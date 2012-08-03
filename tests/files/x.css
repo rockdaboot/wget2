@@ -1,0 +1,13 @@
+@IMPORT "http://example.com"
+
+@media print {
+  * {
+ background: transparent !important; color: black !important; text-shadow: none !important; filter:none !important
+;
+  -ms-filter: none !important;
+ } /* Black prints faster: sanbeiji.com/archives/953 */
+header #search{ width:138px; height:25px; background:url(/common/img/search.png) top left no-repeat; position:absolute; top:12px; right:20px; }
+  background:url( '/common/img/search.png' );
+  background:url( '//example.com/common/img/search.png' );
+  background:url("/common/img/search.png");
+}

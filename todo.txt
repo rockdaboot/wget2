@@ -1,0 +1,42 @@
+- cleanup mget.c: move parse_html / parse_css into own C file
+- https with gnutls
+- respect /robots.txt "Robot Exclusion Standard"
+- proxy support
+- a --sync option / respect page expiry dates / only download changed pages
+- respect data-urls
+- http authentication (basic & digest RFC 2617)
+- request pipelining (maybe using a client cookie)
+- SPDY protocol
+- ftp support
+- https with openssl
+- Documentation docbook with free Serna WYSIWYG/WYMIWYG editor (conversion to texinfo possible)
+- to implement Content-Encoding 'compress' and 'deflate' I need a server supporting these
+
+Done:
+- checksum routines to avoid sum utilities like "sha1sum" (using libgnutls)
+- formatting the source
+- gettext support
+- GNU license
+- connection cache/pool
+- put text into --help
+- flex css parser for recursive/website downloading
+- recursive downloading
+- HTML parsing routine to avoid "html2" utility
+- XML parsing routine to avoid "xml2" utility
+- zlib/gzip support for compressed HTTP downloads
+- option for setting number of download threads
+- tested on BSD
+  *need special makefile (BSDMakefile)
+  *own versions of getline, dprintf, vdprintf
+  *don't use pthread_timedjoin_np
+
+RFC and other documents
+ RFC 6249 Metalink/HTTP: Mirrors and Hashes
+ RFC 5854 The Metalink Download Description Format
+ RFC 5988 Link HTTP Header update
+ RFC 3864 Link HTTP Header
+ RFC 3230 Digest HTTP Header
+ RFC 2069 Digest Access Authentication (old)
+ RFC 2617 Basic and Digest Access Authentication
+ RFC 3986 Uniform Resource Identifier (URI): Generic Syntax
+          (obsoletes RFC 2396, 1738, 1808, 2732)
