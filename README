@@ -1,3 +1,6 @@
+Mget is a leightweight multithreaded metalink/file/website downloader
+written in C (C99 / Posix 2001 compliant).
+
 Use 'make' to compile.
 
-Contents will follow later...
+Have a look into 'todo.txt' about the next steps.
