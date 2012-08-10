@@ -48,7 +48,7 @@ The basic functionality is implemented, like:
 Anybody should feel free to contribute ideas, opinions, knowledge (docs, code,
  autotools, etc.).
 
-No yet implemented
+Not yet implemented
 ------------------
 
 The following is just a quick list of ideas and todos.
