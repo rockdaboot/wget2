@@ -127,9 +127,9 @@ static int parse_bool(option_t opt, UNUSED const char *const *argv, const char *
 {
 	if (!val)
 		*((char *)opt->var) = 1;
-	else if (!strcmp(val,"1") || !strcasecmp(val,"yes") || !strcasecmp(val,"on"))
+	else if (!strcmp(val,"1") || !strcasecmp(val,"y") || !strcasecmp(val,"yes") || !strcasecmp(val,"on"))
 		*((char *)opt->var) = 1;
-	else if (!strcmp(val,"0") || !strcasecmp(val,"no") || !strcasecmp(val,"off"))
+	else if (!strcmp(val,"0") || !strcasecmp(val,"n") || !strcasecmp(val,"no") || !strcasecmp(val,"off"))
 		*((char *)opt->var) = 0;
 	else {
 		err_printf(_("Boolean value '%s' not recognized\n"), val);
@@ -232,7 +232,8 @@ static int set_long_option(const char *name, const char *value)
 		if (!value)
 			err_printf_exit(_("Missing argument for option '%s'\n"), name);
 		opt->parser(opt, NULL, value);
-		ret = opt->args;
+		if (name != namebuf)
+			ret = opt->args;
 	} else {
 		if (opt->parser == parse_bool && value) {
 			opt->parser(opt, NULL, value);
@@ -451,8 +452,6 @@ static int parse_command_line(int argc, const char *const *argv)
 
 		if (argp[1] == '-') {
 			// long option
-			const char *p;
-
 			if (argp[2] == 0)
 				return n + 1;
 

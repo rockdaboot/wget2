@@ -694,65 +694,14 @@ ready:
 	return NULL;
 }
 
-// normalize /../ and remove /./
-
-static void normalize_path(char *path)
-{
-	char *p1 = path, *p2 = path;
-
-	info_printf("path %s -> ", path);
-
-	// skip ./ and ../ at the beginning of the path
-	while (*p2 == '.' || *p2 == '/') {
-		if (*p2 == '/')
-			p2++;
-		else if (*p2 == '.') {
-			if (p2[1] == '/')
-				p2 += 2;
-			else if (p2[1] == '.' && p2[2] == '/')
-				p2 += 3;
-			else
-				break;
-		} else
-			break;
-	}
-
-	while (*p2) {
-		if (*p2 == '/') {
-			if (p2[1] == '.') {
-				if (!strncmp(p2, "/../", 4)) {
-					// go one level up
-					p2 += 3;
-					while (p1 > path && *--p1 != '/');
-				} else if (!strcmp(p2, "/..")) {
-					p2 += 3;
-					while (p1 > path && *--p1 != '/');
-				} else if (!strncmp(p2, "/./", 3)) {
-					p2 += 2;
-				} else if (!strcmp(p2, "/.")) {
-					p2 += 2;
-				} else
-					*p1++ = *p2++;
-			} else if (p1 == path)
-				p2++; // avoid leading slash
-			else if (p2[1] == '/')
-				p2++; // double slash to single slash
-			else
-				*p1++ = *p2++;
-		} else
-			*p1++ = *p2++;
-	}
-	*p1 = 0;
-	info_printf("%s\n", path);
-}
-
+/*
 // watch out: val is not always zero terminated
 
 static void add_uri(int sockfd, IRI *iri, const char *tag, const char *val, int len)
 {
 	if (len < 1 || (len == 1 && *val == '#')) return; // ignore e.g. href='#'
 
-	info_printf("*url = %.*s\n", len, val);
+	log_printf("*url = %.*s\n", len, val);
 
 	if (*val == '/') {
 		char path[len + 1];
@@ -766,19 +715,19 @@ static void add_uri(int sockfd, IRI *iri, const char *tag, const char *val, int 
 			if ((p = strchr(path + 2, '/')))
 				normalize_path(p + 1);
 
-			info_printf("*1 %s:%s\n", iri->scheme ? iri->scheme : "http", path);
+			log_printf("*1 %s:%s\n", iri->scheme ? iri->scheme : "http", path);
 			dprintf(sockfd, "add uri %s:%s\n", iri->scheme ? iri->scheme : "http", path);
 		} else {
 			// absolute path
 			normalize_path(path);
-			info_printf("*2 %s/%s\n", tag, path);
+			log_printf("*2 %s/%s\n", tag, path);
 			dprintf(sockfd, "add uri %s/%s\n", tag, path);
 		}
 	} else {
 		// see if URI begins with a scheme:
 		if (memchr(val, ':', len)) {
 			// absolute URI
-			info_printf("*3 %.*s\n", len, val);
+			log_printf("*3 %.*s\n", len, val);
 			dprintf(sockfd, "add uri %.*s\n", len, val);
 		} else {
 			// relative URI
@@ -793,16 +742,16 @@ static void add_uri(int sockfd, IRI *iri, const char *tag, const char *val, int 
 			}
 
 			normalize_path(path);
-			info_printf("*4 %s/%s\n", tag, path);
+			log_printf("*4 %s/%s\n", tag, path);
 			dprintf(sockfd, "add uri %s/%s\n", tag, path);
 		}
 	}
 }
-
+*/
 struct html_context {
 	IRI
 		*iri;
-	char
+	const char
 		*tag;
 	int
 		sockfd;
@@ -812,16 +761,27 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 {
 	struct html_context *ctx = context;
 
-	if (flags &= XML_FLG_ATTRIBUTE) {
-		if (val) {
-			// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
-			if (!strcasecmp(attr, "href") || !strcasecmp(attr, "src")
-				|| !strcasecmp(attr, "background") || !strcasecmp(attr, "lowsrc")
-				|| !strcasecmp(attr, "data") || !strcasecmp(attr, "code")) {
-				add_uri(ctx->sockfd, ctx->iri, ctx->tag, val, strlen(val));
+	if ((flags &= XML_FLG_ATTRIBUTE) && val) {
+		// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
+		if (!strcasecmp(attr, "href") || !strcasecmp(attr, "src")
+			|| !strcasecmp(attr, "background") || !strcasecmp(attr, "lowsrc")
+			|| !strcasecmp(attr, "data") || !strcasecmp(attr, "code"))
+		{
+			size_t len = strlen(val);
+
+			if (len > 1 || (len == 1 && *val != '#')) {
+				// ignore e.g. href='#'
+				char buf[1024];
+				const char *allocated_buf =
+					iri_relative_to_absolute(ctx->iri, ctx->tag, val, strlen(val), buf, sizeof(buf));
+
+				dprintf(ctx->sockfd, "add uri %s\n", allocated_buf ? allocated_buf : buf);
+
+				xfree(allocated_buf);
 			}
-			// else info_printf(" %s=\"%s\"\n",attr,val);
+			// add_uri(ctx->sockfd, ctx->iri, ctx->tag, val, strlen(val));
 		}
+		// else info_printf(" %s=\"%s\"\n",attr,val);
 	}
 }
 
@@ -829,34 +789,22 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 
 void html_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 {
+	// create scheme://authority that will be prepended to relative paths
+	char tag[1024];
+	const char *allocated_tag = iri_get_connection_part(iri, tag, sizeof(tag));
 	struct html_context context = { .iri = iri, .sockfd = sockfd };
-//	char *tag;
 
-	if (iri->scheme) {
-		if (iri->port) {
-			context.tag = alloca(strlen(iri->scheme) + strlen(iri->host) + strlen(iri->port) + 8);
-			sprintf(context.tag, "%s://%s:%s", iri->scheme, iri->host, iri->port);
-		} else {
-			context.tag = alloca(strlen(iri->scheme) + strlen(iri->host) + 8);
-			sprintf(context.tag, "%s://%s", iri->scheme, iri->host);
-		}
-	} else {
-		if (iri->port) {
-			context.tag = alloca(strlen(iri->host) + strlen(iri->port) + 8);
-			sprintf(context.tag, "%s:%s", iri->host, iri->port);
-		} else {
-			context.tag = alloca(strlen(iri->host) + 8);
-			sprintf(context.tag, "%s", iri->host);
-		}
-	}
+	context.tag = allocated_tag ? allocated_tag: tag;
 
 	html_parse_buffer(resp->body, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
+
+	xfree(allocated_tag);
 }
 
 struct css_context {
 	IRI
 		*iri;
-	char
+	const char
 		*tag;
 	int
 		sockfd;
@@ -866,13 +814,25 @@ static void _css_parse(void *context, const char *url, size_t len)
 {
 	struct html_context *ctx = context;
 
-	add_uri(ctx->sockfd, ctx->iri, ctx->tag, url, len);
+	if (len > 1 || (len == 1 && *url != '#')) {
+		// ignore e.g. href='#'
+		char buf[1024];
+		const char *allocated_buf =
+			iri_relative_to_absolute(ctx->iri, ctx->tag, url, len, buf, sizeof(buf));
+
+		dprintf(ctx->sockfd, "add uri %s\n", allocated_buf ? allocated_buf : buf);
+
+		xfree(allocated_buf);
+	}
+	// add_uri(ctx->sockfd, ctx->iri, ctx->tag, url, len);
 }
 
 void css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 {
-	struct html_context context = { .iri = iri, .sockfd = sockfd };
-//	char *tag;
+	// create scheme://authority that will be prepended to relative paths
+	char tag[1024];
+	const char *allocated_tag = iri_get_connection_part(iri, tag, sizeof(tag));
+	struct css_context context = { .iri = iri, .sockfd = sockfd };
 
 		/*
 		void parse(void *context, int flags, const char *dir, const char *attr, const char *val)
@@ -906,25 +866,11 @@ void css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 		}
 	 */
 
-	if (iri->scheme) {
-		if (iri->port) {
-			context.tag = alloca(strlen(iri->scheme) + strlen(iri->host) + strlen(iri->port) + 5);
-			sprintf(context.tag, "%s://%s:%s", iri->scheme, iri->host, iri->port);
-		} else {
-			context.tag = alloca(strlen(iri->scheme) + strlen(iri->host) + 4);
-			sprintf(context.tag, "%s://%s", iri->scheme, iri->host);
-		}
-	} else {
-		if (iri->port) {
-			context.tag = alloca(strlen(iri->host) + strlen(iri->port) + 2);
-			sprintf(context.tag, "%s:%s", iri->host, iri->port);
-		} else {
-			context.tag = alloca(strlen(iri->host) + 1);
-			strcpy(context.tag, iri->host);
-		}
-	}
+	context.tag = allocated_tag ? allocated_tag: tag;
 
-	css_parse_buffer(resp->body, _css_parse,& context);
+	css_parse_buffer(resp->body, _css_parse, &context);
+
+	xfree(allocated_tag);
 }
 
 void save_file(HTTP_RESPONSE *resp, IRI *iri, int flags)
@@ -986,11 +932,11 @@ void save_file(HTTP_RESPONSE *resp, IRI *iri, int flags)
 		const char *p1, *p2;
 		//		int hostlen=strlen(iri->host);
 		char
-		dir[strlen(iri->host)
+			dir[strlen(iri->host)
 			+(iri->path ? strlen(iri->path) + 1 : 0)
 			+(iri->query ? strlen(iri->query) + 1 : 0)
 			+(iri->fragment ? strlen(iri->fragment) + 1 : 0)
-			+ 11 + 1]; // 10 extra for '/index.html'
+			+ 11 + 1]; // 11 extra for '/index.html'
 
 		if (mkdir(iri->host, 0755) != 0 && errno != EEXIST) {
 			err_printf_exit(_("Failed to make directory '%s'\n"), iri->host);
@@ -1013,7 +959,10 @@ void save_file(HTTP_RESPONSE *resp, IRI *iri, int flags)
 					return;
 				}
 			}
-			n += snprintf(dir + n, sizeof(dir) - n, "/%s", p1);
+			if (*p1)
+				n += snprintf(dir + n, sizeof(dir) - n, "/%s", p1);
+			else
+				n += snprintf(dir + n, sizeof(dir) - n, "/index.html");
 		} else if (!iri->query && !iri->fragment)
 			n += snprintf(dir + n, sizeof(dir) - n, "/index.html");
 
@@ -1140,7 +1089,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 				"Accept: application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
 			if (config.user_agent)
 				http_add_header(req, "User-Agent", config.user_agent);
-			//			if (config.keep_alive)
+			// if (config.keep_alive)
 			http_add_header_line(req, "Connection: keep-alive\r\n");
 
 			if (part)
@@ -1152,11 +1101,8 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			}
 
 			http_free_request(&req);
-			//			http_close(&conn);
+			// http_close(&conn);
 		} else break;
-
-		if (use_iri != iri)
-			iri_free(&use_iri);
 
 		xfree(location);
 
@@ -1182,75 +1128,37 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			break; // 302 with Metalink information
 
 		if (resp->location) {
+			char tag[1024];
+			const char *allocated_tag = iri_get_connection_part(use_iri, tag, sizeof(tag));
+			char url[1024];
+			const char *allocated_url = iri_relative_to_absolute(
+				use_iri, allocated_url ? allocated_url : tag,
+				resp->location, strlen(resp->location), url, sizeof(url));
+
+			xfree(allocated_tag);
+
 			location = resp->location;
 			resp->location = NULL;
-			use_iri = iri_parse(location);
+
+			if (use_iri != iri)
+				iri_free(&use_iri);
+
+			use_iri = iri_parse(allocated_url ? allocated_url : url);
+
+			xfree(allocated_url);
+		} else {
+			if (use_iri != iri)
+				iri_free(&use_iri);
 		}
 
 		http_free_response(&resp);
 	}
 
-	return resp;
-}
-
-/*
-HTTP_RESPONSE *http_read_header(const IRI *iri)
-{
-	HTTP_CONNECTION *conn;
-	HTTP_RESPONSE *resp=NULL;
-
-	if ((conn=http_open(iri))) {
-		HTTP_REQUEST *req=http_create_request(iri,"HEAD");
-		http_add_header_line(req,
-			"Accept-Encoding: gzip\r\n"\
-			"Accept: *\/\*");
-		if (config.user_agent)
-			http_add_header(req,"User-Agent",config.user_agent);
-
-		if (http_send_request(conn,req)==0) {
-			resp=http_get_response(conn,req); // read header only
-		}
-
-		http_free_request(&req);
-		http_close(&conn);
-	}
-
-	return resp;
-}
-
-HTTP_RESPONSE *http_get_header(IRI *iri)
-{
-	IRI *use_iri=iri;
-	HTTP_RESPONSE *resp=NULL;
-	int max_redirect=config.max_redirect;
-	const char *location=NULL;
-
-	while (!terminate && use_iri && (resp=http_read_header(use_iri))) {
-		if (--max_redirect<0 || (resp && (resp->code==302 || resp->code/100==2)))
-			break;
-
-		if (iri!=use_iri)
-			iri_free(&use_iri);
-
-		xfree(location);
-
-		if (resp->location) {
-			location=resp->location;
-			resp->location=NULL;
-			use_iri=iri_parse(location);
-		}
-
-		http_free_response(&resp);
-	}
-
-	if (iri!=use_iri)
+	if (use_iri && use_iri != iri)
 		iri_free(&use_iri);
 
-	if (resp && location) {
-		resp->location=location;
-		location=NULL;
-	} else if (location)
-		xfree(location);
+	return resp;
+}
 
 // HTTP/1.1 302 Found
 // Date: Fri, 20 Apr 2012 15:00:40 GMT
@@ -1271,7 +1179,3 @@ HTTP_RESPONSE *http_get_header(IRI *iri)
 // Digest: SHA-256=5QgXpvMLXWCi1GpNZI9mtzdhFFdtz6tuNwCKIYbbZfU=
 // Location: http://ftp.suse.com/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe
 // Content-Type: text/html; charset=iso-8859-1
-
-	return resp;
-}
- */

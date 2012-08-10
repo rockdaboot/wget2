@@ -194,3 +194,169 @@ IRI *iri_parse(const char *s_uri)
 
 	return iri;
 }
+
+char *iri_get_connection_part(IRI *iri, char *tag, size_t tagsize)
+{
+	size_t len;
+
+	if (iri->scheme) {
+		if (iri->port) {
+			len = strlen(iri->scheme) + strlen(iri->host) + strlen(iri->port) + 4 + 1;
+			if (len > tagsize)
+				tag = xmalloc(len);
+
+			sprintf(tag, "%s://%s:%s", iri->scheme, iri->host, iri->port);
+		} else {
+			len = strlen(iri->scheme) + strlen(iri->host) + 3 + 1;
+			if (len > tagsize)
+				tag = xmalloc(len);
+
+			sprintf(tag, "%s://%s", iri->scheme, iri->host);
+		}
+	} else {
+		if (iri->port) {
+			len = strlen(iri->host) + strlen(iri->port) + 1 + 1;
+			if (len > tagsize)
+				tag = xmalloc(len);
+
+			sprintf(tag, "%s:%s", iri->host, iri->port);
+		} else {
+			len = strlen(iri->host) + 1;
+			if (len > tagsize)
+				tag = xmalloc(len);
+
+			sprintf(tag, "%s", iri->host);
+		}
+	}
+
+	if (len > tagsize)
+		return tag; // return allocated buffer
+
+	return NULL; // static buffer was large enough
+}
+
+// normalize /../ and remove /./
+
+static size_t _normalize_path(char *path)
+{
+	char *p1 = path, *p2 = path;
+
+	log_printf("path %s ->\n", path);
+
+	// skip ./ and ../ at the beginning of the path
+	while (*p2 == '.' || *p2 == '/') {
+		if (*p2 == '/')
+			p2++;
+		else if (*p2 == '.') {
+			if (p2[1] == '/')
+				p2 += 2;
+			else if (p2[1] == '.' && p2[2] == '/')
+				p2 += 3;
+			else
+				break;
+		} else
+			break;
+	}
+
+	while (*p2) {
+		if (*p2 == '/') {
+			if (p2[1] == '.') {
+				if (!strncmp(p2, "/../", 4)) {
+					// go one level up
+					p2 += 3;
+					while (p1 > path && *--p1 != '/');
+				} else if (!strcmp(p2, "/..")) {
+					p2 += 3;
+					while (p1 > path && *--p1 != '/');
+				} else if (!strncmp(p2, "/./", 3)) {
+					p2 += 2;
+				} else if (!strcmp(p2, "/.")) {
+					p2 += 2;
+				} else
+					*p1++ = *p2++;
+			} else if (p1 == path)
+				p2++; // avoid leading slash
+			else if (p2[1] == '/')
+				p2++; // double slash to single slash
+			else
+				*p1++ = *p2++;
+		} else
+			*p1++ = *p2++;
+	}
+	*p1 = 0;
+	log_printf("     %s\n", path);
+
+	return p1 - path;
+}
+
+// convert relative URI to absolute URI
+
+char *iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_t len, char *dst, size_t dst_size)
+{
+	size_t dst_len = 0;
+
+	log_printf("*url = %.*s\n", (int)len, val);
+
+	if (*val == '/') {
+		char path[len + 1];
+
+		strlcpy(path, val, len + 1);
+
+		if (len >= 2 && val[1] == '/') {
+			char *p;
+
+			// absolute URI without scheme: //authority/path...
+			if ((p = strchr(path + 2, '/')))
+				dst_len = _normalize_path(p + 1);
+
+			dst_len += strlen(iri->scheme ? iri->scheme : "http") + 1 + 1;
+			if (dst_len > dst_size)
+				dst = xmalloc(dst_len);
+
+			snprintf(dst, dst_len, "%s:%s", iri->scheme ? iri->scheme : "http", path);
+			log_printf("*1 %s\n", dst);
+		} else {
+			// absolute path
+			dst_len = strlen(tag) + _normalize_path(path) + 1 + 1;
+			if (dst_len > dst_size)
+				dst = xmalloc(dst_len);
+
+			snprintf(dst, dst_len, "%s/%s", tag, path);
+			log_printf("*2 %s\n", dst);
+		}
+	} else {
+		// see if URI begins with a scheme:
+		if (memchr(val, ':', len)) {
+			// absolute URI
+			dst_len = len + 1;
+			if (dst_len > dst_size)
+				dst = xmalloc(dst_len);
+
+			strlcpy(dst, val, dst_len);
+			log_printf("*3 %s\n", dst);
+		} else {
+			// relative URI
+			const char *lastsep = iri->path ? strrchr(iri->path, '/') : NULL;
+			int pathlen = lastsep ? (lastsep - iri->path) + len + 2 : len + 1;
+			char path[pathlen];
+
+			if (lastsep) {
+				snprintf(path, pathlen, "%.*s%.*s", (int)(lastsep - iri->path + 1), iri->path, (int)len, val);
+			} else {
+				strlcpy(path, val, len + 1);
+			}
+
+			dst_len = strlen(tag) + _normalize_path(path) + 1 + 1;
+			if (dst_len > dst_size)
+				dst = xmalloc(dst_len);
+
+			snprintf(dst, dst_len, "%s/%s", tag, path);
+			log_printf("*4 %s\n", dst);
+		}
+	}
+
+	if (dst_len > dst_size)
+		return dst;
+
+	return NULL;
+}

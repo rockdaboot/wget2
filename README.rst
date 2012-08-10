@@ -46,7 +46,8 @@ The basic functionality is implemented, like:
 - compiled and linked with hardening options proposed by the Debian project
 - plugin technology to plug in user-specific code
 
-Anybody should feel free to contribute ideas, opinions, knowledge (docs, code, autotools, etc.).
+Anybody should feel free to contribute ideas, opinions, knowledge (docs, code, autotools, etc.),
+code, test routines, etc.
 
 Not yet implemented
 ------------------
@@ -103,7 +104,7 @@ There is no documentation yet.
 
     $ mget --help
 
-prints the usage and current set of options
+prints the usage and the current set of options
 
 My idea is to use the free Serna WYSIWYG/WYMIWYG editor for documentation.
 It creates docbook format which can be converted into texinfo format.

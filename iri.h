@@ -30,6 +30,8 @@
 #ifndef _MGET_IRI_H
 #define _MGET_IRI_H
 
+#include <stddef.h>
+
 typedef struct {
 	const char
 		*uri,      // pointer to original URI string
@@ -54,5 +56,8 @@ int
 	iri_isunreserved(char c);
 IRI
 	*iri_parse(const char *s);
+char
+	*iri_get_connection_part(IRI *iri, char *tag, size_t tagsize),
+	*iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_t len, char *dst, size_t dst_size);
 
 #endif /* _MGET_IRI_H */

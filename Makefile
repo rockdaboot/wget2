@@ -8,8 +8,8 @@ CFLAGS=-g -std=gnu99 -pedantic -fPIC\
  -Wundef -Wcast-align -O2\
  -D _FILE_OFFSET_BITS=64\
  -D ENABLE_NLS=1\
- -D LOCALEDIR=\"/usr/share/locale\"\
- -D GLOBAL_CONFIG_FILE=\"/etc/mgetrc\"
+ -D LOCALEDIR=\"/usr/share/locale\"
+# -D GLOBAL_CONFIG_FILE=\"/etc/mgetrc\"
 
 #LN=$(SILENT)gcc -fPIE -pie -Wl,-z,relro,-z,now
 LN=$(SILENT)gcc -fPIE -pie -Wl,-z,relro,--as-needed

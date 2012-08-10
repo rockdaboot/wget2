@@ -1,5 +1,4 @@
 Todo:
-- BUG: redirection to a relative URI
 - DNS lookup cache
 - respect /robots.txt "Robot Exclusion Standard"
 - proxy support
@@ -15,10 +14,11 @@ Todo:
 - Documentation docbook with free Serna WYSIWYG/WYMIWYG editor (conversion to texinfo possible)
 - to implement Content-Encoding 'compress' and 'deflate' I need a server supporting these
 
-Refactoring to do:
+Refactoring/cleanup to do:
 - move struct buffer to HTTP_CONNECTION
 - cleanup mget.c: move parse_html / parse_css into own C file
-
+- write test routines (e.g. normalize_path)
+- use gcc/clang 'nonnull' attribute specifier where possible
 
 Done:
 - https with gnutls
