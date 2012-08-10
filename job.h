@@ -51,7 +51,7 @@ typedef struct {
 		hash;
 	off_t
 		position;
-	size_t
+	off_t
 		length;
 } PIECE;
 
@@ -59,7 +59,7 @@ typedef struct {
 typedef struct {
 	off_t
 		position;
-	size_t
+	off_t
 		length;
 	char
 		inuse,
@@ -78,7 +78,7 @@ typedef struct {
 		*parts; // parts to download
 	const char
 		*name;
-	unsigned long long
+	off_t
 		size; // total size of the file (C99 'long long' has at least 64 bits)
 	int
 		mirror_pos, // where to look up the next mirror to use
@@ -97,6 +97,7 @@ int
 	queue_get(JOB **job_out, PART **part_out);
 void
 	job_create_parts(JOB *job),
+	job_sort_mirrors(JOB *job),
 	job_free(JOB *job),
 	job_validate_file(JOB *job),
 //	job_resume(JOB *job),

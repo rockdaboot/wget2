@@ -86,8 +86,9 @@ int iri_isunreserved(char c)
 
 void iri_free(IRI **iri)
 {
-	if (iri && *iri)
+	if (iri && *iri) {
 		xfree(*iri);
+	}
 }
 
 IRI *iri_parse(const char *s_uri)

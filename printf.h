@@ -33,12 +33,12 @@
 #include "mget.h"
 
 int
-	vasprintf(char **restrict buf, const char *restrict fmt, va_list),
+	vasprintf(char **restrict buf, const char *restrict fmt, va_list) PRINTF_FORMAT(2,0),
 	asprintf(char **restrict buf, const char *restrict fmt, ...) PRINTF_FORMAT(2,3),
-	vdprintf(int fd, const char *restrict fmt, va_list),
+	vdprintf(int fd, const char *restrict fmt, va_list) PRINTF_FORMAT(2,0),
 	dprintf(int fd, const char *restrict fmt, ...) PRINTF_FORMAT(2,3);
 size_t
-	vbsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, va_list),
+	vbsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, va_list) PRINTF_FORMAT(3,0),
 	bsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, ...) PRINTF_FORMAT(3,4);
 
 #endif /* _MGET_PRINTF_H */

@@ -46,7 +46,7 @@ static void _write_log(const char *buf, int len)
 	if (!buf || len <= 0) return;
 
 	gettimeofday(&tv, NULL); // obsoleted by POSIX.1-2008, maybe use clock_gettime() ? needs -lrt
-	tp = localtime_r(&tv.tv_sec, &tbuf);
+	tp = localtime_r((const time_t *)&tv.tv_sec, &tbuf); // cast top avoid warning on OpenBSD
 
 	if (!config.logfile)
 		fp = stderr;

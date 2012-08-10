@@ -38,6 +38,6 @@ void
 	log_write(const char *buf, int len),
 	log_printf(const char *fmt, ...) PRINTF_FORMAT(1,2),
 	log_printf_exit(const char *fmt, ...) PRINTF_FORMAT(1,2) NORETURN,
-	log_vprintf(const char *fmt, va_list args);
+	log_vprintf(const char *fmt, va_list args) PRINTF_FORMAT(1,0);
 
 #endif /* _MGET_LOG_H */

@@ -28,7 +28,7 @@
 #define _MGET_MGET_H
 
 #ifndef MGET_VERSION
-	#define MGET_VERSION "0.1"
+	#define MGET_VERSION "0.1.1"
 #endif
 
 #if defined(__GNUC__) && __GNUC__ >= 3

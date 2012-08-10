@@ -46,12 +46,17 @@
 #include "utils.h"
 #include "options.h"
 #include "log.h"
+#include "gnutls.h"
 #include "net.h"
 
 struct TCP {
 	int
 		sockfd,
 		timeout;
+	char
+		ssl;
+	void *
+		ssl_session;
 };
 
 struct addrinfo *tcp_resolve(const char *host, const char *port)
@@ -133,7 +138,7 @@ void tcp_set_timeout(tcp_t tcp, int timeout)
 		tcp->timeout = timeout;
 }
 
-tcp_t tcp_connect(struct addrinfo *addrinfo)
+tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 {
 	tcp_t tcp = NULL;
 	int sockfd = -1, rc;
@@ -163,6 +168,12 @@ tcp_t tcp_connect(struct addrinfo *addrinfo)
 		} else {
 			tcp = xcalloc(1, sizeof(*tcp));
 			tcp->sockfd = sockfd;
+			if (hostname) {
+				tcp->ssl = 1;
+				tcp->ssl_session = ssl_open(tcp->sockfd, hostname);
+				if (!tcp->ssl_session)
+					tcp_close(&tcp);
+			}
 		}
 	} else
 		err_printf(_("Failed to create socket\n"));
@@ -174,20 +185,26 @@ ssize_t tcp_read(tcp_t tcp, char *buf, size_t count)
 {
 	ssize_t rc;
 
-	if (tcp->timeout) {
-		struct pollfd pollfd[1] = {
-			{ tcp->sockfd, POLLIN, 0}};
+	if (tcp->ssl) {
+		rc = ssl_read_timeout(tcp->ssl_session, buf, count, tcp->timeout);
+	} else {
+		if (tcp->timeout) {
+			// wait for socket to be ready to read
+			struct pollfd pollfd[1] = {
+				{ tcp->sockfd, POLLIN, 0}};
 
-		if ((rc = poll(pollfd, 1, tcp->timeout)) < 1)
-			return rc;
+			if ((rc = poll(pollfd, 1, tcp->timeout)) <= 0)
+				return rc;
 
-		if (!(pollfd[0].revents & POLLIN))
-			return -1;
+			if (!(pollfd[0].revents & POLLIN))
+				return -1;
+		}
+
+		rc = read(tcp->sockfd, buf, count);
 	}
 
-	rc = read(tcp->sockfd, buf, count);
-	if (rc == -1)
-		err_printf(_("Failed to read (%d)\n"), errno);
+	if (rc < 0)
+		err_printf(_("Failed to read %zu bytes (%d)\n"), count, errno);
 
 	return rc;
 }
@@ -201,7 +218,7 @@ ssize_t tcp_write(tcp_t tcp, const char *buf, size_t count)
 
 	while (count) {
 		if (tcp->timeout) {
-			if ((rc = poll(pollfd, 1, tcp->timeout)) < 1) {
+			if ((rc = poll(pollfd, 1, tcp->timeout)) <= 0) {
 				err_printf(_("Failed to poll (%d)\n"), errno);
 				return rc;
 			}
@@ -212,7 +229,12 @@ ssize_t tcp_write(tcp_t tcp, const char *buf, size_t count)
 			}
 		}
 
-		if ((n = write(tcp->sockfd, buf, count)) == -1) {
+		if (tcp->ssl)
+			n = ssl_write(tcp->ssl_session, buf, count);
+		else
+			n = write(tcp->sockfd, buf, count);
+			
+		if (n < 0) {
 			err_printf(_("Failed to write %zu bytes (%d)\n"), count, errno);
 			return -1;
 		}
@@ -281,6 +303,9 @@ void tcp_close(tcp_t *tcp)
 		if ((*tcp)->sockfd != -1) {
 			close((*tcp)->sockfd);
 			(*tcp)->sockfd = -1;
+		}
+		if ((*tcp)->ssl && (*tcp)->ssl_session) {
+			ssl_close(&(*tcp)->ssl_session);
 		}
 		xfree(*tcp);
 	}

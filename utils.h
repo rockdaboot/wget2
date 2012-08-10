@@ -46,7 +46,7 @@ ssize_t
 	fdgetline0(char **buf, size_t *bufsize, int fd),
 	getline(char **buf, size_t *bufsize, FILE *fp);
 FILE
-	*vpopenf(const char *type, const char *fmt, va_list args),
+	*vpopenf(const char *type, const char *fmt, va_list args) PRINTF_FORMAT(2,0),
 	*popenf(const char *type, const char *fmt, ...) PRINTF_FORMAT(2,3),
 	*popen2f(FILE **fpin, FILE **fpout, const char *fmt, ...) PRINTF_FORMAT(3,4);
 pid_t

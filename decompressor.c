@@ -39,7 +39,7 @@ struct DECOMPRESSOR {
 	} extra;
 	int
 		(*decompress)(DECOMPRESSOR *dc, char *src, size_t srclen),
-		(*put_data)(void *context, char *data, size_t length); // decompressed data goes here
+		(*put_data)(void *context, const char *data, size_t length); // decompressed data goes here
 	void
 		(*exit)(DECOMPRESSOR * dc),
 		*context; // given to put_data()
@@ -63,10 +63,19 @@ static int gzip_init(z_stream *strm)
 
 static int gzip_decompress(DECOMPRESSOR *dc, char *src, size_t srclen)
 {
-	z_stream *strm = &dc->extra.strm;
+	z_stream *strm;
 	char dst[10240];
 	int status;
 
+	if (!srclen) {
+		// special case to avoid decompress errors
+		if (dc->put_data)
+			dc->put_data(dc->context, "", 0);
+
+		return 0;
+	}
+
+	strm = &dc->extra.strm;
 	strm->next_in = (unsigned char *)src;
 	strm->avail_in = srclen;
 
@@ -106,7 +115,7 @@ static int identity(DECOMPRESSOR *dc, char *src, size_t srclen)
 }
 
 DECOMPRESSOR *decompress_open(int encoding,
-	int (*put_data)(void *context, char *data, size_t length),
+	int (*put_data)(void *context, const char *data, size_t length),
 	void *context)
 {
 	DECOMPRESSOR *dc = xcalloc(1, sizeof(DECOMPRESSOR));

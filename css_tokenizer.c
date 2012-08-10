@@ -2443,6 +2443,10 @@ int yyget_lineno (yyscan_t yyscanner );
 
 void yyset_lineno (int line_number ,yyscan_t yyscanner );
 
+int yyget_column  (yyscan_t yyscanner );
+
+void yyset_column (int column_no ,yyscan_t yyscanner );
+
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
  */
@@ -2585,7 +2589,7 @@ YY_DECL
 #line 65 "css_tokenizer.lex"
 
 
-#line 2589 "css_tokenizer.c"
+#line 2593 "css_tokenizer.c"
 
 	if ( !yyg->yy_init )
 		{
@@ -2895,7 +2899,7 @@ YY_RULE_SETUP
 #line 119 "css_tokenizer.lex"
 ECHO;
 	YY_BREAK
-#line 2899 "css_tokenizer.c"
+#line 2903 "css_tokenizer.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 

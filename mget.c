@@ -53,6 +53,7 @@
 #include "css.h"
 #include "options.h"
 #include "metalink.h"
+#include "gnutls.h"
 
 typedef struct {
 	pthread_t
@@ -99,7 +100,8 @@ static int in_blacklist(const char *uri)
 		p++;
 	if (*p == ':') {
 		// URI has a scheme, check if we support that scheme
-		if (strncasecmp(uri, "http:", 5))
+		if (strncasecmp(uri, "http:", 5) &&
+			strncasecmp(uri, "https:", 6))
 			return 1;
 	}
 
@@ -133,9 +135,11 @@ static int schedule_download(JOB *job, PART *part)
 					part->inuse = 1;
 				else
 					job->inuse = 1;
+
 				dprintf(downloader[offset].sockfd[0], "go\n");
 				return 1;
 			}
+
 			if (++offset >= config.num_threads)
 				offset = 0;
 		}
@@ -275,6 +279,7 @@ int main(int argc, const char *const *argv)
 	//	html_parse_file("index.html",xml_dump,NULL,0);
 		return 0;
 	 */
+
 	// need to set some signals
 	memset(&sig_action, 0, sizeof(sig_action));
 
@@ -284,18 +289,17 @@ int main(int argc, const char *const *argv)
 	sigaction(SIGTERM, &sig_action, NULL);
 	sigaction(SIGINT, &sig_action, NULL);
 
-	//	tcp_settracefunction(NULL,(void (*)(const char *, ...))printf);
-	//	tcp_seterrorfunction(NULL,(void (*)(const char *, ...))printf);
+	//	tcp_settracefunction(NULL,(void (*)(const char *, ...))log_printf);
+	//	tcp_seterrorfunction(NULL,(void (*)(const char *, ...))err_printf);
 	//	tcp_config(NULL,C_TRACE,1);
 
-	//	iri_test(); return 0;
 	n = init(argc, argv);
 
 	for (; n < argc; n++) {
 		if (blacklist_add(argv[n])) {
 			// argv[n] is not in blacklist, add it to the job queue
 			if (config.recursive && !config.span_hosts) {
-				// only download content from given hosts
+				// only download content from hosts given on the command line
 				JOB *job = queue_add(iri_parse(argv[n]));
 				host_add(job->iri->host);
 			} else {
@@ -303,9 +307,6 @@ int main(int argc, const char *const *argv)
 			}
 		}
 	}
-
-	if (config.num_threads < 1)
-		config.num_threads = 1;
 
 	downloader = xcalloc(config.num_threads, sizeof(DOWNLOADER));
 
@@ -398,29 +399,32 @@ int main(int argc, const char *const *argv)
 									}
 								} else part->inuse = 0; // something was wrong, reload again
 							} else if (job->size <= 0) {
-								log_printf("File length %lld - remove job\n", job->size);
+								log_printf("File length %llu - remove job\n", (unsigned long long)job->size);
 								queue_del(job);
 							} else if (!job->mirrors) {
-								log_printf("File length %lld - remove job\n", job->size);
+								log_printf("File length %llu - remove job\n", (unsigned long long)job->size);
 								queue_del(job);
 							} else {
-								log_printf("just loaded metalink file\n");
-								// just loaded a metalink file, create parts
-								job_create_parts(job);
+								// log_printf("just loaded metalink file\n");
+								// just loaded a metalink file, create parts and sort mirrors
+								// job_create_parts(job);
 
-								// resume downloading ?
+								// start or resume downloading
 								job_validate_file(job);
 
 								if (job->hash_ok) {
-									// download of non-chunked file complete, add to blacklist and remove from job queue
-									// blacklist_add(job->uri);
+									// file ok or download of non-chunked file complete, remove from job queue
 									// log_printf("- '%s' completed\n",downloader[n].job->uri);
 									queue_del(job);
 								} else {
 									int it;
+
+									// sort mirrors by priority to download from highest priority first
+									job_sort_mirrors(job);
+
 									for (it = 0; it < vec_size(job->parts); it++)
 										if (schedule_download(job, vec_get(job->parts, it)) == 0)
-											break;
+											break; // now all downloaders have a job
 								}
 							}
 						}
@@ -461,7 +465,7 @@ int main(int argc, const char *const *argv)
 								job->pieces = vec_create(32, 32, NULL);
 
 							memset(&piece, 0, sizeof(PIECE));
-							if (sscanf(buf + 12, "%15zu %15s %127s", &piece.length, piece.hash.type, piece.hash.hash_hex) == 3) {
+							if (sscanf(buf + 12, "%15llu %15s %127s", (unsigned long long *)&piece.length, piece.hash.type, piece.hash.hash_hex) == 3) {
 								piecep = vec_get(job->pieces, vec_size(job->pieces) - 1);
 								if (piecep)
 									piece.position = piecep->position + piecep->length;
@@ -521,7 +525,7 @@ int main(int argc, const char *const *argv)
 	if (config.debug) {
 		for (n = 0; n < vec_size(blacklist); n++) {
 			char *host = vec_get(blacklist, n);
-			info_printf("[%d] %s\n", n, host);
+			info_printf("blacklist[%d] %s\n", n, host);
 		}
 	}
 
@@ -575,9 +579,13 @@ void *downloader_thread(void *p)
 				HTTP_RESPONSE *resp = NULL;
 
 				if (!downloader->part) {
+					int tries = 0;
 
-					dprintf(sockfd, "sts Downloading...\n");
-					resp = http_get(job->iri, NULL, downloader);
+					do {
+						dprintf(sockfd, "sts Downloading...\n");
+						resp = http_get(job->iri, NULL, downloader);
+					} while (!resp && ++tries < 3);
+
 					if (!resp)
 						goto ready;
 
@@ -775,12 +783,12 @@ static void add_uri(int sockfd, IRI *iri, const char *tag, const char *val, int 
 		} else {
 			// relative URI
 			const char *lastsep = iri->path ? strrchr(iri->path, '/') : NULL;
-			char *path;
+			int pathlen = lastsep ? (lastsep - iri->path) + len + 2 : len + 1;
+			char path[pathlen];
+
 			if (lastsep) {
-				path = alloca(lastsep - iri->path + len + 2);
-				snprintf(path, lastsep - iri->path + len + 2, "%.*s%.*s", (int)(lastsep - iri->path + 1), iri->path, len, val);
+				snprintf(path, pathlen, "%.*s%.*s", (int)(lastsep - iri->path + 1), iri->path, len, val);
 			} else {
-				path = alloca(len + 1);
 				strlcpy(path, val, len + 1);
 			}
 
@@ -1031,7 +1039,7 @@ void download_part(DOWNLOADER *downloader)
 {
 	JOB *job = downloader->job;
 	PART *part = downloader->part;
-	int mirror_index = 0;
+	int mirror_index = downloader->id % vec_size(job->mirrors);
 
 	dprintf(downloader->sockfd[1], "sts downloading part...\n");
 	do {
@@ -1045,7 +1053,7 @@ void download_part(DOWNLOADER *downloader)
 			if (msg->body) {
 				int fd;
 
-				log_printf("# body=%zd/%zd bytes\n", msg->content_length, part->length);
+				log_printf("# body=%zd/%llu bytes\n", msg->content_length, (unsigned long long)part->length);
 				if ((fd = open(job->name, O_WRONLY | O_CREAT, 0644)) != -1) {
 					if (lseek(fd, part->position, SEEK_SET) != -1) {
 						ssize_t nbytes;
@@ -1054,7 +1062,7 @@ void download_part(DOWNLOADER *downloader)
 							part->done = 1; // set this when downloaded ok
 						else
 							err_printf(_("Failed to write %zd bytes (%zd)\n"), msg->content_length, nbytes);
-					} else err_printf(_("Failed to lseek to %lld\n"), (long long)part->position);
+					} else err_printf(_("Failed to lseek to %llu\n"), (unsigned long long)part->position);
 					close(fd);
 				} else err_printf(_("Failed to write open %s\n"), job->name);
 
@@ -1064,6 +1072,21 @@ void download_part(DOWNLOADER *downloader)
 			http_free_response(&msg);
 		}
 	} while (!part->done);
+}
+
+static int null_strcasecmp(const char *s1, const char *s2)
+{
+	if (!s1) {
+		if (!s2)
+			return 0;
+		else
+			return -1;
+	} else {
+		if (!s2)
+			return 1;
+		else
+			return strcasecmp(s1, s2);
+	}
 }
 
 HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
@@ -1077,14 +1100,19 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 	while (use_iri) {
 		if (!downloader->conn) {
 			downloader->conn = http_open(use_iri);
-			info_printf("open connection %s\n", downloader->conn->host);
-		} else if (!strcasecmp(downloader->conn->host, iri->host)) {
+			if (downloader->conn)
+				info_printf("opened connection %s\n", downloader->conn->host);
+		} else if (!null_strcasecmp(downloader->conn->host, use_iri->host) &&
+			!null_strcasecmp(downloader->conn->scheme, use_iri->scheme) &&
+			!null_strcasecmp(downloader->conn->port, use_iri->port))
+		{
 			info_printf("reuse connection %s\n", downloader->conn->host);
 		} else {
 			info_printf("close connection %s\n", downloader->conn->host);
 			http_close(&downloader->conn);
 			downloader->conn = http_open(use_iri);
-			info_printf("open connection %s\n", downloader->conn->host);
+			if (downloader->conn)
+				info_printf("opened connection %s\n", downloader->conn->host);
 		}
 		conn = downloader->conn;
 
@@ -1116,8 +1144,8 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			http_add_header_line(req, "Connection: keep-alive\r\n");
 
 			if (part)
-				http_add_header_printf(req, "Range: bytes=%lld-%lld",
-				(long long)part->position, (long long)part->position + part->length - 1);
+				http_add_header_printf(req, "Range: bytes=%llu-%llu",
+				(unsigned long long)part->position, (unsigned long long)part->position + part->length - 1);
 
 			if (http_send_request(conn, req) == 0) {
 				resp = http_get_response(conn, NULL);
@@ -1137,14 +1165,21 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			break;
 		}
 
+		// server doesn't support keep-alive or want us to close the connection
+		if (!resp->keep_alive)
+			http_close(&downloader->conn);
+
 		if (--max_redirect < 0) {
 			if (resp->location) // end of forwarding chain not reached
 				http_free_response(&resp);
 			break;
 		}
 
-		if (resp->code == 302 || resp->code / 100 == 2 || resp->code / 100 >= 4)
-			break;
+		if (resp->code / 100 == 2 || resp->code / 100 >= 4)
+			break; // final response
+
+		if (resp->code == 302 && resp->links && resp->digests)
+			break; // 302 with Metalink information
 
 		if (resp->location) {
 			location = resp->location;

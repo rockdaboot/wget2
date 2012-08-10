@@ -313,7 +313,6 @@ void *vec_get(const VECTOR *v, int pos)
 int vec_browse(const VECTOR *v, int (*browse)(void *elem))
 {
 	int ret = 0;
-	;
 
 	if (v) {
 		int it;
@@ -337,14 +336,24 @@ void vec_setcmpfunc(VECTOR *v, int (*cmp)(const void *elem1, const void *elem2))
 
 void vec_sort(VECTOR *v)
 {
-	/*	int compare(const void *p1, const void *p2)
-		{
-			return v->cmp(*((void **)p1), *((void **)p2));
-		}
-	 */
+/*
+ * without the intermediate _compare function below, v->cmp gets 'const void **elem{1|2}'
+ *
+ * to work lock-less (e.g. with a mutex), we need 'nested functions' (GCC, Intel, IBM)
+ * or BLOCKS (clang) or the GNU libc extension qsort_r()
+#if defined(__clang__)
+#elif defined(__GNUC__)
+	int _compare(const void *p1, const void *p2)
+	{
+		return v->cmp(*((void **)p1), *((void **)p2));
+	}
+	// qsort(v->pl, v->cur, sizeof(void *), _compare);
+#else
+ // fallback: work with mutex and a static variable
+#endif
+*/
 	if (v == NULL || v->cmp == NULL || !v->cur) return;
 
-	//	qsort(v->pl,v->cur,sizeof(void *),compare);
 	qsort(v->pl, v->cur, sizeof(void *), v->cmp);
 	v->sorted = 1;
 }

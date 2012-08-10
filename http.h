@@ -110,7 +110,9 @@ typedef struct {
 		*addrinfo,
 		*ai;
 	const char
-		*host;
+		*host,
+		*port,
+		*scheme;
 	char
 		*buf;
 	size_t
@@ -136,7 +138,7 @@ const char
 	*http_parse_connection(const char *s, char *keep_alive);
 void
 	http_add_param(VECTOR **params, HTTP_HEADER_PARAM *param),
-	http_add_header_vprintf(HTTP_REQUEST *req, const char *fmt, va_list args),
+	http_add_header_vprintf(HTTP_REQUEST *req, const char *fmt, va_list args) PRINTF_FORMAT(2,0),
 	http_add_header_printf(HTTP_REQUEST *req, const char *fmt, ...) PRINTF_FORMAT(2,3),
 	http_add_header_line(HTTP_REQUEST *req, const char *line),
 	http_add_header(HTTP_REQUEST *req, const char *name, const char *value);
@@ -157,7 +159,7 @@ HTTP_RESPONSE
 	*http_get_header(IRI *iri),
 	*http_parse_response(char *buf),
 	*http_get_response_cb(HTTP_CONNECTION *conn, HTTP_REQUEST *req,
-								 int (*parse_body)(void *context, char *data, size_t length),
+								 int (*parse_body)(void *context, const char *data, size_t length),
 								 void *context),
 //	*http_get_response_mem(HTTP_CONNECTION *conn, HTTP_REQUEST *req),
 	*http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req),

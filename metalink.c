@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include "xml.h"
+#include "printf.h"
 #include "metalink.h"
 
 struct metalink_context {

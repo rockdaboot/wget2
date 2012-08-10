@@ -42,6 +42,7 @@ struct config {
 		*logfile,
 		*user_agent;
 	char
+		check_certificate,
 		span_hosts,
 		recursive,
 		verbose,

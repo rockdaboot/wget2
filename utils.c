@@ -403,7 +403,8 @@ char *strndup(const char *s, size_t n)
 
 void buffer_to_hex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size)
 {
-	int it, adjust = 0, c;
+	size_t it;
+	int adjust = 0, c;
 
 	if (!dst || dst_size == 0)
 		return;

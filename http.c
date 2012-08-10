@@ -442,6 +442,15 @@ HTTP_RESPONSE *http_parse_response(char *buf)
 		}
 	}
 
+	// a workaround for broken server configurations
+	// see http://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
+	if (resp->content_encoding == content_encoding_gzip &&
+		!strcasecmp(resp->content_type, "application/x-gzip"))
+	{
+		log_printf("Broken server configuration gzip workaround triggered\n");
+		resp->content_encoding =  content_encoding_identity;
+	}
+
 	return resp;
 }
 
@@ -567,7 +576,9 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 	HTTP_CONNECTION
 		*conn = xcalloc(1, sizeof(HTTP_CONNECTION));
 	const char
-	*port = (iri->port && *iri->port) ? iri->port : iri->scheme ? iri->scheme : "80";
+		*port = (iri->port && *iri->port) ? iri->port : iri->scheme ? iri->scheme : "80";
+	int
+		ssl = iri->scheme && !strcasecmp(iri->scheme, "HTTPS");
 
 	if (!conn)
 		return NULL;
@@ -576,9 +587,11 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 		goto error;
 
 	for (; conn->ai; conn->ai = conn->ai->ai_next) {
-		if ((conn->tcp = tcp_connect(conn->ai)) != NULL) {
+		if ((conn->tcp = tcp_connect(conn->ai, ssl ? iri->host : NULL)) != NULL) {
 			tcp_set_timeout(conn->tcp, config.read_timeout);
-			conn->host = strdup(iri->host);
+			conn->host = iri->host ? strdup(iri->host) : NULL;
+			conn->port = iri->port ? strdup(iri->port) : NULL;
+			conn->scheme = iri->scheme ? strdup(iri->scheme) : NULL;
 			return conn;
 		}
 	}
@@ -594,6 +607,8 @@ void http_close(HTTP_CONNECTION **conn)
 		tcp_close(&(*conn)->tcp);
 		freeaddrinfo((*conn)->addrinfo);
 		xfree((*conn)->host);
+		xfree((*conn)->port);
+		xfree((*conn)->scheme);
 		xfree((*conn)->buf);
 		xfree(*conn);
 	}
@@ -664,7 +679,7 @@ ssize_t http_request_to_buffer(HTTP_REQUEST *req, char **buf, size_t *bufsize)
 HTTP_RESPONSE *http_get_response_cb(
 	HTTP_CONNECTION *conn,
 	HTTP_REQUEST *req,
-	int (*parse_body)(void *context, char *data, size_t length),
+	int (*parse_body)(void *context, const char *data, size_t length),
 	void *context) // given to parse_body
 {
 	size_t bufsize, body_len = 0, body_size = 0;
@@ -895,7 +910,7 @@ struct buffer {
 	char *buf;
 };
 
-static int get_body(void *userdata, char *data, size_t length)
+static int _get_body(void *userdata, const char *data, size_t length)
 {
 	struct buffer *body = userdata;
 
@@ -917,8 +932,9 @@ HTTP_RESPONSE *http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 
 	body.len = 0;
 	body.buf = xmalloc((body.size = 102400) + 1);
+	*body.buf = 0;
 
-	resp = http_get_response_cb(conn, req, get_body, &body);
+	resp = http_get_response_cb(conn, req, _get_body, &body);
 
 	if (resp) {
 		resp->body = body.buf;
@@ -930,7 +946,7 @@ HTTP_RESPONSE *http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 	return resp;
 }
 
-static int get_file(void *context, char *data, size_t length)
+static int _get_file(void *context, const char *data, size_t length)
 {
 	int fd = *(int *)context;
 	ssize_t nbytes = write(fd, data, length);
@@ -943,7 +959,7 @@ static int get_file(void *context, char *data, size_t length)
 
 HTTP_RESPONSE *http_get_response_fd(HTTP_CONNECTION *conn, int fd)
 {
-	HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, get_file, &fd);
+	HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, _get_file, &fd);
 
 	return resp;
 }

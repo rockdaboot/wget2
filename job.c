@@ -94,6 +94,19 @@ void job_create_parts(JOB *job)
 	}
 }
 
+static int _compare_mirror(MIRROR **m1, MIRROR **m2)
+{
+	return (*m1)->priority - (*m2)->priority;
+}
+
+void job_sort_mirrors(JOB *job)
+{
+	if (job->mirrors) {
+		vec_setcmpfunc(job->mirrors, (int(*)(const void *, const void *))_compare_mirror);
+		vec_sort(job->mirrors);
+	}
+}
+
 /*
 void job_create_parts(JOB *job)
 {
@@ -216,6 +229,7 @@ static int check_piece_hash(HASH *hash, int fd, off_t offset, size_t length)
 	return -1;
 }
 
+/*
 // check hash for complete file
 //  0: not ok
 //  1: ok
@@ -227,7 +241,7 @@ static int check_file_hash(HASH *hash, const char *fname)
 	if (hash_file(hash->type, fname, sum, sizeof(sum)) != -1) {
 		return !strcasecmp(sum, hash->hash_hex);
 	}
-	
+*/
 /*
 	FILE *fp;
 	const char *tool;
@@ -245,47 +259,72 @@ static int check_file_hash(HASH *hash, const char *fname)
 		} else err_printf(_("Failed to execute '%s %s'\n"), tool, fname);
 	}
 */
+/*
+ 	return -1;
+}
+*/
+
+static int check_file_fd(HASH *hash, int fd)
+{
+	char sum[128 + 1]; // large enough for sha-512 hex
+
+	if (hash_file_fd(hash->type, fd, sum, sizeof(sum), 0, 0) != -1) {
+		return !strcasecmp(sum, hash->hash_hex);
+	}
+
 	return -1;
 }
 
 void job_validate_file(JOB *job)
 {
+	PART part;
+	off_t fsize = job->size;
 	int fd, rc = -1, it;
+	struct stat st;
 
-	for (it = 0; errno != EINTR && it < vec_size(job->hashes); it++) {
-		HASH *hash = vec_get(job->hashes, it);
+	memset(&part, 0, sizeof(PART));
 
-		if ((rc = check_file_hash(hash, job->name)) == -1)
-			continue;
+	// create space to hold enough parts
+	if (!job->parts)
+		job->parts = vec_create(vec_size(job->pieces), 4, NULL);
+	else
+		vec_clear(job->parts);
 
-		if (rc == 1) {
-			info_printf(_("Checksum OK for '%s'\n"), job->name);
-			job->hash_ok = 1;
-			return;
-		}
-
-		break;
+	// truncate file if needed
+	if (stat(job->name, &st) == 0 && st.st_size > fsize) {
+		if (truncate(job->name, fsize) == -1)
+			err_printf(_("Failed to truncate %s\n from %llu to %llu bytes\n"),
+				job->name, (unsigned long long)st.st_size, (unsigned long long)fsize);
 	}
 
-	if (rc == -1) {
-		// failed to check file, assume file is ok
-		job->hash_ok = 1;
-		info_printf(_("Failed to build checksum, assuming file to be OK\n"));
-		return;
-	} else
-		info_printf(_("Bad checksum for '%s'\n"), job->name);
-
-	info_printf(_("Pieces %d\n"), vec_size(job->pieces));
-	if (vec_size(job->pieces) < 1)
-		return;
-
-	// check which piece is invalid and requeue it
 	if ((fd = open(job->name, O_RDONLY)) != -1) {
-		PART part;
-		ssize_t fsize = job->size;
+		// file exists, check which piece is invalid and requeue it
 
-		memset(&part, 0, sizeof(PART));
-		vec_clear(job->parts);
+		for (it = 0; errno != EINTR && it < vec_size(job->hashes); it++) {
+			HASH *hash = vec_get(job->hashes, it);
+
+			if ((rc = check_file_fd(hash, fd)) == -1)
+				continue; // hash type not available, try next
+
+			if (rc == 1) {
+				info_printf(_("Checksum OK for '%s'\n"), job->name);
+				job->hash_ok = 1;
+				return;
+			}
+
+			break;
+		}
+
+		if (rc == -1) {
+			// failed to check file, assume file is ok
+			job->hash_ok = 1;
+			info_printf(_("Failed to build checksum, assuming file to be OK\n"));
+			return;
+		} else
+			info_printf(_("Bad checksum for '%s'\n"), job->name);
+
+//		if (vec_size(job->pieces) < 1)
+//			return;
 
 		for (it = 0; errno != EINTR && it < vec_size(job->pieces); it++) {
 			PIECE *piece = vec_get(job->pieces, it);
@@ -294,19 +333,35 @@ void job_validate_file(JOB *job)
 			if (fsize >= piece->length) {
 				part.length = piece->length;
 			} else {
-				part.length = fsize;
+				part.length = (size_t)fsize;
 			}
 
-			if ((rc = check_piece_hash(hash, fd, piece->position, piece->length)) != 1) {
+			if ((rc = check_piece_hash(hash, fd, part.position, part.length)) != 1) {
 				info_printf(_("Piece %d/%d not OK - requeuing\n"), it + 1, vec_size(job->pieces));
 				vec_add(job->parts, &part, sizeof(PART));
-				log_printf("  need to download %zd bytes from pos=%lld\n", part.length, (long long)part.position);
+				log_printf("  need to download %llu bytes from pos=%llu\n",
+					(unsigned long long)part.length, (unsigned long long)part.position);
 			}
 
 			part.position += part.length;
 			fsize -= piece->length;
 		}
 		close(fd);
+	} else {
+		for (it = 0; it < vec_size(job->pieces); it++) {
+			PIECE *piece = vec_get(job->pieces, it);
+
+			if (fsize >= piece->length) {
+				part.length = piece->length;
+			} else {
+				part.length = fsize;
+			}
+
+			vec_add(job->parts, &part, sizeof(PART));
+
+			part.position += part.length;
+			fsize -= piece->length;
+		}
 	}
 }
 

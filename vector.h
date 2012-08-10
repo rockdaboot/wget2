@@ -57,7 +57,7 @@ int
 	vec_add(VECTOR *v, const void *elem, int size),
 	vec_add_noalloc(VECTOR *v, const void *elem),
 	vec_add_str(VECTOR *v, const char *s),
-	vec_add_vprintf(VECTOR *v, const char *fmt, va_list args),
+	vec_add_vprintf(VECTOR *v, const char *fmt, va_list args) PRINTF_FORMAT(2,0),
 	vec_add_printf(VECTOR *v, const char *fmt, ...) PRINTF_FORMAT(2,3),
 	vec_replace(VECTOR *v, const void *elem, int size, int pos),
 	vec_move(VECTOR *v, int old_pos, int new_pos),

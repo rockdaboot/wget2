@@ -179,7 +179,8 @@ static char *getToken(XML_CONTEXT *context)
 		while ((c = xml_getc()) != EOF) {
 			if (c == '&') {
 				static const char *aa[] = {"amp", "lt", "gt", "quot", "apos"}, aach[] = "&<>\"'";
-				int aafound = 0, aapos, it, aasemicolon = 0;
+				size_t aapos, it;
+				int aafound = 0, aasemicolon = 0;
 				char aabuf[8];
 
 				for (aapos = 0; aapos<sizeof(aabuf) - 1 && (aabuf[aapos] = xml_getc()) != ';'; aapos++);
@@ -310,7 +311,8 @@ static char *getScriptContent(XML_CONTEXT *context)
 		}
 	}
 
-	context->token[context->token_len] = 0;
+	if (context->token)
+		context->token[context->token_len] = 0;
 
 	if (c == EOF) {
 		if (context->token_len == 0)
@@ -337,7 +339,8 @@ static char *getUnparsed(XML_CONTEXT *context, int flags, const char *end, int l
 		}
 	}
 
-	context->token[context->token_len] = 0;
+	if (context->token)
+		context->token[context->token_len] = 0;
 
 	if (c == EOF) {
 		if (context->token_len == 0)
@@ -401,7 +404,7 @@ static char *getContent(XML_CONTEXT *context, const char *directory)
 static void parseXML(const char *dir, XML_CONTEXT *context)
 {
 	char directory[256] = "", attribute[64] = "", *tok;
-	int pos = 0;
+	size_t pos = 0;
 
 	if (!(context->hints & XML_HINT_HTML)) {
 		pos = snprintf(directory, sizeof(directory), "%s", dir);

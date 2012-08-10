@@ -1,5 +1,6 @@
-- cleanup mget.c: move parse_html / parse_css into own C file
-- https with gnutls
+Todo:
+- BUG: redirection to a relative URI
+- DNS lookup cache
 - respect /robots.txt "Robot Exclusion Standard"
 - proxy support
 - a --sync option / respect page expiry dates / only download changed pages
@@ -7,12 +8,20 @@
 - http authentication (basic & digest RFC 2617)
 - request pipelining (maybe using a client cookie)
 - SPDY protocol
+- Atom / RSS / Podcast / Streaming (.m3u, etc. formats)
+- ICEcast support
 - ftp support
 - https with openssl
 - Documentation docbook with free Serna WYSIWYG/WYMIWYG editor (conversion to texinfo possible)
 - to implement Content-Encoding 'compress' and 'deflate' I need a server supporting these
 
+Refactoring to do:
+- move struct buffer to HTTP_CONNECTION
+- cleanup mget.c: move parse_html / parse_css into own C file
+
+
 Done:
+- https with gnutls
 - checksum routines to avoid sum utilities like "sha1sum" (using libgnutls)
 - formatting the source
 - gettext support

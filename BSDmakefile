@@ -6,10 +6,13 @@ CFLAGS=-g -std=c99 -pedantic -fPIC\
  -fstack-protector --param ssp-buffer-size=4\
  -Wno-sign-compare -Wextra -D_FORTIFY_SOURCE=2\
  -Wundef -Wcast-align -ftrampolines\
+ -I /usr/local/include\
+ -D _FILE_OFFSET_BITS=64\
  -D ENABLE_NLS=1\
  -D LOCALEDIR=\"/usr/share/locale\"
+ -D GLOBAL_CONFIG_FILE=\"/etc/mgetrc\"
 
-LN=$(SILENT)gcc -fPIE -pie -Wl,-z,relro,-z,now
+LN=$(SILENT)gcc -fPIE -pie -Wl,-z,relro,-z,now -L/usr/local/lib
 
 TARGETS=mget
 SOURCES!=ls *.c
@@ -34,7 +37,7 @@ targets: css_tokenizer.c .depend $(TARGETS)
 mget: mget.o $(OBJECTS)
 	@echo Linking $(@F) ...
 	echo $(OBJECTS)
-	$(LN) $> -o $@ -lpthread
+	$(LN) $> -o $@ -lpthread -lgnutls -lz
 
 css_tokenizer.c: css_tokenizer.lex css_tokenizer.h
 	flex -o $@ $<
@@ -46,7 +49,7 @@ clean:
 # default rule to create .o files from .c files
 .c.o:
 	@echo Compiling $(@F)
-	$(CC) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 .if exists(.depend)
 .include ".depend"

@@ -38,7 +38,7 @@ enum {
 
 DECOMPRESSOR
 	*decompress_open(int encoding,
-						  int (*put_data)(void *context, char *data, size_t length),
+						  int (*put_data)(void *context, const char *data, size_t length),
 						  void *context);
 void
 	decompress_close(DECOMPRESSOR *dc);

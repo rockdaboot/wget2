@@ -31,6 +31,12 @@
  * - if appropriate, add a new parse function (examples see below)
  * - extend the print_help() function and the documentation
  *
+ * First, I prepared the parsing to allow multiple arguments for an option,
+ * e.g. "--whatever arg1 arg2 ...".
+ * But now I think, it is ok to say 'each option may just have 0 or 1 option'.
+ * An option with a list of values might then look like: --whatever="arg1 arg2 arg3" or use
+ * any other argument seperator. I remove the legacy code as soon as I am 100% sure...
+ *
  */
 
 #include <string.h>
@@ -38,12 +44,13 @@
 #include <ctype.h>
 #include <pwd.h>
 #include <errno.h>
-#include <wordexp.h>
+#include <glob.h>
 #include <sys/stat.h>
 
 #include "xalloc.h"
 #include "utils.h"
 #include "log.h"
+#include "gnutls.h"
 #include "options.h"
 
 typedef struct option *option_t; // forward declaration
@@ -94,6 +101,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		" \n"
 		"HTTP/HTTPS related options:\n"
 		"  -U  --user-agent        Set User-Agent: header in requests.\n"
+		"      --check-certificate Check the server's certificate against available certificate authorities.\n"
 		" \n"
 		);
 
@@ -109,17 +117,23 @@ static int parse_integer(option_t opt, UNUSED const char *const *argv, const cha
 
 static int parse_string(option_t opt, UNUSED const char *const *argv, const char *val)
 {
-	*((const char **)opt->var) = val;
+	// the strdup'ed string will be released on program exit
+	*((const char **)opt->var) = val ? strdup(val) : NULL;
 
 	return 0;
 }
 
 static int parse_bool(option_t opt, UNUSED const char *const *argv, const char *val)
 {
-	if (val == NULL || *val == 'y' || *val == 'Y' || *val == '1')
+	if (!val)
 		*((char *)opt->var) = 1;
-	else
+	else if (!strcmp(val,"1") || !strcasecmp(val,"yes") || !strcasecmp(val,"on"))
+		*((char *)opt->var) = 1;
+	else if (!strcmp(val,"0") || !strcasecmp(val,"no") || !strcasecmp(val,"off"))
 		*((char *)opt->var) = 0;
+	else {
+		err_printf(_("Boolean value '%s' not recognized\n"), val);
+	}
 
 	return 0;
 }
@@ -156,13 +170,15 @@ config = {
 	.max_redirect = 20,
 	.num_threads = 5,
 	.user_agent = "Mget/"MGET_VERSION,
-	.verbose = 1
+	.verbose = 1,
+	.check_certificate=1
 };
 
 static struct option options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0},
+	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0},
 	{ "debug", &config.debug, parse_bool, 0, 'd'},
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0},
 	{ "help", NULL, print_help, 0, 'h'},
@@ -183,14 +199,22 @@ static int opt_compare(const void *key, const void *option)
 	return strcmp((const char *)key, ((const option_t)option)->long_name);
 }
 
-static void set_long_option(const char *name, const char *value)
+static int set_long_option(const char *name, const char *value)
 {
 	option_t opt;
-	int invert = 0;
+	int invert = 0, ret = 0;
+	char namebuf[strlen(name) + 1], *p;
 
 	if (!strncmp(name, "no-", 3)) {
 		invert = 1;
 		name += 3;
+	}
+
+	if ((p = strchr(name, '='))) {
+		// option with appended value
+		strlcpy(namebuf, name, p - name + 1);
+		name = namebuf;
+		value = p + 1;
 	}
 
 	opt = bsearch(name, options, countof(options), sizeof(options[0]), opt_compare);
@@ -199,7 +223,7 @@ static void set_long_option(const char *name, const char *value)
 		err_printf_exit(_("Unknown option '%s'\n"), name);
 
 	// log_printf("opt=%p pos=%d\n",opt,pos);
-	// log_printf("name=%s value=%s\n",opt->long_name,value);
+	log_printf("name=%s value=%s\n",opt->long_name,value);
 
 	if (value && !opt->args && opt->parser != parse_bool)
 		err_printf_exit(_("Option '%s' doesn't allow an argument\n"), name);
@@ -208,6 +232,7 @@ static void set_long_option(const char *name, const char *value)
 		if (!value)
 			err_printf_exit(_("Missing argument for option '%s'\n"), name);
 		opt->parser(opt, NULL, value);
+		ret = opt->args;
 	} else {
 		if (opt->parser == parse_bool && value) {
 			opt->parser(opt, NULL, value);
@@ -219,6 +244,8 @@ static void set_long_option(const char *name, const char *value)
 		if (invert)
 			*((char *)opt->var) = !*((char *)opt->var); // invert boolean value
 	}
+
+	return ret;
 }
 
 // read and parse config file (not thread-safe !)
@@ -240,14 +267,15 @@ static void _read_config(const char *cfgfile, int expand)
 	int append = 0, pos, found;
 	size_t bufsize = 0, linelen = 0, linesize = sizeof(linebuf);
 	ssize_t len;
-
+/*
 	if (expand) {
+		#include <wordexp.h>
 		// do tilde, wildcard, command and variable expansion
 		wordexp_t wp;
 		struct stat st;
 
 		if (wordexp(cfgfile, &wp, 0) == 0) {
-			int it;
+			size_t it;
 
 			for (it = 0; it < wp.we_wordc; it++) {
 				if (stat(wp.we_wordv[it], &st) == 0 && S_ISREG(st.st_mode))
@@ -259,13 +287,39 @@ static void _read_config(const char *cfgfile, int expand)
 
 		return;
 	}
+*/
+
+	if (expand) {
+		glob_t globbuf;
+//		struct stat st;
+		int flags = GLOB_MARK;
+
+#ifdef GLOB_TILDE
+		flags |= GLOB_TILDE;
+#endif
+
+		if (glob(cfgfile, flags, NULL, &globbuf) == 0) {
+			size_t it;
+
+			for (it = 0; it < globbuf.gl_pathc; it++) {
+				if (globbuf.gl_pathv[it][strlen(globbuf.gl_pathv[it])-1] != '/')
+				// if (stat(globbuf.gl_pathv[it], &st) == 0 && S_ISREG(st.st_mode))
+					_read_config(globbuf.gl_pathv[it], 0);
+			}
+			globfree(&globbuf);
+
+		} else
+			_read_config(cfgfile, 0);
+		
+		return;
+	}
 
 	if ((fp = fopen(cfgfile, "r")) == NULL) {
 		err_printf(_("Failed to open %s\n"), cfgfile);
 		return;
 	}
 
-	info_printf(_("Reading %s\n"), cfgfile);
+	log_printf(_("Reading %s\n"), cfgfile);
 	while ((len = getline(&buf, &bufsize, fp)) >= 0) {
 		if (len == 0 || *buf == '\r' || *buf == '\n') continue;
 
@@ -311,13 +365,13 @@ static void _read_config(const char *cfgfile, int expand)
 			linelen = len;
 		}
 
-		if (sscanf(linep, "%63[A-Za-z0-9-] %n", name, &pos) >= 1) {
+		if (sscanf(linep, " %63[A-Za-z0-9-] %n", name, &pos) >= 1) {
 			if (linep[pos] == '=') {
 				// option, e.g. debug=y
 				found = 1;
 				pos++;
 			} else
-				found = 2; // statement, e.g. include ".wgetrc.d"
+				found = 2; // statement (e.g. include ".wgetrc.d") or boolean option without value (e.g. no-recursive)
 		} else {
 			err_printf(_("Failed to parse: '%s'\n"), linep);
 			continue;
@@ -343,11 +397,13 @@ static void _read_config(const char *cfgfile, int expand)
 
 			if (found == 1) {
 				// log_printf("%s = %s\n",name,val);
-				set_long_option(name, strdup(val)); // the strdup/value will be released on program exit
+				set_long_option(name, val);
 			} else {
 				// log_printf("%s %s\n",name,val);
 				if (!strcmp(name, "include")) {
 					_read_config(val, 1);
+				} else {
+					set_long_option(name, NULL);
 				}
 			}
 		}
@@ -368,60 +424,46 @@ static void read_config(void)
 {
 #ifdef GLOBAL_CONFIG_FILE
 	_read_config(GLOBAL_CONFIG_FILE, 1);
-#endif
-
+#else
 	_read_config("~/.mgetrc", 1);
+#endif
 }
 
-// return the number of arguments consumed
-
-int init(int argc, const char *const *argv)
+static int parse_command_line(int argc, const char *const *argv)
 {
 	static short shortcut_to_option[128];
+	size_t it;
 	int n;
-	option_t opt;
-	const char *argp;
 
 	// init the short option lookup table
-	for (n = 0; n < countof(options); n++) {
-		if (options[n].short_name > 0)
-			shortcut_to_option[(unsigned char)options[n].short_name] = n + 1;
+	for (it = 0; it < countof(options); it++) {
+		if (options[it].short_name > 0)
+			shortcut_to_option[(unsigned char)options[it].short_name] = it + 1;
 	}
-
-	// read global config and user's config
-	// settings in user's config override global settings
-	read_config();
-
-	// now read command line options which override the settings of the config files
 
 	// I like the idea of getopt() but not it's implementation (e.g. global variables).
 	// Therefore I implement my own getopt() behaviour.
 	for (n = 1; n < argc; n++) {
-		argp = argv[n];
+		const char *argp = argv[n];
 
 		if (argp[0] != '-')
 			return n;
 
 		if (argp[1] == '-') {
+			// long option
 			const char *p;
 
 			if (argp[2] == 0)
 				return n + 1;
 
-			// long option
-			if ((p = strchr(argp + 2, '='))) {
-				char name[p - argp - 2 + 1];
-
-				strlcpy(name, argp + 2, sizeof(name));
-				set_long_option(name, p + 1);
-			} else
-				set_long_option(argp + 2, NULL);
+			n += set_long_option(argp + 2, n < argc - 1 ? argv[n+1] : NULL);
 
 		} else if (argp[1]) {
+			// short option(s)
 			int pos;
 
-			// short option(s)
 			for (pos = 1; argp[pos]; pos++) {
+				option_t opt;
 				int idx;
 
 				if (isalnum(argp[pos]) && (idx = shortcut_to_option[(unsigned char)argp[pos]])) {
@@ -441,9 +483,37 @@ int init(int argc, const char *const *argv)
 				} else
 					err_printf_exit(_("Unknown option '-%c'\n"), argp[pos]);
 			}
-		} else
-			return n;
+		}
 	}
+
+	return n;
+}
+
+// read config, parse CLI options, check values, set module options
+// and return the number of arguments consumed
+
+int init(int argc, const char *const *argv)
+{
+	int n;
+
+	// this is a special case for switching on debugging before any config file is read
+	if (argc >= 2 && (!strcmp(argv[1],"-d") || !strcmp(argv[1],"--debug"))) {
+		config.debug = 1;
+	}
+
+	// read global config and user's config
+	// settings in user's config override global settings
+	read_config();
+
+	// now read command line options which override the settings of the config files
+	n = parse_command_line(argc, argv);
+
+	// check for correct settings
+	if (config.num_threads < 1)
+		config.num_threads = 1;
+
+	// set module specific options
+	ssl_set_check_certificate(config.check_certificate);
 
 	return n;
 }
