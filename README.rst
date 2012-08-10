@@ -27,6 +27,7 @@ You might encounter lot's of bugs and missing features.
 So, for now (10.08.2012), don't use it for production !
 
 The basic functionality is implemented, like:
+
 - recursive download of websites with or without spanning hosts
 - download of single web pages / resources
 - zlib/gzip compressed HTTP/HTTPS downloads
@@ -45,8 +46,7 @@ The basic functionality is implemented, like:
 - compiled and linked with hardening options proposed by the Debian project
 - plugin technology to plug in user-specific code
 
-Anybody should feel free to contribute ideas, opinions, knowledge (docs, code,
- autotools, etc.).
+Anybody should feel free to contribute ideas, opinions, knowledge (docs, code, autotools, etc.).
 
 Not yet implemented
 ------------------
