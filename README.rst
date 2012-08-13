@@ -11,7 +11,7 @@ modern and clean code, new technology, new design).
 
 In many cases Mget downloads much faster than Wget due to HTTP zlib
 compression and parallel connections.
-It comsumes less sys and user CPU cycles due to larger buffers and
+It consumes less sys and user CPU cycles due to larger buffers and
 buffer recycling.
 
 License
@@ -23,7 +23,7 @@ Development Status
 ------------------
 
 Mget is in alpha stage.
-You might encounter lot's of bugs and missing features.
+You might encounter lots of bugs and missing features.
 So, for now (10.08.2012), don't use it for production !
 
 The basic functionality is implemented, like:
