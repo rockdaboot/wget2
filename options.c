@@ -50,6 +50,7 @@
 #include "xalloc.h"
 #include "utils.h"
 #include "log.h"
+#include "net.h"
 #include "gnutls.h"
 #include "options.h"
 
@@ -85,23 +86,24 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"Startup:\n"
 		"  -V, --version           Display the version of Wget and exit.\n"
 		"  -h, --help              Print this help.\n"
-		"  -v, --verbose           Print more messages.\n"
-		"  -d, --debug             Print debugging messages.\n"
+		"  -v, --verbose           Print more messages. (default: on)\n"
+		"  -d, --debug             Print debugging messages. (default: off)\n"
 		"  -o  --output-file       File where messages are printed to.\n"
 		" \n"
 		"Download:\n"
-		"  -r  --recursive         Recursive download.\n"
-		"  -H  --span-hosts        Span hosts that where not given on the command line.\n"
-		"      --num-threads       Max. concurrent download threads.\n"
-		"      --max-redirect      Max. number of redirections to follow.\n"
+		"  -r  --recursive         Recursive download. (default: off)\n"
+		"  -H  --span-hosts        Span hosts that where not given on the command line. (default: off)\n"
+		"      --num-threads       Max. concurrent download threads. (default: 5)\n"
+		"      --max-redirect      Max. number of redirections to follow. (default: 20)\n"
 		"  -T  --timeout           General network timeout in seconds.\n"
 		"      --dns-timeout       DNS lookup timeout in seconds.\n"
 		"      --connect-timeout   Connect timeout in seconds.\n"
 		"      --read-timeout      Read and write timeout in seconds.\n"
+		"      --dns-caching       Enable DNS cache (default: on).\n"
 		" \n"
 		"HTTP/HTTPS related options:\n"
 		"  -U  --user-agent        Set User-Agent: header in requests.\n"
-		"      --check-certificate Check the server's certificate against available certificate authorities.\n"
+		"      --check-certificate Check the server's certificate. (default: on)\n"
 		" \n"
 		);
 
@@ -169,6 +171,7 @@ config = {
 	.read_timeout = -1,
 	.max_redirect = 20,
 	.num_threads = 5,
+	.dns_caching = 1,
 	.user_agent = "Mget/"MGET_VERSION,
 	.verbose = 1,
 	.check_certificate=1
@@ -180,6 +183,7 @@ static struct option options[] = {
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0},
 	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0},
 	{ "debug", &config.debug, parse_bool, 0, 'd'},
+	{ "dns-cache", &config.dns_caching, parse_bool, 0, 0},
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0},
 	{ "help", NULL, print_help, 0, 'h'},
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0},
@@ -512,6 +516,7 @@ int init(int argc, const char *const *argv)
 		config.num_threads = 1;
 
 	// set module specific options
+	tcp_set_dns_caching(config.dns_caching);
 	ssl_set_check_certificate(config.check_certificate);
 
 	return n;

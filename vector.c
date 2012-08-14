@@ -267,17 +267,17 @@ int vec_swap(VECTOR *v, int pos1, int pos2)
 	return 0;
 }
 
-void vec_free(VECTOR *v)
+void vec_free(VECTOR **v)
 {
-	if (v) {
-		if (v->pl) {
+	if (v && *v) {
+		if ((*v)->pl) {
 			int it;
 
-			for (it = 0; it < v->cur; it++)
-				xfree(v->pl[it]);
-			xfree(v->pl);
+			for (it = 0; it < (*v)->cur; it++)
+				xfree((*v)->pl[it]);
+			xfree((*v)->pl);
 		}
-		xfree(v);
+		xfree(*v);
 	}
 }
 

@@ -1,26 +1,29 @@
 Todo:
-- DNS lookup cache
 - respect /robots.txt "Robot Exclusion Standard"
-- proxy support
-- a --sync option / respect page expiry dates / only download changed pages
-- respect data-urls
-- http authentication (basic & digest RFC 2617)
 - request pipelining (maybe using a client cookie)
 - SPDY protocol
+- http authentication (basic & digest RFC 2617)
+- proxy support
+- a --sync option / respect page expiry dates / only download changed pages
 - Atom / RSS / Podcast / Streaming (.m3u, etc. formats)
 - ICEcast support
 - ftp support
+- respect data-urls
 - https with openssl
 - Documentation docbook with free Serna WYSIWYG/WYMIWYG editor (conversion to texinfo possible)
 - to implement Content-Encoding 'compress' and 'deflate' I need a server supporting these
 
 Refactoring/cleanup to do:
+- fix bug in normalize_path: contained '//' becomes reduced to '/'
+- fix bug in redirection: following to foreign hosts even if span-hosts=off
+- fix vec_insert_sorted_noalloc()
 - move struct buffer to HTTP_CONNECTION
 - cleanup mget.c: move parse_html / parse_css into own C file
 - write test routines (e.g. normalize_path)
 - use gcc/clang 'nonnull' attribute specifier where possible
 
 Done:
+- DNS lookup cache
 - https with gnutls
 - checksum routines to avoid sum utilities like "sha1sum" (using libgnutls)
 - formatting the source
@@ -49,3 +52,6 @@ RFC and other documents
  RFC 2617 Basic and Digest Access Authentication
  RFC 3986 Uniform Resource Identifier (URI): Generic Syntax
           (obsoletes RFC 2396, 1738, 1808, 2732)
+
+ WARC latest draft (ISO 28500 final costs 122 CHF)
+   http://bibnum.bnf.fr/WARC/WARC_ISO_28500_version1_latestdraft.pdf

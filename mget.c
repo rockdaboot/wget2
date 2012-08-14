@@ -529,9 +529,11 @@ int main(int argc, const char *const *argv)
 		}
 	}
 
+	// freeing to avoid disguising valgrind output
+	tcp_set_dns_caching(0); // frees DNS cache
 	queue_free();
-	vec_free(blacklist);
-	vec_free(hosts);
+	vec_free(&blacklist);
+	vec_free(&hosts);
 	xfree(downloader);
 
 	return EXIT_SUCCESS;

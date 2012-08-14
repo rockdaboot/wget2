@@ -40,11 +40,11 @@ The basic functionality is implemented, like:
 - support for Metalink RFC 6249 (Metalink/HTTP: Mirrors and Hashes)
 - support for Metalink RFC 5854 (Metalink Download Description Format / .meta4 files)
 - Metalink checksumming via libgnutls
+- DNS lookup cache
 - tested on Debian SID amd64 and OpenBSD 5.0
 - compiled and tested with gcc 4.7.1 and clang 3.1.1
 - tested regularly with static analysis tools
 - compiled and linked with hardening options proposed by the Debian project
-- plugin technology to plug in user-specific code
 
 Anybody should feel free to contribute ideas, opinions, knowledge (docs, code, autotools, etc.),
 code, test routines, etc.
@@ -56,15 +56,14 @@ The following is just a quick list of ideas and todos.
 I personally like to experiment with new stuff (new to wget), so
 request pipelining and SPDY protocol are my favorites.
 
-- DNS lookup cache
 - respect /robots.txt "Robot Exclusion Standard"
+- request pipelining (using client cookies)
+- SPDY protocol
+- http authentication (basic & digest RFC 2617)
 - proxy support
 - server cookie stuff
 - a --sync option / respect page expiry dates / only download changed pages
 - respect data-urls
-- http authentication (basic & digest RFC 2617)
-- request pipelining (using client cookies)
-- SPDY protocol
 - Atom / RSS / Podcast / Streaming (.m3u, etc. formats)
 - ICEcast support
 - ftp support
@@ -73,6 +72,7 @@ request pipelining and SPDY protocol are my favorites.
 - Documentation docbook with free Serna WYSIWYG/WYMIWYG editor (conversion to texinfo possible)
 - to implement Content-Encoding 'compress' and 'deflate' I need a server supporting these
 - many easy-to-implement wget options/features
+- plugin technology to plug in user-specific code
 
 
 Requirements

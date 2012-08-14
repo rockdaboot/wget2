@@ -471,7 +471,7 @@ int http_free_link(HTTP_LINK *link)
 void http_free_links(VECTOR *links)
 {
 	vec_browse(links, (int (*)(void *))http_free_link);
-	vec_free(links);
+	vec_free(&links);
 }
 
 int http_free_digest(HTTP_DIGEST *digest)
@@ -484,7 +484,7 @@ int http_free_digest(HTTP_DIGEST *digest)
 void http_free_digests(VECTOR *digests)
 {
 	vec_browse(digests, (int (*)(void *))http_free_digest);
-	vec_free(digests);
+	vec_free(&digests);
 }
 
 /* for security reasons: set all freed pointers to NULL */
@@ -508,7 +508,7 @@ void http_free_request(HTTP_REQUEST **req)
 {
 	if (req && *req) {
 		xfree((*req)->resource);
-		vec_free((*req)->lines);
+		vec_free(&(*req)->lines);
 		(*req)->lines = NULL;
 		xfree(*req);
 	}
@@ -605,7 +605,8 @@ void http_close(HTTP_CONNECTION **conn)
 {
 	if (conn && *conn) {
 		tcp_close(&(*conn)->tcp);
-		freeaddrinfo((*conn)->addrinfo);
+		if (!config.dns_caching)
+			freeaddrinfo((*conn)->addrinfo);
 		xfree((*conn)->host);
 		xfree((*conn)->port);
 		xfree((*conn)->scheme);

@@ -67,7 +67,7 @@ int
 	vec_size(const VECTOR *v),
 	vec_browse(const VECTOR *v, int (*browse)(void *elem));
 void
-	vec_free(VECTOR *v),
+	vec_free(VECTOR **v),
 	vec_clear(VECTOR *v),
 	*vec_get(const VECTOR *v, int pos),
 	vec_setcmpfunc(VECTOR *v, int (*cmp)(const void *elem1, const void *elem2)),
