@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
  *
- * 
+ *
  * test routines
  *
  * Source Code License
@@ -29,8 +29,10 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <time.h>
 
 #include "../utils.h"
 #include "../options.h"
@@ -38,6 +40,7 @@
 #include "../xml.h"
 #include "../iri.h"
 #include "../log.h"
+#include "../vector.h"
 
 static int
 	ok,
@@ -125,7 +128,7 @@ static void test_iri_parse(void)
 
 static void css_dump(UNUSED void *user_ctx, const char *url, size_t len)
 {
-	info_printf("*** %d '%.*s'\n", len, len, url);
+	info_printf("*** %zu '%.*s'\n", len, (int)len, url);
 }
 
 static void test_parser(void)
@@ -187,13 +190,64 @@ static void test_utils(void)
 	}
 }
 
+struct ENTRY {
+	const char
+		*txt;
+};
+
+static int compare_txt(struct ENTRY *a1, struct ENTRY *a2)
+{
+	return strcasecmp(a1->txt, a2->txt);
+}
+
+static void test_vector(void)
+{
+	struct ENTRY
+		*tmp,
+		txt_sorted[5] = { {""}, {"four"}, {"one"}, {"three"}, {"two"} },
+		*txt[countof(txt_sorted)];
+	VECTOR
+		*v = vec_create(2, -2, (int(*)(const void *, const void *))compare_txt);
+	int
+		it, n;
+
+	// copy
+	for (it = 0; it < countof(txt); it++)
+		txt[it] = &txt_sorted[it];
+
+	// shuffle txt
+	for (it = 0; it < countof(txt); it++) {
+		n = rand()%countof(txt);
+		tmp = txt[n];
+		txt[n] = txt[it];
+		txt[it] = tmp;
+	}
+
+	for (it = 0; it < countof(txt); it++) {
+		vec_insert_sorted_noalloc(v, txt[it]);
+	}
+
+	for (it = 0; it < countof(txt); it++) {
+		struct ENTRY *e = vec_get(v, it);
+		if (e == &txt_sorted[it])
+			ok++;
+		else
+			failed++;
+	}
+
+	vec_free(&v);
+}
+
 int main(void)
 {
 	config.debug = 1;
 
+	srand(time(NULL));
+
 	test_iri_parse();
 	test_parser();
 	test_utils();
+	test_vector();
 
 	if (failed) {
 		printf("Summary: %d out of %d tests failed\n", failed, ok + failed);

@@ -155,7 +155,7 @@ int vec_insert_sorted(VECTOR *v, const void *elem, int size)
 
 int vec_insert_sorted_noalloc(VECTOR *v, const void *elem)
 {
-	return vec_insert_sorted_private(v, elem, 0, 1);
+	return vec_insert_sorted_private(v, elem, 0, 0);
 }
 
 int vec_add(VECTOR *v, const void *elem, int size)

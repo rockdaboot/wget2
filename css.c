@@ -126,10 +126,10 @@ void css_parse_file(
 			//			size_t nread=read(fd,buf,st.st_size);
 
 			size_t nread = st.st_size;
-			char *buf = mmap(NULL, nread, PROT_READ, MAP_PRIVATE, fd, 0);
+			char *buf = mmap(NULL, nread, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
 
 			if (nread > 0) {
-				buf[nread] = 0;
+				buf[nread] = 0; // PROT_WRITE allows this write, MAP_PRIVATE prevents changes in underlying file system
 				css_parse_buffer(buf, callback, user_ctx);
 			}
 

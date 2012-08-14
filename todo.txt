@@ -16,7 +16,6 @@ Todo:
 Refactoring/cleanup to do:
 - fix bug in normalize_path: contained '//' becomes reduced to '/'
 - fix bug in redirection: following to foreign hosts even if span-hosts=off
-- fix vec_insert_sorted_noalloc()
 - move struct buffer to HTTP_CONNECTION
 - cleanup mget.c: move parse_html / parse_css into own C file
 - write test routines (e.g. normalize_path)

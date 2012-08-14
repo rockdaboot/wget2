@@ -183,10 +183,8 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 			strcpy((char *)entryp->port, port); // ugly cast, but semantically ok
 
 			pthread_mutex_lock(&dns_mutex);
-			vec_insert_sorted(dns_cache, entryp, sizeof(struct ADDR_ENTRY) + hostlen + portlen);
+			vec_insert_sorted_noalloc(dns_cache, entryp);
 			pthread_mutex_unlock(&dns_mutex);
-
-			xfree(entryp);
 		}
 
 		return addrinfo;
