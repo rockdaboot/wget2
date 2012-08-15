@@ -195,7 +195,7 @@ static int compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
 {
 	int n;
 
-	if ((n = strcasecmp(a1->host, a2->host)))
+	if ((n = strcasecmp(a1->host, a2->host)) == 0)
 		return strcasecmp(a1->port, a2->port);
 
 	return n;
@@ -288,6 +288,8 @@ ssize_t tcp_read(tcp_t tcp, char *buf, size_t count)
 	if (tcp->ssl) {
 		rc = ssl_read_timeout(tcp->ssl_session, buf, count, tcp->timeout);
 	} else {
+		// 0: no timeout / immediate
+		// -1: INFINITE timeout
 		if (tcp->timeout) {
 			// wait for socket to be ready to read
 			struct pollfd pollfd[1] = {
@@ -311,13 +313,17 @@ ssize_t tcp_read(tcp_t tcp, char *buf, size_t count)
 
 ssize_t tcp_write(tcp_t tcp, const char *buf, size_t count)
 {
-	struct pollfd pollfd[1] = {
-		{ tcp->sockfd, POLLOUT, 0}};
 	ssize_t nwritten = 0, n;
 	int rc;
 
 	while (count) {
+		// 0: no timeout / immediate
+		// -1: INFINITE timeout
 		if (tcp->timeout) {
+			// wait for socket to be ready to write
+			struct pollfd pollfd[1] = {
+				{ tcp->sockfd, POLLOUT, 0}};
+
 			if ((rc = poll(pollfd, 1, tcp->timeout)) <= 0) {
 				err_printf(_("Failed to poll (%d)\n"), errno);
 				return rc;

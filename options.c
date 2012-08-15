@@ -35,7 +35,7 @@
  * e.g. "--whatever arg1 arg2 ...".
  * But now I think, it is ok to say 'each option may just have 0 or 1 option'.
  * An option with a list of values might then look like: --whatever="arg1 arg2 arg3" or use
- * any other argument seperator. I remove the legacy code as soon as I am 100% sure...
+ * any other argument separator. I remove the legacy code as soon as I am 100% sure...
  *
  */
 
@@ -148,6 +148,9 @@ static int parse_timeout(option_t opt, UNUSED const char *const *argv, const cha
 		fval = -1;
 	else {
 		fval = atof(val)*1000;
+
+		if (fval == 0) // special wget compatibility: timeout 0 means INFINITY
+			fval = -1;
 	}
 
 	if (opt->var) {

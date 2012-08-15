@@ -531,6 +531,8 @@ int main(int argc, const char *const *argv)
 
 	// freeing to avoid disguising valgrind output
 	tcp_set_dns_caching(0); // frees DNS cache
+	ssl_init();
+	ssl_deinit();
 	queue_free();
 	vec_free(&blacklist);
 	vec_free(&hosts);
@@ -613,6 +615,10 @@ void *downloader_thread(void *p)
 					// Content-Type: text/html; charset=iso-8859-1
 
 					if (resp->links) {
+						// Found a Metalink answer (RFC 6249 Metalink/HTTP: Mirrors and Hashes).
+						// We try to find and download the .meta4 file (RFC 5854).
+						// If we can't find the .meta4, download from the link with the highest priority.
+
 						HTTP_LINK *top_link = NULL, *metalink = NULL;
 						int it;
 
@@ -696,60 +702,6 @@ ready:
 	return NULL;
 }
 
-/*
-// watch out: val is not always zero terminated
-
-static void add_uri(int sockfd, IRI *iri, const char *tag, const char *val, int len)
-{
-	if (len < 1 || (len == 1 && *val == '#')) return; // ignore e.g. href='#'
-
-	log_printf("*url = %.*s\n", len, val);
-
-	if (*val == '/') {
-		char path[len + 1];
-
-		strlcpy(path, val, len + 1);
-
-		if (len >= 2 && val[1] == '/') {
-			char *p;
-
-			// absolute URI without scheme: //authority/path...
-			if ((p = strchr(path + 2, '/')))
-				normalize_path(p + 1);
-
-			log_printf("*1 %s:%s\n", iri->scheme ? iri->scheme : "http", path);
-			dprintf(sockfd, "add uri %s:%s\n", iri->scheme ? iri->scheme : "http", path);
-		} else {
-			// absolute path
-			normalize_path(path);
-			log_printf("*2 %s/%s\n", tag, path);
-			dprintf(sockfd, "add uri %s/%s\n", tag, path);
-		}
-	} else {
-		// see if URI begins with a scheme:
-		if (memchr(val, ':', len)) {
-			// absolute URI
-			log_printf("*3 %.*s\n", len, val);
-			dprintf(sockfd, "add uri %.*s\n", len, val);
-		} else {
-			// relative URI
-			const char *lastsep = iri->path ? strrchr(iri->path, '/') : NULL;
-			int pathlen = lastsep ? (lastsep - iri->path) + len + 2 : len + 1;
-			char path[pathlen];
-
-			if (lastsep) {
-				snprintf(path, pathlen, "%.*s%.*s", (int)(lastsep - iri->path + 1), iri->path, len, val);
-			} else {
-				strlcpy(path, val, len + 1);
-			}
-
-			normalize_path(path);
-			log_printf("*4 %s/%s\n", tag, path);
-			dprintf(sockfd, "add uri %s/%s\n", tag, path);
-		}
-	}
-}
-*/
 struct html_context {
 	IRI
 		*iri;
@@ -781,9 +733,7 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 
 				xfree(allocated_buf);
 			}
-			// add_uri(ctx->sockfd, ctx->iri, ctx->tag, val, strlen(val));
 		}
-		// else info_printf(" %s=\"%s\"\n",attr,val);
 	}
 }
 
@@ -835,38 +785,6 @@ void css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 	char tag[1024];
 	const char *allocated_tag = iri_get_connection_part(iri, tag, sizeof(tag));
 	struct css_context context = { .iri = iri, .sockfd = sockfd };
-
-		/*
-		void parse(void *context, int flags, const char *dir, const char *attr, const char *val)
-		{
-			if (flags&CSS_FLG_ATTRIBUTE) {
-				// check for url() attributes
-				const char *p1=val, *p2;
-				char quote;
-				while (*p1) {
-					if ((*p1=='u' || *p1=='U') && !strncasecmp(p1+1,"rl(",3)) {
-						p1+=4;
-						while (isspace(*p1)) p1++; // skip optional whitespace
-						if (*p1=='\"' || *p1=='\'') {
-							quote=*p1;
-							p1++;
-							for (p2=p1;*p2 && *p2!=quote;p2++) {
-								if (*p2=='\\' && p2[1]) p2++; // escaped character
-							}
-						} else {
-							for (p2=p1;*p2 && !isspace(*p2) && *p2!=')';p2++) {
-								if (*p2=='\\' && p2[1]) p2++; // escaped character
-							}
-						}
-						// TODO: if detecting escaped characters above, we should url-encode them
-
-						add_uri(sockfd,iri,tag,p1,p2-p1);
-					} else
-						p1++;
-				}
-			}
-		}
-	 */
 
 	context.tag = allocated_tag ? allocated_tag: tag;
 
@@ -1161,23 +1079,3 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 
 	return resp;
 }
-
-// HTTP/1.1 302 Found
-// Date: Fri, 20 Apr 2012 15:00:40 GMT
-// Server: Apache/2.2.22 (Linux/SUSE) mod_ssl/2.2.22 OpenSSL/1.0.0e DAV/2 SVN/1.7.4 mod_wsgi/3.3 Python/2.7.2 mod_asn/1.5 mod_mirrorbrain/2.17.0 mod_fastcgi/2.4.2
-// X-Prefix: 87.128.0.0/10
-// X-AS: 3320
-// X-MirrorBrain-Mirror: ftp.suse.com
-// X-MirrorBrain-Realm: country
-// Link: <http://go-oo.mirrorbrain.org/evolution/stable/Evolution-2.24.0.exe.meta4>; rel=describedby; type="application/metalink4+xml"
-// Link: <http://go-oo.mirrorbrain.org/evolution/stable/Evolution-2.24.0.exe.torrent>; rel=describedby; type="application/x-bittorrent"
-// Link: <http://ftp.suse.com/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=1; geo=de
-// Link: <http://ftp.hosteurope.de/mirror/ftp.suse.com/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=2; geo=de
-// Link: <http://ftp.isr.ist.utl.pt/pub/MIRRORS/ftp.suse.com/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=3; geo=pt
-// Link: <http://suse.mirrors.tds.net/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=4; geo=us
-// Link: <http://ftp.kddilabs.jp/Linux/distributions/ftp.suse.com/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=5; geo=jp
-// Digest: MD5=/sr/WFcZH1MKTyt3JHL2tA==
-// Digest: SHA=pvNwuuHWoXkNJMYSZQvr3xPzLZY=
-// Digest: SHA-256=5QgXpvMLXWCi1GpNZI9mtzdhFFdtz6tuNwCKIYbbZfU=
-// Location: http://ftp.suse.com/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe
-// Content-Type: text/html; charset=iso-8859-1

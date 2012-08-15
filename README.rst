@@ -41,6 +41,7 @@ The basic functionality is implemented, like:
 - support for Metalink RFC 5854 (Metalink Download Description Format / .meta4 files)
 - Metalink checksumming via libgnutls
 - DNS lookup cache
+- IPv4 and IPv6 support
 - tested on Debian SID amd64 and OpenBSD 5.0
 - compiled and tested with gcc 4.7.1 and clang 3.1.1
 - tested regularly with static analysis tools

@@ -307,7 +307,7 @@ char *iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_
 
 			// absolute URI without scheme: //authority/path...
 			if ((p = strchr(path + 2, '/')))
-				dst_len = _normalize_path(p + 1);
+				dst_len = _normalize_path(p + 1) + (p - path) + 1;
 
 			dst_len += strlen(iri->scheme ? iri->scheme : "http") + 1 + 1;
 			if (dst_len > dst_size)
