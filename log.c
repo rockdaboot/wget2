@@ -24,7 +24,6 @@
  *
  */
 
-#include <pthread.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -43,7 +42,8 @@ static void _write_log(const char *buf, int len)
 	struct timeval tv;
 	struct tm *tp, tbuf;
 
-	if (!buf || len <= 0) return;
+	if (!buf || len <= 0)
+		return;
 
 	gettimeofday(&tv, NULL); // obsoleted by POSIX.1-2008, maybe use clock_gettime() ? needs -lrt
 	tp = localtime_r((const time_t *)&tv.tv_sec, &tbuf); // cast top avoid warning on OpenBSD
@@ -56,9 +56,12 @@ static void _write_log(const char *buf, int len)
 		fp = fopen(config.logfile, "a");
 
 	if (fp) {
-		fprintf(fp, "%02d.%02d%02d%02d.%03ld %lX %s%s",
+//		fprintf(fp, "%02d.%02d%02d%02d.%03ld %lX %s%s",
+//			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, tv.tv_usec / 1000,
+//			(unsigned long)pthread_self(), buf, buf[len - 1] == '\n' ? "" : "\n");
+		fprintf(fp, "%02d.%02d%02d%02d.%03ld %s%s",
 			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, tv.tv_usec / 1000,
-			(unsigned long)pthread_self(), buf, buf[len - 1] == '\n' ? "" : "\n");
+			buf, buf[len - 1] == '\n' ? "" : "\n");
 
 		if (fp != stderr && fp != stdout) {
 /*
@@ -142,27 +145,31 @@ void log_write(const char *buf, int len)
 
 void err_printf_exit(const char *fmt, ...)
 {
-	va_list args;
+	if (!config.quiet) {
+		va_list args;
 
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
+		va_start(args, fmt);
+		vfprintf(stderr, fmt, args);
+		va_end(args);
+	}
 
 	exit(EXIT_FAILURE);
 }
 
 void err_printf(const char *fmt, ...)
 {
-	va_list args;
+	if (!config.quiet) {
+		va_list args;
 
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
+		va_start(args, fmt);
+		vfprintf(stderr, fmt, args);
+		va_end(args);
+	}
 }
 
 void info_printf(const char *fmt, ...)
 {
-	if (config.verbose) {
+	if (config.verbose && !config.quiet) {
 		va_list args;
 
 		va_start(args, fmt);

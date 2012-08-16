@@ -531,7 +531,6 @@ int main(int argc, const char *const *argv)
 
 	// freeing to avoid disguising valgrind output
 	tcp_set_dns_caching(0); // frees DNS cache
-	ssl_init();
 	ssl_deinit();
 	queue_free();
 	vec_free(&blacklist);

@@ -263,10 +263,8 @@ ssize_t ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 	ssize_t nbytes, x=55, y=66;
 
 	for (;;) {
-		if ((x=gnutls_record_check_pending(session)) <= 0 && (y=ready_2_read(session, timeout)) <= 0) {
-			log_printf("return 0 %zd %zd\n",x,y);
+		if ((x=gnutls_record_check_pending(session)) <= 0 && (y=ready_2_read(session, timeout)) <= 0)
 			return 0;
-		}
 
 		nbytes=gnutls_record_recv(session, buf, count);
 
@@ -274,7 +272,6 @@ ssize_t ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 			break;
 	}
 
-	log_printf("return %zd\n",nbytes < -1 ? -1 : nbytes);
 	return nbytes < -1 ? -1 : nbytes;
 }
 

@@ -47,6 +47,7 @@ struct config {
 		span_hosts,
 		recursive,
 		verbose,
+		quiet,
 		debug;
 };
 

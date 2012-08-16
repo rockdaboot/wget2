@@ -87,6 +87,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"  -V, --version           Display the version of Wget and exit.\n"
 		"  -h, --help              Print this help.\n"
 		"  -v, --verbose           Print more messages. (default: on)\n"
+		"  -q, --quiet             Print no messages except debugging messages. (default: off)\n"
 		"  -d, --debug             Print debugging messages. (default: off)\n"
 		"  -o  --output-file       File where messages are printed to.\n"
 		" \n"
@@ -192,6 +193,7 @@ static struct option options[] = {
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0},
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0},
 	{ "output-file", &config.logfile, parse_string, 1, 'o'},
+	{ "quiet", &config.quiet, parse_bool, 0, 'q'},
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0},
 	{ "recursive", &config.recursive, parse_bool, 0, 'r'},
 	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H'},
