@@ -42,10 +42,8 @@
 #include <netinet/tcp.h>
 #include <netinet/in.h>
 
-//#include "options.h"
 #include "xalloc.h"
 #include "utils.h"
-#include "options.h"
 #include "log.h"
 #include "vector.h"
 #include "gnutls.h"
@@ -66,7 +64,9 @@ static int
 	// timeouts in milliseconds
 	// there is no real 'connect timeout', since connects are async
 	dns_timeout,
-	timeout; // read and write timeouts are the same
+	connect_timeout,
+	timeout, // read and write timeouts are the same
+	debug;
 static pthread_mutex_t
 	dns_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -158,7 +158,7 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 			return NULL;
 		}
 
-		if (config.debug) {
+		if (debug) {
 			for (ai = addrinfo; ai; ai = ai->ai_next) {
 				char adr[NI_MAXHOST], sport[NI_MAXSERV];
 				int rc;
@@ -189,6 +189,11 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 
 		return addrinfo;
 	}
+}
+
+void tcp_set_debug(int _debug)
+{
+	debug = _debug;
 }
 
 static int compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
@@ -226,6 +231,11 @@ void tcp_set_dns_timeout(int timeout)
 	dns_timeout = timeout;
 }
 
+void tcp_set_connect_timeout(int _timeout)
+{
+	connect_timeout = _timeout;
+}
+
 void tcp_set_timeout(tcp_t tcp, int _timeout)
 {
 	if (tcp)
@@ -240,7 +250,7 @@ tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 	int sockfd = -1, rc;
 	char adr[NI_MAXHOST], port[NI_MAXSERV];
 
-	if (config.debug) {
+	if (debug) {
 		if ((rc = getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, adr, sizeof(adr), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
 			log_printf("trying %s:%s...\n", adr, port);
 		else
@@ -270,7 +280,7 @@ tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 			tcp->timeout = timeout;
 			if (hostname) {
 				tcp->ssl = 1;
-				tcp->ssl_session = ssl_open(tcp->sockfd, hostname);
+				tcp->ssl_session = ssl_open(tcp->sockfd, hostname, connect_timeout);
 				if (!tcp->ssl_session)
 					tcp_close(&tcp);
 			}
@@ -316,6 +326,9 @@ ssize_t tcp_write(tcp_t tcp, const char *buf, size_t count)
 	ssize_t nwritten = 0, n;
 	int rc;
 
+	if (tcp->ssl)
+		return ssl_write_timeout(tcp->ssl_session, buf, count, timeout);
+
 	while (count) {
 		// 0: no timeout / immediate
 		// -1: INFINITE timeout
@@ -335,10 +348,7 @@ ssize_t tcp_write(tcp_t tcp, const char *buf, size_t count)
 			}
 		}
 
-		if (tcp->ssl)
-			n = ssl_write(tcp->ssl_session, buf, count);
-		else
-			n = write(tcp->sockfd, buf, count);
+		n = write(tcp->sockfd, buf, count);
 			
 		if (n < 0) {
 			err_printf(_("Failed to write %zu bytes (%d)\n"), count, errno);

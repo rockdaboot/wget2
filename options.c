@@ -45,6 +45,7 @@
 #include <pwd.h>
 #include <errno.h>
 #include <glob.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 
 #include "xalloc.h"
@@ -89,7 +90,8 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"  -v, --verbose           Print more messages. (default: on)\n"
 		"  -q, --quiet             Print no messages except debugging messages. (default: off)\n"
 		"  -d, --debug             Print debugging messages. (default: off)\n"
-		"  -o  --output-file       File where messages are printed to.\n"
+		"  -o  --output-file       File where messages are printed to, '-' for STDOUT.\n"
+		"  -a  --append-output     File where messages are appended to, '-' for STDOUT.\n"
 		" \n"
 		"Download:\n"
 		"  -r  --recursive         Recursive download. (default: off)\n"
@@ -101,6 +103,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --connect-timeout   Connect timeout in seconds.\n"
 		"      --read-timeout      Read and write timeout in seconds.\n"
 		"      --dns-caching       Enable DNS cache (default: on).\n"
+		"  -O  --output-document   File where downloaded content is written to, '-'  for STDOUT.\n"
 		" \n"
 		"HTTP/HTTPS related options:\n"
 		"  -U  --user-agent        Set User-Agent: header in requests.\n"
@@ -108,6 +111,11 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		" \n"
 		);
 
+/*
+ * -a / --append-output should be reduced to -o (with always appending to logfile)
+ * Using rm logfile + mget achieves the old behaviour...
+ *
+ */
 	exit(0);
 }
 
@@ -184,6 +192,7 @@ config = {
 static struct option options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
+	{ "append-output", &config.logfile_append, parse_string, 1, 'a'},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0},
 	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0},
 	{ "debug", &config.debug, parse_bool, 0, 'd'},
@@ -192,6 +201,7 @@ static struct option options[] = {
 	{ "help", NULL, print_help, 0, 'h'},
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0},
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0},
+	{ "output-document", &config.output_document, parse_string, 1, 'O'},
 	{ "output-file", &config.logfile, parse_string, 1, 'o'},
 	{ "quiet", &config.quiet, parse_bool, 0, 'q'},
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0},
@@ -234,25 +244,36 @@ static int set_long_option(const char *name, const char *value)
 	// log_printf("opt=%p pos=%d\n",opt,pos);
 	log_printf("name=%s value=%s\n",opt->long_name,value);
 
-	if (value && !opt->args && opt->parser != parse_bool)
-		err_printf_exit(_("Option '%s' doesn't allow an argument\n"), name);
+	if (opt->parser == parse_string && invert) {
+		// allow no-<string-option> to set value to NULL
+		if (value && name == namebuf)
+			err_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
 
-	if (opt->args) {
-		if (!value)
-			err_printf_exit(_("Missing argument for option '%s'\n"), name);
-		opt->parser(opt, NULL, value);
-		if (name != namebuf)
-			ret = opt->args;
-	} else {
-		if (opt->parser == parse_bool && value) {
-			opt->parser(opt, NULL, value);
-		} else
-			opt->parser(opt, NULL, NULL);
+		*((const char **)opt->var)	= NULL;
 	}
+	else {
+		if (value && !opt->args && opt->parser != parse_bool)
+			err_printf_exit(_("Option '%s' doesn't allow an argument\n"), name);
 
-	if (opt->parser == parse_bool) {
-		if (invert)
-			*((char *)opt->var) = !*((char *)opt->var); // invert boolean value
+		if (opt->args) {
+			if (!value)
+				err_printf_exit(_("Missing argument for option '%s'\n"), name);
+
+			opt->parser(opt, NULL, value);
+
+			if (name != namebuf)
+				ret = opt->args;
+		}
+		else {
+			if (opt->parser == parse_bool) {
+				if (value)
+					opt->parser(opt, NULL, value);
+
+				if (invert)
+					*((char *)opt->var) = !*((char *)opt->var); // invert boolean value
+			} else
+				opt->parser(opt, NULL, NULL);
+		}
 	}
 
 	return ret;
@@ -502,11 +523,29 @@ static int parse_command_line(int argc, const char *const *argv)
 
 int init(int argc, const char *const *argv)
 {
-	int n;
+	int n, truncated = 1;
 
 	// this is a special case for switching on debugging before any config file is read
 	if (argc >= 2 && (!strcmp(argv[1],"-d") || !strcmp(argv[1],"--debug"))) {
 		config.debug = 1;
+	}
+
+	// first processing, to respect options that might influence output
+	// while read_config() (e.g. -d, -q, -a, -o)
+	parse_command_line(argc, argv);
+
+	// truncate logfile, if not in append mode
+	if (config.logfile_append) {
+		config.logfile = config.logfile_append;
+		config.logfile_append = NULL;
+	}
+	else if (config.logfile && strcmp(config.logfile,"-")) {
+		int fd = open(config.logfile, O_WRONLY | O_TRUNC);
+
+		if (fd != -1)
+			close(fd);
+
+		truncated = 1;
 	}
 
 	// read global config and user's config
@@ -516,11 +555,34 @@ int init(int argc, const char *const *argv)
 	// now read command line options which override the settings of the config files
 	n = parse_command_line(argc, argv);
 
+	// truncate logfile, if not in append mode
+	if (config.logfile_append) {
+		config.logfile = config.logfile_append;
+		config.logfile_append = NULL;
+	}
+	else if (config.logfile && strcmp(config.logfile,"-") && !truncated) {
+		int fd = open(config.logfile, O_WRONLY | O_TRUNC);
+
+		if (fd != -1)
+			close(fd);
+	}
+
 	// check for correct settings
 	if (config.num_threads < 1)
 		config.num_threads = 1;
 
+	// truncate output document
+	if (config.output_document && strcmp(config.output_document,"-")) {
+		int fd = open(config.output_document, O_WRONLY | O_TRUNC);
+
+		if (fd != -1)
+			close(fd);
+	}
+
 	// set module specific options
+	tcp_set_timeout(NULL, config.read_timeout);
+	tcp_set_connect_timeout(config.connect_timeout);
+	tcp_set_dns_timeout(config.dns_timeout);
 	tcp_set_dns_caching(config.dns_caching);
 	ssl_set_check_certificate(config.check_certificate);
 

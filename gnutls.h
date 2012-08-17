@@ -34,12 +34,12 @@
 void
 	ssl_init(void),
 	ssl_deinit(void),
-	*ssl_open(int sockfd, const char *hostname),
+	*ssl_open(int sockfd, const char *hostname, int connect_timeout),
 	ssl_close(void **session),
 	ssl_set_check_certificate(char value);
 
 ssize_t
 	ssl_read_timeout(void *session, char *buf, size_t count, int timeout),
-	ssl_write(void *session, const char *buf, size_t count);
+	ssl_write_timeout(void *session, const char *buf, size_t count, int timeout);
 
 #endif /* _MGET_NET_H */

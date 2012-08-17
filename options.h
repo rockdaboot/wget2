@@ -40,7 +40,9 @@ struct config {
 		num_threads;
 	const char
 		*logfile,
-		*user_agent;
+		*logfile_append,
+		*user_agent,
+		*output_document;
 	char
 		dns_caching,
 		check_certificate,

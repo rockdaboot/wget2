@@ -78,6 +78,7 @@ typedef struct {
 static void
 	download_part(DOWNLOADER *downloader),
 	save_file(HTTP_RESPONSE *resp, IRI *iri, int flags),
+	append_file(HTTP_RESPONSE *resp, const char *fname),
 	html_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri),
 	css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri);
 HTTP_RESPONSE
@@ -650,7 +651,7 @@ void *downloader_thread(void *p)
 					if (resp->content_type) {
 						if (!strcasecmp(resp->content_type, "application/metalink4+xml")) {
 							dprintf(sockfd, "sts get metalink info\n");
-							save_file(resp, job->iri, HTTP_FLG_USE_FILE);
+							// save_file(resp, job->iri, HTTP_FLG_USE_FILE);
 							metalink4_parse(sockfd, resp);
 							goto ready;
 						}
@@ -674,9 +675,15 @@ void *downloader_thread(void *p)
 							} else if (!strcasecmp(resp->content_type, "text/css")) {
 								css_parse(sockfd, resp, job->iri);
 							}
-							save_file(resp, job->iri, HTTP_FLG_USE_PATH);
+							if (config.output_document)
+								append_file(resp, config.output_document);
+							else
+								save_file(resp, job->iri, HTTP_FLG_USE_PATH);
 						} else {
-							save_file(resp, job->iri, HTTP_FLG_USE_FILE);
+							if (config.output_document)
+								append_file(resp, config.output_document);
+							else
+								save_file(resp, job->iri, HTTP_FLG_USE_FILE);
 						}
 					}
 
@@ -790,6 +797,26 @@ void css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 	css_parse_buffer(resp->body, _css_parse, &context);
 
 	xfree(allocated_tag);
+}
+
+void append_file(HTTP_RESPONSE *resp, const char *fname)
+{
+	int fd;
+
+	info_printf("append to '%s'\n", fname);
+
+	if (!strcmp(fname,"-")) {
+		size_t rc;
+		if ((rc = fwrite(resp->body, 1, resp->content_length, stdout)) != resp->content_length)
+			err_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
+	}
+	else if ((fd = open(fname, O_WRONLY | O_APPEND | O_CREAT, 0644)) != -1) {
+		ssize_t rc;
+		if ((rc = write(fd, resp->body, resp->content_length)) != (ssize_t)resp->content_length)
+			err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fname, rc, errno);
+		close(fd);
+	} else
+		err_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
 }
 
 void save_file(HTTP_RESPONSE *resp, IRI *iri, int flags)

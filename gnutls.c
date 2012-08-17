@@ -32,7 +32,6 @@
 #include <gnutls/x509.h>
 
 #include "log.h"
-#include "options.h"
 #include "gnutls.h"
 
 static gnutls_certificate_credentials_t
@@ -139,29 +138,39 @@ out:
 	return check_certificate ? ret : 0;
 }
 
+static int _init;
+static pthread_mutex_t _mutex = PTHREAD_MUTEX_INITIALIZER;
+
 void ssl_init(void)
 {
-	static int init;
-	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_lock(&_mutex);
 
-	pthread_mutex_lock(&mutex);
-
-	if (!init) {
-		init = 1;
-
+	if (!_init) {
+		log_printf("GnuTLS init\n");
 		gnutls_global_init();
 		gnutls_certificate_allocate_credentials(&credentials);
 		gnutls_certificate_set_x509_trust_file(credentials, "/etc/ssl/certs/ca-certificates.crt", GNUTLS_X509_FMT_PEM);
 		gnutls_certificate_set_verify_function(credentials, _verify_certificate_callback);
+		log_printf("GnuTLS init done\n");
 	}
 
-	pthread_mutex_unlock(&mutex);
+	_init++;
+
+	pthread_mutex_unlock(&_mutex);
 }
 
 void ssl_deinit(void)
 {
-	gnutls_certificate_free_credentials(credentials);
-	gnutls_global_deinit();
+	pthread_mutex_lock(&_mutex);
+
+	if (_init == 1) {
+		gnutls_certificate_free_credentials(credentials);
+		gnutls_global_deinit();
+	}
+
+	_init--;
+
+	pthread_mutex_unlock(&_mutex);
 }
 
 static int ready_2_transfer(gnutls_session_t session, int timeout, int mode)
@@ -196,7 +205,7 @@ static int ready_2_write(gnutls_session_t session, int timeout)
 	return ready_2_transfer(session, timeout, POLLOUT);
 }
 
-void *ssl_open(int sockfd, const char *hostname)
+void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 {
 	gnutls_session_t session;
 	const char *err;
@@ -222,10 +231,10 @@ void *ssl_open(int sockfd, const char *hostname)
 
 		if (gnutls_record_get_direction(session)) {
 			// wait for writeability
-			ret = ready_2_write(session, config.connect_timeout);
+			ret = ready_2_write(session, connect_timeout);
 		} else {
 			// wait for readability
-			ret = ready_2_read(session, config.connect_timeout);
+			ret = ready_2_read(session, connect_timeout);
 		}
 
 		if (ret <= 0)
@@ -239,7 +248,6 @@ void *ssl_open(int sockfd, const char *hostname)
 			log_printf("Handshake timed out\n");
 		gnutls_perror(ret);
 		ssl_close((void **)&session);
-		session = NULL;
 	} else {
 		log_printf("Handshake completed\n");
 	}
@@ -260,11 +268,12 @@ void ssl_close(void **session)
 
 ssize_t ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 {
-	ssize_t nbytes, x=55, y=66;
+	ssize_t nbytes;
+	int rc;
 
 	for (;;) {
-		if ((x=gnutls_record_check_pending(session)) <= 0 && (y=ready_2_read(session, timeout)) <= 0)
-			return 0;
+		if (gnutls_record_check_pending(session) <= 0 && (rc=ready_2_read(session, timeout)) <= 0)
+			return rc;
 
 		nbytes=gnutls_record_recv(session, buf, count);
 
@@ -275,7 +284,12 @@ ssize_t ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 	return nbytes < -1 ? -1 : nbytes;
 }
 
-ssize_t ssl_write(void *session, const char *buf, size_t count)
+ssize_t ssl_write_timeout(void *session, const char *buf, size_t count, int timeout)
 {
+	int rc;
+
+	if ((rc=ready_2_write(session, timeout)) <= 0)
+		return rc;
+
 	return gnutls_record_send(session, buf, count);
 }

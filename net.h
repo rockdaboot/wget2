@@ -39,8 +39,10 @@ typedef struct TCP *tcp_t;
 void
 	tcp_close(tcp_t *tcp),
 	tcp_set_timeout(tcp_t tcp, int timeout),
+	tcp_set_connect_timeout(int timeout),
 	tcp_set_dns_timeout(int timeout),
-	tcp_set_dns_caching(int caching);
+	tcp_set_dns_caching(int caching),
+	tcp_set_debug(int debug);
 struct addrinfo
 	*tcp_resolve(const char *restrict name, const char *restrict port);
 tcp_t

@@ -56,30 +56,12 @@ static void _write_log(const char *buf, int len)
 		fp = fopen(config.logfile, "a");
 
 	if (fp) {
-//		fprintf(fp, "%02d.%02d%02d%02d.%03ld %lX %s%s",
-//			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, tv.tv_usec / 1000,
-//			(unsigned long)pthread_self(), buf, buf[len - 1] == '\n' ? "" : "\n");
 		fprintf(fp, "%02d.%02d%02d%02d.%03ld %s%s",
 			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, tv.tv_usec / 1000,
 			buf, buf[len - 1] == '\n' ? "" : "\n");
 
-		if (fp != stderr && fp != stdout) {
-/*
-			if (ftell(fp)>=100*1024*1024) {
-				char	src[256];
-				struct stat sbuf;
-				sigset_t	sigset_save;
-
-				snprintf(src,sizeof(src),"%s.bk1",config.logfile);
-
-				my_mutex_lock(&mutex_trace, &sigset_save, __LINE__);
-				if (stat(config.logfile,&sbuf)==0 && sbuf.st_size>=100*1024*1024)
-					rename(config.logfile,src);
-				my_mutex_unlock(&mutex_trace, &sigset_save, __LINE__);
-			}
-*/
+		if (fp != stderr && fp != stdout)
 			fclose(fp);
-		}
 	}
 }
 
