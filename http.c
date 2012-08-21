@@ -576,9 +576,9 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 	HTTP_CONNECTION
 		*conn = xcalloc(1, sizeof(HTTP_CONNECTION));
 	const char
-		*port = (iri->port && *iri->port) ? iri->port : iri->scheme ? iri->scheme : "80";
+		*port = (iri->port && *iri->port) ? iri->port : iri->scheme;
 	int
-		ssl = iri->scheme && !strcasecmp(iri->scheme, "HTTPS");
+		ssl = iri->scheme == IRI_SCHEME_HTTPS;
 
 	if (!conn)
 		return NULL;
@@ -591,7 +591,7 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 			tcp_set_timeout(conn->tcp, config.read_timeout);
 			conn->host = iri->host ? strdup(iri->host) : NULL;
 			conn->port = iri->port ? strdup(iri->port) : NULL;
-			conn->scheme = iri->scheme ? strdup(iri->scheme) : NULL;
+			conn->scheme = iri->scheme;
 			return conn;
 		}
 	}
@@ -609,7 +609,7 @@ void http_close(HTTP_CONNECTION **conn)
 			freeaddrinfo((*conn)->addrinfo);
 		xfree((*conn)->host);
 		xfree((*conn)->port);
-		xfree((*conn)->scheme);
+		// xfree((*conn)->scheme);
 		xfree((*conn)->buf);
 		xfree(*conn);
 	}

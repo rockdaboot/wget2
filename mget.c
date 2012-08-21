@@ -97,16 +97,21 @@ static int
 static int in_blacklist(const char *uri)
 {
 	const char *p = uri;
+
 	while (*p && !iri_isgendelim(*p))
 		p++;
+
 	if (*p == ':') {
 		// URI has a scheme, check if we support that scheme
-		if (strncasecmp(uri, "http:", 5) &&
-			strncasecmp(uri, "https:", 6))
-			return 1;
+		int it;
+
+		for (it = 0; iri_schemes[it]; it++) {
+			if (!strncasecmp(uri, iri_schemes[it], p-uri))
+				return vec_find(blacklist, uri) >= 0;
+		}
 	}
 
-	return vec_find(blacklist, uri) >= 0;
+	return 0;
 }
 
 static int blacklist_add(const char *uri)
@@ -731,13 +736,14 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 
 			if (len > 1 || (len == 1 && *val != '#')) {
 				// ignore e.g. href='#'
-				char buf[1024];
-				const char *allocated_buf =
-					iri_relative_to_absolute(ctx->iri, ctx->tag, val, strlen(val), buf, sizeof(buf));
+				char uri_buf[1024];
+				const char *uri =
+					iri_relative_to_absolute(ctx->iri, ctx->tag, val, strlen(val), uri_buf, sizeof(uri_buf));
 
-				dprintf(ctx->sockfd, "add uri %s\n", allocated_buf ? allocated_buf : buf);
+				dprintf(ctx->sockfd, "add uri %s\n", uri);
 
-				xfree(allocated_buf);
+				if (uri != uri_buf)
+					xfree(uri);
 			}
 		}
 	}
@@ -748,15 +754,15 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 void html_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
-	char tag[1024];
-	const char *allocated_tag = iri_get_connection_part(iri, tag, sizeof(tag));
+	char tag_buf[1024];
 	struct html_context context = { .iri = iri, .sockfd = sockfd };
 
-	context.tag = allocated_tag ? allocated_tag: tag;
+	context.tag = iri_get_connection_part(iri, tag_buf, sizeof(tag_buf));
 
 	html_parse_buffer(resp->body, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
 
-	xfree(allocated_tag);
+	if (context.tag != tag_buf)
+		xfree(context.tag);
 }
 
 struct css_context {
@@ -774,13 +780,14 @@ static void _css_parse(void *context, const char *url, size_t len)
 
 	if (len > 1 || (len == 1 && *url != '#')) {
 		// ignore e.g. href='#'
-		char buf[1024];
-		const char *allocated_buf =
-			iri_relative_to_absolute(ctx->iri, ctx->tag, url, len, buf, sizeof(buf));
+		char uri_buf[1024];
+		const char *uri =
+			iri_relative_to_absolute(ctx->iri, ctx->tag, url, len, uri_buf, sizeof(uri_buf));
 
-		dprintf(ctx->sockfd, "add uri %s\n", allocated_buf ? allocated_buf : buf);
+		dprintf(ctx->sockfd, "add uri %s\n", uri);
 
-		xfree(allocated_buf);
+		if (uri != uri_buf)
+			xfree(uri);
 	}
 	// add_uri(ctx->sockfd, ctx->iri, ctx->tag, url, len);
 }
@@ -788,15 +795,15 @@ static void _css_parse(void *context, const char *url, size_t len)
 void css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
-	char tag[1024];
-	const char *allocated_tag = iri_get_connection_part(iri, tag, sizeof(tag));
+	char tag_buf[1024];
 	struct css_context context = { .iri = iri, .sockfd = sockfd };
 
-	context.tag = allocated_tag ? allocated_tag: tag;
+	context.tag = iri_get_connection_part(iri, tag_buf, sizeof(tag_buf));;
 
 	css_parse_buffer(resp->body, _css_parse, &context);
 
-	xfree(allocated_tag);
+	if (context.tag != tag_buf)
+		xfree(context.tag);
 }
 
 void append_file(HTTP_RESPONSE *resp, const char *fname)
@@ -969,21 +976,6 @@ void download_part(DOWNLOADER *downloader)
 	} while (!part->done);
 }
 
-static int null_strcasecmp(const char *s1, const char *s2)
-{
-	if (!s1) {
-		if (!s2)
-			return 0;
-		else
-			return -1;
-	} else {
-		if (!s2)
-			return 1;
-		else
-			return strcasecmp(s1, s2);
-	}
-}
-
 HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 {
 	IRI *use_iri = iri;
@@ -998,7 +990,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			if (downloader->conn)
 				info_printf("opened connection %s\n", downloader->conn->host);
 		} else if (!null_strcasecmp(downloader->conn->host, use_iri->host) &&
-			!null_strcasecmp(downloader->conn->scheme, use_iri->scheme) &&
+			downloader->conn->scheme == use_iri->scheme &&
 			!null_strcasecmp(downloader->conn->port, use_iri->port))
 		{
 			info_printf("reuse connection %s\n", downloader->conn->host);
@@ -1074,14 +1066,14 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			break; // 302 with Metalink information
 
 		if (resp->location) {
-			char tag[1024];
-			const char *allocated_tag = iri_get_connection_part(use_iri, tag, sizeof(tag));
-			char url[1024];
-			const char *allocated_url = iri_relative_to_absolute(
-				use_iri, allocated_url ? allocated_url : tag,
-				resp->location, strlen(resp->location), url, sizeof(url));
+			char tag_buf[1024];
+			const char *tag = iri_get_connection_part(use_iri, tag_buf, sizeof(tag_buf));
+			char uri_buf[1024];
+			const char *uri = iri_relative_to_absolute(
+				use_iri, tag, resp->location, strlen(resp->location), uri_buf, sizeof(uri_buf));
 
-			xfree(allocated_tag);
+			if (tag != tag_buf)
+				xfree(tag);
 
 			location = resp->location;
 			resp->location = NULL;
@@ -1089,9 +1081,10 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			if (use_iri != iri)
 				iri_free(&use_iri);
 
-			use_iri = iri_parse(allocated_url ? allocated_url : url);
+			use_iri = iri_parse(uri);
 
-			xfree(allocated_url);
+			if (uri != uri_buf)
+				xfree(uri);
 		} else {
 			if (use_iri != iri)
 				iri_free(&use_iri);

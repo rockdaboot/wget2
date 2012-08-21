@@ -32,6 +32,14 @@
 
 #include <stddef.h>
 
+extern const char
+	* const iri_schemes[];
+
+#define IRI_SCHEME_HTTP    (iri_schemes[0])
+#define IRI_SCHEME_HTTPS   (iri_schemes[1])
+#define IRI_SCHEME_FTP     (iri_schemes[2])
+#define IRI_SCHEME_DEFAULT IRI_SCHEME_HTTP
+
 typedef struct {
 	const char
 		*uri,      // pointer to original URI string

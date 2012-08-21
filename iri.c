@@ -32,6 +32,9 @@
 #include "log.h"
 #include "iri.h"
 
+const char
+	* const iri_schemes[] = { "http", "https", "ftp", NULL };
+
 #define IRI_CTYPE_GENDELIM (1<<0)
 #define _iri_isgendelim(c) (iri_ctype[(unsigned char)(c)]&IRI_CTYPE_GENDELIM)
 
@@ -119,10 +122,18 @@ IRI *iri_parse(const char *s_uri)
 
 	if (*s == ':') {
 		// found a scheme
-		iri->scheme = p;
 		*s++ = 0;
-	} else
+
+		if (!strcasecmp(p, IRI_SCHEME_HTTP))
+			iri->scheme = IRI_SCHEME_HTTP;
+		else if (!strcasecmp(p, IRI_SCHEME_HTTPS))
+			iri->scheme = IRI_SCHEME_HTTPS;
+		else
+			iri->scheme = p;
+	} else {
+		iri->scheme = IRI_SCHEME_DEFAULT;
 		s = p; // rewind
+	}
 
 	// this is true for http, https, ftp, file
 	if (s[0] == '/' && s[1] == '/')
@@ -199,40 +210,21 @@ char *iri_get_connection_part(IRI *iri, char *tag, size_t tagsize)
 {
 	size_t len;
 
-	if (iri->scheme) {
-		if (iri->port) {
-			len = strlen(iri->scheme) + strlen(iri->host) + strlen(iri->port) + 4 + 1;
-			if (len > tagsize)
-				tag = xmalloc(len);
+	if (iri->port) {
+		len = strlen(iri->scheme) + strlen(iri->host) + strlen(iri->port) + 4 + 1;
+		if (len > tagsize)
+			tag = xmalloc(len);
 
-			sprintf(tag, "%s://%s:%s", iri->scheme, iri->host, iri->port);
-		} else {
-			len = strlen(iri->scheme) + strlen(iri->host) + 3 + 1;
-			if (len > tagsize)
-				tag = xmalloc(len);
-
-			sprintf(tag, "%s://%s", iri->scheme, iri->host);
-		}
+		sprintf(tag, "%s://%s:%s", iri->scheme, iri->host, iri->port);
 	} else {
-		if (iri->port) {
-			len = strlen(iri->host) + strlen(iri->port) + 1 + 1;
-			if (len > tagsize)
-				tag = xmalloc(len);
+		len = strlen(iri->scheme) + strlen(iri->host) + 3 + 1;
+		if (len > tagsize)
+			tag = xmalloc(len);
 
-			sprintf(tag, "%s:%s", iri->host, iri->port);
-		} else {
-			len = strlen(iri->host) + 1;
-			if (len > tagsize)
-				tag = xmalloc(len);
-
-			sprintf(tag, "%s", iri->host);
-		}
+		sprintf(tag, "%s://%s", iri->scheme, iri->host);
 	}
 
-	if (len > tagsize)
-		return tag; // return allocated buffer
-
-	return NULL; // static buffer was large enough
+	return tag;
 }
 
 // normalize /../ and remove /./
@@ -244,21 +236,30 @@ static size_t _normalize_path(char *path)
 	log_printf("path %s ->\n", path);
 
 	// skip ./ and ../ at the beginning of the path
-	while (*p2 == '.' || *p2 == '/') {
+	for (;;) {
 		if (*p2 == '/')
 			p2++;
 		else if (*p2 == '.') {
 			if (p2[1] == '/')
 				p2 += 2;
-			else if (p2[1] == '.' && p2[2] == '/')
-				p2 += 3;
+			else if (p2[1] == '.') {
+				if (p2[2] == '/')
+					p2 += 3;
+				else if (!p2[2])
+					p2 += 2;
+				else
+					break;
+			}
+			else if (!p2[1])
+				p2++;
 			else
 				break;
 		} else
 			break;
 	}
 
-	while (*p2) {
+	// normalize path but stop at query or fragment
+	while (*p2 && *p2 != '?' && *p2 != '#') {
 		if (*p2 == '/') {
 			if (p2[1] == '.') {
 				if (!strncmp(p2, "/../", 4)) {
@@ -268,10 +269,12 @@ static size_t _normalize_path(char *path)
 				} else if (!strcmp(p2, "/..")) {
 					p2 += 3;
 					while (p1 > path && *--p1 != '/');
+					if (p1 > path) *p1++='/';
 				} else if (!strncmp(p2, "/./", 3)) {
 					p2 += 2;
 				} else if (!strcmp(p2, "/.")) {
 					p2 += 2;
+					if (p1 > path) *p1++='/';
 				} else
 					*p1++ = *p2++;
 			} else if (p1 == path)
@@ -283,13 +286,18 @@ static size_t _normalize_path(char *path)
 		} else
 			*p1++ = *p2++;
 	}
+
+	while (*p2)
+		*p1++ = *p2++;
+
 	*p1 = 0;
+
 	log_printf("     %s\n", path);
 
 	return p1 - path;
 }
 
-// convert relative URI to absolute URI
+// create an absolute URI from a relative URI
 
 char *iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_t len, char *dst, size_t dst_size)
 {
@@ -309,11 +317,11 @@ char *iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_
 			if ((p = strchr(path + 2, '/')))
 				dst_len = _normalize_path(p + 1) + (p - path) + 1;
 
-			dst_len += strlen(iri->scheme ? iri->scheme : "http") + 1 + 1;
+			dst_len += strlen(iri->scheme) + 1 + 1;
 			if (dst_len > dst_size)
 				dst = xmalloc(dst_len);
 
-			snprintf(dst, dst_len, "%s:%s", iri->scheme ? iri->scheme : "http", path);
+			snprintf(dst, dst_len, "%s:%s", iri->scheme, path);
 			log_printf("*1 %s\n", dst);
 		} else {
 			// absolute path
@@ -355,8 +363,5 @@ char *iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_
 		}
 	}
 
-	if (dst_len > dst_size)
-		return dst;
-
-	return NULL;
+	return dst;
 }

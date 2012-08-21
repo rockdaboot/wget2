@@ -401,6 +401,40 @@ char *strndup(const char *s, size_t n)
 	return dst;
 }
 
+// strcmp which also accepts NULL values
+
+int null_strcmp(const char *s1, const char *s2)
+{
+	if (!s1) {
+		if (!s2)
+			return 0;
+		else
+			return -1;
+	} else {
+		if (!s2)
+			return 1;
+		else
+			return strcmp(s1, s2);
+	}
+}
+
+// strcasecmp which also accepts NULL values
+
+int null_strcasecmp(const char *s1, const char *s2)
+{
+	if (!s1) {
+		if (!s2)
+			return 0;
+		else
+			return -1;
+	} else {
+		if (!s2)
+			return 1;
+		else
+			return strcasecmp(s1, s2);
+	}
+}
+
 void buffer_to_hex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size)
 {
 	size_t it;

@@ -55,7 +55,7 @@
 #include "gnutls.h"
 #include "options.h"
 
-typedef struct option *option_t; // forward declaration
+typedef const struct option *option_t; // forward declaration
 
 struct option {
 	const char
@@ -189,7 +189,7 @@ config = {
 	.check_certificate=1
 };
 
-static struct option options[] = {
+static const struct option options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a'},

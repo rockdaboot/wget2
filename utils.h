@@ -52,5 +52,8 @@ FILE
 pid_t
 	fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv),
 	popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *argv);
+int
+	null_strcmp(const char *s1, const char *s2),
+	null_strcasecmp(const char *s1, const char *s2);
 
 #endif /* _MGET_UTILS_H */

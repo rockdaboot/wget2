@@ -34,6 +34,7 @@
 #include <dirent.h>
 #include <time.h>
 
+#include "../xalloc.h"
 #include "../utils.h"
 #include "../options.h"
 #include "../css.h"
@@ -46,27 +47,9 @@ static int
 	ok,
 	failed;
 
-// strcmp, but allows NULL arguments
-
-static int null_strcmp(const char *s1, const char *s2)
-{
-	if (!s1) {
-		if (!s2)
-			return 0;
-		else
-			return -1;
-	} else {
-		if (!s2)
-			return 1;
-		else
-			return strcmp(s1, s2);
-	}
-}
-
 static void test_iri_parse(void)
 {
-
-	static const struct iri_test_data {
+	const struct iri_test_data {
 		const char
 			*uri,
 			*display,
@@ -79,19 +62,20 @@ static void test_iri_parse(void)
 			*query,
 			*fragment;
 	} test_data[] = {
-		{ "//example.com/thepath", NULL, NULL, NULL, NULL, "example.com", NULL, "thepath", NULL, NULL},
-		{ "///thepath", NULL, NULL, NULL, NULL, NULL, NULL, "thepath", NULL, NULL},
-		{ "example.com", NULL, NULL, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
-		{ "http://example.com", NULL, "http", NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
-		{ "http://example.com:80", NULL, "http", NULL, NULL, "example.com", "80", NULL, NULL, NULL},
-		{ "http://example.com:80/index.html", NULL, "http", NULL, NULL, "example.com", "80", "index.html", NULL, NULL},
-		{ "http://example.com:80/index.html?query#frag", NULL, "http", NULL, NULL, "example.com", "80", "index.html", "query", "frag"},
-		{ "http://example.com:80/index.html?#", NULL, "http", NULL, NULL, "example.com", "80", "index.html", "", ""},
-		{ "碼標準萬國碼.com", NULL, NULL, NULL, NULL, "碼標準萬國碼.com", NULL, NULL, NULL, NULL},
+		{ "//example.com/thepath", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "thepath", NULL, NULL},
+		{ "///thepath", NULL, IRI_SCHEME_HTTP, NULL, NULL, NULL, NULL, "thepath", NULL, NULL},
+		{ "example.com", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "http://example.com", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "https://example.com", NULL, IRI_SCHEME_HTTPS, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "http://example.com:80", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", "80", NULL, NULL, NULL},
+		{ "http://example.com:80/index.html", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", "80", "index.html", NULL, NULL},
+		{ "http://example.com:80/index.html?query#frag", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", "80", "index.html", "query", "frag"},
+		{ "http://example.com:80/index.html?#", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", "80", "index.html", "", ""},
+		{ "碼標準萬國碼.com", NULL, IRI_SCHEME_HTTP, NULL, NULL, "碼標準萬國碼.com", NULL, NULL, NULL, NULL},
 		//		{ "ftp://cnn.example.com&story=breaking_news@10.0.0.1/top_story.htm", NULL,"ftp",NULL,NULL,"cnn.example.com",NULL,NULL,"story=breaking_news@10.0.0.1/top_story.htm",NULL }
 		{ "ftp://cnn.example.com?story=breaking_news@10.0.0.1/top_story.htm", NULL, "ftp", NULL, NULL, "cnn.example.com", NULL, NULL, "story=breaking_news@10.0.0.1/top_story.htm", NULL}
 	};
-	unsigned int it;
+	size_t it;
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
@@ -107,7 +91,7 @@ static void test_iri_parse(void)
 			|| null_strcmp(iri->query, t->query)
 			|| null_strcmp(iri->fragment, t->fragment)) {
 			failed++;
-			printf("IRI test #%d failed:\n", it + 1);
+			printf("IRI test #%zu failed:\n", it + 1);
 			printf(" [%s]\n", iri->uri);
 			printf("  display %s (expected %s)\n", iri->display, t->display);
 			printf("  scheme %s (expected %s)\n", iri->scheme, t->scheme);
@@ -126,9 +110,101 @@ static void test_iri_parse(void)
 	}
 }
 
+static void test_iri_relative_to_absolute(void)
+{
+#define HOST "http://example.com"
+
+	const struct iri_test_data {
+		const char
+			*relative,
+			*result;
+	} test_data[] = {
+		{ "",                       "" },
+		{ ".",                      "" },
+		{ "./",                     "" },
+		{ "..",                     "" },
+		{ "../",                    "" },
+		{ "foo",                    "foo" },
+		{ "foo/bar",                "foo/bar" },
+		{ "foo///bar",              "foo/bar" },
+		{ "foo/.",                  "foo/" },
+		{ "foo/./",                 "foo/" },
+		{ "foo./",                  "foo./" },
+		{ "foo/../bar",             "bar" },
+		{ "foo/../bar/",            "bar/" },
+		{ "foo/bar/..",             "foo/" },
+		{ "foo/bar/../x",           "foo/x" },
+		{ "foo/bar/../x/",          "foo/x/" },
+		{ "foo/..",                 "" },
+		{ "foo/../..",              "" },
+		{ "foo/../../..",           "" },
+		{ "foo/../../bar/../../baz", "baz" },
+		{ "a/b/../../c",            "c" },
+		{ "./a/../b",               "b" },
+		{ "/",                       "" },
+		{ "/.",                      "" },
+		{ "/./",                     "" },
+		{ "/..",                     "" },
+		{ "/../",                    "" },
+		{ "/foo",                    "foo" },
+		{ "/foo/bar",                "foo/bar" },
+		{ "/foo///bar",              "foo/bar" },
+		{ "/foo/.",                  "foo/" },
+		{ "/foo/./",                 "foo/" },
+		{ "/foo./",                  "foo./" },
+		{ "/foo/../bar",             "bar" },
+		{ "/foo/../bar/",            "bar/" },
+		{ "/foo/bar/..",             "foo/" },
+		{ "/foo/bar/../x",           "foo/x" },
+		{ "/foo/bar/../x/",          "foo/x/" },
+		{ "/foo/..",                 "" },
+		{ "/foo/../..",              "" },
+		{ "/foo/../../..",           "" },
+		{ "/foo/../../bar/../../baz", "baz" },
+		{ "/a/b/../../c",            "c" },
+		{ "/./a/../b",               "b" },
+		{ ".x",                      ".x" },
+		{ "..x",                     "..x" },
+		{ "foo/.x",                  "foo/.x" },
+		{ "foo/bar/.x",              "foo/bar/.x" },
+		{ "foo/..x",                 "foo/..x" },
+		{ "foo/bar/..x",             "foo/bar/..x" },
+		{ "/x.php?y=ftp://example.com/&z=1_2", "x.php?y=ftp://example.com/&z=1_2" }
+	};
+	size_t it;
+	IRI *iri = iri_parse(HOST);
+	char tag_buf[64];
+	const char *tag = iri_get_connection_part(iri, tag_buf, sizeof(tag_buf));
+
+	for (it = 0; it < countof(test_data); it++) {
+		const struct iri_test_data *t = &test_data[it];
+
+		{
+			char uri_buf[32]; // use a size that forces allocation in some cases
+			const char *uri = iri_relative_to_absolute(
+				iri, tag, t->relative, strlen(t->relative), uri_buf, sizeof(uri_buf));
+
+			if (!strcmp(uri + sizeof(HOST), t->result))
+				ok++;
+			else {
+				failed++;
+				info_printf("Failed [%zu]: %s -> %s (expected %s/%s)\n", it, t->relative, uri, HOST, t->result);
+			}
+
+			if (uri != uri_buf)
+				xfree(uri);
+		}
+	}
+
+	if (tag != tag_buf)
+		xfree(tag);
+
+	iri_free(&iri);
+}
+
 static void css_dump(UNUSED void *user_ctx, const char *url, size_t len)
 {
-	info_printf("*** %zu '%.*s'\n", len, (int)len, url);
+	log_printf("*** %zu '%.*s'\n", len, (int)len, url);
 }
 
 static void test_parser(void)
@@ -208,8 +284,10 @@ static void test_vector(void)
 		*txt[countof(txt_sorted)];
 	VECTOR
 		*v = vec_create(2, -2, (int(*)(const void *, const void *))compare_txt);
+	size_t
+		it;
 	int
-		it, n;
+		n;
 
 	// copy
 	for (it = 0; it < countof(txt); it++)
@@ -224,12 +302,12 @@ static void test_vector(void)
 	}
 
 	for (it = 0; it < countof(txt); it++) {
-		vec_insert_sorted_noalloc(v, txt[it]);
+		vec_insert_sorted(v, txt[it], sizeof(struct ENTRY));
 	}
 
 	for (it = 0; it < countof(txt); it++) {
 		struct ENTRY *e = vec_get(v, it);
-		if (e == &txt_sorted[it])
+		if (!strcmp(e->txt,txt_sorted[it].txt))
 			ok++;
 		else
 			failed++;
@@ -240,11 +318,12 @@ static void test_vector(void)
 
 int main(void)
 {
-	config.debug = 1;
+//	config.debug = 1;
 
 	srand(time(NULL));
 
 	test_iri_parse();
+	test_iri_relative_to_absolute();
 	test_parser();
 	test_utils();
 	test_vector();
