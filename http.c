@@ -39,6 +39,7 @@
 #include "printf.h"
 #include "log.h"
 #include "decompressor.h"
+#include "buffer.h"
 #include "http.h"
 
 int http_isseperator(char c)
@@ -498,7 +499,7 @@ void http_free_response(HTTP_RESPONSE **resp)
 		xfree((*resp)->content_type);
 		xfree((*resp)->location);
 		// xfree((*resp)->reason);
-		xfree((*resp)->body);
+		buffer_free(&(*resp)->body);
 		xfree(*resp);
 	}
 }
@@ -558,10 +559,10 @@ void http_add_header_line(HTTP_REQUEST *req, const char *line)
 void http_add_header(HTTP_REQUEST *req, const char *name, const char *value)
 {
 	size_t
-	lname = strlen(name),
+		lname = strlen(name),
 		lvalue = strlen(value);
 	char
-	*buf = xmalloc(lname + 2 + lvalue + 1); // "%s: %s"
+		*buf = xmalloc(lname + 2 + lvalue + 1); // "%s: %s"
 
 	strcpy(buf, name);
 	buf[lname] = ':';
@@ -592,6 +593,7 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 			conn->host = iri->host ? strdup(iri->host) : NULL;
 			conn->port = iri->port ? strdup(iri->port) : NULL;
 			conn->scheme = iri->scheme;
+			conn->buf = buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
 			return conn;
 		}
 	}
@@ -610,7 +612,7 @@ void http_close(HTTP_CONNECTION **conn)
 		xfree((*conn)->host);
 		xfree((*conn)->port);
 		// xfree((*conn)->scheme);
-		xfree((*conn)->buf);
+		buffer_free(&(*conn)->buf);
 		xfree(*conn);
 	}
 }
@@ -619,26 +621,27 @@ int http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 {
 	ssize_t nbytes;
 
-	if ((nbytes = http_request_to_buffer(req, &conn->buf, &conn->bufsize)) < 0) {
+	if ((nbytes = http_request_to_buffer(req, conn->buf)) < 0) {
 		err_printf(_("Failed to create request buffer\n"));
 		return -1;
 	}
 
-	if (tcp_write(conn->tcp, conn->buf, nbytes) != nbytes) {
+	if (tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
 		err_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
 		return -1;
 	}
 
-	log_printf("# sent %zd bytes:\n%s", nbytes, conn->buf);
+	log_printf("# sent %zd bytes:\n%s", nbytes, conn->buf->data);
 
 	return 0;
 }
 
-ssize_t http_request_to_buffer(HTTP_REQUEST *req, char **buf, size_t *bufsize)
+ssize_t http_request_to_buffer(HTTP_REQUEST *req, buffer_t *buf)
 {
 	// ("%s /%s HTTP/1.1\r\n",req->method,req->resource)
 	size_t size = strlen(req->method)+(req->resource ? strlen(req->resource) : 0) + 13 + 1;
 	size_t length[vec_size(req->lines)];
+	char *data;
 	int it;
 
 	for (it = 0; it < vec_size(req->lines); it++) {
@@ -652,32 +655,261 @@ ssize_t http_request_to_buffer(HTTP_REQUEST *req, char **buf, size_t *bufsize)
 
 	size += 2 + 1; // CRLF + 0 byte
 
-	if (!buf)
-		return size;
+	buffer_ensure_capacity(buf, size);
+	data = buf->data;
 
-	if (!*buf || (*buf && (!bufsize || *bufsize < size))) {
-		xfree(*buf);
-		*buf = xmalloc(size);
-		if (bufsize)
-			*bufsize = size;
-	}
-
-	size = snprintf(*buf, bufsize ? *bufsize : size, "%s /%s HTTP/1.1\r\n", req->method, req->resource ? req->resource : "");
+	size = snprintf(data, size, "%s /%s HTTP/1.1\r\n", req->method, req->resource ? req->resource : "");
 	for (it = 0; it < vec_size(req->lines); it++) {
-		strcpy(*buf + size, vec_get(req->lines, it));
+		strcpy(data + size, vec_get(req->lines, it));
 		size += length[it];
-		if ((*buf)[size - 1] != '\n') {
-			strcpy(*buf + size, "\r\n");
+		if (data[size - 1] != '\n') {
+			strcpy(data + size, "\r\n");
 			size += 2;
 		}
 	}
-	strcpy(*buf + size, "\r\n");
+	strcpy(data + size, "\r\n");
 	size += 2;
 
+	buf->length=size; // just for consistency, not really needed here
 	return size;
 }
 
 HTTP_RESPONSE *http_get_response_cb(
+	HTTP_CONNECTION *conn,
+	HTTP_REQUEST *req,
+	int (*parse_body)(void *context, const char *data, size_t length),
+	void *context) // given to parse_body
+{
+	size_t bufsize, body_len = 0, body_size = 0;
+	ssize_t nbytes, nread = 0;
+	char *buf, *p = NULL;
+	HTTP_RESPONSE *resp = NULL;
+	DECOMPRESSOR *dc = NULL;
+
+	// reuse generic connection buffer
+	buf = conn->buf->data;
+	bufsize = conn->buf->size;
+
+	while ((nbytes = tcp_read(conn->tcp, buf + nread, bufsize - nread)) > 0) {
+		log_printf("nbytes %zd nread %zd %zd\n", nbytes, nread, bufsize);
+		nread += nbytes;
+		buf[nread] = 0; // 0-terminate to allow string functions
+
+		if (nread < 4) continue;
+
+		if (nread == nbytes)
+			p = buf;
+		else
+			p = buf + nread - nbytes - 3;
+
+		if ((p = strstr(p, "\r\n\r\n"))) {
+			// found end-of-header
+			*p = 0;
+
+			log_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
+
+			if (!(resp = http_parse_response(buf)))
+				goto cleanup; // something is wrong with the header
+
+			if (req && !strcasecmp(req->method, "HEAD"))
+				goto cleanup; // a HEAD response won't have a body
+
+			p += 4; // skip \r\n\r\n to point to body
+			break;
+		}
+
+		if ((size_t)nread + 1024 > bufsize) {
+			// buf = xrealloc(buf, (bufsize *= 2) + 1);
+			buffer_ensure_capacity(conn->buf, bufsize + 1024);
+			buf = conn->buf->data;
+			bufsize = conn->buf->size;
+		}
+	}
+	if (!nread) goto cleanup;
+
+	if (!resp || resp->code / 100 == 1 || resp->code == 204 || resp->code == 304 ||
+		(resp->transfer_encoding == transfer_encoding_identity && resp->content_length == 0 && resp->content_length_valid)) {
+		// - body not included, see RFC 2616 4.3
+		// - body empty, see RFC 2616 4.4
+		goto cleanup;
+	}
+
+	dc = decompress_open(resp->content_encoding, parse_body, context);
+
+	// calculate number of body bytes so far read
+	body_len = nread - (p - buf);
+	// move already read body data to buf
+	memmove(buf, p, body_len);
+	buf[body_len] = 0;
+
+	if (resp->transfer_encoding != transfer_encoding_identity) {
+		size_t chunk_size = 0;
+		char *end;
+
+		log_printf("method 1 %zd %zd:\n", body_len, body_size);
+		// RFC 2616 3.6.1
+		// Chunked-Body   = *chunk last-chunk trailer CRLF
+		// chunk          = chunk-size [ chunk-extension ] CRLF chunk-data CRLF
+		// chunk-size     = 1*HEX
+		// last-chunk     = 1*("0") [ chunk-extension ] CRLF
+		// chunk-extension= *( ";" chunk-ext-name [ "=" chunk-ext-val ] )
+		// chunk-ext-name = token
+		// chunk-ext-val  = token | quoted-string
+		// chunk-data     = chunk-size(OCTET)
+		// trailer        = *(entity-header CRLF)
+		// entity-header  = extension-header = message-header
+		// message-header = field-name ":" [ field-value ]
+		// field-name     = token
+		// field-value    = *( field-content | LWS )
+		// field-content  = <the OCTETs making up the field-value
+		//                  and consisting of either *TEXT or combinations
+		//                  of token, separators, and quoted-string>
+
+/*
+			length := 0
+			read chunk-size, chunk-extension (if any) and CRLF
+			while (chunk-size > 0) {
+				read chunk-data and CRLF
+				append chunk-data to entity-body
+				length := length + chunk-size
+				read chunk-size and CRLF
+			}
+			read entity-header
+			while (entity-header not empty) {
+				append entity-header to existing header fields
+				read entity-header
+			}
+			Content-Length := length
+			Remove "chunked" from Transfer-Encoding
+*/
+
+		// read each chunk, stripping the chunk info
+		p = buf;
+		for (;;) {
+			//log_printf("#1 p='%.16s'\n",p);
+			// read: chunk-size [ chunk-extension ] CRLF
+			while ((!(end = strchr(p, '\r')) || end[1] != '\n')) {
+				if ((nbytes = tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)
+					goto cleanup;
+
+				body_len += nbytes;
+				buf[body_len] = 0;
+				log_printf("a nbytes %zd body_len %zd\n", nbytes, body_len);
+			}
+			end += 2;
+
+			// now p points to chunk-size (hex)
+			chunk_size = strtoll(p, NULL, 16);
+			log_printf("chunk size is %zd\n", chunk_size);
+			if (chunk_size == 0) {
+				// now read 'trailer CRLF' which is '*(entity-header CRLF) CRLF'
+				if (*end == '\r' && end[1] == '\n') // shortcut for the most likely case (empty trailer)
+					goto cleanup;
+
+				log_printf("reading trailer\n");
+				while (!strstr(end, "\r\n\r\n")) {
+					if (body_len > 3) {
+						// just need to keep the last 3 bytes to avoid buffer resizing
+						memmove(buf, buf + body_len - 3, 4); // plus 0 terminator, just in case
+						body_len = 3;
+					}
+					if ((nbytes = tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)
+						goto cleanup;
+
+					body_len += nbytes;
+					buf[body_len] = 0;
+					end = buf;
+					log_printf("a nbytes %zd\n", nbytes);
+				}
+				log_printf("end of trailer \n");
+				goto cleanup;
+			}
+
+			p = end + chunk_size + 2;
+			if (p <= buf + body_len) {
+				log_printf("1 skip chunk_size %zd\n", chunk_size);
+				decompress(dc, end, chunk_size);
+				continue;
+			}
+
+			decompress(dc, end, (buf + body_len) - end);
+
+			chunk_size = p - (buf + body_len); // in fact needed bytes to have chunk_size+2 in buf
+
+			log_printf("need at least %zd more bytes\n", chunk_size);
+
+			while (chunk_size > 0) {
+				if ((nbytes = tcp_read(conn->tcp, buf, bufsize)) <= 0)
+					goto cleanup;
+				log_printf("a nbytes=%zd chunk_size=%zd\n", nread, chunk_size);
+
+				if (chunk_size <= (size_t)nbytes) {
+					if (chunk_size == 1 || !strncmp(buf + chunk_size - 2, "\r\n", 2)) {
+						log_printf("chunk completed\n");
+						// p=end+chunk_size+2;
+					} else {
+						err_printf(_("Expected end-of-chunk not found\n"));
+						goto cleanup;
+					}
+					if (chunk_size > 2)
+						decompress(dc, buf, chunk_size - 2);
+					body_len = nbytes - chunk_size;
+					if (body_len)
+						memmove(buf, buf + chunk_size, body_len);
+					buf[body_len] = 0;
+					p = buf;
+					break;
+				} else {
+					chunk_size -= nbytes;
+					if (chunk_size >= 2)
+						decompress(dc, buf, nbytes);
+					else
+						decompress(dc, buf, nbytes - 1); // special case: we got a partial end-of-chunk
+				}
+			}
+		}
+	} else if (resp->content_length_valid) {
+		// read content_length bytes
+		log_printf("method 2\n");
+
+		if (body_len)
+			decompress(dc, buf, body_len);
+
+		while (body_len < resp->content_length && ((nbytes = tcp_read(conn->tcp, buf, bufsize)) > 0)) {
+			body_len += nbytes;
+			log_printf("nbytes %zd total %zd/%zd\n", nbytes, body_len, resp->content_length);
+			decompress(dc, buf, nbytes);
+		}
+		if (nbytes < 0)
+			err_printf(_("Failed to read %zd bytes (%d)\n"), nbytes, errno);
+		if (body_len < resp->content_length)
+			err_printf(_("Just got %zu of %zu bytes\n"), body_len, body_size);
+		else if (body_len > resp->content_length)
+			err_printf(_("Body too large: %zu instead of %zu bytes\n"), body_len, resp->content_length);
+		resp->content_length = body_len;
+	} else {
+		// read as long as we can
+		log_printf("method 3\n");
+
+		if (body_len)
+			decompress(dc, buf, body_len);
+
+		while ((nbytes = tcp_read(conn->tcp, buf, bufsize)) > 0) {
+			body_len += nbytes;
+			log_printf("nbytes %zd total %zd\n", nbytes, body_len);
+			decompress(dc, buf, nbytes);
+		}
+		resp->content_length = body_len;
+	}
+
+cleanup:
+	decompress_close(dc);
+//	xfree(buf);
+
+	return resp;
+}
+
+/*HTTP_RESPONSE *http_get_response_cb(
 	HTTP_CONNECTION *conn,
 	HTTP_REQUEST *req,
 	int (*parse_body)(void *context, const char *data, size_t length),
@@ -761,8 +993,8 @@ HTTP_RESPONSE *http_get_response_cb(
 		// field-content  = <the OCTETs making up the field-value
 		//                  and consisting of either *TEXT or combinations
 		//                  of token, separators, and quoted-string>
-
-		/*
+*/
+/*
 			length := 0
 			read chunk-size, chunk-extension (if any) and CRLF
 			while (chunk-size > 0) {
@@ -778,8 +1010,8 @@ HTTP_RESPONSE *http_get_response_cb(
 			}
 			Content-Length := length
 			Remove "chunked" from Transfer-Encoding
-		 */
-
+*/
+/*
 		// read each chunk, stripping the chunk info
 		p = buf;
 		for (;;) {
@@ -905,43 +1137,29 @@ cleanup:
 
 	return resp;
 }
-
-struct buffer {
-	size_t len, size;
-	char *buf;
-};
+*/
 
 static int _get_body(void *userdata, const char *data, size_t length)
 {
-	struct buffer *body = userdata;
+	buffer_append((buffer_t *)userdata, data, length);
 
-	while (body->size < body->len + length)
-		body->buf = xrealloc(body->buf, (body->size *= 2) + 1);
-
-	memcpy(body->buf + body->len, data, length);
-	body->len += length;
-	body->buf[body->len] = 0;
 	return 0;
 }
 
-// get response, resp->body points to body in memory (clang/c99 version)
+// get response, resp->body points to body in memory
 
 HTTP_RESPONSE *http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 {
-	struct buffer body;
 	HTTP_RESPONSE *resp;
+	buffer_t *body = buffer_alloc(102400);
 
-	body.len = 0;
-	body.buf = xmalloc((body.size = 102400) + 1);
-	*body.buf = 0;
-
-	resp = http_get_response_cb(conn, req, _get_body, &body);
+	resp = http_get_response_cb(conn, req, _get_body, body);
 
 	if (resp) {
-		resp->body = body.buf;
-		resp->content_length = body.len;
+		resp->body = body;
+		resp->content_length = body->length;
 	} else {
-		xfree(body.buf);
+		buffer_free(&body);
 	}
 
 	return resp;

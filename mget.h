@@ -42,7 +42,9 @@
 	#define DEPRECATED __attribute__ ((deprecated))
 	#define MALLOC __attribute__ ((malloc))
 	#define ALLOC_SIZE(a) __attribute__ ((alloc_size(a)))
-	#define ALLOC_SIZE2(a,b) __attribute__ ((alloc_size(a,b)))
+	#define ALLOC_SIZE2(a,b) __attribute__ ((alloc_size(a, b)))
+	#define unlikely(expr) __builtin_expect(!!(expr), 0)
+	#define likely(expr) __builtin_expect(!!(expr), 1)
 #else
 	#define UNUSED
 	#define UNUSED_RESULT
@@ -55,6 +57,8 @@
 	#define MALLOC
 	#define ALLOC_SIZE(a)
 	#define ALLOC_SIZE2(a,b)
+	#define unlikely(expr) expr
+	#define likely(expr) expr
 #endif
 
 #if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)

@@ -31,6 +31,7 @@
 
 #include "xml.h"
 #include "printf.h"
+#include "buffer.h"
 #include "metalink.h"
 
 struct metalink_context {
@@ -110,5 +111,5 @@ void metalink4_parse(int sockfd, HTTP_RESPONSE *resp)
 		ctx.length = 0;
 	strcpy(ctx.location, "-");
 
-	xml_parse_buffer(resp->body, _metalink4_parse, &ctx, 0);
+	xml_parse_buffer(resp->body->data, _metalink4_parse, &ctx, 0);
 }

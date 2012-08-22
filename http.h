@@ -33,6 +33,7 @@
 #include "vector.h"
 #include "job.h"
 #include "net.h"
+#include "buffer.h"
 #include "iri.h"
 
 // FLAGS for http_get_file()
@@ -86,7 +87,8 @@ typedef struct {
 		*digests;
 	const char
 		*content_type,
-		*location,
+		*location;
+	buffer_t
 		*body;
 	size_t
 		content_length;
@@ -113,10 +115,8 @@ typedef struct {
 		*host,
 		*port,
 		*scheme;
-	char
+	buffer_t
 		*buf;
-	size_t
-		bufsize;
 } HTTP_CONNECTION;
 
 int
@@ -174,6 +174,6 @@ void
 int
 	http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req);
 ssize_t
-	http_request_to_buffer(HTTP_REQUEST *req, char **buf, size_t *bufsize);
+	http_request_to_buffer(HTTP_REQUEST *req, buffer_t *buf);
 
 #endif /* _MGET_HTTP_H */

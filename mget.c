@@ -759,7 +759,7 @@ void html_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 
 	context.tag = iri_get_connection_part(iri, tag_buf, sizeof(tag_buf));
 
-	html_parse_buffer(resp->body, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
+	html_parse_buffer(resp->body->data, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
 
 	if (context.tag != tag_buf)
 		xfree(context.tag);
@@ -800,7 +800,7 @@ void css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 
 	context.tag = iri_get_connection_part(iri, tag_buf, sizeof(tag_buf));;
 
-	css_parse_buffer(resp->body, _css_parse, &context);
+	css_parse_buffer(resp->body->data, _css_parse, &context);
 
 	if (context.tag != tag_buf)
 		xfree(context.tag);
@@ -814,12 +814,12 @@ void append_file(HTTP_RESPONSE *resp, const char *fname)
 
 	if (!strcmp(fname,"-")) {
 		size_t rc;
-		if ((rc = fwrite(resp->body, 1, resp->content_length, stdout)) != resp->content_length)
+		if ((rc = fwrite(resp->body->data, 1, resp->body->length, stdout)) != resp->body->length)
 			err_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
 	}
 	else if ((fd = open(fname, O_WRONLY | O_APPEND | O_CREAT, 0644)) != -1) {
 		ssize_t rc;
-		if ((rc = write(fd, resp->body, resp->content_length)) != (ssize_t)resp->content_length)
+		if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
 			err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fname, rc, errno);
 		close(fd);
 	} else
@@ -875,7 +875,7 @@ void save_file(HTTP_RESPONSE *resp, IRI *iri, int flags)
 		info_printf("saving '%s'\n", fname);
 		if ((fd = open(fname, O_WRONLY | O_TRUNC | O_CREAT, 0644)) != -1) {
 			ssize_t rc;
-			if ((rc = write(fd, resp->body, resp->content_length)) != (ssize_t)resp->content_length)
+			if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
 				err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fname, rc, errno);
 			close(fd);
 		} else
@@ -927,7 +927,7 @@ void save_file(HTTP_RESPONSE *resp, IRI *iri, int flags)
 		info_printf("saving '%s'\n", dir);
 		if ((fd = open(dir, O_WRONLY | O_TRUNC | O_CREAT, 0644)) != -1) {
 			ssize_t rc;
-			if ((rc = write(fd, resp->body, resp->content_length)) != (ssize_t)resp->content_length)
+			if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
 				err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), dir, rc, errno);
 			close(fd);
 		} else
@@ -955,15 +955,15 @@ void download_part(DOWNLOADER *downloader)
 			if (msg->body) {
 				int fd;
 
-				log_printf("# body=%zd/%llu bytes\n", msg->content_length, (unsigned long long)part->length);
+				log_printf("# body=%zd/%llu bytes\n", msg->body->length, (unsigned long long)part->length);
 				if ((fd = open(job->name, O_WRONLY | O_CREAT, 0644)) != -1) {
 					if (lseek(fd, part->position, SEEK_SET) != -1) {
 						ssize_t nbytes;
 
-						if ((nbytes = write(fd, msg->body, msg->content_length)) == (ssize_t)msg->content_length)
+						if ((nbytes = write(fd, msg->body->data, msg->body->length)) == (ssize_t)msg->body->length)
 							part->done = 1; // set this when downloaded ok
 						else
-							err_printf(_("Failed to write %zd bytes (%zd)\n"), msg->content_length, nbytes);
+							err_printf(_("Failed to write %zd bytes (%zd)\n"), msg->body->length, nbytes);
 					} else err_printf(_("Failed to lseek to %llu\n"), (unsigned long long)part->position);
 					close(fd);
 				} else err_printf(_("Failed to write open %s\n"), job->name);
