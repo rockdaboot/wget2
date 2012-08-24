@@ -32,7 +32,7 @@
 
 #include "mget.h"
 
-#define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0);
+#define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 //#define xfree(a) xfree(&((void *)(a)))
 //void xfree(void **ptr);
 

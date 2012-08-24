@@ -38,6 +38,7 @@
 	#define CONST __attribute__ ((const))
 	#define NORETURN __attribute__ ((noreturn))
 	#define NONNULL(...) __attribute__ ((nonnull(__VA_ARGS__)))
+	#define NONNULL_ALL __attribute__ ((nonnull))
 	#define PRINTF_FORMAT(a,b) __attribute__ ((format (printf, a, b)))
 	#define DEPRECATED __attribute__ ((deprecated))
 	#define MALLOC __attribute__ ((malloc))
@@ -52,6 +53,7 @@
 	#define CONST
 	#define NORETURN
 	#define NONNULL
+	#define NONNULL_ALL
 	#define PRINTF_FORMAT(a,b)
 	#define DEPRECATED
 	#define MALLOC

@@ -31,6 +31,7 @@
 #define _MGET_IRI_H
 
 #include <stddef.h>
+#include "buffer.h"
 
 extern const char
 	* const iri_schemes[];
@@ -65,7 +66,7 @@ int
 IRI
 	*iri_parse(const char *s);
 char
-	*iri_get_connection_part(IRI *iri, char *tag, size_t tagsize),
-	*iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_t len, char *dst, size_t dst_size);
+	*iri_get_connection_part(IRI *iri, char *tag, size_t tagsize) NONNULL_ALL,
+	*iri_relative_to_absolute(IRI *base, const char *tag, const char *val, size_t len, buffer_t *buf) NONNULL_ALL;
 
 #endif /* _MGET_IRI_H */

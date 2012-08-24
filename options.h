@@ -57,6 +57,7 @@ extern struct config
 	config;
 
 int
-	init(int argc, const char *const *argv);
+	init(int argc, const char *const *argv),
+	selftest_options(void);
 
 #endif /* _MGET_OPTIONS_H */

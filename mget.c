@@ -718,6 +718,8 @@ struct html_context {
 		*iri;
 	const char
 		*tag;
+	buffer_t
+		uri_buf;
 	int
 		sockfd;
 };
@@ -736,14 +738,15 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 
 			if (len > 1 || (len == 1 && *val != '#')) {
 				// ignore e.g. href='#'
-				char uri_buf[1024];
-				const char *uri =
-					iri_relative_to_absolute(ctx->iri, ctx->tag, val, strlen(val), uri_buf, sizeof(uri_buf));
+//				char uri_buf[1024];
+//				const char *uri =
+//					iri_relative_to_absolute(ctx->iri, ctx->tag, val, strlen(val), uri_buf, sizeof(uri_buf));
+					iri_relative_to_absolute(ctx->iri, ctx->tag, val, strlen(val), &ctx->uri_buf);
 
-				dprintf(ctx->sockfd, "add uri %s\n", uri);
+				dprintf(ctx->sockfd, "add uri %s\n", ctx->uri_buf.data);
 
-				if (uri != uri_buf)
-					xfree(uri);
+//				if (uri != uri_buf)
+//					xfree(uri);
 			}
 		}
 	}
@@ -755,11 +758,15 @@ void html_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char tag_buf[1024];
+	char uri_buf[1024];
 	struct html_context context = { .iri = iri, .sockfd = sockfd };
 
 	context.tag = iri_get_connection_part(iri, tag_buf, sizeof(tag_buf));
+	buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
 
 	html_parse_buffer(resp->body->data, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
+
+	buffer_deinit(&context.uri_buf);
 
 	if (context.tag != tag_buf)
 		xfree(context.tag);
@@ -770,6 +777,8 @@ struct css_context {
 		*iri;
 	const char
 		*tag;
+	buffer_t
+		uri_buf;
 	int
 		sockfd;
 };
@@ -780,14 +789,15 @@ static void _css_parse(void *context, const char *url, size_t len)
 
 	if (len > 1 || (len == 1 && *url != '#')) {
 		// ignore e.g. href='#'
-		char uri_buf[1024];
-		const char *uri =
-			iri_relative_to_absolute(ctx->iri, ctx->tag, url, len, uri_buf, sizeof(uri_buf));
+//		char uri_buf[1024];
+//		const char *uri =
+//			iri_relative_to_absolute(ctx->iri, ctx->tag, url, len, uri_buf, sizeof(uri_buf));
+			iri_relative_to_absolute(ctx->iri, ctx->tag, url, len, &ctx->uri_buf);
 
-		dprintf(ctx->sockfd, "add uri %s\n", uri);
+		dprintf(ctx->sockfd, "add uri %s\n", ctx->uri_buf.data);
 
-		if (uri != uri_buf)
-			xfree(uri);
+//		if (uri != uri_buf)
+//			xfree(uri);
 	}
 	// add_uri(ctx->sockfd, ctx->iri, ctx->tag, url, len);
 }
@@ -796,11 +806,15 @@ void css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char tag_buf[1024];
+	char uri_buf[1024];
 	struct css_context context = { .iri = iri, .sockfd = sockfd };
 
 	context.tag = iri_get_connection_part(iri, tag_buf, sizeof(tag_buf));;
+	buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
 
 	css_parse_buffer(resp->body->data, _css_parse, &context);
+
+	buffer_deinit(&context.uri_buf);
 
 	if (context.tag != tag_buf)
 		xfree(context.tag);
@@ -983,6 +997,10 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 	HTTP_RESPONSE *resp = NULL;
 	int max_redirect = 3;
 	const char *location = NULL;
+	char uri_buf_static[1024];
+	buffer_t uri_buf;
+
+	buffer_init(&uri_buf, uri_buf_static, sizeof(uri_buf_static));
 
 	while (use_iri) {
 		if (!downloader->conn) {
@@ -1068,12 +1086,15 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 		if (resp->location) {
 			char tag_buf[1024];
 			const char *tag = iri_get_connection_part(use_iri, tag_buf, sizeof(tag_buf));
-			char uri_buf[1024];
-			const char *uri = iri_relative_to_absolute(
-				use_iri, tag, resp->location, strlen(resp->location), uri_buf, sizeof(uri_buf));
+//			char uri_buf[1024];
+//			const char *uri;
 
-			if (tag != tag_buf)
-				xfree(tag);
+			iri_relative_to_absolute(
+				use_iri, tag, resp->location, strlen(resp->location), &uri_buf);
+//				use_iri, tag, resp->location, strlen(resp->location), uri_buf, sizeof(uri_buf));
+
+//			if (tag != tag_buf)
+//				xfree(tag);
 
 			location = resp->location;
 			resp->location = NULL;
@@ -1081,10 +1102,11 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			if (use_iri != iri)
 				iri_free(&use_iri);
 
-			use_iri = iri_parse(uri);
+			use_iri = iri_parse(uri_buf.data);
 
-			if (uri != uri_buf)
-				xfree(uri);
+			buffer_deinit(&uri_buf);
+//			if (uri != uri_buf)
+//				xfree(uri);
 		} else {
 			if (use_iri != iri)
 				iri_free(&use_iri);

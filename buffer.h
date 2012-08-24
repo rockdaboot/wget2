@@ -17,7 +17,7 @@
  * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Header file for memory buffer routines
+ * Header file for memory/string buffer routines
  *
  * Changelog
  * 22.08.2012  Tim Ruehsen  created
@@ -31,25 +31,30 @@
 
 typedef struct {
 	char
-		*data;
+		*data; // pointer to internal memory
 	size_t
-		length;
+		length; // number of bytes in 'data'
 	size_t
-		size;
-	char
-		allocated;
+		size; // capacity of 'data' (terminating 0 byte doesn't count here)
+	unsigned int
+		release_data : 1, // 'data' has been malloc'ed and must be freed
+		release_buf : 1; // buffer_t structure has been malloc'ed and must be freed
 } buffer_t;
 
 
 buffer_t
+	*buffer_init(buffer_t *buf, char *data, size_t size),
 	*buffer_alloc(size_t size);
 void
-	buffer_init(buffer_t *buf, char *data, size_t size),
 	buffer_ensure_capacity(buffer_t *buf, size_t size),
+	buffer_deinit(buffer_t *buf),
 	buffer_free(buffer_t **buf),
 	buffer_free_data(buffer_t *buf);
-int
-	buffer_append(buffer_t *buf, const void *data, size_t length);
+size_t
+	buffer_memcpy(buffer_t *buf, const void *data, size_t length),
+	buffer_memcat(buffer_t *buf, const void *data, size_t length),
+	buffer_strcpy(buffer_t *buf, const char *s),
+	buffer_strcat(buffer_t *buf, const char *s);
 
 
 #endif /* _MGET_BUFFER_H */

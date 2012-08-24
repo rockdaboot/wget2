@@ -1141,7 +1141,7 @@ cleanup:
 
 static int _get_body(void *userdata, const char *data, size_t length)
 {
-	buffer_append((buffer_t *)userdata, data, length);
+	buffer_memcat((buffer_t *)userdata, data, length);
 
 	return 0;
 }

@@ -34,26 +34,44 @@
 //#define ALIGNMENT 16
 //#define PADDING(n) ((n) + (ALIGNMENT - (n)%ALIGNMENT))
 
-void buffer_init(buffer_t *buf, char *data, size_t size)
+static buffer_t *_buffer_init(buffer_t *buf, char *data, size_t size)
 {
-	buf->data = data;
-	buf->length = 0;
-	buf->size = size;
-	buf->allocated = 0;
-
-	if (buf->data)
+	if (data) {
+		if (likely(size))
+			buf->size = size - 1;
+		buf->data = data;
+		buf->release_data = 0;
 		*buf->data = 0; // always 0 terminate data to allow string functions
+	} else if (likely(size)) {
+		buf->size = size;
+		buf->data = xmalloc(size + 1);
+		buf->release_data = 1;
+		*buf->data = 0; // always 0 terminate data to allow string functions
+	} else {
+		buf->size = 0;
+		buf->data = NULL;
+		buf->release_data = 0;
+	}
+
+	buf->length = 0;
+
+	return buf;
+}
+
+buffer_t *buffer_init(buffer_t *buf, char *data, size_t size)
+{
+	if (!buf) {
+		buf = xmalloc(sizeof(buffer_t));
+		buf->release_buf = 1;
+	} else
+		buf->release_buf = 0;
+
+	return _buffer_init(buf, data, size);
 }
 
 buffer_t *buffer_alloc(size_t size)
 {
-	buffer_t *buf = xmalloc(sizeof(buffer_t));
-
-	buffer_init(buf, xmalloc(size + 1), size);
-
-	buf->allocated = 1;
-
-	return buf;
+	return buffer_init(NULL, NULL, size);
 }
 
 static void _buffer_realloc(buffer_t *buf, size_t size)
@@ -63,13 +81,18 @@ static void _buffer_realloc(buffer_t *buf, size_t size)
 	buf->size = buf->size ? (size / buf->size + 1) * buf->size : size;
 	buf->data = xmalloc(buf->size + 1);
 
-	if (old_data) {
+	if (likely(old_data)) {
 		if (buf->length)
-			memcpy(buf->data, old_data, buf->length);
-		xfree(old_data);
-	}
+			memcpy(buf->data, old_data, buf->length + 1);
+		else
+			*buf->data = 0; // always 0 terminate data to allow string functions
 
-	*buf->data = 0; // always 0 terminate data to allow string functions
+		if (buf->release_data)
+			xfree(old_data);
+	} else
+		*buf->data = 0; // always 0 terminate data to allow string functions
+
+	buf->release_data = 1;
 }
 
 void buffer_ensure_capacity(buffer_t *buf, size_t size)
@@ -80,31 +103,72 @@ void buffer_ensure_capacity(buffer_t *buf, size_t size)
 
 void buffer_free(buffer_t **buf)
 {
-	if (buf && *buf) {
-		xfree((*buf)->data);
-		(*buf)->size = (*buf)->length = 0;
+	if (likely(buf && *buf)) {
+		if ((*buf)->release_data)
+			xfree((*buf)->data);
 
-		if ((*buf)->allocated)
+		if ((*buf)->release_buf)
 			xfree(*buf);
 	}
 }
 
+void buffer_deinit(buffer_t *buf)
+{
+	buffer_free(&buf);
+}
+
 void buffer_free_data(buffer_t *buf)
 {
-	if (buf) {
-		xfree(buf->data);
-		buf->size = buf->length = 0;
+	if (likely(buf)) {
+		if (buf->release_data)
+			xfree(buf->data);
 	}
 }
 
-int buffer_append(buffer_t *buf, const void *data, size_t length)
+size_t buffer_memcpy(buffer_t *buf, const void *data, size_t length)
 {
-	if (buf->size < buf->length + length)
-		_buffer_realloc(buf, buf->length + length);
+	buf->length = 0;
 
-	memcpy(buf->data + buf->length, data, length);
-	buf->length += length;
-	buf->data[buf->length] = 0; // always 0 terminate data to allow string functions
+	return buffer_memcat(buf, data, length);
+}
 
-	return 0;
+size_t buffer_memcat(buffer_t *buf, const void *data, size_t length)
+{
+	if (likely(data)) {
+		if (likely(length)) {
+			if (unlikely(buf->size < buf->length + length))
+				_buffer_realloc(buf, buf->length + length);
+
+			memcpy(buf->data + buf->length, data, length);
+			buf->length += length;
+		}
+		buf->data[buf->length] = 0; // always 0 terminate data to allow string functions
+	}
+
+	return buf->length;
+}
+
+size_t buffer_strcpy(buffer_t *buf, const char *s)
+{
+	buf->length = 0;
+
+	return buffer_strcat(buf, s);
+}
+
+size_t buffer_strcat(buffer_t *buf, const char *s)
+{
+	if (likely(s)) {
+		size_t length = strlen(s);
+
+		if (likely(length)) {
+			if (unlikely(buf->size < buf->length + length))
+				_buffer_realloc(buf, buf->length + length);
+
+			strcpy(buf->data + buf->length, s);
+			buf->length += length;
+		} else
+			buf->data[buf->length] = 0;
+	}
+
+	return buf->length;
 }

@@ -41,11 +41,105 @@
 #include "../xml.h"
 #include "../iri.h"
 #include "../log.h"
+#include "../net.h"
 #include "../vector.h"
+#include "../buffer.h"
 
 static int
 	ok,
 	failed;
+
+static void _test_buffer(buffer_t *buf, const char *name)
+{
+	char test[256];
+	int it;
+
+	for (it = 0; it < sizeof(test)-1; it++) {
+		test[it] = 'a' + it % 26;
+		test[it + 1] = 0;
+
+		buffer_strcpy(buf, test);
+		buffer_strcat(buf, test);
+
+		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1))
+			ok++;
+		else
+			info_printf("test_buffer '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
+
+		buffer_memcpy(buf, test, it + 1);
+		buffer_memcat(buf, test, it + 1);
+
+		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1))
+			ok++;
+		else
+			info_printf("test_buffer '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
+	}
+}
+
+static void test_buffer(void)
+{
+	char buf_static[16];
+	buffer_t buf, *bufp;
+
+	// testing buffer on stack, using initial stack memory
+	// without resizing
+
+	buffer_init(&buf, buf_static, sizeof(buf_static));
+	buffer_deinit(&buf);
+
+	// testing buffer on stack, using initial stack memory
+	// with resizing
+
+	buffer_init(&buf, buf_static, sizeof(buf_static));
+	_test_buffer(&buf, "Test 1");
+	buffer_deinit(&buf);
+
+	// testing buffer on stack, using initial heap memory
+	// without resizing
+
+	buffer_init(&buf, NULL, 16);
+	buffer_deinit(&buf);
+
+	// testing buffer on stack, using initial heap memory
+	// with resizing
+
+	buffer_init(&buf, NULL, 16);
+	_test_buffer(&buf, "Test 2");
+	buffer_deinit(&buf);
+
+	// testing buffer on heap, using initial stack memory
+	// without resizing
+
+	bufp = buffer_init(NULL, buf_static, sizeof(buf_static));
+	buffer_deinit(bufp);
+
+	bufp = buffer_init(NULL, buf_static, sizeof(buf_static));
+	buffer_free(&bufp);
+
+	// testing buffer on heap, using initial stack memory
+	// with resizing
+
+	bufp = buffer_init(NULL, buf_static, sizeof(buf_static));
+	_test_buffer(bufp, "Test 3");
+	buffer_deinit(bufp);
+
+	bufp = buffer_init(NULL, buf_static, sizeof(buf_static));
+	_test_buffer(bufp, "Test 4");
+	buffer_free(&bufp);
+
+	// testing buffer on heap, using initial heap memory
+	// without resizing
+
+	bufp = buffer_alloc(16);
+	buffer_free(&bufp);
+
+	// testing buffer on heap, using initial heap memory
+	// with resizing
+
+	bufp = buffer_alloc(16);
+	_test_buffer(bufp, "Test 5");
+	buffer_free(&bufp);
+}
 
 static void test_iri_parse(void)
 {
@@ -112,94 +206,280 @@ static void test_iri_parse(void)
 
 static void test_iri_relative_to_absolute(void)
 {
-#define HOST "http://example.com"
-
-	const struct iri_test_data {
+	static const struct iri_test_data {
 		const char
+			*base,
 			*relative,
 			*result;
 	} test_data[] = {
-		{ "",                       "" },
-		{ ".",                      "" },
-		{ "./",                     "" },
-		{ "..",                     "" },
-		{ "../",                    "" },
-		{ "foo",                    "foo" },
-		{ "foo/bar",                "foo/bar" },
-		{ "foo///bar",              "foo/bar" },
-		{ "foo/.",                  "foo/" },
-		{ "foo/./",                 "foo/" },
-		{ "foo./",                  "foo./" },
-		{ "foo/../bar",             "bar" },
-		{ "foo/../bar/",            "bar/" },
-		{ "foo/bar/..",             "foo/" },
-		{ "foo/bar/../x",           "foo/x" },
-		{ "foo/bar/../x/",          "foo/x/" },
-		{ "foo/..",                 "" },
-		{ "foo/../..",              "" },
-		{ "foo/../../..",           "" },
-		{ "foo/../../bar/../../baz", "baz" },
-		{ "a/b/../../c",            "c" },
-		{ "./a/../b",               "b" },
-		{ "/",                       "" },
-		{ "/.",                      "" },
-		{ "/./",                     "" },
-		{ "/..",                     "" },
-		{ "/../",                    "" },
-		{ "/foo",                    "foo" },
-		{ "/foo/bar",                "foo/bar" },
-		{ "/foo///bar",              "foo/bar" },
-		{ "/foo/.",                  "foo/" },
-		{ "/foo/./",                 "foo/" },
-		{ "/foo./",                  "foo./" },
-		{ "/foo/../bar",             "bar" },
-		{ "/foo/../bar/",            "bar/" },
-		{ "/foo/bar/..",             "foo/" },
-		{ "/foo/bar/../x",           "foo/x" },
-		{ "/foo/bar/../x/",          "foo/x/" },
-		{ "/foo/..",                 "" },
-		{ "/foo/../..",              "" },
-		{ "/foo/../../..",           "" },
-		{ "/foo/../../bar/../../baz", "baz" },
-		{ "/a/b/../../c",            "c" },
-		{ "/./a/../b",               "b" },
-		{ ".x",                      ".x" },
-		{ "..x",                     "..x" },
-		{ "foo/.x",                  "foo/.x" },
-		{ "foo/bar/.x",              "foo/bar/.x" },
-		{ "foo/..x",                 "foo/..x" },
-		{ "foo/bar/..x",             "foo/bar/..x" },
-		{ "/x.php?y=ftp://example.com/&z=1_2", "x.php?y=ftp://example.com/&z=1_2" }
+#define H1 "http://x.tld"
+		{ H1, "", H1"/" },
+		{ H1, ".", H1"/" },
+		{ H1, "./", H1"/" },
+		{ H1, "..", H1"/" },
+		{ H1, "../", H1"/" },
+		{ H1, "foo", H1"/foo" },
+		{ H1, "foo/bar", H1"/foo/bar" },
+		{ H1, "foo///bar", H1"/foo/bar" },
+		{ H1, "foo/.", H1"/foo/" },
+		{ H1, "foo/./", H1"/foo/" },
+		{ H1, "foo./", H1"/foo./" },
+		{ H1, "foo/../bar", H1"/bar" },
+		{ H1, "foo/../bar/", H1"/bar/" },
+		{ H1, "foo/bar/..", H1"/foo/" },
+		{ H1, "foo/bar/../x", H1"/foo/x" },
+		{ H1, "foo/bar/../x/", H1"/foo/x/" },
+		{ H1, "foo/..", H1"/" },
+		{ H1, "foo/../..", H1"/" },
+		{ H1, "foo/../../..", H1"/" },
+		{ H1, "foo/../../bar/../../baz", H1"/baz" },
+		{ H1, "a/b/../../c", H1"/c" },
+		{ H1, "./a/../b", H1"/b" },
+		{ H1, "/", H1"/" },
+		{ H1, "/.", H1"/" },
+		{ H1, "/./", H1"/" },
+		{ H1, "/..", H1"/" },
+		{ H1, "/../", H1"/" },
+		{ H1, "/foo", H1"/foo" },
+		{ H1, "/foo/bar", H1"/foo/bar" },
+		{ H1, "/foo///bar", H1"/foo/bar" },
+		{ H1, "/foo/.", H1"/foo/" },
+		{ H1, "/foo/./", H1"/foo/" },
+		{ H1, "/foo./", H1"/foo./" },
+		{ H1, "/foo/../bar", H1"/bar" },
+		{ H1, "/foo/../bar/", H1"/bar/" },
+		{ H1, "/foo/bar/..", H1"/foo/" },
+		{ H1, "/foo/bar/../x", H1"/foo/x" },
+		{ H1, "/foo/bar/../x/", H1"/foo/x/" },
+		{ H1, "/foo/..", H1"/" },
+		{ H1, "/foo/../..", H1"/" },
+		{ H1, "/foo/../../..", H1"/" },
+		{ H1, "/foo/../../bar/../../baz", H1"/baz" },
+		{ H1, "/a/b/../../c", H1"/c" },
+		{ H1, "/./a/../b", H1"/b" },
+		{ H1, ".x", H1"/.x" },
+		{ H1, "..x", H1"/..x" },
+		{ H1, "foo/.x", H1"/foo/.x" },
+		{ H1, "foo/bar/.x", H1"/foo/bar/.x" },
+		{ H1, "foo/..x", H1"/foo/..x" },
+		{ H1, "foo/bar/..x", H1"/foo/bar/..x" },
+		{ H1, "/x.php?y=ftp://example.com/&z=1_2", H1"/x.php?y=ftp://example.com/&z=1_2" },
+		{ H1, "//x.y.com/", "http://x.y.com/" },
+		{ H1, "http://x.y.com/", "http://x.y.com/" },
+#undef H1
+#define H1 "http://x.tld/"
+		{ H1, "", H1"" },
+		{ H1, ".", H1"" },
+		{ H1, "./", H1"" },
+		{ H1, "..", H1"" },
+		{ H1, "../", H1"" },
+		{ H1, "foo", H1"foo" },
+		{ H1, "foo/bar", H1"foo/bar" },
+		{ H1, "foo///bar", H1"foo/bar" },
+		{ H1, "foo/.", H1"foo/" },
+		{ H1, "foo/./", H1"foo/" },
+		{ H1, "foo./", H1"foo./" },
+		{ H1, "foo/../bar", H1"bar" },
+		{ H1, "foo/../bar/", H1"bar/" },
+		{ H1, "foo/bar/..", H1"foo/" },
+		{ H1, "foo/bar/../x", H1"foo/x" },
+		{ H1, "foo/bar/../x/", H1"foo/x/" },
+		{ H1, "foo/..", H1"" },
+		{ H1, "foo/../..", H1"" },
+		{ H1, "foo/../../..", H1"" },
+		{ H1, "foo/../../bar/../../baz", H1"baz" },
+		{ H1, "a/b/../../c", H1"c" },
+		{ H1, "./a/../b", H1"b" },
+		{ H1, "/", H1"" },
+		{ H1, "/.", H1"" },
+		{ H1, "/./", H1"" },
+		{ H1, "/..", H1"" },
+		{ H1, "/../", H1"" },
+		{ H1, "/foo", H1"foo" },
+		{ H1, "/foo/bar", H1"foo/bar" },
+		{ H1, "/foo///bar", H1"foo/bar" },
+		{ H1, "/foo/.", H1"foo/" },
+		{ H1, "/foo/./", H1"foo/" },
+		{ H1, "/foo./", H1"foo./" },
+		{ H1, "/foo/../bar", H1"bar" },
+		{ H1, "/foo/../bar/", H1"bar/" },
+		{ H1, "/foo/bar/..", H1"foo/" },
+		{ H1, "/foo/bar/../x", H1"foo/x" },
+		{ H1, "/foo/bar/../x/", H1"foo/x/" },
+		{ H1, "/foo/..", H1"" },
+		{ H1, "/foo/../..", H1"" },
+		{ H1, "/foo/../../..", H1"" },
+		{ H1, "/foo/../../bar/../../baz", H1"baz" },
+		{ H1, "/a/b/../../c", H1"c" },
+		{ H1, "/./a/../b", H1"b" },
+		{ H1, ".x", H1".x" },
+		{ H1, "..x", H1"..x" },
+		{ H1, "foo/.x", H1"foo/.x" },
+		{ H1, "foo/bar/.x", H1"foo/bar/.x" },
+		{ H1, "foo/..x", H1"foo/..x" },
+		{ H1, "foo/bar/..x", H1"foo/bar/..x" },
+		{ H1, "/x.php?y=ftp://example.com/&z=1_2", H1"x.php?y=ftp://example.com/&z=1_2" },
+		{ H1, "//x.y.com/", "http://x.y.com/" },
+		{ H1, "http://x.y.com/", "http://x.y.com/" },
+#undef H1
+#define H1 "http://x.tld/file"
+#define R1 "http://x.tld/"
+		{ H1, "", R1"" },
+		{ H1, ".", R1"" },
+		{ H1, "./", R1"" },
+		{ H1, "..", R1"" },
+		{ H1, "../", R1"" },
+		{ H1, "foo", R1"foo" },
+		{ H1, "foo/bar", R1"foo/bar" },
+		{ H1, "foo///bar", R1"foo/bar" },
+		{ H1, "foo/.", R1"foo/" },
+		{ H1, "foo/./", R1"foo/" },
+		{ H1, "foo./", R1"foo./" },
+		{ H1, "foo/../bar", R1"bar" },
+		{ H1, "foo/../bar/", R1"bar/" },
+		{ H1, "foo/bar/..", R1"foo/" },
+		{ H1, "foo/bar/../x", R1"foo/x" },
+		{ H1, "foo/bar/../x/", R1"foo/x/" },
+		{ H1, "foo/..", R1"" },
+		{ H1, "foo/../..", R1"" },
+		{ H1, "foo/../../..", R1"" },
+		{ H1, "foo/../../bar/../../baz", R1"baz" },
+		{ H1, "a/b/../../c", R1"c" },
+		{ H1, "./a/../b", R1"b" },
+		{ H1, "/", R1"" },
+		{ H1, "/.", R1"" },
+		{ H1, "/./", R1"" },
+		{ H1, "/..", R1"" },
+		{ H1, "/../", R1"" },
+		{ H1, "/foo", R1"foo" },
+		{ H1, "/foo/bar", R1"foo/bar" },
+		{ H1, "/foo///bar", R1"foo/bar" },
+		{ H1, "/foo/.", R1"foo/" },
+		{ H1, "/foo/./", R1"foo/" },
+		{ H1, "/foo./", R1"foo./" },
+		{ H1, "/foo/../bar", R1"bar" },
+		{ H1, "/foo/../bar/", R1"bar/" },
+		{ H1, "/foo/bar/..", R1"foo/" },
+		{ H1, "/foo/bar/../x", R1"foo/x" },
+		{ H1, "/foo/bar/../x/", R1"foo/x/" },
+		{ H1, "/foo/..", R1"" },
+		{ H1, "/foo/../..", R1"" },
+		{ H1, "/foo/../../..", R1"" },
+		{ H1, "/foo/../../bar/../../baz", R1"baz" },
+		{ H1, "/a/b/../../c", R1"c" },
+		{ H1, "/./a/../b", R1"b" },
+		{ H1, ".x", R1".x" },
+		{ H1, "..x", R1"..x" },
+		{ H1, "foo/.x", R1"foo/.x" },
+		{ H1, "foo/bar/.x", R1"foo/bar/.x" },
+		{ H1, "foo/..x", R1"foo/..x" },
+		{ H1, "foo/bar/..x", R1"foo/bar/..x" },
+		{ H1, "/x.php?y=ftp://example.com/&z=1_2", R1"x.php?y=ftp://example.com/&z=1_2" },
+		{ H1, "//x.y.com/", "http://x.y.com/" },
+		{ H1, "http://x.y.com/", "http://x.y.com/" },
+#undef H1
+#undef R1
+#define H1 "http://x.tld/dir/"
+#define R1 "http://x.tld/"
+		{ H1, "", H1"" },
+		{ H1, ".", H1"" },
+		{ H1, "./", H1"" },
+		{ H1, "..", R1"" },
+		{ H1, "../", R1"" },
+		{ H1, "foo", H1"foo" },
+		{ H1, "foo/bar", H1"foo/bar" },
+		{ H1, "foo///bar", H1"foo/bar" },
+		{ H1, "foo/.", H1"foo/" },
+		{ H1, "foo/./", H1"foo/" },
+		{ H1, "foo./", H1"foo./" },
+		{ H1, "foo/../bar", H1"bar" },
+		{ H1, "foo/../bar/", H1"bar/" },
+		{ H1, "foo/bar/..", H1"foo/" },
+		{ H1, "foo/bar/../x", H1"foo/x" },
+		{ H1, "foo/bar/../x/", H1"foo/x/" },
+		{ H1, "foo/..", H1"" },
+		{ H1, "foo/../..", R1"" },
+		{ H1, "foo/../../..", R1"" },
+		{ H1, "foo/../../bar/../../baz", R1"baz" },
+		{ H1, "a/b/../../c", H1"c" },
+		{ H1, "./a/../b", H1"b" },
+		{ H1, "/", R1"" },
+		{ H1, "/.", R1"" },
+		{ H1, "/./", R1"" },
+		{ H1, "/..", R1"" },
+		{ H1, "/../", R1"" },
+		{ H1, "/foo", R1"foo" },
+		{ H1, "/foo/bar", R1"foo/bar" },
+		{ H1, "/foo///bar", R1"foo/bar" },
+		{ H1, "/foo/.", R1"foo/" },
+		{ H1, "/foo/./", R1"foo/" },
+		{ H1, "/foo./", R1"foo./" },
+		{ H1, "/foo/../bar", R1"bar" },
+		{ H1, "/foo/../bar/", R1"bar/" },
+		{ H1, "/foo/bar/..", R1"foo/" },
+		{ H1, "/foo/bar/../x", R1"foo/x" },
+		{ H1, "/foo/bar/../x/", R1"foo/x/" },
+		{ H1, "/foo/..", R1"" },
+		{ H1, "/foo/../..", R1"" },
+		{ H1, "/foo/../../..", R1"" },
+		{ H1, "/foo/../../bar/../../baz", R1"baz" },
+		{ H1, "/a/b/../../c", R1"c" },
+		{ H1, "/./a/../b", R1"b" },
+		{ H1, ".x", H1".x" },
+		{ H1, "..x", H1"..x" },
+		{ H1, "foo/.x", H1"foo/.x" },
+		{ H1, "foo/bar/.x", H1"foo/bar/.x" },
+		{ H1, "foo/..x", H1"foo/..x" },
+		{ H1, "foo/bar/..x", H1"foo/bar/..x" },
+		{ H1, "/x.php?y=ftp://example.com/&z=1_2", R1"x.php?y=ftp://example.com/&z=1_2" },
+		{ H1, "//x.y.com/", "http://x.y.com/" },
+		{ H1, "http://x.y.com/", "http://x.y.com/" }
+#undef H1
+#undef R1
 	};
 	size_t it;
-	IRI *iri = iri_parse(HOST);
-	char tag_buf[64];
-	const char *tag = iri_get_connection_part(iri, tag_buf, sizeof(tag_buf));
+	char tag_buf[16];
+	const char *tag;
+	char uri_buf_static[32]; // use a size that forces allocation in some cases
+	buffer_t *uri_buf = 	buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
+	IRI *base;
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
 
-		{
-			char uri_buf[32]; // use a size that forces allocation in some cases
-			const char *uri = iri_relative_to_absolute(
-				iri, tag, t->relative, strlen(t->relative), uri_buf, sizeof(uri_buf));
+		base = iri_parse(t->base);
+		tag = iri_get_connection_part(base, tag_buf, sizeof(tag_buf));
 
-			if (!strcmp(uri + sizeof(HOST), t->result))
-				ok++;
-			else {
-				failed++;
-				info_printf("Failed [%zu]: %s -> %s (expected %s/%s)\n", it, t->relative, uri, HOST, t->result);
-			}
+		iri_relative_to_absolute(base, tag, t->relative, strlen(t->relative), uri_buf);
 
-			if (uri != uri_buf)
-				xfree(uri);
+		if (!strcmp(uri_buf->data, t->result))
+			ok++;
+		else {
+			failed++;
+			info_printf("Failed [%zu]: %s+%s -> %s (expected %s)\n", it, t->base, t->relative, uri_buf->data, t->result);
 		}
+/*
+		if (!strncmp(t->relative, "http:", 5) && !strcmp(uri_buf->data, t->result))
+			ok++;
+		else if (!strncmp(t->relative, "//", 2) && !strcmp(uri_buf->data, t->result))
+			ok++;
+		else if (HOST[sizeof(HOST)-2] == '/' && !strcmp(uri_buf->data + sizeof(HOST) - 1, t->result))
+			ok++;
+		else if (!strcmp(uri_buf->data + sizeof(HOST), t->result))
+			ok++;
+		else {
+			failed++;
+			info_printf("Failed [%zu]: %zu '%s' '%s'\n", it, sizeof(HOST), uri_buf->data + sizeof(HOST) - 1, t->result);
+			info_printf("Failed [%zu]: %s -> %s (expected %s/%s)\n", it, t->relative, uri_buf->data, HOST, t->result);
+		}
+*/
+		if (tag != tag_buf)
+			xfree(tag);
+
+		iri_free(&base);
 	}
 
-	if (tag != tag_buf)
-		xfree(tag);
-
-	iri_free(&iri);
+	buffer_free(&uri_buf);
 }
 
 static void css_dump(UNUSED void *user_ctx, const char *url, size_t len)
@@ -222,7 +502,7 @@ static void test_parser(void)
 			if (*dp->d_name == '.') continue;
 			if ((ext = strrchr(dp->d_name, '.'))) {
 				snprintf(fname, sizeof(fname), "files/%s", dp->d_name);
-				printf("parsing %s\n", fname);
+				info_printf("parsing %s\n", fname);
 				if (!strcasecmp(ext, ".xml")) {
 					xml_parse_file(fname, NULL, NULL, 0);
 					xml++;
@@ -238,7 +518,7 @@ static void test_parser(void)
 		closedir(dirp);
 	}
 
-	printf("%d XML, %d HTML and %d CSS files parsed\n", xml, html, css);
+	info_printf("%d XML, %d HTML and %d CSS files parsed\n", xml, html, css);
 }
 
 static void test_utils(void)
@@ -253,7 +533,7 @@ static void test_utils(void)
 			buffer_to_hex(src, 1, dst1, ndst);
 			snprintf(dst2, ndst, "%02x", src[0]);
 			if (strcmp(dst1, dst2)) {
-				printf("buffer_to_hex failed: '%s' instead of '%s' (ndst=%d)\n", dst1, dst2, ndst);
+				info_printf("buffer_to_hex failed: '%s' instead of '%s' (ndst=%d)\n", dst1, dst2, ndst);
 				failed++;
 				break;
 			}
@@ -316,23 +596,37 @@ static void test_vector(void)
 	vec_free(&v);
 }
 
-int main(void)
+int main(int argc, const char * const *argv)
 {
-//	config.debug = 1;
+	init(argc, argv); // allows us to test with options (e.g. with --debug)
 
 	srand(time(NULL));
+
+	// testing basic library functionality
+	test_buffer();
+	test_vector();
+	test_utils();
+
+	if (failed) {
+		info_printf("ERROR: %d out of %d basic tests failed\n", failed, ok + failed);
+		info_printf("This may completely break Mget functionality !!!\n");
+		return 1;
+	}
 
 	test_iri_parse();
 	test_iri_relative_to_absolute();
 	test_parser();
-	test_utils();
-	test_vector();
+
+	// free some resources to minimize valgrind output
+	tcp_set_dns_caching(0); // frees DNS cache
 
 	if (failed) {
-		printf("Summary: %d out of %d tests failed\n", failed, ok + failed);
+		info_printf("Summary: %d out of %d tests failed\n", failed, ok + failed);
 		return 1;
-	} else {
-		printf("Summary: All %d tests passed\n", ok + failed);
-		return 0;
 	}
+
+	selftest_options() ? failed++: ok++;
+
+	info_printf("Summary: All %d tests passed\n", ok + failed);
+	return 0;
 }

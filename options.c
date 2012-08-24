@@ -53,6 +53,7 @@
 #include "log.h"
 #include "net.h"
 #include "gnutls.h"
+#include "buffer.h"
 #include "options.h"
 
 typedef const struct option *option_t; // forward declaration
@@ -162,6 +163,9 @@ static int parse_timeout(option_t opt, UNUSED const char *const *argv, const cha
 			fval = -1;
 	}
 
+	if (fval < 0)
+		fval = -1;
+
 	if (opt->var) {
 		*((int *)opt->var) = fval;
 		// log_printf("timeout set to %gs\n",*((int *)opt->var)/1000.);
@@ -193,8 +197,8 @@ static const struct option options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a'},
-	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0},
 	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0},
+	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0},
 	{ "debug", &config.debug, parse_bool, 0, 'd'},
 	{ "dns-cache", &config.dns_caching, parse_bool, 0, 0},
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0},
@@ -241,8 +245,7 @@ static int set_long_option(const char *name, const char *value)
 	if (!opt)
 		err_printf_exit(_("Unknown option '%s'\n"), name);
 
-	// log_printf("opt=%p pos=%d\n",opt,pos);
-	log_printf("name=%s value=%s\n",opt->long_name,value);
+	log_printf("name=%s value=%s invert=%d\n", opt->long_name, value, invert);
 
 	if (opt->parser == parse_string && invert) {
 		// allow no-<string-option> to set value to NULL
@@ -266,8 +269,7 @@ static int set_long_option(const char *name, const char *value)
 		}
 		else {
 			if (opt->parser == parse_bool) {
-				if (value)
-					opt->parser(opt, NULL, value);
+				opt->parser(opt, NULL, value);
 
 				if (invert)
 					*((char *)opt->var) = !*((char *)opt->var); // invert boolean value
@@ -293,11 +295,12 @@ static int set_long_option(const char *name, const char *value)
 static void _read_config(const char *cfgfile, int expand)
 {
 	FILE *fp;
-	char *buf = NULL, linebuf[1024], *line = linebuf, *linep;
+	char *buf = NULL, linebuf_static[1024], *linep;
 	char name[64];
 	int append = 0, pos, found;
-	size_t bufsize = 0, linelen = 0, linesize = sizeof(linebuf);
+	size_t bufsize = 0, linelen = 0;
 	ssize_t len;
+	buffer_t linebuf;
 /*
 	if (expand) {
 		#include <wordexp.h>
@@ -345,6 +348,8 @@ static void _read_config(const char *cfgfile, int expand)
 		return;
 	}
 
+	buffer_init(&linebuf, linebuf_static, sizeof(linebuf_static));
+
 	if ((fp = fopen(cfgfile, "r")) == NULL) {
 		err_printf(_("Failed to open %s\n"), cfgfile);
 		return;
@@ -369,31 +374,19 @@ static void _read_config(const char *cfgfile, int expand)
 			len--;
 		linep[len] = 0;
 
-		if (append || linep[len - 1] == '\\') {
-			// append line to last one
-			if (linelen + len >= linesize) {
-				// don't use realloc here since it copies 'linesize' bytes,
-				// but we just need 'linelen' bytes
-				char *tmp = xmalloc((linesize *= 2));
-				if (line) {
-					memcpy(tmp, line, linelen);
-					if (line != linebuf)
-						xfree(line);
-				}
-				line = tmp;
-			}
-			strcpy(line + linelen, linep);
-			linelen += len;
-			linep = line;
-
-			if (linep[linelen - 1] == '\\') {
-				linep[--linelen] = 0;
+		if (linep[len - 1] == '\\') {
+			if (append) {
+				buffer_memcat(&linebuf, linep, len - 1);
+			} else {
+				buffer_memcpy(&linebuf, linep, len - 1);
 				append = 1;
-				continue;
-			} else
-				append = 0;
-		} else {
-			linelen = len;
+			}
+			continue;
+		} else if (append) {
+			buffer_strcat(&linebuf, linep);
+			append = 0;
+			linep = linebuf.data;
+			linelen = linebuf.length;
 		}
 
 		if (sscanf(linep, " %63[A-Za-z0-9-] %n", name, &pos) >= 1) {
@@ -441,8 +434,9 @@ static void _read_config(const char *cfgfile, int expand)
 
 		linelen = 0;
 	}
-	if (line != linebuf)
-		xfree(line);
+//	if (line != linebuf)
+//		xfree(line);
+	buffer_deinit(&linebuf);
 	xfree(buf);
 	fclose(fp);
 
@@ -467,9 +461,11 @@ static int parse_command_line(int argc, const char *const *argv)
 	int n;
 
 	// init the short option lookup table
-	for (it = 0; it < countof(options); it++) {
-		if (options[it].short_name > 0)
-			shortcut_to_option[(unsigned char)options[it].short_name] = it + 1;
+	if (!shortcut_to_option[0]) {
+		for (it = 0; it < countof(options); it++) {
+			if (options[it].short_name > 0)
+				shortcut_to_option[(unsigned char)options[it].short_name] = it + 1;
+		}
 	}
 
 	// I like the idea of getopt() but not it's implementation (e.g. global variables).
@@ -497,8 +493,8 @@ static int parse_command_line(int argc, const char *const *argv)
 
 				if (isalnum(argp[pos]) && (idx = shortcut_to_option[(unsigned char)argp[pos]])) {
 					opt = &options[idx - 1];
-					// info_printf("opt=%p [%c]\n",opt,argp[pos]);
-					// info_printf("name=%s\n",opt->long_name);
+//					info_printf("opt=%p [%c]\n",(void *)opt,argp[pos]);
+//					info_printf("name=%s\n",opt->long_name);
 					if (opt->args) {
 						const char *val;
 
@@ -507,6 +503,21 @@ static int parse_command_line(int argc, const char *const *argv)
 						val = argp[pos + 1] ? argp + pos + 1 : argv[++n];
 						n += opt->parser(opt, &argv[n], val);
 						break;
+/*
+					}
+					else if (opt->parser == parse_bool) {
+						const char *val;
+
+						if (argp[pos + 1]) {
+							opt->parser(opt, &argv[n], argp + pos + 1);
+							break;
+						} else if (argc > n + opt->args && argv[n+1][0] != '-')
+							val = argv[++n];
+						else
+							val = NULL;
+
+						opt->parser(opt, &argv[n], val);
+*/
 					} else
 						opt->parser(opt, &argv[n], NULL);
 				} else
@@ -587,4 +598,204 @@ int init(int argc, const char *const *argv)
 	ssl_set_check_certificate(config.check_certificate);
 
 	return n;
+}
+
+// self test some functions, called by using --self-test
+
+int selftest_options(void)
+{
+	int ret = 0;
+	size_t it;
+
+	// check if all options are available
+
+	for (it = 0; it < countof(options); it++) {
+		option_t opt = bsearch(options[it].long_name, options, countof(options), sizeof(options[0]), opt_compare);
+		if (!opt) {
+			err_printf("%s: Failed to find option '%s'\n", __func__, options[it].long_name);
+			ret = 1;
+		}
+	}
+
+	// test parsing boolean short and long option
+
+	{
+		static struct {
+			const char
+				*argv[3];
+			char
+				result;
+		} test_bool_short[] = {
+			{ { "", "-r", "-" }, 1 },
+		};
+
+		// save config values
+		char recursive = config.recursive;
+
+		for (it = 0; it < countof(test_bool_short); it++) {
+			config.recursive = 2; // invalid bool value
+			parse_command_line(3, test_bool_short[it].argv);
+			if (config.recursive != test_bool_short[it].result) {
+				err_printf("%s: Failed to parse bool short option #%zu (=%d)\n", __func__, it, config.recursive);
+				ret = 1;
+			}
+		}
+
+		static struct {
+			const char
+				*argv[2];
+			char
+				result;
+		} test_bool[] = {
+			{ { "", "--recursive" }, 1 },
+			{ { "", "--no-recursive" }, 0 },
+			{ { "", "--recursive=y" }, 1 },
+			{ { "", "--recursive=n" }, 0 },
+			{ { "", "--recursive=1" }, 1 },
+			{ { "", "--recursive=0" }, 0 },
+			{ { "", "--recursive=yes" }, 1 },
+			{ { "", "--recursive=no" }, 0 },
+			{ { "", "--recursive=on" }, 1 },
+			{ { "", "--recursive=off" }, 0 }
+		};
+
+		for (it = 0; it < countof(test_bool); it++) {
+			config.recursive = 2; // invalid bool value
+			parse_command_line(2, test_bool[it].argv);
+			if (config.recursive != test_bool[it].result) {
+				err_printf("%s: Failed to parse bool long option #%zu (%d)\n", __func__, it, config.recursive);
+				ret = 1;
+			}
+		}
+
+		// restore config values
+		config.recursive = recursive;
+	}
+
+	// test parsing timeout short and long option
+
+	{
+		static struct {
+			const char
+				*argv[3];
+			int
+				result;
+		} test_timeout_short[] = {
+			{ { "", "-T", "123" }, 123000 },
+			{ { "", "-T", "-1" }, -1 },
+			{ { "", "-T", "inf" }, -1 },
+			{ { "", "-T", "infinity" }, -1 },
+			{ { "", "-T", "0" }, -1 }, // -1 due to special wget compatibility
+			{ { "", "-T", "+123" }, 123000 },
+			{ { "", "-T", "60.2" }, 60200 },
+			{ { "", "-T123", "" }, 123000 },
+			{ { "", "-T-1", "" }, -1 },
+			{ { "", "-Tinf", "" }, -1 },
+			{ { "", "-Tinfinity", "" }, -1 },
+			{ { "", "-T0", "" }, -1 }, // -1 due to special wget compatibility
+			{ { "", "-T+123", "" }, 123000 },
+			{ { "", "-T60.2", "" }, 60200 }
+		};
+
+		// save config values
+		int dns_timeout = config.dns_timeout;
+		int connect_timeout = config.connect_timeout;
+		int read_timeout = config.read_timeout;
+
+		for (it = 0; it < countof(test_timeout_short); it++) {
+			config.dns_timeout = 555; // some value not used in test
+			parse_command_line(3, test_timeout_short[it].argv);
+			if (config.dns_timeout != test_timeout_short[it].result) {
+				err_printf("%s: Failed to parse timeout short option #%zu (=%d)\n", __func__, it, config.dns_timeout);
+				ret = 1;
+			}
+		}
+
+		static struct {
+			const char
+				*argv[3];
+			int
+				result;
+		} test_timeout[] = {
+			{ { "", "--timeout", "123" }, 123000 },
+			{ { "", "--timeout", "-1" }, -1 },
+			{ { "", "--timeout", "inf" }, -1 },
+			{ { "", "--timeout", "infinity" }, -1 },
+			{ { "", "--timeout", "0" }, -1 }, // -1 due to special wget compatibility
+			{ { "", "--timeout", "+123" }, 123000 },
+			{ { "", "--timeout", "60.2" }, 60200 },
+			{ { "", "--timeout=123", "" }, 123000 },
+			{ { "", "--timeout=-1", "" }, -1 },
+			{ { "", "--timeout=inf", "" }, -1 },
+			{ { "", "--timeout=infinity", "" }, -1 },
+			{ { "", "--timeout=0", "" }, -1 }, // -1 due to special wget compatibility
+			{ { "", "--timeout=+123", "" }, 123000 },
+			{ { "", "--timeout=60.2", "" }, 60200 }
+		};
+
+		for (it = 0; it < countof(test_timeout); it++) {
+			config.dns_timeout = 555;  // some value not used in test
+			parse_command_line(3, test_timeout[it].argv);
+			if (config.dns_timeout != test_timeout[it].result) {
+				err_printf("%s: Failed to parse timeout long option #%zu (%d)\n", __func__, it, config.dns_timeout);
+				ret = 1;
+			}
+		}
+
+		// restore config values
+		config.dns_timeout = dns_timeout;
+		config.connect_timeout = connect_timeout;
+		config.read_timeout = read_timeout;
+	}
+
+	// test parsing string short and long option
+
+	{
+		static struct {
+			const char
+				*argv[3];
+			const char
+				*result;
+		} test_string_short[] = {
+			{ { "", "-U", "hello" }, "hello" },
+			{ { "", "-Uhello", "" }, "hello" }
+		};
+
+		// save config values
+		const char *user_agent = config.user_agent;
+
+		for (it = 0; it < countof(test_string_short); it++) {
+			config.user_agent = NULL; // some value not used in test
+			parse_command_line(3, test_string_short[it].argv);
+			if (null_strcmp(config.user_agent, test_string_short[it].result)) {
+				err_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
+				ret = 1;
+			}
+		}
+
+		static struct {
+			const char
+				*argv[3];
+			const char
+				*result;
+		} test_string[] = {
+			{ { "", "--user-agent", "hello" }, "hello" },
+			{ { "", "--user-agent=hello", "" }, "hello" },
+			{ { "", "--no-user-agent", "" }, NULL }
+		};
+
+		for (it = 0; it < countof(test_string); it++) {
+			config.user_agent = NULL;  // some value not used in test
+			parse_command_line(3, test_string[it].argv);
+			if (null_strcmp(config.user_agent, test_string[it].result)) {
+				err_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
+				ret = 1;
+			}
+		}
+
+		// restore config values
+		config.user_agent = user_agent;
+	}
+
+	return ret;
 }
