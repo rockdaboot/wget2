@@ -64,7 +64,7 @@ int
 	iri_isreserved(char c),
 	iri_isunreserved(char c);
 IRI
-	*iri_parse(const char *s);
+	*iri_parse(const char *s) NONNULL_ALL;
 char
 	*iri_get_connection_part(IRI *iri, char *tag, size_t tagsize) NONNULL_ALL,
 	*iri_relative_to_absolute(IRI *base, const char *tag, const char *val, size_t len, buffer_t *buf) NONNULL_ALL;

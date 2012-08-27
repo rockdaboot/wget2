@@ -53,7 +53,7 @@
 #include "css.h"
 #include "options.h"
 #include "metalink.h"
-#include "gnutls.h"
+#include "ssl.h"
 
 typedef struct {
 	pthread_t

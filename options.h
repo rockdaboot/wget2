@@ -42,10 +42,19 @@ struct config {
 		*logfile,
 		*logfile_append,
 		*user_agent,
-		*output_document;
+		*output_document,
+		*ca_cert,
+		*ca_directory,
+		*cert_file,
+		*egd_file,
+		*private_key,
+		*random_file,
+		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
 	char
 		dns_caching,
 		check_certificate,
+		cert_type, // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
+		private_key_type, // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
 		span_hosts,
 		recursive,
 		verbose,
@@ -57,7 +66,7 @@ extern struct config
 	config;
 
 int
-	init(int argc, const char *const *argv),
+	init(int argc, const char *const *argv) NONNULL_ALL,
 	selftest_options(void);
 
 #endif /* _MGET_OPTIONS_H */

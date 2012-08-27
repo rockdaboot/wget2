@@ -52,7 +52,7 @@
 #include "utils.h"
 #include "log.h"
 #include "net.h"
-#include "gnutls.h"
+#include "ssl.h"
 #include "buffer.h"
 #include "options.h"
 
@@ -93,7 +93,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"  -d, --debug             Print debugging messages. (default: off)\n"
 		"  -o  --output-file       File where messages are printed to, '-' for STDOUT.\n"
 		"  -a  --append-output     File where messages are appended to, '-' for STDOUT.\n"
-		" \n"
+		"\n"
 		"Download:\n"
 		"  -r  --recursive         Recursive download. (default: off)\n"
 		"  -H  --span-hosts        Span hosts that where not given on the command line. (default: off)\n"
@@ -103,13 +103,23 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --dns-timeout       DNS lookup timeout in seconds.\n"
 		"      --connect-timeout   Connect timeout in seconds.\n"
 		"      --read-timeout      Read and write timeout in seconds.\n"
-		"      --dns-caching       Enable DNS cache (default: on).\n"
+		"      --dns-caching       Enable DNS cache. (default: on)\n"
 		"  -O  --output-document   File where downloaded content is written to, '-'  for STDOUT.\n"
-		" \n"
-		"HTTP/HTTPS related options:\n"
+		"\n"
+		"HTTP related options:\n"
 		"  -U  --user-agent        Set User-Agent: header in requests.\n"
+		"\n"
+		"HTTPS (SSL/TLS) related options:\n"
+		"      --secure-protocol   Set protocol to be used (auto, SSLv2, SSLv3 or TLSv1). (default: auto)\n"
 		"      --check-certificate Check the server's certificate. (default: on)\n"
-		" \n"
+		"      --certificate       File with client certificate.\n"
+		"      --private-key       File with private key.\n"
+		"      --private-key-type  Type of the private key (PEM or DER). (default: PEM)\n"
+		"      --ca-certificate    File with bundle of PEM CA certificates.\n"
+		"      --ca-directory      Directory with PEM CA certificates.\n"
+		"      --random-file       File to be used as source of random data.\n"
+		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
+		"\n"
 		);
 
 /*
@@ -122,7 +132,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 
 static int parse_integer(option_t opt, UNUSED const char *const *argv, const char *val)
 {
-	*((int *)opt->var) = atoi(val);
+	*((int *)opt->var) = val ? atoi(val) : 0;
 
 	return 0;
 }
@@ -179,6 +189,18 @@ static int parse_timeout(option_t opt, UNUSED const char *const *argv, const cha
 	return 0;
 }
 
+static int parse_cert_type(option_t opt, UNUSED const char *const *argv, const char *val)
+{
+	if (!val || !strcasecmp(val, "PEM"))
+		*((char *)opt->var) = SSL_X509_FMT_PEM;
+	else if (!strcasecmp(val, "DER") || !strcasecmp(val, "ASN1"))
+		*((char *)opt->var) = SSL_X509_FMT_DER;
+	else
+		err_printf_exit("Unknown cert type '%s'\n", val);
+
+	return 0;
+}
+
 // default values for config options (if not 0 or NULL)
 struct config
 config = {
@@ -190,26 +212,39 @@ config = {
 	.dns_caching = 1,
 	.user_agent = "Mget/"MGET_VERSION,
 	.verbose = 1,
-	.check_certificate=1
+	.check_certificate=1,
+	.cert_type = SSL_X509_FMT_PEM,
+	.private_key_type = SSL_X509_FMT_PEM,
+	.secure_protocol = "AUTO",
+	.ca_directory = "/etc/ssl/certs"
 };
 
 static const struct option options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a'},
+	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0},
+	{ "ca-directory", &config.ca_directory, parse_string, 1, 0},
+	{ "certificate", &config.cert_file, parse_string, 1, 0},
+	{ "certificate-type", &config.cert_type, parse_cert_type, 1, 0},
 	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0},
 	{ "debug", &config.debug, parse_bool, 0, 'd'},
 	{ "dns-cache", &config.dns_caching, parse_bool, 0, 0},
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0},
+	{ "egd-file", &config.egd_file, parse_string, 1, 0},
 	{ "help", NULL, print_help, 0, 'h'},
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0},
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0},
 	{ "output-document", &config.output_document, parse_string, 1, 'O'},
 	{ "output-file", &config.logfile, parse_string, 1, 'o'},
+	{ "private-key", &config.private_key, parse_string, 1, 0},
+	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0},
 	{ "quiet", &config.quiet, parse_bool, 0, 'q'},
+	{ "random-file", &config.random_file, parse_string, 1, 0},
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0},
 	{ "recursive", &config.recursive, parse_bool, 0, 'r'},
+	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0},
 	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H'},
 	{ "timeout", NULL, parse_timeout, 1, 'T'},
 	{ "user-agent", &config.user_agent, parse_string, 1, 'U'},
@@ -294,6 +329,7 @@ static int set_long_option(const char *name, const char *value)
 
 static void _read_config(const char *cfgfile, int expand)
 {
+	static int level; // level of recursions to prevent endless include loops
 	FILE *fp;
 	char *buf = NULL, linebuf_static[1024], *linep;
 	char name[64];
@@ -301,6 +337,7 @@ static void _read_config(const char *cfgfile, int expand)
 	size_t bufsize = 0, linelen = 0;
 	ssize_t len;
 	buffer_t linebuf;
+
 /*
 	if (expand) {
 		#include <wordexp.h>
@@ -336,14 +373,26 @@ static void _read_config(const char *cfgfile, int expand)
 			size_t it;
 
 			for (it = 0; it < globbuf.gl_pathc; it++) {
-				if (globbuf.gl_pathv[it][strlen(globbuf.gl_pathv[it])-1] != '/')
-				// if (stat(globbuf.gl_pathv[it], &st) == 0 && S_ISREG(st.st_mode))
+				if (globbuf.gl_pathv[it][strlen(globbuf.gl_pathv[it])-1] != '/') {
+				// if (stat(globbuf.gl_pathv[it], &st) == 0 && S_ISREG(st.st_mode)) {
+					if (++level > 20)
+						err_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
+
 					_read_config(globbuf.gl_pathv[it], 0);
+
+					level--;
+				}
 			}
 			globfree(&globbuf);
 
-		} else
+		} else {
+			if (++level > 20)
+				err_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
+
 			_read_config(cfgfile, 0);
+			
+			level--;
+		}
 		
 		return;
 	}
@@ -425,7 +474,12 @@ static void _read_config(const char *cfgfile, int expand)
 			} else {
 				// log_printf("%s %s\n",name,val);
 				if (!strcmp(name, "include")) {
+					if (++level > 20)
+						err_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
+
 					_read_config(val, 1);
+
+					level--;
 				} else {
 					set_long_option(name, NULL);
 				}

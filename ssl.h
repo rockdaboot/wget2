@@ -21,15 +21,19 @@
  *
  * Changelog
  * 03.08.2012  Tim Ruehsen  created
+ * 27.08.2012               renamed from gnutls.h to ssl.h
  *
  */
 
-#ifndef _MGET_GNUTLS_H
-#define _MGET_GNUTLS_H
+#ifndef _MGET_SSL_H
+#define _MGET_SSL_H
 
 #include <stddef.h>
 
 #include "mget.h"
+
+#define SSL_X509_FMT_PEM 0
+#define SSL_X509_FMT_DER 1
 
 void
 	ssl_init(void),
@@ -42,4 +46,4 @@ ssize_t
 	ssl_read_timeout(void *session, char *buf, size_t count, int timeout),
 	ssl_write_timeout(void *session, const char *buf, size_t count, int timeout);
 
-#endif /* _MGET_NET_H */
+#endif /* _MGET_SSL_H */

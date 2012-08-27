@@ -37,8 +37,17 @@
 	#define PURE __attribute__ ((pure))
 	#define CONST __attribute__ ((const))
 	#define NORETURN __attribute__ ((noreturn))
+// nonnull is dangerous to use with current gcc <= 4.7.1
+// see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=17308
+#if defined(__clang__)
 	#define NONNULL(...) __attribute__ ((nonnull(__VA_ARGS__)))
 	#define NONNULL_ALL __attribute__ ((nonnull))
+#else
+	#define NONNULL(a)
+	#define NONNULL_ALL
+#endif
+//	#define NONNULL(...) __attribute__ ((nonnull(__VA_ARGS__)))
+//	#define NONNULL_ALL __attribute__ ((nonnull))
 	#define PRINTF_FORMAT(a,b) __attribute__ ((format (printf, a, b)))
 	#define DEPRECATED __attribute__ ((deprecated))
 	#define MALLOC __attribute__ ((malloc))
@@ -52,7 +61,7 @@
 	#define PURE
 	#define CONST
 	#define NORETURN
-	#define NONNULL
+	#define NONNULL(a)
 	#define NONNULL_ALL
 	#define PRINTF_FORMAT(a,b)
 	#define DEPRECATED

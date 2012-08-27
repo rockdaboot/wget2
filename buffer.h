@@ -46,15 +46,15 @@ buffer_t
 	*buffer_init(buffer_t *buf, char *data, size_t size),
 	*buffer_alloc(size_t size);
 void
-	buffer_ensure_capacity(buffer_t *buf, size_t size),
-	buffer_deinit(buffer_t *buf),
-	buffer_free(buffer_t **buf),
-	buffer_free_data(buffer_t *buf);
+	buffer_ensure_capacity(buffer_t *buf, size_t size) NONNULL(1),
+	buffer_deinit(buffer_t *buf) NONNULL(1),
+	buffer_free(buffer_t **buf) NONNULL(1),
+	buffer_free_data(buffer_t *buf) NONNULL(1);
 size_t
-	buffer_memcpy(buffer_t *buf, const void *data, size_t length),
-	buffer_memcat(buffer_t *buf, const void *data, size_t length),
-	buffer_strcpy(buffer_t *buf, const char *s),
-	buffer_strcat(buffer_t *buf, const char *s);
+	buffer_memcpy(buffer_t *buf, const void *data, size_t length) NONNULL(1),
+	buffer_memcat(buffer_t *buf, const void *data, size_t length) NONNULL(1),
+	buffer_strcpy(buffer_t *buf, const char *s) NONNULL(1),
+	buffer_strcat(buffer_t *buf, const char *s) NONNULL(1);
 
 
 #endif /* _MGET_BUFFER_H */

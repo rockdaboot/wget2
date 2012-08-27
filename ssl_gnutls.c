@@ -20,19 +20,25 @@
  * gnutls SSL/TLS routines
  *
  * Changelog
- * 03.08.2012  Tim Ruehsen  created
+ * 03.08.2012  Tim Ruehsen  created inspired from gnutls client example
+ * 26.08.2012               mget compatibility regarding config options
+ *
  *
  */
 
 #include <pthread.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <poll.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 
 #include "log.h"
-#include "gnutls.h"
+#include "options.h"
+#include "ssl.h"
 
 static gnutls_certificate_credentials_t
 	credentials;
@@ -141,6 +147,8 @@ out:
 static int _init;
 static pthread_mutex_t _mutex = PTHREAD_MUTEX_INITIALIZER;
 
+// ssl_init() is thread safe and may be called several times
+
 void ssl_init(void)
 {
 	pthread_mutex_lock(&_mutex);
@@ -149,8 +157,67 @@ void ssl_init(void)
 		log_printf("GnuTLS init\n");
 		gnutls_global_init();
 		gnutls_certificate_allocate_credentials(&credentials);
-		gnutls_certificate_set_x509_trust_file(credentials, "/etc/ssl/certs/ca-certificates.crt", GNUTLS_X509_FMT_PEM);
+//		gnutls_certificate_set_x509_trust_file(credentials, "/etc/ssl/certs/ca-certificates.crt", GNUTLS_X509_FMT_PEM);
 		gnutls_certificate_set_verify_function(credentials, _verify_certificate_callback);
+
+		if (config.ca_directory && *config.ca_directory) {
+			DIR *dir;
+
+			if ((dir = opendir(config.ca_directory))) {
+				struct dirent *dp;
+				size_t dirlen = strlen(config.ca_directory);
+
+				while ((dp = readdir(dir))) {
+					size_t len = strlen(dp->d_name);
+
+					if (len >= 4 && !strncasecmp(dp->d_name + len - 4, ".pem", 4)) {
+						struct stat st;
+						char fname[dirlen + 1 + len + 1];
+
+						sprintf(fname, "%s/%s", config.ca_directory, dp->d_name);
+						if (!stat(fname, &st) && S_ISREG(st.st_mode)) {
+							log_printf("GnuTLS loading %s\n", fname);
+							gnutls_certificate_set_x509_trust_file (credentials, fname, GNUTLS_X509_FMT_PEM);
+						}
+					}
+				}
+				
+				closedir(dir);
+			} else {
+				err_printf("Failed to diropen %s\n", config.ca_directory);
+			}
+		}
+
+		if (config.cert_file && !config.private_key) {
+			/* Use the private key from the cert file unless otherwise specified. */
+			config.private_key = config.cert_file;
+			config.private_key_type = config.cert_type;
+		}
+		else if (!config.cert_file && config.private_key) {
+			/* Use the cert from the private key file unless otherwise specified. */
+			config.cert_file = config.private_key;
+			config.cert_type = config.private_key_type;
+		}
+
+		if (config.cert_file && config.private_key) {
+			int type;
+
+			if (config.private_key_type != config.cert_type) {
+				/* GnuTLS can't handle this */
+				err_printf_exit(_("ERROR: GnuTLS requires the key and the cert to be of the same type.\n"));
+			}
+
+			if (config.private_key_type == SSL_X509_FMT_DER)
+				type = GNUTLS_X509_FMT_DER;
+			else
+				type = GNUTLS_X509_FMT_PEM;
+
+			gnutls_certificate_set_x509_key_file(credentials, config.cert_file, config.private_key, type);
+		}
+
+		if (config.ca_cert)
+			gnutls_certificate_set_x509_trust_file(credentials, config.ca_cert, GNUTLS_X509_FMT_PEM);
+
 		log_printf("GnuTLS init done\n");
 	}
 
@@ -158,6 +225,9 @@ void ssl_init(void)
 
 	pthread_mutex_unlock(&_mutex);
 }
+
+// ssl_deinit() is thread safe and may be called several times
+// only the last deinit really takes action
 
 void ssl_deinit(void)
 {
@@ -168,7 +238,7 @@ void ssl_deinit(void)
 		gnutls_global_deinit();
 	}
 
-	_init--;
+	if (_init > 0) _init--;
 
 	pthread_mutex_unlock(&_mutex);
 }
@@ -208,7 +278,7 @@ static int ready_2_write(gnutls_session_t session, int timeout)
 void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 {
 	gnutls_session_t session;
-	const char *err;
+//	const char *err;
 	int ret;
 
 	ssl_init();
@@ -216,11 +286,22 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
 	gnutls_session_set_ptr(session, (void *)hostname);
 	gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
-	gnutls_priority_set_direct(session, "NORMAL", &err);
 	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, credentials);
 	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
 
-	// Perform the TLS handshake
+	if (!strncasecmp(config.secure_protocol, "SSL", 3))
+		ret = gnutls_priority_set_direct (session, "NORMAL:-VERS-TLS-ALL", NULL);
+	else if (!strcasecmp(config.secure_protocol, "TLSv1"))
+		ret = gnutls_priority_set_direct (session, "NORMAL:-VERS-SSL3.0", NULL);
+	else
+		ret = gnutls_priority_set_direct(session, "NORMAL", NULL);
+
+	if (ret < 0) {
+		// print error but continue
+		err_printf("GnuTLS: %s\n", gnutls_strerror(ret));
+	}
+
+    // Perform the TLS handshake
 	for (;;) {
 		ret = gnutls_handshake(session);
 		if (ret == 0 || gnutls_error_is_fatal(ret)) {

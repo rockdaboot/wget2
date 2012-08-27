@@ -46,7 +46,7 @@
 #include "utils.h"
 #include "log.h"
 #include "vector.h"
-#include "gnutls.h"
+#include "ssl.h"
 #include "net.h"
 
 struct TCP {
