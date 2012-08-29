@@ -1,5 +1,5 @@
 # -Wstack-protector -Wconversion
-CC=$(SILENT)gcc
+CC=$(SILENT)clang
 CFLAGS=-g -std=gnu99 -pedantic -fPIC\
  -Wall -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes\
  -Wwrite-strings -Wformat=2 -Wformat -Wformat-security\

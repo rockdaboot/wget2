@@ -36,6 +36,7 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 
+#include "utils.h"
 #include "log.h"
 #include "options.h"
 #include "ssl.h"
@@ -49,6 +50,188 @@ static char
 void ssl_set_check_certificate(char value)
 {
 	check_certificate = value;
+}
+
+static void print_x509_certificate_info(gnutls_session_t session)
+{
+	char dn[128];
+	unsigned char digest[20];
+	unsigned char serial[40];
+	size_t dn_size = sizeof(dn);
+	size_t digest_size = sizeof (digest);
+	size_t serial_size = sizeof(serial);
+	time_t expiret, activet;
+	unsigned int bits;
+	int algo;
+	unsigned int cert_list_size = 0, ncert;
+	const gnutls_datum_t *cert_list;
+	gnutls_x509_crt_t cert;
+	gnutls_certificate_type_t cert_type;
+
+	cert_list = gnutls_certificate_get_peers(session, &cert_list_size);
+
+	for (ncert = 0; ncert < cert_list_size; ncert++) {
+		if ((cert_type = gnutls_certificate_type_get(session)) == GNUTLS_CRT_X509) {
+
+			gnutls_x509_crt_init(&cert);
+			gnutls_x509_crt_import(cert, &cert_list[ncert], GNUTLS_X509_FMT_PEM);
+
+			info_printf(_("Certificate info [%u]:\n"), ncert);
+
+			activet = gnutls_x509_crt_get_activation_time(cert);
+			info_printf(_("  Certificate is valid since: %s"), ctime(&activet));
+
+			expiret = gnutls_x509_crt_get_expiration_time(cert);
+			info_printf(_("  Certificate expires: %s"), ctime(&expiret));
+
+			if (!gnutls_fingerprint(GNUTLS_DIG_MD5, &cert_list[ncert], digest, &digest_size)) {
+				char digest_hex[digest_size * 2 + 1];
+
+				buffer_to_hex(digest, digest_size, digest_hex, sizeof(digest_hex));
+
+				info_printf(_("  Certificate fingerprint: %s\n"), digest_hex);
+			}
+
+			if (!gnutls_x509_crt_get_serial(cert, serial, &serial_size)) {
+				char serial_hex[digest_size * 2 + 1];
+
+				buffer_to_hex(digest, digest_size, serial_hex, sizeof(serial_hex));
+
+				info_printf(_("  Certificate serial number: %s\n"), serial_hex);
+			}
+
+			info_printf(_("  Certificate public key: "));
+			algo = gnutls_x509_crt_get_pk_algorithm(cert, &bits);
+			if (algo == GNUTLS_PK_RSA) {
+				info_printf(_("RSA\n    "));
+				info_printf(ngettext("- Modulus: %d bit\n", "- Modulus: %d bits\n", bits), bits);
+			} else if (algo == GNUTLS_PK_DSA) {
+				info_printf(_("DSA\n    "));
+				info_printf(ngettext("- Exponent: %d bit\n", "- Exponent: %d bits\n", bits), bits);
+			} else
+				info_printf(_("UNKNOWN\n"));
+
+			info_printf(_("  Certificate version: #%d\n"), gnutls_x509_crt_get_version(cert));
+
+			gnutls_x509_crt_get_dn(cert, dn, &dn_size);
+			info_printf("  DN: %s\n", dn);
+
+			gnutls_x509_crt_get_issuer_dn(cert, dn, &dn_size);
+			info_printf(_("  Certificate Issuer's DN: %s\n"), dn);
+
+			gnutls_x509_crt_deinit(cert);
+		} else {
+			info_printf(_("  Unknown certificate type %d\n"), cert_type);
+		}
+	}
+}
+
+static int print_info(gnutls_session_t session)
+{
+	const char *tmp;
+	gnutls_credentials_type_t cred;
+	gnutls_kx_algorithm_t kx;
+	int dhe, ecdh;
+
+	dhe = ecdh = 0;
+
+	/* print the key exchange's algorithm name
+	 */
+	kx = gnutls_kx_get(session);
+	tmp = gnutls_kx_get_name(kx);
+	info_printf(_("----\nKey Exchange: %s\n"), tmp);
+
+	/* Check the authentication type used and switch
+	 * to the appropriate.
+	 */
+	cred = gnutls_auth_get_type(session);
+	switch (cred) {
+	case GNUTLS_CRD_IA:
+		info_printf(_("TLS/IA session\n"));
+		break;
+
+	case GNUTLS_CRD_SRP:
+		info_printf(_("SRP session with username %s\n"), gnutls_srp_server_get_username(session));
+		break;
+
+	case GNUTLS_CRD_PSK:
+		/* This returns NULL in server side.
+		 */
+		if (gnutls_psk_client_get_hint(session) != NULL)
+			info_printf(_("PSK authentication. PSK hint '%s'\n"), gnutls_psk_client_get_hint(session));
+
+		/* This returns NULL in client side.
+		 */
+		if (gnutls_psk_server_get_username(session) != NULL)
+			info_printf(_("PSK authentication. Connected as '%s'\n"), gnutls_psk_server_get_username(session));
+
+		if (kx == GNUTLS_KX_ECDHE_PSK)
+			ecdh = 1;
+		else if (kx == GNUTLS_KX_DHE_PSK)
+			dhe = 1;
+		break;
+
+	case GNUTLS_CRD_ANON: /* anonymous authentication */
+
+		info_printf(_("Anonymous authentication.\n"));
+		if (kx == GNUTLS_KX_ANON_ECDH)
+			ecdh = 1;
+		else if (kx == GNUTLS_KX_ANON_DH)
+			dhe = 1;
+		break;
+
+	case GNUTLS_CRD_CERTIFICATE: /* certificate authentication */
+
+		/* Check if we have been using ephemeral Diffie-Hellman.
+		 */
+		if (kx == GNUTLS_KX_DHE_RSA || kx == GNUTLS_KX_DHE_DSS)
+			dhe = 1;
+		else if (kx == GNUTLS_KX_ECDHE_RSA || kx == GNUTLS_KX_ECDHE_ECDSA)
+			ecdh = 1;
+
+		/* if the certificate list is available, then
+		 * print some information about it.
+		 */
+		print_x509_certificate_info(session);
+
+		break;
+
+	} /* switch */
+
+	if (ecdh != 0)
+		info_printf(_("Ephemeral ECDH using curve %s\n"), gnutls_ecc_curve_get_name(gnutls_ecc_curve_get(session)));
+	else if (dhe != 0)
+		info_printf(_("Ephemeral DH using prime of %d bits\n"), gnutls_dh_get_prime_bits(session));
+
+	/* print the protocol's name (ie TLS 1.0)
+	 */
+	tmp = gnutls_protocol_get_name(gnutls_protocol_get_version(session));
+	info_printf(_("Protocol: %s\n"), tmp);
+
+	/* print the certificate type of the peer.
+	 * ie X.509
+	 */
+	tmp = gnutls_certificate_type_get_name(gnutls_certificate_type_get(session));
+	info_printf(_("Certificate Type: %s\n"), tmp);
+
+	/* print the compression algorithm (if any)
+	 */
+	tmp = gnutls_compression_get_name(gnutls_compression_get(session));
+	info_printf(_("Compression: %s\n"), tmp);
+
+	/* print the name of the cipher used.
+	 * ie 3DES.
+	 */
+	tmp = gnutls_cipher_get_name(gnutls_cipher_get(session));
+	info_printf(_("Cipher: %s\n"), tmp);
+
+	/* Print the MAC algorithms name.
+	 * ie SHA1
+	 */
+	tmp = gnutls_mac_get_name(gnutls_mac_get(session));
+	info_printf(_("MAC: %s\n"), tmp);
+
+	return 0;
 }
 
 /* This function will verify the peer's certificate, and check
@@ -75,6 +258,9 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		ret = -1;
 		goto out;
 	}
+
+	if (config.debug)
+		print_info(session);
 
 	if (status) {
 		if (status & GNUTLS_CERT_INVALID)
@@ -112,27 +298,32 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		goto out;
 	}
 
-	if ((cert_list = gnutls_certificate_get_peers(session, &cert_list_size)) == NULL) {
-		err_printf(_("%s: No certificate was found!\n"), tag);
-		ret = -1;
-	} else if ((err = gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER)) < 0) {
-		err_printf(_("%s: Failed to parse certificate: %s\n"), tag, gnutls_strerror (err));
-		ret = -1;
-	} else {
+	if ((cert_list = gnutls_certificate_get_peers(session, &cert_list_size))) {
+		unsigned int it;
 		time_t now = time(NULL);
 
-		if (now < gnutls_x509_crt_get_activation_time (cert)) {
-			err_printf (_("%s: The certificate is not yet activated\n"), tag);
-			ret = -1;
-		}
-		if (now >= gnutls_x509_crt_get_expiration_time (cert)) {
-			err_printf (_("%s: The certificate has expired\n"), tag);
-			ret = -1;
-		}
-	}
+		for (it = 0; it < cert_list_size && ret == 0; it++) {
+			if (!(err = gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER))) {
+				if (now < gnutls_x509_crt_get_activation_time (cert)) {
+					err_printf (_("%s: The certificate is not yet activated\n"), tag);
+					ret = -1;
+				}
+				else if (now >= gnutls_x509_crt_get_expiration_time (cert)) {
+					err_printf (_("%s: The certificate has expired\n"), tag);
+					ret = -1;
+				}
+			} else {
+				err_printf(_("%s: Failed to parse certificate: %s\n"), tag, gnutls_strerror (err));
+				ret = -1;
+			}
 
-	if (!gnutls_x509_crt_check_hostname(cert, hostname)) {
-		err_printf(_("%s: The certificate's owner does not match hostname '%s'\n"), tag, hostname);
+			if (!gnutls_x509_crt_check_hostname(cert, hostname)) {
+				err_printf(_("%s: The certificate's owner does not match hostname '%s'\n"), tag, hostname);
+				ret = -1;
+			}
+		}
+	} else {
+		err_printf(_("%s: No certificate was found!\n"), tag);
 		ret = -1;
 	}
 
@@ -177,7 +368,7 @@ void ssl_init(void)
 						sprintf(fname, "%s/%s", config.ca_directory, dp->d_name);
 						if (!stat(fname, &st) && S_ISREG(st.st_mode)) {
 							log_printf("GnuTLS loading %s\n", fname);
-							gnutls_certificate_set_x509_trust_file (credentials, fname, GNUTLS_X509_FMT_PEM);
+							gnutls_certificate_set_x509_trust_file(credentials, fname, GNUTLS_X509_FMT_PEM);
 						}
 					}
 				}
@@ -278,7 +469,6 @@ static int ready_2_write(gnutls_session_t session, int timeout)
 void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 {
 	gnutls_session_t session;
-//	const char *err;
 	int ret;
 
 	ssl_init();
@@ -321,6 +511,9 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 		if (ret <= 0)
 			break;
 	}
+
+	if (config.debug)
+		print_info(session);
 
 	if (ret <= 0) {
 		if (ret)

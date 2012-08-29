@@ -51,8 +51,13 @@
 	#define PRINTF_FORMAT(a,b) __attribute__ ((format (printf, a, b)))
 	#define DEPRECATED __attribute__ ((deprecated))
 	#define MALLOC __attribute__ ((malloc))
+#if defined(__clang__)
+	#define ALLOC_SIZE(a)
+	#define ALLOC_SIZE2(a,b)
+#else
 	#define ALLOC_SIZE(a) __attribute__ ((alloc_size(a)))
 	#define ALLOC_SIZE2(a,b) __attribute__ ((alloc_size(a, b)))
+#endif
 	#define unlikely(expr) __builtin_expect(!!(expr), 0)
 	#define likely(expr) __builtin_expect(!!(expr), 1)
 #else
