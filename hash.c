@@ -39,31 +39,30 @@
 #include "log.h"
 #include "hash.h"
 
-static gnutls_digest_algorithm_t get_algorithm(const char *type)
+#include "mget.h"
+
+static NONNULL(1) gnutls_digest_algorithm_t get_algorithm(const char *type)
 {
-	if (type) {
-		if (*type == 's' || *type == 'S') {
-			if (!strcasecmp(type, "sha-1"))
-				return GNUTLS_DIG_SHA1;
-			else if (!strcasecmp(type, "sha-256"))
-				return GNUTLS_DIG_SHA256;
-			else if (!strcasecmp(type, "sha-512"))
-				return GNUTLS_DIG_SHA512;
-			else if (!strcasecmp(type, "sha-224"))
-				return GNUTLS_DIG_SHA224;
-			else if (!strcasecmp(type, "sha-384"))
-				return GNUTLS_DIG_SHA384;
-		}
-		else if (!strcasecmp(type, "md5"))
-			return GNUTLS_DIG_MD5;
-		else if (!strcasecmp(type, "md2"))
-			return GNUTLS_DIG_MD2;
-		else if (!strcasecmp(type, "rmd160"))
-			return GNUTLS_DIG_RMD160;
-
-		err_printf(_("Unknown hash type '%s'\n"), type);
+	if (*type == 's' || *type == 'S') {
+		if (!strcasecmp(type, "sha-1"))
+			return GNUTLS_DIG_SHA1;
+		else if (!strcasecmp(type, "sha-256"))
+			return GNUTLS_DIG_SHA256;
+		else if (!strcasecmp(type, "sha-512"))
+			return GNUTLS_DIG_SHA512;
+		else if (!strcasecmp(type, "sha-224"))
+			return GNUTLS_DIG_SHA224;
+		else if (!strcasecmp(type, "sha-384"))
+			return GNUTLS_DIG_SHA384;
 	}
+	else if (!strcasecmp(type, "md5"))
+		return GNUTLS_DIG_MD5;
+	else if (!strcasecmp(type, "md2"))
+		return GNUTLS_DIG_MD2;
+	else if (!strcasecmp(type, "rmd160"))
+		return GNUTLS_DIG_RMD160;
 
+	err_printf(_("Unknown hash type '%s'\n"), type);
 	return -1;
 }
 
@@ -74,7 +73,7 @@ int hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_hex_s
 	int ret=-1;
 	struct stat st;
 
-	if (digest_hex && digest_hex_size)
+	if (digest_hex_size)
 		*digest_hex=0;
 
 	if (fstat(fd, &st) != 0)
@@ -133,7 +132,7 @@ int hash_file_offset(const char *type, const char *fname, char *digest_hex, size
  	int fd, ret;
 
 	if ((fd = open(fname, O_RDONLY)) == -1) {
-		if (digest_hex && digest_hex_size)
+		if (digest_hex_size)
 			*digest_hex=0;
 		return 0;
 	}

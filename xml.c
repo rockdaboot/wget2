@@ -37,6 +37,7 @@
 #include <ctype.h>
 
 #include "xalloc.h"
+#include "utils.h"
 #include "log.h"
 #include "xml.h"
 
@@ -76,7 +77,19 @@ static void tok_putc(XML_CONTEXT *context, char ch)
 		context->token[context->token_len] = ch;
 }
 
+static void tok_putmem(XML_CONTEXT *context, const char *data, size_t length)
+{
+	if (context->token_len + length > context->token_size) {
+		context->token_size = context->token_size ? context->token_size * 2 + length : 128;
+		context->token = xrealloc(context->token, context->token_size + 1);
+	}
+
+	memcpy(context->token + context->token_len, data, length);
+	context->token_len += length;
+}
+
 // just some shortcuts for readability, undefined after getToken()/getCDATA()
+#define tok_putmem(a,l) tok_putmem(context,(a),(l))
 #define tok_putc(a) tok_putc(context,(a))
 #define xml_getc() context->xml_getc(context)
 #define xml_ungetc() context->xml_ungetc(context)
@@ -206,8 +219,9 @@ static char *getToken(XML_CONTEXT *context)
 					if (aapos) {
 						// snprintf(buf,sizeof(buf),"&%*s%s",aapos,aabuf,aasemicolon ? ";":"");
 						tok_putc('&');
-						for (it = 0; it < aapos; it++)
-							tok_putc(aabuf[it]);
+						tok_putmem(aabuf, aapos);
+//						for (it = 0; it < aapos; it++)
+//							tok_putc(aabuf[it]);
 						if (aasemicolon)
 							tok_putc(';');
 					} else if (aapos == 0) // EOF after "&"
@@ -347,7 +361,7 @@ static char *getUnparsed(XML_CONTEXT *context, int flags, const char *end, int l
 			return NULL;
 	}
 
-	if (context->token_len && context->hints & XML_HINT_REMOVE_EMPTY_CONTENT) {
+	if (context->token && context->token_len && context->hints & XML_HINT_REMOVE_EMPTY_CONTENT) {
 		int notempty = 0;
 		char *p;
 
@@ -398,6 +412,7 @@ static char *getContent(XML_CONTEXT *context, const char *directory)
 }
 
 #undef tok_putc
+#undef tok_putmem
 #undef xml_getc
 #undef xml_ungetc
 
@@ -407,7 +422,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 	size_t pos = 0;
 
 	if (!(context->hints & XML_HINT_HTML)) {
-		pos = snprintf(directory, sizeof(directory), "%s", dir);
+		pos = strlcpy(directory, dir, sizeof(directory));
 		if (pos >= sizeof(directory)) pos = sizeof(directory) - 1;
 	}
 
@@ -428,9 +443,9 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 				if (!pos || directory[pos - 1] != '/')
 					snprintf(&directory[pos], sizeof(directory) - pos, "/%s", tok);
 				else
-					snprintf(&directory[pos], sizeof(directory) - pos, "%s", tok);
+					strlcpy(&directory[pos], tok, sizeof(directory) - pos);
 			} else
-				snprintf(directory, sizeof(directory), "%s", tok);
+				strlcpy(directory, tok, sizeof(directory));
 
 			while ((tok = getToken(context))) {
 				// log_printf("C Token %s\n",tok);
@@ -455,7 +470,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 						parseXML(directory, context); // descend one level
 					break;
 				} else {
-					snprintf(attribute, sizeof(attribute), "%s", tok);
+					strlcpy(attribute, tok, sizeof(attribute));
 					int rc = getValue(context);
 					if (rc == EOF) return;
 					if (rc) {

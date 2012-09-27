@@ -105,6 +105,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --read-timeout      Read and write timeout in seconds.\n"
 		"      --dns-caching       Enable DNS cache. (default: on)\n"
 		"  -O  --output-document   File where downloaded content is written to, '-'  for STDOUT.\n"
+		"      --spider            Enable web spider mode. (default: off)\n"
 		"\n"
 		"HTTP related options:\n"
 		"  -U  --user-agent        Set User-Agent: header in requests.\n"
@@ -189,7 +190,7 @@ static int parse_timeout(option_t opt, UNUSED const char *const *argv, const cha
 	return 0;
 }
 
-static int parse_cert_type(option_t opt, UNUSED const char *const *argv, const char *val)
+static int PURE NONNULL(1) parse_cert_type(option_t opt, UNUSED const char *const *argv, const char *val)
 {
 	if (!val || !strcasecmp(val, "PEM"))
 		*((char *)opt->var) = SSL_X509_FMT_PEM;
@@ -202,8 +203,7 @@ static int parse_cert_type(option_t opt, UNUSED const char *const *argv, const c
 }
 
 // default values for config options (if not 0 or NULL)
-struct config
-config = {
+struct config config = {
 	.connect_timeout = -1,
 	.dns_timeout = -1,
 	.read_timeout = -1,
@@ -216,7 +216,7 @@ config = {
 	.cert_type = SSL_X509_FMT_PEM,
 	.private_key_type = SSL_X509_FMT_PEM,
 	.secure_protocol = "AUTO",
-	.ca_directory = "/etc/ssl/certs"
+	.ca_directory = "system"
 };
 
 static const struct option options[] = {
@@ -246,18 +246,19 @@ static const struct option options[] = {
 	{ "recursive", &config.recursive, parse_bool, 0, 'r'},
 	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0},
 	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H'},
+	{ "spider", &config.spider, parse_bool, 0, 0},
 	{ "timeout", NULL, parse_timeout, 1, 'T'},
 	{ "user-agent", &config.user_agent, parse_string, 1, 'U'},
 	{ "verbose", &config.verbose, parse_bool, 0, 'v'},
 	{ "version", NULL, print_version, 0, 'V'}
 };
 
-static int opt_compare(const void *key, const void *option)
+static int PURE NONNULL_ALL opt_compare(const void *key, const void *option)
 {
 	return strcmp((const char *)key, ((const option_t)option)->long_name);
 }
 
-static int set_long_option(const char *name, const char *value)
+static int NONNULL(1) set_long_option(const char *name, const char *value)
 {
 	option_t opt;
 	int invert = 0, ret = 0;
@@ -279,6 +280,9 @@ static int set_long_option(const char *name, const char *value)
 
 	if (!opt)
 		err_printf_exit(_("Unknown option '%s'\n"), name);
+
+	if (name != namebuf && opt->parser == parse_bool)
+		value = NULL;
 
 	log_printf("name=%s value=%s invert=%d\n", opt->long_name, value, invert);
 
@@ -327,7 +331,7 @@ static int set_long_option(const char *name, const char *value)
 // - format is 'name value', where value might be enclosed in ' or "
 // - values enclosed in " or ' might contain \\, \" and \'
 
-static void _read_config(const char *cfgfile, int expand)
+static void NONNULL(1) _read_config(const char *cfgfile, int expand)
 {
 	static int level; // level of recursions to prevent endless include loops
 	FILE *fp;
@@ -508,7 +512,7 @@ static void read_config(void)
 #endif
 }
 
-static int parse_command_line(int argc, const char *const *argv)
+static int NONNULL(2) parse_command_line(int argc, const char *const *argv)
 {
 	static short shortcut_to_option[128];
 	size_t it;
@@ -697,25 +701,32 @@ int selftest_options(void)
 
 		static struct {
 			const char
-				*argv[2];
+				*argv[3];
 			char
 				result;
 		} test_bool[] = {
-			{ { "", "--recursive" }, 1 },
-			{ { "", "--no-recursive" }, 0 },
-			{ { "", "--recursive=y" }, 1 },
-			{ { "", "--recursive=n" }, 0 },
-			{ { "", "--recursive=1" }, 1 },
-			{ { "", "--recursive=0" }, 0 },
-			{ { "", "--recursive=yes" }, 1 },
-			{ { "", "--recursive=no" }, 0 },
-			{ { "", "--recursive=on" }, 1 },
-			{ { "", "--recursive=off" }, 0 }
+			{ { "", "--recursive", "" }, 1 },
+			{ { "", "--no-recursive", "" }, 0 },
+			{ { "", "--recursive=y", "" }, 1 },
+			{ { "", "--recursive=n", "" }, 0 },
+			{ { "", "--recursive=1", "" }, 1 },
+			{ { "", "--recursive=0", "" }, 0 },
+			{ { "", "--recursive=yes", "" }, 1 },
+			{ { "", "--recursive=no", "" }, 0 },
+			{ { "", "--recursive=on", "" }, 1 },
+			{ { "", "--recursive=off", "" }, 0 }
 		};
 
 		for (it = 0; it < countof(test_bool); it++) {
 			config.recursive = 2; // invalid bool value
 			parse_command_line(2, test_bool[it].argv);
+			if (config.recursive != test_bool[it].result) {
+				err_printf("%s: Failed to parse bool long option #%zu (%d)\n", __func__, it, config.recursive);
+				ret = 1;
+			}
+
+			config.recursive = 2; // invalid bool value
+			parse_command_line(3, test_bool[it].argv);
 			if (config.recursive != test_bool[it].result) {
 				err_printf("%s: Failed to parse bool long option #%zu (%d)\n", __func__, it, config.recursive);
 				ret = 1;

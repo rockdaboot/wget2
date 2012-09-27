@@ -94,7 +94,7 @@ void job_create_parts(JOB *job)
 	}
 }
 
-static int _compare_mirror(MIRROR **m1, MIRROR **m2)
+static int PURE _compare_mirror(MIRROR **m1, MIRROR **m2)
 {
 	return (*m1)->priority - (*m2)->priority;
 }

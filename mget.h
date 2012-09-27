@@ -31,32 +31,30 @@
 	#define MGET_VERSION "0.1.1"
 #endif
 
-#if defined(__GNUC__) && __GNUC__ >= 3
-	#define UNUSED __attribute__ ((unused))
-	#define UNUSED_RESULT __attribute__ ((warn_unused_result))
-	#define PURE __attribute__ ((pure))
-	#define CONST __attribute__ ((const))
-	#define NORETURN __attribute__ ((noreturn))
+#if __GNUC__ >= 3
+	#define UNUSED __attribute__ ((__unused__))
+	#define UNUSED_RESULT __attribute__ ((__warn_unused_result__))
+	#define PURE __attribute__ ((__pure__))
+	#define CONST __attribute__ ((__const__))
+	#define NORETURN __attribute__ ((__noreturn__))
+
 // nonnull is dangerous to use with current gcc <= 4.7.1
 // see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=17308
+// we have to use e.g. the clang analyzer if we want NONNULL
 #if defined(__clang__)
-	#define NONNULL(...) __attribute__ ((nonnull(__VA_ARGS__)))
-	#define NONNULL_ALL __attribute__ ((nonnull))
+	#define NONNULL(...) __attribute__ ((__nonnull__(__VA_ARGS__)))
+	#define NONNULL_ALL __attribute__ ((__nonnull__))
 #else
-	#define NONNULL(a)
-	#define NONNULL_ALL
+	#define NONNULL(...) __attribute__ ((__nonnull__(__VA_ARGS__)))
+	#define NONNULL_ALL __attribute__ ((__nonnull__))
 #endif
-//	#define NONNULL(...) __attribute__ ((nonnull(__VA_ARGS__)))
-//	#define NONNULL_ALL __attribute__ ((nonnull))
-	#define PRINTF_FORMAT(a,b) __attribute__ ((format (printf, a, b)))
-	#define DEPRECATED __attribute__ ((deprecated))
-	#define MALLOC __attribute__ ((malloc))
+	#define PRINTF_FORMAT(a,b) __attribute__ ((__format__ (__printf__, a, b)))
+	#define DEPRECATED __attribute__ ((__deprecated__))
+	#define MALLOC __attribute__ ((__malloc__))
 #if defined(__clang__)
-	#define ALLOC_SIZE(a)
-	#define ALLOC_SIZE2(a,b)
-#else
-	#define ALLOC_SIZE(a) __attribute__ ((alloc_size(a)))
-	#define ALLOC_SIZE2(a,b) __attribute__ ((alloc_size(a, b)))
+	#define ALLOC_SIZE(...)
+#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
+	#define ALLOC_SIZE(...) __attribute__ ((__alloc_size__(__VA_ARGS__)))
 #endif
 	#define unlikely(expr) __builtin_expect(!!(expr), 0)
 	#define likely(expr) __builtin_expect(!!(expr), 1)
@@ -72,7 +70,6 @@
 	#define DEPRECATED
 	#define MALLOC
 	#define ALLOC_SIZE(a)
-	#define ALLOC_SIZE2(a,b)
 	#define unlikely(expr) expr
 	#define likely(expr) expr
 #endif

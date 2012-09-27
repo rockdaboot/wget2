@@ -61,18 +61,41 @@ static void _test_buffer(buffer_t *buf, const char *name)
 		buffer_strcpy(buf, test);
 		buffer_strcat(buf, test);
 
-		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1))
+		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
 			ok++;
-		else
-			info_printf("test_buffer '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
+		} else {
+			failed++;
+			info_printf("test_buffer.1 '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
+		}
 
 		buffer_memcpy(buf, test, it + 1);
 		buffer_memcat(buf, test, it + 1);
 
-		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1))
+		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
 			ok++;
-		else
-			info_printf("test_buffer '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
+		} else {
+			failed++;
+			info_printf("test_buffer.2 '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
+		}
+
+		buffer_printf(buf, "%s%s", test, test);
+
+		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
+			ok++;
+		} else {
+			failed++;
+			info_printf("test_buffer.3 '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
+		}
+
+		buffer_printf(buf, "%s", test);
+		buffer_append_printf(buf, "%s", test);
+
+		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
+			ok++;
+		} else {
+			failed++;
+			info_printf("test_buffer.4 '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
+		}
 	}
 }
 
@@ -139,6 +162,158 @@ static void test_buffer(void)
 	bufp = buffer_alloc(16);
 	_test_buffer(bufp, "Test 5");
 	buffer_free(&bufp);
+}
+
+static void test_buffer_printf(void)
+{
+	char buf_static[32];
+	buffer_t buf;
+
+	// testing buffer_printf() by comparing it with C standard function sprintf()
+
+	static const char *zero_padded[] = { "", "0" };
+	static const char *left_adjust[] = { "", "-" };
+	static const long long number[] = { 0, 1, -1, 10, -10, 18446744073709551615ULL };
+	static const char *modifier[] = { "", "h", "hh", "l", "ll", "L", "z" };
+	static const char *conversion[] = { "d", "i", "u", "o", "x", "X" };
+	char fmt[32], result[32], string[32];
+	size_t z, a, it, n, c, m;
+	int width, precision;
+
+	buffer_init(&buf, buf_static, sizeof(buf_static));
+
+	for (z = 0; z < countof(zero_padded); z++) {
+		for (a = 0; a < countof(left_adjust); a++) {
+			for (width = -1; width < 12; width++) {
+				for (precision = -1; precision < 12; precision++) {
+
+					// testing %s stuff
+
+					if (width == -1) {
+						if (precision == -1) {
+							sprintf(fmt,"%%%s%ss", left_adjust[a], zero_padded[z]);
+						} else {
+							sprintf(fmt,"%%%s%s.%ds", left_adjust[a], zero_padded[z], precision);
+						}
+					} else {
+						if (precision == -1) {
+							sprintf(fmt,"%%%s%s%ds", left_adjust[a], zero_padded[z], width);
+						} else {
+							sprintf(fmt,"%%%s%s%d.%ds", left_adjust[a], zero_padded[z], width, precision);
+						}
+					}
+
+					for (it = 0; it < sizeof(string); it++) {
+						memset(string, 'a', it);
+						string[it] = 0;
+
+						#pragma GCC diagnostic push
+						#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+						sprintf(result, fmt, string);
+						buffer_printf2(&buf, fmt, string);
+						#pragma GCC diagnostic pop
+
+						if (strcmp(result, buf.data)) {
+							failed++;
+							info_printf("%s: Failed with format ('%s','%s'): '%s' != '%s'\n", __func__, fmt, string, buf.data, result);
+							return;
+						} else {
+							// info_printf("%s: format ('%s','%s'): '%s' == '%s'\n", __func__, fmt, string, buf.data, result);
+							ok++;
+						}
+					}
+
+					if (width == -1) {
+						if (precision == -1) {
+							sprintf(fmt,"%%%s%ss", left_adjust[a], zero_padded[z]);
+						} else {
+							sprintf(fmt,"%%%s%s.*s", left_adjust[a], zero_padded[z]);
+						}
+					} else {
+						if (precision == -1) {
+							sprintf(fmt,"%%%s%s*s", left_adjust[a], zero_padded[z]);
+						} else {
+							sprintf(fmt,"%%%s%s*.*s", left_adjust[a], zero_padded[z]);
+						}
+					}
+
+					for (it = 0; it < sizeof(string); it++) {
+						memset(string, 'a', it);
+						string[it] = 0;
+
+						#pragma GCC diagnostic push
+						#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+						if (width == -1) {
+							if (precision == -1) {
+								sprintf(result, fmt, string);
+								buffer_printf2(&buf, fmt, string);
+							} else {
+								sprintf(result, fmt, precision, string);
+								buffer_printf2(&buf, fmt, precision, string);
+							}
+						} else {
+							if (precision == -1) {
+								sprintf(result, fmt, width, string);
+								buffer_printf2(&buf, fmt, width, string);
+							} else {
+								sprintf(result, fmt, width, precision, string);
+								buffer_printf2(&buf, fmt, width, precision, string);
+							}
+						}
+						#pragma GCC diagnostic pop
+
+						if (strcmp(result, buf.data)) {
+							failed++;
+							info_printf("%s: Failed with format ('%s','%s'): '%s' != '%s'\n", __func__, fmt, string, buf.data, result);
+							return;
+						} else {
+							// info_printf("%s: format ('%s','%s'): '%s' == '%s'\n", __func__, fmt, string, buf.data, result);
+							ok++;
+						}
+					}
+
+					// testing integer stuff
+
+					for (m = 0; m < countof(modifier); m++) {
+					for (c = 0; c < countof(conversion); c++) {
+						if (width == -1) {
+							if (precision == -1) {
+								sprintf(fmt,"%%%s%s%s%s", left_adjust[a], zero_padded[z], modifier[m], conversion[c]);
+							} else {
+								sprintf(fmt,"%%%s%s.%d%s%s", left_adjust[a], zero_padded[z], precision, modifier[m], conversion[c]);
+							}
+						} else {
+							if (precision == -1) {
+								sprintf(fmt,"%%%s%s%d%s%s", left_adjust[a], zero_padded[z], width, modifier[m], conversion[c]);
+							} else {
+								sprintf(fmt,"%%%s%s%d.%d%s%s", left_adjust[a], zero_padded[z], width, precision, modifier[m], conversion[c]);
+							}
+						}
+
+						for (n = 0; n < countof(number); n++) {
+							#pragma GCC diagnostic push
+							#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+							sprintf(result, fmt, number[n]);
+							buffer_printf2(&buf, fmt, number[n]);
+							#pragma GCC diagnostic pop
+
+							if (strcmp(result, buf.data)) {
+								failed++;
+								info_printf("%s: Failed with format ('%s','%lld'): '%s' != '%s'\n", __func__, fmt, number[n], buf.data, result);
+//								return;
+							} else {
+								// info_printf("%s: format ('%s','%lld'): '%s' == '%s'\n", __func__, fmt, number[n], buf.data, result);
+								ok++;
+							}
+						}
+					}
+					}
+				}
+			}
+		}
+	}
+
+	buffer_deinit(&buf);
 }
 
 static void test_iri_parse(void)
@@ -604,6 +779,7 @@ int main(int argc, const char * const *argv)
 
 	// testing basic library functionality
 	test_buffer();
+	test_buffer_printf();
 	test_vector();
 	test_utils();
 

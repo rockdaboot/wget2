@@ -196,7 +196,7 @@ void tcp_set_debug(int _debug)
 	debug = _debug;
 }
 
-static int compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
+static int PURE NONNULL_ALL compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
 {
 	int n;
 
@@ -369,18 +369,17 @@ ssize_t tcp_write(tcp_t tcp, const char *buf, size_t count)
 ssize_t tcp_send(tcp_t tcp, const char *fmt, ...)
 {
 	char sbuf[4096], *bufp = NULL;
-	int len;
-	ssize_t len2 = 0;
+	ssize_t len, len2 = 0;
 	va_list args;
 
 	va_start(args, fmt);
 	len = vsnprintf(sbuf, sizeof(sbuf), fmt, args);
 	va_end(args);
 
-	if (len >= 0 && len < (int)sizeof(sbuf)) {
+	if (len >= 0 && len < (ssize_t)sizeof(sbuf)) {
 		// message fits into buf - most likely case
 		bufp = sbuf;
-	} else if (len >= (int)sizeof(sbuf)) {
+	} else if (len >= (ssize_t)sizeof(sbuf)) {
 		// POSIX compliant or glibc >= 2.1
 		bufp = xmalloc(len + 1);
 
@@ -398,6 +397,9 @@ ssize_t tcp_send(tcp_t tcp, const char *fmt, ...)
 			len = vsnprintf(bufp, size, fmt, args);
 			va_end(args);
 		} while (len == -1);
+	} else {
+		err_printf("tcp_send: internal error: unexpected length %zd\n", len);
+		return 0;
 	}
 
 	len2 = tcp_write(tcp, bufp, len);
@@ -408,7 +410,7 @@ ssize_t tcp_send(tcp_t tcp, const char *fmt, ...)
 		xfree(bufp);
 
 	if (len2 > 0 && len != len2)
-		err_printf("tcp_send: internal error: length mismatch %d != %zd\n", len, len2);
+		err_printf("tcp_send: internal error: length mismatch %zd != %zd\n", len, len2);
 
 	return len2;
 }

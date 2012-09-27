@@ -205,7 +205,7 @@ IRI *iri_parse(const char *s_uri)
 
 	return iri;
 }
-
+/*
 char *iri_get_connection_part(IRI *iri, char *tag, size_t tagsize)
 {
 	size_t len;
@@ -226,10 +226,21 @@ char *iri_get_connection_part(IRI *iri, char *tag, size_t tagsize)
 
 	return tag;
 }
+*/
+char *iri_get_connection_part(IRI *iri, buffer_t *buf)
+{
+	if (iri->port) {
+		buffer_printf2(buf, "%s://%s:%s", iri->scheme, iri->host, iri->port);
+	} else {
+		buffer_printf2(buf, "%s://%s", iri->scheme, iri->host);
+	}
+
+	return buf->data;
+}
 
 // normalize /../ and remove /./
 
-static size_t _normalize_path(char *path)
+static size_t NONNULL_ALL _normalize_path(char *path)
 {
 	char *p1 = path, *p2 = path;
 
@@ -287,10 +298,12 @@ static size_t _normalize_path(char *path)
 			*p1++ = *p2++;
 	}
 
-	while (*p2)
-		*p1++ = *p2++;
+	if (p1 != p2) {
+		while (*p2)
+			*p1++ = *p2++;
 
-	*p1 = 0;
+		*p1 = 0;
+	}
 
 	log_printf("     %s\n", path);
 
@@ -302,8 +315,6 @@ static size_t _normalize_path(char *path)
 //char *iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_t len, char *dst, size_t dst_size)
 char *iri_relative_to_absolute(IRI *base, const char *tag, const char *val, size_t len, buffer_t *buf)
 {
-//	size_t dst_len = 0;
-
 	log_printf("*url = %.*s\n", (int)len, val);
 
 	if (*val == '/') {
@@ -316,65 +327,30 @@ char *iri_relative_to_absolute(IRI *base, const char *tag, const char *val, size
 
 			// absolute URI without scheme: //authority/path...
 			if ((p = strchr(path + 2, '/')))
-//				dst_len = _normalize_path(p + 1) + (p - path) + 1;
 				_normalize_path(p + 1);
-
-//			dst_len += strlen(iri->scheme) + 1 + 1;
-//			if (dst_len > dst_size)
-//				dst = xmalloc(dst_len);
 
 			buffer_strcpy(buf, base->scheme);
 			buffer_strcat(buf, ":");
 			buffer_strcat(buf, path);
-//			snprintf(dst, dst_len, "%s:%s", iri->scheme, path);
-//			log_printf("*1 %s\n", dst);
 			log_printf("*1 %s\n", buf->data);
 		} else {
 			// absolute path
-//			dst_len = strlen(tag) + _normalize_path(path) + 1 + 1;
-//			if (dst_len > dst_size)
-//				dst = xmalloc(dst_len);
-
 			_normalize_path(path);
 
 			buffer_strcpy(buf, tag);
 			buffer_strcat(buf, "/");
 			buffer_strcat(buf, path);
-//			snprintf(dst, dst_len, "%s/%s", tag, path);
-//			log_printf("*2 %s\n", dst);
 			log_printf("*2 %s\n", buf->data);
 		}
 	} else {
 		// see if URI begins with a scheme:
 		if (memchr(val, ':', len)) {
 			// absolute URI
-//			dst_len = len + 1;
-//			if (dst_len > dst_size)
-//				dst = xmalloc(dst_len);
-
-//			strlcpy(dst, val, dst_len);
-//			log_printf("*3 %s\n", dst);
 			buffer_memcpy(buf, val, len);
 			log_printf("*3 %s\n", buf->data);
 		} else {
 			// relative path
 			const char *lastsep = base->path ? strrchr(base->path, '/') : NULL;
-/*			int pathlen = lastsep ? (lastsep - iri->path) + len + 2 : len + 1;
-			char path[pathlen];
-
-			if (lastsep) {
-				snprintf(path, pathlen, "%.*s%.*s", (int)(lastsep - iri->path + 1), iri->path, (int)len, val);
-			} else {
-				strlcpy(path, val, len + 1);
-			}
-
-			dst_len = strlen(tag) + _normalize_path(path) + 1 + 1;
-			if (dst_len > dst_size)
-				dst = xmalloc(dst_len);
-
-			snprintf(dst, dst_len, "%s/%s", tag, path);
-			log_printf("*4 %s\n", dst);
-*/
 			buffer_strcpy(buf, tag);
 			buffer_strcat(buf, "/");
 
@@ -392,6 +368,5 @@ char *iri_relative_to_absolute(IRI *base, const char *tag, const char *val, size
 		}
 	}
 
-//	return dst;
 	return buf->data;
 }

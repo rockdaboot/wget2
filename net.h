@@ -37,19 +37,19 @@
 typedef struct TCP *tcp_t;
 
 void
-	tcp_close(tcp_t *tcp),
+	tcp_close(tcp_t *tcp) NONNULL_ALL,
 	tcp_set_timeout(tcp_t tcp, int timeout),
 	tcp_set_connect_timeout(int timeout),
 	tcp_set_dns_timeout(int timeout),
 	tcp_set_dns_caching(int caching),
 	tcp_set_debug(int debug);
 struct addrinfo
-	*tcp_resolve(const char *restrict name, const char *restrict port);
+	*tcp_resolve(const char *restrict name, const char *restrict port) NONNULL_ALL;
 tcp_t
-	tcp_connect(struct addrinfo *addrinfo, const char *hostname);
+	tcp_connect(struct addrinfo *addrinfo, const char *hostname) NONNULL(1);
 ssize_t
-	tcp_send(tcp_t tcp, const char *fmt, ...) PRINTF_FORMAT(2,3),
-	tcp_write(tcp_t tcp, const char *buf, size_t count),
-	tcp_read(tcp_t tcp, char *buf, size_t count);
+	tcp_send(tcp_t tcp, const char *fmt, ...) PRINTF_FORMAT(2,3) NONNULL_ALL,
+	tcp_write(tcp_t tcp, const char *buf, size_t count) NONNULL_ALL,
+	tcp_read(tcp_t tcp, char *buf, size_t count) NONNULL_ALL;
 
 #endif /* _MGET_NET_H */

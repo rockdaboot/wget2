@@ -1,11 +1,12 @@
 # -Wstack-protector -Wconversion
-CC=$(SILENT)clang
+CC=$(SILENT)/usr/share/clang/scan-build/ccc-analyzer
+#CC=$(SILENT)gcc
 CFLAGS=-g -std=gnu99 -pedantic -fPIC\
  -Wall -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes\
  -Wwrite-strings -Wformat=2 -Wformat -Wformat-security\
  -fstack-protector --param ssp-buffer-size=4\
  -Wno-sign-compare -Wextra -D_FORTIFY_SOURCE=2\
- -Wundef -Wcast-align -O2\
+ -Wundef -Wcast-align -O2 \
  -D _FILE_OFFSET_BITS=64\
  -D ENABLE_NLS=1\
  -D LOCALEDIR=\"/usr/share/locale\"

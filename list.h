@@ -29,18 +29,20 @@
 
 #include <stddef.h>
 
+#include "mget.h"
+
 typedef struct LISTNODE LIST;
 
 void
-	*list_append(LIST **list, const void *elem, size_t size),
-	*list_prepend(LIST **list, const void *elem, size_t size),
+	*list_append(LIST **list, const void *elem, size_t size) NONNULL_ALL,
+	*list_prepend(LIST **list, const void *elem, size_t size) NONNULL_ALL,
 	list_remove(LIST **list, void *elem);
 void
-	*list_getfirst(const LIST *list),
-	*list_getlast(const LIST *list),
-	list_free(LIST **list);
+	*list_getfirst(const LIST *list) CONST NONNULL_ALL,
+	*list_getlast(const LIST *list) CONST NONNULL_ALL,
+	list_free(LIST **list) NONNULL_ALL;
 int
-	list_browse(const LIST *list, int (*browse)(void *context, void *elem), void *context);
+	list_browse(const LIST *list, int (*browse)(void *context, void *elem), void *context) NONNULL(2);
 
 
 #endif /* _MGET_LIST_H */

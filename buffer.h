@@ -29,6 +29,8 @@
 
 #include <stddef.h>
 
+#include "mget.h"
+
 typedef struct {
 	char
 		*data; // pointer to internal memory
@@ -49,12 +51,24 @@ void
 	buffer_ensure_capacity(buffer_t *buf, size_t size) NONNULL(1),
 	buffer_deinit(buffer_t *buf) NONNULL(1),
 	buffer_free(buffer_t **buf) NONNULL(1),
-	buffer_free_data(buffer_t *buf) NONNULL(1);
+	buffer_free_data(buffer_t *buf) NONNULL(1),
+	buffer_realloc(buffer_t *buf, size_t size) NONNULL(1);
 size_t
-	buffer_memcpy(buffer_t *buf, const void *data, size_t length) NONNULL(1),
-	buffer_memcat(buffer_t *buf, const void *data, size_t length) NONNULL(1),
-	buffer_strcpy(buffer_t *buf, const char *s) NONNULL(1),
-	buffer_strcat(buffer_t *buf, const char *s) NONNULL(1);
+	buffer_memcpy(buffer_t *buf, const void *data, size_t length) NONNULL(1,2),
+	buffer_memcat(buffer_t *buf, const void *data, size_t length) NONNULL(1,2),
+	buffer_strcpy(buffer_t *buf, const char *s) NONNULL(1,2),
+	buffer_strcat(buffer_t *buf, const char *s) NONNULL(1,2),
+	buffer_memset(buffer_t *buf, char c, size_t length) NONNULL(1),
+	buffer_memset_append(buffer_t *buf, char c, size_t length) NONNULL(1),
+	buffer_append_vprintf(buffer_t *buf, const char *fmt, va_list args) NONNULL(1,2) PRINTF_FORMAT(2,0),
+	buffer_append_printf(buffer_t *buf, const char *fmt, ...) NONNULL(1,2) PRINTF_FORMAT(2,3),
+	buffer_vprintf(buffer_t *buf, const char *fmt, va_list args) NONNULL(1,2) PRINTF_FORMAT(2,0),
+	buffer_printf(buffer_t *buf, const char *fmt, ...) NONNULL(1,2) PRINTF_FORMAT(2,3),
+
+	buffer_append_vprintf2(buffer_t *buf, const char *fmt, va_list args) NONNULL(1,2) PRINTF_FORMAT(2,0),
+	buffer_append_printf2(buffer_t *buf, const char *fmt, ...) NONNULL(1,2) PRINTF_FORMAT(2,3),
+	buffer_vprintf2(buffer_t *buf, const char *fmt, va_list args) NONNULL(1,2) PRINTF_FORMAT(2,0),
+	buffer_printf2(buffer_t *buf, const char *fmt, ...) NONNULL(1,2) PRINTF_FORMAT(2,3);
 
 
 #endif /* _MGET_BUFFER_H */

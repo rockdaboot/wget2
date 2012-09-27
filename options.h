@@ -51,6 +51,7 @@ struct config {
 		*random_file,
 		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
 	char
+		spider,
 		dns_caching,
 		check_certificate,
 		cert_type, // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)

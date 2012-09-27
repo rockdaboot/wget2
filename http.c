@@ -42,9 +42,37 @@
 #include "buffer.h"
 #include "http.h"
 
+#define HTTP_CTYPE_SEPERATOR (1<<0)
+#define _http_isseperator(c) (http_ctype[(unsigned char)(c)]&HTTP_CTYPE_SEPERATOR)
+
+static const unsigned char
+	http_ctype[256] = {
+		['('] = HTTP_CTYPE_SEPERATOR,
+		[')'] = HTTP_CTYPE_SEPERATOR,
+		['<'] = HTTP_CTYPE_SEPERATOR,
+		['>'] = HTTP_CTYPE_SEPERATOR,
+		['@'] = HTTP_CTYPE_SEPERATOR,
+		[','] = HTTP_CTYPE_SEPERATOR,
+		[';'] = HTTP_CTYPE_SEPERATOR,
+		[':'] = HTTP_CTYPE_SEPERATOR,
+		['\\'] = HTTP_CTYPE_SEPERATOR,
+		['\"'] = HTTP_CTYPE_SEPERATOR,
+		['/'] = HTTP_CTYPE_SEPERATOR,
+		['['] = HTTP_CTYPE_SEPERATOR,
+		[']'] = HTTP_CTYPE_SEPERATOR,
+		['?'] = HTTP_CTYPE_SEPERATOR,
+		['='] = HTTP_CTYPE_SEPERATOR,
+		['{'] = HTTP_CTYPE_SEPERATOR,
+		['}'] = HTTP_CTYPE_SEPERATOR,
+		[' '] = HTTP_CTYPE_SEPERATOR,
+		['\t'] = HTTP_CTYPE_SEPERATOR
+	};
+
+
 int http_isseperator(char c)
 {
-	return strchr("()<>@,;:\\\"/[]?={} \t", c) != NULL;
+	// return strchr("()<>@,;:\\\"/[]?={} \t", c) != NULL;
+	return _http_isseperator(c);
 }
 
 // TEXT           = <any OCTET except CTLs, but including LWS>
@@ -57,7 +85,7 @@ int http_isseperator(char c)
 
 int http_istoken(char c)
 {
-	return c > 32 && c <= 126 && !http_isseperator(c);
+	return c > 32 && c <= 126 && !_http_isseperator(c);
 }
 
 const char *http_parse_token(const char *s, const char **token)
@@ -167,7 +195,7 @@ const char *http_parse_name_fixed(const char *s, char *name, size_t name_size)
 	return *s == ':' ? s + 1 : s;
 }
 
-static int compare_param(HTTP_HEADER_PARAM *p1, HTTP_HEADER_PARAM *p2)
+static int NONNULL_ALL compare_param(HTTP_HEADER_PARAM *p1, HTTP_HEADER_PARAM *p2)
 {
 	return strcasecmp(p1->name, p2->name);
 }
@@ -228,27 +256,25 @@ const char *http_parse_link(HTTP_LINK *link, const char *s)
 
 			while (*s == ';') {
 				s = http_parse_param(s, &name, &value);
-				if (!name || !value) continue;
-
-				if (!strcasecmp(name, "rel")) {
-					if (!strcasecmp(value, "describedby"))
-						link->rel = link_rel_describedby;
-					else if (!strcasecmp(value, "duplicate"))
-						link->rel = link_rel_duplicate;
-				} else if (!strcasecmp(name, "pri")) {
-					link->pri = atoi(value);
-				} else if (!strcasecmp(name, "type")) {
-					link->type = value;
-					value = NULL;
+				if (name && value) {
+					if (!strcasecmp(name, "rel")) {
+						if (!strcasecmp(value, "describedby"))
+							link->rel = link_rel_describedby;
+						else if (!strcasecmp(value, "duplicate"))
+							link->rel = link_rel_duplicate;
+					} else if (!strcasecmp(name, "pri")) {
+						link->pri = atoi(value);
+					} else if (!strcasecmp(name, "type")) {
+						link->type = value;
+						value = NULL;
+					}
+					//				http_add_param(&link->params,&param);
+					while (isblank(*s)) s++;
 				}
+
 				xfree(name);
 				xfree(value);
-				//				http_add_param(&link->params,&param);
-				while (isblank(*s)) s++;
 			}
-
-			xfree(name);
-			xfree(value);
 
 			//			if (!msg->contacts) msg->contacts=vec_create(1,1,NULL);
 			//			vec_add(msg->contacts,&contact,sizeof(contact));
@@ -635,22 +661,23 @@ int http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 
 	return 0;
 }
-
+/*
 ssize_t http_request_to_buffer(HTTP_REQUEST *req, buffer_t *buf)
 {
 	// ("%s /%s HTTP/1.1\r\n",req->method,req->resource)
+	int it, nlines = vec_size(req->lines);
 	size_t size = strlen(req->method)+(req->resource ? strlen(req->resource) : 0) + 13 + 1;
-	size_t length[vec_size(req->lines)];
+	size_t length[nlines];
 	char *data;
-	int it;
 
-	for (it = 0; it < vec_size(req->lines); it++) {
+	for (it = 0; it < nlines; it++) {
 		const char *line = vec_get(req->lines, it);
 		if (*line) {
 			size += (length[it] = strlen(line));
 			if (line[length[it] - 1] != '\n')
 				size += 2; // + CRLF
-		}
+		} else
+			length[it] = 0;
 	}
 
 	size += 2 + 1; // CRLF + 0 byte
@@ -659,7 +686,7 @@ ssize_t http_request_to_buffer(HTTP_REQUEST *req, buffer_t *buf)
 	data = buf->data;
 
 	size = snprintf(data, size, "%s /%s HTTP/1.1\r\n", req->method, req->resource ? req->resource : "");
-	for (it = 0; it < vec_size(req->lines); it++) {
+	for (it = 0; it < nlines; it++) {
 		strcpy(data + size, vec_get(req->lines, it));
 		size += length[it];
 		if (data[size - 1] != '\n') {
@@ -672,6 +699,30 @@ ssize_t http_request_to_buffer(HTTP_REQUEST *req, buffer_t *buf)
 
 	buf->length=size; // just for consistency, not really needed here
 	return size;
+}
+*/
+
+ssize_t http_request_to_buffer(HTTP_REQUEST *req, buffer_t *buf)
+{
+	int it;
+
+//	buffer_sprintf(buf, "%s /%s HTTP/1.1\r\n", req->method, req->resource ? req->resource : "");
+
+	buffer_strcpy(buf, req->method);
+	buffer_strcat(buf, " /");
+	if (req->resource)
+		buffer_strcat(buf, req->resource);
+	buffer_strcat(buf, "  HTTP/1.1\r\n");
+
+	for (it = 0; it < vec_size(req->lines); it++) {
+		buffer_strcat(buf, vec_get(req->lines, it));
+		if (buf->data[buf->length - 1] != '\n') {
+			buffer_memcat(buf, "\r\n", 2);
+		}
+	}
+	buffer_memcat(buf, "\r\n", 2);
+
+	return buf->length;
 }
 
 HTTP_RESPONSE *http_get_response_cb(
@@ -719,7 +770,6 @@ HTTP_RESPONSE *http_get_response_cb(
 		}
 
 		if ((size_t)nread + 1024 > bufsize) {
-			// buf = xrealloc(buf, (bufsize *= 2) + 1);
 			buffer_ensure_capacity(conn->buf, bufsize + 1024);
 			buf = conn->buf->data;
 			bufsize = conn->buf->size;

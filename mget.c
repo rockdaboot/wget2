@@ -680,11 +680,13 @@ void *downloader_thread(void *p)
 							} else if (!strcasecmp(resp->content_type, "text/css")) {
 								css_parse(sockfd, resp, job->iri);
 							}
-							if (config.output_document)
-								append_file(resp, config.output_document);
-							else
-								save_file(resp, job->iri, HTTP_FLG_USE_PATH);
-						} else {
+							if (!config.spider) {
+								if (config.output_document)
+									append_file(resp, config.output_document);
+								else
+									save_file(resp, job->iri, HTTP_FLG_USE_PATH);
+							}
+						} else if (!config.spider) {
 							if (config.output_document)
 								append_file(resp, config.output_document);
 							else
@@ -715,13 +717,15 @@ ready:
 
 struct html_context {
 	IRI
-		*iri;
+		*base;
 	const char
 		*tag;
 	buffer_t
 		uri_buf;
 	int
 		sockfd;
+	char
+		base_allocated;
 };
 
 static void _html_parse(void *context, int flags, UNUSED const char *dir, const char *attr, const char *val)
@@ -729,24 +733,83 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 	struct html_context *ctx = context;
 
 	if ((flags &= XML_FLG_ATTRIBUTE) && val) {
+		int found = 0;
+
+		// very simplified
 		// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
-		if (!strcasecmp(attr, "href") || !strcasecmp(attr, "src")
-			|| !strcasecmp(attr, "background") || !strcasecmp(attr, "lowsrc")
-			|| !strcasecmp(attr, "data") || !strcasecmp(attr, "code"))
-		{
-			size_t len = strlen(val);
+		switch (tolower(*attr)) {
+		case 'a':
+			found = !strcasecmp(attr, "action") || !strcasecmp(attr, "archive");
+			break;
+		case 'b':
+			found = !strcasecmp(attr, "background");
+			break;
+		case 'c':
+			found = !strcasecmp(attr, "code") || !strcasecmp(attr, "codebase") ||
+				!strcasecmp(attr, "cite") || !strcasecmp(attr, "classid");
+			break;
+		case 'd':
+			found = !strcasecmp(attr, "data");
+			break;
+		case 'f':
+			found = !strcasecmp(attr, "formaction");
+			break;
+		case 'h':
+			found = !strcasecmp(attr, "href");
+
+			if (found && (*dir == 'b' || *dir == 'B') && !strcasecmp(dir,"base")) {
+				// found a <BASE href="...">
+				// add it to be downloaded, replace old base
+				IRI *iri = iri_parse(val);
+				if (iri) {
+					dprintf(ctx->sockfd, "add uri %s\n", val);
+
+					if (ctx->base_allocated)
+						iri_free(&ctx->base);
+
+					ctx->base = iri;
+					ctx->base_allocated = 1;
+				}
+				return;
+			}
+			break;
+		case 'i':
+			found = !strcasecmp(attr, "icon");
+			break;
+		case 'l':
+			found = !strcasecmp(attr, "lowsrc") || !strcasecmp(attr, "longdesc");
+			break;
+		case 'm':
+			found = !strcasecmp(attr, "manifest");
+			break;
+		case 'p':
+			found = !strcasecmp(attr, "profile") || !strcasecmp(attr, "poster");
+			break;
+		case 's':
+			found = !strcasecmp(attr, "src");
+			break;
+		case 'u':
+			found = !strcasecmp(attr, "usemap");
+			break;
+		}
+
+		if (found) {
+			size_t len;
+
+			// sometimes the URIs are surrounded by spaces, we ignore them
+			while (isspace(*val))
+				val++;
+
+			// skip trailing spaces
+			for (len = strlen(val); len && isspace(val[len - 1]); len--)
+				;
 
 			if (len > 1 || (len == 1 && *val != '#')) {
+				info_printf("%02X %s %s=%s\n",flags,dir,attr,val);
 				// ignore e.g. href='#'
-//				char uri_buf[1024];
-//				const char *uri =
-//					iri_relative_to_absolute(ctx->iri, ctx->tag, val, strlen(val), uri_buf, sizeof(uri_buf));
-					iri_relative_to_absolute(ctx->iri, ctx->tag, val, strlen(val), &ctx->uri_buf);
-
+				iri_relative_to_absolute(ctx->base, ctx->tag, val, len, &ctx->uri_buf);
+				info_printf("  %s -> %s\n", ctx->base->uri, ctx->uri_buf.data);
 				dprintf(ctx->sockfd, "add uri %s\n", ctx->uri_buf.data);
-
-//				if (uri != uri_buf)
-//					xfree(uri);
 			}
 		}
 	}
@@ -757,19 +820,23 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 void html_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
-	char tag_buf[1024];
-	char uri_buf[1024];
-	struct html_context context = { .iri = iri, .sockfd = sockfd };
+	char tag_sbuf[1024];
+	char uri_sbuf[1024];
+	buffer_t tag;
+	struct html_context context = { .base = iri, .sockfd = sockfd };
 
-	context.tag = iri_get_connection_part(iri, tag_buf, sizeof(tag_buf));
-	buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
+	buffer_init(&tag, tag_sbuf, sizeof(tag_sbuf));
+	context.tag = iri_get_connection_part(iri, &tag);
+
+	buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
 	html_parse_buffer(resp->body->data, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
 
-	buffer_deinit(&context.uri_buf);
+	if (context.base_allocated)
+		iri_free(&context.base);
 
-	if (context.tag != tag_buf)
-		xfree(context.tag);
+	buffer_deinit(&context.uri_buf);
+	buffer_deinit(&tag);
 }
 
 struct css_context {
@@ -789,15 +856,8 @@ static void _css_parse(void *context, const char *url, size_t len)
 
 	if (len > 1 || (len == 1 && *url != '#')) {
 		// ignore e.g. href='#'
-//		char uri_buf[1024];
-//		const char *uri =
-//			iri_relative_to_absolute(ctx->iri, ctx->tag, url, len, uri_buf, sizeof(uri_buf));
-			iri_relative_to_absolute(ctx->iri, ctx->tag, url, len, &ctx->uri_buf);
-
+		iri_relative_to_absolute(ctx->base, ctx->tag, url, len, &ctx->uri_buf);
 		dprintf(ctx->sockfd, "add uri %s\n", ctx->uri_buf.data);
-
-//		if (uri != uri_buf)
-//			xfree(uri);
 	}
 	// add_uri(ctx->sockfd, ctx->iri, ctx->tag, url, len);
 }
@@ -805,19 +865,20 @@ static void _css_parse(void *context, const char *url, size_t len)
 void css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
-	char tag_buf[1024];
+	char tag_sbuf[1024];
 	char uri_buf[1024];
+	buffer_t tag;
 	struct css_context context = { .iri = iri, .sockfd = sockfd };
 
-	context.tag = iri_get_connection_part(iri, tag_buf, sizeof(tag_buf));;
+	buffer_init(&tag, tag_sbuf, sizeof(tag_sbuf));
+	context.tag = iri_get_connection_part(iri, &tag);
+
 	buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
 
 	css_parse_buffer(resp->body->data, _css_parse, &context);
 
 	buffer_deinit(&context.uri_buf);
-
-	if (context.tag != tag_buf)
-		xfree(context.tag);
+	buffer_deinit(&tag);
 }
 
 void append_file(HTTP_RESPONSE *resp, const char *fname)
@@ -1041,16 +1102,23 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 				"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8\r\n"
 				"Accept-Language: en-us,en;q=0.5\r\n");
 				 */
-				"Accept-Encoding: gzip\r\n"\
-				"Accept: application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
+				"Accept-Encoding: gzip\r\n");
+
+			http_add_header_line(req, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
+
+//			if (config.spider && !config.recursive)
+//				http_add_header_if_modified_since(time(NULL));
+//				http_add_header_line(req, "If-Modified-Since: Wed, 29 Aug 2012 00:00:00 GMT\r\n");
+
 			if (config.user_agent)
 				http_add_header(req, "User-Agent", config.user_agent);
+
 			// if (config.keep_alive)
 			http_add_header_line(req, "Connection: keep-alive\r\n");
 
 			if (part)
 				http_add_header_printf(req, "Range: bytes=%llu-%llu",
-				(unsigned long long)part->position, (unsigned long long)part->position + part->length - 1);
+					(unsigned long long) part->position, (unsigned long long) part->position + part->length - 1);
 
 			if (http_send_request(conn, req) == 0) {
 				resp = http_get_response(conn, NULL);
@@ -1077,24 +1145,20 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			break;
 		}
 
-		if (resp->code / 100 == 2 || resp->code / 100 >= 4)
+		// 304 Not Modified
+		if (resp->code / 100 == 2 || resp->code / 100 >= 4 || resp->code == 304)
 			break; // final response
 
 		if (resp->code == 302 && resp->links && resp->digests)
 			break; // 302 with Metalink information
 
 		if (resp->location) {
-			char tag_buf[1024];
-			const char *tag = iri_get_connection_part(use_iri, tag_buf, sizeof(tag_buf));
-//			char uri_buf[1024];
-//			const char *uri;
+			char tag_sbuf[1024];
+			buffer_t tag_buf;
+			const char *tag = iri_get_connection_part(use_iri, buffer_init(&tag_buf, tag_sbuf, sizeof(tag_sbuf)));
 
 			iri_relative_to_absolute(
 				use_iri, tag, resp->location, strlen(resp->location), &uri_buf);
-//				use_iri, tag, resp->location, strlen(resp->location), uri_buf, sizeof(uri_buf));
-
-//			if (tag != tag_buf)
-//				xfree(tag);
 
 			location = resp->location;
 			resp->location = NULL;
@@ -1105,8 +1169,6 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			use_iri = iri_parse(uri_buf.data);
 
 			buffer_deinit(&uri_buf);
-//			if (uri != uri_buf)
-//				xfree(uri);
 		} else {
 			if (use_iri != iri)
 				iri_free(&use_iri);

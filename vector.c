@@ -45,13 +45,7 @@ VECTOR *vec_create(int max, int off, int (*cmp)(const void *, const void *))
 {
 	VECTOR *v = xcalloc(1, sizeof(VECTOR));
 
-	if (v == NULL) return NULL;
-
-	if ((v->pl = xmalloc(max * sizeof(void *))) == NULL) {
-		xfree(v);
-		return NULL;
-	}
-
+	v->pl = xmalloc(max * sizeof(void *));
 	v->max = max;
 	v->off = off;
 	v->cmp = cmp;
@@ -59,14 +53,14 @@ VECTOR *vec_create(int max, int off, int (*cmp)(const void *, const void *))
 	return v;
 }
 
-static int vec_insert_private(VECTOR *v, const void *elem, int size, int pos, int replace, int alloc)
+static int NONNULL(2) vec_insert_private(VECTOR *v, const void *elem, size_t size, int pos, int replace, int alloc)
 {
 	void *elemp;
 
-	if (pos < 0 || v == NULL || pos > v->cur) return -1;
+	if (pos < 0 || !v || pos > v->cur) return -1;
 
 	if (alloc) {
-		if ((elemp = xmalloc(size)) == NULL) return -1;
+		elemp = xmalloc(size);
 		memcpy(elemp, elem, size);
 	} else {
 		elemp = (void *)elem;
@@ -79,7 +73,7 @@ static int vec_insert_private(VECTOR *v, const void *elem, int size, int pos, in
 			} else if (v->off<-1) {
 				v->pl = xrealloc(v->pl, (v->max *= -v->off) * sizeof(void *));
 			} else {
-				if (alloc && elemp)
+				if (alloc)
 					free(elemp);
 				return -1;
 			}
@@ -110,7 +104,7 @@ static int vec_insert_private(VECTOR *v, const void *elem, int size, int pos, in
 	return pos; // return position of new element
 }
 
-int vec_insert(VECTOR *v, const void *elem, int size, int pos)
+int vec_insert(VECTOR *v, const void *elem, size_t size, int pos)
 {
 	return vec_insert_private(v, elem, size, pos, 0, 1);
 }
@@ -120,35 +114,33 @@ int vec_insert_noalloc(VECTOR *v, const void *elem, int pos)
 	return vec_insert_private(v, elem, 0, pos, 0, 0);
 }
 
-static int vec_insert_sorted_private(VECTOR *v, const void *elem, int size, int alloc)
+static int NONNULL(2) vec_insert_sorted_private(VECTOR *v, const void *elem, size_t size, int alloc)
 {
 	int m = 0;
 
-	if (v == NULL) return -1;
+	if (!v) return -1;
 
-	if (v->cmp == NULL)
+	if (!v->cmp)
 		return vec_insert_private(v, elem, size, v->cur, 0, alloc);
 
 	if (!v->sorted) vec_sort(v);
 	// vec_sort will leave v->sorted alone if it fails, so check again
 	if (v->sorted) {
-		if (v->cur > 0) {
-			// binary search for element
-			int l = 0, r = v->cur - 1, res = 0;
+		// binary search for element
+		int l = 0, r = v->cur - 1, res = 0;
 
-			while (l <= r) {
-				m = (l + r) / 2;
-				if ((res = v->cmp(elem, v->pl[m])) > 0) l = m + 1;
-				else if (res < 0) r = m - 1;
-				else return vec_insert_private(v, elem, size, m, 0, alloc);
-			}
-			if (res > 0) m++;
+		while (l <= r) {
+			m = (l + r) / 2;
+			if ((res = v->cmp(elem, v->pl[m])) > 0) l = m + 1;
+			else if (res < 0) r = m - 1;
+			else return vec_insert_private(v, elem, size, m, 0, alloc);
 		}
+		if (res > 0) m++;
 	}
 	return vec_insert_private(v, elem, size, m, 0, alloc);
 }
 
-int vec_insert_sorted(VECTOR *v, const void *elem, int size)
+int vec_insert_sorted(VECTOR *v, const void *elem, size_t size)
 {
 	return vec_insert_sorted_private(v, elem, size, 1);
 }
@@ -158,7 +150,7 @@ int vec_insert_sorted_noalloc(VECTOR *v, const void *elem)
 	return vec_insert_sorted_private(v, elem, 0, 0);
 }
 
-int vec_add(VECTOR *v, const void *elem, int size)
+int vec_add(VECTOR *v, const void *elem, size_t size)
 {
 	return vec_insert_private(v, elem, size, v->cur, 0, 1);
 }
@@ -168,9 +160,9 @@ int vec_add_noalloc(VECTOR *v, const void *elem)
 	return vec_insert_private(v, elem, 0, v->cur, 0, 0);
 }
 
-int vec_replace(VECTOR *v, const void *elem, int size, int pos)
+int vec_replace(VECTOR *v, const void *elem, size_t size, int pos)
 {
-	if (pos < 0 || pos >= v->cur) return -1;
+	if (!v || pos < 0 || pos >= v->cur) return -1;
 
 	xfree(v->pl[pos]);
 
@@ -206,7 +198,7 @@ int vec_add_str(VECTOR *v, const char *s)
 
 static int vec_remove_private(VECTOR *v, int pos, int free_entry)
 {
-	if (pos < 0 || pos >= v->cur) return -1;
+	if (pos < 0 || !v || pos >= v->cur) return -1;
 
 	if (free_entry) xfree(v->pl[pos]);
 	memmove(&v->pl[pos], &v->pl[pos + 1], (v->cur - pos - 1) * sizeof(void *));
@@ -229,6 +221,7 @@ int vec_move(VECTOR *v, int old_pos, int new_pos)
 {
 	void *tmp;
 
+	if (!v) return -1;
 	if (old_pos < 0 || old_pos >= v->cur) return -1;
 	if (new_pos < 0 || new_pos >= v->cur) return -1;
 	if (old_pos == new_pos) return 0;
@@ -253,6 +246,7 @@ int vec_swap(VECTOR *v, int pos1, int pos2)
 {
 	void *tmp;
 
+	if (!v) return -1;
 	if (pos1 < 0 || pos1 >= v->cur) return -1;
 	if (pos2 < 0 || pos2 >= v->cur) return -1;
 	if (pos1 == pos2) return 0;
@@ -285,7 +279,7 @@ void vec_free(VECTOR **v)
 
 void vec_clear(VECTOR *v)
 {
-	if (v && v->pl) {
+	if (v) {
 		int it;
 
 		for (it = 0; it < v->cur; it++) {
@@ -298,40 +292,39 @@ void vec_clear(VECTOR *v)
 
 int vec_size(const VECTOR *v)
 {
-	if (v == NULL) return 0;
-
-	return v->cur;
+	return v ? v->cur : 0;
 }
 
 void *vec_get(const VECTOR *v, int pos)
 {
-	if (pos < 0 || v == NULL || pos >= v->cur) return NULL;
+	if (pos < 0 || !v || pos >= v->cur) return NULL;
 
 	return v->pl[pos];
 }
 
 int vec_browse(const VECTOR *v, int (*browse)(void *elem))
 {
-	int ret = 0;
-
 	if (v) {
-		int it;
+		int it, ret;
 
 		for (it = 0; it < v->cur; it++)
-			if ((ret = browse(v->pl[it])) != 0) break;
+			if ((ret = browse(v->pl[it])) != 0)
+				return ret;
 	}
 
-	return ret;
+	return 0;
 }
 
 void vec_setcmpfunc(VECTOR *v, int (*cmp)(const void *elem1, const void *elem2))
 {
-	v->cmp = cmp;
+	if (v) {
+		v->cmp = cmp;
 
-	if (v->cur == 1)
-		v->sorted = 1;
-	else
-		v->sorted = 0;
+		if (v->cur == 1)
+			v->sorted = 1;
+		else
+			v->sorted = 0;
+	}
 }
 
 void vec_sort(VECTOR *v)
@@ -352,10 +345,10 @@ void vec_sort(VECTOR *v)
  // fallback: work with mutex and a static variable
 #endif
 */
-	if (v == NULL || v->cmp == NULL || !v->cur) return;
-
-	qsort(v->pl, v->cur, sizeof(void *), v->cmp);
-	v->sorted = 1;
+	if (v && v->cmp) {
+		qsort(v->pl, v->cur, sizeof(void *), v->cmp);
+		v->sorted = 1;
+	}
 }
 
 // Find first entry that matches spth specified element,
@@ -363,27 +356,27 @@ void vec_sort(VECTOR *v)
 
 int vec_find(const VECTOR *v, const void *elem)
 {
-	if (v == NULL || v->cmp == NULL) return -1;
+	if (v && v->cmp) {
+		if (v->cur == 1) {
+			if (v->cmp(elem, v->pl[0]) == 0) return 0;
+		} else if (v->sorted) {
+			int l, r, m;
+			int res;
 
-	if (v->cur == 1) {
-		if (v->cmp(elem, v->pl[0]) == 0) return 0;
-	} else if (v->sorted) {
-		int l, r, m;
-		int res;
+			// binary search for element (exact match)
+			for (l = 0, r = v->cur - 1; l <= r;) {
+				m = (l + r) / 2;
+				if ((res = v->cmp(elem, v->pl[m])) > 0) l = m + 1;
+				else if (res < 0) r = m - 1;
+				else return m;
+			}
+		} else {
+			int it;
 
-		// binary search for element (exact match)
-		for (l = 0, r = v->cur - 1; l <= r;) {
-			m = (l + r) / 2;
-			if ((res = v->cmp(elem, v->pl[m])) > 0) l = m + 1;
-			else if (res < 0) r = m - 1;
-			else return m;
+			// linear search for element
+			for (it = 0; it < v->cur; it++)
+				if (v->cmp(elem, v->pl[it]) == 0) return it;
 		}
-	} else {
-		int it;
-
-		// linear search for element
-		for (it = 0; it < v->cur; it++)
-			if (v->cmp(elem, v->pl[it]) == 0) return it;
 	}
 
 	return -1; // not found
@@ -395,21 +388,25 @@ int vec_find(const VECTOR *v, const void *elem)
 
 int vec_findext(const VECTOR *v, int start, int direction, int (*find)(void *))
 {
-	int it;
 
-	switch (direction) {
-	case 0: // up
-		if (start >= 0) {
-			for (it = start; it < v->cur; it++)
-				if (find(v->pl[it]) == 0) return it;
+	if (v) {
+		int it;
+
+		switch (direction) {
+		case 0: // up
+			if (start >= 0) {
+				for (it = start; it < v->cur; it++)
+					if (find(v->pl[it]) == 0) return it;
+			}
+			break;
+		case 1: // down
+			if (start < v->cur) {
+				for (it = start; it >= 0; it--)
+					if (find(v->pl[it]) == 0) return it;
+			}
+			break;
 		}
-		break;
-	case 1: // down
-		if (start < v->cur) {
-			for (it = start; it >= 0; it--)
-				if (find(v->pl[it]) == 0) return it;
-		}
-		break;
 	}
+
 	return -1;
 }

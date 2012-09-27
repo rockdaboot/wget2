@@ -46,31 +46,31 @@ typedef struct {
 } VECTOR;
 
 VECTOR
-	*vec_create(int max, int off, int (*cmp)(const void *, const void *));
+	*vec_create(int max, int off, int (*cmp)(const void *, const void *)) MALLOC;
 int
-	vec_find(const VECTOR *v, const void *elem),
-	vec_findext(const VECTOR *v, int start, int direction, int (*find)(void *)),
-	vec_insert(VECTOR *v, const void *elem, int size, int pos),
-	vec_insert_noalloc(VECTOR *v, const void *elem, int pos),
-	vec_insert_sorted(VECTOR *v, const void *elem, int size),
-	vec_insert_sorted_noalloc(VECTOR *v, const void *elem),
-	vec_add(VECTOR *v, const void *elem, int size),
-	vec_add_noalloc(VECTOR *v, const void *elem),
-	vec_add_str(VECTOR *v, const char *s),
-	vec_add_vprintf(VECTOR *v, const char *fmt, va_list args) PRINTF_FORMAT(2,0),
-	vec_add_printf(VECTOR *v, const char *fmt, ...) PRINTF_FORMAT(2,3),
-	vec_replace(VECTOR *v, const void *elem, int size, int pos),
+	vec_find(const VECTOR *v, const void *elem) NONNULL(2),
+	vec_findext(const VECTOR *v, int start, int direction, int (*find)(void *)) NONNULL(4),
+	vec_insert(VECTOR *v, const void *elem, size_t size, int pos) NONNULL(2),
+	vec_insert_noalloc(VECTOR *v, const void *elem, int pos) NONNULL(2),
+	vec_insert_sorted(VECTOR *v, const void *elem, size_t size) NONNULL(2),
+	vec_insert_sorted_noalloc(VECTOR *v, const void *elem) NONNULL(2),
+	vec_add(VECTOR *v, const void *elem, size_t size) NONNULL(2),
+	vec_add_noalloc(VECTOR *v, const void *elem) NONNULL(2),
+	vec_add_str(VECTOR *v, const char *s) NONNULL(2),
+	vec_add_vprintf(VECTOR *v, const char *fmt, va_list args) PRINTF_FORMAT(2,0) NONNULL(2),
+	vec_add_printf(VECTOR *v, const char *fmt, ...) PRINTF_FORMAT(2,3) NONNULL(2),
+	vec_replace(VECTOR *v, const void *elem, size_t size, int pos) NONNULL(2),
 	vec_move(VECTOR *v, int old_pos, int new_pos),
 	vec_swap(VECTOR *v, int pos1, int pos2),
 	vec_remove(VECTOR *v, int pos),
 	vec_remove_nofree(VECTOR *v, int pos),
 	vec_size(const VECTOR *v),
-	vec_browse(const VECTOR *v, int (*browse)(void *elem));
+	vec_browse(const VECTOR *v, int (*browse)(void *elem)) NONNULL(2);
 void
 	vec_free(VECTOR **v),
 	vec_clear(VECTOR *v),
 	*vec_get(const VECTOR *v, int pos),
-	vec_setcmpfunc(VECTOR *v, int (*cmp)(const void *elem1, const void *elem2)),
+	vec_setcmpfunc(VECTOR *v, int (*cmp)(const void *elem1, const void *elem2)) NONNULL(2),
 	vec_sort(VECTOR *v);
 
 #endif /* _MGET_VECTOR_H */

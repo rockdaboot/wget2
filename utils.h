@@ -37,23 +37,23 @@
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
 void
-   buffer_to_hex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size);
+   buffer_to_hex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size) NONNULL_ALL;
 char
-	*strndup(const char *s, size_t n);
+	*strndup(const char *s, size_t n) MALLOC NONNULL_ALL;
 size_t
-	strlcpy(char *dst, const char *src, size_t size);
+	strlcpy(char *restrict dst, const char *restrict src, size_t size) NONNULL_ALL;
 ssize_t
-	fdgetline0(char **buf, size_t *bufsize, int fd),
-	getline(char **buf, size_t *bufsize, FILE *fp);
+	fdgetline0(char **buf, size_t *bufsize, int fd) NONNULL_ALL,
+	getline(char **buf, size_t *bufsize, FILE *fp) NONNULL_ALL;
 FILE
-	*vpopenf(const char *type, const char *fmt, va_list args) PRINTF_FORMAT(2,0),
-	*popenf(const char *type, const char *fmt, ...) PRINTF_FORMAT(2,3),
-	*popen2f(FILE **fpin, FILE **fpout, const char *fmt, ...) PRINTF_FORMAT(3,4);
+	*vpopenf(const char *type, const char *fmt, va_list args) PRINTF_FORMAT(2,0) NONNULL(1,2),
+	*popenf(const char *type, const char *fmt, ...) PRINTF_FORMAT(2,3) NONNULL(1,2),
+	*popen2f(FILE **fpin, FILE **fpout, const char *fmt, ...) PRINTF_FORMAT(3,4) NONNULL(3);
 pid_t
 	fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv),
 	popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *argv);
 int
-	null_strcmp(const char *s1, const char *s2),
-	null_strcasecmp(const char *s1, const char *s2);
+	null_strcmp(const char *s1, const char *s2) PURE,
+	null_strcasecmp(const char *s1, const char *s2) PURE;
 
 #endif /* _MGET_UTILS_H */

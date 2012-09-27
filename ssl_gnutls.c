@@ -74,7 +74,7 @@ static void print_x509_certificate_info(gnutls_session_t session)
 		if ((cert_type = gnutls_certificate_type_get(session)) == GNUTLS_CRT_X509) {
 
 			gnutls_x509_crt_init(&cert);
-			gnutls_x509_crt_import(cert, &cert_list[ncert], GNUTLS_X509_FMT_PEM);
+			gnutls_x509_crt_import(cert, &cert_list[ncert], GNUTLS_X509_FMT_DER);
 
 			info_printf(_("Certificate info [%u]:\n"), ncert);
 
@@ -113,11 +113,29 @@ static void print_x509_certificate_info(gnutls_session_t session)
 
 			info_printf(_("  Certificate version: #%d\n"), gnutls_x509_crt_get_version(cert));
 
+			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_dn(cert, dn, &dn_size);
 			info_printf("  DN: %s\n", dn);
 
+			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_issuer_dn(cert, dn, &dn_size);
 			info_printf(_("  Certificate Issuer's DN: %s\n"), dn);
+
+			dn_size = sizeof(dn);
+			gnutls_x509_crt_get_issuer_dn_oid(cert, 0, dn, &dn_size);
+			info_printf(_("  Certificate Issuer's OID: %s\n"), dn);
+
+			dn_size = sizeof(dn);
+			gnutls_x509_crt_get_issuer_unique_id(cert, dn, &dn_size);
+			info_printf(_("  Certificate Issuer's UID: %s\n"), dn);
+
+			dn_size = sizeof(dn);
+			gnutls_x509_crt_get_subject_key_id(cert, dn, &dn_size, NULL);
+                        info_printf(_("  Certificate Subject ID: %s\n"), dn);
+
+			dn_size = sizeof(dn);
+			gnutls_x509_crt_get_subject_unique_id(cert, dn, &dn_size);
+                        info_printf(_("  Certificate Subject UID: %s\n"), dn);
 
 			gnutls_x509_crt_deinit(cert);
 		} else {
@@ -250,6 +268,9 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	// read hostname
 	hostname = gnutls_session_get_ptr(session);
 
+	if (config.debug)
+		print_info(session);
+
 	/* This verification function uses the trusted CAs in the credentials
 	 * structure. So you must have installed one or more CA certificates.
 	 */
@@ -303,13 +324,13 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		time_t now = time(NULL);
 
 		for (it = 0; it < cert_list_size && ret == 0; it++) {
-			if (!(err = gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER))) {
+			if (!(err = gnutls_x509_crt_import(cert, &cert_list[it], GNUTLS_X509_FMT_DER))) {
 				if (now < gnutls_x509_crt_get_activation_time (cert)) {
-					err_printf (_("%s: The certificate is not yet activated\n"), tag);
+					err_printf(_("%s: The certificate is not yet activated\n"), tag);
 					ret = -1;
 				}
 				else if (now >= gnutls_x509_crt_get_expiration_time (cert)) {
-					err_printf (_("%s: The certificate has expired\n"), tag);
+					err_printf(_("%s: The certificate has expired\n"), tag);
 					ret = -1;
 				}
 			} else {
@@ -317,7 +338,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 				ret = -1;
 			}
 
-			if (!gnutls_x509_crt_check_hostname(cert, hostname)) {
+			if (it == 0 && !gnutls_x509_crt_check_hostname(cert, hostname)) {
 				err_printf(_("%s: The certificate's owner does not match hostname '%s'\n"), tag, hostname);
 				ret = -1;
 			}
@@ -352,31 +373,50 @@ void ssl_init(void)
 		gnutls_certificate_set_verify_function(credentials, _verify_certificate_callback);
 
 		if (config.ca_directory && *config.ca_directory) {
-			DIR *dir;
+			int ncerts = -1;
 
-			if ((dir = opendir(config.ca_directory))) {
-				struct dirent *dp;
-				size_t dirlen = strlen(config.ca_directory);
+			if (!strcmp(config.ca_directory, "system")) {
+				ncerts = gnutls_certificate_set_x509_system_trust(credentials);
+			}
 
-				while ((dp = readdir(dir))) {
-					size_t len = strlen(dp->d_name);
+			if (ncerts < 0) {
+				DIR *dir;
 
-					if (len >= 4 && !strncasecmp(dp->d_name + len - 4, ".pem", 4)) {
-						struct stat st;
-						char fname[dirlen + 1 + len + 1];
+				ncerts = 0;
 
-						sprintf(fname, "%s/%s", config.ca_directory, dp->d_name);
-						if (!stat(fname, &st) && S_ISREG(st.st_mode)) {
-							log_printf("GnuTLS loading %s\n", fname);
-							gnutls_certificate_set_x509_trust_file(credentials, fname, GNUTLS_X509_FMT_PEM);
+				if ((dir = opendir(config.ca_directory))) {
+					struct dirent *dp;
+					size_t dirlen = strlen(config.ca_directory);
+
+					while ((dp = readdir(dir))) {
+						size_t len = strlen(dp->d_name);
+
+						if (len >= 4 && !strncasecmp(dp->d_name + len - 4, ".pem", 4)) {
+							struct stat st;
+							char fname[dirlen + 1 + len + 1];
+
+							sprintf(fname, "%s/%s", config.ca_directory, dp->d_name);
+							if (!stat(fname, &st) && S_ISREG(st.st_mode)) {
+								int rc;
+
+								log_printf("GnuTLS loading %s\n", fname);
+								if ((rc = gnutls_certificate_set_x509_trust_file(credentials, fname, GNUTLS_X509_FMT_PEM)) <= 0)
+									log_printf("Failed to load certs: (%d)\n", rc);
+								else
+									ncerts += rc;
+								if (rc!=1)
+									log_printf("Loaded %d certs\n", rc);
+							}
 						}
 					}
+
+					closedir(dir);
+				} else {
+					err_printf("Failed to diropen %s\n", config.ca_directory);
 				}
-				
-				closedir(dir);
-			} else {
-				err_printf("Failed to diropen %s\n", config.ca_directory);
 			}
+
+			log_printf("Certificates loaded: %d\n", ncerts);
 		}
 
 		if (config.cert_file && !config.private_key) {
@@ -491,7 +531,7 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 		err_printf("GnuTLS: %s\n", gnutls_strerror(ret));
 	}
 
-    // Perform the TLS handshake
+	// Perform the TLS handshake
 	for (;;) {
 		ret = gnutls_handshake(session);
 		if (ret == 0 || gnutls_error_is_fatal(ret)) {

@@ -85,12 +85,12 @@ void list_remove(LISTNODE **list, void *elem)
 
 void *list_getfirst(const LISTNODE *list)
 {
-	return(void *)(list + 1);
+	return (void *)(list + 1);
 }
 
 void *list_getlast(const LISTNODE *list)
 {
-	return(void *)(list->prev + 1);
+	return (void *)(list->prev + 1);
 }
 
 int list_browse(const LIST *list, int (*browse)(void *context, void *elem), void *context)

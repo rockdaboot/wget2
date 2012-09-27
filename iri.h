@@ -59,14 +59,14 @@ void
 	iri_test(void),
 	iri_free(IRI **iri);
 int
-	iri_isgendelim(char c),
-	iri_issubdelim(char c),
-	iri_isreserved(char c),
-	iri_isunreserved(char c);
+	iri_isgendelim(char c) CONST,
+	iri_issubdelim(char c) CONST,
+	iri_isreserved(char c) CONST,
+	iri_isunreserved(char c) CONST;
 IRI
-	*iri_parse(const char *s) NONNULL_ALL;
+	*iri_parse(const char *s) MALLOC NONNULL_ALL;
 char
-	*iri_get_connection_part(IRI *iri, char *tag, size_t tagsize) NONNULL_ALL,
+	*iri_get_connection_part(IRI *iri, buffer_t *buf) NONNULL_ALL,
 	*iri_relative_to_absolute(IRI *base, const char *tag, const char *val, size_t len, buffer_t *buf) NONNULL_ALL;
 
 #endif /* _MGET_IRI_H */

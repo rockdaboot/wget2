@@ -47,9 +47,6 @@ ssize_t fdgetline0(char **buf, size_t *bufsize, int fd)
 	size_t *sizep, length = 0;
 	char *p;
 
-	if (!buf || !bufsize)
-		return -1;
-
 	if (!*buf || !*bufsize) {
 		// first call
 		*buf = malloc(*bufsize = 10240);
@@ -115,9 +112,6 @@ ssize_t getline(char **buf, size_t *bufsize, FILE *fp)
 	ssize_t nbytes = 0;
 	size_t *sizep, length = 0;
 	char *p;
-
-	if (!buf || !bufsize)
-		return -1;
 
 	if (!*buf || !*bufsize) {
 		// first call
@@ -199,8 +193,6 @@ FILE *vpopenf(const char *type, const char *fmt, va_list args)
 		// POSIX compliant or glibc >= 2.1
 		bufp = xmalloc(len + 1);
 		vsnprintf(bufp, len + 1, fmt, args2);
-		fp = popen(sbuf, type);
-		xfree(bufp);
 	} else if (len == -1) {
 		// oldstyle with ugly try-and-error fallback (maybe just truncate the msg ?)
 		size_t size = sizeof(sbuf);
@@ -440,13 +432,8 @@ void buffer_to_hex(const unsigned char *src, size_t src_len, char *dst, size_t d
 	size_t it;
 	int adjust = 0, c;
 
-	if (!dst || dst_size == 0)
+	if (dst_size == 0)
 		return;
-
-	if (!src || src_len == 0) {
-		*dst = 0;
-		return;
-	}
 
 	if (src_len * 2 >= dst_size) {
 		src_len = (dst_size - 1) / 2;

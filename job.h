@@ -93,7 +93,7 @@ JOB
 PART
 	*job_add_part(JOB *job, PART *part);
 int
-	queue_not_empty(void),
+	queue_not_empty(void) PURE,
 	queue_get(JOB **job_out, PART **part_out);
 void
 	job_create_parts(JOB *job),
