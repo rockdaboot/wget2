@@ -248,14 +248,12 @@ static void _convert_pointer(buffer_t *buf, void *pointer)
 	buffer_memcat(buf, dst, length);
 }
 
-size_t buffer_append_vprintf2(buffer_t *buf, const char *fmt, va_list args)
+size_t buffer_vprintf_append2(buffer_t *buf, const char *fmt, va_list args)
 {
 	const char *p = fmt, *begin;
 	int field_width, precision, flags;
 	long long arg;
 	unsigned long long argu;
-
-	buf->length = 0;
 
 	for (;*p;) {
 
@@ -263,7 +261,7 @@ size_t buffer_append_vprintf2(buffer_t *buf, const char *fmt, va_list args)
 
 		for (begin = p; *p && *p != '%'; p++);
 		if (p != begin)
-			buffer_memcat(buf, p, p - begin);
+			buffer_memcat(buf, begin, p - begin);
 
 		if (!*p) break;
 
@@ -419,15 +417,15 @@ size_t buffer_vprintf2(buffer_t *buf, const char *fmt, va_list args)
 {
 	buf->length = 0;
 
-	return buffer_append_vprintf2(buf, fmt, args);
+	return buffer_vprintf_append2(buf, fmt, args);
 }
 
-size_t buffer_append_printf2(buffer_t *buf, const char *fmt, ...)
+size_t buffer_printf_append2(buffer_t *buf, const char *fmt, ...)
 {
 	va_list args;
 
 	va_start(args, fmt);
-	buffer_append_vprintf2(buf, fmt, args);
+	buffer_vprintf_append2(buf, fmt, args);
 	va_end(args);
 
 	return buf->length;
@@ -442,7 +440,7 @@ size_t buffer_printf2(buffer_t *buf, const char *fmt, ...)
 	va_end(args);
 }
 
-size_t buffer_append_vprintf(buffer_t *buf, const char *fmt, va_list args)
+size_t buffer_vprintf_append(buffer_t *buf, const char *fmt, va_list args)
 {
 	ssize_t length;
 	va_list args2;
@@ -462,12 +460,12 @@ size_t buffer_append_vprintf(buffer_t *buf, const char *fmt, va_list args)
 	return buf->length;
 }
 
-size_t buffer_append_printf(buffer_t *buf, const char *fmt, ...)
+size_t buffer_printf_append(buffer_t *buf, const char *fmt, ...)
 {
 	va_list args;
 
 	va_start(args, fmt);
-	buffer_append_vprintf(buf, fmt, args);
+	buffer_vprintf_append(buf, fmt, args);
 	va_end(args);
 
 	return buf->length;
@@ -477,7 +475,7 @@ size_t buffer_vprintf(buffer_t *buf, const char *fmt, va_list args)
 {
 	buf->length = 0;
 
-	return buffer_append_vprintf(buf, fmt, args);
+	return buffer_vprintf_append(buf, fmt, args);
 }
 
 size_t buffer_printf(buffer_t *buf, const char *fmt, ...)

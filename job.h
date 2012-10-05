@@ -79,10 +79,11 @@ typedef struct {
 	const char
 		*name;
 	off_t
-		size; // total size of the file (C99 'long long' has at least 64 bits)
+		size; // total size of the file
 	int
 		mirror_pos, // where to look up the next mirror to use
-		piece_pos; // where to look up the next piece to download
+		piece_pos, // where to look up the next piece to download
+		redirection_level; // number of redirections occurred to create this job
 	char
 		inuse,
 		hash_ok; // checksum of complete file is ok

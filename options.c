@@ -649,6 +649,7 @@ int init(int argc, const char *const *argv)
 	}
 
 	// set module specific options
+	tcp_set_debug(config.debug);
 	tcp_set_timeout(NULL, config.read_timeout);
 	tcp_set_connect_timeout(config.connect_timeout);
 	tcp_set_dns_timeout(config.dns_timeout);

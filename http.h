@@ -72,12 +72,15 @@ enum {
 
 // keep the request as simple as possible
 typedef struct {
-	const char
-		*resource;
-	char
-		method[8]; // we just need HEAD, GET and POST
 	VECTOR
 		*lines;
+	buffer_t
+		esc_resource, // URI escaped resource
+		esc_host; // URI escaped host
+	char
+		esc_resource_buf[256],
+		esc_host_buf[64],
+		method[8]; // we just need HEAD, GET and POST
 } HTTP_REQUEST;
 
 // just parse the header lines that we need
@@ -112,7 +115,7 @@ typedef struct {
 		*addrinfo,
 		*ai;
 	const char
-		*host,
+		*esc_host,
 		*port,
 		*scheme;
 	buffer_t

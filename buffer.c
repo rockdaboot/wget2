@@ -176,6 +176,16 @@ size_t buffer_strcat(buffer_t *buf, const char *s)
 	return buf->length;
 }
 
+size_t buffer_bufcpy(buffer_t *buf, buffer_t *src)
+{
+	return buffer_memcpy(buf, src->data, src->length);
+}
+
+size_t buffer_bufcat(buffer_t *buf, buffer_t *src)
+{
+	return buffer_memcat(buf, src->data, src->length);
+}
+
 size_t buffer_memset(buffer_t *buf, char c, size_t length)
 {
 	buf->length = 0;

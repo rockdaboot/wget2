@@ -58,15 +58,18 @@ size_t
 	buffer_memcat(buffer_t *buf, const void *data, size_t length) NONNULL(1,2),
 	buffer_strcpy(buffer_t *buf, const char *s) NONNULL(1,2),
 	buffer_strcat(buffer_t *buf, const char *s) NONNULL(1,2),
+	buffer_bufcpy(buffer_t *buf, buffer_t *src) NONNULL(1,2),
+	buffer_bufcat(buffer_t *buf, buffer_t *src) NONNULL(1,2),
 	buffer_memset(buffer_t *buf, char c, size_t length) NONNULL(1),
 	buffer_memset_append(buffer_t *buf, char c, size_t length) NONNULL(1),
-	buffer_append_vprintf(buffer_t *buf, const char *fmt, va_list args) NONNULL(1,2) PRINTF_FORMAT(2,0),
-	buffer_append_printf(buffer_t *buf, const char *fmt, ...) NONNULL(1,2) PRINTF_FORMAT(2,3),
+
+	buffer_vprintf_append(buffer_t *buf, const char *fmt, va_list args) NONNULL(1,2) PRINTF_FORMAT(2,0),
+	buffer_printf_append(buffer_t *buf, const char *fmt, ...) NONNULL(1,2) PRINTF_FORMAT(2,3),
 	buffer_vprintf(buffer_t *buf, const char *fmt, va_list args) NONNULL(1,2) PRINTF_FORMAT(2,0),
 	buffer_printf(buffer_t *buf, const char *fmt, ...) NONNULL(1,2) PRINTF_FORMAT(2,3),
 
-	buffer_append_vprintf2(buffer_t *buf, const char *fmt, va_list args) NONNULL(1,2) PRINTF_FORMAT(2,0),
-	buffer_append_printf2(buffer_t *buf, const char *fmt, ...) NONNULL(1,2) PRINTF_FORMAT(2,3),
+	buffer_vprintf_append2(buffer_t *buf, const char *fmt, va_list args) NONNULL(1,2) PRINTF_FORMAT(2,0),
+	buffer_printf_append2(buffer_t *buf, const char *fmt, ...) NONNULL(1,2) PRINTF_FORMAT(2,3),
 	buffer_vprintf2(buffer_t *buf, const char *fmt, va_list args) NONNULL(1,2) PRINTF_FORMAT(2,0),
 	buffer_printf2(buffer_t *buf, const char *fmt, ...) NONNULL(1,2) PRINTF_FORMAT(2,3);
 

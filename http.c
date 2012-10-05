@@ -534,7 +534,8 @@ void http_free_response(HTTP_RESPONSE **resp)
 void http_free_request(HTTP_REQUEST **req)
 {
 	if (req && *req) {
-		xfree((*req)->resource);
+		buffer_deinit(&(*req)->esc_resource);
+		buffer_deinit(&(*req)->esc_host);
 		vec_free(&(*req)->lines);
 		(*req)->lines = NULL;
 		xfree(*req);
@@ -545,20 +546,15 @@ HTTP_REQUEST *http_create_request(const IRI *iri, const char *method)
 {
 	HTTP_REQUEST *req = xcalloc(1, sizeof(HTTP_REQUEST));
 
+	buffer_init(&req->esc_resource, req->esc_resource_buf, sizeof(req->esc_resource_buf));
+	buffer_init(&req->esc_host, req->esc_host_buf, sizeof(req->esc_host_buf));
+
 	strlcpy(req->method, method, sizeof(req->method));
+	iri_get_escaped_resource(iri, &req->esc_resource);
+	iri_get_escaped_host(iri, &req->esc_host);
 	req->lines = vec_create(8, 8, NULL);
 
-	if (iri->query) {
-		char *buf = NULL;
-		if (iri->fragment)
-			asprintf(&buf, "%s?%s#%s", iri->path ? iri->path : "", iri->query, iri->fragment);
-		else
-			asprintf(&buf, "%s?%s", iri->path ? iri->path : "", iri->query);
-		req->resource = buf; // resource is const char *
-	} else
-		req->resource = iri->path ? strdup(iri->path) : NULL;
-
-	http_add_header_printf(req, "Host: %s", iri->host);
+	info_printf("create request %s -> %s\n",iri->path,req->esc_resource.data);
 
 	return req;
 }
@@ -616,7 +612,7 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 	for (; conn->ai; conn->ai = conn->ai->ai_next) {
 		if ((conn->tcp = tcp_connect(conn->ai, ssl ? iri->host : NULL)) != NULL) {
 			tcp_set_timeout(conn->tcp, config.read_timeout);
-			conn->host = iri->host ? strdup(iri->host) : NULL;
+			conn->esc_host = iri->host ? strdup(iri->host) : NULL;
 			conn->port = iri->port ? strdup(iri->port) : NULL;
 			conn->scheme = iri->scheme;
 			conn->buf = buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
@@ -635,7 +631,7 @@ void http_close(HTTP_CONNECTION **conn)
 		tcp_close(&(*conn)->tcp);
 		if (!config.dns_caching)
 			freeaddrinfo((*conn)->addrinfo);
-		xfree((*conn)->host);
+		xfree((*conn)->esc_host);
 		xfree((*conn)->port);
 		// xfree((*conn)->scheme);
 		buffer_free(&(*conn)->buf);
@@ -661,58 +657,20 @@ int http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 
 	return 0;
 }
-/*
-ssize_t http_request_to_buffer(HTTP_REQUEST *req, buffer_t *buf)
-{
-	// ("%s /%s HTTP/1.1\r\n",req->method,req->resource)
-	int it, nlines = vec_size(req->lines);
-	size_t size = strlen(req->method)+(req->resource ? strlen(req->resource) : 0) + 13 + 1;
-	size_t length[nlines];
-	char *data;
-
-	for (it = 0; it < nlines; it++) {
-		const char *line = vec_get(req->lines, it);
-		if (*line) {
-			size += (length[it] = strlen(line));
-			if (line[length[it] - 1] != '\n')
-				size += 2; // + CRLF
-		} else
-			length[it] = 0;
-	}
-
-	size += 2 + 1; // CRLF + 0 byte
-
-	buffer_ensure_capacity(buf, size);
-	data = buf->data;
-
-	size = snprintf(data, size, "%s /%s HTTP/1.1\r\n", req->method, req->resource ? req->resource : "");
-	for (it = 0; it < nlines; it++) {
-		strcpy(data + size, vec_get(req->lines, it));
-		size += length[it];
-		if (data[size - 1] != '\n') {
-			strcpy(data + size, "\r\n");
-			size += 2;
-		}
-	}
-	strcpy(data + size, "\r\n");
-	size += 2;
-
-	buf->length=size; // just for consistency, not really needed here
-	return size;
-}
-*/
 
 ssize_t http_request_to_buffer(HTTP_REQUEST *req, buffer_t *buf)
 {
 	int it;
 
-//	buffer_sprintf(buf, "%s /%s HTTP/1.1\r\n", req->method, req->resource ? req->resource : "");
+//	buffer_sprintf(buf, "%s /%s HTTP/1.1\r\nHOST: %s", req->method, req->esc_resource.data ? req->esc_resource.data : "",);
 
 	buffer_strcpy(buf, req->method);
-	buffer_strcat(buf, " /");
-	if (req->resource)
-		buffer_strcat(buf, req->resource);
-	buffer_strcat(buf, "  HTTP/1.1\r\n");
+	buffer_memcat(buf, " /", 2);
+	buffer_bufcat(buf, &req->esc_resource);
+	buffer_memcat(buf, " HTTP/1.1\r\n", 11);
+	buffer_memcat(buf, "Host: ", 6);
+	buffer_bufcat(buf, &req->esc_host);
+	buffer_memcat(buf, "\r\n", 2);
 
 	for (it = 0; it < vec_size(req->lines); it++) {
 		buffer_strcat(buf, vec_get(req->lines, it));

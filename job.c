@@ -54,7 +54,7 @@ static int free_mirror(MIRROR *mirror)
 void job_free(JOB *job)
 {
 	if (job) {
-		iri_free(&job->iri);
+//		iri_free(&job->iri);
 		vec_browse(job->mirrors, (int (*)(void *))free_mirror);
 		vec_free(&job->mirrors);
 		vec_free(&job->hashes);

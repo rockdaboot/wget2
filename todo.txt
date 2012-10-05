@@ -14,12 +14,10 @@ Todo:
 - to implement Content-Encoding 'compress' and 'deflate' I need a server supporting these
 
 Refactoring/cleanup to do:
-- adjust gnutls stuff to current wget implementation
 - IRI comparison routine to be used in blacklist part, see http://tools.ietf.org/html/rfc2616#section-3.2.3
 - fix bug in redirection: following to foreign hosts even if span-hosts=off
 - cleanup mget.c: move parse_html / parse_css into own C file
 - write more test routines
-- use gcc/clang 'nonnull' attribute specifier where possible
 
 Done:
 - DNS lookup cache

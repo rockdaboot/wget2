@@ -88,7 +88,7 @@ static void _test_buffer(buffer_t *buf, const char *name)
 		}
 
 		buffer_printf(buf, "%s", test);
-		buffer_append_printf(buf, "%s", test);
+		buffer_printf_append(buf, "%s", test);
 
 		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
 			ok++;
@@ -162,6 +162,23 @@ static void test_buffer(void)
 	bufp = buffer_alloc(16);
 	_test_buffer(bufp, "Test 5");
 	buffer_free(&bufp);
+
+	// check that appending works
+
+	buffer_init(&buf, buf_static, sizeof(buf_static));
+	buffer_strcpy(&buf, "A");
+	buffer_strcat(&buf, "B");
+	buffer_memcat(&buf, "C", 1);
+	buffer_memset_append(&buf, 'D', 1);
+	buffer_printf_append2(&buf, "%s", "E");
+	if (!strcmp(buf.data, "ABCDE"))
+		ok++;
+	else {
+		failed++;
+		info_printf("test_buffer.append: got %s (expected %s)\n", buf.data, "ABCDE");
+	}
+	buffer_deinit(bufp);
+
 }
 
 static void test_buffer_printf(void)
@@ -176,11 +193,19 @@ static void test_buffer_printf(void)
 	static const long long number[] = { 0, 1, -1, 10, -10, 18446744073709551615ULL };
 	static const char *modifier[] = { "", "h", "hh", "l", "ll", "L", "z" };
 	static const char *conversion[] = { "d", "i", "u", "o", "x", "X" };
-	char fmt[32], result[32], string[32];
+	char fmt[32], result[64], string[32];
 	size_t z, a, it, n, c, m;
 	int width, precision;
 
 	buffer_init(&buf, buf_static, sizeof(buf_static));
+
+	buffer_printf2(&buf, "%s://%s", "http", "host");
+	if (strcmp("http://host", buf.data)) {
+		failed++;
+		info_printf("%s: Failed with format ('%%s://%%s','http','host'): '%s' != 'http://host'\n", __func__, buf.data);
+		return;
+	} else
+		ok++;
 
 	for (z = 0; z < countof(zero_padded); z++) {
 		for (a = 0; a < countof(left_adjust); a++) {
@@ -191,15 +216,15 @@ static void test_buffer_printf(void)
 
 					if (width == -1) {
 						if (precision == -1) {
-							sprintf(fmt,"%%%s%ss", left_adjust[a], zero_padded[z]);
+							sprintf(fmt,"abc%%%s%ssxyz", left_adjust[a], zero_padded[z]);
 						} else {
-							sprintf(fmt,"%%%s%s.%ds", left_adjust[a], zero_padded[z], precision);
+							sprintf(fmt,"abc%%%s%s.%dsxyz", left_adjust[a], zero_padded[z], precision);
 						}
 					} else {
 						if (precision == -1) {
-							sprintf(fmt,"%%%s%s%ds", left_adjust[a], zero_padded[z], width);
+							sprintf(fmt,"abc%%%s%s%dsxyz", left_adjust[a], zero_padded[z], width);
 						} else {
-							sprintf(fmt,"%%%s%s%d.%ds", left_adjust[a], zero_padded[z], width, precision);
+							sprintf(fmt,"abc%%%s%s%d.%dsxyz", left_adjust[a], zero_padded[z], width, precision);
 						}
 					}
 
@@ -335,16 +360,22 @@ static void test_iri_parse(void)
 		{ "///thepath", NULL, IRI_SCHEME_HTTP, NULL, NULL, NULL, NULL, "thepath", NULL, NULL},
 		{ "example.com", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
 		{ "http://example.com", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "http://example.com:", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "http://example.com:/", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "", NULL, NULL},
+		{ "http://example.com:80/", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "", NULL, NULL},
 		{ "https://example.com", NULL, IRI_SCHEME_HTTPS, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
-		{ "http://example.com:80", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", "80", NULL, NULL, NULL},
-		{ "http://example.com:80/index.html", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", "80", "index.html", NULL, NULL},
-		{ "http://example.com:80/index.html?query#frag", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", "80", "index.html", "query", "frag"},
-		{ "http://example.com:80/index.html?#", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", "80", "index.html", "", ""},
+		{ "https://example.com:443", NULL, IRI_SCHEME_HTTPS, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "https://example.com:444", NULL, IRI_SCHEME_HTTPS, NULL, NULL, "example.com", "444", NULL, NULL, NULL},
+		{ "http://example.com:80", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "http://example.com:81", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", "81", NULL, NULL, NULL},
+		{ "http://example.com/index.html", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", NULL, NULL},
+		{ "http://example.com/index.html?query#frag", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "query", "frag"},
+		{ "http://example.com/index.html?#", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "", ""},
 		{ "碼標準萬國碼.com", NULL, IRI_SCHEME_HTTP, NULL, NULL, "碼標準萬國碼.com", NULL, NULL, NULL, NULL},
 		//		{ "ftp://cnn.example.com&story=breaking_news@10.0.0.1/top_story.htm", NULL,"ftp",NULL,NULL,"cnn.example.com",NULL,NULL,"story=breaking_news@10.0.0.1/top_story.htm",NULL }
 		{ "ftp://cnn.example.com?story=breaking_news@10.0.0.1/top_story.htm", NULL, "ftp", NULL, NULL, "cnn.example.com", NULL, NULL, "story=breaking_news@10.0.0.1/top_story.htm", NULL}
 	};
-	size_t it;
+	unsigned it;
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
@@ -358,9 +389,10 @@ static void test_iri_parse(void)
 			|| null_strcmp(iri->port, t->port)
 			|| null_strcmp(iri->path, t->path)
 			|| null_strcmp(iri->query, t->query)
-			|| null_strcmp(iri->fragment, t->fragment)) {
+			|| null_strcmp(iri->fragment, t->fragment))
+		{
 			failed++;
-			printf("IRI test #%zu failed:\n", it + 1);
+			printf("IRI test #%u failed:\n", it + 1);
 			printf(" [%s]\n", iri->uri);
 			printf("  display %s (expected %s)\n", iri->display, t->display);
 			printf("  scheme %s (expected %s)\n", iri->scheme, t->scheme);
@@ -612,18 +644,19 @@ static void test_iri_relative_to_absolute(void)
 #undef H1
 #undef R1
 	};
-	size_t it;
-	char tag_buf[16];
-	const char *tag;
+	unsigned it;
+	char tag_buf_static[16];
+	buffer_t *tag_buf = buffer_init(NULL, tag_buf_static, sizeof(tag_buf_static));
 	char uri_buf_static[32]; // use a size that forces allocation in some cases
 	buffer_t *uri_buf = 	buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
+	const char *tag;
 	IRI *base;
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
 
 		base = iri_parse(t->base);
-		tag = iri_get_connection_part(base, tag_buf, sizeof(tag_buf));
+		tag = iri_get_connection_part(base, tag_buf);
 
 		iri_relative_to_absolute(base, tag, t->relative, strlen(t->relative), uri_buf);
 
@@ -631,30 +664,56 @@ static void test_iri_relative_to_absolute(void)
 			ok++;
 		else {
 			failed++;
-			info_printf("Failed [%zu]: %s+%s -> %s (expected %s)\n", it, t->base, t->relative, uri_buf->data, t->result);
+			info_printf("Failed [%u]: %s+%s -> %s (expected %s)\n", it, t->base, t->relative, uri_buf->data, t->result);
 		}
-/*
-		if (!strncmp(t->relative, "http:", 5) && !strcmp(uri_buf->data, t->result))
-			ok++;
-		else if (!strncmp(t->relative, "//", 2) && !strcmp(uri_buf->data, t->result))
-			ok++;
-		else if (HOST[sizeof(HOST)-2] == '/' && !strcmp(uri_buf->data + sizeof(HOST) - 1, t->result))
-			ok++;
-		else if (!strcmp(uri_buf->data + sizeof(HOST), t->result))
-			ok++;
-		else {
-			failed++;
-			info_printf("Failed [%zu]: %zu '%s' '%s'\n", it, sizeof(HOST), uri_buf->data + sizeof(HOST) - 1, t->result);
-			info_printf("Failed [%zu]: %s -> %s (expected %s/%s)\n", it, t->relative, uri_buf->data, HOST, t->result);
-		}
-*/
-		if (tag != tag_buf)
-			xfree(tag);
 
 		iri_free(&base);
 	}
 
 	buffer_free(&uri_buf);
+	buffer_free(&tag_buf);
+}
+
+static void test_iri_compare(void)
+{
+	static const struct iri_test_data {
+		const char
+			*url1,
+			*url2;
+		int
+			result;
+	} test_data[] = {
+		{ "http://abc.com", "http://abc.com/", -1}, // different, some web servers redirect ... to .../ due to normalization issues
+		{ "http://abc.com", "http://abc.com:", 0},
+		{ "http://abc.com", "http://abc.com:/", -1},
+		{ "http://abc.com", "http://abc.com:80/", -1},
+		{ "http://abc.com", "http://abc.com:80//", -1},
+		{ "http://abc.com:80/~smith/home.html", "http://abc.com/~smith/home.html", 0},
+		{ "http://abc.com:80/~smith/home.html", "http://ABC.com/~smith/home.html", 0},
+		{ "http://abc.com:80/~smith/home.html", "http://ABC.com/%7Esmith/home.html", 0},
+		{ "http://abc.com:80/~smith/home.html", "http://ABC.com/%7esmith/home.html", 0},
+		{ "http://ABC.com/%7esmith/home.html", "http://ABC.com/%7Esmith/home.html", 0},
+		{ "http://ABC.com/%7esmith/home.html", "http://ACB.com/%7Esmith/home.html", -1}
+	};
+	unsigned it;
+	int n;
+
+	for (it = 0; it < countof(test_data); it++) {
+		const struct iri_test_data *t = &test_data[it];
+		IRI *iri1 = iri_parse(t->url1);
+		IRI *iri2 = iri_parse(t->url2);
+
+		n = iri_compare(iri1, iri2);
+		if (n < -1) n = -1;
+		else if (n > 1) n = 1;
+
+		if (n == t->result)
+			ok++;
+		else {
+			failed++;
+			info_printf("Failed [%u]: compare(%s,%s) -> %d (expected %d)\n", it, t->url1, t->url2, n, t->result);
+		}
+	}
 }
 
 static void css_dump(UNUSED void *user_ctx, const char *url, size_t len)
@@ -791,6 +850,7 @@ int main(int argc, const char * const *argv)
 
 	test_iri_parse();
 	test_iri_relative_to_absolute();
+	test_iri_compare();
 	test_parser();
 
 	// free some resources to minimize valgrind output

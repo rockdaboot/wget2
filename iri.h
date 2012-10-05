@@ -62,11 +62,22 @@ int
 	iri_isgendelim(char c) CONST,
 	iri_issubdelim(char c) CONST,
 	iri_isreserved(char c) CONST,
-	iri_isunreserved(char c) CONST;
+	iri_isunreserved(char c) CONST,
+	iri_isunreserved_path(char c) CONST,
+	iri_compare(IRI *iri1, IRI *iri2) PURE NONNULL_ALL;
 IRI
 	*iri_parse(const char *s) MALLOC NONNULL_ALL;
 char
 	*iri_get_connection_part(IRI *iri, buffer_t *buf) NONNULL_ALL,
 	*iri_relative_to_absolute(IRI *base, const char *tag, const char *val, size_t len, buffer_t *buf) NONNULL_ALL;
+const char
+	*iri_escape(const char *src, buffer_t *buf) NONNULL_ALL,
+	*iri_escape_path(const char *src, buffer_t *buf) NONNULL_ALL,
+	*iri_get_escaped_host(const IRI *iri, buffer_t *buf) NONNULL_ALL,
+	*iri_get_escaped_resource(const IRI *iri, buffer_t *buf) NONNULL_ALL,
+	*iri_get_escaped_path(const IRI *iri, buffer_t *buf) NONNULL_ALL,
+	*iri_get_escaped_query(const IRI *iri, buffer_t *buf) NONNULL_ALL,
+	*iri_get_escaped_fragment(const IRI *iri, buffer_t *buf) NONNULL_ALL,
+	*iri_get_escaped_file(const IRI *iri, buffer_t *buf) NONNULL_ALL;
 
 #endif /* _MGET_IRI_H */

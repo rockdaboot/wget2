@@ -94,37 +94,38 @@ static VECTOR
 static int
 	terminate;
 
-static int in_blacklist(const char *uri)
+// we could speed up the blacklist by having a hashmap of the uri strings
+// and by having a vector of all IRIs in use.
+
+static int NONNULL_ALL in_blacklist(IRI *iri)
 {
-	const char *p = uri;
+	int it;
 
-	while (*p && !iri_isgendelim(*p))
-		p++;
-
-	if (*p == ':') {
-		// URI has a scheme, check if we support that scheme
-		int it;
-
-		for (it = 0; iri_schemes[it]; it++) {
-			if (!strncasecmp(uri, iri_schemes[it], p-uri))
-				return vec_find(blacklist, uri) >= 0;
-		}
+	for (it = 0; iri_schemes[it]; it++) {
+		if (iri_schemes[it] == iri->scheme)
+			return vec_find(blacklist, iri) >= 0;
 	}
 
-	return 0;
+	return 1; // unknown scheme becomes blacked out
 }
 
-static int blacklist_add(const char *uri)
+static IRI *blacklist_add(IRI *iri)
 {
-	if (in_blacklist(uri))
-		return 0;
+	if (!iri)
+		return NULL;
 
 	if (!blacklist)
-		blacklist = vec_create(128, -2, (int(*)(const void *, const void *))strcmp);
+		blacklist = vec_create(128, -2, (int(*)(const void *, const void *))iri_compare);
 
-	//	info_printf("Add to blacklist: %s\n",uri);
-	vec_insert_sorted(blacklist, uri, strlen(uri) + 1);
-	return 1;
+	if (!in_blacklist(iri)) {
+		//	info_printf("Add to blacklist: %s\n",uri);
+		vec_insert_sorted_noalloc(blacklist, iri);
+		return iri;
+	}
+
+	iri_free(&iri);
+
+	return NULL;
 }
 
 static int schedule_download(JOB *job, PART *part)
@@ -170,8 +171,6 @@ static void nop(int sig)
 		abort();
 	}
 }
-
-//static void normalize_path(char *path);
 
 int main(int argc, const char *const *argv)
 {
@@ -302,15 +301,11 @@ int main(int argc, const char *const *argv)
 	n = init(argc, argv);
 
 	for (; n < argc; n++) {
-		if (blacklist_add(argv[n])) {
-			// argv[n] is not in blacklist, add it to the job queue
-			if (config.recursive && !config.span_hosts) {
-				// only download content from hosts given on the command line
-				JOB *job = queue_add(iri_parse(argv[n]));
-				host_add(job->iri->host);
-			} else {
-				queue_add(iri_parse(argv[n]));
-			}
+		JOB *job = queue_add(blacklist_add(iri_parse(argv[n])));
+
+		if (job && config.recursive && !config.span_hosts) {
+			// only download content from hosts given on the command line
+			host_add(job->iri->host);
 		}
 	}
 
@@ -483,21 +478,27 @@ int main(int argc, const char *const *argv)
 						} else if (!strncasecmp(buf + 6, "size ", 5)) {
 							job->size = atoll(buf + 11);
 						}
-					} else if (!strncmp(buf, "add uri ", 8)) {
-						if (blacklist_add(buf + 8)) {
-							// URI is not in blacklist, add it to the job queue
-							IRI *iri = iri_parse(buf + 8);
-							if (config.recursive && !config.span_hosts) {
-								// only download content from given hosts
-								if (iri->host && vec_find(hosts, iri->host) >= 0) {
-									job = queue_add(iri);
-									schedule_download(job, NULL);
-								} else
-									iri_free(&iri);
-							} else {
-								job = queue_add(iri);
-								schedule_download(job, NULL);
+					} else if (!strncmp(buf, "add uri ", 8) || !strncmp(buf, "redirect ", 9)) {
+						IRI *iri;
+
+						if (*buf == 'r') {
+							if (job->redirection_level >= config.max_redirect) {
+								continue;
 							}
+						}
+
+						iri = iri_parse(buf + 8);
+
+						if (config.recursive && !config.span_hosts) {
+							// only download content from given hosts
+							if (!iri->host || vec_find(hosts, iri->host) < 0)
+								iri_free(&iri);
+						}
+
+						if (blacklist_add(iri)) {
+							// IRI was not in black list, create a new job
+							job = queue_add(iri);
+							schedule_download(job, NULL);
 						}
 					}
 				}
@@ -530,8 +531,8 @@ int main(int argc, const char *const *argv)
 
 	if (config.debug) {
 		for (n = 0; n < vec_size(blacklist); n++) {
-			char *host = vec_get(blacklist, n);
-			info_printf("blacklist[%d] %s\n", n, host);
+			IRI *iri = vec_get(blacklist, n);
+			info_printf("blacklist[%d] %s\n", n, iri->uri);
 		}
 	}
 
@@ -662,13 +663,13 @@ void *downloader_thread(void *p)
 						}
 					}
 
-					if (resp->location) {
+//					if (resp->location) {
 						// we have been forwarded to another location
 						// update job with new location
-						iri_free(&job->iri);
-						job->iri = iri_parse(resp->location);
-						resp->location = NULL;
-					}
+//						iri_free(&job->iri);
+//						job->iri = iri_parse(resp->location);
+//						resp->location = NULL;
+//					}
 
 					if (resp->code == 200) {
 						if (config.recursive && resp->content_type) {
@@ -903,111 +904,57 @@ void append_file(HTTP_RESPONSE *resp, const char *fname)
 
 void save_file(HTTP_RESPONSE *resp, IRI *iri, int flags)
 {
-	int fd, n = 0;
+	char sbuf[256];
+	buffer_t buf;
+	const char *fname;
+	int fd;
+
+	buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	if (flags & HTTP_FLG_USE_FILE) {
 		// create the file within the current directory
-		const char *iri_fname;
-		char *fname;
-		size_t l1, l2, l3;
 
-		if (iri->path) {
-			if ((iri_fname = strrchr(iri->path, '/')))
-				iri_fname++;
-			else
-				iri_fname = iri->path;
-		} else
-			iri_fname = NULL;
+		iri_get_escaped_file(iri, &buf);
 
-		// construct filename on the stack
-		l1 = iri_fname ? strlen(iri_fname) : 0;
-		l2 = iri->query ? strlen(iri->query) + 1 : 0;
-		l3 = iri->fragment ? strlen(iri->fragment) + 1 : 0;
-
-		if (l1 + l2 + l3 == 0) {
-			// no filename
-			iri_fname = "index.html";
-			l1 = 10; // l1=strlen(iri_fname);
-		}
-
-		fname = alloca(l1 + l2 + l3 + 1);
-
-		if (iri_fname) {
-			strcpy(fname + n, iri_fname);
-			n += l1;
-		}
-		if (iri->query) {
-			fname[n++] = '?';
-			strcpy(fname + n, iri->query);
-			n += l2;
-		}
-		if (iri->fragment) {
-			fname[n++] = '#';
-			strcpy(fname + n, iri->fragment);
-			n += l3;
-		}
-
-		info_printf("saving '%s'\n", fname);
-		if ((fd = open(fname, O_WRONLY | O_TRUNC | O_CREAT, 0644)) != -1) {
-			ssize_t rc;
-			if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
-				err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fname, rc, errno);
-			close(fd);
-		} else
-			err_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
 	} else if (flags & HTTP_FLG_USE_PATH) {
 		// create the complete path
 		const char *p1, *p2;
-		//		int hostlen=strlen(iri->host);
-		char
-			dir[strlen(iri->host)
-			+(iri->path ? strlen(iri->path) + 1 : 0)
-			+(iri->query ? strlen(iri->query) + 1 : 0)
-			+(iri->fragment ? strlen(iri->fragment) + 1 : 0)
-			+ 11 + 1]; // 11 extra for '/index.html'
 
-		if (mkdir(iri->host, 0755) != 0 && errno != EEXIST) {
-			err_printf_exit(_("Failed to make directory '%s'\n"), iri->host);
-			return;
-		}
+		iri_get_escaped_host(iri, &buf);
+		fname = iri_get_escaped_path(iri, &buf);
 
-		n = snprintf(dir, sizeof(dir), "%s", iri->host);
-
-		if (iri->path) {
-			for (p1 = iri->path; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
-				n += snprintf(dir + n, sizeof(dir) - n, "/%.*s", (int)(p2 - p1), p1);
+		if (*fname) {
+			for (p1 = fname; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
+				*(char *)p2 = 0; // replace path seperator
 
 				// relative paths should have been normalized earlier,
 				// but for security reasons, don't trust myself...
 				if (*p1 == '.' && !strncmp(p1, "..", 2))
-					err_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), iri->path);
+					err_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), fname);
 
-				if (mkdir(dir, 0755) != 0 && errno != EEXIST) {
-					err_printf(_("Failed to make directory '%s'\n"), dir);
+				if (mkdir(fname, 0755) != 0 && errno != EEXIST) {
+					err_printf(_("Failed to make directory '%s'\n"), fname);
 					return;
-				}
+				} else info_printf("mkdir %s\n", fname);
+				
+				*(char *)p2 = '/'; // restore path seperator
 			}
-			if (*p1)
-				n += snprintf(dir + n, sizeof(dir) - n, "/%s", p1);
-			else
-				n += snprintf(dir + n, sizeof(dir) - n, "/index.html");
-		} else if (!iri->query && !iri->fragment)
-			n += snprintf(dir + n, sizeof(dir) - n, "/index.html");
-
-		if (iri->query)
-			n += snprintf(dir + n, sizeof(dir) - n, "?%s", iri->query);
-		if (iri->fragment)
-			n += snprintf(dir + n, sizeof(dir) - n, "#%s", iri->fragment);
-
-		info_printf("saving '%s'\n", dir);
-		if ((fd = open(dir, O_WRONLY | O_TRUNC | O_CREAT, 0644)) != -1) {
-			ssize_t rc;
-			if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
-				err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), dir, rc, errno);
-			close(fd);
-		} else
-			err_printf(_("Failed to open '%s' (errno=%d)\n"), dir, errno);
+		}
 	}
+
+	iri_get_escaped_query(iri, &buf);
+	fname = iri_get_escaped_fragment(iri, &buf);
+
+	info_printf("saving '%s'\n", fname);
+	if ((fd = open(fname, O_WRONLY | O_TRUNC | O_CREAT, 0644)) != -1) {
+		ssize_t rc;
+		if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
+			err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fname, rc, errno);
+		close(fd);
+	} else
+		err_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
+
+	buffer_deinit(&buf);
 }
 
 //void download_part(int sockfd, JOB *job, PART *part)
@@ -1057,7 +1004,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 	HTTP_CONNECTION *conn;
 	HTTP_RESPONSE *resp = NULL;
 	int max_redirect = 3;
-	const char *location = NULL;
+//	const char *location = NULL;
 	char uri_buf_static[1024];
 	buffer_t uri_buf;
 
@@ -1067,18 +1014,18 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 		if (!downloader->conn) {
 			downloader->conn = http_open(use_iri);
 			if (downloader->conn)
-				info_printf("opened connection %s\n", downloader->conn->host);
-		} else if (!null_strcasecmp(downloader->conn->host, use_iri->host) &&
+				info_printf("opened connection %s\n", downloader->conn->esc_host);
+		} else if (!null_strcasecmp(downloader->conn->esc_host, use_iri->host) &&
 			downloader->conn->scheme == use_iri->scheme &&
 			!null_strcasecmp(downloader->conn->port, use_iri->port))
 		{
-			info_printf("reuse connection %s\n", downloader->conn->host);
+			info_printf("reuse connection %s\n", downloader->conn->esc_host);
 		} else {
-			info_printf("close connection %s\n", downloader->conn->host);
+			info_printf("close connection %s\n", downloader->conn->esc_host);
 			http_close(&downloader->conn);
 			downloader->conn = http_open(use_iri);
 			if (downloader->conn)
-				info_printf("opened connection %s\n", downloader->conn->host);
+				info_printf("opened connection %s\n", downloader->conn->esc_host);
 		}
 		conn = downloader->conn;
 
@@ -1128,7 +1075,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			// http_close(&conn);
 		} else break;
 
-		xfree(location);
+//		xfree(location);
 
 		if (!resp) {
 			http_close(&downloader->conn);
@@ -1157,18 +1104,21 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			buffer_t tag_buf;
 			const char *tag = iri_get_connection_part(use_iri, buffer_init(&tag_buf, tag_sbuf, sizeof(tag_sbuf)));
 
-			iri_relative_to_absolute(
-				use_iri, tag, resp->location, strlen(resp->location), &uri_buf);
+			iri_relative_to_absolute(use_iri, tag, resp->location, strlen(resp->location), &uri_buf);
+			buffer_deinit(&tag_buf);
 
-			location = resp->location;
-			resp->location = NULL;
+			dprintf(downloader->sockfd[1], "add uri %s\n", uri_buf.data);
+//			location = resp->location;
+//			resp->location = NULL;
 
-			if (use_iri != iri)
-				iri_free(&use_iri);
+//			if (use_iri != iri)
+//				iri_free(&use_iri);
 
-			use_iri = iri_parse(uri_buf.data);
+//			use_iri = iri_parse(uri_buf.data);
 
 			buffer_deinit(&uri_buf);
+			break;
+
 		} else {
 			if (use_iri != iri)
 				iri_free(&use_iri);
@@ -1177,7 +1127,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 		http_free_response(&resp);
 	}
 
-	if (use_iri && use_iri != iri)
+	if (use_iri != iri)
 		iri_free(&use_iri);
 
 	return resp;

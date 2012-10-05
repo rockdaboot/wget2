@@ -33,7 +33,8 @@
 #include "iri.h"
 
 const char
-	* const iri_schemes[] = { "http", "https", "ftp", NULL };
+	* const iri_schemes[] = { "http", "https", NULL },
+	* const iri_ports[]   = { "80",   "443" };
 
 #define IRI_CTYPE_GENDELIM (1<<0)
 #define _iri_isgendelim(c) (iri_ctype[(unsigned char)(c)]&IRI_CTYPE_GENDELIM)
@@ -62,7 +63,9 @@ static const unsigned char
 		['+'] = IRI_CTYPE_SUBDELIM,
 		[','] = IRI_CTYPE_SUBDELIM,
 		[';'] = IRI_CTYPE_SUBDELIM,
-		['='] = IRI_CTYPE_SUBDELIM
+		['='] = IRI_CTYPE_SUBDELIM,
+
+		['a'] = IRI_CTYPE_SUBDELIM
 	};
 
 int iri_isgendelim(char c)
@@ -84,7 +87,12 @@ int iri_isreserved(char c)
 
 int iri_isunreserved(char c)
 {
-	return isalnum(c) || strchr("-._~", c) != NULL;
+	return c > 32 && c < 127 && (isalnum(c) || strchr("-._~", c) != NULL);
+}
+
+int iri_isunreserved_path(char c)
+{
+	return c > 32 && c < 127 && (isalnum(c) || strchr("/-._~", c) != NULL);
 }
 
 void iri_free(IRI **iri)
@@ -94,11 +102,42 @@ void iri_free(IRI **iri)
 	}
 }
 
+static unsigned char CONST _unhex(unsigned char c)
+{
+	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
+}
+
+// return 1: unescape occurred, string changed
+static int _unescape(unsigned char *src)
+{
+	int ret = 0;
+	unsigned char *dst = src;
+
+	while (*src) {
+		if (*src == '%') {
+			if (isxdigit(src[1]) && isxdigit(src[2])) {
+				*dst++ = (_unhex(src[1]) << 4) | _unhex(src[2]);
+				src += 3;
+				ret = 1;
+				continue;
+			}
+		}
+
+		*dst++ = *src++;
+	}
+	*dst = 0;
+
+	return ret;
+}
+
+// URIs are assumed to be unescaped at this point
+
 IRI *iri_parse(const char *s_uri)
 {
 	IRI *iri;
+	const char *default_port = NULL;
 	char *p, *s, *authority, c;
-	int slen;
+	size_t slen, it;
 
 	/*
 		URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
@@ -112,9 +151,9 @@ IRI *iri_parse(const char *s_uri)
 	iri = xmalloc(sizeof(IRI) + slen * 2 + 2);
 	memset(iri, 0, sizeof(IRI));
 	strcpy(((char *)iri) + sizeof(IRI), s_uri);
-	strcpy(((char *)iri) + sizeof(IRI) + slen + 1, s_uri);
-	iri->uri = ((char *)iri) + sizeof(IRI) + slen + 1;
-	s = ((char *)iri) + sizeof(IRI);
+	iri->uri = ((char *)iri) + sizeof(IRI);
+	s = ((char *)iri) + sizeof(IRI) + slen + 1;
+	strcpy(s, s_uri);
 
 	p = s;
 	while (*s && !_iri_isgendelim(*s))
@@ -124,14 +163,27 @@ IRI *iri_parse(const char *s_uri)
 		// found a scheme
 		*s++ = 0;
 
-		if (!strcasecmp(p, IRI_SCHEME_HTTP))
-			iri->scheme = IRI_SCHEME_HTTP;
-		else if (!strcasecmp(p, IRI_SCHEME_HTTPS))
-			iri->scheme = IRI_SCHEME_HTTPS;
-		else
-			iri->scheme = p;
+		// find the scheme in our static list of supported schemes
+		// for later comparisons we compare pointers (avoiding strcasecmnp())
+		iri->scheme = p;
+		for (it = 0; iri_schemes[it]; it++) {
+			if (!strcasecmp(iri_schemes[it], p)) {
+				iri->scheme = iri_schemes[it];
+				default_port = iri_ports[it];
+				break;
+			}
+		}
+
+		if (iri->scheme == p) {
+			// convert scheme to lowercase
+			for (; *p; p++)
+				if (isupper(*p))
+					*p = tolower(*p);
+		}
+
 	} else {
 		iri->scheme = IRI_SCHEME_DEFAULT;
+		default_port = iri_ports[0]; // port 80
 		s = p; // rewind
 	}
 
@@ -197,11 +249,29 @@ IRI *iri_parse(const char *s_uri)
 				s++;
 		}
 		if (*s == ':') {
-			if (s[1])
-				iri->port = s + 1;
+			if (s[1]) {
+				if (!default_port || (strcmp(s + 1, default_port) && atoi(s + 1) != atoi(default_port)))
+					iri->port = s + 1;
+			}
 		}
 		*s = 0;
+
+		for (p = (char *)iri->host; *p; p++)
+			if (isupper(*p))
+				*p = tolower(*p);
 	}
+
+	// now unescape all components (not interested in display, userinfo, password
+	if (iri->host)
+		_unescape((unsigned char *)iri->host);
+	if (iri->path)
+		_unescape((unsigned char *)iri->path);
+	if (iri->query)
+		_unescape((unsigned char *)iri->query);
+	if (iri->fragment)
+		_unescape((unsigned char *)iri->fragment);
+
+//	info_printf("%s: path '%s'\n", iri->uri, iri->path);
 
 	return iri;
 }
@@ -370,3 +440,184 @@ char *iri_relative_to_absolute(IRI *base, const char *tag, const char *val, size
 
 	return buf->data;
 }
+
+// RFC conform comparison as described in http://tools.ietf.org/html/rfc2616#section-3.2.3
+int iri_compare(IRI *iri1, IRI *iri2)
+{
+	int n;
+
+//	info_printf("iri %p %p %s:%s %s:%s\n",iri1,iri2,iri1->scheme,iri1->port,iri2->scheme,iri2->port);
+
+	if (iri1->scheme != iri2->scheme)
+		return iri1->scheme < iri2->scheme ? -1 : 1;
+
+	if (iri1->port != iri2->port) {
+		if ((n = null_strcmp(iri1->port, iri2->port)))
+			return n;
+	}
+
+	// host is already lowercase, no need to call strcasecmp()
+	if ((n = strcmp(iri1->host, iri2->host)))
+		return n;
+
+	if (!iri1->path) {
+//		if (iri2->path && strcmp(iri2->path, "/"))
+		if (iri2->path)
+			return -1;
+	}
+	else if (!iri2->path) {
+//		if (iri1->path && strcmp(iri1->path, "/"))
+		if (iri1->path)
+			return 1;
+	}
+	else if ((n = strcmp(iri1->path, iri2->path)))
+		return n;
+
+	if ((n = null_strcmp(iri1->query, iri2->query)))
+		return n;
+
+	if ((n = null_strcmp(iri1->fragment, iri2->fragment)))
+		return n;
+
+	return 0;
+}
+
+const char *iri_escape(const char *src, buffer_t *buf)
+{
+	const char *begin;
+
+	for (begin = src; *src; src++) {
+		if (!iri_isunreserved(*src)) {
+			if (begin != src)
+				buffer_memcat(buf, begin, src - begin);
+			begin = src + 1;
+			buffer_printf_append2(buf, "%%%02x", (unsigned char)*src);
+		}
+	}
+
+	if (begin != src)
+		buffer_memcat(buf, begin, src - begin);
+
+	return buf->data;
+}
+
+const char *iri_escape_path(const char *src, buffer_t *buf)
+{
+	const char *begin;
+
+	for (begin = src; *src; src++) {
+		if (!iri_isunreserved_path(*src)) {
+			if (begin != src)
+				buffer_memcat(buf, begin, src - begin);
+			begin = src + 1;
+			buffer_printf_append2(buf, "%%%02x", (unsigned char)*src);
+		}
+	}
+
+	if (begin != src)
+		buffer_memcat(buf, begin, src - begin);
+
+	return buf->data;
+}
+
+const char *iri_get_escaped_host(const IRI *iri, buffer_t *buf)
+{
+	return iri_escape(iri->host, buf);
+}
+
+const char *iri_get_escaped_resource(const IRI *iri, buffer_t *buf)
+{
+	if (iri->path)
+		iri_escape_path(iri->path, buf);
+
+	if (iri->query) {
+		buffer_memcat(buf, "?", 1);
+		iri_escape(iri->query, buf);
+	}
+
+	if (iri->fragment) {
+		buffer_memcat(buf, "#", 1);
+		iri_escape(iri->fragment, buf);
+	}
+
+	return buf->data;
+}
+
+const char *iri_get_escaped_path(const IRI *iri, buffer_t *buf)
+{
+	if (buf->length)
+		buffer_memcat(buf, "/", 1);
+
+	if (iri->path)
+		iri_escape_path(iri->path, buf);
+
+	if (buf->length && buf->data[buf->length - 1] == '/')
+		buffer_memcat(buf, "index.html", 10);
+
+	return buf->data;
+}
+
+const char *iri_get_escaped_query(const IRI *iri, buffer_t *buf)
+{
+	if (iri->query) {
+		buffer_memcat(buf, "?", 1);
+		return iri_escape(iri->query, buf);
+	}
+
+	return buf->data;
+}
+
+const char *iri_get_escaped_fragment(const IRI *iri, buffer_t *buf)
+{
+	if (iri->fragment) {
+		buffer_memcat(buf, "#", 1);
+		return iri_escape(iri->fragment, buf);
+	}
+
+	return buf->data;
+}
+
+
+const char *iri_get_escaped_file(const IRI *iri, buffer_t *buf)
+{
+	if (iri->path) {
+		char *fname;
+		if ((fname = strrchr(iri->path, '/')))
+			iri_escape_path(fname + 1, buf);
+		else
+			iri_escape_path(iri->path, buf);
+	}
+
+	info_printf("file = %s\n", buf->data);
+	if (buf->length == 0)
+		buffer_memcat(buf, "index.html", 10);
+
+	if (iri->query) {
+		buffer_memcat(buf, "?", 1);
+		iri_escape(iri->query, buf);
+	}
+
+	if (iri->fragment) {
+		buffer_memcat(buf, "#", 1);
+		iri_escape(iri->fragment, buf);
+	}
+
+
+	return buf->data;
+}
+
+// escaping: see http://tools.ietf.org/html/rfc2396#2 following (especially 2.4.2)
+/*const char *iri_escape(const char *uri)
+{
+	int esc = 0;
+	const char *p;
+
+	for (p = uri; *p; p++) {
+		if (*p == '%') {
+			if ((isxdigit(p[1]) && isxdigit(p[2])) || p[1] == '%')
+				return uri; // assume that URI is already escaped
+			esc++;
+		} else if ()
+	}
+}
+*/
