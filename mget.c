@@ -529,6 +529,9 @@ int main(int argc, const char *const *argv)
 			err_printf(_("Failed to wait for downloader #%d (%d %d)\n"), n, rc, errno);
 	}
 
+	if (config.save_cookies)
+		cookie_save(config.save_cookies, config.keep_session_cookies);
+
 	if (config.debug) {
 		for (n = 0; n < vec_size(blacklist); n++) {
 			IRI *iri = vec_get(blacklist, n);
@@ -537,12 +540,15 @@ int main(int argc, const char *const *argv)
 	}
 
 	// freeing to avoid disguising valgrind output
+	cookie_free_public_suffixes();
+	cookie_free_cookies();
 	tcp_set_dns_caching(0); // frees DNS cache
 	ssl_deinit();
 	queue_free();
 	vec_free(&blacklist);
 	vec_free(&hosts);
 	xfree(downloader);
+	deinit();
 
 	return EXIT_SUCCESS;
 }
@@ -598,6 +604,9 @@ void *downloader_thread(void *p)
 
 					if (!resp)
 						goto ready;
+
+					cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
+					cookie_store_cookies(resp->cookies); // store cookies
 
 					// check if we got a RFC 6249 Metalink response
 					// HTTP/1.1 302 Found
@@ -911,12 +920,7 @@ void save_file(HTTP_RESPONSE *resp, IRI *iri, int flags)
 
 	buffer_init(&buf, sbuf, sizeof(sbuf));
 
-	if (flags & HTTP_FLG_USE_FILE) {
-		// create the file within the current directory
-
-		iri_get_escaped_file(iri, &buf);
-
-	} else if (flags & HTTP_FLG_USE_PATH) {
+	if (flags & HTTP_FLG_USE_PATH) {
 		// create the complete path
 		const char *p1, *p2;
 
@@ -940,10 +944,14 @@ void save_file(HTTP_RESPONSE *resp, IRI *iri, int flags)
 				*(char *)p2 = '/'; // restore path seperator
 			}
 		}
-	}
 
-	iri_get_escaped_query(iri, &buf);
-	fname = iri_get_escaped_fragment(iri, &buf);
+		iri_get_escaped_query(iri, &buf);
+		fname = iri_get_escaped_fragment(iri, &buf);
+	} else { // if (flags & HTTP_FLG_USE_FILE) {
+		// create the file within the current directory
+
+		fname = iri_get_escaped_file(iri, &buf);
+	}
 
 	info_printf("saving '%s'\n", fname);
 	if ((fd = open(fname, O_WRONLY | O_TRUNC | O_CREAT, 0644)) != -1) {
@@ -974,6 +982,8 @@ void download_part(DOWNLOADER *downloader)
 
 		msg = http_get(mirror->iri, part, downloader);
 		if (msg) {
+			cookie_store_cookies(msg->cookies); // sanitize and store cookies
+
 			if (msg->body) {
 				int fd;
 
@@ -1015,9 +1025,9 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			downloader->conn = http_open(use_iri);
 			if (downloader->conn)
 				info_printf("opened connection %s\n", downloader->conn->esc_host);
-		} else if (!null_strcasecmp(downloader->conn->esc_host, use_iri->host) &&
+		} else if (!null_strcmp(downloader->conn->esc_host, use_iri->host) &&
 			downloader->conn->scheme == use_iri->scheme &&
-			!null_strcasecmp(downloader->conn->port, use_iri->port))
+			!null_strcmp(downloader->conn->port, use_iri->port))
 		{
 			info_printf("reuse connection %s\n", downloader->conn->esc_host);
 		} else {
@@ -1067,6 +1077,17 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 				http_add_header_printf(req, "Range: bytes=%llu-%llu",
 					(unsigned long long) part->position, (unsigned long long) part->position + part->length - 1);
 
+			// add cookies
+			log_printf("cookies_enabled = %d\n", config.cookies);
+			if (config.cookies) {
+				const char *cookie_string;
+
+				if ((cookie_string = cookie_create_request_header(use_iri))) {
+					http_add_header(req, "Cookie", cookie_string);
+					xfree(cookie_string);
+				}
+			}
+
 			if (http_send_request(conn, req) == 0) {
 				resp = http_get_response(conn, NULL);
 			}
@@ -1102,8 +1123,12 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 		if (resp->location) {
 			char tag_sbuf[1024];
 			buffer_t tag_buf;
-			const char *tag = iri_get_connection_part(use_iri, buffer_init(&tag_buf, tag_sbuf, sizeof(tag_sbuf)));
+			const char *tag;
 
+			cookie_normalize_cookies(use_iri, resp->cookies);
+			cookie_store_cookies(resp->cookies);
+
+			tag = iri_get_connection_part(use_iri, buffer_init(&tag_buf, tag_sbuf, sizeof(tag_sbuf)));
 			iri_relative_to_absolute(use_iri, tag, resp->location, strlen(resp->location), &uri_buf);
 			buffer_deinit(&tag_buf);
 

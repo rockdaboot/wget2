@@ -42,7 +42,7 @@
 #define FLAG_HEXLO        64
 #define FLAG_HEXUP       128
 
-static void _copy_string(buffer_t *buf, int flags, int field_width, int precision, const char *arg)
+static void _copy_string(buffer_t *buf, unsigned int flags, int field_width, int precision, const char *arg)
 {
 	size_t length;
 
@@ -56,11 +56,11 @@ static void _copy_string(buffer_t *buf, int flags, int field_width, int precisio
 	// info_printf("flags=0x%02x field_width=%d precision=%d length=%zd arg='%s'\n",
 	//	flags,field_width,precision,length,arg);
 
-	if (precision >= 0 && length > precision)
+	if (precision >= 0 && length > (size_t)precision)
 		length = precision;
 
 	if (field_width) {
-		if (field_width > length) {
+		if ((unsigned)field_width > length) {
 			if (flags & FLAG_LEFT_ADJUST) {
 				buffer_memcat(buf, arg, length);
 				buffer_memset_append(buf, ' ', field_width - length);
@@ -100,7 +100,7 @@ static void _convert_dec_fast(buffer_t *buf, int arg)
 	buffer_memcat(buf, dst + 1, sizeof(str) - (dst - str) - 1);
 }
 
-static void _convert_dec(buffer_t *buf, int flags, int field_width, int precision, long long arg)
+static void _convert_dec(buffer_t *buf, unsigned int flags, int field_width, int precision, long long arg)
 {
 	unsigned long long argu = arg;
 	char str[32], minus = 0; // long enough to hold decimal long long
@@ -156,12 +156,12 @@ static void _convert_dec(buffer_t *buf, int flags, int field_width, int precisio
 	//	flags,field_width,precision,length,length,dst);
 
 	if (field_width) {
-		if (field_width > length + minus) {
+		if ((unsigned)field_width > length + minus) {
 			if (flags & FLAG_LEFT_ADJUST) {
 				if (minus)
 					buffer_memset_append(buf, '-', 1);
 
-				if (length < precision) {
+				if (length < (unsigned)precision) {
 					buffer_memset_append(buf, '0', precision - length);
 					buffer_memcat(buf, dst, length);
 					if (field_width > precision + minus)
@@ -171,7 +171,7 @@ static void _convert_dec(buffer_t *buf, int flags, int field_width, int precisio
 						buffer_memset_append(buf, ' ', field_width - length - minus);
 				}
 			} else {
-				if (length < precision) {
+				if (length < (unsigned)precision) {
 					if (field_width > precision + minus) {
 						if (flags & FLAG_ZERO_PADDED) {
 							if (minus)
@@ -203,7 +203,7 @@ static void _convert_dec(buffer_t *buf, int flags, int field_width, int precisio
 		} else {
 			if (minus)
 				buffer_memset_append(buf, '-', 1);
-			if (length < precision)
+			if (length < (unsigned)precision)
 				buffer_memset_append(buf, '0', precision - length);
 			buffer_memcat(buf, dst, length);
 		}
@@ -211,7 +211,7 @@ static void _convert_dec(buffer_t *buf, int flags, int field_width, int precisio
 		if (minus)
 			buffer_memset_append(buf, '-', 1);
 
-		if (length < precision)
+		if (length < (unsigned)precision)
 			buffer_memset_append(buf, '0', precision - length);
 
 		buffer_memcat(buf, dst, length);
@@ -251,7 +251,8 @@ static void _convert_pointer(buffer_t *buf, void *pointer)
 size_t buffer_vprintf_append2(buffer_t *buf, const char *fmt, va_list args)
 {
 	const char *p = fmt, *begin;
-	int field_width, precision, flags;
+	int field_width, precision;
+	unsigned int flags;
 	long long arg;
 	unsigned long long argu;
 

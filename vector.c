@@ -327,28 +327,53 @@ void vec_setcmpfunc(VECTOR *v, int (*cmp)(const void *elem1, const void *elem2))
 	}
 }
 
+#if defined(__clang__)
+void qsort_r (void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *, void *), void *arg) NONNULL(1,4);
+
+static int NONNULL_ALL _compare(const void *p1, const void *p2, void *v)
+{
+	return ((VECTOR *)v)->cmp(*((void **)p1), *((void **)p2));
+}
+#endif
+
 void vec_sort(VECTOR *v)
 {
 /*
- * without the intermediate _compare function below, v->cmp gets 'const void **elem{1|2}'
+ * without the intermediate _compare function below, v->cmp must take 'const void **elem{1|2}'
+ * but than, the other calls to v->cmp must change as well
  *
  * to work lock-less (e.g. with a mutex), we need 'nested functions' (GCC, Intel, IBM)
  * or BLOCKS (clang) or the GNU libc extension qsort_r()
-#if defined(__clang__)
-#elif defined(__GNUC__)
-	int _compare(const void *p1, const void *p2)
+ *
+ */
+#if !defined(__clang__)
+	int NONNULL_ALL _compare(const void *p1, const void *p2)
 	{
 		return v->cmp(*((void **)p1), *((void **)p2));
 	}
-	// qsort(v->pl, v->cur, sizeof(void *), _compare);
-#else
- // fallback: work with mutex and a static variable
-#endif
-*/
+
 	if (v && v->cmp) {
-		qsort(v->pl, v->cur, sizeof(void *), v->cmp);
+		qsort(v->pl, v->cur, sizeof(void *), _compare);
 		v->sorted = 1;
 	}
+#else
+/*
+	// this should work as soon as the qsort_b() function is available ;-)
+	if (v && v->cmp) {
+		int (^_compare)(const void *, const void *) = ^ int (const void *p1, const void *p2) {
+			return v->cmp(*((void **)p1), *((void **)p2));
+		};
+
+		qsort_b(v->pl, v->cur, sizeof(void *), _compare);
+		v->sorted = 1;
+	}
+*/
+	if (v && v->cmp) {
+		qsort_r(v->pl, v->cur, sizeof(void *), _compare, v);
+		v->sorted = 1;
+	}
+#endif
+
 }
 
 // Find first entry that matches spth specified element,

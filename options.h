@@ -39,6 +39,9 @@ struct config {
 		max_redirect,
 		num_threads;
 	const char
+		*cookie_suffixes,
+		*load_cookies,
+		*save_cookies,
 		*logfile,
 		*logfile_append,
 		*user_agent,
@@ -51,6 +54,8 @@ struct config {
 		*random_file,
 		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
 	char
+		keep_session_cookies,
+		cookies,
 		spider,
 		dns_caching,
 		check_certificate,
@@ -69,5 +74,7 @@ extern struct config
 int
 	init(int argc, const char *const *argv) NONNULL_ALL,
 	selftest_options(void);
+void
+	deinit(void);
 
 #endif /* _MGET_OPTIONS_H */

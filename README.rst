@@ -9,7 +9,7 @@ development environment.
 The originally purpose was to help out on wget2 development (refactoring,
 modern and clean code, new technology, new design).
 
-In many cases Mget downloads much faster than Wget due to HTTP zlib
+In many cases Mget downloads much faster than Wget1.14 due to HTTP zlib
 compression and parallel connections.
 It consumes less sys and user CPU cycles due to larger buffers and
 buffer recycling.
@@ -22,12 +22,15 @@ Mget is licensed under GPLv3.
 Development Status
 ------------------
 
-Mget is in alpha stage.
+Mget is still in alpha stage but is already useful.
 You might encounter lots of bugs and missing features.
-So, for now (10.08.2012), don't use it for production !
+So, for now (05.11.2012), don't use it for production !
 
 The basic functionality is implemented, like:
 
+- cookies (session/non-session), detection of supercookies via Mozilla Public Suffix List
+  (use the new option --cookie-suffixes <filename>, better: put it into ~/.mgetrc)
+- respect cookie public suffix list http://publicsuffix.org/list/
 - recursive download of websites with or without spanning hosts
 - download of single web pages / resources
 - zlib/gzip compressed HTTP/HTTPS downloads
@@ -57,12 +60,12 @@ The following is just a quick list of ideas and todos.
 I personally like to experiment with new stuff (new to wget), so
 request pipelining and SPDY protocol are my favorites.
 
+- compression on TLS/SSL layer
 - respect /robots.txt "Robot Exclusion Standard"
 - request pipelining (using client cookies)
 - SPDY protocol
 - http authentication (basic & digest RFC 2617)
 - proxy support
-- server cookie stuff
 - a --sync option / respect page expiry dates / only download changed pages
 - respect data-urls
 - Atom / RSS / Podcast / Streaming (.m3u, etc. formats)

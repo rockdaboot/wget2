@@ -35,6 +35,9 @@ targets: $(TARGETS) .depend
 analyze:
 	clang --analyze $(SOURCES)
 
+check: targets
+	valgrind --leak-check=full --track-origins=yes --show-reachable=yes ./test
+
 clean:
 	@echo Removing objects and binaries...
 	-@rm -f .depend $(OBJECTS) $(TARGETS)

@@ -28,6 +28,7 @@
 #define _MGET_BUFFER_H
 
 #include <stddef.h>
+#include <stdarg.h>
 
 #include "mget.h"
 

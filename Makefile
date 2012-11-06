@@ -1,5 +1,6 @@
 # -Wstack-protector -Wconversion
-#CC=$(SILENT)/usr/share/clang/scan-build/ccc-analyzer
+#CC=$(SILENT)CCC_CC=clang /usr/share/clang/scan-build/ccc-analyzer -fblocks
+#CC=$(SILENT)clang -fblocks
 CC=$(SILENT)gcc
 CFLAGS=-g -std=gnu99 -pedantic -fPIC\
  -Wall -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes\

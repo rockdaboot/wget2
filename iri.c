@@ -520,6 +520,28 @@ const char *iri_escape_path(const char *src, buffer_t *buf)
 	return buf->data;
 }
 
+const char *iri_escape_query(const char *src, buffer_t *buf)
+{
+	const char *begin;
+
+	for (begin = src; *src; src++) {
+		if (!iri_isunreserved_path(*src) && *src != '=') {
+			if (begin != src)
+				buffer_memcat(buf, begin, src - begin);
+			begin = src + 1;
+			if (*src == ' ')
+				buffer_memcat(buf, "+", 1);
+			else
+				buffer_printf_append2(buf, "%%%02x", (unsigned char)*src);
+		}
+	}
+
+	if (begin != src)
+		buffer_memcat(buf, begin, src - begin);
+
+	return buf->data;
+}
+
 const char *iri_get_escaped_host(const IRI *iri, buffer_t *buf)
 {
 	return iri_escape(iri->host, buf);
@@ -532,7 +554,7 @@ const char *iri_get_escaped_resource(const IRI *iri, buffer_t *buf)
 
 	if (iri->query) {
 		buffer_memcat(buf, "?", 1);
-		iri_escape(iri->query, buf);
+		iri_escape_query(iri->query, buf);
 	}
 
 	if (iri->fragment) {
@@ -561,7 +583,7 @@ const char *iri_get_escaped_query(const IRI *iri, buffer_t *buf)
 {
 	if (iri->query) {
 		buffer_memcat(buf, "?", 1);
-		return iri_escape(iri->query, buf);
+		return iri_escape_query(iri->query, buf);
 	}
 
 	return buf->data;
@@ -588,13 +610,12 @@ const char *iri_get_escaped_file(const IRI *iri, buffer_t *buf)
 			iri_escape_path(iri->path, buf);
 	}
 
-	info_printf("file = %s\n", buf->data);
 	if (buf->length == 0)
 		buffer_memcat(buf, "index.html", 10);
 
 	if (iri->query) {
 		buffer_memcat(buf, "?", 1);
-		iri_escape(iri->query, buf);
+		iri_escape_query(iri->query, buf);
 	}
 
 	if (iri->fragment) {

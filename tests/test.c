@@ -44,6 +44,8 @@
 #include "../net.h"
 #include "../vector.h"
 #include "../buffer.h"
+#include "../http.h"
+#include "../cookie.h"
 
 static int
 	ok,
@@ -713,6 +715,9 @@ static void test_iri_compare(void)
 			failed++;
 			info_printf("Failed [%u]: compare(%s,%s) -> %d (expected %d)\n", it, t->url1, t->url2, n, t->result);
 		}
+
+		iri_free(&iri2);
+		iri_free(&iri1);
 	}
 }
 
@@ -736,14 +741,16 @@ static void test_parser(void)
 			if (*dp->d_name == '.') continue;
 			if ((ext = strrchr(dp->d_name, '.'))) {
 				snprintf(fname, sizeof(fname), "files/%s", dp->d_name);
-				info_printf("parsing %s\n", fname);
 				if (!strcasecmp(ext, ".xml")) {
+					info_printf("parsing %s\n", fname);
 					xml_parse_file(fname, NULL, NULL, 0);
 					xml++;
 				} else if (!strcasecmp(ext, ".html")) {
+					info_printf("parsing %s\n", fname);
 					html_parse_file(fname, NULL, NULL, 0);
 					html++;
 				} else if (!strcasecmp(ext, ".css")) {
+					info_printf("parsing %s\n", fname);
 					css_parse_file(fname, css_dump, NULL);
 					css++;
 				}
@@ -753,6 +760,147 @@ static void test_parser(void)
 	}
 
 	info_printf("%d XML, %d HTML and %d CSS files parsed\n", xml, html, css);
+}
+
+static void gmt_strftime(char *buf, size_t bufsize, struct tm *tp)
+{
+	static const char *dnames[7] = {
+		"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+	};
+	static const char *mnames[12] = {
+		"Jan", "Feb", "Mar","Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+	};
+
+	snprintf(buf, bufsize, "%s, %02d-%s-%d %02d:%02d:%02d GMT",
+		dnames[tp->tm_wday],tp->tm_mday,mnames[tp->tm_mon],tp->tm_year+1900,
+		tp->tm_hour, tp->tm_min, tp->tm_sec);
+}
+
+static void test_cookies(void)
+{
+	static const struct test_data {
+		const char
+			*uri,
+			*set_cookie,
+			*name, *value, *domain, *path, *expires;
+		unsigned int
+			domain_dot : 1, // for compatibility with Netscape cookie format
+			normalized : 1,
+			persistent : 1,
+			host_only : 1,
+			secure_only : 1, // cookie should be used over secure connections only (TLS/HTTPS)
+			http_only : 1; // just use the cookie via HTTP/HTTPS protocol
+		int
+			result;
+	} test_data[] = {
+		{	// allowed cookie
+			"www.example.com",
+			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/; domain=.example.com; HttpOnly",
+			"ID", "65=abcd", "example.com", "/", "Tue, 07-May-2013 07:48:53 GMT",
+			1, 1, 1, 0, 0, 1,
+			1
+		},
+		{	// illegal cookie
+			"www.example.com",
+			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/; domain=.example.org",
+			"ID", "65=abcd", "example.org", "/", "Tue, 07-May-2013 07:48:53 GMT",
+			1, 0, 1, 0, 0, 0,
+			0
+		},
+		{	// supercookie, not accepted by normalization (rule 'com')
+			"www.example.com",
+			"ID=65=abcd; expires=Mon, 29-Feb-2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
+			"ID", "65=abcd", "com", "/", "Mon, 29-Feb-2016 07:48:54 GMT",
+			1, 0, 1, 0, 1, 1,
+			0
+		},
+		{	// supercookie, not accepted by normalization  (rule '*.ar')
+			"www.example.ar",
+			"ID=65=abcd; expires=Tue, 29-Feb-2000 07:48:55 GMT; path=/; domain=.example.ar",
+			"ID", "65=abcd", "example.ar", "/", "Tue, 29-Feb-2000 07:48:55 GMT",
+			1, 0, 1, 0, 0, 0,
+			0
+		},
+		{	// exception rule '!educ.ar', accepted by normalization
+			"www.educ.ar",
+			"ID=65=abcd; path=/; domain=.educ.ar",
+			"ID", "65=abcd", "educ.ar", "/", NULL,
+			1, 1, 0, 0, 0, 0,
+			1
+		},
+	};
+	HTTP_COOKIE cookie;
+	IRI *iri;
+	unsigned it;
+	int result;
+
+	cookie_load_public_suffixes("files/public_suffixes.txt");
+
+	for (it = 0; it < countof(test_data); it++) {
+		const struct test_data *t = &test_data[it];
+		char thedate[32];
+
+		iri = iri_parse(t->uri);
+		http_parse_setcookie(t->set_cookie, &cookie);
+		if ((result = cookie_normalize_cookie(iri, &cookie)) != t->result) {
+			failed++;
+			info_printf("Failed [%u]: normalize_cookie(%s) -> %d (expected %d)\n", it, t->set_cookie, result, t->result);
+			goto next;
+		}
+
+		if (cookie.expires) {
+			gmt_strftime(thedate, sizeof(thedate), gmtime(&cookie.expires));
+			if (strcmp(thedate, t->expires)) {
+				failed++;
+				info_printf("Failed [%u]: expires mismatch: '%s' != '%s' (time_t %ld)\n", it, thedate, t->expires, cookie.expires);
+				goto next;
+			}
+		}
+
+		if (strcmp(cookie.name, t->name) ||
+			strcmp(cookie.value, t->value) ||
+			strcmp(cookie.domain, t->domain) ||
+			strcmp(cookie.path, t->path) ||
+			cookie.domain_dot != t->domain_dot ||
+			cookie.normalized != t->normalized ||
+			cookie.persistent != t->persistent ||
+			cookie.host_only != t->host_only ||
+			cookie.secure_only != t->secure_only ||
+			cookie.http_only != t->http_only)
+		{
+			failed++;
+
+			info_printf("Failed [%u]: cookie (%s) differs:\n", it, t->set_cookie);
+			if (strcmp(cookie.name, t->name))
+				info_printf("  name %s (expected %s)\n", cookie.name, t->name);
+			if (strcmp(cookie.value, t->value))
+				info_printf("  value %s (expected %s)\n", cookie.value, t->value);
+			if (strcmp(cookie.domain, t->domain))
+				info_printf("  domain %s (expected %s)\n", cookie.domain, t->domain);
+			if (strcmp(cookie.path, t->path))
+				info_printf("  path %s (expected %s)\n", cookie.path, t->path);
+			if (cookie.domain_dot != t->domain_dot)
+				info_printf("  domain_dot %d (expected %d)\n", cookie.domain_dot, t->domain_dot);
+			if (cookie.normalized != t->normalized)
+				info_printf("  normalized %d (expected %d)\n", cookie.normalized, t->normalized);
+			if (cookie.persistent != t->persistent)
+				info_printf("  persistent %d (expected %d)\n", cookie.persistent, t->persistent);
+			if (cookie.host_only != t->host_only)
+				info_printf("  host_only %d (expected %d)\n", cookie.host_only, t->host_only);
+			if (cookie.secure_only != t->secure_only)
+				info_printf("  secure_only %d (expected %d)\n", cookie.secure_only, t->secure_only);
+			if (cookie.http_only != t->http_only)
+				info_printf("  http_only %d (expected %d)\n", cookie.http_only, t->http_only);
+
+			goto next;
+		}
+
+		ok++;
+
+next:
+		cookie_free_cookie(&cookie);
+		iri_free(&iri);
+	}
 }
 
 static void test_utils(void)
@@ -853,6 +1001,10 @@ int main(int argc, const char * const *argv)
 	test_iri_compare();
 	test_parser();
 
+	test_cookies();
+	cookie_free_public_suffixes();
+	cookie_free_cookies();
+
 	// free some resources to minimize valgrind output
 	tcp_set_dns_caching(0); // frees DNS cache
 
@@ -862,6 +1014,8 @@ int main(int argc, const char * const *argv)
 	}
 
 	selftest_options() ? failed++: ok++;
+
+	deinit(); // free resources allocated by init()
 
 	info_printf("Summary: All %d tests passed\n", ok + failed);
 	return 0;

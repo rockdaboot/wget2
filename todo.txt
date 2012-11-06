@@ -1,4 +1,5 @@
 Todo:
+- support punycode (RFC 3492) and/or use UTF-8 encoding ?
 - respect /robots.txt "Robot Exclusion Standard"
 - request pipelining (maybe using a client cookie)
 - SPDY protocol
@@ -14,8 +15,6 @@ Todo:
 - to implement Content-Encoding 'compress' and 'deflate' I need a server supporting these
 
 Refactoring/cleanup to do:
-- IRI comparison routine to be used in blacklist part, see http://tools.ietf.org/html/rfc2616#section-3.2.3
-- fix bug in redirection: following to foreign hosts even if span-hosts=off
 - cleanup mget.c: move parse_html / parse_css into own C file
 - write more test routines
 

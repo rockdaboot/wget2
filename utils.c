@@ -40,6 +40,8 @@
 // - using a file descriptor
 // - returns line without trailing \n
 // *buf holds size_t[2] at it's end'
+//
+// casts like '(size_t *)(void *)' are to silence clang
 
 ssize_t fdgetline0(char **buf, size_t *bufsize, int fd)
 {
@@ -50,10 +52,10 @@ ssize_t fdgetline0(char **buf, size_t *bufsize, int fd)
 	if (!*buf || !*bufsize) {
 		// first call
 		*buf = malloc(*bufsize = 10240);
-		sizep = (size_t *)(*buf + *bufsize - 2 * sizeof(size_t));
+		sizep = (size_t *)(void *)(*buf + *bufsize - 2 * sizeof(size_t));
 		sizep[0] = sizep[1] = 0;
 	} else {
-		sizep = (size_t *)(*buf + *bufsize - 2 * sizeof(size_t));
+		sizep = (size_t *)(void*)(*buf + *bufsize - 2 * sizeof(size_t));
 		if (sizep[1]) {
 			// take care of remaining data from last call
 			if ((p = memchr(*buf + sizep[0], '\n', sizep[1]))) {
@@ -86,8 +88,8 @@ ssize_t fdgetline0(char **buf, size_t *bufsize, int fd)
 			size_t *old;
 
 			*buf = xrealloc(*buf, *bufsize = *bufsize * 2);
-			old = (size_t *)(*buf + off);
-			sizep = (size_t *)(*buf + *bufsize - 2 * sizeof(size_t));
+			old = (size_t *)(void *)(*buf + off);
+			sizep = (size_t *)(void *)(*buf + *bufsize - 2 * sizeof(size_t));
 			sizep[0] = old[0];
 			sizep[1] = old[1];
 		}
@@ -116,10 +118,10 @@ ssize_t getline(char **buf, size_t *bufsize, FILE *fp)
 	if (!*buf || !*bufsize) {
 		// first call
 		*buf = xmalloc(*bufsize = 10240);
-		sizep = (size_t *)(*buf + *bufsize - 2 * sizeof(size_t));
+		sizep = (size_t *)(void *)(*buf + *bufsize - 2 * sizeof(size_t));
 		sizep[0] = sizep[1] = 0;
 	} else {
-		sizep = (size_t *)(*buf + *bufsize - 2 * sizeof(size_t));
+		sizep = (size_t *)(void *)(*buf + *bufsize - 2 * sizeof(size_t));
 		if (sizep[1]) {
 			// take care of remaining data from last call
 			if ((p = memchr(*buf + sizep[0], '\n', sizep[1]))) {
@@ -152,8 +154,8 @@ ssize_t getline(char **buf, size_t *bufsize, FILE *fp)
 			size_t *old;
 
 			*buf = xrealloc(*buf, *bufsize = *bufsize * 2);
-			old = (size_t *)(*buf + off);
-			sizep = (size_t *)(*buf + *bufsize - 2 * sizeof(size_t));
+			old = (size_t *)(void *)(*buf + off);
+			sizep = (size_t *)(void *)(*buf + *bufsize - 2 * sizeof(size_t));
 			sizep[0] = old[0];
 			sizep[1] = old[1];
 		}

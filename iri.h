@@ -48,11 +48,11 @@ typedef struct {
 		*scheme,
 		*userinfo,
 		*password,
-		*host,
+		*host, // unescaped
 		*port,
-		*path,
-		*query,
-		*fragment;
+		*path, // unescaped
+		*query, // unescaped
+		*fragment; // unescaped
 } IRI;
 
 void
@@ -73,6 +73,7 @@ char
 const char
 	*iri_escape(const char *src, buffer_t *buf) NONNULL_ALL,
 	*iri_escape_path(const char *src, buffer_t *buf) NONNULL_ALL,
+	*iri_escape_query(const char *src, buffer_t *buf) NONNULL_ALL,
 	*iri_get_escaped_host(const IRI *iri, buffer_t *buf) NONNULL_ALL,
 	*iri_get_escaped_resource(const IRI *iri, buffer_t *buf) NONNULL_ALL,
 	*iri_get_escaped_path(const IRI *iri, buffer_t *buf) NONNULL_ALL,

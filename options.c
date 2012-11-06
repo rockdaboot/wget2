@@ -54,6 +54,7 @@
 #include "net.h"
 #include "ssl.h"
 #include "buffer.h"
+#include "cookie.h"
 #include "options.h"
 
 typedef const struct option *option_t; // forward declaration
@@ -86,11 +87,11 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"Usage: mget [options...] <url>...\n"
 		"\n"
 		"Startup:\n"
-		"  -V, --version           Display the version of Wget and exit.\n"
-		"  -h, --help              Print this help.\n"
-		"  -v, --verbose           Print more messages. (default: on)\n"
-		"  -q, --quiet             Print no messages except debugging messages. (default: off)\n"
-		"  -d, --debug             Print debugging messages. (default: off)\n"
+		"  -V  --version           Display the version of Wget and exit.\n"
+		"  -h  --help              Print this help.\n"
+		"  -v  --verbose           Print more messages. (default: on)\n"
+		"  -q  --quiet             Print no messages except debugging messages. (default: off)\n"
+		"  -d  --debug             Print debugging messages. (default: off)\n"
 		"  -o  --output-file       File where messages are printed to, '-' for STDOUT.\n"
 		"  -a  --append-output     File where messages are appended to, '-' for STDOUT.\n"
 		"\n"
@@ -109,6 +110,13 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"\n"
 		"HTTP related options:\n"
 		"  -U  --user-agent        Set User-Agent: header in requests.\n"
+		"      --cookies           Enable use of cookies. (default: on)\n"
+		"      --keep-session-cookies  Also save session cookies. (default: off)\n"
+		"      --load-cookies      Load cookies from file.\n"
+		"      --save-cookies      Save cookies from file.\n"
+		"      --cookie-suffixes   Load public suffixes from file. They prevent 'supercookie' vulnerabilities.\n"
+		"                          Download the list with:\n"
+		"                          mget -O suffixes.txt http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1\n"
 		"\n"
 		"HTTPS (SSL/TLS) related options:\n"
 		"      --secure-protocol   Set protocol to be used (auto, SSLv2, SSLv3 or TLSv1). (default: auto)\n"
@@ -141,6 +149,7 @@ static int parse_integer(option_t opt, UNUSED const char *const *argv, const cha
 static int parse_string(option_t opt, UNUSED const char *const *argv, const char *val)
 {
 	// the strdup'ed string will be released on program exit
+	xfree(*((const char **)opt->var));
 	*((const char **)opt->var) = val ? strdup(val) : NULL;
 
 	return 0;
@@ -216,7 +225,8 @@ struct config config = {
 	.cert_type = SSL_X509_FMT_PEM,
 	.private_key_type = SSL_X509_FMT_PEM,
 	.secure_protocol = "AUTO",
-	.ca_directory = "system"
+	.ca_directory = "system",
+	.cookies = 1
 };
 
 static const struct option options[] = {
@@ -229,11 +239,15 @@ static const struct option options[] = {
 	{ "certificate-type", &config.cert_type, parse_cert_type, 1, 0},
 	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0},
+	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0},
+	{ "cookies", &config.cookies, parse_bool, 0, 0},
 	{ "debug", &config.debug, parse_bool, 0, 'd'},
 	{ "dns-cache", &config.dns_caching, parse_bool, 0, 0},
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0},
 	{ "egd-file", &config.egd_file, parse_string, 1, 0},
 	{ "help", NULL, print_help, 0, 'h'},
+	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0},
+	{ "load-cookies", &config.load_cookies, parse_string, 1, 0},
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0},
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0},
 	{ "output-document", &config.output_document, parse_string, 1, 'O'},
@@ -244,6 +258,7 @@ static const struct option options[] = {
 	{ "random-file", &config.random_file, parse_string, 1, 0},
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0},
 	{ "recursive", &config.recursive, parse_bool, 0, 'r'},
+	{ "save-cookies", &config.save_cookies, parse_string, 1, 0},
 	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0},
 	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H'},
 	{ "spider", &config.spider, parse_bool, 0, 0},
@@ -291,7 +306,7 @@ static int NONNULL(1) set_long_option(const char *name, const char *value)
 		if (value && name == namebuf)
 			err_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
 
-		*((const char **)opt->var)	= NULL;
+		xfree(*((const char **)opt->var));
 	}
 	else {
 		if (value && !opt->args && opt->parser != parse_bool)
@@ -492,8 +507,7 @@ static void NONNULL(1) _read_config(const char *cfgfile, int expand)
 
 		linelen = 0;
 	}
-//	if (line != linebuf)
-//		xfree(line);
+
 	buffer_deinit(&linebuf);
 	xfree(buf);
 	fclose(fp);
@@ -594,6 +608,12 @@ int init(int argc, const char *const *argv)
 {
 	int n, truncated = 1;
 
+	// the following strdup's are just needed for reallocation/freeing purposes to
+	// satisfy valgrind
+	config.user_agent = strdup(config.user_agent);
+	config.secure_protocol = strdup(config.secure_protocol);
+	config.ca_directory = strdup(config.ca_directory);
+
 	// this is a special case for switching on debugging before any config file is read
 	if (argc >= 2 && (!strcmp(argv[1],"-d") || !strcmp(argv[1],"--debug"))) {
 		config.debug = 1;
@@ -648,6 +668,12 @@ int init(int argc, const char *const *argv)
 			close(fd);
 	}
 
+	if (config.cookies && config.cookie_suffixes)
+		cookie_load_public_suffixes(config.cookie_suffixes);
+
+	if (config.load_cookies)
+		cookie_load(config.load_cookies);
+
 	// set module specific options
 	tcp_set_debug(config.debug);
 	tcp_set_timeout(NULL, config.read_timeout);
@@ -657,6 +683,27 @@ int init(int argc, const char *const *argv)
 	ssl_set_check_certificate(config.check_certificate);
 
 	return n;
+}
+
+// just needs to be called to free all allocated storage on exit
+// for valgrind testing
+
+void deinit(void)
+{
+	xfree(config.cookie_suffixes);
+	xfree(config.load_cookies);
+	xfree(config.save_cookies);
+	xfree(config.logfile);
+	xfree(config.logfile_append);
+	xfree(config.user_agent);
+	xfree(config.output_document);
+	xfree(config.ca_cert);
+	xfree(config.ca_directory);
+	xfree(config.cert_file);
+	xfree(config.egd_file);
+	xfree(config.private_key);
+	xfree(config.random_file);
+	xfree(config.secure_protocol);
 }
 
 // self test some functions, called by using --self-test
@@ -823,15 +870,15 @@ int selftest_options(void)
 			const char
 				*result;
 		} test_string_short[] = {
-			{ { "", "-U", "hello" }, "hello" },
-			{ { "", "-Uhello", "" }, "hello" }
+			{ { "", "-U", "hello1" }, "hello1" },
+			{ { "", "-Uhello2", "" }, "hello2" }
 		};
 
 		// save config values
 		const char *user_agent = config.user_agent;
+		config.user_agent = NULL;
 
 		for (it = 0; it < countof(test_string_short); it++) {
-			config.user_agent = NULL; // some value not used in test
 			parse_command_line(3, test_string_short[it].argv);
 			if (null_strcmp(config.user_agent, test_string_short[it].result)) {
 				err_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
@@ -845,13 +892,12 @@ int selftest_options(void)
 			const char
 				*result;
 		} test_string[] = {
-			{ { "", "--user-agent", "hello" }, "hello" },
-			{ { "", "--user-agent=hello", "" }, "hello" },
+			{ { "", "--user-agent", "hello3" }, "hello3" },
+			{ { "", "--user-agent=hello4", "" }, "hello4" },
 			{ { "", "--no-user-agent", "" }, NULL }
 		};
 
 		for (it = 0; it < countof(test_string); it++) {
-			config.user_agent = NULL;  // some value not used in test
 			parse_command_line(3, test_string[it].argv);
 			if (null_strcmp(config.user_agent, test_string[it].result)) {
 				err_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
@@ -860,6 +906,7 @@ int selftest_options(void)
 		}
 
 		// restore config values
+		xfree(config.user_agent);
 		config.user_agent = user_agent;
 	}
 

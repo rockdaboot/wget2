@@ -21,9 +21,11 @@
  *
  * Changelog
  * 25.04.2012  Tim Ruehsen  created
+ * 26.10.2012               added Cookie support (RFC 6265)
  *
  * Resources:
  * RFC 2616
+ * RFC 6265
  *
  */
 
@@ -35,6 +37,7 @@
 #include "net.h"
 #include "buffer.h"
 #include "iri.h"
+#include "cookie.h"
 
 // FLAGS for http_get_file()
 #define HTTP_FLG_USE_FILE (1<<0) // use filename without path for saving files
@@ -87,7 +90,8 @@ typedef struct {
 typedef struct {
 	VECTOR
 		*links,
-		*digests;
+		*digests,
+		*cookies;
 	const char
 		*content_type,
 		*location;
@@ -132,13 +136,14 @@ const char
 	*http_parse_param(const char *s, const char **param, const char **value) NONNULL_ALL,
 	*http_parse_name(const char *s, const char **name) NONNULL_ALL,
 	*http_parse_name_fixed(const char *s, char *name, size_t name_size) NONNULL_ALL,
-	*http_parse_link(HTTP_LINK *link, const char *s) NONNULL_ALL,
-	*http_parse_digest(HTTP_DIGEST *digest, const char *s) NONNULL_ALL,
+	*http_parse_link(const char *s, HTTP_LINK *link) NONNULL_ALL,
+	*http_parse_digest(const char *s, HTTP_DIGEST *digest) NONNULL_ALL,
 	*http_parse_location(const char *s, const char **location) NONNULL_ALL,
 	*http_parse_transfer_encoding(const char *s, char *transfer_encoding) NONNULL_ALL,
 	*http_parse_content_type(const char *s, const char **content_type) NONNULL_ALL,
 	*http_parse_content_encoding(const char *s, char *content_encoding) NONNULL_ALL,
-	*http_parse_connection(const char *s, char *keep_alive) NONNULL_ALL;
+	*http_parse_connection(const char *s, char *keep_alive) NONNULL_ALL,
+	*http_parse_setcookie(const char *s, HTTP_COOKIE *cookie) NONNULL_ALL;
 void
 	http_add_param(VECTOR **params, HTTP_HEADER_PARAM *param) NONNULL_ALL,
 	http_add_header_vprintf(HTTP_REQUEST *req, const char *fmt, va_list args) PRINTF_FORMAT(2,0) NONNULL_ALL,
@@ -148,9 +153,11 @@ void
 
 int
 	http_free_param(HTTP_HEADER_PARAM *param),
+	http_free_cookie(HTTP_COOKIE *cookie),
 	http_free_digest(HTTP_DIGEST *digest),
 	http_free_link(HTTP_LINK *link);
 void
+	http_free_cookies(VECTOR *cookies),
 	http_free_digests(VECTOR *digests),
 	http_free_links(VECTOR *link),
 //	http_free_header(HTTP_HEADER **header),

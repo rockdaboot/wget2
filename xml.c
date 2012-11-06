@@ -53,9 +53,10 @@ struct XML_CONTEXT {
 		*fp; // FILE pointer to XML file
 	int
 		hints, // XML_HINT...
-		token_size, // size of token buffer
-		token_len, // used bytes of token buffer (not counting terminating 0 byte)
 		(*xml_getc)(XML_CONTEXT *);
+	size_t
+		token_size, // size of token buffer
+		token_len; // used bytes of token buffer (not counting terminating 0 byte)
 	void
 		*user_ctx, // user context (not needed if we were using nested functions)
 		(*xml_ungetc)(XML_CONTEXT *),
@@ -339,7 +340,7 @@ static char *getScriptContent(XML_CONTEXT *context)
 	return context->token;
 }
 
-static char *getUnparsed(XML_CONTEXT *context, int flags, const char *end, int len, const char *directory)
+static char *getUnparsed(XML_CONTEXT *context, int flags, const char *end, size_t len, const char *directory)
 {
 	int c;
 
