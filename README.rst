@@ -63,6 +63,7 @@ request pipelining and SPDY protocol are my favorites.
 - compression on TLS/SSL layer
 - respect /robots.txt "Robot Exclusion Standard"
 - request pipelining (using client cookies)
+- TCP Fast Open (as soon as Debian sid is unfreezed)
 - SPDY protocol
 - http authentication (basic & digest RFC 2617)
 - proxy support

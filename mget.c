@@ -542,7 +542,6 @@ int main(int argc, const char *const *argv)
 	// freeing to avoid disguising valgrind output
 	cookie_free_public_suffixes();
 	cookie_free_cookies();
-	tcp_set_dns_caching(0); // frees DNS cache
 	ssl_deinit();
 	queue_free();
 	vec_free(&blacklist);

@@ -690,6 +690,8 @@ int init(int argc, const char *const *argv)
 
 void deinit(void)
 {
+	tcp_set_dns_caching(0); // frees DNS cache
+
 	xfree(config.cookie_suffixes);
 	xfree(config.load_cookies);
 	xfree(config.save_cookies);

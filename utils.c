@@ -22,6 +22,7 @@
  * Changelog
  * 25.04.2012  Tim Ruehsen  created
  * 31.05.2012               added popen3() and fd_popen3()
+ * 07.11.2012               added memdup()
  *
  */
 
@@ -381,18 +382,6 @@ size_t strlcpy(char *dst, const char *src, size_t size)
 
 	while (*src++);
 	return src - old - 1;
-}
-
-// I found no strndup on my old SUSE 7.3 test system (gcc 2.95)
-
-char *strndup(const char *s, size_t n)
-{
-	char *dst = xmalloc(n + 1);
-
-	memcpy(dst, s, n);
-	dst[n] = 0;
-
-	return dst;
 }
 
 // strcmp which also accepts NULL values

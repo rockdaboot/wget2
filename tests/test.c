@@ -43,6 +43,7 @@
 #include "../log.h"
 #include "../net.h"
 #include "../vector.h"
+#include "../hashmap.h"
 #include "../buffer.h"
 #include "../http.h"
 #include "../cookie.h"
@@ -978,6 +979,120 @@ static void test_vector(void)
 	vec_free(&v);
 }
 
+// Paul Larson's hash function from Microsoft Research
+// ~ O(1) insertion, search and removal
+static unsigned int hash_txt(const char *key)
+{
+	unsigned int h = 0; // use 0 as SALT if hash table attacks doesn't matter
+
+	while (*key)
+		h = h * 101 + (unsigned char)*key++;
+		// h = (h << 6) ^ (h >> 26) ^ (unsigned char)*key++;
+
+	return h;
+}
+
+// this hash function generates collisions and reduces hashmap to a simple list.
+// O(1) insertion, but O(n) search and removal
+static unsigned int hash_txt2(UNUSED const char *key)
+{
+	return 0;
+}
+
+static void test_hashmap(void)
+{
+	HASHMAP *h;
+	char key[128], value[128], *val;
+	int run, it, keysize, valuesize;
+
+	// the initial size of 16 forces the internal reshashing function to be called twice
+
+	for (run = 0; run < 2; run++) {
+		if (run == 0) {
+			h = hashmap_create(16, -2, (unsigned int (*)(const void *))hash_txt, (int (*)(const void *, const void *))strcmp);
+		} else {
+			hashmap_clear(h);
+			hashmap_sethashfunc(h, (unsigned int (*)(const void *))hash_txt2);
+		}
+
+		for (it = 0; it < 26; it++) {
+			keysize = sprintf(key, "http://www.example.com/subdir/%d.html", it);
+			valuesize = sprintf(value, "%d.html", it);
+			if (hashmap_put(h, key, keysize + 1, value, valuesize + 1)) {
+				failed++;
+				info_printf("hashmap_put(%s) returns unexpected old value\n", key);
+			} else ok++;
+		}
+
+		if ((it = hashmap_size(h)) != 26) {
+			failed++;
+			info_printf("hashmap_size() returned %d (expected %d)\n", it, 26);
+		} else ok++;
+
+		// now, look up every single entry
+		for (it = 0; it < 26; it++) {
+			sprintf(key, "http://www.example.com/subdir/%d.html", it);
+			sprintf(value, "%d.html", it);
+			if (!(val = hashmap_get(h, key))) {
+				failed++;
+				info_printf("hashmap_get(%s) didn't find entry\n", key);
+			} else if (strcmp(val, value)) {
+				failed++;
+				info_printf("hashmap_get(%s) found '%s' (expected '%s')\n", key, val, value);
+			} else ok++;
+		}
+
+		hashmap_clear(h);
+
+		if ((it = hashmap_size(h)) != 0) {
+			failed++;
+			info_printf("hashmap_size() returned %d (expected 0)\n", it);
+		} else ok++;
+
+		for (it = 0; it < 26; it++) {
+			keysize = sprintf(key, "http://www.example.com/subdir/%d.html", it);
+			valuesize = sprintf(value, "%d.html", it);
+			if (hashmap_put(h, key, keysize + 1, value, valuesize + 1)) {
+				failed++;
+				info_printf("hashmap_put(%s) returns unexpected old value\n", key);
+			} else ok++;
+		}
+
+		if ((it = hashmap_size(h)) != 26) {
+			failed++;
+			info_printf("hashmap_size() returned %d (expected %d)\n", it, 26);
+		} else ok++;
+
+		// now, remove every single entry
+		for (it = 0; it < 26; it++) {
+			sprintf(key, "http://www.example.com/subdir/%d.html", it);
+			sprintf(value, "%d.html", it);
+			hashmap_remove(h, key);
+		}
+
+		if ((it = hashmap_size(h)) != 0) {
+			failed++;
+			info_printf("hashmap_size() returned %d (expected 0)\n", it);
+		} else ok++;
+
+		for (it = 0; it < 26; it++) {
+			keysize = sprintf(key, "http://www.example.com/subdir/%d.html", it);
+			valuesize = sprintf(value, "%d.html", it);
+			if (hashmap_put(h, key, keysize + 1, value, valuesize + 1)) {
+				failed++;
+				info_printf("hashmap_put(%s) returns unexpected old value\n", key);
+			} else ok++;
+		}
+
+		if ((it = hashmap_size(h)) != 26) {
+			failed++;
+			info_printf("hashmap_size() returned %d (expected %d)\n", it, 26);
+		} else ok++;
+	}
+
+	hashmap_free(&h);
+}
+
 int main(int argc, const char * const *argv)
 {
 	init(argc, argv); // allows us to test with options (e.g. with --debug)
@@ -988,6 +1103,7 @@ int main(int argc, const char * const *argv)
 	test_buffer();
 	test_buffer_printf();
 	test_vector();
+	test_hashmap();
 	test_utils();
 
 	if (failed) {
@@ -1004,9 +1120,6 @@ int main(int argc, const char * const *argv)
 	test_cookies();
 	cookie_free_public_suffixes();
 	cookie_free_cookies();
-
-	// free some resources to minimize valgrind output
-	tcp_set_dns_caching(0); // frees DNS cache
 
 	if (failed) {
 		info_printf("Summary: %d out of %d tests failed\n", failed, ok + failed);

@@ -36,8 +36,8 @@ typedef struct {
 	int
 		(*cmp)(const void *, const void *); // comparison function
 	void
-		**pl; // pointer to list of pointers to elements
- int
+		**pl; // pointer to array of pointers to elements
+	int
 		max,     // allocated elements
 		cur,     // number of elements in use
 		off;     // number of elements to add if resize occurs

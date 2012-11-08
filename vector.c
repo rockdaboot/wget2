@@ -265,10 +265,7 @@ void vec_free(VECTOR **v)
 {
 	if (v && *v) {
 		if ((*v)->pl) {
-			int it;
-
-			for (it = 0; it < (*v)->cur; it++)
-				xfree((*v)->pl[it]);
+			vec_clear(*v);
 			xfree((*v)->pl);
 		}
 		xfree(*v);
@@ -282,10 +279,8 @@ void vec_clear(VECTOR *v)
 	if (v) {
 		int it;
 
-		for (it = 0; it < v->cur; it++) {
+		for (it = 0; it < v->cur; it++)
 			xfree(v->pl[it]);
-			v->pl[it] = NULL;
-		}
 		v->cur = 0;
 	}
 }

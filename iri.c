@@ -470,14 +470,14 @@ int iri_compare(IRI *iri1, IRI *iri2)
 		if (iri1->path)
 			return 1;
 	}
-	else if ((n = strcmp(iri1->path, iri2->path)))
+	else if ((n = strcasecmp(iri1->path, iri2->path)))
 		return n;
 
-	if ((n = null_strcmp(iri1->query, iri2->query)))
+	if ((n = null_strcasecmp(iri1->query, iri2->query)))
 		return n;
 
-	if ((n = null_strcmp(iri1->fragment, iri2->fragment)))
-		return n;
+	// if ((n = null_strcasecmp(iri1->fragment, iri2->fragment)))
+	//		return n;
 
 	return 0;
 }

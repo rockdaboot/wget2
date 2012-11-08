@@ -21,6 +21,7 @@
  *
  * Changelog
  * 25.04.2012  Tim Ruehsen  created
+ * 31.05.2012               added popen3() and fd_popen3()
  *
  */
 
@@ -38,8 +39,6 @@
 
 void
    buffer_to_hex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size) NONNULL_ALL;
-char
-	*strndup(const char *s, size_t n) MALLOC NONNULL_ALL;
 size_t
 	strlcpy(char *restrict dst, const char *restrict src, size_t size) NONNULL_ALL;
 ssize_t

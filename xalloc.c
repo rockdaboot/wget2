@@ -60,3 +60,22 @@ void *xrealloc(void *ptr, size_t size)
  *p = NULL;
 	}
 }*/
+
+// I found no strndup on my old SUSE 7.3 test system (gcc 2.95)
+
+char *strndup(const char *s, size_t n)
+{
+	char *dst = xmalloc(n + 1);
+
+	memcpy(dst, s, n);
+	dst[n] = 0;
+
+	return dst;
+}
+
+// xmemdup sometimes comes in handy
+
+void *xmemdup(const void *s, size_t n)
+{
+	return memcpy(xmalloc(n), s, n);
+}

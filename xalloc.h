@@ -29,6 +29,7 @@
 
 #include <stddef.h>
 #include <stdlib.h> // needed for free()
+#include <string.h> // needed for memcpy()
 
 #include "mget.h"
 
@@ -37,6 +38,9 @@
 void
 	*xmalloc(size_t size) MALLOC ALLOC_SIZE(1),
 	*xcalloc(size_t nmemb, size_t size) MALLOC ALLOC_SIZE(1,2),
-	*xrealloc(void *ptr, size_t size) ALLOC_SIZE(2);
+	*xrealloc(void *ptr, size_t size) ALLOC_SIZE(2),
+	*xmemdup(const void *s, size_t n) MALLOC ALLOC_SIZE(2) NONNULL_ALL;
+char
+	*strndup(const char *s, size_t n) MALLOC NONNULL_ALL;
 
 #endif /* _MGET_XALLOC_H */
