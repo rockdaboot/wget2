@@ -177,6 +177,19 @@ void *hashmap_put(HASHMAP *h, const void *key, size_t keysize, const void *value
 	return hashmap_put_noalloc(h, xmemdup(key, keysize), value ? xmemdup(value, valuesize) : NULL);
 }
 
+void *hashmap_put_ident(HASHMAP *h, const void *key, size_t keysize)
+{
+	// if the key is as well the value (e.g. for blacklists)
+	void *keydup = xmemdup(key, keysize);
+	return hashmap_put_noalloc(h, keydup, keydup);
+}
+
+void *hashmap_put_ident_noalloc(HASHMAP *h, const void *key)
+{
+	// if the key is as well the value (e.g. for blacklists)
+	return hashmap_put_noalloc(h, key, key);
+}
+
 void *hashmap_get(const HASHMAP *h, const void *key)
 {
 	ENTRY *entry;
@@ -205,8 +218,14 @@ static void NONNULL_ALL hashmap_remove_entry(HASHMAP *h, const char *key, int fr
 				h->entry[pos] = next;
 
 			if (free_kv) {
-				xfree(e->key);
-				xfree(e->value);
+				if (e->key == e->value) {
+					// special case: key/value identity
+					xfree(e->key);
+					e->value = NULL;
+				} else {
+					xfree(e->key);
+					xfree(e->value);
+				}
 			}
 			xfree(e);
 
@@ -216,7 +235,7 @@ static void NONNULL_ALL hashmap_remove_entry(HASHMAP *h, const char *key, int fr
 	}
 }
 
-void hashmap_remove(HASHMAP *h, const char *key)
+void hashmap_remove(HASHMAP *h, const void *key)
 {
 	if (h)
 		hashmap_remove_entry(h, key, 1);
@@ -237,8 +256,6 @@ void hashmap_free(HASHMAP **h)
 	}
 }
 
-// remove all elements
-
 void hashmap_clear(HASHMAP *h)
 {
 	if (h) {
@@ -248,8 +265,14 @@ void hashmap_clear(HASHMAP *h)
 		for (it = 0; it < h->max && cur; it++) {
 			for (entry = h->entry[it]; entry; entry = next) {
 				next = entry->next;
-				xfree(entry->value);
-				xfree(entry->key);
+				if (entry->value == entry->key) {
+					// special case: key/value identity
+					xfree(entry->value);
+					entry->key = NULL;
+				} else {
+					xfree(entry->value);
+					xfree(entry->key);
+				}
 				xfree(entry);
 				cur--;
 			}

@@ -43,7 +43,7 @@
 #include "../log.h"
 #include "../net.h"
 #include "../vector.h"
-#include "../hashmap.h"
+#include "../stringmap.h"
 #include "../buffer.h"
 #include "../http.h"
 #include "../cookie.h"
@@ -801,6 +801,34 @@ static void test_cookies(void)
 			1, 1, 1, 0, 0, 1,
 			1
 		},
+		{	// allowed cookie
+			"www.example.com",
+			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/; domain=.example.com",
+			"ID", "65=abcd", "example.com", "/", "Tue, 07-May-2013 07:48:53 GMT",
+			1, 1, 1, 0, 0, 0,
+			1
+		},
+		{	// allowed cookie without path
+			"www.example.com",
+			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; domain=.example.com",
+			"ID", "65=abcd", "example.com", "/", "Tue, 07-May-2013 07:48:53 GMT",
+			1, 1, 1, 0, 0, 0,
+			1
+		},
+		{	// allowed cookie without domain
+			"www.example.com",
+			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/",
+			"ID", "65=abcd", "www.example.com", "/", "Tue, 07-May-2013 07:48:53 GMT",
+			0, 1, 1, 1, 0, 0,
+			1
+		},
+		{	// allowed cookie without domain, path and expires
+			"www.example.com",
+			"ID=65=abcd",
+			"ID", "65=abcd", "www.example.com", "/", "Tue, 07-May-2013 07:48:53 GMT",
+			0, 1, 0, 1, 0, 0,
+			1
+		},
 		{	// illegal cookie
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/; domain=.example.org",
@@ -979,118 +1007,105 @@ static void test_vector(void)
 	vec_free(&v);
 }
 
-// Paul Larson's hash function from Microsoft Research
-// ~ O(1) insertion, search and removal
-static unsigned int hash_txt(const char *key)
-{
-	unsigned int h = 0; // use 0 as SALT if hash table attacks doesn't matter
-
-	while (*key)
-		h = h * 101 + (unsigned char)*key++;
-		// h = (h << 6) ^ (h >> 26) ^ (unsigned char)*key++;
-
-	return h;
-}
-
-// this hash function generates collisions and reduces hashmap to a simple list.
+// this hash function generates collisions and reduces the map to a simple list.
 // O(1) insertion, but O(n) search and removal
-static unsigned int hash_txt2(UNUSED const char *key)
+static unsigned int hash_txt(UNUSED const char *key)
 {
 	return 0;
 }
 
-static void test_hashmap(void)
+static void test_stringmap(void)
 {
-	HASHMAP *h;
+	STRINGMAP *h;
 	char key[128], value[128], *val;
-	int run, it, keysize, valuesize;
+	int run, it, valuesize;
 
 	// the initial size of 16 forces the internal reshashing function to be called twice
 
 	for (run = 0; run < 2; run++) {
 		if (run == 0) {
-			h = hashmap_create(16, -2, (unsigned int (*)(const void *))hash_txt, (int (*)(const void *, const void *))strcmp);
+			h = stringmap_create(16);
 		} else {
-			hashmap_clear(h);
-			hashmap_sethashfunc(h, (unsigned int (*)(const void *))hash_txt2);
+			stringmap_clear(h);
+			stringmap_sethashfunc(h, hash_txt);
 		}
 
 		for (it = 0; it < 26; it++) {
-			keysize = sprintf(key, "http://www.example.com/subdir/%d.html", it);
+			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			valuesize = sprintf(value, "%d.html", it);
-			if (hashmap_put(h, key, keysize + 1, value, valuesize + 1)) {
+			if (stringmap_put(h, key, value, valuesize + 1)) {
 				failed++;
-				info_printf("hashmap_put(%s) returns unexpected old value\n", key);
+				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
 		}
 
-		if ((it = hashmap_size(h)) != 26) {
+		if ((it = stringmap_size(h)) != 26) {
 			failed++;
-			info_printf("hashmap_size() returned %d (expected %d)\n", it, 26);
+			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
 		} else ok++;
 
 		// now, look up every single entry
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			sprintf(value, "%d.html", it);
-			if (!(val = hashmap_get(h, key))) {
+			if (!(val = stringmap_get(h, key))) {
 				failed++;
-				info_printf("hashmap_get(%s) didn't find entry\n", key);
+				info_printf("stringmap_get(%s) didn't find entry\n", key);
 			} else if (strcmp(val, value)) {
 				failed++;
-				info_printf("hashmap_get(%s) found '%s' (expected '%s')\n", key, val, value);
+				info_printf("stringmap_get(%s) found '%s' (expected '%s')\n", key, val, value);
 			} else ok++;
 		}
 
-		hashmap_clear(h);
+		stringmap_clear(h);
 
-		if ((it = hashmap_size(h)) != 0) {
+		if ((it = stringmap_size(h)) != 0) {
 			failed++;
-			info_printf("hashmap_size() returned %d (expected 0)\n", it);
+			info_printf("stringmap_size() returned %d (expected 0)\n", it);
 		} else ok++;
 
 		for (it = 0; it < 26; it++) {
-			keysize = sprintf(key, "http://www.example.com/subdir/%d.html", it);
+			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			valuesize = sprintf(value, "%d.html", it);
-			if (hashmap_put(h, key, keysize + 1, value, valuesize + 1)) {
+			if (stringmap_put(h, key, value, valuesize + 1)) {
 				failed++;
-				info_printf("hashmap_put(%s) returns unexpected old value\n", key);
+				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
 		}
 
-		if ((it = hashmap_size(h)) != 26) {
+		if ((it = stringmap_size(h)) != 26) {
 			failed++;
-			info_printf("hashmap_size() returned %d (expected %d)\n", it, 26);
+			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
 		} else ok++;
 
 		// now, remove every single entry
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			sprintf(value, "%d.html", it);
-			hashmap_remove(h, key);
+			stringmap_remove(h, key);
 		}
 
-		if ((it = hashmap_size(h)) != 0) {
+		if ((it = stringmap_size(h)) != 0) {
 			failed++;
-			info_printf("hashmap_size() returned %d (expected 0)\n", it);
+			info_printf("stringmap_size() returned %d (expected 0)\n", it);
 		} else ok++;
 
 		for (it = 0; it < 26; it++) {
-			keysize = sprintf(key, "http://www.example.com/subdir/%d.html", it);
+			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			valuesize = sprintf(value, "%d.html", it);
-			if (hashmap_put(h, key, keysize + 1, value, valuesize + 1)) {
+			if (stringmap_put(h, key, value, valuesize + 1)) {
 				failed++;
-				info_printf("hashmap_put(%s) returns unexpected old value\n", key);
+				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
 		}
 
-		if ((it = hashmap_size(h)) != 26) {
+		if ((it = stringmap_size(h)) != 26) {
 			failed++;
-			info_printf("hashmap_size() returned %d (expected %d)\n", it, 26);
+			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
 		} else ok++;
 	}
 
-	hashmap_free(&h);
+	stringmap_free(&h);
 }
 
 int main(int argc, const char * const *argv)
@@ -1102,9 +1117,9 @@ int main(int argc, const char * const *argv)
 	// testing basic library functionality
 	test_buffer();
 	test_buffer_printf();
-	test_vector();
-	test_hashmap();
 	test_utils();
+	test_vector();
+	test_stringmap();
 
 	if (failed) {
 		info_printf("ERROR: %d out of %d basic tests failed\n", failed, ok + failed);

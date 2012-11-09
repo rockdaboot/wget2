@@ -53,6 +53,7 @@
 #include "css.h"
 #include "options.h"
 #include "metalink.h"
+#include "blacklist.h"
 #include "ssl.h"
 
 typedef struct {
@@ -88,45 +89,13 @@ static DOWNLOADER
 	*downloader;
 static void
 	*downloader_thread(void *p);
-static VECTOR
-	*blacklist,
+VECTOR
 	*hosts;
 static int
 	terminate;
 
 // we could speed up the blacklist by having a hashmap of the uri strings
 // and by having a vector of all IRIs in use.
-
-static int NONNULL_ALL in_blacklist(IRI *iri)
-{
-	int it;
-
-	for (it = 0; iri_schemes[it]; it++) {
-		if (iri_schemes[it] == iri->scheme)
-			return vec_find(blacklist, iri) >= 0;
-	}
-
-	return 1; // unknown scheme becomes blacked out
-}
-
-static IRI *blacklist_add(IRI *iri)
-{
-	if (!iri)
-		return NULL;
-
-	if (!blacklist)
-		blacklist = vec_create(128, -2, (int(*)(const void *, const void *))iri_compare);
-
-	if (!in_blacklist(iri)) {
-		//	info_printf("Add to blacklist: %s\n",uri);
-		vec_insert_sorted_noalloc(blacklist, iri);
-		return iri;
-	}
-
-	iri_free(&iri);
-
-	return NULL;
-}
 
 static int schedule_download(JOB *job, PART *part)
 {
@@ -532,19 +501,15 @@ int main(int argc, const char *const *argv)
 	if (config.save_cookies)
 		cookie_save(config.save_cookies, config.keep_session_cookies);
 
-	if (config.debug) {
-		for (n = 0; n < vec_size(blacklist); n++) {
-			IRI *iri = vec_get(blacklist, n);
-			info_printf("blacklist[%d] %s\n", n, iri->uri);
-		}
-	}
+	if (config.debug)
+		blacklist_print();
 
 	// freeing to avoid disguising valgrind output
 	cookie_free_public_suffixes();
 	cookie_free_cookies();
 	ssl_deinit();
 	queue_free();
-	vec_free(&blacklist);
+	blacklist_free();
 	vec_free(&hosts);
 	xfree(downloader);
 	deinit();

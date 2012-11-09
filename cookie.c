@@ -402,18 +402,20 @@ int cookie_normalize_cookie(const IRI *iri, HTTP_COOKIE *cookie)
 		}
 
 		if (!cookie->path || *cookie->path != '/') {
-			const char *p = strrchr(iri->path, '/');
+			const char *p = iri->path ? strrchr(iri->path, '/') : NULL;
 
-			if (p) {
-				cookie->path = strdup(p + 1);
+			if (p && p != iri->path) {
+				cookie->path = strndup(iri->path, p - iri->path);
 			} else {
-				err_printf(_("Unexpected URI without '/': %s\n"), iri->path);
-				return 0; // ignore cookie
+				cookie->path = strdup("/");
+				// err_printf(_("Unexpected URI without '/': %s\n"), iri->path);
+				// return 0; // ignore cookie
 			}
 		}
 	}
 
 	cookie->normalized = 1;
+
 /*
 	log_printf(">  %s=%s\n", cookie->name, cookie->value);
 	log_printf(">  expires=%ld max-age=%ld\n", cookie->expires, cookie->maxage);
@@ -422,6 +424,7 @@ int cookie_normalize_cookie(const IRI *iri, HTTP_COOKIE *cookie)
 	log_printf(">  normalized=%d persistent=%d hostonly=%d secure=%d httponly=%d\n",
 		cookie->normalized, cookie->persistent, cookie->host_only, cookie->secure_only, cookie->http_only);
 */
+
 	return 1;
 }
 
