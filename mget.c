@@ -667,6 +667,14 @@ void *downloader_thread(void *p)
 								save_file(resp, job->iri, HTTP_FLG_USE_FILE);
 						}
 					}
+					else if (resp->code == 206 && config.continue_download) { // partial content
+						if (!config.spider) {
+							if (config.output_document)
+								append_file(resp, config.output_document);
+							else
+								save_file(resp, job->iri, HTTP_FLG_USE_FILE | HTTP_FLG_APPEND);
+						}
+					}
 
 				} else {
 					// download metalink part
@@ -855,6 +863,17 @@ void css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 	buffer_deinit(&tag);
 }
 
+static long long NONNULL_ALL get_filesize(const char *fname)
+{
+	struct stat st;
+	
+	if (stat(fname, &st)==0) {
+		return st.st_size;
+	}
+
+	return 0;
+}
+
 void append_file(HTTP_RESPONSE *resp, const char *fname)
 {
 	int fd;
@@ -875,6 +894,46 @@ void append_file(HTTP_RESPONSE *resp, const char *fname)
 		err_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
 }
 
+static const char * NONNULL_ALL create_filename(buffer_t *buf, IRI *iri, int flags)
+{
+	const char *fname;
+
+	if (flags & HTTP_FLG_USE_PATH) {
+		// create the complete path
+		const char *p1, *p2;
+
+		iri_get_escaped_host(iri, buf);
+		fname = iri_get_escaped_path(iri, buf);
+
+		if (*fname) {
+			for (p1 = fname; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
+				*(char *)p2 = 0; // replace path separator
+
+				// relative paths should have been normalized earlier,
+				// but for security reasons, don't trust myself...
+				if (*p1 == '.' && !strncmp(p1, "..", 2))
+					err_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), fname);
+
+				if (mkdir(fname, 0755) != 0 && errno != EEXIST) {
+					err_printf(_("Failed to make directory '%s'\n"), fname);
+					return fname;
+				} else info_printf("mkdir %s\n", fname);
+
+				*(char *)p2 = '/'; // restore path separator
+			}
+		}
+
+		iri_get_escaped_query(iri, buf);
+		// return iri_get_escaped_fragment(iri, &buf);
+	} else { // if (flags & HTTP_FLG_USE_FILE) {
+		// create the file within the current directory
+
+		iri_get_escaped_file(iri, buf);
+	}
+
+	return buf->data;
+}
+
 void save_file(HTTP_RESPONSE *resp, IRI *iri, int flags)
 {
 	char sbuf[256];
@@ -884,41 +943,10 @@ void save_file(HTTP_RESPONSE *resp, IRI *iri, int flags)
 
 	buffer_init(&buf, sbuf, sizeof(sbuf));
 
-	if (flags & HTTP_FLG_USE_PATH) {
-		// create the complete path
-		const char *p1, *p2;
-
-		iri_get_escaped_host(iri, &buf);
-		fname = iri_get_escaped_path(iri, &buf);
-
-		if (*fname) {
-			for (p1 = fname; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
-				*(char *)p2 = 0; // replace path seperator
-
-				// relative paths should have been normalized earlier,
-				// but for security reasons, don't trust myself...
-				if (*p1 == '.' && !strncmp(p1, "..", 2))
-					err_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), fname);
-
-				if (mkdir(fname, 0755) != 0 && errno != EEXIST) {
-					err_printf(_("Failed to make directory '%s'\n"), fname);
-					return;
-				} else info_printf("mkdir %s\n", fname);
-				
-				*(char *)p2 = '/'; // restore path seperator
-			}
-		}
-
-		iri_get_escaped_query(iri, &buf);
-		fname = iri_get_escaped_fragment(iri, &buf);
-	} else { // if (flags & HTTP_FLG_USE_FILE) {
-		// create the file within the current directory
-
-		fname = iri_get_escaped_file(iri, &buf);
-	}
+	fname = create_filename(&buf, iri, flags);
 
 	info_printf("saving '%s'\n", fname);
-	if ((fd = open(fname, O_WRONLY | O_TRUNC | O_CREAT, 0644)) != -1) {
+	if ((fd = open(fname, O_WRONLY | O_CREAT | (flags & HTTP_FLG_APPEND ? O_APPEND : O_TRUNC), 0644)) != -1) {
 		ssize_t rc;
 		if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
 			err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fname, rc, errno);
@@ -1007,6 +1035,18 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			HTTP_REQUEST *req;
 
 			req = http_create_request(use_iri, "GET");
+
+			if (config.continue_download) {
+				char sbuf[256];
+				buffer_t buf;
+
+				buffer_init(&buf, sbuf, sizeof(sbuf));
+
+				http_add_header_printf(req, "Range: bytes=%llu-",
+					get_filesize(create_filename(&buf, use_iri, HTTP_FLG_APPEND)));
+
+				buffer_deinit(&buf);
+			}
 
 			// 20.06.2012: www.google.de only sends gzip responses with one of the
 			// following header lines in the request.

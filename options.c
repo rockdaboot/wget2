@@ -113,6 +113,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --http-proxy        Set HTTP proxy, overriding environment variables.\n"
 		"      --https-proxy       Set HTTPS proxy, overriding environment variables.\n"
 		"  -S  --server-response   Print the server response headers. (default: off)\n"
+		"  -c  --continue-download Continue download for given files. (default: off)\n"
 		"\n"
 		"HTTP related options:\n"
 		"  -U  --user-agent        Set User-Agent: header in requests.\n"
@@ -252,6 +253,7 @@ static const struct option options[] = {
 	{ "certificate-type", &config.cert_type, parse_cert_type, 1, 0},
 	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0},
+	{ "continue-download", &config.continue_download, parse_bool, 0, 'c'},
 	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0},
 	{ "cookies", &config.cookies, parse_bool, 0, 0},
 	{ "debug", &config.debug, parse_bool, 0, 'd'},

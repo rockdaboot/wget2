@@ -43,6 +43,7 @@
 #define HTTP_FLG_USE_FILE (1<<0) // use filename without path for saving files
 #define HTTP_FLG_USE_PATH (1<<1) // use complete path for saving files
 #define HTTP_FLG_CLOBBER  (1<<2) // overwrite existing files
+#define HTTP_FLG_APPEND   (1<<3) // append to file
 
 typedef struct {
 	const char

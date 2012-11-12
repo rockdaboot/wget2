@@ -938,7 +938,6 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 	if (!conn)
 		return NULL;
 
-
 	if (iri->scheme == IRI_SCHEME_HTTP && http_proxy) {
 		host = http_proxy->host;
 		port = (http_proxy->port && *http_proxy->port) ? http_proxy->port : http_proxy->scheme;
