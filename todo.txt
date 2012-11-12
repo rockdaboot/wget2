@@ -4,7 +4,6 @@ Todo:
 - request pipelining (maybe using a client cookie)
 - SPDY protocol
 - http authentication (basic & digest RFC 2617)
-- proxy support
 - a --sync option / respect page expiry dates / only download changed pages
 - Atom / RSS / Podcast / Streaming (.m3u, etc. formats)
 - ICEcast support
@@ -19,6 +18,7 @@ Refactoring/cleanup to do:
 - write more test routines
 
 Done:
+- proxy support
 - DNS lookup cache
 - https with gnutls
 - checksum routines to avoid sum utilities like "sha1sum" (using libgnutls)

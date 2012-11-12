@@ -32,13 +32,9 @@
 #include "mget.h"
 
 struct config {
-	int
-		connect_timeout, // ms
-		dns_timeout, // ms
-		read_timeout, // ms
-		max_redirect,
-		num_threads;
 	const char
+		*http_proxy,
+		*https_proxy,
 		*cookie_suffixes,
 		*load_cookies,
 		*save_cookies,
@@ -53,7 +49,14 @@ struct config {
 		*private_key,
 		*random_file,
 		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
+	int
+		connect_timeout, // ms
+		dns_timeout, // ms
+		read_timeout, // ms
+		max_redirect,
+		num_threads;
 	char
+		keep_alive,
 		keep_session_cookies,
 		cookies,
 		spider,

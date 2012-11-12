@@ -28,6 +28,7 @@ So, for now (05.11.2012), don't use it for production !
 
 The basic functionality is implemented, like:
 
+- proxy support
 - cookies (session/non-session), detection of supercookies via Mozilla Public Suffix List
   (use the new option --cookie-suffixes <filename>, better: put it into ~/.mgetrc)
 - respect cookie public suffix list http://publicsuffix.org/list/
@@ -66,7 +67,6 @@ request pipelining and SPDY protocol are my favorites.
 - TCP Fast Open (as soon as Debian sid is unfreezed)
 - SPDY protocol
 - http authentication (basic & digest RFC 2617)
-- proxy support
 - a --sync option / respect page expiry dates / only download changed pages
 - respect data-urls
 - Atom / RSS / Podcast / Streaming (.m3u, etc. formats)

@@ -73,6 +73,13 @@ char *strndup(const char *s, size_t n)
 	return dst;
 }
 
+// strdup which accepts NULL values
+
+char *strdup_null(const char *s)
+{
+	return s ? strdup(s) : NULL;
+}
+
 // xmemdup sometimes comes in handy
 
 void *xmemdup(const void *s, size_t n)

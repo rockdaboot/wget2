@@ -72,6 +72,9 @@ static const unsigned char
 		['\t'] = HTTP_CTYPE_SEPERATOR
 	};
 
+static IRI
+	*http_proxy,
+	*https_proxy;
 
 int http_isseperator(char c)
 {
@@ -878,6 +881,7 @@ HTTP_REQUEST *http_create_request(const IRI *iri, const char *method)
 	buffer_init(&req->esc_resource, req->esc_resource_buf, sizeof(req->esc_resource_buf));
 	buffer_init(&req->esc_host, req->esc_host_buf, sizeof(req->esc_host_buf));
 
+	req->scheme = iri->scheme;
 	strlcpy(req->method, method, sizeof(req->method));
 	iri_get_escaped_resource(iri, &req->esc_resource);
 	iri_get_escaped_host(iri, &req->esc_host);
@@ -926,18 +930,32 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 	HTTP_CONNECTION
 		*conn = xcalloc(1, sizeof(HTTP_CONNECTION));
 	const char
-		*port = (iri->port && *iri->port) ? iri->port : iri->scheme;
+		*port,
+		*host;
 	int
 		ssl = iri->scheme == IRI_SCHEME_HTTPS;
 
 	if (!conn)
 		return NULL;
 
-	if ((conn->ai = conn->addrinfo = tcp_resolve(iri->host, port)) == NULL)
+	info_printf("host%s port=%s\n",http_proxy->host,http_proxy->port);
+
+	if (iri->scheme == IRI_SCHEME_HTTP && http_proxy) {
+		host = http_proxy->host;
+		port = (http_proxy->port && *http_proxy->port) ? http_proxy->port : http_proxy->scheme;
+	} else if (iri->scheme == IRI_SCHEME_HTTPS && https_proxy) {
+		host = https_proxy->host;
+		port = (https_proxy->port && *https_proxy->port) ? https_proxy->port : https_proxy->scheme;
+	} else {
+		host = iri->host;
+		port = (iri->port && *iri->port) ? iri->port : iri->scheme;
+	}
+
+	if ((conn->ai = conn->addrinfo = tcp_resolve(host, port)) == NULL)
 		goto error;
 
 	for (; conn->ai; conn->ai = conn->ai->ai_next) {
-		if ((conn->tcp = tcp_connect(conn->ai, ssl ? iri->host : NULL)) != NULL) {
+		if ((conn->tcp = tcp_connect(conn->ai, ssl ? host : NULL)) != NULL) {
 			tcp_set_timeout(conn->tcp, config.read_timeout);
 			conn->esc_host = iri->host ? strdup(iri->host) : NULL;
 			conn->port = iri->port ? strdup(iri->port) : NULL;
@@ -987,12 +1005,24 @@ int http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 
 ssize_t http_request_to_buffer(HTTP_REQUEST *req, buffer_t *buf)
 {
-	int it;
+	int it, use_proxy = 0;
 
 //	buffer_sprintf(buf, "%s /%s HTTP/1.1\r\nHOST: %s", req->method, req->esc_resource.data ? req->esc_resource.data : "",);
 
 	buffer_strcpy(buf, req->method);
-	buffer_memcat(buf, " /", 2);
+	buffer_memcat(buf, " ", 1);
+	if (http_proxy && req->scheme == IRI_SCHEME_HTTP) {
+		use_proxy = 1;
+		buffer_strcat(buf, req->scheme);
+		buffer_memcat(buf, "://", 3);
+		buffer_bufcat(buf, &req->esc_host);
+	} else if (https_proxy && req->scheme == IRI_SCHEME_HTTPS) {
+		use_proxy = 1;
+		buffer_strcat(buf, req->scheme);
+		buffer_memcat(buf, "://", 3);
+		buffer_bufcat(buf, &req->esc_host);
+	}
+	buffer_memcat(buf, "/", 1);
 	buffer_bufcat(buf, &req->esc_resource);
 	buffer_memcat(buf, " HTTP/1.1\r\n", 11);
 	buffer_memcat(buf, "Host: ", 6);
@@ -1005,6 +1035,10 @@ ssize_t http_request_to_buffer(HTTP_REQUEST *req, buffer_t *buf)
 			buffer_memcat(buf, "\r\n", 2);
 		}
 	}
+
+	if (use_proxy)
+		buffer_strcat(buf, "Proxy-Connection: keep-alive\r\n");
+
 	buffer_memcat(buf, "\r\n", 2);
 
 	return buf->length;
@@ -1348,3 +1382,19 @@ HTTP_RESPONSE *http_get_response_file(HTTP_CONNECTION *conn, const char *fname)
 	return resp;
 }
  */
+
+void http_set_http_proxy(const char *proxy)
+{
+	iri_free(&http_proxy);
+
+	if (proxy)
+		http_proxy = iri_parse(proxy);
+}
+
+void http_set_https_proxy(const char *proxy)
+{
+	iri_free(&https_proxy);
+
+	if (proxy)
+		https_proxy = iri_parse(proxy);
+}

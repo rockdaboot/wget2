@@ -1034,8 +1034,8 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			if (config.user_agent)
 				http_add_header(req, "User-Agent", config.user_agent);
 
-			// if (config.keep_alive)
-			http_add_header_line(req, "Connection: keep-alive\r\n");
+			if (config.keep_alive)
+				http_add_header_line(req, "Connection: keep-alive\r\n");
 
 			if (part)
 				http_add_header_printf(req, "Range: bytes=%llu-%llu",

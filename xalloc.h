@@ -41,6 +41,7 @@ void
 	*xrealloc(void *ptr, size_t size) ALLOC_SIZE(2),
 	*xmemdup(const void *s, size_t n) MALLOC ALLOC_SIZE(2) NONNULL_ALL;
 char
-	*strndup(const char *s, size_t n) MALLOC NONNULL_ALL;
+	*strndup(const char *s, size_t n) MALLOC NONNULL_ALL,
+	*strdup_null(const char *s) MALLOC;
 
 #endif /* _MGET_XALLOC_H */

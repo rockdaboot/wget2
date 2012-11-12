@@ -56,6 +56,8 @@
 #include "buffer.h"
 #include "cookie.h"
 #include "options.h"
+#include "iri.h"
+#include "http.h"
 
 typedef const struct option *option_t; // forward declaration
 
@@ -107,6 +109,9 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --dns-caching       Enable DNS cache. (default: on)\n"
 		"  -O  --output-document   File where downloaded content is written to, '-'  for STDOUT.\n"
 		"      --spider            Enable web spider mode. (default: off)\n"
+		"      --proxy             Enable support for *_proxy environment variables. (default: on)"
+		"      --http-proxy        Set HTTP proxy, overriding environment variables."
+		"      --https-proxy       Set HTTPS proxy, overriding environment variables."
 		"\n"
 		"HTTP related options:\n"
 		"  -U  --user-agent        Set User-Agent: header in requests.\n"
@@ -117,6 +122,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --cookie-suffixes   Load public suffixes from file. They prevent 'supercookie' vulnerabilities.\n"
 		"                          Download the list with:\n"
 		"                          mget -O suffixes.txt http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1\n"
+		"      --http-keep-alive   Keep connection open for further requests. (default: on)"
 		"\n"
 		"HTTPS (SSL/TLS) related options:\n"
 		"      --secure-protocol   Set protocol to be used (auto, SSLv2, SSLv3 or TLSv1). (default: auto)\n"
@@ -128,6 +134,11 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --ca-directory      Directory with PEM CA certificates.\n"
 		"      --random-file       File to be used as source of random data.\n"
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
+		"\n"
+		"Example boolean option: --quiet=no is the same as --no-quiet or --quiet=off or --quiet off\n"
+		"Example string option: --user-agent=SpecialAgent/1.3.5 or --user-agent \"SpecialAgent/1.3.5\"\n"
+		"\n"
+		"To reset string options use --[no-]option\n"
 		"\n"
 		);
 
@@ -226,7 +237,8 @@ struct config config = {
 	.private_key_type = SSL_X509_FMT_PEM,
 	.secure_protocol = "AUTO",
 	.ca_directory = "system",
-	.cookies = 1
+	.cookies = 1,
+	.keep_alive=1
 };
 
 static const struct option options[] = {
@@ -246,6 +258,9 @@ static const struct option options[] = {
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0},
 	{ "egd-file", &config.egd_file, parse_string, 1, 0},
 	{ "help", NULL, print_help, 0, 'h'},
+	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0},
+	{ "http-proxy", &config.http_proxy, parse_string, 1, 0},
+	{ "https-proxy", &config.https_proxy, parse_string, 1, 0},
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0},
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0},
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0},
@@ -613,6 +628,8 @@ int init(int argc, const char *const *argv)
 	config.user_agent = strdup(config.user_agent);
 	config.secure_protocol = strdup(config.secure_protocol);
 	config.ca_directory = strdup(config.ca_directory);
+	config.http_proxy = strdup_null(getenv("http_proxy"));
+	config.https_proxy = strdup_null(getenv("https_proxy"));
 
 	// this is a special case for switching on debugging before any config file is read
 	if (argc >= 2 && (!strcmp(argv[1],"-d") || !strcmp(argv[1],"--debug"))) {
@@ -668,6 +685,11 @@ int init(int argc, const char *const *argv)
 			close(fd);
 	}
 
+	http_set_http_proxy(config.http_proxy);
+	http_set_https_proxy(config.https_proxy);
+	xfree(config.http_proxy);
+	xfree(config.https_proxy);
+
 	if (config.cookies && config.cookie_suffixes)
 		cookie_load_public_suffixes(config.cookie_suffixes);
 
@@ -706,6 +728,9 @@ void deinit(void)
 	xfree(config.private_key);
 	xfree(config.random_file);
 	xfree(config.secure_protocol);
+
+	http_set_http_proxy(NULL);
+	http_set_https_proxy(NULL);
 }
 
 // self test some functions, called by using --self-test

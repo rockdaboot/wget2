@@ -77,6 +77,8 @@ enum {
 typedef struct {
 	VECTOR
 		*lines;
+	const char
+		*scheme;
 	buffer_t
 		esc_resource, // URI escaped resource
 		esc_host; // URI escaped host
@@ -149,7 +151,9 @@ void
 	http_add_header_vprintf(HTTP_REQUEST *req, const char *fmt, va_list args) PRINTF_FORMAT(2,0) NONNULL_ALL,
 	http_add_header_printf(HTTP_REQUEST *req, const char *fmt, ...) PRINTF_FORMAT(2,3) NONNULL_ALL,
 	http_add_header_line(HTTP_REQUEST *req, const char *line) NONNULL_ALL,
-	http_add_header(HTTP_REQUEST *req, const char *name, const char *value) NONNULL_ALL;
+	http_add_header(HTTP_REQUEST *req, const char *name, const char *value) NONNULL_ALL,
+	http_set_http_proxy(const char *proxy),
+	http_set_https_proxy(const char *proxy);
 
 int
 	http_free_param(HTTP_HEADER_PARAM *param),

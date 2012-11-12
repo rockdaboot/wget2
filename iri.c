@@ -63,9 +63,7 @@ static const unsigned char
 		['+'] = IRI_CTYPE_SUBDELIM,
 		[','] = IRI_CTYPE_SUBDELIM,
 		[';'] = IRI_CTYPE_SUBDELIM,
-		['='] = IRI_CTYPE_SUBDELIM,
-
-		['a'] = IRI_CTYPE_SUBDELIM
+		['='] = IRI_CTYPE_SUBDELIM
 	};
 
 int iri_isgendelim(char c)
@@ -159,7 +157,7 @@ IRI *iri_parse(const char *s_uri)
 	while (*s && !_iri_isgendelim(*s))
 		s++;
 
-	if (*s == ':') {
+	if (*s == ':' && s[1]=='/') {
 		// found a scheme
 		*s++ = 0;
 
