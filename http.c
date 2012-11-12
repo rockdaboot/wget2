@@ -938,7 +938,6 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 	if (!conn)
 		return NULL;
 
-	info_printf("host%s port=%s\n",http_proxy->host,http_proxy->port);
 
 	if (iri->scheme == IRI_SCHEME_HTTP && http_proxy) {
 		host = http_proxy->host;
@@ -1076,7 +1075,10 @@ HTTP_RESPONSE *http_get_response_cb(
 			// found end-of-header
 			*p = 0;
 
-			log_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
+			if (conn->print_response_headers)
+				info_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
+			else
+				log_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 
 			if (!(resp = http_parse_response(buf)))
 				goto cleanup; // something is wrong with the header

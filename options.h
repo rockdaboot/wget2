@@ -56,6 +56,7 @@ struct config {
 		max_redirect,
 		num_threads;
 	char
+		server_response,
 		keep_alive,
 		keep_session_cookies,
 		cookies,

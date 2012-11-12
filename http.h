@@ -126,6 +126,8 @@ typedef struct {
 		*scheme;
 	buffer_t
 		*buf;
+	unsigned
+		print_response_headers : 1;
 } HTTP_CONNECTION;
 
 int

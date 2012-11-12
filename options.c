@@ -109,9 +109,10 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --dns-caching       Enable DNS cache. (default: on)\n"
 		"  -O  --output-document   File where downloaded content is written to, '-'  for STDOUT.\n"
 		"      --spider            Enable web spider mode. (default: off)\n"
-		"      --proxy             Enable support for *_proxy environment variables. (default: on)"
-		"      --http-proxy        Set HTTP proxy, overriding environment variables."
-		"      --https-proxy       Set HTTPS proxy, overriding environment variables."
+		"      --proxy             Enable support for *_proxy environment variables. (default: on)\n"
+		"      --http-proxy        Set HTTP proxy, overriding environment variables.\n"
+		"      --https-proxy       Set HTTPS proxy, overriding environment variables.\n"
+		"  -S  --server-response   Print the server response headers. (default: off)\n"
 		"\n"
 		"HTTP related options:\n"
 		"  -U  --user-agent        Set User-Agent: header in requests.\n"
@@ -122,7 +123,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --cookie-suffixes   Load public suffixes from file. They prevent 'supercookie' vulnerabilities.\n"
 		"                          Download the list with:\n"
 		"                          mget -O suffixes.txt http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1\n"
-		"      --http-keep-alive   Keep connection open for further requests. (default: on)"
+		"      --http-keep-alive   Keep connection open for further requests. (default: on)\n"
 		"\n"
 		"HTTPS (SSL/TLS) related options:\n"
 		"      --secure-protocol   Set protocol to be used (auto, SSLv2, SSLv3 or TLSv1). (default: auto)\n"
@@ -275,6 +276,7 @@ static const struct option options[] = {
 	{ "recursive", &config.recursive, parse_bool, 0, 'r'},
 	{ "save-cookies", &config.save_cookies, parse_string, 1, 0},
 	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0},
+	{ "server-response", &config.server_response, parse_bool, 0, 'S'},
 	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H'},
 	{ "spider", &config.spider, parse_bool, 0, 0},
 	{ "timeout", NULL, parse_timeout, 1, 'T'},

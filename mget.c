@@ -985,21 +985,21 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 	buffer_init(&uri_buf, uri_buf_static, sizeof(uri_buf_static));
 
 	while (use_iri) {
-		if (!downloader->conn) {
-			downloader->conn = http_open(use_iri);
-			if (downloader->conn)
-				info_printf("opened connection %s\n", downloader->conn->esc_host);
-		} else if (!null_strcmp(downloader->conn->esc_host, use_iri->host) &&
+		if (downloader->conn && !null_strcmp(downloader->conn->esc_host, use_iri->host) &&
 			downloader->conn->scheme == use_iri->scheme &&
 			!null_strcmp(downloader->conn->port, use_iri->port))
 		{
 			info_printf("reuse connection %s\n", downloader->conn->esc_host);
 		} else {
-			info_printf("close connection %s\n", downloader->conn->esc_host);
-			http_close(&downloader->conn);
+			if (downloader->conn) {
+				info_printf("close connection %s\n", downloader->conn->esc_host);
+				http_close(&downloader->conn);
+			}
 			downloader->conn = http_open(use_iri);
-			if (downloader->conn)
+			if (downloader->conn) {
 				info_printf("opened connection %s\n", downloader->conn->esc_host);
+				downloader->conn->print_response_headers = config.server_response ? 1 : 0;
+			}
 		}
 		conn = downloader->conn;
 
