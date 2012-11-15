@@ -196,7 +196,12 @@ static const char * NONNULL_ALL get_local_filename(IRI *iri)
 		}
 	}
 
-	log_printf("local filename = '%s'\n", fname);
+	if (config.delete_after) {
+		buffer_deinit(&buf);
+		fname = NULL;
+	} else
+		log_printf("local filename = '%s'\n", fname);
+
 	return fname;
 }
 
@@ -608,6 +613,9 @@ int main(int argc, const char *const *argv)
 
 	if (config.save_cookies)
 		cookie_save(config.save_cookies, config.keep_session_cookies);
+
+	if (config.delete_after && config.output_document)
+		unlink(config.output_document);
 
 	if (config.debug)
 		blacklist_print();
@@ -1042,7 +1050,7 @@ static void set_file_mtime(int fd, time_t modified)
 		err_printf (_("Failed to set file date: %s\n"), strerror (errno));
 }
 
-static void NONNULL_ALL _save_file(HTTP_RESPONSE *resp, const char *fname, int flag)
+static void NONNULL(1) _save_file(HTTP_RESPONSE *resp, const char *fname, int flag)
 {
 	int fd;
 
@@ -1050,7 +1058,8 @@ static void NONNULL_ALL _save_file(HTTP_RESPONSE *resp, const char *fname, int f
 		return;
 
 	if (fname == config.output_document) {
-		if (!strcmp(fname,"-")) {
+		// <fname> can only be NULL if config.delete_after is set
+		if (fname && !strcmp(fname, "-")) {
 			size_t rc;
 
 			if ((rc = fwrite(resp->body->data, 1, resp->body->length, stdout)) != resp->body->length)
@@ -1059,11 +1068,17 @@ static void NONNULL_ALL _save_file(HTTP_RESPONSE *resp, const char *fname, int f
 			return;
 		}
 
+		if (config.delete_after)
+			return;
+
 		flag = O_APPEND;
 		info_printf("append to '%s'\n", fname);
 	} else {
 		info_printf("saving '%s'\n", fname);
 	}
+
+	if (!fname)
+		return;
 
 	if ((fd = open(fname, O_WRONLY | flag | O_CREAT, 0644)) != -1) {
 		ssize_t rc;
@@ -1079,12 +1094,12 @@ static void NONNULL_ALL _save_file(HTTP_RESPONSE *resp, const char *fname, int f
 		err_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
 }
 
-static void NONNULL_ALL save_file(HTTP_RESPONSE *resp, const char *fname)
+static void NONNULL(1) save_file(HTTP_RESPONSE *resp, const char *fname)
 {
 	_save_file(resp, fname, O_TRUNC);
 }
 
-static void NONNULL_ALL append_file(HTTP_RESPONSE *resp, const char *fname)
+static void NONNULL(1) append_file(HTTP_RESPONSE *resp, const char *fname)
 {
 	_save_file(resp, fname, O_APPEND);
 }

@@ -26,7 +26,7 @@
  * How to add a new command line option
  * ====================================
  * - extend option.h/struct config with the needed variable
- * - add a default value for your variable in the 'config' initializer (in this file)
+ * - add a default value for your variable in the 'config' initializer if needed (in this file)
  * - add the long option into 'options[]' (in this file). keep alphabetical order !
  * - if appropriate, add a new parse function (examples see below)
  * - extend the print_help() function and the documentation
@@ -118,6 +118,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --use-server-timestamps Set local file's timestamp to server's timestamp. (default: on)\n"
 		"  -N  --timestamping      Just retrieve younger files than the local ones. (default: off)\n"
 		"      --strict-comments   A dummy option. Parsing always works non-strict."
+		"      --delete-after      Don't save downloaded files. (default: off)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -308,6 +309,7 @@ static const struct option options[] = {
 	{ "cookies", &config.cookies, parse_bool, 0, 0},
 	{ "cut-dirs", &config.cut_directories, parse_integer, 1, 0},
 	{ "debug", &config.debug, parse_bool, 0, 'd'},
+	{ "delete-after", &config.delete_after, parse_bool, 0, 0},
 	{ "directories", &config.directories, parse_bool, 0, 0},
 	{ "directory-prefix", &config.directory_prefix, parse_string, 1, 'P'},
 	{ "dns-cache", &config.dns_caching, parse_bool, 0, 0},
