@@ -96,7 +96,8 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"  -d  --debug             Print debugging messages. (default: off)\n"
 		"  -o  --output-file       File where messages are printed to, '-' for STDOUT.\n"
 		"  -a  --append-output     File where messages are appended to, '-' for STDOUT.\n"
-		"\n"
+		"\n");
+	puts(
 		"Download:\n"
 		"  -r  --recursive         Recursive download. (default: off)\n"
 		"  -H  --span-hosts        Span hosts that where not given on the command line. (default: off)\n"
@@ -116,7 +117,9 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"  -c  --continue-download Continue download for given files. (default: off)\n"
 		"      --use-server-timestamps Set local file's timestamp to server's timestamp. (default: on)\n"
 		"  -N  --timestamping      Just retrieve younger files than the local ones. (default: off)\n"
-		"\n"
+		"      --strict-comments   A dummy option. Parsing always works non-strict."
+		"\n");
+	puts(
 		"HTTP related options:\n"
 		"  -U  --user-agent        Set User-Agent: header in requests.\n"
 		"      --cookies           Enable use of cookies. (default: on)\n"
@@ -127,7 +130,8 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"                          Download the list with:\n"
 		"                          mget -O suffixes.txt http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1\n"
 		"      --http-keep-alive   Keep connection open for further requests. (default: on)\n"
-		"\n"
+		"\n");
+	puts(
 		"HTTPS (SSL/TLS) related options:\n"
 		"      --secure-protocol   Set protocol to be used (auto, SSLv2, SSLv3 or TLSv1). (default: auto)\n"
 		"      --check-certificate Check the server's certificate. (default: on)\n"
@@ -138,7 +142,8 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --ca-directory      Directory with PEM CA certificates.\n"
 		"      --random-file       File to be used as source of random data.\n"
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
-		"\n"
+		"\n");
+	puts(
 		"Directory options:\n"
 		"      --directories       Create hierarchy of directories when retrieving recursively. (default: on)\n"
 		"  -x  --force-directories Create hierarchy of directories when not retrieving recursively. (default: off)\n"
@@ -151,8 +156,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"Example string option: --user-agent=SpecialAgent/1.3.5 or --user-agent \"SpecialAgent/1.3.5\"\n"
 		"\n"
 		"To reset string options use --[no-]option\n"
-		"\n"
-		);
+		"\n");
 
 /*
  * -a / --append-output should be reduced to -o (with always appending to logfile)
@@ -300,6 +304,7 @@ static const struct option options[] = {
 	{ "server-response", &config.server_response, parse_bool, 0, 'S'},
 	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H'},
 	{ "spider", &config.spider, parse_bool, 0, 0},
+	{ "strict-comments", &config.strict_comments, parse_bool, 0, 0},
 	{ "timeout", NULL, parse_timeout, 1, 'T'},
 	{ "timestamping", &config.timestamping, parse_bool, 0, 'N'},
 	{ "use-server-timestamp", &config.use_server_timestamps, parse_bool, 0, 0},

@@ -58,6 +58,7 @@ struct config {
 		max_redirect,
 		num_threads;
 	char
+		strict_comments,
 		protocol_directories,
 		host_directories,
 		force_directories,
