@@ -238,6 +238,39 @@ static int PURE NONNULL(1) parse_cert_type(option_t opt, UNUSED const char *cons
 	return 0;
 }
 
+static int parse_n_option(UNUSED option_t opt, UNUSED const char *const *argv, const char *val)
+{
+	if (val) {
+		const char *p;
+
+		for (p = val; *p; p++) {
+			switch (*p) {
+			case 'v':
+				config.verbose = 0;
+				break;
+			case 'c':
+//				config.clobber = 0;
+				break;
+			case 'd':
+				config.directories = 0;
+				break;
+			case 'H':
+				config.host_directories = 0;
+				break;
+			case 'p':
+//				config.parent = 0;
+				break;
+			default:
+				err_printf_exit(_("Unknown option '-n%c'\n"), *p);
+			}
+
+			log_printf("name=-n%c value=0\n", *p);
+		}
+	}
+
+	return 0;
+}
+
 // default values for config options (if not 0 or NULL)
 struct config config = {
 	.connect_timeout = -1,
@@ -289,6 +322,7 @@ static const struct option options[] = {
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0},
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0},
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0},
+	{ "n", NULL, parse_n_option, 1, 'n'}, // special Wget compatibility option
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0},
 	{ "output-document", &config.output_document, parse_string, 1, 'O'},
 	{ "output-file", &config.logfile, parse_string, 1, 'o'},

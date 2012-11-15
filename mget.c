@@ -371,7 +371,7 @@ int main(int argc, const char *const *argv)
 	//	tcp_config(NULL,C_TRACE,1);
 
 	n = init(argc, argv);
-	info_printf("1\n");
+
 	for (; n < argc; n++) {
 		JOB *job = queue_add(blacklist_add(iri_parse(argv[n])));
 
@@ -416,7 +416,6 @@ int main(int argc, const char *const *argv)
 			dprintf(downloader[n].sockfd[0], "go\n");
 		}
 	}
-	info_printf("2 %d\n",queue_not_empty());
 
 	while (queue_not_empty()) {
 		FD_ZERO(&rset);

@@ -1125,12 +1125,12 @@ int main(int argc, const char * const *argv)
 	cookie_free_public_suffixes();
 	cookie_free_cookies();
 
+	selftest_options() ? failed++ : ok++;
+
 	if (failed) {
 		info_printf("Summary: %d out of %d tests failed\n", failed, ok + failed);
 		return 1;
 	}
-
-	selftest_options() ? failed++: ok++;
 
 	deinit(); // free resources allocated by init()
 
