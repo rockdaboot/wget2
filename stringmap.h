@@ -38,16 +38,16 @@ STRINGMAP
 	*stringmap_create(int max) MALLOC,
 	*stringmap_nocase_create(int max) MALLOC;
 int
+	stringmap_put(STRINGMAP *h, const char *key, const void *value, size_t valuesize),
+	stringmap_put_noalloc(STRINGMAP *h, const char *key, const void *value),
+	stringmap_put_ident(STRINGMAP *h, const char *key),
+	stringmap_put_ident_noalloc(STRINGMAP *h, const char *key),
 	stringmap_size(const STRINGMAP *h),
 	stringmap_browse(const STRINGMAP *h, int (*browse)(const char *key, const void *value)) NONNULL(2);
 void
 	stringmap_free(STRINGMAP **h),
 	stringmap_clear(STRINGMAP *h),
 	*stringmap_get(const STRINGMAP *h, const char *key),
-	*stringmap_put(STRINGMAP *h, const char *key, const void *value, size_t valuesize),
-	*stringmap_put_noalloc(STRINGMAP *h, const char *key, const void *value),
-	*stringmap_put_ident(STRINGMAP *h, const char *key),
-	*stringmap_put_ident_noalloc(STRINGMAP *h, const char *key),
 	stringmap_remove(STRINGMAP *h, const char *key),
 	stringmap_remove_nofree(STRINGMAP *h, const char *key),
 	stringmap_setcmpfunc(STRINGMAP *h, int (*cmp)(const char *key1, const char *key2)) NONNULL_ALL,

@@ -36,30 +36,6 @@
 //#define ALIGNMENT 16
 //#define PADDING(n) ((n) + (ALIGNMENT - (n)%ALIGNMENT))
 
-static buffer_t *_buffer_init(buffer_t *buf, char *data, size_t size)
-{
-	if (data) {
-		if (likely(size))
-			buf->size = size - 1;
-		buf->data = data;
-		buf->release_data = 0;
-		*buf->data = 0; // always 0 terminate data to allow string functions
-	} else if (likely(size)) {
-		buf->size = size;
-		buf->data = xmalloc(size + 1);
-		buf->release_data = 1;
-		*buf->data = 0; // always 0 terminate data to allow string functions
-	} else {
-		buf->size = 0;
-		buf->data = NULL;
-		buf->release_data = 0;
-	}
-
-	buf->length = 0;
-
-	return buf;
-}
-
 buffer_t *buffer_init(buffer_t *buf, char *data, size_t size)
 {
 	if (!buf) {
@@ -68,7 +44,24 @@ buffer_t *buffer_init(buffer_t *buf, char *data, size_t size)
 	} else
 		buf->release_buf = 0;
 
-	return _buffer_init(buf, data, size);
+	if (data) {
+		if (likely(size))
+			buf->size = size - 1;
+		buf->data = data;
+		buf->release_data = 0;
+		*buf->data = 0; // always 0 terminate data to allow string functions
+	} else {
+		if (!size)
+			size = 128;
+		buf->size = size;
+		buf->data = xmalloc(size + 1);
+		buf->release_data = 1;
+		*buf->data = 0; // always 0 terminate data to allow string functions
+	}
+
+	buf->length = 0;
+
+	return buf;
 }
 
 buffer_t *buffer_alloc(size_t size)

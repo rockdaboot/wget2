@@ -766,20 +766,6 @@ static void test_parser(void)
 	info_printf("%d XML, %d HTML and %d CSS files parsed\n", xml, html, css);
 }
 
-static void gmt_strftime(char *buf, size_t bufsize, struct tm *tp)
-{
-	static const char *dnames[7] = {
-		"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
-	};
-	static const char *mnames[12] = {
-		"Jan", "Feb", "Mar","Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-	};
-
-	snprintf(buf, bufsize, "%s, %02d-%s-%d %02d:%02d:%02d GMT",
-		dnames[tp->tm_wday],tp->tm_mday,mnames[tp->tm_mon],tp->tm_year+1900,
-		tp->tm_hour, tp->tm_min, tp->tm_sec);
-}
-
 static void test_cookies(void)
 {
 	static const struct test_data {
@@ -799,57 +785,57 @@ static void test_cookies(void)
 	} test_data[] = {
 		{	// allowed cookie
 			"www.example.com",
-			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/; domain=.example.com; HttpOnly",
-			"ID", "65=abcd", "example.com", "/", "Tue, 07-May-2013 07:48:53 GMT",
+			"ID=65=abcd; expires=Tuesday, 07-May-2013 07:48:53 GMT; path=/; domain=.example.com; HttpOnly",
+			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 1, 1, 0, 0, 1,
 			1
 		},
 		{	// allowed cookie
 			"www.example.com",
-			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/; domain=.example.com",
-			"ID", "65=abcd", "example.com", "/", "Tue, 07-May-2013 07:48:53 GMT",
+			"ID=65=abcd; expires=Tue, 07 May 2013 07:48:53 GMT; path=/; domain=.example.com",
+			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 1, 1, 0, 0, 0,
 			1
 		},
 		{	// allowed cookie without path
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; domain=.example.com",
-			"ID", "65=abcd", "example.com", "/", "Tue, 07-May-2013 07:48:53 GMT",
+			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 1, 1, 0, 0, 0,
 			1
 		},
 		{	// allowed cookie without domain
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/",
-			"ID", "65=abcd", "www.example.com", "/", "Tue, 07-May-2013 07:48:53 GMT",
+			"ID", "65=abcd", "www.example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			0, 1, 1, 1, 0, 0,
 			1
 		},
 		{	// allowed cookie without domain, path and expires
 			"www.example.com",
 			"ID=65=abcd",
-			"ID", "65=abcd", "www.example.com", "/", "Tue, 07-May-2013 07:48:53 GMT",
+			"ID", "65=abcd", "www.example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			0, 1, 0, 1, 0, 0,
 			1
 		},
 		{	// illegal cookie
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/; domain=.example.org",
-			"ID", "65=abcd", "example.org", "/", "Tue, 07-May-2013 07:48:53 GMT",
+			"ID", "65=abcd", "example.org", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 0, 1, 0, 0, 0,
 			0
 		},
 		{	// supercookie, not accepted by normalization (rule 'com')
 			"www.example.com",
 			"ID=65=abcd; expires=Mon, 29-Feb-2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
-			"ID", "65=abcd", "com", "/", "Mon, 29-Feb-2016 07:48:54 GMT",
+			"ID", "65=abcd", "com", "/", "Mon, 29 Feb 2016 07:48:54 GMT",
 			1, 0, 1, 0, 1, 1,
 			0
 		},
 		{	// supercookie, not accepted by normalization  (rule '*.ar')
 			"www.example.ar",
 			"ID=65=abcd; expires=Tue, 29-Feb-2000 07:48:55 GMT; path=/; domain=.example.ar",
-			"ID", "65=abcd", "example.ar", "/", "Tue, 29-Feb-2000 07:48:55 GMT",
+			"ID", "65=abcd", "example.ar", "/", "Tue, 29 Feb 2000 07:48:55 GMT",
 			1, 0, 1, 0, 0, 0,
 			0
 		},
@@ -881,7 +867,7 @@ static void test_cookies(void)
 		}
 
 		if (cookie.expires) {
-			gmt_strftime(thedate, sizeof(thedate), gmtime(&cookie.expires));
+			http_print_date(cookie.expires, thedate, sizeof(thedate));
 			if (strcmp(thedate, t->expires)) {
 				failed++;
 				info_printf("Failed [%u]: expires mismatch: '%s' != '%s' (time_t %ld)\n", it, thedate, t->expires, cookie.expires);

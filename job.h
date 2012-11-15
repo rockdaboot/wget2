@@ -77,7 +77,8 @@ typedef struct {
 		*pieces, // checksums of smaller pieces of the file
 		*parts; // parts to download
 	const char
-		*name;
+		*name,
+		*local_filename;
 	off_t
 		size; // total size of the file
 	int

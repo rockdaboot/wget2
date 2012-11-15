@@ -33,6 +33,7 @@
 
 struct config {
 	const char
+		*directory_prefix,
 		*http_proxy,
 		*https_proxy,
 		*cookie_suffixes,
@@ -50,12 +51,19 @@ struct config {
 		*random_file,
 		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
 	int
+		cut_directories,
 		connect_timeout, // ms
 		dns_timeout, // ms
 		read_timeout, // ms
 		max_redirect,
 		num_threads;
 	char
+		protocol_directories,
+		host_directories,
+		force_directories,
+		directories,
+		timestamping,
+		use_server_timestamps,
 		continue_download,
 		server_response,
 		keep_alive,

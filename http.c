@@ -543,6 +543,29 @@ static time_t NONNULL_ALL parse_rfc1123_date(const char *s)
 	return (((time_t)days * 24 + hour) * 60 + min) * 60 + sec;
 }
 
+char *http_print_date(time_t t, char *buf, size_t bufsize)
+{
+	static const char *dnames[7] = {
+		"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+	};
+	static const char *mnames[12] = {
+		"Jan", "Feb", "Mar","Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+	};
+	struct tm tm;
+
+	if (!bufsize)
+		return buf;
+
+	if (gmtime_r(&t, &tm)) {
+		snprintf(buf, bufsize, "%s, %02d %s %d %02d:%02d:%02d GMT",
+			dnames[tm.tm_wday],tm.tm_mday,mnames[tm.tm_mon],tm.tm_year+1900,
+			tm.tm_hour, tm.tm_min, tm.tm_sec);
+	} else
+		*buf = 0;
+
+	return buf;
+}
+
 // adjust time (t) by number of seconds (n)
 /*
 static long long adjust_time(long long t, int n)
@@ -782,6 +805,9 @@ HTTP_RESPONSE *http_parse_response(char *buf)
 			resp->content_length_valid = 1;
 		} else if (!strcasecmp(name, "Connection")) {
 			http_parse_connection(s, &resp->keep_alive);
+// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
+		} else if (!strcasecmp(name, "Last-Modified")) {
+			resp->last_modified = parse_rfc1123_date(s);
 		} else if (!strcasecmp(name, "Set-Cookie")) {
 			// this is a parser. content validation must be done by higher level functions.
 			HTTP_COOKIE cookie;

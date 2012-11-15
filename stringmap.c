@@ -71,23 +71,23 @@ STRINGMAP *stringmap_nocase_create(int max)
 	return h;
 }
 
-void *stringmap_put_noalloc(STRINGMAP *h, const char *key, const void *value)
+int stringmap_put_noalloc(STRINGMAP *h, const char *key, const void *value)
 {
 	return hashmap_put_noalloc(h->h, key, value);
 }
 
-void *stringmap_put(STRINGMAP *h, const char *key, const void *value, size_t valuesize)
+int stringmap_put(STRINGMAP *h, const char *key, const void *value, size_t valuesize)
 {
 	return hashmap_put_noalloc(h->h, strdup(key), value ? xmemdup(value, valuesize) : NULL);
 }
 
-void *stringmap_put_ident(STRINGMAP *h, const char *key)
+int stringmap_put_ident(STRINGMAP *h, const char *key)
 {
 	char *keydup = strdup(key);
 	return hashmap_put_noalloc(h->h, keydup, keydup);
 }
 
-void *stringmap_put_ident_noalloc(STRINGMAP *h, const char *key)
+int stringmap_put_ident_noalloc(STRINGMAP *h, const char *key)
 {
 	return hashmap_put_noalloc(h->h, key, key);
 }

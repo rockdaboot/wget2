@@ -579,8 +579,6 @@ int cookie_load(const char *fname)
 	if ((fp = fopen(fname, "r"))) {
 		cookie_init_cookie(&cookie);
 
-		pthread_mutex_lock(&cookies_mutex);
-
 		while ((buflen = getline(&buf, &bufsize, fp)) >= 0) {
 			linep = buf;
 
@@ -657,8 +655,6 @@ int cookie_load(const char *fname)
 			} else
 				cookie_free_cookie(&cookie);
 		}
-
-		pthread_mutex_unlock(&cookies_mutex);
 
 		xfree(buf);
 		fclose(fp);

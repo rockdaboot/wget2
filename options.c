@@ -114,6 +114,8 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --https-proxy       Set HTTPS proxy, overriding environment variables.\n"
 		"  -S  --server-response   Print the server response headers. (default: off)\n"
 		"  -c  --continue-download Continue download for given files. (default: off)\n"
+		"      --use-server-timestamps Set local file's timestamp to server's timestamp. (default: on)\n"
+		"  -N  --timestamping      Just retrieve younger files than the local ones. (default: off)\n"
 		"\n"
 		"HTTP related options:\n"
 		"  -U  --user-agent        Set User-Agent: header in requests.\n"
@@ -136,6 +138,14 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --ca-directory      Directory with PEM CA certificates.\n"
 		"      --random-file       File to be used as source of random data.\n"
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
+		"\n"
+		"Directory options:\n"
+		"      --directories       Create hierarchy of directories when retrieving recursively. (default: on)\n"
+		"  -x  --force-directories Create hierarchy of directories when not retrieving recursively. (default: off)\n"
+		"      --host-directories  Force creating host directories. (default: off)\n"
+		"      --protocol-directories  Force creating protocol directories. (default: off)\n"
+		"      --cut-dirs          Skip creating given number of directory components. (default: 0)\n"
+		"  -P  --directory-prefix  Set directory prefix.\n"
 		"\n"
 		"Example boolean option: --quiet=no is the same as --no-quiet or --quiet=off or --quiet off\n"
 		"Example string option: --user-agent=SpecialAgent/1.3.5 or --user-agent \"SpecialAgent/1.3.5\"\n"
@@ -240,7 +250,10 @@ struct config config = {
 	.secure_protocol = "AUTO",
 	.ca_directory = "system",
 	.cookies = 1,
-	.keep_alive=1
+	.keep_alive=1,
+	.use_server_timestamps = 1,
+	.directories = 1,
+	.host_directories = 1
 };
 
 static const struct option options[] = {
@@ -256,11 +269,16 @@ static const struct option options[] = {
 	{ "continue-download", &config.continue_download, parse_bool, 0, 'c'},
 	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0},
 	{ "cookies", &config.cookies, parse_bool, 0, 0},
+	{ "cut-dirs", &config.cut_directories, parse_integer, 1, 0},
 	{ "debug", &config.debug, parse_bool, 0, 'd'},
+	{ "directories", &config.directories, parse_bool, 0, 0},
+	{ "directory-prefix", &config.directory_prefix, parse_string, 1, 'P'},
 	{ "dns-cache", &config.dns_caching, parse_bool, 0, 0},
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0},
 	{ "egd-file", &config.egd_file, parse_string, 1, 0},
+	{ "force-directories", &config.force_directories, parse_bool, 0, 'x'},
 	{ "help", NULL, print_help, 0, 'h'},
+	{ "host-directories", &config.host_directories, parse_bool, 0, 0},
 	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0},
 	{ "http-proxy", &config.http_proxy, parse_string, 1, 0},
 	{ "https-proxy", &config.https_proxy, parse_string, 1, 0},
@@ -272,6 +290,7 @@ static const struct option options[] = {
 	{ "output-file", &config.logfile, parse_string, 1, 'o'},
 	{ "private-key", &config.private_key, parse_string, 1, 0},
 	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0},
+	{ "protocol-directories", &config.protocol_directories, parse_bool, 0, 0},
 	{ "quiet", &config.quiet, parse_bool, 0, 'q'},
 	{ "random-file", &config.random_file, parse_string, 1, 0},
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0},
@@ -282,6 +301,8 @@ static const struct option options[] = {
 	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H'},
 	{ "spider", &config.spider, parse_bool, 0, 0},
 	{ "timeout", NULL, parse_timeout, 1, 'T'},
+	{ "timestamping", &config.timestamping, parse_bool, 0, 'N'},
+	{ "use-server-timestamp", &config.use_server_timestamps, parse_bool, 0, 0},
 	{ "user-agent", &config.user_agent, parse_string, 1, 'U'},
 	{ "verbose", &config.verbose, parse_bool, 0, 'v'},
 	{ "version", NULL, print_version, 0, 'V'}

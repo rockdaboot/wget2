@@ -61,6 +61,7 @@ void job_free(JOB *job)
 		vec_free(&job->parts);
 		vec_free(&job->pieces);
 		xfree(job->name);
+		xfree(job->local_filename);
 	}
 }
 

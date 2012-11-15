@@ -32,6 +32,9 @@
 #ifndef _MGET_HTTP_H
 #define _MGET_HTTP_H
 
+#include <stddef.h>
+#include <time.h>
+
 #include "vector.h"
 #include "job.h"
 #include "net.h"
@@ -102,6 +105,8 @@ typedef struct {
 		*body;
 	size_t
 		content_length;
+	time_t
+		last_modified;
 	char
 		reason[32];
 	short
@@ -149,6 +154,8 @@ const char
 	*http_parse_content_encoding(const char *s, char *content_encoding) NONNULL_ALL,
 	*http_parse_connection(const char *s, char *keep_alive) NONNULL_ALL,
 	*http_parse_setcookie(const char *s, HTTP_COOKIE *cookie) NONNULL_ALL;
+char
+	*http_print_date(time_t t, char *buf, size_t bufsize) NONNULL_ALL;
 void
 	http_add_param(VECTOR **params, HTTP_HEADER_PARAM *param) NONNULL_ALL,
 	http_add_header_vprintf(HTTP_REQUEST *req, const char *fmt, va_list args) PRINTF_FORMAT(2,0) NONNULL_ALL,

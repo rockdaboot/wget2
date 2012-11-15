@@ -571,7 +571,7 @@ const char *iri_get_escaped_path(const IRI *iri, buffer_t *buf)
 	if (iri->path)
 		iri_escape_path(iri->path, buf);
 
-	if (buf->length && buf->data[buf->length - 1] == '/')
+	if (buf->length == 0 || buf->data[buf->length - 1] == '/')
 		buffer_memcat(buf, "index.html", 10);
 
 	return buf->data;
@@ -608,7 +608,7 @@ const char *iri_get_escaped_file(const IRI *iri, buffer_t *buf)
 			iri_escape_path(iri->path, buf);
 	}
 
-	if (buf->length == 0)
+	if (buf->length == 0 || buf->data[buf->length - 1] == '/')
 		buffer_memcat(buf, "index.html", 10);
 
 	if (iri->query) {
@@ -616,11 +616,10 @@ const char *iri_get_escaped_file(const IRI *iri, buffer_t *buf)
 		iri_escape_query(iri->query, buf);
 	}
 
-	if (iri->fragment) {
-		buffer_memcat(buf, "#", 1);
-		iri_escape(iri->fragment, buf);
-	}
-
+//	if (iri->fragment) {
+//		buffer_memcat(buf, "#", 1);
+//		iri_escape(iri->fragment, buf);
+//	}
 
 	return buf->data;
 }

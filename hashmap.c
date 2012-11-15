@@ -139,18 +139,24 @@ static void NONNULL_ALL hashmap_rehash(HASHMAP *h, int newmax)
 	}
 }
 
-void *hashmap_put_noalloc(HASHMAP *h, const void *key, const void *value)
+int hashmap_put_noalloc(HASHMAP *h, const void *key, const void *value)
 {
 	ENTRY *entry;
 	unsigned int hash = h->hash(key);
 	int pos = hash % h->max;
 
 	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		void *old = entry->value;
+		if (entry->key != key)
+			xfree(entry->key);
+		entry->key = (void *)key;
+
+		if (entry->value != value)
+			xfree(entry->value);
 		entry->value = (void *)value;
-		return old;
+
+		return 1;
 	}
-	
+
 	// a new entry
 	entry = malloc(sizeof(ENTRY));
 	entry->key = (void *)key;
@@ -169,22 +175,22 @@ void *hashmap_put_noalloc(HASHMAP *h, const void *key, const void *value)
 		}
 	}
 
-	return NULL;
+	return 0;
 }
 
-void *hashmap_put(HASHMAP *h, const void *key, size_t keysize, const void *value, size_t valuesize)
+int hashmap_put(HASHMAP *h, const void *key, size_t keysize, const void *value, size_t valuesize)
 {
 	return hashmap_put_noalloc(h, xmemdup(key, keysize), value ? xmemdup(value, valuesize) : NULL);
 }
 
-void *hashmap_put_ident(HASHMAP *h, const void *key, size_t keysize)
+int hashmap_put_ident(HASHMAP *h, const void *key, size_t keysize)
 {
 	// if the key is as well the value (e.g. for blacklists)
 	void *keydup = xmemdup(key, keysize);
 	return hashmap_put_noalloc(h, keydup, keydup);
 }
 
-void *hashmap_put_ident_noalloc(HASHMAP *h, const void *key)
+int hashmap_put_ident_noalloc(HASHMAP *h, const void *key)
 {
 	// if the key is as well the value (e.g. for blacklists)
 	return hashmap_put_noalloc(h, key, key);

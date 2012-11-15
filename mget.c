@@ -35,6 +35,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <ctype.h>
+#include <time.h>
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <sys/stat.h>
@@ -78,10 +79,12 @@ typedef struct {
 //	*http_get_uri(const char *uri);
 static void
 	download_part(DOWNLOADER *downloader),
-	save_file(HTTP_RESPONSE *resp, IRI *iri, int flags),
+	save_file(HTTP_RESPONSE *resp, const char *fname),
 	append_file(HTTP_RESPONSE *resp, const char *fname),
-	html_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri),
-	css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri);
+	html_parse(int sockfd, char *data, IRI *iri),
+	html_parse_localfile(int sockfd, const char *fname, IRI *iri),
+	css_parse(int sockfd, char *data, IRI *iri),
+	css_parse_localfile(int sockfd, const char *fname, IRI *iri);
 HTTP_RESPONSE
 	*http_get(IRI *iri, PART *part, DOWNLOADER *downloader);
 
@@ -94,8 +97,108 @@ VECTOR
 static int
 	terminate;
 
-// we could speed up the blacklist by having a hashmap of the uri strings
-// and by having a vector of all IRIs in use.
+// generate the local filename corresponding to an URI
+// respect the following options:
+// --restrict-file-names (unix,windows,nocontrol,ascii,lowercase,uppercase)
+// -nd / --no-directories
+// -x / --force-directories
+// -nH / --no-host-directories
+// --protocol-directories
+// --cut-dirs=number
+// -P / --directory-prefix=prefix
+
+static const char * NONNULL_ALL get_local_filename(IRI *iri)
+{
+	buffer_t buf;
+	const char *fname;
+	int directories;
+
+	if (config.spider || config.output_document)
+		return NULL;
+
+	directories = !!config.recursive;
+
+	if (config.directories == 0)
+		directories = 0;
+
+	if (config.force_directories == 1)
+		directories = 1;
+
+	buffer_init(&buf, NULL, 256);
+
+	if (config.directory_prefix && *config.directory_prefix) {
+		buffer_strcat(&buf, config.directory_prefix);
+		buffer_memcat(&buf, "/", 1);
+	}
+
+	if (directories) {
+		if (config.protocol_directories && iri->scheme && *iri->scheme) {
+			buffer_strcat(&buf, iri->scheme);
+			buffer_memcat(&buf, "/", 1);
+		}
+		if (config.host_directories && iri->host && *iri->host) {
+			iri_get_escaped_host(iri, &buf);
+			// buffer_memcat(&buf, "/", 1);
+		}
+
+		if (config.cut_directories) {
+			// cut directories
+			buffer_t path_buf;
+			const char *p;
+			int n;
+
+			buffer_init(&path_buf, NULL, 256);
+			iri_get_escaped_path(iri, &path_buf);
+
+			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
+				p = strchr(*p =='/' ? p + 1 : p, '/');
+			}
+			if (!p) {
+				// we can't strip this many path elements, just use the filename
+				p = strrchr(path_buf.data, '/');
+				if (!p) {
+					p = path_buf.data;
+					if (*p != '/')
+						buffer_memcat(&buf, "/", 1);
+					buffer_strcat(&buf, p);
+				}
+			}
+
+			buffer_deinit(&path_buf);
+		} else {
+			iri_get_escaped_path(iri, &buf);
+		}
+
+		fname = iri_get_escaped_query(iri, &buf);
+	} else {
+		fname = iri_get_escaped_file(iri, &buf);
+	}
+
+	// create the complete path
+	if (*fname) {
+		const char *p1, *p2;
+
+		for (p1 = fname; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
+			*(char *)p2 = 0; // replace path separator
+
+			// relative paths should have been normalized earlier,
+			// but for security reasons, don't trust myself...
+			if (*p1 == '.' && p1[1] == '.')
+				err_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), fname);
+
+			if (mkdir(fname, 0755) != 0 && errno != EEXIST) {
+				err_printf(_("Failed to make directory '%s'\n"), fname);
+				*(char *)p2 = '/'; // restore path separator
+				return fname;
+			} else log_printf("mkdir %s\n", fname);
+
+			*(char *)p2 = '/'; // restore path separator
+		}
+	}
+
+	log_printf("local filename = '%s'\n", fname);
+	return fname;
+}
 
 static int schedule_download(JOB *job, PART *part)
 {
@@ -127,7 +230,7 @@ static int schedule_download(JOB *job, PART *part)
 static void host_add(const char *host)
 {
 	if (!hosts)
-		hosts = vec_create(4, 4, (int(*)(const void *, const void *))strcasecmp);
+		hosts = vec_create(4, 4, (int(*)(const void *, const void *))strcmp);
 
 	vec_insert_sorted(hosts, host, strlen(host) + 1);
 }
@@ -268,13 +371,18 @@ int main(int argc, const char *const *argv)
 	//	tcp_config(NULL,C_TRACE,1);
 
 	n = init(argc, argv);
-
+	info_printf("1\n");
 	for (; n < argc; n++) {
 		JOB *job = queue_add(blacklist_add(iri_parse(argv[n])));
 
-		if (job && config.recursive && !config.span_hosts) {
-			// only download content from hosts given on the command line
-			host_add(job->iri->host);
+		if (job) {
+			if (!config.output_document)
+				job->local_filename = get_local_filename(job->iri);
+
+			if (config.recursive && !config.span_hosts) {
+				// only download content from hosts given on the command line
+				host_add(job->iri->host);
+			}
 		}
 	}
 
@@ -308,6 +416,7 @@ int main(int argc, const char *const *argv)
 			dprintf(downloader[n].sockfd[0], "go\n");
 		}
 	}
+	info_printf("2 %d\n",queue_not_empty());
 
 	while (queue_not_empty()) {
 		FD_ZERO(&rset);
@@ -464,9 +573,9 @@ int main(int argc, const char *const *argv)
 								iri_free(&iri);
 						}
 
-						if (blacklist_add(iri)) {
-							// IRI was not in black list, create a new job
-							job = queue_add(iri);
+						if ((job = queue_add(blacklist_add(iri)))) {
+							if (!config.output_document)
+								job->local_filename = get_local_filename(job->iri);
 							schedule_download(job, NULL);
 						}
 					}
@@ -630,49 +739,40 @@ void *downloader_thread(void *p)
 					if (resp->content_type) {
 						if (!strcasecmp(resp->content_type, "application/metalink4+xml")) {
 							dprintf(sockfd, "sts get metalink info\n");
-							// save_file(resp, job->iri, HTTP_FLG_USE_FILE);
+							// save_file(resp, job->local_filename, O_TRUNC);
 							metalink4_parse(sockfd, resp);
 							goto ready;
 						}
 					}
 
-//					if (resp->location) {
-						// we have been forwarded to another location
-						// update job with new location
-//						iri_free(&job->iri);
-//						job->iri = iri_parse(resp->location);
-//						resp->location = NULL;
-//					}
-
 					if (resp->code == 200) {
-						if (config.recursive && resp->content_type) {
-							info_printf("content-type: %s\n", resp->content_type);
-							if (!strcasecmp(resp->content_type, "text/html")) {
-								html_parse(sockfd, resp, job->iri);
-							} else if (!strcasecmp(resp->content_type, "application/xhtml+xml")) {
-								// xml_parse(sockfd, resp, job->iri);
-							} else if (!strcasecmp(resp->content_type, "text/css")) {
-								css_parse(sockfd, resp, job->iri);
+						if (config.recursive) {
+							if (resp->content_type) {
+								if (!strcasecmp(resp->content_type, "text/html")) {
+									html_parse(sockfd, resp->body->data, job->iri);
+								} else if (!strcasecmp(resp->content_type, "application/xhtml+xml")) {
+									// xml_parse(sockfd, resp, job->iri);
+								} else if (!strcasecmp(resp->content_type, "text/css")) {
+									css_parse(sockfd, resp->body->data, job->iri);
+								}
 							}
-							if (!config.spider) {
-								if (config.output_document)
-									append_file(resp, config.output_document);
-								else
-									save_file(resp, job->iri, HTTP_FLG_USE_PATH);
-							}
-						} else if (!config.spider) {
-							if (config.output_document)
-								append_file(resp, config.output_document);
-							else
-								save_file(resp, job->iri, HTTP_FLG_USE_FILE);
 						}
+						save_file(resp, config.output_document ? config.output_document : job->local_filename);
 					}
 					else if (resp->code == 206 && config.continue_download) { // partial content
-						if (!config.spider) {
-							if (config.output_document)
-								append_file(resp, config.output_document);
-							else
-								save_file(resp, job->iri, HTTP_FLG_USE_FILE | HTTP_FLG_APPEND);
+						append_file(resp, config.output_document ? config.output_document : job->local_filename);
+					}
+					else if (resp->code == 304 && config.timestamping) { // local up-to-date
+						if (config.recursive) {
+							const char *ext = strrchr(job->local_filename, '.');
+
+							if (ext) {
+								if (!strcasecmp(ext, ".html") || !strcasecmp(ext, ".htm")) {
+									html_parse_localfile(sockfd, job->local_filename, job->iri);
+								} else if (!strcasecmp(ext, ".css")) {
+									css_parse_localfile(sockfd, job->local_filename, job->iri);
+								}
+							}
 						}
 					}
 
@@ -799,7 +899,7 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 
 // use the xml parser, being prepared that HTML is not XML
 
-void html_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
+void html_parse(int sockfd, char *data, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char tag_sbuf[1024];
@@ -812,7 +912,29 @@ void html_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 
 	buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
-	html_parse_buffer(resp->body->data, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
+	html_parse_buffer(data, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
+
+	if (context.base_allocated)
+		iri_free(&context.base);
+
+	buffer_deinit(&context.uri_buf);
+	buffer_deinit(&tag);
+}
+
+void html_parse_localfile(int sockfd, const char *fname, IRI *iri)
+{
+	// create scheme://authority that will be prepended to relative paths
+	char tag_sbuf[1024];
+	char uri_sbuf[1024];
+	buffer_t tag;
+	struct html_context context = { .base = iri, .sockfd = sockfd };
+
+	buffer_init(&tag, tag_sbuf, sizeof(tag_sbuf));
+	context.tag = iri_get_connection_part(iri, &tag);
+
+	buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
+
+	html_parse_file(fname, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
 
 	if (context.base_allocated)
 		iri_free(&context.base);
@@ -844,7 +966,7 @@ static void _css_parse(void *context, const char *url, size_t len)
 	// add_uri(ctx->sockfd, ctx->iri, ctx->tag, url, len);
 }
 
-void css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
+void css_parse(int sockfd, char *data, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char tag_sbuf[1024];
@@ -857,13 +979,32 @@ void css_parse(int sockfd, HTTP_RESPONSE *resp, IRI *iri)
 
 	buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
 
-	css_parse_buffer(resp->body->data, _css_parse, &context);
+	css_parse_buffer(data, _css_parse, &context);
 
 	buffer_deinit(&context.uri_buf);
 	buffer_deinit(&tag);
 }
 
-static long long NONNULL_ALL get_filesize(const char *fname)
+void css_parse_localfile(int sockfd, const char *fname, IRI *iri)
+{
+	// create scheme://authority that will be prepended to relative paths
+	char tag_sbuf[1024];
+	char uri_buf[1024];
+	buffer_t tag;
+	struct css_context context = { .iri = iri, .sockfd = sockfd };
+
+	buffer_init(&tag, tag_sbuf, sizeof(tag_sbuf));
+	context.tag = iri_get_connection_part(iri, &tag);
+
+	buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
+
+	css_parse_file(fname, _css_parse, &context);
+
+	buffer_deinit(&context.uri_buf);
+	buffer_deinit(&tag);
+}
+
+static long long NONNULL_ALL get_file_size(const char *fname)
 {
 	struct stat st;
 	
@@ -874,87 +1015,79 @@ static long long NONNULL_ALL get_filesize(const char *fname)
 	return 0;
 }
 
-void append_file(HTTP_RESPONSE *resp, const char *fname)
+static time_t NONNULL_ALL get_file_mtime(const char *fname)
+{
+	struct stat st;
+
+	if (stat(fname, &st)==0) {
+		return st.st_mtime;
+	}
+
+	return 0;
+}
+
+static void set_file_mtime(int fd, time_t modified)
+{
+	struct timespec timespecs[2]; // [0]=last access  [1]=last modified
+
+#ifdef CLOCK_REALTIME
+	clock_gettime(CLOCK_REALTIME, &timespecs[0]);
+#else
+	timespecs[0].tv_sec = time(NULL);
+	timespecs[0].tv_nsec = 0;
+#endif
+	timespecs[1].tv_sec = modified;
+	timespecs[1].tv_nsec = 0;
+
+	if (futimens(fd, timespecs) == -1)
+		err_printf (_("Failed to set file date: %s\n"), strerror (errno));
+}
+
+static void NONNULL_ALL _save_file(HTTP_RESPONSE *resp, const char *fname, int flag)
 {
 	int fd;
 
-	info_printf("append to '%s'\n", fname);
+	if (config.spider)
+		return;
 
-	if (!strcmp(fname,"-")) {
-		size_t rc;
-		if ((rc = fwrite(resp->body->data, 1, resp->body->length, stdout)) != resp->body->length)
-			err_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
-	}
-	else if ((fd = open(fname, O_WRONLY | O_APPEND | O_CREAT, 0644)) != -1) {
-		ssize_t rc;
-		if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
-			err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fname, rc, errno);
-		close(fd);
-	} else
-		err_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
-}
+	if (fname == config.output_document) {
+		if (!strcmp(fname,"-")) {
+			size_t rc;
 
-static const char * NONNULL_ALL create_filename(buffer_t *buf, IRI *iri, int flags)
-{
-	const char *fname;
+			if ((rc = fwrite(resp->body->data, 1, resp->body->length, stdout)) != resp->body->length)
+				err_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
 
-	if (flags & HTTP_FLG_USE_PATH) {
-		// create the complete path
-		const char *p1, *p2;
-
-		iri_get_escaped_host(iri, buf);
-		fname = iri_get_escaped_path(iri, buf);
-
-		if (*fname) {
-			for (p1 = fname; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
-				*(char *)p2 = 0; // replace path separator
-
-				// relative paths should have been normalized earlier,
-				// but for security reasons, don't trust myself...
-				if (*p1 == '.' && !strncmp(p1, "..", 2))
-					err_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), fname);
-
-				if (mkdir(fname, 0755) != 0 && errno != EEXIST) {
-					err_printf(_("Failed to make directory '%s'\n"), fname);
-					return fname;
-				} else info_printf("mkdir %s\n", fname);
-
-				*(char *)p2 = '/'; // restore path separator
-			}
+			return;
 		}
 
-		iri_get_escaped_query(iri, buf);
-		// return iri_get_escaped_fragment(iri, &buf);
-	} else { // if (flags & HTTP_FLG_USE_FILE) {
-		// create the file within the current directory
-
-		iri_get_escaped_file(iri, buf);
+		flag = O_APPEND;
+		info_printf("append to '%s'\n", fname);
+	} else {
+		info_printf("saving '%s'\n", fname);
 	}
 
-	return buf->data;
-}
-
-void save_file(HTTP_RESPONSE *resp, IRI *iri, int flags)
-{
-	char sbuf[256];
-	buffer_t buf;
-	const char *fname;
-	int fd;
-
-	buffer_init(&buf, sbuf, sizeof(sbuf));
-
-	fname = create_filename(&buf, iri, flags);
-
-	info_printf("saving '%s'\n", fname);
-	if ((fd = open(fname, O_WRONLY | O_CREAT | (flags & HTTP_FLG_APPEND ? O_APPEND : O_TRUNC), 0644)) != -1) {
+	if ((fd = open(fname, O_WRONLY | flag | O_CREAT, 0644)) != -1) {
 		ssize_t rc;
+
 		if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
 			err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fname, rc, errno);
+
+		if (flag == O_TRUNC && resp->last_modified)
+			set_file_mtime(fd, resp->last_modified);
+
 		close(fd);
 	} else
 		err_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
+}
 
-	buffer_deinit(&buf);
+static void NONNULL_ALL save_file(HTTP_RESPONSE *resp, const char *fname)
+{
+	_save_file(resp, fname, O_TRUNC);
+}
+
+static void NONNULL_ALL append_file(HTTP_RESPONSE *resp, const char *fname)
+{
+	_save_file(resp, fname, O_APPEND);
 }
 
 //void download_part(int sockfd, JOB *job, PART *part)
@@ -1036,16 +1169,23 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 
 			req = http_create_request(use_iri, "GET");
 
-			if (config.continue_download) {
-				char sbuf[256];
-				buffer_t buf;
+			if (config.continue_download || config.timestamping) {
+				const char *local_filename = downloader->job->local_filename;
 
-				buffer_init(&buf, sbuf, sizeof(sbuf));
+				if (config.continue_download)
+					http_add_header_printf(req, "Range: bytes=%llu-",
+						get_file_size(local_filename));
 
-				http_add_header_printf(req, "Range: bytes=%llu-",
-					get_filesize(create_filename(&buf, use_iri, HTTP_FLG_APPEND)));
+				if (config.timestamping) {
+					time_t mtime = get_file_mtime(local_filename);
 
-				buffer_deinit(&buf);
+					if (mtime) {
+						char http_date[32];
+
+						http_print_date(mtime + 1, http_date, sizeof(http_date));
+						http_add_header(req, "If-Modified-Since", http_date);
+					}
+				}
 			}
 
 			// 20.06.2012: www.google.de only sends gzip responses with one of the

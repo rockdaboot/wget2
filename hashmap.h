@@ -37,16 +37,16 @@ typedef struct HASHMAP HASHMAP;
 HASHMAP
 	*hashmap_create(int max, int off, unsigned int (*hash)(const void *), int (*cmp)(const void *, const void *)) MALLOC;
 int
+	hashmap_put(HASHMAP *h, const void *key, size_t keysize, const void *value, size_t valuesize),
+	hashmap_put_noalloc(HASHMAP *h, const void *key, const void *value),
+	hashmap_put_ident(HASHMAP *h, const void *key, size_t keysize),
+	hashmap_put_ident_noalloc(HASHMAP *h, const void *key),
 	hashmap_size(const HASHMAP *h),
 	hashmap_browse(const HASHMAP *h, int (*browse)(const void *key, const void *value)) NONNULL(2);
 void
 	hashmap_free(HASHMAP **h),
 	hashmap_clear(HASHMAP *h),
 	*hashmap_get(const HASHMAP *h, const void *key),
-	*hashmap_put(HASHMAP *h, const void *key, size_t keysize, const void *value, size_t valuesize),
-	*hashmap_put_noalloc(HASHMAP *h, const void *key, const void *value),
-	*hashmap_put_ident(HASHMAP *h, const void *key, size_t keysize),
-	*hashmap_put_ident_noalloc(HASHMAP *h, const void *key),
 	hashmap_remove(HASHMAP *h, const void *key),
 	hashmap_remove_nofree(HASHMAP *h, const void *key),
 	hashmap_setcmpfunc(HASHMAP *h, int (*cmp)(const void *key1, const void *key2)) NONNULL_ALL,
