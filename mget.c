@@ -1052,14 +1052,15 @@ static void set_file_mtime(int fd, time_t modified)
 
 static void NONNULL(1) _save_file(HTTP_RESPONSE *resp, const char *fname, int flag)
 {
-	int fd;
+	int fd = 0, multiple, fnum;
+	size_t fname_length = 0;
 
-	if (config.spider)
+	if (config.spider || !fname)
 		return;
 
 	if (fname == config.output_document) {
 		// <fname> can only be NULL if config.delete_after is set
-		if (fname && !strcmp(fname, "-")) {
+		if (!strcmp(fname, "-")) {
 			size_t rc;
 
 			if ((rc = fwrite(resp->body->data, 1, resp->body->length, stdout)) != resp->body->length)
@@ -1072,26 +1073,59 @@ static void NONNULL(1) _save_file(HTTP_RESPONSE *resp, const char *fname, int fl
 			return;
 
 		flag = O_APPEND;
-		info_printf("append to '%s'\n", fname);
-	} else {
-		info_printf("saving '%s'\n", fname);
 	}
 
-	if (!fname)
-		return;
+	if (flag == O_APPEND || !config.clobber || config.timestamping || (config.recursive && config.directories)) {
+		info_printf("noclobber...\n");
+		multiple = 0;
+		if (flag == O_TRUNC && !(config.recursive && config.directories))
+			flag = O_EXCL;
+	} else {
+		// wget compatibility: "clobber" means generating of .x files
+		info_printf("clobber...\n");
+		multiple = 1;
+		fname_length = strlen(fname) + 16;
+		if (flag == O_TRUNC)
+			flag = O_EXCL;
+	}
 
-	if ((fd = open(fname, O_WRONLY | flag | O_CREAT, 0644)) != -1) {
-		ssize_t rc;
+	fd = open(fname, O_WRONLY | flag | O_CREAT, 0644);
 
-		if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
-			err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fname, rc, errno);
+	for (fnum = 0; fnum < 999;) { // just prevent endless loop
+		char unique[fname_length];
 
-		if (flag == O_TRUNC && resp->last_modified)
-			set_file_mtime(fd, resp->last_modified);
+		if (fd != -1) {
+			ssize_t rc;
 
-		close(fd);
-	} else
-		err_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
+			if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
+				err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
+
+			if ((flag & (O_TRUNC | O_EXCL)) && resp->last_modified)
+				set_file_mtime(fd, resp->last_modified);
+
+			if (flag == O_APPEND)
+				info_printf("appended to '%s'\n", fnum ? unique : fname);
+			else
+				info_printf("saved '%s'\n", fnum ? unique : fname);
+
+			close(fd);
+		}
+		else if (multiple && (fd == -1 && errno == EEXIST)) {
+			snprintf(unique, sizeof(unique), "%s.%d", fname, ++fnum);
+			info_printf("unique = %s\n", unique);
+			fd = open(unique, O_WRONLY | flag | O_CREAT, 0644);
+			continue;
+		}
+
+		break;
+	}
+
+	if (fd == -1) {
+		if (errno == EEXIST && fnum < 999)
+			err_printf(_("File '%s' already there; not retrieving.\n"), fname);
+		else
+			err_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
+	}
 }
 
 static void NONNULL(1) save_file(HTTP_RESPONSE *resp, const char *fname)

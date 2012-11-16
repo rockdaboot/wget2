@@ -122,7 +122,8 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"  -4  --inet4-only        Use IPv4 connections only. (default: off)\n"
 		"  -6  --inet6-only        Use IPv6 connections only. (default: off)\n"
 		"      --prefer-family     Prefer IPv4 or IPv6. (default: none)\n"
-		"      --cache             Enabled/Disable using of server cache. (default: on)\n"
+		"      --cache             Enabled using of server cache. (default: on)\n"
+		"      --clobber           Enable file clobbering. (default: on)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -254,7 +255,7 @@ static int parse_n_option(UNUSED option_t opt, UNUSED const char *const *argv, c
 				config.verbose = 0;
 				break;
 			case 'c':
-//				config.clobber = 0;
+				config.clobber = 0;
 				break;
 			case 'd':
 				config.directories = 0;
@@ -310,7 +311,8 @@ struct config config = {
 	.use_server_timestamps = 1,
 	.directories = 1,
 	.host_directories = 1,
-	.cache = 1
+	.cache = 1,
+	.clobber = 1
 };
 
 static const struct option options[] = {
@@ -323,6 +325,7 @@ static const struct option options[] = {
 	{ "certificate", &config.cert_file, parse_string, 1, 0},
 	{ "certificate-type", &config.cert_type, parse_cert_type, 1, 0},
 	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0},
+	{ "clobber", &config.clobber, parse_bool, 0, 0},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0},
 	{ "continue-download", &config.continue_download, parse_bool, 0, 'c'},
 	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0},
