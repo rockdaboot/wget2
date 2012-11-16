@@ -1231,6 +1231,9 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			if (config.keep_alive)
 				http_add_header_line(req, "Connection: keep-alive\r\n");
 
+			if (!config.cache)
+				http_add_header_line(req, "Pragma: no-cache\r\n");
+
 			if (part)
 				http_add_header_printf(req, "Range: bytes=%llu-%llu",
 					(unsigned long long) part->position, (unsigned long long) part->position + part->length - 1);

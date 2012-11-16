@@ -122,6 +122,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"  -4  --inet4-only        Use IPv4 connections only. (default: off)\n"
 		"  -6  --inet6-only        Use IPv6 connections only. (default: off)\n"
 		"      --prefer-family     Prefer IPv4 or IPv6. (default: none)\n"
+		"      --cache             Enabled/Disable using of server cache. (default: on)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -308,7 +309,8 @@ struct config config = {
 	.keep_alive=1,
 	.use_server_timestamps = 1,
 	.directories = 1,
-	.host_directories = 1
+	.host_directories = 1,
+	.cache = 1
 };
 
 static const struct option options[] = {
@@ -317,6 +319,7 @@ static const struct option options[] = {
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a'},
 	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0},
 	{ "ca-directory", &config.ca_directory, parse_string, 1, 0},
+	{ "cache", &config.cache, parse_bool, 0, 0},
 	{ "certificate", &config.cert_file, parse_string, 1, 0},
 	{ "certificate-type", &config.cert_type, parse_cert_type, 1, 0},
 	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0},
