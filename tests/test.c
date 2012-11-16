@@ -193,8 +193,8 @@ static void test_buffer_printf(void)
 
 	static const char *zero_padded[] = { "", "0" };
 	static const char *left_adjust[] = { "", "-" };
-	static const long long number[] = { 0, 1, -1, 10, -10, 18446744073709551615ULL };
-	static const char *modifier[] = { "", "h", "hh", "l", "ll", "L", "z" };
+	static const long long number[] = { 0, 1LL, -1LL, 10LL, -10LL, 18446744073709551615ULL };
+	static const char *modifier[] = { "", "h", "hh", "l", "ll", "z" }; // %L... won't work on OpenBSD5.0
 	static const char *conversion[] = { "d", "i", "u", "o", "x", "X" };
 	char fmt[32], result[64], string[32];
 	size_t z, a, it, n, c, m;
@@ -235,12 +235,15 @@ static void test_buffer_printf(void)
 						memset(string, 'a', it);
 						string[it] = 0;
 
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 						#pragma GCC diagnostic push
 						#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#endif
 						sprintf(result, fmt, string);
 						buffer_printf2(&buf, fmt, string);
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 						#pragma GCC diagnostic pop
-
+#endif
 						if (strcmp(result, buf.data)) {
 							failed++;
 							info_printf("%s: Failed with format ('%s','%s'): '%s' != '%s'\n", __func__, fmt, string, buf.data, result);
@@ -269,8 +272,10 @@ static void test_buffer_printf(void)
 						memset(string, 'a', it);
 						string[it] = 0;
 
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 						#pragma GCC diagnostic push
 						#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#endif
 						if (width == -1) {
 							if (precision == -1) {
 								sprintf(result, fmt, string);
@@ -288,7 +293,9 @@ static void test_buffer_printf(void)
 								buffer_printf2(&buf, fmt, width, precision, string);
 							}
 						}
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 						#pragma GCC diagnostic pop
+#endif
 
 						if (strcmp(result, buf.data)) {
 							failed++;
@@ -319,11 +326,15 @@ static void test_buffer_printf(void)
 						}
 
 						for (n = 0; n < countof(number); n++) {
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 							#pragma GCC diagnostic push
 							#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#endif
 							sprintf(result, fmt, number[n]);
 							buffer_printf2(&buf, fmt, number[n]);
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 							#pragma GCC diagnostic pop
+#endif
 
 							if (strcmp(result, buf.data)) {
 								failed++;
@@ -870,7 +881,7 @@ static void test_cookies(void)
 			http_print_date(cookie.expires, thedate, sizeof(thedate));
 			if (strcmp(thedate, t->expires)) {
 				failed++;
-				info_printf("Failed [%u]: expires mismatch: '%s' != '%s' (time_t %ld)\n", it, thedate, t->expires, cookie.expires);
+				info_printf("Failed [%u]: expires mismatch: '%s' != '%s' (time_t %lld)\n", it, thedate, t->expires, (long long)cookie.expires);
 				goto next;
 			}
 		}

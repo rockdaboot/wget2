@@ -55,6 +55,8 @@
 	#define ALLOC_SIZE(...)
 #elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
 	#define ALLOC_SIZE(...) __attribute__ ((__alloc_size__(__VA_ARGS__)))
+#else
+	#define ALLOC_SIZE(...)
 #endif
 	#define unlikely(expr) __builtin_expect(!!(expr), 0)
 	#define likely(expr) __builtin_expect(!!(expr), 1)

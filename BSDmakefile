@@ -9,7 +9,7 @@ CFLAGS=-g -std=c99 -pedantic -fPIC\
  -I /usr/local/include\
  -D _FILE_OFFSET_BITS=64\
  -D ENABLE_NLS=1\
- -D LOCALEDIR=\"/usr/share/locale\"
+ -D LOCALEDIR=\"/usr/share/locale\"\
  -D GLOBAL_CONFIG_FILE=\"/etc/mgetrc\"
 
 LN=$(SILENT)gcc -fPIE -pie -Wl,-z,relro,-z,now -L/usr/local/lib

@@ -149,9 +149,7 @@ static int print_info(gnutls_session_t session)
 	const char *tmp;
 	gnutls_credentials_type_t cred;
 	gnutls_kx_algorithm_t kx;
-	int dhe, ecdh;
-
-	dhe = ecdh = 0;
+	int dhe = 0, ecdh = 0;
 
 	/* print the key exchange's algorithm name
 	 */
@@ -183,19 +181,23 @@ static int print_info(gnutls_session_t session)
 		if (gnutls_psk_server_get_username(session) != NULL)
 			info_printf(_("PSK authentication. Connected as '%s'\n"), gnutls_psk_server_get_username(session));
 
-		if (kx == GNUTLS_KX_ECDHE_PSK)
-			ecdh = 1;
-		else if (kx == GNUTLS_KX_DHE_PSK)
+		if (kx == GNUTLS_KX_DHE_PSK)
 			dhe = 1;
+#ifdef GNUTLS_KX_ECDHE_PSK
+		else if (kx == GNUTLS_KX_ECDHE_PSK)
+			ecdh = 1;
+#endif
 		break;
 
 	case GNUTLS_CRD_ANON: /* anonymous authentication */
 
 		info_printf(_("Anonymous authentication.\n"));
-		if (kx == GNUTLS_KX_ANON_ECDH)
-			ecdh = 1;
-		else if (kx == GNUTLS_KX_ANON_DH)
+		if (kx == GNUTLS_KX_ANON_DH)
 			dhe = 1;
+#ifdef GNUTLS_KX_ANON_ECDH
+		else if (kx == GNUTLS_KX_ANON_ECDH)
+			ecdh = 1;
+#endif
 		break;
 
 	case GNUTLS_CRD_CERTIFICATE: /* certificate authentication */
@@ -204,8 +206,10 @@ static int print_info(gnutls_session_t session)
 		 */
 		if (kx == GNUTLS_KX_DHE_RSA || kx == GNUTLS_KX_DHE_DSS)
 			dhe = 1;
+#if defined(GNUTLS_KX_ECDHE_RSA) && defined(GNUTLS_KX_ECDHE_ECDSA)
 		else if (kx == GNUTLS_KX_ECDHE_RSA || kx == GNUTLS_KX_ECDHE_ECDSA)
 			ecdh = 1;
+#endif
 
 		/* if the certificate list is available, then
 		 * print some information about it.
@@ -216,10 +220,12 @@ static int print_info(gnutls_session_t session)
 
 	} /* switch */
 
-	if (ecdh != 0)
-		info_printf(_("Ephemeral ECDH using curve %s\n"), gnutls_ecc_curve_get_name(gnutls_ecc_curve_get(session)));
-	else if (dhe != 0)
+	if (dhe != 0)
 		info_printf(_("Ephemeral DH using prime of %d bits\n"), gnutls_dh_get_prime_bits(session));
+#ifdef GNUTLS_KX_ECDHE_PSK
+	else if (ecdh != 0)
+		info_printf(_("Ephemeral ECDH using curve %s\n"), gnutls_ecc_curve_get_name(gnutls_ecc_curve_get(session)));
+#endif
 
 	/* print the protocol's name (ie TLS 1.0)
 	 */
@@ -376,7 +382,9 @@ void ssl_init(void)
 			int ncerts = -1;
 
 			if (!strcmp(config.ca_directory, "system")) {
+#ifdef GNUTLS_NONBLOCK
 				ncerts = gnutls_certificate_set_x509_system_trust(credentials);
+#endif
 			}
 
 			if (ncerts < 0) {
@@ -395,7 +403,7 @@ void ssl_init(void)
 							struct stat st;
 							char fname[dirlen + 1 + len + 1];
 
-							sprintf(fname, "%s/%s", config.ca_directory, dp->d_name);
+							snprintf(fname, sizeof(fname), "%s/%s", config.ca_directory, dp->d_name);
 							if (!stat(fname, &st) && S_ISREG(st.st_mode)) {
 								int rc;
 
@@ -513,7 +521,12 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 
 	ssl_init();
 
+#ifdef GNUTLS_NONBLOCK
 	gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
+#else
+	// very old gnutls version, likely to not work.
+	gnutls_init(&session, GNUTLS_CLIENT);
+#endif
 	gnutls_session_set_ptr(session, (void *)hostname);
 	gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
 	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, credentials);

@@ -539,13 +539,13 @@ int cookie_save(const char *fname, int keep_session_cookies)
 			} else if (!keep_session_cookies)
 				continue;
 
-			fprintf(fp, "%s%s%s\t%s\t%s\t%s\t%ld\t%s\t%s\n",
+			fprintf(fp, "%s%s%s\t%s\t%s\t%s\t%lld\t%s\t%s\n",
 				cookie->http_only ? "#HttpOnly_" : "",
 				cookie->domain_dot ? "." : "", // compatibility, irrelevant since RFC 6562
 				cookie->domain,
 				cookie->host_only ? "FALSE" : "TRUE",
 				cookie->path, cookie->secure_only ? "TRUE" : "FALSE",
-				cookie->expires,
+				(long long)cookie->expires,
 				cookie->name, cookie->value);
 		}
 
