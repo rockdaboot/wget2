@@ -21,6 +21,7 @@
  *
  * Changelog
  * 25.04.2012  Tim Ruehsen  created
+ * 16.11.2012               new functions tcp_set_family() and tcp_set_preferred_family()
  *
  */
 
@@ -42,7 +43,9 @@ void
 	tcp_set_connect_timeout(int timeout),
 	tcp_set_dns_timeout(int timeout),
 	tcp_set_dns_caching(int caching),
-	tcp_set_debug(int debug);
+	tcp_set_debug(int debug),
+	tcp_set_family(int family),
+	tcp_set_preferred_family(int family);
 struct addrinfo
 	*tcp_resolve(const char *restrict name, const char *restrict port) NONNULL_ALL;
 tcp_t

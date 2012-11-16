@@ -117,8 +117,11 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"  -c  --continue-download Continue download for given files. (default: off)\n"
 		"      --use-server-timestamps Set local file's timestamp to server's timestamp. (default: on)\n"
 		"  -N  --timestamping      Just retrieve younger files than the local ones. (default: off)\n"
-		"      --strict-comments   A dummy option. Parsing always works non-strict."
+		"      --strict-comments   A dummy option. Parsing always works non-strict.\n"
 		"      --delete-after      Don't save downloaded files. (default: off)\n"
+		"  -4  --inet4-only        Use IPv4 connections only. (default: off)\n"
+		"  -6  --inet6-only        Use IPv6 connections only. (default: off)\n"
+		"      --prefer-family     Prefer IPv4 or IPv6. (default: none)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -272,6 +275,20 @@ static int parse_n_option(UNUSED option_t opt, UNUSED const char *const *argv, c
 	return 0;
 }
 
+static int parse_prefer_family(UNUSED option_t opt, UNUSED const char *const *argv, const char *val)
+{
+	if (!val || !strcasecmp(val, "none"))
+		*((char *)opt->var) = AF_UNSPEC;
+	else if (!strcasecmp(val, "ipv4"))
+		*((char *)opt->var) = AF_INET;
+	else if (!strcasecmp(val, "ipv6"))
+		*((char *)opt->var) = AF_INET6;
+	else
+		err_printf_exit("Unknown address family '%s'\n", val);
+
+	return 0;
+}
+
 // default values for config options (if not 0 or NULL)
 struct config config = {
 	.connect_timeout = -1,
@@ -321,6 +338,8 @@ static const struct option options[] = {
 	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0},
 	{ "http-proxy", &config.http_proxy, parse_string, 1, 0},
 	{ "https-proxy", &config.https_proxy, parse_string, 1, 0},
+	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4'},
+	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6'},
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0},
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0},
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0},
@@ -328,6 +347,7 @@ static const struct option options[] = {
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0},
 	{ "output-document", &config.output_document, parse_string, 1, 'O'},
 	{ "output-file", &config.logfile, parse_string, 1, 'o'},
+	{ "prefer-family", &config.preferred_family, parse_prefer_family, 1, 0},
 	{ "private-key", &config.private_key, parse_string, 1, 0},
 	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0},
 	{ "protocol-directories", &config.protocol_directories, parse_bool, 0, 0},
@@ -768,6 +788,13 @@ int init(int argc, const char *const *argv)
 	tcp_set_connect_timeout(config.connect_timeout);
 	tcp_set_dns_timeout(config.dns_timeout);
 	tcp_set_dns_caching(config.dns_caching);
+	if (config.inet4_only)
+		tcp_set_family(AF_INET);
+	else if (config.inet6_only)
+		tcp_set_family(AF_INET6);
+	else
+		tcp_set_preferred_family(config.preferred_family);
+
 	ssl_set_check_certificate(config.check_certificate);
 
 	return n;

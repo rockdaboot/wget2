@@ -51,6 +51,7 @@ struct config {
 		*random_file,
 		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
 	int
+		preferred_family,
 		cut_directories,
 		connect_timeout, // ms
 		dns_timeout, // ms
@@ -58,6 +59,8 @@ struct config {
 		max_redirect,
 		num_threads;
 	char
+		inet4_only,
+		inet6_only,
 		delete_after,
 		strict_comments,
 		protocol_directories,

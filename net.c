@@ -21,6 +21,7 @@
  *
  * Changelog
  * 25.04.2012  Tim Ruehsen  created
+ * 16.11.2012               new functions tcp_set_family() and tcp_set_preferred_family()
  *
  */
 
@@ -66,7 +67,9 @@ static int
 	dns_timeout,
 	connect_timeout,
 	timeout, // read and write timeouts are the same
-	debug;
+	debug,
+	family = AF_UNSPEC,
+	preferred_family;
 static pthread_mutex_t
 	dns_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -103,7 +106,7 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 	// it doesn't really hurt
 	{
 		struct addrinfo hints = {
-			.ai_family = AF_UNSPEC,
+			.ai_family = family,
 			.ai_socktype = SOCK_STREAM,
 #if defined(AI_ADDRCONFIG)
 	#if defined(AI_NUMERICSERV)
@@ -158,6 +161,42 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 			return NULL;
 		}
 
+		if (family == AF_UNSPEC && preferred_family != AF_UNSPEC) {
+			struct addrinfo *preferred = NULL, *preferred_tail = NULL;
+			struct addrinfo *unpreferred = NULL, *unpreferred_tail = NULL;
+
+			// split address list into preferred and unpreferred, keeping the original order
+			for (ai = addrinfo; ai;) {
+				if (ai->ai_family == preferred_family) {
+					if (preferred_tail)
+						preferred_tail->ai_next = ai;
+					else
+						preferred = ai; // remember the head of the list
+
+					preferred_tail = ai;
+					ai = ai->ai_next;
+					preferred_tail->ai_next = NULL;
+				} else {
+					if (unpreferred_tail)
+						unpreferred_tail->ai_next = ai;
+					else
+						unpreferred = ai; // remember the head of the list
+
+					unpreferred_tail = ai;
+					ai = ai->ai_next;
+					unpreferred_tail->ai_next = NULL;
+				}
+			}
+
+			// merge preferred + unpreferred
+			if (preferred) {
+				preferred_tail->ai_next = unpreferred;
+				addrinfo = preferred;
+			} else {
+				addrinfo = unpreferred;
+			}
+		}
+
 		if (debug) {
 			for (ai = addrinfo; ai; ai = ai->ai_next) {
 				char adr[NI_MAXHOST], sport[NI_MAXSERV];
@@ -183,7 +222,8 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 			strcpy((char *)entryp->port, port); // ugly cast, but semantically ok
 
 			pthread_mutex_lock(&dns_mutex);
-			vec_insert_sorted_noalloc(dns_cache, entryp);
+			if (vec_find(dns_cache, entryp) == -1)
+				vec_insert_sorted_noalloc(dns_cache, entryp);
 			pthread_mutex_unlock(&dns_mutex);
 		}
 
@@ -194,6 +234,16 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 void tcp_set_debug(int _debug)
 {
 	debug = _debug;
+}
+
+void tcp_set_preferred_family(int _family)
+{
+	preferred_family = _family;
+}
+
+void tcp_set_family(int _family)
+{
+	family = _family;
 }
 
 static int PURE NONNULL_ALL compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
