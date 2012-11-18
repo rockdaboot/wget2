@@ -183,7 +183,7 @@ static int print_info(gnutls_session_t session)
 
 		if (kx == GNUTLS_KX_DHE_PSK)
 			dhe = 1;
-#ifdef GNUTLS_KX_ECDHE_PSK
+#if GNUTLS_VERSION_MAJOR >= 3
 		else if (kx == GNUTLS_KX_ECDHE_PSK)
 			ecdh = 1;
 #endif
@@ -194,7 +194,7 @@ static int print_info(gnutls_session_t session)
 		info_printf(_("Anonymous authentication.\n"));
 		if (kx == GNUTLS_KX_ANON_DH)
 			dhe = 1;
-#ifdef GNUTLS_KX_ANON_ECDH
+#if GNUTLS_VERSION_MAJOR >= 3
 		else if (kx == GNUTLS_KX_ANON_ECDH)
 			ecdh = 1;
 #endif
@@ -206,7 +206,7 @@ static int print_info(gnutls_session_t session)
 		 */
 		if (kx == GNUTLS_KX_DHE_RSA || kx == GNUTLS_KX_DHE_DSS)
 			dhe = 1;
-#if defined(GNUTLS_KX_ECDHE_RSA) && defined(GNUTLS_KX_ECDHE_ECDSA)
+#if GNUTLS_VERSION_MAJOR >= 3
 		else if (kx == GNUTLS_KX_ECDHE_RSA || kx == GNUTLS_KX_ECDHE_ECDSA)
 			ecdh = 1;
 #endif
@@ -222,7 +222,7 @@ static int print_info(gnutls_session_t session)
 
 	if (dhe != 0)
 		info_printf(_("Ephemeral DH using prime of %d bits\n"), gnutls_dh_get_prime_bits(session));
-#ifdef GNUTLS_KX_ECDHE_PSK
+#if GNUTLS_VERSION_MAJOR >= 3
 	else if (ecdh != 0)
 		info_printf(_("Ephemeral ECDH using curve %s\n"), gnutls_ecc_curve_get_name(gnutls_ecc_curve_get(session)));
 #endif
