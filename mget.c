@@ -1063,6 +1063,11 @@ static void NONNULL(1) _save_file(HTTP_RESPONSE *resp, const char *fname, int fl
 		if (!strcmp(fname, "-")) {
 			size_t rc;
 
+			if (config.save_headers) {
+				if ((rc = fwrite(resp->header->data, 1, resp->header->length, stdout)) != resp->header->length)
+					err_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
+			}
+
 			if ((rc = fwrite(resp->body->data, 1, resp->body->length, stdout)) != resp->body->length)
 				err_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
 
@@ -1096,6 +1101,11 @@ static void NONNULL(1) _save_file(HTTP_RESPONSE *resp, const char *fname, int fl
 
 		if (fd != -1) {
 			ssize_t rc;
+
+			if (config.save_headers) {
+				if ((rc = write(fd, resp->header->data, resp->header->length)) != (ssize_t)resp->header->length)
+					err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
+			}
 
 			if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
 				err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
@@ -1216,6 +1226,8 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			HTTP_REQUEST *req;
 
 			req = http_create_request(use_iri, "GET");
+			if (config.save_headers)
+				req->save_headers = 1;
 
 			if (config.continue_download || config.timestamping) {
 				const char *local_filename = downloader->job->local_filename;
@@ -1284,7 +1296,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			}
 
 			if (http_send_request(conn, req) == 0) {
-				resp = http_get_response(conn, NULL);
+				resp = http_get_response(conn, req);
 			}
 
 			http_free_request(&req);

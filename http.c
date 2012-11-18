@@ -883,6 +883,7 @@ void http_free_response(HTTP_RESPONSE **resp)
 		xfree((*resp)->content_type);
 		xfree((*resp)->location);
 		// xfree((*resp)->reason);
+		buffer_free(&(*resp)->header);
 		buffer_free(&(*resp)->body);
 		xfree(*resp);
 	}
@@ -1105,8 +1106,22 @@ HTTP_RESPONSE *http_get_response_cb(
 			else
 				log_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 
-			if (!(resp = http_parse_response(buf)))
-				goto cleanup; // something is wrong with the header
+			if (req->save_headers) {
+				buffer_t *header = buffer_init(NULL, NULL, p - buf + 2);
+				buffer_memcpy(header, buf, p - buf);
+				buffer_memcat(header, "\r\n\r\n", 4);
+
+				if (!(resp = http_parse_response(buf))) {
+					buffer_free(&header);
+					goto cleanup; // something is wrong with the header
+				}
+
+				resp->header = header;
+
+			} else {
+				if (!(resp = http_parse_response(buf)))
+					goto cleanup; // something is wrong with the header
+			}
 
 			if (req && !strcasecmp(req->method, "HEAD"))
 				goto cleanup; // a HEAD response won't have a body

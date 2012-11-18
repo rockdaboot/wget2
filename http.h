@@ -89,7 +89,8 @@ typedef struct {
 	char
 		esc_resource_buf[256],
 		esc_host_buf[64],
-		method[8]; // we just need HEAD, GET and POST
+		method[8], // we just need HEAD, GET and POST
+		save_headers;
 } HTTP_REQUEST;
 
 // just parse the header lines that we need
@@ -102,6 +103,7 @@ typedef struct {
 		*content_type,
 		*location;
 	buffer_t
+		*header,
 		*body;
 	size_t
 		content_length;

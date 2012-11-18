@@ -136,6 +136,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"                          Download the list with:\n"
 		"                          mget -O suffixes.txt http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1\n"
 		"      --http-keep-alive   Keep connection open for further requests. (default: on)\n"
+		"      --save-headers      Save the response headers in front of the response data. (default: off)\n"
 		"\n");
 	puts(
 		"HTTPS (SSL/TLS) related options:\n"
@@ -362,6 +363,7 @@ static const struct option options[] = {
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0},
 	{ "recursive", &config.recursive, parse_bool, 0, 'r'},
 	{ "save-cookies", &config.save_cookies, parse_string, 1, 0},
+	{ "save-headers", &config.save_headers, parse_bool, 0, 0},
 	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0},
 	{ "server-response", &config.server_response, parse_bool, 0, 'S'},
 	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H'},

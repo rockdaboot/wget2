@@ -12,8 +12,8 @@ CFLAGS=-g -std=gnu99 -pedantic -fPIC\
 LN=$(SILENT)gcc -fPIE -pie -Wl,-z,relro,--as-needed
 
 TARGETS=test buffer_printf2_perf
-#SOURCES=$(wildcard *.c)
-#HEADERS=$(wildcard *.h)
+SOURCES=$(wildcard *.c)
+HEADERS=$(wildcard *.h)
 #OBJECTS=$(SOURCES:%.c=%.o)
 MGET_OBJECTS=$(shell ls ../*.o 2>/dev/null|grep -v mget.o)
 

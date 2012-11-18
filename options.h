@@ -59,6 +59,7 @@ struct config {
 		max_redirect,
 		num_threads;
 	char
+		save_headers,
 		clobber,
 		cache,
 		inet4_only,
