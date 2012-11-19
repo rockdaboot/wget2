@@ -100,7 +100,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 	puts(
 		"Download:\n"
 		"  -r  --recursive         Recursive download. (default: off)\n"
-		"  -H  --span-hosts        Span hosts that where not given on the command line. (default: off)\n"
+		"  -H  --span-hosts        Span hosts that were not given on the command line. (default: off)\n"
 		"      --num-threads       Max. concurrent download threads. (default: 5)\n"
 		"      --max-redirect      Max. number of redirections to follow. (default: 20)\n"
 		"  -T  --timeout           General network timeout in seconds.\n"
@@ -137,6 +137,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"                          mget -O suffixes.txt http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1\n"
 		"      --http-keep-alive   Keep connection open for further requests. (default: on)\n"
 		"      --save-headers      Save the response headers in front of the response data. (default: off)\n"
+		"      --referer           Include Referer: url in HTTP requets. (default: off)\n"
 		"\n");
 	puts(
 		"HTTPS (SSL/TLS) related options:\n"
@@ -362,6 +363,7 @@ static const struct option options[] = {
 	{ "random-file", &config.random_file, parse_string, 1, 0},
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0},
 	{ "recursive", &config.recursive, parse_bool, 0, 'r'},
+	{ "referer", &config.referer, parse_string, 1, 0},
 	{ "save-cookies", &config.save_cookies, parse_string, 1, 0},
 	{ "save-headers", &config.save_headers, parse_bool, 0, 0},
 	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0},

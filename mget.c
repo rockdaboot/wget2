@@ -1081,13 +1081,11 @@ static void NONNULL(1) _save_file(HTTP_RESPONSE *resp, const char *fname, int fl
 	}
 
 	if (flag == O_APPEND || !config.clobber || config.timestamping || (config.recursive && config.directories)) {
-		info_printf("noclobber...\n");
 		multiple = 0;
 		if (flag == O_TRUNC && !(config.recursive && config.directories))
 			flag = O_EXCL;
 	} else {
 		// wget compatibility: "clobber" means generating of .x files
-		info_printf("clobber...\n");
 		multiple = 1;
 		fname_length = strlen(fname) + 16;
 		if (flag == O_TRUNC)
@@ -1279,6 +1277,9 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 
 			if (!config.cache)
 				http_add_header_line(req, "Pragma: no-cache\r\n");
+
+			if (config.referer)
+				http_add_header(req, "Referer", config.referer);
 
 			if (part)
 				http_add_header_printf(req, "Range: bytes=%llu-%llu",
