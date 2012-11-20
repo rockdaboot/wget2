@@ -146,13 +146,22 @@ int hashmap_put_noalloc(HASHMAP *h, const void *key, const void *value)
 	int pos = hash % h->max;
 
 	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		if (entry->key != key)
-			xfree(entry->key);
-		entry->key = (void *)key;
-
-		if (entry->value != value)
-			xfree(entry->value);
-		entry->value = (void *)value;
+		if (entry->key == entry->value) {
+			if (entry->key != key || entry->value != value) {
+				xfree(entry->key);
+				entry->key = (void *)key;
+				entry->value = (void *)value;
+			}
+		} else {
+			if (entry->key != key) {
+				xfree(entry->key);
+				entry->key = (void *)key;
+			}
+			if (entry->value != value) {
+				xfree(entry->value);
+				entry->value = (void *)value;
+			}
+		}
 
 		return 1;
 	}

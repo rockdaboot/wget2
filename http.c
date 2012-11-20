@@ -1106,7 +1106,7 @@ HTTP_RESPONSE *http_get_response_cb(
 			else
 				log_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 
-			if (req->save_headers) {
+			if (req && req->save_headers) {
 				buffer_t *header = buffer_init(NULL, NULL, p - buf + 2);
 				buffer_memcpy(header, buf, p - buf);
 				buffer_memcat(header, "\r\n\r\n", 4);

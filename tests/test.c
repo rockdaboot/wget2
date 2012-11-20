@@ -1105,6 +1105,18 @@ static void test_stringmap(void)
 		} else ok++;
 	}
 
+	// some special tests
+	stringmap_clear(h);
+	stringmap_put(h, "thekey", NULL, 0) ? failed++ : ok++;
+	stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
+	stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
+	stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
+	stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
+
+	stringmap_clear(h);
+	stringmap_put_ident(h, "thekey") ? failed++ : ok++;
+	stringmap_put_ident(h, "thekey") ? ok++ : failed++;
+
 	stringmap_free(&h);
 }
 
