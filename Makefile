@@ -1,8 +1,20 @@
+# Package-related substitution variables
+export package     = mget
+export version     = 0.1.2
+export tarname     = $(package)
+export distdir     = $(tarname)-$(version)
+
+# Prefix-related substitution variables
+export prefix      = /usr/local
+export exec_prefix = $(prefix)
+export bindir      = $(prefix)/bin
+
+# Tool-related substitution variables
 # -Wstack-protector -Wconversion
 #CC=$(SILENT)CCC_CC=clang /usr/share/clang/scan-build/ccc-analyzer -fblocks
 #CC=$(SILENT)clang -fblocks
-CC=$(SILENT)gcc
-CFLAGS=-g -std=gnu99 -pedantic -fPIC\
+export CC = $(SILENT)gcc
+export CFLAGS = -g -std=gnu99 -pedantic -fPIC\
  -Wall -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes\
  -Wwrite-strings -Wformat=2 -Wformat -Wformat-security\
  -fstack-protector --param ssp-buffer-size=4\
@@ -14,53 +26,51 @@ CFLAGS=-g -std=gnu99 -pedantic -fPIC\
 # -D GLOBAL_CONFIG_FILE=\"/etc/mgetrc\"
 
 #LN=$(SILENT)gcc -fPIE -pie -Wl,-z,relro,-z,now
-LN=$(SILENT)gcc -fPIE -pie -Wl,-z,relro,--as-needed
-
-TARGETS=mget
-SOURCES=$(wildcard *.c) css_tokenizer.c
-HEADERS=$(wildcard *.h)
-OBJECTS=$(SOURCES:%.c=%.o)
+export LDFLAGS = $(SILENT)gcc -fPIE -pie -Wl,-z,relro,--as-needed
 
 all:
-	@SILENT="@" $(MAKE) --no-print-directory targets
+	@SILENT="@" $(MAKE) -C src --no-print-directory $@
+	@SILENT="@" $(MAKE) -C tests --no-print-directory $@
 
 verbose:
-	@SILENT="" $(MAKE) --no-print-directory targets
+	@SILENT="" $(MAKE) -C src --no-print-directory $@
+	@SILENT="" $(MAKE) -C tests --no-print-directory $@
 
-.depend: $(SOURCES) $(HEADERS)
-	@$(CC) -MM $(SOURCES) > .depend
+analyze install:
+	@$(MAKE) -C src $@
 
-objects: $(OBJECTS) .depend
-	@echo -n
-
-targets: css_tokenizer.c .depend $(TARGETS)
-	@echo -n
-
-analyze:
-	clang --analyze $(SOURCES)
+check:
+	@$(MAKE) -C tests $@
+	@echo "*** ALL TESTS PASSED ***"
 
 clean:
 	@echo Removing objects and binaries...
-	-@rm -f .depend $(OBJECTS) $(TARGETS)
+	@$(MAKE) -C src $@
+	@$(MAKE) -C tests $@
 
-css_tokenizer.c: css_tokenizer.lex css_tokenizer.h
-	flex -o $@ $<
+dist: $(distdir).tar.gz
 
-.c.o:
-	@echo Compiling $(@F)
-	$(CC) $(CFLAGS) -c $< -o $@
+$(distdir).tar.gz: FORCE $(distdir)
+	tar chof - $(distdir) | gzip -9 -c >$(distdir).tar.gz
+	rm -rf $(distdir)
 
-#.SECONDARY:
+$(distdir):
+	mkdir -p $(distdir)/src
+	cp Makefile $(distdir)
+	cp src/Makefile $(distdir)/src
+	cp src/*.c src/*.h $(distdir)/src
 
-# default rule to create .o files from .c files
-#%.o: %.c
-#	@echo Compiling $(@F)
-#	$(CC) -c $< -o $@
+distcheck: $(distdir).tar.gz
+	gzip -cd $+ | tar xvf -
+	$(MAKE) -C $(distdir) all check
+	$(MAKE) -C $(distdir) DESTDIR=$${PWD}/$(distdir)/_inst install uninstall
+	$(MAKE) -C $(distdir) clean
+	rm -rf $(distdir)
+	@echo "*** Package $(distdir).tar.gz ready for distribution."
 
-# default rule to link executables
-%: %.o $(OBJECTS)
-	@echo Linking $(@F) ...
-	$(LN) $^ -o $@ -lpthread -lrt -lgnutls -lz
+FORCE:
+	-rm $(distdir).tar.gz &> /dev/null
+	-rm -rf $(distdir) &> /dev/null
 
--include .depend
-.PHONY: clean analyze
+.PHONY: all verbose clean analyze check install uninstall dist distcheck
+.PHONY: FORCE

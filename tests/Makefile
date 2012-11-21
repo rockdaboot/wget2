@@ -9,13 +9,13 @@ CFLAGS=-g -std=gnu99 -pedantic -fPIC\
  -D _FILE_OFFSET_BITS=64\
  -D ENABLE_NLS=1
 
-LN=$(SILENT)gcc -fPIE -pie -Wl,-z,relro,--as-needed
+LDFLAGS=-fPIE -pie -Wl,-z,relro,--as-needed
 
 TARGETS=test buffer_printf2_perf stringmap_perf
 SOURCES=$(wildcard *.c)
 HEADERS=$(wildcard *.h)
 #OBJECTS=$(SOURCES:%.c=%.o)
-MGET_OBJECTS=$(shell ls ../*.o 2>/dev/null|grep -v mget.o)
+MGET_OBJECTS=$(shell ls ../src/*.o 2>/dev/null|grep -v mget.o)
 
 all:
 	@SILENT="@" $(MAKE) --no-print-directory targets
@@ -36,15 +36,15 @@ analyze:
 	clang --analyze $(SOURCES)
 
 check: targets
-	valgrind --leak-check=full --track-origins=yes --show-reachable=yes ./test
+	valgrind -q --leak-check=full --track-origins=yes --show-reachable=yes ./test
 
 clean:
 	@echo Removing objects and binaries...
-	-@rm -f .depend $(OBJECTS) $(TARGETS)
+	-@rm -rf .depend $(OBJECTS) $(TARGETS) *.plist
 
 .c.o:
 	@echo Compiling $(@F)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(CPPLAGS)-c $< -o $@
 
 #.SECONDARY:
 
@@ -56,11 +56,11 @@ clean:
 # default rule to link executables
 %: %.o $(OBJECTS) $(MGET_OBJECTS)
 	@echo Linking $(@F) ...
-	$(LN) $^ -o $@ -lgnutls -lpthread -lz
+	$(CC) $(LDFLAGS) $^ -o $@ -lgnutls -lpthread -lz
 
 stringmap_perf: stringmap_perf.o $(MGET_OBJECTS)
 	@echo Linking $(@F) ...
-	$(LN) $^ -o $@ -lgnutls -lpthread -lz
+	$(CC) $(LDFLAGS) $^ -o $@ -lgnutls -lpthread -lz
 
 -include .depend
 .PHONY: clean analyze

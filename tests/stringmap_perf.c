@@ -8,7 +8,7 @@
 #include <sys/mman.h>
 #include <errno.h>
 
-#include "../stringmap.h"
+#include "../src/stringmap.h"
 
 static int NONNULL_ALL _print_word(const char *word)
 {

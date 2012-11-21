@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "../buffer.h"
+#include "../src/buffer.h"
 
 #define buffer_strcat(buf, s) \
  

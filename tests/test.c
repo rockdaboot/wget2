@@ -34,19 +34,19 @@
 #include <dirent.h>
 #include <time.h>
 
-#include "../xalloc.h"
-#include "../utils.h"
-#include "../options.h"
-#include "../css.h"
-#include "../xml.h"
-#include "../iri.h"
-#include "../log.h"
-#include "../net.h"
-#include "../vector.h"
-#include "../stringmap.h"
-#include "../buffer.h"
-#include "../http.h"
-#include "../cookie.h"
+#include "../src/xalloc.h"
+#include "../src/utils.h"
+#include "../src/options.h"
+#include "../src/css.h"
+#include "../src/xml.h"
+#include "../src/iri.h"
+#include "../src/log.h"
+#include "../src/net.h"
+#include "../src/vector.h"
+#include "../src/stringmap.h"
+#include "../src/buffer.h"
+#include "../src/http.h"
+#include "../src/cookie.h"
 
 static int
 	ok,
