@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 #include "xalloc.h"
 #include "log.h"
@@ -54,6 +55,16 @@ static unsigned int hash_string(const char *key)
 	return h;
 }
 
+static unsigned int hash_string_nocase(const char *key)
+{
+	unsigned int h = 0; // use 0 as SALT if hash table attacks doesn't matter
+
+	while (*key)
+		h = h * 101 + (unsigned char)tolower(*key++);
+
+	return h;
+}
+
 // create stringmap with initial size <max>
 // the default hash function is Larson's
 
@@ -67,7 +78,7 @@ STRINGMAP *stringmap_create(int max)
 STRINGMAP *stringmap_nocase_create(int max)
 {
 	STRINGMAP *h = xmalloc(sizeof(STRINGMAP));
-	h->h = hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string, (int (*)(const void *, const void *))strcasecmp);
+	h->h = hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string_nocase, (int (*)(const void *, const void *))strcasecmp);
 	return h;
 }
 
@@ -78,13 +89,12 @@ int stringmap_put_noalloc(STRINGMAP *h, const char *key, const void *value)
 
 int stringmap_put(STRINGMAP *h, const char *key, const void *value, size_t valuesize)
 {
-	return hashmap_put_noalloc(h->h, strdup(key), value ? xmemdup(value, valuesize) : NULL);
+	return hashmap_put(h->h, key, strlen(key) + 1, value, valuesize);
 }
 
 int stringmap_put_ident(STRINGMAP *h, const char *key)
 {
-	char *keydup = strdup(key);
-	return hashmap_put_noalloc(h->h, keydup, keydup);
+	return hashmap_put_ident(h->h, key, strlen(key) + 1);
 }
 
 int stringmap_put_ident_noalloc(STRINGMAP *h, const char *key)

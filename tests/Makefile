@@ -11,7 +11,7 @@ CFLAGS=-g -std=gnu99 -pedantic -fPIC\
 
 LN=$(SILENT)gcc -fPIE -pie -Wl,-z,relro,--as-needed
 
-TARGETS=test buffer_printf2_perf
+TARGETS=test buffer_printf2_perf stringmap_perf
 SOURCES=$(wildcard *.c)
 HEADERS=$(wildcard *.h)
 #OBJECTS=$(SOURCES:%.c=%.o)
@@ -55,6 +55,10 @@ clean:
 
 # default rule to link executables
 %: %.o $(OBJECTS) $(MGET_OBJECTS)
+	@echo Linking $(@F) ...
+	$(LN) $^ -o $@ -lgnutls -lpthread -lz
+
+stringmap_perf: stringmap_perf.o $(MGET_OBJECTS)
 	@echo Linking $(@F) ...
 	$(LN) $^ -o $@ -lgnutls -lpthread -lz
 

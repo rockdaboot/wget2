@@ -102,6 +102,13 @@ Build mget with just::
 
 Have a look into Makefile / BSDMakefile to change some defines.
 
+To test the functionality (you need valgrind installed):
+
+	$ cd tests
+	$ make
+	$ make check
+
+
 Documentation
 -------------
 

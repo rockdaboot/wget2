@@ -1105,7 +1105,7 @@ static void test_stringmap(void)
 		} else ok++;
 	}
 
-	// some special tests
+	// testing alloc/free in stringmap/hashmap
 	stringmap_clear(h);
 	stringmap_put(h, "thekey", NULL, 0) ? failed++ : ok++;
 	stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
@@ -1113,9 +1113,12 @@ static void test_stringmap(void)
 	stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
 	stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
 
+	// testing key/value identity alloc/free in stringmap/hashmap
 	stringmap_clear(h);
 	stringmap_put_ident(h, "thekey") ? failed++ : ok++;
 	stringmap_put_ident(h, "thekey") ? ok++ : failed++;
+	stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
+	stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
 
 	stringmap_free(&h);
 }
