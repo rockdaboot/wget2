@@ -1,3 +1,7 @@
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -76,7 +80,7 @@ int main(int argc, const char *const *argv)
 	printf("read %u words, %u uniques, %u doubles\n", unique + duple, unique, duple);
 
 	// const void *keys = stringmap_get_keys(map);
-	// stringmap_browse(map, (int(*)(const char *, const void *))_print_word);
+	stringmap_browse(map, (int(*)(const char *, const void *))_print_word);
 
 	stringmap_free(&map);
 	

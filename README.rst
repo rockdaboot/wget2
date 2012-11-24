@@ -1,17 +1,17 @@
 Mget - multithreaded metalink/file/website downloader
 =====================================================
 
-This is an experimental wget-like tool written in C.
+This is an experimental Wget-like tool written in C.
 
 Designed and written from scratch it requires a C99 and Posix compliant
 development environment.
 
-The originally purpose was to help out on wget2 development (refactoring,
+The originally purpose was to help out on Wget2 development (refactoring,
 modern and clean code, new technology, new design).
 
 In many cases Mget downloads much faster than Wget1.14 due to HTTP zlib
 compression and parallel connections.
-It consumes less sys and user CPU cycles due to larger buffers and
+It consumes less system and user CPU cycles due to larger buffers and
 buffer recycling.
 
 License
@@ -28,6 +28,7 @@ So, for now (05.11.2012), don't use it for production !
 
 The basic functionality is implemented, like:
 
+- autotools support
 - proxy support
 - cookies (session/non-session), detection of supercookies via Mozilla Public Suffix List
   (use the new option --cookie-suffixes <filename>, better: put it into ~/.mgetrc)
@@ -61,6 +62,7 @@ The following is just a quick list of ideas and todos.
 I personally like to experiment with new stuff (new to wget), so
 request pipelining and SPDY protocol are my favorites.
 
+- RFC 6797 HSTS (HTTP Strict Transport Security)
 - compression on TLS/SSL layer
 - respect /robots.txt "Robot Exclusion Standard"
 - request pipelining (using client cookies)
@@ -86,7 +88,7 @@ Requirements
 The following packages are needed to build Mget:
 
 * libz >= 1.2.3
-* libgnutls >= 2.4.2
+* libgnutls >= 2.	4.2
 * flex >= 2.5.35
 
 The versions are recommended, but older version like on OpenBSD 5.0
@@ -96,16 +98,13 @@ are supposed to work.
 Building from git
 -----------------
 
-Build mget with just::
+Build mget with::
 
+    $ ./configure
     $ make
 
-Have a look into Makefile / BSDMakefile to change some defines.
+To test the functionality (you need valgrind installed)::
 
-To test the functionality (you need valgrind installed):
-
-	$ cd tests
-	$ make
 	$ make check
 
 
@@ -116,7 +115,8 @@ There is no documentation yet.
 
     $ mget --help
 
-prints the usage and the current set of options
+prints the usage and the current set of options.
+For more info, see the man pages of Wget.
 
 My idea is to use the free Serna WYSIWYG/WYMIWYG editor for documentation.
 It creates docbook format which can be converted into texinfo format.

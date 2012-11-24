@@ -39,6 +39,10 @@
  *
  */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -76,7 +80,7 @@ struct option {
 
 static int print_version(UNUSED option_t opt, UNUSED const char *const *argv, UNUSED const char *val)
 {
-	info_printf("mget V"MGET_VERSION" - C multithreaded metalink/file/website downloader\n");
+	info_printf("mget V" PACKAGE_VERSION " - C multithreaded metalink/file/website downloader\n");
 
 	return 0;
 }
@@ -84,7 +88,7 @@ static int print_version(UNUSED option_t opt, UNUSED const char *const *argv, UN
 static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *argv, UNUSED const char *val)
 {
 	puts(
-		"Mget V"MGET_VERSION" - multithreaded metalink/file/website downloader written in C\n"
+		"Mget V" PACKAGE_VERSION " - multithreaded metalink/file/website downloader written in C\n"
 		"\n"
 		"Usage: mget [options...] <url>...\n"
 		"\n"
@@ -301,7 +305,7 @@ struct config config = {
 	.max_redirect = 20,
 	.num_threads = 5,
 	.dns_caching = 1,
-	.user_agent = "Mget/"MGET_VERSION,
+	.user_agent = "Mget/"PACKAGE_VERSION,
 	.verbose = 1,
 	.check_certificate=1,
 	.cert_type = SSL_X509_FMT_PEM,

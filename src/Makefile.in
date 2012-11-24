@@ -1,0 +1,92 @@
+# @configure_input@
+
+# Package-related substitution variables
+package        = @PACKAGE_NAME@
+version        = @PACKAGE_VERSION@
+tarname        = @PACKAGE_TARNAME@
+distdir        = $(tarname)-$(version)
+
+# Prefix-related substitution variables
+prefix         = @prefix@
+exec_prefix    = @exec_prefix@
+bindir         = @bindir@
+
+# Tool-related substitution variables
+CC             = @CC@
+DEFS           = @DEFS@
+LIBS           = @LIBS@
+CFLAGS         = @CFLAGS@
+CPPFLAGS       = @CPPFLAGS@
+LDFLAGS        = @LDFLAGS@
+INSTALL        = @INSTALL@
+INSTALL_DATA   = @INSTALL_DATA@
+INSTALL_PROGRAM= @INSTALL_PROGRAM@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+
+# VPATH-related substitution variables
+top_builddir   = @top_builddir@
+builddir       = @builddir@
+srcdir         = @srcdir@
+VPATH          = @srcdir@
+
+TARGETS=mget
+SOURCES=$(wildcard *.c) css_tokenizer.c
+HEADERS=$(wildcard *.h)
+OBJECTS=$(SOURCES:%.c=%.o)
+
+all:
+	@SILENT="@" $(MAKE) --no-print-directory targets
+
+verbose:
+	@SILENT="" $(MAKE) --no-print-directory targets
+
+.depend: $(SOURCES) $(HEADERS)
+	@$(CC) -MM $(SOURCES) > .depend
+
+objects: $(OBJECTS) .depend
+	@echo -n
+
+targets: css_tokenizer.c .depend $(TARGETS)
+	@echo -n
+
+analyze:
+	clang --analyze $(SOURCES)
+
+clean:
+	@echo Removing objects and binaries...
+	-@rm -rf .depend $(OBJECTS) $(TARGETS) *.plist
+
+install:
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL_PROGRAM) -m 0755 mget $(DESTDIR)$(bindir)/mget
+
+uninstall:
+	-rm $(DESTDIR)$(bindir)/mget
+
+Makefile: Makefile.in ../config.status
+	cd .. && ./config.status src/$@
+
+../config.status: ../configure
+	cd .. && ./config.status --recheck
+
+css_tokenizer.c: css_tokenizer.lex css_tokenizer.h
+	flex -o $@ $<
+
+.c.o:
+	@echo Compiling $(@F)
+	$(SILENT)$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) -I. -I$(srcdir) -I.. -c $< -o $@
+
+#.SECONDARY:
+
+# default rule to create .o files from .c files
+#%.o: %.c
+#	@echo Compiling $(@F)
+#	$(CC) -c $< -o $@
+
+# default rule to link executables
+%: %.o $(OBJECTS)
+	@echo Linking $(@F) ...
+	$(SILENT)$(CC) $(LDFLAGS) $^ -o $@ $(LIBS)
+
+-include .depend
+.PHONY: all verbose clean analyze install uninstall

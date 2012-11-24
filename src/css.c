@@ -30,6 +30,10 @@
  *    a simplistic hand-written parser which might be much smaller and faster
  */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <stddef.h>
 #include <unistd.h>
 #include <strings.h>

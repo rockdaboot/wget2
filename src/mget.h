@@ -27,10 +27,6 @@
 #ifndef _MGET_MGET_H
 #define _MGET_MGET_H
 
-#ifndef MGET_VERSION
-	#define MGET_VERSION "0.1.2"
-#endif
-
 #if __GNUC__ >= 3
 	#define UNUSED __attribute__ ((__unused__))
 	#define UNUSED_RESULT __attribute__ ((__warn_unused_result__))
@@ -76,18 +72,12 @@
 	#define likely(expr) expr
 #endif
 
-#if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
-	// define restrict for non c99 compilers
-	#if !defined(restrict)
-		#define restrict
-	#endif
-#endif
-
 #if ENABLE_NLS != 0
 	#include <libintl.h>
 	#define _(STRING) gettext(STRING)
 #else
 	#define _(STRING) STRING
+	#define ngettext(STRING1,STRING2,N) STRING2
 #endif
 
 #endif /* _MGET_MGET_H */
