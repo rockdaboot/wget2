@@ -98,6 +98,12 @@ are supposed to work.
 Building from git
 -----------------
 
+Download project and prepare sources with:
+
+	$ git clone http://github.com/rockdaboot/mget
+	$ cd mget
+	$ ./autogen.sh
+
 Build mget with::
 
     $ ./configure
