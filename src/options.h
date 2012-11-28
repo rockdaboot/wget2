@@ -33,6 +33,7 @@
 
 struct config {
 	const char
+		*default_page,
 		*referer,
 		*directory_prefix,
 		*http_proxy,

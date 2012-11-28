@@ -143,6 +143,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --save-headers      Save the response headers in front of the response data. (default: off)\n"
 		"      --referer           Include Referer: url in HTTP requets. (default: off)\n"
 		"  -E  --adjust-extension  Append extension to saved file (.html or .css). (default: off)\n"
+		"      --default_page      Default file name. (default: index.html)\n"
 		"\n");
 	puts(
 		"HTTPS (SSL/TLS) related options:\n"
@@ -319,7 +320,8 @@ struct config config = {
 	.directories = 1,
 	.host_directories = 1,
 	.cache = 1,
-	.clobber = 1
+	.clobber = 1,
+	.default_page = "index.html"
 };
 
 static const struct option options[] = {
@@ -340,6 +342,7 @@ static const struct option options[] = {
 	{ "cookies", &config.cookies, parse_bool, 0, 0},
 	{ "cut-dirs", &config.cut_directories, parse_integer, 1, 0},
 	{ "debug", &config.debug, parse_bool, 0, 'd'},
+	{ "default-page", &config.default_page, parse_string, 1, 0},
 	{ "delete-after", &config.delete_after, parse_bool, 0, 0},
 	{ "directories", &config.directories, parse_bool, 0, 0},
 	{ "directory-prefix", &config.directory_prefix, parse_string, 1, 'P'},
@@ -733,6 +736,7 @@ int init(int argc, const char *const *argv)
 	config.ca_directory = strdup(config.ca_directory);
 	config.http_proxy = strdup_null(getenv("http_proxy"));
 	config.https_proxy = strdup_null(getenv("https_proxy"));
+	config.default_page = strdup(config.default_page);
 
 	// this is a special case for switching on debugging before any config file is read
 	if (argc >= 2 && (!strcmp(argv[1],"-d") || !strcmp(argv[1],"--debug"))) {
@@ -812,6 +816,7 @@ int init(int argc, const char *const *argv)
 	else
 		tcp_set_preferred_family(config.preferred_family);
 
+	iri_set_defaultpage(config.default_page);
 	ssl_set_check_certificate(config.check_certificate);
 
 	return n;
@@ -838,6 +843,7 @@ void deinit(void)
 	xfree(config.private_key);
 	xfree(config.random_file);
 	xfree(config.secure_protocol);
+	xfree(config.default_page);
 
 	http_set_http_proxy(NULL);
 	http_set_https_proxy(NULL);

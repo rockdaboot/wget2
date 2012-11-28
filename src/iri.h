@@ -57,7 +57,8 @@ typedef struct {
 
 void
 	iri_test(void),
-	iri_free(IRI **iri);
+	iri_free(IRI **iri),
+	iri_set_defaultpage(const char *page);
 int
 	iri_isgendelim(char c) CONST,
 	iri_issubdelim(char c) CONST,

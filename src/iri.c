@@ -36,6 +36,11 @@
 #include "log.h"
 #include "iri.h"
 
+static const char
+	*default_page = "index.html";
+static size_t
+	default_page_length = 10;
+
 const char
 	* const iri_schemes[] = { "http", "https", NULL },
 	* const iri_ports[]   = { "80",   "443" };
@@ -575,8 +580,8 @@ const char *iri_get_escaped_path(const IRI *iri, buffer_t *buf)
 	if (iri->path)
 		iri_escape_path(iri->path, buf);
 
-	if (buf->length == 0 || buf->data[buf->length - 1] == '/')
-		buffer_memcat(buf, "index.html", 10);
+	if ((buf->length == 0 || buf->data[buf->length - 1] == '/') && default_page)
+		buffer_memcat(buf, default_page, default_page_length);
 
 	return buf->data;
 }
@@ -612,8 +617,8 @@ const char *iri_get_escaped_file(const IRI *iri, buffer_t *buf)
 			iri_escape_path(iri->path, buf);
 	}
 
-	if (buf->length == 0 || buf->data[buf->length - 1] == '/')
-		buffer_memcat(buf, "index.html", 10);
+	if ((buf->length == 0 || buf->data[buf->length - 1] == '/') && default_page)
+		buffer_memcat(buf, default_page, default_page_length);
 
 	if (iri->query) {
 		buffer_memcat(buf, "?", 1);
@@ -643,3 +648,9 @@ const char *iri_get_escaped_file(const IRI *iri, buffer_t *buf)
 	}
 }
 */
+
+void iri_set_defaultpage(const char *page)
+{
+	default_page = page;
+	default_page_length = default_page ? strlen(default_page) : 0;
+}
