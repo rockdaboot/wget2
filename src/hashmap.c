@@ -143,7 +143,7 @@ static void NONNULL_ALL hashmap_rehash(HASHMAP *h, int newmax)
 	}
 }
 
-static inline void NONNULL2(1,3) hashmap_new_entry(HASHMAP *h, unsigned int hash, const char *key, const char *value)
+static inline void NONNULL((1,3)) hashmap_new_entry(HASHMAP *h, unsigned int hash, const char *key, const char *value)
 {
 	ENTRY *entry;
 	int pos = hash % h->max;

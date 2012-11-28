@@ -142,6 +142,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --http-keep-alive   Keep connection open for further requests. (default: on)\n"
 		"      --save-headers      Save the response headers in front of the response data. (default: off)\n"
 		"      --referer           Include Referer: url in HTTP requets. (default: off)\n"
+		"  -E  --adjust-extension  Append extension to saved file (.html or .css). (default: off)\n"
 		"\n");
 	puts(
 		"HTTPS (SSL/TLS) related options:\n"
@@ -238,7 +239,7 @@ static int parse_timeout(option_t opt, UNUSED const char *const *argv, const cha
 	return 0;
 }
 
-static int PURE NONNULL(1) parse_cert_type(option_t opt, UNUSED const char *const *argv, const char *val)
+static int PURE NONNULL((1)) parse_cert_type(option_t opt, UNUSED const char *const *argv, const char *val)
 {
 	if (!val || !strcasecmp(val, "PEM"))
 		*((char *)opt->var) = SSL_X509_FMT_PEM;
@@ -324,6 +325,7 @@ struct config config = {
 static const struct option options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
+	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E'},
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a'},
 	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0},
 	{ "ca-directory", &config.ca_directory, parse_string, 1, 0},
@@ -347,6 +349,7 @@ static const struct option options[] = {
 	{ "force-directories", &config.force_directories, parse_bool, 0, 'x'},
 	{ "help", NULL, print_help, 0, 'h'},
 	{ "host-directories", &config.host_directories, parse_bool, 0, 0},
+	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0}, // obsolete, replaced by --adjust-extension
 	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0},
 	{ "http-proxy", &config.http_proxy, parse_string, 1, 0},
 	{ "https-proxy", &config.https_proxy, parse_string, 1, 0},
@@ -388,7 +391,7 @@ static int PURE NONNULL_ALL opt_compare(const void *key, const void *option)
 	return strcmp((const char *)key, ((const option_t)option)->long_name);
 }
 
-static int NONNULL(1) set_long_option(const char *name, const char *value)
+static int NONNULL((1)) set_long_option(const char *name, const char *value)
 {
 	option_t opt;
 	int invert = 0, ret = 0;
@@ -461,7 +464,7 @@ static int NONNULL(1) set_long_option(const char *name, const char *value)
 // - format is 'name value', where value might be enclosed in ' or "
 // - values enclosed in " or ' might contain \\, \" and \'
 
-static void NONNULL(1) _read_config(const char *cfgfile, int expand)
+static void NONNULL((1)) _read_config(const char *cfgfile, int expand)
 {
 	static int level; // level of recursions to prevent endless include loops
 	FILE *fp;
@@ -641,7 +644,7 @@ static void read_config(void)
 #endif
 }
 
-static int NONNULL(2) parse_command_line(int argc, const char *const *argv)
+static int NONNULL((2)) parse_command_line(int argc, const char *const *argv)
 {
 	static short shortcut_to_option[128];
 	size_t it;

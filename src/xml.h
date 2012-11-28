@@ -49,21 +49,21 @@ void
 		const char *buf,
 		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
 		void *user_ctx,
-		int hints) NONNULL(1),
+		int hints) NONNULL((1)),
 	xml_parse_file(
 		const char *fname,
 		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
 		void *user_ctx,
-		int hints) NONNULL(1),
+		int hints) NONNULL((1)),
 	html_parse_buffer(
 		const char *buf,
 		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
 		void *user_ctx,
-		int hints) NONNULL(1),
+		int hints) NONNULL((1)),
 	html_parse_file(
 		const char *fname,
 		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
 		void *user_ctx,
-		int hints) NONNULL(1);
+		int hints) NONNULL((1));
 
 #endif /* _MGET_XML_H */

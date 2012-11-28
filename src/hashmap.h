@@ -42,7 +42,7 @@ int
 	hashmap_put_ident(HASHMAP *h, const void *key, size_t keysize),
 	hashmap_put_ident_noalloc(HASHMAP *h, const void *key),
 	hashmap_size(const HASHMAP *h),
-	hashmap_browse(const HASHMAP *h, int (*browse)(const void *key, const void *value)) NONNULL(2);
+	hashmap_browse(const HASHMAP *h, int (*browse)(const void *key, const void *value)) NONNULL((2));
 void
 	hashmap_free(HASHMAP **h),
 	hashmap_clear(HASHMAP *h),

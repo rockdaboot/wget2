@@ -287,7 +287,7 @@ static int NONNULL_ALL domain_match(const char *domain, const char *host)
 	return 0;
 }
 
-static int NONNULL(1) path_match(const char *cookie_path, const char *request_path)
+static int NONNULL((1)) path_match(const char *cookie_path, const char *request_path)
 {
 	const char *last_slash;
 	size_t cookie_path_length, iri_path_length;

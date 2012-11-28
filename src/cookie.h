@@ -56,13 +56,13 @@ typedef struct {
 void
 	cookie_init_cookie(HTTP_COOKIE *cookie) NONNULL_ALL,
 	cookie_free_cookies(void),
-	cookie_normalize_cookies(const IRI *iri, const VECTOR *cookies) NONNULL(1),
+	cookie_normalize_cookies(const IRI *iri, const VECTOR *cookies) NONNULL((1)),
 	cookie_store_cookie(HTTP_COOKIE *cookie) NONNULL_ALL,
-	cookie_store_cookies(VECTOR *cookies) NONNULL(1),
+	cookie_store_cookies(VECTOR *cookies) NONNULL((1)),
 	cookie_free_public_suffixes(void);
 int
 	cookie_free_cookie(HTTP_COOKIE *cookie) NONNULL_ALL,
-	cookie_normalize_cookie(const IRI *iri, HTTP_COOKIE *cookie) NONNULL(2),
+	cookie_normalize_cookie(const IRI *iri, HTTP_COOKIE *cookie) NONNULL((2)),
 	cookie_save(const char *fname, int keep_session_cookies) NONNULL_ALL,
 	cookie_load(const char *fname) NONNULL_ALL,
 	cookie_load_public_suffixes(const char *fname) NONNULL_ALL;

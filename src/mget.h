@@ -81,17 +81,16 @@
 #if defined(__clang__)
 #	if GCC_VERSION_AT_LEAST(3,3)
 #		define NONNULL_ALL __attribute__ ((nonnull))
-#		define NONNULL(a) __attribute__ ((nonnull ((a))))
-#		define NONNULL2(a, b) __attribute__ ((nonnull ((a), (b))))
+#		define NONNULL(a) __attribute__ ((nonnull a))
 #	else
 #		define NONNULL_ALL
 #		define NONNULL(a)
-#		define NONNULL2(a, b)
 #	endif
 #else
-#	define NONNULL_ALL
-#	define NONNULL(a)
-#	define NONNULL2(a, b)
+//#	define NONNULL_ALL
+#		define NONNULL_ALL __attribute__ ((nonnull))
+#	define NONNULL(a) __attribute__ ((nonnull a))
+// #	define NONNULL(a)
 #endif
 
 #if GCC_VERSION_AT_LEAST(3,4)

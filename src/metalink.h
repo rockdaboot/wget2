@@ -41,6 +41,6 @@
 #include "mget.h"
 
 void
-	metalink4_parse(int sockfd, HTTP_RESPONSE *resp) NONNULL(2);
+	metalink4_parse(int sockfd, HTTP_RESPONSE *resp) NONNULL((2));
 
 #endif /* _MGET_METALINK_H */

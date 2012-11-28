@@ -42,7 +42,7 @@ void
 	*list_getlast(const LIST *list) CONST NONNULL_ALL,
 	list_free(LIST **list) NONNULL_ALL;
 int
-	list_browse(const LIST *list, int (*browse)(void *context, void *elem), void *context) NONNULL(2);
+	list_browse(const LIST *list, int (*browse)(void *context, void *elem), void *context) NONNULL((2));
 
 
 #endif /* _MGET_LIST_H */

@@ -43,7 +43,7 @@ int
 	stringmap_put_ident(STRINGMAP *h, const char *key),
 	stringmap_put_ident_noalloc(STRINGMAP *h, const char *key),
 	stringmap_size(const STRINGMAP *h),
-	stringmap_browse(const STRINGMAP *h, int (*browse)(const char *key, const void *value)) NONNULL(2);
+	stringmap_browse(const STRINGMAP *h, int (*browse)(const char *key, const void *value)) NONNULL((2));
 void
 	stringmap_free(STRINGMAP **h),
 	stringmap_clear(STRINGMAP *h),

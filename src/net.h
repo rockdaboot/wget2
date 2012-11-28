@@ -49,7 +49,7 @@ void
 struct addrinfo
 	*tcp_resolve(const char *restrict name, const char *restrict port) NONNULL_ALL;
 tcp_t
-	tcp_connect(struct addrinfo *addrinfo, const char *hostname) NONNULL(1);
+	tcp_connect(struct addrinfo *addrinfo, const char *hostname) NONNULL((1));
 ssize_t
 	tcp_send(tcp_t tcp, const char *fmt, ...) PRINTF_FORMAT(2,3) NONNULL_ALL,
 	tcp_write(tcp_t tcp, const char *buf, size_t count) NONNULL_ALL,

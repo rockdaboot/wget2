@@ -1054,9 +1054,10 @@ static void set_file_mtime(int fd, time_t modified)
 		err_printf (_("Failed to set file date: %s\n"), strerror (errno));
 }
 
-static void NONNULL(1) _save_file(HTTP_RESPONSE *resp, const char *fname, int flag)
+static void NONNULL((1)) _save_file(HTTP_RESPONSE *resp, const char *fname, int flag)
 {
-	int fd = 0, multiple, fnum;
+	char *alloced_fname = NULL;
+	int fd, multiple, fnum;
 	size_t fname_length = 0;
 
 	if (config.spider || !fname)
@@ -1084,6 +1085,28 @@ static void NONNULL(1) _save_file(HTTP_RESPONSE *resp, const char *fname, int fl
 		flag = O_APPEND;
 	}
 
+	if (config.adjust_extension && resp) {
+		const char *ext;
+
+		if (!strcasecmp(resp->content_type, "text/html")) {
+			ext = ".html";
+		} else if (!strcasecmp(resp->content_type, "text/css")) {
+			ext = ".css";
+		} else
+			ext = NULL;
+
+		if (ext) {
+			size_t ext_length = strlen(ext);
+
+			if ((fname_length = strlen(fname)) >= ext_length && strcasecmp(fname + fname_length - ext_length, ext)) {
+				alloced_fname = xmalloc(fname_length + ext_length + 1);
+				strcpy(alloced_fname, fname);
+				strcpy(alloced_fname + fname_length, ext);
+				fname = alloced_fname;
+			}
+		}
+	}
+
 	if (flag == O_APPEND || !config.clobber || config.timestamping || (config.recursive && config.directories)) {
 		multiple = 0;
 		if (flag == O_TRUNC && !(config.recursive && config.directories))
@@ -1091,7 +1114,10 @@ static void NONNULL(1) _save_file(HTTP_RESPONSE *resp, const char *fname, int fl
 	} else {
 		// wget compatibility: "clobber" means generating of .x files
 		multiple = 1;
-		fname_length = strlen(fname) + 16;
+		if (fname_length)
+			fname_length += 16;
+		else
+			fname_length = strlen(fname) + 16;
 		if (flag == O_TRUNC)
 			flag = O_EXCL;
 	}
@@ -1099,7 +1125,7 @@ static void NONNULL(1) _save_file(HTTP_RESPONSE *resp, const char *fname, int fl
 	fd = open(fname, O_WRONLY | flag | O_CREAT, 0644);
 
 	for (fnum = 0; fnum < 999;) { // just prevent endless loop
-		char unique[fname_length];
+		char unique[fname_length + 1];
 
 		if (fd != -1) {
 			ssize_t rc;
@@ -1124,7 +1150,6 @@ static void NONNULL(1) _save_file(HTTP_RESPONSE *resp, const char *fname, int fl
 		}
 		else if (multiple && (fd == -1 && errno == EEXIST)) {
 			snprintf(unique, sizeof(unique), "%s.%d", fname, ++fnum);
-			info_printf("unique = %s\n", unique);
 			fd = open(unique, O_WRONLY | flag | O_CREAT, 0644);
 			continue;
 		}
@@ -1138,14 +1163,16 @@ static void NONNULL(1) _save_file(HTTP_RESPONSE *resp, const char *fname, int fl
 		else
 			err_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
 	}
+
+	xfree(alloced_fname);
 }
 
-static void NONNULL(1) save_file(HTTP_RESPONSE *resp, const char *fname)
+static void NONNULL((1)) save_file(HTTP_RESPONSE *resp, const char *fname)
 {
 	_save_file(resp, fname, O_TRUNC);
 }
 
-static void NONNULL(1) append_file(HTTP_RESPONSE *resp, const char *fname)
+static void NONNULL((1)) append_file(HTTP_RESPONSE *resp, const char *fname)
 {
 	_save_file(resp, fname, O_APPEND);
 }

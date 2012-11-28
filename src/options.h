@@ -60,6 +60,7 @@ struct config {
 		max_redirect,
 		num_threads;
 	char
+		adjust_extension,
 		save_headers,
 		clobber,
 		cache,
