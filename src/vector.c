@@ -327,7 +327,7 @@ void vec_setcmpfunc(VECTOR *v, int (*cmp)(const void *elem1, const void *elem2))
 }
 
 #if defined(__clang__)
-void qsort_r (void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *, void *), void *arg) NONNULL(1,4);
+void qsort_r (void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *, void *), void *arg) NONNULL2(1,4);
 
 static int NONNULL_ALL _compare(const void *p1, const void *p2, void *v)
 {

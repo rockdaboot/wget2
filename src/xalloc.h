@@ -37,7 +37,7 @@
 
 void
 	*xmalloc(size_t size) MALLOC ALLOC_SIZE(1),
-	*xcalloc(size_t nmemb, size_t size) MALLOC ALLOC_SIZE(1,2),
+	*xcalloc(size_t nmemb, size_t size) MALLOC ALLOC_SIZE2(1,2),
 	*xrealloc(void *ptr, size_t size) ALLOC_SIZE(2),
 	*xmemdup(const void *s, size_t n) MALLOC ALLOC_SIZE(2) NONNULL_ALL;
 char

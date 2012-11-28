@@ -27,49 +27,88 @@
 #ifndef _MGET_MGET_H
 #define _MGET_MGET_H
 
-#if __GNUC__ >= 3
-	#define UNUSED __attribute__ ((__unused__))
-	#define UNUSED_RESULT __attribute__ ((__warn_unused_result__))
-	#define PURE __attribute__ ((__pure__))
-	#define CONST __attribute__ ((__const__))
-	#define NORETURN __attribute__ ((__noreturn__))
+#if defined(__GNUC__) && defined(__GNUC_MINOR__)
+#	define GCC_VERSION_AT_LEAST(major, minor) ((__GNUC__ > (major)) || (__GNUC__ == (major) && __GNUC_MINOR__ >= (minor)))
+#else
+#	define GCC_VERSION_AT_LEAST(major, minor) 0
+#endif
 
-// nonnull is dangerous to use with current gcc <= 4.7.1
+#if GCC_VERSION_AT_LEAST(2,5)
+#	define CONST __attribute__ ((const))
+#	define NORETURN __attribute__ ((noreturn))
+#else
+#	define CONST
+#	define NORETURN
+#endif
+
+#if GCC_VERSION_AT_LEAST(2,95)
+#	define PRINTF_FORMAT(a, b) __attribute__ ((format (printf, a, b)))
+#define UNUSED __attribute__ ((unused))
+#else
+#	define PRINT_FORMAT(a, b)
+#define UNUSED
+#endif
+#define UNUSED __attribute__ ((unused))
+
+#if GCC_VERSION_AT_LEAST(2,96)
+#	define PURE __attribute__ ((pure))
+#else
+#	define PURE
+#endif
+
+#if GCC_VERSION_AT_LEAST(3,0)
+#	define MALLOC __attribute__ ((malloc))
+#	define unlikely(expr) __builtin_expect(!!(expr), 0)
+#	define likely(expr) __builtin_expect(!!(expr), 1)
+#else
+#	define MALLOC
+#	define unlikely(expr) expr
+#	define likely(expr) expr
+#endif
+
+#if GCC_VERSION_AT_LEAST(3,1)
+#	define ALWAYS_INLINE __attribute__ ((always_inline))
+#	define DEPRECATED __attribute__ ((deprecated))
+#else
+#	define ALWAYS_INLINE
+#	define DEPRECATED
+#endif
+
+// nonnull is dangerous to use with current gcc <= 4.7.1.
 // see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=17308
-// we have to use e.g. the clang analyzer if we want NONNULL
+// we have to use e.g. the clang analyzer if we want NONNULL.
+// but even clang is not perfect - don't use nonnull in production
 #if defined(__clang__)
-	#define NONNULL(...) __attribute__ ((__nonnull__(__VA_ARGS__)))
-	#define NONNULL_ALL __attribute__ ((__nonnull__))
+#	if GCC_VERSION_AT_LEAST(3,3)
+#		define NONNULL_ALL __attribute__ ((nonnull))
+#		define NONNULL(a) __attribute__ ((nonnull ((a))))
+#		define NONNULL2(a, b) __attribute__ ((nonnull ((a), (b))))
+#	else
+#		define NONNULL_ALL
+#		define NONNULL(a)
+#		define NONNULL2(a, b)
+#	endif
 #else
-	#define NONNULL(...) __attribute__ ((__nonnull__(__VA_ARGS__)))
-	#define NONNULL_ALL __attribute__ ((__nonnull__))
+#	define NONNULL_ALL
+#	define NONNULL(a)
+#	define NONNULL2(a, b)
 #endif
-	#define PRINTF_FORMAT(a,b) __attribute__ ((__format__ (__printf__, a, b)))
-	#define DEPRECATED __attribute__ ((__deprecated__))
-	#define MALLOC __attribute__ ((__malloc__))
+
+#if GCC_VERSION_AT_LEAST(3,4)
+#	define UNUSED_RESULT __attribute__ ((warn_unused_result))
+#else
+#	define UNUSED_RESULT
+#endif
+
 #if defined(__clang__)
-	#define ALLOC_SIZE(...)
-#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
-	#define ALLOC_SIZE(...) __attribute__ ((__alloc_size__(__VA_ARGS__)))
+#	define ALLOC_SIZE(a)
+#	define ALLOC_SIZE2(a, b)
+#elif GCC_VERSION_AT_LEAST(4,3)
+#	define ALLOC_SIZE(a) __attribute__ ((__alloc_size__(a)))
+#	define ALLOC_SIZE2(a, b) __attribute__ ((__alloc_size__(a, b)))
 #else
-	#define ALLOC_SIZE(...)
-#endif
-	#define unlikely(expr) __builtin_expect(!!(expr), 0)
-	#define likely(expr) __builtin_expect(!!(expr), 1)
-#else
-	#define UNUSED
-	#define UNUSED_RESULT
-	#define PURE
-	#define CONST
-	#define NORETURN
-	#define NONNULL(a)
-	#define NONNULL_ALL
-	#define PRINTF_FORMAT(a,b)
-	#define DEPRECATED
-	#define MALLOC
-	#define ALLOC_SIZE(a)
-	#define unlikely(expr) expr
-	#define likely(expr) expr
+#	define ALLOC_SIZE(a)
+#	define ALLOC_SIZE2(a, b)
 #endif
 
 #if ENABLE_NLS != 0
@@ -78,6 +117,10 @@
 #else
 	#define _(STRING) STRING
 	#define ngettext(STRING1,STRING2,N) STRING2
+#endif
+
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901
+#define restrict
 #endif
 
 #endif /* _MGET_MGET_H */

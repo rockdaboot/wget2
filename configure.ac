@@ -1,10 +1,19 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.69])
+#AC_PREREQ([2.69])
 AC_INIT([mget], [0.1.2], [tim.ruehsen@gmx.de])
 AC_CONFIG_SRCDIR([src/mget.c])
 AC_CONFIG_HEADERS([config.h])
+
+AC_CANONICAL_HOST
+#case $host_os in
+#  linux*)
+#        ;;
+#  *)
+#        AC_MSG_ERROR([$host_os is not currently supported])
+#        ;;
+#esac
 
 # Checks for programs.
 
@@ -13,24 +22,21 @@ AC_CONFIG_HEADERS([config.h])
 CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 AC_PROG_CC
-echo CFLAGS="$CFLAGS" GCC="$GCC"
 if test "x$CFLAGS" = "x" ; then
   if test "x$GCC" = "xyes" ; then
    CFLAGS="-g -std=gnu99 -pedantic -fPIC\
  -Wall -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes\
  -Wwrite-strings -Wformat=2 -Wformat -Wformat-security\
- -fstack-protector --param ssp-buffer-size=4\
  -Wno-sign-compare -Wextra -D_FORTIFY_SOURCE=2\
  -Wcast-align -O2"
   fi
 fi
-echo LDFLAGS="$LDFLAGS" GCC="$GCC"
 if test "x$LDFLAGS" = "x" ; then
   if test "x$GCC" = "xyes" ; then
     LDFLAGS="-fPIE -pie -Wl,-z,relro,--as-needed"
   fi
 fi
-dnl Append EXTRA_CFLAGS to CFLAGS, if defined.
+# Append EXTRA_CFLAGS to CFLAGS, if defined.
 if test "x$EXTRA_CFLAGS" != "x" ; then
   CFLAGS="$CFLAGS $EXTRA_CFLAGS"
 fi
@@ -39,15 +45,47 @@ AC_PROG_LEX
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
+#AC_ARG_WITH(gnutls, AS_HELP_STRING([--with-gnutls[=PATH]], [compile with SSL support]), , with_gnutls="no")
+#if test $with_gnutls != "no"
+#then
+#  if test $with_gnutls != "yes"
+#  then
+#    export PKG_CONFIG_PATH="$with_gnutls:$with_gnutls/pkgconfig:$with_gnutls/lib/pkgconfig:$PKG_CONFIG_PATH"
+#    GNUTLS_BIN_DIR="$with_gnutls/bin/"
+#    AC_SUBST(GNUTLS_BIN_DIR)
+#  fi
+#  echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+#  PKG_CHECK_MODULES([GNUTLS], [gnutls >= 3.0.11], [AC_DEFINE([WITH_SSL], [1], [Use GNUTLS])])
+#  echo "GNUTLS_CFLAGS=$GNUTLS_CFLAGS"
+#  echo "GNUTLS_LIBS=$GNUTLS_LIBS"
+#  echo "GNUTLS_BIN_DIR=$GNUTLS_BIN_DIR"
+#fi
+
+AC_ARG_WITH(gnutls, AS_HELP_STRING([--without-gnutls], [disable GNUTLS SSL support]), with_gnutls=$withval, with_gnutls=yes)
+if test $with_gnutls != "no"
+then
+  AC_CHECK_LIB(gnutls, gnutls_global_init, [with_gnutls=yes; AC_SUBST(GNUTLS_LIBS, "-lgnutls") AC_DEFINE([WITH_GNUTLS], [1], [Use gnutls])], [with_gnutls=no; AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS or Metalink checksumming)])
+fi
+AM_CONDITIONAL([WITH_GNUTLS], [test $with_gnutls = "yes"])
+
+#AC_DEFINE([WITH_SSL], [1], [Use SSL])]
+#AM_CONDITIONAL([WITH_SSL], [test $with_gnutls = "yes"])
+
+AC_ARG_WITH(zlib, AS_HELP_STRING([--without-zlib], [disable gzip compression support]), with_zlib=$withval, with_zlib=yes)
+if test $with_zlib != "no"
+then
+  AC_CHECK_LIB(z, deflate, [with_zlib=yes; AC_SUBST(ZLIB_LIBS, "-lz") AC_DEFINE([WITH_ZLIB], [1], [Use zlib])], [with_zlib=no; AC_MSG_WARN(*** ZLIB was not found. You will not be able to use gzip compression)])
+fi
+AM_CONDITIONAL([WITH_ZLIB], [test $with_zlib = "yes"])
+
+
 # Checks for libraries.
-# FIXME: Replace `main' with a function in `-lgnutls':
-AC_CHECK_LIB([gnutls], [gnutls_global_init])
-# FIXME: Replace `main' with a function in `-lpthread':
+#AC_CHECK_LIB([gnutls], [gnutls_global_init])
 AC_CHECK_LIB([pthread], [pthread_attr_init])
-# FIXME: Replace `main' with a function in `-lrt':
 AC_CHECK_LIB([rt], [clock_gettime])
-# FIXME: Replace `main' with a function in `-lz':
-AC_CHECK_LIB([z], [inflate])
+#AC_CHECK_LIB([z], [deflate])
+
+AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $LIBS")
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h inttypes.h libintl.h locale.h netdb.h netinet/in.h stddef.h stdlib.h string.h strings.h sys/socket.h sys/time.h unistd.h])
@@ -74,9 +112,22 @@ AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([clock_gettime dup2 gettimeofday localtime_r memchr memmove memset mkdir munmap select setlocale socket strcasecmp strchr strdup strerror strncasecmp strndup strrchr strstr strlcpy])
+AC_CHECK_FUNCS([clock_gettime dup2 gettimeofday localtime_r memchr memmove memset mkdir munmap select setlocale socket strcasecmp strchr strdup strerror strncasecmp strndup strrchr strstr strlcpy futimens])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  tests/Makefile])
 AC_OUTPUT
+
+AC_MSG_NOTICE([Summary of build options:
+
+  Version:           ${PACKAGE_VERSION}
+  Host OS:           ${host_os}
+  Install prefix:    ${prefix}
+  Compiler:          ${CC}
+  CFlags:            ${CFLAGS}
+  LDFlags:           ${LDFLAGS}
+  Libs:              ${LIBS}
+  SSL support:       $with_gnutls
+  GZIP compression:  $with_zlib
+])

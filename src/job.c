@@ -36,9 +36,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-#include <gnutls/gnutls.h>
-#include <gnutls/crypto.h>
-
 #include "xalloc.h"
 #include "utils.h"
 #include "log.h"

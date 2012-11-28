@@ -186,7 +186,7 @@ HTTP_RESPONSE
 	*http_parse_response(char *buf) NONNULL_ALL,
 	*http_get_response_cb(HTTP_CONNECTION *conn, HTTP_REQUEST *req,
 								 int (*parse_body)(void *context, const char *data, size_t length),
-								 void *context) NONNULL(1,3,4),
+								 void *context) NONNULL(1) NONNULL2(3,4),
 //	*http_get_response_mem(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL_ALL,
 	*http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL(1),
 	*http_get_response_fd(HTTP_CONNECTION *conn, int fd) NONNULL_ALL;
