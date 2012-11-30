@@ -30,9 +30,14 @@
 #include <stdarg.h>
 
 #include "mget.h"
+#include "iri.h"
 
 struct config {
+	IRI
+		*base;
 	const char
+		*input_file,
+		*base_url,
 		*default_page,
 		*referer,
 		*directory_prefix,
@@ -61,6 +66,8 @@ struct config {
 		max_redirect,
 		num_threads;
 	char
+		force_css,
+		force_html,
 		adjust_extension,
 		save_headers,
 		clobber,

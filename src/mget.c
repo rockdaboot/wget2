@@ -244,6 +244,43 @@ static void host_add(const char *host)
 	vec_insert_sorted(hosts, host, strlen(host) + 1);
 }
 
+static JOB *add_url_to_queue(const char *url, IRI *base)
+{
+	IRI *iri;
+	JOB *job;
+
+	if (base) {
+		char sbuf[256];
+		buffer_t buf;
+
+		buffer_init(&buf, sbuf, sizeof(sbuf));
+		iri = iri_parse(iri_relative_to_absolute(base, url, strlen(url), &buf));
+		buffer_deinit(&buf);
+	} else {
+		// no base and no buf: just check URL for being an absolute URI
+		iri = iri_parse(iri_relative_to_absolute(NULL, url, strlen(url), NULL));
+	}
+
+	if (!iri) {
+		err_printf(_("Cannot resolve relative URI %s\n"), url);
+		return NULL;
+	}
+
+	job = queue_add(blacklist_add(iri));
+
+	if (job) {
+		if (!config.output_document)
+			job->local_filename = get_local_filename(job->iri);
+
+		if (config.recursive && !config.span_hosts) {
+			// only download content from hosts given on the command line
+			host_add(job->iri->host);
+		}
+	}
+
+	return job;
+}
+
 static void nop(int sig)
 {
 	if (sig == SIGTERM) {
@@ -255,7 +292,9 @@ static void nop(int sig)
 
 int main(int argc, const char *const *argv)
 {
-	int n, rc, maxfd, nfds;
+	int n, rc, maxfd, nfds, inputfd = -1;
+	size_t bufsize = 0;
+	char *buf = NULL;
 	pthread_attr_t attr;
 	fd_set rset;
 	struct sigaction sig_action;
@@ -382,17 +421,41 @@ int main(int argc, const char *const *argv)
 	n = init(argc, argv);
 
 	for (; n < argc; n++) {
-		JOB *job = queue_add(blacklist_add(iri_parse(argv[n])));
+		add_url_to_queue(argv[n], config.base);
+	}
 
-		if (job) {
-			if (!config.output_document)
-				job->local_filename = get_local_filename(job->iri);
-
-			if (config.recursive && !config.span_hosts) {
-				// only download content from hosts given on the command line
-				host_add(job->iri->host);
-			}
+	if (config.input_file) {
+		if (config.force_html) {
+			// read URLs from HTML file
+			html_parse_localfile(-1, config.input_file, config.base);
 		}
+		else if (config.force_css) {
+			// read URLs from CSS file
+			css_parse_localfile(-1, config.input_file, config.base);
+		}
+		else if (strcmp(config.input_file, "-")) {
+			int fd;
+			ssize_t len;
+
+			// read URLs from input file
+			if ((fd = open(config.input_file, O_RDONLY))) {
+				while ((len = fdgetline0(&buf, &bufsize, fd)) > 0) {
+					add_url_to_queue(buf, config.base);
+				}
+				close(fd);
+			} else
+				err_printf(_("Failed to open input file %s\n"), config.input_file);
+		} else {
+			if (isatty(STDIN_FILENO)) {
+				ssize_t len;
+
+				// read URLs from STDIN
+				while ((len = fdgetline0(&buf, &bufsize, STDIN_FILENO)) >= 0) {
+					add_url_to_queue(buf, config.base);
+				}
+			} else
+				inputfd = STDIN_FILENO;
+		} // else read later asynchronous and process each URL immediately
 	}
 
 	downloader = xcalloc(config.num_threads, sizeof(DOWNLOADER));
@@ -426,12 +489,17 @@ int main(int argc, const char *const *argv)
 		}
 	}
 
-	while (queue_not_empty()) {
+	while (!queue_empty() || inputfd != -1) {
 		FD_ZERO(&rset);
 		for (maxfd = n = 0; n < config.num_threads; n++) {
 			FD_SET(downloader[n].sockfd[0], &rset);
 			if (downloader[n].sockfd[0] > maxfd)
 				maxfd = downloader[n].sockfd[0];
+		}
+		if (inputfd != -1) {
+			FD_SET(inputfd, &rset);
+			if (inputfd > maxfd)
+				maxfd = inputfd;
 		}
 
 		// later, set timeout here
@@ -442,6 +510,21 @@ int main(int argc, const char *const *argv)
 				err_printf(_("Failed to select, error %d\n"), errno);
 			}
 			continue;
+		}
+
+		if (inputfd != -1 && FD_ISSET(inputfd, &rset)) {
+			ssize_t len;
+
+			while ((len = fdgetline0(&buf, &bufsize, inputfd)) > 0) {
+				JOB *job = add_url_to_queue(buf, config.base);
+				schedule_download(job, NULL);
+			}
+
+			// input closed, don't read from it any more
+			if (len == -1)
+				inputfd = -1;
+
+			nfds--;
 		}
 
 		for (n = 0; n < config.num_threads && nfds > 0 && !terminate; n++) {
@@ -592,6 +675,8 @@ int main(int argc, const char *const *argv)
 			}
 		}
 	}
+
+	xfree(buf);
 
 	// stop downloaders
 	for (n = 0; n < config.num_threads; n++) {
@@ -811,8 +896,6 @@ ready:
 struct html_context {
 	IRI
 		*base;
-	const char
-		*tag;
 	buffer_t
 		uri_buf;
 	int
@@ -897,12 +980,23 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 			for (len = strlen(val); len && isspace(val[len - 1]); len--)
 				;
 
-			if (len > 1 || (len == 1 && *val != '#')) {
-				info_printf("%02X %s %s=%s\n",flags,dir,attr,val);
-				// ignore e.g. href='#'
-				iri_relative_to_absolute(ctx->base, ctx->tag, val, len, &ctx->uri_buf);
-				info_printf("  %s -> %s\n", ctx->base->uri, ctx->uri_buf.data);
-				dprintf(ctx->sockfd, "add uri %s\n", ctx->uri_buf.data);
+			if (len > 1 || (len == 1 && *val != '#')) { // ignore e.g. href='#'
+				// log_printf("%02X %s %s=%s\n",flags,dir,attr,val);
+				if (iri_relative_to_absolute(ctx->base, val, len, &ctx->uri_buf)) {
+					info_printf("%.*s -> %s\n", (int)len, val, ctx->uri_buf.data);
+					if (ctx->sockfd >= 0) {
+						dprintf(ctx->sockfd, "add uri %s\n", ctx->uri_buf.data);
+					} else {
+						JOB *job;
+
+						if ((job = queue_add(blacklist_add(iri_parse(ctx->uri_buf.data))))) {
+							if (!config.output_document)
+								job->local_filename = get_local_filename(job->iri);
+						}
+					}
+				} else {
+					err_printf(_("Cannot resolve relative URI %.*s\n"), (int)len, val);
+				}
 			}
 		}
 	}
@@ -913,13 +1007,8 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 void html_parse(int sockfd, char *data, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
-	char tag_sbuf[1024];
 	char uri_sbuf[1024];
-	buffer_t tag;
 	struct html_context context = { .base = iri, .sockfd = sockfd };
-
-	buffer_init(&tag, tag_sbuf, sizeof(tag_sbuf));
-	context.tag = iri_get_connection_part(iri, &tag);
 
 	buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
@@ -929,19 +1018,13 @@ void html_parse(int sockfd, char *data, IRI *iri)
 		iri_free(&context.base);
 
 	buffer_deinit(&context.uri_buf);
-	buffer_deinit(&tag);
 }
 
 void html_parse_localfile(int sockfd, const char *fname, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
-	char tag_sbuf[1024];
 	char uri_sbuf[1024];
-	buffer_t tag;
 	struct html_context context = { .base = iri, .sockfd = sockfd };
-
-	buffer_init(&tag, tag_sbuf, sizeof(tag_sbuf));
-	context.tag = iri_get_connection_part(iri, &tag);
 
 	buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
@@ -951,14 +1034,11 @@ void html_parse_localfile(int sockfd, const char *fname, IRI *iri)
 		iri_free(&context.base);
 
 	buffer_deinit(&context.uri_buf);
-	buffer_deinit(&tag);
 }
 
 struct css_context {
 	IRI
-		*iri;
-	const char
-		*tag;
+		*base;
 	buffer_t
 		uri_buf;
 	int
@@ -967,12 +1047,24 @@ struct css_context {
 
 static void _css_parse(void *context, const char *url, size_t len)
 {
-	struct html_context *ctx = context;
+	struct css_context *ctx = context;
 
 	if (len > 1 || (len == 1 && *url != '#')) {
 		// ignore e.g. href='#'
-		iri_relative_to_absolute(ctx->base, ctx->tag, url, len, &ctx->uri_buf);
-		dprintf(ctx->sockfd, "add uri %s\n", ctx->uri_buf.data);
+		if (iri_relative_to_absolute(ctx->base, url, len, &ctx->uri_buf)) {
+			if (ctx->sockfd >= 0) {
+				dprintf(ctx->sockfd, "add uri %s\n", ctx->uri_buf.data);
+			} else {
+				JOB *job;
+
+				if ((job = queue_add(blacklist_add(iri_parse(ctx->uri_buf.data))))) {
+					if (!config.output_document)
+						job->local_filename = get_local_filename(job->iri);
+				}
+			}
+		} else {
+			err_printf(_("Cannot resolve relative URI %.*s\n"), (int)len, url);
+		}
 	}
 	// add_uri(ctx->sockfd, ctx->iri, ctx->tag, url, len);
 }
@@ -980,39 +1072,27 @@ static void _css_parse(void *context, const char *url, size_t len)
 void css_parse(int sockfd, char *data, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
-	char tag_sbuf[1024];
 	char uri_buf[1024];
-	buffer_t tag;
-	struct css_context context = { .iri = iri, .sockfd = sockfd };
-
-	buffer_init(&tag, tag_sbuf, sizeof(tag_sbuf));
-	context.tag = iri_get_connection_part(iri, &tag);
+	struct css_context context = { .base = iri, .sockfd = sockfd };
 
 	buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
 
 	css_parse_buffer(data, _css_parse, &context);
 
 	buffer_deinit(&context.uri_buf);
-	buffer_deinit(&tag);
 }
 
 void css_parse_localfile(int sockfd, const char *fname, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
-	char tag_sbuf[1024];
 	char uri_buf[1024];
-	buffer_t tag;
-	struct css_context context = { .iri = iri, .sockfd = sockfd };
-
-	buffer_init(&tag, tag_sbuf, sizeof(tag_sbuf));
-	context.tag = iri_get_connection_part(iri, &tag);
+	struct css_context context = { .base = iri, .sockfd = sockfd };
 
 	buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
 
 	css_parse_file(fname, _css_parse, &context);
 
 	buffer_deinit(&context.uri_buf);
-	buffer_deinit(&tag);
 }
 
 static long long NONNULL_ALL get_file_size(const char *fname)
@@ -1360,16 +1440,10 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			break; // 302 with Metalink information
 
 		if (resp->location) {
-			char tag_sbuf[1024];
-			buffer_t tag_buf;
-			const char *tag;
-
 			cookie_normalize_cookies(use_iri, resp->cookies);
 			cookie_store_cookies(resp->cookies);
 
-			tag = iri_get_connection_part(use_iri, buffer_init(&tag_buf, tag_sbuf, sizeof(tag_sbuf)));
-			iri_relative_to_absolute(use_iri, tag, resp->location, strlen(resp->location), &uri_buf);
-			buffer_deinit(&tag_buf);
+			iri_relative_to_absolute(use_iri, resp->location, strlen(resp->location), &uri_buf);
 
 			dprintf(downloader->sockfd[1], "add uri %s\n", uri_buf.data);
 //			location = resp->location;

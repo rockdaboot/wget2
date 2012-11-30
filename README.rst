@@ -88,7 +88,7 @@ Requirements
 The following packages are needed to build Mget:
 
 * libz >= 1.2.3
-* libgnutls >= 2.	4.2
+* libgnutls >= 2.4.2
 * flex >= 2.5.35
 
 The versions are recommended, but older version like on OpenBSD 5.0

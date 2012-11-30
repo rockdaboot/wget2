@@ -52,7 +52,8 @@ typedef struct {
 		*port,
 		*path, // unescaped
 		*query, // unescaped
-		*fragment; // unescaped
+		*fragment, // unescaped
+		*connection_part; // helper, e.g. http://www.example.com:8080
 } IRI;
 
 void
@@ -67,11 +68,10 @@ int
 	iri_isunreserved_path(char c) CONST,
 	iri_compare(IRI *iri1, IRI *iri2) PURE NONNULL_ALL;
 IRI
-	*iri_parse(const char *s) MALLOC NONNULL_ALL;
-char
-	*iri_get_connection_part(IRI *iri, buffer_t *buf) NONNULL_ALL,
-	*iri_relative_to_absolute(IRI *base, const char *tag, const char *val, size_t len, buffer_t *buf) NONNULL_ALL;
+	*iri_parse(const char *s) MALLOC;
 const char
+	*iri_get_connection_part(IRI *iri),
+	*iri_relative_to_absolute(IRI *base, const char *val, size_t len, buffer_t *buf),
 	*iri_escape(const char *src, buffer_t *buf) NONNULL_ALL,
 	*iri_escape_path(const char *src, buffer_t *buf) NONNULL_ALL,
 	*iri_escape_query(const char *src, buffer_t *buf) NONNULL_ALL,

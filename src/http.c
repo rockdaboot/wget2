@@ -504,7 +504,7 @@ static time_t NONNULL_ALL parse_rfc1123_date(const char *s)
 	else if (sscanf(s, " %*[a-zA-Z], %2d-%3s-%4d %2d:%2d:%2d", &day, mname, &year, &hour, &min, &sec) >= 6) {
 		// RFC 850 / 1036 or Netscape: Wednesday, 09-Jun-21 10:18:14 or Wed, 09-Jun-2021 10:18:14
 	}
-	else if (sscanf(s, " %*[a-zA-Z], %3s %2d %2d:%2d:%2d %4d", mname, &day, &hour, &min, &sec, &year) >= 6) {
+	else if (sscanf(s, " %*[a-zA-Z] %3s %2d %2d:%2d:%2d %4d", mname, &day, &hour, &min, &sec, &year) >= 6) {
 		// ANSI C's asctime(): Wed Jun 09 10:18:14 2021
 	} else {
 		err_printf(_("Failed to parse date '%s'\n"), s);

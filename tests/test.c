@@ -666,20 +666,15 @@ static void test_iri_relative_to_absolute(void)
 #undef R1
 	};
 	unsigned it;
-	char tag_buf_static[16];
-	buffer_t *tag_buf = buffer_init(NULL, tag_buf_static, sizeof(tag_buf_static));
 	char uri_buf_static[32]; // use a size that forces allocation in some cases
 	buffer_t *uri_buf = 	buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
-	const char *tag;
 	IRI *base;
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
 
 		base = iri_parse(t->base);
-		tag = iri_get_connection_part(base, tag_buf);
-
-		iri_relative_to_absolute(base, tag, t->relative, strlen(t->relative), uri_buf);
+		iri_relative_to_absolute(base, t->relative, strlen(t->relative), uri_buf);
 
 		if (!strcmp(uri_buf->data, t->result))
 			ok++;
@@ -692,7 +687,6 @@ static void test_iri_relative_to_absolute(void)
 	}
 
 	buffer_free(&uri_buf);
-	buffer_free(&tag_buf);
 }
 
 static void test_iri_compare(void)
@@ -805,9 +799,9 @@ static void test_cookies(void)
 			1, 1, 1, 0, 0, 1,
 			1
 		},
-		{	// allowed cookie
+		{	// allowed cookie ANSI C's asctime format
 			"www.example.com",
-			"ID=65=abcd; expires=Tue, 07 May 2013 07:48:53 GMT; path=/; domain=.example.com",
+			"ID=65=abcd; expires=Tue May 07 07:48:53 2013; path=/; domain=.example.com",
 			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 1, 1, 0, 0, 0,
 			1

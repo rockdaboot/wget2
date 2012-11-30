@@ -44,6 +44,7 @@
 
 #include "xalloc.h"
 #include "log.h"
+#include "buffer.h"
 #include "css_tokenizer.h"
 #include "css.h"
 
@@ -120,26 +121,42 @@ void css_parse_file(
 	void(*callback)(void *user_ctx, const char *url, size_t len),
 	void *user_ctx)
 {
-	struct stat st;
+	int fd;
 
-	if (stat(fname, &st) == 0) {
-		int fd;
-
+	if (strcmp(fname,"-")) {
 		if ((fd = open(fname, O_RDONLY)) != -1) {
-			//			char *buf=xmalloc(st.st_size+1);
-			//			size_t nread=read(fd,buf,st.st_size);
+			struct stat st;
+			if (fstat(fd, &st) == 0) {
+				//			char *buf=xmalloc(st.st_size+1);
+				//			size_t nread=read(fd,buf,st.st_size);
+				size_t nread = st.st_size;
+				char *buf = mmap(NULL, nread, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
 
-			size_t nread = st.st_size;
-			char *buf = mmap(NULL, nread, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+				if (nread > 0) {
+					buf[nread] = 0; // PROT_WRITE allows this write, MAP_PRIVATE prevents changes in underlying file system
+					css_parse_buffer(buf, callback, user_ctx);
+				}
 
-			if (nread > 0) {
-				buf[nread] = 0; // PROT_WRITE allows this write, MAP_PRIVATE prevents changes in underlying file system
-				css_parse_buffer(buf, callback, user_ctx);
+				munmap(buf, nread);
+				//			xfree(buf);
 			}
-
-			munmap(buf, nread);
 			close(fd);
-			//			xfree(buf);
+		} else
+			err_printf(_("Failed to open %s\n"), fname);
+	} else {
+		// read data from STDIN.
+		// maybe should use yy_scan_bytes instead of buffering into memory.
+		char tmp[4096];
+		ssize_t nbytes;
+		buffer_t *buf = buffer_alloc(4096);
+
+		while ((nbytes = read(STDIN_FILENO, tmp, sizeof(tmp))) > 0) {
+			buffer_memcat(buf, tmp, nbytes);
 		}
+
+		if (buf->length)
+			css_parse_buffer(buf->data, callback, user_ctx);
+
+		buffer_free(&buf);
 	}
 }

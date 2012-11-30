@@ -100,12 +100,16 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"  -d  --debug             Print debugging messages. (default: off)\n"
 		"  -o  --output-file       File where messages are printed to, '-' for STDOUT.\n"
 		"  -a  --append-output     File where messages are appended to, '-' for STDOUT.\n"
+		"  -i  --input-file        File where URLs are read from, - for STDIN.\n"
+		"  -F  --force-html        Treat input file as HTML. (default: off)\n"
+		"      --force-css         Treat input file as CSS. (default: off)\n (NEW!)"
+		"  -B  --base-url          Base for relative URLs read from input-file or from command line\n"
 		"\n");
 	puts(
 		"Download:\n"
 		"  -r  --recursive         Recursive download. (default: off)\n"
 		"  -H  --span-hosts        Span hosts that were not given on the command line. (default: off)\n"
-		"      --num-threads       Max. concurrent download threads. (default: 5)\n"
+		"      --num-threads       Max. concurrent download threads. (default: 5) (NEW!)\n"
 		"      --max-redirect      Max. number of redirections to follow. (default: 20)\n"
 		"  -T  --timeout           General network timeout in seconds.\n"
 		"      --dns-timeout       DNS lookup timeout in seconds.\n"
@@ -329,6 +333,7 @@ static const struct option options[] = {
 	// leave the entries in alphabetical order of 'long_name' !
 	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E'},
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a'},
+	{ "base-url", &config.base_url, parse_string, 1, 'B'},
 	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0},
 	{ "ca-directory", &config.ca_directory, parse_string, 1, 0},
 	{ "cache", &config.cache, parse_bool, 0, 0},
@@ -349,7 +354,9 @@ static const struct option options[] = {
 	{ "dns-cache", &config.dns_caching, parse_bool, 0, 0},
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0},
 	{ "egd-file", &config.egd_file, parse_string, 1, 0},
+	{ "force-css", &config.force_css, parse_bool, 0, 0},
 	{ "force-directories", &config.force_directories, parse_bool, 0, 'x'},
+	{ "force-html", &config.force_html, parse_bool, 0, 'F'},
 	{ "help", NULL, print_help, 0, 'h'},
 	{ "host-directories", &config.host_directories, parse_bool, 0, 0},
 	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0}, // obsolete, replaced by --adjust-extension
@@ -358,6 +365,7 @@ static const struct option options[] = {
 	{ "https-proxy", &config.https_proxy, parse_string, 1, 0},
 	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4'},
 	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6'},
+	{ "input-file", &config.input_file, parse_string, 1, 'i'},
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0},
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0},
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0},
@@ -803,6 +811,9 @@ int init(int argc, const char *const *argv)
 	if (config.load_cookies)
 		cookie_load(config.load_cookies);
 
+	if (config.base_url)
+		config.base = iri_parse(config.base_url);
+
 	// set module specific options
 	tcp_set_debug(config.debug);
 	tcp_set_timeout(NULL, config.read_timeout);
@@ -844,6 +855,10 @@ void deinit(void)
 	xfree(config.random_file);
 	xfree(config.secure_protocol);
 	xfree(config.default_page);
+	xfree(config.base_url);
+	xfree(config.input_file);
+
+	iri_free(&config.base);
 
 	http_set_http_proxy(NULL);
 	http_set_https_proxy(NULL);

@@ -105,6 +105,7 @@ int iri_isunreserved_path(char c)
 void iri_free(IRI **iri)
 {
 	if (iri && *iri) {
+		xfree((*iri)->connection_part);
 		xfree(*iri);
 	}
 }
@@ -146,12 +147,16 @@ IRI *iri_parse(const char *s_uri)
 	char *p, *s, *authority, c;
 	size_t slen, it;
 
+	if (!s_uri)
+		return NULL;
+
 	/*
 		URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
 		hier-part   = "//" authority path-abempty / path-absolute / path-rootless / path-empty
 		scheme      =  ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
 	 */
 	while (isspace(*s_uri)) s_uri++;
+	if (!*s_uri) return NULL;
 
 	// just use one block of memory for all parsed URI parts
 	slen = strlen(s_uri);
@@ -282,37 +287,37 @@ IRI *iri_parse(const char *s_uri)
 
 	return iri;
 }
-/*
-char *iri_get_connection_part(IRI *iri, char *tag, size_t tagsize)
+
+static char *_iri_build_connection_part(IRI *iri)
 {
+	char *tag;
 	size_t len;
 
 	if (iri->port) {
 		len = strlen(iri->scheme) + strlen(iri->host) + strlen(iri->port) + 4 + 1;
-		if (len > tagsize)
-			tag = xmalloc(len);
+		tag = xmalloc(len);
 
 		sprintf(tag, "%s://%s:%s", iri->scheme, iri->host, iri->port);
 	} else {
 		len = strlen(iri->scheme) + strlen(iri->host) + 3 + 1;
-		if (len > tagsize)
-			tag = xmalloc(len);
+		tag = xmalloc(len);
 
 		sprintf(tag, "%s://%s", iri->scheme, iri->host);
 	}
 
 	return tag;
 }
-*/
-char *iri_get_connection_part(IRI *iri, buffer_t *buf)
+
+const char *iri_get_connection_part(IRI *iri)
 {
-	if (iri->port) {
-		buffer_printf2(buf, "%s://%s:%s", iri->scheme, iri->host, iri->port);
-	} else {
-		buffer_printf2(buf, "%s://%s", iri->scheme, iri->host);
+	if (iri) {
+		if (!iri->connection_part)
+			iri->connection_part = _iri_build_connection_part(iri);
+
+		return iri->connection_part;
 	}
 
-	return buf->data;
+	return NULL;
 }
 
 // normalize /../ and remove /./
@@ -390,45 +395,53 @@ static size_t NONNULL_ALL _normalize_path(char *path)
 // create an absolute URI from a base + relative URI
 
 //char *iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_t len, char *dst, size_t dst_size)
-char *iri_relative_to_absolute(IRI *base, const char *tag, const char *val, size_t len, buffer_t *buf)
+const char *iri_relative_to_absolute(IRI *base, const char *val, size_t len, buffer_t *buf)
 {
 	log_printf("*url = %.*s\n", (int)len, val);
 
 	if (*val == '/') {
-		char path[len + 1];
+		if (base) {
+			char path[len + 1];
 
-		strlcpy(path, val, len + 1);
+			strlcpy(path, val, len + 1);
 
-		if (len >= 2 && val[1] == '/') {
-			char *p;
+			if (len >= 2 && val[1] == '/') {
+				char *p;
 
-			// absolute URI without scheme: //authority/path...
-			if ((p = strchr(path + 2, '/')))
-				_normalize_path(p + 1);
+				// absolute URI without scheme: //authority/path...
+				if ((p = strchr(path + 2, '/')))
+					_normalize_path(p + 1);
 
-			buffer_strcpy(buf, base->scheme);
-			buffer_strcat(buf, ":");
-			buffer_strcat(buf, path);
-			log_printf("*1 %s\n", buf->data);
-		} else {
-			// absolute path
-			_normalize_path(path);
+				buffer_strcpy(buf, base->scheme);
+				buffer_strcat(buf, ":");
+				buffer_strcat(buf, path);
+				log_printf("*1 %s\n", buf->data);
+			} else {
+				// absolute path
+				_normalize_path(path);
 
-			buffer_strcpy(buf, tag);
-			buffer_strcat(buf, "/");
-			buffer_strcat(buf, path);
-			log_printf("*2 %s\n", buf->data);
-		}
+				buffer_strcpy(buf, iri_get_connection_part(base));
+				buffer_strcat(buf, "/");
+				buffer_strcat(buf, path);
+				log_printf("*2 %s\n", buf->data);
+			}
+		} else
+			return NULL;
 	} else {
 		// see if URI begins with a scheme:
 		if (memchr(val, ':', len)) {
 			// absolute URI
-			buffer_memcpy(buf, val, len);
-			log_printf("*3 %s\n", buf->data);
-		} else {
+			if (buf) {
+				buffer_memcpy(buf, val, len);
+				log_printf("*3 %s\n", buf->data);
+			} else {
+				log_printf("*3 %s\n", val);
+				return val;
+			}
+		} else if (base) {
 			// relative path
 			const char *lastsep = base->path ? strrchr(base->path, '/') : NULL;
-			buffer_strcpy(buf, tag);
+			buffer_strcpy(buf, iri_get_connection_part(base));
 			buffer_strcat(buf, "/");
 
 			size_t tmp_len = buf->length;
@@ -442,7 +455,8 @@ char *iri_relative_to_absolute(IRI *base, const char *tag, const char *val, size
 			buf->length = _normalize_path(buf->data + tmp_len) + tmp_len;
 
 			log_printf("*4 %s %zu\n", buf->data, buf->length);
-		}
+		} else
+			return NULL;
 	}
 
 	return buf->data;

@@ -50,7 +50,7 @@ targets: css_tokenizer.c .depend $(TARGETS)
 	@echo -n
 
 analyze:
-	clang --analyze $(SOURCES)
+	clang --analyze $(CFLAGS) $(DEFS) $(CPPFLAGS) -I. -I$(srcdir) -I.. $(SOURCES)
 
 clean:
 	@echo Removing objects and binaries...

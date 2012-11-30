@@ -466,9 +466,9 @@ int queue_get(JOB **job_out, PART **part_out)
 	return list_browse(queue, (int(*)(void *, void *))find_free_job, &context);
 }
 
-int queue_not_empty(void)
+int queue_empty(void)
 {
-	return queue ? 1 : 0;
+	return !queue;
 }
 
 // did I say, that I like nested function instead using contexts !?
