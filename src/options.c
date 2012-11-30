@@ -148,6 +148,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --referer           Include Referer: url in HTTP requets. (default: off)\n"
 		"  -E  --adjust-extension  Append extension to saved file (.html or .css). (default: off)\n"
 		"      --default_page      Default file name. (default: index.html)\n"
+		"  -Q  --quota             Download quota, 0 = no quota. (default: 0)\n"
 		"\n");
 	puts(
 		"HTTPS (SSL/TLS) related options:\n"
@@ -187,6 +188,38 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 static int parse_integer(option_t opt, UNUSED const char *const *argv, const char *val)
 {
 	*((int *)opt->var) = val ? atoi(val) : 0;
+
+	return 0;
+}
+
+static int parse_numbytes(option_t opt, UNUSED const char *const *argv, const char *val)
+{
+	char modifier = 0;
+	double num = 0;
+
+	if (val) {
+		if (!strcasecmp(val, "INF") || !strcasecmp(val, "INFINITY")) {
+			*((long long *)opt->var) = 0;
+			return 0;
+		}
+
+		if (sscanf(val, " %lf%c", &num, &modifier) >= 1) {
+			if (modifier) {
+				switch (tolower(modifier)) {
+				case 'k': num *= 1024; break;
+				case 'm': num *= 1024*1024; break;
+				case 'g': num *= 1024*1024*1024; break;
+				case 't': num *= 1024*1024*1024*1024LL; break;
+				default:
+					err_printf_exit(_("Invalid byte specifier: %s\n"), val);
+				}
+			}
+		} else
+			err_printf_exit(_("Invalid byte specifier: %s\n"), val);
+	}
+
+	*((long long *)opt->var) = (long long)num;
+	info_printf("num = %lld\n",(long long)num);
 
 	return 0;
 }
@@ -378,6 +411,7 @@ static const struct option options[] = {
 	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0},
 	{ "protocol-directories", &config.protocol_directories, parse_bool, 0, 0},
 	{ "quiet", &config.quiet, parse_bool, 0, 'q'},
+	{ "quota", &config.quota, parse_numbytes, 1, 'Q'},
 	{ "random-file", &config.random_file, parse_string, 1, 0},
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0},
 	{ "recursive", &config.recursive, parse_bool, 0, 'r'},

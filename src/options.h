@@ -57,6 +57,8 @@ struct config {
 		*private_key,
 		*random_file,
 		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
+	long long
+		quota;
 	int
 		preferred_family,
 		cut_directories,
