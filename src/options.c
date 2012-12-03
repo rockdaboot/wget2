@@ -194,10 +194,10 @@ static int parse_integer(option_t opt, UNUSED const char *const *argv, const cha
 
 static int parse_numbytes(option_t opt, UNUSED const char *const *argv, const char *val)
 {
-	char modifier = 0;
-	double num = 0;
-
 	if (val) {
+		char modifier = 0, error = 0;
+		double num = 0;
+
 		if (!strcasecmp(val, "INF") || !strcasecmp(val, "INFINITY")) {
 			*((long long *)opt->var) = 0;
 			return 0;
@@ -210,16 +210,17 @@ static int parse_numbytes(option_t opt, UNUSED const char *const *argv, const ch
 				case 'm': num *= 1024*1024; break;
 				case 'g': num *= 1024*1024*1024; break;
 				case 't': num *= 1024*1024*1024*1024LL; break;
-				default:
-					err_printf_exit(_("Invalid byte specifier: %s\n"), val);
+				default: error = 1;
 				}
 			}
 		} else
+			error = 1;
+
+		if (!error)
+			*((long long *)opt->var) = (long long)num;
+		else
 			err_printf_exit(_("Invalid byte specifier: %s\n"), val);
 	}
-
-	*((long long *)opt->var) = (long long)num;
-	info_printf("num = %lld\n",(long long)num);
 
 	return 0;
 }

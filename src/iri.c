@@ -455,7 +455,9 @@ const char *iri_relative_to_absolute(IRI *base, const char *val, size_t len, buf
 			buf->length = _normalize_path(buf->data + tmp_len) + tmp_len;
 
 			log_printf("*4 %s %zu\n", buf->data, buf->length);
-		} else
+		} else if (val[len] == 0)
+			return val;
+		else
 			return NULL;
 	}
 

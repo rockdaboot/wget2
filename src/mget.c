@@ -98,6 +98,8 @@ static void
 	*downloader_thread(void *p);
 VECTOR
 	*hosts;
+size_t
+	quota;
 static int
 	terminate;
 
@@ -211,6 +213,9 @@ static const char * NONNULL_ALL get_local_filename(IRI *iri)
 
 static int schedule_download(JOB *job, PART *part)
 {
+	if (config.quota && quota >= config.quota)
+		return 0;
+
 	if (job) {
 		static int offset;
 		int n;
@@ -242,6 +247,22 @@ static void host_add(const char *host)
 		hosts = vec_create(4, 4, (int(*)(const void *, const void *))strcmp);
 
 	vec_insert_sorted(hosts, host, strlen(host) + 1);
+}
+
+// Since quota may change at any time in a threaded environment,
+// we have to modify and check the quota in one (protected) step.
+static size_t quota_modify_read(size_t nbytes)
+{
+	static pthread_mutex_t
+		mutex = PTHREAD_MUTEX_INITIALIZER;
+	size_t old_quota;
+
+	pthread_mutex_lock(&mutex);
+	old_quota = quota;
+	quota += nbytes;
+	pthread_mutex_unlock(&mutex);
+
+	return old_quota;
 }
 
 static JOB *add_url_to_queue(const char *url, IRI *base)
@@ -490,6 +511,11 @@ int main(int argc, const char *const *argv)
 	}
 
 	while (!queue_empty() || inputfd != -1) {
+		if (config.quota && quota >= config.quota) {
+			info_printf(_("Quota of %llu bytes reached - stopping.\n"), config.quota);
+			break;
+		}
+
 		FD_ZERO(&rset);
 		for (maxfd = n = 0; n < config.num_threads; n++) {
 			FD_SET(downloader[n].sockfd[0], &rset);
@@ -599,8 +625,10 @@ int main(int argc, const char *const *argv)
 							}
 						}
 
-						if (queue_get(&downloader[n].job, &downloader[n].part))
-							dprintf(downloader[n].sockfd[0], "go\n");
+						if (config.quota && config.quota > quota) {
+							if (queue_get(&downloader[n].job, &downloader[n].part))
+								dprintf(downloader[n].sockfd[0], "go\n");
+						}
 					} else if (!strncmp(buf, "chunk ", 6)) {
 						if (!strncasecmp(buf + 6, "mirror ", 7)) {
 							MIRROR mirror;
@@ -842,6 +870,8 @@ void *downloader_thread(void *p)
 					}
 
 					if (resp->code == 200) {
+						save_file(resp, config.output_document ? config.output_document : job->local_filename);
+
 						if (config.recursive) {
 							if (resp->content_type) {
 								if (!strcasecmp(resp->content_type, "text/html")) {
@@ -853,7 +883,6 @@ void *downloader_thread(void *p)
 								}
 							}
 						}
-						save_file(resp, config.output_document ? config.output_document : job->local_filename);
 					}
 					else if (resp->code == 206 && config.continue_download) { // partial content
 						append_file(resp, config.output_document ? config.output_document : job->local_filename);
@@ -1141,6 +1170,11 @@ static void NONNULL((1)) _save_file(HTTP_RESPONSE *resp, const char *fname, int 
 	size_t fname_length = 0;
 
 	if (config.spider || !fname)
+		return;
+
+	// - optimistic approach expects data being written without error
+	// - to be Wget compatible: quota_modify_read() returns old quota value
+	if (config.quota && quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length) >= config.quota)
 		return;
 
 	if (fname == config.output_document) {
