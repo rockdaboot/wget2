@@ -74,6 +74,8 @@ static int
 	debug,
 	family = AF_UNSPEC,
 	preferred_family;
+static struct addrinfo
+	*bind_addrinfo;
 static pthread_mutex_t
 	dns_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -114,12 +116,12 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 			.ai_socktype = SOCK_STREAM,
 #if defined(AI_ADDRCONFIG)
 	#if defined(AI_NUMERICSERV)
-			.ai_flags = AI_ADDRCONFIG | (isdigit(*port) ? AI_NUMERICSERV : 0)
+			.ai_flags = AI_ADDRCONFIG | (port && isdigit(*port) ? AI_NUMERICSERV : 0)
 	#else
 			.ai_flags = AI_ADDRCONFIG
 	#endif
 #elif defined(AI_NUMERICSERV)
-			.ai_flags = (isdigit(*port) ? AI_NUMERICSERV : 0)
+			.ai_flags = (port && isdigit(*port) ? AI_NUMERICSERV : 0)
 #endif
 		};
 		struct addrinfo *addrinfo = NULL, *ai;
@@ -129,7 +131,7 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 		// to make the function work on old systems
 		char portbuf[16];
 
-		if (!isdigit(port)) {
+		if (port && !isdigit(port)) {
 			if (!strcasecmp(port, "http"))
 				port = "80";
 			else if (!strcasecmp(port, "https"))
@@ -147,7 +149,10 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 		}
 #endif
 
-		log_printf("resolving %s:%s...\n", host, port);
+		if (port)
+			log_printf("resolving %s:%s...\n", host, port);
+		else
+			log_printf("resolving %s...\n", host);
 
 		// get the IP address for the server
 		for (tries = 0; tries < 3; tries++) {
@@ -161,7 +166,10 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 		}
 
 		if (rc) {
-			err_printf(_("Failed to resolve %s:%s (%s)\n"), host, port, gai_strerror(rc));
+			if (port)
+				err_printf(_("Failed to resolve %s:%s (%s)\n"), host, port, gai_strerror(rc));
+			else
+				err_printf(_("Failed to resolve %s (%s)\n"), host, gai_strerror(rc));
 			return NULL;
 		}
 
@@ -216,14 +224,14 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 		if (dns_cache) {
 			// insert addrinfo into dns cache
 			size_t hostlen = strlen(host) + 1;
-			size_t portlen = strlen(port) + 1;
+			size_t portlen = port ? strlen(port) + 1 : 1;
 			struct ADDR_ENTRY *entryp = xmalloc(sizeof(struct ADDR_ENTRY) + hostlen + portlen);
 
 			entryp->host = ((char *)entryp) + sizeof(struct ADDR_ENTRY);
 			entryp->port = ((char *)entryp) + sizeof(struct ADDR_ENTRY) + hostlen;
 			entryp->addrinfo = addrinfo;
 			strcpy((char *)entryp->host, host); // ugly cast, but semantically ok
-			strcpy((char *)entryp->port, port); // ugly cast, but semantically ok
+			strcpy((char *)entryp->port, port ? port : ""); // ugly cast, but semantically ok
 
 			pthread_mutex_lock(&dns_mutex);
 			if (vec_find(dns_cache, entryp) == -1)
@@ -298,6 +306,44 @@ void tcp_set_timeout(tcp_t tcp, int _timeout)
 		timeout = _timeout;
 }
 
+void tcp_set_bind_address(const char *bind_address)
+{
+	if (bind_addrinfo) {
+		freeaddrinfo(bind_addrinfo);
+		bind_addrinfo = NULL;
+	}
+
+	if (bind_address) {
+		char copy[strlen(bind_address) + 1], *s = copy;
+		const char *host;
+
+		strcpy(copy, bind_address);
+
+		if (*s == '[') {
+			// IPv6 address within brackets
+			char *p = strrchr(s, ']');
+			if (p) {
+				host = s + 1;
+				s = p + 1;
+			} else {
+				// something is broken
+				host = s + 1;
+				while (*s) s++;
+			}
+		} else {
+			host = s;
+			while (*s && *s != ':')
+				s++;
+		}
+		if (*s == ':') {
+			*s = 0;
+			bind_addrinfo = tcp_resolve(host, s + 1); // bind to specified port
+		} else {
+			bind_addrinfo = tcp_resolve(host, NULL); // bind to any host
+		}
+	}
+}
+
 tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 {
 	tcp_t tcp = NULL;
@@ -322,6 +368,21 @@ tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 		on = 1;
 		if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) == -1)
 			err_printf(_("Failed to set socket option NODELAY\n"));
+
+		if (bind_addrinfo) {
+			if (debug) {
+				if ((rc = getnameinfo(bind_addrinfo->ai_addr, bind_addrinfo->ai_addrlen, adr, sizeof(adr), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+					log_printf("binding to %s:%s...\n", adr, port);
+				else
+					log_printf("binding to ???:%s (%s)...\n", port, gai_strerror(rc));
+			}
+
+			if (bind(sockfd, bind_addrinfo->ai_addr, bind_addrinfo->ai_addrlen) != 0) {
+				err_printf(_("Failed to bind (%d)\n"), errno);
+				close(sockfd);
+				return NULL;
+			}
+		}
 
 		if (connect(sockfd, addrinfo->ai_addr, addrinfo->ai_addrlen) < 0 &&
 			errno != EINPROGRESS)

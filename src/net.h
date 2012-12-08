@@ -45,9 +45,10 @@ void
 	tcp_set_dns_caching(int caching),
 	tcp_set_debug(int debug),
 	tcp_set_family(int family),
-	tcp_set_preferred_family(int family);
+	tcp_set_preferred_family(int family),
+	tcp_set_bind_address(const char *bind_address);
 struct addrinfo
-	*tcp_resolve(const char *restrict name, const char *restrict port) NONNULL_ALL;
+	*tcp_resolve(const char *restrict name, const char *restrict port) NONNULL((1));
 tcp_t
 	tcp_connect(struct addrinfo *addrinfo, const char *hostname) NONNULL((1));
 ssize_t

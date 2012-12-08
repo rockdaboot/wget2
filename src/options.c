@@ -132,6 +132,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --prefer-family     Prefer IPv4 or IPv6. (default: none)\n"
 		"      --cache             Enabled using of server cache. (default: on)\n"
 		"      --clobber           Enable file clobbering. (default: on)\n"
+		"      --bind-address      Bind to sockets to local address. (default: automatic)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -368,6 +369,7 @@ static const struct option options[] = {
 	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E'},
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a'},
 	{ "base-url", &config.base_url, parse_string, 1, 'B'},
+	{ "bind-address", &config.bind_address, parse_string, 1, 0},
 	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0},
 	{ "ca-directory", &config.ca_directory, parse_string, 1, 0},
 	{ "cache", &config.cache, parse_bool, 0, 0},
@@ -855,6 +857,7 @@ int init(int argc, const char *const *argv)
 	tcp_set_connect_timeout(config.connect_timeout);
 	tcp_set_dns_timeout(config.dns_timeout);
 	tcp_set_dns_caching(config.dns_caching);
+	tcp_set_bind_address(config.bind_address);
 	if (config.inet4_only)
 		tcp_set_family(AF_INET);
 	else if (config.inet6_only)
@@ -874,6 +877,7 @@ int init(int argc, const char *const *argv)
 void deinit(void)
 {
 	tcp_set_dns_caching(0); // frees DNS cache
+	tcp_set_bind_address(NULL); // free bind address
 
 	xfree(config.cookie_suffixes);
 	xfree(config.load_cookies);

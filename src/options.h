@@ -36,6 +36,7 @@ struct config {
 	IRI
 		*base;
 	const char
+		*bind_address,
 		*input_file,
 		*base_url,
 		*default_page,

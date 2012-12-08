@@ -248,11 +248,12 @@ IRI *iri_parse(const char *s_uri)
 		if (*s == '[') {
 			p = strrchr(s, ']');
 			if (p) {
-				iri->host = s;
+				iri->host = s + 1;
+				*p = 0;
 				s = p + 1;
 			} else {
 				// something is broken
-				iri->host = s;
+				iri->host = s + 1;
 				while (*s) s++;
 			}
 		} else {
