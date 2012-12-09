@@ -265,7 +265,7 @@ static size_t quota_modify_read(size_t nbytes)
 	return old_quota;
 }
 
-static JOB *add_url_to_queue(const char *url, IRI *base)
+static JOB *add_url_to_queue(const char *url, IRI *base, const char *encoding)
 {
 	IRI *iri;
 	JOB *job;
@@ -275,11 +275,11 @@ static JOB *add_url_to_queue(const char *url, IRI *base)
 		buffer_t buf;
 
 		buffer_init(&buf, sbuf, sizeof(sbuf));
-		iri = iri_parse(iri_relative_to_absolute(base, url, strlen(url), &buf));
+		iri = iri_parse_encoding(iri_relative_to_absolute(base, url, strlen(url), &buf), encoding);
 		buffer_deinit(&buf);
 	} else {
 		// no base and no buf: just check URL for being an absolute URI
-		iri = iri_parse(iri_relative_to_absolute(NULL, url, strlen(url), NULL));
+		iri = iri_parse_encoding(iri_relative_to_absolute(NULL, url, strlen(url), NULL), encoding);
 	}
 
 	if (!iri) {
@@ -442,7 +442,7 @@ int main(int argc, const char *const *argv)
 	n = init(argc, argv);
 
 	for (; n < argc; n++) {
-		add_url_to_queue(argv[n], config.base);
+		add_url_to_queue(argv[n], config.base, config.local_encoding);
 	}
 
 	if (config.input_file) {
@@ -461,7 +461,7 @@ int main(int argc, const char *const *argv)
 			// read URLs from input file
 			if ((fd = open(config.input_file, O_RDONLY))) {
 				while ((len = fdgetline0(&buf, &bufsize, fd)) > 0) {
-					add_url_to_queue(buf, config.base);
+					add_url_to_queue(buf, config.base, config.local_encoding);
 				}
 				close(fd);
 			} else
@@ -472,7 +472,7 @@ int main(int argc, const char *const *argv)
 
 				// read URLs from STDIN
 				while ((len = fdgetline0(&buf, &bufsize, STDIN_FILENO)) >= 0) {
-					add_url_to_queue(buf, config.base);
+					add_url_to_queue(buf, config.base, config.local_encoding);
 				}
 			} else
 				inputfd = STDIN_FILENO;
@@ -542,7 +542,7 @@ int main(int argc, const char *const *argv)
 			ssize_t len;
 
 			while ((len = fdgetline0(&buf, &bufsize, inputfd)) > 0) {
-				JOB *job = add_url_to_queue(buf, config.base);
+				JOB *job = add_url_to_queue(buf, config.base, config.local_encoding);
 				schedule_download(job, NULL);
 			}
 

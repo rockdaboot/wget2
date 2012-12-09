@@ -51,6 +51,7 @@
 #include <glob.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <stringprep.h>
 
 #include "xalloc.h"
 #include "utils.h"
@@ -404,6 +405,7 @@ static const struct option options[] = {
 	{ "input-file", &config.input_file, parse_string, 1, 'i'},
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0},
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0},
+	{ "local-encoding", &config.local_encoding, parse_string, 1, 0},
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0},
 	{ "n", NULL, parse_n_option, 1, 'n'}, // special Wget compatibility option
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0},
@@ -419,6 +421,7 @@ static const struct option options[] = {
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0},
 	{ "recursive", &config.recursive, parse_bool, 0, 'r'},
 	{ "referer", &config.referer, parse_string, 1, 0},
+	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0},
 	{ "save-cookies", &config.save_cookies, parse_string, 1, 0},
 	{ "save-headers", &config.save_headers, parse_bool, 0, 0},
 	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0},
@@ -837,8 +840,11 @@ int init(int argc, const char *const *argv)
 			close(fd);
 	}
 
-	http_set_http_proxy(config.http_proxy);
-	http_set_https_proxy(config.https_proxy);
+	if (!config.local_encoding)
+		config.local_encoding = strdup(stringprep_locale_charset());
+
+	http_set_http_proxy(config.http_proxy, config.local_encoding);
+	http_set_https_proxy(config.https_proxy, config.local_encoding);
 	xfree(config.http_proxy);
 	xfree(config.https_proxy);
 
@@ -896,11 +902,13 @@ void deinit(void)
 	xfree(config.default_page);
 	xfree(config.base_url);
 	xfree(config.input_file);
+	xfree(config.local_encoding);
+	xfree(config.remote_encoding);
 
 	iri_free(&config.base);
 
-	http_set_http_proxy(NULL);
-	http_set_https_proxy(NULL);
+	http_set_http_proxy(NULL, NULL);
+	http_set_https_proxy(NULL, NULL);
 }
 
 // self test some functions, called by using --self-test

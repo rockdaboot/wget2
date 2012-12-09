@@ -78,6 +78,12 @@ then
 fi
 AM_CONDITIONAL([WITH_ZLIB], [test $with_zlib = "yes"])
 
+AC_ARG_WITH(libidn, AS_HELP_STRING([--without-libidn], [disable IDN support]), with_libidn=$withval, with_libidn=yes)
+if test $with_libidn != "no"
+then
+  AC_CHECK_LIB(idn, idna_to_ascii_8z, [with_libidn=yes; AC_SUBST(IDN_LIBS, "-lidn") AC_DEFINE([WITH_LIBIDN], [1], [Use libidn])], [with_libidn=no; AC_MSG_WARN(*** LIBIDN was not found. You will not be able to use IDN support)])
+fi
+AM_CONDITIONAL([WITH_LIBIDN], [test $with_libidn = "yes"])
 
 # Checks for libraries.
 #AC_CHECK_LIB([gnutls], [gnutls_global_init])
@@ -85,7 +91,7 @@ AC_CHECK_LIB([pthread], [pthread_attr_init])
 AC_CHECK_LIB([rt], [clock_gettime])
 #AC_CHECK_LIB([z], [deflate])
 
-AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $LIBS")
+AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $IDN_LIBS $LIBS")
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h inttypes.h libintl.h locale.h netdb.h netinet/in.h stddef.h stdlib.h string.h strings.h sys/socket.h sys/time.h unistd.h])
@@ -130,4 +136,5 @@ AC_MSG_NOTICE([Summary of build options:
   Libs:              ${LIBS}
   SSL support:       $with_gnutls
   GZIP compression:  $with_zlib
+  IDN support:       $with_libidn
 ])

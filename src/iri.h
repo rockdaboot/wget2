@@ -53,7 +53,8 @@ typedef struct {
 		*path, // unescaped
 		*query, // unescaped
 		*fragment, // unescaped
-		*connection_part; // helper, e.g. http://www.example.com:8080
+		*connection_part, // helper, e.g. http://www.example.com:8080
+		*encoding; // host's locale, we need to convert it to UTF-8 when resolving
 } IRI;
 
 void
@@ -68,7 +69,8 @@ int
 	iri_isunreserved_path(char c) CONST,
 	iri_compare(IRI *iri1, IRI *iri2) PURE NONNULL_ALL;
 IRI
-	*iri_parse(const char *s) MALLOC;
+	*iri_parse(const char *uri) MALLOC,
+	*iri_parse_encoding(const char *uri, const char *encoding) MALLOC;
 const char
 	*iri_get_connection_part(IRI *iri),
 	*iri_relative_to_absolute(IRI *base, const char *val, size_t len, buffer_t *buf),

@@ -629,6 +629,9 @@ ALLOCA
 EGREP
 GREP
 CPP
+WITH_LIBIDN_FALSE
+WITH_LIBIDN_TRUE
+IDN_LIBS
 WITH_ZLIB_FALSE
 WITH_ZLIB_TRUE
 ZLIB_LIBS
@@ -700,6 +703,7 @@ ac_user_opts='
 enable_option_checking
 with_gnutls
 with_zlib
+with_libidn
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1324,6 +1328,7 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --without-gnutls        disable GNUTLS SSL support
   --without-zlib          disable gzip compression support
+  --without-libidn        disable IDN support
 
 Some influential environment variables:
   CC          C compiler command
@@ -3648,6 +3653,71 @@ fi
 
 
 
+# Check whether --with-libidn was given.
+if test "${with_libidn+set}" = set; then :
+  withval=$with_libidn; with_libidn=$withval
+else
+  with_libidn=yes
+fi
+
+if test $with_libidn != "no"
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for idna_to_ascii_8z in -lidn" >&5
+$as_echo_n "checking for idna_to_ascii_8z in -lidn... " >&6; }
+if ${ac_cv_lib_idn_idna_to_ascii_8z+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lidn  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char idna_to_ascii_8z ();
+int
+main ()
+{
+return idna_to_ascii_8z ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_idn_idna_to_ascii_8z=yes
+else
+  ac_cv_lib_idn_idna_to_ascii_8z=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_idn_idna_to_ascii_8z" >&5
+$as_echo "$ac_cv_lib_idn_idna_to_ascii_8z" >&6; }
+if test "x$ac_cv_lib_idn_idna_to_ascii_8z" = xyes; then :
+  with_libidn=yes; IDN_LIBS="-lidn"
+
+$as_echo "#define WITH_LIBIDN 1" >>confdefs.h
+
+else
+  with_libidn=no; { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** LIBIDN was not found. You will not be able to use IDN support" >&5
+$as_echo "$as_me: WARNING: *** LIBIDN was not found. You will not be able to use IDN support" >&2;}
+fi
+
+fi
+ if test $with_libidn = "yes"; then
+  WITH_LIBIDN_TRUE=
+  WITH_LIBIDN_FALSE='#'
+else
+  WITH_LIBIDN_TRUE='#'
+  WITH_LIBIDN_FALSE=
+fi
+
+
 # Checks for libraries.
 #AC_CHECK_LIB([gnutls], [gnutls_global_init])
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_attr_init in -lpthread" >&5
@@ -3742,7 +3812,7 @@ fi
 
 #AC_CHECK_LIB([z], [deflate])
 
-LIBS="$GNUTLS_LIBS $ZLIB_LIBS $LIBS"
+LIBS="$GNUTLS_LIBS $ZLIB_LIBS $IDN_LIBS $LIBS"
 
 
 # Checks for header files.
@@ -5328,6 +5398,10 @@ if test -z "${WITH_ZLIB_TRUE}" && test -z "${WITH_ZLIB_FALSE}"; then
   as_fn_error $? "conditional \"WITH_ZLIB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${WITH_LIBIDN_TRUE}" && test -z "${WITH_LIBIDN_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_LIBIDN\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 
 : "${CONFIG_STATUS=./config.status}"
 ac_write_fail=0
@@ -6511,6 +6585,7 @@ fi
   Libs:              ${LIBS}
   SSL support:       $with_gnutls
   GZIP compression:  $with_zlib
+  IDN support:       $with_libidn
 " >&5
 $as_echo "$as_me: Summary of build options:
 
@@ -6523,4 +6598,5 @@ $as_echo "$as_me: Summary of build options:
   Libs:              ${LIBS}
   SSL support:       $with_gnutls
   GZIP compression:  $with_zlib
+  IDN support:       $with_libidn
 " >&6;}

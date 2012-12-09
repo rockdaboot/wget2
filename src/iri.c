@@ -289,6 +289,16 @@ IRI *iri_parse(const char *s_uri)
 	return iri;
 }
 
+IRI *iri_parse_encoding(const char *uri, const char *encoding)
+{
+	IRI *iri = iri_parse(uri);
+
+	if (iri && null_strcasecmp(encoding, "UTF-8"))
+		iri->encoding = encoding; // locale is needed for IDN host/domain conversion
+
+	return iri;
+}
+
 static char *_iri_build_connection_part(IRI *iri)
 {
 	char *tag;

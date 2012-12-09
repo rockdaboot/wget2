@@ -1429,18 +1429,14 @@ HTTP_RESPONSE *http_get_response_file(HTTP_CONNECTION *conn, const char *fname)
 }
  */
 
-void http_set_http_proxy(const char *proxy)
+void http_set_http_proxy(const char *proxy, const char *locale)
 {
 	iri_free(&http_proxy);
-
-	if (proxy)
-		http_proxy = iri_parse(proxy);
+	http_proxy = iri_parse_encoding(proxy, locale);
 }
 
-void http_set_https_proxy(const char *proxy)
+void http_set_https_proxy(const char *proxy, const char *locale)
 {
 	iri_free(&https_proxy);
-
-	if (proxy)
-		https_proxy = iri_parse(proxy);
+	https_proxy = iri_parse_encoding(proxy, locale);
 }

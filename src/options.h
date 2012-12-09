@@ -36,6 +36,8 @@ struct config {
 	IRI
 		*base;
 	const char
+		*local_encoding,
+		*remote_encoding,
 		*bind_address,
 		*input_file,
 		*base_url,

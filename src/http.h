@@ -164,8 +164,8 @@ void
 	http_add_header_printf(HTTP_REQUEST *req, const char *fmt, ...) PRINTF_FORMAT(2,3) NONNULL_ALL,
 	http_add_header_line(HTTP_REQUEST *req, const char *line) NONNULL_ALL,
 	http_add_header(HTTP_REQUEST *req, const char *name, const char *value) NONNULL_ALL,
-	http_set_http_proxy(const char *proxy),
-	http_set_https_proxy(const char *proxy);
+	http_set_http_proxy(const char *proxy, const char *locale),
+	http_set_https_proxy(const char *proxy, const char *locale);
 
 int
 	http_free_param(HTTP_HEADER_PARAM *param),
