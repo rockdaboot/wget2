@@ -30,10 +30,14 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
+#include <iconv.h>
+#include <idna.h>
 
 #include "xalloc.h"
 #include "utils.h"
 #include "log.h"
+#include "utf8.h"
 #include "iri.h"
 
 static const char
@@ -105,6 +109,7 @@ int iri_isunreserved_path(char c)
 void iri_free(IRI **iri)
 {
 	if (iri && *iri) {
+		xfree((*iri)->host_asc);
 		xfree((*iri)->connection_part);
 		xfree(*iri);
 	}
@@ -277,6 +282,13 @@ IRI *iri_parse(const char *s_uri)
 	// now unescape all components (not interested in display, userinfo, password
 	if (iri->host)
 		_unescape((unsigned char *)iri->host);
+	else {
+		if (iri->scheme == IRI_SCHEME_HTTP || iri->scheme == IRI_SCHEME_HTTPS) {
+			err_printf(_("Missing host/domain in URI '%s'\n"), iri->uri);
+			iri_free(&iri);
+			return NULL;
+		}
+	}
 	if (iri->path)
 		_unescape((unsigned char *)iri->path);
 	if (iri->query)
@@ -293,8 +305,18 @@ IRI *iri_parse_encoding(const char *uri, const char *encoding)
 {
 	IRI *iri = iri_parse(uri);
 
-	if (iri && null_strcasecmp(encoding, "UTF-8"))
-		iri->encoding = encoding; // locale is needed for IDN host/domain conversion
+	if (iri) {
+		char *host_asc = NULL, *host_utf = str_to_utf8(iri->host, encoding);
+
+		if (host_utf) {
+			int rc;
+
+			if ((rc = idna_to_ascii_8z(host_utf, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS)
+				iri->host_asc = host_asc;
+			else
+				err_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
+		}
+	}
 
 	return iri;
 }
@@ -578,7 +600,7 @@ const char *iri_escape_query(const char *src, buffer_t *buf)
 
 const char *iri_get_escaped_host(const IRI *iri, buffer_t *buf)
 {
-	return iri_escape(iri->host, buf);
+	return iri_escape(iri->host_asc ? iri->host_asc : iri->host, buf);
 }
 
 const char *iri_get_escaped_resource(const IRI *iri, buffer_t *buf)

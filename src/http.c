@@ -970,13 +970,13 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 		return NULL;
 
 	if (iri->scheme == IRI_SCHEME_HTTP && http_proxy) {
-		host = http_proxy->host;
+		host = http_proxy->host_asc ? http_proxy->host_asc : http_proxy->host;
 		port = (http_proxy->port && *http_proxy->port) ? http_proxy->port : http_proxy->scheme;
 	} else if (iri->scheme == IRI_SCHEME_HTTPS && https_proxy) {
-		host = https_proxy->host;
+		host = https_proxy->host_asc ? https_proxy->host_asc : https_proxy->host;
 		port = (https_proxy->port && *https_proxy->port) ? https_proxy->port : https_proxy->scheme;
 	} else {
-		host = iri->host;
+		host = iri->host_asc ? iri->host_asc : iri->host;
 		port = (iri->port && *iri->port) ? iri->port : iri->scheme;
 	}
 

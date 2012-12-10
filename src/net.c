@@ -159,7 +159,7 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 			if ((rc = getaddrinfo(host, port, &hints, &addrinfo)) == 0 || rc != EAI_AGAIN)
 				break;
 
-			{
+			if (tries < 2) {
 				const struct timespec ts = {0, 100 * 1000 * 1000};
 				nanosleep(&ts, NULL);
 			}
@@ -223,14 +223,14 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 
 		if (dns_cache) {
 			// insert addrinfo into dns cache
-			size_t hostlen = strlen(host) + 1;
+			size_t hostlen = host ? strlen(host) + 1 : 1;
 			size_t portlen = port ? strlen(port) + 1 : 1;
 			struct ADDR_ENTRY *entryp = xmalloc(sizeof(struct ADDR_ENTRY) + hostlen + portlen);
 
 			entryp->host = ((char *)entryp) + sizeof(struct ADDR_ENTRY);
 			entryp->port = ((char *)entryp) + sizeof(struct ADDR_ENTRY) + hostlen;
 			entryp->addrinfo = addrinfo;
-			strcpy((char *)entryp->host, host); // ugly cast, but semantically ok
+			strcpy((char *)entryp->host, host ? host : ""); // ugly cast, but semantically ok
 			strcpy((char *)entryp->port, port ? port : ""); // ugly cast, but semantically ok
 
 			pthread_mutex_lock(&dns_mutex);

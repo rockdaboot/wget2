@@ -688,8 +688,8 @@ static void NONNULL((1)) _read_config(const char *cfgfile, int expand)
 
 static void read_config(void)
 {
-#ifdef GLOBAL_CONFIG_FILE
-	_read_config(GLOBAL_CONFIG_FILE, 1);
+#ifdef SYSTEM_MGETRC
+	_read_config(SYSTEM_MGETRC, 1);
 #else
 	_read_config("~/.mgetrc", 1);
 #endif
@@ -842,6 +842,7 @@ int init(int argc, const char *const *argv)
 
 	if (!config.local_encoding)
 		config.local_encoding = strdup(stringprep_locale_charset());
+	log_printf("Local encoding is '%s'\n", config.local_encoding);
 
 	http_set_http_proxy(config.http_proxy, config.local_encoding);
 	http_set_https_proxy(config.https_proxy, config.local_encoding);

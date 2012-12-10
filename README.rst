@@ -89,6 +89,7 @@ The following packages are needed to build Mget:
 
 * libz >= 1.2.3
 * libgnutls >= 2.4.2
+* libidn >= 1.25
 * flex >= 2.5.35
 
 The versions are recommended, but older version like on OpenBSD 5.0
@@ -101,8 +102,6 @@ Building from git
 Download project and prepare sources with:
 
 	$ git clone http://github.com/rockdaboot/mget
-	$ cd mget
-	$ ./autogen.sh
 
 Build mget with::
 
@@ -117,11 +116,11 @@ To test the functionality (you need valgrind installed)::
 Documentation
 -------------
 
-There is no documentation yet.
+There is no own documentation yet, but Mget aims to be Wget1.14 compatible.
 
     $ mget --help
 
-prints the usage and the current set of options.
+prints the usage and the current set of integrated options.
 For more info, see the man pages of Wget.
 
 My idea is to use the free Serna WYSIWYG/WYMIWYG editor for documentation.

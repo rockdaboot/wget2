@@ -49,12 +49,12 @@ typedef struct {
 		*userinfo,
 		*password,
 		*host, // unescaped
+		*host_asc, // RFC 3987 toASCII version of host or NULL if no conversion took place
 		*port,
 		*path, // unescaped
 		*query, // unescaped
 		*fragment, // unescaped
-		*connection_part, // helper, e.g. http://www.example.com:8080
-		*encoding; // host's locale, we need to convert it to UTF-8 when resolving
+		*connection_part; // helper, e.g. http://www.example.com:8080
 } IRI;
 
 void

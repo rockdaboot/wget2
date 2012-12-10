@@ -5,6 +5,7 @@ package        = @PACKAGE_NAME@
 version        = @PACKAGE_VERSION@
 tarname        = @PACKAGE_TARNAME@
 distdir        = $(tarname)-$(version)
+sysconfdir     = @sysconfdir@
 
 # Prefix-related substitution variables
 prefix         = @prefix@
@@ -13,7 +14,7 @@ bindir         = @bindir@
 
 # Tool-related substitution variables
 CC             = @CC@
-DEFS           = @DEFS@
+DEFS           = @DEFS@ -DSYSTEM_MGETRC=\"$(sysconfdir)/mgetrc\" -DLOCALEDIR=\"$(localedir)\"
 LIBS           = @LIBS@
 CFLAGS         = @CFLAGS@
 CPPFLAGS       = @CPPFLAGS@

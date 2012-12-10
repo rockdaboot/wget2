@@ -107,7 +107,10 @@ ssize_t fdgetline0(char **buf, size_t *bufsize, int fd)
 	}
 
 	if (length) {
-		(*buf)[length - 1] = 0;
+		if ((*buf)[length - 1] == '\n')
+			(*buf)[length - 1] = 0;
+		else
+			(*buf)[length] = 0;
 		return length;
 	} else **buf = 0;
 
@@ -173,7 +176,10 @@ ssize_t getline(char **buf, size_t *bufsize, FILE *fp)
 	}
 
 	if (length) {
-		(*buf)[length - 1] = 0;
+		if ((*buf)[length - 1] == '\n')
+			(*buf)[length - 1] = 0;
+		else
+			(*buf)[length] = 0;
 		return length;
 	} else **buf = 0;
 

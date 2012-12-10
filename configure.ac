@@ -45,6 +45,12 @@ AC_PROG_LEX
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
+#
+# Gettext
+#
+AM_GNU_GETTEXT([external],[need-ngettext])
+AM_GNU_GETTEXT_VERSION([0.17])
+
 #AC_ARG_WITH(gnutls, AS_HELP_STRING([--with-gnutls[=PATH]], [compile with SSL support]), , with_gnutls="no")
 #if test $with_gnutls != "no"
 #then
