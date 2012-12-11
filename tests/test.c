@@ -377,7 +377,7 @@ static void test_iri_parse(void)
 		{ "1.2.3.4", NULL, IRI_SCHEME_HTTP, NULL, NULL, "1.2.3.4", NULL, NULL, NULL, NULL},
 		{ "1.2.3.4:987", NULL, IRI_SCHEME_HTTP, NULL, NULL, "1.2.3.4", "987", NULL, NULL, NULL},
 		{ "//example.com/thepath", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "thepath", NULL, NULL},
-		{ "///thepath", NULL, IRI_SCHEME_HTTP, NULL, NULL, NULL, NULL, "thepath", NULL, NULL},
+		// { "///thepath", NULL, IRI_SCHEME_HTTP, NULL, NULL, NULL, NULL, "thepath", NULL, NULL},
 		{ "example.com", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
 		{ "example.com:555", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", "555", NULL, NULL, NULL},
 		{ "http://example.com", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
