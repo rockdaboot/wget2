@@ -100,6 +100,7 @@ struct config {
 		span_hosts,
 		recursive,
 		verbose,
+		print_version,
 		quiet,
 		debug;
 };

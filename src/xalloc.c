@@ -90,5 +90,5 @@ char *strdup_null(const char *s)
 
 void *xmemdup(const void *s, size_t n)
 {
-	return memcpy(xmalloc(n), s, n);
+	return s ? memcpy(xmalloc(n), s, n) : NULL;
 }

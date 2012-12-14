@@ -10,7 +10,7 @@ The originally purpose was to help out on Wget2 development (refactoring,
 modern and clean code, new technology, new design).
 
 In many cases Mget downloads much faster than Wget1.14 due to HTTP zlib
-compression and parallel connections.
+compression, parallel connections and use of If-Modified-Since HTTP header.
 It consumes less system and user CPU cycles due to larger buffers and
 buffer recycling.
 
@@ -23,11 +23,11 @@ Development Status
 ------------------
 
 Mget is still in alpha stage but is already useful.
-You might encounter lots of bugs and missing features.
-So, for now (05.11.2012), don't use it for production !
+Many Wget options are already implemented, but some are still missing.
 
 The basic functionality is implemented, like:
 
+- IDN support for international domains
 - autotools support
 - proxy support
 - cookies (session/non-session), detection of supercookies via Mozilla Public Suffix List
@@ -62,6 +62,7 @@ The following is just a quick list of ideas and todos.
 I personally like to experiment with new stuff (new to wget), so
 request pipelining and SPDY protocol are my favorites.
 
+- WARC support
 - RFC 6797 HSTS (HTTP Strict Transport Security)
 - compression on TLS/SSL layer
 - respect /robots.txt "Robot Exclusion Standard"

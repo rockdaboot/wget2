@@ -101,6 +101,7 @@ typedef struct {
 		*cookies;
 	const char
 		*content_type,
+		*content_type_encoding,
 		*location;
 	buffer_t
 		*header,
@@ -152,7 +153,7 @@ const char
 	*http_parse_digest(const char *s, HTTP_DIGEST *digest) NONNULL_ALL,
 	*http_parse_location(const char *s, const char **location) NONNULL_ALL,
 	*http_parse_transfer_encoding(const char *s, char *transfer_encoding) NONNULL_ALL,
-	*http_parse_content_type(const char *s, const char **content_type) NONNULL_ALL,
+	*http_parse_content_type(const char *s, const char **content_type, const char **charset),
 	*http_parse_content_encoding(const char *s, char *content_encoding) NONNULL_ALL,
 	*http_parse_connection(const char *s, char *keep_alive) NONNULL_ALL,
 	*http_parse_setcookie(const char *s, HTTP_COOKIE *cookie) NONNULL_ALL;

@@ -97,7 +97,7 @@ IRI *blacklist_add(IRI *iri)
 		blacklist = hashmap_create(128, -2, (unsigned int(*)(const void *))hash_iri, (int(*)(const void *, const void *))iri_compare);
 
 	if (!in_blacklist(iri)) {
-		//	info_printf("Add to blacklist: %s\n",uri);
+		// info_printf("Add to blacklist: %s\n",iri->uri);
 		hashmap_put_ident_noalloc(blacklist, iri);
 		return iri;
 	}

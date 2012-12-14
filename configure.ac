@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 #AC_PREREQ([2.69])
-AC_INIT([mget], [0.1.2], [tim.ruehsen@gmx.de])
+AC_INIT([mget], [0.1.3], [tim.ruehsen@gmx.de])
 AC_CONFIG_SRCDIR([src/mget.c])
 AC_CONFIG_HEADERS([config.h])
 

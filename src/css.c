@@ -60,7 +60,8 @@ int yylex_destroy(yyscan_t yyscanner);
 
 void css_parse_buffer(
 	const char *buf,
-	void(*callback)(void *user_ctx, const char *url, size_t len),
+	void(*callback_uri)(void *user_ctx, const char *url, size_t len),
+	void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
 	void *user_ctx)
 {
 	int token;
@@ -92,7 +93,7 @@ void css_parse_buffer(
 
 			if (*text == '\'' || *text == '\"') {
 				// a string - remove the quotes
-				callback(user_ctx, text + 1, length - 2);
+				callback_uri(user_ctx, text + 1, length - 2);
 			} else {
 				// extract URI from url(...)
 				if (!strncasecmp(text, "url(", 4)) {
@@ -108,7 +109,28 @@ void css_parse_buffer(
 						length -= 2;
 					}
 				}
-				callback(user_ctx, text, length);
+				callback_uri(user_ctx, text, length);
+			}
+		} else if (token == CHARSET_SYM) {
+			// e.g. @charset "UTF-8"
+
+			// skip whitespace before charset name
+			while ((token = yylex(scanner)) == S);
+
+			// now token should be STRING
+			if (token == STRING) {
+				text = yyget_text(scanner);
+				length = yyget_leng(scanner);
+
+				if (*text == '\'' || *text == '\"') {
+					// a string - remove the quotes
+					callback_encoding(user_ctx, text + 1, length - 2);
+				} else {
+					// a string without quotes
+					callback_encoding(user_ctx, text, length);
+				}
+			} else {
+				info_printf("Unknown token after @charset: %d\n", token);
 			}
 		}
 	}
@@ -118,7 +140,8 @@ void css_parse_buffer(
 
 void css_parse_file(
 	const char *fname,
-	void(*callback)(void *user_ctx, const char *url, size_t len),
+	void(*callback_uri)(void *user_ctx, const char *url, size_t len),
+	void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
 	void *user_ctx)
 {
 	int fd;
@@ -134,7 +157,7 @@ void css_parse_file(
 
 				if (nread > 0) {
 					buf[nread] = 0; // PROT_WRITE allows this write, MAP_PRIVATE prevents changes in underlying file system
-					css_parse_buffer(buf, callback, user_ctx);
+					css_parse_buffer(buf, callback_uri, callback_encoding, user_ctx);
 				}
 
 				munmap(buf, nread);
@@ -155,7 +178,7 @@ void css_parse_file(
 		}
 
 		if (buf->length)
-			css_parse_buffer(buf->data, callback, user_ctx);
+			css_parse_buffer(buf->data, callback_uri, callback_encoding, user_ctx);
 
 		buffer_free(&buf);
 	}

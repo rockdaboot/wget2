@@ -79,13 +79,6 @@ struct option {
 		short_name;
 };
 
-static int print_version(UNUSED option_t opt, UNUSED const char *const *argv, UNUSED const char *val)
-{
-	info_printf("mget V" PACKAGE_VERSION " - C multithreaded metalink/file/website downloader\n");
-
-	return 0;
-}
-
 static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *argv, UNUSED const char *val)
 {
 	puts(
@@ -103,7 +96,7 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"  -a  --append-output     File where messages are appended to, '-' for STDOUT.\n"
 		"  -i  --input-file        File where URLs are read from, - for STDIN.\n"
 		"  -F  --force-html        Treat input file as HTML. (default: off)\n"
-		"      --force-css         Treat input file as CSS. (default: off)\n (NEW!)"
+		"      --force-css         Treat input file as CSS. (default: off) (NEW!)\n"
 		"  -B  --base-url          Base for relative URLs read from input-file or from command line\n"
 		"\n");
 	puts(
@@ -434,7 +427,7 @@ static const struct option options[] = {
 	{ "use-server-timestamp", &config.use_server_timestamps, parse_bool, 0, 0},
 	{ "user-agent", &config.user_agent, parse_string, 1, 'U'},
 	{ "verbose", &config.verbose, parse_bool, 0, 'v'},
-	{ "version", NULL, print_version, 0, 'V'}
+	{ "version", &config.print_version, parse_bool, 0, 'V'}
 };
 
 static int PURE NONNULL_ALL opt_compare(const void *key, const void *option)
@@ -813,6 +806,9 @@ int init(int argc, const char *const *argv)
 	// settings in user's config override global settings
 	read_config();
 
+	if (config.print_version)
+		info_printf("mget V" PACKAGE_VERSION " - C multithreaded metalink/file/website downloader\n");
+
 	// now read command line options which override the settings of the config files
 	n = parse_command_line(argc, argv);
 
@@ -842,7 +838,7 @@ int init(int argc, const char *const *argv)
 
 	if (!config.local_encoding)
 		config.local_encoding = strdup(stringprep_locale_charset());
-	log_printf("Local encoding is '%s'\n", config.local_encoding);
+	log_printf("Local URI encoding = '%s'\n", config.local_encoding);
 
 	http_set_http_proxy(config.http_proxy, config.local_encoding);
 	http_set_https_proxy(config.https_proxy, config.local_encoding);
@@ -856,7 +852,7 @@ int init(int argc, const char *const *argv)
 		cookie_load(config.load_cookies);
 
 	if (config.base_url)
-		config.base = iri_parse(config.base_url);
+		config.base = iri_parse_encoding(config.base_url, config.local_encoding);
 
 	// set module specific options
 	tcp_set_debug(config.debug);

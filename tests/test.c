@@ -392,7 +392,7 @@ static void test_iri_parse(void)
 		{ "http://example.com/index.html", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", NULL, NULL},
 		{ "http://example.com/index.html?query#frag", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "query", "frag"},
 		{ "http://example.com/index.html?#", NULL, IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "", ""},
-		{ "碼標準萬國碼.com", NULL, IRI_SCHEME_HTTP, NULL, NULL, "碼標準萬國碼.com", NULL, NULL, NULL, NULL},
+		{ "碼標準萬國碼.com", NULL, IRI_SCHEME_HTTP, NULL, NULL, "xn--9cs565brid46mda086o.com", NULL, NULL, NULL, NULL},
 		//		{ "ftp://cnn.example.com&story=breaking_news@10.0.0.1/top_story.htm", NULL,"ftp",NULL,NULL,"cnn.example.com",NULL,NULL,"story=breaking_news@10.0.0.1/top_story.htm",NULL }
 		{ "ftp://cnn.example.com?story=breaking_news@10.0.0.1/top_story.htm", NULL, "ftp", NULL, NULL, "cnn.example.com", NULL, NULL, "story=breaking_news@10.0.0.1/top_story.htm", NULL}
 	};
@@ -400,7 +400,7 @@ static void test_iri_parse(void)
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
-		IRI *iri = iri_parse(t->uri);
+		IRI *iri = iri_parse_encoding(t->uri, "utf-8");
 
 		if (null_strcmp(iri->display, t->display)
 			|| null_strcmp(iri->scheme, t->scheme)
@@ -673,7 +673,7 @@ static void test_iri_relative_to_absolute(void)
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
 
-		base = iri_parse(t->base);
+		base = iri_parse_encoding(t->base, "utf-8");
 		iri_relative_to_absolute(base, t->relative, strlen(t->relative), uri_buf);
 
 		if (!strcmp(uri_buf->data, t->result))
@@ -715,8 +715,8 @@ static void test_iri_compare(void)
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
-		IRI *iri1 = iri_parse(t->url1);
-		IRI *iri2 = iri_parse(t->url2);
+		IRI *iri1 = iri_parse_encoding(t->url1, "utf-8");
+		IRI *iri2 = iri_parse_encoding(t->url2, "utf-8");
 
 		n = iri_compare(iri1, iri2);
 		if (n < -1) n = -1;
@@ -734,7 +734,12 @@ static void test_iri_compare(void)
 	}
 }
 
-static void css_dump(UNUSED void *user_ctx, const char *url, size_t len)
+static void _css_dump_charset(UNUSED void *user_ctx, const char *encoding, size_t len)
+{
+	log_printf(_("URI content encoding = '%.*s'\n"), (int)len, encoding);
+}
+
+static void _css_dump_uri(UNUSED void *user_ctx, const char *url, size_t len)
 {
 	log_printf("*** %zu '%.*s'\n", len, (int)len, url);
 }
@@ -764,7 +769,7 @@ static void test_parser(void)
 					html++;
 				} else if (!strcasecmp(ext, ".css")) {
 					info_printf("parsing %s\n", fname);
-					css_parse_file(fname, css_dump, NULL);
+					css_parse_file(fname, _css_dump_uri, _css_dump_charset, NULL);
 					css++;
 				}
 			}
@@ -867,7 +872,7 @@ static void test_cookies(void)
 		const struct test_data *t = &test_data[it];
 		char thedate[32];
 
-		iri = iri_parse(t->uri);
+		iri = iri_parse_encoding(t->uri, "utf-8");
 		http_parse_setcookie(t->set_cookie, &cookie);
 		if ((result = cookie_normalize_cookie(iri, &cookie)) != t->result) {
 			failed++;
@@ -1151,12 +1156,12 @@ int main(int argc, const char * const *argv)
 
 	selftest_options() ? failed++ : ok++;
 
+	deinit(); // free resources allocated by init()
+
 	if (failed) {
 		info_printf("Summary: %d out of %d tests failed\n", failed, ok + failed);
 		return 1;
 	}
-
-	deinit(); // free resources allocated by init()
 
 	info_printf("Summary: All %d tests passed\n", ok + failed);
 	return 0;

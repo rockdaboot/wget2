@@ -22,11 +22,13 @@
 void
 	css_parse_buffer(
 		const char *buf,
-		void(*callback)(void *user_ctx, const char *url, size_t len),
+		void(*callback_uri)(void *user_ctx, const char *url, size_t len),
+		void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
 		void *user_ctx),
 	css_parse_file(
 		const char *fname,
-		void(*callback)(void *user_ctx, const char *url, size_t len),
+		void(*callback_uri)(void *user_ctx, const char *url, size_t len),
+		void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
 		void *user_ctx);
 
 #endif /* _MGET_CSS_H */

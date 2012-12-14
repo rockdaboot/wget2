@@ -48,13 +48,14 @@ typedef struct {
 		*scheme,
 		*userinfo,
 		*password,
-		*host, // unescaped
-		*host_asc, // RFC 3987 toASCII version of host or NULL if no conversion took place
+		*host, // unescaped, toASCII converted, lowercase
 		*port,
 		*path, // unescaped
 		*query, // unescaped
 		*fragment, // unescaped
 		*connection_part; // helper, e.g. http://www.example.com:8080
+	char
+		host_allocated; // if set, free host in iri_free()
 } IRI;
 
 void
@@ -69,7 +70,7 @@ int
 	iri_isunreserved_path(char c) CONST,
 	iri_compare(IRI *iri1, IRI *iri2) PURE NONNULL_ALL;
 IRI
-	*iri_parse(const char *uri) MALLOC,
+//	*iri_parse(const char *uri) MALLOC,
 	*iri_parse_encoding(const char *uri, const char *encoding) MALLOC;
 const char
 	*iri_get_connection_part(IRI *iri),

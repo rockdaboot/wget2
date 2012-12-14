@@ -368,15 +368,33 @@ const char *http_parse_transfer_encoding(const char *s, char *transfer_encoding)
 // media-type     = type "/" subtype *( ";" parameter )
 // type           = token
 // subtype        = token
+// example: Content-Type: text/html; charset=ISO-8859-4
 
-const char *http_parse_content_type(const char *s, const char **content_type)
+const char *http_parse_content_type(const char *s, const char **content_type, const char **charset)
 {
+	HTTP_HEADER_PARAM param;
 	const char *p;
 
 	while (isblank(*s)) s++;
 
 	for (p = s; *s && (http_istoken(*s) || *s == '/'); s++);
-	*content_type = strndup(p, s - p);
+	if (content_type)
+		*content_type = strndup(p, s - p);
+
+	if (charset) {
+		*charset = NULL;
+
+		while (*s) {
+			s=http_parse_param(s, &param.name, &param.value);
+			if (!null_strcasecmp("charset", param.name)) {
+				xfree(param.name);
+				*charset = param.value;
+				break;
+			}
+			xfree(param.name);
+			xfree(param.value);
+		}
+	}
 
 	return s;
 }
@@ -803,7 +821,7 @@ HTTP_RESPONSE *http_parse_response(char *buf)
 		} else if (!strcasecmp(name, "Content-Encoding")) {
 			http_parse_content_encoding(s, &resp->content_encoding);
 		} else if (!strcasecmp(name, "Content-Type")) {
-			http_parse_content_type(s, &resp->content_type);
+			http_parse_content_type(s, &resp->content_type, &resp->content_type_encoding);
 		} else if (!strcasecmp(name, "Content-Length")) {
 			resp->content_length = (size_t)atoll(s);
 			resp->content_length_valid = 1;
@@ -885,6 +903,7 @@ void http_free_response(HTTP_RESPONSE **resp)
 		http_free_cookies((*resp)->cookies);
 		(*resp)->cookies = NULL;
 		xfree((*resp)->content_type);
+		xfree((*resp)->content_type_encoding);
 		xfree((*resp)->location);
 		// xfree((*resp)->reason);
 		buffer_free(&(*resp)->header);
@@ -970,13 +989,13 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 		return NULL;
 
 	if (iri->scheme == IRI_SCHEME_HTTP && http_proxy) {
-		host = http_proxy->host_asc ? http_proxy->host_asc : http_proxy->host;
+		host = http_proxy->host;
 		port = (http_proxy->port && *http_proxy->port) ? http_proxy->port : http_proxy->scheme;
 	} else if (iri->scheme == IRI_SCHEME_HTTPS && https_proxy) {
-		host = https_proxy->host_asc ? https_proxy->host_asc : https_proxy->host;
+		host = https_proxy->host;
 		port = (https_proxy->port && *https_proxy->port) ? https_proxy->port : https_proxy->scheme;
 	} else {
-		host = iri->host_asc ? iri->host_asc : iri->host;
+		host = iri->host;
 		port = (iri->port && *iri->port) ? iri->port : iri->scheme;
 	}
 

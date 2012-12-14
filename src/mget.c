@@ -85,10 +85,10 @@ static void
 	download_part(DOWNLOADER *downloader),
 	save_file(HTTP_RESPONSE *resp, const char *fname),
 	append_file(HTTP_RESPONSE *resp, const char *fname),
-	html_parse(int sockfd, char *data, IRI *iri),
-	html_parse_localfile(int sockfd, const char *fname, IRI *iri),
-	css_parse(int sockfd, char *data, IRI *iri),
-	css_parse_localfile(int sockfd, const char *fname, IRI *iri);
+	html_parse(int sockfd, const char *data, const char *encoding, IRI *iri),
+	html_parse_localfile(int sockfd, const char *fname, const char *encoding, IRI *iri),
+	css_parse(int sockfd, const char *data, const char *encoding, IRI *iri),
+	css_parse_localfile(int sockfd, const char *fname, const char *encoding, IRI *iri);
 HTTP_RESPONSE
 	*http_get(IRI *iri, PART *part, DOWNLOADER *downloader);
 
@@ -243,10 +243,13 @@ static int schedule_download(JOB *job, PART *part)
 
 static void host_add(const char *host)
 {
-	if (!hosts)
-		hosts = vec_create(4, 4, (int(*)(const void *, const void *))strcmp);
+	if (host) {
+		if (!hosts)
+			hosts = vec_create(4, 4, (int(*)(const void *, const void *))strcmp);
 
-	vec_insert_sorted(hosts, host, strlen(host) + 1);
+		log_printf("Add host %s\n",host);
+		vec_insert_sorted(hosts, host, strlen(host) + 1);
+	}
 }
 
 // Since quota may change at any time in a threaded environment,
@@ -448,11 +451,11 @@ int main(int argc, const char *const *argv)
 	if (config.input_file) {
 		if (config.force_html) {
 			// read URLs from HTML file
-			html_parse_localfile(-1, config.input_file, config.base);
+			html_parse_localfile(-1, config.input_file, config.remote_encoding, config.base);
 		}
 		else if (config.force_css) {
 			// read URLs from CSS file
-			css_parse_localfile(-1, config.input_file, config.base);
+			css_parse_localfile(-1, config.input_file, config.remote_encoding, config.base);
 		}
 		else if (strcmp(config.input_file, "-")) {
 			int fd;
@@ -625,7 +628,7 @@ int main(int argc, const char *const *argv)
 							}
 						}
 
-						if (config.quota && config.quota > quota) {
+						if (!config.quota || (config.quota && config.quota > quota)) {
 							if (queue_get(&downloader[n].job, &downloader[n].part))
 								dprintf(downloader[n].sockfd[0], "go\n");
 						}
@@ -639,7 +642,7 @@ int main(int argc, const char *const *argv)
 							memset(&mirror, 0, sizeof(MIRROR));
 							pos = 0;
 							if (sscanf(buf + 13, "%2s %6d %n", mirror.location, &mirror.priority, &pos) >= 2 && pos) {
-								mirror.iri = iri_parse(buf + 13 + pos);
+								mirror.iri = iri_parse_encoding(buf + 13 + pos, NULL);
 								vec_add(job->mirrors, &mirror, sizeof(MIRROR));
 							} else
 								err_printf(_("Failed to parse metalink mirror '%s'\n"), buf);
@@ -677,19 +680,30 @@ int main(int argc, const char *const *argv)
 						}
 					} else if (!strncmp(buf, "add uri ", 8) || !strncmp(buf, "redirect ", 9)) {
 						IRI *iri;
+						char *p, *encoding;
 
 						if (*buf == 'r') {
 							if (job->redirection_level >= config.max_redirect) {
 								continue;
 							}
-						}
+							encoding = buf + 9;
+						} else
+							encoding = buf + 8;
 
-						iri = iri_parse(buf + 8);
+						for (p = encoding; *p != ' '; p++);
+						*p = 0;
+
+						if (*encoding == '-')
+							encoding = NULL;
+						
+						iri = iri_parse_encoding(p + 1, encoding);
 
 						if (config.recursive && !config.span_hosts) {
 							// only download content from given hosts
-							if (!iri->host || vec_find(hosts, iri->host) < 0)
+							if (!iri->host || vec_find(hosts, iri->host) < 0) {
+								info_printf("URI '%s' not followed: host '%s' not in host list\n", iri->uri, iri->host);
 								iri_free(&iri);
+							}
 						}
 
 						if ((job = queue_add(blacklist_add(iri)))) {
@@ -851,11 +865,11 @@ void *downloader_thread(void *p)
 
 						if (metalink) {
 							// found a link to a metalink4 description, create a new job
-							dprintf(sockfd, "add uri %s\n", metalink->uri);
+							dprintf(sockfd, "add uri - %s\n", metalink->uri);
 							goto ready;
 						} else if (top_link) {
 							// no metalink4 description found, create a new job
-							dprintf(sockfd, "add uri %s\n", top_link->uri);
+							dprintf(sockfd, "add uri - %s\n", top_link->uri);
 							goto ready;
 						}
 					}
@@ -875,11 +889,11 @@ void *downloader_thread(void *p)
 						if (config.recursive) {
 							if (resp->content_type) {
 								if (!strcasecmp(resp->content_type, "text/html")) {
-									html_parse(sockfd, resp->body->data, job->iri);
+									html_parse(sockfd, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 								} else if (!strcasecmp(resp->content_type, "application/xhtml+xml")) {
 									// xml_parse(sockfd, resp, job->iri);
 								} else if (!strcasecmp(resp->content_type, "text/css")) {
-									css_parse(sockfd, resp->body->data, job->iri);
+									css_parse(sockfd, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 								}
 							}
 						}
@@ -893,9 +907,9 @@ void *downloader_thread(void *p)
 
 							if (ext) {
 								if (!strcasecmp(ext, ".html") || !strcasecmp(ext, ".htm")) {
-									html_parse_localfile(sockfd, job->local_filename, job->iri);
+									html_parse_localfile(sockfd, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 								} else if (!strcasecmp(ext, ".css")) {
-									css_parse_localfile(sockfd, job->local_filename, job->iri);
+									css_parse_localfile(sockfd, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 								}
 							}
 						}
@@ -925,19 +939,30 @@ ready:
 struct html_context {
 	IRI
 		*base;
+	const char
+		*encoding;
 	buffer_t
 		uri_buf;
 	int
 		sockfd;
 	char
-		base_allocated;
+		base_allocated,
+		encoding_allocated;
 };
 
-static void _html_parse(void *context, int flags, UNUSED const char *dir, const char *attr, const char *val)
+static void _html_parse(void *context, int flags, const char *dir, const char *attr, const char *val)
 {
+	static int found_content_type;
 	struct html_context *ctx = context;
 
-	if ((flags &= XML_FLG_ATTRIBUTE) && val) {
+	// Read the encoding from META tag, e.g. from
+	//   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">.
+	// It overrides the encoding from the HTTP response resp. from the CLI.
+	if ((flags & XML_FLG_BEGIN) && tolower(*dir) == 'm' && !strcasecmp(dir, "meta")) {
+		found_content_type = 0;
+	}
+
+	if ((flags & XML_FLG_ATTRIBUTE) && val) {
 		int found = 0;
 
 		// very simplified
@@ -962,12 +987,12 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 		case 'h':
 			found = !strcasecmp(attr, "href");
 
-			if (found && (*dir == 'b' || *dir == 'B') && !strcasecmp(dir,"base")) {
+			if (found && tolower(*dir) == 'b' && !strcasecmp(dir,"base")) {
 				// found a <BASE href="...">
 				// add it to be downloaded, replace old base
-				IRI *iri = iri_parse(val);
+				IRI *iri = iri_parse_encoding(val, ctx->encoding);
 				if (iri) {
-					dprintf(ctx->sockfd, "add uri %s\n", val);
+					dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", val);
 
 					if (ctx->base_allocated)
 						iri_free(&ctx->base);
@@ -976,6 +1001,22 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 					ctx->base_allocated = 1;
 				}
 				return;
+			}
+
+			if (!found && !ctx->encoding_allocated) {
+				// if we have no encoding yet, read it from META tag, e.g. from
+				//   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+				if (!strcasecmp(dir, "meta")) {
+					if (!strcasecmp(attr, "http-equiv") && !strcasecmp(val, "Content-Type"))
+						found_content_type = 1;
+					else if (found_content_type && !strcasecmp(attr, "content")) {
+						http_parse_content_type(val, NULL, &ctx->encoding);
+						if (ctx->encoding) {
+							ctx->encoding_allocated = 1;
+							info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
+						}
+					}
+				}
 			}
 			break;
 		case 'i':
@@ -1012,13 +1053,13 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 			if (len > 1 || (len == 1 && *val != '#')) { // ignore e.g. href='#'
 				// log_printf("%02X %s %s=%s\n",flags,dir,attr,val);
 				if (iri_relative_to_absolute(ctx->base, val, len, &ctx->uri_buf)) {
-					info_printf("%.*s -> %s\n", (int)len, val, ctx->uri_buf.data);
+					// info_printf("%.*s -> %s\n", (int)len, val, ctx->uri_buf.data);
 					if (ctx->sockfd >= 0) {
-						dprintf(ctx->sockfd, "add uri %s\n", ctx->uri_buf.data);
+						dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", ctx->uri_buf.data);
 					} else {
 						JOB *job;
 
-						if ((job = queue_add(blacklist_add(iri_parse(ctx->uri_buf.data))))) {
+						if ((job = queue_add(blacklist_add(iri_parse_encoding(ctx->uri_buf.data, ctx->encoding))))) {
 							if (!config.output_document)
 								job->local_filename = get_local_filename(job->iri);
 						}
@@ -1033,15 +1074,21 @@ static void _html_parse(void *context, int flags, UNUSED const char *dir, const 
 
 // use the xml parser, being prepared that HTML is not XML
 
-void html_parse(int sockfd, char *data, IRI *iri)
+void html_parse(int sockfd, const char *data, const char *encoding, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char uri_sbuf[1024];
-	struct html_context context = { .base = iri, .sockfd = sockfd };
+	struct html_context context = { .base = iri, .sockfd = sockfd, .encoding = encoding };
 
 	buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
+	if (encoding)
+		info_printf(_("URI content encoding = '%s'\n"), encoding);
+
 	html_parse_buffer(data, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
+
+	if (context.encoding_allocated)
+		xfree(context.encoding);
 
 	if (context.base_allocated)
 		iri_free(&context.base);
@@ -1049,15 +1096,21 @@ void html_parse(int sockfd, char *data, IRI *iri)
 	buffer_deinit(&context.uri_buf);
 }
 
-void html_parse_localfile(int sockfd, const char *fname, IRI *iri)
+void html_parse_localfile(int sockfd, const char *fname, const char *encoding, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char uri_sbuf[1024];
-	struct html_context context = { .base = iri, .sockfd = sockfd };
+	struct html_context context = { .base = iri, .sockfd = sockfd, .encoding = encoding };
 
 	buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
+	if (encoding)
+		info_printf(_("URI content encoding = '%s'\n"), encoding);
+
 	html_parse_file(fname, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
+
+	if (context.encoding_allocated)
+		xfree(context.encoding);
 
 	if (context.base_allocated)
 		iri_free(&context.base);
@@ -1068,13 +1121,28 @@ void html_parse_localfile(int sockfd, const char *fname, IRI *iri)
 struct css_context {
 	IRI
 		*base;
+	const char
+		*encoding;
 	buffer_t
 		uri_buf;
 	int
 		sockfd;
+	char
+		encoding_allocated;
 };
 
-static void _css_parse(void *context, const char *url, size_t len)
+static void _css_parse_encoding(void *context, const char *encoding, size_t len)
+{
+	struct css_context *ctx = context;
+
+	if (!ctx->encoding || (!ctx->encoding_allocated && strncasecmp(ctx->encoding, encoding, len))) {
+		ctx->encoding = strndup(encoding, len);
+		ctx->encoding_allocated = 1;
+		info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
+	}
+}
+
+static void _css_parse_uri(void *context, const char *url, size_t len)
 {
 	struct css_context *ctx = context;
 
@@ -1082,11 +1150,11 @@ static void _css_parse(void *context, const char *url, size_t len)
 		// ignore e.g. href='#'
 		if (iri_relative_to_absolute(ctx->base, url, len, &ctx->uri_buf)) {
 			if (ctx->sockfd >= 0) {
-				dprintf(ctx->sockfd, "add uri %s\n", ctx->uri_buf.data);
+				dprintf(ctx->sockfd, "add uri - %s\n", ctx->uri_buf.data);
 			} else {
 				JOB *job;
 
-				if ((job = queue_add(blacklist_add(iri_parse(ctx->uri_buf.data))))) {
+				if ((job = queue_add(blacklist_add(iri_parse_encoding(ctx->uri_buf.data, NULL))))) {
 					if (!config.output_document)
 						job->local_filename = get_local_filename(job->iri);
 				}
@@ -1095,31 +1163,42 @@ static void _css_parse(void *context, const char *url, size_t len)
 			err_printf(_("Cannot resolve relative URI %.*s\n"), (int)len, url);
 		}
 	}
-	// add_uri(ctx->sockfd, ctx->iri, ctx->tag, url, len);
 }
 
-void css_parse(int sockfd, char *data, IRI *iri)
+void css_parse(int sockfd, const char *data, const char *encoding, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char uri_buf[1024];
-	struct css_context context = { .base = iri, .sockfd = sockfd };
+	struct css_context context = { .base = iri, .sockfd = sockfd, .encoding = encoding };
 
 	buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
 
-	css_parse_buffer(data, _css_parse, &context);
+	if (encoding)
+		info_printf(_("URI content encoding = '%s'\n"), encoding);
+
+	css_parse_buffer(data, _css_parse_uri, _css_parse_encoding, &context);
+
+	if (context.encoding_allocated)
+		xfree(context.encoding);
 
 	buffer_deinit(&context.uri_buf);
 }
 
-void css_parse_localfile(int sockfd, const char *fname, IRI *iri)
+void css_parse_localfile(int sockfd, const char *fname, const char *encoding, IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char uri_buf[1024];
-	struct css_context context = { .base = iri, .sockfd = sockfd };
+	struct css_context context = { .base = iri, .sockfd = sockfd, .encoding = encoding };
 
 	buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
 
-	css_parse_file(fname, _css_parse, &context);
+	if (encoding)
+		info_printf(_("URI content encoding = '%s'\n"), encoding);
+
+	css_parse_file(fname, _css_parse_uri, _css_parse_encoding, &context);
+
+	if (context.encoding_allocated)
+		xfree(context.encoding);
 
 	buffer_deinit(&context.uri_buf);
 }
@@ -1199,7 +1278,7 @@ static void NONNULL((1)) _save_file(HTTP_RESPONSE *resp, const char *fname, int 
 		flag = O_APPEND;
 	}
 
-	if (config.adjust_extension && resp) {
+	if (config.adjust_extension && resp && resp->content_type) {
 		const char *ext;
 
 		if (!strcasecmp(resp->content_type, "text/html")) {
@@ -1479,7 +1558,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 
 			iri_relative_to_absolute(use_iri, resp->location, strlen(resp->location), &uri_buf);
 
-			dprintf(downloader->sockfd[1], "add uri %s\n", uri_buf.data);
+			dprintf(downloader->sockfd[1], "add uri - %s\n", uri_buf.data);
 //			location = resp->location;
 //			resp->location = NULL;
 

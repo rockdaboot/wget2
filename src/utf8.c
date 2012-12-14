@@ -39,34 +39,42 @@
 
 char *str_to_utf8(const char *src, const char *encoding)
 {
-	char *dst = NULL;
+	const char *p;
 
-	if (src && null_strcasecmp(encoding, "utf-8")) {
-		const char *p;
+	if (!src)
+		return NULL;
 
-		for (p = src; *p > 0; p++); // see if conversion is needed
-		if (*p) {
-			// host needs encoding to utf-8
-			iconv_t cd=iconv_open("utf-8", encoding);
+	// see if conversion is needed
+	for (p = src; *p > 0; p++);
+	if (!*p) return NULL;
 
-			if (cd != (iconv_t)-1) {
-				char *tmp = (char *)src; // iconv won't change the content of src
-				size_t tmp_len = strlen(src);
-				size_t utf_len = tmp_len * 6, utf_len_tmp = utf_len;
-				char *utf = xmalloc(utf_len + 1), *utf_tmp = utf;
+	if (!encoding)
+		encoding = "iso-8859-1"; // default character-set for most browsers
 
-				if (iconv(cd, &tmp, &tmp_len, &utf_tmp, &utf_len_tmp) != (size_t)-1) {
-					dst = strndup(utf, utf_len - utf_len_tmp);
-					log_printf("converted '%s' (%s) -> '%s' (utf-8)\n", src, encoding, dst);
-				} else
-					err_printf(_("Failed to convert %s string into utf-8 (%d)\n"), encoding, errno);
+	if (strcasecmp(encoding, "utf-8")) {
+		char *dst = NULL;
 
-				xfree(utf);
-				iconv_close(cd);
+		// host needs encoding to utf-8
+		iconv_t cd=iconv_open("utf-8", encoding);
+
+		if (cd != (iconv_t)-1) {
+			char *tmp = (char *)src; // iconv won't change where src points to, but changes tmp itself
+			size_t tmp_len = strlen(src);
+			size_t utf_len = tmp_len * 6, utf_len_tmp = utf_len;
+			char *utf = xmalloc(utf_len + 1), *utf_tmp = utf;
+
+			if (iconv(cd, &tmp, &tmp_len, &utf_tmp, &utf_len_tmp) != (size_t)-1) {
+				dst = strndup(utf, utf_len - utf_len_tmp);
+				log_printf("converted '%s' (%s) -> '%s' (utf-8)\n", src, encoding, dst);
 			} else
-				err_printf(_("Failed to prepare encoding %s into utf-8 (%d)\n"), encoding, errno);
-		}
-	}
+				err_printf(_("Failed to convert %s string into utf-8 (%d)\n"), encoding, errno);
 
-	return dst;
+			xfree(utf);
+			iconv_close(cd);
+		} else
+			err_printf(_("Failed to prepare encoding %s into utf-8 (%d)\n"), encoding, errno);
+
+		return dst;
+	} else
+		return strdup(src);
 }

@@ -39,7 +39,7 @@ void
 	*xmalloc(size_t size) MALLOC ALLOC_SIZE(1),
 	*xcalloc(size_t nmemb, size_t size) MALLOC ALLOC_SIZE2(1,2),
 	*xrealloc(void *ptr, size_t size) ALLOC_SIZE(2),
-	*xmemdup(const void *s, size_t n) MALLOC ALLOC_SIZE(2) NONNULL_ALL;
+	*xmemdup(const void *s, size_t n) MALLOC ALLOC_SIZE(2);
 char
 #ifndef HAVE_STRNDUP
 	*strndup(const char *s, size_t n) MALLOC NONNULL_ALL,

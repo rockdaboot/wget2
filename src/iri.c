@@ -109,7 +109,8 @@ int iri_isunreserved_path(char c)
 void iri_free(IRI **iri)
 {
 	if (iri && *iri) {
-		xfree((*iri)->host_asc);
+		if ((*iri)->host_allocated)
+			xfree((*iri)->host);
 		xfree((*iri)->connection_part);
 		xfree(*iri);
 	}
@@ -145,7 +146,7 @@ static int _unescape(unsigned char *src)
 
 // URIs are assumed to be unescaped at this point
 
-IRI *iri_parse(const char *s_uri)
+static IRI *iri_parse(const char *s_uri)
 {
 	IRI *iri;
 	const char *default_port = NULL;
@@ -273,11 +274,12 @@ IRI *iri_parse(const char *s_uri)
 			}
 		}
 		*s = 0;
-
+/*
 		for (p = (char *)iri->host; *p; p++)
-			if (isupper(*p))
+			if (*p >= 'A' && *p <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
 				*p = tolower(*p);
-	}
+*/
+ 	}
 
 	// now unescape all components (not interested in display, userinfo, password
 	if (iri->host)
@@ -306,15 +308,28 @@ IRI *iri_parse_encoding(const char *uri, const char *encoding)
 	IRI *iri = iri_parse(uri);
 
 	if (iri) {
-		char *host_asc = NULL, *host_utf = str_to_utf8(iri->host, encoding);
+		const char *host_utf = str_to_utf8(iri->host, encoding);
 
 		if (host_utf) {
+			char *host_asc = NULL;
 			int rc;
 
-			if ((rc = idna_to_ascii_8z(host_utf, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS)
-				iri->host_asc = host_asc;
-			else
+			if ((rc = idna_to_ascii_8z(host_utf, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
+				// log_printf("toASCII '%s' -> '%s'\n", host_utf, host_asc);
+				iri->host = host_asc;
+				iri->host_allocated = 1;
+			} else
 				err_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
+
+			xfree(host_utf);
+		}
+
+		if (iri->host) {
+			char *p;
+
+			for (p = (char *)iri->host; *p; p++)
+				if (*p >= 'A' && *p <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
+					*p = tolower(*p);
 		}
 	}
 
@@ -600,7 +615,7 @@ const char *iri_escape_query(const char *src, buffer_t *buf)
 
 const char *iri_get_escaped_host(const IRI *iri, buffer_t *buf)
 {
-	return iri_escape(iri->host_asc ? iri->host_asc : iri->host, buf);
+	return iri_escape(iri->host, buf);
 }
 
 const char *iri_get_escaped_resource(const IRI *iri, buffer_t *buf)

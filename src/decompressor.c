@@ -45,7 +45,7 @@ struct DECOMPRESSOR {
 		(*decompress)(DECOMPRESSOR *dc, char *src, size_t srclen),
 		(*put_data)(void *context, const char *data, size_t length); // decompressed data goes here
 	void
-		(*exit)(DECOMPRESSOR * dc),
+		(*exit)(DECOMPRESSOR *dc),
 		*context; // given to put_data()
 	char
 		encoding;
