@@ -30,6 +30,7 @@
 #include <stdarg.h>
 
 #include "mget.h"
+#include "stringmap.h"
 #include "iri.h"
 
 struct config {
@@ -60,6 +61,9 @@ struct config {
 		*private_key,
 		*random_file,
 		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
+	STRINGMAP
+		*domains,
+		*exclude_domains;
 	long long
 		quota;
 	int

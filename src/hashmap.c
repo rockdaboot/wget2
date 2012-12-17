@@ -114,7 +114,7 @@ static inline void NONNULL_ALL hashmap_free_entry(ENTRY **e)
 	}
 }
 
-static void NONNULL_ALL hashmap_rehash(HASHMAP *h, int newmax)
+static void NONNULL_ALL hashmap_rehash(HASHMAP *h, int newmax, int recalc_hash)
 {
 	ENTRY **new_entry, *entry, *next;
 	int it, pos, cur = h->cur;
@@ -127,7 +127,8 @@ static void NONNULL_ALL hashmap_rehash(HASHMAP *h, int newmax)
 				next = entry->next;
 
 				// now move entry from 'h' to 'new_hashmap'
-				entry->hash = h->hash(entry->key);
+				if (recalc_hash)
+					entry->hash = h->hash(entry->key);
 				pos = entry->hash % newmax;
 				entry->next = new_entry[pos];
 				new_entry[pos] = entry;
@@ -157,9 +158,9 @@ static inline void NONNULL((1,3)) hashmap_new_entry(HASHMAP *h, unsigned int has
 
 	if (++h->cur >= h->threshold) {
 		if (h->off > 0) {
-			hashmap_rehash(h, h->max + h->off);
+			hashmap_rehash(h, h->max + h->off, 0);
 		} else if (h->off<-1) {
-			hashmap_rehash(h, h->max * -h->off);
+			hashmap_rehash(h, h->max * -h->off, 0);
 		} else {
 			// no resizing occurs
 		}
@@ -374,7 +375,7 @@ void hashmap_sethashfunc(HASHMAP *h, unsigned int (*hash)(const void *key))
 	if (h) {
 		h->hash = hash;
 
-		hashmap_rehash(h, h->max);
+		hashmap_rehash(h, h->max, 1);
 	}
 }
 

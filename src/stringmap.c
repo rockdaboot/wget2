@@ -50,23 +50,23 @@ struct STRINGMAP {
 // ~ O(1) insertion, search and removal
 static unsigned int hash_string(const char *key)
 {
-	unsigned int h = 0; // use 0 as SALT if hash table attacks doesn't matter
+	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
 
 	while (*key)
-		h = h * 101 + (unsigned char)*key++;
+		hash = hash * 101 + (unsigned char)*key++;
 		// h = (h << 6) ^ (h >> 26) ^ (unsigned char)*key++;
 
-	return h;
+	return hash;
 }
 
 static unsigned int hash_string_nocase(const char *key)
 {
-	unsigned int h = 0; // use 0 as SALT if hash table attacks doesn't matter
+	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
 
 	while (*key)
-		h = h * 101 + (unsigned char)tolower(*key++);
+		hash = hash * 101 + (unsigned char)tolower(*key++);
 
-	return h;
+	return hash;
 }
 
 // create stringmap with initial size <max>

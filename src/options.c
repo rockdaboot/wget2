@@ -63,6 +63,7 @@
 #include "options.h"
 #include "iri.h"
 #include "http.h"
+#include "stringmap.h"
 
 typedef const struct option *option_t; // forward declaration
 
@@ -127,6 +128,8 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --cache             Enabled using of server cache. (default: on)\n"
 		"      --clobber           Enable file clobbering. (default: on)\n"
 		"      --bind-address      Bind to sockets to local address. (default: automatic)\n"
+		"  -D  --domains           Comma-separated list of domains to follow.\n"
+		"      --exclude-domains   Comma-separated list of domains NOT to follow.\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -225,6 +228,26 @@ static int parse_string(option_t opt, UNUSED const char *const *argv, const char
 	// the strdup'ed string will be released on program exit
 	xfree(*((const char **)opt->var));
 	*((const char **)opt->var) = val ? strdup(val) : NULL;
+
+	return 0;
+}
+
+static int parse_stringset(option_t opt, UNUSED const char *const *argv, const char *val)
+{
+	STRINGMAP *map = *((STRINGMAP **)opt->var);
+
+	if (val) {
+		const char *s, *p;
+
+		for (s = val; (p = strchr(s, ',')); s = p + 1) {
+			if (p != s)
+				stringmap_put_ident_noalloc(map, strndup(s, p - s));
+		}
+		if (*s)
+			stringmap_put_ident_noalloc(map, strdup(s));
+	} else {
+		stringmap_clear(map);
+	}
 
 	return 0;
 }
@@ -383,7 +406,9 @@ static const struct option options[] = {
 	{ "directory-prefix", &config.directory_prefix, parse_string, 1, 'P'},
 	{ "dns-cache", &config.dns_caching, parse_bool, 0, 0},
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0},
+	{ "domains", &config.domains, parse_stringset, 1, 'D'},
 	{ "egd-file", &config.egd_file, parse_string, 1, 0},
+	{ "exclude-domains", &config.exclude_domains, parse_stringset, 1, 0},
 	{ "force-css", &config.force_css, parse_bool, 0, 0},
 	{ "force-directories", &config.force_directories, parse_bool, 0, 'x'},
 	{ "force-html", &config.force_html, parse_bool, 0, 'F'},
@@ -468,7 +493,14 @@ static int NONNULL((1)) set_long_option(const char *name, const char *value)
 		if (value && name == namebuf)
 			err_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
 
-		xfree(*((const char **)opt->var));
+		parse_string(opt, NULL, NULL);
+	}
+	else if (opt->parser == parse_stringset && invert) {
+		// allow no-<string-option> to set value to NULL
+		if (value && name == namebuf)
+			err_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
+
+		parse_stringset(opt, NULL, NULL);
 	}
 	else {
 		if (value && !opt->args && opt->parser != parse_bool)
@@ -778,6 +810,8 @@ int init(int argc, const char *const *argv)
 	config.http_proxy = strdup_null(getenv("http_proxy"));
 	config.https_proxy = strdup_null(getenv("https_proxy"));
 	config.default_page = strdup(config.default_page);
+	config.domains = stringmap_create(16);
+	config.exclude_domains = stringmap_create(16);
 
 	// this is a special case for switching on debugging before any config file is read
 	if (argc >= 2 && (!strcmp(argv[1],"-d") || !strcmp(argv[1],"--debug"))) {
@@ -903,6 +937,9 @@ void deinit(void)
 	xfree(config.remote_encoding);
 
 	iri_free(&config.base);
+
+	stringmap_free(&config.domains);
+	stringmap_free(&config.exclude_domains);
 
 	http_set_http_proxy(NULL, NULL);
 	http_set_https_proxy(NULL, NULL);

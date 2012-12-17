@@ -65,13 +65,12 @@ request pipelining and SPDY protocol are my favorites.
 
 - WARC support
 - RFC 6797 HSTS (HTTP Strict Transport Security)
-- compression on TLS/SSL layer
-- respect /robots.txt "Robot Exclusion Standard"
+- compression on TLS/SSL layer (non-standard GnuTLS extension)
+- respect /robots.txt "Robot Exclusion Standard" and <META name="robots" ...>
 - request pipelining (using client cookies)
 - TCP Fast Open (as soon as Debian sid is unfreezed)
 - SPDY protocol
 - http authentication (basic & digest RFC 2617)
-- a --sync option / respect page expiry dates / only download changed pages
 - respect data-urls
 - Atom / RSS / Podcast / Streaming (.m3u, etc. formats)
 - ICEcast support
@@ -79,6 +78,7 @@ request pipelining and SPDY protocol are my favorites.
 - https with openssl
 - a progress display
 - Documentation docbook with free Serna WYSIWYG/WYMIWYG editor (conversion to texinfo possible)
+  and/or with doxygen (API docs embedded into source code)
 - many easy-to-implement wget options/features
 - plugin technology to plug in user-specific code
 

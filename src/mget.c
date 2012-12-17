@@ -96,8 +96,6 @@ static DOWNLOADER
 	*downloader;
 static void
 	*downloader_thread(void *p);
-VECTOR
-	*hosts;
 size_t
 	quota;
 static int
@@ -241,17 +239,6 @@ static int schedule_download(JOB *job, PART *part)
 	return 0;
 }
 
-static void host_add(const char *host)
-{
-	if (host) {
-		if (!hosts)
-			hosts = vec_create(4, 4, (int(*)(const void *, const void *))strcmp);
-
-		log_printf("Add host %s\n",host);
-		vec_insert_sorted(hosts, host, strlen(host) + 1);
-	}
-}
-
 // Since quota may change at any time in a threaded environment,
 // we have to modify and check the quota in one (protected) step.
 static size_t quota_modify_read(size_t nbytes)
@@ -297,8 +284,9 @@ static JOB *add_url_to_queue(const char *url, IRI *base, const char *encoding)
 			job->local_filename = get_local_filename(job->iri);
 
 		if (config.recursive && !config.span_hosts) {
-			// only download content from hosts given on the command line
-			host_add(job->iri->host);
+			// only download content from hosts given on the command line or from input file
+			if (!stringmap_get(config.exclude_domains, job->iri->host))
+				stringmap_put_ident(config.domains, job->iri->host);
 		}
 	}
 
@@ -700,8 +688,8 @@ int main(int argc, const char *const *argv)
 
 						if (config.recursive && !config.span_hosts) {
 							// only download content from given hosts
-							if (!iri->host || vec_find(hosts, iri->host) < 0) {
-								info_printf("URI '%s' not followed: host '%s' not in host list\n", iri->uri, iri->host);
+							if (!iri->host || !stringmap_get(config.domains, iri->host) || stringmap_get(config.exclude_domains, iri->host)) {
+								info_printf("URI '%s' not followed\n", iri->uri);
 								iri_free(&iri);
 							}
 						}
@@ -757,7 +745,6 @@ int main(int argc, const char *const *argv)
 	ssl_deinit();
 	queue_free();
 	blacklist_free();
-	vec_free(&hosts);
 	xfree(downloader);
 	deinit();
 
