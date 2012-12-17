@@ -407,6 +407,8 @@ const char *http_parse_content_encoding(const char *s, char *content_encoding)
 
 	if (!strcasecmp(s, "gzip") || !strcasecmp(s, "x-gzip"))
 		*content_encoding = content_encoding_gzip;
+	else if (!strcasecmp(s, "deflate"))
+		*content_encoding = content_encoding_deflate;
 	else
 		*content_encoding = content_encoding_identity;
 

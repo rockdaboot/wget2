@@ -132,7 +132,7 @@ static void print_x509_certificate_info(gnutls_session_t session)
 			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_issuer_unique_id(cert, dn, &dn_size);
 			info_printf(_("  Certificate Issuer's UID: %s\n"), dn);
-
+/*
 			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_subject_key_id(cert, dn, &dn_size, NULL);
                         info_printf(_("  Certificate Subject ID: %s\n"), dn);
@@ -140,7 +140,7 @@ static void print_x509_certificate_info(gnutls_session_t session)
 			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_subject_unique_id(cert, dn, &dn_size);
                         info_printf(_("  Certificate Subject UID: %s\n"), dn);
-
+*/
 			gnutls_x509_crt_deinit(cert);
 		} else {
 			info_printf(_("  Unknown certificate type %d\n"), cert_type);

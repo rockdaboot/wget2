@@ -110,6 +110,19 @@ static void gzip_exit(DECOMPRESSOR *dc)
 	}
 }
 
+static int deflate_init(z_stream *strm)
+{
+	memset(strm, 0, sizeof(*strm));
+
+	// -15: decode raw deflate data
+	if (inflateInit2(strm, -15) != Z_OK) {
+		err_printf(_("Failed to init deflate decompression\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
 static int identity(DECOMPRESSOR *dc, char *src, size_t srclen)
 {
 	if (dc->put_data)
@@ -127,6 +140,11 @@ DECOMPRESSOR *decompress_open(int encoding,
 
 	if (encoding == content_encoding_gzip) {
 		if ((rc = gzip_init(&dc->extra.strm)) == 0) {
+			dc->decompress = gzip_decompress;
+			dc->exit = gzip_exit;
+		}
+	} else if (encoding == content_encoding_deflate) {
+		if ((rc = deflate_init(&dc->extra.strm)) == 0) {
 			dc->decompress = gzip_decompress;
 			dc->exit = gzip_exit;
 		}

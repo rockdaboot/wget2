@@ -1485,7 +1485,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 				"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8\r\n"
 				"Accept-Language: en-us,en;q=0.5\r\n");
 				 */
-				"Accept-Encoding: gzip\r\n");
+				"Accept-Encoding: gzip, deflate\r\n");
 
 			http_add_header_line(req, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
 

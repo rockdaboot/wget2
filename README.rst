@@ -11,6 +11,7 @@ modern and clean code, new technology, new design).
 
 In many cases Mget downloads much faster than Wget1.14 due to HTTP zlib
 compression, parallel connections and use of If-Modified-Since HTTP header.
+
 It consumes less system and user CPU cycles due to larger buffers and
 buffer recycling.
 
@@ -35,7 +36,7 @@ The basic functionality is implemented, like:
 - respect cookie public suffix list http://publicsuffix.org/list/
 - recursive download of websites with or without spanning hosts
 - download of single web pages / resources
-- zlib/gzip compressed HTTP/HTTPS downloads
+- zlib/gzip compressed HTTP/HTTPS downloads (gzip, deflate)
 - number of parallel download threads is adjustable
 - include directive for config files (wildcards allowed)
 - support for keep-alive connections
@@ -78,7 +79,6 @@ request pipelining and SPDY protocol are my favorites.
 - https with openssl
 - a progress display
 - Documentation docbook with free Serna WYSIWYG/WYMIWYG editor (conversion to texinfo possible)
-- to implement Content-Encoding 'compress' and 'deflate' I need a server supporting these
 - many easy-to-implement wget options/features
 - plugin technology to plug in user-specific code
 

@@ -33,7 +33,8 @@ typedef struct DECOMPRESSOR DECOMPRESSOR;
 
 enum {
 	content_encoding_identity,
-	content_encoding_gzip
+	content_encoding_gzip,
+	content_encoding_deflate
 };
 
 DECOMPRESSOR
