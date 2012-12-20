@@ -96,7 +96,7 @@ static DOWNLOADER
 	*downloader;
 static void
 	*downloader_thread(void *p);
-size_t
+long long
 	quota;
 static int
 	terminate;
@@ -241,7 +241,7 @@ static int schedule_download(JOB *job, PART *part)
 
 // Since quota may change at any time in a threaded environment,
 // we have to modify and check the quota in one (protected) step.
-static size_t quota_modify_read(size_t nbytes)
+static long long quota_modify_read(size_t nbytes)
 {
 	static pthread_mutex_t
 		mutex = PTHREAD_MUTEX_INITIALIZER;

@@ -424,7 +424,7 @@ void ssl_init(void)
 
 					closedir(dir);
 				} else {
-					err_printf("Failed to diropen %s\n", config.ca_directory);
+					err_printf(_("Failed to diropen %s\n"), config.ca_directory);
 				}
 			}
 
@@ -532,6 +532,7 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	gnutls_init(&session, GNUTLS_CLIENT);
 #endif
 	gnutls_session_set_ptr(session, (void *)hostname);
+	// RFC 6066 SNI Server Name Indication
 	gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
 	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, credentials);
 	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);

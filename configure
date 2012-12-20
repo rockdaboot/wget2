@@ -3261,7 +3261,7 @@ if test "x$CFLAGS" = "x" ; then
    CFLAGS="-g -std=gnu99 -pedantic -fPIC\
  -Wall -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes\
  -Wwrite-strings -Wformat=2 -Wformat -Wformat-security\
- -Wno-sign-compare -Wextra -D_FORTIFY_SOURCE=2\
+ -Wsign-compare -Wextra -D_FORTIFY_SOURCE=2\
  -Wcast-align -O2"
   fi
 fi

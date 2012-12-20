@@ -118,8 +118,8 @@
 	#define ngettext(STRING1,STRING2,N) STRING2
 #endif
 
-#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901
-#define restrict
-#endif
+//#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901
+//#define restrict
+//#endif
 
 #endif /* _MGET_MGET_H */

@@ -63,14 +63,15 @@ The following is just a quick list of ideas and todos.
 I personally like to experiment with new stuff (new to wget), so
 request pipelining and SPDY protocol are my favorites.
 
-- WARC support
-- RFC 6797 HSTS (HTTP Strict Transport Security)
-- compression on TLS/SSL layer (non-standard GnuTLS extension)
 - respect /robots.txt "Robot Exclusion Standard" and <META name="robots" ...>
-- request pipelining (using client cookies)
-- TCP Fast Open (as soon as Debian sid is unfreezed)
-- SPDY protocol
 - http authentication (basic & digest RFC 2617)
+- WARC support
+- TCP Fast Open (as soon as Debian sid is unfreezed)
+- RFC 6797 HSTS (HTTP Strict Transport Security)
+  Chromium HSTS domain list: https://src.chromium.org/viewvc/chrome/trunk/src/net/base/transport_security_state_static.json
+- compression on TLS/SSL layer (non-standard GnuTLS extension)
+- request pipelining (using client cookies)
+- SPDY protocol
 - respect data-urls
 - Atom / RSS / Podcast / Streaming (.m3u, etc. formats)
 - ICEcast support
