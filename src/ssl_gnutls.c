@@ -537,11 +537,11 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
 
 	if (!strncasecmp(config.secure_protocol, "SSL", 3))
-		ret = gnutls_priority_set_direct (session, "NORMAL:-VERS-TLS-ALL", NULL);
+		ret = gnutls_priority_set_direct (session, "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0", NULL);
 	else if (!strcasecmp(config.secure_protocol, "TLSv1"))
 		ret = gnutls_priority_set_direct (session, "NORMAL:-VERS-SSL3.0", NULL);
 	else
-		ret = gnutls_priority_set_direct(session, "NORMAL", NULL);
+		ret = gnutls_priority_set_direct(session, "NORMAL:%COMPAT", NULL);
 
 	if (ret < 0) {
 		// print error but continue
