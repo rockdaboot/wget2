@@ -80,7 +80,6 @@ request pipelining and SPDY protocol are my favorites.
 - a progress display
 - Documentation docbook with free Serna WYSIWYG/WYMIWYG editor (conversion to texinfo possible)
   and/or with doxygen (API docs embedded into source code)
-- many easy-to-implement wget options/features
 - plugin technology to plug in user-specific code
 
 

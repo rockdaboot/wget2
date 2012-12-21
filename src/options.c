@@ -45,11 +45,13 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <ctype.h>
 #include <pwd.h>
 #include <errno.h>
 #include <glob.h>
 #include <fcntl.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <stringprep.h>
 
@@ -801,6 +803,9 @@ static int NONNULL((2)) parse_command_line(int argc, const char *const *argv)
 int init(int argc, const char *const *argv)
 {
 	int n, truncated = 1;
+
+	// seed random generator, used e.g. by Digest Authentication
+	srand48((long)time(NULL) ^ getpid());
 
 	// the following strdup's are just needed for reallocation/freeing purposes to
 	// satisfy valgrind

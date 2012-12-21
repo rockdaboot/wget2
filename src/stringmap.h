@@ -36,7 +36,7 @@ typedef struct STRINGMAP STRINGMAP;
 
 STRINGMAP
 	*stringmap_create(int max) MALLOC,
-	*stringmap_nocase_create(int max) MALLOC;
+	*stringmap_create_nocase(int max) MALLOC;
 int
 	stringmap_put(STRINGMAP *h, const char *key, const void *value, size_t valuesize),
 	stringmap_put_noalloc(STRINGMAP *h, const char *key, const void *value),

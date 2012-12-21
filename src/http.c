@@ -34,6 +34,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
@@ -48,6 +49,8 @@
 #include "decompressor.h"
 #include "buffer.h"
 #include "cookie.h"
+#include "base64.h"
+#include "md5.h"
 #include "http.h"
 
 #define HTTP_CTYPE_SEPERATOR (1<<0)
@@ -309,9 +312,7 @@ const char *http_parse_digest(const char *s, HTTP_DIGEST *digest)
 	memset(digest, 0, sizeof(*digest));
 
 	while (isblank(*s)) s++;
-
-	for (p = s; http_istoken(*s); s++);
-	digest->algorithm = strndup(p, s - p);
+	s=http_parse_token(s, &digest->algorithm);
 
 	while (isblank(*s)) s++;
 
@@ -327,6 +328,36 @@ const char *http_parse_digest(const char *s, HTTP_DIGEST *digest)
 	}
 
 	while (*s && !isblank(*s)) s++;
+
+	return s;
+}
+
+// RFC 2617:
+// challenge   = auth-scheme 1*SP 1#auth-param
+// auth-scheme = token
+// auth-param  = token "=" ( token | quoted-string )
+
+const char *http_parse_challenge(const char *s, HTTP_CHALLENGE *challenge)
+{
+	memset(challenge, 0, sizeof(*challenge));
+
+	while (isblank(*s)) s++;
+	s=http_parse_token(s, &challenge->auth_scheme);
+
+	HTTP_HEADER_PARAM param;
+	do {
+		s=http_parse_param(s, &param.name, &param.value);
+		if (param.name) {
+			if (!challenge->params)
+				challenge->params = stringmap_create_nocase(8);
+			stringmap_put_noalloc(challenge->params, param.name, param.value);
+		}
+
+		while (isblank(*s)) s++;
+
+		if (*s != ',') break;
+		else s++;
+	} while (*s);
 
 	return s;
 }
@@ -840,6 +871,13 @@ HTTP_RESPONSE *http_parse_response(char *buf)
 			if (!resp->cookies)
 				resp->cookies = vec_create(4, 4, NULL);
 			vec_add(resp->cookies, &cookie, sizeof(cookie));
+		} else if (!strcasecmp(name, "WWW-Authenticate")) {
+			HTTP_CHALLENGE challenge;
+			http_parse_challenge(s, &challenge);
+
+			if (!resp->challenges)
+				resp->challenges = vec_create(2, 2, NULL);
+			vec_add(resp->challenges, &challenge, sizeof(challenge));
 		}
 	}
 
@@ -859,6 +897,13 @@ int http_free_param(HTTP_HEADER_PARAM *param)
 {
 	xfree(param->name);
 	xfree(param->value);
+	return 0;
+}
+
+static int http_free_param2(const char *key, const char *value)
+{
+	xfree(key);
+	xfree(value);
 	return 0;
 }
 
@@ -888,6 +933,20 @@ void http_free_digests(VECTOR *digests)
 	vec_free(&digests);
 }
 
+int http_free_challenge(HTTP_CHALLENGE *challenge)
+{
+	xfree(challenge->auth_scheme);
+	stringmap_browse(challenge->params, (int (*)(const char *, const void *))http_free_param2);
+	stringmap_free(&challenge->params);
+	return 0;
+}
+
+void http_free_challenges(VECTOR *challenges)
+{
+	vec_browse(challenges, (int (*)(void *))http_free_challenge);
+	vec_free(&challenges);
+}
+
 void http_free_cookies(VECTOR *cookies)
 {
 	vec_browse(cookies, (int (*)(void *))cookie_free_cookie);
@@ -902,6 +961,8 @@ void http_free_response(HTTP_RESPONSE **resp)
 		(*resp)->links = NULL;
 		http_free_digests((*resp)->digests);
 		(*resp)->digests = NULL;
+		http_free_challenges((*resp)->challenges);
+		(*resp)->challenges = NULL;
 		http_free_cookies((*resp)->cookies);
 		(*resp)->cookies = NULL;
 		xfree((*resp)->content_type);
@@ -975,6 +1036,91 @@ void http_add_header(HTTP_REQUEST *req, const char *name, const char *value)
 	strcpy(buf + lname + 2, value);
 
 	vec_add_noalloc(req->lines, buf);
+}
+
+void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const char *username, const char *password)
+{
+	if (!challenge || !username || !password)
+		return;
+
+	if (!strcasecmp(challenge->auth_scheme, "basic")) {
+		const char *encoded = mget_base64_encode_printf_alloc("%s:%s", username, password);
+		http_add_header_printf(req, "Authorization: Basic %s", encoded);
+		xfree(encoded);
+	}
+	else if (!strcasecmp(challenge->auth_scheme, "digest")) {
+#ifndef MD5_DIGEST_LENGTH
+#  define MD5_DIGEST_LENGTH 16
+#endif
+		char a1buf[MD5_DIGEST_LENGTH * 2 + 1], a2buf[MD5_DIGEST_LENGTH * 2 + 1];
+		char response_digest[MD5_DIGEST_LENGTH * 2 + 1], cnonce[16] = "";
+		buffer_t buf;
+		const char
+			*realm = stringmap_get(challenge->params, "realm"),
+			*opaque = stringmap_get(challenge->params, "opaque"),
+			*nonce = stringmap_get(challenge->params, "nonce"),
+			*qop = stringmap_get(challenge->params, "qop"),
+			*algorithm = stringmap_get(challenge->params, "algorithm");
+
+		if (qop && strcmp(qop, "auth")) {
+			err_printf(_("Unsupported quality of protection '%s'.\n"), qop);
+			return;
+		}
+
+		if (algorithm && strcmp(algorithm, "MD5") && strcmp(algorithm, "MD5-sess")) {
+			err_printf(_("Unsupported algorithm '%s'.\n"), algorithm);
+			return;
+		}
+
+		if (!realm || !nonce)
+			return;
+
+		/// A1BUF = H(user ":" realm ":" password)
+		md5_printf_hex(a1buf, "%s:%s:%s", username, realm, password);
+
+		if (!strcmp(algorithm, "MD5-sess")) {
+			// A1BUF = H( H(user ":" realm ":" password) ":" nonce ":" cnonce )
+			snprintf(cnonce, sizeof(cnonce), "%08lx", lrand48()); // create random hex string
+			md5_printf_hex(a1buf, "%s:%s:%s", a1buf, nonce, cnonce);
+		}
+
+		// A2BUF = H(method ":" path)
+		md5_printf_hex(a2buf, "%s:%s", req->method, req->esc_resource.data);
+
+		if (!strcmp(qop, "auth") || !strcmp(qop, "auth-int")) {
+			// RFC 2617 Digest Access Authentication
+			if (!*cnonce)
+				snprintf(cnonce, sizeof(cnonce), "%08lx", lrand48()); // create random hex string
+
+			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" nc ":" cnonce ":" qop ": " A2BUF)
+			md5_printf_hex(response_digest, "%s:%s:00000001:%s:%s:%s", a1buf, nonce, /* nc, */ cnonce, qop, a2buf);
+		} else {
+			// RFC 2069 Digest Access Authentication
+
+			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" A2BUF)
+			md5_printf_hex(response_digest, "%s:%s:%s", a1buf, nonce, a2buf);
+		}
+
+		buffer_init(&buf, NULL, 256);
+
+		buffer_printf2(&buf,
+			"Authorization: Digest "\
+			"username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", response=\"%s\"",
+			username, realm, nonce, req->esc_resource.data, response_digest);
+
+		if (!strcmp(qop,"auth"))
+			buffer_printf_append2(&buf, ", qop=auth, nc=00000001, cnonce=\"%s\"", cnonce);
+
+		if (opaque)
+			buffer_printf_append2(&buf, ", opaque=\"%s\"", opaque);
+
+		if (algorithm)
+			buffer_printf_append2(&buf, ", algorithm=\"%s\"", algorithm);
+
+		http_add_header_line(req, buf.data);
+
+		buffer_deinit(&buf);
+	}
 }
 
 HTTP_CONNECTION *http_open(const IRI *iri)

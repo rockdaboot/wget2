@@ -79,7 +79,7 @@ STRINGMAP *stringmap_create(int max)
 	return h;
 }
 
-STRINGMAP *stringmap_nocase_create(int max)
+STRINGMAP *stringmap_create_nocase(int max)
 {
 	STRINGMAP *h = xmalloc(sizeof(STRINGMAP));
 	h->h = hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string_nocase, (int (*)(const void *, const void *))strcasecmp);

@@ -888,7 +888,7 @@ void *downloader_thread(void *p)
 					else if (resp->code == 206 && config.continue_download) { // partial content
 						append_file(resp, config.output_document ? config.output_document : job->local_filename);
 					}
-					else if (resp->code == 304 && config.timestamping) { // local up-to-date
+					else if (resp->code == 304 && config.timestamping) { // local document is up-to-date
 						if (config.recursive) {
 							const char *ext = strrchr(job->local_filename, '.');
 
@@ -1405,12 +1405,8 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 	IRI *use_iri = iri;
 	HTTP_CONNECTION *conn;
 	HTTP_RESPONSE *resp = NULL;
-	int max_redirect = 3;
-//	const char *location = NULL;
-	char uri_buf_static[1024];
-	buffer_t uri_buf;
-
-	buffer_init(&uri_buf, uri_buf_static, sizeof(uri_buf_static));
+	VECTOR *challenges = NULL;
+//	int max_redirect = 3;
 
 	while (use_iri) {
 		if (downloader->conn && !null_strcmp(downloader->conn->esc_host, use_iri->host) &&
@@ -1492,6 +1488,14 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			if (config.referer)
 				http_add_header(req, "Referer", config.referer);
 
+			if (challenges) {
+				// There might be more than one challenge, we could select the securest one.
+				// For simplicity and testing we just take the first for now.
+				// the following adds an Authorization: HTTP header
+//				http_add_credentials(req, vec_get(challenges, 0), config.username, config.password);
+				http_add_credentials(req, vec_get(challenges, 0), "oms", "123");
+			}
+
 			if (part)
 				http_add_header_printf(req, "Range: bytes=%llu-%llu",
 					(unsigned long long) part->position, (unsigned long long) part->position + part->length - 1);
@@ -1512,10 +1516,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			}
 
 			http_free_request(&req);
-			// http_close(&conn);
 		} else break;
-
-//		xfree(location);
 
 		if (!resp) {
 			http_close(&downloader->conn);
@@ -1526,9 +1527,15 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 		if (!resp->keep_alive)
 			http_close(&downloader->conn);
 
-		if (--max_redirect < 0) {
-			if (resp->location) // end of forwarding chain not reached
+		if (resp->code == 302 && resp->links && resp->digests)
+			break; // 302 with Metalink information
+
+		if (resp->code == 401 && !challenges) { // Unauthorized
+			if ((challenges = resp->challenges)) {
+				resp->challenges = NULL;
 				http_free_response(&resp);
+				continue; // try again with credentials
+			}
 			break;
 		}
 
@@ -1536,37 +1543,31 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 		if (resp->code / 100 == 2 || resp->code / 100 >= 4 || resp->code == 304)
 			break; // final response
 
-		if (resp->code == 302 && resp->links && resp->digests)
-			break; // 302 with Metalink information
-
 		if (resp->location) {
+			char uri_buf_static[1024];
+			buffer_t uri_buf;
+
 			cookie_normalize_cookies(use_iri, resp->cookies);
 			cookie_store_cookies(resp->cookies);
 
+			buffer_init(&uri_buf, uri_buf_static, sizeof(uri_buf_static));
+
 			iri_relative_to_absolute(use_iri, resp->location, strlen(resp->location), &uri_buf);
 
-			dprintf(downloader->sockfd[1], "add uri - %s\n", uri_buf.data);
-//			location = resp->location;
-//			resp->location = NULL;
-
-//			if (use_iri != iri)
-//				iri_free(&use_iri);
-
-//			use_iri = iri_parse(uri_buf.data);
+			dprintf(downloader->sockfd[1], "redirect - %s\n", uri_buf.data);
 
 			buffer_deinit(&uri_buf);
 			break;
-
-		} else {
-			if (use_iri != iri)
-				iri_free(&use_iri);
 		}
+
+//		if (use_iri != iri)
+//			iri_free(&use_iri);
 
 		http_free_response(&resp);
 	}
 
-	if (use_iri != iri)
-		iri_free(&use_iri);
+//	if (use_iri != iri)
+//		iri_free(&use_iri);
 
 	return resp;
 }

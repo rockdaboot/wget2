@@ -36,6 +36,7 @@
 #include <time.h>
 
 #include "vector.h"
+#include "stringmap.h"
 #include "job.h"
 #include "net.h"
 #include "buffer.h"
@@ -72,6 +73,13 @@ typedef struct {
 		*encoded_digest;
 } HTTP_DIGEST;
 
+typedef struct {
+	const char
+		*auth_scheme;
+	STRINGMAP
+		*params;
+} HTTP_CHALLENGE;
+
 enum {
 	transfer_encoding_identity,
 	transfer_encoding_chunked
@@ -98,7 +106,8 @@ typedef struct {
 	VECTOR
 		*links,
 		*digests,
-		*cookies;
+		*cookies,
+		*challenges;
 	const char
 		*content_type,
 		*content_type_encoding,
@@ -151,6 +160,7 @@ const char
 	*http_parse_name_fixed(const char *s, char *name, size_t name_size) NONNULL_ALL,
 	*http_parse_link(const char *s, HTTP_LINK *link) NONNULL_ALL,
 	*http_parse_digest(const char *s, HTTP_DIGEST *digest) NONNULL_ALL,
+	*http_parse_challenge(const char *s, HTTP_CHALLENGE *challenge) NONNULL_ALL,
 	*http_parse_location(const char *s, const char **location) NONNULL_ALL,
 	*http_parse_transfer_encoding(const char *s, char *transfer_encoding) NONNULL_ALL,
 	*http_parse_content_type(const char *s, const char **content_type, const char **charset),
@@ -165,6 +175,7 @@ void
 	http_add_header_printf(HTTP_REQUEST *req, const char *fmt, ...) PRINTF_FORMAT(2,3) NONNULL_ALL,
 	http_add_header_line(HTTP_REQUEST *req, const char *line) NONNULL_ALL,
 	http_add_header(HTTP_REQUEST *req, const char *name, const char *value) NONNULL_ALL,
+	http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const char *username, const char *password) NONNULL((1)),
 	http_set_http_proxy(const char *proxy, const char *locale),
 	http_set_https_proxy(const char *proxy, const char *locale);
 
@@ -172,10 +183,12 @@ int
 	http_free_param(HTTP_HEADER_PARAM *param),
 	http_free_cookie(HTTP_COOKIE *cookie),
 	http_free_digest(HTTP_DIGEST *digest),
+	http_free_challenge(HTTP_CHALLENGE *challenge),
 	http_free_link(HTTP_LINK *link);
 void
 	http_free_cookies(VECTOR *cookies),
 	http_free_digests(VECTOR *digests),
+	http_free_challenges(VECTOR *challenges),
 	http_free_links(VECTOR *link),
 //	http_free_header(HTTP_HEADER **header),
 	http_free_request(HTTP_REQUEST **req),
