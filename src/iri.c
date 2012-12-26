@@ -106,12 +106,20 @@ int iri_isunreserved_path(char c)
 	return c > 32 && c < 127 && (isalnum(c) || strchr("/-._~", c) != NULL);
 }
 
+// needed as helper for blacklist.c/blacklist_free()
+void iri_free_content(IRI *iri)
+{
+	if (iri) {
+		if (iri->host_allocated)
+			xfree(iri->host);
+		xfree(iri->connection_part);
+	}
+}
+
 void iri_free(IRI **iri)
 {
 	if (iri && *iri) {
-		if ((*iri)->host_allocated)
-			xfree((*iri)->host);
-		xfree((*iri)->connection_part);
+		iri_free_content(*iri);
 		xfree(*iri);
 	}
 }
@@ -146,7 +154,7 @@ static int _unescape(unsigned char *src)
 
 // URIs are assumed to be unescaped at this point
 
-static IRI *iri_parse(const char *s_uri)
+IRI *iri_parse(const char *s_uri, const char *encoding)
 {
 	IRI *iri;
 	const char *default_port = NULL;
@@ -281,34 +289,16 @@ static IRI *iri_parse(const char *s_uri)
 */
  	}
 
+	iri->resolv_port = iri->port ? iri->port : default_port;
+
 	// now unescape all components (not interested in display, userinfo, password
-	if (iri->host)
+	if (iri->host) {
+		const char *host_utf;
+		char *p;
+
 		_unescape((unsigned char *)iri->host);
-	else {
-		if (iri->scheme == IRI_SCHEME_HTTP || iri->scheme == IRI_SCHEME_HTTPS) {
-			err_printf(_("Missing host/domain in URI '%s'\n"), iri->uri);
-			iri_free(&iri);
-			return NULL;
-		}
-	}
-	if (iri->path)
-		_unescape((unsigned char *)iri->path);
-	if (iri->query)
-		_unescape((unsigned char *)iri->query);
-	if (iri->fragment)
-		_unescape((unsigned char *)iri->fragment);
 
-//	info_printf("%s: path '%s'\n", iri->uri, iri->path);
-
-	return iri;
-}
-
-IRI *iri_parse_encoding(const char *uri, const char *encoding)
-{
-	IRI *iri = iri_parse(uri);
-
-	if (iri) {
-		const char *host_utf = str_to_utf8(iri->host, encoding);
+		host_utf = str_to_utf8(iri->host, encoding);
 
 		if (host_utf) {
 			char *host_asc = NULL;
@@ -324,14 +314,25 @@ IRI *iri_parse_encoding(const char *uri, const char *encoding)
 			xfree(host_utf);
 		}
 
-		if (iri->host) {
-			char *p;
-
-			for (p = (char *)iri->host; *p; p++)
-				if (*p >= 'A' && *p <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
-					*p = tolower(*p);
+		for (p = (char *)iri->host; *p; p++)
+			if (*p >= 'A' && *p <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
+				*p = tolower(*p);
+	}
+	else {
+		if (iri->scheme == IRI_SCHEME_HTTP || iri->scheme == IRI_SCHEME_HTTPS) {
+			err_printf(_("Missing host/domain in URI '%s'\n"), iri->uri);
+			iri_free(&iri);
+			return NULL;
 		}
 	}
+	if (iri->path)
+		_unescape((unsigned char *)iri->path);
+	if (iri->query)
+		_unescape((unsigned char *)iri->query);
+	if (iri->fragment)
+		_unescape((unsigned char *)iri->fragment);
+
+//	info_printf("%s: path '%s'\n", iri->uri, iri->path);
 
 	return iri;
 }

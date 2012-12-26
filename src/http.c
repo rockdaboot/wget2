@@ -900,13 +900,6 @@ int http_free_param(HTTP_HEADER_PARAM *param)
 	return 0;
 }
 
-static int http_free_param2(const char *key, const char *value)
-{
-	xfree(key);
-	xfree(value);
-	return 0;
-}
-
 int http_free_link(HTTP_LINK *link)
 {
 	xfree(link->uri);
@@ -936,7 +929,6 @@ void http_free_digests(VECTOR *digests)
 int http_free_challenge(HTTP_CHALLENGE *challenge)
 {
 	xfree(challenge->auth_scheme);
-	stringmap_browse(challenge->params, (int (*)(const char *, const void *))http_free_param2);
 	stringmap_free(&challenge->params);
 	return 0;
 }
@@ -1024,24 +1016,19 @@ void http_add_header_line(HTTP_REQUEST *req, const char *line)
 
 void http_add_header(HTTP_REQUEST *req, const char *name, const char *value)
 {
-	size_t
-		lname = strlen(name),
-		lvalue = strlen(value);
-	char
-		*buf = xmalloc(lname + 2 + lvalue + 1); // "%s: %s"
-
-	strcpy(buf, name);
-	buf[lname] = ':';
-	buf[lname + 1] = ' ';
-	strcpy(buf + lname + 2, value);
-
-	vec_add_noalloc(req->lines, buf);
+	vec_add_printf(req->lines, "%s: %s", name, value);
 }
 
 void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const char *username, const char *password)
 {
-	if (!challenge || !username || !password)
+	if (!challenge)
 		return;
+
+	if (!username)
+		username = "";
+
+	if (!password)
+		password = "";
 
 	if (!strcasecmp(challenge->auth_scheme, "basic")) {
 		const char *encoded = mget_base64_encode_printf_alloc("%s:%s", username, password);
@@ -1085,7 +1072,7 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 		}
 
 		// A2BUF = H(method ":" path)
-		md5_printf_hex(a2buf, "%s:%s", req->method, req->esc_resource.data);
+		md5_printf_hex(a2buf, "%s:/%s", req->method, req->esc_resource.data);
 
 		if (!strcmp(qop, "auth") || !strcmp(qop, "auth-int")) {
 			// RFC 2617 Digest Access Authentication
@@ -1105,7 +1092,7 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 
 		buffer_printf2(&buf,
 			"Authorization: Digest "\
-			"username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", response=\"%s\"",
+			"username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/%s\", response=\"%s\"",
 			username, realm, nonce, req->esc_resource.data, response_digest);
 
 		if (!strcmp(qop,"auth"))
@@ -1115,7 +1102,7 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 			buffer_printf_append2(&buf, ", opaque=\"%s\"", opaque);
 
 		if (algorithm)
-			buffer_printf_append2(&buf, ", algorithm=\"%s\"", algorithm);
+			buffer_printf_append2(&buf, ", algorithm=%s", algorithm);
 
 		http_add_header_line(req, buf.data);
 
@@ -1138,13 +1125,14 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 
 	if (iri->scheme == IRI_SCHEME_HTTP && http_proxy) {
 		host = http_proxy->host;
-		port = (http_proxy->port && *http_proxy->port) ? http_proxy->port : http_proxy->scheme;
+		port = http_proxy->resolv_port;
 	} else if (iri->scheme == IRI_SCHEME_HTTPS && https_proxy) {
 		host = https_proxy->host;
-		port = (https_proxy->port && *https_proxy->port) ? https_proxy->port : https_proxy->scheme;
+		port = https_proxy->resolv_port;
+//		port = https_proxy->port && *https_proxy->port) ? https_proxy->port : https_proxy->scheme;
 	} else {
 		host = iri->host;
-		port = (iri->port && *iri->port) ? iri->port : iri->scheme;
+		port = iri->resolv_port;
 	}
 
 	if ((conn->ai = conn->addrinfo = tcp_resolve(host, port)) == NULL)
@@ -1154,7 +1142,7 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 		if ((conn->tcp = tcp_connect(conn->ai, ssl ? host : NULL)) != NULL) {
 			tcp_set_timeout(conn->tcp, config.read_timeout);
 			conn->esc_host = iri->host ? strdup(iri->host) : NULL;
-			conn->port = iri->port ? strdup(iri->port) : NULL;
+			conn->port = iri->resolv_port;
 			conn->scheme = iri->scheme;
 			conn->buf = buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
 			return conn;
@@ -1173,7 +1161,7 @@ void http_close(HTTP_CONNECTION **conn)
 		if (!config.dns_caching)
 			freeaddrinfo((*conn)->addrinfo);
 		xfree((*conn)->esc_host);
-		xfree((*conn)->port);
+		// xfree((*conn)->port);
 		// xfree((*conn)->scheme);
 		buffer_free(&(*conn)->buf);
 		xfree(*conn);
@@ -1599,11 +1587,11 @@ HTTP_RESPONSE *http_get_response_file(HTTP_CONNECTION *conn, const char *fname)
 void http_set_http_proxy(const char *proxy, const char *locale)
 {
 	iri_free(&http_proxy);
-	http_proxy = iri_parse_encoding(proxy, locale);
+	http_proxy = iri_parse(proxy, locale);
 }
 
 void http_set_https_proxy(const char *proxy, const char *locale)
 {
 	iri_free(&https_proxy);
-	https_proxy = iri_parse_encoding(proxy, locale);
+	https_proxy = iri_parse(proxy, locale);
 }

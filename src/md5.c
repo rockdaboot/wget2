@@ -34,6 +34,7 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+#include "xalloc.h"
 #include "utils.h"
 #include "printf.h"
 #include "md5.h"
@@ -53,7 +54,8 @@ void md5_printf_hex(char *digest_hex, const char *fmt, ...)
 
 		if (gnutls_hash_fast(GNUTLS_DIG_MD5, plaintext, size, digest) == 0) {
 			buffer_to_hex(digest, sizeof(digest), digest_hex, sizeof(digest) * 2 +1);
-			return;
 		}
+
+		xfree(plaintext);
 	}
 }

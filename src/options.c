@@ -132,6 +132,8 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"      --bind-address      Bind to sockets to local address. (default: automatic)\n"
 		"  -D  --domains           Comma-separated list of domains to follow.\n"
 		"      --exclude-domains   Comma-separated list of domains NOT to follow.\n"
+		"      --user              Username for Authentication. (default: empty username)\n"
+		"      --password          Password for Authentication. (default: empty password)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -149,6 +151,8 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 		"  -E  --adjust-extension  Append extension to saved file (.html or .css). (default: off)\n"
 		"      --default_page      Default file name. (default: index.html)\n"
 		"  -Q  --quota             Download quota, 0 = no quota. (default: 0)\n"
+		"      --http-user         Username for HTTP Authentication. (default: empty username)\n"
+		"      --http-password     Password for HTTP Authentication. (default: empty password)\n"
 		"\n");
 	puts(
 		"HTTPS (SSL/TLS) related options:\n"
@@ -418,7 +422,9 @@ static const struct option options[] = {
 	{ "host-directories", &config.host_directories, parse_bool, 0, 0},
 	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0}, // obsolete, replaced by --adjust-extension
 	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0},
+	{ "http-password", &config.http_password, parse_string, 1, 0},
 	{ "http-proxy", &config.http_proxy, parse_string, 1, 0},
+	{ "http-user", &config.http_username, parse_string, 1, 0},
 	{ "https-proxy", &config.https_proxy, parse_string, 1, 0},
 	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4'},
 	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6'},
@@ -431,6 +437,7 @@ static const struct option options[] = {
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0},
 	{ "output-document", &config.output_document, parse_string, 1, 'O'},
 	{ "output-file", &config.logfile, parse_string, 1, 'o'},
+	{ "password", &config.password, parse_string, 1, 0},
 	{ "prefer-family", &config.preferred_family, parse_prefer_family, 1, 0},
 	{ "private-key", &config.private_key, parse_string, 1, 0},
 	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0},
@@ -452,6 +459,7 @@ static const struct option options[] = {
 	{ "timeout", NULL, parse_timeout, 1, 'T'},
 	{ "timestamping", &config.timestamping, parse_bool, 0, 'N'},
 	{ "use-server-timestamp", &config.use_server_timestamps, parse_bool, 0, 0},
+	{ "user", &config.username, parse_string, 1, 0},
 	{ "user-agent", &config.user_agent, parse_string, 1, 'U'},
 	{ "verbose", &config.verbose, parse_bool, 0, 'v'},
 	{ "version", &config.print_version, parse_bool, 0, 'V'}
@@ -891,7 +899,13 @@ int init(int argc, const char *const *argv)
 		cookie_load(config.load_cookies);
 
 	if (config.base_url)
-		config.base = iri_parse_encoding(config.base_url, config.local_encoding);
+		config.base = iri_parse(config.base_url, config.local_encoding);
+
+	if (config.username && !config.http_username)
+		config.http_username = strdup(config.username);
+
+	if (config.password && !config.http_password)
+		config.http_password = strdup(config.password);
 
 	// set module specific options
 	tcp_set_debug(config.debug);
@@ -940,6 +954,10 @@ void deinit(void)
 	xfree(config.input_file);
 	xfree(config.local_encoding);
 	xfree(config.remote_encoding);
+	xfree(config.username);
+	xfree(config.password);
+	xfree(config.http_username);
+	xfree(config.http_password);
 
 	iri_free(&config.base);
 

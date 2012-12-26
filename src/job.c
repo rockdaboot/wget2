@@ -156,28 +156,6 @@ PART *job_add_part(JOB *job, PART *part)
 	return vec_get(job->parts, vec_add(job->parts, part, sizeof(PART)));
 }
 
-/*
-static const char *getSumTool(const char *type)
-{
-	if (*type == 's' || *type == 'S') {
-		if (!strcasecmp(type, "sha-1"))
-			return "sha1sum";
-		else if (!strcasecmp(type, "sha-256"))
-			return "sha256sum";
-		else if (!strcasecmp(type, "sha-512"))
-			return "sha512sum";
-		else if (!strcasecmp(type, "sha-224"))
-			return "sha224sum";
-		else if (!strcasecmp(type, "sha-384"))
-			return "sha384sum";
-	} else if (!strcasecmp(type, "md5"))
-		return "md5sum";
-
-	err_printf(_("Unknown hash type '%s'\n"), type);
-	return NULL;
-}
-*/
-
 // check hash for part of a file
 // -1: error
 //  0: not ok
@@ -190,44 +168,7 @@ static int check_piece_hash(HASH *hash, int fd, off_t offset, size_t length)
 	if (hash_file_fd(hash->type, fd, sum, sizeof(sum), offset, length) != -1) {
 		return !strcasecmp(sum, hash->hash_hex);
 	}
-/*
-	const char *tool = getSumTool(hash->type);
 
-	if (!tool)
-		return 1; // unknown hash algorithm - assume data to be ok
-
-	if (lseek(fd, offset, SEEK_SET) != -1) {
-		const char *argv[] = {tool, NULL};
-		int fdin, fdout;
-
-		if (fd_popen3(&fdin, &fdout, NULL, argv)) {
-			char buf[102400];
-			char sum[128 + 1]; // large enough for sha-512 hex
-			ssize_t nbytes, rc;
-
-			while (length > 0 && (nbytes = read(fd, buf, length<sizeof(buf) ? length : sizeof(buf))) > 0) {
-				if ((rc = write(fdin, buf, nbytes)) != nbytes) {
-					err_printf(_("Failed to pipe data to '%s', rc=%zd (%d)\n"), tool, rc, errno);
-					break; // no need to go on, checksum will fail
-				}
-				length -= nbytes;
-			}
-			close(fdin);
-
-			nbytes = read(fdout, sum, 128);
-			close(fdout);
-
-			if (nbytes > 0) {
-				buf[nbytes] = 0;
-				if (!strncasecmp(sum, hash->hash_hex, strlen(hash->hash_hex))) {
-					return 1;
-				} else {
-					return 0;
-				}
-			}
-		}
-	}
-*/
 	return -1;
 }
 

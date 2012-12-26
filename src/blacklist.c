@@ -155,7 +155,14 @@ void blacklist_free(void)
 }
 */
 
+static int _free_entry(IRI *iri)
+{
+	iri_free_content(iri);
+	return 0;
+}
+
 void blacklist_free(void)
 {
+	hashmap_browse(blacklist, (int(*)(const void *, const void *))_free_entry);
 	hashmap_free(&blacklist);
 }

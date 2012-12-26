@@ -69,6 +69,7 @@ int
 void
 	vec_free(VECTOR **v),
 	vec_clear(VECTOR *v),
+	vec_clear_nofree(VECTOR *v),
 	*vec_get(const VECTOR *v, int pos),
 	vec_setcmpfunc(VECTOR *v, int (*cmp)(const void *elem1, const void *elem2)) NONNULL((2)),
 	vec_sort(VECTOR *v);

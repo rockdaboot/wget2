@@ -289,6 +289,17 @@ void vec_clear(VECTOR *v)
 	}
 }
 
+void vec_clear_nofree(VECTOR *v)
+{
+	if (v) {
+		int it;
+
+		for (it = 0; it < v->cur; it++)
+			v->pl[it] = NULL;
+		v->cur = 0;
+	}
+}
+
 int vec_size(const VECTOR *v)
 {
 	return v ? v->cur : 0;

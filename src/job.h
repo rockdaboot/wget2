@@ -68,7 +68,8 @@ typedef struct {
 
 typedef struct {
 	IRI
-		*iri;
+		*iri,
+		*referer;
 
 	// Metalink information
 	VECTOR

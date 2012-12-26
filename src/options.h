@@ -37,6 +37,10 @@ struct config {
 	IRI
 		*base;
 	const char
+		*username,
+		*password,
+		*http_username,
+		*http_password,
 		*local_encoding,
 		*remote_encoding,
 		*bind_address,

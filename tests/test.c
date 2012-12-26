@@ -400,7 +400,7 @@ static void test_iri_parse(void)
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
-		IRI *iri = iri_parse_encoding(t->uri, "utf-8");
+		IRI *iri = iri_parse(t->uri, "utf-8");
 
 		if (null_strcmp(iri->display, t->display)
 			|| null_strcmp(iri->scheme, t->scheme)
@@ -673,7 +673,7 @@ static void test_iri_relative_to_absolute(void)
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
 
-		base = iri_parse_encoding(t->base, "utf-8");
+		base = iri_parse(t->base, "utf-8");
 		iri_relative_to_absolute(base, t->relative, strlen(t->relative), uri_buf);
 
 		if (!strcmp(uri_buf->data, t->result))
@@ -715,8 +715,8 @@ static void test_iri_compare(void)
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
-		IRI *iri1 = iri_parse_encoding(t->url1, "utf-8");
-		IRI *iri2 = iri_parse_encoding(t->url2, "utf-8");
+		IRI *iri1 = iri_parse(t->url1, "utf-8");
+		IRI *iri2 = iri_parse(t->url2, "utf-8");
 
 		n = iri_compare(iri1, iri2);
 		if (n < -1) n = -1;
@@ -872,7 +872,7 @@ static void test_cookies(void)
 		const struct test_data *t = &test_data[it];
 		char thedate[32];
 
-		iri = iri_parse_encoding(t->uri, "utf-8");
+		iri = iri_parse(t->uri, "utf-8");
 		http_parse_setcookie(t->set_cookie, &cookie);
 		if ((result = cookie_normalize_cookie(iri, &cookie)) != t->result) {
 			failed++;
@@ -1124,6 +1124,42 @@ static void test_stringmap(void)
 	stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
 
 	stringmap_free(&h);
+
+	HTTP_CHALLENGE challenge;
+	http_parse_challenge("Basic realm=\"test realm\"", &challenge);
+	http_free_challenge(&challenge);
+
+	VECTOR *challenges;
+	challenges = vec_create(2, 2, NULL);
+	http_parse_challenge("Basic realm=\"test realm\"", &challenge);
+	vec_add(challenges, &challenge, sizeof(challenge));
+	http_free_challenges(challenges);
+
+	char *response_text = strdup(
+"HTTP/1.1 401 Authorization Required\r\n"\
+"Date: Sun, 23 Dec 2012 21:03:45 GMT\r\n"\
+"Server: Apache/2.2.22 (Debian)\r\n"\
+"WWW-Authenticate: Digest realm=\"therealm\", nonce=\"Ip6MaovRBAA=c4af733c51270698260f5d357724c2cbce20fa3d\", algorithm=MD5, domain=\"/prot_digest_md5\", qop=\"auth\"\r\n"\
+"Vary: Accept-Encoding\r\n"\
+"Content-Length: 476\r\n"\
+"Keep-Alive: timeout=5, max=99\r\n"\
+"Connection: Keep-Alive\r\n"\
+"Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
+
+	IRI *iri = iri_parse("http://localhost/prot_digest_md5/", NULL);
+	HTTP_REQUEST *req = http_create_request(iri, "GET");
+	HTTP_RESPONSE *resp = http_parse_response(response_text);
+	http_add_credentials(req, vec_get(resp->challenges, 0), "tim", "123");
+//	for (it=0;it<vec_size(req->lines);it++) {
+//		info_printf("%s\n", (char *)vec_get(req->lines, it));
+//	}
+	http_free_response(&resp);
+	http_free_request(&req);
+	iri_free(&iri);
+	xfree(response_text);
+
+// Authorization: Digest username="tim", realm="therealm", nonce="Ip6MaovRBAA=c4af733c51270698260f5d357724c2cbce20fa3d", uri="/prot_digest_md5/", response="a99e2012d507a73dd46eb044d3f4641c", qop=auth, nc=00000001, cnonce="3d20faa1"
+
 }
 
 int main(int argc, const char * const *argv)

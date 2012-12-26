@@ -50,6 +50,7 @@ typedef struct {
 		*password,
 		*host, // unescaped, toASCII converted, lowercase
 		*port,
+		*resolv_port,
 		*path, // unescaped
 		*query, // unescaped
 		*fragment, // unescaped
@@ -61,6 +62,7 @@ typedef struct {
 void
 	iri_test(void),
 	iri_free(IRI **iri),
+	iri_free_content(IRI *iri),
 	iri_set_defaultpage(const char *page);
 int
 	iri_isgendelim(char c) CONST,
@@ -70,8 +72,7 @@ int
 	iri_isunreserved_path(char c) CONST,
 	iri_compare(IRI *iri1, IRI *iri2) PURE NONNULL_ALL;
 IRI
-//	*iri_parse(const char *uri) MALLOC,
-	*iri_parse_encoding(const char *uri, const char *encoding) MALLOC;
+	*iri_parse(const char *uri, const char *encoding) MALLOC;
 const char
 	*iri_get_connection_part(IRI *iri),
 	*iri_relative_to_absolute(IRI *base, const char *val, size_t len, buffer_t *buf),

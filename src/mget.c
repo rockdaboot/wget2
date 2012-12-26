@@ -265,11 +265,11 @@ static JOB *add_url_to_queue(const char *url, IRI *base, const char *encoding)
 		buffer_t buf;
 
 		buffer_init(&buf, sbuf, sizeof(sbuf));
-		iri = iri_parse_encoding(iri_relative_to_absolute(base, url, strlen(url), &buf), encoding);
+		iri = iri_parse(iri_relative_to_absolute(base, url, strlen(url), &buf), encoding);
 		buffer_deinit(&buf);
 	} else {
 		// no base and no buf: just check URL for being an absolute URI
-		iri = iri_parse_encoding(iri_relative_to_absolute(NULL, url, strlen(url), NULL), encoding);
+		iri = iri_parse(iri_relative_to_absolute(NULL, url, strlen(url), NULL), encoding);
 	}
 
 	if (!iri) {
@@ -630,7 +630,7 @@ int main(int argc, const char *const *argv)
 							memset(&mirror, 0, sizeof(MIRROR));
 							pos = 0;
 							if (sscanf(buf + 13, "%2s %6d %n", mirror.location, &mirror.priority, &pos) >= 2 && pos) {
-								mirror.iri = iri_parse_encoding(buf + 13 + pos, NULL);
+								mirror.iri = iri_parse(buf + 13 + pos, NULL);
 								vec_add(job->mirrors, &mirror, sizeof(MIRROR));
 							} else
 								err_printf(_("Failed to parse metalink mirror '%s'\n"), buf);
@@ -667,6 +667,7 @@ int main(int argc, const char *const *argv)
 							job->size = atoll(buf + 11);
 						}
 					} else if (!strncmp(buf, "add uri ", 8) || !strncmp(buf, "redirect ", 9)) {
+						JOB *new_job;
 						IRI *iri;
 						char *p, *encoding;
 
@@ -684,7 +685,7 @@ int main(int argc, const char *const *argv)
 						if (*encoding == '-')
 							encoding = NULL;
 						
-						iri = iri_parse_encoding(p + 1, encoding);
+						iri = iri_parse(p + 1, encoding);
 
 						if (config.recursive && !config.span_hosts) {
 							// only download content from given hosts
@@ -694,10 +695,16 @@ int main(int argc, const char *const *argv)
 							}
 						}
 
-						if ((job = queue_add(blacklist_add(iri)))) {
+						if ((new_job = queue_add(blacklist_add(iri)))) {
 							if (!config.output_document)
-								job->local_filename = get_local_filename(job->iri);
-							schedule_download(job, NULL);
+								new_job->local_filename = get_local_filename(new_job->iri);
+							if (*buf == 'r') {
+								new_job->redirection_level = job->redirection_level + 1;
+								new_job->referer = job->referer;
+							} else {
+								new_job->referer = job->iri;
+							}
+							schedule_download(new_job, NULL);
 						}
 					}
 				}
@@ -977,7 +984,7 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 			if (found && tolower(*dir) == 'b' && !strcasecmp(dir,"base")) {
 				// found a <BASE href="...">
 				// add it to be downloaded, replace old base
-				IRI *iri = iri_parse_encoding(val, ctx->encoding);
+				IRI *iri = iri_parse(val, ctx->encoding);
 				if (iri) {
 					dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", val);
 
@@ -1046,7 +1053,7 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 					} else {
 						JOB *job;
 
-						if ((job = queue_add(blacklist_add(iri_parse_encoding(ctx->uri_buf.data, ctx->encoding))))) {
+						if ((job = queue_add(blacklist_add(iri_parse(ctx->uri_buf.data, ctx->encoding))))) {
 							if (!config.output_document)
 								job->local_filename = get_local_filename(job->iri);
 						}
@@ -1077,8 +1084,10 @@ void html_parse(int sockfd, const char *data, const char *encoding, IRI *iri)
 	if (context.encoding_allocated)
 		xfree(context.encoding);
 
-	if (context.base_allocated)
+//		xfree(context.base->connection_part);
+	if (context.base_allocated) {
 		iri_free(&context.base);
+	}
 
 	buffer_deinit(&context.uri_buf);
 }
@@ -1141,7 +1150,7 @@ static void _css_parse_uri(void *context, const char *url, size_t len)
 			} else {
 				JOB *job;
 
-				if ((job = queue_add(blacklist_add(iri_parse_encoding(ctx->uri_buf.data, NULL))))) {
+				if ((job = queue_add(blacklist_add(iri_parse(ctx->uri_buf.data, NULL))))) {
 					if (!config.output_document)
 						job->local_filename = get_local_filename(job->iri);
 				}
@@ -1402,16 +1411,15 @@ void download_part(DOWNLOADER *downloader)
 
 HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 {
-	IRI *use_iri = iri;
 	HTTP_CONNECTION *conn;
 	HTTP_RESPONSE *resp = NULL;
 	VECTOR *challenges = NULL;
 //	int max_redirect = 3;
 
-	while (use_iri) {
-		if (downloader->conn && !null_strcmp(downloader->conn->esc_host, use_iri->host) &&
-			downloader->conn->scheme == use_iri->scheme &&
-			!null_strcmp(downloader->conn->port, use_iri->port))
+	while (iri) {
+		if (downloader->conn && !null_strcmp(downloader->conn->esc_host, iri->host) &&
+			downloader->conn->scheme == iri->scheme &&
+			!null_strcmp(downloader->conn->port, iri->resolv_port))
 		{
 			info_printf("reuse connection %s\n", downloader->conn->esc_host);
 		} else {
@@ -1419,7 +1427,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 				info_printf("close connection %s\n", downloader->conn->esc_host);
 				http_close(&downloader->conn);
 			}
-			downloader->conn = http_open(use_iri);
+			downloader->conn = http_open(iri);
 			if (downloader->conn) {
 				info_printf("opened connection %s\n", downloader->conn->esc_host);
 				downloader->conn->print_response_headers = config.server_response ? 1 : 0;
@@ -1430,7 +1438,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 		if (conn) {
 			HTTP_REQUEST *req;
 
-			req = http_create_request(use_iri, "GET");
+			req = http_create_request(iri, "GET");
 			if (config.save_headers)
 				req->save_headers = 1;
 
@@ -1487,13 +1495,30 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 
 			if (config.referer)
 				http_add_header(req, "Referer", config.referer);
+			else if (downloader->job->referer) {
+				IRI *referer = downloader->job->referer;
+				char sbuf[256];
+				buffer_t buf;
+
+				buffer_init(&buf, sbuf, sizeof(sbuf));
+
+				buffer_strcat(&buf, referer->scheme);
+				buffer_memcat(&buf, "://", 3);
+				buffer_strcat(&buf, referer->host);
+				buffer_memcat(&buf, "/", 1);
+				iri_get_escaped_resource(referer, &buf);
+
+				http_add_header(req, "Referer", buf.data);
+				buffer_deinit(&buf);
+			}
 
 			if (challenges) {
 				// There might be more than one challenge, we could select the securest one.
 				// For simplicity and testing we just take the first for now.
 				// the following adds an Authorization: HTTP header
 //				http_add_credentials(req, vec_get(challenges, 0), config.username, config.password);
-				http_add_credentials(req, vec_get(challenges, 0), "oms", "123");
+				http_add_credentials(req, vec_get(challenges, 0), config.http_username, config.http_password);
+				http_free_challenges(challenges);
 			}
 
 			if (part)
@@ -1505,7 +1530,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			if (config.cookies) {
 				const char *cookie_string;
 
-				if ((cookie_string = cookie_create_request_header(use_iri))) {
+				if ((cookie_string = cookie_create_request_header(iri))) {
 					http_add_header(req, "Cookie", cookie_string);
 					xfree(cookie_string);
 				}
@@ -1547,12 +1572,12 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			char uri_buf_static[1024];
 			buffer_t uri_buf;
 
-			cookie_normalize_cookies(use_iri, resp->cookies);
+			cookie_normalize_cookies(iri, resp->cookies);
 			cookie_store_cookies(resp->cookies);
 
 			buffer_init(&uri_buf, uri_buf_static, sizeof(uri_buf_static));
 
-			iri_relative_to_absolute(use_iri, resp->location, strlen(resp->location), &uri_buf);
+			iri_relative_to_absolute(iri, resp->location, strlen(resp->location), &uri_buf);
 
 			dprintf(downloader->sockfd[1], "redirect - %s\n", uri_buf.data);
 
@@ -1560,14 +1585,8 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			break;
 		}
 
-//		if (use_iri != iri)
-//			iri_free(&use_iri);
-
 		http_free_response(&resp);
 	}
-
-//	if (use_iri != iri)
-//		iri_free(&use_iri);
 
 	return resp;
 }
