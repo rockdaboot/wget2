@@ -60,8 +60,13 @@ Not yet implemented
 ------------------
 
 The following is just a quick list of ideas and todos.
-I personally like to experiment with new stuff (new to wget), so
-request pipelining and SPDY protocol are my favorites.
+The mid-range goal is to come as close to Wget, that Wget's units test work for Mget.
+
+This is next on my list:
+- use automake for automatic makefiles
+- create and use libmget
+- use gtk-doc-tools for documentation (http://developer.gnome.org/gtk-doc-manual/unstable/settingup.html.en)
+  [i want the docs stay with the code: already tested Doxygen, but the man page support seems broken/orphaned]
 
 - respect /robots.txt "Robot Exclusion Standard" and <META name="robots" ...>
 - http authentication (basic & digest RFC 2617)

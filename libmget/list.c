@@ -31,8 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "xalloc.h"
-#include "list.h"
+#include <libmget.h>
+#include <xalloc.h>
 
 typedef struct LISTNODE LISTNODE;
 
@@ -44,11 +44,13 @@ struct LISTNODE {
 
 void *list_append(LISTNODE **list, const void *elem, size_t size)
 {
+	// allocate space for node and data in one row
 	LISTNODE *node = xmalloc(sizeof(LISTNODE) + size);
 
-	memmove(node + 1, elem, size);
+	memcpy(node + 1, elem, size);
 
 	if (!*list) {
+		// <*list> is an empty list
 		*list = node;
 		node->next = node->prev = node;
 	} else {
@@ -113,7 +115,8 @@ int list_browse(const LIST *list, int (*browse)(void *context, void *elem), void
 
 void list_free(LIST **list)
 {
-	while (*list) list_remove(list, ((LISTNODE *) * list) + 1);
+	while (*list)
+		list_remove(list, ((LISTNODE *) * list) + 1);
 }
 
 /*

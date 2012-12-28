@@ -44,11 +44,12 @@
 #include <sys/select.h>
 #include <sys/stat.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "iri.h"
 #include "net.h"
 #include "utils.h"
-#include "list.h"
 #include "vector.h"
 #include "http.h"
 #include "log.h"

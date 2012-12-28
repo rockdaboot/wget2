@@ -127,6 +127,8 @@ size_t bsprintf(char **buf, size_t *bufsize, const char *fmt, ...)
 	va_end(args);
 }
 
+#ifndef HAVE_DPRINTF
+
 // just a fallback, if dprintf/vdprintf do not exist
 
 int vdprintf(int fd, const char *fmt, va_list args)
@@ -180,3 +182,4 @@ int dprintf(int fd, const char *fmt, ...)
 	return vdprintf(fd, fmt, args);
 	va_end(args);
 }
+#endif // HAVE_DPRINTF

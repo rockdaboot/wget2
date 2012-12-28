@@ -36,10 +36,11 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "utils.h"
 #include "log.h"
-#include "list.h"
 #include "hash.h"
 #include "job.h"
 

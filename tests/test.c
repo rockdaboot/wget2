@@ -61,7 +61,7 @@ static void _test_buffer(buffer_t *buf, const char *name)
 	char test[256];
 	int it;
 
-	for (it = 0; it < sizeof(test)-1; it++) {
+	for (it = 0; it < (int)sizeof(test)-1; it++) {
 		test[it] = 'a' + it % 26;
 		test[it + 1] = 0;
 

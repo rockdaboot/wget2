@@ -3,8 +3,20 @@
 
 #AC_PREREQ([2.69])
 AC_INIT([mget], [0.1.3], [tim.ruehsen@gmx.de])
+AM_INIT_AUTOMAKE
+
+LT_PREREQ([2.2])
+# Bug in libtool adds -O2 and -g by default
+save_cflags=$CFLAGS
+LT_INIT([dlopen])
+CFLAGS=$save_cflags
+
 AC_CONFIG_SRCDIR([src/mget.c])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIR([m4])
+
+## Non-verbose make
+#m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AC_CANONICAL_HOST
 #case $host_os in
@@ -22,6 +34,7 @@ AC_CANONICAL_HOST
 CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 AC_PROG_CC
+
 if test "x$CFLAGS" = "x" ; then
   if test "x$GCC" = "xyes" ; then
    CFLAGS="-g -std=gnu99 -pedantic -fPIC\
@@ -44,6 +57,13 @@ fi
 AC_PROG_LEX
 AC_PROG_INSTALL
 AC_PROG_LN_S
+AM_PROG_CC_C_O
+
+# Require C99 support
+AC_PROG_CC_C99
+if test "$ac_cv_prog_cc_c99" = "no" ; then
+   AC_ERROR([Compiler does not support C99. Aborting.])
+fi
 
 #
 # Gettext
@@ -124,9 +144,13 @@ AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([clock_gettime dup2 gettimeofday localtime_r memchr memmove memset mkdir munmap select setlocale socket strcasecmp strchr strdup strerror strncasecmp strndup strrchr strstr strlcpy futimens])
+AC_CHECK_FUNCS([clock_gettime dup2 gettimeofday localtime_r memchr memmove\
+	memset mkdir munmap select setlocale socket strcasecmp strchr strdup\
+	strerror strncasecmp strndup strrchr strstr strlcpy futimens dprintf])
 
 AC_CONFIG_FILES([Makefile
+                 include/Makefile
+                 libmget/Makefile
                  src/Makefile
                  tests/Makefile])
 AC_OUTPUT
