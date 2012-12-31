@@ -6,6 +6,9 @@ This is an experimental Wget-like tool written in C.
 Designed and written from scratch it requires a C99 and Posix compliant
 development environment.
 
+Included is the stand-alone library libmget which provides an interface
+to many useful functions used by Mget.
+
 The originally purpose was to help out on Wget2 development (refactoring,
 modern and clean code, new technology, new design).
 
@@ -19,6 +22,7 @@ License
 -------
 
 Mget is licensed under GPLv3.
+libmget is licensed under LGPLv3.
 
 Development Status
 ------------------
@@ -108,11 +112,12 @@ Building from git
 Download project and prepare sources with:
 
 	$ git clone http://github.com/rockdaboot/mget
+	$ ./autogen.sh
 
 Build mget with::
 
-    $ ./configure
-    $ make
+	$ ./configure
+	$ make
 
 To test the functionality (you need valgrind installed)::
 
@@ -124,7 +129,7 @@ Documentation
 
 There is no own documentation yet, but Mget aims to be Wget1.14 compatible.
 
-    $ mget --help
+	$ mget --help
 
 prints the usage and the current set of integrated options.
 For more info, see the man pages of Wget.
