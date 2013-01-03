@@ -22,7 +22,7 @@ License
 -------
 
 Mget is licensed under GPLv3.
-libmget is licensed under LGPLv3.
+Libmget is licensed under LGPLv3.
 
 Development Status
 ------------------
@@ -67,11 +67,9 @@ The following is just a quick list of ideas and todos.
 The mid-range goal is to come as close to Wget, that Wget's units test work for Mget.
 
 This is next on my list:
-- use automake for automatic makefiles
-- create and use libmget
-- use gtk-doc-tools for documentation (http://developer.gnome.org/gtk-doc-manual/unstable/settingup.html.en)
-  [i want the docs stay with the code: already tested Doxygen, but the man page support seems broken/orphaned]
 
+- use gtk-doc-tools for documentation (http://developer.gnome.org/gtk-doc-manual/unstable/settingup.html.en)
+  I want the docs stay with the code: already tested Doxygen, but the man page support seems broken/orphaned.
 - respect /robots.txt "Robot Exclusion Standard" and <META name="robots" ...>
 - http authentication (basic & digest RFC 2617)
 - WARC support
@@ -109,7 +107,7 @@ are supposed to work.
 Building from git
 -----------------
 
-Download project and prepare sources with:
+Download project and prepare sources with::
 
 	$ git clone http://github.com/rockdaboot/mget
 	$ ./autogen.sh
@@ -123,6 +121,9 @@ To test the functionality (you need valgrind installed)::
 
 	$ make check
 
+To install Mget::
+
+	$ sudo make install (or su -c "make install")
 
 Documentation
 -------------
