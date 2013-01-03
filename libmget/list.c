@@ -35,20 +35,71 @@
 
 #include <xalloc.h>
 
-typedef struct MGET_LISTNODE MGET_LISTNODE;
+/**
+ * SECTION:libmget
+ * @short_description: Double linked list routines
+ * @title: libmget list routines
+ * @stability: stable
+ * @include: libmget.h
+ *
+ * Double linked lists are used by Mget to implement the job queue.\n
+ * Fast insertion and removal, that's all we need here.
+ *
+ * See mget_list_append() for an example on how to use lists.
+ **/
 
-struct MGET_LISTNODE {
-	MGET_LISTNODE
+typedef struct _MGET_LISTNODE _MGET_LISTNODE;
+
+struct _MGET_LISTNODE {
+	_MGET_LISTNODE
 		*next,
 		*prev;
 };
 
-void *mget_list_append(MGET_LISTNODE **list, const void *elem, size_t size)
+/**
+ * mget_list_append:
+ * @list Pointer to a double linked list.
+ * @data Pointer to data to be inserted.
+ * @size Size of data in bytes.
+ *
+ * Append an entry to the end of the list.
+ * @size bytes at @data will be copied and appended to the list.
+ *
+ * A pointer to the new element will be returned.
+ * It must be freed by mget_list_remove() or implicitely by mget_list_free().
+ *
+ * Returns: Pointer to the new element.
+ *
+ * <example>
+ * <title>Example Usage</title>
+ * <programlisting>
+ *	MGET_LIST *list = NULL;
+ *	struct mystruct mydata1 = { .x = 1, .y = 25 };
+ *	struct mystruct mydata2 = { .x = 5, .y = 99 };
+ *	struct mystruct *data;
+ *
+ *	mget_list_append(&list, &mydata1, sizeof(mydata1)); // append mydata1 to list
+ *	mget_list_append(&list, &mydata2, sizeof(mydata2)); // append mydata2 to list
+ *
+ *	data = mget_list_getfirst(list);
+ *	printf("data=(%d,%d)\n", data->x, data->y); // prints 'data=(1,25)'
+ *
+ *	mget_list_remove(&list, data);
+ *
+ *	data = mget_list_getfirst(list);
+ *	printf("data=(%d,%d)\n", data->x, data->y); // prints 'data=(5,99)'
+ *
+ *	mget_list_free(&list);
+ * </programlisting>
+ * </example>
+ *
+ **/
+void *mget_list_append(_MGET_LISTNODE **list, const void *data, size_t size)
 {
 	// allocate space for node and data in one row
-	MGET_LISTNODE *node = xmalloc(sizeof(MGET_LISTNODE) + size);
+	_MGET_LISTNODE *node = xmalloc(sizeof(_MGET_LISTNODE) + size);
 
-	memcpy(node + 1, elem, size);
+	memcpy(node + 1, data, size);
 
 	if (!*list) {
 		// <*list> is an empty list
@@ -64,18 +115,33 @@ void *mget_list_append(MGET_LISTNODE **list, const void *elem, size_t size)
 	return node + 1;
 }
 
-void *mget_list_prepend(MGET_LISTNODE **list, const void *elem, size_t size)
+/**
+ * mget_list_prepend:
+ * @list Pointer to a double linked list.
+ * @data Pointer to data to be inserted.
+ * @size Size of data in bytes.
+ *
+ * Insert an entry at the beginning of the list.
+ * @size bytes at @data will be copied and prepended to the list.
+ *
+ * A pointer to the new element will be returned.
+ * It must be freed by mget_list_remove() or implicitely by mget_list_free().
+ *
+ * Returns: Pointer to the new element.
+ *
+ */
+void *mget_list_prepend(_MGET_LISTNODE **list, const void *data, size_t size)
 {
 	if (!*list) {
-		return mget_list_append(list, elem, size);
+		return mget_list_append(list, data, size);
 	} else {
-		return mget_list_append(&(*list)->prev, elem, size);
+		return mget_list_append(&(*list)->prev, data, size);
 	}
 }
 
-void mget_list_remove(MGET_LISTNODE **list, void *elem)
+void mget_list_remove(_MGET_LISTNODE **list, void *elem)
 {
-	MGET_LISTNODE *node = ((MGET_LISTNODE *)elem) - 1;
+	_MGET_LISTNODE *node = ((_MGET_LISTNODE *)elem) - 1;
 
 	if (node->prev == node->next && node == node->prev) {
 		// last node in list
@@ -90,12 +156,12 @@ void mget_list_remove(MGET_LISTNODE **list, void *elem)
 	xfree(node);
 }
 
-void *mget_list_getfirst(const MGET_LISTNODE *list)
+void *mget_list_getfirst(const _MGET_LISTNODE *list)
 {
 	return (void *)(list + 1);
 }
 
-void *mget_list_getlast(const MGET_LISTNODE *list)
+void *mget_list_getlast(const _MGET_LISTNODE *list)
 {
 	return (void *)(list->prev + 1);
 }
@@ -105,7 +171,7 @@ int mget_list_browse(const MGET_LIST *list, int (*browse)(void *context, void *e
 	int ret = 0;
 
 	if (list) {
-		const MGET_LISTNODE *end = list->prev, *cur = list;
+		const _MGET_LISTNODE *end = list->prev, *cur = list;
 
 		while ((ret = browse(context, (void *)(cur + 1))) == 0 && cur != end)
 			cur = cur->next;
@@ -117,14 +183,14 @@ int mget_list_browse(const MGET_LIST *list, int (*browse)(void *context, void *e
 void mget_list_free(MGET_LIST **list)
 {
 	while (*list)
-		mget_list_remove(list, ((MGET_LISTNODE *) * list) + 1);
+		mget_list_remove(list, ((_MGET_LISTNODE *) * list) + 1);
 }
 
 /*
 void mget_list_dump(const MGET_LIST *list)
 {
 	if (list) {
-		const MGET_LISTNODE *cur = list;
+		const _MGET_LISTNODE *cur = list;
 
 		do {
 			log_printf("%p: next %p prev %p\n", cur, cur->next, cur->prev);

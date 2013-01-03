@@ -24,21 +24,6 @@
  *
  */
 
-/** @defgroup libmget_list Mget double linked lists
-  * @{
-  */
-
-/**
- * @file list.h
- * @author Tim Ruehsen (tim.ruehsen@gmx.de)
- * @date 25.04.2012.
- * @brief Routines for double linked lists.\n\n
- * Double linked lists are used by Mget to implement it's job queue.\n
- * Fast insertion and removal, that's all we need here.
- *
- * @see list_append for an example on how to use it.
- */
-
 #ifndef _MGET_LIBMGET_H
 #define _MGET_LIBMGET_H
 
@@ -107,11 +92,12 @@
 #		define NONNULL_ALL
 #		define NONNULL(a)
 #	endif
-#else
-//#	define NONNULL_ALL
-#		define NONNULL_ALL __attribute__ ((nonnull))
+#elif GCC_VERSION_AT_LEAST(3,3)
+#	define NONNULL_ALL __attribute__ ((nonnull))
 #	define NONNULL(a) __attribute__ ((nonnull a))
-// #	define NONNULL(a)
+#else
+#	define NONNULL_ALL
+#	define NONNULL(a)
 #endif
 
 #if GCC_VERSION_AT_LEAST(3,4)
@@ -148,60 +134,17 @@
  * Double linked list
  */
 
-typedef struct MGET_LISTNODE MGET_LIST;
-
-/**
- * @fn void *mget_list_append(MGET_LIST **list, const void *elem, size_t size)
- * @brief Append an element to the list.
- *
- * Append an entry to the end of the list.\n
- * <size> bytes at <elem> will be copied and appended to the list.
- * 
- * A pointer to the new element will be returned.\n
- * It can *only* freed by list_remove() or implicitely by list_free().
- *
- * @param [in,out] list  Pointer to a double linked list.
- * @param [in] elem  Pointer to data to be linked
- * @param [in] size  Size of data in bytes.
- *
- * @return Pointer to the new element.
- *
- * Example Usage:
- * @code
- *	MGET_LIST *list = NULL;
- *	struct mystruct mydata1 = { .x = 1, .y = 25 };
- *	struct mystruct mydata2 = { .x = 5, .y = 99 };
- *	struct mystruct *data;
- * 
- *	mget_list_append(&list, &mydata1, sizeof(mydata1)); // append mydata1 to list
- *	mget_list_append(&list, &mydata2, sizeof(mydata2)); // append mydata2 to list
- *
- *	data = mget_list_getfirst(list);
- *	printf("data=(%d,%d)\n", data->x, data->y); // prints 'data=(1,25)'
- * 
- *	mget_list_remove(&list, data);
- *
- *	data = mget_list_getfirst(list);
- *	printf("data=(%d,%d)\n", data->x, data->y); // prints 'data=(5,99)'
- * 
- *	mget_list_free(&list);
- * 
- * @endcode
- *
- */
-void *mget_list_append(MGET_LIST **list, const void *elem, size_t size) NONNULL_ALL;
-
-void *mget_list_prepend(MGET_LIST **list, const void *elem, size_t size) NONNULL_ALL;
-
-void mget_list_remove(MGET_LIST **list, void *elem);
+typedef struct _MGET_LISTNODE MGET_LIST;
 
 void
+	*mget_list_append(MGET_LIST **list, const void *data, size_t size) NONNULL_ALL,
+	*mget_list_prepend(MGET_LIST **list, const void *data, size_t size) NONNULL_ALL,
 	*mget_list_getfirst(const MGET_LIST *list) CONST NONNULL_ALL,
 	*mget_list_getlast(const MGET_LIST *list) CONST NONNULL_ALL,
+	mget_list_remove(MGET_LIST **list, void *elem),
 	mget_list_free(MGET_LIST **list) NONNULL_ALL;
 
 int
 	mget_list_browse(const MGET_LIST *list, int (*browse)(void *context, void *elem), void *context) NONNULL((2));
 
 #endif /* _MGET_LIBMGET_H */
-/** @} */

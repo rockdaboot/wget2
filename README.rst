@@ -76,6 +76,7 @@ This is next on my list:
 - TCP Fast Open (as soon as Debian sid is unfreezed)
 - RFC 6797 HSTS (HTTP Strict Transport Security)
   Chromium HSTS domain list: https://src.chromium.org/viewvc/chrome/trunk/src/net/base/transport_security_state_static.json
+- read credentials from secure wallets (e.g. kwallet, firefox, maybe an own tool ?)
 - compression on TLS/SSL layer (non-standard GnuTLS extension)
 - request pipelining (using client cookies)
 - SPDY protocol
@@ -95,6 +96,9 @@ Requirements
 
 The following packages are needed to build Mget:
 
+* autotools (autoconf, autogen, automake, autopoint)
+* gtk-doc-tools (when creating the HTML documentation)
+* xsltproc (when creating man pages)
 * libz >= 1.2.3
 * libgnutls >= 2.4.2
 * libidn >= 1.25
@@ -112,18 +116,26 @@ Download project and prepare sources with::
 	$ git clone http://github.com/rockdaboot/mget
 	$ ./autogen.sh
 
-Build mget with::
+Build Mget with::
 
 	$ ./configure
 	$ make
 
-To test the functionality (you need valgrind installed)::
+Test the functionality (you need valgrind installed)::
 
 	$ make check
 
-To install Mget::
+Install Mget and libmget::
 
 	$ sudo make install (or su -c "make install")
+
+Create Mget HTML documentation::
+
+	$ ./configure --enable-gtk-doc
+
+Create Mget HTML documentation and man pages (not functional right now)::
+
+	$ ./configure --enable-gtk-doc --enable-man
 
 Documentation
 -------------

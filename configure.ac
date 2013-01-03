@@ -15,8 +15,8 @@ AC_CONFIG_SRCDIR([src/mget.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
-## Non-verbose make
-#m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+# Non-verbose make
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AC_CANONICAL_HOST
 #case $host_os in
@@ -61,7 +61,9 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AM_PROG_CC_C_O
 
+#
 # Require C99 support
+#
 AC_PROG_CC_C99
 if test "$ac_cv_prog_cc_c99" = "no" ; then
    AC_ERROR([Compiler does not support C99. Aborting.])
@@ -72,6 +74,23 @@ fi
 #
 AM_GNU_GETTEXT([external],[need-ngettext])
 AM_GNU_GETTEXT_VERSION([0.18.1])
+
+#
+# check for gtk-doc
+#
+m4_ifdef([GTK_DOC_CHECK], [
+GTK_DOC_CHECK([1.14],[--flavour no-tmpl])
+],[
+AM_CONDITIONAL([ENABLE_GTK_DOC], false)
+])
+
+#
+# enable creation of man pages
+#
+AC_ARG_ENABLE(man,[AC_HELP_STRING([--enable-man],
+                                  [regenerate man pages from Docbook [default=no]])],enable_man=yes,enable_man=no)
+AC_PATH_PROG([XSLTPROC], [xsltproc])
+AM_CONDITIONAL(ENABLE_MAN, test x$enable_man != xno)
 
 #AC_ARG_WITH(gnutls, AS_HELP_STRING([--with-gnutls[=PATH]], [compile with SSL support]), , with_gnutls="no")
 #if test $with_gnutls != "no"
@@ -154,6 +173,7 @@ AC_CONFIG_FILES([Makefile po/Makefile.in
                  include/Makefile
                  libmget/Makefile
                  src/Makefile
+                 docs/libmget/Makefile
                  data/Makefile
                  tests/Makefile])
 AC_OUTPUT

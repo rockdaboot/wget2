@@ -41,8 +41,9 @@
 #include "printf.h"
 #include "log.h"
 
+static const char
+	*logfile;
 static char
-	*logfile,
 	debug,
 	quiet,
 	verbose = 1;
