@@ -36,6 +36,8 @@
 #include <time.h>
 #include <errno.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "utils.h"
 #include "iri.h"
@@ -251,7 +253,7 @@ void cookie_free_public_suffixes(void)
 	vec_free(&suffix_exceptions);
 }
 
-static int NONNULL_ALL compare_cookie(const HTTP_COOKIE *c1, const HTTP_COOKIE *c2)
+static int NONNULL_ALL compare_cookie(const MGET_COOKIE *c1, const MGET_COOKIE *c2)
 {
 	int n;
 
@@ -329,13 +331,13 @@ static int NONNULL((1)) path_match(const char *cookie_path, const char *request_
 	return 0;
 }
 
-void cookie_init_cookie(HTTP_COOKIE *cookie)
+void cookie_init_cookie(MGET_COOKIE *cookie)
 {
 	memset(cookie, 0, sizeof(*cookie));
 	cookie->last_access = cookie->creation = time(NULL);
 }
 
-int cookie_free_cookie(HTTP_COOKIE *cookie)
+int cookie_free_cookie(MGET_COOKIE *cookie)
 {
 	xfree(cookie->name);
 	xfree(cookie->value);
@@ -354,7 +356,7 @@ void cookie_free_cookies(void)
 }
 
 // normalize/sanitize and store cookies
-int cookie_normalize_cookie(const IRI *iri, HTTP_COOKIE *cookie)
+int cookie_normalize_cookie(const IRI *iri, MGET_COOKIE *cookie)
 {
 /*
 	log_printf("normalize cookie %s=%s\n", cookie->name, cookie->value);
@@ -440,9 +442,9 @@ void cookie_normalize_cookies(const IRI *iri, const VECTOR *cookies)
 		cookie_normalize_cookie(iri, vec_get(cookies, it));
 }
 
-void cookie_store_cookie(HTTP_COOKIE *cookie)
+void cookie_store_cookie(MGET_COOKIE *cookie)
 {
-	HTTP_COOKIE *old;
+	MGET_COOKIE *old;
 	int pos;
 
 	log_printf("got cookie %s=%s\n", cookie->name, cookie->value);
@@ -476,7 +478,7 @@ void cookie_store_cookies(VECTOR *cookies)
 	int it;
 
 	for (it = vec_size(cookies) - 1; it >= 0; it--) {
-		HTTP_COOKIE *cookie = vec_get(cookies, it);
+		MGET_COOKIE *cookie = vec_get(cookies, it);
 		cookie_store_cookie(cookie);
 		vec_remove(cookies, it);
 	}
@@ -486,14 +488,14 @@ char *cookie_create_request_header(const IRI *iri)
 {
 	int it, init = 0;
 	time_t now = time(NULL);
-	buffer_t buf;
+	mget_buffer_t buf;
 
 	log_printf("cookie_create_request_header for host=%s path=%s\n",iri->host,iri->path);
 
 	pthread_mutex_lock(&cookies_mutex);
 
 	for (it = 0; it < vec_size(cookies); it++) {
-		HTTP_COOKIE *cookie = vec_get(cookies, it);
+		MGET_COOKIE *cookie = vec_get(cookies, it);
 
 		if (((!cookie->host_only && domain_match(cookie->domain, iri->host)) ||
 			(cookie->host_only && !strcasecmp(cookie->domain, iri->host))) &&
@@ -535,7 +537,7 @@ int cookie_save(const char *fname, int keep_session_cookies)
 		pthread_mutex_lock(&cookies_mutex);
 
 		for (it = 0; it < vec_size(cookies) && !ferror(fp); it++) {
-			HTTP_COOKIE *cookie = vec_get(cookies, it);
+			MGET_COOKIE *cookie = vec_get(cookies, it);
 
 			if (cookie->persistent) {
 				if (cookie->expires < now)
@@ -572,7 +574,7 @@ int cookie_save(const char *fname, int keep_session_cookies)
 
 int cookie_load(const char *fname)
 {
-	HTTP_COOKIE cookie;
+	MGET_COOKIE cookie;
 	FILE *fp;
 	int ncookies = 0;
 	char *buf = NULL, *linep, *p;

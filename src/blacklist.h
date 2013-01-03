@@ -29,8 +29,6 @@
 
 #include "iri.h"
 
-#include "mget.h"
-
 int
 	in_blacklist(IRI *iri) NONNULL_ALL;
 IRI

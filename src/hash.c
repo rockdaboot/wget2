@@ -38,12 +38,12 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "utils.h"
 #include "log.h"
 #include "hash.h"
-
-#include "mget.h"
 
 static NONNULL((1)) gnutls_digest_algorithm_t get_algorithm(const char *type)
 {

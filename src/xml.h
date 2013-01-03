@@ -27,8 +27,6 @@
 #ifndef _MGET_XML_H
 #define _MGET_XML_H
 
-#include "mget.h"
-
 #define XML_FLG_BEGIN      (1<<0) // <
 #define XML_FLG_CLOSE      (1<<1) // >
 #define XML_FLG_END        (1<<2) // </elem>

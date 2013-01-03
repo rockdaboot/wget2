@@ -33,6 +33,8 @@
 #include <strings.h>
 #include <string.h>
 
+#include <libmget.h>
+
 #include "xml.h"
 #include "printf.h"
 #include "buffer.h"

@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 
+#include <libmget.h>
+
 #include "../src/buffer.h"
 
 #define buffer_strcat(buf, s) \
@@ -13,7 +15,7 @@ int main(void)
 {
 	int it;
 	char sbuf[128];
-	buffer_t buf;
+	mget_buffer_t buf;
 
 	buffer_init(&buf,sbuf,sizeof(sbuf));
 

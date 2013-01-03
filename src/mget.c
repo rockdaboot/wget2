@@ -114,7 +114,7 @@ static int
 
 static const char * NONNULL_ALL get_local_filename(IRI *iri)
 {
-	buffer_t buf;
+	mget_buffer_t buf;
 	const char *fname;
 	int directories;
 
@@ -148,7 +148,7 @@ static const char * NONNULL_ALL get_local_filename(IRI *iri)
 
 		if (config.cut_directories) {
 			// cut directories
-			buffer_t path_buf;
+			mget_buffer_t path_buf;
 			const char *p;
 			int n;
 
@@ -263,7 +263,7 @@ static JOB *add_url_to_queue(const char *url, IRI *base, const char *encoding)
 
 	if (base) {
 		char sbuf[256];
-		buffer_t buf;
+		mget_buffer_t buf;
 
 		buffer_init(&buf, sbuf, sizeof(sbuf));
 		iri = iri_parse(iri_relative_to_absolute(base, url, strlen(url), &buf), encoding);
@@ -936,7 +936,7 @@ struct html_context {
 		*base;
 	const char
 		*encoding;
-	buffer_t
+	mget_buffer_t
 		uri_buf;
 	int
 		sockfd;
@@ -1120,7 +1120,7 @@ struct css_context {
 		*base;
 	const char
 		*encoding;
-	buffer_t
+	mget_buffer_t
 		uri_buf;
 	int
 		sockfd;
@@ -1499,7 +1499,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			else if (downloader->job->referer) {
 				IRI *referer = downloader->job->referer;
 				char sbuf[256];
-				buffer_t buf;
+				mget_buffer_t buf;
 
 				buffer_init(&buf, sbuf, sizeof(sbuf));
 
@@ -1571,7 +1571,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 
 		if (resp->location) {
 			char uri_buf_static[1024];
-			buffer_t uri_buf;
+			mget_buffer_t uri_buf;
 
 			cookie_normalize_cookies(iri, resp->cookies);
 			cookie_store_cookies(resp->cookies);

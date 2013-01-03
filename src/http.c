@@ -41,6 +41,8 @@
 #include <errno.h>
 #include <zlib.h>
 
+#include <libmget.h>
+
 #include "options.h"
 #include "xalloc.h"
 #include "utils.h"
@@ -708,7 +710,7 @@ static long long get_current_time(void)
 }
 */
 
-const char *http_parse_setcookie(const char *s, HTTP_COOKIE *cookie)
+const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 {
 	const char *name, *p;
 
@@ -865,7 +867,7 @@ HTTP_RESPONSE *http_parse_response(char *buf)
 			resp->last_modified = parse_rfc1123_date(s);
 		} else if (!strcasecmp(name, "Set-Cookie")) {
 			// this is a parser. content validation must be done by higher level functions.
-			HTTP_COOKIE cookie;
+			MGET_COOKIE cookie;
 			http_parse_setcookie(s, &cookie);
 
 			if (!resp->cookies)
@@ -1041,7 +1043,7 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 #endif
 		char a1buf[MD5_DIGEST_LENGTH * 2 + 1], a2buf[MD5_DIGEST_LENGTH * 2 + 1];
 		char response_digest[MD5_DIGEST_LENGTH * 2 + 1], cnonce[16] = "";
-		buffer_t buf;
+		mget_buffer_t buf;
 		const char
 			*realm = stringmap_get(challenge->params, "realm"),
 			*opaque = stringmap_get(challenge->params, "opaque"),
@@ -1187,7 +1189,7 @@ int http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 	return 0;
 }
 
-ssize_t http_request_to_buffer(HTTP_REQUEST *req, buffer_t *buf)
+ssize_t http_request_to_buffer(HTTP_REQUEST *req, mget_buffer_t *buf)
 {
 	int it, use_proxy = 0;
 
@@ -1238,7 +1240,7 @@ HTTP_RESPONSE *http_get_response_cb(
 	ssize_t nbytes, nread = 0;
 	char *buf, *p = NULL;
 	HTTP_RESPONSE *resp = NULL;
-	DECOMPRESSOR *dc = NULL;
+	MGET_DECOMPRESSOR *dc = NULL;
 
 	// reuse generic connection buffer
 	buf = conn->buf->data;
@@ -1266,7 +1268,7 @@ HTTP_RESPONSE *http_get_response_cb(
 				log_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 
 			if (req && req->save_headers) {
-				buffer_t *header = buffer_init(NULL, NULL, p - buf + 2);
+				mget_buffer_t *header = buffer_init(NULL, NULL, p - buf + 2);
 				buffer_memcpy(header, buf, p - buf);
 				buffer_memcat(header, "\r\n\r\n", 4);
 
@@ -1480,7 +1482,7 @@ cleanup:
 
 static int _get_body(void *userdata, const char *data, size_t length)
 {
-	buffer_memcat((buffer_t *)userdata, data, length);
+	buffer_memcat((mget_buffer_t *)userdata, data, length);
 
 	return 0;
 }
@@ -1490,7 +1492,7 @@ static int _get_body(void *userdata, const char *data, size_t length)
 HTTP_RESPONSE *http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 {
 	HTTP_RESPONSE *resp;
-	buffer_t *body = buffer_alloc(102400);
+	mget_buffer_t *body = buffer_alloc(102400);
 
 	resp = http_get_response_cb(conn, req, _get_body, body);
 

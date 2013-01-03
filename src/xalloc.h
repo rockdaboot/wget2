@@ -31,8 +31,6 @@
 #include <stdlib.h> // needed for free()
 #include <string.h> // needed for memcpy()
 
-#include "mget.h"
-
 #define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 
 void

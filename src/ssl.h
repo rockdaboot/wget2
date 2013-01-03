@@ -30,10 +30,8 @@
 
 #include <stddef.h>
 
-#include "mget.h"
-
-#define SSL_X509_FMT_PEM 0
-#define SSL_X509_FMT_DER 1
+#define MGET_SSL_X509_FMT_PEM 0
+#define MGET_SSL_X509_FMT_DER 1
 
 void
 	ssl_init(void),

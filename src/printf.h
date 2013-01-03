@@ -30,8 +30,6 @@
 #include <stddef.h>
 #include <stdarg.h>
 
-#include "mget.h"
-
 int
 	vasprintf(char **restrict buf, const char *restrict fmt, va_list) PRINTF_FORMAT(2,0),
 	asprintf(char **restrict buf, const char *restrict fmt, ...) PRINTF_FORMAT(2,3);

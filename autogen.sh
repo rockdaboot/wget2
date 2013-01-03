@@ -1,1 +1,1 @@
-autoreconf -i
+autoreconf -i --force

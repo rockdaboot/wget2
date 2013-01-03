@@ -42,6 +42,8 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "log.h"
 #include "buffer.h"
@@ -171,7 +173,7 @@ void css_parse_file(
 		// maybe should use yy_scan_bytes instead of buffering into memory.
 		char tmp[4096];
 		ssize_t nbytes;
-		buffer_t *buf = buffer_alloc(4096);
+		mget_buffer_t *buf = buffer_alloc(4096);
 
 		while ((nbytes = read(STDIN_FILENO, tmp, sizeof(tmp))) > 0) {
 			buffer_memcat(buf, tmp, nbytes);

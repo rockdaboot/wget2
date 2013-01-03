@@ -38,6 +38,8 @@
 #include <errno.h>
 #include <sys/time.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "printf.h"
 

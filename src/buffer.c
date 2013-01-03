@@ -33,6 +33,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "utils.h"
 #include "buffer.h"
@@ -40,10 +42,10 @@
 //#define ALIGNMENT 16
 //#define PADDING(n) ((n) + (ALIGNMENT - (n)%ALIGNMENT))
 
-buffer_t *buffer_init(buffer_t *buf, char *data, size_t size)
+mget_buffer_t *buffer_init(mget_buffer_t *buf, char *data, size_t size)
 {
 	if (!buf) {
-		buf = xmalloc(sizeof(buffer_t));
+		buf = xmalloc(sizeof(mget_buffer_t));
 		buf->release_buf = 1;
 	} else
 		buf->release_buf = 0;
@@ -68,12 +70,12 @@ buffer_t *buffer_init(buffer_t *buf, char *data, size_t size)
 	return buf;
 }
 
-buffer_t *buffer_alloc(size_t size)
+mget_buffer_t *buffer_alloc(size_t size)
 {
 	return buffer_init(NULL, NULL, size);
 }
 
-void buffer_realloc(buffer_t *buf, size_t size)
+void buffer_realloc(mget_buffer_t *buf, size_t size)
 {
 	const char *old_data = buf->data;
 
@@ -95,13 +97,13 @@ void buffer_realloc(buffer_t *buf, size_t size)
 	buf->release_data = 1;
 }
 
-void buffer_ensure_capacity(buffer_t *buf, size_t size)
+void buffer_ensure_capacity(mget_buffer_t *buf, size_t size)
 {
 	if (buf->size < size)
 		buffer_realloc(buf, size);
 }
 
-void buffer_free(buffer_t **buf)
+void buffer_free(mget_buffer_t **buf)
 {
 	if (likely(buf && *buf)) {
 		if ((*buf)->release_data) {
@@ -114,12 +116,12 @@ void buffer_free(buffer_t **buf)
 	}
 }
 
-void buffer_deinit(buffer_t *buf)
+void buffer_deinit(mget_buffer_t *buf)
 {
 	buffer_free(&buf);
 }
 
-void buffer_free_data(buffer_t *buf)
+void buffer_free_data(mget_buffer_t *buf)
 {
 	if (likely(buf)) {
 		if (buf->release_data) {
@@ -129,14 +131,14 @@ void buffer_free_data(buffer_t *buf)
 	}
 }
 
-size_t buffer_memcpy(buffer_t *buf, const void *data, size_t length)
+size_t buffer_memcpy(mget_buffer_t *buf, const void *data, size_t length)
 {
 	buf->length = 0;
 
 	return buffer_memcat(buf, data, length);
 }
 
-size_t buffer_memcat(buffer_t *buf, const void *data, size_t length)
+size_t buffer_memcat(mget_buffer_t *buf, const void *data, size_t length)
 {
 	if (length) {
 		if (buf->size < buf->length + length)
@@ -150,14 +152,14 @@ size_t buffer_memcat(buffer_t *buf, const void *data, size_t length)
 	return buf->length;
 }
 
-size_t buffer_strcpy(buffer_t *buf, const char *s)
+size_t buffer_strcpy(mget_buffer_t *buf, const char *s)
 {
 	buf->length = 0;
 
 	return buffer_strcat(buf, s);
 }
 
-size_t buffer_strcat(buffer_t *buf, const char *s)
+size_t buffer_strcat(mget_buffer_t *buf, const char *s)
 {
 	size_t length = strlen(s);
 
@@ -173,24 +175,24 @@ size_t buffer_strcat(buffer_t *buf, const char *s)
 	return buf->length;
 }
 
-size_t buffer_bufcpy(buffer_t *buf, buffer_t *src)
+size_t buffer_bufcpy(mget_buffer_t *buf, mget_buffer_t *src)
 {
 	return buffer_memcpy(buf, src->data, src->length);
 }
 
-size_t buffer_bufcat(buffer_t *buf, buffer_t *src)
+size_t buffer_bufcat(mget_buffer_t *buf, mget_buffer_t *src)
 {
 	return buffer_memcat(buf, src->data, src->length);
 }
 
-size_t buffer_memset(buffer_t *buf, char c, size_t length)
+size_t buffer_memset(mget_buffer_t *buf, char c, size_t length)
 {
 	buf->length = 0;
 
 	return buffer_memset_append(buf, c, length);
 }
 
-size_t buffer_memset_append(buffer_t *buf, char c, size_t length)
+size_t buffer_memset_append(mget_buffer_t *buf, char c, size_t length)
 {
 	if (likely(length)) {
 		if (unlikely(buf->size < buf->length + length))

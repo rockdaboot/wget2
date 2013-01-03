@@ -37,6 +37,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "log.h"
 #include "utils.h"

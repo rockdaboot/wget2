@@ -1,2 +1,2 @@
-SUBDIRS = include libmget src tests
+SUBDIRS = po include libmget src data tests
 ACLOCAL_AMFLAGS= -I m4

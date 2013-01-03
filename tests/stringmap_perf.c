@@ -12,6 +12,8 @@
 #include <sys/mman.h>
 #include <errno.h>
 
+#include <libmget.h>
+
 #include "../src/stringmap.h"
 
 static int NONNULL_ALL _print_word(const char *word)
@@ -26,7 +28,7 @@ int main(int argc, const char *const *argv)
 	char *buf, *word, *end;
 	size_t length;
 	struct stat st;
-	STRINGMAP *map = stringmap_create(1024);
+	MGET_STRINGMAP *map = stringmap_create(1024);
 
 	for (it = 1; it < argc; it++) {
 		if ((fd = open(argv[it], O_RDONLY)) == -1) {

@@ -33,8 +33,6 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
-#include "mget.h"
-
 typedef struct TCP *tcp_t;
 
 void

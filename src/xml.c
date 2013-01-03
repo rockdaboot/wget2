@@ -40,6 +40,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "utils.h"
 #include "log.h"

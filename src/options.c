@@ -55,6 +55,8 @@
 #include <sys/stat.h>
 #include <stringprep.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "utils.h"
 #include "log.h"
@@ -240,7 +242,7 @@ static int parse_string(option_t opt, UNUSED const char *const *argv, const char
 
 static int parse_stringset(option_t opt, UNUSED const char *const *argv, const char *val)
 {
-	STRINGMAP *map = *((STRINGMAP **)opt->var);
+	MGET_STRINGMAP *map = *((MGET_STRINGMAP **)opt->var);
 
 	if (val) {
 		const char *s, *p;
@@ -305,9 +307,9 @@ static int parse_timeout(option_t opt, UNUSED const char *const *argv, const cha
 static int PURE NONNULL((1)) parse_cert_type(option_t opt, UNUSED const char *const *argv, const char *val)
 {
 	if (!val || !strcasecmp(val, "PEM"))
-		*((char *)opt->var) = SSL_X509_FMT_PEM;
+		*((char *)opt->var) = MGET_SSL_X509_FMT_PEM;
 	else if (!strcasecmp(val, "DER") || !strcasecmp(val, "ASN1"))
-		*((char *)opt->var) = SSL_X509_FMT_DER;
+		*((char *)opt->var) = MGET_SSL_X509_FMT_DER;
 	else
 		err_printf_exit("Unknown cert type '%s'\n", val);
 
@@ -372,8 +374,8 @@ struct config config = {
 	.user_agent = "Mget/"PACKAGE_VERSION,
 	.verbose = 1,
 	.check_certificate=1,
-	.cert_type = SSL_X509_FMT_PEM,
-	.private_key_type = SSL_X509_FMT_PEM,
+	.cert_type = MGET_SSL_X509_FMT_PEM,
+	.private_key_type = MGET_SSL_X509_FMT_PEM,
 	.secure_protocol = "AUTO",
 	.ca_directory = "system",
 	.cookies = 1,
@@ -550,7 +552,7 @@ static int NONNULL((1)) set_long_option(const char *name, const char *value)
 // - format is 'name value', where value might be enclosed in ' or "
 // - values enclosed in " or ' might contain \\, \" and \'
 
-static void NONNULL((1)) _read_config(const char *cfgfile, int expand)
+static int NONNULL((1)) _read_config(const char *cfgfile, int expand)
 {
 	static int level; // level of recursions to prevent endless include loops
 	FILE *fp;
@@ -559,7 +561,7 @@ static void NONNULL((1)) _read_config(const char *cfgfile, int expand)
 	int append = 0, pos, found;
 	size_t bufsize = 0, linelen = 0;
 	ssize_t len;
-	buffer_t linebuf;
+	mget_buffer_t linebuf;
 
 /*
 	if (expand) {
@@ -579,7 +581,7 @@ static void NONNULL((1)) _read_config(const char *cfgfile, int expand)
 		} else
 			err_printf(_("Failed to expand %s\n"), cfgfile);
 
-		return;
+		return 0;
 	}
 */
 
@@ -617,17 +619,18 @@ static void NONNULL((1)) _read_config(const char *cfgfile, int expand)
 			level--;
 		}
 		
-		return;
+		return 0;
 	}
-
-	buffer_init(&linebuf, linebuf_static, sizeof(linebuf_static));
 
 	if ((fp = fopen(cfgfile, "r")) == NULL) {
 		err_printf(_("Failed to open %s\n"), cfgfile);
-		return;
+		return -1;
 	}
 
 	log_printf(_("Reading %s\n"), cfgfile);
+
+	buffer_init(&linebuf, linebuf_static, sizeof(linebuf_static));
+
 	while ((len = getline(&buf, &bufsize, fp)) >= 0) {
 		if (len == 0 || *buf == '\r' || *buf == '\n') continue;
 
@@ -719,15 +722,16 @@ static void NONNULL((1)) _read_config(const char *cfgfile, int expand)
 	if (append) {
 		err_printf(_("Failed to parse last line in '%s'\n"), cfgfile);
 	}
+
+	return 0;
 }
 
 static void read_config(void)
 {
-#ifdef SYSTEM_MGETRC
-	_read_config(SYSTEM_MGETRC, 1);
-#else
+	if (access(SYSCONFDIR"mgetrc", R_OK) == 0)
+		_read_config(SYSCONFDIR"mgetrc", 1);
+
 	_read_config("~/.mgetrc", 1);
-#endif
 }
 
 static int NONNULL((2)) parse_command_line(int argc, const char *const *argv)
@@ -848,6 +852,9 @@ int init(int argc, const char *const *argv)
 
 		truncated = 1;
 	}
+	log_set_logfile(config.logfile);
+	log_set_quiet(config.quiet);
+	log_set_debug(config.debug);
 
 	// read global config and user's config
 	// settings in user's config override global settings
@@ -870,6 +877,9 @@ int init(int argc, const char *const *argv)
 		if (fd != -1)
 			close(fd);
 	}
+	log_set_logfile(config.logfile);
+	log_set_quiet(config.quiet);
+	log_set_debug(config.debug);
 
 	// check for correct settings
 	if (config.num_threads < 1)

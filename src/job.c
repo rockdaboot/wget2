@@ -44,7 +44,7 @@
 #include "hash.h"
 #include "job.h"
 
-static LIST
+static MGET_LIST
 	*queue;
 
 static int free_mirror(MIRROR *mirror)
@@ -346,7 +346,7 @@ JOB *queue_add(IRI *iri)
 		memset(&job, 0, sizeof(JOB));
 		job.iri = iri;
 
-		jobp = list_append(&queue, &job, sizeof(JOB));
+		jobp = mget_list_append(&queue, &job, sizeof(JOB));
 
 		log_printf("queue_add %p %s\n", (void *)jobp, iri->uri);
 		return jobp;
@@ -359,7 +359,7 @@ void queue_del(JOB *job)
 {
 	log_printf("queue_del %p\n", (void *)job);
 	job_free(job);
-	list_remove(&queue, job);
+	mget_list_remove(&queue, job);
 }
 
 struct find_free_job_context {
@@ -405,7 +405,7 @@ int queue_get(JOB **job_out, PART **part_out)
 	if (part_out)
 		*part_out = NULL;
 
-	return list_browse(queue, (int(*)(void *, void *))find_free_job, &context);
+	return mget_list_browse(queue, (int(*)(void *, void *))find_free_job, &context);
 }
 
 int queue_empty(void)
@@ -424,6 +424,6 @@ static int queue_free_func(void *context UNUSED, JOB *job)
 
 void queue_free(void)
 {
-	list_browse(queue, (int(*)(void *, void *))queue_free_func, NULL);
-	list_free(&queue);
+	mget_list_browse(queue, (int(*)(void *, void *))queue_free_func, NULL);
+	mget_list_free(&queue);
 }

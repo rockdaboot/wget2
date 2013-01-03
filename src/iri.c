@@ -34,6 +34,8 @@
 #include <iconv.h>
 #include <idna.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "utils.h"
 #include "log.h"
@@ -444,7 +446,7 @@ static size_t NONNULL_ALL _normalize_path(char *path)
 // create an absolute URI from a base + relative URI
 
 //char *iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_t len, char *dst, size_t dst_size)
-const char *iri_relative_to_absolute(IRI *base, const char *val, size_t len, buffer_t *buf)
+const char *iri_relative_to_absolute(IRI *base, const char *val, size_t len, mget_buffer_t *buf)
 {
 	log_printf("*url = %.*s\n", (int)len, val);
 
@@ -554,7 +556,7 @@ int iri_compare(IRI *iri1, IRI *iri2)
 	return 0;
 }
 
-const char *iri_escape(const char *src, buffer_t *buf)
+const char *iri_escape(const char *src, mget_buffer_t *buf)
 {
 	const char *begin;
 
@@ -573,7 +575,7 @@ const char *iri_escape(const char *src, buffer_t *buf)
 	return buf->data;
 }
 
-const char *iri_escape_path(const char *src, buffer_t *buf)
+const char *iri_escape_path(const char *src, mget_buffer_t *buf)
 {
 	const char *begin;
 
@@ -592,7 +594,7 @@ const char *iri_escape_path(const char *src, buffer_t *buf)
 	return buf->data;
 }
 
-const char *iri_escape_query(const char *src, buffer_t *buf)
+const char *iri_escape_query(const char *src, mget_buffer_t *buf)
 {
 	const char *begin;
 
@@ -614,12 +616,12 @@ const char *iri_escape_query(const char *src, buffer_t *buf)
 	return buf->data;
 }
 
-const char *iri_get_escaped_host(const IRI *iri, buffer_t *buf)
+const char *iri_get_escaped_host(const IRI *iri, mget_buffer_t *buf)
 {
 	return iri_escape(iri->host, buf);
 }
 
-const char *iri_get_escaped_resource(const IRI *iri, buffer_t *buf)
+const char *iri_get_escaped_resource(const IRI *iri, mget_buffer_t *buf)
 {
 	if (iri->path)
 		iri_escape_path(iri->path, buf);
@@ -637,7 +639,7 @@ const char *iri_get_escaped_resource(const IRI *iri, buffer_t *buf)
 	return buf->data;
 }
 
-const char *iri_get_escaped_path(const IRI *iri, buffer_t *buf)
+const char *iri_get_escaped_path(const IRI *iri, mget_buffer_t *buf)
 {
 	if (buf->length)
 		buffer_memcat(buf, "/", 1);
@@ -651,7 +653,7 @@ const char *iri_get_escaped_path(const IRI *iri, buffer_t *buf)
 	return buf->data;
 }
 
-const char *iri_get_escaped_query(const IRI *iri, buffer_t *buf)
+const char *iri_get_escaped_query(const IRI *iri, mget_buffer_t *buf)
 {
 	if (iri->query) {
 		buffer_memcat(buf, "?", 1);
@@ -661,7 +663,7 @@ const char *iri_get_escaped_query(const IRI *iri, buffer_t *buf)
 	return buf->data;
 }
 
-const char *iri_get_escaped_fragment(const IRI *iri, buffer_t *buf)
+const char *iri_get_escaped_fragment(const IRI *iri, mget_buffer_t *buf)
 {
 	if (iri->fragment) {
 		buffer_memcat(buf, "#", 1);
@@ -672,7 +674,7 @@ const char *iri_get_escaped_fragment(const IRI *iri, buffer_t *buf)
 }
 
 
-const char *iri_get_escaped_file(const IRI *iri, buffer_t *buf)
+const char *iri_get_escaped_file(const IRI *iri, mget_buffer_t *buf)
 {
 	if (iri->path) {
 		char *fname;

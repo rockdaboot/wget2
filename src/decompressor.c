@@ -32,20 +32,22 @@
 #include <string.h>
 #include <zlib.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "log.h"
 #include "decompressor.h"
 
-struct DECOMPRESSOR {
+struct MGET_DECOMPRESSOR {
 	union {
 		z_stream
 		strm;
 	} extra;
 	int
-		(*decompress)(DECOMPRESSOR *dc, char *src, size_t srclen),
+		(*decompress)(MGET_DECOMPRESSOR *dc, char *src, size_t srclen),
 		(*put_data)(void *context, const char *data, size_t length); // decompressed data goes here
 	void
-		(*exit)(DECOMPRESSOR *dc),
+		(*exit)(MGET_DECOMPRESSOR *dc),
 		*context; // given to put_data()
 	char
 		encoding;
@@ -65,7 +67,7 @@ static int gzip_init(z_stream *strm)
 	return 0;
 }
 
-static int gzip_decompress(DECOMPRESSOR *dc, char *src, size_t srclen)
+static int gzip_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 {
 	z_stream *strm;
 	char dst[10240];
@@ -101,7 +103,7 @@ static int gzip_decompress(DECOMPRESSOR *dc, char *src, size_t srclen)
 	return -1;
 }
 
-static void gzip_exit(DECOMPRESSOR *dc)
+static void gzip_exit(MGET_DECOMPRESSOR *dc)
 {
 	int status;
 
@@ -123,7 +125,7 @@ static int deflate_init(z_stream *strm)
 	return 0;
 }
 
-static int identity(DECOMPRESSOR *dc, char *src, size_t srclen)
+static int identity(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 {
 	if (dc->put_data)
 		dc->put_data(dc->context, src, srclen);
@@ -131,11 +133,11 @@ static int identity(DECOMPRESSOR *dc, char *src, size_t srclen)
 	return 0;
 }
 
-DECOMPRESSOR *decompress_open(int encoding,
+MGET_DECOMPRESSOR *decompress_open(int encoding,
 	int (*put_data)(void *context, const char *data, size_t length),
 	void *context)
 {
-	DECOMPRESSOR *dc = xcalloc(1, sizeof(DECOMPRESSOR));
+	MGET_DECOMPRESSOR *dc = xcalloc(1, sizeof(MGET_DECOMPRESSOR));
 	int rc = 0;
 
 	if (encoding == content_encoding_gzip) {
@@ -164,7 +166,7 @@ DECOMPRESSOR *decompress_open(int encoding,
 	return dc;
 }
 
-void decompress_close(DECOMPRESSOR *dc)
+void decompress_close(MGET_DECOMPRESSOR *dc)
 {
 	if (dc) {
 		if (dc->exit)
@@ -173,7 +175,7 @@ void decompress_close(DECOMPRESSOR *dc)
 	}
 }
 
-int decompress(DECOMPRESSOR *dc, char *src, size_t srclen)
+int decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 {
 	if (dc) {
 		return dc->decompress(dc, src, srclen);

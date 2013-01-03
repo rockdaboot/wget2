@@ -32,20 +32,21 @@
 #include <string.h>
 
 #include <libmget.h>
+
 #include <xalloc.h>
 
-typedef struct LISTNODE LISTNODE;
+typedef struct MGET_LISTNODE MGET_LISTNODE;
 
-struct LISTNODE {
-	LISTNODE
+struct MGET_LISTNODE {
+	MGET_LISTNODE
 		*next,
 		*prev;
 };
 
-void *list_append(LISTNODE **list, const void *elem, size_t size)
+void *mget_list_append(MGET_LISTNODE **list, const void *elem, size_t size)
 {
 	// allocate space for node and data in one row
-	LISTNODE *node = xmalloc(sizeof(LISTNODE) + size);
+	MGET_LISTNODE *node = xmalloc(sizeof(MGET_LISTNODE) + size);
 
 	memcpy(node + 1, elem, size);
 
@@ -63,18 +64,18 @@ void *list_append(LISTNODE **list, const void *elem, size_t size)
 	return node + 1;
 }
 
-void *list_prepend(LISTNODE **list, const void *elem, size_t size)
+void *mget_list_prepend(MGET_LISTNODE **list, const void *elem, size_t size)
 {
 	if (!*list) {
-		return list_append(list, elem, size);
+		return mget_list_append(list, elem, size);
 	} else {
-		return list_append(&(*list)->prev, elem, size);
+		return mget_list_append(&(*list)->prev, elem, size);
 	}
 }
 
-void list_remove(LISTNODE **list, void *elem)
+void mget_list_remove(MGET_LISTNODE **list, void *elem)
 {
-	LISTNODE *node = ((LISTNODE *)elem) - 1;
+	MGET_LISTNODE *node = ((MGET_LISTNODE *)elem) - 1;
 
 	if (node->prev == node->next && node == node->prev) {
 		// last node in list
@@ -89,22 +90,22 @@ void list_remove(LISTNODE **list, void *elem)
 	xfree(node);
 }
 
-void *list_getfirst(const LISTNODE *list)
+void *mget_list_getfirst(const MGET_LISTNODE *list)
 {
 	return (void *)(list + 1);
 }
 
-void *list_getlast(const LISTNODE *list)
+void *mget_list_getlast(const MGET_LISTNODE *list)
 {
 	return (void *)(list->prev + 1);
 }
 
-int list_browse(const LIST *list, int (*browse)(void *context, void *elem), void *context)
+int mget_list_browse(const MGET_LIST *list, int (*browse)(void *context, void *elem), void *context)
 {
 	int ret = 0;
 
 	if (list) {
-		const LISTNODE *end = list->prev, *cur = list;
+		const MGET_LISTNODE *end = list->prev, *cur = list;
 
 		while ((ret = browse(context, (void *)(cur + 1))) == 0 && cur != end)
 			cur = cur->next;
@@ -113,17 +114,17 @@ int list_browse(const LIST *list, int (*browse)(void *context, void *elem), void
 	return ret;
 }
 
-void list_free(LIST **list)
+void mget_list_free(MGET_LIST **list)
 {
 	while (*list)
-		list_remove(list, ((LISTNODE *) * list) + 1);
+		mget_list_remove(list, ((MGET_LISTNODE *) * list) + 1);
 }
 
 /*
-void list_dump(const LIST *list)
+void mget_list_dump(const MGET_LIST *list)
 {
 	if (list) {
-		const LISTNODE *cur = list;
+		const MGET_LISTNODE *cur = list;
 
 		do {
 			log_printf("%p: next %p prev %p\n", cur, cur->next, cur->prev);

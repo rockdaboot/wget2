@@ -40,6 +40,8 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 
+#include <libmget.h>
+
 #include "utils.h"
 #include "log.h"
 #include "options.h"
@@ -450,7 +452,7 @@ void ssl_init(void)
 				err_printf_exit(_("ERROR: GnuTLS requires the key and the cert to be of the same type.\n"));
 			}
 
-			if (config.private_key_type == SSL_X509_FMT_DER)
+			if (config.private_key_type == MGET_SSL_X509_FMT_DER)
 				type = GNUTLS_X509_FMT_DER;
 			else
 				type = GNUTLS_X509_FMT_PEM;

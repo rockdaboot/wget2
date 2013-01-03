@@ -33,6 +33,8 @@
 #include <string.h>
 #include <stdarg.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "printf.h"
 #include "vector.h"

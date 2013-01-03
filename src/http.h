@@ -76,7 +76,7 @@ typedef struct {
 typedef struct {
 	const char
 		*auth_scheme;
-	STRINGMAP
+	MGET_STRINGMAP
 		*params;
 } HTTP_CHALLENGE;
 
@@ -91,7 +91,7 @@ typedef struct {
 		*lines;
 	const char
 		*scheme;
-	buffer_t
+	mget_buffer_t
 		esc_resource, // URI escaped resource
 		esc_host; // URI escaped host
 	char
@@ -112,7 +112,7 @@ typedef struct {
 		*content_type,
 		*content_type_encoding,
 		*location;
-	buffer_t
+	mget_buffer_t
 		*header,
 		*body;
 	size_t
@@ -142,7 +142,7 @@ typedef struct {
 		*esc_host,
 		*port,
 		*scheme;
-	buffer_t
+	mget_buffer_t
 		*buf;
 	unsigned
 		print_response_headers : 1;
@@ -166,7 +166,7 @@ const char
 	*http_parse_content_type(const char *s, const char **content_type, const char **charset),
 	*http_parse_content_encoding(const char *s, char *content_encoding) NONNULL_ALL,
 	*http_parse_connection(const char *s, char *keep_alive) NONNULL_ALL,
-	*http_parse_setcookie(const char *s, HTTP_COOKIE *cookie) NONNULL_ALL;
+	*http_parse_setcookie(const char *s, MGET_COOKIE *cookie) NONNULL_ALL;
 char
 	*http_print_date(time_t t, char *buf, size_t bufsize) NONNULL_ALL;
 void
@@ -181,7 +181,7 @@ void
 
 int
 	http_free_param(HTTP_HEADER_PARAM *param),
-	http_free_cookie(HTTP_COOKIE *cookie),
+	http_free_cookie(MGET_COOKIE *cookie),
 	http_free_digest(HTTP_DIGEST *digest),
 	http_free_challenge(HTTP_CHALLENGE *challenge),
 	http_free_link(HTTP_LINK *link);
@@ -214,6 +214,6 @@ void
 int
 	http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL_ALL;
 ssize_t
-	http_request_to_buffer(HTTP_REQUEST *req, buffer_t *buf) NONNULL_ALL;
+	http_request_to_buffer(HTTP_REQUEST *req, mget_buffer_t *buf) NONNULL_ALL;
 
 #endif /* _MGET_HTTP_H */

@@ -31,13 +31,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <libmget.h>
+
 #include "log.h"
 #include "iri.h"
 #include "hashmap.h"
 #include "blacklist.h"
 
 //static VECTOR
-static HASHMAP
+static MGET_HASHMAP
 	*blacklist;
 
 // Paul Larson's hash function from Microsoft Research

@@ -8,7 +8,8 @@
 
 #define YY_NO_INPUT
 
-#include "mget.h"
+#include <libmget.h>
+
 #include "css_tokenizer.h"
 #include "log.h"
 

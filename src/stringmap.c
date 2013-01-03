@@ -34,6 +34,8 @@
 #include <stdarg.h>
 #include <ctype.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "log.h"
 #include "hashmap.h"
@@ -41,8 +43,8 @@
 
 typedef struct ENTRY ENTRY;
 
-struct STRINGMAP {
-	HASHMAP
+struct MGET_STRINGMAP {
+	MGET_HASHMAP
 		*h;
 };
 
@@ -72,58 +74,58 @@ static unsigned int hash_string_nocase(const char *key)
 // create stringmap with initial size <max>
 // the default hash function is Larson's
 
-STRINGMAP *stringmap_create(int max)
+MGET_STRINGMAP *stringmap_create(int max)
 {
-	STRINGMAP *h = xmalloc(sizeof(STRINGMAP));
+	MGET_STRINGMAP *h = xmalloc(sizeof(MGET_STRINGMAP));
 	h->h = hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string, (int (*)(const void *, const void *))strcmp);
 	return h;
 }
 
-STRINGMAP *stringmap_create_nocase(int max)
+MGET_STRINGMAP *stringmap_create_nocase(int max)
 {
-	STRINGMAP *h = xmalloc(sizeof(STRINGMAP));
+	MGET_STRINGMAP *h = xmalloc(sizeof(MGET_STRINGMAP));
 	h->h = hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string_nocase, (int (*)(const void *, const void *))strcasecmp);
 	return h;
 }
 
-int stringmap_put_noalloc(STRINGMAP *h, const char *key, const void *value)
+int stringmap_put_noalloc(MGET_STRINGMAP *h, const char *key, const void *value)
 {
 	return hashmap_put_noalloc(h->h, key, value);
 }
 
-int stringmap_put(STRINGMAP *h, const char *key, const void *value, size_t valuesize)
+int stringmap_put(MGET_STRINGMAP *h, const char *key, const void *value, size_t valuesize)
 {
 	return hashmap_put(h->h, key, strlen(key) + 1, value, valuesize);
 }
 
-int stringmap_put_ident(STRINGMAP *h, const char *key)
+int stringmap_put_ident(MGET_STRINGMAP *h, const char *key)
 {
 	return hashmap_put_ident(h->h, key, strlen(key) + 1);
 }
 
-int stringmap_put_ident_noalloc(STRINGMAP *h, const char *key)
+int stringmap_put_ident_noalloc(MGET_STRINGMAP *h, const char *key)
 {
 	return hashmap_put_noalloc(h->h, key, key);
 }
 
-void *stringmap_get(const STRINGMAP *h, const char *key)
+void *stringmap_get(const MGET_STRINGMAP *h, const char *key)
 {
 	return hashmap_get(h->h, key);
 }
 
-void stringmap_remove(STRINGMAP *h, const char *key)
+void stringmap_remove(MGET_STRINGMAP *h, const char *key)
 {
 	if (h)
 		hashmap_remove(h->h, key);
 }
 
-void stringmap_remove_nofree(STRINGMAP *h, const char *key)
+void stringmap_remove_nofree(MGET_STRINGMAP *h, const char *key)
 {
 	if (h)
 		hashmap_remove(h->h, key);
 }
 
-void stringmap_free(STRINGMAP **h)
+void stringmap_free(MGET_STRINGMAP **h)
 {
 	if (h) {
 		hashmap_free(&(*h)->h);
@@ -131,17 +133,17 @@ void stringmap_free(STRINGMAP **h)
 	}
 }
 
-void stringmap_clear(STRINGMAP *h)
+void stringmap_clear(MGET_STRINGMAP *h)
 {
 	hashmap_clear(h->h);
 }
 
-int stringmap_size(const STRINGMAP *h)
+int stringmap_size(const MGET_STRINGMAP *h)
 {
 	return h ? hashmap_size(h->h): 0;
 }
 
-int stringmap_browse(const STRINGMAP *h, int (*browse)(const char *key, const void *value))
+int stringmap_browse(const MGET_STRINGMAP *h, int (*browse)(const char *key, const void *value))
 {
 	if (h)
 		hashmap_browse(h->h, (int (*)(const void *, const void *))browse);
@@ -149,19 +151,19 @@ int stringmap_browse(const STRINGMAP *h, int (*browse)(const char *key, const vo
 	return 0;
 }
 
-void stringmap_setcmpfunc(STRINGMAP *h, int (*cmp)(const char *key1, const char *key2))
+void stringmap_setcmpfunc(MGET_STRINGMAP *h, int (*cmp)(const char *key1, const char *key2))
 {
 	if (h)
 		hashmap_setcmpfunc(h->h, (int (*)(const void *, const void *))cmp);
 }
 
-void stringmap_sethashfunc(STRINGMAP *h, unsigned int (*hash)(const char *key))
+void stringmap_sethashfunc(MGET_STRINGMAP *h, unsigned int (*hash)(const char *key))
 {
 	if (h)
 		hashmap_sethashfunc(h->h, (unsigned int (*)(const void *))hash);
 }
 
-void stringmap_setloadfactor(STRINGMAP *h, float factor)
+void stringmap_setloadfactor(MGET_STRINGMAP *h, float factor)
 {
 	if (h)
 		hashmap_setloadfactor(h->h, factor);

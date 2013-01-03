@@ -29,9 +29,11 @@
 
 #include <stdarg.h>
 
-#include "mget.h"
-
 void
+	log_set_logfile(const char *logfile),
+	log_set_debug(char debug),
+	log_set_quiet(char quiet),
+	log_set_verbose(char verbose),
 	err_printf(const char *fmt, ...) PRINTF_FORMAT(1,2),
 	err_printf_exit(const char *fmt, ...) PRINTF_FORMAT(1,2) NORETURN,
 	info_printf(const char *fmt, ...) PRINTF_FORMAT(1,2),

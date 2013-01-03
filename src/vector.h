@@ -30,8 +30,6 @@
 #include <stddef.h>
 #include <stdarg.h>
 
-#include "mget.h"
-
 typedef struct {
 	int
 		(*cmp)(const void *, const void *); // comparison function

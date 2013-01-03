@@ -17,8 +17,6 @@
 
 #include <stddef.h>
 
-#include "mget.h"
-
 void
 	css_parse_buffer(
 		const char *buf,

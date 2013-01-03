@@ -54,6 +54,8 @@ if test "x$EXTRA_CFLAGS" != "x" ; then
   CFLAGS="$CFLAGS $EXTRA_CFLAGS"
 fi
 
+#AM_NLS
+#IT_PROG_INTLTOOL([0.40.0])
 AC_PROG_LEX
 AC_PROG_INSTALL
 AC_PROG_LN_S
@@ -69,7 +71,7 @@ fi
 # Gettext
 #
 AM_GNU_GETTEXT([external],[need-ngettext])
-AM_GNU_GETTEXT_VERSION([0.17])
+AM_GNU_GETTEXT_VERSION([0.18.1])
 
 #AC_ARG_WITH(gnutls, AS_HELP_STRING([--with-gnutls[=PATH]], [compile with SSL support]), , with_gnutls="no")
 #if test $with_gnutls != "no"
@@ -148,10 +150,11 @@ AC_CHECK_FUNCS([clock_gettime dup2 gettimeofday localtime_r memchr memmove\
 	memset mkdir munmap select setlocale socket strcasecmp strchr strdup\
 	strerror strncasecmp strndup strrchr strstr strlcpy futimens dprintf])
 
-AC_CONFIG_FILES([Makefile
+AC_CONFIG_FILES([Makefile po/Makefile.in
                  include/Makefile
                  libmget/Makefile
                  src/Makefile
+                 data/Makefile
                  tests/Makefile])
 AC_OUTPUT
 
@@ -161,7 +164,7 @@ AC_MSG_NOTICE([Summary of build options:
   Host OS:           ${host_os}
   Install prefix:    ${prefix}
   Compiler:          ${CC}
-  CFlags:            ${CFLAGS}
+  CFlags:            ${CFLAGS} ${CPPFLAGS}
   LDFlags:           ${LDFLAGS}
   Libs:              ${LIBS}
   SSL support:       $with_gnutls

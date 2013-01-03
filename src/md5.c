@@ -34,6 +34,8 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "utils.h"
 #include "printf.h"

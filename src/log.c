@@ -35,10 +35,17 @@
 #include <errno.h>
 #include <sys/time.h>
 
-#include "options.h"
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "printf.h"
 #include "log.h"
+
+static char
+	*logfile,
+	debug,
+	quiet,
+	verbose = 1;
 
 static void _write_log(const char *buf, int len)
 {
@@ -52,12 +59,12 @@ static void _write_log(const char *buf, int len)
 	gettimeofday(&tv, NULL); // obsoleted by POSIX.1-2008, maybe use clock_gettime() ? needs -lrt
 	tp = localtime_r((const time_t *)&tv.tv_sec, &tbuf); // cast top avoid warning on OpenBSD
 
-	if (!config.logfile)
+	if (!logfile)
 		fp = stderr;
-	else if (*config.logfile == '-' && config.logfile[1] == 0)
+	else if (*logfile == '-' && logfile[1] == 0)
 		fp = stdout;
 	else
-		fp = fopen(config.logfile, "a");
+		fp = fopen(logfile, "a");
 
 	if (fp) {
 		fprintf(fp, "%02d.%02d%02d%02d.%03ld %s%s",
@@ -69,9 +76,29 @@ static void _write_log(const char *buf, int len)
 	}
 }
 
+void log_set_logfile(const char *_logfile)
+{
+	logfile = _logfile;
+}
+
+void log_set_debug(char _debug)
+{
+	debug = _debug;
+}
+
+void log_set_quiet(char _quiet)
+{
+	quiet = _quiet;
+}
+
+void log_set_verbose(char _verbose)
+{
+	verbose = _verbose;
+}
+
 void log_vprintf(const char *fmt, va_list args)
 {
-	if (config.debug) {
+	if (debug) {
 		char sbuf[4096];
 		int err = errno, len;
 		va_list args2;
@@ -100,7 +127,7 @@ void log_vprintf(const char *fmt, va_list args)
 
 void log_printf(const char *fmt, ...)
 {
-	if (config.debug) {
+	if (debug) {
 		va_list args;
 
 		va_start(args, fmt);
@@ -111,7 +138,7 @@ void log_printf(const char *fmt, ...)
 
 void log_printf_exit(const char *fmt, ...)
 {
-	if (config.debug) {
+	if (debug) {
 		va_list args;
 
 		va_start(args, fmt);
@@ -124,14 +151,14 @@ void log_printf_exit(const char *fmt, ...)
 
 void log_write(const char *buf, int len)
 {
-	if (config.debug) {
+	if (debug) {
 		_write_log(buf, len);
 	}
 }
 
 void err_printf_exit(const char *fmt, ...)
 {
-	if (!config.quiet) {
+	if (!quiet) {
 		va_list args;
 
 		va_start(args, fmt);
@@ -144,7 +171,7 @@ void err_printf_exit(const char *fmt, ...)
 
 void err_printf(const char *fmt, ...)
 {
-	if (!config.quiet) {
+	if (!quiet) {
 		va_list args;
 
 		va_start(args, fmt);
@@ -155,7 +182,7 @@ void err_printf(const char *fmt, ...)
 
 void info_printf(const char *fmt, ...)
 {
-	if (config.verbose && !config.quiet) {
+	if (verbose && !quiet) {
 		va_list args;
 
 		va_start(args, fmt);

@@ -47,6 +47,8 @@
 #include <netinet/tcp.h>
 #include <netinet/in.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "utils.h"
 #include "log.h"

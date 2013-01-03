@@ -148,10 +148,10 @@
  * Double linked list
  */
 
-typedef struct LISTNODE LIST;
+typedef struct MGET_LISTNODE MGET_LIST;
 
 /**
- * @fn void *list_append(LIST **list, const void *elem, size_t size)
+ * @fn void *mget_list_append(MGET_LIST **list, const void *elem, size_t size)
  * @brief Append an element to the list.
  *
  * Append an entry to the end of the list.\n
@@ -168,38 +168,40 @@ typedef struct LISTNODE LIST;
  *
  * Example Usage:
  * @code
- *	LIST *list = NULL;
+ *	MGET_LIST *list = NULL;
  *	struct mystruct mydata1 = { .x = 1, .y = 25 };
  *	struct mystruct mydata2 = { .x = 5, .y = 99 };
  *	struct mystruct *data;
  * 
- *	list_append(&list, &mydata1, sizeof(mydata1)); // append mydata1 to list
- *	list_append(&list, &mydata2, sizeof(mydata2)); // append mydata2 to list
+ *	mget_list_append(&list, &mydata1, sizeof(mydata1)); // append mydata1 to list
+ *	mget_list_append(&list, &mydata2, sizeof(mydata2)); // append mydata2 to list
  *
- *	data = list_getfirst(list);
+ *	data = mget_list_getfirst(list);
  *	printf("data=(%d,%d)\n", data->x, data->y); // prints 'data=(1,25)'
  * 
- *	list_remove(&list, data);
+ *	mget_list_remove(&list, data);
  *
- *	data = list_getfirst(list);
+ *	data = mget_list_getfirst(list);
  *	printf("data=(%d,%d)\n", data->x, data->y); // prints 'data=(5,99)'
  * 
- *	list_free(&list);
+ *	mget_list_free(&list);
  * 
  * @endcode
  *
  */
-void *list_append(LIST **list, const void *elem, size_t size) NONNULL_ALL;
+void *mget_list_append(MGET_LIST **list, const void *elem, size_t size) NONNULL_ALL;
 
-void *list_prepend(LIST **list, const void *elem, size_t size) NONNULL_ALL;
+void *mget_list_prepend(MGET_LIST **list, const void *elem, size_t size) NONNULL_ALL;
 
-void list_remove(LIST **list, void *elem);
+void mget_list_remove(MGET_LIST **list, void *elem);
+
 void
-	*list_getfirst(const LIST *list) CONST NONNULL_ALL,
-	*list_getlast(const LIST *list) CONST NONNULL_ALL,
-	list_free(LIST **list) NONNULL_ALL;
+	*mget_list_getfirst(const MGET_LIST *list) CONST NONNULL_ALL,
+	*mget_list_getlast(const MGET_LIST *list) CONST NONNULL_ALL,
+	mget_list_free(MGET_LIST **list) NONNULL_ALL;
+
 int
-	list_browse(const LIST *list, int (*browse)(void *context, void *elem), void *context) NONNULL((2));
+	mget_list_browse(const MGET_LIST *list, int (*browse)(void *context, void *elem), void *context) NONNULL((2));
 
 #endif /* _MGET_LIBMGET_H */
 /** @} */

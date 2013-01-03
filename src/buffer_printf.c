@@ -33,6 +33,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "log.h"
 #include "buffer.h"
@@ -46,7 +48,7 @@
 #define FLAG_HEXLO        64
 #define FLAG_HEXUP       128
 
-static void _copy_string(buffer_t *buf, unsigned int flags, int field_width, int precision, const char *arg)
+static void _copy_string(mget_buffer_t *buf, unsigned int flags, int field_width, int precision, const char *arg)
 {
 	size_t length;
 
@@ -80,7 +82,7 @@ static void _copy_string(buffer_t *buf, unsigned int flags, int field_width, int
 	}
 }
 
-static void _convert_dec_fast(buffer_t *buf, int arg)
+static void _convert_dec_fast(mget_buffer_t *buf, int arg)
 {
 	char str[32]; // long enough to hold decimal long long
 	char *dst = str + sizeof(str) - 1;
@@ -104,7 +106,7 @@ static void _convert_dec_fast(buffer_t *buf, int arg)
 	buffer_memcat(buf, dst + 1, sizeof(str) - (dst - str) - 1);
 }
 
-static void _convert_dec(buffer_t *buf, unsigned int flags, int field_width, int precision, long long arg)
+static void _convert_dec(mget_buffer_t *buf, unsigned int flags, int field_width, int precision, long long arg)
 {
 	unsigned long long argu = arg;
 	char str[32], minus = 0; // long enough to hold decimal long long
@@ -222,7 +224,7 @@ static void _convert_dec(buffer_t *buf, unsigned int flags, int field_width, int
 	}
 }
 
-static void _convert_pointer(buffer_t *buf, void *pointer)
+static void _convert_pointer(mget_buffer_t *buf, void *pointer)
 {
 	static const char HEX[16] = "0123456789abcdef";
 	char str[32]; // long enough to hold hexadecimal pointer
@@ -252,7 +254,7 @@ static void _convert_pointer(buffer_t *buf, void *pointer)
 	buffer_memcat(buf, dst, length);
 }
 
-size_t buffer_vprintf_append2(buffer_t *buf, const char *fmt, va_list args)
+size_t buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list args)
 {
 	const char *p = fmt, *begin;
 	int field_width, precision;
@@ -418,14 +420,14 @@ size_t buffer_vprintf_append2(buffer_t *buf, const char *fmt, va_list args)
 	return buf->length;
 }
 
-size_t buffer_vprintf2(buffer_t *buf, const char *fmt, va_list args)
+size_t buffer_vprintf2(mget_buffer_t *buf, const char *fmt, va_list args)
 {
 	buf->length = 0;
 
 	return buffer_vprintf_append2(buf, fmt, args);
 }
 
-size_t buffer_printf_append2(buffer_t *buf, const char *fmt, ...)
+size_t buffer_printf_append2(mget_buffer_t *buf, const char *fmt, ...)
 {
 	va_list args;
 
@@ -436,7 +438,7 @@ size_t buffer_printf_append2(buffer_t *buf, const char *fmt, ...)
 	return buf->length;
 }
 
-size_t buffer_printf2(buffer_t *buf, const char *fmt, ...)
+size_t buffer_printf2(mget_buffer_t *buf, const char *fmt, ...)
 {
 	va_list args;
 
@@ -445,7 +447,7 @@ size_t buffer_printf2(buffer_t *buf, const char *fmt, ...)
 	va_end(args);
 }
 
-size_t buffer_vprintf_append(buffer_t *buf, const char *fmt, va_list args)
+size_t buffer_vprintf_append(mget_buffer_t *buf, const char *fmt, va_list args)
 {
 	ssize_t length;
 	va_list args2;
@@ -465,7 +467,7 @@ size_t buffer_vprintf_append(buffer_t *buf, const char *fmt, va_list args)
 	return buf->length;
 }
 
-size_t buffer_printf_append(buffer_t *buf, const char *fmt, ...)
+size_t buffer_printf_append(mget_buffer_t *buf, const char *fmt, ...)
 {
 	va_list args;
 
@@ -476,14 +478,14 @@ size_t buffer_printf_append(buffer_t *buf, const char *fmt, ...)
 	return buf->length;
 }
 
-size_t buffer_vprintf(buffer_t *buf, const char *fmt, va_list args)
+size_t buffer_vprintf(mget_buffer_t *buf, const char *fmt, va_list args)
 {
 	buf->length = 0;
 
 	return buffer_vprintf_append(buf, fmt, args);
 }
 
-size_t buffer_printf(buffer_t *buf, const char *fmt, ...)
+size_t buffer_printf(mget_buffer_t *buf, const char *fmt, ...)
 {
 	va_list args;
 

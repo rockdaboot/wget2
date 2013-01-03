@@ -38,6 +38,8 @@
 #include <dirent.h>
 #include <time.h>
 
+#include <libmget.h>
+
 #include "../src/xalloc.h"
 #include "../src/utils.h"
 #include "../src/options.h"
@@ -56,7 +58,7 @@ static int
 	ok,
 	failed;
 
-static void _test_buffer(buffer_t *buf, const char *name)
+static void _test_buffer(mget_buffer_t *buf, const char *name)
 {
 	char test[256];
 	int it;
@@ -109,7 +111,7 @@ static void _test_buffer(buffer_t *buf, const char *name)
 static void test_buffer(void)
 {
 	char buf_static[16];
-	buffer_t buf, *bufp;
+	mget_buffer_t buf, *bufp;
 
 	// testing buffer on stack, using initial stack memory
 	// without resizing
@@ -191,7 +193,7 @@ static void test_buffer(void)
 static void test_buffer_printf(void)
 {
 	char buf_static[32];
-	buffer_t buf;
+	mget_buffer_t buf;
 
 	// testing buffer_printf() by comparing it with C standard function sprintf()
 
@@ -667,7 +669,7 @@ static void test_iri_relative_to_absolute(void)
 	};
 	unsigned it;
 	char uri_buf_static[32]; // use a size that forces allocation in some cases
-	buffer_t *uri_buf = 	buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
+	mget_buffer_t *uri_buf = 	buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
 	IRI *base;
 
 	for (it = 0; it < countof(test_data); it++) {
@@ -754,11 +756,11 @@ static void test_parser(void)
 
 	// test the XML / HTML parser, you should start the test with valgrind
 	// to detect memory faults
-	if ((dirp = opendir("files")) != NULL) {
+	if ((dirp = opendir(SRCDIR "/files")) != NULL) {
 		while ((dp = readdir(dirp)) != NULL) {
 			if (*dp->d_name == '.') continue;
 			if ((ext = strrchr(dp->d_name, '.'))) {
-				snprintf(fname, sizeof(fname), "files/%s", dp->d_name);
+				snprintf(fname, sizeof(fname), SRCDIR "/files/%s", dp->d_name);
 				if (!strcasecmp(ext, ".xml")) {
 					info_printf("parsing %s\n", fname);
 					xml_parse_file(fname, NULL, NULL, 0);
@@ -861,12 +863,12 @@ static void test_cookies(void)
 			1
 		},
 	};
-	HTTP_COOKIE cookie;
+	MGET_COOKIE cookie;
 	IRI *iri;
 	unsigned it;
 	int result;
 
-	cookie_load_public_suffixes("files/public_suffixes.txt");
+	cookie_load_public_suffixes(DATADIR "/public_suffixes.txt");
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
@@ -1019,7 +1021,7 @@ static unsigned int hash_txt(UNUSED const char *key)
 
 static void test_stringmap(void)
 {
-	STRINGMAP *h;
+	MGET_STRINGMAP *h;
 	char key[128], value[128], *val;
 	int run, it, valuesize;
 

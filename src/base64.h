@@ -29,8 +29,6 @@
 
 #include <stddef.h>
 
-#include "mget.h"
-
 int
 	mget_base64_is_string(const char *src),
 	mget_base64_decode(char *restrict dst, const char *restrict src, int n) NONNULL_ALL,

@@ -31,6 +31,8 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "printf.h"
 #include "base64.h"

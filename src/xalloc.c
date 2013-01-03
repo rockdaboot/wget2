@@ -30,6 +30,8 @@
 
 #include <stdlib.h>
 
+#include <libmget.h>
+
 #include "log.h"
 #include "xalloc.h"
 

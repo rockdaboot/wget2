@@ -29,8 +29,6 @@
 
 #include <stddef.h>
 
-#include "mget.h"
-
 void
 	md5_printf_hex(char *digest_hex, const char *fmt, ...) PRINTF_FORMAT(2,3) NONNULL_ALL;
 

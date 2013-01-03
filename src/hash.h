@@ -27,8 +27,6 @@
 #ifndef _MGET_HASH_H
 #define _MGET_HASH_H
 
-#include "mget.h"
-
 int
    hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length) NONNULL_ALL,
    hash_file_offset(const char *type, const char *fname, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length) NONNULL_ALL,

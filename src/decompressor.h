@@ -29,7 +29,7 @@
 
 #include <stddef.h>
 
-typedef struct DECOMPRESSOR DECOMPRESSOR;
+typedef struct MGET_DECOMPRESSOR MGET_DECOMPRESSOR;
 
 enum {
 	content_encoding_identity,
@@ -37,13 +37,13 @@ enum {
 	content_encoding_deflate
 };
 
-DECOMPRESSOR
+MGET_DECOMPRESSOR
 	*decompress_open(int encoding,
 						  int (*put_data)(void *context, const char *data, size_t length),
 						  void *context);
 void
-	decompress_close(DECOMPRESSOR *dc);
+	decompress_close(MGET_DECOMPRESSOR *dc);
 int
-	decompress(DECOMPRESSOR *dc, char *src, size_t srclen);
+	decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen);
 
 #endif /* _MGET_DECOMPRESSOR_H */

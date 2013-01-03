@@ -20,7 +20,7 @@
  * Header file for Metalink routines
  *
  * Changelog
- * 10.07.2012  Tim Ruehsen  created (refactored from mget.c)
+ * 10.07.2012  Tim Ruehsen  created
  *
  * Resources:
  * RFC 5854 - The Metalink Download Description Format
@@ -38,7 +38,6 @@
 #define _MGET_METALINK_H
 
 #include "http.h"
-#include "mget.h"
 
 void
 	metalink4_parse(int sockfd, HTTP_RESPONSE *resp) NONNULL((2));

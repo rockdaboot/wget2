@@ -33,8 +33,6 @@
 #include <stdarg.h>
 #include <unistd.h>
 
-#include "mget.h"
-
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
 void

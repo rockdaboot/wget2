@@ -29,8 +29,6 @@
 
 #include <stddef.h>
 
-#include "mget.h"
-
 char
 	*str_to_utf8(const char *src, const char *encoding) MALLOC;
 

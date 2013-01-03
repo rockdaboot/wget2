@@ -32,6 +32,8 @@
 #include <errno.h>
 #include <iconv.h>
 
+#include <libmget.h>
+
 #include "xalloc.h"
 #include "utils.h"
 #include "log.h"
