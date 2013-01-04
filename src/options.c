@@ -84,7 +84,7 @@ struct option {
 		short_name;
 };
 
-static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *argv, UNUSED const char *val)
+static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, G_GNUC_MGET_UNUSED const char *val)
 {
 	puts(
 		"Mget V" PACKAGE_VERSION " - multithreaded metalink/file/website downloader written in C\n"
@@ -191,14 +191,14 @@ static int NORETURN print_help(UNUSED option_t opt, UNUSED const char *const *ar
 	exit(0);
 }
 
-static int parse_integer(option_t opt, UNUSED const char *const *argv, const char *val)
+static int parse_integer(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	*((int *)opt->var) = val ? atoi(val) : 0;
 
 	return 0;
 }
 
-static int parse_numbytes(option_t opt, UNUSED const char *const *argv, const char *val)
+static int parse_numbytes(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	if (val) {
 		char modifier = 0, error = 0;
@@ -231,7 +231,7 @@ static int parse_numbytes(option_t opt, UNUSED const char *const *argv, const ch
 	return 0;
 }
 
-static int parse_string(option_t opt, UNUSED const char *const *argv, const char *val)
+static int parse_string(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	// the strdup'ed string will be released on program exit
 	xfree(*((const char **)opt->var));
@@ -240,7 +240,7 @@ static int parse_string(option_t opt, UNUSED const char *const *argv, const char
 	return 0;
 }
 
-static int parse_stringset(option_t opt, UNUSED const char *const *argv, const char *val)
+static int parse_stringset(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	MGET_STRINGMAP *map = *((MGET_STRINGMAP **)opt->var);
 
@@ -260,7 +260,7 @@ static int parse_stringset(option_t opt, UNUSED const char *const *argv, const c
 	return 0;
 }
 
-static int parse_bool(option_t opt, UNUSED const char *const *argv, const char *val)
+static int parse_bool(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	if (!val)
 		*((char *)opt->var) = 1;
@@ -275,7 +275,7 @@ static int parse_bool(option_t opt, UNUSED const char *const *argv, const char *
 	return 0;
 }
 
-static int parse_timeout(option_t opt, UNUSED const char *const *argv, const char *val)
+static int parse_timeout(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	double fval;
 
@@ -304,7 +304,7 @@ static int parse_timeout(option_t opt, UNUSED const char *const *argv, const cha
 	return 0;
 }
 
-static int PURE NONNULL((1)) parse_cert_type(option_t opt, UNUSED const char *const *argv, const char *val)
+static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL((1)) parse_cert_type(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	if (!val || !strcasecmp(val, "PEM"))
 		*((char *)opt->var) = MGET_SSL_X509_FMT_PEM;
@@ -316,7 +316,7 @@ static int PURE NONNULL((1)) parse_cert_type(option_t opt, UNUSED const char *co
 	return 0;
 }
 
-static int parse_n_option(UNUSED option_t opt, UNUSED const char *const *argv, const char *val)
+static int parse_n_option(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	if (val) {
 		const char *p;
@@ -349,7 +349,7 @@ static int parse_n_option(UNUSED option_t opt, UNUSED const char *const *argv, c
 	return 0;
 }
 
-static int parse_prefer_family(UNUSED option_t opt, UNUSED const char *const *argv, const char *val)
+static int parse_prefer_family(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	if (!val || !strcasecmp(val, "none"))
 		*((char *)opt->var) = AF_UNSPEC;
@@ -467,12 +467,12 @@ static const struct option options[] = {
 	{ "version", &config.print_version, parse_bool, 0, 'V'}
 };
 
-static int PURE NONNULL_ALL opt_compare(const void *key, const void *option)
+static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL opt_compare(const void *key, const void *option)
 {
 	return strcmp((const char *)key, ((const option_t)option)->long_name);
 }
 
-static int NONNULL((1)) set_long_option(const char *name, const char *value)
+static int G_GNUC_MGET_NONNULL((1)) set_long_option(const char *name, const char *value)
 {
 	option_t opt;
 	int invert = 0, ret = 0;
@@ -552,7 +552,7 @@ static int NONNULL((1)) set_long_option(const char *name, const char *value)
 // - format is 'name value', where value might be enclosed in ' or "
 // - values enclosed in " or ' might contain \\, \" and \'
 
-static int NONNULL((1)) _read_config(const char *cfgfile, int expand)
+static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand)
 {
 	static int level; // level of recursions to prevent endless include loops
 	FILE *fp;
@@ -734,7 +734,7 @@ static void read_config(void)
 	_read_config("~/.mgetrc", 1);
 }
 
-static int NONNULL((2)) parse_command_line(int argc, const char *const *argv)
+static int G_GNUC_MGET_NONNULL((2)) parse_command_line(int argc, const char *const *argv)
 {
 	static short shortcut_to_option[128];
 	size_t it;

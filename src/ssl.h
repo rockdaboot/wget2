@@ -36,12 +36,12 @@
 void
 	ssl_init(void),
 	ssl_deinit(void),
-	*ssl_open(int sockfd, const char *hostname, int connect_timeout) NONNULL_ALL,
-	ssl_close(void **session) NONNULL_ALL,
+	*ssl_open(int sockfd, const char *hostname, int connect_timeout) G_GNUC_MGET_NONNULL_ALL,
+	ssl_close(void **session) G_GNUC_MGET_NONNULL_ALL,
 	ssl_set_check_certificate(char value);
 
 ssize_t
-	ssl_read_timeout(void *session, char *buf, size_t count, int timeout) NONNULL_ALL,
-	ssl_write_timeout(void *session, const char *buf, size_t count, int timeout) NONNULL_ALL;
+	ssl_read_timeout(void *session, char *buf, size_t count, int timeout) G_GNUC_MGET_NONNULL_ALL,
+	ssl_write_timeout(void *session, const char *buf, size_t count, int timeout) G_GNUC_MGET_NONNULL_ALL;
 
 #endif /* _MGET_SSL_H */

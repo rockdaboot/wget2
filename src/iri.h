@@ -65,25 +65,25 @@ void
 	iri_free_content(IRI *iri),
 	iri_set_defaultpage(const char *page);
 int
-	iri_isgendelim(char c) CONST,
-	iri_issubdelim(char c) CONST,
-	iri_isreserved(char c) CONST,
-	iri_isunreserved(char c) CONST,
-	iri_isunreserved_path(char c) CONST,
-	iri_compare(IRI *iri1, IRI *iri2) PURE NONNULL_ALL;
+	iri_isgendelim(char c) G_GNUC_MGET_CONST,
+	iri_issubdelim(char c) G_GNUC_MGET_CONST,
+	iri_isreserved(char c) G_GNUC_MGET_CONST,
+	iri_isunreserved(char c) G_GNUC_MGET_CONST,
+	iri_isunreserved_path(char c) G_GNUC_MGET_CONST,
+	iri_compare(IRI *iri1, IRI *iri2) G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL;
 IRI
-	*iri_parse(const char *uri, const char *encoding) MALLOC;
+	*iri_parse(const char *uri, const char *encoding) G_GNUC_MGET_MALLOC;
 const char
 	*iri_get_connection_part(IRI *iri),
 	*iri_relative_to_absolute(IRI *base, const char *val, size_t len, mget_buffer_t *buf),
-	*iri_escape(const char *src, mget_buffer_t *buf) NONNULL_ALL,
-	*iri_escape_path(const char *src, mget_buffer_t *buf) NONNULL_ALL,
-	*iri_escape_query(const char *src, mget_buffer_t *buf) NONNULL_ALL,
-	*iri_get_escaped_host(const IRI *iri, mget_buffer_t *buf) NONNULL_ALL,
-	*iri_get_escaped_resource(const IRI *iri, mget_buffer_t *buf) NONNULL_ALL,
-	*iri_get_escaped_path(const IRI *iri, mget_buffer_t *buf) NONNULL_ALL,
-	*iri_get_escaped_query(const IRI *iri, mget_buffer_t *buf) NONNULL_ALL,
-	*iri_get_escaped_fragment(const IRI *iri, mget_buffer_t *buf) NONNULL_ALL,
-	*iri_get_escaped_file(const IRI *iri, mget_buffer_t *buf) NONNULL_ALL;
+	*iri_escape(const char *src, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL,
+	*iri_escape_path(const char *src, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL,
+	*iri_escape_query(const char *src, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL,
+	*iri_get_escaped_host(const IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL,
+	*iri_get_escaped_resource(const IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL,
+	*iri_get_escaped_path(const IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL,
+	*iri_get_escaped_query(const IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL,
+	*iri_get_escaped_fragment(const IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL,
+	*iri_get_escaped_file(const IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
 
 #endif /* _MGET_IRI_H */

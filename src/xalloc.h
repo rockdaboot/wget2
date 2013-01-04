@@ -34,15 +34,15 @@
 #define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 
 void
-	*xmalloc(size_t size) MALLOC ALLOC_SIZE(1),
-	*xcalloc(size_t nmemb, size_t size) MALLOC ALLOC_SIZE2(1,2),
-	*xrealloc(void *ptr, size_t size) ALLOC_SIZE(2),
-	*xmemdup(const void *s, size_t n) MALLOC ALLOC_SIZE(2);
+	*xmalloc(size_t size) G_GNUC_MGET_MALLOC G_GNUC_MGET_ALLOC_SIZE(1),
+	*xcalloc(size_t nmemb, size_t size) G_GNUC_MGET_MALLOC G_GNUC_MGET_ALLOC_SIZE2(1,2),
+	*xrealloc(void *ptr, size_t size) G_GNUC_MGET_ALLOC_SIZE(2),
+	*xmemdup(const void *s, size_t n) G_GNUC_MGET_MALLOC G_GNUC_MGET_ALLOC_SIZE(2);
 char
 #ifndef HAVE_STRNDUP
-	*strndup(const char *s, size_t n) MALLOC NONNULL_ALL,
+	*strndup(const char *s, size_t n) G_GNUC_MGET_MALLOC G_GNUC_MGET_NONNULL_ALL,
 #endif
-	*strdup_null(const char *s) MALLOC;
+	*strdup_null(const char *s) G_GNUC_MGET_MALLOC;
 
 #ifndef HAVE_STRDUP
 # define strdup(s) strndup((s), strlen(s));

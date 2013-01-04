@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include <libmget.h>
+#include "../include/libmget.h"
 
 #include <xalloc.h>
 
@@ -42,25 +43,29 @@
  * @stability: stable
  * @include: libmget.h
  *
- * Double linked lists are used by Mget to implement the job queue.\n
- * Fast insertion and removal, that's all we need here.
+ * Double linked lists provide fast insertion and removal and
+ * iteration in either direction.
+ *
+ * Each entry has pointers to the next and the previous entry.
+ * Iteration can be done by calling the mget_list_browse() function,
+ * so the list structure doesn't need to be exposed.
+ *
+ * This datatype is used by the Mget tool to implement the job queue.
  *
  * See mget_list_append() for an example on how to use lists.
- **/
-
-typedef struct _MGET_LISTNODE _MGET_LISTNODE;
+ */
 
 struct _MGET_LISTNODE {
-	_MGET_LISTNODE
+	MGET_LIST
 		*next,
 		*prev;
 };
 
 /**
  * mget_list_append:
- * @list Pointer to a double linked list.
- * @data Pointer to data to be inserted.
- * @size Size of data in bytes.
+ * @list: Pointer to Pointer to a double linked list.
+ * @data: Pointer to data to be inserted.
+ * @size: Size of data in bytes.
  *
  * Append an entry to the end of the list.
  * @size bytes at @data will be copied and appended to the list.
@@ -92,12 +97,12 @@ struct _MGET_LISTNODE {
  *	mget_list_free(&list);
  * </programlisting>
  * </example>
- *
- **/
-void *mget_list_append(_MGET_LISTNODE **list, const void *data, size_t size)
+ */
+void *
+mget_list_append(MGET_LIST **list, const void *data, size_t size)
 {
 	// allocate space for node and data in one row
-	_MGET_LISTNODE *node = xmalloc(sizeof(_MGET_LISTNODE) + size);
+	MGET_LIST *node = xmalloc(sizeof(MGET_LIST) + size);
 
 	memcpy(node + 1, data, size);
 
@@ -117,9 +122,9 @@ void *mget_list_append(_MGET_LISTNODE **list, const void *data, size_t size)
 
 /**
  * mget_list_prepend:
- * @list Pointer to a double linked list.
- * @data Pointer to data to be inserted.
- * @size Size of data in bytes.
+ * @list: Pointer to Pointer to a double linked list.
+ * @data: Pointer to data to be inserted.
+ * @size: Size of data in bytes.
  *
  * Insert an entry at the beginning of the list.
  * @size bytes at @data will be copied and prepended to the list.
@@ -128,9 +133,8 @@ void *mget_list_append(_MGET_LISTNODE **list, const void *data, size_t size)
  * It must be freed by mget_list_remove() or implicitely by mget_list_free().
  *
  * Returns: Pointer to the new element.
- *
  */
-void *mget_list_prepend(_MGET_LISTNODE **list, const void *data, size_t size)
+void *mget_list_prepend(MGET_LIST **list, const void *data, size_t size)
 {
 	if (!*list) {
 		return mget_list_append(list, data, size);
@@ -139,12 +143,19 @@ void *mget_list_prepend(_MGET_LISTNODE **list, const void *data, size_t size)
 	}
 }
 
-void mget_list_remove(_MGET_LISTNODE **list, void *elem)
+/**
+ * mget_list_remove:
+ * @list: Pointer to Pointer to a double linked list.
+ * @elem: Pointer to a list element returned by mget_list_append() or mget_list_prepend().
+ *
+ * Remove an entry from the list.
+ */
+void mget_list_remove(MGET_LIST **list, void *elem)
 {
-	_MGET_LISTNODE *node = ((_MGET_LISTNODE *)elem) - 1;
+	MGET_LIST *node = ((MGET_LIST *)elem) - 1;
 
 	if (node->prev == node->next && node == node->prev) {
-		// last node in list
+		// removing the last node in the list
 		if (list && *list && node == *list)
 			*list = NULL;
 	} else {
@@ -156,22 +167,62 @@ void mget_list_remove(_MGET_LISTNODE **list, void *elem)
 	xfree(node);
 }
 
-void *mget_list_getfirst(const _MGET_LISTNODE *list)
+/**
+ * mget_list_getfirst:
+ * @list: Pointer to a double linked list.
+ *
+ * Returns: Pointer to the first element of the list or %NULL if the list is empty.
+ */
+void *mget_list_getfirst(const MGET_LIST *list)
 {
-	return (void *)(list + 1);
+	return (void *)(list ? list + 1 : list);
 }
 
-void *mget_list_getlast(const _MGET_LISTNODE *list)
+/**
+ * mget_list_getlast:
+ * @list: Pointer to a double linked list.
+ *
+ * Returns: Pointer to the last element of the list or %NULL if the list is empty.
+ */
+void *mget_list_getlast(const MGET_LIST *list)
 {
-	return (void *)(list->prev + 1);
+	return (void *)(list ? list->prev + 1 : list);
 }
 
+/**
+ * mget_list_browse:
+ * @list: Pointer to a double linked list.
+ * @browse: Pointer to callback function which is called for every element in the list.
+ * If the callback functions returns a value not equal to zero, browsing is stopped and
+ * this value will be returned by mget_list_browse.
+ * @context: The context handle that will be passed to the callback function.
+ *
+ * Returns: The return value of the last call to the browse function.
+ *
+ * <example>
+ *  <title>Example Usage</title>
+ *  <programlisting>
+ * // assume that list contains C strings.
+ * MGET_LIST *list = NULL;
+ * static int print_elem(void *context, const char *elem)
+ * {
+ *	  printf("%s\n",elem);
+ *	  return 0;
+ * }
+ *
+ * void dump(MGET_LIST *list)
+ * {
+ *	  mget_list_browse(list, (int(*)(void *, void *))print_elem, NULL);
+ * }
+ *  </programlisting>
+ * </example>
+ */
 int mget_list_browse(const MGET_LIST *list, int (*browse)(void *context, void *elem), void *context)
 {
 	int ret = 0;
 
 	if (list) {
-		const _MGET_LISTNODE *end = list->prev, *cur = list;
+		const MGET_LIST *end = list->prev, *cur = list;
 
 		while ((ret = browse(context, (void *)(cur + 1))) == 0 && cur != end)
 			cur = cur->next;
@@ -180,17 +231,23 @@ int mget_list_browse(const MGET_LIST *list, int (*browse)(void *context, void *e
 	return ret;
 }
 
+/**
+ * mget_list_free:
+ * @list: Pointer to Pointer to a double linked list.
+ *
+ * Freeing the list and it's entry.
+ */
 void mget_list_free(MGET_LIST **list)
 {
 	while (*list)
-		mget_list_remove(list, ((_MGET_LISTNODE *) * list) + 1);
+		mget_list_remove(list, *list + 1);
 }
 
 /*
 void mget_list_dump(const MGET_LIST *list)
 {
 	if (list) {
-		const _MGET_LISTNODE *cur = list;
+		const MGET_LIST *cur = list;
 
 		do {
 			log_printf("%p: next %p prev %p\n", cur, cur->next, cur->prev);

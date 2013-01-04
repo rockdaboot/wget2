@@ -112,7 +112,7 @@ static int
 // --cut-dirs=number
 // -P / --directory-prefix=prefix
 
-static const char * NONNULL_ALL get_local_filename(IRI *iri)
+static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(IRI *iri)
 {
 	mget_buffer_t buf;
 	const char *fname;
@@ -1200,7 +1200,7 @@ void css_parse_localfile(int sockfd, const char *fname, const char *encoding, IR
 	buffer_deinit(&context.uri_buf);
 }
 
-static long long NONNULL_ALL get_file_size(const char *fname)
+static long long G_GNUC_MGET_NONNULL_ALL get_file_size(const char *fname)
 {
 	struct stat st;
 	
@@ -1211,7 +1211,7 @@ static long long NONNULL_ALL get_file_size(const char *fname)
 	return 0;
 }
 
-static time_t NONNULL_ALL get_file_mtime(const char *fname)
+static time_t G_GNUC_MGET_NONNULL_ALL get_file_mtime(const char *fname)
 {
 	struct stat st;
 
@@ -1239,7 +1239,7 @@ static void set_file_mtime(int fd, time_t modified)
 		err_printf (_("Failed to set file date: %s\n"), strerror (errno));
 }
 
-static void NONNULL((1)) _save_file(HTTP_RESPONSE *resp, const char *fname, int flag)
+static void G_GNUC_MGET_NONNULL((1)) _save_file(HTTP_RESPONSE *resp, const char *fname, int flag)
 {
 	char *alloced_fname = NULL;
 	int fd, multiple, fnum;
@@ -1357,12 +1357,12 @@ static void NONNULL((1)) _save_file(HTTP_RESPONSE *resp, const char *fname, int 
 	xfree(alloced_fname);
 }
 
-static void NONNULL((1)) save_file(HTTP_RESPONSE *resp, const char *fname)
+static void G_GNUC_MGET_NONNULL((1)) save_file(HTTP_RESPONSE *resp, const char *fname)
 {
 	_save_file(resp, fname, O_TRUNC);
 }
 
-static void NONNULL((1)) append_file(HTTP_RESPONSE *resp, const char *fname)
+static void G_GNUC_MGET_NONNULL((1)) append_file(HTTP_RESPONSE *resp, const char *fname)
 {
 	_save_file(resp, fname, O_APPEND);
 }

@@ -25,7 +25,7 @@ DOC_MAIN_SGML_FILE=$(DOC_MODULE)-docs.sgml
 DOC_SOURCE_DIR=$(top_srcdir)/libmget $(top_srcdir)/include
 
 # Extra options to pass to gtkdoc-scangobj. Not normally needed.
-SCANGOBJ_OPTIONS=--ignore-decorators="UNUSED_RESULT|NONNULL_ALL|CONST|PURE|NONNULL((2))"
+#SCANGOBJ_OPTIONS=--ignore-decorators="UNUSED_RESULT|CONST|PURE"
 
 # Extra options to supply to gtkdoc-scan.
 # e.g. SCAN_OPTIONS=--deprecated-guards="GTK_DISABLE_DEPRECATED"

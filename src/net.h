@@ -36,7 +36,7 @@
 typedef struct TCP *tcp_t;
 
 void
-	tcp_close(tcp_t *tcp) NONNULL_ALL,
+	tcp_close(tcp_t *tcp) G_GNUC_MGET_NONNULL_ALL,
 	tcp_set_timeout(tcp_t tcp, int timeout),
 	tcp_set_connect_timeout(int timeout),
 	tcp_set_dns_timeout(int timeout),
@@ -46,12 +46,12 @@ void
 	tcp_set_preferred_family(int family),
 	tcp_set_bind_address(const char *bind_address);
 struct addrinfo
-	*tcp_resolve(const char *restrict name, const char *restrict port) NONNULL((1));
+	*tcp_resolve(const char *restrict name, const char *restrict port) G_GNUC_MGET_NONNULL((1));
 tcp_t
-	tcp_connect(struct addrinfo *addrinfo, const char *hostname) NONNULL((1));
+	tcp_connect(struct addrinfo *addrinfo, const char *hostname) G_GNUC_MGET_NONNULL((1));
 ssize_t
-	tcp_send(tcp_t tcp, const char *fmt, ...) PRINTF_FORMAT(2,3) NONNULL_ALL,
-	tcp_write(tcp_t tcp, const char *buf, size_t count) NONNULL_ALL,
-	tcp_read(tcp_t tcp, char *buf, size_t count) NONNULL_ALL;
+	tcp_send(tcp_t tcp, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL,
+	tcp_write(tcp_t tcp, const char *buf, size_t count) G_GNUC_MGET_NONNULL_ALL,
+	tcp_read(tcp_t tcp, char *buf, size_t count) G_GNUC_MGET_NONNULL_ALL;
 
 #endif /* _MGET_NET_H */

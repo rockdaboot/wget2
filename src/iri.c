@@ -126,7 +126,7 @@ void iri_free(IRI **iri)
 	}
 }
 
-static unsigned char CONST _unhex(unsigned char c)
+static unsigned char G_GNUC_MGET_CONST _unhex(unsigned char c)
 {
 	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
 }
@@ -373,7 +373,7 @@ const char *iri_get_connection_part(IRI *iri)
 
 // normalize /../ and remove /./
 
-static size_t NONNULL_ALL _normalize_path(char *path)
+static size_t G_GNUC_MGET_NONNULL_ALL _normalize_path(char *path)
 {
 	char *p1 = path, *p2 = path;
 

@@ -45,7 +45,7 @@
 #include "log.h"
 #include "hash.h"
 
-static NONNULL((1)) gnutls_digest_algorithm_t get_algorithm(const char *type)
+static G_GNUC_MGET_NONNULL((1)) gnutls_digest_algorithm_t get_algorithm(const char *type)
 {
 	if (*type == 's' || *type == 'S') {
 		if (!strcasecmp(type, "sha-1"))

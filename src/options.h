@@ -116,7 +116,7 @@ extern struct config
 	config;
 
 int
-	init(int argc, const char *const *argv) NONNULL_ALL,
+	init(int argc, const char *const *argv) G_GNUC_MGET_NONNULL_ALL,
 	selftest_options(void);
 void
 	deinit(void);

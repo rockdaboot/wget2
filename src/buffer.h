@@ -47,30 +47,30 @@ mget_buffer_t
 	*buffer_init(mget_buffer_t *buf, char *data, size_t size),
 	*buffer_alloc(size_t size);
 void
-	buffer_ensure_capacity(mget_buffer_t *buf, size_t size) NONNULL((1)),
-	buffer_deinit(mget_buffer_t *buf) NONNULL((1)),
-	buffer_free(mget_buffer_t **buf) NONNULL((1)),
-	buffer_free_data(mget_buffer_t *buf) NONNULL((1)),
-	buffer_realloc(mget_buffer_t *buf, size_t size) NONNULL((1));
+	buffer_ensure_capacity(mget_buffer_t *buf, size_t size) G_GNUC_MGET_NONNULL((1)),
+	buffer_deinit(mget_buffer_t *buf) G_GNUC_MGET_NONNULL((1)),
+	buffer_free(mget_buffer_t **buf) G_GNUC_MGET_NONNULL((1)),
+	buffer_free_data(mget_buffer_t *buf) G_GNUC_MGET_NONNULL((1)),
+	buffer_realloc(mget_buffer_t *buf, size_t size) G_GNUC_MGET_NONNULL((1));
 size_t
-	buffer_memcpy(mget_buffer_t *buf, const void *data, size_t length) NONNULL((1,2)),
-	buffer_memcat(mget_buffer_t *buf, const void *data, size_t length) NONNULL((1,2)),
-	buffer_strcpy(mget_buffer_t *buf, const char *s) NONNULL((1,2)),
-	buffer_strcat(mget_buffer_t *buf, const char *s) NONNULL((1,2)),
-	buffer_bufcpy(mget_buffer_t *buf, mget_buffer_t *src) NONNULL((1,2)),
-	buffer_bufcat(mget_buffer_t *buf, mget_buffer_t *src) NONNULL((1,2)),
-	buffer_memset(mget_buffer_t *buf, char c, size_t length) NONNULL((1)),
-	buffer_memset_append(mget_buffer_t *buf, char c, size_t length) NONNULL((1)),
+	buffer_memcpy(mget_buffer_t *buf, const void *data, size_t length) G_GNUC_MGET_NONNULL((1,2)),
+	buffer_memcat(mget_buffer_t *buf, const void *data, size_t length) G_GNUC_MGET_NONNULL((1,2)),
+	buffer_strcpy(mget_buffer_t *buf, const char *s) G_GNUC_MGET_NONNULL((1,2)),
+	buffer_strcat(mget_buffer_t *buf, const char *s) G_GNUC_MGET_NONNULL((1,2)),
+	buffer_bufcpy(mget_buffer_t *buf, mget_buffer_t *src) G_GNUC_MGET_NONNULL((1,2)),
+	buffer_bufcat(mget_buffer_t *buf, mget_buffer_t *src) G_GNUC_MGET_NONNULL((1,2)),
+	buffer_memset(mget_buffer_t *buf, char c, size_t length) G_GNUC_MGET_NONNULL((1)),
+	buffer_memset_append(mget_buffer_t *buf, char c, size_t length) G_GNUC_MGET_NONNULL((1)),
 
-	buffer_vprintf_append(mget_buffer_t *buf, const char *fmt, va_list args) NONNULL((1,2)) PRINTF_FORMAT(2,0),
-	buffer_printf_append(mget_buffer_t *buf, const char *fmt, ...) NONNULL((1,2)) PRINTF_FORMAT(2,3),
-	buffer_vprintf(mget_buffer_t *buf, const char *fmt, va_list args) NONNULL((1,2)) PRINTF_FORMAT(2,0),
-	buffer_printf(mget_buffer_t *buf, const char *fmt, ...) NONNULL((1,2)) PRINTF_FORMAT(2,3),
+	buffer_vprintf_append(mget_buffer_t *buf, const char *fmt, va_list args) G_GNUC_MGET_NONNULL((1,2)) G_GNUC_MGET_PRINTF_FORMAT(2,0),
+	buffer_printf_append(mget_buffer_t *buf, const char *fmt, ...) G_GNUC_MGET_NONNULL((1,2)) G_GNUC_MGET_PRINTF_FORMAT(2,3),
+	buffer_vprintf(mget_buffer_t *buf, const char *fmt, va_list args) G_GNUC_MGET_NONNULL((1,2)) G_GNUC_MGET_PRINTF_FORMAT(2,0),
+	buffer_printf(mget_buffer_t *buf, const char *fmt, ...) G_GNUC_MGET_NONNULL((1,2)) G_GNUC_MGET_PRINTF_FORMAT(2,3),
 
-	buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list args) NONNULL((1,2)) PRINTF_FORMAT(2,0),
-	buffer_printf_append2(mget_buffer_t *buf, const char *fmt, ...) NONNULL((1,2)) PRINTF_FORMAT(2,3),
-	buffer_vprintf2(mget_buffer_t *buf, const char *fmt, va_list args) NONNULL((1,2)) PRINTF_FORMAT(2,0),
-	buffer_printf2(mget_buffer_t *buf, const char *fmt, ...) NONNULL((1,2)) PRINTF_FORMAT(2,3);
+	buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list args) G_GNUC_MGET_NONNULL((1,2)) G_GNUC_MGET_PRINTF_FORMAT(2,0),
+	buffer_printf_append2(mget_buffer_t *buf, const char *fmt, ...) G_GNUC_MGET_NONNULL((1,2)) G_GNUC_MGET_PRINTF_FORMAT(2,3),
+	buffer_vprintf2(mget_buffer_t *buf, const char *fmt, va_list args) G_GNUC_MGET_NONNULL((1,2)) G_GNUC_MGET_PRINTF_FORMAT(2,0),
+	buffer_printf2(mget_buffer_t *buf, const char *fmt, ...) G_GNUC_MGET_NONNULL((1,2)) G_GNUC_MGET_PRINTF_FORMAT(2,3);
 
 
 #endif /* _MGET_BUFFER_H */

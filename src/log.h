@@ -34,12 +34,12 @@ void
 	log_set_debug(char debug),
 	log_set_quiet(char quiet),
 	log_set_verbose(char verbose),
-	err_printf(const char *fmt, ...) PRINTF_FORMAT(1,2),
-	err_printf_exit(const char *fmt, ...) PRINTF_FORMAT(1,2) NORETURN,
-	info_printf(const char *fmt, ...) PRINTF_FORMAT(1,2),
+	err_printf(const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(1,2),
+	err_printf_exit(const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(1,2) G_GNUC_MGET_NORETURN,
+	info_printf(const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(1,2),
 	log_write(const char *buf, int len),
-	log_printf(const char *fmt, ...) PRINTF_FORMAT(1,2),
-	log_printf_exit(const char *fmt, ...) PRINTF_FORMAT(1,2) NORETURN,
-	log_vprintf(const char *fmt, va_list args) PRINTF_FORMAT(1,0);
+	log_printf(const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(1,2),
+	log_printf_exit(const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(1,2) G_GNUC_MGET_NORETURN,
+	log_vprintf(const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(1,0);
 
 #endif /* _MGET_LOG_H */

@@ -69,7 +69,7 @@ static pthread_mutex_t
 
 // by this kind of sorting, we can easily see if a domain matches or not (match = supercookie !)
 
-static int NONNULL_ALL suffix_compare(const PUBLIC_SUFFIX *s1, const PUBLIC_SUFFIX *s2)
+static int G_GNUC_MGET_NONNULL_ALL suffix_compare(const PUBLIC_SUFFIX *s1, const PUBLIC_SUFFIX *s2)
 {
 	int n;
 
@@ -82,7 +82,7 @@ static int NONNULL_ALL suffix_compare(const PUBLIC_SUFFIX *s1, const PUBLIC_SUFF
 	return strcmp(s1->label, s2->label);
 }
 
-static void NONNULL_ALL suffix_init(PUBLIC_SUFFIX *suffix, const char *rule, size_t length)
+static void G_GNUC_MGET_NONNULL_ALL suffix_init(PUBLIC_SUFFIX *suffix, const char *rule, size_t length)
 {
 	const char *src;
 	char *dst;
@@ -253,7 +253,7 @@ void cookie_free_public_suffixes(void)
 	vec_free(&suffix_exceptions);
 }
 
-static int NONNULL_ALL compare_cookie(const MGET_COOKIE *c1, const MGET_COOKIE *c2)
+static int G_GNUC_MGET_NONNULL_ALL compare_cookie(const MGET_COOKIE *c1, const MGET_COOKIE *c2)
 {
 	int n;
 
@@ -266,7 +266,7 @@ static int NONNULL_ALL compare_cookie(const MGET_COOKIE *c1, const MGET_COOKIE *
 	return n;
 }
 
-static int NONNULL_ALL domain_match(const char *domain, const char *host)
+static int G_GNUC_MGET_NONNULL_ALL domain_match(const char *domain, const char *host)
 {
 	size_t domain_length, host_length;
 	const char *p;
@@ -289,7 +289,7 @@ static int NONNULL_ALL domain_match(const char *domain, const char *host)
 	return 0;
 }
 
-static int NONNULL((1)) path_match(const char *cookie_path, const char *request_path)
+static int G_GNUC_MGET_NONNULL((1)) path_match(const char *cookie_path, const char *request_path)
 {
 	const char *last_slash;
 	size_t cookie_path_length, iri_path_length;

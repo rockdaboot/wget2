@@ -33,22 +33,22 @@
 typedef struct MGET_HASHMAP MGET_HASHMAP;
 
 MGET_HASHMAP
-	*hashmap_create(int max, int off, unsigned int (*hash)(const void *), int (*cmp)(const void *, const void *)) MALLOC;
+	*hashmap_create(int max, int off, unsigned int (*hash)(const void *), int (*cmp)(const void *, const void *)) G_GNUC_MGET_MALLOC;
 int
 	hashmap_put(MGET_HASHMAP *h, const void *key, size_t keysize, const void *value, size_t valuesize),
 	hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value),
 	hashmap_put_ident(MGET_HASHMAP *h, const void *key, size_t keysize),
 	hashmap_put_ident_noalloc(MGET_HASHMAP *h, const void *key),
 	hashmap_size(const MGET_HASHMAP *h),
-	hashmap_browse(const MGET_HASHMAP *h, int (*browse)(const void *key, const void *value)) NONNULL((2));
+	hashmap_browse(const MGET_HASHMAP *h, int (*browse)(const void *key, const void *value)) G_GNUC_MGET_NONNULL((2));
 void
 	hashmap_free(MGET_HASHMAP **h),
 	hashmap_clear(MGET_HASHMAP *h),
 	*hashmap_get(const MGET_HASHMAP *h, const void *key),
 	hashmap_remove(MGET_HASHMAP *h, const void *key),
 	hashmap_remove_nofree(MGET_HASHMAP *h, const void *key),
-	hashmap_setcmpfunc(MGET_HASHMAP *h, int (*cmp)(const void *key1, const void *key2)) NONNULL_ALL,
-	hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *key)) NONNULL_ALL,
-	hashmap_setloadfactor(MGET_HASHMAP *h, float factor) NONNULL_ALL;
+	hashmap_setcmpfunc(MGET_HASHMAP *h, int (*cmp)(const void *key1, const void *key2)) G_GNUC_MGET_NONNULL_ALL,
+	hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *key)) G_GNUC_MGET_NONNULL_ALL,
+	hashmap_setloadfactor(MGET_HASHMAP *h, float factor) G_GNUC_MGET_NONNULL_ALL;
 
 #endif /* _MGET_HASHMAP_H */

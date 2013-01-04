@@ -30,6 +30,6 @@
 #include <stddef.h>
 
 void
-	md5_printf_hex(char *digest_hex, const char *fmt, ...) PRINTF_FORMAT(2,3) NONNULL_ALL;
+	md5_printf_hex(char *digest_hex, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL;
 
 #endif /* _MGET_MD5_H */

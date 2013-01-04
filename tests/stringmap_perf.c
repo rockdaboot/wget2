@@ -16,7 +16,7 @@
 
 #include "../src/stringmap.h"
 
-static int NONNULL_ALL _print_word(const char *word)
+static int G_GNUC_MGET_NONNULL_ALL _print_word(const char *word)
 {
 	printf("%s\n", word);
 	return 0;

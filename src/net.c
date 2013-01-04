@@ -260,7 +260,7 @@ void tcp_set_family(int _family)
 	family = _family;
 }
 
-static int PURE NONNULL_ALL compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
+static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
 {
 	int n;
 

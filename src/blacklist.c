@@ -67,7 +67,7 @@ static unsigned int hash_iri(const IRI *iri)
 	return h;
 }
 
-static int NONNULL_ALL _blacklist_print(const IRI *iri)
+static int G_GNUC_MGET_NONNULL_ALL _blacklist_print(const IRI *iri)
 {
 	info_printf("blacklist %s\n", iri->uri);
 	return 0;

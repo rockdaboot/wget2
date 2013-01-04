@@ -153,29 +153,29 @@ int
 	http_istoken(char c),
 	http_istext(char c);
 const char
-	*http_parse_token(const char *s, const char **token) NONNULL_ALL,
-	*http_parse_quoted_string(const char *s, const char **qstring) NONNULL_ALL,
-	*http_parse_param(const char *s, const char **param, const char **value) NONNULL_ALL,
-	*http_parse_name(const char *s, const char **name) NONNULL_ALL,
-	*http_parse_name_fixed(const char *s, char *name, size_t name_size) NONNULL_ALL,
-	*http_parse_link(const char *s, HTTP_LINK *link) NONNULL_ALL,
-	*http_parse_digest(const char *s, HTTP_DIGEST *digest) NONNULL_ALL,
-	*http_parse_challenge(const char *s, HTTP_CHALLENGE *challenge) NONNULL_ALL,
-	*http_parse_location(const char *s, const char **location) NONNULL_ALL,
-	*http_parse_transfer_encoding(const char *s, char *transfer_encoding) NONNULL_ALL,
+	*http_parse_token(const char *s, const char **token) G_GNUC_MGET_NONNULL_ALL,
+	*http_parse_quoted_string(const char *s, const char **qstring) G_GNUC_MGET_NONNULL_ALL,
+	*http_parse_param(const char *s, const char **param, const char **value) G_GNUC_MGET_NONNULL_ALL,
+	*http_parse_name(const char *s, const char **name) G_GNUC_MGET_NONNULL_ALL,
+	*http_parse_name_fixed(const char *s, char *name, size_t name_size) G_GNUC_MGET_NONNULL_ALL,
+	*http_parse_link(const char *s, HTTP_LINK *link) G_GNUC_MGET_NONNULL_ALL,
+	*http_parse_digest(const char *s, HTTP_DIGEST *digest) G_GNUC_MGET_NONNULL_ALL,
+	*http_parse_challenge(const char *s, HTTP_CHALLENGE *challenge) G_GNUC_MGET_NONNULL_ALL,
+	*http_parse_location(const char *s, const char **location) G_GNUC_MGET_NONNULL_ALL,
+	*http_parse_transfer_encoding(const char *s, char *transfer_encoding) G_GNUC_MGET_NONNULL_ALL,
 	*http_parse_content_type(const char *s, const char **content_type, const char **charset),
-	*http_parse_content_encoding(const char *s, char *content_encoding) NONNULL_ALL,
-	*http_parse_connection(const char *s, char *keep_alive) NONNULL_ALL,
-	*http_parse_setcookie(const char *s, MGET_COOKIE *cookie) NONNULL_ALL;
+	*http_parse_content_encoding(const char *s, char *content_encoding) G_GNUC_MGET_NONNULL_ALL,
+	*http_parse_connection(const char *s, char *keep_alive) G_GNUC_MGET_NONNULL_ALL,
+	*http_parse_setcookie(const char *s, MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL_ALL;
 char
-	*http_print_date(time_t t, char *buf, size_t bufsize) NONNULL_ALL;
+	*http_print_date(time_t t, char *buf, size_t bufsize) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_add_param(VECTOR **params, HTTP_HEADER_PARAM *param) NONNULL_ALL,
-	http_add_header_vprintf(HTTP_REQUEST *req, const char *fmt, va_list args) PRINTF_FORMAT(2,0) NONNULL_ALL,
-	http_add_header_printf(HTTP_REQUEST *req, const char *fmt, ...) PRINTF_FORMAT(2,3) NONNULL_ALL,
-	http_add_header_line(HTTP_REQUEST *req, const char *line) NONNULL_ALL,
-	http_add_header(HTTP_REQUEST *req, const char *name, const char *value) NONNULL_ALL,
-	http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const char *username, const char *password) NONNULL((1)),
+	http_add_param(VECTOR **params, HTTP_HEADER_PARAM *param) G_GNUC_MGET_NONNULL_ALL,
+	http_add_header_vprintf(HTTP_REQUEST *req, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL,
+	http_add_header_printf(HTTP_REQUEST *req, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL,
+	http_add_header_line(HTTP_REQUEST *req, const char *line) G_GNUC_MGET_NONNULL_ALL,
+	http_add_header(HTTP_REQUEST *req, const char *name, const char *value) G_GNUC_MGET_NONNULL_ALL,
+	http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const char *username, const char *password) G_GNUC_MGET_NONNULL((1)),
 	http_set_http_proxy(const char *proxy, const char *locale),
 	http_set_https_proxy(const char *proxy, const char *locale);
 
@@ -195,25 +195,25 @@ void
 	http_free_response(HTTP_RESPONSE **resp);
 
 HTTP_RESPONSE
-	*http_read_header(const IRI *iri) NONNULL_ALL,
-	*http_get_header(IRI *iri) NONNULL_ALL,
-	*http_parse_response(char *buf) NONNULL_ALL,
+	*http_read_header(const IRI *iri) G_GNUC_MGET_NONNULL_ALL,
+	*http_get_header(IRI *iri) G_GNUC_MGET_NONNULL_ALL,
+	*http_parse_response(char *buf) G_GNUC_MGET_NONNULL_ALL,
 	*http_get_response_cb(HTTP_CONNECTION *conn, HTTP_REQUEST *req,
 								 int (*parse_body)(void *context, const char *data, size_t length),
-								 void *context) NONNULL((1,3,4)),
+								 void *context) G_GNUC_MGET_NONNULL((1,3,4)),
 //	*http_get_response_mem(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL_ALL,
-	*http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL((1)),
-	*http_get_response_fd(HTTP_CONNECTION *conn, int fd) NONNULL_ALL;
+	*http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req) G_GNUC_MGET_NONNULL((1)),
+	*http_get_response_fd(HTTP_CONNECTION *conn, int fd) G_GNUC_MGET_NONNULL_ALL;
 
 HTTP_CONNECTION
-	*http_open(const IRI *iri) NONNULL_ALL;
+	*http_open(const IRI *iri) G_GNUC_MGET_NONNULL_ALL;
 HTTP_REQUEST
-	*http_create_request(const IRI *iri, const char *method) NONNULL_ALL;
+	*http_create_request(const IRI *iri, const char *method) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_close(HTTP_CONNECTION **conn) NONNULL_ALL;
+	http_close(HTTP_CONNECTION **conn) G_GNUC_MGET_NONNULL_ALL;
 int
-	http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL_ALL;
+	http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req) G_GNUC_MGET_NONNULL_ALL;
 ssize_t
-	http_request_to_buffer(HTTP_REQUEST *req, mget_buffer_t *buf) NONNULL_ALL;
+	http_request_to_buffer(HTTP_REQUEST *req, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
 
 #endif /* _MGET_HTTP_H */

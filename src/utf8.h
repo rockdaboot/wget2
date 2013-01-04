@@ -30,6 +30,6 @@
 #include <stddef.h>
 
 char
-	*str_to_utf8(const char *src, const char *encoding) MALLOC;
+	*str_to_utf8(const char *src, const char *encoding) G_GNUC_MGET_MALLOC;
 
 #endif /* _MGET_UTF8_H */

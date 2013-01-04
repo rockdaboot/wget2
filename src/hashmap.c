@@ -90,7 +90,7 @@ MGET_HASHMAP *hashmap_create(int max, int off, unsigned int (*hash)(const void *
 	return h;
 }
 
-static inline ENTRY * NONNULL_ALL hashmap_find_entry(const MGET_HASHMAP *h, const char *key, unsigned int hash, int pos)
+static inline ENTRY * G_GNUC_MGET_NONNULL_ALL hashmap_find_entry(const MGET_HASHMAP *h, const char *key, unsigned int hash, int pos)
 {
 	ENTRY *e;
 
@@ -107,7 +107,7 @@ static inline ENTRY * NONNULL_ALL hashmap_find_entry(const MGET_HASHMAP *h, cons
 	return NULL;
 }
 
-static inline void NONNULL_ALL hashmap_free_entry(ENTRY **e)
+static inline void G_GNUC_MGET_NONNULL_ALL hashmap_free_entry(ENTRY **e)
 {
 	if (*e) {
 		xfree((*e)->value);
@@ -116,7 +116,7 @@ static inline void NONNULL_ALL hashmap_free_entry(ENTRY **e)
 	}
 }
 
-static void NONNULL_ALL hashmap_rehash(MGET_HASHMAP *h, int newmax, int recalc_hash)
+static void G_GNUC_MGET_NONNULL_ALL hashmap_rehash(MGET_HASHMAP *h, int newmax, int recalc_hash)
 {
 	ENTRY **new_entry, *entry, *next;
 	int it, pos, cur = h->cur;
@@ -146,7 +146,7 @@ static void NONNULL_ALL hashmap_rehash(MGET_HASHMAP *h, int newmax, int recalc_h
 	}
 }
 
-static inline void NONNULL((1,3)) hashmap_new_entry(MGET_HASHMAP *h, unsigned int hash, const char *key, const char *value)
+static inline void G_GNUC_MGET_NONNULL((1,3)) hashmap_new_entry(MGET_HASHMAP *h, unsigned int hash, const char *key, const char *value)
 {
 	ENTRY *entry;
 	int pos = hash % h->max;
@@ -263,7 +263,7 @@ void *hashmap_get(const MGET_HASHMAP *h, const void *key)
 	return NULL;
 }
 
-static void NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const char *key, int free_kv)
+static void G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const char *key, int free_kv)
 {
 	ENTRY *e, *next, *prev = NULL;
 	unsigned int hash = h->hash(key);

@@ -97,7 +97,7 @@ void job_create_parts(JOB *job)
 	}
 }
 
-static int PURE _compare_mirror(MIRROR **m1, MIRROR **m2)
+static int G_GNUC_MGET_PURE _compare_mirror(MIRROR **m1, MIRROR **m2)
 {
 	return (*m1)->priority - (*m2)->priority;
 }
@@ -416,7 +416,7 @@ int queue_empty(void)
 // did I say, that I like nested function instead using contexts !?
 // gcc, IBM and Intel support nested functions, just clang refuses it
 
-static int queue_free_func(void *context UNUSED, JOB *job)
+static int queue_free_func(void *context G_GNUC_MGET_UNUSED, JOB *job)
 {
 	job_free(job);
 	return 0;

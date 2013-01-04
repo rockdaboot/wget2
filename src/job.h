@@ -96,7 +96,7 @@ JOB
 PART
 	*job_add_part(JOB *job, PART *part);
 int
-	queue_empty(void) PURE,
+	queue_empty(void) G_GNUC_MGET_PURE,
 	queue_get(JOB **job_out, PART **part_out);
 void
 	job_create_parts(JOB *job),

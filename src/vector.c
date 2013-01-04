@@ -59,7 +59,7 @@ VECTOR *vec_create(int max, int off, int (*cmp)(const void *, const void *))
 	return v;
 }
 
-static int NONNULL((2)) vec_insert_private(VECTOR *v, const void *elem, size_t size, int pos, int replace, int alloc)
+static int G_GNUC_MGET_NONNULL((2)) vec_insert_private(VECTOR *v, const void *elem, size_t size, int pos, int replace, int alloc)
 {
 	void *elemp;
 
@@ -120,7 +120,7 @@ int vec_insert_noalloc(VECTOR *v, const void *elem, int pos)
 	return vec_insert_private(v, elem, 0, pos, 0, 0);
 }
 
-static int NONNULL((2)) vec_insert_sorted_private(VECTOR *v, const void *elem, size_t size, int alloc)
+static int G_GNUC_MGET_NONNULL((2)) vec_insert_sorted_private(VECTOR *v, const void *elem, size_t size, int alloc)
 {
 	int m = 0;
 
@@ -340,9 +340,9 @@ void vec_setcmpfunc(VECTOR *v, int (*cmp)(const void *elem1, const void *elem2))
 }
 
 #if defined(__clang__)
-void qsort_r (void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *, void *), void *arg) NONNULL((1,4));
+void qsort_r (void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *, void *), void *arg) G_GNUC_MGET_NONNULL((1,4));
 
-static int NONNULL_ALL _compare(const void *p1, const void *p2, void *v)
+static int G_GNUC_MGET_NONNULL_ALL _compare(const void *p1, const void *p2, void *v)
 {
 	return ((VECTOR *)v)->cmp(*((void **)p1), *((void **)p2));
 }
@@ -359,7 +359,7 @@ void vec_sort(VECTOR *v)
  *
  */
 #if !defined(__clang__)
-	int NONNULL_ALL _compare(const void *p1, const void *p2)
+	int G_GNUC_MGET_NONNULL_ALL _compare(const void *p1, const void *p2)
 	{
 		return v->cmp(*((void **)p1), *((void **)p2));
 	}

@@ -211,7 +211,7 @@ const char *http_parse_name_fixed(const char *s, char *name, size_t name_size)
 	return *s == ':' ? s + 1 : s;
 }
 
-static int NONNULL_ALL compare_param(HTTP_HEADER_PARAM *p1, HTTP_HEADER_PARAM *p2)
+static int G_GNUC_MGET_NONNULL_ALL compare_param(HTTP_HEADER_PARAM *p1, HTTP_HEADER_PARAM *p2)
 {
 	return strcasecmp(p1->name, p2->name);
 }
@@ -533,7 +533,7 @@ static int leap_days(int y1, int y2)
 	return (y2/4 - y1/4) - (y2/100 - y1/100) + (y2/400 - y1/400);
 }
 
-static time_t NONNULL_ALL parse_rfc1123_date(const char *s)
+static time_t G_GNUC_MGET_NONNULL_ALL parse_rfc1123_date(const char *s)
 {
 	// we simply can't use strptime() since it requires us to setlocale()
 	// which is not thread-safe !!!

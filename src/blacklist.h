@@ -30,7 +30,7 @@
 #include "iri.h"
 
 int
-	in_blacklist(IRI *iri) NONNULL_ALL;
+	in_blacklist(IRI *iri) G_GNUC_MGET_NONNULL_ALL;
 IRI
 	*blacklist_add(IRI *iri);
 void
