@@ -109,7 +109,7 @@ if ENABLE_MAN
 
 man_MANS = libmget.3
 
-libmget.3 : xml/libmget.xml
+libmget.3: xml/libmget.xml
         @XSLTPROC@ -nonet http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 
 endif

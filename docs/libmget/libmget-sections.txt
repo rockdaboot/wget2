@@ -1,0 +1,11 @@
+<SECTION>
+<FILE>libmget</FILE>
+<TITLE>Double Linked List</TITLE>
+mget_list_append
+mget_list_prepend
+mget_list_getfirst
+mget_list_getlast
+mget_list_remove
+mget_list_browse
+mget_list_free
+</SECTION>
