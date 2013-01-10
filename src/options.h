@@ -29,7 +29,8 @@
 
 #include <stdarg.h>
 
-#include "stringmap.h"
+#include <libmget.h>
+
 #include "iri.h"
 
 struct config {

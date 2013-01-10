@@ -40,7 +40,6 @@
 
 #include <libmget.h>
 
-#include "../src/xalloc.h"
 #include "../src/utils.h"
 #include "../src/options.h"
 #include "../src/css.h"
@@ -48,9 +47,6 @@
 #include "../src/iri.h"
 #include "../src/log.h"
 #include "../src/net.h"
-#include "../src/vector.h"
-#include "../src/stringmap.h"
-#include "../src/buffer.h"
 #include "../src/http.h"
 #include "../src/cookie.h"
 
@@ -67,8 +63,8 @@ static void _test_buffer(mget_buffer_t *buf, const char *name)
 		test[it] = 'a' + it % 26;
 		test[it + 1] = 0;
 
-		buffer_strcpy(buf, test);
-		buffer_strcat(buf, test);
+		mget_buffer_strcpy(buf, test);
+		mget_buffer_strcat(buf, test);
 
 		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
 			ok++;
@@ -77,8 +73,8 @@ static void _test_buffer(mget_buffer_t *buf, const char *name)
 			info_printf("test_buffer.1 '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
 		}
 
-		buffer_memcpy(buf, test, it + 1);
-		buffer_memcat(buf, test, it + 1);
+		mget_buffer_memcpy(buf, test, it + 1);
+		mget_buffer_memcat(buf, test, it + 1);
 
 		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
 			ok++;
@@ -87,7 +83,7 @@ static void _test_buffer(mget_buffer_t *buf, const char *name)
 			info_printf("test_buffer.2 '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
 		}
 
-		buffer_printf(buf, "%s%s", test, test);
+		mget_buffer_printf(buf, "%s%s", test, test);
 
 		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
 			ok++;
@@ -96,8 +92,8 @@ static void _test_buffer(mget_buffer_t *buf, const char *name)
 			info_printf("test_buffer.3 '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
 		}
 
-		buffer_printf(buf, "%s", test);
-		buffer_printf_append(buf, "%s", test);
+		mget_buffer_printf(buf, "%s", test);
+		mget_buffer_printf_append(buf, "%s", test);
 
 		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
 			ok++;
@@ -116,77 +112,77 @@ static void test_buffer(void)
 	// testing buffer on stack, using initial stack memory
 	// without resizing
 
-	buffer_init(&buf, buf_static, sizeof(buf_static));
-	buffer_deinit(&buf);
+	mget_buffer_init(&buf, buf_static, sizeof(buf_static));
+	mget_buffer_deinit(&buf);
 
 	// testing buffer on stack, using initial stack memory
 	// with resizing
 
-	buffer_init(&buf, buf_static, sizeof(buf_static));
+	mget_buffer_init(&buf, buf_static, sizeof(buf_static));
 	_test_buffer(&buf, "Test 1");
-	buffer_deinit(&buf);
+	mget_buffer_deinit(&buf);
 
 	// testing buffer on stack, using initial heap memory
 	// without resizing
 
-	buffer_init(&buf, NULL, 16);
-	buffer_deinit(&buf);
+	mget_buffer_init(&buf, NULL, 16);
+	mget_buffer_deinit(&buf);
 
 	// testing buffer on stack, using initial heap memory
 	// with resizing
 
-	buffer_init(&buf, NULL, 16);
+	mget_buffer_init(&buf, NULL, 16);
 	_test_buffer(&buf, "Test 2");
-	buffer_deinit(&buf);
+	mget_buffer_deinit(&buf);
 
 	// testing buffer on heap, using initial stack memory
 	// without resizing
 
-	bufp = buffer_init(NULL, buf_static, sizeof(buf_static));
-	buffer_deinit(bufp);
+	bufp = mget_buffer_init(NULL, buf_static, sizeof(buf_static));
+	mget_buffer_deinit(bufp);
 
-	bufp = buffer_init(NULL, buf_static, sizeof(buf_static));
-	buffer_free(&bufp);
+	bufp = mget_buffer_init(NULL, buf_static, sizeof(buf_static));
+	mget_buffer_free(&bufp);
 
 	// testing buffer on heap, using initial stack memory
 	// with resizing
 
-	bufp = buffer_init(NULL, buf_static, sizeof(buf_static));
+	bufp = mget_buffer_init(NULL, buf_static, sizeof(buf_static));
 	_test_buffer(bufp, "Test 3");
-	buffer_deinit(bufp);
+	mget_buffer_deinit(bufp);
 
-	bufp = buffer_init(NULL, buf_static, sizeof(buf_static));
+	bufp = mget_buffer_init(NULL, buf_static, sizeof(buf_static));
 	_test_buffer(bufp, "Test 4");
-	buffer_free(&bufp);
+	mget_buffer_free(&bufp);
 
 	// testing buffer on heap, using initial heap memory
 	// without resizing
 
-	bufp = buffer_alloc(16);
-	buffer_free(&bufp);
+	bufp = mget_buffer_alloc(16);
+	mget_buffer_free(&bufp);
 
 	// testing buffer on heap, using initial heap memory
 	// with resizing
 
-	bufp = buffer_alloc(16);
+	bufp = mget_buffer_alloc(16);
 	_test_buffer(bufp, "Test 5");
-	buffer_free(&bufp);
+	mget_buffer_free(&bufp);
 
 	// check that appending works
 
-	buffer_init(&buf, buf_static, sizeof(buf_static));
-	buffer_strcpy(&buf, "A");
-	buffer_strcat(&buf, "B");
-	buffer_memcat(&buf, "C", 1);
-	buffer_memset_append(&buf, 'D', 1);
-	buffer_printf_append2(&buf, "%s", "E");
+	mget_buffer_init(&buf, buf_static, sizeof(buf_static));
+	mget_buffer_strcpy(&buf, "A");
+	mget_buffer_strcat(&buf, "B");
+	mget_buffer_memcat(&buf, "C", 1);
+	mget_buffer_memset_append(&buf, 'D', 1);
+	mget_buffer_printf_append2(&buf, "%s", "E");
 	if (!strcmp(buf.data, "ABCDE"))
 		ok++;
 	else {
 		failed++;
 		info_printf("test_buffer.append: got %s (expected %s)\n", buf.data, "ABCDE");
 	}
-	buffer_deinit(bufp);
+	mget_buffer_deinit(bufp);
 
 }
 
@@ -206,9 +202,9 @@ static void test_buffer_printf(void)
 	size_t z, a, it, n, c, m;
 	int width, precision;
 
-	buffer_init(&buf, buf_static, sizeof(buf_static));
+	mget_buffer_init(&buf, buf_static, sizeof(buf_static));
 
-	buffer_printf2(&buf, "%s://%s", "http", "host");
+	mget_buffer_printf2(&buf, "%s://%s", "http", "host");
 	if (strcmp("http://host", buf.data)) {
 		failed++;
 		info_printf("%s: Failed with format ('%%s://%%s','http','host'): '%s' != 'http://host'\n", __func__, buf.data);
@@ -246,7 +242,7 @@ static void test_buffer_printf(void)
 						#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
 						sprintf(result, fmt, string);
-						buffer_printf2(&buf, fmt, string);
+						mget_buffer_printf2(&buf, fmt, string);
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 						#pragma GCC diagnostic pop
 #endif
@@ -285,18 +281,18 @@ static void test_buffer_printf(void)
 						if (width == -1) {
 							if (precision == -1) {
 								sprintf(result, fmt, string);
-								buffer_printf2(&buf, fmt, string);
+								mget_buffer_printf2(&buf, fmt, string);
 							} else {
 								sprintf(result, fmt, precision, string);
-								buffer_printf2(&buf, fmt, precision, string);
+								mget_buffer_printf2(&buf, fmt, precision, string);
 							}
 						} else {
 							if (precision == -1) {
 								sprintf(result, fmt, width, string);
-								buffer_printf2(&buf, fmt, width, string);
+								mget_buffer_printf2(&buf, fmt, width, string);
 							} else {
 								sprintf(result, fmt, width, precision, string);
-								buffer_printf2(&buf, fmt, width, precision, string);
+								mget_buffer_printf2(&buf, fmt, width, precision, string);
 							}
 						}
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
@@ -337,7 +333,7 @@ static void test_buffer_printf(void)
 							#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
 							sprintf(result, fmt, number[n]);
-							buffer_printf2(&buf, fmt, number[n]);
+							mget_buffer_printf2(&buf, fmt, number[n]);
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 							#pragma GCC diagnostic pop
 #endif
@@ -358,7 +354,7 @@ static void test_buffer_printf(void)
 		}
 	}
 
-	buffer_deinit(&buf);
+	mget_buffer_deinit(&buf);
 }
 
 static void test_iri_parse(void)
@@ -669,7 +665,7 @@ static void test_iri_relative_to_absolute(void)
 	};
 	unsigned it;
 	char uri_buf_static[32]; // use a size that forces allocation in some cases
-	mget_buffer_t *uri_buf = 	buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
+	mget_buffer_t *uri_buf = 	mget_buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
 	IRI *base;
 
 	for (it = 0; it < countof(test_data); it++) {
@@ -688,7 +684,7 @@ static void test_iri_relative_to_absolute(void)
 		iri_free(&base);
 	}
 
-	buffer_free(&uri_buf);
+	mget_buffer_free(&uri_buf);
 }
 
 static void test_iri_compare(void)
@@ -738,12 +734,12 @@ static void test_iri_compare(void)
 
 static void _css_dump_charset(G_GNUC_MGET_UNUSED void *user_ctx, const char *encoding, size_t len)
 {
-	log_printf(_("URI content encoding = '%.*s'\n"), (int)len, encoding);
+	debug_printf(_("URI content encoding = '%.*s'\n"), (int)len, encoding);
 }
 
 static void _css_dump_uri(G_GNUC_MGET_UNUSED void *user_ctx, const char *url, size_t len)
 {
-	log_printf("*** %zu '%.*s'\n", len, (int)len, url);
+	debug_printf("*** %zu '%.*s'\n", len, (int)len, url);
 }
 
 static void test_parser(void)
@@ -979,7 +975,7 @@ static void test_vector(void)
 		txt_sorted[5] = { {""}, {"four"}, {"one"}, {"three"}, {"two"} },
 		*txt[countof(txt_sorted)];
 	VECTOR
-		*v = vec_create(2, -2, (int(*)(const void *, const void *))compare_txt);
+		*v = mget_vector_create(2, -2, (int(*)(const void *, const void *))compare_txt);
 	size_t
 		it;
 	int
@@ -998,18 +994,18 @@ static void test_vector(void)
 	}
 
 	for (it = 0; it < countof(txt); it++) {
-		vec_insert_sorted(v, txt[it], sizeof(struct ENTRY));
+		mget_vector_insert_sorted(v, txt[it], sizeof(struct ENTRY));
 	}
 
 	for (it = 0; it < countof(txt); it++) {
-		struct ENTRY *e = vec_get(v, it);
+		struct ENTRY *e = mget_vector_get(v, it);
 		if (!strcmp(e->txt,txt_sorted[it].txt))
 			ok++;
 		else
 			failed++;
 	}
 
-	vec_free(&v);
+	mget_vector_free(&v);
 }
 
 // this hash function generates collisions and reduces the map to a simple list.
@@ -1029,22 +1025,22 @@ static void test_stringmap(void)
 
 	for (run = 0; run < 2; run++) {
 		if (run == 0) {
-			h = stringmap_create(16);
+			h = mget_stringmap_create(16);
 		} else {
-			stringmap_clear(h);
-			stringmap_sethashfunc(h, hash_txt);
+			mget_stringmap_clear(h);
+			mget_stringmap_sethashfunc(h, hash_txt);
 		}
 
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			valuesize = sprintf(value, "%d.html", it);
-			if (stringmap_put(h, key, value, valuesize + 1)) {
+			if (mget_stringmap_put(h, key, value, valuesize + 1)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
 		}
 
-		if ((it = stringmap_size(h)) != 26) {
+		if ((it = mget_stringmap_size(h)) != 26) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
 		} else ok++;
@@ -1053,7 +1049,7 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			sprintf(value, "%d.html", it);
-			if (!(val = stringmap_get(h, key))) {
+			if (!(val = mget_stringmap_get(h, key))) {
 				failed++;
 				info_printf("stringmap_get(%s) didn't find entry\n", key);
 			} else if (strcmp(val, value)) {
@@ -1062,9 +1058,9 @@ static void test_stringmap(void)
 			} else ok++;
 		}
 
-		stringmap_clear(h);
+		mget_stringmap_clear(h);
 
-		if ((it = stringmap_size(h)) != 0) {
+		if ((it = mget_stringmap_size(h)) != 0) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected 0)\n", it);
 		} else ok++;
@@ -1072,13 +1068,13 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			valuesize = sprintf(value, "%d.html", it);
-			if (stringmap_put(h, key, value, valuesize + 1)) {
+			if (mget_stringmap_put(h, key, value, valuesize + 1)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
 		}
 
-		if ((it = stringmap_size(h)) != 26) {
+		if ((it = mget_stringmap_size(h)) != 26) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
 		} else ok++;
@@ -1087,10 +1083,10 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			sprintf(value, "%d.html", it);
-			stringmap_remove(h, key);
+			mget_stringmap_remove(h, key);
 		}
 
-		if ((it = stringmap_size(h)) != 0) {
+		if ((it = mget_stringmap_size(h)) != 0) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected 0)\n", it);
 		} else ok++;
@@ -1098,43 +1094,43 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			valuesize = sprintf(value, "%d.html", it);
-			if (stringmap_put(h, key, value, valuesize + 1)) {
+			if (mget_stringmap_put(h, key, value, valuesize + 1)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
 		}
 
-		if ((it = stringmap_size(h)) != 26) {
+		if ((it = mget_stringmap_size(h)) != 26) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
 		} else ok++;
 	}
 
 	// testing alloc/free in stringmap/hashmap
-	stringmap_clear(h);
-	stringmap_put(h, "thekey", NULL, 0) ? failed++ : ok++;
-	stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
-	stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
-	stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
-	stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
+	mget_stringmap_clear(h);
+	mget_stringmap_put(h, "thekey", NULL, 0) ? failed++ : ok++;
+	mget_stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
+	mget_stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
+	mget_stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
+	mget_stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
 
 	// testing key/value identity alloc/free in stringmap/hashmap
-	stringmap_clear(h);
-	stringmap_put_ident(h, "thekey") ? failed++ : ok++;
-	stringmap_put_ident(h, "thekey") ? ok++ : failed++;
-	stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
-	stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
+	mget_stringmap_clear(h);
+	mget_stringmap_put_ident(h, "thekey") ? failed++ : ok++;
+	mget_stringmap_put_ident(h, "thekey") ? ok++ : failed++;
+	mget_stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
+	mget_stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
 
-	stringmap_free(&h);
+	mget_stringmap_free(&h);
 
 	HTTP_CHALLENGE challenge;
 	http_parse_challenge("Basic realm=\"test realm\"", &challenge);
 	http_free_challenge(&challenge);
 
 	VECTOR *challenges;
-	challenges = vec_create(2, 2, NULL);
+	challenges = mget_vector_create(2, 2, NULL);
 	http_parse_challenge("Basic realm=\"test realm\"", &challenge);
-	vec_add(challenges, &challenge, sizeof(challenge));
+	mget_vector_add(challenges, &challenge, sizeof(challenge));
 	http_free_challenges(challenges);
 
 	char *response_text = strdup(
@@ -1151,7 +1147,7 @@ static void test_stringmap(void)
 	IRI *iri = iri_parse("http://localhost/prot_digest_md5/", NULL);
 	HTTP_REQUEST *req = http_create_request(iri, "GET");
 	HTTP_RESPONSE *resp = http_parse_response(response_text);
-	http_add_credentials(req, vec_get(resp->challenges, 0), "tim", "123");
+	http_add_credentials(req, mget_vector_get(resp->challenges, 0), "tim", "123");
 //	for (it=0;it<vec_size(req->lines);it++) {
 //		info_printf("%s\n", (char *)vec_get(req->lines, it));
 //	}

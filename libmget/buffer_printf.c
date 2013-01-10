@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of libmget.
  *
- * Mget is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * Libmget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Libmget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * Memory buffer printf routines
@@ -34,10 +34,7 @@
 #include <ctype.h>
 
 #include <libmget.h>
-
-#include "xalloc.h"
-#include "log.h"
-#include "buffer.h"
+#include "private.h"
 
 #define FLAG_ZERO_PADDED   1
 #define FLAG_LEFT_ADJUST   2
@@ -53,7 +50,7 @@ static void _copy_string(mget_buffer_t *buf, unsigned int flags, int field_width
 	size_t length;
 
 	if (!arg) {
-		buffer_strcat(buf, "(null)");
+		mget_buffer_strcat(buf, "(null)");
 		return;
 	}
 
@@ -68,17 +65,17 @@ static void _copy_string(mget_buffer_t *buf, unsigned int flags, int field_width
 	if (field_width) {
 		if ((unsigned)field_width > length) {
 			if (flags & FLAG_LEFT_ADJUST) {
-				buffer_memcat(buf, arg, length);
-				buffer_memset_append(buf, ' ', field_width - length);
+				mget_buffer_memcat(buf, arg, length);
+				mget_buffer_memset_append(buf, ' ', field_width - length);
 			} else {
-				buffer_memset_append(buf, ' ', field_width - length);
-				buffer_memcat(buf, arg, length);
+				mget_buffer_memset_append(buf, ' ', field_width - length);
+				mget_buffer_memcat(buf, arg, length);
 			}
 		} else {
-			buffer_memcat(buf, arg, length);
+			mget_buffer_memcat(buf, arg, length);
 		}
 	} else {
-		buffer_memcat(buf, arg, length);
+		mget_buffer_memcat(buf, arg, length);
 	}
 }
 
@@ -103,7 +100,7 @@ static void _convert_dec_fast(mget_buffer_t *buf, int arg)
 	if (minus)
 		*dst-- = '-';
 
-	buffer_memcat(buf, dst + 1, sizeof(str) - (dst - str) - 1);
+	mget_buffer_memcat(buf, dst + 1, sizeof(str) - (dst - str) - 1);
 }
 
 static void _convert_dec(mget_buffer_t *buf, unsigned int flags, int field_width, int precision, long long arg)
@@ -165,62 +162,62 @@ static void _convert_dec(mget_buffer_t *buf, unsigned int flags, int field_width
 		if ((unsigned)field_width > length + minus) {
 			if (flags & FLAG_LEFT_ADJUST) {
 				if (minus)
-					buffer_memset_append(buf, '-', 1);
+					mget_buffer_memset_append(buf, '-', 1);
 
 				if (length < (unsigned)precision) {
-					buffer_memset_append(buf, '0', precision - length);
-					buffer_memcat(buf, dst, length);
+					mget_buffer_memset_append(buf, '0', precision - length);
+					mget_buffer_memcat(buf, dst, length);
 					if (field_width > precision + minus)
-						buffer_memset_append(buf, ' ', field_width - precision - minus);
+						mget_buffer_memset_append(buf, ' ', field_width - precision - minus);
 				} else {
-						buffer_memcat(buf, dst, length);
-						buffer_memset_append(buf, ' ', field_width - length - minus);
+						mget_buffer_memcat(buf, dst, length);
+						mget_buffer_memset_append(buf, ' ', field_width - length - minus);
 				}
 			} else {
 				if (length < (unsigned)precision) {
 					if (field_width > precision + minus) {
 						if (flags & FLAG_ZERO_PADDED) {
 							if (minus)
-								buffer_memset_append(buf, '-', 1);
-							buffer_memset_append(buf, '0', field_width - precision - minus);
+								mget_buffer_memset_append(buf, '-', 1);
+							mget_buffer_memset_append(buf, '0', field_width - precision - minus);
 						} else {
-							buffer_memset_append(buf, ' ', field_width - precision - minus);
+							mget_buffer_memset_append(buf, ' ', field_width - precision - minus);
 							if (minus)
-								buffer_memset_append(buf, '-', 1);
+								mget_buffer_memset_append(buf, '-', 1);
 						}
 					} else {
 						if (minus)
-							buffer_memset_append(buf, '-', 1);
+							mget_buffer_memset_append(buf, '-', 1);
 					}
-					buffer_memset_append(buf, '0', precision - length);
+					mget_buffer_memset_append(buf, '0', precision - length);
 				} else {
 					if (flags & FLAG_ZERO_PADDED) {
 						if (minus)
-							buffer_memset_append(buf, '-', 1);
-						buffer_memset_append(buf, '0', field_width - length - minus);
+							mget_buffer_memset_append(buf, '-', 1);
+						mget_buffer_memset_append(buf, '0', field_width - length - minus);
 					} else {
-						buffer_memset_append(buf, ' ', field_width - length - minus);
+						mget_buffer_memset_append(buf, ' ', field_width - length - minus);
 						if (minus)
-							buffer_memset_append(buf, '-', 1);
+							mget_buffer_memset_append(buf, '-', 1);
 					}
 				}
-				buffer_memcat(buf, dst, length);
+				mget_buffer_memcat(buf, dst, length);
 			}
 		} else {
 			if (minus)
-				buffer_memset_append(buf, '-', 1);
+				mget_buffer_memset_append(buf, '-', 1);
 			if (length < (unsigned)precision)
-				buffer_memset_append(buf, '0', precision - length);
-			buffer_memcat(buf, dst, length);
+				mget_buffer_memset_append(buf, '0', precision - length);
+			mget_buffer_memcat(buf, dst, length);
 		}
 	} else {
 		if (minus)
-			buffer_memset_append(buf, '-', 1);
+			mget_buffer_memset_append(buf, '-', 1);
 
 		if (length < (unsigned)precision)
-			buffer_memset_append(buf, '0', precision - length);
+			mget_buffer_memset_append(buf, '0', precision - length);
 
-		buffer_memcat(buf, dst, length);
+		mget_buffer_memcat(buf, dst, length);
 	}
 }
 
@@ -233,10 +230,10 @@ static void _convert_pointer(mget_buffer_t *buf, void *pointer)
 	size_t arg;
 
 	if (!pointer) {
-		buffer_memcat(buf, "0x0", 3);
+		mget_buffer_memcat(buf, "0x0", 3);
 		return;
 	} else {
-		buffer_memcat(buf, "0x", 2);
+		mget_buffer_memcat(buf, "0x", 2);
 	}
 
 	// convert to a size_t (covers full address room) tp allow integer arithmetic
@@ -251,10 +248,10 @@ static void _convert_pointer(mget_buffer_t *buf, void *pointer)
 		length++;
 	} while (arg);
 
-	buffer_memcat(buf, dst, length);
+	mget_buffer_memcat(buf, dst, length);
 }
 
-size_t buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list args)
+size_t mget_buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list args)
 {
 	const char *p = fmt, *begin;
 	int field_width, precision;
@@ -268,14 +265,14 @@ size_t buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list args)
 
 		for (begin = p; *p && *p != '%'; p++);
 		if (p != begin)
-			buffer_memcat(buf, begin, p - begin);
+			mget_buffer_memcat(buf, begin, p - begin);
 
 		if (!*p) break;
 
 		// shortcut to %s and %p, handle %%
 
 		if (*++p == 's') {
-			buffer_strcat(buf, va_arg(args, const char *));
+			mget_buffer_strcat(buf, va_arg(args, const char *));
 			p++;
 			continue;
 		}
@@ -290,7 +287,7 @@ size_t buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list args)
 			continue;
 		}
 		else if (*p == '%') {
-			buffer_memset_append(buf, '%', 1);
+			mget_buffer_memset_append(buf, '%', 1);
 			p++;
 			continue;
 		}
@@ -408,8 +405,8 @@ size_t buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list args)
 		else if (*p == 'o')
 			_convert_dec(buf, flags | FLAG_OCTAL, field_width, precision, argu);
 		else {
-			err_printf("Internal error: Unknown conversion specifier '%c'\n", *p);
-			buffer_memset_append(buf, '%', 1);
+			// err_printf("Internal error: Unknown conversion specifier '%c'\n", *p);
+			mget_buffer_memset_append(buf, '%', 1);
 			p = begin + 1;
 			continue;
 		}
@@ -420,34 +417,34 @@ size_t buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list args)
 	return buf->length;
 }
 
-size_t buffer_vprintf2(mget_buffer_t *buf, const char *fmt, va_list args)
+size_t mget_buffer_vprintf2(mget_buffer_t *buf, const char *fmt, va_list args)
 {
 	buf->length = 0;
 
-	return buffer_vprintf_append2(buf, fmt, args);
+	return mget_buffer_vprintf_append2(buf, fmt, args);
 }
 
-size_t buffer_printf_append2(mget_buffer_t *buf, const char *fmt, ...)
+size_t mget_buffer_printf_append2(mget_buffer_t *buf, const char *fmt, ...)
 {
 	va_list args;
 
 	va_start(args, fmt);
-	buffer_vprintf_append2(buf, fmt, args);
+	mget_buffer_vprintf_append2(buf, fmt, args);
 	va_end(args);
 
 	return buf->length;
 }
 
-size_t buffer_printf2(mget_buffer_t *buf, const char *fmt, ...)
+size_t mget_buffer_printf2(mget_buffer_t *buf, const char *fmt, ...)
 {
 	va_list args;
 
 	va_start(args, fmt);
-	return buffer_vprintf2(buf, fmt, args);
+	return mget_buffer_vprintf2(buf, fmt, args);
 	va_end(args);
 }
 
-size_t buffer_vprintf_append(mget_buffer_t *buf, const char *fmt, va_list args)
+size_t mget_buffer_vprintf_append(mget_buffer_t *buf, const char *fmt, va_list args)
 {
 	ssize_t length;
 	va_list args2;
@@ -459,7 +456,7 @@ size_t buffer_vprintf_append(mget_buffer_t *buf, const char *fmt, va_list args)
 	length = vsnprintf(buf->data + buf->length, buf->size - buf->length, fmt, args);
 
 	if (length == -1 || (size_t)length >= buf->size - buf->length) {
-		buffer_realloc(buf, buf->size * 2 + length);
+		mget_buffer_realloc(buf, buf->size * 2 + length);
 		buf->length += vsnprintf(buf->data + buf->length, buf->size - buf->length, fmt, args2);
 	} else
 		buf->length += length;
@@ -467,30 +464,30 @@ size_t buffer_vprintf_append(mget_buffer_t *buf, const char *fmt, va_list args)
 	return buf->length;
 }
 
-size_t buffer_printf_append(mget_buffer_t *buf, const char *fmt, ...)
+size_t mget_buffer_printf_append(mget_buffer_t *buf, const char *fmt, ...)
 {
 	va_list args;
 
 	va_start(args, fmt);
-	buffer_vprintf_append(buf, fmt, args);
+	mget_buffer_vprintf_append(buf, fmt, args);
 	va_end(args);
 
 	return buf->length;
 }
 
-size_t buffer_vprintf(mget_buffer_t *buf, const char *fmt, va_list args)
+size_t mget_buffer_vprintf(mget_buffer_t *buf, const char *fmt, va_list args)
 {
 	buf->length = 0;
 
-	return buffer_vprintf_append(buf, fmt, args);
+	return mget_buffer_vprintf_append(buf, fmt, args);
 }
 
-size_t buffer_printf(mget_buffer_t *buf, const char *fmt, ...)
+size_t mget_buffer_printf(mget_buffer_t *buf, const char *fmt, ...)
 {
 	va_list args;
 
 	va_start(args, fmt);
-	buffer_vprintf(buf, fmt, args);
+	mget_buffer_vprintf(buf, fmt, args);
 	va_end(args);
 
 	return buf->length;

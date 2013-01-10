@@ -38,7 +38,6 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
 #include "utils.h"
 #include "iri.h"
 #include "log.h"
@@ -91,14 +90,14 @@ static void G_GNUC_MGET_NONNULL_ALL suffix_init(PUBLIC_SUFFIX *suffix, const cha
 
 	if (length >= sizeof(suffix->label_buf) - 1) {
 		suffix->nlabels = 0;
-		err_printf(_("Suffix rule too long: %s\n"), rule);
+		error_printf(_("Suffix rule too long: %s\n"), rule);
 		return;
 	}
 
 	if (*rule == '*') {
 		if (*++rule != '.') {
 			suffix->nlabels = 0;
-			err_printf(_("Unsupported kind of rule : %s\n"), rule);
+			error_printf(_("Unsupported kind of rule : %s\n"), rule);
 			return;
 		}
 		rule++;
@@ -143,11 +142,11 @@ int cookie_suffix_match(const char *domain)
 			suffix.nlabels++;
 
 	// if domain has enough labels, it won't match
-	rule = vec_get(suffixes, 0);
+	rule = mget_vector_get(suffixes, 0);
 	if (!rule || rule->nlabels < suffix.nlabels - 1)
 		return 0;
 
-	rule = vec_get(suffixes, vec_find(suffixes, &suffix));
+	rule = mget_vector_get(suffixes, mget_vector_find(suffixes, &suffix));
 	if (rule) {
 		// definitely a match, no matter if the found rule is a wildcard or not
 		return 1;
@@ -161,7 +160,7 @@ int cookie_suffix_match(const char *domain)
 		suffix.length = strlen(suffix.label);
 		suffix.nlabels--;
 
-		rule = vec_get(suffixes, vec_find(suffixes, &suffix));
+		rule = mget_vector_get(suffixes, mget_vector_find(suffixes, &suffix));
 		if (rule) {
 			if (rule->wildcard) {
 				// now that we matched a wildcard, we have to check for an exception
@@ -169,7 +168,7 @@ int cookie_suffix_match(const char *domain)
 				suffix.length = length_bak;
 				suffix.nlabels++;
 
-				rule = vec_get(suffix_exceptions, vec_find(suffix_exceptions, &suffix));
+				rule = mget_vector_get(suffix_exceptions, mget_vector_find(suffix_exceptions, &suffix));
 				if (rule)
 					return 0;
 
@@ -193,9 +192,9 @@ int cookie_load_public_suffixes(const char *fname)
 	// as of 02.11.2012, the list at http://publicsuffix.org/list/ contains ~6000 rules
 	// and 40 exceptions.
 	if (!suffixes)
-		suffixes = vec_create(6*1024, -2, (int(*)(const void *, const void *))suffix_compare);
+		suffixes = mget_vector_create(6*1024, -2, (int(*)(const void *, const void *))suffix_compare);
 	if (!suffix_exceptions)
-		suffix_exceptions = vec_create(64, -2, (int(*)(const void *, const void *))suffix_compare);
+		suffix_exceptions = mget_vector_create(64, -2, (int(*)(const void *, const void *))suffix_compare);
 
 	if ((fp = fopen(fname, "r"))) {
 		while ((buflen = getline(&buf, &bufsize, fp)) >= 0) {
@@ -213,10 +212,10 @@ int cookie_load_public_suffixes(const char *fname)
 			if (*p == '!') {
 				// add to exceptions
 				suffix_init(&suffix, p + 1, linep - p - 1);
-				suffixp = vec_get(suffix_exceptions, vec_add(suffix_exceptions, &suffix, sizeof(suffix)));
+				suffixp = mget_vector_get(suffix_exceptions, mget_vector_add(suffix_exceptions, &suffix, sizeof(suffix)));
 			} else {
 				suffix_init(&suffix, p, linep - p);
-				suffixp = vec_get(suffixes, vec_add(suffixes, &suffix, sizeof(suffix)));
+				suffixp = mget_vector_get(suffixes, mget_vector_add(suffixes, &suffix, sizeof(suffix)));
 			}
 
 			if (suffixp)
@@ -228,11 +227,11 @@ int cookie_load_public_suffixes(const char *fname)
 		xfree(buf);
 		fclose(fp);
 
-		vec_sort(suffix_exceptions);
-		vec_sort(suffixes);
+		mget_vector_sort(suffix_exceptions);
+		mget_vector_sort(suffixes);
 
 	} else
-		err_printf(_("Failed to open public suffix file '%s'\n"), fname);
+		error_printf(_("Failed to open public suffix file '%s'\n"), fname);
 
 	return nsuffixes;
 }
@@ -247,10 +246,10 @@ static int cookie_free_public_suffix(PUBLIC_SUFFIX *suffix)
 void cookie_free_public_suffixes(void)
 {
 //	vec_browse(suffixes, (int (*)(void *))cookie_free_suffix);
-	vec_free(&suffixes);
+	mget_vector_free(&suffixes);
 
 //	vec_browse(suffix_exceptions, (int (*)(void *))cookie_free_suffix);
-	vec_free(&suffix_exceptions);
+	mget_vector_free(&suffix_exceptions);
 }
 
 static int G_GNUC_MGET_NONNULL_ALL compare_cookie(const MGET_COOKIE *c1, const MGET_COOKIE *c2)
@@ -271,7 +270,7 @@ static int G_GNUC_MGET_NONNULL_ALL domain_match(const char *domain, const char *
 	size_t domain_length, host_length;
 	const char *p;
 
-	log_printf("domain_match(%s,%s)", domain, host);
+	debug_printf("domain_match(%s,%s)", domain, host);
 
 	if (!strcmp(domain, host))
 		return 1; // an exact match
@@ -294,7 +293,7 @@ static int G_GNUC_MGET_NONNULL((1)) path_match(const char *cookie_path, const ch
 	const char *last_slash;
 	size_t cookie_path_length, iri_path_length;
 
-	log_printf("path_match(%s,%s)", cookie_path, request_path);
+	debug_printf("path_match(%s,%s)", cookie_path, request_path);
 
 	// algorithm as described in RFC 6265 5.1.4
 
@@ -350,8 +349,8 @@ int cookie_free_cookie(MGET_COOKIE *cookie)
 void cookie_free_cookies(void)
 {
 	pthread_mutex_lock(&cookies_mutex);
-	vec_browse(cookies, (int (*)(void *))cookie_free_cookie);
-	vec_free(&cookies);
+	mget_vector_browse(cookies, (int (*)(void *))cookie_free_cookie);
+	mget_vector_free(&cookies);
 	pthread_mutex_unlock(&cookies_mutex);
 }
 
@@ -389,7 +388,7 @@ int cookie_normalize_cookie(const IRI *iri, MGET_COOKIE *cookie)
 			cookie->domain = strdup("");
 
 		// respect http://publicsuffix.org/list/ to avoid "supercookies"
-		if (vec_size(suffixes) > 0 && cookie_suffix_match(cookie->domain)) {
+		if (mget_vector_size(suffixes) > 0 && cookie_suffix_match(cookie->domain)) {
 			info_printf("Supercookie %s not accepted\n", cookie->domain);
 			return 0;
 		}
@@ -398,7 +397,7 @@ int cookie_normalize_cookie(const IRI *iri, MGET_COOKIE *cookie)
 			if (domain_match(cookie->domain, iri->host)) {
 				cookie->host_only = 0;
 			} else {
-				log_printf("Domain mismatch: %s %s\n", cookie->domain, iri->host);
+				debug_printf("Domain mismatch: %s %s\n", cookie->domain, iri->host);
 				return 0; // ignore cookie
 			}
 		} else {
@@ -438,8 +437,8 @@ void cookie_normalize_cookies(const IRI *iri, const VECTOR *cookies)
 {
 	int it;
 
-	for (it = 0; it < vec_size(cookies); it++)
-		cookie_normalize_cookie(iri, vec_get(cookies, it));
+	for (it = 0; it < mget_vector_size(cookies); it++)
+		cookie_normalize_cookie(iri, mget_vector_get(cookies, it));
 }
 
 void cookie_store_cookie(MGET_COOKIE *cookie)
@@ -447,7 +446,7 @@ void cookie_store_cookie(MGET_COOKIE *cookie)
 	MGET_COOKIE *old;
 	int pos;
 
-	log_printf("got cookie %s=%s\n", cookie->name, cookie->value);
+	debug_printf("got cookie %s=%s\n", cookie->name, cookie->value);
 
 	if (!cookie->normalized)
 		return;
@@ -455,19 +454,19 @@ void cookie_store_cookie(MGET_COOKIE *cookie)
 	pthread_mutex_lock(&cookies_mutex);
 
 	if (!cookies) {
-		cookies = vec_create(128, -2, (int(*)(const void *, const void *))compare_cookie);
+		cookies = mget_vector_create(128, -2, (int(*)(const void *, const void *))compare_cookie);
 		old = NULL;
 	} else
-		old = vec_get(cookies, pos = vec_find(cookies, cookie));
+		old = mget_vector_get(cookies, pos = mget_vector_find(cookies, cookie));
 
 	if (old) {
-		log_printf("replace old cookie %s=%s\n", cookie->name, cookie->value);
+		debug_printf("replace old cookie %s=%s\n", cookie->name, cookie->value);
 		cookie->creation = old->creation;
 		cookie_free_cookie(old);
-		vec_replace(cookies, cookie, sizeof(*cookie), pos);
+		mget_vector_replace(cookies, cookie, sizeof(*cookie), pos);
 	} else {
-		log_printf("store new cookie %s=%s\n", cookie->name, cookie->value);
-		vec_insert_sorted(cookies, cookie, sizeof(*cookie));
+		debug_printf("store new cookie %s=%s\n", cookie->name, cookie->value);
+		mget_vector_insert_sorted(cookies, cookie, sizeof(*cookie));
 	}
 
 	pthread_mutex_unlock(&cookies_mutex);
@@ -477,10 +476,10 @@ void cookie_store_cookies(VECTOR *cookies)
 {
 	int it;
 
-	for (it = vec_size(cookies) - 1; it >= 0; it--) {
-		MGET_COOKIE *cookie = vec_get(cookies, it);
+	for (it = mget_vector_size(cookies) - 1; it >= 0; it--) {
+		MGET_COOKIE *cookie = mget_vector_get(cookies, it);
 		cookie_store_cookie(cookie);
-		vec_remove(cookies, it);
+		mget_vector_remove(cookies, it);
 	}
 }
 
@@ -490,12 +489,12 @@ char *cookie_create_request_header(const IRI *iri)
 	time_t now = time(NULL);
 	mget_buffer_t buf;
 
-	log_printf("cookie_create_request_header for host=%s path=%s\n",iri->host,iri->path);
+	debug_printf("cookie_create_request_header for host=%s path=%s\n",iri->host,iri->path);
 
 	pthread_mutex_lock(&cookies_mutex);
 
-	for (it = 0; it < vec_size(cookies); it++) {
-		MGET_COOKIE *cookie = vec_get(cookies, it);
+	for (it = 0; it < mget_vector_size(cookies); it++) {
+		MGET_COOKIE *cookie = mget_vector_get(cookies, it);
 
 		if (((!cookie->host_only && domain_match(cookie->domain, iri->host)) ||
 			(cookie->host_only && !strcasecmp(cookie->domain, iri->host))) &&
@@ -504,14 +503,14 @@ char *cookie_create_request_header(const IRI *iri)
 			path_match(cookie->path, iri->path))
 		{
 			if (!init) {
-				buffer_init(&buf, NULL, 128);
+				mget_buffer_init(&buf, NULL, 128);
 				init = 1;
 			}
 
 			if (buf.length)
-				buffer_printf_append2(&buf, "; %s=%s", cookie->name, cookie->value);
+				mget_buffer_printf_append2(&buf, "; %s=%s", cookie->name, cookie->value);
 			else
-				buffer_printf_append2(&buf, "%s=%s", cookie->name, cookie->value);
+				mget_buffer_printf_append2(&buf, "%s=%s", cookie->name, cookie->value);
 		}
 	}
 
@@ -536,8 +535,8 @@ int cookie_save(const char *fname, int keep_session_cookies)
 
 		pthread_mutex_lock(&cookies_mutex);
 
-		for (it = 0; it < vec_size(cookies) && !ferror(fp); it++) {
-			MGET_COOKIE *cookie = vec_get(cookies, it);
+		for (it = 0; it < mget_vector_size(cookies) && !ferror(fp); it++) {
+			MGET_COOKIE *cookie = mget_vector_get(cookies, it);
 
 			if (cookie->persistent) {
 				if (cookie->expires < now)
@@ -564,10 +563,10 @@ int cookie_save(const char *fname, int keep_session_cookies)
 			ret = -1;
 
 		if (ret)
-			err_printf(_("Failed to write to cookie file '%s': %s\n"), fname, strerror(errno));
+			error_printf(_("Failed to write to cookie file '%s': %s\n"), fname, strerror(errno));
 
 	} else
-		err_printf(_("Failed to open cookie file '%s': %s\n"), fname, strerror(errno));
+		error_printf(_("Failed to open cookie file '%s': %s\n"), fname, strerror(errno));
 
 	return ret;
 }
@@ -645,7 +644,7 @@ int cookie_load(const char *fname)
 			// parse name
 			for (p = *linep ? ++linep : linep; *linep && *linep != '\t';) linep++;
 			if (linep == p) {
-				err_printf(_("Incomplete entry in '%s': %s\n"), fname, buf);
+				error_printf(_("Incomplete entry in '%s': %s\n"), fname, buf);
 				cookie_free_cookie(&cookie);
 				continue;
 			}
@@ -665,7 +664,7 @@ int cookie_load(const char *fname)
 		xfree(buf);
 		fclose(fp);
 	} else
-		err_printf(_("Failed to open cookie file '%s'\n"), fname);
+		error_printf(_("Failed to open cookie file '%s'\n"), fname);
 
 	info_printf(_("loaded %d cookie%s from '%s'\n"), ncookies, ncookies !=1 ? "s" : "", fname);
 

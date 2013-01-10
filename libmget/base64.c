@@ -30,12 +30,11 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include <libmget.h>
+#include "private.h"
 
-#include "xalloc.h"
-#include "printf.h"
-#include "base64.h"
 
 static const unsigned char base64_2_bin[256] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

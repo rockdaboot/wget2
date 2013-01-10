@@ -35,11 +35,10 @@
 #include <stddef.h>
 #include <time.h>
 
-#include "vector.h"
-#include "stringmap.h"
+#include <libmget.h>
+
 #include "job.h"
 #include "net.h"
-#include "buffer.h"
 #include "iri.h"
 #include "cookie.h"
 

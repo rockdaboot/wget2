@@ -29,12 +29,13 @@
 #endif
 
 #include <stddef.h>
+#include <string.h>
+#include <strings.h>
 #include <errno.h>
 #include <iconv.h>
 
 #include <libmget.h>
 
-#include "xalloc.h"
 #include "utils.h"
 #include "log.h"
 #include "utf8.h"
@@ -67,14 +68,14 @@ char *str_to_utf8(const char *src, const char *encoding)
 
 			if (iconv(cd, &tmp, &tmp_len, &utf_tmp, &utf_len_tmp) != (size_t)-1) {
 				dst = strndup(utf, utf_len - utf_len_tmp);
-				log_printf("converted '%s' (%s) -> '%s' (utf-8)\n", src, encoding, dst);
+				debug_printf("converted '%s' (%s) -> '%s' (utf-8)\n", src, encoding, dst);
 			} else
-				err_printf(_("Failed to convert %s string into utf-8 (%d)\n"), encoding, errno);
+				error_printf(_("Failed to convert %s string into utf-8 (%d)\n"), encoding, errno);
 
 			xfree(utf);
 			iconv_close(cd);
 		} else
-			err_printf(_("Failed to prepare encoding %s into utf-8 (%d)\n"), encoding, errno);
+			error_printf(_("Failed to prepare encoding %s into utf-8 (%d)\n"), encoding, errno);
 
 		return dst;
 	} else

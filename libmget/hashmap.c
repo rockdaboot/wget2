@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of libmget.
  *
- * Mget is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * Libmget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Libmget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * hashmap routines
@@ -34,14 +34,11 @@
 #include <stdarg.h>
 
 #include <libmget.h>
+#include "private.h"
 
-#include "xalloc.h"
-#include "log.h"
-#include "hashmap.h"
+typedef struct _ENTRY ENTRY;
 
-typedef struct ENTRY ENTRY;
-
-struct ENTRY {
+struct _ENTRY {
 	void
 		*key,
 		*value;
@@ -51,7 +48,7 @@ struct ENTRY {
 		hash;
 };
 
-struct MGET_HASHMAP {
+struct _MGET_HASHMAP {
 	unsigned int
 		(*hash)(const void *); // hash function
 	int
@@ -74,7 +71,7 @@ struct MGET_HASHMAP {
 // cmp: comparison function for finding
 // the hashmap plus shallow content is freed by hashmap_free()
 
-MGET_HASHMAP *hashmap_create(int max, int off, unsigned int (*hash)(const void *), int (*cmp)(const void *, const void *))
+MGET_HASHMAP *mget_hashmap_create(int max, int off, unsigned int (*hash)(const void *), int (*cmp)(const void *, const void *))
 {
 	MGET_HASHMAP *h = xmalloc(sizeof(MGET_HASHMAP));
 
@@ -169,7 +166,7 @@ static inline void G_GNUC_MGET_NONNULL((1,3)) hashmap_new_entry(MGET_HASHMAP *h,
 	}
 }
 
-int hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value)
+int mget_hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value)
 {
 	ENTRY *entry;
 	unsigned int hash = h->hash(key);
@@ -196,7 +193,7 @@ int hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value)
 	return 0;
 }
 
-int hashmap_put(MGET_HASHMAP *h, const void *key, size_t keysize, const void *value, size_t valuesize)
+int mget_hashmap_put(MGET_HASHMAP *h, const void *key, size_t keysize, const void *value, size_t valuesize)
 {
 	ENTRY *entry;
 	unsigned int hash = h->hash(key);
@@ -206,19 +203,19 @@ int hashmap_put(MGET_HASHMAP *h, const void *key, size_t keysize, const void *va
 		if (entry->key != entry->value)
 			xfree(entry->value);
 
-		entry->value = value ? xmemdup(value, valuesize) : NULL;
+		entry->value = value ? mget_memdup(value, valuesize) : NULL;
 
 		return 1;
 	}
 
 	// a new entry
-	hashmap_new_entry(h, hash, xmemdup(key, keysize), value ? xmemdup(value, valuesize) : NULL);
+	hashmap_new_entry(h, hash, mget_memdup(key, keysize), value ? mget_memdup(value, valuesize) : NULL);
 	
 	return 0;
 //	return hashmap_put_noalloc(h, xmemdup(key, keysize), value ? xmemdup(value, valuesize) : NULL);
 }
 
-int hashmap_put_ident(MGET_HASHMAP *h, const void *key, size_t keysize)
+int mget_hashmap_put_ident(MGET_HASHMAP *h, const void *key, size_t keysize)
 {
 	ENTRY *entry;
 	void *keydup;
@@ -235,7 +232,7 @@ int hashmap_put_ident(MGET_HASHMAP *h, const void *key, size_t keysize)
 	}
 
 	// a new entry
-	keydup = xmemdup(key, keysize);
+	keydup = mget_memdup(key, keysize);
 	hashmap_new_entry(h, hash, keydup, keydup);
 
 	return 0;
@@ -245,13 +242,13 @@ int hashmap_put_ident(MGET_HASHMAP *h, const void *key, size_t keysize)
 //	return hashmap_put_noalloc(h, keydup, keydup);
 }
 
-int hashmap_put_ident_noalloc(MGET_HASHMAP *h, const void *key)
+int mget_hashmap_put_ident_noalloc(MGET_HASHMAP *h, const void *key)
 {
 	// if the key is as well the value (e.g. for blacklists)
-	return hashmap_put_noalloc(h, key, key);
+	return mget_hashmap_put_noalloc(h, key, key);
 }
 
-void *hashmap_get(const MGET_HASHMAP *h, const void *key)
+void *mget_hashmap_get(const MGET_HASHMAP *h, const void *key)
 {
 	ENTRY *entry;
 	unsigned int hash = h->hash(key);
@@ -296,28 +293,28 @@ static void G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const 
 	}
 }
 
-void hashmap_remove(MGET_HASHMAP *h, const void *key)
+void mget_hashmap_remove(MGET_HASHMAP *h, const void *key)
 {
 	if (h)
 		hashmap_remove_entry(h, key, 1);
 }
 
-void hashmap_remove_nofree(MGET_HASHMAP *h, const void *key)
+void mget_hashmap_remove_nofree(MGET_HASHMAP *h, const void *key)
 {
 	if (h)
 		hashmap_remove_entry(h, key, 0);
 }
 
-void hashmap_free(MGET_HASHMAP **h)
+void mget_hashmap_free(MGET_HASHMAP **h)
 {
 	if (h && *h) {
-		hashmap_clear(*h);
+		mget_hashmap_clear(*h);
 		xfree((*h)->entry);
 		xfree(*h);
 	}
 }
 
-void hashmap_clear(MGET_HASHMAP *h)
+void mget_hashmap_clear(MGET_HASHMAP *h)
 {
 	if (h) {
 		ENTRY *entry, *next;
@@ -343,12 +340,12 @@ void hashmap_clear(MGET_HASHMAP *h)
 	}
 }
 
-int hashmap_size(const MGET_HASHMAP *h)
+int mget_hashmap_size(const MGET_HASHMAP *h)
 {
 	return h ? h->cur : 0;
 }
 
-int hashmap_browse(const MGET_HASHMAP *h, int (*browse)(const void *key, const void *value))
+int mget_hashmap_browse(const MGET_HASHMAP *h, int (*browse)(const void *key, const void *value))
 {
 	if (h) {
 		ENTRY *entry;
@@ -366,13 +363,13 @@ int hashmap_browse(const MGET_HASHMAP *h, int (*browse)(const void *key, const v
 	return 0;
 }
 
-void hashmap_setcmpfunc(MGET_HASHMAP *h, int (*cmp)(const void *key1, const void *key2))
+void mget_hashmap_setcmpfunc(MGET_HASHMAP *h, int (*cmp)(const void *key1, const void *key2))
 {
 	if (h)
 		h->cmp = cmp;
 }
 
-void hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *key))
+void mget_hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *key))
 {
 	if (h) {
 		h->hash = hash;
@@ -381,7 +378,7 @@ void hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *key))
 	}
 }
 
-void hashmap_setloadfactor(MGET_HASHMAP *h, float factor)
+void mget_hashmap_setloadfactor(MGET_HASHMAP *h, float factor)
 {
 	if (h) {
 		h->factor = factor;

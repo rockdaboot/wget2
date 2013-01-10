@@ -40,7 +40,7 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
+#include "utils.h"
 #include "printf.h"
 
 int vasprintf(char **buf, const char *fmt, va_list args)

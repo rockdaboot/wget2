@@ -29,17 +29,14 @@
 
 #include <stdarg.h>
 
+// use the helper routines provided by libmget
+#define info_printf mget_info_printf
+#define error_printf  mget_error_printf
+#define error_printf_exit  mget_error_printf_exit
+#define debug_printf mget_debug_printf
+#define debug_write mget_debug_write
+
 void
-	log_set_logfile(const char *logfile),
-	log_set_debug(char debug),
-	log_set_quiet(char quiet),
-	log_set_verbose(char verbose),
-	err_printf(const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(1,2),
-	err_printf_exit(const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(1,2) G_GNUC_MGET_NORETURN,
-	info_printf(const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(1,2),
-	log_write(const char *buf, int len),
-	log_printf(const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(1,2),
-	log_printf_exit(const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(1,2) G_GNUC_MGET_NORETURN,
-	log_vprintf(const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(1,0);
+	log_init(void);
 
 #endif /* _MGET_LOG_H */

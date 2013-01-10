@@ -1,15 +1,17 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
+CFLAGS=$CFLAGS
+LDFLAGS=$LDFLAGS
 
-#AC_PREREQ([2.69])
+AC_PREREQ([2.69])
 AC_INIT([mget], [0.1.3], [tim.ruehsen@gmx.de])
 AM_INIT_AUTOMAKE
 
+CFLAGS=$CFLAGS
+AC_USE_SYSTEM_EXTENSIONS
+
 LT_PREREQ([2.2])
-# Bug in libtool adds -O2 and -g by default
-save_cflags=$CFLAGS
 LT_INIT([dlopen])
-CFLAGS=$save_cflags
 
 AC_CONFIG_SRCDIR([src/mget.c])
 AC_CONFIG_HEADERS([config.h])
@@ -31,8 +33,6 @@ AC_CANONICAL_HOST
 
 # If CFLAGS isn't defined and using gcc, set CFLAGS to something reasonable.
 # Otherwise, just prevent autoconf from molesting CFLAGS.
-CFLAGS=$CFLAGS
-LDFLAGS=$LDFLAGS
 AC_PROG_CC
 
 if test "x$CFLAGS" = "x" ; then
@@ -79,7 +79,7 @@ AM_GNU_GETTEXT_VERSION([0.18.1])
 # check for gtk-doc
 #
 m4_ifdef([GTK_DOC_CHECK], [
-GTK_DOC_CHECK([1.14],[--flavour no-tmpl])
+GTK_DOC_CHECK([1.15],[--flavour no-tmpl])
 ],[
 AM_CONDITIONAL([ENABLE_GTK_DOC], false)
 ])
@@ -88,9 +88,27 @@ AM_CONDITIONAL([ENABLE_GTK_DOC], false)
 # enable creation of man pages
 #
 AC_ARG_ENABLE(man,[AC_HELP_STRING([--enable-man],
-                                  [regenerate man pages from Docbook [default=no]])],enable_man=yes,enable_man=no)
-AC_PATH_PROG([XSLTPROC], [xsltproc])
+                                  [generate man pages [default=auto]])],enable_man=yes,enable_man=no)
+
+AS_IF([test "$enable_man" != no], [
+  AC_PATH_PROG([XSLTPROC], [xsltproc])
+  AS_IF([test -z "$XSLTPROC"], [
+    AS_IF([test "$enable_man" = yes], [
+      AC_MSG_ERROR([xsltproc is required for --enable-man])
+    ])
+    enable_man=no
+  ])
+])
+
+#AC_PATH_PROG([XSLTPROC], [xsltproc])
 AM_CONDITIONAL(ENABLE_MAN, test x$enable_man != xno)
+AC_MSG_CHECKING([whether to generate man pages])
+AS_IF([ test "$enable_man" != no ], [
+  AC_MSG_RESULT([yes])
+], [
+  AC_MSG_RESULT([no])
+])
+
 
 #AC_ARG_WITH(gnutls, AS_HELP_STRING([--with-gnutls[=PATH]], [compile with SSL support]), , with_gnutls="no")
 #if test $with_gnutls != "no"
@@ -141,7 +159,9 @@ AC_CHECK_LIB([rt], [clock_gettime])
 AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $IDN_LIBS $LIBS")
 
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h inttypes.h libintl.h locale.h netdb.h netinet/in.h stddef.h stdlib.h string.h strings.h sys/socket.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([\
+ fcntl.h inttypes.h libintl.h locale.h netdb.h netinet/in.h stddef.h stdlib.h string.h\
+ strings.h sys/socket.h sys/time.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
@@ -165,9 +185,10 @@ AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([clock_gettime dup2 gettimeofday localtime_r memchr memmove\
-	memset mkdir munmap select setlocale socket strcasecmp strchr strdup\
-	strerror strncasecmp strndup strrchr strstr strlcpy futimens dprintf])
+AC_CHECK_FUNCS([\
+ clock_gettime dup2 gettimeofday localtime_r memchr memmove\
+ memset mkdir munmap select setlocale socket strcasecmp strchr strdup\
+ strerror strncasecmp strndup strrchr strstr strlcpy futimens dprintf vasprintf])
 
 AC_CONFIG_FILES([Makefile po/Makefile.in
                  include/Makefile

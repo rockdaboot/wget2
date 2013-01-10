@@ -27,8 +27,9 @@
 #ifndef _MGET_JOB_H
 #define _MGET_JOB_H
 
+#include <libmget.h>
+
 #include "iri.h"
-#include "vector.h"
 
 typedef struct {
 	IRI

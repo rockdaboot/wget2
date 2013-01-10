@@ -40,7 +40,6 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
 #include "utils.h"
 #include "log.h"
 #include "hash.h"
@@ -66,7 +65,7 @@ static G_GNUC_MGET_NONNULL((1)) gnutls_digest_algorithm_t get_algorithm(const ch
 	else if (!strcasecmp(type, "rmd160"))
 		return GNUTLS_DIG_RMD160;
 
-	err_printf(_("Unknown hash type '%s'\n"), type);
+	error_printf(_("Unknown hash type '%s'\n"), type);
 	return -1;
 }
 
@@ -89,7 +88,7 @@ int hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_hex_s
 	if (offset + length > st.st_size)
 		return 0;
 	
-	log_printf("%s hashing pos %llu, length %llu...\n", type, (unsigned long long)offset, (unsigned long long)length);
+	debug_printf("%s hashing pos %llu, length %llu...\n", type, (unsigned long long)offset, (unsigned long long)length);
 
 	if ((algorithm = get_algorithm(type)) >= 0) {
 		unsigned char digest[gnutls_hash_get_len(algorithm)];
@@ -114,7 +113,7 @@ int hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_hex_s
 			gnutls_hash_deinit(dig, digest);
 
 			if (nbytes < 0) {
-				err_printf("%s: Failed to read %llu bytes\n", __func__, (unsigned long long)length);
+				error_printf("%s: Failed to read %llu bytes\n", __func__, (unsigned long long)length);
 				close(fd);
 				return -1;
 			}

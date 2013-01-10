@@ -42,7 +42,6 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
 #include "utils.h"
 #include "log.h"
 #include "xml.h"
@@ -436,7 +435,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 	do {
 		getContent(context, directory);
 		if (context->token_len)
-			log_printf("%s=%s\n", directory, context->token);
+			debug_printf("%s=%s\n", directory, context->token);
 
 		if (!(tok = getToken(context))) return;
 		// log_printf("A Token '%s'\n",tok);
@@ -468,10 +467,10 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 							// special HTML <script> content parsing
 							// see http://www.whatwg.org/specs/web-apps/current-work/multipage/scripting-1.html#the-script-element
 							// 4.3.1.2 Restrictions for contents of script elements
-							log_printf("*** need special <script> handling\n");
+							debug_printf("*** need special <script> handling\n");
 							getScriptContent(context);
 							if (*context->token)
-								log_printf("%s=%s\n", directory, context->token);
+								debug_printf("%s=%s\n", directory, context->token);
 						}
 					} else
 						parseXML(directory, context); // descend one level
@@ -481,11 +480,11 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 					int rc = getValue(context);
 					if (rc == EOF) return;
 					if (rc) {
-						log_printf("%s/@%s=%s\n", directory, attribute, context->token);
+						debug_printf("%s/@%s=%s\n", directory, attribute, context->token);
 						if (context->callback)
 							context->callback(context->user_ctx, flags | XML_FLG_ATTRIBUTE, directory, attribute, context->token);
 					} else {
-						log_printf("%s/@%s\n", directory, attribute);
+						debug_printf("%s/@%s\n", directory, attribute);
 						if (context->callback)
 							context->callback(context->user_ctx, flags | XML_FLG_ATTRIBUTE, directory, attribute, NULL);
 					}
@@ -512,15 +511,15 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 				continue;
 		} else if (!strcmp(tok, "<!--")) { // comment - ignore
 			getComment(context);
-			log_printf("%s=<!--%s-->\n", directory, context->token);
+			debug_printf("%s=<!--%s-->\n", directory, context->token);
 			continue;
 		} else if (!strcmp(tok, "<?")) { // special info - ignore
 			getProcessing(context);
-			log_printf("%s=<?%s?>\n", directory, context->token);
+			debug_printf("%s=<?%s?>\n", directory, context->token);
 			continue;
 		} else if (!strcmp(tok, "<!")) {
 			getSpecial(context);
-			log_printf("%s=<!%s>\n", directory, context->token);
+			debug_printf("%s=<!%s>\n", directory, context->token);
 		}
 	} while (tok);
 }
@@ -610,7 +609,7 @@ void xml_parse_file(
 
 		fclose(fp);
 	} else
-		err_printf(_("%s: Failed to open %s\n"), __func__, fname);
+		error_printf(_("%s: Failed to open %s\n"), __func__, fname);
 }
 
 void html_parse_file(

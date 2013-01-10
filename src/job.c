@@ -38,7 +38,6 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
 #include "utils.h"
 #include "log.h"
 #include "hash.h"
@@ -57,11 +56,11 @@ void job_free(JOB *job)
 {
 	if (job) {
 //		iri_free(&job->iri);
-		vec_browse(job->mirrors, (int (*)(void *))free_mirror);
-		vec_free(&job->mirrors);
-		vec_free(&job->hashes);
-		vec_free(&job->parts);
-		vec_free(&job->pieces);
+		mget_vector_browse(job->mirrors, (int (*)(void *))free_mirror);
+		mget_vector_free(&job->mirrors);
+		mget_vector_free(&job->hashes);
+		mget_vector_free(&job->parts);
+		mget_vector_free(&job->pieces);
 		xfree(job->name);
 		xfree(job->local_filename);
 	}
@@ -77,12 +76,12 @@ void job_create_parts(JOB *job)
 
 	// create space to hold enough parts
 	if (!job->parts)
-		job->parts = vec_create(vec_size(job->pieces), 4, NULL);
+		job->parts = mget_vector_create(mget_vector_size(job->pieces), 4, NULL);
 	else
-		vec_clear(job->parts);
+		mget_vector_clear(job->parts);
 
-	for (it = 0; it < vec_size(job->pieces); it++) {
-		PIECE *piece = vec_get(job->pieces, it);
+	for (it = 0; it < mget_vector_size(job->pieces); it++) {
+		PIECE *piece = mget_vector_get(job->pieces, it);
 
 		if (fsize >= piece->length) {
 			part.length = piece->length;
@@ -90,7 +89,7 @@ void job_create_parts(JOB *job)
 			part.length = fsize;
 		}
 
-		vec_add(job->parts, &part, sizeof(PART));
+		mget_vector_add(job->parts, &part, sizeof(PART));
 
 		part.position += part.length;
 		fsize -= piece->length;
@@ -105,8 +104,8 @@ static int G_GNUC_MGET_PURE _compare_mirror(MIRROR **m1, MIRROR **m2)
 void job_sort_mirrors(JOB *job)
 {
 	if (job->mirrors) {
-		vec_setcmpfunc(job->mirrors, (int(*)(const void *, const void *))_compare_mirror);
-		vec_sort(job->mirrors);
+		mget_vector_setcmpfunc(job->mirrors, (int(*)(const void *, const void *))_compare_mirror);
+		mget_vector_sort(job->mirrors);
 	}
 }
 
@@ -154,7 +153,7 @@ PART *job_add_part(JOB *job, PART *part)
 	if (!job->parts)
 		job_create_parts(job);
 
-	return vec_get(job->parts, vec_add(job->parts, part, sizeof(PART)));
+	return mget_vector_get(job->parts, mget_vector_add(job->parts, part, sizeof(PART)));
 }
 
 // check hash for part of a file
@@ -230,22 +229,22 @@ void job_validate_file(JOB *job)
 
 	// create space to hold enough parts
 	if (!job->parts)
-		job->parts = vec_create(vec_size(job->pieces), 4, NULL);
+		job->parts = mget_vector_create(mget_vector_size(job->pieces), 4, NULL);
 	else
-		vec_clear(job->parts);
+		mget_vector_clear(job->parts);
 
 	// truncate file if needed
 	if (stat(job->name, &st) == 0 && st.st_size > fsize) {
 		if (truncate(job->name, fsize) == -1)
-			err_printf(_("Failed to truncate %s\n from %llu to %llu bytes\n"),
+			error_printf(_("Failed to truncate %s\n from %llu to %llu bytes\n"),
 				job->name, (unsigned long long)st.st_size, (unsigned long long)fsize);
 	}
 
 	if ((fd = open(job->name, O_RDONLY)) != -1) {
 		// file exists, check which piece is invalid and requeue it
 
-		for (it = 0; errno != EINTR && it < vec_size(job->hashes); it++) {
-			HASH *hash = vec_get(job->hashes, it);
+		for (it = 0; errno != EINTR && it < mget_vector_size(job->hashes); it++) {
+			HASH *hash = mget_vector_get(job->hashes, it);
 
 			if ((rc = check_file_fd(hash, fd)) == -1)
 				continue; // hash type not available, try next
@@ -270,8 +269,8 @@ void job_validate_file(JOB *job)
 //		if (vec_size(job->pieces) < 1)
 //			return;
 
-		for (it = 0; errno != EINTR && it < vec_size(job->pieces); it++) {
-			PIECE *piece = vec_get(job->pieces, it);
+		for (it = 0; errno != EINTR && it < mget_vector_size(job->pieces); it++) {
+			PIECE *piece = mget_vector_get(job->pieces, it);
 			HASH *hash = &piece->hash;
 
 			if (fsize >= piece->length) {
@@ -281,9 +280,9 @@ void job_validate_file(JOB *job)
 			}
 
 			if ((rc = check_piece_hash(hash, fd, part.position, part.length)) != 1) {
-				info_printf(_("Piece %d/%d not OK - requeuing\n"), it + 1, vec_size(job->pieces));
-				vec_add(job->parts, &part, sizeof(PART));
-				log_printf("  need to download %llu bytes from pos=%llu\n",
+				info_printf(_("Piece %d/%d not OK - requeuing\n"), it + 1, mget_vector_size(job->pieces));
+				mget_vector_add(job->parts, &part, sizeof(PART));
+				debug_printf("  need to download %llu bytes from pos=%llu\n",
 					(unsigned long long)part.length, (unsigned long long)part.position);
 			}
 
@@ -292,8 +291,8 @@ void job_validate_file(JOB *job)
 		}
 		close(fd);
 	} else {
-		for (it = 0; it < vec_size(job->pieces); it++) {
-			PIECE *piece = vec_get(job->pieces, it);
+		for (it = 0; it < mget_vector_size(job->pieces); it++) {
+			PIECE *piece = mget_vector_get(job->pieces, it);
 
 			if (fsize >= piece->length) {
 				part.length = piece->length;
@@ -301,7 +300,7 @@ void job_validate_file(JOB *job)
 				part.length = fsize;
 			}
 
-			vec_add(job->parts, &part, sizeof(PART));
+			mget_vector_add(job->parts, &part, sizeof(PART));
 
 			part.position += part.length;
 			fsize -= piece->length;
@@ -348,7 +347,7 @@ JOB *queue_add(IRI *iri)
 
 		jobp = mget_list_append(&queue, &job, sizeof(JOB));
 
-		log_printf("queue_add %p %s\n", (void *)jobp, iri->uri);
+		debug_printf("queue_add %p %s\n", (void *)jobp, iri->uri);
 		return jobp;
 	}
 
@@ -357,7 +356,7 @@ JOB *queue_add(IRI *iri)
 
 void queue_del(JOB *job)
 {
-	log_printf("queue_del %p\n", (void *)job);
+	debug_printf("queue_del %p\n", (void *)job);
 	job_free(job);
 	mget_list_remove(&queue, job);
 }
@@ -377,20 +376,20 @@ static int find_free_job(struct find_free_job_context *context, JOB *job)
 		int it;
 		// log_printf("nparts %d\n",vec_size(job->parts));
 
-		for (it = 0; it < vec_size(job->parts); it++) {
-			PART *part = vec_get(job->parts, it);
+		for (it = 0; it < mget_vector_size(job->parts); it++) {
+			PART *part = mget_vector_get(job->parts, it);
 			if (!part->inuse) {
 				part->inuse = 1;
 				*context->part_out = part;
 				*context->job_out = job;
-				log_printf("queue_get part %d/%d %s\n", it + 1, vec_size(job->parts), job->name);
+				debug_printf("queue_get part %d/%d %s\n", it + 1, mget_vector_size(job->parts), job->name);
 				return 1;
 			}
 		}
 	} else if (!job->inuse) {
 		job->inuse = 1;
 		*context->job_out = job;
-		log_printf("queue_get job %s\n", job->iri->uri);
+		debug_printf("queue_get job %s\n", job->iri->uri);
 		return 1;
 	}
 	return 0;

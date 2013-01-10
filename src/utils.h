@@ -30,9 +30,12 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h> // for free()
 #include <stdarg.h>
 #include <unistd.h>
 
+// I try to never leave freed pointers hanging around
+#define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
 void
@@ -52,5 +55,14 @@ pid_t
 int
 	null_strcmp(const char *s1, const char *s2) G_GNUC_MGET_PURE,
 	null_strcasecmp(const char *s1, const char *s2) G_GNUC_MGET_PURE;
+
+#ifndef HAVE_STRNDUP
+char *
+	strndup(const char *s, size_t n) G_GNUC_MGET_MALLOC G_GNUC_MGET_NONNULL_ALL;
+#endif
+
+#ifndef HAVE_STRDUP
+# define strdup(s) strndup((s), strlen(s));
+#endif
 
 #endif /* _MGET_UTILS_H */

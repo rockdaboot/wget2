@@ -39,7 +39,6 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
 #include "log.h"
 #include "utils.h"
 
@@ -105,7 +104,7 @@ ssize_t fdgetline0(char **buf, size_t *bufsize, int fd)
 	if (nbytes == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
 		// socket is broken
 		if (errno != EBADF)
-			err_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
+			error_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
 	}
 
 	if (length) {
@@ -174,7 +173,7 @@ ssize_t getline(char **buf, size_t *bufsize, FILE *fp)
 	if (nbytes == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
 		// socket is broken
 		if (errno != EBADF)
-			err_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
+			error_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
 	}
 
 	if (length) {
@@ -249,11 +248,11 @@ pid_t fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv)
 	// create a pipe. the child writes into it and the parent read from it.
 	// pipefd[0]=reader pipefd[1]=writer
 	if (fdin && pipe(pipefd_in) == -1) {
-		err_printf(_("Failed to create pipe for STDIN on %s\n"), argv[0]);
+		error_printf(_("Failed to create pipe for STDIN on %s\n"), argv[0]);
 		return -1;
 	}
 	if (fdout && pipe(pipefd_out) == -1) {
-		err_printf(_("Failed to create pipe for STDOUT on %s\n"), argv[0]);
+		error_printf(_("Failed to create pipe for STDOUT on %s\n"), argv[0]);
 		if (fdin) {
 			close(pipefd_in[0]);
 			close(pipefd_in[1]);
@@ -261,7 +260,7 @@ pid_t fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv)
 		return -1;
 	}
 	if (fderr && fderr != fdout && pipe(pipefd_err) == -1) {
-		err_printf(_("Failed to create pipe for STDERR on %s\n"), argv[0]);
+		error_printf(_("Failed to create pipe for STDERR on %s\n"), argv[0]);
 		if (fdin) {
 			close(pipefd_in[0]);
 			close(pipefd_in[1]);
@@ -279,7 +278,7 @@ pid_t fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv)
 
 			// redirect STDIN to reader
 			if (dup2(pipefd_in[0], STDIN_FILENO) == -1)
-				err_printf_exit(_("Failed to dup2(%d,%d) (%d)\n"), pipefd_in[0], STDIN_FILENO, errno);
+				error_printf_exit(_("Failed to dup2(%d,%d) (%d)\n"), pipefd_in[0], STDIN_FILENO, errno);
 
 			close(pipefd_in[0]); // the old STDIN reader is not needed any more
 		}
@@ -289,7 +288,7 @@ pid_t fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv)
 
 			// redirect STDOUT to writer
 			if (dup2(pipefd_out[1], STDOUT_FILENO) == -1)
-				err_printf_exit(_("Failed to dup2(%d,%d) (%d)\n"), pipefd_out[1], STDOUT_FILENO, errno);
+				error_printf_exit(_("Failed to dup2(%d,%d) (%d)\n"), pipefd_out[1], STDOUT_FILENO, errno);
 
 			close(pipefd_out[1]); // the old STDOUT writer is not needed any more
 		}
@@ -300,7 +299,7 @@ pid_t fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv)
 
 				// redirect STDERR to writer
 				if (dup2(pipefd_err[1], STDERR_FILENO) == -1)
-					err_printf_exit(_("Failed to dup2(%d,%d) (%d)\n"), pipefd_err[1], STDERR_FILENO, errno);
+					error_printf_exit(_("Failed to dup2(%d,%d) (%d)\n"), pipefd_err[1], STDERR_FILENO, errno);
 
 				close(pipefd_err[1]); // the old STDERR writer is not needed any more
 			} else {
@@ -327,7 +326,7 @@ pid_t fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv)
 			close(pipefd_err[0]);
 			close(pipefd_err[1]);
 		}
-		err_printf(_("Failed to fork '%s'\n"), argv[0]);
+		error_printf(_("Failed to fork '%s'\n"), argv[0]);
 		return pid;
 	}
 
@@ -452,3 +451,17 @@ void buffer_to_hex(const unsigned char *src, size_t src_len, char *dst, size_t d
 
 	*dst = 0;
 }
+
+#ifndef HAVE_STRNDUP
+// I found no strndup on my old SUSE 7.3 test system (gcc 2.95)
+
+char *strndup(const char *s, size_t n)
+{
+	char *dst = xmalloc(n + 1);
+
+	memcpy(dst, s, n);
+	dst[n] = 0;
+
+	return dst;
+}
+#endif

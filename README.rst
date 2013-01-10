@@ -21,14 +21,14 @@ buffer recycling.
 License
 -------
 
-Mget is licensed under GPLv3.
-Libmget is licensed under LGPLv3.
+|Mget is licensed under GPLv3+.
+|Libmget is licensed under LGPLv3+.
 
 Development Status
 ------------------
 
-Mget is still in alpha stage but is already useful.
-Many Wget options are already implemented, but some are still missing.
+|Mget is still in alpha stage but is already useful.
+|Many Wget options are already implemented, but some are still missing.
 
 The basic functionality is implemented, like:
 
@@ -61,10 +61,10 @@ Anybody should feel free to contribute ideas, opinions, knowledge (docs, code, a
 code, test routines, etc.
 
 Not yet implemented
-------------------
+-------------------
 
-The following is just a quick list of ideas and todos.
-The mid-range goal is to come as close to Wget, that Wget's units test work for Mget.
+|The following is just a quick list of ideas and todos.
+|The mid-range goal is to come as close to Wget, that Wget's units test work for Mget.
 
 This is next on my list:
 
@@ -142,6 +142,7 @@ Documentation
 
 There is no own documentation yet, but Mget aims to be Wget1.14 compatible.
 
+::
 	$ mget --help
 
 prints the usage and the current set of integrated options.

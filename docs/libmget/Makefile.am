@@ -109,11 +109,17 @@ if ENABLE_MAN
 
 man_MANS = libmget.3
 
-libmget.3: xml/libmget.xml
-        @XSLTPROC@ -nonet http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+libmget.3: $(srcdir)/xml/libmget.xml
+	@XSLTPROC@ -nonet http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 
 endif
 endif
 
 BUILT_EXTRA_DIST = $(man_MANS)
-EXTRA_DIST += xml/libmget.xml
+EXTRA_DIST += $(man_MANS)
+CLEANFILES += $(man_MANS)
+
+#dist-hook-local: all-local
+
+#mgetlib-docs-clean: clean
+#	cd $(srcdir) && rm -rf xml html

@@ -35,7 +35,6 @@
 
 #include "log.h"
 #include "iri.h"
-#include "hashmap.h"
 #include "blacklist.h"
 
 //static VECTOR
@@ -75,7 +74,7 @@ static int G_GNUC_MGET_NONNULL_ALL _blacklist_print(const IRI *iri)
 
 void blacklist_print(void)
 {
-	hashmap_browse(blacklist, (int(*)(const void *, const void *))_blacklist_print);
+	mget_hashmap_browse(blacklist, (int(*)(const void *, const void *))_blacklist_print);
 }
 
 int in_blacklist(IRI *iri)
@@ -84,7 +83,7 @@ int in_blacklist(IRI *iri)
 
 	for (it = 0; iri_schemes[it]; it++) {
 		if (iri_schemes[it] == iri->scheme)
-			return !!hashmap_get(blacklist, iri);
+			return !!mget_hashmap_get(blacklist, iri);
 	}
 
 	return 1; // unknown scheme becomes blacked out
@@ -96,11 +95,11 @@ IRI *blacklist_add(IRI *iri)
 		return NULL;
 
 	if (!blacklist)
-		blacklist = hashmap_create(128, -2, (unsigned int(*)(const void *))hash_iri, (int(*)(const void *, const void *))iri_compare);
+		blacklist = mget_hashmap_create(128, -2, (unsigned int(*)(const void *))hash_iri, (int(*)(const void *, const void *))iri_compare);
 
 	if (!in_blacklist(iri)) {
 		// info_printf("Add to blacklist: %s\n",iri->uri);
-		hashmap_put_ident_noalloc(blacklist, iri);
+		mget_hashmap_put_ident_noalloc(blacklist, iri);
 		return iri;
 	}
 
@@ -165,6 +164,6 @@ static int _free_entry(IRI *iri)
 
 void blacklist_free(void)
 {
-	hashmap_browse(blacklist, (int(*)(const void *, const void *))_free_entry);
-	hashmap_free(&blacklist);
+	mget_hashmap_browse(blacklist, (int(*)(const void *, const void *))_free_entry);
+	mget_hashmap_free(&blacklist);
 }

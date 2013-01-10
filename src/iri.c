@@ -36,7 +36,6 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
 #include "utils.h"
 #include "log.h"
 #include "utf8.h"
@@ -250,7 +249,7 @@ IRI *iri_parse(const char *s_uri, const char *encoding)
 	}
 
 	if (*s) {
-		log_printf("unparsed rest '%s'\n", s);
+		debug_printf("unparsed rest '%s'\n", s);
 	}
 
 	if (*authority) {
@@ -311,7 +310,7 @@ IRI *iri_parse(const char *s_uri, const char *encoding)
 				iri->host = host_asc;
 				iri->host_allocated = 1;
 			} else
-				err_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
+				error_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
 
 			xfree(host_utf);
 		}
@@ -322,7 +321,7 @@ IRI *iri_parse(const char *s_uri, const char *encoding)
 	}
 	else {
 		if (iri->scheme == IRI_SCHEME_HTTP || iri->scheme == IRI_SCHEME_HTTPS) {
-			err_printf(_("Missing host/domain in URI '%s'\n"), iri->uri);
+			error_printf(_("Missing host/domain in URI '%s'\n"), iri->uri);
 			iri_free(&iri);
 			return NULL;
 		}
@@ -377,7 +376,7 @@ static size_t G_GNUC_MGET_NONNULL_ALL _normalize_path(char *path)
 {
 	char *p1 = path, *p2 = path;
 
-	log_printf("path %s ->\n", path);
+	debug_printf("path %s ->\n", path);
 
 	// skip ./ and ../ at the beginning of the path
 	for (;;) {
@@ -438,7 +437,7 @@ static size_t G_GNUC_MGET_NONNULL_ALL _normalize_path(char *path)
 		*p1 = 0;
 	}
 
-	log_printf("     %s\n", path);
+	debug_printf("     %s\n", path);
 
 	return p1 - path;
 }
@@ -448,7 +447,7 @@ static size_t G_GNUC_MGET_NONNULL_ALL _normalize_path(char *path)
 //char *iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_t len, char *dst, size_t dst_size)
 const char *iri_relative_to_absolute(IRI *base, const char *val, size_t len, mget_buffer_t *buf)
 {
-	log_printf("*url = %.*s\n", (int)len, val);
+	debug_printf("*url = %.*s\n", (int)len, val);
 
 	if (*val == '/') {
 		if (base) {
@@ -463,18 +462,18 @@ const char *iri_relative_to_absolute(IRI *base, const char *val, size_t len, mge
 				if ((p = strchr(path + 2, '/')))
 					_normalize_path(p + 1);
 
-				buffer_strcpy(buf, base->scheme);
-				buffer_strcat(buf, ":");
-				buffer_strcat(buf, path);
-				log_printf("*1 %s\n", buf->data);
+				mget_buffer_strcpy(buf, base->scheme);
+				mget_buffer_strcat(buf, ":");
+				mget_buffer_strcat(buf, path);
+				debug_printf("*1 %s\n", buf->data);
 			} else {
 				// absolute path
 				_normalize_path(path);
 
-				buffer_strcpy(buf, iri_get_connection_part(base));
-				buffer_strcat(buf, "/");
-				buffer_strcat(buf, path);
-				log_printf("*2 %s\n", buf->data);
+				mget_buffer_strcpy(buf, iri_get_connection_part(base));
+				mget_buffer_strcat(buf, "/");
+				mget_buffer_strcat(buf, path);
+				debug_printf("*2 %s\n", buf->data);
 			}
 		} else
 			return NULL;
@@ -483,29 +482,29 @@ const char *iri_relative_to_absolute(IRI *base, const char *val, size_t len, mge
 		if (memchr(val, ':', len)) {
 			// absolute URI
 			if (buf) {
-				buffer_memcpy(buf, val, len);
-				log_printf("*3 %s\n", buf->data);
+				mget_buffer_memcpy(buf, val, len);
+				debug_printf("*3 %s\n", buf->data);
 			} else {
-				log_printf("*3 %s\n", val);
+				debug_printf("*3 %s\n", val);
 				return val;
 			}
 		} else if (base) {
 			// relative path
 			const char *lastsep = base->path ? strrchr(base->path, '/') : NULL;
-			buffer_strcpy(buf, iri_get_connection_part(base));
-			buffer_strcat(buf, "/");
+			mget_buffer_strcpy(buf, iri_get_connection_part(base));
+			mget_buffer_strcat(buf, "/");
 
 			size_t tmp_len = buf->length;
 
 			if (lastsep)
-				buffer_memcat(buf, base->path, lastsep - base->path + 1);
+				mget_buffer_memcat(buf, base->path, lastsep - base->path + 1);
 
 			if (len)
-				buffer_memcat(buf, val, len);
+				mget_buffer_memcat(buf, val, len);
 
 			buf->length = _normalize_path(buf->data + tmp_len) + tmp_len;
 
-			log_printf("*4 %s %zu\n", buf->data, buf->length);
+			debug_printf("*4 %s %zu\n", buf->data, buf->length);
 		} else if (val[len] == 0)
 			return val;
 		else
@@ -563,14 +562,14 @@ const char *iri_escape(const char *src, mget_buffer_t *buf)
 	for (begin = src; *src; src++) {
 		if (!iri_isunreserved(*src)) {
 			if (begin != src)
-				buffer_memcat(buf, begin, src - begin);
+				mget_buffer_memcat(buf, begin, src - begin);
 			begin = src + 1;
-			buffer_printf_append2(buf, "%%%02x", (unsigned char)*src);
+			mget_buffer_printf_append2(buf, "%%%02x", (unsigned char)*src);
 		}
 	}
 
 	if (begin != src)
-		buffer_memcat(buf, begin, src - begin);
+		mget_buffer_memcat(buf, begin, src - begin);
 
 	return buf->data;
 }
@@ -582,14 +581,14 @@ const char *iri_escape_path(const char *src, mget_buffer_t *buf)
 	for (begin = src; *src; src++) {
 		if (!iri_isunreserved_path(*src)) {
 			if (begin != src)
-				buffer_memcat(buf, begin, src - begin);
+				mget_buffer_memcat(buf, begin, src - begin);
 			begin = src + 1;
-			buffer_printf_append2(buf, "%%%02x", (unsigned char)*src);
+			mget_buffer_printf_append2(buf, "%%%02x", (unsigned char)*src);
 		}
 	}
 
 	if (begin != src)
-		buffer_memcat(buf, begin, src - begin);
+		mget_buffer_memcat(buf, begin, src - begin);
 
 	return buf->data;
 }
@@ -601,17 +600,17 @@ const char *iri_escape_query(const char *src, mget_buffer_t *buf)
 	for (begin = src; *src; src++) {
 		if (!iri_isunreserved_path(*src) && *src != '=') {
 			if (begin != src)
-				buffer_memcat(buf, begin, src - begin);
+				mget_buffer_memcat(buf, begin, src - begin);
 			begin = src + 1;
 			if (*src == ' ')
-				buffer_memcat(buf, "+", 1);
+				mget_buffer_memcat(buf, "+", 1);
 			else
-				buffer_printf_append2(buf, "%%%02x", (unsigned char)*src);
+				mget_buffer_printf_append2(buf, "%%%02x", (unsigned char)*src);
 		}
 	}
 
 	if (begin != src)
-		buffer_memcat(buf, begin, src - begin);
+		mget_buffer_memcat(buf, begin, src - begin);
 
 	return buf->data;
 }
@@ -627,12 +626,12 @@ const char *iri_get_escaped_resource(const IRI *iri, mget_buffer_t *buf)
 		iri_escape_path(iri->path, buf);
 
 	if (iri->query) {
-		buffer_memcat(buf, "?", 1);
+		mget_buffer_memcat(buf, "?", 1);
 		iri_escape_query(iri->query, buf);
 	}
 
 	if (iri->fragment) {
-		buffer_memcat(buf, "#", 1);
+		mget_buffer_memcat(buf, "#", 1);
 		iri_escape(iri->fragment, buf);
 	}
 
@@ -642,13 +641,13 @@ const char *iri_get_escaped_resource(const IRI *iri, mget_buffer_t *buf)
 const char *iri_get_escaped_path(const IRI *iri, mget_buffer_t *buf)
 {
 	if (buf->length)
-		buffer_memcat(buf, "/", 1);
+		mget_buffer_memcat(buf, "/", 1);
 
 	if (iri->path)
 		iri_escape_path(iri->path, buf);
 
 	if ((buf->length == 0 || buf->data[buf->length - 1] == '/') && default_page)
-		buffer_memcat(buf, default_page, default_page_length);
+		mget_buffer_memcat(buf, default_page, default_page_length);
 
 	return buf->data;
 }
@@ -656,7 +655,7 @@ const char *iri_get_escaped_path(const IRI *iri, mget_buffer_t *buf)
 const char *iri_get_escaped_query(const IRI *iri, mget_buffer_t *buf)
 {
 	if (iri->query) {
-		buffer_memcat(buf, "?", 1);
+		mget_buffer_memcat(buf, "?", 1);
 		return iri_escape_query(iri->query, buf);
 	}
 
@@ -666,7 +665,7 @@ const char *iri_get_escaped_query(const IRI *iri, mget_buffer_t *buf)
 const char *iri_get_escaped_fragment(const IRI *iri, mget_buffer_t *buf)
 {
 	if (iri->fragment) {
-		buffer_memcat(buf, "#", 1);
+		mget_buffer_memcat(buf, "#", 1);
 		return iri_escape(iri->fragment, buf);
 	}
 
@@ -685,10 +684,10 @@ const char *iri_get_escaped_file(const IRI *iri, mget_buffer_t *buf)
 	}
 
 	if ((buf->length == 0 || buf->data[buf->length - 1] == '/') && default_page)
-		buffer_memcat(buf, default_page, default_page_length);
+		mget_buffer_memcat(buf, default_page, default_page_length);
 
 	if (iri->query) {
-		buffer_memcat(buf, "?", 1);
+		mget_buffer_memcat(buf, "?", 1);
 		iri_escape_query(iri->query, buf);
 	}
 

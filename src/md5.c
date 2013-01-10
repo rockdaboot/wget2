@@ -36,7 +36,6 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
 #include "utils.h"
 #include "printf.h"
 #include "md5.h"

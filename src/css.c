@@ -36,6 +36,7 @@
 
 #include <stddef.h>
 #include <unistd.h>
+#include <string.h>
 #include <strings.h>
 #include <ctype.h>
 #include <fcntl.h>
@@ -44,9 +45,7 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
 #include "log.h"
-#include "buffer.h"
 #include "css_tokenizer.h"
 #include "css.h"
 
@@ -167,21 +166,21 @@ void css_parse_file(
 			}
 			close(fd);
 		} else
-			err_printf(_("Failed to open %s\n"), fname);
+			error_printf(_("Failed to open %s\n"), fname);
 	} else {
 		// read data from STDIN.
 		// maybe should use yy_scan_bytes instead of buffering into memory.
 		char tmp[4096];
 		ssize_t nbytes;
-		mget_buffer_t *buf = buffer_alloc(4096);
+		mget_buffer_t *buf = mget_buffer_alloc(4096);
 
 		while ((nbytes = read(STDIN_FILENO, tmp, sizeof(tmp))) > 0) {
-			buffer_memcat(buf, tmp, nbytes);
+			mget_buffer_memcat(buf, tmp, nbytes);
 		}
 
 		if (buf->length)
 			css_parse_buffer(buf->data, callback_uri, callback_encoding, user_ctx);
 
-		buffer_free(&buf);
+		mget_buffer_free(&buf);
 	}
 }

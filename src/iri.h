@@ -31,7 +31,7 @@
 #define _MGET_IRI_H
 
 #include <stddef.h>
-#include "buffer.h"
+#include <libmget.h>
 
 extern const char
 	* const iri_schemes[];

@@ -287,7 +287,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	 * structure. So you must have installed one or more CA certificates.
 	 */
 	if (gnutls_certificate_verify_peers2(session, &status) < 0) {
-		err_printf(_("%s: Certificate verification error\n"), tag);
+		error_printf(_("%s: Certificate verification error\n"), tag);
 		ret = -1;
 		goto out;
 	}
@@ -297,19 +297,19 @@ static int _verify_certificate_callback(gnutls_session_t session)
 
 	if (status) {
 		if (status & GNUTLS_CERT_INVALID)
-			err_printf(_("%s: The certificate is not trusted.\n"), tag);
+			error_printf(_("%s: The certificate is not trusted.\n"), tag);
 		if (status & GNUTLS_CERT_REVOKED)
-			err_printf(_("%s: The certificate has been revoked.\n"), tag);
+			error_printf(_("%s: The certificate has been revoked.\n"), tag);
 		if (status & GNUTLS_CERT_SIGNER_NOT_FOUND)
-			err_printf(_("%s: The certificate hasn't got a known issuer.\n"), tag);
+			error_printf(_("%s: The certificate hasn't got a known issuer.\n"), tag);
 		if (status & GNUTLS_CERT_SIGNER_NOT_CA)
-			err_printf(_("%s: The certificate signer was not a CA.\n"), tag);
+			error_printf(_("%s: The certificate signer was not a CA.\n"), tag);
 		if (status & GNUTLS_CERT_INSECURE_ALGORITHM)
-			err_printf(_("%s: The certificate was signed using an insecure algorithm\n"), tag);
+			error_printf(_("%s: The certificate was signed using an insecure algorithm\n"), tag);
 		if (status & GNUTLS_CERT_NOT_ACTIVATED)
-			err_printf(_("%s: The certificate is not yet activated\n"), tag);
+			error_printf(_("%s: The certificate is not yet activated\n"), tag);
 		if (status & GNUTLS_CERT_EXPIRED)
-			err_printf(_("%s: The certificate has expired\n"), tag);
+			error_printf(_("%s: The certificate has expired\n"), tag);
 
 		ret = -1;
 		goto out;
@@ -320,13 +320,13 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	 * be easily extended to work with openpgp keys as well.
 	 */
 	if (gnutls_certificate_type_get(session) != GNUTLS_CRT_X509) {
-		err_printf(_("%s: Certificate must be X.509\n"), tag);
+		error_printf(_("%s: Certificate must be X.509\n"), tag);
 		ret = -1;
 		goto out;
 	}
 
 	if (gnutls_x509_crt_init(&cert) < 0) {
-		err_printf(_("%s: Error initializing X.509 certificate\n"), tag);
+		error_printf(_("%s: Error initializing X.509 certificate\n"), tag);
 		ret = -1;
 		goto out;
 	}
@@ -338,25 +338,25 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		for (it = 0; it < cert_list_size && ret == 0; it++) {
 			if (!(err = gnutls_x509_crt_import(cert, &cert_list[it], GNUTLS_X509_FMT_DER))) {
 				if (now < gnutls_x509_crt_get_activation_time (cert)) {
-					err_printf(_("%s: The certificate is not yet activated\n"), tag);
+					error_printf(_("%s: The certificate is not yet activated\n"), tag);
 					ret = -1;
 				}
 				else if (now >= gnutls_x509_crt_get_expiration_time (cert)) {
-					err_printf(_("%s: The certificate has expired\n"), tag);
+					error_printf(_("%s: The certificate has expired\n"), tag);
 					ret = -1;
 				}
 			} else {
-				err_printf(_("%s: Failed to parse certificate: %s\n"), tag, gnutls_strerror (err));
+				error_printf(_("%s: Failed to parse certificate: %s\n"), tag, gnutls_strerror (err));
 				ret = -1;
 			}
 
 			if (it == 0 && !gnutls_x509_crt_check_hostname(cert, hostname)) {
-				err_printf(_("%s: The certificate's owner does not match hostname '%s'\n"), tag, hostname);
+				error_printf(_("%s: The certificate's owner does not match hostname '%s'\n"), tag, hostname);
 				ret = -1;
 			}
 		}
 	} else {
-		err_printf(_("%s: No certificate was found!\n"), tag);
+		error_printf(_("%s: No certificate was found!\n"), tag);
 		ret = -1;
 	}
 
@@ -378,7 +378,7 @@ void ssl_init(void)
 	pthread_mutex_lock(&_mutex);
 
 	if (!_init) {
-		log_printf("GnuTLS init\n");
+		debug_printf("GnuTLS init\n");
 		gnutls_global_init();
 		gnutls_certificate_allocate_credentials(&credentials);
 //		gnutls_certificate_set_x509_trust_file(credentials, "/etc/ssl/certs/ca-certificates.crt", GNUTLS_X509_FMT_PEM);
@@ -413,24 +413,24 @@ void ssl_init(void)
 							if (!stat(fname, &st) && S_ISREG(st.st_mode)) {
 								int rc;
 
-								log_printf("GnuTLS loading %s\n", fname);
+								debug_printf("GnuTLS loading %s\n", fname);
 								if ((rc = gnutls_certificate_set_x509_trust_file(credentials, fname, GNUTLS_X509_FMT_PEM)) <= 0)
-									log_printf("Failed to load certs: (%d)\n", rc);
+									debug_printf("Failed to load certs: (%d)\n", rc);
 								else
 									ncerts += rc;
 								if (rc!=1)
-									log_printf("Loaded %d certs\n", rc);
+									debug_printf("Loaded %d certs\n", rc);
 							}
 						}
 					}
 
 					closedir(dir);
 				} else {
-					err_printf(_("Failed to diropen %s\n"), config.ca_directory);
+					error_printf(_("Failed to diropen %s\n"), config.ca_directory);
 				}
 			}
 
-			log_printf("Certificates loaded: %d\n", ncerts);
+			debug_printf("Certificates loaded: %d\n", ncerts);
 		}
 
 		if (config.cert_file && !config.private_key) {
@@ -449,7 +449,7 @@ void ssl_init(void)
 
 			if (config.private_key_type != config.cert_type) {
 				/* GnuTLS can't handle this */
-				err_printf_exit(_("ERROR: GnuTLS requires the key and the cert to be of the same type.\n"));
+				error_printf_exit(_("ERROR: GnuTLS requires the key and the cert to be of the same type.\n"));
 			}
 
 			if (config.private_key_type == MGET_SSL_X509_FMT_DER)
@@ -463,7 +463,7 @@ void ssl_init(void)
 		if (config.ca_cert)
 			gnutls_certificate_set_x509_trust_file(credentials, config.ca_cert, GNUTLS_X509_FMT_PEM);
 
-		log_printf("GnuTLS init done\n");
+		debug_printf("GnuTLS init done\n");
 	}
 
 	_init++;
@@ -548,7 +548,7 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 
 	if (ret < 0) {
 		// print error but continue
-		err_printf("GnuTLS: %s\n", gnutls_strerror(ret));
+		error_printf("GnuTLS: %s\n", gnutls_strerror(ret));
 	}
 
 	// Perform the TLS handshake
@@ -577,13 +577,13 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 
 	if (ret <= 0) {
 		if (ret)
-			log_printf("Handshake failed (%d)\n", ret);
+			debug_printf("Handshake failed (%d)\n", ret);
 		else
-			log_printf("Handshake timed out\n");
+			debug_printf("Handshake timed out\n");
 		gnutls_perror(ret);
 		ssl_close((void **)&session);
 	} else {
-		log_printf("Handshake completed\n");
+		debug_printf("Handshake completed\n");
 	}
 
 	return session;

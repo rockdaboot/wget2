@@ -54,6 +54,6 @@ enum {
   FUNCTION
 };
 
-#define YY_FATAL_ERROR(msg) err_printf_exit(msg)
+#define YY_FATAL_ERROR(msg) error_printf_exit(msg)
 
 #endif /* CSS_TOKENIZER_H */

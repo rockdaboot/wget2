@@ -1,6 +1,7 @@
 <SECTION>
 <FILE>libmget</FILE>
 <TITLE>Double Linked List</TITLE>
+MGET_LIST
 mget_list_append
 mget_list_prepend
 mget_list_getfirst

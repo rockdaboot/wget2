@@ -1,3 +1,29 @@
+/*
+ * Copyright(c) 2012 Tim Ruehsen
+ *
+ * This file is part of MGet.
+ *
+ * Mget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Mget is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * testing performance of buffer printf routines
+ *
+ * Changelog
+ * 06.07.2012  Tim Ruehsen  created
+ *
+ */
+
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -6,18 +32,13 @@
 
 #include <libmget.h>
 
-#include "../src/buffer.h"
-
-#define buffer_strcat(buf, s) \
- 
-
 int main(void)
 {
 	int it;
 	char sbuf[128];
 	mget_buffer_t buf;
 
-	buffer_init(&buf,sbuf,sizeof(sbuf));
+	mget_buffer_init(&buf,sbuf,sizeof(sbuf));
 
 	for (it = 0; it < 10000000; it++) {
 		// buffer: 0.239s  libc: 0.018s (gcc replaces sprintf(%s) by strcpy())
@@ -47,14 +68,14 @@ int main(void)
 
 		// buffer: 0.456s  libc: 0.867s
 //		sprintf(sbuf,"%X\n", it);
-		buffer_printf2(&buf,"%X\n", it);
+		mget_buffer_printf2(&buf,"%X\n", it);
 
 		// buffer: 0.955s  libc: 1.648s
 //		sprintf(sbuf,"teststring %s sabbeldi %d\n", "[foobar foobar foobar]", it);
 //		buffer_printf2(&buf,"teststring %s sabbeldi %d\n", "[foobar foobar foobar]", it);
 	}
 
-	buffer_deinit(&buf);
+	mget_buffer_deinit(&buf);
 
 	return 0;
 }

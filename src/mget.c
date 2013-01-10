@@ -46,11 +46,9 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
 #include "iri.h"
 #include "net.h"
 #include "utils.h"
-#include "vector.h"
 #include "http.h"
 #include "log.h"
 #include "job.h"
@@ -129,17 +127,17 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(IRI *iri)
 	if (config.force_directories == 1)
 		directories = 1;
 
-	buffer_init(&buf, NULL, 256);
+	mget_buffer_init(&buf, NULL, 256);
 
 	if (config.directory_prefix && *config.directory_prefix) {
-		buffer_strcat(&buf, config.directory_prefix);
-		buffer_memcat(&buf, "/", 1);
+		mget_buffer_strcat(&buf, config.directory_prefix);
+		mget_buffer_memcat(&buf, "/", 1);
 	}
 
 	if (directories) {
 		if (config.protocol_directories && iri->scheme && *iri->scheme) {
-			buffer_strcat(&buf, iri->scheme);
-			buffer_memcat(&buf, "/", 1);
+			mget_buffer_strcat(&buf, iri->scheme);
+			mget_buffer_memcat(&buf, "/", 1);
 		}
 		if (config.host_directories && iri->host && *iri->host) {
 			iri_get_escaped_host(iri, &buf);
@@ -152,7 +150,7 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(IRI *iri)
 			const char *p;
 			int n;
 
-			buffer_init(&path_buf, NULL, 256);
+			mget_buffer_init(&path_buf, NULL, 256);
 			iri_get_escaped_path(iri, &path_buf);
 
 			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
@@ -164,12 +162,12 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(IRI *iri)
 				if (!p) {
 					p = path_buf.data;
 					if (*p != '/')
-						buffer_memcat(&buf, "/", 1);
-					buffer_strcat(&buf, p);
+						mget_buffer_memcat(&buf, "/", 1);
+					mget_buffer_strcat(&buf, p);
 				}
 			}
 
-			buffer_deinit(&path_buf);
+			mget_buffer_deinit(&path_buf);
 		} else {
 			iri_get_escaped_path(iri, &buf);
 		}
@@ -189,23 +187,23 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(IRI *iri)
 			// relative paths should have been normalized earlier,
 			// but for security reasons, don't trust myself...
 			if (*p1 == '.' && p1[1] == '.')
-				err_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), fname);
+				error_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), fname);
 
 			if (mkdir(fname, 0755) != 0 && errno != EEXIST) {
-				err_printf(_("Failed to make directory '%s'\n"), fname);
+				error_printf(_("Failed to make directory '%s'\n"), fname);
 				*(char *)p2 = '/'; // restore path separator
 				return fname;
-			} else log_printf("mkdir %s\n", fname);
+			} else debug_printf("mkdir %s\n", fname);
 
 			*(char *)p2 = '/'; // restore path separator
 		}
 	}
 
 	if (config.delete_after) {
-		buffer_deinit(&buf);
+		mget_buffer_deinit(&buf);
 		fname = NULL;
 	} else
-		log_printf("local filename = '%s'\n", fname);
+		debug_printf("local filename = '%s'\n", fname);
 
 	return fname;
 }
@@ -265,16 +263,16 @@ static JOB *add_url_to_queue(const char *url, IRI *base, const char *encoding)
 		char sbuf[256];
 		mget_buffer_t buf;
 
-		buffer_init(&buf, sbuf, sizeof(sbuf));
+		mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 		iri = iri_parse(iri_relative_to_absolute(base, url, strlen(url), &buf), encoding);
-		buffer_deinit(&buf);
+		mget_buffer_deinit(&buf);
 	} else {
 		// no base and no buf: just check URL for being an absolute URI
 		iri = iri_parse(iri_relative_to_absolute(NULL, url, strlen(url), NULL), encoding);
 	}
 
 	if (!iri) {
-		err_printf(_("Cannot resolve relative URI %s\n"), url);
+		error_printf(_("Cannot resolve relative URI %s\n"), url);
 		return NULL;
 	}
 
@@ -286,8 +284,8 @@ static JOB *add_url_to_queue(const char *url, IRI *base, const char *encoding)
 
 		if (config.recursive && !config.span_hosts) {
 			// only download content from hosts given on the command line or from input file
-			if (!stringmap_get(config.exclude_domains, job->iri->host))
-				stringmap_put_ident(config.domains, job->iri->host);
+			if (!mget_stringmap_get(config.exclude_domains, job->iri->host))
+				mget_stringmap_put_ident(config.domains, job->iri->host);
 		}
 	}
 
@@ -457,7 +455,7 @@ int main(int argc, const char *const *argv)
 				}
 				close(fd);
 			} else
-				err_printf(_("Failed to open input file %s\n"), config.input_file);
+				error_printf(_("Failed to open input file %s\n"), config.input_file);
 		} else {
 			if (isatty(STDIN_FILENO)) {
 				ssize_t len;
@@ -490,7 +488,7 @@ int main(int argc, const char *const *argv)
 		pthread_attr_setschedpolicy(&attr, SCHED_OTHER);
 
 		if ((rc = pthread_create(&downloader[n].tid, &attr, downloader_thread, &downloader[n])) != 0) {
-			err_printf(_("Failed to start downloader, error %d\n"), rc);
+			error_printf(_("Failed to start downloader, error %d\n"), rc);
 			close(downloader[n].sockfd[0]);
 			close(downloader[n].sockfd[1]);
 		}
@@ -525,7 +523,7 @@ int main(int argc, const char *const *argv)
 			// timeout or error
 			if (nfds == -1) {
 				if (errno == EINTR) break;
-				err_printf(_("Failed to select, error %d\n"), errno);
+				error_printf(_("Failed to select, error %d\n"), errno);
 			}
 			continue;
 		}
@@ -553,7 +551,7 @@ int main(int argc, const char *const *argv)
 					char *buf = downloader[n].buf;
 					int pos;
 
-					log_printf("- [%d] %s\n", n, buf);
+					debug_printf("- [%d] %s\n", n, buf);
 
 					if (!strncmp(buf, "sts ", 4)) {
 						if (job && job->iri->uri)
@@ -572,25 +570,25 @@ int main(int argc, const char *const *argv)
 								if (part->done) {
 									// check if all parts are done (downloaded + hash-checked)
 									int all_done = 1, it;
-									for (it = 0; it < vec_size(job->parts); it++) {
-										PART *part = vec_get(job->parts, it);
+									for (it = 0; it < mget_vector_size(job->parts); it++) {
+										PART *part = mget_vector_get(job->parts, it);
 										if (!part->done) {
 											all_done = 0;
 											break;
 										}
 									}
 									// log_printf("all_done=%d\n",all_done);
-									if (all_done && vec_size(job->hashes) > 0) {
+									if (all_done && mget_vector_size(job->hashes) > 0) {
 										// check integrity of complete file
 										dprintf(downloader[n].sockfd[0], "check\n");
 										continue;
 									}
 								} else part->inuse = 0; // something was wrong, reload again
 							} else if (job->size <= 0) {
-								log_printf("File length %llu - remove job\n", (unsigned long long)job->size);
+								debug_printf("File length %llu - remove job\n", (unsigned long long)job->size);
 								queue_del(job);
 							} else if (!job->mirrors) {
-								log_printf("File length %llu - remove job\n", (unsigned long long)job->size);
+								debug_printf("File length %llu - remove job\n", (unsigned long long)job->size);
 								queue_del(job);
 							} else {
 								// log_printf("just loaded metalink file\n");
@@ -610,8 +608,8 @@ int main(int argc, const char *const *argv)
 									// sort mirrors by priority to download from highest priority first
 									job_sort_mirrors(job);
 
-									for (it = 0; it < vec_size(job->parts); it++)
-										if (schedule_download(job, vec_get(job->parts, it)) == 0)
+									for (it = 0; it < mget_vector_size(job->parts); it++)
+										if (schedule_download(job, mget_vector_get(job->parts, it)) == 0)
 											break; // now all downloaders have a job
 								}
 							}
@@ -626,42 +624,42 @@ int main(int argc, const char *const *argv)
 							MIRROR mirror;
 
 							if (!job->mirrors)
-								job->mirrors = vec_create(4, 4, NULL);
+								job->mirrors = mget_vector_create(4, 4, NULL);
 
 							memset(&mirror, 0, sizeof(MIRROR));
 							pos = 0;
 							if (sscanf(buf + 13, "%2s %6d %n", mirror.location, &mirror.priority, &pos) >= 2 && pos) {
 								mirror.iri = iri_parse(buf + 13 + pos, NULL);
-								vec_add(job->mirrors, &mirror, sizeof(MIRROR));
+								mget_vector_add(job->mirrors, &mirror, sizeof(MIRROR));
 							} else
-								err_printf(_("Failed to parse metalink mirror '%s'\n"), buf);
+								error_printf(_("Failed to parse metalink mirror '%s'\n"), buf);
 						} else if (!strncasecmp(buf + 6, "hash ", 5)) {
 							// hashes for the complete file
 							HASH hash;
 
 							if (!job->hashes)
-								job->hashes = vec_create(4, 4, NULL);
+								job->hashes = mget_vector_create(4, 4, NULL);
 
 							memset(&hash, 0, sizeof(HASH));
 							if (sscanf(buf + 11, "%15s %127s", hash.type, hash.hash_hex) == 2) {
-								vec_add(job->hashes, &hash, sizeof(HASH));
+								mget_vector_add(job->hashes, &hash, sizeof(HASH));
 							} else
-								err_printf(_("Failed to parse metalink hash '%s'\n"), buf);
+								error_printf(_("Failed to parse metalink hash '%s'\n"), buf);
 						} else if (!strncasecmp(buf + 6, "piece ", 6)) {
 							// hash for a piece of the file
 							PIECE piece, *piecep;
 
 							if (!job->pieces)
-								job->pieces = vec_create(32, 32, NULL);
+								job->pieces = mget_vector_create(32, 32, NULL);
 
 							memset(&piece, 0, sizeof(PIECE));
 							if (sscanf(buf + 12, "%15llu %15s %127s", (unsigned long long *)&piece.length, piece.hash.type, piece.hash.hash_hex) == 3) {
-								piecep = vec_get(job->pieces, vec_size(job->pieces) - 1);
+								piecep = mget_vector_get(job->pieces, mget_vector_size(job->pieces) - 1);
 								if (piecep)
 									piece.position = piecep->position + piecep->length;
-								vec_add(job->pieces, &piece, sizeof(PIECE));
+								mget_vector_add(job->pieces, &piece, sizeof(PIECE));
 							} else
-								err_printf(_("Failed to parse metalink piece '%s'\n"), buf);
+								error_printf(_("Failed to parse metalink piece '%s'\n"), buf);
 						} else if (!strncasecmp(buf + 6, "name ", 5)) {
 							job->name = strdup(buf + 11);
 						} else if (!strncasecmp(buf + 6, "size ", 5)) {
@@ -690,7 +688,7 @@ int main(int argc, const char *const *argv)
 
 						if (config.recursive && !config.span_hosts) {
 							// only download content from given hosts
-							if (!iri->host || !stringmap_get(config.domains, iri->host) || stringmap_get(config.exclude_domains, iri->host)) {
+							if (!iri->host || !mget_stringmap_get(config.domains, iri->host) || mget_stringmap_get(config.exclude_domains, iri->host)) {
 								info_printf("URI '%s' not followed\n", iri->uri);
 								iri_free(&iri);
 							}
@@ -723,7 +721,7 @@ int main(int argc, const char *const *argv)
 		http_close(&downloader[n].conn);
 		xfree(downloader[n].buf);
 		if (pthread_kill(downloader[n].tid, SIGTERM) == -1)
-			err_printf(_("Failed to kill downloader #%d\n"), n);
+			error_printf(_("Failed to kill downloader #%d\n"), n);
 	}
 
 	for (n = 0; n < config.num_threads; n++) {
@@ -735,7 +733,7 @@ int main(int argc, const char *const *argv)
 		int rc;
 		//		if ((rc=pthread_timedjoin_np(downloader[n].tid, NULL, &ts))!=0)
 		if ((rc = pthread_join(downloader[n].tid, NULL)) != 0)
-			err_printf(_("Failed to wait for downloader #%d (%d %d)\n"), n, rc, errno);
+			error_printf(_("Failed to wait for downloader #%d (%d %d)\n"), n, rc, errno);
 	}
 
 	if (config.save_cookies)
@@ -781,21 +779,21 @@ void *downloader_thread(void *p)
 			// timeout or error
 			if (nfds == -1) {
 				if (errno == EINTR || errno == EBADF) break;
-				err_printf(_("Failed to select, error %d\n"), errno);
+				error_printf(_("Failed to select, error %d\n"), errno);
 			}
 			continue;
 		}
 
 		while (!terminate && fdgetline0(&buf, &bufsize, sockfd) > 0) {
-			log_printf("+ [%d] %s\n", downloader->id, buf);
+			debug_printf("+ [%d] %s\n", downloader->id, buf);
 			job = downloader->job;
 			if (!strcmp(buf, "check")) {
 				dprintf(sockfd, "sts %s checking...\n", job->name);
 				job_validate_file(job);
 				if (job->hash_ok)
-					log_printf("sts check ok");
+					debug_printf("sts check ok");
 				else
-					log_printf("sts check failed");
+					debug_printf("sts check failed");
 				dprintf(sockfd, "ready\n");
 			} else if (!strcmp(buf, "go")) {
 				HTTP_RESPONSE *resp = NULL;
@@ -843,8 +841,8 @@ void *downloader_thread(void *p)
 						HTTP_LINK *top_link = NULL, *metalink = NULL;
 						int it;
 
-						for (it = 0; it < vec_size(resp->links); it++) {
-							HTTP_LINK *link = vec_get(resp->links, it);
+						for (it = 0; it < mget_vector_size(resp->links); it++) {
+							HTTP_LINK *link = mget_vector_get(resp->links, it);
 							if (link->rel == link_rel_describedby) {
 								if (!strcasecmp(link->type, "application/metalink4+xml")) {
 									// found a link to a metalink4 description
@@ -1060,7 +1058,7 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 						}
 					}
 				} else {
-					err_printf(_("Cannot resolve relative URI %.*s\n"), (int)len, val);
+					error_printf(_("Cannot resolve relative URI %.*s\n"), (int)len, val);
 				}
 			}
 		}
@@ -1075,7 +1073,7 @@ void html_parse(int sockfd, const char *data, const char *encoding, IRI *iri)
 	char uri_sbuf[1024];
 	struct html_context context = { .base = iri, .sockfd = sockfd, .encoding = encoding };
 
-	buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
+	mget_buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
@@ -1090,7 +1088,7 @@ void html_parse(int sockfd, const char *data, const char *encoding, IRI *iri)
 		iri_free(&context.base);
 	}
 
-	buffer_deinit(&context.uri_buf);
+	mget_buffer_deinit(&context.uri_buf);
 }
 
 void html_parse_localfile(int sockfd, const char *fname, const char *encoding, IRI *iri)
@@ -1099,7 +1097,7 @@ void html_parse_localfile(int sockfd, const char *fname, const char *encoding, I
 	char uri_sbuf[1024];
 	struct html_context context = { .base = iri, .sockfd = sockfd, .encoding = encoding };
 
-	buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
+	mget_buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
@@ -1112,7 +1110,7 @@ void html_parse_localfile(int sockfd, const char *fname, const char *encoding, I
 	if (context.base_allocated)
 		iri_free(&context.base);
 
-	buffer_deinit(&context.uri_buf);
+	mget_buffer_deinit(&context.uri_buf);
 }
 
 struct css_context {
@@ -1157,7 +1155,7 @@ static void _css_parse_uri(void *context, const char *url, size_t len)
 				}
 			}
 		} else {
-			err_printf(_("Cannot resolve relative URI %.*s\n"), (int)len, url);
+			error_printf(_("Cannot resolve relative URI %.*s\n"), (int)len, url);
 		}
 	}
 }
@@ -1168,7 +1166,7 @@ void css_parse(int sockfd, const char *data, const char *encoding, IRI *iri)
 	char uri_buf[1024];
 	struct css_context context = { .base = iri, .sockfd = sockfd, .encoding = encoding };
 
-	buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
+	mget_buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
 
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
@@ -1178,7 +1176,7 @@ void css_parse(int sockfd, const char *data, const char *encoding, IRI *iri)
 	if (context.encoding_allocated)
 		xfree(context.encoding);
 
-	buffer_deinit(&context.uri_buf);
+	mget_buffer_deinit(&context.uri_buf);
 }
 
 void css_parse_localfile(int sockfd, const char *fname, const char *encoding, IRI *iri)
@@ -1187,7 +1185,7 @@ void css_parse_localfile(int sockfd, const char *fname, const char *encoding, IR
 	char uri_buf[1024];
 	struct css_context context = { .base = iri, .sockfd = sockfd, .encoding = encoding };
 
-	buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
+	mget_buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
 
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
@@ -1197,7 +1195,7 @@ void css_parse_localfile(int sockfd, const char *fname, const char *encoding, IR
 	if (context.encoding_allocated)
 		xfree(context.encoding);
 
-	buffer_deinit(&context.uri_buf);
+	mget_buffer_deinit(&context.uri_buf);
 }
 
 static long long G_GNUC_MGET_NONNULL_ALL get_file_size(const char *fname)
@@ -1236,7 +1234,7 @@ static void set_file_mtime(int fd, time_t modified)
 	timespecs[1].tv_nsec = 0;
 
 	if (futimens(fd, timespecs) == -1)
-		err_printf (_("Failed to set file date: %s\n"), strerror (errno));
+		error_printf (_("Failed to set file date: %s\n"), strerror (errno));
 }
 
 static void G_GNUC_MGET_NONNULL((1)) _save_file(HTTP_RESPONSE *resp, const char *fname, int flag)
@@ -1260,11 +1258,11 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(HTTP_RESPONSE *resp, const char 
 
 			if (config.save_headers) {
 				if ((rc = fwrite(resp->header->data, 1, resp->header->length, stdout)) != resp->header->length)
-					err_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
+					error_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
 			}
 
 			if ((rc = fwrite(resp->body->data, 1, resp->body->length, stdout)) != resp->body->length)
-				err_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
+				error_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
 
 			return;
 		}
@@ -1322,11 +1320,11 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(HTTP_RESPONSE *resp, const char 
 
 			if (config.save_headers) {
 				if ((rc = write(fd, resp->header->data, resp->header->length)) != (ssize_t)resp->header->length)
-					err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
+					error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
 			}
 
 			if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
-				err_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
+				error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
 
 			if ((flag & (O_TRUNC | O_EXCL)) && resp->last_modified)
 				set_file_mtime(fd, resp->last_modified);
@@ -1349,9 +1347,9 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(HTTP_RESPONSE *resp, const char 
 
 	if (fd == -1) {
 		if (errno == EEXIST && fnum < 999)
-			err_printf(_("File '%s' already there; not retrieving.\n"), fname);
+			error_printf(_("File '%s' already there; not retrieving.\n"), fname);
 		else
-			err_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
+			error_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
 	}
 
 	xfree(alloced_fname);
@@ -1373,14 +1371,14 @@ void download_part(DOWNLOADER *downloader)
 {
 	JOB *job = downloader->job;
 	PART *part = downloader->part;
-	int mirror_index = downloader->id % vec_size(job->mirrors);
+	int mirror_index = downloader->id % mget_vector_size(job->mirrors);
 
 	dprintf(downloader->sockfd[1], "sts downloading part...\n");
 	do {
 		HTTP_RESPONSE *msg;
-		MIRROR *mirror = vec_get(job->mirrors, mirror_index);
+		MIRROR *mirror = mget_vector_get(job->mirrors, mirror_index);
 
-		mirror_index = (mirror_index + 1) % vec_size(job->mirrors);
+		mirror_index = (mirror_index + 1) % mget_vector_size(job->mirrors);
 
 		msg = http_get(mirror->iri, part, downloader);
 		if (msg) {
@@ -1389,7 +1387,7 @@ void download_part(DOWNLOADER *downloader)
 			if (msg->body) {
 				int fd;
 
-				log_printf("# body=%zd/%llu bytes\n", msg->body->length, (unsigned long long)part->length);
+				debug_printf("# body=%zd/%llu bytes\n", msg->body->length, (unsigned long long)part->length);
 				if ((fd = open(job->name, O_WRONLY | O_CREAT, 0644)) != -1) {
 					if (lseek(fd, part->position, SEEK_SET) != -1) {
 						ssize_t nbytes;
@@ -1397,13 +1395,13 @@ void download_part(DOWNLOADER *downloader)
 						if ((nbytes = write(fd, msg->body->data, msg->body->length)) == (ssize_t)msg->body->length)
 							part->done = 1; // set this when downloaded ok
 						else
-							err_printf(_("Failed to write %zd bytes (%zd)\n"), msg->body->length, nbytes);
-					} else err_printf(_("Failed to lseek to %llu\n"), (unsigned long long)part->position);
+							error_printf(_("Failed to write %zd bytes (%zd)\n"), msg->body->length, nbytes);
+					} else error_printf(_("Failed to lseek to %llu\n"), (unsigned long long)part->position);
 					close(fd);
-				} else err_printf(_("Failed to write open %s\n"), job->name);
+				} else error_printf(_("Failed to write open %s\n"), job->name);
 
 			} else
-				log_printf("# empty body\n");
+				debug_printf("# empty body\n");
 
 			http_free_response(&msg);
 		}
@@ -1501,16 +1499,16 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 				char sbuf[256];
 				mget_buffer_t buf;
 
-				buffer_init(&buf, sbuf, sizeof(sbuf));
+				mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
-				buffer_strcat(&buf, referer->scheme);
-				buffer_memcat(&buf, "://", 3);
-				buffer_strcat(&buf, referer->host);
-				buffer_memcat(&buf, "/", 1);
+				mget_buffer_strcat(&buf, referer->scheme);
+				mget_buffer_memcat(&buf, "://", 3);
+				mget_buffer_strcat(&buf, referer->host);
+				mget_buffer_memcat(&buf, "/", 1);
 				iri_get_escaped_resource(referer, &buf);
 
 				http_add_header(req, "Referer", buf.data);
-				buffer_deinit(&buf);
+				mget_buffer_deinit(&buf);
 			}
 
 			if (challenges) {
@@ -1518,7 +1516,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 				// For simplicity and testing we just take the first for now.
 				// the following adds an Authorization: HTTP header
 //				http_add_credentials(req, vec_get(challenges, 0), config.username, config.password);
-				http_add_credentials(req, vec_get(challenges, 0), config.http_username, config.http_password);
+				http_add_credentials(req, mget_vector_get(challenges, 0), config.http_username, config.http_password);
 				http_free_challenges(challenges);
 			}
 
@@ -1527,7 +1525,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 					(unsigned long long) part->position, (unsigned long long) part->position + part->length - 1);
 
 			// add cookies
-			log_printf("cookies_enabled = %d\n", config.cookies);
+			debug_printf("cookies_enabled = %d\n", config.cookies);
 			if (config.cookies) {
 				const char *cookie_string;
 
@@ -1576,13 +1574,13 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			cookie_normalize_cookies(iri, resp->cookies);
 			cookie_store_cookies(resp->cookies);
 
-			buffer_init(&uri_buf, uri_buf_static, sizeof(uri_buf_static));
+			mget_buffer_init(&uri_buf, uri_buf_static, sizeof(uri_buf_static));
 
 			iri_relative_to_absolute(iri, resp->location, strlen(resp->location), &uri_buf);
 
 			dprintf(downloader->sockfd[1], "redirect - %s\n", uri_buf.data);
 
-			buffer_deinit(&uri_buf);
+			mget_buffer_deinit(&uri_buf);
 			break;
 		}
 

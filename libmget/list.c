@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
@@ -32,9 +32,7 @@
 #include <string.h>
 
 #include <libmget.h>
-#include "../include/libmget.h"
-
-#include <xalloc.h>
+#include "private.h"
 
 /**
  * SECTION:libmget
@@ -102,7 +100,7 @@ void *
 mget_list_append(MGET_LIST **list, const void *data, size_t size)
 {
 	// allocate space for node and data in one row
-	MGET_LIST *node = xmalloc(sizeof(MGET_LIST) + size);
+	MGET_LIST *node = mget_malloc(sizeof(MGET_LIST) + size);
 
 	memcpy(node + 1, data, size);
 

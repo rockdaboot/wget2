@@ -57,17 +57,14 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
 #include "utils.h"
 #include "log.h"
 #include "net.h"
 #include "ssl.h"
-#include "buffer.h"
 #include "cookie.h"
 #include "options.h"
 #include "iri.h"
 #include "http.h"
-#include "stringmap.h"
 
 typedef const struct option *option_t; // forward declaration
 
@@ -225,7 +222,7 @@ static int parse_numbytes(option_t opt, G_GNUC_MGET_UNUSED const char *const *ar
 		if (!error)
 			*((long long *)opt->var) = (long long)num;
 		else
-			err_printf_exit(_("Invalid byte specifier: %s\n"), val);
+			error_printf_exit(_("Invalid byte specifier: %s\n"), val);
 	}
 
 	return 0;
@@ -249,12 +246,12 @@ static int parse_stringset(option_t opt, G_GNUC_MGET_UNUSED const char *const *a
 
 		for (s = val; (p = strchr(s, ',')); s = p + 1) {
 			if (p != s)
-				stringmap_put_ident_noalloc(map, strndup(s, p - s));
+				mget_stringmap_put_ident_noalloc(map, strndup(s, p - s));
 		}
 		if (*s)
-			stringmap_put_ident_noalloc(map, strdup(s));
+			mget_stringmap_put_ident_noalloc(map, strdup(s));
 	} else {
-		stringmap_clear(map);
+		mget_stringmap_clear(map);
 	}
 
 	return 0;
@@ -269,7 +266,7 @@ static int parse_bool(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, 
 	else if (!strcmp(val,"0") || !strcasecmp(val,"n") || !strcasecmp(val,"no") || !strcasecmp(val,"off"))
 		*((char *)opt->var) = 0;
 	else {
-		err_printf(_("Boolean value '%s' not recognized\n"), val);
+		error_printf(_("Boolean value '%s' not recognized\n"), val);
 	}
 
 	return 0;
@@ -311,7 +308,7 @@ static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL((1)) parse_cert_type(option_t op
 	else if (!strcasecmp(val, "DER") || !strcasecmp(val, "ASN1"))
 		*((char *)opt->var) = MGET_SSL_X509_FMT_DER;
 	else
-		err_printf_exit("Unknown cert type '%s'\n", val);
+		error_printf_exit("Unknown cert type '%s'\n", val);
 
 	return 0;
 }
@@ -339,10 +336,10 @@ static int parse_n_option(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED co
 //				config.parent = 0;
 				break;
 			default:
-				err_printf_exit(_("Unknown option '-n%c'\n"), *p);
+				error_printf_exit(_("Unknown option '-n%c'\n"), *p);
 			}
 
-			log_printf("name=-n%c value=0\n", *p);
+			debug_printf("name=-n%c value=0\n", *p);
 		}
 	}
 
@@ -358,7 +355,7 @@ static int parse_prefer_family(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUS
 	else if (!strcasecmp(val, "ipv6"))
 		*((char *)opt->var) = AF_INET6;
 	else
-		err_printf_exit("Unknown address family '%s'\n", val);
+		error_printf_exit("Unknown address family '%s'\n", val);
 
 	return 0;
 }
@@ -493,34 +490,34 @@ static int G_GNUC_MGET_NONNULL((1)) set_long_option(const char *name, const char
 	opt = bsearch(name, options, countof(options), sizeof(options[0]), opt_compare);
 
 	if (!opt)
-		err_printf_exit(_("Unknown option '%s'\n"), name);
+		error_printf_exit(_("Unknown option '%s'\n"), name);
 
 	if (name != namebuf && opt->parser == parse_bool)
 		value = NULL;
 
-	log_printf("name=%s value=%s invert=%d\n", opt->long_name, value, invert);
+	debug_printf("name=%s value=%s invert=%d\n", opt->long_name, value, invert);
 
 	if (opt->parser == parse_string && invert) {
 		// allow no-<string-option> to set value to NULL
 		if (value && name == namebuf)
-			err_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
+			error_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
 
 		parse_string(opt, NULL, NULL);
 	}
 	else if (opt->parser == parse_stringset && invert) {
 		// allow no-<string-option> to set value to NULL
 		if (value && name == namebuf)
-			err_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
+			error_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
 
 		parse_stringset(opt, NULL, NULL);
 	}
 	else {
 		if (value && !opt->args && opt->parser != parse_bool)
-			err_printf_exit(_("Option '%s' doesn't allow an argument\n"), name);
+			error_printf_exit(_("Option '%s' doesn't allow an argument\n"), name);
 
 		if (opt->args) {
 			if (!value)
-				err_printf_exit(_("Missing argument for option '%s'\n"), name);
+				error_printf_exit(_("Missing argument for option '%s'\n"), name);
 
 			opt->parser(opt, NULL, value);
 
@@ -601,7 +598,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 				if (globbuf.gl_pathv[it][strlen(globbuf.gl_pathv[it])-1] != '/') {
 				// if (stat(globbuf.gl_pathv[it], &st) == 0 && S_ISREG(st.st_mode)) {
 					if (++level > 20)
-						err_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
+						error_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
 
 					_read_config(globbuf.gl_pathv[it], 0);
 
@@ -612,7 +609,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 		} else {
 			if (++level > 20)
-				err_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
+				error_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
 
 			_read_config(cfgfile, 0);
 			
@@ -623,13 +620,13 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 	}
 
 	if ((fp = fopen(cfgfile, "r")) == NULL) {
-		err_printf(_("Failed to open %s\n"), cfgfile);
+		error_printf(_("Failed to open %s\n"), cfgfile);
 		return -1;
 	}
 
-	log_printf(_("Reading %s\n"), cfgfile);
+	debug_printf(_("Reading %s\n"), cfgfile);
 
-	buffer_init(&linebuf, linebuf_static, sizeof(linebuf_static));
+	mget_buffer_init(&linebuf, linebuf_static, sizeof(linebuf_static));
 
 	while ((len = getline(&buf, &bufsize, fp)) >= 0) {
 		if (len == 0 || *buf == '\r' || *buf == '\n') continue;
@@ -651,14 +648,14 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 		if (linep[len - 1] == '\\') {
 			if (append) {
-				buffer_memcat(&linebuf, linep, len - 1);
+				mget_buffer_memcat(&linebuf, linep, len - 1);
 			} else {
-				buffer_memcpy(&linebuf, linep, len - 1);
+				mget_buffer_memcpy(&linebuf, linep, len - 1);
 				append = 1;
 			}
 			continue;
 		} else if (append) {
-			buffer_strcat(&linebuf, linep);
+			mget_buffer_strcat(&linebuf, linep);
 			append = 0;
 			linep = linebuf.data;
 			linelen = linebuf.length;
@@ -672,7 +669,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 			} else
 				found = 2; // statement (e.g. include ".wgetrc.d") or boolean option without value (e.g. no-recursive)
 		} else {
-			err_printf(_("Failed to parse: '%s'\n"), linep);
+			error_printf(_("Failed to parse: '%s'\n"), linep);
 			continue;
 		}
 
@@ -701,7 +698,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 				// log_printf("%s %s\n",name,val);
 				if (!strcmp(name, "include")) {
 					if (++level > 20)
-						err_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
+						error_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
 
 					_read_config(val, 1);
 
@@ -715,12 +712,12 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 		linelen = 0;
 	}
 
-	buffer_deinit(&linebuf);
+	mget_buffer_deinit(&linebuf);
 	xfree(buf);
 	fclose(fp);
 
 	if (append) {
-		err_printf(_("Failed to parse last line in '%s'\n"), cfgfile);
+		error_printf(_("Failed to parse last line in '%s'\n"), cfgfile);
 	}
 
 	return 0;
@@ -779,7 +776,7 @@ static int G_GNUC_MGET_NONNULL((2)) parse_command_line(int argc, const char *con
 						const char *val;
 
 						if (!argp[pos + 1] && argc <= n + opt->args)
-							err_printf_exit(_("Missing argument(s) for option '-%c'\n"), argp[pos]);
+							error_printf_exit(_("Missing argument(s) for option '-%c'\n"), argp[pos]);
 						val = argp[pos + 1] ? argp + pos + 1 : argv[++n];
 						n += opt->parser(opt, &argv[n], val);
 						break;
@@ -801,12 +798,18 @@ static int G_GNUC_MGET_NONNULL((2)) parse_command_line(int argc, const char *con
 					} else
 						opt->parser(opt, &argv[n], NULL);
 				} else
-					err_printf_exit(_("Unknown option '-%c'\n"), argp[pos]);
+					error_printf_exit(_("Unknown option '-%c'\n"), argp[pos]);
 			}
 		}
 	}
 
 	return n;
+}
+
+static void G_GNUC_MGET_NORETURN _no_memory(void)
+{
+	fprintf(stderr, "No memory\n");
+	exit(EXIT_FAILURE);
 }
 
 // read config, parse CLI options, check values, set module options
@@ -816,24 +819,27 @@ int init(int argc, const char *const *argv)
 {
 	int n, truncated = 1;
 
+	// set libmget out-of-memory function
+	mget_set_oomfunc(_no_memory);
+
 	// seed random generator, used e.g. by Digest Authentication
 	srand48((long)time(NULL) ^ getpid());
+
+	// this is a special case for switching on debugging before any config file is read
+	if (argc >= 2 && (!strcmp(argv[1],"-d") || !strcmp(argv[1],"--debug"))) {
+		config.debug = 1;
+	}
 
 	// the following strdup's are just needed for reallocation/freeing purposes to
 	// satisfy valgrind
 	config.user_agent = strdup(config.user_agent);
 	config.secure_protocol = strdup(config.secure_protocol);
 	config.ca_directory = strdup(config.ca_directory);
-	config.http_proxy = strdup_null(getenv("http_proxy"));
-	config.https_proxy = strdup_null(getenv("https_proxy"));
+	config.http_proxy = mget_strdup(getenv("http_proxy"));
+	config.https_proxy = mget_strdup(getenv("https_proxy"));
 	config.default_page = strdup(config.default_page);
-	config.domains = stringmap_create(16);
-	config.exclude_domains = stringmap_create(16);
-
-	// this is a special case for switching on debugging before any config file is read
-	if (argc >= 2 && (!strcmp(argv[1],"-d") || !strcmp(argv[1],"--debug"))) {
-		config.debug = 1;
-	}
+	config.domains = mget_stringmap_create(16);
+	config.exclude_domains = mget_stringmap_create(16);
 
 	// first processing, to respect options that might influence output
 	// while read_config() (e.g. -d, -q, -a, -o)
@@ -852,9 +858,7 @@ int init(int argc, const char *const *argv)
 
 		truncated = 1;
 	}
-	log_set_logfile(config.logfile);
-	log_set_quiet(config.quiet);
-	log_set_debug(config.debug);
+	log_init();
 
 	// read global config and user's config
 	// settings in user's config override global settings
@@ -866,20 +870,18 @@ int init(int argc, const char *const *argv)
 	// now read command line options which override the settings of the config files
 	n = parse_command_line(argc, argv);
 
-	// truncate logfile, if not in append mode
 	if (config.logfile_append) {
 		config.logfile = config.logfile_append;
 		config.logfile_append = NULL;
 	}
 	else if (config.logfile && strcmp(config.logfile,"-") && !truncated) {
+		// truncate logfile
 		int fd = open(config.logfile, O_WRONLY | O_TRUNC);
 
 		if (fd != -1)
 			close(fd);
 	}
-	log_set_logfile(config.logfile);
-	log_set_quiet(config.quiet);
-	log_set_debug(config.debug);
+	log_init();
 
 	// check for correct settings
 	if (config.num_threads < 1)
@@ -895,7 +897,7 @@ int init(int argc, const char *const *argv)
 
 	if (!config.local_encoding)
 		config.local_encoding = strdup(stringprep_locale_charset());
-	log_printf("Local URI encoding = '%s'\n", config.local_encoding);
+	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
 
 	http_set_http_proxy(config.http_proxy, config.local_encoding);
 	http_set_https_proxy(config.https_proxy, config.local_encoding);
@@ -971,8 +973,8 @@ void deinit(void)
 
 	iri_free(&config.base);
 
-	stringmap_free(&config.domains);
-	stringmap_free(&config.exclude_domains);
+	mget_stringmap_free(&config.domains);
+	mget_stringmap_free(&config.exclude_domains);
 
 	http_set_http_proxy(NULL, NULL);
 	http_set_https_proxy(NULL, NULL);
@@ -990,7 +992,7 @@ int selftest_options(void)
 	for (it = 0; it < countof(options); it++) {
 		option_t opt = bsearch(options[it].long_name, options, countof(options), sizeof(options[0]), opt_compare);
 		if (!opt) {
-			err_printf("%s: Failed to find option '%s'\n", __func__, options[it].long_name);
+			error_printf("%s: Failed to find option '%s'\n", __func__, options[it].long_name);
 			ret = 1;
 		}
 	}
@@ -1014,7 +1016,7 @@ int selftest_options(void)
 			config.recursive = 2; // invalid bool value
 			parse_command_line(3, test_bool_short[it].argv);
 			if (config.recursive != test_bool_short[it].result) {
-				err_printf("%s: Failed to parse bool short option #%zu (=%d)\n", __func__, it, config.recursive);
+				error_printf("%s: Failed to parse bool short option #%zu (=%d)\n", __func__, it, config.recursive);
 				ret = 1;
 			}
 		}
@@ -1041,14 +1043,14 @@ int selftest_options(void)
 			config.recursive = 2; // invalid bool value
 			parse_command_line(2, test_bool[it].argv);
 			if (config.recursive != test_bool[it].result) {
-				err_printf("%s: Failed to parse bool long option #%zu (%d)\n", __func__, it, config.recursive);
+				error_printf("%s: Failed to parse bool long option #%zu (%d)\n", __func__, it, config.recursive);
 				ret = 1;
 			}
 
 			config.recursive = 2; // invalid bool value
 			parse_command_line(3, test_bool[it].argv);
 			if (config.recursive != test_bool[it].result) {
-				err_printf("%s: Failed to parse bool long option #%zu (%d)\n", __func__, it, config.recursive);
+				error_printf("%s: Failed to parse bool long option #%zu (%d)\n", __func__, it, config.recursive);
 				ret = 1;
 			}
 		}
@@ -1091,7 +1093,7 @@ int selftest_options(void)
 			config.dns_timeout = 555; // some value not used in test
 			parse_command_line(3, test_timeout_short[it].argv);
 			if (config.dns_timeout != test_timeout_short[it].result) {
-				err_printf("%s: Failed to parse timeout short option #%zu (=%d)\n", __func__, it, config.dns_timeout);
+				error_printf("%s: Failed to parse timeout short option #%zu (=%d)\n", __func__, it, config.dns_timeout);
 				ret = 1;
 			}
 		}
@@ -1122,7 +1124,7 @@ int selftest_options(void)
 			config.dns_timeout = 555;  // some value not used in test
 			parse_command_line(3, test_timeout[it].argv);
 			if (config.dns_timeout != test_timeout[it].result) {
-				err_printf("%s: Failed to parse timeout long option #%zu (%d)\n", __func__, it, config.dns_timeout);
+				error_printf("%s: Failed to parse timeout long option #%zu (%d)\n", __func__, it, config.dns_timeout);
 				ret = 1;
 			}
 		}
@@ -1153,7 +1155,7 @@ int selftest_options(void)
 		for (it = 0; it < countof(test_string_short); it++) {
 			parse_command_line(3, test_string_short[it].argv);
 			if (null_strcmp(config.user_agent, test_string_short[it].result)) {
-				err_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
+				error_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
 				ret = 1;
 			}
 		}
@@ -1172,7 +1174,7 @@ int selftest_options(void)
 		for (it = 0; it < countof(test_string); it++) {
 			parse_command_line(3, test_string[it].argv);
 			if (null_strcmp(config.user_agent, test_string[it].result)) {
-				err_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
+				error_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
 				ret = 1;
 			}
 		}

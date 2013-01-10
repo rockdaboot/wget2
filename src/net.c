@@ -49,10 +49,8 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
 #include "utils.h"
 #include "log.h"
-#include "vector.h"
 #include "ssl.h"
 #include "net.h"
 
@@ -101,7 +99,7 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 		struct ADDR_ENTRY *entryp, entry = { .host = host, .port = port };
 
 		pthread_mutex_lock(&dns_mutex);
-		entryp = vec_get(dns_cache, vec_find(dns_cache, &entry));
+		entryp = mget_vector_get(dns_cache, mget_vector_find(dns_cache, &entry));
 		pthread_mutex_unlock(&dns_mutex);
 
 		if (entryp) {
@@ -152,9 +150,9 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 #endif
 
 		if (port)
-			log_printf("resolving %s:%s...\n", host, port);
+			debug_printf("resolving %s:%s...\n", host, port);
 		else
-			log_printf("resolving %s...\n", host);
+			debug_printf("resolving %s...\n", host);
 
 		// get the IP address for the server
 		for (tries = 0; tries < 3; tries++) {
@@ -169,9 +167,9 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 
 		if (rc) {
 			if (port)
-				err_printf(_("Failed to resolve %s:%s (%s)\n"), host, port, gai_strerror(rc));
+				error_printf(_("Failed to resolve %s:%s (%s)\n"), host, port, gai_strerror(rc));
 			else
-				err_printf(_("Failed to resolve %s (%s)\n"), host, gai_strerror(rc));
+				error_printf(_("Failed to resolve %s (%s)\n"), host, gai_strerror(rc));
 			return NULL;
 		}
 
@@ -217,9 +215,9 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 				int rc;
 
 				if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
-					log_printf("has %s:%s\n", adr, sport);
+					debug_printf("has %s:%s\n", adr, sport);
 				else
-					log_printf("has ???:%s (%s)\n", sport, gai_strerror(rc));
+					debug_printf("has ???:%s (%s)\n", sport, gai_strerror(rc));
 			}
 		}
 
@@ -236,8 +234,8 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 			strcpy((char *)entryp->port, port ? port : ""); // ugly cast, but semantically ok
 
 			pthread_mutex_lock(&dns_mutex);
-			if (vec_find(dns_cache, entryp) == -1)
-				vec_insert_sorted_noalloc(dns_cache, entryp);
+			if (mget_vector_find(dns_cache, entryp) == -1)
+				mget_vector_insert_sorted_noalloc(dns_cache, entryp);
 			pthread_mutex_unlock(&dns_mutex);
 		}
 
@@ -275,16 +273,16 @@ void tcp_set_dns_caching(int caching)
 	pthread_mutex_lock(&dns_mutex);
 	if (caching) {
 		if (!dns_cache)
-			dns_cache = vec_create(4,-2,(int(*)(const void *, const void *))compare_addr);
+			dns_cache = mget_vector_create(4,-2,(int(*)(const void *, const void *))compare_addr);
 	} else {
 		if (dns_cache) {
 			int it;
 
-			for (it = 0; it < vec_size(dns_cache); it++) {
-				struct ADDR_ENTRY *entryp = vec_get(dns_cache, it);
+			for (it = 0; it < mget_vector_size(dns_cache); it++) {
+				struct ADDR_ENTRY *entryp = mget_vector_get(dns_cache, it);
 				freeaddrinfo(entryp->addrinfo);
 			}
-			vec_free(&dns_cache);
+			mget_vector_free(&dns_cache);
 		}
 	}
 	pthread_mutex_unlock(&dns_mutex);
@@ -354,9 +352,9 @@ tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 
 	if (debug) {
 		if ((rc = getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, adr, sizeof(adr), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
-			log_printf("trying %s:%s...\n", adr, port);
+			debug_printf("trying %s:%s...\n", adr, port);
 		else
-			log_printf("trying ???:%s (%s)...\n", port, gai_strerror(rc));
+			debug_printf("trying ???:%s (%s)...\n", port, gai_strerror(rc));
 	}
 
 	if ((sockfd = socket(addrinfo->ai_family, addrinfo->ai_socktype, addrinfo->ai_protocol)) != -1) {
@@ -365,22 +363,22 @@ tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 		fcntl(sockfd, F_SETFL, O_NDELAY);
 
 		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
-			err_printf(_("Failed to set socket option REUSEADDR\n"));
+			error_printf(_("Failed to set socket option REUSEADDR\n"));
 
 		on = 1;
 		if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) == -1)
-			err_printf(_("Failed to set socket option NODELAY\n"));
+			error_printf(_("Failed to set socket option NODELAY\n"));
 
 		if (bind_addrinfo) {
 			if (debug) {
 				if ((rc = getnameinfo(bind_addrinfo->ai_addr, bind_addrinfo->ai_addrlen, adr, sizeof(adr), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
-					log_printf("binding to %s:%s...\n", adr, port);
+					debug_printf("binding to %s:%s...\n", adr, port);
 				else
-					log_printf("binding to ???:%s (%s)...\n", port, gai_strerror(rc));
+					debug_printf("binding to ???:%s (%s)...\n", port, gai_strerror(rc));
 			}
 
 			if (bind(sockfd, bind_addrinfo->ai_addr, bind_addrinfo->ai_addrlen) != 0) {
-				err_printf(_("Failed to bind (%d)\n"), errno);
+				error_printf(_("Failed to bind (%d)\n"), errno);
 				close(sockfd);
 				return NULL;
 			}
@@ -389,7 +387,7 @@ tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 		if (connect(sockfd, addrinfo->ai_addr, addrinfo->ai_addrlen) < 0 &&
 			errno != EINPROGRESS)
 		{
-			err_printf(_("Failed to connect (%d)\n"), errno);
+			error_printf(_("Failed to connect (%d)\n"), errno);
 			close(sockfd);
 		} else {
 			tcp = xcalloc(1, sizeof(*tcp));
@@ -403,7 +401,7 @@ tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 			}
 		}
 	} else
-		err_printf(_("Failed to create socket\n"));
+		error_printf(_("Failed to create socket\n"));
 
 	return tcp;
 }
@@ -433,7 +431,7 @@ ssize_t tcp_read(tcp_t tcp, char *buf, size_t count)
 	}
 
 	if (rc < 0)
-		err_printf(_("Failed to read %zu bytes (%d)\n"), count, errno);
+		error_printf(_("Failed to read %zu bytes (%d)\n"), count, errno);
 
 	return rc;
 }
@@ -455,12 +453,12 @@ ssize_t tcp_write(tcp_t tcp, const char *buf, size_t count)
 				{ tcp->sockfd, POLLOUT, 0}};
 
 			if ((rc = poll(pollfd, 1, tcp->timeout)) <= 0) {
-				err_printf(_("Failed to poll (%d)\n"), errno);
+				error_printf(_("Failed to poll (%d)\n"), errno);
 				return rc;
 			}
 
 			if (!(pollfd[0].revents & POLLOUT)) {
-				err_printf(_("Failed to get POLLOUT event\n"));
+				error_printf(_("Failed to get POLLOUT event\n"));
 				return -1;
 			}
 		}
@@ -468,7 +466,7 @@ ssize_t tcp_write(tcp_t tcp, const char *buf, size_t count)
 		n = write(tcp->sockfd, buf, count);
 			
 		if (n < 0) {
-			err_printf(_("Failed to write %zu bytes (%d)\n"), count, errno);
+			error_printf(_("Failed to write %zu bytes (%d)\n"), count, errno);
 			return -1;
 		}
 
@@ -515,19 +513,19 @@ ssize_t tcp_send(tcp_t tcp, const char *fmt, ...)
 			va_end(args);
 		} while (len == -1);
 	} else {
-		err_printf("tcp_send: internal error: unexpected length %zd\n", len);
+		error_printf("tcp_send: internal error: unexpected length %zd\n", len);
 		return 0;
 	}
 
 	len2 = tcp_write(tcp, bufp, len);
 	if (len2 > 0)
-		log_write(bufp, len2);
+		debug_write(bufp, len2);
 
 	if (bufp != sbuf)
 		xfree(bufp);
 
 	if (len2 > 0 && len != len2)
-		err_printf("tcp_send: internal error: length mismatch %zd != %zd\n", len, len2);
+		error_printf("tcp_send: internal error: length mismatch %zd != %zd\n", len, len2);
 
 	return len2;
 }

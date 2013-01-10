@@ -44,14 +44,10 @@
 #include <libmget.h>
 
 #include "options.h"
-#include "xalloc.h"
 #include "utils.h"
 #include "printf.h"
 #include "log.h"
-#include "decompressor.h"
-#include "buffer.h"
 #include "cookie.h"
-#include "base64.h"
 #include "md5.h"
 #include "http.h"
 
@@ -218,8 +214,8 @@ static int G_GNUC_MGET_NONNULL_ALL compare_param(HTTP_HEADER_PARAM *p1, HTTP_HEA
 
 void http_add_param(VECTOR **params, HTTP_HEADER_PARAM *param)
 {
-	if (!*params) *params = vec_create(4, 4, (int(*)(const void *, const void *))compare_param);
-	vec_add(*params, param, sizeof(HTTP_HEADER_PARAM));
+	if (!*params) *params = mget_vector_create(4, 4, (int(*)(const void *, const void *))compare_param);
+	mget_vector_add(*params, param, sizeof(HTTP_HEADER_PARAM));
 }
 
 /*
@@ -351,8 +347,8 @@ const char *http_parse_challenge(const char *s, HTTP_CHALLENGE *challenge)
 		s=http_parse_param(s, &param.name, &param.value);
 		if (param.name) {
 			if (!challenge->params)
-				challenge->params = stringmap_create_nocase(8);
-			stringmap_put_noalloc(challenge->params, param.name, param.value);
+				challenge->params = mget_stringmap_create_nocase(8);
+			mget_stringmap_put_noalloc(challenge->params, param.name, param.value);
 		}
 
 		while (isblank(*s)) s++;
@@ -439,11 +435,11 @@ const char *http_parse_content_encoding(const char *s, char *content_encoding)
 	while (isblank(*s)) s++;
 
 	if (!strcasecmp(s, "gzip") || !strcasecmp(s, "x-gzip"))
-		*content_encoding = content_encoding_gzip;
+		*content_encoding = mget_content_encoding_gzip;
 	else if (!strcasecmp(s, "deflate"))
-		*content_encoding = content_encoding_deflate;
+		*content_encoding = mget_content_encoding_deflate;
 	else
-		*content_encoding = content_encoding_identity;
+		*content_encoding = mget_content_encoding_identity;
 
 	while (http_istoken(*s)) s++;
 
@@ -560,7 +556,7 @@ static time_t G_GNUC_MGET_NONNULL_ALL parse_rfc1123_date(const char *s)
 	else if (sscanf(s, " %*[a-zA-Z] %3s %2d %2d:%2d:%2d %4d", mname, &day, &hour, &min, &sec, &year) >= 6) {
 		// ANSI C's asctime(): Wed Jun 09 10:18:14 2021
 	} else {
-		err_printf(_("Failed to parse date '%s'\n"), s);
+		error_printf(_("Failed to parse date '%s'\n"), s);
 		return 0; // return as session cookie
 	}
 
@@ -587,7 +583,7 @@ static time_t G_GNUC_MGET_NONNULL_ALL parse_rfc1123_date(const char *s)
 	if (mon < 1 || mon > 12 || day < 1 || (day > days_per_month[mon - 1] + leap_month) ||
 		hour < 0 || hour > 23 || min < 0 || min > 60 || sec < 0 || sec > 60)
 	{
-		err_printf(_("Failed to parse date '%s'\n"), s);
+		error_printf(_("Failed to parse date '%s'\n"), s);
 		return 0; // return as session cookie
 	}
 
@@ -774,14 +770,14 @@ const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 							xfree(cookie->path);
 						cookie->path = strndup(p, s - p);
 					} else {
-						log_printf("Unsupported cookie-av '%s'\n", name);
+						debug_printf("Unsupported cookie-av '%s'\n", name);
 					}
 				} else if (!strcasecmp(name, "secure")) {
 					cookie->secure_only = 1;
 				} else if (!strcasecmp(name, "httponly")) {
 					cookie->http_only = 1;
 				} else {
-					log_printf("Unsupported cookie-av '%s'\n", name);
+					debug_printf("Unsupported cookie-av '%s'\n", name);
 				}
 
 				xfree(name);
@@ -790,7 +786,7 @@ const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 
 	} else {
 		cookie_free_cookie(cookie);
-		log_printf("Cookie without name or assignment ignored\n");
+		debug_printf("Cookie without name or assignment ignored\n");
 	}
 
 	return s;
@@ -812,7 +808,7 @@ HTTP_RESPONSE *http_parse_response(char *buf)
 		// eol[-1]=0;
 		// log_printf("# %s\n",buf);
 	} else {
-		err_printf(_("HTTP response header not found\n"));
+		error_printf(_("HTTP response header not found\n"));
 		xfree(resp);
 		return NULL;
 	}
@@ -841,16 +837,16 @@ HTTP_RESPONSE *http_parse_response(char *buf)
 			http_parse_link(s, &link);
 			// log_printf("link->uri=%s\n",link.uri);
 			if (!resp->links)
-				resp->links = vec_create(8, 8, NULL);
-			vec_add(resp->links, &link, sizeof(link));
+				resp->links = mget_vector_create(8, 8, NULL);
+			mget_vector_add(resp->links, &link, sizeof(link));
 		} else if (!strcasecmp(name, "Digest")) {
 			// http://tools.ietf.org/html/rfc3230
 			HTTP_DIGEST digest;
 			http_parse_digest(s, &digest);
 			// log_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
 			if (!resp->digests)
-				resp->digests = vec_create(4, 4, NULL);
-			vec_add(resp->digests, &digest, sizeof(digest));
+				resp->digests = mget_vector_create(4, 4, NULL);
+			mget_vector_add(resp->digests, &digest, sizeof(digest));
 		} else if (!strcasecmp(name, "Transfer-Encoding")) {
 			http_parse_transfer_encoding(s, &resp->transfer_encoding);
 		} else if (!strcasecmp(name, "Content-Encoding")) {
@@ -871,25 +867,25 @@ HTTP_RESPONSE *http_parse_response(char *buf)
 			http_parse_setcookie(s, &cookie);
 
 			if (!resp->cookies)
-				resp->cookies = vec_create(4, 4, NULL);
-			vec_add(resp->cookies, &cookie, sizeof(cookie));
+				resp->cookies = mget_vector_create(4, 4, NULL);
+			mget_vector_add(resp->cookies, &cookie, sizeof(cookie));
 		} else if (!strcasecmp(name, "WWW-Authenticate")) {
 			HTTP_CHALLENGE challenge;
 			http_parse_challenge(s, &challenge);
 
 			if (!resp->challenges)
-				resp->challenges = vec_create(2, 2, NULL);
-			vec_add(resp->challenges, &challenge, sizeof(challenge));
+				resp->challenges = mget_vector_create(2, 2, NULL);
+			mget_vector_add(resp->challenges, &challenge, sizeof(challenge));
 		}
 	}
 
 	// a workaround for broken server configurations
 	// see http://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
-	if (resp->content_encoding == content_encoding_gzip &&
+	if (resp->content_encoding == mget_content_encoding_gzip &&
 		!strcasecmp(resp->content_type, "application/x-gzip"))
 	{
-		log_printf("Broken server configuration gzip workaround triggered\n");
-		resp->content_encoding =  content_encoding_identity;
+		debug_printf("Broken server configuration gzip workaround triggered\n");
+		resp->content_encoding =  mget_content_encoding_identity;
 	}
 
 	return resp;
@@ -911,8 +907,8 @@ int http_free_link(HTTP_LINK *link)
 
 void http_free_links(VECTOR *links)
 {
-	vec_browse(links, (int (*)(void *))http_free_link);
-	vec_free(&links);
+	mget_vector_browse(links, (int (*)(void *))http_free_link);
+	mget_vector_free(&links);
 }
 
 int http_free_digest(HTTP_DIGEST *digest)
@@ -924,27 +920,27 @@ int http_free_digest(HTTP_DIGEST *digest)
 
 void http_free_digests(VECTOR *digests)
 {
-	vec_browse(digests, (int (*)(void *))http_free_digest);
-	vec_free(&digests);
+	mget_vector_browse(digests, (int (*)(void *))http_free_digest);
+	mget_vector_free(&digests);
 }
 
 int http_free_challenge(HTTP_CHALLENGE *challenge)
 {
 	xfree(challenge->auth_scheme);
-	stringmap_free(&challenge->params);
+	mget_stringmap_free(&challenge->params);
 	return 0;
 }
 
 void http_free_challenges(VECTOR *challenges)
 {
-	vec_browse(challenges, (int (*)(void *))http_free_challenge);
-	vec_free(&challenges);
+	mget_vector_browse(challenges, (int (*)(void *))http_free_challenge);
+	mget_vector_free(&challenges);
 }
 
 void http_free_cookies(VECTOR *cookies)
 {
-	vec_browse(cookies, (int (*)(void *))cookie_free_cookie);
-	vec_free(&cookies);
+	mget_vector_browse(cookies, (int (*)(void *))cookie_free_cookie);
+	mget_vector_free(&cookies);
 }
 
 /* for security reasons: set all freed pointers to NULL */
@@ -963,8 +959,8 @@ void http_free_response(HTTP_RESPONSE **resp)
 		xfree((*resp)->content_type_encoding);
 		xfree((*resp)->location);
 		// xfree((*resp)->reason);
-		buffer_free(&(*resp)->header);
-		buffer_free(&(*resp)->body);
+		mget_buffer_free(&(*resp)->header);
+		mget_buffer_free(&(*resp)->body);
 		xfree(*resp);
 	}
 }
@@ -973,9 +969,9 @@ void http_free_response(HTTP_RESPONSE **resp)
 void http_free_request(HTTP_REQUEST **req)
 {
 	if (req && *req) {
-		buffer_deinit(&(*req)->esc_resource);
-		buffer_deinit(&(*req)->esc_host);
-		vec_free(&(*req)->lines);
+		mget_buffer_deinit(&(*req)->esc_resource);
+		mget_buffer_deinit(&(*req)->esc_host);
+		mget_vector_free(&(*req)->lines);
 		(*req)->lines = NULL;
 		xfree(*req);
 	}
@@ -985,21 +981,21 @@ HTTP_REQUEST *http_create_request(const IRI *iri, const char *method)
 {
 	HTTP_REQUEST *req = xcalloc(1, sizeof(HTTP_REQUEST));
 
-	buffer_init(&req->esc_resource, req->esc_resource_buf, sizeof(req->esc_resource_buf));
-	buffer_init(&req->esc_host, req->esc_host_buf, sizeof(req->esc_host_buf));
+	mget_buffer_init(&req->esc_resource, req->esc_resource_buf, sizeof(req->esc_resource_buf));
+	mget_buffer_init(&req->esc_host, req->esc_host_buf, sizeof(req->esc_host_buf));
 
 	req->scheme = iri->scheme;
 	strlcpy(req->method, method, sizeof(req->method));
 	iri_get_escaped_resource(iri, &req->esc_resource);
 	iri_get_escaped_host(iri, &req->esc_host);
-	req->lines = vec_create(8, 8, NULL);
+	req->lines = mget_vector_create(8, 8, NULL);
 
 	return req;
 }
 
 void http_add_header_vprintf(HTTP_REQUEST *req, const char *fmt, va_list args)
 {
-	vec_add_vprintf(req->lines, fmt, args);
+	mget_vector_add_vprintf(req->lines, fmt, args);
 }
 
 void http_add_header_printf(HTTP_REQUEST *req, const char *fmt, ...)
@@ -1013,12 +1009,12 @@ void http_add_header_printf(HTTP_REQUEST *req, const char *fmt, ...)
 
 void http_add_header_line(HTTP_REQUEST *req, const char *line)
 {
-	vec_add_str(req->lines, line);
+	mget_vector_add_str(req->lines, line);
 }
 
 void http_add_header(HTTP_REQUEST *req, const char *name, const char *value)
 {
-	vec_add_printf(req->lines, "%s: %s", name, value);
+	mget_vector_add_printf(req->lines, "%s: %s", name, value);
 }
 
 void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const char *username, const char *password)
@@ -1045,19 +1041,19 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 		char response_digest[MD5_DIGEST_LENGTH * 2 + 1], cnonce[16] = "";
 		mget_buffer_t buf;
 		const char
-			*realm = stringmap_get(challenge->params, "realm"),
-			*opaque = stringmap_get(challenge->params, "opaque"),
-			*nonce = stringmap_get(challenge->params, "nonce"),
-			*qop = stringmap_get(challenge->params, "qop"),
-			*algorithm = stringmap_get(challenge->params, "algorithm");
+			*realm = mget_stringmap_get(challenge->params, "realm"),
+			*opaque = mget_stringmap_get(challenge->params, "opaque"),
+			*nonce = mget_stringmap_get(challenge->params, "nonce"),
+			*qop = mget_stringmap_get(challenge->params, "qop"),
+			*algorithm = mget_stringmap_get(challenge->params, "algorithm");
 
 		if (qop && strcmp(qop, "auth")) {
-			err_printf(_("Unsupported quality of protection '%s'.\n"), qop);
+			error_printf(_("Unsupported quality of protection '%s'.\n"), qop);
 			return;
 		}
 
 		if (algorithm && strcmp(algorithm, "MD5") && strcmp(algorithm, "MD5-sess")) {
-			err_printf(_("Unsupported algorithm '%s'.\n"), algorithm);
+			error_printf(_("Unsupported algorithm '%s'.\n"), algorithm);
 			return;
 		}
 
@@ -1090,25 +1086,25 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 			md5_printf_hex(response_digest, "%s:%s:%s", a1buf, nonce, a2buf);
 		}
 
-		buffer_init(&buf, NULL, 256);
+		mget_buffer_init(&buf, NULL, 256);
 
-		buffer_printf2(&buf,
+		mget_buffer_printf2(&buf,
 			"Authorization: Digest "\
 			"username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/%s\", response=\"%s\"",
 			username, realm, nonce, req->esc_resource.data, response_digest);
 
 		if (!strcmp(qop,"auth"))
-			buffer_printf_append2(&buf, ", qop=auth, nc=00000001, cnonce=\"%s\"", cnonce);
+			mget_buffer_printf_append2(&buf, ", qop=auth, nc=00000001, cnonce=\"%s\"", cnonce);
 
 		if (opaque)
-			buffer_printf_append2(&buf, ", opaque=\"%s\"", opaque);
+			mget_buffer_printf_append2(&buf, ", opaque=\"%s\"", opaque);
 
 		if (algorithm)
-			buffer_printf_append2(&buf, ", algorithm=%s", algorithm);
+			mget_buffer_printf_append2(&buf, ", algorithm=%s", algorithm);
 
 		http_add_header_line(req, buf.data);
 
-		buffer_deinit(&buf);
+		mget_buffer_deinit(&buf);
 	}
 }
 
@@ -1146,7 +1142,7 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 			conn->esc_host = iri->host ? strdup(iri->host) : NULL;
 			conn->port = iri->resolv_port;
 			conn->scheme = iri->scheme;
-			conn->buf = buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
+			conn->buf = mget_buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
 			return conn;
 		}
 	}
@@ -1165,7 +1161,7 @@ void http_close(HTTP_CONNECTION **conn)
 		xfree((*conn)->esc_host);
 		// xfree((*conn)->port);
 		// xfree((*conn)->scheme);
-		buffer_free(&(*conn)->buf);
+		mget_buffer_free(&(*conn)->buf);
 		xfree(*conn);
 	}
 }
@@ -1175,16 +1171,16 @@ int http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 	ssize_t nbytes;
 
 	if ((nbytes = http_request_to_buffer(req, conn->buf)) < 0) {
-		err_printf(_("Failed to create request buffer\n"));
+		error_printf(_("Failed to create request buffer\n"));
 		return -1;
 	}
 
 	if (tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
-		err_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
+		error_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
 		return -1;
 	}
 
-	log_printf("# sent %zd bytes:\n%s", nbytes, conn->buf->data);
+	debug_printf("# sent %zd bytes:\n%s", nbytes, conn->buf->data);
 
 	return 0;
 }
@@ -1195,37 +1191,37 @@ ssize_t http_request_to_buffer(HTTP_REQUEST *req, mget_buffer_t *buf)
 
 //	buffer_sprintf(buf, "%s /%s HTTP/1.1\r\nHOST: %s", req->method, req->esc_resource.data ? req->esc_resource.data : "",);
 
-	buffer_strcpy(buf, req->method);
-	buffer_memcat(buf, " ", 1);
+	mget_buffer_strcpy(buf, req->method);
+	mget_buffer_memcat(buf, " ", 1);
 	if (http_proxy && req->scheme == IRI_SCHEME_HTTP) {
 		use_proxy = 1;
-		buffer_strcat(buf, req->scheme);
-		buffer_memcat(buf, "://", 3);
-		buffer_bufcat(buf, &req->esc_host);
+		mget_buffer_strcat(buf, req->scheme);
+		mget_buffer_memcat(buf, "://", 3);
+		mget_buffer_bufcat(buf, &req->esc_host);
 	} else if (https_proxy && req->scheme == IRI_SCHEME_HTTPS) {
 		use_proxy = 1;
-		buffer_strcat(buf, req->scheme);
-		buffer_memcat(buf, "://", 3);
-		buffer_bufcat(buf, &req->esc_host);
+		mget_buffer_strcat(buf, req->scheme);
+		mget_buffer_memcat(buf, "://", 3);
+		mget_buffer_bufcat(buf, &req->esc_host);
 	}
-	buffer_memcat(buf, "/", 1);
-	buffer_bufcat(buf, &req->esc_resource);
-	buffer_memcat(buf, " HTTP/1.1\r\n", 11);
-	buffer_memcat(buf, "Host: ", 6);
-	buffer_bufcat(buf, &req->esc_host);
-	buffer_memcat(buf, "\r\n", 2);
+	mget_buffer_memcat(buf, "/", 1);
+	mget_buffer_bufcat(buf, &req->esc_resource);
+	mget_buffer_memcat(buf, " HTTP/1.1\r\n", 11);
+	mget_buffer_memcat(buf, "Host: ", 6);
+	mget_buffer_bufcat(buf, &req->esc_host);
+	mget_buffer_memcat(buf, "\r\n", 2);
 
-	for (it = 0; it < vec_size(req->lines); it++) {
-		buffer_strcat(buf, vec_get(req->lines, it));
+	for (it = 0; it < mget_vector_size(req->lines); it++) {
+		mget_buffer_strcat(buf, mget_vector_get(req->lines, it));
 		if (buf->data[buf->length - 1] != '\n') {
-			buffer_memcat(buf, "\r\n", 2);
+			mget_buffer_memcat(buf, "\r\n", 2);
 		}
 	}
 
 	if (use_proxy)
-		buffer_strcat(buf, "Proxy-Connection: keep-alive\r\n");
+		mget_buffer_strcat(buf, "Proxy-Connection: keep-alive\r\n");
 
-	buffer_memcat(buf, "\r\n", 2);
+	mget_buffer_memcat(buf, "\r\n", 2);
 
 	return buf->length;
 }
@@ -1247,7 +1243,7 @@ HTTP_RESPONSE *http_get_response_cb(
 	bufsize = conn->buf->size;
 
 	while ((nbytes = tcp_read(conn->tcp, buf + nread, bufsize - nread)) > 0) {
-		log_printf("nbytes %zd nread %zd %zd\n", nbytes, nread, bufsize);
+		debug_printf("nbytes %zd nread %zd %zd\n", nbytes, nread, bufsize);
 		nread += nbytes;
 		buf[nread] = 0; // 0-terminate to allow string functions
 
@@ -1265,15 +1261,15 @@ HTTP_RESPONSE *http_get_response_cb(
 			if (conn->print_response_headers)
 				info_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 			else
-				log_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
+				debug_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 
 			if (req && req->save_headers) {
-				mget_buffer_t *header = buffer_init(NULL, NULL, p - buf + 2);
-				buffer_memcpy(header, buf, p - buf);
-				buffer_memcat(header, "\r\n\r\n", 4);
+				mget_buffer_t *header = mget_buffer_init(NULL, NULL, p - buf + 2);
+				mget_buffer_memcpy(header, buf, p - buf);
+				mget_buffer_memcat(header, "\r\n\r\n", 4);
 
 				if (!(resp = http_parse_response(buf))) {
-					buffer_free(&header);
+					mget_buffer_free(&header);
 					goto cleanup; // something is wrong with the header
 				}
 
@@ -1292,7 +1288,7 @@ HTTP_RESPONSE *http_get_response_cb(
 		}
 
 		if ((size_t)nread + 1024 > bufsize) {
-			buffer_ensure_capacity(conn->buf, bufsize + 1024);
+			mget_buffer_ensure_capacity(conn->buf, bufsize + 1024);
 			buf = conn->buf->data;
 			bufsize = conn->buf->size;
 		}
@@ -1306,7 +1302,7 @@ HTTP_RESPONSE *http_get_response_cb(
 		goto cleanup;
 	}
 
-	dc = decompress_open(resp->content_encoding, parse_body, context);
+	dc = mget_decompress_open(resp->content_encoding, parse_body, context);
 
 	// calculate number of body bytes so far read
 	body_len = nread - (p - buf);
@@ -1318,7 +1314,7 @@ HTTP_RESPONSE *http_get_response_cb(
 		size_t chunk_size = 0;
 		char *end;
 
-		log_printf("method 1 %zd %zd:\n", body_len, body_size);
+		debug_printf("method 1 %zd %zd:\n", body_len, body_size);
 		// RFC 2616 3.6.1
 		// Chunked-Body   = *chunk last-chunk trailer CRLF
 		// chunk          = chunk-size [ chunk-extension ] CRLF chunk-data CRLF
@@ -1366,19 +1362,19 @@ HTTP_RESPONSE *http_get_response_cb(
 
 				body_len += nbytes;
 				buf[body_len] = 0;
-				log_printf("a nbytes %zd body_len %zd\n", nbytes, body_len);
+				debug_printf("a nbytes %zd body_len %zd\n", nbytes, body_len);
 			}
 			end += 2;
 
 			// now p points to chunk-size (hex)
 			chunk_size = strtoll(p, NULL, 16);
-			log_printf("chunk size is %zd\n", chunk_size);
+			debug_printf("chunk size is %zd\n", chunk_size);
 			if (chunk_size == 0) {
 				// now read 'trailer CRLF' which is '*(entity-header CRLF) CRLF'
 				if (*end == '\r' && end[1] == '\n') // shortcut for the most likely case (empty trailer)
 					goto cleanup;
 
-				log_printf("reading trailer\n");
+				debug_printf("reading trailer\n");
 				while (!strstr(end, "\r\n\r\n")) {
 					if (body_len > 3) {
 						// just need to keep the last 3 bytes to avoid buffer resizing
@@ -1391,40 +1387,40 @@ HTTP_RESPONSE *http_get_response_cb(
 					body_len += nbytes;
 					buf[body_len] = 0;
 					end = buf;
-					log_printf("a nbytes %zd\n", nbytes);
+					debug_printf("a nbytes %zd\n", nbytes);
 				}
-				log_printf("end of trailer \n");
+				debug_printf("end of trailer \n");
 				goto cleanup;
 			}
 
 			p = end + chunk_size + 2;
 			if (p <= buf + body_len) {
-				log_printf("1 skip chunk_size %zd\n", chunk_size);
-				decompress(dc, end, chunk_size);
+				debug_printf("1 skip chunk_size %zd\n", chunk_size);
+				mget_decompress(dc, end, chunk_size);
 				continue;
 			}
 
-			decompress(dc, end, (buf + body_len) - end);
+			mget_decompress(dc, end, (buf + body_len) - end);
 
 			chunk_size = p - (buf + body_len); // in fact needed bytes to have chunk_size+2 in buf
 
-			log_printf("need at least %zd more bytes\n", chunk_size);
+			debug_printf("need at least %zd more bytes\n", chunk_size);
 
 			while (chunk_size > 0) {
 				if ((nbytes = tcp_read(conn->tcp, buf, bufsize)) <= 0)
 					goto cleanup;
-				log_printf("a nbytes=%zd chunk_size=%zd\n", nread, chunk_size);
+				debug_printf("a nbytes=%zd chunk_size=%zd\n", nread, chunk_size);
 
 				if (chunk_size <= (size_t)nbytes) {
 					if (chunk_size == 1 || !strncmp(buf + chunk_size - 2, "\r\n", 2)) {
-						log_printf("chunk completed\n");
+						debug_printf("chunk completed\n");
 						// p=end+chunk_size+2;
 					} else {
-						err_printf(_("Expected end-of-chunk not found\n"));
+						error_printf(_("Expected end-of-chunk not found\n"));
 						goto cleanup;
 					}
 					if (chunk_size > 2)
-						decompress(dc, buf, chunk_size - 2);
+						mget_decompress(dc, buf, chunk_size - 2);
 					body_len = nbytes - chunk_size;
 					if (body_len)
 						memmove(buf, buf + chunk_size, body_len);
@@ -1434,55 +1430,55 @@ HTTP_RESPONSE *http_get_response_cb(
 				} else {
 					chunk_size -= nbytes;
 					if (chunk_size >= 2)
-						decompress(dc, buf, nbytes);
+						mget_decompress(dc, buf, nbytes);
 					else
-						decompress(dc, buf, nbytes - 1); // special case: we got a partial end-of-chunk
+						mget_decompress(dc, buf, nbytes - 1); // special case: we got a partial end-of-chunk
 				}
 			}
 		}
 	} else if (resp->content_length_valid) {
 		// read content_length bytes
-		log_printf("method 2\n");
+		debug_printf("method 2\n");
 
 		if (body_len)
-			decompress(dc, buf, body_len);
+			mget_decompress(dc, buf, body_len);
 
 		while (body_len < resp->content_length && ((nbytes = tcp_read(conn->tcp, buf, bufsize)) > 0)) {
 			body_len += nbytes;
-			log_printf("nbytes %zd total %zd/%zd\n", nbytes, body_len, resp->content_length);
-			decompress(dc, buf, nbytes);
+			debug_printf("nbytes %zd total %zd/%zd\n", nbytes, body_len, resp->content_length);
+			mget_decompress(dc, buf, nbytes);
 		}
 		if (nbytes < 0)
-			err_printf(_("Failed to read %zd bytes (%d)\n"), nbytes, errno);
+			error_printf(_("Failed to read %zd bytes (%d)\n"), nbytes, errno);
 		if (body_len < resp->content_length)
-			err_printf(_("Just got %zu of %zu bytes\n"), body_len, body_size);
+			error_printf(_("Just got %zu of %zu bytes\n"), body_len, body_size);
 		else if (body_len > resp->content_length)
-			err_printf(_("Body too large: %zu instead of %zu bytes\n"), body_len, resp->content_length);
+			error_printf(_("Body too large: %zu instead of %zu bytes\n"), body_len, resp->content_length);
 		resp->content_length = body_len;
 	} else {
 		// read as long as we can
-		log_printf("method 3\n");
+		debug_printf("method 3\n");
 
 		if (body_len)
-			decompress(dc, buf, body_len);
+			mget_decompress(dc, buf, body_len);
 
 		while ((nbytes = tcp_read(conn->tcp, buf, bufsize)) > 0) {
 			body_len += nbytes;
-			log_printf("nbytes %zd total %zd\n", nbytes, body_len);
-			decompress(dc, buf, nbytes);
+			debug_printf("nbytes %zd total %zd\n", nbytes, body_len);
+			mget_decompress(dc, buf, nbytes);
 		}
 		resp->content_length = body_len;
 	}
 
 cleanup:
-	decompress_close(dc);
+	mget_decompress_close(dc);
 
 	return resp;
 }
 
 static int _get_body(void *userdata, const char *data, size_t length)
 {
-	buffer_memcat((mget_buffer_t *)userdata, data, length);
+	mget_buffer_memcat((mget_buffer_t *)userdata, data, length);
 
 	return 0;
 }
@@ -1492,7 +1488,7 @@ static int _get_body(void *userdata, const char *data, size_t length)
 HTTP_RESPONSE *http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 {
 	HTTP_RESPONSE *resp;
-	mget_buffer_t *body = buffer_alloc(102400);
+	mget_buffer_t *body = mget_buffer_alloc(102400);
 
 	resp = http_get_response_cb(conn, req, _get_body, body);
 
@@ -1500,7 +1496,7 @@ HTTP_RESPONSE *http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 		resp->body = body;
 		resp->content_length = body->length;
 	} else {
-		buffer_free(&body);
+		mget_buffer_free(&body);
 	}
 
 	return resp;
@@ -1512,7 +1508,7 @@ static int _get_file(void *context, const char *data, size_t length)
 	ssize_t nbytes = write(fd, data, length);
 
 	if (nbytes == -1 || (size_t)nbytes != length)
-		err_printf(_("Failed to write %zu bytes of data (%d)\n"), length, errno);
+		error_printf(_("Failed to write %zu bytes of data (%d)\n"), length, errno);
 
 	return 0;
 }

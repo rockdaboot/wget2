@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of libmget.
  *
- * Mget is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * Libmget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Libmget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * HTTP decompression routines
@@ -33,12 +33,9 @@
 #include <zlib.h>
 
 #include <libmget.h>
+#include "private.h"
 
-#include "xalloc.h"
-#include "log.h"
-#include "decompressor.h"
-
-struct MGET_DECOMPRESSOR {
+struct _MGET_DECOMPRESSOR {
 	union {
 		z_stream
 		strm;
@@ -60,7 +57,7 @@ static int gzip_init(z_stream *strm)
 	// +16: decode gzip format only
 	// +32: decode gzip and zlib (autodetect)
 	if (inflateInit2(strm, 15 + 32) != Z_OK) {
-		err_printf(_("Failed to init gzip decompression\n"));
+		error_printf(_("Failed to init gzip decompression\n"));
 		return -1;
 	}
 
@@ -99,7 +96,7 @@ static int gzip_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 	if (status == Z_OK || status == Z_STREAM_END)
 		return 0;
 
-	err_printf(_("Failed to uncompress gzip stream (%d)\n"), status);
+	error_printf(_("Failed to uncompress gzip stream (%d)\n"), status);
 	return -1;
 }
 
@@ -108,7 +105,7 @@ static void gzip_exit(MGET_DECOMPRESSOR *dc)
 	int status;
 
 	if ((status = inflateEnd(&dc->extra.strm)) != Z_OK) {
-		err_printf(_("Failed to close gzip stream (%d)\n"), status);
+		error_printf(_("Failed to close gzip stream (%d)\n"), status);
 	}
 }
 
@@ -118,7 +115,7 @@ static int deflate_init(z_stream *strm)
 
 	// -15: decode raw deflate data
 	if (inflateInit2(strm, -15) != Z_OK) {
-		err_printf(_("Failed to init deflate decompression\n"));
+		error_printf(_("Failed to init deflate decompression\n"));
 		return -1;
 	}
 
@@ -133,19 +130,19 @@ static int identity(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 	return 0;
 }
 
-MGET_DECOMPRESSOR *decompress_open(int encoding,
+MGET_DECOMPRESSOR *mget_decompress_open(int encoding,
 	int (*put_data)(void *context, const char *data, size_t length),
 	void *context)
 {
 	MGET_DECOMPRESSOR *dc = xcalloc(1, sizeof(MGET_DECOMPRESSOR));
 	int rc = 0;
 
-	if (encoding == content_encoding_gzip) {
+	if (encoding == mget_content_encoding_gzip) {
 		if ((rc = gzip_init(&dc->extra.strm)) == 0) {
 			dc->decompress = gzip_decompress;
 			dc->exit = gzip_exit;
 		}
-	} else if (encoding == content_encoding_deflate) {
+	} else if (encoding == mget_content_encoding_deflate) {
 		if ((rc = deflate_init(&dc->extra.strm)) == 0) {
 			dc->decompress = gzip_decompress;
 			dc->exit = gzip_exit;
@@ -166,7 +163,7 @@ MGET_DECOMPRESSOR *decompress_open(int encoding,
 	return dc;
 }
 
-void decompress_close(MGET_DECOMPRESSOR *dc)
+void mget_decompress_close(MGET_DECOMPRESSOR *dc)
 {
 	if (dc) {
 		if (dc->exit)
@@ -175,7 +172,7 @@ void decompress_close(MGET_DECOMPRESSOR *dc)
 	}
 }
 
-int decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
+int mget_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 {
 	if (dc) {
 		return dc->decompress(dc, src, srclen);

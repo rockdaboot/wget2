@@ -37,35 +37,29 @@
 
 #include <libmget.h>
 
-#include "xalloc.h"
+#include "options.h"
+#include "utils.h"
 #include "printf.h"
 #include "log.h"
 
-static const char
-	*logfile;
-static char
-	debug,
-	quiet,
-	verbose = 1;
-
-static void _write_log(const char *buf, int len)
+static void _write_debug(const char *buf, size_t len)
 {
 	FILE *fp;
 	struct timeval tv;
 	struct tm *tp, tbuf;
 
-	if (!buf || len <= 0)
+	if (!buf || (ssize_t)len <= 0)
 		return;
 
 	gettimeofday(&tv, NULL); // obsoleted by POSIX.1-2008, maybe use clock_gettime() ? needs -lrt
-	tp = localtime_r((const time_t *)&tv.tv_sec, &tbuf); // cast top avoid warning on OpenBSD
+	tp = localtime_r((const time_t *)&tv.tv_sec, &tbuf); // cast avoids warning on OpenBSD
 
-	if (!logfile)
+	if (!config.logfile)
 		fp = stderr;
-	else if (*logfile == '-' && logfile[1] == 0)
+	else if (*config.logfile == '-' && config.logfile[1] == 0)
 		fp = stdout;
 	else
-		fp = fopen(logfile, "a");
+		fp = fopen(config.logfile, "a");
 
 	if (fp) {
 		fprintf(fp, "%02d.%02d%02d%02d.%03ld %s%s",
@@ -77,117 +71,29 @@ static void _write_log(const char *buf, int len)
 	}
 }
 
-void log_set_logfile(const char *_logfile)
+void log_init(void)
 {
-	logfile = _logfile;
-}
+/*
+	MGET_LOGGER *logger = mget_get_logger(MGET_LOGGER_DEBUG);
+	if (config.debug) {
+		if (!config.logfile)
+			mget_logger_set_file(logger, stderr); // direct debug output to STDERR
+		else if (*config.logfile == '-' && config.logfile[1] == 0)
+			mget_logger_set_file(logger, stdout); // direct debug output to STDIN
+		else
+			mget_logger_set_filename(logger, config.logfile);  // direct debug output to logfile
 
-void log_set_debug(char _debug)
-{
-	debug = _debug;
-}
+		mget_logger_set_timestamp(logger, 1); // switch timestamps on
+	} else
+		mget_logger_set_file(logger, NULL); // stop logging (if already started)
+*/
 
-void log_set_quiet(char _quiet)
-{
-	quiet = _quiet;
-}
+	// set debug logging
+	mget_logger_set_func(mget_get_logger(MGET_LOGGER_DEBUG), config.debug ? _write_debug : NULL);
 
-void log_set_verbose(char _verbose)
-{
-	verbose = _verbose;
-}
+	// set error logging
+	mget_logger_set_file(mget_get_logger(MGET_LOGGER_ERROR), config.quiet ? NULL : stderr);
 
-void log_vprintf(const char *fmt, va_list args)
-{
-	if (debug) {
-		char sbuf[4096];
-		int err = errno, len;
-		va_list args2;
-
-		// vsnprintf destroys args, so we need a copy for the fallback case
-		va_copy(args2, args);
-
-		// first try without malloc
-		len = vsnprintf(sbuf, sizeof(sbuf), fmt, args);
-
-		if (len >= 0 && len < (int)sizeof(sbuf)) {
-			_write_log(sbuf, len);
-		} else {
-			// fallback to memory allocation
-			char *buf;
-			len = vasprintf(&buf, fmt, args2);
-			if (len != -1) {
-				_write_log(buf, len);
-				xfree(buf);
-			}
-		}
-
-		errno = err;
-	}
-}
-
-void log_printf(const char *fmt, ...)
-{
-	if (debug) {
-		va_list args;
-
-		va_start(args, fmt);
-		log_vprintf(fmt, args);
-		va_end(args);
-	}
-}
-
-void log_printf_exit(const char *fmt, ...)
-{
-	if (debug) {
-		va_list args;
-
-		va_start(args, fmt);
-		log_vprintf(fmt, args);
-		va_end(args);
-	}
-
-	exit(EXIT_FAILURE);
-}
-
-void log_write(const char *buf, int len)
-{
-	if (debug) {
-		_write_log(buf, len);
-	}
-}
-
-void err_printf_exit(const char *fmt, ...)
-{
-	if (!quiet) {
-		va_list args;
-
-		va_start(args, fmt);
-		vfprintf(stderr, fmt, args);
-		va_end(args);
-	}
-
-	exit(EXIT_FAILURE);
-}
-
-void err_printf(const char *fmt, ...)
-{
-	if (!quiet) {
-		va_list args;
-
-		va_start(args, fmt);
-		vfprintf(stderr, fmt, args);
-		va_end(args);
-	}
-}
-
-void info_printf(const char *fmt, ...)
-{
-	if (verbose && !quiet) {
-		va_list args;
-
-		va_start(args, fmt);
-		vfprintf(stderr, fmt, args);
-		va_end(args);
-	}
+	// set info logging
+	mget_logger_set_file(mget_get_logger(MGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
 }
