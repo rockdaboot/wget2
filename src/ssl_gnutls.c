@@ -42,7 +42,6 @@
 
 #include <libmget.h>
 
-#include "utils.h"
 #include "log.h"
 #include "options.h"
 #include "ssl.h"
@@ -93,7 +92,7 @@ static void print_x509_certificate_info(gnutls_session_t session)
 			if (!gnutls_fingerprint(GNUTLS_DIG_MD5, &cert_list[ncert], digest, &digest_size)) {
 				char digest_hex[digest_size * 2 + 1];
 
-				buffer_to_hex(digest, digest_size, digest_hex, sizeof(digest_hex));
+				mget_memtohex(digest, digest_size, digest_hex, sizeof(digest_hex));
 
 				info_printf(_("  Certificate fingerprint: %s\n"), digest_hex);
 			}
@@ -101,7 +100,7 @@ static void print_x509_certificate_info(gnutls_session_t session)
 			if (!gnutls_x509_crt_get_serial(cert, serial, &serial_size)) {
 				char serial_hex[digest_size * 2 + 1];
 
-				buffer_to_hex(digest, digest_size, serial_hex, sizeof(serial_hex));
+				mget_memtohex(digest, digest_size, serial_hex, sizeof(serial_hex));
 
 				info_printf(_("  Certificate serial number: %s\n"), serial_hex);
 			}
@@ -387,11 +386,11 @@ void ssl_init(void)
 		if (config.ca_directory && *config.ca_directory) {
 			int ncerts = -1;
 
-			if (!strcmp(config.ca_directory, "system")) {
 #ifdef GNUTLS_NONBLOCK
+			if (!strcmp(config.ca_directory, "system")) {
 				ncerts = gnutls_certificate_set_x509_system_trust(credentials);
-#endif
 			}
+#endif
 
 			if (ncerts < 0) {
 				DIR *dir;

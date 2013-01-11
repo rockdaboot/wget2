@@ -46,15 +46,12 @@
 
 #include <libmget.h>
 
-#include "iri.h"
+#include "mget.h"
 #include "net.h"
-#include "utils.h"
 #include "http.h"
 #include "log.h"
 #include "job.h"
 #include "printf.h"
-#include "xml.h"
-#include "css.h"
 #include "options.h"
 #include "metalink.h"
 #include "blacklist.h"
@@ -84,12 +81,12 @@ static void
 	download_part(DOWNLOADER *downloader),
 	save_file(HTTP_RESPONSE *resp, const char *fname),
 	append_file(HTTP_RESPONSE *resp, const char *fname),
-	html_parse(int sockfd, const char *data, const char *encoding, IRI *iri),
-	html_parse_localfile(int sockfd, const char *fname, const char *encoding, IRI *iri),
-	css_parse(int sockfd, const char *data, const char *encoding, IRI *iri),
-	css_parse_localfile(int sockfd, const char *fname, const char *encoding, IRI *iri);
+	html_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *iri),
+	html_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *iri),
+	css_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *iri),
+	css_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *iri);
 HTTP_RESPONSE
-	*http_get(IRI *iri, PART *part, DOWNLOADER *downloader);
+	*http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader);
 
 static DOWNLOADER
 	*downloader;
@@ -110,7 +107,7 @@ static int
 // --cut-dirs=number
 // -P / --directory-prefix=prefix
 
-static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(IRI *iri)
+static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 {
 	mget_buffer_t buf;
 	const char *fname;
@@ -140,7 +137,7 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(IRI *iri)
 			mget_buffer_memcat(&buf, "/", 1);
 		}
 		if (config.host_directories && iri->host && *iri->host) {
-			iri_get_escaped_host(iri, &buf);
+			mget_iri_get_escaped_host(iri, &buf);
 			// buffer_memcat(&buf, "/", 1);
 		}
 
@@ -151,7 +148,7 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(IRI *iri)
 			int n;
 
 			mget_buffer_init(&path_buf, NULL, 256);
-			iri_get_escaped_path(iri, &path_buf);
+			mget_iri_get_escaped_path(iri, &path_buf);
 
 			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
 				p = strchr(*p =='/' ? p + 1 : p, '/');
@@ -169,12 +166,12 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(IRI *iri)
 
 			mget_buffer_deinit(&path_buf);
 		} else {
-			iri_get_escaped_path(iri, &buf);
+			mget_iri_get_escaped_path(iri, &buf);
 		}
 
-		fname = iri_get_escaped_query(iri, &buf);
+		fname = mget_iri_get_escaped_query(iri, &buf);
 	} else {
-		fname = iri_get_escaped_file(iri, &buf);
+		fname = mget_iri_get_escaped_file(iri, &buf);
 	}
 
 	// create the complete path
@@ -254,9 +251,9 @@ static long long quota_modify_read(size_t nbytes)
 	return old_quota;
 }
 
-static JOB *add_url_to_queue(const char *url, IRI *base, const char *encoding)
+static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encoding)
 {
-	IRI *iri;
+	MGET_IRI *iri;
 	JOB *job;
 
 	if (base) {
@@ -264,11 +261,11 @@ static JOB *add_url_to_queue(const char *url, IRI *base, const char *encoding)
 		mget_buffer_t buf;
 
 		mget_buffer_init(&buf, sbuf, sizeof(sbuf));
-		iri = iri_parse(iri_relative_to_absolute(base, url, strlen(url), &buf), encoding);
+		iri = mget_iri_parse(mget_iri_relative_to_abs(base, url, strlen(url), &buf), encoding);
 		mget_buffer_deinit(&buf);
 	} else {
 		// no base and no buf: just check URL for being an absolute URI
-		iri = iri_parse(iri_relative_to_absolute(NULL, url, strlen(url), NULL), encoding);
+		iri = mget_iri_parse(mget_iri_relative_to_abs(NULL, url, strlen(url), NULL), encoding);
 	}
 
 	if (!iri) {
@@ -450,7 +447,7 @@ int main(int argc, const char *const *argv)
 
 			// read URLs from input file
 			if ((fd = open(config.input_file, O_RDONLY))) {
-				while ((len = fdgetline0(&buf, &bufsize, fd)) > 0) {
+				while ((len = mget_fdgetline(&buf, &bufsize, fd)) > 0) {
 					add_url_to_queue(buf, config.base, config.local_encoding);
 				}
 				close(fd);
@@ -461,7 +458,7 @@ int main(int argc, const char *const *argv)
 				ssize_t len;
 
 				// read URLs from STDIN
-				while ((len = fdgetline0(&buf, &bufsize, STDIN_FILENO)) >= 0) {
+				while ((len = mget_fdgetline(&buf, &bufsize, STDIN_FILENO)) >= 0) {
 					add_url_to_queue(buf, config.base, config.local_encoding);
 				}
 			} else
@@ -531,7 +528,7 @@ int main(int argc, const char *const *argv)
 		if (inputfd != -1 && FD_ISSET(inputfd, &rset)) {
 			ssize_t len;
 
-			while ((len = fdgetline0(&buf, &bufsize, inputfd)) > 0) {
+			while ((len = mget_fdgetline(&buf, &bufsize, inputfd)) > 0) {
 				JOB *job = add_url_to_queue(buf, config.base, config.local_encoding);
 				schedule_download(job, NULL);
 			}
@@ -545,7 +542,7 @@ int main(int argc, const char *const *argv)
 
 		for (n = 0; n < config.num_threads && nfds > 0 && !terminate; n++) {
 			if (FD_ISSET(downloader[n].sockfd[0], &rset)) {
-				while (!terminate && fdgetline0(&downloader[n].buf, &downloader[n].bufsize, downloader[n].sockfd[0]) > 0) {
+				while (!terminate && mget_fdgetline(&downloader[n].buf, &downloader[n].bufsize, downloader[n].sockfd[0]) > 0) {
 					JOB *job = downloader[n].job;
 					PART *part = downloader[n].part;
 					char *buf = downloader[n].buf;
@@ -629,7 +626,7 @@ int main(int argc, const char *const *argv)
 							memset(&mirror, 0, sizeof(MIRROR));
 							pos = 0;
 							if (sscanf(buf + 13, "%2s %6d %n", mirror.location, &mirror.priority, &pos) >= 2 && pos) {
-								mirror.iri = iri_parse(buf + 13 + pos, NULL);
+								mirror.iri = mget_iri_parse(buf + 13 + pos, NULL);
 								mget_vector_add(job->mirrors, &mirror, sizeof(MIRROR));
 							} else
 								error_printf(_("Failed to parse metalink mirror '%s'\n"), buf);
@@ -667,7 +664,7 @@ int main(int argc, const char *const *argv)
 						}
 					} else if (!strncmp(buf, "add uri ", 8) || !strncmp(buf, "redirect ", 9)) {
 						JOB *new_job;
-						IRI *iri;
+						MGET_IRI *iri;
 						char *p, *encoding;
 
 						if (*buf == 'r') {
@@ -684,13 +681,13 @@ int main(int argc, const char *const *argv)
 						if (*encoding == '-')
 							encoding = NULL;
 						
-						iri = iri_parse(p + 1, encoding);
+						iri = mget_iri_parse(p + 1, encoding);
 
 						if (config.recursive && !config.span_hosts) {
 							// only download content from given hosts
 							if (!iri->host || !mget_stringmap_get(config.domains, iri->host) || mget_stringmap_get(config.exclude_domains, iri->host)) {
 								info_printf("URI '%s' not followed\n", iri->uri);
-								iri_free(&iri);
+								mget_iri_free(&iri);
 							}
 						}
 
@@ -737,7 +734,7 @@ int main(int argc, const char *const *argv)
 	}
 
 	if (config.save_cookies)
-		cookie_save(config.save_cookies, config.keep_session_cookies);
+		mget_cookie_save(config.save_cookies, config.keep_session_cookies);
 
 	if (config.delete_after && config.output_document)
 		unlink(config.output_document);
@@ -746,8 +743,8 @@ int main(int argc, const char *const *argv)
 		blacklist_print();
 
 	// freeing to avoid disguising valgrind output
-	cookie_free_public_suffixes();
-	cookie_free_cookies();
+	mget_cookie_free_public_suffixes();
+	mget_cookie_free_cookies();
 	ssl_deinit();
 	queue_free();
 	blacklist_free();
@@ -784,7 +781,7 @@ void *downloader_thread(void *p)
 			continue;
 		}
 
-		while (!terminate && fdgetline0(&buf, &bufsize, sockfd) > 0) {
+		while (!terminate && mget_fdgetline(&buf, &bufsize, sockfd) > 0) {
 			debug_printf("+ [%d] %s\n", downloader->id, buf);
 			job = downloader->job;
 			if (!strcmp(buf, "check")) {
@@ -809,8 +806,8 @@ void *downloader_thread(void *p)
 					if (!resp)
 						goto ready;
 
-					cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
-					cookie_store_cookies(resp->cookies); // store cookies
+					mget_cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
+					mget_cookie_store_cookies(resp->cookies); // store cookies
 
 					// check if we got a RFC 6249 Metalink response
 					// HTTP/1.1 302 Found
@@ -930,7 +927,7 @@ ready:
 }
 
 struct html_context {
-	IRI
+	MGET_IRI
 		*base;
 	const char
 		*encoding;
@@ -983,12 +980,12 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 			if (found && tolower(*dir) == 'b' && !strcasecmp(dir,"base")) {
 				// found a <BASE href="...">
 				// add it to be downloaded, replace old base
-				IRI *iri = iri_parse(val, ctx->encoding);
+				MGET_IRI *iri = mget_iri_parse(val, ctx->encoding);
 				if (iri) {
 					dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", val);
 
 					if (ctx->base_allocated)
-						iri_free(&ctx->base);
+						mget_iri_free(&ctx->base);
 
 					ctx->base = iri;
 					ctx->base_allocated = 1;
@@ -1045,14 +1042,14 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 
 			if (len > 1 || (len == 1 && *val != '#')) { // ignore e.g. href='#'
 				// log_printf("%02X %s %s=%s\n",flags,dir,attr,val);
-				if (iri_relative_to_absolute(ctx->base, val, len, &ctx->uri_buf)) {
+				if (mget_iri_relative_to_abs(ctx->base, val, len, &ctx->uri_buf)) {
 					// info_printf("%.*s -> %s\n", (int)len, val, ctx->uri_buf.data);
 					if (ctx->sockfd >= 0) {
 						dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", ctx->uri_buf.data);
 					} else {
 						JOB *job;
 
-						if ((job = queue_add(blacklist_add(iri_parse(ctx->uri_buf.data, ctx->encoding))))) {
+						if ((job = queue_add(blacklist_add(mget_iri_parse(ctx->uri_buf.data, ctx->encoding))))) {
 							if (!config.output_document)
 								job->local_filename = get_local_filename(job->iri);
 						}
@@ -1067,7 +1064,7 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 
 // use the xml parser, being prepared that HTML is not XML
 
-void html_parse(int sockfd, const char *data, const char *encoding, IRI *iri)
+void html_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char uri_sbuf[1024];
@@ -1078,20 +1075,20 @@ void html_parse(int sockfd, const char *data, const char *encoding, IRI *iri)
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
 
-	html_parse_buffer(data, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
+	mget_html_parse_buffer(data, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
 
 	if (context.encoding_allocated)
 		xfree(context.encoding);
 
 //		xfree(context.base->connection_part);
 	if (context.base_allocated) {
-		iri_free(&context.base);
+		mget_iri_free(&context.base);
 	}
 
 	mget_buffer_deinit(&context.uri_buf);
 }
 
-void html_parse_localfile(int sockfd, const char *fname, const char *encoding, IRI *iri)
+void html_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char uri_sbuf[1024];
@@ -1102,19 +1099,19 @@ void html_parse_localfile(int sockfd, const char *fname, const char *encoding, I
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
 
-	html_parse_file(fname, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
+	mget_html_parse_file(fname, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
 
 	if (context.encoding_allocated)
 		xfree(context.encoding);
 
 	if (context.base_allocated)
-		iri_free(&context.base);
+		mget_iri_free(&context.base);
 
 	mget_buffer_deinit(&context.uri_buf);
 }
 
 struct css_context {
-	IRI
+	MGET_IRI
 		*base;
 	const char
 		*encoding;
@@ -1143,13 +1140,13 @@ static void _css_parse_uri(void *context, const char *url, size_t len)
 
 	if (len > 1 || (len == 1 && *url != '#')) {
 		// ignore e.g. href='#'
-		if (iri_relative_to_absolute(ctx->base, url, len, &ctx->uri_buf)) {
+		if (mget_iri_relative_to_abs(ctx->base, url, len, &ctx->uri_buf)) {
 			if (ctx->sockfd >= 0) {
 				dprintf(ctx->sockfd, "add uri - %s\n", ctx->uri_buf.data);
 			} else {
 				JOB *job;
 
-				if ((job = queue_add(blacklist_add(iri_parse(ctx->uri_buf.data, NULL))))) {
+				if ((job = queue_add(blacklist_add(mget_iri_parse(ctx->uri_buf.data, NULL))))) {
 					if (!config.output_document)
 						job->local_filename = get_local_filename(job->iri);
 				}
@@ -1160,7 +1157,7 @@ static void _css_parse_uri(void *context, const char *url, size_t len)
 	}
 }
 
-void css_parse(int sockfd, const char *data, const char *encoding, IRI *iri)
+void css_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char uri_buf[1024];
@@ -1171,7 +1168,7 @@ void css_parse(int sockfd, const char *data, const char *encoding, IRI *iri)
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
 
-	css_parse_buffer(data, _css_parse_uri, _css_parse_encoding, &context);
+	mget_css_parse_buffer(data, _css_parse_uri, _css_parse_encoding, &context);
 
 	if (context.encoding_allocated)
 		xfree(context.encoding);
@@ -1179,7 +1176,7 @@ void css_parse(int sockfd, const char *data, const char *encoding, IRI *iri)
 	mget_buffer_deinit(&context.uri_buf);
 }
 
-void css_parse_localfile(int sockfd, const char *fname, const char *encoding, IRI *iri)
+void css_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *iri)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char uri_buf[1024];
@@ -1190,7 +1187,7 @@ void css_parse_localfile(int sockfd, const char *fname, const char *encoding, IR
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
 
-	css_parse_file(fname, _css_parse_uri, _css_parse_encoding, &context);
+	mget_css_parse_file(fname, _css_parse_uri, _css_parse_encoding, &context);
 
 	if (context.encoding_allocated)
 		xfree(context.encoding);
@@ -1382,7 +1379,7 @@ void download_part(DOWNLOADER *downloader)
 
 		msg = http_get(mirror->iri, part, downloader);
 		if (msg) {
-			cookie_store_cookies(msg->cookies); // sanitize and store cookies
+			mget_cookie_store_cookies(msg->cookies); // sanitize and store cookies
 
 			if (msg->body) {
 				int fd;
@@ -1408,7 +1405,7 @@ void download_part(DOWNLOADER *downloader)
 	} while (!part->done);
 }
 
-HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
+HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 {
 	HTTP_CONNECTION *conn;
 	HTTP_RESPONSE *resp = NULL;
@@ -1416,9 +1413,9 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 //	int max_redirect = 3;
 
 	while (iri) {
-		if (downloader->conn && !null_strcmp(downloader->conn->esc_host, iri->host) &&
+		if (downloader->conn && !mget_strcmp(downloader->conn->esc_host, iri->host) &&
 			downloader->conn->scheme == iri->scheme &&
-			!null_strcmp(downloader->conn->port, iri->resolv_port))
+			!mget_strcmp(downloader->conn->port, iri->resolv_port))
 		{
 			info_printf("reuse connection %s\n", downloader->conn->esc_host);
 		} else {
@@ -1495,7 +1492,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			if (config.referer)
 				http_add_header(req, "Referer", config.referer);
 			else if (downloader->job->referer) {
-				IRI *referer = downloader->job->referer;
+				MGET_IRI *referer = downloader->job->referer;
 				char sbuf[256];
 				mget_buffer_t buf;
 
@@ -1505,7 +1502,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 				mget_buffer_memcat(&buf, "://", 3);
 				mget_buffer_strcat(&buf, referer->host);
 				mget_buffer_memcat(&buf, "/", 1);
-				iri_get_escaped_resource(referer, &buf);
+				mget_iri_get_escaped_resource(referer, &buf);
 
 				http_add_header(req, "Referer", buf.data);
 				mget_buffer_deinit(&buf);
@@ -1529,7 +1526,7 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			if (config.cookies) {
 				const char *cookie_string;
 
-				if ((cookie_string = cookie_create_request_header(iri))) {
+				if ((cookie_string = mget_cookie_create_request_header(iri))) {
 					http_add_header(req, "Cookie", cookie_string);
 					xfree(cookie_string);
 				}
@@ -1571,12 +1568,12 @@ HTTP_RESPONSE *http_get(IRI *iri, PART *part, DOWNLOADER *downloader)
 			char uri_buf_static[1024];
 			mget_buffer_t uri_buf;
 
-			cookie_normalize_cookies(iri, resp->cookies);
-			cookie_store_cookies(resp->cookies);
+			mget_cookie_normalize_cookies(iri, resp->cookies);
+			mget_cookie_store_cookies(resp->cookies);
 
 			mget_buffer_init(&uri_buf, uri_buf_static, sizeof(uri_buf_static));
 
-			iri_relative_to_absolute(iri, resp->location, strlen(resp->location), &uri_buf);
+			mget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
 
 			dprintf(downloader->sockfd[1], "redirect - %s\n", uri_buf.data);
 

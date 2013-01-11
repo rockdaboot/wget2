@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of libmget.
  *
- * Mget is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * Libmget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Libmget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * xml parsing routines
@@ -42,7 +42,7 @@
 
 #include <libmget.h>
 
-#include "utils.h"
+#include "mget.h"
 #include "log.h"
 #include "xml.h"
 
@@ -469,7 +469,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 							// 4.3.1.2 Restrictions for contents of script elements
 							debug_printf("*** need special <script> handling\n");
 							getScriptContent(context);
-							if (*context->token)
+							if (context->token && *context->token)
 								debug_printf("%s=%s\n", directory, context->token);
 						}
 					} else
@@ -538,7 +538,7 @@ static void xml_parse_buffer_ungetc(XML_CONTEXT *context)
 		context->p--;
 }
 
-void xml_parse_buffer(
+void mget_xml_parse_buffer(
 	const char *buf,
 	void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
 	void *user_ctx,
@@ -562,13 +562,13 @@ void xml_parse_buffer(
 	xfree(context.token);
 }
 
-void html_parse_buffer(
+void mget_html_parse_buffer(
 	const char *buf,
 	void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
 	void *user_ctx,
 	int hints)
 {
-	xml_parse_buffer(buf, callback, user_ctx, hints | XML_HINT_HTML);
+	mget_xml_parse_buffer(buf, callback, user_ctx, hints | XML_HINT_HTML);
 }
 
 static int xml_parse_file_getc(XML_CONTEXT *context)
@@ -581,7 +581,7 @@ static void xml_parse_file_ungetc(XML_CONTEXT *context)
 	fseek(context->fp, -1, SEEK_CUR);
 }
 
-void xml_parse_file(
+void mget_xml_parse_file(
 	const char *fname,
 	void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
 	void *user_ctx,
@@ -612,13 +612,13 @@ void xml_parse_file(
 		error_printf(_("%s: Failed to open %s\n"), __func__, fname);
 }
 
-void html_parse_file(
+void mget_html_parse_file(
 	const char *fname,
 	void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
 	void *user_ctx,
 	int hints)
 {
-	xml_parse_file(fname, callback, user_ctx, hints | XML_HINT_HTML);
+	mget_xml_parse_file(fname, callback, user_ctx, hints | XML_HINT_HTML);
 }
 
 /*

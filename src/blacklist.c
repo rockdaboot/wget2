@@ -34,7 +34,6 @@
 #include <libmget.h>
 
 #include "log.h"
-#include "iri.h"
 #include "blacklist.h"
 
 //static VECTOR
@@ -43,7 +42,7 @@ static MGET_HASHMAP
 
 // Paul Larson's hash function from Microsoft Research
 // ~ O(1) insertion, search and removal
-static unsigned int hash_iri(const IRI *iri)
+static unsigned int hash_iri(const MGET_IRI *iri)
 {
 	unsigned int h = 0; // use 0 as SALT if hash table attacks doesn't matter
 	const unsigned char *p;
@@ -66,7 +65,7 @@ static unsigned int hash_iri(const IRI *iri)
 	return h;
 }
 
-static int G_GNUC_MGET_NONNULL_ALL _blacklist_print(const IRI *iri)
+static int G_GNUC_MGET_NONNULL_ALL _blacklist_print(const MGET_IRI *iri)
 {
 	info_printf("blacklist %s\n", iri->uri);
 	return 0;
@@ -77,33 +76,22 @@ void blacklist_print(void)
 	mget_hashmap_browse(blacklist, (int(*)(const void *, const void *))_blacklist_print);
 }
 
-int in_blacklist(IRI *iri)
-{
-	int it;
-
-	for (it = 0; iri_schemes[it]; it++) {
-		if (iri_schemes[it] == iri->scheme)
-			return !!mget_hashmap_get(blacklist, iri);
-	}
-
-	return 1; // unknown scheme becomes blacked out
-}
-
-IRI *blacklist_add(IRI *iri)
+MGET_IRI *blacklist_add(MGET_IRI *iri)
 {
 	if (!iri)
 		return NULL;
 
 	if (!blacklist)
-		blacklist = mget_hashmap_create(128, -2, (unsigned int(*)(const void *))hash_iri, (int(*)(const void *, const void *))iri_compare);
+		blacklist = mget_hashmap_create(128, -2, (unsigned int(*)(const void *))hash_iri, (int(*)(const void *, const void *))mget_iri_compare);
 
-	if (!in_blacklist(iri)) {
-		// info_printf("Add to blacklist: %s\n",iri->uri);
-		mget_hashmap_put_ident_noalloc(blacklist, iri);
-		return iri;
+	if (mget_iri_supported(iri)) {
+		if (mget_hashmap_put_ident_noalloc(blacklist, iri) == 0) {
+			// info_printf("Added to blacklist: %s\n",iri->uri);
+			return iri;
+		}
 	}
 
-	iri_free(&iri);
+	mget_iri_free(&iri);
 
 	return NULL;
 }
@@ -156,9 +144,9 @@ void blacklist_free(void)
 }
 */
 
-static int _free_entry(IRI *iri)
+static int _free_entry(MGET_IRI *iri)
 {
-	iri_free_content(iri);
+	mget_iri_free_content(iri);
 	return 0;
 }
 

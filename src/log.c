@@ -38,7 +38,6 @@
 #include <libmget.h>
 
 #include "options.h"
-#include "utils.h"
 #include "printf.h"
 #include "log.h"
 

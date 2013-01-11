@@ -6,10 +6,10 @@ check_PROGRAMS = test buffer_printf2_perf stringmap_perf
 
 test_SOURCES = test.c
 test_CPPFLAGS = -I$(top_srcdir)/include
-test_LDADD = ../libmget/libmget.la ../src/mget-printf.o\
- ../src/mget-log.o ../src/mget-http.o ../src/mget-iri.o ../src/mget-utils.o\
- ../src/mget-css.o ../src/mget-cookie.o ../src/mget-options.o ../src/mget-net.o\
- ../src/mget-css_tokenizer.o ../src/mget-md5.o ../src/mget-xml.o ../src/mget-utf8.o\
+test_LDADD = ../libmget/libmget.la \
+ ../src/mget-log.o ../src/mget-http.o \
+ ../src/mget-options.o ../src/mget-net.o\
+ ../src/mget-md5.o \
  ../src/mget-ssl_gnutls.o
 
 buffer_printf2_perf_SOURCES = buffer_printf2_perf.c

@@ -45,8 +45,8 @@ void
 	tcp_set_family(int family),
 	tcp_set_preferred_family(int family),
 	tcp_set_bind_address(const char *bind_address);
-struct addrinfo
-	*tcp_resolve(const char *restrict name, const char *restrict port) G_GNUC_MGET_NONNULL((1));
+struct addrinfo *
+	tcp_resolve(const char *restrict name, const char *restrict port) G_GNUC_MGET_NONNULL((1));
 tcp_t
 	tcp_connect(struct addrinfo *addrinfo, const char *hostname) G_GNUC_MGET_NONNULL((1));
 ssize_t

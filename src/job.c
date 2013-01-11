@@ -38,7 +38,7 @@
 
 #include <libmget.h>
 
-#include "utils.h"
+#include "mget.h"
 #include "log.h"
 #include "hash.h"
 #include "job.h"
@@ -48,7 +48,7 @@ static MGET_LIST
 
 static int free_mirror(MIRROR *mirror)
 {
-	iri_free(&mirror->iri);
+	mget_iri_free(&mirror->iri);
 	return 0;
 }
 
@@ -337,7 +337,7 @@ void job_resume(JOB *job)
 }
  */
 
-JOB *queue_add(IRI *iri)
+JOB *queue_add(MGET_IRI *iri)
 {
 	if (iri) {
 		JOB job, *jobp;

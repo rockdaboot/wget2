@@ -39,16 +39,15 @@
 #include <time.h>
 
 #include <libmget.h>
+#include "../libmget/private.h"
 
-#include "../src/utils.h"
 #include "../src/options.h"
-#include "../src/css.h"
-#include "../src/xml.h"
-#include "../src/iri.h"
 #include "../src/log.h"
 #include "../src/net.h"
 #include "../src/http.h"
-#include "../src/cookie.h"
+
+// number of elements within an array
+#define countof(a) (sizeof(a)/sizeof(*(a)))
 
 static int
 	ok,
@@ -398,17 +397,17 @@ static void test_iri_parse(void)
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
-		IRI *iri = iri_parse(t->uri, "utf-8");
+		MGET_IRI *iri = mget_iri_parse(t->uri, "utf-8");
 
-		if (null_strcmp(iri->display, t->display)
-			|| null_strcmp(iri->scheme, t->scheme)
-			|| null_strcmp(iri->userinfo, t->userinfo)
-			|| null_strcmp(iri->password, t->password)
-			|| null_strcmp(iri->host, t->host)
-			|| null_strcmp(iri->port, t->port)
-			|| null_strcmp(iri->path, t->path)
-			|| null_strcmp(iri->query, t->query)
-			|| null_strcmp(iri->fragment, t->fragment))
+		if (mget_strcmp(iri->display, t->display)
+			|| mget_strcmp(iri->scheme, t->scheme)
+			|| mget_strcmp(iri->userinfo, t->userinfo)
+			|| mget_strcmp(iri->password, t->password)
+			|| mget_strcmp(iri->host, t->host)
+			|| mget_strcmp(iri->port, t->port)
+			|| mget_strcmp(iri->path, t->path)
+			|| mget_strcmp(iri->query, t->query)
+			|| mget_strcmp(iri->fragment, t->fragment))
 		{
 			failed++;
 			printf("IRI test #%u failed:\n", it + 1);
@@ -426,7 +425,7 @@ static void test_iri_parse(void)
 			ok++;
 		}
 
-		iri_free(&iri);
+		mget_iri_free(&iri);
 	}
 }
 
@@ -666,13 +665,13 @@ static void test_iri_relative_to_absolute(void)
 	unsigned it;
 	char uri_buf_static[32]; // use a size that forces allocation in some cases
 	mget_buffer_t *uri_buf = 	mget_buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
-	IRI *base;
+	MGET_IRI *base;
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
 
-		base = iri_parse(t->base, "utf-8");
-		iri_relative_to_absolute(base, t->relative, strlen(t->relative), uri_buf);
+		base = mget_iri_parse(t->base, "utf-8");
+		mget_iri_relative_to_abs(base, t->relative, strlen(t->relative), uri_buf);
 
 		if (!strcmp(uri_buf->data, t->result))
 			ok++;
@@ -681,7 +680,7 @@ static void test_iri_relative_to_absolute(void)
 			info_printf("Failed [%u]: %s+%s -> %s (expected %s)\n", it, t->base, t->relative, uri_buf->data, t->result);
 		}
 
-		iri_free(&base);
+		mget_iri_free(&base);
 	}
 
 	mget_buffer_free(&uri_buf);
@@ -713,10 +712,10 @@ static void test_iri_compare(void)
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
-		IRI *iri1 = iri_parse(t->url1, "utf-8");
-		IRI *iri2 = iri_parse(t->url2, "utf-8");
+		MGET_IRI *iri1 = mget_iri_parse(t->url1, "utf-8");
+		MGET_IRI *iri2 = mget_iri_parse(t->url2, "utf-8");
 
-		n = iri_compare(iri1, iri2);
+		n = mget_iri_compare(iri1, iri2);
 		if (n < -1) n = -1;
 		else if (n > 1) n = 1;
 
@@ -727,8 +726,8 @@ static void test_iri_compare(void)
 			info_printf("Failed [%u]: compare(%s,%s) -> %d (expected %d)\n", it, t->url1, t->url2, n, t->result);
 		}
 
-		iri_free(&iri2);
-		iri_free(&iri1);
+		mget_iri_free(&iri2);
+		mget_iri_free(&iri1);
 	}
 }
 
@@ -759,15 +758,15 @@ static void test_parser(void)
 				snprintf(fname, sizeof(fname), SRCDIR "/files/%s", dp->d_name);
 				if (!strcasecmp(ext, ".xml")) {
 					info_printf("parsing %s\n", fname);
-					xml_parse_file(fname, NULL, NULL, 0);
+					mget_xml_parse_file(fname, NULL, NULL, 0);
 					xml++;
 				} else if (!strcasecmp(ext, ".html")) {
 					info_printf("parsing %s\n", fname);
-					html_parse_file(fname, NULL, NULL, 0);
+					mget_html_parse_file(fname, NULL, NULL, 0);
 					html++;
 				} else if (!strcasecmp(ext, ".css")) {
 					info_printf("parsing %s\n", fname);
-					css_parse_file(fname, _css_dump_uri, _css_dump_charset, NULL);
+					mget_css_parse_file(fname, _css_dump_uri, _css_dump_charset, NULL);
 					css++;
 				}
 			}
@@ -860,19 +859,19 @@ static void test_cookies(void)
 		},
 	};
 	MGET_COOKIE cookie;
-	IRI *iri;
+	MGET_IRI *iri;
 	unsigned it;
 	int result;
 
-	cookie_load_public_suffixes(DATADIR "/public_suffixes.txt");
+	mget_cookie_load_public_suffixes(DATADIR "/public_suffixes.txt");
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
 		char thedate[32];
 
-		iri = iri_parse(t->uri, "utf-8");
+		iri = mget_iri_parse(t->uri, "utf-8");
 		http_parse_setcookie(t->set_cookie, &cookie);
-		if ((result = cookie_normalize_cookie(iri, &cookie)) != t->result) {
+		if ((result = mget_cookie_normalize_cookie(iri, &cookie)) != t->result) {
 			failed++;
 			info_printf("Failed [%u]: normalize_cookie(%s) -> %d (expected %d)\n", it, t->set_cookie, result, t->result);
 			goto next;
@@ -928,8 +927,8 @@ static void test_cookies(void)
 		ok++;
 
 next:
-		cookie_free_cookie(&cookie);
-		iri_free(&iri);
+		mget_cookie_free_cookie(&cookie);
+		mget_iri_free(&iri);
 	}
 }
 
@@ -942,7 +941,7 @@ static void test_utils(void)
 	for (ndst = 1; ndst <= 3; ndst++) {
 		for (it = 0; it <= 255; it++) {
 			src[0] = it;
-			buffer_to_hex(src, 1, dst1, ndst);
+			mget_memtohex(src, 1, dst1, ndst);
 			snprintf(dst2, ndst, "%02x", src[0]);
 			if (strcmp(dst1, dst2)) {
 				info_printf("buffer_to_hex failed: '%s' instead of '%s' (ndst=%d)\n", dst1, dst2, ndst);
@@ -1144,7 +1143,7 @@ static void test_stringmap(void)
 "Connection: Keep-Alive\r\n"\
 "Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-	IRI *iri = iri_parse("http://localhost/prot_digest_md5/", NULL);
+	MGET_IRI *iri = mget_iri_parse("http://localhost/prot_digest_md5/", NULL);
 	HTTP_REQUEST *req = http_create_request(iri, "GET");
 	HTTP_RESPONSE *resp = http_parse_response(response_text);
 	http_add_credentials(req, mget_vector_get(resp->challenges, 0), "tim", "123");
@@ -1153,7 +1152,7 @@ static void test_stringmap(void)
 //	}
 	http_free_response(&resp);
 	http_free_request(&req);
-	iri_free(&iri);
+	mget_iri_free(&iri);
 	xfree(response_text);
 
 // Authorization: Digest username="tim", realm="therealm", nonce="Ip6MaovRBAA=c4af733c51270698260f5d357724c2cbce20fa3d", uri="/prot_digest_md5/", response="a99e2012d507a73dd46eb044d3f4641c", qop=auth, nc=00000001, cnonce="3d20faa1"
@@ -1185,8 +1184,8 @@ int main(int argc, const char * const *argv)
 	test_parser();
 
 	test_cookies();
-	cookie_free_public_suffixes();
-	cookie_free_cookies();
+	mget_cookie_free_public_suffixes();
+	mget_cookie_free_cookies();
 
 	selftest_options() ? failed++ : ok++;
 

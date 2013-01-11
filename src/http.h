@@ -39,8 +39,6 @@
 
 #include "job.h"
 #include "net.h"
-#include "iri.h"
-#include "cookie.h"
 
 // FLAGS for http_get_file()
 #define HTTP_FLG_USE_FILE (1<<0) // use filename without path for saving files
@@ -135,8 +133,7 @@ typedef struct {
 	tcp_t
 		tcp;
 	struct addrinfo
-		*addrinfo,
-		*ai;
+		*addrinfo;
 	const char
 		*esc_host,
 		*port,
@@ -194,8 +191,8 @@ void
 	http_free_response(HTTP_RESPONSE **resp);
 
 HTTP_RESPONSE
-	*http_read_header(const IRI *iri) G_GNUC_MGET_NONNULL_ALL,
-	*http_get_header(IRI *iri) G_GNUC_MGET_NONNULL_ALL,
+	*http_read_header(const MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL,
+	*http_get_header(MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL,
 	*http_parse_response(char *buf) G_GNUC_MGET_NONNULL_ALL,
 	*http_get_response_cb(HTTP_CONNECTION *conn, HTTP_REQUEST *req,
 								 int (*parse_body)(void *context, const char *data, size_t length),
@@ -205,9 +202,9 @@ HTTP_RESPONSE
 	*http_get_response_fd(HTTP_CONNECTION *conn, int fd) G_GNUC_MGET_NONNULL_ALL;
 
 HTTP_CONNECTION
-	*http_open(const IRI *iri) G_GNUC_MGET_NONNULL_ALL;
+	*http_open(const MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
 HTTP_REQUEST
-	*http_create_request(const IRI *iri, const char *method) G_GNUC_MGET_NONNULL_ALL;
+	*http_create_request(const MGET_IRI *iri, const char *method) G_GNUC_MGET_NONNULL_ALL;
 void
 	http_close(HTTP_CONNECTION **conn) G_GNUC_MGET_NONNULL_ALL;
 int

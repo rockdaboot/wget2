@@ -31,10 +31,8 @@
 
 #include <libmget.h>
 
-#include "iri.h"
-
 struct config {
-	IRI
+	MGET_IRI
 		*base;
 	const char
 		*username,

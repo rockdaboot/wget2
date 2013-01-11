@@ -186,9 +186,10 @@ AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([\
- clock_gettime dup2 gettimeofday localtime_r memchr memmove\
- memset mkdir munmap select setlocale socket strcasecmp strchr strdup\
- strerror strncasecmp strndup strrchr strstr strlcpy futimens dprintf vasprintf])
+ clock_gettime dprintf dup2 futimens gettimeofday localtime_r memchr\
+ memmove memset mkdir munmap select setlocale socket strcasecmp\
+ strchr strdup strerror strncasecmp strndup strrchr strstr strlcpy \
+ vasprintf])
 
 AC_CONFIG_FILES([Makefile po/Makefile.in
                  include/Makefile

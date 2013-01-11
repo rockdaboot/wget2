@@ -2354,12 +2354,16 @@ static yyconst flex_int16_t yy_chk[7008] =
 
 #define YY_NO_INPUT
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <libmget.h>
 
 #include "css_tokenizer.h"
 #include "log.h"
 
-#line 2363 "css_tokenizer.c"
+#line 2367 "css_tokenizer.c"
 
 #define INITIAL 0
 
@@ -2587,10 +2591,10 @@ YY_DECL
 	register int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
-#line 66 "css_tokenizer.lex"
+#line 70 "css_tokenizer.lex"
 
 
-#line 2594 "css_tokenizer.c"
+#line 2598 "css_tokenizer.c"
 
 	if ( !yyg->yy_init )
 		{
@@ -2672,235 +2676,235 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 68 "css_tokenizer.lex"
+#line 72 "css_tokenizer.lex"
 {return S;}
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 70 "css_tokenizer.lex"
+#line 74 "css_tokenizer.lex"
 /* ignore comments */
 	YY_BREAK
 case 3:
 /* rule 3 can match eol */
 YY_RULE_SETUP
-#line 71 "css_tokenizer.lex"
+#line 75 "css_tokenizer.lex"
 /* unclosed comment at EOF */
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 73 "css_tokenizer.lex"
+#line 77 "css_tokenizer.lex"
 {return CDO;}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 74 "css_tokenizer.lex"
+#line 78 "css_tokenizer.lex"
 {return CDC;}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 75 "css_tokenizer.lex"
+#line 79 "css_tokenizer.lex"
 {return INCLUDES;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 76 "css_tokenizer.lex"
+#line 80 "css_tokenizer.lex"
 {return DASHMATCH;}
 	YY_BREAK
 case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
-#line 78 "css_tokenizer.lex"
+#line 82 "css_tokenizer.lex"
 {return STRING;}
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 79 "css_tokenizer.lex"
+#line 83 "css_tokenizer.lex"
 {return BAD_STRING;}
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 81 "css_tokenizer.lex"
+#line 85 "css_tokenizer.lex"
 {return IDENT;}
 	YY_BREAK
 case 11:
 /* rule 11 can match eol */
 YY_RULE_SETUP
-#line 83 "css_tokenizer.lex"
+#line 87 "css_tokenizer.lex"
 {return HASH;}
 	YY_BREAK
 case 12:
 /* rule 12 can match eol */
 YY_RULE_SETUP
-#line 85 "css_tokenizer.lex"
+#line 89 "css_tokenizer.lex"
 {return IMPORT_SYM;}
 	YY_BREAK
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 86 "css_tokenizer.lex"
+#line 90 "css_tokenizer.lex"
 {return PAGE_SYM;}
 	YY_BREAK
 case 14:
 /* rule 14 can match eol */
 YY_RULE_SETUP
-#line 87 "css_tokenizer.lex"
+#line 91 "css_tokenizer.lex"
 {return MEDIA_SYM;}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 88 "css_tokenizer.lex"
+#line 92 "css_tokenizer.lex"
 {return CHARSET_SYM;}
 	YY_BREAK
 case 16:
 /* rule 16 can match eol */
 YY_RULE_SETUP
-#line 90 "css_tokenizer.lex"
+#line 94 "css_tokenizer.lex"
 {return IMPORTANT_SYM;}
 	YY_BREAK
 case 17:
 /* rule 17 can match eol */
 YY_RULE_SETUP
-#line 92 "css_tokenizer.lex"
+#line 96 "css_tokenizer.lex"
 {return EMS;}
 	YY_BREAK
 case 18:
 /* rule 18 can match eol */
 YY_RULE_SETUP
-#line 93 "css_tokenizer.lex"
+#line 97 "css_tokenizer.lex"
 {return EXS;}
 	YY_BREAK
 case 19:
 /* rule 19 can match eol */
 YY_RULE_SETUP
-#line 94 "css_tokenizer.lex"
+#line 98 "css_tokenizer.lex"
 {return LENGTH;}
 	YY_BREAK
 case 20:
 /* rule 20 can match eol */
 YY_RULE_SETUP
-#line 95 "css_tokenizer.lex"
+#line 99 "css_tokenizer.lex"
 {return LENGTH;}
 	YY_BREAK
 case 21:
 /* rule 21 can match eol */
 YY_RULE_SETUP
-#line 96 "css_tokenizer.lex"
+#line 100 "css_tokenizer.lex"
 {return LENGTH;}
 	YY_BREAK
 case 22:
 /* rule 22 can match eol */
 YY_RULE_SETUP
-#line 97 "css_tokenizer.lex"
+#line 101 "css_tokenizer.lex"
 {return LENGTH;}
 	YY_BREAK
 case 23:
 /* rule 23 can match eol */
 YY_RULE_SETUP
-#line 98 "css_tokenizer.lex"
+#line 102 "css_tokenizer.lex"
 {return LENGTH;}
 	YY_BREAK
 case 24:
 /* rule 24 can match eol */
 YY_RULE_SETUP
-#line 99 "css_tokenizer.lex"
+#line 103 "css_tokenizer.lex"
 {return LENGTH;}
 	YY_BREAK
 case 25:
 /* rule 25 can match eol */
 YY_RULE_SETUP
-#line 100 "css_tokenizer.lex"
+#line 104 "css_tokenizer.lex"
 {return ANGLE;}
 	YY_BREAK
 case 26:
 /* rule 26 can match eol */
 YY_RULE_SETUP
-#line 101 "css_tokenizer.lex"
+#line 105 "css_tokenizer.lex"
 {return ANGLE;}
 	YY_BREAK
 case 27:
 /* rule 27 can match eol */
 YY_RULE_SETUP
-#line 102 "css_tokenizer.lex"
+#line 106 "css_tokenizer.lex"
 {return ANGLE;}
 	YY_BREAK
 case 28:
 /* rule 28 can match eol */
 YY_RULE_SETUP
-#line 103 "css_tokenizer.lex"
+#line 107 "css_tokenizer.lex"
 {return TIME;}
 	YY_BREAK
 case 29:
 /* rule 29 can match eol */
 YY_RULE_SETUP
-#line 104 "css_tokenizer.lex"
+#line 108 "css_tokenizer.lex"
 {return TIME;}
 	YY_BREAK
 case 30:
 /* rule 30 can match eol */
 YY_RULE_SETUP
-#line 105 "css_tokenizer.lex"
+#line 109 "css_tokenizer.lex"
 {return FREQ;}
 	YY_BREAK
 case 31:
 /* rule 31 can match eol */
 YY_RULE_SETUP
-#line 106 "css_tokenizer.lex"
+#line 110 "css_tokenizer.lex"
 {return FREQ;}
 	YY_BREAK
 case 32:
 /* rule 32 can match eol */
 YY_RULE_SETUP
-#line 107 "css_tokenizer.lex"
+#line 111 "css_tokenizer.lex"
 {return DIMENSION;}
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 109 "css_tokenizer.lex"
+#line 113 "css_tokenizer.lex"
 {return PERCENTAGE;}
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 110 "css_tokenizer.lex"
+#line 114 "css_tokenizer.lex"
 {return NUMBER;}
 	YY_BREAK
 case 35:
 /* rule 35 can match eol */
 YY_RULE_SETUP
-#line 112 "css_tokenizer.lex"
+#line 116 "css_tokenizer.lex"
 {return URI;}
 	YY_BREAK
 case 36:
 /* rule 36 can match eol */
 YY_RULE_SETUP
-#line 113 "css_tokenizer.lex"
+#line 117 "css_tokenizer.lex"
 {return URI;}
 	YY_BREAK
 case 37:
 /* rule 37 can match eol */
 YY_RULE_SETUP
-#line 114 "css_tokenizer.lex"
+#line 118 "css_tokenizer.lex"
 {return BAD_URI;}
 	YY_BREAK
 case 38:
 /* rule 38 can match eol */
 YY_RULE_SETUP
-#line 116 "css_tokenizer.lex"
+#line 120 "css_tokenizer.lex"
 {return FUNCTION;}
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 118 "css_tokenizer.lex"
+#line 122 "css_tokenizer.lex"
 {return *yytext;}
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 120 "css_tokenizer.lex"
+#line 124 "css_tokenizer.lex"
 ECHO;
 	YY_BREAK
-#line 2904 "css_tokenizer.c"
+#line 2908 "css_tokenizer.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -4014,7 +4018,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 120 "css_tokenizer.lex"
+#line 124 "css_tokenizer.lex"
 
 
 

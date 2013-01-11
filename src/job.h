@@ -29,10 +29,8 @@
 
 #include <libmget.h>
 
-#include "iri.h"
-
 typedef struct {
-	IRI
+	MGET_IRI
 		*iri;
 	int
 		priority;
@@ -68,7 +66,7 @@ typedef struct {
 } PART;
 
 typedef struct {
-	IRI
+	MGET_IRI
 		*iri,
 		*referer;
 
@@ -93,7 +91,7 @@ typedef struct {
 } JOB;
 
 JOB
-	*queue_add(IRI *iri);
+	*queue_add(MGET_IRI *iri);
 PART
 	*job_add_part(JOB *job, PART *part);
 int

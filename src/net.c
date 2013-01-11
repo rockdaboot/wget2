@@ -49,7 +49,7 @@
 
 #include <libmget.h>
 
-#include "utils.h"
+#include "mget.h"
 #include "log.h"
 #include "ssl.h"
 #include "net.h"
@@ -347,61 +347,66 @@ void tcp_set_bind_address(const char *bind_address)
 tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 {
 	tcp_t tcp = NULL;
+	struct addrinfo *ai;
 	int sockfd = -1, rc;
 	char adr[NI_MAXHOST], port[NI_MAXSERV];
 
-	if (debug) {
-		if ((rc = getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, adr, sizeof(adr), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
-			debug_printf("trying %s:%s...\n", adr, port);
-		else
-			debug_printf("trying ???:%s (%s)...\n", port, gai_strerror(rc));
-	}
+	for (ai = addrinfo; ai && !tcp; ai = ai->ai_next) {
+		if (debug) {
+			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+				debug_printf("trying %s:%s...\n", adr, port);
+			else
+				debug_printf("trying ???:%s (%s)...\n", port, gai_strerror(rc));
+		}
 
-	if ((sockfd = socket(addrinfo->ai_family, addrinfo->ai_socktype, addrinfo->ai_protocol)) != -1) {
-		int on = 1;
+		if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) != -1) {
+			int on = 1;
 
-		fcntl(sockfd, F_SETFL, O_NDELAY);
+			fcntl(sockfd, F_SETFL, O_NDELAY);
 
-		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
-			error_printf(_("Failed to set socket option REUSEADDR\n"));
+			if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
+				error_printf(_("Failed to set socket option REUSEADDR\n"));
 
-		on = 1;
-		if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) == -1)
-			error_printf(_("Failed to set socket option NODELAY\n"));
+			on = 1;
+			if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) == -1)
+				error_printf(_("Failed to set socket option NODELAY\n"));
 
-		if (bind_addrinfo) {
-			if (debug) {
-				if ((rc = getnameinfo(bind_addrinfo->ai_addr, bind_addrinfo->ai_addrlen, adr, sizeof(adr), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
-					debug_printf("binding to %s:%s...\n", adr, port);
-				else
-					debug_printf("binding to ???:%s (%s)...\n", port, gai_strerror(rc));
+			if (bind_addrinfo) {
+				if (debug) {
+					if ((rc = getnameinfo(bind_addrinfo->ai_addr, bind_addrinfo->ai_addrlen, adr, sizeof(adr), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+						debug_printf("binding to %s:%s...\n", adr, port);
+					else
+						debug_printf("binding to ???:%s (%s)...\n", port, gai_strerror(rc));
+				}
+
+				if (bind(sockfd, bind_addrinfo->ai_addr, bind_addrinfo->ai_addrlen) != 0) {
+					error_printf(_("Failed to bind (%d)\n"), errno);
+					close(sockfd);
+					return NULL;
+				}
 			}
 
-			if (bind(sockfd, bind_addrinfo->ai_addr, bind_addrinfo->ai_addrlen) != 0) {
-				error_printf(_("Failed to bind (%d)\n"), errno);
+			if (connect(sockfd, ai->ai_addr, ai->ai_addrlen) < 0 &&
+				errno != EINPROGRESS)
+			{
+				error_printf(_("Failed to connect (%d)\n"), errno);
 				close(sockfd);
-				return NULL;
+			} else {
+				tcp = xcalloc(1, sizeof(*tcp));
+				tcp->sockfd = sockfd;
+				tcp->timeout = timeout;
+				if (hostname) {
+					tcp->ssl = 1;
+					tcp->ssl_session = ssl_open(tcp->sockfd, hostname, connect_timeout);
+					if (!tcp->ssl_session) {
+						tcp_close(&tcp);
+						continue;
+					}
+				}
 			}
-		}
-
-		if (connect(sockfd, addrinfo->ai_addr, addrinfo->ai_addrlen) < 0 &&
-			errno != EINPROGRESS)
-		{
-			error_printf(_("Failed to connect (%d)\n"), errno);
-			close(sockfd);
-		} else {
-			tcp = xcalloc(1, sizeof(*tcp));
-			tcp->sockfd = sockfd;
-			tcp->timeout = timeout;
-			if (hostname) {
-				tcp->ssl = 1;
-				tcp->ssl_session = ssl_open(tcp->sockfd, hostname, connect_timeout);
-				if (!tcp->ssl_session)
-					tcp_close(&tcp);
-			}
-		}
-	} else
-		error_printf(_("Failed to create socket\n"));
+		} else
+			error_printf(_("Failed to create socket (%d)\n"), errno);
+	}
 
 	return tcp;
 }

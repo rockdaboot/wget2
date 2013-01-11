@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of libmget.
  *
- * Mget is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * Libmget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Libmget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * Cookie routines
@@ -37,20 +37,15 @@
 #include <errno.h>
 
 #include <libmget.h>
-
-#include "utils.h"
-#include "iri.h"
-#include "log.h"
-#include "cookie.h"
-#include "options.h"
+#include "private.h"
 
 // #define MAX_LABELS 6 // as of 02.11.2012, we need a value of 4, but having sparse is ok
 
 typedef struct {
 	char
 		label_buf[40];
-	const char
-		*label;
+	const char *
+		label;
 	unsigned short
 		length;
 	unsigned char
@@ -125,7 +120,7 @@ static void NONNULL_ALL suffix_print(PUBLIC_SUFFIX *suffix)
 }
 */
 
-int cookie_suffix_match(const char *domain)
+int mget_cookie_suffix_match(const char *domain)
 {
 	PUBLIC_SUFFIX suffix, *rule;
 	const char *p, *label_bak;
@@ -180,7 +175,7 @@ int cookie_suffix_match(const char *domain)
 	return 0;
 }
 
-int cookie_load_public_suffixes(const char *fname)
+int mget_cookie_load_public_suffixes(const char *fname)
 {
 	PUBLIC_SUFFIX suffix, *suffixp;
 	FILE *fp;
@@ -197,7 +192,7 @@ int cookie_load_public_suffixes(const char *fname)
 		suffix_exceptions = mget_vector_create(64, -2, (int(*)(const void *, const void *))suffix_compare);
 
 	if ((fp = fopen(fname, "r"))) {
-		while ((buflen = getline(&buf, &bufsize, fp)) >= 0) {
+		while ((buflen = mget_getline(&buf, &bufsize, fp)) >= 0) {
 			linep = buf;
 
 			while (isspace(*linep)) linep++; // ignore leading whitespace
@@ -243,7 +238,7 @@ static int cookie_free_public_suffix(PUBLIC_SUFFIX *suffix)
 }
 */
 
-void cookie_free_public_suffixes(void)
+void mget_cookie_free_public_suffixes(void)
 {
 //	vec_browse(suffixes, (int (*)(void *))cookie_free_suffix);
 	mget_vector_free(&suffixes);
@@ -330,13 +325,13 @@ static int G_GNUC_MGET_NONNULL((1)) path_match(const char *cookie_path, const ch
 	return 0;
 }
 
-void cookie_init_cookie(MGET_COOKIE *cookie)
+void mget_cookie_init_cookie(MGET_COOKIE *cookie)
 {
 	memset(cookie, 0, sizeof(*cookie));
 	cookie->last_access = cookie->creation = time(NULL);
 }
 
-int cookie_free_cookie(MGET_COOKIE *cookie)
+int mget_cookie_free_cookie(MGET_COOKIE *cookie)
 {
 	xfree(cookie->name);
 	xfree(cookie->value);
@@ -346,16 +341,16 @@ int cookie_free_cookie(MGET_COOKIE *cookie)
 	return 0;
 }
 
-void cookie_free_cookies(void)
+void mget_cookie_free_cookies(void)
 {
 	pthread_mutex_lock(&cookies_mutex);
-	mget_vector_browse(cookies, (int (*)(void *))cookie_free_cookie);
+	mget_vector_browse(cookies, (int (*)(void *))mget_cookie_free_cookie);
 	mget_vector_free(&cookies);
 	pthread_mutex_unlock(&cookies_mutex);
 }
 
 // normalize/sanitize and store cookies
-int cookie_normalize_cookie(const IRI *iri, MGET_COOKIE *cookie)
+int mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie)
 {
 /*
 	log_printf("normalize cookie %s=%s\n", cookie->name, cookie->value);
@@ -388,7 +383,7 @@ int cookie_normalize_cookie(const IRI *iri, MGET_COOKIE *cookie)
 			cookie->domain = strdup("");
 
 		// respect http://publicsuffix.org/list/ to avoid "supercookies"
-		if (mget_vector_size(suffixes) > 0 && cookie_suffix_match(cookie->domain)) {
+		if (mget_vector_size(suffixes) > 0 && mget_cookie_suffix_match(cookie->domain)) {
 			info_printf("Supercookie %s not accepted\n", cookie->domain);
 			return 0;
 		}
@@ -433,15 +428,15 @@ int cookie_normalize_cookie(const IRI *iri, MGET_COOKIE *cookie)
 	return 1;
 }
 
-void cookie_normalize_cookies(const IRI *iri, const VECTOR *cookies)
+void mget_cookie_normalize_cookies(const MGET_IRI *iri, const VECTOR *cookies)
 {
 	int it;
 
 	for (it = 0; it < mget_vector_size(cookies); it++)
-		cookie_normalize_cookie(iri, mget_vector_get(cookies, it));
+		mget_cookie_normalize_cookie(iri, mget_vector_get(cookies, it));
 }
 
-void cookie_store_cookie(MGET_COOKIE *cookie)
+void mget_cookie_store_cookie(MGET_COOKIE *cookie)
 {
 	MGET_COOKIE *old;
 	int pos;
@@ -462,7 +457,7 @@ void cookie_store_cookie(MGET_COOKIE *cookie)
 	if (old) {
 		debug_printf("replace old cookie %s=%s\n", cookie->name, cookie->value);
 		cookie->creation = old->creation;
-		cookie_free_cookie(old);
+		mget_cookie_free_cookie(old);
 		mget_vector_replace(cookies, cookie, sizeof(*cookie), pos);
 	} else {
 		debug_printf("store new cookie %s=%s\n", cookie->name, cookie->value);
@@ -472,18 +467,18 @@ void cookie_store_cookie(MGET_COOKIE *cookie)
 	pthread_mutex_unlock(&cookies_mutex);
 }
 
-void cookie_store_cookies(VECTOR *cookies)
+void mget_cookie_store_cookies(VECTOR *cookies)
 {
 	int it;
 
 	for (it = mget_vector_size(cookies) - 1; it >= 0; it--) {
 		MGET_COOKIE *cookie = mget_vector_get(cookies, it);
-		cookie_store_cookie(cookie);
+		mget_cookie_store_cookie(cookie);
 		mget_vector_remove(cookies, it);
 	}
 }
 
-char *cookie_create_request_header(const IRI *iri)
+char *mget_cookie_create_request_header(const MGET_IRI *iri)
 {
 	int it, init = 0;
 	time_t now = time(NULL);
@@ -521,7 +516,7 @@ char *cookie_create_request_header(const IRI *iri)
 
 // save the cookie store to a flat file
 
-int cookie_save(const char *fname, int keep_session_cookies)
+int mget_cookie_save(const char *fname, int keep_session_cookies)
 {
 	FILE *fp;
 	int it, ret = -1;
@@ -571,7 +566,7 @@ int cookie_save(const char *fname, int keep_session_cookies)
 	return ret;
 }
 
-int cookie_load(const char *fname)
+int mget_cookie_load(const char *fname, int keep_session_cookies)
 {
 	MGET_COOKIE cookie;
 	FILE *fp;
@@ -582,9 +577,9 @@ int cookie_load(const char *fname)
 	time_t now = time(NULL);
 
 	if ((fp = fopen(fname, "r"))) {
-		cookie_init_cookie(&cookie);
+		mget_cookie_init_cookie(&cookie);
 
-		while ((buflen = getline(&buf, &bufsize, fp)) >= 0) {
+		while ((buflen = mget_getline(&buf, &bufsize, fp)) >= 0) {
 			linep = buf;
 
 			while (isspace(*linep)) linep++; // ignore leading whitespace
@@ -632,12 +627,12 @@ int cookie_load(const char *fname)
 			cookie.expires = atol(p);
 			if (cookie.expires && cookie.expires < now) {
 				// drop expired cookie
-				cookie_free_cookie(&cookie);
+				mget_cookie_free_cookie(&cookie);
 				continue;
 			}
-			if (!cookie.expires && !config.keep_session_cookies) {
+			if (!cookie.expires && !keep_session_cookies) {
 				// drop session cookies
-				cookie_free_cookie(&cookie);
+				mget_cookie_free_cookie(&cookie);
 				continue;
 			}
 
@@ -645,7 +640,7 @@ int cookie_load(const char *fname)
 			for (p = *linep ? ++linep : linep; *linep && *linep != '\t';) linep++;
 			if (linep == p) {
 				error_printf(_("Incomplete entry in '%s': %s\n"), fname, buf);
-				cookie_free_cookie(&cookie);
+				mget_cookie_free_cookie(&cookie);
 				continue;
 			}
 			cookie.name = strndup(p, linep - p);
@@ -654,11 +649,11 @@ int cookie_load(const char *fname)
 			for (p = *linep ? ++linep : linep; *linep;) linep++;
 			cookie.value = strndup(p, linep - p);
 
-			if (cookie_normalize_cookie(NULL, &cookie) != 0) {
+			if (mget_cookie_normalize_cookie(NULL, &cookie) != 0) {
 				ncookies++;
-				cookie_store_cookie(&cookie);
+				mget_cookie_store_cookie(&cookie);
 			} else
-				cookie_free_cookie(&cookie);
+				mget_cookie_free_cookie(&cookie);
 		}
 
 		xfree(buf);

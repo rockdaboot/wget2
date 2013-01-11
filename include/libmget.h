@@ -24,12 +24,13 @@
  *
  */
 
-#ifndef _MGET_LIBMGET_H
-#define _MGET_LIBMGET_H
+#ifndef _LIBMGET_LIBMGET_H
+#define _LIBMGET_LIBMGET_H
 
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <time.h>
 
 // transitional defines, remove when migration to libmget is done
 #define xmalloc mget_malloc
@@ -154,6 +155,75 @@
 #endif
 
 MGET_BEGIN_DECLS
+
+/*
+ * Utility functions
+ */
+
+/**
+ * MGET_UTILITY:
+ *
+ * General utility functions
+ */
+
+int
+	mget_strcmp(const char *s1, const char *s2) G_GNUC_MGET_PURE;
+int
+	mget_strcasecmp(const char *s1, const char *s2) G_GNUC_MGET_PURE;
+void
+   mget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size) G_GNUC_MGET_NONNULL_ALL;
+ssize_t
+	mget_fdgetline(char **buf, size_t *bufsize, int fd) G_GNUC_MGET_NONNULL_ALL;
+ssize_t
+	mget_getline(char **buf, size_t *bufsize, FILE *fp) G_GNUC_MGET_NONNULL_ALL;
+FILE *
+	mget_vpopenf(const char *type, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((1,2));
+FILE *
+	mget_popenf(const char *type, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL((1,2));
+FILE *
+	popen2f(FILE **fpin, FILE **fpout, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(3,4) G_GNUC_MGET_NONNULL((3));
+pid_t
+	mget_fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv);
+pid_t
+	mget_popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *argv);
+size_t
+	vbsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, va_list) G_GNUC_MGET_PRINTF_FORMAT(3,0);
+size_t
+	bsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(3,4);
+
+/**
+ * MGET_COMPATIBILITY:
+ *
+ * General compatibility functions
+ */
+
+#ifndef HAVE_STRNDUP
+char *
+	strndup(const char *s, size_t n) G_GNUC_MGET_MALLOC G_GNUC_MGET_NONNULL_ALL;
+#endif
+
+#ifndef HAVE_STRDUP
+#	define strdup(s) strndup((s), strlen(s));
+#endif
+
+#ifndef HAVE_STRLCPY
+size_t
+	strlcpy(char *restrict dst, const char *restrict src, size_t size) G_GNUC_MGET_NONNULL_ALL;
+#endif
+
+#ifndef HAVE_VASPRINTF
+int
+	vasprintf(char **restrict buf, const char *restrict fmt, va_list) G_GNUC_MGET_PRINTF_FORMAT(2,0);
+int
+	asprintf(char **restrict buf, const char *restrict fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3);
+#endif
+
+#ifndef HAVE_DPRINTF
+int
+	vdprintf(int fd, const char *restrict fmt, va_list) G_GNUC_MGET_PRINTF_FORMAT(2,0);
+int
+	dprintf(int fd, const char *restrict fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3);
+#endif /* HAVE_DPRINTF */
 
 /*
  * Double linked list
@@ -312,21 +382,21 @@ void
 #define MGET_LOGGER_DEBUG  3
 
 void
-	mget_info_vprintf(const char *fmt, va_list args);
+	mget_info_vprintf(const char *fmt, va_list args) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(1,0);
 void
-	mget_info_printf(const char *fmt, ...);
+	mget_info_printf(const char *fmt, ...) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(1,2);
 void
-	mget_error_vprintf(const char *fmt, va_list args);
+	mget_error_vprintf(const char *fmt, va_list args) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(1,0);
 void
-	mget_error_printf(const char *fmt, ...);
+	mget_error_printf(const char *fmt, ...) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(1,2);
 void
-	mget_error_printf_exit(const char *fmt, ...);
+	mget_error_printf_exit(const char *fmt, ...) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_NORETURN G_GNUC_MGET_PRINTF_FORMAT(1,2);
 void
-	mget_debug_vprintf(const char *fmt, va_list args);
+	mget_debug_vprintf(const char *fmt, va_list args) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(1,0);
 void
-	mget_debug_printf(const char *fmt, ...);
+	mget_debug_printf(const char *fmt, ...) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(1,2);
 void
-	mget_debug_write(const char *buf, int len);
+	mget_debug_write(const char *buf, int len) G_GNUC_MGET_NONNULL_ALL;
 MGET_LOGGER *
 	mget_get_logger(int id);
 
@@ -484,6 +554,194 @@ void
 int
 	mget_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen);
 
+/*
+ * URI/IRI routines
+ */
+
+// TODO: i have to move this away from libmget.h
+extern const char * const
+	iri_schemes[];
+
+#define IRI_SCHEME_HTTP    (iri_schemes[0])
+#define IRI_SCHEME_HTTPS   (iri_schemes[1])
+#define IRI_SCHEME_FTP     (iri_schemes[2])
+#define IRI_SCHEME_DEFAULT IRI_SCHEME_HTTP
+
+typedef struct {
+	const char
+		*uri,      // pointer to original URI string
+		*display,
+		*scheme,
+		*userinfo,
+		*password,
+		*host, // unescaped, toASCII converted, lowercase
+		*port,
+		*resolv_port,
+		*path, // unescaped
+		*query, // unescaped
+		*fragment, // unescaped
+		*connection_part; // helper, e.g. http://www.example.com:8080
+	char
+		host_allocated; // if set, free host in iri_free()
+} MGET_IRI;
+
+void
+	mget_iri_test(void);
+void
+	mget_iri_free(MGET_IRI **iri);
+void
+	mget_iri_free_content(MGET_IRI *iri);
+void
+	mget_iri_set_defaultpage(const char *page);
+int
+	mget_iri_supported(const MGET_IRI *iri) G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL;
+int
+	mget_iri_isgendelim(char c) G_GNUC_MGET_CONST;
+int
+	mget_iri_issubdelim(char c) G_GNUC_MGET_CONST;
+int
+	mget_iri_isreserved(char c) G_GNUC_MGET_CONST;
+int
+	mget_iri_isunreserved(char c) G_GNUC_MGET_CONST;
+int
+	mget_iri_isunreserved_path(char c) G_GNUC_MGET_CONST;
+int
+	mget_iri_compare(MGET_IRI *iri1, MGET_IRI *iri2) G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL;
+MGET_IRI *
+	mget_iri_parse(const char *uri, const char *encoding) G_GNUC_MGET_MALLOC;
+const char *
+	mget_iri_get_connection_part(MGET_IRI *iri);
+const char *
+	mget_iri_relative_to_abs(MGET_IRI *base, const char *val, size_t len, mget_buffer_t *buf);
+const char *
+	mget_iri_escape(const char *src, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+const char *
+	mget_iri_escape_path(const char *src, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+const char *
+	mget_iri_escape_query(const char *src, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+const char *
+	mget_iri_get_escaped_host(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+const char *
+	mget_iri_get_escaped_resource(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+const char *
+	mget_iri_get_escaped_path(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+const char *
+	mget_iri_get_escaped_query(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+const char *
+	mget_iri_get_escaped_fragment(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+const char *
+	mget_iri_get_escaped_file(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+char *
+	mget_str_to_utf8(const char *src, const char *encoding) G_GNUC_MGET_MALLOC;
+
+/*
+ * Cookie routines
+ */
+
+typedef struct {
+	const char
+		*name,
+		*value,
+		*domain,
+		*path;
+	time_t
+		expires, // time of expiration (format YYYYMMDDHHMMSS)
+		maxage, // like expires, but precedes it if set
+		last_access,
+		creation;
+	unsigned int
+		domain_dot : 1, // for compatibility with Netscape cookie format
+		normalized : 1,
+		persistent : 1,
+		host_only : 1,
+		secure_only : 1, // cookie should be used over secure connections only (TLS/HTTPS)
+		http_only : 1; // just use the cookie via HTTP/HTTPS protocol
+} MGET_COOKIE;
+
+void
+	mget_cookie_init_cookie(MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL_ALL;
+void
+	mget_cookie_free_cookies(void);
+void
+	mget_cookie_normalize_cookies(const MGET_IRI *iri, const VECTOR *cookies) G_GNUC_MGET_NONNULL((1));
+void
+	mget_cookie_store_cookie(MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL_ALL;
+void
+	mget_cookie_store_cookies(VECTOR *cookies) G_GNUC_MGET_NONNULL((1));
+void
+	mget_cookie_free_public_suffixes(void);
+int
+	mget_cookie_free_cookie(MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL_ALL;
+int
+	mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL((2));
+int
+	mget_cookie_save(const char *fname, int keep_session_cookies) G_GNUC_MGET_NONNULL_ALL;
+int
+	mget_cookie_load(const char *fname, int keep_session_cookies) G_GNUC_MGET_NONNULL_ALL;
+int
+	mget_cookie_load_public_suffixes(const char *fname) G_GNUC_MGET_NONNULL_ALL;
+int
+	mget_cookie_suffix_match(const char *domain) G_GNUC_MGET_NONNULL_ALL;
+char *
+	mget_cookie_create_request_header(const MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
+
+/*
+ * CSS parsing routines
+ */
+
+void
+	mget_css_parse_buffer(
+		const char *buf,
+		void(*callback_uri)(void *user_ctx, const char *url, size_t len),
+		void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
+		void *user_ctx),
+	mget_css_parse_file(
+		const char *fname,
+		void(*callback_uri)(void *user_ctx, const char *url, size_t len),
+		void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
+		void *user_ctx);
+
+/*
+ * XML and HTML parsing routines
+ */
+
+#define XML_FLG_BEGIN      (1<<0) // <
+#define XML_FLG_CLOSE      (1<<1) // >
+#define XML_FLG_END        (1<<2) // </elem>
+#define XML_FLG_ATTRIBUTE  (1<<3) // attr="value"
+#define XML_FLG_CONTENT    (1<<4)
+#define XML_FLG_COMMENT    (1<<5) // <!-- ... -->
+//#define XML_FLG_CDATA      (1<<6) // <![CDATA[...]]>, now same handling as 'special'
+#define XML_FLG_PROCESSING (1<<7) // e.g. <? ... ?>
+#define XML_FLG_SPECIAL    (1<<8) // e.g. <!DOCTYPE ...>
+
+#define XML_HINT_REMOVE_EMPTY_CONTENT (1<<0) // merge spaces, remove empty content
+#define XML_HINT_HTML                 (1<<1) // parse HTML instead of XML
+
+#define HTML_HINT_REMOVE_EMPTY_CONTENT XML_HINT_REMOVE_EMPTY_CONTENT
+
+void
+	mget_xml_parse_buffer(
+		const char *buf,
+		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
+		void *user_ctx,
+		int hints) G_GNUC_MGET_NONNULL((1)),
+	mget_xml_parse_file(
+		const char *fname,
+		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
+		void *user_ctx,
+		int hints) G_GNUC_MGET_NONNULL((1)),
+	mget_html_parse_buffer(
+		const char *buf,
+		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
+		void *user_ctx,
+		int hints) G_GNUC_MGET_NONNULL((1)),
+	mget_html_parse_file(
+		const char *fname,
+		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
+		void *user_ctx,
+		int hints) G_GNUC_MGET_NONNULL((1));
+
 MGET_END_DECLS
 
-#endif /* _MGET_LIBMGET_H */
+#endif /* _LIBMGET_LIBMGET_H */

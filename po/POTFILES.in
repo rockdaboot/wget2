@@ -4,14 +4,14 @@ libmget/base64.c
 src/blacklist.c
 libmget/buffer.c
 libmget/buffer_printf.c
-src/cookie.c
+libmget/cookie.c
 src/css.c
 src/css_tokenizer.c
 libmget/decompressor.c
 src/hash.c
 libmget/hashmap.c
 src/http.c
-src/iri.c
+libmget/iri.c
 src/job.c
 libmget/log.c
 src/log.c
@@ -24,7 +24,7 @@ src/printf.c
 src/ssl_gnutls.c
 libmget/stringmap.c
 src/utf8.c
-src/utils.c
+libmget/utils.c
 libmget/vector.c
 libmget/mem.c
 libmget/xalloc.c

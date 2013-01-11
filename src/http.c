@@ -43,11 +43,10 @@
 
 #include <libmget.h>
 
+#include "mget.h"
 #include "options.h"
-#include "utils.h"
 #include "printf.h"
 #include "log.h"
-#include "cookie.h"
 #include "md5.h"
 #include "http.h"
 
@@ -77,7 +76,7 @@ static const unsigned char
 		['\t'] = HTTP_CTYPE_SEPERATOR
 	};
 
-static IRI
+static MGET_IRI
 	*http_proxy,
 	*https_proxy;
 
@@ -415,7 +414,7 @@ const char *http_parse_content_type(const char *s, const char **content_type, co
 
 		while (*s) {
 			s=http_parse_param(s, &param.name, &param.value);
-			if (!null_strcasecmp("charset", param.name)) {
+			if (!mget_strcasecmp("charset", param.name)) {
 				xfree(param.name);
 				*charset = param.value;
 				break;
@@ -710,7 +709,7 @@ const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 {
 	const char *name, *p;
 
-	cookie_init_cookie(cookie);
+	mget_cookie_init_cookie(cookie);
 
 	while (isspace(*s)) s++;
 	s = http_parse_token(s, &cookie->name);
@@ -785,7 +784,7 @@ const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 		} while (*s);
 
 	} else {
-		cookie_free_cookie(cookie);
+		mget_cookie_free_cookie(cookie);
 		debug_printf("Cookie without name or assignment ignored\n");
 	}
 
@@ -939,7 +938,7 @@ void http_free_challenges(VECTOR *challenges)
 
 void http_free_cookies(VECTOR *cookies)
 {
-	mget_vector_browse(cookies, (int (*)(void *))cookie_free_cookie);
+	mget_vector_browse(cookies, (int (*)(void *))mget_cookie_free_cookie);
 	mget_vector_free(&cookies);
 }
 
@@ -977,7 +976,7 @@ void http_free_request(HTTP_REQUEST **req)
 	}
 }
 
-HTTP_REQUEST *http_create_request(const IRI *iri, const char *method)
+HTTP_REQUEST *http_create_request(const MGET_IRI *iri, const char *method)
 {
 	HTTP_REQUEST *req = xcalloc(1, sizeof(HTTP_REQUEST));
 
@@ -986,8 +985,8 @@ HTTP_REQUEST *http_create_request(const IRI *iri, const char *method)
 
 	req->scheme = iri->scheme;
 	strlcpy(req->method, method, sizeof(req->method));
-	iri_get_escaped_resource(iri, &req->esc_resource);
-	iri_get_escaped_host(iri, &req->esc_host);
+	mget_iri_get_escaped_resource(iri, &req->esc_resource);
+	mget_iri_get_escaped_host(iri, &req->esc_host);
 	req->lines = mget_vector_create(8, 8, NULL);
 
 	return req;
@@ -1047,12 +1046,12 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 			*qop = mget_stringmap_get(challenge->params, "qop"),
 			*algorithm = mget_stringmap_get(challenge->params, "algorithm");
 
-		if (qop && strcmp(qop, "auth")) {
+		if (mget_strcmp(qop, "auth")) {
 			error_printf(_("Unsupported quality of protection '%s'.\n"), qop);
 			return;
 		}
 
-		if (algorithm && strcmp(algorithm, "MD5") && strcmp(algorithm, "MD5-sess")) {
+		if (mget_strcmp(algorithm, "MD5") && mget_strcmp(algorithm, "MD5-sess")) {
 			error_printf(_("Unsupported algorithm '%s'.\n"), algorithm);
 			return;
 		}
@@ -1063,7 +1062,7 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 		/// A1BUF = H(user ":" realm ":" password)
 		md5_printf_hex(a1buf, "%s:%s:%s", username, realm, password);
 
-		if (!strcmp(algorithm, "MD5-sess")) {
+		if (!mget_strcmp(algorithm, "MD5-sess")) {
 			// A1BUF = H( H(user ":" realm ":" password) ":" nonce ":" cnonce )
 			snprintf(cnonce, sizeof(cnonce), "%08lx", lrand48()); // create random hex string
 			md5_printf_hex(a1buf, "%s:%s:%s", a1buf, nonce, cnonce);
@@ -1072,7 +1071,7 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 		// A2BUF = H(method ":" path)
 		md5_printf_hex(a2buf, "%s:/%s", req->method, req->esc_resource.data);
 
-		if (!strcmp(qop, "auth") || !strcmp(qop, "auth-int")) {
+		if (!mget_strcmp(qop, "auth") || !mget_strcmp(qop, "auth-int")) {
 			// RFC 2617 Digest Access Authentication
 			if (!*cnonce)
 				snprintf(cnonce, sizeof(cnonce), "%08lx", lrand48()); // create random hex string
@@ -1093,7 +1092,7 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 			"username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/%s\", response=\"%s\"",
 			username, realm, nonce, req->esc_resource.data, response_digest);
 
-		if (!strcmp(qop,"auth"))
+		if (!mget_strcmp(qop,"auth"))
 			mget_buffer_printf_append2(&buf, ", qop=auth, nc=00000001, cnonce=\"%s\"", cnonce);
 
 		if (opaque)
@@ -1108,7 +1107,7 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 	}
 }
 
-HTTP_CONNECTION *http_open(const IRI *iri)
+HTTP_CONNECTION *http_open(const MGET_IRI *iri)
 {
 	HTTP_CONNECTION
 		*conn = xcalloc(1, sizeof(HTTP_CONNECTION));
@@ -1133,18 +1132,16 @@ HTTP_CONNECTION *http_open(const IRI *iri)
 		port = iri->resolv_port;
 	}
 
-	if ((conn->ai = conn->addrinfo = tcp_resolve(host, port)) == NULL)
+	if ((conn->addrinfo = tcp_resolve(host, port)) == NULL)
 		goto error;
 
-	for (; conn->ai; conn->ai = conn->ai->ai_next) {
-		if ((conn->tcp = tcp_connect(conn->ai, ssl ? host : NULL)) != NULL) {
-			tcp_set_timeout(conn->tcp, config.read_timeout);
-			conn->esc_host = iri->host ? strdup(iri->host) : NULL;
-			conn->port = iri->resolv_port;
-			conn->scheme = iri->scheme;
-			conn->buf = mget_buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
-			return conn;
-		}
+	if ((conn->tcp = tcp_connect(conn->addrinfo, ssl ? host : NULL)) != NULL) {
+		tcp_set_timeout(conn->tcp, config.read_timeout);
+		conn->esc_host = iri->host ? strdup(iri->host) : NULL;
+		conn->port = iri->resolv_port;
+		conn->scheme = iri->scheme;
+		conn->buf = mget_buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
+		return conn;
 	}
 
 error:
@@ -1221,7 +1218,7 @@ ssize_t http_request_to_buffer(HTTP_REQUEST *req, mget_buffer_t *buf)
 	if (use_proxy)
 		mget_buffer_strcat(buf, "Proxy-Connection: keep-alive\r\n");
 
-	mget_buffer_memcat(buf, "\r\n", 2);
+	mget_buffer_memcat(buf, "\r\n", 2); // end-of-header
 
 	return buf->length;
 }
@@ -1584,12 +1581,12 @@ HTTP_RESPONSE *http_get_response_file(HTTP_CONNECTION *conn, const char *fname)
 
 void http_set_http_proxy(const char *proxy, const char *locale)
 {
-	iri_free(&http_proxy);
-	http_proxy = iri_parse(proxy, locale);
+	mget_iri_free(&http_proxy);
+	http_proxy = mget_iri_parse(proxy, locale);
 }
 
 void http_set_https_proxy(const char *proxy, const char *locale)
 {
-	iri_free(&https_proxy);
-	https_proxy = iri_parse(proxy, locale);
+	mget_iri_free(&https_proxy);
+	https_proxy = mget_iri_parse(proxy, locale);
 }

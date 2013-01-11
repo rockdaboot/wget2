@@ -39,9 +39,9 @@
 #include <sys/time.h>
 
 #include <libmget.h>
+#include "private.h"
 
-#include "utils.h"
-#include "printf.h"
+#ifndef HAVE_DPRINTF
 
 int vasprintf(char **buf, const char *fmt, va_list args)
 {
@@ -87,6 +87,8 @@ int asprintf(char **buf, const char *fmt, ...)
 	return vasprintf(buf, fmt, args);
 	va_end(args);
 }
+
+#endif
 
 // this is similar to vasprintf, but with buffer reuse
 

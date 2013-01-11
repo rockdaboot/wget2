@@ -36,7 +36,7 @@
 
 #include <libmget.h>
 
-#include "utils.h"
+#include "mget.h"
 #include "printf.h"
 #include "md5.h"
 
@@ -54,7 +54,7 @@ void md5_printf_hex(char *digest_hex, const char *fmt, ...)
 		unsigned char digest[gnutls_hash_get_len(GNUTLS_DIG_MD5)];
 
 		if (gnutls_hash_fast(GNUTLS_DIG_MD5, plaintext, size, digest) == 0) {
-			buffer_to_hex(digest, sizeof(digest), digest_hex, sizeof(digest) * 2 +1);
+			mget_memtohex(digest, sizeof(digest), digest_hex, sizeof(digest) * 2 +1);
 		}
 
 		xfree(plaintext);

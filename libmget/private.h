@@ -24,8 +24,8 @@
  *
  */
 
-#ifndef _MGET_INTERN_H
-#define _MGET_INTERN_H
+#ifndef _LIBMGET_PRIVATE_H
+#define _LIBMGET_PRIVATE_H
 
 #include <stdlib.h> // needed for free()
 

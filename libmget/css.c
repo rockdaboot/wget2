@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of libmget.
  *
- * Mget is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * Libmget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Libmget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  * 
  *
  * css parsing routines
@@ -44,10 +44,9 @@
 #include <sys/mman.h>
 
 #include <libmget.h>
+#include "private.h"
 
-#include "log.h"
 #include "css_tokenizer.h"
-#include "css.h"
 
 // see css_tokenizer.c
 typedef void* yyscan_t;
@@ -59,7 +58,7 @@ YY_BUFFER_STATE yy_scan_string(const char * yystr, yyscan_t yyscanner);
 int yylex(yyscan_t yyscanner);
 int yylex_destroy(yyscan_t yyscanner);
 
-void css_parse_buffer(
+void mget_css_parse_buffer(
 	const char *buf,
 	void(*callback_uri)(void *user_ctx, const char *url, size_t len),
 	void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
@@ -131,7 +130,7 @@ void css_parse_buffer(
 					callback_encoding(user_ctx, text, length);
 				}
 			} else {
-				info_printf("Unknown token after @charset: %d\n", token);
+				error_printf(_("Unknown token after @charset: %d\n"), token);
 			}
 		}
 	}
@@ -139,7 +138,7 @@ void css_parse_buffer(
 	yylex_destroy(scanner);
 }
 
-void css_parse_file(
+void mget_css_parse_file(
 	const char *fname,
 	void(*callback_uri)(void *user_ctx, const char *url, size_t len),
 	void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
@@ -158,7 +157,7 @@ void css_parse_file(
 
 				if (nread > 0) {
 					buf[nread] = 0; // PROT_WRITE allows this write, MAP_PRIVATE prevents changes in underlying file system
-					css_parse_buffer(buf, callback_uri, callback_encoding, user_ctx);
+					mget_css_parse_buffer(buf, callback_uri, callback_encoding, user_ctx);
 				}
 
 				munmap(buf, nread);
@@ -179,7 +178,7 @@ void css_parse_file(
 		}
 
 		if (buf->length)
-			css_parse_buffer(buf->data, callback_uri, callback_encoding, user_ctx);
+			mget_css_parse_buffer(buf->data, callback_uri, callback_encoding, user_ctx);
 
 		mget_buffer_free(&buf);
 	}

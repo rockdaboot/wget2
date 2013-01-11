@@ -35,7 +35,6 @@
 
 #include <libmget.h>
 
-#include "xml.h"
 #include "printf.h"
 #include "metalink.h"
 
@@ -116,5 +115,5 @@ void metalink4_parse(int sockfd, HTTP_RESPONSE *resp)
 		ctx.length = 0;
 	strcpy(ctx.location, "-");
 
-	xml_parse_buffer(resp->body->data, _metalink4_parse, &ctx, 0);
+	mget_xml_parse_buffer(resp->body->data, _metalink4_parse, &ctx, 0);
 }

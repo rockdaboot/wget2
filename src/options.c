@@ -57,13 +57,11 @@
 
 #include <libmget.h>
 
-#include "utils.h"
+#include "mget.h"
 #include "log.h"
 #include "net.h"
 #include "ssl.h"
-#include "cookie.h"
 #include "options.h"
-#include "iri.h"
 #include "http.h"
 
 typedef const struct option *option_t; // forward declaration
@@ -628,7 +626,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 	mget_buffer_init(&linebuf, linebuf_static, sizeof(linebuf_static));
 
-	while ((len = getline(&buf, &bufsize, fp)) >= 0) {
+	while ((len = mget_getline(&buf, &bufsize, fp)) >= 0) {
 		if (len == 0 || *buf == '\r' || *buf == '\n') continue;
 
 		linep = buf;
@@ -905,13 +903,13 @@ int init(int argc, const char *const *argv)
 	xfree(config.https_proxy);
 
 	if (config.cookies && config.cookie_suffixes)
-		cookie_load_public_suffixes(config.cookie_suffixes);
+		mget_cookie_load_public_suffixes(config.cookie_suffixes);
 
 	if (config.load_cookies)
-		cookie_load(config.load_cookies);
+		mget_cookie_load(config.load_cookies, config.keep_session_cookies);
 
 	if (config.base_url)
-		config.base = iri_parse(config.base_url, config.local_encoding);
+		config.base = mget_iri_parse(config.base_url, config.local_encoding);
 
 	if (config.username && !config.http_username)
 		config.http_username = strdup(config.username);
@@ -933,7 +931,7 @@ int init(int argc, const char *const *argv)
 	else
 		tcp_set_preferred_family(config.preferred_family);
 
-	iri_set_defaultpage(config.default_page);
+	mget_iri_set_defaultpage(config.default_page);
 	ssl_set_check_certificate(config.check_certificate);
 
 	return n;
@@ -971,7 +969,7 @@ void deinit(void)
 	xfree(config.http_username);
 	xfree(config.http_password);
 
-	iri_free(&config.base);
+	mget_iri_free(&config.base);
 
 	mget_stringmap_free(&config.domains);
 	mget_stringmap_free(&config.exclude_domains);
@@ -1154,7 +1152,7 @@ int selftest_options(void)
 
 		for (it = 0; it < countof(test_string_short); it++) {
 			parse_command_line(3, test_string_short[it].argv);
-			if (null_strcmp(config.user_agent, test_string_short[it].result)) {
+			if (mget_strcmp(config.user_agent, test_string_short[it].result)) {
 				error_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
 				ret = 1;
 			}
@@ -1173,7 +1171,7 @@ int selftest_options(void)
 
 		for (it = 0; it < countof(test_string); it++) {
 			parse_command_line(3, test_string[it].argv);
-			if (null_strcmp(config.user_agent, test_string[it].result)) {
+			if (mget_strcmp(config.user_agent, test_string[it].result)) {
 				error_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
 				ret = 1;
 			}

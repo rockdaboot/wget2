@@ -40,7 +40,6 @@
 
 #include <libmget.h>
 
-#include "utils.h"
 #include "log.h"
 #include "hash.h"
 
@@ -119,7 +118,7 @@ int hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_hex_s
 			}
 		} else {
 			if (gnutls_hash_fast(algorithm, buf, length, digest) == 0) {
-				buffer_to_hex(digest, sizeof(digest), digest_hex, digest_hex_size);
+				mget_memtohex(digest, sizeof(digest), digest_hex, digest_hex_size);
 				ret = 0;
 			}
 

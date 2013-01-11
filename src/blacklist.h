@@ -27,12 +27,12 @@
 #ifndef _MGET_BLACKLIST_H
 #define _MGET_BLACKLIST_H
 
-#include "iri.h"
+#include <libmget.h>
 
 int
-	in_blacklist(IRI *iri) G_GNUC_MGET_NONNULL_ALL;
-IRI
-	*blacklist_add(IRI *iri);
+	in_blacklist(MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
+MGET_IRI
+	*blacklist_add(MGET_IRI *iri);
 void
 	blacklist_print(void),
 	blacklist_free(void);
