@@ -41,10 +41,7 @@
 #include <ctype.h>
 
 #include <libmget.h>
-
-#include "mget.h"
-#include "log.h"
-#include "xml.h"
+#include "private.h"
 
 typedef struct XML_CONTEXT XML_CONTEXT;
 

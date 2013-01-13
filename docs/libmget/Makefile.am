@@ -107,16 +107,20 @@ endif
 if ENABLE_GTK_DOC
 if ENABLE_MAN
 
-man_MANS = libmget.3
+#man_MANS = libmget.3
+man_MANS = libmget_list_routines.3
 
-libmget.3: $(srcdir)/xml/libmget.xml
-	@XSLTPROC@ -nonet http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+#libmget.3: $(srcdir)/xml/libmget.xml
+#libmget_list_routines.3: $(srcdir)/xml/libmget.xml
+libmget_list_routines.3: sgml.stamp
+#	@XSLTPROC@ -nonet http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+	@XSLTPROC@ -nonet http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl xml/libmget.xml
 
 endif
 endif
 
 BUILT_EXTRA_DIST = $(man_MANS)
-EXTRA_DIST += $(man_MANS)
+#EXTRA_DIST += $(man_MANS)
 CLEANFILES += $(man_MANS)
 
 #dist-hook-local: all-local

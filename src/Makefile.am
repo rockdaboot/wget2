@@ -3,7 +3,7 @@ DEFS = @DEFS@ -DSYSCONFDIR=\"$(sysconfdir)/@PACKAGE@\" -DLOCALEDIR=\"$(localedir
 bin_PROGRAMS = mget x
 mget_SOURCES = blacklist.c blacklist.h \
  hash.c hash.h http.c http.h\
- job.c job.h log.c log.h md5.c md5.h metalink.c metalink.h mget.c\
+ job.c job.h log.c log.h md5.c md5.h metalink.c metalink.h mget.c mget.h\
  net.c net.h options.c options.h ssl_gnutls.c ssl.h
 mget_CPPFLAGS = -I$(top_srcdir)/include
 mget_LDADD = ../libmget/libmget.la
