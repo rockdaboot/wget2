@@ -1127,14 +1127,15 @@ static void _css_parse_encoding(void *context, const char *encoding, size_t len)
 {
 	struct css_context *ctx = context;
 
-	if (!ctx->encoding || (!ctx->encoding_allocated && strncasecmp(ctx->encoding, encoding, len))) {
+	// take only the first @charset rule
+	if (!ctx->encoding_allocated && mget_strncasecmp(ctx->encoding, encoding, len)) {
 		ctx->encoding = strndup(encoding, len);
 		ctx->encoding_allocated = 1;
 		info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
 	}
 }
 
-static void _css_parse_uri(void *context, const char *url, size_t len)
+static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_MGET_UNUSED)
 {
 	struct css_context *ctx = context;
 
@@ -1146,7 +1147,7 @@ static void _css_parse_uri(void *context, const char *url, size_t len)
 			} else {
 				JOB *job;
 
-				if ((job = queue_add(blacklist_add(mget_iri_parse(ctx->uri_buf.data, NULL))))) {
+				if ((job = queue_add(blacklist_add(mget_iri_parse(ctx->uri_buf.data, ctx->encoding))))) {
 					if (!config.output_document)
 						job->local_filename = get_local_filename(job->iri);
 				}
@@ -1157,11 +1158,11 @@ static void _css_parse_uri(void *context, const char *url, size_t len)
 	}
 }
 
-void css_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *iri)
+void css_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char uri_buf[1024];
-	struct css_context context = { .base = iri, .sockfd = sockfd, .encoding = encoding };
+	struct css_context context = { .base = base, .sockfd = sockfd, .encoding = encoding };
 
 	mget_buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
 
@@ -1176,11 +1177,11 @@ void css_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *iri
 	mget_buffer_deinit(&context.uri_buf);
 }
 
-void css_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *iri)
+void css_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char uri_buf[1024];
-	struct css_context context = { .base = iri, .sockfd = sockfd, .encoding = encoding };
+	struct css_context context = { .base = base, .sockfd = sockfd, .encoding = encoding };
 
 	mget_buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
 
@@ -1409,7 +1410,7 @@ HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 {
 	HTTP_CONNECTION *conn;
 	HTTP_RESPONSE *resp = NULL;
-	VECTOR *challenges = NULL;
+	MGET_VECTOR *challenges = NULL;
 //	int max_redirect = 3;
 
 	while (iri) {

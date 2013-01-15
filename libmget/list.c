@@ -35,9 +35,9 @@
 #include "private.h"
 
 /**
- * SECTION:libmget
+ * SECTION:libmget-list
  * @short_description: Double linked list routines
- * @title: libmget list routines
+ * @title: libmget-list
  * @stability: stable
  * @include: libmget.h
  *

@@ -71,7 +71,8 @@ Z		z|\\0{0,4}(5a|7a)(\r\n|[ \t\r\n\f])?|\\z
 
 {s}			{return S;}
 
-\/\*[^*]*\*+([^/*][^*]*\*+)*\/		/* ignore comments */
+{comment}	{return COMMENT;}
+#\/\*[^*]*\*+([^/*][^*]*\*+)*\/		/* ignore comments */
 {badcomment}                         /* unclosed comment at EOF */
 
 "<!--"		{return CDO;}

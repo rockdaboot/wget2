@@ -973,7 +973,7 @@ static void test_vector(void)
 		*tmp,
 		txt_sorted[5] = { {""}, {"four"}, {"one"}, {"three"}, {"two"} },
 		*txt[countof(txt_sorted)];
-	VECTOR
+	MGET_VECTOR
 		*v = mget_vector_create(2, -2, (int(*)(const void *, const void *))compare_txt);
 	size_t
 		it;
@@ -1126,7 +1126,7 @@ static void test_stringmap(void)
 	http_parse_challenge("Basic realm=\"test realm\"", &challenge);
 	http_free_challenge(&challenge);
 
-	VECTOR *challenges;
+	MGET_VECTOR *challenges;
 	challenges = mget_vector_create(2, 2, NULL);
 	http_parse_challenge("Basic realm=\"test realm\"", &challenge);
 	mget_vector_add(challenges, &challenge, sizeof(challenge));

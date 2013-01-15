@@ -279,19 +279,18 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	// read hostname
 	hostname = gnutls_session_get_ptr(session);
 
-	if (config.debug)
-		print_info(session);
-
 	/* This verification function uses the trusted CAs in the credentials
 	 * structure. So you must have installed one or more CA certificates.
 	 */
 	if (gnutls_certificate_verify_peers2(session, &status) < 0) {
+		if (mget_get_logger(MGET_LOGGER_DEBUG))
+			print_info(session);
 		error_printf(_("%s: Certificate verification error\n"), tag);
 		ret = -1;
 		goto out;
 	}
 
-	if (config.debug)
+	if (mget_get_logger(MGET_LOGGER_DEBUG))
 		print_info(session);
 
 	if (status) {
@@ -571,7 +570,7 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 			break;
 	}
 
-	if (config.debug)
+	if (mget_get_logger(MGET_LOGGER_DEBUG))
 		print_info(session);
 
 	if (ret <= 0) {

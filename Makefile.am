@@ -1,4 +1,4 @@
-SUBDIRS = po include libmget src data tests docs/libmget
+SUBDIRS = po include libmget src data examples tests docs/libmget
 ACLOCAL_AMFLAGS= -I m4
 
 # Enable GTK-Doc during make distcheck

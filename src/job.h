@@ -71,7 +71,7 @@ typedef struct {
 		*referer;
 
 	// Metalink information
-	VECTOR
+	MGET_VECTOR
 		*mirrors,
 		*hashes, // checksums of complete file
 		*pieces, // checksums of smaller pieces of the file

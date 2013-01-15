@@ -72,6 +72,23 @@ int mget_strcasecmp(const char *s1, const char *s2)
 	}
 }
 
+// strcasecmp which also accepts NULL values
+
+int mget_strncasecmp(const char *s1, const char *s2, size_t n)
+{
+	if (!s1) {
+		if (!s2)
+			return 0;
+		else
+			return -1;
+	} else {
+		if (!s2)
+			return 1;
+		else
+			return strncasecmp(s1, s2, n);
+	}
+}
+
 void mget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size)
 {
 	size_t it;

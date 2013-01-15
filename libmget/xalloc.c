@@ -33,7 +33,27 @@
 #include <libmget.h>
 #include "private.h"
 
-static void G_GNUC_MGET_NORETURN
+/**
+ * SECTION:libmget-xalloc
+ * @short_description: Memory allocation functions
+ * @title: libmget-xalloc
+ * @stability: stable
+ * @include: libmget.h
+ *
+ * The provided memory allocation functions are used by explicit libmget memory
+ * allocations.
+ * They differ from the standard ones in that they exit the program in an
+ * out-of-memory situation with %EXIT_FAILURE. That means, you don't have to
+ * check the returned value against %NULL.
+ *
+ * You can provide a out-of-memory function that will be called before exit(),
+ * e.g. to print out a "No memory" message.
+ *
+ * To work around this behavior, either provide your own allocation routines,
+ * namely malloc(), calloc(), realloc().
+ */
+
+static void
 	(*_oom_func)(void);
 
 static inline void G_GNUC_MGET_NORETURN _no_memory(void)
@@ -44,11 +64,25 @@ static inline void G_GNUC_MGET_NORETURN _no_memory(void)
 	exit(EXIT_FAILURE);
 }
 
-void mget_set_oomfunc(G_GNUC_MGET_NORETURN void (*oom_func)(void))
+/**
+ * mget_set_oomfunc:
+ * @oom_func: Pointer to your custom out-of-memory function.
+ *
+ * Set a custom out-of-memory function.
+ */
+void mget_set_oomfunc(void (*oom_func)(void))
 {
 	_oom_func = oom_func;
 }
 
+/**
+ * mget_malloc:
+ * @size: Number of bytes to allocate.
+ *
+ * Like the standard malloc(), except that it doesn't return %NULL values.
+ *
+ * Return: A pointer to the allocated (uninitialized) memory.
+ */
 void *mget_malloc(size_t size)
 {
 	void *p = malloc(size);
@@ -57,6 +91,15 @@ void *mget_malloc(size_t size)
 	return p;
 }
 
+/**
+ * mget_calloc:
+ * @nmemb: Number of elements (each of size @size) to allocate.
+ * @size: Size of element.
+ *
+ * Like the standard calloc(), except that it doesn't return %NULL values.
+ *
+ * Return: A pointer to the allocated (initialized) memory.
+ */
 void *mget_calloc(size_t nmemb, size_t size)
 {
 	void *p = calloc(nmemb, size);
@@ -65,6 +108,15 @@ void *mget_calloc(size_t nmemb, size_t size)
 	return p;
 }
 
+/**
+ * mget_realloc:
+ * @ptr: Pointer to old memory area.
+ * @size: Number of bytes to allocate for the new memory area.
+ *
+ * Like the standard realloc(), except that it doesn't return %NULL values.
+ *
+ * Return: A pointer to the new memory area.
+ */
 void *mget_realloc(void *ptr, size_t size)
 {
 	void *p = realloc(ptr, size);

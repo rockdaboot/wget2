@@ -170,6 +170,8 @@ int
 	mget_strcmp(const char *s1, const char *s2) G_GNUC_MGET_PURE;
 int
 	mget_strcasecmp(const char *s1, const char *s2) G_GNUC_MGET_PURE;
+int
+	mget_strncasecmp(const char *s1, const char *s2, size_t n) G_GNUC_MGET_PURE;
 void
    mget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size) G_GNUC_MGET_NONNULL_ALL;
 ssize_t
@@ -181,15 +183,15 @@ FILE *
 FILE *
 	mget_popenf(const char *type, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL((1,2));
 FILE *
-	popen2f(FILE **fpin, FILE **fpout, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(3,4) G_GNUC_MGET_NONNULL((3));
+	mget_popen2f(FILE **fpin, FILE **fpout, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(3,4) G_GNUC_MGET_NONNULL((3));
 pid_t
 	mget_fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv);
 pid_t
 	mget_popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *argv);
 size_t
-	vbsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, va_list) G_GNUC_MGET_PRINTF_FORMAT(3,0);
+	mget_vbsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, va_list) G_GNUC_MGET_PRINTF_FORMAT(3,0);
 size_t
-	bsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(3,4);
+	mget_bsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(3,4);
 
 /**
  * MGET_COMPATIBILITY:
@@ -265,7 +267,7 @@ void *
 void *
 	mget_realloc(void *ptr, size_t size) G_GNUC_MGET_ALLOC_SIZE(2);
 void
-	mget_set_oomfunc(G_GNUC_MGET_NORETURN void (*oom_func)(void));
+	mget_set_oomfunc(void (*oom_func)(void));
 
 /*
  * String/Memory routines, slightly different than standard functions
@@ -404,58 +406,58 @@ MGET_LOGGER *
  * Vector datatype routines
  */
 
-typedef struct _MGET_VECTOR VECTOR;
+typedef struct _MGET_VECTOR MGET_VECTOR;
 
-VECTOR *
+MGET_VECTOR *
 	mget_vector_create(int max, int off, int (*cmp)(const void *, const void *)) G_GNUC_MGET_MALLOC;
 int
-	mget_vector_find(const VECTOR *v, const void *elem) G_GNUC_MGET_NONNULL((2));
+	mget_vector_find(const MGET_VECTOR *v, const void *elem) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_findext(const VECTOR *v, int start, int direction, int (*find)(void *)) G_GNUC_MGET_NONNULL((4));
+	mget_vector_findext(const MGET_VECTOR *v, int start, int direction, int (*find)(void *)) G_GNUC_MGET_NONNULL((4));
 int
-	mget_vector_insert(VECTOR *v, const void *elem, size_t size, int pos) G_GNUC_MGET_NONNULL((2));
+	mget_vector_insert(MGET_VECTOR *v, const void *elem, size_t size, int pos) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_insert_noalloc(VECTOR *v, const void *elem, int pos) G_GNUC_MGET_NONNULL((2));
+	mget_vector_insert_noalloc(MGET_VECTOR *v, const void *elem, int pos) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_insert_sorted(VECTOR *v, const void *elem, size_t size) G_GNUC_MGET_NONNULL((2));
+	mget_vector_insert_sorted(MGET_VECTOR *v, const void *elem, size_t size) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_insert_sorted_noalloc(VECTOR *v, const void *elem) G_GNUC_MGET_NONNULL((2));
+	mget_vector_insert_sorted_noalloc(MGET_VECTOR *v, const void *elem) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_add(VECTOR *v, const void *elem, size_t size) G_GNUC_MGET_NONNULL((2));
+	mget_vector_add(MGET_VECTOR *v, const void *elem, size_t size) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_add_noalloc(VECTOR *v, const void *elem) G_GNUC_MGET_NONNULL((2));
+	mget_vector_add_noalloc(MGET_VECTOR *v, const void *elem) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_add_str(VECTOR *v, const char *s) G_GNUC_MGET_NONNULL((2));
+	mget_vector_add_str(MGET_VECTOR *v, const char *s) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_add_vprintf(VECTOR *v, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((2));
+	mget_vector_add_vprintf(MGET_VECTOR *v, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_add_printf(VECTOR *v, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL((2));
+	mget_vector_add_printf(MGET_VECTOR *v, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_replace(VECTOR *v, const void *elem, size_t size, int pos) G_GNUC_MGET_NONNULL((2));
+	mget_vector_replace(MGET_VECTOR *v, const void *elem, size_t size, int pos) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_move(VECTOR *v, int old_pos, int new_pos);
+	mget_vector_move(MGET_VECTOR *v, int old_pos, int new_pos);
 int
-	mget_vector_swap(VECTOR *v, int pos1, int pos2);
+	mget_vector_swap(MGET_VECTOR *v, int pos1, int pos2);
 int
-	mget_vector_remove(VECTOR *v, int pos);
+	mget_vector_remove(MGET_VECTOR *v, int pos);
 int
-	mget_vector_remove_nofree(VECTOR *v, int pos);
+	mget_vector_remove_nofree(MGET_VECTOR *v, int pos);
 int
-	mget_vector_size(const VECTOR *v);
+	mget_vector_size(const MGET_VECTOR *v);
 int
-	mget_vector_browse(const VECTOR *v, int (*browse)(void *elem)) G_GNUC_MGET_NONNULL((2));
+	mget_vector_browse(const MGET_VECTOR *v, int (*browse)(void *elem)) G_GNUC_MGET_NONNULL((2));
 void
-	mget_vector_free(VECTOR **v);
+	mget_vector_free(MGET_VECTOR **v);
 void
-	mget_vector_clear(VECTOR *v);
+	mget_vector_clear(MGET_VECTOR *v);
 void
-	mget_vector_clear_nofree(VECTOR *v);
+	mget_vector_clear_nofree(MGET_VECTOR *v);
 void *
-	mget_vector_get(const VECTOR *v, int pos);
+	mget_vector_get(const MGET_VECTOR *v, int pos);
 void
-	mget_vector_setcmpfunc(VECTOR *v, int (*cmp)(const void *elem1, const void *elem2)) G_GNUC_MGET_NONNULL((2));
+	mget_vector_setcmpfunc(MGET_VECTOR *v, int (*cmp)(const void *elem1, const void *elem2)) G_GNUC_MGET_NONNULL((2));
 void
-	mget_vector_sort(VECTOR *v);
+	mget_vector_sort(MGET_VECTOR *v);
 
 /*
  * Hashmap datatype routines
@@ -663,11 +665,11 @@ void
 void
 	mget_cookie_free_cookies(void);
 void
-	mget_cookie_normalize_cookies(const MGET_IRI *iri, const VECTOR *cookies) G_GNUC_MGET_NONNULL((1));
+	mget_cookie_normalize_cookies(const MGET_IRI *iri, const MGET_VECTOR *cookies) G_GNUC_MGET_NONNULL((1));
 void
 	mget_cookie_store_cookie(MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL_ALL;
 void
-	mget_cookie_store_cookies(VECTOR *cookies) G_GNUC_MGET_NONNULL((1));
+	mget_cookie_store_cookies(MGET_VECTOR *cookies) G_GNUC_MGET_NONNULL((1));
 void
 	mget_cookie_free_public_suffixes(void);
 int
@@ -689,17 +691,36 @@ char *
  * CSS parsing routines
  */
 
+typedef struct {
+	size_t
+		org_len;
+	size_t
+		len;
+	size_t
+		pos;
+	const char *
+		org_url;
+	const char *
+		url;
+} MGET_CSS_URL;
+
 void
 	mget_css_parse_buffer(
 		const char *buf,
-		void(*callback_uri)(void *user_ctx, const char *url, size_t len),
+		void(*callback_uri)(void *user_ctx, const char *url, size_t len, size_t pos),
 		void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
-		void *user_ctx),
+		void *user_ctx) G_GNUC_MGET_NONNULL((1));
+void
 	mget_css_parse_file(
 		const char *fname,
-		void(*callback_uri)(void *user_ctx, const char *url, size_t len),
+		void(*callback_uri)(void *user_ctx, const char *url, size_t len, size_t pos),
 		void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
-		void *user_ctx);
+		void *user_ctx) G_GNUC_MGET_NONNULL((1));
+MGET_VECTOR *
+	css_get_uris_from_localfile(
+		const char *fname,
+		MGET_IRI *base,
+		const char **encoding) G_GNUC_MGET_NONNULL((1));
 
 /*
  * XML and HTML parsing routines

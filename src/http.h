@@ -84,7 +84,7 @@ enum {
 
 // keep the request as simple as possible
 typedef struct {
-	VECTOR
+	MGET_VECTOR
 		*lines;
 	const char
 		*scheme;
@@ -100,7 +100,7 @@ typedef struct {
 
 // just parse the header lines that we need
 typedef struct {
-	VECTOR
+	MGET_VECTOR
 		*links,
 		*digests,
 		*cookies,
@@ -166,7 +166,7 @@ const char
 char
 	*http_print_date(time_t t, char *buf, size_t bufsize) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_add_param(VECTOR **params, HTTP_HEADER_PARAM *param) G_GNUC_MGET_NONNULL_ALL,
+	http_add_param(MGET_VECTOR **params, HTTP_HEADER_PARAM *param) G_GNUC_MGET_NONNULL_ALL,
 	http_add_header_vprintf(HTTP_REQUEST *req, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL,
 	http_add_header_printf(HTTP_REQUEST *req, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL,
 	http_add_header_line(HTTP_REQUEST *req, const char *line) G_GNUC_MGET_NONNULL_ALL,
@@ -182,10 +182,10 @@ int
 	http_free_challenge(HTTP_CHALLENGE *challenge),
 	http_free_link(HTTP_LINK *link);
 void
-	http_free_cookies(VECTOR *cookies),
-	http_free_digests(VECTOR *digests),
-	http_free_challenges(VECTOR *challenges),
-	http_free_links(VECTOR *link),
+	http_free_cookies(MGET_VECTOR *cookies),
+	http_free_digests(MGET_VECTOR *digests),
+	http_free_challenges(MGET_VECTOR *challenges),
+	http_free_links(MGET_VECTOR *link),
 //	http_free_header(HTTP_HEADER **header),
 	http_free_request(HTTP_REQUEST **req),
 	http_free_response(HTTP_RESPONSE **resp);

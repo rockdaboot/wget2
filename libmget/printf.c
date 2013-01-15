@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of libmget.
  *
- * Mget is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * Libmget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Libmget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * printf style routines
@@ -92,7 +92,7 @@ int asprintf(char **buf, const char *fmt, ...)
 
 // this is similar to vasprintf, but with buffer reuse
 
-size_t vbsprintf(char **buf, size_t *bufsize, const char *fmt, va_list args)
+size_t mget_vbsprintf(char **buf, size_t *bufsize, const char *fmt, va_list args)
 {
 	size_t len;
 	va_list args2;
@@ -122,12 +122,12 @@ size_t vbsprintf(char **buf, size_t *bufsize, const char *fmt, va_list args)
 	return len;
 }
 
-size_t bsprintf(char **buf, size_t *bufsize, const char *fmt, ...)
+size_t mget_bsprintf(char **buf, size_t *bufsize, const char *fmt, ...)
 {
 	va_list args;
 
 	va_start(args, fmt);
-	return vbsprintf(buf, bufsize, fmt, args);
+	return mget_vbsprintf(buf, bufsize, fmt, args);
 	va_end(args);
 }
 

@@ -197,6 +197,7 @@ AC_CONFIG_FILES([Makefile po/Makefile.in
                  src/Makefile
                  docs/libmget/Makefile
                  data/Makefile
+                 examples/Makefile
                  tests/Makefile])
 AC_OUTPUT
 

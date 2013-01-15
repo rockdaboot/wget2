@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2012 Tim Ruehsen
+ * Copyright(c) 2013 Tim Ruehsen
  *
  * This file is part of libmget.
  *

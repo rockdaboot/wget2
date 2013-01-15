@@ -90,7 +90,7 @@ struct ADDR_ENTRY {
 };
 
 // resolver / DNS cache container
-static VECTOR
+static MGET_VECTOR
 	*dns_cache;
 
 struct addrinfo *tcp_resolve(const char *host, const char *port)

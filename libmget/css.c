@@ -55,17 +55,18 @@ char *yyget_text(yyscan_t yyscanner);
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 int yylex_init(yyscan_t* scanner);
 YY_BUFFER_STATE yy_scan_string(const char * yystr, yyscan_t yyscanner);
+YY_BUFFER_STATE yy_scan_bytes(const char * yystr, int len, yyscan_t yyscanner);
 int yylex(yyscan_t yyscanner);
 int yylex_destroy(yyscan_t yyscanner);
 
 void mget_css_parse_buffer(
 	const char *buf,
-	void(*callback_uri)(void *user_ctx, const char *url, size_t len),
+	void(*callback_uri)(void *user_ctx, const char *url, size_t len, size_t pos),
 	void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
 	void *user_ctx)
 {
 	int token;
-	int length;
+	size_t length, pos = 0;
 	char *text;
 	yyscan_t scanner;
 
@@ -77,26 +78,30 @@ void mget_css_parse_buffer(
 	while ((token = yylex(scanner)) != CSSEOF) {
 		if (token == IMPORT_SYM) {
 			// e.g. @import "http:example.com/index.html"
+			pos += yyget_leng(scanner);
 
 			// skip whitespace before URI/STRING
-			while ((token = yylex(scanner)) == S);
+			while ((token = yylex(scanner)) == S)
+				pos += yyget_leng(scanner);
 
 			// now token should be STRING or URI
 			if (token == STRING)
 				token = URI;
 		}
 
-		if (token == URI) {
+		if (token == URI && callback_uri) {
 			// e.g. url(http:example.com/index.html)
 			text = yyget_text(scanner);
 			length = yyget_leng(scanner);
 
 			if (*text == '\'' || *text == '\"') {
 				// a string - remove the quotes
-				callback_uri(user_ctx, text + 1, length - 2);
+				callback_uri(user_ctx, text + 1, length - 2, pos + 1);
 			} else {
 				// extract URI from url(...)
 				if (!strncasecmp(text, "url(", 4)) {
+					char *otext = text;
+
 					// remove trailing ) and any spaces before
 					for (length--; isspace(text[length - 1]); length--);
 
@@ -108,14 +113,17 @@ void mget_css_parse_buffer(
 						text++;
 						length -= 2;
 					}
+
+					callback_uri(user_ctx, text, length, pos + (text - otext));
 				}
-				callback_uri(user_ctx, text, length);
 			}
-		} else if (token == CHARSET_SYM) {
+		} else if (token == CHARSET_SYM && callback_encoding) {
 			// e.g. @charset "UTF-8"
+			pos += yyget_leng(scanner);
 
 			// skip whitespace before charset name
-			while ((token = yylex(scanner)) == S);
+			while ((token = yylex(scanner)) == S)
+				pos += yyget_leng(scanner);
 
 			// now token should be STRING
 			if (token == STRING) {
@@ -133,6 +141,7 @@ void mget_css_parse_buffer(
 				error_printf(_("Unknown token after @charset: %d\n"), token);
 			}
 		}
+		pos += yyget_leng(scanner);
 	}
 
 	yylex_destroy(scanner);
@@ -140,7 +149,7 @@ void mget_css_parse_buffer(
 
 void mget_css_parse_file(
 	const char *fname,
-	void(*callback_uri)(void *user_ctx, const char *url, size_t len),
+	void(*callback_uri)(void *user_ctx, const char *url, size_t len, size_t pos),
 	void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
 	void *user_ctx)
 {

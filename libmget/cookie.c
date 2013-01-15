@@ -53,7 +53,7 @@ typedef struct {
 		wildcard; // this is a wildcard rule (e.g. *.sapporo.jp)
 } PUBLIC_SUFFIX;
 
-static VECTOR
+static MGET_VECTOR
 	*cookies,
 	*suffixes,
 	*suffix_exceptions;
@@ -428,7 +428,7 @@ int mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie)
 	return 1;
 }
 
-void mget_cookie_normalize_cookies(const MGET_IRI *iri, const VECTOR *cookies)
+void mget_cookie_normalize_cookies(const MGET_IRI *iri, const MGET_VECTOR *cookies)
 {
 	int it;
 
@@ -467,7 +467,7 @@ void mget_cookie_store_cookie(MGET_COOKIE *cookie)
 	pthread_mutex_unlock(&cookies_mutex);
 }
 
-void mget_cookie_store_cookies(VECTOR *cookies)
+void mget_cookie_store_cookies(MGET_VECTOR *cookies)
 {
 	int it;
 

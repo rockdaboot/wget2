@@ -1,5 +1,5 @@
 <SECTION>
-<FILE>libmget</FILE>
+<FILE>libmget-list</FILE>
 <TITLE>Double Linked List</TITLE>
 MGET_LIST
 mget_list_append
@@ -9,4 +9,13 @@ mget_list_getlast
 mget_list_remove
 mget_list_browse
 mget_list_free
+</SECTION>
+
+<SECTION>
+<FILE>libmget-xalloc</FILE>
+<TITLE>Memory Allocation Functions</TITLE>
+mget_set_oomfunc
+mget_malloc
+mget_calloc
+mget_realloc
 </SECTION>

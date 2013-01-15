@@ -49,7 +49,8 @@ enum {
   NUMBER,
   URI,
   BAD_URI,
-  FUNCTION
+  FUNCTION,
+  COMMENT
 };
 
 #define YY_FATAL_ERROR(msg) error_printf_exit(msg)

@@ -16,8 +16,8 @@
 
   <chapter>
     <title>LibMget functions</title>
-        <xi:include href="xml/libmget.xml"/>
-
+        <xi:include href="xml/libmget-list.xml"/>
+        <xi:include href="xml/libmget-xalloc.xml"/>
   </chapter>
   <chapter id="object-tree">
     <title>Object Hierarchy</title>
