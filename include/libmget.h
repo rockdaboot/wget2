@@ -309,7 +309,8 @@ typedef struct {
 	size_t
 		size; // capacity of 'data' (terminating 0 byte doesn't count here)
 	unsigned int
-		release_data : 1, // 'data' has been malloc'ed and must be freed
+		release_data : 1; // 'data' has been malloc'ed and must be freed
+	unsigned int
 		release_buf : 1; // buffer_t structure has been malloc'ed and must be freed
 } mget_buffer_t;
 
@@ -570,19 +571,30 @@ extern const char * const
 #define IRI_SCHEME_DEFAULT IRI_SCHEME_HTTP
 
 typedef struct {
-	const char
-		*uri,      // pointer to original URI string
-		*display,
-		*scheme,
-		*userinfo,
-		*password,
-		*host, // unescaped, toASCII converted, lowercase
-		*port,
-		*resolv_port,
-		*path, // unescaped
-		*query, // unescaped
-		*fragment, // unescaped
-		*connection_part; // helper, e.g. http://www.example.com:8080
+	const char *
+		uri;      // pointer to original URI string
+	const char *
+		display;
+	const char *
+		scheme;
+	const char *
+		userinfo;
+	const char *
+		password;
+	const char *
+		host; // unescaped, toASCII converted, lowercase
+	const char *
+		port;
+	const char *
+		resolv_port;
+	const char *
+		path; // unescaped
+	const char *
+		query; // unescaped
+	const char *
+		fragment; // unescaped
+	const char *
+		connection_part; // helper, e.g. http://www.example.com:8080
 	char
 		host_allocated; // if set, free host in iri_free()
 } MGET_IRI;
@@ -641,22 +653,33 @@ char *
  */
 
 typedef struct {
-	const char
-		*name,
-		*value,
-		*domain,
-		*path;
+	const char *
+		name;
+	const char *
+		value;
+	const char *
+		domain;
+	const char *
+		path;
 	time_t
-		expires, // time of expiration (format YYYYMMDDHHMMSS)
-		maxage, // like expires, but precedes it if set
-		last_access,
+		expires; // time of expiration (format YYYYMMDDHHMMSS)
+	time_t
+		maxage; // like expires, but precedes it if set
+	time_t
+		last_access;
+	time_t
 		creation;
 	unsigned int
-		domain_dot : 1, // for compatibility with Netscape cookie format
-		normalized : 1,
-		persistent : 1,
-		host_only : 1,
-		secure_only : 1, // cookie should be used over secure connections only (TLS/HTTPS)
+		domain_dot : 1; // for compatibility with Netscape cookie format
+	unsigned int
+		normalized : 1;
+	unsigned int
+		persistent : 1;
+	unsigned int
+		host_only : 1;
+	unsigned int
+		secure_only : 1; // cookie should be used over secure connections only (TLS/HTTPS)
+	unsigned int
 		http_only : 1; // just use the cookie via HTTP/HTTPS protocol
 } MGET_COOKIE;
 
@@ -717,7 +740,7 @@ void
 		void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
 		void *user_ctx) G_GNUC_MGET_NONNULL((1));
 MGET_VECTOR *
-	css_get_uris_from_localfile(
+	css_get_urls_from_localfile(
 		const char *fname,
 		MGET_IRI *base,
 		const char **encoding) G_GNUC_MGET_NONNULL((1));
@@ -762,6 +785,79 @@ void
 		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
 		void *user_ctx,
 		int hints) G_GNUC_MGET_NONNULL((1));
+
+/*
+ * TCP network routines
+ */
+
+typedef struct _TCP MGET_TCP;
+
+void
+	mget_tcp_close(MGET_TCP **tcp) G_GNUC_MGET_NONNULL_ALL;
+void
+	mget_tcp_set_timeout(MGET_TCP *tcp, int timeout);
+void
+	mget_tcp_set_connect_timeout(int timeout);
+void
+	mget_tcp_set_dns_timeout(int timeout);
+void
+	mget_tcp_set_dns_caching(int caching);
+void
+	mget_tcp_set_debug(int debug);
+void
+	mget_tcp_set_family(int family);
+void
+	mget_tcp_set_preferred_family(int family);
+void
+	mget_tcp_set_bind_address(const char *bind_address);
+struct addrinfo *
+	mget_tcp_resolve(const char *restrict name, const char *restrict port) G_GNUC_MGET_NONNULL((1));
+MGET_TCP *
+	mget_tcp_connect(struct addrinfo *addrinfo, const char *hostname) G_GNUC_MGET_NONNULL((1));
+ssize_t
+	mget_tcp_vprintf(MGET_TCP *tcp, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL;
+ssize_t
+	mget_tcp_printf(MGET_TCP *tcp, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL;
+ssize_t
+	mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count) G_GNUC_MGET_NONNULL_ALL;
+ssize_t
+	mget_tcp_read(MGET_TCP *tcp, char *buf, size_t count) G_GNUC_MGET_NONNULL_ALL;
+
+/*
+ * SSL routines
+ */
+
+#define MGET_SSL_X509_FMT_PEM 0
+#define MGET_SSL_X509_FMT_DER 1
+
+#define MGET_SSL_SECURE_PROTOCOL   1
+#define MGET_SSL_CA_DIRECTORY      2
+#define MGET_SSL_CA_CERT           3
+#define MGET_SSL_CERT_FILE         4
+#define MGET_SSL_PRIVATE_KEY       5
+#define MGET_SSL_CHECK_CERTIFICATE 6
+#define MGET_SSL_CERT_TYPE         7
+#define MGET_SSL_PRIVATE_KEY_TYPE  8
+
+void
+	mget_ssl_init(void);
+void
+	mget_ssl_deinit(void);
+void
+	mget_ssl_set_config_string(int key, const char *value);
+void
+	mget_ssl_set_config_int(int key, int value);
+void *
+	mget_ssl_open(int sockfd, const char *hostname, int connect_timeout) G_GNUC_MGET_NONNULL_ALL;
+void
+	mget_ssl_close(void **session) G_GNUC_MGET_NONNULL_ALL;
+void
+	mget_ssl_set_check_certificate(char value);
+
+ssize_t
+	mget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout) G_GNUC_MGET_NONNULL_ALL;
+ssize_t
+	mget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout) G_GNUC_MGET_NONNULL_ALL;
 
 MGET_END_DECLS
 

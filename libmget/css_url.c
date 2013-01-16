@@ -49,7 +49,7 @@ typedef struct {
 } _CSS_CONTEXT;
 
 // Callback function, called from CSS parser for each @charset found.
-static void _css_parse_encoding(void *context G_GNUC_MGET_UNUSED, const char *encoding, size_t len)
+static void _css_get_encoding(void *context G_GNUC_MGET_UNUSED, const char *encoding, size_t len)
 {
 	_CSS_CONTEXT *ctx = context;
 
@@ -61,7 +61,7 @@ static void _css_parse_encoding(void *context G_GNUC_MGET_UNUSED, const char *en
 }
 
 // Callback function, called from CSS parser for each URI found.
-static void _css_parse_uri(void *context G_GNUC_MGET_UNUSED, const char *url, size_t len, size_t pos G_GNUC_MGET_UNUSED)
+static void _css_get_url(void *context G_GNUC_MGET_UNUSED, const char *url, size_t len, size_t pos G_GNUC_MGET_UNUSED)
 {
 	_CSS_CONTEXT *ctx = context;
 
@@ -84,14 +84,14 @@ static void _css_parse_uri(void *context G_GNUC_MGET_UNUSED, const char *url, si
 	}
 }
 
-MGET_VECTOR *css_get_uris_from_localfile(const char *fname, MGET_IRI *base, const char **encoding)
+MGET_VECTOR *css_get_urls_from_localfile(const char *fname, MGET_IRI *base, const char **encoding)
 {
 	_CSS_CONTEXT context = { .base = base, .encoding = encoding };
 
 	context.uris = mget_vector_create(32, -2, NULL);
 	mget_buffer_init(&context.uri_buf, NULL, 128);
 
-	mget_css_parse_file(fname, _css_parse_uri, encoding ? _css_parse_encoding : NULL, &context);
+	mget_css_parse_file(fname, _css_get_url, encoding ? _css_get_encoding : NULL, &context);
 
 	mget_buffer_deinit(&context.uri_buf);
 

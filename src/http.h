@@ -38,7 +38,6 @@
 #include <libmget.h>
 
 #include "job.h"
-#include "net.h"
 
 // FLAGS for http_get_file()
 #define HTTP_FLG_USE_FILE (1<<0) // use filename without path for saving files
@@ -47,15 +46,17 @@
 #define HTTP_FLG_APPEND   (1<<3) // append to file
 
 typedef struct {
-	const char
-		*name,
-		*value;
+	const char *
+		name;
+	const char *
+		value;
 } HTTP_HEADER_PARAM;
 
 typedef struct {
-	const char
-		*uri,
-		*type;
+	const char *
+		uri;
+	const char *
+		type;
 	int
 		pri;
 	enum {
@@ -65,16 +66,17 @@ typedef struct {
 } HTTP_LINK;
 
 typedef struct {
-	const char
-		*algorithm,
-		*encoded_digest;
+	const char *
+		algorithm;
+	const char *
+		encoded_digest;
 } HTTP_DIGEST;
 
 typedef struct {
-	const char
-		*auth_scheme;
-	MGET_STRINGMAP
-		*params;
+	const char *
+		auth_scheme;
+	MGET_STRINGMAP *
+		params;
 } HTTP_CHALLENGE;
 
 enum {
@@ -84,12 +86,13 @@ enum {
 
 // keep the request as simple as possible
 typedef struct {
-	MGET_VECTOR
-		*lines;
-	const char
-		*scheme;
+	MGET_VECTOR *
+		lines;
+	const char *
+		scheme;
 	mget_buffer_t
-		esc_resource, // URI escaped resource
+		esc_resource; // URI escaped resource
+	mget_buffer_t
 		esc_host; // URI escaped host
 	char
 		esc_resource_buf[256],
@@ -130,7 +133,7 @@ typedef struct {
 } HTTP_RESPONSE;
 
 typedef struct {
-	tcp_t
+	MGET_TCP *
 		tcp;
 	struct addrinfo
 		*addrinfo;

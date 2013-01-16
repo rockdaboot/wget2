@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of libmget.
  *
- * Mget is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * Libmget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Libmget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * gnutls SSL/TLS routines
@@ -41,23 +41,53 @@
 #include <gnutls/x509.h>
 
 #include <libmget.h>
+#include "private.h"
 
-#include "log.h"
-#include "options.h"
-#include "ssl.h"
+static struct _config {
+	const char
+		*secure_protocol,
+		*ca_directory,
+		*ca_cert,
+		*cert_file,
+		*private_key;
+	char
+		check_certificate,
+		cert_type,
+		private_key_type;
+} _config = {
+	.check_certificate=1,
+	.cert_type = MGET_SSL_X509_FMT_PEM,
+	.private_key_type = MGET_SSL_X509_FMT_PEM,
+	.secure_protocol = "AUTO",
+	.ca_directory = "system"
+};
 
 static gnutls_certificate_credentials_t
-	credentials;
+	_credentials;
 
-static char
-	check_certificate;
-
-void ssl_set_check_certificate(char value)
+void mget_ssl_set_config_string(int key, const char *value)
 {
-	check_certificate = value;
+	switch (key) {
+	case MGET_SSL_SECURE_PROTOCOL: _config.secure_protocol = value; break;
+	case MGET_SSL_CA_DIRECTORY: _config.ca_directory = value; break;
+	case MGET_SSL_CA_CERT: _config.ca_cert = value; break;
+	case MGET_SSL_CERT_FILE: _config.cert_file = value; break;
+	case MGET_SSL_PRIVATE_KEY: _config.private_key = value; break;
+	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
+	}
 }
 
-static void print_x509_certificate_info(gnutls_session_t session)
+void mget_ssl_set_config_int(int key, int value)
+{
+	switch (key) {
+	case MGET_SSL_CHECK_CERTIFICATE: _config.check_certificate = (char)value; break;
+	case MGET_SSL_CERT_TYPE: _config.cert_type = (char)value; break;
+	case MGET_SSL_PRIVATE_KEY_TYPE: _config.private_key_type = (char)value; break;
+	default: error_printf(_("Unknown config key %d (or value must not be an integer)\n"), key);
+	}
+}
+
+static void _print_x509_certificate_info(gnutls_session_t session)
 {
 	char dn[128];
 	unsigned char digest[20];
@@ -149,7 +179,7 @@ static void print_x509_certificate_info(gnutls_session_t session)
 	}
 }
 
-static int print_info(gnutls_session_t session)
+static int _print_info(gnutls_session_t session)
 {
 	const char *tmp;
 	gnutls_credentials_type_t cred;
@@ -219,7 +249,7 @@ static int print_info(gnutls_session_t session)
 		/* if the certificate list is available, then
 		 * print some information about it.
 		 */
-		print_x509_certificate_info(session);
+		_print_x509_certificate_info(session);
 
 		break;
 
@@ -274,7 +304,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	int ret = 0, err;
 	gnutls_x509_crt_t cert;
 	const char *hostname;
-	const char *tag = check_certificate ? _("ERROR") : _("WARNING");
+	const char *tag = _config.check_certificate ? _("ERROR") : _("WARNING");
 
 	// read hostname
 	hostname = gnutls_session_get_ptr(session);
@@ -284,14 +314,14 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	 */
 	if (gnutls_certificate_verify_peers2(session, &status) < 0) {
 		if (mget_get_logger(MGET_LOGGER_DEBUG))
-			print_info(session);
+			_print_info(session);
 		error_printf(_("%s: Certificate verification error\n"), tag);
 		ret = -1;
 		goto out;
 	}
 
 	if (mget_get_logger(MGET_LOGGER_DEBUG))
-		print_info(session);
+		_print_info(session);
 
 	if (status) {
 		if (status & GNUTLS_CERT_INVALID)
@@ -363,7 +393,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	// 0: continue handshake
 	// else: stop handshake
 out:
-	return check_certificate ? ret : 0;
+	return _config.check_certificate ? ret : 0;
 }
 
 static int _init;
@@ -371,23 +401,23 @@ static pthread_mutex_t _mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // ssl_init() is thread safe and may be called several times
 
-void ssl_init(void)
+void mget_ssl_init(void)
 {
 	pthread_mutex_lock(&_mutex);
 
 	if (!_init) {
 		debug_printf("GnuTLS init\n");
 		gnutls_global_init();
-		gnutls_certificate_allocate_credentials(&credentials);
+		gnutls_certificate_allocate_credentials(&_credentials);
 //		gnutls_certificate_set_x509_trust_file(credentials, "/etc/ssl/certs/ca-certificates.crt", GNUTLS_X509_FMT_PEM);
-		gnutls_certificate_set_verify_function(credentials, _verify_certificate_callback);
+		gnutls_certificate_set_verify_function(_credentials, _verify_certificate_callback);
 
-		if (config.ca_directory && *config.ca_directory) {
+		if (_config.ca_directory && *_config.ca_directory) {
 			int ncerts = -1;
 
 #ifdef GNUTLS_NONBLOCK
-			if (!strcmp(config.ca_directory, "system")) {
-				ncerts = gnutls_certificate_set_x509_system_trust(credentials);
+			if (!strcmp(_config.ca_directory, "system")) {
+				ncerts = gnutls_certificate_set_x509_system_trust(_credentials);
 			}
 #endif
 
@@ -396,9 +426,9 @@ void ssl_init(void)
 
 				ncerts = 0;
 
-				if ((dir = opendir(config.ca_directory))) {
+				if ((dir = opendir(_config.ca_directory))) {
 					struct dirent *dp;
-					size_t dirlen = strlen(config.ca_directory);
+					size_t dirlen = strlen(_config.ca_directory);
 
 					while ((dp = readdir(dir))) {
 						size_t len = strlen(dp->d_name);
@@ -407,59 +437,57 @@ void ssl_init(void)
 							struct stat st;
 							char fname[dirlen + 1 + len + 1];
 
-							snprintf(fname, sizeof(fname), "%s/%s", config.ca_directory, dp->d_name);
+							snprintf(fname, sizeof(fname), "%s/%s", _config.ca_directory, dp->d_name);
 							if (!stat(fname, &st) && S_ISREG(st.st_mode)) {
 								int rc;
 
 								debug_printf("GnuTLS loading %s\n", fname);
-								if ((rc = gnutls_certificate_set_x509_trust_file(credentials, fname, GNUTLS_X509_FMT_PEM)) <= 0)
+								if ((rc = gnutls_certificate_set_x509_trust_file(_credentials, fname, GNUTLS_X509_FMT_PEM)) <= 0)
 									debug_printf("Failed to load certs: (%d)\n", rc);
 								else
 									ncerts += rc;
-								if (rc!=1)
-									debug_printf("Loaded %d certs\n", rc);
 							}
 						}
 					}
 
 					closedir(dir);
 				} else {
-					error_printf(_("Failed to diropen %s\n"), config.ca_directory);
+					error_printf(_("Failed to diropen %s\n"), _config.ca_directory);
 				}
 			}
 
 			debug_printf("Certificates loaded: %d\n", ncerts);
 		}
 
-		if (config.cert_file && !config.private_key) {
+		if (_config.cert_file && !_config.private_key) {
 			/* Use the private key from the cert file unless otherwise specified. */
-			config.private_key = config.cert_file;
-			config.private_key_type = config.cert_type;
+			_config.private_key = _config.cert_file;
+			_config.private_key_type = _config.cert_type;
 		}
-		else if (!config.cert_file && config.private_key) {
+		else if (!_config.cert_file && _config.private_key) {
 			/* Use the cert from the private key file unless otherwise specified. */
-			config.cert_file = config.private_key;
-			config.cert_type = config.private_key_type;
+			_config.cert_file = _config.private_key;
+			_config.cert_type = _config.private_key_type;
 		}
 
-		if (config.cert_file && config.private_key) {
+		if (_config.cert_file && _config.private_key) {
 			int type;
 
-			if (config.private_key_type != config.cert_type) {
+			if (_config.private_key_type != _config.cert_type) {
 				/* GnuTLS can't handle this */
 				error_printf_exit(_("ERROR: GnuTLS requires the key and the cert to be of the same type.\n"));
 			}
 
-			if (config.private_key_type == MGET_SSL_X509_FMT_DER)
+			if (_config.private_key_type == MGET_SSL_X509_FMT_DER)
 				type = GNUTLS_X509_FMT_DER;
 			else
 				type = GNUTLS_X509_FMT_PEM;
 
-			gnutls_certificate_set_x509_key_file(credentials, config.cert_file, config.private_key, type);
+			gnutls_certificate_set_x509_key_file(_credentials, _config.cert_file, _config.private_key, type);
 		}
 
-		if (config.ca_cert)
-			gnutls_certificate_set_x509_trust_file(credentials, config.ca_cert, GNUTLS_X509_FMT_PEM);
+		if (_config.ca_cert)
+			gnutls_certificate_set_x509_trust_file(_credentials, _config.ca_cert, GNUTLS_X509_FMT_PEM);
 
 		debug_printf("GnuTLS init done\n");
 	}
@@ -472,12 +500,12 @@ void ssl_init(void)
 // ssl_deinit() is thread safe and may be called several times
 // only the last deinit really takes action
 
-void ssl_deinit(void)
+void mget_ssl_deinit(void)
 {
 	pthread_mutex_lock(&_mutex);
 
 	if (_init == 1) {
-		gnutls_certificate_free_credentials(credentials);
+		gnutls_certificate_free_credentials(_credentials);
 		gnutls_global_deinit();
 	}
 
@@ -486,7 +514,7 @@ void ssl_deinit(void)
 	pthread_mutex_unlock(&_mutex);
 }
 
-static int ready_2_transfer(gnutls_session_t session, int timeout, int mode)
+static int _ready_2_transfer(gnutls_session_t session, int timeout, int mode)
 {
 	// 0: no timeout / immediate
 	// -1: INFINITE timeout
@@ -508,22 +536,22 @@ static int ready_2_transfer(gnutls_session_t session, int timeout, int mode)
 	return 1;
 }
 
-static int ready_2_read(gnutls_session_t session, int timeout)
+static int _ready_2_read(gnutls_session_t session, int timeout)
 {
-	return ready_2_transfer(session, timeout, POLLIN);
+	return _ready_2_transfer(session, timeout, POLLIN);
 }
 
-static int ready_2_write(gnutls_session_t session, int timeout)
+static int _ready_2_write(gnutls_session_t session, int timeout)
 {
-	return ready_2_transfer(session, timeout, POLLOUT);
+	return _ready_2_transfer(session, timeout, POLLOUT);
 }
 
-void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
+void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 {
 	gnutls_session_t session;
 	int ret;
 
-	ssl_init();
+	mget_ssl_init();
 
 #ifdef GNUTLS_NONBLOCK
 	gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
@@ -534,13 +562,13 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	gnutls_session_set_ptr(session, (void *)hostname);
 	// RFC 6066 SNI Server Name Indication
 	gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
-	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, credentials);
+	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, _credentials);
 	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
 
-	if (!strncasecmp(config.secure_protocol, "SSL", 3))
-		ret = gnutls_priority_set_direct (session, "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0", NULL);
-	else if (!strcasecmp(config.secure_protocol, "TLSv1"))
-		ret = gnutls_priority_set_direct (session, "NORMAL:-VERS-SSL3.0", NULL);
+	if (!strncasecmp(_config.secure_protocol, "SSL", 3))
+		ret = gnutls_priority_set_direct(session, "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0", NULL);
+	else if (!strcasecmp(_config.secure_protocol, "TLSv1"))
+		ret = gnutls_priority_set_direct(session, "NORMAL:-VERS-SSL3.0", NULL);
 	else
 		ret = gnutls_priority_set_direct(session, "NORMAL:%COMPAT", NULL);
 
@@ -560,10 +588,10 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 
 		if (gnutls_record_get_direction(session)) {
 			// wait for writeability
-			ret = ready_2_write(session, connect_timeout);
+			ret = _ready_2_write(session, connect_timeout);
 		} else {
 			// wait for readability
-			ret = ready_2_read(session, connect_timeout);
+			ret = _ready_2_read(session, connect_timeout);
 		}
 
 		if (ret <= 0)
@@ -571,7 +599,7 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	}
 
 	if (mget_get_logger(MGET_LOGGER_DEBUG))
-		print_info(session);
+		_print_info(session);
 
 	if (ret <= 0) {
 		if (ret)
@@ -579,7 +607,7 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 		else
 			debug_printf("Handshake timed out\n");
 		gnutls_perror(ret);
-		ssl_close((void **)&session);
+		mget_ssl_close((void **)&session);
 	} else {
 		debug_printf("Handshake completed\n");
 	}
@@ -587,7 +615,7 @@ void *ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	return session;
 }
 
-void ssl_close(void **session)
+void mget_ssl_close(void **session)
 {
 	gnutls_session_t s = *session;
 
@@ -598,13 +626,13 @@ void ssl_close(void **session)
 	}
 }
 
-ssize_t ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
+ssize_t mget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 {
 	ssize_t nbytes;
 	int rc;
 
 	for (;;) {
-		if (gnutls_record_check_pending(session) <= 0 && (rc=ready_2_read(session, timeout)) <= 0)
+		if (gnutls_record_check_pending(session) <= 0 && (rc=_ready_2_read(session, timeout)) <= 0)
 			return rc;
 
 		nbytes=gnutls_record_recv(session, buf, count);
@@ -616,11 +644,11 @@ ssize_t ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 	return nbytes < -1 ? -1 : nbytes;
 }
 
-ssize_t ssl_write_timeout(void *session, const char *buf, size_t count, int timeout)
+ssize_t mget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout)
 {
 	int rc;
 
-	if ((rc=ready_2_write(session, timeout)) <= 0)
+	if ((rc=_ready_2_write(session, timeout)) <= 0)
 		return rc;
 
 	return gnutls_record_send(session, buf, count);

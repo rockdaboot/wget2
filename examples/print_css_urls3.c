@@ -126,7 +126,7 @@ int main(int argc, const char *const *argv)
 
 	for (;argpos < argc; argpos++) {
 		// use '-' as filename for STDIN
-		MGET_VECTOR *css_urls = css_get_uris_from_localfile(argv[argpos], base_uri, &css_encoding);
+		MGET_VECTOR *css_urls = css_get_urls_from_localfile(argv[argpos], base_uri, &css_encoding);
 
 		if (mget_vector_size(css_urls) > 0) {
 			info_printf("URL encoding for %s is '%s':\n", argv[argpos], css_encoding ? css_encoding : "UTF-8");

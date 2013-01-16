@@ -39,6 +39,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
+#include <netdb.h>
 #include <zlib.h>
 
 #include <libmget.h>
@@ -1132,11 +1133,11 @@ HTTP_CONNECTION *http_open(const MGET_IRI *iri)
 		port = iri->resolv_port;
 	}
 
-	if ((conn->addrinfo = tcp_resolve(host, port)) == NULL)
+	if ((conn->addrinfo = mget_tcp_resolve(host, port)) == NULL)
 		goto error;
 
-	if ((conn->tcp = tcp_connect(conn->addrinfo, ssl ? host : NULL)) != NULL) {
-		tcp_set_timeout(conn->tcp, config.read_timeout);
+	if ((conn->tcp = mget_tcp_connect(conn->addrinfo, ssl ? host : NULL)) != NULL) {
+		mget_tcp_set_timeout(conn->tcp, config.read_timeout);
 		conn->esc_host = iri->host ? strdup(iri->host) : NULL;
 		conn->port = iri->resolv_port;
 		conn->scheme = iri->scheme;
@@ -1152,7 +1153,7 @@ error:
 void http_close(HTTP_CONNECTION **conn)
 {
 	if (conn && *conn) {
-		tcp_close(&(*conn)->tcp);
+		mget_tcp_close(&(*conn)->tcp);
 		if (!config.dns_caching)
 			freeaddrinfo((*conn)->addrinfo);
 		xfree((*conn)->esc_host);
@@ -1172,7 +1173,7 @@ int http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 		return -1;
 	}
 
-	if (tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
+	if (mget_tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
 		error_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
 		return -1;
 	}
@@ -1239,7 +1240,7 @@ HTTP_RESPONSE *http_get_response_cb(
 	buf = conn->buf->data;
 	bufsize = conn->buf->size;
 
-	while ((nbytes = tcp_read(conn->tcp, buf + nread, bufsize - nread)) > 0) {
+	while ((nbytes = mget_tcp_read(conn->tcp, buf + nread, bufsize - nread)) > 0) {
 		debug_printf("nbytes %zd nread %zd %zd\n", nbytes, nread, bufsize);
 		nread += nbytes;
 		buf[nread] = 0; // 0-terminate to allow string functions
@@ -1354,7 +1355,7 @@ HTTP_RESPONSE *http_get_response_cb(
 			//log_printf("#1 p='%.16s'\n",p);
 			// read: chunk-size [ chunk-extension ] CRLF
 			while ((!(end = strchr(p, '\r')) || end[1] != '\n')) {
-				if ((nbytes = tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)
+				if ((nbytes = mget_tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)
 					goto cleanup;
 
 				body_len += nbytes;
@@ -1378,7 +1379,7 @@ HTTP_RESPONSE *http_get_response_cb(
 						memmove(buf, buf + body_len - 3, 4); // plus 0 terminator, just in case
 						body_len = 3;
 					}
-					if ((nbytes = tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)
+					if ((nbytes = mget_tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)
 						goto cleanup;
 
 					body_len += nbytes;
@@ -1404,7 +1405,7 @@ HTTP_RESPONSE *http_get_response_cb(
 			debug_printf("need at least %zd more bytes\n", chunk_size);
 
 			while (chunk_size > 0) {
-				if ((nbytes = tcp_read(conn->tcp, buf, bufsize)) <= 0)
+				if ((nbytes = mget_tcp_read(conn->tcp, buf, bufsize)) <= 0)
 					goto cleanup;
 				debug_printf("a nbytes=%zd chunk_size=%zd\n", nread, chunk_size);
 
@@ -1440,7 +1441,7 @@ HTTP_RESPONSE *http_get_response_cb(
 		if (body_len)
 			mget_decompress(dc, buf, body_len);
 
-		while (body_len < resp->content_length && ((nbytes = tcp_read(conn->tcp, buf, bufsize)) > 0)) {
+		while (body_len < resp->content_length && ((nbytes = mget_tcp_read(conn->tcp, buf, bufsize)) > 0)) {
 			body_len += nbytes;
 			debug_printf("nbytes %zd total %zd/%zd\n", nbytes, body_len, resp->content_length);
 			mget_decompress(dc, buf, nbytes);
@@ -1459,7 +1460,7 @@ HTTP_RESPONSE *http_get_response_cb(
 		if (body_len)
 			mget_decompress(dc, buf, body_len);
 
-		while ((nbytes = tcp_read(conn->tcp, buf, bufsize)) > 0) {
+		while ((nbytes = mget_tcp_read(conn->tcp, buf, bufsize)) > 0) {
 			body_len += nbytes;
 			debug_printf("nbytes %zd total %zd\n", nbytes, body_len);
 			mget_decompress(dc, buf, nbytes);

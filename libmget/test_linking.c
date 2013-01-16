@@ -19,9 +19,11 @@ int main(void)
 	mget_list_free((MGET_LIST **)1); // list.c
 	mget_get_logger(0); // log.c
 	mget_logger_set_filename(NULL, ""); // logger.c
+	mget_tcp_set_debug(0); // net.c
 	mget_strdup(""); // mem.c
 	mget_popenf("r", "%s", ""); // pipe.c
 	mget_bsprintf(NULL, NULL, "%s", ""); // printf.c
+	mget_ssl_set_config_int(0, 0); // ssl_[gnutls].c
 	mget_stringmap_create(0); // stringmap.c
 	if (mget_strcmp("", "")) {}; // utils.c
 	mget_vector_size(NULL); // vector.c

@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of libmget.
  *
- * Mget is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * Libmget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Libmget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * network routines
@@ -48,13 +48,9 @@
 #include <netinet/in.h>
 
 #include <libmget.h>
+#include "private.h"
 
-#include "mget.h"
-#include "log.h"
-#include "ssl.h"
-#include "net.h"
-
-struct TCP {
+struct _TCP {
 	void *
 		ssl_session;
 	int
@@ -93,7 +89,7 @@ struct ADDR_ENTRY {
 static MGET_VECTOR
 	*dns_cache;
 
-struct addrinfo *tcp_resolve(const char *host, const char *port)
+struct addrinfo *mget_tcp_resolve(const char *host, const char *port)
 {
 	if (dns_cache) {
 		struct ADDR_ENTRY *entryp, entry = { .host = host, .port = port };
@@ -243,17 +239,17 @@ struct addrinfo *tcp_resolve(const char *host, const char *port)
 	}
 }
 
-void tcp_set_debug(int _debug)
+void mget_tcp_set_debug(int _debug)
 {
 	debug = _debug;
 }
 
-void tcp_set_preferred_family(int _family)
+void mget_tcp_set_preferred_family(int _family)
 {
 	preferred_family = _family;
 }
 
-void tcp_set_family(int _family)
+void mget_tcp_set_family(int _family)
 {
 	family = _family;
 }
@@ -268,7 +264,7 @@ static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL compare_addr(struct ADDR_ENT
 	return n;
 }
 
-void tcp_set_dns_caching(int caching)
+void mget_tcp_set_dns_caching(int caching)
 {
 	pthread_mutex_lock(&dns_mutex);
 	if (caching) {
@@ -288,17 +284,17 @@ void tcp_set_dns_caching(int caching)
 	pthread_mutex_unlock(&dns_mutex);
 }
 
-void tcp_set_dns_timeout(int timeout)
+void mget_tcp_set_dns_timeout(int timeout)
 {
 	dns_timeout = timeout;
 }
 
-void tcp_set_connect_timeout(int _timeout)
+void mget_tcp_set_connect_timeout(int _timeout)
 {
 	connect_timeout = _timeout;
 }
 
-void tcp_set_timeout(tcp_t tcp, int _timeout)
+void mget_tcp_set_timeout(MGET_TCP *tcp, int _timeout)
 {
 	if (tcp)
 		tcp->timeout = _timeout;
@@ -306,7 +302,7 @@ void tcp_set_timeout(tcp_t tcp, int _timeout)
 		timeout = _timeout;
 }
 
-void tcp_set_bind_address(const char *bind_address)
+void mget_tcp_set_bind_address(const char *bind_address)
 {
 	if (bind_addrinfo) {
 		freeaddrinfo(bind_addrinfo);
@@ -337,16 +333,16 @@ void tcp_set_bind_address(const char *bind_address)
 		}
 		if (*s == ':') {
 			*s = 0;
-			bind_addrinfo = tcp_resolve(host, s + 1); // bind to specified port
+			bind_addrinfo = mget_tcp_resolve(host, s + 1); // bind to specified port
 		} else {
-			bind_addrinfo = tcp_resolve(host, NULL); // bind to any host
+			bind_addrinfo = mget_tcp_resolve(host, NULL); // bind to any host
 		}
 	}
 }
 
-tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
+MGET_TCP *mget_tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 {
-	tcp_t tcp = NULL;
+	MGET_TCP *tcp = NULL;
 	struct addrinfo *ai;
 	int sockfd = -1, rc;
 	char adr[NI_MAXHOST], port[NI_MAXSERV];
@@ -397,9 +393,9 @@ tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 				tcp->timeout = timeout;
 				if (hostname) {
 					tcp->ssl = 1;
-					tcp->ssl_session = ssl_open(tcp->sockfd, hostname, connect_timeout);
+					tcp->ssl_session = mget_ssl_open(tcp->sockfd, hostname, connect_timeout);
 					if (!tcp->ssl_session) {
-						tcp_close(&tcp);
+						mget_tcp_close(&tcp);
 						continue;
 					}
 				}
@@ -411,12 +407,12 @@ tcp_t tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 	return tcp;
 }
 
-ssize_t tcp_read(tcp_t tcp, char *buf, size_t count)
+ssize_t mget_tcp_read(MGET_TCP *tcp, char *buf, size_t count)
 {
 	ssize_t rc;
 
 	if (tcp->ssl) {
-		rc = ssl_read_timeout(tcp->ssl_session, buf, count, tcp->timeout);
+		rc = mget_ssl_read_timeout(tcp->ssl_session, buf, count, tcp->timeout);
 	} else {
 		// 0: no timeout / immediate
 		// -1: INFINITE timeout
@@ -441,13 +437,13 @@ ssize_t tcp_read(tcp_t tcp, char *buf, size_t count)
 	return rc;
 }
 
-ssize_t tcp_write(tcp_t tcp, const char *buf, size_t count)
+ssize_t mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count)
 {
 	ssize_t nwritten = 0, n;
 	int rc;
 
 	if (tcp->ssl)
-		return ssl_write_timeout(tcp->ssl_session, buf, count, timeout);
+		return mget_ssl_write_timeout(tcp->ssl_session, buf, count, timeout);
 
 	while (count) {
 		// 0: no timeout / immediate
@@ -486,15 +482,12 @@ ssize_t tcp_write(tcp_t tcp, const char *buf, size_t count)
 	return 0;
 }
 
-ssize_t tcp_send(tcp_t tcp, const char *fmt, ...)
+ssize_t mget_tcp_vprintf(MGET_TCP *tcp, const char *fmt, va_list args)
 {
 	char sbuf[4096], *bufp = NULL;
 	ssize_t len, len2 = 0;
-	va_list args;
 
-	va_start(args, fmt);
 	len = vsnprintf(sbuf, sizeof(sbuf), fmt, args);
-	va_end(args);
 
 	if (len >= 0 && len < (ssize_t)sizeof(sbuf)) {
 		// message fits into buf - most likely case
@@ -503,9 +496,7 @@ ssize_t tcp_send(tcp_t tcp, const char *fmt, ...)
 		// POSIX compliant or glibc >= 2.1
 		bufp = xmalloc(len + 1);
 
-		va_start(args, fmt);
 		len = vsnprintf(bufp, len + 1, fmt, args);
-		va_end(args);
 	} else if (len == -1) {
 		// oldstyle with ugly try-and-error fallback (maybe just truncate the msg ?)
 		size_t size = sizeof(sbuf);
@@ -513,16 +504,14 @@ ssize_t tcp_send(tcp_t tcp, const char *fmt, ...)
 		do {
 			xfree(bufp);
 			bufp = xmalloc(size *= 2);
-			va_start(args, fmt);
 			len = vsnprintf(bufp, size, fmt, args);
-			va_end(args);
 		} while (len == -1);
 	} else {
 		error_printf("tcp_send: internal error: unexpected length %zd\n", len);
 		return 0;
 	}
 
-	len2 = tcp_write(tcp, bufp, len);
+	len2 = mget_tcp_write(tcp, bufp, len);
 	if (len2 > 0)
 		debug_write(bufp, len2);
 
@@ -535,7 +524,16 @@ ssize_t tcp_send(tcp_t tcp, const char *fmt, ...)
 	return len2;
 }
 
-void tcp_close(tcp_t *tcp)
+ssize_t mget_tcp_printf(MGET_TCP *tcp, const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	return mget_tcp_vprintf(tcp, fmt, args);
+	va_end(args);
+}
+
+void mget_tcp_close(MGET_TCP **tcp)
 {
 	if (tcp && *tcp) {
 		if ((*tcp)->sockfd != -1) {
@@ -543,7 +541,7 @@ void tcp_close(tcp_t *tcp)
 			(*tcp)->sockfd = -1;
 		}
 		if ((*tcp)->ssl && (*tcp)->ssl_session) {
-			ssl_close(&(*tcp)->ssl_session);
+			mget_ssl_close(&(*tcp)->ssl_session);
 		}
 		xfree(*tcp);
 	}

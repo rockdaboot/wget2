@@ -47,7 +47,6 @@
 #include <libmget.h>
 
 #include "mget.h"
-#include "net.h"
 #include "http.h"
 #include "log.h"
 #include "job.h"
@@ -55,7 +54,6 @@
 #include "options.h"
 #include "metalink.h"
 #include "blacklist.h"
-#include "ssl.h"
 
 typedef struct {
 	pthread_t
@@ -422,10 +420,6 @@ int main(int argc, const char *const *argv)
 	sigaction(SIGTERM, &sig_action, NULL);
 	sigaction(SIGINT, &sig_action, NULL);
 
-	//	tcp_settracefunction(NULL,(void (*)(const char *, ...))log_printf);
-	//	tcp_seterrorfunction(NULL,(void (*)(const char *, ...))err_printf);
-	//	tcp_config(NULL,C_TRACE,1);
-
 	n = init(argc, argv);
 
 	for (; n < argc; n++) {
@@ -745,7 +739,7 @@ int main(int argc, const char *const *argv)
 	// freeing to avoid disguising valgrind output
 	mget_cookie_free_public_suffixes();
 	mget_cookie_free_cookies();
-	ssl_deinit();
+	mget_ssl_deinit();
 	queue_free();
 	blacklist_free();
 	xfree(downloader);

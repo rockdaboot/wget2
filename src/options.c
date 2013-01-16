@@ -53,14 +53,13 @@
 #include <fcntl.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <netdb.h>
 #include <stringprep.h>
 
 #include <libmget.h>
 
 #include "mget.h"
 #include "log.h"
-#include "net.h"
-#include "ssl.h"
 #include "options.h"
 #include "http.h"
 
@@ -918,21 +917,30 @@ int init(int argc, const char *const *argv)
 		config.http_password = strdup(config.password);
 
 	// set module specific options
-	tcp_set_debug(config.debug);
-	tcp_set_timeout(NULL, config.read_timeout);
-	tcp_set_connect_timeout(config.connect_timeout);
-	tcp_set_dns_timeout(config.dns_timeout);
-	tcp_set_dns_caching(config.dns_caching);
-	tcp_set_bind_address(config.bind_address);
+	mget_tcp_set_debug(config.debug);
+	mget_tcp_set_timeout(NULL, config.read_timeout);
+	mget_tcp_set_connect_timeout(config.connect_timeout);
+	mget_tcp_set_dns_timeout(config.dns_timeout);
+	mget_tcp_set_dns_caching(config.dns_caching);
+	mget_tcp_set_bind_address(config.bind_address);
 	if (config.inet4_only)
-		tcp_set_family(AF_INET);
+		mget_tcp_set_family(AF_INET);
 	else if (config.inet6_only)
-		tcp_set_family(AF_INET6);
+		mget_tcp_set_family(AF_INET6);
 	else
-		tcp_set_preferred_family(config.preferred_family);
+		mget_tcp_set_preferred_family(config.preferred_family);
 
 	mget_iri_set_defaultpage(config.default_page);
-	ssl_set_check_certificate(config.check_certificate);
+
+	// SSL settings
+	mget_ssl_set_config_int(MGET_SSL_CHECK_CERTIFICATE, config.check_certificate);
+	mget_ssl_set_config_int(MGET_SSL_CERT_TYPE, config.cert_type);
+	mget_ssl_set_config_int(MGET_SSL_PRIVATE_KEY_TYPE, config.private_key_type);
+	mget_ssl_set_config_string(MGET_SSL_SECURE_PROTOCOL, config.secure_protocol);
+	mget_ssl_set_config_string(MGET_SSL_CA_DIRECTORY, config.ca_directory);
+	mget_ssl_set_config_string(MGET_SSL_CA_CERT, config.ca_cert);
+	mget_ssl_set_config_string(MGET_SSL_CERT_FILE, config.cert_file);
+	mget_ssl_set_config_string(MGET_SSL_PRIVATE_KEY, config.private_key);
 
 	return n;
 }
@@ -942,8 +950,8 @@ int init(int argc, const char *const *argv)
 
 void deinit(void)
 {
-	tcp_set_dns_caching(0); // frees DNS cache
-	tcp_set_bind_address(NULL); // free bind address
+	mget_tcp_set_dns_caching(0); // frees DNS cache
+	mget_tcp_set_bind_address(NULL); // free bind address
 
 	xfree(config.cookie_suffixes);
 	xfree(config.load_cookies);

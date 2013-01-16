@@ -50,6 +50,7 @@
 #define error_printf mget_error_printf
 #define error_printf_exit mget_error_printf_exit
 #define debug_printf mget_debug_printf
+#define debug_write mget_debug_write
 
 // _MGET_LOGGER is shared between log.c and logger.c, but must no be exposed to the public
 struct _MGET_LOGGER {
