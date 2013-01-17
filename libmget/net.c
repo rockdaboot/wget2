@@ -64,10 +64,9 @@ struct _TCP {
 static int
 	// timeouts in milliseconds
 	// there is no real 'connect timeout', since connects are async
-	dns_timeout,
-	connect_timeout,
-	timeout, // read and write timeouts are the same
-	debug,
+	dns_timeout = -1,
+	connect_timeout = -1,
+	timeout = -1, // read and write timeouts are the same
 	family = AF_UNSPEC,
 	preferred_family;
 static struct addrinfo
@@ -205,7 +204,7 @@ struct addrinfo *mget_tcp_resolve(const char *host, const char *port)
 			}
 		}
 
-		if (debug) {
+		if (mget_get_logger(MGET_LOGGER_DEBUG)->vprintf) {
 			for (ai = addrinfo; ai; ai = ai->ai_next) {
 				char adr[NI_MAXHOST], sport[NI_MAXSERV];
 				int rc;
@@ -239,11 +238,6 @@ struct addrinfo *mget_tcp_resolve(const char *host, const char *port)
 	}
 }
 
-void mget_tcp_set_debug(int _debug)
-{
-	debug = _debug;
-}
-
 void mget_tcp_set_preferred_family(int _family)
 {
 	preferred_family = _family;
@@ -269,7 +263,7 @@ void mget_tcp_set_dns_caching(int caching)
 	pthread_mutex_lock(&dns_mutex);
 	if (caching) {
 		if (!dns_cache)
-			dns_cache = mget_vector_create(4,-2,(int(*)(const void *, const void *))compare_addr);
+			dns_cache = mget_vector_create(4, -2, (int(*)(const void *, const void *))compare_addr);
 	} else {
 		if (dns_cache) {
 			int it;
@@ -282,6 +276,11 @@ void mget_tcp_set_dns_caching(int caching)
 		}
 	}
 	pthread_mutex_unlock(&dns_mutex);
+}
+
+int mget_tcp_get_dns_caching(void)
+{
+	return !!dns_cache;
 }
 
 void mget_tcp_set_dns_timeout(int timeout)
@@ -348,7 +347,7 @@ MGET_TCP *mget_tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 	char adr[NI_MAXHOST], port[NI_MAXSERV];
 
 	for (ai = addrinfo; ai && !tcp; ai = ai->ai_next) {
-		if (debug) {
+		if (mget_get_logger(MGET_LOGGER_DEBUG)->vprintf) {
 			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
 				debug_printf("trying %s:%s...\n", adr, port);
 			else
@@ -368,7 +367,7 @@ MGET_TCP *mget_tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 				error_printf(_("Failed to set socket option NODELAY\n"));
 
 			if (bind_addrinfo) {
-				if (debug) {
+				if (mget_get_logger(MGET_LOGGER_DEBUG)->vprintf) {
 					if ((rc = getnameinfo(bind_addrinfo->ai_addr, bind_addrinfo->ai_addrlen, adr, sizeof(adr), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
 						debug_printf("binding to %s:%s...\n", adr, port);
 					else

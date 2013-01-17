@@ -43,7 +43,6 @@
 
 #include "../src/options.h"
 #include "../src/log.h"
-#include "../src/net.h"
 #include "../src/http.h"
 
 // number of elements within an array
@@ -736,7 +735,7 @@ static void _css_dump_charset(G_GNUC_MGET_UNUSED void *user_ctx, const char *enc
 	debug_printf(_("URI content encoding = '%.*s'\n"), (int)len, encoding);
 }
 
-static void _css_dump_uri(G_GNUC_MGET_UNUSED void *user_ctx, const char *url, size_t len)
+static void _css_dump_uri(G_GNUC_MGET_UNUSED void *user_ctx, const char *url, size_t len, G_GNUC_MGET_UNUSED size_t pos)
 {
 	debug_printf("*** %zu '%.*s'\n", len, (int)len, url);
 }

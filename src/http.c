@@ -1108,6 +1108,27 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 	}
 }
 
+/*
+static struct _config {
+	int
+		read_timeout;
+	unsigned int
+		dns_caching : 1;
+} _config = {
+	.read_timeout = -1,
+	.dns_caching = 1
+};
+
+void http_set_config_int(int key, int value)
+{
+	switch (key) {
+	case HTTP_READ_TIMEOUT: _config.read_timeout = value;
+	case HTTP_DNS: _config.read_timeout = value;
+	default: error_printf(_("Unknown config key %d (or value must not be an integer)\n"), key);
+	}
+}
+*/
+
 HTTP_CONNECTION *http_open(const MGET_IRI *iri)
 {
 	HTTP_CONNECTION
@@ -1137,7 +1158,6 @@ HTTP_CONNECTION *http_open(const MGET_IRI *iri)
 		goto error;
 
 	if ((conn->tcp = mget_tcp_connect(conn->addrinfo, ssl ? host : NULL)) != NULL) {
-		mget_tcp_set_timeout(conn->tcp, config.read_timeout);
 		conn->esc_host = iri->host ? strdup(iri->host) : NULL;
 		conn->port = iri->resolv_port;
 		conn->scheme = iri->scheme;
@@ -1154,7 +1174,7 @@ void http_close(HTTP_CONNECTION **conn)
 {
 	if (conn && *conn) {
 		mget_tcp_close(&(*conn)->tcp);
-		if (!config.dns_caching)
+		if (!mget_tcp_get_dns_caching())
 			freeaddrinfo((*conn)->addrinfo);
 		xfree((*conn)->esc_host);
 		// xfree((*conn)->port);
@@ -1174,7 +1194,8 @@ int http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 	}
 
 	if (mget_tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
-		error_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
+		// An error will be written by the mget_tcp_write function.
+		// error_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
 		return -1;
 	}
 
@@ -1262,7 +1283,7 @@ HTTP_RESPONSE *http_get_response_cb(
 				debug_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 
 			if (req && req->save_headers) {
-				mget_buffer_t *header = mget_buffer_init(NULL, NULL, p - buf + 2);
+				mget_buffer_t *header = mget_buffer_init(NULL, NULL, p - buf + 4);
 				mget_buffer_memcpy(header, buf, p - buf);
 				mget_buffer_memcat(header, "\r\n\r\n", 4);
 

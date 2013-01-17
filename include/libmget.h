@@ -302,8 +302,8 @@ char *
  */
 
 typedef struct {
-	char
-		*data; // pointer to internal memory
+	char *
+		data; // pointer to internal memory
 	size_t
 		length; // number of bytes in 'data'
 	size_t
@@ -802,6 +802,8 @@ void
 	mget_tcp_set_dns_timeout(int timeout);
 void
 	mget_tcp_set_dns_caching(int caching);
+int
+	mget_tcp_get_dns_caching(void) G_GNUC_MGET_PURE;
 void
 	mget_tcp_set_debug(int debug);
 void

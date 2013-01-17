@@ -110,6 +110,33 @@ AS_IF([ test "$enable_man" != no ], [
 ])
 
 
+# Check for valgrind
+ac_enable_valgrind=no
+AC_ARG_ENABLE(valgrind-testing,
+     [  --enable-valgrind-testing     enable running of tests inside Valgrind ],
+     [ ac_enable_valgrind=yes ], [ ac_enable_valgrind=no] )
+
+if test "x${ac_enable_valgrind}" = xyes ; then
+  if test "x${enable_shared}" = xyes ; then
+    AC_MSG_WARN([
+*** You have requested to test under valgrind, but have not disabled the
+*** building of shared libraries. You usually need to do:
+***   ./configure --disable-shared --enable-valgrind-testing
+*** for Valgrind to produce useful output.])
+  fi
+
+  AC_CHECK_PROG(HAVE_VALGRIND, valgrind, yes, no)
+  if test "x$HAVE_VALGRIND" = xyes ; then
+    VALGRIND_ENVIRONMENT="valgrind -q --leak-check=yes --show-reachable=yes --track-origins=yes"
+    AC_SUBST(VALGRIND_ENVIRONMENT)
+    TESTS_INFO="Test suite will be run under valgrind"
+  else
+    TESTS_INFO="(Valgrind not found)"
+  fi
+else
+  TESTS_INFO="(Valgrind testing not enabled)"
+fi
+
 #AC_ARG_WITH(gnutls, AS_HELP_STRING([--with-gnutls[=PATH]], [compile with SSL support]), , with_gnutls="no")
 #if test $with_gnutls != "no"
 #then
@@ -213,4 +240,5 @@ AC_MSG_NOTICE([Summary of build options:
   SSL support:       $with_gnutls
   GZIP compression:  $with_zlib
   IDN support:       $with_libidn
+  Tests:             ${TESTS_INFO}
 ])

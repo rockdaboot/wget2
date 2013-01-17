@@ -135,14 +135,14 @@ typedef struct {
 typedef struct {
 	MGET_TCP *
 		tcp;
-	struct addrinfo
-		*addrinfo;
+	struct addrinfo *
+		addrinfo;
 	const char
 		*esc_host,
 		*port,
 		*scheme;
-	mget_buffer_t
-		*buf;
+	mget_buffer_t *
+		buf;
 	unsigned
 		print_response_headers : 1;
 } HTTP_CONNECTION;

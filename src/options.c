@@ -917,7 +917,6 @@ int init(int argc, const char *const *argv)
 		config.http_password = strdup(config.password);
 
 	// set module specific options
-	mget_tcp_set_debug(config.debug);
 	mget_tcp_set_timeout(NULL, config.read_timeout);
 	mget_tcp_set_connect_timeout(config.connect_timeout);
 	mget_tcp_set_dns_timeout(config.dns_timeout);
