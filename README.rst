@@ -1,7 +1,7 @@
-Mget - multithreaded metalink/file/website downloader
-=====================================================
+Mget - multithreaded metalink/file/website downloader and library
+=================================================================
 
-This is an experimental Wget-like tool written in C.
+This is a Wget-like tool written in C.
 
 Designed and written from scratch it requires a C99 and Posix compliant
 development environment.
