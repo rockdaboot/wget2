@@ -47,7 +47,6 @@
 #include <libmget.h>
 
 #include "mget.h"
-#include "http.h"
 #include "log.h"
 #include "job.h"
 #include "printf.h"

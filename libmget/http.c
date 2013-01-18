@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of libmget.
  *
- * Mget is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * Libmget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Libmget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * HTTP routines
@@ -43,13 +43,7 @@
 #include <zlib.h>
 
 #include <libmget.h>
-
-#include "mget.h"
-#include "options.h"
-#include "printf.h"
-#include "log.h"
-#include "md5.h"
-#include "http.h"
+#include "private.h"
 
 #define HTTP_CTYPE_SEPERATOR (1<<0)
 #define _http_isseperator(c) (http_ctype[(unsigned char)(c)]&HTTP_CTYPE_SEPERATOR)
@@ -1061,16 +1055,16 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 			return;
 
 		/// A1BUF = H(user ":" realm ":" password)
-		md5_printf_hex(a1buf, "%s:%s:%s", username, realm, password);
+		mget_md5_printf_hex(a1buf, "%s:%s:%s", username, realm, password);
 
 		if (!mget_strcmp(algorithm, "MD5-sess")) {
 			// A1BUF = H( H(user ":" realm ":" password) ":" nonce ":" cnonce )
 			snprintf(cnonce, sizeof(cnonce), "%08lx", lrand48()); // create random hex string
-			md5_printf_hex(a1buf, "%s:%s:%s", a1buf, nonce, cnonce);
+			mget_md5_printf_hex(a1buf, "%s:%s:%s", a1buf, nonce, cnonce);
 		}
 
 		// A2BUF = H(method ":" path)
-		md5_printf_hex(a2buf, "%s:/%s", req->method, req->esc_resource.data);
+		mget_md5_printf_hex(a2buf, "%s:/%s", req->method, req->esc_resource.data);
 
 		if (!mget_strcmp(qop, "auth") || !mget_strcmp(qop, "auth-int")) {
 			// RFC 2617 Digest Access Authentication
@@ -1078,12 +1072,12 @@ void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const ch
 				snprintf(cnonce, sizeof(cnonce), "%08lx", lrand48()); // create random hex string
 
 			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" nc ":" cnonce ":" qop ": " A2BUF)
-			md5_printf_hex(response_digest, "%s:%s:00000001:%s:%s:%s", a1buf, nonce, /* nc, */ cnonce, qop, a2buf);
+			mget_md5_printf_hex(response_digest, "%s:%s:00000001:%s:%s:%s", a1buf, nonce, /* nc, */ cnonce, qop, a2buf);
 		} else {
 			// RFC 2069 Digest Access Authentication
 
 			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" A2BUF)
-			md5_printf_hex(response_digest, "%s:%s:%s", a1buf, nonce, a2buf);
+			mget_md5_printf_hex(response_digest, "%s:%s:%s", a1buf, nonce, a2buf);
 		}
 
 		mget_buffer_init(&buf, NULL, 256);

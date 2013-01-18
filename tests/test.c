@@ -43,7 +43,6 @@
 
 #include "../src/options.h"
 #include "../src/log.h"
-#include "../src/http.h"
 
 // number of elements within an array
 #define countof(a) (sizeof(a)/sizeof(*(a)))

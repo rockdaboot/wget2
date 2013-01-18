@@ -37,7 +37,7 @@
 #ifndef _MGET_METALINK_H
 #define _MGET_METALINK_H
 
-#include "http.h"
+#include <libmget.h>
 
 void
 	metalink4_parse(int sockfd, HTTP_RESPONSE *resp) G_GNUC_MGET_NONNULL((2));

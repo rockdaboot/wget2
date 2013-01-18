@@ -22,7 +22,7 @@
  * Changelog
  * 16.01.2013  Tim Ruehsen  created
  *
- * Simple demonstration how to download an URL with high level API functions.
+ * Simple demonstration how to download an URI.
  *
  */
 
@@ -41,12 +41,28 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 	HTTP_CONNECTION *conn = NULL;
 	HTTP_REQUEST *req;
 
+/*
+ * todo: create a libmget init function like this:
 	mget_global_init(
-		MGET_DEBUG_STREAM, stderr,
-		MGET_ERROR_STREAM, stderr,
-		MGET_INFO_STREAM, stdout,
-//		MGET_DNS_CACHING, 1,
+		MGET_DEBUG_FILE, stderr,
+		MGET_ERROR_FILE, stderr,
+		MGET_INFO_FILE, stdout,
+		MGET_DNS_CACHING, 1,
 		NULL);
+ */
+
+	// We want the libmget debug messages be printed to STDERR.
+	// From here on, we can call mget_debug_printf, etc.
+	mget_logger_set_file(mget_get_logger(MGET_LOGGER_DEBUG), stderr);
+
+	// We want the libmget error messages be printed to STDERR.
+	// From here on, we can call mget_error_printf, etc.
+	mget_logger_set_file(mget_get_logger(MGET_LOGGER_ERROR), stderr);
+
+	// We want the libmget info messages be printed to STDOUT.
+	// From here on, we can call mget_info_printf, etc.
+	mget_logger_set_file(mget_get_logger(MGET_LOGGER_INFO), stdout);
+
 
 	// 1. parse the URL into a URI
 	//    if you want use a non-ascii (international) domain, the second
@@ -127,17 +143,13 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 /*
  * todo: create this kind of high-level function:
 	resp = http_get("http://example.com",
-		HTTP_BIND_ADDRESS, "127.0.0.1:6666",
+		HTTP_SERVER_PORT, 8000,
 		HTTP_URL_CHARACTERSET, "iso-8859-1",
 		HTTP_COOKIE_STORE, "cookies.txt",
 		HTTP_COOKIE_KEEPSESSIONCOOKIES, 1,
-		HTTP_HEADER_ADD, "Accept-Encoding: gzip, deflate",
-		HTTP_PROXY, "myproxy.com:9375",
-		HTTP_HEADER_SAVE_STREAM, stdout,
-		HTTP_BODY_SAVE_STREAM, stdout,
+		HTTP_ADD_HEADER, "Accept-Encoding: gzip, deflate",
+		HTTP_USE_PROXY, "myproxy.com:9375",
 		NULL);
-
-	http_free_response(&resp);
 */
 
 out:

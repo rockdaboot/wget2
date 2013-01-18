@@ -1,7 +1,7 @@
-Mget - multithreaded metalink/file/website downloader
-=====================================================
+Mget - multithreaded metalink/file/website downloader and library
+=================================================================
 
-This is an experimental Wget-like tool written in C.
+This is a Wget-like tool and library written in C.
 
 Designed and written from scratch it requires a C99 and Posix compliant
 development environment.
@@ -21,14 +21,16 @@ buffer recycling.
 License
 -------
 
-|Mget is licensed under GPLv3+.
-|Libmget is licensed under LGPLv3+.
+Mget is licensed under GPLv3+.
+
+Libmget is licensed under LGPLv3+.
 
 Development Status
 ------------------
 
-|Mget is still in alpha stage but is already useful.
-|Many Wget options are already implemented, but some are still missing.
+Mget is still in alpha stage but is already useful.
+
+Many Wget options are already implemented, but some are still missing.
 
 The basic functionality is implemented, like:
 
@@ -143,6 +145,7 @@ Documentation
 There is no own documentation yet, but Mget aims to be Wget1.14 compatible.
 
 ::
+
 	$ mget --help
 
 prints the usage and the current set of integrated options.

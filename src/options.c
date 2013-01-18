@@ -61,7 +61,6 @@
 #include "mget.h"
 #include "log.h"
 #include "options.h"
-#include "http.h"
 
 typedef const struct option *option_t; // forward declaration
 

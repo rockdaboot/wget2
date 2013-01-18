@@ -1,4 +1,4 @@
-bin_PROGRAMS = print_css_urls print_css_urls2 print_css_urls3 http_get
+bin_PROGRAMS = print_css_urls print_css_urls2 print_css_urls3 http_get http_get2
 
 INCLUDES = -I$(top_srcdir)/include
 AM_LDFLAGS = -static
@@ -14,4 +14,7 @@ print_css_urls3_SOURCES = print_css_urls3.c
 print_css_urls3_LDADD = $(local_ldadd)
 
 http_get_SOURCES = http_get.c
-http_get_LDADD = ../src/mget-http.o ../src/mget-md5.o $(local_ldadd)
+http_get_LDADD = $(local_ldadd)
+
+http_get2_SOURCES = http_get2.c
+http_get2_LDADD = $(local_ldadd)
