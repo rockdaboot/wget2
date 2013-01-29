@@ -201,15 +201,15 @@ const char *http_parse_name_fixed(const char *s, char *name, size_t name_size)
 	return *s == ':' ? s + 1 : s;
 }
 
-static int G_GNUC_MGET_NONNULL_ALL compare_param(HTTP_HEADER_PARAM *p1, HTTP_HEADER_PARAM *p2)
+static int G_GNUC_MGET_NONNULL_ALL compare_param(MGET_HTTP_HEADER_PARAM *p1, MGET_HTTP_HEADER_PARAM *p2)
 {
 	return strcasecmp(p1->name, p2->name);
 }
 
-void http_add_param(MGET_VECTOR **params, HTTP_HEADER_PARAM *param)
+void http_add_param(MGET_VECTOR **params, MGET_HTTP_HEADER_PARAM *param)
 {
 	if (!*params) *params = mget_vector_create(4, 4, (int(*)(const void *, const void *))compare_param);
-	mget_vector_add(*params, param, sizeof(HTTP_HEADER_PARAM));
+	mget_vector_add(*params, param, sizeof(MGET_HTTP_HEADER_PARAM));
 }
 
 /*
@@ -243,7 +243,7 @@ void http_add_param(MGET_VECTOR **params, HTTP_HEADER_PARAM *param)
   reg-rel-type   = LOALPHA *( LOALPHA | DIGIT | "." | "-" )
   ext-rel-type   = URI
 */
-const char *http_parse_link(const char *s, HTTP_LINK *link)
+const char *http_parse_link(const char *s, MGET_HTTP_LINK *link)
 {
 	memset(link, 0, sizeof(*link));
 
@@ -297,7 +297,7 @@ const char *http_parse_link(const char *s, HTTP_LINK *link)
 // instance-digest = digest-algorithm "=" <encoded digest output>
 // digest-algorithm = token
 
-const char *http_parse_digest(const char *s, HTTP_DIGEST *digest)
+const char *http_parse_digest(const char *s, MGET_HTTP_DIGEST *digest)
 {
 	const char *p;
 
@@ -329,14 +329,14 @@ const char *http_parse_digest(const char *s, HTTP_DIGEST *digest)
 // auth-scheme = token
 // auth-param  = token "=" ( token | quoted-string )
 
-const char *http_parse_challenge(const char *s, HTTP_CHALLENGE *challenge)
+const char *http_parse_challenge(const char *s, MGET_HTTP_CHALLENGE *challenge)
 {
 	memset(challenge, 0, sizeof(*challenge));
 
 	while (isblank(*s)) s++;
 	s=http_parse_token(s, &challenge->auth_scheme);
 
-	HTTP_HEADER_PARAM param;
+	MGET_HTTP_HEADER_PARAM param;
 	do {
 		s=http_parse_param(s, &param.name, &param.value);
 		if (param.name) {
@@ -395,7 +395,7 @@ const char *http_parse_transfer_encoding(const char *s, char *transfer_encoding)
 
 const char *http_parse_content_type(const char *s, const char **content_type, const char **charset)
 {
-	HTTP_HEADER_PARAM param;
+	MGET_HTTP_HEADER_PARAM param;
 	const char *p;
 
 	while (isblank(*s)) s++;
@@ -789,13 +789,13 @@ const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 /* content of <buf> will be destroyed */
 
 /* buf must be 0-terminated */
-HTTP_RESPONSE *http_parse_response(char *buf)
+MGET_HTTP_RESPONSE *http_parse_response(char *buf)
 {
 	const char *s;
 	char *line, *eol, name[32];
-	HTTP_RESPONSE *resp = NULL;
+	MGET_HTTP_RESPONSE *resp = NULL;
 
-	resp = xcalloc(1, sizeof(HTTP_RESPONSE));
+	resp = xcalloc(1, sizeof(MGET_HTTP_RESPONSE));
 
 	if (sscanf(buf, " HTTP/%3hd.%3hd %3hd %31[^\r\n] ",
 		&resp->major, &resp->minor, &resp->code, resp->reason) >= 3 && (eol = strchr(buf + 10, '\n'))) {
@@ -827,7 +827,7 @@ HTTP_RESPONSE *http_parse_response(char *buf)
 			http_parse_location(s, &resp->location);
 		} else if (resp->code / 100 == 3 && !strcasecmp(name, "Link")) {
 			// log_printf("s=%.31s\n",s);
-			HTTP_LINK link;
+			MGET_HTTP_LINK link;
 			http_parse_link(s, &link);
 			// log_printf("link->uri=%s\n",link.uri);
 			if (!resp->links)
@@ -835,7 +835,7 @@ HTTP_RESPONSE *http_parse_response(char *buf)
 			mget_vector_add(resp->links, &link, sizeof(link));
 		} else if (!strcasecmp(name, "Digest")) {
 			// http://tools.ietf.org/html/rfc3230
-			HTTP_DIGEST digest;
+			MGET_HTTP_DIGEST digest;
 			http_parse_digest(s, &digest);
 			// log_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
 			if (!resp->digests)
@@ -864,7 +864,7 @@ HTTP_RESPONSE *http_parse_response(char *buf)
 				resp->cookies = mget_vector_create(4, 4, NULL);
 			mget_vector_add(resp->cookies, &cookie, sizeof(cookie));
 		} else if (!strcasecmp(name, "WWW-Authenticate")) {
-			HTTP_CHALLENGE challenge;
+			MGET_HTTP_CHALLENGE challenge;
 			http_parse_challenge(s, &challenge);
 
 			if (!resp->challenges)
@@ -885,69 +885,77 @@ HTTP_RESPONSE *http_parse_response(char *buf)
 	return resp;
 }
 
-int http_free_param(HTTP_HEADER_PARAM *param)
+int http_free_param(MGET_HTTP_HEADER_PARAM *param)
 {
 	xfree(param->name);
 	xfree(param->value);
 	return 0;
 }
 
-int http_free_link(HTTP_LINK *link)
+int http_free_link(MGET_HTTP_LINK *link)
 {
 	xfree(link->uri);
 	xfree(link->type);
 	return 0;
 }
 
-void http_free_links(MGET_VECTOR *links)
+void http_free_links(MGET_VECTOR **links)
 {
-	mget_vector_browse(links, (int (*)(void *))http_free_link);
-	mget_vector_free(&links);
+	if (links) {
+		mget_vector_browse(*links, (int (*)(void *))http_free_link);
+		mget_vector_free(links);
+	}
 }
 
-int http_free_digest(HTTP_DIGEST *digest)
+int http_free_digest(MGET_HTTP_DIGEST *digest)
 {
 	xfree(digest->algorithm);
 	xfree(digest->encoded_digest);
 	return 0;
 }
 
-void http_free_digests(MGET_VECTOR *digests)
+void http_free_digests(MGET_VECTOR **digests)
 {
-	mget_vector_browse(digests, (int (*)(void *))http_free_digest);
-	mget_vector_free(&digests);
+	if (digests) {
+		mget_vector_browse(*digests, (int (*)(void *))http_free_digest);
+		mget_vector_free(digests);
+	}
 }
 
-int http_free_challenge(HTTP_CHALLENGE *challenge)
+int http_free_challenge(MGET_HTTP_CHALLENGE *challenge)
 {
 	xfree(challenge->auth_scheme);
 	mget_stringmap_free(&challenge->params);
 	return 0;
 }
 
-void http_free_challenges(MGET_VECTOR *challenges)
+void http_free_challenges(MGET_VECTOR **challenges)
 {
-	mget_vector_browse(challenges, (int (*)(void *))http_free_challenge);
-	mget_vector_free(&challenges);
+	if (challenges) {
+		mget_vector_browse(*challenges, (int (*)(void *))http_free_challenge);
+		mget_vector_free(challenges);
+	}
 }
 
-void http_free_cookies(MGET_VECTOR *cookies)
+void http_free_cookies(MGET_VECTOR **cookies)
 {
-	mget_vector_browse(cookies, (int (*)(void *))mget_cookie_free_cookie);
-	mget_vector_free(&cookies);
+	if (cookies) {
+		mget_vector_browse(*cookies, (int (*)(void *))mget_cookie_free_cookie);
+		mget_vector_free(cookies);
+	}
 }
 
 /* for security reasons: set all freed pointers to NULL */
-void http_free_response(HTTP_RESPONSE **resp)
+void http_free_response(MGET_HTTP_RESPONSE **resp)
 {
 	if (resp && *resp) {
-		http_free_links((*resp)->links);
+		http_free_links(&(*resp)->links);
 		(*resp)->links = NULL;
-		http_free_digests((*resp)->digests);
+		http_free_digests(&(*resp)->digests);
 		(*resp)->digests = NULL;
-		http_free_challenges((*resp)->challenges);
+		http_free_challenges(&(*resp)->challenges);
 		(*resp)->challenges = NULL;
-		http_free_cookies((*resp)->cookies);
+		http_free_cookies(&(*resp)->cookies);
 		(*resp)->cookies = NULL;
 		xfree((*resp)->content_type);
 		xfree((*resp)->content_type_encoding);
@@ -960,7 +968,7 @@ void http_free_response(HTTP_RESPONSE **resp)
 }
 
 /* for security reasons: set all freed pointers to NULL */
-void http_free_request(HTTP_REQUEST **req)
+void http_free_request(MGET_HTTP_REQUEST **req)
 {
 	if (req && *req) {
 		mget_buffer_deinit(&(*req)->esc_resource);
@@ -971,9 +979,9 @@ void http_free_request(HTTP_REQUEST **req)
 	}
 }
 
-HTTP_REQUEST *http_create_request(const MGET_IRI *iri, const char *method)
+MGET_HTTP_REQUEST *http_create_request(const MGET_IRI *iri, const char *method)
 {
-	HTTP_REQUEST *req = xcalloc(1, sizeof(HTTP_REQUEST));
+	MGET_HTTP_REQUEST *req = xcalloc(1, sizeof(MGET_HTTP_REQUEST));
 
 	mget_buffer_init(&req->esc_resource, req->esc_resource_buf, sizeof(req->esc_resource_buf));
 	mget_buffer_init(&req->esc_host, req->esc_host_buf, sizeof(req->esc_host_buf));
@@ -987,12 +995,12 @@ HTTP_REQUEST *http_create_request(const MGET_IRI *iri, const char *method)
 	return req;
 }
 
-void http_add_header_vprintf(HTTP_REQUEST *req, const char *fmt, va_list args)
+void http_add_header_vprintf(MGET_HTTP_REQUEST *req, const char *fmt, va_list args)
 {
 	mget_vector_add_vprintf(req->lines, fmt, args);
 }
 
-void http_add_header_printf(HTTP_REQUEST *req, const char *fmt, ...)
+void http_add_header_printf(MGET_HTTP_REQUEST *req, const char *fmt, ...)
 {
 	va_list args;
 
@@ -1001,17 +1009,17 @@ void http_add_header_printf(HTTP_REQUEST *req, const char *fmt, ...)
 	va_end(args);
 }
 
-void http_add_header_line(HTTP_REQUEST *req, const char *line)
+void http_add_header_line(MGET_HTTP_REQUEST *req, const char *line)
 {
 	mget_vector_add_str(req->lines, line);
 }
 
-void http_add_header(HTTP_REQUEST *req, const char *name, const char *value)
+void http_add_header(MGET_HTTP_REQUEST *req, const char *name, const char *value)
 {
 	mget_vector_add_printf(req->lines, "%s: %s", name, value);
 }
 
-void http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const char *username, const char *password)
+void http_add_credentials(MGET_HTTP_REQUEST *req, MGET_HTTP_CHALLENGE *challenge, const char *username, const char *password)
 {
 	if (!challenge)
 		return;
@@ -1123,10 +1131,10 @@ void http_set_config_int(int key, int value)
 }
 */
 
-HTTP_CONNECTION *http_open(const MGET_IRI *iri)
+MGET_HTTP_CONNECTION *http_open(const MGET_IRI *iri)
 {
-	HTTP_CONNECTION
-		*conn = xcalloc(1, sizeof(HTTP_CONNECTION));
+	MGET_HTTP_CONNECTION
+		*conn = xcalloc(1, sizeof(MGET_HTTP_CONNECTION));
 	const char
 		*port,
 		*host;
@@ -1164,7 +1172,7 @@ error:
 	return NULL;
 }
 
-void http_close(HTTP_CONNECTION **conn)
+void http_close(MGET_HTTP_CONNECTION **conn)
 {
 	if (conn && *conn) {
 		mget_tcp_close(&(*conn)->tcp);
@@ -1178,7 +1186,7 @@ void http_close(HTTP_CONNECTION **conn)
 	}
 }
 
-int http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
+int http_send_request(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req)
 {
 	ssize_t nbytes;
 
@@ -1198,7 +1206,7 @@ int http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
 	return 0;
 }
 
-ssize_t http_request_to_buffer(HTTP_REQUEST *req, mget_buffer_t *buf)
+ssize_t http_request_to_buffer(MGET_HTTP_REQUEST *req, mget_buffer_t *buf)
 {
 	int it, use_proxy = 0;
 
@@ -1239,16 +1247,17 @@ ssize_t http_request_to_buffer(HTTP_REQUEST *req, mget_buffer_t *buf)
 	return buf->length;
 }
 
-HTTP_RESPONSE *http_get_response_cb(
-	HTTP_CONNECTION *conn,
-	HTTP_REQUEST *req,
+MGET_HTTP_RESPONSE *http_get_response_cb(
+	MGET_HTTP_CONNECTION *conn,
+	MGET_HTTP_REQUEST *req,
+	unsigned int flags,
 	int (*parse_body)(void *context, const char *data, size_t length),
 	void *context) // given to parse_body
 {
 	size_t bufsize, body_len = 0, body_size = 0;
 	ssize_t nbytes, nread = 0;
 	char *buf, *p = NULL;
-	HTTP_RESPONSE *resp = NULL;
+	MGET_HTTP_RESPONSE *resp = NULL;
 	MGET_DECOMPRESSOR *dc = NULL;
 
 	// reuse generic connection buffer
@@ -1271,12 +1280,9 @@ HTTP_RESPONSE *http_get_response_cb(
 			// found end-of-header
 			*p = 0;
 
-			if (conn->print_response_headers)
-				info_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
-			else
-				debug_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
+			debug_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 
-			if (req && req->save_headers) {
+			if (req && (flags&MGET_HTTP_RESPONSE_KEEPHEADER)) {
 				mget_buffer_t *header = mget_buffer_init(NULL, NULL, p - buf + 4);
 				mget_buffer_memcpy(header, buf, p - buf);
 				mget_buffer_memcat(header, "\r\n\r\n", 4);
@@ -1498,12 +1504,12 @@ static int _get_body(void *userdata, const char *data, size_t length)
 
 // get response, resp->body points to body in memory
 
-HTTP_RESPONSE *http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
+MGET_HTTP_RESPONSE *http_get_response(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req, unsigned int flags)
 {
-	HTTP_RESPONSE *resp;
+	MGET_HTTP_RESPONSE *resp;
 	mget_buffer_t *body = mget_buffer_alloc(102400);
 
-	resp = http_get_response_cb(conn, req, _get_body, body);
+	resp = http_get_response_cb(conn, req, flags, _get_body, body);
 
 	if (resp) {
 		resp->body = body;
@@ -1526,9 +1532,9 @@ static int _get_file(void *context, const char *data, size_t length)
 	return 0;
 }
 
-HTTP_RESPONSE *http_get_response_fd(HTTP_CONNECTION *conn, int fd)
+MGET_HTTP_RESPONSE *http_get_response_fd(MGET_HTTP_CONNECTION *conn, int fd, unsigned int flags)
 {
-	HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, _get_file, &fd);
+	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, _get_file, &fd);
 
 	return resp;
 }
@@ -1595,14 +1601,14 @@ HTTP_RESPONSE *http_get_response_file(HTTP_CONNECTION *conn, const char *fname)
 }
  */
 
-void http_set_http_proxy(const char *proxy, const char *locale)
+void http_set_http_proxy(const char *proxy, const char *encoding)
 {
 	mget_iri_free(&http_proxy);
-	http_proxy = mget_iri_parse(proxy, locale);
+	http_proxy = mget_iri_parse(proxy, encoding);
 }
 
-void http_set_https_proxy(const char *proxy, const char *locale)
+void http_set_https_proxy(const char *proxy, const char *encoding)
 {
 	mget_iri_free(&https_proxy);
-	https_proxy = mget_iri_parse(proxy, locale);
+	https_proxy = mget_iri_parse(proxy, encoding);
 }

@@ -152,11 +152,11 @@ int main(int argc, const char *const *argv)
 
 	// We want the libmget error messages be printed to STDERR.
 	// From here on, we can call mget_error_printf, etc.
-	mget_logger_set_file(mget_get_logger(MGET_LOGGER_ERROR), stderr);
+	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_ERROR), stderr);
 
 	// We want the libmget info messages be printed to STDOUT.
 	// From here on, we can call mget_info_printf, etc.
-	mget_logger_set_file(mget_get_logger(MGET_LOGGER_INFO), stdout);
+	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_INFO), stdout);
 
 	// parse options
 	for (argpos = 1; argpos < argc; argpos++) {

@@ -61,7 +61,7 @@ typedef struct {
 		*job;
 	PART
 		*part;
-	HTTP_CONNECTION
+	MGET_HTTP_CONNECTION
 		*conn;
 	char
 		*buf;
@@ -76,13 +76,13 @@ typedef struct {
 //	*http_get_uri(const char *uri);
 static void
 	download_part(DOWNLOADER *downloader),
-	save_file(HTTP_RESPONSE *resp, const char *fname),
-	append_file(HTTP_RESPONSE *resp, const char *fname),
+	save_file(MGET_HTTP_RESPONSE *resp, const char *fname),
+	append_file(MGET_HTTP_RESPONSE *resp, const char *fname),
 	html_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *iri),
 	html_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *iri),
 	css_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *iri),
 	css_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *iri);
-HTTP_RESPONSE
+MGET_HTTP_RESPONSE
 	*http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader);
 
 static DOWNLOADER
@@ -786,7 +786,7 @@ void *downloader_thread(void *p)
 					debug_printf("sts check failed");
 				dprintf(sockfd, "ready\n");
 			} else if (!strcmp(buf, "go")) {
-				HTTP_RESPONSE *resp = NULL;
+				MGET_HTTP_RESPONSE *resp = NULL;
 
 				if (!downloader->part) {
 					int tries = 0;
@@ -828,11 +828,11 @@ void *downloader_thread(void *p)
 						// We try to find and download the .meta4 file (RFC 5854).
 						// If we can't find the .meta4, download from the link with the highest priority.
 
-						HTTP_LINK *top_link = NULL, *metalink = NULL;
+						MGET_HTTP_LINK *top_link = NULL, *metalink = NULL;
 						int it;
 
 						for (it = 0; it < mget_vector_size(resp->links); it++) {
-							HTTP_LINK *link = mget_vector_get(resp->links, it);
+							MGET_HTTP_LINK *link = mget_vector_get(resp->links, it);
 							if (link->rel == link_rel_describedby) {
 								if (!strcasecmp(link->type, "application/metalink4+xml")) {
 									// found a link to a metalink4 description
@@ -1228,7 +1228,7 @@ static void set_file_mtime(int fd, time_t modified)
 		error_printf (_("Failed to set file date: %s\n"), strerror (errno));
 }
 
-static void G_GNUC_MGET_NONNULL((1)) _save_file(HTTP_RESPONSE *resp, const char *fname, int flag)
+static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const char *fname, int flag)
 {
 	char *alloced_fname = NULL;
 	int fd, multiple, fnum;
@@ -1346,12 +1346,12 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(HTTP_RESPONSE *resp, const char 
 	xfree(alloced_fname);
 }
 
-static void G_GNUC_MGET_NONNULL((1)) save_file(HTTP_RESPONSE *resp, const char *fname)
+static void G_GNUC_MGET_NONNULL((1)) save_file(MGET_HTTP_RESPONSE *resp, const char *fname)
 {
 	_save_file(resp, fname, O_TRUNC);
 }
 
-static void G_GNUC_MGET_NONNULL((1)) append_file(HTTP_RESPONSE *resp, const char *fname)
+static void G_GNUC_MGET_NONNULL((1)) append_file(MGET_HTTP_RESPONSE *resp, const char *fname)
 {
 	_save_file(resp, fname, O_APPEND);
 }
@@ -1366,7 +1366,7 @@ void download_part(DOWNLOADER *downloader)
 
 	dprintf(downloader->sockfd[1], "sts downloading part...\n");
 	do {
-		HTTP_RESPONSE *msg;
+		MGET_HTTP_RESPONSE *msg;
 		MIRROR *mirror = mget_vector_get(job->mirrors, mirror_index);
 
 		mirror_index = (mirror_index + 1) % mget_vector_size(job->mirrors);
@@ -1399,10 +1399,10 @@ void download_part(DOWNLOADER *downloader)
 	} while (!part->done);
 }
 
-HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
+MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 {
-	HTTP_CONNECTION *conn;
-	HTTP_RESPONSE *resp = NULL;
+	MGET_HTTP_CONNECTION *conn;
+	MGET_HTTP_RESPONSE *resp = NULL;
 	MGET_VECTOR *challenges = NULL;
 //	int max_redirect = 3;
 
@@ -1420,17 +1420,14 @@ HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 			downloader->conn = http_open(iri);
 			if (downloader->conn) {
 				info_printf("opened connection %s\n", downloader->conn->esc_host);
-				downloader->conn->print_response_headers = config.server_response ? 1 : 0;
 			}
 		}
 		conn = downloader->conn;
 
 		if (conn) {
-			HTTP_REQUEST *req;
+			MGET_HTTP_REQUEST *req;
 
 			req = http_create_request(iri, "GET");
-			if (config.save_headers)
-				req->save_headers = 1;
 
 			if (config.continue_download || config.timestamping) {
 				const char *local_filename = downloader->job->local_filename;
@@ -1508,7 +1505,7 @@ HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 				// the following adds an Authorization: HTTP header
 //				http_add_credentials(req, vec_get(challenges, 0), config.username, config.password);
 				http_add_credentials(req, mget_vector_get(challenges, 0), config.http_username, config.http_password);
-				http_free_challenges(challenges);
+				http_free_challenges(&challenges);
 			}
 
 			if (part)
@@ -1516,7 +1513,6 @@ HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 					(unsigned long long) part->position, (unsigned long long) part->position + part->length - 1);
 
 			// add cookies
-			debug_printf("cookies_enabled = %d\n", config.cookies);
 			if (config.cookies) {
 				const char *cookie_string;
 
@@ -1527,7 +1523,7 @@ HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 			}
 
 			if (http_send_request(conn, req) == 0) {
-				resp = http_get_response(conn, req);
+				resp = http_get_response(conn, req, config.save_headers || config.server_response ? MGET_HTTP_RESPONSE_KEEPHEADER : 0);
 			}
 
 			http_free_request(&req);
@@ -1537,6 +1533,9 @@ HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 			http_close(&downloader->conn);
 			break;
 		}
+
+		if (config.server_response)
+			info_printf("# got header %zd bytes:\n%s\n\n", resp->header->length, resp->header->data);
 
 		// server doesn't support keep-alive or want us to close the connection
 		if (!resp->keep_alive)

@@ -103,7 +103,7 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 	}
 }
 
-void metalink4_parse(int sockfd, HTTP_RESPONSE *resp)
+void metalink4_parse(int sockfd, MGET_HTTP_RESPONSE *resp)
 {
 	struct metalink_context ctx;
 

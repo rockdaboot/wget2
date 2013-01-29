@@ -38,8 +38,8 @@
 int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED)
 {
 	MGET_IRI *uri;
-	HTTP_CONNECTION *conn = NULL;
-	HTTP_REQUEST *req;
+	MGET_HTTP_CONNECTION *conn = NULL;
+	MGET_HTTP_REQUEST *req;
 
 /*
  * todo: create a libmget init function like this:
@@ -53,15 +53,15 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 
 	// We want the libmget debug messages be printed to STDERR.
 	// From here on, we can call mget_debug_printf, etc.
-	mget_logger_set_file(mget_get_logger(MGET_LOGGER_DEBUG), stderr);
+	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_DEBUG), stderr);
 
 	// We want the libmget error messages be printed to STDERR.
 	// From here on, we can call mget_error_printf, etc.
-	mget_logger_set_file(mget_get_logger(MGET_LOGGER_ERROR), stderr);
+	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_ERROR), stderr);
 
 	// We want the libmget info messages be printed to STDOUT.
 	// From here on, we can call mget_info_printf, etc.
-	mget_logger_set_file(mget_get_logger(MGET_LOGGER_INFO), stdout);
+	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_INFO), stdout);
 
 
 	// 1. parse the URL into a URI
@@ -108,12 +108,10 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 	// http_open() works semi-async and returns immediately after domain name lookup.
 	conn = http_open(uri);
 
-	HTTP_RESPONSE *resp;
+	MGET_HTTP_RESPONSE *resp;
 	if (conn) {
-		req->save_headers = 1; // store raw header, we want to print further down
-
 		if (http_send_request(conn, req) == 0) {
-			resp = http_get_response(conn, req);
+			resp = http_get_response(conn, req, MGET_HTTP_RESPONSE_KEEPHEADER);
 
 			if (!resp)
 				goto out;

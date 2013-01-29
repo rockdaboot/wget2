@@ -1120,7 +1120,7 @@ static void test_stringmap(void)
 
 	mget_stringmap_free(&h);
 
-	HTTP_CHALLENGE challenge;
+	MGET_HTTP_CHALLENGE challenge;
 	http_parse_challenge("Basic realm=\"test realm\"", &challenge);
 	http_free_challenge(&challenge);
 
@@ -1128,7 +1128,7 @@ static void test_stringmap(void)
 	challenges = mget_vector_create(2, 2, NULL);
 	http_parse_challenge("Basic realm=\"test realm\"", &challenge);
 	mget_vector_add(challenges, &challenge, sizeof(challenge));
-	http_free_challenges(challenges);
+	http_free_challenges(&challenges);
 
 	char *response_text = strdup(
 "HTTP/1.1 401 Authorization Required\r\n"\
@@ -1142,8 +1142,8 @@ static void test_stringmap(void)
 "Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
 	MGET_IRI *iri = mget_iri_parse("http://localhost/prot_digest_md5/", NULL);
-	HTTP_REQUEST *req = http_create_request(iri, "GET");
-	HTTP_RESPONSE *resp = http_parse_response(response_text);
+	MGET_HTTP_REQUEST *req = http_create_request(iri, "GET");
+	MGET_HTTP_RESPONSE *resp = http_parse_response(response_text);
 	http_add_credentials(req, mget_vector_get(resp->challenges, 0), "tim", "123");
 //	for (it=0;it<vec_size(req->lines);it++) {
 //		info_printf("%s\n", (char *)vec_get(req->lines, it));

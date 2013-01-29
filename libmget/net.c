@@ -238,14 +238,48 @@ struct addrinfo *mget_tcp_resolve(const char *host, const char *port)
 	}
 }
 
+static int G_GNUC_MGET_CONST _value_to_family(int value)
+{
+	switch (value) {
+	case MGET_NET_FAMILY_IPV4:
+		return AF_INET;
+	case MGET_NET_FAMILY_IPV6:
+		return AF_INET6;
+	default:
+		return AF_UNSPEC;
+	}
+}
+
+static int G_GNUC_MGET_CONST _family_to_value(int family)
+{
+	switch (family) {
+	case AF_INET:
+		return MGET_NET_FAMILY_IPV4;
+	case AF_INET6:
+		return MGET_NET_FAMILY_IPV6;
+	default:
+		return MGET_NET_FAMILY_ANY;
+	}
+}
+
 void mget_tcp_set_preferred_family(int _family)
 {
-	preferred_family = _family;
+	preferred_family = _value_to_family(_family);
 }
 
 void mget_tcp_set_family(int _family)
 {
-	family = _family;
+	family = _value_to_family(_family);
+}
+
+int mget_tcp_get_preferred_family(void)
+{
+	return _family_to_value(preferred_family);
+}
+
+int mget_tcp_get_family(void)
+{
+	return _family_to_value(family);
 }
 
 static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
@@ -332,9 +366,9 @@ void mget_tcp_set_bind_address(const char *bind_address)
 		}
 		if (*s == ':') {
 			*s = 0;
-			bind_addrinfo = mget_tcp_resolve(host, s + 1); // bind to specified port
+			bind_addrinfo = mget_tcp_resolve(host, s + 1); // bind to host + specified port
 		} else {
-			bind_addrinfo = mget_tcp_resolve(host, NULL); // bind to any host
+			bind_addrinfo = mget_tcp_resolve(host, NULL); // bind to host on any port
 		}
 	}
 }

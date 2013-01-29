@@ -116,9 +116,9 @@
 #endif
 
 #if GCC_VERSION_AT_LEAST(4,0)
-#define G_GNUC_NULL_TERMINATED __attribute__((__sentinel__))
+#define G_GNUC_MGET_NULL_TERMINATED __attribute__((__sentinel__))
 #else
-#define G_GNUC_NULL_TERMINATED
+#define G_GNUC_MGET_NULL_TERMINATED
 #endif
 
 #if defined(__clang__)
@@ -177,9 +177,35 @@ MGET_BEGIN_DECLS
 #define MGET_INFO_STREAM  1006
 #define MGET_INFO_FUNC    1007
 #define MGET_INFO_FILE    1008
+#define MGET_DNS_CACHING  1009
+#define MGET_COOKIE_SUFFIXES 1010
+#define MGET_COOKIES_ENABLED 1011
+#define MGET_COOKIE_STORE 1012
+#define MGET_COOKIE_KEEPSESSIONCOOKIES 1013
+#define MGET_BIND_ADDRESS 1014
+#define MGET_NET_FAMILY_EXCLUSIVE 1015
+#define MGET_NET_FAMILY_PREFERRED 1016
 
-void mget_global_init(int key, ...) G_GNUC_NULL_TERMINATED;
-void mget_global_deinit(void);
+#define MGET_HTTP_URL          2000
+#define MGET_HTTP_URL_ENCODING 2001
+#define MGET_HTTP_URI          2002
+#define MGET_HTTP_COOKIE_STORE 2003
+#define MGET_HTTP_HEADER_ADD   2004
+//#define MGET_HTTP_HEADER_DEL   2005
+//#define MGET_HTTP_HEADER_SET   2006
+//#define MGET_HTTP_BIND_ADDRESS 2007
+#define MGET_HTTP_CONNECTION_PTR 2008
+#define MGET_HTTP_RESPONSE_KEEPHEADER 2009
+#define MGET_HTTP_MAX_REDIRECTIONS 2010
+
+void
+	mget_global_init(int key, ...) G_GNUC_MGET_NULL_TERMINATED;
+void
+	mget_global_deinit(void);
+const void *
+	mget_global_get_ptr(int key);
+int
+	mget_global_get_int(int key);
 
 /*
  * Utility functions
@@ -397,9 +423,15 @@ typedef struct _MGET_LOGGER MGET_LOGGER;
 void
 	mget_logger_set_func(MGET_LOGGER *logger, void (*func)(const char *buf, size_t len) G_GNUC_MGET_NONNULL_ALL);
 void
-	mget_logger_set_file(MGET_LOGGER *logger, FILE *fp);
+	mget_logger_set_stream(MGET_LOGGER *logger, FILE *fp);
 void
-	mget_logger_set_filename(MGET_LOGGER *logger, const char *fname);
+	mget_logger_set_file(MGET_LOGGER *logger, const char *fname);
+void
+	(*mget_logger_get_func(MGET_LOGGER *logger))(const char *, size_t);
+FILE *
+	mget_logger_get_stream(MGET_LOGGER *logger);
+const char *
+	mget_logger_get_file(MGET_LOGGER *logger);
 
 /*
  * Logging routines
@@ -815,6 +847,10 @@ void
  * TCP network routines
  */
 
+#define MGET_NET_FAMILY_ANY  0
+#define MGET_NET_FAMILY_IPV4 1
+#define MGET_NET_FAMILY_IPV6 2
+
 typedef struct _TCP MGET_TCP;
 
 void
@@ -829,6 +865,10 @@ void
 	mget_tcp_set_dns_caching(int caching);
 int
 	mget_tcp_get_dns_caching(void) G_GNUC_MGET_PURE;
+int
+	mget_tcp_get_family(void)  G_GNUC_MGET_CONST;
+int
+	mget_tcp_get_preferred_family(void)  G_GNUC_MGET_CONST;
 void
 	mget_tcp_set_debug(int debug);
 void
@@ -895,7 +935,7 @@ typedef struct {
 		name;
 	const char *
 		value;
-} HTTP_HEADER_PARAM;
+} MGET_HTTP_HEADER_PARAM;
 
 typedef struct {
 	const char *
@@ -908,21 +948,21 @@ typedef struct {
 		link_rel_describedby,
 		link_rel_duplicate
 	} rel;
-} HTTP_LINK;
+} MGET_HTTP_LINK;
 
 typedef struct {
 	const char *
 		algorithm;
 	const char *
 		encoded_digest;
-} HTTP_DIGEST;
+} MGET_HTTP_DIGEST;
 
 typedef struct {
 	const char *
 		auth_scheme;
 	MGET_STRINGMAP *
 		params;
-} HTTP_CHALLENGE;
+} MGET_HTTP_CHALLENGE;
 
 enum {
 	transfer_encoding_identity,
@@ -947,7 +987,7 @@ typedef struct {
 		method[8]; // we just need HEAD, GET and POST
 	char
 		save_headers;
-} HTTP_REQUEST;
+} MGET_HTTP_REQUEST;
 
 // just parse the header lines that we need
 typedef struct {
@@ -989,7 +1029,7 @@ typedef struct {
 		content_length_valid;
 	char
 		keep_alive;
-} HTTP_RESPONSE;
+} MGET_HTTP_RESPONSE;
 
 typedef struct {
 	MGET_TCP *
@@ -1006,7 +1046,7 @@ typedef struct {
 		buf;
 	unsigned
 		print_response_headers : 1;
-} HTTP_CONNECTION;
+} MGET_HTTP_CONNECTION;
 
 int
 	http_isseperator(char c);
@@ -1026,11 +1066,11 @@ const char *
 const char *
 	http_parse_name_fixed(const char *s, char *name, size_t name_size) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_link(const char *s, HTTP_LINK *link) G_GNUC_MGET_NONNULL_ALL;
+	http_parse_link(const char *s, MGET_HTTP_LINK *link) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_digest(const char *s, HTTP_DIGEST *digest) G_GNUC_MGET_NONNULL_ALL;
+	http_parse_digest(const char *s, MGET_HTTP_DIGEST *digest) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_challenge(const char *s, HTTP_CHALLENGE *challenge) G_GNUC_MGET_NONNULL_ALL;
+	http_parse_challenge(const char *s, MGET_HTTP_CHALLENGE *challenge) G_GNUC_MGET_NONNULL_ALL;
 const char *
 	http_parse_location(const char *s, const char **location) G_GNUC_MGET_NONNULL_ALL;
 const char *
@@ -1048,75 +1088,82 @@ char *
 	http_print_date(time_t t, char *buf, size_t bufsize) G_GNUC_MGET_NONNULL_ALL;
 
 void
-	http_add_param(MGET_VECTOR **params, HTTP_HEADER_PARAM *param) G_GNUC_MGET_NONNULL_ALL;
+	http_add_param(MGET_VECTOR **params, MGET_HTTP_HEADER_PARAM *param) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_add_header_vprintf(HTTP_REQUEST *req, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL;
+	http_add_header_vprintf(MGET_HTTP_REQUEST *req, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_add_header_printf(HTTP_REQUEST *req, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL;
+	http_add_header_printf(MGET_HTTP_REQUEST *req, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_add_header_line(HTTP_REQUEST *req, const char *line) G_GNUC_MGET_NONNULL_ALL;
+	http_add_header_line(MGET_HTTP_REQUEST *req, const char *line) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_add_header(HTTP_REQUEST *req, const char *name, const char *value) G_GNUC_MGET_NONNULL_ALL;
+	http_add_header(MGET_HTTP_REQUEST *req, const char *name, const char *value) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_add_credentials(HTTP_REQUEST *req, HTTP_CHALLENGE *challenge, const char *username, const char *password) G_GNUC_MGET_NONNULL((1));
+	http_add_credentials(MGET_HTTP_REQUEST *req, MGET_HTTP_CHALLENGE *challenge, const char *username, const char *password) G_GNUC_MGET_NONNULL((1));
 void
-	http_set_http_proxy(const char *proxy, const char *locale);
+	http_set_http_proxy(const char *proxy, const char *encoding);
 void
-	http_set_https_proxy(const char *proxy, const char *locale);
+	http_set_https_proxy(const char *proxy, const char *encoding);
 
 int
-	http_free_param(HTTP_HEADER_PARAM *param);
+	http_free_param(MGET_HTTP_HEADER_PARAM *param);
 int
 	http_free_cookie(MGET_COOKIE *cookie);
 int
-	http_free_digest(HTTP_DIGEST *digest);
+	http_free_digest(MGET_HTTP_DIGEST *digest);
 int
-	http_free_challenge(HTTP_CHALLENGE *challenge);
+	http_free_challenge(MGET_HTTP_CHALLENGE *challenge);
 int
-	http_free_link(HTTP_LINK *link);
+	http_free_link(MGET_HTTP_LINK *link);
 
 void
-	http_free_cookies(MGET_VECTOR *cookies);
+	http_free_cookies(MGET_VECTOR **cookies);
 void
-	http_free_digests(MGET_VECTOR *digests);
+	http_free_digests(MGET_VECTOR **digests);
 void
-	http_free_challenges(MGET_VECTOR *challenges);
+	http_free_challenges(MGET_VECTOR **challenges);
 void
-	http_free_links(MGET_VECTOR *link);
+	http_free_links(MGET_VECTOR **links);
 //void
 //	http_free_header(HTTP_HEADER **header);
 void
-	http_free_request(HTTP_REQUEST **req);
+	http_free_request(MGET_HTTP_REQUEST **req);
 void
-	http_free_response(HTTP_RESPONSE **resp);
+	http_free_response(MGET_HTTP_RESPONSE **resp);
 
-HTTP_RESPONSE *
+MGET_HTTP_RESPONSE *
 	http_read_header(const MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
-HTTP_RESPONSE *
+MGET_HTTP_RESPONSE *
 	http_get_header(MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
-HTTP_RESPONSE *
+MGET_HTTP_RESPONSE *
 	http_parse_response(char *buf) G_GNUC_MGET_NONNULL_ALL;
-HTTP_RESPONSE *
-	http_get_response_cb(HTTP_CONNECTION *conn, HTTP_REQUEST *req,
+MGET_HTTP_RESPONSE *
+	http_get_response_cb(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req, unsigned int flags,
 								 int (*parse_body)(void *context, const char *data, size_t length),
-								 void *context) G_GNUC_MGET_NONNULL((1,3,4));
+								 void *context) G_GNUC_MGET_NONNULL((1,4,5));
 //HTTP_RESPONSE *
 //	http_get_response_mem(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL_ALL,
-HTTP_RESPONSE *
-	http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req) G_GNUC_MGET_NONNULL((1));
-HTTP_RESPONSE *
-	http_get_response_fd(HTTP_CONNECTION *conn, int fd) G_GNUC_MGET_NONNULL_ALL;
+MGET_HTTP_RESPONSE *
+	http_get_response(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req, unsigned int flags) G_GNUC_MGET_NONNULL((1));
+MGET_HTTP_RESPONSE *
+	http_get_response_fd(MGET_HTTP_CONNECTION *conn, int fd, unsigned int flags) G_GNUC_MGET_NONNULL_ALL;
 
-HTTP_CONNECTION *
+MGET_HTTP_CONNECTION *
 	http_open(const MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
-HTTP_REQUEST *
+MGET_HTTP_REQUEST *
 	http_create_request(const MGET_IRI *iri, const char *method) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_close(HTTP_CONNECTION **conn) G_GNUC_MGET_NONNULL_ALL;
+	http_close(MGET_HTTP_CONNECTION **conn) G_GNUC_MGET_NONNULL_ALL;
 int
-	http_send_request(HTTP_CONNECTION *conn, HTTP_REQUEST *req) G_GNUC_MGET_NONNULL_ALL;
+	http_send_request(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req) G_GNUC_MGET_NONNULL_ALL;
 ssize_t
-	http_request_to_buffer(HTTP_REQUEST *req, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+	http_request_to_buffer(MGET_HTTP_REQUEST *req, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+
+/*
+ * Highlevel HTTP routines
+ */
+
+MGET_HTTP_RESPONSE *
+	mget_http_get(int first_key, ...) G_GNUC_MGET_NULL_TERMINATED;
 
 /*
  * MD5 routines

@@ -345,11 +345,11 @@ static int parse_n_option(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED co
 static int parse_prefer_family(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	if (!val || !strcasecmp(val, "none"))
-		*((char *)opt->var) = AF_UNSPEC;
+		*((char *)opt->var) = MGET_NET_FAMILY_ANY;
 	else if (!strcasecmp(val, "ipv4"))
-		*((char *)opt->var) = AF_INET;
+		*((char *)opt->var) = MGET_NET_FAMILY_IPV4;
 	else if (!strcasecmp(val, "ipv6"))
-		*((char *)opt->var) = AF_INET6;
+		*((char *)opt->var) = MGET_NET_FAMILY_IPV6;
 	else
 		error_printf_exit("Unknown address family '%s'\n", val);
 
@@ -922,9 +922,9 @@ int init(int argc, const char *const *argv)
 	mget_tcp_set_dns_caching(config.dns_caching);
 	mget_tcp_set_bind_address(config.bind_address);
 	if (config.inet4_only)
-		mget_tcp_set_family(AF_INET);
+		mget_tcp_set_family(MGET_NET_FAMILY_IPV4);
 	else if (config.inet6_only)
-		mget_tcp_set_family(AF_INET6);
+		mget_tcp_set_family(MGET_NET_FAMILY_IPV6);
 	else
 		mget_tcp_set_preferred_family(config.preferred_family);
 

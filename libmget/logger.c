@@ -109,8 +109,12 @@ void mget_logger_set_func(MGET_LOGGER *logger, void (*func)(const char *buf, siz
 	}
 }
 
+void (*mget_logger_get_func(MGET_LOGGER *logger))(const char *, size_t)
+{
+	return logger ? logger->func : NULL;
+}
 
-void mget_logger_set_file(MGET_LOGGER *logger, FILE *fp)
+void mget_logger_set_stream(MGET_LOGGER *logger, FILE *fp)
 {
 	if (logger) {
 		logger->fp = fp;
@@ -119,11 +123,21 @@ void mget_logger_set_file(MGET_LOGGER *logger, FILE *fp)
 	}
 }
 
-void mget_logger_set_filename(MGET_LOGGER *logger, const char *fname)
+FILE *mget_logger_get_stream(MGET_LOGGER *logger)
+{
+	return logger ? logger->fp : NULL;
+}
+
+void mget_logger_set_file(MGET_LOGGER *logger, const char *fname)
 {
 	if (logger) {
 		logger->fname = fname;
 		logger->vprintf = fname ? _logger_vprintf_fname : NULL;
 		logger->write = fname ? _logger_write_fname : NULL;
 	}
+}
+
+const char *mget_logger_get_file(MGET_LOGGER *logger)
+{
+	return logger ? logger->fname : NULL;
 }

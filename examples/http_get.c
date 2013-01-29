@@ -37,117 +37,53 @@
 
 int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED)
 {
-	MGET_IRI *uri;
-	HTTP_CONNECTION *conn = NULL;
-	HTTP_REQUEST *req;
+	MGET_HTTP_CONNECTION *conn = NULL;
+	MGET_HTTP_RESPONSE *resp;
 
+	// set up libmget global configuration
 	mget_global_init(
 		MGET_DEBUG_STREAM, stderr,
 		MGET_ERROR_STREAM, stderr,
 		MGET_INFO_STREAM, stdout,
-//		MGET_DNS_CACHING, 1,
+		MGET_DNS_CACHING, 1,
+		MGET_COOKIES_ENABLED, 1,
+		MGET_COOKIE_SUFFIXES, "public_suffixes.txt",
+		MGET_COOKIE_STORE, "cookies.txt",
+		MGET_COOKIE_KEEPSESSIONCOOKIES, 1,
+		// MGET_BIND_ADDRESS, "127.0.0.1:6666",
+		// MGET_NET_FAMILY_EXCLUSIVE, MGET_NET_FAMILY_IPV4, // or MGET_NET_FAMILY_IPV6 or MGET_NET_FAMILY_ANY
+		// MGET_NET_FAMILY_PREFERRED, MGET_NET_FAMILY_IPV4, // or MGET_NET_FAMILY_IPV6 or MGET_NET_FAMILY_ANY
 		NULL);
 
-	// 1. parse the URL into a URI
-	//    if you want use a non-ascii (international) domain, the second
-	//    parameter should be the character encoding of this file (e.g. "iso-8859-1")
-	uri = mget_iri_parse("http://www.example.org", NULL);
-
-	// 2. create a HTTP/1.1 GET request.
-	//    the only default header is 'Host: www.example.com' (taken from uri)
-	req = http_create_request(uri, "GET");
-
-	// 3. add HTTP headers as you wish
-	http_add_header(req, "User-Agent", "TheUserAgent/0.5");
-
-	// libmget also supports gzip'ed or deflated response bodies
-	http_add_header_line(req, "Accept-Encoding: gzip, deflate\r\n");
-	http_add_header_line(req, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
-	http_add_header_line(req, "Accept-Language: en-us,en;q=0.5\r\n");
-
-	// use keep-alive if you want to send more requests on the same connection
-	// http_add_header_line(req, "Connection: keep-alive\r\n");
-
-	// you need cookie support ? just #define COOKIE_SUPPORT or remove the #ifdef/#endif
-	// 'keep_session_cookies' should be 0 or 1
-#ifdef COOKIE_SUPPORT
-	int keep_session_cookies = 1;
-	const char *cookie_string;
-
-	// load public suffixes for cookie validation
-	mget_cookie_load_public_suffixes("public_suffixes.txt");
-
-	// load cookie-store
-	mget_cookie_load("cookies.txt", keep_session_cookies);
-
-	// enrich the HTTP request with the uri-related cookies we have
-	if ((cookie_string = mget_cookie_create_request_header(uri))) {
-		http_add_header(req, "Cookie", cookie_string);
-		free((void *)cookie_string);
-	}
-#endif
-
-	// 4. establish connection to the host/port given by uri
-	// well, we could have done this directly after mget_iri_parse(), since
-	// http_open() works semi-async and returns immediately after domain name lookup.
-	conn = http_open(uri);
-
-	HTTP_RESPONSE *resp;
-	if (conn) {
-		req->save_headers = 1; // store raw header, we want to print further down
-
-		if (http_send_request(conn, req) == 0) {
-			resp = http_get_response(conn, req);
-
-			if (!resp)
-				goto out;
-
-			// server doesn't support or want keep-alive
-			if (!resp->keep_alive)
-				http_close(&conn);
-
-#ifdef COOKIE_SUPPORT
-			// check and normalization of received cookies
-			mget_cookie_normalize_cookies(uri, resp->cookies);
-
-			// put cookies into cookie-store (also known as cookie-jar)
-			mget_cookie_store_cookies(resp->cookies);
-
-			// save cookie-store to file
-			mget_cookie_save("cookies.txt", keep_session_cookies);
-#endif
-
-			// let's assume the body isn't binary (doesn't contain \0)
-			mget_info_printf("%s%s\n", resp->header->data, resp->body->data);
-
-			http_free_response(&resp);
-		}
-	}
-
-/*
- * todo: create this kind of high-level function:
-	resp = http_get("http://example.com",
-		HTTP_BIND_ADDRESS, "127.0.0.1:6666",
-		HTTP_URL_CHARACTERSET, "iso-8859-1",
-		HTTP_COOKIE_STORE, "cookies.txt",
-		HTTP_COOKIE_KEEPSESSIONCOOKIES, 1,
-		HTTP_HEADER_ADD, "Accept-Encoding: gzip, deflate",
-		HTTP_PROXY, "myproxy.com:9375",
-		HTTP_HEADER_SAVE_STREAM, stdout,
-		HTTP_BODY_SAVE_STREAM, stdout,
+	// execute an HTTP GET request and return the response
+	resp = mget_http_get(
+		MGET_HTTP_URL, "http://example.com",
+		// MGET_HTTP_URL_ENCODING, "utf-8",
+		MGET_HTTP_HEADER_ADD, "User-Agent: Mozilla/5.0",
+		MGET_HTTP_HEADER_ADD, "Accept-Encoding: gzip, deflate",
+		MGET_HTTP_HEADER_ADD, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+		MGET_HTTP_HEADER_ADD, "Accept-Language: en-us,en;q=0.5",
+		// MGET_HTTP_PROXY, "myproxy.com:9375",
+		// MGET_HTTP_HEADER_SAVEAS_STREAM, stdout,
+		// MGET_HTTP_BODY_SAVEAS_STREAM, stdout,
+		MGET_HTTP_MAX_REDIRECTIONS, 5,
+		MGET_HTTP_CONNECTION_PTR, &conn,
+		// MGET_HTTP_RESPONSE_PTR, &resp,
 		NULL);
 
-	http_free_response(&resp);
-*/
+	if (resp) {
+		// let's assume the body is printable
+		printf("%s%s\n", resp->header->data, resp->body->data);
 
-out:
-#ifdef COOKIE_SUPPORT
-	mget_cookie_free_public_suffixes();
-	mget_cookie_free_cookies();
-#endif
+		// free the response
+		http_free_response(&resp);
+	}
+
+	// close connection if still open
 	http_close(&conn);
-	http_free_request(&req);
-	mget_iri_free(&uri);
+
+	// free resources - needed for valgrind testing
+	mget_global_deinit();
 
 	return 0;
 }

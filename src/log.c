@@ -91,8 +91,8 @@ void log_init(void)
 	mget_logger_set_func(mget_get_logger(MGET_LOGGER_DEBUG), config.debug ? _write_debug : NULL);
 
 	// set error logging
-	mget_logger_set_file(mget_get_logger(MGET_LOGGER_ERROR), config.quiet ? NULL : stderr);
+	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_ERROR), config.quiet ? NULL : stderr);
 
 	// set info logging
-	mget_logger_set_file(mget_get_logger(MGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
+	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
 }
