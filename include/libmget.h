@@ -28,6 +28,7 @@
 #define _LIBMGET_LIBMGET_H
 
 #include <stddef.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <time.h>
@@ -592,6 +593,28 @@ void
 	mget_stringmap_sethashfunc(MGET_STRINGMAP *h, unsigned int (*hash)(const char *key)) G_GNUC_MGET_NONNULL_ALL;
 void
 	mget_stringmap_setloadfactor(MGET_STRINGMAP *h, float factor) G_GNUC_MGET_NONNULL_ALL;
+
+/*
+ * Thread wrapper routines
+ */
+
+#define MGET_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
+
+typedef pthread_mutex_t mget_thread_mutex_t;
+typedef pthread_t mget_thread_t;
+
+int
+	mget_thread_start(mget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags);
+void
+	mget_thread_mutex_lock(mget_thread_mutex_t *);
+void
+	mget_thread_mutex_unlock(mget_thread_mutex_t *);
+int
+	mget_thread_kill(mget_thread_t thread, int sig);
+int
+	mget_thread_join(mget_thread_t thread);
+mget_thread_t
+	mget_thread_self(void);
 
 /*
  * Decompressor routines

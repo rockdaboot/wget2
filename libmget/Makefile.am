@@ -2,8 +2,8 @@ lib_LTLIBRARIES = libmget.la
 libmget_la_SOURCES = buffer.c buffer_printf.c base64.c compat.c cookie.c\
  css.c css_tokenizer.c css_tokenizer.h css_tokenizer.lex css_url.c \
  decompressor.c hashmap.c io.c http.c init.c iri.c list.c log.c logger.c md5.c\
- mem.c net.c pipe.c printf.c ssl_gnutls.c stringmap.c utils.c vector.c xalloc.c\
- xml.c private.h http_highlevel.c
+ mem.c net.c pipe.c printf.c ssl_gnutls.c stringmap.c thread.c utils.c vector.c\
+ xalloc.c xml.c private.h http_highlevel.c
 
 libmget_la_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src
 

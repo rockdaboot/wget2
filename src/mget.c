@@ -28,7 +28,6 @@
 # include <config.h>
 #endif
 
-#include <pthread.h>
 #include <unistd.h>
 #include <stddef.h>
 #include <fcntl.h>
@@ -55,7 +54,7 @@
 #include "blacklist.h"
 
 typedef struct {
-	pthread_t
+	mget_thread_t
 		tid;
 	JOB
 		*job;
@@ -236,14 +235,14 @@ static int schedule_download(JOB *job, PART *part)
 // we have to modify and check the quota in one (protected) step.
 static long long quota_modify_read(size_t nbytes)
 {
-	static pthread_mutex_t
-		mutex = PTHREAD_MUTEX_INITIALIZER;
+	static mget_thread_mutex_t
+		mutex = MGET_THREAD_MUTEX_INITIALIZER;
 	size_t old_quota;
 
-	pthread_mutex_lock(&mutex);
+	mget_thread_mutex_lock(&mutex);
 	old_quota = quota;
 	quota += nbytes;
-	pthread_mutex_unlock(&mutex);
+	mget_thread_mutex_unlock(&mutex);
 
 	return old_quota;
 }
@@ -300,7 +299,6 @@ int main(int argc, const char *const *argv)
 	int n, rc, maxfd, nfds, inputfd = -1;
 	size_t bufsize = 0;
 	char *buf = NULL;
-	pthread_attr_t attr;
 	fd_set rset;
 	struct sigaction sig_action;
 
@@ -472,18 +470,11 @@ int main(int argc, const char *const *argv)
 		fcntl(downloader[n].sockfd[1], F_SETFL, O_NDELAY);
 
 		// init thread attributes
-		pthread_attr_init(&attr);
-		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-		// pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
-		pthread_attr_setschedpolicy(&attr, SCHED_OTHER);
-
-		if ((rc = pthread_create(&downloader[n].tid, &attr, downloader_thread, &downloader[n])) != 0) {
+		if ((rc = mget_thread_start(&downloader[n].tid, downloader_thread, &downloader[n], 0)) != 0) {
 			error_printf(_("Failed to start downloader, error %d\n"), rc);
 			close(downloader[n].sockfd[0]);
 			close(downloader[n].sockfd[1]);
 		}
-
-		pthread_attr_destroy(&attr);
 
 		if (queue_get(&downloader[n].job, NULL)) {
 			dprintf(downloader[n].sockfd[0], "go\n");
@@ -710,7 +701,7 @@ int main(int argc, const char *const *argv)
 		close(downloader[n].sockfd[1]);
 		http_close(&downloader[n].conn);
 		xfree(downloader[n].buf);
-		if (pthread_kill(downloader[n].tid, SIGTERM) == -1)
+		if (mget_thread_kill(downloader[n].tid, SIGTERM) == -1)
 			error_printf(_("Failed to kill downloader #%d\n"), n);
 	}
 
@@ -722,7 +713,7 @@ int main(int argc, const char *const *argv)
 		// else we will have a huge memory leak
 		int rc;
 		//		if ((rc=pthread_timedjoin_np(downloader[n].tid, NULL, &ts))!=0)
-		if ((rc = pthread_join(downloader[n].tid, NULL)) != 0)
+		if ((rc = mget_thread_join(downloader[n].tid)) != 0)
 			error_printf(_("Failed to wait for downloader #%d (%d %d)\n"), n, rc, errno);
 	}
 
@@ -755,10 +746,10 @@ void *downloader_thread(void *p)
 	size_t bufsize = 0;
 	fd_set rset;
 	int nfds;
-	//	unsigned int seed=(unsigned int)(time(NULL)|pthread_self());
+	//	unsigned int seed=(unsigned int)(time(NULL)|mget_thread_self());
 	int sockfd = downloader->sockfd[1];
 
-	downloader->tid = pthread_self(); // to avoid race condition
+	downloader->tid = mget_thread_self(); // to avoid race condition
 
 	while (!terminate) {
 		FD_ZERO(&rset);
