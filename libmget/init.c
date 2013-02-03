@@ -90,7 +90,7 @@ void mget_global_init(int first_key, ...)
 			mget_logger_set_file(mget_get_logger(MGET_LOGGER_INFO), va_arg(args, const char *));
 			break;
 		case MGET_DNS_CACHING:
-			mget_tcp_set_dns_caching(va_arg(args, int));
+			mget_tcp_set_dns_caching(NULL, va_arg(args, int));
 			break;
 		case MGET_COOKIE_SUFFIXES:
 			mget_cookie_load_public_suffixes(va_arg(args, const char *));
@@ -108,13 +108,13 @@ void mget_global_init(int first_key, ...)
 			_config.keep_session_cookies = va_arg(args, int);
 			break;
 		case MGET_BIND_ADDRESS:
-			mget_tcp_set_bind_address(va_arg(args, const char *));
+			mget_tcp_set_bind_address(NULL, va_arg(args, const char *));
 			break;
 		case MGET_NET_FAMILY_EXCLUSIVE:
-			mget_tcp_set_family(va_arg(args, int));
+			mget_tcp_set_family(NULL, va_arg(args, int));
 			break;
 		case MGET_NET_FAMILY_PREFERRED:
-			mget_tcp_set_preferred_family(va_arg(args, int));
+			mget_tcp_set_preferred_family(NULL, va_arg(args, int));
 			break;
 		default:
 			pthread_mutex_unlock(&_mutex);
@@ -140,8 +140,8 @@ void mget_global_deinit(void)
 		if (_config.cookies_enabled && _config.cookie_store)
 			mget_cookie_save(_config.cookie_store, _config.keep_session_cookies);
 		mget_cookie_free_cookies();
-		mget_tcp_set_bind_address(NULL);
-		mget_tcp_set_dns_caching(0);
+		mget_tcp_set_bind_address(NULL, NULL);
+		mget_tcp_set_dns_caching(NULL, 0);
 	}
 
 	if (_init > 0) _init--;
@@ -153,20 +153,15 @@ int mget_global_get_int(int key)
 {
 	switch (key) {
 	case MGET_DNS_CACHING:
-		return mget_tcp_get_dns_caching();
-		break;
+		return mget_tcp_get_dns_caching(NULL);
 	case MGET_COOKIES_ENABLED:
 		return _config.cookies_enabled;
-		break;
 	case MGET_COOKIE_KEEPSESSIONCOOKIES:
 		return _config.keep_session_cookies;
-		break;
 	case MGET_NET_FAMILY_EXCLUSIVE:
-		return mget_tcp_get_family();
-		break;
+		return mget_tcp_get_family(NULL);
 	case MGET_NET_FAMILY_PREFERRED:
-		return mget_tcp_get_preferred_family();
-		break;
+		return mget_tcp_get_preferred_family(NULL);
 	default:
 		mget_error_printf(_("%s: Unknown option %d"), __func__, key);
 		return 0;

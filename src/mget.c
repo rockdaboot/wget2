@@ -672,6 +672,7 @@ int main(int argc, const char *const *argv)
 							if (!iri->host || !mget_stringmap_get(config.domains, iri->host) || mget_stringmap_get(config.exclude_domains, iri->host)) {
 								info_printf("URI '%s' not followed\n", iri->uri);
 								mget_iri_free(&iri);
+								continue;
 							}
 						}
 

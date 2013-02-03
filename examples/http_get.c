@@ -33,8 +33,6 @@
 #include <stdlib.h>
 #include <libmget.h>
 
-#define COOKIE_SUPPORT
-
 int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED)
 {
 	MGET_HTTP_CONNECTION *conn = NULL;

@@ -198,6 +198,7 @@ MGET_BEGIN_DECLS
 #define MGET_HTTP_CONNECTION_PTR 2008
 #define MGET_HTTP_RESPONSE_KEEPHEADER 2009
 #define MGET_HTTP_MAX_REDIRECTIONS 2010
+#define MGET_HTTP_BODY_SAVEAS_STREAM 2011
 
 void
 	mget_global_init(int key, ...) G_GNUC_MGET_NULL_TERMINATED;
@@ -876,34 +877,42 @@ void
 
 typedef struct _TCP MGET_TCP;
 
+MGET_TCP *
+	mget_tcp_init(void);
+void
+	mget_tcp_deinit(MGET_TCP **tcp);
+void
+	mget_dns_cache_free(void);
 void
 	mget_tcp_close(MGET_TCP **tcp) G_GNUC_MGET_NONNULL_ALL;
 void
 	mget_tcp_set_timeout(MGET_TCP *tcp, int timeout);
 void
-	mget_tcp_set_connect_timeout(int timeout);
+	mget_tcp_set_connect_timeout(MGET_TCP *tcp, int timeout);
 void
-	mget_tcp_set_dns_timeout(int timeout);
+	mget_tcp_set_dns_timeout(MGET_TCP *tcp, int timeout);
 void
-	mget_tcp_set_dns_caching(int caching);
+	mget_tcp_set_dns_caching(MGET_TCP *tcp, int caching);
 int
-	mget_tcp_get_dns_caching(void) G_GNUC_MGET_PURE;
+	mget_tcp_get_dns_caching(MGET_TCP *tcp) G_GNUC_MGET_PURE;
 int
-	mget_tcp_get_family(void)  G_GNUC_MGET_CONST;
+	mget_tcp_get_family(MGET_TCP *tcp)  G_GNUC_MGET_CONST;
 int
-	mget_tcp_get_preferred_family(void)  G_GNUC_MGET_CONST;
+	mget_tcp_get_preferred_family(MGET_TCP *tcp)  G_GNUC_MGET_CONST;
 void
-	mget_tcp_set_debug(int debug);
+	mget_tcp_set_debug(MGET_TCP *tcp, int debug);
 void
-	mget_tcp_set_family(int family);
+	mget_tcp_set_family(MGET_TCP *tcp, int family);
 void
-	mget_tcp_set_preferred_family(int family);
+	mget_tcp_set_preferred_family(MGET_TCP *tcp, int family);
 void
-	mget_tcp_set_bind_address(const char *bind_address);
+	mget_tcp_set_bind_address(MGET_TCP *tcp, const char *bind_address);
 struct addrinfo *
-	mget_tcp_resolve(const char *restrict name, const char *restrict port) G_GNUC_MGET_NONNULL((1));
-MGET_TCP *
-	mget_tcp_connect(struct addrinfo *addrinfo, const char *hostname) G_GNUC_MGET_NONNULL((1));
+	mget_tcp_resolve(MGET_TCP *tcp, const char *restrict name, const char *restrict port) G_GNUC_MGET_NONNULL((2));
+int
+	mget_tcp_connect(MGET_TCP *tcp, const char *host, const char *port) G_GNUC_MGET_NONNULL((1));
+int
+	mget_tcp_connect_ssl(MGET_TCP *tcp, const char *host, const char *port, const char *hostname) G_GNUC_MGET_NONNULL((1));
 ssize_t
 	mget_tcp_vprintf(MGET_TCP *tcp, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL;
 ssize_t
@@ -1038,6 +1047,8 @@ typedef struct {
 		last_modified;
 	char
 		reason[32];
+	int
+		icy_metaint;
 	short
 		major;
 	short
@@ -1057,8 +1068,6 @@ typedef struct {
 typedef struct {
 	MGET_TCP *
 		tcp;
-	struct addrinfo *
-		addrinfo;
 	const char *
 		esc_host;
 	const char *
@@ -1169,6 +1178,10 @@ MGET_HTTP_RESPONSE *
 	http_get_response(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req, unsigned int flags) G_GNUC_MGET_NONNULL((1));
 MGET_HTTP_RESPONSE *
 	http_get_response_fd(MGET_HTTP_CONNECTION *conn, int fd, unsigned int flags) G_GNUC_MGET_NONNULL_ALL;
+MGET_HTTP_RESPONSE *
+	http_get_response_stream(MGET_HTTP_CONNECTION *conn, FILE *stream, unsigned int flags) G_GNUC_MGET_NONNULL_ALL;
+MGET_HTTP_RESPONSE *
+	http_get_response_func(MGET_HTTP_CONNECTION *conn, int(*func)(void *, const char *, size_t), void *context, unsigned int flags) G_GNUC_MGET_NONNULL((1,2));
 
 MGET_HTTP_CONNECTION *
 	http_open(const MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;

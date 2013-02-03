@@ -50,45 +50,53 @@
 #include <libmget.h>
 #include "private.h"
 
-struct _TCP {
+static struct _TCP {
 	void *
 		ssl_session;
+	struct addrinfo *
+		addrinfo;
+	struct addrinfo *
+		bind_addrinfo;
 	int
 		sockfd,
-		timeout;
-	char
-		ssl;
+		// timeouts in milliseconds
+		// there is no real 'connect timeout', since connects are async
+		dns_timeout,
+		connect_timeout,
+		timeout, // read and write timeouts are the same
+		family,
+		preferred_family;
+	unsigned int
+		ssl : 1,
+		caching : 1,
+		addrinfo_allocated : 1,
+		bind_addrinfo_allocated : 1;
+} _global_tcp = {
+	.sockfd = -1,
+	.dns_timeout = -1,
+	.connect_timeout = -1,
+	.timeout = -1,
+	.family = AF_UNSPEC,
+	.caching = 1
 };
-
-// global settings
-static int
-	// timeouts in milliseconds
-	// there is no real 'connect timeout', since connects are async
-	dns_timeout = -1,
-	connect_timeout = -1,
-	timeout = -1, // read and write timeouts are the same
-	family = AF_UNSPEC,
-	preferred_family;
-static struct addrinfo
-	*bind_addrinfo;
-static pthread_mutex_t
-	dns_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 // resolver / DNS cache entry
 struct ADDR_ENTRY {
-	const char
-		*host,
-		*port;
-	struct addrinfo
-		*addrinfo;
+	const char *
+		host;
+	const char *
+		port;
+	struct addrinfo *
+		addrinfo;
 };
-
 // resolver / DNS cache container
 static MGET_VECTOR
 	*dns_cache;
+static pthread_mutex_t
+	dns_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-struct addrinfo *mget_tcp_resolve(const char *host, const char *port)
+static struct addrinfo *_mget_dns_cache_get(const char *host, const char *port)
 {
 	if (dns_cache) {
 		struct ADDR_ENTRY *entryp, entry = { .host = host, .port = port };
@@ -103,11 +111,72 @@ struct addrinfo *mget_tcp_resolve(const char *host, const char *port)
 		}
 	}
 
+	return NULL;
+}
+
+static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL _compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
+{
+	int n;
+
+	if ((n = strcasecmp(a1->host, a2->host)) == 0)
+		return strcasecmp(a1->port, a2->port);
+
+	return n;
+}
+
+static void _mget_dns_cache_add(const char *host, const char *port, struct addrinfo *addrinfo)
+{
+	// insert addrinfo into dns cache
+	size_t hostlen = host ? strlen(host) + 1 : 1;
+	size_t portlen = port ? strlen(port) + 1 : 1;
+	struct ADDR_ENTRY *entryp = xmalloc(sizeof(struct ADDR_ENTRY) + hostlen + portlen);
+
+	entryp->host = ((char *)entryp) + sizeof(struct ADDR_ENTRY);
+	entryp->port = ((char *)entryp) + sizeof(struct ADDR_ENTRY) + hostlen;
+	entryp->addrinfo = addrinfo;
+	strcpy((char *)entryp->host, host ? host : ""); // ugly cast, but semantically ok
+	strcpy((char *)entryp->port, port ? port : ""); // ugly cast, but semantically ok
+
+	pthread_mutex_lock(&dns_mutex);
+	if (!dns_cache)
+		dns_cache = mget_vector_create(4, -2, (int(*)(const void *, const void *))_compare_addr);
+
+	if (mget_vector_find(dns_cache, entryp) == -1)
+		mget_vector_insert_sorted_noalloc(dns_cache, entryp);
+	pthread_mutex_unlock(&dns_mutex);
+}
+
+void mget_dns_cache_free(void)
+{
+	pthread_mutex_lock(&dns_mutex);
+	if (dns_cache) {
+		int it;
+
+		for (it = 0; it < mget_vector_size(dns_cache); it++) {
+			struct ADDR_ENTRY *entryp = mget_vector_get(dns_cache, it);
+			freeaddrinfo(entryp->addrinfo);
+		}
+		mget_vector_free(&dns_cache);
+	}
+	pthread_mutex_unlock(&dns_mutex);
+}
+
+struct addrinfo *mget_tcp_resolve(MGET_TCP *tcp, const char *host, const char *port)
+{
+	struct addrinfo *addrinfo, *ai;
+	int tries, rc = 0;
+
+	if (!tcp)
+		tcp = &_global_tcp;
+
+	if (tcp->caching && (addrinfo = _mget_dns_cache_get(host, port)))
+		return addrinfo;
+
 	// we need a block here to not let fall non-C99 compilers (e.g. gcc 2.95)
 	// it doesn't really hurt
 	{
 		struct addrinfo hints = {
-			.ai_family = family,
+			.ai_family = tcp->family,
 			.ai_socktype = SOCK_STREAM,
 #if defined(AI_ADDRCONFIG)
 	#if defined(AI_NUMERICSERV)
@@ -119,8 +188,6 @@ struct addrinfo *mget_tcp_resolve(const char *host, const char *port)
 			.ai_flags = (port && isdigit(*port) ? AI_NUMERICSERV : 0)
 #endif
 		};
-		struct addrinfo *addrinfo = NULL, *ai;
-		int tries, rc = 0;
 
 #if !defined(AI_NUMERICSERV)
 		// to make the function work on old systems
@@ -168,13 +235,13 @@ struct addrinfo *mget_tcp_resolve(const char *host, const char *port)
 			return NULL;
 		}
 
-		if (family == AF_UNSPEC && preferred_family != AF_UNSPEC) {
+		if (tcp->family == AF_UNSPEC && tcp->preferred_family != AF_UNSPEC) {
 			struct addrinfo *preferred = NULL, *preferred_tail = NULL;
 			struct addrinfo *unpreferred = NULL, *unpreferred_tail = NULL;
 
 			// split address list into preferred and unpreferred, keeping the original order
 			for (ai = addrinfo; ai;) {
-				if (ai->ai_family == preferred_family) {
+				if (ai->ai_family == tcp->preferred_family) {
 					if (preferred_tail)
 						preferred_tail->ai_next = ai;
 					else
@@ -216,23 +283,8 @@ struct addrinfo *mget_tcp_resolve(const char *host, const char *port)
 			}
 		}
 
-		if (dns_cache) {
-			// insert addrinfo into dns cache
-			size_t hostlen = host ? strlen(host) + 1 : 1;
-			size_t portlen = port ? strlen(port) + 1 : 1;
-			struct ADDR_ENTRY *entryp = xmalloc(sizeof(struct ADDR_ENTRY) + hostlen + portlen);
-
-			entryp->host = ((char *)entryp) + sizeof(struct ADDR_ENTRY);
-			entryp->port = ((char *)entryp) + sizeof(struct ADDR_ENTRY) + hostlen;
-			entryp->addrinfo = addrinfo;
-			strcpy((char *)entryp->host, host ? host : ""); // ugly cast, but semantically ok
-			strcpy((char *)entryp->port, port ? port : ""); // ugly cast, but semantically ok
-
-			pthread_mutex_lock(&dns_mutex);
-			if (mget_vector_find(dns_cache, entryp) == -1)
-				mget_vector_insert_sorted_noalloc(dns_cache, entryp);
-			pthread_mutex_unlock(&dns_mutex);
-		}
+		if (tcp->caching)
+			_mget_dns_cache_add(host, port, addrinfo);
 
 		return addrinfo;
 	}
@@ -262,84 +314,59 @@ static int G_GNUC_MGET_CONST _family_to_value(int family)
 	}
 }
 
-void mget_tcp_set_preferred_family(int _family)
+void mget_tcp_set_dns_caching(MGET_TCP *tcp, int caching)
 {
-	preferred_family = _value_to_family(_family);
+	(tcp ? tcp : &_global_tcp)->caching = caching;
 }
 
-void mget_tcp_set_family(int _family)
+void mget_tcp_set_preferred_family(MGET_TCP *tcp, int family)
 {
-	family = _value_to_family(_family);
+	(tcp ? tcp : &_global_tcp)->preferred_family = _value_to_family(family);
 }
 
-int mget_tcp_get_preferred_family(void)
+void mget_tcp_set_family(MGET_TCP *tcp, int family)
 {
-	return _family_to_value(preferred_family);
+	(tcp ? tcp : &_global_tcp)->family = _value_to_family(family);
 }
 
-int mget_tcp_get_family(void)
+int mget_tcp_get_preferred_family(MGET_TCP *tcp)
 {
-	return _family_to_value(family);
+	return _family_to_value((tcp ? tcp : &_global_tcp)->preferred_family);
 }
 
-static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
+int mget_tcp_get_family(MGET_TCP *tcp)
 {
-	int n;
-
-	if ((n = strcasecmp(a1->host, a2->host)) == 0)
-		return strcasecmp(a1->port, a2->port);
-
-	return n;
+	return _family_to_value((tcp ? tcp : &_global_tcp)->family);
 }
 
-void mget_tcp_set_dns_caching(int caching)
+int mget_tcp_get_dns_caching(MGET_TCP *tcp)
 {
-	pthread_mutex_lock(&dns_mutex);
-	if (caching) {
-		if (!dns_cache)
-			dns_cache = mget_vector_create(4, -2, (int(*)(const void *, const void *))compare_addr);
-	} else {
-		if (dns_cache) {
-			int it;
-
-			for (it = 0; it < mget_vector_size(dns_cache); it++) {
-				struct ADDR_ENTRY *entryp = mget_vector_get(dns_cache, it);
-				freeaddrinfo(entryp->addrinfo);
-			}
-			mget_vector_free(&dns_cache);
-		}
-	}
-	pthread_mutex_unlock(&dns_mutex);
+	return (tcp ? tcp : &_global_tcp)->caching;
 }
 
-int mget_tcp_get_dns_caching(void)
+void mget_tcp_set_dns_timeout(MGET_TCP *tcp, int timeout)
 {
-	return !!dns_cache;
+	(tcp ? tcp : &_global_tcp)->dns_timeout = timeout;
 }
 
-void mget_tcp_set_dns_timeout(int timeout)
+void mget_tcp_set_connect_timeout(MGET_TCP *tcp, int timeout)
 {
-	dns_timeout = timeout;
+	(tcp ? tcp : &_global_tcp)->connect_timeout = timeout;
 }
 
-void mget_tcp_set_connect_timeout(int _timeout)
+void mget_tcp_set_timeout(MGET_TCP *tcp, int timeout)
 {
-	connect_timeout = _timeout;
+	(tcp ? tcp : &_global_tcp)->timeout = timeout;
 }
 
-void mget_tcp_set_timeout(MGET_TCP *tcp, int _timeout)
+void mget_tcp_set_bind_address(MGET_TCP *tcp, const char *bind_address)
 {
-	if (tcp)
-		tcp->timeout = _timeout;
-	else
-		timeout = _timeout;
-}
+	if (!tcp)
+		tcp = &_global_tcp;
 
-void mget_tcp_set_bind_address(const char *bind_address)
-{
-	if (bind_addrinfo) {
-		freeaddrinfo(bind_addrinfo);
-		bind_addrinfo = NULL;
+	if (tcp->bind_addrinfo_allocated) {
+		freeaddrinfo(tcp->bind_addrinfo);
+		tcp->bind_addrinfo = NULL;
 	}
 
 	if (bind_address) {
@@ -366,26 +393,58 @@ void mget_tcp_set_bind_address(const char *bind_address)
 		}
 		if (*s == ':') {
 			*s = 0;
-			bind_addrinfo = mget_tcp_resolve(host, s + 1); // bind to host + specified port
+			tcp->bind_addrinfo = mget_tcp_resolve(tcp, host, s + 1); // bind to host + specified port
 		} else {
-			bind_addrinfo = mget_tcp_resolve(host, NULL); // bind to host on any port
+			tcp->bind_addrinfo = mget_tcp_resolve(tcp, host, NULL); // bind to host on any port
 		}
+		tcp->bind_addrinfo_allocated = !tcp->caching;
 	}
 }
 
-MGET_TCP *mget_tcp_connect(struct addrinfo *addrinfo, const char *hostname)
+MGET_TCP *mget_tcp_init(void)
 {
-	MGET_TCP *tcp = NULL;
+	MGET_TCP *tcp = xmalloc(sizeof(MGET_TCP));
+
+	*tcp = _global_tcp;
+	return tcp;
+}
+
+void mget_tcp_deinit(MGET_TCP **tcp)
+{
+	if (tcp) {
+		mget_tcp_close(tcp);
+
+		if ((*tcp)->bind_addrinfo_allocated) {
+			freeaddrinfo((*tcp)->bind_addrinfo);
+			(*tcp)->bind_addrinfo = NULL;
+		}
+		xfree(*tcp);
+	}
+}
+
+int mget_tcp_connect(MGET_TCP *tcp, const char *host, const char *port)
+{
+	return mget_tcp_connect_ssl(tcp, host, port, NULL);
+}
+
+int mget_tcp_connect_ssl(MGET_TCP *tcp, const char *host, const char *port, const char *hostname)
+{
 	struct addrinfo *ai;
 	int sockfd = -1, rc;
-	char adr[NI_MAXHOST], port[NI_MAXSERV];
+	char adr[NI_MAXHOST], s_port[NI_MAXSERV];
 
-	for (ai = addrinfo; ai && !tcp; ai = ai->ai_next) {
+	if (tcp->addrinfo_allocated)
+		freeaddrinfo(tcp->addrinfo);
+
+	tcp->addrinfo = mget_tcp_resolve(tcp, host, port);
+	tcp->addrinfo_allocated = !tcp->caching;
+
+	for (ai = tcp->addrinfo; ai; ai = ai->ai_next) {
 		if (mget_get_logger(MGET_LOGGER_DEBUG)->vprintf) {
-			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
-				debug_printf("trying %s:%s...\n", adr, port);
+			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+				debug_printf("trying %s:%s...\n", adr, s_port);
 			else
-				debug_printf("trying ???:%s (%s)...\n", port, gai_strerror(rc));
+				debug_printf("trying ???:%s (%s)...\n", s_port, gai_strerror(rc));
 		}
 
 		if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) != -1) {
@@ -400,18 +459,18 @@ MGET_TCP *mget_tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 			if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) == -1)
 				error_printf(_("Failed to set socket option NODELAY\n"));
 
-			if (bind_addrinfo) {
+			if (tcp->bind_addrinfo) {
 				if (mget_get_logger(MGET_LOGGER_DEBUG)->vprintf) {
-					if ((rc = getnameinfo(bind_addrinfo->ai_addr, bind_addrinfo->ai_addrlen, adr, sizeof(adr), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
-						debug_printf("binding to %s:%s...\n", adr, port);
+					if ((rc = getnameinfo(tcp->bind_addrinfo->ai_addr, tcp->bind_addrinfo->ai_addrlen, adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+						debug_printf("binding to %s:%s...\n", adr, s_port);
 					else
-						debug_printf("binding to ???:%s (%s)...\n", port, gai_strerror(rc));
+						debug_printf("binding to ???:%s (%s)...\n", s_port, gai_strerror(rc));
 				}
 
-				if (bind(sockfd, bind_addrinfo->ai_addr, bind_addrinfo->ai_addrlen) != 0) {
+				if (bind(sockfd, tcp->bind_addrinfo->ai_addr, tcp->bind_addrinfo->ai_addrlen) != 0) {
 					error_printf(_("Failed to bind (%d)\n"), errno);
 					close(sockfd);
-					return NULL;
+					return -1;
 				}
 			}
 
@@ -421,23 +480,23 @@ MGET_TCP *mget_tcp_connect(struct addrinfo *addrinfo, const char *hostname)
 				error_printf(_("Failed to connect (%d)\n"), errno);
 				close(sockfd);
 			} else {
-				tcp = xcalloc(1, sizeof(*tcp));
 				tcp->sockfd = sockfd;
-				tcp->timeout = timeout;
 				if (hostname) {
 					tcp->ssl = 1;
-					tcp->ssl_session = mget_ssl_open(tcp->sockfd, hostname, connect_timeout);
+					tcp->ssl_session = mget_ssl_open(tcp->sockfd, hostname, tcp->connect_timeout);
 					if (!tcp->ssl_session) {
 						mget_tcp_close(&tcp);
 						continue;
 					}
 				}
+
+				return 0;
 			}
 		} else
 			error_printf(_("Failed to create socket (%d)\n"), errno);
 	}
 
-	return tcp;
+	return -1;
 }
 
 ssize_t mget_tcp_read(MGET_TCP *tcp, char *buf, size_t count)
@@ -476,7 +535,7 @@ ssize_t mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count)
 	int rc;
 
 	if (tcp->ssl)
-		return mget_ssl_write_timeout(tcp->ssl_session, buf, count, timeout);
+		return mget_ssl_write_timeout(tcp->ssl_session, buf, count, tcp->timeout);
 
 	while (count) {
 		// 0: no timeout / immediate
@@ -576,6 +635,9 @@ void mget_tcp_close(MGET_TCP **tcp)
 		if ((*tcp)->ssl && (*tcp)->ssl_session) {
 			mget_ssl_close(&(*tcp)->ssl_session);
 		}
-		xfree(*tcp);
+		if ((*tcp)->addrinfo_allocated) {
+			freeaddrinfo((*tcp)->addrinfo);
+			(*tcp)->addrinfo = NULL;
+		}
 	}
 }

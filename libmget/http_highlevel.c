@@ -42,6 +42,7 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 	MGET_HTTP_REQUEST *req;
 	MGET_HTTP_RESPONSE *resp = NULL;
 	MGET_VECTOR *challenges = NULL;
+	FILE *saveas_stream = NULL;
 	va_list args;
 	const char *url = NULL,	*url_encoding = NULL;
 	const char *http_username = NULL, *http_password = NULL;
@@ -84,6 +85,9 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 			break;
 		case MGET_HTTP_MAX_REDIRECTIONS:
 			max_redirections = va_arg(args, int);
+			break;
+		case MGET_HTTP_BODY_SAVEAS_STREAM:
+			saveas_stream = va_arg(args, FILE *);
 			break;
 		default:
 			error_printf(_("Unknown option %d\n"), key);
@@ -149,8 +153,12 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 		}
 
 		if (conn) {
-			if (http_send_request(conn, req) == 0)
-				resp = http_get_response(conn, req, MGET_HTTP_RESPONSE_KEEPHEADER);
+			if (http_send_request(conn, req) == 0) {
+				if (saveas_stream)
+					resp = http_get_response_stream(conn, saveas_stream, MGET_HTTP_RESPONSE_KEEPHEADER);
+				else
+					resp = http_get_response(conn, req, MGET_HTTP_RESPONSE_KEEPHEADER);
+			}
 		}
 
 		http_free_request(&req);

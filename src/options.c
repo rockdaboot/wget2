@@ -917,16 +917,16 @@ int init(int argc, const char *const *argv)
 
 	// set module specific options
 	mget_tcp_set_timeout(NULL, config.read_timeout);
-	mget_tcp_set_connect_timeout(config.connect_timeout);
-	mget_tcp_set_dns_timeout(config.dns_timeout);
-	mget_tcp_set_dns_caching(config.dns_caching);
-	mget_tcp_set_bind_address(config.bind_address);
+	mget_tcp_set_connect_timeout(NULL, config.connect_timeout);
+	mget_tcp_set_dns_timeout(NULL, config.dns_timeout);
+	mget_tcp_set_dns_caching(NULL, config.dns_caching);
+	mget_tcp_set_bind_address(NULL, config.bind_address);
 	if (config.inet4_only)
-		mget_tcp_set_family(MGET_NET_FAMILY_IPV4);
+		mget_tcp_set_family(NULL, MGET_NET_FAMILY_IPV4);
 	else if (config.inet6_only)
-		mget_tcp_set_family(MGET_NET_FAMILY_IPV6);
+		mget_tcp_set_family(NULL, MGET_NET_FAMILY_IPV6);
 	else
-		mget_tcp_set_preferred_family(config.preferred_family);
+		mget_tcp_set_preferred_family(NULL, config.preferred_family);
 
 	mget_iri_set_defaultpage(config.default_page);
 
@@ -948,8 +948,8 @@ int init(int argc, const char *const *argv)
 
 void deinit(void)
 {
-	mget_tcp_set_dns_caching(0); // frees DNS cache
-	mget_tcp_set_bind_address(NULL); // free bind address
+	mget_dns_cache_free(); // frees DNS cache
+	mget_tcp_set_bind_address(NULL, NULL); // free global bind address
 
 	xfree(config.cookie_suffixes);
 	xfree(config.load_cookies);

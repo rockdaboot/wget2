@@ -870,6 +870,8 @@ MGET_HTTP_RESPONSE *http_parse_response(char *buf)
 			if (!resp->challenges)
 				resp->challenges = mget_vector_create(2, 2, NULL);
 			mget_vector_add(resp->challenges, &challenge, sizeof(challenge));
+		} else if (!strcasecmp(name, "ICY-Metaint")) {
+			resp->icy_metaint = atoi(s);
 		}
 	}
 
@@ -1156,10 +1158,12 @@ MGET_HTTP_CONNECTION *http_open(const MGET_IRI *iri)
 		port = iri->resolv_port;
 	}
 
-	if ((conn->addrinfo = mget_tcp_resolve(host, port)) == NULL)
-		goto error;
+	conn->tcp = mget_tcp_init();
 
-	if ((conn->tcp = mget_tcp_connect(conn->addrinfo, ssl ? host : NULL)) != NULL) {
+//	if ((conn->addrinfo = mget_tcp_resolve(host, port)) == NULL)
+//		goto error;
+
+	if (mget_tcp_connect_ssl(conn->tcp, host, port, ssl ? host : NULL) == 0) {
 		conn->esc_host = iri->host ? strdup(iri->host) : NULL;
 		conn->port = iri->resolv_port;
 		conn->scheme = iri->scheme;
@@ -1167,7 +1171,7 @@ MGET_HTTP_CONNECTION *http_open(const MGET_IRI *iri)
 		return conn;
 	}
 
-error:
+//error:
 	http_close(&conn);
 	return NULL;
 }
@@ -1175,9 +1179,9 @@ error:
 void http_close(MGET_HTTP_CONNECTION **conn)
 {
 	if (conn && *conn) {
-		mget_tcp_close(&(*conn)->tcp);
-		if (!mget_tcp_get_dns_caching())
-			freeaddrinfo((*conn)->addrinfo);
+		mget_tcp_deinit(&(*conn)->tcp);
+//		if (!mget_tcp_get_dns_caching())
+//			freeaddrinfo((*conn)->addrinfo);
 		xfree((*conn)->esc_host);
 		// xfree((*conn)->port);
 		// xfree((*conn)->scheme);
@@ -1521,7 +1525,7 @@ MGET_HTTP_RESPONSE *http_get_response(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQU
 	return resp;
 }
 
-static int _get_file(void *context, const char *data, size_t length)
+static int _get_fd(void *context, const char *data, size_t length)
 {
 	int fd = *(int *)context;
 	ssize_t nbytes = write(fd, data, length);
@@ -1534,7 +1538,36 @@ static int _get_file(void *context, const char *data, size_t length)
 
 MGET_HTTP_RESPONSE *http_get_response_fd(MGET_HTTP_CONNECTION *conn, int fd, unsigned int flags)
 {
-	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, _get_file, &fd);
+	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, _get_fd, &fd);
+
+	return resp;
+}
+
+static int _get_stream(void *context, const char *data, size_t length)
+{
+	FILE *stream = (FILE *)context;
+	size_t nbytes = fwrite(data, 1, length, stream);
+
+	if (nbytes != length) {
+		error_printf(_("Failed to write %zu bytes of data (%d)\n"), length, errno);
+
+		if (feof(stream))
+			return -1;
+	}
+
+	return 0;
+}
+
+MGET_HTTP_RESPONSE *http_get_response_stream(MGET_HTTP_CONNECTION *conn, FILE *stream, unsigned int flags)
+{
+	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, _get_stream, stream);
+
+	return resp;
+}
+
+MGET_HTTP_RESPONSE *http_get_response_func(MGET_HTTP_CONNECTION *conn, int(*func)(void *, const char *, size_t), void *context, unsigned int flags)
+{
+	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, func, context);
 
 	return resp;
 }
