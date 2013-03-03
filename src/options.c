@@ -129,6 +129,8 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --exclude-domains   Comma-separated list of domains NOT to follow.\n"
 		"      --user              Username for Authentication. (default: empty username)\n"
 		"      --password          Password for Authentication. (default: empty password)\n"
+		"  -l  --level             Maximum recursion depth. (default: 5)\n"
+		"  -p  --page-requisites   Download all necessary files to display a HTML page\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -378,7 +380,8 @@ struct config config = {
 	.host_directories = 1,
 	.cache = 1,
 	.clobber = 1,
-	.default_page = "index.html"
+	.default_page = "index.html",
+	.level = 5
 };
 
 static const struct option options[] = {
@@ -425,6 +428,7 @@ static const struct option options[] = {
 	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6'},
 	{ "input-file", &config.input_file, parse_string, 1, 'i'},
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0},
+	{ "level", &config.level, parse_integer, 1, 'l'},
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0},
 	{ "local-encoding", &config.local_encoding, parse_string, 1, 0},
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0},
@@ -432,6 +436,7 @@ static const struct option options[] = {
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0},
 	{ "output-document", &config.output_document, parse_string, 1, 'O'},
 	{ "output-file", &config.logfile, parse_string, 1, 'o'},
+	{ "page-requisites", &config.page_requisites, parse_bool, 0, 'p'},
 	{ "password", &config.password, parse_string, 1, 0},
 	{ "prefer-family", &config.preferred_family, parse_prefer_family, 1, 0},
 	{ "private-key", &config.private_key, parse_string, 1, 0},

@@ -69,6 +69,7 @@ struct config {
 	long long
 		quota;
 	int
+		level,
 		preferred_family,
 		cut_directories,
 		connect_timeout, // ms
@@ -77,6 +78,7 @@ struct config {
 		max_redirect,
 		num_threads;
 	char
+		page_requisites,
 		force_css,
 		force_html,
 		adjust_extension,

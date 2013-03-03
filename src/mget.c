@@ -651,13 +651,20 @@ int main(int argc, const char *const *argv)
 						MGET_IRI *iri;
 						char *p, *encoding;
 
-						if (*buf == 'r') {
-							if (job->redirection_level >= config.max_redirect) {
+						if (*buf == 'r') { // redirect
+							if (config.max_redirect && job->redirection_level >= config.max_redirect) {
 								continue;
 							}
 							encoding = buf + 9;
-						} else
+						} else {
 							encoding = buf + 8;
+							
+//							if (config.recursive) {
+//								if (config.level && job->level >= config.level + config.page_requisites) {
+//									continue;
+//								}
+//							}
+						}
 
 						for (p = encoding; *p != ' '; p++);
 						*p = 0;
@@ -683,6 +690,7 @@ int main(int argc, const char *const *argv)
 								new_job->redirection_level = job->redirection_level + 1;
 								new_job->referer = job->referer;
 							} else {
+								new_job->level = job->level + 1;
 								new_job->referer = job->iri;
 							}
 							schedule_download(new_job, NULL);
@@ -861,7 +869,7 @@ void *downloader_thread(void *p)
 					if (resp->code == 200) {
 						save_file(resp, config.output_document ? config.output_document : job->local_filename);
 
-						if (config.recursive) {
+						if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
 							if (resp->content_type) {
 								if (!strcasecmp(resp->content_type, "text/html")) {
 									html_parse(sockfd, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
@@ -877,7 +885,7 @@ void *downloader_thread(void *p)
 						append_file(resp, config.output_document ? config.output_document : job->local_filename);
 					}
 					else if (resp->code == 304 && config.timestamping) { // local document is up-to-date
-						if (config.recursive) {
+						if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
 							const char *ext = strrchr(job->local_filename, '.');
 
 							if (ext) {
@@ -961,6 +969,13 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 			break;
 		case 'h':
 			found = !strcasecmp(attr, "href");
+
+			// with --page-requisites: just load inline URLs from the deepest level documents
+//			if (config.recursive) {
+//				if (config.page_requisites && config.level && job->level >= config.level) {
+//					// don't load from dir 'A', 'AREA' and 'EMBED'
+//				}
+//			}
 
 			if (found && tolower(*dir) == 'b' && !strcasecmp(dir,"base")) {
 				// found a <BASE href="...">
@@ -1403,15 +1418,15 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 			downloader->conn->scheme == iri->scheme &&
 			!mget_strcmp(downloader->conn->port, iri->resolv_port))
 		{
-			info_printf("reuse connection %s\n", downloader->conn->esc_host);
+			debug_printf("reuse connection %s\n", downloader->conn->esc_host);
 		} else {
 			if (downloader->conn) {
-				info_printf("close connection %s\n", downloader->conn->esc_host);
+				debug_printf("close connection %s\n", downloader->conn->esc_host);
 				http_close(&downloader->conn);
 			}
 			downloader->conn = http_open(iri);
 			if (downloader->conn) {
-				info_printf("opened connection %s\n", downloader->conn->esc_host);
+				debug_printf("opened connection %s\n", downloader->conn->esc_host);
 			}
 		}
 		conn = downloader->conn;

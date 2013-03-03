@@ -82,6 +82,7 @@ typedef struct {
 	off_t
 		size; // total size of the file
 	int
+		level, // current recursion level
 		mirror_pos, // where to look up the next mirror to use
 		piece_pos, // where to look up the next piece to download
 		redirection_level; // number of redirections occurred to create this job

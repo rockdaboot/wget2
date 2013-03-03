@@ -78,17 +78,24 @@ void blacklist_print(void)
 
 MGET_IRI *blacklist_add(MGET_IRI *iri)
 {
+	MGET_IRI *existing_iri;
+
 	if (!iri)
 		return NULL;
 
 	if (!blacklist)
 		blacklist = mget_hashmap_create(128, -2, (unsigned int(*)(const void *))hash_iri, (int(*)(const void *, const void *))mget_iri_compare);
 
+	if ((existing_iri = mget_hashmap_get(blacklist, iri))) {
+		// info_printf("Already in blacklist: %s\n",iri->uri);
+		mget_iri_free(&iri);
+		return existing_iri;
+	}
+
 	if (mget_iri_supported(iri)) {
-		if (mget_hashmap_put_ident_noalloc(blacklist, iri) == 0) {
-			// info_printf("Added to blacklist: %s\n",iri->uri);
-			return iri;
-		}
+		// info_printf("Add to blacklist: %s\n",iri->uri);
+		mget_hashmap_put_ident_noalloc(blacklist, iri);
+		return iri;
 	}
 
 	mget_iri_free(&iri);

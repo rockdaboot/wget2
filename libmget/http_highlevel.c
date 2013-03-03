@@ -141,15 +141,15 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 			conn->scheme == uri->scheme &&
 			!mget_strcmp(conn->port, uri->resolv_port))
 		{
-			info_printf("reuse connection %s\n", conn->esc_host);
+			debug_printf("reuse connection %s\n", conn->esc_host);
 		} else {
 			if (conn) {
-				info_printf("close connection %s\n", conn->esc_host);
+				debug_printf("close connection %s\n", conn->esc_host);
 				http_close(&conn);
 			}
 			conn = http_open(uri);
 			if (conn)
-				info_printf("opened connection %s\n", conn->esc_host);
+				debug_printf("opened connection %s\n", conn->esc_host);
 		}
 
 		if (conn) {
