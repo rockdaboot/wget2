@@ -77,8 +77,8 @@ static void
 	download_part(DOWNLOADER *downloader),
 	save_file(MGET_HTTP_RESPONSE *resp, const char *fname),
 	append_file(MGET_HTTP_RESPONSE *resp, const char *fname),
-	html_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *iri),
-	html_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *iri),
+	html_parse(int sockfd, int level, const char *data, const char *encoding, MGET_IRI *iri),
+	html_parse_localfile(int sockfd, int level, const char *fname, const char *encoding, MGET_IRI *iri),
 	css_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *iri),
 	css_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *iri);
 MGET_HTTP_RESPONSE
@@ -426,7 +426,7 @@ int main(int argc, const char *const *argv)
 	if (config.input_file) {
 		if (config.force_html) {
 			// read URLs from HTML file
-			html_parse_localfile(-1, config.input_file, config.remote_encoding, config.base);
+			html_parse_localfile(-1, 0, config.input_file, config.remote_encoding, config.base);
 		}
 		else if (config.force_css) {
 			// read URLs from CSS file
@@ -792,7 +792,7 @@ void *downloader_thread(void *p)
 					int tries = 0;
 
 					do {
-						dprintf(sockfd, "sts Downloading...\n");
+						dprintf(sockfd, "sts Downloading...[%d]\n", job->level);
 						resp = http_get(job->iri, NULL, downloader);
 					} while (!resp && ++tries < 3);
 
@@ -872,7 +872,7 @@ void *downloader_thread(void *p)
 						if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
 							if (resp->content_type) {
 								if (!strcasecmp(resp->content_type, "text/html")) {
-									html_parse(sockfd, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+									html_parse(sockfd, job->level, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 								} else if (!strcasecmp(resp->content_type, "application/xhtml+xml")) {
 									// xml_parse(sockfd, resp, job->iri);
 								} else if (!strcasecmp(resp->content_type, "text/css")) {
@@ -890,7 +890,7 @@ void *downloader_thread(void *p)
 
 							if (ext) {
 								if (!strcasecmp(ext, ".html") || !strcasecmp(ext, ".htm")) {
-									html_parse_localfile(sockfd, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+									html_parse_localfile(sockfd, job->level, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 								} else if (!strcasecmp(ext, ".css")) {
 									css_parse_localfile(sockfd, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 								}
@@ -927,6 +927,7 @@ struct html_context {
 	mget_buffer_t
 		uri_buf;
 	int
+		level,
 		sockfd;
 	char
 		base_allocated,
@@ -971,11 +972,12 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 			found = !strcasecmp(attr, "href");
 
 			// with --page-requisites: just load inline URLs from the deepest level documents
-//			if (config.recursive) {
-//				if (config.page_requisites && config.level && job->level >= config.level) {
-//					// don't load from dir 'A', 'AREA' and 'EMBED'
-//				}
-//			}
+			if (found && config.recursive && config.page_requisites && config.level && ctx->level >= config.level) {
+				// don't load from dir 'A', 'AREA' and 'EMBED'
+				if (tolower(*dir) == 'a' && (dir[1] == 0 || !strcasecmp(dir,"area"))) {
+					return;
+				}
+			}
 
 			if (found && tolower(*dir) == 'b' && !strcasecmp(dir,"base")) {
 				// found a <BASE href="...">
@@ -1064,11 +1066,11 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 
 // use the xml parser, being prepared that HTML is not XML
 
-void html_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *iri)
+void html_parse(int sockfd, int level, const char *data, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char uri_sbuf[1024];
-	struct html_context context = { .base = iri, .sockfd = sockfd, .encoding = encoding };
+	struct html_context context = { .base = base, .sockfd = sockfd, .level = level, .encoding = encoding };
 
 	mget_buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
@@ -1088,11 +1090,11 @@ void html_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *ir
 	mget_buffer_deinit(&context.uri_buf);
 }
 
-void html_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *iri)
+void html_parse_localfile(int sockfd, int level, const char *fname, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
 	char uri_sbuf[1024];
-	struct html_context context = { .base = iri, .sockfd = sockfd, .encoding = encoding };
+	struct html_context context = { .base = base, .sockfd = sockfd, .level = level, .encoding = encoding };
 
 	mget_buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
