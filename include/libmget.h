@@ -896,9 +896,11 @@ void
 int
 	mget_tcp_get_dns_caching(MGET_TCP *tcp) G_GNUC_MGET_PURE;
 int
-	mget_tcp_get_family(MGET_TCP *tcp)  G_GNUC_MGET_CONST;
+	mget_tcp_get_family(MGET_TCP *tcp) G_GNUC_MGET_CONST;
 int
-	mget_tcp_get_preferred_family(MGET_TCP *tcp)  G_GNUC_MGET_CONST;
+	mget_tcp_get_preferred_family(MGET_TCP *tcp) G_GNUC_MGET_CONST;
+int
+	mget_tcp_get_local_port(MGET_TCP *tcp);
 void
 	mget_tcp_set_debug(MGET_TCP *tcp, int debug);
 void
@@ -913,6 +915,10 @@ int
 	mget_tcp_connect(MGET_TCP *tcp, const char *host, const char *port) G_GNUC_MGET_NONNULL((1));
 int
 	mget_tcp_connect_ssl(MGET_TCP *tcp, const char *host, const char *port, const char *hostname) G_GNUC_MGET_NONNULL((1));
+int
+	mget_tcp_listen(MGET_TCP *tcp, const char *host, const char *port, int backlog) G_GNUC_MGET_NONNULL((1));
+MGET_TCP
+	*mget_tcp_accept(MGET_TCP *parent_tcp)G_GNUC_MGET_NONNULL((1));
 ssize_t
 	mget_tcp_vprintf(MGET_TCP *tcp, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL;
 ssize_t

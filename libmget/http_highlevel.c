@@ -57,7 +57,7 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 		.cookies_enabled = !!mget_global_get_int(MGET_COOKIES_ENABLED)
 	};
 	
-	va_start (args, first_key);
+	va_start(args, first_key);
 	for (key = first_key; key; key = va_arg(args, int)) {
 		switch (key) {
 		case MGET_HTTP_URL:

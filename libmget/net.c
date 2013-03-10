@@ -68,6 +68,7 @@ static struct _TCP {
 		preferred_family;
 	unsigned int
 		ssl : 1,
+		passive : 1,
 		caching : 1,
 		addrinfo_allocated : 1,
 		bind_addrinfo_allocated : 1;
@@ -164,7 +165,7 @@ void mget_dns_cache_free(void)
 struct addrinfo *mget_tcp_resolve(MGET_TCP *tcp, const char *host, const char *port)
 {
 	struct addrinfo *addrinfo, *ai;
-	int tries, rc = 0;
+	int tries, rc = 0, ai_flags = 0;
 
 	if (!tcp)
 		tcp = &_global_tcp;
@@ -172,21 +173,24 @@ struct addrinfo *mget_tcp_resolve(MGET_TCP *tcp, const char *host, const char *p
 	if (tcp->caching && (addrinfo = _mget_dns_cache_get(host, port)))
 		return addrinfo;
 
+#if defined(AI_NUMERICSERV)
+	ai_flags |= (port && isdigit(*port) ? AI_NUMERICSERV : 0);
+#endif
+#if defined(AI_ADDRCONFIG)
+	ai_flags |= AI_ADDRCONFIG;
+#endif
+
+	if (tcp->passive) {
+		ai_flags |= AI_PASSIVE;
+	}
+
 	// we need a block here to not let fall non-C99 compilers (e.g. gcc 2.95)
 	// it doesn't really hurt
 	{
 		struct addrinfo hints = {
 			.ai_family = tcp->family,
 			.ai_socktype = SOCK_STREAM,
-#if defined(AI_ADDRCONFIG)
-	#if defined(AI_NUMERICSERV)
-			.ai_flags = AI_ADDRCONFIG | (port && isdigit(*port) ? AI_NUMERICSERV : 0)
-	#else
-			.ai_flags = AI_ADDRCONFIG
-	#endif
-#elif defined(AI_NUMERICSERV)
-			.ai_flags = (port && isdigit(*port) ? AI_NUMERICSERV : 0)
-#endif
+			.ai_flags = ai_flags
 		};
 
 #if !defined(AI_NUMERICSERV)
@@ -218,7 +222,7 @@ struct addrinfo *mget_tcp_resolve(MGET_TCP *tcp, const char *host, const char *p
 
 		// get the IP address for the server
 		for (tries = 0; tries < 3; tries++) {
-			if ((rc = getaddrinfo(host, port, &hints, &addrinfo)) == 0 || rc != EAI_AGAIN)
+			if ((rc = getaddrinfo(host, port ? port : "0", &hints, &addrinfo)) == 0 || rc != EAI_AGAIN)
 				break;
 
 			if (tries < 2) {
@@ -319,14 +323,14 @@ void mget_tcp_set_dns_caching(MGET_TCP *tcp, int caching)
 	(tcp ? tcp : &_global_tcp)->caching = caching;
 }
 
+int mget_tcp_get_dns_caching(MGET_TCP *tcp)
+{
+	return (tcp ? tcp : &_global_tcp)->caching;
+}
+
 void mget_tcp_set_preferred_family(MGET_TCP *tcp, int family)
 {
 	(tcp ? tcp : &_global_tcp)->preferred_family = _value_to_family(family);
-}
-
-void mget_tcp_set_family(MGET_TCP *tcp, int family)
-{
-	(tcp ? tcp : &_global_tcp)->family = _value_to_family(family);
 }
 
 int mget_tcp_get_preferred_family(MGET_TCP *tcp)
@@ -334,14 +338,32 @@ int mget_tcp_get_preferred_family(MGET_TCP *tcp)
 	return _family_to_value((tcp ? tcp : &_global_tcp)->preferred_family);
 }
 
+void mget_tcp_set_family(MGET_TCP *tcp, int family)
+{
+	(tcp ? tcp : &_global_tcp)->family = _value_to_family(family);
+}
+
 int mget_tcp_get_family(MGET_TCP *tcp)
 {
 	return _family_to_value((tcp ? tcp : &_global_tcp)->family);
 }
 
-int mget_tcp_get_dns_caching(MGET_TCP *tcp)
+int mget_tcp_get_local_port(MGET_TCP *tcp)
 {
-	return (tcp ? tcp : &_global_tcp)->caching;
+	if (tcp) {
+		struct sockaddr_storage addr_store;
+		struct sockaddr *addr = (struct sockaddr *)&addr_store;
+		socklen_t addr_len = sizeof(addr_store);
+		char s_port[NI_MAXSERV];
+
+		// get automatic retrieved port number
+		if (getsockname(tcp->sockfd, addr, &addr_len)==0) {
+			if (getnameinfo(addr, addr_len, NULL, 0, s_port, sizeof(s_port), NI_NUMERICSERV)==0)
+				return atoi(s_port);
+		}
+	}
+
+	return 0;
 }
 
 void mget_tcp_set_dns_timeout(MGET_TCP *tcp, int timeout)
@@ -497,6 +519,108 @@ int mget_tcp_connect_ssl(MGET_TCP *tcp, const char *host, const char *port, cons
 	}
 
 	return -1;
+}
+
+int mget_tcp_listen(MGET_TCP *tcp, const char *host, const char *port, int backlog)
+{
+	struct addrinfo *ai;
+	int sockfd = -1, rc;
+	char adr[NI_MAXHOST], s_port[NI_MAXSERV];
+
+	if (tcp->bind_addrinfo_allocated)
+		freeaddrinfo(tcp->bind_addrinfo);
+
+	tcp->passive = 1;
+	tcp->bind_addrinfo = mget_tcp_resolve(tcp, host, port);
+	tcp->bind_addrinfo_allocated = !tcp->caching;
+
+	for (ai = tcp->bind_addrinfo; ai; ai = ai->ai_next) {
+		if (mget_get_logger(MGET_LOGGER_DEBUG)->vprintf) {
+			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+				debug_printf("trying %s:%s...\n", adr, s_port);
+			else
+				debug_printf("trying %s:%s (%s)...\n", host, s_port, gai_strerror(rc));
+		}
+
+		if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) != -1) {
+			int on = 1;
+
+			fcntl(sockfd, F_SETFL, O_NDELAY);
+
+			if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
+				error_printf(_("Failed to set socket option REUSEADDR\n"));
+
+			on = 1;
+			if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) == -1)
+				error_printf(_("Failed to set socket option NODELAY\n"));
+
+			if (bind(sockfd, ai->ai_addr, ai->ai_addrlen) != 0) {
+				error_printf(_("Failed to bind (%d)\n"), errno);
+				close(sockfd);
+				return -1;
+			}
+
+			if (listen(sockfd, backlog) < 0) {
+				error_printf(_("Failed to listen (%d)\n"), errno);
+				close(sockfd);
+			} else {
+				tcp->sockfd = sockfd;
+
+				if (mget_get_logger(MGET_LOGGER_DEBUG)->vprintf) {
+					if (!port)
+						snprintf(s_port, sizeof(s_port), "%d", mget_tcp_get_local_port(tcp));
+
+					if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), NULL, 0, NI_NUMERICHOST)) == 0)
+						debug_printf("listen on %s:%s...\n", adr, port ? port : s_port);
+					else
+						debug_printf("listen on %s:%s (%s)...\n", host, port ? port : s_port, gai_strerror(rc));
+				}
+
+				return 0;
+			}
+		} else
+			error_printf(_("Failed to create socket (%d)\n"), errno);
+	}
+
+	return -1;
+
+}
+
+MGET_TCP *mget_tcp_accept(MGET_TCP *parent_tcp)
+{
+	int sockfd;
+
+	if (parent_tcp->ssl) {
+		// rc = mget_ssl_accept_timeout(tcp->ssl_session, tcp->timeout);
+	} else {
+		// 0: no timeout / immediate
+		// -1: INFINITE timeout
+		if (parent_tcp->timeout) {
+			// wait for socket to be ready to read
+			struct pollfd pollfd[1] = {
+				{ parent_tcp->sockfd, POLLIN, 0}};
+
+			if (poll(pollfd, 1, parent_tcp->timeout) <= 0)
+				return NULL;
+
+			if (!(pollfd[0].revents & POLLIN))
+				return NULL;
+		}
+
+		if ((sockfd = accept(parent_tcp->sockfd, parent_tcp->bind_addrinfo->ai_addr, &parent_tcp->bind_addrinfo->ai_addrlen))!=-1) {
+			MGET_TCP *tcp = xmalloc(sizeof(MGET_TCP));
+
+			*tcp = *parent_tcp;
+			tcp->sockfd = sockfd;
+			tcp->addrinfo = NULL;
+			tcp->bind_addrinfo = NULL;
+			return tcp;
+		}
+	}
+
+	error_printf(_("Failed to accept (%d)\n"), errno);
+
+	return NULL;
 }
 
 ssize_t mget_tcp_read(MGET_TCP *tcp, char *buf, size_t count)
