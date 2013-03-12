@@ -422,6 +422,50 @@ const char *http_parse_content_type(const char *s, const char **content_type, co
 	return s;
 }
 
+// RFC 2183
+//
+// disposition := "Content-Disposition" ":" disposition-type *(";" disposition-parm)
+// disposition-type := "inline" / "attachment" / extension-token   ; values are not case-sensitive
+// disposition-parm := filename-parm / creation-date-parm / modification-date-parm
+//                     / read-date-parm / size-parm / parameter
+// filename-parm := "filename" "=" value
+// creation-date-parm := "creation-date" "=" quoted-date-time
+// modification-date-parm := "modification-date" "=" quoted-date-time
+// read-date-parm := "read-date" "=" quoted-date-time
+// size-parm := "size" "=" 1*DIGIT
+// quoted-date-time := quoted-string
+//                     ; contents MUST be an RFC 822 `date-time'
+//                     ; numeric timezones (+HHMM or -HHMM) MUST be used
+
+const char *http_parse_content_disposition(const char *s, const char **filename)
+{
+	MGET_HTTP_HEADER_PARAM param;
+	const char *p;
+
+	if (filename) {
+		*filename = NULL;
+
+		while (*s) {
+			s=http_parse_param(s, &param.name, &param.value);
+			if (param.value && !mget_strcasecmp("filename", param.name)) {
+				xfree(param.name);
+
+				//
+				if (!(p = strpbrk(param.value,"/\\"))) {
+					*filename = strdup(param.value + 1);
+					xfree(param.value);
+				} else
+					*filename = param.value;
+				break;
+			}
+			xfree(param.name);
+			xfree(param.value);
+		}
+	}
+
+	return s;
+}
+
 // Content-Encoding  = "Content-Encoding" ":" 1#content-coding
 
 const char *http_parse_content_encoding(const char *s, char *content_encoding)
@@ -850,6 +894,8 @@ MGET_HTTP_RESPONSE *http_parse_response(char *buf)
 		} else if (!strcasecmp(name, "Content-Length")) {
 			resp->content_length = (size_t)atoll(s);
 			resp->content_length_valid = 1;
+		} else if (!strcasecmp(name, "Content-Disposition")) {
+			http_parse_content_disposition(s, &resp->content_filename);
 		} else if (!strcasecmp(name, "Connection")) {
 			http_parse_connection(s, &resp->keep_alive);
 // Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
@@ -961,6 +1007,7 @@ void http_free_response(MGET_HTTP_RESPONSE **resp)
 		(*resp)->cookies = NULL;
 		xfree((*resp)->content_type);
 		xfree((*resp)->content_type_encoding);
+		xfree((*resp)->content_filename);
 		xfree((*resp)->location);
 		// xfree((*resp)->reason);
 		mget_buffer_free(&(*resp)->header);

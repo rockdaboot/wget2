@@ -150,6 +150,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"  -Q  --quota             Download quota, 0 = no quota. (default: 0)\n"
 		"      --http-user         Username for HTTP Authentication. (default: empty username)\n"
 		"      --http-password     Password for HTTP Authentication. (default: empty password)\n"
+		"      --content-disposition  Take filename from Content-Disposition. (default: off)\n"
 		"\n");
 	puts(
 		"HTTPS (SSL/TLS) related options:\n"
@@ -399,6 +400,7 @@ static const struct option options[] = {
 	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0},
 	{ "clobber", &config.clobber, parse_bool, 0, 0},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0},
+	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0},
 	{ "continue-download", &config.continue_download, parse_bool, 0, 'c'},
 	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0},
 	{ "cookies", &config.cookies, parse_bool, 0, 0},

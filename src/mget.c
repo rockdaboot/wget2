@@ -867,7 +867,10 @@ void *downloader_thread(void *p)
 					}
 
 					if (resp->code == 200) {
-						save_file(resp, config.output_document ? config.output_document : job->local_filename);
+						if (config.content_disposition && resp->content_filename)
+							save_file(resp, resp->content_filename);
+						else
+							save_file(resp, config.output_document ? config.output_document : job->local_filename);
 
 						if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
 							if (resp->content_type) {
@@ -882,11 +885,19 @@ void *downloader_thread(void *p)
 						}
 					}
 					else if (resp->code == 206 && config.continue_download) { // partial content
-						append_file(resp, config.output_document ? config.output_document : job->local_filename);
+						if (config.content_disposition && resp->content_filename)
+							append_file(resp, resp->content_filename);
+						else
+							append_file(resp, config.output_document ? config.output_document : job->local_filename);
 					}
 					else if (resp->code == 304 && config.timestamping) { // local document is up-to-date
 						if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
-							const char *ext = strrchr(job->local_filename, '.');
+							const char *ext;
+							
+							if (config.content_disposition && resp->content_filename)
+								ext = strrchr(resp->content_filename, '.');
+							else
+								ext = strrchr(job->local_filename, '.');
 
 							if (ext) {
 								if (!strcasecmp(ext, ".html") || !strcasecmp(ext, ".htm")) {

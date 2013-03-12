@@ -1042,6 +1042,8 @@ typedef struct {
 	const char *
 		content_type_encoding;
 	const char *
+		content_filename;
+	const char *
 		location;
 	mget_buffer_t *
 		header;
@@ -1114,9 +1116,11 @@ const char *
 const char *
 	http_parse_transfer_encoding(const char *s, char *transfer_encoding) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_content_type(const char *s, const char **content_type, const char **charset);
+	http_parse_content_type(const char *s, const char **content_type, const char **charset) G_GNUC_MGET_NONNULL((1));
 const char *
 	http_parse_content_encoding(const char *s, char *content_encoding) G_GNUC_MGET_NONNULL_ALL;
+const char *
+	http_parse_content_disposition(const char *s, const char **filename) G_GNUC_MGET_NONNULL((1));
 const char *
 	http_parse_connection(const char *s, char *keep_alive) G_GNUC_MGET_NONNULL_ALL;
 const char *

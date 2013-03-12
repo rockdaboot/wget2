@@ -78,6 +78,7 @@ struct config {
 		max_redirect,
 		num_threads;
 	char
+		content_disposition,
 		page_requisites,
 		force_css,
 		force_html,
