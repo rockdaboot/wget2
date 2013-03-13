@@ -38,7 +38,7 @@ static const char *body = "\
 </body>\n\
 </html>\n";
 
-int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED)
+int main(void)
 {
 	// function won't come back if an error occurs
 	mget_test_start_http_server(

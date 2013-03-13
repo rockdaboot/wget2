@@ -72,7 +72,7 @@ void mget_error_printf(const char *fmt, ...)
 		va_list args;
 
 		va_start(args, fmt);
-		_error.vprintf(&_info, fmt, args);
+		_error.vprintf(&_error, fmt, args);
 		va_end(args);
 	}
 }
@@ -83,7 +83,7 @@ void mget_error_printf_exit(const char *fmt, ...)
 		va_list args;
 
 		va_start(args, fmt);
-		_error.vprintf(&_info, fmt, args);
+		_error.vprintf(&_error, fmt, args);
 		va_end(args);
 	}
 

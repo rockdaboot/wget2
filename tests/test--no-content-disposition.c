@@ -40,10 +40,19 @@ static const char *body = "\
 
 int main(void)
 {
+	mget_test_url_t urls[]={
+		{	.name = "dummy.html",
+			.body = body,
+			.headers = {
+				"Content-Type: text/html",
+				"Content-Disposition: attachment; filename=\"filename.html\""
+			},
+		},
+	};
+
 	// function won't come back if an error occurs
 	mget_test_start_http_server(
-		MGET_TEST_RESPONSE_BODY, body,
-		MGET_TEST_RESPONSE_HEADER, "Content-Type: text/html",
+		MGET_TEST_RESPONSE_URL, &urls, countof(urls),
 		0);
 
 	// function won't come back if an error occurs

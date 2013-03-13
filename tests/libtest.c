@@ -35,6 +35,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <libmget.h>
 
@@ -47,10 +48,14 @@ static MGET_TCP
 static int
 	server_port;
 static const char
-	*response_code = "200 OK",
+	*response_code = "200 Dontcare",
 	*response_body = "";
 static MGET_VECTOR
 	*response_headers;
+static mget_test_url_t
+	*urls;
+static size_t
+	nurls;
 static char
 	tmpdir[128];
 
@@ -85,7 +90,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 
 				mget_tcp_write(tcp, buf, nbytes);
 			}
-			mget_tcp_close(&tcp);
+			mget_tcp_deinit(&tcp);
 		} else
 			mget_info_printf(_("Failed to get connection\n"));
 	}
@@ -107,6 +112,10 @@ void mget_test_stop_http_server(void)
 		mget_error_printf(_("Failed to remove tmpdir %s\n"), tmpdir);
 
 	// free resources - needed for valgrind testing
+//	mget_thread_t tid = server_tid;
+//	server_tid = 0;
+	pthread_kill(server_tid, SIGKILL);
+	mget_thread_join(server_tid);
 	mget_tcp_deinit(&parent_tcp);
 	mget_global_deinit();
 }
@@ -137,6 +146,10 @@ void mget_test_start_http_server(int first_key, ...)
 			response_code = va_arg(args, const char *);
 			break;
 		case MGET_TEST_EXPECTED_REQUEST_HEADER:
+			break;
+		case MGET_TEST_RESPONSE_URL:
+			urls = va_arg(args, mget_test_url_t *);
+			nurls = va_arg(args, size_t);
 			break;
 		default:
 			mget_error_printf(_("Unknown option %d\n"), key);

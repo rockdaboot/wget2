@@ -19,6 +19,7 @@ extern "C" {
 #define MGET_TEST_RESPONSE_HEADER 1002
 #define MGET_TEST_EXPECTED_REQUEST_HEADER 1003
 #define MGET_TEST_RESPONSE_CODE 1004
+#define MGET_TEST_RESPONSE_URL 1005
 
 // defines for mget_test()
 #define MGET_TEST_NAME 2001
@@ -27,6 +28,19 @@ extern "C" {
 #define MGET_TEST_EXPECTED_ERROR_CODE 2004
 #define MGET_TEST_EXPECTED_FILE 2005
 #define MGET_TEST_EXPECTED_FILE_CONTENT 2006
+
+#define countof(a) (sizeof(a)/sizeof(*(a)))
+
+typedef struct {
+	const char *
+		name;
+	const char *
+		code;
+	const char *
+		body;
+	const char *
+		headers[10];
+} mget_test_url_t;
 
 void mget_test_stop_http_server(void);
 void mget_test_start_http_server(int first_key, ...);

@@ -142,6 +142,7 @@ void mget_global_deinit(void)
 		mget_cookie_free_cookies();
 		mget_tcp_set_bind_address(NULL, NULL);
 		mget_tcp_set_dns_caching(NULL, 0);
+		mget_dns_cache_free();
 	}
 
 	if (_init > 0) _init--;

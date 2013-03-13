@@ -26,33 +26,19 @@
 
 #include "libtest.h"
 
-static const char *body = "\
-<html>\n\
-<head>\n\
-  <title>The Title</title>\n\
-</head>\n\
-<body>\n\
-  <p>\n\
-    Some text\n\
-  </p>\n\
-</body>\n\
-</html>\n";
-
 int main(void)
 {
 	// function won't come back if an error occurs
 	mget_test_start_http_server(
-		MGET_TEST_RESPONSE_BODY, body,
+		MGET_TEST_RESPONSE_CODE, "404 Dontcare",
 		MGET_TEST_RESPONSE_HEADER, "Content-Type: text/html",
 		0);
 
 	// function won't come back if an error occurs
 	mget_test(
-		MGET_TEST_OPTIONS, "--no-content-disposition",
-		MGET_TEST_REQUEST_URL, "dummy.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILE, "dummy.html",
-		MGET_TEST_EXPECTED_FILE_CONTENT, body,
+		MGET_TEST_OPTIONS, "--spider",
+		MGET_TEST_REQUEST_URL, "nonexistent",
+		MGET_TEST_EXPECTED_ERROR_CODE, 8,
 		0);
 
 	return 0;
