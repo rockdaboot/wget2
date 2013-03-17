@@ -15,21 +15,38 @@ extern "C" {
 #endif
 
 // defines for mget_test_start_http_server()
-#define MGET_TEST_RESPONSE_BODY 1001
-#define MGET_TEST_RESPONSE_HEADER 1002
-#define MGET_TEST_EXPECTED_REQUEST_HEADER 1003
-#define MGET_TEST_RESPONSE_CODE 1004
-#define MGET_TEST_RESPONSE_URL 1005
+#define MGET_TEST_EXPECTED_REQUEST_HEADER 1001
+#define MGET_TEST_RESPONSE_URLS 1002
 
 // defines for mget_test()
-#define MGET_TEST_NAME 2001
-#define MGET_TEST_REQUEST_URL 2002
-#define MGET_TEST_OPTIONS 2003
-#define MGET_TEST_EXPECTED_ERROR_CODE 2004
-#define MGET_TEST_EXPECTED_FILE 2005
-#define MGET_TEST_EXPECTED_FILE_CONTENT 2006
+#define MGET_TEST_REQUEST_URL 2001
+#define MGET_TEST_OPTIONS 2002
+#define MGET_TEST_EXPECTED_ERROR_CODE 2003
+#define MGET_TEST_EXPECTED_FILES 2004
+#define MGET_TEST_EXISTING_FILES 2005
 
 #define countof(a) (sizeof(a)/sizeof(*(a)))
+
+G_GNUC_MGET_UNUSED static const char *MGET_TEST_SOME_HTML_BODY = "\
+<html>\n\
+<head>\n\
+  <title>The Title</title>\n\
+</head>\n\
+<body>\n\
+  <p>\n\
+    Some text\n\
+  </p>\n\
+</body>\n\
+</html>\n";
+
+typedef struct {
+	const char *
+		name;
+	const char *
+		content;
+	time_t
+		timestamp;
+} mget_test_file_t;
 
 typedef struct {
 	const char *
@@ -40,6 +57,8 @@ typedef struct {
 		body;
 	const char *
 		headers[10];
+	char
+		body_alloc; // if body has been allocated internally (and need to be freed on exit)
 } mget_test_url_t;
 
 void mget_test_stop_http_server(void);

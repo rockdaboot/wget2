@@ -1,14 +1,11 @@
 #DEFS = @DEFS@ -DDATADIR=\"$(datadir)/@PACKAGE@\" -DSRCDIR=\"$(srcdir)\"
 DEFS = @DEFS@ -DDATADIR=\"$(top_srcdir)/data\" -DSRCDIR=\"$(srcdir)\"
-AM_CPPFLAGS = -I$(top_srcdir)/include
+AM_CPPFLAGS = -Wno-missing-field-initializers -I$(top_srcdir)/include
 LDADD = ../libmget/libmget.la libtest.o
 
-MGET_TESTS = \
-   test_basic test--no-content-disposition-trivial \
-   test--no-content-disposition test--spider-fail
+MGET_TESTS = test-mget-1
 
-check_PROGRAMS = test buffer_printf2_perf stringmap_perf \
-   $(MGET_TESTS)
+check_PROGRAMS = test buffer_printf2_perf stringmap_perf $(MGET_TESTS)
 
 test_SOURCES = test.c
 test_LDADD = ../libmget/libmget.la ../src/mget-log.o ../src/mget-options.o
@@ -28,5 +25,5 @@ dist-hook:
 #	cp -p $(srcdir)/random/a1 $(srcdir)/random/a2 $(distdir)/random
 
 TESTS_ENVIRONMENT = @VALGRIND_ENVIRONMENT@
-TESTS = test \
-      $(MGET_TESTS)
+#TESTS = test $(MGET_TESTS)
+TESTS = $(MGET_TESTS)

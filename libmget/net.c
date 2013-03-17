@@ -433,7 +433,7 @@ MGET_TCP *mget_tcp_init(void)
 
 void mget_tcp_deinit(MGET_TCP **tcp)
 {
-	if (tcp) {
+	if (tcp && *tcp) {
 		mget_tcp_close(tcp);
 
 		if ((*tcp)->bind_addrinfo_allocated) {
