@@ -24,7 +24,12 @@
  *
  */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <stdlib.h> // exit()
+#include <string.h> // strlen()
 #include "libtest.h"
 
 static const char *mainpage = "\
@@ -177,7 +182,7 @@ int main(void)
 
 	urls[1].headers[1] = NULL;
 
-	// test--http-content-disposition
+	// test--HTTP-content-disposition
 	mget_test(
 		MGET_TEST_OPTIONS, "-e contentdisposition=on",
 		MGET_TEST_REQUEST_URL, "dummy.html",
@@ -187,7 +192,7 @@ int main(void)
 			{	NULL } },
 		0);
 
-	// test--http-content-disposition-1
+	// test--HTTP-content-disposition-1
 	mget_test(
 		MGET_TEST_OPTIONS, "-e contentdisposition=on",
 		MGET_TEST_REQUEST_URL, "dummy.html",
@@ -203,7 +208,7 @@ int main(void)
 			{	NULL } },
 		0);
 
-	// test--http-content-disposition-2
+	// test--HTTP-content-disposition-2
 	mget_test(
 		MGET_TEST_OPTIONS, "--no-content-disposition",
 		MGET_TEST_REQUEST_URL, "dummy.html",
@@ -220,15 +225,114 @@ int main(void)
 		0);
 
 	urls[3].headers[1] = "Last-Modified: Sat, 09 Oct 2004 08:30:00 GMT";
-//	urls[3].headers[2] = "Content-Disposition: attachment; filename=\"filename.html\"";
 
-	// test--http-content-disposition
+	// test-N--no-content-disposition-trivial
 	mget_test(
 		MGET_TEST_OPTIONS, "-N --no-content-disposition",
 		MGET_TEST_REQUEST_URL, "dummy.txt",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{	"dummy.txt", urls[3].body, 1097310600 },
+			{	NULL } },
+		0);
+
+	urls[3].headers[2] = "Content-Disposition: attachment; filename=\"filename.txt\"";
+
+	// test-N--no-content-disposition
+	mget_test(
+		MGET_TEST_OPTIONS, "-N --no-content-disposition",
+		MGET_TEST_REQUEST_URL, "dummy.txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"dummy.txt", urls[3].body, 1097310600 },
+			{	NULL } },
+		0);
+
+	// test-N-HTTP--content-disposition
+	mget_test(
+		MGET_TEST_OPTIONS, "-N --content-disposition",
+		MGET_TEST_REQUEST_URL, "dummy.txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"filename.txt", urls[3].body, 1097310600 },
+			{	NULL } },
+		0);
+
+	urls[3].headers[2] = NULL;
+
+	{
+		// server sends same length content with slightly different content
+		char modified[strlen(urls[3].body) + 1];
+
+		strcpy(modified,urls[3].body);
+		modified[3] = 'x';
+
+		// test-N-current
+		mget_test(
+			MGET_TEST_OPTIONS, "-N",
+			MGET_TEST_REQUEST_URL, "dummy.txt",
+			MGET_TEST_EXPECTED_ERROR_CODE, 0,
+			MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
+				{	"dummy.txt", modified, 1097310600 },
+				{	NULL } },
+			MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+				{	"dummy.txt", modified, 1097310600 },
+				{	NULL } },
+			0);
+
+		// test-N-old
+		mget_test(
+			MGET_TEST_OPTIONS, "-N",
+			MGET_TEST_REQUEST_URL, "dummy.txt",
+			MGET_TEST_EXPECTED_ERROR_CODE, 0,
+			MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
+				{	"dummy.txt", modified, 1097310000 }, // earlier timestamp
+				{	NULL } },
+			MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+				{	"dummy.txt", urls[3].body, 1097310600 },
+				{	NULL } },
+			0);
+
+		// test-N-smaller
+		const char *old_body = urls[3].body;
+		modified[strlen(modified)-2] = 0;
+		urls[3].body = modified;
+		mget_test(
+			MGET_TEST_OPTIONS, "-N",
+			MGET_TEST_REQUEST_URL, "dummy.txt",
+			MGET_TEST_EXPECTED_ERROR_CODE, 0,
+			MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
+				{	"dummy.txt", old_body, 1097310600 },
+				{	NULL } },
+			MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+				{	"dummy.txt", modified, 1097310600 },
+				{	NULL } },
+			0);
+		urls[3].body = old_body; // restore body
+	}
+
+	// test-N
+	mget_test(
+		MGET_TEST_OPTIONS, "-N",
+		MGET_TEST_REQUEST_URL, "dummy.txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"dummy.txt", urls[3].body, 0},
+			{	NULL } },
+		0);
+
+	urls[3].headers[1] = NULL;
+
+	// test-N-no-info
+	mget_test(
+		MGET_TEST_OPTIONS, "-N",
+		MGET_TEST_REQUEST_URL, "dummy.txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
+			{	"dummy.txt", "anycontent", 1097310600 },
+			{	NULL } },
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"dummy.txt", urls[3].body, 0},
 			{	NULL } },
 		0);
 

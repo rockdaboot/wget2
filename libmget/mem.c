@@ -37,7 +37,7 @@
 
 char *mget_strdup(const char *s)
 {
-	return s ? strcpy(xmalloc(strlen(s)), s) : NULL;
+	return s ? strcpy(xmalloc(strlen(s) + 1), s) : NULL;
 }
 
 // memdup sometimes comes in handy

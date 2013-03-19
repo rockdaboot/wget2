@@ -36,7 +36,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <utime.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <libmget.h>
 
 #include "libtest.h"
@@ -246,7 +248,7 @@ void mget_test(int first_key, ...)
 	const char
 		*request_url = "index.html",
 		*options="";
-	mget_test_file_t
+	const mget_test_file_t
 		*expected_files = NULL,
 		*existing_files = NULL;
 	size_t
@@ -269,10 +271,10 @@ void mget_test(int first_key, ...)
 			expected_error_code = va_arg(args, int);
 			break;
 		case MGET_TEST_EXPECTED_FILES:
-			expected_files = va_arg(args, mget_test_file_t *);
+			expected_files = va_arg(args, const mget_test_file_t *);
 			break;
 		case MGET_TEST_EXISTING_FILES:
-			existing_files = va_arg(args, mget_test_file_t *);
+			existing_files = va_arg(args, const mget_test_file_t *);
 			break;
 		case MGET_TEST_OPTIONS:
 			options = va_arg(args, const char *);
@@ -297,11 +299,18 @@ void mget_test(int first_key, ...)
 				if (nbytes != (ssize_t)strlen(existing_files[it].content))
 					mget_error_printf_exit(_("Failed to write %zu bytes to file %s/%s [%s]\n"),
 						strlen(existing_files[it].content), tmpdir, existing_files[it].name, options);
+
+				if (existing_files[it].timestamp) {
+					// take the old utime() instead of utimes()
+					if (utime(existing_files[it].name, &(struct utimbuf){ 0, existing_files[it].timestamp}))
+						mget_error_printf_exit(_("Failed to set mtime of %s/%s [%s]\n"),
+							tmpdir, existing_files[it].name, options);
+				}
+
 			} else {
 				mget_error_printf_exit(_("Failed to write open file %s/%s [%s] (%d,%s)\n"),
 					tmpdir, *existing_files[it].name == '/' ? existing_files[it].name + 1 : existing_files[it].name , options,
 					errno, strerror(errno));
-
 			}
 		}
 	}
