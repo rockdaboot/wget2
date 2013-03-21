@@ -127,7 +127,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s\r\n", url->headers[it]);
 				}
 				nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "\r\n");
-				if (!strcmp(method, "GET"))
+				if (!strcmp(method, "GET") || !strcmp(method, "POST"))
 					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s", url->body ? url->body : "");
 
 				mget_tcp_write(tcp, buf, nbytes);

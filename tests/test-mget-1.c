@@ -336,5 +336,95 @@ int main(void)
 			{	NULL } },
 		0);
 
+	urls[1].headers[1] = "Content-Disposition: attachment; filename=\"filename.html\"";
+
+	// test-O--no-content-disposition
+	mget_test(
+		MGET_TEST_OPTIONS, "-O out --no-content-disposition",
+		MGET_TEST_REQUEST_URL, "dummy.txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"out", urls[3].body },
+			{	NULL } },
+		0);
+
+	// test-O-HTTP-content-disposition
+	mget_test(
+		MGET_TEST_OPTIONS, "-O out",
+		MGET_TEST_REQUEST_URL, "dummy.txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"out", urls[3].body },
+			{	NULL } },
+		0);
+
+
+	urls[3].headers[1] = NULL;
+
+	// test-O-nc
+	mget_test(
+		MGET_TEST_OPTIONS, "-nc -O out",
+		MGET_TEST_REQUEST_URL, "dummy.txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"out", urls[3].body },
+			{	NULL } },
+		0);
+
+	// test-O-nc
+	mget_test(
+		MGET_TEST_OPTIONS, "-O out",
+		MGET_TEST_REQUEST_URL, "nonexistent",
+		MGET_TEST_EXPECTED_ERROR_CODE, 8,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"out", "" },
+			{	NULL } },
+		0);
+
+	// test-O
+	mget_test(
+		MGET_TEST_OPTIONS, "-O out",
+		MGET_TEST_REQUEST_URL, "dummy.txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"out", urls[3].body },
+			{	NULL } },
+		0);
+
+	// test-restrict-lowercase
+	urls[3].name="/DuMmy.Txt";
+	mget_test(
+		MGET_TEST_OPTIONS, "--post-data xyz --restrict-file-names=lowercase",
+		MGET_TEST_REQUEST_URL, "DuMmy.Txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
+	// test-restrict-uppercase
+	mget_test(
+		MGET_TEST_OPTIONS, "--restrict-file-names=uppercase",
+		MGET_TEST_REQUEST_URL, "DuMmy.Txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"DUMMY.TXT", urls[3].body },
+			{	NULL } },
+		0);
+	urls[3].name="/dummy.txt";
+
+	// test-c-full
+	mget_test(
+		MGET_TEST_OPTIONS, "-c",
+		MGET_TEST_REQUEST_URL, "dummy.txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
 	exit(0);
 }
