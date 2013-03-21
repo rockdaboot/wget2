@@ -752,12 +752,12 @@ ssize_t mget_tcp_printf(MGET_TCP *tcp, const char *fmt, ...)
 void mget_tcp_close(MGET_TCP **tcp)
 {
 	if (tcp && *tcp) {
+		if ((*tcp)->ssl && (*tcp)->ssl_session) {
+			mget_ssl_close(&(*tcp)->ssl_session);
+		}
 		if ((*tcp)->sockfd != -1) {
 			close((*tcp)->sockfd);
 			(*tcp)->sockfd = -1;
-		}
-		if ((*tcp)->ssl && (*tcp)->ssl_session) {
-			mget_ssl_close(&(*tcp)->ssl_session);
 		}
 		if ((*tcp)->addrinfo_allocated) {
 			freeaddrinfo((*tcp)->addrinfo);

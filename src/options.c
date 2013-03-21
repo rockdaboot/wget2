@@ -844,6 +844,8 @@ int init(int argc, const char *const *argv)
 	config.domains = mget_stringmap_create(16);
 	config.exclude_domains = mget_stringmap_create(16);
 
+	log_init();
+
 	// first processing, to respect options that might influence output
 	// while read_config() (e.g. -d, -q, -a, -o)
 	parse_command_line(argc, argv);

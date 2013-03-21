@@ -1,14 +1,15 @@
 #DEFS = @DEFS@ -DDATADIR=\"$(datadir)/@PACKAGE@\" -DSRCDIR=\"$(srcdir)\"
 DEFS = @DEFS@ -DDATADIR=\"$(top_srcdir)/data\" -DSRCDIR=\"$(srcdir)\"
 AM_CPPFLAGS = -Wno-missing-field-initializers -I$(top_srcdir)/include
-LDADD = ../libmget/libmget.la libtest.o
+AM_LDFLAGS = -static
+LDADD = $(top_srcdir)/libmget/libmget.la libtest.o
 
-MGET_TESTS = test-mget-1
+MGET_TESTS = test test-mget-1
 
 check_PROGRAMS = test buffer_printf2_perf stringmap_perf $(MGET_TESTS)
 
 test_SOURCES = test.c
-test_LDADD = ../libmget/libmget.la ../src/mget-log.o ../src/mget-options.o
+test_LDADD = $(top_srcdir)/libmget/libmget.la $(top_srcdir)/src/mget-log.o $(top_srcdir)/src/mget-options.o
 
 #libtest_SOURCES = libtest.c
 #libtest_CPPFLAGS = -I$(top_srcdir)/include

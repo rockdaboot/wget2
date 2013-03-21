@@ -48,7 +48,8 @@ static mget_thread_t
 static MGET_TCP
 	*parent_tcp;
 static int
-	server_port;
+	server_port,
+	terminate;
 /*static const char
 	*response_code = "200 Dontcare",
 	*response_body = "";
@@ -61,6 +62,11 @@ static size_t
 static char
 	tmpdir[128];
 
+static void nop(int sig G_GNUC_MGET_UNUSED)
+{
+	terminate = 1;
+}
+
 static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 {
 	MGET_TCP *tcp=NULL;
@@ -70,7 +76,9 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 	size_t body_len, request_url_length;
 	unsigned it;
 
-	while (server_tid) {
+	sigaction(SIGTERM, &(struct sigaction) { .sa_handler = nop }, NULL);
+
+	while (!terminate) {
 		mget_tcp_deinit(&tcp);
 
 		if ((tcp = mget_tcp_accept(parent_tcp))) {
@@ -124,9 +132,11 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 
 				mget_tcp_write(tcp, buf, nbytes);
 			}
-		} else
-			mget_info_printf(_("Failed to get connection\n"));
+		} else if (!terminate)
+			mget_error_printf(_("Failed to get connection\n"));
 	}
+
+	mget_tcp_deinit(&parent_tcp);
 
 	return NULL;
 }
@@ -153,11 +163,8 @@ void mget_test_stop_http_server(void)
 		mget_error_printf(_("Failed to remove tmpdir %s\n"), tmpdir);
 
 	// free resources - needed for valgrind testing
-//	mget_thread_t tid = server_tid;
-//	server_tid = 0;
-	pthread_kill(server_tid, SIGKILL);
+	pthread_kill(server_tid, SIGTERM);
 	mget_thread_join(server_tid);
-	mget_tcp_deinit(&parent_tcp);
 	mget_global_deinit();
 }
 
@@ -302,7 +309,7 @@ void mget_test(int first_key, ...)
 
 				if (existing_files[it].timestamp) {
 					// take the old utime() instead of utimes()
-					if (utime(existing_files[it].name, &(struct utimbuf){ 0, existing_files[it].timestamp}))
+					if (utime(existing_files[it].name, &(struct utimbuf){ 0, existing_files[it].timestamp }))
 						mget_error_printf_exit(_("Failed to set mtime of %s/%s [%s]\n"),
 							tmpdir, existing_files[it].name, options);
 				}
@@ -317,6 +324,7 @@ void mget_test(int first_key, ...)
 
 	//	snprintf(cmd, sizeof(cmd), "../../src/mget -q %s http://localhost:%d/%s", options, server_port, request_url);
 	snprintf(cmd, sizeof(cmd), "wget -q %s http://localhost:%d/%s", options, server_port, request_url);
+	mget_error_printf("  Testing '%s'\n", cmd);
 	rc = system(cmd);
 	if (!WIFEXITED(rc)) {
 		mget_error_printf_exit(_("Unexpected error code %d, expected %d [%s]\n"), rc, expected_error_code, options);
