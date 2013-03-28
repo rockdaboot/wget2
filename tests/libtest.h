@@ -24,6 +24,7 @@ extern "C" {
 #define MGET_TEST_EXPECTED_ERROR_CODE 2003
 #define MGET_TEST_EXPECTED_FILES 2004
 #define MGET_TEST_EXISTING_FILES 2005
+#define MGET_TEST_KEEP_TMPFILES 2006
 
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 

@@ -49,7 +49,8 @@ static MGET_TCP
 	*parent_tcp;
 static int
 	server_port,
-	terminate;
+	terminate,
+	keep_tmpfiles;
 /*static const char
 	*response_code = "200 Dontcare",
 	*response_body = "";
@@ -71,10 +72,11 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 {
 	MGET_TCP *tcp=NULL;
 	mget_test_url_t *url;
-	char buf[4096], method[32], request_url[256];
+	char buf[4096], method[32], request_url[256], tag[64], value[256], *p;
 	ssize_t nbytes;
 	size_t body_len, request_url_length;
 	unsigned it;
+	int byterange, from_bytes, to_bytes;
 
 	sigaction(SIGTERM, &(struct sigaction) { .sa_handler = nop }, NULL);
 
@@ -90,10 +92,21 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 					continue;
 				}
 
+				byterange = from_bytes = 0;
+
+				for (p = strstr(buf, "\r\n"); sscanf(p, "\r\n%63[^:]: %255[^\r]", tag, value) == 2; p = strstr(p + 2, "\r\n")) {
+					if (!strcasecmp(tag, "Range")) {
+						to_bytes = 0;
+						if ((byterange = sscanf(value, "bytes=%d-%d", &from_bytes, &to_bytes)) < 0)
+							byterange = 0;
+					}
+				}
+
 				url = NULL;
 				request_url_length = strlen(request_url);
 
 				if (request_url[request_url_length - 1] == '/') {
+					// access a directory
 					for (it = 0; it < nurls; it++) {
 						if (!strcmp(request_url, urls[it].name) ||
 							(!strncmp(request_url, urls[it].name, request_url_length) &&
@@ -104,6 +117,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 						}
 					}
 				} else {
+					// access a file
 					for (it = 0; it < nurls; it++) {
 						if (!strcmp(request_url, urls[it].name)) {
 							url = &urls[it];
@@ -117,19 +131,45 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 					continue;
 				}
 
-				// send response
-				body_len = strlen(url->body ? url->body : "");
-				nbytes = snprintf(buf, sizeof(buf),
-					"HTTP/1.1 %s\r\n"\
-					"Content-Length: %zu\r\n",
-					url->code, body_len);
-				for (it = 0; it < countof(url->headers) && url->headers[it]; it++) {
-					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s\r\n", url->headers[it]);
+				if (byterange == 1) {
+					to_bytes = strlen(url->body) - 1;
 				}
-				nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "\r\n");
-				if (!strcmp(method, "GET") || !strcmp(method, "POST"))
-					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s", url->body ? url->body : "");
+				if (byterange) {
+					if (from_bytes > to_bytes || from_bytes >= (int)strlen(url->body)) {
+						mget_tcp_printf(tcp, "HTTP/1.1 416 Range Not Satisfiable\r\nConnection: close\r\n\r\n");
+						continue;
+					}
 
+					// create response
+					body_len = to_bytes - from_bytes + 1;
+					nbytes = snprintf(buf, sizeof(buf),
+						"HTTP/1.1 206 Partial Content\r\n"\
+						"Content-Length: %zu\r\n"\
+						"Accept-Ranges: bytes\r\n"\
+						"Content-Range: %d-%d/%zu\r\n",
+						body_len, from_bytes, to_bytes, body_len);
+					for (it = 0; it < countof(url->headers) && url->headers[it]; it++) {
+						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s\r\n", url->headers[it]);
+					}
+					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "\r\n");
+					if (!strcmp(method, "GET") || !strcmp(method, "POST"))
+						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%.*s", (int)body_len, url->body + from_bytes);
+				} else {
+					// create response
+					body_len = strlen(url->body ? url->body : "");
+					nbytes = snprintf(buf, sizeof(buf),
+						"HTTP/1.1 %s\r\n"\
+						"Content-Length: %zu\r\n",
+						url->code, body_len);
+					for (it = 0; it < countof(url->headers) && url->headers[it]; it++) {
+						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s\r\n", url->headers[it]);
+					}
+					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "\r\n");
+					if (!strcmp(method, "GET") || !strcmp(method, "POST"))
+						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s", url->body ? url->body : "");
+				}
+
+				// send response
 				mget_tcp_write(tcp, buf, nbytes);
 			}
 		} else if (!terminate)
@@ -143,7 +183,6 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 
 void mget_test_stop_http_server(void)
 {
-	char cmd[128];
 	size_t it;
 
 //	mget_vector_free(&response_headers);
@@ -158,9 +197,13 @@ void mget_test_stop_http_server(void)
 	if (chdir("..") != 0)
 		mget_error_printf(_("Failed to chdir ..\n"));
 
-	snprintf(cmd, sizeof(cmd), "rm -rf %s", tmpdir);
-	if (system(cmd) != 0)
-		mget_error_printf(_("Failed to remove tmpdir %s\n"), tmpdir);
+	if (!keep_tmpfiles) {
+		char cmd[128];
+
+		snprintf(cmd, sizeof(cmd), "rm -rf %s", tmpdir);
+		if (system(cmd) != 0)
+			mget_error_printf(_("Failed to remove tmpdir %s\n"), tmpdir);
+	}
 
 	// free resources - needed for valgrind testing
 	pthread_kill(server_tid, SIGTERM);
@@ -268,6 +311,8 @@ void mget_test(int first_key, ...)
 	int key;
 	va_list args;
 
+	keep_tmpfiles = 0;
+
 	va_start (args, first_key);
 	for (key = first_key; key; key = va_arg(args, int)) {
 		switch (key) {
@@ -285,6 +330,9 @@ void mget_test(int first_key, ...)
 			break;
 		case MGET_TEST_OPTIONS:
 			options = va_arg(args, const char *);
+			break;
+		case MGET_TEST_KEEP_TMPFILES:
+			keep_tmpfiles = va_arg(args, int);
 			break;
 		default:
 			mget_error_printf_exit(_("Unknown option %d [%s]\n"), key, options);
@@ -323,7 +371,7 @@ void mget_test(int first_key, ...)
 	}
 
 	//	snprintf(cmd, sizeof(cmd), "../../src/mget -q %s http://localhost:%d/%s", options, server_port, request_url);
-	snprintf(cmd, sizeof(cmd), "wget -q %s http://localhost:%d/%s", options, server_port, request_url);
+	snprintf(cmd, sizeof(cmd), "wget %s http://localhost:%d/%s", options, server_port, request_url);
 	mget_error_printf("  Testing '%s'\n", cmd);
 	rc = system(cmd);
 	if (!WIFEXITED(rc)) {

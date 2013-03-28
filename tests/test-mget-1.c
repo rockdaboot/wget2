@@ -415,7 +415,7 @@ int main(void)
 
 	// test-c-full
 	mget_test(
-		MGET_TEST_OPTIONS, "-c",
+		MGET_TEST_OPTIONS, "-d -c",
 		MGET_TEST_REQUEST_URL, "dummy.txt",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
@@ -425,6 +425,27 @@ int main(void)
 			{	"dummy.txt", urls[3].body },
 			{	NULL } },
 		0);
+
+	{
+		// server sends same length content with slightly different content
+		char *partial = strndup(urls[3].body, strlen(urls[3].body)-2);
+
+		// test-c-partial
+		mget_test(
+			MGET_TEST_OPTIONS, "-c",
+			MGET_TEST_REQUEST_URL, "dummy.txt",
+//			MGET_TEST_KEEP_TMPFILES, 1,
+			MGET_TEST_EXPECTED_ERROR_CODE, 0,
+			MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
+				{	"dummy.txt", partial },
+				{	NULL } },
+			MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+				{	"dummy.txt", urls[3].body },
+				{	NULL } },
+			0);
+
+		mget_xfree(partial);
+	}
 
 	exit(0);
 }
