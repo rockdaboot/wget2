@@ -277,8 +277,8 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 
 		if (config.recursive && !config.span_hosts) {
 			// only download content from hosts given on the command line or from input file
-			if (!mget_stringmap_get(config.exclude_domains, job->iri->host))
-				mget_stringmap_put_ident(config.domains, job->iri->host);
+			if (mget_stringmap_get(config.exclude_domains, job->iri->host) == 0)
+				mget_stringmap_put(config.domains, job->iri->host, NULL, 0);
 		}
 	}
 

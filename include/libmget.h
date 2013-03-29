@@ -531,10 +531,10 @@ int
 	mget_hashmap_put(MGET_HASHMAP *h, const void *key, size_t keysize, const void *value, size_t valuesize);
 int
 	mget_hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value);
-int
-	mget_hashmap_put_ident(MGET_HASHMAP *h, const void *key, size_t keysize);
-int
-	mget_hashmap_put_ident_noalloc(MGET_HASHMAP *h, const void *key);
+//int
+//	mget_hashmap_put_ident(MGET_HASHMAP *h, const void *key, size_t keysize);
+//int
+//	mget_hashmap_put_ident_noalloc(MGET_HASHMAP *h, const void *key);
 int
 	mget_hashmap_size(const MGET_HASHMAP *h);
 int
@@ -545,6 +545,8 @@ void
 	mget_hashmap_clear(MGET_HASHMAP *h);
 void *
 	mget_hashmap_get(const MGET_HASHMAP *h, const void *key);
+int
+	mget_hashmap_get_null(const MGET_HASHMAP *h, const void *key, void **value);
 void
 	mget_hashmap_remove(MGET_HASHMAP *h, const void *key);
 void
@@ -570,10 +572,10 @@ int
 	mget_stringmap_put(MGET_STRINGMAP *h, const char *key, const void *value, size_t valuesize);
 int
 	mget_stringmap_put_noalloc(MGET_STRINGMAP *h, const char *key, const void *value);
-int
-	mget_stringmap_put_ident(MGET_STRINGMAP *h, const char *key);
-int
-	mget_stringmap_put_ident_noalloc(MGET_STRINGMAP *h, const char *key);
+//int
+//	mget_stringmap_put_ident(MGET_STRINGMAP *h, const char *key);
+//int
+//	mget_stringmap_put_ident_noalloc(MGET_STRINGMAP *h, const char *key);
 int
 	mget_stringmap_size(const MGET_STRINGMAP *h);
 int
@@ -584,6 +586,8 @@ void
 	mget_stringmap_clear(MGET_STRINGMAP *h);
 void *
 	mget_stringmap_get(const MGET_STRINGMAP *h, const char *key);
+int
+	mget_stringmap_get_null(const MGET_STRINGMAP *h, const char *key, void **value);
 void
 	mget_stringmap_remove(MGET_STRINGMAP *h, const char *key);
 void

@@ -94,19 +94,14 @@ int mget_stringmap_put(MGET_STRINGMAP *h, const char *key, const void *value, si
 	return mget_hashmap_put(h->h, key, strlen(key) + 1, value, valuesize);
 }
 
-int mget_stringmap_put_ident(MGET_STRINGMAP *h, const char *key)
-{
-	return mget_hashmap_put_ident(h->h, key, strlen(key) + 1);
-}
-
-int mget_stringmap_put_ident_noalloc(MGET_STRINGMAP *h, const char *key)
-{
-	return mget_hashmap_put_noalloc(h->h, key, key);
-}
-
 void *mget_stringmap_get(const MGET_STRINGMAP *h, const char *key)
 {
 	return mget_hashmap_get(h->h, key);
+}
+
+int mget_stringmap_get_null(const MGET_STRINGMAP *h, const char *key, void **value)
+{
+	return mget_hashmap_get_null(h->h, key, value);
 }
 
 void mget_stringmap_remove(MGET_STRINGMAP *h, const char *key)

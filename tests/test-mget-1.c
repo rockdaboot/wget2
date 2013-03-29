@@ -415,7 +415,7 @@ int main(void)
 
 	// test-c-full
 	mget_test(
-		MGET_TEST_OPTIONS, "-d -c",
+		MGET_TEST_OPTIONS, "-c",
 		MGET_TEST_REQUEST_URL, "dummy.txt",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {

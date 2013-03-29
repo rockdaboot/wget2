@@ -1113,8 +1113,8 @@ static void test_stringmap(void)
 
 	// testing key/value identity alloc/free in stringmap/hashmap
 	mget_stringmap_clear(h);
-	mget_stringmap_put_ident(h, "thekey") ? failed++ : ok++;
-	mget_stringmap_put_ident(h, "thekey") ? ok++ : failed++;
+	mget_stringmap_put(h, "thekey", NULL, 0) ? failed++ : ok++;
+	mget_stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
 	mget_stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
 	mget_stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
 

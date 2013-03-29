@@ -90,7 +90,7 @@ int main(int argc, const char *const *argv)
 					unique++;
 				}
 */
-				if (mget_stringmap_put_ident(map, word))
+				if (mget_stringmap_put(map, word, NULL, 0))
 					duple++;
 				else
 					unique++;

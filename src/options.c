@@ -245,10 +245,10 @@ static int parse_stringset(option_t opt, G_GNUC_MGET_UNUSED const char *const *a
 
 		for (s = val; (p = strchr(s, ',')); s = p + 1) {
 			if (p != s)
-				mget_stringmap_put_ident_noalloc(map, strndup(s, p - s));
+				mget_stringmap_put_noalloc(map, strndup(s, p - s), NULL);
 		}
 		if (*s)
-			mget_stringmap_put_ident_noalloc(map, strdup(s));
+			mget_stringmap_put_noalloc(map, strdup(s), NULL);
 	} else {
 		mget_stringmap_clear(map);
 	}

@@ -173,7 +173,10 @@ int mget_hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value
 	int pos = hash % h->max;
 
 	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		if (entry->value != value) {
+		if (entry->key == entry->value) {
+			if (key != value && entry->value != value)
+				entry->value = (void *)value;
+		} else if (entry->value != value) {
 			xfree(entry->value);
 			entry->value = (void *)value;
 		}
@@ -197,16 +200,52 @@ int mget_hashmap_put(MGET_HASHMAP *h, const void *key, size_t keysize, const voi
 	int pos = hash % h->max;
 
 	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		xfree(entry->value);
+		if (entry->key != entry->value)
+			xfree(entry->value);
+
 		entry->value = mget_memdup(value, valuesize);
 
 		return 1;
 	}
 
 	// a new entry
-	hashmap_new_entry(h, hash, mget_memdup(key, keysize), mget_memdup(value, valuesize));
+	hashmap_new_entry(h, hash, mget_memdup(key, keysize), value ? mget_memdup(value, valuesize) : NULL);
+	
+	return 0;
+//	return hashmap_put_noalloc(h, xmemdup(key, keysize), mget_memdup(value, valuesize));
+}
+
+int mget_hashmap_put_ident(MGET_HASHMAP *h, const void *key, size_t keysize)
+{
+	ENTRY *entry;
+	void *keydup;
+	unsigned int hash = h->hash(key);
+	int pos = hash % h->max;
+
+	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
+		if (entry->key != entry->value) {
+			xfree(entry->value);
+			entry->value = entry->key;
+		}
+
+		return 1;
+	}
+
+	// a new entry
+	keydup = mget_memdup(key, keysize);
+	hashmap_new_entry(h, hash, keydup, keydup);
 
 	return 0;
+
+	// if the key is as well the value (e.g. for blacklists)
+//	void *keydup = xmemdup(key, keysize);
+//	return hashmap_put_noalloc(h, keydup, keydup);
+}
+
+int mget_hashmap_put_ident_noalloc(MGET_HASHMAP *h, const void *key)
+{
+	// if the key is as well the value (e.g. for blacklists)
+	return mget_hashmap_put_noalloc(h, key, key);
 }
 
 void *mget_hashmap_get(const MGET_HASHMAP *h, const void *key)
@@ -219,20 +258,6 @@ void *mget_hashmap_get(const MGET_HASHMAP *h, const void *key)
 		return entry->value;
 
 	return NULL;
-}
-
-int mget_hashmap_get_null(const MGET_HASHMAP *h, const void *key, void **value)
-{
-	ENTRY *entry;
-	unsigned int hash = h->hash(key);
-	int pos = hash % h->max;
-
-	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		if (value) *value = entry->value;
-		return 1;
-	}
-
-	return 0;
 }
 
 static void G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const char *key, int free_kv)
@@ -251,8 +276,14 @@ static void G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const 
 				h->entry[pos] = next;
 
 			if (free_kv) {
-				xfree(e->key);
-				xfree(e->value);
+				if (e->key == e->value) {
+					// special case: key/value identity
+					xfree(e->key);
+					e->value = NULL;
+				} else {
+					xfree(e->key);
+					xfree(e->value);
+				}
 			}
 			xfree(e);
 
@@ -292,8 +323,14 @@ void mget_hashmap_clear(MGET_HASHMAP *h)
 		for (it = 0; it < h->max && cur; it++) {
 			for (entry = h->entry[it]; entry; entry = next) {
 				next = entry->next;
-				xfree(entry->value);
-				xfree(entry->key);
+				if (entry->key == entry->value) {
+					// special case: key/value identity
+					xfree(entry->value);
+					entry->key = NULL;
+				} else {
+					xfree(entry->value);
+					xfree(entry->key);
+				}
 				xfree(entry);
 				cur--;
 			}
