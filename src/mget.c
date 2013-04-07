@@ -1543,7 +1543,7 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 			}
 
 			if (http_send_request(conn, req) == 0) {
-				resp = http_get_response(conn, req, config.save_headers || config.server_response ? MGET_HTTP_RESPONSE_KEEPHEADER : 0);
+				resp = http_get_response(conn, NULL, req, config.save_headers || config.server_response ? MGET_HTTP_RESPONSE_KEEPHEADER : 0);
 			}
 
 			http_free_request(&req);

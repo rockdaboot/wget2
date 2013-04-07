@@ -1143,7 +1143,7 @@ static void test_stringmap(void)
 
 	MGET_IRI *iri = mget_iri_parse("http://localhost/prot_digest_md5/", NULL);
 	MGET_HTTP_REQUEST *req = http_create_request(iri, "GET");
-	MGET_HTTP_RESPONSE *resp = http_parse_response(response_text);
+	MGET_HTTP_RESPONSE *resp = http_parse_response_header(response_text);
 	http_add_credentials(req, mget_vector_get(resp->challenges, 0), "tim", "123");
 //	for (it=0;it<vec_size(req->lines);it++) {
 //		info_printf("%s\n", (char *)vec_get(req->lines, it));

@@ -111,7 +111,7 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 	MGET_HTTP_RESPONSE *resp;
 	if (conn) {
 		if (http_send_request(conn, req) == 0) {
-			resp = http_get_response(conn, req, MGET_HTTP_RESPONSE_KEEPHEADER);
+			resp = http_get_response(conn, NULL, req, MGET_HTTP_RESPONSE_KEEPHEADER);
 
 			if (!resp)
 				goto out;

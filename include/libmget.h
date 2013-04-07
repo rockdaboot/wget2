@@ -199,6 +199,10 @@ MGET_BEGIN_DECLS
 #define MGET_HTTP_RESPONSE_KEEPHEADER 2009
 #define MGET_HTTP_MAX_REDIRECTIONS 2010
 #define MGET_HTTP_BODY_SAVEAS_STREAM 2011
+#define MGET_HTTP_BODY_SAVEAS_FILE 2012
+#define MGET_HTTP_BODY_SAVEAS_FD 2013
+#define MGET_HTTP_BODY_SAVEAS_FUNC 2014
+#define MGET_HTTP_HEADER_FUNC 2015
 
 void
 	mget_global_init(int key, ...) G_GNUC_MGET_NULL_TERMINATED;
@@ -1108,7 +1112,7 @@ const char *
 const char *
 	http_parse_name(const char *s, const char **name) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_name_fixed(const char *s, char *name, size_t name_size) G_GNUC_MGET_NONNULL_ALL;
+	http_parse_name_fixed(const char *s, const char **name, size_t *namelen) G_GNUC_MGET_NONNULL_ALL;
 const char *
 	http_parse_link(const char *s, MGET_HTTP_LINK *link) G_GNUC_MGET_NONNULL_ALL;
 const char *
@@ -1181,21 +1185,30 @@ MGET_HTTP_RESPONSE *
 MGET_HTTP_RESPONSE *
 	http_get_header(MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
 MGET_HTTP_RESPONSE *
-	http_parse_response(char *buf) G_GNUC_MGET_NONNULL_ALL;
+	http_parse_response_header(char *buf) G_GNUC_MGET_NONNULL_ALL;
 MGET_HTTP_RESPONSE *
 	http_get_response_cb(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req, unsigned int flags,
-								 int (*parse_body)(void *context, const char *data, size_t length),
-								 void *context) G_GNUC_MGET_NONNULL((1,4,5));
+		int (*header_callback)(void *context, MGET_HTTP_RESPONSE *),
+		int (*parse_body)(void *context, const char *data, size_t length),
+		void *context) G_GNUC_MGET_NONNULL((1,5));
 //HTTP_RESPONSE *
 //	http_get_response_mem(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL_ALL,
 MGET_HTTP_RESPONSE *
-	http_get_response(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req, unsigned int flags) G_GNUC_MGET_NONNULL((1));
+	http_get_response(MGET_HTTP_CONNECTION *conn,
+		int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+		MGET_HTTP_REQUEST *req, unsigned int flags) G_GNUC_MGET_NONNULL((1));
 MGET_HTTP_RESPONSE *
-	http_get_response_fd(MGET_HTTP_CONNECTION *conn, int fd, unsigned int flags) G_GNUC_MGET_NONNULL_ALL;
+	http_get_response_fd(MGET_HTTP_CONNECTION *conn,
+		int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+		int fd, unsigned int flags) G_GNUC_MGET_NONNULL_ALL;
 MGET_HTTP_RESPONSE *
-	http_get_response_stream(MGET_HTTP_CONNECTION *conn, FILE *stream, unsigned int flags) G_GNUC_MGET_NONNULL_ALL;
+	http_get_response_stream(MGET_HTTP_CONNECTION *conn,
+		int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+		FILE *stream, unsigned int flags) G_GNUC_MGET_NONNULL_ALL;
 MGET_HTTP_RESPONSE *
-	http_get_response_func(MGET_HTTP_CONNECTION *conn, int(*func)(void *, const char *, size_t), void *context, unsigned int flags) G_GNUC_MGET_NONNULL((1,2));
+	http_get_response_func(MGET_HTTP_CONNECTION *conn,
+		int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+		int(*func)(void *, const char *, size_t), void *context, unsigned int flags) G_GNUC_MGET_NONNULL((1,2));
 
 MGET_HTTP_CONNECTION *
 	http_open(const MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;

@@ -186,15 +186,16 @@ const char *http_parse_name(const char *s, const char **name)
 	return *s == ':' ? s + 1 : s;
 }
 
-const char *http_parse_name_fixed(const char *s, char *name, size_t name_size)
+const char *http_parse_name_fixed(const char *s, const char **name, size_t *namelen)
 {
-	const char *endp = name + name_size - 1;
-
 	while (isblank(*s)) s++;
 
-	while (name < endp && http_istoken(*s))
-		*name++ = *s++;
-	*name = 0;
+	*name = s;
+
+	while (http_istoken(*s))
+		s++;
+
+	*namelen = s - *name;
 
 	while (*s && *s != ':') s++;
 
@@ -833,10 +834,12 @@ const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 /* content of <buf> will be destroyed */
 
 /* buf must be 0-terminated */
-MGET_HTTP_RESPONSE *http_parse_response(char *buf)
+MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 {
 	const char *s;
-	char *line, *eol, name[32];
+	char *line, *eol;
+	const char *name;
+	size_t namesize;
 	MGET_HTTP_RESPONSE *resp = NULL;
 
 	resp = xcalloc(1, sizeof(MGET_HTTP_RESPONSE));
@@ -863,13 +866,13 @@ MGET_HTTP_RESPONSE *http_parse_response(char *buf)
 
 		// log_printf("# %p %s\n",eol,line);
 
-		s = http_parse_name_fixed(line, name, sizeof(name));
+		s = http_parse_name_fixed(line, &name, &namesize);
 		// s now points directly after :
 
-		if (resp->code / 100 == 3 && !strcasecmp(name, "Location")) {
+		if (resp->code / 100 == 3 && !strncasecmp(name, "Location", namesize)) {
 			xfree(resp->location);
 			http_parse_location(s, &resp->location);
-		} else if (resp->code / 100 == 3 && !strcasecmp(name, "Link")) {
+		} else if (resp->code / 100 == 3 && !strncasecmp(name, "Link", namesize)) {
 			// log_printf("s=%.31s\n",s);
 			MGET_HTTP_LINK link;
 			http_parse_link(s, &link);
@@ -877,7 +880,7 @@ MGET_HTTP_RESPONSE *http_parse_response(char *buf)
 			if (!resp->links)
 				resp->links = mget_vector_create(8, 8, NULL);
 			mget_vector_add(resp->links, &link, sizeof(link));
-		} else if (!strcasecmp(name, "Digest")) {
+		} else if (!strncasecmp(name, "Digest", namesize)) {
 			// http://tools.ietf.org/html/rfc3230
 			MGET_HTTP_DIGEST digest;
 			http_parse_digest(s, &digest);
@@ -885,23 +888,23 @@ MGET_HTTP_RESPONSE *http_parse_response(char *buf)
 			if (!resp->digests)
 				resp->digests = mget_vector_create(4, 4, NULL);
 			mget_vector_add(resp->digests, &digest, sizeof(digest));
-		} else if (!strcasecmp(name, "Transfer-Encoding")) {
+		} else if (!strncasecmp(name, "Transfer-Encoding", namesize)) {
 			http_parse_transfer_encoding(s, &resp->transfer_encoding);
-		} else if (!strcasecmp(name, "Content-Encoding")) {
+		} else if (!strncasecmp(name, "Content-Encoding", namesize)) {
 			http_parse_content_encoding(s, &resp->content_encoding);
-		} else if (!strcasecmp(name, "Content-Type")) {
+		} else if (!strncasecmp(name, "Content-Type", namesize)) {
 			http_parse_content_type(s, &resp->content_type, &resp->content_type_encoding);
-		} else if (!strcasecmp(name, "Content-Length")) {
+		} else if (!strncasecmp(name, "Content-Length", namesize)) {
 			resp->content_length = (size_t)atoll(s);
 			resp->content_length_valid = 1;
-		} else if (!strcasecmp(name, "Content-Disposition")) {
+		} else if (!strncasecmp(name, "Content-Disposition", namesize)) {
 			http_parse_content_disposition(s, &resp->content_filename);
-		} else if (!strcasecmp(name, "Connection")) {
+		} else if (!strncasecmp(name, "Connection", namesize)) {
 			http_parse_connection(s, &resp->keep_alive);
 // Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
-		} else if (!strcasecmp(name, "Last-Modified")) {
+		} else if (!strncasecmp(name, "Last-Modified", namesize)) {
 			resp->last_modified = parse_rfc1123_date(s);
-		} else if (!strcasecmp(name, "Set-Cookie")) {
+		} else if (!strncasecmp(name, "Set-Cookie", namesize)) {
 			// this is a parser. content validation must be done by higher level functions.
 			MGET_COOKIE cookie;
 			http_parse_setcookie(s, &cookie);
@@ -909,14 +912,14 @@ MGET_HTTP_RESPONSE *http_parse_response(char *buf)
 			if (!resp->cookies)
 				resp->cookies = mget_vector_create(4, 4, NULL);
 			mget_vector_add(resp->cookies, &cookie, sizeof(cookie));
-		} else if (!strcasecmp(name, "WWW-Authenticate")) {
+		} else if (!strncasecmp(name, "WWW-Authenticate", namesize)) {
 			MGET_HTTP_CHALLENGE challenge;
 			http_parse_challenge(s, &challenge);
 
 			if (!resp->challenges)
 				resp->challenges = mget_vector_create(2, 2, NULL);
 			mget_vector_add(resp->challenges, &challenge, sizeof(challenge));
-		} else if (!strcasecmp(name, "ICY-Metaint")) {
+		} else if (!strncasecmp(name, "ICY-Metaint", namesize)) {
 			resp->icy_metaint = atoi(s);
 		}
 	}
@@ -1302,6 +1305,7 @@ MGET_HTTP_RESPONSE *http_get_response_cb(
 	MGET_HTTP_CONNECTION *conn,
 	MGET_HTTP_REQUEST *req,
 	unsigned int flags,
+	int (*header_callback)(void *context, MGET_HTTP_RESPONSE *),
 	int (*parse_body)(void *context, const char *data, size_t length),
 	void *context) // given to parse_body
 {
@@ -1333,12 +1337,12 @@ MGET_HTTP_RESPONSE *http_get_response_cb(
 
 			debug_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 
-			if (req && (flags&MGET_HTTP_RESPONSE_KEEPHEADER)) {
+			if (flags&MGET_HTTP_RESPONSE_KEEPHEADER) {
 				mget_buffer_t *header = mget_buffer_init(NULL, NULL, p - buf + 4);
 				mget_buffer_memcpy(header, buf, p - buf);
 				mget_buffer_memcat(header, "\r\n\r\n", 4);
 
-				if (!(resp = http_parse_response(buf))) {
+				if (!(resp = http_parse_response_header(buf))) {
 					mget_buffer_free(&header);
 					goto cleanup; // something is wrong with the header
 				}
@@ -1346,9 +1350,12 @@ MGET_HTTP_RESPONSE *http_get_response_cb(
 				resp->header = header;
 
 			} else {
-				if (!(resp = http_parse_response(buf)))
+				if (!(resp = http_parse_response_header(buf)))
 					goto cleanup; // something is wrong with the header
 			}
+
+			if (header_callback)
+				header_callback(context, resp);
 
 			if (req && !strcasecmp(req->method, "HEAD"))
 				goto cleanup; // a HEAD response won't have a body
@@ -1555,12 +1562,14 @@ static int _get_body(void *userdata, const char *data, size_t length)
 
 // get response, resp->body points to body in memory
 
-MGET_HTTP_RESPONSE *http_get_response(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req, unsigned int flags)
+MGET_HTTP_RESPONSE *http_get_response(MGET_HTTP_CONNECTION *conn,
+	int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+	MGET_HTTP_REQUEST *req, unsigned int flags)
 {
 	MGET_HTTP_RESPONSE *resp;
 	mget_buffer_t *body = mget_buffer_alloc(102400);
 
-	resp = http_get_response_cb(conn, req, flags, _get_body, body);
+	resp = http_get_response_cb(conn, req, flags, header_func, _get_body, body);
 
 	if (resp) {
 		resp->body = body;
@@ -1583,9 +1592,11 @@ static int _get_fd(void *context, const char *data, size_t length)
 	return 0;
 }
 
-MGET_HTTP_RESPONSE *http_get_response_fd(MGET_HTTP_CONNECTION *conn, int fd, unsigned int flags)
+MGET_HTTP_RESPONSE *http_get_response_fd(MGET_HTTP_CONNECTION *conn,
+	int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+	int fd, unsigned int flags)
 {
-	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, _get_fd, &fd);
+	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, header_func, _get_fd, &fd);
 
 	return resp;
 }
@@ -1605,16 +1616,21 @@ static int _get_stream(void *context, const char *data, size_t length)
 	return 0;
 }
 
-MGET_HTTP_RESPONSE *http_get_response_stream(MGET_HTTP_CONNECTION *conn, FILE *stream, unsigned int flags)
+MGET_HTTP_RESPONSE *http_get_response_stream(MGET_HTTP_CONNECTION *conn,
+	int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+	FILE *stream, unsigned int flags)
 {
-	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, _get_stream, stream);
+	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, header_func, _get_stream, stream);
 
 	return resp;
 }
 
-MGET_HTTP_RESPONSE *http_get_response_func(MGET_HTTP_CONNECTION *conn, int(*func)(void *, const char *, size_t), void *context, unsigned int flags)
+MGET_HTTP_RESPONSE *http_get_response_func(MGET_HTTP_CONNECTION *conn,
+	int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+	int(*body_func)(void *, const char *, size_t),
+	void *context, unsigned int flags)
 {
-	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, func, context);
+	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, header_func, body_func, context);
 
 	return resp;
 }
