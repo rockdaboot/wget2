@@ -216,7 +216,7 @@ void *mget_hashmap_get(const MGET_HASHMAP *h, const void *key)
 	int pos = hash % h->max;
 
 	if ((entry = hashmap_find_entry(h, key, hash, pos)))
-		return entry->value;
+		return entry->value; // watch out, value may be NULL
 
 	return NULL;
 }
@@ -231,6 +231,18 @@ int mget_hashmap_get_null(const MGET_HASHMAP *h, const void *key, void **value)
 		if (value) *value = entry->value;
 		return 1;
 	}
+
+	return 0;
+}
+
+int mget_hashmap_contains(const MGET_HASHMAP *h, const void *key)
+{
+	ENTRY *entry;
+	unsigned int hash = h->hash(key);
+	int pos = hash % h->max;
+
+	if ((entry = hashmap_find_entry(h, key, hash, pos)))
+		return 1;
 
 	return 0;
 }

@@ -93,7 +93,7 @@ MGET_IRI *blacklist_add(MGET_IRI *iri)
 //	}
 
 	if (mget_iri_supported(iri)) {
-		if (mget_hashmap_get(blacklist, iri) == 0) {
+		if (!mget_hashmap_contains(blacklist, iri)) {
 			// info_printf("Add to blacklist: %s\n",iri->uri);
 			mget_hashmap_put_noalloc(blacklist, iri, NULL); // use hashmap as a hashset (without value)
 			return iri;
