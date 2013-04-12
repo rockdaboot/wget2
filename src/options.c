@@ -95,7 +95,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"  -i  --input-file        File where URLs are read from, - for STDIN.\n"
 		"  -F  --force-html        Treat input file as HTML. (default: off)\n"
 		"      --force-css         Treat input file as CSS. (default: off) (NEW!)\n"
-		"  -B  --base-url          Base for relative URLs read from input-file or from command line\n"
+		"  -B  --base              Base for relative URLs read from input-file or from command line\n"
 		"\n");
 	puts(
 		"Download:\n"
@@ -390,7 +390,7 @@ static const struct option options[] = {
 	// leave the entries in alphabetical order of 'long_name' !
 	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E'},
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a'},
-	{ "base-url", &config.base_url, parse_string, 1, 'B'},
+	{ "base", &config.base_url, parse_string, 1, 'B'},
 	{ "bind-address", &config.bind_address, parse_string, 1, 0},
 	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0},
 	{ "ca-directory", &config.ca_directory, parse_string, 1, 0},
