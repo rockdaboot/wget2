@@ -218,10 +218,11 @@ AC_CHECK_FUNCS([\
  strchr strdup strerror strncasecmp strndup strrchr strstr strlcpy \
  vasprintf])
 
-AC_CONFIG_FILES([Makefile po/Makefile.in
+AC_CONFIG_FILES([Makefile
                  include/Makefile
                  libmget/Makefile
                  src/Makefile
+                 po/Makefile.in
                  docs/libmget/Makefile
                  data/Makefile
                  examples/Makefile
