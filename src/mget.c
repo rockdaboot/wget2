@@ -277,8 +277,9 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 
 		if (config.recursive && !config.span_hosts) {
 			// only download content from hosts given on the command line or from input file
-			if (mget_stringmap_get(config.exclude_domains, job->iri->host) == 0)
+			if (!mget_stringmap_contains(config.exclude_domains, job->iri->host)) {
 				mget_stringmap_put(config.domains, job->iri->host, NULL, 0);
+			}
 		}
 	}
 
@@ -676,7 +677,7 @@ int main(int argc, const char *const *argv)
 
 						if (config.recursive && !config.span_hosts) {
 							// only download content from given hosts
-							if (!iri->host || !mget_stringmap_get(config.domains, iri->host) || mget_stringmap_get(config.exclude_domains, iri->host)) {
+							if (!iri->host || !mget_stringmap_contains(config.domains, iri->host) || mget_stringmap_contains(config.exclude_domains, iri->host)) {
 								info_printf("URI '%s' not followed\n", iri->uri);
 								mget_iri_free(&iri);
 								continue;
@@ -1527,7 +1528,6 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 				// the following adds an Authorization: HTTP header
 //				http_add_credentials(req, vec_get(challenges, 0), config.username, config.password);
 				http_add_credentials(req, mget_vector_get(challenges, 0), config.http_username, config.http_password);
-				http_free_challenges(&challenges);
 			}
 
 			if (part)
@@ -1567,6 +1567,7 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 			break; // 302 with Metalink information
 
 		if (resp->code == 401 && !challenges) { // Unauthorized
+			http_free_challenges(&challenges);
 			if ((challenges = resp->challenges)) {
 				resp->challenges = NULL;
 				http_free_response(&resp);
@@ -1599,5 +1600,6 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 		http_free_response(&resp);
 	}
 
+	http_free_challenges(&challenges);
 	return resp;
 }

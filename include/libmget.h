@@ -551,6 +551,8 @@ void *
 	mget_hashmap_get(const MGET_HASHMAP *h, const void *key);
 int
 	mget_hashmap_get_null(const MGET_HASHMAP *h, const void *key, void **value);
+int
+	mget_hashmap_contains(const MGET_HASHMAP *h, const void *key);
 void
 	mget_hashmap_remove(MGET_HASHMAP *h, const void *key);
 void
@@ -592,6 +594,8 @@ void *
 	mget_stringmap_get(const MGET_STRINGMAP *h, const char *key);
 int
 	mget_stringmap_get_null(const MGET_STRINGMAP *h, const char *key, void **value);
+int
+	mget_stringmap_contains(const MGET_STRINGMAP *h, const char *key);
 void
 	mget_stringmap_remove(MGET_STRINGMAP *h, const char *key);
 void

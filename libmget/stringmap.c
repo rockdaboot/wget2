@@ -104,6 +104,11 @@ int mget_stringmap_get_null(const MGET_STRINGMAP *h, const char *key, void **val
 	return mget_hashmap_get_null(h->h, key, value);
 }
 
+int mget_stringmap_contains(const MGET_STRINGMAP *h, const char *key)
+{
+	return mget_hashmap_contains(h->h, key);
+}
+
 void mget_stringmap_remove(MGET_STRINGMAP *h, const char *key)
 {
 	if (h)
