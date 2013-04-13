@@ -1384,7 +1384,9 @@ void download_part(DOWNLOADER *downloader)
 	PART *part = downloader->part;
 	int mirror_index = downloader->id % mget_vector_size(job->mirrors);
 
-	dprintf(downloader->sockfd[1], "sts downloading part...\n");
+	dprintf(downloader->sockfd[1], "sts downloading %zd-%zd\n",
+		part->position, part->position + part->length - 1);
+
 	do {
 		MGET_HTTP_RESPONSE *msg;
 		MIRROR *mirror = mget_vector_get(job->mirrors, mirror_index);
