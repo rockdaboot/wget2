@@ -89,6 +89,8 @@ void job_create_parts(JOB *job)
 			part.length = fsize;
 		}
 
+		part.id = it + 1;
+
 		mget_vector_add(job->parts, &part, sizeof(PART));
 
 		part.position += part.length;
@@ -148,6 +150,7 @@ void job_create_parts(JOB *job)
 }
 */
 
+/*
 PART *job_add_part(JOB *job, PART *part)
 {
 	if (!job->parts)
@@ -155,6 +158,7 @@ PART *job_add_part(JOB *job, PART *part)
 
 	return mget_vector_get(job->parts, mget_vector_add(job->parts, part, sizeof(PART)));
 }
+*/
 
 // check hash for part of a file
 // -1: error
@@ -279,6 +283,8 @@ void job_validate_file(JOB *job)
 				part.length = (size_t)fsize;
 			}
 
+			part.id = it + 1;
+
 			if ((rc = check_piece_hash(hash, fd, part.position, part.length)) != 1) {
 				info_printf(_("Piece %d/%d not OK - requeuing\n"), it + 1, mget_vector_size(job->pieces));
 				mget_vector_add(job->parts, &part, sizeof(PART));
@@ -299,6 +305,8 @@ void job_validate_file(JOB *job)
 			} else {
 				part.length = fsize;
 			}
+
+			part.id = it + 1;
 
 			mget_vector_add(job->parts, &part, sizeof(PART));
 

@@ -60,6 +60,8 @@ typedef struct {
 		position;
 	off_t
 		length;
+	int
+		id;
 	char
 		inuse,
 		done;

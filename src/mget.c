@@ -1385,12 +1385,13 @@ void download_part(DOWNLOADER *downloader)
 	PART *part = downloader->part;
 	int mirror_index = downloader->id % mget_vector_size(job->mirrors);
 
-	dprintf(downloader->sockfd[1], "sts downloading %zd-%zd\n",
-		part->position, part->position + part->length - 1);
-
 	do {
 		MGET_HTTP_RESPONSE *msg;
 		MIRROR *mirror = mget_vector_get(job->mirrors, mirror_index);
+
+		dprintf(downloader->sockfd[1], "sts downloading part %d/%d (%zd-%zd) %s from %s (mirror %d)\n",
+			part->id, mget_vector_size(job->parts),
+			part->position, part->position + part->length - 1, job->name, mirror->iri->host, mirror_index);
 
 		mirror_index = (mirror_index + 1) % mget_vector_size(job->mirrors);
 
@@ -1398,10 +1399,17 @@ void download_part(DOWNLOADER *downloader)
 		if (msg) {
 			mget_cookie_store_cookies(msg->cookies); // sanitize and store cookies
 
-			if (msg->body) {
+			if (msg->code != 200 && msg->code != 206) {
+				dprintf(downloader->sockfd[1], "sts part %d download error %d\n", part->id, msg->code);
+			} else if (!msg->body) {
+				dprintf(downloader->sockfd[1], "sts part %d download error 'empty body'\n", part->id);
+			} else if (msg->body->length != (size_t)part->length) {
+				dprintf(downloader->sockfd[1], "sts part %d download error '%zd bytes of %zd expected'\n",
+					part->id, msg->body->length, part->length);
+			} else {
 				int fd;
 
-				debug_printf("# body=%zd/%llu bytes\n", msg->body->length, (unsigned long long)part->length);
+				info_printf("sts part %d downloaded\n", part->id);
 				if ((fd = open(job->name, O_WRONLY | O_CREAT, 0644)) != -1) {
 					if (lseek(fd, part->position, SEEK_SET) != -1) {
 						ssize_t nbytes;
@@ -1410,12 +1418,13 @@ void download_part(DOWNLOADER *downloader)
 							part->done = 1; // set this when downloaded ok
 						else
 							error_printf(_("Failed to write %zd bytes (%zd)\n"), msg->body->length, nbytes);
-					} else error_printf(_("Failed to lseek to %llu\n"), (unsigned long long)part->position);
+					} else
+						error_printf(_("Failed to lseek to %llu\n"), (unsigned long long)part->position);
 					close(fd);
-				} else error_printf(_("Failed to write open %s\n"), job->name);
+				} else
+					error_printf(_("Failed to write open %s\n"), job->name);
 
-			} else
-				debug_printf("# empty body\n");
+			}
 
 			http_free_response(&msg);
 		}
@@ -1424,6 +1433,7 @@ void download_part(DOWNLOADER *downloader)
 
 MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 {
+	MGET_IRI *dont_free = iri;
 	MGET_HTTP_CONNECTION *conn;
 	MGET_HTTP_RESPONSE *resp = NULL;
 	MGET_VECTOR *challenges = NULL;
@@ -1591,15 +1601,26 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 
 			mget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
 
-			dprintf(downloader->sockfd[1], "redirect - %s\n", uri_buf.data);
-
-			mget_buffer_deinit(&uri_buf);
-			break;
+			if (!part) {
+				dprintf(downloader->sockfd[1], "redirect - %s\n", uri_buf.data);
+				mget_buffer_deinit(&uri_buf);
+				break;
+			} else {
+				// directly follow when using metalink
+				if (iri != dont_free)
+					mget_iri_free(&iri);
+				iri = mget_iri_parse(uri_buf.data, NULL);
+				mget_buffer_deinit(&uri_buf);
+			}
 		}
 
 		http_free_response(&resp);
 	}
 
+	if (iri != dont_free)
+		mget_iri_free(&iri);
+
 	http_free_challenges(&challenges);
+
 	return resp;
 }
