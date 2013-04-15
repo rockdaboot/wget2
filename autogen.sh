@@ -1,5 +1,6 @@
 # !/bin/sh -e
 
+mkdir m4
 gtkdocize
 autoreconf --install --force --symlink
 
