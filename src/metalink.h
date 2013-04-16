@@ -40,6 +40,7 @@
 #include <libmget.h>
 
 void
+	metalink3_parse(int sockfd, MGET_HTTP_RESPONSE *resp) G_GNUC_MGET_NONNULL((2)),
 	metalink4_parse(int sockfd, MGET_HTTP_RESPONSE *resp) G_GNUC_MGET_NONNULL((2));
 
 #endif /* _MGET_METALINK_H */

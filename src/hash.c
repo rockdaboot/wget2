@@ -46,15 +46,15 @@
 static G_GNUC_MGET_NONNULL((1)) gnutls_digest_algorithm_t get_algorithm(const char *type)
 {
 	if (*type == 's' || *type == 'S') {
-		if (!strcasecmp(type, "sha-1"))
+		if (!strcasecmp(type, "sha-1") || !strcasecmp(type, "sha1"))
 			return GNUTLS_DIG_SHA1;
-		else if (!strcasecmp(type, "sha-256"))
+		else if (!strcasecmp(type, "sha-256") || !strcasecmp(type, "sha256"))
 			return GNUTLS_DIG_SHA256;
-		else if (!strcasecmp(type, "sha-512"))
+		else if (!strcasecmp(type, "sha-512") || !strcasecmp(type, "sha512"))
 			return GNUTLS_DIG_SHA512;
-		else if (!strcasecmp(type, "sha-224"))
+		else if (!strcasecmp(type, "sha-224") || !strcasecmp(type, "sha224"))
 			return GNUTLS_DIG_SHA224;
-		else if (!strcasecmp(type, "sha-384"))
+		else if (!strcasecmp(type, "sha-384") || !strcasecmp(type, "sha384"))
 			return GNUTLS_DIG_SHA384;
 	}
 	else if (!strcasecmp(type, "md5"))

@@ -98,9 +98,9 @@ ssize_t mget_fdgetline(char **buf, size_t *bufsize, int fd)
 	}
 
 	if (nbytes == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
-		// socket is broken
-		if (errno != EBADF)
-			error_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
+		// file/socket descriptor is broken
+		// if (errno != EBADF)
+		// 	error_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
 	}
 
 	if (length) {
@@ -168,8 +168,8 @@ ssize_t mget_getline(char **buf, size_t *bufsize, FILE *fp)
 
 	if (nbytes == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
 		// socket is broken
-		if (errno != EBADF)
-			error_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
+		// if (errno != EBADF)
+		//	error_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
 	}
 
 	if (length) {

@@ -468,7 +468,7 @@ int main(int argc, const char *const *argv)
 
 		// reading & writing to pipe must not block
 		fcntl(downloader[n].sockfd[0], F_SETFL, O_NDELAY);
-		fcntl(downloader[n].sockfd[1], F_SETFL, O_NDELAY);
+		// fcntl(downloader[n].sockfd[1], F_SETFL, O_NDELAY);
 
 		// init thread attributes
 		if ((rc = mget_thread_start(&downloader[n].tid, downloader_thread, &downloader[n], 0)) != 0) {
@@ -754,15 +754,15 @@ void *downloader_thread(void *p)
 	JOB *job;
 	char *buf = NULL;
 	size_t bufsize = 0;
-	fd_set rset;
-	int nfds;
+//	fd_set rset;
+//	int nfds;
 	//	unsigned int seed=(unsigned int)(time(NULL)|mget_thread_self());
 	int sockfd = downloader->sockfd[1];
 
 	downloader->tid = mget_thread_self(); // to avoid race condition
 
 	while (!terminate) {
-		FD_ZERO(&rset);
+/*		FD_ZERO(&rset);
 		FD_SET(sockfd, &rset);
 
 		// later, set timeout here
@@ -774,7 +774,7 @@ void *downloader_thread(void *p)
 			}
 			continue;
 		}
-
+*/
 		while (!terminate && mget_fdgetline(&buf, &bufsize, sockfd) > 0) {
 			debug_printf("+ [%d] %s\n", downloader->id, buf);
 			job = downloader->job;
@@ -835,7 +835,9 @@ void *downloader_thread(void *p)
 						for (it = 0; it < mget_vector_size(resp->links); it++) {
 							MGET_HTTP_LINK *link = mget_vector_get(resp->links, it);
 							if (link->rel == link_rel_describedby) {
-								if (!strcasecmp(link->type, "application/metalink4+xml")) {
+								if (!strcasecmp(link->type, "application/metalink4+xml") ||
+								    !strcasecmp(link->type, "application/metalink+xml"))
+								{
 									// found a link to a metalink4 description
 									metalink = link;
 									break;
@@ -848,7 +850,7 @@ void *downloader_thread(void *p)
 						}
 
 						if (metalink) {
-							// found a link to a metalink4 description, create a new job
+							// found a link to a metalink3 or metalink4 description, create a new job
 							dprintf(sockfd, "add uri - %s\n", metalink->uri);
 							goto ready;
 						} else if (top_link) {
@@ -860,9 +862,15 @@ void *downloader_thread(void *p)
 
 					if (resp->content_type) {
 						if (!strcasecmp(resp->content_type, "application/metalink4+xml")) {
-							dprintf(sockfd, "sts get metalink info\n");
+							dprintf(sockfd, "sts get metalink4 info\n");
 							// save_file(resp, job->local_filename, O_TRUNC);
 							metalink4_parse(sockfd, resp);
+							goto ready;
+						}
+						else if (!strcasecmp(resp->content_type, "application/metalink+xml")) {
+							dprintf(sockfd, "sts get metalink3 info\n");
+							// save_file(resp, job->local_filename, O_TRUNC);
+							metalink3_parse(sockfd, resp);
 							goto ready;
 						}
 					}

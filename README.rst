@@ -51,6 +51,7 @@ The basic functionality is implemented, like:
 - HTTPS via libgnutls
 - support for Metalink RFC 6249 (Metalink/HTTP: Mirrors and Hashes)
 - support for Metalink RFC 5854 (Metalink Download Description Format / .meta4 files)
+- support for Metalink 3
 - Metalink checksumming via libgnutls
 - DNS lookup cache
 - IPv4 and IPv6 support
@@ -73,7 +74,7 @@ This is next on my list:
 - use gtk-doc-tools for documentation (http://developer.gnome.org/gtk-doc-manual/unstable/settingup.html.en)
   I want the docs stay with the code: already tested Doxygen, but the man page support seems broken/orphaned.
 - respect /robots.txt "Robot Exclusion Standard" and <META name="robots" ...>
-- http authentication (basic & digest RFC 2617)
+- http authentication (basic & digest RFC 2617) [done and working, but some optimizing needed]
 - WARC support
 - TCP Fast Open (as soon as Debian sid is unfreezed)
 - RFC 6797 HSTS (HTTP Strict Transport Security)
@@ -107,8 +108,7 @@ The following packages are needed to build Mget:
 * libidn >= 1.25
 * flex >= 2.5.35
 
-The versions are recommended, but older version like on OpenBSD 5.0
-are supposed to work.
+The versions are recommended, but older versions are supposed to work.
 
 
 Building from git
