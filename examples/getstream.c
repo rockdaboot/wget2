@@ -17,7 +17,7 @@
  * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Example for loading and playing a .m3u stream
+ * Example for retrieving a SHOUTCAST stream and showing the metainfo (using a .m3u playlist)
  *
  * Changelog
  * 03.02.2013  Tim Ruehsen  created
@@ -42,10 +42,11 @@ static char *streamdata;
 static char metadata[255*16];
 static int metaint, streamdatalen, metadatalen;
 
-static void examine_response_header(void *context, MGET_HTTP_RESPONSE *resp)
+// callback function to examine received HTTP response header
+// <context> depends on MGET_HTTP_BODY_SAVEAS_* option given to mget_http_get().
+// The response header is has been parsed into <resp> structure.
+static void header_handler(void *context G_GNUC_MGET_UNUSED, MGET_HTTP_RESPONSE *resp)
 {
-	// <context> depends on MGET_HTTP_BODY_SAVEAS_* option given to mget_http_get().
-	// The response header is so far parsed into <resp> structure.
 	// If you are looking for header that are ignored by libmget, parse them yourself.
 
 	if (resp->header) {
@@ -66,7 +67,8 @@ static void examine_response_header(void *context, MGET_HTTP_RESPONSE *resp)
 	}
 }
 
-static void parse_body(void *context, const char *data, size_t len)
+// callback function to handle incoming stream data
+static void stream_handler(void *context G_GNUC_MGET_UNUSED, const char *data, size_t len)
 {
 	// any stream data received is piped through this function
 
@@ -111,18 +113,16 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 		MGET_INFO_STREAM, stderr,
 		NULL);
 
-	// execute an HTTP GET request and return the response
+	// get and parse the m3u playlist file
 	resp = mget_http_get(
-		MGET_HTTP_URL, "http://www.ndr.de/resources/metadaten/audio/m3u/n-joy.m3u",
-		MGET_HTTP_HEADER_ADD, "User-Agent: Mozilla/5.0",
-		MGET_HTTP_MAX_REDIRECTIONS, 5,
+		MGET_HTTP_URL, "http://listen.radionomy.com/gothica.m3u",
 		NULL);
 
-	if (resp && resp->code==200 && !strcasecmp(resp->content_type, "audio/x-mpegurl")) {
+	if (resp && resp->code == 200 && !strcasecmp(resp->content_type, "audio/x-mpegurl")) {
 		char *p1 = resp->body->data, *p2 = p1;
 
 		while (isspace(*p1)) p1++; // skip whitespace
-		for (p2 =p1; !isspace(*p2);) p2++;
+		for (p2 = p1; !isspace(*p2);) p2++;
 
 		stream_url = strndup(p1, p2 - p1);
 	}
@@ -136,13 +136,11 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 	// After the metadata, again <size> bytes stream data follow, and so on.
 	if (stream_url) {
 		resp = mget_http_get(
-//			MGET_HTTP_URL, stream_url,
-			MGET_HTTP_URL, "http://streaming207.radionomy.com:80/Gothica",
-			MGET_HTTP_HEADER_ADD, "User-Agent: Mozilla/5.0",
-			MGET_HTTP_HEADER_ADD, "Icy-Metadata: 1",
-			MGET_HTTP_HEADER_FUNC, examine_response_header,
+			MGET_HTTP_URL, stream_url,
+			MGET_HTTP_HEADER_ADD, "Icy-Metadata: 1", // we want in-stream title/actor information
+			MGET_HTTP_HEADER_FUNC, header_handler,
 			// MGET_HTTP_HEADER_SAVEAS_STREAM, stdout,
-			MGET_HTTP_BODY_SAVEAS_FUNC, parse_body,
+			MGET_HTTP_BODY_SAVEAS_FUNC, stream_handler,
 			NULL);
 
 		http_free_response(&resp);

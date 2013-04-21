@@ -49,7 +49,7 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 	va_list args;
 	const char *url = NULL,	*url_encoding = NULL;
 	const char *http_username = NULL, *http_password = NULL;
-	int key, it, max_redirections = 0, redirection_level = 0;
+	int key, it, max_redirections = 5, redirection_level = 0;
 
 	struct {
 		unsigned int
