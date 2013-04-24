@@ -65,7 +65,7 @@ static const unsigned char
 		['!'] = IRI_CTYPE_SUBDELIM,
 		['$'] = IRI_CTYPE_SUBDELIM,
 		['&'] = IRI_CTYPE_SUBDELIM,
-		['\\'] = IRI_CTYPE_SUBDELIM,
+//		['\\'] = IRI_CTYPE_SUBDELIM,
 		['\''] = IRI_CTYPE_SUBDELIM,
 		['('] = IRI_CTYPE_SUBDELIM,
 		[')'] = IRI_CTYPE_SUBDELIM,
@@ -107,12 +107,12 @@ int mget_iri_isreserved(char c)
 
 int mget_iri_isunreserved(char c)
 {
-	return c > 32 && c < 127 && (isalnum(c) || strchr("-._~", c) != NULL);
+	return c > 32 && c < 127 && (isalnum(c) || strchr("-._~", c));
 }
 
 int mget_iri_isunreserved_path(char c)
 {
-	return c > 32 && c < 127 && (isalnum(c) || strchr("/-._~", c) != NULL);
+	return c > 32 && c < 127 && (isalnum(c) || strchr("/-._~", c));
 }
 
 // needed as helper for blacklist.c/blacklist_free()
@@ -648,7 +648,7 @@ const char *mget_iri_escape_query(const char *src, mget_buffer_t *buf)
 	const char *begin;
 
 	for (begin = src; *src; src++) {
-		if (!mget_iri_isunreserved_path(*src) && *src != '=') {
+		if (!mget_iri_isunreserved(*src) && *src != '=') {
 			if (begin != src)
 				mget_buffer_memcat(buf, begin, src - begin);
 			begin = src + 1;
