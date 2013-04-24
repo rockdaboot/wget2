@@ -1305,9 +1305,9 @@ MGET_HTTP_RESPONSE *http_get_response_cb(
 	MGET_HTTP_CONNECTION *conn,
 	MGET_HTTP_REQUEST *req,
 	unsigned int flags,
-	int (*header_callback)(void *context, MGET_HTTP_RESPONSE *),
-	int (*parse_body)(void *context, const char *data, size_t length),
-	void *context) // given to parse_body
+	int (*header_handler)(void *context, MGET_HTTP_RESPONSE *),
+	int (*body_handler)(void *context, const char *data, size_t length),
+	void *context) // given to body_handler
 {
 	size_t bufsize, body_len = 0, body_size = 0;
 	ssize_t nbytes, nread = 0;
@@ -1354,8 +1354,10 @@ MGET_HTTP_RESPONSE *http_get_response_cb(
 					goto cleanup; // something is wrong with the header
 			}
 
-			if (header_callback)
-				header_callback(context, resp);
+			if (header_handler) {
+				if (header_handler(context, resp))
+					goto cleanup; // stop requested by callback function
+			}
 
 			if (req && !strcasecmp(req->method, "HEAD"))
 				goto cleanup; // a HEAD response won't have a body
@@ -1379,7 +1381,7 @@ MGET_HTTP_RESPONSE *http_get_response_cb(
 		goto cleanup;
 	}
 
-	dc = mget_decompress_open(resp->content_encoding, parse_body, context);
+	dc = mget_decompress_open(resp->content_encoding, body_handler, context);
 
 	// calculate number of body bytes so far read
 	body_len = nread - (p - buf);
@@ -1563,13 +1565,13 @@ static int _get_body(void *userdata, const char *data, size_t length)
 // get response, resp->body points to body in memory
 
 MGET_HTTP_RESPONSE *http_get_response(MGET_HTTP_CONNECTION *conn,
-	int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+	int(*header_handler)(void *, MGET_HTTP_RESPONSE *),
 	MGET_HTTP_REQUEST *req, unsigned int flags)
 {
 	MGET_HTTP_RESPONSE *resp;
 	mget_buffer_t *body = mget_buffer_alloc(102400);
 
-	resp = http_get_response_cb(conn, req, flags, header_func, _get_body, body);
+	resp = http_get_response_cb(conn, req, flags, header_handler, _get_body, body);
 
 	if (resp) {
 		resp->body = body;
@@ -1593,10 +1595,10 @@ static int _get_fd(void *context, const char *data, size_t length)
 }
 
 MGET_HTTP_RESPONSE *http_get_response_fd(MGET_HTTP_CONNECTION *conn,
-	int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+	int(*header_handler)(void *, MGET_HTTP_RESPONSE *),
 	int fd, unsigned int flags)
 {
-	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, header_func, _get_fd, &fd);
+	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, header_handler, _get_fd, &fd);
 
 	return resp;
 }
@@ -1626,11 +1628,11 @@ MGET_HTTP_RESPONSE *http_get_response_stream(MGET_HTTP_CONNECTION *conn,
 }
 
 MGET_HTTP_RESPONSE *http_get_response_func(MGET_HTTP_CONNECTION *conn,
-	int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+	int(*header_handler)(void *, MGET_HTTP_RESPONSE *),
 	int(*body_func)(void *, const char *, size_t),
 	void *context, unsigned int flags)
 {
-	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, header_func, body_func, context);
+	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, header_handler, body_func, context);
 
 	return resp;
 }

@@ -43,9 +43,9 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 	MGET_HTTP_RESPONSE *resp = NULL;
 	MGET_VECTOR *challenges = NULL;
 	FILE *saveas_stream = NULL;
-	int(*saveas_func)(void *, const char *, size_t) = NULL;
+	int(*saveas_handler)(void *, const char *, size_t) = NULL;
 	int saveas_fd = -1;
-	int (*header_callback)(void *, MGET_HTTP_RESPONSE *) = NULL;
+	int (*header_handler)(void *, MGET_HTTP_RESPONSE *) = NULL;
 	va_list args;
 	const char *url = NULL,	*url_encoding = NULL;
 	const char *http_username = NULL, *http_password = NULL;
@@ -93,13 +93,13 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 			saveas_stream = va_arg(args, FILE *);
 			break;
 		case MGET_HTTP_BODY_SAVEAS_FUNC:
-			saveas_func = va_arg(args, int(*)(void *, const char *, size_t));
+			saveas_handler = va_arg(args, int(*)(void *, const char *, size_t));
 			break;
 		case MGET_HTTP_BODY_SAVEAS_FD:
 			saveas_fd = va_arg(args, int);
 			break;
 		case MGET_HTTP_HEADER_FUNC:
-			header_callback = va_arg(args, int (*)(void *, MGET_HTTP_RESPONSE *));
+			header_handler = va_arg(args, int (*)(void *, MGET_HTTP_RESPONSE *));
 			break;
 		default:
 			error_printf(_("Unknown option %d\n"), key);
@@ -167,13 +167,13 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 		if (conn) {
 			if (http_send_request(conn, req) == 0) {
 				if (saveas_stream)
-					resp = http_get_response_stream(conn, header_callback, saveas_stream, MGET_HTTP_RESPONSE_KEEPHEADER);
-				else if (saveas_func)
-					resp = http_get_response_func(conn, header_callback, saveas_func, NULL, MGET_HTTP_RESPONSE_KEEPHEADER);
+					resp = http_get_response_stream(conn, header_handler, saveas_stream, MGET_HTTP_RESPONSE_KEEPHEADER);
+				else if (saveas_handler)
+					resp = http_get_response_func(conn, header_handler, saveas_handler, NULL, MGET_HTTP_RESPONSE_KEEPHEADER);
 				else if (saveas_fd != -1)
-					resp = http_get_response_fd(conn, header_callback, saveas_fd, MGET_HTTP_RESPONSE_KEEPHEADER);
+					resp = http_get_response_fd(conn, header_handler, saveas_fd, MGET_HTTP_RESPONSE_KEEPHEADER);
 				else
-					resp = http_get_response(conn, header_callback, req, MGET_HTTP_RESPONSE_KEEPHEADER);
+					resp = http_get_response(conn, header_handler, req, MGET_HTTP_RESPONSE_KEEPHEADER);
 			}
 		}
 

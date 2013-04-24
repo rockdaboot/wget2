@@ -1192,8 +1192,8 @@ MGET_HTTP_RESPONSE *
 	http_parse_response_header(char *buf) G_GNUC_MGET_NONNULL_ALL;
 MGET_HTTP_RESPONSE *
 	http_get_response_cb(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req, unsigned int flags,
-		int (*header_callback)(void *context, MGET_HTTP_RESPONSE *),
-		int (*parse_body)(void *context, const char *data, size_t length),
+		int (*header_handler)(void *context, MGET_HTTP_RESPONSE *),
+		int (*body_handler)(void *context, const char *data, size_t length),
 		void *context) G_GNUC_MGET_NONNULL((1,5));
 //HTTP_RESPONSE *
 //	http_get_response_mem(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL_ALL,
