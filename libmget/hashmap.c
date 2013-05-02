@@ -249,24 +249,25 @@ int mget_hashmap_contains(const MGET_HASHMAP *h, const void *key)
 
 static void G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const char *key, int free_kv)
 {
-	ENTRY *e, *next, *prev = NULL;
+	ENTRY *entry, *next, *prev = NULL;
 	unsigned int hash = h->hash(key);
 	int pos = hash % h->max;
 
-	for (e = h->entry[pos]; e; prev = e, e = next) {
-		next = e->next;
+	for (entry = h->entry[pos]; entry; prev = entry, entry = next) {
+		next = entry->next;
 
-		if (hash == e->hash && (key == e->key || !h->cmp(key, e->key))) {
+		if (hash == entry->hash && (key == entry->key || !h->cmp(key, entry->key))) {
 			if (prev)
 				prev->next = next;
 			else
 				h->entry[pos] = next;
 
 			if (free_kv) {
-				xfree(e->key);
-				xfree(e->value);
+				if (entry->value != entry->key)
+					xfree(entry->key);
+				xfree(entry->value);
 			}
-			xfree(e);
+			xfree(entry);
 
 			h->cur--;
 			return;
@@ -304,8 +305,9 @@ void mget_hashmap_clear(MGET_HASHMAP *h)
 		for (it = 0; it < h->max && cur; it++) {
 			for (entry = h->entry[it]; entry; entry = next) {
 				next = entry->next;
+				if (entry->value != entry->key)
+					xfree(entry->key);
 				xfree(entry->value);
-				xfree(entry->key);
 				xfree(entry);
 				cur--;
 			}
