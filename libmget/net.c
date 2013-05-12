@@ -57,6 +57,8 @@ static struct _TCP {
 		addrinfo;
 	struct addrinfo *
 		bind_addrinfo;
+	struct addrinfo *
+		connect_addrinfo; // needed for TCP_FASTOPEN delayed connect
 	int
 		sockfd,
 		// timeouts in milliseconds
@@ -71,14 +73,20 @@ static struct _TCP {
 		passive : 1,
 		caching : 1,
 		addrinfo_allocated : 1,
-		bind_addrinfo_allocated : 1;
+		bind_addrinfo_allocated : 1,
+		tcp_fastopen : 1, // do we use TCP_FASTOPEN or not
+		first_send : 1; // TCP_FASTOPEN's first packet is sent different
 } _global_tcp = {
 	.sockfd = -1,
 	.dns_timeout = -1,
 	.connect_timeout = -1,
 	.timeout = -1,
 	.family = AF_UNSPEC,
-	.caching = 1
+	.caching = 1,
+#if defined(TCP_FASTOPEN) && defined(MSG_FASTOPEN)
+	.tcp_fastopen = 1,
+	.first_send = 1
+#endif
 };
 
 
@@ -496,9 +504,22 @@ int mget_tcp_connect_ssl(MGET_TCP *tcp, const char *host, const char *port, cons
 				}
 			}
 
-			if (connect(sockfd, ai->ai_addr, ai->ai_addrlen) < 0 &&
-				errno != EINPROGRESS)
-			{
+			if (!hostname)  {
+				if (tcp->tcp_fastopen) {
+					rc = 0;
+					errno = 0;
+					tcp->connect_addrinfo = ai;
+				} else {
+					rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
+					tcp->first_send = 0;
+				}
+			} else {
+				// SSL
+				rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
+				tcp->first_send = 0;
+			}
+
+			if (rc < 0 && errno != EINPROGRESS) {
 				error_printf(_("Failed to connect (%d)\n"), errno);
 				close(sockfd);
 			} else {
@@ -554,6 +575,14 @@ int mget_tcp_listen(MGET_TCP *tcp, const char *host, const char *port, int backl
 			if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) == -1)
 				error_printf(_("Failed to set socket option NODELAY\n"));
 
+#ifdef TCP_FASTOPEN
+			if (tcp->tcp_fastopen)  {
+				on = 1;
+				if (setsockopt(sockfd, IPPROTO_TCP, TCP_FASTOPEN, &on, sizeof(on)) == -1)
+					error_printf(_("Failed to set socket option FASTOPEN\n"));
+			}
+#endif
+
 			if (bind(sockfd, ai->ai_addr, ai->ai_addrlen) != 0) {
 				error_printf(_("Failed to bind (%d)\n"), errno);
 				close(sockfd);
@@ -597,13 +626,12 @@ MGET_TCP *mget_tcp_accept(MGET_TCP *parent_tcp)
 		// -1: INFINITE timeout
 		if (parent_tcp->timeout) {
 			// wait for socket to be ready to read
-			struct pollfd pollfd[1] = {
-				{ parent_tcp->sockfd, POLLIN, 0}};
+			struct pollfd pollfd = { parent_tcp->sockfd, POLLIN, 0 };
 
-			if (poll(pollfd, 1, parent_tcp->timeout) <= 0)
+			if (poll(&pollfd, 1, parent_tcp->timeout) <= 0)
 				return NULL;
 
-			if (!(pollfd[0].revents & POLLIN))
+			if (!(pollfd.revents & POLLIN))
 				return NULL;
 		}
 
@@ -634,13 +662,12 @@ ssize_t mget_tcp_read(MGET_TCP *tcp, char *buf, size_t count)
 		// -1: INFINITE timeout
 		if (tcp->timeout) {
 			// wait for socket to be ready to read
-			struct pollfd pollfd[1] = {
-				{ tcp->sockfd, POLLIN, 0}};
+			struct pollfd pollfd = { tcp->sockfd, POLLIN, 0 };
 
-			if ((rc = poll(pollfd, 1, tcp->timeout)) <= 0)
+			if ((rc = poll(&pollfd, 1, tcp->timeout)) <= 0)
 				return rc;
 
-			if (!(pollfd[0].revents & POLLIN))
+			if (!(pollfd.revents & POLLIN))
 				return -1;
 		}
 
@@ -650,7 +677,7 @@ ssize_t mget_tcp_read(MGET_TCP *tcp, char *buf, size_t count)
 	if (rc < 0)
 		error_printf(_("Failed to read %zu bytes (%d)\n"), count, errno);
 
-	return rc;
+		return rc;
 }
 
 ssize_t mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count)
@@ -662,37 +689,56 @@ ssize_t mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count)
 		return mget_ssl_write_timeout(tcp->ssl_session, buf, count, tcp->timeout);
 
 	while (count) {
-		// 0: no timeout / immediate
-		// -1: INFINITE timeout
-		if (tcp->timeout) {
-			// wait for socket to be ready to write
-			struct pollfd pollfd[1] = {
-				{ tcp->sockfd, POLLOUT, 0}};
+#ifdef TCP_FASTOPEN
+		if (tcp->tcp_fastopen && tcp->first_send) {
+			n = sendto(tcp->sockfd, buf, count, MSG_FASTOPEN,
+				tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
+			tcp->first_send = 0;
 
-			if ((rc = poll(pollfd, 1, tcp->timeout)) <= 0) {
-				error_printf(_("Failed to poll (%d)\n"), errno);
-				return rc;
+			if (n < 0 && errno == EOPNOTSUPP) {
+				// fallback from fastopen, e.g. when fastopen is disabled in system
+				tcp->tcp_fastopen = 0;
+				rc = connect(tcp->sockfd, tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
+				if (rc < 0 && errno != EINPROGRESS) {
+					error_printf(_("Failed to connect (%d)\n"), errno);
+					return -1;
+				}
+				errno = EAGAIN;
 			}
+		} else
+#endif
+			n = send(tcp->sockfd, buf, count, 0);
 
-			if (!(pollfd[0].revents & POLLOUT)) {
-				error_printf(_("Failed to get POLLOUT event\n"));
+		if (n >= 0) {
+			if ((size_t)n >= count)
+				return nwritten + n;
+
+			count -= n;
+			buf += n;
+			nwritten += n;
+		} else {
+			if (errno != EAGAIN && errno != EINPROGRESS) {
+				error_printf(_("Failed to write %zu bytes (%d)\n"), count, errno);
 				return -1;
 			}
+
+			// 0: no timeout / immediate
+			// -1: INFINITE timeout
+			if (tcp->timeout) {
+				// wait for socket to be ready to write
+				struct pollfd pollfd = { tcp->sockfd, POLLOUT, 0 };
+
+				if ((rc = poll(&pollfd, 1, tcp->timeout)) <= 0) {
+					error_printf(_("Failed to poll (%d)\n"), errno);
+					return rc;
+				}
+
+				if (!(pollfd.revents & POLLOUT)) {
+					error_printf(_("Failed to get POLLOUT event\n"));
+					return -1;
+				}
+			}
 		}
-
-		n = write(tcp->sockfd, buf, count);
-			
-		if (n < 0) {
-			error_printf(_("Failed to write %zu bytes (%d)\n"), count, errno);
-			return -1;
-		}
-
-		if ((size_t)n >= count)
-			return nwritten + n;
-
-		count -= n;
-		buf += n;
-		nwritten += n;
 	}
 
 	return 0;

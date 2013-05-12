@@ -34,6 +34,7 @@ Many Wget options are already implemented, but some are still missing.
 
 The basic functionality is implemented, like:
 
+- use TCP Fast Open if available
 - IDN support for international domains
 - autotools support
 - proxy support
@@ -76,7 +77,6 @@ This is next on my list:
 - respect /robots.txt "Robot Exclusion Standard" and <META name="robots" ...>
 - http authentication (basic & digest RFC 2617) [done and working, but some optimizing needed]
 - WARC support
-- TCP Fast Open (as soon as Debian sid is unfreezed)
 - RFC 6797 HSTS (HTTP Strict Transport Security)
   Chromium HSTS domain list: https://src.chromium.org/viewvc/chrome/trunk/src/net/base/transport_security_state_static.json
 - read credentials from secure wallets (e.g. kwallet, firefox, maybe an own tool ?)
