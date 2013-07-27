@@ -37,6 +37,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <utime.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <libmget.h>
@@ -56,6 +57,8 @@ static int
 	*response_body = "";
 static MGET_VECTOR
 	*response_headers; */
+static MGET_VECTOR
+	*request_urls;
 static mget_test_url_t
 	*urls;
 static size_t
@@ -87,7 +90,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 			// as a quick hack, just assume that request comes in one packet
 			if ((nbytes = mget_tcp_read(tcp, buf, sizeof(buf)-1)) > 0) {
 				buf[nbytes]=0;
-				if (sscanf(buf, "%31s %255s", method, request_url) !=2 || *request_url != '/') {
+				if (sscanf(buf, "%31s %255s", method, request_url) !=2) {
 					mget_tcp_printf(tcp, "HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");
 					continue;
 				}
@@ -119,6 +122,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 				} else {
 					// access a file
 					for (it = 0; it < nurls; it++) {
+						// printf("%s %s\n", request_url, urls[it].name);
 						if (!strcmp(request_url, urls[it].name)) {
 							url = &urls[it];
 							break;
@@ -186,6 +190,7 @@ void mget_test_stop_http_server(void)
 	size_t it;
 
 //	mget_vector_free(&response_headers);
+	mget_vector_free(&request_urls);
 
 	for (it = 0; it < nurls; it++) {
 		if (urls[it].body_alloc) {
@@ -296,7 +301,7 @@ void mget_test(int first_key, ...)
 {
 	char cmd[1024];
 	const char
-		*request_url = "index.html",
+		*request_url,
 		*options="";
 	const mget_test_file_t
 		*expected_files = NULL,
@@ -304,20 +309,29 @@ void mget_test(int first_key, ...)
 	size_t
 		it;
 	int
+		key,
 		fd,
 		rc,
 		expected_error_code = 0;
-
-	int key;
+	DIR *dir;
+	struct dirent *dp;
 	va_list args;
 
 	keep_tmpfiles = 0;
+
+	if (!request_urls)
+		request_urls = mget_vector_create(8,8,NULL);
 
 	va_start (args, first_key);
 	for (key = first_key; key; key = va_arg(args, int)) {
 		switch (key) {
 		case MGET_TEST_REQUEST_URL:
-			request_url = va_arg(args, const char *);
+			if ((request_url = va_arg(args, const char *)))
+				mget_vector_add_str(request_urls, request_url);
+			break;
+		case MGET_TEST_REQUEST_URLS:
+			while ((request_url = va_arg(args, const char *)))
+				mget_vector_add_str(request_urls, request_url);
 			break;
 		case MGET_TEST_EXPECTED_ERROR_CODE:
 			expected_error_code = va_arg(args, int);
@@ -370,8 +384,19 @@ void mget_test(int first_key, ...)
 		}
 	}
 
-	//	snprintf(cmd, sizeof(cmd), "../../src/mget -q %s http://localhost:%d/%s", options, server_port, request_url);
-	snprintf(cmd, sizeof(cmd), "wget %s http://localhost:%d/%s", options, server_port, request_url);
+	if (mget_vector_size(request_urls) > 0) {
+		//	snprintf(cmd, sizeof(cmd), "../../src/mget -q %s http://localhost:%d/%s", options, server_port, request_url);
+		int n = snprintf(cmd, sizeof(cmd), "/home/tim/src/wget/trunk/src/wget %s", options);
+
+		for (it = 0; it < (size_t)mget_vector_size(request_urls); it++) {
+			n += snprintf(cmd + n, sizeof(cmd) - n, " 'http://localhost:%d/%s'",
+				server_port, (char *)mget_vector_get(request_urls, it));
+		}
+	} else {
+		//	snprintf(cmd, sizeof(cmd), "../../src/mget -q %s", options);
+		snprintf(cmd, sizeof(cmd), "wget %s", options);
+	}
+
 	mget_error_printf("  Testing '%s'\n", cmd);
 	rc = system(cmd);
 	if (!WIFEXITED(rc)) {
@@ -410,5 +435,32 @@ void mget_test(int first_key, ...)
 		}
 	}
 
-//	system("ls -la");
+	// look if there are unexpected
+	if ((dir = opendir("."))) {
+		while ((dp = readdir(dir))) {
+			if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
+				continue;
+
+			if (expected_files) {
+				for (it = 0; expected_files[it].name && strcmp(expected_files[it].name, dp->d_name); it++)
+						break;
+
+				if (!expected_files[it].name)
+					mget_error_printf_exit(_("Unexpected file %s/%s found\n"), tmpdir, dp->d_name);
+			} else
+				mget_error_printf_exit(_("Unexpected file %s/%s found\n"), tmpdir, dp->d_name);
+		}
+
+		closedir(dir);
+	} else
+		mget_error_printf_exit(_("Failed to diropen %s\n"), tmpdir);
+
+	mget_vector_clear(request_urls);
+
+	//	system("ls -la");
+}
+
+int mget_test_get_server_port(void)
+{
+	return server_port;
 }

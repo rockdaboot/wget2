@@ -28,7 +28,6 @@
 # include <config.h>
 #endif
 
-#include <pthread.h>
 #include <stdarg.h>
 
 #include <libmget.h>
@@ -45,17 +44,17 @@ static struct _CONFIG {
 };
 
 static int _init;
-static pthread_mutex_t _mutex = PTHREAD_MUTEX_INITIALIZER;
+static mget_thread_mutex_t _mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
 void mget_global_init(int first_key, ...)
 {
 	va_list args;
 	int key;
 
-	pthread_mutex_lock(&_mutex);
+	mget_thread_mutex_lock(&_mutex);
 
 	if (_init++) {
-		pthread_mutex_unlock(&_mutex);
+		mget_thread_mutex_unlock(&_mutex);
 		return;
 	}
 
@@ -117,7 +116,7 @@ void mget_global_init(int first_key, ...)
 			mget_tcp_set_preferred_family(NULL, va_arg(args, int));
 			break;
 		default:
-			pthread_mutex_unlock(&_mutex);
+			mget_thread_mutex_unlock(&_mutex);
 			mget_error_printf(_("%s: Unknown option %d"), __func__, key);
 			return;
 		}
@@ -127,12 +126,12 @@ void mget_global_init(int first_key, ...)
 	if (_config.cookies_enabled && _config.cookie_store)
 		mget_cookie_load(_config.cookie_store, _config.keep_session_cookies);
 
-	pthread_mutex_unlock(&_mutex);
+	mget_thread_mutex_unlock(&_mutex);
 }
 
 void mget_global_deinit(void)
 {
-	pthread_mutex_lock(&_mutex);
+	mget_thread_mutex_lock(&_mutex);
 
 	if (_init == 1) {
 		// free resources here
@@ -147,7 +146,7 @@ void mget_global_deinit(void)
 
 	if (_init > 0) _init--;
 
-	pthread_mutex_unlock(&_mutex);
+	mget_thread_mutex_unlock(&_mutex);
 }
 
 int mget_global_get_int(int key)

@@ -33,6 +33,8 @@
 #include <libmget.h>
 #include "private.h"
 
+#ifdef HAVE_LIBPTHREAD
+
 int mget_thread_start(mget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_MGET_UNUSED)
 {
 	int rc;
@@ -74,3 +76,17 @@ mget_thread_t mget_thread_self(void)
 {
 	return pthread_self();
 }
+
+#else // HAVE_LIBPTHREAD
+
+int mget_thread_start(mget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_MGET_UNUSED)
+{
+	return -1;
+}
+void mget_thread_mutex_lock(mget_thread_mutex_t *mutex) { }
+void mget_thread_mutex_unlock(mget_thread_mutex_t *mutex) { }
+int mget_thread_kill(mget_thread_t thread, int sig) { return 0; }
+int mget_thread_join(mget_thread_t thread) { return 0; }
+mget_thread_t mget_thread_self(void) { return 0; }
+
+#endif // HAVE_LIBPTHREAD

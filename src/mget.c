@@ -201,6 +201,7 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 	return fname;
 }
 
+// assign a job to the next idle downloader
 static int schedule_download(JOB *job, PART *part)
 {
 	if (config.quota && quota >= config.quota)
@@ -247,6 +248,76 @@ static long long quota_modify_read(size_t nbytes)
 	return old_quota;
 }
 
+// everything host/domain specific should go here
+typedef struct {
+	const char
+		*scheme,
+		*host;
+	unsigned int
+		got_robots; // if /robots.txt has been fetched
+} HOST;
+
+static MGET_HASHMAP
+	*hosts;
+
+static int _host_compare(const HOST *host1, const HOST *host2)
+{
+	int n;
+
+	if (host1->scheme != host2->scheme)
+		return host1->scheme < host2->scheme ? -1 : 1;
+
+	// host is already lowercase, no need to call strcasecmp()
+	if ((n = strcmp(host1->host, host2->host)))
+		return n;
+
+	return 0;
+}
+
+static unsigned int _host_hash(const HOST *host)
+{
+	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
+	const unsigned char *p;
+
+	for (p = (unsigned char *)host->scheme; p && *p; p++)
+		hash = hash * 101 + *p;
+
+	for (p = (unsigned char *)host->host; p && *p; p++)
+		hash = hash * 101 + *p;
+
+	return hash;
+}
+
+static void hosts_add(MGET_IRI *iri)
+{
+	if (!iri)
+		return;
+
+	if (!hosts)
+		hosts = mget_hashmap_create(16, -2, (unsigned int (*)(const void *))_host_hash, (int (*)(const void *, const void *))_host_compare);
+
+	HOST *host = xcalloc(1,sizeof(HOST));
+	host->scheme = iri->scheme;
+	host->host = iri->host;
+
+	if (!mget_hashmap_contains(hosts, host)) {
+		// info_printf("Add to hosts: %s\n", hostname);
+		mget_hashmap_put_noalloc(hosts, host, host);
+	}
+}
+/*
+static int _free_host_entry(const char *name G_GNUC_MGET_UNUSED, HOST *host)
+{
+//	xfree(host->name);
+	return 0;
+}
+*/
+static void hosts_free(void)
+{
+//	mget_hashmap_browse(hosts, (int(*)(const char *, const void *))_free_host_entry);
+	mget_hashmap_free(&hosts);
+}
+
 static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encoding)
 {
 	MGET_IRI *iri;
@@ -280,6 +351,8 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 			if (!mget_stringmap_contains(config.exclude_domains, job->iri->host)) {
 				mget_stringmap_put(config.domains, job->iri->host, NULL, 0);
 			}
+
+			hosts_add(job->iri);
 		}
 	}
 
@@ -742,6 +815,7 @@ int main(int argc, const char *const *argv)
 	mget_ssl_deinit();
 	queue_free();
 	blacklist_free();
+	hosts_free();
 	xfree(downloader);
 	deinit();
 
@@ -1498,13 +1572,16 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 			// User-Agent: Wget/1.13.4 (linux-gnu)
 			//
 			// Accept: prefer XML over HTML
+#ifdef WITH_ZLIB
 			http_add_header_line(req,
 				/*				"Accept-Encoding: gzip\r\n"\
 				"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20100101 Firefox/10.0.5 Iceweasel/10.0.5\r\n"\
 				"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8\r\n"
 				"Accept-Language: en-us,en;q=0.5\r\n");
 				 */
-				"Accept-Encoding: gzip, deflate\r\n");
+				"Accept-Encoding: gzip, deflate\r\n"
+				);
+#endif
 
 			http_add_header_line(req, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
 

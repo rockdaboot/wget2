@@ -46,7 +46,8 @@ if test "x$CFLAGS" = "x" ; then
 fi
 if test "x$LDFLAGS" = "x" ; then
   if test "x$GCC" = "xyes" ; then
-    LDFLAGS="-fPIE -pie -Wl,-z,relro,--as-needed"
+#    LDFLAGS="-fPIE -pie -Wl,-z,relro,--as-needed"
+    LDFLAGS="-fPIE -pie -Wl,--as-needed"
   fi
 fi
 # Append EXTRA_CFLAGS to CFLAGS, if defined.
@@ -188,7 +189,7 @@ AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $IDN_LIBS $LIBS")
 # Checks for header files.
 AC_CHECK_HEADERS([\
  fcntl.h inttypes.h libintl.h locale.h netdb.h netinet/in.h stddef.h stdlib.h string.h\
- strings.h sys/socket.h sys/time.h unistd.h])
+ strings.h sys/socket.h sys/time.h unistd.h crypt.h poll.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
@@ -216,7 +217,7 @@ AC_CHECK_FUNCS([\
  clock_gettime dprintf dup2 futimens gettimeofday localtime_r memchr\
  memmove memset mkdir munmap select setlocale socket strcasecmp\
  strchr strdup strerror strncasecmp strndup strrchr strstr strlcpy \
- vasprintf])
+ vasprintf nanosleep usleep])
 
 AC_CONFIG_FILES([Makefile
                  include/Makefile

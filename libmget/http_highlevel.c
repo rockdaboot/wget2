@@ -28,7 +28,6 @@
 # include <config.h>
 #endif
 
-#include <pthread.h>
 #include <string.h>
 
 #include <libmget.h>

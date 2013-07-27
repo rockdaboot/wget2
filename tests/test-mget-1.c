@@ -125,9 +125,31 @@ int main(void)
 	};
 
 	// functions won't come back if an error occurs
-
 	mget_test_start_http_server(
 		MGET_TEST_RESPONSE_URLS, &urls, countof(urls),
+		0);
+
+	// test-noop
+	mget_test(
+		MGET_TEST_REQUEST_URL, "index.html",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ "index.html", urls[0].body },
+			{	NULL } },
+		0);
+
+	// test-nonexistent-quiet
+	mget_test(
+		MGET_TEST_OPTIONS, "--quiet",
+		MGET_TEST_REQUEST_URL, "nonexistent",
+		MGET_TEST_EXPECTED_ERROR_CODE, 8,
+		0);
+
+	// test-stdouterr
+	mget_test(
+		MGET_TEST_OPTIONS, "-c -O /dev/full",
+		MGET_TEST_REQUEST_URL, "dummy.txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 3,
 		0);
 
 	// test--spider
@@ -371,7 +393,7 @@ int main(void)
 			{	NULL } },
 		0);
 
-	// test-O-nc
+	// test-O-nonexisting
 	mget_test(
 		MGET_TEST_OPTIONS, "-O out",
 		MGET_TEST_REQUEST_URL, "nonexistent",
@@ -446,6 +468,40 @@ int main(void)
 
 		mget_xfree(partial);
 	}
+
+	{
+		// server sends same length content with slightly different content
+		char *partial = strndup(urls[3].body, strlen(urls[3].body)-2);
+		urls[3].headers[1] = "Content-Length: 0";
+
+		// test-c-shorter
+		mget_test(
+			MGET_TEST_OPTIONS, "-c",
+			MGET_TEST_REQUEST_URL, "dummy.txt",
+//			MGET_TEST_KEEP_TMPFILES, 1,
+			MGET_TEST_EXPECTED_ERROR_CODE, 0,
+			MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
+				{	"dummy.txt", partial },
+				{	NULL } },
+			MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+				{	"dummy.txt", urls[3].body },
+				{	NULL } },
+			0);
+
+		urls[3].headers[1] = NULL;
+		mget_xfree(partial);
+	}
+
+	// test-c
+	mget_test(
+		MGET_TEST_OPTIONS, "-c",
+		MGET_TEST_REQUEST_URL, "dummy.txt",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		// no existing file
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
 
 	exit(0);
 }

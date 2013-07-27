@@ -28,7 +28,6 @@
 # include <config.h>
 #endif
 
-#include <pthread.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdarg.h>

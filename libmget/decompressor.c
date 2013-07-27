@@ -30,16 +30,20 @@
 
 #include <stdio.h>
 #include <string.h>
+#if WITH_ZLIB
 #include <zlib.h>
+#endif
 
 #include <libmget.h>
 #include "private.h"
 
 struct _MGET_DECOMPRESSOR {
+#if WITH_ZLIB
 	union {
 		z_stream
-		strm;
+			strm;
 	} extra;
+#endif
 	int
 		(*decompress)(MGET_DECOMPRESSOR *dc, char *src, size_t srclen),
 		(*put_data)(void *context, const char *data, size_t length); // decompressed data goes here
@@ -50,6 +54,7 @@ struct _MGET_DECOMPRESSOR {
 		encoding;
 };
 
+#if WITH_ZLIB
 static int gzip_init(z_stream *strm)
 {
 	memset(strm, 0, sizeof(*strm));
@@ -121,6 +126,7 @@ static int deflate_init(z_stream *strm)
 
 	return 0;
 }
+#endif // WITH_ZLIB
 
 static int identity(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 {
@@ -138,15 +144,19 @@ MGET_DECOMPRESSOR *mget_decompress_open(int encoding,
 	int rc = 0;
 
 	if (encoding == mget_content_encoding_gzip) {
+#if WITH_ZLIB
 		if ((rc = gzip_init(&dc->extra.strm)) == 0) {
 			dc->decompress = gzip_decompress;
 			dc->exit = gzip_exit;
 		}
+#endif
 	} else if (encoding == mget_content_encoding_deflate) {
+#if WITH_ZLIB
 		if ((rc = deflate_init(&dc->extra.strm)) == 0) {
 			dc->decompress = gzip_decompress;
 			dc->exit = gzip_exit;
 		}
+#endif
 	} else {
 		// identity
 		dc->decompress = identity;

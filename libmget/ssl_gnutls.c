@@ -30,13 +30,23 @@
 # include <config.h>
 #endif
 
-#include <pthread.h>
+#ifdef WITH_GNUTLS
+
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
-#include <poll.h>
 #include <dirent.h>
 #include <sys/stat.h>
+
+/*
+#ifdef WIN32
+#	include <winsock2.h>
+#elif defined(HAVE_POLL_H)
+#	include <sys/poll.h>
+#else
+#	include <sys/select.h>
+#endif
+*/
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 
@@ -397,13 +407,13 @@ out:
 }
 
 static int _init;
-static pthread_mutex_t _mutex = PTHREAD_MUTEX_INITIALIZER;
+static mget_thread_mutex_t _mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
 // ssl_init() is thread safe and may be called several times
 
 void mget_ssl_init(void)
 {
-	pthread_mutex_lock(&_mutex);
+	mget_thread_mutex_lock(&_mutex);
 
 	if (!_init) {
 		debug_printf("GnuTLS init\n");
@@ -494,7 +504,7 @@ void mget_ssl_init(void)
 
 	_init++;
 
-	pthread_mutex_unlock(&_mutex);
+	mget_thread_mutex_unlock(&_mutex);
 }
 
 // ssl_deinit() is thread safe and may be called several times
@@ -502,7 +512,7 @@ void mget_ssl_init(void)
 
 void mget_ssl_deinit(void)
 {
-	pthread_mutex_lock(&_mutex);
+	mget_thread_mutex_lock(&_mutex);
 
 	if (_init == 1) {
 		gnutls_certificate_free_credentials(_credentials);
@@ -511,9 +521,10 @@ void mget_ssl_deinit(void)
 
 	if (_init > 0) _init--;
 
-	pthread_mutex_unlock(&_mutex);
+	mget_thread_mutex_unlock(&_mutex);
 }
-
+/*
+#ifdef POLLIN
 static int _ready_2_transfer(gnutls_session_t session, int timeout, int mode)
 {
 	// 0: no timeout / immediate
@@ -522,12 +533,17 @@ static int _ready_2_transfer(gnutls_session_t session, int timeout, int mode)
 		int sockfd = (int)(ptrdiff_t)gnutls_transport_get_ptr(session);
 		int rc;
 
+		if (mode == MGET_IO_READABLE)
+			mode = POLLIN;
+		else
+			mode = POLLOUT;
+
 		// wait for socket to be ready to read
 		struct pollfd pollfd[1] = {
 			{ sockfd, mode, 0}};
 
 		if ((rc = poll(pollfd, 1, timeout)) <= 0)
-			return rc < 0 ? -1 : 0;
+			return rc;
 
 		if (!(pollfd[0].revents & mode))
 			return -1;
@@ -535,17 +551,44 @@ static int _ready_2_transfer(gnutls_session_t session, int timeout, int mode)
 
 	return 1;
 }
+#else
+static int _ready_2_transfer(int fd, int timeout, int mode)
+{
+	// 0: no timeout / immediate
+	// -1: INFINITE timeout
+	// >0: number of milliseconds to wait
+	if (timeout) {
+		fd_set fdset;
+		struct timeval tmo = { timeout / 1000, (timeout % 1000) * 1000 };
+		int rc;
+
+		FD_ZERO(&fdset);
+		FD_SET(fd, &fdset);
+
+		if (mode == MGET_IO_READABLE) {
+			rc = select(fd + 1, &fdset, NULL, NULL, &tmo);
+		} else {
+			rc = select(fd + 1, NULL, &fdset, NULL, &tmo);
+		}
+
+		if (rc <= 0)
+			return rc;
+	}
+
+	return 1;
+}
+#endif
 
 static int _ready_2_read(gnutls_session_t session, int timeout)
 {
-	return _ready_2_transfer(session, timeout, POLLIN);
+	return _ready_2_transfer(session, timeout, MGET_IO_READABLE);
 }
 
 static int _ready_2_write(gnutls_session_t session, int timeout)
 {
-	return _ready_2_transfer(session, timeout, POLLOUT);
+	return _ready_2_transfer(session, timeout, MGET_IO_WRITABLE);
 }
-
+*/
 void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 {
 	gnutls_session_t session;
@@ -588,10 +631,10 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 
 		if (gnutls_record_get_direction(session)) {
 			// wait for writeability
-			ret = _ready_2_write(session, connect_timeout);
+			ret = mget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), connect_timeout);
 		} else {
 			// wait for readability
-			ret = _ready_2_read(session, connect_timeout);
+			ret = mget_ready_2_read((int)(ptrdiff_t)gnutls_transport_get_ptr(session), connect_timeout);
 		}
 
 		if (ret <= 0)
@@ -632,7 +675,8 @@ ssize_t mget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 	int rc;
 
 	for (;;) {
-		if (gnutls_record_check_pending(session) <= 0 && (rc=_ready_2_read(session, timeout)) <= 0)
+		if (gnutls_record_check_pending(session) <= 0 &&
+			(rc=mget_ready_2_read((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
 			return rc;
 
 		nbytes=gnutls_record_recv(session, buf, count);
@@ -648,8 +692,26 @@ ssize_t mget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 {
 	int rc;
 
-	if ((rc=_ready_2_write(session, timeout)) <= 0)
+	if ((rc=mget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
 		return rc;
 
 	return gnutls_record_send(session, buf, count);
 }
+
+#else // WITH_GNUTLS
+
+#include <stddef.h>
+
+#include <libmget.h>
+#include "private.h"
+
+void mget_ssl_set_config_string(int key, const char *value) { }
+void mget_ssl_set_config_int(int key, int value) { }
+void mget_ssl_init(void) { }
+void mget_ssl_deinit(void) { }
+void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout) { return NULL; }
+void mget_ssl_close(void **session) { }
+ssize_t mget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout) { return 0; }
+ssize_t mget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout) { return 0; }
+
+#endif // WITH_GNUTLS

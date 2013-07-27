@@ -348,10 +348,7 @@ void job_resume(JOB *job)
 JOB *queue_add(MGET_IRI *iri)
 {
 	if (iri) {
-		JOB job, *jobp;
-
-		memset(&job, 0, sizeof(JOB));
-		job.iri = iri;
+		JOB job = { .iri = iri }, *jobp;
 
 		jobp = mget_list_append(&queue, &job, sizeof(JOB));
 
@@ -406,7 +403,7 @@ static int find_free_job(struct find_free_job_context *context, JOB *job)
 int queue_get(JOB **job_out, PART **part_out)
 {
 	struct find_free_job_context
-	context = {job_out, part_out};
+		context = {job_out, part_out};
 
 	*job_out = NULL;
 	if (part_out)

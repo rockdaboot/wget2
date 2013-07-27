@@ -25,6 +25,7 @@ extern "C" {
 #define MGET_TEST_EXPECTED_FILES 2004
 #define MGET_TEST_EXISTING_FILES 2005
 #define MGET_TEST_KEEP_TMPFILES 2006
+#define MGET_TEST_REQUEST_URLS 2007
 
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
@@ -58,13 +59,24 @@ typedef struct {
 		body;
 	const char *
 		headers[10];
+	const char *
+		request_headers[10];
 	char
 		body_alloc; // if body has been allocated internally (and need to be freed on exit)
+
+	// auth fields
+	const char *
+		auth_method;
+	const char *
+		auth_username;
+	const char *
+		auth_password;
 } mget_test_url_t;
 
 void mget_test_stop_http_server(void);
 void mget_test_start_http_server(int first_key, ...);
 void mget_test(int first_key, ...);
+int mget_test_get_server_port(void);
 
 #ifdef	__cplusplus
 }

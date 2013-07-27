@@ -31,8 +31,12 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#ifdef HAVE_ICONV
 #include <iconv.h>
+#endif
+#ifdef WITH_LIBIDN
 #include <idna.h>
+#endif
 
 #include <libmget.h>
 #include "private.h"
@@ -175,6 +179,7 @@ char *mget_str_to_utf8(const char *src, const char *encoding)
 	if (!encoding)
 		encoding = "iso-8859-1"; // default character-set for most browsers
 
+#ifdef HAVE_ICONV
 	if (strcasecmp(encoding, "utf-8")) {
 		char *dst = NULL;
 
@@ -199,8 +204,10 @@ char *mget_str_to_utf8(const char *src, const char *encoding)
 			error_printf(_("Failed to prepare encoding %s into utf-8 (%d)\n"), encoding, errno);
 
 		return dst;
-	} else
-		return strdup(src);
+	}
+#endif // HAVE_ICONV
+
+	return strdup(src);
 }
 
 // URIs are assumed to be unescaped at this point
@@ -352,6 +359,7 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 		host_utf = mget_str_to_utf8(iri->host, encoding);
 
 		if (host_utf) {
+#ifdef WITH_LIBIDN
 			char *host_asc = NULL;
 			int rc;
 
@@ -361,7 +369,7 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 				iri->host_allocated = 1;
 			} else
 				error_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
-
+#endif
 			xfree(host_utf);
 		}
 
@@ -614,7 +622,7 @@ const char *mget_iri_escape(const char *src, mget_buffer_t *buf)
 			if (begin != src)
 				mget_buffer_memcat(buf, begin, src - begin);
 			begin = src + 1;
-			mget_buffer_printf_append2(buf, "%%%02x", (unsigned char)*src);
+			mget_buffer_printf_append2(buf, "%%%02X", (unsigned char)*src);
 		}
 	}
 
@@ -633,7 +641,7 @@ const char *mget_iri_escape_path(const char *src, mget_buffer_t *buf)
 			if (begin != src)
 				mget_buffer_memcat(buf, begin, src - begin);
 			begin = src + 1;
-			mget_buffer_printf_append2(buf, "%%%02x", (unsigned char)*src);
+			mget_buffer_printf_append2(buf, "%%%02X", (unsigned char)*src);
 		}
 	}
 
@@ -655,7 +663,7 @@ const char *mget_iri_escape_query(const char *src, mget_buffer_t *buf)
 			if (*src == ' ')
 				mget_buffer_memcat(buf, "+", 1);
 			else
-				mget_buffer_printf_append2(buf, "%%%02x", (unsigned char)*src);
+				mget_buffer_printf_append2(buf, "%%%02X", (unsigned char)*src);
 		}
 	}
 

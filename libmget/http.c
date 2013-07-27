@@ -39,8 +39,24 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
-#include <netdb.h>
-#include <zlib.h>
+#if WITH_ZLIB
+//#include <zlib.h>
+#endif
+
+#ifdef __WIN32
+# include <winsock2.h>
+#else
+# ifdef __VMS
+#  include "vms_ip.h"
+# else /* def __VMS */
+// #  include <netdb.h>
+# endif /* def __VMS [else] */
+# include <sys/socket.h>
+# include <netinet/in.h>
+#ifndef __BEOS__
+# include <arpa/inet.h>
+#endif
+#endif
 
 #include <libmget.h>
 #include "private.h"
@@ -1114,7 +1130,7 @@ void http_add_credentials(MGET_HTTP_REQUEST *req, MGET_HTTP_CHALLENGE *challenge
 		if (!realm || !nonce)
 			return;
 
-		/// A1BUF = H(user ":" realm ":" password)
+		// A1BUF = H(user ":" realm ":" password)
 		mget_md5_printf_hex(a1buf, "%s:%s:%s", username, realm, password);
 
 		if (!mget_strcmp(algorithm, "MD5-sess")) {

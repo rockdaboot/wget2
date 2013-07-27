@@ -41,7 +41,9 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#ifdef HAVE_MMAP
 #include <sys/mman.h>
+#endif
 
 #include <libmget.h>
 #include "private.h"
@@ -159,18 +161,24 @@ void mget_css_parse_file(
 		if ((fd = open(fname, O_RDONLY)) != -1) {
 			struct stat st;
 			if (fstat(fd, &st) == 0) {
-				//			char *buf=xmalloc(st.st_size+1);
-				//			size_t nread=read(fd,buf,st.st_size);
+#ifdef HAVE_MMAP
 				size_t nread = st.st_size;
 				char *buf = mmap(NULL, nread, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+#else
+				char *buf=xmalloc(st.st_size+1);
+				size_t nread=read(fd,buf,st.st_size);
+#endif
 
 				if (nread > 0) {
 					buf[nread] = 0; // PROT_WRITE allows this write, MAP_PRIVATE prevents changes in underlying file system
 					mget_css_parse_buffer(buf, callback_uri, callback_encoding, user_ctx);
 				}
 
+#ifdef HAVE_MMAP
 				munmap(buf, nread);
-				//			xfree(buf);
+#else
+				xfree(buf);
+#endif
 			}
 			close(fd);
 		} else

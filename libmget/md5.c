@@ -31,8 +31,15 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include <gnutls/gnutls.h>
-#include <gnutls/crypto.h>
+#ifdef WITH_GNUTLS
+#	include <gnutls/gnutls.h>
+#	include <gnutls/crypto.h>
+#elif HAVE_CRYPT_H
+// fallback to glibc crypt_r() extension
+#	include <crypt.h>
+#else
+// no MD5 available
+#endif
 
 #include <libmget.h>
 #include "private.h"
@@ -48,11 +55,24 @@ void mget_md5_printf_hex(char *digest_hex, const char *fmt, ...)
 	va_end(args);
 
 	if (plaintext) {
+#ifdef WITH_GNUTLS
 		unsigned char digest[gnutls_hash_get_len(GNUTLS_DIG_MD5)];
 
 		if (gnutls_hash_fast(GNUTLS_DIG_MD5, plaintext, size, digest) == 0) {
 			mget_memtohex(digest, sizeof(digest), digest_hex, sizeof(digest) * 2 +1);
 		}
+#elif HAVE_CRYPT_H
+		const char *digest;
+		struct crypt_data data = { .initialized = 0 };
+
+		if ((digest = crypt_r(plaintext, "$1$", &data))) {
+			mget_memtohex(digest, 16, digest_hex, 16 * 2 +1);
+
+			xfree(digest);
+		}
+#else
+		*digest_hex = 0;
+#endif
 
 		xfree(plaintext);
 	}

@@ -28,7 +28,10 @@
 #define _LIBMGET_LIBMGET_H
 
 #include <stddef.h>
+#ifdef HAVE_LIBPTHREAD
 #include <pthread.h>
+#endif
+#include <unistd.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <time.h>
@@ -223,6 +226,14 @@ int
  * General utility functions
  */
 
+// <mode> values for mget_ready_to_transfer()
+#define MGET_IO_READABLE 1
+#define MGET_IO_WRITABLE 2
+
+int
+	mget_ready_2_read(int fd, int timeout);
+int
+	mget_ready_2_write(int fd, int timeout);
 int
 	mget_strcmp(const char *s1, const char *s2) G_GNUC_MGET_PURE;
 int
@@ -262,7 +273,7 @@ char *
 #endif
 
 #ifndef HAVE_STRDUP
-#	define strdup(s) strndup((s), strlen(s));
+#	define strdup(s) strndup((s), strlen(s))
 #endif
 
 #ifndef HAVE_STRLCPY
@@ -611,10 +622,15 @@ void
  * Thread wrapper routines
  */
 
+#ifdef PTHREAD_MUTEX_INITIALIZER
 #define MGET_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
-
 typedef pthread_mutex_t mget_thread_mutex_t;
-typedef pthread_t mget_thread_t;
+#else
+#define MGET_THREAD_MUTEX_INITIALIZER 0
+typedef int mget_thread_mutex_t;
+#endif
+
+typedef unsigned long int mget_thread_t;
 
 int
 	mget_thread_start(mget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags);

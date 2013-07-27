@@ -25,13 +25,14 @@
  *
  */
 
+#define _GNU_SOURCE
+
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
 
-#include <pthread.h>
 #include <sys/types.h>
-#include <sys/socket.h>
+//#include <sys/socket.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>  // on old systems we need this for strcasecmp()...
@@ -40,12 +41,32 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <fcntl.h>
+// #include <sys/ioctl.h>
+#ifdef HAVE_POLL_H
 #include <poll.h>
+#endif
 #include <time.h>
 #include <errno.h>
-#include <netdb.h>
-#include <netinet/tcp.h>
-#include <netinet/in.h>
+
+#ifndef __WIN32
+# ifdef __VMS
+#  include "vms_ip.h"
+# else /* def __VMS */
+#  include <netdb.h>
+# endif /* def __VMS [else] */
+# include <sys/socket.h>
+# include <netinet/tcp.h>
+# include <netinet/in.h>
+# ifndef __BEOS__
+#  include <arpa/inet.h>
+# endif
+#else
+# include <winsock2.h>
+# include <ws2tcpip.h>
+#endif /* not WINDOWS */
+
+//#include <netinet/tcp.h>
+//#include <netinet/in.h>
 
 #include <libmget.h>
 #include "private.h"
@@ -102,17 +123,17 @@ struct ADDR_ENTRY {
 // resolver / DNS cache container
 static MGET_VECTOR
 	*dns_cache;
-static pthread_mutex_t
-	dns_mutex = PTHREAD_MUTEX_INITIALIZER;
+static mget_thread_mutex_t
+	dns_mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
 static struct addrinfo *_mget_dns_cache_get(const char *host, const char *port)
 {
 	if (dns_cache) {
 		struct ADDR_ENTRY *entryp, entry = { .host = host, .port = port };
 
-		pthread_mutex_lock(&dns_mutex);
+		mget_thread_mutex_lock(&dns_mutex);
 		entryp = mget_vector_get(dns_cache, mget_vector_find(dns_cache, &entry));
-		pthread_mutex_unlock(&dns_mutex);
+		mget_thread_mutex_unlock(&dns_mutex);
 
 		if (entryp) {
 			// DNS cache entry found
@@ -146,18 +167,18 @@ static void _mget_dns_cache_add(const char *host, const char *port, struct addri
 	strcpy((char *)entryp->host, host ? host : ""); // ugly cast, but semantically ok
 	strcpy((char *)entryp->port, port ? port : ""); // ugly cast, but semantically ok
 
-	pthread_mutex_lock(&dns_mutex);
+	mget_thread_mutex_lock(&dns_mutex);
 	if (!dns_cache)
 		dns_cache = mget_vector_create(4, -2, (int(*)(const void *, const void *))_compare_addr);
 
 	if (mget_vector_find(dns_cache, entryp) == -1)
 		mget_vector_insert_sorted_noalloc(dns_cache, entryp);
-	pthread_mutex_unlock(&dns_mutex);
+	mget_thread_mutex_unlock(&dns_mutex);
 }
 
 void mget_dns_cache_free(void)
 {
-	pthread_mutex_lock(&dns_mutex);
+	mget_thread_mutex_lock(&dns_mutex);
 	if (dns_cache) {
 		int it;
 
@@ -167,7 +188,7 @@ void mget_dns_cache_free(void)
 		}
 		mget_vector_free(&dns_cache);
 	}
-	pthread_mutex_unlock(&dns_mutex);
+	mget_thread_mutex_unlock(&dns_mutex);
 }
 
 struct addrinfo *mget_tcp_resolve(MGET_TCP *tcp, const char *host, const char *port)
@@ -205,7 +226,7 @@ struct addrinfo *mget_tcp_resolve(MGET_TCP *tcp, const char *host, const char *p
 		// to make the function work on old systems
 		char portbuf[16];
 
-		if (port && !isdigit(port)) {
+		if (port && !isdigit(*port)) {
 			if (!strcasecmp(port, "http"))
 				port = "80";
 			else if (!strcasecmp(port, "https"))
@@ -234,8 +255,15 @@ struct addrinfo *mget_tcp_resolve(MGET_TCP *tcp, const char *host, const char *p
 				break;
 
 			if (tries < 2) {
+#ifdef HAVE_NANOSLEEP
 				const struct timespec ts = {0, 100 * 1000 * 1000};
 				nanosleep(&ts, NULL);
+#elif defined(HAVE_USLEEP)
+				// obsoleted by POSIX.1-2001, use nanosleep instead
+				usleep(100*1000);
+#else
+				break;
+#endif
 			}
 		}
 
@@ -457,6 +485,29 @@ int mget_tcp_connect(MGET_TCP *tcp, const char *host, const char *port)
 	return mget_tcp_connect_ssl(tcp, host, port, NULL);
 }
 
+static void _set_async(int fd)
+{
+#ifdef WIN32
+	unsigned long on = 1;
+
+	if (ioctlsocket(fd, FIONBIO, &on) < 0)
+		error_printf_exit(_("Failed to set socket to non-blocking\n"));
+#elif defined(F_SETFL)
+	int flags;
+
+	if ((flags = fcntl(fd, F_GETFL)) < 0)
+		error_printf_exit(_("Failed to set socket flags\n"));
+
+	if (fcntl(fd, F_SETFL, flags | O_NDELAY) < 0)
+		error_printf_exit(_("Failed to set socket to non-blocking\n"));
+#else
+	int on = 1;
+
+	if (ioctl(fd, FIONBIO, &on) < 0)
+		error_printf_exit(_("Failed to set socket to non-blocking\n"));
+#endif
+}
+
 int mget_tcp_connect_ssl(MGET_TCP *tcp, const char *host, const char *port, const char *hostname)
 {
 	struct addrinfo *ai;
@@ -480,13 +531,13 @@ int mget_tcp_connect_ssl(MGET_TCP *tcp, const char *host, const char *port, cons
 		if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) != -1) {
 			int on = 1;
 
-			fcntl(sockfd, F_SETFL, O_NDELAY);
+			_set_async(sockfd);
 
-			if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
+			if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void *)&on, sizeof(on)) == -1)
 				error_printf(_("Failed to set socket option REUSEADDR\n"));
 
 			on = 1;
-			if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) == -1)
+			if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == -1)
 				error_printf(_("Failed to set socket option NODELAY\n"));
 
 			if (tcp->bind_addrinfo) {
@@ -519,7 +570,12 @@ int mget_tcp_connect_ssl(MGET_TCP *tcp, const char *host, const char *port, cons
 				tcp->first_send = 0;
 			}
 
-			if (rc < 0 && errno != EINPROGRESS) {
+			if (rc < 0
+				&& errno != EAGAIN
+#ifdef EINPROGRESS
+				&& errno != EINPROGRESS
+#endif
+			) {
 				error_printf(_("Failed to connect (%d)\n"), errno);
 				close(sockfd);
 			} else {
@@ -566,13 +622,13 @@ int mget_tcp_listen(MGET_TCP *tcp, const char *host, const char *port, int backl
 		if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) != -1) {
 			int on = 1;
 
-			fcntl(sockfd, F_SETFL, O_NDELAY);
+			_set_async(sockfd);
 
-			if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
+			if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void *)&on, sizeof(on)) == -1)
 				error_printf(_("Failed to set socket option REUSEADDR\n"));
 
 			on = 1;
-			if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) == -1)
+			if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == -1)
 				error_printf(_("Failed to set socket option NODELAY\n"));
 
 #ifdef TCP_FASTOPEN
@@ -580,6 +636,7 @@ int mget_tcp_listen(MGET_TCP *tcp, const char *host, const char *port, int backl
 				on = 1;
 				if (setsockopt(sockfd, IPPROTO_TCP, TCP_FASTOPEN, &on, sizeof(on)) == -1)
 					error_printf(_("Failed to set socket option FASTOPEN\n"));
+				tcp->first_send = 0;
 			}
 #endif
 
@@ -625,13 +682,7 @@ MGET_TCP *mget_tcp_accept(MGET_TCP *parent_tcp)
 		// 0: no timeout / immediate
 		// -1: INFINITE timeout
 		if (parent_tcp->timeout) {
-			// wait for socket to be ready to read
-			struct pollfd pollfd = { parent_tcp->sockfd, POLLIN, 0 };
-
-			if (poll(&pollfd, 1, parent_tcp->timeout) <= 0)
-				return NULL;
-
-			if (!(pollfd.revents & POLLIN))
+			if (mget_ready_2_read(parent_tcp->sockfd, parent_tcp->timeout) <= 0)
 				return NULL;
 		}
 
@@ -661,14 +712,8 @@ ssize_t mget_tcp_read(MGET_TCP *tcp, char *buf, size_t count)
 		// 0: no timeout / immediate
 		// -1: INFINITE timeout
 		if (tcp->timeout) {
-			// wait for socket to be ready to read
-			struct pollfd pollfd = { tcp->sockfd, POLLIN, 0 };
-
-			if ((rc = poll(&pollfd, 1, tcp->timeout)) <= 0)
+			if ((rc = mget_ready_2_read(tcp->sockfd, tcp->timeout)) <= 0)
 				return rc;
-
-			if (!(pollfd.revents & POLLIN))
-				return -1;
 		}
 
 		rc = read(tcp->sockfd, buf, count);
@@ -699,7 +744,12 @@ ssize_t mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count)
 				// fallback from fastopen, e.g. when fastopen is disabled in system
 				tcp->tcp_fastopen = 0;
 				rc = connect(tcp->sockfd, tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
-				if (rc < 0 && errno != EINPROGRESS) {
+				if (rc < 0
+					&& errno != EAGAIN
+#ifdef EINPROGRESS
+				&& errno != EINPROGRESS
+#endif
+			) {
 					error_printf(_("Failed to connect (%d)\n"), errno);
 					return -1;
 				}
@@ -717,7 +767,11 @@ ssize_t mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count)
 			buf += n;
 			nwritten += n;
 		} else {
-			if (errno != EAGAIN && errno != EINPROGRESS) {
+			if (errno != EAGAIN
+#ifdef EINPROGRESS
+				&& errno != EINPROGRESS
+#endif
+			) {
 				error_printf(_("Failed to write %zu bytes (%d)\n"), count, errno);
 				return -1;
 			}
@@ -725,18 +779,8 @@ ssize_t mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count)
 			// 0: no timeout / immediate
 			// -1: INFINITE timeout
 			if (tcp->timeout) {
-				// wait for socket to be ready to write
-				struct pollfd pollfd = { tcp->sockfd, POLLOUT, 0 };
-
-				if ((rc = poll(&pollfd, 1, tcp->timeout)) <= 0) {
-					error_printf(_("Failed to poll (%d)\n"), errno);
+				if ((rc = mget_ready_2_write(tcp->sockfd, tcp->timeout)) <= 0)
 					return rc;
-				}
-
-				if (!(pollfd.revents & POLLOUT)) {
-					error_printf(_("Failed to get POLLOUT event\n"));
-					return -1;
-				}
 			}
 		}
 	}

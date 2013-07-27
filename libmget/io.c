@@ -34,6 +34,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#ifdef WIN32
+#	include <winsock2.h>
+#elif defined(HAVE_POLL_H)
+#	include <sys/poll.h>
+#else
+#	include <sys/select.h>
+#endif
 
 #include <libmget.h>
 #include "private.h"
@@ -97,7 +104,7 @@ ssize_t mget_fdgetline(char **buf, size_t *bufsize, int fd)
 		}
 	}
 
-	if (nbytes == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
+	if (nbytes == -1 && errno != EAGAIN) {
 		// file/socket descriptor is broken
 		// if (errno != EBADF)
 		// 	error_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
@@ -166,7 +173,7 @@ ssize_t mget_getline(char **buf, size_t *bufsize, FILE *fp)
 		}
 	}
 
-	if (nbytes == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
+	if (nbytes == -1 && errno != EAGAIN) {
 		// socket is broken
 		// if (errno != EBADF)
 		//	error_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
@@ -181,4 +188,69 @@ ssize_t mget_getline(char **buf, size_t *bufsize, FILE *fp)
 	} else **buf = 0;
 
 	return -1;
+}
+
+#ifdef POLLIN
+static int _ready_2_transfer(int fd, int timeout, int mode)
+{
+	// 0: no timeout / immediate
+	// -1: INFINITE timeout
+	// >0: number of milliseconds to wait
+	if (timeout) {
+		int rc;
+
+		if (mode == MGET_IO_READABLE)
+			mode = POLLIN;
+		else
+			mode = POLLOUT;
+
+		// wait for socket to be ready to read
+		struct pollfd pollfd[1] = {
+			{ fd, mode, 0}};
+
+		if ((rc = poll(pollfd, 1, timeout)) <= 0)
+			return rc < 0 ? -1 : 0;
+
+		if (!(pollfd[0].revents & mode))
+			return -1;
+	}
+
+	return 1;
+}
+#else
+static int _ready_2_transfer(int fd, int timeout, int mode)
+{
+	// 0: no timeout / immediate
+	// -1: INFINITE timeout
+	// >0: number of milliseconds to wait
+	if (timeout) {
+		fd_set fdset;
+		struct timeval tmo = { timeout / 1000, (timeout % 1000) * 1000 };
+		int rc;
+
+		FD_ZERO(&fdset);
+		FD_SET(fd, &fdset);
+
+		if (mode == MGET_IO_READABLE) {
+			rc = select(fd + 1, &fdset, NULL, NULL, &tmo);
+		} else {
+			rc = select(fd + 1, NULL, &fdset, NULL, &tmo);
+		}
+
+		if (rc <= 0)
+			return rc;
+	}
+
+	return 1;
+}
+#endif
+
+int mget_ready_2_read(int fd, int timeout)
+{
+	return _ready_2_transfer(fd, timeout, MGET_IO_READABLE);
+}
+
+int mget_ready_2_write(int fd, int timeout)
+{
+	return _ready_2_transfer(fd, timeout, MGET_IO_WRITABLE);
 }
