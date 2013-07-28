@@ -38,6 +38,7 @@
 #include <signal.h>
 #include <utime.h>
 #include <dirent.h>
+#include <ctype.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <libmget.h>
@@ -79,7 +80,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 	ssize_t nbytes;
 	size_t body_len, request_url_length;
 	unsigned it;
-	int byterange, from_bytes, to_bytes;
+	int byterange, from_bytes, to_bytes, authorized;
 
 	sigaction(SIGTERM, &(struct sigaction) { .sa_handler = nop }, NULL);
 
@@ -87,6 +88,8 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 		mget_tcp_deinit(&tcp);
 
 		if ((tcp = mget_tcp_accept(parent_tcp))) {
+			authorized = 0;
+
 			// as a quick hack, just assume that request comes in one packet
 			if ((nbytes = mget_tcp_read(tcp, buf, sizeof(buf)-1)) > 0) {
 				buf[nbytes]=0;
@@ -102,6 +105,24 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 						to_bytes = 0;
 						if ((byterange = sscanf(value, "bytes=%d-%d", &from_bytes, &to_bytes)) < 0)
 							byterange = 0;
+					}
+					else if (url && !strcasecmp(tag, "Authorization")) {
+						const char *auth_scheme, *s;
+
+						s=http_parse_token(value, &auth_scheme);
+						while (isblank(*s)) s++;
+
+						if (!strcasecmp(auth_scheme, "basic")) {
+							const char *encoded = mget_base64_encode_printf_alloc("%s:%s", url->auth_username, url->auth_password);
+
+							mget_error_printf("Auth check '%s' <-> '%s'\n", encoded, s);
+							if (!strcmp(encoded, s))
+								authorized = 1;
+
+							mget_xfree(encoded);
+						}
+
+						mget_xfree(auth_scheme);
 					}
 				}
 
@@ -132,6 +153,19 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 
 				if (!url) {
 					mget_tcp_printf(tcp, "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
+					continue;
+				}
+
+				if (url->auth_method && !authorized) {
+					if (!strcasecmp(url->auth_method, "basic"))
+						mget_tcp_printf(tcp,
+							"HTTP/1.1 401 Unauthorized\r\n" \
+							"WWW-Authenticate: %s realm=\"Protected Page\"\r\n" \
+							"Connection: close\r\n\r\n",
+							url->auth_method);
+					else
+						mget_error_printf(_("Unknown authentication scheme '%s'\n"), url->auth_method);
+
 					continue;
 				}
 

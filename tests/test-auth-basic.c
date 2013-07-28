@@ -37,9 +37,9 @@
 
 int main(void)
 {
-	mget_test_url_t urls[]={
+	mget_test_url_t urls[] = {
 		{	.name = "/needs-auth.txt",
-			.auth_method = "basic",
+			.auth_method = "Basic",
 			.auth_username = username,
 			.auth_password = password,
 			.code = "200 Dontcare",
@@ -58,7 +58,7 @@ int main(void)
 	// test-auth-basic
 	mget_test(
 //		MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "--user=" username " --password=" password,
+		MGET_TEST_OPTIONS, "-d --user=" username " --password=" password,
 		MGET_TEST_REQUEST_URL, urls[0].name + 1,
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
