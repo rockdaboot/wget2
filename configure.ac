@@ -43,6 +43,8 @@ if test "x$CFLAGS" = "x" ; then
  -Wsign-compare -Wextra -D_FORTIFY_SOURCE=2\
  -Wcast-align -O2"
   fi
+else
+  CFLAGS="$CFLAGS -fPIC"
 fi
 if test "x$LDFLAGS" = "x" ; then
   if test "x$GCC" = "xyes" ; then

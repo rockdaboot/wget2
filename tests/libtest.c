@@ -420,7 +420,7 @@ void mget_test(int first_key, ...)
 
 	if (mget_vector_size(request_urls) > 0) {
 		//	snprintf(cmd, sizeof(cmd), "../../src/mget -q %s http://localhost:%d/%s", options, server_port, request_url);
-		int n = snprintf(cmd, sizeof(cmd), "/home/tim/src/wget/trunk/src/wget %s", options);
+		int n = snprintf(cmd, sizeof(cmd), "wget %s", options);
 
 		for (it = 0; it < (size_t)mget_vector_size(request_urls); it++) {
 			n += snprintf(cmd + n, sizeof(cmd) - n, " 'http://localhost:%d/%s'",
