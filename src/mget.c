@@ -1619,10 +1619,25 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 
 			if (challenges) {
 				// There might be more than one challenge, we could select the securest one.
-				// For simplicity and testing we just take the first for now.
+				// Prefer 'Digest' over 'Basic'
 				// the following adds an Authorization: HTTP header
-//				http_add_credentials(req, vec_get(challenges, 0), config.username, config.password);
-				http_add_credentials(req, mget_vector_get(challenges, 0), config.http_username, config.http_password);
+				MGET_HTTP_CHALLENGE *challenge, *selected_challenge = NULL;
+
+				for (int it = 0; it < mget_vector_size(challenges); it++) {
+					challenge = mget_vector_get(challenges, it);
+
+					if (strcasecmp(challenge->auth_scheme, "digest")) {
+						selected_challenge = challenge;
+						break;
+					}
+					else if (strcasecmp(challenge->auth_scheme, "basic")) {
+						if (!selected_challenge)
+							selected_challenge = challenge;
+					}
+				}
+
+				if (selected_challenge)
+					http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
 			}
 
 			if (part)
