@@ -343,11 +343,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		if (status & GNUTLS_CERT_SIGNER_NOT_CA)
 			error_printf(_("%s: The certificate signer was not a CA.\n"), tag);
 		if (status & GNUTLS_CERT_INSECURE_ALGORITHM)
-			error_printf(_("%s: The certificate was signed using an insecure algorithm\n"), tag);
+			error_printf(_("%s: The certificate was signed using an insecure algorithm.\n"), tag);
 		if (status & GNUTLS_CERT_NOT_ACTIVATED)
-			error_printf(_("%s: The certificate is not yet activated\n"), tag);
+			error_printf(_("%s: The certificate is not yet activated.\n"), tag);
 		if (status & GNUTLS_CERT_EXPIRED)
-			error_printf(_("%s: The certificate has expired\n"), tag);
+			error_printf(_("%s: The certificate has expired.\n"), tag);
 
 		ret = -1;
 		goto out;
@@ -425,7 +425,7 @@ void mget_ssl_init(void)
 		if (_config.ca_directory && *_config.ca_directory) {
 			int ncerts = -1;
 
-#ifdef GNUTLS_NONBLOCK
+#if GNUTLS_VERSION_MAJOR >= 3
 			if (!strcmp(_config.ca_directory, "system")) {
 				ncerts = gnutls_certificate_set_x509_system_trust(_credentials);
 			}
