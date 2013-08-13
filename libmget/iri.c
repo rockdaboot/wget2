@@ -352,7 +352,6 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 	// now unescape all components (not interested in display, userinfo, password
 	if (iri->host) {
 		const char *host_utf;
-		char *p;
 
 		_unescape((unsigned char *)iri->host);
 

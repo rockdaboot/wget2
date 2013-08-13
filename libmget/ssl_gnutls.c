@@ -608,16 +608,26 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, _credentials);
 	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
 
-	if (!strncasecmp(_config.secure_protocol, "SSL", 3))
-		ret = gnutls_priority_set_direct(session, "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0", NULL);
-	else if (!strcasecmp(_config.secure_protocol, "TLSv1"))
-		ret = gnutls_priority_set_direct(session, "NORMAL:-VERS-SSL3.0", NULL);
-	else
-		ret = gnutls_priority_set_direct(session, "NORMAL:%COMPAT", NULL);
+	if (_config.secure_protocol) {
+		if (!strncasecmp(_config.secure_protocol, "SSL", 3))
+			ret = gnutls_priority_set_direct(session, "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0", NULL);
+		else if (!strcasecmp(_config.secure_protocol, "TLSv1"))
+			ret = gnutls_priority_set_direct(session, "NORMAL:-VERS-SSL3.0", NULL);
+		else if (!strcasecmp(_config.secure_protocol, "secure"))
+			// -RSA to force DHE/ECDHE key exchanges to have Perfect Forward Secrecy (PFS))
+			ret = gnutls_priority_set_direct(session, "NORMAL:-VERS-SSL3.0:-RSA", NULL);
+		else if (!strcasecmp(_config.secure_protocol, "auto"))
+			ret = gnutls_priority_set_direct(session, "NORMAL:%COMPAT", NULL);
+		else if (*_config.secure_protocol)
+			ret = gnutls_priority_set_direct(session, _config.secure_protocol, NULL);
+		else
+			// use GnuTLS defaults, which even holds old/insecure ciphers
+			ret = 0;
 
-	if (ret < 0) {
-		// print error but continue
-		error_printf("GnuTLS: %s\n", gnutls_strerror(ret));
+		if (ret < 0) {
+			// print error but continue
+			error_printf("GnuTLS: %s\n", gnutls_strerror(ret));
+		}
 	}
 
 	// Perform the TLS handshake

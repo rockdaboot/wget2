@@ -21,19 +21,18 @@ buffer recycling.
 License
 -------
 
-Mget is licensed under GPLv3+.
-
+Mget is licensed under GPLv3+.<br>
 Libmget is licensed under LGPLv3+.
 
 Development Status
 ------------------
 
-Mget is still in alpha stage but is already useful.
-
+Mget is still in alpha stage but is already useful.<br>
 Many Wget options are already implemented, but some are still missing.
 
 The basic functionality is implemented, like:
 
+- new option --secure-protocol=secure to have TLS only plus forcing Perfect Forward Secrecy (PFS)
 - use TCP Fast Open if available
 - IDN support for international domains
 - autotools support
@@ -61,24 +60,23 @@ The basic functionality is implemented, like:
 - tested regularly with static analysis tools
 - compiled and linked with hardening options proposed by the Debian project
 
-Anybody should feel free to contribute ideas, opinions, knowledge (docs, code, autotools, etc.),
-code, test routines, etc.
+Anybody should feel free to contribute ideas, opinions, knowledge, code, tests, etc.
 
 Not yet implemented
 -------------------
 
-|The following is just a quick list of ideas and todos.
-|The mid-range goal is to come as close to Wget, that Wget's units test work for Mget.
+The following is just a quick list of ideas and todos.<br>
+The mid-range goal is to come as close to Wget, that Wget's units test work for Mget.
 
 This is next on my list:
 
-- use gtk-doc-tools for documentation (http://developer.gnome.org/gtk-doc-manual/unstable/settingup.html.en)
+- use [gtk-doc-tools](http://developer.gnome.org/gtk-doc-manual/unstable/settingup.html.en) for documentation.<br>
   I want the docs stay with the code: already tested Doxygen, but the man page support seems broken/orphaned.
 - respect /robots.txt "Robot Exclusion Standard" and <META name="robots" ...>
 - http authentication (basic & digest RFC 2617) [done and working, but some optimizing needed]
 - WARC support
 - RFC 6797 HSTS (HTTP Strict Transport Security)
-  Chromium HSTS domain list: https://src.chromium.org/viewvc/chrome/trunk/src/net/base/transport_security_state_static.json
+  [Chromium HSTS domain list](https://src.chromium.org/viewvc/chrome/trunk/src/net/base/transport_security_state_static.json)
 - read credentials from secure wallets (e.g. kwallet, firefox, maybe an own tool ?)
 - compression on TLS/SSL layer (non-standard GnuTLS extension)
 - request pipelining (using client cookies)
@@ -114,40 +112,38 @@ The versions are recommended, but older versions are supposed to work.
 Building from git
 -----------------
 
-Download project and prepare sources with::
+Download project and prepare sources with
 
-	$ git clone http://github.com/rockdaboot/mget
-	$ ./autogen.sh
+		git clone http://github.com/rockdaboot/mget
+		./autogen.sh
 
-Build Mget with::
+Build Mget with
 
-	$ ./configure
-	$ make
+		./configure
+		make
 
-Test the functionality (you need valgrind installed)::
+Test the functionality (you need valgrind installed)
 
-	$ make check
+		make check
 
-Install Mget and libmget::
+Install Mget and libmget
 
-	$ sudo make install (or su -c "make install")
+		sudo make install (or su -c "make install")
 
-Create Mget HTML documentation::
+Create Mget HTML documentation
 
-	$ ./configure --enable-gtk-doc
+		./configure --enable-gtk-doc
 
-Create Mget HTML documentation and man pages (not functional right now)::
+Create Mget HTML documentation and man pages (not functional right now)
 
-	$ ./configure --enable-gtk-doc --enable-man
+		./configure --enable-gtk-doc --enable-man
 
 Documentation
 -------------
 
 There is no own documentation yet, but Mget aims to be Wget1.14 compatible.
 
-::
-
-	$ mget --help
+		mget --help
 
 prints the usage and the current set of integrated options.
 For more info, see the man pages of Wget.

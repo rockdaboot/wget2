@@ -25,7 +25,9 @@
  *
  */
 
-#define _GNU_SOURCE
+#ifndef _GNU_SOURCE
+#	define _GNU_SOURCE
+#endif
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -314,7 +316,6 @@ struct addrinfo *mget_tcp_resolve(MGET_TCP *tcp, const char *host, const char *p
 		if (mget_get_logger(MGET_LOGGER_DEBUG)->vprintf) {
 			for (ai = addrinfo; ai; ai = ai->ai_next) {
 				char adr[NI_MAXHOST], sport[NI_MAXSERV];
-				int rc;
 
 				if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
 					debug_printf("has %s:%s\n", adr, sport);
