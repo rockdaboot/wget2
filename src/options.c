@@ -556,7 +556,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 {
 	static int level; // level of recursions to prevent endless include loops
 	FILE *fp;
-	char *buf = NULL, linebuf_static[1024], *linep;
+	char *buf = NULL, *linep;
 	char name[64];
 	int append = 0, pos, found;
 	size_t bufsize = 0, linelen = 0;
@@ -629,7 +629,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 	debug_printf(_("Reading %s\n"), cfgfile);
 
-	mget_buffer_init(&linebuf, linebuf_static, sizeof(linebuf_static));
+	mget_buffer_init(&linebuf, (char[1024]){}, 1024);
 
 	while ((len = mget_getline(&buf, &bufsize, fp)) >= 0) {
 		if (len == 0 || *buf == '\r' || *buf == '\n') continue;

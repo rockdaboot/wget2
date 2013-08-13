@@ -143,7 +143,7 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 			const char *p;
 			int n;
 
-			mget_buffer_init(&path_buf, NULL, 256);
+			mget_buffer_init(&path_buf, (char[256]){}, 256);
 			mget_iri_get_escaped_path(iri, &path_buf);
 
 			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
@@ -324,10 +324,9 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 	JOB *job;
 
 	if (base) {
-		char sbuf[256];
 		mget_buffer_t buf;
 
-		mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+		mget_buffer_init(&buf, (char[256]){}, 256);
 		iri = mget_iri_parse(mget_iri_relative_to_abs(base, url, strlen(url), &buf), encoding);
 		mget_buffer_deinit(&buf);
 	} else {
@@ -794,7 +793,6 @@ int main(int argc, const char *const *argv)
 		//		ts.tv_sec += 1;
 		// if the thread is not detached, we have to call pthread_join()/pthread_timedjoin_np()
 		// else we will have a huge memory leak
-		int rc;
 		//		if ((rc=pthread_timedjoin_np(downloader[n].tid, NULL, &ts))!=0)
 		if ((rc = mget_thread_join(downloader[n].tid)) != 0)
 			error_printf(_("Failed to wait for downloader #%d (%d %d)\n"), n, rc, errno);
@@ -1163,10 +1161,9 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 void html_parse(int sockfd, int level, const char *data, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
-	char uri_sbuf[1024];
 	struct html_context context = { .base = base, .sockfd = sockfd, .level = level, .encoding = encoding };
 
-	mget_buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
+	mget_buffer_init(&context.uri_buf, (char[1024]){}, 1024);
 
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
@@ -1187,10 +1184,9 @@ void html_parse(int sockfd, int level, const char *data, const char *encoding, M
 void html_parse_localfile(int sockfd, int level, const char *fname, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
-	char uri_sbuf[1024];
 	struct html_context context = { .base = base, .sockfd = sockfd, .level = level, .encoding = encoding };
 
-	mget_buffer_init(&context.uri_buf, uri_sbuf, sizeof(uri_sbuf));
+	mget_buffer_init(&context.uri_buf, (char[1024]){}, 1024);
 
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
@@ -1257,10 +1253,9 @@ static void _css_parse_uri(void *context, const char *url, size_t len, size_t po
 void css_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
-	char uri_buf[1024];
 	struct css_context context = { .base = base, .sockfd = sockfd, .encoding = encoding };
 
-	mget_buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
+	mget_buffer_init(&context.uri_buf, (char[1024]){}, 1024);
 
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
@@ -1276,10 +1271,9 @@ void css_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *bas
 void css_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
-	char uri_buf[1024];
 	struct css_context context = { .base = base, .sockfd = sockfd, .encoding = encoding };
 
-	mget_buffer_init(&context.uri_buf, uri_buf, sizeof(uri_buf));
+	mget_buffer_init(&context.uri_buf, (char[1024]){}, 1024);
 
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
@@ -1602,10 +1596,9 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 				http_add_header(req, "Referer", config.referer);
 			else if (downloader->job->referer) {
 				MGET_IRI *referer = downloader->job->referer;
-				char sbuf[256];
 				mget_buffer_t buf;
 
-				mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+				mget_buffer_init(&buf, (char[256]){}, 256);
 
 				mget_buffer_strcat(&buf, referer->scheme);
 				mget_buffer_memcat(&buf, "://", 3);
@@ -1691,13 +1684,12 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 			break; // final response
 
 		if (resp->location) {
-			char uri_buf_static[1024];
 			mget_buffer_t uri_buf;
 
 			mget_cookie_normalize_cookies(iri, resp->cookies);
 			mget_cookie_store_cookies(resp->cookies);
 
-			mget_buffer_init(&uri_buf, uri_buf_static, sizeof(uri_buf_static));
+			mget_buffer_init(&uri_buf, (char[1024]){}, 1024);
 
 			mget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
 

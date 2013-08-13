@@ -35,10 +35,9 @@
 int main(void)
 {
 	int it;
-	char sbuf[128];
 	mget_buffer_t buf;
 
-	mget_buffer_init(&buf,sbuf,sizeof(sbuf));
+	mget_buffer_init(&buf, (char[128]){}, 128);
 
 	for (it = 0; it < 10000000; it++) {
 		// buffer: 0.239s  libc: 0.018s (gcc replaces sprintf(%s) by strcpy())
@@ -68,7 +67,7 @@ int main(void)
 
 		// buffer: 0.456s  libc: 0.867s
 //		sprintf(sbuf,"%X\n", it);
-		mget_buffer_printf2(&buf,"%X\n", it);
+		mget_buffer_printf2(&buf, "%X\n", it);
 
 		// buffer: 0.955s  libc: 1.648s
 //		sprintf(sbuf,"teststring %s sabbeldi %d\n", "[foobar foobar foobar]", it);
