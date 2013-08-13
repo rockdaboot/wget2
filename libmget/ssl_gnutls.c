@@ -176,11 +176,11 @@ static void _print_x509_certificate_info(gnutls_session_t session)
 /*
 			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_subject_key_id(cert, dn, &dn_size, NULL);
-                        info_printf(_("  Certificate Subject ID: %s\n"), dn);
+			info_printf(_("  Certificate Subject ID: %s\n"), dn);
 
 			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_subject_unique_id(cert, dn, &dn_size);
-                        info_printf(_("  Certificate Subject UID: %s\n"), dn);
+			info_printf(_("  Certificate Subject UID: %s\n"), dn);
 */
 			gnutls_x509_crt_deinit(cert);
 		} else {
@@ -323,8 +323,8 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	 * structure. So you must have installed one or more CA certificates.
 	 */
 	if (gnutls_certificate_verify_peers2(session, &status) < 0) {
-		if (mget_get_logger(MGET_LOGGER_DEBUG))
-			_print_info(session);
+//		if (mget_get_logger(MGET_LOGGER_DEBUG))
+//			_print_info(session);
 		error_printf(_("%s: Certificate verification error\n"), tag);
 		ret = -1;
 		goto out;
@@ -409,7 +409,7 @@ out:
 static int _init;
 static mget_thread_mutex_t _mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
-// ssl_init() is thread safe and may be called several times
+// ssl_init() is thread safe
 
 void mget_ssl_init(void)
 {
@@ -499,10 +499,10 @@ void mget_ssl_init(void)
 		if (_config.ca_cert)
 			gnutls_certificate_set_x509_trust_file(_credentials, _config.ca_cert, GNUTLS_X509_FMT_PEM);
 
+		_init++;
+
 		debug_printf("GnuTLS init done\n");
 	}
-
-	_init++;
 
 	mget_thread_mutex_unlock(&_mutex);
 }
@@ -594,7 +594,8 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	gnutls_session_t session;
 	int ret;
 
-	mget_ssl_init();
+	if (!_init)
+		mget_ssl_init();
 
 #ifdef GNUTLS_NONBLOCK
 	gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
@@ -627,6 +628,8 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 		if (ret < 0) {
 			// print error but continue
 			error_printf("GnuTLS: %s\n", gnutls_strerror(ret));
+			gnutls_deinit(session);
+			return NULL;
 		}
 	}
 
@@ -651,16 +654,19 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 			break;
 	}
 
-	if (mget_get_logger(MGET_LOGGER_DEBUG))
-		_print_info(session);
+//	if (mget_get_logger(MGET_LOGGER_DEBUG))
+//		_print_info(session);
 
 	if (ret <= 0) {
 		if (ret)
 			debug_printf("Handshake failed (%d)\n", ret);
 		else
 			debug_printf("Handshake timed out\n");
-		gnutls_perror(ret);
-		mget_ssl_close((void **)&session);
+
+		error_printf("GnuTLS: %s\n", gnutls_strerror(ret));
+
+		gnutls_deinit(session);
+		return NULL;
 	} else {
 		debug_printf("Handshake completed\n");
 	}
