@@ -17,7 +17,7 @@
  * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * IRI/URI routines
+ * Metalink parsing routines
  *
  * Changelog
  * 10.07.2012  Tim Ruehsen  created (refactored from mget.c)
@@ -50,9 +50,10 @@ struct metalink_context {
 		length;
 };
 
-static void _metalink4_parse(void *context, int flags, const char *dir, const char *attr, const char *value)
+static void _metalink4_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
 {
 	struct metalink_context *ctx = context;
+	char value[len + 1];
 
 	// info_printf("\n%02X %s %s '%s'\n", flags, dir, attr, value);
 	if (!(flags & (XML_FLG_CONTENT | XML_FLG_ATTRIBUTE))) return; // ignore comments
@@ -60,6 +61,9 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 	if (strncasecmp(dir, "/metalink/file", 14)) return;
 
 	dir += 14;
+
+	memcpy(value, val, len);
+	value[len] = 0;
 
 	if (attr) {
 		if (*dir == 0) { // /metalink/file
@@ -113,9 +117,10 @@ void metalink4_parse(int sockfd, MGET_HTTP_RESPONSE *resp)
 	mget_xml_parse_buffer(resp->body->data, _metalink4_parse, &ctx, 0);
 }
 
-static void _metalink3_parse(void *context, int flags, const char *dir, const char *attr, const char *value)
+static void _metalink3_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
 {
 	struct metalink_context *ctx = context;
+	char value[len + 1];
 
 	// info_printf("\n%02X %s %s '%s'\n", flags, dir, attr, value);
 	if (!(flags & (XML_FLG_CONTENT | XML_FLG_ATTRIBUTE))) return; // ignore comments
@@ -123,6 +128,9 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 	if (strncasecmp(dir, "/metalink/files/file", 20)) return;
 
 	dir += 20;
+
+	memcpy(value, val, len);
+	value[len] = 0;
 
 	if (attr) {
 		if (*dir == 0) { // /metalink/file

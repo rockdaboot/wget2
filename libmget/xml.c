@@ -36,9 +36,15 @@
 # include <config.h>
 #endif
 
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#ifdef HAVE_MMAP
+#include <sys/mman.h>
+#endif
 
 #include <libmget.h>
 #include "private.h"
@@ -48,142 +54,105 @@ typedef struct XML_CONTEXT XML_CONTEXT;
 struct XML_CONTEXT {
 	const char
 		*buf, // pointer to original start of buffer (0-terminated)
-		*p; // pointer to somewhere inside buffer
-	char
+		*p, // pointer next char in buffer
 		*token; // token buffer
-	FILE
-		*fp; // FILE pointer to XML file
 	int
-		hints, // XML_HINT...
-		(*xml_getc)(XML_CONTEXT *);
+		hints; // XML_HINT...
 	size_t
 		token_size, // size of token buffer
 		token_len; // used bytes of token buffer (not counting terminating 0 byte)
 	void
-		*user_ctx, // user context (not needed if we were using nested functions)
-		(*xml_ungetc)(XML_CONTEXT *),
-		(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *token);
+		*user_ctx; // user context (not needed if we were using nested functions)
+	mget_xml_callback_function
+		*callback;
 };
 
 // append a char to token buffer
 
-static void tok_putc(XML_CONTEXT *context, char ch)
-{
-	if (context->token_len >= context->token_size) {
-		context->token_size = context->token_size ? context->token_size * 2 : 128;
-		context->token = xrealloc(context->token, context->token_size + 1);
-	}
-
-	if (ch)
-		context->token[context->token_len++] = ch;
-	else
-		context->token[context->token_len] = ch;
-}
-
-static void tok_putmem(XML_CONTEXT *context, const char *data, size_t length)
-{
-	if (context->token_len + length > context->token_size) {
-		context->token_size = context->token_size ? context->token_size * 2 + length : 128;
-		context->token = xrealloc(context->token, context->token_size + 1);
-	}
-
-	memcpy(context->token + context->token_len, data, length);
-	context->token_len += length;
-}
-
-// just some shortcuts for readability, undefined after getToken()/getCDATA()
-#define tok_putmem(a,l) tok_putmem(context,(a),(l))
-#define tok_putc(a) tok_putc(context,(a))
-#define xml_getc() context->xml_getc(context)
-#define xml_ungetc() context->xml_ungetc(context)
-
-static char *getToken(XML_CONTEXT *context)
+static const char *getToken(XML_CONTEXT *context)
 {
 	int c;
 
 	context->token_len = 0;
 
-	// remove leading spaces
-	while ((c = xml_getc()) != EOF && isspace(c));
-	if (c == EOF) return NULL;
+	// skip leading spaces
+	while ((c = *context->p++) && isspace(c));
+	if (!c) return NULL;
 
-	tok_putc(c);
+	context->token = context->p - 1;
+	context->token_len++;
 
-	// log_printf("a tok=%s\n",context->token);
+	// info_printf("a tok=%.*s c=%c\n",(int)context->token_len, context->token, c);
 	if (c == '<') { // fetch specials, e.g. start of comments '<!--'
-		if ((c = xml_getc()) == EOF) return NULL;
+		if (!(c = *context->p++)) return NULL;
 		if (c == '?' || c == '/') {
-			tok_putc(c);
-			tok_putc(0);
+			context->token_len = 2;
 			return context->token;
 		}
-		if (c != '!') {
-			xml_ungetc();
-			tok_putc(0);
-			return context->token;
-		}
-		tok_putc(c);
 
-		// left: <!--, <![CDATA[ and <!WHATEVER
-		if ((c = xml_getc()) == EOF) return NULL;
-		if (c == '-') {
-			tok_putc(c);
-			if ((c = xml_getc()) == EOF) return NULL;
-			tok_putc(c);
+		if (c == '!') {
+			// left: <!--, <![CDATA[ and <!WHATEVER
+			if (!(c = *context->p++)) return NULL;
 			if (c == '-') {
-				tok_putc(0);
+				if (!(c = *context->p++)) return NULL;
+				if (c == '-') {
+					context->token_len = 4;
+					return context->token;
+				} else {
+					context->p -= 2;
+					context->token_len = 2;
+					return context->token;
+				}
+			} else {
+				context->p--;
+				context->token_len = 2;
 				return context->token;
 			}
 		} else {
-			xml_ungetc();
-			tok_putc(0);
+			context->p--;
+			context->token_len = 1;
 			return context->token;
 		}
 	}
 
 	if (c == '-') { // fetch specials, e.g. end of comments '-->'
-		if ((c = xml_getc()) == EOF) return NULL;
+		if (!(c = *context->p++)) return NULL;
 		if (c != '-') {
-			xml_ungetc();
+			context->p--;
 			c = '-';
 		} else {
-			if ((c = xml_getc()) == EOF) return NULL;
+			if (!(c = *context->p++)) return NULL;
 			if (c != '>') {
-				xml_ungetc();
-				xml_ungetc();
+				context->p -= 2;
 				c = '-';
 			} else {
-				tok_putc('-');
-				tok_putc('>');
-				tok_putc(0);
+				context->token_len = 3;
 				return context->token;
 			}
 		}
 	}
 
 	if (c == '?') { // fetch specials, e.g. '?>'
-		if ((c = xml_getc()) == EOF) return NULL;
+		if (!(c = *context->p++)) return NULL;
 		if (c != '>') {
-			xml_ungetc();
+			context->p--;
 			c = '?';
 		} else {
-			tok_putc('>');
-			tok_putc(0);
+			context->token_len = 2;
 			return context->token;
 		}
 	}
 
 	if (c == '/') {
-		if ((c = xml_getc()) == EOF) return NULL;
+		if (!(c = *context->p++)) return NULL;
 		if (c == '>') {
-			tok_putc(c);
-			tok_putc(0);
+			context->token_len = 2;
 			return context->token;
 		} else return NULL; // syntax error
 	}
 
 	if (c == '=' || c == '>') {
-		tok_putc(0);
+		context->token_len = 1;
 		return context->token;
 	}
 
@@ -191,71 +160,29 @@ static char *getToken(XML_CONTEXT *context)
 		int quote = c;
 
 		context->token_len = 0;
+		context->token = context->p;
 
-		while ((c = xml_getc()) != EOF) {
-			if (c == '&') {
-				static const char *aa[] = {"amp", "lt", "gt", "quot", "apos"}, aach[] = "&<>\"'";
-				size_t aapos, it;
-				int aafound = 0, aasemicolon = 0;
-				char aabuf[8];
+		while ((c = *context->p++) && c != quote);
+		if (!c) return NULL;
 
-				for (aapos = 0; aapos<sizeof(aabuf) - 1 && (aabuf[aapos] = xml_getc()) != ';'; aapos++);
-				if (aapos<sizeof(aabuf) - 1 && aabuf[aapos] == ';') {
-					aasemicolon = 1;
-					aabuf[aapos] = 0;
-
-					// TODO: http://www.w3.org/TR/xml/#syntax
-					// Char ::= #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]
-					if (sscanf(aabuf, "#x%x", (unsigned int *)&c) == 1) { // Hexadecimal
-						tok_putc(c);
-						aafound = 1;
-					} else {
-						for (it = 0; it<sizeof(aa) / sizeof(aa[0]); it++)
-							if (!strcmp(aabuf, aa[it])) {
-								tok_putc(aach[it]);
-								aafound = 1;
-								break;
-							}
-					}
-				}
-				if (!aafound) { // Entity not found: Take data as it is
-					if (aapos) {
-						// snprintf(buf,sizeof(buf),"&%*s%s",aapos,aabuf,aasemicolon ? ";":"");
-						tok_putc('&');
-						tok_putmem(aabuf, aapos);
-//						for (it = 0; it < aapos; it++)
-//							tok_putc(aabuf[it]);
-						if (aasemicolon)
-							tok_putc(';');
-					} else if (aapos == 0) // EOF after "&"
-						tok_putc('&');
-				}
-			} else if (c == quote)
-				break;
-			else
-				tok_putc(c);
-		}
-		if (c == EOF) return NULL;
-
-		tok_putc(0);
+		context->token_len = context->p - context->token - 1;
 		return context->token;
 	}
 
 	if (c == '_' || isalpha(c)) {
-		while ((c = xml_getc()) != EOF && !isspace(c) && c != '>' && c != '=')
-			tok_putc(c);
-		if (c == EOF) return NULL;
-		if (c == '>' || c == '=') xml_ungetc();
-		tok_putc(0);
+		while ((c = *context->p++) && !isspace(c) && c != '>' && c != '=');
+		if (!c) return NULL;
+//		if (c == '>' || c == '=') context->p--;
+		context->p--;
+		context->token_len = context->p - context->token;
 		return context->token;
 	}
 
-	while ((c = xml_getc()) != EOF && !isspace(c))
-		tok_putc(c);
+	while ((c = *context->p++) && !isspace(c));
 
-	if (*context->token) {
-		xml_ungetc();
-		tok_putc(0);
+	if (c) {
+		context->p--;
+		context->token_len = context->p - context->token;
 		return context->token;
 	}
 
@@ -267,103 +194,89 @@ static int getValue(XML_CONTEXT *context)
 	int c;
 
 	context->token_len = 0;
+	context->token = context->p;
 
 	// remove leading spaces
-	while ((c = xml_getc()) != EOF && isspace(c));
-	if (c == EOF) return EOF;
-
-	tok_putc(c);
+	while ((c = *context->p++) && isspace(c));
+	if (!c) return EOF;
 
 	if (c == '=') {
-		if (getToken(context) == NULL)
+		if (!getToken(context))
 			return EOF;
 		else
 			return 1; // token valid
 	}
 
 	// attribute without value
-	tok_putc(0);
-	xml_ungetc();
-	return 0;
+	context->p--;
+	context->token = context->p;
+	return 1;
 }
 
 // special HTML <script> content parsing
 // see http://www.whatwg.org/specs/web-apps/current-work/multipage/scripting-1.html#the-script-element
 // 4.3.1.2 Restrictions for contents of script elements
 
-static char *getScriptContent(XML_CONTEXT *context)
+static const char *getScriptContent(XML_CONTEXT *context)
 {
-	int c, comment = 0;
+	int comment = 0, length_valid = 0;
 	const char *p;
 
-	context->token_len = 0;
-
-	while ((c = xml_getc()) != EOF) {
-		tok_putc(c);
-
-		// we can't use p++ since tok_putc() changes context->token and context->token_len
-		p = context->token + context->token_len - 1;
-
+	for (p = context->token = context->p; *p; p++) {
 		if (comment) {
-			if (*p == '>' && context->token_len >= 3 && !strncmp(context->token + context->token_len - 3, "-->", 3)) {
+			if (*p == '-' && !memcmp(p, "-->", 3)) {
+				p += 3 - 1;
 				comment = 0;
 			}
 		} else {
-			if (*p == '-') {
-				if (context->token_len >= 4 && !strncmp(context->token + context->token_len - 4, "<!--", 4)) {
-					comment = 1;
-				}
-			} else if (*p == '>' && context->token_len >= 9) {
-				// check if we found </script>
-				const char *p2 = p - 1;
-
-				// go back all spaces that may be between '</script' and '>'
-				while (isspace(*p2) && p2 >= context->token + 8) p2--;
-
-				if (!strncasecmp(p2 - 7, "</script", 8)) {
-					context->token_len -= p - p2 + 8;
-					break;
+			if (*p == '<' && !memcmp(p, "<!--", 4)) {
+				p += 4 - 1;
+				comment = 1;
+			} else if (*p == '<' && !memcmp(p, "</script", 8)) {
+				context->token_len = p - context->token;
+				length_valid = 1;
+				for (p += 8; isspace(*p); p++);
+				if (*p == '>') {
+					p++;
+					break; // found end of <script>
 				}
 			}
 		}
 	}
+	context->p = p;
 
-	if (context->token)
-		context->token[context->token_len] = 0;
+	if (!length_valid)
+		context->token_len = p - context->token;
 
-	if (c == EOF) {
-		if (context->token_len == 0)
-			return NULL;
-	}
+	if (!*p && !context->token_len)
+		return NULL;
 
 	if (context->callback)
-		context->callback(context->user_ctx, XML_FLG_CONTENT | XML_FLG_END, "script", NULL, context->token);
+		context->callback(context->user_ctx, XML_FLG_CONTENT | XML_FLG_END, "script", NULL, context->token, context->token_len, context->token - context->buf);
 
 	return context->token;
 }
 
-static char *getUnparsed(XML_CONTEXT *context, int flags, const char *end, size_t len, const char *directory)
+static const char *getUnparsed(XML_CONTEXT *context, int flags, const char *end, size_t len, const char *directory)
 {
 	int c;
 
-	context->token_len = 0;
-
-	while ((c = xml_getc()) != EOF) {
-		tok_putc(c);
-		if (context->token_len >= len && !strncmp(context->token + context->token_len - len, end, len)) {
-			context->token_len -= len;
-			break;
+	if (len == 1) {
+		for (context->token = context->p; (c = *context->p) && c != *end; context->p++);
+	} else {
+		for (context->token = context->p; (c = *context->p); context->p++) {
+			if (c == *end && context->p[1] == end[1] && (len == 2 || context->p[2] == end[2])) {
+				break;
+			}
 		}
 	}
 
-	if (context->token)
-		context->token[context->token_len] = 0;
+	context->token_len = context->p - context->token;
+	if (c) context->p += len;
 
-	if (c == EOF) {
-		if (context->token_len == 0)
-			return NULL;
-	}
-
+	if (!c && !context->token_len)
+		return NULL;
+/*
 	if (context->token && context->token_len && context->hints & XML_HINT_REMOVE_EMPTY_CONTENT) {
 		int notempty = 0;
 		char *p;
@@ -377,51 +290,59 @@ static char *getUnparsed(XML_CONTEXT *context, int flags, const char *end, size_
 
 		if (notempty) {
 			if (context->callback)
-				context->callback(context->user_ctx, flags, directory, NULL, context->token);
+				context->callback(context->user_ctx, flags, directory, NULL, context->token, context->token_len, context->token - context->buf);
 		} else {
 			// ignore empty content
 			context->token_len = 0;
 			context->token[0] = 0;
 		}
 	} else {
-		if (context->callback)
-			context->callback(context->user_ctx, flags, directory, NULL, context->token);
-	}
+*/
+	if (context->callback)
+		context->callback(context->user_ctx, flags, directory, NULL, context->token, context->token_len, context->token - context->buf);
+
+//	}
 
 	return context->token;
 }
 
-static char *getComment(XML_CONTEXT *context)
+static const char *getComment(XML_CONTEXT *context)
 {
 	return getUnparsed(context, XML_FLG_COMMENT, "-->", 3, NULL);
 }
 
-static char *getProcessing(XML_CONTEXT *context)
+static const char *getProcessing(XML_CONTEXT *context)
 {
 	return getUnparsed(context, XML_FLG_PROCESSING, "?>", 2, NULL);
 }
 
-static char *getSpecial(XML_CONTEXT *context)
+static const char *getSpecial(XML_CONTEXT *context)
 {
 	return getUnparsed(context, XML_FLG_SPECIAL, ">", 1, NULL);
 }
 
-static char *getContent(XML_CONTEXT *context, const char *directory)
+static const char *getContent(XML_CONTEXT *context, const char *directory)
 {
-	char *p = getUnparsed(context, XML_FLG_CONTENT, "<", 1, directory);
-	if (p)
-		xml_ungetc();
-	return p;
-}
+	int c;
 
-#undef tok_putc
-#undef tok_putmem
-#undef xml_getc
-#undef xml_ungetc
+	for (context->token = context->p; (c = *context->p) && c != '<'; context->p++);
+
+	context->token_len = context->p - context->token;
+
+	if (!c && !context->token_len)
+		return NULL;
+
+	// debug_printf("content=%.*s\n", (int)context->token_len, context->token);
+	if (context->callback && context->token_len)
+		context->callback(context->user_ctx, XML_FLG_CONTENT, directory, NULL, context->token, context->token_len, context->token - context->buf);
+
+	return context->token;
+}
 
 static void parseXML(const char *dir, XML_CONTEXT *context)
 {
-	char directory[256] = "", attribute[64] = "", *tok;
+	const char *tok;
+	char directory[256] = "", attribute[64] = "";
 	size_t pos = 0;
 
 	if (!(context->hints & XML_HINT_HTML)) {
@@ -432,33 +353,35 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 	do {
 		getContent(context, directory);
 		if (context->token_len)
-			debug_printf("%s=%s\n", directory, context->token);
+			debug_printf("%s=%.*s\n", directory, (int)context->token_len, context->token);
 
 		if (!(tok = getToken(context))) return;
-		// log_printf("A Token '%s'\n",tok);
+		// debug_printf("A Token '%.*s'\n", (int)context->token_len, context->token);
 
-		if (!strcmp(tok, "<")) {
+		if (context->token_len == 1 && *tok == '<') {
 			// get element name and add it to directory
 			int flags = XML_FLG_BEGIN;
 
 			if (!(tok = getToken(context))) return;
+			// debug_printf("A2 Token '%.*s'\n", (int)context->token_len, context->token);
+
 			if (!(context->hints & XML_HINT_HTML)) {
 				if (!pos || directory[pos - 1] != '/')
-					snprintf(&directory[pos], sizeof(directory) - pos, "/%s", tok);
+					snprintf(&directory[pos], sizeof(directory) - pos, "/%.*s", (int)context->token_len, tok);
 				else
-					strlcpy(&directory[pos], tok, sizeof(directory) - pos);
+					snprintf(&directory[pos], sizeof(directory) - pos, "%.*s", (int)context->token_len, tok);
 			} else
-				strlcpy(directory, tok, sizeof(directory));
+				snprintf(directory, sizeof(directory), "%.*s", (int)context->token_len, tok);
 
 			while ((tok = getToken(context))) {
-				// log_printf("C Token %s\n",tok);
-				if (!strcmp(tok, "/>")) {
+				// debug_printf("C Token %.*s\n", (int)context->token_len, context->token);
+				if (context->token_len == 2 && !strncmp(tok, "/>", 2)) {
 					if (context->callback)
-						context->callback(context->user_ctx, flags | XML_FLG_END, directory, NULL, NULL);
+						context->callback(context->user_ctx, flags | XML_FLG_END, directory, NULL, NULL, 0, 0);
 					break; // stay in this level
-				} else if (!strcmp(tok, ">")) {
+				} else if (context->token_len == 1 && *tok == '>') {
 					if (context->callback)
-						context->callback(context->user_ctx, flags | XML_FLG_CLOSE, directory, NULL, NULL);
+						context->callback(context->user_ctx, flags | XML_FLG_CLOSE, directory, NULL, NULL, 0, 0);
 					if (context->hints & XML_HINT_HTML) {
 						if (!strcasecmp(directory, "script")) {
 							// special HTML <script> content parsing
@@ -466,78 +389,69 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 							// 4.3.1.2 Restrictions for contents of script elements
 							debug_printf("*** need special <script> handling\n");
 							getScriptContent(context);
-							if (context->token && *context->token)
-								debug_printf("%s=%s\n", directory, context->token);
+							if (context->token_len)
+								debug_printf("%s=%.*s\n", directory, (int)context->token_len, context->token);
 						}
 					} else
 						parseXML(directory, context); // descend one level
 					break;
 				} else {
-					strlcpy(attribute, tok, sizeof(attribute));
-					int rc = getValue(context);
-					if (rc == EOF) return;
-					if (rc) {
-						debug_printf("%s/@%s=%s\n", directory, attribute, context->token);
+					snprintf(attribute, sizeof(attribute), "%.*s", (int)context->token_len, tok);
+					if (getValue(context) == 0) return;
+					if (context->token_len) {
+						debug_printf("%s/@%s=%.*s\n", directory, attribute, (int)context->token_len, context->token);
 						if (context->callback)
-							context->callback(context->user_ctx, flags | XML_FLG_ATTRIBUTE, directory, attribute, context->token);
+							context->callback(context->user_ctx, flags | XML_FLG_ATTRIBUTE, directory, attribute, context->token, context->token_len, context->token - context->buf);
 					} else {
 						debug_printf("%s/@%s\n", directory, attribute);
 						if (context->callback)
-							context->callback(context->user_ctx, flags | XML_FLG_ATTRIBUTE, directory, attribute, NULL);
+							context->callback(context->user_ctx, flags | XML_FLG_ATTRIBUTE, directory, attribute, NULL, 0, 0);
 					}
 					flags = 0;
 				}
 			}
 			directory[pos] = 0;
-		} else if (!strcmp(tok, "</")) {
-			// ascend one level
-			// cleanup - get name and '>'
-			if (!(tok = getToken(context))) return;
-			// log_printf("X Token %s\n",tok);
-			if (context->callback) {
+		} else if (context->token_len == 2) {
+			if (!strncmp(tok, "</", 2)) {
+				// ascend one level
+				// cleanup - get name and '>'
+				if (!(tok = getToken(context))) return;
+				// log_printf("X Token %s\n",tok);
+				if (context->callback) {
+					if (!(context->hints & XML_HINT_HTML))
+						context->callback(context->user_ctx, XML_FLG_END, directory, NULL, NULL, 0, 0);
+					else {
+						char tag[context->token_len + 1]; // we need to \0 terminate tok
+						memcpy(tag, tok, context->token_len);
+						tag[context->token_len] = 0;
+						context->callback(context->user_ctx, XML_FLG_END, tag, NULL, NULL, 0, 0);
+					}
+				}
+				if (!(tok = getToken(context))) return;
+				// log_printf("Y Token %s\n",tok);
 				if (!(context->hints & XML_HINT_HTML))
-					context->callback(context->user_ctx, XML_FLG_END, directory, NULL, NULL);
+					return;
 				else
-					context->callback(context->user_ctx, XML_FLG_END, tok, NULL, NULL);
-			}
-			if (!(tok = getToken(context))) return;
-			// log_printf("Y Token %s\n",tok);
-			if (!(context->hints & XML_HINT_HTML))
-				return;
-			else
+					continue;
+			} else if (context->token_len == 2 && !strncmp(tok, "<?", 2)) { // special info - ignore
+				getProcessing(context);
+				debug_printf("%s=<?%.*s?>\n", directory, (int)context->token_len, context->token);
 				continue;
-		} else if (!strcmp(tok, "<!--")) { // comment - ignore
+			} else if (context->token_len == 2 && !strncmp(tok, "<!", 2)) {
+				getSpecial(context);
+				debug_printf("%s=<!%.*s>\n", directory, (int)context->token_len, context->token);
+			}
+		} else if (context->token_len == 4 && !strncmp(tok, "<!--", 4)) { // comment - ignore
 			getComment(context);
-			debug_printf("%s=<!--%s-->\n", directory, context->token);
+			debug_printf("%s=<!--%.*s-->\n", directory, (int)context->token_len, context->token);
 			continue;
-		} else if (!strcmp(tok, "<?")) { // special info - ignore
-			getProcessing(context);
-			debug_printf("%s=<?%s?>\n", directory, context->token);
-			continue;
-		} else if (!strcmp(tok, "<!")) {
-			getSpecial(context);
-			debug_printf("%s=<!%s>\n", directory, context->token);
 		}
 	} while (tok);
 }
 
-static int xml_parse_buffer_getc(XML_CONTEXT *context)
-{
-	if (*context->p)
-		return *context->p++;
-
-	return EOF;
-}
-
-static void xml_parse_buffer_ungetc(XML_CONTEXT *context)
-{
-	if (context->p != context->buf)
-		context->p--;
-}
-
 void mget_xml_parse_buffer(
 	const char *buf,
-	void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
+	mget_xml_callback_function *callback,
 	void *user_ctx,
 	int hints)
 {
@@ -548,99 +462,79 @@ void mget_xml_parse_buffer(
 	context.token_len = 0;
 	context.buf = buf;
 	context.p = buf;
-	context.fp = NULL;
-	context.xml_getc = xml_parse_buffer_getc;
-	context.xml_ungetc = xml_parse_buffer_ungetc;
 	context.user_ctx = user_ctx;
 	context.callback = callback;
 	context.hints = hints;
 
 	parseXML("/", &context);
-	xfree(context.token);
 }
 
 void mget_html_parse_buffer(
 	const char *buf,
-	void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
+	mget_xml_callback_function *callback,
 	void *user_ctx,
 	int hints)
 {
 	mget_xml_parse_buffer(buf, callback, user_ctx, hints | XML_HINT_HTML);
 }
 
-static int xml_parse_file_getc(XML_CONTEXT *context)
-{
-	return fgetc(context->fp);
-}
-
-static void xml_parse_file_ungetc(XML_CONTEXT *context)
-{
-	fseek(context->fp, -1, SEEK_CUR);
-}
-
 void mget_xml_parse_file(
 	const char *fname,
-	void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
+	mget_xml_callback_function *callback,
 	void *user_ctx,
 	int hints)
 {
-	FILE *fp;
-	XML_CONTEXT context;
+	int fd;
 
-	// we could also use mmap() and call xml_parse_buffer
-	if ((fp = fopen(fname, "r")) != NULL) {
-		context.token = NULL;
-		context.token_size = 0;
-		context.token_len = 0;
-		context.buf = NULL;
-		context.p = NULL;
-		context.fp = fp;
-		context.xml_getc = xml_parse_file_getc;
-		context.xml_ungetc = xml_parse_file_ungetc;
-		context.user_ctx = user_ctx;
-		context.callback = callback;
-		context.hints = hints;
+	if (strcmp(fname,"-")) {
+		if ((fd = open(fname, O_RDONLY)) != -1) {
+			struct stat st;
+			if (fstat(fd, &st) == 0) {
+#ifdef HAVE_MMAP
+				size_t nread = st.st_size;
+				char *buf = mmap(NULL, nread, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+#else
+				char *buf=xmalloc(st.st_size + 1);
+				size_t nread=read(fd, buf, st.st_size);
+#endif
 
-		parseXML("/", &context);
-		xfree(context.token);
+				if (nread > 0) {
+					buf[nread] = 0; // PROT_WRITE allows this write, MAP_PRIVATE prevents changes in underlying file system
+					mget_xml_parse_buffer(buf, callback, user_ctx, hints);
+				}
 
-		fclose(fp);
-	} else
-		error_printf(_("%s: Failed to open %s\n"), __func__, fname);
+#ifdef HAVE_MMAP
+				munmap(buf, nread);
+#else
+				xfree(buf);
+#endif
+			}
+			close(fd);
+		} else
+			error_printf(_("Failed to open %s\n"), fname);
+	} else {
+		// read data from STDIN.
+		// maybe should use yy_scan_bytes instead of buffering into memory.
+		char tmp[4096];
+		ssize_t nbytes;
+		mget_buffer_t *buf = mget_buffer_alloc(4096);
+
+		while ((nbytes = read(STDIN_FILENO, tmp, sizeof(tmp))) > 0) {
+			mget_buffer_memcat(buf, tmp, nbytes);
+		}
+
+		if (buf->length)
+			mget_xml_parse_buffer(buf->data, callback, user_ctx, hints);
+
+		mget_buffer_free(&buf);
+	}
 }
 
 void mget_html_parse_file(
 	const char *fname,
-	void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
+	mget_xml_callback_function *callback,
 	void *user_ctx,
 	int hints)
 {
 	mget_xml_parse_file(fname, callback, user_ctx, hints | XML_HINT_HTML);
 }
-
-/*
-// version with nested functions, much clearer... sigh
-void xml_parse_buffer(const char *buf, void(*callback)(char *, char *, char *))
-{
-	const char *p = buf;
-
-	void my_ungetc(void) { if (p != buf) p--; }
-	int my_getc(void) { return *p ? *p++ : EOF; }
-
-	parseXML("", callback, my_getc, my_ungetc);
-}
-
-// version with nested functions, much clearer... sigh
-void xml_parse_file(const char *fname, void(*callback)(char *, char *, char *))
-{
-	FILE	*fp;
-
-	void my_ungetc(void) { fseek(fp, -1, SEEK_CUR); }
-	int my_getc(void) { return fgetc(fp); }
-
-	if ((fp = fopen(fname, "r")) != NULL) {
-		parseXML("", callback, my_getc, my_ungetc);
-		fclose(fp);
-	} else err_printf(_("%s: Failed to open %s\n"), __func__, fname);
-}
- */

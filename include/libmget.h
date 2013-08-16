@@ -873,25 +873,31 @@ MGET_VECTOR *
 
 #define HTML_HINT_REMOVE_EMPTY_CONTENT XML_HINT_REMOVE_EMPTY_CONTENT
 
+typedef void mget_xml_callback_function(void *, int, const char *, const char *, const char *, size_t, size_t);
+
 void
 	mget_xml_parse_buffer(
 		const char *buf,
-		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
+		mget_xml_callback_function *callback,
+//		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
 		void *user_ctx,
 		int hints) G_GNUC_MGET_NONNULL((1)),
 	mget_xml_parse_file(
 		const char *fname,
-		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
+		mget_xml_callback_function *callback,
+//		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
 		void *user_ctx,
 		int hints) G_GNUC_MGET_NONNULL((1)),
 	mget_html_parse_buffer(
 		const char *buf,
-		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
+		mget_xml_callback_function *callback,
+//		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
 		void *user_ctx,
 		int hints) G_GNUC_MGET_NONNULL((1)),
 	mget_html_parse_file(
 		const char *fname,
-		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
+		mget_xml_callback_function *callback,
+//		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
 		void *user_ctx,
 		int hints) G_GNUC_MGET_NONNULL((1));
 

@@ -7,12 +7,13 @@ LDADD = $(top_srcdir)/libmget/libmget.la libtest.o
 MGET_TESTS = test test-mget-1 test-restrict-ascii test-i-http test-np test--spider-r \
  test--post-file test-E-k test-k test-meta-robots test-idn-robots test-idn-meta test-idn-cmd \
  test-iri test-iri-disabled test-iri-percent test-iri-list test-iri-forced-remote \
- test-auth-basic
+ test-auth-basic test-parse-html
 
 check_PROGRAMS = buffer_printf2_perf stringmap_perf $(MGET_TESTS)
 
 test_SOURCES = test.c
 test_LDADD = $(top_srcdir)/libmget/libmget.la $(top_srcdir)/src/mget-log.o $(top_srcdir)/src/mget-options.o
+test_parse_html_LDADD = $(top_srcdir)/libmget/libmget.la $(top_srcdir)/src/mget-log.o $(top_srcdir)/src/mget-options.o
 
 #libtest_SOURCES = libtest.c
 #libtest_CPPFLAGS = -I$(top_srcdir)/include

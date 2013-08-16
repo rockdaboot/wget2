@@ -19,10 +19,6 @@
  *
  * test routines
  *
- * Source Code License
- *   CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
- *   http://creativecommons.org/publicdomain/zero/1.0/legalcode
- *
  * Changelog
  * 06.07.2012  Tim Ruehsen  created
  *
@@ -43,9 +39,6 @@
 
 #include "../src/options.h"
 #include "../src/log.h"
-
-// number of elements within an array
-#define countof(a) (sizeof(a)/sizeof(*(a)))
 
 static int
 	ok,
@@ -758,15 +751,17 @@ static void test_parser(void)
 					info_printf("parsing %s\n", fname);
 					mget_xml_parse_file(fname, NULL, NULL, 0);
 					xml++;
-				} else if (!strcasecmp(ext, ".html")) {
+				}
+/*				else if (!strcasecmp(ext, ".html")) {
 					info_printf("parsing %s\n", fname);
 					mget_html_parse_file(fname, NULL, NULL, 0);
 					html++;
-				} else if (!strcasecmp(ext, ".css")) {
+				}
+				else if (!strcasecmp(ext, ".css")) {
 					info_printf("parsing %s\n", fname);
 					mget_css_parse_file(fname, _css_dump_uri, _css_dump_charset, NULL);
 					css++;
-				}
+				} */
 			}
 		}
 		closedir(dirp);

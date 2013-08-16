@@ -1026,7 +1026,7 @@ struct html_context {
 		encoding_allocated;
 };
 
-static void _html_parse(void *context, int flags, const char *dir, const char *attr, const char *val)
+static void _html_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
 {
 	static int found_content_type;
 	struct html_context *ctx = context;
@@ -1040,6 +1040,10 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
 		int found = 0;
+		char valbuf[len + 1], *value = valbuf;
+
+		memcpy(value, val, len);
+		value[len] = 0;
 
 		// very simplified
 		// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
@@ -1074,9 +1078,9 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 			if (found && tolower(*dir) == 'b' && !strcasecmp(dir,"base")) {
 				// found a <BASE href="...">
 				// add it to be downloaded, replace old base
-				MGET_IRI *iri = mget_iri_parse(val, ctx->encoding);
+				MGET_IRI *iri = mget_iri_parse(value, ctx->encoding);
 				if (iri) {
-					dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", val);
+					dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", value);
 
 					if (ctx->base_allocated)
 						mget_iri_free(&ctx->base);
@@ -1091,10 +1095,10 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 				// if we have no encoding yet, read it from META tag, e.g. from
 				//   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 				if (!strcasecmp(dir, "meta")) {
-					if (!strcasecmp(attr, "http-equiv") && !strcasecmp(val, "Content-Type"))
+					if (!strcasecmp(attr, "http-equiv") && !strcasecmp(value, "Content-Type"))
 						found_content_type = 1;
 					else if (found_content_type && !strcasecmp(attr, "content")) {
-						http_parse_content_type(val, NULL, &ctx->encoding);
+						http_parse_content_type(value, NULL, &ctx->encoding);
 						if (ctx->encoding) {
 							ctx->encoding_allocated = 1;
 							info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
@@ -1124,19 +1128,17 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 		}
 
 		if (found) {
-			size_t len;
-
 			// sometimes the URIs are surrounded by spaces, we ignore them
-			while (isspace(*val))
-				val++;
+			while (isspace(*value))
+				value++;
 
 			// skip trailing spaces
-			for (len = strlen(val); len && isspace(val[len - 1]); len--)
+			for (; len && isspace(value[len - 1]); len--)
 				;
 
-			if (len > 1 || (len == 1 && *val != '#')) { // ignore e.g. href='#'
+			if (len > 1 || (len == 1 && *value != '#')) { // ignore e.g. href='#'
 				// log_printf("%02X %s %s=%s\n",flags,dir,attr,val);
-				if (mget_iri_relative_to_abs(ctx->base, val, len, &ctx->uri_buf)) {
+				if (mget_iri_relative_to_abs(ctx->base, value, len, &ctx->uri_buf)) {
 					// info_printf("%.*s -> %s\n", (int)len, val, ctx->uri_buf.data);
 					if (ctx->sockfd >= 0) {
 						dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", ctx->uri_buf.data);
@@ -1149,7 +1151,7 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 						}
 					}
 				} else {
-					error_printf(_("Cannot resolve relative URI %.*s\n"), (int)len, val);
+					error_printf(_("Cannot resolve relative URI %s\n"), value);
 				}
 			}
 		}

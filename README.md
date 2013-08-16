@@ -122,7 +122,7 @@ Build Mget with
 		./configure
 		make
 
-Test the functionality (you need valgrind installed)
+Test the functionality (sorry, right now under heavy development)
 
 		make check
 
@@ -130,13 +130,15 @@ Install Mget and libmget
 
 		sudo make install (or su -c "make install")
 
-Create Mget HTML documentation
+To create Mget HTML documentation
 
 		./configure --enable-gtk-doc
+		make
 
-Create Mget HTML documentation and man pages (not functional right now)
+To create Mget HTML documentation and man pages (not functional right now)
 
 		./configure --enable-gtk-doc --enable-man
+		make
 
 Documentation
 -------------
