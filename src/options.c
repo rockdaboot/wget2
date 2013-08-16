@@ -154,7 +154,8 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"\n");
 	puts(
 		"HTTPS (SSL/TLS) related options:\n"
-		"      --secure-protocol   Set protocol to be used (auto, SSLv2, SSLv3 or TLSv1). (default: auto)\n"
+		"      --secure-protocol   Set protocol to be used (auto, SSLv3, TLSv1, SECURE). (default: auto)\n"
+		"                          Or use GnuTLS priority strings, e.g. NORMAL:-VERS-SSL3.0:-RSA\n"
 		"      --check-certificate Check the server's certificate. (default: on)\n"
 		"      --certificate       File with client certificate.\n"
 		"      --private-key       File with private key.\n"

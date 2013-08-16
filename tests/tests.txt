@@ -28,7 +28,7 @@ Test-O--no-content-disposition-trivial.px
 *Test-O.px
 *Test-Restrict-Lowercase.px
 *Test-Restrict-Uppercase.px
-Test-auth-basic.px
+*Test-auth-basic.px
 Test-auth-no-challenge-url.px
 Test-auth-no-challenge.px
 Test-auth-retcode.px

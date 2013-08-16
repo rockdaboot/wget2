@@ -330,8 +330,8 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		goto out;
 	}
 
-	if (mget_get_logger(MGET_LOGGER_DEBUG))
-		_print_info(session);
+//	if (mget_get_logger(MGET_LOGGER_DEBUG))
+//		_print_info(session);
 
 	if (status) {
 		if (status & GNUTLS_CERT_INVALID)
@@ -654,8 +654,8 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 			break;
 	}
 
-//	if (mget_get_logger(MGET_LOGGER_DEBUG))
-//		_print_info(session);
+	if (mget_get_logger(MGET_LOGGER_DEBUG))
+		_print_info(session);
 
 	if (ret <= 0) {
 		if (ret)
