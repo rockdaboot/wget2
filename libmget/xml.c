@@ -169,7 +169,7 @@ static const char *getToken(XML_CONTEXT *context)
 		return context->token;
 	}
 
-	if (c == '_' || isalpha(c)) {
+	if (isalpha(c) || c == '_') {
 		while ((c = *context->p++) && !isspace(c) && c != '>' && c != '=');
 		if (!c) return NULL;
 //		if (c == '>' || c == '=') context->p--;
@@ -342,7 +342,7 @@ static const char *getContent(XML_CONTEXT *context, const char *directory)
 static void parseXML(const char *dir, XML_CONTEXT *context)
 {
 	const char *tok;
-	char directory[256] = "", attribute[64] = "";
+	char directory[256] = "";
 	size_t pos = 0;
 
 	if (!(context->hints & XML_HINT_HTML)) {
@@ -370,8 +370,16 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 					snprintf(&directory[pos], sizeof(directory) - pos, "/%.*s", (int)context->token_len, tok);
 				else
 					snprintf(&directory[pos], sizeof(directory) - pos, "%.*s", (int)context->token_len, tok);
-			} else
-				snprintf(directory, sizeof(directory), "%.*s", (int)context->token_len, tok);
+			} else {
+				// snprintf(directory, sizeof(directory), "%.*s", (int)context->token_len, tok);
+				if (context->token_len < sizeof(directory)) {
+					strncpy(directory, tok, context->token_len);
+					directory[context->token_len] = 0;
+				} else {
+					strncpy(directory, tok, sizeof(directory) - 1);
+					directory[sizeof(directory) - 1] = 0;
+				}
+			}
 
 			while ((tok = getToken(context))) {
 				// debug_printf("C Token %.*s\n", (int)context->token_len, context->token);
@@ -396,7 +404,11 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 						parseXML(directory, context); // descend one level
 					break;
 				} else {
-					snprintf(attribute, sizeof(attribute), "%.*s", (int)context->token_len, tok);
+//					snprintf(attribute, sizeof(attribute), "%.*s", (int)context->token_len, tok);
+					char attribute[context->token_len + 1];
+					strncpy(attribute, tok, context->token_len);
+					directory[context->token_len] = 0;
+
 					if (getValue(context) == 0) return;
 					if (context->token_len) {
 						debug_printf("%s/@%s=%.*s\n", directory, attribute, (int)context->token_len, context->token);
