@@ -802,10 +802,21 @@ void *downloader_thread(void *p)
 		}
 
 		if (resp->content_type) {
+			int metalink = 0;
+
 			if (!strcasecmp(resp->content_type, "application/metalink4+xml")) {
 				print_status(downloader, "get metalink4 info\n");
 				// save_file(resp, job->local_filename, O_TRUNC);
 				metalink4_parse(job, resp);
+				metalink = 1;
+			}
+			else if (!strcasecmp(resp->content_type, "application/metalink+xml")) {
+				print_status(downloader, "get metalink3 info\n");
+				// save_file(resp, job->local_filename, O_TRUNC);
+				metalink3_parse(job, resp);
+				metalink = 1;
+			}
+			if (metalink) {
 				if (job->size <= 0) {
 					debug_printf("File length %llu - remove job\n", (unsigned long long)job->size);
 				} else if (!job->mirrors) {
@@ -827,13 +838,7 @@ void *downloader_thread(void *p)
 
 						job = NULL; // do not remove this job from queue yet
 					}
-					goto ready;
 				}
-			}
-			else if (!strcasecmp(resp->content_type, "application/metalink+xml")) {
-				print_status(downloader, "get metalink3 info\n");
-				// save_file(resp, job->local_filename, O_TRUNC);
-				metalink3_parse(job, resp);
 				goto ready;
 			}
 		}
