@@ -885,58 +885,82 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 		s = http_parse_name_fixed(line, &name, &namesize);
 		// s now points directly after :
 
-		if (resp->code / 100 == 3 && !strncasecmp(name, "Location", namesize)) {
-			xfree(resp->location);
-			http_parse_location(s, &resp->location);
-		} else if (resp->code / 100 == 3 && !strncasecmp(name, "Link", namesize)) {
-			// log_printf("s=%.31s\n",s);
-			MGET_HTTP_LINK link;
-			http_parse_link(s, &link);
-			// log_printf("link->uri=%s\n",link.uri);
-			if (!resp->links)
-				resp->links = mget_vector_create(8, 8, NULL);
-			mget_vector_add(resp->links, &link, sizeof(link));
-		} else if (!strncasecmp(name, "Digest", namesize)) {
-			// http://tools.ietf.org/html/rfc3230
-			MGET_HTTP_DIGEST digest;
-			http_parse_digest(s, &digest);
-			// log_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
-			if (!resp->digests)
-				resp->digests = mget_vector_create(4, 4, NULL);
-			mget_vector_add(resp->digests, &digest, sizeof(digest));
-		} else if (!strncasecmp(name, "Transfer-Encoding", namesize)) {
-			http_parse_transfer_encoding(s, &resp->transfer_encoding);
-		} else if (!strncasecmp(name, "Content-Encoding", namesize)) {
-			http_parse_content_encoding(s, &resp->content_encoding);
-		} else if (!strncasecmp(name, "Content-Type", namesize)) {
-			http_parse_content_type(s, &resp->content_type, &resp->content_type_encoding);
-		} else if (!strncasecmp(name, "Content-Length", namesize)) {
-			resp->content_length = (size_t)atoll(s);
-			resp->content_length_valid = 1;
-		} else if (!strncasecmp(name, "Content-Disposition", namesize)) {
-			http_parse_content_disposition(s, &resp->content_filename);
-		} else if (!strncasecmp(name, "Connection", namesize)) {
-			http_parse_connection(s, &resp->keep_alive);
-// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
-		} else if (!strncasecmp(name, "Last-Modified", namesize)) {
-			resp->last_modified = parse_rfc1123_date(s);
-		} else if (!strncasecmp(name, "Set-Cookie", namesize)) {
-			// this is a parser. content validation must be done by higher level functions.
-			MGET_COOKIE cookie;
-			http_parse_setcookie(s, &cookie);
+		switch (*name | 0x20) {
+		case 'c':
+			if (!strncasecmp(name, "Content-Encoding", namesize)) {
+				http_parse_content_encoding(s, &resp->content_encoding);
+			} else if (!strncasecmp(name, "Content-Type", namesize)) {
+				http_parse_content_type(s, &resp->content_type, &resp->content_type_encoding);
+			} else if (!strncasecmp(name, "Content-Length", namesize)) {
+				resp->content_length = (size_t)atoll(s);
+				resp->content_length_valid = 1;
+			} else if (!strncasecmp(name, "Content-Disposition", namesize)) {
+				http_parse_content_disposition(s, &resp->content_filename);
+			} else if (!strncasecmp(name, "Connection", namesize)) {
+				http_parse_connection(s, &resp->keep_alive);
+			}
+			break;
+		case 'l':
+			if (!strncasecmp(name, "Last-Modified", namesize)) {
+				// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
+				resp->last_modified = parse_rfc1123_date(s);
+			} else if (resp->code / 100 == 3 && !strncasecmp(name, "Location", namesize)) {
+				xfree(resp->location);
+				http_parse_location(s, &resp->location);
+			} else if (resp->code / 100 == 3 && !strncasecmp(name, "Link", namesize)) {
+				// log_printf("s=%.31s\n",s);
+				MGET_HTTP_LINK link;
+				http_parse_link(s, &link);
+				// log_printf("link->uri=%s\n",link.uri);
+				if (!resp->links)
+					resp->links = mget_vector_create(8, 8, NULL);
+				mget_vector_add(resp->links, &link, sizeof(link));
+			}
+			break;
+		case 't':
+			if (!strncasecmp(name, "Transfer-Encoding", namesize)) {
+				http_parse_transfer_encoding(s, &resp->transfer_encoding);
+			}
+			break;
+		case 's':
+			if (!strncasecmp(name, "Set-Cookie", namesize)) {
+				// this is a parser. content validation must be done by higher level functions.
+				MGET_COOKIE cookie;
+				http_parse_setcookie(s, &cookie);
 
-			if (!resp->cookies)
-				resp->cookies = mget_vector_create(4, 4, NULL);
-			mget_vector_add(resp->cookies, &cookie, sizeof(cookie));
-		} else if (!strncasecmp(name, "WWW-Authenticate", namesize)) {
-			MGET_HTTP_CHALLENGE challenge;
-			http_parse_challenge(s, &challenge);
+				if (!resp->cookies)
+					resp->cookies = mget_vector_create(4, 4, NULL);
+				mget_vector_add(resp->cookies, &cookie, sizeof(cookie));
+			}
+			break;
+		case 'w':
+			if (!strncasecmp(name, "WWW-Authenticate", namesize)) {
+				MGET_HTTP_CHALLENGE challenge;
+				http_parse_challenge(s, &challenge);
 
-			if (!resp->challenges)
-				resp->challenges = mget_vector_create(2, 2, NULL);
-			mget_vector_add(resp->challenges, &challenge, sizeof(challenge));
-		} else if (!strncasecmp(name, "ICY-Metaint", namesize)) {
-			resp->icy_metaint = atoi(s);
+				if (!resp->challenges)
+					resp->challenges = mget_vector_create(2, 2, NULL);
+				mget_vector_add(resp->challenges, &challenge, sizeof(challenge));
+			}
+			break;
+		case 'd':
+			if (!strncasecmp(name, "Digest", namesize)) {
+				// http://tools.ietf.org/html/rfc3230
+				MGET_HTTP_DIGEST digest;
+				http_parse_digest(s, &digest);
+				// log_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
+				if (!resp->digests)
+					resp->digests = mget_vector_create(4, 4, NULL);
+				mget_vector_add(resp->digests, &digest, sizeof(digest));
+			}
+			break;
+		case 'i':
+			if (!strncasecmp(name, "ICY-Metaint", namesize)) {
+				resp->icy_metaint = atoi(s);
+			}
+			break;
+		default:
+			break;
 		}
 	}
 

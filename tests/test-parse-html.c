@@ -67,8 +67,8 @@ static const char *test_data[] ={
 
 static void html_dump(G_GNUC_MGET_UNUSED void *user_ctx, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos)
 {
-	// info_printf("\n%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
-	if ((flags & XML_FLG_ATTRIBUTE) && value) {
+//	info_printf("\n%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
+	if ((flags & XML_FLG_ATTRIBUTE) && val) {
 		int found = 0;
 
 		info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);

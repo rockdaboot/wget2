@@ -349,7 +349,7 @@ void mget_cookie_free_cookies(void)
 }
 
 // normalize/sanitize and store cookies
-int mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie)
+static int _mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie)
 {
 /*
 	log_printf("normalize cookie %s=%s\n", cookie->name, cookie->value);
@@ -372,8 +372,8 @@ int mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie)
 
 		// convert domain to lowercase
 		for (p = (char *)cookie->domain; *p; p++)
-			if (isupper(*p))
-				*p = tolower(*p);
+			if (*p >= 'A' && *p <= 'Z')
+				*p |= 0x20;
 	}
 
 	if (iri) {
@@ -427,12 +427,27 @@ int mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie)
 	return 1;
 }
 
+int mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie)
+{
+	mget_thread_mutex_lock(&cookies_mutex);
+
+	int ret = _mget_cookie_normalize_cookie(iri, cookie);
+
+	mget_thread_mutex_unlock(&cookies_mutex);
+
+	return ret;
+}
+
 void mget_cookie_normalize_cookies(const MGET_IRI *iri, const MGET_VECTOR *cookies)
 {
 	int it;
 
+	mget_thread_mutex_lock(&cookies_mutex);
+
 	for (it = 0; it < mget_vector_size(cookies); it++)
-		mget_cookie_normalize_cookie(iri, mget_vector_get(cookies, it));
+		_mget_cookie_normalize_cookie(iri, mget_vector_get(cookies, it));
+
+	mget_thread_mutex_unlock(&cookies_mutex);
 }
 
 void mget_cookie_store_cookie(MGET_COOKIE *cookie)

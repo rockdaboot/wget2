@@ -72,17 +72,51 @@ struct XML_CONTEXT {
 static const char *getToken(XML_CONTEXT *context)
 {
 	int c;
+	const char *p;
 
-	context->token_len = 0;
+//	context->token_len = 0;
 
 	// skip leading spaces
 	while ((c = *context->p++) && isspace(c));
 	if (!c) return NULL;
 
 	context->token = context->p - 1;
-	context->token_len++;
+//	context->token_len++;
 
-	// info_printf("a tok=%.*s c=%c\n",(int)context->token_len, context->token, c);
+//	info_printf("a c=%c\n", c);
+
+	if (isalpha(c) || c == '_') {
+		while ((c = *context->p++) && !isspace(c) && c != '>' && c != '=');
+		if (!c) return NULL;
+//		if (c == '>' || c == '=') context->p--;
+		context->p--;
+		context->token_len = context->p - context->token;
+		return context->token;
+	}
+
+	if (c == '/') {
+		if (!(c = *context->p++)) return NULL;
+		if (c == '>') {
+			context->token_len = 2;
+			return context->token;
+		} else return NULL; // syntax error
+	}
+
+	if (c == '\"' || c == '\'') { // read in quoted value
+		int quote = c;
+
+		context->token = context->p;
+
+		if (!(p = strchr(context->p, quote)))
+			return NULL;
+		// while ((c = *context->p++) && c != quote);
+		//if (!c) return NULL;
+		context->p = p + 1;
+
+		context->token_len = context->p - context->token - 1;
+		return context->token;
+	}
+
 	if (c == '<') { // fetch specials, e.g. start of comments '<!--'
 		if (!(c = *context->p++)) return NULL;
 		if (c == '?' || c == '/') {
@@ -115,6 +149,11 @@ static const char *getToken(XML_CONTEXT *context)
 		}
 	}
 
+	if (c == '>' || c == '=') {
+		context->token_len = 1;
+		return context->token;
+	}
+
 	if (c == '-') { // fetch specials, e.g. end of comments '-->'
 		if (!(c = *context->p++)) return NULL;
 		if (c != '-') {
@@ -141,41 +180,6 @@ static const char *getToken(XML_CONTEXT *context)
 			context->token_len = 2;
 			return context->token;
 		}
-	}
-
-	if (c == '/') {
-		if (!(c = *context->p++)) return NULL;
-		if (c == '>') {
-			context->token_len = 2;
-			return context->token;
-		} else return NULL; // syntax error
-	}
-
-	if (c == '=' || c == '>') {
-		context->token_len = 1;
-		return context->token;
-	}
-
-	if (c == '\"' || c == '\'') { // read in quoted value
-		int quote = c;
-
-		context->token_len = 0;
-		context->token = context->p;
-
-		while ((c = *context->p++) && c != quote);
-		if (!c) return NULL;
-
-		context->token_len = context->p - context->token - 1;
-		return context->token;
-	}
-
-	if (isalpha(c) || c == '_') {
-		while ((c = *context->p++) && !isspace(c) && c != '>' && c != '=');
-		if (!c) return NULL;
-//		if (c == '>' || c == '=') context->p--;
-		context->p--;
-		context->token_len = context->p - context->token;
-		return context->token;
 	}
 
 	while ((c = *context->p++) && !isspace(c));
@@ -407,7 +411,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 //					snprintf(attribute, sizeof(attribute), "%.*s", (int)context->token_len, tok);
 					char attribute[context->token_len + 1];
 					strncpy(attribute, tok, context->token_len);
-					directory[context->token_len] = 0;
+					attribute[context->token_len] = 0;
 
 					if (getValue(context) == 0) return;
 					if (context->token_len) {
@@ -445,11 +449,11 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 					return;
 				else
 					continue;
-			} else if (context->token_len == 2 && !strncmp(tok, "<?", 2)) { // special info - ignore
+			} else if (!strncmp(tok, "<?", 2)) { // special info - ignore
 				getProcessing(context);
 				debug_printf("%s=<?%.*s?>\n", directory, (int)context->token_len, context->token);
 				continue;
-			} else if (context->token_len == 2 && !strncmp(tok, "<!", 2)) {
+			} else if (!strncmp(tok, "<!", 2)) {
 				getSpecial(context);
 				debug_printf("%s=<!%.*s>\n", directory, (int)context->token_len, context->token);
 			}

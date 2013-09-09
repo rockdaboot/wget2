@@ -77,6 +77,21 @@ mget_thread_t mget_thread_self(void)
 	return pthread_self();
 }
 
+int mget_thread_cond_init(mget_thread_cond_t *cond)
+{
+	return pthread_cond_init(cond, NULL);
+}
+
+int mget_thread_cond_signal(mget_thread_cond_t *cond)
+{
+	return pthread_cond_broadcast(cond);
+}
+
+int mget_thread_cond_wait(mget_thread_cond_t *cond, mget_thread_mutex_t *mutex)
+{
+	return pthread_cond_wait(cond, mutex);
+}
+
 #else // HAVE_LIBPTHREAD
 
 int mget_thread_start(mget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_MGET_UNUSED)

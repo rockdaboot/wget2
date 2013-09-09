@@ -261,8 +261,8 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 		if (iri->scheme == p) {
 			// convert scheme to lowercase
 			for (; *p; p++)
-				if (isupper(*p))
-					*p = tolower(*p);
+				if (*p >= 'A' && *p <= 'Z')
+					*p |= 0x20;
 		}
 
 	} else {
@@ -301,8 +301,7 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 
 	if (c == '#') {
 		iri->fragment = s;
-		while (*s)
-			s++;
+		s += strlen(s);
 	}
 
 	if (*s) {
@@ -326,7 +325,7 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 			} else {
 				// something is broken
 				iri->host = s + 1;
-				while (*s) s++;
+				s += strlen(s);
 			}
 		} else {
 			iri->host = s;
@@ -340,11 +339,6 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 			}
 		}
 		*s = 0;
-/*
-		for (p = (char *)iri->host; *p; p++)
-			if (*p >= 'A' && *p <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
-				*p = tolower(*p);
-*/
  	}
 
 	iri->resolv_port = iri->port ? iri->port : default_port;
@@ -353,7 +347,8 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 	if (iri->host) {
 		const char *host_utf;
 
-		_unescape((unsigned char *)iri->host);
+		if (strchr(iri->host, '%'))
+			_unescape((unsigned char *)iri->host);
 
 		host_utf = mget_str_to_utf8(iri->host, encoding);
 
@@ -374,7 +369,7 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 
 		for (p = (char *)iri->host; *p; p++)
 			if (*p >= 'A' && *p <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
-				*p = tolower(*p);
+				*p |= 0x20;
 	}
 	else {
 		if (iri->scheme == IRI_SCHEME_HTTP || iri->scheme == IRI_SCHEME_HTTPS) {
@@ -383,11 +378,11 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 			return NULL;
 		}
 	}
-	if (iri->path)
+	if (iri->path && strchr(iri->path, '%'))
 		_unescape((unsigned char *)iri->path);
-	if (iri->query)
+	if (iri->query && strchr(iri->query, '%'))
 		_unescape((unsigned char *)iri->query);
-	if (iri->fragment)
+	if (iri->fragment && strchr(iri->fragment, '%'))
 		_unescape((unsigned char *)iri->fragment);
 
 //	info_printf("%s: path '%s'\n", iri->uri, iri->path);
@@ -578,18 +573,7 @@ int mget_iri_compare(MGET_IRI *iri1, MGET_IRI *iri2)
 
 //	info_printf("iri %p %p %s:%s %s:%s\n",iri1,iri2,iri1->scheme,iri1->port,iri2->scheme,iri2->port);
 
-	if (iri1->scheme != iri2->scheme)
-		return iri1->scheme < iri2->scheme ? -1 : 1;
-
-	if (iri1->port != iri2->port) {
-		if ((n = mget_strcmp(iri1->port, iri2->port)))
-			return n;
-	}
-
-	// host is already lowercase, no need to call strcasecmp()
-	if ((n = strcmp(iri1->host, iri2->host)))
-		return n;
-
+/*
 	if (!iri1->path) {
 //		if (iri2->path && strcmp(iri2->path, "/"))
 		if (iri2->path)
@@ -600,10 +584,22 @@ int mget_iri_compare(MGET_IRI *iri1, MGET_IRI *iri2)
 		if (iri1->path)
 			return 1;
 	}
-	else if ((n = strcasecmp(iri1->path, iri2->path)))
+*/
+	if ((n = mget_strcasecmp(iri1->path, iri2->path)))
 		return n;
 
 	if ((n = mget_strcasecmp(iri1->query, iri2->query)))
+		return n;
+
+	if (iri1->scheme != iri2->scheme)
+		return iri1->scheme < iri2->scheme ? -1 : 1;
+
+	if (iri1->port != iri2->port)
+		if ((n = mget_strcmp(iri1->port, iri2->port)))
+			return n;
+
+	// host is already lowercase, no need to call strcasecmp()
+	if ((n = strcmp(iri1->host, iri2->host)))
 		return n;
 
 	// if ((n = null_strcasecmp(iri1->fragment, iri2->fragment)))

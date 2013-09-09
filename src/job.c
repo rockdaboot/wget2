@@ -263,7 +263,7 @@ void job_validate_file(JOB *job)
 		}
 
 		if (rc == -1) {
-			// failed to check file, assume file is ok
+			// failed to check file, continue as if file is ok
 			job->hash_ok = 1;
 			info_printf(_("Failed to build checksum, assuming file to be OK\n"));
 			return;
@@ -345,12 +345,17 @@ void job_resume(JOB *job)
 }
  */
 
+static mget_thread_mutex_t
+	mutex = MGET_THREAD_MUTEX_INITIALIZER;
+
 JOB *queue_add(MGET_IRI *iri)
 {
 	if (iri) {
 		JOB job = { .iri = iri }, *jobp;
 
+		mget_thread_mutex_lock(&mutex);
 		jobp = mget_list_append(&queue, &job, sizeof(JOB));
+		mget_thread_mutex_unlock(&mutex);
 
 		debug_printf("queue_add %p %s\n", (void *)jobp, iri->uri);
 		return jobp;
@@ -361,14 +366,19 @@ JOB *queue_add(MGET_IRI *iri)
 
 void queue_del(JOB *job)
 {
-	debug_printf("queue_del %p\n", (void *)job);
-	job_free(job);
-	mget_list_remove(&queue, job);
+	if (job) {
+		debug_printf("queue_del %p\n", (void *)job);
+		job_free(job);
+
+		mget_thread_mutex_lock(&mutex);
+		mget_list_remove(&queue, job);
+		mget_thread_mutex_unlock(&mutex);
+	}
 }
 
 struct find_free_job_context {
-	JOB **job_out;
-	PART **part_out;
+	JOB **job;
+	PART **part;
 };
 
 // did I say, that I like nested function instead using contexts !?
@@ -377,7 +387,7 @@ struct find_free_job_context {
 static int find_free_job(struct find_free_job_context *context, JOB *job)
 {
 	// log_printf("%p %p %p %d\n",part_out,job,job->parts,job->inuse);
-	if (context->part_out && job->parts) {
+	if (context->part && job->parts) {
 		int it;
 		// log_printf("nparts %d\n",vec_size(job->parts));
 
@@ -385,31 +395,35 @@ static int find_free_job(struct find_free_job_context *context, JOB *job)
 			PART *part = mget_vector_get(job->parts, it);
 			if (!part->inuse) {
 				part->inuse = 1;
-				*context->part_out = part;
-				*context->job_out = job;
+				*context->part = part;
+				*context->job = job;
 				debug_printf("queue_get part %d/%d %s\n", it + 1, mget_vector_size(job->parts), job->name);
 				return 1;
 			}
 		}
 	} else if (!job->inuse) {
 		job->inuse = 1;
-		*context->job_out = job;
+		*context->job = job;
 		debug_printf("queue_get job %s\n", job->iri->uri);
 		return 1;
 	}
 	return 0;
 }
 
-int queue_get(JOB **job_out, PART **part_out)
+int queue_get(JOB **job, PART **part)
 {
 	struct find_free_job_context
-		context = {job_out, part_out};
+		context = { .job = job, .part = part };
 
-	*job_out = NULL;
-	if (part_out)
-		*part_out = NULL;
+	*job = NULL;
+	if (part)
+		*part = NULL;
 
-	return mget_list_browse(queue, (int(*)(void *, void *))find_free_job, &context);
+	mget_thread_mutex_lock(&mutex);
+	int ret = mget_list_browse(queue, (int(*)(void *, void *))find_free_job, &context);
+	mget_thread_mutex_unlock(&mutex);
+
+	return ret;
 }
 
 int queue_empty(void)
@@ -428,6 +442,21 @@ static int queue_free_func(void *context G_GNUC_MGET_UNUSED, JOB *job)
 
 void queue_free(void)
 {
+	mget_thread_mutex_lock(&mutex);
 	mget_list_browse(queue, (int(*)(void *, void *))queue_free_func, NULL);
 	mget_list_free(&queue);
+	mget_thread_mutex_unlock(&mutex);
+}
+
+static int queue_print_func(void *context G_GNUC_MGET_UNUSED, JOB *job)
+{
+	info_printf("%s %d\n", job->local_filename, job->inuse);
+	return 0;
+}
+
+void queue_print(void)
+{
+	mget_thread_mutex_lock(&mutex);
+	mget_list_browse(queue, (int(*)(void *, void *))queue_print_func, NULL);
+	mget_thread_mutex_unlock(&mutex);
 }

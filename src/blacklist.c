@@ -36,9 +36,11 @@
 #include "log.h"
 #include "blacklist.h"
 
-//static VECTOR
 static MGET_HASHMAP
 	*blacklist;
+
+static mget_thread_mutex_t
+	mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
 // Paul Larson's hash function from Microsoft Research
 // ~ O(1) insertion, search and removal
@@ -73,7 +75,9 @@ static int G_GNUC_MGET_NONNULL_ALL _blacklist_print(const MGET_IRI *iri)
 
 void blacklist_print(void)
 {
+	mget_thread_mutex_lock(&mutex);
 	mget_hashmap_browse(blacklist, (int(*)(const void *, const void *))_blacklist_print);
+	mget_thread_mutex_unlock(&mutex);
 }
 
 MGET_IRI *blacklist_add(MGET_IRI *iri)
@@ -83,9 +87,6 @@ MGET_IRI *blacklist_add(MGET_IRI *iri)
 	if (!iri)
 		return NULL;
 
-	if (!blacklist)
-		blacklist = mget_hashmap_create(128, -2, (unsigned int(*)(const void *))hash_iri, (int(*)(const void *, const void *))mget_iri_compare);
-
 //	if ((existing_iri = mget_hashmap_get(blacklist, iri))) {
 //		// info_printf("Already in blacklist: %s\n",iri->uri);
 //		mget_iri_free(&iri);
@@ -93,65 +94,25 @@ MGET_IRI *blacklist_add(MGET_IRI *iri)
 //	}
 
 	if (mget_iri_supported(iri)) {
+		mget_thread_mutex_lock(&mutex);
+
+		if (!blacklist)
+			blacklist = mget_hashmap_create(128, -2, (unsigned int(*)(const void *))hash_iri, (int(*)(const void *, const void *))mget_iri_compare);
+
 		if (!mget_hashmap_contains(blacklist, iri)) {
 			// info_printf("Add to blacklist: %s\n",iri->uri);
 			mget_hashmap_put_noalloc(blacklist, iri, NULL); // use hashmap as a hashset (without value)
+			mget_thread_mutex_unlock(&mutex);
 			return iri;
 		}
+
+		mget_thread_mutex_unlock(&mutex);
 	}
 
 	mget_iri_free(&iri);
 
 	return NULL;
 }
-
-/*
-int in_blacklist(IRI *iri)
-{
-	int it;
-
-	for (it = 0; iri_schemes[it]; it++) {
-		if (iri_schemes[it] == iri->scheme)
-			return vec_find(blacklist, iri) >= 0;
-	}
-
-	return 1; // unknown scheme becomes blacked out
-}
-
-IRI *blacklist_add(IRI *iri)
-{
-	if (!iri)
-		return NULL;
-
-	if (!blacklist)
-		blacklist = vec_create(128, -2, (int(*)(const void *, const void *))iri_compare);
-
-	if (!in_blacklist(iri)) {
-		//	info_printf("Add to blacklist: %s\n",uri);
-		vec_insert_sorted_noalloc(blacklist, iri);
-		return iri;
-	}
-
-	iri_free(&iri);
-
-	return NULL;
-}
-
-void blacklist_print(void)
-{
-	int n;
-
-	for (n = 0; n < vec_size(blacklist); n++) {
-		IRI *iri = vec_get(blacklist, n);
-		info_printf("blacklist[%d] %s\n", n, iri->uri);
-	}
-}
-
-void blacklist_free(void)
-{
-	vec_free(&blacklist);
-}
-*/
 
 static int _free_entry(MGET_IRI *iri)
 {
@@ -161,6 +122,10 @@ static int _free_entry(MGET_IRI *iri)
 
 void blacklist_free(void)
 {
+	mget_thread_mutex_lock(&mutex);
+
 	mget_hashmap_browse(blacklist, (int(*)(const void *, const void *))_free_entry);
 	mget_hashmap_free(&blacklist);
+
+	mget_thread_mutex_unlock(&mutex);
 }

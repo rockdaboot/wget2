@@ -29,6 +29,8 @@
  * RFC 3864 Link HTTP Header
  * RFC 3230 Digest HTTP Header
  *
+ * Some examples to test:
+ * http://go-oo.mirrorbrain.org/stable/linux-x86/3.2.1/ooobasis3.2-ar-help-3.2.1-9505.i586.rpm
  * http://download.services.openoffice.org/files/stable/
  * http://go-oo.mirrorbrain.org/evolution/stable/Evolution-2.24.0.exe
  *
@@ -40,7 +42,7 @@
 #include <libmget.h>
 
 void
-	metalink3_parse(int sockfd, MGET_HTTP_RESPONSE *resp) G_GNUC_MGET_NONNULL((2)),
-	metalink4_parse(int sockfd, MGET_HTTP_RESPONSE *resp) G_GNUC_MGET_NONNULL((2));
+	metalink3_parse(JOB *job, MGET_HTTP_RESPONSE *resp) G_GNUC_MGET_NONNULL((2)),
+	metalink4_parse(JOB *job, MGET_HTTP_RESPONSE *resp) G_GNUC_MGET_NONNULL((2));
 
 #endif /* _MGET_METALINK_H */

@@ -35,11 +35,13 @@
 
 #include <libmget.h>
 
+#include "job.h"
 #include "metalink.h"
 
 struct metalink_context {
+	JOB
+		*job;
 	int
-		sockfd,
 		priority;
 //		id; // counting piece number in metalink 3
 	char
@@ -68,7 +70,7 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 	if (attr) {
 		if (*dir == 0) { // /metalink/file
 			if (!strcasecmp(attr, "name")) {
-				dprintf(ctx->sockfd, "chunk name %s\n", value);
+				ctx->job->name = strdup(value);
 			}
 		} else if (!strcasecmp(dir, "/pieces")) {
 			if (!strcasecmp(attr, "type")) {
@@ -92,27 +94,61 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 	} else {
 		if (!strcasecmp(dir, "/pieces/hash")) {
 			sscanf(value, "%127s", ctx->hash);
-			if (ctx->length && *ctx->hash_type && *ctx->hash)
-				dprintf(ctx->sockfd, "chunk piece %lld %s %s\n", ctx->length, ctx->hash_type, ctx->hash);
+			if (ctx->length && *ctx->hash_type && *ctx->hash) {
+				// hash for a piece of the file
+				PIECE piece, *piecep;
+
+				if (!ctx->job->pieces)
+					ctx->job->pieces = mget_vector_create(32, 32, NULL);
+
+				piece.length = ctx->length;
+				strcpy(piece.hash.type,ctx->hash_type);
+				strcpy(piece.hash.hash_hex,ctx->hash);
+
+				piecep = mget_vector_get(ctx->job->pieces, mget_vector_size(ctx->job->pieces) - 1);
+				if (piecep)
+					piece.position = piecep->position + piecep->length;
+				mget_vector_add(ctx->job->pieces, &piece, sizeof(PIECE));
+			}
 			*ctx->hash = 0;
 		} else if (!strcasecmp(dir, "/hash")) {
 			sscanf(value, "%127s", ctx->hash);
-			if (*ctx->hash_type && *ctx->hash)
-				dprintf(ctx->sockfd, "chunk hash %s %s\n", ctx->hash_type, ctx->hash);
+			if (*ctx->hash_type && *ctx->hash) {
+				// hashes for the complete file
+				HASH hash;
+
+				if (!ctx->job->hashes)
+					ctx->job->hashes = mget_vector_create(4, 4, NULL);
+
+				memset(&hash, 0, sizeof(HASH));
+				strcpy(hash.type,ctx->hash_type);
+				strcpy(hash.hash_hex,ctx->hash);
+				mget_vector_add(ctx->job->hashes, &hash, sizeof(HASH));
+			}
 			*ctx->hash_type = *ctx->hash = 0;
 		} else if (!strcasecmp(dir, "/size")) {
-			dprintf(ctx->sockfd, "chunk size %lld\n", atoll(value));
+			ctx->job->size = atoll(value);
 		} else if (!strcasecmp(dir, "/url")) {
-			dprintf(ctx->sockfd, "chunk mirror %s %u %s\n", ctx->location, ctx->priority, value);
-			strcpy(ctx->location, "-");
+			MIRROR mirror;
+
+			if (!ctx->job->mirrors)
+				ctx->job->mirrors = mget_vector_create(4, 4, NULL);
+
+			memset(&mirror, 0, sizeof(MIRROR));
+			strcpy(mirror.location, ctx->location);
+			mirror.priority = ctx->priority;
+			mirror.iri = mget_iri_parse(value, NULL);
+			mget_vector_add(ctx->job->mirrors, &mirror, sizeof(MIRROR));
+
+			*ctx->location = 0;
 			ctx->priority = 999999;
 		}
 	}
 }
 
-void metalink4_parse(int sockfd, MGET_HTTP_RESPONSE *resp)
+void metalink4_parse(JOB *job, MGET_HTTP_RESPONSE *resp)
 {
-	struct metalink_context ctx = { .sockfd = sockfd, .priority = 999999, .location = "-" };
+	struct metalink_context ctx = { .job = job, .priority = 999999, .location = "-" };
 
 	mget_xml_parse_buffer(resp->body->data, _metalink4_parse, &ctx, 0);
 }
@@ -135,7 +171,7 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 	if (attr) {
 		if (*dir == 0) { // /metalink/file
 			if (!strcasecmp(attr, "name")) {
-				dprintf(ctx->sockfd, "chunk name %s\n", value);
+				ctx->job->name = strdup(value);
 			}
 			return;
 		}
@@ -168,27 +204,62 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 	} else {
 		if (!strcasecmp(dir, "/verification/pieces/hash")) {
 			sscanf(value, "%127s", ctx->hash);
-			if (ctx->length && *ctx->hash_type && *ctx->hash)
-				dprintf(ctx->sockfd, "chunk piece %lld %s %s\n", ctx->length, ctx->hash_type, ctx->hash);
+			if (ctx->length && *ctx->hash_type && *ctx->hash) {
+				// hash for a piece of the file
+				PIECE piece, *piecep;
+
+				if (!ctx->job->pieces)
+					ctx->job->pieces = mget_vector_create(32, 32, NULL);
+
+				piece.length = ctx->length;
+				strcpy(piece.hash.type,ctx->hash_type);
+				strcpy(piece.hash.hash_hex,ctx->hash);
+
+				piecep = mget_vector_get(ctx->job->pieces, mget_vector_size(ctx->job->pieces) - 1);
+				if (piecep)
+					piece.position = piecep->position + piecep->length;
+				mget_vector_add(ctx->job->pieces, &piece, sizeof(PIECE));
+
+			}
 			*ctx->hash = 0;
 		} else if (!strcasecmp(dir, "/verification/hash")) {
 			sscanf(value, "%127s", ctx->hash);
-			if (*ctx->hash_type && *ctx->hash)
-				dprintf(ctx->sockfd, "chunk hash %s %s\n", ctx->hash_type, ctx->hash);
+			if (*ctx->hash_type && *ctx->hash) {
+				// hashes for the complete file
+				HASH hash;
+
+				if (!ctx->job->hashes)
+					ctx->job->hashes = mget_vector_create(4, 4, NULL);
+
+				memset(&hash, 0, sizeof(HASH));
+				strcpy(hash.type,ctx->hash_type);
+				strcpy(hash.hash_hex,ctx->hash);
+				mget_vector_add(ctx->job->hashes, &hash, sizeof(HASH));
+			}
 			*ctx->hash_type = *ctx->hash = 0;
 		} else if (!strcasecmp(dir, "/size")) {
-			dprintf(ctx->sockfd, "chunk size %lld\n", atoll(value));
+			ctx->job->size = atoll(value);
 		} else if (!strcasecmp(dir, "/resources/url")) {
-			dprintf(ctx->sockfd, "chunk mirror %s %u %s\n", ctx->location, ctx->priority, value);
-			strcpy(ctx->location, "-");
+			MIRROR mirror;
+
+			if (!ctx->job->mirrors)
+				ctx->job->mirrors = mget_vector_create(4, 4, NULL);
+
+			memset(&mirror, 0, sizeof(MIRROR));
+			strcpy(mirror.location, ctx->location);
+			mirror.priority = ctx->priority;
+			mirror.iri = mget_iri_parse(value, NULL);
+			mget_vector_add(ctx->job->mirrors, &mirror, sizeof(MIRROR));
+
+			*ctx->location = 0;
 			ctx->priority = 999999;
 		}
 	}
 }
 
-void metalink3_parse(int sockfd, MGET_HTTP_RESPONSE *resp)
+void metalink3_parse(JOB *job, MGET_HTTP_RESPONSE *resp)
 {
-	struct metalink_context ctx = { .sockfd = sockfd, .priority = 999999, .location = "-" };
+	struct metalink_context ctx = { .job = job, .priority = 999999, .location = "-" };
 
 	mget_xml_parse_buffer(resp->body->data, _metalink3_parse, &ctx, 0);
 }

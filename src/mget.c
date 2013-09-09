@@ -67,8 +67,9 @@ typedef struct {
 	size_t
 		bufsize;
 	int
-		sockfd[2],
 		id;
+	mget_thread_cond_t
+		cond;
 } DOWNLOADER;
 
 //static HTTP_RESPONSE
@@ -77,15 +78,15 @@ static void
 	download_part(DOWNLOADER *downloader),
 	save_file(MGET_HTTP_RESPONSE *resp, const char *fname),
 	append_file(MGET_HTTP_RESPONSE *resp, const char *fname),
-	html_parse(int sockfd, int level, const char *data, const char *encoding, MGET_IRI *iri),
-	html_parse_localfile(int sockfd, int level, const char *fname, const char *encoding, MGET_IRI *iri),
-	css_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *iri),
-	css_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *iri);
+	html_parse(JOB *job, int level, const char *data, const char *encoding, MGET_IRI *iri),
+	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, MGET_IRI *iri),
+	css_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *iri),
+	css_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *iri);
 MGET_HTTP_RESPONSE
 	*http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader);
 
 static DOWNLOADER
-	*downloader;
+	*downloaders;
 static void
 	*downloader_thread(void *p);
 long long
@@ -201,37 +202,6 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 	return fname;
 }
 
-// assign a job to the next idle downloader
-static int schedule_download(JOB *job, PART *part)
-{
-	if (config.quota && quota >= config.quota)
-		return 0;
-
-	if (job) {
-		static int offset;
-		int n;
-
-		for (n = 0; n < config.num_threads; n++) {
-			if (downloader[offset].job == NULL) {
-				downloader[offset].job = job;
-				downloader[offset].part = part;
-				if (part)
-					part->inuse = 1;
-				else
-					job->inuse = 1;
-
-				dprintf(downloader[offset].sockfd[0], "go\n");
-				return 1;
-			}
-
-			if (++offset >= config.num_threads)
-				offset = 0;
-		}
-	}
-
-	return 0;
-}
-
 // Since quota may change at any time in a threaded environment,
 // we have to modify and check the quota in one (protected) step.
 static long long quota_modify_read(size_t nbytes)
@@ -259,6 +229,8 @@ typedef struct {
 
 static MGET_HASHMAP
 	*hosts;
+static mget_thread_mutex_t
+	hosts_mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
 static int _host_compare(const HOST *host1, const HOST *host2)
 {
@@ -293,6 +265,8 @@ static void hosts_add(MGET_IRI *iri)
 	if (!iri)
 		return;
 
+	mget_thread_mutex_lock(&hosts_mutex);
+
 	if (!hosts)
 		hosts = mget_hashmap_create(16, -2, (unsigned int (*)(const void *))_host_hash, (int (*)(const void *, const void *))_host_compare);
 
@@ -304,6 +278,8 @@ static void hosts_add(MGET_IRI *iri)
 		// info_printf("Add to hosts: %s\n", hostname);
 		mget_hashmap_put_noalloc(hosts, host, host);
 	}
+
+	mget_thread_mutex_unlock(&hosts_mutex);
 }
 /*
 static int _free_host_entry(const char *name G_GNUC_MGET_UNUSED, HOST *host)
@@ -314,10 +290,18 @@ static int _free_host_entry(const char *name G_GNUC_MGET_UNUSED, HOST *host)
 */
 static void hosts_free(void)
 {
-//	mget_hashmap_browse(hosts, (int(*)(const char *, const void *))_free_host_entry);
+	mget_thread_mutex_lock(&hosts_mutex);
+
+	//	mget_hashmap_browse(hosts, (int(*)(const char *, const void *))_free_host_entry);
 	mget_hashmap_free(&hosts);
+
+	mget_thread_mutex_unlock(&hosts_mutex);
 }
 
+static mget_thread_mutex_t
+	downloader_mutex = MGET_THREAD_MUTEX_INITIALIZER;
+
+// Needs to be thread-save
 static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encoding)
 {
 	MGET_IRI *iri;
@@ -339,6 +323,8 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 		return NULL;
 	}
 
+	mget_thread_mutex_lock(&downloader_mutex);
+
 	job = queue_add(blacklist_add(iri));
 
 	if (job) {
@@ -355,7 +341,70 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 		}
 	}
 
+	mget_thread_mutex_unlock(&downloader_mutex);
+
 	return job;
+}
+
+// Needs to be thread-save
+static void add_uri(JOB *job, const char *encoding, const char *uri, int redirection)
+{
+	JOB *new_job;
+	MGET_IRI *iri;
+
+	if (redirection) { // redirect
+		if (config.max_redirect && job && job->redirection_level >= config.max_redirect) {
+			return;
+		}
+	} else {
+//		if (config.recursive) {
+//			if (config.level && job->level >= config.level + config.page_requisites) {
+//				continue;
+//			}
+//		}
+	}
+
+	iri = mget_iri_parse(uri, encoding);
+
+	mget_thread_mutex_lock(&downloader_mutex);
+
+	if (config.recursive && !config.span_hosts) {
+		// only download content from given hosts
+		if (!iri->host || !mget_stringmap_contains(config.domains, iri->host) || mget_stringmap_contains(config.exclude_domains, iri->host)) {
+			mget_thread_mutex_unlock(&downloader_mutex);
+			info_printf("URI '%s' not followed\n", iri->uri);
+			mget_iri_free(&iri);
+			return;
+		}
+	}
+
+	if ((new_job = queue_add(blacklist_add(iri)))) {
+		if (!config.output_document)
+			new_job->local_filename = get_local_filename(new_job->iri);
+		if (job) {
+			if (redirection) {
+				new_job->redirection_level = job->redirection_level + 1;
+				new_job->referer = job->referer;
+			} else {
+				new_job->level = job->level + 1;
+				new_job->referer = job->iri;
+			}
+		}
+	}
+
+	mget_thread_mutex_unlock(&downloader_mutex);
+}
+
+static void print_status(DOWNLOADER *downloader, const char *fmt, ...) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(2,3);
+static void print_status(DOWNLOADER *downloader G_GNUC_MGET_UNUSED, const char *fmt, ...)
+{
+	if (config.verbose) {
+		va_list args;
+
+		va_start(args, fmt);
+		mget_info_vprintf(fmt, args);
+		va_end(args);
+	}
 }
 
 static void nop(int sig)
@@ -367,12 +416,21 @@ static void nop(int sig)
 	}
 }
 
+static mget_thread_mutex_t
+	main_mutex = MGET_THREAD_MUTEX_INITIALIZER;
+static mget_thread_cond_t
+	main_cond = MGET_THREAD_COND_INITIALIZER, // is signalled whenever a job is done
+	worker_cond = MGET_THREAD_COND_INITIALIZER;  // is signalled whenever a job is added
+static mget_thread_t
+	input_tid;
+static void
+	*input_thread(void *p);
+
 int main(int argc, const char *const *argv)
 {
-	int n, rc, maxfd, nfds, inputfd = -1;
+	int n, rc;
 	size_t bufsize = 0;
 	char *buf = NULL;
-	fd_set rset;
 	struct sigaction sig_action;
 
 #if ENABLE_NLS != 0
@@ -499,11 +557,11 @@ int main(int argc, const char *const *argv)
 	if (config.input_file) {
 		if (config.force_html) {
 			// read URLs from HTML file
-			html_parse_localfile(-1, 0, config.input_file, config.remote_encoding, config.base);
+			html_parse_localfile(NULL, 0, config.input_file, config.remote_encoding, config.base);
 		}
 		else if (config.force_css) {
 			// read URLs from CSS file
-			css_parse_localfile(-1, config.input_file, config.remote_encoding, config.base);
+			css_parse_localfile(NULL, config.input_file, config.remote_encoding, config.base);
 		}
 		else if (strcmp(config.input_file, "-")) {
 			int fd;
@@ -525,267 +583,47 @@ int main(int argc, const char *const *argv)
 				while ((len = mget_fdgetline(&buf, &bufsize, STDIN_FILENO)) >= 0) {
 					add_url_to_queue(buf, config.base, config.local_encoding);
 				}
-			} else
-				inputfd = STDIN_FILENO;
+			} else if ((rc = mget_thread_start(&input_tid, input_thread, NULL, 0)) != 0) {
+				error_printf(_("Failed to start downloader, error %d\n"), rc);
+			}
 		} // else read later asynchronous and process each URL immediately
 	}
 
-	downloader = xcalloc(config.num_threads, sizeof(DOWNLOADER));
+	downloaders = xcalloc(config.num_threads, sizeof(DOWNLOADER));
 
 	for (n = 0; n < config.num_threads; n++) {
-		downloader[n].id = n;
-
-		// create two-way communication path
-		socketpair(AF_UNIX, SOCK_STREAM, 0, downloader[n].sockfd);
-
-		// reading & writing to pipe must not block
-		fcntl(downloader[n].sockfd[0], F_SETFL, O_NDELAY);
-		// fcntl(downloader[n].sockfd[1], F_SETFL, O_NDELAY);
+		downloaders[n].id = n;
+		mget_thread_cond_init(&worker_cond);
 
 		// init thread attributes
-		if ((rc = mget_thread_start(&downloader[n].tid, downloader_thread, &downloader[n], 0)) != 0) {
+		if ((rc = mget_thread_start(&downloaders[n].tid, downloader_thread, &downloaders[n], 0)) != 0) {
 			error_printf(_("Failed to start downloader, error %d\n"), rc);
-			close(downloader[n].sockfd[0]);
-			close(downloader[n].sockfd[1]);
-		}
-
-		if (queue_get(&downloader[n].job, NULL)) {
-			dprintf(downloader[n].sockfd[0], "go\n");
 		}
 	}
 
-	while (!queue_empty() || inputfd != -1) {
+	mget_thread_mutex_lock(&main_mutex);
+	while (!terminate) {
+		// queue_print();
+		if (queue_empty() && !input_tid) {
+			break;
+		}
+
 		if (config.quota && quota >= config.quota) {
 			info_printf(_("Quota of %llu bytes reached - stopping.\n"), config.quota);
 			break;
 		}
 
-		FD_ZERO(&rset);
-		for (maxfd = n = 0; n < config.num_threads; n++) {
-			FD_SET(downloader[n].sockfd[0], &rset);
-			if (downloader[n].sockfd[0] > maxfd)
-				maxfd = downloader[n].sockfd[0];
-		}
-		if (inputfd != -1) {
-			FD_SET(inputfd, &rset);
-			if (inputfd > maxfd)
-				maxfd = inputfd;
-		}
-
-		// later, set timeout here
-		if ((nfds = select(maxfd + 1, &rset, NULL, NULL, NULL)) <= 0) {
-			// timeout or error
-			if (nfds == -1) {
-				if (errno == EINTR) break;
-				error_printf(_("Failed to select, error %d\n"), errno);
-			}
-			continue;
-		}
-
-		if (inputfd != -1 && FD_ISSET(inputfd, &rset)) {
-			ssize_t len;
-
-			while ((len = mget_fdgetline(&buf, &bufsize, inputfd)) > 0) {
-				JOB *job = add_url_to_queue(buf, config.base, config.local_encoding);
-				schedule_download(job, NULL);
-			}
-
-			// input closed, don't read from it any more
-			if (len == -1)
-				inputfd = -1;
-
-			nfds--;
-		}
-
-		for (n = 0; n < config.num_threads && nfds > 0 && !terminate; n++) {
-			if (FD_ISSET(downloader[n].sockfd[0], &rset)) {
-				while (!terminate && mget_fdgetline(&downloader[n].buf, &downloader[n].bufsize, downloader[n].sockfd[0]) > 0) {
-					JOB *job = downloader[n].job;
-					PART *part = downloader[n].part;
-					char *buf = downloader[n].buf;
-					int pos;
-
-					debug_printf("- [%d] %s\n", n, buf);
-
-					if (!strncmp(buf, "sts ", 4)) {
-						if (job && job->iri->uri)
-							info_printf("status '%s' for %s\n", buf + 4, job->iri->uri);
-						else
-							info_printf("status '%s'\n", buf + 4);
-					} else if (!strcmp(buf, "ready")) {
-						if (job) {
-							downloader[n].part = NULL;
-							// log_printf("got job %p %d\n",job->pieces,job->hash_ok);
-							if (!job->pieces || job->hash_ok) {
-								// download of single-part file complete, remove from job queue
-								// log_printf("- '%s' completed\n",downloader[n].job->uri);
-								queue_del(job);
-							} else if (part) {
-								if (part->done) {
-									// check if all parts are done (downloaded + hash-checked)
-									int all_done = 1, it;
-									for (it = 0; it < mget_vector_size(job->parts); it++) {
-										PART *part = mget_vector_get(job->parts, it);
-										if (!part->done) {
-											all_done = 0;
-											break;
-										}
-									}
-									// log_printf("all_done=%d\n",all_done);
-									if (all_done && mget_vector_size(job->hashes) > 0) {
-										// check integrity of complete file
-										dprintf(downloader[n].sockfd[0], "check\n");
-										continue;
-									}
-								} else part->inuse = 0; // something was wrong, reload again
-							} else if (job->size <= 0) {
-								debug_printf("File length %llu - remove job\n", (unsigned long long)job->size);
-								queue_del(job);
-							} else if (!job->mirrors) {
-								debug_printf("File length %llu - remove job\n", (unsigned long long)job->size);
-								queue_del(job);
-							} else {
-								// log_printf("just loaded metalink file\n");
-								// just loaded a metalink file, create parts and sort mirrors
-								// job_create_parts(job);
-
-								// start or resume downloading
-								job_validate_file(job);
-
-								if (job->hash_ok) {
-									// file ok or download of non-chunked file complete, remove from job queue
-									// log_printf("- '%s' completed\n",downloader[n].job->uri);
-									queue_del(job);
-								} else {
-									int it;
-
-									// sort mirrors by priority to download from highest priority first
-									job_sort_mirrors(job);
-
-									for (it = 0; it < mget_vector_size(job->parts); it++)
-										if (schedule_download(job, mget_vector_get(job->parts, it)) == 0)
-											break; // now all downloaders have a job
-								}
-							}
-						}
-
-						if (!config.quota || (config.quota && config.quota > quota)) {
-							if (queue_get(&downloader[n].job, &downloader[n].part))
-								dprintf(downloader[n].sockfd[0], "go\n");
-						}
-					} else if (!strncmp(buf, "chunk ", 6)) {
-						if (!strncasecmp(buf + 6, "mirror ", 7)) {
-							MIRROR mirror;
-
-							if (!job->mirrors)
-								job->mirrors = mget_vector_create(4, 4, NULL);
-
-							memset(&mirror, 0, sizeof(MIRROR));
-							pos = 0;
-							if (sscanf(buf + 13, "%2s %6d %n", mirror.location, &mirror.priority, &pos) >= 2 && pos) {
-								mirror.iri = mget_iri_parse(buf + 13 + pos, NULL);
-								mget_vector_add(job->mirrors, &mirror, sizeof(MIRROR));
-							} else
-								error_printf(_("Failed to parse metalink mirror '%s'\n"), buf);
-						} else if (!strncasecmp(buf + 6, "hash ", 5)) {
-							// hashes for the complete file
-							HASH hash;
-
-							if (!job->hashes)
-								job->hashes = mget_vector_create(4, 4, NULL);
-
-							memset(&hash, 0, sizeof(HASH));
-							if (sscanf(buf + 11, "%15s %127s", hash.type, hash.hash_hex) == 2) {
-								mget_vector_add(job->hashes, &hash, sizeof(HASH));
-							} else
-								error_printf(_("Failed to parse metalink hash '%s'\n"), buf);
-						} else if (!strncasecmp(buf + 6, "piece ", 6)) {
-							// hash for a piece of the file
-							PIECE piece, *piecep;
-
-							if (!job->pieces)
-								job->pieces = mget_vector_create(32, 32, NULL);
-
-							memset(&piece, 0, sizeof(PIECE));
-							if (sscanf(buf + 12, "%15llu %15s %127s", (unsigned long long *)&piece.length, piece.hash.type, piece.hash.hash_hex) == 3) {
-								piecep = mget_vector_get(job->pieces, mget_vector_size(job->pieces) - 1);
-								if (piecep)
-									piece.position = piecep->position + piecep->length;
-								mget_vector_add(job->pieces, &piece, sizeof(PIECE));
-							} else
-								error_printf(_("Failed to parse metalink piece '%s'\n"), buf);
-						} else if (!strncasecmp(buf + 6, "name ", 5)) {
-							job->name = strdup(buf + 11);
-						} else if (!strncasecmp(buf + 6, "size ", 5)) {
-							job->size = atoll(buf + 11);
-						}
-					} else if (!strncmp(buf, "add uri ", 8) || !strncmp(buf, "redirect ", 9)) {
-						JOB *new_job;
-						MGET_IRI *iri;
-						char *p, *encoding;
-
-						if (*buf == 'r') { // redirect
-							if (config.max_redirect && job->redirection_level >= config.max_redirect) {
-								continue;
-							}
-							encoding = buf + 9;
-						} else {
-							encoding = buf + 8;
-							
-//							if (config.recursive) {
-//								if (config.level && job->level >= config.level + config.page_requisites) {
-//									continue;
-//								}
-//							}
-						}
-
-						for (p = encoding; *p != ' '; p++);
-						*p = 0;
-
-						if (*encoding == '-')
-							encoding = NULL;
-						
-						iri = mget_iri_parse(p + 1, encoding);
-
-						if (config.recursive && !config.span_hosts) {
-							// only download content from given hosts
-							if (!iri->host || !mget_stringmap_contains(config.domains, iri->host) || mget_stringmap_contains(config.exclude_domains, iri->host)) {
-								info_printf("URI '%s' not followed\n", iri->uri);
-								mget_iri_free(&iri);
-								continue;
-							}
-						}
-
-						if ((new_job = queue_add(blacklist_add(iri)))) {
-							if (!config.output_document)
-								new_job->local_filename = get_local_filename(new_job->iri);
-							if (*buf == 'r') {
-								new_job->redirection_level = job->redirection_level + 1;
-								new_job->referer = job->referer;
-							} else {
-								new_job->level = job->level + 1;
-								new_job->referer = job->iri;
-							}
-							schedule_download(new_job, NULL);
-						}
-					}
-				}
-				nfds--;
-			}
-		}
+		// here we sit and wait for an event from our worker threads
+		mget_thread_cond_wait(&main_cond, &main_mutex);
 	}
+	mget_thread_mutex_unlock(&main_mutex);
 
+//	info_printf(_("Main done\n"));
 	xfree(buf);
 
 	// stop downloaders
-	for (n = 0; n < config.num_threads; n++) {
-		close(downloader[n].sockfd[0]);
-		close(downloader[n].sockfd[1]);
-		http_close(&downloader[n].conn);
-		xfree(downloader[n].buf);
-		if (mget_thread_kill(downloader[n].tid, SIGTERM) == -1)
-			error_printf(_("Failed to kill downloader #%d\n"), n);
-	}
+	terminate=1;
+	mget_thread_cond_signal(&worker_cond);
 
 	for (n = 0; n < config.num_threads; n++) {
 		//		struct timespec ts;
@@ -794,7 +632,7 @@ int main(int argc, const char *const *argv)
 		// if the thread is not detached, we have to call pthread_join()/pthread_timedjoin_np()
 		// else we will have a huge memory leak
 		//		if ((rc=pthread_timedjoin_np(downloader[n].tid, NULL, &ts))!=0)
-		if ((rc = mget_thread_join(downloader[n].tid)) != 0)
+		if ((rc = mget_thread_join(downloaders[n].tid)) != 0)
 			error_printf(_("Failed to wait for downloader #%d (%d %d)\n"), n, rc, errno);
 	}
 
@@ -814,204 +652,260 @@ int main(int argc, const char *const *argv)
 	queue_free();
 	blacklist_free();
 	hosts_free();
-	xfree(downloader);
+	xfree(downloaders);
 	deinit();
 
 	return EXIT_SUCCESS;
 }
 
+void *input_thread(void *p G_GNUC_MGET_UNUSED)
+{
+	ssize_t len;
+	size_t bufsize = 0;
+	char *buf = NULL;
+
+	while ((len = mget_fdgetline(&buf, &bufsize, STDIN_FILENO)) >= 0) {
+		add_url_to_queue(buf, config.base, config.local_encoding);
+		mget_thread_cond_signal(&worker_cond);
+	}
+
+	// input closed, don't read from it any more
+	debug_printf("input closed\n");
+	input_tid = 0;
+	return NULL;
+}
+
 void *downloader_thread(void *p)
 {
 	DOWNLOADER *downloader = p;
+	MGET_HTTP_RESPONSE *resp = NULL;
 	JOB *job;
-	char *buf = NULL;
-	size_t bufsize = 0;
-//	fd_set rset;
-//	int nfds;
-	//	unsigned int seed=(unsigned int)(time(NULL)|mget_thread_self());
-	int sockfd = downloader->sockfd[1];
+	PART *part;
 
 	downloader->tid = mget_thread_self(); // to avoid race condition
 
-	while (!terminate) {
-/*		FD_ZERO(&rset);
-		FD_SET(sockfd, &rset);
+	mget_thread_mutex_lock(&main_mutex);
 
-		// later, set timeout here
-		if ((nfds = select(sockfd + 1, &rset, NULL, NULL, NULL)) <= 0) {
-			// timeout or error
-			if (nfds == -1) {
-				if (errno == EINTR || errno == EBADF) break;
-				error_printf(_("Failed to select, error %d\n"), errno);
-			}
+	while (!terminate) {
+		if (queue_get(&downloader->job, &downloader->part) == 0) {
+			// here we sit and wait for a job
+			mget_thread_cond_wait(&worker_cond, &main_mutex);
 			continue;
 		}
-*/
-		while (!terminate && mget_fdgetline(&buf, &bufsize, sockfd) > 0) {
-			debug_printf("+ [%d] %s\n", downloader->id, buf);
-			job = downloader->job;
-			if (!strcmp(buf, "check")) {
-				dprintf(sockfd, "sts %s checking...\n", job->name);
-				job_validate_file(job);
-				if (job->hash_ok)
-					debug_printf("sts check ok");
-				else
-					debug_printf("sts check failed");
-				dprintf(sockfd, "ready\n");
-			} else if (!strcmp(buf, "go")) {
-				MGET_HTTP_RESPONSE *resp = NULL;
 
-				if (!downloader->part) {
-					int tries = 0;
+		// hey, we got a job...
+		mget_thread_mutex_unlock(&main_mutex);
+		job = downloader->job;
 
-					do {
-						dprintf(sockfd, "sts Downloading...[%d]\n", job->level);
-						resp = http_get(job->iri, NULL, downloader);
-					} while (!resp && ++tries < 3);
+		if ((part = downloader->part)) {
+			// download metalink part
+			download_part(downloader);
+			if (part->done) {
+				// check if all parts are done (downloaded + hash-checked)
+				int all_done = 1, it;
 
-					if (!resp)
-						goto ready;
-
-					mget_cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
-					mget_cookie_store_cookies(resp->cookies); // store cookies
-
-					// check if we got a RFC 6249 Metalink response
-					// HTTP/1.1 302 Found
-					// Date: Fri, 20 Apr 2012 15:00:40 GMT
-					// Server: Apache/2.2.22 (Linux/SUSE) mod_ssl/2.2.22 OpenSSL/1.0.0e DAV/2 SVN/1.7.4 mod_wsgi/3.3 Python/2.7.2 mod_asn/1.5 mod_mirrorbrain/2.17.0 mod_fastcgi/2.4.2
-					// X-Prefix: 87.128.0.0/10
-					// X-AS: 3320
-					// X-MirrorBrain-Mirror: ftp.suse.com
-					// X-MirrorBrain-Realm: country
-					// Link: <http://go-oo.mirrorbrain.org/evolution/stable/Evolution-2.24.0.exe.meta4>; rel=describedby; type="application/metalink4+xml"
-					// Link: <http://go-oo.mirrorbrain.org/evolution/stable/Evolution-2.24.0.exe.torrent>; rel=describedby; type="application/x-bittorrent"
-					// Link: <http://ftp.suse.com/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=1; geo=de
-					// Link: <http://ftp.hosteurope.de/mirror/ftp.suse.com/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=2; geo=de
-					// Link: <http://ftp.isr.ist.utl.pt/pub/MIRRORS/ftp.suse.com/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=3; geo=pt
-					// Link: <http://suse.mirrors.tds.net/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=4; geo=us
-					// Link: <http://ftp.kddilabs.jp/Linux/distributions/ftp.suse.com/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=5; geo=jp
-					// Digest: MD5=/sr/WFcZH1MKTyt3JHL2tA==
-					// Digest: SHA=pvNwuuHWoXkNJMYSZQvr3xPzLZY=
-					// Digest: SHA-256=5QgXpvMLXWCi1GpNZI9mtzdhFFdtz6tuNwCKIYbbZfU=
-					// Location: http://ftp.suse.com/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe
-					// Content-Type: text/html; charset=iso-8859-1
-
-					if (resp->links) {
-						// Found a Metalink answer (RFC 6249 Metalink/HTTP: Mirrors and Hashes).
-						// We try to find and download the .meta4 file (RFC 5854).
-						// If we can't find the .meta4, download from the link with the highest priority.
-
-						MGET_HTTP_LINK *top_link = NULL, *metalink = NULL;
-						int it;
-
-						for (it = 0; it < mget_vector_size(resp->links); it++) {
-							MGET_HTTP_LINK *link = mget_vector_get(resp->links, it);
-							if (link->rel == link_rel_describedby) {
-								if (!strcasecmp(link->type, "application/metalink4+xml") ||
-								    !strcasecmp(link->type, "application/metalink+xml"))
-								{
-									// found a link to a metalink4 description
-									metalink = link;
-									break;
-								}
-							} else if (link->rel == link_rel_duplicate) {
-								if (!top_link || top_link->pri > link->pri)
-									// just save the top priority link
-									top_link = link;
-							}
-						}
-
-						if (metalink) {
-							// found a link to a metalink3 or metalink4 description, create a new job
-							dprintf(sockfd, "add uri - %s\n", metalink->uri);
-							goto ready;
-						} else if (top_link) {
-							// no metalink4 description found, create a new job
-							dprintf(sockfd, "add uri - %s\n", top_link->uri);
-							goto ready;
-						}
+				for (it = 0; it < mget_vector_size(job->parts); it++) {
+					PART *part = mget_vector_get(job->parts, it);
+					if (!part->done) {
+						all_done = 0;
+						break;
 					}
-
-					if (resp->content_type) {
-						if (!strcasecmp(resp->content_type, "application/metalink4+xml")) {
-							dprintf(sockfd, "sts get metalink4 info\n");
-							// save_file(resp, job->local_filename, O_TRUNC);
-							metalink4_parse(sockfd, resp);
-							goto ready;
-						}
-						else if (!strcasecmp(resp->content_type, "application/metalink+xml")) {
-							dprintf(sockfd, "sts get metalink3 info\n");
-							// save_file(resp, job->local_filename, O_TRUNC);
-							metalink3_parse(sockfd, resp);
-							goto ready;
-						}
-					}
-
-					if (resp->code == 200) {
-						if (config.content_disposition && resp->content_filename)
-							save_file(resp, resp->content_filename);
-						else
-							save_file(resp, config.output_document ? config.output_document : job->local_filename);
-
-						if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
-							if (resp->content_type) {
-								if (!strcasecmp(resp->content_type, "text/html")) {
-									html_parse(sockfd, job->level, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
-								} else if (!strcasecmp(resp->content_type, "application/xhtml+xml")) {
-									// xml_parse(sockfd, resp, job->iri);
-								} else if (!strcasecmp(resp->content_type, "text/css")) {
-									css_parse(sockfd, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
-								}
-							}
-						}
-					}
-					else if (resp->code == 206 && config.continue_download) { // partial content
-						if (config.content_disposition && resp->content_filename)
-							append_file(resp, resp->content_filename);
-						else
-							append_file(resp, config.output_document ? config.output_document : job->local_filename);
-					}
-					else if (resp->code == 304 && config.timestamping) { // local document is up-to-date
-						if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
-							const char *ext;
-							
-							if (config.content_disposition && resp->content_filename)
-								ext = strrchr(resp->content_filename, '.');
-							else
-								ext = strrchr(job->local_filename, '.');
-
-							if (ext) {
-								if (!strcasecmp(ext, ".html") || !strcasecmp(ext, ".htm")) {
-									html_parse_localfile(sockfd, job->level, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
-								} else if (!strcasecmp(ext, ".css")) {
-									css_parse_localfile(sockfd, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
-								}
-							}
-						}
-					}
-
-				} else {
-					// download metalink part
-					download_part(downloader);
 				}
 
-				// regular download
-ready:
-				if (resp) {
-					dprintf(sockfd, "sts %d %s\n", resp->code, resp->reason);
-					http_free_response(&resp);
+				// log_printf("all_done=%d\n",all_done);
+				if (all_done && mget_vector_size(job->hashes) > 0) {
+					// check integrity of complete file
+					print_status(downloader, "%s checking...\n", job->name);
+					job_validate_file(job);
+					if (job->hash_ok) {
+						debug_printf("checksum ok");
+						queue_del(job);
+						mget_thread_cond_signal(&main_cond);
+					} else
+						debug_printf("checksum failed");
+					continue;
 				}
-				dprintf(sockfd, "ready\n");
+			} else part->inuse = 0; // something was wrong, reload again
+
+			continue;
+		}
+
+		int tries = 0;
+		do {
+			print_status(downloader, "Downloading...[%d]\n", job->level);
+			resp = http_get(job->iri, NULL, downloader);
+		} while (!resp && ++tries < 3);
+
+		if (!resp)
+			goto ready;
+
+		mget_cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
+		mget_cookie_store_cookies(resp->cookies); // store cookies
+
+		// check if we got a RFC 6249 Metalink response
+		// HTTP/1.1 302 Found
+		// Date: Fri, 20 Apr 2012 15:00:40 GMT
+		// Server: Apache/2.2.22 (Linux/SUSE) mod_ssl/2.2.22 OpenSSL/1.0.0e DAV/2 SVN/1.7.4 mod_wsgi/3.3 Python/2.7.2 mod_asn/1.5 mod_mirrorbrain/2.17.0 mod_fastcgi/2.4.2
+		// X-Prefix: 87.128.0.0/10
+		// X-AS: 3320
+		// X-MirrorBrain-Mirror: ftp.suse.com
+		// X-MirrorBrain-Realm: country
+		// Link: <http://go-oo.mirrorbrain.org/evolution/stable/Evolution-2.24.0.exe.meta4>; rel=describedby; type="application/metalink4+xml"
+		// Link: <http://go-oo.mirrorbrain.org/evolution/stable/Evolution-2.24.0.exe.torrent>; rel=describedby; type="application/x-bittorrent"
+		// Link: <http://ftp.suse.com/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=1; geo=de
+		// Link: <http://ftp.hosteurope.de/mirror/ftp.suse.com/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=2; geo=de
+		// Link: <http://ftp.isr.ist.utl.pt/pub/MIRRORS/ftp.suse.com/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=3; geo=pt
+		// Link: <http://suse.mirrors.tds.net/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=4; geo=us
+		// Link: <http://ftp.kddilabs.jp/Linux/distributions/ftp.suse.com/projects/go-oo/evolution/stable/Evolution-2.24.0.exe>; rel=duplicate; pri=5; geo=jp
+		// Digest: MD5=/sr/WFcZH1MKTyt3JHL2tA==
+		// Digest: SHA=pvNwuuHWoXkNJMYSZQvr3xPzLZY=
+		// Digest: SHA-256=5QgXpvMLXWCi1GpNZI9mtzdhFFdtz6tuNwCKIYbbZfU=
+		// Location: http://ftp.suse.com/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe
+		// Content-Type: text/html; charset=iso-8859-1
+
+		if (resp->links) {
+			// Found a Metalink answer (RFC 6249 Metalink/HTTP: Mirrors and Hashes).
+			// We try to find and download the .meta4 file (RFC 5854).
+			// If we can't find the .meta4, download from the link with the highest priority.
+
+			MGET_HTTP_LINK *top_link = NULL, *metalink = NULL;
+			int it;
+
+			for (it = 0; it < mget_vector_size(resp->links); it++) {
+				MGET_HTTP_LINK *link = mget_vector_get(resp->links, it);
+				if (link->rel == link_rel_describedby) {
+					if (!strcasecmp(link->type, "application/metalink4+xml") ||
+						 !strcasecmp(link->type, "application/metalink+xml"))
+					{
+						// found a link to a metalink4 description
+						metalink = link;
+						break;
+					}
+				} else if (link->rel == link_rel_duplicate) {
+					if (!top_link || top_link->pri > link->pri)
+						// just save the top priority link
+						top_link = link;
+				}
+			}
+
+			if (metalink) {
+				// found a link to a metalink3 or metalink4 description, create a new job
+				add_uri(job, NULL, metalink->uri, 0);
+				// dprintf(sockfd, "add uri - %s\n", metalink->uri);
+				goto ready;
+			} else if (top_link) {
+				// no metalink4 description found, create a new job
+				add_uri(job, NULL, top_link->uri, 0);
+				// dprintf(sockfd, "add uri - %s\n", top_link->uri);
+				goto ready;
 			}
 		}
+
+		if (resp->content_type) {
+			if (!strcasecmp(resp->content_type, "application/metalink4+xml")) {
+				print_status(downloader, "get metalink4 info\n");
+				// save_file(resp, job->local_filename, O_TRUNC);
+				metalink4_parse(job, resp);
+				if (job->size <= 0) {
+					debug_printf("File length %llu - remove job\n", (unsigned long long)job->size);
+				} else if (!job->mirrors) {
+					debug_printf("File length %llu - remove job\n", (unsigned long long)job->size);
+				} else {
+					// just loaded a metalink file, create parts and sort mirrors
+
+					// start or resume downloading
+					job_validate_file(job);
+
+					if (job->hash_ok) {
+						// file already downloaded and checksum ok
+					} else {
+						// sort mirrors by priority to download from highest priority first
+						job_sort_mirrors(job);
+
+						// wake up sleeping workers
+						mget_thread_cond_signal(&worker_cond);
+
+						job = NULL; // do not remove this job from queue yet
+					}
+					goto ready;
+				}
+			}
+			else if (!strcasecmp(resp->content_type, "application/metalink+xml")) {
+				print_status(downloader, "get metalink3 info\n");
+				// save_file(resp, job->local_filename, O_TRUNC);
+				metalink3_parse(job, resp);
+				goto ready;
+			}
+		}
+
+		if (resp->code == 200) {
+			if (config.content_disposition && resp->content_filename)
+				save_file(resp, resp->content_filename);
+			else
+				save_file(resp, config.output_document ? config.output_document : job->local_filename);
+
+			if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
+				if (resp->content_type) {
+					if (!strcasecmp(resp->content_type, "text/html")) {
+						html_parse(job, job->level, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					} else if (!strcasecmp(resp->content_type, "application/xhtml+xml")) {
+						// xml_parse(sockfd, resp, job->iri);
+					} else if (!strcasecmp(resp->content_type, "text/css")) {
+						css_parse(job, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					}
+				}
+			}
+		}
+		else if (resp->code == 206 && config.continue_download) { // partial content
+			if (config.content_disposition && resp->content_filename)
+				append_file(resp, resp->content_filename);
+			else
+				append_file(resp, config.output_document ? config.output_document : job->local_filename);
+		}
+		else if (resp->code == 304 && config.timestamping) { // local document is up-to-date
+			if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
+				const char *ext;
+
+				if (config.content_disposition && resp->content_filename)
+					ext = strrchr(resp->content_filename, '.');
+				else
+					ext = strrchr(job->local_filename, '.');
+
+				if (ext) {
+					if (!strcasecmp(ext, ".html") || !strcasecmp(ext, ".htm")) {
+						html_parse_localfile(job, job->level, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					} else if (!strcasecmp(ext, ".css")) {
+						css_parse_localfile(job, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					}
+				}
+			}
+		}
+
+		// regular download
+ready:
+		if (resp) {
+			print_status(downloader, "%d %s\n", resp->code, resp->reason);
+			http_free_response(&resp);
+		}
+
+		// download of single-part file complete, remove from job queue
+		// log_printf("- '%s' completed\n",downloader[n].job->uri);
+		queue_del(job);
+		mget_thread_cond_signal(&main_cond);
 	}
 
-	xfree(buf);
+	mget_thread_mutex_unlock(&main_mutex);
+	http_close(&downloader->conn);
+
+	// if we terminate, tell the other downloaders
+	mget_thread_cond_signal(&worker_cond);
 
 	return NULL;
 }
 
 struct html_context {
+	JOB
+		*job;
 	MGET_IRI
 		*base;
 	const char
@@ -1019,8 +913,7 @@ struct html_context {
 	mget_buffer_t
 		uri_buf;
 	int
-		level,
-		sockfd;
+		level;
 	char
 		base_allocated,
 		encoding_allocated;
@@ -1044,6 +937,8 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 
 		memcpy(value, val, len);
 		value[len] = 0;
+
+		// info_printf("%02X %s %s '%s' %zd %zd\n", flags, dir, attr, val, len, pos);
 
 		// very simplified
 		// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
@@ -1080,7 +975,8 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 				// add it to be downloaded, replace old base
 				MGET_IRI *iri = mget_iri_parse(value, ctx->encoding);
 				if (iri) {
-					dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", value);
+					add_uri(ctx->job, ctx->encoding, value, 0);
+					// dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", value);
 
 					if (ctx->base_allocated)
 						mget_iri_free(&ctx->base);
@@ -1140,16 +1036,7 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 				// log_printf("%02X %s %s=%s\n",flags,dir,attr,val);
 				if (mget_iri_relative_to_abs(ctx->base, value, len, &ctx->uri_buf)) {
 					// info_printf("%.*s -> %s\n", (int)len, val, ctx->uri_buf.data);
-					if (ctx->sockfd >= 0) {
-						dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", ctx->uri_buf.data);
-					} else {
-						JOB *job;
-
-						if ((job = queue_add(blacklist_add(mget_iri_parse(ctx->uri_buf.data, ctx->encoding))))) {
-							if (!config.output_document)
-								job->local_filename = get_local_filename(job->iri);
-						}
-					}
+					add_uri(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
 				} else {
 					error_printf(_("Cannot resolve relative URI %s\n"), value);
 				}
@@ -1160,10 +1047,10 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 
 // use the xml parser, being prepared that HTML is not XML
 
-void html_parse(int sockfd, int level, const char *data, const char *encoding, MGET_IRI *base)
+void html_parse(JOB *job, int level, const char *data, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
-	struct html_context context = { .base = base, .sockfd = sockfd, .level = level, .encoding = encoding };
+	struct html_context context = { .base = base, .job = job, .level = level, .encoding = encoding };
 
 	mget_buffer_init(&context.uri_buf, (char[1024]){}, 1024);
 
@@ -1183,10 +1070,10 @@ void html_parse(int sockfd, int level, const char *data, const char *encoding, M
 	mget_buffer_deinit(&context.uri_buf);
 }
 
-void html_parse_localfile(int sockfd, int level, const char *fname, const char *encoding, MGET_IRI *base)
+void html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
-	struct html_context context = { .base = base, .sockfd = sockfd, .level = level, .encoding = encoding };
+	struct html_context context = { .base = base, .job = job, .level = level, .encoding = encoding };
 
 	mget_buffer_init(&context.uri_buf, (char[1024]){}, 1024);
 
@@ -1205,6 +1092,8 @@ void html_parse_localfile(int sockfd, int level, const char *fname, const char *
 }
 
 struct css_context {
+	JOB
+		*job;
 	MGET_IRI
 		*base;
 	const char
@@ -1236,26 +1125,17 @@ static void _css_parse_uri(void *context, const char *url, size_t len, size_t po
 	if (len > 1 || (len == 1 && *url != '#')) {
 		// ignore e.g. href='#'
 		if (mget_iri_relative_to_abs(ctx->base, url, len, &ctx->uri_buf)) {
-			if (ctx->sockfd >= 0) {
-				dprintf(ctx->sockfd, "add uri - %s\n", ctx->uri_buf.data);
-			} else {
-				JOB *job;
-
-				if ((job = queue_add(blacklist_add(mget_iri_parse(ctx->uri_buf.data, ctx->encoding))))) {
-					if (!config.output_document)
-						job->local_filename = get_local_filename(job->iri);
-				}
-			}
+			add_uri(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
 		} else {
 			error_printf(_("Cannot resolve relative URI %.*s\n"), (int)len, url);
 		}
 	}
 }
 
-void css_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *base)
+void css_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
-	struct css_context context = { .base = base, .sockfd = sockfd, .encoding = encoding };
+	struct css_context context = { .base = base, .job = job, .encoding = encoding };
 
 	mget_buffer_init(&context.uri_buf, (char[1024]){}, 1024);
 
@@ -1270,10 +1150,10 @@ void css_parse(int sockfd, const char *data, const char *encoding, MGET_IRI *bas
 	mget_buffer_deinit(&context.uri_buf);
 }
 
-void css_parse_localfile(int sockfd, const char *fname, const char *encoding, MGET_IRI *base)
+void css_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
-	struct css_context context = { .base = base, .sockfd = sockfd, .encoding = encoding };
+	struct css_context context = { .base = base, .job = job, .encoding = encoding };
 
 	mget_buffer_init(&context.uri_buf, (char[1024]){}, 1024);
 
@@ -1467,7 +1347,7 @@ void download_part(DOWNLOADER *downloader)
 		MGET_HTTP_RESPONSE *msg;
 		MIRROR *mirror = mget_vector_get(job->mirrors, mirror_index);
 
-		dprintf(downloader->sockfd[1], "sts downloading part %d/%d (%zd-%zd) %s from %s (mirror %d)\n",
+		print_status(downloader, "downloading part %d/%d (%zd-%zd) %s from %s (mirror %d)\n",
 			part->id, mget_vector_size(job->parts),
 			part->position, part->position + part->length - 1, job->name, mirror->iri->host, mirror_index);
 
@@ -1478,16 +1358,16 @@ void download_part(DOWNLOADER *downloader)
 			mget_cookie_store_cookies(msg->cookies); // sanitize and store cookies
 
 			if (msg->code != 200 && msg->code != 206) {
-				dprintf(downloader->sockfd[1], "sts part %d download error %d\n", part->id, msg->code);
+				print_status(downloader, "part %d download error %d\n", part->id, msg->code);
 			} else if (!msg->body) {
-				dprintf(downloader->sockfd[1], "sts part %d download error 'empty body'\n", part->id);
+				print_status(downloader, "part %d download error 'empty body'\n", part->id);
 			} else if (msg->body->length != (size_t)part->length) {
-				dprintf(downloader->sockfd[1], "sts part %d download error '%zd bytes of %zd expected'\n",
+				print_status(downloader, "part %d download error '%zd bytes of %zd expected'\n",
 					part->id, msg->body->length, part->length);
 			} else {
 				int fd;
 
-				info_printf("sts part %d downloaded\n", part->id);
+				print_status(downloader, "part %d downloaded\n", part->id);
 				if ((fd = open(job->name, O_WRONLY | O_CREAT, 0644)) != -1) {
 					if (lseek(fd, part->position, SEEK_SET) != -1) {
 						ssize_t nbytes;
@@ -1696,7 +1576,8 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 			mget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
 
 			if (!part) {
-				dprintf(downloader->sockfd[1], "redirect - %s\n", uri_buf.data);
+				add_uri(downloader->job, NULL, uri_buf.data, 1);
+//				dprintf(downloader->sockfd[1], "redirect - %s\n", uri_buf.data);
 				mget_buffer_deinit(&uri_buf);
 				break;
 			} else {

@@ -624,10 +624,13 @@ void
 
 #ifdef PTHREAD_MUTEX_INITIALIZER
 #define MGET_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
+#define MGET_THREAD_COND_INITIALIZER PTHREAD_COND_INITIALIZER
 typedef pthread_mutex_t mget_thread_mutex_t;
+typedef pthread_cond_t mget_thread_cond_t;
 #else
 #define MGET_THREAD_MUTEX_INITIALIZER 0
 typedef int mget_thread_mutex_t;
+typedef int mget_thread_cond_t;
 #endif
 
 typedef unsigned long int mget_thread_t;
@@ -642,6 +645,12 @@ int
 	mget_thread_kill(mget_thread_t thread, int sig);
 int
 	mget_thread_join(mget_thread_t thread);
+int
+	mget_thread_cond_init(mget_thread_cond_t *cond);
+int
+	mget_thread_cond_signal(mget_thread_cond_t *cond);
+int
+	mget_thread_cond_wait(mget_thread_cond_t *cond, mget_thread_mutex_t *mutex);
 mget_thread_t
 	mget_thread_self(void);
 

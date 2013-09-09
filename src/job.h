@@ -101,6 +101,7 @@ int
 	queue_empty(void) G_GNUC_MGET_PURE,
 	queue_get(JOB **job_out, PART **part_out);
 void
+	queue_print(void),
 	job_create_parts(JOB *job),
 	job_sort_mirrors(JOB *job),
 	job_free(JOB *job),
