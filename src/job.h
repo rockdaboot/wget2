@@ -29,31 +29,6 @@
 
 #include <libmget.h>
 
-typedef struct {
-	MGET_IRI
-		*iri;
-	int
-		priority;
-	char
-		location[3];
-} MIRROR;
-
-typedef struct {
-	char
-		type[16],
-		hash_hex[128+1];
-} HASH;
-
-// Metalink piece, for checksumming after download
-typedef struct {
-	HASH
-		hash;
-	off_t
-		position;
-	off_t
-		length;
-} PIECE;
-
 // file part to download
 typedef struct {
 	off_t
@@ -73,24 +48,20 @@ typedef struct {
 		*referer;
 
 	// Metalink information
+	MGET_METALINK
+		*metalink;
+
 	MGET_VECTOR
-		*mirrors,
-		*hashes, // checksums of complete file
-		*pieces, // checksums of smaller pieces of the file
 		*parts; // parts to download
 	const char
-		*name,
 		*local_filename;
-	off_t
-		size; // total size of the file
 	int
 		level, // current recursion level
-		mirror_pos, // where to look up the next mirror to use
-		piece_pos, // where to look up the next piece to download
-		redirection_level; // number of redirections occurred to create this job
+		redirection_level, // number of redirections occurred to create this job
+		mirror_pos, // where to look up the next (metalink) mirror to use
+		piece_pos; // where to look up the next (metalink) piece to download
 	char
-		inuse,
-		hash_ok; // checksum of complete file is ok
+		inuse;
 } JOB;
 
 JOB
@@ -99,13 +70,12 @@ PART
 	*job_add_part(JOB *job, PART *part);
 int
 	queue_empty(void) G_GNUC_MGET_PURE,
-	queue_get(JOB **job_out, PART **part_out);
+	queue_get(JOB **job_out, PART **part_out),
+	job_validate_file(JOB *job);
 void
 	queue_print(void),
 	job_create_parts(JOB *job),
-	job_sort_mirrors(JOB *job),
 	job_free(JOB *job),
-	job_validate_file(JOB *job),
 //	job_resume(JOB *job),
 	queue_del(JOB *job),
 	queue_free(void);

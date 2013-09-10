@@ -40,28 +40,16 @@
 
 #include "mget.h"
 #include "log.h"
-#include "hash.h"
 #include "job.h"
 
 static MGET_LIST
 	*queue;
 
-static int free_mirror(MIRROR *mirror)
-{
-	mget_iri_free(&mirror->iri);
-	return 0;
-}
-
 void job_free(JOB *job)
 {
 	if (job) {
-//		iri_free(&job->iri);
-		mget_vector_browse(job->mirrors, (int (*)(void *))free_mirror);
-		mget_vector_free(&job->mirrors);
-		mget_vector_free(&job->hashes);
+		mget_metalink_free(&job->metalink);
 		mget_vector_free(&job->parts);
-		mget_vector_free(&job->pieces);
-		xfree(job->name);
 		xfree(job->local_filename);
 	}
 }
@@ -69,19 +57,25 @@ void job_free(JOB *job)
 void job_create_parts(JOB *job)
 {
 	PART part;
-	ssize_t fsize = job->size;
+	MGET_METALINK *metalink;
+	ssize_t fsize;
 	int it;
+
+	if (!job || !(metalink = job->metalink))
+		return;
 
 	memset(&part, 0, sizeof(PART));
 
 	// create space to hold enough parts
 	if (!job->parts)
-		job->parts = mget_vector_create(mget_vector_size(job->pieces), 4, NULL);
+		job->parts = mget_vector_create(mget_vector_size(metalink->pieces), 4, NULL);
 	else
 		mget_vector_clear(job->parts);
 
-	for (it = 0; it < mget_vector_size(job->pieces); it++) {
-		PIECE *piece = mget_vector_get(job->pieces, it);
+	fsize = metalink->size;
+
+	for (it = 0; it < mget_vector_size(metalink->pieces); it++) {
+		MGET_METALINK_PIECE *piece = mget_vector_get(metalink->pieces, it);
 
 		if (fsize >= piece->length) {
 			part.length = piece->length;
@@ -95,19 +89,6 @@ void job_create_parts(JOB *job)
 
 		part.position += part.length;
 		fsize -= piece->length;
-	}
-}
-
-static int G_GNUC_MGET_PURE _compare_mirror(MIRROR **m1, MIRROR **m2)
-{
-	return (*m1)->priority - (*m2)->priority;
-}
-
-void job_sort_mirrors(JOB *job)
-{
-	if (job->mirrors) {
-		mget_vector_setcmpfunc(job->mirrors, (int(*)(const void *, const void *))_compare_mirror);
-		mget_vector_sort(job->mirrors);
 	}
 }
 
@@ -165,11 +146,11 @@ PART *job_add_part(JOB *job, PART *part)
 //  0: not ok
 //  1: ok
 
-static int check_piece_hash(HASH *hash, int fd, off_t offset, size_t length)
+static int check_piece_hash(MGET_METALINK_HASH *hash, int fd, off_t offset, size_t length)
 {
 	char sum[128 + 1]; // large enough for sha-512 hex
 
-	if (hash_file_fd(hash->type, fd, sum, sizeof(sum), offset, length) != -1) {
+	if (mget_hash_file_fd(hash->type, fd, sum, sizeof(sum), offset, length) != -1) {
 		return !strcasecmp(sum, hash->hash_hex);
 	}
 
@@ -211,52 +192,57 @@ static int check_file_hash(HASH *hash, const char *fname)
 }
 */
 
-static int check_file_fd(HASH *hash, int fd)
+static int check_file_fd(MGET_METALINK_HASH *hash, int fd)
 {
 	char sum[128 + 1]; // large enough for sha-512 hex
 
-	if (hash_file_fd(hash->type, fd, sum, sizeof(sum), 0, 0) != -1) {
+	if (mget_hash_file_fd(hash->type, fd, sum, sizeof(sum), 0, 0) != -1) {
 		return !strcasecmp(sum, hash->hash_hex);
 	}
 
 	return -1;
 }
 
-void job_validate_file(JOB *job)
+int job_validate_file(JOB *job)
 {
 	PART part;
-	off_t fsize = job->size;
+	MGET_METALINK *metalink;
+	off_t fsize;
 	int fd, rc = -1, it;
 	struct stat st;
+
+	if (!job || !(metalink = job->metalink))
+		return 0;
 
 	memset(&part, 0, sizeof(PART));
 
 	// create space to hold enough parts
 	if (!job->parts)
-		job->parts = mget_vector_create(mget_vector_size(job->pieces), 4, NULL);
+		job->parts = mget_vector_create(mget_vector_size(metalink->pieces), 4, NULL);
 	else
 		mget_vector_clear(job->parts);
 
+	fsize = metalink->size;
+
 	// truncate file if needed
-	if (stat(job->name, &st) == 0 && st.st_size > fsize) {
-		if (truncate(job->name, fsize) == -1)
+	if (stat(metalink->name, &st) == 0 && st.st_size > fsize) {
+		if (truncate(metalink->name, fsize) == -1)
 			error_printf(_("Failed to truncate %s\n from %llu to %llu bytes\n"),
-				job->name, (unsigned long long)st.st_size, (unsigned long long)fsize);
+				metalink->name, (unsigned long long)st.st_size, (unsigned long long)fsize);
 	}
 
-	if ((fd = open(job->name, O_RDONLY)) != -1) {
+	if ((fd = open(metalink->name, O_RDONLY)) != -1) {
 		// file exists, check which piece is invalid and requeue it
 
-		for (it = 0; errno != EINTR && it < mget_vector_size(job->hashes); it++) {
-			HASH *hash = mget_vector_get(job->hashes, it);
+		for (it = 0; errno != EINTR && it < mget_vector_size(metalink->hashes); it++) {
+			MGET_METALINK_HASH *hash = mget_vector_get(metalink->hashes, it);
 
 			if ((rc = check_file_fd(hash, fd)) == -1)
 				continue; // hash type not available, try next
 
 			if (rc == 1) {
-				info_printf(_("Checksum OK for '%s'\n"), job->name);
-				job->hash_ok = 1;
-				return;
+				info_printf(_("Checksum OK for '%s'\n"), metalink->name);
+				return 1; // we are done
 			}
 
 			break;
@@ -264,18 +250,17 @@ void job_validate_file(JOB *job)
 
 		if (rc == -1) {
 			// failed to check file, continue as if file is ok
-			job->hash_ok = 1;
 			info_printf(_("Failed to build checksum, assuming file to be OK\n"));
-			return;
+			return 1; // we are done
 		} else
-			info_printf(_("Bad checksum for '%s'\n"), job->name);
+			info_printf(_("Bad checksum for '%s'\n"), metalink->name);
 
-//		if (vec_size(job->pieces) < 1)
+//		if (vec_size(metalink->pieces) < 1)
 //			return;
 
-		for (it = 0; errno != EINTR && it < mget_vector_size(job->pieces); it++) {
-			PIECE *piece = mget_vector_get(job->pieces, it);
-			HASH *hash = &piece->hash;
+		for (it = 0; errno != EINTR && it < mget_vector_size(metalink->pieces); it++) {
+			MGET_METALINK_PIECE *piece = mget_vector_get(metalink->pieces, it);
+			MGET_METALINK_HASH *hash = &piece->hash;
 
 			if (fsize >= piece->length) {
 				part.length = piece->length;
@@ -286,7 +271,7 @@ void job_validate_file(JOB *job)
 			part.id = it + 1;
 
 			if ((rc = check_piece_hash(hash, fd, part.position, part.length)) != 1) {
-				info_printf(_("Piece %d/%d not OK - requeuing\n"), it + 1, mget_vector_size(job->pieces));
+				info_printf(_("Piece %d/%d not OK - requeuing\n"), it + 1, mget_vector_size(metalink->pieces));
 				mget_vector_add(job->parts, &part, sizeof(PART));
 				debug_printf("  need to download %llu bytes from pos=%llu\n",
 					(unsigned long long)part.length, (unsigned long long)part.position);
@@ -297,8 +282,8 @@ void job_validate_file(JOB *job)
 		}
 		close(fd);
 	} else {
-		for (it = 0; it < mget_vector_size(job->pieces); it++) {
-			PIECE *piece = mget_vector_get(job->pieces, it);
+		for (it = 0; it < mget_vector_size(metalink->pieces); it++) {
+			MGET_METALINK_PIECE *piece = mget_vector_get(metalink->pieces, it);
 
 			if (fsize >= piece->length) {
 				part.length = piece->length;
@@ -314,36 +299,9 @@ void job_validate_file(JOB *job)
 			fsize -= piece->length;
 		}
 	}
+
+	return 0;
 }
-
-/*
-void job_resume(JOB *job)
-{
-	const char *tool;
-	char sum[128+1]; // large enough for sha-512 hex
-	int fd, it;
-
-	if (vec_size(job->pieces)<1) {
-		// if there are no pieces, just checksum the complete file
-		// if the checksum is ok, the download will be skipped
-		job_check_file(job);
-		return;
-	}
-
-	if ((fd=open(job->name,O_RDONLY))!=-1)
-		for (it=0;it<vec_size(job->pieces);it++) {
-			PIECE *piece=vec_get(job->pieces,it);
-			HASH *hash=&piece->hash;
-
-			if ((rc=check_piece_hash(hash,fd,piece->position,piece->length))==1)
-				log_printf("piece %d/%d ok\n",it+1,vec_size(job->pieces));
-			else
-				log_printf("piece %d/%d failed\n",it+1,vec_size(job->pieces));
-		}
-		close(fd);
-	}
-}
- */
 
 static mget_thread_mutex_t
 	mutex = MGET_THREAD_MUTEX_INITIALIZER;
@@ -397,7 +355,7 @@ static int find_free_job(struct find_free_job_context *context, JOB *job)
 				part->inuse = 1;
 				*context->part = part;
 				*context->job = job;
-				debug_printf("queue_get part %d/%d %s\n", it + 1, mget_vector_size(job->parts), job->name);
+				debug_printf("queue_get part %d/%d %s\n", it + 1, mget_vector_size(job->parts), job->local_filename);
 				return 1;
 			}
 		}

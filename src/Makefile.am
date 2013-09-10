@@ -1,8 +1,8 @@
 DEFS = @DEFS@ -DSYSCONFDIR=\"$(sysconfdir)/@PACKAGE@\" -DLOCALEDIR=\"$(localedir)\"
 
 bin_PROGRAMS = mget
-mget_SOURCES = blacklist.c blacklist.h hash.c hash.h  job.c job.h log.c log.h\
- metalink.c metalink.h mget.c mget.h options.c options.h
+mget_SOURCES = blacklist.c blacklist.h job.c job.h log.c log.h\
+ mget.c mget.h options.c options.h
 mget_CPPFLAGS = -I$(top_srcdir)/include
 mget_LDADD = ../libmget/libmget.la
 mget_LDFLAGS = -static

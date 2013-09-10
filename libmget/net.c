@@ -175,6 +175,11 @@ static void _mget_dns_cache_add(const char *host, const char *port, struct addri
 
 	if (mget_vector_find(dns_cache, entryp) == -1)
 		mget_vector_insert_sorted_noalloc(dns_cache, entryp);
+	else {
+		// race condition:
+		xfree(entryp);
+		freeaddrinfo(addrinfo);
+	}
 	mget_thread_mutex_unlock(&dns_mutex);
 }
 
@@ -195,14 +200,26 @@ void mget_dns_cache_free(void)
 
 struct addrinfo *mget_tcp_resolve(MGET_TCP *tcp, const char *host, const char *port)
 {
-	struct addrinfo *addrinfo, *ai;
+	static mget_thread_mutex_t
+		mutex = MGET_THREAD_MUTEX_INITIALIZER;
+	struct addrinfo *addrinfo, *ai, hints;
 	int tries, rc = 0, ai_flags = 0;
 
 	if (!tcp)
 		tcp = &_global_tcp;
 
-	if (tcp->caching && (addrinfo = _mget_dns_cache_get(host, port)))
-		return addrinfo;
+	if (tcp->caching) {
+		if ((addrinfo = _mget_dns_cache_get(host, port)))
+			return addrinfo;
+
+		// prevent multiple address resolutions of the same host/port
+		mget_thread_mutex_lock(&mutex);
+		// now try again
+		if ((addrinfo = _mget_dns_cache_get(host, port))) {
+			mget_thread_mutex_unlock(&mutex);
+			return addrinfo;
+		}
+	}
 
 #if defined(AI_NUMERICSERV)
 	ai_flags |= (port && isdigit(*port) ? AI_NUMERICSERV : 0);
@@ -215,120 +232,121 @@ struct addrinfo *mget_tcp_resolve(MGET_TCP *tcp, const char *host, const char *p
 		ai_flags |= AI_PASSIVE;
 	}
 
-	// we need a block here to not let fall non-C99 compilers (e.g. gcc 2.95)
-	// it doesn't really hurt
-	{
-		struct addrinfo hints = {
-			.ai_family = tcp->family,
-			.ai_socktype = SOCK_STREAM,
-			.ai_flags = ai_flags
-		};
+	memset(&hints, 0 ,sizeof(hints));
+	hints.ai_family = tcp->family;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = ai_flags;
 
 #if !defined(AI_NUMERICSERV)
-		// to make the function work on old systems
-		char portbuf[16];
+	// to make the function work on old systems
+	char portbuf[16];
 
-		if (port && !isdigit(*port)) {
-			if (!strcasecmp(port, "http"))
-				port = "80";
-			else if (!strcasecmp(port, "https"))
-				port = "443";
-			else if (!strcasecmp(port, "ftp"))
-				port = "21";
-			else {
-				// TODO: check availability of getservbyname_r to use it
-				struct servent *s = getservbyname(port, "tcp");
-				if (s) {
-					snprintf(portbuf, sizeof(portbuf), "%d", s->s_port);
-					port = portbuf;
-				}
+	if (port && !isdigit(*port)) {
+		if (!strcasecmp(port, "http"))
+			port = "80";
+		else if (!strcasecmp(port, "https"))
+			port = "443";
+		else if (!strcasecmp(port, "ftp"))
+			port = "21";
+		else {
+			// TODO: check availability of getservbyname_r to use it
+			struct servent *s = getservbyname(port, "tcp");
+			if (s) {
+				snprintf(portbuf, sizeof(portbuf), "%d", s->s_port);
+				port = portbuf;
 			}
 		}
+	}
 #endif
 
-		if (port)
-			debug_printf("resolving %s:%s...\n", host, port);
-		else
-			debug_printf("resolving %s...\n", host);
+	if (port)
+		debug_printf("resolving %s:%s...\n", host, port);
+	else
+		debug_printf("resolving %s...\n", host);
 
-		// get the IP address for the server
-		for (tries = 0; tries < 3; tries++) {
-			if ((rc = getaddrinfo(host, port ? port : "0", &hints, &addrinfo)) == 0 || rc != EAI_AGAIN)
-				break;
+	// get the IP address for the server
+	for (tries = 0; tries < 3; tries++) {
+		if ((rc = getaddrinfo(host, port ? port : "0", &hints, &addrinfo)) == 0 || rc != EAI_AGAIN)
+			break;
 
-			if (tries < 2) {
+		if (tries < 2) {
 #ifdef HAVE_NANOSLEEP
-				const struct timespec ts = {0, 100 * 1000 * 1000};
-				nanosleep(&ts, NULL);
+			const struct timespec ts = {0, 100 * 1000 * 1000};
+			nanosleep(&ts, NULL);
 #elif defined(HAVE_USLEEP)
-				// obsoleted by POSIX.1-2001, use nanosleep instead
-				usleep(100*1000);
+			// obsoleted by POSIX.1-2001, use nanosleep instead
+			usleep(100*1000);
 #else
-				break;
+			break;
 #endif
-			}
 		}
+	}
 
-		if (rc) {
-			if (port)
-				error_printf(_("Failed to resolve %s:%s (%s)\n"), host, port, gai_strerror(rc));
-			else
-				error_printf(_("Failed to resolve %s (%s)\n"), host, gai_strerror(rc));
-			return NULL;
-		}
-
-		if (tcp->family == AF_UNSPEC && tcp->preferred_family != AF_UNSPEC) {
-			struct addrinfo *preferred = NULL, *preferred_tail = NULL;
-			struct addrinfo *unpreferred = NULL, *unpreferred_tail = NULL;
-
-			// split address list into preferred and unpreferred, keeping the original order
-			for (ai = addrinfo; ai;) {
-				if (ai->ai_family == tcp->preferred_family) {
-					if (preferred_tail)
-						preferred_tail->ai_next = ai;
-					else
-						preferred = ai; // remember the head of the list
-
-					preferred_tail = ai;
-					ai = ai->ai_next;
-					preferred_tail->ai_next = NULL;
-				} else {
-					if (unpreferred_tail)
-						unpreferred_tail->ai_next = ai;
-					else
-						unpreferred = ai; // remember the head of the list
-
-					unpreferred_tail = ai;
-					ai = ai->ai_next;
-					unpreferred_tail->ai_next = NULL;
-				}
-			}
-
-			// merge preferred + unpreferred
-			if (preferred) {
-				preferred_tail->ai_next = unpreferred;
-				addrinfo = preferred;
-			} else {
-				addrinfo = unpreferred;
-			}
-		}
-
-		if (mget_get_logger(MGET_LOGGER_DEBUG)->vprintf) {
-			for (ai = addrinfo; ai; ai = ai->ai_next) {
-				char adr[NI_MAXHOST], sport[NI_MAXSERV];
-
-				if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
-					debug_printf("has %s:%s\n", adr, sport);
-				else
-					debug_printf("has ???:%s (%s)\n", sport, gai_strerror(rc));
-			}
-		}
+	if (rc) {
+		if (port)
+			error_printf(_("Failed to resolve %s:%s (%s)\n"), host, port, gai_strerror(rc));
+		else
+			error_printf(_("Failed to resolve %s (%s)\n"), host, gai_strerror(rc));
 
 		if (tcp->caching)
-			_mget_dns_cache_add(host, port, addrinfo);
+			mget_thread_mutex_unlock(&mutex);
 
-		return addrinfo;
+		return NULL;
 	}
+
+	if (tcp->family == AF_UNSPEC && tcp->preferred_family != AF_UNSPEC) {
+		struct addrinfo *preferred = NULL, *preferred_tail = NULL;
+		struct addrinfo *unpreferred = NULL, *unpreferred_tail = NULL;
+
+		// split address list into preferred and unpreferred, keeping the original order
+		for (ai = addrinfo; ai;) {
+			if (ai->ai_family == tcp->preferred_family) {
+				if (preferred_tail)
+					preferred_tail->ai_next = ai;
+				else
+					preferred = ai; // remember the head of the list
+
+				preferred_tail = ai;
+				ai = ai->ai_next;
+				preferred_tail->ai_next = NULL;
+			} else {
+				if (unpreferred_tail)
+					unpreferred_tail->ai_next = ai;
+				else
+					unpreferred = ai; // remember the head of the list
+
+				unpreferred_tail = ai;
+				ai = ai->ai_next;
+				unpreferred_tail->ai_next = NULL;
+			}
+		}
+
+		// merge preferred + unpreferred
+		if (preferred) {
+			preferred_tail->ai_next = unpreferred;
+			addrinfo = preferred;
+		} else {
+			addrinfo = unpreferred;
+		}
+	}
+
+	if (mget_get_logger(MGET_LOGGER_DEBUG)->vprintf) {
+		for (ai = addrinfo; ai; ai = ai->ai_next) {
+			char adr[NI_MAXHOST], sport[NI_MAXSERV];
+
+			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+				debug_printf("has %s:%s\n", adr, sport);
+			else
+				debug_printf("has ???:%s (%s)\n", sport, gai_strerror(rc));
+		}
+	}
+
+	if (tcp->caching) {
+		_mget_dns_cache_add(host, port, addrinfo);
+		mget_thread_mutex_unlock(&mutex);
+	}
+
+	return addrinfo;
 }
 
 static int G_GNUC_MGET_CONST _value_to_family(int value)

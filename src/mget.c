@@ -48,9 +48,7 @@
 #include "mget.h"
 #include "log.h"
 #include "job.h"
-#include "printf.h"
 #include "options.h"
-#include "metalink.h"
 #include "blacklist.h"
 
 typedef struct {
@@ -144,7 +142,7 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 			const char *p;
 			int n;
 
-			mget_buffer_init(&path_buf, (char[256]){}, 256);
+			mget_buffer_init(&path_buf, alloca(256), 256);
 			mget_iri_get_escaped_path(iri, &path_buf);
 
 			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
@@ -309,8 +307,9 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 
 	if (base) {
 		mget_buffer_t buf;
+		char sbuf[256];
 
-		mget_buffer_init(&buf, (char[256]){}, 256);
+		mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 		iri = mget_iri_parse(mget_iri_relative_to_abs(base, url, strlen(url), &buf), encoding);
 		mget_buffer_deinit(&buf);
 	} else {
@@ -593,7 +592,6 @@ int main(int argc, const char *const *argv)
 
 	for (n = 0; n < config.num_threads; n++) {
 		downloaders[n].id = n;
-		mget_thread_cond_init(&worker_cond);
 
 		// init thread attributes
 		if ((rc = mget_thread_start(&downloaders[n].tid, downloader_thread, &downloaders[n], 0)) != 0) {
@@ -684,56 +682,31 @@ void *downloader_thread(void *p)
 
 	downloader->tid = mget_thread_self(); // to avoid race condition
 
-	mget_thread_mutex_lock(&main_mutex);
-
 	while (!terminate) {
+		mget_thread_mutex_lock(&main_mutex);
 		if (queue_get(&downloader->job, &downloader->part) == 0) {
 			// here we sit and wait for a job
 			mget_thread_cond_wait(&worker_cond, &main_mutex);
+			mget_thread_mutex_unlock(&main_mutex);
 			continue;
 		}
+		mget_thread_mutex_unlock(&main_mutex);
 
 		// hey, we got a job...
-		mget_thread_mutex_unlock(&main_mutex);
 		job = downloader->job;
 
 		if ((part = downloader->part)) {
 			// download metalink part
 			download_part(downloader);
-			if (part->done) {
-				// check if all parts are done (downloaded + hash-checked)
-				int all_done = 1, it;
-
-				for (it = 0; it < mget_vector_size(job->parts); it++) {
-					PART *part = mget_vector_get(job->parts, it);
-					if (!part->done) {
-						all_done = 0;
-						break;
-					}
-				}
-
-				// log_printf("all_done=%d\n",all_done);
-				if (all_done && mget_vector_size(job->hashes) > 0) {
-					// check integrity of complete file
-					print_status(downloader, "%s checking...\n", job->name);
-					job_validate_file(job);
-					if (job->hash_ok) {
-						debug_printf("checksum ok");
-						queue_del(job);
-						mget_thread_cond_signal(&main_cond);
-					} else
-						debug_printf("checksum failed");
-					continue;
-				}
-			} else part->inuse = 0; // something was wrong, reload again
-
 			continue;
 		}
 
 		int tries = 0;
 		do {
-			print_status(downloader, "Downloading...[%d]\n", job->level);
+			print_status(downloader, "Downloading '%s' ...\n", job->local_filename);
 			resp = http_get(job->iri, NULL, downloader);
+			if (resp)
+				print_status(downloader, "%d %s\n", resp->code, resp->reason);
 		} while (!resp && ++tries < 3);
 
 		if (!resp)
@@ -802,42 +775,34 @@ void *downloader_thread(void *p)
 		}
 
 		if (resp->content_type) {
-			int metalink = 0;
-
 			if (!strcasecmp(resp->content_type, "application/metalink4+xml")) {
-				print_status(downloader, "get metalink4 info\n");
+				// print_status(downloader, "get metalink4 info\n");
 				// save_file(resp, job->local_filename, O_TRUNC);
-				metalink4_parse(job, resp);
-				metalink = 1;
+				job->metalink = metalink4_parse(resp->body->data);
 			}
 			else if (!strcasecmp(resp->content_type, "application/metalink+xml")) {
-				print_status(downloader, "get metalink3 info\n");
+				// print_status(downloader, "get metalink3 info\n");
 				// save_file(resp, job->local_filename, O_TRUNC);
-				metalink3_parse(job, resp);
-				metalink = 1;
+				job->metalink = metalink3_parse(resp->body->data);
 			}
-			if (metalink) {
-				if (job->size <= 0) {
-					debug_printf("File length %llu - remove job\n", (unsigned long long)job->size);
-				} else if (!job->mirrors) {
-					debug_printf("File length %llu - remove job\n", (unsigned long long)job->size);
+			if (job->metalink) {
+				if (job->metalink->size <= 0) {
+					error_printf("File length %llu - remove job\n", (unsigned long long)job->metalink->size);
+				} else if (!job->metalink->mirrors) {
+					error_printf("No download mirrors found - remove job\n");
 				} else {
-					// just loaded a metalink file, create parts and sort mirrors
+					// just loaded a metalink description, create parts and sort mirrors
 
 					// start or resume downloading
-					job_validate_file(job);
-
-					if (job->hash_ok) {
-						// file already downloaded and checksum ok
-					} else {
+					if (!job_validate_file(job)) {
 						// sort mirrors by priority to download from highest priority first
-						job_sort_mirrors(job);
+						mget_metalink_sort_mirrors(job->metalink);
 
 						// wake up sleeping workers
 						mget_thread_cond_signal(&worker_cond);
 
 						job = NULL; // do not remove this job from queue yet
-					}
+					} // else file already downloaded and checksum ok
 				}
 				goto ready;
 			}
@@ -889,7 +854,6 @@ void *downloader_thread(void *p)
 		// regular download
 ready:
 		if (resp) {
-			print_status(downloader, "%d %s\n", resp->code, resp->reason);
 			http_free_response(&resp);
 		}
 
@@ -1056,8 +1020,9 @@ void html_parse(JOB *job, int level, const char *data, const char *encoding, MGE
 {
 	// create scheme://authority that will be prepended to relative paths
 	struct html_context context = { .base = base, .job = job, .level = level, .encoding = encoding };
+	char sbuf[1024];
 
-	mget_buffer_init(&context.uri_buf, (char[1024]){}, 1024);
+	mget_buffer_init(&context.uri_buf, sbuf, sizeof(sbuf));
 
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
@@ -1079,8 +1044,9 @@ void html_parse_localfile(JOB *job, int level, const char *fname, const char *en
 {
 	// create scheme://authority that will be prepended to relative paths
 	struct html_context context = { .base = base, .job = job, .level = level, .encoding = encoding };
+	char sbuf[1024];
 
-	mget_buffer_init(&context.uri_buf, (char[1024]){}, 1024);
+	mget_buffer_init(&context.uri_buf, sbuf, sizeof(sbuf));
 
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
@@ -1141,8 +1107,9 @@ void css_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
 	struct css_context context = { .base = base, .job = job, .encoding = encoding };
+	char sbuf[1024];
 
-	mget_buffer_init(&context.uri_buf, (char[1024]){}, 1024);
+	mget_buffer_init(&context.uri_buf, sbuf, sizeof(sbuf));
 
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
@@ -1159,8 +1126,9 @@ void css_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET
 {
 	// create scheme://authority that will be prepended to relative paths
 	struct css_context context = { .base = base, .job = job, .encoding = encoding };
+	char sbuf[1024];
 
-	mget_buffer_init(&context.uri_buf, (char[1024]){}, 1024);
+	mget_buffer_init(&context.uri_buf, sbuf, sizeof(sbuf));
 
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
@@ -1345,18 +1313,20 @@ static void G_GNUC_MGET_NONNULL((1)) append_file(MGET_HTTP_RESPONSE *resp, const
 void download_part(DOWNLOADER *downloader)
 {
 	JOB *job = downloader->job;
+	MGET_METALINK *metalink = job->metalink;
 	PART *part = downloader->part;
-	int mirror_index = downloader->id % mget_vector_size(job->mirrors);
+	int mirror_index = downloader->id % mget_vector_size(metalink->mirrors);
+	int tries;
 
-	do {
+	for (tries = 0; tries < mget_vector_size(metalink->mirrors) && !part->done; tries++) {
 		MGET_HTTP_RESPONSE *msg;
-		MIRROR *mirror = mget_vector_get(job->mirrors, mirror_index);
+		MGET_METALINK_MIRROR *mirror = mget_vector_get(metalink->mirrors, mirror_index);
 
 		print_status(downloader, "downloading part %d/%d (%zd-%zd) %s from %s (mirror %d)\n",
 			part->id, mget_vector_size(job->parts),
-			part->position, part->position + part->length - 1, job->name, mirror->iri->host, mirror_index);
+			part->position, part->position + part->length - 1, metalink->name, mirror->iri->host, mirror_index);
 
-		mirror_index = (mirror_index + 1) % mget_vector_size(job->mirrors);
+		mirror_index = (mirror_index + 1) % mget_vector_size(metalink->mirrors);
 
 		msg = http_get(mirror->iri, part, downloader);
 		if (msg) {
@@ -1373,7 +1343,7 @@ void download_part(DOWNLOADER *downloader)
 				int fd;
 
 				print_status(downloader, "part %d downloaded\n", part->id);
-				if ((fd = open(job->name, O_WRONLY | O_CREAT, 0644)) != -1) {
+				if ((fd = open(metalink->name, O_WRONLY | O_CREAT, 0644)) != -1) {
 					if (lseek(fd, part->position, SEEK_SET) != -1) {
 						ssize_t nbytes;
 
@@ -1385,13 +1355,42 @@ void download_part(DOWNLOADER *downloader)
 						error_printf(_("Failed to lseek to %llu\n"), (unsigned long long)part->position);
 					close(fd);
 				} else
-					error_printf(_("Failed to write open %s\n"), job->name);
-
+					error_printf(_("Failed to write open %s\n"), metalink->name);
 			}
 
 			http_free_response(&msg);
 		}
-	} while (!part->done);
+	}
+
+	if (part->done) {
+		// check if all parts are done (downloaded + hash-checked)
+		int all_done = 1, it;
+
+		mget_thread_mutex_lock(&downloader_mutex);
+		for (it = 0; it < mget_vector_size(job->parts); it++) {
+			PART *p = mget_vector_get(job->parts, it);
+			if (!p->done) {
+				all_done = 0;
+				break;
+			}
+		}
+		mget_thread_mutex_unlock(&downloader_mutex);
+
+		// log_printf("all_done=%d\n",all_done);
+		if (all_done && mget_vector_size(job->metalink->hashes) > 0) {
+			// check integrity of complete file
+			print_status(downloader, "%s checking...\n", job->local_filename);
+			if (job_validate_file(job)) {
+				debug_printf("checksum ok");
+				queue_del(job);
+				mget_thread_cond_signal(&main_cond);
+			} else
+				debug_printf("checksum failed");
+		}
+	} else {
+		print_status(downloader, "part %d failed\n", part->id);
+		part->inuse = 0; // something was wrong, reload again later
+	}
 }
 
 MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
@@ -1484,8 +1483,9 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 			else if (downloader->job->referer) {
 				MGET_IRI *referer = downloader->job->referer;
 				mget_buffer_t buf;
+				char sbuf[256];
 
-				mget_buffer_init(&buf, (char[256]){}, 256);
+				mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 				mget_buffer_strcat(&buf, referer->scheme);
 				mget_buffer_memcat(&buf, "://", 3);
@@ -1572,11 +1572,12 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 
 		if (resp->location) {
 			mget_buffer_t uri_buf;
+			char uri_sbuf[1024];
 
 			mget_cookie_normalize_cookies(iri, resp->cookies);
 			mget_cookie_store_cookies(resp->cookies);
 
-			mget_buffer_init(&uri_buf, (char[1024]){}, 1024);
+			mget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
 			mget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
 

@@ -207,10 +207,11 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 			break; // final response
 
 		if (resp->location) {
+			char uri_sbuf[1024];
 			mget_buffer_t uri_buf;
 
 			// if relative location, convert to absolute
-			mget_buffer_init(&uri_buf, (char[1024]){}, 1024);
+			mget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
 			mget_iri_relative_to_abs(uri, resp->location, strlen(resp->location), &uri_buf);
 
 			if (bits.free_uri)

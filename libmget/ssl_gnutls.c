@@ -614,9 +614,11 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 			ret = gnutls_priority_set_direct(session, "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0", NULL);
 		else if (!strcasecmp(_config.secure_protocol, "TLSv1"))
 			ret = gnutls_priority_set_direct(session, "NORMAL:-VERS-SSL3.0", NULL);
-		else if (!strcasecmp(_config.secure_protocol, "secure"))
+		else if (!strcasecmp(_config.secure_protocol, "PFS")) {
 			// -RSA to force DHE/ECDHE key exchanges to have Perfect Forward Secrecy (PFS))
-			ret = gnutls_priority_set_direct(session, "NORMAL:-VERS-SSL3.0:-RSA", NULL);
+			if ((ret = gnutls_priority_set_direct(session, "PFS", NULL)) != GNUTLS_E_SUCCESS)
+				ret = gnutls_priority_set_direct(session, "NORMAL:-RSA", NULL);
+		}
 		else if (!strcasecmp(_config.secure_protocol, "auto"))
 			ret = gnutls_priority_set_direct(session, "NORMAL:%COMPAT", NULL);
 		else if (*_config.secure_protocol)

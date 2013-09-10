@@ -41,9 +41,8 @@
 #include <libmget.h>
 
 #include "log.h"
-#include "hash.h"
 
-static G_GNUC_MGET_NONNULL((1)) gnutls_digest_algorithm_t get_algorithm(const char *type)
+static G_GNUC_MGET_NONNULL((1)) gnutls_digest_algorithm_t _get_algorithm(const char *type)
 {
 	if (*type == 's' || *type == 'S') {
 		if (!strcasecmp(type, "sha-1") || !strcasecmp(type, "sha1"))
@@ -69,7 +68,7 @@ static G_GNUC_MGET_NONNULL((1)) gnutls_digest_algorithm_t get_algorithm(const ch
 }
 
 // return 0 = OK, -1 = failed
-int hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
+int mget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
 {
 	int algorithm;
 	int ret=-1;
@@ -89,11 +88,17 @@ int hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_hex_s
 	
 	debug_printf("%s hashing pos %llu, length %llu...\n", type, (unsigned long long)offset, (unsigned long long)length);
 
-	if ((algorithm = get_algorithm(type)) >= 0) {
+	if ((algorithm = _get_algorithm(type)) >= 0) {
 		unsigned char digest[gnutls_hash_get_len(algorithm)];
 		char *buf = mmap(NULL, length, PROT_READ, MAP_PRIVATE, fd, offset);
 
-		if (buf == MAP_FAILED) {
+		if (buf != MAP_FAILED) {
+			if (gnutls_hash_fast(algorithm, buf, length, digest) == 0) {
+				mget_memtohex(digest, sizeof(digest), digest_hex, digest_hex_size);
+				ret = 0;
+			}
+			munmap(buf, length);
+		} else {
 			// Fallback to read
 			ssize_t nbytes = 0;
 			gnutls_hash_hd_t dig;
@@ -116,20 +121,13 @@ int hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_hex_s
 				close(fd);
 				return -1;
 			}
-		} else {
-			if (gnutls_hash_fast(algorithm, buf, length, digest) == 0) {
-				mget_memtohex(digest, sizeof(digest), digest_hex, digest_hex_size);
-				ret = 0;
-			}
-
-			munmap(buf, length);
 		}
 	}
 	
 	return ret;
 }
 
-int hash_file_offset(const char *type, const char *fname, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
+int mget_hash_file_offset(const char *type, const char *fname, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
 {
  	int fd, ret;
 
@@ -139,13 +137,13 @@ int hash_file_offset(const char *type, const char *fname, char *digest_hex, size
 		return 0;
 	}
 
-	ret = hash_file_fd(type, fd, digest_hex, digest_hex_size, offset, length);
+	ret = mget_hash_file_fd(type, fd, digest_hex, digest_hex_size, offset, length);
 	close(fd);
 	
 	return ret;
 }
 
-int hash_file(const char *type, const char *fname, char *digest_hex, size_t digest_hex_size)
+int mget_hash_file(const char *type, const char *fname, char *digest_hex, size_t digest_hex_size)
 {
-	return hash_file_offset(type, fname, digest_hex, digest_hex_size, 0, 0);
+	return mget_hash_file_offset(type, fname, digest_hex, digest_hex_size, 0, 0);
 }

@@ -1270,6 +1270,62 @@ MGET_HTTP_RESPONSE *
 void
 	mget_md5_printf_hex(char *digest_hex, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL;
 
+/*
+ * Hash file routines
+ */
+
+int
+	mget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length) G_GNUC_MGET_NONNULL_ALL,
+	mget_hash_file_offset(const char *type, const char *fname, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length) G_GNUC_MGET_NONNULL_ALL,
+	mget_hash_file(const char *type, const char *fname, char *digest_hex, size_t digest_hex_size) G_GNUC_MGET_NONNULL_ALL;
+
+/*
+ * Metalink types and routines
+ */
+
+typedef struct {
+	MGET_IRI
+		*iri;
+	int
+		priority;
+	char
+		location[3]; // location of the mirror, e.g. 'de', 'fr' or 'jp'
+} MGET_METALINK_MIRROR;
+
+typedef struct {
+	char
+		type[16], // type of hash, e.g. 'MD5' or 'SHA-256'
+		hash_hex[128+1]; // hash value as HEX string
+} MGET_METALINK_HASH;
+
+// Metalink piece, for checksumming after download
+typedef struct {
+	MGET_METALINK_HASH
+		hash;
+	off_t
+		position;
+	off_t
+		length;
+} MGET_METALINK_PIECE;
+
+typedef struct {
+	char
+		*name;
+	MGET_VECTOR
+		*mirrors,
+		*hashes, // checksums of complete file
+		*pieces; // checksums of smaller pieces of the file
+	off_t
+		size; // total size of the file
+} MGET_METALINK;
+
+MGET_METALINK
+	*metalink3_parse(const char *xml) G_GNUC_MGET_NONNULL((1)),
+	*metalink4_parse(const char *xml) G_GNUC_MGET_NONNULL((1));
+void
+	mget_metalink_free(MGET_METALINK **metalink),
+	mget_metalink_sort_mirrors(MGET_METALINK *metalink);
+
 MGET_END_DECLS
 
 #endif /* _LIBMGET_LIBMGET_H */

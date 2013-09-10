@@ -154,7 +154,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"\n");
 	puts(
 		"HTTPS (SSL/TLS) related options:\n"
-		"      --secure-protocol   Set protocol to be used (auto, SSLv3, TLSv1, SECURE). (default: auto)\n"
+		"      --secure-protocol   Set protocol to be used (auto, SSLv3, TLSv1, PFS). (default: auto)\n"
 		"                          Or use GnuTLS priority strings, e.g. NORMAL:-VERS-SSL3.0:-RSA\n"
 		"      --check-certificate Check the server's certificate. (default: on)\n"
 		"      --certificate       File with client certificate.\n"
@@ -630,7 +630,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 	debug_printf(_("Reading %s\n"), cfgfile);
 
-	mget_buffer_init(&linebuf, (char[1024]){}, 1024);
+	mget_buffer_init(&linebuf, alloca(1024), 1024);
 
 	while ((len = mget_getline(&buf, &bufsize, fp)) >= 0) {
 		if (len == 0 || *buf == '\r' || *buf == '\n') continue;
