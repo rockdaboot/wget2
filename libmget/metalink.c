@@ -62,6 +62,11 @@ typedef struct {
 		length;
 } _metalink_context_t ;
 
+static void _free_mirror(MGET_METALINK_MIRROR *mirror)
+{
+	mget_iri_free(&mirror->iri);
+}
+
 static void _metalink4_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
 {
 	_metalink_context_t *ctx = context;
@@ -143,8 +148,10 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 		} else if (!strcasecmp(dir, "/url")) {
 			MGET_METALINK_MIRROR mirror;
 
-			if (!metalink->mirrors)
+			if (!metalink->mirrors) {
 				metalink->mirrors = mget_vector_create(4, 4, NULL);
+				mget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
+			}
 
 			memset(&mirror, 0, sizeof(MGET_METALINK_MIRROR));
 			strcpy(mirror.location, ctx->location);
@@ -279,17 +286,10 @@ MGET_METALINK *metalink3_parse(const char *xml)
 	return metalink;
 }
 
-static int _free_mirror(MGET_METALINK_MIRROR *mirror)
-{
-	mget_iri_free(&mirror->iri);
-	return 0;
-}
-
 void mget_metalink_free(MGET_METALINK **metalink)
 {
 	if (metalink && *metalink) {
 		xfree((*metalink)->name);
-		mget_vector_browse((*metalink)->mirrors, (int (*)(void *))_free_mirror);
 		mget_vector_free(&(*metalink)->mirrors);
 		mget_vector_free(&(*metalink)->hashes);
 		mget_vector_free(&(*metalink)->pieces);

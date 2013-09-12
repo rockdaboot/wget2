@@ -36,67 +36,79 @@
 #include "private.h"
 
 typedef struct {
-	MGET_IRI
-		*base;
 	const char
 		**encoding;
 	MGET_VECTOR
 		*uris;
-	mget_buffer_t
-		uri_buf;
-	char
-		encoding_allocated;
 } _CSS_CONTEXT;
 
+static void _free_url(MGET_PARSED_URL *url)
+{
+	xfree(url->url);
+	xfree(url->abs_url);
+}
+
 // Callback function, called from CSS parser for each @charset found.
-static void _css_get_encoding(void *context G_GNUC_MGET_UNUSED, const char *encoding, size_t len)
+static void _css_get_encoding(void *context, const char *encoding, size_t len)
 {
 	_CSS_CONTEXT *ctx = context;
 
 	// take only the first @charset rule
 	if (!*ctx->encoding) {
-		info_printf(_("URI content encoding = '%.*s'\n"), (int)len, encoding);
+		debug_printf(_("URI content encoding = '%.*s'\n"), (int)len, encoding);
 		*ctx->encoding = strndup(encoding, len);
 	}
 }
 
 // Callback function, called from CSS parser for each URI found.
-static void _css_get_url(void *context G_GNUC_MGET_UNUSED, const char *url, size_t len, size_t pos G_GNUC_MGET_UNUSED)
+static void _css_get_url(void *context, const char *url, size_t len, size_t pos)
 {
 	_CSS_CONTEXT *ctx = context;
+	MGET_PARSED_URL parsed_url = { .len = len, .pos = pos, .url = strndup(url, len), .abs_url = NULL };
 
-	// ignore e.g. href='#'
-	if (len > 1 || (len == 1 && *url != '#')) {
-		MGET_CSS_URL css_url = { .org_len = len, .pos = pos };
+	if (!ctx->uris) {
+		ctx->uris = mget_vector_create(16, -2, NULL);
+		mget_vector_set_destructor(ctx->uris, (void(*)(void *))_free_url);
+	}
 
-		if (!ctx->base) {
-//			mget_info_printf("  %.*s\n", (int)len, url);
-			css_url.org_url = strndup(url, len);
-			mget_vector_add(ctx->uris, &css_url, sizeof(css_url));
-		} else if (mget_iri_relative_to_abs(ctx->base, url, len, &ctx->uri_buf)) {
-//			mget_info_printf("  %.*s -> %s\n", (int)len, url, ctx->uri_buf.data);
-			css_url.org_url = strndup(url, len);
-			css_url.url = strndup(ctx->uri_buf.data, ctx->uri_buf.length + 1);
-			mget_vector_add(ctx->uris, &css_url, sizeof(css_url));
-		} else {
-			error_printf("Cannot resolve relative URI %.*s\n", (int)len, url);
+	mget_vector_add(ctx->uris, &parsed_url, sizeof(parsed_url));
+}
+
+static void _urls_to_absolute(MGET_VECTOR *urls, MGET_IRI *base)
+{
+	if (base && urls) {
+		mget_buffer_t buf;
+		mget_buffer_init(&buf, NULL, 1024);
+
+		for (int it = 0; it < mget_vector_size(urls); it++) {
+			MGET_PARSED_URL *url = mget_vector_get(urls, it);
+
+			if (mget_iri_relative_to_abs(base, url->url, url->len, &buf))
+				url->abs_url = strndup(buf.data, buf.length + 1);
+			else
+				error_printf("Cannot resolve relative URI '%s'\n", url->url);
 		}
+
+		mget_buffer_deinit(&buf);
 	}
 }
 
-MGET_VECTOR *css_get_urls_from_localfile(const char *fname, MGET_IRI *base, const char **encoding)
+MGET_VECTOR *mget_css_get_urls(const char *css, MGET_IRI *base, const char **encoding)
 {
-	_CSS_CONTEXT context = { .base = base, .encoding = encoding };
+	_CSS_CONTEXT context = { .encoding = encoding };
 
-	context.uris = mget_vector_create(32, -2, NULL);
-	mget_buffer_init(&context.uri_buf, NULL, 128);
+	mget_css_parse_buffer(css, _css_get_url, encoding ? _css_get_encoding : NULL, &context);
+	_urls_to_absolute(context.uris, base);
+
+	return context.uris;
+}
+
+MGET_VECTOR *mget_css_get_urls_from_localfile(const char *fname, MGET_IRI *base, const char **encoding)
+{
+	_CSS_CONTEXT context = { .encoding = encoding };
 
 	mget_css_parse_file(fname, _css_get_url, encoding ? _css_get_encoding : NULL, &context);
-
-	mget_buffer_deinit(&context.uri_buf);
-
-	if (context.encoding_allocated)
-		xfree(context.encoding);
+	_urls_to_absolute(context.uris, base);
 
 	return context.uris;
 }

@@ -1071,8 +1071,6 @@ struct css_context {
 		*encoding;
 	mget_buffer_t
 		uri_buf;
-	int
-		sockfd;
 	char
 		encoding_allocated;
 };

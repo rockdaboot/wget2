@@ -55,25 +55,18 @@ static void G_GNUC_MGET_NORETURN usage(const char *myname)
 		"  Examples:\n"\
 		"    %s --base http://www.mydomain.com x.css\n"\
 		"    cat x.css | %s --base http://www.mydomain.com -\n"\
+		"    %s http://www.example.com\n"\
 		"\n"\
 		"  Print URIs as found (without a base):\n"\
 		"    %s --base \"\" x.css\n\n",
-		myname, myname, myname, myname);
-}
-
-static int _print_url(MGET_CSS_URL *css_url)
-{
-	info_printf("  %s -> %s\n", css_url->org_url, css_url->url);
-	xfree(css_url->org_url);
-	xfree(css_url->url);
-	return 0;
+		myname, myname, myname, myname, myname);
 }
 
 int main(int argc, const char *const *argv)
 {
 	// Base URI for converting relative to absolute URIs
 	const char *
-		base = "http://www.example.com";
+		base = NULL;
 
 	// Encoding of 'base'
 	// We assume that this file (and base) is encoded in iso-8859-1 or compatible.
@@ -122,17 +115,26 @@ int main(int argc, const char *const *argv)
 
 	// All URIs are converted into UTF-8 charset.
 	// That's why we need the local encoding (aka 'encoding of base URI') here.
-	base_uri = mget_iri_parse(base, local_encoding);
+	base_uri = base ? mget_iri_parse(base, local_encoding) : NULL;
 
 	for (;argpos < argc; argpos++) {
 		// use '-' as filename for STDIN
-		MGET_VECTOR *css_urls = css_get_urls_from_localfile(argv[argpos], base_uri, &css_encoding);
+		MGET_VECTOR *css_urls = mget_css_get_urls_from_localfile(argv[argpos], base_uri, &css_encoding);
 
 		if (mget_vector_size(css_urls) > 0) {
 			info_printf("URL encoding for %s is '%s':\n", argv[argpos], css_encoding ? css_encoding : "UTF-8");
-			mget_vector_browse(css_urls, (int (*)(void *))_print_url);
+
+			for (int it = 0; it < mget_vector_size(css_urls); it++) {
+				MGET_PARSED_URL *css_url = mget_vector_get(css_urls, it);
+				if (css_url->abs_url)
+					info_printf("  %s -> %s\n", css_url->url, css_url->abs_url);
+				else
+					info_printf("  %s\n", css_url->url);
+			}
+
 			info_printf("\n");
 		}
+
 		mget_vector_free(&css_urls);
 	}
 

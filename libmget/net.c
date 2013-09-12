@@ -156,6 +156,11 @@ static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL _compare_addr(struct ADDR_EN
 	return n;
 }
 
+static void _free_dns(struct ADDR_ENTRY *entry)
+{
+	freeaddrinfo(entry->addrinfo);
+}
+
 static void _mget_dns_cache_add(const char *host, const char *port, struct addrinfo *addrinfo)
 {
 	// insert addrinfo into dns cache
@@ -170,8 +175,10 @@ static void _mget_dns_cache_add(const char *host, const char *port, struct addri
 	strcpy((char *)entryp->port, port ? port : ""); // ugly cast, but semantically ok
 
 	mget_thread_mutex_lock(&dns_mutex);
-	if (!dns_cache)
+	if (!dns_cache) {
 		dns_cache = mget_vector_create(4, -2, (int(*)(const void *, const void *))_compare_addr);
+		mget_vector_set_destructor(dns_cache, (void(*)(void *))_free_dns);
+	}
 
 	if (mget_vector_find(dns_cache, entryp) == -1)
 		mget_vector_insert_sorted_noalloc(dns_cache, entryp);
@@ -186,15 +193,7 @@ static void _mget_dns_cache_add(const char *host, const char *port, struct addri
 void mget_dns_cache_free(void)
 {
 	mget_thread_mutex_lock(&dns_mutex);
-	if (dns_cache) {
-		int it;
-
-		for (it = 0; it < mget_vector_size(dns_cache); it++) {
-			struct ADDR_ENTRY *entryp = mget_vector_get(dns_cache, it);
-			freeaddrinfo(entryp->addrinfo);
-		}
-		mget_vector_free(&dns_cache);
-	}
+	mget_vector_free(&dns_cache);
 	mget_thread_mutex_unlock(&dns_mutex);
 }
 

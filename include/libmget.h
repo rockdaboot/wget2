@@ -532,6 +532,8 @@ void *
 void
 	mget_vector_setcmpfunc(MGET_VECTOR *v, int (*cmp)(const void *elem1, const void *elem2)) G_GNUC_MGET_NONNULL((2));
 void
+	mget_vector_set_destructor(MGET_VECTOR *v, void (*destructor)(void *elem));
+void
 	mget_vector_sort(MGET_VECTOR *v);
 
 /*
@@ -813,7 +815,7 @@ void
 	mget_cookie_store_cookies(MGET_VECTOR *cookies) G_GNUC_MGET_NONNULL((1));
 void
 	mget_cookie_free_public_suffixes(void);
-int
+void
 	mget_cookie_free_cookie(MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL_ALL;
 int
 	mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL((2));
@@ -834,16 +836,14 @@ char *
 
 typedef struct {
 	size_t
-		org_len;
-	size_t
 		len;
 	size_t
 		pos;
 	const char *
-		org_url;
-	const char *
 		url;
-} MGET_CSS_URL;
+	const char *
+		abs_url;
+} MGET_PARSED_URL;
 
 void
 	mget_css_parse_buffer(
@@ -858,7 +858,12 @@ void
 		void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
 		void *user_ctx) G_GNUC_MGET_NONNULL((1));
 MGET_VECTOR *
-	css_get_urls_from_localfile(
+	mget_css_get_urls(
+		const char *css,
+		MGET_IRI *base,
+		const char **encoding) G_GNUC_MGET_NONNULL((1));
+MGET_VECTOR *
+	mget_css_get_urls_from_localfile(
 		const char *fname,
 		MGET_IRI *base,
 		const char **encoding) G_GNUC_MGET_NONNULL((1));
@@ -986,6 +991,7 @@ ssize_t
 #define MGET_SSL_CHECK_CERTIFICATE 6
 #define MGET_SSL_CERT_TYPE         7
 #define MGET_SSL_PRIVATE_KEY_TYPE  8
+#define MGET_SSL_PRINT_INFO        9
 
 void
 	mget_ssl_init(void);
@@ -1191,13 +1197,13 @@ void
 
 int
 	http_free_param(MGET_HTTP_HEADER_PARAM *param);
-int
+void
 	http_free_cookie(MGET_COOKIE *cookie);
-int
+void
 	http_free_digest(MGET_HTTP_DIGEST *digest);
-int
+void
 	http_free_challenge(MGET_HTTP_CHALLENGE *challenge);
-int
+void
 	http_free_link(MGET_HTTP_LINK *link);
 
 void
@@ -1262,6 +1268,8 @@ ssize_t
 
 MGET_HTTP_RESPONSE *
 	mget_http_get(int first_key, ...) G_GNUC_MGET_NULL_TERMINATED;
+MGET_VECTOR
+	*mget_get_css_urls(const char *data);
 
 /*
  * MD5 routines

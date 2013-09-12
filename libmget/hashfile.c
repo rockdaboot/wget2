@@ -77,14 +77,14 @@ int mget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_
 	if (digest_hex_size)
 		*digest_hex=0;
 
-	if (fstat(fd, &st) != 0)
-		return 0;
+	if (fd == -1 || fstat(fd, &st) != 0)
+		return -1;
 
 	if (length == 0)
 		length = st.st_size;
 
 	if (offset + length > st.st_size)
-		return 0;
+		return -1;
 	
 	debug_printf("%s hashing pos %llu, length %llu...\n", type, (unsigned long long)offset, (unsigned long long)length);
 

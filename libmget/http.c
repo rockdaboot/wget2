@@ -912,8 +912,10 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 				MGET_HTTP_LINK link;
 				http_parse_link(s, &link);
 				// log_printf("link->uri=%s\n",link.uri);
-				if (!resp->links)
+				if (!resp->links) {
 					resp->links = mget_vector_create(8, 8, NULL);
+					mget_vector_set_destructor(resp->links, (void(*)(void *))http_free_link);
+				}
 				mget_vector_add(resp->links, &link, sizeof(link));
 			}
 			break;
@@ -928,8 +930,10 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 				MGET_COOKIE cookie;
 				http_parse_setcookie(s, &cookie);
 
-				if (!resp->cookies)
+				if (!resp->cookies) {
 					resp->cookies = mget_vector_create(4, 4, NULL);
+					mget_vector_set_destructor(resp->cookies, (void(*)(void *))mget_cookie_free_cookie);
+				}
 				mget_vector_add(resp->cookies, &cookie, sizeof(cookie));
 			}
 			break;
@@ -938,8 +942,10 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 				MGET_HTTP_CHALLENGE challenge;
 				http_parse_challenge(s, &challenge);
 
-				if (!resp->challenges)
+				if (!resp->challenges) {
 					resp->challenges = mget_vector_create(2, 2, NULL);
+					mget_vector_set_destructor(resp->challenges, (void(*)(void *))http_free_challenge);
+				}
 				mget_vector_add(resp->challenges, &challenge, sizeof(challenge));
 			}
 			break;
@@ -949,8 +955,10 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 				MGET_HTTP_DIGEST digest;
 				http_parse_digest(s, &digest);
 				// log_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
-				if (!resp->digests)
+				if (!resp->digests) {
 					resp->digests = mget_vector_create(4, 4, NULL);
+					mget_vector_set_destructor(resp->digests, (void(*)(void *))http_free_digest);
+				}
 				mget_vector_add(resp->digests, &digest, sizeof(digest));
 			}
 			break;
@@ -983,71 +991,51 @@ int http_free_param(MGET_HTTP_HEADER_PARAM *param)
 	return 0;
 }
 
-int http_free_link(MGET_HTTP_LINK *link)
+void http_free_link(MGET_HTTP_LINK *link)
 {
 	xfree(link->uri);
 	xfree(link->type);
-	return 0;
 }
 
 void http_free_links(MGET_VECTOR **links)
 {
-	if (links) {
-		mget_vector_browse(*links, (int (*)(void *))http_free_link);
-		mget_vector_free(links);
-	}
+	mget_vector_free(links);
 }
 
-int http_free_digest(MGET_HTTP_DIGEST *digest)
+void http_free_digest(MGET_HTTP_DIGEST *digest)
 {
 	xfree(digest->algorithm);
 	xfree(digest->encoded_digest);
-	return 0;
 }
 
 void http_free_digests(MGET_VECTOR **digests)
 {
-	if (digests) {
-		mget_vector_browse(*digests, (int (*)(void *))http_free_digest);
-		mget_vector_free(digests);
-	}
+	mget_vector_free(digests);
 }
 
-int http_free_challenge(MGET_HTTP_CHALLENGE *challenge)
+void http_free_challenge(MGET_HTTP_CHALLENGE *challenge)
 {
 	xfree(challenge->auth_scheme);
 	mget_stringmap_free(&challenge->params);
-	return 0;
 }
 
 void http_free_challenges(MGET_VECTOR **challenges)
 {
-	if (challenges) {
-		mget_vector_browse(*challenges, (int (*)(void *))http_free_challenge);
-		mget_vector_free(challenges);
-	}
+	mget_vector_free(challenges);
 }
 
 void http_free_cookies(MGET_VECTOR **cookies)
 {
-	if (cookies) {
-		mget_vector_browse(*cookies, (int (*)(void *))mget_cookie_free_cookie);
-		mget_vector_free(cookies);
-	}
+	mget_vector_free(cookies);
 }
 
-/* for security reasons: set all freed pointers to NULL */
 void http_free_response(MGET_HTTP_RESPONSE **resp)
 {
 	if (resp && *resp) {
 		http_free_links(&(*resp)->links);
-		(*resp)->links = NULL;
 		http_free_digests(&(*resp)->digests);
-		(*resp)->digests = NULL;
 		http_free_challenges(&(*resp)->challenges);
-		(*resp)->challenges = NULL;
 		http_free_cookies(&(*resp)->cookies);
-		(*resp)->cookies = NULL;
 		xfree((*resp)->content_type);
 		xfree((*resp)->content_type_encoding);
 		xfree((*resp)->content_filename);

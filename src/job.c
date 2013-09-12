@@ -169,25 +169,6 @@ static int check_file_hash(HASH *hash, const char *fname)
 	if (hash_file(hash->type, fname, sum, sizeof(sum)) != -1) {
 		return !strcasecmp(sum, hash->hash_hex);
 	}
-*/
-/*
-	FILE *fp;
-	const char *tool;
-
-	if ((tool = getSumTool(hash->type)) != NULL) {
-		if ((fp = popenf("r", "%s %s", tool, fname)) != NULL) {
-			char sum[128 + 1] = ""; // large enough for sha-512 hex
-			int rc = fscanf(fp, "%128s", sum);
-			pclose(fp);
-
-			if (rc == 1 && !strcasecmp(sum, hash->hash_hex))
-				return 1;
-			else
-				return 0;
-		} else err_printf(_("Failed to execute '%s %s'\n"), tool, fname);
-	}
-*/
-/*
  	return -1;
 }
 */

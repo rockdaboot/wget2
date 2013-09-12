@@ -40,6 +40,8 @@ struct _MGET_VECTOR {
 	int
 		(*cmp)(const void *, const void *); // comparison function
 	void
+		(*destructor)(void *); // element destructor function
+	void
 		**pl; // pointer to array of pointers to elements
 	int
 		max,     // allocated elements
@@ -180,6 +182,9 @@ int mget_vector_replace(MGET_VECTOR *v, const void *elem, size_t size, int pos)
 {
 	if (!v || pos < 0 || pos >= v->cur) return -1;
 
+	if (v->destructor)
+		v->destructor(v->pl[pos]);
+
 	xfree(v->pl[pos]);
 
 	return _vec_insert_private(v, elem, size, pos, 1, 1); // replace existing entry
@@ -216,7 +221,12 @@ static int _vec_remove_private(MGET_VECTOR *v, int pos, int free_entry)
 {
 	if (pos < 0 || !v || pos >= v->cur) return -1;
 
-	if (free_entry) xfree(v->pl[pos]);
+	if (free_entry) {
+		if (v->destructor)
+			v->destructor(v->pl[pos]);
+		xfree(v->pl[pos]);
+	}
+
 	memmove(&v->pl[pos], &v->pl[pos + 1], (v->cur - pos - 1) * sizeof(void *));
 	v->cur--;
 
@@ -295,8 +305,16 @@ void mget_vector_clear(MGET_VECTOR *v)
 	if (v) {
 		int it;
 
-		for (it = 0; it < v->cur; it++)
-			xfree(v->pl[it]);
+		if (v->destructor) {
+			for (it = 0; it < v->cur; it++) {
+				v->destructor(v->pl[it]);
+				xfree(v->pl[it]);
+			}
+		} else {
+			for (it = 0; it < v->cur; it++)
+				xfree(v->pl[it]);
+		}
+
 		v->cur = 0;
 	}
 }
@@ -347,6 +365,12 @@ void mget_vector_setcmpfunc(MGET_VECTOR *v, int (*cmp)(const void *elem1, const 
 		else
 			v->sorted = 0;
 	}
+}
+
+void mget_vector_set_destructor(MGET_VECTOR *v, void (*destructor)(void *elem))
+{
+	if (v)
+		v->destructor = destructor;
 }
 
 #if defined(__clang__)

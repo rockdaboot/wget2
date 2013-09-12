@@ -22,7 +22,7 @@
  * Changelog
  * 14.01.2013  Tim Ruehsen  created
  *
- * Demonstrate how to extract URIs from CSS files.
+ * Demonstrate how to extract URIs from CSS files using callback functions.
  * We don't care about character encoding in this example.
  *
  */

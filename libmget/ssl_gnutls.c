@@ -63,7 +63,8 @@ static struct _config {
 	char
 		check_certificate,
 		cert_type,
-		private_key_type;
+		private_key_type,
+		print_info;
 } _config = {
 	.check_certificate=1,
 	.cert_type = MGET_SSL_X509_FMT_PEM,
@@ -93,6 +94,7 @@ void mget_ssl_set_config_int(int key, int value)
 	case MGET_SSL_CHECK_CERTIFICATE: _config.check_certificate = (char)value; break;
 	case MGET_SSL_CERT_TYPE: _config.cert_type = (char)value; break;
 	case MGET_SSL_PRIVATE_KEY_TYPE: _config.private_key_type = (char)value; break;
+	case MGET_SSL_PRINT_INFO: _config.print_info = (char)value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an integer)\n"), key);
 	}
 }
@@ -656,7 +658,7 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 			break;
 	}
 
-	if (mget_get_logger(MGET_LOGGER_DEBUG))
+	if (_config.print_info)
 		_print_info(session);
 
 	if (ret <= 0) {
@@ -694,7 +696,7 @@ ssize_t mget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 
 	for (;;) {
 		if (gnutls_record_check_pending(session) <= 0 &&
-			(rc=mget_ready_2_read((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
+			(rc = mget_ready_2_read((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
 			return rc;
 
 		nbytes=gnutls_record_recv(session, buf, count);
@@ -710,7 +712,7 @@ ssize_t mget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 {
 	int rc;
 
-	if ((rc=mget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
+	if ((rc = mget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
 		return rc;
 
 	return gnutls_record_send(session, buf, count);

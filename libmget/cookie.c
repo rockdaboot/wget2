@@ -57,12 +57,12 @@ static MGET_VECTOR
 	*_suffixes,
 	*_suffix_exceptions;
 static mget_thread_mutex_t
-	cookies_mutex = MGET_THREAD_MUTEX_INITIALIZER;
+	_cookies_mutex = MGET_THREAD_MUTEX_INITIALIZER;
 	// no need for a suffix_mutex, it is load once, read many
 
 // by this kind of sorting, we can easily see if a domain matches or not (match = supercookie !)
 
-static int G_GNUC_MGET_NONNULL_ALL suffix_compare(const PUBLIC_SUFFIX *s1, const PUBLIC_SUFFIX *s2)
+static int G_GNUC_MGET_NONNULL_ALL _suffix_compare(const PUBLIC_SUFFIX *s1, const PUBLIC_SUFFIX *s2)
 {
 	int n;
 
@@ -75,7 +75,7 @@ static int G_GNUC_MGET_NONNULL_ALL suffix_compare(const PUBLIC_SUFFIX *s1, const
 	return strcmp(s1->label, s2->label);
 }
 
-static void G_GNUC_MGET_NONNULL_ALL suffix_init(PUBLIC_SUFFIX *suffix, const char *rule, size_t length)
+static void G_GNUC_MGET_NONNULL_ALL _suffix_init(PUBLIC_SUFFIX *suffix, const char *rule, size_t length)
 {
 	const char *src;
 	char *dst;
@@ -186,9 +186,9 @@ int mget_cookie_load_public_suffixes(const char *fname)
 	// as of 02.11.2012, the list at http://publicsuffix.org/list/ contains ~6000 rules
 	// and 40 exceptions.
 	if (!_suffixes)
-		_suffixes = mget_vector_create(6*1024, -2, (int(*)(const void *, const void *))suffix_compare);
+		_suffixes = mget_vector_create(6*1024, -2, (int(*)(const void *, const void *))_suffix_compare);
 	if (!_suffix_exceptions)
-		_suffix_exceptions = mget_vector_create(64, -2, (int(*)(const void *, const void *))suffix_compare);
+		_suffix_exceptions = mget_vector_create(64, -2, (int(*)(const void *, const void *))_suffix_compare);
 
 	if ((fp = fopen(fname, "r"))) {
 		while ((buflen = mget_getline(&buf, &bufsize, fp)) >= 0) {
@@ -205,10 +205,10 @@ int mget_cookie_load_public_suffixes(const char *fname)
 			*linep = 0;
 			if (*p == '!') {
 				// add to exceptions
-				suffix_init(&suffix, p + 1, linep - p - 1);
+				_suffix_init(&suffix, p + 1, linep - p - 1);
 				suffixp = mget_vector_get(_suffix_exceptions, mget_vector_add(_suffix_exceptions, &suffix, sizeof(suffix)));
 			} else {
-				suffix_init(&suffix, p, linep - p);
+				_suffix_init(&suffix, p, linep - p);
 				suffixp = mget_vector_get(_suffixes, mget_vector_add(_suffixes, &suffix, sizeof(suffix)));
 			}
 
@@ -239,14 +239,11 @@ static int cookie_free_public_suffix(PUBLIC_SUFFIX *suffix)
 
 void mget_cookie_free_public_suffixes(void)
 {
-//	vec_browse(suffixes, (int (*)(void *))cookie_free_suffix);
 	mget_vector_free(&_suffixes);
-
-//	vec_browse(suffix_exceptions, (int (*)(void *))cookie_free_suffix);
 	mget_vector_free(&_suffix_exceptions);
 }
 
-static int G_GNUC_MGET_NONNULL_ALL compare_cookie(const MGET_COOKIE *c1, const MGET_COOKIE *c2)
+static int G_GNUC_MGET_NONNULL_ALL _compare_cookie(const MGET_COOKIE *c1, const MGET_COOKIE *c2)
 {
 	int n;
 
@@ -259,7 +256,7 @@ static int G_GNUC_MGET_NONNULL_ALL compare_cookie(const MGET_COOKIE *c1, const M
 	return n;
 }
 
-static int G_GNUC_MGET_NONNULL_ALL domain_match(const char *domain, const char *host)
+static int G_GNUC_MGET_NONNULL_ALL _domain_match(const char *domain, const char *host)
 {
 	size_t domain_length, host_length;
 	const char *p;
@@ -282,7 +279,7 @@ static int G_GNUC_MGET_NONNULL_ALL domain_match(const char *domain, const char *
 	return 0;
 }
 
-static int G_GNUC_MGET_NONNULL((1)) path_match(const char *cookie_path, const char *request_path)
+static int G_GNUC_MGET_NONNULL((1)) _path_match(const char *cookie_path, const char *request_path)
 {
 	const char *last_slash;
 	size_t cookie_path_length, iri_path_length;
@@ -330,22 +327,19 @@ void mget_cookie_init_cookie(MGET_COOKIE *cookie)
 	cookie->last_access = cookie->creation = time(NULL);
 }
 
-int mget_cookie_free_cookie(MGET_COOKIE *cookie)
+void mget_cookie_free_cookie(MGET_COOKIE *cookie)
 {
 	xfree(cookie->name);
 	xfree(cookie->value);
 	xfree(cookie->domain);
 	xfree(cookie->path);
-
-	return 0;
 }
 
 void mget_cookie_free_cookies(void)
 {
-	mget_thread_mutex_lock(&cookies_mutex);
-	mget_vector_browse(_cookies, (int (*)(void *))mget_cookie_free_cookie);
+	mget_thread_mutex_lock(&_cookies_mutex);
 	mget_vector_free(&_cookies);
-	mget_thread_mutex_unlock(&cookies_mutex);
+	mget_thread_mutex_unlock(&_cookies_mutex);
 }
 
 // normalize/sanitize and store cookies
@@ -388,7 +382,7 @@ static int _mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cooki
 		}
 
 		if (*cookie->domain) {
-			if (domain_match(cookie->domain, iri->host)) {
+			if (_domain_match(cookie->domain, iri->host)) {
 				cookie->host_only = 0;
 			} else {
 				debug_printf("Domain mismatch: %s %s\n", cookie->domain, iri->host);
@@ -429,25 +423,23 @@ static int _mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cooki
 
 int mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie)
 {
-	mget_thread_mutex_lock(&cookies_mutex);
+	mget_thread_mutex_lock(&_cookies_mutex);
 
 	int ret = _mget_cookie_normalize_cookie(iri, cookie);
 
-	mget_thread_mutex_unlock(&cookies_mutex);
+	mget_thread_mutex_unlock(&_cookies_mutex);
 
 	return ret;
 }
 
 void mget_cookie_normalize_cookies(const MGET_IRI *iri, const MGET_VECTOR *cookies)
 {
-	int it;
+	mget_thread_mutex_lock(&_cookies_mutex);
 
-	mget_thread_mutex_lock(&cookies_mutex);
-
-	for (it = 0; it < mget_vector_size(cookies); it++)
+	for (int it = 0; it < mget_vector_size(cookies); it++)
 		_mget_cookie_normalize_cookie(iri, mget_vector_get(cookies, it));
 
-	mget_thread_mutex_unlock(&cookies_mutex);
+	mget_thread_mutex_unlock(&_cookies_mutex);
 }
 
 void mget_cookie_store_cookie(MGET_COOKIE *cookie)
@@ -460,10 +452,11 @@ void mget_cookie_store_cookie(MGET_COOKIE *cookie)
 	if (!cookie->normalized)
 		return;
 
-	mget_thread_mutex_lock(&cookies_mutex);
+	mget_thread_mutex_lock(&_cookies_mutex);
 
 	if (!_cookies) {
-		_cookies = mget_vector_create(128, -2, (int(*)(const void *, const void *))compare_cookie);
+		_cookies = mget_vector_create(128, -2, (int(*)(const void *, const void *))_compare_cookie);
+		mget_vector_set_destructor(_cookies, (void(*)(void *))mget_cookie_free_cookie);
 		old = NULL;
 	} else
 		old = mget_vector_get(_cookies, pos = mget_vector_find(_cookies, cookie));
@@ -471,14 +464,13 @@ void mget_cookie_store_cookie(MGET_COOKIE *cookie)
 	if (old) {
 		debug_printf("replace old cookie %s=%s\n", cookie->name, cookie->value);
 		cookie->creation = old->creation;
-		mget_cookie_free_cookie(old);
 		mget_vector_replace(_cookies, cookie, sizeof(*cookie), pos);
 	} else {
 		debug_printf("store new cookie %s=%s\n", cookie->name, cookie->value);
 		mget_vector_insert_sorted(_cookies, cookie, sizeof(*cookie));
 	}
 
-	mget_thread_mutex_unlock(&cookies_mutex);
+	mget_thread_mutex_unlock(&_cookies_mutex);
 }
 
 void mget_cookie_store_cookies(MGET_VECTOR *cookies)
@@ -488,7 +480,7 @@ void mget_cookie_store_cookies(MGET_VECTOR *cookies)
 	for (it = mget_vector_size(cookies) - 1; it >= 0; it--) {
 		MGET_COOKIE *cookie = mget_vector_get(cookies, it);
 		mget_cookie_store_cookie(cookie);
-		mget_vector_remove(cookies, it);
+		mget_vector_remove_nofree(cookies, it);
 	}
 }
 
@@ -500,16 +492,16 @@ char *mget_cookie_create_request_header(const MGET_IRI *iri)
 
 	debug_printf("cookie_create_request_header for host=%s path=%s\n",iri->host,iri->path);
 
-	mget_thread_mutex_lock(&cookies_mutex);
+	mget_thread_mutex_lock(&_cookies_mutex);
 
 	for (it = 0; it < mget_vector_size(_cookies); it++) {
 		MGET_COOKIE *cookie = mget_vector_get(_cookies, it);
 
-		if (((!cookie->host_only && domain_match(cookie->domain, iri->host)) ||
+		if (((!cookie->host_only && _domain_match(cookie->domain, iri->host)) ||
 			(cookie->host_only && !strcasecmp(cookie->domain, iri->host))) &&
 			(!cookie->expires || cookie->expires >= now) &&
 			(!cookie->secure_only || (cookie->secure_only && iri->scheme == IRI_SCHEME_HTTPS)) &&
-			path_match(cookie->path, iri->path))
+			_path_match(cookie->path, iri->path))
 		{
 			if (!init) {
 				mget_buffer_init(&buf, NULL, 128);
@@ -523,7 +515,7 @@ char *mget_cookie_create_request_header(const MGET_IRI *iri)
 		}
 	}
 
-	mget_thread_mutex_unlock(&cookies_mutex);
+	mget_thread_mutex_unlock(&_cookies_mutex);
 
 	return init ? buf.data : NULL;
 }
@@ -542,7 +534,7 @@ int mget_cookie_save(const char *fname, int keep_session_cookies)
 		fputs("# HTTP cookie file\n", fp);
 		fputs("#Generated by Mget " PACKAGE_VERSION ". Edit at your own risk.\n\n", fp);
 
-		mget_thread_mutex_lock(&cookies_mutex);
+		mget_thread_mutex_lock(&_cookies_mutex);
 
 		for (it = 0; it < mget_vector_size(_cookies) && !ferror(fp); it++) {
 			MGET_COOKIE *cookie = mget_vector_get(_cookies, it);
@@ -563,7 +555,7 @@ int mget_cookie_save(const char *fname, int keep_session_cookies)
 				cookie->name, cookie->value);
 		}
 
-		mget_thread_mutex_unlock(&cookies_mutex);
+		mget_thread_mutex_unlock(&_cookies_mutex);
 
 		if (!ferror(fp))
 			ret = 0;
