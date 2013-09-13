@@ -725,7 +725,6 @@ const char *mget_iri_get_escaped_fragment(const MGET_IRI *iri, mget_buffer_t *bu
 	return buf->data;
 }
 
-
 const char *mget_iri_get_escaped_file(const MGET_IRI *iri, mget_buffer_t *buf)
 {
 	if (iri->path) {

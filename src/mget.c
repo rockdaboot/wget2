@@ -1182,9 +1182,14 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 {
 	char *alloced_fname = NULL;
 	int fd, multiple, fnum;
-	size_t fname_length = 0;
+	size_t fname_length;
 
 	if (config.spider || !fname)
+		return;
+
+	// do not save into directories
+	fname_length = strlen(fname);
+	if (fname[fname_length - 1] == '/')
 		return;
 
 	// - optimistic approach expects data being written without error
@@ -1227,7 +1232,7 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 		if (ext) {
 			size_t ext_length = strlen(ext);
 
-			if ((fname_length = strlen(fname)) >= ext_length && strcasecmp(fname + fname_length - ext_length, ext)) {
+			if (fname_length >= ext_length && strcasecmp(fname + fname_length - ext_length, ext)) {
 				alloced_fname = xmalloc(fname_length + ext_length + 1);
 				strcpy(alloced_fname, fname);
 				strcpy(alloced_fname + fname_length, ext);
@@ -1243,10 +1248,7 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 	} else {
 		// wget compatibility: "clobber" means generating of .x files
 		multiple = 1;
-		if (fname_length)
-			fname_length += 16;
-		else
-			fname_length = strlen(fname) + 16;
+		fname_length += 16;
 		if (flag == O_TRUNC)
 			flag = O_EXCL;
 	}
