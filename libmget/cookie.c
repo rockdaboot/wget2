@@ -479,8 +479,9 @@ void mget_cookie_store_cookies(MGET_VECTOR *cookies)
 
 	for (it = mget_vector_size(cookies) - 1; it >= 0; it--) {
 		MGET_COOKIE *cookie = mget_vector_get(cookies, it);
-		mget_cookie_store_cookie(cookie);
+		mget_cookie_store_cookie(cookie); // stores a shallow copy of 'cookie'
 		mget_vector_remove_nofree(cookies, it);
+		xfree(cookie); // shallow free of 'cookie'
 	}
 }
 
