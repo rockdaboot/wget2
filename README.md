@@ -32,7 +32,7 @@ Many Wget options are already implemented, but some are still missing.
 
 The basic functionality is implemented, like:
 
-- new option --secure-protocol=secure to have TLS only plus forcing Perfect Forward Secrecy (PFS)
+- new option --secure-protocol=PFS to have TLS only plus forcing Perfect Forward Secrecy (PFS)
 - use TCP Fast Open if available
 - IDN support for international domains
 - autotools support
@@ -72,7 +72,7 @@ This is next on my list:
 
 - use [gtk-doc-tools](http://developer.gnome.org/gtk-doc-manual/unstable/settingup.html.en) for documentation.<br>
   I want the docs stay with the code: already tested Doxygen, but the man page support seems broken/orphaned.
-- respect /robots.txt "Robot Exclusion Standard" and <META name="robots" ...>
+- respect /robots.txt "Robot Exclusion Standard" and `<META name="robots" ...>`
 - http authentication (basic & digest RFC 2617) [done and working, but some optimizing needed]
 - WARC support
 - RFC 6797 HSTS (HTTP Strict Transport Security)
