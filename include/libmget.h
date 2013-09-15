@@ -758,15 +758,17 @@ const char *
 const char *
 	mget_iri_get_escaped_resource(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	mget_iri_get_escaped_path(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+	mget_iri_get_path(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding) G_GNUC_MGET_NONNULL((1,2));
 const char *
-	mget_iri_get_escaped_query(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+	mget_iri_get_query(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding) G_GNUC_MGET_NONNULL((1,2));
 const char *
 	mget_iri_get_escaped_fragment(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	mget_iri_get_escaped_file(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+	mget_iri_get_file(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding) G_GNUC_MGET_NONNULL((1,2));
 char *
 	mget_str_to_utf8(const char *src, const char *encoding) G_GNUC_MGET_MALLOC;
+char *
+	mget_utf8_to_str(const char *src, const char *encoding) G_GNUC_MGET_MALLOC;
 
 /*
  * Cookie routines

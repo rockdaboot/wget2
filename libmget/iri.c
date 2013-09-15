@@ -167,19 +167,17 @@ static int _unescape(unsigned char *src)
 
 char *mget_str_to_utf8(const char *src, const char *encoding)
 {
-	const char *p;
-
 	if (!src)
 		return NULL;
 
 	// see if conversion is needed
-	for (p = src; *p > 0; p++);
-	if (!*p) return NULL;
+//	for (char *p = src; *p > 0; p++);
+//	if (!*p) return NULL;
 
+#ifdef HAVE_ICONV
 	if (!encoding)
 		encoding = "iso-8859-1"; // default character-set for most browsers
 
-#ifdef HAVE_ICONV
 	if (strcasecmp(encoding, "utf-8")) {
 		char *dst = NULL;
 
@@ -194,7 +192,7 @@ char *mget_str_to_utf8(const char *src, const char *encoding)
 
 			if (iconv(cd, &tmp, &tmp_len, &utf_tmp, &utf_len_tmp) != (size_t)-1) {
 				dst = strndup(utf, utf_len - utf_len_tmp);
-				debug_printf("converted '%s' (%s) -> '%s' (utf-8)\n", src, encoding, dst);
+					debug_printf("converted '%s' (%s) -> '%s' (utf-8)\n", src, encoding, dst);
 			} else
 				error_printf(_("Failed to convert %s string into utf-8 (%d)\n"), encoding, errno);
 
@@ -210,16 +208,55 @@ char *mget_str_to_utf8(const char *src, const char *encoding)
 	return strdup(src);
 }
 
+char *mget_utf8_to_str(const char *src, const char *encoding)
+{
+	if (!src)
+		return NULL;
+
+#ifdef HAVE_ICONV
+	if (!encoding)
+		encoding = "iso-8859-1"; // default character-set for most browsers
+
+	if (strcasecmp(encoding, "utf-8")) {
+		char *dst = NULL;
+
+		// host needs encoding from utf-8 to 'encoding'
+		iconv_t cd=iconv_open(encoding, "utf-8");
+
+		if (cd != (iconv_t)-1) {
+			char *tmp = (char *)src; // iconv won't change where src points to, but changes tmp itself
+			size_t tmp_len = strlen(src);
+			size_t utf_len = tmp_len * 6, utf_len_tmp = utf_len;
+			char *utf = xmalloc(utf_len + 1), *utf_tmp = utf;
+
+			if (iconv(cd, &tmp, &tmp_len, &utf_tmp, &utf_len_tmp) != (size_t)-1) {
+				dst = strndup(utf, utf_len - utf_len_tmp);
+					debug_printf("converted '%s' (utf-8) -> '%s' (%s)\n", src, dst, encoding);
+			} else
+				error_printf(_("Failed to convert %s string info utf-8 (%d)\n"), encoding, errno);
+
+			xfree(utf);
+			iconv_close(cd);
+		} else
+			error_printf(_("Failed to prepare encoding utf-8 into %s (%d)\n"), encoding, errno);
+
+		return dst;
+	}
+#endif // HAVE_ICONV
+
+	return strdup(src);
+}
+
 // URIs are assumed to be unescaped at this point
 
-MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
+MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 {
 	MGET_IRI *iri;
 	const char *default_port = NULL;
 	char *p, *s, *authority, c;
 	size_t slen, it;
 
-	if (!s_uri)
+	if (!url)
 		return NULL;
 
 	/*
@@ -227,17 +264,27 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 		hier-part   = "//" authority path-abempty / path-absolute / path-rootless / path-empty
 		scheme      =  ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
 	 */
-	while (isspace(*s_uri)) s_uri++;
-	if (!*s_uri) return NULL;
+	while (isspace(*url)) url++;
+	if (!*url) return NULL;
+
+	if (strchr(url, '%')) {
+		char *unesc_url = strdup(url);
+
+		_unescape((unsigned char *)unesc_url);
+		url = mget_str_to_utf8(unesc_url, encoding);
+		xfree(unesc_url);
+	} else {
+		url = mget_str_to_utf8(url, encoding);
+	}
 
 	// just use one block of memory for all parsed URI parts
-	slen = strlen(s_uri);
+	slen = strlen(url);
 	iri = xmalloc(sizeof(MGET_IRI) + slen * 2 + 2);
 	memset(iri, 0, sizeof(MGET_IRI));
-	strcpy(((char *)iri) + sizeof(MGET_IRI), s_uri);
+	strcpy(((char *)iri) + sizeof(MGET_IRI), url);
 	iri->uri = ((char *)iri) + sizeof(MGET_IRI);
 	s = ((char *)iri) + sizeof(MGET_IRI) + slen + 1;
-	strcpy(s, s_uri);
+	strcpy(s, url);
 
 	p = s;
 	while (*s && !_iri_isgendelim(*s))
@@ -343,8 +390,9 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 
 	iri->resolv_port = iri->port ? iri->port : default_port;
 
-	// now unescape all components (not interested in display, userinfo, password
+	// now unescape all components (not interested in display, userinfo, password)
 	if (iri->host) {
+/*
 		const char *host_utf;
 
 		if (strchr(iri->host, '%'))
@@ -353,20 +401,23 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 		host_utf = mget_str_to_utf8(iri->host, encoding);
 
 		if (host_utf) {
+*/
 #ifdef WITH_LIBIDN
 			char *host_asc = NULL;
 			int rc;
 
-			if ((rc = idna_to_ascii_8z(host_utf, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
-				// log_printf("toASCII '%s' -> '%s'\n", host_utf, host_asc);
+//			if ((rc = idna_to_ascii_8z(host_utf, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
+			if ((rc = idna_to_ascii_8z(iri->host, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
+				// log_printf("toASCII '%s' -> '%s'\n", iri->host, host_asc);
 				iri->host = host_asc;
 				iri->host_allocated = 1;
 			} else
 				error_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
 #endif
+/*
 			xfree(host_utf);
 		}
-
+*/
 		for (p = (char *)iri->host; *p; p++)
 			if (*p >= 'A' && *p <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
 				*p |= 0x20;
@@ -378,14 +429,17 @@ MGET_IRI *mget_iri_parse(const char *s_uri, const char *encoding)
 			return NULL;
 		}
 	}
-	if (iri->path && strchr(iri->path, '%'))
-		_unescape((unsigned char *)iri->path);
-	if (iri->query && strchr(iri->query, '%'))
-		_unescape((unsigned char *)iri->query);
-	if (iri->fragment && strchr(iri->fragment, '%'))
-		_unescape((unsigned char *)iri->fragment);
 
-//	info_printf("%s: path '%s'\n", iri->uri, iri->path);
+	// see http://stackoverflow.com/questions/1549213/whats-the-correct-encoding-of-http-get-request-strings
+	// maybe we should iconv the complete URL to UTF-8 ?
+//	if (iri->path && strchr(iri->path, '%'))
+//		_unescape((unsigned char *)iri->path);
+//	if (iri->query && strchr(iri->query, '%'))
+//		_unescape((unsigned char *)iri->query);
+//	if (iri->fragment && strchr(iri->fragment, '%'))
+//		_unescape((unsigned char *)iri->fragment);
+
+	info_printf("%s: path '%s'\n", iri->uri, iri->path);
 
 	return iri;
 }
@@ -691,13 +745,19 @@ const char *mget_iri_get_escaped_resource(const MGET_IRI *iri, mget_buffer_t *bu
 	return buf->data;
 }
 
-const char *mget_iri_get_escaped_path(const MGET_IRI *iri, mget_buffer_t *buf)
+const char *mget_iri_get_path(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding)
 {
 	if (buf->length)
 		mget_buffer_memcat(buf, "/", 1);
 
-	if (iri->path)
-		mget_iri_escape_path(iri->path, buf);
+	if (iri->path) {
+		char *fname;
+
+		fname = mget_utf8_to_str(iri->path, encoding);
+		mget_buffer_strcat(buf, fname);
+		xfree(fname);
+//		mget_iri_escape_path(iri->path, buf);
+	}
 
 	if ((buf->length == 0 || buf->data[buf->length - 1] == '/') && default_page)
 		mget_buffer_memcat(buf, default_page, default_page_length);
@@ -705,11 +765,14 @@ const char *mget_iri_get_escaped_path(const MGET_IRI *iri, mget_buffer_t *buf)
 	return buf->data;
 }
 
-const char *mget_iri_get_escaped_query(const MGET_IRI *iri, mget_buffer_t *buf)
+const char *mget_iri_get_query(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding)
 {
 	if (iri->query) {
 		mget_buffer_memcat(buf, "?", 1);
-		return mget_iri_escape_query(iri->query, buf);
+		char *query = mget_utf8_to_str(iri->query, encoding);
+		mget_buffer_strcat(buf, query);
+		xfree(query);
+//		return mget_iri_escape_query(iri->query, buf);
 	}
 
 	return buf->data;
@@ -725,30 +788,32 @@ const char *mget_iri_get_escaped_fragment(const MGET_IRI *iri, mget_buffer_t *bu
 	return buf->data;
 }
 
-const char *mget_iri_get_escaped_file(const MGET_IRI *iri, mget_buffer_t *buf)
+const char *mget_iri_get_file(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding)
 {
 	if (iri->path) {
 		char *fname;
+
 		if ((fname = strrchr(iri->path, '/')))
-			mget_iri_escape_path(fname + 1, buf);
+			fname = mget_utf8_to_str(fname + 1, encoding);
 		else
-			mget_iri_escape_path(iri->path, buf);
+			fname = mget_utf8_to_str(iri->path, encoding);
+
+		mget_buffer_strcat(buf, fname);
+//		mget_iri_escape_path(fname, buf);
+		xfree(fname);
 	}
 
 	if ((buf->length == 0 || buf->data[buf->length - 1] == '/') && default_page)
 		mget_buffer_memcat(buf, default_page, default_page_length);
 
-	if (iri->query) {
-		mget_buffer_memcat(buf, "?", 1);
-		mget_iri_escape_query(iri->query, buf);
-	}
+	return mget_iri_get_query(iri, buf, encoding);
 
 //	if (iri->fragment) {
 //		buffer_memcat(buf, "#", 1);
 //		iri_escape(iri->fragment, buf);
 //	}
 
-	return buf->data;
+//	return buf->data;
 }
 
 // escaping: see http://tools.ietf.org/html/rfc2396#2 following (especially 2.4.2)

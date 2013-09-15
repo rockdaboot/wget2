@@ -132,7 +132,8 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 			mget_buffer_memcat(&buf, "/", 1);
 		}
 		if (config.host_directories && iri->host && *iri->host) {
-			mget_iri_get_escaped_host(iri, &buf);
+			// mget_iri_get_host(iri, &buf);
+			mget_buffer_strcat(&buf, iri->host);
 			// buffer_memcat(&buf, "/", 1);
 		}
 
@@ -143,7 +144,7 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 			int n;
 
 			mget_buffer_init(&path_buf, alloca(256), 256);
-			mget_iri_get_escaped_path(iri, &path_buf);
+			mget_iri_get_path(iri, &path_buf, config.local_encoding);
 
 			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
 				p = strchr(*p =='/' ? p + 1 : p, '/');
@@ -161,13 +162,15 @@ static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 
 			mget_buffer_deinit(&path_buf);
 		} else {
-			mget_iri_get_escaped_path(iri, &buf);
+			mget_iri_get_path(iri, &buf, config.local_encoding);
 		}
 
-		fname = mget_iri_get_escaped_query(iri, &buf);
+		fname = mget_iri_get_query(iri, &buf, config.local_encoding);
 	} else {
-		fname = mget_iri_get_escaped_file(iri, &buf);
+		fname = mget_iri_get_file(iri, &buf, config.local_encoding);
 	}
+
+	// do the filename escaping here
 
 	// create the complete path
 	if (*fname) {
