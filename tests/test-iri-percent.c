@@ -53,11 +53,18 @@ int main(void)
 		{	.name = "/hello_" ccedilla_l15_pct eacute_u8_pct ".html",
 			.code = "200 Dontcare",
 			.body =
-				"<html><head><title>La seule page en français</title>" \
+				"<html><head><title>La seule page en fran" ccedilla_l15 "ais</title>" \
 				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-1\"/></head><body>" \
 				"<p></p></body></html>",
 			.headers = {
 				"Content-type: text/html; charset=UTF-8",
+			}
+		},
+		{	.name = "/robots.txt",
+			.code = "200 Dontcare",
+			.body = "",
+			.headers = {
+				"Content-Type: text/plain",
 			}
 		},
 	};

@@ -68,7 +68,7 @@ int main(void)
 		{	.name = "/p1_fran%E7ais.html",
 			.code = "200 Dontcare",
 			.body =
-				"<html><head><title>La seule page en français</title>" \
+				"<html><head><title>La seule page en fran" ccedilla_l15 "ais</title>" \
 				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-1\"/></head><body>" \
 				"<p>Link to page 2 <a href=\"http://localhost:{{port}}/p2_" eacute_l1 eacute_l1 "n.html\">Die enkele nerderlangstalige pagina</a>." \
 				"</p></body></html>",
@@ -135,7 +135,7 @@ int main(void)
 
 	mget_test(
 //		MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "--iri --trust-server-names --restrict-file-names=nocontrol -nH -r",
+		MGET_TEST_OPTIONS, "--iri -e robots=on --trust-server-names --restrict-file-names=nocontrol -nH -r",
 		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {

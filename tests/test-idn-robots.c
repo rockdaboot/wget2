@@ -71,7 +71,7 @@ int main(void)
 
 	// test-idn-robots
 	snprintf(options, sizeof(options),
-		"--iri -rH -e http_proxy=localhost:%d --local-encoding=EUC-JP http://" euc_jp_hostname "/",
+		"--iri -e robots=on -rH -e http_proxy=localhost:%d --local-encoding=EUC-JP http://" euc_jp_hostname "/",
 		mget_test_get_server_port());
 
 	mget_test(
@@ -88,7 +88,7 @@ int main(void)
 
 	// test-idn-robots-utf8
 	snprintf(options, sizeof(options),
-		"--iri -rH -e http_proxy=localhost:%d --local-encoding=UTF-8 http://" utf8_hostname "/",
+		"--iri -e robots=on -rH -e http_proxy=localhost:%d --local-encoding=UTF-8 http://" utf8_hostname "/",
 		mget_test_get_server_port());
 
 	urls[0].body = "<a href=\"http://" utf8_hostname "/foo.txt\">The link</a>",

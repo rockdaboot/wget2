@@ -331,6 +331,49 @@ void mget_test_start_http_server(int first_key, ...)
 		mget_error_printf_exit(_("Failed to start server, error %d\n"), rc);
 }
 
+void _scan_for_unexpected(const char *dirname, const mget_test_file_t *expected_files)
+{
+	DIR *dir;
+	struct dirent *dp;
+	struct stat st;
+	size_t it, dirlen = strlen(dirname);
+
+	printf("Entering %s\n", dirname);
+
+	if ((dir = opendir(dirname))) {
+		while ((dp = readdir(dir))) {
+			char fname[dirlen + 1 + strlen(dp->d_name) + 1];
+
+			if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
+				continue;
+
+			if (*dirname == '.' && dirname[1] == 0)
+				sprintf(fname, "%s", dp->d_name);
+			else
+				sprintf(fname, "%s/%s", dirname, dp->d_name);
+
+			printf(" - %s/%s\n", dirname, dp->d_name);
+			if (stat(dp->d_name, &st) == 0 && S_ISDIR(st.st_mode)) {
+				_scan_for_unexpected(fname, expected_files);
+				continue;
+			}
+
+			if (expected_files) {
+				printf("search %s\n", fname);
+
+				for (it = 0; expected_files[it].name && strcmp(expected_files[it].name, fname); it++);
+
+				if (!expected_files[it].name)
+					mget_error_printf_exit(_("Unexpected file %s/%s found\n"), tmpdir, fname);
+			} else
+				mget_error_printf_exit(_("Unexpected file %s/%s found\n"), tmpdir, fname);
+		}
+
+		closedir(dir);
+	} else
+		mget_error_printf_exit(_("Failed to diropen %s\n"), dirname);
+}
+
 void mget_test(int first_key, ...)
 {
 	char cmd[1024];
@@ -347,8 +390,6 @@ void mget_test(int first_key, ...)
 		fd,
 		rc,
 		expected_error_code = 0;
-	DIR *dir;
-	struct dirent *dp;
 	va_list args;
 
 	keep_tmpfiles = 0;
@@ -469,25 +510,8 @@ void mget_test(int first_key, ...)
 		}
 	}
 
-	// look if there are unexpected
-	if ((dir = opendir("."))) {
-		while ((dp = readdir(dir))) {
-			if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
-				continue;
-
-			if (expected_files) {
-				for (it = 0; expected_files[it].name && strcmp(expected_files[it].name, dp->d_name); it++)
-						break;
-
-				if (!expected_files[it].name)
-					mget_error_printf_exit(_("Unexpected file %s/%s found\n"), tmpdir, dp->d_name);
-			} else
-				mget_error_printf_exit(_("Unexpected file %s/%s found\n"), tmpdir, dp->d_name);
-		}
-
-		closedir(dir);
-	} else
-		mget_error_printf_exit(_("Failed to diropen %s\n"), tmpdir);
+	// look if there are unexpected files in our working dir
+	_scan_for_unexpected(".", expected_files);
 
 	mget_vector_clear(request_urls);
 
