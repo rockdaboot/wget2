@@ -73,11 +73,12 @@ int main(void)
 			{	"urls.txt", urls[0].body },
 			{	NULL } },
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
 			{ urls[2].name + 1, urls[2].body },
 			{	NULL } },
 		0);
-
+/*
 	// test-i-http (expands to -i http://localhost:{{port}}/urls.txt)
 	mget_test(
 		MGET_TEST_OPTIONS, "-i",
@@ -89,6 +90,6 @@ int main(void)
 			{ urls[2].name + 1, urls[2].body },
 			{	NULL } },
 		0);
-
+*/
 	exit(0);
 }

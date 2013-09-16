@@ -40,7 +40,7 @@ int main(void)
 	mget_test(
 		MGET_TEST_OPTIONS, "-d --post-file=nofile",
 		MGET_TEST_REQUEST_URL, "",
-		MGET_TEST_EXPECTED_ERROR_CODE, 3,
+		MGET_TEST_EXPECTED_ERROR_CODE, 3, // fails with older Wget (<= 1.14)
 		0);
 
 	exit(0);

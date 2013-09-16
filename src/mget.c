@@ -565,6 +565,8 @@ int main(int argc, const char *const *argv)
 			// read URLs from CSS file
 			css_parse_localfile(NULL, config.input_file, config.remote_encoding, config.base);
 		}
+//		else if (!strcasecmp(config.input_file, "http://", 7)) {
+//		}
 		else if (strcmp(config.input_file, "-")) {
 			int fd;
 			ssize_t len;

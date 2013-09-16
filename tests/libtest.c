@@ -331,7 +331,7 @@ void mget_test_start_http_server(int first_key, ...)
 		mget_error_printf_exit(_("Failed to start server, error %d\n"), rc);
 }
 
-void _scan_for_unexpected(const char *dirname, const mget_test_file_t *expected_files)
+static void _scan_for_unexpected(const char *dirname, const mget_test_file_t *expected_files)
 {
 	DIR *dir;
 	struct dirent *dp;
@@ -353,7 +353,7 @@ void _scan_for_unexpected(const char *dirname, const mget_test_file_t *expected_
 				sprintf(fname, "%s/%s", dirname, dp->d_name);
 
 			printf(" - %s/%s\n", dirname, dp->d_name);
-			if (stat(dp->d_name, &st) == 0 && S_ISDIR(st.st_mode)) {
+			if (stat(fname, &st) == 0 && S_ISDIR(st.st_mode)) {
 				_scan_for_unexpected(fname, expected_files);
 				continue;
 			}
@@ -460,16 +460,16 @@ void mget_test(int first_key, ...)
 	}
 
 	if (mget_vector_size(request_urls) > 0) {
-		//	snprintf(cmd, sizeof(cmd), "../../src/mget -q %s http://localhost:%d/%s", options, server_port, request_url);
-		int n = snprintf(cmd, sizeof(cmd), "wget %s", options);
+		int n = snprintf(cmd, sizeof(cmd), "../../src/mget %s http://localhost:%d/%s", options, server_port, request_url);
+		// int n = snprintf(cmd, sizeof(cmd), "wget %s", options);
 
-		for (it = 0; it < (size_t)mget_vector_size(request_urls); it++) {
+		for (it = 1; it < (size_t)mget_vector_size(request_urls); it++) {
 			n += snprintf(cmd + n, sizeof(cmd) - n, " 'http://localhost:%d/%s'",
 				server_port, (char *)mget_vector_get(request_urls, it));
 		}
 	} else {
-		//	snprintf(cmd, sizeof(cmd), "../../src/mget -q %s", options);
-		snprintf(cmd, sizeof(cmd), "wget %s", options);
+		snprintf(cmd, sizeof(cmd), "../../src/mget %s", options);
+		// snprintf(cmd, sizeof(cmd), "wget %s", options);
 	}
 
 	mget_error_printf("  Testing '%s'\n", cmd);
