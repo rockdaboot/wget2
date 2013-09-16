@@ -80,7 +80,6 @@ int main(int argc, const char *const *argv)
 
 	// Character encoding of CSS file content
 	// An HTTP response may contain the encoding in the Content-Type header,
-	// but if
 	// see http://stackoverflow.com/questions/2526033/why-specify-charset-utf-8-in-your-css-file
 	const char *
 		css_encoding = NULL;

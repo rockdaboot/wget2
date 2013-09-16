@@ -18,6 +18,9 @@
  *
  *
  * URI/IRI routines
+ * about encoding see http://nikitathespider.com/articles/EncodingDivination.html
+ * about GET encoding see http://stackoverflow.com/questions/1549213/whats-the-correct-encoding-of-http-get-request-strings
+ *
  *
  * Changelog
  * 25.04.2012  Tim Ruehsen  created
@@ -165,86 +168,54 @@ static int _unescape(unsigned char *src)
 	return ret;
 }
 
-char *mget_str_to_utf8(const char *src, const char *encoding)
+char *mget_charset_transcode(const char *src, const char *src_encoding, const char *dst_encoding)
 {
 	if (!src)
 		return NULL;
 
-	// see if conversion is needed
-//	for (char *p = src; *p > 0; p++);
-//	if (!*p) return NULL;
-
 #ifdef HAVE_ICONV
-	if (!encoding)
-		encoding = "iso-8859-1"; // default character-set for most browsers
+	if (!src_encoding)
+		src_encoding = "iso-8859-1"; // default character-set for most browsers
+	if (!dst_encoding)
+		dst_encoding = "iso-8859-1"; // default character-set for most browsers
 
-	if (strcasecmp(encoding, "utf-8")) {
-		char *dst = NULL;
+	if (strcasecmp(src_encoding, dst_encoding)) {
+		char *ret = NULL;
 
-		// host needs encoding to utf-8
-		iconv_t cd=iconv_open("utf-8", encoding);
+		iconv_t cd=iconv_open(dst_encoding, src_encoding);
 
 		if (cd != (iconv_t)-1) {
 			char *tmp = (char *)src; // iconv won't change where src points to, but changes tmp itself
 			size_t tmp_len = strlen(src);
-			size_t utf_len = tmp_len * 6, utf_len_tmp = utf_len;
-			char *utf = xmalloc(utf_len + 1), *utf_tmp = utf;
+			size_t dst_len = tmp_len * 6, dst_len_tmp = dst_len;
+			char *dst = xmalloc(dst_len + 1), *dst_tmp = dst;
 
-			if (iconv(cd, &tmp, &tmp_len, &utf_tmp, &utf_len_tmp) != (size_t)-1) {
-				dst = strndup(utf, utf_len - utf_len_tmp);
-					debug_printf("converted '%s' (%s) -> '%s' (utf-8)\n", src, encoding, dst);
+			if (iconv(cd, &tmp, &tmp_len, &dst_tmp, &dst_len_tmp) != (size_t)-1) {
+				debug_printf("converted '%s' (%s) -> '%s' (%s)\n", src, src_encoding, dst_encoding, dst);
+				ret = strndup(dst, dst_len - dst_len_tmp);
 			} else
-				error_printf(_("Failed to convert %s string into utf-8 (%d)\n"), encoding, errno);
+				error_printf(_("Failed to convert %s string into %s (%d)\n"), src_encoding, dst_encoding, errno);
 
-			xfree(utf);
+			xfree(dst);
 			iconv_close(cd);
 		} else
-			error_printf(_("Failed to prepare encoding %s into utf-8 (%d)\n"), encoding, errno);
+			error_printf(_("Failed to prepare encoding %s into %s (%d)\n"), src_encoding, dst_encoding, errno);
 
-		return dst;
+		return ret;
 	}
-#endif // HAVE_ICONV
+#endif
 
 	return strdup(src);
 }
 
+char *mget_str_to_utf8(const char *src, const char *encoding)
+{
+	return mget_charset_transcode(src, encoding, "utf-8");
+}
+
 char *mget_utf8_to_str(const char *src, const char *encoding)
 {
-	if (!src)
-		return NULL;
-
-#ifdef HAVE_ICONV
-	if (!encoding)
-		encoding = "iso-8859-1"; // default character-set for most browsers
-
-	if (strcasecmp(encoding, "utf-8")) {
-		char *dst = NULL;
-
-		// host needs encoding from utf-8 to 'encoding'
-		iconv_t cd=iconv_open(encoding, "utf-8");
-
-		if (cd != (iconv_t)-1) {
-			char *tmp = (char *)src; // iconv won't change where src points to, but changes tmp itself
-			size_t tmp_len = strlen(src);
-			size_t utf_len = tmp_len * 6, utf_len_tmp = utf_len;
-			char *utf = xmalloc(utf_len + 1), *utf_tmp = utf;
-
-			if (iconv(cd, &tmp, &tmp_len, &utf_tmp, &utf_len_tmp) != (size_t)-1) {
-				dst = strndup(utf, utf_len - utf_len_tmp);
-					debug_printf("converted '%s' (utf-8) -> '%s' (%s)\n", src, dst, encoding);
-			} else
-				error_printf(_("Failed to convert %s string info utf-8 (%d)\n"), encoding, errno);
-
-			xfree(utf);
-			iconv_close(cd);
-		} else
-			error_printf(_("Failed to prepare encoding utf-8 into %s (%d)\n"), encoding, errno);
-
-		return dst;
-	}
-#endif // HAVE_ICONV
-
-	return strdup(src);
+	return mget_charset_transcode(src, "utf-8", encoding);
 }
 
 // URIs are assumed to be unescaped at this point
@@ -267,6 +238,7 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 	while (isspace(*url)) url++;
 	if (!*url) return NULL;
 
+	// first unescape, than convert to UTF-8
 	if (strchr(url, '%')) {
 		char *unesc_url = strdup(url);
 
@@ -285,6 +257,7 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 	iri->uri = ((char *)iri) + sizeof(MGET_IRI);
 	s = ((char *)iri) + sizeof(MGET_IRI) + slen + 1;
 	strcpy(s, url);
+	xfree(url);
 
 	p = s;
 	while (*s && !_iri_isgendelim(*s))
@@ -392,32 +365,17 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 
 	// now unescape all components (not interested in display, userinfo, password)
 	if (iri->host) {
-/*
-		const char *host_utf;
-
-		if (strchr(iri->host, '%'))
-			_unescape((unsigned char *)iri->host);
-
-		host_utf = mget_str_to_utf8(iri->host, encoding);
-
-		if (host_utf) {
-*/
 #ifdef WITH_LIBIDN
-			char *host_asc = NULL;
-			int rc;
+		char *host_asc = NULL;
+		int rc;
 
-//			if ((rc = idna_to_ascii_8z(host_utf, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
-			if ((rc = idna_to_ascii_8z(iri->host, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
-				// log_printf("toASCII '%s' -> '%s'\n", iri->host, host_asc);
-				iri->host = host_asc;
-				iri->host_allocated = 1;
-			} else
-				error_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
+		if ((rc = idna_to_ascii_8z(iri->host, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
+			// log_printf("toASCII '%s' -> '%s'\n", iri->host, host_asc);
+			iri->host = host_asc;
+			iri->host_allocated = 1;
+		} else
+			error_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
 #endif
-/*
-			xfree(host_utf);
-		}
-*/
 		for (p = (char *)iri->host; *p; p++)
 			if (*p >= 'A' && *p <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
 				*p |= 0x20;
@@ -430,16 +388,7 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 		}
 	}
 
-	// see http://stackoverflow.com/questions/1549213/whats-the-correct-encoding-of-http-get-request-strings
-	// maybe we should iconv the complete URL to UTF-8 ?
-//	if (iri->path && strchr(iri->path, '%'))
-//		_unescape((unsigned char *)iri->path);
-//	if (iri->query && strchr(iri->query, '%'))
-//		_unescape((unsigned char *)iri->query);
-//	if (iri->fragment && strchr(iri->fragment, '%'))
-//		_unescape((unsigned char *)iri->fragment);
-
-	info_printf("%s: path '%s'\n", iri->uri, iri->path);
+	// info_printf("%s: path '%s'\n", iri->uri, iri->path);
 
 	return iri;
 }
@@ -756,7 +705,6 @@ const char *mget_iri_get_path(const MGET_IRI *iri, mget_buffer_t *buf, const cha
 		fname = mget_utf8_to_str(iri->path, encoding);
 		mget_buffer_strcat(buf, fname);
 		xfree(fname);
-//		mget_iri_escape_path(iri->path, buf);
 	}
 
 	if ((buf->length == 0 || buf->data[buf->length - 1] == '/') && default_page)
@@ -772,7 +720,6 @@ const char *mget_iri_get_query(const MGET_IRI *iri, mget_buffer_t *buf, const ch
 		char *query = mget_utf8_to_str(iri->query, encoding);
 		mget_buffer_strcat(buf, query);
 		xfree(query);
-//		return mget_iri_escape_query(iri->query, buf);
 	}
 
 	return buf->data;
@@ -799,7 +746,6 @@ const char *mget_iri_get_file(const MGET_IRI *iri, mget_buffer_t *buf, const cha
 			fname = mget_utf8_to_str(iri->path, encoding);
 
 		mget_buffer_strcat(buf, fname);
-//		mget_iri_escape_path(fname, buf);
 		xfree(fname);
 	}
 
@@ -807,13 +753,6 @@ const char *mget_iri_get_file(const MGET_IRI *iri, mget_buffer_t *buf, const cha
 		mget_buffer_memcat(buf, default_page, default_page_length);
 
 	return mget_iri_get_query(iri, buf, encoding);
-
-//	if (iri->fragment) {
-//		buffer_memcat(buf, "#", 1);
-//		iri_escape(iri->fragment, buf);
-//	}
-
-//	return buf->data;
 }
 
 // escaping: see http://tools.ietf.org/html/rfc2396#2 following (especially 2.4.2)
