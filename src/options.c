@@ -259,14 +259,16 @@ static int parse_stringset(option_t opt, G_GNUC_MGET_UNUSED const char *const *a
 
 static int parse_bool(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
-	if (!val)
-		*((char *)opt->var) = 1;
-	else if (!strcmp(val,"1") || !strcasecmp(val,"y") || !strcasecmp(val,"yes") || !strcasecmp(val,"on"))
-		*((char *)opt->var) = 1;
-	else if (!strcmp(val,"0") || !strcasecmp(val,"n") || !strcasecmp(val,"no") || !strcasecmp(val,"off"))
-		*((char *)opt->var) = 0;
-	else {
-		error_printf(_("Boolean value '%s' not recognized\n"), val);
+	if (opt->var) {
+		if (!val)
+			*((char *)opt->var) = 1;
+		else if (!strcmp(val,"1") || !strcasecmp(val,"y") || !strcasecmp(val,"yes") || !strcasecmp(val,"on"))
+			*((char *)opt->var) = 1;
+		else if (!strcmp(val,"0") || !strcasecmp(val,"n") || !strcasecmp(val,"no") || !strcasecmp(val,"off"))
+			*((char *)opt->var) = 0;
+		else {
+			error_printf(_("Boolean value '%s' not recognized\n"), val);
+		}
 	}
 
 	return 0;
@@ -386,6 +388,8 @@ struct config config = {
 	.level = 5
 };
 
+static int parse_execute(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val);
+
 static const struct option options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
@@ -416,6 +420,7 @@ static const struct option options[] = {
 	{ "domains", &config.domains, parse_stringset, 1, 'D'},
 	{ "egd-file", &config.egd_file, parse_string, 1, 0},
 	{ "exclude-domains", &config.exclude_domains, parse_stringset, 1, 0},
+	{ "execute", NULL, parse_execute, 1, 'e'},
 	{ "force-css", &config.force_css, parse_bool, 0, 0},
 	{ "force-directories", &config.force_directories, parse_bool, 0, 'x'},
 	{ "force-html", &config.force_html, parse_bool, 0, 'F'},
@@ -430,6 +435,7 @@ static const struct option options[] = {
 	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4'},
 	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6'},
 	{ "input-file", &config.input_file, parse_string, 1, 'i'},
+	{ "iri", NULL, parse_bool, 0, 0}, // Wget compatibility, in fact a do-nothing option
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0},
 	{ "level", &config.level, parse_integer, 1, 'l'},
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0},
@@ -473,6 +479,21 @@ static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL opt_compare(const void *key,
 	return strcmp((const char *)key, ((const option_t)option)->long_name);
 }
 
+static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL opt_compare_execute(const void *key, const void *option)
+{
+	const char *s1 = (char *)key;
+	const char *s2 = ((const option_t)option)->long_name;
+
+	while (*s1 && *s2) {
+		if (*s1 == '-' || *s1 == '_') s1++;
+		if (*s2 == '-' || *s2 == '_') s2++;
+		if (*s1 != *s2) break;
+		s1++; s2++;
+	}
+
+	return *s1 - *s2;
+}
+
 static int G_GNUC_MGET_NONNULL((1)) set_long_option(const char *name, const char *value)
 {
 	option_t opt;
@@ -492,6 +513,11 @@ static int G_GNUC_MGET_NONNULL((1)) set_long_option(const char *name, const char
 	}
 
 	opt = bsearch(name, options, countof(options), sizeof(options[0]), opt_compare);
+	if (!opt) {
+		// Maybe the user asked for e.g. https_only or httpsonly instead of https-only
+		// opt_compare_execute() will find these. Wget -e/--execute compatibility.
+		opt = bsearch(name, options, countof(options), sizeof(options[0]), opt_compare_execute);
+	}
 
 	if (!opt)
 		error_printf_exit(_("Unknown option '%s'\n"), name);
@@ -542,6 +568,57 @@ static int G_GNUC_MGET_NONNULL((1)) set_long_option(const char *name, const char
 	return ret;
 }
 
+static int parse_execute(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+{
+	// info_printf("### argv=%s val=%s\n",argv[0],val);
+	set_long_option(val, NULL);
+
+	return 0;
+}
+
+static int _parse_option(char *linep, char **name, char **val)
+{
+	int quote;
+
+	while (isspace(*linep)) linep++;
+	for (*name = linep; isalnum(*linep) || *linep == '-'; linep++);
+
+	if (!**name) {
+		error_printf(_("Failed to parse: '%s'\n"), linep);
+		// continue;
+		return 0;
+	}
+
+	if (*linep == '=') {
+		// option with value, e.g. debug=y
+		*linep++ = 0;
+		// while (isspace(linep)) linep++;
+
+		*val = linep;
+
+		if (((quote = *linep) == '\"' || quote == '\'')) {
+			char *src = linep + 1, *dst = linep, c;
+
+			while ((c = *src) != quote && c) {
+				if (c == '\\') {
+					// we could extend \r, \n etc to control codes here
+					// but it is not needed so far
+					*dst++ = src[1];
+					src += 2;
+				} else *dst++ = *src++;
+			}
+			*dst = 0;
+		}
+		return 1;
+	} else {
+		// statement (e.g. include ".wgetrc.d") or boolean option without value (e.g. no-recursive)
+		if (*linep) *linep++ = 0;
+		while (isspace(*linep)) linep++;
+		*val = linep;
+		return 2;
+	}
+}
+
 // read and parse config file (not thread-safe !)
 // - first, leading and trailing whitespace are trimmed
 // - lines beginning with '#' are comments, except the line before has a trailing slash
@@ -557,10 +634,9 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 {
 	static int level; // level of recursions to prevent endless include loops
 	FILE *fp;
-	char *buf = NULL, *linep;
-	char name[64];
-	int append = 0, pos, found;
-	size_t bufsize = 0, linelen = 0;
+	char *buf = NULL, *linep, *name, *val;
+	int append = 0, found;
+	size_t bufsize = 0;
 	ssize_t len;
 	mget_buffer_t linebuf;
 
@@ -601,8 +677,6 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 			for (it = 0; it < globbuf.gl_pathc; it++) {
 				if (globbuf.gl_pathv[it][strlen(globbuf.gl_pathv[it])-1] != '/') {
 				// if (stat(globbuf.gl_pathv[it], &st) == 0 && S_ISREG(st.st_mode)) {
-					if (++level > 20)
-						error_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
 
 					_read_config(globbuf.gl_pathv[it], 0);
 
@@ -662,58 +736,26 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 			mget_buffer_strcat(&linebuf, linep);
 			append = 0;
 			linep = linebuf.data;
-			linelen = linebuf.length;
 		}
 
-		if (sscanf(linep, " %63[A-Za-z0-9-] %n", name, &pos) >= 1) {
-			if (linep[pos] == '=') {
-				// option, e.g. debug=y
-				found = 1;
-				pos++;
-			} else
-				found = 2; // statement (e.g. include ".wgetrc.d") or boolean option without value (e.g. no-recursive)
-		} else {
-			error_printf(_("Failed to parse: '%s'\n"), linep);
-			continue;
-		}
+		found = _parse_option(linep, &name, &val);
 
-		if (found) {
-			char *val = linep + pos;
-			int vallen = linelen - pos, quote;
+		if (found == 1) {
+			// log_printf("%s = %s\n",name,val);
+			set_long_option(name, val);
+		} else if (found == 2) {
+			// log_printf("%s %s\n",name,val);
+			if (!strcmp(name, "include")) {
+				if (++level > 20)
+					error_printf_exit(_("Config file recursion loop detected in %s\n"), cfgfile);
 
-			if (vallen >= 2 && ((quote = *val) == '\"' || quote == '\'')) {
-				char *src = val + 1, *dst = val, c;
+				_read_config(val, 1);
 
-				while ((c = *src) != quote && c) {
-					if (c == '\\') {
-						// we could extend \r, \n etc to control codes here
-						// but it is not needed so far
-						*dst++ = src[1];
-						src += 2;
-					} else *dst++ = *src++;
-				}
-				*dst = 0;
-			}
-
-			if (found == 1) {
-				// log_printf("%s = %s\n",name,val);
-				set_long_option(name, val);
+				level--;
 			} else {
-				// log_printf("%s %s\n",name,val);
-				if (!strcmp(name, "include")) {
-					if (++level > 20)
-						error_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
-
-					_read_config(val, 1);
-
-					level--;
-				} else {
-					set_long_option(name, NULL);
-				}
+				set_long_option(name, NULL);
 			}
 		}
-
-		linelen = 0;
 	}
 
 	mget_buffer_deinit(&linebuf);
@@ -774,8 +816,8 @@ static int G_GNUC_MGET_NONNULL((2)) parse_command_line(int argc, const char *con
 
 				if (isalnum(argp[pos]) && (idx = shortcut_to_option[(unsigned char)argp[pos]])) {
 					opt = &options[idx - 1];
-//					info_printf("opt=%p [%c]\n",(void *)opt,argp[pos]);
-//					info_printf("name=%s\n",opt->long_name);
+					// info_printf("opt=%p [%c]\n",(void *)opt,argp[pos]);
+					// info_printf("name=%s\n",opt->long_name);
 					if (opt->args) {
 						const char *val;
 
@@ -784,21 +826,6 @@ static int G_GNUC_MGET_NONNULL((2)) parse_command_line(int argc, const char *con
 						val = argp[pos + 1] ? argp + pos + 1 : argv[++n];
 						n += opt->parser(opt, &argv[n], val);
 						break;
-/*
-					}
-					else if (opt->parser == parse_bool) {
-						const char *val;
-
-						if (argp[pos + 1]) {
-							opt->parser(opt, &argv[n], argp + pos + 1);
-							break;
-						} else if (argc > n + opt->args && argv[n+1][0] != '-')
-							val = argv[++n];
-						else
-							val = NULL;
-
-						opt->parser(opt, &argv[n], val);
-*/
 					} else
 						opt->parser(opt, &argv[n], NULL);
 				} else
@@ -830,8 +857,12 @@ int init(int argc, const char *const *argv)
 	srand48((long)time(NULL) ^ getpid());
 
 	// this is a special case for switching on debugging before any config file is read
-	if (argc >= 2 && (!strcmp(argv[1],"-d") || !strcmp(argv[1],"--debug"))) {
-		config.debug = 1;
+	if (argc >= 2) {
+		if (!strcmp(argv[1],"-d"))
+			config.debug = 1;
+		else if (!strcmp(argv[1],"--debug")) {
+			set_long_option(argv[1], argv[2]);
+		}
 	}
 
 	// the following strdup's are just needed for reallocation/freeing purposes to
