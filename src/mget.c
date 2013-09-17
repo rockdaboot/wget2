@@ -316,12 +316,18 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 		iri = mget_iri_parse(mget_iri_relative_to_abs(base, url, strlen(url), &buf), encoding);
 		mget_buffer_deinit(&buf);
 	} else {
-		// no base and no buf: just check URL for being an absolute URI
+		// no base: just check URL for being an absolute URI
 		iri = mget_iri_parse(mget_iri_relative_to_abs(NULL, url, strlen(url), NULL), encoding);
 	}
 
 	if (!iri) {
 		error_printf(_("Cannot resolve relative URI %s\n"), url);
+		return NULL;
+	}
+
+	if (config.https_only && iri->scheme != IRI_SCHEME_HTTPS) {
+		info_printf(_("Not following '%s' (https-only requested)\n"), url);
+		mget_iri_free(&iri);
 		return NULL;
 	}
 
@@ -349,7 +355,7 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 }
 
 // Needs to be thread-save
-static void add_uri(JOB *job, const char *encoding, const char *uri, int redirection)
+static void add_url(JOB *job, const char *encoding, const char *url, int redirection)
 {
 	JOB *new_job;
 	MGET_IRI *iri;
@@ -366,7 +372,13 @@ static void add_uri(JOB *job, const char *encoding, const char *uri, int redirec
 //		}
 	}
 
-	iri = mget_iri_parse(uri, encoding);
+	iri = mget_iri_parse(url, encoding);
+
+	if (config.https_only && iri->scheme != IRI_SCHEME_HTTPS) {
+		info_printf(_("Not following '%s' (https-only requested)\n"), url);
+		mget_iri_free(&iri);
+		return;
+	}
 
 	mget_thread_mutex_lock(&downloader_mutex);
 
@@ -768,12 +780,12 @@ void *downloader_thread(void *p)
 
 			if (metalink) {
 				// found a link to a metalink3 or metalink4 description, create a new job
-				add_uri(job, NULL, metalink->uri, 0);
+				add_url(job, NULL, metalink->uri, 0);
 				// dprintf(sockfd, "add uri - %s\n", metalink->uri);
 				goto ready;
 			} else if (top_link) {
 				// no metalink4 description found, create a new job
-				add_uri(job, NULL, top_link->uri, 0);
+				add_url(job, NULL, top_link->uri, 0);
 				// dprintf(sockfd, "add uri - %s\n", top_link->uri);
 				goto ready;
 			}
@@ -949,7 +961,7 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 				// add it to be downloaded, replace old base
 				MGET_IRI *iri = mget_iri_parse(value, ctx->encoding);
 				if (iri) {
-					add_uri(ctx->job, ctx->encoding, value, 0);
+					add_url(ctx->job, ctx->encoding, value, 0);
 					// dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", value);
 
 					if (ctx->base_allocated)
@@ -1010,7 +1022,7 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 				// log_printf("%02X %s %s=%s\n",flags,dir,attr,val);
 				if (mget_iri_relative_to_abs(ctx->base, value, len, &ctx->uri_buf)) {
 					// info_printf("%.*s -> %s\n", (int)len, val, ctx->uri_buf.data);
-					add_uri(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
+					add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
 				} else {
 					error_printf(_("Cannot resolve relative URI %s\n"), value);
 				}
@@ -1099,7 +1111,7 @@ static void _css_parse_uri(void *context, const char *url, size_t len, size_t po
 	if (len > 1 || (len == 1 && *url != '#')) {
 		// ignore e.g. href='#'
 		if (mget_iri_relative_to_abs(ctx->base, url, len, &ctx->uri_buf)) {
-			add_uri(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
+			add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
 		} else {
 			error_printf(_("Cannot resolve relative URI %.*s\n"), (int)len, url);
 		}
@@ -1587,7 +1599,7 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 			mget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
 
 			if (!part) {
-				add_uri(downloader->job, NULL, uri_buf.data, 1);
+				add_url(downloader->job, NULL, uri_buf.data, 1);
 //				dprintf(downloader->sockfd[1], "redirect - %s\n", uri_buf.data);
 				mget_buffer_deinit(&uri_buf);
 				break;

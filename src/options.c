@@ -164,6 +164,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --ca-directory      Directory with PEM CA certificates.\n"
 		"      --random-file       File to be used as source of random data.\n"
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
+		"      --https-only        Do not follow non-secure URLs. (default: off)"
 		"\n");
 	puts(
 		"Directory options:\n"
@@ -431,6 +432,7 @@ static const struct option options[] = {
 	{ "http-password", &config.http_password, parse_string, 1, 0},
 	{ "http-proxy", &config.http_proxy, parse_string, 1, 0},
 	{ "http-user", &config.http_username, parse_string, 1, 0},
+	{ "https-only", &config.https_only, parse_bool, 0, 0},
 	{ "https-proxy", &config.https_proxy, parse_string, 1, 0},
 	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4'},
 	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6'},
