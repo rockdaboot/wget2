@@ -468,8 +468,8 @@ const char *http_parse_content_disposition(const char *s, const char **filename)
 				xfree(param.name);
 
 				//
-				if (!(p = strpbrk(param.value,"/\\"))) {
-					*filename = strdup(param.value + 1);
+				if ((p = strpbrk(param.value,"/\\"))) {
+					*filename = strdup(p + 1);
 					xfree(param.value);
 				} else
 					*filename = param.value;
@@ -515,9 +515,9 @@ const char *http_parse_connection(const char *s, char *keep_alive)
 	return s;
 }
 
+/*
 // returns GMT/UTC time as an integer of format YYYYMMDDHHMMSS
 // this makes us independant from size of time_t - work around possible year 2038 problems
-/*
 static long long NONNULL_ALL parse_rfc1123_date(const char *s)
 {
 	// we simply can't use strptime() since it requires us to setlocale()
@@ -584,7 +584,30 @@ static int leap_days(int y1, int y2)
 	return (y2/4 - y1/4) - (y2/100 - y1/100) + (y2/400 - y1/400);
 }
 
-static time_t G_GNUC_MGET_NONNULL_ALL parse_rfc1123_date(const char *s)
+/*
+RFC 2616, 3.3.1 Full Date
+HTTP-date    = rfc1123-date | rfc850-date | asctime-date
+rfc1123-date = wkday "," SP date1 SP time SP "GMT"
+rfc850-date  = weekday "," SP date2 SP time SP "GMT"
+asctime-date = wkday SP date3 SP time SP 4DIGIT
+date1        = 2DIGIT SP month SP 4DIGIT
+					; day month year (e.g., 02 Jun 1982)
+date2        = 2DIGIT "-" month "-" 2DIGIT
+					; day-month-year (e.g., 02-Jun-82)
+date3        = month SP ( 2DIGIT | ( SP 1DIGIT ))
+					; month day (e.g., Jun  2)
+time         = 2DIGIT ":" 2DIGIT ":" 2DIGIT
+					; 00:00:00 - 23:59:59
+wkday        = "Mon" | "Tue" | "Wed"
+				 | "Thu" | "Fri" | "Sat" | "Sun"
+weekday      = "Monday" | "Tuesday" | "Wednesday"
+				 | "Thursday" | "Friday" | "Saturday" | "Sunday"
+month        = "Jan" | "Feb" | "Mar" | "Apr"
+				 | "May" | "Jun" | "Jul" | "Aug"
+				 | "Sep" | "Oct" | "Nov" | "Dec"
+*/
+
+time_t http_parse_full_date(const char *s)
 {
 	// we simply can't use strptime() since it requires us to setlocale()
 	// which is not thread-safe !!!
@@ -798,7 +821,7 @@ const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 					for (p = ++s; *s > 32 && *s <= 126 && *s != ';'; s++);
 
 					if (!strcasecmp(name, "expires")) {
-						cookie->expires = parse_rfc1123_date(p);
+						cookie->expires = http_parse_full_date(p);
 					} else if (!strcasecmp(name, "max-age")) {
 						long offset = atol(p);
 
@@ -861,9 +884,15 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 	resp = xcalloc(1, sizeof(MGET_HTTP_RESPONSE));
 
 	if (sscanf(buf, " HTTP/%3hd.%3hd %3hd %31[^\r\n] ",
-		&resp->major, &resp->minor, &resp->code, resp->reason) >= 3 && (eol = strchr(buf + 10, '\n'))) {
-		// eol[-1]=0;
-		// log_printf("# %s\n",buf);
+		&resp->major, &resp->minor, &resp->code, resp->reason) >= 3)
+	{
+		if ((eol = strchr(buf + 10, '\n'))) {
+			// eol[-1]=0;
+			// log_printf("# %s\n",buf);
+		} else {
+			// empty HTTP header
+			return resp;
+		}
 	} else {
 		error_printf(_("HTTP response header not found\n"));
 		xfree(resp);
@@ -903,7 +932,7 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 		case 'l':
 			if (!strncasecmp(name, "Last-Modified", namesize)) {
 				// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
-				resp->last_modified = parse_rfc1123_date(s);
+				resp->last_modified = http_parse_full_date(s);
 			} else if (resp->code / 100 == 3 && !strncasecmp(name, "Location", namesize)) {
 				xfree(resp->location);
 				http_parse_location(s, &resp->location);

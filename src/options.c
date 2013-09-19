@@ -903,8 +903,50 @@ int init(int argc, const char *const *argv)
 	// settings in user's config override global settings
 	read_config();
 
-	if (config.print_version)
-		info_printf("mget V" PACKAGE_VERSION " - C multithreaded metalink/file/website downloader\n");
+	if (config.print_version) {
+		info_printf("mget V" PACKAGE_VERSION " - C multithreaded metalink/file/website downloader\n\n");
+		info_printf("+digest"
+
+#if defined WITH_GNUTLS
+	" +https"
+#else
+	" -https"
+#endif
+
+	" +ipv6"
+	" +iri"
+
+#if SIZEOF_OFF_T >= 8
+	" +large-file"
+#else
+	" -large-file"
+#endif
+
+#if defined ENABLE_NLS
+	" +nls"
+#else
+	" -nls"
+#endif
+
+#if defined ENABLE_NTLM
+  " +ntlm"
+#else
+  " -ntlm"
+#endif
+
+#if defined ENABLE_OPIE
+	" +opie"
+#else
+	" -opie"
+#endif
+
+#if defined WITH_GNUTLS
+	" +ssl/gnutls"
+#else
+	" -ssl"
+#endif
+			"\n");
+	}
 
 	// now read command line options which override the settings of the config files
 	n = parse_command_line(argc, argv);

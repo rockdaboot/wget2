@@ -61,6 +61,8 @@ typedef struct {
 		headers[10];
 	const char *
 		request_headers[10];
+	time_t
+		modified;
 	char
 		body_alloc; // if body has been allocated internally (and need to be freed on exit)
 

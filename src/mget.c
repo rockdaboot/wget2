@@ -92,6 +92,22 @@ long long
 static int
 	terminate;
 
+static int
+	exit_status;
+
+void set_exit_status(int status)
+{
+	// use Wget exit status scheme:
+	// - error code 0 is default
+	// - error code 1 is used directly by exit() (fatal errors)
+	// - error codes 2... : lower numbers preceed higher numbers
+	if (exit_status) {
+		if (status < exit_status)
+			exit_status = status;
+	} else
+		exit_status = status;
+}
+
 // generate the local filename corresponding to an URI
 // respect the following options:
 // --restrict-file-names (unix,windows,nocontrol,ascii,lowercase,uppercase)
@@ -324,13 +340,14 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 		error_printf(_("Cannot resolve relative URI %s\n"), url);
 		return NULL;
 	}
-
+/*
+ * The URLs are user requested, so no check on --https-only
 	if (config.https_only && iri->scheme != IRI_SCHEME_HTTPS) {
 		info_printf(_("Not following '%s' (https-only requested)\n"), url);
 		mget_iri_free(&iri);
 		return NULL;
 	}
-
+*/
 	mget_thread_mutex_lock(&downloader_mutex);
 
 	job = queue_add(blacklist_add(iri));
@@ -670,7 +687,7 @@ int main(int argc, const char *const *argv)
 	xfree(downloaders);
 	deinit();
 
-	return EXIT_SUCCESS;
+	return exit_status;
 }
 
 void *input_thread(void *p G_GNUC_MGET_UNUSED)
@@ -866,6 +883,8 @@ void *downloader_thread(void *p)
 					}
 				}
 			}
+		} else if (resp->code == 404) {
+			set_exit_status(8);
 		}
 
 		// regular download
@@ -1198,7 +1217,7 @@ static void set_file_mtime(int fd, time_t modified)
 static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const char *fname, int flag)
 {
 	char *alloced_fname = NULL;
-	int fd, multiple, fnum;
+	int fd, multiple = 0, fnum, oflag = flag;
 	size_t fname_length;
 
 	if (config.spider || !fname)
@@ -1220,12 +1239,16 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 			size_t rc;
 
 			if (config.save_headers) {
-				if ((rc = fwrite(resp->header->data, 1, resp->header->length, stdout)) != resp->header->length)
+				if ((rc = fwrite(resp->header->data, 1, resp->header->length, stdout)) != resp->header->length) {
 					error_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
+					set_exit_status(3);
+				}
 			}
 
-			if ((rc = fwrite(resp->body->data, 1, resp->body->length, stdout)) != resp->body->length)
+			if ((rc = fwrite(resp->body->data, 1, resp->body->length, stdout)) != resp->body->length) {
 				error_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
+				set_exit_status(3);
+			}
 
 			return;
 		}
@@ -1258,19 +1281,21 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 		}
 	}
 
-	if (flag == O_APPEND || !config.clobber || config.timestamping || (config.recursive && config.directories)) {
-		multiple = 0;
-		if (flag == O_TRUNC && !(config.recursive && config.directories))
+	if (config.timestamping) {
+		if (oflag == O_TRUNC)
+			flag = O_TRUNC;
+	} else if (!config.clobber || (config.recursive && config.directories)) {
+		if (oflag == O_TRUNC && !(config.recursive && config.directories))
 			flag = O_EXCL;
-	} else {
+	} else if (flag != O_APPEND) {
 		// wget compatibility: "clobber" means generating of .x files
 		multiple = 1;
 		fname_length += 16;
-		if (flag == O_TRUNC)
-			flag = O_EXCL;
+		flag = O_EXCL;
 	}
 
 	fd = open(fname, O_WRONLY | flag | O_CREAT, 0644);
+	info_printf("fd=%d flag=%02x (%02x %02x %02x)\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND);
 
 	for (fnum = 0; fnum < 999;) { // just prevent endless loop
 		char unique[fname_length + 1];
@@ -1279,12 +1304,16 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 			ssize_t rc;
 
 			if (config.save_headers) {
-				if ((rc = write(fd, resp->header->data, resp->header->length)) != (ssize_t)resp->header->length)
+				if ((rc = write(fd, resp->header->data, resp->header->length)) != (ssize_t)resp->header->length) {
 					error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
+					set_exit_status(3);
+				}
 			}
 
-			if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length)
+			if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length) {
 				error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
+				set_exit_status(3);
+			}
 
 			if ((flag & (O_TRUNC | O_EXCL)) && resp->last_modified)
 				set_file_mtime(fd, resp->last_modified);
@@ -1308,8 +1337,10 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 	if (fd == -1) {
 		if (errno == EEXIST && fnum < 999)
 			error_printf(_("File '%s' already there; not retrieving.\n"), fname);
-		else
+		else {
 			error_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
+			set_exit_status(3);
+		}
 	}
 
 	xfree(alloced_fname);
@@ -1371,8 +1402,10 @@ void download_part(DOWNLOADER *downloader)
 					} else
 						error_printf(_("Failed to lseek to %llu\n"), (unsigned long long)part->position);
 					close(fd);
-				} else
+				} else {
 					error_printf(_("Failed to write open %s\n"), metalink->name);
+					set_exit_status(3);
+				}
 			}
 
 			http_free_response(&msg);

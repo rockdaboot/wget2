@@ -57,6 +57,12 @@ if test "x$EXTRA_CFLAGS" != "x" ; then
   CFLAGS="$CFLAGS $EXTRA_CFLAGS"
 fi
 
+dnl Check for large file support.  This check needs to come fairly
+dnl early because it could (in principle) affect whether functions and
+dnl headers are available, whether they work, etc.
+AC_SYS_LARGEFILE
+AC_CHECK_SIZEOF(off_t)
+
 #AM_NLS
 #IT_PROG_INTLTOOL([0.40.0])
 AC_PROG_LEX

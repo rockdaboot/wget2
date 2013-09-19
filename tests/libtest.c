@@ -81,6 +81,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 	size_t body_len, request_url_length;
 	unsigned it;
 	int byterange, from_bytes, to_bytes, authorized;
+	time_t modified;
 
 	sigaction(SIGTERM, &(struct sigaction) { .sa_handler = nop }, NULL);
 
@@ -99,6 +100,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 				}
 
 				byterange = from_bytes = 0;
+				modified = 0;
 
 				for (p = strstr(buf, "\r\n"); sscanf(p, "\r\n%63[^:]: %255[^\r]", tag, value) == 2; p = strstr(p + 2, "\r\n")) {
 					if (!strcasecmp(tag, "Range")) {
@@ -123,6 +125,10 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 						}
 
 						mget_xfree(auth_scheme);
+					}
+					else if (!strcasecmp(tag, "If-Modified-Since")) {
+						modified = http_parse_full_date(value);
+						mget_info_printf("modified = %ld\n", modified);
 					}
 				}
 
@@ -166,6 +172,11 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 					else
 						mget_error_printf(_("Unknown authentication scheme '%s'\n"), url->auth_method);
 
+					continue;
+				}
+
+				if (modified && url->modified<=modified) {
+					mget_tcp_printf(tcp,"HTTP/1.1 304 Not Modified\r\n\r\n");
 					continue;
 				}
 
@@ -459,17 +470,10 @@ void mget_test(int first_key, ...)
 		}
 	}
 
-	if (mget_vector_size(request_urls) > 0) {
-		int n = snprintf(cmd, sizeof(cmd), "../../src/mget %s http://localhost:%d/%s", options, server_port, request_url);
-		// int n = snprintf(cmd, sizeof(cmd), "wget %s", options);
-
-		for (it = 1; it < (size_t)mget_vector_size(request_urls); it++) {
-			n += snprintf(cmd + n, sizeof(cmd) - n, " 'http://localhost:%d/%s'",
-				server_port, (char *)mget_vector_get(request_urls, it));
-		}
-	} else {
-		snprintf(cmd, sizeof(cmd), "../../src/mget %s", options);
-		// snprintf(cmd, sizeof(cmd), "wget %s", options);
+	int n = snprintf(cmd, sizeof(cmd), "../../src/mget %s", options);
+	for (it = 0; it < (size_t)mget_vector_size(request_urls); it++) {
+		n += snprintf(cmd + n, sizeof(cmd) - n, " 'http://localhost:%d/%s'",
+			server_port, (char *)mget_vector_get(request_urls, it));
 	}
 
 	mget_error_printf("  Testing '%s'\n", cmd);

@@ -1158,6 +1158,8 @@ const char *
 	http_parse_name(const char *s, const char **name) G_GNUC_MGET_NONNULL_ALL;
 const char *
 	http_parse_name_fixed(const char *s, const char **name, size_t *namelen) G_GNUC_MGET_NONNULL_ALL;
+time_t
+	http_parse_full_date(const char *s) G_GNUC_MGET_NONNULL_ALL;
 const char *
 	http_parse_link(const char *s, MGET_HTTP_LINK *link) G_GNUC_MGET_NONNULL_ALL;
 const char *
