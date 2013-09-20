@@ -78,6 +78,7 @@ struct config {
 		max_redirect,
 		num_threads;
 	char
+		parent,
 		https_only,
 		content_disposition,
 		page_requisites,

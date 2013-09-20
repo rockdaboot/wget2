@@ -244,6 +244,8 @@ typedef struct {
 		got_robots; // if /robots.txt has been fetched
 } HOST;
 
+static MGET_VECTOR
+	*parents;
 static MGET_HASHMAP
 	*hosts;
 static mget_thread_mutex_t
@@ -364,6 +366,21 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 
 			hosts_add(job->iri);
 		}
+	
+		if (!config.parent) {
+			char *p;
+
+			if (!parents)
+				parents = mget_vector_create(4, -2, NULL);
+
+			// calc length of directory part in iri->path (including last /)
+			if (!iri->path || !(p = strrchr(iri->path, '/')))
+				iri->dirlen = 0;
+			else
+				iri->dirlen = p - iri->path + 1;
+
+			mget_vector_add_noalloc(parents, iri);
+		}
 	}
 
 	mget_thread_mutex_unlock(&downloader_mutex);
@@ -392,18 +409,53 @@ static void add_url(JOB *job, const char *encoding, const char *url, int redirec
 	iri = mget_iri_parse(url, encoding);
 
 	if (config.https_only && iri->scheme != IRI_SCHEME_HTTPS) {
-		info_printf(_("Not following '%s' (https-only requested)\n"), url);
+		info_printf(_("URL '%s' not followed (https-only requested)\n"), url);
 		mget_iri_free(&iri);
 		return;
 	}
 
 	mget_thread_mutex_lock(&downloader_mutex);
 
+	if (config.recursive && !config.parent) {
+		// do not ascend above the parent directory
+		int ok = 0;
+
+		// see if at least one parent matches
+		for (int it = 0; it < mget_vector_size(parents); it++) {
+			MGET_IRI *parent = mget_vector_get(parents, it);
+
+			if (!strcmp(parent->host, iri->host)) {
+				if (!parent->dirlen || !strncmp(parent->path, iri->path, parent->dirlen)) {
+					info_printf("found\n");
+					ok = 1;
+					break;
+				}
+			}
+		}
+
+		if (!ok) {
+			mget_thread_mutex_unlock(&downloader_mutex);
+			info_printf(_("URL '%s' not followed (parent ascending not allowed)\n"), url);
+			mget_iri_free(&iri);
+			return;
+		}
+	}
+
 	if (config.recursive && !config.span_hosts) {
 		// only download content from given hosts
-		if (!iri->host || !mget_stringmap_contains(config.domains, iri->host) || mget_stringmap_contains(config.exclude_domains, iri->host)) {
+		char *reason = NULL;
+
+		if (!iri->host) {
+			reason = _("missing ip/host/domain");
+		} else if (!mget_stringmap_contains(config.domains, iri->host)) {
+			reason = _("no host-spanning requested");
+		} else if (mget_stringmap_contains(config.exclude_domains, iri->host)) {
+			reason = _("domain explicitely excluded");
+		}
+
+		if (reason) {
 			mget_thread_mutex_unlock(&downloader_mutex);
-			info_printf("URI '%s' not followed\n", iri->uri);
+			info_printf(_("URL '%s' not followed (%s)\n"), iri->uri, reason);
 			mget_iri_free(&iri);
 			return;
 		}
@@ -685,6 +737,8 @@ int main(int argc, const char *const *argv)
 	blacklist_free();
 	hosts_free();
 	xfree(downloaders);
+	mget_vector_clear_nofree(parents);
+	mget_vector_free(&parents);
 	deinit();
 
 	return exit_status;
@@ -737,7 +791,10 @@ void *downloader_thread(void *p)
 
 		int tries = 0;
 		do {
-			print_status(downloader, "Downloading '%s' ...\n", job->local_filename);
+			if (job->local_filename)
+				print_status(downloader, "Downloading '%s' ...\n", job->local_filename);
+			else
+				print_status(downloader, "Downloading '%s' ...\n", job->iri->uri);
 			resp = http_get(job->iri, NULL, downloader);
 			if (resp)
 				print_status(downloader, "%d %s\n", resp->code, resp->reason);
@@ -1295,7 +1352,7 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 	}
 
 	fd = open(fname, O_WRONLY | flag | O_CREAT, 0644);
-	info_printf("fd=%d flag=%02x (%02x %02x %02x)\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND);
+	// info_printf("fd=%d flag=%02x (%02x %02x %02x)\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND);
 
 	for (fnum = 0; fnum < 999;) { // just prevent endless loop
 		char unique[fname_length + 1];

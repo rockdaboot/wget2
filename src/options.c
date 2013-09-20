@@ -131,6 +131,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --password          Password for Authentication. (default: empty password)\n"
 		"  -l  --level             Maximum recursion depth. (default: 5)\n"
 		"  -p  --page-requisites   Download all necessary files to display a HTML page\n"
+		"      --parent            Ascend above parent directory. (default: on)"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -336,7 +337,7 @@ static int parse_n_option(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED co
 				config.host_directories = 0;
 				break;
 			case 'p':
-//				config.parent = 0;
+				config.parent = 0;
 				break;
 			default:
 				error_printf_exit(_("Unknown option '-n%c'\n"), *p);
@@ -386,7 +387,8 @@ struct config config = {
 	.cache = 1,
 	.clobber = 1,
 	.default_page = "index.html",
-	.level = 5
+	.level = 5,
+	.parent = 1
 };
 
 static int parse_execute(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val);
@@ -448,6 +450,7 @@ static const struct option options[] = {
 	{ "output-document", &config.output_document, parse_string, 1, 'O'},
 	{ "output-file", &config.logfile, parse_string, 1, 'o'},
 	{ "page-requisites", &config.page_requisites, parse_bool, 0, 'p'},
+	{ "parent", &config.parent, parse_bool, 0, 0},
 	{ "password", &config.password, parse_string, 1, 0},
 	{ "prefer-family", &config.preferred_family, parse_prefer_family, 1, 0},
 	{ "private-key", &config.private_key, parse_string, 1, 0},
@@ -560,7 +563,7 @@ static int G_GNUC_MGET_NONNULL((1)) set_long_option(const char *name, const char
 			if (opt->parser == parse_bool) {
 				opt->parser(opt, NULL, value);
 
-				if (invert)
+				if (invert && opt->var)
 					*((char *)opt->var) = !*((char *)opt->var); // invert boolean value
 			} else
 				opt->parser(opt, NULL, NULL);

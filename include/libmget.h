@@ -692,7 +692,7 @@ extern const char * const
 
 typedef struct {
 	const char *
-		uri;      // pointer to original URI string
+		uri;      // pointer to original URI string, unescaped and converted to UTF-8
 	const char *
 		display;
 	const char *
@@ -715,6 +715,9 @@ typedef struct {
 		fragment; // unescaped
 	const char *
 		connection_part; // helper, e.g. http://www.example.com:8080
+
+	size_t
+		dirlen; // length of directory part in 'path' (needed/initialized on with --no-parent)
 	char
 		host_allocated; // if set, free host in iri_free()
 } MGET_IRI;
