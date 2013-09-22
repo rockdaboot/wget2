@@ -746,6 +746,8 @@ int
 	mget_iri_compare(MGET_IRI *iri1, MGET_IRI *iri2) G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL;
 MGET_IRI *
 	mget_iri_parse(const char *uri, const char *encoding) G_GNUC_MGET_MALLOC;
+MGET_IRI *
+	mget_iri_parse_base(MGET_IRI *base, const char *url, const char *encoding) G_GNUC_MGET_MALLOC;
 const char *
 	mget_iri_get_connection_part(MGET_IRI *iri);
 const char *

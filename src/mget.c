@@ -50,6 +50,7 @@
 #include "job.h"
 #include "options.h"
 #include "blacklist.h"
+#include "host.h"
 
 typedef struct {
 	mget_thread_t
@@ -118,7 +119,7 @@ void set_exit_status(int status)
 // --cut-dirs=number
 // -P / --directory-prefix=prefix
 
-static const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
+const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 {
 	mget_buffer_t buf;
 	const char *fname;
@@ -235,15 +236,6 @@ static long long quota_modify_read(size_t nbytes)
 	return old_quota;
 }
 
-// everything host/domain specific should go here
-typedef struct {
-	const char
-		*scheme,
-		*host;
-	unsigned int
-		got_robots; // if /robots.txt has been fetched
-} HOST;
-
 static MGET_VECTOR
 	*parents;
 static MGET_HASHMAP
@@ -279,11 +271,8 @@ static unsigned int _host_hash(const HOST *host)
 	return hash;
 }
 
-static void hosts_add(MGET_IRI *iri)
+static HOST *hosts_add(MGET_IRI *iri)
 {
-	if (!iri)
-		return;
-
 	mget_thread_mutex_lock(&hosts_mutex);
 
 	if (!hosts)
@@ -296,77 +285,181 @@ static void hosts_add(MGET_IRI *iri)
 	if (!mget_hashmap_contains(hosts, host)) {
 		// info_printf("Add to hosts: %s\n", hostname);
 		mget_hashmap_put_noalloc(hosts, host, host);
+	} else {
+		xfree(host);
 	}
 
 	mget_thread_mutex_unlock(&hosts_mutex);
+
+	return host; // 1=entry already there
 }
-/*
+
+static HOST *hosts_get(MGET_IRI *iri)
+{
+	HOST *hostp, host = { .scheme = iri->scheme, .host = iri->host };
+
+	mget_thread_mutex_lock(&hosts_mutex);
+
+	if (hosts) {
+		hostp = mget_hashmap_get(hosts, &host);
+	} else {
+		hostp = NULL;
+	}
+
+	mget_thread_mutex_unlock(&hosts_mutex);
+
+	return hostp;
+}
+
+static void mget_robots_free(ROBOTS **robots);
 static int _free_host_entry(const char *name G_GNUC_MGET_UNUSED, HOST *host)
 {
-//	xfree(host->name);
+	mget_robots_free(&host->robots);
 	return 0;
 }
-*/
+
 static void hosts_free(void)
 {
 	mget_thread_mutex_lock(&hosts_mutex);
 
-	//	mget_hashmap_browse(hosts, (int(*)(const char *, const void *))_free_host_entry);
+	mget_hashmap_browse(hosts, (int(*)(const void *, const void *))_free_host_entry);
 	mget_hashmap_free(&hosts);
 
 	mget_thread_mutex_unlock(&hosts_mutex);
 }
 
+typedef struct {
+	const char *
+		path;
+	size_t
+		len;
+} ROBOTS_PATH;
+
+typedef struct ROBOTS {
+	MGET_VECTOR
+		*paths;
+	MGET_VECTOR
+		*sitemaps;
+} ROBOTS;
+
+static void _free_path(ROBOTS_PATH *path)
+{
+	xfree(path->path);
+}
+
+static ROBOTS *mget_robots_parse(const char *data)
+{
+	ROBOTS *robots;
+	ROBOTS_PATH path;
+	int collect = 0;
+	const char *p;
+
+	if (!data || !*data)
+		return NULL;
+
+	robots = xcalloc(1, sizeof (ROBOTS));
+
+	do {
+		if (collect < 2 && !strncasecmp(data, "User-agent:", 11)) {
+			if (!collect) {
+				for (data += 11; *data==' ' || *data == '\t'; data++);
+				if (!strncasecmp(data, "mget", 4)) {
+					collect = 1;
+				}
+				else if (*data == '*') {
+					collect = 1;
+				}
+			} else
+				collect = 2;
+		}
+		else if (collect == 1 && !strncasecmp(data, "Disallow:", 9)) {
+			for (data += 9; *data==' ' || *data == '\t'; data++);
+			if (*data == '\r' || *data == '\n' || !*data) {
+				// all allowed
+				mget_vector_free(&robots->paths);
+				collect = 2;
+			} else {
+				if (!robots->paths) {
+					robots->paths = mget_vector_create(32, -2, NULL);
+					mget_vector_set_destructor(robots->paths, (void(*)(void *))_free_path);
+				}
+				for (p = data; !isspace(*p); p++);
+				path.len = p - data;
+				path.path = strndup(data, path.len);
+				mget_vector_add(robots->paths, &path, sizeof(path));
+			}
+		}
+		else if (!strncasecmp(data, "Sitemap:", 8)) {
+			for (data += 8; *data==' ' || *data == '\t'; data++);
+			for (p = data; !isspace(*p); p++);
+
+			if (!robots->sitemaps)
+				robots->sitemaps = mget_vector_create(4, -2, NULL);
+			mget_vector_add_noalloc(robots->sitemaps, strndup(data, p - data));
+		}
+
+		if ((data = strchr(data, '\n')))
+			data++; // point to next line
+	} while (data && *data);
+
+	return robots;
+}
+
+static void mget_robots_free(ROBOTS **robots)
+{
+	if (robots && *robots) {
+		mget_vector_free(&(*robots)->paths);
+		mget_vector_free(&(*robots)->sitemaps);
+	}
+}
+
 static mget_thread_mutex_t
 	downloader_mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
-// Needs to be thread-save
+// Add URLs given by user (command line or -i option).
+// Needs to be thread-save.
 static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encoding)
 {
 	MGET_IRI *iri;
-	JOB *job;
+	JOB *job = NULL;
 
-	if (base) {
-		mget_buffer_t buf;
-		char sbuf[256];
-
-		mget_buffer_init(&buf, sbuf, sizeof(sbuf));
-		iri = mget_iri_parse(mget_iri_relative_to_abs(base, url, strlen(url), &buf), encoding);
-		mget_buffer_deinit(&buf);
-	} else {
-		// no base: just check URL for being an absolute URI
-		iri = mget_iri_parse(mget_iri_relative_to_abs(NULL, url, strlen(url), NULL), encoding);
-	}
+	iri = mget_iri_parse_base(base, url, encoding);
 
 	if (!iri) {
 		error_printf(_("Cannot resolve relative URI %s\n"), url);
 		return NULL;
 	}
-/*
- * The URLs are user requested, so no check on --https-only
-	if (config.https_only && iri->scheme != IRI_SCHEME_HTTPS) {
-		info_printf(_("Not following '%s' (https-only requested)\n"), url);
-		mget_iri_free(&iri);
-		return NULL;
-	}
-*/
+
 	mget_thread_mutex_lock(&downloader_mutex);
 
-	job = queue_add(blacklist_add(iri));
+	if (!blacklist_add(iri)) {
+		mget_thread_mutex_unlock(&downloader_mutex);
+		return NULL;
+	}
 
-	if (job) {
-		if (!config.output_document)
-			job->local_filename = get_local_filename(job->iri);
-
-		if (config.recursive && !config.span_hosts) {
+	if (config.recursive) {
+		if (!config.span_hosts) {
 			// only download content from hosts given on the command line or from input file
-			if (!mget_stringmap_contains(config.exclude_domains, job->iri->host)) {
-				mget_stringmap_put(config.domains, job->iri->host, NULL, 0);
+			if (!mget_stringmap_contains(config.exclude_domains, iri->host)) {
+				mget_stringmap_put(config.domains, iri->host, NULL, 0);
 			}
-
-			hosts_add(job->iri);
 		}
-	
+
+		if (config.robots) {
+			HOST * host;
+
+			if ((host = hosts_add(iri))) {
+				// a new host entry has been created
+				job = queue_add(mget_iri_parse_base(iri, "/robots.txt", encoding));
+				job->host = host;
+				host->robot_job = job;
+				job->deferred = mget_vector_create(2, -2, NULL);
+				mget_vector_add_noalloc(job->deferred, iri);
+			} else if ((host = hosts_get(iri)) && (job = host->robot_job)) {
+				mget_vector_add_noalloc(job->deferred, iri);
+			}
+		}
+
 		if (!config.parent) {
 			char *p;
 
@@ -383,6 +476,14 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 		}
 	}
 
+	if (!job)
+		job = queue_add(iri);
+
+	if (!job->deferred)
+		job->local_filename = get_local_filename(iri);
+	else
+		job->local_filename = get_local_filename(job->iri);
+
 	mget_thread_mutex_unlock(&downloader_mutex);
 
 	return job;
@@ -391,7 +492,7 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 // Needs to be thread-save
 static void add_url(JOB *job, const char *encoding, const char *url, int redirection)
 {
-	JOB *new_job;
+	JOB *new_job = NULL;
 	MGET_IRI *iri;
 
 	if (redirection) { // redirect
@@ -461,9 +562,42 @@ static void add_url(JOB *job, const char *encoding, const char *url, int redirec
 		}
 	}
 
-	if ((new_job = queue_add(blacklist_add(iri)))) {
+	if (config.recursive && config.robots) {
+		HOST * host;
+
+		if ((host = hosts_add(iri))) {
+			// a new host entry has been created
+			new_job = queue_add(mget_iri_parse_base(iri, "/robots.txt", encoding));
+			new_job->host = host;
+			host->robot_job = new_job;
+			new_job->deferred = mget_vector_create(2, -2, NULL);
+			mget_vector_add_noalloc(new_job->deferred, iri);
+		} else if ((host = hosts_get(iri))) {
+			if (host->robot_job) {
+				mget_vector_add_noalloc(host->robot_job->deferred, iri);
+				mget_thread_mutex_unlock(&downloader_mutex);
+				return;
+			}
+
+			if (host->robots && iri->path) {
+				for (int it = 0; it < mget_vector_size(host->robots->paths); it++) {
+					ROBOTS_PATH *path = mget_vector_get(host->robots->paths, it);
+					if (!strncmp(path->path, iri->path, path->len)) {
+						mget_thread_mutex_unlock(&downloader_mutex);
+						info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), iri->uri);
+						mget_iri_free(&iri);
+						return;
+					}
+//					info_printf("checked robot path '%.*s'\n", path->path, path->len);
+				}
+			}
+		}
+	}
+
+	if (new_job || (new_job = queue_add(blacklist_add(iri)))) {
 		if (!config.output_document)
 			new_job->local_filename = get_local_filename(new_job->iri);
+
 		if (job) {
 			if (redirection) {
 				new_job->redirection_level = job->redirection_level + 1;
@@ -780,14 +914,14 @@ void *downloader_thread(void *p)
 		}
 		mget_thread_mutex_unlock(&main_mutex);
 
-		// hey, we got a job...
-		job = downloader->job;
-
 		if ((part = downloader->part)) {
 			// download metalink part
 			download_part(downloader);
 			continue;
 		}
+
+		// hey, we got a job...
+		job = downloader->job;
 
 		int tries = 0;
 		do {
@@ -913,6 +1047,20 @@ void *downloader_thread(void *p)
 						// xml_parse(sockfd, resp, job->iri);
 					} else if (!strcasecmp(resp->content_type, "text/css")) {
 						css_parse(job, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					} else if (job->deferred && !strcasecmp(resp->content_type, "text/plain")) {
+						debug_printf("Scanning robots.txt ...\n");
+						job->host->robots = mget_robots_parse(resp->body->data);
+/*
+						for (int it = 0; it < mget_vector_size(job->host->robots->paths); it++) {
+							ROBOTS_PATH *path = mget_vector_get(job->host->robots->paths, it);
+							info_printf("path '%s'\n", path->path);
+						}
+						for (int it = 0; it < mget_vector_size(job->host->robots->sitemaps); it++) {
+							const char *sitemap = mget_vector_get(job->host->robots->sitemaps, it);
+							info_printf("sitemap '%s'\n", sitemap);
+						}
+						exit(0);
+*/
 					}
 				}
 			}
@@ -941,7 +1089,8 @@ void *downloader_thread(void *p)
 				}
 			}
 		} else if (resp->code == 404) {
-			set_exit_status(8);
+			if (!job->deferred) // ignore errors on robots.txt
+				set_exit_status(8);
 		}
 
 		// regular download
@@ -1352,7 +1501,7 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 	}
 
 	fd = open(fname, O_WRONLY | flag | O_CREAT, 0644);
-	// info_printf("fd=%d flag=%02x (%02x %02x %02x)\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND);
+//	info_printf("fd=%d flag=%02x (%02x %02x %02x)\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND);
 
 	for (fnum = 0; fnum < 999;) { // just prevent endless loop
 		char unique[fname_length + 1];
@@ -1395,7 +1544,7 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 		if (errno == EEXIST && fnum < 999)
 			error_printf(_("File '%s' already there; not retrieving.\n"), fname);
 		else {
-			error_printf(_("Failed to open '%s' (errno=%d)\n"), fname, errno);
+			error_printf(_("Failed to open '%s' (errno=%d): %s\n"), fname, errno, strerror(errno));
 			set_exit_status(3);
 		}
 	}

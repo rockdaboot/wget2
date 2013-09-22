@@ -368,7 +368,6 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 #ifdef WITH_LIBIDN
 		char *host_asc = NULL;
 		int rc;
-
 		if ((rc = idna_to_ascii_8z(iri->host, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
 			// log_printf("toASCII '%s' -> '%s'\n", iri->host, host_asc);
 			iri->host = host_asc;
@@ -560,13 +559,32 @@ const char *mget_iri_relative_to_abs(MGET_IRI *base, const char *val, size_t len
 			buf->length = _normalize_path(buf->data + tmp_len) + tmp_len;
 
 			debug_printf("*4 %s %zu\n", buf->data, buf->length);
-		} else if (val[len] == 0)
+		} else if (val[len] == 0) {
 			return val;
-		else
+		} else
 			return NULL;
 	}
 
 	return buf->data;
+}
+
+MGET_IRI *mget_iri_parse_base(MGET_IRI *base, const char *url, const char *encoding)
+{
+	MGET_IRI *iri;
+
+	if (base) {
+		mget_buffer_t buf;
+		char sbuf[256];
+
+		mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+		iri = mget_iri_parse(mget_iri_relative_to_abs(base, url, strlen(url), &buf), encoding);
+		mget_buffer_deinit(&buf);
+	} else {
+		// no base: just check URL for being an absolute URI
+		iri = mget_iri_parse(mget_iri_relative_to_abs(NULL, url, strlen(url), NULL), encoding);
+	}
+
+	return iri;
 }
 
 // RFC conform comparison as described in http://tools.ietf.org/html/rfc2616#section-3.2.3

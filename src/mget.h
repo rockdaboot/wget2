@@ -36,4 +36,7 @@
 // number of elements within an array
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
+void set_exit_status(int status);
+const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri);
+
 #endif /* _MGET_SSL_H */

@@ -171,7 +171,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"Directory options:\n"
 		"      --directories       Create hierarchy of directories when retrieving recursively. (default: on)\n"
 		"  -x  --force-directories Create hierarchy of directories when not retrieving recursively. (default: off)\n"
-		"      --host-directories  Force creating host directories. (default: off)\n"
+		"      --host-directories  Create host directories when retrieving recursively. (default: on)\n"
 		"      --protocol-directories  Force creating protocol directories. (default: off)\n"
 		"      --cut-dirs          Skip creating given number of directory components. (default: 0)\n"
 		"  -P  --directory-prefix  Set directory prefix.\n"
@@ -388,7 +388,8 @@ struct config config = {
 	.clobber = 1,
 	.default_page = "index.html",
 	.level = 5,
-	.parent = 1
+	.parent = 1,
+	.robots = 1
 };
 
 static int parse_execute(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val);
@@ -396,87 +397,88 @@ static int parse_execute(option_t opt, G_GNUC_MGET_UNUSED const char *const *arg
 static const struct option options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
-	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E'},
-	{ "append-output", &config.logfile_append, parse_string, 1, 'a'},
-	{ "base", &config.base_url, parse_string, 1, 'B'},
-	{ "bind-address", &config.bind_address, parse_string, 1, 0},
-	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0},
-	{ "ca-directory", &config.ca_directory, parse_string, 1, 0},
-	{ "cache", &config.cache, parse_bool, 0, 0},
-	{ "certificate", &config.cert_file, parse_string, 1, 0},
-	{ "certificate-type", &config.cert_type, parse_cert_type, 1, 0},
-	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0},
-	{ "clobber", &config.clobber, parse_bool, 0, 0},
-	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0},
-	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0},
-	{ "continue-download", &config.continue_download, parse_bool, 0, 'c'},
-	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0},
-	{ "cookies", &config.cookies, parse_bool, 0, 0},
-	{ "cut-dirs", &config.cut_directories, parse_integer, 1, 0},
-	{ "debug", &config.debug, parse_bool, 0, 'd'},
-	{ "default-page", &config.default_page, parse_string, 1, 0},
-	{ "delete-after", &config.delete_after, parse_bool, 0, 0},
-	{ "directories", &config.directories, parse_bool, 0, 0},
-	{ "directory-prefix", &config.directory_prefix, parse_string, 1, 'P'},
-	{ "dns-cache", &config.dns_caching, parse_bool, 0, 0},
-	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0},
-	{ "domains", &config.domains, parse_stringset, 1, 'D'},
-	{ "egd-file", &config.egd_file, parse_string, 1, 0},
-	{ "exclude-domains", &config.exclude_domains, parse_stringset, 1, 0},
-	{ "execute", NULL, parse_execute, 1, 'e'},
-	{ "force-css", &config.force_css, parse_bool, 0, 0},
-	{ "force-directories", &config.force_directories, parse_bool, 0, 'x'},
-	{ "force-html", &config.force_html, parse_bool, 0, 'F'},
-	{ "help", NULL, print_help, 0, 'h'},
-	{ "host-directories", &config.host_directories, parse_bool, 0, 0},
-	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0}, // obsolete, replaced by --adjust-extension
-	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0},
-	{ "http-password", &config.http_password, parse_string, 1, 0},
-	{ "http-proxy", &config.http_proxy, parse_string, 1, 0},
-	{ "http-user", &config.http_username, parse_string, 1, 0},
-	{ "https-only", &config.https_only, parse_bool, 0, 0},
-	{ "https-proxy", &config.https_proxy, parse_string, 1, 0},
-	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4'},
-	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6'},
-	{ "input-file", &config.input_file, parse_string, 1, 'i'},
-	{ "iri", NULL, parse_bool, 0, 0}, // Wget compatibility, in fact a do-nothing option
-	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0},
-	{ "level", &config.level, parse_integer, 1, 'l'},
-	{ "load-cookies", &config.load_cookies, parse_string, 1, 0},
-	{ "local-encoding", &config.local_encoding, parse_string, 1, 0},
-	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0},
-	{ "n", NULL, parse_n_option, 1, 'n'}, // special Wget compatibility option
-	{ "num-threads", &config.num_threads, parse_integer, 1, 0},
-	{ "output-document", &config.output_document, parse_string, 1, 'O'},
-	{ "output-file", &config.logfile, parse_string, 1, 'o'},
-	{ "page-requisites", &config.page_requisites, parse_bool, 0, 'p'},
-	{ "parent", &config.parent, parse_bool, 0, 0},
-	{ "password", &config.password, parse_string, 1, 0},
-	{ "prefer-family", &config.preferred_family, parse_prefer_family, 1, 0},
-	{ "private-key", &config.private_key, parse_string, 1, 0},
-	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0},
-	{ "protocol-directories", &config.protocol_directories, parse_bool, 0, 0},
-	{ "quiet", &config.quiet, parse_bool, 0, 'q'},
-	{ "quota", &config.quota, parse_numbytes, 1, 'Q'},
-	{ "random-file", &config.random_file, parse_string, 1, 0},
-	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0},
-	{ "recursive", &config.recursive, parse_bool, 0, 'r'},
-	{ "referer", &config.referer, parse_string, 1, 0},
-	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0},
-	{ "save-cookies", &config.save_cookies, parse_string, 1, 0},
-	{ "save-headers", &config.save_headers, parse_bool, 0, 0},
-	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0},
-	{ "server-response", &config.server_response, parse_bool, 0, 'S'},
-	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H'},
-	{ "spider", &config.spider, parse_bool, 0, 0},
-	{ "strict-comments", &config.strict_comments, parse_bool, 0, 0},
-	{ "timeout", NULL, parse_timeout, 1, 'T'},
-	{ "timestamping", &config.timestamping, parse_bool, 0, 'N'},
-	{ "use-server-timestamp", &config.use_server_timestamps, parse_bool, 0, 0},
-	{ "user", &config.username, parse_string, 1, 0},
-	{ "user-agent", &config.user_agent, parse_string, 1, 'U'},
-	{ "verbose", &config.verbose, parse_bool, 0, 'v'},
-	{ "version", &config.print_version, parse_bool, 0, 'V'}
+	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E' },
+	{ "append-output", &config.logfile_append, parse_string, 1, 'a' },
+	{ "base", &config.base_url, parse_string, 1, 'B' },
+	{ "bind-address", &config.bind_address, parse_string, 1, 0 },
+	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0 },
+	{ "ca-directory", &config.ca_directory, parse_string, 1, 0 },
+	{ "cache", &config.cache, parse_bool, 0, 0 },
+	{ "certificate", &config.cert_file, parse_string, 1, 0 },
+	{ "certificate-type", &config.cert_type, parse_cert_type, 1, 0 },
+	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0 },
+	{ "clobber", &config.clobber, parse_bool, 0, 0 },
+	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0 },
+	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0 },
+	{ "continue-download", &config.continue_download, parse_bool, 0, 'c' },
+	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0 },
+	{ "cookies", &config.cookies, parse_bool, 0, 0 },
+	{ "cut-dirs", &config.cut_directories, parse_integer, 1, 0 },
+	{ "debug", &config.debug, parse_bool, 0, 'd' },
+	{ "default-page", &config.default_page, parse_string, 1, 0 },
+	{ "delete-after", &config.delete_after, parse_bool, 0, 0 },
+	{ "directories", &config.directories, parse_bool, 0, 0 },
+	{ "directory-prefix", &config.directory_prefix, parse_string, 1, 'P' },
+	{ "dns-cache", &config.dns_caching, parse_bool, 0, 0 },
+	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0 },
+	{ "domains", &config.domains, parse_stringset, 1, 'D' },
+	{ "egd-file", &config.egd_file, parse_string, 1, 0 },
+	{ "exclude-domains", &config.exclude_domains, parse_stringset, 1, 0 },
+	{ "execute", NULL, parse_execute, 1, 'e' },
+	{ "force-css", &config.force_css, parse_bool, 0, 0 },
+	{ "force-directories", &config.force_directories, parse_bool, 0, 'x' },
+	{ "force-html", &config.force_html, parse_bool, 0, 'F' },
+	{ "help", NULL, print_help, 0, 'h' },
+	{ "host-directories", &config.host_directories, parse_bool, 0, 0 },
+	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0 }, // obsolete, replaced by --adjust-extension
+	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0 },
+	{ "http-password", &config.http_password, parse_string, 1, 0 },
+	{ "http-proxy", &config.http_proxy, parse_string, 1, 0 },
+	{ "http-user", &config.http_username, parse_string, 1, 0 },
+	{ "https-only", &config.https_only, parse_bool, 0, 0 },
+	{ "https-proxy", &config.https_proxy, parse_string, 1, 0 },
+	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4' },
+	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6' },
+	{ "input-file", &config.input_file, parse_string, 1, 'i' },
+	{ "iri", NULL, parse_bool, 0, 0 }, // Wget compatibility, in fact a do-nothing option
+	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0 },
+	{ "level", &config.level, parse_integer, 1, 'l' },
+	{ "load-cookies", &config.load_cookies, parse_string, 1, 0 },
+	{ "local-encoding", &config.local_encoding, parse_string, 1, 0 },
+	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0 },
+	{ "n", NULL, parse_n_option, 1, 'n' }, // special Wget compatibility option
+	{ "num-threads", &config.num_threads, parse_integer, 1, 0 },
+	{ "output-document", &config.output_document, parse_string, 1, 'O' },
+	{ "output-file", &config.logfile, parse_string, 1, 'o' },
+	{ "page-requisites", &config.page_requisites, parse_bool, 0, 'p' },
+	{ "parent", &config.parent, parse_bool, 0, 0 },
+	{ "password", &config.password, parse_string, 1, 0 },
+	{ "prefer-family", &config.preferred_family, parse_prefer_family, 1, 0 },
+	{ "private-key", &config.private_key, parse_string, 1, 0 },
+	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0 },
+	{ "protocol-directories", &config.protocol_directories, parse_bool, 0, 0 },
+	{ "quiet", &config.quiet, parse_bool, 0, 'q' },
+	{ "quota", &config.quota, parse_numbytes, 1, 'Q' },
+	{ "random-file", &config.random_file, parse_string, 1, 0 },
+	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0 },
+	{ "recursive", &config.recursive, parse_bool, 0, 'r' },
+	{ "referer", &config.referer, parse_string, 1, 0 },
+	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0 },
+	{ "robots", &config.robots, parse_bool, 0, 0 },
+	{ "save-cookies", &config.save_cookies, parse_string, 1, 0 },
+	{ "save-headers", &config.save_headers, parse_bool, 0, 0 },
+	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0 },
+	{ "server-response", &config.server_response, parse_bool, 0, 'S' },
+	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H' },
+	{ "spider", &config.spider, parse_bool, 0, 0 },
+	{ "strict-comments", &config.strict_comments, parse_bool, 0, 0 },
+	{ "timeout", NULL, parse_timeout, 1, 'T' },
+	{ "timestamping", &config.timestamping, parse_bool, 0, 'N' },
+	{ "use-server-timestamp", &config.use_server_timestamps, parse_bool, 0, 0 },
+	{ "user", &config.username, parse_string, 1, 0 },
+	{ "user-agent", &config.user_agent, parse_string, 1, 'U' },
+	{ "verbose", &config.verbose, parse_bool, 0, 'v' },
+	{ "version", &config.print_version, parse_bool, 0, 'V' }
 };
 
 static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL opt_compare(const void *key, const void *option)
@@ -707,7 +709,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 		return -1;
 	}
 
-	debug_printf(_("Reading %s\n"), cfgfile);
+	debug_printf("Reading %s\n", cfgfile);
 
 	mget_buffer_init(&linebuf, alloca(1024), 1024);
 

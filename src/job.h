@@ -29,6 +29,8 @@
 
 #include <libmget.h>
 
+#include "host.h"
+
 // file part to download
 typedef struct {
 	off_t
@@ -42,7 +44,7 @@ typedef struct {
 		done;
 } PART;
 
-typedef struct {
+typedef struct JOB {
 	MGET_IRI
 		*iri,
 		*referer;
@@ -52,7 +54,10 @@ typedef struct {
 		*metalink;
 
 	MGET_VECTOR
-		*parts; // parts to download
+		*parts, // parts to download
+		*deferred; // IRIs that need to wait for this job to be done (while downloading robots.txt)
+	HOST
+		*host;
 	const char
 		*local_filename;
 	int

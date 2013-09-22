@@ -50,6 +50,8 @@ void job_free(JOB *job)
 	if (job) {
 		mget_metalink_free(&job->metalink);
 		mget_vector_free(&job->parts);
+		mget_vector_clear_nofree(job->deferred);
+		mget_vector_free(&job->deferred);
 		xfree(job->local_filename);
 	}
 }
@@ -307,6 +309,18 @@ void queue_del(JOB *job)
 {
 	if (job) {
 		debug_printf("queue_del %p\n", (void *)job);
+
+		// special handling for automatic robots.txt jobs
+		if (job->deferred) {
+			if (job->host)
+				job->host->robot_job = NULL;
+			mget_iri_free(&job->iri);
+			for (int it = 0; it < mget_vector_size(job->deferred); it++) {
+				JOB *new_job = queue_add(mget_vector_get(job->deferred, it));
+				new_job->local_filename = get_local_filename(new_job->iri);
+			}
+		}
+
 		job_free(job);
 
 		mget_thread_mutex_lock(&mutex);

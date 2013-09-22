@@ -166,6 +166,9 @@ static inline void G_GNUC_MGET_NONNULL((1,3)) hashmap_new_entry(MGET_HASHMAP *h,
 	}
 }
 
+// return:
+//  0: new entry
+//  1: existing entry has been replaced
 int mget_hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value)
 {
 	ENTRY *entry;
