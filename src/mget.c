@@ -1159,7 +1159,6 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 
 		if ((*dir == 'm' || *dir == 'M') && !strcasecmp(dir, "meta")) {
 			if (config.robots) {
-				info_printf("#a %d %s = %s\n",ctx->found_robots,attr,value);
 				if (!ctx->found_robots) {
 					if (!strcasecmp(attr, "name") && !strcasecmp(value, "robots")) {
 						ctx->found_robots = 1;
@@ -1173,10 +1172,10 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 						if (*value == ',') { value++; continue; }
 						for (p = value; *p && !isspace(*p) && *p != ','; p++);
 
-						info_printf("ROBOTS=%.*s\n", (int)(p - value), value);
-						if (!strncasecmp(value, "ALL", p - value) || !strncasecmp(value, "FOLLOW", p - value))
+						// info_printf("ROBOTS=%.*s\n", (int)(p - value), value);
+						if (!strncasecmp(value, "all", p - value) || !strncasecmp(value, "follow", p - value))
 							ctx->follow = 1;
-						else if (!strncasecmp(value, "NOFOLLOW", p - value))
+						else if (!strncasecmp(value, "nofollow", p - value) || !strncasecmp(value, "none", p - value))
 							ctx->follow = 0;
 
 						value = *p  ? p + 1 : p;
