@@ -339,10 +339,10 @@ struct find_free_job_context {
 
 static int find_free_job(struct find_free_job_context *context, JOB *job)
 {
-	// log_printf("%p %p %p %d\n",part_out,job,job->parts,job->inuse);
+	// debug_printf("%p %p %p %d\n",part_out,job,job->parts,job->inuse);
 	if (context->part && job->parts) {
 		int it;
-		// log_printf("nparts %d\n",vec_size(job->parts));
+		// debug_printf("nparts %d\n",vec_size(job->parts));
 
 		for (it = 0; it < mget_vector_size(job->parts); it++) {
 			PART *part = mget_vector_get(job->parts, it);

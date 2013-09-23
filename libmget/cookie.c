@@ -346,12 +346,12 @@ void mget_cookie_free_cookies(void)
 static int _mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie)
 {
 /*
-	log_printf("normalize cookie %s=%s\n", cookie->name, cookie->value);
-	log_printf("<  %s=%s\n", cookie->name, cookie->value);
-	log_printf("<  expires=%ld max-age=%ld\n", cookie->expires, cookie->maxage);
-	log_printf("<  domain=%s\n", cookie->domain);
-	log_printf("<  path=%s\n", cookie->path);
-	log_printf("<  normalized=%d persistent=%d hostonly=%d secure=%d httponly=%d\n",
+	debug_printf("normalize cookie %s=%s\n", cookie->name, cookie->value);
+	debug_printf("<  %s=%s\n", cookie->name, cookie->value);
+	debug_printf("<  expires=%ld max-age=%ld\n", cookie->expires, cookie->maxage);
+	debug_printf("<  domain=%s\n", cookie->domain);
+	debug_printf("<  path=%s\n", cookie->path);
+	debug_printf("<  normalized=%d persistent=%d hostonly=%d secure=%d httponly=%d\n",
 		cookie->normalized, cookie->persistent, cookie->host_only, cookie->secure_only, cookie->http_only);
 */
 	cookie->normalized = 0;
@@ -410,11 +410,11 @@ static int _mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cooki
 	cookie->normalized = 1;
 
 /*
-	log_printf(">  %s=%s\n", cookie->name, cookie->value);
-	log_printf(">  expires=%ld max-age=%ld\n", cookie->expires, cookie->maxage);
-	log_printf(">  domain=%s\n", cookie->domain);
-	log_printf(">  path=%s\n", cookie->path);
-	log_printf(">  normalized=%d persistent=%d hostonly=%d secure=%d httponly=%d\n",
+	debug_printf(">  %s=%s\n", cookie->name, cookie->value);
+	debug_printf(">  expires=%ld max-age=%ld\n", cookie->expires, cookie->maxage);
+	debug_printf(">  domain=%s\n", cookie->domain);
+	debug_printf(">  path=%s\n", cookie->path);
+	debug_printf(">  normalized=%d persistent=%d hostonly=%d secure=%d httponly=%d\n",
 		cookie->normalized, cookie->persistent, cookie->host_only, cookie->secure_only, cookie->http_only);
 */
 

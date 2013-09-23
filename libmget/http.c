@@ -888,7 +888,7 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 	{
 		if ((eol = strchr(buf + 10, '\n'))) {
 			// eol[-1]=0;
-			// log_printf("# %s\n",buf);
+			// debug_printf("# %s\n",buf);
 		} else {
 			// empty HTTP header
 			return resp;
@@ -909,7 +909,7 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 		if (eol)
 			eol[-1] = 0;
 
-		// log_printf("# %p %s\n",eol,line);
+		// debug_printf("# %p %s\n",eol,line);
 
 		s = http_parse_name_fixed(line, &name, &namesize);
 		// s now points directly after :
@@ -937,10 +937,10 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 				xfree(resp->location);
 				http_parse_location(s, &resp->location);
 			} else if (resp->code / 100 == 3 && !strncasecmp(name, "Link", namesize)) {
-				// log_printf("s=%.31s\n",s);
+				// debug_printf("s=%.31s\n",s);
 				MGET_HTTP_LINK link;
 				http_parse_link(s, &link);
-				// log_printf("link->uri=%s\n",link.uri);
+				// debug_printf("link->uri=%s\n",link.uri);
 				if (!resp->links) {
 					resp->links = mget_vector_create(8, 8, NULL);
 					mget_vector_set_destructor(resp->links, (void(*)(void *))http_free_link);
@@ -983,7 +983,7 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 				// http://tools.ietf.org/html/rfc3230
 				MGET_HTTP_DIGEST digest;
 				http_parse_digest(s, &digest);
-				// log_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
+				// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
 				if (!resp->digests) {
 					resp->digests = mget_vector_create(4, 4, NULL);
 					mget_vector_set_destructor(resp->digests, (void(*)(void *))http_free_digest);
@@ -1490,7 +1490,7 @@ MGET_HTTP_RESPONSE *http_get_response_cb(
 		// read each chunk, stripping the chunk info
 		p = buf;
 		for (;;) {
-			//log_printf("#1 p='%.16s'\n",p);
+			// debug_printf("#1 p='%.16s'\n",p);
 			// read: chunk-size [ chunk-extension ] CRLF
 			while ((!(end = strchr(p, '\r')) || end[1] != '\n')) {
 				if ((nbytes = mget_tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)

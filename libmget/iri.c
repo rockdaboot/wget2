@@ -194,12 +194,12 @@ char *mget_charset_transcode(const char *src, const char *src_encoding, const ch
 				debug_printf("converted '%s' (%s) -> '%s' (%s)\n", src, src_encoding, dst_encoding, dst);
 				ret = strndup(dst, dst_len - dst_len_tmp);
 			} else
-				error_printf(_("Failed to convert %s string into %s (%d)\n"), src_encoding, dst_encoding, errno);
+				error_printf(_("Failed to convert '%s' string into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
 
 			xfree(dst);
 			iconv_close(cd);
 		} else
-			error_printf(_("Failed to prepare encoding %s into %s (%d)\n"), src_encoding, dst_encoding, errno);
+			error_printf(_("Failed to prepare encoding '%s' into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
 
 		return ret;
 	}
@@ -243,10 +243,16 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 		char *unesc_url = strdup(url);
 
 		_unescape((unsigned char *)unesc_url);
-		url = mget_str_to_utf8(unesc_url, encoding);
-		xfree(unesc_url);
+		if ((url = mget_str_to_utf8(unesc_url, encoding)))
+			xfree(unesc_url);
+		else
+			url = unesc_url; // on error, use what we have
+
 	} else {
-		url = mget_str_to_utf8(url, encoding);
+		if ((s = mget_str_to_utf8(url, encoding)))
+			url = s;
+		else
+			url = strdup(url); // on error, use what we have and satisfy xfree() below
 	}
 
 	// just use one block of memory for all parsed URI parts
@@ -369,7 +375,7 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 		char *host_asc = NULL;
 		int rc;
 		if ((rc = idna_to_ascii_8z(iri->host, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
-			// log_printf("toASCII '%s' -> '%s'\n", iri->host, host_asc);
+			// debug_printf("toASCII '%s' -> '%s'\n", iri->host, host_asc);
 			iri->host = host_asc;
 			iri->host_allocated = 1;
 		} else

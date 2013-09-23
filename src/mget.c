@@ -988,12 +988,12 @@ void *downloader_thread(void *p)
 
 			if (metalink) {
 				// found a link to a metalink3 or metalink4 description, create a new job
-				add_url(job, NULL, metalink->uri, 0);
+				add_url(job, "utf-8", metalink->uri, 0);
 				// dprintf(sockfd, "add uri - %s\n", metalink->uri);
 				goto ready;
 			} else if (top_link) {
 				// no metalink4 description found, create a new job
-				add_url(job, NULL, top_link->uri, 0);
+				add_url(job, "utf-8", top_link->uri, 0);
 				// dprintf(sockfd, "add uri - %s\n", top_link->uri);
 				goto ready;
 			}
@@ -1100,7 +1100,7 @@ ready:
 		}
 
 		// download of single-part file complete, remove from job queue
-		// log_printf("- '%s' completed\n",downloader[n].job->uri);
+		// debug_printf("- '%s' completed\n",downloader[n].job->uri);
 		queue_del(job);
 		mget_thread_cond_signal(&main_cond);
 	}
@@ -1127,19 +1127,25 @@ struct html_context {
 		level;
 	char
 		base_allocated,
-		encoding_allocated;
+		encoding_allocated,
+		encoding_fixed,
+		follow,
+		found_robots,
+		found_content_type;
 };
 
 static void _html_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
 {
-	static int found_content_type;
 	struct html_context *ctx = context;
 
 	// Read the encoding from META tag, e.g. from
 	//   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">.
 	// It overrides the encoding from the HTTP response resp. from the CLI.
-	if ((flags & XML_FLG_BEGIN) && tolower(*dir) == 'm' && !strcasecmp(dir, "meta")) {
-		found_content_type = 0;
+	//
+	// Also ,we are interested in ROBOTS e.g.
+	//   <META name="ROBOTS" content="NOINDEX, NOFOLLOW">
+	if ((flags & XML_FLG_BEGIN) && (*dir == 'm' || *dir == 'M') && !strcasecmp(dir, "meta")) {
+		ctx->found_robots = ctx->found_content_type = 0;
 	}
 
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
@@ -1149,7 +1155,62 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 		memcpy(value, val, len);
 		value[len] = 0;
 
-		// info_printf("%02X %s %s '%s' %zd %zd\n", flags, dir, attr, val, len, pos);
+		// info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
+
+		if ((*dir == 'm' || *dir == 'M') && !strcasecmp(dir, "meta")) {
+			if (config.robots) {
+				info_printf("#a %d %s = %s\n",ctx->found_robots,attr,value);
+				if (!ctx->found_robots) {
+					if (!strcasecmp(attr, "name") && !strcasecmp(value, "robots")) {
+						ctx->found_robots = 1;
+						return;
+					}
+				} else if (ctx->found_robots && !strcasecmp(attr, "content")) {
+					char *p;
+
+					while (*value) {
+						while (isspace(*value)) value++;
+						if (*value == ',') { value++; continue; }
+						for (p = value; *p && !isspace(*p) && *p != ','; p++);
+
+						info_printf("ROBOTS=%.*s\n", (int)(p - value), value);
+						if (!strncasecmp(value, "ALL", p - value) || !strncasecmp(value, "FOLLOW", p - value))
+							ctx->follow = 1;
+						else if (!strncasecmp(value, "NOFOLLOW", p - value))
+							ctx->follow = 0;
+
+						value = *p  ? p + 1 : p;
+					}
+					return;
+				}
+			}
+
+			if (ctx->found_content_type) {
+				if (!strcasecmp(attr, "content")) {
+					if (!ctx->encoding_allocated) {
+						http_parse_content_type(value, NULL, &ctx->encoding);
+						if (ctx->encoding) {
+							ctx->encoding_allocated = 1;
+							info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
+						}
+					}
+				}
+			}
+			else if (!ctx->found_content_type && !ctx->encoding_fixed) {
+				if (!strcasecmp(attr, "http-equiv") && !strcasecmp(value, "Content-Type")) {
+					ctx->found_content_type = 1;
+				}
+				else if (!strcasecmp(attr, "charset")) {
+					if (!ctx->encoding_allocated) {
+						ctx->encoding = strndup(val, len);
+						ctx->encoding_allocated = 1;
+						info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
+					}
+				}
+			}
+
+			return;
+		}
 
 		// very simplified
 		// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
@@ -1197,22 +1258,6 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 				}
 				return;
 			}
-
-			if (!found && !ctx->encoding_allocated) {
-				// if we have no encoding yet, read it from META tag, e.g. from
-				//   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-				if (!strcasecmp(dir, "meta")) {
-					if (!strcasecmp(attr, "http-equiv") && !strcasecmp(value, "Content-Type"))
-						found_content_type = 1;
-					else if (found_content_type && !strcasecmp(attr, "content")) {
-						http_parse_content_type(value, NULL, &ctx->encoding);
-						if (ctx->encoding) {
-							ctx->encoding_allocated = 1;
-							info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
-						}
-					}
-				}
-			}
 			break;
 		case 'i':
 			found = !strcasecmp(attr, "icon");
@@ -1235,23 +1280,29 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 		}
 
 		if (found) {
-			// sometimes the URIs are surrounded by spaces, we ignore them
-			while (isspace(*value))
-				value++;
+			if (ctx->follow) {
+				// sometimes the URIs are surrounded by spaces, we ignore them
+				while (isspace(*value))
+					value++;
 
-			// skip trailing spaces
-			for (; len && isspace(value[len - 1]); len--)
-				;
+				// skip trailing spaces
+				for (; len && isspace(value[len - 1]); len--)
+					;
 
-			if (len > 1 || (len == 1 && *value != '#')) { // ignore e.g. href='#'
-				// log_printf("%02X %s %s=%s\n",flags,dir,attr,val);
-				if (mget_iri_relative_to_abs(ctx->base, value, len, &ctx->uri_buf)) {
-					// info_printf("%.*s -> %s\n", (int)len, val, ctx->uri_buf.data);
-					add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
-				} else {
-					error_printf(_("Cannot resolve relative URI %s\n"), value);
+				if (len > 1 || (len == 1 && *value != '#')) { // ignore e.g. href='#'
+					// info_printf("%02X %s %s=%s\n",flags,dir,attr,val);
+					if (mget_iri_relative_to_abs(ctx->base, value, len, &ctx->uri_buf)) {
+						// info_printf("%.*s -> %s\n", (int)len, val, ctx->uri_buf.data);
+						if (!ctx->base && !ctx->uri_buf.length)
+							info_printf(_("URL '%s' not followed (missing base URI)\n"), value);
+						else
+							add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
+					} else {
+						error_printf(_("Cannot resolve relative URI %s\n"), value);
+					}
 				}
-			}
+			} else
+				info_printf(_("URL '%s' not followed (nofollow set by META/ROBOTS element)\n"), value);
 		}
 	}
 }
@@ -1261,13 +1312,19 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 void html_parse(JOB *job, int level, const char *data, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
-	struct html_context context = { .base = base, .job = job, .level = level, .encoding = encoding };
+	struct html_context context = { .base = base, .job = job, .level = level, .encoding = encoding, .follow = 1 };
 	char sbuf[1024];
 
 	mget_buffer_init(&context.uri_buf, sbuf, sizeof(sbuf));
 
-	if (encoding)
-		info_printf(_("URI content encoding = '%s'\n"), encoding);
+	if (encoding) {
+		if (encoding == config.remote_encoding) {
+			info_printf(_("URI content encoding = '%s' (may be overridden by document settings)\n"), encoding);
+		} else {
+			context.encoding_fixed = 1;
+			info_printf(_("URI content encoding = '%s' (fixed by server response)\n"), encoding);
+		}
+	}
 
 	mget_html_parse_buffer(data, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
 
@@ -1285,7 +1342,7 @@ void html_parse(JOB *job, int level, const char *data, const char *encoding, MGE
 void html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, MGET_IRI *base)
 {
 	// create scheme://authority that will be prepended to relative paths
-	struct html_context context = { .base = base, .job = job, .level = level, .encoding = encoding };
+	struct html_context context = { .base = base, .job = job, .level = level, .encoding = encoding, .follow = 1 };
 	char sbuf[1024];
 
 	mget_buffer_init(&context.uri_buf, sbuf, sizeof(sbuf));
@@ -1336,7 +1393,10 @@ static void _css_parse_uri(void *context, const char *url, size_t len, size_t po
 	if (len > 1 || (len == 1 && *url != '#')) {
 		// ignore e.g. href='#'
 		if (mget_iri_relative_to_abs(ctx->base, url, len, &ctx->uri_buf)) {
-			add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
+			if (!ctx->base && !ctx->uri_buf.length)
+				info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)len, url);
+			else
+				add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
 		} else {
 			error_printf(_("Cannot resolve relative URI %.*s\n"), (int)len, url);
 		}
@@ -1632,7 +1692,7 @@ void download_part(DOWNLOADER *downloader)
 		}
 		mget_thread_mutex_unlock(&downloader_mutex);
 
-		// log_printf("all_done=%d\n",all_done);
+		// debug_printf("all_done=%d\n",all_done);
 		if (all_done && mget_vector_size(job->metalink->hashes) > 0) {
 			// check integrity of complete file
 			print_status(downloader, "%s checking...\n", job->local_filename);
@@ -1838,8 +1898,7 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 			mget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
 
 			if (!part) {
-				add_url(downloader->job, NULL, uri_buf.data, 1);
-//				dprintf(downloader->sockfd[1], "redirect - %s\n", uri_buf.data);
+				add_url(downloader->job, "utf-8", uri_buf.data, 1);
 				mget_buffer_deinit(&uri_buf);
 				break;
 			} else {

@@ -432,7 +432,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 				// ascend one level
 				// cleanup - get name and '>'
 				if (!(tok = getToken(context))) return;
-				// log_printf("X Token %s\n",tok);
+				// debug_printf("X Token %s\n",tok);
 				if (context->callback) {
 					if (!(context->hints & XML_HINT_HTML))
 						context->callback(context->user_ctx, XML_FLG_END, directory, NULL, NULL, 0, 0);
@@ -444,7 +444,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 					}
 				}
 				if (!(tok = getToken(context))) return;
-				// log_printf("Y Token %s\n",tok);
+				// debug_printf("Y Token %s\n",tok);
 				if (!(context->hints & XML_HINT_HTML))
 					return;
 				else

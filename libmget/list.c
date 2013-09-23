@@ -248,10 +248,10 @@ void mget_list_dump(const MGET_LIST *list)
 		const MGET_LIST *cur = list;
 
 		do {
-			log_printf("%p: next %p prev %p\n", cur, cur->next, cur->prev);
+			debug_printf("%p: next %p prev %p\n", cur, cur->next, cur->prev);
 			cur = cur->next;
 		} while (cur != list);
 	} else
-		log_printf("empty\n");
+		debug_printf("empty\n");
 }
 */

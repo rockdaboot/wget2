@@ -294,7 +294,7 @@ static int parse_timeout(option_t opt, G_GNUC_MGET_UNUSED const char *const *arg
 
 	if (opt->var) {
 		*((int *)opt->var) = fval;
-		// log_printf("timeout set to %gs\n",*((int *)opt->var)/1000.);
+		// debug_printf("timeout set to %gs\n",*((int *)opt->var)/1000.);
 	} else {
 		// --timeout option sets all timeouts
 		config.connect_timeout =
@@ -748,10 +748,10 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 		found = _parse_option(linep, &name, &val);
 
 		if (found == 1) {
-			// log_printf("%s = %s\n",name,val);
+			// debug_printf("%s = %s\n",name,val);
 			set_long_option(name, val);
 		} else if (found == 2) {
-			// log_printf("%s %s\n",name,val);
+			// debug_printf("%s %s\n",name,val);
 			if (!strcmp(name, "include")) {
 				if (++level > 20)
 					error_printf_exit(_("Config file recursion loop detected in %s\n"), cfgfile);
