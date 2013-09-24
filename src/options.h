@@ -35,6 +35,7 @@ struct config {
 	MGET_IRI
 		*base;
 	const char
+		*restrict_file_names,
 		*username,
 		*password,
 		*http_username,
@@ -78,6 +79,7 @@ struct config {
 		max_redirect,
 		num_threads;
 	char
+		trust_server_names,
 		robots,
 		parent,
 		https_only,

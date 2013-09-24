@@ -595,8 +595,12 @@ static void add_url(JOB *job, const char *encoding, const char *url, int redirec
 	}
 
 	if (new_job || (new_job = queue_add(blacklist_add(iri)))) {
-		if (!config.output_document)
-			new_job->local_filename = get_local_filename(new_job->iri);
+		if (!config.output_document) {
+			if (!redirection || config.trust_server_names)
+				new_job->local_filename = get_local_filename(new_job->iri);
+			else
+				new_job->local_filename = strdup(job->local_filename);
+		}
 
 		if (job) {
 			if (redirection) {

@@ -131,7 +131,8 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --password          Password for Authentication. (default: empty password)\n"
 		"  -l  --level             Maximum recursion depth. (default: 5)\n"
 		"  -p  --page-requisites   Download all necessary files to display a HTML page\n"
-		"      --parent            Ascend above parent directory. (default: on)"
+		"      --parent            Ascend above parent directory. (default: on)\n"
+		"      --trust-server-names  On redirection use the server's filename. (default: off)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -464,6 +465,7 @@ static const struct option options[] = {
 	{ "recursive", &config.recursive, parse_bool, 0, 'r' },
 	{ "referer", &config.referer, parse_string, 1, 0 },
 	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0 },
+	{ "restrict-file-names", &config.restrict_file_names, parse_string, 1, 0 },
 	{ "robots", &config.robots, parse_bool, 0, 0 },
 	{ "save-cookies", &config.save_cookies, parse_string, 1, 0 },
 	{ "save-headers", &config.save_headers, parse_bool, 0, 0 },
@@ -474,6 +476,7 @@ static const struct option options[] = {
 	{ "strict-comments", &config.strict_comments, parse_bool, 0, 0 },
 	{ "timeout", NULL, parse_timeout, 1, 'T' },
 	{ "timestamping", &config.timestamping, parse_bool, 0, 'N' },
+	{ "trust-server-names", &config.trust_server_names, parse_bool, 0, 0 },
 	{ "use-server-timestamp", &config.use_server_timestamps, parse_bool, 0, 0 },
 	{ "user", &config.username, parse_string, 1, 0 },
 	{ "user-agent", &config.user_agent, parse_string, 1, 'U' },

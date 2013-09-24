@@ -268,8 +268,8 @@ char *mget_read_file(const char *fname, size_t *size)
 			struct stat st;
 
 			if (fstat(fd, &st) == 0) {
-				size_t total = 0;
-				
+				off_t total = 0;
+
 				buf = xmalloc(st.st_size + 1);
 
 				while (total < st.st_size && (nread = read(fd, buf + total, st.st_size - total)) > 0) {
