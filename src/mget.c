@@ -1128,7 +1128,7 @@ struct html_context {
 	char
 		base_allocated,
 		encoding_allocated,
-		encoding_fixed,
+		encoding_certain,
 		follow,
 		found_robots,
 		found_content_type;
@@ -1189,20 +1189,31 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 					if (!ctx->encoding_allocated) {
 						http_parse_content_type(value, NULL, &ctx->encoding);
 						if (ctx->encoding) {
-							ctx->encoding_allocated = 1;
+							if (!strcasecmp(ctx->encoding, "UTF-16")) {
+								// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
+								xfree(ctx->encoding);
+								ctx->encoding = "UTF-8";
+							} else {
+								ctx->encoding_allocated = 1;
+							}
 							info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
 						}
 					}
 				}
 			}
-			else if (!ctx->found_content_type && !ctx->encoding_fixed) {
+			else if (!ctx->found_content_type && !ctx->encoding_certain) {
 				if (!strcasecmp(attr, "http-equiv") && !strcasecmp(value, "Content-Type")) {
 					ctx->found_content_type = 1;
 				}
 				else if (!strcasecmp(attr, "charset")) {
 					if (!ctx->encoding_allocated) {
-						ctx->encoding = strndup(val, len);
-						ctx->encoding_allocated = 1;
+						if (!strcasecmp(value, "UTF-16")) {
+							// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
+							ctx->encoding = "UTF-8";
+						} else {
+							ctx->encoding = strndup(val, len);
+							ctx->encoding_allocated = 1;
+						}
 						info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
 					}
 				}
@@ -1312,18 +1323,40 @@ void html_parse(JOB *job, int level, const char *data, const char *encoding, MGE
 {
 	// create scheme://authority that will be prepended to relative paths
 	struct html_context context = { .base = base, .job = job, .level = level, .encoding = encoding, .follow = 1 };
-	char sbuf[1024];
+	char sbuf[1024], *reason = NULL;
 
 	mget_buffer_init(&context.uri_buf, sbuf, sizeof(sbuf));
 
-	if (encoding) {
-		if (encoding == config.remote_encoding) {
-			info_printf(_("URI content encoding = '%s' (may be overridden by document settings)\n"), encoding);
+	// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
+	if (encoding && encoding == config.remote_encoding) {
+		context.encoding_certain = 1;
+		reason = _("fixed by user settings");
+	} else {
+		if ((unsigned char)data[0] == 0xFE && (unsigned char)data[1] == 0xFF) {
+			// Big-endian UTF-16
+			context.encoding = "UTF-16BE";
+			context.encoding_certain = 1;
+			reason = _("fixed by BOM");
+		} else if ((unsigned char)data[0] == 0xFF && (unsigned char)data[1] == 0xFE) {
+			// Little-endian UTF-16
+			context.encoding = "UTF-16LE";
+			context.encoding_certain = 1;
+			reason = _("fixed by BOM");
+		} else if ((unsigned char)data[0] == 0xEF && (unsigned char)data[1] == 0xBB && (unsigned char)data[2] == 0xBF) {
+			// UTF-8
+			context.encoding = "UTF-8";
+			context.encoding_certain = 1;
+			reason = _("fixed by BOM");
 		} else {
-			context.encoding_fixed = 1;
-			info_printf(_("URI content encoding = '%s' (fixed by server response)\n"), encoding);
+			context.encoding_certain = 1;
+			reason = _("fixed by server response");
 		}
 	}
+
+	// If we have an non-ASCII encoding, we should convert 'data' to UTF-8 right here
+
+	if (context.encoding && reason)
+		info_printf(_("URI content encoding = '%s' (%s)\n"), context.encoding, reason);
 
 	mget_html_parse_buffer(data, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
 
@@ -1340,24 +1373,12 @@ void html_parse(JOB *job, int level, const char *data, const char *encoding, MGE
 
 void html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, MGET_IRI *base)
 {
-	// create scheme://authority that will be prepended to relative paths
-	struct html_context context = { .base = base, .job = job, .level = level, .encoding = encoding, .follow = 1 };
-	char sbuf[1024];
+	char *data;
 
-	mget_buffer_init(&context.uri_buf, sbuf, sizeof(sbuf));
+	if ((data = mget_read_file(fname, NULL)))
+		html_parse(job, level, data, encoding, base);
 
-	if (encoding)
-		info_printf(_("URI content encoding = '%s'\n"), encoding);
-
-	mget_html_parse_file(fname, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
-
-	if (context.encoding_allocated)
-		xfree(context.encoding);
-
-	if (context.base_allocated)
-		mget_iri_free(&context.base);
-
-	mget_buffer_deinit(&context.uri_buf);
+	xfree(data);
 }
 
 struct css_context {

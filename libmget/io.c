@@ -33,6 +33,8 @@
 //#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <errno.h>
 #ifdef WIN32
 #	include <winsock2.h>
@@ -253,4 +255,57 @@ int mget_ready_2_read(int fd, int timeout)
 int mget_ready_2_write(int fd, int timeout)
 {
 	return _ready_2_transfer(fd, timeout, MGET_IO_WRITABLE);
+}
+
+char *mget_read_file(const char *fname, size_t *size)
+{
+	int fd;
+	ssize_t nread;
+	char *buf = NULL;
+
+	if (strcmp(fname,"-")) {
+		if ((fd = open(fname, O_RDONLY)) != -1) {
+			struct stat st;
+
+			if (fstat(fd, &st) == 0) {
+				size_t total = 0;
+				
+				buf = xmalloc(st.st_size + 1);
+
+				while (total < st.st_size && (nread = read(fd, buf + total, st.st_size - total)) > 0) {
+					total += nread;
+				}
+
+				if (size)
+					*size = total;
+
+				if (total != st.st_size)
+					error_printf(_("WARNING: Size of %s changed from %zd to %zd while reading. This may lead to unwanted results !\n"), fname, st.st_size, total);
+			} else
+				error_printf(_("Failed to fstat %s\n"), fname);
+
+			close(fd);
+		} else
+			error_printf(_("Failed to open %s\n"), fname);
+	} else {
+		// read data from STDIN.
+		char tmp[4096];
+		mget_buffer_t buffer;
+		
+		mget_buffer_init(&buffer, NULL, 4096);
+
+		while ((nread = read(STDIN_FILENO, tmp, sizeof(tmp))) > 0) {
+			mget_buffer_memcat(&buffer, tmp, nread);
+		}
+
+		if (size)
+			*size = buffer.length;
+
+		buf = buffer.data;
+		buffer.data = NULL;
+
+		mget_buffer_deinit(&buffer);
+	}
+
+	return buf;
 }

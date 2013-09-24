@@ -691,6 +691,7 @@ static void test_iri_compare(void)
 		{ "http://abc.com", "http://abc.com:/", -1},
 		{ "http://abc.com", "http://abc.com:80/", -1},
 		{ "http://abc.com", "http://abc.com:80//", -1},
+		// { "http://äöü.com", "http://ÄÖÜ.com:80//", 0},
 		{ "http://abc.com:80/~smith/home.html", "http://abc.com/~smith/home.html", 0},
 		{ "http://abc.com:80/~smith/home.html", "http://ABC.com/~smith/home.html", 0},
 		{ "http://abc.com:80/~smith/home.html", "http://ABC.com/%7Esmith/home.html", 0},
