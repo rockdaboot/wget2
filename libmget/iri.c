@@ -56,8 +56,11 @@ const char
 #define IRI_CTYPE_GENDELIM (1<<0)
 #define _iri_isgendelim(c) (iri_ctype[(unsigned char)(c)]&IRI_CTYPE_GENDELIM)
 
-#define IRI_CTYPE_SUBDELIM (1<<0)
+#define IRI_CTYPE_SUBDELIM (1<<1)
 #define _iri_issubdelim(c) (iri_ctype[(unsigned char)(c)]&IRI_CTYPE_SUBDELIM)
+
+#define IRI_CTYPE_UNRESERVED (1<<2)
+#define _iri_isunreserved(c) (iri_ctype[(unsigned char)(c)]&IRI_CTYPE_UNRESERVED)
 
 static const unsigned char
 	iri_ctype[256] = {
@@ -80,7 +83,12 @@ static const unsigned char
 		['+'] = IRI_CTYPE_SUBDELIM,
 		[','] = IRI_CTYPE_SUBDELIM,
 		[';'] = IRI_CTYPE_SUBDELIM,
-		['='] = IRI_CTYPE_SUBDELIM
+		['='] = IRI_CTYPE_SUBDELIM,
+
+		['-'] = IRI_CTYPE_UNRESERVED,
+		['.'] = IRI_CTYPE_UNRESERVED,
+		['_'] = IRI_CTYPE_UNRESERVED,
+		['~'] = IRI_CTYPE_UNRESERVED
 	};
 
 int mget_iri_supported(const MGET_IRI *iri)
@@ -114,12 +122,12 @@ int mget_iri_isreserved(char c)
 
 int mget_iri_isunreserved(char c)
 {
-	return c > 32 && c < 127 && (isalnum(c) || strchr("-._~", c));
+	return c > 32 && c < 127 && (isalnum(c) || _iri_isunreserved(c));
 }
 
 int mget_iri_isunreserved_path(char c)
 {
-	return c > 32 && c < 127 && (isalnum(c) || strchr("/-._~", c));
+	return c > 32 && c < 127 && (isalnum(c) || _iri_isunreserved(c) || c == '/');
 }
 
 // needed as helper for blacklist.c/blacklist_free()

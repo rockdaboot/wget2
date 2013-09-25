@@ -55,18 +55,18 @@ static const unsigned char base64_2_bin[256] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static int isbase64(char c)
+static int G_GNUC_MGET_CONST _isbase64(char c)
 {
 	// isalnum(c) does not work for all locales
-	return (c>='A' && c<='Z') || (c>='a' && c<='z') || (c>='0' && c<='9') || c=='+' || c=='/';
+	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '+' || c == '/';
 }
 
 int mget_base64_is_string(const char *src)
 {
 	if (src) {
-		while (isbase64(*src)) src++;
+		while (_isbase64(*src)) src++;
 
-		if (!*src || (*src=='=' && src[1]) || (*src=='=' && src[1]=='=' && src[2]))
+		if (!*src || (*src == '=' && src[1]) || (*src == '=' && src[1] == '=' && src[2]))
 			return 1;
 	}
 
@@ -81,7 +81,7 @@ int mget_base64_decode(char *dst, const char *src, int n)
 	int extra;
 
 	// trim '=' at the end
-	while (n > 0 && !isbase64(usrc[n - 1]))
+	while (n > 0 && !_isbase64(usrc[n - 1]))
 		n--;
 
 	extra = n & 3;
@@ -111,12 +111,12 @@ int mget_base64_decode(char *dst, const char *src, int n)
 	}
 
 	*dst = 0;
-	return(int) (dst - old);
+	return (int) (dst - old);
 }
 
 char *mget_base64_decode_alloc(const char *src, int n)
 {
-	char *dst=xmalloc(((n+3)/4)*3+1);
+	char *dst = xmalloc(((n + 3) / 4) * 3 + 1);
 
 	mget_base64_decode(dst, src, n);
 
@@ -163,7 +163,7 @@ int mget_base64_encode(char *dst, const char *src, int n)
 
 char *mget_base64_encode_alloc(const char *src, int n)
 {
-	char *dst = xmalloc(((n + 2) / 3)*4 + 1);
+	char *dst = xmalloc(((n + 2) / 3) * 4 + 1);
 
 	mget_base64_encode(dst, src, n);
 

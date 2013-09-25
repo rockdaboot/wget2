@@ -53,6 +53,8 @@ struct _MGET_HASHMAP {
 		(*hash)(const void *); // hash function
 	int
 		(*cmp)(const void *, const void *); // compare function
+	void
+		(*destructor)(void *); // element destructor function
 	ENTRY
 		**entry; // pointer to array of pointers to entries
 	int
@@ -81,6 +83,7 @@ MGET_HASHMAP *mget_hashmap_create(int max, int off, unsigned int (*hash)(const v
 	h->off = off;
 	h->hash = hash;
 	h->cmp = cmp;
+	h->destructor=NULL;
 	h->factor = 0.75;
 	h->threshold = (int)(max * h->factor);
 
@@ -102,15 +105,6 @@ static inline ENTRY * G_GNUC_MGET_NONNULL_ALL hashmap_find_entry(const MGET_HASH
 	// 	info_printf("collision on %s\n", key);
 
 	return NULL;
-}
-
-static inline void G_GNUC_MGET_NONNULL_ALL hashmap_free_entry(ENTRY **e)
-{
-	if (*e) {
-		xfree((*e)->value);
-		xfree((*e)->key);
-		xfree(*e);
-	}
 }
 
 static void G_GNUC_MGET_NONNULL_ALL hashmap_rehash(MGET_HASHMAP *h, int newmax, int recalc_hash)
@@ -177,6 +171,8 @@ int mget_hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value
 
 	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
 		if (entry->value != value) {
+			if (h->destructor)
+				h->destructor(entry->value);
 			xfree(entry->value);
 			entry->value = (void *)value;
 		}
@@ -200,6 +196,8 @@ int mget_hashmap_put(MGET_HASHMAP *h, const void *key, size_t keysize, const voi
 	int pos = hash % h->max;
 
 	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
+		if (h->destructor)
+			h->destructor(entry->value);
 		xfree(entry->value);
 		entry->value = mget_memdup(value, valuesize);
 
@@ -268,6 +266,8 @@ static void G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const 
 			if (free_kv) {
 				if (entry->value != entry->key)
 					xfree(entry->key);
+				if (h->destructor)
+					h->destructor(entry->value);
 				xfree(entry->value);
 			}
 			xfree(entry);
@@ -310,6 +310,8 @@ void mget_hashmap_clear(MGET_HASHMAP *h)
 				next = entry->next;
 				if (entry->value != entry->key)
 					xfree(entry->key);
+				if (h->destructor)
+					h->destructor(entry->value);
 				xfree(entry->value);
 				xfree(entry);
 				cur--;
@@ -356,6 +358,12 @@ void mget_hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *
 
 		hashmap_rehash(h, h->max, 1);
 	}
+}
+
+void mget_hashmap_set_destructor(MGET_HASHMAP *h, void (*destructor)(void *elem))
+{
+	if (h)
+		h->destructor = destructor;
 }
 
 void mget_hashmap_setloadfactor(MGET_HASHMAP *h, float factor)

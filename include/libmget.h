@@ -315,7 +315,7 @@ void *
 void *
 	mget_list_getfirst(const MGET_LIST *list) G_GNUC_MGET_CONST;
 void *
-	mget_list_getlast(const MGET_LIST *list) G_GNUC_MGET_CONST;
+	mget_list_getlast(const MGET_LIST *list) G_GNUC_MGET_PURE;
 void
 	mget_list_remove(MGET_LIST **list, void *elem) G_GNUC_MGET_NONNULL_ALL;
 void
@@ -353,7 +353,7 @@ char *
  */
 
 int
-	mget_base64_is_string(const char *src);
+	mget_base64_is_string(const char *src) G_GNUC_MGET_PURE;
 int
 	mget_base64_decode(char *restrict dst, const char *restrict src, int n) G_GNUC_MGET_NONNULL_ALL;
 int
@@ -446,11 +446,11 @@ void
 void
 	mget_logger_set_file(MGET_LOGGER *logger, const char *fname);
 void
-	(*mget_logger_get_func(MGET_LOGGER *logger))(const char *, size_t);
+	(*mget_logger_get_func(MGET_LOGGER *logger))(const char *, size_t) G_GNUC_MGET_PURE;
 FILE *
-	mget_logger_get_stream(MGET_LOGGER *logger);
+	mget_logger_get_stream(MGET_LOGGER *logger) G_GNUC_MGET_PURE;
 const char *
-	mget_logger_get_file(MGET_LOGGER *logger);
+	mget_logger_get_file(MGET_LOGGER *logger) G_GNUC_MGET_PURE;
 
 /*
  * Logging routines
@@ -477,7 +477,7 @@ void
 void
 	mget_debug_write(const char *buf, int len) G_GNUC_MGET_NONNULL_ALL;
 MGET_LOGGER *
-	mget_get_logger(int id);
+	mget_get_logger(int id) G_GNUC_MGET_CONST;
 
 /*
  * Vector datatype routines
@@ -520,7 +520,7 @@ int
 int
 	mget_vector_remove_nofree(MGET_VECTOR *v, int pos);
 int
-	mget_vector_size(const MGET_VECTOR *v);
+	mget_vector_size(const MGET_VECTOR *v) G_GNUC_MGET_PURE;
 int
 	mget_vector_browse(const MGET_VECTOR *v, int (*browse)(void *elem)) G_GNUC_MGET_NONNULL((2));
 void
@@ -530,7 +530,7 @@ void
 void
 	mget_vector_clear_nofree(MGET_VECTOR *v);
 void *
-	mget_vector_get(const MGET_VECTOR *v, int pos);
+	mget_vector_get(const MGET_VECTOR *v, int pos) G_GNUC_MGET_PURE;
 void
 	mget_vector_setcmpfunc(MGET_VECTOR *v, int (*cmp)(const void *elem1, const void *elem2)) G_GNUC_MGET_NONNULL((2));
 void
@@ -555,7 +555,7 @@ int
 //int
 //	mget_hashmap_put_ident_noalloc(MGET_HASHMAP *h, const void *key);
 int
-	mget_hashmap_size(const MGET_HASHMAP *h);
+	mget_hashmap_size(const MGET_HASHMAP *h) G_GNUC_MGET_PURE;
 int
 	mget_hashmap_browse(const MGET_HASHMAP *h, int (*browse)(const void *key, const void *value)) G_GNUC_MGET_NONNULL((2));
 void
@@ -573,17 +573,19 @@ void
 void
 	mget_hashmap_remove_nofree(MGET_HASHMAP *h, const void *key);
 void
-	mget_hashmap_setcmpfunc(MGET_HASHMAP *h, int (*cmp)(const void *key1, const void *key2)) G_GNUC_MGET_NONNULL_ALL;
+	mget_hashmap_setcmpfunc(MGET_HASHMAP *h, int (*cmp)(const void *key1, const void *key2));
 void
-	mget_hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *key)) G_GNUC_MGET_NONNULL_ALL;
+	mget_hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *key));
 void
-	mget_hashmap_setloadfactor(MGET_HASHMAP *h, float factor) G_GNUC_MGET_NONNULL_ALL;
+	mget_hashmap_set_destructor(MGET_HASHMAP *h, void (*destructor)(void *elem));
+void
+	mget_hashmap_setloadfactor(MGET_HASHMAP *h, float factor);
 
 /*
  * Hashmap datatype routines
  */
 
-typedef struct _MGET_STRINGMAP MGET_STRINGMAP;
+typedef MGET_HASHMAP MGET_STRINGMAP;
 
 MGET_STRINGMAP *
 	mget_stringmap_create(int max) G_GNUC_MGET_MALLOC;
@@ -598,7 +600,7 @@ int
 //int
 //	mget_stringmap_put_ident_noalloc(MGET_STRINGMAP *h, const char *key);
 int
-	mget_stringmap_size(const MGET_STRINGMAP *h);
+	mget_stringmap_size(const MGET_STRINGMAP *h) G_GNUC_MGET_PURE;
 int
 	mget_stringmap_browse(const MGET_STRINGMAP *h, int (*browse)(const char *key, const void *value)) G_GNUC_MGET_NONNULL((2));
 void
@@ -616,11 +618,11 @@ void
 void
 	mget_stringmap_remove_nofree(MGET_STRINGMAP *h, const char *key);
 void
-	mget_stringmap_setcmpfunc(MGET_STRINGMAP *h, int (*cmp)(const char *key1, const char *key2)) G_GNUC_MGET_NONNULL_ALL;
+	mget_stringmap_setcmpfunc(MGET_STRINGMAP *h, int (*cmp)(const char *key1, const char *key2));
 void
-	mget_stringmap_sethashfunc(MGET_STRINGMAP *h, unsigned int (*hash)(const char *key)) G_GNUC_MGET_NONNULL_ALL;
+	mget_stringmap_sethashfunc(MGET_STRINGMAP *h, unsigned int (*hash)(const char *key));
 void
-	mget_stringmap_setloadfactor(MGET_STRINGMAP *h, float factor) G_GNUC_MGET_NONNULL_ALL;
+	mget_stringmap_setloadfactor(MGET_STRINGMAP *h, float factor);
 
 /*
  * Thread wrapper routines
@@ -656,7 +658,7 @@ int
 int
 	mget_thread_cond_wait(mget_thread_cond_t *cond, mget_thread_mutex_t *mutex);
 mget_thread_t
-	mget_thread_self(void);
+	mget_thread_self(void) G_GNUC_MGET_CONST;
 
 /*
  * Decompressor routines
@@ -741,9 +743,9 @@ int
 int
 	mget_iri_isreserved(char c) G_GNUC_MGET_CONST;
 int
-	mget_iri_isunreserved(char c) G_GNUC_MGET_CONST;
+	mget_iri_isunreserved(char c) G_GNUC_MGET_PURE;
 int
-	mget_iri_isunreserved_path(char c) G_GNUC_MGET_CONST;
+	mget_iri_isunreserved_path(char c) G_GNUC_MGET_PURE;
 int
 	mget_iri_compare(MGET_IRI *iri1, MGET_IRI *iri2) G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL;
 MGET_IRI *
@@ -955,9 +957,9 @@ void
 int
 	mget_tcp_get_dns_caching(MGET_TCP *tcp) G_GNUC_MGET_PURE;
 int
-	mget_tcp_get_family(MGET_TCP *tcp) G_GNUC_MGET_CONST;
+	mget_tcp_get_family(MGET_TCP *tcp) G_GNUC_MGET_PURE;
 int
-	mget_tcp_get_preferred_family(MGET_TCP *tcp) G_GNUC_MGET_CONST;
+	mget_tcp_get_preferred_family(MGET_TCP *tcp) G_GNUC_MGET_PURE;
 int
 	mget_tcp_get_local_port(MGET_TCP *tcp);
 void
@@ -1149,11 +1151,11 @@ typedef struct {
 } MGET_HTTP_CONNECTION;
 
 int
-	http_isseperator(char c);
+	http_isseperator(char c) G_GNUC_MGET_CONST;
 int
-	http_istoken(char c);
-int
-	http_istext(char c);
+	http_istoken(char c) G_GNUC_MGET_CONST;
+// int
+//	http_istext(char c);
 
 const char *
 	http_parse_token(const char *s, const char **token) G_GNUC_MGET_NONNULL_ALL;

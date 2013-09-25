@@ -271,12 +271,20 @@ static unsigned int _host_hash(const HOST *host)
 	return hash;
 }
 
+static void mget_robots_free(ROBOTS **robots);
+static void _free_host_entry(HOST *host)
+{
+	mget_robots_free(&host->robots);
+}
+
 static HOST *hosts_add(MGET_IRI *iri)
 {
 	mget_thread_mutex_lock(&hosts_mutex);
 
-	if (!hosts)
+	if (!hosts) {
 		hosts = mget_hashmap_create(16, -2, (unsigned int (*)(const void *))_host_hash, (int (*)(const void *, const void *))_host_compare);
+		mget_hashmap_set_destructor(hosts, (void(*)(void *))_free_host_entry);
+	}
 
 	HOST *host = xcalloc(1,sizeof(HOST));
 	host->scheme = iri->scheme;
@@ -311,20 +319,10 @@ static HOST *hosts_get(MGET_IRI *iri)
 	return hostp;
 }
 
-static void mget_robots_free(ROBOTS **robots);
-static int _free_host_entry(const char *name G_GNUC_MGET_UNUSED, HOST *host)
-{
-	mget_robots_free(&host->robots);
-	return 0;
-}
-
 static void hosts_free(void)
 {
 	mget_thread_mutex_lock(&hosts_mutex);
-
-	mget_hashmap_browse(hosts, (int(*)(const void *, const void *))_free_host_entry);
 	mget_hashmap_free(&hosts);
-
 	mget_thread_mutex_unlock(&hosts_mutex);
 }
 
@@ -1175,8 +1173,9 @@ static void _html_parse(void *context, int flags, const char *dir, const char *a
 						while (isspace(*value)) value++;
 						if (*value == ',') { value++; continue; }
 						for (p = value; *p && !isspace(*p) && *p != ','; p++);
+						if (p == value) break;
 
-						// info_printf("ROBOTS=%.*s\n", (int)(p - value), value);
+						// debug_printf("ROBOTS='%.*s'\n", (int)(p - value), value);
 						if (!strncasecmp(value, "all", p - value) || !strncasecmp(value, "follow", p - value))
 							ctx->follow = 1;
 						else if (!strncasecmp(value, "nofollow", p - value) || !strncasecmp(value, "none", p - value))

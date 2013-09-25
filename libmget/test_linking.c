@@ -6,7 +6,7 @@
 
 int main(void)
 {
-	mget_base64_is_string(""); // base64.c
+	mget_info_printf("%d\n", mget_base64_is_string("")); // base64.c
 	mget_buffer_alloc(0); // buffer.c
 	mget_buffer_printf((mget_buffer_t *)1, "%s", ""); // buffer_printf.c
 	strlcpy((char *)"", "", 0); // compat.c
@@ -17,7 +17,7 @@ int main(void)
 	mget_fdgetline((char **)"", (size_t *)1, 0); // io.c
 	mget_iri_parse("", NULL); // iri.c
 	mget_list_free((MGET_LIST **)1); // list.c
-	mget_get_logger(0); // log.c
+	mget_debug_write("", 0); // log.c
 	mget_logger_set_file(NULL, ""); // logger.c
 	mget_tcp_set_connect_timeout(NULL, 0); // net.c
 	mget_strdup(""); // mem.c
@@ -26,7 +26,7 @@ int main(void)
 	mget_ssl_set_config_int(0, 0); // ssl_[gnutls].c
 	mget_stringmap_create(0); // stringmap.c
 	if (mget_strcmp("", "")) {}; // utils.c
-	mget_vector_size(NULL); // vector.c
+	mget_vector_set_destructor(NULL, NULL); // vector.c
 	mget_malloc(1); // xalloc.c
 	mget_xml_parse_buffer("", NULL, NULL, 0); // xml.c
 }

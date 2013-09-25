@@ -78,7 +78,7 @@ typedef struct {
 void mget_test_stop_http_server(void);
 void mget_test_start_http_server(int first_key, ...);
 void mget_test(int first_key, ...);
-int mget_test_get_server_port(void);
+int mget_test_get_server_port(void) G_GNUC_MGET_PURE;
 
 #ifdef	__cplusplus
 }
