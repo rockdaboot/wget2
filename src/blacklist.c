@@ -80,30 +80,22 @@ void blacklist_print(void)
 	mget_thread_mutex_unlock(&mutex);
 }
 
-static void _free_entry(MGET_IRI *iri)
+static void _free_entry(MGET_IRI *iri, G_GNUC_MGET_UNUSED void *value)
 {
 	mget_iri_free_content(iri);
 }
 
 MGET_IRI *blacklist_add(MGET_IRI *iri)
 {
-//	MGET_IRI *existing_iri;
-
 	if (!iri)
 		return NULL;
-
-//	if ((existing_iri = mget_hashmap_get(blacklist, iri))) {
-//		// info_printf("Already in blacklist: %s\n",iri->uri);
-//		mget_iri_free(&iri);
-//		return existing_iri;
-//	}
 
 	if (mget_iri_supported(iri)) {
 		mget_thread_mutex_lock(&mutex);
 
 		if (!blacklist) {
 			blacklist = mget_hashmap_create(128, -2, (unsigned int(*)(const void *))hash_iri, (int(*)(const void *, const void *))mget_iri_compare);
-			mget_hashmap_set_destructor(blacklist, (void(*)(void *))_free_entry);
+			mget_hashmap_set_destructor(blacklist, (void(*)(void *, void *))_free_entry);
 		}
 
 		if (!mget_hashmap_contains(blacklist, iri)) {

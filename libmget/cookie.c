@@ -329,10 +329,12 @@ void mget_cookie_init_cookie(MGET_COOKIE *cookie)
 
 void mget_cookie_free_cookie(MGET_COOKIE *cookie)
 {
-	xfree(cookie->name);
-	xfree(cookie->value);
-	xfree(cookie->domain);
-	xfree(cookie->path);
+	if (cookie) {
+		xfree(cookie->name);
+		xfree(cookie->value);
+		xfree(cookie->domain);
+		xfree(cookie->path);
+	}
 }
 
 void mget_cookie_free_cookies(void)
@@ -565,10 +567,10 @@ int mget_cookie_save(const char *fname, int keep_session_cookies)
 			ret = -1;
 
 		if (ret)
-			error_printf(_("Failed to write to cookie file '%s': %s\n"), fname, strerror(errno));
+			error_printf(_("Failed to write to cookie file '%s' (%d)\n"), fname, errno);
 
 	} else
-		error_printf(_("Failed to open cookie file '%s': %s\n"), fname, strerror(errno));
+		error_printf(_("Failed to open cookie file '%s' (%d)\n"), fname, errno);
 
 	return ret;
 }

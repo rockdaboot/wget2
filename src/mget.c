@@ -84,6 +84,8 @@ static void
 MGET_HTTP_RESPONSE
 	*http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader);
 
+static MGET_HASHMAP
+	*known_urls;
 static DOWNLOADER
 	*downloaders;
 static void
@@ -272,7 +274,7 @@ static unsigned int _host_hash(const HOST *host)
 }
 
 static void mget_robots_free(ROBOTS **robots);
-static void _free_host_entry(HOST *host)
+static void _free_host_entry(HOST *host, G_GNUC_MGET_UNUSED void *dummy)
 {
 	mget_robots_free(&host->robots);
 }
@@ -283,23 +285,19 @@ static HOST *hosts_add(MGET_IRI *iri)
 
 	if (!hosts) {
 		hosts = mget_hashmap_create(16, -2, (unsigned int (*)(const void *))_host_hash, (int (*)(const void *, const void *))_host_compare);
-		mget_hashmap_set_destructor(hosts, (void(*)(void *))_free_host_entry);
+		mget_hashmap_set_destructor(hosts, (void(*)(void *, void *))_free_host_entry);
 	}
 
-	HOST *host = xcalloc(1,sizeof(HOST));
-	host->scheme = iri->scheme;
-	host->host = iri->host;
+	HOST *hostp = NULL, host = { .scheme = iri->scheme, .host = iri->host };
 
-	if (!mget_hashmap_contains(hosts, host)) {
+	if (!mget_hashmap_contains(hosts, &host)) {
 		// info_printf("Add to hosts: %s\n", hostname);
-		mget_hashmap_put_noalloc(hosts, host, host);
-	} else {
-		xfree(host);
+		mget_hashmap_put_noalloc(hosts, hostp = mget_memdup(&host, sizeof(host)), NULL);
 	}
 
 	mget_thread_mutex_unlock(&hosts_mutex);
 
-	return host; // 1=entry already there
+	return hostp;
 }
 
 static HOST *hosts_get(MGET_IRI *iri)
@@ -875,6 +873,7 @@ int main(int argc, const char *const *argv)
 	xfree(downloaders);
 	mget_vector_clear_nofree(parents);
 	mget_vector_free(&parents);
+	mget_hashmap_free(&known_urls);
 	deinit();
 
 	return exit_status;
@@ -1116,262 +1115,122 @@ ready:
 	return NULL;
 }
 
-struct html_context {
-	JOB
-		*job;
-	MGET_IRI
-		*base;
-	const char
-		*encoding;
-	mget_buffer_t
-		uri_buf;
-	int
-		level;
-	char
-		base_allocated,
-		encoding_allocated,
-		encoding_certain,
-		follow,
-		found_robots,
-		found_content_type;
-};
-
-static void _html_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
+static unsigned int G_GNUC_MGET_PURE hash_url(const char *url)
 {
-	struct html_context *ctx = context;
+	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
 
-	// Read the encoding from META tag, e.g. from
-	//   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">.
-	// It overrides the encoding from the HTTP response resp. from the CLI.
-	//
-	// Also ,we are interested in ROBOTS e.g.
-	//   <META name="ROBOTS" content="NOINDEX, NOFOLLOW">
-	if ((flags & XML_FLG_BEGIN) && (*dir == 'm' || *dir == 'M') && !strcasecmp(dir, "meta")) {
-		ctx->found_robots = ctx->found_content_type = 0;
-	}
+	while (*url)
+		hash = hash * 101 + (unsigned char)*url++;
 
-	if ((flags & XML_FLG_ATTRIBUTE) && val) {
-		int found = 0;
-		char valbuf[len + 1], *value = valbuf;
-
-		memcpy(value, val, len);
-		value[len] = 0;
-
-		// info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
-
-		if ((*dir == 'm' || *dir == 'M') && !strcasecmp(dir, "meta")) {
-			if (config.robots) {
-				if (!ctx->found_robots) {
-					if (!strcasecmp(attr, "name") && !strcasecmp(value, "robots")) {
-						ctx->found_robots = 1;
-						return;
-					}
-				} else if (ctx->found_robots && !strcasecmp(attr, "content")) {
-					char *p;
-
-					while (*value) {
-						while (isspace(*value)) value++;
-						if (*value == ',') { value++; continue; }
-						for (p = value; *p && !isspace(*p) && *p != ','; p++);
-						if (p == value) break;
-
-						// debug_printf("ROBOTS='%.*s'\n", (int)(p - value), value);
-						if (!strncasecmp(value, "all", p - value) || !strncasecmp(value, "follow", p - value))
-							ctx->follow = 1;
-						else if (!strncasecmp(value, "nofollow", p - value) || !strncasecmp(value, "none", p - value))
-							ctx->follow = 0;
-
-						value = *p  ? p + 1 : p;
-					}
-					return;
-				}
-			}
-
-			if (ctx->found_content_type) {
-				if (!strcasecmp(attr, "content")) {
-					if (!ctx->encoding_allocated) {
-						http_parse_content_type(value, NULL, &ctx->encoding);
-						if (ctx->encoding) {
-							if (!strcasecmp(ctx->encoding, "UTF-16")) {
-								// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
-								xfree(ctx->encoding);
-								ctx->encoding = "UTF-8";
-							} else {
-								ctx->encoding_allocated = 1;
-							}
-							info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
-						}
-					}
-				}
-			}
-			else if (!ctx->found_content_type && !ctx->encoding_certain) {
-				if (!strcasecmp(attr, "http-equiv") && !strcasecmp(value, "Content-Type")) {
-					ctx->found_content_type = 1;
-				}
-				else if (!strcasecmp(attr, "charset")) {
-					if (!ctx->encoding_allocated) {
-						if (!strcasecmp(value, "UTF-16")) {
-							// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
-							ctx->encoding = "UTF-8";
-						} else {
-							ctx->encoding = strndup(val, len);
-							ctx->encoding_allocated = 1;
-						}
-						info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
-					}
-				}
-			}
-
-			return;
-		}
-
-		// very simplified
-		// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
-		switch (tolower(*attr)) {
-		case 'a':
-			found = !strcasecmp(attr, "action") || !strcasecmp(attr, "archive");
-			break;
-		case 'b':
-			found = !strcasecmp(attr, "background");
-			break;
-		case 'c':
-			found = !strcasecmp(attr, "code") || !strcasecmp(attr, "codebase") ||
-				!strcasecmp(attr, "cite") || !strcasecmp(attr, "classid");
-			break;
-		case 'd':
-			found = !strcasecmp(attr, "data");
-			break;
-		case 'f':
-			found = !strcasecmp(attr, "formaction");
-			break;
-		case 'h':
-			found = !strcasecmp(attr, "href");
-
-			// with --page-requisites: just load inline URLs from the deepest level documents
-			if (found && config.recursive && config.page_requisites && config.level && ctx->level >= config.level) {
-				// don't load from dir 'A', 'AREA' and 'EMBED'
-				if (tolower(*dir) == 'a' && (dir[1] == 0 || !strcasecmp(dir,"area"))) {
-					return;
-				}
-			}
-
-			if (found && tolower(*dir) == 'b' && !strcasecmp(dir,"base")) {
-				// found a <BASE href="...">
-				// add it to be downloaded, replace old base
-				MGET_IRI *iri = mget_iri_parse(value, ctx->encoding);
-				if (iri) {
-					add_url(ctx->job, ctx->encoding, value, 0);
-					// dprintf(ctx->sockfd, "add uri %s %s\n", ctx->encoding ? ctx->encoding : "-", value);
-
-					if (ctx->base_allocated)
-						mget_iri_free(&ctx->base);
-
-					ctx->base = iri;
-					ctx->base_allocated = 1;
-				}
-				return;
-			}
-			break;
-		case 'i':
-			found = !strcasecmp(attr, "icon");
-			break;
-		case 'l':
-			found = !strcasecmp(attr, "lowsrc") || !strcasecmp(attr, "longdesc");
-			break;
-		case 'm':
-			found = !strcasecmp(attr, "manifest");
-			break;
-		case 'p':
-			found = !strcasecmp(attr, "profile") || !strcasecmp(attr, "poster");
-			break;
-		case 's':
-			found = !strcasecmp(attr, "src");
-			break;
-		case 'u':
-			found = !strcasecmp(attr, "usemap");
-			break;
-		}
-
-		if (found) {
-			if (ctx->follow) {
-				// sometimes the URIs are surrounded by spaces, we ignore them
-				while (isspace(*value))
-					value++;
-
-				// skip trailing spaces
-				for (; len && isspace(value[len - 1]); len--)
-					;
-
-				if (len > 1 || (len == 1 && *value != '#')) { // ignore e.g. href='#'
-					// info_printf("%02X %s %s=%s\n",flags,dir,attr,val);
-					if (mget_iri_relative_to_abs(ctx->base, value, len, &ctx->uri_buf)) {
-						// info_printf("%.*s -> %s\n", (int)len, val, ctx->uri_buf.data);
-						if (!ctx->base && !ctx->uri_buf.length)
-							info_printf(_("URL '%s' not followed (missing base URI)\n"), value);
-						else
-							add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
-					} else {
-						error_printf(_("Cannot resolve relative URI %s\n"), value);
-					}
-				}
-			} else
-				info_printf(_("URL '%s' not followed (nofollow set by META/ROBOTS element)\n"), value);
-		}
-	}
+	return hash;
 }
 
-// use the xml parser, being prepared that HTML is not XML
-
-void html_parse(JOB *job, int level, const char *data, const char *encoding, MGET_IRI *base)
+void html_parse(JOB *job, int level, const char *html, const char *encoding, MGET_IRI *base)
 {
-	// create scheme://authority that will be prepended to relative paths
-	struct html_context context = { .base = base, .job = job, .level = level, .encoding = encoding, .follow = 1 };
-	char sbuf[1024], *reason = NULL;
+	MGET_HTML_PARSE_RESULT *res  = mget_html_get_urls_inline(html);
+	const char *reason;
+	mget_buffer_t buf;
+	char sbuf[1024];
 
-	mget_buffer_init(&context.uri_buf, sbuf, sizeof(sbuf));
+	if (config.robots && !res->follow)
+		goto cleanup;
+
+	if (!known_urls)
+		known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
 
 	// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
 	if (encoding && encoding == config.remote_encoding) {
-		context.encoding_certain = 1;
-		reason = _("fixed by user settings");
+		reason = _("set by user");
 	} else {
-		if ((unsigned char)data[0] == 0xFE && (unsigned char)data[1] == 0xFF) {
+		if ((unsigned char)html[0] == 0xFE && (unsigned char)html[1] == 0xFF) {
 			// Big-endian UTF-16
-			context.encoding = "UTF-16BE";
-			context.encoding_certain = 1;
-			reason = _("fixed by BOM");
-		} else if ((unsigned char)data[0] == 0xFF && (unsigned char)data[1] == 0xFE) {
+			encoding = "UTF-16BE";
+			reason = _("set by BOM");
+		} else if ((unsigned char)html[0] == 0xFF && (unsigned char)html[1] == 0xFE) {
 			// Little-endian UTF-16
-			context.encoding = "UTF-16LE";
-			context.encoding_certain = 1;
-			reason = _("fixed by BOM");
-		} else if ((unsigned char)data[0] == 0xEF && (unsigned char)data[1] == 0xBB && (unsigned char)data[2] == 0xBF) {
+			encoding = "UTF-16LE";
+			reason = _("set by BOM");
+		} else if ((unsigned char)html[0] == 0xEF && (unsigned char)html[1] == 0xBB && (unsigned char)html[2] == 0xBF) {
 			// UTF-8
-			context.encoding = "UTF-8";
-			context.encoding_certain = 1;
-			reason = _("fixed by BOM");
+			encoding = "UTF-8";
+			reason = _("set by BOM");
 		} else {
-			context.encoding_certain = 1;
-			reason = _("fixed by server response");
+			reason = _("set by server response");
+		}
+
+		if (!mget_strncasecmp(res->encoding, "UTF-16", 6) || !mget_strncasecmp(encoding, "UTF-16", 6)) {
+			// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
+			// we found an encoding in the HTML, so it can't be UTF-16*.
+			encoding = "UTF-8";
+			reason = _("wrong stated UTF-16* changed to UTF-8");
+		}
+
+		if (!encoding) {
+			if (res->encoding) {
+				encoding = res->encoding;
+				reason = _("set by document");
+			} else {
+				encoding = "CP1252"; // default encoding for HTML5 (pre-HTML5 is iso-8859-1)
+				reason = _("default, encoding not specified");
+			}
 		}
 	}
 
-	// If we have an non-ASCII encoding, we should convert 'data' to UTF-8 right here
+	info_printf(_("URI content encoding = '%s' (%s)\n"), encoding, reason);
 
-	if (context.encoding && reason)
-		info_printf(_("URI content encoding = '%s' (%s)\n"), context.encoding, reason);
-
-	mget_html_parse_buffer(data, _html_parse, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
-
-	if (context.encoding_allocated)
-		xfree(context.encoding);
-
-//		xfree(context.base->connection_part);
-	if (context.base_allocated) {
-		mget_iri_free(&context.base);
+	if (res->base.p) {
+		char *base_url = alloca(res->base.len + 1);
+		strlcpy(base_url, res->base.p, res->base.len + 1);
+		base = mget_iri_parse(base_url, encoding);
 	}
 
-	mget_buffer_deinit(&context.uri_buf);
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
+	int page_requisites = config.recursive && config.page_requisites && config.level && level >= config.level;
+
+	for (int it = 0; it < mget_vector_size(res->uris); it++) {
+		MGET_HTML_PARSED_URL *html_url = mget_vector_get(res->uris, it);
+		mget_string_t *url = &html_url->url;
+		char *tmp;
+
+		// Blacklist for URLs before they are processed
+		if (mget_hashmap_put_noalloc(known_urls, tmp = strndup(url->p, url->len), NULL)) {
+			// error_printf(_("URL '%.*s' already known\n"), (int)url->len, url->p);
+			xfree(tmp);
+			continue;
+		} else {
+			// error_printf(_("URL '%.*s' added\n"), (int)url->len, url->p);
+		}
+
+		// with --page-requisites: just load inline URLs from the deepest level documents
+		if (page_requisites && !strcasecmp(html_url->attr, "href")) {
+			// don't load from dir 'A', 'AREA' and 'EMBED'
+			if (tolower(*html_url->dir) == 'a' && (html_url->dir[1] == 0 || !strcasecmp(html_url->dir,"area") || !strcasecmp(html_url->dir,"embed"))) {
+				info_printf(_("URL '%.*s' not followed (page requisites + level)\n"), (int)url->len, url->p);
+				continue;
+			}
+		}
+
+		if (url->len > 1 || (url->len == 1 && *url->p != '#')) { // ignore e.g. href='#'
+			if (mget_iri_relative_to_abs(base, url->p, url->len, &buf)) {
+				// info_printf("%.*s -> %s\n", (int)url->len, url->p, buf.data);
+				if (!base && !buf.length)
+					info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)url->len, url->p);
+				else
+					add_url(job, encoding, buf.data, 0);
+			} else {
+				error_printf(_("Cannot resolve relative URI %.*s\n"), (int)url->len, url->p);
+			}
+		}
+	}
+
+	mget_buffer_deinit(&buf);
+
+	if (res->base.p)
+		mget_iri_free(&base);
+
+cleanup:
+	mget_html_free_urls_inline(&res);
 }
 
 void html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, MGET_IRI *base)

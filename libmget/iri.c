@@ -199,8 +199,8 @@ char *mget_charset_transcode(const char *src, const char *src_encoding, const ch
 			char *dst = xmalloc(dst_len + 1), *dst_tmp = dst;
 
 			if (iconv(cd, &tmp, &tmp_len, &dst_tmp, &dst_len_tmp) != (size_t)-1) {
-				debug_printf("converted '%s' (%s) -> '%s' (%s)\n", src, src_encoding, dst_encoding, dst);
 				ret = strndup(dst, dst_len - dst_len_tmp);
+				debug_printf("converted '%s' (%s) -> '%s' (%s)\n", src, src_encoding, ret, dst_encoding);
 			} else
 				error_printf(_("Failed to convert '%s' string into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
 
@@ -777,8 +777,10 @@ const char *mget_iri_get_file(const MGET_IRI *iri, mget_buffer_t *buf, const cha
 		else
 			fname = mget_utf8_to_str(iri->path, encoding);
 
-		mget_buffer_strcat(buf, fname);
-		xfree(fname);
+		if (fname) {
+			mget_buffer_strcat(buf, fname);
+			xfree(fname);
+		}
 	}
 
 	if ((buf->length == 0 || buf->data[buf->length - 1] == '/') && default_page)

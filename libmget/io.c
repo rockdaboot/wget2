@@ -275,6 +275,7 @@ char *mget_read_file(const char *fname, size_t *size)
 				while (total < st.st_size && (nread = read(fd, buf + total, st.st_size - total)) > 0) {
 					total += nread;
 				}
+				buf[total] = 0;
 
 				if (size)
 					*size = total;

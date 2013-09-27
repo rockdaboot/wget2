@@ -74,21 +74,17 @@ static const char *getToken(XML_CONTEXT *context)
 	int c;
 	const char *p;
 
-//	context->token_len = 0;
-
 	// skip leading spaces
 	while ((c = *context->p++) && isspace(c));
 	if (!c) return NULL;
 
 	context->token = context->p - 1;
-//	context->token_len++;
 
 //	info_printf("a c=%c\n", c);
 
 	if (isalpha(c) || c == '_') {
 		while ((c = *context->p++) && !isspace(c) && c != '>' && c != '=');
 		if (!c) return NULL;
-//		if (c == '>' || c == '=') context->p--;
 		context->p--;
 		context->token_len = context->p - context->token;
 		return context->token;
@@ -109,8 +105,6 @@ static const char *getToken(XML_CONTEXT *context)
 
 		if (!(p = strchr(context->p, quote)))
 			return NULL;
-		// while ((c = *context->p++) && c != quote);
-		//if (!c) return NULL;
 		context->p = p + 1;
 
 		context->token_len = context->p - context->token - 1;

@@ -54,7 +54,7 @@ struct _MGET_HASHMAP {
 	int
 		(*cmp)(const void *, const void *); // compare function
 	void
-		(*destructor)(void *); // element destructor function
+		(*destructor)(void *, void *); // element destructor function
 	ENTRY
 		**entry; // pointer to array of pointers to entries
 	int
@@ -171,14 +171,23 @@ int mget_hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value
 
 	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
 		if (entry->value != value) {
-			if (h->destructor)
-				h->destructor(entry->value);
+			if (entry->key != key) {
+				if (key != entry->value) {
+					if (h->destructor)
+						h->destructor((void *)key, entry->value);
+					xfree(key);
+				} else {
+					if (h->destructor)
+						h->destructor(NULL, entry->value);
+				}
+			} else {
+				if (h->destructor)
+					h->destructor(NULL, entry->value);
+			}
+
 			xfree(entry->value);
 			entry->value = (void *)value;
 		}
-
-		if (entry->key != key)
-			xfree(key);
 
 		return 1;
 	}
@@ -197,8 +206,10 @@ int mget_hashmap_put(MGET_HASHMAP *h, const void *key, size_t keysize, const voi
 
 	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
 		if (h->destructor)
-			h->destructor(entry->value);
+			h->destructor(NULL, entry->value);
+
 		xfree(entry->value);
+
 		entry->value = mget_memdup(value, valuesize);
 
 		return 1;
@@ -264,11 +275,16 @@ static void G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const 
 				h->entry[pos] = next;
 
 			if (free_kv) {
-				if (entry->value != entry->key)
-					xfree(entry->key);
-				if (h->destructor)
-					h->destructor(entry->value);
-				xfree(entry->value);
+				if (entry->value != entry->key) {
+					if (h->destructor) {
+						h->destructor(entry->key, entry->value);
+						xfree(entry->value);
+					}
+				} else {
+					if (h->destructor)
+						h->destructor(entry->key, NULL);
+				}
+				xfree(entry->key);
 			}
 			xfree(entry);
 
@@ -308,11 +324,17 @@ void mget_hashmap_clear(MGET_HASHMAP *h)
 		for (it = 0; it < h->max && cur; it++) {
 			for (entry = h->entry[it]; entry; entry = next) {
 				next = entry->next;
-				if (entry->value != entry->key)
-					xfree(entry->key);
-				if (h->destructor)
-					h->destructor(entry->value);
-				xfree(entry->value);
+				if (entry->value != entry->key) {
+					// key and value are different -> free both
+					if (h->destructor)
+						h->destructor(entry->key, entry->value);
+					xfree(entry->value);
+				} else {
+					// key and value are the same -> just free one of them
+					if (h->destructor)
+						h->destructor(entry->key, NULL);
+				}
+				xfree(entry->key);
 				xfree(entry);
 				cur--;
 			}
@@ -360,7 +382,7 @@ void mget_hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *
 	}
 }
 
-void mget_hashmap_set_destructor(MGET_HASHMAP *h, void (*destructor)(void *elem))
+void mget_hashmap_set_destructor(MGET_HASHMAP *h, void (*destructor)(void *key, void *value))
 {
 	if (h)
 		h->destructor = destructor;

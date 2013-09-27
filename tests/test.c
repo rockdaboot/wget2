@@ -1122,6 +1122,7 @@ static void test_stringmap(void)
 
 	MGET_VECTOR *challenges;
 	challenges = mget_vector_create(2, 2, NULL);
+	mget_vector_set_destructor(challenges, (void(*)(void *))http_free_challenge);
 	http_parse_challenge("Basic realm=\"test realm\"", &challenge);
 	mget_vector_add(challenges, &challenge, sizeof(challenge));
 	http_free_challenges(&challenges);

@@ -577,7 +577,7 @@ void
 void
 	mget_hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *key));
 void
-	mget_hashmap_set_destructor(MGET_HASHMAP *h, void (*destructor)(void *elem));
+	mget_hashmap_set_destructor(MGET_HASHMAP *h, void (*destructor)(void *key, void *value));
 void
 	mget_hashmap_setloadfactor(MGET_HASHMAP *h, float factor);
 
@@ -880,6 +880,38 @@ MGET_VECTOR *
 		const char *fname,
 		MGET_IRI *base,
 		const char **encoding) G_GNUC_MGET_NONNULL((1));
+
+typedef struct {
+	const char
+		*p;
+	size_t
+		len;
+} mget_string_t;
+
+typedef struct {
+	mget_string_t
+		url;
+	char
+		attr[16];
+	char
+		dir[16];
+} MGET_HTML_PARSED_URL;
+
+typedef struct {
+	MGET_VECTOR
+		*uris;
+	const char *
+		encoding;
+	mget_string_t
+		base;
+	char
+		follow;
+} MGET_HTML_PARSE_RESULT;
+
+MGET_HTML_PARSE_RESULT *
+	mget_html_get_urls_inline(const char *html);
+void
+	mget_html_free_urls_inline(MGET_HTML_PARSE_RESULT **res);
 
 /*
  * XML and HTML parsing routines

@@ -224,6 +224,7 @@ static int _vec_remove_private(MGET_VECTOR *v, int pos, int free_entry)
 	if (free_entry) {
 		if (v->destructor)
 			v->destructor(v->pl[pos]);
+
 		xfree(v->pl[pos]);
 	}
 
