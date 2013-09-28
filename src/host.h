@@ -29,11 +29,8 @@
 
 #include <stdarg.h>
 
-#include "job.h"
-
 struct JOB;
 typedef struct JOB JOB;
-typedef struct ROBOTS ROBOTS;
 
 // everything host/domain specific should go here
 typedef struct {
@@ -45,5 +42,12 @@ typedef struct {
 	ROBOTS
 		*robots;
 } HOST;
+
+HOST *
+	hosts_add(MGET_IRI *iri);
+HOST *
+	hosts_get(MGET_IRI *iri);
+void
+	hosts_free(void);
 
 #endif /* _MGET_HOST_H */
