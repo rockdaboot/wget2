@@ -1381,6 +1381,29 @@ void
 	mget_metalink_free(MGET_METALINK **metalink),
 	mget_metalink_sort_mirrors(MGET_METALINK *metalink);
 
+/*
+ * Robots types and routines
+ */
+
+typedef struct {
+	const char *
+		path;
+	size_t
+		len;
+} ROBOTS_PATH;
+
+typedef struct ROBOTS {
+	MGET_VECTOR
+		*paths;
+	MGET_VECTOR
+		*sitemaps;
+} ROBOTS;
+
+ROBOTS *
+	mget_robots_parse(const char *data);
+void
+	mget_robots_free(ROBOTS **robots);
+
 MGET_END_DECLS
 
 #endif /* _LIBMGET_LIBMGET_H */

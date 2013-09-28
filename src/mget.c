@@ -273,7 +273,6 @@ static unsigned int _host_hash(const HOST *host)
 	return hash;
 }
 
-static void mget_robots_free(ROBOTS **robots);
 static void _free_host_entry(HOST *host, G_GNUC_MGET_UNUSED void *dummy)
 {
 	mget_robots_free(&host->robots);
@@ -322,91 +321,6 @@ static void hosts_free(void)
 	mget_thread_mutex_lock(&hosts_mutex);
 	mget_hashmap_free(&hosts);
 	mget_thread_mutex_unlock(&hosts_mutex);
-}
-
-typedef struct {
-	const char *
-		path;
-	size_t
-		len;
-} ROBOTS_PATH;
-
-typedef struct ROBOTS {
-	MGET_VECTOR
-		*paths;
-	MGET_VECTOR
-		*sitemaps;
-} ROBOTS;
-
-static void _free_path(ROBOTS_PATH *path)
-{
-	xfree(path->path);
-}
-
-static ROBOTS *mget_robots_parse(const char *data)
-{
-	ROBOTS *robots;
-	ROBOTS_PATH path;
-	int collect = 0;
-	const char *p;
-
-	if (!data || !*data)
-		return NULL;
-
-	robots = xcalloc(1, sizeof (ROBOTS));
-
-	do {
-		if (collect < 2 && !strncasecmp(data, "User-agent:", 11)) {
-			if (!collect) {
-				for (data += 11; *data==' ' || *data == '\t'; data++);
-				if (!strncasecmp(data, "mget", 4)) {
-					collect = 1;
-				}
-				else if (*data == '*') {
-					collect = 1;
-				}
-			} else
-				collect = 2;
-		}
-		else if (collect == 1 && !strncasecmp(data, "Disallow:", 9)) {
-			for (data += 9; *data==' ' || *data == '\t'; data++);
-			if (*data == '\r' || *data == '\n' || !*data) {
-				// all allowed
-				mget_vector_free(&robots->paths);
-				collect = 2;
-			} else {
-				if (!robots->paths) {
-					robots->paths = mget_vector_create(32, -2, NULL);
-					mget_vector_set_destructor(robots->paths, (void(*)(void *))_free_path);
-				}
-				for (p = data; !isspace(*p); p++);
-				path.len = p - data;
-				path.path = strndup(data, path.len);
-				mget_vector_add(robots->paths, &path, sizeof(path));
-			}
-		}
-		else if (!strncasecmp(data, "Sitemap:", 8)) {
-			for (data += 8; *data==' ' || *data == '\t'; data++);
-			for (p = data; !isspace(*p); p++);
-
-			if (!robots->sitemaps)
-				robots->sitemaps = mget_vector_create(4, -2, NULL);
-			mget_vector_add_noalloc(robots->sitemaps, strndup(data, p - data));
-		}
-
-		if ((data = strchr(data, '\n')))
-			data++; // point to next line
-	} while (data && *data);
-
-	return robots;
-}
-
-static void mget_robots_free(ROBOTS **robots)
-{
-	if (robots && *robots) {
-		mget_vector_free(&(*robots)->paths);
-		mget_vector_free(&(*robots)->sitemaps);
-	}
 }
 
 static mget_thread_mutex_t
@@ -1051,17 +965,6 @@ void *downloader_thread(void *p)
 					} else if (job->deferred && !strcasecmp(resp->content_type, "text/plain")) {
 						debug_printf("Scanning robots.txt ...\n");
 						job->host->robots = mget_robots_parse(resp->body->data);
-/*
-						for (int it = 0; it < mget_vector_size(job->host->robots->paths); it++) {
-							ROBOTS_PATH *path = mget_vector_get(job->host->robots->paths, it);
-							info_printf("path '%s'\n", path->path);
-						}
-						for (int it = 0; it < mget_vector_size(job->host->robots->sitemaps); it++) {
-							const char *sitemap = mget_vector_get(job->host->robots->sitemaps, it);
-							info_printf("sitemap '%s'\n", sitemap);
-						}
-						exit(0);
-*/
 					}
 				}
 			}
