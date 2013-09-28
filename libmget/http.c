@@ -784,6 +784,41 @@ static long long get_current_time(void)
 }
 */
 
+/*
+ RFC 6265
+
+ set-cookie-header = "Set-Cookie:" SP set-cookie-string
+ set-cookie-string = cookie-pair *( ";" SP cookie-av )
+ cookie-pair       = cookie-name "=" cookie-value
+ cookie-name       = token
+ cookie-value      = *cookie-octet / ( DQUOTE *cookie-octet DQUOTE )
+ cookie-octet      = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
+                       ; US-ASCII characters excluding CTLs,
+                       ; whitespace DQUOTE, comma, semicolon,
+                       ; and backslash
+ token             = <token, defined in [RFC2616], Section 2.2>
+
+ cookie-av         = expires-av / max-age-av / domain-av /
+                     path-av / secure-av / httponly-av /
+                     extension-av
+ expires-av        = "Expires=" sane-cookie-date
+ sane-cookie-date  = <rfc1123-date, defined in [RFC2616], Section 3.3.1>
+ max-age-av        = "Max-Age=" non-zero-digit *DIGIT
+                       ; In practice, both expires-av and max-age-av
+                       ; are limited to dates representable by the
+                       ; user agent.
+ non-zero-digit    = %x31-39
+                       ; digits 1 through 9
+ domain-av         = "Domain=" domain-value
+ domain-value      = <subdomain>
+                       ; defined in [RFC1034], Section 3.5, as
+                       ; enhanced by [RFC1123], Section 2.1
+ path-av           = "Path=" path-value
+ path-value        = <any CHAR except CTLs or ";">
+ secure-av         = "Secure"
+ httponly-av       = "HttpOnly"
+ extension-av      = <any CHAR except CTLs or ";">
+*/
 const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 {
 	const char *name, *p;
@@ -864,7 +899,7 @@ const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 
 	} else {
 		mget_cookie_free_cookie(cookie);
-		debug_printf("Cookie without name or assignment ignored\n");
+		error_printf("Cookie without name or assignment ignored\n");
 	}
 
 	return s;
@@ -959,11 +994,13 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 				MGET_COOKIE cookie;
 				http_parse_setcookie(s, &cookie);
 
-				if (!resp->cookies) {
-					resp->cookies = mget_vector_create(4, 4, NULL);
-					mget_vector_set_destructor(resp->cookies, (void(*)(void *))mget_cookie_free_cookie);
+				if (cookie.name) {
+					if (!resp->cookies) {
+						resp->cookies = mget_vector_create(4, 4, NULL);
+						mget_vector_set_destructor(resp->cookies, (void(*)(void *))mget_cookie_free_cookie);
+					}
+					mget_vector_add(resp->cookies, &cookie, sizeof(cookie));
 				}
-				mget_vector_add(resp->cookies, &cookie, sizeof(cookie));
 			}
 			break;
 		case 'w':
