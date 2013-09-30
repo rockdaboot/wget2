@@ -318,6 +318,29 @@ static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL((1)) parse_cert_type(option_t op
 	return 0;
 }
 
+// legacy option, needed to succeed test suite
+static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL((1)) parse_restrict_names(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+{
+	if (!val || !*val || !strcasecmp(val, "none"))
+		*((int *)opt->var) = RESTRICT_NAMES_NONE;
+	else if (!strcasecmp(val, "unix"))
+		*((int *)opt->var) = RESTRICT_NAMES_UNIX;
+	else if (!strcasecmp(val, "windows"))
+		*((int *)opt->var) = RESTRICT_NAMES_WINDOWS;
+	else if (!strcasecmp(val, "nocontrol"))
+		*((int *)opt->var) = RESTRICT_NAMES_NOCONTROL;
+	else if (!strcasecmp(val, "ascii"))
+		*((int *)opt->var) = RESTRICT_NAMES_ASCII;
+	else if (!strcasecmp(val, "uppercase"))
+		*((int *)opt->var) = RESTRICT_NAMES_UPPERCASE;
+	else if (!strcasecmp(val, "lowercase"))
+		*((int *)opt->var) = RESTRICT_NAMES_LOWERCASE;
+	else
+		error_printf_exit("Unknown restrict-file-name type '%s'\n", val);
+
+	return 0;
+}
+
 static int parse_n_option(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	if (val) {
@@ -465,7 +488,7 @@ static const struct option options[] = {
 	{ "recursive", &config.recursive, parse_bool, 0, 'r' },
 	{ "referer", &config.referer, parse_string, 1, 0 },
 	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0 },
-	{ "restrict-file-names", &config.restrict_file_names, parse_string, 1, 0 },
+	{ "restrict-file-names", &config.restrict_file_names, parse_restrict_names, 1, 0 },
 	{ "robots", &config.robots, parse_bool, 0, 0 },
 	{ "save-cookies", &config.save_cookies, parse_string, 1, 0 },
 	{ "save-headers", &config.save_headers, parse_bool, 0, 0 },

@@ -111,6 +111,68 @@ void set_exit_status(int status)
 		exit_status = status;
 }
 
+/*
+ * This functions exists to pass the Wget test suite.
+ * All we really need (Mget is targeted for Unix/Linux), is UNIX restriction (\NUL and /)
+ *  with escaping of control characters.
+ */
+char *restrict_file_name(char *fname, char *esc)
+{
+	char *s, *dst;
+	int escaped, c;
+
+	switch (config.restrict_file_names) {
+	case RESTRICT_NAMES_WINDOWS:
+		break;
+	case RESTRICT_NAMES_NOCONTROL:
+		break;
+	case RESTRICT_NAMES_ASCII:
+		for (escaped = 0, dst = esc, s = fname; *s; s++) {
+			if (*s < 32) {
+				*dst++ = '%';
+				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
+				*dst++ = (c = (*s & 0xf)) >= 10 ? c + 'A' - 10 : c + '0';
+				escaped = 1;
+			} else
+				*dst++ = *s;
+		}
+		*dst = 0;
+		info_printf("esc=%s\n",esc);
+
+		if (escaped)
+			return esc;
+		break;
+	case RESTRICT_NAMES_UPPERCASE:
+		for (s = fname; *s; s++)
+			if (*s >= 'a' && *s <= 'a') // islower() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
+				*s &= ~0x20;
+		break;
+	case RESTRICT_NAMES_LOWERCASE:
+		for (s = fname; *s; s++)
+			if (*s >= 'A' && *s <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
+				*s |= 0x20;
+		break;
+	case RESTRICT_NAMES_UNIX:
+	default:
+		for (escaped = 0, dst = esc, s = fname; *s; s++) {
+			if (*s >= 1 && *s <= 31) {
+				*dst++ = '%';
+				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
+				*dst++ = (c = (*s & 0xf)) >= 10 ? c + 'A' - 10 : c + '0';
+				escaped = 1;
+			} else
+				*dst++ = *s;
+		}
+		*dst = 0;
+
+		if (escaped)
+			return esc;
+		break;
+	}
+
+	return fname;
+}
+
 // generate the local filename corresponding to an URI
 // respect the following options:
 // --restrict-file-names (unix,windows,nocontrol,ascii,lowercase,uppercase)
@@ -124,7 +186,7 @@ void set_exit_status(int status)
 const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 {
 	mget_buffer_t buf;
-	const char *fname;
+	char *fname;
 	int directories;
 
 	if (config.spider || config.output_document)
@@ -184,12 +246,21 @@ const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 			mget_iri_get_path(iri, &buf, config.local_encoding);
 		}
 
-		fname = mget_iri_get_query(iri, &buf, config.local_encoding);
+		fname = mget_iri_get_query_as_filename(iri, &buf, config.local_encoding);
 	} else {
-		fname = mget_iri_get_file(iri, &buf, config.local_encoding);
+		fname = mget_iri_get_filename(iri, &buf, config.local_encoding);
 	}
 
 	// do the filename escaping here
+	if (config.restrict_file_names) {
+		char fname_esc[buf.length * 3 + 1];
+
+		if (restrict_file_name(fname, fname_esc) != fname) {
+			// escaping was really done, replace fname
+			mget_buffer_strcpy(&buf, fname_esc);
+			fname = buf.data;
+		}
+	}
 
 	// create the complete path
 	if (*fname) {

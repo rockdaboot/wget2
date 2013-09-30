@@ -726,67 +726,108 @@ const char *mget_iri_get_escaped_resource(const MGET_IRI *iri, mget_buffer_t *bu
 	return buf->data;
 }
 
-const char *mget_iri_get_path(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding)
+char *mget_iri_get_path(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding)
 {
 	if (buf->length)
 		mget_buffer_memcat(buf, "/", 1);
 
 	if (iri->path) {
-		char *fname;
-
-		fname = mget_utf8_to_str(iri->path, encoding);
-		mget_buffer_strcat(buf, fname);
-		xfree(fname);
-	}
-
-	if ((buf->length == 0 || buf->data[buf->length - 1] == '/') && default_page)
-		mget_buffer_memcat(buf, default_page, default_page_length);
-
-	return buf->data;
-}
-
-const char *mget_iri_get_query(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding)
-{
-	if (iri->query) {
-		mget_buffer_memcat(buf, "?", 1);
-		char *query = mget_utf8_to_str(iri->query, encoding);
-		mget_buffer_strcat(buf, query);
-		xfree(query);
-	}
-
-	return buf->data;
-}
-
-const char *mget_iri_get_escaped_fragment(const MGET_IRI *iri, mget_buffer_t *buf)
-{
-	if (iri->fragment) {
-		mget_buffer_memcat(buf, "#", 1);
-		return mget_iri_escape(iri->fragment, buf);
-	}
-
-	return buf->data;
-}
-
-const char *mget_iri_get_file(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding)
-{
-	if (iri->path) {
-		char *fname;
-
-		if ((fname = strrchr(iri->path, '/')))
-			fname = mget_utf8_to_str(fname + 1, encoding);
-		else
-			fname = mget_utf8_to_str(iri->path, encoding);
-
-		if (fname) {
-			mget_buffer_strcat(buf, fname);
-			xfree(fname);
+		if (mget_strcasecmp(encoding, "utf-8")) {
+			char *fname = mget_utf8_to_str(iri->path, encoding);
+			if (fname) {
+				mget_buffer_strcat(buf, fname);
+				xfree(fname);
+			}
+		} else {
+			mget_buffer_strcat(buf, iri->path);
 		}
 	}
 
 	if ((buf->length == 0 || buf->data[buf->length - 1] == '/') && default_page)
 		mget_buffer_memcat(buf, default_page, default_page_length);
 
-	return mget_iri_get_query(iri, buf, encoding);
+	return buf->data;
+}
+
+char *mget_iri_get_query_as_filename(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding)
+{
+	if (iri->query) {
+		const char *query;
+		int allocated = 0;
+
+		mget_buffer_memcat(buf, "?", 1);
+
+		if (mget_strcasecmp(encoding, "utf-8")) {
+			if ((query = mget_utf8_to_str(iri->query, encoding)))
+				allocated = 1;
+		} else {
+			query = iri->query;
+		}
+
+		if (query) {
+			int slashes = 0;
+			const char *src = query;
+
+			// count slashes in query string
+			while ((src = strchr(src, '/'))) {
+				slashes++;
+				src++;
+			}
+
+			if (slashes) {
+				// escape slashes to use query as part of a filename
+				const char *begin;
+
+				for (src = begin = query; *src; src++) {
+					if (*src == '/') {
+						if (begin != src)
+							mget_buffer_memcat(buf, begin, src - begin);
+						begin = src + 1;
+						mget_buffer_memcat(buf, "%2f", 3);
+					}
+				}
+
+				if (begin != src)
+					mget_buffer_memcat(buf, begin, src - begin);
+			}
+
+			mget_buffer_strcat(buf, query);
+		}
+
+		if (allocated)
+			xfree(query);
+	}
+
+	return buf->data;
+}
+
+char *mget_iri_get_filename(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding)
+{
+	if (iri->path) {
+		char *fname;
+
+		if (mget_strcasecmp(encoding, "utf-8")) {
+			if ((fname = strrchr(iri->path, '/')))
+				fname = mget_utf8_to_str(fname + 1, encoding);
+			else
+				fname = mget_utf8_to_str(iri->path, encoding);
+
+			if (fname) {
+				mget_buffer_strcat(buf, fname);
+				xfree(fname);
+			}
+		} else {
+			if ((fname = strrchr(iri->path, '/')))
+				mget_buffer_strcat(buf, fname + 1);
+			else
+				mget_buffer_strcat(buf, iri->path);
+		}
+	}
+
+	if ((buf->length == 0 || buf->data[buf->length - 1] == '/') && default_page)
+		mget_buffer_memcat(buf, default_page, default_page_length);
+
+	return mget_iri_get_query_as_filename(iri, buf, encoding);
 }
 
 // escaping: see http://tools.ietf.org/html/rfc2396#2 following (especially 2.4.2)

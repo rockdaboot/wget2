@@ -420,9 +420,7 @@ int main(void)
 			{	"out", urls[3].body },
 			{	NULL } },
 		0);
-/*
- * Lowercase/uppercase stuff has to handled using utf-8.
- * As long as Mget does not have such functions, leave these tests out.
+
 	// test-restrict-lowercase
 	urls[3].name="/DuMmy.Txt";
 	mget_test(
@@ -444,7 +442,6 @@ int main(void)
 			{	NULL } },
 		0);
 	urls[3].name="/dummy.txt";
-*/
 
 	// test-c-full
 	mget_test(
