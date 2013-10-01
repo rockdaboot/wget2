@@ -774,6 +774,8 @@ char *
 	mget_iri_get_filename(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding) G_GNUC_MGET_NONNULL((1,2));
 char *
 	mget_charset_transcode(const char *src, const char *src_encoding, const char *dst_encoding) G_GNUC_MGET_MALLOC;
+int
+	mget_str_needs_encoding(const char *s) G_GNUC_MGET_NONNULL((1)) G_GNUC_MGET_PURE;
 char *
 	mget_str_to_utf8(const char *src, const char *encoding) G_GNUC_MGET_MALLOC;
 char *

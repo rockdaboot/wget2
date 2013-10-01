@@ -137,7 +137,6 @@ char *restrict_file_name(char *fname, char *esc)
 				*dst++ = *s;
 		}
 		*dst = 0;
-		info_printf("esc=%s\n",esc);
 
 		if (escaped)
 			return esc;

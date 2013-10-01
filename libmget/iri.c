@@ -216,6 +216,13 @@ char *mget_charset_transcode(const char *src, const char *src_encoding, const ch
 	return strdup(src);
 }
 
+int mget_str_needs_encoding(const char *s)
+{
+	while (*s > 0) s++;
+
+	return !!*s;
+}
+
 char *mget_str_to_utf8(const char *src, const char *encoding)
 {
 	return mget_charset_transcode(src, encoding, "utf-8");
@@ -234,6 +241,7 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 	const char *default_port = NULL;
 	char *p, *s, *authority, c;
 	size_t slen, it;
+	int url_allocated;
 
 	if (!url)
 		return NULL;
@@ -251,16 +259,23 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 		char *unesc_url = strdup(url);
 
 		_unescape((unsigned char *)unesc_url);
-		if ((url = mget_str_to_utf8(unesc_url, encoding)))
-			xfree(unesc_url);
-		else
-			url = unesc_url; // on error, use what we have
 
+		if (mget_str_needs_encoding(unesc_url)) {
+			if ((url = mget_str_to_utf8(unesc_url, encoding)))
+				xfree(unesc_url);
+			else
+				url = unesc_url; // on error, use what we have
+		}
+		url_allocated = 1;
 	} else {
-		if ((s = mget_str_to_utf8(url, encoding)))
-			url = s;
-		else
-			url = strdup(url); // on error, use what we have and satisfy xfree() below
+		url_allocated = 0;
+
+		if (mget_str_needs_encoding(url)) {
+			if ((s = mget_str_to_utf8(url, encoding))) {
+				url = s;
+				url_allocated = 1;
+			}
+		}
 	}
 
 	// just use one block of memory for all parsed URI parts
@@ -271,7 +286,8 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 	iri->uri = ((char *)iri) + sizeof(MGET_IRI);
 	s = ((char *)iri) + sizeof(MGET_IRI) + slen + 1;
 	strcpy(s, url);
-	xfree(url);
+	if (url_allocated)
+		xfree(url);
 
 	p = s;
 	while (*s && !_iri_isgendelim(*s))
