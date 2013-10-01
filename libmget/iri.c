@@ -799,7 +799,7 @@ char *mget_iri_get_query_as_filename(const MGET_IRI *iri, mget_buffer_t *buf, co
 						if (begin != src)
 							mget_buffer_memcat(buf, begin, src - begin);
 						begin = src + 1;
-						mget_buffer_memcat(buf, "%2f", 3);
+						mget_buffer_memcat(buf, "%2F", 3);
 					}
 				}
 
