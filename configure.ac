@@ -171,12 +171,22 @@ then
 fi
 AM_CONDITIONAL([WITH_ZLIB], [test $with_zlib = "yes"])
 
-AC_ARG_WITH(libidn, AS_HELP_STRING([--without-libidn], [disable IDN support]), with_libidn=$withval, with_libidn=yes)
-if test $with_libidn != "no"
+#AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support]), with_libidn2=$withval, with_libidn2=yes)
+#if test $with_libidn2 != "no"
+#then
+#  AC_CHECK_LIB(idn2, idn2_lookup_u8, [with_libidn2=yes; AC_SUBST(IDN_LIBS, "-lidn2") AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2])], [with_libidn2=no; AC_MSG_WARN(*** LIBIDN2 was not found. You will not able to use IDN2008 support)])
+#fi
+#AM_CONDITIONAL([WITH_LIBIDN2], [test $with_libidn2 = "yes"])
+
+if test x$with_libidn2 != "xyes"
 then
-  AC_CHECK_LIB(idn, idna_to_ascii_8z, [with_libidn=yes; AC_SUBST(IDN_LIBS, "-lidn") AC_DEFINE([WITH_LIBIDN], [1], [Use libidn])], [with_libidn=no; AC_MSG_WARN(*** LIBIDN was not found. You will not be able to use IDN support)])
+  AC_ARG_WITH(libidn, AS_HELP_STRING([--without-libidn], [disable IDN support]), with_libidn=$withval, with_libidn=yes)
+  if test x$with_libidn != "xno"
+  then
+    AC_CHECK_LIB(idn, idna_to_ascii_8z, [with_libidn=yes; AC_SUBST(IDN_LIBS, "-lidn") AC_DEFINE([WITH_LIBIDN], [1], [Use libidn])], [with_libidn=no; AC_MSG_WARN(*** LIBIDN was not found. You will not be able to use IDN support)])
+  fi
 fi
-AM_CONDITIONAL([WITH_LIBIDN], [test $with_libidn = "yes"])
+AM_CONDITIONAL([WITH_LIBIDN], [test x$with_libidn = "xyes"])
 
 # Checks for libraries.
 #AC_CHECK_LIB([gnutls], [gnutls_global_init])
@@ -241,6 +251,7 @@ AC_MSG_NOTICE([Summary of build options:
   Libs:              ${LIBS}
   SSL support:       $with_gnutls
   GZIP compression:  $with_zlib
-  IDN support:       $with_libidn
+  IDN support:       $IDN_LIBS
+#  IDN support:       $with_libidn
   Tests:             ${TESTS_INFO}
 ])

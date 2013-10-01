@@ -37,7 +37,9 @@
 #ifdef HAVE_ICONV
 #include <iconv.h>
 #endif
-#ifdef WITH_LIBIDN
+#ifdef WITH_LIBIDN2
+#include <idn2.h>
+#elif WITH_LIBIDN
 #include <idna.h>
 #endif
 
@@ -395,19 +397,35 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 
 	// now unescape all components (not interested in display, userinfo, password)
 	if (iri->host) {
-#ifdef WITH_LIBIDN
-		char *host_asc = NULL;
-		int rc;
-		if ((rc = idna_to_ascii_8z(iri->host, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
-			// debug_printf("toASCII '%s' -> '%s'\n", iri->host, host_asc);
-			iri->host = host_asc;
-			iri->host_allocated = 1;
-		} else
-			error_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
-#endif
-		for (p = (char *)iri->host; *p; p++)
+		for (p = (char *)iri->host; *p; p++) {
 			if (*p >= 'A' && *p <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
 				*p |= 0x20;
+		}
+#ifdef WITH_LIBIDN2
+		if (mget_str_needs_encoding(iri->host)) {
+			char *host_asc = NULL;
+			int rc;
+
+			if ((rc = idn2_lookup_u8((uint8_t *)iri->host, (uint8_t **)&host_asc, 0)) == IDN2_OK) {
+				debug_printf("idn2 '%s' -> '%s'\n", iri->host, host_asc);
+				iri->host = host_asc;
+				iri->host_allocated = 1;
+			} else
+				error_printf(_("toASCII failed (%d): %s\n"), rc, idn2_strerror(rc));
+		}
+#elif WITH_LIBIDN
+		if (mget_str_needs_encoding(iri->host)) {
+			char *host_asc = NULL;
+			int rc;
+
+			if ((rc = idna_to_ascii_8z(iri->host, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
+				// debug_printf("toASCII '%s' -> '%s'\n", iri->host, host_asc);
+				iri->host = host_asc;
+				iri->host_allocated = 1;
+			} else
+				error_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
+		}
+#endif
 	}
 	else {
 		if (iri->scheme == IRI_SCHEME_HTTP || iri->scheme == IRI_SCHEME_HTTPS) {

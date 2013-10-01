@@ -116,7 +116,7 @@ void set_exit_status(int status)
  * All we really need (Mget is targeted for Unix/Linux), is UNIX restriction (\NUL and /)
  *  with escaping of control characters.
  */
-char *restrict_file_name(char *fname, char *esc)
+static char *restrict_file_name(char *fname, char *esc)
 {
 	char *s, *dst;
 	int escaped, c;
