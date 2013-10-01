@@ -144,7 +144,7 @@ char *restrict_file_name(char *fname, char *esc)
 		break;
 	case RESTRICT_NAMES_UPPERCASE:
 		for (s = fname; *s; s++)
-			if (*s >= 'a' && *s <= 'a') // islower() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
+			if (*s >= 'a' && *s <= 'z') // islower() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
 				*s &= ~0x20;
 		break;
 	case RESTRICT_NAMES_LOWERCASE:
