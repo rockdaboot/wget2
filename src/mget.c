@@ -82,7 +82,7 @@ static void
 	css_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *iri),
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *iri);
 MGET_HTTP_RESPONSE
-	*http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader);
+	*http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, int method_get);
 
 static MGET_HASHMAP
 	*known_urls;
@@ -386,6 +386,16 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 	return job;
 }
 
+static mget_thread_mutex_t
+	main_mutex = MGET_THREAD_MUTEX_INITIALIZER;
+static mget_thread_cond_t
+	main_cond = MGET_THREAD_COND_INITIALIZER, // is signalled whenever a job is done
+	worker_cond = MGET_THREAD_COND_INITIALIZER;  // is signalled whenever a job is added
+static mget_thread_t
+	input_tid;
+static void
+	*input_thread(void *p);
+
 // Needs to be thread-save
 static void add_url(JOB *job, const char *encoding, const char *url, int redirection)
 {
@@ -508,6 +518,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int redirec
 				new_job->referer = job->iri;
 			}
 		}
+
+		mget_thread_cond_signal(&worker_cond);
 	}
 
 	mget_thread_mutex_unlock(&downloader_mutex);
@@ -533,16 +545,6 @@ static void nop(int sig)
 		abort();
 	}
 }
-
-static mget_thread_mutex_t
-	main_mutex = MGET_THREAD_MUTEX_INITIALIZER;
-static mget_thread_cond_t
-	main_cond = MGET_THREAD_COND_INITIALIZER, // is signalled whenever a job is done
-	worker_cond = MGET_THREAD_COND_INITIALIZER;  // is signalled whenever a job is added
-static mget_thread_t
-	input_tid;
-static void
-	*input_thread(void *p);
 
 int main(int argc, const char *const *argv)
 {
@@ -811,6 +813,7 @@ void *downloader_thread(void *p)
 		mget_thread_mutex_lock(&main_mutex);
 		if (queue_get(&downloader->job, &downloader->part) == 0) {
 			// here we sit and wait for a job
+			info_printf("[%d] wait...\n", downloader->id);
 			mget_thread_cond_wait(&worker_cond, &main_mutex);
 			mget_thread_mutex_unlock(&main_mutex);
 			continue;
@@ -826,16 +829,41 @@ void *downloader_thread(void *p)
 		// hey, we got a job...
 		job = downloader->job;
 
-		int tries = 0;
-		do {
+		if (config.spider && !job->deferred) {
+			// In spider mode, we first make a HEAD request.
+			// If the Content-Type header gives us not a parsable type, we are done.
+			for (int tries = 0; !resp && tries < 3; tries++) {
+				print_status(downloader, "[%d] Checking '%s' ...\n", downloader->id, job->iri->uri);
+				resp = http_get(job->iri, NULL, downloader, 0);
+				if (resp)
+					print_status(downloader, "%d %s\n", resp->code, resp->reason);
+			}
+
+			if (!resp)
+				goto ready;
+
+			if (resp->code == 404)
+				set_exit_status(8);
+
+			if (resp->code != 200 || !resp->content_type)
+				goto ready;
+
+			if (strcasecmp(resp->content_type, "text/html") && strcasecmp(resp->content_type, "text/css")
+				&& strcasecmp(resp->content_type, "application/xhtml+xml"))
+				goto ready;
+
+			http_free_response(&resp);
+		}
+
+		for (int tries = 0; !resp && tries < 3; tries++) {
 			if (job->local_filename)
-				print_status(downloader, "Downloading '%s' ...\n", job->local_filename);
+				print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->local_filename);
 			else
-				print_status(downloader, "Downloading '%s' ...\n", job->iri->uri);
-			resp = http_get(job->iri, NULL, downloader);
+				print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->iri->uri);
+			resp = http_get(job->iri, NULL, downloader, 1);
 			if (resp)
 				print_status(downloader, "%d %s\n", resp->code, resp->reason);
-		} while (!resp && ++tries < 3);
+		}
 
 		if (!resp)
 			goto ready;
@@ -987,9 +1015,7 @@ void *downloader_thread(void *p)
 
 		// regular download
 ready:
-		if (resp) {
-			http_free_response(&resp);
-		}
+		http_free_response(&resp);
 
 		// download of single-part file complete, remove from job queue
 		// debug_printf("- '%s' completed\n",downloader[n].job->uri);
@@ -1415,7 +1441,7 @@ void download_part(DOWNLOADER *downloader)
 
 		mirror_index = (mirror_index + 1) % mget_vector_size(metalink->mirrors);
 
-		msg = http_get(mirror->iri, part, downloader);
+		msg = http_get(mirror->iri, part, downloader, 1);
 		if (msg) {
 			mget_cookie_store_cookies(msg->cookies); // sanitize and store cookies
 
@@ -1482,7 +1508,7 @@ void download_part(DOWNLOADER *downloader)
 	}
 }
 
-MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
+MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, int method_get)
 {
 	MGET_IRI *dont_free = iri;
 	MGET_HTTP_CONNECTION *conn;
@@ -1511,7 +1537,10 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader)
 		if (conn) {
 			MGET_HTTP_REQUEST *req;
 
-			req = http_create_request(iri, "GET");
+			if (method_get)
+				req = http_create_request(iri, "GET");
+			else
+				req = http_create_request(iri, "HEAD");
 
 			if (config.continue_download || config.timestamping) {
 				const char *local_filename = downloader->job->local_filename;
