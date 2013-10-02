@@ -54,7 +54,6 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <netdb.h>
-#include <stringprep.h>
 
 #include <libmget.h>
 
@@ -1008,7 +1007,8 @@ int init(int argc, const char *const *argv)
 	}
 
 	if (!config.local_encoding)
-		config.local_encoding = strdup(stringprep_locale_charset());
+		config.local_encoding = mget_local_charset_encoding();
+
 	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
 
 	http_set_http_proxy(config.http_proxy, config.local_encoding);

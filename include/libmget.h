@@ -262,6 +262,18 @@ size_t
 	mget_bsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(3,4);
 char *
 	mget_read_file(const char *fname, size_t *size) G_GNUC_MGET_NONNULL((1));
+const char
+	*mget_local_charset_encoding(void);
+char *
+	mget_charset_transcode(const char *src, const char *src_encoding, const char *dst_encoding) G_GNUC_MGET_MALLOC;
+int
+	mget_str_needs_encoding(const char *s) G_GNUC_MGET_NONNULL((1)) G_GNUC_MGET_PURE;
+char *
+	mget_str_to_utf8(const char *src, const char *encoding) G_GNUC_MGET_MALLOC;
+char *
+	mget_utf8_to_str(const char *src, const char *encoding) G_GNUC_MGET_MALLOC;
+const char *
+	mget_str_to_ascii(const char *src);
 
 /**
  * MGET_COMPATIBILITY:
@@ -772,14 +784,6 @@ char *
 	mget_iri_get_query_as_filename(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding) G_GNUC_MGET_NONNULL((1,2));
 char *
 	mget_iri_get_filename(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding) G_GNUC_MGET_NONNULL((1,2));
-char *
-	mget_charset_transcode(const char *src, const char *src_encoding, const char *dst_encoding) G_GNUC_MGET_MALLOC;
-int
-	mget_str_needs_encoding(const char *s) G_GNUC_MGET_NONNULL((1)) G_GNUC_MGET_PURE;
-char *
-	mget_str_to_utf8(const char *src, const char *encoding) G_GNUC_MGET_MALLOC;
-char *
-	mget_utf8_to_str(const char *src, const char *encoding) G_GNUC_MGET_MALLOC;
 
 /*
  * Cookie routines

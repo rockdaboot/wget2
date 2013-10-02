@@ -716,6 +716,15 @@ static void test_iri_compare(void)
 		else {
 			failed++;
 			info_printf("Failed [%u]: compare(%s,%s) -> %d (expected %d)\n", it, t->url1, t->url2, n, t->result);
+			printf("  display %s / %s\n", iri1->display, iri2->display);
+			printf("  scheme %s / %s\n", iri1->scheme, iri2->scheme);
+			printf("  user %s / %s\n", iri1->userinfo, iri2->userinfo);
+			printf("  host %s / %s\n", iri1->host, iri2->host);
+			printf("  port %s / %s\n", iri1->port, iri2->port);
+			printf("  path %s / %s\n", iri1->path, iri2->path);
+			printf("  query %s / %s\n", iri1->query, iri2->query);
+			printf("  fragment %s / %s\n", iri1->fragment, iri2->fragment);
+			printf("\n");
 		}
 
 		mget_iri_free(&iri2);

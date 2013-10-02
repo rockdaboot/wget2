@@ -130,11 +130,9 @@ int main(int argc, const char *const *argv)
 	const char *
 		base = "http://www.example.com";
 
-	// Encoding of 'base'
-	// We assume that this file (and base) is encoded in iso-8859-1 or compatible.
-	// Changing the base with --base option will determine the local charset.
+	// We assume that base is encoded in the local charset.
 	const char *
-		local_encoding = "iso-8859-1";
+		local_encoding = mget_local_charset_encoding();
 
 	// parsed 'base'
 	MGET_IRI
@@ -162,8 +160,7 @@ int main(int argc, const char *const *argv)
 	for (argpos = 1; argpos < argc; argpos++) {
 		if (!strcmp(argv[argpos], "--base") && argc - argpos > 1) {
 			base = argv[++argpos];
-			local_encoding = stringprep_locale_charset();
-			info_printf("Local URI encoding = '%s'\n", local_encoding);
+			info_printf("Base URL encoding = '%s'\n", local_encoding);
 		} else if (!strcmp(argv[argpos], "--encoding") && argc - argpos > 1) {
 			css_encoding = argv[++argpos];
 		} else if (!strcmp(argv[argpos], "--")) {

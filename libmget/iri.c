@@ -34,14 +34,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
-#ifdef HAVE_ICONV
-#include <iconv.h>
-#endif
-#ifdef WITH_LIBIDN2
-#include <idn2.h>
-#elif WITH_LIBIDN
-#include <idna.h>
-#endif
 
 #include <libmget.h>
 #include "private.h"
@@ -178,63 +170,6 @@ static int _unescape(unsigned char *src)
 	return ret;
 }
 
-char *mget_charset_transcode(const char *src, const char *src_encoding, const char *dst_encoding)
-{
-	if (!src)
-		return NULL;
-
-#ifdef HAVE_ICONV
-	if (!src_encoding)
-		src_encoding = "iso-8859-1"; // default character-set for most browsers
-	if (!dst_encoding)
-		dst_encoding = "iso-8859-1"; // default character-set for most browsers
-
-	if (strcasecmp(src_encoding, dst_encoding)) {
-		char *ret = NULL;
-
-		iconv_t cd=iconv_open(dst_encoding, src_encoding);
-
-		if (cd != (iconv_t)-1) {
-			char *tmp = (char *)src; // iconv won't change where src points to, but changes tmp itself
-			size_t tmp_len = strlen(src);
-			size_t dst_len = tmp_len * 6, dst_len_tmp = dst_len;
-			char *dst = xmalloc(dst_len + 1), *dst_tmp = dst;
-
-			if (iconv(cd, &tmp, &tmp_len, &dst_tmp, &dst_len_tmp) != (size_t)-1) {
-				ret = strndup(dst, dst_len - dst_len_tmp);
-				debug_printf("converted '%s' (%s) -> '%s' (%s)\n", src, src_encoding, ret, dst_encoding);
-			} else
-				error_printf(_("Failed to convert '%s' string into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
-
-			xfree(dst);
-			iconv_close(cd);
-		} else
-			error_printf(_("Failed to prepare encoding '%s' into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
-
-		return ret;
-	}
-#endif
-
-	return strdup(src);
-}
-
-int mget_str_needs_encoding(const char *s)
-{
-	while (*s > 0) s++;
-
-	return !!*s;
-}
-
-char *mget_str_to_utf8(const char *src, const char *encoding)
-{
-	return mget_charset_transcode(src, encoding, "utf-8");
-}
-
-char *mget_utf8_to_str(const char *src, const char *encoding)
-{
-	return mget_charset_transcode(src, "utf-8", encoding);
-}
-
 // URIs are assumed to be unescaped at this point
 
 MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
@@ -267,7 +202,9 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 				xfree(unesc_url);
 			else
 				url = unesc_url; // on error, use what we have
-		}
+		} else
+			url = unesc_url;
+
 		url_allocated = 1;
 	} else {
 		url_allocated = 0;
@@ -401,31 +338,10 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 			if (*p >= 'A' && *p <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
 				*p |= 0x20;
 		}
-#ifdef WITH_LIBIDN2
-		if (mget_str_needs_encoding(iri->host)) {
-			char *host_asc = NULL;
-			int rc;
-
-			if ((rc = idn2_lookup_u8((uint8_t *)iri->host, (uint8_t **)&host_asc, 0)) == IDN2_OK) {
-				debug_printf("idn2 '%s' -> '%s'\n", iri->host, host_asc);
-				iri->host = host_asc;
-				iri->host_allocated = 1;
-			} else
-				error_printf(_("toASCII failed (%d): %s\n"), rc, idn2_strerror(rc));
+		if ((p = (char *)mget_str_to_ascii(iri->host)) != iri->host) {
+			iri->host = p;
+			iri->host_allocated = 1;
 		}
-#elif WITH_LIBIDN
-		if (mget_str_needs_encoding(iri->host)) {
-			char *host_asc = NULL;
-			int rc;
-
-			if ((rc = idna_to_ascii_8z(iri->host, &host_asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
-				// debug_printf("toASCII '%s' -> '%s'\n", iri->host, host_asc);
-				iri->host = host_asc;
-				iri->host_allocated = 1;
-			} else
-				error_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
-		}
-#endif
 	}
 	else {
 		if (iri->scheme == IRI_SCHEME_HTTP || iri->scheme == IRI_SCHEME_HTTPS) {

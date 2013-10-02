@@ -276,10 +276,9 @@ static void G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const 
 
 			if (free_kv) {
 				if (entry->value != entry->key) {
-					if (h->destructor) {
+					if (h->destructor)
 						h->destructor(entry->key, entry->value);
-						xfree(entry->value);
-					}
+					xfree(entry->value);
 				} else {
 					if (h->destructor)
 						h->destructor(entry->key, NULL);

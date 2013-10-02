@@ -1,0 +1,156 @@
+/*
+ * Copyright(c) 2012 Tim Ruehsen
+ *
+ * This file is part of libmget.
+ *
+ * Libmget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Libmget is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * a collection of charset encoding routines
+ *
+ * Changelog
+ * 02.10.2013  Tim Ruehsen  created
+ *
+ */
+
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
+#include <string.h>
+#include <strings.h>
+#include <errno.h>
+
+#ifdef HAVE_ICONV
+# include <iconv.h>
+#endif
+
+#if defined(HAVE_STRINGPREP_H) && defined(WITH_LIBIDN)
+# include <stringprep.h>
+#elif HAVE_LANGINFO_H
+# include <langinfo.h>
+#endif
+
+#if defined(HAVE_IDN2_H) && defined(WITH_LIBIDN2)
+# include <idn2.h>
+#elif defined(HAVE_IDNA_H) && defined(WITH_LIBIDN)
+# include <idna.h>
+#endif
+
+#include <libmget.h>
+#include "private.h"
+
+const char *mget_local_charset_encoding(void)
+{
+#if defined(HAVE_STRINGPREP_H) && defined(WITH_LIBIDN)
+	return strdup(stringprep_locale_charset());
+#else
+	const char *encoding = nl_langinfo(CODESET);
+
+	if (encoding && *encoding)
+		return strdup(encoding);
+	else
+		return strdup("ASCII");
+#endif
+}
+
+char *mget_charset_transcode(const char *src, const char *src_encoding, const char *dst_encoding)
+{
+	if (!src)
+		return NULL;
+
+#ifdef HAVE_ICONV
+	if (!src_encoding)
+		src_encoding = "iso-8859-1"; // default character-set for most browsers
+	if (!dst_encoding)
+		dst_encoding = "iso-8859-1"; // default character-set for most browsers
+
+	if (strcasecmp(src_encoding, dst_encoding)) {
+		char *ret = NULL;
+
+		iconv_t cd=iconv_open(dst_encoding, src_encoding);
+
+		if (cd != (iconv_t)-1) {
+			char *tmp = (char *)src; // iconv won't change where src points to, but changes tmp itself
+			size_t tmp_len = strlen(src);
+			size_t dst_len = tmp_len * 6, dst_len_tmp = dst_len;
+			char *dst = xmalloc(dst_len + 1), *dst_tmp = dst;
+
+			if (iconv(cd, &tmp, &tmp_len, &dst_tmp, &dst_len_tmp) != (size_t)-1) {
+				ret = strndup(dst, dst_len - dst_len_tmp);
+				debug_printf("converted '%s' (%s) -> '%s' (%s)\n", src, src_encoding, ret, dst_encoding);
+			} else
+				error_printf(_("Failed to convert '%s' string into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
+
+			xfree(dst);
+			iconv_close(cd);
+		} else
+			error_printf(_("Failed to prepare encoding '%s' into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
+
+		return ret;
+	}
+#endif
+
+	return strdup(src);
+}
+
+int mget_str_needs_encoding(const char *s)
+{
+	while (*s > 0) s++;
+
+	return !!*s;
+}
+
+char *mget_str_to_utf8(const char *src, const char *encoding)
+{
+	return mget_charset_transcode(src, encoding, "utf-8");
+}
+
+char *mget_utf8_to_str(const char *src, const char *encoding)
+{
+	return mget_charset_transcode(src, "utf-8", encoding);
+}
+
+const char *mget_str_to_ascii(const char *src)
+{
+#ifdef WITH_LIBIDN2
+	if (mget_str_needs_encoding(src)) {
+		char *asc = NULL;
+		int rc;
+
+		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, 0)) == IDN2_OK) {
+			debug_printf("idn2 '%s' -> '%s'\n", src, asc);
+			src = asc;
+		} else
+			error_printf(_("toASCII failed (%d): %s\n"), rc, idn2_strerror(rc));
+	}
+#elif WITH_LIBIDN
+	if (mget_str_needs_encoding(src)) {
+		char *asc = NULL;
+		int rc;
+
+		if ((rc = idna_to_ascii_8z(src, &asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
+			// debug_printf("toASCII '%s' -> '%s'\n", src, asc);
+			src = asc;
+		} else
+			error_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
+	}
+#else
+	if (mget_str_needs_encoding(src)) {
+		error_printf(_("toASCII not available: '%s'\n"), src);
+	}
+#endif
+
+	return src;
+}

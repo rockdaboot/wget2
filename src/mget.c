@@ -551,9 +551,10 @@ int main(int argc, const char *const *argv)
 	char *buf = NULL;
 	struct sigaction sig_action;
 
-#if ENABLE_NLS != 0
 	#include <locale.h>
 	setlocale(LC_ALL, "");
+
+#if ENABLE_NLS != 0
 	bindtextdomain("mget", LOCALEDIR);
 	textdomain("mget");
 #endif

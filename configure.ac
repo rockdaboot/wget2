@@ -171,12 +171,12 @@ then
 fi
 AM_CONDITIONAL([WITH_ZLIB], [test $with_zlib = "yes"])
 
-#AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support]), with_libidn2=$withval, with_libidn2=yes)
-#if test $with_libidn2 != "no"
-#then
-#  AC_CHECK_LIB(idn2, idn2_lookup_u8, [with_libidn2=yes; AC_SUBST(IDN_LIBS, "-lidn2") AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2])], [with_libidn2=no; AC_MSG_WARN(*** LIBIDN2 was not found. You will not able to use IDN2008 support)])
-#fi
-#AM_CONDITIONAL([WITH_LIBIDN2], [test $with_libidn2 = "yes"])
+AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support]), with_libidn2=$withval, with_libidn2=yes)
+if test $with_libidn2 != "no"
+then
+  AC_CHECK_LIB(idn2, idn2_lookup_u8, [with_libidn2=yes; AC_SUBST(IDN_LIBS, "-lidn2") AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2])], [with_libidn2=no; AC_MSG_WARN(*** LIBIDN2 was not found. You will not able to use IDN2008 support)])
+fi
+AM_CONDITIONAL([WITH_LIBIDN2], [test $with_libidn2 = "yes"])
 
 if test x$with_libidn2 != "xyes"
 then
@@ -199,7 +199,8 @@ AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $IDN_LIBS $LIBS")
 # Checks for header files.
 AC_CHECK_HEADERS([\
  fcntl.h inttypes.h libintl.h locale.h netdb.h netinet/in.h stddef.h stdlib.h string.h\
- strings.h sys/socket.h sys/time.h unistd.h crypt.h poll.h])
+ strings.h sys/socket.h sys/time.h unistd.h crypt.h poll.h idna.h idn2.h stringprep.h\
+ langinfo.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
@@ -252,6 +253,5 @@ AC_MSG_NOTICE([Summary of build options:
   SSL support:       $with_gnutls
   GZIP compression:  $with_zlib
   IDN support:       $IDN_LIBS
-#  IDN support:       $with_libidn
   Tests:             ${TESTS_INFO}
 ])
