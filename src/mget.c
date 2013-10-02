@@ -84,6 +84,8 @@ static void
 MGET_HTTP_RESPONSE
 	*http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, int method_get);
 
+static MGET_STRINGMAP
+	*etags;
 static MGET_HASHMAP
 	*known_urls;
 static DOWNLOADER
@@ -778,6 +780,7 @@ int main(int argc, const char *const *argv)
 	mget_vector_clear_nofree(parents);
 	mget_vector_free(&parents);
 	mget_hashmap_free(&known_urls);
+	mget_stringmap_free(&etags);
 	deinit();
 
 	return exit_status;
@@ -802,6 +805,9 @@ void *input_thread(void *p G_GNUC_MGET_UNUSED)
 
 void *downloader_thread(void *p)
 {
+	static mget_thread_mutex_t
+		etag_mutex = MGET_THREAD_MUTEX_INITIALIZER;
+
 	DOWNLOADER *downloader = p;
 	MGET_HTTP_RESPONSE *resp = NULL;
 	JOB *job;
@@ -813,7 +819,6 @@ void *downloader_thread(void *p)
 		mget_thread_mutex_lock(&main_mutex);
 		if (queue_get(&downloader->job, &downloader->part) == 0) {
 			// here we sit and wait for a job
-			info_printf("[%d] wait...\n", downloader->id);
 			mget_thread_cond_wait(&worker_cond, &main_mutex);
 			mget_thread_mutex_unlock(&main_mutex);
 			continue;
@@ -851,6 +856,20 @@ void *downloader_thread(void *p)
 			if (strcasecmp(resp->content_type, "text/html") && strcasecmp(resp->content_type, "text/css")
 				&& strcasecmp(resp->content_type, "application/xhtml+xml"))
 				goto ready;
+
+			if (resp->etag) {
+				mget_thread_mutex_lock(&etag_mutex);
+				if (!etags)
+					etags = mget_stringmap_create(128);
+				int rc = mget_stringmap_put_noalloc(etags, resp->etag, NULL);
+				resp->etag = NULL;
+				mget_thread_mutex_unlock(&etag_mutex);
+
+				if (rc) {
+					info_printf("Not scanning '%s' (known ETag)\n", job->iri->uri);
+					goto ready;
+				}
+			}
 
 			http_free_response(&resp);
 		}

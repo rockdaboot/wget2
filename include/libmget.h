@@ -1143,6 +1143,8 @@ typedef struct {
 		content_filename;
 	const char *
 		location;
+	const char *
+		etag;
 	mget_buffer_t *
 		header;
 	mget_buffer_t *
@@ -1225,6 +1227,8 @@ const char *
 	http_parse_connection(const char *s, char *keep_alive) G_GNUC_MGET_NONNULL_ALL;
 const char *
 	http_parse_setcookie(const char *s, MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL_ALL;
+const char *
+	http_parse_etag(const char *s, const char **etag) G_GNUC_MGET_NONNULL((1));
 
 char *
 	http_print_date(time_t t, char *buf, size_t bufsize) G_GNUC_MGET_NONNULL_ALL;

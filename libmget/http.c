@@ -515,6 +515,18 @@ const char *http_parse_connection(const char *s, char *keep_alive)
 	return s;
 }
 
+const char *http_parse_etag(const char *s, const char **etag)
+{
+	const char *p;
+
+	while (isblank(*s)) s++;
+
+	for (p = s; *s && !isblank(*s); s++);
+	*etag = strndup(p, s - p);
+
+	return s;
+}
+
 /*
 // returns GMT/UTC time as an integer of format YYYYMMDDHHMMSS
 // this makes us independant from size of time_t - work around possible year 2038 problems
@@ -1033,6 +1045,11 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 				resp->icy_metaint = atoi(s);
 			}
 			break;
+		case 'e':
+			if (!strncasecmp(name, "ETag", namesize)) {
+				http_parse_etag(s, &resp->etag);
+			}
+			break;
 		default:
 			break;
 		}
@@ -1106,6 +1123,7 @@ void http_free_response(MGET_HTTP_RESPONSE **resp)
 		xfree((*resp)->content_type_encoding);
 		xfree((*resp)->content_filename);
 		xfree((*resp)->location);
+		xfree((*resp)->etag);
 		// xfree((*resp)->reason);
 		mget_buffer_free(&(*resp)->header);
 		mget_buffer_free(&(*resp)->body);
