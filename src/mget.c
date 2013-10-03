@@ -1127,12 +1127,10 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, MGE
 	for (int it = 0; it < mget_vector_size(res->uris); it++) {
 		MGET_HTML_PARSED_URL *html_url = mget_vector_get(res->uris, it);
 		mget_string_t *url = &html_url->url;
-		char *tmp;
 
 		// Blacklist for URLs before they are processed
-		if (mget_hashmap_put_noalloc(known_urls, tmp = strndup(url->p, url->len), NULL)) {
+		if (mget_hashmap_put_noalloc(known_urls, strndup(url->p, url->len), NULL)) {
 			// error_printf(_("URL '%.*s' already known\n"), (int)url->len, url->p);
-			xfree(tmp);
 			continue;
 		} else {
 			// error_printf(_("URL '%.*s' added\n"), (int)url->len, url->p);
