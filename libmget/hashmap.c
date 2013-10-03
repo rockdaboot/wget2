@@ -175,7 +175,6 @@ int mget_hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value
 				if (key != entry->value) {
 					if (h->destructor)
 						h->destructor((void *)key, entry->value);
-					xfree(key);
 				} else {
 					if (h->destructor)
 						h->destructor(NULL, entry->value);
@@ -189,6 +188,7 @@ int mget_hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value
 			entry->value = (void *)value;
 		}
 
+		xfree(key);
 		return 1;
 	}
 
