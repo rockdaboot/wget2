@@ -224,8 +224,9 @@ const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 			mget_buffer_t path_buf;
 			const char *p;
 			int n;
+			char sbuf[256];
 
-			mget_buffer_init(&path_buf, alloca(256), 256);
+			mget_buffer_init(&path_buf, sbuf, sizeof(sbuf));
 			mget_iri_get_path(iri, &path_buf, config.local_encoding);
 
 			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
@@ -505,10 +506,10 @@ static void add_url(JOB *job, const char *encoding, const char *url, int redirec
 
 	if (new_job || (new_job = queue_add(blacklist_add(iri)))) {
 		if (!config.output_document) {
-			if (!redirection || config.trust_server_names)
+			if (!redirection || config.trust_server_names || !job)
 				new_job->local_filename = get_local_filename(new_job->iri);
 			else
-				new_job->local_filename = strdup(job->local_filename);
+				new_job->local_filename = mget_strdup(job->local_filename);
 		}
 
 		if (job) {
@@ -1341,7 +1342,7 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 		flag = O_APPEND;
 	}
 
-	if (config.adjust_extension && resp && resp->content_type) {
+	if (config.adjust_extension && resp->content_type) {
 		const char *ext;
 
 		if (!strcasecmp(resp->content_type, "text/html")) {

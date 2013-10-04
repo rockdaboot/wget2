@@ -119,7 +119,7 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 		NULL);
 
 	if (resp && resp->code == 200 && !strcasecmp(resp->content_type, "audio/x-mpegurl")) {
-		char *p1 = resp->body->data, *p2 = p1;
+		char *p1 = resp->body->data, *p2;
 
 		while (isspace(*p1)) p1++; // skip whitespace
 		for (p2 = p1; !isspace(*p2);) p2++;

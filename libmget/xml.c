@@ -169,7 +169,7 @@ static const char *getToken(XML_CONTEXT *context)
 		if (!(c = *context->p++)) return NULL;
 		if (c != '>') {
 			context->p--;
-			c = '?';
+			// c = '?';
 		} else {
 			context->token_len = 2;
 			return context->token;

@@ -41,9 +41,13 @@
 #define xcalloc mget_calloc
 #define xrealloc mget_realloc
 
+/*
+ * Attribute defines specific for clang (especially for improving clang analyzer)
+ * Using G_GNU_ as prefix to let gtk-doc recognize the attributes.
+ */
 
 /*
- * Attribute defines
+ * Attribute defines for GCC and compatible compilers
  * Using G_GNU_ as prefix to let gtk-doc recognize the attributes.
  */
 
@@ -63,10 +67,10 @@
 
 #if GCC_VERSION_AT_LEAST(2,95)
 #	define G_GNUC_MGET_PRINTF_FORMAT(a, b) __attribute__ ((format (printf, a, b)))
-#define G_GNUC_MGET_UNUSED __attribute__ ((unused))
+#	define G_GNUC_MGET_UNUSED __attribute__ ((unused))
 #else
 #	define G_GNUC_MGET_PRINT_FORMAT(a, b)
-#define G_GNUC_MGET_UNUSED
+#	define G_GNUC_MGET_UNUSED
 #endif
 
 #if GCC_VERSION_AT_LEAST(2,96)
@@ -120,9 +124,9 @@
 #endif
 
 #if GCC_VERSION_AT_LEAST(4,0)
-#define G_GNUC_MGET_NULL_TERMINATED __attribute__((__sentinel__))
+#	define G_GNUC_MGET_NULL_TERMINATED __attribute__((__sentinel__))
 #else
-#define G_GNUC_MGET_NULL_TERMINATED
+#	define G_GNUC_MGET_NULL_TERMINATED
 #endif
 
 #if defined(__clang__)
@@ -138,23 +142,23 @@
 
 // Let C++ include C headers
 #ifdef  __cplusplus
-# define MGET_BEGIN_DECLS  extern "C" {
-# define MGET_END_DECLS    }
+#	define MGET_BEGIN_DECLS  extern "C" {
+#	define MGET_END_DECLS    }
 #else
-# define MGET_BEGIN_DECLS
-# define MGET_END_DECLS
+#	define MGET_BEGIN_DECLS
+#	define MGET_END_DECLS
 #endif
 
 #if ENABLE_NLS != 0
-	#include <libintl.h>
-	#define _(STRING) gettext(STRING)
+#	include <libintl.h>
+#	define _(STRING) gettext(STRING)
 #else
-	#define _(STRING) STRING
-	#define ngettext(STRING1,STRING2,N) STRING2
+#	define _(STRING) STRING
+#	define ngettext(STRING1,STRING2,N) STRING2
 #endif
 
 //#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901
-//#define restrict
+//#	define restrict
 //#endif
 
 #undef GCC_VERSION_AT_LEAST

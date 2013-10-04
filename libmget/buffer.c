@@ -47,19 +47,18 @@ mget_buffer_t *mget_buffer_init(mget_buffer_t *buf, char *data, size_t size)
 	} else
 		buf->release_buf = 0;
 
-	if (data) {
-		if (likely(size))
-			buf->size = size - 1;
+	if (data && likely(size)) {
+		buf->size = size - 1;
 		buf->data = data;
-		buf->release_data = 0;
 		*buf->data = 0; // always 0 terminate data to allow string functions
+		buf->release_data = 0;
 	} else {
 		if (!size)
 			size = 128;
 		buf->size = size;
 		buf->data = xmalloc(size + 1);
-		buf->release_data = 1;
 		*buf->data = 0; // always 0 terminate data to allow string functions
+		buf->release_data = 1;
 	}
 
 	buf->length = 0;
