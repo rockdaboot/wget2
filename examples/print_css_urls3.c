@@ -33,7 +33,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stringprep.h> // from libidn
 
 #include <libmget.h>
 
