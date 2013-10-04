@@ -175,7 +175,12 @@ AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support])
 if test $with_libidn2 != "no"
 then
   AC_CHECK_LIB(idn2, idn2_lookup_u8, [with_libidn2=yes; AC_SUBST(IDN_LIBS, "-lidn2") AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2])], [with_libidn2=no; AC_MSG_WARN(*** LIBIDN2 was not found. You will not able to use IDN2008 support)])
+  if test x$with_libidn2 = "xyes"
+  then
+    AC_CHECK_LIB(unistring, u8_tolower, [with_libunistring=yes; AC_SUBST(IDN_LIBS, "-lidn2 -lunistring") AC_DEFINE([WITH_LIBUNISTRING], [1], [Use libunistring])], [with_libunistring=no; AC_MSG_WARN(*** LIBUNISTRING was not found. You will not able to use IDN2008 on uppercase domains)])
+  fi
 fi
+AM_CONDITIONAL([WITH_LIBUNISTRING], [test $with_libunistring = "yes"])
 AM_CONDITIONAL([WITH_LIBIDN2], [test $with_libidn2 = "yes"])
 
 if test x$with_libidn2 != "xyes"
@@ -200,7 +205,7 @@ AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $IDN_LIBS $LIBS")
 AC_CHECK_HEADERS([\
  fcntl.h inttypes.h libintl.h locale.h netdb.h netinet/in.h stddef.h stdlib.h string.h\
  strings.h sys/socket.h sys/time.h unistd.h crypt.h poll.h idna.h idn2.h stringprep.h\
- langinfo.h])
+ langinfo.h unicase.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL

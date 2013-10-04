@@ -35,16 +35,19 @@
 #define euc_jp_hostname "\272\243\306\374\244\317.\306\374\313\334"
 #define punycoded_hostname "xn--v9ju72g90p.xn--wgv71a"
 
+// The charset in the document's META tag is stated wrong by purpose (UTF-8).
+// The charset in the response header has priority and is correct (EUC-JP)
+
 int main(void)
 {
 	mget_test_url_t urls[]={
 		{	.name = "http://start-here.com/start.html",
 			.code = "200 Dontcare",
 			.body =
-				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=EUC-JP\" />" \
+				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />" \
 				"<a href=\"http://" euc_jp_hostname "/\">The link</a>",
 			.headers = {
-				"Content-Type: text/html; charset=UTF-8",
+				"Content-Type: text/html; charset=EUC-JP",
 			}
 		},
 		{	.name = "http://" punycoded_hostname "/index.html",

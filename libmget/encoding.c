@@ -48,6 +48,11 @@
 # include <idna.h>
 #endif
 
+#if defined(HAVE_UNICASE_H) && defined(WITH_LIBUNISTRING)
+#include <unicase.h>
+#include <unistr.h>
+#endif
+
 #include <libmget.h>
 #include "private.h"
 
@@ -128,17 +133,48 @@ const char *mget_str_to_ascii(const char *src)
 	if (mget_str_needs_encoding(src)) {
 		char *asc = NULL;
 		int rc;
+#ifdef WITH_LIBUNISTRING
+		uint8_t *lower, resbuf[256];
+		size_t len = sizeof(resbuf) - 1; // leave space for additional \0 byte
 
+		// we need a conversion to lowercase
+		lower = u8_tolower((uint8_t *)src, u8_strlen((uint8_t *)src), 0, UNINORM_NFKC, resbuf, &len);
+		if (!lower) {
+			printf("u8_tolower(%s) failed (%d)\n", src, errno);
+			return src;
+		}
+
+		// u8_tolower() does not terminate the result string
+		if (lower == resbuf) {
+			lower[len]=0;
+		} else {
+			uint8_t *tmp = lower;
+			lower = (uint8_t *)strndup((char *)lower, len);
+			xfree(tmp);
+		}
+
+		if ((rc = idn2_lookup_u8(lower, (uint8_t **)&asc, 0)) == IDN2_OK) {
+			debug_printf("idn2 '%s' -> '%s'\n", src, asc);
+			src = asc;
+		} else
+			error_printf(_("toASCII(%s) failed (%d): %s\n"), lower, rc, idn2_strerror(rc));
+
+		if (lower != resbuf)
+			xfree(lower);
+#else
 		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, 0)) == IDN2_OK) {
 			debug_printf("idn2 '%s' -> '%s'\n", src, asc);
 			src = asc;
 		} else
-			error_printf(_("toASCII failed (%d): %s\n"), rc, idn2_strerror(rc));
+			error_printf(_("toASCII(%s) failed (%d): %s\n"), src, rc, idn2_strerror(rc));
+#endif
 	}
 #elif WITH_LIBIDN
 	if (mget_str_needs_encoding(src)) {
 		char *asc = NULL;
 		int rc;
+
+		// idna_to_ascii_8z() automatically converts UTF-8 to lowercase
 
 		if ((rc = idna_to_ascii_8z(src, &asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
 			// debug_printf("toASCII '%s' -> '%s'\n", src, asc);
