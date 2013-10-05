@@ -326,7 +326,7 @@ static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encodi
 	iri = mget_iri_parse_base(base, url, encoding);
 
 	if (!iri) {
-		error_printf(_("Cannot resolve relative URI %s\n"), url);
+		error_printf(_("Cannot resolve URI '%s'\n"), url);
 		return NULL;
 	}
 
@@ -418,6 +418,11 @@ static void add_url(JOB *job, const char *encoding, const char *url, int redirec
 	}
 
 	iri = mget_iri_parse(url, encoding);
+
+	if (!iri) {
+		error_printf(_("Cannot resolve URI '%s'\n"), url);
+		return;
+	}
 
 	if (config.https_only && iri->scheme != IRI_SCHEME_HTTPS) {
 		info_printf(_("URL '%s' not followed (https-only requested)\n"), url);
