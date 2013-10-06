@@ -96,19 +96,19 @@ static void _test_buffer(mget_buffer_t *buf, const char *name)
 
 static void test_buffer(void)
 {
-	char buf_static[16];
+	char sbuf[16];
 	mget_buffer_t buf, *bufp;
 
 	// testing buffer on stack, using initial stack memory
 	// without resizing
 
-	mget_buffer_init(&buf, buf_static, sizeof(buf_static));
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 	mget_buffer_deinit(&buf);
 
 	// testing buffer on stack, using initial stack memory
 	// with resizing
 
-	mget_buffer_init(&buf, buf_static, sizeof(buf_static));
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 	_test_buffer(&buf, "Test 1");
 	mget_buffer_deinit(&buf);
 
@@ -128,20 +128,20 @@ static void test_buffer(void)
 	// testing buffer on heap, using initial stack memory
 	// without resizing
 
-	bufp = mget_buffer_init(NULL, buf_static, sizeof(buf_static));
+	bufp = mget_buffer_init(NULL, sbuf, sizeof(sbuf));
 	mget_buffer_deinit(bufp);
 
-	bufp = mget_buffer_init(NULL, buf_static, sizeof(buf_static));
+	bufp = mget_buffer_init(NULL, sbuf, sizeof(sbuf));
 	mget_buffer_free(&bufp);
 
 	// testing buffer on heap, using initial stack memory
 	// with resizing
 
-	bufp = mget_buffer_init(NULL, buf_static, sizeof(buf_static));
+	bufp = mget_buffer_init(NULL, sbuf, sizeof(sbuf));
 	_test_buffer(bufp, "Test 3");
 	mget_buffer_deinit(bufp);
 
-	bufp = mget_buffer_init(NULL, buf_static, sizeof(buf_static));
+	bufp = mget_buffer_init(NULL, sbuf, sizeof(sbuf));
 	_test_buffer(bufp, "Test 4");
 	mget_buffer_free(&bufp);
 
@@ -160,7 +160,7 @@ static void test_buffer(void)
 
 	// check that appending works
 
-	mget_buffer_init(&buf, buf_static, sizeof(buf_static));
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 	mget_buffer_strcpy(&buf, "A");
 	mget_buffer_strcat(&buf, "B");
 	mget_buffer_memcat(&buf, "C", 1);

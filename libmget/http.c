@@ -1450,7 +1450,7 @@ MGET_HTTP_RESPONSE *http_get_response_cb(
 			debug_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 
 			if (flags&MGET_HTTP_RESPONSE_KEEPHEADER) {
-				mget_buffer_t *header = mget_buffer_init(NULL, NULL, p - buf + 4);
+				mget_buffer_t *header = mget_buffer_alloc(p - buf + 4);
 				mget_buffer_memcpy(header, buf, p - buf);
 				mget_buffer_memcat(header, "\r\n\r\n", 4);
 

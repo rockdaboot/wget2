@@ -36,8 +36,9 @@ int main(void)
 {
 	int it;
 	mget_buffer_t buf;
+	char sbuf[128];
 
-	mget_buffer_init(&buf, (char[128]){}, 128);
+	mget_buffer_init(&buf, &sbuf, sizeof(sbuf));
 
 	for (it = 0; it < 10000000; it++) {
 		// buffer: 0.239s  libc: 0.018s (gcc replaces sprintf(%s) by strcpy())
