@@ -1,7 +1,7 @@
 Mget - multithreaded metalink/file/website downloader and library
 =================================================================
 
-This is a Wget-like tool and library written in C.
+This is a multithreaded Wget-like tool and library written in C.
 
 Designed and written from scratch it requires a C99 and Posix compliant
 development environment.
@@ -32,6 +32,8 @@ Many Wget options are already implemented, but some are still missing.
 
 The basic functionality is implemented, like:
 
+- Internationalized Domain Names in Applications (compile-selectable IDNA2008 or IDNA2003)
+- ICEcast / SHOUTcast support via library (see examples/getstream.c)
 - respect /robots.txt "Robot Exclusion Standard" and `<META name="robots" ...>`
 - new option --secure-protocol=PFS to have TLS only plus forcing Perfect Forward Secrecy (PFS)
 - use TCP Fast Open if available
@@ -79,11 +81,10 @@ This is next on my list:
   [Chromium HSTS domain list](https://src.chromium.org/viewvc/chrome/trunk/src/net/base/transport_security_state_static.json)
 - read credentials from secure wallets (e.g. kwallet, firefox, maybe an own tool ?)
 - compression on TLS/SSL layer (non-standard GnuTLS extension)
-- request pipelining (using client cookies)
-- SPDY protocol
+- HTTP request pipelining (using client cookies)
+- SPDY / HTTP2.0 protocol
 - respect data-urls
 - Atom / RSS / Podcast / Streaming (.m3u, etc. formats)
-- ICEcast support
 - ftp support
 - https with openssl
 - a progress display
@@ -103,7 +104,7 @@ The following packages are needed to build Mget:
 * gettext >= 0.18.1
 * libz >= 1.2.3
 * libgnutls >= 2.4.2
-* libidn >= 1.25
+* libidn2 >= 0.9 + libunistring >= 0.9.3 (libidn >= 1.25 if you don't have libidn2)
 * flex >= 2.5.35
 
 The versions are recommended, but older versions are supposed to work.
