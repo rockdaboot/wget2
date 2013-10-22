@@ -84,7 +84,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"Usage: mget [options...] <url>...\n"
 		"\n"
 		"Startup:\n"
-		"  -V  --version           Display the version of Wget and exit.\n"
+		"  -V  --version           Display the version of Mget and exit.\n"
 		"  -h  --help              Print this help.\n"
 		"  -v  --verbose           Print more messages. (default: on)\n"
 		"  -q  --quiet             Print no messages except debugging messages. (default: off)\n"
