@@ -62,6 +62,7 @@ static struct _config {
 		*private_key;
 	char
 		check_certificate,
+		check_hostname,
 		cert_type,
 		private_key_type,
 		print_info;
@@ -92,6 +93,7 @@ void mget_ssl_set_config_int(int key, int value)
 {
 	switch (key) {
 	case MGET_SSL_CHECK_CERTIFICATE: _config.check_certificate = (char)value; break;
+	case MGET_SSL_CHECK_HOSTNAME: _config.check_hostname = (char)value; break;
 	case MGET_SSL_CERT_TYPE: _config.cert_type = (char)value; break;
 	case MGET_SSL_PRIVATE_KEY_TYPE: _config.private_key_type = (char)value; break;
 	case MGET_SSL_PRINT_INFO: _config.print_info = (char)value; break;
@@ -390,10 +392,17 @@ static int _verify_certificate_callback(gnutls_session_t session)
 				ret = -1;
 			}
 
-			if (it == 0 && !gnutls_x509_crt_check_hostname(cert, hostname)) {
-				error_printf(_("%s: The certificate's owner does not match hostname '%s'\n"), tag, hostname);
-				ret = -1;
+			if (_config.check_hostname) {
+				if (it == 0 && !gnutls_x509_crt_check_hostname(cert, hostname)) {
+					error_printf(_("%s: The certificate's owner does not match hostname '%s'\n"), tag, hostname);
+					ret = -1;
+				}
+			} else {
+				if (it == 0 && !gnutls_x509_crt_check_hostname(cert, hostname)) {
+					error_printf(_("WARNING: The certificate's owner does not match hostname '%s'\n"), hostname);
+				}
 			}
+
 		}
 	} else {
 		error_printf(_("%s: No certificate was found!\n"), tag);

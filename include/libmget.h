@@ -1042,9 +1042,10 @@ ssize_t
 #define MGET_SSL_CERT_FILE         4
 #define MGET_SSL_PRIVATE_KEY       5
 #define MGET_SSL_CHECK_CERTIFICATE 6
-#define MGET_SSL_CERT_TYPE         7
-#define MGET_SSL_PRIVATE_KEY_TYPE  8
-#define MGET_SSL_PRINT_INFO        9
+#define MGET_SSL_CHECK_HOSTNAME    7
+#define MGET_SSL_CERT_TYPE         8
+#define MGET_SSL_PRIVATE_KEY_TYPE  9
+#define MGET_SSL_PRINT_INFO        10
 
 void
 	mget_ssl_init(void);

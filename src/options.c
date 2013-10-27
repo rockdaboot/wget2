@@ -158,6 +158,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --secure-protocol   Set protocol to be used (auto, SSLv3, TLSv1, PFS). (default: auto)\n"
 		"                          Or use GnuTLS priority strings, e.g. NORMAL:-VERS-SSL3.0:-RSA\n"
 		"      --check-certificate Check the server's certificate. (default: on)\n"
+		"      --check-hostname    Check the server's certificate's hostname. (default: on)\n"
 		"      --certificate       File with client certificate.\n"
 		"      --private-key       File with private key.\n"
 		"      --private-key-type  Type of the private key (PEM or DER). (default: PEM)\n"
@@ -398,6 +399,7 @@ struct config config = {
 	.user_agent = "Mget/"PACKAGE_VERSION,
 	.verbose = 1,
 	.check_certificate=1,
+	.check_hostname=1,
 	.cert_type = MGET_SSL_X509_FMT_PEM,
 	.private_key_type = MGET_SSL_X509_FMT_PEM,
 	.secure_protocol = "AUTO",
@@ -430,6 +432,7 @@ static const struct option options[] = {
 	{ "certificate", &config.cert_file, parse_string, 1, 0 },
 	{ "certificate-type", &config.cert_type, parse_cert_type, 1, 0 },
 	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0 },
+	{ "check-hostname", &config.check_hostname, parse_bool, 0, 0 },
 	{ "clobber", &config.clobber, parse_bool, 0, 0 },
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0 },
 	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0 },
@@ -1048,6 +1051,7 @@ int init(int argc, const char *const *argv)
 
 	// SSL settings
 	mget_ssl_set_config_int(MGET_SSL_CHECK_CERTIFICATE, config.check_certificate);
+	mget_ssl_set_config_int(MGET_SSL_CHECK_HOSTNAME, config.check_hostname);
 	mget_ssl_set_config_int(MGET_SSL_CERT_TYPE, config.cert_type);
 	mget_ssl_set_config_int(MGET_SSL_PRIVATE_KEY_TYPE, config.private_key_type);
 	mget_ssl_set_config_int(MGET_SSL_PRINT_INFO, config.debug);

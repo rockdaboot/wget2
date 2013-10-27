@@ -118,6 +118,7 @@ struct config {
 		spider,
 		dns_caching,
 		check_certificate,
+		check_hostname,
 		cert_type, // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
 		private_key_type, // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
 		span_hosts,

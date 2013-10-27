@@ -237,7 +237,7 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 		*s++ = 0;
 
 		// find the scheme in our static list of supported schemes
-		// for later comparisons we compare pointers (avoiding strcasecmnp())
+		// for later comparisons we compare pointers (avoiding strcasecmp())
 		iri->scheme = p;
 		for (it = 0; iri_schemes[it]; it++) {
 			if (!strcasecmp(iri_schemes[it], p)) {
