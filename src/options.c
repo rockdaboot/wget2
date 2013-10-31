@@ -132,6 +132,8 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"  -p  --page-requisites   Download all necessary files to display a HTML page\n"
 		"      --parent            Ascend above parent directory. (default: on)\n"
 		"      --trust-server-names  On redirection use the server's filename. (default: off)\n"
+		"      --chunk-size        Download large files in multithreaded chunks. (default: 0 (=off))\n"
+		"                          Example: mget --chunk-size=1M\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -433,6 +435,7 @@ static const struct option options[] = {
 	{ "certificate-type", &config.cert_type, parse_cert_type, 1, 0 },
 	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0 },
 	{ "check-hostname", &config.check_hostname, parse_bool, 0, 0 },
+	{ "chunk-size", &config.chunk_size, parse_numbytes, 1, 0 },
 	{ "clobber", &config.clobber, parse_bool, 0, 0 },
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0 },
 	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0 },

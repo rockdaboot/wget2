@@ -30,6 +30,7 @@
  * RFC 3230 Digest HTTP Header
  *
  * Some examples to test:
+ * http://go-oo.mirrorbrain.org/stable/linux-x86/3.2.1/ooobasis3.2-af-calc-3.2.1-9505.i586.rpm
  * http://go-oo.mirrorbrain.org/stable/linux-x86/3.2.1/ooobasis3.2-ar-help-3.2.1-9505.i586.rpm
  * http://download.services.openoffice.org/files/stable/
  * http://go-oo.mirrorbrain.org/evolution/stable/Evolution-2.24.0.exe
@@ -119,8 +120,8 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 					metalink->pieces = mget_vector_create(32, 32, NULL);
 
 				piece.length = ctx->length;
-				strcpy(piece.hash.type,ctx->hash_type);
-				strcpy(piece.hash.hash_hex,ctx->hash);
+				strcpy(piece.hash.type, ctx->hash_type);
+				strcpy(piece.hash.hash_hex, ctx->hash);
 
 				piecep = mget_vector_get(metalink->pieces, mget_vector_size(metalink->pieces) - 1);
 				if (piecep)
@@ -232,8 +233,8 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 					metalink->pieces = mget_vector_create(32, 32, NULL);
 
 				piece.length = ctx->length;
-				strcpy(piece.hash.type,ctx->hash_type);
-				strcpy(piece.hash.hash_hex,ctx->hash);
+				strcpy(piece.hash.type, ctx->hash_type);
+				strcpy(piece.hash.hash_hex, ctx->hash);
 
 				piecep = mget_vector_get(metalink->pieces, mget_vector_size(metalink->pieces) - 1);
 				if (piecep)

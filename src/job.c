@@ -207,6 +207,13 @@ int job_validate_file(JOB *job)
 
 	fsize = metalink->size;
 
+	if (mget_vector_size(metalink->hashes) == 0) {
+		// multipart non-metalink download: do not clobber if file has expected size
+		if (stat(metalink->name, &st) == 0 && st.st_size == fsize) {
+			return 1; // we are done
+		}
+	}
+
 	// truncate file if needed
 	if (stat(metalink->name, &st) == 0 && st.st_size > fsize) {
 		if (truncate(metalink->name, fsize) == -1)
@@ -223,15 +230,14 @@ int job_validate_file(JOB *job)
 			if ((rc = check_file_fd(hash, fd)) == -1)
 				continue; // hash type not available, try next
 
-			if (rc == 1) {
-				info_printf(_("Checksum OK for '%s'\n"), metalink->name);
-				return 1; // we are done
-			}
-
 			break;
 		}
 
-		if (rc == -1) {
+		if (rc == 1) {
+			info_printf(_("Checksum OK for '%s'\n"), metalink->name);
+			return 1; // we are done
+		}
+		else if (rc == -1) {
 			// failed to check file, continue as if file is ok
 			info_printf(_("Failed to build checksum, assuming file to be OK\n"));
 			return 1; // we are done

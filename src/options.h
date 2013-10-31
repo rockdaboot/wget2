@@ -75,6 +75,8 @@ struct config {
 	MGET_STRINGMAP
 		*domains,
 		*exclude_domains;
+	size_t
+		chunk_size;
 	long long
 		quota;
 	int

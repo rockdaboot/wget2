@@ -1377,7 +1377,7 @@ typedef struct {
 } MGET_METALINK_PIECE;
 
 typedef struct {
-	char
+	const char
 		*name;
 	MGET_VECTOR
 		*mirrors,

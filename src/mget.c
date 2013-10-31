@@ -840,7 +840,7 @@ void *downloader_thread(void *p)
 		// hey, we got a job...
 		job = downloader->job;
 
-		if (config.spider && !job->deferred) {
+		if ((config.spider || config.chunk_size) && !job->deferred) {
 			// In spider mode, we first make a HEAD request.
 			// If the Content-Type header gives us not a parsable type, we are done.
 			for (int tries = 0; !resp && tries < 3; tries++) {
@@ -856,25 +856,60 @@ void *downloader_thread(void *p)
 			if (resp->code == 404)
 				set_exit_status(8);
 
-			if (resp->code != 200 || !resp->content_type)
-				goto ready;
-
-			if (strcasecmp(resp->content_type, "text/html") && strcasecmp(resp->content_type, "text/css")
-				&& strcasecmp(resp->content_type, "application/xhtml+xml"))
-				goto ready;
-
-			if (resp->etag) {
-				mget_thread_mutex_lock(&etag_mutex);
-				if (!etags)
-					etags = mget_stringmap_create(128);
-				int rc = mget_stringmap_put_noalloc(etags, resp->etag, NULL);
-				resp->etag = NULL;
-				mget_thread_mutex_unlock(&etag_mutex);
-
-				if (rc) {
-					info_printf("Not scanning '%s' (known ETag)\n", job->iri->uri);
+			if (config.spider) {
+				if (resp->code != 200 || !resp->content_type)
 					goto ready;
+
+				if (strcasecmp(resp->content_type, "text/html") && strcasecmp(resp->content_type, "text/css")
+					&& strcasecmp(resp->content_type, "application/xhtml+xml"))
+					goto ready;
+
+				if (resp->etag) {
+					mget_thread_mutex_lock(&etag_mutex);
+					if (!etags)
+						etags = mget_stringmap_create(128);
+					int rc = mget_stringmap_put_noalloc(etags, resp->etag, NULL);
+					resp->etag = NULL;
+					mget_thread_mutex_unlock(&etag_mutex);
+
+					if (rc) {
+						info_printf("Not scanning '%s' (known ETag)\n", job->iri->uri);
+						goto ready;
+					}
 				}
+			} else if (config.chunk_size && resp->content_length > config.chunk_size) {
+				// create metalink structure without hashing
+				MGET_METALINK_PIECE piece = { .length = config.chunk_size };
+				MGET_METALINK_MIRROR mirror;
+				MGET_METALINK *metalink = xcalloc(1, sizeof(MGET_METALINK));
+				metalink->size = resp->content_length; // total file size
+				metalink->name = mget_strdup(job->local_filename);
+
+				int npieces = (resp->content_length + config.chunk_size - 1) / config.chunk_size;
+				metalink->pieces = mget_vector_create(npieces, 1, NULL);
+				for (int it = 0; it < npieces; it++) {
+					piece.position = it * config.chunk_size;
+					mget_vector_add(metalink->pieces, &piece, sizeof(MGET_METALINK_PIECE));
+				}
+
+				metalink->mirrors = mget_vector_create(1, 1, NULL);
+				// mget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
+
+				memset(&mirror, 0, sizeof(MGET_METALINK_MIRROR));
+				strcpy(mirror.location, "-");
+				// mirror.iri = mget_iri_parse(job->iri, NULL);
+				mirror.iri = job->iri;
+				mget_vector_add(metalink->mirrors, &mirror, sizeof(MGET_METALINK_MIRROR));
+
+				job->metalink = metalink;
+
+				// start or resume downloading
+				if (!job_validate_file(job)) {
+					// wake up sleeping workers
+					mget_thread_cond_signal(&worker_cond);
+					job = NULL; // do not remove this job from queue yet
+				} // else file already downloaded and checksum ok
+				goto ready;
 			}
 
 			http_free_response(&resp);
@@ -945,12 +980,10 @@ void *downloader_thread(void *p)
 			if (metalink) {
 				// found a link to a metalink3 or metalink4 description, create a new job
 				add_url(job, "utf-8", metalink->uri, 0);
-				// dprintf(sockfd, "add uri - %s\n", metalink->uri);
 				goto ready;
 			} else if (top_link) {
 				// no metalink4 description found, create a new job
 				add_url(job, "utf-8", top_link->uri, 0);
-				// dprintf(sockfd, "add uri - %s\n", top_link->uri);
 				goto ready;
 			}
 		}
@@ -1515,15 +1548,16 @@ void download_part(DOWNLOADER *downloader)
 		mget_thread_mutex_unlock(&downloader_mutex);
 
 		// debug_printf("all_done=%d\n",all_done);
-		if (all_done && mget_vector_size(job->metalink->hashes) > 0) {
+		if (all_done) {
+//		if (all_done && mget_vector_size(job->metalink->hashes) > 0) {
 			// check integrity of complete file
 			print_status(downloader, "%s checking...\n", job->local_filename);
 			if (job_validate_file(job)) {
-				debug_printf("checksum ok");
+				debug_printf("checksum ok\n");
 				queue_del(job);
 				mget_thread_cond_signal(&main_cond);
 			} else
-				debug_printf("checksum failed");
+				debug_printf("checksum failed\n");
 		}
 	} else {
 		print_status(downloader, "part %d failed\n", part->id);

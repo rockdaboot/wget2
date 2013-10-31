@@ -1473,7 +1473,7 @@ MGET_HTTP_RESPONSE *http_get_response_cb(
 
 			if (req && !strcasecmp(req->method, "HEAD"))
 				goto cleanup; // a HEAD response won't have a body
-
+				
 			p += 4; // skip \r\n\r\n to point to body
 			break;
 		}
@@ -1687,7 +1687,8 @@ MGET_HTTP_RESPONSE *http_get_response(MGET_HTTP_CONNECTION *conn,
 
 	if (resp) {
 		resp->body = body;
-		resp->content_length = body->length;
+		if (!strcasecmp(req->method, "GET"))
+			resp->content_length = body->length;
 	} else {
 		mget_buffer_free(&body);
 	}

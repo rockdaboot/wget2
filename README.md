@@ -32,6 +32,7 @@ Many Wget options are already implemented, but some are still missing.
 
 The basic functionality is implemented, like:
 
+- Multithreaded download of single files (option --chunk-size)
 - Internationalized Domain Names in Applications (compile-selectable IDNA2008 or IDNA2003)
 - ICEcast / SHOUTcast support via library (see examples/getstream.c)
 - respect /robots.txt "Robot Exclusion Standard" and `<META name="robots" ...>`
