@@ -87,9 +87,9 @@ static const unsigned char
 		['\t'] = HTTP_CTYPE_SEPERATOR
 	};
 
-static MGET_IRI
-	*http_proxy,
-	*https_proxy;
+static MGET_VECTOR
+	*http_proxies,
+	*https_proxies;
 
 int http_isseperator(char c)
 {
@@ -1297,6 +1297,13 @@ void http_set_config_int(int key, int value)
 
 MGET_HTTP_CONNECTION *http_open(const MGET_IRI *iri)
 {
+	static int next_http_proxy = -1;
+	static int next_https_proxy = -1;
+	static mget_thread_mutex_t
+		mutex = MGET_THREAD_MUTEX_INITIALIZER;
+
+	MGET_IRI
+		*proxy;
 	MGET_HTTP_CONNECTION
 		*conn = xcalloc(1, sizeof(MGET_HTTP_CONNECTION));
 	const char
@@ -1308,13 +1315,20 @@ MGET_HTTP_CONNECTION *http_open(const MGET_IRI *iri)
 	if (!conn)
 		return NULL;
 
-	if (iri->scheme == IRI_SCHEME_HTTP && http_proxy) {
-		host = http_proxy->host;
-		port = http_proxy->resolv_port;
-	} else if (iri->scheme == IRI_SCHEME_HTTPS && https_proxy) {
-		host = https_proxy->host;
-		port = https_proxy->resolv_port;
-//		port = https_proxy->port && *https_proxy->port) ? https_proxy->port : https_proxy->scheme;
+	if (iri->scheme == IRI_SCHEME_HTTP && http_proxies) {
+		mget_thread_mutex_lock(&mutex);
+		proxy = mget_vector_get(http_proxies, (++next_http_proxy) % mget_vector_size(http_proxies));
+		mget_thread_mutex_unlock(&mutex);
+
+		host = proxy->host;
+		port = proxy->resolv_port;
+	} else if (iri->scheme == IRI_SCHEME_HTTPS && https_proxies) {
+		mget_thread_mutex_lock(&mutex);
+		proxy = mget_vector_get(https_proxies, (++next_https_proxy) % mget_vector_size(https_proxies));
+		mget_thread_mutex_unlock(&mutex);
+
+		host = proxy->host;
+		port = proxy->resolv_port;
 	} else {
 		host = iri->host;
 		port = iri->resolv_port;
@@ -1380,12 +1394,12 @@ ssize_t http_request_to_buffer(MGET_HTTP_REQUEST *req, mget_buffer_t *buf)
 
 	mget_buffer_strcpy(buf, req->method);
 	mget_buffer_memcat(buf, " ", 1);
-	if (http_proxy && req->scheme == IRI_SCHEME_HTTP) {
+	if (req->scheme == IRI_SCHEME_HTTP && mget_vector_size(http_proxies) > 0) {
 		use_proxy = 1;
 		mget_buffer_strcat(buf, req->scheme);
 		mget_buffer_memcat(buf, "://", 3);
 		mget_buffer_bufcat(buf, &req->esc_host);
-	} else if (https_proxy && req->scheme == IRI_SCHEME_HTTPS) {
+	} else if (req->scheme == IRI_SCHEME_HTTPS && mget_vector_size(https_proxies) > 0) {
 		use_proxy = 1;
 		mget_buffer_strcat(buf, req->scheme);
 		mget_buffer_memcat(buf, "://", 3);
@@ -1812,14 +1826,47 @@ HTTP_RESPONSE *http_get_response_file(HTTP_CONNECTION *conn, const char *fname)
 }
  */
 
+static MGET_VECTOR *_parse_proxies(const char *proxy, const char *encoding)
+{
+	if (proxy) {
+		MGET_VECTOR *proxies;
+		const char *s, *p;
+
+		proxies = mget_vector_create(8, -2, NULL);
+		mget_vector_set_destructor(proxies, (void(*)(void *))mget_iri_free);
+
+		for (s = proxy; (p = strchr(s, ',')); s = p + 1) {
+			while (isspace(*s) && s < p) s++;
+
+			if (p != s) {
+				char host[p - s + 1];
+
+				memcpy(host, s, p -s);
+				host[p - s] = 0;
+				mget_vector_add_noalloc(proxies, mget_iri_parse(host, encoding));
+			}
+		}
+		if (*s)
+			mget_vector_add_noalloc(proxies, mget_iri_parse(s, encoding));
+
+		return proxies;
+	}
+
+	return NULL;
+}
+
 void http_set_http_proxy(const char *proxy, const char *encoding)
 {
-	mget_iri_free(&http_proxy);
-	http_proxy = mget_iri_parse(proxy, encoding);
+	if (http_proxies)
+		mget_vector_free(&http_proxies);
+
+	http_proxies = _parse_proxies(proxy, encoding);
 }
 
 void http_set_https_proxy(const char *proxy, const char *encoding)
 {
-	mget_iri_free(&https_proxy);
-	https_proxy = mget_iri_parse(proxy, encoding);
+	if (https_proxies)
+		mget_vector_free(&https_proxies);
+
+	https_proxies = _parse_proxies(proxy, encoding);
 }
