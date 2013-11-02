@@ -10,6 +10,8 @@
 
 int main(void)
 {
+	char *empty = (char *)"";
+
 	mget_info_printf("%d\n", mget_base64_is_string("")); // base64.c
 	mget_buffer_alloc(0); // buffer.c
 	mget_buffer_printf((mget_buffer_t *)1, "%s", ""); // buffer_printf.c
@@ -18,7 +20,7 @@ int main(void)
 	mget_css_parse_buffer((const char *)1, NULL, NULL, NULL); // css.c
 	mget_decompress_close(NULL); // decompressor.c
 	mget_hashmap_create(0, 0, NULL, NULL); // hashmap.c
-	mget_fdgetline((char **)"", (size_t *)1, 0); // io.c
+	mget_fdgetline(&empty, (size_t *)1, 0); // io.c
 	mget_iri_parse("", NULL); // iri.c
 	mget_list_free((MGET_LIST **)1); // list.c
 	mget_debug_write("", 0); // log.c

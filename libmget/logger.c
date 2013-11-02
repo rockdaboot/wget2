@@ -38,7 +38,8 @@
 #include <libmget.h>
 #include "private.h"
 
-static void _logger_vprintf_func(const MGET_LOGGER *logger, const char *fmt, va_list args)
+static void G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((1,2))
+_logger_vprintf_func(const MGET_LOGGER *logger, const char *fmt, va_list args)
 {
 	char sbuf[4096];
 	int err = errno, len;
@@ -70,7 +71,8 @@ static void _logger_write_func(const MGET_LOGGER *logger, const char *buf, size_
 	logger->func(buf, len);
 }
 
-static void _logger_vprintf_file(const MGET_LOGGER *logger, const char *fmt, va_list args)
+static void  G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((1,2))
+_logger_vprintf_file(const MGET_LOGGER *logger, const char *fmt, va_list args)
 {
 	vfprintf(logger->fp, fmt, args);
 }
@@ -80,7 +82,8 @@ static void _logger_write_file(const MGET_LOGGER *logger, const char *buf, size_
 	fwrite(buf, 1, len, logger->fp);
 }
 
-static void _logger_vprintf_fname(const MGET_LOGGER *logger, const char *fmt, va_list args)
+static void G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((1,2))
+_logger_vprintf_fname(const MGET_LOGGER *logger, const char *fmt, va_list args)
 {
 	FILE *fp = fopen(logger->fname, "a");
 

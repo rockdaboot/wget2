@@ -1513,15 +1513,13 @@ void download_part(DOWNLOADER *downloader)
 
 				print_status(downloader, "part %d downloaded\n", part->id);
 				if ((fd = open(metalink->name, O_WRONLY | O_CREAT, 0644)) != -1) {
-					if (lseek(fd, part->position, SEEK_SET) != -1) {
-						ssize_t nbytes;
+					ssize_t nbytes;
 
-						if ((nbytes = write(fd, msg->body->data, msg->body->length)) == (ssize_t)msg->body->length)
-							part->done = 1; // set this when downloaded ok
-						else
-							error_printf(_("Failed to write %zd bytes (%zd)\n"), msg->body->length, nbytes);
-					} else
-						error_printf(_("Failed to lseek to %llu\n"), (unsigned long long)part->position);
+					if ((nbytes = pwrite(fd, msg->body->data, msg->body->length, part->position)) == (ssize_t)msg->body->length)
+						part->done = 1; // set this when downloaded ok
+					else
+						error_printf(_("Failed to pwrite %zd bytes at pos %zd (%zd)\n"), msg->body->length, part->position, nbytes);
+
 					close(fd);
 				} else {
 					error_printf(_("Failed to write open %s\n"), metalink->name);

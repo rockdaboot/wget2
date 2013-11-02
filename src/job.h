@@ -44,7 +44,7 @@ typedef struct {
 		done;
 } PART;
 
-typedef struct JOB {
+struct JOB {
 	MGET_IRI
 		*iri,
 		*referer;
@@ -67,7 +67,7 @@ typedef struct JOB {
 		piece_pos; // where to look up the next (metalink) piece to download
 	char
 		inuse;
-} JOB;
+};
 
 JOB
 	*queue_add(MGET_IRI *iri);
