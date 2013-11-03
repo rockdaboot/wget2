@@ -281,7 +281,8 @@ char *mget_read_file(const char *fname, size_t *size)
 					*size = total;
 
 				if (total != st.st_size)
-					error_printf(_("WARNING: Size of %s changed from %zd to %zd while reading. This may lead to unwanted results !\n"), fname, st.st_size, total);
+					error_printf(_("WARNING: Size of %s changed from %lld to %lld while reading. This may lead to unwanted results !\n"),
+						fname, (long long)st.st_size, (long long)total);
 			} else
 				error_printf(_("Failed to fstat %s\n"), fname);
 

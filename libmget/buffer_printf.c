@@ -384,7 +384,7 @@ size_t mget_buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list 
 
 		case 'p': // %p shortcut
 			p++;
-			_convert_dec(buf, flags | FLAG_HEXLO | FLAG_ALTERNATE, field_width, precision, (long long)va_arg(args, void *));
+			_convert_dec(buf, flags | FLAG_HEXLO | FLAG_ALTERNATE, field_width, precision, (long long)(ptrdiff_t)va_arg(args, void *));
 			continue;
 
 		default:
