@@ -55,7 +55,7 @@ ROBOTS *mget_robots_parse(const char *data)
 	do {
 		if (collect < 2 && !strncasecmp(data, "User-agent:", 11)) {
 			if (!collect) {
-				for (data += 11; *data==' ' || *data == '\t'; data++);
+				for (data += 11; *data == ' ' || *data == '\t'; data++);
 				if (!strncasecmp(data, "mget", 4)) {
 					collect = 1;
 				}
@@ -66,7 +66,7 @@ ROBOTS *mget_robots_parse(const char *data)
 				collect = 2;
 		}
 		else if (collect == 1 && !strncasecmp(data, "Disallow:", 9)) {
-			for (data += 9; *data==' ' || *data == '\t'; data++);
+			for (data += 9; *data == ' ' || *data == '\t'; data++);
 			if (*data == '\r' || *data == '\n' || !*data) {
 				// all allowed
 				mget_vector_free(&robots->paths);

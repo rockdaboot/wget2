@@ -27,11 +27,12 @@ Libmget is licensed under LGPLv3+.
 Development Status
 ------------------
 
-Mget is still in alpha stage but is already useful.<br>
-Many Wget options are already implemented, but some are still missing.
+Mget has already many features that go beyond what Wget provides.<br>
 
-The basic functionality is implemented, like:
+An incomplete list of implemented features:
 
+- Support scanning sitemap files given in robots.txt (Sitemap XML, gzipped Sitemap XML, plain text) including
+sitemap index files.
 - Support arbitrary number of proxies for parallel downloads
 - Multithreaded download of single files (option --chunk-size)
 - Internationalized Domain Names in Applications (compile-selectable IDNA2008 or IDNA2003)
@@ -61,7 +62,7 @@ The basic functionality is implemented, like:
 - DNS lookup cache
 - IPv4 and IPv6 support
 - tested on Debian SID amd64 and OpenBSD 5.0
-- compiled and tested with gcc 4.7.1 and clang 3.1.1
+- compiled and tested with gcc (4.7.1 upto 4.8.2) and clang (3.1.1 upto 3.4)
 - tested regularly with static analysis tools
 - compiled and linked with hardening options proposed by the Debian project
 
@@ -81,9 +82,9 @@ This is next on my list:
 - WARC support
 - RFC 6797 HSTS (HTTP Strict Transport Security)
   [Chromium HSTS domain list](https://src.chromium.org/viewvc/chrome/trunk/src/net/base/transport_security_state_static.json)
-- read credentials from secure wallets (e.g. kwallet, firefox, maybe an own tool ?)
+- read credentials from secure wallets (e.g. kwallet, firefox, http://sourceforge.net/projects/passwordsafe/)
 - compression on TLS/SSL layer (non-standard GnuTLS extension)
-- HTTP request pipelining (using client cookies)
+- HTTP request pipelining
 - SPDY / HTTP2.0 protocol
 - respect data-urls
 - Atom / RSS / Podcast / Streaming (.m3u, etc. formats)

@@ -74,7 +74,7 @@ static const char attrs[][12] = {
 	"usemap"
 };
 
-// Callback function, called from CSS parser for each URI found.
+// Callback function, called from HTML parser for each URI found.
 static void _html_get_url(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
 {
 	_HTML_CONTEXT *ctx = context;

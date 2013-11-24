@@ -52,6 +52,9 @@
 #include "blacklist.h"
 #include "host.h"
 
+#define URL_FLG_REDIRECTION  (1<<0)
+#define URL_FLG_SITEMAP      (1<<1)
+
 typedef struct {
 	mget_thread_t
 		tid;
@@ -77,6 +80,9 @@ static void
 	download_part(DOWNLOADER *downloader),
 	save_file(MGET_HTTP_RESPONSE *resp, const char *fname),
 	append_file(MGET_HTTP_RESPONSE *resp, const char *fname),
+	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, MGET_IRI *iri),
+	sitemap_parse_xml_gz(JOB *job, mget_buffer_t *data, const char *encoding, MGET_IRI *iri),
+	sitemap_parse_text(JOB *job, const char *data, const char *encoding, MGET_IRI *base),
 	html_parse(JOB *job, int level, const char *data, const char *encoding, MGET_IRI *iri),
 	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, MGET_IRI *iri),
 	css_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *iri),
@@ -400,12 +406,12 @@ static void
 	*input_thread(void *p);
 
 // Needs to be thread-save
-static void add_url(JOB *job, const char *encoding, const char *url, int redirection)
+static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 {
 	JOB *new_job = NULL;
 	MGET_IRI *iri;
 
-	if (redirection) { // redirect
+	if (flags & URL_FLG_REDIRECTION) { // redirect
 		if (config.max_redirect && job && job->redirection_level >= config.max_redirect) {
 			return;
 		}
@@ -511,21 +517,25 @@ static void add_url(JOB *job, const char *encoding, const char *url, int redirec
 
 	if (new_job || (new_job = queue_add(blacklist_add(iri)))) {
 		if (!config.output_document) {
-			if (!redirection || config.trust_server_names || !job)
+			if (!(flags & URL_FLG_REDIRECTION) || config.trust_server_names || !job)
 				new_job->local_filename = get_local_filename(new_job->iri);
 			else
 				new_job->local_filename = mget_strdup(job->local_filename);
 		}
 
 		if (job) {
-			if (redirection) {
+			if (flags & URL_FLG_REDIRECTION) {
 				new_job->redirection_level = job->redirection_level + 1;
 				new_job->referer = job->referer;
 			} else {
 				new_job->level = job->level + 1;
 				new_job->referer = job->iri;
+				job->iri = NULL;
 			}
 		}
+
+		if (flags & URL_FLG_SITEMAP)
+			new_job->sitemap = 1;
 
 		mget_thread_cond_signal(&worker_cond);
 	}
@@ -860,8 +870,12 @@ void *downloader_thread(void *p)
 				if (resp->code != 200 || !resp->content_type)
 					goto ready;
 
-				if (strcasecmp(resp->content_type, "text/html") && strcasecmp(resp->content_type, "text/css")
-					&& strcasecmp(resp->content_type, "application/xhtml+xml"))
+				if (strcasecmp(resp->content_type, "text/html")
+					&& strcasecmp(resp->content_type, "text/css")
+					&& strcasecmp(resp->content_type, "application/xhtml+xml")
+					&& (!job->sitemap || !strcasecmp(resp->content_type, "application/xml"))
+					&& (!job->sitemap || !strcasecmp(resp->content_type, "application/x-gzip"))
+					&& (!job->sitemap || !strcasecmp(resp->content_type, "text/plain")))
 					goto ready;
 
 				if (resp->etag) {
@@ -1036,9 +1050,28 @@ void *downloader_thread(void *p)
 						// xml_parse(sockfd, resp, job->iri);
 					} else if (!strcasecmp(resp->content_type, "text/css")) {
 						css_parse(job, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					} else if (job->sitemap) {
+						if (!strcasecmp(resp->content_type, "application/xml"))
+							sitemap_parse_xml(job, resp->body->data, "utf-8", job->iri);
+						else if (!strcasecmp(resp->content_type, "application/x-gzip"))
+							sitemap_parse_xml_gz(job, resp->body, "utf-8", job->iri);
+						// else if (!strcasecmp(resp->content_type, "application/rss+xml"))
+						//	sitemap_parse_xml(job, resp->body->data, "utf-8", job->iri);
+						// else if (!strcasecmp(resp->content_type, "application/atom+xml")) // see http://de.wikipedia.org/wiki/Atom_%28Format%29
+						//	sitemap_parse_text(job, resp->body->data, "utf-8", job->iri); http://en.wikipedia.org/wiki/Atom_%28standard%29
+						else if (!strcasecmp(resp->content_type, "text/plain"))
+							sitemap_parse_text(job, resp->body->data, "utf-8", job->iri);
+
 					} else if (job->deferred && !strcasecmp(resp->content_type, "text/plain")) {
 						debug_printf("Scanning robots.txt ...\n");
-						job->host->robots = mget_robots_parse(resp->body->data);
+						if ((job->host->robots = mget_robots_parse(resp->body->data))) {
+							// add sitemaps to be downloaded (format http://www.sitemaps.org/protocol.html)
+							for (int it = 0; it < mget_vector_size(job->host->robots->sitemaps); it++) {
+								const char *sitemap = mget_vector_get(job->host->robots->sitemaps, it);
+								info_printf("adding sitemap '%s'\n", sitemap);
+								add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see http://www.sitemaps.org/protocol.html#escaping
+							}
+						}
 					}
 				}
 			}
@@ -1214,6 +1247,179 @@ void html_parse_localfile(JOB *job, int level, const char *fname, const char *en
 		html_parse(job, level, data, encoding, base);
 
 	xfree(data);
+}
+
+struct sitemap_context {
+	MGET_VECTOR
+		*sitemap_urls,
+		*urls;
+};
+
+static void _sitemap_get_url(void *context, int flags, const char *dir, const char *attr G_GNUC_MGET_UNUSED, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
+{
+	struct sitemap_context *ctx = context;
+	mget_string_t url;
+	int type = 0;
+
+	if ((flags & XML_FLG_CONTENT) && len) {
+		if (!strcasecmp(dir, "/sitemapindex/sitemap/loc"))
+			type = 1;
+		else if (!strcasecmp(dir, "/urlset/url/loc"))
+			type = 2;
+
+		if (type) {
+			for (;len && isspace(*val); val++, len--); // skip leading spaces
+			for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces
+
+			// info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
+			url.p = val;
+			url.len = len;
+
+			if (type == 1) {
+				if (!ctx->sitemap_urls)
+					ctx->sitemap_urls = mget_vector_create(32, -2, NULL);
+
+				mget_vector_add(ctx->sitemap_urls, &url, sizeof(url));
+			} else {
+				if (!ctx->urls)
+					ctx->urls = mget_vector_create(32, -2, NULL);
+
+				mget_vector_add(ctx->urls, &url, sizeof(url));
+
+			}
+		}
+	}
+}
+
+static void mget_sitemap_get_urls_inline(const char *sitemap, MGET_VECTOR **urls, MGET_VECTOR **sitemap_urls)
+{
+	struct sitemap_context context = { .urls = NULL, .sitemap_urls = NULL };
+
+	mget_xml_parse_buffer(sitemap, _sitemap_get_url, &context, XML_HINT_REMOVE_EMPTY_CONTENT);
+
+	*urls = context.urls;
+	*sitemap_urls = context.sitemap_urls;
+}
+
+void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
+{
+	MGET_VECTOR *urls, *sitemap_urls;
+	const char *p;
+	size_t baselen = 0;
+
+	mget_sitemap_get_urls_inline(data, &urls, &sitemap_urls);
+
+	if (!known_urls)
+		known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
+
+	if (base) {
+		if ((p = strrchr(base->uri, '/')))
+			baselen = p - base->uri + 1; // + 1 to include /
+		else
+			baselen = strlen(base->uri);
+	}
+
+	// process the sitemap urls here
+	info_printf(_("found %d url(s) (base=%s)\n"), mget_vector_size(urls), base->uri);
+	for (int it = 0; it < mget_vector_size(urls); it++) {
+		mget_string_t *url = mget_vector_get(urls, it);;
+
+		// A Sitemap file located at http://example.com/catalog/sitemap.xml can include any URLs starting with http://example.com/catalog/
+		// but not any other.
+		if (baselen && (url->len <= baselen || !strncasecmp(url->p, base->uri, baselen))) {
+			info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)url->len, url->p);
+			continue;
+		}
+
+		// Blacklist for URLs before they are processed
+		if (mget_hashmap_put_noalloc(known_urls, (p = strndup(url->p, url->len)), NULL)) {
+			// the strndup'ed url has already been freed when we come here
+			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
+			continue;
+		}
+
+		add_url(job, encoding, p, 0);
+	}
+
+	// process the sitemap index urls here
+	info_printf(_("found %d sitemap url(s) (base=%s)\n"), mget_vector_size(sitemap_urls), base->uri);
+	for (int it = 0; it < mget_vector_size(sitemap_urls); it++) {
+		mget_string_t *url = mget_vector_get(sitemap_urls, it);;
+
+		// TODO: url must have same scheme, port and host as base
+
+		// Blacklist for URLs before they are processed
+		if (mget_hashmap_put_noalloc(known_urls, (p = strndup(url->p, url->len)), NULL)) {
+			// the strndup'ed url has already been freed when we come here
+			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
+			continue;
+		}
+
+		add_url(job, encoding, p, URL_FLG_SITEMAP);
+	}
+}
+
+static int _get_unzipped(void *userdata, const char *data, size_t length)
+{
+	mget_buffer_memcat((mget_buffer_t *)userdata, data, length);
+
+	return 0;
+}
+
+void sitemap_parse_xml_gz(JOB *job, mget_buffer_t *gzipped_data, const char *encoding, MGET_IRI *base)
+{
+	mget_buffer_t *plain = mget_buffer_alloc(gzipped_data->length * 10);
+	MGET_DECOMPRESSOR *dc = NULL;
+
+	if ((dc = mget_decompress_open(mget_content_encoding_gzip, _get_unzipped, plain))) {
+		mget_decompress(dc, gzipped_data->data, gzipped_data->length);
+		mget_decompress_close(dc);
+
+		sitemap_parse_xml(job, plain->data, encoding, base);
+	} else
+		error_printf("Can't scan '%s' because no libz support enabled at compile time\n", job->iri->uri);
+
+	mget_buffer_free(&plain);
+}
+
+void sitemap_parse_text(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
+{
+	size_t baselen = 0;
+	const char *end, *line, *p;
+	size_t len;
+
+	if (!known_urls)
+		known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
+
+	if (base) {
+		if ((p = strrchr(base->uri, '/')))
+			baselen = p - base->uri + 1; // + 1 to include /
+		else
+			baselen = strlen(base->uri);
+	}
+
+	// also catch the case where the last line isn't terminated by '\n'
+	for (line = end = data; *end && (end = (p = strchr(line, '\n')) ? p : line + strlen(line)); line = end + 1) {
+		// trim
+		len = end - line;
+		for (;len && isspace(*line); line++, len--); // skip leading spaces
+		for (;len && isspace(line[len - 1]); len--);  // skip trailing spaces
+
+		if (len) {
+			// A Sitemap file located at http://example.com/catalog/sitemap.txt can include any URLs starting with http://example.com/catalog/
+			// but not any other.
+			if (baselen && (len <= baselen || !strncasecmp(line, base->uri, baselen))) {
+				info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)len, line);
+			} else {
+				char url[len + 1];
+
+				memcpy(url, line, len);
+				url[len] = 0;
+
+				add_url(job, encoding, url, 0);
+			}
+		}
+	}
 }
 
 struct css_context {
@@ -1755,7 +1961,7 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 			mget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
 
 			if (!part) {
-				add_url(downloader->job, "utf-8", uri_buf.data, 1);
+				add_url(downloader->job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION);
 				mget_buffer_deinit(&uri_buf);
 				break;
 			} else {
