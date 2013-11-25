@@ -33,7 +33,9 @@
 
 #define ccedilla_l15 "\xE7"
 #define ccedilla_l15_pct "%E7"
-#define eacute_l1 "\xE9"
+#define ccedilla_u8 "\xC3\xA7"
+#define ccedilla_u8_pct "%C3%A7"
+#define eacute_l15 "\xE9"
 #define eacute_u8 "\xC3\xA9"
 #define eacute_u8_pct "%C3%A9"
 
@@ -44,17 +46,17 @@ int main(void)
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Main Page</title></head><body><p>" \
-				"Link to page 1 <a href=\"http://localhost:{{port}}/hello_" ccedilla_l15_pct eacute_l1 ".html\">La seule page en fran&ccedil;ais</a>." \
+				"Link to page 1 <a href=\"http://localhost:{{port}}/hello_" ccedilla_l15_pct eacute_l15 ".html\">La seule page en fran&ccedil;ais</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-type: text/html; charset=ISO-8859-15",
 			}
 		},
-		{	.name = "/hello_" ccedilla_l15_pct eacute_u8_pct ".html",
+		{	.name = "/hello_" ccedilla_u8_pct eacute_u8_pct ".html",
 			.code = "200 Dontcare",
 			.body =
-				"<html><head><title>La seule page en fran" ccedilla_l15 "ais</title>" \
-				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-1\"/></head><body>" \
+				"<html><head><title>La seule page en fran" ccedilla_u8 "ais</title>" \
+				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-15\"/></head><body>" \
 				"<p></p></body></html>",
 			.headers = {
 				"Content-type: text/html; charset=UTF-8",
@@ -76,13 +78,13 @@ int main(void)
 
 	// test-iri-disabled
 	mget_test(
-//		MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "--iri -e robots=off --restrict-file-names=nocontrol -nH -r",
+		MGET_TEST_KEEP_TMPFILES, 1,
+		MGET_TEST_OPTIONS, "-d --iri -e robots=off --restrict-file-names=nocontrol -nH -r",
 		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
-			{ "hello_" ccedilla_l15 eacute_u8 ".html", urls[1].body },
+			{ "hello_" ccedilla_u8 eacute_u8 ".html", urls[1].body },
 			{	NULL } },
 		0);
 

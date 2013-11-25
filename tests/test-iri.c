@@ -33,7 +33,7 @@
 
 #define ccedilla_l15 "\xE7"
 #define ccedilla_u8 "\xC3\xA7"
-#define eacute_l1 "\xE9"
+#define eacute_l15 "\xE9"
 #define eacute_u8 "\xC3\xA9"
 #define eurosign_l15 "\xA4"
 #define eurosign_u8 "\xE2\x82\xAC"
@@ -57,36 +57,36 @@ int main(void)
 				"Content-type: text/plain",
 			}
 		},
-		{	.name = "/p1_fran%C3%A7ais.html", // UTF-8 encoded
-			.code = "404 Not Found",
+		{	.name = "/p1_fran%E7ais.html",
+			.code = "404 Not found",
 			.body =
 				"<html><head><title>404</title></head><body><p>What ever</p></body></html>",
 			.headers = {
 				"Content-type: text/html; charset=UTF-8",
 			}
 		},
-		{	.name = "/p1_fran%E7ais.html",
+		{	.name = "/p1_fran%C3%A7ais.html", // UTF-8 encoded
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>La seule page en fran" ccedilla_l15 "ais</title>" \
-				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-1\"/></head><body>" \
-				"<p>Link to page 2 <a href=\"http://localhost:{{port}}/p2_" eacute_l1 eacute_l1 "n.html\">Die enkele nerderlangstalige pagina</a>." \
+				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/></head><body>" \
+				"<p>Link to page 2 <a href=\"http://localhost:{{port}}/p2_" eacute_l15 eacute_l15 "n.html\">Die enkele nerderlangstalige pagina</a>." \
 				"</p></body></html>",
 			.headers = {
-				"Content-type: text/html; charset=UTF-8",
+				"Content-type: text/html; charset=ISO-8859-15", // server response overrides META charset attribute
 			}
 		},
 		{	.name = "/p2_%C3%A9%C3%A9n.html", // UTF-8 encoded
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Die enkele nederlandstalige pagina</title>" \
-				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/>" \
+				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-15\"/>" \
 				"</head><body><p>&Eacute;&eacute;n is niet veel maar toch meer dan nul.<br/>" \
 				"Nerdelands is een mooie taal... dit zin stuckje spreekt vanzelf, of niet :)<br/>" \
 				"<a href=\"http://localhost:{{port}}/p4_m" eacute_u8 eacute_u8 "r.html\">M&eacute&eacute;r</a>" \
 				"</p></body></html>",
 			.headers = {
-				"Content-type: text/html; charset=ISO-8859-1",
+				"Content-type: text/html; charset=UTF-8", // server response overrides META charset attribute
 			},
 		},
 		{	.name = "/p3_%E2%82%AC%E2%82%AC%E2%82%AC.html", // UTF-8 encoded
@@ -96,7 +96,7 @@ int main(void)
 				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/>" \
 				"</head><body><p>My tailor isn't rich anymore.</p></body></html>",
 			.headers = {
-				"Content-type: text/plain; charset=ISO-8859-1",
+				"Content-type: text/plain; charset=ISO-8859-15",
 			},
 		},
 		{	.name = "/p3_%A4%A4%A4.html",
@@ -106,7 +106,7 @@ int main(void)
 				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/>" \
 				"</head><body><p>My tailor isn't rich anymore.</p></body></html>",
 			.headers = {
-				"Content-type: text/plain; charset=ISO-8859-1",
+				"Content-type: text/plain; charset=ISO-8859-15",
 			},
 		},
 		{	.name = "/p4_m%C3%A9%C3%A9r.html",
@@ -141,7 +141,7 @@ int main(void)
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
-			{ "p1_fran" ccedilla_l15 "ais.html", urls[3].body },
+			{ "p1_fran" ccedilla_u8 "ais.html", urls[3].body },
 			{ "p2_" eacute_u8 eacute_u8 "n.html", urls[4].body },
 			{ "p3_" eurosign_u8 eurosign_u8 eurosign_u8 ".html", urls[5].body },
 			{ "p4_m" eacute_u8 eacute_u8 "r.html", urls[7].body },

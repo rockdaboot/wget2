@@ -33,7 +33,7 @@
 
 #define ccedilla_l15 "\xE7"
 #define ccedilla_u8 "\xC3\xA7"
-#define eacute_l1 "\xE9"
+#define eacute_l15 "\xE9"
 #define eacute_u8 "\xC3\xA9"
 #define eurosign_l15 "\xA4"
 #define eurosign_u8 "\xE2\x82\xAC"
@@ -64,7 +64,7 @@ int main(void)
 			.body =
 				"<html><head><title>La seule page en fran" ccedilla_l15 "ais</title>" \
 				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-1\"/></head><body>" \
-				"<p>Link to page 2 <a href=\"http://localhost:{{port}}/p2_" eacute_l1 eacute_l1 "n.html\">Die enkele nerderlangstalige pagina</a>." \
+				"<p>Link to page 2 <a href=\"http://localhost:{{port}}/p2_" eacute_l15 eacute_l15 "n.html\">Die enkele nerderlangstalige pagina</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-type: text/html; charset=UTF-8",
@@ -75,7 +75,7 @@ int main(void)
 			.body =
 				"<html><head><title>La seule page en fran" ccedilla_l15 "ais</title>" \
 				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-1\"/></head><body>" \
-				"<p>Link to page 2 <a href=\"http://localhost:{{port}}/p2_" eacute_l1 eacute_l1 "n.html\">Die enkele nerderlangstalige pagina</a>." \
+				"<p>Link to page 2 <a href=\"http://localhost:{{port}}/p2_" eacute_l15 eacute_l15 "n.html\">Die enkele nerderlangstalige pagina</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-type: text/html; charset=UTF-8",
@@ -137,9 +137,9 @@ int main(void)
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body }, // index.html
 			{ urls[1].name + 1, urls[1].body }, // robots.txt
-			{ "p1_fran" ccedilla_l15 "ais.html", urls[3].body },
-			{ "p2_" eacute_l1 eacute_l1 "n.html", urls[4].body },
-			{ "p3_" eurosign_l15 eurosign_l15 eurosign_l15 ".html", urls[6].body },
+			{ "p1_fran" ccedilla_u8 "ais.html", urls[3].body },
+			{ "p2_" eacute_u8 eacute_u8 "n.html", urls[4].body },
+			{ "p3_" eurosign_u8 eurosign_u8 eurosign_u8 ".html", urls[6].body },
 			{	NULL } },
 		0);
 
