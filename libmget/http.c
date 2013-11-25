@@ -1833,7 +1833,7 @@ static MGET_VECTOR *_parse_proxies(const char *proxy, const char *encoding)
 		const char *s, *p;
 
 		proxies = mget_vector_create(8, -2, NULL);
-		mget_vector_set_destructor(proxies, (void(*)(void *))mget_iri_free);
+		mget_vector_set_destructor(proxies, (void(*)(void *))mget_iri_free_content);
 
 		for (s = proxy; (p = strchr(s, ',')); s = p + 1) {
 			while (isspace(*s) && s < p) s++;
