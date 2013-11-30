@@ -351,7 +351,13 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 		}
 	}
 
-	// info_printf("%s: path '%s'\n", iri->uri, iri->path);
+/*
+	debug_printf("scheme=%s\n",iri->scheme);
+	debug_printf("host=%s\n",iri->host);
+	debug_printf("path=%s\n",iri->path);
+	debug_printf("query=%s\n",iri->query);
+	debug_printf("fragment=%s\n",iri->fragment);
+*/
 
 	return iri;
 }
@@ -739,9 +745,9 @@ char *mget_iri_get_query_as_filename(const MGET_IRI *iri, mget_buffer_t *buf, co
 
 				if (begin != src)
 					mget_buffer_memcat(buf, begin, src - begin);
+			} else {
+				mget_buffer_strcat(buf, query);
 			}
-
-			mget_buffer_strcat(buf, query);
 		}
 
 		if (allocated)
