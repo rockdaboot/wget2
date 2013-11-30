@@ -80,13 +80,14 @@ static void
 	download_part(DOWNLOADER *downloader),
 	save_file(MGET_HTTP_RESPONSE *resp, const char *fname),
 	append_file(MGET_HTTP_RESPONSE *resp, const char *fname),
-	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, MGET_IRI *iri),
-	sitemap_parse_xml_gz(JOB *job, mget_buffer_t *data, const char *encoding, MGET_IRI *iri),
+	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, MGET_IRI *base),
+	sitemap_parse_xml_gz(JOB *job, mget_buffer_t *data, const char *encoding, MGET_IRI *base),
+	sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base),
 	sitemap_parse_text(JOB *job, const char *data, const char *encoding, MGET_IRI *base),
-	html_parse(JOB *job, int level, const char *data, const char *encoding, MGET_IRI *iri),
-	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, MGET_IRI *iri),
-	css_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *iri),
-	css_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *iri);
+	html_parse(JOB *job, int level, const char *data, const char *encoding, MGET_IRI *base),
+	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, MGET_IRI *base),
+	css_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base),
+	css_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base);
 MGET_HTTP_RESPONSE
 	*http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, int method_get);
 
@@ -701,6 +702,10 @@ int main(int argc, const char *const *argv)
 		else if (config.force_css) {
 			// read URLs from CSS file
 			css_parse_localfile(NULL, config.input_file, config.remote_encoding, config.base);
+		}
+		else if (config.force_sitemap) {
+			// read URLs from Sitemap XML file (base is normally not needed, all URLs should be absolute)
+			sitemap_parse_xml_localfile(NULL, config.input_file, "utf-8", config.base);
 		}
 //		else if (!strcasecmp(config.input_file, "http://", 7)) {
 //		}
@@ -1320,7 +1325,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, MGET_IR
 	}
 
 	// process the sitemap urls here
-	info_printf(_("found %d url(s) (base=%s)\n"), mget_vector_size(urls), base->uri);
+	info_printf(_("found %d url(s) (base=%s)\n"), mget_vector_size(urls), base ? base->uri : NULL);
 	for (int it = 0; it < mget_vector_size(urls); it++) {
 		mget_string_t *url = mget_vector_get(urls, it);;
 
@@ -1342,7 +1347,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, MGET_IR
 	}
 
 	// process the sitemap index urls here
-	info_printf(_("found %d sitemap url(s) (base=%s)\n"), mget_vector_size(sitemap_urls), base->uri);
+	info_printf(_("found %d sitemap url(s) (base=%s)\n"), mget_vector_size(sitemap_urls), base ? base->uri : NULL);
 	for (int it = 0; it < mget_vector_size(sitemap_urls); it++) {
 		mget_string_t *url = mget_vector_get(sitemap_urls, it);;
 
@@ -1380,6 +1385,16 @@ void sitemap_parse_xml_gz(JOB *job, mget_buffer_t *gzipped_data, const char *enc
 		error_printf("Can't scan '%s' because no libz support enabled at compile time\n", job->iri->uri);
 
 	mget_buffer_free(&plain);
+}
+
+void sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base)
+{
+	char *data;
+
+	if ((data = mget_read_file(fname, NULL)))
+		sitemap_parse_xml(job, data, encoding, base);
+
+	xfree(data);
 }
 
 void sitemap_parse_text(JOB *job, const char *data, const char *encoding, MGET_IRI *base)

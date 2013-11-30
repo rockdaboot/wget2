@@ -94,6 +94,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"  -i  --input-file        File where URLs are read from, - for STDIN.\n"
 		"  -F  --force-html        Treat input file as HTML. (default: off)\n"
 		"      --force-css         Treat input file as CSS. (default: off) (NEW!)\n"
+		"      --force-sitemap     Treat input file as Sitemap. (default: off) (NEW!)\n"
 		"  -B  --base              Base for relative URLs read from input-file or from command line\n"
 		"\n");
 	puts(
@@ -459,6 +460,7 @@ static const struct option options[] = {
 	{ "force-css", &config.force_css, parse_bool, 0, 0 },
 	{ "force-directories", &config.force_directories, parse_bool, 0, 'x' },
 	{ "force-html", &config.force_html, parse_bool, 0, 'F' },
+	{ "force-sitemap", &config.force_sitemap, parse_bool, 0, 0 },
 	{ "help", NULL, print_help, 0, 'h' },
 	{ "host-directories", &config.host_directories, parse_bool, 0, 0 },
 	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0 }, // obsolete, replaced by --adjust-extension

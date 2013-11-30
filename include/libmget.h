@@ -479,17 +479,17 @@ const char *
 void
 	mget_info_vprintf(const char *fmt, va_list args) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(1,0);
 void
-	mget_info_printf(const char *fmt, ...) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(1,2);
+	mget_info_printf(const char *fmt, ...) G_GNUC_MGET_NONNULL((1)) G_GNUC_MGET_PRINTF_FORMAT(1,2);
 void
 	mget_error_vprintf(const char *fmt, va_list args) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(1,0);
 void
-	mget_error_printf(const char *fmt, ...) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(1,2);
+	mget_error_printf(const char *fmt, ...) G_GNUC_MGET_NONNULL((1)) G_GNUC_MGET_PRINTF_FORMAT(1,2);
 void
-	mget_error_printf_exit(const char *fmt, ...) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_NORETURN G_GNUC_MGET_PRINTF_FORMAT(1,2);
+	mget_error_printf_exit(const char *fmt, ...) G_GNUC_MGET_NONNULL((1)) G_GNUC_MGET_NORETURN G_GNUC_MGET_PRINTF_FORMAT(1,2);
 void
 	mget_debug_vprintf(const char *fmt, va_list args) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(1,0);
 void
-	mget_debug_printf(const char *fmt, ...) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(1,2);
+	mget_debug_printf(const char *fmt, ...) G_GNUC_MGET_NONNULL((1)) G_GNUC_MGET_PRINTF_FORMAT(1,2);
 void
 	mget_debug_write(const char *buf, int len) G_GNUC_MGET_NONNULL_ALL;
 MGET_LOGGER *
