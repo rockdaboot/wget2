@@ -921,6 +921,9 @@ MGET_HTML_PARSE_RESULT *
 void
 	mget_html_free_urls_inline(MGET_HTML_PARSE_RESULT **res);
 
+void
+	mget_sitemap_get_urls_inline(const char *sitemap, MGET_VECTOR **urls, MGET_VECTOR **sitemap_urls);
+
 /*
  * XML and HTML parsing routines
  */

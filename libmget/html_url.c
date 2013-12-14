@@ -17,7 +17,7 @@
  * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Higher level HTML parsing routines
+ * Extracting URLs from HTML
  *
  * Changelog
  * 26.09.2013  Tim Ruehsen  created

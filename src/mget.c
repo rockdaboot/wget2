@@ -1254,58 +1254,6 @@ void html_parse_localfile(JOB *job, int level, const char *fname, const char *en
 	xfree(data);
 }
 
-struct sitemap_context {
-	MGET_VECTOR
-		*sitemap_urls,
-		*urls;
-};
-
-static void _sitemap_get_url(void *context, int flags, const char *dir, const char *attr G_GNUC_MGET_UNUSED, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
-{
-	struct sitemap_context *ctx = context;
-	mget_string_t url;
-	int type = 0;
-
-	if ((flags & XML_FLG_CONTENT) && len) {
-		if (!strcasecmp(dir, "/sitemapindex/sitemap/loc"))
-			type = 1;
-		else if (!strcasecmp(dir, "/urlset/url/loc"))
-			type = 2;
-
-		if (type) {
-			for (;len && isspace(*val); val++, len--); // skip leading spaces
-			for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces
-
-			// info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
-			url.p = val;
-			url.len = len;
-
-			if (type == 1) {
-				if (!ctx->sitemap_urls)
-					ctx->sitemap_urls = mget_vector_create(32, -2, NULL);
-
-				mget_vector_add(ctx->sitemap_urls, &url, sizeof(url));
-			} else {
-				if (!ctx->urls)
-					ctx->urls = mget_vector_create(32, -2, NULL);
-
-				mget_vector_add(ctx->urls, &url, sizeof(url));
-
-			}
-		}
-	}
-}
-
-static void mget_sitemap_get_urls_inline(const char *sitemap, MGET_VECTOR **urls, MGET_VECTOR **sitemap_urls)
-{
-	struct sitemap_context context = { .urls = NULL, .sitemap_urls = NULL };
-
-	mget_xml_parse_buffer(sitemap, _sitemap_get_url, &context, XML_HINT_REMOVE_EMPTY_CONTENT);
-
-	*urls = context.urls;
-	*sitemap_urls = context.sitemap_urls;
-}
-
 void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
 {
 	MGET_VECTOR *urls, *sitemap_urls;
@@ -1362,6 +1310,10 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, MGET_IR
 
 		add_url(job, encoding, p, URL_FLG_SITEMAP);
 	}
+
+	mget_vector_free(&urls);
+	mget_vector_free(&sitemap_urls);
+	// mget_sizemap_free_urls_inline(&res);
 }
 
 static int _get_unzipped(void *userdata, const char *data, size_t length)
