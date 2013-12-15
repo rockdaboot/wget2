@@ -924,6 +924,9 @@ void
 void
 	mget_sitemap_get_urls_inline(const char *sitemap, MGET_VECTOR **urls, MGET_VECTOR **sitemap_urls);
 
+void
+	mget_atom_get_urls_inline(const char *atom, MGET_VECTOR **urls);
+
 /*
  * XML and HTML parsing routines
  */

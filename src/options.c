@@ -95,6 +95,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"  -F  --force-html        Treat input file as HTML. (default: off)\n"
 		"      --force-css         Treat input file as CSS. (default: off) (NEW!)\n"
 		"      --force-sitemap     Treat input file as Sitemap. (default: off) (NEW!)\n"
+		"      --force-atom        Treat input file as Atom Feed. (default: off) (NEW!)\n"
 		"  -B  --base              Base for relative URLs read from input-file or from command line\n"
 		"\n");
 	puts(
@@ -457,6 +458,7 @@ static const struct option options[] = {
 	{ "egd-file", &config.egd_file, parse_string, 1, 0 },
 	{ "exclude-domains", &config.exclude_domains, parse_stringset, 1, 0 },
 	{ "execute", NULL, parse_execute, 1, 'e' },
+	{ "force-atom", &config.force_atom, parse_bool, 0, 0 },
 	{ "force-css", &config.force_css, parse_bool, 0, 0 },
 	{ "force-directories", &config.force_directories, parse_bool, 0, 'x' },
 	{ "force-html", &config.force_html, parse_bool, 0, 'F' },

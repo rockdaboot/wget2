@@ -84,6 +84,8 @@ static void
 	sitemap_parse_xml_gz(JOB *job, mget_buffer_t *data, const char *encoding, MGET_IRI *base),
 	sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base),
 	sitemap_parse_text(JOB *job, const char *data, const char *encoding, MGET_IRI *base),
+	atom_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base),
+	atom_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base),
 	html_parse(JOB *job, int level, const char *data, const char *encoding, MGET_IRI *base),
 	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, MGET_IRI *base),
 	css_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base),
@@ -707,6 +709,10 @@ int main(int argc, const char *const *argv)
 			// read URLs from Sitemap XML file (base is normally not needed, all URLs should be absolute)
 			sitemap_parse_xml_localfile(NULL, config.input_file, "utf-8", config.base);
 		}
+		else if (config.force_atom) {
+			// read URLs from Atom Feed XML file
+			atom_parse_localfile(NULL, config.input_file, "utf-8", config.base);
+		}
 //		else if (!strcasecmp(config.input_file, "http://", 7)) {
 //		}
 		else if (strcmp(config.input_file, "-")) {
@@ -878,6 +884,7 @@ void *downloader_thread(void *p)
 				if (strcasecmp(resp->content_type, "text/html")
 					&& strcasecmp(resp->content_type, "text/css")
 					&& strcasecmp(resp->content_type, "application/xhtml+xml")
+					&& strcasecmp(resp->content_type, "application/atom+xml")
 					&& (!job->sitemap || !strcasecmp(resp->content_type, "application/xml"))
 					&& (!job->sitemap || !strcasecmp(resp->content_type, "application/x-gzip"))
 					&& (!job->sitemap || !strcasecmp(resp->content_type, "text/plain")))
@@ -1055,6 +1062,8 @@ void *downloader_thread(void *p)
 						// xml_parse(sockfd, resp, job->iri);
 					} else if (!strcasecmp(resp->content_type, "text/css")) {
 						css_parse(job, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					} else if (!strcasecmp(resp->content_type, "application/atom+xml")) { // see RFC4287, http://de.wikipedia.org/wiki/Atom_%28Format%29
+						atom_parse(job, resp->body->data, "utf-8", job->iri);
 					} else if (job->sitemap) {
 						if (!strcasecmp(resp->content_type, "application/xml"))
 							sitemap_parse_xml(job, resp->body->data, "utf-8", job->iri);
@@ -1062,8 +1071,6 @@ void *downloader_thread(void *p)
 							sitemap_parse_xml_gz(job, resp->body, "utf-8", job->iri);
 						// else if (!strcasecmp(resp->content_type, "application/rss+xml"))
 						//	sitemap_parse_xml(job, resp->body->data, "utf-8", job->iri);
-						// else if (!strcasecmp(resp->content_type, "application/atom+xml")) // see http://de.wikipedia.org/wiki/Atom_%28Format%29
-						//	sitemap_parse_text(job, resp->body->data, "utf-8", job->iri); http://en.wikipedia.org/wiki/Atom_%28standard%29
 						else if (!strcasecmp(resp->content_type, "text/plain"))
 							sitemap_parse_text(job, resp->body->data, "utf-8", job->iri);
 
@@ -1313,7 +1320,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, MGET_IR
 
 	mget_vector_free(&urls);
 	mget_vector_free(&sitemap_urls);
-	// mget_sizemap_free_urls_inline(&res);
+	// mget_sitemap_free_urls_inline(&res);
 }
 
 static int _get_unzipped(void *userdata, const char *data, size_t length)
@@ -1387,6 +1394,60 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, MGET_I
 			}
 		}
 	}
+}
+
+void atom_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
+{
+	MGET_VECTOR *urls;
+	const char *p;
+	size_t baselen = 0;
+
+	mget_atom_get_urls_inline(data, &urls);
+
+	if (!known_urls)
+		known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
+
+	if (base) {
+		if ((p = strrchr(base->uri, '/')))
+			baselen = p - base->uri + 1; // + 1 to include /
+		else
+			baselen = strlen(base->uri);
+	}
+
+	// process the sitemap urls here
+	info_printf(_("found %d url(s) (base=%s)\n"), mget_vector_size(urls), base ? base->uri : NULL);
+	for (int it = 0; it < mget_vector_size(urls); it++) {
+		mget_string_t *url = mget_vector_get(urls, it);;
+
+		// A Sitemap file located at http://example.com/catalog/sitemap.xml can include any URLs starting with http://example.com/catalog/
+		// but not any other.
+		if (baselen && (url->len <= baselen || !strncasecmp(url->p, base->uri, baselen))) {
+			info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)url->len, url->p);
+			continue;
+		}
+
+		// Blacklist for URLs before they are processed
+		if (mget_hashmap_put_noalloc(known_urls, (p = strndup(url->p, url->len)), NULL)) {
+			// the strndup'ed url has already been freed when we come here
+			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
+			continue;
+		}
+
+		add_url(job, encoding, p, 0);
+	}
+
+	mget_vector_free(&urls);
+	// mget_atom_free_urls_inline(&res);
+}
+
+void atom_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base)
+{
+	char *data;
+
+	if ((data = mget_read_file(fname, NULL)))
+		atom_parse(job, data, encoding, base);
+
+	xfree(data);
 }
 
 struct css_context {

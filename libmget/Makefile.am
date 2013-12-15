@@ -1,5 +1,5 @@
 lib_LTLIBRARIES = libmget.la
-libmget_la_SOURCES = buffer.c buffer_printf.c base64.c compat.c cookie.c\
+libmget_la_SOURCES = atom_url.c buffer.c buffer_printf.c base64.c compat.c cookie.c\
  css.c css_tokenizer.c css_tokenizer.h css_tokenizer.lex css_url.c\
  decompressor.c encoding.c hashfile.c hashmap.c io.c html_url.c http.c init.c iri.c\
  list.c log.c logger.c md5.c mem.c metalink.c net.c pipe.c printf.c robots.c sitemap_url.c ssl_gnutls.c\

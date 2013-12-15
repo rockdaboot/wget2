@@ -31,7 +31,9 @@ Mget has already many features that go beyond what Wget provides.<br>
 
 An incomplete list of implemented features:
 
-- Support parsing URLs from local Sitemap XML file (--force-sitemap -i <filename>)
+- Support scanning Atom 1.0 feeds from local files (--force-atom -i <filename>)
+- Support scanning Atom 1.0 feeds.
+- Support scanning URLs from local Sitemap XML file (--force-sitemap -i <filename>)
 - Support scanning sitemap files given in robots.txt (Sitemap XML, gzipped Sitemap XML, plain text) including
 sitemap index files.
 - Support arbitrary number of proxies for parallel downloads
