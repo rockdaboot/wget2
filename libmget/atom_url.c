@@ -52,7 +52,7 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
 		if (!strcasecmp(attr, "href") || !strcasecmp(attr, "uri")
 			|| !strcasecmp(attr, "src") || !strcasecmp(attr, "scheme")
-			|| !strcasecmp(attr, "xmlns") || !strncasecmp(attr, "xmlns:"))
+			|| !strcasecmp(attr, "xmlns") || !strncasecmp(attr, "xmlns:", 6))
 		{
 			for (;len && isspace(*val); val++, len--); // skip leading spaces
 			for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces
