@@ -31,6 +31,8 @@ Mget has already many features that go beyond what Wget provides.<br>
 
 An incomplete list of implemented features:
 
+- Support scanning RSS 2.0 feeds from local files (--force-rss -i <filename>)
+- Support scanning RSS 2.0 feeds.
 - Support scanning Atom 1.0 feeds from local files (--force-atom -i <filename>)
 - Support scanning Atom 1.0 feeds.
 - Support scanning URLs from local Sitemap XML file (--force-sitemap -i <filename>)
@@ -90,7 +92,7 @@ This is next on my list:
 - HTTP request pipelining
 - SPDY / HTTP2.0 protocol
 - respect data-urls
-- Atom / RSS / Podcast / Streaming (.m3u, etc. formats)
+- Streaming (.m3u, etc. formats)
 - ftp support
 - https with openssl
 - a progress display

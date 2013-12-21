@@ -927,6 +927,9 @@ void
 void
 	mget_atom_get_urls_inline(const char *atom, MGET_VECTOR **urls);
 
+void
+	mget_rss_get_urls_inline(const char *rss, MGET_VECTOR **urls);
+
 /*
  * XML and HTML parsing routines
  */

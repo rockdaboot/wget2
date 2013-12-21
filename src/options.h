@@ -96,6 +96,7 @@ struct config {
 		https_only,
 		content_disposition,
 		page_requisites,
+		force_rss,
 		force_atom,
 		force_sitemap,
 		force_css,
