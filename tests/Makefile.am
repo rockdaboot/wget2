@@ -8,7 +8,7 @@ LDADD = $(top_srcdir)/libmget/libmget.la libtest.o
 MGET_TESTS = test test-mget-1 test-restrict-ascii test-i-http test-np test--spider-r \
  test--post-file test-E-k test-k test-meta-robots test-idn-robots test-idn-meta test-idn-cmd \
  test-iri test-iri-percent test-iri-list test-iri-forced-remote \
- test-auth-basic test-parse-html
+ test-auth-basic test-parse-html test-parse-rss
 
 check_PROGRAMS = buffer_printf2_perf stringmap_perf $(MGET_TESTS)
 

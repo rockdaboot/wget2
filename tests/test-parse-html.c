@@ -148,10 +148,9 @@ static void test_parse_files(void)
 {
 	DIR *dirp;
 	struct dirent *dp;
-	struct stat st;
 	const char *ext;
 	char fname[128];
-	int xml = 0, html = 0, css = 0, type, fd;
+	int xml = 0, html = 0, css = 0, type;
 
 	// test the XML / HTML parser, you should start the test with valgrind
 	// to detect memory faults
@@ -169,32 +168,18 @@ static void test_parse_files(void)
 				snprintf(fname, sizeof(fname), SRCDIR "/files/%s", dp->d_name);
 				info_printf("parsing %s\n", fname);
 
-				if ((fd = open(fname, O_RDONLY)) != -1) {
-					if (fstat(fd, &st) == 0) {
-#ifdef HAVE_MMAP
-						size_t nread = st.st_size;
-						char *buf = mmap(NULL, nread, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
-#else
-						char *buf=xmalloc(st.st_size + 1);
-						size_t nread=read(fd, buf, st.st_size);
-#endif
-						if (nread > 0) {
-							buf[nread] = 0; // PROT_WRITE allows this write, MAP_PRIVATE prevents changes in underlying file system
-							if (type == 1) {
-								mget_xml_parse_buffer(buf, html_dump, buf, 0);
-								xml++;
-							} else {
-								mget_html_parse_buffer(buf, html_dump, buf, 0);
-								html++;
-							}
-						}
-#ifdef HAVE_MMAP
-						munmap(buf, nread);
-#else
-						xfree(buf);
-#endif
+				char *data;
+
+				if ((data = mget_read_file(fname, NULL))) {
+					if (type == 1) {
+						mget_xml_parse_buffer(data, html_dump, data, 0);
+						xml++;
+					} else {
+						mget_html_parse_buffer(data, html_dump, data, 0);
+						html++;
 					}
-					close(fd);
+
+					xfree(data);
 				}
 			}
 		}
