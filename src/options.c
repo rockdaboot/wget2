@@ -92,6 +92,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"  -o  --output-file       File where messages are printed to, '-' for STDOUT.\n"
 		"  -a  --append-output     File where messages are appended to, '-' for STDOUT.\n"
 		"  -i  --input-file        File where URLs are read from, - for STDIN.\n"
+		"      --input-encoding    Character encoding of the file contents read with --input-file. (default: local encoding)\n"
 		"  -F  --force-html        Treat input file as HTML. (default: off)\n"
 		"      --force-css         Treat input file as CSS. (default: off) (NEW!)\n"
 		"      --force-sitemap     Treat input file as Sitemap. (default: off) (NEW!)\n"
@@ -139,6 +140,8 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --trust-server-names  On redirection use the server's filename. (default: off)\n"
 		"      --chunk-size        Download large files in multithreaded chunks. (default: 0 (=off))\n"
 		"                          Example: mget --chunk-size=1M\n"
+		"      --local-encoding    Character encoding of environment and filenames.\n"
+		"      --remote-encoding   Character encoding of remote files (if not specified in Content-Type HTTP header or in document itself)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -476,6 +479,7 @@ static const struct option options[] = {
 	{ "https-proxy", &config.https_proxy, parse_string, 1, 0 },
 	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4' },
 	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6' },
+	{ "input-encoding", &config.input_encoding, parse_string, 1, 0 },
 	{ "input-file", &config.input_file, parse_string, 1, 'i' },
 	{ "iri", NULL, parse_bool, 0, 0 }, // Wget compatibility, in fact a do-nothing option
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0 },
@@ -1022,8 +1026,11 @@ int init(int argc, const char *const *argv)
 
 	if (!config.local_encoding)
 		config.local_encoding = mget_local_charset_encoding();
+	if (!config.input_encoding)
+		config.input_encoding = strdup(config.local_encoding);
 
 	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
+	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
 
 	http_set_http_proxy(config.http_proxy, config.local_encoding);
 	http_set_https_proxy(config.https_proxy, config.local_encoding);
@@ -1100,6 +1107,7 @@ void deinit(void)
 	xfree(config.default_page);
 	xfree(config.base_url);
 	xfree(config.input_file);
+	xfree(config.input_encoding);
 	xfree(config.local_encoding);
 	xfree(config.remote_encoding);
 	xfree(config.username);

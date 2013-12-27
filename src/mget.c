@@ -584,105 +584,6 @@ int main(int argc, const char *const *argv)
 	textdomain("mget");
 #endif
 
-	/*
-		char buf[20240];
-		FILE *fp=fopen("styles.css","r");
-		buf[fread(buf,1,20240,fp)]=0;
-		fclose(fp);
-
-		void css_dump(void *user_ctx, int flags, const char *dir, const char *attr, const char *val)
-		{
-	//		info_printf("\n%02X %s %s '%s'\n",flags,dir,attr,val);
-
-	//		if (flags&CSS_FLG_SPACES) {
-	//			info_printf("%s",val);
-	//			return;
-	//		}
-			if (flags&CSS_FLG_ATTRIBUTE) {
-				// check for url() attributes
-				const char *p1=val, *p2;
-				char quote;
-				while (*p1) {
-					if ((*p1=='u' || *p1=='U') && !strncasecmp(p1+1,"rl(",3)) {
-						p1+=4;
-						if (*p1=='\"' || *p1=='\'') {
-							quote=*p1;
-							p1++;
-							for (p2=p1;*p2 && *p2!=quote;p2++);
-						} else {
-							for (p2=p1;*p2 && *p2!=')';p2++);
-						}
-						info_printf("*url = %.*s\n",(int)(p2-p1),p1);
-					} else
-						p1++;
-				}
-
-				info_printf("\t%s: %s;\n",attr,val);
-				return;
-			}
-			if (flags&CSS_FLG_SELECTOR_BEGIN) {
-				info_printf("%s {\n",val);
-			}
-			if (flags&CSS_FLG_SELECTOR_END) {
-				info_printf("}\n");
-			}
-		}
-		css_parse_buffer(buf,css_dump,NULL,0);
-		return 0;
-
-		char buf[20240];
-		FILE *fp=fopen("index.html","r");
-		buf[fread(buf,1,20240,fp)]=0;
-		fclose(fp);
-
-		void xml_dump(UNUSED void *user_ctx, int flags, const char *dir, const char *attr, const char *val)
-		{
-	//		info_printf("\n%02X %s %s '%s'\n",flags,dir,attr,val);
-
-			if (flags&XML_FLG_BEGIN) {
-				const char *p=*dir=='/'?strrchr(dir,'/'):dir;
-				if (p) {
-					if (*dir=='/') p++;
-					if (flags==(XML_FLG_BEGIN|XML_FLG_END)) {
-						info_printf("<%s/>",p);
-						return;
-					}
-					info_printf("<%s",p);
-				}
-			}
-			if (flags&XML_FLG_ATTRIBUTE) {
-				if (val)
-					info_printf(" %s=\"%s\"",attr,val);
-				else
-					info_printf(" %s",attr); // HTML bareword attribute
-			}
-			if (flags&XML_FLG_CLOSE) {
-				info_printf(">");
-			}
-			if (flags&XML_FLG_CONTENT) {
-				info_printf("%s",val);
-			}
-			if (flags&XML_FLG_END) {
-				const char *p=*dir=='/'?strrchr(dir,'/'):dir;
-				if (p) {
-					if (*dir=='/') p++;
-					info_printf("</%s>",p);
-				}
-			}
-
-			if (flags==XML_FLG_COMMENT)
-				info_printf("<!--%s-->",val);
-			else if (flags==XML_FLG_PROCESSING)
-				info_printf("<?%s?>",val);
-			else if (flags==XML_FLG_SPECIAL)
-				info_printf("<!%s>",val);
-		}
-		html_parse_buffer(buf,xml_dump,NULL,HTML_HINT_REMOVE_EMPTY_CONTENT);
-	//	xml_parse_buffer(buf,xml_dump,NULL,0);
-	//	html_parse_file("index.html",xml_dump,NULL,0);
-		return 0;
-	 */
-
 	// need to set some signals
 	memset(&sig_action, 0, sizeof(sig_action));
 
@@ -701,11 +602,11 @@ int main(int argc, const char *const *argv)
 	if (config.input_file) {
 		if (config.force_html) {
 			// read URLs from HTML file
-			html_parse_localfile(NULL, 0, config.input_file, config.remote_encoding, config.base);
+			html_parse_localfile(NULL, 0, config.input_file, config.input_encoding, config.base);
 		}
 		else if (config.force_css) {
 			// read URLs from CSS file
-			css_parse_localfile(NULL, config.input_file, config.remote_encoding, config.base);
+			css_parse_localfile(NULL, config.input_file, config.input_encoding, config.base);
 		}
 		else if (config.force_sitemap) {
 			// read URLs from Sitemap XML file (base is normally not needed, all URLs should be absolute)
@@ -721,30 +622,46 @@ int main(int argc, const char *const *argv)
 		}
 //		else if (!strcasecmp(config.input_file, "http://", 7)) {
 //		}
-		else if (strcmp(config.input_file, "-")) {
+		else if (!strcmp(config.input_file, "-")) {
+			if (isatty(STDIN_FILENO)) {
+				ssize_t len;
+				char *url;
+
+				// read URLs from STDIN
+				while ((len = mget_fdgetline(&buf, &bufsize, STDIN_FILENO)) >= 0) {
+					for (url = buf; len && isspace(*url); url++, len--); // skip leading spaces
+					if (*url == '#' || len <= 0) continue; // skip empty lines and comments
+					for (;len && isspace(url[len - 1]); len--);  // skip trailing spaces
+					// debug_printf("len=%zd url=%s\n", len, buf);
+
+					url[len] = 0;
+					add_url_to_queue(buf, config.base, config.input_encoding);
+				}
+			} else {
+				// read URLs asynchronously and process each URL immediately when it arrives
+				if ((rc = mget_thread_start(&input_tid, input_thread, NULL, 0)) != 0)
+					error_printf(_("Failed to start downloader, error %d\n"), rc);
+			}
+		} else {
 			int fd;
 			ssize_t len;
+			char *url;
 
 			// read URLs from input file
 			if ((fd = open(config.input_file, O_RDONLY))) {
-				while ((len = mget_fdgetline(&buf, &bufsize, fd)) > 0) {
-					add_url_to_queue(buf, config.base, config.local_encoding);
+				while ((len = mget_fdgetline(&buf, &bufsize, fd)) >= 0) {
+					for (url = buf; len && isspace(*url); url++, len--); // skip leading spaces
+					if (*url == '#' || len <= 0) continue; // skip empty lines and comments
+					for (;len && isspace(url[len - 1]); len--);  // skip trailing spaces
+					// debug_printf("len=%zd url=%s\n", len, buf);
+
+					url[len] = 0;
+					add_url_to_queue(url, config.base, config.input_encoding);
 				}
 				close(fd);
 			} else
 				error_printf(_("Failed to open input file %s\n"), config.input_file);
-		} else {
-			if (isatty(STDIN_FILENO)) {
-				ssize_t len;
-
-				// read URLs from STDIN
-				while ((len = mget_fdgetline(&buf, &bufsize, STDIN_FILENO)) >= 0) {
-					add_url_to_queue(buf, config.base, config.local_encoding);
-				}
-			} else if ((rc = mget_thread_start(&input_tid, input_thread, NULL, 0)) != 0) {
-				error_printf(_("Failed to start downloader, error %d\n"), rc);
-			}
-		} // else read later asynchronous and process each URL immediately
+		}
 	}
 
 	downloaders = xcalloc(config.num_threads, sizeof(DOWNLOADER));
