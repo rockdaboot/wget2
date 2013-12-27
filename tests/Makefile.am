@@ -5,7 +5,7 @@ AM_LDFLAGS = -static
 LDADD = $(top_srcdir)/libmget/libmget.la libtest.o
 
 # test-iri-disabled removed since Mget always uses IRIs
-MGET_TESTS = test test-mget-1 test-restrict-ascii test-i-http test-np test--spider-r \
+MGET_TESTS = test-iri-list test test-mget-1 test-restrict-ascii test-i-http test-np test--spider-r \
  test--post-file test-E-k test-k test-meta-robots test-idn-robots test-idn-meta test-idn-cmd \
  test-iri test-iri-percent test-iri-list test-iri-forced-remote \
  test-auth-basic test-parse-html test-parse-rss

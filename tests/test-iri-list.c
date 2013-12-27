@@ -55,19 +55,11 @@ int main(void)
 			}
 		},
 		{	.name = "/p1_fran%C3%A7ais.html", // UTF-8 encoded
-			.code = "404 File not found",
-			.body =
-				"<html><head><title>404</title><p>nop</p></body></html>",
-			.headers = {
-				"Content-type: text/html; charset=UTF-8",
-			}
-		},
-		{	.name = "/p1_fran%E7ais.html",
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>404</title><p>nop</p></body></html>",
 			.headers = {
-				"Content-type: text/html; charset=ISO-8859-1",
+				"Content-type: text/html; charset=UTF-8",
 			}
 		},
 		{	.name = "/p2_%C3%A9%C3%A9n.html", // UTF-8 encoded
@@ -80,17 +72,7 @@ int main(void)
 				"Content-type: text/html; charset=ISO-8859-1",
 			},
 		},
-		{	.name = "/p2_%E9%E9n.html",
-			.code = "200 Dontcare2",
-			.body =
-				"<html><head><title>Die enkele nederlandstalige pagina</title>" \
-				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/></head>" \
-				"<body><p>Dutch page</p></body></html>",
-			.headers = {
-				"Content-type: text/html; charset=ISO-8859-1",
-			},
-		},
-		{	.name = "/url_list.txt", // UTF-8 encoded
+		{	.name = "/urls.txt",
 			.code = "200 Dontcare",
 			.body =
 				"http://localhost:{{port}}/\r\n" \
@@ -110,14 +92,17 @@ int main(void)
 	// test-iri-disabled
 	mget_test(
 //		MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "--iri --trust-server-names -i",
-		MGET_TEST_REQUEST_URL, "url_list.txt",
+		MGET_TEST_OPTIONS, "--local-encoding=UTF-8 --input-encoding=ISO-8859-1 --iri --trust-server-names -i urls.txt",
+		MGET_TEST_REQUEST_URL, NULL,
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
+			{       "urls.txt", urls[4].body },
+			{       NULL } },
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
-			{ urls[6].name + 1, urls[6].body }, // url_list.txt
 			{ urls[0].name + 1, urls[0].body }, // index.html
-			{ "p1_fran" ccedilla_l1 "ais.html", urls[2].body },
-			{ "p2_" eacute_u8 eacute_u8 "n.html", urls[4].body },
+			{ "p1_fran" ccedilla_u8 "ais.html", urls[2].body },
+			{ "p2_" eacute_u8 eacute_u8 "n.html", urls[3].body },
+			{ "urls.txt", urls[4].body },
 			{	NULL } },
 		0);
 

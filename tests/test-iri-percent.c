@@ -78,8 +78,8 @@ int main(void)
 
 	// test-iri-disabled
 	mget_test(
-		MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "-d --iri -e robots=off --restrict-file-names=nocontrol -nH -r",
+		// MGET_TEST_KEEP_TMPFILES, 1,
+		MGET_TEST_OPTIONS, "--iri -e robots=off --restrict-file-names=nocontrol -nH -r",
 		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {

@@ -86,7 +86,7 @@ int main(void)
 
 	// test-meta-robots
 	mget_test(
-		MGET_TEST_OPTIONS, "-d -r -e robots=on -nd",
+		MGET_TEST_OPTIONS, "-r -e robots=on -nd",
 		MGET_TEST_REQUEST_URLS, "start.html", "mid.html", "end.html", "solo.html", NULL,
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
