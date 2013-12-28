@@ -32,10 +32,11 @@
 #include "libtest.h"
 
 #define ccedilla_l15 "\xE7"
+#define ccedilla_u8 "\xC3\xA7"
 #define eurosign_l15 "\xA4"
-#define eacute_l1 "\xE9"
+#define eurosign_u8 "\xE2\x82\xAC"
+#define eacute_l15 "\xE9"
 #define eacute_u8 "\xC3\xA9"
-#define currency_u8 "\xC2\xA4"
 
 int main(void)
 {
@@ -59,22 +60,14 @@ int main(void)
 			}
 		},
 		{	.name = "/p1_fran%C3%A7ais.html", // UTF-8 encoded
-			.code = "404 Not Found",
-			.body =
-				"<html><head><title>404</title></head><body><p>What ever</p></body></html>",
-			.headers = {
-				"Content-type: text/html; charset=UTF-8",
-			}
-		},
-		{	.name = "/p1_fran%E7ais.html",
 			.code = "200 Dontcare",
 			.body =
-				"<html><head><title>La seule page en français</title>" \
-				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-1\"/></head><body>" \
-				"<p>Link to page 2 <a href=\"http://localhost:{{port}}/p2_" eacute_l1 eacute_l1 "n.html\">Die enkele nerderlangstalige pagina</a>." \
+				"<html><head><title>La seule page en fran" ccedilla_l15 "ais</title>" \
+				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/></head><body>" \
+				"<p>Link to page 2 <a href=\"http://localhost:{{port}}/p2_" eacute_l15 eacute_l15 "n.html\">Die enkele nerderlangstalige pagina</a>." \
 				"</p></body></html>",
 			.headers = {
-				"Content-type: text/html; charset=UTF-8",
+				"Content-type: text/html; charset=ISO-8859-15", // overrides META tag in document
 			}
 		},
 		{	.name = "/p2_%C3%A9%C3%A9n.html", // UTF-8 encoded
@@ -108,24 +101,6 @@ int main(void)
 				"Content-type: text/plain",
 			},
 		},
-		{	.name = "/p3_%A4%A4%A4.html",
-			.code = "200 Dontcare",
-			.body =
-				"<html><head><title>Euro page</title>" \
-				"</head><body><p>My tailor isn't rich anymore.</p></body></html>",
-			.headers = {
-				"Content-type: text/plain",
-			},
-		},
-		{	.name = "/p3_%C2%A4%C2%A4%C2%A4.html", // UTF-8 encoded
-			.code = "200 Dontcare",
-			.body =
-				"<html><head><title>Euro page</title>" \
-				"</head><body><p>My tailor isn't rich anymore.</p></body></html>",
-			.headers = {
-				"Content-type: text/plain",
-			},
-		},
 	};
 
 	// functions won't come back if an error occurs
@@ -135,16 +110,16 @@ int main(void)
 
 	// test-iri-disabled
 	mget_test(
-//		MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "--iri -e robots=on --trust-server-names --remote-encoding=iso-8859-1 -nH -r",
+		MGET_TEST_KEEP_TMPFILES, 1,
+		MGET_TEST_OPTIONS, "-e robots=on --trust-server-names --local-encoding=UTF-8 --remote-encoding=iso-8859-1 -nH -r",
 		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
-			{ "p1_fran" ccedilla_l15 "ais.html", urls[3].body },
-			{ "p2_" eacute_u8 eacute_u8 "n.html", urls[4].body },
-			{ "p3_" currency_u8 currency_u8 currency_u8 ".html", urls[6].body },
+			{ "p1_fran" ccedilla_u8 "ais.html", urls[2].body },
+			{ "p2_" eacute_u8 eacute_u8 "n.html", urls[3].body },
+			{ "p3_" eurosign_u8 eurosign_u8 eurosign_u8 ".html", urls[5].body },
 			{	NULL } },
 		0);
 
