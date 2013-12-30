@@ -294,13 +294,23 @@ static int parse_timeout(option_t opt, G_GNUC_MGET_UNUSED const char *const *arg
 	if (!strcasecmp(val, "INF") || !strcasecmp(val, "INFINITY"))
 		fval = -1;
 	else {
-		fval = atof(val)*1000;
+		char modifier = 0;
 
-		if (fval == 0) // special wget compatibility: timeout 0 means INFINITY
-			fval = -1;
+		if (sscanf(val, " %lf%c", &fval, &modifier) >= 1 && fval > 0) {
+			if (modifier) {
+				switch (tolower(modifier)) {
+				case 's': fval *= 1000; break;
+				case 'm': fval *= 60 * 1000; break;
+				case 'h': fval *= 60 * 60 * 1000; break;
+				case 'd': fval *= 60 * 60 * 24 * 1000; break;
+				default: error_printf_exit(_("Invalid time specifier in '%s'\n"), val);
+				}
+			} else
+				fval *= 1000;
+		}
 	}
 
-	if (fval < 0)
+	if (fval <= 0) // special Wget compatibility: timeout 0 means INFINITY
 		fval = -1;
 
 	if (opt->var) {
@@ -309,8 +319,8 @@ static int parse_timeout(option_t opt, G_GNUC_MGET_UNUSED const char *const *arg
 	} else {
 		// --timeout option sets all timeouts
 		config.connect_timeout =
-			config.dns_timeout =
-			config.read_timeout = fval;
+		config.dns_timeout =
+		config.read_timeout = fval;
 	}
 
 	return 0;
@@ -351,6 +361,8 @@ static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL((1)) parse_restrict_names(option
 	return 0;
 }
 
+// Wget compatibility: support -nv, -nc, -nd, -nH and -np
+// Mget supports --no-... to all boolean and string options
 static int parse_n_option(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	if (val) {

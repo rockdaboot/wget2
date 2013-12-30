@@ -241,7 +241,7 @@ const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 			mget_iri_get_path(iri, &path_buf, config.local_encoding);
 
 			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
-				p = strchr(*p =='/' ? p + 1 : p, '/');
+				p = strchr(*p == '/' ? p + 1 : p, '/');
 			}
 			if (!p) {
 				// we can't strip this many path elements, just use the filename
