@@ -1002,6 +1002,7 @@ void *downloader_thread(void *p)
 					if (!strcasecmp(resp->content_type, "text/html")) {
 						html_parse(job, job->level, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 					} else if (!strcasecmp(resp->content_type, "application/xhtml+xml")) {
+						html_parse(job, job->level, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 						// xml_parse(sockfd, resp, job->iri);
 					} else if (!strcasecmp(resp->content_type, "text/css")) {
 						css_parse(job, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
@@ -1580,10 +1581,14 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 	if (config.adjust_extension && resp->content_type) {
 		const char *ext;
 
-		if (!strcasecmp(resp->content_type, "text/html")) {
+		if (!strcasecmp(resp->content_type, "text/html") || !strcasecmp(resp->content_type, "application/xhtml+xml")) {
 			ext = ".html";
 		} else if (!strcasecmp(resp->content_type, "text/css")) {
 			ext = ".css";
+		} else if (!strcasecmp(resp->content_type, "application/atom+xml")) {
+			ext = ".atom";
+		} else if (!strcasecmp(resp->content_type, "application/rss+xml")) {
+			ext = ".rss";
 		} else
 			ext = NULL;
 
