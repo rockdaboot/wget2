@@ -268,17 +268,8 @@ struct addrinfo *mget_tcp_resolve(MGET_TCP *tcp, const char *host, const char *p
 		if ((rc = getaddrinfo(host, port ? port : "0", &hints, &addrinfo)) == 0 || rc != EAI_AGAIN)
 			break;
 
-		if (tries < 2) {
-#ifdef HAVE_NANOSLEEP
-			const struct timespec ts = {0, 100 * 1000 * 1000};
-			nanosleep(&ts, NULL);
-#elif defined(HAVE_USLEEP)
-			// obsoleted by POSIX.1-2001, use nanosleep instead
-			usleep(100*1000);
-#else
-			break;
-#endif
-		}
+		if (tries < 2)
+			mget_millisleep(100);
 	}
 
 	if (rc) {

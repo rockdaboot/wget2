@@ -246,6 +246,8 @@ int
 	mget_strncasecmp(const char *s1, const char *s2, size_t n) G_GNUC_MGET_PURE;
 void
    mget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size) G_GNUC_MGET_NONNULL_ALL;
+void
+	mget_millisleep(int ms);
 ssize_t
 	mget_fdgetline(char **buf, size_t *bufsize, int fd) G_GNUC_MGET_NONNULL_ALL;
 ssize_t

@@ -29,11 +29,10 @@
 #endif
 
 #include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
-#include <errno.h>
+#include <time.h>
 
 #include <libmget.h>
 #include "private.h"
@@ -110,4 +109,18 @@ void mget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t d
 		*dst++ = (c = (*src >> 4)) >= 10 ? c + 'a' - 10 : c + '0';
 
 	*dst = 0;
+}
+
+void mget_millisleep(int ms)
+{
+	if (ms <= 0)
+		return;
+
+#ifdef HAVE_NANOSLEEP
+	nanosleep(&(struct timespec){ .tv_sec = ms / 1000, .tv_nsec = (ms % 1000) * 1000000 }, NULL);
+#elif defined HAVE_USLEEP
+	usleep(ms); // obsoleted by POSIX.1-2001, use nanosleep instead
+#else
+	sleep((ms + 500) / 1000);
+#endif
 }

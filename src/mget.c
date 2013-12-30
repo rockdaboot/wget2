@@ -779,14 +779,10 @@ void *downloader_thread(void *p)
 
 		if (config.wait) {
 			if (do_wait) {
-				int tmo;
-
 				if (config.random_wait)
-					tmo = config.wait / 2 + drand48() * config.wait;
+					mget_millisleep(config.wait / 2 + drand48() * config.wait);
 				else
-					tmo = config.wait;
-
-				nanosleep(&(struct timespec){ .tv_sec = tmo / 1000, .tv_nsec = (tmo % 1000) * 1000000 }, NULL);
+					mget_millisleep(config.wait);
 			} else
 				do_wait = 1;
 		}
@@ -803,8 +799,10 @@ void *downloader_thread(void *p)
 		if ((config.spider || config.chunk_size) && !job->deferred) {
 			// In spider mode, we first make a HEAD request.
 			// If the Content-Type header gives us not a parsable type, we are done.
-			for (int tries = 0; !resp && tries < 3; tries++) {
-				print_status(downloader, "[%d] Checking '%s' ...\n", downloader->id, job->iri->uri);
+			print_status(downloader, "[%d] Checking '%s' ...\n", downloader->id, job->iri->uri);
+			for (int tries = 0; !resp && tries < config.tries; tries++) {
+				mget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
+
 				resp = http_get(job->iri, NULL, downloader, 0);
 				if (resp)
 					print_status(downloader, "%d %s\n", resp->code, resp->reason);
@@ -887,6 +885,8 @@ void *downloader_thread(void *p)
 			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->iri->uri);
 
 		for (int tries = 0; !resp && tries < config.tries; tries++) {
+			mget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
+
 			resp = http_get(job->iri, NULL, downloader, 1);
 			if (resp)
 				print_status(downloader, "%d %s\n", resp->code, resp->reason);
@@ -1674,57 +1674,60 @@ static void G_GNUC_MGET_NONNULL((1)) append_file(MGET_HTTP_RESPONSE *resp, const
 	_save_file(resp, fname, O_APPEND);
 }
 
-//void download_part(int sockfd, JOB *job, PART *part)
-
 void download_part(DOWNLOADER *downloader)
 {
 	JOB *job = downloader->job;
 	MGET_METALINK *metalink = job->metalink;
 	PART *part = downloader->part;
 	int mirror_index = downloader->id % mget_vector_size(metalink->mirrors);
-	int tries;
+	int tries, mirrors;
 
-	for (tries = 0; tries < mget_vector_size(metalink->mirrors) && !part->done; tries++) {
-		MGET_HTTP_RESPONSE *msg;
-		MGET_METALINK_MIRROR *mirror = mget_vector_get(metalink->mirrors, mirror_index);
+	// we try every mirror max. 'config.tries' number of times
+	for (tries = 0; tries < config.tries && !part->done; tries++) {
+		mget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
 
-		print_status(downloader, "downloading part %d/%d (%zd-%zd) %s from %s (mirror %d)\n",
-			part->id, mget_vector_size(job->parts),
-			part->position, part->position + part->length - 1, metalink->name, mirror->iri->host, mirror_index);
+		for (mirrors = 0; mirrors < mget_vector_size(metalink->mirrors) && !part->done; mirrors++) {
+			MGET_HTTP_RESPONSE *msg;
+			MGET_METALINK_MIRROR *mirror = mget_vector_get(metalink->mirrors, mirror_index);
 
-		mirror_index = (mirror_index + 1) % mget_vector_size(metalink->mirrors);
+			print_status(downloader, "downloading part %d/%d (%zd-%zd) %s from %s (mirror %d)\n",
+				part->id, mget_vector_size(job->parts),
+				part->position, part->position + part->length - 1, metalink->name, mirror->iri->host, mirror_index);
 
-		msg = http_get(mirror->iri, part, downloader, 1);
-		if (msg) {
-			mget_cookie_store_cookies(msg->cookies); // sanitize and store cookies
+			mirror_index = (mirror_index + 1) % mget_vector_size(metalink->mirrors);
 
-			if (msg->code != 200 && msg->code != 206) {
-				print_status(downloader, "part %d download error %d\n", part->id, msg->code);
-			} else if (!msg->body) {
-				print_status(downloader, "part %d download error 'empty body'\n", part->id);
-			} else if (msg->body->length != (size_t)part->length) {
-				print_status(downloader, "part %d download error '%zd bytes of %zd expected'\n",
-					part->id, msg->body->length, part->length);
-			} else {
-				int fd;
+			msg = http_get(mirror->iri, part, downloader, 1);
+			if (msg) {
+				mget_cookie_store_cookies(msg->cookies); // sanitize and store cookies
 
-				print_status(downloader, "part %d downloaded\n", part->id);
-				if ((fd = open(metalink->name, O_WRONLY | O_CREAT, 0644)) != -1) {
-					ssize_t nbytes;
-
-					if ((nbytes = pwrite(fd, msg->body->data, msg->body->length, part->position)) == (ssize_t)msg->body->length)
-						part->done = 1; // set this when downloaded ok
-					else
-						error_printf(_("Failed to pwrite %zd bytes at pos %zd (%zd)\n"), msg->body->length, part->position, nbytes);
-
-					close(fd);
+				if (msg->code != 200 && msg->code != 206) {
+					print_status(downloader, "part %d download error %d\n", part->id, msg->code);
+				} else if (!msg->body) {
+					print_status(downloader, "part %d download error 'empty body'\n", part->id);
+				} else if (msg->body->length != (size_t)part->length) {
+					print_status(downloader, "part %d download error '%zd bytes of %zd expected'\n",
+						part->id, msg->body->length, part->length);
 				} else {
-					error_printf(_("Failed to write open %s\n"), metalink->name);
-					set_exit_status(3);
-				}
-			}
+					int fd;
 
-			http_free_response(&msg);
+					print_status(downloader, "part %d downloaded\n", part->id);
+					if ((fd = open(metalink->name, O_WRONLY | O_CREAT, 0644)) != -1) {
+						ssize_t nbytes;
+
+						if ((nbytes = pwrite(fd, msg->body->data, msg->body->length, part->position)) == (ssize_t)msg->body->length)
+							part->done = 1; // set this when downloaded ok
+						else
+							error_printf(_("Failed to pwrite %zd bytes at pos %zd (%zd)\n"), msg->body->length, part->position, nbytes);
+
+						close(fd);
+					} else {
+						error_printf(_("Failed to write open %s\n"), metalink->name);
+						set_exit_status(3);
+					}
+				}
+
+				http_free_response(&msg);
+			}
 		}
 	}
 
