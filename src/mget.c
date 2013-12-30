@@ -201,7 +201,7 @@ const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
 	char *fname;
 	int directories;
 
-	if (config.spider || config.output_document)
+	if ((config.spider || config.output_document) && !config.continue_download)
 		return NULL;
 
 	directories = !!config.recursive;
@@ -498,6 +498,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			host->robot_job = new_job;
 			new_job->deferred = mget_vector_create(2, -2, NULL);
 			mget_vector_add_noalloc(new_job->deferred, iri);
+			blacklist_add(iri);
 		} else if ((host = hosts_get(iri))) {
 			if (host->robot_job) {
 				mget_vector_add_noalloc(host->robot_job->deferred, iri);
