@@ -81,6 +81,9 @@ struct config {
 	long long
 		quota;
 	int
+		tries,
+		wait,
+		waitretry,
 		restrict_file_names,
 		level,
 		preferred_family,
@@ -91,6 +94,7 @@ struct config {
 		max_redirect,
 		num_threads;
 	char
+		random_wait,
 		trust_server_names,
 		robots,
 		parent,

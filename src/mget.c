@@ -763,6 +763,7 @@ void *downloader_thread(void *p)
 	MGET_HTTP_RESPONSE *resp = NULL;
 	JOB *job;
 	PART *part;
+	int do_wait = 0;
 
 	downloader->tid = mget_thread_self(); // to avoid race condition
 
@@ -775,6 +776,20 @@ void *downloader_thread(void *p)
 			continue;
 		}
 		mget_thread_mutex_unlock(&main_mutex);
+
+		if (config.wait) {
+			if (do_wait) {
+				int tmo;
+
+				if (config.random_wait)
+					tmo = config.wait / 2 + drand48() * config.wait;
+				else
+					tmo = config.wait;
+
+				nanosleep(&(struct timespec){ .tv_sec = tmo / 1000, .tv_nsec = (tmo % 1000) * 1000000 }, NULL);
+			} else
+				do_wait = 1;
+		}
 
 		if ((part = downloader->part)) {
 			// download metalink part
@@ -866,18 +881,21 @@ void *downloader_thread(void *p)
 			http_free_response(&resp);
 		}
 
-		for (int tries = 0; !resp && tries < 3; tries++) {
-			if (job->local_filename)
-				print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->local_filename);
-			else
-				print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->iri->uri);
+		if (job->local_filename)
+			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->local_filename);
+		else
+			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->iri->uri);
+
+		for (int tries = 0; !resp && tries < config.tries; tries++) {
 			resp = http_get(job->iri, NULL, downloader, 1);
 			if (resp)
 				print_status(downloader, "%d %s\n", resp->code, resp->reason);
 		}
 
-		if (!resp)
+		if (!resp) {
+			print_status(downloader, "[%d] Failed to download\n", downloader->id);
 			goto ready;
+		}
 
 		mget_cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
 		mget_cookie_store_cookies(resp->cookies); // store cookies

@@ -436,7 +436,8 @@ struct config config = {
 	.default_page = "index.html",
 	.level = 5,
 	.parent = 1,
-	.robots = 1
+	.robots = 1,
+	.tries = 20
 };
 
 static int parse_execute(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val);
@@ -513,6 +514,7 @@ static const struct option options[] = {
 	{ "quiet", &config.quiet, parse_bool, 0, 'q' },
 	{ "quota", &config.quota, parse_numbytes, 1, 'Q' },
 	{ "random-file", &config.random_file, parse_string, 1, 0 },
+	{ "random-wait", &config.random_wait, parse_bool, 0, 0 },
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0 },
 	{ "recursive", &config.recursive, parse_bool, 0, 'r' },
 	{ "referer", &config.referer, parse_string, 1, 0 },
@@ -533,7 +535,9 @@ static const struct option options[] = {
 	{ "user", &config.username, parse_string, 1, 0 },
 	{ "user-agent", &config.user_agent, parse_string, 1, 'U' },
 	{ "verbose", &config.verbose, parse_bool, 0, 'v' },
-	{ "version", &config.print_version, parse_bool, 0, 'V' }
+	{ "version", &config.print_version, parse_bool, 0, 'V' },
+	{ "wait", &config.wait, parse_timeout, 1, 'w' },
+	{ "waitretry", &config.waitretry, parse_timeout, 1, 0 }
 };
 
 static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL opt_compare(const void *key, const void *option)
@@ -915,7 +919,7 @@ int init(int argc, const char *const *argv)
 	// set libmget out-of-memory function
 	mget_set_oomfunc(_no_memory);
 
-	// seed random generator, used e.g. by Digest Authentication
+	// seed random generator, used e.g. by Digest Authentication and --random-wait
 	srand48((long)time(NULL) ^ getpid());
 
 	// this is a special case for switching on debugging before any config file is read
