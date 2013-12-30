@@ -30,6 +30,6 @@ dist-hook:
 #	mkdir $(distdir)/random
 #	cp -p $(srcdir)/random/a1 $(srcdir)/random/a2 $(distdir)/random
 
-TESTS_ENVIRONMENT = @VALGRIND_ENVIRONMENT@
+TESTS_ENVIRONMENT = TESTS_VALGRIND="@VALGRIND_ENVIRONMENT@"
 #TESTS = test $(MGET_TESTS)
 TESTS = $(MGET_TESTS)

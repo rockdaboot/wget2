@@ -75,7 +75,7 @@ static void nop(int sig G_GNUC_MGET_UNUSED)
 static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 {
 	MGET_TCP *tcp=NULL;
-	mget_test_url_t *url;
+	mget_test_url_t *url = NULL;
 	char buf[4096], method[32], request_url[256], tag[64], value[256], *p;
 	ssize_t nbytes;
 	size_t body_len, request_url_length;
@@ -349,7 +349,7 @@ static void _scan_for_unexpected(const char *dirname, const mget_test_file_t *ex
 	struct stat st;
 	size_t it, dirlen = strlen(dirname);
 
-	printf("Entering %s\n", dirname);
+	mget_info_printf("Entering %s\n", dirname);
 
 	if ((dir = opendir(dirname))) {
 		while ((dp = readdir(dir))) {
@@ -363,14 +363,14 @@ static void _scan_for_unexpected(const char *dirname, const mget_test_file_t *ex
 			else
 				sprintf(fname, "%s/%s", dirname, dp->d_name);
 
-			printf(" - %s/%s\n", dirname, dp->d_name);
+			mget_info_printf(" - %s/%s\n", dirname, dp->d_name);
 			if (stat(fname, &st) == 0 && S_ISDIR(st.st_mode)) {
 				_scan_for_unexpected(fname, expected_files);
 				continue;
 			}
 
 			if (expected_files) {
-				printf("search %s\n", fname);
+				mget_info_printf("search %s\n", fname);
 
 				for (it = 0; expected_files[it].name && strcmp(expected_files[it].name, fname); it++);
 
@@ -387,13 +387,14 @@ static void _scan_for_unexpected(const char *dirname, const mget_test_file_t *ex
 
 void mget_test(int first_key, ...)
 {
-	char cmd[1024];
 	const char
 		*request_url,
 		*options="";
 	const mget_test_file_t
 		*expected_files = NULL,
 		*existing_files = NULL;
+	mget_buffer_t
+		*cmd = mget_buffer_alloc(1024);
 	size_t
 		it;
 	int
@@ -440,8 +441,8 @@ void mget_test(int first_key, ...)
 	}
 
 	// clean directory
-	snprintf(cmd, sizeof(cmd), "rm -rf ../%s/*", tmpdir);
-	if (system(cmd) != 0)
+	mget_buffer_printf2(cmd, "rm -rf ../%s/*", tmpdir);
+	if (system(cmd->data) != 0)
 		mget_error_printf_exit(_("Failed to wipe tmpdir %s\n"), tmpdir);
 
 	// create files
@@ -470,14 +471,19 @@ void mget_test(int first_key, ...)
 		}
 	}
 
-	int n = snprintf(cmd, sizeof(cmd), "../../src/mget %s", options);
+	const char *valgrind = getenv("TESTS_VALGRIND");
+	if (valgrind)
+		mget_buffer_printf2(cmd, "%s ../../src/mget %s", valgrind, options);
+	else
+		mget_buffer_printf2(cmd, "../../src/mget %s", options);
 	for (it = 0; it < (size_t)mget_vector_size(request_urls); it++) {
-		n += snprintf(cmd + n, sizeof(cmd) - n, " 'http://localhost:%d/%s'",
+		mget_buffer_printf_append2(cmd, " 'http://localhost:%d/%s'",
 			server_port, (char *)mget_vector_get(request_urls, it));
 	}
+	mget_buffer_strcat(cmd, " 2>&1");
 
-	mget_error_printf("  Testing '%s'\n", cmd);
-	rc = system(cmd);
+	mget_error_printf("  Testing '%s'\n", cmd->data);
+	rc = system(cmd->data);
 	if (!WIFEXITED(rc)) {
 		mget_error_printf_exit(_("Unexpected error code %d, expected %d [%s]\n"), rc, expected_error_code, options);
 	}
@@ -518,6 +524,7 @@ void mget_test(int first_key, ...)
 	_scan_for_unexpected(".", expected_files);
 
 	mget_vector_clear(request_urls);
+	mget_buffer_free(&cmd);
 
 	//	system("ls -la");
 }
