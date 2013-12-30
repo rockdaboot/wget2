@@ -123,7 +123,7 @@ AS_IF([ test "$enable_man" != no ], [
 ac_enable_valgrind=no
 AC_ARG_ENABLE(valgrind-tests,
   AS_HELP_STRING([--enable-valgrind-tests], [enable using Valgrind for tests]),
-  [ac_enable_valgrind=$enableval], [ac_enable_valgrind=yes])
+  [ac_enable_valgrind=$enableval], [ac_enable_valgrind=no])
 
 if test "${ac_enable_valgrind}" = "yes" ; then
   AC_CHECK_PROG(HAVE_VALGRIND, valgrind, yes, no)
