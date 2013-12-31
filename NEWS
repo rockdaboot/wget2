@@ -1,0 +1,4 @@
+31.12.2013
+  Added support for XZ Content-Encoding / Accept-Encoding type (LZMA2 compression).
+    See https://wiki.mozilla.org/LZMA2_Compression for setting up an Apache to support it.
+    See https://bugzilla.mozilla.org/show_bug.cgi?id=366559 for Firefox/Mozilla discussion.

@@ -1775,6 +1775,10 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 	MGET_HTTP_RESPONSE *resp = NULL;
 	MGET_VECTOR *challenges = NULL;
 //	int max_redirect = 3;
+	mget_buffer_t buf;
+	char sbuf[256];
+
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	while (iri) {
 		if (downloader->conn && !mget_strcmp(downloader->conn->esc_host, iri->host) &&
@@ -1830,16 +1834,23 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 			// User-Agent: Wget/1.13.4 (linux-gnu)
 			//
 			// Accept: prefer XML over HTML
-#ifdef WITH_ZLIB
-			http_add_header_line(req,
-				/*				"Accept-Encoding: gzip\r\n"\
-				"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20100101 Firefox/10.0.5 Iceweasel/10.0.5\r\n"\
-				"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8\r\n"
-				"Accept-Language: en-us,en;q=0.5\r\n");
-				 */
-				"Accept-Encoding: gzip, deflate\r\n"
-				);
+			/*				"Accept-Encoding: gzip\r\n"\
+			"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20100101 Firefox/10.0.5 Iceweasel/10.0.5\r\n"\
+			"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8\r\n"
+			"Accept-Language: en-us,en;q=0.5\r\n");
+			 */
+
+			mget_buffer_reset(&buf);
+#if WITH_ZLIB
+			mget_buffer_strcat(&buf, buf.length ? ",gzip, deflate" : "gzip, deflate");
 #endif
+#if WITH_LZMA
+			mget_buffer_strcat(&buf, buf.length ? ", xz" : "xz");
+#endif
+			if (!buf.length)
+				mget_buffer_strcat(&buf, "identity");
+
+			http_add_header(req, "Accept-Encoding", buf.data);
 
 			http_add_header_line(req, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
 
@@ -1860,19 +1871,14 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 				http_add_header(req, "Referer", config.referer);
 			else if (downloader->job->referer) {
 				MGET_IRI *referer = downloader->job->referer;
-				mget_buffer_t buf;
-				char sbuf[256];
 
-				mget_buffer_init(&buf, sbuf, sizeof(sbuf));
-
-				mget_buffer_strcat(&buf, referer->scheme);
+				mget_buffer_strcpy(&buf, referer->scheme);
 				mget_buffer_memcat(&buf, "://", 3);
 				mget_buffer_strcat(&buf, referer->host);
 				mget_buffer_memcat(&buf, "/", 1);
 				mget_iri_get_escaped_resource(referer, &buf);
 
 				http_add_header(req, "Referer", buf.data);
-				mget_buffer_deinit(&buf);
 			}
 
 			if (challenges) {
@@ -1979,6 +1985,7 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 		mget_iri_free(&iri);
 
 	http_free_challenges(&challenges);
+	mget_buffer_deinit(&buf);
 
 	return resp;
 }

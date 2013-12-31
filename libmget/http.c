@@ -493,6 +493,8 @@ const char *http_parse_content_encoding(const char *s, char *content_encoding)
 		*content_encoding = mget_content_encoding_gzip;
 	else if (!strcasecmp(s, "deflate"))
 		*content_encoding = mget_content_encoding_deflate;
+	else if (!strcasecmp(s, "xz"))
+		*content_encoding = mget_content_encoding_lzma;
 	else
 		*content_encoding = mget_content_encoding_identity;
 

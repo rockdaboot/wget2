@@ -167,9 +167,16 @@ AM_CONDITIONAL([WITH_GNUTLS], [test $with_gnutls = "yes"])
 AC_ARG_WITH(zlib, AS_HELP_STRING([--without-zlib], [disable gzip compression support]), with_zlib=$withval, with_zlib=yes)
 if test $with_zlib != "no"
 then
-  AC_CHECK_LIB(z, deflate, [with_zlib=yes; AC_SUBST(ZLIB_LIBS, "-lz") AC_DEFINE([WITH_ZLIB], [1], [Use zlib])], [with_zlib=no; AC_MSG_WARN(*** ZLIB was not found. You will not be able to use gzip compression)])
+  AC_CHECK_LIB(z, deflate, [with_zlib=yes; AC_SUBST(ZLIB_LIBS, "-lz") AC_DEFINE([WITH_ZLIB], [1], [Use zlib])], [with_zlib=no; AC_MSG_WARN(*** ZLIB was not found. You will not be able to use gzip (de)compression)])
 fi
 AM_CONDITIONAL([WITH_ZLIB], [test $with_zlib = "yes"])
+
+AC_ARG_WITH(lzma, AS_HELP_STRING([--without-lzma], [disable LZMA compression support]), with_lzma=$withval, with_lzma=yes)
+if test $with_lzma != "no"
+then
+  AC_CHECK_LIB(lzma, lzma_code, [with_lzma=yes; AC_SUBST(LZMA_LIBS, "-llzma") AC_DEFINE([WITH_LZMA], [1], [Use liblzma])], [with_lzma=no; AC_MSG_WARN(*** liblzma was not found. You will not be able to use LZMA (de)compression)])
+fi
+AM_CONDITIONAL([WITH_LZMA], [test $with_lzma = "yes"])
 
 AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support]), with_libidn2=$withval, with_libidn2=yes)
 if test $with_libidn2 != "no"
@@ -199,7 +206,7 @@ AC_CHECK_LIB([pthread], [pthread_attr_init])
 AC_CHECK_LIB([rt], [clock_gettime])
 #AC_CHECK_LIB([z], [deflate])
 
-AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $IDN_LIBS $LIBS")
+AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $LZMA_LIBS $IDN_LIBS $LIBS")
 
 # Checks for header files.
 AC_CHECK_HEADERS([\
@@ -257,6 +264,7 @@ AC_MSG_NOTICE([Summary of build options:
   Libs:              ${LIBS}
   SSL support:       $with_gnutls
   GZIP compression:  $with_zlib
+  LZMA compression:  $with_lzma
   IDN support:       $IDN_LIBS
   Tests:             ${TESTS_INFO}
 ])

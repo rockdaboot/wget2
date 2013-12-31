@@ -31,6 +31,7 @@ Mget has already many features that go beyond what Wget provides.<br>
 
 An incomplete list of implemented features:
 
+- New Year gimmick: added support for XZ Content-Encoding / Accept-Encoding type
 - Character encoding of input files may be specified despite from local and remote encoding (--input-encoding)
 - Support scanning RSS 2.0 feeds from local files (--force-rss -i <filename>)
 - Support scanning RSS 2.0 feeds.

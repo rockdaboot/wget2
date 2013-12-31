@@ -687,7 +687,8 @@ typedef struct _MGET_DECOMPRESSOR MGET_DECOMPRESSOR;
 enum {
 	mget_content_encoding_identity,
 	mget_content_encoding_gzip,
-	mget_content_encoding_deflate
+	mget_content_encoding_deflate,
+	mget_content_encoding_lzma
 };
 
 MGET_DECOMPRESSOR *
