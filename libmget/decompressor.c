@@ -23,7 +23,10 @@
  * 20.06.2012  Tim Ruehsen  created
  * 31.12.2013  Tim Ruehsen  added LZMA decompression
  *
- * see https://wiki.mozilla.org/LZMA2_Compression
+ * References
+ *   http://en.wikipedia.org/wiki/HTTP_compression
+ *   https://wiki.mozilla.org/LZMA2_Compression
+ *   https://groups.google.com/forum/#!topic/mozilla.dev.platform/CBhSPWs3HS8
  */
 
 #if HAVE_CONFIG_H

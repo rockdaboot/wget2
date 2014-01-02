@@ -1845,7 +1845,7 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 			mget_buffer_strcat(&buf, buf.length ? ",gzip, deflate" : "gzip, deflate");
 #endif
 #if WITH_LZMA
-			mget_buffer_strcat(&buf, buf.length ? ", xz" : "xz");
+			mget_buffer_strcat(&buf, buf.length ? ", xz, lzma" : "xz, lzma");
 #endif
 			if (!buf.length)
 				mget_buffer_strcat(&buf, "identity");
