@@ -29,7 +29,7 @@ Mailing List
 
 To join the mailing list send an email to
 
-	(mailto:mget-bugs+subscribe@googlegroups.com)
+	<mget-bugs+subscribe@googlegroups.com>
 
 and follow the instructions provided by the answer mail.
 
