@@ -1,4 +1,24 @@
+02.01.2013
+  Added support for bzip2 Content-Encoding / Accept-Encoding type.
+    It easy going after having gzip and lzma decompression implemented.
+  Created a mailing list for discussions around Mget.
+    Subscribe by sending a mail to mget-bugs+subscribe@googlegroups.com.
+
 31.12.2013
-  Added support for XZ Content-Encoding / Accept-Encoding type (LZMA2 compression).
+  Added support for XZ / LZMA Content-Encoding / Accept-Encoding type (LZMA2 compression).
     See https://wiki.mozilla.org/LZMA2_Compression for setting up an Apache to support it.
     See https://bugzilla.mozilla.org/show_bug.cgi?id=366559 for Firefox/Mozilla discussion.
+
+30.12.2013
+  Extended --adjust-extension to attach .rss resp. .atom to RSS and Atom Feeds.
+  Implemented Wget options -w/--wait, --random-wait, -t/--tries.
+    With these you can (randomly) slow down website downloading.
+
+25.12.2013
+  Added URL scanning of RSS 2.0 feeds using the internal XML parser.
+
+15.12.2013
+  Added URL scanning of Atom 1.0 feeds using the internal XML parser.
+
+24.11.2013
+  Added URL scanning of sitemaps using the internal XML parser.

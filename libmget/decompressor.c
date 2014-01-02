@@ -21,7 +21,8 @@
  *
  * Changelog
  * 20.06.2012  Tim Ruehsen  created
- * 31.12.2013  Tim Ruehsen  added LZMA decompression
+ * 31.12.2013  Tim Ruehsen  added XZ / LZMA decompression
+ * 02.01.2014  Tim Ruehsen  added BZIP2 decompression
  *
  * References
  *   http://en.wikipedia.org/wiki/HTTP_compression
@@ -40,6 +41,10 @@
 #include <zlib.h>
 #endif
 
+#if WITH_BZIP2
+#include <bzlib.h>
+#endif
+
 #if WITH_LZMA
 #include <lzma.h>
 #endif
@@ -55,6 +60,10 @@ struct _MGET_DECOMPRESSOR {
 #if WITH_LZMA
 	lzma_stream
 		lzma_strm;
+#endif
+#if WITH_BZIP2
+	bz_stream
+		bz_strm;
 #endif
 
 	int
@@ -184,7 +193,7 @@ static int lzma_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 		}
 	} while (status == LZMA_OK && !strm->avail_out);
 
-	if (status == Z_OK || status == Z_STREAM_END)
+	if (status == LZMA_OK || status == LZMA_STREAM_END)
 		return 0;
 
 	error_printf(_("Failed to uncompress LZMA stream (%d)\n"), status);
@@ -196,6 +205,61 @@ static void lzma_exit(MGET_DECOMPRESSOR *dc)
 	lzma_end(&dc->lzma_strm);
 }
 #endif // WITH_LZMA
+
+#if WITH_BZIP2
+static int bzip2_init(bz_stream *strm)
+{
+	memset(strm, 0, sizeof(*strm));
+
+	if (BZ2_bzDecompressInit(strm, 0, 0) != BZ_OK) {
+		error_printf(_("Failed to init bzip2 decompression\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+static int bzip2_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
+{
+	bz_stream *strm;
+	char dst[10240];
+	int status;
+
+	if (!srclen) {
+		// special case to avoid decompress errors
+		if (dc->put_data)
+			dc->put_data(dc->context, "", 0);
+
+		return 0;
+	}
+
+	strm = &dc->bz_strm;
+	strm->next_in = src;
+	strm->avail_in = srclen;
+
+	do {
+		strm->next_out = dst;
+		strm->avail_out = sizeof(dst);
+
+		status = BZ2_bzDecompress(strm);
+		if ((status == BZ_OK || status == BZ_STREAM_END) && strm->avail_out<sizeof(dst)) {
+			if (dc->put_data)
+				dc->put_data(dc->context, dst, sizeof(dst) - strm->avail_out);
+		}
+	} while (status == BZ_OK && !strm->avail_out);
+
+	if (status == BZ_OK || status == BZ_STREAM_END)
+		return 0;
+
+	error_printf(_("Failed to uncompress bzip2 stream (%d)\n"), status);
+	return -1;
+}
+
+static void bzip2_exit(MGET_DECOMPRESSOR *dc)
+{
+	BZ2_bzDecompressEnd(&dc->bz_strm);
+}
+#endif // WITH_BZIP2
 
 static int identity(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 {
@@ -224,6 +288,13 @@ MGET_DECOMPRESSOR *mget_decompress_open(int encoding,
 		if ((rc = deflate_init(&dc->z_strm)) == 0) {
 			dc->decompress = gzip_decompress;
 			dc->exit = gzip_exit;
+		}
+#endif
+	} else if (encoding == mget_content_encoding_bzip2) {
+#if WITH_BZIP2
+		if ((rc = bzip2_init(&dc->bz_strm)) == 0) {
+			dc->decompress = bzip2_decompress;
+			dc->exit = bzip2_exit;
 		}
 #endif
 	} else if (encoding == mget_content_encoding_lzma) {

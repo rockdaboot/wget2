@@ -688,7 +688,8 @@ enum {
 	mget_content_encoding_identity,
 	mget_content_encoding_gzip,
 	mget_content_encoding_deflate,
-	mget_content_encoding_lzma
+	mget_content_encoding_lzma,
+	mget_content_encoding_bzip2
 };
 
 MGET_DECOMPRESSOR *

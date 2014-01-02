@@ -1,5 +1,5 @@
-Mget - multithreaded metalink/file/website downloader and library
-=================================================================
+Mget - multithreaded metalink / file / website downloader / spider and library
+==============================================================================
 
 This is a multithreaded Wget-like tool and library written in C.
 
@@ -24,6 +24,16 @@ License
 Mget is licensed under GPLv3+.<br>
 Libmget is licensed under LGPLv3+.
 
+Mailing List
+------------
+
+To join the mailing list send an email to
+
+	(mailto:mget-bugs+subscribe@googlegroups.com)
+
+and follow the instructions provided by the answer mail.
+
+
 Development Status
 ------------------
 
@@ -31,7 +41,8 @@ Mget has already many features that go beyond what Wget provides.<br>
 
 An incomplete list of implemented features:
 
-- New Year gimmick: added support for XZ Content-Encoding / Accept-Encoding type
+- Support for bzip2 Content-Encoding / Accept-Encoding compression type
+- New Year gimmick: added support for XZ Content-Encoding / Accept-Encoding compression type
 - Character encoding of input files may be specified despite from local and remote encoding (--input-encoding)
 - Support scanning RSS 2.0 feeds from local files (--force-rss -i <filename>)
 - Support scanning RSS 2.0 feeds.
@@ -52,7 +63,7 @@ sitemap index files.
 - proxy support
 - cookies (session/non-session), detection of supercookies via Mozilla Public Suffix List
   (use the new option --cookie-suffixes <filename>, better: put it into ~/.mgetrc)
-- respect cookie public suffix list http://publicsuffix.org/list/
+- respect cookie public suffix list (http://publicsuffix.org/list/)
 - recursive download of websites with or without spanning hosts
 - download of single web pages / resources
 - zlib/gzip compressed HTTP/HTTPS downloads (gzip, deflate)
@@ -81,7 +92,7 @@ Not yet implemented
 The following is just a quick list of ideas and todos.<br>
 The mid-range goal is to come as close to Wget, that Wget's units test work for Mget.
 
-This is next on my list:
+Some ideas of what could be done next (but contact me before you start bigger changes!):
 
 - use [gtk-doc-tools](http://developer.gnome.org/gtk-doc-manual/unstable/settingup.html.en) for documentation.<br>
   I want the docs stay with the code: already tested Doxygen, but the man page support seems broken/orphaned.
@@ -90,7 +101,6 @@ This is next on my list:
 - RFC 6797 HSTS (HTTP Strict Transport Security)
   [Chromium HSTS domain list](https://src.chromium.org/viewvc/chrome/trunk/src/net/base/transport_security_state_static.json)
 - read credentials from secure wallets (e.g. kwallet, firefox, http://sourceforge.net/projects/passwordsafe/)
-- compression on TLS/SSL layer (non-standard GnuTLS extension)
 - HTTP request pipelining
 - SPDY / HTTP2.0 protocol
 - respect data-urls
@@ -113,6 +123,8 @@ The following packages are needed to build Mget:
 * xsltproc (when creating man pages)
 * gettext >= 0.18.1
 * libz >= 1.2.3 (the distribution may call the package zlib*, eg. zlib1g on Debian)
+* liblzma >= 5.1.1alpha (optional, if you need LZMA decompression)
+* libbz2 >= 1.0.6 (optional, if you need BZIP2 decompression)
 * libgnutls >= 2.4.2
 * libidn2 >= 0.9 + libunistring >= 0.9.3 (libidn >= 1.25 if you don't have libidn2)
 * flex >= 2.5.35

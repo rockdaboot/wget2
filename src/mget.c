@@ -1842,7 +1842,10 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 
 			mget_buffer_reset(&buf);
 #if WITH_ZLIB
-			mget_buffer_strcat(&buf, buf.length ? ",gzip, deflate" : "gzip, deflate");
+			mget_buffer_strcat(&buf, buf.length ? ", gzip, deflate" : "gzip, deflate");
+#endif
+#if WITH_BZIP2
+			mget_buffer_strcat(&buf, buf.length ? ", bzip2" : "bzip2");
 #endif
 #if WITH_LZMA
 			mget_buffer_strcat(&buf, buf.length ? ", xz, lzma" : "xz, lzma");

@@ -178,6 +178,13 @@ then
 fi
 AM_CONDITIONAL([WITH_LZMA], [test $with_lzma = "yes"])
 
+AC_ARG_WITH(bz2, AS_HELP_STRING([--without-bzip2], [disable bzip2 compression support]), with_bzip2=$withval, with_bzip2=yes)
+if test $with_bzip2 != "no"
+then
+  AC_CHECK_LIB(bz2, BZ2_bzDecompress, [with_bzip2=yes; AC_SUBST(BZIP2_LIBS, "-lbz2") AC_DEFINE([WITH_BZIP2], [1], [Use libbz2])], [with_bzip2=no; AC_MSG_WARN(*** libbz2 was not found. You will not be able to use bzip2 (de)compression)])
+fi
+AM_CONDITIONAL([WITH_BZIP2], [test $with_bzip2 = "yes"])
+
 AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support]), with_libidn2=$withval, with_libidn2=yes)
 if test $with_libidn2 != "no"
 then
@@ -206,7 +213,7 @@ AC_CHECK_LIB([pthread], [pthread_attr_init])
 AC_CHECK_LIB([rt], [clock_gettime])
 #AC_CHECK_LIB([z], [deflate])
 
-AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $LZMA_LIBS $IDN_LIBS $LIBS")
+AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $LZMA_LIBS $BZIP2_LIBS $IDN_LIBS $LIBS")
 
 # Checks for header files.
 AC_CHECK_HEADERS([\
@@ -264,6 +271,7 @@ AC_MSG_NOTICE([Summary of build options:
   Libs:              ${LIBS}
   SSL support:       $with_gnutls
   GZIP compression:  $with_zlib
+  BZIP2 compression: $with_bzip2
   LZMA compression:  $with_lzma
   IDN support:       $IDN_LIBS
   Tests:             ${TESTS_INFO}

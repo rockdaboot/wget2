@@ -968,7 +968,7 @@ int init(int argc, const char *const *argv)
 	read_config();
 
 	if (config.print_version) {
-		info_printf("mget V" PACKAGE_VERSION " - C multithreaded metalink/file/website downloader\n\n");
+		info_printf("Mget " PACKAGE_VERSION " - C multithreaded metalink/file/website downloader\n\n");
 		info_printf("+digest"
 
 #if defined WITH_GNUTLS
@@ -1009,6 +1009,45 @@ int init(int argc, const char *const *argv)
 #else
 	" -ssl"
 #endif
+
+#if defined HAVE_ICONV
+	" +iconv"
+#else
+	" -iconv"
+#endif
+
+#if defined WITH_LIBIDN2
+	" +idn2"
+#elif defined WITH_LIBIDN
+	" +idn"
+#else
+	" -idn"
+#endif
+
+#if defined WITH_LIBUNISTRING
+	" +unistring"
+#else
+	" -unistring"
+#endif
+
+#if defined WITH_ZLIB
+	" +zlib"
+#else
+	" -zlib"
+#endif
+
+#if defined WITH_LZMA
+	" +lzma"
+#else
+	" -lzma"
+#endif
+
+#if defined WITH_BZIP2
+	" +bzip2"
+#else
+	" -bzip2"
+#endif
+
 			"\n");
 	}
 
