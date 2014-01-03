@@ -206,3 +206,30 @@ size_t mget_buffer_memset_append(mget_buffer_t *buf, char c, size_t length)
 
 	return buf->length;
 }
+
+char *mget_buffer_trim(mget_buffer_t *buf)
+{
+	if (buf->length) {
+		size_t len = buf->length;
+		char *start = buf->data;
+		char *end = start + len - 1;
+
+		if (isspace(*end)) {
+			// skip trailing spaces
+			for (; isspace(*end) && end >= start; end--)
+				;
+			end[1] = 0;
+			buf->length = end - start + 1;
+		}
+
+		if (isspace(*start)) {
+			// skip leading spaces
+			for (len = buf->length; isspace(*start) && end >= start; start++)
+				;
+			buf->length = end - start + 1;
+			memmove(buf->data, start, buf->length + 1); // include trailing 0
+		}
+	}
+
+	return buf->data;
+}

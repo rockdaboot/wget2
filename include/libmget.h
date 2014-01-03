@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 // transitional defines, remove when migration to libmget is done
@@ -434,6 +435,8 @@ size_t
 	mget_buffer_memset(mget_buffer_t *buf, char c, size_t length) G_GNUC_MGET_NONNULL((1));
 size_t
 	mget_buffer_memset_append(mget_buffer_t *buf, char c, size_t length) G_GNUC_MGET_NONNULL((1));
+char *
+	mget_buffer_trim(mget_buffer_t *buf) G_GNUC_MGET_NONNULL((1));
 size_t
 	mget_buffer_vprintf_append(mget_buffer_t *buf, const char *fmt, va_list args) G_GNUC_MGET_NONNULL((1,2)) G_GNUC_MGET_PRINTF_FORMAT(2,0);
 size_t

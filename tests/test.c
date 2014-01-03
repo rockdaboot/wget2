@@ -174,6 +174,27 @@ static void test_buffer(void)
 	}
 	mget_buffer_deinit(bufp);
 
+	// test mget_buffer_trim()
+
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	for (int mid_ws = 0; mid_ws <= 2; mid_ws++) {
+		char expected[16];
+		snprintf(expected, sizeof(expected), "x%.*sy", mid_ws, "  ");
+
+		for (int lead_ws = 0; lead_ws <= 2; lead_ws++) {
+			for (int trail_ws = 0; trail_ws <= 2; trail_ws++) {
+				mget_buffer_printf2(&buf, "%.*sx%.*sy%.*s", lead_ws, "  ", mid_ws, "  ", trail_ws, "  ");
+				mget_buffer_trim(&buf);
+				if (!strcmp(buf.data, expected))
+					ok++;
+				else {
+					failed++;
+					info_printf("test_buffer_trim: got '%s' (expected '%s') (%d, %d, %d)\n", buf.data, expected, lead_ws, mid_ws, trail_ws);
+				}
+			}
+		}
+	}
+	mget_buffer_deinit(bufp);
 }
 
 static void test_buffer_printf(void)

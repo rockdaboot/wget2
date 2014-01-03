@@ -119,12 +119,8 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 		NULL);
 
 	if (resp && resp->code == 200 && !strcasecmp(resp->content_type, "audio/x-mpegurl")) {
-		char *p1 = resp->body->data, *p2;
-
-		while (isspace(*p1)) p1++; // skip whitespace
-		for (p2 = p1; !isspace(*p2);) p2++;
-
-		stream_url = strndup(p1, p2 - p1);
+		mget_buffer_trim(resp->body); // remove leading and trailing whitespace
+		stream_url = strndup(resp->body->data, resp->body->length);
 	}
 
 	// free the response
