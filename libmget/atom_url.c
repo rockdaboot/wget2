@@ -47,9 +47,12 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 	struct atom_context *ctx = context;
 	mget_string_t url;
 
+	if (!val | !len)
+		return;
+
 	url.p = NULL;
 
-	if ((flags & XML_FLG_ATTRIBUTE) && val) {
+	if ((flags & XML_FLG_ATTRIBUTE)) {
 		if (!strcasecmp(attr, "href") || !strcasecmp(attr, "uri")
 			|| !strcasecmp(attr, "src") || !strcasecmp(attr, "scheme")
 			|| !strcasecmp(attr, "xmlns") || !strncasecmp(attr, "xmlns:", 6))
@@ -66,7 +69,7 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 			mget_vector_add(ctx->urls, &url, sizeof(url));
 		}
 	}
-	else if ((flags & XML_FLG_CONTENT) && len) {
+	else if ((flags & XML_FLG_CONTENT)) {
 		const char *elem = strrchr(dir, '/');
 
 		if (elem) {

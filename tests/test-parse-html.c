@@ -78,6 +78,7 @@ static void html_dump(G_GNUC_MGET_UNUSED void *user_ctx, int flags, const char *
 		switch (tolower(*attr)) {
 		case 'h':
 			found = !strcasecmp(attr, "href");
+			break;
 		case 's':
 			found = !strcasecmp(attr, "src");
 			break;

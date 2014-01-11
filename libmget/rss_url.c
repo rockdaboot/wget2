@@ -46,9 +46,12 @@ static void _rss_get_url(void *context, int flags, const char *dir, const char *
 	struct rss_context *ctx = context;
 	mget_string_t url;
 
+	if (!val || !len)
+		return;
+
 	url.p = NULL;
 
-	if ((flags & XML_FLG_ATTRIBUTE) && val) {
+	if ((flags & XML_FLG_ATTRIBUTE)) {
 		if (!strcasecmp(attr, "url") || !strcasecmp(attr, "href")
 			|| !strcasecmp(attr, "src") || !strcasecmp(attr, "domain")
 			|| !strcasecmp(attr, "xmlns") || !strncasecmp(attr, "xmlns:", 6))
@@ -65,7 +68,7 @@ static void _rss_get_url(void *context, int flags, const char *dir, const char *
 			mget_vector_add(ctx->urls, &url, sizeof(url));
 		}
 	}
-	else if ((flags & XML_FLG_CONTENT) && len) {
+	else if ((flags & XML_FLG_CONTENT)) {
 		const char *elem = strrchr(dir, '/');
 
 		if (elem) {

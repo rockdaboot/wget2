@@ -34,7 +34,7 @@
 #include <unistd.h>
 #include <libmget.h>
 
-void html_parse_localfile(const char *fname)
+static void html_parse_localfile(const char *fname)
 {
 	char *data;
 

@@ -1038,7 +1038,7 @@ void *downloader_thread(void *p)
 				append_file(resp, config.output_document ? config.output_document : job->local_filename);
 		}
 		else if (resp->code == 304 && config.timestamping) { // local document is up-to-date
-			if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
+			if (config.recursive && (!config.level || job->level < config.level + config.page_requisites) && job->local_filename) {
 				const char *ext;
 
 				if (config.content_disposition && resp->content_filename)

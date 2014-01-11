@@ -263,6 +263,9 @@ char *mget_read_file(const char *fname, size_t *size)
 	ssize_t nread;
 	char *buf = NULL;
 
+	if (!fname)
+		return NULL;
+
 	if (strcmp(fname,"-")) {
 		if ((fd = open(fname, O_RDONLY)) != -1) {
 			struct stat st;

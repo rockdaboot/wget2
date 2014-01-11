@@ -210,9 +210,8 @@ size_t mget_buffer_memset_append(mget_buffer_t *buf, char c, size_t length)
 char *mget_buffer_trim(mget_buffer_t *buf)
 {
 	if (buf->length) {
-		size_t len = buf->length;
 		char *start = buf->data;
-		char *end = start + len - 1;
+		char *end = start + buf->length - 1;
 
 		if (isspace(*end)) {
 			// skip trailing spaces
@@ -224,7 +223,7 @@ char *mget_buffer_trim(mget_buffer_t *buf)
 
 		if (isspace(*start)) {
 			// skip leading spaces
-			for (len = buf->length; isspace(*start) && end >= start; start++)
+			for (; isspace(*start) && end >= start; start++)
 				;
 			buf->length = end - start + 1;
 			memmove(buf->data, start, buf->length + 1); // include trailing 0
