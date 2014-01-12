@@ -2,7 +2,7 @@
 DEFS = @DEFS@ -DDATADIR=\"$(top_srcdir)/data\" -DSRCDIR=\"$(srcdir)\"
 AM_CPPFLAGS = -Wno-missing-field-initializers -I$(top_srcdir)/include
 AM_LDFLAGS = -static
-LDADD = $(top_srcdir)/libmget/libmget.la libtest.o
+LDADD = libtest.la ../libmget/libmget.la
 
 # test-iri-disabled removed since Mget always uses IRIs
 MGET_TESTS = test test-mget-1 test-restrict-ascii test-i-http test-np test--spider-r \
@@ -13,14 +13,15 @@ MGET_TESTS = test test-mget-1 test-restrict-ascii test-i-http test-np test--spid
 check_PROGRAMS = buffer_printf2_perf stringmap_perf $(MGET_TESTS)
 
 test_SOURCES = test.c
-test_LDADD = $(top_srcdir)/libmget/libmget.la $(top_srcdir)/src/mget-log.o $(top_srcdir)/src/mget-options.o
-test_parse_html_LDADD = $(top_srcdir)/libmget/libmget.la $(top_srcdir)/src/mget-log.o $(top_srcdir)/src/mget-options.o
+test_LDADD = ../libmget/libmget.la ../src/mget-log.o ../src/mget-options.o
+test_parse_html_LDADD = ../libmget/libmget.la ../src/mget-log.o ../src/mget-options.o
 
-#libtest_SOURCES = libtest.c
-#libtest_CPPFLAGS = -I$(top_srcdir)/include
+noinst_LTLIBRARIES = libtest.la
+libtest_la_SOURCES = libtest.c
+libtest_la_CPPFLAGS = -I$(top_srcdir)/tests -I$(top_srcdir)/include
 #libtest_LDADD = libtest.o
 
-EXTRA_DIST = files
+EXTRA_DIST = files libtest.h
 dist-hook:
 	rm -f $(distdir)/files/elb_bibel.txt
 #	cp $(top_srcdir)/data/public_suffixes.txt $(distdir)/files/

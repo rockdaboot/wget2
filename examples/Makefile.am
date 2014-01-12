@@ -3,7 +3,7 @@ noinst_PROGRAMS = print_css_urls print_css_urls2 print_css_urls3 http_get\
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_LDFLAGS = -static
-LDADD = $(top_srcdir)/libmget/libmget.la
+LDADD = ../libmget/libmget.la
 # local_ldadd = $(top_srcdir)/libmget/libmget.la
 
 #print_css_urls_SOURCES = print_css_urls.c
