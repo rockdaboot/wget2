@@ -4,7 +4,7 @@ CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 
 AC_PREREQ([2.69])
-AC_INIT([mget], [0.1.3], [tim.ruehsen@gmx.de])
+AC_INIT([mget], [0.1.3], [mget-bugs@googlegroups.com])
 AM_INIT_AUTOMAKE
 
 CFLAGS=$CFLAGS
