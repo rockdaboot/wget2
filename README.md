@@ -24,8 +24,12 @@ License
 Mget is licensed under GPLv3+.<br>
 Libmget is licensed under LGPLv3+.
 
-Mailing List
-------------
+Contact
+-------
+
+Project: (https://github.com/rockdaboot/mget)
+Website: (http://rockdaboot.github.io/mget)
+Mailing List: <mget-bugs@googlegroups.com>
 
 To join the mailing list send an email to
 
@@ -33,6 +37,9 @@ To join the mailing list send an email to
 
 and follow the instructions provided by the answer mail.
 
+Or go to
+
+(https://groups.google.com/forum/#!forum/mget-bugs/join)
 
 Development Status
 ------------------
@@ -96,7 +103,6 @@ Some ideas of what could be done next (but contact me before you start bigger ch
 
 - use [gtk-doc-tools](http://developer.gnome.org/gtk-doc-manual/unstable/settingup.html.en) for documentation.<br>
   I want the docs stay with the code: already tested Doxygen, but the man page support seems broken/orphaned.
-- http authentication (basic & digest RFC 2617) [done and working, but some optimizing needed]
 - WARC support
 - RFC 6797 HSTS (HTTP Strict Transport Security)
   [Chromium HSTS domain list](https://src.chromium.org/viewvc/chrome/trunk/src/net/base/transport_security_state_static.json)
@@ -123,8 +129,8 @@ The following packages are needed to build Mget:
 * xsltproc (when creating man pages)
 * gettext >= 0.18.1
 * libz >= 1.2.3 (the distribution may call the package zlib*, eg. zlib1g on Debian)
-* liblzma >= 5.1.1alpha (optional, if you need LZMA decompression)
-* libbz2 >= 1.0.6 (optional, if you need BZIP2 decompression)
+* liblzma >= 5.1.1alpha (optional, if you want HTTP lzma decompression)
+* libbz2 >= 1.0.6 (optional, if you want HTTP bzip2 decompression)
 * libgnutls >= 2.4.2
 * libidn2 >= 0.9 + libunistring >= 0.9.3 (libidn >= 1.25 if you don't have libidn2)
 * flex >= 2.5.35
@@ -145,7 +151,7 @@ Build Mget with
 		./configure
 		make
 
-Test the functionality (sorry, right now under heavy development)
+Test the functionality
 
 		make check
 
@@ -158,7 +164,7 @@ To create Mget HTML documentation
 		./configure --enable-gtk-doc
 		make
 
-To create Mget HTML documentation and man pages (not functional right now)
+To create Mget HTML documentation and man pages
 
 		./configure --enable-gtk-doc --enable-man
 		make
