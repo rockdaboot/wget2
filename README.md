@@ -27,9 +27,9 @@ Libmget is licensed under LGPLv3+.
 Contact
 -------
 
-Project: (https://github.com/rockdaboot/mget)
-Website: (http://rockdaboot.github.io/mget)
-Mailing List: <mget-bugs@googlegroups.com>
+[Project](https://github.com/rockdaboot/mget)<br>
+[Website](http://rockdaboot.github.io/mget)<br>
+[Mailing List](https://groups.google.com/forum/#!forum/mget-bugs)
 
 To join the mailing list send an email to
 
@@ -37,9 +37,7 @@ To join the mailing list send an email to
 
 and follow the instructions provided by the answer mail.
 
-Or go to
-
-(https://groups.google.com/forum/#!forum/mget-bugs/join)
+Or click [join](https://groups.google.com/forum/#!forum/mget-bugs/join).
 
 Development Status
 ------------------
