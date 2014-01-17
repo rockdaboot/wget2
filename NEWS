@@ -1,4 +1,8 @@
-02.01.2013
+17.01.2014
+	Release first public version v0.1.3 (master branch)
+	Created new branch 'develop' for further hacking.
+
+02.01.2014
   Added support for bzip2 Content-Encoding / Accept-Encoding type.
     It easy going after having gzip and lzma decompression implemented.
   Created a mailing list for discussions around Mget.
