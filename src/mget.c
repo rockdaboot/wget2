@@ -1695,9 +1695,10 @@ void download_part(DOWNLOADER *downloader)
 			MGET_HTTP_RESPONSE *msg;
 			MGET_METALINK_MIRROR *mirror = mget_vector_get(metalink->mirrors, mirror_index);
 
-			print_status(downloader, "downloading part %d/%d (%zd-%zd) %s from %s (mirror %d)\n",
+			print_status(downloader, "downloading part %d/%d (%lld-%lld) %s from %s (mirror %d)\n",
 				part->id, mget_vector_size(job->parts),
-				part->position, part->position + part->length - 1, metalink->name, mirror->iri->host, mirror_index);
+				(long long)part->position, (long long)(part->position + part->length - 1),
+				metalink->name, mirror->iri->host, mirror_index);
 
 			mirror_index = (mirror_index + 1) % mget_vector_size(metalink->mirrors);
 
@@ -1710,8 +1711,8 @@ void download_part(DOWNLOADER *downloader)
 				} else if (!msg->body) {
 					print_status(downloader, "part %d download error 'empty body'\n", part->id);
 				} else if (msg->body->length != (size_t)part->length) {
-					print_status(downloader, "part %d download error '%zd bytes of %zd expected'\n",
-						part->id, msg->body->length, part->length);
+					print_status(downloader, "part %d download error '%zd bytes of %lld expected'\n",
+						part->id, msg->body->length, (long long)part->length);
 				} else {
 					int fd;
 
@@ -1722,7 +1723,7 @@ void download_part(DOWNLOADER *downloader)
 						if ((nbytes = pwrite(fd, msg->body->data, msg->body->length, part->position)) == (ssize_t)msg->body->length)
 							part->done = 1; // set this when downloaded ok
 						else
-							error_printf(_("Failed to pwrite %zd bytes at pos %zd (%zd)\n"), msg->body->length, part->position, nbytes);
+							error_printf(_("Failed to pwrite %zd bytes at pos %lld (%zd)\n"), msg->body->length, (long long)part->position, nbytes);
 
 						close(fd);
 					} else {

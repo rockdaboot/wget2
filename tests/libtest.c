@@ -507,8 +507,8 @@ void mget_test(int first_key, ...)
 					close(fd);
 
 					if (nbytes != st.st_size)
-						mget_error_printf_exit(_("Failed to read %zd bytes from file %s/%s [%s]\n"),
-							st.st_size, tmpdir, expected_files[it].name, options);
+						mget_error_printf_exit(_("Failed to read %lld bytes from file %s/%s [%s]\n"),
+							(long long)st.st_size, tmpdir, expected_files[it].name, options);
 
 					if (strlen(expected_files[it].content) != (size_t)nbytes || memcmp(expected_files[it].content, content, nbytes) != 0)
 						mget_error_printf_exit(_("Unexpected content in %s [%s]\n"), expected_files[it].name, options);

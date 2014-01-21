@@ -646,6 +646,10 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 		}
 	}
 
+	// Wait for socket being ready before we call gnutls_handshake().
+	// I had problems on a KVM Win7 + CygWin (gnutls 3.2.4-1).
+	ret = mget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), connect_timeout);
+
 	// Perform the TLS handshake
 	for (;;) {
 		ret = gnutls_handshake(session);

@@ -122,7 +122,7 @@ Requirements
 
 The following packages are needed to build Mget:
 
-* autotools (autoconf, autogen, automake, autopoint, libtool)
+* autotools (autoconf, autogen, automake, libtool)
 * gtk-doc-tools (when creating the HTML documentation)
 * xsltproc (when creating man pages)
 * gettext >= 0.18.1

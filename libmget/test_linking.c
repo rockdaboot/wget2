@@ -6,6 +6,7 @@
 # include <config.h>
 #endif
 
+#include <string.h> // CygWin strlcpy() declaration
 #include <libmget.h>
 
 int main(void)

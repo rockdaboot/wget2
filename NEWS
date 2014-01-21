@@ -1,6 +1,10 @@
+21.01.2014
+  Gtk-doc is not required any more to configure and compile the project.
+  Made project configurable and compilable on Cygwin.
+
 17.01.2014
-	Release first public version v0.1.3 (master branch)
-	Created new branch 'develop' for further hacking.
+  Release first public version v0.1.3 (master branch)
+  Created new branch 'develop' for further hacking.
 
 02.01.2014
   Added support for bzip2 Content-Encoding / Accept-Encoding type.
