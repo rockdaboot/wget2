@@ -122,14 +122,14 @@ Requirements
 
 The following packages are needed to build Mget:
 
-* autotools (autoconf, autogen, automake, autopoint, libtool)
+* autotools (autoconf, autogen, automake, libtool)
 * gtk-doc-tools (when creating the HTML documentation)
 * xsltproc (when creating man pages)
 * gettext >= 0.18.1
 * libz >= 1.2.3 (the distribution may call the package zlib*, eg. zlib1g on Debian)
 * liblzma >= 5.1.1alpha (optional, if you want HTTP lzma decompression)
 * libbz2 >= 1.0.6 (optional, if you want HTTP bzip2 decompression)
-* libgnutls >= 2.4.2
+* libgnutls >= 2.10.0
 * libidn2 >= 0.9 + libunistring >= 0.9.3 (libidn >= 1.25 if you don't have libidn2)
 * flex >= 2.5.35
 

@@ -69,7 +69,7 @@ struct _MGET_LISTNODE {
  * @size bytes at @data will be copied and appended to the list.
  *
  * A pointer to the new element will be returned.
- * It must be freed by mget_list_remove() or implicitely by mget_list_free().
+ * It must be freed by mget_list_remove() or implicitly by mget_list_free().
  *
  * Returns: Pointer to the new element.
  *
@@ -194,6 +194,8 @@ void *mget_list_getlast(const MGET_LIST *list)
  * If the callback functions returns a value not equal to zero, browsing is stopped and
  * this value will be returned by mget_list_browse.
  * @context: The context handle that will be passed to the callback function.
+ *
+ * Iterate through all entries of the @list and call the function @browse for each.
  *
  * Returns: The return value of the last call to the browse function.
  *

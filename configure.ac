@@ -3,8 +3,8 @@
 CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 
-AC_PREREQ([2.69])
-AC_INIT([mget], [0.1.3], [mget-bugs@googlegroups.com])
+AC_PREREQ([2.67])
+AC_INIT([mget], [0.1.4], [mget-bugs@googlegroups.com])
 AM_INIT_AUTOMAKE
 
 CFLAGS=$CFLAGS
@@ -157,12 +157,21 @@ fi
 AC_ARG_WITH(gnutls, AS_HELP_STRING([--without-gnutls], [disable GNUTLS SSL support]), with_gnutls=$withval, with_gnutls=yes)
 if test $with_gnutls != "no"
 then
-  AC_CHECK_LIB(gnutls, gnutls_global_init, [with_gnutls=yes; AC_SUBST(GNUTLS_LIBS, "-lgnutls") AC_DEFINE([WITH_GNUTLS], [1], [Use gnutls])], [with_gnutls=no; AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS or Metalink checksumming)])
+  AC_CHECK_LIB(gnutls, gnutls_global_init, [with_gnutls=yes; AC_SUBST(GNUTLS_LIBS, "-lgnutls") AC_DEFINE([WITH_GNUTLS], [1], [Use gnutls])], [with_gnutls=no; AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS. Fallback to libnettle for Metalink checksumming.)])
+  AC_CHECK_LIB(gnutls, gnutls_hash, [with_gnutls_hash=yes])
 fi
 AM_CONDITIONAL([WITH_GNUTLS], [test $with_gnutls = "yes"])
 
 #AC_DEFINE([WITH_SSL], [1], [Use SSL])]
 #AM_CONDITIONAL([WITH_SSL], [test $with_gnutls = "yes"])
+
+
+if test $with_gnutls != "yes" || test x$with_gnutls_hash != "xyes"
+then
+  AC_CHECK_LIB(nettle, nettle_md5_init, [with_libnettle=yes; AC_SUBST(NETTLE_LIBS, "-lnettle") AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])], [with_libnettle=no; AC_MSG_WARN(*** LIBNETTLE was not found. Metalink checksumming is not available.)])
+fi
+AM_CONDITIONAL([WITH_LIBNETTLE], [test x$with_libnettle = "xyes"])
+
 
 AC_ARG_WITH(zlib, AS_HELP_STRING([--without-zlib], [disable gzip compression support]), with_zlib=$withval, with_zlib=yes)
 if test $with_zlib != "no"
@@ -194,7 +203,7 @@ then
     AC_CHECK_LIB(unistring, u8_tolower, [with_libunistring=yes; AC_SUBST(IDN_LIBS, "-lidn2 -lunistring") AC_DEFINE([WITH_LIBUNISTRING], [1], [Use libunistring])], [with_libunistring=no; AC_MSG_WARN(*** LIBUNISTRING was not found. You will not able to use IDN2008 on uppercase domains)])
   fi
 fi
-AM_CONDITIONAL([WITH_LIBUNISTRING], [test $with_libunistring = "yes"])
+AM_CONDITIONAL([WITH_LIBUNISTRING], [test x$with_libunistring = "xyes"])
 AM_CONDITIONAL([WITH_LIBIDN2], [test $with_libidn2 = "yes"])
 
 if test x$with_libidn2 != "xyes"
@@ -208,12 +217,10 @@ fi
 AM_CONDITIONAL([WITH_LIBIDN], [test x$with_libidn = "xyes"])
 
 # Checks for libraries.
-#AC_CHECK_LIB([gnutls], [gnutls_global_init])
 AC_CHECK_LIB([pthread], [pthread_attr_init])
 AC_CHECK_LIB([rt], [clock_gettime])
-#AC_CHECK_LIB([z], [deflate])
 
-AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $LZMA_LIBS $BZIP2_LIBS $IDN_LIBS $LIBS")
+AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $LZMA_LIBS $BZIP2_LIBS $IDN_LIBS $NETTLE_LIBS $LIBS")
 
 # Checks for header files.
 AC_CHECK_HEADERS([\
@@ -222,7 +229,7 @@ AC_CHECK_HEADERS([\
  langinfo.h unicase.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
-AC_CHECK_HEADER_STDBOOL
+#AC_CHECK_HEADER_STDBOOL
 AC_C_INLINE
 AC_TYPE_INT16_T
 AC_TYPE_INT32_T

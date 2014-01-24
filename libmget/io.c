@@ -47,6 +47,17 @@
 #include <libmget.h>
 #include "private.h"
 
+/**
+ * SECTION:libmget-io
+ * @short_description: I/O helper routines
+ * @title: libmget-io
+ * @stability: unstable
+ * @include: libmget.h
+ *
+ * Some general i/o helper functions that be handy for developers.
+ *
+ */
+
 // similar to getline(), but:
 // - using a file descriptor
 // - returns line without trailing \n
@@ -247,11 +258,39 @@ static int _ready_2_transfer(int fd, int timeout, int mode)
 }
 #endif
 
+/**
+ * mget_ready_2_read:
+ * @fd: File descriptor to wait for.
+ * @timeout: Max. duration in milliseconds to wait.
+ * A value of 0 means the function returns immediately.
+ * A value of -1 means infinite timeout.
+ *
+ * Wait for a file descriptor to become ready to read.
+ *
+ * Returns:
+ * -1 on error.
+ * 0 on timeout. The file descriptor is not ready for reading.
+ * 1 on success. The file descriptor is ready for reading.
+ */
 int mget_ready_2_read(int fd, int timeout)
 {
 	return _ready_2_transfer(fd, timeout, MGET_IO_READABLE);
 }
 
+/**
+ * mget_ready_2_write:
+ * @fd: File descriptor to wait for.
+ * @timeout: Max. duration in milliseconds to wait.
+ * A value of 0 means the function returns immediately.
+ * A value of -1 means infinite timeout.
+ *
+ * Wait for a file descriptor to become ready to write.
+ *
+ * Returns:
+ * -1 on error.
+ * 0 on timeout. The file descriptor is not ready for reading.
+ * 1 on success. The file descriptor is ready for reading.
+ */
 int mget_ready_2_write(int fd, int timeout)
 {
 	return _ready_2_transfer(fd, timeout, MGET_IO_WRITABLE);

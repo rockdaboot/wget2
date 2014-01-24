@@ -1355,6 +1355,51 @@ void
 	mget_md5_printf_hex(char *digest_hex, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL;
 
 /*
+ * Hash / digest routines
+ */
+
+typedef struct _hash_hd_st mget_hash_hd_t;
+
+/**
+ * mget_digest_algorithm_t:
+ * @MGET_DIGTYPE_UNKNOWN: Unknown hash algorithm.
+ * @MGET_DIGTYPE_MD5: MD5 algorithm.
+ * @MGET_DIGTYPE_SHA1: SHA-1 algorithm.
+ * @MGET_DIGTYPE_RMD160: RMD160 algorithm.
+ * @MGET_DIGTYPE_MD2: MD2 algorithm.
+ * @MGET_DIGTYPE_SHA256: SHA-256 algorithm.
+ * @MGET_DIGTYPE_SHA384: SHA-384 algorithm.
+ * @MGET_DIGTYPE_SHA512: SHA-512 algorithm.
+ * @MGET_DIGTYPE_SHA224: SHA-224 algorithm.
+ *
+ * Enumeration of different hash digest algorithms.
+ */
+typedef enum {
+	MGET_DIGTYPE_UNKNOWN,
+	MGET_DIGTYPE_MD5,
+	MGET_DIGTYPE_SHA1,
+	MGET_DIGTYPE_RMD160,
+	MGET_DIGTYPE_MD2,
+	MGET_DIGTYPE_SHA256,
+	MGET_DIGTYPE_SHA384,
+	MGET_DIGTYPE_SHA512,
+	MGET_DIGTYPE_SHA224
+} mget_digest_algorithm_t;
+
+mget_digest_algorithm_t
+	mget_hash_get_algorithm(const char *name);
+int
+	mget_hash_fast(mget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest);
+int
+	mget_hash_get_len(mget_digest_algorithm_t algorithm);
+int
+	mget_hash_init(mget_hash_hd_t *dig, mget_digest_algorithm_t algorithm);
+int
+	mget_hash(mget_hash_hd_t *handle, const void *text, size_t textlen);
+void
+	mget_hash_deinit(mget_hash_hd_t *handle, void *digest);
+
+/*
  * Hash file routines
  */
 

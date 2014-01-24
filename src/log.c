@@ -38,7 +38,6 @@
 #include <libmget.h>
 
 #include "options.h"
-#include "printf.h"
 #include "log.h"
 
 static void _write_debug(const char *buf, size_t len)

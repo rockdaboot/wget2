@@ -678,7 +678,6 @@ int mget_tcp_listen(MGET_TCP *tcp, const char *host, const char *port, int backl
 	}
 
 	return -1;
-
 }
 
 MGET_TCP *mget_tcp_accept(MGET_TCP *parent_tcp)
@@ -731,7 +730,7 @@ ssize_t mget_tcp_read(MGET_TCP *tcp, char *buf, size_t count)
 	if (rc < 0)
 		error_printf(_("Failed to read %zu bytes (%d)\n"), count, errno);
 
-		return rc;
+	return rc;
 }
 
 ssize_t mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count)
@@ -755,6 +754,7 @@ ssize_t mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count)
 				rc = connect(tcp->sockfd, tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
 				if (rc < 0
 					&& errno != EAGAIN
+					&& errno != ENOTCONN
 #ifdef EINPROGRESS
 				&& errno != EINPROGRESS
 #endif
@@ -777,6 +777,7 @@ ssize_t mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count)
 			nwritten += n;
 		} else {
 			if (errno != EAGAIN
+				&& errno != ENOTCONN
 #ifdef EINPROGRESS
 				&& errno != EINPROGRESS
 #endif
