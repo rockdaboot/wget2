@@ -69,7 +69,7 @@ mget_digest_algorithm_t mget_hash_get_algorithm(const char *name)
 	return MGET_DIGTYPE_UNKNOWN;
 }
 
-#ifdef WITH_GNUTLS
+#if defined(WITH_GNUTLS) && !defined(WITH_LIBNETTLE)
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -139,12 +139,22 @@ static const struct nettle_hash *
 		[MGET_DIGTYPE_UNKNOWN] = NULL,
 		[MGET_DIGTYPE_MD2] = &nettle_md2,
 		[MGET_DIGTYPE_MD5] = &nettle_md5,
+#ifdef RIPEMD160_DIGEST_SIZE
 		[MGET_DIGTYPE_RMD160] = &nettle_ripemd160,
+#endif
 		[MGET_DIGTYPE_SHA1] = &nettle_sha1,
+#ifdef SHA224_DIGEST_SIZE
 		[MGET_DIGTYPE_SHA224] = &nettle_sha224,
+#endif
+#ifdef SHA256_DIGEST_SIZE
 		[MGET_DIGTYPE_SHA256] = &nettle_sha256,
+#endif
+#ifdef SHA384_DIGEST_SIZE
 		[MGET_DIGTYPE_SHA384] = &nettle_sha384,
-		[MGET_DIGTYPE_SHA512] = &nettle_sha512
+#endif
+#ifdef SHA512_DIGEST_SIZE
+		[MGET_DIGTYPE_SHA512] = &nettle_sha512,
+#endif
 };
 
 int mget_hash_fast(mget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
