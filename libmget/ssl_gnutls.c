@@ -198,7 +198,10 @@ static int _print_info(gnutls_session_t session)
 	const char *tmp;
 	gnutls_credentials_type_t cred;
 	gnutls_kx_algorithm_t kx;
-	int dhe = 0, ecdh = 0;
+	int dhe = 0;
+#if GNUTLS_VERSION_MAJOR >= 3
+	int ecdh = 0;
+#endif
 
 	/* print the key exchange's algorithm name
 	 */
