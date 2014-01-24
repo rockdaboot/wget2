@@ -194,7 +194,7 @@ then
     AC_CHECK_LIB(unistring, u8_tolower, [with_libunistring=yes; AC_SUBST(IDN_LIBS, "-lidn2 -lunistring") AC_DEFINE([WITH_LIBUNISTRING], [1], [Use libunistring])], [with_libunistring=no; AC_MSG_WARN(*** LIBUNISTRING was not found. You will not able to use IDN2008 on uppercase domains)])
   fi
 fi
-AM_CONDITIONAL([WITH_LIBUNISTRING], [test $with_libunistring = "yes"])
+AM_CONDITIONAL([WITH_LIBUNISTRING], [test x$with_libunistring = "xyes"])
 AM_CONDITIONAL([WITH_LIBIDN2], [test $with_libidn2 = "yes"])
 
 if test x$with_libidn2 != "xyes"
