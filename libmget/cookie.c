@@ -38,8 +38,6 @@
 #include <libmget.h>
 #include "private.h"
 
-// #define MAX_LABELS 6 // as of 02.11.2012, we need a value of 4, but having sparse is ok
-
 typedef struct {
 	char
 		label_buf[40];
@@ -503,7 +501,7 @@ char *mget_cookie_create_request_header(const MGET_IRI *iri)
 		if (((!cookie->host_only && _domain_match(cookie->domain, iri->host)) ||
 			(cookie->host_only && !strcasecmp(cookie->domain, iri->host))) &&
 			(!cookie->expires || cookie->expires >= now) &&
-			(!cookie->secure_only || (cookie->secure_only && iri->scheme == IRI_SCHEME_HTTPS)) &&
+			(!cookie->secure_only || (cookie->secure_only && iri->scheme == MGET_IRI_SCHEME_HTTPS)) &&
 			_path_match(cookie->path, iri->path))
 		{
 			if (!init) {

@@ -97,14 +97,14 @@ int mget_stringmap_contains(const MGET_STRINGMAP *h, const char *key)
 	return mget_hashmap_contains(h, key);
 }
 
-void mget_stringmap_remove(MGET_STRINGMAP *h, const char *key)
+int mget_stringmap_remove(MGET_STRINGMAP *h, const char *key)
 {
-	mget_hashmap_remove(h, key);
+	return mget_hashmap_remove(h, key);
 }
 
-void mget_stringmap_remove_nofree(MGET_STRINGMAP *h, const char *key)
+int mget_stringmap_remove_nofree(MGET_STRINGMAP *h, const char *key)
 {
-	mget_hashmap_remove(h, key);
+	return mget_hashmap_remove(h, key);
 }
 
 void mget_stringmap_free(MGET_STRINGMAP **h)
@@ -122,9 +122,9 @@ int mget_stringmap_size(const MGET_STRINGMAP *h)
 	return mget_hashmap_size(h);
 }
 
-int mget_stringmap_browse(const MGET_STRINGMAP *h, int (*browse)(const char *key, const void *value))
+int mget_stringmap_browse(const MGET_STRINGMAP *h, int (*browse)(void *ctx, const char *key, void *value), void *ctx)
 {
-	return mget_hashmap_browse(h, (int (*)(const void *, const void *))browse);
+	return mget_hashmap_browse(h, (int (*)(void *, const void *, void *))browse, ctx);
 }
 
 void mget_stringmap_setcmpfunc(MGET_STRINGMAP *h, int (*cmp)(const char *key1, const char *key2))

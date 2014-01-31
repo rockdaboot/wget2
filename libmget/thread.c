@@ -52,6 +52,11 @@ int mget_thread_start(mget_thread_t *thread, void *(*start_routine)(void *), voi
 	return rc;
 }
 
+int mget_thread_mutex_init(mget_thread_mutex_t *mutex)
+{
+	return pthread_mutex_init(mutex, NULL);
+}
+
 void mget_thread_mutex_lock(mget_thread_mutex_t *mutex)
 {
 	pthread_mutex_lock(mutex);

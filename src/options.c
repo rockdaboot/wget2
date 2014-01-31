@@ -177,6 +177,10 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --random-file       File to be used as source of random data.\n"
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
 		"      --https-only        Do not follow non-secure URLs. (default: off)"
+		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)"
+		"      --hsts-file         Set file for HSTS saving/loading. (default: .mget_hsts)\n"
+		"      --load-hsts         Load entries from HSTS file.\n"
+		"      --save-hsts         Save entries into HSTS file.\n"
 		"\n");
 	puts(
 		"Directory options:\n"
@@ -437,7 +441,9 @@ struct config config = {
 	.level = 5,
 	.parent = 1,
 	.robots = 1,
-	.tries = 20
+	.tries = 20,
+	.hsts = 1,
+	.hsts_file = ".mget_hsts"
 };
 
 static int parse_execute(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val);
@@ -483,6 +489,8 @@ static const struct option options[] = {
 	{ "force-sitemap", &config.force_sitemap, parse_bool, 0, 0 },
 	{ "help", NULL, print_help, 0, 'h' },
 	{ "host-directories", &config.host_directories, parse_bool, 0, 0 },
+	{ "hsts", &config.hsts, parse_bool, 0, 0 },
+	{ "hsts-file", &config.hsts_file, parse_string, 1, 0 },
 	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0 }, // obsolete, replaced by --adjust-extension
 	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0 },
 	{ "http-password", &config.http_password, parse_string, 1, 0 },
@@ -498,6 +506,7 @@ static const struct option options[] = {
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0 },
 	{ "level", &config.level, parse_integer, 1, 'l' },
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0 },
+	{ "load-hsts", &config.load_hsts, parse_bool, 0, 0 },
 	{ "local-encoding", &config.local_encoding, parse_string, 1, 0 },
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0 },
 	{ "n", NULL, parse_n_option, 1, 'n' }, // special Wget compatibility option
@@ -523,6 +532,7 @@ static const struct option options[] = {
 	{ "robots", &config.robots, parse_bool, 0, 0 },
 	{ "save-cookies", &config.save_cookies, parse_string, 1, 0 },
 	{ "save-headers", &config.save_headers, parse_bool, 0, 0 },
+	{ "save-hsts", &config.save_hsts, parse_bool, 0, 0 },
 	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0 },
 	{ "server-response", &config.server_response, parse_bool, 0, 'S' },
 	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H' },
@@ -939,6 +949,7 @@ int init(int argc, const char *const *argv)
 	config.http_proxy = mget_strdup(getenv("http_proxy"));
 	config.https_proxy = mget_strdup(getenv("https_proxy"));
 	config.default_page = strdup(config.default_page);
+	config.hsts_file = strdup(config.hsts_file);
 	config.domains = mget_stringmap_create(16);
 	config.exclude_domains = mget_stringmap_create(16);
 
@@ -1098,6 +1109,12 @@ int init(int argc, const char *const *argv)
 	if (config.load_cookies)
 		mget_cookie_load(config.load_cookies, config.keep_session_cookies);
 
+	if (config.hsts) {
+		config.hsts_db = mget_hsts_db_alloc();
+		if (config.load_hsts)
+			mget_hsts_db_load(config.hsts_db, config.hsts_file);
+	}
+
 	if (config.base_url)
 		config.base = mget_iri_parse(config.base_url, config.local_encoding);
 
@@ -1148,6 +1165,7 @@ void deinit(void)
 	xfree(config.cookie_suffixes);
 	xfree(config.load_cookies);
 	xfree(config.save_cookies);
+	xfree(config.hsts_file);
 	xfree(config.logfile);
 	xfree(config.logfile_append);
 	xfree(config.user_agent);

@@ -463,7 +463,7 @@ const char *http_parse_content_disposition(const char *s, const char **filename)
 		*filename = NULL;
 
 		while (*s) {
-			s=http_parse_param(s, &param.name, &param.value);
+			s = http_parse_param(s, &param.name, &param.value);
 			if (param.value && !mget_strcasecmp("filename", param.name)) {
 				xfree(param.name);
 
@@ -478,6 +478,45 @@ const char *http_parse_content_disposition(const char *s, const char **filename)
 			xfree(param.name);
 			xfree(param.value);
 		}
+	}
+
+	return s;
+}
+
+// RFC 6797
+//
+// Strict-Transport-Security = "Strict-Transport-Security" ":" [ directive ]  *( ";" [ directive ] )
+// directive                 = directive-name [ "=" directive-value ]
+// directive-name            = token
+// directive-value           = token | quoted-string
+
+const char *http_parse_strict_transport_security(const char *s, time_t *maxage, char *include_subdomains)
+{
+	MGET_HTTP_HEADER_PARAM param;
+
+	*maxage = 0;
+	*include_subdomains = 0;
+
+	while (*s) {
+		s = http_parse_param(s, &param.name, &param.value);
+
+		if (param.value) {
+			if (!mget_strcasecmp(param.name, "max-age")) {
+				long offset = atol(param.value);
+
+				if (offset > 0)
+					*maxage = time(NULL) + offset;
+				else
+					*maxage = 0; // keep 0 as a special value: remove entry from HSTS database
+			}
+		} else {
+			if (!mget_strcasecmp(param.name, "includeSubDomains")) {
+				*include_subdomains = 1;
+			}
+		}
+
+		xfree(param.name);
+		xfree(param.value);
 	}
 
 	return s;
@@ -1020,6 +1059,10 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 					mget_vector_add(resp->cookies, &cookie, sizeof(cookie));
 				}
 			}
+			else if (!strncasecmp(name, "Strict-Transport-Security", namesize)) {
+				resp->hsts = 1;
+				http_parse_strict_transport_security(s, &resp->hsts_maxage, &resp->hsts_include_subdomains);
+			}
 			break;
 		case 'w':
 			if (!strncasecmp(name, "WWW-Authenticate", namesize)) {
@@ -1316,19 +1359,19 @@ MGET_HTTP_CONNECTION *http_open(const MGET_IRI *iri)
 		*port,
 		*host;
 	int
-		ssl = iri->scheme == IRI_SCHEME_HTTPS;
+		ssl = iri->scheme == MGET_IRI_SCHEME_HTTPS;
 
 	if (!conn)
 		return NULL;
 
-	if (iri->scheme == IRI_SCHEME_HTTP && http_proxies) {
+	if (iri->scheme == MGET_IRI_SCHEME_HTTP && http_proxies) {
 		mget_thread_mutex_lock(&mutex);
 		proxy = mget_vector_get(http_proxies, (++next_http_proxy) % mget_vector_size(http_proxies));
 		mget_thread_mutex_unlock(&mutex);
 
 		host = proxy->host;
 		port = proxy->resolv_port;
-	} else if (iri->scheme == IRI_SCHEME_HTTPS && https_proxies) {
+	} else if (iri->scheme == MGET_IRI_SCHEME_HTTPS && https_proxies) {
 		mget_thread_mutex_lock(&mutex);
 		proxy = mget_vector_get(https_proxies, (++next_https_proxy) % mget_vector_size(https_proxies));
 		mget_thread_mutex_unlock(&mutex);
@@ -1400,12 +1443,12 @@ ssize_t http_request_to_buffer(MGET_HTTP_REQUEST *req, mget_buffer_t *buf)
 
 	mget_buffer_strcpy(buf, req->method);
 	mget_buffer_memcat(buf, " ", 1);
-	if (req->scheme == IRI_SCHEME_HTTP && mget_vector_size(http_proxies) > 0) {
+	if (req->scheme == MGET_IRI_SCHEME_HTTP && mget_vector_size(http_proxies) > 0) {
 		use_proxy = 1;
 		mget_buffer_strcat(buf, req->scheme);
 		mget_buffer_memcat(buf, "://", 3);
 		mget_buffer_bufcat(buf, &req->esc_host);
-	} else if (req->scheme == IRI_SCHEME_HTTPS && mget_vector_size(https_proxies) > 0) {
+	} else if (req->scheme == MGET_IRI_SCHEME_HTTPS && mget_vector_size(https_proxies) > 0) {
 		use_proxy = 1;
 		mget_buffer_strcat(buf, req->scheme);
 		mget_buffer_memcat(buf, "://", 3);

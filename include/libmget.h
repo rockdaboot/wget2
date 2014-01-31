@@ -406,7 +406,7 @@ typedef struct {
 mget_buffer_t *
 	mget_buffer_init(mget_buffer_t *buf, char *data, size_t size);
 mget_buffer_t *
-	mget_buffer_alloc(size_t size);
+	mget_buffer_alloc(size_t size) G_GNUC_MGET_MALLOC G_GNUC_MGET_ALLOC_SIZE(1);
 void
 	mget_buffer_ensure_capacity(mget_buffer_t *buf, size_t size) G_GNUC_MGET_NONNULL((1));
 void
@@ -416,7 +416,7 @@ void
 void
 	mget_buffer_free_data(mget_buffer_t *buf) G_GNUC_MGET_NONNULL((1));
 void
-	mget_buffer_realloc(mget_buffer_t *buf, size_t size) G_GNUC_MGET_NONNULL((1));
+	mget_buffer_realloc(mget_buffer_t *buf, size_t size) G_GNUC_MGET_NONNULL((1)) G_GNUC_MGET_ALLOC_SIZE(2);
 void
 	mget_buffer_reset(mget_buffer_t *buf);
 size_t
@@ -578,7 +578,7 @@ int
 int
 	mget_hashmap_size(const MGET_HASHMAP *h) G_GNUC_MGET_PURE;
 int
-	mget_hashmap_browse(const MGET_HASHMAP *h, int (*browse)(const void *key, const void *value)) G_GNUC_MGET_NONNULL((2));
+	mget_hashmap_browse(const MGET_HASHMAP *h, int (*browse)(void *ctx, const void *key, void *value), void *ctx) G_GNUC_MGET_NONNULL((2));
 void
 	mget_hashmap_free(MGET_HASHMAP **h);
 void
@@ -589,9 +589,9 @@ int
 	mget_hashmap_get_null(const MGET_HASHMAP *h, const void *key, void **value);
 int
 	mget_hashmap_contains(const MGET_HASHMAP *h, const void *key);
-void
+int
 	mget_hashmap_remove(MGET_HASHMAP *h, const void *key);
-void
+int
 	mget_hashmap_remove_nofree(MGET_HASHMAP *h, const void *key);
 void
 	mget_hashmap_setcmpfunc(MGET_HASHMAP *h, int (*cmp)(const void *key1, const void *key2));
@@ -623,7 +623,7 @@ int
 int
 	mget_stringmap_size(const MGET_STRINGMAP *h) G_GNUC_MGET_PURE;
 int
-	mget_stringmap_browse(const MGET_STRINGMAP *h, int (*browse)(const char *key, const void *value)) G_GNUC_MGET_NONNULL((2));
+	mget_stringmap_browse(const MGET_STRINGMAP *h, int (*browse)(void *ctx, const char *key, void *value), void *ctx) G_GNUC_MGET_NONNULL((2));
 void
 	mget_stringmap_free(MGET_STRINGMAP **h);
 void
@@ -634,9 +634,9 @@ int
 	mget_stringmap_get_null(const MGET_STRINGMAP *h, const char *key, void **value);
 int
 	mget_stringmap_contains(const MGET_STRINGMAP *h, const char *key);
-void
+int
 	mget_stringmap_remove(MGET_STRINGMAP *h, const char *key);
-void
+int
 	mget_stringmap_remove_nofree(MGET_STRINGMAP *h, const char *key);
 void
 	mget_stringmap_setcmpfunc(MGET_STRINGMAP *h, int (*cmp)(const char *key1, const char *key2));
@@ -664,6 +664,8 @@ typedef int mget_thread_cond_t;
 
 int
 	mget_thread_start(mget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags);
+int
+	mget_thread_mutex_init(mget_thread_mutex_t *mutex);
 void
 	mget_thread_mutex_lock(mget_thread_mutex_t *);
 void
@@ -710,12 +712,12 @@ int
 
 // TODO: i have to move this away from libmget.h
 extern const char * const
-	iri_schemes[];
+	mget_iri_schemes[];
 
-#define IRI_SCHEME_HTTP    (iri_schemes[0])
-#define IRI_SCHEME_HTTPS   (iri_schemes[1])
-#define IRI_SCHEME_FTP     (iri_schemes[2])
-#define IRI_SCHEME_DEFAULT IRI_SCHEME_HTTP
+#define MGET_IRI_SCHEME_HTTP    (mget_iri_schemes[0])
+#define MGET_IRI_SCHEME_HTTPS   (mget_iri_schemes[1])
+#define MGET_IRI_SCHEME_FTP     (mget_iri_schemes[2])
+#define MGET_IRI_SCHEME_DEFAULT MGET_IRI_SCHEME_HTTP
 
 typedef struct {
 	const char *
@@ -729,17 +731,17 @@ typedef struct {
 	const char *
 		password;
 	const char *
-		host; // unescaped, toASCII converted, lowercase
+		host; // unescaped, toASCII converted, lowercase host (or IP address) part
 	const char *
 		port;
 	const char *
 		resolv_port;
 	const char *
-		path; // unescaped
+		path; // unescaped path part or NULL
 	const char *
-		query; // unescaped
+		query; // unescaped query part or NULL
 	const char *
-		fragment; // unescaped
+		fragment; // unescaped fragment part or NULL
 	const char *
 		connection_part; // helper, e.g. http://www.example.com:8080
 
@@ -857,6 +859,42 @@ int
 	mget_cookie_suffix_match(const char *domain) G_GNUC_MGET_NONNULL_ALL;
 char *
 	mget_cookie_create_request_header(const MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
+
+/*
+ * HTTP Strict Transport Security (HSTS) routines
+ */
+
+// structure for HTTP Strict Transport Security (HSTS) entries
+typedef struct _mget_hsts_st mget_hsts_t;
+typedef struct _mget_hsts_db_st mget_hsts_db_t;
+
+mget_hsts_t *
+	mget_hsts_init(mget_hsts_t *hsts);
+mget_hsts_t *
+	mget_hsts_alloc(void) G_GNUC_MGET_MALLOC;
+void
+	mget_hsts_deinit(mget_hsts_t *hsts);
+void
+	mget_hsts_free(mget_hsts_t **hsts);
+mget_hsts_t *
+	mget_hsts_new(const char *host, const char *port, time_t maxage, int include_subdomains);
+int
+	mget_hsts_host_match(const mget_hsts_db_t *hsts_db, const char *host, int port);
+
+mget_hsts_db_t *
+	mget_hsts_db_init(mget_hsts_db_t *hsts_db);
+mget_hsts_db_t *
+	mget_hsts_db_alloc(void) G_GNUC_MGET_MALLOC;
+void
+	mget_hsts_db_deinit(mget_hsts_db_t *hsts_db);
+void
+	mget_hsts_db_free(mget_hsts_db_t **hsts_db);
+void
+	mget_hsts_db_add(mget_hsts_db_t *hsts_db, mget_hsts_t *hsts);
+int
+	mget_hsts_db_save(mget_hsts_db_t *hsts_db, const char *fname);
+int
+	mget_hsts_db_load(mget_hsts_db_t *hsts_db, const char *fname);
 
 /*
  * CSS parsing routines
@@ -1174,6 +1212,12 @@ typedef struct {
 		content_length;
 	time_t
 		last_modified;
+	time_t
+		hsts_maxage;
+	char
+		hsts_include_subdomains;
+	char
+		hsts; // if hsts_maxage and hsts_include_subdomains are valid
 	char
 		reason[32];
 	int
@@ -1244,6 +1288,8 @@ const char *
 	http_parse_content_encoding(const char *s, char *content_encoding) G_GNUC_MGET_NONNULL_ALL;
 const char *
 	http_parse_content_disposition(const char *s, const char **filename) G_GNUC_MGET_NONNULL((1));
+const char *
+	http_parse_strict_transport_security(const char *s, time_t *maxage, char *include_subdomains) G_GNUC_MGET_NONNULL((1));
 const char *
 	http_parse_connection(const char *s, char *keep_alive) G_GNUC_MGET_NONNULL_ALL;
 const char *

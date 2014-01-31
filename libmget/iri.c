@@ -44,7 +44,7 @@ static size_t
 	default_page_length = 10;
 
 const char
-	* const iri_schemes[] = { "http", "https", NULL },
+	* const mget_iri_schemes[] = { "http", "https", NULL },
 	* const iri_ports[]   = { "80",   "443" };
 
 #define IRI_CTYPE_GENDELIM (1<<0)
@@ -89,8 +89,8 @@ int mget_iri_supported(const MGET_IRI *iri)
 {
 	int it;
 
-	for (it = 0; iri_schemes[it]; it++) {
-		if (iri_schemes[it] == iri->scheme)
+	for (it = 0; mget_iri_schemes[it]; it++) {
+		if (mget_iri_schemes[it] == iri->scheme)
 			return 1;
 	}
 
@@ -239,9 +239,9 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 		// find the scheme in our static list of supported schemes
 		// for later comparisons we compare pointers (avoiding strcasecmp())
 		iri->scheme = p;
-		for (it = 0; iri_schemes[it]; it++) {
-			if (!strcasecmp(iri_schemes[it], p)) {
-				iri->scheme = iri_schemes[it];
+		for (it = 0; mget_iri_schemes[it]; it++) {
+			if (!strcasecmp(mget_iri_schemes[it], p)) {
+				iri->scheme = mget_iri_schemes[it];
 				default_port = iri_ports[it];
 				break;
 			}
@@ -255,7 +255,7 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 		}
 
 	} else {
-		iri->scheme = IRI_SCHEME_DEFAULT;
+		iri->scheme = MGET_IRI_SCHEME_DEFAULT;
 		default_port = iri_ports[0]; // port 80
 		s = p; // rewind
 	}
@@ -344,7 +344,7 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 		}
 	}
 	else {
-		if (iri->scheme == IRI_SCHEME_HTTP || iri->scheme == IRI_SCHEME_HTTPS) {
+		if (iri->scheme == MGET_IRI_SCHEME_HTTP || iri->scheme == MGET_IRI_SCHEME_HTTPS) {
 			error_printf(_("Missing host/domain in URI '%s'\n"), iri->uri);
 			mget_iri_free(&iri);
 			return NULL;

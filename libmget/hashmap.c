@@ -259,7 +259,7 @@ int mget_hashmap_contains(const MGET_HASHMAP *h, const void *key)
 	return 0;
 }
 
-static void G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const char *key, int free_kv)
+static int G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const char *key, int free_kv)
 {
 	ENTRY *entry, *next, *prev = NULL;
 	unsigned int hash = h->hash(key);
@@ -288,21 +288,27 @@ static void G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const 
 			xfree(entry);
 
 			h->cur--;
-			return;
+			return 1;
 		}
 	}
+
+	return 0;
 }
 
-void mget_hashmap_remove(MGET_HASHMAP *h, const void *key)
+int mget_hashmap_remove(MGET_HASHMAP *h, const void *key)
 {
 	if (h)
-		hashmap_remove_entry(h, key, 1);
+		return hashmap_remove_entry(h, key, 1);
+	else
+		return 0;
 }
 
-void mget_hashmap_remove_nofree(MGET_HASHMAP *h, const void *key)
+int mget_hashmap_remove_nofree(MGET_HASHMAP *h, const void *key)
 {
 	if (h)
-		hashmap_remove_entry(h, key, 0);
+		return hashmap_remove_entry(h, key, 0);
+	else
+		return 0;
 }
 
 void mget_hashmap_free(MGET_HASHMAP **h)
@@ -348,7 +354,7 @@ int mget_hashmap_size(const MGET_HASHMAP *h)
 	return h ? h->cur : 0;
 }
 
-int mget_hashmap_browse(const MGET_HASHMAP *h, int (*browse)(const void *key, const void *value))
+int mget_hashmap_browse(const MGET_HASHMAP *h, int (*browse)(void *ctx, const void *key, void *value), void *ctx)
 {
 	if (h) {
 		ENTRY *entry;
@@ -356,7 +362,7 @@ int mget_hashmap_browse(const MGET_HASHMAP *h, int (*browse)(const void *key, co
 
 		for (it = 0; it < h->max && cur; it++) {
 			for (entry = h->entry[it]; entry; entry = entry->next) {
-				if ((ret = browse(entry->key, entry->value)) != 0)
+				if ((ret = browse(ctx, entry->key, entry->value)) != 0)
 					return ret;
 				cur--;
 			}

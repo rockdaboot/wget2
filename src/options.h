@@ -62,6 +62,7 @@ struct config {
 		*cookie_suffixes,
 		*load_cookies,
 		*save_cookies,
+		*hsts_file,
 		*logfile,
 		*logfile_append,
 		*user_agent,
@@ -76,6 +77,8 @@ struct config {
 	MGET_STRINGMAP
 		*domains,
 		*exclude_domains;
+	mget_hsts_db_t
+		*hsts_db; // in-memory HSTS database
 	size_t
 		chunk_size;
 	long long
@@ -94,6 +97,9 @@ struct config {
 		max_redirect,
 		num_threads;
 	char
+		hsts, // if HSTS (HTTP Strict Transport Security) is enabled or not
+		load_hsts, // on startup, load HSTS entries from hsts_file
+		save_hsts, // on exit, save HSTS entries info hsts_file
 		random_wait,
 		trust_server_names,
 		robots,

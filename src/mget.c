@@ -74,8 +74,6 @@ typedef struct {
 		cond;
 } DOWNLOADER;
 
-//static HTTP_RESPONSE
-//	*http_get_uri(const char *uri);
 static void
 	download_part(DOWNLOADER *downloader),
 	save_file(MGET_HTTP_RESPONSE *resp, const char *fname),
@@ -103,11 +101,10 @@ static DOWNLOADER
 	*downloaders;
 static void
 	*downloader_thread(void *p);
-long long
+static long long
 	quota;
 static int
 	terminate;
-
 static int
 	exit_status;
 
@@ -435,7 +432,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		return;
 	}
 
-	if (config.https_only && iri->scheme != IRI_SCHEME_HTTPS) {
+	if (config.https_only && iri->scheme != MGET_IRI_SCHEME_HTTPS) {
 		info_printf(_("URL '%s' not followed (https-only requested)\n"), url);
 		mget_iri_free(&iri);
 		return;
@@ -714,6 +711,9 @@ int main(int argc, const char *const *argv)
 	if (config.save_cookies)
 		mget_cookie_save(config.save_cookies, config.keep_session_cookies);
 
+	if (config.hsts && config.save_hsts && config.hsts_file)
+		mget_hsts_db_save(config.hsts_db, config.hsts_file);
+
 	if (config.delete_after && config.output_document)
 		unlink(config.output_document);
 
@@ -721,6 +721,7 @@ int main(int argc, const char *const *argv)
 		blacklist_print();
 
 	// freeing to avoid disguising valgrind output
+	mget_hsts_db_free(&config.hsts_db);
 	mget_cookie_free_public_suffixes();
 	mget_cookie_free_cookies();
 	mget_ssl_deinit();
@@ -879,9 +880,9 @@ void *downloader_thread(void *p)
 			http_free_response(&resp);
 		}
 
-		if (job->local_filename)
-			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->local_filename);
-		else
+//		if (job->local_filename)
+//			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->local_filename);
+//		else
 			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->iri->uri);
 
 		for (int tries = 0; !resp && tries < config.tries; tries++) {
@@ -899,6 +900,10 @@ void *downloader_thread(void *p)
 
 		mget_cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
 		mget_cookie_store_cookies(resp->cookies); // store cookies
+
+		// care for HSTS feature
+		if (config.hsts && job->iri->scheme == MGET_IRI_SCHEME_HTTPS && resp->hsts)
+			mget_hsts_db_add(config.hsts_db, mget_hsts_new(job->iri->host, job->iri->port, resp->hsts_maxage, resp->hsts_include_subdomains));
 
 		// check if we got a RFC 6249 Metalink response
 		// HTTP/1.1 302 Found
@@ -1024,8 +1029,11 @@ void *downloader_thread(void *p)
 							for (int it = 0; it < mget_vector_size(job->host->robots->sitemaps); it++) {
 								const char *sitemap = mget_vector_get(job->host->robots->sitemaps, it);
 								info_printf("adding sitemap '%s'\n", sitemap);
+//	debug_printf("XXX adding %s\n", sitemap);
 								add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see http://www.sitemaps.org/protocol.html#escaping
 							}
+//	debug_printf("XXX 4\n");
+							info_printf("job '%s'\n", job->iri->uri);
 						}
 					}
 				}
@@ -1064,7 +1072,7 @@ ready:
 		http_free_response(&resp);
 
 		// download of single-part file complete, remove from job queue
-		// debug_printf("- '%s' completed\n",downloader[n].job->uri);
+		info_printf("'%s' completed\n",job->iri->uri);
 		queue_del(job);
 		mget_thread_cond_signal(&main_cond);
 	}
@@ -1692,7 +1700,7 @@ void download_part(DOWNLOADER *downloader)
 		mget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
 
 		for (mirrors = 0; mirrors < mget_vector_size(metalink->mirrors) && !part->done; mirrors++) {
-			MGET_HTTP_RESPONSE *msg;
+			MGET_HTTP_RESPONSE *resp;
 			MGET_METALINK_MIRROR *mirror = mget_vector_get(metalink->mirrors, mirror_index);
 
 			print_status(downloader, "downloading part %d/%d (%lld-%lld) %s from %s (mirror %d)\n",
@@ -1702,17 +1710,17 @@ void download_part(DOWNLOADER *downloader)
 
 			mirror_index = (mirror_index + 1) % mget_vector_size(metalink->mirrors);
 
-			msg = http_get(mirror->iri, part, downloader, 1);
-			if (msg) {
-				mget_cookie_store_cookies(msg->cookies); // sanitize and store cookies
+			resp = http_get(mirror->iri, part, downloader, 1);
+			if (resp) {
+				mget_cookie_store_cookies(resp->cookies); // sanitize and store cookies
 
-				if (msg->code != 200 && msg->code != 206) {
-					print_status(downloader, "part %d download error %d\n", part->id, msg->code);
-				} else if (!msg->body) {
+				if (resp->code != 200 && resp->code != 206) {
+					print_status(downloader, "part %d download error %d\n", part->id, resp->code);
+				} else if (!resp->body) {
 					print_status(downloader, "part %d download error 'empty body'\n", part->id);
-				} else if (msg->body->length != (size_t)part->length) {
+				} else if (resp->body->length != (size_t)part->length) {
 					print_status(downloader, "part %d download error '%zd bytes of %lld expected'\n",
-						part->id, msg->body->length, (long long)part->length);
+						part->id, resp->body->length, (long long)part->length);
 				} else {
 					int fd;
 
@@ -1720,10 +1728,10 @@ void download_part(DOWNLOADER *downloader)
 					if ((fd = open(metalink->name, O_WRONLY | O_CREAT, 0644)) != -1) {
 						ssize_t nbytes;
 
-						if ((nbytes = pwrite(fd, msg->body->data, msg->body->length, part->position)) == (ssize_t)msg->body->length)
+						if ((nbytes = pwrite(fd, resp->body->data, resp->body->length, part->position)) == (ssize_t)resp->body->length)
 							part->done = 1; // set this when downloaded ok
 						else
-							error_printf(_("Failed to pwrite %zd bytes at pos %lld (%zd)\n"), msg->body->length, (long long)part->position, nbytes);
+							error_printf(_("Failed to pwrite %zd bytes at pos %lld (%zd)\n"), resp->body->length, (long long)part->position, nbytes);
 
 						close(fd);
 					} else {
@@ -1732,7 +1740,7 @@ void download_part(DOWNLOADER *downloader)
 					}
 				}
 
-				http_free_response(&msg);
+				http_free_response(&resp);
 			}
 		}
 	}
@@ -1775,11 +1783,19 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 	MGET_HTTP_CONNECTION *conn;
 	MGET_HTTP_RESPONSE *resp = NULL;
 	MGET_VECTOR *challenges = NULL;
+	const char *iri_scheme;
 //	int max_redirect = 3;
 	mget_buffer_t buf;
 	char sbuf[256];
 
 	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
+	if (config.hsts && iri && iri->scheme == MGET_IRI_SCHEME_HTTP && mget_hsts_host_match(config.hsts_db, iri->host, atoi(iri->resolv_port))) {
+		info_printf("HSTS in effect for %s:%s\n", iri->host, iri->resolv_port);
+		iri_scheme = iri->scheme;
+		iri->scheme = MGET_IRI_SCHEME_HTTPS;
+	} else
+		iri_scheme = NULL;
 
 	while (iri) {
 		if (downloader->conn && !mget_strcmp(downloader->conn->esc_host, iri->host) &&
@@ -1792,7 +1808,9 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 				debug_printf("close connection %s\n", downloader->conn->esc_host);
 				http_close(&downloader->conn);
 			}
+
 			downloader->conn = http_open(iri);
+
 			if (downloader->conn) {
 				debug_printf("opened connection %s\n", downloader->conn->esc_host);
 			}
@@ -1979,14 +1997,26 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 					mget_iri_free(&iri);
 				iri = mget_iri_parse(uri_buf.data, NULL);
 				mget_buffer_deinit(&uri_buf);
+
+				// apply the HSTS check to the location URL
+				if (config.hsts && iri && iri->scheme == MGET_IRI_SCHEME_HTTP && mget_hsts_host_match(config.hsts_db, iri->host, atoi(iri->resolv_port))) {
+					info_printf("HSTS in effect for %s:%s\n", iri->host, iri->resolv_port);
+					iri_scheme = iri->scheme;
+					iri->scheme = MGET_IRI_SCHEME_HTTPS;
+				} else
+					iri_scheme = NULL;
 			}
 		}
 
 		http_free_response(&resp);
 	}
 
-	if (iri != dont_free)
-		mget_iri_free(&iri);
+	if (iri) {
+		if (iri != dont_free)
+			mget_iri_free(&iri);
+		else if (iri_scheme)
+			iri->scheme = iri_scheme; // may have been changed by HSTS
+	}
 
 	http_free_challenges(&challenges);
 	mget_buffer_deinit(&buf);

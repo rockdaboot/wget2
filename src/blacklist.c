@@ -67,7 +67,7 @@ static unsigned int G_GNUC_MGET_NONNULL_ALL hash_iri(const MGET_IRI *iri)
 	return h;
 }
 
-static int G_GNUC_MGET_NONNULL_ALL _blacklist_print(const MGET_IRI *iri)
+static int G_GNUC_MGET_NONNULL_ALL _blacklist_print(G_GNUC_MGET_UNUSED void *ctx, const MGET_IRI *iri)
 {
 	info_printf("blacklist %s\n", iri->uri);
 	return 0;
@@ -76,7 +76,7 @@ static int G_GNUC_MGET_NONNULL_ALL _blacklist_print(const MGET_IRI *iri)
 void blacklist_print(void)
 {
 	mget_thread_mutex_lock(&mutex);
-	mget_hashmap_browse(blacklist, (int(*)(const void *, const void *))_blacklist_print);
+	mget_hashmap_browse(blacklist, (int(*)(void *, const void *, void *))_blacklist_print, NULL);
 	mget_thread_mutex_unlock(&mutex);
 }
 
