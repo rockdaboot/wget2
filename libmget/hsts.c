@@ -98,7 +98,7 @@ void mget_hsts_free(mget_hsts_t **hsts)
 {
 	if (hsts) {
 		mget_hsts_deinit(*hsts);
-		*hsts = NULL;
+		xfree(*hsts);
 	}
 }
 
@@ -165,7 +165,7 @@ void mget_hsts_db_free(mget_hsts_db_t **hsts_db)
 {
 	if (hsts_db) {
 		mget_hsts_db_deinit(*hsts_db);
-		hsts_db = NULL;
+		xfree(*hsts_db);
 	}
 }
 
@@ -184,11 +184,12 @@ void mget_hsts_db_add(mget_hsts_db_t *hsts_db, mget_hsts_t *hsts)
 			old->maxage = hsts->maxage;
 			old->include_subdomains = hsts->include_subdomains;
 			mget_hsts_free(&hsts);
-			debug_printf("replaced old HSTS %s:%d (maxage=%ld, includeSubDomains=%d)\n", old->host, old->port, old->maxage, old->include_subdomains);
+			debug_printf("update HSTS %s:%d (maxage=%ld, includeSubDomains=%d)\n", old->host, old->port, old->maxage, old->include_subdomains);
 		} else {
-			mget_hashmap_put_noalloc(hsts_db->entries, hsts, NULL);
+			// key and value are the same to make mget_hashmap_get() return old 'hsts'
+			mget_hashmap_put_noalloc(hsts_db->entries, hsts, hsts);
+			debug_printf("stored HSTS %s:%d (maxage=%ld, includeSubDomains=%d)\n", hsts->host, hsts->port, hsts->maxage, hsts->include_subdomains);
 			// no need to free anything here
-			debug_printf("stored new HSTS %s:%d (maxage=%ld, includeSubDomains=%d)\n", hsts->host, hsts->port, hsts->maxage, hsts->include_subdomains);
 		}
 	}
 
@@ -301,7 +302,7 @@ int mget_hsts_db_load(mget_hsts_db_t *hsts_db, const char *fname)
 			}
 
 			if (ok) {
-				mget_hsts_db_add(hsts_db, &hsts);
+				mget_hsts_db_add(hsts_db, mget_memdup(&hsts, sizeof(hsts)));
 				nentries++;
 			} else {
 				mget_hsts_deinit(&hsts);

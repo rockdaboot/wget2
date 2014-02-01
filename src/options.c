@@ -443,7 +443,9 @@ struct config config = {
 	.robots = 1,
 	.tries = 20,
 	.hsts = 1,
-	.hsts_file = ".mget_hsts"
+	.hsts_file = ".mget_hsts",
+//	.load_hsts = 1,
+//	.save_hsts = 1
 };
 
 static int parse_execute(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val);

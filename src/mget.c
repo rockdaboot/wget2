@@ -1034,7 +1034,7 @@ void *downloader_thread(void *p)
 								add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see http://www.sitemaps.org/protocol.html#escaping
 							}
 //	debug_printf("XXX 4\n");
-//							info_printf("job '%s'\n", job->iri->uri);
+//							info_printf("host->robots %p\n", job->host->robots);
 						}
 					}
 				}
