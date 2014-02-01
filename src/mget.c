@@ -537,7 +537,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			}
 		}
 
-		if (flags & URL_FLG_SITEMAP)
+		// mark this job as a Sitemap job, but not if it is a robot.txt job
+		if (flags & URL_FLG_SITEMAP && !new_job->deferred)
 			new_job->sitemap = 1;
 
 		mget_thread_cond_signal(&worker_cond);
@@ -1033,7 +1034,7 @@ void *downloader_thread(void *p)
 								add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see http://www.sitemaps.org/protocol.html#escaping
 							}
 //	debug_printf("XXX 4\n");
-							info_printf("job '%s'\n", job->iri->uri);
+//							info_printf("job '%s'\n", job->iri->uri);
 						}
 					}
 				}
@@ -1072,7 +1073,6 @@ ready:
 		http_free_response(&resp);
 
 		// download of single-part file complete, remove from job queue
-		info_printf("'%s' completed\n",job->iri->uri);
 		queue_del(job);
 		mget_thread_cond_signal(&main_cond);
 	}

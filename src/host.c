@@ -33,6 +33,7 @@
 #include <libmget.h>
 
 #include "host.h"
+#include "options.h"
 
 static MGET_HASHMAP
 	*hosts;
@@ -43,8 +44,13 @@ static int _host_compare(const HOST *host1, const HOST *host2)
 {
 	int n;
 
-	if (host1->scheme != host2->scheme)
-		return host1->scheme < host2->scheme ? -1 : 1;
+	// If we use SCHEME here, we would eventually download robots.txt twice,
+	//   e.g. for http://example.com and second for https://example.com.
+	// This only makes sense when having the scheme and/or port within the directory name.
+
+	if (config.protocol_directories)
+		if (host1->scheme != host2->scheme)
+			return host1->scheme < host2->scheme ? -1 : 1;
 
 	// host is already lowercase, no need to call strcasecmp()
 	if ((n = strcmp(host1->host, host2->host)))
@@ -58,8 +64,13 @@ static unsigned int _host_hash(const HOST *host)
 	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
 	const unsigned char *p;
 
-	for (p = (unsigned char *)host->scheme; p && *p; p++)
-		hash = hash * 101 + *p;
+	// If we use SCHEME here, we would eventually download robots.txt twice.
+	// e.g. for http://example.com and second for https://example.com
+	// This only makes sense when having the scheme and/or port within the directory name.
+
+	if (config.protocol_directories)
+		for (p = (unsigned char *)host->scheme; p && *p; p++)
+			hash = hash * 101 + *p;
 
 	for (p = (unsigned char *)host->host; p && *p; p++)
 		hash = hash * 101 + *p;
