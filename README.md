@@ -1,7 +1,7 @@
+[![Build Status](https://travis-ci.org/rockdaboot/mget.png?branch=develop)](https://travis-ci.org/rockdaboot/mget)
+
 Mget - multithreaded metalink / file / website downloader / spider and library
 ==============================================================================
-
-[![Build Status](https://travis-ci.org/rockdaboot/mget.png?branch=develop)](https://travis-ci.org/rockdaboot/mget)
 
 This is a multithreaded Wget-like tool and library written in C.
 
