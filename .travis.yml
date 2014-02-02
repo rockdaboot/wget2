@@ -4,3 +4,5 @@ compiler:
   - clang
 # Change this to your needs
 script: ./autogen.sh && ./configure && make
+before_install:
+  - apt-get -q install autoconf automake gtk-doc-tools gettext
