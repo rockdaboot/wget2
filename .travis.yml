@@ -5,4 +5,5 @@ compiler:
 # Change this to your needs
 script: ./autogen.sh && ./configure && make
 before_install:
-  - apt-get -q install autoconf automake gtk-doc-tools gettext
+  - sudo apt-get -qq update
+  - sudo apt-get -q install autoconf automake gtk-doc-tools gettext
