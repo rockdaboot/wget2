@@ -956,6 +956,66 @@ next:
 	}
 }
 
+static void test_hsts(void)
+{
+	static const struct hsts_db_data {
+		const char *
+			host;
+		int
+			port;
+		const char *
+			hsts_params;
+	} hsts_db_data[] = {
+		{ "www.example.com", 443, "max-age=14400; includeSubDomains" },
+		{ "www.example2.com", 443, "max-age=14400" },
+		{ "www.example2.com", 443, "max-age=0" }, // this removes the previous entry
+	};
+	static const struct hsts_data {
+		const char *
+			host;
+		int
+			port;
+		int
+			result;
+	} hsts_data[] = {
+		{ "www.example.com", 443, 1 }, // exact match
+		{ "ftp.example.com", 443, 0 },
+		{ "example.com", 443, 0 },
+		{ "sub.www.example.com", 443, 1 }, // subdomain
+		{ "sub1.sub2.www.example.com", 443, 1 }, // subdomain
+		{ "www.example2.com", 443, 0 }, // entry should have been removed due to maxage=0
+		{ "www.example.com", 80, 0 }, // wrong port
+	};
+	mget_hsts_db_t *hsts_db = mget_hsts_db_alloc();
+	time_t maxage;
+	char include_subdomains;
+	unsigned it;
+	int n;
+
+	// fill HSTS database with values
+	for (it = 0; it < countof(hsts_db_data); it++) {
+		const struct hsts_db_data *t = &hsts_db_data[it];
+		http_parse_strict_transport_security(t->hsts_params, &maxage, &include_subdomains);
+		mget_hsts_db_add(hsts_db, mget_hsts_new(t->host, t->port, maxage, include_subdomains));
+	}
+
+	// check HSTS database with values
+	for (it = 0; it < countof(hsts_data); it++) {
+		const struct hsts_data *t = &hsts_data[it];
+
+		n = mget_hsts_host_match(hsts_db, t->host, t->port);
+
+		if (n == t->result)
+			ok++;
+		else {
+			failed++;
+			info_printf("Failed [%u]: mget_hsts_host_match(%s,%d) -> %d (expected %d)\n", it, t->host, t->port, n, t->result);
+		}
+	}
+
+	mget_hsts_db_free(&hsts_db);
+}
+
 static void test_utils(void)
 {
 	int it, ndst;
@@ -1211,6 +1271,8 @@ int main(int argc, const char * const *argv)
 	test_cookies();
 	mget_cookie_free_public_suffixes();
 	mget_cookie_free_cookies();
+
+	test_hsts();
 
 	selftest_options() ? failed++ : ok++;
 

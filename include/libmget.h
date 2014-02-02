@@ -877,7 +877,7 @@ void
 void
 	mget_hsts_free(mget_hsts_t **hsts);
 mget_hsts_t *
-	mget_hsts_new(const char *host, const char *port, time_t maxage, int include_subdomains);
+	mget_hsts_new(const char *host, int port, time_t maxage, int include_subdomains);
 int
 	mget_hsts_host_match(const mget_hsts_db_t *hsts_db, const char *host, int port);
 

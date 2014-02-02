@@ -102,14 +102,12 @@ void mget_hsts_free(mget_hsts_t **hsts)
 	}
 }
 
-mget_hsts_t *mget_hsts_new(const char *host, const char *port, time_t maxage, int include_subdomains)
+mget_hsts_t *mget_hsts_new(const char *host, int port, time_t maxage, int include_subdomains)
 {
 	mget_hsts_t *hsts = mget_hsts_alloc();
 
 	hsts->host = mget_strdup(host);
-	hsts->port = port ? atoi(port) : 443;
-	if (hsts->port == 0)
-		hsts->port = 443;
+	hsts->port = port ? port : 443;
 	hsts->maxage = maxage;
 	hsts->include_subdomains = include_subdomains;
 

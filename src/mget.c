@@ -104,9 +104,9 @@ static void
 static long long
 	quota;
 static int
-	terminate;
-static int
-	exit_status;
+	terminate,
+	exit_status,
+	hsts_changed;
 
 void set_exit_status(int status)
 {
@@ -712,7 +712,7 @@ int main(int argc, const char *const *argv)
 	if (config.save_cookies)
 		mget_cookie_save(config.save_cookies, config.keep_session_cookies);
 
-	if (config.hsts && config.save_hsts && config.hsts_file)
+	if (config.hsts && config.save_hsts && config.hsts_file && hsts_changed)
 		mget_hsts_db_save(config.hsts_db, config.hsts_file);
 
 	if (config.delete_after && config.output_document)
@@ -903,8 +903,10 @@ void *downloader_thread(void *p)
 		mget_cookie_store_cookies(resp->cookies); // store cookies
 
 		// care for HSTS feature
-		if (config.hsts && job->iri->scheme == MGET_IRI_SCHEME_HTTPS && resp->hsts)
-			mget_hsts_db_add(config.hsts_db, mget_hsts_new(job->iri->host, job->iri->port, resp->hsts_maxage, resp->hsts_include_subdomains));
+		if (config.hsts && job->iri->scheme == MGET_IRI_SCHEME_HTTPS && resp->hsts) {
+			mget_hsts_db_add(config.hsts_db, mget_hsts_new(job->iri->host, atoi(job->iri->resolv_port), resp->hsts_maxage, resp->hsts_include_subdomains));
+			hsts_changed = 1;
+		}
 
 		// check if we got a RFC 6249 Metalink response
 		// HTTP/1.1 302 Found
