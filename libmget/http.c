@@ -171,8 +171,7 @@ const char *http_parse_param(const char *s, const char **param, const char **val
 
 	while (isblank(*s)) s++;
 
-	if (*s == '=') {
-		s++;
+	if (*s++ == '=') {
 		while (isblank(*s)) s++;
 		if (*s == '\"') {
 			s = http_parse_quoted_string(s, value);
