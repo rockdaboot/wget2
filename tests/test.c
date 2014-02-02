@@ -248,13 +248,13 @@ static void test_buffer_printf(void)
 						memset(string, 'a', it);
 						string[it] = 0;
 
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 						#pragma GCC diagnostic push
 						#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
 						sprintf(result, fmt, string);
 						mget_buffer_printf2(&buf, fmt, string);
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 						#pragma GCC diagnostic pop
 #endif
 						if (strcmp(result, buf.data)) {
@@ -285,7 +285,7 @@ static void test_buffer_printf(void)
 						memset(string, 'a', it);
 						string[it] = 0;
 
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 						#pragma GCC diagnostic push
 						#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
@@ -306,7 +306,7 @@ static void test_buffer_printf(void)
 								mget_buffer_printf2(&buf, fmt, width, precision, string);
 							}
 						}
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 						#pragma GCC diagnostic pop
 #endif
 
@@ -339,13 +339,13 @@ static void test_buffer_printf(void)
 						}
 
 						for (n = 0; n < countof(number); n++) {
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 							#pragma GCC diagnostic push
 							#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
 							sprintf(result, fmt, number[n]);
 							mget_buffer_printf2(&buf, fmt, number[n]);
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 							#pragma GCC diagnostic pop
 #endif
 
