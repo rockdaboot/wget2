@@ -1,0 +1,11 @@
+language: c
+compiler:
+  - gcc
+  - clang
+# Change this to your needs
+script: ./autogen.sh && ./configure --enable-gtk-doc && make && make check
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get -q install autoconf automake autopoint gtk-doc-tools gettext liblzma5 liblzma-dev libidn2-0 libidn2-0-dev libunistring0 libunistring-dev
+  - apt-cache search libidn|grep libidn
+  - apt-cache search lzma|grep liblzma
