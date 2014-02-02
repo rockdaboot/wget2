@@ -71,7 +71,7 @@ static void html_dump(G_GNUC_MGET_UNUSED void *user_ctx, int flags, const char *
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
 		int found = 0;
 
-		info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
+		// info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
 
 		// very simplified
 		// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value

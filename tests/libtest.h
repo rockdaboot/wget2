@@ -80,6 +80,10 @@ void mget_test_start_http_server(int first_key, ...);
 void mget_test(int first_key, ...);
 int mget_test_get_server_port(void) G_GNUC_MGET_PURE;
 
+#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+#	pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
+
 #ifdef	__cplusplus
 }
 #endif
