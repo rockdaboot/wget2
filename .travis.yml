@@ -6,4 +6,6 @@ compiler:
 script: ./autogen.sh && ./configure && make
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get -q install autoconf automake gtk-doc-tools gettext
+  - sudo apt-get -q install autoconf automake gtk-doc-tools gettext liblzma5
+  - apt-cache search libidn|grep libidn
+  - apt-cache search lzma|grep liblzma
