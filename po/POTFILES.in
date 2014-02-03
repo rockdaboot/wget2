@@ -19,6 +19,7 @@ libmget/encoding.c
 libmget/hashfile.c
 libmget/hashmap.c
 libmget/hashmap_old.c
+libmget/hsts.c
 libmget/html_url.c
 libmget/http.c
 libmget/http_highlevel.c
