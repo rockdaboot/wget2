@@ -37,7 +37,18 @@
 #include <libmget.h>
 #include "private.h"
 
-// strcmp which also accepts NULL values
+/**
+ * mget_strcmp:
+ * @s1: String
+ * @s2: String
+ *
+ * This functions compares @s1 and @s2 in the same way as strcmp() does,
+ * except that it also handles %NULL values. It returns 0 if both @s1 and @s2
+ * are %NULL. It returns -1 if @s1 is %NULL and @s2 is not %NULL. It return 1 if
+ * @s2 is %NULL and @s1 is not %NULL.
+ *
+ * Returns: Same as strcmp() if none of @s1 or @s2 is %NULL. Else see above.
+ */
 
 int mget_strcmp(const char *s1, const char *s2)
 {
@@ -54,7 +65,18 @@ int mget_strcmp(const char *s1, const char *s2)
 	}
 }
 
-// strcasecmp which also accepts NULL values
+/**
+ * mget_strcasecmp:
+ * @s1: String
+ * @s2: String
+ *
+ * This functions compares @s1 and @s2 in the same way as strcasecmp() does,
+ * except that it also handles %NULL values. It returns 0 if both @s1 and @s2
+ * are %NULL. It returns -1 if @s1 is %NULL and @s2 is not %NULL. It return 1 if
+ * @s2 is %NULL and @s1 is not %NULL.
+ *
+ * Returns: Same as strcasecmp() if none of @s1 or @s2 is %NULL. Else see above.
+ */
 
 int mget_strcasecmp(const char *s1, const char *s2)
 {
