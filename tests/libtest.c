@@ -47,7 +47,7 @@
 
 static mget_thread_t
 	server_tid;
-static MGET_TCP
+static mget_tcp_t
 	*parent_tcp;
 static int
 	server_port,
@@ -58,7 +58,7 @@ static int
 	*response_body = "";
 static MGET_VECTOR
 	*response_headers; */
-static MGET_VECTOR
+static mget_vector_t
 	*request_urls;
 static mget_test_url_t
 	*urls;
@@ -74,7 +74,7 @@ static void nop(int sig G_GNUC_MGET_UNUSED)
 
 static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 {
-	MGET_TCP *tcp=NULL;
+	mget_tcp_t *tcp=NULL;
 	mget_test_url_t *url = NULL;
 	char buf[4096], method[32], request_url[256], tag[64], value[256], *p;
 	ssize_t nbytes;
@@ -111,7 +111,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 					else if (url && !strcasecmp(tag, "Authorization")) {
 						const char *auth_scheme, *s;
 
-						s=http_parse_token(value, &auth_scheme);
+						s=mget_http_parse_token(value, &auth_scheme);
 						while (isblank(*s)) s++;
 
 						if (!strcasecmp(auth_scheme, "basic")) {
@@ -127,7 +127,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 						mget_xfree(auth_scheme);
 					}
 					else if (!strcasecmp(tag, "If-Modified-Since")) {
-						modified = http_parse_full_date(value);
+						modified = mget_http_parse_full_date(value);
 						mget_info_printf("modified = %ld\n", modified);
 					}
 				}

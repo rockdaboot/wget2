@@ -35,8 +35,8 @@
 
 int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED)
 {
-	MGET_HTTP_CONNECTION *conn = NULL;
-	MGET_HTTP_RESPONSE *resp;
+	mget_http_connection_t *conn = NULL;
+	mget_http_response_t *resp;
 
 	// set up libmget global configuration
 	mget_global_init(
@@ -74,11 +74,11 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 		printf("%s%s\n", resp->header->data, resp->body->data);
 
 		// free the response
-		http_free_response(&resp);
+		mget_http_free_response(&resp);
 	}
 
 	// close connection if still open
-	http_close(&conn);
+	mget_http_close(&conn);
 
 	// free resources - needed for valgrind testing
 	mget_global_deinit();

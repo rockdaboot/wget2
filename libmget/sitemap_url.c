@@ -37,7 +37,7 @@
 #include "private.h"
 
 struct sitemap_context {
-	MGET_VECTOR
+	mget_vector_t
 		*sitemap_urls,
 		*urls;
 };
@@ -78,7 +78,7 @@ static void _sitemap_get_url(void *context, int flags, const char *dir, const ch
 	}
 }
 
-void mget_sitemap_get_urls_inline(const char *sitemap, MGET_VECTOR **urls, MGET_VECTOR **sitemap_urls)
+void mget_sitemap_get_urls_inline(const char *sitemap, mget_vector_t **urls, mget_vector_t **sitemap_urls)
 {
 	struct sitemap_context context = { .urls = NULL, .sitemap_urls = NULL };
 

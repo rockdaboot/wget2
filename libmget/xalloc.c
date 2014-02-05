@@ -54,12 +54,12 @@
  */
 
 static void
-	(*_oom_func)(void);
+	(*_oom_callback)(void);
 
 static inline void G_GNUC_MGET_NORETURN _no_memory(void)
 {
-	if (_oom_func)
-		_oom_func();
+	if (_oom_callback)
+		_oom_callback();
 
 	exit(EXIT_FAILURE);
 }
@@ -72,7 +72,7 @@ static inline void G_GNUC_MGET_NORETURN _no_memory(void)
  */
 void mget_set_oomfunc(void (*oom_func)(void))
 {
-	_oom_func = oom_func;
+	_oom_callback = oom_func;
 }
 
 /**

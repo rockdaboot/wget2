@@ -53,13 +53,13 @@
 #define debug_write mget_debug_write
 
 // _MGET_LOGGER is shared between log.c and logger.c, but must no be exposed to the public
-struct _MGET_LOGGER {
+struct _mget_logger_st {
 	FILE *fp;
 	const char *fname;
 	void (*func)(const char *buf, size_t bufsize);
 
-	void (*vprintf)(const MGET_LOGGER *logger, const char *fmt, va_list args);
-	void (*write)(const MGET_LOGGER *logger, const char *buf, size_t bufsize);
+	void (*vprintf)(const mget_logger_t *logger, const char *fmt, va_list args);
+	void (*write)(const mget_logger_t *logger, const char *buf, size_t bufsize);
 };
 
 #endif /* _MGET_INTERN_H */

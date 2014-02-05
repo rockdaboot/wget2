@@ -63,7 +63,7 @@ struct XML_CONTEXT {
 		token_len; // used bytes of token buffer (not counting terminating 0 byte)
 	void
 		*user_ctx; // user context (not needed if we were using nested functions)
-	mget_xml_callback_function
+	mget_xml_callback_t
 		*callback;
 };
 
@@ -461,7 +461,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 
 void mget_xml_parse_buffer(
 	const char *buf,
-	mget_xml_callback_function *callback,
+	mget_xml_callback_t *callback,
 	void *user_ctx,
 	int hints)
 {
@@ -481,7 +481,7 @@ void mget_xml_parse_buffer(
 
 void mget_html_parse_buffer(
 	const char *buf,
-	mget_xml_callback_function *callback,
+	mget_xml_callback_t *callback,
 	void *user_ctx,
 	int hints)
 {
@@ -490,7 +490,7 @@ void mget_html_parse_buffer(
 
 void mget_xml_parse_file(
 	const char *fname,
-	mget_xml_callback_function *callback,
+	mget_xml_callback_t *callback,
 	void *user_ctx,
 	int hints)
 {
@@ -542,7 +542,7 @@ void mget_xml_parse_file(
 
 void mget_html_parse_file(
 	const char *fname,
-	mget_xml_callback_function *callback,
+	mget_xml_callback_t *callback,
 	void *user_ctx,
 	int hints)
 {

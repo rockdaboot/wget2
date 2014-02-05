@@ -48,7 +48,7 @@ struct _ENTRY {
 		hash;
 };
 
-struct _MGET_HASHMAP {
+struct _mget_hashmap_st {
 	unsigned int
 		(*hash)(const void *); // hash function
 	int
@@ -73,9 +73,9 @@ struct _MGET_HASHMAP {
 // cmp: comparison function for finding
 // the hashmap plus shallow content is freed by hashmap_free()
 
-MGET_HASHMAP *mget_hashmap_create(int max, int off, unsigned int (*hash)(const void *), int (*cmp)(const void *, const void *))
+mget_hashmap_t *mget_hashmap_create(int max, int off, unsigned int (*hash)(const void *), int (*cmp)(const void *, const void *))
 {
-	MGET_HASHMAP *h = xmalloc(sizeof(MGET_HASHMAP));
+	mget_hashmap_t *h = xmalloc(sizeof(mget_hashmap_t));
 
 	h->entry = xcalloc(max, sizeof(ENTRY *));
 	h->max = max;
@@ -90,7 +90,7 @@ MGET_HASHMAP *mget_hashmap_create(int max, int off, unsigned int (*hash)(const v
 	return h;
 }
 
-static inline ENTRY * G_GNUC_MGET_NONNULL_ALL hashmap_find_entry(const MGET_HASHMAP *h, const char *key, unsigned int hash, int pos)
+static inline ENTRY * G_GNUC_MGET_NONNULL_ALL hashmap_find_entry(const mget_hashmap_t *h, const char *key, unsigned int hash, int pos)
 {
 	ENTRY *e;
 
@@ -107,7 +107,7 @@ static inline ENTRY * G_GNUC_MGET_NONNULL_ALL hashmap_find_entry(const MGET_HASH
 	return NULL;
 }
 
-static void G_GNUC_MGET_NONNULL_ALL hashmap_rehash(MGET_HASHMAP *h, int newmax, int recalc_hash)
+static void G_GNUC_MGET_NONNULL_ALL hashmap_rehash(mget_hashmap_t *h, int newmax, int recalc_hash)
 {
 	ENTRY **new_entry, *entry, *next;
 	int it, pos, cur = h->cur;
@@ -137,7 +137,7 @@ static void G_GNUC_MGET_NONNULL_ALL hashmap_rehash(MGET_HASHMAP *h, int newmax, 
 	}
 }
 
-static inline void G_GNUC_MGET_NONNULL((1,3)) hashmap_new_entry(MGET_HASHMAP *h, unsigned int hash, const char *key, const char *value)
+static inline void G_GNUC_MGET_NONNULL((1,3)) hashmap_new_entry(mget_hashmap_t *h, unsigned int hash, const char *key, const char *value)
 {
 	ENTRY *entry;
 	int pos = hash % h->max;
@@ -163,7 +163,7 @@ static inline void G_GNUC_MGET_NONNULL((1,3)) hashmap_new_entry(MGET_HASHMAP *h,
 // return:
 //  0: new entry
 //  1: existing entry has been replaced
-int mget_hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value)
+int mget_hashmap_put_noalloc(mget_hashmap_t *h, const void *key, const void *value)
 {
 	ENTRY *entry;
 	unsigned int hash = h->hash(key);
@@ -198,7 +198,7 @@ int mget_hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value
 	return 0;
 }
 
-int mget_hashmap_put(MGET_HASHMAP *h, const void *key, size_t keysize, const void *value, size_t valuesize)
+int mget_hashmap_put(mget_hashmap_t *h, const void *key, size_t keysize, const void *value, size_t valuesize)
 {
 	ENTRY *entry;
 	unsigned int hash = h->hash(key);
@@ -221,7 +221,7 @@ int mget_hashmap_put(MGET_HASHMAP *h, const void *key, size_t keysize, const voi
 	return 0;
 }
 
-void *mget_hashmap_get(const MGET_HASHMAP *h, const void *key)
+void *mget_hashmap_get(const mget_hashmap_t *h, const void *key)
 {
 	ENTRY *entry;
 	unsigned int hash = h->hash(key);
@@ -233,7 +233,7 @@ void *mget_hashmap_get(const MGET_HASHMAP *h, const void *key)
 	return NULL;
 }
 
-int mget_hashmap_get_null(const MGET_HASHMAP *h, const void *key, void **value)
+int mget_hashmap_get_null(const mget_hashmap_t *h, const void *key, void **value)
 {
 	ENTRY *entry;
 	unsigned int hash = h->hash(key);
@@ -247,7 +247,7 @@ int mget_hashmap_get_null(const MGET_HASHMAP *h, const void *key, void **value)
 	return 0;
 }
 
-int mget_hashmap_contains(const MGET_HASHMAP *h, const void *key)
+int mget_hashmap_contains(const mget_hashmap_t *h, const void *key)
 {
 	ENTRY *entry;
 	unsigned int hash = h->hash(key);
@@ -259,7 +259,7 @@ int mget_hashmap_contains(const MGET_HASHMAP *h, const void *key)
 	return 0;
 }
 
-static int G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const char *key, int free_kv)
+static int G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(mget_hashmap_t *h, const char *key, int free_kv)
 {
 	ENTRY *entry, *next, *prev = NULL;
 	unsigned int hash = h->hash(key);
@@ -295,7 +295,7 @@ static int G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(MGET_HASHMAP *h, const c
 	return 0;
 }
 
-int mget_hashmap_remove(MGET_HASHMAP *h, const void *key)
+int mget_hashmap_remove(mget_hashmap_t *h, const void *key)
 {
 	if (h)
 		return hashmap_remove_entry(h, key, 1);
@@ -303,7 +303,7 @@ int mget_hashmap_remove(MGET_HASHMAP *h, const void *key)
 		return 0;
 }
 
-int mget_hashmap_remove_nofree(MGET_HASHMAP *h, const void *key)
+int mget_hashmap_remove_nofree(mget_hashmap_t *h, const void *key)
 {
 	if (h)
 		return hashmap_remove_entry(h, key, 0);
@@ -311,7 +311,7 @@ int mget_hashmap_remove_nofree(MGET_HASHMAP *h, const void *key)
 		return 0;
 }
 
-void mget_hashmap_free(MGET_HASHMAP **h)
+void mget_hashmap_free(mget_hashmap_t **h)
 {
 	if (h && *h) {
 		mget_hashmap_clear(*h);
@@ -320,7 +320,7 @@ void mget_hashmap_free(MGET_HASHMAP **h)
 	}
 }
 
-void mget_hashmap_clear(MGET_HASHMAP *h)
+void mget_hashmap_clear(mget_hashmap_t *h)
 {
 	if (h) {
 		ENTRY *entry, *next;
@@ -349,12 +349,12 @@ void mget_hashmap_clear(MGET_HASHMAP *h)
 	}
 }
 
-int mget_hashmap_size(const MGET_HASHMAP *h)
+int mget_hashmap_size(const mget_hashmap_t *h)
 {
 	return h ? h->cur : 0;
 }
 
-int mget_hashmap_browse(const MGET_HASHMAP *h, int (*browse)(void *ctx, const void *key, void *value), void *ctx)
+int mget_hashmap_browse(const mget_hashmap_t *h, int (*browse)(void *ctx, const void *key, void *value), void *ctx)
 {
 	if (h) {
 		ENTRY *entry;
@@ -372,13 +372,13 @@ int mget_hashmap_browse(const MGET_HASHMAP *h, int (*browse)(void *ctx, const vo
 	return 0;
 }
 
-void mget_hashmap_setcmpfunc(MGET_HASHMAP *h, int (*cmp)(const void *key1, const void *key2))
+void mget_hashmap_setcmpfunc(mget_hashmap_t *h, int (*cmp)(const void *key1, const void *key2))
 {
 	if (h)
 		h->cmp = cmp;
 }
 
-void mget_hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *key))
+void mget_hashmap_sethashfunc(mget_hashmap_t *h, unsigned int (*hash)(const void *key))
 {
 	if (h) {
 		h->hash = hash;
@@ -387,13 +387,13 @@ void mget_hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *
 	}
 }
 
-void mget_hashmap_set_destructor(MGET_HASHMAP *h, void (*destructor)(void *key, void *value))
+void mget_hashmap_set_destructor(mget_hashmap_t *h, void (*destructor)(void *key, void *value))
 {
 	if (h)
 		h->destructor = destructor;
 }
 
-void mget_hashmap_setloadfactor(MGET_HASHMAP *h, float factor)
+void mget_hashmap_setloadfactor(mget_hashmap_t *h, float factor)
 {
 	if (h) {
 		h->factor = factor;

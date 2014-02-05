@@ -409,7 +409,7 @@ static void test_iri_parse(void)
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
-		MGET_IRI *iri = mget_iri_parse(t->uri, "utf-8");
+		mget_iri_t *iri = mget_iri_parse(t->uri, "utf-8");
 
 		if (mget_strcmp(iri->display, t->display)
 			|| mget_strcmp(iri->scheme, t->scheme)
@@ -677,7 +677,7 @@ static void test_iri_relative_to_absolute(void)
 	unsigned it;
 	char uri_buf_static[32]; // use a size that forces allocation in some cases
 	mget_buffer_t *uri_buf = 	mget_buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
-	MGET_IRI *base;
+	mget_iri_t *base;
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
@@ -725,8 +725,8 @@ static void test_iri_compare(void)
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
-		MGET_IRI *iri1 = mget_iri_parse(t->url1, "utf-8");
-		MGET_IRI *iri2 = mget_iri_parse(t->url2, "utf-8");
+		mget_iri_t *iri1 = mget_iri_parse(t->url1, "utf-8");
+		mget_iri_t *iri2 = mget_iri_parse(t->url2, "utf-8");
 
 		n = mget_iri_compare(iri1, iri2);
 		if (n < -1) n = -1;
@@ -753,6 +753,7 @@ static void test_iri_compare(void)
 	}
 }
 
+/*
 static void _css_dump_charset(G_GNUC_MGET_UNUSED void *user_ctx, const char *encoding, size_t len)
 {
 	debug_printf(_("URI content encoding = '%.*s'\n"), (int)len, encoding);
@@ -762,6 +763,7 @@ static void _css_dump_uri(G_GNUC_MGET_UNUSED void *user_ctx, const char *url, si
 {
 	debug_printf("*** %zu '%.*s'\n", len, (int)len, url);
 }
+*/
 
 static void test_parser(void)
 {
@@ -882,8 +884,8 @@ static void test_cookies(void)
 			1
 		},
 	};
-	MGET_COOKIE cookie;
-	MGET_IRI *iri;
+	mget_cookie_t cookie;
+	mget_iri_t *iri;
 	unsigned it;
 	int result;
 
@@ -894,7 +896,7 @@ static void test_cookies(void)
 		char thedate[32];
 
 		iri = mget_iri_parse(t->uri, "utf-8");
-		http_parse_setcookie(t->set_cookie, &cookie);
+		mget_http_parse_setcookie(t->set_cookie, &cookie);
 		if ((result = mget_cookie_normalize_cookie(iri, &cookie)) != t->result) {
 			failed++;
 			info_printf("Failed [%u]: normalize_cookie(%s) -> %d (expected %d)\n", it, t->set_cookie, result, t->result);
@@ -902,7 +904,7 @@ static void test_cookies(void)
 		}
 
 		if (cookie.expires) {
-			http_print_date(cookie.expires, thedate, sizeof(thedate));
+			mget_http_print_date(cookie.expires, thedate, sizeof(thedate));
 			if (strcmp(thedate, t->expires)) {
 				failed++;
 				info_printf("Failed [%u]: expires mismatch: '%s' != '%s' (time_t %lld)\n", it, thedate, t->expires, (long long)cookie.expires);
@@ -995,7 +997,7 @@ static void test_hsts(void)
 	// fill HSTS database with values
 	for (it = 0; it < countof(hsts_db_data); it++) {
 		const struct hsts_db_data *t = &hsts_db_data[it];
-		http_parse_strict_transport_security(t->hsts_params, &maxage, &include_subdomains);
+		mget_http_parse_strict_transport_security(t->hsts_params, &maxage, &include_subdomains);
 		mget_hsts_db_add(hsts_db, mget_hsts_new(t->host, t->port, maxage, include_subdomains));
 	}
 
@@ -1057,7 +1059,7 @@ static void test_vector(void)
 		*tmp,
 		txt_sorted[5] = { {""}, {"four"}, {"one"}, {"three"}, {"two"} },
 		*txt[countof(txt_sorted)];
-	MGET_VECTOR
+	mget_vector_t
 		*v = mget_vector_create(2, -2, (int(*)(const void *, const void *))compare_txt);
 	size_t
 		it;
@@ -1100,7 +1102,7 @@ static unsigned int hash_txt(G_GNUC_MGET_UNUSED const char *key)
 
 static void test_stringmap(void)
 {
-	MGET_STRINGMAP *h;
+	mget_stringmap_t *h;
 	char key[128], value[128], *val;
 	int run, it, valuesize;
 
@@ -1206,16 +1208,16 @@ static void test_stringmap(void)
 
 	mget_stringmap_free(&h);
 
-	MGET_HTTP_CHALLENGE challenge;
-	http_parse_challenge("Basic realm=\"test realm\"", &challenge);
-	http_free_challenge(&challenge);
+	mget_http_challenge_t challenge;
+	mget_http_parse_challenge("Basic realm=\"test realm\"", &challenge);
+	mget_http_free_challenge(&challenge);
 
-	MGET_VECTOR *challenges;
+	mget_vector_t *challenges;
 	challenges = mget_vector_create(2, 2, NULL);
-	mget_vector_set_destructor(challenges, (void(*)(void *))http_free_challenge);
-	http_parse_challenge("Basic realm=\"test realm\"", &challenge);
+	mget_vector_set_destructor(challenges, (void(*)(void *))mget_http_free_challenge);
+	mget_http_parse_challenge("Basic realm=\"test realm\"", &challenge);
 	mget_vector_add(challenges, &challenge, sizeof(challenge));
-	http_free_challenges(&challenges);
+	mget_http_free_challenges(&challenges);
 
 	char *response_text = strdup(
 "HTTP/1.1 401 Authorization Required\r\n"\
@@ -1228,15 +1230,15 @@ static void test_stringmap(void)
 "Connection: Keep-Alive\r\n"\
 "Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-	MGET_IRI *iri = mget_iri_parse("http://localhost/prot_digest_md5/", NULL);
-	MGET_HTTP_REQUEST *req = http_create_request(iri, "GET");
-	MGET_HTTP_RESPONSE *resp = http_parse_response_header(response_text);
-	http_add_credentials(req, mget_vector_get(resp->challenges, 0), "tim", "123");
+	mget_iri_t *iri = mget_iri_parse("http://localhost/prot_digest_md5/", NULL);
+	mget_http_request_t *req = mget_http_create_request(iri, "GET");
+	mget_http_response_t *resp = mget_http_parse_response_header(response_text);
+	mget_http_add_credentials(req, mget_vector_get(resp->challenges, 0), "tim", "123");
 //	for (it=0;it<vec_size(req->lines);it++) {
 //		info_printf("%s\n", (char *)vec_get(req->lines, it));
 //	}
-	http_free_response(&resp);
-	http_free_request(&req);
+	mget_http_free_response(&resp);
+	mget_http_free_request(&req);
 	mget_iri_free(&iri);
 	xfree(response_text);
 

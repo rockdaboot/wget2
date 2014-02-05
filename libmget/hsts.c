@@ -39,7 +39,7 @@
 #include "private.h"
 
 struct _mget_hsts_db_st {
-	MGET_HASHMAP *
+	mget_hashmap_t *
 		entries;
 	mget_thread_mutex_t
 		mutex;
@@ -56,7 +56,7 @@ struct _mget_hsts_st {
 		include_subdomains : 1; // whether or not subdomains are included
 };
 
-static unsigned int _hash_hsts(const mget_hsts_t *hsts)
+static unsigned int G_GNUC_MGET_PURE _hash_hsts(const mget_hsts_t *hsts)
 {
 	unsigned int hash = hsts->port;
 	const unsigned char *p;

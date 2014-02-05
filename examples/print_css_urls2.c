@@ -49,7 +49,7 @@
 #define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 
 struct css_context {
-	MGET_IRI
+	mget_iri_t
 		*base;
 	const char
 		*encoding;
@@ -109,7 +109,7 @@ static void css_parse_uri(void *context G_GNUC_MGET_UNUSED, const char *url, siz
 	}
 }
 
-static void css_parse_localfile(const char *fname, MGET_IRI *base, const char *encoding)
+static void css_parse_localfile(const char *fname, mget_iri_t *base, const char *encoding)
 {
 	struct css_context context = { .base = base, .encoding = encoding };
 
@@ -134,7 +134,7 @@ int main(int argc, const char *const *argv)
 		local_encoding = mget_local_charset_encoding();
 
 	// parsed 'base'
-	MGET_IRI
+	mget_iri_t
 		*base_uri;
 
 	// Character encoding of CSS file content

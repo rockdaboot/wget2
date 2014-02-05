@@ -50,7 +50,7 @@ typedef struct {
 		wildcard; // this is a wildcard rule (e.g. *.sapporo.jp)
 } PUBLIC_SUFFIX;
 
-static MGET_VECTOR
+static mget_vector_t
 	*_cookies,
 	*_suffixes,
 	*_suffix_exceptions;
@@ -241,7 +241,7 @@ void mget_cookie_free_public_suffixes(void)
 	mget_vector_free(&_suffix_exceptions);
 }
 
-static int G_GNUC_MGET_NONNULL_ALL _compare_cookie(const MGET_COOKIE *c1, const MGET_COOKIE *c2)
+static int G_GNUC_MGET_NONNULL_ALL _compare_cookie(const mget_cookie_t *c1, const mget_cookie_t *c2)
 {
 	int n;
 
@@ -319,13 +319,13 @@ static int G_GNUC_MGET_NONNULL((1)) _path_match(const char *cookie_path, const c
 	return 0;
 }
 
-void mget_cookie_init_cookie(MGET_COOKIE *cookie)
+void mget_cookie_init_cookie(mget_cookie_t *cookie)
 {
 	memset(cookie, 0, sizeof(*cookie));
 	cookie->last_access = cookie->creation = time(NULL);
 }
 
-void mget_cookie_free_cookie(MGET_COOKIE *cookie)
+void mget_cookie_free_cookie(mget_cookie_t *cookie)
 {
 	if (cookie) {
 		xfree(cookie->name);
@@ -343,7 +343,7 @@ void mget_cookie_free_cookies(void)
 }
 
 // normalize/sanitize and store cookies
-static int _mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie)
+static int _mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *cookie)
 {
 /*
 	debug_printf("normalize cookie %s=%s\n", cookie->name, cookie->value);
@@ -421,7 +421,7 @@ static int _mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cooki
 	return 1;
 }
 
-int mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie)
+int mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *cookie)
 {
 	mget_thread_mutex_lock(&_cookies_mutex);
 
@@ -432,7 +432,7 @@ int mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie)
 	return ret;
 }
 
-void mget_cookie_normalize_cookies(const MGET_IRI *iri, const MGET_VECTOR *cookies)
+void mget_cookie_normalize_cookies(const mget_iri_t *iri, const mget_vector_t *cookies)
 {
 	mget_thread_mutex_lock(&_cookies_mutex);
 
@@ -442,9 +442,9 @@ void mget_cookie_normalize_cookies(const MGET_IRI *iri, const MGET_VECTOR *cooki
 	mget_thread_mutex_unlock(&_cookies_mutex);
 }
 
-void mget_cookie_store_cookie(MGET_COOKIE *cookie)
+void mget_cookie_store_cookie(mget_cookie_t *cookie)
 {
-	MGET_COOKIE *old;
+	mget_cookie_t *old;
 	int pos;
 
 	debug_printf("got cookie %s=%s\n", cookie->name, cookie->value);
@@ -473,19 +473,19 @@ void mget_cookie_store_cookie(MGET_COOKIE *cookie)
 	mget_thread_mutex_unlock(&_cookies_mutex);
 }
 
-void mget_cookie_store_cookies(MGET_VECTOR *cookies)
+void mget_cookie_store_cookies(mget_vector_t *cookies)
 {
 	int it;
 
 	for (it = mget_vector_size(cookies) - 1; it >= 0; it--) {
-		MGET_COOKIE *cookie = mget_vector_get(cookies, it);
+		mget_cookie_t *cookie = mget_vector_get(cookies, it);
 		mget_cookie_store_cookie(cookie); // stores a shallow copy of 'cookie'
 		mget_vector_remove_nofree(cookies, it);
 		xfree(cookie); // shallow free of 'cookie'
 	}
 }
 
-char *mget_cookie_create_request_header(const MGET_IRI *iri)
+char *mget_cookie_create_request_header(const mget_iri_t *iri)
 {
 	int it, init = 0;
 	time_t now = time(NULL);
@@ -496,7 +496,7 @@ char *mget_cookie_create_request_header(const MGET_IRI *iri)
 	mget_thread_mutex_lock(&_cookies_mutex);
 
 	for (it = 0; it < mget_vector_size(_cookies); it++) {
-		MGET_COOKIE *cookie = mget_vector_get(_cookies, it);
+		mget_cookie_t *cookie = mget_vector_get(_cookies, it);
 
 		if (((!cookie->host_only && _domain_match(cookie->domain, iri->host)) ||
 			(cookie->host_only && !strcasecmp(cookie->domain, iri->host))) &&
@@ -538,7 +538,7 @@ int mget_cookie_save(const char *fname, int keep_session_cookies)
 		mget_thread_mutex_lock(&_cookies_mutex);
 
 		for (it = 0; it < mget_vector_size(_cookies) && !ferror(fp); it++) {
-			MGET_COOKIE *cookie = mget_vector_get(_cookies, it);
+			mget_cookie_t *cookie = mget_vector_get(_cookies, it);
 
 			if (cookie->persistent) {
 				if (cookie->expires < now)
@@ -575,7 +575,7 @@ int mget_cookie_save(const char *fname, int keep_session_cookies)
 
 int mget_cookie_load(const char *fname, int keep_session_cookies)
 {
-	MGET_COOKIE cookie;
+	mget_cookie_t cookie;
 	FILE *fp;
 	int ncookies = 0;
 	char *buf = NULL, *linep, *p;

@@ -53,8 +53,8 @@
  * See mget_list_append() for an example on how to use lists.
  */
 
-struct _MGET_LISTNODE {
-	MGET_LIST
+struct _mget_list_st {
+	mget_list_t
 		*next,
 		*prev;
 };
@@ -97,10 +97,10 @@ struct _MGET_LISTNODE {
  * </example>
  */
 void *
-mget_list_append(MGET_LIST **list, const void *data, size_t size)
+mget_list_append(mget_list_t **list, const void *data, size_t size)
 {
 	// allocate space for node and data in one row
-	MGET_LIST *node = mget_malloc(sizeof(MGET_LIST) + size);
+	mget_list_t *node = mget_malloc(sizeof(mget_list_t) + size);
 
 	memcpy(node + 1, data, size);
 
@@ -132,7 +132,7 @@ mget_list_append(MGET_LIST **list, const void *data, size_t size)
  *
  * Returns: Pointer to the new element.
  */
-void *mget_list_prepend(MGET_LIST **list, const void *data, size_t size)
+void *mget_list_prepend(mget_list_t **list, const void *data, size_t size)
 {
 	if (!*list) {
 		return mget_list_append(list, data, size);
@@ -148,9 +148,9 @@ void *mget_list_prepend(MGET_LIST **list, const void *data, size_t size)
  *
  * Remove an entry from the list.
  */
-void mget_list_remove(MGET_LIST **list, void *elem)
+void mget_list_remove(mget_list_t **list, void *elem)
 {
-	MGET_LIST *node = ((MGET_LIST *)elem) - 1;
+	mget_list_t *node = ((mget_list_t *)elem) - 1;
 
 	if (node->prev == node->next && node == node->prev) {
 		// removing the last node in the list
@@ -171,7 +171,7 @@ void mget_list_remove(MGET_LIST **list, void *elem)
  *
  * Returns: Pointer to the first element of the list or %NULL if the list is empty.
  */
-void *mget_list_getfirst(const MGET_LIST *list)
+void *mget_list_getfirst(const mget_list_t *list)
 {
 	return (void *)(list ? list + 1 : list);
 }
@@ -182,7 +182,7 @@ void *mget_list_getfirst(const MGET_LIST *list)
  *
  * Returns: Pointer to the last element of the list or %NULL if the list is empty.
  */
-void *mget_list_getlast(const MGET_LIST *list)
+void *mget_list_getlast(const mget_list_t *list)
 {
 	return (void *)(list ? list->prev + 1 : list);
 }
@@ -217,12 +217,12 @@ void *mget_list_getlast(const MGET_LIST *list)
  *  </programlisting>
  * </example>
  */
-int mget_list_browse(const MGET_LIST *list, int (*browse)(void *context, void *elem), void *context)
+int mget_list_browse(const mget_list_t *list, int (*browse)(void *context, void *elem), void *context)
 {
 	int ret = 0;
 
 	if (list) {
-		const MGET_LIST *end = list->prev, *cur = list;
+		const mget_list_t *end = list->prev, *cur = list;
 
 		while ((ret = browse(context, (void *)(cur + 1))) == 0 && cur != end)
 			cur = cur->next;
@@ -237,7 +237,7 @@ int mget_list_browse(const MGET_LIST *list, int (*browse)(void *context, void *e
  *
  * Freeing the list and it's entry.
  */
-void mget_list_free(MGET_LIST **list)
+void mget_list_free(mget_list_t **list)
 {
 	while (*list)
 		mget_list_remove(list, *list + 1);

@@ -36,7 +36,7 @@
 #include "log.h"
 #include "blacklist.h"
 
-static MGET_HASHMAP
+static mget_hashmap_t
 	*blacklist;
 
 static mget_thread_mutex_t
@@ -44,7 +44,7 @@ static mget_thread_mutex_t
 
 // Paul Larson's hash function from Microsoft Research
 // ~ O(1) insertion, search and removal
-static unsigned int G_GNUC_MGET_NONNULL_ALL hash_iri(const MGET_IRI *iri)
+static unsigned int G_GNUC_MGET_NONNULL_ALL hash_iri(const mget_iri_t *iri)
 {
 	unsigned int h = 0; // use 0 as SALT if hash table attacks doesn't matter
 	const unsigned char *p;
@@ -67,7 +67,7 @@ static unsigned int G_GNUC_MGET_NONNULL_ALL hash_iri(const MGET_IRI *iri)
 	return h;
 }
 
-static int G_GNUC_MGET_NONNULL_ALL _blacklist_print(G_GNUC_MGET_UNUSED void *ctx, const MGET_IRI *iri)
+static int G_GNUC_MGET_NONNULL_ALL _blacklist_print(G_GNUC_MGET_UNUSED void *ctx, const mget_iri_t *iri)
 {
 	info_printf("blacklist %s\n", iri->uri);
 	return 0;
@@ -80,12 +80,12 @@ void blacklist_print(void)
 	mget_thread_mutex_unlock(&mutex);
 }
 
-static void _free_entry(MGET_IRI *iri, G_GNUC_MGET_UNUSED void *value)
+static void _free_entry(mget_iri_t *iri, G_GNUC_MGET_UNUSED void *value)
 {
 	mget_iri_free_content(iri);
 }
 
-MGET_IRI *blacklist_add(MGET_IRI *iri)
+mget_iri_t *blacklist_add(mget_iri_t *iri)
 {
 	if (!iri)
 		return NULL;
