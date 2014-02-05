@@ -44,9 +44,9 @@ typedef struct {
 } HOST;
 
 HOST *
-	hosts_add(MGET_IRI *iri);
+	hosts_add(mget_iri_t *iri);
 HOST *
-	hosts_get(MGET_IRI *iri);
+	hosts_get(mget_iri_t *iri);
 void
 	hosts_free(void);
 

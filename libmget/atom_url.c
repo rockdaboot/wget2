@@ -38,7 +38,7 @@
 #include "private.h"
 
 struct atom_context {
-	MGET_VECTOR
+	mget_vector_t
 		*urls;
 };
 
@@ -95,7 +95,7 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 	}
 }
 
-void mget_atom_get_urls_inline(const char *atom, MGET_VECTOR **urls)
+void mget_atom_get_urls_inline(const char *atom, mget_vector_t **urls)
 {
 	struct atom_context context = { .urls = NULL };
 

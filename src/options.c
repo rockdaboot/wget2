@@ -256,7 +256,7 @@ static int parse_string(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv
 
 static int parse_stringset(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
-	MGET_STRINGMAP *map = *((MGET_STRINGMAP **)opt->var);
+	mget_stringmap_t *map = *((mget_stringmap_t **)opt->var);
 
 	if (val) {
 		const char *s, *p;
@@ -1100,8 +1100,8 @@ int init(int argc, const char *const *argv)
 	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
 	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
 
-	http_set_http_proxy(config.http_proxy, config.local_encoding);
-	http_set_https_proxy(config.https_proxy, config.local_encoding);
+	mget_http_set_http_proxy(config.http_proxy, config.local_encoding);
+	mget_http_set_https_proxy(config.https_proxy, config.local_encoding);
 	xfree(config.http_proxy);
 	xfree(config.https_proxy);
 
@@ -1195,8 +1195,8 @@ void deinit(void)
 	mget_stringmap_free(&config.domains);
 	mget_stringmap_free(&config.exclude_domains);
 
-	http_set_http_proxy(NULL, NULL);
-	http_set_https_proxy(NULL, NULL);
+	mget_http_set_http_proxy(NULL, NULL);
+	mget_http_set_https_proxy(NULL, NULL);
 }
 
 // self test some functions, called by using --self-test

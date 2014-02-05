@@ -62,82 +62,82 @@ static unsigned int G_GNUC_MGET_PURE hash_string_nocase(const char *key)
 // create stringmap with initial size <max>
 // the default hash function is Larson's
 
-MGET_STRINGMAP *mget_stringmap_create(int max)
+mget_stringmap_t *mget_stringmap_create(int max)
 {
 	return mget_hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string, (int (*)(const void *, const void *))strcmp);
 }
 
-MGET_STRINGMAP *mget_stringmap_create_nocase(int max)
+mget_stringmap_t *mget_stringmap_create_nocase(int max)
 {
 	return mget_hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string_nocase, (int (*)(const void *, const void *))strcasecmp);
 }
 
-int mget_stringmap_put_noalloc(MGET_STRINGMAP *h, const char *key, const void *value)
+int mget_stringmap_put_noalloc(mget_stringmap_t *h, const char *key, const void *value)
 {
 	return mget_hashmap_put_noalloc(h, key, value);
 }
 
-int mget_stringmap_put(MGET_STRINGMAP *h, const char *key, const void *value, size_t valuesize)
+int mget_stringmap_put(mget_stringmap_t *h, const char *key, const void *value, size_t valuesize)
 {
 	return mget_hashmap_put(h, key, strlen(key) + 1, value, valuesize);
 }
 
-void *mget_stringmap_get(const MGET_STRINGMAP *h, const char *key)
+void *mget_stringmap_get(const mget_stringmap_t *h, const char *key)
 {
 	return mget_hashmap_get(h, key);
 }
 
-int mget_stringmap_get_null(const MGET_STRINGMAP *h, const char *key, void **value)
+int mget_stringmap_get_null(const mget_stringmap_t *h, const char *key, void **value)
 {
 	return mget_hashmap_get_null(h, key, value);
 }
 
-int mget_stringmap_contains(const MGET_STRINGMAP *h, const char *key)
+int mget_stringmap_contains(const mget_stringmap_t *h, const char *key)
 {
 	return mget_hashmap_contains(h, key);
 }
 
-int mget_stringmap_remove(MGET_STRINGMAP *h, const char *key)
+int mget_stringmap_remove(mget_stringmap_t *h, const char *key)
 {
 	return mget_hashmap_remove(h, key);
 }
 
-int mget_stringmap_remove_nofree(MGET_STRINGMAP *h, const char *key)
+int mget_stringmap_remove_nofree(mget_stringmap_t *h, const char *key)
 {
 	return mget_hashmap_remove(h, key);
 }
 
-void mget_stringmap_free(MGET_STRINGMAP **h)
+void mget_stringmap_free(mget_stringmap_t **h)
 {
 	mget_hashmap_free(h);
 }
 
-void mget_stringmap_clear(MGET_STRINGMAP *h)
+void mget_stringmap_clear(mget_stringmap_t *h)
 {
 	mget_hashmap_clear(h);
 }
 
-int mget_stringmap_size(const MGET_STRINGMAP *h)
+int mget_stringmap_size(const mget_stringmap_t *h)
 {
 	return mget_hashmap_size(h);
 }
 
-int mget_stringmap_browse(const MGET_STRINGMAP *h, int (*browse)(void *ctx, const char *key, void *value), void *ctx)
+int mget_stringmap_browse(const mget_stringmap_t *h, int (*browse)(void *ctx, const char *key, void *value), void *ctx)
 {
 	return mget_hashmap_browse(h, (int (*)(void *, const void *, void *))browse, ctx);
 }
 
-void mget_stringmap_setcmpfunc(MGET_STRINGMAP *h, int (*cmp)(const char *key1, const char *key2))
+void mget_stringmap_setcmpfunc(mget_stringmap_t *h, int (*cmp)(const char *key1, const char *key2))
 {
 	mget_hashmap_setcmpfunc(h, (int (*)(const void *, const void *))cmp);
 }
 
-void mget_stringmap_sethashfunc(MGET_STRINGMAP *h, unsigned int (*hash)(const char *key))
+void mget_stringmap_sethashfunc(mget_stringmap_t *h, unsigned int (*hash)(const char *key))
 {
 	mget_hashmap_sethashfunc(h, (unsigned int (*)(const void *))hash);
 }
 
-void mget_stringmap_setloadfactor(MGET_STRINGMAP *h, float factor)
+void mget_stringmap_setloadfactor(mget_stringmap_t *h, float factor)
 {
 	mget_hashmap_setloadfactor(h, factor);
 }

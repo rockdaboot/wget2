@@ -37,6 +37,6 @@
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
 void set_exit_status(int status);
-const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri);
+const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(mget_iri_t *iri);
 
 #endif /* _MGET_SSL_H */

@@ -39,7 +39,7 @@
 #include "private.h"
 
 static void G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((1,2))
-_logger_vprintf_func(const MGET_LOGGER *logger, const char *fmt, va_list args)
+_logger_vprintf_func(const mget_logger_t *logger, const char *fmt, va_list args)
 {
 	char sbuf[4096];
 	int err = errno, len;
@@ -66,24 +66,24 @@ _logger_vprintf_func(const MGET_LOGGER *logger, const char *fmt, va_list args)
 	errno = err;
 }
 
-static void _logger_write_func(const MGET_LOGGER *logger, const char *buf, size_t len)
+static void _logger_write_func(const mget_logger_t *logger, const char *buf, size_t len)
 {
 	logger->func(buf, len);
 }
 
 static void  G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((1,2))
-_logger_vprintf_file(const MGET_LOGGER *logger, const char *fmt, va_list args)
+_logger_vprintf_file(const mget_logger_t *logger, const char *fmt, va_list args)
 {
 	vfprintf(logger->fp, fmt, args);
 }
 
-static void _logger_write_file(const MGET_LOGGER *logger, const char *buf, size_t len)
+static void _logger_write_file(const mget_logger_t *logger, const char *buf, size_t len)
 {
 	fwrite(buf, 1, len, logger->fp);
 }
 
 static void G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((1,2))
-_logger_vprintf_fname(const MGET_LOGGER *logger, const char *fmt, va_list args)
+_logger_vprintf_fname(const mget_logger_t *logger, const char *fmt, va_list args)
 {
 	FILE *fp = fopen(logger->fname, "a");
 
@@ -93,7 +93,7 @@ _logger_vprintf_fname(const MGET_LOGGER *logger, const char *fmt, va_list args)
 	}
 }
 
-static void _logger_write_fname(const MGET_LOGGER *logger, const char *buf, size_t len)
+static void _logger_write_fname(const mget_logger_t *logger, const char *buf, size_t len)
 {
 	FILE *fp = fopen(logger->fname, "a");
 
@@ -103,7 +103,7 @@ static void _logger_write_fname(const MGET_LOGGER *logger, const char *buf, size
 	}
 }
 
-void mget_logger_set_func(MGET_LOGGER *logger, void (*func)(const char *buf, size_t len))
+void mget_logger_set_func(mget_logger_t *logger, void (*func)(const char *buf, size_t len))
 {
 	if (logger) {
 		logger->func = func;
@@ -112,12 +112,12 @@ void mget_logger_set_func(MGET_LOGGER *logger, void (*func)(const char *buf, siz
 	}
 }
 
-void (*mget_logger_get_func(MGET_LOGGER *logger))(const char *, size_t)
+void (*mget_logger_get_func(mget_logger_t *logger))(const char *, size_t)
 {
 	return logger ? logger->func : NULL;
 }
 
-void mget_logger_set_stream(MGET_LOGGER *logger, FILE *fp)
+void mget_logger_set_stream(mget_logger_t *logger, FILE *fp)
 {
 	if (logger) {
 		logger->fp = fp;
@@ -126,12 +126,12 @@ void mget_logger_set_stream(MGET_LOGGER *logger, FILE *fp)
 	}
 }
 
-FILE *mget_logger_get_stream(MGET_LOGGER *logger)
+FILE *mget_logger_get_stream(mget_logger_t *logger)
 {
 	return logger ? logger->fp : NULL;
 }
 
-void mget_logger_set_file(MGET_LOGGER *logger, const char *fname)
+void mget_logger_set_file(mget_logger_t *logger, const char *fname)
 {
 	if (logger) {
 		logger->fname = fname;
@@ -140,7 +140,7 @@ void mget_logger_set_file(MGET_LOGGER *logger, const char *fname)
 	}
 }
 
-const char *mget_logger_get_file(MGET_LOGGER *logger)
+const char *mget_logger_get_file(mget_logger_t *logger)
 {
 	return logger ? logger->fname : NULL;
 }

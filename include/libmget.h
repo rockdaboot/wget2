@@ -325,22 +325,22 @@ int
  *
  * Type for double linked lists and list entries.
  */
-typedef struct _MGET_LISTNODE MGET_LIST;
+typedef struct _mget_list_st mget_list_t;
 
 void *
-	mget_list_append(MGET_LIST **list, const void *data, size_t size) G_GNUC_MGET_NONNULL_ALL;
+	mget_list_append(mget_list_t **list, const void *data, size_t size) G_GNUC_MGET_NONNULL_ALL;
 void *
-	mget_list_prepend(MGET_LIST **list, const void *data, size_t size) G_GNUC_MGET_NONNULL_ALL;
+	mget_list_prepend(mget_list_t **list, const void *data, size_t size) G_GNUC_MGET_NONNULL_ALL;
 void *
-	mget_list_getfirst(const MGET_LIST *list) G_GNUC_MGET_CONST;
+	mget_list_getfirst(const mget_list_t *list) G_GNUC_MGET_CONST;
 void *
-	mget_list_getlast(const MGET_LIST *list) G_GNUC_MGET_PURE;
+	mget_list_getlast(const mget_list_t *list) G_GNUC_MGET_PURE;
 void
-	mget_list_remove(MGET_LIST **list, void *elem) G_GNUC_MGET_NONNULL_ALL;
+	mget_list_remove(mget_list_t **list, void *elem) G_GNUC_MGET_NONNULL_ALL;
 void
-	mget_list_free(MGET_LIST **list) G_GNUC_MGET_NONNULL_ALL;
+	mget_list_free(mget_list_t **list) G_GNUC_MGET_NONNULL_ALL;
 int
-	mget_list_browse(const MGET_LIST *list, int (*browse)(void *context, void *elem), void *context) G_GNUC_MGET_NONNULL((2));
+	mget_list_browse(const mget_list_t *list, int (*browse)(void *context, void *elem), void *context) G_GNUC_MGET_NONNULL((2));
 
 /*
  * Memory allocation routines
@@ -356,7 +356,7 @@ void *
 void *
 	mget_realloc(void *ptr, size_t size) G_GNUC_MGET_ALLOC_SIZE(2);
 void
-	mget_set_oomfunc(void (*oom_func)(void));
+	mget_set_oomfunc(void (*oom_callback)(void));
 
 /*
  * String/Memory routines, slightly different than standard functions
@@ -458,20 +458,20 @@ size_t
  * Logger routines
  */
 
-typedef struct _MGET_LOGGER MGET_LOGGER;
+typedef struct _mget_logger_st mget_logger_t;
 
 void
-	mget_logger_set_func(MGET_LOGGER *logger, void (*func)(const char *buf, size_t len) G_GNUC_MGET_NONNULL_ALL);
+	mget_logger_set_func(mget_logger_t *logger, void (*func)(const char *buf, size_t len) G_GNUC_MGET_NONNULL_ALL);
 void
-	mget_logger_set_stream(MGET_LOGGER *logger, FILE *fp);
+	mget_logger_set_stream(mget_logger_t *logger, FILE *fp);
 void
-	mget_logger_set_file(MGET_LOGGER *logger, const char *fname);
+	mget_logger_set_file(mget_logger_t *logger, const char *fname);
 void
-	(*mget_logger_get_func(MGET_LOGGER *logger))(const char *, size_t) G_GNUC_MGET_PURE;
+	(*mget_logger_get_func(mget_logger_t *logger))(const char *, size_t) G_GNUC_MGET_PURE;
 FILE *
-	mget_logger_get_stream(MGET_LOGGER *logger) G_GNUC_MGET_PURE;
+	mget_logger_get_stream(mget_logger_t *logger) G_GNUC_MGET_PURE;
 const char *
-	mget_logger_get_file(MGET_LOGGER *logger) G_GNUC_MGET_PURE;
+	mget_logger_get_file(mget_logger_t *logger) G_GNUC_MGET_PURE;
 
 /*
  * Logging routines
@@ -497,153 +497,153 @@ void
 	mget_debug_printf(const char *fmt, ...) G_GNUC_MGET_NONNULL((1)) G_GNUC_MGET_PRINTF_FORMAT(1,2);
 void
 	mget_debug_write(const char *buf, int len) G_GNUC_MGET_NONNULL_ALL;
-MGET_LOGGER *
+mget_logger_t *
 	mget_get_logger(int id) G_GNUC_MGET_CONST;
 
 /*
  * Vector datatype routines
  */
 
-typedef struct _MGET_VECTOR MGET_VECTOR;
+typedef struct _mget_vector_st mget_vector_t;
 
-MGET_VECTOR *
+mget_vector_t *
 	mget_vector_create(int max, int off, int (*cmp)(const void *, const void *)) G_GNUC_MGET_MALLOC;
 int
-	mget_vector_find(const MGET_VECTOR *v, const void *elem) G_GNUC_MGET_NONNULL((2));
+	mget_vector_find(const mget_vector_t *v, const void *elem) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_findext(const MGET_VECTOR *v, int start, int direction, int (*find)(void *)) G_GNUC_MGET_NONNULL((4));
+	mget_vector_findext(const mget_vector_t *v, int start, int direction, int (*find)(void *)) G_GNUC_MGET_NONNULL((4));
 int
-	mget_vector_insert(MGET_VECTOR *v, const void *elem, size_t size, int pos) G_GNUC_MGET_NONNULL((2));
+	mget_vector_insert(mget_vector_t *v, const void *elem, size_t size, int pos) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_insert_noalloc(MGET_VECTOR *v, const void *elem, int pos) G_GNUC_MGET_NONNULL((2));
+	mget_vector_insert_noalloc(mget_vector_t *v, const void *elem, int pos) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_insert_sorted(MGET_VECTOR *v, const void *elem, size_t size) G_GNUC_MGET_NONNULL((2));
+	mget_vector_insert_sorted(mget_vector_t *v, const void *elem, size_t size) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_insert_sorted_noalloc(MGET_VECTOR *v, const void *elem) G_GNUC_MGET_NONNULL((2));
+	mget_vector_insert_sorted_noalloc(mget_vector_t *v, const void *elem) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_add(MGET_VECTOR *v, const void *elem, size_t size) G_GNUC_MGET_NONNULL((2));
+	mget_vector_add(mget_vector_t *v, const void *elem, size_t size) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_add_noalloc(MGET_VECTOR *v, const void *elem) G_GNUC_MGET_NONNULL((2));
+	mget_vector_add_noalloc(mget_vector_t *v, const void *elem) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_add_str(MGET_VECTOR *v, const char *s) G_GNUC_MGET_NONNULL((2));
+	mget_vector_add_str(mget_vector_t *v, const char *s) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_add_vprintf(MGET_VECTOR *v, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((2));
+	mget_vector_add_vprintf(mget_vector_t *v, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_add_printf(MGET_VECTOR *v, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL((2));
+	mget_vector_add_printf(mget_vector_t *v, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_replace(MGET_VECTOR *v, const void *elem, size_t size, int pos) G_GNUC_MGET_NONNULL((2));
+	mget_vector_replace(mget_vector_t *v, const void *elem, size_t size, int pos) G_GNUC_MGET_NONNULL((2));
 int
-	mget_vector_move(MGET_VECTOR *v, int old_pos, int new_pos);
+	mget_vector_move(mget_vector_t *v, int old_pos, int new_pos);
 int
-	mget_vector_swap(MGET_VECTOR *v, int pos1, int pos2);
+	mget_vector_swap(mget_vector_t *v, int pos1, int pos2);
 int
-	mget_vector_remove(MGET_VECTOR *v, int pos);
+	mget_vector_remove(mget_vector_t *v, int pos);
 int
-	mget_vector_remove_nofree(MGET_VECTOR *v, int pos);
+	mget_vector_remove_nofree(mget_vector_t *v, int pos);
 int
-	mget_vector_size(const MGET_VECTOR *v) G_GNUC_MGET_PURE;
+	mget_vector_size(const mget_vector_t *v) G_GNUC_MGET_PURE;
 int
-	mget_vector_browse(const MGET_VECTOR *v, int (*browse)(void *elem)) G_GNUC_MGET_NONNULL((2));
+	mget_vector_browse(const mget_vector_t *v, int (*browse)(void *ctx, void *elem), void *ctx) G_GNUC_MGET_NONNULL((2));
 void
-	mget_vector_free(MGET_VECTOR **v);
+	mget_vector_free(mget_vector_t **v);
 void
-	mget_vector_clear(MGET_VECTOR *v);
+	mget_vector_clear(mget_vector_t *v);
 void
-	mget_vector_clear_nofree(MGET_VECTOR *v);
+	mget_vector_clear_nofree(mget_vector_t *v);
 void *
-	mget_vector_get(const MGET_VECTOR *v, int pos) G_GNUC_MGET_PURE;
+	mget_vector_get(const mget_vector_t *v, int pos) G_GNUC_MGET_PURE;
 void
-	mget_vector_setcmpfunc(MGET_VECTOR *v, int (*cmp)(const void *elem1, const void *elem2)) G_GNUC_MGET_NONNULL((2));
+	mget_vector_setcmpfunc(mget_vector_t *v, int (*cmp)(const void *elem1, const void *elem2)) G_GNUC_MGET_NONNULL((2));
 void
-	mget_vector_set_destructor(MGET_VECTOR *v, void (*destructor)(void *elem));
+	mget_vector_set_destructor(mget_vector_t *v, void (*destructor)(void *elem));
 void
-	mget_vector_sort(MGET_VECTOR *v);
+	mget_vector_sort(mget_vector_t *v);
 
 /*
  * Hashmap datatype routines
  */
 
-typedef struct _MGET_HASHMAP MGET_HASHMAP;
+typedef struct _mget_hashmap_st mget_hashmap_t;
 
-MGET_HASHMAP
+mget_hashmap_t
 	*mget_hashmap_create(int max, int off, unsigned int (*hash)(const void *), int (*cmp)(const void *, const void *)) G_GNUC_MGET_MALLOC;
 int
-	mget_hashmap_put(MGET_HASHMAP *h, const void *key, size_t keysize, const void *value, size_t valuesize);
+	mget_hashmap_put(mget_hashmap_t *h, const void *key, size_t keysize, const void *value, size_t valuesize);
 int
-	mget_hashmap_put_noalloc(MGET_HASHMAP *h, const void *key, const void *value);
+	mget_hashmap_put_noalloc(mget_hashmap_t *h, const void *key, const void *value);
 //int
 //	mget_hashmap_put_ident(MGET_HASHMAP *h, const void *key, size_t keysize);
 //int
 //	mget_hashmap_put_ident_noalloc(MGET_HASHMAP *h, const void *key);
 int
-	mget_hashmap_size(const MGET_HASHMAP *h) G_GNUC_MGET_PURE;
+	mget_hashmap_size(const mget_hashmap_t *h) G_GNUC_MGET_PURE;
 int
-	mget_hashmap_browse(const MGET_HASHMAP *h, int (*browse)(void *ctx, const void *key, void *value), void *ctx) G_GNUC_MGET_NONNULL((2));
+	mget_hashmap_browse(const mget_hashmap_t *h, int (*browse)(void *ctx, const void *key, void *value), void *ctx) G_GNUC_MGET_NONNULL((2));
 void
-	mget_hashmap_free(MGET_HASHMAP **h);
+	mget_hashmap_free(mget_hashmap_t **h);
 void
-	mget_hashmap_clear(MGET_HASHMAP *h);
+	mget_hashmap_clear(mget_hashmap_t *h);
 void *
-	mget_hashmap_get(const MGET_HASHMAP *h, const void *key);
+	mget_hashmap_get(const mget_hashmap_t *h, const void *key);
 int
-	mget_hashmap_get_null(const MGET_HASHMAP *h, const void *key, void **value);
+	mget_hashmap_get_null(const mget_hashmap_t *h, const void *key, void **value);
 int
-	mget_hashmap_contains(const MGET_HASHMAP *h, const void *key);
+	mget_hashmap_contains(const mget_hashmap_t *h, const void *key);
 int
-	mget_hashmap_remove(MGET_HASHMAP *h, const void *key);
+	mget_hashmap_remove(mget_hashmap_t *h, const void *key);
 int
-	mget_hashmap_remove_nofree(MGET_HASHMAP *h, const void *key);
+	mget_hashmap_remove_nofree(mget_hashmap_t *h, const void *key);
 void
-	mget_hashmap_setcmpfunc(MGET_HASHMAP *h, int (*cmp)(const void *key1, const void *key2));
+	mget_hashmap_setcmpfunc(mget_hashmap_t *h, int (*cmp)(const void *key1, const void *key2));
 void
-	mget_hashmap_sethashfunc(MGET_HASHMAP *h, unsigned int (*hash)(const void *key));
+	mget_hashmap_sethashfunc(mget_hashmap_t *h, unsigned int (*hash)(const void *key));
 void
-	mget_hashmap_set_destructor(MGET_HASHMAP *h, void (*destructor)(void *key, void *value));
+	mget_hashmap_set_destructor(mget_hashmap_t *h, void (*destructor)(void *key, void *value));
 void
-	mget_hashmap_setloadfactor(MGET_HASHMAP *h, float factor);
+	mget_hashmap_setloadfactor(mget_hashmap_t *h, float factor);
 
 /*
  * Hashmap datatype routines
  */
 
-typedef MGET_HASHMAP MGET_STRINGMAP;
+typedef mget_hashmap_t mget_stringmap_t;
 
-MGET_STRINGMAP *
+mget_stringmap_t *
 	mget_stringmap_create(int max) G_GNUC_MGET_MALLOC;
-MGET_STRINGMAP *
+mget_stringmap_t *
 	mget_stringmap_create_nocase(int max) G_GNUC_MGET_MALLOC;
 int
-	mget_stringmap_put(MGET_STRINGMAP *h, const char *key, const void *value, size_t valuesize);
+	mget_stringmap_put(mget_stringmap_t *h, const char *key, const void *value, size_t valuesize);
 int
-	mget_stringmap_put_noalloc(MGET_STRINGMAP *h, const char *key, const void *value);
+	mget_stringmap_put_noalloc(mget_stringmap_t *h, const char *key, const void *value);
 //int
 //	mget_stringmap_put_ident(MGET_STRINGMAP *h, const char *key);
 //int
 //	mget_stringmap_put_ident_noalloc(MGET_STRINGMAP *h, const char *key);
 int
-	mget_stringmap_size(const MGET_STRINGMAP *h) G_GNUC_MGET_PURE;
+	mget_stringmap_size(const mget_stringmap_t *h) G_GNUC_MGET_PURE;
 int
-	mget_stringmap_browse(const MGET_STRINGMAP *h, int (*browse)(void *ctx, const char *key, void *value), void *ctx) G_GNUC_MGET_NONNULL((2));
+	mget_stringmap_browse(const mget_stringmap_t *h, int (*browse)(void *ctx, const char *key, void *value), void *ctx) G_GNUC_MGET_NONNULL((2));
 void
-	mget_stringmap_free(MGET_STRINGMAP **h);
+	mget_stringmap_free(mget_stringmap_t **h);
 void
-	mget_stringmap_clear(MGET_STRINGMAP *h);
+	mget_stringmap_clear(mget_stringmap_t *h);
 void *
-	mget_stringmap_get(const MGET_STRINGMAP *h, const char *key);
+	mget_stringmap_get(const mget_stringmap_t *h, const char *key);
 int
-	mget_stringmap_get_null(const MGET_STRINGMAP *h, const char *key, void **value);
+	mget_stringmap_get_null(const mget_stringmap_t *h, const char *key, void **value);
 int
-	mget_stringmap_contains(const MGET_STRINGMAP *h, const char *key);
+	mget_stringmap_contains(const mget_stringmap_t *h, const char *key);
 int
-	mget_stringmap_remove(MGET_STRINGMAP *h, const char *key);
+	mget_stringmap_remove(mget_stringmap_t *h, const char *key);
 int
-	mget_stringmap_remove_nofree(MGET_STRINGMAP *h, const char *key);
+	mget_stringmap_remove_nofree(mget_stringmap_t *h, const char *key);
 void
-	mget_stringmap_setcmpfunc(MGET_STRINGMAP *h, int (*cmp)(const char *key1, const char *key2));
+	mget_stringmap_setcmpfunc(mget_stringmap_t *h, int (*cmp)(const char *key1, const char *key2));
 void
-	mget_stringmap_sethashfunc(MGET_STRINGMAP *h, unsigned int (*hash)(const char *key));
+	mget_stringmap_sethashfunc(mget_stringmap_t *h, unsigned int (*hash)(const char *key));
 void
-	mget_stringmap_setloadfactor(MGET_STRINGMAP *h, float factor);
+	mget_stringmap_setloadfactor(mget_stringmap_t *h, float factor);
 
 /*
  * Thread wrapper routines
@@ -687,7 +687,7 @@ mget_thread_t
  * Decompressor routines
  */
 
-typedef struct _MGET_DECOMPRESSOR MGET_DECOMPRESSOR;
+typedef struct _mget_decompressor_st mget_decompressor_t;
 
 enum {
 	mget_content_encoding_identity,
@@ -697,14 +697,14 @@ enum {
 	mget_content_encoding_bzip2
 };
 
-MGET_DECOMPRESSOR *
+mget_decompressor_t *
 	mget_decompress_open(int encoding,
 						 int (*put_data)(void *context, const char *data, size_t length),
 						 void *context);
 void
-	mget_decompress_close(MGET_DECOMPRESSOR *dc);
+	mget_decompress_close(mget_decompressor_t *dc);
 int
-	mget_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen);
+	mget_decompress(mget_decompressor_t *dc, char *src, size_t srclen);
 
 /*
  * URI/IRI routines
@@ -719,7 +719,7 @@ extern const char * const
 #define MGET_IRI_SCHEME_FTP     (mget_iri_schemes[2])
 #define MGET_IRI_SCHEME_DEFAULT MGET_IRI_SCHEME_HTTP
 
-typedef struct {
+typedef struct mget_iri_st {
 	const char *
 		uri;      // pointer to original URI string, unescaped and converted to UTF-8
 	const char *
@@ -744,23 +744,22 @@ typedef struct {
 		fragment; // unescaped fragment part or NULL
 	const char *
 		connection_part; // helper, e.g. http://www.example.com:8080
-
 	size_t
 		dirlen; // length of directory part in 'path' (needed/initialized on with --no-parent)
 	char
 		host_allocated; // if set, free host in iri_free()
-} MGET_IRI;
+} mget_iri_t;
 
 void
 	mget_iri_test(void);
 void
-	mget_iri_free(MGET_IRI **iri);
+	mget_iri_free(mget_iri_t **iri);
 void
-	mget_iri_free_content(MGET_IRI *iri);
+	mget_iri_free_content(mget_iri_t *iri);
 void
 	mget_iri_set_defaultpage(const char *page);
 int
-	mget_iri_supported(const MGET_IRI *iri) G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL;
+	mget_iri_supported(const mget_iri_t *iri) G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL;
 int
 	mget_iri_isgendelim(char c) G_GNUC_MGET_CONST;
 int
@@ -772,15 +771,15 @@ int
 int
 	mget_iri_isunreserved_path(char c) G_GNUC_MGET_PURE;
 int
-	mget_iri_compare(MGET_IRI *iri1, MGET_IRI *iri2) G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL;
-MGET_IRI *
+	mget_iri_compare(mget_iri_t *iri1, mget_iri_t *iri2) G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL;
+mget_iri_t *
 	mget_iri_parse(const char *uri, const char *encoding) G_GNUC_MGET_MALLOC;
-MGET_IRI *
-	mget_iri_parse_base(MGET_IRI *base, const char *url, const char *encoding) G_GNUC_MGET_MALLOC;
+mget_iri_t *
+	mget_iri_parse_base(mget_iri_t *base, const char *url, const char *encoding) G_GNUC_MGET_MALLOC;
 const char *
-	mget_iri_get_connection_part(MGET_IRI *iri);
+	mget_iri_get_connection_part(mget_iri_t *iri);
 const char *
-	mget_iri_relative_to_abs(MGET_IRI *base, const char *val, size_t len, mget_buffer_t *buf);
+	mget_iri_relative_to_abs(mget_iri_t *base, const char *val, size_t len, mget_buffer_t *buf);
 const char *
 	mget_iri_escape(const char *src, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
 const char *
@@ -788,21 +787,21 @@ const char *
 const char *
 	mget_iri_escape_query(const char *src, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	mget_iri_get_escaped_host(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+	mget_iri_get_escaped_host(const mget_iri_t *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	mget_iri_get_escaped_resource(const MGET_IRI *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+	mget_iri_get_escaped_resource(const mget_iri_t *iri, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
 char *
-	mget_iri_get_path(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding) G_GNUC_MGET_NONNULL((1,2));
+	mget_iri_get_path(const mget_iri_t *iri, mget_buffer_t *buf, const char *encoding) G_GNUC_MGET_NONNULL((1,2));
 char *
-	mget_iri_get_query_as_filename(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding) G_GNUC_MGET_NONNULL((1,2));
+	mget_iri_get_query_as_filename(const mget_iri_t *iri, mget_buffer_t *buf, const char *encoding) G_GNUC_MGET_NONNULL((1,2));
 char *
-	mget_iri_get_filename(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding) G_GNUC_MGET_NONNULL((1,2));
+	mget_iri_get_filename(const mget_iri_t *iri, mget_buffer_t *buf, const char *encoding) G_GNUC_MGET_NONNULL((1,2));
 
 /*
  * Cookie routines
  */
 
-typedef struct {
+typedef struct mget_cookie_st {
 	const char *
 		name;
 	const char *
@@ -831,24 +830,24 @@ typedef struct {
 		secure_only : 1; // cookie should be used over secure connections only (TLS/HTTPS)
 	unsigned int
 		http_only : 1; // just use the cookie via HTTP/HTTPS protocol
-} MGET_COOKIE;
+} mget_cookie_t;
 
 void
-	mget_cookie_init_cookie(MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_init_cookie(mget_cookie_t *cookie) G_GNUC_MGET_NONNULL_ALL;
 void
 	mget_cookie_free_cookies(void);
 void
-	mget_cookie_normalize_cookies(const MGET_IRI *iri, const MGET_VECTOR *cookies) G_GNUC_MGET_NONNULL((1));
+	mget_cookie_normalize_cookies(const mget_iri_t *iri, const mget_vector_t *cookies) G_GNUC_MGET_NONNULL((1));
 void
-	mget_cookie_store_cookie(MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_store_cookie(mget_cookie_t *cookie) G_GNUC_MGET_NONNULL_ALL;
 void
-	mget_cookie_store_cookies(MGET_VECTOR *cookies) G_GNUC_MGET_NONNULL((1));
+	mget_cookie_store_cookies(mget_vector_t *cookies) G_GNUC_MGET_NONNULL((1));
 void
 	mget_cookie_free_public_suffixes(void);
 void
-	mget_cookie_free_cookie(MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_free_cookie(mget_cookie_t *cookie) G_GNUC_MGET_NONNULL_ALL;
 int
-	mget_cookie_normalize_cookie(const MGET_IRI *iri, MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL((2));
+	mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *cookie) G_GNUC_MGET_NONNULL((2));
 int
 	mget_cookie_save(const char *fname, int keep_session_cookies) G_GNUC_MGET_NONNULL_ALL;
 int
@@ -858,7 +857,7 @@ int
 int
 	mget_cookie_suffix_match(const char *domain) G_GNUC_MGET_NONNULL_ALL;
 char *
-	mget_cookie_create_request_header(const MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_create_request_header(const mget_iri_t *iri) G_GNUC_MGET_NONNULL_ALL;
 
 /*
  * HTTP Strict Transport Security (HSTS) routines
@@ -923,15 +922,15 @@ void
 		void(*callback_uri)(void *user_ctx, const char *url, size_t len, size_t pos),
 		void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
 		void *user_ctx) G_GNUC_MGET_NONNULL((1));
-MGET_VECTOR *
+mget_vector_t *
 	mget_css_get_urls(
 		const char *css,
-		MGET_IRI *base,
+		mget_iri_t *base,
 		const char **encoding) G_GNUC_MGET_NONNULL((1));
-MGET_VECTOR *
+mget_vector_t *
 	mget_css_get_urls_from_localfile(
 		const char *fname,
-		MGET_IRI *base,
+		mget_iri_t *base,
 		const char **encoding) G_GNUC_MGET_NONNULL((1));
 
 typedef struct {
@@ -951,7 +950,7 @@ typedef struct {
 } MGET_HTML_PARSED_URL;
 
 typedef struct {
-	MGET_VECTOR
+	mget_vector_t
 		*uris;
 	const char *
 		encoding;
@@ -967,13 +966,13 @@ void
 	mget_html_free_urls_inline(MGET_HTML_PARSE_RESULT **res);
 
 void
-	mget_sitemap_get_urls_inline(const char *sitemap, MGET_VECTOR **urls, MGET_VECTOR **sitemap_urls);
+	mget_sitemap_get_urls_inline(const char *sitemap, mget_vector_t **urls, mget_vector_t **sitemap_urls);
 
 void
-	mget_atom_get_urls_inline(const char *atom, MGET_VECTOR **urls);
+	mget_atom_get_urls_inline(const char *atom, mget_vector_t **urls);
 
 void
-	mget_rss_get_urls_inline(const char *rss, MGET_VECTOR **urls);
+	mget_rss_get_urls_inline(const char *rss, mget_vector_t **urls);
 
 /*
  * XML and HTML parsing routines
@@ -994,30 +993,30 @@ void
 
 #define HTML_HINT_REMOVE_EMPTY_CONTENT XML_HINT_REMOVE_EMPTY_CONTENT
 
-typedef void mget_xml_callback_function(void *, int, const char *, const char *, const char *, size_t, size_t);
+typedef void mget_xml_callback_t(void *, int, const char *, const char *, const char *, size_t, size_t);
 
 void
 	mget_xml_parse_buffer(
 		const char *buf,
-		mget_xml_callback_function *callback,
+		mget_xml_callback_t *callback,
 //		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
 		void *user_ctx,
 		int hints) G_GNUC_MGET_NONNULL((1)),
 	mget_xml_parse_file(
 		const char *fname,
-		mget_xml_callback_function *callback,
+		mget_xml_callback_t *callback,
 //		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
 		void *user_ctx,
 		int hints) G_GNUC_MGET_NONNULL((1)),
 	mget_html_parse_buffer(
 		const char *buf,
-		mget_xml_callback_function *callback,
+		mget_xml_callback_t *callback,
 //		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
 		void *user_ctx,
 		int hints) G_GNUC_MGET_NONNULL((1)),
 	mget_html_parse_file(
 		const char *fname,
-		mget_xml_callback_function *callback,
+		mget_xml_callback_t *callback,
 //		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
 		void *user_ctx,
 		int hints) G_GNUC_MGET_NONNULL((1));
@@ -1030,58 +1029,58 @@ void
 #define MGET_NET_FAMILY_IPV4 1
 #define MGET_NET_FAMILY_IPV6 2
 
-typedef struct _TCP MGET_TCP;
+typedef struct mget_tcp_st mget_tcp_t;
 
-MGET_TCP *
+mget_tcp_t *
 	mget_tcp_init(void);
 void
-	mget_tcp_deinit(MGET_TCP **tcp);
+	mget_tcp_deinit(mget_tcp_t **tcp);
 void
 	mget_dns_cache_free(void);
 void
-	mget_tcp_close(MGET_TCP **tcp) G_GNUC_MGET_NONNULL_ALL;
+	mget_tcp_close(mget_tcp_t **tcp) G_GNUC_MGET_NONNULL_ALL;
 void
-	mget_tcp_set_timeout(MGET_TCP *tcp, int timeout);
+	mget_tcp_set_timeout(mget_tcp_t *tcp, int timeout);
 void
-	mget_tcp_set_connect_timeout(MGET_TCP *tcp, int timeout);
+	mget_tcp_set_connect_timeout(mget_tcp_t *tcp, int timeout);
 void
-	mget_tcp_set_dns_timeout(MGET_TCP *tcp, int timeout);
+	mget_tcp_set_dns_timeout(mget_tcp_t *tcp, int timeout);
 void
-	mget_tcp_set_dns_caching(MGET_TCP *tcp, int caching);
+	mget_tcp_set_dns_caching(mget_tcp_t *tcp, int caching);
 int
-	mget_tcp_get_dns_caching(MGET_TCP *tcp) G_GNUC_MGET_PURE;
+	mget_tcp_get_dns_caching(mget_tcp_t *tcp) G_GNUC_MGET_PURE;
 int
-	mget_tcp_get_family(MGET_TCP *tcp) G_GNUC_MGET_PURE;
+	mget_tcp_get_family(mget_tcp_t *tcp) G_GNUC_MGET_PURE;
 int
-	mget_tcp_get_preferred_family(MGET_TCP *tcp) G_GNUC_MGET_PURE;
+	mget_tcp_get_preferred_family(mget_tcp_t *tcp) G_GNUC_MGET_PURE;
 int
-	mget_tcp_get_local_port(MGET_TCP *tcp);
+	mget_tcp_get_local_port(mget_tcp_t *tcp);
 void
-	mget_tcp_set_debug(MGET_TCP *tcp, int debug);
+	mget_tcp_set_debug(mget_tcp_t *tcp, int debug);
 void
-	mget_tcp_set_family(MGET_TCP *tcp, int family);
+	mget_tcp_set_family(mget_tcp_t *tcp, int family);
 void
-	mget_tcp_set_preferred_family(MGET_TCP *tcp, int family);
+	mget_tcp_set_preferred_family(mget_tcp_t *tcp, int family);
 void
-	mget_tcp_set_bind_address(MGET_TCP *tcp, const char *bind_address);
+	mget_tcp_set_bind_address(mget_tcp_t *tcp, const char *bind_address);
 struct addrinfo *
-	mget_tcp_resolve(MGET_TCP *tcp, const char *restrict name, const char *restrict port) G_GNUC_MGET_NONNULL((2));
+	mget_tcp_resolve(mget_tcp_t *tcp, const char *restrict name, const char *restrict port) G_GNUC_MGET_NONNULL((2));
 int
-	mget_tcp_connect(MGET_TCP *tcp, const char *host, const char *port) G_GNUC_MGET_NONNULL((1));
+	mget_tcp_connect(mget_tcp_t *tcp, const char *host, const char *port) G_GNUC_MGET_NONNULL((1));
 int
-	mget_tcp_connect_ssl(MGET_TCP *tcp, const char *host, const char *port, const char *hostname) G_GNUC_MGET_NONNULL((1));
+	mget_tcp_connect_ssl(mget_tcp_t *tcp, const char *host, const char *port, const char *hostname) G_GNUC_MGET_NONNULL((1));
 int
-	mget_tcp_listen(MGET_TCP *tcp, const char *host, const char *port, int backlog) G_GNUC_MGET_NONNULL((1));
-MGET_TCP
-	*mget_tcp_accept(MGET_TCP *parent_tcp)G_GNUC_MGET_NONNULL((1));
+	mget_tcp_listen(mget_tcp_t *tcp, const char *host, const char *port, int backlog) G_GNUC_MGET_NONNULL((1));
+mget_tcp_t
+	*mget_tcp_accept(mget_tcp_t *parent_tcp)G_GNUC_MGET_NONNULL((1));
 ssize_t
-	mget_tcp_vprintf(MGET_TCP *tcp, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL;
+	mget_tcp_vprintf(mget_tcp_t *tcp, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL;
 ssize_t
-	mget_tcp_printf(MGET_TCP *tcp, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL;
+	mget_tcp_printf(mget_tcp_t *tcp, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL;
 ssize_t
-	mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count) G_GNUC_MGET_NONNULL_ALL;
+	mget_tcp_write(mget_tcp_t *tcp, const char *buf, size_t count) G_GNUC_MGET_NONNULL_ALL;
 ssize_t
-	mget_tcp_read(MGET_TCP *tcp, char *buf, size_t count) G_GNUC_MGET_NONNULL_ALL;
+	mget_tcp_read(mget_tcp_t *tcp, char *buf, size_t count) G_GNUC_MGET_NONNULL_ALL;
 
 /*
  * SSL routines
@@ -1130,7 +1129,7 @@ typedef struct {
 		name;
 	const char *
 		value;
-} MGET_HTTP_HEADER_PARAM;
+} mget_http_header_param_t;
 
 typedef struct {
 	const char *
@@ -1143,21 +1142,21 @@ typedef struct {
 		link_rel_describedby,
 		link_rel_duplicate
 	} rel;
-} MGET_HTTP_LINK;
+} mget_http_link_t;
 
 typedef struct {
 	const char *
 		algorithm;
 	const char *
 		encoded_digest;
-} MGET_HTTP_DIGEST;
+} mget_http_digest_t;
 
 typedef struct {
 	const char *
 		auth_scheme;
-	MGET_STRINGMAP *
+	mget_stringmap_t *
 		params;
-} MGET_HTTP_CHALLENGE;
+} mget_http_challenge_t;
 
 enum {
 	transfer_encoding_identity,
@@ -1166,7 +1165,7 @@ enum {
 
 // keep the request as simple as possible
 typedef struct {
-	MGET_VECTOR *
+	mget_vector_t *
 		lines;
 	const char *
 		scheme;
@@ -1182,17 +1181,17 @@ typedef struct {
 		method[8]; // we just need HEAD, GET and POST
 	char
 		save_headers;
-} MGET_HTTP_REQUEST;
+} mget_http_request_t;
 
 // just parse the header lines that we need
 typedef struct {
-	MGET_VECTOR *
+	mget_vector_t *
 		links;
-	MGET_VECTOR *
+	mget_vector_t *
 		digests;
-	MGET_VECTOR *
+	mget_vector_t *
 		cookies;
-	MGET_VECTOR *
+	mget_vector_t *
 		challenges;
 	const char *
 		content_type;
@@ -1236,10 +1235,10 @@ typedef struct {
 		content_length_valid;
 	char
 		keep_alive;
-} MGET_HTTP_RESPONSE;
+} mget_http_response_t;
 
 typedef struct {
-	MGET_TCP *
+	mget_tcp_t *
 		tcp;
 	const char *
 		esc_host;
@@ -1251,146 +1250,144 @@ typedef struct {
 		buf;
 	unsigned
 		print_response_headers : 1;
-} MGET_HTTP_CONNECTION;
+} mget_http_connection_t;
 
 int
-	http_isseperator(char c) G_GNUC_MGET_CONST;
+	mget_http_isseperator(char c) G_GNUC_MGET_CONST;
 int
-	http_istoken(char c) G_GNUC_MGET_CONST;
-// int
-//	http_istext(char c);
+	mget_http_istoken(char c) G_GNUC_MGET_CONST;
 
 const char *
-	http_parse_token(const char *s, const char **token) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_token(const char *s, const char **token) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_quoted_string(const char *s, const char **qstring) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_quoted_string(const char *s, const char **qstring) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_param(const char *s, const char **param, const char **value) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_param(const char *s, const char **param, const char **value) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_name(const char *s, const char **name) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_name(const char *s, const char **name) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_name_fixed(const char *s, const char **name, size_t *namelen) G_GNUC_MGET_NONNULL_ALL;
+	mget_parse_name_fixed(const char *s, const char **name, size_t *namelen) G_GNUC_MGET_NONNULL_ALL;
 time_t
-	http_parse_full_date(const char *s) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_full_date(const char *s) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_link(const char *s, MGET_HTTP_LINK *link) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_link(const char *s, mget_http_link_t *link) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_digest(const char *s, MGET_HTTP_DIGEST *digest) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_digest(const char *s, mget_http_digest_t *digest) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_challenge(const char *s, MGET_HTTP_CHALLENGE *challenge) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_challenge(const char *s, mget_http_challenge_t *challenge) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_location(const char *s, const char **location) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_location(const char *s, const char **location) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_transfer_encoding(const char *s, char *transfer_encoding) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_transfer_encoding(const char *s, char *transfer_encoding) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_content_type(const char *s, const char **content_type, const char **charset) G_GNUC_MGET_NONNULL((1));
+	mget_http_parse_content_type(const char *s, const char **content_type, const char **charset) G_GNUC_MGET_NONNULL((1));
 const char *
-	http_parse_content_encoding(const char *s, char *content_encoding) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_content_encoding(const char *s, char *content_encoding) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_content_disposition(const char *s, const char **filename) G_GNUC_MGET_NONNULL((1));
+	mget_http_parse_content_disposition(const char *s, const char **filename) G_GNUC_MGET_NONNULL((1));
 const char *
-	http_parse_strict_transport_security(const char *s, time_t *maxage, char *include_subdomains) G_GNUC_MGET_NONNULL((1));
+	mget_http_parse_strict_transport_security(const char *s, time_t *maxage, char *include_subdomains) G_GNUC_MGET_NONNULL((1));
 const char *
-	http_parse_connection(const char *s, char *keep_alive) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_connection(const char *s, char *keep_alive) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_setcookie(const char *s, MGET_COOKIE *cookie) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_setcookie(const char *s, mget_cookie_t *cookie) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	http_parse_etag(const char *s, const char **etag) G_GNUC_MGET_NONNULL((1));
+	mget_http_parse_etag(const char *s, const char **etag) G_GNUC_MGET_NONNULL((1));
 
 char *
-	http_print_date(time_t t, char *buf, size_t bufsize) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_print_date(time_t t, char *buf, size_t bufsize) G_GNUC_MGET_NONNULL_ALL;
 
 void
-	http_add_param(MGET_VECTOR **params, MGET_HTTP_HEADER_PARAM *param) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_add_param(mget_vector_t **params, mget_http_header_param_t *param) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_add_header_vprintf(MGET_HTTP_REQUEST *req, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_add_header_vprintf(mget_http_request_t *req, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_add_header_printf(MGET_HTTP_REQUEST *req, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_add_header_printf(mget_http_request_t *req, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_add_header_line(MGET_HTTP_REQUEST *req, const char *line) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_add_header_line(mget_http_request_t *req, const char *line) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_add_header(MGET_HTTP_REQUEST *req, const char *name, const char *value) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_add_header(mget_http_request_t *req, const char *name, const char *value) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_add_credentials(MGET_HTTP_REQUEST *req, MGET_HTTP_CHALLENGE *challenge, const char *username, const char *password) G_GNUC_MGET_NONNULL((1));
+	mget_http_add_credentials(mget_http_request_t *req, mget_http_challenge_t *challenge, const char *username, const char *password) G_GNUC_MGET_NONNULL((1));
 void
-	http_set_http_proxy(const char *proxy, const char *encoding);
+	mget_http_set_http_proxy(const char *proxy, const char *encoding);
 void
-	http_set_https_proxy(const char *proxy, const char *encoding);
+	mget_http_set_https_proxy(const char *proxy, const char *encoding);
 
 int
-	http_free_param(MGET_HTTP_HEADER_PARAM *param);
+	mget_http_free_param(mget_http_header_param_t *param);
 void
-	http_free_cookie(MGET_COOKIE *cookie);
+	mget_http_free_cookie(mget_cookie_t *cookie);
 void
-	http_free_digest(MGET_HTTP_DIGEST *digest);
+	mget_http_free_digest(mget_http_digest_t *digest);
 void
-	http_free_challenge(MGET_HTTP_CHALLENGE *challenge);
+	mget_http_free_challenge(mget_http_challenge_t *challenge);
 void
-	http_free_link(MGET_HTTP_LINK *link);
+	mget_http_free_link(mget_http_link_t *link);
 
 void
-	http_free_cookies(MGET_VECTOR **cookies);
+	mget_http_free_cookies(mget_vector_t **cookies);
 void
-	http_free_digests(MGET_VECTOR **digests);
+	mget_http_free_digests(mget_vector_t **digests);
 void
-	http_free_challenges(MGET_VECTOR **challenges);
+	mget_http_free_challenges(mget_vector_t **challenges);
 void
-	http_free_links(MGET_VECTOR **links);
+	mget_http_free_links(mget_vector_t **links);
 //void
-//	http_free_header(HTTP_HEADER **header);
+//	mget_http_free_header(HTTP_HEADER **header);
 void
-	http_free_request(MGET_HTTP_REQUEST **req);
+	mget_http_free_request(mget_http_request_t **req);
 void
-	http_free_response(MGET_HTTP_RESPONSE **resp);
+	mget_http_free_response(mget_http_response_t **resp);
 
-MGET_HTTP_RESPONSE *
-	http_read_header(const MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
-MGET_HTTP_RESPONSE *
-	http_get_header(MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
-MGET_HTTP_RESPONSE *
-	http_parse_response_header(char *buf) G_GNUC_MGET_NONNULL_ALL;
-MGET_HTTP_RESPONSE *
-	http_get_response_cb(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req, unsigned int flags,
-		int (*header_handler)(void *context, MGET_HTTP_RESPONSE *),
-		int (*body_handler)(void *context, const char *data, size_t length),
+mget_http_response_t *
+	mget_http_read_header(const mget_iri_t *iri) G_GNUC_MGET_NONNULL_ALL;
+mget_http_response_t *
+	mget_http_get_header(mget_iri_t *iri) G_GNUC_MGET_NONNULL_ALL;
+mget_http_response_t *
+	mget_http_parse_response_header(char *buf) G_GNUC_MGET_NONNULL_ALL;
+mget_http_response_t *
+	mget_http_get_response_cb(mget_http_connection_t *conn, mget_http_request_t *req, unsigned int flags,
+		int (*header_callback)(void *context, mget_http_response_t *),
+		int (*body_callback)(void *context, const char *data, size_t length),
 		void *context) G_GNUC_MGET_NONNULL((1,5));
 //HTTP_RESPONSE *
 //	http_get_response_mem(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL_ALL,
-MGET_HTTP_RESPONSE *
-	http_get_response(MGET_HTTP_CONNECTION *conn,
-		int(*header_func)(void *, MGET_HTTP_RESPONSE *),
-		MGET_HTTP_REQUEST *req, unsigned int flags) G_GNUC_MGET_NONNULL((1));
-MGET_HTTP_RESPONSE *
-	http_get_response_fd(MGET_HTTP_CONNECTION *conn,
-		int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+mget_http_response_t *
+	mget_http_get_response(mget_http_connection_t *conn,
+		int(*header_callback)(void *, mget_http_response_t *),
+		mget_http_request_t *req, unsigned int flags) G_GNUC_MGET_NONNULL((1));
+mget_http_response_t *
+	mget_http_get_response_fd(mget_http_connection_t *conn,
+		int(*header_callback)(void *, mget_http_response_t *),
 		int fd, unsigned int flags) G_GNUC_MGET_NONNULL_ALL;
-MGET_HTTP_RESPONSE *
-	http_get_response_stream(MGET_HTTP_CONNECTION *conn,
-		int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+mget_http_response_t *
+	mget_http_get_response_stream(mget_http_connection_t *conn,
+		int(*header_callback)(void *, mget_http_response_t *),
 		FILE *stream, unsigned int flags) G_GNUC_MGET_NONNULL_ALL;
-MGET_HTTP_RESPONSE *
-	http_get_response_func(MGET_HTTP_CONNECTION *conn,
-		int(*header_func)(void *, MGET_HTTP_RESPONSE *),
-		int(*func)(void *, const char *, size_t), void *context, unsigned int flags) G_GNUC_MGET_NONNULL((1,2));
+mget_http_response_t *
+	mget_http_get_response_func(mget_http_connection_t *conn,
+		int(*header_callback)(void *, mget_http_response_t *),
+		int(*body_callback)(void *, const char *, size_t), void *context, unsigned int flags) G_GNUC_MGET_NONNULL((1,2));
 
-MGET_HTTP_CONNECTION *
-	http_open(const MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
-MGET_HTTP_REQUEST *
-	http_create_request(const MGET_IRI *iri, const char *method) G_GNUC_MGET_NONNULL_ALL;
+mget_http_connection_t *
+	mget_http_open(const mget_iri_t *iri) G_GNUC_MGET_NONNULL_ALL;
+mget_http_request_t *
+	mget_http_create_request(const mget_iri_t *iri, const char *method) G_GNUC_MGET_NONNULL_ALL;
 void
-	http_close(MGET_HTTP_CONNECTION **conn) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_close(mget_http_connection_t **conn) G_GNUC_MGET_NONNULL_ALL;
 int
-	http_send_request(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_send_request(mget_http_connection_t *conn, mget_http_request_t *req) G_GNUC_MGET_NONNULL_ALL;
 ssize_t
-	http_request_to_buffer(MGET_HTTP_REQUEST *req, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_request_to_buffer(mget_http_request_t *req, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
 
 /*
  * Highlevel HTTP routines
  */
 
-MGET_HTTP_RESPONSE *
+mget_http_response_t *
 	mget_http_get(int first_key, ...) G_GNUC_MGET_NULL_TERMINATED;
-MGET_VECTOR
+mget_vector_t
 	*mget_get_css_urls(const char *data);
 
 /*
@@ -1404,7 +1401,7 @@ void
  * Hash / digest routines
  */
 
-typedef struct _hash_hd_st mget_hash_hd_t;
+typedef struct _mget_hash_hd_st mget_hash_hd_t;
 
 /**
  * mget_digest_algorithm_t:
@@ -1459,47 +1456,47 @@ int
  */
 
 typedef struct {
-	MGET_IRI
+	mget_iri_t
 		*iri;
 	int
 		priority;
 	char
 		location[3]; // location of the mirror, e.g. 'de', 'fr' or 'jp'
-} MGET_METALINK_MIRROR;
+} mget_metalink_mirror_t;
 
 typedef struct {
 	char
 		type[16], // type of hash, e.g. 'MD5' or 'SHA-256'
 		hash_hex[128+1]; // hash value as HEX string
-} MGET_METALINK_HASH;
+} mget_metalink_hash_t;
 
 // Metalink piece, for checksumming after download
 typedef struct {
-	MGET_METALINK_HASH
+	mget_metalink_hash_t
 		hash;
 	off_t
 		position;
 	off_t
 		length;
-} MGET_METALINK_PIECE;
+} mget_metalink_piece_t;
 
 typedef struct {
 	const char
 		*name;
-	MGET_VECTOR
+	mget_vector_t
 		*mirrors,
 		*hashes, // checksums of complete file
 		*pieces; // checksums of smaller pieces of the file
 	off_t
 		size; // total size of the file
-} MGET_METALINK;
+} mget_metalink_t;
 
-MGET_METALINK
+mget_metalink_t
 	*metalink3_parse(const char *xml) G_GNUC_MGET_NONNULL((1)),
 	*metalink4_parse(const char *xml) G_GNUC_MGET_NONNULL((1));
 void
-	mget_metalink_free(MGET_METALINK **metalink),
-	mget_metalink_sort_mirrors(MGET_METALINK *metalink);
+	mget_metalink_free(mget_metalink_t **metalink),
+	mget_metalink_sort_mirrors(mget_metalink_t *metalink);
 
 /*
  * Robots types and routines
@@ -1513,9 +1510,9 @@ typedef struct {
 } ROBOTS_PATH;
 
 typedef struct ROBOTS {
-	MGET_VECTOR
+	mget_vector_t
 		*paths;
-	MGET_VECTOR
+	mget_vector_t
 		*sitemaps;
 } ROBOTS;
 

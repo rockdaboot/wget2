@@ -73,7 +73,7 @@ mget_digest_algorithm_t mget_hash_get_algorithm(const char *name)
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
-struct _hash_hd_st {
+struct _mget_hash_hd_st {
 	gnutls_hash_hd_t
 		dig;
 };
@@ -127,7 +127,7 @@ void mget_hash_deinit(mget_hash_hd_t *handle, void *digest)
 #elif defined (WITH_LIBNETTLE)
 #include <nettle/nettle-meta.h>
 
-struct _hash_hd_st {
+struct _mget_hash_hd_st {
 	const struct nettle_hash
 		*hash;
 	void
@@ -207,7 +207,7 @@ void mget_hash_deinit(mget_hash_hd_t *handle, void *digest)
 #else // empty functions which return error
 #define _U G_GNUC_MGET_UNUSED
 
-struct _hash_hd_st {
+struct _mget_hash_hd_st {
 	char dig;
 };
 

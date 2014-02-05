@@ -35,7 +35,7 @@
 #include "host.h"
 #include "options.h"
 
-static MGET_HASHMAP
+static mget_hashmap_t
 	*hosts;
 static mget_thread_mutex_t
 	hosts_mutex = MGET_THREAD_MUTEX_INITIALIZER;
@@ -83,7 +83,7 @@ static void _free_host_entry(HOST *host, G_GNUC_MGET_UNUSED void *dummy)
 	mget_robots_free(&host->robots);
 }
 
-HOST *hosts_add(MGET_IRI *iri)
+HOST *hosts_add(mget_iri_t *iri)
 {
 	mget_thread_mutex_lock(&hosts_mutex);
 
@@ -104,7 +104,7 @@ HOST *hosts_add(MGET_IRI *iri)
 	return hostp;
 }
 
-HOST *hosts_get(MGET_IRI *iri)
+HOST *hosts_get(mget_iri_t *iri)
 {
 	HOST *hostp, host = { .scheme = iri->scheme, .host = iri->host };
 

@@ -23,7 +23,7 @@ int main(void)
 	mget_hashmap_create(0, 0, NULL, NULL); // hashmap.c
 	mget_fdgetline(&empty, (size_t *)1, 0); // io.c
 	mget_iri_parse("", NULL); // iri.c
-	mget_list_free((MGET_LIST **)1); // list.c
+	mget_list_free((mget_list_t **)1); // list.c
 	mget_debug_write("", 0); // log.c
 	mget_logger_set_file(NULL, ""); // logger.c
 	mget_tcp_set_connect_timeout(NULL, 0); // net.c

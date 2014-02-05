@@ -73,7 +73,7 @@
 #include <libmget.h>
 #include "private.h"
 
-static struct _TCP {
+static struct mget_tcp_st {
 	void *
 		ssl_session;
 	struct addrinfo *
@@ -123,7 +123,7 @@ struct ADDR_ENTRY {
 		addrinfo;
 };
 // resolver / DNS cache container
-static MGET_VECTOR
+static mget_vector_t
 	*dns_cache;
 static mget_thread_mutex_t
 	dns_mutex = MGET_THREAD_MUTEX_INITIALIZER;
@@ -197,7 +197,7 @@ void mget_dns_cache_free(void)
 	mget_thread_mutex_unlock(&dns_mutex);
 }
 
-struct addrinfo *mget_tcp_resolve(MGET_TCP *tcp, const char *host, const char *port)
+struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char *port)
 {
 	static mget_thread_mutex_t
 		mutex = MGET_THREAD_MUTEX_INITIALIZER;
@@ -363,37 +363,37 @@ static int G_GNUC_MGET_CONST _family_to_value(int family)
 	}
 }
 
-void mget_tcp_set_dns_caching(MGET_TCP *tcp, int caching)
+void mget_tcp_set_dns_caching(mget_tcp_t *tcp, int caching)
 {
 	(tcp ? tcp : &_global_tcp)->caching = caching;
 }
 
-int mget_tcp_get_dns_caching(MGET_TCP *tcp)
+int mget_tcp_get_dns_caching(mget_tcp_t *tcp)
 {
 	return (tcp ? tcp : &_global_tcp)->caching;
 }
 
-void mget_tcp_set_preferred_family(MGET_TCP *tcp, int family)
+void mget_tcp_set_preferred_family(mget_tcp_t *tcp, int family)
 {
 	(tcp ? tcp : &_global_tcp)->preferred_family = _value_to_family(family);
 }
 
-int mget_tcp_get_preferred_family(MGET_TCP *tcp)
+int mget_tcp_get_preferred_family(mget_tcp_t *tcp)
 {
 	return _family_to_value((tcp ? tcp : &_global_tcp)->preferred_family);
 }
 
-void mget_tcp_set_family(MGET_TCP *tcp, int family)
+void mget_tcp_set_family(mget_tcp_t *tcp, int family)
 {
 	(tcp ? tcp : &_global_tcp)->family = _value_to_family(family);
 }
 
-int mget_tcp_get_family(MGET_TCP *tcp)
+int mget_tcp_get_family(mget_tcp_t *tcp)
 {
 	return _family_to_value((tcp ? tcp : &_global_tcp)->family);
 }
 
-int mget_tcp_get_local_port(MGET_TCP *tcp)
+int mget_tcp_get_local_port(mget_tcp_t *tcp)
 {
 	if (tcp) {
 		struct sockaddr_storage addr_store;
@@ -411,22 +411,22 @@ int mget_tcp_get_local_port(MGET_TCP *tcp)
 	return 0;
 }
 
-void mget_tcp_set_dns_timeout(MGET_TCP *tcp, int timeout)
+void mget_tcp_set_dns_timeout(mget_tcp_t *tcp, int timeout)
 {
 	(tcp ? tcp : &_global_tcp)->dns_timeout = timeout;
 }
 
-void mget_tcp_set_connect_timeout(MGET_TCP *tcp, int timeout)
+void mget_tcp_set_connect_timeout(mget_tcp_t *tcp, int timeout)
 {
 	(tcp ? tcp : &_global_tcp)->connect_timeout = timeout;
 }
 
-void mget_tcp_set_timeout(MGET_TCP *tcp, int timeout)
+void mget_tcp_set_timeout(mget_tcp_t *tcp, int timeout)
 {
 	(tcp ? tcp : &_global_tcp)->timeout = timeout;
 }
 
-void mget_tcp_set_bind_address(MGET_TCP *tcp, const char *bind_address)
+void mget_tcp_set_bind_address(mget_tcp_t *tcp, const char *bind_address)
 {
 	if (!tcp)
 		tcp = &_global_tcp;
@@ -468,15 +468,15 @@ void mget_tcp_set_bind_address(MGET_TCP *tcp, const char *bind_address)
 	}
 }
 
-MGET_TCP *mget_tcp_init(void)
+mget_tcp_t *mget_tcp_init(void)
 {
-	MGET_TCP *tcp = xmalloc(sizeof(MGET_TCP));
+	mget_tcp_t *tcp = xmalloc(sizeof(mget_tcp_t));
 
 	*tcp = _global_tcp;
 	return tcp;
 }
 
-void mget_tcp_deinit(MGET_TCP **tcp)
+void mget_tcp_deinit(mget_tcp_t **tcp)
 {
 	if (tcp && *tcp) {
 		mget_tcp_close(tcp);
@@ -489,7 +489,7 @@ void mget_tcp_deinit(MGET_TCP **tcp)
 	}
 }
 
-int mget_tcp_connect(MGET_TCP *tcp, const char *host, const char *port)
+int mget_tcp_connect(mget_tcp_t *tcp, const char *host, const char *port)
 {
 	return mget_tcp_connect_ssl(tcp, host, port, NULL);
 }
@@ -517,7 +517,7 @@ static void _set_async(int fd)
 #endif
 }
 
-int mget_tcp_connect_ssl(MGET_TCP *tcp, const char *host, const char *port, const char *hostname)
+int mget_tcp_connect_ssl(mget_tcp_t *tcp, const char *host, const char *port, const char *hostname)
 {
 	struct addrinfo *ai;
 	int sockfd = -1, rc;
@@ -607,7 +607,7 @@ int mget_tcp_connect_ssl(MGET_TCP *tcp, const char *host, const char *port, cons
 	return -1;
 }
 
-int mget_tcp_listen(MGET_TCP *tcp, const char *host, const char *port, int backlog)
+int mget_tcp_listen(mget_tcp_t *tcp, const char *host, const char *port, int backlog)
 {
 	struct addrinfo *ai;
 	int sockfd = -1, rc;
@@ -680,7 +680,7 @@ int mget_tcp_listen(MGET_TCP *tcp, const char *host, const char *port, int backl
 	return -1;
 }
 
-MGET_TCP *mget_tcp_accept(MGET_TCP *parent_tcp)
+mget_tcp_t *mget_tcp_accept(mget_tcp_t *parent_tcp)
 {
 	int sockfd;
 
@@ -695,7 +695,7 @@ MGET_TCP *mget_tcp_accept(MGET_TCP *parent_tcp)
 		}
 
 		if ((sockfd = accept(parent_tcp->sockfd, parent_tcp->bind_addrinfo->ai_addr, &parent_tcp->bind_addrinfo->ai_addrlen))!=-1) {
-			MGET_TCP *tcp = xmalloc(sizeof(MGET_TCP));
+			mget_tcp_t *tcp = xmalloc(sizeof(mget_tcp_t));
 
 			*tcp = *parent_tcp;
 			tcp->sockfd = sockfd;
@@ -710,7 +710,7 @@ MGET_TCP *mget_tcp_accept(MGET_TCP *parent_tcp)
 	return NULL;
 }
 
-ssize_t mget_tcp_read(MGET_TCP *tcp, char *buf, size_t count)
+ssize_t mget_tcp_read(mget_tcp_t *tcp, char *buf, size_t count)
 {
 	ssize_t rc;
 
@@ -733,7 +733,7 @@ ssize_t mget_tcp_read(MGET_TCP *tcp, char *buf, size_t count)
 	return rc;
 }
 
-ssize_t mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count)
+ssize_t mget_tcp_write(mget_tcp_t *tcp, const char *buf, size_t count)
 {
 	ssize_t nwritten = 0, n;
 	int rc;
@@ -798,7 +798,7 @@ ssize_t mget_tcp_write(MGET_TCP *tcp, const char *buf, size_t count)
 	return 0;
 }
 
-ssize_t mget_tcp_vprintf(MGET_TCP *tcp, const char *fmt, va_list args)
+ssize_t mget_tcp_vprintf(mget_tcp_t *tcp, const char *fmt, va_list args)
 {
 	char sbuf[4096], *bufp = NULL;
 	ssize_t len, len2 = 0;
@@ -840,7 +840,7 @@ ssize_t mget_tcp_vprintf(MGET_TCP *tcp, const char *fmt, va_list args)
 	return len2;
 }
 
-ssize_t mget_tcp_printf(MGET_TCP *tcp, const char *fmt, ...)
+ssize_t mget_tcp_printf(mget_tcp_t *tcp, const char *fmt, ...)
 {
 	va_list args;
 
@@ -849,7 +849,7 @@ ssize_t mget_tcp_printf(MGET_TCP *tcp, const char *fmt, ...)
 	va_end(args);
 }
 
-void mget_tcp_close(MGET_TCP **tcp)
+void mget_tcp_close(mget_tcp_t **tcp)
 {
 	if (tcp && *tcp) {
 		if ((*tcp)->ssl && (*tcp)->ssl_session) {

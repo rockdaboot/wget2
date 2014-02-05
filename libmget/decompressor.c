@@ -52,7 +52,7 @@
 #include <libmget.h>
 #include "private.h"
 
-struct _MGET_DECOMPRESSOR {
+struct _mget_decompressor_st {
 #if WITH_ZLIB
 	z_stream
 		z_strm;
@@ -67,10 +67,10 @@ struct _MGET_DECOMPRESSOR {
 #endif
 
 	int
-		(*decompress)(MGET_DECOMPRESSOR *dc, char *src, size_t srclen),
+		(*decompress)(mget_decompressor_t *dc, char *src, size_t srclen),
 		(*put_data)(void *context, const char *data, size_t length); // decompressed data goes here
 	void
-		(*exit)(MGET_DECOMPRESSOR *dc),
+		(*exit)(mget_decompressor_t *dc),
 		*context; // given to put_data()
 	char
 		encoding;
@@ -91,7 +91,7 @@ static int gzip_init(z_stream *strm)
 	return 0;
 }
 
-static int gzip_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
+static int gzip_decompress(mget_decompressor_t *dc, char *src, size_t srclen)
 {
 	z_stream *strm;
 	char dst[10240];
@@ -127,7 +127,7 @@ static int gzip_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 	return -1;
 }
 
-static void gzip_exit(MGET_DECOMPRESSOR *dc)
+static void gzip_exit(mget_decompressor_t *dc)
 {
 	int status;
 
@@ -164,7 +164,7 @@ static int lzma_init(lzma_stream *strm)
 	return 0;
 }
 
-static int lzma_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
+static int lzma_decompress(mget_decompressor_t *dc, char *src, size_t srclen)
 {
 	lzma_stream *strm;
 	char dst[10240];
@@ -200,7 +200,7 @@ static int lzma_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 	return -1;
 }
 
-static void lzma_exit(MGET_DECOMPRESSOR *dc)
+static void lzma_exit(mget_decompressor_t *dc)
 {
 	lzma_end(&dc->lzma_strm);
 }
@@ -219,7 +219,7 @@ static int bzip2_init(bz_stream *strm)
 	return 0;
 }
 
-static int bzip2_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
+static int bzip2_decompress(mget_decompressor_t *dc, char *src, size_t srclen)
 {
 	bz_stream *strm;
 	char dst[10240];
@@ -255,13 +255,13 @@ static int bzip2_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 	return -1;
 }
 
-static void bzip2_exit(MGET_DECOMPRESSOR *dc)
+static void bzip2_exit(mget_decompressor_t *dc)
 {
 	BZ2_bzDecompressEnd(&dc->bz_strm);
 }
 #endif // WITH_BZIP2
 
-static int identity(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
+static int identity(mget_decompressor_t *dc, char *src, size_t srclen)
 {
 	if (dc->put_data)
 		dc->put_data(dc->context, src, srclen);
@@ -269,11 +269,11 @@ static int identity(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
 	return 0;
 }
 
-MGET_DECOMPRESSOR *mget_decompress_open(int encoding,
+mget_decompressor_t *mget_decompress_open(int encoding,
 	int (*put_data)(void *context, const char *data, size_t length),
 	void *context)
 {
-	MGET_DECOMPRESSOR *dc = xcalloc(1, sizeof(MGET_DECOMPRESSOR));
+	mget_decompressor_t *dc = xcalloc(1, sizeof(mget_decompressor_t));
 	int rc = 0;
 
 	if (encoding == mget_content_encoding_gzip) {
@@ -320,7 +320,7 @@ MGET_DECOMPRESSOR *mget_decompress_open(int encoding,
 	return dc;
 }
 
-void mget_decompress_close(MGET_DECOMPRESSOR *dc)
+void mget_decompress_close(mget_decompressor_t *dc)
 {
 	if (dc) {
 		if (dc->exit)
@@ -329,7 +329,7 @@ void mget_decompress_close(MGET_DECOMPRESSOR *dc)
 	}
 }
 
-int mget_decompress(MGET_DECOMPRESSOR *dc, char *src, size_t srclen)
+int mget_decompress(mget_decompressor_t *dc, char *src, size_t srclen)
 {
 	if (dc) {
 		return dc->decompress(dc, src, srclen);

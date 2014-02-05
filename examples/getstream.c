@@ -45,7 +45,7 @@ static int metaint, streamdatalen, metadatalen;
 // callback function to examine received HTTP response header
 // <context> depends on MGET_HTTP_BODY_SAVEAS_* option given to mget_http_get().
 // The response header is has been parsed into <resp> structure.
-static void header_handler(void *context G_GNUC_MGET_UNUSED, MGET_HTTP_RESPONSE *resp)
+static void header_callback(void *context G_GNUC_MGET_UNUSED, mget_http_response_t *resp)
 {
 	// If you are looking for header that are ignored by libmget, parse them yourself.
 
@@ -68,7 +68,7 @@ static void header_handler(void *context G_GNUC_MGET_UNUSED, MGET_HTTP_RESPONSE 
 }
 
 // callback function to handle incoming stream data
-static void stream_handler(void *context G_GNUC_MGET_UNUSED, const char *data, size_t len)
+static void stream_callback(void *context G_GNUC_MGET_UNUSED, const char *data, size_t len)
 {
 	// any stream data received is piped through this function
 
@@ -103,7 +103,7 @@ static void stream_handler(void *context G_GNUC_MGET_UNUSED, const char *data, s
 
 int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED)
 {
-	MGET_HTTP_RESPONSE *resp;
+	mget_http_response_t *resp;
 	char *stream_url = NULL;
 
 	// set up libmget global configuration
@@ -124,7 +124,7 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 	}
 
 	// free the response
-	http_free_response(&resp);
+	mget_http_free_response(&resp);
 
 	// The icy-metaint: response header indicates the <size> of the data blocks.
 	// The stream starts with <size> data bytes followed by one single byte, that holds the size of the metadata divided by 16.
@@ -134,12 +134,12 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 		resp = mget_http_get(
 			MGET_HTTP_URL, stream_url,
 			MGET_HTTP_HEADER_ADD, "Icy-Metadata: 1", // we want in-stream title/actor information
-			MGET_HTTP_HEADER_FUNC, header_handler, // callback used to parse special headers like 'Icy-Name'
+			MGET_HTTP_HEADER_FUNC, header_callback, // callback used to parse special headers like 'Icy-Name'
 			// MGET_HTTP_HEADER_SAVEAS_STREAM, stdout,
-			MGET_HTTP_BODY_SAVEAS_FUNC, stream_handler, // callback to cut title info out of audio stream
+			MGET_HTTP_BODY_SAVEAS_FUNC, stream_callback, // callback to cut title info out of audio stream
 			NULL);
 
-		http_free_response(&resp);
+		mget_http_free_response(&resp);
 	}
 
 	// free resources - needed for valgrind testing

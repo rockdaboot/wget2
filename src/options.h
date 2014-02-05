@@ -41,7 +41,7 @@
 #define RESTRICT_NAMES_LOWERCASE  1<<6
 
 struct config {
-	MGET_IRI
+	mget_iri_t
 		*base;
 	const char
 		*username,
@@ -74,7 +74,7 @@ struct config {
 		*private_key,
 		*random_file,
 		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
-	MGET_STRINGMAP
+	mget_stringmap_t
 		*domains,
 		*exclude_domains;
 	mget_hsts_db_t

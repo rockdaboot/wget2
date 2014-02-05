@@ -38,7 +38,7 @@
 typedef struct {
 	const char
 		**encoding;
-	MGET_VECTOR
+	mget_vector_t
 		*uris;
 } _CSS_CONTEXT;
 
@@ -74,7 +74,7 @@ static void _css_get_url(void *context, const char *url, size_t len, size_t pos)
 	mget_vector_add(ctx->uris, &parsed_url, sizeof(parsed_url));
 }
 
-static void _urls_to_absolute(MGET_VECTOR *urls, MGET_IRI *base)
+static void _urls_to_absolute(mget_vector_t *urls, mget_iri_t *base)
 {
 	if (base && urls) {
 		mget_buffer_t buf;
@@ -93,7 +93,7 @@ static void _urls_to_absolute(MGET_VECTOR *urls, MGET_IRI *base)
 	}
 }
 
-MGET_VECTOR *mget_css_get_urls(const char *css, MGET_IRI *base, const char **encoding)
+mget_vector_t *mget_css_get_urls(const char *css, mget_iri_t *base, const char **encoding)
 {
 	_CSS_CONTEXT context = { .encoding = encoding };
 
@@ -103,7 +103,7 @@ MGET_VECTOR *mget_css_get_urls(const char *css, MGET_IRI *base, const char **enc
 	return context.uris;
 }
 
-MGET_VECTOR *mget_css_get_urls_from_localfile(const char *fname, MGET_IRI *base, const char **encoding)
+mget_vector_t *mget_css_get_urls_from_localfile(const char *fname, mget_iri_t *base, const char **encoding)
 {
 	_CSS_CONTEXT context = { .encoding = encoding };
 

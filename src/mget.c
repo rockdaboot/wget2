@@ -62,7 +62,7 @@ typedef struct {
 		*job;
 	PART
 		*part;
-	MGET_HTTP_CONNECTION
+	mget_http_connection_t
 		*conn;
 	char
 		*buf;
@@ -76,26 +76,26 @@ typedef struct {
 
 static void
 	download_part(DOWNLOADER *downloader),
-	save_file(MGET_HTTP_RESPONSE *resp, const char *fname),
-	append_file(MGET_HTTP_RESPONSE *resp, const char *fname),
-	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, MGET_IRI *base),
-	sitemap_parse_xml_gz(JOB *job, mget_buffer_t *data, const char *encoding, MGET_IRI *base),
-	sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base),
-	sitemap_parse_text(JOB *job, const char *data, const char *encoding, MGET_IRI *base),
-	atom_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base),
-	atom_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base),
-	rss_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base),
-	rss_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base),
-	html_parse(JOB *job, int level, const char *data, const char *encoding, MGET_IRI *base),
-	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, MGET_IRI *base),
-	css_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base),
-	css_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base);
-MGET_HTTP_RESPONSE
-	*http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, int method_get);
+	save_file(mget_http_response_t *resp, const char *fname),
+	append_file(mget_http_response_t *resp, const char *fname),
+	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, mget_iri_t *base),
+	sitemap_parse_xml_gz(JOB *job, mget_buffer_t *data, const char *encoding, mget_iri_t *base),
+	sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, mget_iri_t *base),
+	sitemap_parse_text(JOB *job, const char *data, const char *encoding, mget_iri_t *base),
+	atom_parse(JOB *job, const char *data, const char *encoding, mget_iri_t *base),
+	atom_parse_localfile(JOB *job, const char *fname, const char *encoding, mget_iri_t *base),
+	rss_parse(JOB *job, const char *data, const char *encoding, mget_iri_t *base),
+	rss_parse_localfile(JOB *job, const char *fname, const char *encoding, mget_iri_t *base),
+	html_parse(JOB *job, int level, const char *data, const char *encoding, mget_iri_t *base),
+	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, mget_iri_t *base),
+	css_parse(JOB *job, const char *data, const char *encoding, mget_iri_t *base),
+	css_parse_localfile(JOB *job, const char *fname, const char *encoding, mget_iri_t *base);
+mget_http_response_t
+	*http_get(mget_iri_t *iri, PART *part, DOWNLOADER *downloader, int method_get);
 
-static MGET_STRINGMAP
+static mget_stringmap_t
 	*etags;
-static MGET_HASHMAP
+static mget_hashmap_t
 	*known_urls;
 static DOWNLOADER
 	*downloaders;
@@ -192,7 +192,7 @@ static char *restrict_file_name(char *fname, char *esc)
 // --cut-dirs=number
 // -P / --directory-prefix=prefix
 
-const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(MGET_IRI *iri)
+const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(mget_iri_t *iri)
 {
 	mget_buffer_t buf;
 	char *fname;
@@ -319,16 +319,16 @@ static long long quota_modify_read(size_t nbytes)
 	return old_quota;
 }
 
-static MGET_VECTOR
+static mget_vector_t
 	*parents;
 static mget_thread_mutex_t
 	downloader_mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
 // Add URLs given by user (command line or -i option).
 // Needs to be thread-save.
-static JOB *add_url_to_queue(const char *url, MGET_IRI *base, const char *encoding)
+static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *encoding)
 {
-	MGET_IRI *iri;
+	mget_iri_t *iri;
 	JOB *job = NULL;
 
 	iri = mget_iri_parse_base(base, url, encoding);
@@ -411,7 +411,7 @@ static void
 static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 {
 	JOB *new_job = NULL;
-	MGET_IRI *iri;
+	mget_iri_t *iri;
 
 	if (flags & URL_FLG_REDIRECTION) { // redirect
 		if (config.max_redirect && job && job->redirection_level >= config.max_redirect) {
@@ -446,7 +446,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 		// see if at least one parent matches
 		for (int it = 0; it < mget_vector_size(parents); it++) {
-			MGET_IRI *parent = mget_vector_get(parents, it);
+			mget_iri_t *parent = mget_vector_get(parents, it);
 
 			if (!strcmp(parent->host, iri->host)) {
 				if (!parent->dirlen || !strncmp(parent->path, iri->path, parent->dirlen)) {
@@ -762,7 +762,7 @@ void *downloader_thread(void *p)
 		etag_mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
 	DOWNLOADER *downloader = p;
-	MGET_HTTP_RESPONSE *resp = NULL;
+	mget_http_response_t *resp = NULL;
 	JOB *job;
 	PART *part;
 	int do_wait = 0;
@@ -845,9 +845,9 @@ void *downloader_thread(void *p)
 				}
 			} else if (config.chunk_size && resp->content_length > config.chunk_size) {
 				// create metalink structure without hashing
-				MGET_METALINK_PIECE piece = { .length = config.chunk_size };
-				MGET_METALINK_MIRROR mirror;
-				MGET_METALINK *metalink = xcalloc(1, sizeof(MGET_METALINK));
+				mget_metalink_piece_t piece = { .length = config.chunk_size };
+				mget_metalink_mirror_t mirror;
+				mget_metalink_t *metalink = xcalloc(1, sizeof(mget_metalink_t));
 				metalink->size = resp->content_length; // total file size
 				metalink->name = mget_strdup(job->local_filename);
 
@@ -855,17 +855,17 @@ void *downloader_thread(void *p)
 				metalink->pieces = mget_vector_create(npieces, 1, NULL);
 				for (int it = 0; it < npieces; it++) {
 					piece.position = it * config.chunk_size;
-					mget_vector_add(metalink->pieces, &piece, sizeof(MGET_METALINK_PIECE));
+					mget_vector_add(metalink->pieces, &piece, sizeof(mget_metalink_piece_t));
 				}
 
 				metalink->mirrors = mget_vector_create(1, 1, NULL);
 				// mget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
 
-				memset(&mirror, 0, sizeof(MGET_METALINK_MIRROR));
+				memset(&mirror, 0, sizeof(mget_metalink_mirror_t));
 				strcpy(mirror.location, "-");
 				// mirror.iri = mget_iri_parse(job->iri, NULL);
 				mirror.iri = job->iri;
-				mget_vector_add(metalink->mirrors, &mirror, sizeof(MGET_METALINK_MIRROR));
+				mget_vector_add(metalink->mirrors, &mirror, sizeof(mget_metalink_mirror_t));
 
 				job->metalink = metalink;
 
@@ -878,7 +878,7 @@ void *downloader_thread(void *p)
 				goto ready;
 			}
 
-			http_free_response(&resp);
+			mget_http_free_response(&resp);
 		}
 
 //		if (job->local_filename)
@@ -934,11 +934,11 @@ void *downloader_thread(void *p)
 			// We try to find and download the .meta4 file (RFC 5854).
 			// If we can't find the .meta4, download from the link with the highest priority.
 
-			MGET_HTTP_LINK *top_link = NULL, *metalink = NULL;
+			mget_http_link_t *top_link = NULL, *metalink = NULL;
 			int it;
 
 			for (it = 0; it < mget_vector_size(resp->links); it++) {
-				MGET_HTTP_LINK *link = mget_vector_get(resp->links, it);
+				mget_http_link_t *link = mget_vector_get(resp->links, it);
 				if (link->rel == link_rel_describedby) {
 					if (!strcasecmp(link->type, "application/metalink4+xml") ||
 						 !strcasecmp(link->type, "application/metalink+xml"))
@@ -1072,7 +1072,7 @@ void *downloader_thread(void *p)
 
 		// regular download
 ready:
-		http_free_response(&resp);
+		mget_http_free_response(&resp);
 
 		// download of single-part file complete, remove from job queue
 		queue_del(job);
@@ -1080,7 +1080,7 @@ ready:
 	}
 
 	mget_thread_mutex_unlock(&main_mutex);
-	http_close(&downloader->conn);
+	mget_http_close(&downloader->conn);
 
 	// if we terminate, tell the other downloaders
 	mget_thread_cond_signal(&worker_cond);
@@ -1098,7 +1098,7 @@ static unsigned int G_GNUC_MGET_PURE hash_url(const char *url)
 	return hash;
 }
 
-void html_parse(JOB *job, int level, const char *html, const char *encoding, MGET_IRI *base)
+void html_parse(JOB *job, int level, const char *html, const char *encoding, mget_iri_t *base)
 {
 	MGET_HTML_PARSE_RESULT *res  = mget_html_get_urls_inline(html);
 	const char *reason;
@@ -1204,7 +1204,7 @@ cleanup:
 	mget_html_free_urls_inline(&res);
 }
 
-void html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, MGET_IRI *base)
+void html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, mget_iri_t *base)
 {
 	char *data;
 
@@ -1214,9 +1214,9 @@ void html_parse_localfile(JOB *job, int level, const char *fname, const char *en
 	xfree(data);
 }
 
-void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
+void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, mget_iri_t *base)
 {
-	MGET_VECTOR *urls, *sitemap_urls;
+	mget_vector_t *urls, *sitemap_urls;
 	const char *p;
 	size_t baselen = 0;
 
@@ -1283,10 +1283,10 @@ static int _get_unzipped(void *userdata, const char *data, size_t length)
 	return 0;
 }
 
-void sitemap_parse_xml_gz(JOB *job, mget_buffer_t *gzipped_data, const char *encoding, MGET_IRI *base)
+void sitemap_parse_xml_gz(JOB *job, mget_buffer_t *gzipped_data, const char *encoding, mget_iri_t *base)
 {
 	mget_buffer_t *plain = mget_buffer_alloc(gzipped_data->length * 10);
-	MGET_DECOMPRESSOR *dc = NULL;
+	mget_decompressor_t *dc = NULL;
 
 	if ((dc = mget_decompress_open(mget_content_encoding_gzip, _get_unzipped, plain))) {
 		mget_decompress(dc, gzipped_data->data, gzipped_data->length);
@@ -1299,7 +1299,7 @@ void sitemap_parse_xml_gz(JOB *job, mget_buffer_t *gzipped_data, const char *enc
 	mget_buffer_free(&plain);
 }
 
-void sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base)
+void sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, mget_iri_t *base)
 {
 	char *data;
 
@@ -1309,7 +1309,7 @@ void sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encodi
 	xfree(data);
 }
 
-void sitemap_parse_text(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
+void sitemap_parse_text(JOB *job, const char *data, const char *encoding, mget_iri_t *base)
 {
 	size_t baselen = 0;
 	const char *end, *line, *p;
@@ -1349,7 +1349,7 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, MGET_I
 	}
 }
 
-static void _add_urls(JOB *job, MGET_VECTOR *urls, const char *encoding, MGET_IRI *base)
+static void _add_urls(JOB *job, mget_vector_t *urls, const char *encoding, mget_iri_t *base)
 {
 	const char *p;
 	size_t baselen = 0;
@@ -1384,9 +1384,9 @@ static void _add_urls(JOB *job, MGET_VECTOR *urls, const char *encoding, MGET_IR
 	}
 }
 
-void atom_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
+void atom_parse(JOB *job, const char *data, const char *encoding, mget_iri_t *base)
 {
-	MGET_VECTOR *urls;
+	mget_vector_t *urls;
 
 	mget_atom_get_urls_inline(data, &urls);
 	_add_urls(job, urls, encoding, base);
@@ -1394,7 +1394,7 @@ void atom_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base
 	// mget_atom_free_urls_inline(&res);
 }
 
-void atom_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base)
+void atom_parse_localfile(JOB *job, const char *fname, const char *encoding, mget_iri_t *base)
 {
 	char *data;
 
@@ -1404,9 +1404,9 @@ void atom_parse_localfile(JOB *job, const char *fname, const char *encoding, MGE
 	xfree(data);
 }
 
-void rss_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
+void rss_parse(JOB *job, const char *data, const char *encoding, mget_iri_t *base)
 {
-	MGET_VECTOR *urls;
+	mget_vector_t *urls;
 
 	mget_rss_get_urls_inline(data, &urls);
 	_add_urls(job, urls, encoding, base);
@@ -1414,7 +1414,7 @@ void rss_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
 	// mget_rss_free_urls_inline(&res);
 }
 
-void rss_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base)
+void rss_parse_localfile(JOB *job, const char *fname, const char *encoding, mget_iri_t *base)
 {
 	char *data;
 
@@ -1427,7 +1427,7 @@ void rss_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET
 struct css_context {
 	JOB
 		*job;
-	MGET_IRI
+	mget_iri_t
 		*base;
 	const char
 		*encoding;
@@ -1466,7 +1466,7 @@ static void _css_parse_uri(void *context, const char *url, size_t len, size_t po
 	}
 }
 
-void css_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
+void css_parse(JOB *job, const char *data, const char *encoding, mget_iri_t *base)
 {
 	// create scheme://authority that will be prepended to relative paths
 	struct css_context context = { .base = base, .job = job, .encoding = encoding };
@@ -1485,7 +1485,7 @@ void css_parse(JOB *job, const char *data, const char *encoding, MGET_IRI *base)
 	mget_buffer_deinit(&context.uri_buf);
 }
 
-void css_parse_localfile(JOB *job, const char *fname, const char *encoding, MGET_IRI *base)
+void css_parse_localfile(JOB *job, const char *fname, const char *encoding, mget_iri_t *base)
 {
 	// create scheme://authority that will be prepended to relative paths
 	struct css_context context = { .base = base, .job = job, .encoding = encoding };
@@ -1543,7 +1543,7 @@ static void set_file_mtime(int fd, time_t modified)
 		error_printf (_("Failed to set file date: %s\n"), strerror (errno));
 }
 
-static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const char *fname, int flag)
+static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, const char *fname, int flag)
 {
 	char *alloced_fname = NULL;
 	int fd, multiple = 0, fnum, oflag = flag;
@@ -1679,12 +1679,12 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(MGET_HTTP_RESPONSE *resp, const 
 	xfree(alloced_fname);
 }
 
-static void G_GNUC_MGET_NONNULL((1)) save_file(MGET_HTTP_RESPONSE *resp, const char *fname)
+static void G_GNUC_MGET_NONNULL((1)) save_file(mget_http_response_t *resp, const char *fname)
 {
 	_save_file(resp, fname, O_TRUNC);
 }
 
-static void G_GNUC_MGET_NONNULL((1)) append_file(MGET_HTTP_RESPONSE *resp, const char *fname)
+static void G_GNUC_MGET_NONNULL((1)) append_file(mget_http_response_t *resp, const char *fname)
 {
 	_save_file(resp, fname, O_APPEND);
 }
@@ -1692,7 +1692,7 @@ static void G_GNUC_MGET_NONNULL((1)) append_file(MGET_HTTP_RESPONSE *resp, const
 void download_part(DOWNLOADER *downloader)
 {
 	JOB *job = downloader->job;
-	MGET_METALINK *metalink = job->metalink;
+	mget_metalink_t *metalink = job->metalink;
 	PART *part = downloader->part;
 	int mirror_index = downloader->id % mget_vector_size(metalink->mirrors);
 	int tries, mirrors;
@@ -1702,8 +1702,8 @@ void download_part(DOWNLOADER *downloader)
 		mget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
 
 		for (mirrors = 0; mirrors < mget_vector_size(metalink->mirrors) && !part->done; mirrors++) {
-			MGET_HTTP_RESPONSE *resp;
-			MGET_METALINK_MIRROR *mirror = mget_vector_get(metalink->mirrors, mirror_index);
+			mget_http_response_t *resp;
+			mget_metalink_mirror_t *mirror = mget_vector_get(metalink->mirrors, mirror_index);
 
 			print_status(downloader, "downloading part %d/%d (%lld-%lld) %s from %s (mirror %d)\n",
 				part->id, mget_vector_size(job->parts),
@@ -1742,7 +1742,7 @@ void download_part(DOWNLOADER *downloader)
 					}
 				}
 
-				http_free_response(&resp);
+				mget_http_free_response(&resp);
 			}
 		}
 	}
@@ -1779,12 +1779,12 @@ void download_part(DOWNLOADER *downloader)
 	}
 }
 
-MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, int method_get)
+mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *downloader, int method_get)
 {
-	MGET_IRI *dont_free = iri;
-	MGET_HTTP_CONNECTION *conn;
-	MGET_HTTP_RESPONSE *resp = NULL;
-	MGET_VECTOR *challenges = NULL;
+	mget_iri_t *dont_free = iri;
+	mget_http_connection_t *conn;
+	mget_http_response_t *resp = NULL;
+	mget_vector_t *challenges = NULL;
 	const char *iri_scheme;
 //	int max_redirect = 3;
 	mget_buffer_t buf;
@@ -1808,10 +1808,10 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 		} else {
 			if (downloader->conn) {
 				debug_printf("close connection %s\n", downloader->conn->esc_host);
-				http_close(&downloader->conn);
+				mget_http_close(&downloader->conn);
 			}
 
-			downloader->conn = http_open(iri);
+			downloader->conn = mget_http_open(iri);
 
 			if (downloader->conn) {
 				debug_printf("opened connection %s\n", downloader->conn->esc_host);
@@ -1820,18 +1820,18 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 		conn = downloader->conn;
 
 		if (conn) {
-			MGET_HTTP_REQUEST *req;
+			mget_http_request_t *req;
 
 			if (method_get)
-				req = http_create_request(iri, "GET");
+				req = mget_http_create_request(iri, "GET");
 			else
-				req = http_create_request(iri, "HEAD");
+				req = mget_http_create_request(iri, "HEAD");
 
 			if (config.continue_download || config.timestamping) {
 				const char *local_filename = downloader->job->local_filename;
 
 				if (config.continue_download)
-					http_add_header_printf(req, "Range: bytes=%llu-",
+					mget_http_add_header_printf(req, "Range: bytes=%llu-",
 						get_file_size(local_filename));
 
 				if (config.timestamping) {
@@ -1840,8 +1840,8 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 					if (mtime) {
 						char http_date[32];
 
-						http_print_date(mtime + 1, http_date, sizeof(http_date));
-						http_add_header(req, "If-Modified-Since", http_date);
+						mget_http_print_date(mtime + 1, http_date, sizeof(http_date));
+						mget_http_add_header(req, "If-Modified-Since", http_date);
 					}
 				}
 			}
@@ -1874,27 +1874,27 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 			if (!buf.length)
 				mget_buffer_strcat(&buf, "identity");
 
-			http_add_header(req, "Accept-Encoding", buf.data);
+			mget_http_add_header(req, "Accept-Encoding", buf.data);
 
-			http_add_header_line(req, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
+			mget_http_add_header_line(req, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
 
 //			if (config.spider && !config.recursive)
 //				http_add_header_if_modified_since(time(NULL));
 //				http_add_header_line(req, "If-Modified-Since: Wed, 29 Aug 2012 00:00:00 GMT\r\n");
 
 			if (config.user_agent)
-				http_add_header(req, "User-Agent", config.user_agent);
+				mget_http_add_header(req, "User-Agent", config.user_agent);
 
 			if (config.keep_alive)
-				http_add_header_line(req, "Connection: keep-alive\r\n");
+				mget_http_add_header_line(req, "Connection: keep-alive\r\n");
 
 			if (!config.cache)
-				http_add_header_line(req, "Pragma: no-cache\r\n");
+				mget_http_add_header_line(req, "Pragma: no-cache\r\n");
 
 			if (config.referer)
-				http_add_header(req, "Referer", config.referer);
+				mget_http_add_header(req, "Referer", config.referer);
 			else if (downloader->job->referer) {
-				MGET_IRI *referer = downloader->job->referer;
+				mget_iri_t *referer = downloader->job->referer;
 
 				mget_buffer_strcpy(&buf, referer->scheme);
 				mget_buffer_memcat(&buf, "://", 3);
@@ -1902,14 +1902,14 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 				mget_buffer_memcat(&buf, "/", 1);
 				mget_iri_get_escaped_resource(referer, &buf);
 
-				http_add_header(req, "Referer", buf.data);
+				mget_http_add_header(req, "Referer", buf.data);
 			}
 
 			if (challenges) {
 				// There might be more than one challenge, we could select the securest one.
 				// Prefer 'Digest' over 'Basic'
 				// the following adds an Authorization: HTTP header
-				MGET_HTTP_CHALLENGE *challenge, *selected_challenge = NULL;
+				mget_http_challenge_t *challenge, *selected_challenge = NULL;
 
 				for (int it = 0; it < mget_vector_size(challenges); it++) {
 					challenge = mget_vector_get(challenges, it);
@@ -1925,11 +1925,11 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 				}
 
 				if (selected_challenge)
-					http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
+					mget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
 			}
 
 			if (part)
-				http_add_header_printf(req, "Range: bytes=%llu-%llu",
+				mget_http_add_header_printf(req, "Range: bytes=%llu-%llu",
 					(unsigned long long) part->position, (unsigned long long) part->position + part->length - 1);
 
 			// add cookies
@@ -1937,20 +1937,20 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 				const char *cookie_string;
 
 				if ((cookie_string = mget_cookie_create_request_header(iri))) {
-					http_add_header(req, "Cookie", cookie_string);
+					mget_http_add_header(req, "Cookie", cookie_string);
 					xfree(cookie_string);
 				}
 			}
 
-			if (http_send_request(conn, req) == 0) {
-				resp = http_get_response(conn, NULL, req, config.save_headers || config.server_response ? MGET_HTTP_RESPONSE_KEEPHEADER : 0);
+			if (mget_http_send_request(conn, req) == 0) {
+				resp = mget_http_get_response(conn, NULL, req, config.save_headers || config.server_response ? MGET_HTTP_RESPONSE_KEEPHEADER : 0);
 			}
 
-			http_free_request(&req);
+			mget_http_free_request(&req);
 		} else break;
 
 		if (!resp) {
-			http_close(&downloader->conn);
+			mget_http_close(&downloader->conn);
 			break;
 		}
 
@@ -1959,16 +1959,16 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 
 		// server doesn't support keep-alive or want us to close the connection
 		if (!resp->keep_alive)
-			http_close(&downloader->conn);
+			mget_http_close(&downloader->conn);
 
 		if (resp->code == 302 && resp->links && resp->digests)
 			break; // 302 with Metalink information
 
 		if (resp->code == 401 && !challenges) { // Unauthorized
-			http_free_challenges(&challenges);
+			mget_http_free_challenges(&challenges);
 			if ((challenges = resp->challenges)) {
 				resp->challenges = NULL;
-				http_free_response(&resp);
+				mget_http_free_response(&resp);
 				continue; // try again with credentials
 			}
 			break;
@@ -2010,7 +2010,7 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 			}
 		}
 
-		http_free_response(&resp);
+		mget_http_free_response(&resp);
 	}
 
 	if (iri) {
@@ -2020,7 +2020,7 @@ MGET_HTTP_RESPONSE *http_get(MGET_IRI *iri, PART *part, DOWNLOADER *downloader, 
 			iri->scheme = iri_scheme; // may have been changed by HSTS
 	}
 
-	http_free_challenges(&challenges);
+	mget_http_free_challenges(&challenges);
 	mget_buffer_deinit(&buf);
 
 	return resp;
