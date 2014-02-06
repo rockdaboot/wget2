@@ -244,6 +244,8 @@ int
 int
 	mget_strcasecmp(const char *s1, const char *s2) G_GNUC_MGET_PURE;
 int
+	mget_strncmp(const char *s1, const char *s2, size_t n) G_GNUC_MGET_PURE;
+int
 	mget_strncasecmp(const char *s1, const char *s2, size_t n) G_GNUC_MGET_PURE;
 void
    mget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size) G_GNUC_MGET_NONNULL_ALL;

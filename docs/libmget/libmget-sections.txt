@@ -1,4 +1,24 @@
 <SECTION>
+<FILE>libmget-xalloc</FILE>
+<TITLE>Memory Allocation Functions</TITLE>
+mget_set_oomfunc
+mget_malloc
+mget_calloc
+mget_realloc
+</SECTION>
+
+<SECTION>
+<FILE>libmget-utils</FILE>
+<TITLE>General utility functions</TITLE>
+mget_strcmp
+mget_strcasecmp
+mget_strncmp
+mget_strncasecmp
+mget_memtohex
+mget_millisleep
+</SECTION>
+
+<SECTION>
 <FILE>libmget-list</FILE>
 <TITLE>Double Linked List</TITLE>
 mget_list_t
@@ -9,13 +29,4 @@ mget_list_getlast
 mget_list_remove
 mget_list_browse
 mget_list_free
-</SECTION>
-
-<SECTION>
-<FILE>libmget-xalloc</FILE>
-<TITLE>Memory Allocation Functions</TITLE>
-mget_set_oomfunc
-mget_malloc
-mget_calloc
-mget_realloc
 </SECTION>
