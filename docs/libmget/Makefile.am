@@ -29,11 +29,11 @@ DOC_SOURCE_DIR=$(top_srcdir)/libmget $(top_srcdir)/include
 
 # Extra options to supply to gtkdoc-scan.
 # e.g. SCAN_OPTIONS=--deprecated-guards="GTK_DISABLE_DEPRECATED"
-SCAN_OPTIONS=
+SCAN_OPTIONS=--ignore-decorators="G_GNUC_MGET_UNUSED"
 
 # Extra options to supply to gtkdoc-mkdb.
 # e.g. MKDB_OPTIONS=--xml-mode --output-format=xml
-MKDB_OPTIONS=--xml-mode --output-format=xml
+MKDB_OPTIONS=--xml-mode --output-format=xml --ignore-files=css_tokenizer.c
 
 # Extra options to supply to gtkdoc-mktmpl
 # e.g. MKTMPL_OPTIONS=--only-section-tmpl
@@ -104,22 +104,26 @@ endif
 
 -include $(top_srcdir)/git.mk
 
+man_MANS =
+
 if ENABLE_GTK_DOC
 if ENABLE_MAN
 
-man_MANS = libmget-xalloc.3 libmget-utils.3 libmget-list.3
+man_MANS += libmget-xalloc.3 libmget-utils.3 libmget-list.3
 
 %.3: xml/%.xml
+#.xml.3:
 	@XSLTPROC@ -nonet http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 
 endif
 endif
 
 BUILT_EXTRA_DIST = $(man_MANS)
-#EXTRA_DIST += xml/libmget-xalloc.xml
-CLEANFILES += $(man_MANS)
+EXTRA_DIST += $(man_MANS)
+CLEANFILES ?=
+CLEANFILES += $(man_MANS) libmget-overrides.txt libmget-decl.txt libmget-decl-list.txt
 
-#dist-hook-local: all-local
+dist-hook-local: all-local
 
-#mgetlib-docs-clean: clean
-#	cd $(srcdir) && rm -rf xml html
+libmget-docs-clean:
+	cd $(srcdir) && rm -rf xml html

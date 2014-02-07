@@ -7,7 +7,6 @@
 <book id="index">
   <bookinfo>
     <title>LibMget Reference Manual</title>
-    <para><productname class='registered'>LibMGet</productname>LibMGet Reference Manual</para>
     <releaseinfo>
       for libmget [VERSION].
       The latest version of this documentation can be found on-line at

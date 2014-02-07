@@ -110,7 +110,7 @@ int main(void)
 
 	// test-iri-disabled
 	mget_test(
-		MGET_TEST_KEEP_TMPFILES, 1,
+		// MGET_TEST_KEEP_TMPFILES, 1,
 		MGET_TEST_OPTIONS, "-e robots=on --trust-server-names --local-encoding=UTF-8 --remote-encoding=iso-8859-1 -nH -r",
 		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
