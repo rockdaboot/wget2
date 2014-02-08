@@ -3,7 +3,7 @@ compiler:
   - gcc
   - clang
 # Change this to your needs
-script: ./autogen.sh && ./configure --enable-gtk-doc && make && make check
+script: ./autogen.sh && ./configure --enable-gtk-doc && make && make check && make distcheck
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get -q install autoconf automake autopoint libtool gtk-doc-tools gettext flex liblzma5 liblzma-dev libidn2-0 libidn2-0-dev libunistring0 libunistring-dev
