@@ -104,26 +104,29 @@ endif
 
 -include $(top_srcdir)/git.mk
 
+theMANS =
 man_MANS =
 
 if ENABLE_GTK_DOC
 if ENABLE_MAN
 
-man_MANS += libmget-xalloc.3 libmget-utils.3 libmget-list.3
+theMANS += libmget-xalloc.3 libmget-utils.3 libmget-list.3
+man_MANS += docs $(theMANS)
 
-%.3: xml/%.xml
+%.3:
 #.xml.3:
-	@XSLTPROC@ -nonet http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+	@file=xml/`echo $@|cut -d'.' -f1`.xml; \
+	@XSLTPROC@ -nonet http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $$file
 
 endif
 endif
 
-BUILT_EXTRA_DIST = $(man_MANS)
-EXTRA_DIST += $(man_MANS)
+BUILT_EXTRA_DIST = $(theMANS)
+EXTRA_DIST += $(theMANS)
 CLEANFILES ?=
-CLEANFILES += $(man_MANS) libmget-overrides.txt libmget-decl.txt libmget-decl-list.txt
+CLEANFILES += $(theMANS) libmget-overrides.txt libmget-decl.txt libmget-decl-list.txt
 
 dist-hook-local: all-local
 
-libmget-docs-clean:
+libmget-docs-clean: clean
 	cd $(srcdir) && rm -rf xml html
