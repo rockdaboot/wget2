@@ -30,3 +30,13 @@ mget_list_remove
 mget_list_browse
 mget_list_free
 </SECTION>
+
+<SECTION>
+<FILE>libmget-io</FILE>
+<TITLE>I/O helper routines</TITLE>
+mget_fdgetline
+mget_getline
+mget_ready_2_read
+mget_ready_2_write
+mget_read_file
+</SECTION>
