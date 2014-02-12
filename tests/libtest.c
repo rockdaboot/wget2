@@ -22,8 +22,11 @@
  * Changelog
  * 16.01.2013  Tim Ruehsen  created
  *
- * Simple demonstration how to download an URL with high level API functions.
+ * Test suite function library
  *
+ * To create the X.509 stuff, I followed the instructions at
+ *   gnutls.org/manual/html_node/gnutls_002dserv-Invocation.html
+ * 
  */
 
 #if HAVE_CONFIG_H
@@ -46,11 +49,11 @@
 #include "libtest.h"
 
 static mget_thread_t
-	server_tid;
-static mget_tcp_t
-	*parent_tcp;
+	server_tid,
+	server_ssl_tid;
 static int
 	server_port,
+	server_port_ssl,
 	terminate,
 	keep_tmpfiles;
 /*static const char
@@ -74,7 +77,7 @@ static void nop(int sig G_GNUC_MGET_UNUSED)
 
 static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 {
-	mget_tcp_t *tcp=NULL;
+	mget_tcp_t *tcp=NULL, *parent_tcp = ctx;
 	mget_test_url_t *url = NULL;
 	char buf[4096], method[32], request_url[256], tag[64], value[256], *p;
 	ssize_t nbytes;
@@ -257,18 +260,23 @@ void mget_test_stop_http_server(void)
 
 	// free resources - needed for valgrind testing
 	pthread_kill(server_tid, SIGTERM);
+	pthread_kill(server_ssl_tid, SIGTERM);
+
 	mget_thread_join(server_tid);
+	mget_thread_join(server_ssl_tid);
+
 	mget_global_deinit();
 }
 
 void mget_test_start_http_server(int first_key, ...)
 {
+	static mget_tcp_t *parent_tcp, *parent_tcp_ssl;
 	int rc, key;
 	size_t it;
 	va_list args;
 
 	mget_global_init(
-//		MGET_DEBUG_STREAM, stderr,
+		MGET_DEBUG_STREAM, stderr,
 		MGET_ERROR_STREAM, stderr,
 //		MGET_INFO_STREAM, stdout,
 		NULL);
@@ -309,18 +317,24 @@ void mget_test_start_http_server(int first_key, ...)
 	if (chdir(tmpdir) != 0)
 		mget_error_printf_exit(_("Failed to change to tmpdir (%d)\n"), errno);
 
+	// init HTTP server socket
 	parent_tcp=mget_tcp_init();
-
 	mget_tcp_set_timeout(parent_tcp, -1); // INFINITE timeout
-
 	if (mget_tcp_listen(parent_tcp, "localhost", NULL, 5) != 0)
 		exit(1);
-
 	server_port = mget_tcp_get_local_port(parent_tcp);
+
+	// init HTTPS server socket
+	parent_tcp_ssl=mget_tcp_init();
+	mget_tcp_set_ssl(parent_tcp_ssl, 1); // switch SSL on
+	mget_tcp_set_timeout(parent_tcp_ssl, -1); // INFINITE timeout
+	if (mget_tcp_listen(parent_tcp_ssl, "localhost", NULL, 5) != 0)
+		exit(1);
+	server_port_ssl = mget_tcp_get_local_port(parent_tcp_ssl);
 
 	// now replace {{port}} in the body by the actual server port
 	for (it = 0; it < nurls; it++) {
-		if (urls[it].body && strstr(urls[it].body, "{{port}}")) {
+		if (urls[it].body && (strstr(urls[it].body, "{{port}}") || strstr(urls[it].body, "{{sslport}}"))) {
 			const char *src = urls[it].body;
 			char *dst = mget_malloc(strlen(src) + 1);
 
@@ -328,17 +342,30 @@ void mget_test_start_http_server(int first_key, ...)
 			urls[it].body_alloc = 1;
 
 			while (*src) {
-				if (*src == '{' && !strncmp(src, "{{port}}", 8)) {
-					dst += sprintf(dst, "%d", server_port);
-					src += 8;
-				} else *dst++ = *src++;
+				if (*src == '{') {
+					if (!strncmp(src, "{{port}}", 8)) {
+						dst += sprintf(dst, "%d", server_port);
+						src += 8;
+						continue;
+					}
+					else if (!strncmp(src, "{{sslport}}", 11)) {
+						dst += sprintf(dst, "%d", server_port_ssl);
+						src += 11;
+						continue;
+					}
+				}
+				*dst++ = *src++;
 			}
 			*dst = 0;
 		}
 	}
 
-	// init thread attributes
-	if ((rc = mget_thread_start(&server_tid, _server_thread, NULL, 0)) != 0)
+	// start thread for HTTP
+	if ((rc = mget_thread_start(&server_tid, _server_thread, parent_tcp, 0)) != 0)
+		mget_error_printf_exit(_("Failed to start server, error %d\n"), rc);
+
+	// start thread for HTTPS
+	if ((rc = mget_thread_start(&server_ssl_tid, _server_thread, parent_tcp_ssl, 0)) != 0)
 		mget_error_printf_exit(_("Failed to start server, error %d\n"), rc);
 }
 

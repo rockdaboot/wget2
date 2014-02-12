@@ -395,17 +395,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 				ret = -1;
 			}
 
-			if (_config.check_hostname) {
-				if (it == 0 && !gnutls_x509_crt_check_hostname(cert, hostname)) {
-					error_printf(_("%s: The certificate's owner does not match hostname '%s'\n"), tag, hostname);
+			if (it == 0 && (!hostname || !gnutls_x509_crt_check_hostname(cert, hostname))) {
+				error_printf(_("%s: The certificate's owner does not match hostname '%s'\n"), tag, hostname);
+				if (_config.check_hostname)
 					ret = -1;
-				}
-			} else {
-				if (it == 0 && !gnutls_x509_crt_check_hostname(cert, hostname)) {
-					error_printf(_("WARNING: The certificate's owner does not match hostname '%s'\n"), hostname);
-				}
 			}
-
 		}
 	} else {
 		error_printf(_("%s: No certificate was found!\n"), tag);
@@ -420,7 +414,7 @@ out:
 	return _config.check_certificate ? ret : 0;
 }
 
-static int _init;
+static int _init, _server_init;
 static mget_thread_mutex_t _mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
 // ssl_init() is thread safe
@@ -436,7 +430,7 @@ void mget_ssl_init(void)
 //		gnutls_certificate_set_x509_trust_file(credentials, "/etc/ssl/certs/ca-certificates.crt", GNUTLS_X509_FMT_PEM);
 		gnutls_certificate_set_verify_function(_credentials, _verify_certificate_callback);
 
-		if (_config.ca_directory && *_config.ca_directory) {
+		if (_config.ca_directory && *_config.ca_directory && _config.check_certificate) {
 			int ncerts = -1;
 
 #if GNUTLS_VERSION_MAJOR >= 3
@@ -537,6 +531,7 @@ void mget_ssl_deinit(void)
 
 	mget_thread_mutex_unlock(&_mutex);
 }
+
 /*
 #ifdef POLLIN
 static int _ready_2_transfer(gnutls_session_t session, int timeout, int mode)
@@ -619,7 +614,8 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 #endif
 	gnutls_session_set_ptr(session, (void *)hostname);
 	// RFC 6066 SNI Server Name Indication
-	gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
+	if (hostname)
+		gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
 	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, _credentials);
 	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
 
@@ -696,9 +692,133 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 
 void mget_ssl_close(void **session)
 {
-	gnutls_session_t s = *session;
+	if (session && *session) {
+		gnutls_session_t s = *session;
 
-	if (s) {
+		gnutls_bye(s, GNUTLS_SHUT_RDWR);
+		gnutls_deinit(s);
+		*session = NULL;
+	}
+}
+
+static gnutls_certificate_credentials_t
+	_server_credentials;
+static gnutls_priority_t
+	priority_cache;
+
+void mget_ssl_server_init(void)
+{
+	mget_thread_mutex_lock(&_mutex);
+
+	if (!_server_init) {
+		debug_printf("GnuTLS server init\n");
+		gnutls_global_init();
+
+		gnutls_certificate_allocate_credentials(&_server_credentials);
+		if (gnutls_certificate_set_x509_trust_file(_server_credentials, "../x509-ca.pem", GNUTLS_X509_FMT_PEM) < 0)
+			error_printf(_("No CAs were found\n"));
+		if (gnutls_certificate_set_x509_key_file(_server_credentials, "../x509-server.pem", "../x509-server-key.pem", GNUTLS_X509_FMT_PEM) < 0) {
+			error_printf(_("No certificates or keys were found\n"));
+			exit(1);
+		}
+
+		/* Generate Diffie-Hellman parameters - for use with DHE
+		 * kx algorithms. When short bit length is used, it might
+		 * be wise to regenerate parameters often.
+		 */
+		static gnutls_dh_params_t dh_params;
+		unsigned int bits = gnutls_sec_param_to_pk_bits(GNUTLS_PK_DH, GNUTLS_SEC_PARAM_LEGACY);
+
+		gnutls_dh_params_init(&dh_params);
+		gnutls_dh_params_generate2(dh_params, bits);
+
+		gnutls_priority_init(&priority_cache, "PERFORMANCE:%SERVER_PRECEDENCE", NULL);
+
+		_server_init++;
+
+		debug_printf("GnuTLS server init done\n");
+	}
+
+	mget_thread_mutex_unlock(&_mutex);
+}
+
+void mget_ssl_server_deinit(void)
+{
+	mget_thread_mutex_lock(&_mutex);
+
+	if (_server_init == 1) {
+		gnutls_certificate_free_credentials(_server_credentials);
+		gnutls_priority_deinit(priority_cache);
+		gnutls_global_deinit();
+	}
+
+	if (_server_init > 0) _server_init--;
+
+	mget_thread_mutex_unlock(&_mutex);
+}
+
+void *mget_ssl_server_open(int sockfd, const char *hostname, int connect_timeout)
+{
+	gnutls_session_t session;
+
+	if (!_init)
+		mget_ssl_server_init();
+
+	gnutls_init(&session, GNUTLS_SERVER);
+	gnutls_priority_set(session, priority_cache);
+	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, _server_credentials);
+	/* We don't request any certificate from the client.
+	 * If we did we would need to verify it.
+	 */
+	gnutls_certificate_server_set_request(session, GNUTLS_CERT_IGNORE);
+
+	// gnutls_transport_set_int(session, sockfd);
+	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
+
+	// Wait for socket being ready before we call gnutls_handshake().
+	// I had problems on a KVM Win7 + CygWin (gnutls 3.2.4-1).
+	int ret = mget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), connect_timeout);
+
+	// Perform the TLS handshake
+	for (;;) {
+		ret = gnutls_handshake(session);
+		if (ret == 0 || gnutls_error_is_fatal(ret)) {
+			if (ret == 0)
+				ret = 1;
+			break;
+		}
+
+		if (gnutls_record_get_direction(session)) {
+			// wait for writeability
+			ret = mget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), connect_timeout);
+		} else {
+			// wait for readability
+			ret = mget_ready_2_read((int)(ptrdiff_t)gnutls_transport_get_ptr(session), connect_timeout);
+		}
+
+		if (ret <= 0) {
+			if (ret)
+				debug_printf("Server handshake failed (%d)\n", ret);
+			else
+				debug_printf("Server handshake timed out\n");
+
+			error_printf("GnuTLS Server: %s\n", gnutls_strerror(ret));
+
+			gnutls_deinit(session);
+			return NULL;
+		}
+	}
+
+	debug_printf("Handshake completed\n");
+
+	return session;
+}
+
+void mget_ssl_server_close(void **session)
+{
+	if (session && *session) {
+		gnutls_session_t s = *session;
+
 		gnutls_bye(s, GNUTLS_SHUT_RDWR);
 		gnutls_deinit(s);
 		*session = NULL;

@@ -36,7 +36,7 @@ int main(void)
 	mget_test_url_t urls[]={
 		{	.name = "/urls.txt",
 			.code = "200 Dontcare",
-			.body = "http://localhost:{{port}}/page1.html\nhttp://localhost:{{port}}/page2.html\n",
+			.body = "https://localhost:{{sslport}}/page1.html\nhttps://localhost:{{sslport}}/page2.html\n",
 			.headers = {
 				"Content-Type: text/plain",
 			}
@@ -65,7 +65,7 @@ int main(void)
 	// test-i
 	mget_test(
 //		MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "-i urls.txt",
+		MGET_TEST_OPTIONS, "--no-check-certificate -i urls.txt",
 		MGET_TEST_REQUEST_URL, NULL,
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {

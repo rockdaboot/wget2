@@ -82,6 +82,8 @@ static struct mget_tcp_st {
 		bind_addrinfo;
 	struct addrinfo *
 		connect_addrinfo; // needed for TCP_FASTOPEN delayed connect
+	const char *
+		ssl_hostname; // if set, do SSL hostname checking
 	int
 		sockfd,
 		// timeouts in milliseconds
@@ -146,7 +148,7 @@ static struct addrinfo *_mget_dns_cache_get(const char *host, const char *port)
 	return NULL;
 }
 
-static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL _compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
+static int G_GNUC_MGET_PURE _compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
 {
 	int n;
 
@@ -207,6 +209,9 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 	if (!tcp)
 		tcp = &_global_tcp;
 
+	if (!port)
+		port = "0";
+
 	if (tcp->caching) {
 		if ((addrinfo = _mget_dns_cache_get(host, port)))
 			return addrinfo;
@@ -221,7 +226,7 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 	}
 
 #if defined(AI_NUMERICSERV)
-	ai_flags |= (port && isdigit(*port) ? AI_NUMERICSERV : 0);
+	ai_flags |= (isdigit(*port) ? AI_NUMERICSERV : 0);
 #endif
 #if defined(AI_ADDRCONFIG)
 	ai_flags |= AI_ADDRCONFIG;
@@ -240,7 +245,7 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 	// to make the function work on old systems
 	char portbuf[16];
 
-	if (port && !isdigit(*port)) {
+	if (!isdigit(*port)) {
 		if (!strcasecmp(port, "http"))
 			port = "80";
 		else if (!strcasecmp(port, "https"))
@@ -258,14 +263,11 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 	}
 #endif
 
-	if (port)
-		debug_printf("resolving %s:%s...\n", host, port);
-	else
-		debug_printf("resolving %s...\n", host);
+	debug_printf("resolving %s:%s...\n", host, port);
 
 	// get the IP address for the server
 	for (tries = 0; tries < 3; tries++) {
-		if ((rc = getaddrinfo(host, port ? port : "0", &hints, &addrinfo)) == 0 || rc != EAI_AGAIN)
+		if ((rc = getaddrinfo(host, port, &hints, &addrinfo)) == 0 || rc != EAI_AGAIN)
 			break;
 
 		if (tries < 2)
@@ -273,10 +275,7 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 	}
 
 	if (rc) {
-		if (port)
-			error_printf(_("Failed to resolve %s:%s (%s)\n"), host, port, gai_strerror(rc));
-		else
-			error_printf(_("Failed to resolve %s (%s)\n"), host, gai_strerror(rc));
+		error_printf(_("Failed to resolve %s:%s (%s)\n"), host, port, gai_strerror(rc));
 
 		if (tcp->caching)
 			mget_thread_mutex_unlock(&mutex);
@@ -468,30 +467,61 @@ void mget_tcp_set_bind_address(mget_tcp_t *tcp, const char *bind_address)
 	}
 }
 
+void mget_tcp_set_ssl(mget_tcp_t *tcp, int ssl)
+{
+	(tcp ? tcp : &_global_tcp)->ssl = ssl;
+}
+
+int mget_tcp_get_ssl(mget_tcp_t *tcp)
+{
+	return (tcp ? tcp : &_global_tcp)->ssl;
+}
+
+void mget_tcp_set_ssl_hostname(mget_tcp_t *tcp, const char *hostname)
+{
+	if (!tcp)
+		tcp = &_global_tcp;
+
+	xfree(tcp->ssl_hostname);
+	tcp->ssl_hostname = mget_strdup(hostname);
+}
+
+const char *mget_tcp_get_ssl_hostname(mget_tcp_t *tcp)
+{
+	return (tcp ? tcp : &_global_tcp)->ssl_hostname;
+}
+
 mget_tcp_t *mget_tcp_init(void)
 {
 	mget_tcp_t *tcp = xmalloc(sizeof(mget_tcp_t));
 
 	*tcp = _global_tcp;
+	tcp->ssl_hostname = mget_strdup(_global_tcp.ssl_hostname);
+
 	return tcp;
 }
 
-void mget_tcp_deinit(mget_tcp_t **tcp)
+void mget_tcp_deinit(mget_tcp_t **_tcp)
 {
-	if (tcp && *tcp) {
+	mget_tcp_t *tcp;
+
+	if (!_tcp) {
+		xfree(_global_tcp.ssl_hostname);
+		return;
+	}
+
+	if ((tcp = *_tcp)) {
 		mget_tcp_close(tcp);
 
-		if ((*tcp)->bind_addrinfo_allocated) {
-			freeaddrinfo((*tcp)->bind_addrinfo);
-			(*tcp)->bind_addrinfo = NULL;
+		if (tcp->bind_addrinfo_allocated) {
+			freeaddrinfo(tcp->bind_addrinfo);
+			tcp->bind_addrinfo = NULL;
 		}
-		xfree(*tcp);
+		xfree(tcp->ssl_hostname);
+		xfree(tcp);
+		if (_tcp)
+			*_tcp = NULL;
 	}
-}
-
-int mget_tcp_connect(mget_tcp_t *tcp, const char *host, const char *port)
-{
-	return mget_tcp_connect_ssl(tcp, host, port, NULL);
 }
 
 static void _set_async(int fd)
@@ -517,7 +547,7 @@ static void _set_async(int fd)
 #endif
 }
 
-int mget_tcp_connect_ssl(mget_tcp_t *tcp, const char *host, const char *port, const char *hostname)
+int mget_tcp_connect(mget_tcp_t *tcp, const char *host, const char *port)
 {
 	struct addrinfo *ai;
 	int sockfd = -1, rc;
@@ -564,7 +594,10 @@ int mget_tcp_connect_ssl(mget_tcp_t *tcp, const char *host, const char *port, co
 				}
 			}
 
-			if (!hostname)  {
+			if (tcp->ssl)  {
+				rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
+				tcp->first_send = 0;
+			} else {
 				if (tcp->tcp_fastopen) {
 					rc = 0;
 					errno = 0;
@@ -573,10 +606,6 @@ int mget_tcp_connect_ssl(mget_tcp_t *tcp, const char *host, const char *port, co
 					rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
 					tcp->first_send = 0;
 				}
-			} else {
-				// SSL
-				rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
-				tcp->first_send = 0;
 			}
 
 			if (rc < 0
@@ -589,11 +618,10 @@ int mget_tcp_connect_ssl(mget_tcp_t *tcp, const char *host, const char *port, co
 				close(sockfd);
 			} else {
 				tcp->sockfd = sockfd;
-				if (hostname) {
-					tcp->ssl = 1;
-					tcp->ssl_session = mget_ssl_open(tcp->sockfd, hostname, tcp->connect_timeout);
+				if (tcp->ssl) {
+					tcp->ssl_session = mget_ssl_open(tcp->sockfd, tcp->ssl_hostname, tcp->connect_timeout);
 					if (!tcp->ssl_session) {
-						mget_tcp_close(&tcp);
+						mget_tcp_close(tcp);
 						continue;
 					}
 				}
@@ -623,9 +651,9 @@ int mget_tcp_listen(mget_tcp_t *tcp, const char *host, const char *port, int bac
 	for (ai = tcp->bind_addrinfo; ai; ai = ai->ai_next) {
 		if (mget_get_logger(MGET_LOGGER_DEBUG)->vprintf) {
 			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
-				debug_printf("trying %s:%s...\n", adr, s_port);
+				debug_printf("try to listen on %s:%s...\n", adr, s_port);
 			else
-				debug_printf("trying %s:%s (%s)...\n", host, s_port, gai_strerror(rc));
+				debug_printf("try to listen on %s:%s (%s)...\n", host, s_port, gai_strerror(rc));
 		}
 
 		if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) != -1) {
@@ -655,10 +683,7 @@ int mget_tcp_listen(mget_tcp_t *tcp, const char *host, const char *port, int bac
 				return -1;
 			}
 
-			if (listen(sockfd, backlog) < 0) {
-				error_printf(_("Failed to listen (%d)\n"), errno);
-				close(sockfd);
-			} else {
+			if (listen(sockfd, backlog) == 0) {
 				tcp->sockfd = sockfd;
 
 				if (mget_get_logger(MGET_LOGGER_DEBUG)->vprintf) {
@@ -666,12 +691,15 @@ int mget_tcp_listen(mget_tcp_t *tcp, const char *host, const char *port, int bac
 						snprintf(s_port, sizeof(s_port), "%d", mget_tcp_get_local_port(tcp));
 
 					if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), NULL, 0, NI_NUMERICHOST)) == 0)
-						debug_printf("listen on %s:%s...\n", adr, port ? port : s_port);
+						debug_printf("%ssecure listen on %s:%s...\n", tcp->ssl ? "" : "in", adr, port ? port : s_port);
 					else
-						debug_printf("listen on %s:%s (%s)...\n", host, port ? port : s_port, gai_strerror(rc));
+						debug_printf("%ssecure listen on %s:%s (%s)...\n", tcp->ssl ? "" : "in", host, port ? port : s_port, gai_strerror(rc));
 				}
 
 				return 0;
+			} else {
+				error_printf(_("Failed to listen (%d)\n"), errno);
+				close(sockfd);
 			}
 		} else
 			error_printf(_("Failed to create socket (%d)\n"), errno);
@@ -684,25 +712,29 @@ mget_tcp_t *mget_tcp_accept(mget_tcp_t *parent_tcp)
 {
 	int sockfd;
 
-	if (parent_tcp->ssl) {
-		// rc = mget_ssl_accept_timeout(tcp->ssl_session, tcp->timeout);
-	} else {
-		// 0: no timeout / immediate
-		// -1: INFINITE timeout
-		if (parent_tcp->timeout) {
-			if (mget_ready_2_read(parent_tcp->sockfd, parent_tcp->timeout) <= 0)
-				return NULL;
+	// 0: no timeout / immediate
+	// -1: INFINITE timeout
+	if (parent_tcp->timeout) {
+		if (mget_ready_2_read(parent_tcp->sockfd, parent_tcp->timeout) <= 0)
+			return NULL;
+	}
+
+	if ((sockfd = accept(parent_tcp->sockfd, parent_tcp->bind_addrinfo->ai_addr, &parent_tcp->bind_addrinfo->ai_addrlen))!=-1) {
+		mget_tcp_t *tcp = xmalloc(sizeof(mget_tcp_t));
+
+		*tcp = *parent_tcp;
+		tcp->sockfd = sockfd;
+		tcp->ssl_hostname = NULL;
+		tcp->addrinfo = NULL;
+		tcp->bind_addrinfo = NULL;
+
+		if (tcp->ssl) {
+			tcp->ssl_session = mget_ssl_server_open(tcp->sockfd, parent_tcp->ssl_hostname, tcp->connect_timeout);
+			if (!tcp->ssl_session)
+				mget_tcp_deinit(&tcp);
 		}
 
-		if ((sockfd = accept(parent_tcp->sockfd, parent_tcp->bind_addrinfo->ai_addr, &parent_tcp->bind_addrinfo->ai_addrlen))!=-1) {
-			mget_tcp_t *tcp = xmalloc(sizeof(mget_tcp_t));
-
-			*tcp = *parent_tcp;
-			tcp->sockfd = sockfd;
-			tcp->addrinfo = NULL;
-			tcp->bind_addrinfo = NULL;
-			return tcp;
-		}
+		return tcp;
 	}
 
 	error_printf(_("Failed to accept (%d)\n"), errno);
@@ -766,7 +798,8 @@ ssize_t mget_tcp_write(mget_tcp_t *tcp, const char *buf, size_t count)
 			}
 		} else
 #endif
-			n = send(tcp->sockfd, buf, count, 0);
+
+		n = send(tcp->sockfd, buf, count, 0);
 
 		if (n >= 0) {
 			if ((size_t)n >= count)
@@ -849,19 +882,22 @@ ssize_t mget_tcp_printf(mget_tcp_t *tcp, const char *fmt, ...)
 	va_end(args);
 }
 
-void mget_tcp_close(mget_tcp_t **tcp)
+void mget_tcp_close(mget_tcp_t *tcp)
 {
-	if (tcp && *tcp) {
-		if ((*tcp)->ssl && (*tcp)->ssl_session) {
-			mget_ssl_close(&(*tcp)->ssl_session);
+	if (tcp) {
+		if (tcp->ssl && tcp->ssl_session) {
+			if (tcp->passive)
+				mget_ssl_server_close(&tcp->ssl_session);
+			else
+				mget_ssl_close(&tcp->ssl_session);
 		}
-		if ((*tcp)->sockfd != -1) {
-			close((*tcp)->sockfd);
-			(*tcp)->sockfd = -1;
+		if (tcp->sockfd != -1) {
+			close(tcp->sockfd);
+			tcp->sockfd = -1;
 		}
-		if ((*tcp)->addrinfo_allocated) {
-			freeaddrinfo((*tcp)->addrinfo);
-			(*tcp)->addrinfo = NULL;
+		if (tcp->addrinfo_allocated) {
+			freeaddrinfo(tcp->addrinfo);
+			tcp->addrinfo = NULL;
 		}
 	}
 }

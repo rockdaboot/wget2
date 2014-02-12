@@ -1383,11 +1383,12 @@ mget_http_connection_t *mget_http_open(const mget_iri_t *iri)
 	}
 
 	conn->tcp = mget_tcp_init();
+	if (ssl) {
+		mget_tcp_set_ssl(conn->tcp, 1); // switch SSL on
+		mget_tcp_set_ssl_hostname(conn->tcp, host); // enable host name checking
+	}
 
-//	if ((conn->addrinfo = mget_tcp_resolve(host, port)) == NULL)
-//		goto error;
-
-	if (mget_tcp_connect_ssl(conn->tcp, host, port, ssl ? host : NULL) == 0) {
+	if (mget_tcp_connect(conn->tcp, host, port) == 0) {
 		conn->esc_host = iri->host ? strdup(iri->host) : NULL;
 		conn->port = iri->resolv_port;
 		conn->scheme = iri->scheme;
@@ -1395,7 +1396,6 @@ mget_http_connection_t *mget_http_open(const mget_iri_t *iri)
 		return conn;
 	}
 
-//error:
 	mget_http_close(&conn);
 	return NULL;
 }

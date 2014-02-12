@@ -1040,7 +1040,7 @@ void
 void
 	mget_dns_cache_free(void);
 void
-	mget_tcp_close(mget_tcp_t **tcp) G_GNUC_MGET_NONNULL_ALL;
+	mget_tcp_close(mget_tcp_t *tcp);
 void
 	mget_tcp_set_timeout(mget_tcp_t *tcp, int timeout);
 void
@@ -1049,6 +1049,14 @@ void
 	mget_tcp_set_dns_timeout(mget_tcp_t *tcp, int timeout);
 void
 	mget_tcp_set_dns_caching(mget_tcp_t *tcp, int caching);
+void
+	mget_tcp_set_ssl(mget_tcp_t *tcp, int ssl);
+int
+	mget_tcp_get_ssl(mget_tcp_t *tcp) G_GNUC_MGET_PURE;
+void
+	mget_tcp_set_ssl_hostname(mget_tcp_t *tcp, const char *hostname);
+const char *
+	mget_tcp_get_ssl_hostname(mget_tcp_t *tcp) G_GNUC_MGET_PURE;
 int
 	mget_tcp_get_dns_caching(mget_tcp_t *tcp) G_GNUC_MGET_PURE;
 int
@@ -1069,8 +1077,6 @@ struct addrinfo *
 	mget_tcp_resolve(mget_tcp_t *tcp, const char *restrict name, const char *restrict port) G_GNUC_MGET_NONNULL((2));
 int
 	mget_tcp_connect(mget_tcp_t *tcp, const char *host, const char *port) G_GNUC_MGET_NONNULL((1));
-int
-	mget_tcp_connect_ssl(mget_tcp_t *tcp, const char *host, const char *port, const char *hostname) G_GNUC_MGET_NONNULL((1));
 int
 	mget_tcp_listen(mget_tcp_t *tcp, const char *host, const char *port, int backlog) G_GNUC_MGET_NONNULL((1));
 mget_tcp_t
@@ -1111,11 +1117,20 @@ void
 void
 	mget_ssl_set_config_int(int key, int value);
 void *
-	mget_ssl_open(int sockfd, const char *hostname, int connect_timeout) G_GNUC_MGET_NONNULL_ALL;
+	mget_ssl_open(int sockfd, const char *hostname, int connect_timeout) G_GNUC_MGET_NONNULL((2));
 void
-	mget_ssl_close(void **session) G_GNUC_MGET_NONNULL_ALL;
+	mget_ssl_close(void **session);
 void
 	mget_ssl_set_check_certificate(char value);
+
+void
+	mget_ssl_server_init(void);
+void
+	mget_ssl_server_deinit(void);
+void *
+	mget_ssl_server_open(int sockfd, const char *hostname, int connect_timeout);
+void
+	mget_ssl_server_close(void **session);
 
 ssize_t
 	mget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout) G_GNUC_MGET_NONNULL_ALL;

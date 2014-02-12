@@ -1,3 +1,7 @@
+12.02.2014
+  Added HTTPS server code, used in test suite.
+  Added new test test-i-https.
+
 06.02.2014
   Changed the naming convention of types.
   Support pkg-config.
