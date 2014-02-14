@@ -49,7 +49,7 @@
 
 /**
  * SECTION:libmget-io
- * @short_description: I/O helper routines
+ * @short_description: I\O helper routines
  * @title: libmget-io
  * @stability: unstable
  * @include: libmget.h

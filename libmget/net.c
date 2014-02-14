@@ -729,7 +729,7 @@ mget_tcp_t *mget_tcp_accept(mget_tcp_t *parent_tcp)
 		tcp->bind_addrinfo = NULL;
 
 		if (tcp->ssl) {
-			tcp->ssl_session = mget_ssl_server_open(tcp->sockfd, parent_tcp->ssl_hostname, tcp->connect_timeout);
+			tcp->ssl_session = mget_ssl_server_open(tcp->sockfd, tcp->connect_timeout);
 			if (!tcp->ssl_session)
 				mget_tcp_deinit(&tcp);
 		}

@@ -1145,13 +1145,13 @@ int init(int argc, const char *const *argv)
 	mget_ssl_set_config_int(MGET_SSL_CHECK_CERTIFICATE, config.check_certificate);
 	mget_ssl_set_config_int(MGET_SSL_CHECK_HOSTNAME, config.check_hostname);
 	mget_ssl_set_config_int(MGET_SSL_CERT_TYPE, config.cert_type);
-	mget_ssl_set_config_int(MGET_SSL_PRIVATE_KEY_TYPE, config.private_key_type);
+	mget_ssl_set_config_int(MGET_SSL_KEY_TYPE, config.private_key_type);
 	mget_ssl_set_config_int(MGET_SSL_PRINT_INFO, config.debug);
 	mget_ssl_set_config_string(MGET_SSL_SECURE_PROTOCOL, config.secure_protocol);
 	mget_ssl_set_config_string(MGET_SSL_CA_DIRECTORY, config.ca_directory);
-	mget_ssl_set_config_string(MGET_SSL_CA_CERT, config.ca_cert);
+	mget_ssl_set_config_string(MGET_SSL_CA_FILE, config.ca_cert);
 	mget_ssl_set_config_string(MGET_SSL_CERT_FILE, config.cert_file);
-	mget_ssl_set_config_string(MGET_SSL_PRIVATE_KEY, config.private_key);
+	mget_ssl_set_config_string(MGET_SSL_KEY_FILE, config.private_key);
 
 	return n;
 }

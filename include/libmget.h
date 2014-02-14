@@ -1057,6 +1057,10 @@ void
 	mget_tcp_set_ssl_hostname(mget_tcp_t *tcp, const char *hostname);
 const char *
 	mget_tcp_get_ssl_hostname(mget_tcp_t *tcp) G_GNUC_MGET_PURE;
+void
+	mget_tcp_set_ssl_ca_file(mget_tcp_t *tcp, const char *cafile);
+void
+	mget_tcp_set_ssl_key_file(mget_tcp_t *tcp, const char *certfile, const char *keyfile);
 int
 	mget_tcp_get_dns_caching(mget_tcp_t *tcp) G_GNUC_MGET_PURE;
 int
@@ -1099,14 +1103,15 @@ ssize_t
 
 #define MGET_SSL_SECURE_PROTOCOL   1
 #define MGET_SSL_CA_DIRECTORY      2
-#define MGET_SSL_CA_CERT           3
+#define MGET_SSL_CA_FILE           3
 #define MGET_SSL_CERT_FILE         4
-#define MGET_SSL_PRIVATE_KEY       5
-#define MGET_SSL_CHECK_CERTIFICATE 6
-#define MGET_SSL_CHECK_HOSTNAME    7
-#define MGET_SSL_CERT_TYPE         8
-#define MGET_SSL_PRIVATE_KEY_TYPE  9
-#define MGET_SSL_PRINT_INFO        10
+#define MGET_SSL_KEY_FILE       5
+#define MGET_SSL_CA_TYPE           6
+#define MGET_SSL_CERT_TYPE         7
+#define MGET_SSL_KEY_TYPE  8
+#define MGET_SSL_CHECK_CERTIFICATE 9
+#define MGET_SSL_CHECK_HOSTNAME    10
+#define MGET_SSL_PRINT_INFO        11
 
 void
 	mget_ssl_init(void);
@@ -1128,7 +1133,7 @@ void
 void
 	mget_ssl_server_deinit(void);
 void *
-	mget_ssl_server_open(int sockfd, const char *hostname, int connect_timeout);
+	mget_ssl_server_open(int sockfd, int connect_timeout);
 void
 	mget_ssl_server_close(void **session);
 

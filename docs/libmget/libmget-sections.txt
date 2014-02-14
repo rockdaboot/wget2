@@ -33,7 +33,7 @@ mget_list_free
 
 <SECTION>
 <FILE>libmget-io</FILE>
-<TITLE>I/O helper routines</TITLE>
+<TITLE>IO helper routines</TITLE>
 mget_fdgetline
 mget_getline
 mget_ready_2_read
