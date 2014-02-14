@@ -469,19 +469,20 @@ void mget_ssl_init(void)
 		debug_printf("GnuTLS init\n");
 		gnutls_global_init();
 		gnutls_certificate_allocate_credentials(&_credentials);
-//		gnutls_certificate_set_x509_trust_file(credentials, "/etc/ssl/certs/ca-certificates.crt", GNUTLS_X509_FMT_PEM);
 		gnutls_certificate_set_verify_function(_credentials, _verify_certificate_callback);
 
 		if (_config.ca_directory && *_config.ca_directory && _config.check_certificate) {
 			int ncerts = -1;
 
 #if GNUTLS_VERSION_MAJOR >= 3
-			if (!strcmp(_config.ca_directory, "system")) {
+			if (!strcmp(_config.ca_directory, "system"))
 				ncerts = gnutls_certificate_set_x509_system_trust(_credentials);
-			}
+#else
+			if (!strcmp(_config.ca_directory, "system"))
+				_config.ca_directory = "/etc/ssl/certs"
 #endif
 
-			if (ncerts < 0) {
+		if (ncerts < 0) {
 				DIR *dir;
 
 				ncerts = 0;
