@@ -479,7 +479,7 @@ void mget_ssl_init(void)
 				ncerts = gnutls_certificate_set_x509_system_trust(_credentials);
 #else
 			if (!strcmp(_config.ca_directory, "system"))
-				_config.ca_directory = "/etc/ssl/certs"
+				_config.ca_directory = "/etc/ssl/certs";
 #endif
 
 		if (ncerts < 0) {
@@ -652,6 +652,7 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	// very old gnutls version, likely to not work.
 	gnutls_init(&session, GNUTLS_CLIENT);
 #endif
+
 	gnutls_priority_set(session, _priority_cache);
 	gnutls_session_set_ptr(session, (void *)hostname);
 	// RFC 6066 SNI Server Name Indication
@@ -698,9 +699,9 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 
 		gnutls_deinit(session);
 		return NULL;
-	} else {
-		debug_printf("Handshake completed\n");
 	}
+
+	debug_printf("Handshake completed\n");
 
 	return session;
 }
@@ -726,6 +727,8 @@ void mget_ssl_server_init(void)
 	mget_thread_mutex_lock(&_mutex);
 
 	if (!_server_init) {
+		int ret;
+
 		debug_printf("GnuTLS server init\n");
 		gnutls_global_init();
 
@@ -742,7 +745,8 @@ void mget_ssl_server_init(void)
 		gnutls_dh_params_init(&dh_params);
 		gnutls_dh_params_generate2(dh_params, bits);
 */
-		gnutls_priority_init(&_server_priority_cache, "PERFORMANCE:%SERVER_PRECEDENCE", NULL);
+		if ((ret = gnutls_priority_init(&_server_priority_cache, "PERFORMANCE", NULL)) < 0)
+			error_printf("GnuTLS: Unsupported server priority string '%s': %s\n", "PERFORMANCE", gnutls_strerror(ret));
 
 		_server_init++;
 
@@ -774,7 +778,13 @@ void *mget_ssl_server_open(int sockfd, int connect_timeout)
 	if (!_init)
 		mget_ssl_server_init();
 
+#ifdef GNUTLS_NONBLOCK
+	gnutls_init(&session, GNUTLS_SERVER | GNUTLS_NONBLOCK);
+#else
+	// very old gnutls version, likely to not work.
 	gnutls_init(&session, GNUTLS_SERVER);
+#endif
+
 	gnutls_priority_set(session, _server_priority_cache);
 	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, _server_credentials);
 
@@ -806,21 +816,21 @@ void *mget_ssl_server_open(int sockfd, int connect_timeout)
 			// wait for readability
 			ret = mget_ready_2_read(sockfd, connect_timeout);
 		}
-
-		if (ret <= 0) {
-			if (ret)
-				debug_printf("Server handshake failed (%d)\n", ret);
-			else
-				debug_printf("Server handshake timed out\n");
-
-			error_printf("GnuTLS Server: %s\n", gnutls_strerror(ret));
-
-			gnutls_deinit(session);
-			return NULL;
-		}
 	}
 
-	debug_printf("Handshake completed\n");
+	if (ret <= 0) {
+		if (ret)
+			debug_printf("Server handshake failed (%d)\n", ret);
+		else
+			debug_printf("Server handshake timed out\n");
+
+		error_printf("GnuTLS Server: %s\n", gnutls_strerror(ret));
+
+		gnutls_deinit(session);
+		return NULL;
+	}
+
+	debug_printf("Server handshake completed\n");
 
 	return session;
 }

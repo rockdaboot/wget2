@@ -62,14 +62,10 @@ int main(void)
 		MGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 
-	mget_debug_printf("pwd = '%s'\n", get_current_dir_name());
-	mget_debug_printf("datadir = '%s'\n", DATADIR);
-	mget_debug_printf("srcdir = '%s'\n", SRCDIR);
-
 	// test-i-https with loading CA Certificate
 	mget_test(
 		// MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "--ca-certificate=" "../" SRCDIR "/certs/x509-ca.pem -i urls.txt",
+		MGET_TEST_OPTIONS, "--ca-certificate=../" SRCDIR "/certs/x509-ca.pem -i urls.txt",
 		MGET_TEST_REQUEST_URL, NULL,
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
@@ -101,7 +97,7 @@ int main(void)
 	// test-i-https failing due to unknown certificate
 	mget_test(
 		// MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "-i urls.txt",
+		MGET_TEST_OPTIONS, "--tries=1 -i urls.txt",
 		MGET_TEST_REQUEST_URL, NULL,
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {

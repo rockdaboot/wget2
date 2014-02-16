@@ -142,6 +142,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"                          Example: mget --chunk-size=1M\n"
 		"      --local-encoding    Character encoding of environment and filenames.\n"
 		"      --remote-encoding   Character encoding of remote files (if not specified in Content-Type HTTP header or in document itself)\n"
+		"  -t   --tries            Number of tries for each download. (default 20)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -542,6 +543,7 @@ static const struct option options[] = {
 	{ "strict-comments", &config.strict_comments, parse_bool, 0, 0 },
 	{ "timeout", NULL, parse_timeout, 1, 'T' },
 	{ "timestamping", &config.timestamping, parse_bool, 0, 'N' },
+	{ "tries", &config.tries, parse_integer, 1, 't' },
 	{ "trust-server-names", &config.trust_server_names, parse_bool, 0, 0 },
 	{ "use-server-timestamp", &config.use_server_timestamps, parse_bool, 0, 0 },
 	{ "user", &config.username, parse_string, 1, 0 },

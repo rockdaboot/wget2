@@ -1695,13 +1695,12 @@ void download_part(DOWNLOADER *downloader)
 	mget_metalink_t *metalink = job->metalink;
 	PART *part = downloader->part;
 	int mirror_index = downloader->id % mget_vector_size(metalink->mirrors);
-	int tries, mirrors;
 
 	// we try every mirror max. 'config.tries' number of times
-	for (tries = 0; tries < config.tries && !part->done; tries++) {
+	for (int tries = 0; tries < config.tries && !part->done; tries++) {
 		mget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
 
-		for (mirrors = 0; mirrors < mget_vector_size(metalink->mirrors) && !part->done; mirrors++) {
+		for (int mirrors = 0; mirrors < mget_vector_size(metalink->mirrors) && !part->done; mirrors++) {
 			mget_http_response_t *resp;
 			mget_metalink_mirror_t *mirror = mget_vector_get(metalink->mirrors, mirror_index);
 

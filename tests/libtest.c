@@ -312,7 +312,7 @@ void mget_test_start_http_server(int first_key, ...)
 	snprintf(tmpdir, sizeof(tmpdir), ".test_%d", getpid());
 
 	if (mkdir(tmpdir, 0755) != 0)
-			mget_error_printf_exit(_("Failed to create tmpdir (%d)\n"), errno);
+		mget_error_printf_exit(_("Failed to create tmpdir (%d)\n"), errno);
 
 	if (chdir(tmpdir) != 0)
 		mget_error_printf_exit(_("Failed to change to tmpdir (%d)\n"), errno);
