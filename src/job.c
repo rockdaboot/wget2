@@ -295,16 +295,16 @@ int job_validate_file(JOB *job)
 static mget_thread_mutex_t
 	mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
-JOB *queue_add(mget_iri_t *iri)
+JOB *queue_add_job(JOB *job)
 {
-	if (iri) {
-		JOB job = { .iri = iri }, *jobp;
+	if (job) {
+		JOB *jobp;
 
 		mget_thread_mutex_lock(&mutex);
-		jobp = mget_list_append(&queue, &job, sizeof(JOB));
+		jobp = mget_list_append(&queue, job, sizeof(JOB));
 		mget_thread_mutex_unlock(&mutex);
 
-		debug_printf("queue_add %p %s\n", (void *)jobp, iri->uri);
+		debug_printf("queue_add_job %p %s\n", (void *)jobp, job->iri->uri);
 		return jobp;
 	}
 
@@ -318,12 +318,17 @@ void queue_del(JOB *job)
 
 		// special handling for automatic robots.txt jobs
 		if (job->deferred) {
+			JOB new_job = { .iri = NULL };
+
 			if (job->host)
 				job->host->robot_job = NULL;
 			mget_iri_free(&job->iri);
+
+			// create a job for each deferred IRI
 			for (int it = 0; it < mget_vector_size(job->deferred); it++) {
-				JOB *new_job = queue_add(mget_vector_get(job->deferred, it));
-				new_job->local_filename = get_local_filename(new_job->iri);
+				new_job.iri = mget_vector_get(job->deferred, it);
+				new_job.local_filename = get_local_filename(new_job.iri);
+				queue_add_job(&new_job);
 			}
 		}
 
@@ -418,4 +423,15 @@ void queue_print(void)
 	mget_thread_mutex_lock(&mutex);
 	mget_list_browse(queue, (int(*)(void *, void *))queue_print_func, NULL);
 	mget_thread_mutex_unlock(&mutex);
+}
+
+JOB *job_init(JOB *job, mget_iri_t *iri)
+{
+	if (iri) {
+		memset(job, 0, sizeof(JOB));
+		job->iri = iri;
+		return job;
+	}
+
+	return NULL;
 }

@@ -71,7 +71,8 @@ struct JOB {
 };
 
 JOB
-	*queue_add(mget_iri_t *iri);
+	*job_init(JOB *job, mget_iri_t *iri),
+	*queue_add_job(JOB *job);
 PART
 	*job_add_part(JOB *job, PART *part);
 int

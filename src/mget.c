@@ -75,7 +75,6 @@ typedef struct {
 } DOWNLOADER;
 
 static void
-	download_part(DOWNLOADER *downloader),
 	save_file(mget_http_response_t *resp, const char *fname),
 	append_file(mget_http_response_t *resp, const char *fname),
 	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, mget_iri_t *base),
@@ -90,6 +89,8 @@ static void
 	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, mget_iri_t *base),
 	css_parse(JOB *job, const char *data, const char *encoding, mget_iri_t *base),
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, mget_iri_t *base);
+static int
+	download_part(DOWNLOADER *downloader);
 mget_http_response_t
 	*http_get(mget_iri_t *iri, PART *part, DOWNLOADER *downloader, int method_get);
 
@@ -104,9 +105,10 @@ static void
 static long long
 	quota;
 static int
-	terminate,
 	exit_status,
 	hsts_changed;
+static volatile int
+	terminate;
 
 void set_exit_status(int status)
 {
@@ -329,7 +331,7 @@ static mget_thread_mutex_t
 static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *encoding)
 {
 	mget_iri_t *iri;
-	JOB *job = NULL;
+	JOB *new_job = NULL, job_buf;
 
 	iri = mget_iri_parse_base(base, url, encoding);
 
@@ -358,13 +360,13 @@ static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *enco
 
 			if ((host = hosts_add(iri))) {
 				// a new host entry has been created
-				job = queue_add(mget_iri_parse_base(iri, "/robots.txt", encoding));
-				job->host = host;
-				host->robot_job = job;
-				job->deferred = mget_vector_create(2, -2, NULL);
-				mget_vector_add_noalloc(job->deferred, iri);
-			} else if ((host = hosts_get(iri)) && (job = host->robot_job)) {
-				mget_vector_add_noalloc(job->deferred, iri);
+				new_job = job_init(&job_buf, mget_iri_parse_base(iri, "/robots.txt", encoding));
+				new_job->host = host;
+				host->robot_job = new_job;
+				new_job->deferred = mget_vector_create(2, -2, NULL);
+				mget_vector_add_noalloc(new_job->deferred, iri);
+			} else if ((host = hosts_get(iri)) && (new_job = host->robot_job)) {
+				mget_vector_add_noalloc(new_job->deferred, iri);
 			}
 		}
 
@@ -384,17 +386,19 @@ static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *enco
 		}
 	}
 
-	if (!job)
-		job = queue_add(iri);
+	if (!new_job)
+		new_job = job_init(&job_buf, iri);
 
-	if (!job->deferred)
-		job->local_filename = get_local_filename(iri);
+	if (!new_job->deferred)
+		new_job->local_filename = get_local_filename(iri);
 	else
-		job->local_filename = get_local_filename(job->iri);
+		new_job->local_filename = get_local_filename(new_job->iri);
+
+	queue_add_job(new_job);
 
 	mget_thread_mutex_unlock(&downloader_mutex);
 
-	return job;
+	return new_job;
 }
 
 static mget_thread_mutex_t
@@ -410,7 +414,7 @@ static void
 // Needs to be thread-save
 static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 {
-	JOB *new_job = NULL;
+	JOB *new_job = NULL, job_buf;
 	mget_iri_t *iri;
 
 	if (flags & URL_FLG_REDIRECTION) { // redirect
@@ -490,7 +494,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 		if ((host = hosts_add(iri))) {
 			// a new host entry has been created
-			new_job = queue_add(mget_iri_parse_base(iri, "/robots.txt", encoding));
+			new_job = job_init(&job_buf, mget_iri_parse_base(iri, "/robots.txt", encoding));
 			new_job->host = host;
 			host->robot_job = new_job;
 			new_job->deferred = mget_vector_create(2, -2, NULL);
@@ -518,7 +522,10 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		}
 	}
 
-	if (new_job || (new_job = queue_add(blacklist_add(iri)))) {
+	if (!new_job)
+		new_job = job_init(&job_buf, blacklist_add(iri));
+
+	if (new_job) {
 		if (!config.output_document) {
 			if (!(flags & URL_FLG_REDIRECTION) || config.trust_server_names || !job)
 				new_job->local_filename = get_local_filename(new_job->iri);
@@ -541,6 +548,10 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		if (flags & URL_FLG_SITEMAP && !new_job->deferred)
 			new_job->sitemap = 1;
 
+		// now add the new job to the queue (thread-safe))
+		queue_add_job(new_job);
+
+		// and wake up all waiting threads
 		mget_thread_cond_signal(&worker_cond);
 	}
 
@@ -689,14 +700,11 @@ int main(int argc, const char *const *argv)
 		// here we sit and wait for an event from our worker threads
 		mget_thread_cond_wait(&main_cond, &main_mutex);
 	}
-	mget_thread_mutex_unlock(&main_mutex);
-
-//	info_printf(_("Main done\n"));
-	xfree(buf);
 
 	// stop downloaders
 	terminate=1;
 	mget_thread_cond_signal(&worker_cond);
+	mget_thread_mutex_unlock(&main_mutex);
 
 	for (n = 0; n < config.num_threads; n++) {
 		//		struct timespec ts;
@@ -722,6 +730,7 @@ int main(int argc, const char *const *argv)
 		blacklist_print();
 
 	// freeing to avoid disguising valgrind output
+	xfree(buf);
 	mget_hsts_db_free(&config.hsts_db);
 	mget_cookie_free_public_suffixes();
 	mget_cookie_free_cookies();
@@ -769,12 +778,12 @@ void *downloader_thread(void *p)
 
 	downloader->tid = mget_thread_self(); // to avoid race condition
 
+	mget_thread_mutex_lock(&main_mutex);
+
 	while (!terminate) {
-		mget_thread_mutex_lock(&main_mutex);
 		if (queue_get(&downloader->job, &downloader->part) == 0) {
 			// here we sit and wait for a job
 			mget_thread_cond_wait(&worker_cond, &main_mutex);
-			mget_thread_mutex_unlock(&main_mutex);
 			continue;
 		}
 		mget_thread_mutex_unlock(&main_mutex);
@@ -791,7 +800,13 @@ void *downloader_thread(void *p)
 
 		if ((part = downloader->part)) {
 			// download metalink part
-			download_part(downloader);
+			if (download_part(downloader) == 0) {
+				mget_thread_mutex_lock(&main_mutex);
+				queue_del(downloader->job);
+				mget_thread_cond_signal(&main_cond);
+			} else {
+				mget_thread_mutex_lock(&main_mutex);
+			}
 			continue;
 		}
 
@@ -1075,6 +1090,7 @@ ready:
 		mget_http_free_response(&resp);
 
 		// download of single-part file complete, remove from job queue
+		mget_thread_mutex_lock(&main_mutex);
 		queue_del(job);
 		mget_thread_cond_signal(&main_cond);
 	}
@@ -1689,12 +1705,13 @@ static void G_GNUC_MGET_NONNULL((1)) append_file(mget_http_response_t *resp, con
 	_save_file(resp, fname, O_APPEND);
 }
 
-void download_part(DOWNLOADER *downloader)
+int download_part(DOWNLOADER *downloader)
 {
 	JOB *job = downloader->job;
 	mget_metalink_t *metalink = job->metalink;
 	PART *part = downloader->part;
 	int mirror_index = downloader->id % mget_vector_size(metalink->mirrors);
+	int ret = -1;
 
 	// we try every mirror max. 'config.tries' number of times
 	for (int tries = 0; tries < config.tries && !part->done; tries++) {
@@ -1767,8 +1784,7 @@ void download_part(DOWNLOADER *downloader)
 			print_status(downloader, "%s checking...\n", job->local_filename);
 			if (job_validate_file(job)) {
 				debug_printf("checksum ok\n");
-				queue_del(job);
-				mget_thread_cond_signal(&main_cond);
+				ret = 0;
 			} else
 				debug_printf("checksum failed\n");
 		}
@@ -1776,6 +1792,8 @@ void download_part(DOWNLOADER *downloader)
 		print_status(downloader, "part %d failed\n", part->id);
 		part->inuse = 0; // something was wrong, reload again later
 	}
+
+	return ret;
 }
 
 mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *downloader, int method_get)
