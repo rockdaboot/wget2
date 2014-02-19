@@ -142,34 +142,6 @@ void mget_iri_free(mget_iri_t **iri)
 	}
 }
 
-static unsigned char G_GNUC_MGET_CONST _unhex(unsigned char c)
-{
-	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
-}
-
-// return 1: unescape occurred, string changed
-static int _unescape(unsigned char *src)
-{
-	int ret = 0;
-	unsigned char *dst = src;
-
-	while (*src) {
-		if (*src == '%') {
-			if (isxdigit(src[1]) && isxdigit(src[2])) {
-				*dst++ = (_unhex(src[1]) << 4) | _unhex(src[2]);
-				src += 3;
-				ret = 1;
-				continue;
-			}
-		}
-
-		*dst++ = *src++;
-	}
-	*dst = 0;
-
-	return ret;
-}
-
 // URIs are assumed to be unescaped at this point
 
 mget_iri_t *mget_iri_parse(const char *url, const char *encoding)
@@ -195,7 +167,7 @@ mget_iri_t *mget_iri_parse(const char *url, const char *encoding)
 	if (strchr(url, '%')) {
 		char *unesc_url = strdup(url);
 
-		_unescape((unsigned char *)unesc_url);
+		mget_percent_unescape((unsigned char *)unesc_url);
 
 		if (mget_str_needs_encoding(unesc_url)) {
 			if ((url = mget_str_to_utf8(unesc_url, encoding)))

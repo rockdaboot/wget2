@@ -456,7 +456,7 @@ const char *mget_http_parse_content_type(const char *s, const char **content_typ
 const char *mget_http_parse_content_disposition(const char *s, const char **filename)
 {
 	mget_http_header_param_t param;
-	const char *p;
+	char *p;
 
 	if (filename) {
 		*filename = NULL;
@@ -473,6 +473,53 @@ const char *mget_http_parse_content_disposition(const char *s, const char **file
 				} else
 					*filename = param.value;
 				break;
+			} else if (param.value && !mget_strcasecmp("filename*", param.name)) {
+				// RFC5987
+				// ext-value     = charset  "'" [ language ] "'" value-chars
+				// ; like RFC 2231's <extended-initial-value>
+				// ; (see [RFC2231], Section 7)
+
+				// charset       = "UTF-8" / "ISO-8859-1" / mime-charset
+
+				// mime-charset  = 1*mime-charsetc
+				// mime-charsetc = ALPHA / DIGIT
+				//		/ "!" / "#" / "$" / "%" / "&"
+				//		/ "+" / "-" / "^" / "_" / "`"
+				//		/ "{" / "}" / "~"
+				//		; as <mime-charset> in Section 2.3 of [RFC2978]
+				//		; except that the single quote is not included
+				//		; SHOULD be registered in the IANA charset registry
+
+				// language      = <Language-Tag, defined in [RFC5646], Section 2.1>
+
+				// value-chars   = *( pct-encoded / attr-char )
+
+				// pct-encoded   = "%" HEXDIG HEXDIG
+				//		; see [RFC3986], Section 2.1
+
+				// attr-char     = ALPHA / DIGIT
+				//		/ "!" / "#" / "$" / "&" / "+" / "-" / "."
+				//		/ "^" / "_" / "`" / "|" / "~"
+				//		; token except ( "*" / "'" / "%" )
+
+				if ((p = strchr(param.value, '\''))) {
+					const char *charset = param.value;
+					const char *language = p + 1;
+					*p = 0;
+					if ((p = strchr(language, '\''))) {
+						*p++ = 0;
+						if (*p) {
+							mget_percent_unescape((unsigned char *)p);
+							if (mget_str_needs_encoding(p))
+								*filename = mget_str_to_utf8(p, charset);
+							else
+								*filename = strdup(p);
+							xfree(param.name);
+							xfree(param.value);
+							break;
+						}
+					}
+				}
 			}
 			xfree(param.name);
 			xfree(param.value);

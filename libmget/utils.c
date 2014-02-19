@@ -33,6 +33,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include <time.h>
+#include <ctype.h>
 
 #include <libmget.h>
 #include "private.h"
@@ -210,3 +211,40 @@ void mget_millisleep(int ms)
 	sleep((ms + 500) / 1000);
 #endif
 }
+
+static inline unsigned char G_GNUC_MGET_CONST _unhex(unsigned char c)
+{
+	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
+}
+
+/**
+ * mget_percent_unescape:
+ * @src: String to unescape
+ *
+ * Does an inline percent unescape.
+ * Each occurrence of %xx (x = hex digit) will converted into it's byte representation.
+ *
+ * Returns: 0 if the string did not change, 1 if unescaping took place.
+ */
+int mget_percent_unescape(unsigned char *src)
+{
+	int ret = 0;
+	unsigned char *dst = src;
+
+	while (*src) {
+		if (*src == '%') {
+			if (isxdigit(src[1]) && isxdigit(src[2])) {
+				*dst++ = (_unhex(src[1]) << 4) | _unhex(src[2]);
+				src += 3;
+				ret = 1;
+				continue;
+			}
+		}
+
+		*dst++ = *src++;
+	}
+	*dst = 0;
+
+	return ret;
+}
+

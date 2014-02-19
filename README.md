@@ -48,6 +48,7 @@ Mget has already many features that go beyond what Wget provides.<br>
 
 An incomplete list of implemented features:
 
+- support for RFC 6266 compliant Content-Disposition
 - RFC 6797 HSTS (HTTP Strict Transport Security)
 - Support for bzip2 Content-Encoding / Accept-Encoding compression type
 - New Year gimmick: added support for XZ Content-Encoding / Accept-Encoding compression type

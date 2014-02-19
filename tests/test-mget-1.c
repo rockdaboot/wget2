@@ -121,6 +121,14 @@ int main(void)
 				"Content-Type: text/plain",
             "Content-Disposition: attachment; filename=\"filename.html\"",
 			}
+		},
+		{	.name = "/dummy2.html",
+			.code = "200 Dontcare",
+			.body = dummypage,
+			.headers = {
+				"Content-Type: text/plain",
+            "Content-Disposition: attachment; filename*=UTF-8''%66ile_fran%c3%A7ais.html",
+			}
 		}
 	};
 
@@ -243,6 +251,23 @@ int main(void)
 			{	"filename.html", "dontcare" },
 			{	"filename.html.1", "dontcare" },
 			{	"dummy.html", dummypage },
+			{	NULL } },
+		0);
+
+	// test--HTTP-content-disposition-RFC6266
+#define ccedilla_u8 "\xC3\xA7"
+	mget_test(
+		MGET_TEST_OPTIONS, "-e contentdisposition=on --local-encoding=utf-8",
+		MGET_TEST_REQUEST_URL, "dummy2.html",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
+			{	"filename.html", "dontcare" },
+			{	"filename.html.1", "dontcare" },
+			{	NULL } },
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{	"filename.html", "dontcare" },
+			{	"filename.html.1", "dontcare" },
+			{	"file_fran" ccedilla_u8 "ais.html", dummypage },
 			{	NULL } },
 		0);
 
