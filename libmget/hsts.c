@@ -79,12 +79,10 @@ static int G_GNUC_MGET_NONNULL_ALL _compare_hsts(const mget_hsts_t *h1, const mg
 
 mget_hsts_t *mget_hsts_init(mget_hsts_t *hsts)
 {
-	return memset(hsts, 0, sizeof(*hsts));
-}
+	if (!hsts)
+		hsts = xmalloc(sizeof(mget_hsts_t));
 
-mget_hsts_t *mget_hsts_alloc(void)
-{
-	return mget_hsts_init(xmalloc(sizeof(mget_hsts_t)));
+	return memset(hsts, 0, sizeof(*hsts));
 }
 
 void mget_hsts_deinit(mget_hsts_t *hsts)
@@ -104,7 +102,7 @@ void mget_hsts_free(mget_hsts_t **hsts)
 
 mget_hsts_t *mget_hsts_new(const char *host, int port, time_t maxage, int include_subdomains)
 {
-	mget_hsts_t *hsts = mget_hsts_alloc();
+	mget_hsts_t *hsts = mget_hsts_init(NULL);
 
 	hsts->host = mget_strdup(host);
 	hsts->port = port ? port : 443;
@@ -138,16 +136,15 @@ int mget_hsts_host_match(const mget_hsts_db_t *hsts_db, const char *host, int po
 
 mget_hsts_db_t *mget_hsts_db_init(mget_hsts_db_t *hsts_db)
 {
+	if (!hsts_db)
+		hsts_db = xmalloc(sizeof(mget_hsts_db_t));
+
 	memset(hsts_db, 0, sizeof(*hsts_db));
 	hsts_db->entries = mget_hashmap_create(16, -2, (unsigned int(*)(const void *))_hash_hsts, (int(*)(const void *, const void *))_compare_hsts);
 	mget_hashmap_set_destructor(hsts_db->entries, (void(*)(void *, void *))mget_hsts_deinit);
 	mget_thread_mutex_init(&hsts_db->mutex);
-	return hsts_db;
-}
 
-mget_hsts_db_t *mget_hsts_db_alloc(void)
-{
-	return mget_hsts_db_init(xmalloc(sizeof(mget_hsts_db_t)));
+	return hsts_db;
 }
 
 void mget_hsts_db_deinit(mget_hsts_db_t *hsts_db)

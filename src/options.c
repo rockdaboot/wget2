@@ -1114,7 +1114,7 @@ int init(int argc, const char *const *argv)
 		mget_cookie_load(config.load_cookies, config.keep_session_cookies);
 
 	if (config.hsts) {
-		config.hsts_db = mget_hsts_db_alloc();
+		config.hsts_db = mget_hsts_db_init(NULL);
 		if (config.load_hsts)
 			mget_hsts_db_load(config.hsts_db, config.hsts_file);
 	}

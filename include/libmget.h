@@ -873,8 +873,6 @@ typedef struct _mget_hsts_db_st mget_hsts_db_t;
 
 mget_hsts_t *
 	mget_hsts_init(mget_hsts_t *hsts);
-mget_hsts_t *
-	mget_hsts_alloc(void) G_GNUC_MGET_MALLOC;
 void
 	mget_hsts_deinit(mget_hsts_t *hsts);
 void
@@ -886,8 +884,6 @@ int
 
 mget_hsts_db_t *
 	mget_hsts_db_init(mget_hsts_db_t *hsts_db);
-mget_hsts_db_t *
-	mget_hsts_db_alloc(void) G_GNUC_MGET_MALLOC;
 void
 	mget_hsts_db_deinit(mget_hsts_db_t *hsts_db);
 void

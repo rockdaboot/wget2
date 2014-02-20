@@ -988,7 +988,7 @@ static void test_hsts(void)
 		{ "www.example2.com", 443, 0 }, // entry should have been removed due to maxage=0
 		{ "www.example.com", 80, 0 }, // wrong port
 	};
-	mget_hsts_db_t *hsts_db = mget_hsts_db_alloc();
+	mget_hsts_db_t *hsts_db = mget_hsts_db_init(NULL);
 	time_t maxage;
 	char include_subdomains;
 	unsigned it;
