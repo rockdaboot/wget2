@@ -926,7 +926,7 @@ const char *mget_http_parse_setcookie(const char *s, mget_cookie_t *cookie)
 {
 	const char *name, *p;
 
-	mget_cookie_init_cookie(cookie);
+	mget_cookie_init(cookie);
 
 	while (isspace(*s)) s++;
 	s = mget_http_parse_token(s, &cookie->name);
@@ -1001,7 +1001,7 @@ const char *mget_http_parse_setcookie(const char *s, mget_cookie_t *cookie)
 		} while (*s);
 
 	} else {
-		mget_cookie_free_cookie(cookie);
+		mget_cookie_deinit(cookie);
 		error_printf("Cookie without name or assignment ignored\n");
 	}
 
@@ -1100,7 +1100,7 @@ mget_http_response_t *mget_http_parse_response_header(char *buf)
 				if (cookie.name) {
 					if (!resp->cookies) {
 						resp->cookies = mget_vector_create(4, 4, NULL);
-						mget_vector_set_destructor(resp->cookies, (void(*)(void *))mget_cookie_free_cookie);
+						mget_vector_set_destructor(resp->cookies, (void(*)(void *))mget_cookie_free);
 					}
 					mget_vector_add(resp->cookies, &cookie, sizeof(cookie));
 				}

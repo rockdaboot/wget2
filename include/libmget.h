@@ -189,11 +189,12 @@ MGET_BEGIN_DECLS
 #define MGET_DNS_CACHING  1009
 #define MGET_COOKIE_SUFFIXES 1010
 #define MGET_COOKIES_ENABLED 1011
-#define MGET_COOKIE_STORE 1012
-#define MGET_COOKIE_KEEPSESSIONCOOKIES 1013
-#define MGET_BIND_ADDRESS 1014
-#define MGET_NET_FAMILY_EXCLUSIVE 1015
-#define MGET_NET_FAMILY_PREFERRED 1016
+#define MGET_COOKIE_FILE 1012
+#define MGET_COOKIE_DB 1013
+#define MGET_COOKIE_KEEPSESSIONCOOKIES 1014
+#define MGET_BIND_ADDRESS 1015
+#define MGET_NET_FAMILY_EXCLUSIVE 1016
+#define MGET_NET_FAMILY_PREFERRED 1017
 
 #define MGET_HTTP_URL          2000
 #define MGET_HTTP_URL_ENCODING 2001
@@ -805,6 +806,17 @@ char *
  * Cookie routines
  */
 
+// typedef and structure for cookie database
+typedef struct mget_cookie_db_st {
+	mget_vector_t *
+		cookies;
+	mget_thread_mutex_t
+		mutex;
+} mget_cookie_db_t;
+
+// structure for cookie store
+//typedef struct mget_cookie_db_st mget_cookie_db_t;
+
 typedef struct mget_cookie_st {
 	const char *
 		name;
@@ -836,32 +848,38 @@ typedef struct mget_cookie_st {
 		http_only : 1; // just use the cookie via HTTP/HTTPS protocol
 } mget_cookie_t;
 
+mget_cookie_t *
+	mget_cookie_init(mget_cookie_t *cookie);
 void
-	mget_cookie_init_cookie(mget_cookie_t *cookie) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_deinit(mget_cookie_t *cookie);
 void
-	mget_cookie_free_cookies(void);
+	mget_cookie_free(mget_cookie_t **cookie);
 void
 	mget_cookie_normalize_cookies(const mget_iri_t *iri, const mget_vector_t *cookies) G_GNUC_MGET_NONNULL((1));
 void
-	mget_cookie_store_cookie(mget_cookie_t *cookie) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie) G_GNUC_MGET_NONNULL_ALL;
 void
-	mget_cookie_store_cookies(mget_vector_t *cookies) G_GNUC_MGET_NONNULL((1));
+	mget_cookie_store_cookies(mget_cookie_db_t *cookie_db, mget_vector_t *cookies) G_GNUC_MGET_NONNULL((1));
 void
 	mget_cookie_free_public_suffixes(void);
-void
-	mget_cookie_free_cookie(mget_cookie_t *cookie) G_GNUC_MGET_NONNULL_ALL;
 int
 	mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *cookie) G_GNUC_MGET_NONNULL((2));
+mget_cookie_db_t *
+	mget_cookie_db_init(mget_cookie_db_t *cookie_db);
+void
+	mget_cookie_db_deinit(mget_cookie_db_t *cookie_db);
+void
+	mget_cookie_db_free(mget_cookie_db_t **cookie_db);
 int
-	mget_cookie_save(const char *fname, int keep_session_cookies) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_db_save(mget_cookie_db_t *cookie_db, const char *fname, int keep_session_cookies);
 int
-	mget_cookie_load(const char *fname, int keep_session_cookies) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_db_load(mget_cookie_db_t *cookie_db, const char *fname, int keep_session_cookies);
 int
 	mget_cookie_load_public_suffixes(const char *fname) G_GNUC_MGET_NONNULL_ALL;
 int
 	mget_cookie_suffix_match(const char *domain) G_GNUC_MGET_NONNULL_ALL;
 char *
-	mget_cookie_create_request_header(const mget_iri_t *iri) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_create_request_header(mget_cookie_db_t *cookie_db, const mget_iri_t *iri) G_GNUC_MGET_NONNULL_ALL;
 
 /*
  * HTTP Strict Transport Security (HSTS) routines

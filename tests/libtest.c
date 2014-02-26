@@ -233,6 +233,46 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 	return NULL;
 }
 
+// To reduce the verbosity of 'valgrind --trace-children=yes' output,
+//   we avoid system("rm -rf ...") calls.
+static void _remove_directory(const char *dirname);
+static void _empty_directory(const char *dirname)
+{
+	DIR *dir;
+	struct dirent *dp;
+	struct stat st;
+	size_t dirlen = strlen(dirname);
+
+	if ((dir = opendir(dirname))) {
+		while ((dp = readdir(dir))) {
+			if (*dp->d_name == '.' && (dp->d_name[1] == 0 || (dp->d_name[1] == '.' && dp->d_name[2] == 0)))
+				continue;
+
+			char fname[dirlen + 1 + strlen(dp->d_name) + 1];
+			snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
+
+			if (stat(fname, &st) == 0) {
+				if (S_ISDIR(st.st_mode)) {
+					_remove_directory(fname);
+				} else {
+					if (unlink(fname) == -1)
+						mget_error_printf(_("Failed to unlink %s\n"), fname);
+				}
+			}
+		}
+
+		closedir(dir);
+	} else
+		mget_error_printf(_("Failed to opendir %s\n"), dirname);
+}
+
+static void _remove_directory(const char *dirname)
+{
+	_empty_directory(dirname);
+	if (rmdir(dirname) == -1)
+		mget_error_printf(_("Failed to rmdir %s\n"), dirname);
+}
+
 void mget_test_stop_http_server(void)
 {
 	size_t it;
@@ -250,13 +290,8 @@ void mget_test_stop_http_server(void)
 	if (chdir("..") != 0)
 		mget_error_printf(_("Failed to chdir ..\n"));
 
-	if (!keep_tmpfiles) {
-		char cmd[128];
-
-		snprintf(cmd, sizeof(cmd), "rm -rf %s", tmpdir);
-		if (system(cmd) != 0)
-			mget_error_printf(_("Failed to remove tmpdir %s\n"), tmpdir);
-	}
+	if (!keep_tmpfiles)
+		_remove_directory(tmpdir);
 
 	// free resources - needed for valgrind testing
 	pthread_kill(server_tid, SIGTERM);
@@ -474,9 +509,8 @@ void mget_test(int first_key, ...)
 	}
 
 	// clean directory
-	mget_buffer_printf2(cmd, "rm -rf ../%s/*", tmpdir);
-	if (system(cmd->data) != 0)
-		mget_error_printf_exit(_("Failed to wipe tmpdir %s\n"), tmpdir);
+	mget_buffer_printf2(cmd, "../%s", tmpdir);
+	_empty_directory(cmd->data);
 
 	// create files
 	if (existing_files) {

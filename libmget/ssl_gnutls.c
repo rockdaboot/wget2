@@ -499,7 +499,7 @@ void mget_ssl_init(void)
 							char fname[dirlen + 1 + len + 1];
 
 							snprintf(fname, sizeof(fname), "%s/%s", _config.ca_directory, dp->d_name);
-							if (!stat(fname, &st) && S_ISREG(st.st_mode)) {
+							if (stat(fname, &st) == 0 && S_ISREG(st.st_mode)) {
 								int rc;
 
 								debug_printf("GnuTLS loading %s\n", fname);
@@ -513,7 +513,7 @@ void mget_ssl_init(void)
 
 					closedir(dir);
 				} else {
-					error_printf(_("Failed to diropen %s\n"), _config.ca_directory);
+					error_printf(_("Failed to opendir %s\n"), _config.ca_directory);
 				}
 			}
 

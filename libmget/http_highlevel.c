@@ -41,6 +41,7 @@ mget_http_response_t *mget_http_get(int first_key, ...)
 	mget_http_request_t *req;
 	mget_http_response_t *resp = NULL;
 	mget_vector_t *challenges = NULL;
+	mget_cookie_db_t *cookie_db = NULL;
 	FILE *saveas_stream = NULL;
 	int(*saveas_callback)(void *, const char *, size_t) = NULL;
 	int saveas_fd = -1;
@@ -117,6 +118,9 @@ mget_http_response_t *mget_http_get(int first_key, ...)
 		goto out;
 	}
 
+	if (bits.cookies_enabled)
+		cookie_db = (mget_cookie_db_t *)mget_global_get_ptr(MGET_COOKIE_DB);
+
 	while (uri && redirection_level <= max_redirections) {
 		// create a HTTP/1.1 GET request.
 		// the only default header is 'Host: domain' (taken from uri)
@@ -139,9 +143,9 @@ mget_http_response_t *mget_http_get(int first_key, ...)
 		// http_add_header_line(req, "Connection: keep-alive\r\n");
 
 		// enrich the HTTP request with the uri-related cookies we have
-		if (bits.cookies_enabled) {
+		if (cookie_db) {
 			const char *cookie_string;
-			if ((cookie_string = mget_cookie_create_request_header(uri))) {
+			if ((cookie_string = mget_cookie_create_request_header(cookie_db, uri))) {
 				mget_http_add_header(req, "Cookie", cookie_string);
 				xfree(cookie_string);
 			}
@@ -185,12 +189,12 @@ mget_http_response_t *mget_http_get(int first_key, ...)
 		if (!resp->keep_alive)
 			mget_http_close(&conn);
 
-		if (bits.cookies_enabled) {
+		if (cookie_db) {
 			// check and normalization of received cookies
 			mget_cookie_normalize_cookies(uri, resp->cookies);
 
 			// put cookies into cookie-store (also known as cookie-jar)
-			mget_cookie_store_cookies(resp->cookies);
+			mget_cookie_store_cookies(cookie_db, resp->cookies);
 		}
 
 		if (resp->code == 401 && !challenges) { // Unauthorized

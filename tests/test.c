@@ -953,7 +953,7 @@ static void test_cookies(void)
 		ok++;
 
 next:
-		mget_cookie_free_cookie(&cookie);
+		mget_cookie_deinit(&cookie);
 		mget_iri_free(&iri);
 	}
 }
@@ -1272,7 +1272,6 @@ int main(int argc, const char * const *argv)
 
 	test_cookies();
 	mget_cookie_free_public_suffixes();
-	mget_cookie_free_cookies();
 
 	test_hsts();
 

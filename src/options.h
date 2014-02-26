@@ -96,6 +96,8 @@ struct config {
 		read_timeout, // ms
 		max_redirect,
 		num_threads;
+	struct mget_cookie_db_st
+		cookie_db;
 	char
 		hsts, // if HSTS (HTTP Strict Transport Security) is enabled or not
 		load_hsts, // on startup, load HSTS entries from hsts_file
