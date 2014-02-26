@@ -131,7 +131,7 @@ static void _html_get_url(void *context, int flags, const char *dir, const char 
 
 					memcpy(value, val, len);
 					value[len] = 0;
-					http_parse_content_type(value, NULL, &res->encoding);
+					mget_http_parse_content_type(value, NULL, &res->encoding);
 				}
 			}
 			else if (!ctx->found_content_type && !res->encoding) {

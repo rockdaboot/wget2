@@ -142,6 +142,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"                          Example: mget --chunk-size=1M\n"
 		"      --local-encoding    Character encoding of environment and filenames.\n"
 		"      --remote-encoding   Character encoding of remote files (if not specified in Content-Type HTTP header or in document itself)\n"
+		"  -t   --tries            Number of tries for each download. (default 20)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -177,6 +178,10 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --random-file       File to be used as source of random data.\n"
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
 		"      --https-only        Do not follow non-secure URLs. (default: off)"
+		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)"
+		"      --hsts-file         Set file for HSTS saving/loading. (default: .mget_hsts)\n"
+		"      --load-hsts         Load entries from HSTS file.\n"
+		"      --save-hsts         Save entries into HSTS file.\n"
 		"\n");
 	puts(
 		"Directory options:\n"
@@ -252,7 +257,7 @@ static int parse_string(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv
 
 static int parse_stringset(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
-	MGET_STRINGMAP *map = *((MGET_STRINGMAP **)opt->var);
+	mget_stringmap_t *map = *((mget_stringmap_t **)opt->var);
 
 	if (val) {
 		const char *s, *p;
@@ -437,7 +442,11 @@ struct config config = {
 	.level = 5,
 	.parent = 1,
 	.robots = 1,
-	.tries = 20
+	.tries = 20,
+	.hsts = 1,
+	.hsts_file = ".mget_hsts",
+//	.load_hsts = 1,
+//	.save_hsts = 1
 };
 
 static int parse_execute(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val);
@@ -483,6 +492,8 @@ static const struct option options[] = {
 	{ "force-sitemap", &config.force_sitemap, parse_bool, 0, 0 },
 	{ "help", NULL, print_help, 0, 'h' },
 	{ "host-directories", &config.host_directories, parse_bool, 0, 0 },
+	{ "hsts", &config.hsts, parse_bool, 0, 0 },
+	{ "hsts-file", &config.hsts_file, parse_string, 1, 0 },
 	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0 }, // obsolete, replaced by --adjust-extension
 	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0 },
 	{ "http-password", &config.http_password, parse_string, 1, 0 },
@@ -498,6 +509,7 @@ static const struct option options[] = {
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0 },
 	{ "level", &config.level, parse_integer, 1, 'l' },
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0 },
+	{ "load-hsts", &config.load_hsts, parse_bool, 0, 0 },
 	{ "local-encoding", &config.local_encoding, parse_string, 1, 0 },
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0 },
 	{ "n", NULL, parse_n_option, 1, 'n' }, // special Wget compatibility option
@@ -523,6 +535,7 @@ static const struct option options[] = {
 	{ "robots", &config.robots, parse_bool, 0, 0 },
 	{ "save-cookies", &config.save_cookies, parse_string, 1, 0 },
 	{ "save-headers", &config.save_headers, parse_bool, 0, 0 },
+	{ "save-hsts", &config.save_hsts, parse_bool, 0, 0 },
 	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0 },
 	{ "server-response", &config.server_response, parse_bool, 0, 'S' },
 	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H' },
@@ -530,6 +543,7 @@ static const struct option options[] = {
 	{ "strict-comments", &config.strict_comments, parse_bool, 0, 0 },
 	{ "timeout", NULL, parse_timeout, 1, 'T' },
 	{ "timestamping", &config.timestamping, parse_bool, 0, 'N' },
+	{ "tries", &config.tries, parse_integer, 1, 't' },
 	{ "trust-server-names", &config.trust_server_names, parse_bool, 0, 0 },
 	{ "use-server-timestamp", &config.use_server_timestamps, parse_bool, 0, 0 },
 	{ "user", &config.username, parse_string, 1, 0 },
@@ -939,6 +953,7 @@ int init(int argc, const char *const *argv)
 	config.http_proxy = mget_strdup(getenv("http_proxy"));
 	config.https_proxy = mget_strdup(getenv("https_proxy"));
 	config.default_page = strdup(config.default_page);
+	config.hsts_file = strdup(config.hsts_file);
 	config.domains = mget_stringmap_create(16);
 	config.exclude_domains = mget_stringmap_create(16);
 
@@ -1087,16 +1102,24 @@ int init(int argc, const char *const *argv)
 	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
 	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
 
-	http_set_http_proxy(config.http_proxy, config.local_encoding);
-	http_set_https_proxy(config.https_proxy, config.local_encoding);
+	mget_http_set_http_proxy(config.http_proxy, config.local_encoding);
+	mget_http_set_https_proxy(config.https_proxy, config.local_encoding);
 	xfree(config.http_proxy);
 	xfree(config.https_proxy);
 
-	if (config.cookies && config.cookie_suffixes)
-		mget_cookie_load_public_suffixes(config.cookie_suffixes);
+	if (config.cookies) {
+		mget_cookie_db_init(&config.cookie_db);
+		if (config.cookie_suffixes)
+			mget_cookie_load_public_suffixes(config.cookie_suffixes);
+		if (config.load_cookies)
+			mget_cookie_db_load(&config.cookie_db, config.load_cookies, config.keep_session_cookies);
+	}
 
-	if (config.load_cookies)
-		mget_cookie_load(config.load_cookies, config.keep_session_cookies);
+	if (config.hsts) {
+		config.hsts_db = mget_hsts_db_init(NULL);
+		if (config.load_hsts)
+			mget_hsts_db_load(config.hsts_db, config.hsts_file);
+	}
 
 	if (config.base_url)
 		config.base = mget_iri_parse(config.base_url, config.local_encoding);
@@ -1126,13 +1149,13 @@ int init(int argc, const char *const *argv)
 	mget_ssl_set_config_int(MGET_SSL_CHECK_CERTIFICATE, config.check_certificate);
 	mget_ssl_set_config_int(MGET_SSL_CHECK_HOSTNAME, config.check_hostname);
 	mget_ssl_set_config_int(MGET_SSL_CERT_TYPE, config.cert_type);
-	mget_ssl_set_config_int(MGET_SSL_PRIVATE_KEY_TYPE, config.private_key_type);
+	mget_ssl_set_config_int(MGET_SSL_KEY_TYPE, config.private_key_type);
 	mget_ssl_set_config_int(MGET_SSL_PRINT_INFO, config.debug);
 	mget_ssl_set_config_string(MGET_SSL_SECURE_PROTOCOL, config.secure_protocol);
 	mget_ssl_set_config_string(MGET_SSL_CA_DIRECTORY, config.ca_directory);
-	mget_ssl_set_config_string(MGET_SSL_CA_CERT, config.ca_cert);
+	mget_ssl_set_config_string(MGET_SSL_CA_FILE, config.ca_cert);
 	mget_ssl_set_config_string(MGET_SSL_CERT_FILE, config.cert_file);
-	mget_ssl_set_config_string(MGET_SSL_PRIVATE_KEY, config.private_key);
+	mget_ssl_set_config_string(MGET_SSL_KEY_FILE, config.private_key);
 
 	return n;
 }
@@ -1148,6 +1171,7 @@ void deinit(void)
 	xfree(config.cookie_suffixes);
 	xfree(config.load_cookies);
 	xfree(config.save_cookies);
+	xfree(config.hsts_file);
 	xfree(config.logfile);
 	xfree(config.logfile_append);
 	xfree(config.user_agent);
@@ -1175,8 +1199,8 @@ void deinit(void)
 	mget_stringmap_free(&config.domains);
 	mget_stringmap_free(&config.exclude_domains);
 
-	http_set_http_proxy(NULL, NULL);
-	http_set_https_proxy(NULL, NULL);
+	mget_http_set_http_proxy(NULL, NULL);
+	mget_http_set_https_proxy(NULL, NULL);
 }
 
 // self test some functions, called by using --self-test

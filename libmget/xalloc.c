@@ -49,30 +49,30 @@
  * You can provide a out-of-memory function that will be called before exit(),
  * e.g. to print out a "No memory" message.
  *
- * To work around this behavior, either provide your own allocation routines,
+ * To work around this behavior, provide your own allocation routines,
  * namely malloc(), calloc(), realloc().
  */
 
 static void
-	(*_oom_func)(void);
+	(*_oom_callback)(void);
 
 static inline void G_GNUC_MGET_NORETURN _no_memory(void)
 {
-	if (_oom_func)
-		_oom_func();
+	if (_oom_callback)
+		_oom_callback();
 
 	exit(EXIT_FAILURE);
 }
 
 /**
  * mget_set_oomfunc:
- * @oom_func: Pointer to your custom out-of-memory function.
+ * @oom_callback: Pointer to your custom out-of-memory function.
  *
  * Set a custom out-of-memory function.
  */
-void mget_set_oomfunc(void (*oom_func)(void))
+void mget_set_oomfunc(void (*oom_callback)(void))
 {
-	_oom_func = oom_func;
+	_oom_callback = oom_callback;
 }
 
 /**
@@ -80,6 +80,8 @@ void mget_set_oomfunc(void (*oom_func)(void))
  * @size: Number of bytes to allocate.
  *
  * Like the standard malloc(), except that it doesn't return %NULL values.
+ * If an out-of-memory condition occurs the oom callback function is called (if set).
+ * Thereafter the application is terminated by exit(%EXIT_FAILURE);
  *
  * Return: A pointer to the allocated (uninitialized) memory.
  */
@@ -97,6 +99,8 @@ void *mget_malloc(size_t size)
  * @size: Size of element.
  *
  * Like the standard calloc(), except that it doesn't return %NULL values.
+ * If an out-of-memory condition occurs the oom callback function is called (if set).
+ * Thereafter the application is terminated by exit(%EXIT_FAILURE);
  *
  * Return: A pointer to the allocated (initialized) memory.
  */
@@ -114,6 +118,8 @@ void *mget_calloc(size_t nmemb, size_t size)
  * @size: Number of bytes to allocate for the new memory area.
  *
  * Like the standard realloc(), except that it doesn't return %NULL values.
+ * If an out-of-memory condition occurs the oom callback function is called (if set).
+ * Thereafter the application is terminated by exit(%EXIT_FAILURE);
  *
  * Return: A pointer to the new memory area.
  */

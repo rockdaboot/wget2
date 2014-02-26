@@ -34,8 +34,10 @@
 #include "private.h"
 
 static struct _CONFIG {
-	const char *
-		cookie_store;
+	char *
+		cookie_file;
+	struct mget_cookie_db_st
+		cookie_db;
 	char
 		cookies_enabled,
 		keep_session_cookies;
@@ -98,10 +100,10 @@ void mget_global_init(int first_key, ...)
 		case MGET_COOKIES_ENABLED:
 			_config.cookies_enabled = va_arg(args, int);
 			break;
-		case MGET_COOKIE_STORE:
+		case MGET_COOKIE_FILE:
 			// load cookie-store
 			_config.cookies_enabled = 1;
-			_config.cookie_store = va_arg(args, const char *);
+			_config.cookie_file = va_arg(args, char *);
 			break;
 		case MGET_COOKIE_KEEPSESSIONCOOKIES:
 			_config.keep_session_cookies = va_arg(args, int);
@@ -123,8 +125,10 @@ void mget_global_init(int first_key, ...)
 	}
 	va_end(args);
 
-	if (_config.cookies_enabled && _config.cookie_store)
-		mget_cookie_load(_config.cookie_store, _config.keep_session_cookies);
+	if (_config.cookies_enabled && _config.cookie_file) {
+		mget_cookie_db_init(&_config.cookie_db);
+		mget_cookie_db_load(&_config.cookie_db, _config.cookie_file, _config.keep_session_cookies);
+	}
 
 	mget_thread_mutex_unlock(&_mutex);
 }
@@ -136,9 +140,10 @@ void mget_global_deinit(void)
 	if (_init == 1) {
 		// free resources here
 		mget_cookie_free_public_suffixes();
-		if (_config.cookies_enabled && _config.cookie_store)
-			mget_cookie_save(_config.cookie_store, _config.keep_session_cookies);
-		mget_cookie_free_cookies();
+		if (_config.cookies_enabled && _config.cookie_file) {
+			mget_cookie_db_save(&_config.cookie_db, _config.cookie_file, _config.keep_session_cookies);
+			mget_cookie_db_deinit(&_config.cookie_db);
+		}
 		mget_tcp_set_bind_address(NULL, NULL);
 		mget_tcp_set_dns_caching(NULL, 0);
 		mget_dns_cache_free();
@@ -192,8 +197,11 @@ const void *mget_global_get_ptr(int key)
 //	case MGET_COOKIE_SUFFIXES:
 //		mget_cookie_load_public_suffixes(va_arg(args, const char *));
 //		break;
-	case MGET_COOKIE_STORE:
-		return _config.cookie_store;
+	case MGET_COOKIE_FILE:
+		return _config.cookie_file;
+		break;
+	case MGET_COOKIE_DB:
+		return &_config.cookie_db;
 		break;
 	default:
 		mget_error_printf(_("%s: Unknown option %d"), __func__, key);

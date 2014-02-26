@@ -37,9 +37,10 @@
 
 int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED)
 {
-	MGET_IRI *uri;
-	MGET_HTTP_CONNECTION *conn = NULL;
-	MGET_HTTP_REQUEST *req;
+	mget_iri_t *uri;
+	mget_http_connection_t *conn = NULL;
+	mget_http_request_t *req;
+	mget_cookie_db_t cookies;
 
 /*
  * todo: create a libmget init function like this:
@@ -71,15 +72,15 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 
 	// 2. create a HTTP/1.1 GET request.
 	//    the only default header is 'Host: www.example.com' (taken from uri)
-	req = http_create_request(uri, "GET");
+	req = mget_http_create_request(uri, "GET");
 
 	// 3. add HTTP headers as you wish
-	http_add_header(req, "User-Agent", "TheUserAgent/0.5");
+	mget_http_add_header(req, "User-Agent", "TheUserAgent/0.5");
 
 	// libmget also supports gzip'ed or deflated response bodies
-	http_add_header_line(req, "Accept-Encoding: gzip, deflate\r\n");
-	http_add_header_line(req, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
-	http_add_header_line(req, "Accept-Language: en-us,en;q=0.5\r\n");
+	mget_http_add_header_line(req, "Accept-Encoding: gzip, deflate\r\n");
+	mget_http_add_header_line(req, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
+	mget_http_add_header_line(req, "Accept-Language: en-us,en;q=0.5\r\n");
 
 	// use keep-alive if you want to send more requests on the same connection
 	// http_add_header_line(req, "Connection: keep-alive\r\n");
@@ -90,15 +91,18 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 	int keep_session_cookies = 1;
 	const char *cookie_string;
 
+	// init cookie database
+	mget_cookie_db_init(&cookies);
+
 	// load public suffixes for cookie validation
 	mget_cookie_load_public_suffixes("public_suffixes.txt");
 
 	// load cookie-store
-	mget_cookie_load("cookies.txt", keep_session_cookies);
+	mget_cookie_db_load(&cookies, "cookies.txt", keep_session_cookies);
 
 	// enrich the HTTP request with the uri-related cookies we have
-	if ((cookie_string = mget_cookie_create_request_header(uri))) {
-		http_add_header(req, "Cookie", cookie_string);
+	if ((cookie_string = mget_cookie_create_request_header(&cookies, uri))) {
+		mget_http_add_header(req, "Cookie", cookie_string);
 		free((void *)cookie_string);
 	}
 #endif
@@ -106,35 +110,35 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 	// 4. establish connection to the host/port given by uri
 	// well, we could have done this directly after mget_iri_parse(), since
 	// http_open() works semi-async and returns immediately after domain name lookup.
-	conn = http_open(uri);
+	conn = mget_http_open(uri);
 
-	MGET_HTTP_RESPONSE *resp;
+	mget_http_response_t *resp;
 	if (conn) {
-		if (http_send_request(conn, req) == 0) {
-			resp = http_get_response(conn, NULL, req, MGET_HTTP_RESPONSE_KEEPHEADER);
+		if (mget_http_send_request(conn, req) == 0) {
+			resp = mget_http_get_response(conn, NULL, req, MGET_HTTP_RESPONSE_KEEPHEADER);
 
 			if (!resp)
 				goto out;
 
 			// server doesn't support or want keep-alive
 			if (!resp->keep_alive)
-				http_close(&conn);
+				mget_http_close(&conn);
 
 #ifdef COOKIE_SUPPORT
 			// check and normalization of received cookies
 			mget_cookie_normalize_cookies(uri, resp->cookies);
 
 			// put cookies into cookie-store (also known as cookie-jar)
-			mget_cookie_store_cookies(resp->cookies);
+			mget_cookie_store_cookies(&cookies, resp->cookies);
 
 			// save cookie-store to file
-			mget_cookie_save("cookies.txt", keep_session_cookies);
+			mget_cookie_db_save(&cookies, "cookies.txt", keep_session_cookies);
 #endif
 
 			// let's assume the body isn't binary (doesn't contain \0)
 			mget_info_printf("%s%s\n", resp->header->data, resp->body->data);
 
-			http_free_response(&resp);
+			mget_http_free_response(&resp);
 		}
 	}
 
@@ -153,10 +157,10 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 out:
 #ifdef COOKIE_SUPPORT
 	mget_cookie_free_public_suffixes();
-	mget_cookie_free_cookies();
+	mget_cookie_db_deinit(&cookies);
 #endif
-	http_close(&conn);
-	http_free_request(&req);
+	mget_http_close(&conn);
+	mget_http_free_request(&req);
 	mget_iri_free(&uri);
 
 	return 0;

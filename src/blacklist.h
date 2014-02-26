@@ -30,9 +30,9 @@
 #include <libmget.h>
 
 int
-	in_blacklist(MGET_IRI *iri) G_GNUC_MGET_NONNULL_ALL;
-MGET_IRI
-	*blacklist_add(MGET_IRI *iri);
+	in_blacklist(mget_iri_t *iri) G_GNUC_MGET_NONNULL_ALL;
+mget_iri_t
+	*blacklist_add(mget_iri_t *iri);
 void
 	blacklist_print(void),
 	blacklist_free(void);

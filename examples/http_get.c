@@ -35,8 +35,8 @@
 
 int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED)
 {
-	MGET_HTTP_CONNECTION *conn = NULL;
-	MGET_HTTP_RESPONSE *resp;
+	mget_http_connection_t *conn = NULL;
+	mget_http_response_t *resp;
 
 	// set up libmget global configuration
 	mget_global_init(
@@ -46,7 +46,7 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 		MGET_DNS_CACHING, 1,
 		MGET_COOKIES_ENABLED, 1,
 		MGET_COOKIE_SUFFIXES, "public_suffixes.txt",
-		MGET_COOKIE_STORE, "cookies.txt",
+		MGET_COOKIE_FILE, "cookies.txt",
 		MGET_COOKIE_KEEPSESSIONCOOKIES, 1,
 		// MGET_BIND_ADDRESS, "127.0.0.1:6666",
 		// MGET_NET_FAMILY_EXCLUSIVE, MGET_NET_FAMILY_IPV4, // or MGET_NET_FAMILY_IPV6 or MGET_NET_FAMILY_ANY
@@ -74,11 +74,11 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 		printf("%s%s\n", resp->header->data, resp->body->data);
 
 		// free the response
-		http_free_response(&resp);
+		mget_http_free_response(&resp);
 	}
 
 	// close connection if still open
-	http_close(&conn);
+	mget_http_close(&conn);
 
 	// free resources - needed for valgrind testing
 	mget_global_deinit();

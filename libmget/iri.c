@@ -44,7 +44,7 @@ static size_t
 	default_page_length = 10;
 
 const char
-	* const iri_schemes[] = { "http", "https", NULL },
+	* const mget_iri_schemes[] = { "http", "https", NULL },
 	* const iri_ports[]   = { "80",   "443" };
 
 #define IRI_CTYPE_GENDELIM (1<<0)
@@ -85,12 +85,12 @@ static const unsigned char
 		['~'] = IRI_CTYPE_UNRESERVED
 	};
 
-int mget_iri_supported(const MGET_IRI *iri)
+int mget_iri_supported(const mget_iri_t *iri)
 {
 	int it;
 
-	for (it = 0; iri_schemes[it]; it++) {
-		if (iri_schemes[it] == iri->scheme)
+	for (it = 0; mget_iri_schemes[it]; it++) {
+		if (mget_iri_schemes[it] == iri->scheme)
 			return 1;
 	}
 
@@ -125,7 +125,7 @@ int mget_iri_isunreserved_path(char c)
 }
 
 // needed as helper for blacklist.c/blacklist_free()
-void mget_iri_free_content(MGET_IRI *iri)
+void mget_iri_free_content(mget_iri_t *iri)
 {
 	if (iri) {
 		if (iri->host_allocated)
@@ -134,7 +134,7 @@ void mget_iri_free_content(MGET_IRI *iri)
 	}
 }
 
-void mget_iri_free(MGET_IRI **iri)
+void mget_iri_free(mget_iri_t **iri)
 {
 	if (iri && *iri) {
 		mget_iri_free_content(*iri);
@@ -142,39 +142,11 @@ void mget_iri_free(MGET_IRI **iri)
 	}
 }
 
-static unsigned char G_GNUC_MGET_CONST _unhex(unsigned char c)
-{
-	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
-}
-
-// return 1: unescape occurred, string changed
-static int _unescape(unsigned char *src)
-{
-	int ret = 0;
-	unsigned char *dst = src;
-
-	while (*src) {
-		if (*src == '%') {
-			if (isxdigit(src[1]) && isxdigit(src[2])) {
-				*dst++ = (_unhex(src[1]) << 4) | _unhex(src[2]);
-				src += 3;
-				ret = 1;
-				continue;
-			}
-		}
-
-		*dst++ = *src++;
-	}
-	*dst = 0;
-
-	return ret;
-}
-
 // URIs are assumed to be unescaped at this point
 
-MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
+mget_iri_t *mget_iri_parse(const char *url, const char *encoding)
 {
-	MGET_IRI *iri;
+	mget_iri_t *iri;
 	const char *default_port = NULL;
 	char *p, *s, *authority, c;
 	size_t slen, it;
@@ -195,7 +167,7 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 	if (strchr(url, '%')) {
 		char *unesc_url = strdup(url);
 
-		_unescape((unsigned char *)unesc_url);
+		mget_percent_unescape((unsigned char *)unesc_url);
 
 		if (mget_str_needs_encoding(unesc_url)) {
 			if ((url = mget_str_to_utf8(unesc_url, encoding)))
@@ -219,11 +191,11 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 
 	// just use one block of memory for all parsed URI parts
 	slen = strlen(url);
-	iri = xmalloc(sizeof(MGET_IRI) + slen * 2 + 2);
-	memset(iri, 0, sizeof(MGET_IRI));
-	strcpy(((char *)iri) + sizeof(MGET_IRI), url);
-	iri->uri = ((char *)iri) + sizeof(MGET_IRI);
-	s = ((char *)iri) + sizeof(MGET_IRI) + slen + 1;
+	iri = xmalloc(sizeof(mget_iri_t) + slen * 2 + 2);
+	memset(iri, 0, sizeof(mget_iri_t));
+	strcpy(((char *)iri) + sizeof(mget_iri_t), url);
+	iri->uri = ((char *)iri) + sizeof(mget_iri_t);
+	s = ((char *)iri) + sizeof(mget_iri_t) + slen + 1;
 	strcpy(s, url);
 	if (url_allocated)
 		xfree(url);
@@ -239,9 +211,9 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 		// find the scheme in our static list of supported schemes
 		// for later comparisons we compare pointers (avoiding strcasecmp())
 		iri->scheme = p;
-		for (it = 0; iri_schemes[it]; it++) {
-			if (!strcasecmp(iri_schemes[it], p)) {
-				iri->scheme = iri_schemes[it];
+		for (it = 0; mget_iri_schemes[it]; it++) {
+			if (!strcasecmp(mget_iri_schemes[it], p)) {
+				iri->scheme = mget_iri_schemes[it];
 				default_port = iri_ports[it];
 				break;
 			}
@@ -255,7 +227,7 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 		}
 
 	} else {
-		iri->scheme = IRI_SCHEME_DEFAULT;
+		iri->scheme = MGET_IRI_SCHEME_DEFAULT;
 		default_port = iri_ports[0]; // port 80
 		s = p; // rewind
 	}
@@ -344,7 +316,7 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 		}
 	}
 	else {
-		if (iri->scheme == IRI_SCHEME_HTTP || iri->scheme == IRI_SCHEME_HTTPS) {
+		if (iri->scheme == MGET_IRI_SCHEME_HTTP || iri->scheme == MGET_IRI_SCHEME_HTTPS) {
 			error_printf(_("Missing host/domain in URI '%s'\n"), iri->uri);
 			mget_iri_free(&iri);
 			return NULL;
@@ -362,7 +334,7 @@ MGET_IRI *mget_iri_parse(const char *url, const char *encoding)
 	return iri;
 }
 
-static char *_iri_build_connection_part(MGET_IRI *iri)
+static char *_iri_build_connection_part(mget_iri_t *iri)
 {
 	char *tag;
 	size_t len;
@@ -382,7 +354,7 @@ static char *_iri_build_connection_part(MGET_IRI *iri)
 	return tag;
 }
 
-const char *mget_iri_get_connection_part(MGET_IRI *iri)
+const char *mget_iri_get_connection_part(mget_iri_t *iri)
 {
 	if (iri) {
 		if (!iri->connection_part)
@@ -469,7 +441,7 @@ static size_t G_GNUC_MGET_NONNULL_ALL _normalize_path(char *path)
 // create an absolute URI from a base + relative URI
 
 //char *iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_t len, char *dst, size_t dst_size)
-const char *mget_iri_relative_to_abs(MGET_IRI *base, const char *val, size_t len, mget_buffer_t *buf)
+const char *mget_iri_relative_to_abs(mget_iri_t *base, const char *val, size_t len, mget_buffer_t *buf)
 {
 	debug_printf("*url = %.*s\n", (int)len, val);
 
@@ -538,9 +510,9 @@ const char *mget_iri_relative_to_abs(MGET_IRI *base, const char *val, size_t len
 	return buf->data;
 }
 
-MGET_IRI *mget_iri_parse_base(MGET_IRI *base, const char *url, const char *encoding)
+mget_iri_t *mget_iri_parse_base(mget_iri_t *base, const char *url, const char *encoding)
 {
-	MGET_IRI *iri;
+	mget_iri_t *iri;
 
 	if (base) {
 		mget_buffer_t buf;
@@ -558,7 +530,7 @@ MGET_IRI *mget_iri_parse_base(MGET_IRI *base, const char *url, const char *encod
 }
 
 // RFC conform comparison as described in http://tools.ietf.org/html/rfc2616#section-3.2.3
-int mget_iri_compare(MGET_IRI *iri1, MGET_IRI *iri2)
+int mget_iri_compare(mget_iri_t *iri1, mget_iri_t *iri2)
 {
 	int n;
 
@@ -659,12 +631,12 @@ const char *mget_iri_escape_query(const char *src, mget_buffer_t *buf)
 	return buf->data;
 }
 
-const char *mget_iri_get_escaped_host(const MGET_IRI *iri, mget_buffer_t *buf)
+const char *mget_iri_get_escaped_host(const mget_iri_t *iri, mget_buffer_t *buf)
 {
 	return mget_iri_escape(iri->host, buf);
 }
 
-const char *mget_iri_get_escaped_resource(const MGET_IRI *iri, mget_buffer_t *buf)
+const char *mget_iri_get_escaped_resource(const mget_iri_t *iri, mget_buffer_t *buf)
 {
 	if (iri->path)
 		mget_iri_escape_path(iri->path, buf);
@@ -682,7 +654,7 @@ const char *mget_iri_get_escaped_resource(const MGET_IRI *iri, mget_buffer_t *bu
 	return buf->data;
 }
 
-char *mget_iri_get_path(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding)
+char *mget_iri_get_path(const mget_iri_t *iri, mget_buffer_t *buf, const char *encoding)
 {
 	if (buf->length)
 		mget_buffer_memcat(buf, "/", 1);
@@ -705,7 +677,7 @@ char *mget_iri_get_path(const MGET_IRI *iri, mget_buffer_t *buf, const char *enc
 	return buf->data;
 }
 
-char *mget_iri_get_query_as_filename(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding)
+char *mget_iri_get_query_as_filename(const mget_iri_t *iri, mget_buffer_t *buf, const char *encoding)
 {
 	if (iri->query) {
 		const char *query;
@@ -757,7 +729,7 @@ char *mget_iri_get_query_as_filename(const MGET_IRI *iri, mget_buffer_t *buf, co
 	return buf->data;
 }
 
-char *mget_iri_get_filename(const MGET_IRI *iri, mget_buffer_t *buf, const char *encoding)
+char *mget_iri_get_filename(const mget_iri_t *iri, mget_buffer_t *buf, const char *encoding)
 {
 	if (iri->path) {
 		char *fname;

@@ -36,7 +36,7 @@ int main(void)
 	mget_test_url_t urls[]={
 		{	.name = "/urls.txt",
 			.code = "200 Dontcare",
-			.body = "http://localhost:{{port}}/page1.html\nhttp://localhost:{{port}}/page2.html\n",
+			.body = "https://localhost:{{sslport}}/page1.html\nhttps://localhost:{{sslport}}/page2.html\n",
 			.headers = {
 				"Content-Type: text/plain",
 			}
@@ -62,10 +62,10 @@ int main(void)
 		MGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 
-	// test-i
+	// test-i-https with loading CA Certificate
 	mget_test(
-//		MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "-i urls.txt",
+		// MGET_TEST_KEEP_TMPFILES, 1,
+		MGET_TEST_OPTIONS, "--ca-certificate=../" SRCDIR "/certs/x509-ca.pem -i urls.txt",
 		MGET_TEST_REQUEST_URL, NULL,
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
@@ -77,8 +77,39 @@ int main(void)
 			{ urls[2].name + 1, urls[2].body },
 			{	NULL } },
 		0);
+
+	// test-i-https ignoring unknown certificate
+	mget_test(
+		// MGET_TEST_KEEP_TMPFILES, 1,
+		MGET_TEST_OPTIONS, "--no-check-certificate -i urls.txt",
+		MGET_TEST_REQUEST_URL, NULL,
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
+			{	"urls.txt", urls[0].body },
+			{	NULL } },
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[2].name + 1, urls[2].body },
+			{	NULL } },
+		0);
+
+	// test-i-https failing due to unknown certificate
+	mget_test(
+		// MGET_TEST_KEEP_TMPFILES, 1,
+		MGET_TEST_OPTIONS, "--tries=1 -i urls.txt",
+		MGET_TEST_REQUEST_URL, NULL,
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
+			{	"urls.txt", urls[0].body },
+			{	NULL } },
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{	NULL } },
+		0);
+
 /*
-	// test-i-http (expands to -i http://localhost:{{port}}/urls.txt)
+	// test-i-http (expands to -i https://localhost:{{sslport}}/urls.txt)
 	mget_test(
 		MGET_TEST_OPTIONS, "-i",
 		MGET_TEST_REQUEST_URL, "urls.txt",

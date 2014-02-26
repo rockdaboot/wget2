@@ -33,8 +33,9 @@
 #include <libmget.h>
 
 #include "host.h"
+#include "options.h"
 
-static MGET_HASHMAP
+static mget_hashmap_t
 	*hosts;
 static mget_thread_mutex_t
 	hosts_mutex = MGET_THREAD_MUTEX_INITIALIZER;
@@ -43,8 +44,13 @@ static int _host_compare(const HOST *host1, const HOST *host2)
 {
 	int n;
 
-	if (host1->scheme != host2->scheme)
-		return host1->scheme < host2->scheme ? -1 : 1;
+	// If we use SCHEME here, we would eventually download robots.txt twice,
+	//   e.g. for http://example.com and second for https://example.com.
+	// This only makes sense when having the scheme and/or port within the directory name.
+
+	if (config.protocol_directories)
+		if (host1->scheme != host2->scheme)
+			return host1->scheme < host2->scheme ? -1 : 1;
 
 	// host is already lowercase, no need to call strcasecmp()
 	if ((n = strcmp(host1->host, host2->host)))
@@ -58,8 +64,13 @@ static unsigned int _host_hash(const HOST *host)
 	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
 	const unsigned char *p;
 
-	for (p = (unsigned char *)host->scheme; p && *p; p++)
-		hash = hash * 101 + *p;
+	// If we use SCHEME here, we would eventually download robots.txt twice.
+	// e.g. for http://example.com and second for https://example.com
+	// This only makes sense when having the scheme and/or port within the directory name.
+
+	if (config.protocol_directories)
+		for (p = (unsigned char *)host->scheme; p && *p; p++)
+			hash = hash * 101 + *p;
 
 	for (p = (unsigned char *)host->host; p && *p; p++)
 		hash = hash * 101 + *p;
@@ -72,7 +83,7 @@ static void _free_host_entry(HOST *host, G_GNUC_MGET_UNUSED void *dummy)
 	mget_robots_free(&host->robots);
 }
 
-HOST *hosts_add(MGET_IRI *iri)
+HOST *hosts_add(mget_iri_t *iri)
 {
 	mget_thread_mutex_lock(&hosts_mutex);
 
@@ -93,7 +104,7 @@ HOST *hosts_add(MGET_IRI *iri)
 	return hostp;
 }
 
-HOST *hosts_get(MGET_IRI *iri)
+HOST *hosts_get(mget_iri_t *iri)
 {
 	HOST *hostp, host = { .scheme = iri->scheme, .host = iri->host };
 

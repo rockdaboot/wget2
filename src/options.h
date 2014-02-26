@@ -41,7 +41,7 @@
 #define RESTRICT_NAMES_LOWERCASE  1<<6
 
 struct config {
-	MGET_IRI
+	mget_iri_t
 		*base;
 	const char
 		*username,
@@ -62,6 +62,7 @@ struct config {
 		*cookie_suffixes,
 		*load_cookies,
 		*save_cookies,
+		*hsts_file,
 		*logfile,
 		*logfile_append,
 		*user_agent,
@@ -73,9 +74,11 @@ struct config {
 		*private_key,
 		*random_file,
 		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
-	MGET_STRINGMAP
+	mget_stringmap_t
 		*domains,
 		*exclude_domains;
+	mget_hsts_db_t
+		*hsts_db; // in-memory HSTS database
 	size_t
 		chunk_size;
 	long long
@@ -93,7 +96,12 @@ struct config {
 		read_timeout, // ms
 		max_redirect,
 		num_threads;
+	struct mget_cookie_db_st
+		cookie_db;
 	char
+		hsts, // if HSTS (HTTP Strict Transport Security) is enabled or not
+		load_hsts, // on startup, load HSTS entries from hsts_file
+		save_hsts, // on exit, save HSTS entries info hsts_file
 		random_wait,
 		trust_server_names,
 		robots,

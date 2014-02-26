@@ -16,8 +16,10 @@
 
   <chapter>
     <title>LibMget functions</title>
-        <xi:include href="xml/libmget-list.xml"/>
         <xi:include href="xml/libmget-xalloc.xml"/>
+        <xi:include href="xml/libmget-list.xml"/>
+        <xi:include href="xml/libmget-utils.xml"/>
+        <xi:include href="xml/libmget-io.xml"/>
   </chapter>
   <chapter id="object-tree">
     <title>Object Hierarchy</title>
@@ -32,5 +34,7 @@
     <xi:include href="xml/api-index-deprecated.xml"><xi:fallback /></xi:include>
   </index>
 
+<!--
   <xi:include href="xml/annotation-glossary.xml"><xi:fallback /></xi:include>
+-->
 </book>

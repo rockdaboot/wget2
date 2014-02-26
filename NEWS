@@ -1,3 +1,31 @@
+26.02.2014
+  New release v0.1.5
+
+19.02.2014
+  Added support for RFC 6266 Content-Disposition
+
+17.02.2014
+  Fixed a race condition that could lead to sigfaults.
+  Fixed waiting for threads a program exit.
+
+16.02.2014
+  Made HTTPS test work with GnuTLS 2.12.
+  Added option -/t--tries to Mget.
+
+12.02.2014
+  Added HTTPS server code, used in test suite.
+  Added new test test-i-https.
+
+06.02.2014
+  Changed the naming convention of types.
+  Support pkg-config.
+  Fixed generating of man pages.
+  
+01.02.2014
+  Added support for RFC 6797 HTTP Strict Transport Security (HSTS).
+  Do not download robots.txt twice for HTTP and HTTPS if --protocol-directories
+    is not given.
+
 24.01.2014
   New release v0.1.4
   Use libnettle for checksumming if libgnutls is not available or < 2.10.0.
@@ -12,7 +40,7 @@
 
 02.01.2014
   Added support for bzip2 Content-Encoding / Accept-Encoding type.
-    It easy going after having gzip and lzma decompression implemented.
+    It was easy going after having gzip and lzma decompression implemented.
   Created a mailing list for discussions around Mget.
     Subscribe by sending a mail to mget-bugs+subscribe@googlegroups.com.
 

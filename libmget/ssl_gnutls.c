@@ -57,34 +57,38 @@ static struct _config {
 	const char
 		*secure_protocol,
 		*ca_directory,
-		*ca_cert,
+		*ca_file,
 		*cert_file,
-		*private_key;
+		*key_file;
 	char
 		check_certificate,
 		check_hostname,
+		ca_type,
 		cert_type,
-		private_key_type,
+		key_type,
 		print_info;
 } _config = {
 	.check_certificate=1,
+	.ca_type = MGET_SSL_X509_FMT_PEM,
 	.cert_type = MGET_SSL_X509_FMT_PEM,
-	.private_key_type = MGET_SSL_X509_FMT_PEM,
+	.key_type = MGET_SSL_X509_FMT_PEM,
 	.secure_protocol = "AUTO",
 	.ca_directory = "system"
 };
 
 static gnutls_certificate_credentials_t
 	_credentials;
+static gnutls_priority_t
+	_priority_cache;
 
 void mget_ssl_set_config_string(int key, const char *value)
 {
 	switch (key) {
 	case MGET_SSL_SECURE_PROTOCOL: _config.secure_protocol = value; break;
 	case MGET_SSL_CA_DIRECTORY: _config.ca_directory = value; break;
-	case MGET_SSL_CA_CERT: _config.ca_cert = value; break;
+	case MGET_SSL_CA_FILE: _config.ca_file = value; break;
 	case MGET_SSL_CERT_FILE: _config.cert_file = value; break;
-	case MGET_SSL_PRIVATE_KEY: _config.private_key = value; break;
+	case MGET_SSL_KEY_FILE: _config.key_file = value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
 	}
 }
@@ -94,8 +98,9 @@ void mget_ssl_set_config_int(int key, int value)
 	switch (key) {
 	case MGET_SSL_CHECK_CERTIFICATE: _config.check_certificate = (char)value; break;
 	case MGET_SSL_CHECK_HOSTNAME: _config.check_hostname = (char)value; break;
+	case MGET_SSL_CA_TYPE: _config.ca_type = (char)value; break;
 	case MGET_SSL_CERT_TYPE: _config.cert_type = (char)value; break;
-	case MGET_SSL_PRIVATE_KEY_TYPE: _config.private_key_type = (char)value; break;
+	case MGET_SSL_KEY_TYPE: _config.key_type = (char)value; break;
 	case MGET_SSL_PRINT_INFO: _config.print_info = (char)value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an integer)\n"), key);
 	}
@@ -395,17 +400,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 				ret = -1;
 			}
 
-			if (_config.check_hostname) {
-				if (it == 0 && !gnutls_x509_crt_check_hostname(cert, hostname)) {
-					error_printf(_("%s: The certificate's owner does not match hostname '%s'\n"), tag, hostname);
+			if (it == 0 && (!hostname || !gnutls_x509_crt_check_hostname(cert, hostname))) {
+				error_printf(_("%s: The certificate's owner does not match hostname '%s'\n"), tag, hostname);
+				if (_config.check_hostname)
 					ret = -1;
-				}
-			} else {
-				if (it == 0 && !gnutls_x509_crt_check_hostname(cert, hostname)) {
-					error_printf(_("WARNING: The certificate's owner does not match hostname '%s'\n"), hostname);
-				}
 			}
-
 		}
 	} else {
 		error_printf(_("%s: No certificate was found!\n"), tag);
@@ -420,10 +419,47 @@ out:
 	return _config.check_certificate ? ret : 0;
 }
 
-static int _init;
+static int _init, _server_init;
 static mget_thread_mutex_t _mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
+static inline int _key_type(int type)
+{
+	if (type == MGET_SSL_X509_FMT_DER)
+		return GNUTLS_X509_FMT_DER;
+
+	return GNUTLS_X509_FMT_PEM;
+}
+
 // ssl_init() is thread safe
+
+static void _set_credentials(gnutls_certificate_credentials_t *credentials)
+{
+	if (_config.cert_file && !_config.key_file) {
+		// Use the private key from the cert file unless otherwise specified.
+		_config.key_file = _config.cert_file;
+		_config.key_type = _config.cert_type;
+	}
+	else if (!_config.cert_file && _config.key_file) {
+		// Use the cert from the private key file unless otherwise specified.
+		_config.cert_file = _config.key_file;
+		_config.cert_type = _config.key_type;
+	}
+
+	if (_config.cert_file && _config.key_file) {
+		if (_config.key_type != _config.cert_type) {
+			// GnuTLS can't handle this
+			error_printf(_("GnuTLS requires the key and the cert to be of the same type.\n"));
+		}
+
+		if (gnutls_certificate_set_x509_key_file(*credentials, _config.cert_file, _config.key_file, _key_type(_config.key_type)) < 0)
+			error_printf(_("No certificates or keys were found\n"));
+	}
+
+	if (_config.ca_file) {
+		if (gnutls_certificate_set_x509_trust_file(*credentials, _config.ca_file, _key_type(_config.ca_type)) < 0)
+			error_printf(_("No CAs were found\n"));
+	}
+}
 
 void mget_ssl_init(void)
 {
@@ -433,19 +469,20 @@ void mget_ssl_init(void)
 		debug_printf("GnuTLS init\n");
 		gnutls_global_init();
 		gnutls_certificate_allocate_credentials(&_credentials);
-//		gnutls_certificate_set_x509_trust_file(credentials, "/etc/ssl/certs/ca-certificates.crt", GNUTLS_X509_FMT_PEM);
 		gnutls_certificate_set_verify_function(_credentials, _verify_certificate_callback);
 
-		if (_config.ca_directory && *_config.ca_directory) {
+		if (_config.ca_directory && *_config.ca_directory && _config.check_certificate) {
 			int ncerts = -1;
 
 #if GNUTLS_VERSION_MAJOR >= 3
-			if (!strcmp(_config.ca_directory, "system")) {
+			if (!strcmp(_config.ca_directory, "system"))
 				ncerts = gnutls_certificate_set_x509_system_trust(_credentials);
-			}
+#else
+			if (!strcmp(_config.ca_directory, "system"))
+				_config.ca_directory = "/etc/ssl/certs";
 #endif
 
-			if (ncerts < 0) {
+		if (ncerts < 0) {
 				DIR *dir;
 
 				ncerts = 0;
@@ -462,7 +499,7 @@ void mget_ssl_init(void)
 							char fname[dirlen + 1 + len + 1];
 
 							snprintf(fname, sizeof(fname), "%s/%s", _config.ca_directory, dp->d_name);
-							if (!stat(fname, &st) && S_ISREG(st.st_mode)) {
+							if (stat(fname, &st) == 0 && S_ISREG(st.st_mode)) {
 								int rc;
 
 								debug_printf("GnuTLS loading %s\n", fname);
@@ -476,42 +513,47 @@ void mget_ssl_init(void)
 
 					closedir(dir);
 				} else {
-					error_printf(_("Failed to diropen %s\n"), _config.ca_directory);
+					error_printf(_("Failed to opendir %s\n"), _config.ca_directory);
 				}
 			}
 
 			debug_printf("Certificates loaded: %d\n", ncerts);
 		}
 
-		if (_config.cert_file && !_config.private_key) {
-			/* Use the private key from the cert file unless otherwise specified. */
-			_config.private_key = _config.cert_file;
-			_config.private_key_type = _config.cert_type;
-		}
-		else if (!_config.cert_file && _config.private_key) {
-			/* Use the cert from the private key file unless otherwise specified. */
-			_config.cert_file = _config.private_key;
-			_config.cert_type = _config.private_key_type;
-		}
+		_set_credentials(&_credentials);
 
-		if (_config.cert_file && _config.private_key) {
-			int type;
+		if (_config.secure_protocol) {
+			const char *priorities = NULL;
+			int ret;
 
-			if (_config.private_key_type != _config.cert_type) {
-				/* GnuTLS can't handle this */
-				error_printf_exit(_("ERROR: GnuTLS requires the key and the cert to be of the same type.\n"));
+			if (!strcasecmp(_config.secure_protocol, "PFS")) {
+				priorities = "PFS";
+				// -RSA to force DHE/ECDHE key exchanges to have Perfect Forward Secrecy (PFS))
+				if ((ret = gnutls_priority_init(&_priority_cache, priorities, NULL)) != GNUTLS_E_SUCCESS) {
+					priorities = "NORMAL:-RSA";
+					ret = gnutls_priority_init(&_priority_cache, priorities, NULL);
+				}
+			} else {
+				if (!strncasecmp(_config.secure_protocol, "SSL", 3))
+					priorities = "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0";
+				else if (!strcasecmp(_config.secure_protocol, "TLSv1"))
+					priorities = "NORMAL:-VERS-SSL3.0";
+				else if (!strcasecmp(_config.secure_protocol, "auto"))
+					priorities = "NORMAL:%COMPAT";
+				else if (*_config.secure_protocol)
+					priorities = _config.secure_protocol;
+				
+				if (priorities) {
+					ret = gnutls_priority_init(&_priority_cache, priorities, NULL);
+				} else {
+					// use GnuTLS defaults, which might hold insecure ciphers
+					ret = 0;
+				}
 			}
 
-			if (_config.private_key_type == MGET_SSL_X509_FMT_DER)
-				type = GNUTLS_X509_FMT_DER;
-			else
-				type = GNUTLS_X509_FMT_PEM;
-
-			gnutls_certificate_set_x509_key_file(_credentials, _config.cert_file, _config.private_key, type);
+			if (ret < 0)
+				error_printf("GnuTLS: Unsupported priority string '%s': %s\n", priorities, gnutls_strerror(ret));
 		}
-
-		if (_config.ca_cert)
-			gnutls_certificate_set_x509_trust_file(_credentials, _config.ca_cert, GNUTLS_X509_FMT_PEM);
 
 		_init++;
 
@@ -530,6 +572,7 @@ void mget_ssl_deinit(void)
 
 	if (_init == 1) {
 		gnutls_certificate_free_credentials(_credentials);
+		gnutls_priority_deinit(_priority_cache);
 		gnutls_global_deinit();
 	}
 
@@ -537,6 +580,7 @@ void mget_ssl_deinit(void)
 
 	mget_thread_mutex_unlock(&_mutex);
 }
+
 /*
 #ifdef POLLIN
 static int _ready_2_transfer(gnutls_session_t session, int timeout, int mode)
@@ -592,17 +636,8 @@ static int _ready_2_transfer(int fd, int timeout, int mode)
 	return 1;
 }
 #endif
-
-static int _ready_2_read(gnutls_session_t session, int timeout)
-{
-	return _ready_2_transfer(session, timeout, MGET_IO_READABLE);
-}
-
-static int _ready_2_write(gnutls_session_t session, int timeout)
-{
-	return _ready_2_transfer(session, timeout, MGET_IO_WRITABLE);
-}
 */
+
 void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 {
 	gnutls_session_t session;
@@ -617,41 +652,18 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	// very old gnutls version, likely to not work.
 	gnutls_init(&session, GNUTLS_CLIENT);
 #endif
+
+	gnutls_priority_set(session, _priority_cache);
 	gnutls_session_set_ptr(session, (void *)hostname);
 	// RFC 6066 SNI Server Name Indication
-	gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
+	if (hostname)
+		gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
 	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, _credentials);
 	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
 
-	if (_config.secure_protocol) {
-		if (!strncasecmp(_config.secure_protocol, "SSL", 3))
-			ret = gnutls_priority_set_direct(session, "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0", NULL);
-		else if (!strcasecmp(_config.secure_protocol, "TLSv1"))
-			ret = gnutls_priority_set_direct(session, "NORMAL:-VERS-SSL3.0", NULL);
-		else if (!strcasecmp(_config.secure_protocol, "PFS")) {
-			// -RSA to force DHE/ECDHE key exchanges to have Perfect Forward Secrecy (PFS))
-			if ((ret = gnutls_priority_set_direct(session, "PFS", NULL)) != GNUTLS_E_SUCCESS)
-				ret = gnutls_priority_set_direct(session, "NORMAL:-RSA", NULL);
-		}
-		else if (!strcasecmp(_config.secure_protocol, "auto"))
-			ret = gnutls_priority_set_direct(session, "NORMAL:%COMPAT", NULL);
-		else if (*_config.secure_protocol)
-			ret = gnutls_priority_set_direct(session, _config.secure_protocol, NULL);
-		else
-			// use GnuTLS defaults, which even holds old/insecure ciphers
-			ret = 0;
-
-		if (ret < 0) {
-			// print error but continue
-			error_printf("GnuTLS: %s\n", gnutls_strerror(ret));
-			gnutls_deinit(session);
-			return NULL;
-		}
-	}
-
 	// Wait for socket being ready before we call gnutls_handshake().
 	// I had problems on a KVM Win7 + CygWin (gnutls 3.2.4-1).
-	ret = mget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), connect_timeout);
+	ret = mget_ready_2_write(sockfd, connect_timeout);
 
 	// Perform the TLS handshake
 	for (;;) {
@@ -664,10 +676,10 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 
 		if (gnutls_record_get_direction(session)) {
 			// wait for writeability
-			ret = mget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), connect_timeout);
+			ret = mget_ready_2_write(sockfd, connect_timeout);
 		} else {
 			// wait for readability
-			ret = mget_ready_2_read((int)(ptrdiff_t)gnutls_transport_get_ptr(session), connect_timeout);
+			ret = mget_ready_2_read(sockfd, connect_timeout);
 		}
 
 		if (ret <= 0)
@@ -687,18 +699,147 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 
 		gnutls_deinit(session);
 		return NULL;
-	} else {
-		debug_printf("Handshake completed\n");
 	}
+
+	debug_printf("Handshake completed\n");
 
 	return session;
 }
 
 void mget_ssl_close(void **session)
 {
-	gnutls_session_t s = *session;
+	if (session && *session) {
+		gnutls_session_t s = *session;
 
-	if (s) {
+		gnutls_bye(s, GNUTLS_SHUT_RDWR);
+		gnutls_deinit(s);
+		*session = NULL;
+	}
+}
+
+static gnutls_certificate_credentials_t
+	_server_credentials;
+static gnutls_priority_t
+	_server_priority_cache;
+
+void mget_ssl_server_init(void)
+{
+	mget_thread_mutex_lock(&_mutex);
+
+	if (!_server_init) {
+		int ret;
+
+		debug_printf("GnuTLS server init\n");
+		gnutls_global_init();
+
+		gnutls_certificate_allocate_credentials(&_server_credentials);
+		_set_credentials(&_server_credentials);
+
+		/* Generate Diffie-Hellman parameters - for use with DHE
+		 * kx algorithms. When short bit length is used, it might
+		 * be wise to regenerate parameters often.
+		 */
+/*		static gnutls_dh_params_t dh_params;
+		unsigned int bits = gnutls_sec_param_to_pk_bits(GNUTLS_PK_DH, GNUTLS_SEC_PARAM_LEGACY); // since 3.0.13
+
+		gnutls_dh_params_init(&dh_params);
+		gnutls_dh_params_generate2(dh_params, bits);
+*/
+		if ((ret = gnutls_priority_init(&_server_priority_cache, "PERFORMANCE", NULL)) < 0)
+			error_printf("GnuTLS: Unsupported server priority string '%s': %s\n", "PERFORMANCE", gnutls_strerror(ret));
+
+		_server_init++;
+
+		debug_printf("GnuTLS server init done\n");
+	}
+
+	mget_thread_mutex_unlock(&_mutex);
+}
+
+void mget_ssl_server_deinit(void)
+{
+	mget_thread_mutex_lock(&_mutex);
+
+	if (_server_init == 1) {
+		gnutls_certificate_free_credentials(_server_credentials);
+		gnutls_priority_deinit(_server_priority_cache);
+		gnutls_global_deinit();
+	}
+
+	if (_server_init > 0) _server_init--;
+
+	mget_thread_mutex_unlock(&_mutex);
+}
+
+void *mget_ssl_server_open(int sockfd, int connect_timeout)
+{
+	gnutls_session_t session;
+
+	if (!_init)
+		mget_ssl_server_init();
+
+#ifdef GNUTLS_NONBLOCK
+	gnutls_init(&session, GNUTLS_SERVER | GNUTLS_NONBLOCK);
+#else
+	// very old gnutls version, likely to not work.
+	gnutls_init(&session, GNUTLS_SERVER);
+#endif
+
+	gnutls_priority_set(session, _server_priority_cache);
+	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, _server_credentials);
+
+	/* We don't request any certificate from the client.
+	 * If we did we would need to verify it.
+	 */
+	gnutls_certificate_server_set_request(session, GNUTLS_CERT_IGNORE);
+
+	// gnutls_transport_set_int(session, sockfd);
+	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
+
+	// Wait for socket being ready before we call gnutls_handshake().
+	// I had problems on a KVM Win7 + CygWin (gnutls 3.2.4-1).
+	int ret = mget_ready_2_write(sockfd, connect_timeout);
+
+	// Perform the TLS handshake
+	for (;;) {
+		ret = gnutls_handshake(session);
+		if (ret == 0 || gnutls_error_is_fatal(ret)) {
+			if (ret == 0)
+				ret = 1;
+			break;
+		}
+
+		if (gnutls_record_get_direction(session)) {
+			// wait for writeability
+			ret = mget_ready_2_write(sockfd, connect_timeout);
+		} else {
+			// wait for readability
+			ret = mget_ready_2_read(sockfd, connect_timeout);
+		}
+	}
+
+	if (ret <= 0) {
+		if (ret)
+			debug_printf("Server handshake failed (%d)\n", ret);
+		else
+			debug_printf("Server handshake timed out\n");
+
+		error_printf("GnuTLS Server: %s\n", gnutls_strerror(ret));
+
+		gnutls_deinit(session);
+		return NULL;
+	}
+
+	debug_printf("Server handshake completed\n");
+
+	return session;
+}
+
+void mget_ssl_server_close(void **session)
+{
+	if (session && *session) {
+		gnutls_session_t s = *session;
+
 		gnutls_bye(s, GNUTLS_SHUT_RDWR);
 		gnutls_deinit(s);
 		*session = NULL;
@@ -749,5 +890,9 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout) { ret
 void mget_ssl_close(void **session) { }
 ssize_t mget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout) { return 0; }
 ssize_t mget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout) { return 0; }
+void mget_ssl_server_init(void) { }
+void mget_ssl_server_deinit(void) { }
+void *mget_ssl_server_open(int sockfd, int connect_timeout) { return NULL; }
+void mget_ssl_server_close(void **session) { }
 
 #endif // WITH_GNUTLS

@@ -33,18 +33,19 @@
 #include <libmget.h>
 #include "private.h"
 
-MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
+mget_http_response_t *mget_http_get(int first_key, ...)
 {
-	MGET_VECTOR *headers = mget_vector_create(8, 8, NULL);
-	MGET_IRI *uri = NULL;
-	MGET_HTTP_CONNECTION *conn = NULL, **connp = NULL;
-	MGET_HTTP_REQUEST *req;
-	MGET_HTTP_RESPONSE *resp = NULL;
-	MGET_VECTOR *challenges = NULL;
+	mget_vector_t *headers = mget_vector_create(8, 8, NULL);
+	mget_iri_t *uri = NULL;
+	mget_http_connection_t *conn = NULL, **connp = NULL;
+	mget_http_request_t *req;
+	mget_http_response_t *resp = NULL;
+	mget_vector_t *challenges = NULL;
+	mget_cookie_db_t *cookie_db = NULL;
 	FILE *saveas_stream = NULL;
-	int(*saveas_handler)(void *, const char *, size_t) = NULL;
+	int(*saveas_callback)(void *, const char *, size_t) = NULL;
 	int saveas_fd = -1;
-	int (*header_handler)(void *, MGET_HTTP_RESPONSE *) = NULL;
+	int (*header_callback)(void *, mget_http_response_t *) = NULL;
 	va_list args;
 	const char *url = NULL,	*url_encoding = NULL;
 	const char *http_username = NULL, *http_password = NULL;
@@ -66,7 +67,7 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 			url = va_arg(args, const char *);
 			break;
 		case MGET_HTTP_URI:
-			uri = va_arg(args, MGET_IRI *);
+			uri = va_arg(args, mget_iri_t *);
 			break;
 		case MGET_HTTP_URL_ENCODING:
 			url_encoding = va_arg(args, const char *);
@@ -78,7 +79,7 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 			break;
 		}
 		case MGET_HTTP_CONNECTION_PTR:
-			connp = va_arg(args, MGET_HTTP_CONNECTION **);
+			connp = va_arg(args, mget_http_connection_t **);
 			if (connp)
 				conn = *connp;
 			break;
@@ -92,13 +93,13 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 			saveas_stream = va_arg(args, FILE *);
 			break;
 		case MGET_HTTP_BODY_SAVEAS_FUNC:
-			saveas_handler = va_arg(args, int(*)(void *, const char *, size_t));
+			saveas_callback = va_arg(args, int(*)(void *, const char *, size_t));
 			break;
 		case MGET_HTTP_BODY_SAVEAS_FD:
 			saveas_fd = va_arg(args, int);
 			break;
 		case MGET_HTTP_HEADER_FUNC:
-			header_handler = va_arg(args, int (*)(void *, MGET_HTTP_RESPONSE *));
+			header_callback = va_arg(args, int (*)(void *, mget_http_response_t *));
 			break;
 		default:
 			error_printf(_("Unknown option %d\n"), key);
@@ -117,32 +118,35 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 		goto out;
 	}
 
+	if (bits.cookies_enabled)
+		cookie_db = (mget_cookie_db_t *)mget_global_get_ptr(MGET_COOKIE_DB);
+
 	while (uri && redirection_level <= max_redirections) {
 		// create a HTTP/1.1 GET request.
 		// the only default header is 'Host: domain' (taken from uri)
-		req = http_create_request(uri, "GET");
+		req = mget_http_create_request(uri, "GET");
 
 		// add HTTP headers
 		for (it = 0; it < mget_vector_size(headers); it++) {
-			http_add_header_line(req, mget_vector_get(headers, it));
+			mget_http_add_header_line(req, mget_vector_get(headers, it));
 		}
 
 		if (challenges) {
 			// There might be more than one challenge, we could select the securest one.
 			// For simplicity and testing we just take the first for now.
 			// the following adds an Authorization: HTTP header
-			http_add_credentials(req, mget_vector_get(challenges, 0), http_username, http_password);
-			http_free_challenges(&challenges);
+			mget_http_add_credentials(req, mget_vector_get(challenges, 0), http_username, http_password);
+			mget_http_free_challenges(&challenges);
 		}
 
 		// use keep-alive if you want to send more requests on the same connection
 		// http_add_header_line(req, "Connection: keep-alive\r\n");
 
 		// enrich the HTTP request with the uri-related cookies we have
-		if (bits.cookies_enabled) {
+		if (cookie_db) {
 			const char *cookie_string;
-			if ((cookie_string = mget_cookie_create_request_header(uri))) {
-				http_add_header(req, "Cookie", cookie_string);
+			if ((cookie_string = mget_cookie_create_request_header(cookie_db, uri))) {
+				mget_http_add_header(req, "Cookie", cookie_string);
 				xfree(cookie_string);
 			}
 		}
@@ -156,47 +160,47 @@ MGET_HTTP_RESPONSE *mget_http_get(int first_key, ...)
 		} else {
 			if (conn) {
 				debug_printf("close connection %s\n", conn->esc_host);
-				http_close(&conn);
+				mget_http_close(&conn);
 			}
-			conn = http_open(uri);
+			conn = mget_http_open(uri);
 			if (conn)
 				debug_printf("opened connection %s\n", conn->esc_host);
 		}
 
 		if (conn) {
-			if (http_send_request(conn, req) == 0) {
+			if (mget_http_send_request(conn, req) == 0) {
 				if (saveas_stream)
-					resp = http_get_response_stream(conn, header_handler, saveas_stream, MGET_HTTP_RESPONSE_KEEPHEADER);
-				else if (saveas_handler)
-					resp = http_get_response_func(conn, header_handler, saveas_handler, NULL, MGET_HTTP_RESPONSE_KEEPHEADER);
+					resp = mget_http_get_response_stream(conn, header_callback, saveas_stream, MGET_HTTP_RESPONSE_KEEPHEADER);
+				else if (saveas_callback)
+					resp = mget_http_get_response_func(conn, header_callback, saveas_callback, NULL, MGET_HTTP_RESPONSE_KEEPHEADER);
 				else if (saveas_fd != -1)
-					resp = http_get_response_fd(conn, header_handler, saveas_fd, MGET_HTTP_RESPONSE_KEEPHEADER);
+					resp = mget_http_get_response_fd(conn, header_callback, saveas_fd, MGET_HTTP_RESPONSE_KEEPHEADER);
 				else
-					resp = http_get_response(conn, header_handler, req, MGET_HTTP_RESPONSE_KEEPHEADER);
+					resp = mget_http_get_response(conn, header_callback, req, MGET_HTTP_RESPONSE_KEEPHEADER);
 			}
 		}
 
-		http_free_request(&req);
+		mget_http_free_request(&req);
 
 		if (!resp)
 			goto out;
 
 		// server doesn't support or want keep-alive
 		if (!resp->keep_alive)
-			http_close(&conn);
+			mget_http_close(&conn);
 
-		if (bits.cookies_enabled) {
+		if (cookie_db) {
 			// check and normalization of received cookies
 			mget_cookie_normalize_cookies(uri, resp->cookies);
 
 			// put cookies into cookie-store (also known as cookie-jar)
-			mget_cookie_store_cookies(resp->cookies);
+			mget_cookie_store_cookies(cookie_db, resp->cookies);
 		}
 
 		if (resp->code == 401 && !challenges) { // Unauthorized
 			if ((challenges = resp->challenges)) {
 				resp->challenges = NULL;
-				http_free_response(&resp);
+				mget_http_free_response(&resp);
 				continue; // try again with credentials
 			}
 			break;
@@ -234,10 +238,10 @@ out:
 	if (connp) {
 		*connp = conn;
 	} else {
-		http_close(&conn);
+		mget_http_close(&conn);
 	}
 
-	http_free_challenges(&challenges);
+	mget_http_free_challenges(&challenges);
 
 	mget_vector_clear_nofree(headers);
 	mget_vector_free(&headers);

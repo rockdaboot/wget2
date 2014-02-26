@@ -87,11 +87,11 @@ static const unsigned char
 		['\t'] = HTTP_CTYPE_SEPERATOR
 	};
 
-static MGET_VECTOR
+static mget_vector_t
 	*http_proxies,
 	*https_proxies;
 
-int http_isseperator(char c)
+int mget_http_isseperator(char c)
 {
 	// return strchr("()<>@,;:\\\"/[]?={} \t", c) != NULL;
 	return _http_isseperator(c);
@@ -105,16 +105,16 @@ int http_isseperator(char c)
 
 // token          = 1*<any CHAR except CTLs or separators>
 
-int http_istoken(char c)
+int mget_http_istoken(char c)
 {
 	return c > 32 && c <= 126 && !_http_isseperator(c);
 }
 
-const char *http_parse_token(const char *s, const char **token)
+const char *mget_http_parse_token(const char *s, const char **token)
 {
 	const char *p;
 
-	for (p = s; http_istoken(*s); s++);
+	for (p = s; mget_http_istoken(*s); s++);
 
 	*token = strndup(p, s - p);
 
@@ -128,7 +128,7 @@ const char *http_parse_token(const char *s, const char **token)
 // CTL            = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
 // LWS            = [CRLF] 1*( SP | HT )
 
-const char *http_parse_quoted_string(const char *s, const char **qstring)
+const char *mget_http_parse_quoted_string(const char *s, const char **qstring)
 {
 	if (*s == '\"') {
 		const char *p = ++s;
@@ -153,7 +153,7 @@ const char *http_parse_quoted_string(const char *s, const char **qstring)
 // generic-param  =  token [ EQUAL gen-value ]
 // gen-value      =  token / host / quoted-string
 
-const char *http_parse_param(const char *s, const char **param, const char **value)
+const char *mget_http_parse_param(const char *s, const char **param, const char **value)
 {
 	const char *p;
 
@@ -166,18 +166,17 @@ const char *http_parse_param(const char *s, const char **param, const char **val
 		while (isblank(*s)) s++;
 	}
 
-	for (p = s; http_istoken(*s); s++);
+	for (p = s; mget_http_istoken(*s); s++);
 	*param = strndup(p, s - p);
 
 	while (isblank(*s)) s++;
 
-	if (*s == '=') {
-		s++;
+	if (*s++ == '=') {
 		while (isblank(*s)) s++;
 		if (*s == '\"') {
-			s = http_parse_quoted_string(s, value);
+			s = mget_http_parse_quoted_string(s, value);
 		} else {
-			s = http_parse_token(s, value);
+			s = mget_http_parse_token(s, value);
 		}
 	} else *value = NULL;
 
@@ -191,24 +190,24 @@ const char *http_parse_param(const char *s, const char **param, const char **val
 //                  and consisting of either *TEXT or combinations
 //                  of token, separators, and quoted-string>
 
-const char *http_parse_name(const char *s, const char **name)
+const char *mget_http_parse_name(const char *s, const char **name)
 {
 	while (isblank(*s)) s++;
 
-	s = http_parse_token(s, name);
+	s = mget_http_parse_token(s, name);
 
 	while (*s && *s != ':') s++;
 
 	return *s == ':' ? s + 1 : s;
 }
 
-const char *http_parse_name_fixed(const char *s, const char **name, size_t *namelen)
+const char *mget_parse_name_fixed(const char *s, const char **name, size_t *namelen)
 {
 	while (isblank(*s)) s++;
 
 	*name = s;
 
-	while (http_istoken(*s))
+	while (mget_http_istoken(*s))
 		s++;
 
 	*namelen = s - *name;
@@ -218,15 +217,15 @@ const char *http_parse_name_fixed(const char *s, const char **name, size_t *name
 	return *s == ':' ? s + 1 : s;
 }
 
-static int G_GNUC_MGET_NONNULL_ALL compare_param(MGET_HTTP_HEADER_PARAM *p1, MGET_HTTP_HEADER_PARAM *p2)
+static int G_GNUC_MGET_NONNULL_ALL compare_param(mget_http_header_param_t *p1, mget_http_header_param_t *p2)
 {
 	return strcasecmp(p1->name, p2->name);
 }
 
-void http_add_param(MGET_VECTOR **params, MGET_HTTP_HEADER_PARAM *param)
+void mget_http_add_param(mget_vector_t **params, mget_http_header_param_t *param)
 {
 	if (!*params) *params = mget_vector_create(4, 4, (int(*)(const void *, const void *))compare_param);
-	mget_vector_add(*params, param, sizeof(MGET_HTTP_HEADER_PARAM));
+	mget_vector_add(*params, param, sizeof(*param));
 }
 
 /*
@@ -260,7 +259,7 @@ void http_add_param(MGET_VECTOR **params, MGET_HTTP_HEADER_PARAM *param)
   reg-rel-type   = LOALPHA *( LOALPHA | DIGIT | "." | "-" )
   ext-rel-type   = URI
 */
-const char *http_parse_link(const char *s, MGET_HTTP_LINK *link)
+const char *mget_http_parse_link(const char *s, mget_http_link_t *link)
 {
 	memset(link, 0, sizeof(*link));
 
@@ -278,7 +277,7 @@ const char *http_parse_link(const char *s, MGET_HTTP_LINK *link)
 			while (isblank(*s)) s++;
 
 			while (*s == ';') {
-				s = http_parse_param(s, &name, &value);
+				s = mget_http_parse_param(s, &name, &value);
 				if (name && value) {
 					if (!strcasecmp(name, "rel")) {
 						if (!strcasecmp(value, "describedby"))
@@ -314,14 +313,14 @@ const char *http_parse_link(const char *s, MGET_HTTP_LINK *link)
 // instance-digest = digest-algorithm "=" <encoded digest output>
 // digest-algorithm = token
 
-const char *http_parse_digest(const char *s, MGET_HTTP_DIGEST *digest)
+const char *mget_http_parse_digest(const char *s, mget_http_digest_t *digest)
 {
 	const char *p;
 
 	memset(digest, 0, sizeof(*digest));
 
 	while (isblank(*s)) s++;
-	s=http_parse_token(s, &digest->algorithm);
+	s = mget_http_parse_token(s, &digest->algorithm);
 
 	while (isblank(*s)) s++;
 
@@ -329,7 +328,7 @@ const char *http_parse_digest(const char *s, MGET_HTTP_DIGEST *digest)
 		s++;
 		while (isblank(*s)) s++;
 		if (*s == '\"') {
-			s = http_parse_quoted_string(s, &digest->encoded_digest);
+			s = mget_http_parse_quoted_string(s, &digest->encoded_digest);
 		} else {
 			for (p = s; *s && !isblank(*s) && *s != ',' && *s != ';'; s++);
 			digest->encoded_digest = strndup(p, s - p);
@@ -346,16 +345,16 @@ const char *http_parse_digest(const char *s, MGET_HTTP_DIGEST *digest)
 // auth-scheme = token
 // auth-param  = token "=" ( token | quoted-string )
 
-const char *http_parse_challenge(const char *s, MGET_HTTP_CHALLENGE *challenge)
+const char *mget_http_parse_challenge(const char *s, mget_http_challenge_t *challenge)
 {
 	memset(challenge, 0, sizeof(*challenge));
 
 	while (isblank(*s)) s++;
-	s=http_parse_token(s, &challenge->auth_scheme);
+	s = mget_http_parse_token(s, &challenge->auth_scheme);
 
-	MGET_HTTP_HEADER_PARAM param;
+	mget_http_header_param_t param;
 	do {
-		s=http_parse_param(s, &param.name, &param.value);
+		s = mget_http_parse_param(s, &param.name, &param.value);
 		if (param.name) {
 			if (!challenge->params)
 				challenge->params = mget_stringmap_create_nocase(8);
@@ -371,7 +370,7 @@ const char *http_parse_challenge(const char *s, MGET_HTTP_CHALLENGE *challenge)
 	return s;
 }
 
-const char *http_parse_location(const char *s, const char **location)
+const char *mget_http_parse_location(const char *s, const char **location)
 {
 	const char *p;
 
@@ -390,7 +389,7 @@ const char *http_parse_location(const char *s, const char **location)
 // attribute               = token
 // value                   = token | quoted-string
 
-const char *http_parse_transfer_encoding(const char *s, char *transfer_encoding)
+const char *mget_http_parse_transfer_encoding(const char *s, char *transfer_encoding)
 {
 	while (isblank(*s)) s++;
 
@@ -399,7 +398,7 @@ const char *http_parse_transfer_encoding(const char *s, char *transfer_encoding)
 	else
 		*transfer_encoding = transfer_encoding_chunked;
 
-	while (http_istoken(*s)) s++;
+	while (mget_http_istoken(*s)) s++;
 
 	return s;
 }
@@ -410,14 +409,14 @@ const char *http_parse_transfer_encoding(const char *s, char *transfer_encoding)
 // subtype        = token
 // example: Content-Type: text/html; charset=ISO-8859-4
 
-const char *http_parse_content_type(const char *s, const char **content_type, const char **charset)
+const char *mget_http_parse_content_type(const char *s, const char **content_type, const char **charset)
 {
-	MGET_HTTP_HEADER_PARAM param;
+	mget_http_header_param_t param;
 	const char *p;
 
 	while (isblank(*s)) s++;
 
-	for (p = s; *s && (http_istoken(*s) || *s == '/'); s++);
+	for (p = s; *s && (mget_http_istoken(*s) || *s == '/'); s++);
 	if (content_type)
 		*content_type = strndup(p, s - p);
 
@@ -425,7 +424,7 @@ const char *http_parse_content_type(const char *s, const char **content_type, co
 		*charset = NULL;
 
 		while (*s) {
-			s=http_parse_param(s, &param.name, &param.value);
+			s=mget_http_parse_param(s, &param.name, &param.value);
 			if (!mget_strcasecmp("charset", param.name)) {
 				xfree(param.name);
 				*charset = param.value;
@@ -454,16 +453,16 @@ const char *http_parse_content_type(const char *s, const char **content_type, co
 //                     ; contents MUST be an RFC 822 `date-time'
 //                     ; numeric timezones (+HHMM or -HHMM) MUST be used
 
-const char *http_parse_content_disposition(const char *s, const char **filename)
+const char *mget_http_parse_content_disposition(const char *s, const char **filename)
 {
-	MGET_HTTP_HEADER_PARAM param;
-	const char *p;
+	mget_http_header_param_t param;
+	char *p;
 
 	if (filename) {
 		*filename = NULL;
 
 		while (*s) {
-			s=http_parse_param(s, &param.name, &param.value);
+			s = mget_http_parse_param(s, &param.name, &param.value);
 			if (param.value && !mget_strcasecmp("filename", param.name)) {
 				xfree(param.name);
 
@@ -474,6 +473,53 @@ const char *http_parse_content_disposition(const char *s, const char **filename)
 				} else
 					*filename = param.value;
 				break;
+			} else if (param.value && !mget_strcasecmp("filename*", param.name)) {
+				// RFC5987
+				// ext-value     = charset  "'" [ language ] "'" value-chars
+				// ; like RFC 2231's <extended-initial-value>
+				// ; (see [RFC2231], Section 7)
+
+				// charset       = "UTF-8" / "ISO-8859-1" / mime-charset
+
+				// mime-charset  = 1*mime-charsetc
+				// mime-charsetc = ALPHA / DIGIT
+				//		/ "!" / "#" / "$" / "%" / "&"
+				//		/ "+" / "-" / "^" / "_" / "`"
+				//		/ "{" / "}" / "~"
+				//		; as <mime-charset> in Section 2.3 of [RFC2978]
+				//		; except that the single quote is not included
+				//		; SHOULD be registered in the IANA charset registry
+
+				// language      = <Language-Tag, defined in [RFC5646], Section 2.1>
+
+				// value-chars   = *( pct-encoded / attr-char )
+
+				// pct-encoded   = "%" HEXDIG HEXDIG
+				//		; see [RFC3986], Section 2.1
+
+				// attr-char     = ALPHA / DIGIT
+				//		/ "!" / "#" / "$" / "&" / "+" / "-" / "."
+				//		/ "^" / "_" / "`" / "|" / "~"
+				//		; token except ( "*" / "'" / "%" )
+
+				if ((p = strchr(param.value, '\''))) {
+					const char *charset = param.value;
+					const char *language = p + 1;
+					*p = 0;
+					if ((p = strchr(language, '\''))) {
+						*p++ = 0;
+						if (*p) {
+							mget_percent_unescape((unsigned char *)p);
+							if (mget_str_needs_encoding(p))
+								*filename = mget_str_to_utf8(p, charset);
+							else
+								*filename = strdup(p);
+							xfree(param.name);
+							xfree(param.value);
+							break;
+						}
+					}
+				}
 			}
 			xfree(param.name);
 			xfree(param.value);
@@ -483,9 +529,48 @@ const char *http_parse_content_disposition(const char *s, const char **filename)
 	return s;
 }
 
+// RFC 6797
+//
+// Strict-Transport-Security = "Strict-Transport-Security" ":" [ directive ]  *( ";" [ directive ] )
+// directive                 = directive-name [ "=" directive-value ]
+// directive-name            = token
+// directive-value           = token | quoted-string
+
+const char *mget_http_parse_strict_transport_security(const char *s, time_t *maxage, char *include_subdomains)
+{
+	mget_http_header_param_t param;
+
+	*maxage = 0;
+	*include_subdomains = 0;
+
+	while (*s) {
+		s = mget_http_parse_param(s, &param.name, &param.value);
+
+		if (param.value) {
+			if (!mget_strcasecmp(param.name, "max-age")) {
+				long offset = atol(param.value);
+
+				if (offset > 0)
+					*maxage = time(NULL) + offset;
+				else
+					*maxage = 0; // keep 0 as a special value: remove entry from HSTS database
+			}
+		} else {
+			if (!mget_strcasecmp(param.name, "includeSubDomains")) {
+				*include_subdomains = 1;
+			}
+		}
+
+		xfree(param.name);
+		xfree(param.value);
+	}
+
+	return s;
+}
+
 // Content-Encoding  = "Content-Encoding" ":" 1#content-coding
 
-const char *http_parse_content_encoding(const char *s, char *content_encoding)
+const char *mget_http_parse_content_encoding(const char *s, char *content_encoding)
 {
 	while (isblank(*s)) s++;
 
@@ -502,12 +587,12 @@ const char *http_parse_content_encoding(const char *s, char *content_encoding)
 	else
 		*content_encoding = mget_content_encoding_identity;
 
-	while (http_istoken(*s)) s++;
+	while (mget_http_istoken(*s)) s++;
 
 	return s;
 }
 
-const char *http_parse_connection(const char *s, char *keep_alive)
+const char *mget_http_parse_connection(const char *s, char *keep_alive)
 {
 	while (isblank(*s)) s++;
 
@@ -516,12 +601,12 @@ const char *http_parse_connection(const char *s, char *keep_alive)
 	else
 		*keep_alive = 0;
 
-	while (http_istoken(*s)) s++;
+	while (mget_http_istoken(*s)) s++;
 
 	return s;
 }
 
-const char *http_parse_etag(const char *s, const char **etag)
+const char *mget_http_parse_etag(const char *s, const char **etag)
 {
 	const char *p;
 
@@ -625,7 +710,7 @@ month        = "Jan" | "Feb" | "Mar" | "Apr"
 				 | "Sep" | "Oct" | "Nov" | "Dec"
 */
 
-time_t http_parse_full_date(const char *s)
+time_t mget_http_parse_full_date(const char *s)
 {
 	// we simply can't use strptime() since it requires us to setlocale()
 	// which is not thread-safe !!!
@@ -692,7 +777,7 @@ time_t http_parse_full_date(const char *s)
 	return (((time_t)days * 24 + hour) * 60 + min) * 60 + sec;
 }
 
-char *http_print_date(time_t t, char *buf, size_t bufsize)
+char *mget_http_print_date(time_t t, char *buf, size_t bufsize)
 {
 	static const char *dnames[7] = {
 		"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
@@ -837,14 +922,14 @@ static long long get_current_time(void)
  httponly-av       = "HttpOnly"
  extension-av      = <any CHAR except CTLs or ";">
 */
-const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
+const char *mget_http_parse_setcookie(const char *s, mget_cookie_t *cookie)
 {
 	const char *name, *p;
 
-	mget_cookie_init_cookie(cookie);
+	mget_cookie_init(cookie);
 
 	while (isspace(*s)) s++;
-	s = http_parse_token(s, &cookie->name);
+	s = mget_http_parse_token(s, &cookie->name);
 	while (isspace(*s)) s++;
 
 	if (cookie->name && *cookie->name && *s == '=') {
@@ -863,7 +948,7 @@ const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 			if (!*s) break;
 
 			for (s++; isspace(*s);) s++;
-			s = http_parse_token(s, &name);
+			s = mget_http_parse_token(s, &name);
 
 			if (name) {
 				while (*s && *s != '=' && *s != ';') s++;
@@ -874,7 +959,7 @@ const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 					for (p = ++s; *s > 32 && *s <= 126 && *s != ';'; s++);
 
 					if (!strcasecmp(name, "expires")) {
-						cookie->expires = http_parse_full_date(p);
+						cookie->expires = mget_http_parse_full_date(p);
 					} else if (!strcasecmp(name, "max-age")) {
 						long offset = atol(p);
 
@@ -916,7 +1001,7 @@ const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 		} while (*s);
 
 	} else {
-		mget_cookie_free_cookie(cookie);
+		mget_cookie_deinit(cookie);
 		error_printf("Cookie without name or assignment ignored\n");
 	}
 
@@ -926,15 +1011,15 @@ const char *http_parse_setcookie(const char *s, MGET_COOKIE *cookie)
 /* content of <buf> will be destroyed */
 
 /* buf must be 0-terminated */
-MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
+mget_http_response_t *mget_http_parse_response_header(char *buf)
 {
 	const char *s;
 	char *line, *eol;
 	const char *name;
 	size_t namesize;
-	MGET_HTTP_RESPONSE *resp = NULL;
+	mget_http_response_t *resp = NULL;
 
-	resp = xcalloc(1, sizeof(MGET_HTTP_RESPONSE));
+	resp = xcalloc(1, sizeof(mget_http_response_t));
 
 	if (sscanf(buf, " HTTP/%3hd.%3hd %3hd %31[^\r\n] ",
 		&resp->major, &resp->minor, &resp->code, resp->reason) >= 3)
@@ -964,71 +1049,75 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 
 		// debug_printf("# %p %s\n",eol,line);
 
-		s = http_parse_name_fixed(line, &name, &namesize);
+		s = mget_parse_name_fixed(line, &name, &namesize);
 		// s now points directly after :
 
 		switch (*name | 0x20) {
 		case 'c':
 			if (!strncasecmp(name, "Content-Encoding", namesize)) {
-				http_parse_content_encoding(s, &resp->content_encoding);
+				mget_http_parse_content_encoding(s, &resp->content_encoding);
 			} else if (!strncasecmp(name, "Content-Type", namesize)) {
-				http_parse_content_type(s, &resp->content_type, &resp->content_type_encoding);
+				mget_http_parse_content_type(s, &resp->content_type, &resp->content_type_encoding);
 			} else if (!strncasecmp(name, "Content-Length", namesize)) {
 				resp->content_length = (size_t)atoll(s);
 				resp->content_length_valid = 1;
 			} else if (!strncasecmp(name, "Content-Disposition", namesize)) {
-				http_parse_content_disposition(s, &resp->content_filename);
+				mget_http_parse_content_disposition(s, &resp->content_filename);
 			} else if (!strncasecmp(name, "Connection", namesize)) {
-				http_parse_connection(s, &resp->keep_alive);
+				mget_http_parse_connection(s, &resp->keep_alive);
 			}
 			break;
 		case 'l':
 			if (!strncasecmp(name, "Last-Modified", namesize)) {
 				// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
-				resp->last_modified = http_parse_full_date(s);
+				resp->last_modified = mget_http_parse_full_date(s);
 			} else if (resp->code / 100 == 3 && !strncasecmp(name, "Location", namesize)) {
 				xfree(resp->location);
-				http_parse_location(s, &resp->location);
+				mget_http_parse_location(s, &resp->location);
 			} else if (resp->code / 100 == 3 && !strncasecmp(name, "Link", namesize)) {
 				// debug_printf("s=%.31s\n",s);
-				MGET_HTTP_LINK link;
-				http_parse_link(s, &link);
+				mget_http_link_t link;
+				mget_http_parse_link(s, &link);
 				// debug_printf("link->uri=%s\n",link.uri);
 				if (!resp->links) {
 					resp->links = mget_vector_create(8, 8, NULL);
-					mget_vector_set_destructor(resp->links, (void(*)(void *))http_free_link);
+					mget_vector_set_destructor(resp->links, (void(*)(void *))mget_http_free_link);
 				}
 				mget_vector_add(resp->links, &link, sizeof(link));
 			}
 			break;
 		case 't':
 			if (!strncasecmp(name, "Transfer-Encoding", namesize)) {
-				http_parse_transfer_encoding(s, &resp->transfer_encoding);
+				mget_http_parse_transfer_encoding(s, &resp->transfer_encoding);
 			}
 			break;
 		case 's':
 			if (!strncasecmp(name, "Set-Cookie", namesize)) {
 				// this is a parser. content validation must be done by higher level functions.
-				MGET_COOKIE cookie;
-				http_parse_setcookie(s, &cookie);
+				mget_cookie_t cookie;
+				mget_http_parse_setcookie(s, &cookie);
 
 				if (cookie.name) {
 					if (!resp->cookies) {
 						resp->cookies = mget_vector_create(4, 4, NULL);
-						mget_vector_set_destructor(resp->cookies, (void(*)(void *))mget_cookie_free_cookie);
+						mget_vector_set_destructor(resp->cookies, (void(*)(void *))mget_cookie_free);
 					}
 					mget_vector_add(resp->cookies, &cookie, sizeof(cookie));
 				}
 			}
+			else if (!strncasecmp(name, "Strict-Transport-Security", namesize)) {
+				resp->hsts = 1;
+				mget_http_parse_strict_transport_security(s, &resp->hsts_maxage, &resp->hsts_include_subdomains);
+			}
 			break;
 		case 'w':
 			if (!strncasecmp(name, "WWW-Authenticate", namesize)) {
-				MGET_HTTP_CHALLENGE challenge;
-				http_parse_challenge(s, &challenge);
+				mget_http_challenge_t challenge;
+				mget_http_parse_challenge(s, &challenge);
 
 				if (!resp->challenges) {
 					resp->challenges = mget_vector_create(2, 2, NULL);
-					mget_vector_set_destructor(resp->challenges, (void(*)(void *))http_free_challenge);
+					mget_vector_set_destructor(resp->challenges, (void(*)(void *))mget_http_free_challenge);
 				}
 				mget_vector_add(resp->challenges, &challenge, sizeof(challenge));
 			}
@@ -1036,12 +1125,12 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 		case 'd':
 			if (!strncasecmp(name, "Digest", namesize)) {
 				// http://tools.ietf.org/html/rfc3230
-				MGET_HTTP_DIGEST digest;
-				http_parse_digest(s, &digest);
+				mget_http_digest_t digest;
+				mget_http_parse_digest(s, &digest);
 				// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
 				if (!resp->digests) {
 					resp->digests = mget_vector_create(4, 4, NULL);
-					mget_vector_set_destructor(resp->digests, (void(*)(void *))http_free_digest);
+					mget_vector_set_destructor(resp->digests, (void(*)(void *))mget_http_free_digest);
 				}
 				mget_vector_add(resp->digests, &digest, sizeof(digest));
 			}
@@ -1053,7 +1142,7 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 			break;
 		case 'e':
 			if (!strncasecmp(name, "ETag", namesize)) {
-				http_parse_etag(s, &resp->etag);
+				mget_http_parse_etag(s, &resp->etag);
 			}
 			break;
 		default:
@@ -1073,58 +1162,58 @@ MGET_HTTP_RESPONSE *http_parse_response_header(char *buf)
 	return resp;
 }
 
-int http_free_param(MGET_HTTP_HEADER_PARAM *param)
+int mget_http_free_param(mget_http_header_param_t *param)
 {
 	xfree(param->name);
 	xfree(param->value);
 	return 0;
 }
 
-void http_free_link(MGET_HTTP_LINK *link)
+void mget_http_free_link(mget_http_link_t *link)
 {
 	xfree(link->uri);
 	xfree(link->type);
 }
 
-void http_free_links(MGET_VECTOR **links)
+void mget_http_free_links(mget_vector_t **links)
 {
 	mget_vector_free(links);
 }
 
-void http_free_digest(MGET_HTTP_DIGEST *digest)
+void mget_http_free_digest(mget_http_digest_t *digest)
 {
 	xfree(digest->algorithm);
 	xfree(digest->encoded_digest);
 }
 
-void http_free_digests(MGET_VECTOR **digests)
+void mget_http_free_digests(mget_vector_t **digests)
 {
 	mget_vector_free(digests);
 }
 
-void http_free_challenge(MGET_HTTP_CHALLENGE *challenge)
+void mget_http_free_challenge(mget_http_challenge_t *challenge)
 {
 	xfree(challenge->auth_scheme);
 	mget_stringmap_free(&challenge->params);
 }
 
-void http_free_challenges(MGET_VECTOR **challenges)
+void mget_http_free_challenges(mget_vector_t **challenges)
 {
 	mget_vector_free(challenges);
 }
 
-void http_free_cookies(MGET_VECTOR **cookies)
+void mget_http_free_cookies(mget_vector_t **cookies)
 {
 	mget_vector_free(cookies);
 }
 
-void http_free_response(MGET_HTTP_RESPONSE **resp)
+void mget_http_free_response(mget_http_response_t **resp)
 {
 	if (resp && *resp) {
-		http_free_links(&(*resp)->links);
-		http_free_digests(&(*resp)->digests);
-		http_free_challenges(&(*resp)->challenges);
-		http_free_cookies(&(*resp)->cookies);
+		mget_http_free_links(&(*resp)->links);
+		mget_http_free_digests(&(*resp)->digests);
+		mget_http_free_challenges(&(*resp)->challenges);
+		mget_http_free_cookies(&(*resp)->cookies);
 		xfree((*resp)->content_type);
 		xfree((*resp)->content_type_encoding);
 		xfree((*resp)->content_filename);
@@ -1138,7 +1227,7 @@ void http_free_response(MGET_HTTP_RESPONSE **resp)
 }
 
 /* for security reasons: set all freed pointers to NULL */
-void http_free_request(MGET_HTTP_REQUEST **req)
+void mget_http_free_request(mget_http_request_t **req)
 {
 	if (req && *req) {
 		mget_buffer_deinit(&(*req)->esc_resource);
@@ -1149,9 +1238,9 @@ void http_free_request(MGET_HTTP_REQUEST **req)
 	}
 }
 
-MGET_HTTP_REQUEST *http_create_request(const MGET_IRI *iri, const char *method)
+mget_http_request_t *mget_http_create_request(const mget_iri_t *iri, const char *method)
 {
-	MGET_HTTP_REQUEST *req = xcalloc(1, sizeof(MGET_HTTP_REQUEST));
+	mget_http_request_t *req = xcalloc(1, sizeof(mget_http_request_t));
 
 	mget_buffer_init(&req->esc_resource, req->esc_resource_buf, sizeof(req->esc_resource_buf));
 	mget_buffer_init(&req->esc_host, req->esc_host_buf, sizeof(req->esc_host_buf));
@@ -1165,31 +1254,31 @@ MGET_HTTP_REQUEST *http_create_request(const MGET_IRI *iri, const char *method)
 	return req;
 }
 
-void http_add_header_vprintf(MGET_HTTP_REQUEST *req, const char *fmt, va_list args)
+void mget_http_add_header_vprintf(mget_http_request_t *req, const char *fmt, va_list args)
 {
 	mget_vector_add_vprintf(req->lines, fmt, args);
 }
 
-void http_add_header_printf(MGET_HTTP_REQUEST *req, const char *fmt, ...)
+void mget_http_add_header_printf(mget_http_request_t *req, const char *fmt, ...)
 {
 	va_list args;
 
 	va_start(args, fmt);
-	http_add_header_vprintf(req, fmt, args);
+	mget_http_add_header_vprintf(req, fmt, args);
 	va_end(args);
 }
 
-void http_add_header_line(MGET_HTTP_REQUEST *req, const char *line)
+void mget_http_add_header_line(mget_http_request_t *req, const char *line)
 {
 	mget_vector_add_str(req->lines, line);
 }
 
-void http_add_header(MGET_HTTP_REQUEST *req, const char *name, const char *value)
+void mget_http_add_header(mget_http_request_t *req, const char *name, const char *value)
 {
 	mget_vector_add_printf(req->lines, "%s: %s", name, value);
 }
 
-void http_add_credentials(MGET_HTTP_REQUEST *req, MGET_HTTP_CHALLENGE *challenge, const char *username, const char *password)
+void mget_http_add_credentials(mget_http_request_t *req, mget_http_challenge_t *challenge, const char *username, const char *password)
 {
 	if (!challenge)
 		return;
@@ -1202,7 +1291,7 @@ void http_add_credentials(MGET_HTTP_REQUEST *req, MGET_HTTP_CHALLENGE *challenge
 
 	if (!strcasecmp(challenge->auth_scheme, "basic")) {
 		const char *encoded = mget_base64_encode_printf_alloc("%s:%s", username, password);
-		http_add_header_printf(req, "Authorization: Basic %s", encoded);
+		mget_http_add_header_printf(req, "Authorization: Basic %s", encoded);
 		xfree(encoded);
 	}
 	else if (!strcasecmp(challenge->auth_scheme, "digest")) {
@@ -1274,7 +1363,7 @@ void http_add_credentials(MGET_HTTP_REQUEST *req, MGET_HTTP_CHALLENGE *challenge
 		if (algorithm)
 			mget_buffer_printf_append2(&buf, ", algorithm=%s", algorithm);
 
-		http_add_header_line(req, buf.data);
+		mget_http_add_header_line(req, buf.data);
 
 		mget_buffer_deinit(&buf);
 	}
@@ -1301,34 +1390,34 @@ void http_set_config_int(int key, int value)
 }
 */
 
-MGET_HTTP_CONNECTION *http_open(const MGET_IRI *iri)
+mget_http_connection_t *mget_http_open(const mget_iri_t *iri)
 {
 	static int next_http_proxy = -1;
 	static int next_https_proxy = -1;
 	static mget_thread_mutex_t
 		mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
-	MGET_IRI
+	mget_iri_t
 		*proxy;
-	MGET_HTTP_CONNECTION
-		*conn = xcalloc(1, sizeof(MGET_HTTP_CONNECTION));
+	mget_http_connection_t
+		*conn = xcalloc(1, sizeof(mget_http_connection_t));
 	const char
 		*port,
 		*host;
 	int
-		ssl = iri->scheme == IRI_SCHEME_HTTPS;
+		ssl = iri->scheme == MGET_IRI_SCHEME_HTTPS;
 
 	if (!conn)
 		return NULL;
 
-	if (iri->scheme == IRI_SCHEME_HTTP && http_proxies) {
+	if (iri->scheme == MGET_IRI_SCHEME_HTTP && http_proxies) {
 		mget_thread_mutex_lock(&mutex);
 		proxy = mget_vector_get(http_proxies, (++next_http_proxy) % mget_vector_size(http_proxies));
 		mget_thread_mutex_unlock(&mutex);
 
 		host = proxy->host;
 		port = proxy->resolv_port;
-	} else if (iri->scheme == IRI_SCHEME_HTTPS && https_proxies) {
+	} else if (iri->scheme == MGET_IRI_SCHEME_HTTPS && https_proxies) {
 		mget_thread_mutex_lock(&mutex);
 		proxy = mget_vector_get(https_proxies, (++next_https_proxy) % mget_vector_size(https_proxies));
 		mget_thread_mutex_unlock(&mutex);
@@ -1341,11 +1430,12 @@ MGET_HTTP_CONNECTION *http_open(const MGET_IRI *iri)
 	}
 
 	conn->tcp = mget_tcp_init();
+	if (ssl) {
+		mget_tcp_set_ssl(conn->tcp, 1); // switch SSL on
+		mget_tcp_set_ssl_hostname(conn->tcp, host); // enable host name checking
+	}
 
-//	if ((conn->addrinfo = mget_tcp_resolve(host, port)) == NULL)
-//		goto error;
-
-	if (mget_tcp_connect_ssl(conn->tcp, host, port, ssl ? host : NULL) == 0) {
+	if (mget_tcp_connect(conn->tcp, host, port) == 0) {
 		conn->esc_host = iri->host ? strdup(iri->host) : NULL;
 		conn->port = iri->resolv_port;
 		conn->scheme = iri->scheme;
@@ -1353,12 +1443,11 @@ MGET_HTTP_CONNECTION *http_open(const MGET_IRI *iri)
 		return conn;
 	}
 
-//error:
-	http_close(&conn);
+	mget_http_close(&conn);
 	return NULL;
 }
 
-void http_close(MGET_HTTP_CONNECTION **conn)
+void mget_http_close(mget_http_connection_t **conn)
 {
 	if (conn && *conn) {
 		mget_tcp_deinit(&(*conn)->tcp);
@@ -1372,11 +1461,11 @@ void http_close(MGET_HTTP_CONNECTION **conn)
 	}
 }
 
-int http_send_request(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req)
+int mget_http_send_request(mget_http_connection_t *conn, mget_http_request_t *req)
 {
 	ssize_t nbytes;
 
-	if ((nbytes = http_request_to_buffer(req, conn->buf)) < 0) {
+	if ((nbytes = mget_http_request_to_buffer(req, conn->buf)) < 0) {
 		error_printf(_("Failed to create request buffer\n"));
 		return -1;
 	}
@@ -1392,7 +1481,7 @@ int http_send_request(MGET_HTTP_CONNECTION *conn, MGET_HTTP_REQUEST *req)
 	return 0;
 }
 
-ssize_t http_request_to_buffer(MGET_HTTP_REQUEST *req, mget_buffer_t *buf)
+ssize_t mget_http_request_to_buffer(mget_http_request_t *req, mget_buffer_t *buf)
 {
 	int it, use_proxy = 0;
 
@@ -1400,12 +1489,12 @@ ssize_t http_request_to_buffer(MGET_HTTP_REQUEST *req, mget_buffer_t *buf)
 
 	mget_buffer_strcpy(buf, req->method);
 	mget_buffer_memcat(buf, " ", 1);
-	if (req->scheme == IRI_SCHEME_HTTP && mget_vector_size(http_proxies) > 0) {
+	if (req->scheme == MGET_IRI_SCHEME_HTTP && mget_vector_size(http_proxies) > 0) {
 		use_proxy = 1;
 		mget_buffer_strcat(buf, req->scheme);
 		mget_buffer_memcat(buf, "://", 3);
 		mget_buffer_bufcat(buf, &req->esc_host);
-	} else if (req->scheme == IRI_SCHEME_HTTPS && mget_vector_size(https_proxies) > 0) {
+	} else if (req->scheme == MGET_IRI_SCHEME_HTTPS && mget_vector_size(https_proxies) > 0) {
 		use_proxy = 1;
 		mget_buffer_strcat(buf, req->scheme);
 		mget_buffer_memcat(buf, "://", 3);
@@ -1433,19 +1522,19 @@ ssize_t http_request_to_buffer(MGET_HTTP_REQUEST *req, mget_buffer_t *buf)
 	return buf->length;
 }
 
-MGET_HTTP_RESPONSE *http_get_response_cb(
-	MGET_HTTP_CONNECTION *conn,
-	MGET_HTTP_REQUEST *req,
+mget_http_response_t *mget_http_get_response_cb(
+	mget_http_connection_t *conn,
+	mget_http_request_t *req,
 	unsigned int flags,
-	int (*header_handler)(void *context, MGET_HTTP_RESPONSE *),
-	int (*body_handler)(void *context, const char *data, size_t length),
-	void *context) // given to body_handler
+	int (*header_callback)(void *context, mget_http_response_t *resp),
+	int (*body_callback)(void *context, const char *data, size_t length),
+	void *context) // given to body_callback
 {
 	size_t bufsize, body_len = 0, body_size = 0;
 	ssize_t nbytes, nread = 0;
 	char *buf, *p = NULL;
-	MGET_HTTP_RESPONSE *resp = NULL;
-	MGET_DECOMPRESSOR *dc = NULL;
+	mget_http_response_t *resp = NULL;
+	mget_decompressor_t *dc = NULL;
 
 	// reuse generic connection buffer
 	buf = conn->buf->data;
@@ -1474,7 +1563,7 @@ MGET_HTTP_RESPONSE *http_get_response_cb(
 				mget_buffer_memcpy(header, buf, p - buf);
 				mget_buffer_memcat(header, "\r\n\r\n", 4);
 
-				if (!(resp = http_parse_response_header(buf))) {
+				if (!(resp = mget_http_parse_response_header(buf))) {
 					mget_buffer_free(&header);
 					goto cleanup; // something is wrong with the header
 				}
@@ -1482,12 +1571,12 @@ MGET_HTTP_RESPONSE *http_get_response_cb(
 				resp->header = header;
 
 			} else {
-				if (!(resp = http_parse_response_header(buf)))
+				if (!(resp = mget_http_parse_response_header(buf)))
 					goto cleanup; // something is wrong with the header
 			}
 
-			if (header_handler) {
-				if (header_handler(context, resp))
+			if (header_callback) {
+				if (header_callback(context, resp))
 					goto cleanup; // stop requested by callback function
 			}
 
@@ -1513,7 +1602,7 @@ MGET_HTTP_RESPONSE *http_get_response_cb(
 		goto cleanup;
 	}
 
-	dc = mget_decompress_open(resp->content_encoding, body_handler, context);
+	dc = mget_decompress_open(resp->content_encoding, body_callback, context);
 
 	// calculate number of body bytes so far read
 	body_len = nread - (p - buf);
@@ -1696,14 +1785,16 @@ static int _get_body(void *userdata, const char *data, size_t length)
 
 // get response, resp->body points to body in memory
 
-MGET_HTTP_RESPONSE *http_get_response(MGET_HTTP_CONNECTION *conn,
-	int(*header_handler)(void *, MGET_HTTP_RESPONSE *),
-	MGET_HTTP_REQUEST *req, unsigned int flags)
+mget_http_response_t *mget_http_get_response(
+	mget_http_connection_t *conn,
+	int (*header_callback)(void *, mget_http_response_t *),
+	mget_http_request_t *req,
+	unsigned int flags)
 {
-	MGET_HTTP_RESPONSE *resp;
+	mget_http_response_t *resp;
 	mget_buffer_t *body = mget_buffer_alloc(102400);
 
-	resp = http_get_response_cb(conn, req, flags, header_handler, _get_body, body);
+	resp = mget_http_get_response_cb(conn, req, flags, header_callback, _get_body, body);
 
 	if (resp) {
 		resp->body = body;
@@ -1727,11 +1818,13 @@ static int _get_fd(void *context, const char *data, size_t length)
 	return 0;
 }
 
-MGET_HTTP_RESPONSE *http_get_response_fd(MGET_HTTP_CONNECTION *conn,
-	int(*header_handler)(void *, MGET_HTTP_RESPONSE *),
-	int fd, unsigned int flags)
+mget_http_response_t *mget_http_get_response_fd(
+	mget_http_connection_t *conn,
+	int (*header_callback)(void *, mget_http_response_t *),
+	int fd,
+	unsigned int flags)
 {
-	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, header_handler, _get_fd, &fd);
+	 mget_http_response_t *resp = mget_http_get_response_cb(conn, NULL, flags, header_callback, _get_fd, &fd);
 
 	return resp;
 }
@@ -1751,21 +1844,23 @@ static int _get_stream(void *context, const char *data, size_t length)
 	return 0;
 }
 
-MGET_HTTP_RESPONSE *http_get_response_stream(MGET_HTTP_CONNECTION *conn,
-	int(*header_func)(void *, MGET_HTTP_RESPONSE *),
+mget_http_response_t *mget_http_get_response_stream(
+	mget_http_connection_t *conn,
+	int (*header_callback)(void *, mget_http_response_t *),
 	FILE *stream, unsigned int flags)
 {
-	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, header_func, _get_stream, stream);
+	mget_http_response_t *resp = mget_http_get_response_cb(conn, NULL, flags, header_callback, _get_stream, stream);
 
 	return resp;
 }
 
-MGET_HTTP_RESPONSE *http_get_response_func(MGET_HTTP_CONNECTION *conn,
-	int(*header_handler)(void *, MGET_HTTP_RESPONSE *),
-	int(*body_func)(void *, const char *, size_t),
+mget_http_response_t *mget_http_get_response_func(
+	mget_http_connection_t *conn,
+	int (*header_callback)(void *, mget_http_response_t *),
+	int (*body_callback)(void *, const char *, size_t),
 	void *context, unsigned int flags)
 {
-	MGET_HTTP_RESPONSE *resp = http_get_response_cb(conn, NULL, flags, header_handler, body_func, context);
+	mget_http_response_t *resp = mget_http_get_response_cb(conn, NULL, flags, header_callback, body_callback, context);
 
 	return resp;
 }
@@ -1832,10 +1927,10 @@ HTTP_RESPONSE *http_get_response_file(HTTP_CONNECTION *conn, const char *fname)
 }
  */
 
-static MGET_VECTOR *_parse_proxies(const char *proxy, const char *encoding)
+static mget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 {
 	if (proxy) {
-		MGET_VECTOR *proxies;
+		mget_vector_t *proxies;
 		const char *s, *p;
 
 		proxies = mget_vector_create(8, -2, NULL);
@@ -1861,7 +1956,7 @@ static MGET_VECTOR *_parse_proxies(const char *proxy, const char *encoding)
 	return NULL;
 }
 
-void http_set_http_proxy(const char *proxy, const char *encoding)
+void mget_http_set_http_proxy(const char *proxy, const char *encoding)
 {
 	if (http_proxies)
 		mget_vector_free(&http_proxies);
@@ -1869,7 +1964,7 @@ void http_set_http_proxy(const char *proxy, const char *encoding)
 	http_proxies = _parse_proxies(proxy, encoding);
 }
 
-void http_set_https_proxy(const char *proxy, const char *encoding)
+void mget_http_set_https_proxy(const char *proxy, const char *encoding)
 {
 	if (https_proxies)
 		mget_vector_free(&https_proxies);

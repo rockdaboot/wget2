@@ -38,7 +38,7 @@
 #include <libmget.h>
 #include "private.h"
 
-static MGET_LOGGER
+static mget_logger_t
 	_info,
 	_error,
 	_debug;
@@ -113,7 +113,7 @@ void mget_debug_write(const char *buf, int len)
 		_debug.write(&_debug, buf, len);
 }
 
-MGET_LOGGER *mget_get_logger(int id)
+mget_logger_t *mget_get_logger(int id)
 {
 	if (id == MGET_LOGGER_DEBUG)
 		return &_debug;

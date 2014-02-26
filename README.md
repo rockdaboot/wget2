@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/rockdaboot/mget.png?branch=develop)](https://travis-ci.org/rockdaboot/mget)
+
 Mget - multithreaded metalink / file / website downloader / spider and library
 ==============================================================================
 
@@ -46,6 +48,8 @@ Mget has already many features that go beyond what Wget provides.<br>
 
 An incomplete list of implemented features:
 
+- support for RFC 6266 compliant Content-Disposition
+- RFC 6797 HSTS (HTTP Strict Transport Security)
 - Support for bzip2 Content-Encoding / Accept-Encoding compression type
 - New Year gimmick: added support for XZ Content-Encoding / Accept-Encoding compression type
 - Character encoding of input files may be specified despite from local and remote encoding (--input-encoding)
@@ -102,9 +106,8 @@ Some ideas of what could be done next (but contact me before you start bigger ch
 - use [gtk-doc-tools](http://developer.gnome.org/gtk-doc-manual/unstable/settingup.html.en) for documentation.<br>
   I want the docs stay with the code: already tested Doxygen, but the man page support seems broken/orphaned.
 - WARC support
-- RFC 6797 HSTS (HTTP Strict Transport Security)
-  [Chromium HSTS domain list](https://src.chromium.org/viewvc/chrome/trunk/src/net/base/transport_security_state_static.json)
 - read credentials from secure wallets (e.g. kwallet, firefox, http://sourceforge.net/projects/passwordsafe/)
+  [Chromium HSTS domain list](http://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json)
 - HTTP request pipelining
 - SPDY / HTTP2.0 protocol
 - respect data-urls

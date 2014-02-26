@@ -40,7 +40,7 @@
 
 #include <libmget.h>
 
-static int G_GNUC_MGET_NONNULL_ALL _print_word(const char *word)
+static int G_GNUC_MGET_NONNULL_ALL _print_word(G_GNUC_MGET_UNUSED void *ctx, const char *word)
 {
 	printf("%s\n", word);
 	return 0;
@@ -52,7 +52,7 @@ int main(int argc, const char *const *argv)
 	char *buf, *word, *end;
 	size_t length;
 	struct stat st;
-	MGET_STRINGMAP *map = mget_stringmap_create(1024);
+	mget_stringmap_t *map = mget_stringmap_create(1024);
 
 	for (it = 1; it < argc; it++) {
 		if ((fd = open(argv[it], O_RDONLY)) == -1) {
@@ -106,7 +106,7 @@ int main(int argc, const char *const *argv)
 	printf("read %u words, %u uniques, %u doubles\n", unique + duple, unique, duple);
 
 	// const void *keys = stringmap_get_keys(map);
-	mget_stringmap_browse(map, (int(*)(const char *, const void *))_print_word);
+	mget_stringmap_browse(map, (int(*)(void *, const char *, void *))_print_word, NULL);
 
 	mget_stringmap_free(&map);
 	

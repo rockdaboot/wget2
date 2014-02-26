@@ -45,15 +45,15 @@ typedef struct {
 } PART;
 
 struct JOB {
-	MGET_IRI
+	mget_iri_t
 		*iri,
 		*referer;
 
 	// Metalink information
-	MGET_METALINK
+	mget_metalink_t
 		*metalink;
 
-	MGET_VECTOR
+	mget_vector_t
 		*parts, // parts to download
 		*deferred; // IRIs that need to wait for this job to be done (while downloading robots.txt)
 	HOST
@@ -71,7 +71,8 @@ struct JOB {
 };
 
 JOB
-	*queue_add(MGET_IRI *iri);
+	*job_init(JOB *job, mget_iri_t *iri),
+	*queue_add_job(JOB *job);
 PART
 	*job_add_part(JOB *job, PART *part);
 int

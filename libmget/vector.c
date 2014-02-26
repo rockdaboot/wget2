@@ -36,13 +36,13 @@
 #include <libmget.h>
 #include "private.h"
 
-struct _MGET_VECTOR {
+struct _mget_vector_st {
 	int
 		(*cmp)(const void *, const void *); // comparison function
 	void
 		(*destructor)(void *); // element destructor function
 	void
-		**pl; // pointer to array of pointers to elements
+		**entry; // pointer to array of pointers to elements
 	int
 		max,     // allocated elements
 		cur,     // number of elements in use
@@ -59,11 +59,11 @@ struct _MGET_VECTOR {
 //      or NULL if not needed.
 // the vector plus content is freed by vec_free()
 
-MGET_VECTOR *mget_vector_create(int max, int off, int (*cmp)(const void *, const void *))
+mget_vector_t *mget_vector_create(int max, int off, int (*cmp)(const void *, const void *))
 {
-	MGET_VECTOR *v = xcalloc(1, sizeof(MGET_VECTOR));
+	mget_vector_t *v = xcalloc(1, sizeof(mget_vector_t));
 
-	v->pl = xmalloc(max * sizeof(void *));
+	v->entry = xmalloc(max * sizeof(void *));
 	v->max = max;
 	v->off = off;
 	v->cmp = cmp;
@@ -71,7 +71,7 @@ MGET_VECTOR *mget_vector_create(int max, int off, int (*cmp)(const void *, const
 	return v;
 }
 
-static int G_GNUC_MGET_NONNULL((2)) _vec_insert_private(MGET_VECTOR *v, const void *elem, size_t size, int pos, int replace, int alloc)
+static int G_GNUC_MGET_NONNULL((2)) _vec_insert_private(mget_vector_t *v, const void *elem, size_t size, int pos, int replace, int alloc)
 {
 	void *elemp;
 
@@ -87,9 +87,9 @@ static int G_GNUC_MGET_NONNULL((2)) _vec_insert_private(MGET_VECTOR *v, const vo
 	if (!replace) {
 		if (v->max == v->cur) {
 			if (v->off > 0) {
-				v->pl = xrealloc(v->pl, (v->max += v->off) * sizeof(void *));
+				v->entry = xrealloc(v->entry, (v->max += v->off) * sizeof(void *));
 			} else if (v->off<-1) {
-				v->pl = xrealloc(v->pl, (v->max *= -v->off) * sizeof(void *));
+				v->entry = xrealloc(v->entry, (v->max *= -v->off) * sizeof(void *));
 			} else {
 				if (alloc)
 					free(elemp);
@@ -97,22 +97,22 @@ static int G_GNUC_MGET_NONNULL((2)) _vec_insert_private(MGET_VECTOR *v, const vo
 			}
 		}
 
-		memmove(&v->pl[pos + 1], &v->pl[pos], (v->cur - pos) * sizeof(void *));
+		memmove(&v->entry[pos + 1], &v->entry[pos], (v->cur - pos) * sizeof(void *));
 		v->cur++;
 	}
 
-	v->pl[pos] = elemp;
+	v->entry[pos] = elemp;
 
 	if (v->cmp) {
 		if (v->cur == 1) v->sorted = 1;
 		else if (v->cur > 1 && v->sorted) {
 			if (pos == 0) {
-				if (v->cmp(elem, v->pl[1]) > 0) v->sorted = 0;
+				if (v->cmp(elem, v->entry[1]) > 0) v->sorted = 0;
 			} else if (pos == v->cur - 1) {
-				if (v->cmp(elem, v->pl[v->cur - 2]) < 0) v->sorted = 0;
+				if (v->cmp(elem, v->entry[v->cur - 2]) < 0) v->sorted = 0;
 			} else {
-				if (v->cmp(elem, v->pl[pos - 1]) < 0 ||
-					v->cmp(elem, v->pl[pos + 1]) > 0) {
+				if (v->cmp(elem, v->entry[pos - 1]) < 0 ||
+					v->cmp(elem, v->entry[pos + 1]) > 0) {
 					v->sorted = 0;
 				}
 			}
@@ -122,17 +122,17 @@ static int G_GNUC_MGET_NONNULL((2)) _vec_insert_private(MGET_VECTOR *v, const vo
 	return pos; // return position of new element
 }
 
-int mget_vector_insert(MGET_VECTOR *v, const void *elem, size_t size, int pos)
+int mget_vector_insert(mget_vector_t *v, const void *elem, size_t size, int pos)
 {
 	return _vec_insert_private(v, elem, size, pos, 0, 1);
 }
 
-int mget_vector_insert_noalloc(MGET_VECTOR *v, const void *elem, int pos)
+int mget_vector_insert_noalloc(mget_vector_t *v, const void *elem, int pos)
 {
 	return _vec_insert_private(v, elem, 0, pos, 0, 0);
 }
 
-static int G_GNUC_MGET_NONNULL((2)) _vec_insert_sorted_private(MGET_VECTOR *v, const void *elem, size_t size, int alloc)
+static int G_GNUC_MGET_NONNULL((2)) _vec_insert_sorted_private(mget_vector_t *v, const void *elem, size_t size, int alloc)
 {
 	int m = 0;
 
@@ -149,7 +149,7 @@ static int G_GNUC_MGET_NONNULL((2)) _vec_insert_sorted_private(MGET_VECTOR *v, c
 
 		while (l <= r) {
 			m = (l + r) / 2;
-			if ((res = v->cmp(elem, v->pl[m])) > 0) l = m + 1;
+			if ((res = v->cmp(elem, v->entry[m])) > 0) l = m + 1;
 			else if (res < 0) r = m - 1;
 			else return _vec_insert_private(v, elem, size, m, 0, alloc);
 		}
@@ -158,39 +158,39 @@ static int G_GNUC_MGET_NONNULL((2)) _vec_insert_sorted_private(MGET_VECTOR *v, c
 	return _vec_insert_private(v, elem, size, m, 0, alloc);
 }
 
-int mget_vector_insert_sorted(MGET_VECTOR *v, const void *elem, size_t size)
+int mget_vector_insert_sorted(mget_vector_t *v, const void *elem, size_t size)
 {
 	return _vec_insert_sorted_private(v, elem, size, 1);
 }
 
-int mget_vector_insert_sorted_noalloc(MGET_VECTOR *v, const void *elem)
+int mget_vector_insert_sorted_noalloc(mget_vector_t *v, const void *elem)
 {
 	return _vec_insert_sorted_private(v, elem, 0, 0);
 }
 
-int mget_vector_add(MGET_VECTOR *v, const void *elem, size_t size)
+int mget_vector_add(mget_vector_t *v, const void *elem, size_t size)
 {
 	return _vec_insert_private(v, elem, size, v->cur, 0, 1);
 }
 
-int mget_vector_add_noalloc(MGET_VECTOR *v, const void *elem)
+int mget_vector_add_noalloc(mget_vector_t *v, const void *elem)
 {
 	return _vec_insert_private(v, elem, 0, v->cur, 0, 0);
 }
 
-int mget_vector_replace(MGET_VECTOR *v, const void *elem, size_t size, int pos)
+int mget_vector_replace(mget_vector_t *v, const void *elem, size_t size, int pos)
 {
 	if (!v || pos < 0 || pos >= v->cur) return -1;
 
 	if (v->destructor)
-		v->destructor(v->pl[pos]);
+		v->destructor(v->entry[pos]);
 
-	xfree(v->pl[pos]);
+	xfree(v->entry[pos]);
 
 	return _vec_insert_private(v, elem, size, pos, 1, 1); // replace existing entry
 }
 
-int mget_vector_add_vprintf(MGET_VECTOR *v, const char *fmt, va_list args)
+int mget_vector_add_vprintf(mget_vector_t *v, const char *fmt, va_list args)
 {
 	char *buf;
 
@@ -200,7 +200,7 @@ int mget_vector_add_vprintf(MGET_VECTOR *v, const char *fmt, va_list args)
 	return -1;
 }
 
-int mget_vector_add_printf(MGET_VECTOR *v, const char *fmt, ...)
+int mget_vector_add_printf(mget_vector_t *v, const char *fmt, ...)
 {
 	va_list args;
 
@@ -209,7 +209,7 @@ int mget_vector_add_printf(MGET_VECTOR *v, const char *fmt, ...)
 	va_end(args);
 }
 
-int mget_vector_add_str(MGET_VECTOR *v, const char *s)
+int mget_vector_add_str(mget_vector_t *v, const char *s)
 {
 	if (s)
 		return mget_vector_add(v, s, strlen(s) + 1);
@@ -217,34 +217,34 @@ int mget_vector_add_str(MGET_VECTOR *v, const char *s)
 		return -1;
 }
 
-static int _vec_remove_private(MGET_VECTOR *v, int pos, int free_entry)
+static int _vec_remove_private(mget_vector_t *v, int pos, int free_entry)
 {
 	if (pos < 0 || !v || pos >= v->cur) return -1;
 
 	if (free_entry) {
 		if (v->destructor)
-			v->destructor(v->pl[pos]);
+			v->destructor(v->entry[pos]);
 
-		xfree(v->pl[pos]);
+		xfree(v->entry[pos]);
 	}
 
-	memmove(&v->pl[pos], &v->pl[pos + 1], (v->cur - pos - 1) * sizeof(void *));
+	memmove(&v->entry[pos], &v->entry[pos + 1], (v->cur - pos - 1) * sizeof(void *));
 	v->cur--;
 
 	return pos;
 }
 
-int mget_vector_remove(MGET_VECTOR *v, int pos)
+int mget_vector_remove(mget_vector_t *v, int pos)
 {
 	return _vec_remove_private(v, pos, 1);
 }
 
-int mget_vector_remove_nofree(MGET_VECTOR *v, int pos)
+int mget_vector_remove_nofree(mget_vector_t *v, int pos)
 {
 	return _vec_remove_private(v, pos, 0);
 }
 
-int mget_vector_move(MGET_VECTOR *v, int old_pos, int new_pos)
+int mget_vector_move(mget_vector_t *v, int old_pos, int new_pos)
 {
 	void *tmp;
 
@@ -253,23 +253,23 @@ int mget_vector_move(MGET_VECTOR *v, int old_pos, int new_pos)
 	if (new_pos < 0 || new_pos >= v->cur) return -1;
 	if (old_pos == new_pos) return 0;
 
-	if (v->sorted && v->cmp && v->cmp(v->pl[old_pos], v->pl[new_pos]))
+	if (v->sorted && v->cmp && v->cmp(v->entry[old_pos], v->entry[new_pos]))
 		v->sorted = 0;
 
 	if (old_pos < new_pos) {
-		tmp = v->pl[old_pos];
-		memmove(&v->pl[old_pos], &v->pl[old_pos + 1], (new_pos - old_pos) * sizeof(void *));
-		v->pl[new_pos] = tmp;
+		tmp = v->entry[old_pos];
+		memmove(&v->entry[old_pos], &v->entry[old_pos + 1], (new_pos - old_pos) * sizeof(void *));
+		v->entry[new_pos] = tmp;
 	} else {
-		tmp = v->pl[old_pos];
-		memmove(&v->pl[new_pos + 1], &v->pl[new_pos], (old_pos - new_pos) * sizeof(void *));
-		v->pl[new_pos] = tmp;
+		tmp = v->entry[old_pos];
+		memmove(&v->entry[new_pos + 1], &v->entry[new_pos], (old_pos - new_pos) * sizeof(void *));
+		v->entry[new_pos] = tmp;
 	}
 
 	return 0;
 }
 
-int mget_vector_swap(MGET_VECTOR *v, int pos1, int pos2)
+int mget_vector_swap(mget_vector_t *v, int pos1, int pos2)
 {
 	void *tmp;
 
@@ -278,22 +278,22 @@ int mget_vector_swap(MGET_VECTOR *v, int pos1, int pos2)
 	if (pos2 < 0 || pos2 >= v->cur) return -1;
 	if (pos1 == pos2) return 0;
 
-	tmp = v->pl[pos1];
-	v->pl[pos1] = v->pl[pos2];
-	v->pl[pos2] = tmp;
+	tmp = v->entry[pos1];
+	v->entry[pos1] = v->entry[pos2];
+	v->entry[pos2] = tmp;
 
-	if (v->sorted && v->cmp && v->cmp(v->pl[pos1], v->pl[pos2]))
+	if (v->sorted && v->cmp && v->cmp(v->entry[pos1], v->entry[pos2]))
 		v->sorted = 0;
 
 	return 0;
 }
 
-void mget_vector_free(MGET_VECTOR **v)
+void mget_vector_free(mget_vector_t **v)
 {
 	if (v && *v) {
-		if ((*v)->pl) {
+		if ((*v)->entry) {
 			mget_vector_clear(*v);
-			xfree((*v)->pl);
+			xfree((*v)->entry);
 		}
 		xfree(*v);
 	}
@@ -301,62 +301,62 @@ void mget_vector_free(MGET_VECTOR **v)
 
 // remove all elements
 
-void mget_vector_clear(MGET_VECTOR *v)
+void mget_vector_clear(mget_vector_t *v)
 {
 	if (v) {
 		int it;
 
 		if (v->destructor) {
 			for (it = 0; it < v->cur; it++) {
-				v->destructor(v->pl[it]);
-				xfree(v->pl[it]);
+				v->destructor(v->entry[it]);
+				xfree(v->entry[it]);
 			}
 		} else {
 			for (it = 0; it < v->cur; it++)
-				xfree(v->pl[it]);
+				xfree(v->entry[it]);
 		}
 
 		v->cur = 0;
 	}
 }
 
-void mget_vector_clear_nofree(MGET_VECTOR *v)
+void mget_vector_clear_nofree(mget_vector_t *v)
 {
 	if (v) {
 		int it;
 
 		for (it = 0; it < v->cur; it++)
-			v->pl[it] = NULL;
+			v->entry[it] = NULL;
 		v->cur = 0;
 	}
 }
 
-int mget_vector_size(const MGET_VECTOR *v)
+int mget_vector_size(const mget_vector_t *v)
 {
 	return v ? v->cur : 0;
 }
 
-void *mget_vector_get(const MGET_VECTOR *v, int pos)
+void *mget_vector_get(const mget_vector_t *v, int pos)
 {
 	if (pos < 0 || !v || pos >= v->cur) return NULL;
 
-	return v->pl[pos];
+	return v->entry[pos];
 }
 
-int mget_vector_browse(const MGET_VECTOR *v, int (*browse)(void *elem))
+int mget_vector_browse(const mget_vector_t *v, int (*browse)(void *ctx, void *elem), void *ctx)
 {
 	if (v) {
 		int it, ret;
 
 		for (it = 0; it < v->cur; it++)
-			if ((ret = browse(v->pl[it])) != 0)
+			if ((ret = browse(ctx, v->entry[it])) != 0)
 				return ret;
 	}
 
 	return 0;
 }
 
-void mget_vector_setcmpfunc(MGET_VECTOR *v, int (*cmp)(const void *elem1, const void *elem2))
+void mget_vector_setcmpfunc(mget_vector_t *v, int (*cmp)(const void *elem1, const void *elem2))
 {
 	if (v) {
 		v->cmp = cmp;
@@ -368,7 +368,7 @@ void mget_vector_setcmpfunc(MGET_VECTOR *v, int (*cmp)(const void *elem1, const 
 	}
 }
 
-void mget_vector_set_destructor(MGET_VECTOR *v, void (*destructor)(void *elem))
+void mget_vector_set_destructor(mget_vector_t *v, void (*destructor)(void *elem))
 {
 	if (v)
 		v->destructor = destructor;
@@ -379,11 +379,11 @@ void qsort_r (void *base, size_t nmemb, size_t size, int (*compar)(const void *,
 
 static int G_GNUC_MGET_NONNULL_ALL _compare(const void *p1, const void *p2, void *v)
 {
-	return ((MGET_VECTOR *)v)->cmp(*((void **)p1), *((void **)p2));
+	return ((mget_vector_t *)v)->cmp(*((void **)p1), *((void **)p2));
 }
 #endif
 
-void mget_vector_sort(MGET_VECTOR *v)
+void mget_vector_sort(mget_vector_t *v)
 {
 /*
  * without the intermediate _compare function below, v->cmp must take 'const void **elem{1|2}'
@@ -400,7 +400,7 @@ void mget_vector_sort(MGET_VECTOR *v)
 	}
 
 	if (v && v->cmp) {
-		qsort(v->pl, v->cur, sizeof(void *), _compare);
+		qsort(v->entry, v->cur, sizeof(void *), _compare);
 		v->sorted = 1;
 	}
 #else
@@ -416,7 +416,7 @@ void mget_vector_sort(MGET_VECTOR *v)
 	}
 */
 	if (v && v->cmp) {
-		qsort_r(v->pl, v->cur, sizeof(void *), _compare, v);
+		qsort_r(v->entry, v->cur, sizeof(void *), _compare, v);
 		v->sorted = 1;
 	}
 #endif
@@ -426,11 +426,11 @@ void mget_vector_sort(MGET_VECTOR *v)
 // Find first entry that matches spth specified element,
 // using the compare function of the vector
 
-int mget_vector_find(const MGET_VECTOR *v, const void *elem)
+int mget_vector_find(const mget_vector_t *v, const void *elem)
 {
 	if (v && v->cmp) {
 		if (v->cur == 1) {
-			if (v->cmp(elem, v->pl[0]) == 0) return 0;
+			if (v->cmp(elem, v->entry[0]) == 0) return 0;
 		} else if (v->sorted) {
 			int l, r, m;
 			int res;
@@ -438,7 +438,7 @@ int mget_vector_find(const MGET_VECTOR *v, const void *elem)
 			// binary search for element (exact match)
 			for (l = 0, r = v->cur - 1; l <= r;) {
 				m = (l + r) / 2;
-				if ((res = v->cmp(elem, v->pl[m])) > 0) l = m + 1;
+				if ((res = v->cmp(elem, v->entry[m])) > 0) l = m + 1;
 				else if (res < 0) r = m - 1;
 				else return m;
 			}
@@ -447,7 +447,7 @@ int mget_vector_find(const MGET_VECTOR *v, const void *elem)
 
 			// linear search for element
 			for (it = 0; it < v->cur; it++)
-				if (v->cmp(elem, v->pl[it]) == 0) return it;
+				if (v->cmp(elem, v->entry[it]) == 0) return it;
 		}
 	}
 
@@ -458,7 +458,7 @@ int mget_vector_find(const MGET_VECTOR *v, const void *elem)
 // direction (0=up, 1=down) and using a custom function which returns 0
 // when a matching element is passed to it.
 
-int mget_vector_findext(const MGET_VECTOR *v, int start, int direction, int (*find)(void *))
+int mget_vector_findext(const mget_vector_t *v, int start, int direction, int (*find)(void *))
 {
 
 	if (v) {
@@ -468,13 +468,13 @@ int mget_vector_findext(const MGET_VECTOR *v, int start, int direction, int (*fi
 		case 0: // up
 			if (start >= 0) {
 				for (it = start; it < v->cur; it++)
-					if (find(v->pl[it]) == 0) return it;
+					if (find(v->entry[it]) == 0) return it;
 			}
 			break;
 		case 1: // down
 			if (start < v->cur) {
 				for (it = start; it >= 0; it--)
-					if (find(v->pl[it]) == 0) return it;
+					if (find(v->entry[it]) == 0) return it;
 			}
 			break;
 		}

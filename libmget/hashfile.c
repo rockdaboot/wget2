@@ -73,7 +73,7 @@ mget_digest_algorithm_t mget_hash_get_algorithm(const char *name)
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
-struct _hash_hd_st {
+struct _mget_hash_hd_st {
 	gnutls_hash_hd_t
 		dig;
 };
@@ -93,7 +93,7 @@ static const gnutls_digest_algorithm_t
 
 int mget_hash_fast(mget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
 {
-	if (algorithm >= 0 && algorithm < countof(_gnutls_algorithm))
+	if ((unsigned)algorithm < countof(_gnutls_algorithm))
 		return gnutls_hash_fast(_gnutls_algorithm[algorithm], text, textlen, digest);
 	else
 		return -1;
@@ -101,7 +101,7 @@ int mget_hash_fast(mget_digest_algorithm_t algorithm, const void *text, size_t t
 
 int mget_hash_get_len(mget_digest_algorithm_t algorithm)
 {
-	if (algorithm >= 0 && algorithm < countof(_gnutls_algorithm))
+	if ((unsigned)algorithm < countof(_gnutls_algorithm))
 		return gnutls_hash_get_len(_gnutls_algorithm[algorithm]);
 	else
 		return 0;
@@ -109,7 +109,7 @@ int mget_hash_get_len(mget_digest_algorithm_t algorithm)
 
 int mget_hash_init(mget_hash_hd_t *dig, mget_digest_algorithm_t algorithm)
 {
-	if (algorithm >= 0 && algorithm < countof(_gnutls_algorithm))
+	if ((unsigned)algorithm < countof(_gnutls_algorithm))
 		return gnutls_hash_init(&dig->dig, _gnutls_algorithm[algorithm]) == 0 ? 0 : -1;
 	else
 		return -1;
@@ -127,7 +127,7 @@ void mget_hash_deinit(mget_hash_hd_t *handle, void *digest)
 #elif defined (WITH_LIBNETTLE)
 #include <nettle/nettle-meta.h>
 
-struct _hash_hd_st {
+struct _mget_hash_hd_st {
 	const struct nettle_hash
 		*hash;
 	void
@@ -207,7 +207,7 @@ void mget_hash_deinit(mget_hash_hd_t *handle, void *digest)
 #else // empty functions which return error
 #define _U G_GNUC_MGET_UNUSED
 
-struct _hash_hd_st {
+struct _mget_hash_hd_st {
 	char dig;
 };
 

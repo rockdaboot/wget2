@@ -22,8 +22,11 @@
  * Changelog
  * 16.01.2013  Tim Ruehsen  created
  *
- * Simple demonstration how to download an URL with high level API functions.
+ * Test suite function library
  *
+ * To create the X.509 stuff, I followed the instructions at
+ *   gnutls.org/manual/html_node/gnutls_002dserv-Invocation.html
+ * 
  */
 
 #if HAVE_CONFIG_H
@@ -46,11 +49,11 @@
 #include "libtest.h"
 
 static mget_thread_t
-	server_tid;
-static MGET_TCP
-	*parent_tcp;
+	server_tid,
+	server_ssl_tid;
 static int
 	server_port,
+	server_port_ssl,
 	terminate,
 	keep_tmpfiles;
 /*static const char
@@ -58,7 +61,7 @@ static int
 	*response_body = "";
 static MGET_VECTOR
 	*response_headers; */
-static MGET_VECTOR
+static mget_vector_t
 	*request_urls;
 static mget_test_url_t
 	*urls;
@@ -74,7 +77,7 @@ static void nop(int sig G_GNUC_MGET_UNUSED)
 
 static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 {
-	MGET_TCP *tcp=NULL;
+	mget_tcp_t *tcp=NULL, *parent_tcp = ctx;
 	mget_test_url_t *url = NULL;
 	char buf[4096], method[32], request_url[256], tag[64], value[256], *p;
 	ssize_t nbytes;
@@ -111,7 +114,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 					else if (url && !strcasecmp(tag, "Authorization")) {
 						const char *auth_scheme, *s;
 
-						s=http_parse_token(value, &auth_scheme);
+						s=mget_http_parse_token(value, &auth_scheme);
 						while (isblank(*s)) s++;
 
 						if (!strcasecmp(auth_scheme, "basic")) {
@@ -127,7 +130,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 						mget_xfree(auth_scheme);
 					}
 					else if (!strcasecmp(tag, "If-Modified-Since")) {
-						modified = http_parse_full_date(value);
+						modified = mget_http_parse_full_date(value);
 						mget_info_printf("modified = %ld\n", modified);
 					}
 				}
@@ -230,6 +233,46 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 	return NULL;
 }
 
+// To reduce the verbosity of 'valgrind --trace-children=yes' output,
+//   we avoid system("rm -rf ...") calls.
+static void _remove_directory(const char *dirname);
+static void _empty_directory(const char *dirname)
+{
+	DIR *dir;
+	struct dirent *dp;
+	struct stat st;
+	size_t dirlen = strlen(dirname);
+
+	if ((dir = opendir(dirname))) {
+		while ((dp = readdir(dir))) {
+			if (*dp->d_name == '.' && (dp->d_name[1] == 0 || (dp->d_name[1] == '.' && dp->d_name[2] == 0)))
+				continue;
+
+			char fname[dirlen + 1 + strlen(dp->d_name) + 1];
+			snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
+
+			if (stat(fname, &st) == 0) {
+				if (S_ISDIR(st.st_mode)) {
+					_remove_directory(fname);
+				} else {
+					if (unlink(fname) == -1)
+						mget_error_printf(_("Failed to unlink %s\n"), fname);
+				}
+			}
+		}
+
+		closedir(dir);
+	} else
+		mget_error_printf(_("Failed to opendir %s\n"), dirname);
+}
+
+static void _remove_directory(const char *dirname)
+{
+	_empty_directory(dirname);
+	if (rmdir(dirname) == -1)
+		mget_error_printf(_("Failed to rmdir %s\n"), dirname);
+}
+
 void mget_test_stop_http_server(void)
 {
 	size_t it;
@@ -247,28 +290,28 @@ void mget_test_stop_http_server(void)
 	if (chdir("..") != 0)
 		mget_error_printf(_("Failed to chdir ..\n"));
 
-	if (!keep_tmpfiles) {
-		char cmd[128];
-
-		snprintf(cmd, sizeof(cmd), "rm -rf %s", tmpdir);
-		if (system(cmd) != 0)
-			mget_error_printf(_("Failed to remove tmpdir %s\n"), tmpdir);
-	}
+	if (!keep_tmpfiles)
+		_remove_directory(tmpdir);
 
 	// free resources - needed for valgrind testing
 	pthread_kill(server_tid, SIGTERM);
+	pthread_kill(server_ssl_tid, SIGTERM);
+
 	mget_thread_join(server_tid);
+	mget_thread_join(server_ssl_tid);
+
 	mget_global_deinit();
 }
 
 void mget_test_start_http_server(int first_key, ...)
 {
+	static mget_tcp_t *parent_tcp, *parent_tcp_ssl;
 	int rc, key;
 	size_t it;
 	va_list args;
 
 	mget_global_init(
-//		MGET_DEBUG_STREAM, stderr,
+		MGET_DEBUG_STREAM, stderr,
 		MGET_ERROR_STREAM, stderr,
 //		MGET_INFO_STREAM, stdout,
 		NULL);
@@ -304,23 +347,35 @@ void mget_test_start_http_server(int first_key, ...)
 	snprintf(tmpdir, sizeof(tmpdir), ".test_%d", getpid());
 
 	if (mkdir(tmpdir, 0755) != 0)
-			mget_error_printf_exit(_("Failed to create tmpdir (%d)\n"), errno);
+		mget_error_printf_exit(_("Failed to create tmpdir (%d)\n"), errno);
 
 	if (chdir(tmpdir) != 0)
 		mget_error_printf_exit(_("Failed to change to tmpdir (%d)\n"), errno);
 
+	// init server SSL layer (default cert and key file types are PEM)
+	// SRCDIR is the (relative) path to the tests dir. Since we chdir()'ed into a subdirectory, we need "../"
+	mget_ssl_set_config_string(MGET_SSL_CA_FILE, "../" SRCDIR "/certs/x509-ca.pem");
+	mget_ssl_set_config_string(MGET_SSL_CERT_FILE, "../" SRCDIR "/certs/x509-server.pem");
+	mget_ssl_set_config_string(MGET_SSL_KEY_FILE, "../" SRCDIR "/certs/x509-server-key.pem");
+
+	// init HTTP server socket
 	parent_tcp=mget_tcp_init();
-
 	mget_tcp_set_timeout(parent_tcp, -1); // INFINITE timeout
-
 	if (mget_tcp_listen(parent_tcp, "localhost", NULL, 5) != 0)
 		exit(1);
-
 	server_port = mget_tcp_get_local_port(parent_tcp);
+
+	// init HTTPS server socket
+	parent_tcp_ssl=mget_tcp_init();
+	mget_tcp_set_ssl(parent_tcp_ssl, 1); // switch SSL on
+	mget_tcp_set_timeout(parent_tcp_ssl, -1); // INFINITE timeout
+	if (mget_tcp_listen(parent_tcp_ssl, "localhost", NULL, 5) != 0)
+		exit(1);
+	server_port_ssl = mget_tcp_get_local_port(parent_tcp_ssl);
 
 	// now replace {{port}} in the body by the actual server port
 	for (it = 0; it < nurls; it++) {
-		if (urls[it].body && strstr(urls[it].body, "{{port}}")) {
+		if (urls[it].body && (strstr(urls[it].body, "{{port}}") || strstr(urls[it].body, "{{sslport}}"))) {
 			const char *src = urls[it].body;
 			char *dst = mget_malloc(strlen(src) + 1);
 
@@ -328,17 +383,30 @@ void mget_test_start_http_server(int first_key, ...)
 			urls[it].body_alloc = 1;
 
 			while (*src) {
-				if (*src == '{' && !strncmp(src, "{{port}}", 8)) {
-					dst += sprintf(dst, "%d", server_port);
-					src += 8;
-				} else *dst++ = *src++;
+				if (*src == '{') {
+					if (!strncmp(src, "{{port}}", 8)) {
+						dst += sprintf(dst, "%d", server_port);
+						src += 8;
+						continue;
+					}
+					else if (!strncmp(src, "{{sslport}}", 11)) {
+						dst += sprintf(dst, "%d", server_port_ssl);
+						src += 11;
+						continue;
+					}
+				}
+				*dst++ = *src++;
 			}
 			*dst = 0;
 		}
 	}
 
-	// init thread attributes
-	if ((rc = mget_thread_start(&server_tid, _server_thread, NULL, 0)) != 0)
+	// start thread for HTTP
+	if ((rc = mget_thread_start(&server_tid, _server_thread, parent_tcp, 0)) != 0)
+		mget_error_printf_exit(_("Failed to start server, error %d\n"), rc);
+
+	// start thread for HTTPS
+	if ((rc = mget_thread_start(&server_ssl_tid, _server_thread, parent_tcp_ssl, 0)) != 0)
 		mget_error_printf_exit(_("Failed to start server, error %d\n"), rc);
 }
 
@@ -441,9 +509,8 @@ void mget_test(int first_key, ...)
 	}
 
 	// clean directory
-	mget_buffer_printf2(cmd, "rm -rf ../%s/*", tmpdir);
-	if (system(cmd->data) != 0)
-		mget_error_printf_exit(_("Failed to wipe tmpdir %s\n"), tmpdir);
+	mget_buffer_printf2(cmd, "../%s", tmpdir);
+	_empty_directory(cmd->data);
 
 	// create files
 	if (existing_files) {

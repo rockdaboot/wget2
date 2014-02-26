@@ -4,7 +4,7 @@ CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 
 AC_PREREQ([2.67])
-AC_INIT([mget], [0.1.4], [mget-bugs@googlegroups.com])
+AC_INIT([mget], [0.1.5], [mget-bugs@googlegroups.com], [mget], [https://github.com/rockdaboot/mget])
 AM_INIT_AUTOMAKE
 
 CFLAGS=$CFLAGS
@@ -12,6 +12,12 @@ AC_USE_SYSTEM_EXTENSIONS
 
 LT_PREREQ([2.2])
 LT_INIT([dlopen])
+
+# Keep version info in configure.ac
+# see also "Updating library version information" at
+#   http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
+AC_SUBST([LIBMGET_SO_VERSION], [0:0:0])
+AC_SUBST([LIBMGET_API_VERSION], [0.1])
 
 AC_CONFIG_SRCDIR([src/mget.c])
 AC_CONFIG_HEADERS([config.h])
@@ -57,9 +63,9 @@ if test "x$EXTRA_CFLAGS" != "x" ; then
   CFLAGS="$CFLAGS $EXTRA_CFLAGS"
 fi
 
-dnl Check for large file support.  This check needs to come fairly
-dnl early because it could (in principle) affect whether functions and
-dnl headers are available, whether they work, etc.
+# Check for large file support.  This check needs to come fairly
+# early because it could (in principle) affect whether functions and
+# headers are available, whether they work, etc.
 AC_SYS_LARGEFILE
 AC_CHECK_SIZEOF(off_t)
 
@@ -197,10 +203,10 @@ AM_CONDITIONAL([WITH_BZIP2], [test $with_bzip2 = "yes"])
 AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support]), with_libidn2=$withval, with_libidn2=yes)
 if test $with_libidn2 != "no"
 then
-  AC_CHECK_LIB(idn2, idn2_lookup_u8, [with_libidn2=yes; AC_SUBST(IDN_LIBS, "-lidn2") AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2])], [with_libidn2=no; AC_MSG_WARN(*** LIBIDN2 was not found. You will not able to use IDN2008 support)])
+  AC_CHECK_LIB(idn2, idn2_lookup_u8, [with_libidn2=yes; AC_SUBST(IDN_LIBS, "-lidn2") AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2])], [with_libidn2=no; AC_MSG_WARN(*** LIBIDN2 was not found. You will not be able to use IDN2008 support)])
   if test x$with_libidn2 = "xyes"
   then
-    AC_CHECK_LIB(unistring, u8_tolower, [with_libunistring=yes; AC_SUBST(IDN_LIBS, "-lidn2 -lunistring") AC_DEFINE([WITH_LIBUNISTRING], [1], [Use libunistring])], [with_libunistring=no; AC_MSG_WARN(*** LIBUNISTRING was not found. You will not able to use IDN2008 on uppercase domains)])
+    AC_CHECK_LIB(unistring, u8_tolower, [with_libunistring=yes; AC_SUBST(IDN_LIBS, "-lidn2 -lunistring") AC_DEFINE([WITH_LIBUNISTRING], [1], [Use libunistring])], [with_libunistring=no; AC_MSG_WARN(*** LIBUNISTRING was not found. You will not be able to use IDN2008 on uppercase domains)])
   fi
 fi
 AM_CONDITIONAL([WITH_LIBUNISTRING], [test x$with_libunistring = "xyes"])
@@ -264,7 +270,8 @@ AC_CONFIG_FILES([Makefile
                  docs/libmget/Makefile
                  data/Makefile
                  examples/Makefile
-                 tests/Makefile])
+                 tests/Makefile
+                 libmget-${LIBMGET_API_VERSION}.pc:libmget.pc.in])
 AC_OUTPUT
 
 AC_MSG_NOTICE([Summary of build options:

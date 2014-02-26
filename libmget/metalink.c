@@ -50,7 +50,7 @@
 #include "mget.h"
 
 typedef struct {
-	MGET_METALINK
+	mget_metalink_t
 		*metalink;
 	int
 		priority;
@@ -63,7 +63,7 @@ typedef struct {
 		length;
 } _metalink_context_t ;
 
-static void _free_mirror(MGET_METALINK_MIRROR *mirror)
+static void _free_mirror(mget_metalink_mirror_t *mirror)
 {
 	mget_iri_free(&mirror->iri);
 }
@@ -108,13 +108,13 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 			}
 		}
 	} else {
-		MGET_METALINK *metalink = ctx->metalink;
+		mget_metalink_t *metalink = ctx->metalink;
 
 		if (!strcasecmp(dir, "/pieces/hash")) {
 			sscanf(value, "%127s", ctx->hash);
 			if (ctx->length && *ctx->hash_type && *ctx->hash) {
 				// hash for a piece of the file
-				MGET_METALINK_PIECE piece, *piecep;
+				mget_metalink_piece_t piece, *piecep;
 
 				if (!metalink->pieces)
 					metalink->pieces = mget_vector_create(32, 32, NULL);
@@ -126,39 +126,39 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 				piecep = mget_vector_get(metalink->pieces, mget_vector_size(metalink->pieces) - 1);
 				if (piecep)
 					piece.position = piecep->position + piecep->length;
-				mget_vector_add(metalink->pieces, &piece, sizeof(MGET_METALINK_PIECE));
+				mget_vector_add(metalink->pieces, &piece, sizeof(mget_metalink_piece_t));
 			}
 			*ctx->hash = 0;
 		} else if (!strcasecmp(dir, "/hash")) {
 			sscanf(value, "%127s", ctx->hash);
 			if (*ctx->hash_type && *ctx->hash) {
 				// hashes for the complete file
-				MGET_METALINK_HASH hash;
+				mget_metalink_hash_t hash;
 
 				if (!metalink->hashes)
 					metalink->hashes = mget_vector_create(4, 4, NULL);
 
-				memset(&hash, 0, sizeof(MGET_METALINK_HASH));
+				memset(&hash, 0, sizeof(mget_metalink_hash_t));
 				strcpy(hash.type,ctx->hash_type);
 				strcpy(hash.hash_hex,ctx->hash);
-				mget_vector_add(metalink->hashes, &hash, sizeof(MGET_METALINK_HASH));
+				mget_vector_add(metalink->hashes, &hash, sizeof(mget_metalink_hash_t));
 			}
 			*ctx->hash_type = *ctx->hash = 0;
 		} else if (!strcasecmp(dir, "/size")) {
 			metalink->size = atoll(value);
 		} else if (!strcasecmp(dir, "/url")) {
-			MGET_METALINK_MIRROR mirror;
+			mget_metalink_mirror_t mirror;
 
 			if (!metalink->mirrors) {
 				metalink->mirrors = mget_vector_create(4, 4, NULL);
 				mget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
 			}
 
-			memset(&mirror, 0, sizeof(MGET_METALINK_MIRROR));
+			memset(&mirror, 0, sizeof(mget_metalink_mirror_t));
 			strcpy(mirror.location, ctx->location);
 			mirror.priority = ctx->priority;
 			mirror.iri = mget_iri_parse(value, NULL);
-			mget_vector_add(metalink->mirrors, &mirror, sizeof(MGET_METALINK_MIRROR));
+			mget_vector_add(metalink->mirrors, &mirror, sizeof(mget_metalink_mirror_t));
 
 			*ctx->location = 0;
 			ctx->priority = 999999;
@@ -166,9 +166,9 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 	}
 }
 
-MGET_METALINK *metalink4_parse(const char *xml)
+mget_metalink_t *metalink4_parse(const char *xml)
 {
-	MGET_METALINK *metalink = xcalloc(1, sizeof(MGET_METALINK));
+	mget_metalink_t *metalink = xcalloc(1, sizeof(mget_metalink_t));
 	_metalink_context_t ctx = { .metalink = metalink, .priority = 999999, .location = "-" };
 
 	mget_xml_parse_buffer(xml, _metalink4_parse, &ctx, 0);
@@ -221,13 +221,13 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 			}
 		}
 	} else {
-		MGET_METALINK *metalink = ctx->metalink;
+		mget_metalink_t *metalink = ctx->metalink;
 
 		if (!strcasecmp(dir, "/verification/pieces/hash")) {
 			sscanf(value, "%127s", ctx->hash);
 			if (ctx->length && *ctx->hash_type && *ctx->hash) {
 				// hash for a piece of the file
-				MGET_METALINK_PIECE piece, *piecep;
+				mget_metalink_piece_t piece, *piecep;
 
 				if (!metalink->pieces)
 					metalink->pieces = mget_vector_create(32, 32, NULL);
@@ -239,7 +239,7 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 				piecep = mget_vector_get(metalink->pieces, mget_vector_size(metalink->pieces) - 1);
 				if (piecep)
 					piece.position = piecep->position + piecep->length;
-				mget_vector_add(metalink->pieces, &piece, sizeof(MGET_METALINK_PIECE));
+				mget_vector_add(metalink->pieces, &piece, sizeof(mget_metalink_piece_t));
 
 			}
 			*ctx->hash = 0;
@@ -247,30 +247,30 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 			sscanf(value, "%127s", ctx->hash);
 			if (*ctx->hash_type && *ctx->hash) {
 				// hashes for the complete file
-				MGET_METALINK_HASH hash;
+				mget_metalink_hash_t hash;
 
 				if (!metalink->hashes)
 					metalink->hashes = mget_vector_create(4, 4, NULL);
 
-				memset(&hash, 0, sizeof(MGET_METALINK_HASH));
+				memset(&hash, 0, sizeof(mget_metalink_hash_t));
 				strcpy(hash.type,ctx->hash_type);
 				strcpy(hash.hash_hex,ctx->hash);
-				mget_vector_add(metalink->hashes, &hash, sizeof(MGET_METALINK_HASH));
+				mget_vector_add(metalink->hashes, &hash, sizeof(mget_metalink_hash_t));
 			}
 			*ctx->hash_type = *ctx->hash = 0;
 		} else if (!strcasecmp(dir, "/size")) {
 			metalink->size = atoll(value);
 		} else if (!strcasecmp(dir, "/resources/url")) {
-			MGET_METALINK_MIRROR mirror;
+			mget_metalink_mirror_t mirror;
 
 			if (!metalink->mirrors)
 				metalink->mirrors = mget_vector_create(4, 4, NULL);
 
-			memset(&mirror, 0, sizeof(MGET_METALINK_MIRROR));
+			memset(&mirror, 0, sizeof(mget_metalink_mirror_t));
 			strcpy(mirror.location, ctx->location);
 			mirror.priority = ctx->priority;
 			mirror.iri = mget_iri_parse(value, NULL);
-			mget_vector_add(metalink->mirrors, &mirror, sizeof(MGET_METALINK_MIRROR));
+			mget_vector_add(metalink->mirrors, &mirror, sizeof(mget_metalink_mirror_t));
 
 			*ctx->location = 0;
 			ctx->priority = 999999;
@@ -278,16 +278,16 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 	}
 }
 
-MGET_METALINK *metalink3_parse(const char *xml)
+mget_metalink_t *metalink3_parse(const char *xml)
 {
-	MGET_METALINK *metalink = xcalloc(1, sizeof(MGET_METALINK));
+	mget_metalink_t *metalink = xcalloc(1, sizeof(mget_metalink_t));
 	_metalink_context_t ctx = { .metalink = metalink, .priority = 999999, .location = "-" };
 
 	mget_xml_parse_buffer(xml, _metalink3_parse, &ctx, 0);
 	return metalink;
 }
 
-void mget_metalink_free(MGET_METALINK **metalink)
+void mget_metalink_free(mget_metalink_t **metalink)
 {
 	if (metalink && *metalink) {
 		xfree((*metalink)->name);
@@ -298,12 +298,12 @@ void mget_metalink_free(MGET_METALINK **metalink)
 	}
 }
 
-static int G_GNUC_MGET_PURE _compare_mirror(MGET_METALINK_MIRROR **m1, MGET_METALINK_MIRROR **m2)
+static int G_GNUC_MGET_PURE _compare_mirror(mget_metalink_mirror_t **m1, mget_metalink_mirror_t **m2)
 {
 	return (*m1)->priority - (*m2)->priority;
 }
 
-void mget_metalink_sort_mirrors(MGET_METALINK *metalink)
+void mget_metalink_sort_mirrors(mget_metalink_t *metalink)
 {
 	if (metalink) {
 		mget_vector_setcmpfunc(metalink->mirrors, (int(*)(const void *, const void *))_compare_mirror);
