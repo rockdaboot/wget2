@@ -1128,6 +1128,7 @@ ssize_t
 #define MGET_SSL_CHECK_CERTIFICATE 9
 #define MGET_SSL_CHECK_HOSTNAME    10
 #define MGET_SSL_PRINT_INFO        11
+#define MGET_SSL_DIRECT_OPTIONS    12
 
 void
 	mget_ssl_init(void);

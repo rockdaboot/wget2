@@ -44,6 +44,7 @@ struct config {
 	mget_iri_t
 		*base;
 	const char
+		*gnutls_options,
 		*username,
 		*password,
 		*http_username,

@@ -182,6 +182,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --hsts-file         Set file for HSTS saving/loading. (default: .mget_hsts)\n"
 		"      --load-hsts         Load entries from HSTS file.\n"
 		"      --save-hsts         Save entries into HSTS file.\n"
+		"      --gnutls-options    Custom GnuTLS priority string. Interferes with --secure-protocol. (default: none)\n"
 		"\n");
 	puts(
 		"Directory options:\n"
@@ -490,6 +491,7 @@ static const struct option options[] = {
 	{ "force-html", &config.force_html, parse_bool, 0, 'F' },
 	{ "force-rss", &config.force_rss, parse_bool, 0, 0 },
 	{ "force-sitemap", &config.force_sitemap, parse_bool, 0, 0 },
+	{ "gnutls-options", &config.gnutls_options, parse_string, 1, 0 },
 	{ "help", NULL, print_help, 0, 'h' },
 	{ "host-directories", &config.host_directories, parse_bool, 0, 0 },
 	{ "hsts", &config.hsts, parse_bool, 0, 0 },
@@ -1152,6 +1154,7 @@ int init(int argc, const char *const *argv)
 	mget_ssl_set_config_int(MGET_SSL_KEY_TYPE, config.private_key_type);
 	mget_ssl_set_config_int(MGET_SSL_PRINT_INFO, config.debug);
 	mget_ssl_set_config_string(MGET_SSL_SECURE_PROTOCOL, config.secure_protocol);
+	mget_ssl_set_config_string(MGET_SSL_DIRECT_OPTIONS, config.gnutls_options);
 	mget_ssl_set_config_string(MGET_SSL_CA_DIRECTORY, config.ca_directory);
 	mget_ssl_set_config_string(MGET_SSL_CA_FILE, config.ca_cert);
 	mget_ssl_set_config_string(MGET_SSL_CERT_FILE, config.cert_file);
