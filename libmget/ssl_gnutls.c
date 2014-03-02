@@ -451,12 +451,12 @@ static void _set_credentials(gnutls_certificate_credentials_t *credentials)
 			error_printf(_("GnuTLS requires the key and the cert to be of the same type.\n"));
 		}
 
-		if (gnutls_certificate_set_x509_key_file(*credentials, _config.cert_file, _config.key_file, _key_type(_config.key_type)) < 0)
+		if (gnutls_certificate_set_x509_key_file(*credentials, _config.cert_file, _config.key_file, _key_type(_config.key_type)) != GNUTLS_E_SUCCESS)
 			error_printf(_("No certificates or keys were found\n"));
 	}
 
 	if (_config.ca_file) {
-		if (gnutls_certificate_set_x509_trust_file(*credentials, _config.ca_file, _key_type(_config.ca_type)) < 0)
+		if (gnutls_certificate_set_x509_trust_file(*credentials, _config.ca_file, _key_type(_config.ca_type)) <= 0)
 			error_printf(_("No CAs were found\n"));
 	}
 }
