@@ -1,3 +1,6 @@
+02.03.2014
+  Added --gnutls-options to directly set a GnuTLS priority string for secure connections.
+
 26.02.2014
   New release v0.1.5
 
