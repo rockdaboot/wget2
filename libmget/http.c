@@ -1100,7 +1100,7 @@ mget_http_response_t *mget_http_parse_response_header(char *buf)
 				if (cookie.name) {
 					if (!resp->cookies) {
 						resp->cookies = mget_vector_create(4, 4, NULL);
-						mget_vector_set_destructor(resp->cookies, (void(*)(void *))mget_cookie_free);
+						mget_vector_set_destructor(resp->cookies, (void(*)(void *))mget_cookie_deinit);
 					}
 					mget_vector_add(resp->cookies, &cookie, sizeof(cookie));
 				}

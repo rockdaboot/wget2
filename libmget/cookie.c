@@ -449,6 +449,9 @@ void mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie
 	mget_cookie_t *old;
 	int pos;
 
+	if (!cookie_db)
+		return;
+
 	debug_printf("got cookie %s=%s\n", cookie->name, cookie->value);
 
 	if (!cookie->normalized)
@@ -458,7 +461,7 @@ void mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie
 
 	if (!cookie_db->cookies) {
 		cookie_db->cookies = mget_vector_create(128, -2, (int(*)(const void *, const void *))_compare_cookie);
-		mget_vector_set_destructor(cookie_db->cookies, (void(*)(void *))mget_cookie_free);
+		mget_vector_set_destructor(cookie_db->cookies, (void(*)(void *))mget_cookie_deinit);
 		old = NULL;
 	} else
 		old = mget_vector_get(cookie_db->cookies, pos = mget_vector_find(cookie_db->cookies, cookie));
@@ -477,13 +480,15 @@ void mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie
 
 void mget_cookie_store_cookies(mget_cookie_db_t *cookie_db, mget_vector_t *cookies)
 {
-	int it;
+	if (cookie_db) {
+		int it;
 
-	for (it = mget_vector_size(cookies) - 1; it >= 0; it--) {
-		mget_cookie_t *cookie = mget_vector_get(cookies, it);
-		mget_cookie_store_cookie(cookie_db, cookie); // stores a shallow copy of 'cookie'
-		mget_vector_remove_nofree(cookies, it);
-		xfree(cookie); // shallow free of 'cookie'
+		for (it = mget_vector_size(cookies) - 1; it >= 0; it--) {
+			mget_cookie_t *cookie = mget_vector_get(cookies, it);
+			mget_cookie_store_cookie(cookie_db, cookie); // stores a shallow copy of 'cookie'
+			mget_vector_remove_nofree(cookies, it);
+			xfree(cookie); // shallow free of 'cookie'
+		}
 	}
 }
 
@@ -492,6 +497,9 @@ char *mget_cookie_create_request_header(mget_cookie_db_t *cookie_db, const mget_
 	int it, init = 0;
 	time_t now = time(NULL);
 	mget_buffer_t buf;
+
+	if (!cookie_db || !iri)
+		return NULL;
 
 	debug_printf("cookie_create_request_header for host=%s path=%s\n",iri->host,iri->path);
 
@@ -530,7 +538,7 @@ mget_cookie_db_t *mget_cookie_db_init(mget_cookie_db_t *cookie_db)
 
 	memset(cookie_db, 0, sizeof(*cookie_db));
 	cookie_db->cookies = mget_vector_create(32, -2, (int(*)(const void *, const void *))_compare_cookie);
-	mget_vector_set_destructor(cookie_db->cookies, (void(*)(void *))mget_cookie_free);
+	mget_vector_set_destructor(cookie_db->cookies, (void(*)(void *))mget_cookie_deinit);
 	mget_thread_mutex_init(&cookie_db->mutex);
 
 	return cookie_db;

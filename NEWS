@@ -1,3 +1,6 @@
+08.03.2014
+  Fixed sigfault in cookie handling, introduced in v0.1.5.
+
 02.03.2014
   Added --gnutls-options to directly set a GnuTLS priority string for secure connections.
 

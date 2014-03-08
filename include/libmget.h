@@ -855,15 +855,15 @@ void
 void
 	mget_cookie_free(mget_cookie_t **cookie);
 void
-	mget_cookie_normalize_cookies(const mget_iri_t *iri, const mget_vector_t *cookies) G_GNUC_MGET_NONNULL((1));
+	mget_cookie_normalize_cookies(const mget_iri_t *iri, const mget_vector_t *cookies);
 void
-	mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie);
 void
-	mget_cookie_store_cookies(mget_cookie_db_t *cookie_db, mget_vector_t *cookies) G_GNUC_MGET_NONNULL((1));
+	mget_cookie_store_cookies(mget_cookie_db_t *cookie_db, mget_vector_t *cookies);
 void
 	mget_cookie_free_public_suffixes(void);
 int
-	mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *cookie) G_GNUC_MGET_NONNULL((2));
+	mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *cookie);
 mget_cookie_db_t *
 	mget_cookie_db_init(mget_cookie_db_t *cookie_db);
 void
@@ -875,11 +875,11 @@ int
 int
 	mget_cookie_db_load(mget_cookie_db_t *cookie_db, const char *fname, int keep_session_cookies);
 int
-	mget_cookie_load_public_suffixes(const char *fname) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_load_public_suffixes(const char *fname);
 int
-	mget_cookie_suffix_match(const char *domain) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_suffix_match(const char *domain);
 char *
-	mget_cookie_create_request_header(mget_cookie_db_t *cookie_db, const mget_iri_t *iri) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_create_request_header(mget_cookie_db_t *cookie_db, const mget_iri_t *iri);
 
 /*
  * HTTP Strict Transport Security (HSTS) routines

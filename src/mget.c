@@ -718,7 +718,7 @@ int main(int argc, const char *const *argv)
 	}
 
 	if (config.save_cookies)
-		mget_cookie_db_save(&config.cookie_db, config.save_cookies, config.keep_session_cookies);
+		mget_cookie_db_save(config.cookie_db, config.save_cookies, config.keep_session_cookies);
 
 	if (config.hsts && config.save_hsts && config.hsts_file && hsts_changed)
 		mget_hsts_db_save(config.hsts_db, config.hsts_file);
@@ -731,10 +731,6 @@ int main(int argc, const char *const *argv)
 
 	// freeing to avoid disguising valgrind output
 	xfree(buf);
-	mget_hsts_db_free(&config.hsts_db);
-	mget_cookie_free_public_suffixes();
-	mget_cookie_db_deinit(&config.cookie_db);
-	mget_ssl_deinit();
 	queue_free();
 	blacklist_free();
 	hosts_free();
@@ -915,7 +911,7 @@ void *downloader_thread(void *p)
 		}
 
 		mget_cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
-		mget_cookie_store_cookies(&config.cookie_db, resp->cookies); // store cookies
+		mget_cookie_store_cookies(config.cookie_db, resp->cookies); // store cookies
 
 		// care for HSTS feature
 		if (config.hsts && job->iri->scheme == MGET_IRI_SCHEME_HTTPS && resp->hsts) {
@@ -1730,7 +1726,7 @@ int download_part(DOWNLOADER *downloader)
 
 			resp = http_get(mirror->iri, part, downloader, 1);
 			if (resp) {
-				mget_cookie_store_cookies(&config.cookie_db, resp->cookies); // sanitize and store cookies
+				mget_cookie_store_cookies(config.cookie_db, resp->cookies); // sanitize and store cookies
 
 				if (resp->code != 200 && resp->code != 206) {
 					print_status(downloader, "part %d download error %d\n", part->id, resp->code);
@@ -1953,7 +1949,7 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 			if (config.cookies) {
 				const char *cookie_string;
 
-				if ((cookie_string = mget_cookie_create_request_header(&config.cookie_db, iri))) {
+				if ((cookie_string = mget_cookie_create_request_header(config.cookie_db, iri))) {
 					mget_http_add_header(req, "Cookie", cookie_string);
 					xfree(cookie_string);
 				}
@@ -2000,7 +1996,7 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 			char uri_sbuf[1024];
 
 			mget_cookie_normalize_cookies(iri, resp->cookies);
-			mget_cookie_store_cookies(&config.cookie_db, resp->cookies);
+			mget_cookie_store_cookies(config.cookie_db, resp->cookies);
 
 			mget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
