@@ -40,7 +40,7 @@
 
 typedef struct {
 	char
-		label_buf[40];
+		label_buf[42];
 	const char *
 		label;
 	unsigned short

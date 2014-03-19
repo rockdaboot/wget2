@@ -870,9 +870,9 @@ static void test_cookies(void)
 			0
 		},
 		{	// supercookie, not accepted by normalization  (rule '*.ar')
-			"www.example.ar",
-			"ID=65=abcd; expires=Tue, 29-Feb-2000 07:48:55 GMT; path=/; domain=.example.ar",
-			"ID", "65=abcd", "example.ar", "/", "Tue, 29 Feb 2000 07:48:55 GMT",
+			"www.sa.gov.au",
+			"ID=65=abcd; expires=Tue, 29-Feb-2000 07:48:55 GMT; path=/; domain=.sa.gov.au",
+			"ID", "65=abcd", "sa.gov.au", "/", "Tue, 29 Feb 2000 07:48:55 GMT",
 			1, 0, 1, 0, 0, 0,
 			0
 		},
