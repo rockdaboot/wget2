@@ -40,11 +40,11 @@
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
 void
-	mget_cookie_free_public_suffixes(void);
+	psl_free(void);
 int
-	mget_cookie_load_public_suffixes(const char *fname);
+	psl_load_file(const char *fname);
 int
-	mget_cookie_suffix_match(const char *domain);
+	psl_is_tld(const char *domain);
 
 typedef struct {
 	char
@@ -114,14 +114,7 @@ static void G_GNUC_MGET_NONNULL_ALL _suffix_init(PUBLIC_SUFFIX *suffix, const ch
 	*dst = 0;
 }
 
-/*
-static void NONNULL_ALL suffix_print(PUBLIC_SUFFIX *suffix)
-{
-	info_printf("[%d] %d %s (%d)\n", suffix->nlabels, suffix->wildcard, suffix->label, suffix->length);
-}
-*/
-
-int psl_domain_match(const char *domain)
+int psl_is_tld(const char *domain)
 {
 	PUBLIC_SUFFIX suffix, *rule;
 	const char *p, *label_bak;
@@ -185,15 +178,15 @@ int psl_load_file(const char *fname)
 	size_t bufsize = 0;
 	ssize_t buflen;
 
-	// as of 02.11.2012, the list at http://publicsuffix.org/list/ contains ~6000 rules
-	// and 40 exceptions.
+	// as of 02.11.2012, the list at http://publicsuffix.org/list/ contains ~6000 rules and 40 exceptions.
+	// as of 19.02.2014, the list at http://publicsuffix.org/list/ contains ~6500 rules and 19 exceptions.
 	if (!_suffixes)
 		_suffixes = mget_vector_create(8*1024, -2, (int(*)(const void *, const void *))_suffix_compare);
 	if (!_suffix_exceptions)
 		_suffix_exceptions = mget_vector_create(64, -2, (int(*)(const void *, const void *))_suffix_compare);
 
 	if ((fp = fopen(fname, "r"))) {
-		while ((buflen = mget_getline(&buf, &bufsize, fp)) >= 0) {
+		while ((buflen = getline(&buf, &bufsize, fp)) >= 0) {
 			linep = buf;
 
 			while (isspace(*linep)) linep++; // ignore leading whitespace
@@ -232,13 +225,6 @@ int psl_load_file(const char *fname)
 	return nsuffixes;
 }
 
-/*
-static int cookie_free_public_suffix(PUBLIC_SUFFIX *suffix)
-{
-	return 0;
-}
-*/
-
 void psl_free(void)
 {
 	mget_vector_free(&_suffixes);
@@ -253,93 +239,36 @@ static void test_cookies(void)
 {
 	static const struct test_data {
 		const char
-			*uri,
-			*set_cookie,
-			*name, *value, *domain, *path, *expires;
-		unsigned int
-			domain_dot : 1, // for compatibility with Netscape cookie format
-			normalized : 1,
-			persistent : 1,
-			host_only : 1,
-			secure_only : 1, // cookie should be used over secure connections only (TLS/HTTPS)
-			http_only : 1; // just use the cookie via HTTP/HTTPS protocol
+			*domain;
 		int
 			result;
 	} test_data[] = {
-		{	// allowed cookie
-			"www.example.com",
-			"ID=65=abcd; expires=Tuesday, 07-May-2013 07:48:53 GMT; path=/; domain=.example.com; HttpOnly",
-			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
-			1, 1, 1, 0, 0, 1,
-			1
-		},
-		{	// allowed cookie ANSI C's asctime format
-			"www.example.com",
-			"ID=65=abcd; expires=Tue May 07 07:48:53 2013; path=/; domain=.example.com",
-			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
-			1, 1, 1, 0, 0, 0,
-			1
-		},
-		{	// allowed cookie without path
-			"www.example.com",
-			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; domain=.example.com",
-			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
-			1, 1, 1, 0, 0, 0,
-			1
-		},
-		{	// allowed cookie without domain
-			"www.example.com",
-			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/",
-			"ID", "65=abcd", "www.example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
-			0, 1, 1, 1, 0, 0,
-			1
-		},
-		{	// allowed cookie without domain, path and expires
-			"www.example.com",
-			"ID=65=abcd",
-			"ID", "65=abcd", "www.example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
-			0, 1, 0, 1, 0, 0,
-			1
-		},
-		{	// illegal cookie
-			"www.example.com",
-			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/; domain=.example.org",
-			"ID", "65=abcd", "example.org", "/", "Tue, 07 May 2013 07:48:53 GMT",
-			1, 0, 1, 0, 0, 0,
-			0
-		},
-		{	// supercookie, not accepted by normalization (rule 'com')
-			"www.example.com",
-			"ID=65=abcd; expires=Mon, 29-Feb-2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
-			"ID", "65=abcd", "com", "/", "Mon, 29 Feb 2016 07:48:54 GMT",
-			1, 0, 1, 0, 1, 1,
-			0
-		},
-		{	// supercookie, not accepted by normalization  (rule '*.ar')
-			"www.example.ar",
-			"ID=65=abcd; expires=Tue, 29-Feb-2000 07:48:55 GMT; path=/; domain=.example.ar",
-			"ID", "65=abcd", "example.ar", "/", "Tue, 29 Feb 2000 07:48:55 GMT",
-			1, 0, 1, 0, 0, 0,
-			0
-		},
-		{	// exception rule '!educ.ar', accepted by normalization
-			"www.educ.ar",
-			"ID=65=abcd; path=/; domain=.educ.ar",
-			"ID", "65=abcd", "educ.ar", "/", NULL,
-			1, 1, 0, 0, 0, 0,
-			1
-		},
+		{ "www.example.com", 0 },
+		{ "com.ar", 1 },
+		{ "www.com.ar", 0 },
+		{ "cc.ar.us", 1 },
+		{ ".cc.ar.us", 1 },
+		{ "www.cc.ar.us", 0 },
+		{ "www.ck", 0 }, // exception from *.ck
+		{ "abc.www.ck", 0 },
+		{ "xxx.ck", 1 },
+		{ "www.xxx.ck", 0 },
 	};
 	unsigned it;
 
-	psl_load_file("../data/effective_tld_names.dat");
+	psl_load_file("../data/public_suffixes.txt");
+//	psl_load_file("../data/effective_tld_names.dat");
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
+		int result = psl_is_tld(t->domain);
 
-		printf("psl_domain_match(%s)=%d\n", t->domain, psl_domain_match(t->domain));
-
-		ok++;
+		if (result == t->result) {
+			ok++;
+		} else {
+			failed++;
+			printf("psl_is_tld(%s)=%d (expected %d)\n", t->domain, result, t->result);
+		}
 	}
 
 	psl_free();
