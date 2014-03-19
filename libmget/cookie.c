@@ -423,7 +423,7 @@ static int _mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *c
 	return 1;
 }
 
-int mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *cookie)
+int mget_cookie_normalize(const mget_iri_t *iri, mget_cookie_t *cookie)
 {
 //	mget_thread_mutex_lock(&_cookies_mutex);
 
@@ -449,22 +449,21 @@ void mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie
 	mget_cookie_t *old;
 	int pos;
 
-	if (!cookie_db)
+	if (!cookie_db) {
+		mget_cookie_deinit(cookie);
 		return;
+	}
 
 	debug_printf("got cookie %s=%s\n", cookie->name, cookie->value);
 
-	if (!cookie->normalized)
+	if (!cookie->normalized) {
+		mget_cookie_deinit(cookie);
 		return;
+	}
 
 	mget_thread_mutex_lock(&cookie_db->mutex);
 
-	if (!cookie_db->cookies) {
-		cookie_db->cookies = mget_vector_create(128, -2, (int(*)(const void *, const void *))_compare_cookie);
-		mget_vector_set_destructor(cookie_db->cookies, (void(*)(void *))mget_cookie_deinit);
-		old = NULL;
-	} else
-		old = mget_vector_get(cookie_db->cookies, pos = mget_vector_find(cookie_db->cookies, cookie));
+	old = mget_vector_get(cookie_db->cookies, pos = mget_vector_find(cookie_db->cookies, cookie));
 
 	if (old) {
 		debug_printf("replace old cookie %s=%s\n", cookie->name, cookie->value);
@@ -702,7 +701,7 @@ int mget_cookie_db_load(mget_cookie_db_t *cookie_db, const char *fname, int keep
 			for (p = *linep ? ++linep : linep; *linep;) linep++;
 			cookie.value = strndup(p, linep - p);
 
-			if (mget_cookie_normalize_cookie(NULL, &cookie) != 0) {
+			if (mget_cookie_normalize(NULL, &cookie) != 0) {
 				ncookies++;
 				mget_cookie_store_cookie(cookie_db, &cookie);
 			} else

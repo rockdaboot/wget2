@@ -885,21 +885,24 @@ static void test_cookies(void)
 		},
 	};
 	mget_cookie_t cookie;
+	mget_cookie_db_t cookies;
 	mget_iri_t *iri;
 	unsigned it;
 	int result;
 
+	mget_cookie_db_init(&cookies);
 	mget_cookie_load_public_suffixes(DATADIR "/public_suffixes.txt");
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
-		char thedate[32];
+		char thedate[32], *header;
 
 		iri = mget_iri_parse(t->uri, "utf-8");
 		mget_http_parse_setcookie(t->set_cookie, &cookie);
-		if ((result = mget_cookie_normalize_cookie(iri, &cookie)) != t->result) {
+		if ((result = mget_cookie_normalize(iri, &cookie)) != t->result) {
 			failed++;
 			info_printf("Failed [%u]: normalize_cookie(%s) -> %d (expected %d)\n", it, t->set_cookie, result, t->result);
+			mget_cookie_deinit(&cookie);
 			goto next;
 		}
 
@@ -908,6 +911,7 @@ static void test_cookies(void)
 			if (strcmp(thedate, t->expires)) {
 				failed++;
 				info_printf("Failed [%u]: expires mismatch: '%s' != '%s' (time_t %lld)\n", it, thedate, t->expires, (long long)cookie.expires);
+				mget_cookie_deinit(&cookie);
 				goto next;
 			}
 		}
@@ -947,15 +951,23 @@ static void test_cookies(void)
 			if (cookie.http_only != t->http_only)
 				info_printf("  http_only %d (expected %d)\n", cookie.http_only, t->http_only);
 
+			mget_cookie_deinit(&cookie);
 			goto next;
 		}
+
+		mget_cookie_store_cookie(&cookies, &cookie);
+
+		info_printf("%s\n", header = mget_cookie_create_request_header(&cookies, iri));
+		xfree(header);
 
 		ok++;
 
 next:
-		mget_cookie_deinit(&cookie);
 		mget_iri_free(&iri);
 	}
+
+	mget_cookie_free_public_suffixes();
+	mget_cookie_db_deinit(&cookies);
 }
 
 static void test_hsts(void)
@@ -1248,6 +1260,18 @@ static void test_stringmap(void)
 
 int main(int argc, const char * const *argv)
 {
+	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
+	if (argc == 1) {
+		const char *valgrind = getenv("TESTS_VALGRIND");
+
+		if (valgrind && *valgrind) {
+			char cmd[strlen(valgrind)+strlen(argv[0])+32];
+
+			snprintf(cmd, sizeof(cmd), "TESTS_VALGRIND="" %s %s", valgrind, argv[0]);
+			return system(cmd) != 0;
+		}
+	}
+
 	init(argc, argv); // allows us to test with options (e.g. with --debug)
 
 	srand(time(NULL));
@@ -1271,7 +1295,6 @@ int main(int argc, const char * const *argv)
 	test_parser();
 
 	test_cookies();
-	mget_cookie_free_public_suffixes();
 
 	test_hsts();
 

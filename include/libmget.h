@@ -863,7 +863,7 @@ void
 void
 	mget_cookie_free_public_suffixes(void);
 int
-	mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *cookie);
+	mget_cookie_normalize(const mget_iri_t *iri, mget_cookie_t *cookie);
 mget_cookie_db_t *
 	mget_cookie_db_init(mget_cookie_db_t *cookie_db);
 void
