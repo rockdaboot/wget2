@@ -891,7 +891,7 @@ static void test_cookies(void)
 	int result;
 
 	mget_cookie_db_init(&cookies);
-	mget_cookie_load_public_suffixes(DATADIR "/public_suffixes.txt");
+	mget_cookie_load_public_suffixes(DATADIR "/effective_tld_names.dat");
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];

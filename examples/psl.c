@@ -17,10 +17,10 @@
  * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * test routines
+ * Public Suffix List routines (right now experimental)
  *
  * Changelog
- * 06.07.2012  Tim Ruehsen  created
+ * 19.03.2014  Tim Ruehsen  created from libmget/cookie.c
  *
  */
 
@@ -36,15 +36,7 @@
 
 #define info_printf printf
 #define error_printf printf
-#define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 #define countof(a) (sizeof(a)/sizeof(*(a)))
-
-void
-	psl_free(void);
-int
-	psl_load_file(const char *fname);
-int
-	psl_is_tld(const char *domain);
 
 typedef struct {
 	char
@@ -56,15 +48,24 @@ typedef struct {
 	unsigned char
 		nlabels, // number of labels
 		wildcard; // this is a wildcard rule (e.g. *.sapporo.jp)
-} PUBLIC_SUFFIX;
+} _psl_entry_t;
 
-static mget_vector_t
-	*_suffixes,
-	*_suffix_exceptions;
+typedef struct {
+	mget_vector_t
+		*suffixes,
+		*suffix_exceptions;
+} psl_ctx_t;
+
+void
+	psl_free(psl_ctx_t **psl);
+psl_ctx_t *
+	psl_load_file(const char *fname);
+int
+	psl_is_tld(psl_ctx_t *psl, const char *domain);
 
 // by this kind of sorting, we can easily see if a domain matches or not (match = supercookie !)
 
-static int G_GNUC_MGET_NONNULL_ALL _suffix_compare(const PUBLIC_SUFFIX *s1, const PUBLIC_SUFFIX *s2)
+static int G_GNUC_MGET_NONNULL_ALL _suffix_compare(const _psl_entry_t *s1, const _psl_entry_t *s2)
 {
 	int n;
 
@@ -77,7 +78,7 @@ static int G_GNUC_MGET_NONNULL_ALL _suffix_compare(const PUBLIC_SUFFIX *s1, cons
 	return strcmp(s1->label, s2->label);
 }
 
-static void G_GNUC_MGET_NONNULL_ALL _suffix_init(PUBLIC_SUFFIX *suffix, const char *rule, size_t length)
+static void G_GNUC_MGET_NONNULL_ALL _suffix_init(_psl_entry_t *suffix, const char *rule, size_t length)
 {
 	const char *src;
 	char *dst;
@@ -114,9 +115,9 @@ static void G_GNUC_MGET_NONNULL_ALL _suffix_init(PUBLIC_SUFFIX *suffix, const ch
 	*dst = 0;
 }
 
-int psl_is_tld(const char *domain)
+int psl_is_tld(psl_ctx_t *psl, const char *domain)
 {
-	PUBLIC_SUFFIX suffix, *rule;
+	_psl_entry_t suffix, *rule;
 	const char *p, *label_bak;
 	unsigned short length_bak;
 
@@ -131,11 +132,11 @@ int psl_is_tld(const char *domain)
 			suffix.nlabels++;
 
 	// if domain has enough labels, it won't match
-	rule = mget_vector_get(_suffixes, 0);
+	rule = mget_vector_get(psl->suffixes, 0);
 	if (!rule || rule->nlabels < suffix.nlabels - 1)
 		return 0;
 
-	rule = mget_vector_get(_suffixes, mget_vector_find(_suffixes, &suffix));
+	rule = mget_vector_get(psl->suffixes, mget_vector_find(psl->suffixes, &suffix));
 	if (rule) {
 		// definitely a match, no matter if the found rule is a wildcard or not
 		return 1;
@@ -149,7 +150,7 @@ int psl_is_tld(const char *domain)
 		suffix.length = strlen(suffix.label);
 		suffix.nlabels--;
 
-		rule = mget_vector_get(_suffixes, mget_vector_find(_suffixes, &suffix));
+		rule = mget_vector_get(psl->suffixes, mget_vector_find(psl->suffixes, &suffix));
 		if (rule) {
 			if (rule->wildcard) {
 				// now that we matched a wildcard, we have to check for an exception
@@ -157,8 +158,7 @@ int psl_is_tld(const char *domain)
 				suffix.length = length_bak;
 				suffix.nlabels++;
 
-				rule = mget_vector_get(_suffix_exceptions, mget_vector_find(_suffix_exceptions, &suffix));
-				if (rule)
+				if (mget_vector_get(psl->suffix_exceptions, mget_vector_find(psl->suffix_exceptions, &suffix)) != 0)
 					return 0;
 
 				return 1;
@@ -169,21 +169,25 @@ int psl_is_tld(const char *domain)
 	return 0;
 }
 
-int psl_load_file(const char *fname)
+psl_ctx_t *psl_load_file(const char *fname)
 {
-	PUBLIC_SUFFIX suffix, *suffixp;
+	psl_ctx_t *psl;
+	_psl_entry_t suffix, *suffixp;
 	FILE *fp;
 	int nsuffixes = 0;
 	char *buf = NULL, *linep, *p;
 	size_t bufsize = 0;
 	ssize_t buflen;
 
+	if (!(psl = calloc(1, sizeof(psl_ctx_t))))
+		return NULL;
+
 	// as of 02.11.2012, the list at http://publicsuffix.org/list/ contains ~6000 rules and 40 exceptions.
 	// as of 19.02.2014, the list at http://publicsuffix.org/list/ contains ~6500 rules and 19 exceptions.
-	if (!_suffixes)
-		_suffixes = mget_vector_create(8*1024, -2, (int(*)(const void *, const void *))_suffix_compare);
-	if (!_suffix_exceptions)
-		_suffix_exceptions = mget_vector_create(64, -2, (int(*)(const void *, const void *))_suffix_compare);
+	if (psl->suffixes)
+		psl->suffixes = mget_vector_create(8*1024, -2, (int(*)(const void *, const void *))_suffix_compare);
+	if (psl->suffix_exceptions)
+		psl->suffix_exceptions = mget_vector_create(64, -2, (int(*)(const void *, const void *))_suffix_compare);
 
 	if ((fp = fopen(fname, "r"))) {
 		while ((buflen = getline(&buf, &bufsize, fp)) >= 0) {
@@ -198,13 +202,14 @@ int psl_load_file(const char *fname)
 			// parse suffix rule
 			for (p = linep; *linep && !isspace(*linep);) linep++;
 			*linep = 0;
+
 			if (*p == '!') {
 				// add to exceptions
 				_suffix_init(&suffix, p + 1, linep - p - 1);
-				suffixp = mget_vector_get(_suffix_exceptions, mget_vector_add(_suffix_exceptions, &suffix, sizeof(suffix)));
+				suffixp = mget_vector_get(psl->suffix_exceptions, mget_vector_add(psl->suffix_exceptions, &suffix, sizeof(suffix)));
 			} else {
 				_suffix_init(&suffix, p, linep - p);
-				suffixp = mget_vector_get(_suffixes, mget_vector_add(_suffixes, &suffix, sizeof(suffix)));
+				suffixp = mget_vector_get(psl->suffixes, mget_vector_add(psl->suffixes, &suffix, sizeof(suffix)));
 			}
 
 			if (suffixp)
@@ -213,22 +218,26 @@ int psl_load_file(const char *fname)
 			nsuffixes++;;
 		}
 
-		xfree(buf);
+		free(buf);
 		fclose(fp);
 
-		mget_vector_sort(_suffix_exceptions);
-		mget_vector_sort(_suffixes);
+		mget_vector_sort(psl->suffix_exceptions);
+		mget_vector_sort(psl->suffixes);
 
 	} else
-		error_printf(_("Failed to open public suffix file '%s'\n"), fname);
+		error_printf(_("Failed to open PSL file '%s'\n"), fname);
 
 	return nsuffixes;
 }
 
-void psl_free(void)
+void psl_free(psl_ctx_t **psl)
 {
-	mget_vector_free(&_suffixes);
-	mget_vector_free(&_suffix_exceptions);
+	if (psl && *psl) {
+		mget_vector_free(&(*psl)->suffixes);
+		mget_vector_free(&(*psl)->suffix_exceptions);
+		free(*psl);
+		*psl = NULL;
+	}
 }
 
 static int
@@ -255,9 +264,9 @@ static void test_cookies(void)
 		{ "www.xxx.ck", 0 },
 	};
 	unsigned it;
+	psl_ctx_t *psl;
 
-	psl_load_file("../data/public_suffixes.txt");
-//	psl_load_file("../data/effective_tld_names.dat");
+	psl = psl_load_file("../data/effective_tld_names.dat");
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
@@ -271,7 +280,7 @@ static void test_cookies(void)
 		}
 	}
 
-	psl_free();
+	psl_free(&psl);
 }
 
 int main(int argc, const char * const *argv)
