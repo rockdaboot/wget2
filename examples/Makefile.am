@@ -1,5 +1,5 @@
 noinst_PROGRAMS = print_css_urls print_css_urls2 print_css_urls3 http_get\
- http_get2 getstream print_html_urls psl
+ http_get2 getstream print_html_urls
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_LDFLAGS = -static
