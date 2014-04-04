@@ -98,7 +98,7 @@ void mget_global_init(int first_key, ...)
 			_config.cookies_enabled = 1;
 			break;
 		case MGET_COOKIES_ENABLED:
-			_config.cookies_enabled = va_arg(args, int);
+			_config.cookies_enabled = !!va_arg(args, int);
 			break;
 		case MGET_COOKIE_FILE:
 			// load cookie-store
@@ -106,7 +106,7 @@ void mget_global_init(int first_key, ...)
 			_config.cookie_file = va_arg(args, char *);
 			break;
 		case MGET_COOKIE_KEEPSESSIONCOOKIES:
-			_config.keep_session_cookies = va_arg(args, int);
+			_config.keep_session_cookies = !!va_arg(args, int);
 			break;
 		case MGET_BIND_ADDRESS:
 			mget_tcp_set_bind_address(NULL, va_arg(args, const char *));
@@ -199,10 +199,8 @@ const void *mget_global_get_ptr(int key)
 //		break;
 	case MGET_COOKIE_FILE:
 		return _config.cookie_file;
-		break;
 	case MGET_COOKIE_DB:
 		return &_config.cookie_db;
-		break;
 	default:
 		mget_error_printf(_("%s: Unknown option %d"), __func__, key);
 		return NULL;

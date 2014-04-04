@@ -75,15 +75,15 @@ static void nop(int sig G_GNUC_MGET_UNUSED)
 	terminate = 1;
 }
 
-static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
+static void *_server_thread(void *ctx)
 {
 	mget_tcp_t *tcp=NULL, *parent_tcp = ctx;
 	mget_test_url_t *url = NULL;
 	char buf[4096], method[32], request_url[256], tag[64], value[256], *p;
-	ssize_t nbytes;
+	ssize_t nbytes, from_bytes, to_bytes;
 	size_t body_len, request_url_length;
 	unsigned it;
-	int byterange, from_bytes, to_bytes, authorized;
+	int byterange, authorized;
 	time_t modified;
 
 	sigaction(SIGTERM, &(struct sigaction) { .sa_handler = nop }, NULL);
@@ -102,13 +102,12 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 					continue;
 				}
 
-				byterange = from_bytes = 0;
+				byterange = from_bytes = to_bytes = 0;
 				modified = 0;
 
 				for (p = strstr(buf, "\r\n"); sscanf(p, "\r\n%63[^:]: %255[^\r]", tag, value) == 2; p = strstr(p + 2, "\r\n")) {
 					if (!strcasecmp(tag, "Range")) {
-						to_bytes = 0;
-						if ((byterange = sscanf(value, "bytes=%d-%d", &from_bytes, &to_bytes)) < 0)
+						if ((byterange = sscanf(value, "bytes=%zd-%zd", &from_bytes, &to_bytes)) < 1)
 							byterange = 0;
 					}
 					else if (url && !strcasecmp(tag, "Authorization")) {
@@ -198,7 +197,7 @@ static void *_server_thread(void *ctx G_GNUC_MGET_UNUSED)
 						"HTTP/1.1 206 Partial Content\r\n"\
 						"Content-Length: %zu\r\n"\
 						"Accept-Ranges: bytes\r\n"\
-						"Content-Range: %d-%d/%zu\r\n",
+						"Content-Range: %zd-%zd/%zu\r\n",
 						body_len, from_bytes, to_bytes, body_len);
 					for (it = 0; it < countof(url->headers) && url->headers[it]; it++) {
 						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s\r\n", url->headers[it]);
@@ -463,7 +462,7 @@ void mget_test(int first_key, ...)
 		*existing_files = NULL;
 	mget_buffer_t
 		*cmd = mget_buffer_alloc(1024);
-	size_t
+	unsigned
 		it;
 	int
 		key,

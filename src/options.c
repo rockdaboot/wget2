@@ -320,13 +320,13 @@ static int parse_timeout(option_t opt, G_GNUC_MGET_UNUSED const char *const *arg
 		fval = -1;
 
 	if (opt->var) {
-		*((int *)opt->var) = fval;
+		*((int *)opt->var) = (int) fval;
 		// debug_printf("timeout set to %gs\n",*((int *)opt->var)/1000.);
 	} else {
 		// --timeout option sets all timeouts
 		config.connect_timeout =
 		config.dns_timeout =
-		config.read_timeout = fval;
+		config.read_timeout = (int) fval;
 	}
 
 	return 0;
@@ -402,7 +402,7 @@ static int parse_n_option(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED co
 	return 0;
 }
 
-static int parse_prefer_family(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_prefer_family(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	if (!val || !strcasecmp(val, "none"))
 		*((char *)opt->var) = MGET_NET_FAMILY_ANY;
@@ -862,7 +862,7 @@ static void read_config(void)
 static int G_GNUC_MGET_NONNULL((2)) parse_command_line(int argc, const char *const *argv)
 {
 	static short shortcut_to_option[128];
-	size_t it;
+	unsigned short it;
 	int n;
 
 	// init the short option lookup table

@@ -224,6 +224,7 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 			return addrinfo;
 		}
 	}
+	addrinfo = NULL;
 
 #if defined(AI_NUMERICSERV)
 	ai_flags |= (isdigit(*port) ? AI_NUMERICSERV : 0);

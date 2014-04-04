@@ -218,14 +218,14 @@ char *mget_buffer_trim(mget_buffer_t *buf)
 			for (; isspace(*end) && end >= start; end--)
 				;
 			end[1] = 0;
-			buf->length = end - start + 1;
+			buf->length = (size_t) (end - start + 1);
 		}
 
 		if (isspace(*start)) {
 			// skip leading spaces
 			for (; isspace(*start) && end >= start; start++)
 				;
-			buf->length = end - start + 1;
+			buf->length = (size_t) (end - start + 1);
 			memmove(buf->data, start, buf->length + 1); // include trailing 0
 		}
 	}

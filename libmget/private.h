@@ -58,7 +58,7 @@ struct _mget_logger_st {
 	const char *fname;
 	void (*func)(const char *buf, size_t bufsize);
 
-	void (*vprintf)(const mget_logger_t *logger, const char *fmt, va_list args);
+	void (*vprintf)(const mget_logger_t *logger, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0);
 	void (*write)(const mget_logger_t *logger, const char *buf, size_t bufsize);
 };
 

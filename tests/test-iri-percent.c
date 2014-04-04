@@ -31,7 +31,7 @@
 #include <stdlib.h> // exit()
 #include "libtest.h"
 
-#define ccedilla_l15 "\xE7"
+// #define ccedilla_l15 "\xE7"
 #define ccedilla_l15_pct "%E7"
 #define ccedilla_u8 "\xC3\xA7"
 #define ccedilla_u8_pct "%C3%A7"

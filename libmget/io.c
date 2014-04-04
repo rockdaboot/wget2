@@ -204,7 +204,7 @@ ssize_t mget_getline(char **buf, size_t *bufsize, FILE *fp)
 }
 
 #ifdef POLLIN
-static int _ready_2_transfer(int fd, int timeout, int mode)
+static int _ready_2_transfer(int fd, int timeout, short mode)
 {
 	// 0: no timeout / immediate
 	// -1: INFINITE timeout
@@ -218,8 +218,7 @@ static int _ready_2_transfer(int fd, int timeout, int mode)
 			mode = POLLOUT;
 
 		// wait for socket to be ready to read
-		struct pollfd pollfd[1] = {
-			{ fd, mode, 0}};
+		struct pollfd pollfd[1] = { { fd, mode, 0 } };
 
 		if ((rc = poll(pollfd, 1, timeout)) <= 0)
 			return rc < 0 ? -1 : 0;

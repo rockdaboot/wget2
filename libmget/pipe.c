@@ -208,7 +208,7 @@ pid_t mget_fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv)
 
 pid_t mget_popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *argv)
 {
-	int fdin, fdout, fderr = -1;
+	int fdin = -1, fdout = -1, fderr = -1;
 	pid_t pid;
 
 	if (fpin) *fpin = NULL;

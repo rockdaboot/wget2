@@ -76,7 +76,7 @@ static void G_GNUC_MGET_NORETURN usage(const char *myname)
 }
 
 // Callback function, called from CSS parser for each @charset found.
-static void css_parse_encoding(void *context G_GNUC_MGET_UNUSED, const char *encoding, size_t len)
+static void css_parse_encoding(void *context, const char *encoding, size_t len)
 {
 	struct css_context *ctx = context;
 
@@ -93,7 +93,7 @@ static void css_parse_encoding(void *context G_GNUC_MGET_UNUSED, const char *enc
 }
 
 // Callback function, called from CSS parser for each URI found.
-static void css_parse_uri(void *context G_GNUC_MGET_UNUSED, const char *url, size_t len, size_t pos G_GNUC_MGET_UNUSED)
+static void css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_MGET_UNUSED)
 {
 	struct css_context *ctx = context;
 

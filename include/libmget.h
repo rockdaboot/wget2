@@ -378,9 +378,9 @@ char *
 
 int
 	mget_base64_is_string(const char *src) G_GNUC_MGET_PURE;
-int
+size_t
 	mget_base64_decode(char *restrict dst, const char *restrict src, int n) G_GNUC_MGET_NONNULL_ALL;
-int
+size_t
 	mget_base64_encode(char *restrict dst, const char *restrict src, int n) G_GNUC_MGET_NONNULL_ALL;
 char *
 	mget_base64_decode_alloc(const char *restrict src, int n) G_GNUC_MGET_NONNULL_ALL;
@@ -501,7 +501,7 @@ void
 void
 	mget_debug_printf(const char *fmt, ...) G_GNUC_MGET_NONNULL((1)) G_GNUC_MGET_PRINTF_FORMAT(1,2);
 void
-	mget_debug_write(const char *buf, int len) G_GNUC_MGET_NONNULL_ALL;
+	mget_debug_write(const char *buf, size_t len) G_GNUC_MGET_NONNULL_ALL;
 mget_logger_t *
 	mget_get_logger(int id) G_GNUC_MGET_CONST;
 

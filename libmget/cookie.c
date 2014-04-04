@@ -43,7 +43,7 @@ typedef struct {
 		label_buf[42];
 	const char *
 		label;
-	unsigned short
+	size_t
 		length;
 	unsigned char
 		nlabels, // number of labels
@@ -63,7 +63,7 @@ static int G_GNUC_MGET_NONNULL_ALL _suffix_compare(const PUBLIC_SUFFIX *s1, cons
 	if ((n = s2->nlabels - s1->nlabels))
 		return n; // most labels first
 
-	if ((n=s1->length - s2->length))
+	if ((n = (int) (s1->length - s2->length)))
 		return n;  // shorter rules first
 
 	return strcmp(s1->label, s2->label);
@@ -101,7 +101,7 @@ static void G_GNUC_MGET_NONNULL_ALL _suffix_init(PUBLIC_SUFFIX *suffix, const ch
 	for (dst = suffix->label_buf, src = rule; *src;) {
 		if (*src == '.')
 			suffix->nlabels++;
-		*dst++ = tolower(*src++);
+		*dst++ = (char) tolower(*src++);
 	}
 	*dst = 0;
 }
@@ -117,7 +117,7 @@ int mget_cookie_suffix_match(const char *domain)
 {
 	PUBLIC_SUFFIX suffix, *rule;
 	const char *p, *label_bak;
-	unsigned short length_bak;
+	size_t length_bak;
 
 	// this function should be called without leading dots, just make shure
 	suffix.label = domain + (*domain == '.');

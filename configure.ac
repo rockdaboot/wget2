@@ -39,7 +39,8 @@ AC_CANONICAL_HOST
 
 # If CFLAGS isn't defined and using gcc, set CFLAGS to something reasonable.
 # Otherwise, just prevent autoconf from molesting CFLAGS.
-AC_PROG_CC
+#AC_PROG_CC
+AC_PROG_CC_STDC
 
 if test "x$CFLAGS" = "x" ; then
   if test "x$GCC" = "xyes" ; then

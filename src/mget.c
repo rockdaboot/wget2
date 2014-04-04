@@ -787,7 +787,7 @@ void *downloader_thread(void *p)
 		if (config.wait) {
 			if (do_wait) {
 				if (config.random_wait)
-					mget_millisleep(config.wait / 2 + drand48() * config.wait);
+					mget_millisleep(config.wait / (int) (2 + drand48() * config.wait));
 				else
 					mget_millisleep(config.wait);
 			} else
@@ -862,9 +862,9 @@ void *downloader_thread(void *p)
 				metalink->size = resp->content_length; // total file size
 				metalink->name = mget_strdup(job->local_filename);
 
-				int npieces = (resp->content_length + config.chunk_size - 1) / config.chunk_size;
-				metalink->pieces = mget_vector_create(npieces, 1, NULL);
-				for (int it = 0; it < npieces; it++) {
+				ssize_t npieces = (resp->content_length + config.chunk_size - 1) / config.chunk_size;
+				metalink->pieces = mget_vector_create((int) npieces, 1, NULL);
+				for (unsigned it = 0; it < npieces; it++) {
 					piece.position = it * config.chunk_size;
 					mget_vector_add(metalink->pieces, &piece, sizeof(mget_metalink_piece_t));
 				}

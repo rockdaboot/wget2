@@ -65,7 +65,7 @@ static const char *test_data[] ={
 	"</html>\n"
 };
 
-static void html_dump(G_GNUC_MGET_UNUSED void *user_ctx, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos)
+static void html_dump(void *user_ctx, int flags, const char *dir G_GNUC_MGET_UNUSED, const char *attr, const char *val, size_t len, size_t pos)
 {
 //	info_printf("\n%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
@@ -89,14 +89,14 @@ static void html_dump(G_GNUC_MGET_UNUSED void *user_ctx, int flags, const char *
 			const char *doc = (const char *)user_ctx;
 
 			if (memcmp(doc + pos, val, len)) {
-				error_printf_exit("Not found: '%.*s' expected at pos %zd with length %zd\n", (int) len, val, pos, len);
 				failed++;
+				error_printf_exit("Not found: '%.*s' expected at pos %zd with length %zd\n", (int) len, val, pos, len);
 			} else
 				ok++;
 		}
 	}
 	return;
-
+/*
 	if (flags & XML_FLG_BEGIN) {
 		const char *p = *dir == '/' ? strrchr(dir, '/') : dir;
 		if (p) {
@@ -134,6 +134,7 @@ static void html_dump(G_GNUC_MGET_UNUSED void *user_ctx, int flags, const char *
 		info_printf("<?%.*s?>", (int) len, val);
 	else if (flags == XML_FLG_SPECIAL)
 		info_printf("<!%.*s>", (int) len, val);
+*/
 }
 
 static void test_parse_buffer(void)

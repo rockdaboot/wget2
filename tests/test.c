@@ -1038,7 +1038,7 @@ static void test_utils(void)
 
 	for (ndst = 1; ndst <= 3; ndst++) {
 		for (it = 0; it <= 255; it++) {
-			src[0] = it;
+			src[0] = (unsigned char) it;
 			mget_memtohex(src, 1, dst1, ndst);
 			snprintf(dst2, ndst, "%02x", src[0]);
 			if (strcmp(dst1, dst2)) {
@@ -1073,7 +1073,7 @@ static void test_vector(void)
 		*txt[countof(txt_sorted)];
 	mget_vector_t
 		*v = mget_vector_create(2, -2, (int(*)(const void *, const void *))compare_txt);
-	size_t
+	unsigned
 		it;
 	int
 		n;
@@ -1084,7 +1084,7 @@ static void test_vector(void)
 
 	// shuffle txt
 	for (it = 0; it < countof(txt); it++) {
-		n = rand()%countof(txt);
+		n = rand() % countof(txt);
 		tmp = txt[n];
 		txt[n] = txt[it];
 		txt[it] = tmp;
@@ -1116,14 +1116,15 @@ static void test_stringmap(void)
 {
 	mget_stringmap_t *h;
 	char key[128], value[128], *val;
-	int run, it, valuesize;
+	int run, it;
+	size_t valuesize;
 
 	// the initial size of 16 forces the internal reshashing function to be called twice
 
+	h = mget_stringmap_create(16);
+
 	for (run = 0; run < 2; run++) {
-		if (run == 0) {
-			h = mget_stringmap_create(16);
-		} else {
+		if (run) {
 			mget_stringmap_clear(h);
 			mget_stringmap_sethashfunc(h, hash_txt);
 		}
@@ -1274,7 +1275,7 @@ int main(int argc, const char * const *argv)
 
 	init(argc, argv); // allows us to test with options (e.g. with --debug)
 
-	srand(time(NULL));
+	srand((unsigned int) time(NULL));
 
 	// testing basic library functionality
 	test_buffer();

@@ -106,11 +106,11 @@ static int gzip_decompress(mget_decompressor_t *dc, char *src, size_t srclen)
 	}
 
 	strm = &dc->z_strm;
-	strm->next_in = (unsigned char *)src;
-	strm->avail_in = srclen;
+	strm->next_in = (unsigned char *) src;
+	strm->avail_in = (unsigned int) srclen;
 
 	do {
-		strm->next_out = (unsigned char *)dst;
+		strm->next_out = (unsigned char *) dst;
 		strm->avail_out = sizeof(dst);
 
 		status = inflate(strm, Z_SYNC_FLUSH);
@@ -235,7 +235,7 @@ static int bzip2_decompress(mget_decompressor_t *dc, char *src, size_t srclen)
 
 	strm = &dc->bz_strm;
 	strm->next_in = src;
-	strm->avail_in = srclen;
+	strm->avail_in = (unsigned int) srclen;
 
 	do {
 		strm->next_out = dst;

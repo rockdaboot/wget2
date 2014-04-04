@@ -74,7 +74,7 @@ int mget_base64_is_string(const char *src)
 }
 
 // dst size must be at least ((n+3)/4)*3+1 bytes
-int mget_base64_decode(char *dst, const char *src, int n)
+size_t mget_base64_decode(char *dst, const char *src, int n)
 {
 	const unsigned char *usrc = (const unsigned char *)src;
 	char *old = dst;
@@ -111,7 +111,7 @@ int mget_base64_decode(char *dst, const char *src, int n)
 	}
 
 	*dst = 0;
-	return (int) (dst - old);
+	return (size_t) (dst - old);
 }
 
 char *mget_base64_decode_alloc(const char *src, int n)
@@ -124,7 +124,7 @@ char *mget_base64_decode_alloc(const char *src, int n)
 }
 
 // dst size must be at least ((n+2)/3)*4+1 bytes
-int mget_base64_encode(char *dst, const char *src, int n)
+size_t mget_base64_encode(char *dst, const char *src, int n)
 {
 	static const char base64[64] =
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -158,7 +158,7 @@ int mget_base64_encode(char *dst, const char *src, int n)
 
 	*dst = 0;
 
-	return dst - start;
+	return (size_t) (dst - start);
 }
 
 char *mget_base64_encode_alloc(const char *src, int n)

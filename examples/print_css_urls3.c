@@ -38,11 +38,11 @@
 
 // use the helper routines provided by libmget
 #define info_printf        mget_info_printf
-#define error_printf       mget_error_printf
+// #define error_printf       mget_error_printf
 #define error_printf_exit  mget_error_printf_exit
 
 // I try to never leave freed pointers hanging around
-#define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
+// #define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 
 static void G_GNUC_MGET_NORETURN usage(const char *myname)
 {
