@@ -20,7 +20,7 @@
  * Testing Mget
  *
  * Changelog
- * 15.07.2013  Tim Ruehsen  created
+ * 27.05.2014  Tim Ruehsen  created
  *
  */
 
@@ -39,7 +39,7 @@ int main(void)
 			.body =
 				"<html><head><title>Main Page</title></head><body><p>A link to a" \
 				" <a href=\"http://localhost:{{port}}/secondpage.html\">second page</a>." \
-				" Also, a <a href=\"http://localhost:{{port}}/nonexistent\">broken link</a>." \
+				" Hey, a picture <img src=\"picture.png\"/>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -68,6 +68,13 @@ int main(void)
 				"Content-Type: text/html",
 			}
 		},
+		{	.name = "/picture.png",
+			.code = "200 Dontcare",
+			.body = "PNG data",
+			.headers = {
+				"Content-Type: image/png",
+			}
+		},
 		{	.name = "/dummy.txt",
 			.code = "200 Dontcare",
 			.body = "What ever",
@@ -82,21 +89,16 @@ int main(void)
 		MGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 
-	// test--spider-r-HTTP-Content-Disposition
+	// test--page-requisites
 	mget_test(
-//		MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "--spider -r",
+		MGET_TEST_KEEP_TMPFILES, 1,
+		MGET_TEST_OPTIONS, "--page-requisites",
 		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 8,
-		0);
-
-	// test--spider-r
-	urls[1].headers[1] = NULL;
-	mget_test(
-//		MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "--spider -r",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 8,
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ "localhost/index.html", urls[0].body },
+			{ "localhost/picture.png", urls[3].body },
+			{	NULL } },
 		0);
 
 	exit(0);

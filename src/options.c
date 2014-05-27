@@ -1132,6 +1132,11 @@ int init(int argc, const char *const *argv)
 	if (config.password && !config.http_password)
 		config.http_password = strdup(config.password);
 
+	if (config.page_requisites && !config.recursive) {
+		config.recursive = 1;
+		config.level = 1;
+	}
+
 	// set module specific options
 	mget_tcp_set_timeout(NULL, config.read_timeout);
 	mget_tcp_set_connect_timeout(NULL, config.connect_timeout);

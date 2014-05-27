@@ -1171,7 +1171,8 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 
 	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
-	int page_requisites = config.recursive && config.page_requisites && config.level && level >= config.level;
+	int page_requisites = config.recursive && config.page_requisites && config.level && level < config.level;
+	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
 
 	for (int it = 0; it < mget_vector_size(res->uris); it++) {
 		MGET_HTML_PARSED_URL *html_url = mget_vector_get(res->uris, it);
