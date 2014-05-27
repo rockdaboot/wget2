@@ -91,7 +91,7 @@ int main(void)
 
 	// test--page-requisites
 	mget_test(
-		MGET_TEST_KEEP_TMPFILES, 1,
+//		MGET_TEST_KEEP_TMPFILES, 1,
 		MGET_TEST_OPTIONS, "--page-requisites",
 		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
