@@ -91,9 +91,8 @@ static void _html_get_url(void *context, int flags, const char *dir, const char 
 
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
 		MGET_HTML_PARSE_RESULT *res = &ctx->result;
-//		int found = 0;
 
-		// info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
+//		info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
 
 		if ((*dir|0x20) == 'm' && !strcasecmp(dir, "meta")) {
 			if (!ctx->found_robots) {
@@ -146,7 +145,8 @@ static void _html_get_url(void *context, int flags, const char *dir, const char 
 			return;
 		}
 
-		if (!maybe[(unsigned char)*attr] || !attr[1] || !attr[2])
+		// shortcut to avoid unneeded calls to bsearch()
+		if (!maybe[(unsigned char)*attr|0x20] || !attr[1] || !attr[2])
 			return;
 
 		if (bsearch(attr, attrs, countof(attrs), sizeof(attrs[0]), (int(*)(const void *, const void *))strcasecmp)) {

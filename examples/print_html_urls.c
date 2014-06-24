@@ -57,6 +57,14 @@ static void html_parse_localfile(const char *fname)
 
 int main(int argc, const char *const *argv)
 {
+/*
+	mget_global_init(
+		MGET_DEBUG_STREAM, stderr,
+		MGET_ERROR_STREAM, stderr,
+		MGET_INFO_STREAM, stdout,
+		NULL);
+*/
+
 	if (!isatty(STDIN_FILENO)) {
 		// read HTML data from STDIN
 		html_parse_localfile("-");
