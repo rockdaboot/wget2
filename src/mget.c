@@ -454,7 +454,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 			if (!strcmp(parent->host, iri->host)) {
 				if (!parent->dirlen || !strncmp(parent->path, iri->path, parent->dirlen)) {
-					info_printf("found\n");
+					// info_printf("found\n");
 					ok = 1;
 					break;
 				}
@@ -1172,7 +1172,7 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	int page_requisites = config.recursive && config.page_requisites && config.level && level < config.level;
-	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
+//	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
 
 	for (int it = 0; it < mget_vector_size(res->uris); it++) {
 		MGET_HTML_PARSED_URL *html_url = mget_vector_get(res->uris, it);
