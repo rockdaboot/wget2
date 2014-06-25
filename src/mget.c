@@ -340,10 +340,16 @@ static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *enco
 		return NULL;
 	}
 
+	if (iri->scheme != MGET_IRI_SCHEME_HTTP && iri->scheme != MGET_IRI_SCHEME_HTTPS) {
+		mget_iri_free(&iri);
+		return NULL;
+	}
+
 	mget_thread_mutex_lock(&downloader_mutex);
 
 	if (!blacklist_add(iri)) {
 		mget_thread_mutex_unlock(&downloader_mutex);
+		mget_iri_free(&iri);
 		return NULL;
 	}
 
@@ -433,6 +439,12 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	if (!iri) {
 		error_printf(_("Cannot resolve URI '%s'\n"), url);
+		return;
+	}
+
+	if (iri->scheme != MGET_IRI_SCHEME_HTTP && iri->scheme != MGET_IRI_SCHEME_HTTPS) {
+		info_printf(_("URL '%s' not followed (unsupported scheme '%s')\n"), url, iri->scheme);
+		mget_iri_free(&iri);
 		return;
 	}
 
