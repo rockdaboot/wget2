@@ -720,7 +720,7 @@ mget_tcp_t *mget_tcp_accept(mget_tcp_t *parent_tcp)
 			return NULL;
 	}
 
-	if ((sockfd = accept(parent_tcp->sockfd, parent_tcp->bind_addrinfo->ai_addr, &parent_tcp->bind_addrinfo->ai_addrlen))!=-1) {
+	if ((sockfd = accept(parent_tcp->sockfd, parent_tcp->bind_addrinfo->ai_addr, &parent_tcp->bind_addrinfo->ai_addrlen)) != -1) {
 		mget_tcp_t *tcp = xmalloc(sizeof(mget_tcp_t));
 
 		*tcp = *parent_tcp;

@@ -91,6 +91,8 @@ static void
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, mget_iri_t *base);
 static int
 	download_part(DOWNLOADER *downloader);
+static unsigned int G_GNUC_MGET_PURE
+	hash_url(const char *url);
 mget_http_response_t
 	*http_get(mget_iri_t *iri, PART *part, DOWNLOADER *downloader, int method_get);
 
@@ -408,7 +410,8 @@ static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *enco
 }
 
 static mget_thread_mutex_t
-	main_mutex = MGET_THREAD_MUTEX_INITIALIZER;
+	main_mutex = MGET_THREAD_MUTEX_INITIALIZER,
+	known_urls_mutex = MGET_THREAD_MUTEX_INITIALIZER;
 static mget_thread_cond_t
 	main_cond = MGET_THREAD_COND_INITIALIZER, // is signalled whenever a job is done
 	worker_cond = MGET_THREAD_COND_INITIALIZER;  // is signalled whenever a job is added
@@ -475,8 +478,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 		if (!ok) {
 			mget_thread_mutex_unlock(&downloader_mutex);
-			info_printf(_("URL '%s' not followed (parent ascending not allowed)\n"), url);
 			mget_iri_free(&iri);
+			info_printf(_("URL '%s' not followed (parent ascending not allowed)\n"), url);
 			return;
 		}
 	}
@@ -614,6 +617,8 @@ int main(int argc, const char *const *argv)
 	sig_action.sa_handler = nop;
 	sigaction(SIGTERM, &sig_action, NULL);
 	sigaction(SIGINT, &sig_action, NULL);
+
+	known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
 
 	n = init(argc, argv);
 
@@ -1132,9 +1137,6 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 	if (config.robots && !res->follow)
 		goto cleanup;
 
-	if (!known_urls)
-		known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
-
 	// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
 	if (encoding && encoding == config.remote_encoding) {
 		reason = _("set by user");
@@ -1186,6 +1188,7 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 	int page_requisites = config.recursive && config.page_requisites && config.level && level < config.level;
 //	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
 
+	mget_thread_mutex_lock(&known_urls_mutex);
 	for (int it = 0; it < mget_vector_size(res->uris); it++) {
 		MGET_HTML_PARSED_URL *html_url = mget_vector_get(res->uris, it);
 		mget_string_t *url = &html_url->url;
@@ -1219,6 +1222,7 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 			}
 		}
 	}
+	mget_thread_mutex_unlock(&known_urls_mutex);
 
 	mget_buffer_deinit(&buf);
 
@@ -1247,9 +1251,6 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, mget_ir
 
 	mget_sitemap_get_urls_inline(data, &urls, &sitemap_urls);
 
-	if (!known_urls)
-		known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
-
 	if (base) {
 		if ((p = strrchr(base->uri, '/')))
 			baselen = p - base->uri + 1; // + 1 to include /
@@ -1259,6 +1260,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, mget_ir
 
 	// process the sitemap urls here
 	info_printf(_("found %d url(s) (base=%s)\n"), mget_vector_size(urls), base ? base->uri : NULL);
+	mget_thread_mutex_lock(&known_urls_mutex);
 	for (int it = 0; it < mget_vector_size(urls); it++) {
 		mget_string_t *url = mget_vector_get(urls, it);;
 
@@ -1295,6 +1297,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, mget_ir
 
 		add_url(job, encoding, p, URL_FLG_SITEMAP);
 	}
+	mget_thread_mutex_unlock(&known_urls_mutex);
 
 	mget_vector_free(&urls);
 	mget_vector_free(&sitemap_urls);
@@ -1340,9 +1343,6 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, mget_i
 	const char *end, *line, *p;
 	size_t len;
 
-	if (!known_urls)
-		known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
-
 	if (base) {
 		if ((p = strrchr(base->uri, '/')))
 			baselen = p - base->uri + 1; // + 1 to include /
@@ -1379,9 +1379,6 @@ static void _add_urls(JOB *job, mget_vector_t *urls, const char *encoding, mget_
 	const char *p;
 	size_t baselen = 0;
 
-	if (!known_urls)
-		known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
-
 	if (base) {
 		if ((p = strrchr(base->uri, '/')))
 			baselen = p - base->uri + 1; // + 1 to include /
@@ -1390,6 +1387,8 @@ static void _add_urls(JOB *job, mget_vector_t *urls, const char *encoding, mget_
 	}
 
 	info_printf(_("found %d url(s) (base=%s)\n"), mget_vector_size(urls), base ? base->uri : NULL);
+
+	mget_thread_mutex_lock(&known_urls_mutex);
 	for (int it = 0; it < mget_vector_size(urls); it++) {
 		mget_string_t *url = mget_vector_get(urls, it);;
 
@@ -1407,6 +1406,7 @@ static void _add_urls(JOB *job, mget_vector_t *urls, const char *encoding, mget_
 
 		add_url(job, encoding, p, 0);
 	}
+	mget_thread_mutex_unlock(&known_urls_mutex);
 }
 
 void atom_parse(JOB *job, const char *data, const char *encoding, mget_iri_t *base)
