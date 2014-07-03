@@ -224,7 +224,7 @@ static void *_server_thread(void *ctx)
 				mget_tcp_write(tcp, buf, nbytes);
 			}
 		} else if (!terminate)
-			mget_error_printf(_("Failed to get connection\n"));
+			mget_error_printf(_("Failed to get connection (%d)\n"), errno);
 	}
 
 	mget_tcp_deinit(&parent_tcp);
