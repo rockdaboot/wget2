@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2013 Tim Ruehsen
+ * Copyright(c) 2014 Tim Ruehsen
  *
  * This file is part of libmget.
  *
@@ -20,7 +20,7 @@
  * Testing Mget
  *
  * Changelog
- * 08.07.2013  Tim Ruehsen  created
+ * 02.07.2014  Tim Ruehsen  created
  *
  */
 
@@ -38,7 +38,8 @@ int main(void)
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Main Page</title></head><body><p>A link to a" \
-				" <a href=\"http://localhost:{{port}}/firstlevel/secondpage.html\">second page</a>." \
+				" <A hreF=\"http://localhost:{{port}}/firstlevel/secondpage.html\">second page</a>." \
+				" <a href=\"file://path/file_to_be_ignored.txt\">Unsupported file scheme</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -48,7 +49,7 @@ int main(void)
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Second Page</title></head><body><p>A link to a" \
-				" <a href=\"http://localhost:{{port}}/firstlevel/lowerlevel/thirdpage.html\">third page</a>." \
+				" <a hRef=\"http://localhost:{{port}}/firstlevel/lowerlevel/thirdpage.html\">third page</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -58,7 +59,7 @@ int main(void)
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Third Page</title></head><body><p>A link to a" \
-				" <a href=\"http://localhost:{{port}}/higherlevelpage.html\">higher level page</a>." \
+				" <A href=\"http://localhost:{{port}}/higherlevelpage.html\">higher level page</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -80,7 +81,7 @@ int main(void)
 				"<html><head><title>Higher Level Page</title></head><body><p>" \
 				"This page is on a higher level in the URL path hierarchy. Therefore, it" \
 				"should not be downloaded. Wget should not visit the following link to a" \
-				" <a href=\"http://localhost:{{port}}/firstlevel/fourthpage.html\">fourth page</a>." \
+				" <a Href=\"http://localhost:{{port}}/firstlevel/fourthpage.html\">fourth page</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",

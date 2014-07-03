@@ -66,8 +66,9 @@ struct JOB {
 		mirror_pos, // where to look up the next (metalink) mirror to use
 		piece_pos; // where to look up the next (metalink) piece to download
 	char
-		inuse,
-		sitemap; // URL is a sitemap to be scanned in recursive mode
+		inuse, // if job is already in use by another downloader thread
+		sitemap, // URL is a sitemap to be scanned in recursive mode
+		head_first; // first check mime type by using a HEAD request
 };
 
 JOB

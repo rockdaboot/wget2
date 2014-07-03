@@ -213,6 +213,10 @@ MGET_BEGIN_DECLS
 #define MGET_HTTP_BODY_SAVEAS_FUNC 2014
 #define MGET_HTTP_HEADER_FUNC 2015
 
+// used by http_get()
+#define MGET_HTTP_METHOD_HEAD 0
+#define MGET_HTTP_METHOD_GET  1
+
 void
 	mget_global_init(int key, ...) G_GNUC_MGET_NULL_TERMINATED;
 void
@@ -254,6 +258,10 @@ void
 	mget_millisleep(int ms);
 int
 	mget_percent_unescape(unsigned char *src);
+int
+	mget_match_tail(const char *s, const char *tail) G_GNUC_MGET_PURE;
+int
+	mget_match_tail_nocase(const char *s, const char *tail) G_GNUC_MGET_PURE;
 ssize_t
 	mget_fdgetline(char **buf, size_t *bufsize, int fd) G_GNUC_MGET_NONNULL_ALL;
 ssize_t

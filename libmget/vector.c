@@ -170,12 +170,12 @@ int mget_vector_insert_sorted_noalloc(mget_vector_t *v, const void *elem)
 
 int mget_vector_add(mget_vector_t *v, const void *elem, size_t size)
 {
-	return _vec_insert_private(v, elem, size, v->cur, 0, 1);
+	return v ? _vec_insert_private(v, elem, size, v->cur, 0, 1) : -1;
 }
 
 int mget_vector_add_noalloc(mget_vector_t *v, const void *elem)
 {
-	return _vec_insert_private(v, elem, 0, v->cur, 0, 0);
+	return v ? _vec_insert_private(v, elem, 0, v->cur, 0, 0) : -1;
 }
 
 int mget_vector_replace(mget_vector_t *v, const void *elem, size_t size, int pos)

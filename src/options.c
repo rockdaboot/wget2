@@ -143,6 +143,8 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --local-encoding    Character encoding of environment and filenames.\n"
 		"      --remote-encoding   Character encoding of remote files (if not specified in Content-Type HTTP header or in document itself)\n"
 		"  -t   --tries            Number of tries for each download. (default 20)\n"
+		"  -A   --accept           Comma-separated list of file name suffixes or patterns.\n"
+		"  -R   --reject           Comma-separated list of file name suffixes or patterns.\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -271,6 +273,29 @@ static int parse_stringset(option_t opt, G_GNUC_MGET_UNUSED const char *const *a
 			mget_stringmap_put_noalloc(map, strdup(s), NULL);
 	} else {
 		mget_stringmap_clear(map);
+	}
+
+	return 0;
+}
+
+static int parse_stringlist(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+{
+	mget_vector_t *v = *((mget_vector_t **)opt->var);
+
+	if (val) {
+		const char *s, *p;
+
+		if (!v)
+			v = *((mget_vector_t **)opt->var) = mget_vector_create(8, -2, NULL);
+
+		for (s = val; (p = strchr(s, ',')); s = p + 1) {
+			if (p != s)
+				mget_vector_add_noalloc(v, strndup(s, p - s));
+		}
+		if (*s)
+			mget_vector_add_noalloc(v, strdup(s));
+	} else {
+		mget_vector_free(&v);
 	}
 
 	return 0;
@@ -455,6 +480,7 @@ static int parse_execute(option_t opt, G_GNUC_MGET_UNUSED const char *const *arg
 static const struct option options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
+	{ "accept", &config.accept_patterns, parse_stringlist, 1, 'A' },
 	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E' },
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a' },
 	{ "base", &config.base_url, parse_string, 1, 'B' },
@@ -503,6 +529,7 @@ static const struct option options[] = {
 	{ "http-user", &config.http_username, parse_string, 1, 0 },
 	{ "https-only", &config.https_only, parse_bool, 0, 0 },
 	{ "https-proxy", &config.https_proxy, parse_string, 1, 0 },
+	{ "ignore-case", &config.ignore_case, parse_bool, 0, 0 },
 	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4' },
 	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6' },
 	{ "input-encoding", &config.input_encoding, parse_string, 1, 0 },
@@ -532,6 +559,7 @@ static const struct option options[] = {
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0 },
 	{ "recursive", &config.recursive, parse_bool, 0, 'r' },
 	{ "referer", &config.referer, parse_string, 1, 0 },
+	{ "reject", &config.reject_patterns, parse_stringlist, 1, 'R' },
 	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0 },
 	{ "restrict-file-names", &config.restrict_file_names, parse_restrict_names, 1, 0 },
 	{ "robots", &config.robots, parse_bool, 0, 0 },

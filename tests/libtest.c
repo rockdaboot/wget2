@@ -211,7 +211,7 @@ static void *_server_thread(void *ctx)
 					nbytes = snprintf(buf, sizeof(buf),
 						"HTTP/1.1 %s\r\n"\
 						"Content-Length: %zu\r\n",
-						url->code, body_len);
+						url->code ? url->code : "200 OK\r\n", body_len);
 					for (it = 0; it < countof(url->headers) && url->headers[it]; it++) {
 						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s\r\n", url->headers[it]);
 					}

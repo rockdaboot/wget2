@@ -8,7 +8,7 @@ LDADD = libtest.la ../libmget/libmget-@LIBMGET_API_VERSION@.la
 MGET_TESTS = test test-mget-1 test-restrict-ascii test-i-http test-i-https test-np test--spider-r \
  test-meta-robots test-idn-robots test-idn-meta test-idn-cmd \
  test-iri test-iri-percent test-iri-list test-iri-forced-remote \
- test-auth-basic test-parse-html test-parse-rss test--page-requisites
+ test-auth-basic test-parse-html test-parse-rss test--page-requisites test--accept
 
 #test--post-file test-E-k test-k
 

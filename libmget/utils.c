@@ -248,3 +248,34 @@ int mget_percent_unescape(unsigned char *src)
 	return ret;
 }
 
+/**
+ * mget_match_tail:
+ * @s: String
+ * @tail: String
+ *
+ * Checks if @tail matches the end of the string @s.
+ *
+ * Returns: 1 if @tail matches the end of @s, 0 if not.
+ */
+int mget_match_tail(const char *s, const char *tail)
+{
+	const char *p = s + strlen(s) - strlen(tail);
+
+	return p >= s && !strcmp(p, tail);
+}
+
+/**
+ * mget_match_tail_nocase:
+ * @s: String
+ * @tail: String
+ *
+ * Checks if @tail matches the end of the string @s, disregarding the case.
+ *
+ * Returns: 1 if @tail matches the end of @s, 0 if not.
+ */
+int mget_match_tail_nocase(const char *s, const char *tail)
+{
+	const char *p = s + strlen(s) - strlen(tail);
+
+	return p >= s && !strcasecmp(p, tail);
+}

@@ -78,6 +78,9 @@ struct config {
 	mget_stringmap_t
 		*domains,
 		*exclude_domains;
+	mget_vector_t
+		*accept_patterns,
+		*reject_patterns;
 	mget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
 	size_t
@@ -100,6 +103,7 @@ struct config {
 	struct mget_cookie_db_st
 		*cookie_db;
 	char
+		ignore_case,
 		hsts, // if HSTS (HTTP Strict Transport Security) is enabled or not
 		load_hsts, // on startup, load HSTS entries from hsts_file
 		save_hsts, // on exit, save HSTS entries info hsts_file

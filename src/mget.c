@@ -39,6 +39,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <time.h>
+#include <fnmatch.h>
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <sys/stat.h>
@@ -276,10 +277,10 @@ const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(mget_iri_t *iri)
 
 	// create the complete path
 	if (*fname) {
-		const char *p1, *p2;
+		char *p1, *p2;
 
 		for (p1 = fname; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
-			*(char *)p2 = 0; // replace path separator
+			*p2 = 0; // replace path separator
 
 			// relative paths should have been normalized earlier,
 			// but for security reasons, don't trust myself...
@@ -288,11 +289,11 @@ const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(mget_iri_t *iri)
 
 			if (mkdir(fname, 0755) != 0 && errno != EEXIST) {
 				error_printf(_("Failed to make directory '%s'\n"), fname);
-				*(char *)p2 = '/'; // restore path separator
+				*p2 = '/'; // restore path separator
 				return fname;
 			} else debug_printf("mkdir %s\n", fname);
 
-			*(char *)p2 = '/'; // restore path separator
+			*p2 = '/'; // restore path separator
 		}
 	}
 
@@ -325,6 +326,25 @@ static mget_vector_t
 	*parents;
 static mget_thread_mutex_t
 	downloader_mutex = MGET_THREAD_MUTEX_INITIALIZER;
+
+static int in_pattern_list(const mget_vector_t *v, const char *url)
+{
+  for (int it = 0; it < mget_vector_size(v); it++) {
+		const char *pattern = mget_vector_get(v, it);
+
+		debug_printf("pattern '%s' - %s\n", pattern, url);
+
+		if (strpbrk(pattern, "*?[]")) {
+			return config.ignore_case ? !fnmatch(pattern, url, FNM_CASEFOLD) : !fnmatch(pattern, url, 0);
+		} else if (config.ignore_case) {
+			return mget_match_tail_nocase(url, pattern);
+		} else {
+			return mget_match_tail(url, pattern);
+		}
+  }
+
+  return 0;
+}
 
 // Add URLs given by user (command line or -i option).
 // Needs to be thread-save.
@@ -821,14 +841,25 @@ void *downloader_thread(void *p)
 		// hey, we got a job...
 		job = downloader->job;
 
-		if ((config.spider || config.chunk_size) && !job->deferred) {
+		if (config.accept_patterns && !in_pattern_list(config.accept_patterns, job->iri->uri)) {
+			if (config.recursive)
+				job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+		}
+
+		if (config.reject_patterns && in_pattern_list(config.reject_patterns, job->iri->uri)) {
+			if (config.recursive)
+				job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+		}
+
+		info_printf("head_first=%d deferred=%d iri=%s\n", job->head_first, !!job->deferred, job->iri->uri);
+		if ((config.spider || config.chunk_size || job->head_first) && !job->deferred) {
 			// In spider mode, we first make a HEAD request.
 			// If the Content-Type header gives us not a parsable type, we are done.
 			print_status(downloader, "[%d] Checking '%s' ...\n", downloader->id, job->iri->uri);
 			for (int tries = 0; !resp && tries < config.tries; tries++) {
 				mget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
 
-				resp = http_get(job->iri, NULL, downloader, 0);
+				resp = http_get(job->iri, NULL, downloader, MGET_HTTP_METHOD_HEAD);
 				if (resp)
 					print_status(downloader, "%d %s\n", resp->code, resp->reason);
 			}
@@ -839,7 +870,9 @@ void *downloader_thread(void *p)
 			if (resp->code == 404)
 				set_exit_status(8);
 
-			if (config.spider) {
+			if (config.spider || job->head_first) {
+				job->head_first = 0;
+
 				if (resp->code != 200 || !resp->content_type)
 					goto ready;
 
@@ -912,7 +945,7 @@ void *downloader_thread(void *p)
 		for (int tries = 0; !resp && tries < config.tries; tries++) {
 			mget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
 
-			resp = http_get(job->iri, NULL, downloader, 1);
+			resp = http_get(job->iri, NULL, downloader, MGET_HTTP_METHOD_GET);
 			if (resp)
 				print_status(downloader, "%d %s\n", resp->code, resp->reason);
 		}
@@ -1574,18 +1607,27 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 	int fd, multiple = 0, fnum, oflag = flag;
 	size_t fname_length;
 
-	if (config.spider || !fname)
+	if (!fname)
 		return;
+
+	if (config.spider) {
+		debug_printf("not saved '%s' (spider mode enabled)\n", fname);
+		return;
+	}
 
 	// do not save into directories
 	fname_length = strlen(fname);
-	if (fname[fname_length - 1] == '/')
+	if (fname[fname_length - 1] == '/') {
+		debug_printf("not saved '%s' (file is a directory)\n", fname);
 		return;
+	}
 
 	// - optimistic approach expects data being written without error
 	// - to be Wget compatible: quota_modify_read() returns old quota value
-	if (config.quota && quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length) >= config.quota)
+	if (config.quota && quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length) >= config.quota) {
+		debug_printf("not saved '%s' (quota of %lld reached)\n", fname, config.quota);
 		return;
+	}
 
 	if (fname == config.output_document) {
 		// <fname> can only be NULL if config.delete_after is set
@@ -1607,8 +1649,10 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 			return;
 		}
 
-		if (config.delete_after)
+		if (config.delete_after) {
+			debug_printf("not saved '%s' (--delete-after)\n", fname);
 			return;
+		}
 
 		flag = O_APPEND;
 	}
@@ -1637,6 +1681,18 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 				fname = alloced_fname;
 			}
 		}
+	}
+
+	if (config.accept_patterns && !in_pattern_list(config.accept_patterns, fname)) {
+		debug_printf("not saved '%s' (doesn't match accept pattern)\n", fname);
+		xfree(alloced_fname);
+		return;
+	}
+
+	if (config.reject_patterns && in_pattern_list(config.reject_patterns, fname)) {
+		debug_printf("not saved '%s' (matches reject pattern)\n", fname);
+		xfree(alloced_fname);
+		return;
 	}
 
 	if (config.timestamping) {
@@ -1737,7 +1793,7 @@ int download_part(DOWNLOADER *downloader)
 
 			mirror_index = (mirror_index + 1) % mget_vector_size(metalink->mirrors);
 
-			resp = http_get(mirror->iri, part, downloader, 1);
+			resp = http_get(mirror->iri, part, downloader, MGET_HTTP_METHOD_GET);
 			if (resp) {
 				mget_cookie_store_cookies(config.cookie_db, resp->cookies); // sanitize and store cookies
 
