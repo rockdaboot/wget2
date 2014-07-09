@@ -213,11 +213,11 @@ AM_CONDITIONAL([WITH_BZIP2], [test $with_bzip2 = "yes"])
 AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support]), with_libidn2=$withval, with_libidn2=yes)
 if test $with_libidn2 != "no"; then
   AC_SEARCH_LIBS(idn2_lookup_u8, idn2,
-    [with_libidn2=yes; AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2])],
+    [with_libidn2=yes; AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2]) IDNA_INFO="IDNA 2008 (libidn2)"],
     [with_libidn2=no;  AC_MSG_WARN(*** LIBIDN2 was not found. You will not be able to use IDN2008 support)])
   if test $with_libidn2 = "yes"; then
     AC_SEARCH_LIBS(u8_tolower, unistring,
-      [with_libunistring=yes; AC_DEFINE([WITH_LIBUNISTRING], [1], [Use libunistring])],
+      [with_libunistring=yes; AC_DEFINE([WITH_LIBUNISTRING], [1], [Use libunistring]) IDNA_INFO="IDNA 2008 (libidn2+libunistring)"],
       [with_libunistring=no;  AC_MSG_WARN(*** LIBUNISTRING was not found. You will not be able to use IDN2008 on uppercase domains)])
   fi
 fi
@@ -228,15 +228,11 @@ if test x$with_libidn2 != "xyes"; then
   AC_ARG_WITH(libidn, AS_HELP_STRING([--without-libidn], [disable IDN support]), with_libidn=$withval, with_libidn=yes)
   if test $with_libidn != "no"; then
     AC_SEARCH_LIBS(idna_to_ascii_8z, idn,
-      [with_libidn=yes; AC_DEFINE([WITH_LIBIDN], [1], [Use libidn])],
+      [with_libidn=yes; AC_DEFINE([WITH_LIBIDN], [1], [Use libidn]) IDNA_INFO="IDNA 2003 (libidn)"],
       [with_libidn=no; AC_MSG_WARN(*** LIBIDN was not found. You will not be able to use IDN support)])
-#    AC_CHECK_LIB(idn, idna_to_ascii_8z, [with_libidn=yes; AC_SUBST(IDN_LIBS, "-lidn") AC_DEFINE([WITH_LIBIDN], [1], [Use libidn])], [with_libidn=no; AC_MSG_WARN(*** LIBIDN was not found. You will not be able to use IDN support)])
   fi
 fi
 AM_CONDITIONAL([WITH_LIBIDN], [test x$with_libidn = "xyes"])
-
-#AC_SUBST(LIBS, "$GNUTLS_LIBS $LZMA_LIBS $BZIP2_LIBS $IDN_LIBS $NETTLE_LIBS $LIBS")
-#AC_SUBST(LIBS, "$GNUTLS_LIBS $LIBS")
 
 # Checks for header files.
 AC_CHECK_HEADERS([\
@@ -297,7 +293,7 @@ AC_MSG_NOTICE([Summary of build options:
   GZIP compression:  $with_zlib
   BZIP2 compression: $with_bzip2
   LZMA compression:  $with_lzma
-  IDN support:       $IDN_LIBS
+  IDNA support:      $IDNA_INFO
   PSL support:       $with_libpsl
   Tests:             ${TESTS_INFO}
 ])
