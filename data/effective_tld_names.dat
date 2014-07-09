@@ -180,6 +180,7 @@ ar
 com.ar
 edu.ar
 gob.ar
+gov.ar
 int.ar
 mil.ar
 net.ar
@@ -222,7 +223,6 @@ edu.au
 gov.au
 asn.au
 id.au
-csiro.au
 // Historic 2LDs (closed to new registration, but sites still exist)
 info.au
 conf.au
@@ -245,7 +245,7 @@ sa.edu.au
 tas.edu.au
 vic.edu.au
 wa.edu.au
-act.gov.au
+// act.gov.au  Bug 984824 - Removed at request of Greg Tankard
 // nsw.gov.au  Bug 547985 - Removed at request of <Shae.Donelan@services.nsw.gov.au>
 // nt.gov.au  Bug 940478 - Removed at request of Greg Connors <Greg.Connors@nt.gov.au>
 qld.gov.au
@@ -292,6 +292,7 @@ rs.ba
 // bb : http://en.wikipedia.org/wiki/.bb
 bb
 biz.bb
+co.bb
 com.bb
 edu.bb
 gov.bb
@@ -299,6 +300,7 @@ info.bb
 net.bb
 org.bb
 store.bb
+tv.bb
 
 // bd : http://en.wikipedia.org/wiki/.bd
 *.bd
@@ -596,9 +598,12 @@ gob.cl
 co.cl
 mil.cl
 
-// cm : http://en.wikipedia.org/wiki/.cm
+// cm : http://en.wikipedia.org/wiki/.cm plus bug 981927
 cm
+co.cm
+com.cm
 gov.cm
+net.cm
 
 // cn : http://en.wikipedia.org/wiki/.cn
 // Submitted by registry <tanyaling@cnnic.cn> 2008-06-11
@@ -1192,373 +1197,373 @@ edu.it
 // There is also a list of reserved geo-names corresponding to Italian municipalities
 // http://www.nic.it/documenti/appendice-c.pdf, but it is not included here.
 // Regions
-abr.it 
-abruzzo.it 
-aosta-valley.it 
-aostavalley.it 
-bas.it 
-basilicata.it 
-cal.it 
-calabria.it 
-cam.it 
-campania.it 
-emilia-romagna.it 
-emiliaromagna.it 
-emr.it 
-friuli-v-giulia.it 
-friuli-ve-giulia.it 
-friuli-vegiulia.it 
-friuli-venezia-giulia.it 
-friuli-veneziagiulia.it 
-friuli-vgiulia.it 
-friuliv-giulia.it 
-friulive-giulia.it 
-friulivegiulia.it 
-friulivenezia-giulia.it 
-friuliveneziagiulia.it 
-friulivgiulia.it 
-fvg.it 
-laz.it 
-lazio.it 
-lig.it 
-liguria.it 
-lom.it 
-lombardia.it 
-lombardy.it 
-lucania.it 
-mar.it 
-marche.it 
-mol.it 
-molise.it 
-piedmont.it 
-piemonte.it 
-pmn.it 
-pug.it 
-puglia.it 
+abr.it
+abruzzo.it
+aosta-valley.it
+aostavalley.it
+bas.it
+basilicata.it
+cal.it
+calabria.it
+cam.it
+campania.it
+emilia-romagna.it
+emiliaromagna.it
+emr.it
+friuli-v-giulia.it
+friuli-ve-giulia.it
+friuli-vegiulia.it
+friuli-venezia-giulia.it
+friuli-veneziagiulia.it
+friuli-vgiulia.it
+friuliv-giulia.it
+friulive-giulia.it
+friulivegiulia.it
+friulivenezia-giulia.it
+friuliveneziagiulia.it
+friulivgiulia.it
+fvg.it
+laz.it
+lazio.it
+lig.it
+liguria.it
+lom.it
+lombardia.it
+lombardy.it
+lucania.it
+mar.it
+marche.it
+mol.it
+molise.it
+piedmont.it
+piemonte.it
+pmn.it
+pug.it
+puglia.it
 sar.it
-sardegna.it 
-sardinia.it 
-sic.it 
-sicilia.it 
-sicily.it 
-taa.it 
-tos.it 
-toscana.it 
-trentino-a-adige.it 
-trentino-aadige.it 
-trentino-alto-adige.it 
-trentino-altoadige.it 
-trentino-s-tirol.it 
-trentino-stirol.it 
-trentino-sud-tirol.it 
-trentino-sudtirol.it 
-trentino-sued-tirol.it 
-trentino-suedtirol.it 
-trentinoa-adige.it 
-trentinoaadige.it 
-trentinoalto-adige.it 
-trentinoaltoadige.it 
-trentinos-tirol.it 
-trentinostirol.it 
-trentinosud-tirol.it 
-trentinosudtirol.it 
-trentinosued-tirol.it 
-trentinosuedtirol.it 
-tuscany.it 
-umb.it 
-umbria.it 
-val-d-aosta.it 
-val-daosta.it 
-vald-aosta.it 
-valdaosta.it 
-valle-aosta.it 
-valle-d-aosta.it 
-valle-daosta.it 
-valleaosta.it 
-valled-aosta.it 
-valledaosta.it 
-vallee-aoste.it 
-valleeaoste.it 
-vao.it 
-vda.it 
-ven.it 
-veneto.it 
+sardegna.it
+sardinia.it
+sic.it
+sicilia.it
+sicily.it
+taa.it
+tos.it
+toscana.it
+trentino-a-adige.it
+trentino-aadige.it
+trentino-alto-adige.it
+trentino-altoadige.it
+trentino-s-tirol.it
+trentino-stirol.it
+trentino-sud-tirol.it
+trentino-sudtirol.it
+trentino-sued-tirol.it
+trentino-suedtirol.it
+trentinoa-adige.it
+trentinoaadige.it
+trentinoalto-adige.it
+trentinoaltoadige.it
+trentinos-tirol.it
+trentinostirol.it
+trentinosud-tirol.it
+trentinosudtirol.it
+trentinosued-tirol.it
+trentinosuedtirol.it
+tuscany.it
+umb.it
+umbria.it
+val-d-aosta.it
+val-daosta.it
+vald-aosta.it
+valdaosta.it
+valle-aosta.it
+valle-d-aosta.it
+valle-daosta.it
+valleaosta.it
+valled-aosta.it
+valledaosta.it
+vallee-aoste.it
+valleeaoste.it
+vao.it
+vda.it
+ven.it
+veneto.it
 // Provinces
-ag.it 
-agrigento.it 
-al.it 
-alessandria.it 
-alto-adige.it 
-altoadige.it 
-an.it 
-ancona.it 
-andria-barletta-trani.it 
-andria-trani-barletta.it 
-andriabarlettatrani.it 
-andriatranibarletta.it 
-ao.it 
-aosta.it 
-aoste.it 
-ap.it 
-aq.it 
-aquila.it 
-ar.it 
-arezzo.it 
-ascoli-piceno.it 
-ascolipiceno.it 
-asti.it 
-at.it 
-av.it 
-avellino.it 
-ba.it 
-balsan.it 
-bari.it 
-barletta-trani-andria.it 
-barlettatraniandria.it 
-belluno.it 
-benevento.it 
-bergamo .it 
-bg.it 
-bi.it 
-biella.it 
-bl.it 
-bn.it 
-bo.it 
-bologna.it 
-bolzano.it 
-bozen.it 
-br.it 
-brescia.it 
-brindisi.it 
-bs.it 
-bt.it 
-bz.it 
-ca.it 
-cagliari.it 
-caltanissetta.it 
-campidano-medio.it 
-campidanomedio.it 
-campobasso.it 
-carbonia-iglesias.it 
-carboniaiglesias.it 
-carrara-massa.it 
-carraramassa.it 
-caserta.it 
-catania.it 
-catanzaro.it 
-cb.it 
-ce.it 
-cesena-forli.it 
-cesenaforli.it 
-ch.it 
-chieti.it 
-ci.it 
-cl.it 
-cn.it 
-co.it 
-como.it 
-cosenza.it 
-cr.it 
-cremona.it 
-crotone.it 
-cs.it 
-ct.it 
-cuneo.it 
-cz.it 
-dell-ogliastra.it 
-dellogliastra.it 
-en.it 
-enna.it 
-fc.it 
-fe.it 
-fermo.it 
-ferrara.it 
-fg.it 
-fi.it 
-firenze.it 
-florence.it 
-fm.it 
-foggia.it 
-forli-cesena.it 
+ag.it
+agrigento.it
+al.it
+alessandria.it
+alto-adige.it
+altoadige.it
+an.it
+ancona.it
+andria-barletta-trani.it
+andria-trani-barletta.it
+andriabarlettatrani.it
+andriatranibarletta.it
+ao.it
+aosta.it
+aoste.it
+ap.it
+aq.it
+aquila.it
+ar.it
+arezzo.it
+ascoli-piceno.it
+ascolipiceno.it
+asti.it
+at.it
+av.it
+avellino.it
+ba.it
+balsan.it
+bari.it
+barletta-trani-andria.it
+barlettatraniandria.it
+belluno.it
+benevento.it
+bergamo.it
+bg.it
+bi.it
+biella.it
+bl.it
+bn.it
+bo.it
+bologna.it
+bolzano.it
+bozen.it
+br.it
+brescia.it
+brindisi.it
+bs.it
+bt.it
+bz.it
+ca.it
+cagliari.it
+caltanissetta.it
+campidano-medio.it
+campidanomedio.it
+campobasso.it
+carbonia-iglesias.it
+carboniaiglesias.it
+carrara-massa.it
+carraramassa.it
+caserta.it
+catania.it
+catanzaro.it
+cb.it
+ce.it
+cesena-forli.it
+cesenaforli.it
+ch.it
+chieti.it
+ci.it
+cl.it
+cn.it
+co.it
+como.it
+cosenza.it
+cr.it
+cremona.it
+crotone.it
+cs.it
+ct.it
+cuneo.it
+cz.it
+dell-ogliastra.it
+dellogliastra.it
+en.it
+enna.it
+fc.it
+fe.it
+fermo.it
+ferrara.it
+fg.it
+fi.it
+firenze.it
+florence.it
+fm.it
+foggia.it
+forli-cesena.it
 forlicesena.it
-fr.it 
-frosinone.it 
-ge.it 
-genoa.it 
-genova.it 
-go.it 
-gorizia.it 
-gr.it 
-grosseto.it 
-iglesias-carbonia.it 
-iglesiascarbonia.it 
-im.it 
-imperia.it 
-is.it 
-isernia.it 
-kr.it 
-la-spezia.it 
-laquila.it 
-laspezia.it 
-latina.it 
-lc.it 
-le.it 
-lecce.it 
-lecco.it 
-li.it 
-livorno.it 
-lo.it 
-lodi.it 
-lt.it 
-lu.it 
-lucca.it 
-macerata.it 
-mantova.it 
-massa-carrara.it 
-massacarrara.it 
-matera.it 
-mb.it 
-mc.it 
-me.it 
-medio-campidano.it 
-mediocampidano.it 
-messina.it 
-mi.it 
-milan.it 
-milano.it 
-mn.it 
-mo.it 
-modena.it 
-monza-brianza.it 
-monza-e-della-brianza.it 
-monza.it 
-monzabrianza.it 
-monzaebrianza.it 
-monzaedellabrianza.it 
-ms.it 
-mt.it 
-na.it 
-naples.it 
-napoli.it 
-no.it 
-novara.it 
-nu.it 
-nuoro.it 
-og.it 
-ogliastra.it 
-olbia-tempio.it 
-olbiatempio.it 
-or.it 
-oristano.it 
-ot.it 
-pa.it 
-padova.it 
-padua.it 
-palermo.it 
-parma.it 
-pavia.it 
-pc.it 
-pd.it 
-pe.it 
-perugia.it 
-pesaro-urbino.it 
-pesarourbino.it 
-pescara.it 
-pg.it 
-pi.it 
-piacenza.it 
-pisa.it 
-pistoia.it 
-pn.it 
-po.it 
-pordenone.it 
-potenza .it 
-pr.it 
-prato.it 
-pt.it 
-pu.it 
-pv.it 
-pz.it 
-ra.it 
-ragusa.it 
-ravenna.it 
-rc.it 
-re.it 
+fr.it
+frosinone.it
+ge.it
+genoa.it
+genova.it
+go.it
+gorizia.it
+gr.it
+grosseto.it
+iglesias-carbonia.it
+iglesiascarbonia.it
+im.it
+imperia.it
+is.it
+isernia.it
+kr.it
+la-spezia.it
+laquila.it
+laspezia.it
+latina.it
+lc.it
+le.it
+lecce.it
+lecco.it
+li.it
+livorno.it
+lo.it
+lodi.it
+lt.it
+lu.it
+lucca.it
+macerata.it
+mantova.it
+massa-carrara.it
+massacarrara.it
+matera.it
+mb.it
+mc.it
+me.it
+medio-campidano.it
+mediocampidano.it
+messina.it
+mi.it
+milan.it
+milano.it
+mn.it
+mo.it
+modena.it
+monza-brianza.it
+monza-e-della-brianza.it
+monza.it
+monzabrianza.it
+monzaebrianza.it
+monzaedellabrianza.it
+ms.it
+mt.it
+na.it
+naples.it
+napoli.it
+no.it
+novara.it
+nu.it
+nuoro.it
+og.it
+ogliastra.it
+olbia-tempio.it
+olbiatempio.it
+or.it
+oristano.it
+ot.it
+pa.it
+padova.it
+padua.it
+palermo.it
+parma.it
+pavia.it
+pc.it
+pd.it
+pe.it
+perugia.it
+pesaro-urbino.it
+pesarourbino.it
+pescara.it
+pg.it
+pi.it
+piacenza.it
+pisa.it
+pistoia.it
+pn.it
+po.it
+pordenone.it
+potenza.it
+pr.it
+prato.it
+pt.it
+pu.it
+pv.it
+pz.it
+ra.it
+ragusa.it
+ravenna.it
+rc.it
+re.it
 reggio-calabria.it
-reggio-emilia.it 
-reggiocalabria.it 
-reggioemilia.it 
-rg.it 
-ri.it 
-rieti.it 
-rimini.it 
-rm.it 
-rn.it 
-ro.it 
-roma.it 
-rome.it 
-rovigo.it 
-sa.it 
-salerno.it 
-sassari.it 
-savona.it 
-si.it 
-siena.it 
-siracusa.it 
-so.it 
-sondrio.it 
-sp.it 
-sr.it 
-ss.it 
-suedtirol.it 
-sv.it 
-ta.it 
-taranto.it 
-te.it 
-tempio-olbia.it 
-tempioolbia.it 
-teramo.it 
-terni.it 
-tn.it 
-to.it 
-torino.it 
-tp.it 
-tr.it 
-trani-andria-barletta.it 
-trani-barletta-andria.it 
-traniandriabarletta.it 
-tranibarlettaandria.it 
-trapani.it 
-trentino.it 
-trento.it 
-treviso.it 
-trieste.it 
-ts.it 
-turin.it 
-tv.it 
-ud.it 
-udine.it 
-urbino-pesaro.it 
-urbinopesaro.it 
-va.it 
-varese.it 
-vb.it 
-vc.it 
-ve.it 
-venezia.it 
-venice.it 
-verbania.it 
-vercelli.it 
-verona.it 
-vi.it 
-vibo-valentia.it 
-vibovalentia.it 
-vicenza.it 
-viterbo.it 
-vr.it 
-vs.it 
-vt.it 
-vv.it 
+reggio-emilia.it
+reggiocalabria.it
+reggioemilia.it
+rg.it
+ri.it
+rieti.it
+rimini.it
+rm.it
+rn.it
+ro.it
+roma.it
+rome.it
+rovigo.it
+sa.it
+salerno.it
+sassari.it
+savona.it
+si.it
+siena.it
+siracusa.it
+so.it
+sondrio.it
+sp.it
+sr.it
+ss.it
+suedtirol.it
+sv.it
+ta.it
+taranto.it
+te.it
+tempio-olbia.it
+tempioolbia.it
+teramo.it
+terni.it
+tn.it
+to.it
+torino.it
+tp.it
+tr.it
+trani-andria-barletta.it
+trani-barletta-andria.it
+traniandriabarletta.it
+tranibarlettaandria.it
+trapani.it
+trentino.it
+trento.it
+treviso.it
+trieste.it
+ts.it
+turin.it
+tv.it
+ud.it
+udine.it
+urbino-pesaro.it
+urbinopesaro.it
+va.it
+varese.it
+vb.it
+vc.it
+ve.it
+venezia.it
+venice.it
+verbania.it
+vercelli.it
+verona.it
+vi.it
+vibo-valentia.it
+vibovalentia.it
+vicenza.it
+viterbo.it
+vr.it
+vs.it
+vt.it
+vv.it
 
 // je : http://www.channelisles.net/register-domains/
 // Confirmed by registry <nigel@channelisles.net> 2013-11-28
@@ -5146,7 +5151,24 @@ com.nr
 nu
 
 // nz : http://en.wikipedia.org/wiki/.nz
-*.nz
+// Confirmed by registry <jay@nzrs.net.nz> 2014-05-19
+nz
+ac.nz
+co.nz
+cri.nz
+geek.nz
+gen.nz
+govt.nz
+health.nz
+iwi.nz
+kiwi.nz
+maori.nz
+mil.nz
+māori.nz
+net.nz
+org.nz
+parliament.nz
+school.nz
 
 // om : http://en.wikipedia.org/wiki/.om
 om
@@ -5613,7 +5635,6 @@ oryol.ru
 palana.ru
 penza.ru
 perm.ru
-pskov.ru
 ptz.ru
 rnd.ru
 ryazan.ru
@@ -5733,7 +5754,7 @@ gov.sd
 info.sd
 
 // se : http://en.wikipedia.org/wiki/.se
-// Submitted by registry <Patrik.Wallstrom@iis.se> 2008-06-24
+// Submitted by registry <patrik.wallstrom@iis.se> 2014-03-18
 se
 a.se
 ac.se
@@ -5767,7 +5788,6 @@ pp.se
 press.se
 r.se
 s.se
-sshn.se
 t.se
 tm.se
 u.se
@@ -6151,19 +6171,19 @@ com.ug
 org.ug
 
 // uk : http://en.wikipedia.org/wiki/.uk
-// Submitted by registry <noc@nominet.org.uk> 2012-10-02
-// and tweaked by us pending further consultation.
-*.uk
+// Submitted by registry <Michael.Daly@nominet.org.uk>
+uk
+ac.uk
+co.uk
+gov.uk
+ltd.uk
+me.uk
+net.uk
+nhs.uk
+org.uk
+plc.uk
+police.uk
 *.sch.uk
-!bl.uk
-!british-library.uk
-!jet.uk
-!mod.uk
-!national-library-scotland.uk
-!nel.uk
-!nic.uk
-!nls.uk
-!parliament.uk
 
 // us : http://en.wikipedia.org/wiki/.us
 us
@@ -6441,16 +6461,24 @@ edu.vc
 
 // ve : https://registro.nic.ve/
 // Confirmed by registry 2012-10-04
+// Updated 2014-05-20 - Bug 940478
 ve
+arts.ve
 co.ve
 com.ve
 e12.ve
 edu.ve
+firm.ve
+gob.ve
 gov.ve
 info.ve
+int.ve
 mil.ve
 net.ve
 org.ve
+rec.ve
+store.ve
+tec.ve
 web.ve
 
 // vg : http://en.wikipedia.org/wiki/.vg
@@ -6483,8 +6511,12 @@ pro.vn
 health.vn
 
 // vu : http://en.wikipedia.org/wiki/.vu
-// list of 2nd level tlds ?
+// http://www.vunic.vu/
 vu
+com.vu
+edu.vu
+net.vu
+org.vu
 
 // wf : http://www.afnic.fr/medias/documents/AFNIC-naming-policy2012.pdf
 wf
@@ -6610,7 +6642,14 @@ yt
 فلسطين
 
 // xn--90a3ac ("srb" Cyrillic) : RS
+// http://www.rnids.rs/en/the-.срб-domain
 срб
+пр.срб
+орг.срб
+обр.срб
+од.срб
+упр.срб
+ак.срб
 
 // xn--p1ai ("rf" Russian-Cyrillic) : RU
 // http://www.cctld.ru/en/docs/rulesrf.php
@@ -7535,6 +7574,419 @@ bzh
 // rio : 2014-02-27 Empresa Municipal de Informática SA - IPLANRIO
 rio
 
+// cash : 2014-03-07 Delta Lake, LLC
+cash
+
+// gives : 2014-03-07 United TLD Holdco Ltd.
+gives
+
+// hiphop : 2014-03-07 Uniregistry, Corp.
+hiphop
+
+// degree : 2014-03-07 Puff House, LLC
+degree
+
+// digital : 2014-03-07 Dash Park, LLC
+digital
+
+// rehab : 2014-03-07 United TLD Holdco Ltd.
+rehab
+
+// wtf : 2014-03-07 Hidden Way, LLC
+wtf
+
+// financial : 2014-03-07 Just Cover, LLC
+financial
+
+// limited : 2014-03-07 Big Fest, LLC
+limited
+
+// discount : 2014-03-07 Holly Hill, LLC
+discount
+
+// fail : 2014-03-07 Atomic Pipe, LLC
+fail
+
+// vet : 2014-03-07 Wild Dale, LLC
+vet
+
+// ngo : 2014-03-07 Public Interest Registry
+ngo
+
+// fitness : 2014-03-07 Brice Orchard, LLC
+fitness
+
+// schule : 2014-03-07 Outer Moon, LLC
+schule
+
+// navy : 2014-03-07 United TLD Holdco Ltd.
+navy
+
+// bio : 2014-03-07 STARTING DOT LIMITED
+bio
+
+// ong : 2014-03-07 Public Interest Registry
+ong
+
+// town : 2014-03-07 Koko Moon, LLC
+town
+
+// toys : 2014-03-07 Pioneer Orchard, LLC
+toys
+
+// army : 2014-03-07 United TLD Holdco Ltd.
+army
+
+// engineering : 2014-03-07 Romeo Canyon
+engineering
+
+// capital : 2014-03-07 Delta Mill, LLC
+capital
+
+// exchange : 2014-03-07 Spring Falls, LLC
+exchange
+
+// fan : 2014-03-07 Goose Glen, LLC
+fan
+
+// market : 2014-03-07 Victor Way, LLC
+market
+
+// media : 2014-03-07 Grand Glen, LLC
+media
+
+// lease : 2014-03-07 Victor Trail, LLC
+lease
+
+// university : 2014-03-07 Little Station, LLC
+university
+
+// reisen : 2014-03-07 New Cypress, LLC
+reisen
+
+// airforce : 2014-03-07 United TLD Holdco Ltd.
+airforce
+
+// pictures : 2014-03-07 Foggy Sky, LLC
+pictures
+
+// gripe : 2014-03-07 Corn Sunset, LLC
+gripe
+
+// engineering : 2014-03-07 United TLD Holdco Ltd.
+engineering
+
+// associates : 2014-03-07 Baxter Hill, LLC
+associates
+
+// xn--mxtq1m : 2014-03-07 Net-Chinese Co., Ltd.
+政府
+
+// williamhill : 2014-03-13 William Hill Organization Limited
+williamhill
+
+// hiv : 2014-03-13 dotHIV gemeinnuetziger e.V.
+hiv
+
+// sca : 2014-03-13 SVENSKA CELLULOSA AKTIEBOLAGET SCA (publ)
+sca
+
+// reise : 2014-03-13 dotreise GmbH 
+reise
+
+// accountants : 2014-03-20 Knob Town, LLC 
+accountants
+
+// clinic : 2014-03-20 Goose Park, LLC 
+clinic
+
+// versicherung : 2014-03-20 dotversicherung-registry GmbH 
+versicherung
+
+// top : 2014-03-20 Jiangsu Bangning Science & Technology Co.,Ltd. 
+top
+
+// furniture : 2014-03-20 Lone Fields, LLC 
+furniture
+
+// dental : 2014-03-20 Tin Birch, LLC 
+dental
+
+// fund : 2014-03-20 John Castle, LLC 
+fund
+
+// creditcard : 2014-03-20 Binky Frostbite, LLC 
+creditcard
+
+// insure : 2014-03-20 Pioneer Willow, LLC 
+insure
+
+// audio : 2014-03-20 Uniregistry, Corp. 
+audio
+
+// claims : 2014-03-20 Black Corner, LLC 
+claims
+
+// loans : 2014-03-20 June Woods, LLC 
+loans
+
+// auction : 2014-03-20 Sand Galley, LLC 
+auction
+
+// attorney : 2014-03-20 Victor North, LLC 
+attorney
+
+// finance : 2014-03-20 Cotton Cypress, LLC 
+finance
+
+// investments : 2014-03-20 Holly Glen, LLC 
+investments
+
+// juegos : 2014-03-20 Uniregistry, Corp. 
+juegos
+
+// dentist : 2014-03-20 Outer Lake, LLC 
+dentist
+
+// lds : 2014-03-20 IRI Domain Management, LLC 
+lds
+
+// lawyer : 2014-03-20 Atomic Station, LLC 
+lawyer
+
+// surgery : 2014-03-20 Tin Avenue, LLC 
+surgery
+
+// gratis : 2014-03-20 Pioneer Tigers, LLC 
+gratis
+
+// software : 2014-03-20 Over Birch, LLC 
+software
+
+// mortgage : 2014-03-20 Outer Gardens, LLC 
+mortgage
+
+// republican : 2014-03-20 United TLD Holdco Ltd. 
+republican
+
+// credit : 2014-03-20 Snow Shadow, LLC 
+credit
+
+// tax : 2014-03-20 Storm Orchard, LLC 
+tax
+
+// africa : 2014-03-24 ZA Central Registry NPC trading as Registry.Africa 
+africa
+
+// joburg : 2014-03-24 ZA Central Registry NPC trading as ZA Central Registry 
+joburg
+
+// durban : 2014-03-24 ZA Central Registry NPC trading as ZA Central Registry 
+durban
+
+// capetown : 2014-03-24 ZA Central Registry NPC trading as ZA Central Registry 
+capetown
+
+// sap : 2014-03-27 SAP AG 
+sap
+
+// datsun : 2014-03-27 NISSAN MOTOR CO., LTD. 
+datsun
+
+// infiniti : 2014-03-27 NISSAN MOTOR CO., LTD. 
+infiniti
+
+// firmdale : 2014-03-27 Firmdale Holdings Limited 
+firmdale
+
+// organic : 2014-03-27 Afilias Limited 
+organic
+
+// nissan : 2014-03-27 NISSAN MOTOR CO., LTD. 
+nissan
+
+// website : 2014-04-03 DotWebsite Inc. 
+website
+
+// space : 2014-04-03 DotSpace Inc. 
+space
+
+// schmidt : 2014-04-03 SALM S.A.S. 
+schmidt
+
+// cuisinella : 2014-04-03 SALM S.A.S. 
+cuisinella
+
+// samsung : 2014-04-03 SAMSUNG SDS CO., LTD 
+samsung
+
+// crs : 2014-04-03 Federated Co operatives Limited 
+crs
+
+// doosan : 2014-04-03 Doosan Corporation 
+doosan
+
+// press : 2014-04-03 DotPress Inc. 
+press
+
+// emerck : 2014-04-03 Merck KGaA 
+emerck
+
+// erni : 2014-04-03 ERNI Group Holding AG 
+erni
+
+// direct : 2014-04-10 Half Trail, LLC 
+direct
+
+// yandex : 2014-04-10 YANDEX, LLC 
+yandex
+
+// lotto : 2014-04-10 Afilias Limited 
+lotto
+
+// toshiba : 2014-04-10 TOSHIBA Corporation 
+toshiba
+
+// bauhaus : 2014-04-17 Werkhaus GmbH 
+bauhaus
+
+// host : 2014-04-17 DotHost Inc. 
+host
+
+// ltda : 2014-04-17 DOMAIN ROBOT SERVICOS DE HOSPEDAGEM NA INTERNET LTDA 
+ltda
+
+// global : 2014-04-17 Dot GLOBAL AS 
+global
+
+// abogado : 2014-04-24 Top Level Domain Holdings Limited 
+abogado
+
+// place : 2014-04-24 Snow Galley, LLC 
+place
+
+// tirol : 2014-04-24 punkt Tirol GmbH 
+tirol
+
+// gmx : 2014-04-24 1&1 Mail & Media GmbH 
+gmx
+
+// tatar : 2014-04-24 Limited Liability Company "Coordination Center of Regional Domain of Tatarstan Republic" 
+tatar
+
+// scholarships : 2014-04-24 Scholarships.com, LLC 
+scholarships
+
+// eurovision : 2014-04-24 European Broadcasting Union (EBU) 
+eurovision
+
+// wedding : 2014-04-24 Top Level Domain Holdings Limited 
+wedding
+
+// active : 2014-05-01 The Active Network, Inc 
+active
+
+// madrid : 2014-05-01 Comunidad de Madrid 
+madrid
+
+// youtube : 2014-05-01 Charleston Road Registry Inc. 
+youtube
+
+// sharp : 2014-05-01 Sharp Corporation 
+sharp
+
+// uol : 2014-05-01 UBN INTERNET LTDA. 
+uol
+
+// physio : 2014-05-01 PhysBiz Pty Ltd 
+physio
+
+// gmail : 2014-05-01 Charleston Road Registry Inc. 
+gmail
+
+// channel : 2014-05-08 Charleston Road Registry Inc. 
+channel
+
+// fly : 2014-05-08 Charleston Road Registry Inc. 
+fly
+
+// zip : 2014-05-08 Charleston Road Registry Inc. 
+zip
+
+// esq : 2014-05-08 Charleston Road Registry Inc. 
+esq
+
+// rsvp : 2014-05-08 Charleston Road Registry Inc. 
+rsvp
+
+// wales : 2014-05-08 Nominet UK 
+wales
+
+// cymru : 2014-05-08 Nominet UK 
+cymru
+
+// green : 2014-05-08 Afilias Limited 
+green
+
+// lgbt : 2014-05-08 Afilias Limited 
+lgbt
+
+// xn--hxt814e : 2014-05-15 Zodiac Libra Limited 
+网店
+
+// cancerresearch : 2014-05-15 Australian Cancer Research Foundation 
+cancerresearch
+
+// everbank : 2014-05-15 EverBank 
+everbank
+
+// frl : 2014-05-15 FRLregistry B.V. 
+frl
+
+// property : 2014-05-22 Uniregistry, Corp. 
+property
+
+// forsale : 2014-05-22 Sea Oaks, LLC 
+forsale
+
+// seat : 2014-05-22 SEAT, S.A. (Sociedad Unipersonal) 
+seat
+
+// deals : 2014-05-22 Sand Sunset, LLC 
+deals
+
+// nra : 2014-05-22 NRA Holdings Company, INC. 
+nra
+
+// xn--fjq720a : 2014-05-22 Will Bloom, LLC 
+娱乐
+
+// realtor : 2014-05-29 Real Estate Domains LLC 
+realtor
+
+// bnpparibas : 2014-05-29 BNP Paribas 
+bnpparibas
+
+// melbourne : 2014-05-29 The Crown in right of the State of Victoria, represented by its Department of State Development, Business and Innovation 
+melbourne
+
+// hosting : 2014-05-29 Uniregistry, Corp. 
+hosting
+
+// yoga : 2014-05-29 Top Level Domain Holdings Limited 
+yoga
+
+// city : 2014-05-29 Snow Sky, LLC 
+city
+
+// bond : 2014-06-05 Bond University Limited 
+bond
+
+// click : 2014-06-05 Uniregistry, Corp. 
+click
+
+// cern : 2014-06-05 European Organization for Nuclear Research ("CERN") 
+cern
 
 // ===END ICANN DOMAINS===
 // ===BEGIN PRIVATE DOMAINS===
@@ -7544,20 +7996,22 @@ rio
 cloudfront.net
 
 // Amazon Elastic Compute Cloud: https://aws.amazon.com/ec2/
-// Submitted by Osman Surkatty <osmans@amazon.com> 2013-04-02
-compute.amazonaws.com
-us-east-1.amazonaws.com
-compute-1.amazonaws.com
-z-1.compute-1.amazonaws.com
-z-2.compute-1.amazonaws.com
+// Submitted by Osman Surkatty <osmans@amazon.com> 2014-05-20
 ap-northeast-1.compute.amazonaws.com
 ap-southeast-1.compute.amazonaws.com
 ap-southeast-2.compute.amazonaws.com
+cn-north-1.compute.amazonaws.cn
+compute.amazonaws.cn
+compute.amazonaws.com
+compute-1.amazonaws.com
 eu-west-1.compute.amazonaws.com
 sa-east-1.compute.amazonaws.com
+us-east-1.amazonaws.com
 us-gov-west-1.compute.amazonaws.com
 us-west-1.compute.amazonaws.com
 us-west-2.compute.amazonaws.com
+z-1.compute-1.amazonaws.com
+z-2.compute-1.amazonaws.com
 
 // Amazon Elastic Beanstalk : https://aws.amazon.com/elasticbeanstalk/
 // Submitted by Adam Stein <astein@amazon.com> 2013-04-02
@@ -7600,16 +8054,17 @@ ar.com
 br.com
 cn.com
 com.de
+com.se
 de.com
 eu.com
 gb.com
 gb.net
-gr.com
 hu.com
 hu.net
 jp.net
 jpn.com
 kr.com
+mex.com
 no.com
 qc.com
 ru.com
@@ -7619,9 +8074,29 @@ se.net
 uk.com
 uk.net
 us.com
-us.org
 uy.com
+za.bz
 za.com
+
+// Africa.com Web Solutions Ltd : https://registry.africa.com
+// Submitted by Gavin Brown <gavin.brown@centralnic.com> 2014-02-04
+africa.com
+
+// iDOT Services Limited : http://www.domain.gr.com
+// Submitted by Gavin Brown <gavin.brown@centralnic.com> 2014-02-04
+gr.com
+
+// Radix FZC : http://domains.in.net
+// Submitted by Gavin Brown <gavin.brown@centralnic.com> 2014-02-04
+in.net
+
+// US REGISTRY LLC : http://us.org
+// Submitted by Gavin Brown <gavin.brown@centralnic.com> 2014-02-04
+us.org
+
+// co.com Registry, LLC : https://registry.co.com
+// Submitted by Gavin Brown <gavin.brown@centralnic.com> 2014-02-04
+co.com
 
 // c.la : http://www.c.la/
 c.la
@@ -7935,6 +8410,10 @@ global.ssl.fastly.net
 a.prod.fastly.net
 global.prod.fastly.net
 
+// Firebase, Inc.
+// Submitted by Chris Raynor <chris@firebase.com> 2014-01-21
+firebaseapp.com
+
 // GitHub, Inc.
 // Submitted by Ben Toews <btoews@github.com> 2014-02-06
 github.io
@@ -8014,13 +8493,25 @@ azurewebsites.net
 azure-mobile.net
 cloudapp.net
 
+// NFSN, Inc. : https://www.NearlyFreeSpeech.NET/
+// Submitted by Jeff Wheelhouse <support@nearlyfreespeech.net> 2014-02-02
+nfshost.com
+
 // NYC.mn : http://www.information.nyc.mn
 // Submitted by Matthew Brown <mattbrown@nyc.mn> 2013-03-11
 nyc.mn
 
+// One Fold Media : http://www.onefoldmedia.com/
+// Submitted by Eddie Jones <eddie@onefoldmedia.com> 2014-06-10
+nid.io
+
 // Opera Software, A.S.A.
 // Submitted by Yngve Pettersen <yngve@opera.com> 2009-11-26
 operaunite.com
+
+// OutSystems
+// Submitted by Duarte Santos <domain-admin@outsystemscloud.com> 2014-03-11
+outsystemscloud.com
 
 // Red Hat, Inc. OpenShift : https://openshift.redhat.com/
 // Submitted by Tim Kramer <tkramer@rhcloud.com> 2012-10-24
