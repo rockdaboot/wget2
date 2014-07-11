@@ -17,7 +17,6 @@ int main(void)
 	mget_buffer_alloc(0); // buffer.c
 	mget_buffer_printf((mget_buffer_t *)1, "%s", ""); // buffer_printf.c
 	strlcpy((char *)"", "", 0); // compat.c
-	mget_cookie_free_public_suffixes(); // cookie.c
 	mget_css_parse_buffer((const char *)1, NULL, NULL, NULL); // css.c
 	mget_decompress_close(NULL); // decompressor.c
 	mget_hashmap_create(0, 0, NULL, NULL); // hashmap.c

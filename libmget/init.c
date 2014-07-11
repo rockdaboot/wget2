@@ -36,7 +36,7 @@
 static struct _CONFIG {
 	char *
 		cookie_file;
-	struct mget_cookie_db_st
+	mget_cookie_db_t *
 		cookie_db;
 	char
 		cookies_enabled,
@@ -52,6 +52,7 @@ void mget_global_init(int first_key, ...)
 {
 	va_list args;
 	int key;
+	const char *psl_file = NULL;
 
 	mget_thread_mutex_lock(&_mutex);
 
@@ -94,7 +95,7 @@ void mget_global_init(int first_key, ...)
 			mget_tcp_set_dns_caching(NULL, va_arg(args, int));
 			break;
 		case MGET_COOKIE_SUFFIXES:
-			mget_cookie_load_public_suffixes(va_arg(args, const char *));
+			psl_file = va_arg(args, const char *);
 			_config.cookies_enabled = 1;
 			break;
 		case MGET_COOKIES_ENABLED:
@@ -126,8 +127,9 @@ void mget_global_init(int first_key, ...)
 	va_end(args);
 
 	if (_config.cookies_enabled && _config.cookie_file) {
-		mget_cookie_db_init(&_config.cookie_db);
-		mget_cookie_db_load(&_config.cookie_db, _config.cookie_file, _config.keep_session_cookies);
+		_config.cookie_db = mget_cookie_db_init(NULL);
+		mget_cookie_db_load(_config.cookie_db, _config.cookie_file, _config.keep_session_cookies);
+		mget_cookie_db_load_psl(_config.cookie_db, psl_file);
 	}
 
 	mget_thread_mutex_unlock(&_mutex);
@@ -139,10 +141,10 @@ void mget_global_deinit(void)
 
 	if (_init == 1) {
 		// free resources here
-		mget_cookie_free_public_suffixes();
-		if (_config.cookies_enabled && _config.cookie_file) {
-			mget_cookie_db_save(&_config.cookie_db, _config.cookie_file, _config.keep_session_cookies);
-			mget_cookie_db_deinit(&_config.cookie_db);
+		if (_config.cookie_db && _config.cookies_enabled && _config.cookie_file) {
+			mget_cookie_db_save(_config.cookie_db, _config.cookie_file, _config.keep_session_cookies);
+			mget_cookie_db_deinit(_config.cookie_db);
+			_config.cookie_db = NULL;
 		}
 		mget_tcp_set_bind_address(NULL, NULL);
 		mget_tcp_set_dns_caching(NULL, 0);
@@ -194,9 +196,6 @@ const void *mget_global_get_ptr(int key)
 		return (void *)mget_logger_get_func(mget_get_logger(MGET_LOGGER_INFO));
 	case MGET_INFO_FILE:
 		return mget_logger_get_file(mget_get_logger(MGET_LOGGER_INFO));
-//	case MGET_COOKIE_SUFFIXES:
-//		mget_cookie_load_public_suffixes(va_arg(args, const char *));
-//		break;
 	case MGET_COOKIE_FILE:
 		return _config.cookie_file;
 	case MGET_COOKIE_DB:

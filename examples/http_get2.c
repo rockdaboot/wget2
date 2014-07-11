@@ -40,7 +40,7 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 	mget_iri_t *uri;
 	mget_http_connection_t *conn = NULL;
 	mget_http_request_t *req;
-	mget_cookie_db_t cookies;
+	mget_cookie_db_t *cookies;
 
 /*
  * todo: create a libmget init function like this:
@@ -92,16 +92,17 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 	const char *cookie_string;
 
 	// init cookie database
-	mget_cookie_db_init(&cookies);
+	cookies = mget_cookie_db_init(NULL);
 
-	// load public suffixes for cookie validation
-	mget_cookie_load_public_suffixes("public_suffixes.txt");
+	// load public suffixes for cookie validation from file (instead of using internal PSL data)
+	// just works if Mget has been compiled with libpsl
+	mget_cookie_db_load_psl(cookies, "public_suffixes.txt");
 
 	// load cookie-store
-	mget_cookie_db_load(&cookies, "cookies.txt", keep_session_cookies);
+	mget_cookie_db_load(cookies, "cookies.txt", keep_session_cookies);
 
 	// enrich the HTTP request with the uri-related cookies we have
-	if ((cookie_string = mget_cookie_create_request_header(&cookies, uri))) {
+	if ((cookie_string = mget_cookie_create_request_header(cookies, uri))) {
 		mget_http_add_header(req, "Cookie", cookie_string);
 		free((void *)cookie_string);
 	}
@@ -129,10 +130,10 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 			mget_cookie_normalize_cookies(uri, resp->cookies);
 
 			// put cookies into cookie-store (also known as cookie-jar)
-			mget_cookie_store_cookies(&cookies, resp->cookies);
+			mget_cookie_store_cookies(cookies, resp->cookies);
 
 			// save cookie-store to file
-			mget_cookie_db_save(&cookies, "cookies.txt", keep_session_cookies);
+			mget_cookie_db_save(cookies, "cookies.txt", keep_session_cookies);
 #endif
 
 			// let's assume the body isn't binary (doesn't contain \0)
@@ -156,8 +157,7 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 
 out:
 #ifdef COOKIE_SUPPORT
-	mget_cookie_free_public_suffixes();
-	mget_cookie_db_deinit(&cookies);
+	mget_cookie_db_deinit(cookies);
 #endif
 	mget_http_close(&conn);
 	mget_http_free_request(&req);

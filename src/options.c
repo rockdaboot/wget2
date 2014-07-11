@@ -1140,7 +1140,7 @@ int init(int argc, const char *const *argv)
 	if (config.cookies) {
 		config.cookie_db = mget_cookie_db_init(NULL);
 		if (config.cookie_suffixes)
-			mget_cookie_load_public_suffixes(config.cookie_suffixes);
+			mget_cookie_db_load_psl(config.cookie_db, config.cookie_suffixes);
 		if (config.load_cookies)
 			mget_cookie_db_load(config.cookie_db, config.load_cookies, config.keep_session_cookies);
 	}
@@ -1206,7 +1206,6 @@ void deinit(void)
 
 	mget_cookie_db_free(&config.cookie_db);
 	mget_hsts_db_free(&config.hsts_db);
-	mget_cookie_free_public_suffixes();
 	mget_ssl_deinit();
 
 	xfree(config.cookie_suffixes);

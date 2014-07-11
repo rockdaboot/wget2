@@ -815,12 +815,7 @@ char *
  */
 
 // typedef and structure for cookie database
-typedef struct mget_cookie_db_st {
-	mget_vector_t *
-		cookies;
-	mget_thread_mutex_t
-		mutex;
-} mget_cookie_db_t;
+typedef struct mget_cookie_db_st mget_cookie_db_t;
 
 // structure for cookie store
 //typedef struct mget_cookie_db_st mget_cookie_db_t;
@@ -864,14 +859,14 @@ void
 	mget_cookie_free(mget_cookie_t **cookie);
 void
 	mget_cookie_normalize_cookies(const mget_iri_t *iri, const mget_vector_t *cookies);
-void
+int
 	mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie);
 void
 	mget_cookie_store_cookies(mget_cookie_db_t *cookie_db, mget_vector_t *cookies);
-void
-	mget_cookie_free_public_suffixes(void);
 int
 	mget_cookie_normalize(const mget_iri_t *iri, mget_cookie_t *cookie);
+int
+	mget_cookie_check_psl(const mget_cookie_db_t *cookie_db, const mget_cookie_t *cookie);
 mget_cookie_db_t *
 	mget_cookie_db_init(mget_cookie_db_t *cookie_db);
 void
@@ -883,9 +878,7 @@ int
 int
 	mget_cookie_db_load(mget_cookie_db_t *cookie_db, const char *fname, int keep_session_cookies);
 int
-	mget_cookie_load_public_suffixes(const char *fname);
-int
-	mget_cookie_suffix_match(const char *domain);
+	mget_cookie_db_load_psl(mget_cookie_db_t *cookie_db, const char *fname);
 char *
 	mget_cookie_create_request_header(mget_cookie_db_t *cookie_db, const mget_iri_t *iri);
 

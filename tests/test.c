@@ -818,80 +818,81 @@ static void test_cookies(void)
 			secure_only : 1, // cookie should be used over secure connections only (TLS/HTTPS)
 			http_only : 1; // just use the cookie via HTTP/HTTPS protocol
 		int
-			result;
+			result,
+			psl_result;
 	} test_data[] = {
 		{	// allowed cookie
 			"www.example.com",
 			"ID=65=abcd; expires=Tuesday, 07-May-2013 07:48:53 GMT; path=/; domain=.example.com; HttpOnly",
 			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 1, 1, 0, 0, 1,
-			1
+			0, 0
 		},
 		{	// allowed cookie ANSI C's asctime format
 			"www.example.com",
 			"ID=65=abcd; expires=Tue May 07 07:48:53 2013; path=/; domain=.example.com",
 			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 1, 1, 0, 0, 0,
-			1
+			0, 0
 		},
 		{	// allowed cookie without path
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; domain=.example.com",
 			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 1, 1, 0, 0, 0,
-			1
+			0, 0
 		},
 		{	// allowed cookie without domain
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/",
 			"ID", "65=abcd", "www.example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			0, 1, 1, 1, 0, 0,
-			1
+			0, 0
 		},
 		{	// allowed cookie without domain, path and expires
 			"www.example.com",
 			"ID=65=abcd",
 			"ID", "65=abcd", "www.example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			0, 1, 0, 1, 0, 0,
-			1
+			0, 0
 		},
 		{	// illegal cookie
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/; domain=.example.org",
 			"ID", "65=abcd", "example.org", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 0, 1, 0, 0, 0,
-			0
+			-1, 0
 		},
-		{	// supercookie, not accepted by normalization (rule 'com')
+		{	// supercookie, accepted by normalization (rule 'com') but not by mget_cookie_check_psl())
 			"www.example.com",
 			"ID=65=abcd; expires=Mon, 29-Feb-2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
 			"ID", "65=abcd", "com", "/", "Mon, 29 Feb 2016 07:48:54 GMT",
 			1, 0, 1, 0, 1, 1,
-			0
+			0, -1
 		},
-		{	// supercookie, not accepted by normalization  (rule '*.ar')
+		{	// supercookie, accepted by normalization  (rule '*.ar') but not by mget_cookie_check_psl())
 			"www.sa.gov.au",
 			"ID=65=abcd; expires=Tue, 29-Feb-2000 07:48:55 GMT; path=/; domain=.sa.gov.au",
 			"ID", "65=abcd", "sa.gov.au", "/", "Tue, 29 Feb 2000 07:48:55 GMT",
 			1, 0, 1, 0, 0, 0,
-			0
+			0, -1
 		},
 		{	// exception rule '!educ.ar', accepted by normalization
 			"www.educ.ar",
 			"ID=65=abcd; path=/; domain=.educ.ar",
 			"ID", "65=abcd", "educ.ar", "/", NULL,
 			1, 1, 0, 0, 0, 0,
-			1
+			0, 0
 		},
 	};
 	mget_cookie_t cookie;
-	mget_cookie_db_t cookies;
+	mget_cookie_db_t *cookies;
 	mget_iri_t *iri;
 	unsigned it;
-	int result;
+	int result, result_psl;
 
-	mget_cookie_db_init(&cookies);
-	mget_cookie_load_public_suffixes(DATADIR "/effective_tld_names.dat");
+	cookies = mget_cookie_db_init(NULL);
+	mget_cookie_db_load_psl(cookies, DATADIR "/effective_tld_names.dat");
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
@@ -902,6 +903,13 @@ static void test_cookies(void)
 		if ((result = mget_cookie_normalize(iri, &cookie)) != t->result) {
 			failed++;
 			info_printf("Failed [%u]: normalize_cookie(%s) -> %d (expected %d)\n", it, t->set_cookie, result, t->result);
+			mget_cookie_deinit(&cookie);
+			goto next;
+		} else {
+			if ((result_psl = mget_cookie_check_psl(cookies, &cookie)) != t->psl_result) {
+				failed++;
+				info_printf("Failed [%u]: PSL check(%s) -> %d (expected %d)\n", it, t->set_cookie, result_psl, t->psl_result);
+			}
 			mget_cookie_deinit(&cookie);
 			goto next;
 		}
@@ -955,9 +963,9 @@ static void test_cookies(void)
 			goto next;
 		}
 
-		mget_cookie_store_cookie(&cookies, &cookie);
+		mget_cookie_store_cookie(cookies, &cookie);
 
-		info_printf("%s\n", header = mget_cookie_create_request_header(&cookies, iri));
+		info_printf("%s\n", header = mget_cookie_create_request_header(cookies, iri));
 		xfree(header);
 
 		ok++;
@@ -966,8 +974,7 @@ next:
 		mget_iri_free(&iri);
 	}
 
-	mget_cookie_free_public_suffixes();
-	mget_cookie_db_deinit(&cookies);
+	mget_cookie_db_deinit(cookies);
 }
 
 static void test_hsts(void)
