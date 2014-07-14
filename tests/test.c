@@ -863,6 +863,7 @@ static void test_cookies(void)
 			1, 0, 1, 0, 0, 0,
 			-1, 0
 		},
+#ifdef WITH_LIBPSL
 		{	// supercookie, accepted by normalization (rule 'com') but not by mget_cookie_check_psl())
 			"www.example.com",
 			"ID=65=abcd; expires=Mon, 29-Feb-2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
@@ -877,6 +878,7 @@ static void test_cookies(void)
 			1, 0, 1, 0, 0, 0,
 			0, -1
 		},
+#endif
 		{	// exception rule '!educ.ar', accepted by normalization
 			"www.educ.ar",
 			"ID=65=abcd; path=/; domain=.educ.ar",
