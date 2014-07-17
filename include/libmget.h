@@ -376,7 +376,7 @@ void
  */
 
 void *
-	mget_memdup(const void *s, size_t n) G_GNUC_MGET_MALLOC G_GNUC_MGET_ALLOC_SIZE(2);
+	mget_memdup(const void *s, size_t n) G_GNUC_MGET_ALLOC_SIZE(2);
 char *
 	mget_strdup(const char *s) G_GNUC_MGET_MALLOC;
 
@@ -758,7 +758,7 @@ typedef struct mget_iri_st {
 	const char *
 		connection_part; // helper, e.g. http://www.example.com:8080
 	size_t
-		dirlen; // length of directory part in 'path' (needed/initialized on with --no-parent)
+		dirlen; // length of directory part in 'path' (needed/initialized with --no-parent)
 	char
 		host_allocated; // if set, free host in iri_free()
 } mget_iri_t;
@@ -786,9 +786,11 @@ int
 int
 	mget_iri_compare(mget_iri_t *iri1, mget_iri_t *iri2) G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL;
 mget_iri_t *
-	mget_iri_parse(const char *uri, const char *encoding) G_GNUC_MGET_MALLOC;
+	mget_iri_parse(const char *uri, const char *encoding);
 mget_iri_t *
-	mget_iri_parse_base(mget_iri_t *base, const char *url, const char *encoding) G_GNUC_MGET_MALLOC;
+	mget_iri_parse_base(mget_iri_t *base, const char *url, const char *encoding);
+mget_iri_t *
+	mget_iri_clone(mget_iri_t *iri);
 const char *
 	mget_iri_get_connection_part(mget_iri_t *iri);
 const char *
@@ -977,12 +979,12 @@ typedef struct {
 		base;
 	char
 		follow;
-} MGET_HTML_PARSE_RESULT;
+} MGET_HTML_PARSED_RESULT;
 
-MGET_HTML_PARSE_RESULT *
+MGET_HTML_PARSED_RESULT *
 	mget_html_get_urls_inline(const char *html);
 void
-	mget_html_free_urls_inline(MGET_HTML_PARSE_RESULT **res);
+	mget_html_free_urls_inline(MGET_HTML_PARSED_RESULT **res);
 
 void
 	mget_sitemap_get_urls_inline(const char *sitemap, mget_vector_t **urls, mget_vector_t **sitemap_urls);

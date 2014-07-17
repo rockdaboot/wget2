@@ -110,6 +110,8 @@ struct config {
 	struct mget_cookie_db_st
 		*cookie_db;
 	char
+		backup_converted,
+		convert_links,
 		ignore_case,
 		hsts, // if HSTS (HTTP Strict Transport Security) is enabled or not
 		load_hsts, // on startup, load HSTS entries from hsts_file

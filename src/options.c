@@ -145,6 +145,8 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"  -t   --tries            Number of tries for each download. (default 20)\n"
 		"  -A   --accept           Comma-separated list of file name suffixes or patterns.\n"
 		"  -R   --reject           Comma-separated list of file name suffixes or patterns.\n"
+		"  -k   --convert-links    Convert embedded URLs to local URLs. (default: off)\n"
+		"  -K   --backup-converted When converting, keep the original file with a .orig suffix. (default: off)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -483,6 +485,7 @@ static const struct option options[] = {
 	{ "accept", &config.accept_patterns, parse_stringlist, 1, 'A' },
 	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E' },
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a' },
+	{ "backup-converted", &config.backup_converted, parse_bool, 0, 'K' },
 	{ "base", &config.base_url, parse_string, 1, 'B' },
 	{ "bind-address", &config.bind_address, parse_string, 1, 0 },
 	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0 },
@@ -497,6 +500,7 @@ static const struct option options[] = {
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0 },
 	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0 },
 	{ "continue-download", &config.continue_download, parse_bool, 0, 'c' },
+	{ "convert-links", &config.convert_links, parse_bool, 0, 'k' },
 	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0 },
 	{ "cookies", &config.cookies, parse_bool, 0, 0 },
 	{ "cut-dirs", &config.cut_directories, parse_integer, 1, 0 },

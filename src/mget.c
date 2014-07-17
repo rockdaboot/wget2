@@ -75,6 +75,21 @@ typedef struct {
 		cond;
 } DOWNLOADER;
 
+#define _CONTENT_TYPE_HTML 1
+typedef struct {
+	const char *
+		filename;
+	const char *
+		encoding;
+	mget_iri_t *
+		base_url;
+	MGET_HTML_PARSED_RESULT *
+		parsed;
+	int
+		content_type;
+} _conversion_t;
+static mget_vector_t *conversions;
+
 static void
 	save_file(mget_http_response_t *resp, const char *fname),
 	append_file(mget_http_response_t *resp, const char *fname),
@@ -593,6 +608,116 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	mget_thread_mutex_unlock(&downloader_mutex);
 }
 
+static void _convert_links(void)
+{
+	FILE *fpout = NULL;
+	mget_buffer_t buf;
+	char sbuf[1024];
+
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
+	// cycle through all documents where links have been found
+	for (int it = 0; it < mget_vector_size(conversions); it++) {
+		_conversion_t *conversion = mget_vector_get(conversions, it);
+		const char *data, *data_ptr;
+		size_t data_length;
+
+		mget_info_printf("convert %s %s %s\n", conversion->filename, conversion->base_url->uri, conversion->encoding);
+
+		if (!(data = data_ptr = mget_read_file(conversion->filename, &data_length))) {
+			mget_error_printf(_("%s not found (%d)\n"), conversion->filename, errno);
+			continue;
+		}
+
+		// cycle through all links found in the document
+		for (int it2 = 0; it2 < mget_vector_size(conversion->parsed->uris); it2++) {
+			MGET_HTML_PARSED_URL *html_url = mget_vector_get(conversion->parsed->uris, it2);
+			mget_string_t *url = &html_url->url;
+
+			url->p = (size_t) url->p + data; // convert offset to pointer
+
+			if (url->len == 1 && *url->p == '#') // ignore e.g. href='#'
+				continue;
+
+			if (mget_iri_relative_to_abs(conversion->base_url, url->p, url->len, &buf)) {
+				// buf.data now holds the absolute URL as a string
+				mget_iri_t *iri = mget_iri_parse(buf.data, conversion->encoding);
+
+				if (!iri) {
+					mget_error_printf(_("Cannot resolve URI '%s'\n"), buf.data);
+					continue;
+				}
+
+				const char *filename = get_local_filename(iri);
+
+				if (access(filename, W_OK) == 0) {
+					const char *linkpath = filename, *dir = NULL, *p1, *p2;
+					const char *docpath = conversion->filename;
+
+					// e.g.
+					// docpath  'hostname/1level/2level/3level/xyz.html'
+					// linkpath 'hostname/1level/2level.bak/3level/xyz.html'
+					// expected result: '../../2level.bak/3level/xyz.html'
+
+					// find first difference in path
+					for (dir = p1 = linkpath, p2 = docpath; *p1 && *p1 == *p2; p1++, p2++)
+						if (*p1 == '/') dir = p1+1;
+
+					// generate relative path
+					mget_buffer_reset(&buf); // reuse buffer
+					while (*p2) {
+						if (*p2++ == '/')
+							mget_buffer_memcat(&buf, "../", 3);
+					}
+					mget_buffer_strcat(&buf, dir);
+
+					mget_info_printf("  %.*s -> %s\n", (int) url->len,  url->p, linkpath);
+					mget_info_printf("       -> %s\n", buf.data);
+				} else {
+					// insert absolute URL
+					mget_info_printf("  %.*s -> %s\n", (int) url->len,  url->p, buf.data);
+				}
+
+				if (buf.length != url->len || strncmp(buf.data, url->p, url->len)) {
+					// conversion takes place, write to disk
+					if (!fpout) {
+						if (config.backup_converted) {
+							char dstfile[strlen(conversion->filename) + 5 + 1];
+
+							strcpy(dstfile, conversion->filename);
+							strcpy(dstfile + sizeof(dstfile) - 6, ".orig");
+
+							if (rename(conversion->filename, dstfile) == -1) {
+								mget_error_printf(_("Failed to rename %s to %s (%d)"), conversion->filename, dstfile, errno);
+							}
+						}
+						if (!(fpout = fopen(conversion->filename, "w")))
+							mget_error_printf(_("Failed to write open %s (%d)"), conversion->filename, errno);
+					}
+					if (fpout) {
+						fwrite(data_ptr, 1, url->p - data_ptr, fpout);
+						fwrite(buf.data, 1, buf.length, fpout);
+						data_ptr = url->p + url->len;
+					}
+				}
+				
+				xfree(filename);
+				mget_iri_free(&iri);
+			}
+		}
+
+		if (fpout) {
+			fwrite(data_ptr, 1, (data + data_length) - data_ptr, fpout);
+			fclose(fpout);
+			fpout = NULL;
+		}
+
+		xfree(data);
+	}
+
+	mget_buffer_deinit(&buf);
+}
+
 static void print_status(DOWNLOADER *downloader, const char *fmt, ...) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(2,3);
 static void print_status(DOWNLOADER *downloader G_GNUC_MGET_UNUSED, const char *fmt, ...)
 {
@@ -765,6 +890,11 @@ int main(int argc, const char *const *argv)
 
 	if (config.debug)
 		blacklist_print();
+
+	if (config.convert_links && !config.delete_after) {
+		_convert_links();
+		mget_vector_free(&conversions);
+	}
 
 	// freeing to avoid disguising valgrind output
 	xfree(buf);
@@ -1150,6 +1280,38 @@ ready:
 	return NULL;
 }
 
+static void _free_conversion_entry(_conversion_t *conversion)
+{
+	xfree(conversion->filename);
+	xfree(conversion->encoding);
+	mget_iri_free(&conversion->base_url);
+	mget_html_free_urls_inline(&conversion->parsed);
+}
+
+static void _remember_for_conversion(const char *filename, mget_iri_t *base_url, int content_type, const char *encoding, MGET_HTML_PARSED_RESULT *parsed)
+{
+	static mget_thread_mutex_t
+		mutex = MGET_THREAD_MUTEX_INITIALIZER;
+	_conversion_t conversion;
+
+	conversion.filename = strdup(filename);
+	conversion.encoding = strdup(encoding);
+	conversion.base_url = mget_memdup(base_url, sizeof(*base_url));
+	conversion.content_type = content_type;
+	conversion.parsed = parsed;
+
+	mget_thread_mutex_lock(&mutex);
+
+	if (!conversions) {
+		conversions = mget_vector_create(128, -2, NULL);
+		mget_vector_set_destructor(conversions, (void(*)(void *))_free_conversion_entry);
+	}
+
+	mget_vector_add(conversions, &conversion, sizeof(conversion));
+
+	mget_thread_mutex_unlock(&mutex);
+}
+
 static unsigned int G_GNUC_MGET_PURE hash_url(const char *url)
 {
 	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
@@ -1162,12 +1324,13 @@ static unsigned int G_GNUC_MGET_PURE hash_url(const char *url)
 
 void html_parse(JOB *job, int level, const char *html, const char *encoding, mget_iri_t *base)
 {
-	MGET_HTML_PARSE_RESULT *res  = mget_html_get_urls_inline(html);
+	MGET_HTML_PARSED_RESULT *parsed  = mget_html_get_urls_inline(html);
+	mget_iri_t *allocated_base = NULL;
 	const char *reason;
 	mget_buffer_t buf;
 	char sbuf[1024];
 
-	if (config.robots && !res->follow)
+	if (config.robots && !parsed->follow)
 		goto cleanup;
 
 	// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
@@ -1190,7 +1353,7 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 			reason = _("set by server response");
 		}
 
-		if (!mget_strncasecmp(res->encoding, "UTF-16", 6) || !mget_strncasecmp(encoding, "UTF-16", 6)) {
+		if (!mget_strncasecmp(parsed->encoding, "UTF-16", 6) || !mget_strncasecmp(encoding, "UTF-16", 6)) {
 			// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
 			// we found an encoding in the HTML, so it can't be UTF-16*.
 			encoding = "UTF-8";
@@ -1198,8 +1361,8 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 		}
 
 		if (!encoding) {
-			if (res->encoding) {
-				encoding = res->encoding;
+			if (parsed->encoding) {
+				encoding = parsed->encoding;
 				reason = _("set by document");
 			} else {
 				encoding = "CP1252"; // default encoding for HTML5 (pre-HTML5 is iso-8859-1)
@@ -1210,10 +1373,10 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 
 	info_printf(_("URI content encoding = '%s' (%s)\n"), encoding, reason);
 
-	if (res->base.p) {
-		char *base_url = alloca(res->base.len + 1);
-		strlcpy(base_url, res->base.p, res->base.len + 1);
-		base = mget_iri_parse(base_url, encoding);
+	if (parsed->base.p) {
+		char base_url[parsed->base.len + 1];
+		strlcpy(base_url, parsed->base.p, parsed->base.len + 1);
+		base = allocated_base = mget_iri_parse(base_url, encoding);
 	}
 
 	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
@@ -1222,8 +1385,8 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 //	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
 
 	mget_thread_mutex_lock(&known_urls_mutex);
-	for (int it = 0; it < mget_vector_size(res->uris); it++) {
-		MGET_HTML_PARSED_URL *html_url = mget_vector_get(res->uris, it);
+	for (int it = 0; it < mget_vector_size(parsed->uris); it++) {
+		MGET_HTML_PARSED_URL *html_url = mget_vector_get(parsed->uris, it);
 		mget_string_t *url = &html_url->url;
 
 		// Blacklist for URLs before they are processed
@@ -1259,11 +1422,19 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 
 	mget_buffer_deinit(&buf);
 
-	if (res->base.p)
-		mget_iri_free(&base);
+	if (config.convert_links && !config.delete_after) {
+		for (int it = 0; it < mget_vector_size(parsed->uris); it++) {
+			MGET_HTML_PARSED_URL *html_url = mget_vector_get(parsed->uris, it);
+			html_url->url.p = (const char *) (html_url->url.p - html); // convert pointer to offset
+		}
+		_remember_for_conversion(job->local_filename, mget_iri_clone(base), _CONTENT_TYPE_HTML, encoding, parsed);
+		parsed = NULL; // 'parsed' has been consumed
+	}
+
+	mget_iri_free(&allocated_base);
 
 cleanup:
-	mget_html_free_urls_inline(&res);
+	mget_html_free_urls_inline(&parsed);
 }
 
 void html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, mget_iri_t *base)
@@ -1423,7 +1594,7 @@ static void _add_urls(JOB *job, mget_vector_t *urls, const char *encoding, mget_
 
 	mget_thread_mutex_lock(&known_urls_mutex);
 	for (int it = 0; it < mget_vector_size(urls); it++) {
-		mget_string_t *url = mget_vector_get(urls, it);;
+		mget_string_t *url = mget_vector_get(urls, it);
 
 		if (baselen && (url->len <= baselen || !strncasecmp(url->p, base->uri, baselen))) {
 			info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)url->len, url->p);

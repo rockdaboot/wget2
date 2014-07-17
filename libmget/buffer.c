@@ -130,6 +130,7 @@ void mget_buffer_free_data(mget_buffer_t *buf)
 void mget_buffer_reset(mget_buffer_t *buf)
 {
 	buf->length = 0;
+	*buf->data = 0;
 }
 
 size_t mget_buffer_memcpy(mget_buffer_t *buf, const void *data, size_t length)
