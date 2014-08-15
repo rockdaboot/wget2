@@ -50,7 +50,7 @@ struct _mget_hsts_st {
 		host;
 	time_t
 		maxage; // expiry time
-	short
+	int
 		port;
 	unsigned int
 		include_subdomains : 1; // whether or not subdomains are included

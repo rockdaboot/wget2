@@ -38,13 +38,23 @@ int main(void)
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Main Page</title></head><body><p>A link to a" \
-				" <a href=\"site;sub:.html\">second page</a>." \
+				" <a href=\"second.html\">second page</a>." \
+				" <a href=\"htTp://localhost:{{port}}/second.html\">second page</a>." \
+				" <a href=\"subdir/third.html\">third page</a>." \
+				" <a href=\"htTp://localhost:{{port}}/subdir/third.html\">third page</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
 			}
 		},
-		{	.name = "/site;sub:.html",
+		{	.name = "/second.html",
+			.code = "200 Dontcare",
+			.body = "<html><head><title>Site</title></head><body>Some Text</body></html>",
+			.headers = {
+				"Content-Type: text/html",
+			}
+		},
+		{	.name = "/subdir/third.html",
 			.code = "200 Dontcare",
 			.body = "<html><head><title>Site</title></head><body>Some Text</body></html>",
 			.headers = {
@@ -55,7 +65,10 @@ int main(void)
 
 	const char *converted =
 		"<html><head><title>Main Page</title></head><body><p>A link to a" \
-		" <a href=\"site%3Bsub:.html\">second page</a>." \
+		" <a href=\"second.html\">second page</a>." \
+		" <a href=\"second.html\">second page</a>." \
+		" <a href=\"subdir/third.html\">third page</a>." \
+		" <a href=\"subdir/third.html\">third page</a>." \
 		"</p></body></html>";
 
 	// functions won't come back if an error occurs
@@ -69,8 +82,9 @@ int main(void)
 		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
-			{ "index.html", converted },
-			{ "site;sub:.html", urls[1].body },
+			{ urls[0].name + 1, converted },
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[2].name + 1, urls[2].body },
 			{	NULL } },
 		0);
 

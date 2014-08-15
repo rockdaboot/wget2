@@ -1,3 +1,17 @@
+15.08.2014
+  New release v0.1.6
+  Check cookie domains via libpsl against the Public Sufix List
+  Fixed -p/--page-requisites
+  Fixed HTML parsing of uppercase attributes (fixes issue #21)
+  Added --accept, --reject, --ignore-case
+  Added -k/--convert-links and -K/--backup-converted
+
+08.03.2014
+  Fixed sigfault in cookie handling, introduced in v0.1.5.
+
+02.03.2014
+  Added --gnutls-options to directly set a GnuTLS priority string for secure connections.
+
 26.02.2014
   New release v0.1.5
 
@@ -6,7 +20,7 @@
 
 17.02.2014
   Fixed a race condition that could lead to sigfaults.
-  Fixed waiting for threads a program exit.
+  Fixed waiting for threads at program exit.
 
 16.02.2014
   Made HTTPS test work with GnuTLS 2.12.

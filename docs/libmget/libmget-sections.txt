@@ -16,6 +16,8 @@ mget_strncmp
 mget_strncasecmp
 mget_memtohex
 mget_millisleep
+mget_match_tail
+mget_match_tail_nocase
 </SECTION>
 
 <SECTION>

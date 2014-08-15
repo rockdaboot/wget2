@@ -107,7 +107,7 @@ void mget_debug_printf(const char *fmt, ...)
 	}
 }
 
-void mget_debug_write(const char *buf, int len)
+void mget_debug_write(const char *buf, size_t len)
 {
 	if (_debug.write)
 		_debug.write(&_debug, buf, len);

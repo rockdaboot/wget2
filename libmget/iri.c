@@ -20,6 +20,7 @@
  * URI/IRI routines
  * about encoding see http://nikitathespider.com/articles/EncodingDivination.html
  * about GET encoding see http://stackoverflow.com/questions/1549213/whats-the-correct-encoding-of-http-get-request-strings
+ * RFC 3986: URI generic syntax
  *
  *
  * Changelog
@@ -332,6 +333,36 @@ mget_iri_t *mget_iri_parse(const char *url, const char *encoding)
 */
 
 	return iri;
+}
+
+mget_iri_t *mget_iri_clone(mget_iri_t *iri)
+{
+	if (!iri)
+		return NULL;
+
+	size_t slen = strlen(iri->uri);
+	mget_iri_t *clone = mget_memdup(iri, sizeof(mget_iri_t) + slen * 2 + 2);
+
+	clone->connection_part = mget_strdup(iri->connection_part);
+
+	// adjust pointers
+	if (iri->host_allocated)
+		clone->host = strdup(iri->host);
+	else
+		clone->host = iri->host ? (char *)clone + (size_t) (iri->host - (const char *)iri) : NULL;
+
+	clone->uri = iri->uri ? (char *)clone + (size_t) (iri->uri - (const char *)iri) : NULL;
+	clone->display = iri->display ? (char *)clone + (size_t) (iri->display - (const char *)iri): NULL;
+	// not adjust scheme, it is a pointer to a static string
+	clone->userinfo = iri->userinfo ? (char *)clone + (size_t) (iri->userinfo - (const char *)iri): NULL;
+	clone->password = iri->password ? (char *)clone + (size_t) (iri->password - (const char *)iri): NULL;
+	clone->port = iri->port ? (char *)clone + (size_t) (iri->port - (const char *)iri): NULL;
+	clone->resolv_port = iri->resolv_port ? (char *)clone + (size_t) (iri->resolv_port - (const char *)iri): NULL;
+	clone->path = iri->path ? (char *)clone + (size_t) (iri->path - (const char *)iri): NULL;
+	clone->query = iri->query ? (char *)clone + (size_t) (iri->query - (const char *)iri): NULL;
+	clone->fragment = iri->fragment ? (char *)clone + (size_t) (iri->fragment - (const char *)iri): NULL;
+
+	return clone;
 }
 
 static char *_iri_build_connection_part(mget_iri_t *iri)

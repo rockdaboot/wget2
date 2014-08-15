@@ -28,6 +28,9 @@
 #define _MGET_OPTIONS_H
 
 #include <stdarg.h>
+#ifdef WITH_LIPSL
+#	include <libpsl.h>
+#endif
 
 #include <libmget.h>
 
@@ -44,6 +47,7 @@ struct config {
 	mget_iri_t
 		*base;
 	const char
+		*gnutls_options,
 		*username,
 		*password,
 		*http_username,
@@ -77,8 +81,15 @@ struct config {
 	mget_stringmap_t
 		*domains,
 		*exclude_domains;
+	mget_vector_t
+		*accept_patterns,
+		*reject_patterns;
 	mget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
+#ifdef WITH_LIPSL
+	psl_ctx_t
+		*psl; // libpsl Publix Suffix List context
+#endif
 	size_t
 		chunk_size;
 	long long
@@ -97,8 +108,11 @@ struct config {
 		max_redirect,
 		num_threads;
 	struct mget_cookie_db_st
-		cookie_db;
+		*cookie_db;
 	char
+		backup_converted,
+		convert_links,
+		ignore_case,
 		hsts, // if HSTS (HTTP Strict Transport Security) is enabled or not
 		load_hsts, // on startup, load HSTS entries from hsts_file
 		save_hsts, // on exit, save HSTS entries info hsts_file

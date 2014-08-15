@@ -56,6 +56,7 @@
 static struct _config {
 	const char
 		*secure_protocol,
+		*direct_options,
 		*ca_directory,
 		*ca_file,
 		*cert_file,
@@ -85,6 +86,7 @@ void mget_ssl_set_config_string(int key, const char *value)
 {
 	switch (key) {
 	case MGET_SSL_SECURE_PROTOCOL: _config.secure_protocol = value; break;
+	case MGET_SSL_DIRECT_OPTIONS: _config.direct_options = value; break;
 	case MGET_SSL_CA_DIRECTORY: _config.ca_directory = value; break;
 	case MGET_SSL_CA_FILE: _config.ca_file = value; break;
 	case MGET_SSL_CERT_FILE: _config.cert_file = value; break;
@@ -451,12 +453,12 @@ static void _set_credentials(gnutls_certificate_credentials_t *credentials)
 			error_printf(_("GnuTLS requires the key and the cert to be of the same type.\n"));
 		}
 
-		if (gnutls_certificate_set_x509_key_file(*credentials, _config.cert_file, _config.key_file, _key_type(_config.key_type)) < 0)
+		if (gnutls_certificate_set_x509_key_file(*credentials, _config.cert_file, _config.key_file, _key_type(_config.key_type)) != GNUTLS_E_SUCCESS)
 			error_printf(_("No certificates or keys were found\n"));
 	}
 
 	if (_config.ca_file) {
-		if (gnutls_certificate_set_x509_trust_file(*credentials, _config.ca_file, _key_type(_config.ca_type)) < 0)
+		if (gnutls_certificate_set_x509_trust_file(*credentials, _config.ca_file, _key_type(_config.ca_type)) <= 0)
 			error_printf(_("No CAs were found\n"));
 	}
 }
@@ -522,11 +524,13 @@ void mget_ssl_init(void)
 
 		_set_credentials(&_credentials);
 
-		if (_config.secure_protocol) {
+		if (_config.secure_protocol || _config.direct_options) {
 			const char *priorities = NULL;
 			int ret;
 
-			if (!strcasecmp(_config.secure_protocol, "PFS")) {
+			if (_config.direct_options) {
+				ret = gnutls_priority_init(&_priority_cache, _config.direct_options, NULL);
+			} else if (!strcasecmp(_config.secure_protocol, "PFS")) {
 				priorities = "PFS";
 				// -RSA to force DHE/ECDHE key exchanges to have Perfect Forward Secrecy (PFS))
 				if ((ret = gnutls_priority_init(&_priority_cache, priorities, NULL)) != GNUTLS_E_SUCCESS) {

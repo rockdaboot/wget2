@@ -224,6 +224,7 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 			return addrinfo;
 		}
 	}
+	addrinfo = NULL;
 
 #if defined(AI_NUMERICSERV)
 	ai_flags |= (isdigit(*port) ? AI_NUMERICSERV : 0);
@@ -719,7 +720,7 @@ mget_tcp_t *mget_tcp_accept(mget_tcp_t *parent_tcp)
 			return NULL;
 	}
 
-	if ((sockfd = accept(parent_tcp->sockfd, parent_tcp->bind_addrinfo->ai_addr, &parent_tcp->bind_addrinfo->ai_addrlen))!=-1) {
+	if ((sockfd = accept(parent_tcp->sockfd, parent_tcp->bind_addrinfo->ai_addr, &parent_tcp->bind_addrinfo->ai_addrlen)) != -1) {
 		mget_tcp_t *tcp = xmalloc(sizeof(mget_tcp_t));
 
 		*tcp = *parent_tcp;

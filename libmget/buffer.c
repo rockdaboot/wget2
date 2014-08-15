@@ -130,6 +130,7 @@ void mget_buffer_free_data(mget_buffer_t *buf)
 void mget_buffer_reset(mget_buffer_t *buf)
 {
 	buf->length = 0;
+	*buf->data = 0;
 }
 
 size_t mget_buffer_memcpy(mget_buffer_t *buf, const void *data, size_t length)
@@ -218,14 +219,14 @@ char *mget_buffer_trim(mget_buffer_t *buf)
 			for (; isspace(*end) && end >= start; end--)
 				;
 			end[1] = 0;
-			buf->length = end - start + 1;
+			buf->length = (size_t) (end - start + 1);
 		}
 
 		if (isspace(*start)) {
 			// skip leading spaces
 			for (; isspace(*start) && end >= start; start++)
 				;
-			buf->length = end - start + 1;
+			buf->length = (size_t) (end - start + 1);
 			memmove(buf->data, start, buf->length + 1); // include trailing 0
 		}
 	}

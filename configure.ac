@@ -4,7 +4,7 @@ CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 
 AC_PREREQ([2.67])
-AC_INIT([mget], [0.1.5], [mget-bugs@googlegroups.com], [mget], [https://github.com/rockdaboot/mget])
+AC_INIT([mget], [0.1.6], [mget-bugs@googlegroups.com], [mget], [https://github.com/rockdaboot/mget])
 AM_INIT_AUTOMAKE
 
 CFLAGS=$CFLAGS
@@ -39,10 +39,11 @@ AC_CANONICAL_HOST
 
 # If CFLAGS isn't defined and using gcc, set CFLAGS to something reasonable.
 # Otherwise, just prevent autoconf from molesting CFLAGS.
-AC_PROG_CC
+#AC_PROG_CC
+AC_PROG_CC_STDC
 
-if test "x$CFLAGS" = "x" ; then
-  if test "x$GCC" = "xyes" ; then
+if test "x$CFLAGS" = "x"; then
+  if test "x$GCC" = "xyes"; then
    CFLAGS="-g -std=gnu99 -pedantic -fPIC\
  -Wall -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes\
  -Wwrite-strings -Wformat=2 -Wformat -Wformat-security\
@@ -52,14 +53,14 @@ if test "x$CFLAGS" = "x" ; then
 else
   CFLAGS="$CFLAGS -fPIC"
 fi
-if test "x$LDFLAGS" = "x" ; then
-  if test "x$GCC" = "xyes" ; then
+if test "x$LDFLAGS" = "x"; then
+  if test "x$GCC" = "xyes"; then
 #    LDFLAGS="-fPIE -pie -Wl,-z,relro,--as-needed"
     LDFLAGS="-fPIE -pie -Wl,--as-needed -ffunction-sections"
   fi
 fi
 # Append EXTRA_CFLAGS to CFLAGS, if defined.
-if test "x$EXTRA_CFLAGS" != "x" ; then
+if test "x$EXTRA_CFLAGS" != "x"; then
   CFLAGS="$CFLAGS $EXTRA_CFLAGS"
 fi
 
@@ -80,7 +81,7 @@ AM_PROG_CC_C_O
 # Require C99 support
 #
 AC_PROG_CC_C99
-if test "$ac_cv_prog_cc_c99" = "no" ; then
+if test "$ac_cv_prog_cc_c99" = "no"; then
    AC_ERROR([Compiler does not support C99. Aborting.])
 fi
 
@@ -126,12 +127,10 @@ AS_IF([ test "$enable_man" != no ], [
 
 
 # Check for valgrind
-ac_enable_valgrind=no
 AC_ARG_ENABLE(valgrind-tests,
   AS_HELP_STRING([--enable-valgrind-tests], [enable using Valgrind for tests]),
   [ac_enable_valgrind=$enableval], [ac_enable_valgrind=no])
-
-if test "${ac_enable_valgrind}" = "yes" ; then
+if test "${ac_enable_valgrind}" != "no" ; then
   AC_CHECK_PROG(HAVE_VALGRIND, valgrind, yes, no)
   if test "$HAVE_VALGRIND" = "yes" ; then
     VALGRIND_ENVIRONMENT="valgrind --error-exitcode=1 --leak-check=yes --show-reachable=yes --track-origins=yes"
@@ -147,8 +146,7 @@ fi
 #AC_ARG_WITH(gnutls, AS_HELP_STRING([--with-gnutls[=PATH]], [compile with SSL support]), , with_gnutls="no")
 #if test $with_gnutls != "no"
 #then
-#  if test $with_gnutls != "yes"
-#  then
+#  if test $with_gnutls != "yes"; then
 #    export PKG_CONFIG_PATH="$with_gnutls:$with_gnutls/pkgconfig:$with_gnutls/lib/pkgconfig:$PKG_CONFIG_PATH"
 #    GNUTLS_BIN_DIR="$with_gnutls/bin/"
 #    AC_SUBST(GNUTLS_BIN_DIR)
@@ -160,73 +158,81 @@ fi
 #  echo "GNUTLS_BIN_DIR=$GNUTLS_BIN_DIR"
 #fi
 
+# Check for needed libraries
+AC_SEARCH_LIBS(clock_gettime, rt)
+AC_SEARCH_LIBS(pthread_create, pthread, [AC_DEFINE([HAVE_LIBPTHREAD], [1], [Use pthreads])])
+
 AC_ARG_WITH(gnutls, AS_HELP_STRING([--without-gnutls], [disable GNUTLS SSL support]), with_gnutls=$withval, with_gnutls=yes)
-if test $with_gnutls != "no"
-then
-  AC_CHECK_LIB(gnutls, gnutls_global_init, [with_gnutls=yes; AC_SUBST(GNUTLS_LIBS, "-lgnutls") AC_DEFINE([WITH_GNUTLS], [1], [Use gnutls])], [with_gnutls=no; AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS. Fallback to libnettle for Metalink checksumming.)])
-  AC_CHECK_LIB(gnutls, gnutls_hash, [with_gnutls_hash=yes])
+if test $with_gnutls != "no"; then
+  AC_SEARCH_LIBS(gnutls_global_init, gnutls,
+    [with_gnutls=yes; AC_DEFINE([WITH_GNUTLS], [1], [Use gnutls])],
+    [with_gnutls=no;  AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS. Fallback to libnettle for Metalink checksumming.)])
+  AC_SEARCH_LIBS(gnutls_hash, gnutls, [with_gnutls_hash=yes])
 fi
 AM_CONDITIONAL([WITH_GNUTLS], [test $with_gnutls = "yes"])
 
-#AC_DEFINE([WITH_SSL], [1], [Use SSL])]
-#AM_CONDITIONAL([WITH_SSL], [test $with_gnutls = "yes"])
-
-
-if test $with_gnutls != "yes" || test x$with_gnutls_hash != "xyes"
-then
-  AC_CHECK_LIB(nettle, nettle_md5_init, [with_libnettle=yes; AC_SUBST(NETTLE_LIBS, "-lnettle") AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])], [with_libnettle=no; AC_MSG_WARN(*** LIBNETTLE was not found. Metalink checksumming is not available.)])
+if test $with_gnutls != "yes" || test x$with_gnutls_hash != "xyes"; then
+  AC_SEARCH_LIBS(nettle_md5_init, nettle,
+    [with_libnettle=yes; AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])],
+    [with_libnettle=no;  AC_MSG_WARN(*** LIBNETTLE was not found. Metalink checksumming is not available.)])
 fi
 AM_CONDITIONAL([WITH_LIBNETTLE], [test x$with_libnettle = "xyes"])
 
+AC_ARG_WITH(libpsl, AS_HELP_STRING([--without-libpsl], [disable support for libpsl cookie checking]), with_libpsl=$withval, with_libpsl=yes)
+if test $with_libpsl != "no"; then
+  AC_SEARCH_LIBS(psl_builtin, psl,
+    [with_libpsl=yes; AC_DEFINE([WITH_LIBPSL], [1], [PSL support enabled])],
+    [with_libpsl=no;  AC_MSG_WARN(*** libpsl was not found. Fallback to builtin cookie checking.)])
+fi
+AM_CONDITIONAL([WITH_LIBPSL], [test $with_libpsl = "yes"])
 
 AC_ARG_WITH(zlib, AS_HELP_STRING([--without-zlib], [disable gzip compression support]), with_zlib=$withval, with_zlib=yes)
-if test $with_zlib != "no"
-then
-  AC_CHECK_LIB(z, deflate, [with_zlib=yes; AC_SUBST(ZLIB_LIBS, "-lz") AC_DEFINE([WITH_ZLIB], [1], [Use zlib])], [with_zlib=no; AC_MSG_WARN(*** ZLIB was not found. You will not be able to use gzip (de)compression)])
+if test $with_zlib != "no"; then
+  AC_SEARCH_LIBS(deflate, z,
+    [with_zlib=yes; AC_DEFINE([WITH_ZLIB], [1], [Use zlib])],
+    [with_zlib=no;  AC_MSG_WARN(*** ZLIB was not found. You will not be able to use gzip (de)compression)])
 fi
 AM_CONDITIONAL([WITH_ZLIB], [test $with_zlib = "yes"])
 
 AC_ARG_WITH(lzma, AS_HELP_STRING([--without-lzma], [disable LZMA compression support]), with_lzma=$withval, with_lzma=yes)
-if test $with_lzma != "no"
-then
-  AC_CHECK_LIB(lzma, lzma_code, [with_lzma=yes; AC_SUBST(LZMA_LIBS, "-llzma") AC_DEFINE([WITH_LZMA], [1], [Use liblzma])], [with_lzma=no; AC_MSG_WARN(*** liblzma was not found. You will not be able to use LZMA (de)compression)])
+if test $with_lzma != "no"; then
+  AC_SEARCH_LIBS(lzma_code, lzma,
+    [with_lzma=yes; AC_DEFINE([WITH_LZMA], [1], [Use liblzma])],
+    [with_lzma=no;  AC_MSG_WARN(*** liblzma was not found. You will not be able to use LZMA (de)compression)])
 fi
 AM_CONDITIONAL([WITH_LZMA], [test $with_lzma = "yes"])
 
 AC_ARG_WITH(bz2, AS_HELP_STRING([--without-bzip2], [disable bzip2 compression support]), with_bzip2=$withval, with_bzip2=yes)
-if test $with_bzip2 != "no"
-then
-  AC_CHECK_LIB(bz2, BZ2_bzDecompress, [with_bzip2=yes; AC_SUBST(BZIP2_LIBS, "-lbz2") AC_DEFINE([WITH_BZIP2], [1], [Use libbz2])], [with_bzip2=no; AC_MSG_WARN(*** libbz2 was not found. You will not be able to use bzip2 (de)compression)])
+if test $with_bzip2 != "no"; then
+  AC_SEARCH_LIBS(BZ2_bzDecompress, bz2,
+    [with_bzip2=yes; AC_DEFINE([WITH_BZIP2], [1], [Use liblzma])],
+    [with_bzip2=no;  AC_MSG_WARN(*** libbz2 was not found. You will not be able to use BZIP2 (de)compression)])
 fi
 AM_CONDITIONAL([WITH_BZIP2], [test $with_bzip2 = "yes"])
 
 AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support]), with_libidn2=$withval, with_libidn2=yes)
-if test $with_libidn2 != "no"
-then
-  AC_CHECK_LIB(idn2, idn2_lookup_u8, [with_libidn2=yes; AC_SUBST(IDN_LIBS, "-lidn2") AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2])], [with_libidn2=no; AC_MSG_WARN(*** LIBIDN2 was not found. You will not be able to use IDN2008 support)])
-  if test x$with_libidn2 = "xyes"
-  then
-    AC_CHECK_LIB(unistring, u8_tolower, [with_libunistring=yes; AC_SUBST(IDN_LIBS, "-lidn2 -lunistring") AC_DEFINE([WITH_LIBUNISTRING], [1], [Use libunistring])], [with_libunistring=no; AC_MSG_WARN(*** LIBUNISTRING was not found. You will not be able to use IDN2008 on uppercase domains)])
+if test $with_libidn2 != "no"; then
+  AC_SEARCH_LIBS(idn2_lookup_u8, idn2,
+    [with_libidn2=yes; AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2]) IDNA_INFO="IDNA 2008 (libidn2)"],
+    [with_libidn2=no;  AC_MSG_WARN(*** LIBIDN2 was not found. You will not be able to use IDN2008 support)])
+  if test $with_libidn2 = "yes"; then
+    AC_SEARCH_LIBS(u8_tolower, unistring,
+      [with_libunistring=yes; AC_DEFINE([WITH_LIBUNISTRING], [1], [Use libunistring]) IDNA_INFO="IDNA 2008 (libidn2+libunistring)"],
+      [with_libunistring=no;  AC_MSG_WARN(*** LIBUNISTRING was not found. You will not be able to use IDN2008 on uppercase domains)])
   fi
 fi
 AM_CONDITIONAL([WITH_LIBUNISTRING], [test x$with_libunistring = "xyes"])
 AM_CONDITIONAL([WITH_LIBIDN2], [test $with_libidn2 = "yes"])
 
-if test x$with_libidn2 != "xyes"
-then
+if test x$with_libidn2 != "xyes"; then
   AC_ARG_WITH(libidn, AS_HELP_STRING([--without-libidn], [disable IDN support]), with_libidn=$withval, with_libidn=yes)
-  if test x$with_libidn != "xno"
-  then
-    AC_CHECK_LIB(idn, idna_to_ascii_8z, [with_libidn=yes; AC_SUBST(IDN_LIBS, "-lidn") AC_DEFINE([WITH_LIBIDN], [1], [Use libidn])], [with_libidn=no; AC_MSG_WARN(*** LIBIDN was not found. You will not be able to use IDN support)])
+  if test $with_libidn != "no"; then
+    AC_SEARCH_LIBS(idna_to_ascii_8z, idn,
+      [with_libidn=yes; AC_DEFINE([WITH_LIBIDN], [1], [Use libidn]) IDNA_INFO="IDNA 2003 (libidn)"],
+      [with_libidn=no; AC_MSG_WARN(*** LIBIDN was not found. You will not be able to use IDN support)])
   fi
 fi
 AM_CONDITIONAL([WITH_LIBIDN], [test x$with_libidn = "xyes"])
-
-# Checks for libraries.
-AC_CHECK_LIB([pthread], [pthread_attr_init])
-AC_CHECK_LIB([rt], [clock_gettime])
-
-AC_SUBST(LIBS, "$GNUTLS_LIBS $ZLIB_LIBS $LZMA_LIBS $BZIP2_LIBS $IDN_LIBS $NETTLE_LIBS $LIBS")
 
 # Checks for header files.
 AC_CHECK_HEADERS([\
@@ -287,6 +293,7 @@ AC_MSG_NOTICE([Summary of build options:
   GZIP compression:  $with_zlib
   BZIP2 compression: $with_bzip2
   LZMA compression:  $with_lzma
-  IDN support:       $IDN_LIBS
+  IDNA support:      $IDNA_INFO
+  PSL support:       $with_libpsl
   Tests:             ${TESTS_INFO}
 ])

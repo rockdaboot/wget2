@@ -818,88 +818,101 @@ static void test_cookies(void)
 			secure_only : 1, // cookie should be used over secure connections only (TLS/HTTPS)
 			http_only : 1; // just use the cookie via HTTP/HTTPS protocol
 		int
-			result;
+			result,
+			psl_result;
 	} test_data[] = {
 		{	// allowed cookie
 			"www.example.com",
 			"ID=65=abcd; expires=Tuesday, 07-May-2013 07:48:53 GMT; path=/; domain=.example.com; HttpOnly",
 			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 1, 1, 0, 0, 1,
-			1
+			0, 0
 		},
 		{	// allowed cookie ANSI C's asctime format
 			"www.example.com",
 			"ID=65=abcd; expires=Tue May 07 07:48:53 2013; path=/; domain=.example.com",
 			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 1, 1, 0, 0, 0,
-			1
+			0, 0
 		},
 		{	// allowed cookie without path
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; domain=.example.com",
 			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 1, 1, 0, 0, 0,
-			1
+			0, 0
 		},
 		{	// allowed cookie without domain
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/",
 			"ID", "65=abcd", "www.example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			0, 1, 1, 1, 0, 0,
-			1
+			0, 0
 		},
 		{	// allowed cookie without domain, path and expires
 			"www.example.com",
 			"ID=65=abcd",
 			"ID", "65=abcd", "www.example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			0, 1, 0, 1, 0, 0,
-			1
+			0, 0
 		},
 		{	// illegal cookie
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/; domain=.example.org",
 			"ID", "65=abcd", "example.org", "/", "Tue, 07 May 2013 07:48:53 GMT",
 			1, 0, 1, 0, 0, 0,
-			0
+			-1, 0
 		},
-		{	// supercookie, not accepted by normalization (rule 'com')
+#ifdef WITH_LIBPSL
+		{	// supercookie, accepted by normalization (rule 'com') but not by mget_cookie_check_psl())
 			"www.example.com",
 			"ID=65=abcd; expires=Mon, 29-Feb-2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
 			"ID", "65=abcd", "com", "/", "Mon, 29 Feb 2016 07:48:54 GMT",
 			1, 0, 1, 0, 1, 1,
-			0
+			0, -1
 		},
-		{	// supercookie, not accepted by normalization  (rule '*.ar')
-			"www.example.ar",
-			"ID=65=abcd; expires=Tue, 29-Feb-2000 07:48:55 GMT; path=/; domain=.example.ar",
-			"ID", "65=abcd", "example.ar", "/", "Tue, 29 Feb 2000 07:48:55 GMT",
+		{	// supercookie, accepted by normalization  (rule '*.ar') but not by mget_cookie_check_psl())
+			"www.sa.gov.au",
+			"ID=65=abcd; expires=Tue, 29-Feb-2000 07:48:55 GMT; path=/; domain=.sa.gov.au",
+			"ID", "65=abcd", "sa.gov.au", "/", "Tue, 29 Feb 2000 07:48:55 GMT",
 			1, 0, 1, 0, 0, 0,
-			0
+			0, -1
 		},
+#endif
 		{	// exception rule '!educ.ar', accepted by normalization
 			"www.educ.ar",
 			"ID=65=abcd; path=/; domain=.educ.ar",
 			"ID", "65=abcd", "educ.ar", "/", NULL,
 			1, 1, 0, 0, 0, 0,
-			1
+			0, 0
 		},
 	};
 	mget_cookie_t cookie;
+	mget_cookie_db_t *cookies;
 	mget_iri_t *iri;
 	unsigned it;
-	int result;
+	int result, result_psl;
 
-	mget_cookie_load_public_suffixes(DATADIR "/public_suffixes.txt");
+	cookies = mget_cookie_db_init(NULL);
+	mget_cookie_db_load_psl(cookies, DATADIR "/effective_tld_names.dat");
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
-		char thedate[32];
+		char thedate[32], *header;
 
 		iri = mget_iri_parse(t->uri, "utf-8");
 		mget_http_parse_setcookie(t->set_cookie, &cookie);
-		if ((result = mget_cookie_normalize_cookie(iri, &cookie)) != t->result) {
+		if ((result = mget_cookie_normalize(iri, &cookie)) != t->result) {
 			failed++;
 			info_printf("Failed [%u]: normalize_cookie(%s) -> %d (expected %d)\n", it, t->set_cookie, result, t->result);
+			mget_cookie_deinit(&cookie);
+			goto next;
+		} else {
+			if ((result_psl = mget_cookie_check_psl(cookies, &cookie)) != t->psl_result) {
+				failed++;
+				info_printf("Failed [%u]: PSL check(%s) -> %d (expected %d)\n", it, t->set_cookie, result_psl, t->psl_result);
+			}
+			mget_cookie_deinit(&cookie);
 			goto next;
 		}
 
@@ -908,6 +921,7 @@ static void test_cookies(void)
 			if (strcmp(thedate, t->expires)) {
 				failed++;
 				info_printf("Failed [%u]: expires mismatch: '%s' != '%s' (time_t %lld)\n", it, thedate, t->expires, (long long)cookie.expires);
+				mget_cookie_deinit(&cookie);
 				goto next;
 			}
 		}
@@ -947,15 +961,22 @@ static void test_cookies(void)
 			if (cookie.http_only != t->http_only)
 				info_printf("  http_only %d (expected %d)\n", cookie.http_only, t->http_only);
 
+			mget_cookie_deinit(&cookie);
 			goto next;
 		}
+
+		mget_cookie_store_cookie(cookies, &cookie);
+
+		info_printf("%s\n", header = mget_cookie_create_request_header(cookies, iri));
+		xfree(header);
 
 		ok++;
 
 next:
-		mget_cookie_deinit(&cookie);
 		mget_iri_free(&iri);
 	}
+
+	mget_cookie_db_deinit(cookies);
 }
 
 static void test_hsts(void)
@@ -1026,7 +1047,7 @@ static void test_utils(void)
 
 	for (ndst = 1; ndst <= 3; ndst++) {
 		for (it = 0; it <= 255; it++) {
-			src[0] = it;
+			src[0] = (unsigned char) it;
 			mget_memtohex(src, 1, dst1, ndst);
 			snprintf(dst2, ndst, "%02x", src[0]);
 			if (strcmp(dst1, dst2)) {
@@ -1061,7 +1082,7 @@ static void test_vector(void)
 		*txt[countof(txt_sorted)];
 	mget_vector_t
 		*v = mget_vector_create(2, -2, (int(*)(const void *, const void *))compare_txt);
-	size_t
+	unsigned
 		it;
 	int
 		n;
@@ -1072,7 +1093,7 @@ static void test_vector(void)
 
 	// shuffle txt
 	for (it = 0; it < countof(txt); it++) {
-		n = rand()%countof(txt);
+		n = rand() % countof(txt);
 		tmp = txt[n];
 		txt[n] = txt[it];
 		txt[it] = tmp;
@@ -1104,14 +1125,15 @@ static void test_stringmap(void)
 {
 	mget_stringmap_t *h;
 	char key[128], value[128], *val;
-	int run, it, valuesize;
+	int run, it;
+	size_t valuesize;
 
 	// the initial size of 16 forces the internal reshashing function to be called twice
 
+	h = mget_stringmap_create(16);
+
 	for (run = 0; run < 2; run++) {
-		if (run == 0) {
-			h = mget_stringmap_create(16);
-		} else {
+		if (run) {
 			mget_stringmap_clear(h);
 			mget_stringmap_sethashfunc(h, hash_txt);
 		}
@@ -1248,9 +1270,21 @@ static void test_stringmap(void)
 
 int main(int argc, const char * const *argv)
 {
+	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
+	if (argc == 1) {
+		const char *valgrind = getenv("TESTS_VALGRIND");
+
+		if (valgrind && *valgrind) {
+			char cmd[strlen(valgrind)+strlen(argv[0])+32];
+
+			snprintf(cmd, sizeof(cmd), "TESTS_VALGRIND="" %s %s", valgrind, argv[0]);
+			return system(cmd) != 0;
+		}
+	}
+
 	init(argc, argv); // allows us to test with options (e.g. with --debug)
 
-	srand(time(NULL));
+	srand((unsigned int) time(NULL));
 
 	// testing basic library functionality
 	test_buffer();
@@ -1271,7 +1305,6 @@ int main(int argc, const char * const *argv)
 	test_parser();
 
 	test_cookies();
-	mget_cookie_free_public_suffixes();
 
 	test_hsts();
 

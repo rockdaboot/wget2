@@ -99,14 +99,19 @@ int mget_thread_cond_wait(mget_thread_cond_t *cond, mget_thread_mutex_t *mutex)
 
 #else // HAVE_LIBPTHREAD
 
+// dummy thread functions
 int mget_thread_start(mget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_MGET_UNUSED)
 {
 	return -1;
 }
+int mget_thread_mutex_init(mget_thread_mutex_t *mutex) { return 0; }
 void mget_thread_mutex_lock(mget_thread_mutex_t *mutex) { }
 void mget_thread_mutex_unlock(mget_thread_mutex_t *mutex) { }
 int mget_thread_kill(mget_thread_t thread, int sig) { return 0; }
 int mget_thread_join(mget_thread_t thread) { return 0; }
 mget_thread_t mget_thread_self(void) { return 0; }
+int mget_thread_cond_init(mget_thread_cond_t *cond) { return 0; }
+int mget_thread_cond_signal(mget_thread_cond_t *cond) { return 0; }
+int mget_thread_cond_wait(mget_thread_cond_t *cond, mget_thread_mutex_t *mutex) { return 0; }
 
 #endif // HAVE_LIBPTHREAD

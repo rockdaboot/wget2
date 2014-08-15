@@ -37,7 +37,7 @@
 #include "private.h"
 
 typedef struct {
-	MGET_HTML_PARSE_RESULT
+	MGET_HTML_PARSED_RESULT
 		result;
 	char
 		found_robots,
@@ -90,10 +90,9 @@ static void _html_get_url(void *context, int flags, const char *dir, const char 
 	}
 
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
-		MGET_HTML_PARSE_RESULT *res = &ctx->result;
-//		int found = 0;
+	MGET_HTML_PARSED_RESULT *res = &ctx->result;
 
-		// info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
+//		info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
 
 		if ((*dir|0x20) == 'm' && !strcasecmp(dir, "meta")) {
 			if (!ctx->found_robots) {
@@ -146,7 +145,8 @@ static void _html_get_url(void *context, int flags, const char *dir, const char 
 			return;
 		}
 
-		if (!maybe[(unsigned char)*attr] || !attr[1] || !attr[2])
+		// shortcut to avoid unneeded calls to bsearch()
+		if (!maybe[(unsigned char)*attr|0x20] || !attr[1] || !attr[2])
 			return;
 
 		if (bsearch(attr, attrs, countof(attrs), sizeof(attrs[0]), (int(*)(const void *, const void *))strcasecmp)) {
@@ -194,7 +194,7 @@ static void _urls_to_absolute(MGET_VECTOR *urls, MGET_IRI *base)
 }
 */
 
-void mget_html_free_urls_inline(MGET_HTML_PARSE_RESULT **res)
+void mget_html_free_urls_inline (MGET_HTML_PARSED_RESULT **res)
 {
 	if (res && *res) {
 		xfree((*res)->encoding);
@@ -203,12 +203,12 @@ void mget_html_free_urls_inline(MGET_HTML_PARSE_RESULT **res)
 	}
 }
 
-MGET_HTML_PARSE_RESULT *mget_html_get_urls_inline(const char *html)
+MGET_HTML_PARSED_RESULT *mget_html_get_urls_inline(const char *html)
 {
 	_HTML_CONTEXT context = { .result.follow = 1 };
 
 //	context.result.uris = mget_vector_create(32, -2, NULL);
 	mget_html_parse_buffer(html, _html_get_url, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);
 
-	return (MGET_HTML_PARSE_RESULT *)mget_memdup(&context.result, sizeof(context.result));
+	return mget_memdup(&context.result, sizeof(context.result));
 }

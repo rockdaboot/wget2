@@ -222,15 +222,15 @@ static const char *getScriptContent(XML_CONTEXT *context)
 
 	for (p = context->token = context->p; *p; p++) {
 		if (comment) {
-			if (*p == '-' && !memcmp(p, "-->", 3)) {
+			if (*p == '-' && !strncmp(p, "-->", 3)) {
 				p += 3 - 1;
 				comment = 0;
 			}
 		} else {
-			if (*p == '<' && !memcmp(p, "<!--", 4)) {
+			if (*p == '<' && !strncmp(p, "<!--", 4)) {
 				p += 4 - 1;
 				comment = 1;
-			} else if (*p == '<' && !memcmp(p, "</script", 8)) {
+			} else if (*p == '<' && !strncasecmp(p, "</script", 8)) {
 				context->token_len = p - context->token;
 				length_valid = 1;
 				for (p += 8; isspace(*p); p++);

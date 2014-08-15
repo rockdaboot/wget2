@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2014 Tim Ruehsen
+ * Copyright(c) 2013 Tim Ruehsen
  *
  * This file is part of libmget.
  *
@@ -20,7 +20,7 @@
  * Testing Mget
  *
  * Changelog
- * 02.07.2014  Tim Ruehsen  created
+ * 27.05.2014  Tim Ruehsen  created
  *
  */
 
@@ -34,57 +34,52 @@
 int main(void)
 {
 	mget_test_url_t urls[]={
-		{	.name = "/firstlevel/index.html",
+		{	.name = "/index.html",
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Main Page</title></head><body><p>A link to a" \
-				" <A hreF=\"http://localhost:{{port}}/firstlevel/secondpage.html\">second page</a>." \
-				" <a href=\"file://path/file_to_be_ignored.txt\">Unsupported file scheme</a>." \
+				" <a href=\"http://localhost:{{port}}/secondpage.html\">second page</a>." \
+				" Hey, a picture <img src=\"picture.png\"/>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
 			}
 		},
-		{	.name = "/firstlevel/secondpage.html",
+		{	.name = "/secondpage.html",
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Second Page</title></head><body><p>A link to a" \
-				" <a hRef=\"http://localhost:{{port}}/firstlevel/lowerlevel/thirdpage.html\">third page</a>." \
+				" <a href=\"http://localhost:{{port}}/thirdpage.html\">third page</a>." \
+				" Also, a <a href=\"http://localhost:{{port}}/nonexistent\">broken link</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
+				"Content-Disposition: attachment; filename=\"filename.html\"",
 			}
 		},
-		{	.name = "/firstlevel/lowerlevel/thirdpage.html",
+		{	.name = "/thirdpage.html",
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Third Page</title></head><body><p>A link to a" \
-				" <A href=\"http://localhost:{{port}}/higherlevelpage.html\">higher level page</a>." \
+				" <a href=\"http://localhost:{{port}}/dummy.txt\">text file</a>." \
+				" Also, a <a href=\"http://localhost:{{port}}/againnonexistent\">broken link</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
 			}
 		},
-		{	.name = "/firstlevel/fourthpage.html",
+		{	.name = "/picture.png",
 			.code = "200 Dontcare",
-			.body =
-				"<html><head><title>Fourth Page</title></head><body><p>" \
-				"This page is only linked by the higher level page. Therefore, it should not be downloaded." \
-				"</p></body></html>",
+			.body = "PNG data",
 			.headers = {
-				"Content-Type: text/html",
+				"Content-Type: image/png",
 			}
 		},
-		{	.name = "/higherlevelpage.html",
+		{	.name = "/dummy.txt",
 			.code = "200 Dontcare",
-			.body =
-				"<html><head><title>Higher Level Page</title></head><body><p>" \
-				"This page is on a higher level in the URL path hierarchy. Therefore, it" \
-				"should not be downloaded. Wget should not visit the following link to a" \
-				" <a Href=\"http://localhost:{{port}}/firstlevel/fourthpage.html\">fourth page</a>." \
-				"</p></body></html>",
+			.body = "What ever",
 			.headers = {
-				"Content-Type: text/html",
+				"Content-Type: text/plain",
 			}
 		},
 	};
@@ -94,15 +89,15 @@ int main(void)
 		MGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 
-	// test-i
+	// test--page-requisites
 	mget_test(
-		MGET_TEST_OPTIONS, "-np -nH -r",
-		MGET_TEST_REQUEST_URL, "firstlevel/",
+//		MGET_TEST_KEEP_TMPFILES, 1,
+		MGET_TEST_OPTIONS, "--page-requisites",
+		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body },
-			{ urls[1].name + 1, urls[1].body },
-			{ urls[2].name + 1, urls[2].body },
+			{ "localhost/index.html", urls[0].body },
+			{ "localhost/picture.png", urls[3].body },
 			{	NULL } },
 		0);
 

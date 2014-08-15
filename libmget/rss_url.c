@@ -41,7 +41,7 @@ struct rss_context {
 		*urls;
 };
 
-static void _rss_get_url(void *context, int flags, const char *dir, const char *attr G_GNUC_MGET_UNUSED, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
+static void _rss_get_url(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
 {
 	struct rss_context *ctx = context;
 	mget_string_t url;

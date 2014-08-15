@@ -34,207 +34,44 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
+#ifdef WITH_LIBPSL
+#	include <libpsl.h>
+#endif
 
 #include <libmget.h>
 #include "private.h"
 
-typedef struct {
-	char
-		label_buf[40];
-	const char *
-		label;
-	unsigned short
-		length;
-	unsigned char
-		nlabels, // number of labels
-		wildcard; // this is a wildcard rule (e.g. *.sapporo.jp)
-} PUBLIC_SUFFIX;
-
-static mget_vector_t
-	*_suffixes,
-	*_suffix_exceptions;
+struct mget_cookie_db_st {
+	mget_vector_t *
+		cookies;
+#ifdef WITH_LIBPSL
+	psl_ctx_t
+		*psl; // libpsl Publix Suffix List context
+#endif
+	mget_thread_mutex_t
+		mutex;
+};
 
 // by this kind of sorting, we can easily see if a domain matches or not (match = supercookie !)
 
-static int G_GNUC_MGET_NONNULL_ALL _suffix_compare(const PUBLIC_SUFFIX *s1, const PUBLIC_SUFFIX *s2)
+int mget_cookie_db_load_psl(mget_cookie_db_t *cookie_db, const char *fname)
 {
-	int n;
+#ifdef WITH_LIBPSL
+		if (fname) {
+			psl_ctx_t *psl = psl_load_file(fname);
 
-	if ((n = s2->nlabels - s1->nlabels))
-		return n; // most labels first
-
-	if ((n=s1->length - s2->length))
-		return n;  // shorter rules first
-
-	return strcmp(s1->label, s2->label);
-}
-
-static void G_GNUC_MGET_NONNULL_ALL _suffix_init(PUBLIC_SUFFIX *suffix, const char *rule, size_t length)
-{
-	const char *src;
-	char *dst;
-
-	suffix->label = suffix->label_buf;
-
-	if (length >= sizeof(suffix->label_buf) - 1) {
-		suffix->nlabels = 0;
-		error_printf(_("Suffix rule too long: %s\n"), rule);
-		return;
-	}
-
-	if (*rule == '*') {
-		if (*++rule != '.') {
-			suffix->nlabels = 0;
-			error_printf(_("Unsupported kind of rule : %s\n"), rule);
-			return;
+			if (psl)
+				psl_free(cookie_db->psl);
+			cookie_db->psl = psl;
+		} else {
+			psl_free(cookie_db->psl);
+			cookie_db->psl = NULL;
 		}
-		rule++;
-		suffix->wildcard = 1;
-		suffix->length = (unsigned char)length - 2;
-	} else {
-		suffix->wildcard = 0;
-		suffix->length = (unsigned char)length;
-	}
 
-	suffix->nlabels = 1;
-
-	for (dst = suffix->label_buf, src = rule; *src;) {
-		if (*src == '.')
-			suffix->nlabels++;
-		*dst++ = tolower(*src++);
-	}
-	*dst = 0;
-}
-
-/*
-static void NONNULL_ALL suffix_print(PUBLIC_SUFFIX *suffix)
-{
-	info_printf("[%d] %d %s (%d)\n", suffix->nlabels, suffix->wildcard, suffix->label, suffix->length);
-}
-*/
-
-int mget_cookie_suffix_match(const char *domain)
-{
-	PUBLIC_SUFFIX suffix, *rule;
-	const char *p, *label_bak;
-	unsigned short length_bak;
-
-	// this function should be called without leading dots, just make shure
-	suffix.label = domain + (*domain == '.');
-	suffix.length = strlen(suffix.label);
-	suffix.wildcard = 0;
-	suffix.nlabels = 1;
-
-	for (p = suffix.label; *p; p++)
-		if (*p == '.')
-			suffix.nlabels++;
-
-	// if domain has enough labels, it won't match
-	rule = mget_vector_get(_suffixes, 0);
-	if (!rule || rule->nlabels < suffix.nlabels - 1)
 		return 0;
-
-	rule = mget_vector_get(_suffixes, mget_vector_find(_suffixes, &suffix));
-	if (rule) {
-		// definitely a match, no matter if the found rule is a wildcard or not
-		return 1;
-	}
-
-	label_bak = suffix.label;
-	length_bak = suffix.length;
-
-	if ((suffix.label = strchr(suffix.label, '.'))) {
-		suffix.label++;
-		suffix.length = strlen(suffix.label);
-		suffix.nlabels--;
-
-		rule = mget_vector_get(_suffixes, mget_vector_find(_suffixes, &suffix));
-		if (rule) {
-			if (rule->wildcard) {
-				// now that we matched a wildcard, we have to check for an exception
-				suffix.label = label_bak;
-				suffix.length = length_bak;
-				suffix.nlabels++;
-
-				rule = mget_vector_get(_suffix_exceptions, mget_vector_find(_suffix_exceptions, &suffix));
-				if (rule)
-					return 0;
-
-				return 1;
-			}
-		}
-	}
-
-	return 0;
-}
-
-int mget_cookie_load_public_suffixes(const char *fname)
-{
-	PUBLIC_SUFFIX suffix, *suffixp;
-	FILE *fp;
-	int nsuffixes = 0;
-	char *buf = NULL, *linep, *p;
-	size_t bufsize = 0;
-	ssize_t buflen;
-
-	// as of 02.11.2012, the list at http://publicsuffix.org/list/ contains ~6000 rules
-	// and 40 exceptions.
-	if (!_suffixes)
-		_suffixes = mget_vector_create(6*1024, -2, (int(*)(const void *, const void *))_suffix_compare);
-	if (!_suffix_exceptions)
-		_suffix_exceptions = mget_vector_create(64, -2, (int(*)(const void *, const void *))_suffix_compare);
-
-	if ((fp = fopen(fname, "r"))) {
-		while ((buflen = mget_getline(&buf, &bufsize, fp)) >= 0) {
-			linep = buf;
-
-			while (isspace(*linep)) linep++; // ignore leading whitespace
-			if (!*linep) continue; // skip empty lines
-
-			if (*linep == '/' && linep[1] == '/')
-				continue; // skip comments
-
-			// parse suffix rule
-			for (p = linep; *linep && !isspace(*linep);) linep++;
-			*linep = 0;
-			if (*p == '!') {
-				// add to exceptions
-				_suffix_init(&suffix, p + 1, linep - p - 1);
-				suffixp = mget_vector_get(_suffix_exceptions, mget_vector_add(_suffix_exceptions, &suffix, sizeof(suffix)));
-			} else {
-				_suffix_init(&suffix, p, linep - p);
-				suffixp = mget_vector_get(_suffixes, mget_vector_add(_suffixes, &suffix, sizeof(suffix)));
-			}
-
-			if (suffixp)
-				suffixp->label = suffixp->label_buf; // set label to changed address
-
-			nsuffixes++;;
-		}
-
-		xfree(buf);
-		fclose(fp);
-
-		mget_vector_sort(_suffix_exceptions);
-		mget_vector_sort(_suffixes);
-
-	} else
-		error_printf(_("Failed to open public suffix file '%s'\n"), fname);
-
-	return nsuffixes;
-}
-
-/*
-static int cookie_free_public_suffix(PUBLIC_SUFFIX *suffix)
-{
-	return 0;
-}
-*/
-
-void mget_cookie_free_public_suffixes(void)
-{
-	mget_vector_free(&_suffixes);
-	mget_vector_free(&_suffix_exceptions);
+#else
+		return -1;
+#endif
 }
 
 static int G_GNUC_MGET_NONNULL_ALL _compare_cookie(const mget_cookie_t *c1, const mget_cookie_t *c2)
@@ -377,18 +214,12 @@ static int _mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *c
 		if (!cookie->domain)
 			cookie->domain = strdup("");
 
-		// respect http://publicsuffix.org/list/ to avoid "supercookies"
-		if (mget_vector_size(_suffixes) > 0 && mget_cookie_suffix_match(cookie->domain)) {
-			info_printf("Supercookie %s not accepted\n", cookie->domain);
-			return 0;
-		}
-
 		if (*cookie->domain) {
 			if (_domain_match(cookie->domain, iri->host)) {
 				cookie->host_only = 0;
 			} else {
 				debug_printf("Domain mismatch: %s %s\n", cookie->domain, iri->host);
-				return 0; // ignore cookie
+				return -1; // ignore cookie
 			}
 		} else {
 			xfree(cookie->domain);
@@ -404,7 +235,7 @@ static int _mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *c
 			} else {
 				cookie->path = strdup("/");
 				// err_printf(_("Unexpected URI without '/': %s\n"), iri->path);
-				// return 0; // ignore cookie
+				// return -1; // ignore cookie
 			}
 		}
 	}
@@ -420,10 +251,10 @@ static int _mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *c
 		cookie->normalized, cookie->persistent, cookie->host_only, cookie->secure_only, cookie->http_only);
 */
 
-	return 1;
+	return 0;
 }
 
-int mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *cookie)
+int mget_cookie_normalize(const mget_iri_t *iri, mget_cookie_t *cookie)
 {
 //	mget_thread_mutex_lock(&_cookies_mutex);
 
@@ -444,24 +275,47 @@ void mget_cookie_normalize_cookies(const mget_iri_t *iri, const mget_vector_t *c
 //	mget_thread_mutex_unlock(&_cookies_mutex);
 }
 
-void mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie)
+int mget_cookie_check_psl(const mget_cookie_db_t *cookie_db, const mget_cookie_t *cookie)
+{
+//	mget_thread_mutex_lock(&_cookies_mutex);
+
+#ifdef WITH_LIBPSL
+	int ret = psl_is_public_suffix(cookie_db->psl, cookie->domain) ? -1 : 0;
+#else
+	int ret = 0;
+#endif
+
+//	mget_thread_mutex_unlock(&_cookies_mutex);
+
+	return ret;
+}
+
+int mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie)
 {
 	mget_cookie_t *old;
 	int pos;
 
+	if (!cookie_db) {
+		mget_cookie_deinit(cookie);
+		return -1;
+	}
+
 	debug_printf("got cookie %s=%s\n", cookie->name, cookie->value);
 
-	if (!cookie->normalized)
-		return;
+	if (!cookie->normalized) {
+		mget_cookie_deinit(cookie);
+		return -1;
+	}
+
+	if (mget_cookie_check_psl(cookie_db, cookie) != 0) {
+		debug_printf("cookie '%s' dropped, domain '%s' is a public suffix\n", cookie->name, cookie->domain);
+		mget_cookie_deinit(cookie);
+		return -1;
+	}
 
 	mget_thread_mutex_lock(&cookie_db->mutex);
 
-	if (!cookie_db->cookies) {
-		cookie_db->cookies = mget_vector_create(128, -2, (int(*)(const void *, const void *))_compare_cookie);
-		mget_vector_set_destructor(cookie_db->cookies, (void(*)(void *))mget_cookie_free);
-		old = NULL;
-	} else
-		old = mget_vector_get(cookie_db->cookies, pos = mget_vector_find(cookie_db->cookies, cookie));
+	old = mget_vector_get(cookie_db->cookies, pos = mget_vector_find(cookie_db->cookies, cookie));
 
 	if (old) {
 		debug_printf("replace old cookie %s=%s\n", cookie->name, cookie->value);
@@ -473,17 +327,21 @@ void mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie
 	}
 
 	mget_thread_mutex_unlock(&cookie_db->mutex);
+
+	return 0;
 }
 
 void mget_cookie_store_cookies(mget_cookie_db_t *cookie_db, mget_vector_t *cookies)
 {
-	int it;
+	if (cookie_db) {
+		int it;
 
-	for (it = mget_vector_size(cookies) - 1; it >= 0; it--) {
-		mget_cookie_t *cookie = mget_vector_get(cookies, it);
-		mget_cookie_store_cookie(cookie_db, cookie); // stores a shallow copy of 'cookie'
-		mget_vector_remove_nofree(cookies, it);
-		xfree(cookie); // shallow free of 'cookie'
+		for (it = mget_vector_size(cookies) - 1; it >= 0; it--) {
+			mget_cookie_t *cookie = mget_vector_get(cookies, it);
+			mget_cookie_store_cookie(cookie_db, cookie); // stores a shallow copy of 'cookie'
+			mget_vector_remove_nofree(cookies, it);
+			xfree(cookie); // shallow free of 'cookie'
+		}
 	}
 }
 
@@ -492,6 +350,9 @@ char *mget_cookie_create_request_header(mget_cookie_db_t *cookie_db, const mget_
 	int it, init = 0;
 	time_t now = time(NULL);
 	mget_buffer_t buf;
+
+	if (!cookie_db || !iri)
+		return NULL;
 
 	debug_printf("cookie_create_request_header for host=%s path=%s\n",iri->host,iri->path);
 
@@ -530,8 +391,11 @@ mget_cookie_db_t *mget_cookie_db_init(mget_cookie_db_t *cookie_db)
 
 	memset(cookie_db, 0, sizeof(*cookie_db));
 	cookie_db->cookies = mget_vector_create(32, -2, (int(*)(const void *, const void *))_compare_cookie);
-	mget_vector_set_destructor(cookie_db->cookies, (void(*)(void *))mget_cookie_free);
+	mget_vector_set_destructor(cookie_db->cookies, (void(*)(void *))mget_cookie_deinit);
 	mget_thread_mutex_init(&cookie_db->mutex);
+#ifdef WITH_LIBPSL
+	cookie_db->psl = (psl_ctx_t *)psl_builtin();
+#endif
 
 	return cookie_db;
 }
@@ -539,6 +403,10 @@ mget_cookie_db_t *mget_cookie_db_init(mget_cookie_db_t *cookie_db)
 void mget_cookie_db_deinit(mget_cookie_db_t *cookie_db)
 {
 	if (cookie_db) {
+#ifdef WITH_LIBPSL
+		psl_free(cookie_db->psl);
+		cookie_db->psl = NULL;
+#endif
 		mget_thread_mutex_lock(&cookie_db->mutex);
 		mget_vector_free(&cookie_db->cookies);
 		mget_thread_mutex_unlock(&cookie_db->mutex);
@@ -694,7 +562,7 @@ int mget_cookie_db_load(mget_cookie_db_t *cookie_db, const char *fname, int keep
 			for (p = *linep ? ++linep : linep; *linep;) linep++;
 			cookie.value = strndup(p, linep - p);
 
-			if (mget_cookie_normalize_cookie(NULL, &cookie) != 0) {
+			if (mget_cookie_normalize(NULL, &cookie) == 0 && mget_cookie_check_psl(cookie_db, &cookie) == 0) {
 				ncookies++;
 				mget_cookie_store_cookie(cookie_db, &cookie);
 			} else

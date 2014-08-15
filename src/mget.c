@@ -39,6 +39,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <time.h>
+#include <fnmatch.h>
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <sys/stat.h>
@@ -74,6 +75,21 @@ typedef struct {
 		cond;
 } DOWNLOADER;
 
+#define _CONTENT_TYPE_HTML 1
+typedef struct {
+	const char *
+		filename;
+	const char *
+		encoding;
+	mget_iri_t *
+		base_url;
+	MGET_HTML_PARSED_RESULT *
+		parsed;
+	int
+		content_type;
+} _conversion_t;
+static mget_vector_t *conversions;
+
 static void
 	save_file(mget_http_response_t *resp, const char *fname),
 	append_file(mget_http_response_t *resp, const char *fname),
@@ -91,6 +107,8 @@ static void
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, mget_iri_t *base);
 static int
 	download_part(DOWNLOADER *downloader);
+static unsigned int G_GNUC_MGET_PURE
+	hash_url(const char *url);
 mget_http_response_t
 	*http_get(mget_iri_t *iri, PART *part, DOWNLOADER *downloader, int method_get);
 
@@ -276,10 +294,10 @@ const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(mget_iri_t *iri)
 
 	// create the complete path
 	if (*fname) {
-		const char *p1, *p2;
+		char *p1, *p2;
 
 		for (p1 = fname; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
-			*(char *)p2 = 0; // replace path separator
+			*p2 = 0; // replace path separator
 
 			// relative paths should have been normalized earlier,
 			// but for security reasons, don't trust myself...
@@ -288,11 +306,11 @@ const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(mget_iri_t *iri)
 
 			if (mkdir(fname, 0755) != 0 && errno != EEXIST) {
 				error_printf(_("Failed to make directory '%s'\n"), fname);
-				*(char *)p2 = '/'; // restore path separator
+				*p2 = '/'; // restore path separator
 				return fname;
 			} else debug_printf("mkdir %s\n", fname);
 
-			*(char *)p2 = '/'; // restore path separator
+			*p2 = '/'; // restore path separator
 		}
 	}
 
@@ -326,6 +344,25 @@ static mget_vector_t
 static mget_thread_mutex_t
 	downloader_mutex = MGET_THREAD_MUTEX_INITIALIZER;
 
+static int in_pattern_list(const mget_vector_t *v, const char *url)
+{
+  for (int it = 0; it < mget_vector_size(v); it++) {
+		const char *pattern = mget_vector_get(v, it);
+
+		debug_printf("pattern '%s' - %s\n", pattern, url);
+
+		if (strpbrk(pattern, "*?[]")) {
+			return config.ignore_case ? !fnmatch(pattern, url, FNM_CASEFOLD) : !fnmatch(pattern, url, 0);
+		} else if (config.ignore_case) {
+			return mget_match_tail_nocase(url, pattern);
+		} else {
+			return mget_match_tail(url, pattern);
+		}
+  }
+
+  return 0;
+}
+
 // Add URLs given by user (command line or -i option).
 // Needs to be thread-save.
 static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *encoding)
@@ -340,10 +377,16 @@ static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *enco
 		return NULL;
 	}
 
+	if (iri->scheme != MGET_IRI_SCHEME_HTTP && iri->scheme != MGET_IRI_SCHEME_HTTPS) {
+		mget_iri_free(&iri);
+		return NULL;
+	}
+
 	mget_thread_mutex_lock(&downloader_mutex);
 
 	if (!blacklist_add(iri)) {
 		mget_thread_mutex_unlock(&downloader_mutex);
+		mget_iri_free(&iri);
 		return NULL;
 	}
 
@@ -402,7 +445,8 @@ static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *enco
 }
 
 static mget_thread_mutex_t
-	main_mutex = MGET_THREAD_MUTEX_INITIALIZER;
+	main_mutex = MGET_THREAD_MUTEX_INITIALIZER,
+	known_urls_mutex = MGET_THREAD_MUTEX_INITIALIZER;
 static mget_thread_cond_t
 	main_cond = MGET_THREAD_COND_INITIALIZER, // is signalled whenever a job is done
 	worker_cond = MGET_THREAD_COND_INITIALIZER;  // is signalled whenever a job is added
@@ -436,6 +480,12 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		return;
 	}
 
+	if (iri->scheme != MGET_IRI_SCHEME_HTTP && iri->scheme != MGET_IRI_SCHEME_HTTPS) {
+		info_printf(_("URL '%s' not followed (unsupported scheme '%s')\n"), url, iri->scheme);
+		mget_iri_free(&iri);
+		return;
+	}
+
 	if (config.https_only && iri->scheme != MGET_IRI_SCHEME_HTTPS) {
 		info_printf(_("URL '%s' not followed (https-only requested)\n"), url);
 		mget_iri_free(&iri);
@@ -454,7 +504,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 			if (!strcmp(parent->host, iri->host)) {
 				if (!parent->dirlen || !strncmp(parent->path, iri->path, parent->dirlen)) {
-					info_printf("found\n");
+					// info_printf("found\n");
 					ok = 1;
 					break;
 				}
@@ -463,8 +513,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 		if (!ok) {
 			mget_thread_mutex_unlock(&downloader_mutex);
-			info_printf(_("URL '%s' not followed (parent ascending not allowed)\n"), url);
 			mget_iri_free(&iri);
+			info_printf(_("URL '%s' not followed (parent ascending not allowed)\n"), url);
 			return;
 		}
 	}
@@ -558,6 +608,116 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	mget_thread_mutex_unlock(&downloader_mutex);
 }
 
+static void _convert_links(void)
+{
+	FILE *fpout = NULL;
+	mget_buffer_t buf;
+	char sbuf[1024];
+
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
+	// cycle through all documents where links have been found
+	for (int it = 0; it < mget_vector_size(conversions); it++) {
+		_conversion_t *conversion = mget_vector_get(conversions, it);
+		const char *data, *data_ptr;
+		size_t data_length;
+
+		mget_info_printf("convert %s %s %s\n", conversion->filename, conversion->base_url->uri, conversion->encoding);
+
+		if (!(data = data_ptr = mget_read_file(conversion->filename, &data_length))) {
+			mget_error_printf(_("%s not found (%d)\n"), conversion->filename, errno);
+			continue;
+		}
+
+		// cycle through all links found in the document
+		for (int it2 = 0; it2 < mget_vector_size(conversion->parsed->uris); it2++) {
+			MGET_HTML_PARSED_URL *html_url = mget_vector_get(conversion->parsed->uris, it2);
+			mget_string_t *url = &html_url->url;
+
+			url->p = (size_t) url->p + data; // convert offset to pointer
+
+			if (url->len == 1 && *url->p == '#') // ignore e.g. href='#'
+				continue;
+
+			if (mget_iri_relative_to_abs(conversion->base_url, url->p, url->len, &buf)) {
+				// buf.data now holds the absolute URL as a string
+				mget_iri_t *iri = mget_iri_parse(buf.data, conversion->encoding);
+
+				if (!iri) {
+					mget_error_printf(_("Cannot resolve URI '%s'\n"), buf.data);
+					continue;
+				}
+
+				const char *filename = get_local_filename(iri);
+
+				if (access(filename, W_OK) == 0) {
+					const char *linkpath = filename, *dir = NULL, *p1, *p2;
+					const char *docpath = conversion->filename;
+
+					// e.g.
+					// docpath  'hostname/1level/2level/3level/xyz.html'
+					// linkpath 'hostname/1level/2level.bak/3level/xyz.html'
+					// expected result: '../../2level.bak/3level/xyz.html'
+
+					// find first difference in path
+					for (dir = p1 = linkpath, p2 = docpath; *p1 && *p1 == *p2; p1++, p2++)
+						if (*p1 == '/') dir = p1+1;
+
+					// generate relative path
+					mget_buffer_reset(&buf); // reuse buffer
+					while (*p2) {
+						if (*p2++ == '/')
+							mget_buffer_memcat(&buf, "../", 3);
+					}
+					mget_buffer_strcat(&buf, dir);
+
+					mget_info_printf("  %.*s -> %s\n", (int) url->len,  url->p, linkpath);
+					mget_info_printf("       -> %s\n", buf.data);
+				} else {
+					// insert absolute URL
+					mget_info_printf("  %.*s -> %s\n", (int) url->len,  url->p, buf.data);
+				}
+
+				if (buf.length != url->len || strncmp(buf.data, url->p, url->len)) {
+					// conversion takes place, write to disk
+					if (!fpout) {
+						if (config.backup_converted) {
+							char dstfile[strlen(conversion->filename) + 5 + 1];
+
+							strcpy(dstfile, conversion->filename);
+							strcpy(dstfile + sizeof(dstfile) - 6, ".orig");
+
+							if (rename(conversion->filename, dstfile) == -1) {
+								mget_error_printf(_("Failed to rename %s to %s (%d)"), conversion->filename, dstfile, errno);
+							}
+						}
+						if (!(fpout = fopen(conversion->filename, "w")))
+							mget_error_printf(_("Failed to write open %s (%d)"), conversion->filename, errno);
+					}
+					if (fpout) {
+						fwrite(data_ptr, 1, url->p - data_ptr, fpout);
+						fwrite(buf.data, 1, buf.length, fpout);
+						data_ptr = url->p + url->len;
+					}
+				}
+				
+				xfree(filename);
+				mget_iri_free(&iri);
+			}
+		}
+
+		if (fpout) {
+			fwrite(data_ptr, 1, (data + data_length) - data_ptr, fpout);
+			fclose(fpout);
+			fpout = NULL;
+		}
+
+		xfree(data);
+	}
+
+	mget_buffer_deinit(&buf);
+}
+
 static void print_status(DOWNLOADER *downloader, const char *fmt, ...) G_GNUC_MGET_NONNULL_ALL G_GNUC_MGET_PRINTF_FORMAT(2,3);
 static void print_status(DOWNLOADER *downloader G_GNUC_MGET_UNUSED, const char *fmt, ...)
 {
@@ -602,6 +762,8 @@ int main(int argc, const char *const *argv)
 	sig_action.sa_handler = nop;
 	sigaction(SIGTERM, &sig_action, NULL);
 	sigaction(SIGINT, &sig_action, NULL);
+
+	known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
 
 	n = init(argc, argv);
 
@@ -718,7 +880,7 @@ int main(int argc, const char *const *argv)
 	}
 
 	if (config.save_cookies)
-		mget_cookie_db_save(&config.cookie_db, config.save_cookies, config.keep_session_cookies);
+		mget_cookie_db_save(config.cookie_db, config.save_cookies, config.keep_session_cookies);
 
 	if (config.hsts && config.save_hsts && config.hsts_file && hsts_changed)
 		mget_hsts_db_save(config.hsts_db, config.hsts_file);
@@ -729,12 +891,13 @@ int main(int argc, const char *const *argv)
 	if (config.debug)
 		blacklist_print();
 
+	if (config.convert_links && !config.delete_after) {
+		_convert_links();
+		mget_vector_free(&conversions);
+	}
+
 	// freeing to avoid disguising valgrind output
 	xfree(buf);
-	mget_hsts_db_free(&config.hsts_db);
-	mget_cookie_free_public_suffixes();
-	mget_cookie_db_deinit(&config.cookie_db);
-	mget_ssl_deinit();
 	queue_free();
 	blacklist_free();
 	hosts_free();
@@ -791,7 +954,7 @@ void *downloader_thread(void *p)
 		if (config.wait) {
 			if (do_wait) {
 				if (config.random_wait)
-					mget_millisleep(config.wait / 2 + drand48() * config.wait);
+					mget_millisleep(config.wait / (int) (2 + drand48() * config.wait));
 				else
 					mget_millisleep(config.wait);
 			} else
@@ -813,14 +976,25 @@ void *downloader_thread(void *p)
 		// hey, we got a job...
 		job = downloader->job;
 
-		if ((config.spider || config.chunk_size) && !job->deferred) {
+		if (config.accept_patterns && !in_pattern_list(config.accept_patterns, job->iri->uri)) {
+			if (config.recursive)
+				job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+		}
+
+		if (config.reject_patterns && in_pattern_list(config.reject_patterns, job->iri->uri)) {
+			if (config.recursive)
+				job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+		}
+
+		info_printf("head_first=%d deferred=%d iri=%s\n", job->head_first, !!job->deferred, job->iri->uri);
+		if ((config.spider || config.chunk_size || job->head_first) && !job->deferred) {
 			// In spider mode, we first make a HEAD request.
 			// If the Content-Type header gives us not a parsable type, we are done.
 			print_status(downloader, "[%d] Checking '%s' ...\n", downloader->id, job->iri->uri);
 			for (int tries = 0; !resp && tries < config.tries; tries++) {
 				mget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
 
-				resp = http_get(job->iri, NULL, downloader, 0);
+				resp = http_get(job->iri, NULL, downloader, MGET_HTTP_METHOD_HEAD);
 				if (resp)
 					print_status(downloader, "%d %s\n", resp->code, resp->reason);
 			}
@@ -831,7 +1005,9 @@ void *downloader_thread(void *p)
 			if (resp->code == 404)
 				set_exit_status(8);
 
-			if (config.spider) {
+			if (config.spider || job->head_first) {
+				job->head_first = 0;
+
 				if (resp->code != 200 || !resp->content_type)
 					goto ready;
 
@@ -866,9 +1042,9 @@ void *downloader_thread(void *p)
 				metalink->size = resp->content_length; // total file size
 				metalink->name = mget_strdup(job->local_filename);
 
-				int npieces = (resp->content_length + config.chunk_size - 1) / config.chunk_size;
-				metalink->pieces = mget_vector_create(npieces, 1, NULL);
-				for (int it = 0; it < npieces; it++) {
+				ssize_t npieces = (resp->content_length + config.chunk_size - 1) / config.chunk_size;
+				metalink->pieces = mget_vector_create((int) npieces, 1, NULL);
+				for (unsigned it = 0; it < npieces; it++) {
 					piece.position = it * config.chunk_size;
 					mget_vector_add(metalink->pieces, &piece, sizeof(mget_metalink_piece_t));
 				}
@@ -904,7 +1080,7 @@ void *downloader_thread(void *p)
 		for (int tries = 0; !resp && tries < config.tries; tries++) {
 			mget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
 
-			resp = http_get(job->iri, NULL, downloader, 1);
+			resp = http_get(job->iri, NULL, downloader, MGET_HTTP_METHOD_GET);
 			if (resp)
 				print_status(downloader, "%d %s\n", resp->code, resp->reason);
 		}
@@ -915,7 +1091,7 @@ void *downloader_thread(void *p)
 		}
 
 		mget_cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
-		mget_cookie_store_cookies(&config.cookie_db, resp->cookies); // store cookies
+		mget_cookie_store_cookies(config.cookie_db, resp->cookies); // store cookies
 
 		// care for HSTS feature
 		if (config.hsts && job->iri->scheme == MGET_IRI_SCHEME_HTTPS && resp->hsts) {
@@ -1104,6 +1280,38 @@ ready:
 	return NULL;
 }
 
+static void _free_conversion_entry(_conversion_t *conversion)
+{
+	xfree(conversion->filename);
+	xfree(conversion->encoding);
+	mget_iri_free(&conversion->base_url);
+	mget_html_free_urls_inline(&conversion->parsed);
+}
+
+static void _remember_for_conversion(const char *filename, mget_iri_t *base_url, int content_type, const char *encoding, MGET_HTML_PARSED_RESULT *parsed)
+{
+	static mget_thread_mutex_t
+		mutex = MGET_THREAD_MUTEX_INITIALIZER;
+	_conversion_t conversion;
+
+	conversion.filename = strdup(filename);
+	conversion.encoding = strdup(encoding);
+	conversion.base_url = mget_memdup(base_url, sizeof(*base_url));
+	conversion.content_type = content_type;
+	conversion.parsed = parsed;
+
+	mget_thread_mutex_lock(&mutex);
+
+	if (!conversions) {
+		conversions = mget_vector_create(128, -2, NULL);
+		mget_vector_set_destructor(conversions, (void(*)(void *))_free_conversion_entry);
+	}
+
+	mget_vector_add(conversions, &conversion, sizeof(conversion));
+
+	mget_thread_mutex_unlock(&mutex);
+}
+
 static unsigned int G_GNUC_MGET_PURE hash_url(const char *url)
 {
 	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
@@ -1116,16 +1324,14 @@ static unsigned int G_GNUC_MGET_PURE hash_url(const char *url)
 
 void html_parse(JOB *job, int level, const char *html, const char *encoding, mget_iri_t *base)
 {
-	MGET_HTML_PARSE_RESULT *res  = mget_html_get_urls_inline(html);
+	MGET_HTML_PARSED_RESULT *parsed  = mget_html_get_urls_inline(html);
+	mget_iri_t *allocated_base = NULL;
 	const char *reason;
 	mget_buffer_t buf;
 	char sbuf[1024];
 
-	if (config.robots && !res->follow)
+	if (config.robots && !parsed->follow)
 		goto cleanup;
-
-	if (!known_urls)
-		known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
 
 	// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
 	if (encoding && encoding == config.remote_encoding) {
@@ -1147,7 +1353,7 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 			reason = _("set by server response");
 		}
 
-		if (!mget_strncasecmp(res->encoding, "UTF-16", 6) || !mget_strncasecmp(encoding, "UTF-16", 6)) {
+		if (!mget_strncasecmp(parsed->encoding, "UTF-16", 6) || !mget_strncasecmp(encoding, "UTF-16", 6)) {
 			// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
 			// we found an encoding in the HTML, so it can't be UTF-16*.
 			encoding = "UTF-8";
@@ -1155,8 +1361,8 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 		}
 
 		if (!encoding) {
-			if (res->encoding) {
-				encoding = res->encoding;
+			if (parsed->encoding) {
+				encoding = parsed->encoding;
 				reason = _("set by document");
 			} else {
 				encoding = "CP1252"; // default encoding for HTML5 (pre-HTML5 is iso-8859-1)
@@ -1167,18 +1373,20 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 
 	info_printf(_("URI content encoding = '%s' (%s)\n"), encoding, reason);
 
-	if (res->base.p) {
-		char *base_url = alloca(res->base.len + 1);
-		strlcpy(base_url, res->base.p, res->base.len + 1);
-		base = mget_iri_parse(base_url, encoding);
+	if (parsed->base.p) {
+		char base_url[parsed->base.len + 1];
+		strlcpy(base_url, parsed->base.p, parsed->base.len + 1);
+		base = allocated_base = mget_iri_parse(base_url, encoding);
 	}
 
 	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
-	int page_requisites = config.recursive && config.page_requisites && config.level && level >= config.level;
+	int page_requisites = config.recursive && config.page_requisites && config.level && level < config.level;
+//	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
 
-	for (int it = 0; it < mget_vector_size(res->uris); it++) {
-		MGET_HTML_PARSED_URL *html_url = mget_vector_get(res->uris, it);
+	mget_thread_mutex_lock(&known_urls_mutex);
+	for (int it = 0; it < mget_vector_size(parsed->uris); it++) {
+		MGET_HTML_PARSED_URL *html_url = mget_vector_get(parsed->uris, it);
 		mget_string_t *url = &html_url->url;
 
 		// Blacklist for URLs before they are processed
@@ -1210,14 +1418,23 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 			}
 		}
 	}
+	mget_thread_mutex_unlock(&known_urls_mutex);
 
 	mget_buffer_deinit(&buf);
 
-	if (res->base.p)
-		mget_iri_free(&base);
+	if (config.convert_links && !config.delete_after) {
+		for (int it = 0; it < mget_vector_size(parsed->uris); it++) {
+			MGET_HTML_PARSED_URL *html_url = mget_vector_get(parsed->uris, it);
+			html_url->url.p = (const char *) (html_url->url.p - html); // convert pointer to offset
+		}
+		_remember_for_conversion(job->local_filename, mget_iri_clone(base), _CONTENT_TYPE_HTML, encoding, parsed);
+		parsed = NULL; // 'parsed' has been consumed
+	}
+
+	mget_iri_free(&allocated_base);
 
 cleanup:
-	mget_html_free_urls_inline(&res);
+	mget_html_free_urls_inline(&parsed);
 }
 
 void html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, mget_iri_t *base)
@@ -1238,9 +1455,6 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, mget_ir
 
 	mget_sitemap_get_urls_inline(data, &urls, &sitemap_urls);
 
-	if (!known_urls)
-		known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
-
 	if (base) {
 		if ((p = strrchr(base->uri, '/')))
 			baselen = p - base->uri + 1; // + 1 to include /
@@ -1250,6 +1464,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, mget_ir
 
 	// process the sitemap urls here
 	info_printf(_("found %d url(s) (base=%s)\n"), mget_vector_size(urls), base ? base->uri : NULL);
+	mget_thread_mutex_lock(&known_urls_mutex);
 	for (int it = 0; it < mget_vector_size(urls); it++) {
 		mget_string_t *url = mget_vector_get(urls, it);;
 
@@ -1286,6 +1501,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, mget_ir
 
 		add_url(job, encoding, p, URL_FLG_SITEMAP);
 	}
+	mget_thread_mutex_unlock(&known_urls_mutex);
 
 	mget_vector_free(&urls);
 	mget_vector_free(&sitemap_urls);
@@ -1331,9 +1547,6 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, mget_i
 	const char *end, *line, *p;
 	size_t len;
 
-	if (!known_urls)
-		known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
-
 	if (base) {
 		if ((p = strrchr(base->uri, '/')))
 			baselen = p - base->uri + 1; // + 1 to include /
@@ -1370,9 +1583,6 @@ static void _add_urls(JOB *job, mget_vector_t *urls, const char *encoding, mget_
 	const char *p;
 	size_t baselen = 0;
 
-	if (!known_urls)
-		known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
-
 	if (base) {
 		if ((p = strrchr(base->uri, '/')))
 			baselen = p - base->uri + 1; // + 1 to include /
@@ -1381,8 +1591,10 @@ static void _add_urls(JOB *job, mget_vector_t *urls, const char *encoding, mget_
 	}
 
 	info_printf(_("found %d url(s) (base=%s)\n"), mget_vector_size(urls), base ? base->uri : NULL);
+
+	mget_thread_mutex_lock(&known_urls_mutex);
 	for (int it = 0; it < mget_vector_size(urls); it++) {
-		mget_string_t *url = mget_vector_get(urls, it);;
+		mget_string_t *url = mget_vector_get(urls, it);
 
 		if (baselen && (url->len <= baselen || !strncasecmp(url->p, base->uri, baselen))) {
 			info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)url->len, url->p);
@@ -1398,6 +1610,7 @@ static void _add_urls(JOB *job, mget_vector_t *urls, const char *encoding, mget_
 
 		add_url(job, encoding, p, 0);
 	}
+	mget_thread_mutex_unlock(&known_urls_mutex);
 }
 
 void atom_parse(JOB *job, const char *data, const char *encoding, mget_iri_t *base)
@@ -1565,18 +1778,27 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 	int fd, multiple = 0, fnum, oflag = flag;
 	size_t fname_length;
 
-	if (config.spider || !fname)
+	if (!fname)
 		return;
+
+	if (config.spider) {
+		debug_printf("not saved '%s' (spider mode enabled)\n", fname);
+		return;
+	}
 
 	// do not save into directories
 	fname_length = strlen(fname);
-	if (fname[fname_length - 1] == '/')
+	if (fname[fname_length - 1] == '/') {
+		debug_printf("not saved '%s' (file is a directory)\n", fname);
 		return;
+	}
 
 	// - optimistic approach expects data being written without error
 	// - to be Wget compatible: quota_modify_read() returns old quota value
-	if (config.quota && quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length) >= config.quota)
+	if (config.quota && quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length) >= config.quota) {
+		debug_printf("not saved '%s' (quota of %lld reached)\n", fname, config.quota);
 		return;
+	}
 
 	if (fname == config.output_document) {
 		// <fname> can only be NULL if config.delete_after is set
@@ -1598,8 +1820,10 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 			return;
 		}
 
-		if (config.delete_after)
+		if (config.delete_after) {
+			debug_printf("not saved '%s' (--delete-after)\n", fname);
 			return;
+		}
 
 		flag = O_APPEND;
 	}
@@ -1628,6 +1852,18 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 				fname = alloced_fname;
 			}
 		}
+	}
+
+	if (config.accept_patterns && !in_pattern_list(config.accept_patterns, fname)) {
+		debug_printf("not saved '%s' (doesn't match accept pattern)\n", fname);
+		xfree(alloced_fname);
+		return;
+	}
+
+	if (config.reject_patterns && in_pattern_list(config.reject_patterns, fname)) {
+		debug_printf("not saved '%s' (matches reject pattern)\n", fname);
+		xfree(alloced_fname);
+		return;
 	}
 
 	if (config.timestamping) {
@@ -1728,9 +1964,9 @@ int download_part(DOWNLOADER *downloader)
 
 			mirror_index = (mirror_index + 1) % mget_vector_size(metalink->mirrors);
 
-			resp = http_get(mirror->iri, part, downloader, 1);
+			resp = http_get(mirror->iri, part, downloader, MGET_HTTP_METHOD_GET);
 			if (resp) {
-				mget_cookie_store_cookies(&config.cookie_db, resp->cookies); // sanitize and store cookies
+				mget_cookie_store_cookies(config.cookie_db, resp->cookies); // sanitize and store cookies
 
 				if (resp->code != 200 && resp->code != 206) {
 					print_status(downloader, "part %d download error %d\n", part->id, resp->code);
@@ -1953,7 +2189,7 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 			if (config.cookies) {
 				const char *cookie_string;
 
-				if ((cookie_string = mget_cookie_create_request_header(&config.cookie_db, iri))) {
+				if ((cookie_string = mget_cookie_create_request_header(config.cookie_db, iri))) {
 					mget_http_add_header(req, "Cookie", cookie_string);
 					xfree(cookie_string);
 				}
@@ -2000,7 +2236,7 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 			char uri_sbuf[1024];
 
 			mget_cookie_normalize_cookies(iri, resp->cookies);
-			mget_cookie_store_cookies(&config.cookie_db, resp->cookies);
+			mget_cookie_store_cookies(config.cookie_db, resp->cookies);
 
 			mget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
 

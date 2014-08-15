@@ -143,6 +143,10 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --local-encoding    Character encoding of environment and filenames.\n"
 		"      --remote-encoding   Character encoding of remote files (if not specified in Content-Type HTTP header or in document itself)\n"
 		"  -t   --tries            Number of tries for each download. (default 20)\n"
+		"  -A   --accept           Comma-separated list of file name suffixes or patterns.\n"
+		"  -R   --reject           Comma-separated list of file name suffixes or patterns.\n"
+		"  -k   --convert-links    Convert embedded URLs to local URLs. (default: off)\n"
+		"  -K   --backup-converted When converting, keep the original file with a .orig suffix. (default: off)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -182,6 +186,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --hsts-file         Set file for HSTS saving/loading. (default: .mget_hsts)\n"
 		"      --load-hsts         Load entries from HSTS file.\n"
 		"      --save-hsts         Save entries into HSTS file.\n"
+		"      --gnutls-options    Custom GnuTLS priority string. Interferes with --secure-protocol. (default: none)\n"
 		"\n");
 	puts(
 		"Directory options:\n"
@@ -275,6 +280,29 @@ static int parse_stringset(option_t opt, G_GNUC_MGET_UNUSED const char *const *a
 	return 0;
 }
 
+static int parse_stringlist(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+{
+	mget_vector_t *v = *((mget_vector_t **)opt->var);
+
+	if (val) {
+		const char *s, *p;
+
+		if (!v)
+			v = *((mget_vector_t **)opt->var) = mget_vector_create(8, -2, NULL);
+
+		for (s = val; (p = strchr(s, ',')); s = p + 1) {
+			if (p != s)
+				mget_vector_add_noalloc(v, strndup(s, p - s));
+		}
+		if (*s)
+			mget_vector_add_noalloc(v, strdup(s));
+	} else {
+		mget_vector_free(&v);
+	}
+
+	return 0;
+}
+
 static int parse_bool(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	if (opt->var) {
@@ -319,13 +347,13 @@ static int parse_timeout(option_t opt, G_GNUC_MGET_UNUSED const char *const *arg
 		fval = -1;
 
 	if (opt->var) {
-		*((int *)opt->var) = fval;
+		*((int *)opt->var) = (int) fval;
 		// debug_printf("timeout set to %gs\n",*((int *)opt->var)/1000.);
 	} else {
 		// --timeout option sets all timeouts
 		config.connect_timeout =
 		config.dns_timeout =
-		config.read_timeout = fval;
+		config.read_timeout = (int) fval;
 	}
 
 	return 0;
@@ -401,7 +429,7 @@ static int parse_n_option(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED co
 	return 0;
 }
 
-static int parse_prefer_family(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_prefer_family(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
 {
 	if (!val || !strcasecmp(val, "none"))
 		*((char *)opt->var) = MGET_NET_FAMILY_ANY;
@@ -454,8 +482,10 @@ static int parse_execute(option_t opt, G_GNUC_MGET_UNUSED const char *const *arg
 static const struct option options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
+	{ "accept", &config.accept_patterns, parse_stringlist, 1, 'A' },
 	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E' },
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a' },
+	{ "backup-converted", &config.backup_converted, parse_bool, 0, 'K' },
 	{ "base", &config.base_url, parse_string, 1, 'B' },
 	{ "bind-address", &config.bind_address, parse_string, 1, 0 },
 	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0 },
@@ -470,6 +500,7 @@ static const struct option options[] = {
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0 },
 	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0 },
 	{ "continue-download", &config.continue_download, parse_bool, 0, 'c' },
+	{ "convert-links", &config.convert_links, parse_bool, 0, 'k' },
 	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0 },
 	{ "cookies", &config.cookies, parse_bool, 0, 0 },
 	{ "cut-dirs", &config.cut_directories, parse_integer, 1, 0 },
@@ -490,6 +521,7 @@ static const struct option options[] = {
 	{ "force-html", &config.force_html, parse_bool, 0, 'F' },
 	{ "force-rss", &config.force_rss, parse_bool, 0, 0 },
 	{ "force-sitemap", &config.force_sitemap, parse_bool, 0, 0 },
+	{ "gnutls-options", &config.gnutls_options, parse_string, 1, 0 },
 	{ "help", NULL, print_help, 0, 'h' },
 	{ "host-directories", &config.host_directories, parse_bool, 0, 0 },
 	{ "hsts", &config.hsts, parse_bool, 0, 0 },
@@ -501,6 +533,7 @@ static const struct option options[] = {
 	{ "http-user", &config.http_username, parse_string, 1, 0 },
 	{ "https-only", &config.https_only, parse_bool, 0, 0 },
 	{ "https-proxy", &config.https_proxy, parse_string, 1, 0 },
+	{ "ignore-case", &config.ignore_case, parse_bool, 0, 0 },
 	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4' },
 	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6' },
 	{ "input-encoding", &config.input_encoding, parse_string, 1, 0 },
@@ -530,6 +563,7 @@ static const struct option options[] = {
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0 },
 	{ "recursive", &config.recursive, parse_bool, 0, 'r' },
 	{ "referer", &config.referer, parse_string, 1, 0 },
+	{ "reject", &config.reject_patterns, parse_stringlist, 1, 'R' },
 	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0 },
 	{ "restrict-file-names", &config.restrict_file_names, parse_restrict_names, 1, 0 },
 	{ "robots", &config.robots, parse_bool, 0, 0 },
@@ -860,7 +894,7 @@ static void read_config(void)
 static int G_GNUC_MGET_NONNULL((2)) parse_command_line(int argc, const char *const *argv)
 {
 	static short shortcut_to_option[128];
-	size_t it;
+	unsigned short it;
 	int n;
 
 	// init the short option lookup table
@@ -1108,11 +1142,11 @@ int init(int argc, const char *const *argv)
 	xfree(config.https_proxy);
 
 	if (config.cookies) {
-		mget_cookie_db_init(&config.cookie_db);
+		config.cookie_db = mget_cookie_db_init(NULL);
 		if (config.cookie_suffixes)
-			mget_cookie_load_public_suffixes(config.cookie_suffixes);
+			mget_cookie_db_load_psl(config.cookie_db, config.cookie_suffixes);
 		if (config.load_cookies)
-			mget_cookie_db_load(&config.cookie_db, config.load_cookies, config.keep_session_cookies);
+			mget_cookie_db_load(config.cookie_db, config.load_cookies, config.keep_session_cookies);
 	}
 
 	if (config.hsts) {
@@ -1129,6 +1163,11 @@ int init(int argc, const char *const *argv)
 
 	if (config.password && !config.http_password)
 		config.http_password = strdup(config.password);
+
+	if (config.page_requisites && !config.recursive) {
+		config.recursive = 1;
+		config.level = 1;
+	}
 
 	// set module specific options
 	mget_tcp_set_timeout(NULL, config.read_timeout);
@@ -1152,6 +1191,7 @@ int init(int argc, const char *const *argv)
 	mget_ssl_set_config_int(MGET_SSL_KEY_TYPE, config.private_key_type);
 	mget_ssl_set_config_int(MGET_SSL_PRINT_INFO, config.debug);
 	mget_ssl_set_config_string(MGET_SSL_SECURE_PROTOCOL, config.secure_protocol);
+	mget_ssl_set_config_string(MGET_SSL_DIRECT_OPTIONS, config.gnutls_options);
 	mget_ssl_set_config_string(MGET_SSL_CA_DIRECTORY, config.ca_directory);
 	mget_ssl_set_config_string(MGET_SSL_CA_FILE, config.ca_cert);
 	mget_ssl_set_config_string(MGET_SSL_CERT_FILE, config.cert_file);
@@ -1167,6 +1207,10 @@ void deinit(void)
 {
 	mget_dns_cache_free(); // frees DNS cache
 	mget_tcp_set_bind_address(NULL, NULL); // free global bind address
+
+	mget_cookie_db_free(&config.cookie_db);
+	mget_hsts_db_free(&config.hsts_db);
+	mget_ssl_deinit();
 
 	xfree(config.cookie_suffixes);
 	xfree(config.load_cookies);

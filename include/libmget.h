@@ -213,6 +213,10 @@ MGET_BEGIN_DECLS
 #define MGET_HTTP_BODY_SAVEAS_FUNC 2014
 #define MGET_HTTP_HEADER_FUNC 2015
 
+// used by http_get()
+#define MGET_HTTP_METHOD_HEAD 0
+#define MGET_HTTP_METHOD_GET  1
+
 void
 	mget_global_init(int key, ...) G_GNUC_MGET_NULL_TERMINATED;
 void
@@ -254,6 +258,10 @@ void
 	mget_millisleep(int ms);
 int
 	mget_percent_unescape(unsigned char *src);
+int
+	mget_match_tail(const char *s, const char *tail) G_GNUC_MGET_PURE;
+int
+	mget_match_tail_nocase(const char *s, const char *tail) G_GNUC_MGET_PURE;
 ssize_t
 	mget_fdgetline(char **buf, size_t *bufsize, int fd) G_GNUC_MGET_NONNULL_ALL;
 ssize_t
@@ -368,7 +376,7 @@ void
  */
 
 void *
-	mget_memdup(const void *s, size_t n) G_GNUC_MGET_MALLOC G_GNUC_MGET_ALLOC_SIZE(2);
+	mget_memdup(const void *s, size_t n) G_GNUC_MGET_ALLOC_SIZE(2);
 char *
 	mget_strdup(const char *s) G_GNUC_MGET_MALLOC;
 
@@ -378,9 +386,9 @@ char *
 
 int
 	mget_base64_is_string(const char *src) G_GNUC_MGET_PURE;
-int
+size_t
 	mget_base64_decode(char *restrict dst, const char *restrict src, int n) G_GNUC_MGET_NONNULL_ALL;
-int
+size_t
 	mget_base64_encode(char *restrict dst, const char *restrict src, int n) G_GNUC_MGET_NONNULL_ALL;
 char *
 	mget_base64_decode_alloc(const char *restrict src, int n) G_GNUC_MGET_NONNULL_ALL;
@@ -501,7 +509,7 @@ void
 void
 	mget_debug_printf(const char *fmt, ...) G_GNUC_MGET_NONNULL((1)) G_GNUC_MGET_PRINTF_FORMAT(1,2);
 void
-	mget_debug_write(const char *buf, int len) G_GNUC_MGET_NONNULL_ALL;
+	mget_debug_write(const char *buf, size_t len) G_GNUC_MGET_NONNULL_ALL;
 mget_logger_t *
 	mget_get_logger(int id) G_GNUC_MGET_CONST;
 
@@ -750,7 +758,7 @@ typedef struct mget_iri_st {
 	const char *
 		connection_part; // helper, e.g. http://www.example.com:8080
 	size_t
-		dirlen; // length of directory part in 'path' (needed/initialized on with --no-parent)
+		dirlen; // length of directory part in 'path' (needed/initialized with --no-parent)
 	char
 		host_allocated; // if set, free host in iri_free()
 } mget_iri_t;
@@ -778,9 +786,11 @@ int
 int
 	mget_iri_compare(mget_iri_t *iri1, mget_iri_t *iri2) G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL;
 mget_iri_t *
-	mget_iri_parse(const char *uri, const char *encoding) G_GNUC_MGET_MALLOC;
+	mget_iri_parse(const char *uri, const char *encoding);
 mget_iri_t *
-	mget_iri_parse_base(mget_iri_t *base, const char *url, const char *encoding) G_GNUC_MGET_MALLOC;
+	mget_iri_parse_base(mget_iri_t *base, const char *url, const char *encoding);
+mget_iri_t *
+	mget_iri_clone(mget_iri_t *iri);
 const char *
 	mget_iri_get_connection_part(mget_iri_t *iri);
 const char *
@@ -807,12 +817,7 @@ char *
  */
 
 // typedef and structure for cookie database
-typedef struct mget_cookie_db_st {
-	mget_vector_t *
-		cookies;
-	mget_thread_mutex_t
-		mutex;
-} mget_cookie_db_t;
+typedef struct mget_cookie_db_st mget_cookie_db_t;
 
 // structure for cookie store
 //typedef struct mget_cookie_db_st mget_cookie_db_t;
@@ -855,15 +860,15 @@ void
 void
 	mget_cookie_free(mget_cookie_t **cookie);
 void
-	mget_cookie_normalize_cookies(const mget_iri_t *iri, const mget_vector_t *cookies) G_GNUC_MGET_NONNULL((1));
-void
-	mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie) G_GNUC_MGET_NONNULL_ALL;
-void
-	mget_cookie_store_cookies(mget_cookie_db_t *cookie_db, mget_vector_t *cookies) G_GNUC_MGET_NONNULL((1));
-void
-	mget_cookie_free_public_suffixes(void);
+	mget_cookie_normalize_cookies(const mget_iri_t *iri, const mget_vector_t *cookies);
 int
-	mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *cookie) G_GNUC_MGET_NONNULL((2));
+	mget_cookie_store_cookie(mget_cookie_db_t *cookie_db, mget_cookie_t *cookie);
+void
+	mget_cookie_store_cookies(mget_cookie_db_t *cookie_db, mget_vector_t *cookies);
+int
+	mget_cookie_normalize(const mget_iri_t *iri, mget_cookie_t *cookie);
+int
+	mget_cookie_check_psl(const mget_cookie_db_t *cookie_db, const mget_cookie_t *cookie);
 mget_cookie_db_t *
 	mget_cookie_db_init(mget_cookie_db_t *cookie_db);
 void
@@ -875,11 +880,9 @@ int
 int
 	mget_cookie_db_load(mget_cookie_db_t *cookie_db, const char *fname, int keep_session_cookies);
 int
-	mget_cookie_load_public_suffixes(const char *fname) G_GNUC_MGET_NONNULL_ALL;
-int
-	mget_cookie_suffix_match(const char *domain) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_db_load_psl(mget_cookie_db_t *cookie_db, const char *fname);
 char *
-	mget_cookie_create_request_header(mget_cookie_db_t *cookie_db, const mget_iri_t *iri) G_GNUC_MGET_NONNULL_ALL;
+	mget_cookie_create_request_header(mget_cookie_db_t *cookie_db, const mget_iri_t *iri);
 
 /*
  * HTTP Strict Transport Security (HSTS) routines
@@ -976,12 +979,12 @@ typedef struct {
 		base;
 	char
 		follow;
-} MGET_HTML_PARSE_RESULT;
+} MGET_HTML_PARSED_RESULT;
 
-MGET_HTML_PARSE_RESULT *
+MGET_HTML_PARSED_RESULT *
 	mget_html_get_urls_inline(const char *html);
 void
-	mget_html_free_urls_inline(MGET_HTML_PARSE_RESULT **res);
+	mget_html_free_urls_inline(MGET_HTML_PARSED_RESULT **res);
 
 void
 	mget_sitemap_get_urls_inline(const char *sitemap, mget_vector_t **urls, mget_vector_t **sitemap_urls);
@@ -1128,6 +1131,7 @@ ssize_t
 #define MGET_SSL_CHECK_CERTIFICATE 9
 #define MGET_SSL_CHECK_HOSTNAME    10
 #define MGET_SSL_PRINT_INFO        11
+#define MGET_SSL_DIRECT_OPTIONS    12
 
 void
 	mget_ssl_init(void);
