@@ -48,7 +48,9 @@ Mget has already many features that go beyond what Wget provides.<br>
 
 An incomplete list of implemented features:
 
-- support for RFC 6266 compliant Content-Disposition
+- Use [libpsl](https://github.com/rockdaboot/libpsl) for cookie domain checking (using Public Suffix List)
+- Support link conversion (-k/--convert-links and -K/--backup-converted)
+- Support for RFC 6266 compliant Content-Disposition
 - RFC 6797 HSTS (HTTP Strict Transport Security)
 - Support for bzip2 Content-Encoding / Accept-Encoding compression type
 - New Year gimmick: added support for XZ Content-Encoding / Accept-Encoding compression type
@@ -72,7 +74,6 @@ sitemap index files.
 - proxy support
 - cookies (session/non-session), detection of supercookies via Mozilla Public Suffix List
   (use the new option --cookie-suffixes <filename>, better: put it into ~/.mgetrc)
-- respect cookie public suffix list (http://publicsuffix.org/list/)
 - recursive download of websites with or without spanning hosts
 - download of single web pages / resources
 - zlib/gzip compressed HTTP/HTTPS downloads (gzip, deflate)
@@ -103,8 +104,6 @@ The mid-range goal is to come as close to Wget, that Wget's units test work for 
 
 Some ideas of what could be done next (but contact me before you start bigger changes!):
 
-- use [gtk-doc-tools](http://developer.gnome.org/gtk-doc-manual/unstable/settingup.html.en) for documentation.<br>
-  I want the docs stay with the code: already tested Doxygen, but the man page support seems broken/orphaned.
 - WARC support
 - read credentials from secure wallets (e.g. kwallet, firefox, http://sourceforge.net/projects/passwordsafe/)
   [Chromium HSTS domain list](http://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json)
@@ -135,8 +134,9 @@ The following packages are needed to build Mget:
 * libgnutls >= 2.10.0
 * libidn2 >= 0.9 + libunistring >= 0.9.3 (libidn >= 1.25 if you don't have libidn2)
 * flex >= 2.5.35
+* libpsl >= 0.5.0
 
-The versions are recommended, but older versions are supposed to work.
+The versions are recommended, but older versions may also work.
 
 
 Building from git
@@ -180,7 +180,4 @@ There is no own documentation yet, but Mget aims to be Wget1.14 compatible.
 prints the usage and the current set of integrated options.
 For more info, see the man pages of Wget.
 
-My idea is to use the free Serna WYSIWYG/WYMIWYG editor for documentation.
-It creates docbook format which can be converted into texinfo format.
-And it opens the documentation process to almost any volunteers without
-texinfo knowledge.
+The Mget library API documentation has been started.
