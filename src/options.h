@@ -28,9 +28,6 @@
 #define _MGET_OPTIONS_H
 
 #include <stdarg.h>
-#ifdef WITH_LIPSL
-#	include <libpsl.h>
-#endif
 
 #include <libmget.h>
 
@@ -86,10 +83,6 @@ struct config {
 		*reject_patterns;
 	mget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
-#ifdef WITH_LIPSL
-	psl_ctx_t
-		*psl; // libpsl Publix Suffix List context
-#endif
 	size_t
 		chunk_size;
 	long long
