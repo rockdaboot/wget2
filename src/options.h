@@ -31,14 +31,14 @@
 
 #include <libmget.h>
 
-// types fro --restrict-file-names
-#define RESTRICT_NAMES_NONE  1<<0
-#define RESTRICT_NAMES_UNIX  1<<1
-#define RESTRICT_NAMES_WINDOWS  1<<2
-#define RESTRICT_NAMES_NOCONTROL  1<<3
-#define RESTRICT_NAMES_ASCII  1<<4
-#define RESTRICT_NAMES_UPPERCASE  1<<5
-#define RESTRICT_NAMES_LOWERCASE  1<<6
+// types for --restrict-file-names
+#define RESTRICT_NAMES_NONE  0
+#define RESTRICT_NAMES_UNIX  1<<0
+#define RESTRICT_NAMES_WINDOWS  1<<1
+#define RESTRICT_NAMES_NOCONTROL  1<<2
+#define RESTRICT_NAMES_ASCII  1<<3
+#define RESTRICT_NAMES_UPPERCASE  1<<4
+#define RESTRICT_NAMES_LOWERCASE  1<<5
 
 struct config {
 	mget_iri_t
