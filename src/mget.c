@@ -145,6 +145,7 @@ void set_exit_status(int status)
  * This functions exists to pass the Wget test suite.
  * All we really need (Mget is targeted for Unix/Linux), is UNIX restriction (\NUL and /)
  *  with escaping of control characters.
+ * See http://en.wikipedia.org/wiki/Comparison_of_file_systems
  */
 static char *restrict_file_name(char *fname, char *esc)
 {

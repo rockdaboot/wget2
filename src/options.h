@@ -28,20 +28,17 @@
 #define _MGET_OPTIONS_H
 
 #include <stdarg.h>
-#ifdef WITH_LIPSL
-#	include <libpsl.h>
-#endif
 
 #include <libmget.h>
 
-// types fro --restrict-file-names
-#define RESTRICT_NAMES_NONE  1<<0
-#define RESTRICT_NAMES_UNIX  1<<1
-#define RESTRICT_NAMES_WINDOWS  1<<2
-#define RESTRICT_NAMES_NOCONTROL  1<<3
-#define RESTRICT_NAMES_ASCII  1<<4
-#define RESTRICT_NAMES_UPPERCASE  1<<5
-#define RESTRICT_NAMES_LOWERCASE  1<<6
+// types for --restrict-file-names
+#define RESTRICT_NAMES_NONE  0
+#define RESTRICT_NAMES_UNIX  1<<0
+#define RESTRICT_NAMES_WINDOWS  1<<1
+#define RESTRICT_NAMES_NOCONTROL  1<<2
+#define RESTRICT_NAMES_ASCII  1<<3
+#define RESTRICT_NAMES_UPPERCASE  1<<4
+#define RESTRICT_NAMES_LOWERCASE  1<<5
 
 struct config {
 	mget_iri_t
@@ -86,10 +83,6 @@ struct config {
 		*reject_patterns;
 	mget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
-#ifdef WITH_LIPSL
-	psl_ctx_t
-		*psl; // libpsl Publix Suffix List context
-#endif
 	size_t
 		chunk_size;
 	long long
@@ -110,6 +103,7 @@ struct config {
 	struct mget_cookie_db_st
 		*cookie_db;
 	char
+		mirror,
 		backup_converted,
 		convert_links,
 		ignore_case,

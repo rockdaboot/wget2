@@ -99,6 +99,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --force-atom        Treat input file as Atom Feed. (default: off) (NEW!)\n"
 		"      --force-rss         Treat input file as RSS Feed. (default: off) (NEW!)\n"
 		"  -B  --base              Base for relative URLs read from input-file or from command line\n"
+		"  -e  --execute           Wget compatibility option, not needed for Mget\n"
 		"\n");
 	puts(
 		"Download:\n"
@@ -138,15 +139,25 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"  -p  --page-requisites   Download all necessary files to display a HTML page\n"
 		"      --parent            Ascend above parent directory. (default: on)\n"
 		"      --trust-server-names  On redirection use the server's filename. (default: off)\n"
-		"      --chunk-size        Download large files in multithreaded chunks. (default: 0 (=off))\n"
+		"      --chunk-size        Download large files in multithreaded chunks. (default: 0 (=off))\n");
+	puts(
 		"                          Example: mget --chunk-size=1M\n"
 		"      --local-encoding    Character encoding of environment and filenames.\n"
 		"      --remote-encoding   Character encoding of remote files (if not specified in Content-Type HTTP header or in document itself)\n"
 		"  -t   --tries            Number of tries for each download. (default 20)\n"
 		"  -A   --accept           Comma-separated list of file name suffixes or patterns.\n"
 		"  -R   --reject           Comma-separated list of file name suffixes or patterns.\n"
+		"       --ignore-case      Ignore case when matching files. (default: off)\n"
 		"  -k   --convert-links    Convert embedded URLs to local URLs. (default: off)\n"
 		"  -K   --backup-converted When converting, keep the original file with a .orig suffix. (default: off)\n"
+		"  -w   --wait             Wait number of seconds between downloads (per thread). (default: 0)\n"
+		"       --waitretry        Wait up to number of seconds after error (per thread). (default: 10)\n"
+		"       --random-wait      Wait 0.5 up to 1.5*<--wait> seconds between downloads (per thread). (default: off)\n"
+		"       --dns-cache        Caching of domain name lookups. (default: on)\n"
+		"       --iri              Wget dummy option, you can't switch off international support\n"
+		"       --robots           Respect robots.txt standard for recursive downloads. (default: on)\n"
+		"       --restrict-file-names  unix, windows, nocontrol, ascii, lowercase, uppercase, none\n"
+		"  -m   --mirror           Turn on mirroring options -r -N -l inf\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -162,11 +173,13 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --save-headers      Save the response headers in front of the response data. (default: off)\n"
 		"      --referer           Include Referer: url in HTTP requets. (default: off)\n"
 		"  -E  --adjust-extension  Append extension to saved file (.html or .css). (default: off)\n"
+		/* For Wget compatibility we also understand --html-extension */
 		"      --default_page      Default file name. (default: index.html)\n"
 		"  -Q  --quota             Download quota, 0 = no quota. (default: 0)\n"
 		"      --http-user         Username for HTTP Authentication. (default: empty username)\n"
 		"      --http-password     Password for HTTP Authentication. (default: empty password)\n"
 		"      --content-disposition  Take filename from Content-Disposition. (default: off)\n"
+		"      --default-page      Default file name if name isn't known. (default: index.html)\n"
 		"\n");
 	puts(
 		"HTTPS (SSL/TLS) related options:\n"
@@ -175,6 +188,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --check-certificate Check the server's certificate. (default: on)\n"
 		"      --check-hostname    Check the server's certificate's hostname. (default: on)\n"
 		"      --certificate       File with client certificate.\n"
+		"      --certificate-type  Certificate type: PEM or DER (known as ASN1). (default: PEM)\n"
 		"      --private-key       File with private key.\n"
 		"      --private-key-type  Type of the private key (PEM or DER). (default: PEM)\n"
 		"      --ca-certificate    File with bundle of PEM CA certificates.\n"
@@ -315,6 +329,23 @@ static int parse_bool(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, 
 		else {
 			error_printf(_("Boolean value '%s' not recognized\n"), val);
 		}
+	}
+
+	return 0;
+}
+
+static int parse_mirror(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+{
+	parse_bool(opt, argv, val);
+
+	if (config.mirror) {
+		config.recursive = 1;
+		config.level = 0; // INF
+		config.timestamping = 1;
+	} else {
+		config.recursive = 0;
+		config.level = 5; // default value
+		config.timestamping = 0;
 	}
 
 	return 0;
@@ -545,6 +576,7 @@ static const struct option options[] = {
 	{ "load-hsts", &config.load_hsts, parse_bool, 0, 0 },
 	{ "local-encoding", &config.local_encoding, parse_string, 1, 0 },
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0 },
+	{ "mirror", &config.mirror, parse_mirror, 0, 'm' },
 	{ "n", NULL, parse_n_option, 1, 'n' }, // special Wget compatibility option
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0 },
 	{ "output-document", &config.output_document, parse_string, 1, 'O' },
