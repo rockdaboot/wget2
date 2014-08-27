@@ -157,6 +157,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"       --iri              Wget dummy option, you can't switch off international support\n"
 		"       --robots           Respect robots.txt standard for recursive downloads. (default: on)\n"
 		"       --restrict-file-names  unix, windows, nocontrol, ascii, lowercase, uppercase, none\n"
+		"  -m   --mirror           Turn on mirroring options -r -N -l inf\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -328,6 +329,23 @@ static int parse_bool(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, 
 		else {
 			error_printf(_("Boolean value '%s' not recognized\n"), val);
 		}
+	}
+
+	return 0;
+}
+
+static int parse_mirror(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+{
+	parse_bool(opt, argv, val);
+
+	if (config.mirror) {
+		config.recursive = 1;
+		config.level = 0; // INF
+		config.timestamping = 1;
+	} else {
+		config.recursive = 0;
+		config.level = 5; // default value
+		config.timestamping = 0;
 	}
 
 	return 0;
@@ -558,6 +576,7 @@ static const struct option options[] = {
 	{ "load-hsts", &config.load_hsts, parse_bool, 0, 0 },
 	{ "local-encoding", &config.local_encoding, parse_string, 1, 0 },
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0 },
+	{ "mirror", &config.mirror, parse_mirror, 0, 'm' },
 	{ "n", NULL, parse_n_option, 1, 'n' }, // special Wget compatibility option
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0 },
 	{ "output-document", &config.output_document, parse_string, 1, 'O' },
