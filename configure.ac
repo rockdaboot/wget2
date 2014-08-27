@@ -4,7 +4,7 @@ CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 
 AC_PREREQ([2.67])
-AC_INIT([mget], [0.1.6], [mget-bugs@googlegroups.com], [mget], [https://github.com/rockdaboot/mget])
+AC_INIT([mget], [0.1.8], [mget-bugs@googlegroups.com], [mget], [https://github.com/rockdaboot/mget])
 AM_INIT_AUTOMAKE
 
 CFLAGS=$CFLAGS

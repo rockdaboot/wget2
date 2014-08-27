@@ -1,3 +1,8 @@
+27.08.2014
+  New release v0.1.7
+  added -m / --mirror
+  added descriptions of options to --help
+
 15.08.2014
   New release v0.1.6
   Check cookie domains via libpsl against the Public Sufix List
