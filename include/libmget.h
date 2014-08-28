@@ -29,13 +29,16 @@
 
 #include <stddef.h>
 #ifdef HAVE_LIBPTHREAD
-#include <pthread.h>
+#	include <pthread.h>
 #endif
 #include <unistd.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#ifdef HAVE_INTTYPES_H
+#	include <inttypes.h>
+#endif
 
 // transitional defines, remove when migration to libmget is done
 #define xmalloc mget_malloc

@@ -47,13 +47,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
-#include <pwd.h>
+//#include <pwd.h>
 #include <errno.h>
-#include <glob.h>
+#ifdef HAVE_GLOB_H
+#	include <glob.h>
+#endif
 #include <fcntl.h>
 #include <time.h>
 #include <sys/stat.h>
-#include <netdb.h>
+//#include <netdb.h>
 
 #include <libmget.h>
 
@@ -808,6 +810,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 	}
 */
 
+#ifdef HAVE_GLOB
 	if (expand) {
 		glob_t globbuf;
 //		struct stat st;
@@ -842,6 +845,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 		
 		return 0;
 	}
+#endif
 
 	if ((fp = fopen(cfgfile, "r")) == NULL) {
 		error_printf(_("Failed to open %s\n"), cfgfile);
@@ -918,7 +922,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 static void read_config(void)
 {
 	if (access(SYSCONFDIR"mgetrc", R_OK) == 0)
-		_read_config(SYSCONFDIR"mgetrc", 1);
+		_read_config(SYSCONFDIR"mgetrc", 0);
 
 	_read_config("~/.mgetrc", 1);
 }
@@ -1000,7 +1004,7 @@ int init(int argc, const char *const *argv)
 	mget_set_oomfunc(_no_memory);
 
 	// seed random generator, used e.g. by Digest Authentication and --random-wait
-	srand48((long)time(NULL) ^ getpid());
+	srand(time(NULL) ^ getpid());
 
 	// this is a special case for switching on debugging before any config file is read
 	if (argc >= 2) {

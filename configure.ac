@@ -27,13 +27,17 @@ AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AC_CANONICAL_HOST
-#case $host_os in
-#  linux*)
-#        ;;
+case $host_os in
+  linux*)
+    ;;
+  mingw*)
+    XTRA_CFLAGS="-Wno-attributes -fno-PIC"
+#    XTRA_LIBS=-lws2_32
+    ;;
 #  *)
-#        AC_MSG_ERROR([$host_os is not currently supported])
-#        ;;
-#esac
+#    AC_MSG_ERROR([$host_os is not currently supported])
+#    ;;
+esac
 
 # Checks for programs.
 
@@ -62,6 +66,9 @@ fi
 # Append EXTRA_CFLAGS to CFLAGS, if defined.
 if test "x$EXTRA_CFLAGS" != "x"; then
   CFLAGS="$CFLAGS $EXTRA_CFLAGS"
+fi
+if test "x$XTRA_CFLAGS" != "x"; then
+  CFLAGS="$CFLAGS $XTRA_CFLAGS"
 fi
 
 # Check for large file support.  This check needs to come fairly
@@ -159,6 +166,7 @@ fi
 #fi
 
 # Check for needed libraries
+AC_SEARCH_LIBS(socket, ws2_32)
 AC_SEARCH_LIBS(clock_gettime, rt)
 AC_SEARCH_LIBS(pthread_create, pthread, [AC_DEFINE([HAVE_LIBPTHREAD], [1], [Use pthreads])])
 
@@ -238,7 +246,7 @@ AM_CONDITIONAL([WITH_LIBIDN], [test x$with_libidn = "xyes"])
 AC_CHECK_HEADERS([\
  fcntl.h inttypes.h libintl.h locale.h netdb.h netinet/in.h stddef.h stdlib.h string.h\
  strings.h sys/socket.h sys/time.h unistd.h crypt.h poll.h idna.h idn2.h stringprep.h\
- langinfo.h unicase.h])
+ langinfo.h unicase.h fnmatch.h glob.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 #AC_CHECK_HEADER_STDBOOL
@@ -259,14 +267,15 @@ AC_CHECK_TYPES([ptrdiff_t])
 # Checks for library functions.
 AC_FUNC_ALLOCA
 AC_FUNC_FORK
-AC_FUNC_MALLOC
+#AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_FUNC_REALLOC
+AC_FUNC_FNMATCH
 AC_CHECK_FUNCS([\
  clock_gettime dprintf dup2 futimens gettimeofday localtime_r memchr\
  memmove memset mkdir munmap select setlocale socket strcasecmp\
  strchr strdup strerror strncasecmp strndup strrchr strstr strlcpy \
- vasprintf nanosleep usleep iconv])
+ vasprintf nanosleep usleep iconv nl_langinfo futimens glob pwrite])
 
 AC_CONFIG_FILES([Makefile
                  include/Makefile

@@ -33,7 +33,9 @@
 #include <strings.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
+#ifdef HAVE_MMAP
+#	include <sys/mman.h>
+#endif
 
 #include <libmget.h>
 #include <private.h>
@@ -260,7 +262,10 @@ int mget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_
 
 	if ((algorithm = mget_hash_get_algorithm(type)) != MGET_DIGTYPE_UNKNOWN) {
 		unsigned char digest[mget_hash_get_len(algorithm)];
-		char *buf = mmap(NULL, length, PROT_READ, MAP_PRIVATE, fd, offset);
+		char *buf;
+
+#ifdef HAVE_MMAP
+		buf = mmap(NULL, length, PROT_READ, MAP_PRIVATE, fd, offset);
 
 		if (buf != MAP_FAILED) {
 			if (mget_hash_fast(algorithm, buf, length, digest) == 0) {
@@ -269,6 +274,7 @@ int mget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_
 			}
 			munmap(buf, length);
 		} else {
+#endif
 			// Fallback to read
 			ssize_t nbytes = 0;
 			mget_hash_hd_t dig;
@@ -294,7 +300,9 @@ int mget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_
 
 			mget_memtohex(digest, sizeof(digest), digest_hex, digest_hex_size);
 			ret = 0;
+#ifdef HAVE_MMAP
 		}
+#endif
 	}
 	
 	return ret;

@@ -38,7 +38,7 @@
 
 #if defined(HAVE_STRINGPREP_H) && defined(WITH_LIBIDN)
 # include <stringprep.h>
-#elif HAVE_LANGINFO_H
+#elif defined(HAVE_LANGINFO_H)
 # include <langinfo.h>
 #endif
 
@@ -60,14 +60,19 @@ const char *mget_local_charset_encoding(void)
 {
 #if defined(HAVE_STRINGPREP_H) && defined(WITH_LIBIDN)
 	return strdup(stringprep_locale_charset());
-#else
+#elif defined(HAVE_NL_LANGINFO)
 	const char *encoding = nl_langinfo(CODESET);
 
 	if (encoding && *encoding)
 		return strdup(encoding);
-	else
-		return strdup("ASCII");
+#elif defined(_WIN32) || defined(__WIN32__) || defined(_WIN64) || defined(__WIN64__)
+	static char buf[16];
+
+	 // GetACP() returns the codepage.
+	 snprintf(buf, sizeof(buf), "CP%u", GetACP ());
+	 return buf;
 #endif
+	return strdup("ASCII");
 }
 
 char *mget_charset_transcode(const char *src, const char *src_encoding, const char *dst_encoding)

@@ -39,11 +39,12 @@
 #include <errno.h>
 #include <ctype.h>
 #include <time.h>
-#include <fnmatch.h>
-#include <sys/socket.h>
-#include <sys/select.h>
+//#include <sys/socket.h>
+//#include <sys/select.h>
 #include <sys/stat.h>
-
+#ifndef HAVE_FUTIMENS
+#	include <utime.h>
+#endif
 #include <libmget.h>
 
 #include "mget.h"
@@ -52,6 +53,12 @@
 #include "options.h"
 #include "blacklist.h"
 #include "host.h"
+
+#if defined(HAVE_FNMATCH_H) && defined(HAVE_FNMATCH)
+#	include <fnmatch.h>
+#else
+#	include "compat_fnmatch.c"
+#endif
 
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)
@@ -305,7 +312,11 @@ const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(mget_iri_t *iri)
 			if (*p1 == '.' && p1[1] == '.')
 				error_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), fname);
 
+#if defined(_WIN32) || defined(_WIN64)
+			if (mkdir(fname) != 0 && errno != EEXIST) {
+#else
 			if (mkdir(fname, 0755) != 0 && errno != EEXIST) {
+#endif
 				error_printf(_("Failed to make directory '%s'\n"), fname);
 				*p2 = '/'; // restore path separator
 				return fname;
@@ -745,7 +756,6 @@ int main(int argc, const char *const *argv)
 	int n, rc;
 	size_t bufsize = 0;
 	char *buf = NULL;
-	struct sigaction sig_action;
 
 	#include <locale.h>
 	setlocale(LC_ALL, "");
@@ -755,7 +765,14 @@ int main(int argc, const char *const *argv)
 	textdomain("mget");
 #endif
 
+#if defined(_WIN32) || defined(_WIN64)
+	// not sure if this is needed for Windows
+	// signal(SIGPIPE, SIG_IGN);
+	signal(SIGTERM, nop);
+	signal(SIGINT, nop);
+#else
 	// need to set some signals
+	struct sigaction sig_action;
 	memset(&sig_action, 0, sizeof(sig_action));
 
 	sig_action.sa_sigaction = (void (*)(int, siginfo_t *, void *))SIG_IGN;
@@ -763,6 +780,7 @@ int main(int argc, const char *const *argv)
 	sig_action.sa_handler = nop;
 	sigaction(SIGTERM, &sig_action, NULL);
 	sigaction(SIGINT, &sig_action, NULL);
+#endif
 
 	known_urls = mget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
 
@@ -955,7 +973,7 @@ void *downloader_thread(void *p)
 		if (config.wait) {
 			if (do_wait) {
 				if (config.random_wait)
-					mget_millisleep(config.wait / (int) (2 + drand48() * config.wait));
+					mget_millisleep(rand() % config.wait + config.wait / 2); // (0.5 - 1.5) * config.wait
 				else
 					mget_millisleep(config.wait);
 			} else
@@ -1756,6 +1774,7 @@ static time_t G_GNUC_MGET_NONNULL_ALL get_file_mtime(const char *fname)
 	return 0;
 }
 
+#ifdef HAVE_FUTIMENS
 static void set_file_mtime(int fd, time_t modified)
 {
 	struct timespec timespecs[2]; // [0]=last access  [1]=last modified
@@ -1766,12 +1785,25 @@ static void set_file_mtime(int fd, time_t modified)
 	timespecs[0].tv_sec = time(NULL);
 	timespecs[0].tv_nsec = 0;
 #endif
+
 	timespecs[1].tv_sec = modified;
 	timespecs[1].tv_nsec = 0;
 
 	if (futimens(fd, timespecs) == -1)
 		error_printf (_("Failed to set file date: %s\n"), strerror (errno));
 }
+#else
+static void set_file_mtime(const char *filename, time_t modified)
+{
+	struct utimbuf utimbuf;
+
+	utimbuf.actime = time(NULL);
+	utimbuf.modtime = modified;
+
+	if (utime(filename, &utimbuf) == -1)
+		error_printf (_("Failed to set file date: %s\n"), strerror (errno));
+}
+#endif
 
 static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, const char *fname, int flag)
 {
@@ -1902,8 +1934,11 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 			}
 
 			if ((flag & (O_TRUNC | O_EXCL)) && resp->last_modified)
+#ifdef HAVE_FUTIMENS
 				set_file_mtime(fd, resp->last_modified);
-
+#else
+				set_file_mtime(fname, resp->last_modified);
+#endif
 			if (flag == O_APPEND)
 				info_printf("appended to '%s'\n", fnum ? unique : fname);
 			else
@@ -1983,7 +2018,11 @@ int download_part(DOWNLOADER *downloader)
 					if ((fd = open(metalink->name, O_WRONLY | O_CREAT, 0644)) != -1) {
 						ssize_t nbytes;
 
+#ifdef HAVE_PWRITE
 						if ((nbytes = pwrite(fd, resp->body->data, resp->body->length, part->position)) == (ssize_t)resp->body->length)
+#else
+						if (fseek(fd, part->position, SEEK_SET) ==0 && write(fd, resp->body->data, resp->body->length) == (ssize_t)resp->body->length)
+#endif
 							part->done = 1; // set this when downloaded ok
 						else
 							error_printf(_("Failed to pwrite %zd bytes at pos %lld (%zd)\n"), resp->body->length, (long long)part->position, nbytes);

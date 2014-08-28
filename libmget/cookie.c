@@ -449,13 +449,13 @@ int mget_cookie_db_save(mget_cookie_db_t *cookie_db, const char *fname, int keep
 			} else if (!keep_session_cookies)
 				continue;
 
-			fprintf(fp, "%s%s%s\t%s\t%s\t%s\t%lld\t%s\t%s\n",
+			fprintf(fp, "%s%s%s\t%s\t%s\t%s\t%"PRId64"\t%s\t%s\n",
 				cookie->http_only ? "#HttpOnly_" : "",
 				cookie->domain_dot ? "." : "", // compatibility, irrelevant since RFC 6562
 				cookie->domain,
 				cookie->host_only ? "FALSE" : "TRUE",
 				cookie->path, cookie->secure_only ? "TRUE" : "FALSE",
-				(long long)cookie->expires,
+				(int64_t)cookie->expires,
 				cookie->name, cookie->value);
 		}
 

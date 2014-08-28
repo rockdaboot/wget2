@@ -28,6 +28,8 @@
 # include <config.h>
 #endif
 
+#if !defined(_WIN32) && !defined(__WIN32__) && !defined(_WIN64) && !defined(__WIN64__)
+
 #include <stddef.h>
 #include <stdio.h>
 //#include <stdlib.h>
@@ -37,6 +39,7 @@
 
 #include <libmget.h>
 #include "private.h"
+
 
 FILE *mget_vpopenf(const char *type, const char *fmt, va_list args)
 {
@@ -223,3 +226,5 @@ pid_t mget_popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *ar
 
 	return pid;
 }
+
+#endif
