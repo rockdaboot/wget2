@@ -404,7 +404,7 @@ mil.bo
 tv.bo
 
 // br : http://registro.br/dominio/categoria.html
-// Submitted by registry <fneves@registro.br> 2014-03-04
+// Submitted by registry <fneves@registro.br> 2014-08-11
 br
 adm.br
 adv.br
@@ -452,7 +452,7 @@ mil.br
 mp.br
 mus.br
 net.br
-nom.br
+*.nom.br
 not.br
 ntr.br
 odo.br
@@ -818,7 +818,14 @@ gob.es
 edu.es
 
 // et : http://en.wikipedia.org/wiki/.et
-*.et
+et
+com.et
+gov.et
+org.et
+edu.et
+biz.et
+name.et
+info.et
 
 // eu : http://en.wikipedia.org/wiki/.eu
 eu
@@ -6005,11 +6012,35 @@ mil.to
 // Submitted by Ryan Sleevi <ryan.sleevi@gmail.com> 2014-01-03
 tp
 
-// tr : http://en.wikipedia.org/wiki/.tr
-*.tr
-!nic.tr
-// Used by government in the TRNC
-// http://en.wikipedia.org/wiki/.nc.tr
+// subTLDs: https://www.nic.tr/forms/eng/policies.pdf
+//     and: https://www.nic.tr/forms/politikalar.pdf
+// Submitted by <mehmetgurevin@gmail.com> 2014-07-19
+tr
+com.tr
+info.tr
+biz.tr
+net.tr
+org.tr
+web.tr
+gen.tr
+tv.tr
+av.tr
+dr.tr
+bbs.tr
+name.tr
+tel.tr
+gov.tr
+bel.tr
+pol.tr
+mil.tr
+k12.tr
+edu.tr
+kep.tr
+
+// Used by Northern Cyprus
+nc.tr
+
+// Used by government agencies of Northern Cyprus
 gov.nc.tr
 
 // travel : http://en.wikipedia.org/wiki/.travel
@@ -6284,7 +6315,7 @@ k12.mo.us
 k12.ms.us
 k12.mt.us
 k12.nc.us
-k12.nd.us
+// k12.nd.us  Bug 1028347 - Removed at request of Travis Rosso <trossow@nd.gov>
 k12.ne.us
 k12.nh.us
 k12.nj.us
@@ -6309,7 +6340,6 @@ k12.wa.us
 k12.wi.us
 // k12.wv.us  Bug 947705 - Removed at request of Verne Britton <verne@wvnet.edu>
 k12.wy.us
-
 cc.ak.us
 cc.al.us
 cc.ar.us
@@ -6365,7 +6395,6 @@ cc.wa.us
 cc.wi.us
 cc.wv.us
 cc.wy.us
-
 lib.ak.us
 lib.al.us
 lib.ar.us
@@ -6421,7 +6450,6 @@ lib.wa.us
 lib.wi.us
 // lib.wv.us  Bug 941670 - Removed at request of Larry W Arnold <arnold@wvlc.lib.wv.us>
 lib.wy.us
-
 // k12.ma.us contains school districts in Massachusetts. The 4LDs are
 //  managed indepedently except for private (PVT), charter (CHTR) and
 //  parochial (PAROCH) schools.  Those are delegated dorectly to the
@@ -7673,8 +7701,8 @@ pictures
 // gripe : 2014-03-07 Corn Sunset, LLC
 gripe
 
-// engineering : 2014-03-07 United TLD Holdco Ltd.
-engineering
+// engineer : 2014-03-07 United TLD Holdco Ltd.
+engineer
 
 // associates : 2014-03-07 Baxter Hill, LLC
 associates
@@ -7987,6 +8015,171 @@ click
 
 // cern : 2014-06-05 European Organization for Nuclear Research ("CERN") 
 cern
+
+// healthcare : 2014-06-13 Silver Glen, LLC
+healthcare
+
+// xn--30rr7y : 2014-06-13 Excellent First Limited
+慈善
+
+// band : 2014-06-13 Auburn Hollow, LLC
+band
+
+// xn--9et52u : 2014-06-13 RISE VICTORY LIMITED
+时尚
+
+// world : 2014-06-13 Bitter Fields, LLC
+world
+
+// latrobe : 2014-06-16 La Trobe University
+latrobe
+
+// bible : 2014-06-19 American Bible Society
+bible
+
+// java : 2014-06-19 Oracle Corporation
+java
+
+// sky : 2014-06-19 Sky IP International Ltd, a company incorporated in England and Wales, operating via its registered Swiss branch
+sky
+
+// oracle : 2014-06-19 Oracle Corporation
+oracle
+
+// pharmacy : 2014-06-19 National Association of Boards of Pharmacy
+pharmacy
+
+// dvag : 2014-06-23 Deutsche Vermögensberatung Aktiengesellschaft DVAG
+dvag
+
+// xn--vermgensberater-ctb : 2014-06-23 Deutsche Vermögensberatung Aktiengesellschaft DVAG
+vermögensberater
+
+// xn--vermgensberatung-pwb : 2014-06-23 Deutsche Vermögensberatung Aktiengesellschaft DVAG
+vermögensberatung
+
+// montblanc : 2014-06-23 Richemont DNS Inc.
+montblanc
+
+// iwc : 2014-06-23 Richemont DNS Inc.
+iwc
+
+// cartier : 2014-06-23 Richemont DNS Inc.
+cartier
+
+// pohl : 2014-06-23 Deutsche Vermögensberatung Aktiengesellschaft DVAG
+pohl
+
+// diet : 2014-06-26 Uniregistry, Corp.
+diet
+
+// cba : 2014-06-26 COMMONWEALTH BANK OF AUSTRALIA
+cba
+
+// netbank : 2014-06-26 COMMONWEALTH BANK OF AUSTRALIA
+netbank
+
+// pictet : 2014-06-26 Pictet Europe S.A.
+pictet
+
+// help : 2014-06-26 Uniregistry, Corp.
+help
+
+// pizza : 2014-06-26 Foggy Moon, LLC
+pizza
+
+// garden : 2014-06-26 Top Level Domain Holdings Limited
+garden
+
+// commbank : 2014-06-26 COMMONWEALTH BANK OF AUSTRALIA
+commbank
+
+// gifts : 2014-07-03 Goose Sky, LLC
+gifts
+
+// fashion : 2014-07-03 Top Level Domain Holdings Limited
+fashion
+
+// tui : 2014-07-03 TUI AG
+tui
+
+// iinet : 2014-07-03 Connect West Pty. Ltd.
+iinet
+
+// restaurant : 2014-07-03 Snow Avenue, LLC
+restaurant
+
+// alsace : 2014-07-02 REGION D ALSACE
+alsace
+
+// poker : 2014-07-03 Afilias Domains No. 5 Limited
+poker
+
+// allfinanz : 2014-07-03 Allfinanz Deutsche Vermögensberatung Aktiengesellschaft
+allfinanz
+
+// sarl : 2014-07-03 Delta Orchard, LLC
+sarl
+
+// taipei : 2014-07-10 Taipei City Government
+taipei
+
+// immo : 2014-07-10 Auburn Bloom, LLC
+immo
+
+// hermes : 2014-07-10 HERMES INTERNATIONAL
+hermes
+
+// rip : 2014-07-10 United TLD Holdco Ltd.
+rip
+
+// gbiz : 2014-07-17 Charleston Road Registry Inc.
+gbiz
+
+// bloomberg : 2014-07-17 Bloomberg IP Holdings LLC
+bloomberg
+
+// sew : 2014-07-17 SEW-EURODRIVE GmbH & Co KG
+sew
+
+// prof : 2014-07-24 Charleston Road Registry Inc.
+prof
+
+// gle : 2014-07-24 Charleston Road Registry Inc.
+gle
+
+// amsterdam : 2014-07-24 Gemeente Amsterdam
+amsterdam
+
+// aquarelle : 2014-07-24 Aquarelle.com
+aquarelle
+
+// nexus : 2014-07-24 Charleston Road Registry Inc.
+nexus
+
+// flsmidth : 2014-07-24 FLSmidth A/S
+flsmidth
+
+// bnl : 2014-07-24 Banca Nazionale del Lavoro
+bnl
+
+// bcn : 2014-07-24 Municipi de Barcelona
+bcn
+
+// chrome : 2014-07-24 Charleston Road Registry Inc.
+chrome
+
+// google : 2014-07-24 Charleston Road Registry Inc.
+google
+
+// barcelona : 2014-07-24 Municipi de Barcelona
+barcelona
+
+// cal : 2014-07-24 Charleston Road Registry Inc.
+cal 
+
+// abbott : 2014-07-24 Abbott Laboratories, Inc.
+abbott
 
 // ===END ICANN DOMAINS===
 // ===BEGIN PRIVATE DOMAINS===
@@ -8414,6 +8607,10 @@ global.prod.fastly.net
 // Submitted by Chris Raynor <chris@firebase.com> 2014-01-21
 firebaseapp.com
 
+// Flynn : https://flynn.io
+// Submitted by Jonathan Rudenberg <jonathan@flynn.io> 2014-07-12
+flynnhub.com
+
 // GitHub, Inc.
 // Submitted by Ben Toews <btoews@github.com> 2014-02-06
 github.io
@@ -8520,6 +8717,10 @@ rhcloud.com
 // priv.at : http://www.nic.priv.at/
 // Submitted by registry <lendl@nic.at> 2008-06-09
 priv.at
+
+// Yola : https://www.yola.com/
+// Submitted by Stefano Rivera <stefano@yola.com> 2014-07-09
+yolasite.com
 
 // ZaNiC : http://www.za.net/
 // Submitted by registry <hostmaster@nic.za.net> 2009-10-03
