@@ -1063,7 +1063,7 @@ void *downloader_thread(void *p)
 
 				ssize_t npieces = (resp->content_length + config.chunk_size - 1) / config.chunk_size;
 				metalink->pieces = mget_vector_create((int) npieces, 1, NULL);
-				for (unsigned it = 0; it < npieces; it++) {
+				for (int it = 0; it < npieces; it++) {
 					piece.position = it * config.chunk_size;
 					mget_vector_add(metalink->pieces, &piece, sizeof(mget_metalink_piece_t));
 				}
@@ -2016,12 +2016,12 @@ int download_part(DOWNLOADER *downloader)
 
 					print_status(downloader, "part %d downloaded\n", part->id);
 					if ((fd = open(metalink->name, O_WRONLY | O_CREAT, 0644)) != -1) {
-						ssize_t nbytes;
-
 #ifdef HAVE_PWRITE
+						ssize_t nbytes;
 						if ((nbytes = pwrite(fd, resp->body->data, resp->body->length, part->position)) == (ssize_t)resp->body->length)
 #else
-						if (fseek(fd, part->position, SEEK_SET) ==0 && write(fd, resp->body->data, resp->body->length) == (ssize_t)resp->body->length)
+						ssize_t nbytes = -1;
+						if (fseek(fd, part->position, SEEK_SET) == 0 && (nbytes = write(fd, resp->body->data, resp->body->length)) == (ssize_t)resp->body->length)
 #endif
 							part->done = 1; // set this when downloaded ok
 						else

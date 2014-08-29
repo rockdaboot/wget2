@@ -34,6 +34,9 @@ case $host_os in
     XTRA_CFLAGS="-Wno-attributes -fno-PIC"
 #    XTRA_LIBS=-lws2_32
     ;;
+  cygwin*)
+    XTRA_CFLAGS="-Wno-char-subscripts -fno-PIC"
+    ;;
 #  *)
 #    AC_MSG_ERROR([$host_os is not currently supported])
 #    ;;

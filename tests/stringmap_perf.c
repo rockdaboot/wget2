@@ -35,7 +35,9 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>
-#include <sys/mman.h>
+#ifdef HAVE_MMAP
+#	include <sys/mman.h>
+#endif
 #include <errno.h>
 
 #include <libmget.h>
@@ -68,11 +70,19 @@ int main(int argc, const char *const *argv)
 
 		length = st.st_size;
 
+#ifdef HAVE_MMAP
 		if (!(buf = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0))) {
 			fprintf(stderr, "Failed to mmap %s (%d)\n", argv[it], errno);
 			close(fd);
 			continue;
 		}
+#else
+		if (!(buf = xmalloc(length + 1)) || read(fd, buf, length) != (signed)length) {
+			fprintf(stderr, "Failed to read %s (%d)\n", argv[it], errno);
+			close(fd);
+			continue;
+		}
+#endif
 
 		buf[length] = 0;
 
@@ -99,7 +109,11 @@ int main(int argc, const char *const *argv)
 			}
 		}
 
+#ifdef HAVE_MMAP
 		munmap(buf, length);
+#else
+		free(buf);
+#endif
 		close(fd);
 	}
 

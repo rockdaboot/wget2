@@ -70,7 +70,7 @@ static size_t
 static char
 	tmpdir[128];
 
-static void nop(int sig G_GNUC_MGET_UNUSED)
+static void sigterm_handler(int sig G_GNUC_MGET_UNUSED)
 {
 	terminate = 1;
 }
@@ -86,7 +86,11 @@ static void *_server_thread(void *ctx)
 	int byterange, authorized;
 	time_t modified;
 
-	sigaction(SIGTERM, &(struct sigaction) { .sa_handler = nop }, NULL);
+#if defined(_WIN32) || defined(_WIN64)
+	signal(SIGTERM, sigterm_handler);
+#else
+	sigaction(SIGTERM, &(struct sigaction) { .sa_handler = sigterm_handler }, NULL);
+#endif
 
 	while (!terminate) {
 		mget_tcp_deinit(&tcp);
@@ -345,7 +349,11 @@ void mget_test_start_http_server(int first_key, ...)
 
 	snprintf(tmpdir, sizeof(tmpdir), ".test_%d", getpid());
 
+#if defined(_WIN32) || defined(_WIN64)
+	if (mkdir(tmpdir) != 0)
+#else
 	if (mkdir(tmpdir, 0755) != 0)
+#endif
 		mget_error_printf_exit(_("Failed to create tmpdir (%d)\n"), errno);
 
 	if (chdir(tmpdir) != 0)
@@ -550,6 +558,23 @@ void mget_test(int first_key, ...)
 
 	mget_error_printf("  Testing '%s'\n", cmd->data);
 	rc = system(cmd->data);
+
+#if defined(_WIN32) || defined(_WIN64)
+	if (rc) {
+		mget_error_printf_exit(_("Failed to execute command (%d)\n"), errno);
+	}/* else {
+		if ((fp = fopen("exit_code", "r"))) {
+			if (fscanf(fp, "%d", &rc) != 1)
+				mget_error_printf_exit(_("Failed to fetch exit code\n"));
+			else if (rc != expected_error_code) {
+				mget_error_printf_exit(_("Unexpected error code %d, expected %d [%s]\n"),
+					rc, expected_error_code, options);
+			fclose(fp);
+		} else
+			mget_error_printf_exit(_("Failed to execute command (%d)\n"), errno);
+	}
+	unlink("exit_code"); */
+#else
 	if (!WIFEXITED(rc)) {
 		mget_error_printf_exit(_("Unexpected error code %d, expected %d [%s]\n"), rc, expected_error_code, options);
 	}
@@ -557,6 +582,7 @@ void mget_test(int first_key, ...)
 		mget_error_printf_exit(_("Unexpected error code %d, expected %d [%s]\n"),
 			WEXITSTATUS(rc), expected_error_code, options);
 	}
+#endif
 
 	if (expected_files) {
 		for (it = 0; expected_files[it].name; it++) {
