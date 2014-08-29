@@ -135,12 +135,12 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 				// hashes for the complete file
 				mget_metalink_hash_t hash;
 
-				if (!metalink->hashes)
-					metalink->hashes = mget_vector_create(4, 4, NULL);
-
 				memset(&hash, 0, sizeof(mget_metalink_hash_t));
 				strcpy(hash.type,ctx->hash_type);
 				strcpy(hash.hash_hex,ctx->hash);
+
+				if (!metalink->hashes)
+					metalink->hashes = mget_vector_create(4, 4, NULL);
 				mget_vector_add(metalink->hashes, &hash, sizeof(mget_metalink_hash_t));
 			}
 			*ctx->hash_type = *ctx->hash = 0;
@@ -149,15 +149,15 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 		} else if (!strcasecmp(dir, "/url")) {
 			mget_metalink_mirror_t mirror;
 
-			if (!metalink->mirrors) {
-				metalink->mirrors = mget_vector_create(4, 4, NULL);
-				mget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
-			}
-
 			memset(&mirror, 0, sizeof(mget_metalink_mirror_t));
 			strcpy(mirror.location, ctx->location);
 			mirror.priority = ctx->priority;
 			mirror.iri = mget_iri_parse(value, NULL);
+
+			if (!metalink->mirrors) {
+				metalink->mirrors = mget_vector_create(4, 4, NULL);
+				mget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
+			}
 			mget_vector_add(metalink->mirrors, &mirror, sizeof(mget_metalink_mirror_t));
 
 			*ctx->location = 0;
@@ -249,12 +249,12 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 				// hashes for the complete file
 				mget_metalink_hash_t hash;
 
-				if (!metalink->hashes)
-					metalink->hashes = mget_vector_create(4, 4, NULL);
-
 				memset(&hash, 0, sizeof(mget_metalink_hash_t));
 				strcpy(hash.type,ctx->hash_type);
 				strcpy(hash.hash_hex,ctx->hash);
+
+				if (!metalink->hashes)
+					metalink->hashes = mget_vector_create(4, 4, NULL);
 				mget_vector_add(metalink->hashes, &hash, sizeof(mget_metalink_hash_t));
 			}
 			*ctx->hash_type = *ctx->hash = 0;
@@ -263,13 +263,13 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 		} else if (!strcasecmp(dir, "/resources/url")) {
 			mget_metalink_mirror_t mirror;
 
-			if (!metalink->mirrors)
-				metalink->mirrors = mget_vector_create(4, 4, NULL);
-
 			memset(&mirror, 0, sizeof(mget_metalink_mirror_t));
 			strcpy(mirror.location, ctx->location);
 			mirror.priority = ctx->priority;
 			mirror.iri = mget_iri_parse(value, NULL);
+
+			if (!metalink->mirrors)
+				metalink->mirrors = mget_vector_create(4, 4, NULL);
 			mget_vector_add(metalink->mirrors, &mirror, sizeof(mget_metalink_mirror_t));
 
 			*ctx->location = 0;
