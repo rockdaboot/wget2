@@ -670,7 +670,7 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	ret = mget_ready_2_write(sockfd, connect_timeout);
 
 	// Perform the TLS handshake
-	for (;;) {
+	while (ret > 0) {
 		ret = gnutls_handshake(session);
 		if (ret == 0 || gnutls_error_is_fatal(ret)) {
 			if (ret == 0)
@@ -685,9 +685,6 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 			// wait for readability
 			ret = mget_ready_2_read(sockfd, connect_timeout);
 		}
-
-		if (ret <= 0)
-			break;
 	}
 
 	if (_config.print_info)
@@ -805,7 +802,7 @@ void *mget_ssl_server_open(int sockfd, int connect_timeout)
 	int ret = mget_ready_2_write(sockfd, connect_timeout);
 
 	// Perform the TLS handshake
-	for (;;) {
+	while (ret > 0) {
 		ret = gnutls_handshake(session);
 		if (ret == 0 || gnutls_error_is_fatal(ret)) {
 			if (ret == 0)

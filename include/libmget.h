@@ -475,9 +475,11 @@ size_t
  */
 
 typedef struct _mget_logger_st mget_logger_t;
+typedef void (*mget_logger_func_t)(const char *buf , size_t len) G_GNUC_MGET_NONNULL_ALL;
 
 void
-	mget_logger_set_func(mget_logger_t *logger, void (*func)(const char *buf, size_t len) G_GNUC_MGET_NONNULL_ALL);
+	mget_logger_set_func(mget_logger_t *logger, mget_logger_func_t);
+//	mget_logger_set_func(mget_logger_t *logger, void (*func)(const char *buf G_GNUC_MGET_NONNULL, size_t len));
 void
 	mget_logger_set_stream(mget_logger_t *logger, FILE *fp);
 void

@@ -268,7 +268,7 @@ const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(mget_iri_t *iri)
 			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
 				p = strchr(*p == '/' ? p + 1 : p, '/');
 			}
-			if (!p) {
+			if (!p && path_buf.data) {
 				// we can't strip this many path elements, just use the filename
 				p = strrchr(path_buf.data, '/');
 				if (!p) {
@@ -364,13 +364,15 @@ static int in_pattern_list(const mget_vector_t *v, const char *url)
 		debug_printf("pattern '%s' - %s\n", pattern, url);
 
 		if (strpbrk(pattern, "*?[]")) {
-			return config.ignore_case ? !fnmatch(pattern, url, FNM_CASEFOLD) : !fnmatch(pattern, url, 0);
+			if (!fnmatch(pattern, url, config.ignore_case ? FNM_CASEFOLD : 0))
+				return 1;
 		} else if (config.ignore_case) {
-			return mget_match_tail_nocase(url, pattern);
-		} else {
-			return mget_match_tail(url, pattern);
+			if (mget_match_tail_nocase(url, pattern))
+				return 1;
+		} else if (mget_match_tail(url, pattern)) {
+			return 1;
 		}
-  }
+	}
 
   return 0;
 }
