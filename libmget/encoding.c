@@ -117,7 +117,7 @@ char *mget_charset_transcode(const char *src, const char *src_encoding, const ch
 
 int mget_str_needs_encoding(const char *s)
 {
-	while (*s > 0) s++;
+	while (*s && (*s & ~0x7f) == 0) s++;
 
 	return !!*s;
 }
