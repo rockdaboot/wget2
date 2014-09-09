@@ -986,8 +986,15 @@ typedef struct {
 		follow;
 } MGET_HTML_PARSED_RESULT;
 
+typedef struct {
+	const char *
+		name;
+	const char *
+		attribute;
+} mget_html_tag_t;
+
 MGET_HTML_PARSED_RESULT *
-	mget_html_get_urls_inline(const char *html);
+	mget_html_get_urls_inline(const char *html, mget_vector_t *additional_tags, mget_vector_t *ignore_tags);
 void
 	mget_html_free_urls_inline(MGET_HTML_PARSED_RESULT **res);
 

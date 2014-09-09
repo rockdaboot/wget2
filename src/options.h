@@ -80,7 +80,9 @@ struct config {
 		*exclude_domains;
 	mget_vector_t
 		*accept_patterns,
-		*reject_patterns;
+		*reject_patterns,
+		*follow_tags,
+		*ignore_tags;
 	mget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
 	size_t

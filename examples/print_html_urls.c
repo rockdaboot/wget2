@@ -39,7 +39,7 @@ static void html_parse_localfile(const char *fname)
 	char *data;
 
 	if ((data = mget_read_file(fname, NULL))) {
-		MGET_HTML_PARSED_RESULT *res  = mget_html_get_urls_inline(data);
+		MGET_HTML_PARSED_RESULT *res  = mget_html_get_urls_inline(data, NULL, NULL);
 
 		if (res->encoding)
 			printf("URI encoding '%s'\n", res->encoding);

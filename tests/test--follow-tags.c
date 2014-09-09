@@ -20,8 +20,7 @@
  * Testing Mget
  *
  * Changelog
- * 08.07.2013  Tim Ruehsen  created
- * 02.07.2014  Tim Ruehsen  added uppercase combinations of <a href...> (issue #21)
+ * 09.09.2014  Tim Ruehsen  created
  *
  */
 
@@ -39,9 +38,7 @@ int main(void)
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Main Page</title></head><body><p>A link to a" \
-				" <A hreF=\"http://localhost:{{port}}/secondpage.html\">second page</a>." \
-				" <a href=\"picture_a.jpeg\">Picture a</a>." \
-				" <a href=\"picture_A.jpeg\">Picture A</a>." \
+				" <a href=\"secondpage.html\">second page</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -51,38 +48,32 @@ int main(void)
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Second Page</title></head><body><p>A link to a" \
-				" <a href=\"picture_b.jpeg\">Picture b</a>." \
-				" <a href=\"picture_B.JpeG\">Picture B</a>." \
-				" <a href=\"picture_c.png\">Picture C</a>." \
+				" <a href=\"2a.jpeg\">Picture 2a</a>." \
+				" <img src=\"2b.jpeg\" data-500px=\"2c.jpeg\" data-highres=\"2d.jpeg\">" \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
 			}
 		},
-		{	.name = "/picture_a.jpeg",
+		{	.name = "/2a.jpeg",
 			.code = "200 Dontcare",
-			.body = "don't care",
+			.body = "pic 2a",
 			.headers = { "Content-Type: image/jpeg" }
 		},
-		{	.name = "/picture_A.jpeg",
+		{	.name = "/2b.jpeg",
 			.code = "200 Dontcare",
-			.body = "don't care",
+			.body = "pic 2b",
 			.headers = { "Content-Type: image/jpeg" }
 		},
-		{	.name = "/picture_b.jpeg",
+		{	.name = "/2c.jpeg",
 			.code = "200 Dontcare",
-			.body = "don't care",
+			.body = "pic 2c",
 			.headers = { "Content-Type: image/jpeg" }
 		},
-		{	.name = "/picture_B.JpeG",
+		{	.name = "/2d.jpeg",
 			.code = "200 Dontcare",
-			.body = "don't care",
+			.body = "pic 2c",
 			.headers = { "Content-Type: image/jpeg" }
-		},
-		{	.name = "/picture_c.png",
-			.code = "200 Dontcare",
-			.body = "don't care",
-			.headers = { "Content-Type: image/png" }
 		},
 	};
 
@@ -91,87 +82,41 @@ int main(void)
 		MGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 
-	// --accept using just suffixes
+	// without additional tags
 	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '.jpeg'",
+		MGET_TEST_OPTIONS, "-r -nH ",
 		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[2].name + 1, urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
+			{	NULL } },
+		0);
+
+	// --follow-tags single entry
+	mget_test(
+		MGET_TEST_OPTIONS, "-r -nH --follow-tags 'img/data-500px'",
+		MGET_TEST_REQUEST_URL, "index.html",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
 			{ urls[2].name + 1, urls[2].body },
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
 			{	NULL } },
 		0);
 
-	// --reject using just suffixes
+	// --follow-tags single entry without attribute
 	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '.jpeg'",
+		MGET_TEST_OPTIONS, "-r -nH --follow-tags 'img'",
 		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
-			{ urls[5].name + 1, urls[5].body },
-			{ urls[6].name + 1, urls[6].body },
-			{	NULL } },
-		0);
-
-	// --accept using just suffixes and ignore case
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '.jpeg' --ignore-case",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
-			{ urls[2].name + 1, urls[2].body },
-			{ urls[3].name + 1, urls[3].body },
-			{ urls[4].name + 1, urls[4].body },
-			{ urls[5].name + 1, urls[5].body },
-			{	NULL } },
-		0);
-
-	// --reject using just suffixes and ignore case
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '.jpeg' --ignore-case",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body },
-			{ urls[1].name + 1, urls[1].body },
-			{ urls[6].name + 1, urls[6].body },
-			{	NULL } },
-		0);
-
-	// --accept using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '*.jpeg'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
-			{ urls[2].name + 1, urls[2].body },
-			{ urls[3].name + 1, urls[3].body },
-			{ urls[4].name + 1, urls[4].body },
-			{	NULL } },
-		0);
-
-	// --reject using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '*.jpeg'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body },
-			{ urls[1].name + 1, urls[1].body },
-			{ urls[5].name + 1, urls[5].body },
-			{ urls[6].name + 1, urls[6].body },
-			{	NULL } },
-		0);
-
-	// --accept using wildcards and ignore case
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '*.jpeg' --ignore-case",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[2].name + 1, urls[2].body },
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
@@ -179,90 +124,90 @@ int main(void)
 			{	NULL } },
 		0);
 
-	// --reject using wildcards and ignore case
+	// --follow-tags two entries
 	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '*.jpeg' --ignore-case",
+		MGET_TEST_OPTIONS, "-r -nH --follow-tags 'img/data-500px,img/data-highres'",
 		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
-			{ urls[6].name + 1, urls[6].body },
-			{	NULL } },
-		0);
-
-	// --accept using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '*picture*'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[2].name + 1, urls[2].body },
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
 			{ urls[5].name + 1, urls[5].body },
-			{ urls[6].name + 1, urls[6].body },
 			{	NULL } },
 		0);
 
-	// --reject using wildcards
+	// --follow-tags two entries
 	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '*picture*'",
+		MGET_TEST_OPTIONS, "-r -nH --follow-tags 'img/data-highres,img/data-500px'",
 		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
-			{	NULL } },
-		0);
-
-	// --accept using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '*picture_[ab]*'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[2].name + 1, urls[2].body },
-			{ urls[4].name + 1, urls[4].body },
-			{	NULL } },
-		0);
-
-	// --reject using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '*picture_[ab]*'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body },
-			{ urls[1].name + 1, urls[1].body },
-			{ urls[3].name + 1, urls[3].body },
-			{ urls[5].name + 1, urls[5].body },
-			{ urls[6].name + 1, urls[6].body },
-			{	NULL } },
-		0);
-
-	// --accept using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '*picture_a*' --accept '*picture_c*'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
-			{ urls[2].name + 1, urls[2].body },
-			{ urls[6].name + 1, urls[6].body },
-			{	NULL } },
-		0);
-
-	// --reject using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '*picture_a*' --reject '*picture_c*'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body },
-			{ urls[1].name + 1, urls[1].body },
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
 			{ urls[5].name + 1, urls[5].body },
+			{	NULL } },
+		0);
+
+	// --ignore-tags single entry
+	mget_test(
+		MGET_TEST_OPTIONS, "-r -nH --ignore-tags 'img/src'",
+		MGET_TEST_REQUEST_URL, "index.html",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[2].name + 1, urls[2].body },
+			{	NULL } },
+		0);
+
+	// --ignore-tags single entry without attribute
+	mget_test(
+		MGET_TEST_OPTIONS, "-r -nH --ignore-tags 'img'",
+		MGET_TEST_REQUEST_URL, "index.html",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[2].name + 1, urls[2].body },
+			{	NULL } },
+		0);
+
+	// --ignore-tags two entries
+	mget_test(
+		MGET_TEST_OPTIONS, "-r -nH --ignore-tags 'img/src,a/href'",
+		MGET_TEST_REQUEST_URL, "index.html",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{	NULL } },
+		0);
+
+	// --ignore-tags two entries
+	mget_test(
+		MGET_TEST_OPTIONS, "-r -nH --ignore-tags 'a/href,img/src'",
+		MGET_TEST_REQUEST_URL, "index.html",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{	NULL } },
+		0);
+
+	// --ignore-tags and --follow-tags combined
+	mget_test(
+		MGET_TEST_OPTIONS, "-r -nH --ignore-tags 'img/src' --follow-tags='img/data-500px'",
+		MGET_TEST_REQUEST_URL, "index.html",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[2].name + 1, urls[2].body },
+			{ urls[4].name + 1, urls[4].body },
 			{	NULL } },
 		0);
 

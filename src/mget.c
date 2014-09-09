@@ -1007,7 +1007,7 @@ void *downloader_thread(void *p)
 				job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
 		}
 
-		info_printf("head_first=%d deferred=%d iri=%s\n", job->head_first, !!job->deferred, job->iri->uri);
+//		info_printf("head_first=%d deferred=%d iri=%s\n", job->head_first, !!job->deferred, job->iri->uri);
 		if ((config.spider || config.chunk_size || job->head_first) && !job->deferred) {
 			// In spider mode, we first make a HEAD request.
 			// If the Content-Type header gives us not a parsable type, we are done.
@@ -1345,7 +1345,7 @@ static unsigned int G_GNUC_MGET_PURE hash_url(const char *url)
 
 void html_parse(JOB *job, int level, const char *html, const char *encoding, mget_iri_t *base)
 {
-	MGET_HTML_PARSED_RESULT *parsed  = mget_html_get_urls_inline(html);
+	MGET_HTML_PARSED_RESULT *parsed  = mget_html_get_urls_inline(html, config.follow_tags, config.ignore_tags);
 	mget_iri_t *allocated_base = NULL;
 	const char *reason;
 	mget_buffer_t buf;

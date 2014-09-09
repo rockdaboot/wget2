@@ -39,10 +39,14 @@
 typedef struct {
 	MGET_HTML_PARSED_RESULT
 		result;
+	mget_vector_t *
+		additional_tags;
+	mget_vector_t *
+		ignore_tags;
 	char
 		found_robots,
 		found_content_type;
-} _HTML_CONTEXT;
+} _html_context_t;
 
 // see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
 static const char maybe[256] = {
@@ -75,9 +79,9 @@ static const char attrs[][12] = {
 };
 
 // Callback function, called from HTML parser for each URI found.
-static void _html_get_url(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
+static void _html_get_url(void *context, int flags, const char *tag, const char *attr, const char *val, size_t len, size_t pos G_GNUC_MGET_UNUSED)
 {
-	_HTML_CONTEXT *ctx = context;
+	_html_context_t *ctx = context;
 
 	// Read the encoding from META tag, e.g. from
 	//   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">.
@@ -85,16 +89,16 @@ static void _html_get_url(void *context, int flags, const char *dir, const char 
 	//
 	// Also ,we are interested in ROBOTS e.g.
 	//   <META name="ROBOTS" content="NOINDEX, NOFOLLOW">
-	if ((flags & XML_FLG_BEGIN) && (*dir|0x20) == 'm' && !strcasecmp(dir, "meta")) {
+	if ((flags & XML_FLG_BEGIN) && (*tag|0x20) == 'm' && !strcasecmp(tag, "meta")) {
 		ctx->found_robots = ctx->found_content_type = 0;
 	}
 
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
-	MGET_HTML_PARSED_RESULT *res = &ctx->result;
+		MGET_HTML_PARSED_RESULT *res = &ctx->result;
 
 //		info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
 
-		if ((*dir|0x20) == 'm' && !strcasecmp(dir, "meta")) {
+		if ((*tag|0x20) == 'm' && !strcasecmp(tag, "meta")) {
 			if (!ctx->found_robots) {
 				if (!strcasecmp(attr, "name") && !strncasecmp(val, "robots", len)) {
 					ctx->found_robots = 1;
@@ -145,15 +149,31 @@ static void _html_get_url(void *context, int flags, const char *dir, const char 
 			return;
 		}
 
-		// shortcut to avoid unneeded calls to bsearch()
-		if (!maybe[(unsigned char)*attr|0x20] || !attr[1] || !attr[2])
-			return;
+		if (ctx->ignore_tags) {
+			if (mget_vector_find(ctx->ignore_tags, &(mget_html_tag_t){ .name = tag, .attribute = NULL } ) != -1
+				|| mget_vector_find(ctx->ignore_tags, &(mget_html_tag_t){ .name = tag, .attribute = attr } ) != -1)
+				return;
+		}
 
-		if (bsearch(attr, attrs, countof(attrs), sizeof(attrs[0]), (int(*)(const void *, const void *))strcasecmp)) {
+		// shortcut to avoid unneeded calls to bsearch()
+		int found = 0;
+
+		// search the static list for a tag/attr match
+		if (maybe[(unsigned char)*attr|0x20] && attr[1] && attr[2])
+			found = bsearch(attr, attrs, countof(attrs), sizeof(attrs[0]), (int(*)(const void *, const void *))strcasecmp) != NULL;
+
+		// search the dynamic list for a tag/attr match
+		if (!found && ctx->additional_tags) {
+			if (mget_vector_find(ctx->additional_tags, &(mget_html_tag_t){ .name = tag, .attribute = NULL } ) != -1
+				|| mget_vector_find(ctx->additional_tags, &(mget_html_tag_t){ .name = tag, .attribute = attr } ) != -1)
+				found = 1;
+		}
+
+		if (found) {
 			for (;len && isspace(*val); val++, len--); // skip leading spaces
 			for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces
 
-			if ((*dir|0x20) == 'd' && !strcasecmp(dir,"base")) {
+			if ((*tag|0x20) == 'b' && !strcasecmp(tag,"base")) {
 				// found a <BASE href="...">
 				res->base.p = val;
 				res->base.len = len;
@@ -165,7 +185,7 @@ static void _html_get_url(void *context, int flags, const char *dir, const char 
 
 			MGET_HTML_PARSED_URL url;
 			strlcpy(url.attr, attr, sizeof(url.attr));
-			strlcpy(url.dir, dir, sizeof(url.dir));
+			strlcpy(url.dir, tag, sizeof(url.dir));
 			url.url.p = val;
 			url.url.len = len;
 			mget_vector_add(res->uris, &url, sizeof(url));
@@ -203,9 +223,13 @@ void mget_html_free_urls_inline (MGET_HTML_PARSED_RESULT **res)
 	}
 }
 
-MGET_HTML_PARSED_RESULT *mget_html_get_urls_inline(const char *html)
+MGET_HTML_PARSED_RESULT *mget_html_get_urls_inline(const char *html, mget_vector_t *additional_tags, mget_vector_t *ignore_tags)
 {
-	_HTML_CONTEXT context = { .result.follow = 1 };
+	_html_context_t context = {
+		.result.follow = 1,
+		.additional_tags = additional_tags,
+		.ignore_tags = ignore_tags
+	};
 
 //	context.result.uris = mget_vector_create(32, -2, NULL);
 	mget_html_parse_buffer(html, _html_get_url, &context, HTML_HINT_REMOVE_EMPTY_CONTENT);

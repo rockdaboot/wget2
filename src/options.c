@@ -160,6 +160,8 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"       --robots           Respect robots.txt standard for recursive downloads. (default: on)\n"
 		"       --restrict-file-names  unix, windows, nocontrol, ascii, lowercase, uppercase, none\n"
 		"  -m   --mirror           Turn on mirroring options -r -N -l inf\n"
+		"       --follow-tags      Scan additional tag/attributes for URLs, e.g. --follow-tags=\"img/data-500px,img/data-hires\n"
+		"       --ignore-tags      Ignore tag/attributes for URL scanning, e.g. --ignore-tags=\"img,a/href\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -300,7 +302,7 @@ static int parse_stringlist(option_t opt, G_GNUC_MGET_UNUSED const char *const *
 {
 	mget_vector_t *v = *((mget_vector_t **)opt->var);
 
-	if (val) {
+	if (val && *val) {
 		const char *s, *p;
 
 		if (!v)
@@ -312,6 +314,77 @@ static int parse_stringlist(option_t opt, G_GNUC_MGET_UNUSED const char *const *
 		}
 		if (*s)
 			mget_vector_add_noalloc(v, strdup(s));
+	} else {
+		mget_vector_free(&v);
+	}
+
+	return 0;
+}
+
+static void _free_tag(mget_html_tag_t *tag)
+{
+	if (tag) {
+		xfree(tag->attribute);
+		xfree(tag->name);
+	}
+}
+
+static void G_GNUC_MGET_NONNULL_ALL _add_tag(mget_vector_t *v, const char *begin, const char *end)
+{
+	mget_html_tag_t tag;
+	const char *attribute;
+
+	if ((attribute = memchr(begin, '/', end - begin))) {
+		tag.name = strndup(begin, attribute - begin);
+		tag.attribute = strndup(attribute + 1, (end - begin) - (attribute - begin) - 1);
+	} else {
+		tag.name = strndup(begin, end - begin);
+		tag.attribute = NULL;
+	}
+
+	if (mget_vector_find(v, &tag) == -1)
+		mget_vector_insert_sorted(v, &tag, sizeof(tag));
+	else
+		_free_tag(&tag); // avoid double entries
+}
+
+static int G_GNUC_MGET_NONNULL_ALL _compare_tag(const mget_html_tag_t *t1, const mget_html_tag_t *t2)
+{
+	int n;
+
+	if (!(n = strcasecmp(t1->name, t2->name))) {
+		if (!t1->attribute) {
+			if (!t2->attribute)
+				n = 0;
+			else
+				n = -1;
+		} else if (!t2->attribute) {
+			n = 1;
+		} else
+			n = strcasecmp(t1->attribute, t2->attribute);
+	}
+
+	return n;
+}
+
+static int parse_taglist(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+{
+	mget_vector_t *v = *((mget_vector_t **)opt->var);
+
+	if (val && *val) {
+		const char *s, *p;
+
+		if (!v) {
+			v = *((mget_vector_t **)opt->var) = mget_vector_create(8, -2, (int(*)(const void *, const void *))_compare_tag);
+			mget_vector_set_destructor(v, (void(*)(void *))_free_tag);
+		}
+
+		for (s = val; (p = strchr(s, ',')); s = p + 1) {
+			if (p != s)
+				_add_tag(v, s, p);
+		}
+		if (*s)
+			_add_tag(v, s, s + strlen(s));
 	} else {
 		mget_vector_free(&v);
 	}
@@ -548,6 +621,7 @@ static const struct option options[] = {
 	{ "egd-file", &config.egd_file, parse_string, 1, 0 },
 	{ "exclude-domains", &config.exclude_domains, parse_stringset, 1, 0 },
 	{ "execute", NULL, parse_execute, 1, 'e' },
+	{ "follow-tags", &config.follow_tags, parse_taglist, 1, 0 },
 	{ "force-atom", &config.force_atom, parse_bool, 0, 0 },
 	{ "force-css", &config.force_css, parse_bool, 0, 0 },
 	{ "force-directories", &config.force_directories, parse_bool, 0, 'x' },
@@ -567,6 +641,7 @@ static const struct option options[] = {
 	{ "https-only", &config.https_only, parse_bool, 0, 0 },
 	{ "https-proxy", &config.https_proxy, parse_string, 1, 0 },
 	{ "ignore-case", &config.ignore_case, parse_bool, 0, 0 },
+	{ "ignore-tags", &config.ignore_tags, parse_taglist, 1, 0 },
 	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4' },
 	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6' },
 	{ "input-encoding", &config.input_encoding, parse_string, 1, 0 },
@@ -1278,6 +1353,8 @@ void deinit(void)
 
 	mget_stringmap_free(&config.domains);
 	mget_stringmap_free(&config.exclude_domains);
+	mget_vector_free(&config.follow_tags);
+	mget_vector_free(&config.ignore_tags);
 
 	mget_http_set_http_proxy(NULL, NULL);
 	mget_http_set_https_proxy(NULL, NULL);
