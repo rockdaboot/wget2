@@ -80,6 +80,11 @@ void blacklist_print(void)
 	mget_thread_mutex_unlock(&mutex);
 }
 
+int blacklist_size(void)
+{
+	return mget_hashmap_size(blacklist);
+}
+
 static void _free_entry(mget_iri_t *iri, G_GNUC_MGET_UNUSED void *value)
 {
 	mget_iri_free_content(iri);

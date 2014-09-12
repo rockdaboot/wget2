@@ -43,6 +43,8 @@
 
 static mget_list_t
 	*queue;
+static int
+	qsize;
 
 void job_free(JOB *job)
 {
@@ -301,6 +303,7 @@ JOB *queue_add_job(JOB *job)
 
 		mget_thread_mutex_lock(&mutex);
 		jobp = mget_list_append(&queue, job, sizeof(JOB));
+		qsize++;
 		mget_thread_mutex_unlock(&mutex);
 
 		debug_printf("queue_add_job %p %s\n", (void *)jobp, job->iri->uri);
@@ -335,6 +338,7 @@ void queue_del(JOB *job)
 
 		mget_thread_mutex_lock(&mutex);
 		mget_list_remove(&queue, job);
+		qsize--;
 		mget_thread_mutex_unlock(&mutex);
 	}
 }
@@ -408,6 +412,7 @@ void queue_free(void)
 	mget_thread_mutex_lock(&mutex);
 	mget_list_browse(queue, (int(*)(void *, void *))queue_free_func, NULL);
 	mget_list_free(&queue);
+	qsize = 0;
 	mget_thread_mutex_unlock(&mutex);
 }
 
@@ -422,6 +427,11 @@ void queue_print(void)
 	mget_thread_mutex_lock(&mutex);
 	mget_list_browse(queue, (int(*)(void *, void *))queue_print_func, NULL);
 	mget_thread_mutex_unlock(&mutex);
+}
+
+int queue_size(void)
+{
+	return qsize;
 }
 
 JOB *job_init(JOB *job, mget_iri_t *iri)

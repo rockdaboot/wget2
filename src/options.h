@@ -44,6 +44,7 @@ struct config {
 	mget_iri_t
 		*base;
 	const char
+		*progress,
 		*gnutls_options,
 		*username,
 		*password,

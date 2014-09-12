@@ -141,7 +141,8 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"  -p  --page-requisites   Download all necessary files to display a HTML page\n"
 		"      --parent            Ascend above parent directory. (default: on)\n"
 		"      --trust-server-names  On redirection use the server's filename. (default: off)\n"
-		"      --chunk-size        Download large files in multithreaded chunks. (default: 0 (=off))\n");
+		"      --chunk-size        Download large files in multithreaded chunks. (default: 0 (=off))\n"
+		"      --progress          Type of progress bar (bar, dot, none). (default: none)\n");
 	puts(
 		"                          Example: mget --chunk-size=1M\n"
 		"      --local-encoding    Character encoding of environment and filenames.\n"
@@ -664,6 +665,7 @@ static const struct option options[] = {
 	{ "prefer-family", &config.preferred_family, parse_prefer_family, 1, 0 },
 	{ "private-key", &config.private_key, parse_string, 1, 0 },
 	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0 },
+	{ "progress", &config.progress, parse_string, 1, 0 },
 	{ "protocol-directories", &config.protocol_directories, parse_bool, 0, 0 },
 	{ "quiet", &config.quiet, parse_bool, 0, 'q' },
 	{ "quota", &config.quota, parse_numbytes, 1, 'Q' },

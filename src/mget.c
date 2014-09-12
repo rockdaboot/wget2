@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2012 Tim Ruehsen
+ * Copyright(c) 2012-2014 Tim Ruehsen
  *
  * This file is part of MGet.
  *
@@ -53,6 +53,7 @@
 #include "options.h"
 #include "blacklist.h"
 #include "host.h"
+#include "bar.h"
 
 #if defined(HAVE_FNMATCH_H) && defined(HAVE_FNMATCH)
 #	include <fnmatch.h>
@@ -857,12 +858,17 @@ int main(int argc, const char *const *argv)
 		}
 	}
 
+	if (config.progress) {
+		mget_logger_set_stream(mget_get_logger(MGET_LOGGER_INFO), NULL);
+		bar_init();
+	}
+
 	downloaders = xcalloc(config.num_threads, sizeof(DOWNLOADER));
 
 	for (n = 0; n < config.num_threads; n++) {
 		downloaders[n].id = n;
 
-		// init thread attributes
+		// start worker threads (I call them 'downloaders')
 		if ((rc = mget_thread_start(&downloaders[n].tid, downloader_thread, &downloaders[n], 0)) != 0) {
 			error_printf(_("Failed to start downloader, error %d\n"), rc);
 		}
@@ -875,6 +881,9 @@ int main(int argc, const char *const *argv)
 			break;
 		}
 
+		if (config.progress)
+			bar_printf(config.num_threads, "Files: %d/%d  Bytes: %llu  Errors: %d          ", blacklist_size() - queue_size() - 1, blacklist_size(), quota, 0);
+
 		if (config.quota && quota >= config.quota) {
 			info_printf(_("Quota of %llu bytes reached - stopping.\n"), config.quota);
 			break;
@@ -885,7 +894,7 @@ int main(int argc, const char *const *argv)
 	}
 
 	// stop downloaders
-	terminate=1;
+	terminate = 1;
 	mget_thread_cond_signal(&worker_cond);
 	mget_thread_mutex_unlock(&main_mutex);
 
@@ -923,6 +932,7 @@ int main(int argc, const char *const *argv)
 	blacklist_free();
 	hosts_free();
 	xfree(downloaders);
+	bar_deinit();
 	mget_vector_clear_nofree(parents);
 	mget_vector_free(&parents);
 	mget_hashmap_free(&known_urls);
