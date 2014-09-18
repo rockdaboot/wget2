@@ -138,6 +138,9 @@ void mget_bar_update(const mget_bar_t *bar, int slotpos, int max, int cur)
 	double ratio = max ? cur / (double) max : 0;
 	int cols = bar->max_width * ratio;
 
+	if (cols > bar->max_width)
+		cols = bar->max_width;
+
 	slot->max = max;
 
 	if (slot->cols != cols || (int)(slot->ratio * 100) != (int)(ratio * 100) || slot->first) {
@@ -145,26 +148,22 @@ void mget_bar_update(const mget_bar_t *bar, int slotpos, int max, int cur)
 		slot->ratio = ratio;
 		slot->first = 0;
 
-		printf("\033[s\033[%dA", bar->nslots - slotpos);
-		printf("[%d] %3d%% [%.*s%.*s]", slotpos, (int)(ratio * 100), cols, bar->filled, bar->max_width - cols, bar->spaces);
+		if (cols <= 0)
+			cols = 1;
+
+//		printf("col=%d bar->max_width=%d\n",cols,bar->max_width);
+		printf("\033[s\033[%dA\033[1G", bar->nslots - slotpos);
+		printf("%3d%% [%.*s>%.*s]", (int)(ratio * 100), cols - 1, bar->filled, bar->max_width - cols, bar->spaces);
 		printf("\033[u");
 		fflush(stdout);
 	}
 }
 
-/*
-bar_update_cb(bar, 5, &context, print_sum);
-static void bar_update_cb(const bar_t *bar, int slotpos, void *context, const char * (*func)(void *context))
+void mget_bar_print(mget_bar_t *bar, int slotpos, const char *s)
 {
-	const char *text = func(context);
-
-	if (text) {
-		printf("\033[s\033[%dA", bar->nslots - slotpos);
-		puts(text);
-		puts("\033[u");
-	}
+	printf("\033[s\033[%dA\033[6G[%-*.*s]\033[u", bar->nslots - slotpos, bar->max_width, bar->max_width, s);
+	fflush(stdout);
 }
-*/
 
 ssize_t
 	mget_bar_vprintf(mget_bar_t *bar, int slotpos, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(3,0) G_GNUC_MGET_NONNULL_ALL;
@@ -173,10 +172,10 @@ ssize_t
 
 ssize_t mget_bar_vprintf(mget_bar_t *bar, int slotpos, const char *fmt, va_list args)
 {
-	printf("\033[s\033[%dA", bar->nslots - slotpos);
-	ssize_t len = vprintf(fmt, args);
-	printf("\033[u");
-	fflush(stdout);
+	char text[bar->max_width + 1];
+
+	ssize_t len = vsnprintf(text, sizeof(text), fmt, args);
+	mget_bar_print(bar, slotpos, text);
 
 	return len;
 }
@@ -190,13 +189,6 @@ ssize_t mget_bar_printf(mget_bar_t *bar, int slotpos, const char *fmt, ...)
 	va_end(args);
 }
 
-void mget_bar_print(mget_bar_t *bar, int slotpos, const char *s)
-{
-	printf("\033[s\033[%dA%s\033[u", bar->nslots - slotpos, s);
-//	mget_info_printf("\033[s\033[%dA%s\033[u", bar->nslots - slotpos, s);
-	fflush(mget_logger_get_stream(mget_get_logger(MGET_LOGGER_INFO)));
-}
-
 static mget_bar_t
 	*bar;
 static mget_thread_mutex_t
@@ -206,8 +198,8 @@ void bar_init(void)
 {
 	char lf[config.num_threads + 1];
 
-	memset(lf, '\n', config.num_threads);
-	puts(lf);
+	memset(lf, '\n', config.num_threads + 1);
+	fwrite(lf, 1, config.num_threads + 1, stdout);
 
 	bar = mget_bar_init(NULL, config.num_threads + 1, 70);
 	
@@ -237,13 +229,25 @@ void bar_print(int slotpos, const char *s)
 	mget_thread_mutex_unlock(&mutex);
 }
 
+void bar_vprintf(int slotpos, const char *fmt, va_list args)
+{
+	mget_thread_mutex_lock(&mutex);
+	mget_bar_vprintf(bar, slotpos, fmt, args);
+	mget_thread_mutex_unlock(&mutex);
+}
+
 void bar_printf(int slotpos, const char *fmt, ...)
 {
 	va_list args;
 
 	va_start(args, fmt);
-	mget_thread_mutex_lock(&mutex);
-	mget_bar_vprintf(bar, slotpos, fmt, args);
-	mget_thread_mutex_unlock(&mutex);
+	bar_vprintf(slotpos, fmt, args);
 	va_end(args);
+}
+
+void bar_update(int slotpos, int max, int cur)
+{
+	mget_thread_mutex_lock(&mutex);
+	mget_bar_update(bar, slotpos, max, cur);
+	mget_thread_mutex_unlock(&mutex);
 }

@@ -1350,6 +1350,7 @@ void deinit(void)
 	xfree(config.password);
 	xfree(config.http_username);
 	xfree(config.http_password);
+	xfree(config.progress);
 
 	mget_iri_free(&config.base);
 

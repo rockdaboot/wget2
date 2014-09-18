@@ -153,6 +153,16 @@ else
   TESTS_INFO="Valgrind testing not enabled"
 fi
 
+# check for gcc's atomic read-add-write functionality
+AC_MSG_CHECKING([for __sync_fetch_and_add])
+AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([
+    int main(void) { return __sync_fetch_and_add((int *)0, 0); }
+   ])],
+   [AC_DEFINE([WITH_SYNC_FETCH_AND_ADD], [1], [use __sync_fetch_and_add]) AC_MSG_RESULT([yes])],
+   [AC_MSG_RESULT([no])]
+)
+
 #AC_ARG_WITH(gnutls, AS_HELP_STRING([--with-gnutls[=PATH]], [compile with SSL support]), , with_gnutls="no")
 #if test $with_gnutls != "no"
 #then

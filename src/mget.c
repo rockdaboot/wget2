@@ -340,6 +340,9 @@ const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(mget_iri_t *iri)
 // we have to modify and check the quota in one (protected) step.
 static long long quota_modify_read(size_t nbytes)
 {
+#ifdef WITH_SYNC_FETCH_AND_ADD
+	return __sync_fetch_and_add(&quota, nbytes);
+#else
 	static mget_thread_mutex_t
 		mutex = MGET_THREAD_MUTEX_INITIALIZER;
 	size_t old_quota;
@@ -350,6 +353,7 @@ static long long quota_modify_read(size_t nbytes)
 	mget_thread_mutex_unlock(&mutex);
 
 	return old_quota;
+#endif
 }
 
 static mget_vector_t
@@ -882,7 +886,7 @@ int main(int argc, const char *const *argv)
 		}
 
 		if (config.progress)
-			bar_printf(config.num_threads, "Files: %d/%d  Bytes: %llu  Errors: %d          ", blacklist_size() - queue_size() - 1, blacklist_size(), quota, 0);
+			bar_printf(config.num_threads, "Files: %d/%d  Bytes: %llu", blacklist_size() - queue_size(), blacklist_size(), quota);
 
 		if (config.quota && quota >= config.quota) {
 			info_printf(_("Quota of %llu bytes reached - stopping.\n"), config.quota);
@@ -908,6 +912,9 @@ int main(int argc, const char *const *argv)
 		if ((rc = mget_thread_join(downloaders[n].tid)) != 0)
 			error_printf(_("Failed to wait for downloader #%d (%d %d)\n"), n, rc, errno);
 	}
+
+	if (config.progress)
+		bar_printf(config.num_threads, "Files: %d/%d  Bytes: %llu", blacklist_size() - queue_size(), blacklist_size(), quota);
 
 	if (config.save_cookies)
 		mget_cookie_db_save(config.cookie_db, config.save_cookies, config.keep_session_cookies);
@@ -992,6 +999,10 @@ void *downloader_thread(void *p)
 				do_wait = 1;
 		}
 
+//		if (config.progress)
+//			bar_print(downloader->id, "Send header...");
+//			bar_update(downloader->id, 0, 0); // update to empty bar
+
 		if ((part = downloader->part)) {
 			// download metalink part
 			if (download_part(downloader) == 0) {
@@ -1000,7 +1011,10 @@ void *downloader_thread(void *p)
 				mget_thread_cond_signal(&main_cond);
 			} else {
 				mget_thread_mutex_lock(&main_mutex);
+				if (config.progress)
+					mget_thread_cond_signal(&main_cond); // needed for progress bar updates
 			}
+
 			continue;
 		}
 
@@ -1106,6 +1120,9 @@ void *downloader_thread(void *p)
 //		if (job->local_filename)
 //			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->local_filename);
 //		else
+		if (config.progress)
+			bar_print(downloader->id, job->iri->uri);
+		else
 			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->iri->uri);
 
 		for (int tries = 0; !resp && tries < config.tries; tries++) {
@@ -1162,8 +1179,8 @@ void *downloader_thread(void *p)
 			for (it = 0; it < mget_vector_size(resp->links); it++) {
 				mget_http_link_t *link = mget_vector_get(resp->links, it);
 				if (link->rel == link_rel_describedby) {
-					if (!strcasecmp(link->type, "application/metalink4+xml") ||
-						 !strcasecmp(link->type, "application/metalink+xml"))
+					if (link->type && (!strcasecmp(link->type, "application/metalink4+xml") ||
+						 !strcasecmp(link->type, "application/metalink+xml")))
 					{
 						// found a link to a metalink4 description
 						metalink = link;
@@ -1840,9 +1857,14 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 
 	// - optimistic approach expects data being written without error
 	// - to be Wget compatible: quota_modify_read() returns old quota value
-	if (config.quota && quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length) >= config.quota) {
-		debug_printf("not saved '%s' (quota of %lld reached)\n", fname, config.quota);
-		return;
+	if (config.quota) {
+		if (quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length) >= config.quota) {
+			debug_printf("not saved '%s' (quota of %lld reached)\n", fname, config.quota);
+			return;
+		}
+	} else if (config.progress) {
+		// just update number bytes read (body only) for display purposes
+		quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length);
 	}
 
 	if (fname == config.output_document) {
@@ -2016,6 +2038,11 @@ int download_part(DOWNLOADER *downloader)
 			if (resp) {
 				mget_cookie_store_cookies(config.cookie_db, resp->cookies); // sanitize and store cookies
 
+				if (config.progress) {
+					// just update number bytes read (body only) for display purposes
+					quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length);
+				}
+
 				if (resp->code != 200 && resp->code != 206) {
 					print_status(downloader, "part %d download error %d\n", part->id, resp->code);
 				} else if (!resp->body) {
@@ -2069,12 +2096,22 @@ int download_part(DOWNLOADER *downloader)
 		if (all_done) {
 //		if (all_done && mget_vector_size(job->metalink->hashes) > 0) {
 			// check integrity of complete file
-			print_status(downloader, "%s checking...\n", job->local_filename);
+			if (config.progress)
+				bar_print(downloader->id, "Checksumming...");
+			else
+				print_status(downloader, "%s checking...\n", job->local_filename);
 			if (job_validate_file(job)) {
-				debug_printf("checksum ok\n");
+				if (config.progress)
+					bar_print(downloader->id, "Checksum OK");
+				else
+					debug_printf("checksum ok\n");
 				ret = 0;
-			} else
-				debug_printf("checksum failed\n");
+			} else {
+				if (config.progress)
+					bar_print(downloader->id, "Checksum FAILED");
+				else
+					debug_printf("checksum failed\n");
+			}
 		}
 	} else {
 		print_status(downloader, "part %d failed\n", part->id);
@@ -2082,6 +2119,32 @@ int download_part(DOWNLOADER *downloader)
 	}
 
 	return ret;
+}
+
+// the following is just needed for the progress bar
+struct _body_callback_context {
+	DOWNLOADER *downloader;
+	mget_buffer_t *body;
+	size_t expected_length;
+};
+static int _get_header(void *context, mget_http_response_t *resp)
+{
+	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
+
+	// initialize the expected max. number of bytes for bar display
+	bar_update(ctx->downloader->id, ctx->expected_length = resp->content_length, 0);
+
+	return 0;
+}
+static int _get_body(void *context, const char *data, size_t length)
+{
+	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
+
+	mget_buffer_memcat(ctx->body, data, length); // append new data to body
+
+	bar_update(ctx->downloader->id, ctx->expected_length, ctx->body->length);
+
+	return 0;
 }
 
 mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *downloader, int method_get)
@@ -2248,7 +2311,22 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 			}
 
 			if (mget_http_send_request(conn, req) == 0) {
-				resp = mget_http_get_response(conn, NULL, req, config.save_headers || config.server_response ? MGET_HTTP_RESPONSE_KEEPHEADER : 0);
+				if (config.progress) {
+					mget_buffer_t *body = mget_buffer_alloc(102400);
+					struct _body_callback_context context = { .downloader = downloader, .body = body };
+
+					resp = mget_http_get_response_func(conn, _get_header, _get_body, &context, config.save_headers || config.server_response ? MGET_HTTP_RESPONSE_KEEPHEADER : 0);
+
+					if (resp) {
+						resp->body = body;
+						if (!strcasecmp(req->method, "GET"))
+							resp->content_length = body->length;
+					} else {
+						mget_buffer_free(&body);
+					}
+
+				} else
+					resp = mget_http_get_response(conn, NULL, req, config.save_headers || config.server_response ? MGET_HTTP_RESPONSE_KEEPHEADER : 0);
 			}
 
 			mget_http_free_request(&req);

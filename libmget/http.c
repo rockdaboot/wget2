@@ -1528,7 +1528,7 @@ mget_http_response_t *mget_http_get_response_cb(
 	unsigned int flags,
 	int (*header_callback)(void *context, mget_http_response_t *resp),
 	int (*body_callback)(void *context, const char *data, size_t length),
-	void *context) // given to body_callback
+	void *context) // given to body_callback and header_callback
 {
 	size_t bufsize, body_len = 0, body_size = 0;
 	ssize_t nbytes, nread = 0;
@@ -1787,7 +1787,7 @@ static int _get_body(void *userdata, const char *data, size_t length)
 
 mget_http_response_t *mget_http_get_response(
 	mget_http_connection_t *conn,
-	int (*header_callback)(void *, mget_http_response_t *),
+	int (*header_callback)(void *context, mget_http_response_t *resp),
 	mget_http_request_t *req,
 	unsigned int flags)
 {

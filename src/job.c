@@ -62,7 +62,6 @@ void job_create_parts(JOB *job)
 	PART part;
 	mget_metalink_t *metalink;
 	ssize_t fsize;
-	int it;
 
 	if (!job || !(metalink = job->metalink))
 		return;
@@ -77,7 +76,7 @@ void job_create_parts(JOB *job)
 
 	fsize = metalink->size;
 
-	for (it = 0; it < mget_vector_size(metalink->pieces); it++) {
+	for (int it = 0; it < mget_vector_size(metalink->pieces); it++) {
 		mget_metalink_piece_t *piece = mget_vector_get(metalink->pieces, it);
 
 		if (fsize >= piece->length) {
@@ -192,7 +191,7 @@ int job_validate_file(JOB *job)
 	PART part;
 	mget_metalink_t *metalink;
 	off_t fsize;
-	int fd, rc = -1, it;
+	int fd, rc = -1;
 	struct stat st;
 
 	if (!job || !(metalink = job->metalink))
@@ -225,7 +224,7 @@ int job_validate_file(JOB *job)
 	if ((fd = open(metalink->name, O_RDONLY)) != -1) {
 		// file exists, check which piece is invalid and requeue it
 
-		for (it = 0; errno != EINTR && it < mget_vector_size(metalink->hashes); it++) {
+		for (int it = 0; errno != EINTR && it < mget_vector_size(metalink->hashes); it++) {
 			mget_metalink_hash_t *hash = mget_vector_get(metalink->hashes, it);
 
 			if ((rc = check_file_fd(hash, fd)) == -1)
@@ -248,7 +247,7 @@ int job_validate_file(JOB *job)
 //		if (vec_size(metalink->pieces) < 1)
 //			return;
 
-		for (it = 0; errno != EINTR && it < mget_vector_size(metalink->pieces); it++) {
+		for (int it = 0; errno != EINTR && it < mget_vector_size(metalink->pieces); it++) {
 			mget_metalink_piece_t *piece = mget_vector_get(metalink->pieces, it);
 			mget_metalink_hash_t *hash = &piece->hash;
 
@@ -272,7 +271,7 @@ int job_validate_file(JOB *job)
 		}
 		close(fd);
 	} else {
-		for (it = 0; it < mget_vector_size(metalink->pieces); it++) {
+		for (int it = 0; it < mget_vector_size(metalink->pieces); it++) {
 			mget_metalink_piece_t *piece = mget_vector_get(metalink->pieces, it);
 
 			if (fsize >= piece->length) {
@@ -355,10 +354,9 @@ static int find_free_job(struct find_free_job_context *context, JOB *job)
 {
 	// debug_printf("%p %p %p %d\n",part_out,job,job->parts,job->inuse);
 	if (context->part && job->parts) {
-		int it;
 		// debug_printf("nparts %d\n",vec_size(job->parts));
 
-		for (it = 0; it < mget_vector_size(job->parts); it++) {
+		for (int it = 0; it < mget_vector_size(job->parts); it++) {
 			PART *part = mget_vector_get(job->parts, it);
 			if (!part->inuse) {
 				part->inuse = 1;
