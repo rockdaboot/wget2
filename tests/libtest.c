@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2013 Tim Ruehsen
+ * Copyright(c) 2013-2014 Tim Ruehsen
  *
  * This file is part of libmget.
  *
@@ -17,12 +17,10 @@
  * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Example for retrieving and parsing an HTTP URI
+ * Test suite function library
  *
  * Changelog
  * 16.01.2013  Tim Ruehsen  created
- *
- * Test suite function library
  *
  * To create the X.509 stuff, I followed the instructions at
  *   gnutls.org/manual/html_node/gnutls_002dserv-Invocation.html
@@ -464,7 +462,8 @@ void mget_test(int first_key, ...)
 {
 	const char
 		*request_url,
-		*options="";
+		*options="",
+		*executable="../../src/mget";
 	const mget_test_file_t
 		*expected_files = NULL,
 		*existing_files = NULL;
@@ -510,6 +509,9 @@ void mget_test(int first_key, ...)
 		case MGET_TEST_KEEP_TMPFILES:
 			keep_tmpfiles = va_arg(args, int);
 			break;
+		case MGET_TEST_EXECUTABLE:
+			executable = va_arg(args, const char *);
+			break;
 		default:
 			mget_error_printf_exit(_("Unknown option %d [%s]\n"), key, options);
 		}
@@ -547,16 +549,16 @@ void mget_test(int first_key, ...)
 
 	const char *valgrind = getenv("TESTS_VALGRIND");
 	if (valgrind)
-		mget_buffer_printf2(cmd, "%s ../../src/mget %s", valgrind, options);
+		mget_buffer_printf2(cmd, "%s %s %s", valgrind, executable, options);
 	else
-		mget_buffer_printf2(cmd, "../../src/mget %s", options);
+		mget_buffer_printf2(cmd, "%s %s", executable, options);
 	for (it = 0; it < (size_t)mget_vector_size(request_urls); it++) {
 		mget_buffer_printf_append2(cmd, " 'http://localhost:%d/%s'",
 			server_port, (char *)mget_vector_get(request_urls, it));
 	}
 	mget_buffer_strcat(cmd, " 2>&1");
 
-	mget_error_printf("  Testing '%s'\n", cmd->data);
+	mget_error_printf("\n  Testing '%s'\n", cmd->data);
 	rc = system(cmd->data);
 
 #if defined(_WIN32) || defined(_WIN64)

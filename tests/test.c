@@ -976,7 +976,7 @@ next:
 		mget_iri_free(&iri);
 	}
 
-	mget_cookie_db_deinit(cookies);
+	mget_cookie_db_free(&cookies);
 }
 
 static void test_hsts(void)

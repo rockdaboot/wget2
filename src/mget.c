@@ -1344,7 +1344,7 @@ static void _remember_for_conversion(const char *filename, mget_iri_t *base_url,
 
 	conversion.filename = strdup(filename);
 	conversion.encoding = strdup(encoding);
-	conversion.base_url = mget_memdup(base_url, sizeof(*base_url));
+	conversion.base_url = mget_iri_clone(base_url);
 	conversion.content_type = content_type;
 	conversion.parsed = parsed;
 
@@ -1475,7 +1475,7 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, mge
 			MGET_HTML_PARSED_URL *html_url = mget_vector_get(parsed->uris, it);
 			html_url->url.p = (const char *) (html_url->url.p - html); // convert pointer to offset
 		}
-		_remember_for_conversion(job->local_filename, mget_iri_clone(base), _CONTENT_TYPE_HTML, encoding, parsed);
+		_remember_for_conversion(job->local_filename, base, _CONTENT_TYPE_HTML, encoding, parsed);
 		parsed = NULL; // 'parsed' has been consumed
 	}
 
@@ -1980,7 +1980,7 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 
 			close(fd);
 		}
-		else if (multiple && (fd == -1 && errno == EEXIST)) {
+		else if (multiple && errno == EEXIST) {
 			snprintf(unique, sizeof(unique), "%s.%d", fname, ++fnum);
 			fd = open(unique, O_WRONLY | flag | O_CREAT, 0644);
 			continue;
@@ -1992,6 +1992,8 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 	if (fd == -1) {
 		if (errno == EEXIST && fnum < 999)
 			error_printf(_("File '%s' already there; not retrieving.\n"), fname);
+		else if (errno == EISDIR)
+			info_printf(_("Directory / file name clash - not saving '%s'\n"), fname);
 		else {
 			error_printf(_("Failed to open '%s' (errno=%d): %s\n"), fname, errno, strerror(errno));
 			set_exit_status(3);

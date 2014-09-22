@@ -1,8 +1,32 @@
-/* 
- * File:   libtest.h
- * Author: tim
+/*
+ * Copyright(c) 2013-2014 Tim Ruehsen
  *
- * Created on 10. März 2013, 20:21
+ * This file is part of libmget.
+ *
+ * Libmget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Libmget is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Test suite function library header
+ *
+ * Changelog
+ * 10.03.2013  Tim Ruehsen  created
+ *
+ * Test suite function library
+ *
+ * To create the X.509 stuff, I followed the instructions at
+ *   gnutls.org/manual/html_node/gnutls_002dserv-Invocation.html
+ *
  */
 
 #ifndef _LIBMGET_LIBTEST_H
@@ -26,6 +50,7 @@ extern "C" {
 #define MGET_TEST_EXISTING_FILES 2005
 #define MGET_TEST_KEEP_TMPFILES 2006
 #define MGET_TEST_REQUEST_URLS 2007
+#define MGET_TEST_EXECUTABLE 2008
 
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
