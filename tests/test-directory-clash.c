@@ -83,9 +83,6 @@ int main(void)
 
 	mget_test(
 		MGET_TEST_OPTIONS, "-r -nH",
-//		MGET_TEST_EXECUTABLE, "wget",
-//		MGET_TEST_OPTIONS, "-r -nH -d",
-		MGET_TEST_KEEP_TMPFILES, 1,
 		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
@@ -95,10 +92,7 @@ int main(void)
 		0);
 
 	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH -d",
-//		MGET_TEST_EXECUTABLE, "wget",
-//		MGET_TEST_OPTIONS, "-r -nH -d",
-		MGET_TEST_KEEP_TMPFILES, 1,
+		MGET_TEST_OPTIONS, "-r -nH",
 		MGET_TEST_REQUEST_URL, "index2.html",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
