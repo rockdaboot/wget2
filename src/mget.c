@@ -1944,6 +1944,21 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 		multiple = 1;
 		fname_length += 16;
 		flag = O_EXCL;
+
+		if (config.backups) {
+			char src[fname_length + 1], dst[fname_length + 1];
+
+			for (int it = config.backups; it > 0; it--) {
+				if (it > 1)
+					snprintf(src, sizeof(src), "%s.%d", fname, it - 1);
+				else
+					strlcpy(src, fname, sizeof(src));
+				snprintf(dst, sizeof(dst), "%s.%d", fname, it);
+
+				if (rename(src, dst) == -1 && errno != ENOENT)
+					error_printf(_("Failed to rename %s to %s (errno=%d)\n"), src, dst, errno);
+			}
+		}
 	}
 
 	fd = open(fname, O_WRONLY | flag | O_CREAT, 0644);

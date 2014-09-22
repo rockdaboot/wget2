@@ -142,27 +142,28 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --parent            Ascend above parent directory. (default: on)\n"
 		"      --trust-server-names  On redirection use the server's filename. (default: off)\n"
 		"      --chunk-size        Download large files in multithreaded chunks. (default: 0 (=off))\n"
-		"      --progress          Type of progress bar (bar, dot, none). (default: none)\n");
+		"                          Example: mget --chunk-size=1M\n");
 	puts(
-		"                          Example: mget --chunk-size=1M\n"
+		"      --progress          Type of progress bar (bar, dot, none). (default: none)\n"
 		"      --local-encoding    Character encoding of environment and filenames.\n"
 		"      --remote-encoding   Character encoding of remote files (if not specified in Content-Type HTTP header or in document itself)\n"
-		"  -t   --tries            Number of tries for each download. (default 20)\n"
-		"  -A   --accept           Comma-separated list of file name suffixes or patterns.\n"
-		"  -R   --reject           Comma-separated list of file name suffixes or patterns.\n"
-		"       --ignore-case      Ignore case when matching files. (default: off)\n"
-		"  -k   --convert-links    Convert embedded URLs to local URLs. (default: off)\n"
-		"  -K   --backup-converted When converting, keep the original file with a .orig suffix. (default: off)\n"
-		"  -w   --wait             Wait number of seconds between downloads (per thread). (default: 0)\n"
-		"       --waitretry        Wait up to number of seconds after error (per thread). (default: 10)\n"
-		"       --random-wait      Wait 0.5 up to 1.5*<--wait> seconds between downloads (per thread). (default: off)\n"
-		"       --dns-cache        Caching of domain name lookups. (default: on)\n"
-		"       --iri              Wget dummy option, you can't switch off international support\n"
-		"       --robots           Respect robots.txt standard for recursive downloads. (default: on)\n"
-		"       --restrict-file-names  unix, windows, nocontrol, ascii, lowercase, uppercase, none\n"
-		"  -m   --mirror           Turn on mirroring options -r -N -l inf\n"
-		"       --follow-tags      Scan additional tag/attributes for URLs, e.g. --follow-tags=\"img/data-500px,img/data-hires\n"
-		"       --ignore-tags      Ignore tag/attributes for URL scanning, e.g. --ignore-tags=\"img,a/href\n"
+		"  -t  --tries             Number of tries for each download. (default 20)\n"
+		"  -A  --accept            Comma-separated list of file name suffixes or patterns.\n"
+		"  -R  --reject            Comma-separated list of file name suffixes or patterns.\n"
+		"      --ignore-case       Ignore case when matching files. (default: off)\n"
+		"  -k  --convert-links     Convert embedded URLs to local URLs. (default: off)\n"
+		"  -K  --backup-converted  When converting, keep the original file with a .orig suffix. (default: off)\n"
+		"  -w  --wait              Wait number of seconds between downloads (per thread). (default: 0)\n"
+		"      --waitretry         Wait up to number of seconds after error (per thread). (default: 10)\n"
+		"      --random-wait       Wait 0.5 up to 1.5*<--wait> seconds between downloads (per thread). (default: off)\n"
+		"      --dns-cache         Caching of domain name lookups. (default: on)\n"
+		"      --iri               Wget dummy option, you can't switch off international support\n"
+		"      --robots            Respect robots.txt standard for recursive downloads. (default: on)\n"
+		"      --restrict-file-names  unix, windows, nocontrol, ascii, lowercase, uppercase, none\n"
+		"  -m  --mirror            Turn on mirroring options -r -N -l inf\n"
+		"      --follow-tags       Scan additional tag/attributes for URLs, e.g. --follow-tags=\"img/data-500px,img/data-hires\n"
+		"      --ignore-tags       Ignore tag/attributes for URL scanning, e.g. --ignore-tags=\"img,a/href\n"
+		"      --backups           Make backups instead of overwriting/increasing number. (default: 0)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -593,6 +594,7 @@ static const struct option options[] = {
 	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E' },
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a' },
 	{ "backup-converted", &config.backup_converted, parse_bool, 0, 'K' },
+	{ "backups", &config.backups, parse_integer, 0, 0 },
 	{ "base", &config.base_url, parse_string, 1, 'B' },
 	{ "bind-address", &config.bind_address, parse_string, 1, 0 },
 	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0 },

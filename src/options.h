@@ -91,6 +91,7 @@ struct config {
 	long long
 		quota;
 	int
+		backups,
 		tries,
 		wait,
 		waitretry,
