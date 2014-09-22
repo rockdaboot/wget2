@@ -44,6 +44,8 @@ struct config {
 	mget_iri_t
 		*base;
 	const char
+		*post_file,
+		*post_data,
 		*progress,
 		*gnutls_options,
 		*username,

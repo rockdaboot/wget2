@@ -1461,13 +1461,17 @@ void mget_http_close(mget_http_connection_t **conn)
 	}
 }
 
-int mget_http_send_request(mget_http_connection_t *conn, mget_http_request_t *req)
+static int  G_GNUC_MGET_NONNULL((1,2)) _http_send_request(mget_http_connection_t *conn, mget_http_request_t *req, const void *body, size_t length)
 {
 	ssize_t nbytes;
 
 	if ((nbytes = mget_http_request_to_buffer(req, conn->buf)) < 0) {
 		error_printf(_("Failed to create request buffer\n"));
 		return -1;
+	}
+
+	if (body && length) {
+		nbytes = mget_buffer_memcat(conn->buf, body, length);
 	}
 
 	if (mget_tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
@@ -1481,9 +1485,19 @@ int mget_http_send_request(mget_http_connection_t *conn, mget_http_request_t *re
 	return 0;
 }
 
+int mget_http_send_request(mget_http_connection_t *conn, mget_http_request_t *req)
+{
+	return _http_send_request(conn, req, NULL, 0);
+}
+
+int mget_http_send_request_with_body(mget_http_connection_t *conn, mget_http_request_t *req, const void *body, size_t length)
+{
+	return _http_send_request(conn, req, body, length);
+}
+
 ssize_t mget_http_request_to_buffer(mget_http_request_t *req, mget_buffer_t *buf)
 {
-	int it, use_proxy = 0;
+	int use_proxy = 0;
 
 //	buffer_sprintf(buf, "%s /%s HTTP/1.1\r\nHOST: %s", req->method, req->esc_resource.data ? req->esc_resource.data : "",);
 
@@ -1507,7 +1521,7 @@ ssize_t mget_http_request_to_buffer(mget_http_request_t *req, mget_buffer_t *buf
 	mget_buffer_bufcat(buf, &req->esc_host);
 	mget_buffer_memcat(buf, "\r\n", 2);
 
-	for (it = 0; it < mget_vector_size(req->lines); it++) {
+	for (int it = 0; it < mget_vector_size(req->lines); it++) {
 		mget_buffer_strcat(buf, mget_vector_get(req->lines, it));
 		if (buf->data[buf->length - 1] != '\n') {
 			mget_buffer_memcat(buf, "\r\n", 2);

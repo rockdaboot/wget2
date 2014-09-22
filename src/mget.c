@@ -118,7 +118,7 @@ static int
 static unsigned int G_GNUC_MGET_PURE
 	hash_url(const char *url);
 mget_http_response_t
-	*http_get(mget_iri_t *iri, PART *part, DOWNLOADER *downloader, int method_get);
+	*http_get(mget_iri_t *iri, PART *part, DOWNLOADER *downloader, const char *method);
 
 static mget_stringmap_t
 	*etags;
@@ -1039,7 +1039,7 @@ void *downloader_thread(void *p)
 			for (int tries = 0; !resp && tries < config.tries; tries++) {
 				mget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
 
-				resp = http_get(job->iri, NULL, downloader, MGET_HTTP_METHOD_HEAD);
+				resp = http_get(job->iri, NULL, downloader, "HEAD");
 				if (resp)
 					print_status(downloader, "%d %s\n", resp->code, resp->reason);
 			}
@@ -1128,7 +1128,7 @@ void *downloader_thread(void *p)
 		for (int tries = 0; !resp && tries < config.tries; tries++) {
 			mget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
 
-			resp = http_get(job->iri, NULL, downloader, MGET_HTTP_METHOD_GET);
+			resp = http_get(job->iri, NULL, downloader, NULL);
 			if (resp)
 				print_status(downloader, "%d %s\n", resp->code, resp->reason);
 		}
@@ -2051,7 +2051,7 @@ int download_part(DOWNLOADER *downloader)
 
 			mirror_index = (mirror_index + 1) % mget_vector_size(metalink->mirrors);
 
-			resp = http_get(mirror->iri, part, downloader, MGET_HTTP_METHOD_GET);
+			resp = http_get(mirror->iri, part, downloader, "GET");
 			if (resp) {
 				mget_cookie_store_cookies(config.cookie_db, resp->cookies); // sanitize and store cookies
 
@@ -2164,7 +2164,7 @@ static int _get_body(void *context, const char *data, size_t length)
 	return 0;
 }
 
-mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *downloader, int method_get)
+mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *downloader, const char *method)
 {
 	mget_iri_t *dont_free = iri;
 	mget_http_connection_t *conn;
@@ -2174,6 +2174,7 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 //	int max_redirect = 3;
 	mget_buffer_t buf;
 	char sbuf[256];
+	int rc;
 
 	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
@@ -2207,10 +2208,12 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 		if (conn) {
 			mget_http_request_t *req;
 
-			if (method_get)
-				req = mget_http_create_request(iri, "GET");
+			if (method)
+				req = mget_http_create_request(iri, method);
+			else if (config.post_data || config.post_file)
+				req = mget_http_create_request(iri, "POST");
 			else
-				req = mget_http_create_request(iri, "HEAD");
+				req = mget_http_create_request(iri, "GET");
 
 			if (config.continue_download || config.timestamping) {
 				const char *local_filename = downloader->job->local_filename;
@@ -2327,7 +2330,28 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 				}
 			}
 
-			if (mget_http_send_request(conn, req) == 0) {
+			if (config.post_data) {
+				size_t length = strlen(config.post_data);
+
+				mget_http_add_header_line(req, "Content-Type: application/x-www-form-urlencoded");
+				mget_http_add_header_printf(req, "Content-Length: %zu", length);
+				rc = mget_http_send_request_with_body(conn, req, config.post_data, length);
+			} else if (config.post_file) {
+				size_t length;
+				char *data;
+
+				if ((data = mget_read_file(config.post_file, &length))) {
+					mget_http_add_header_line(req, "Content-Type: application/x-www-form-urlencoded");
+					mget_http_add_header_printf(req, "Content-Length: %zu", length);
+					rc = mget_http_send_request_with_body(conn, req, data, length);
+					xfree(data);
+				} else
+					break;
+			} else {
+				rc = mget_http_send_request(conn, req);
+			}
+
+			if (rc == 0) {
 				if (config.progress) {
 					mget_buffer_t *body = mget_buffer_alloc(102400);
 					struct _body_callback_context context = { .downloader = downloader, .body = body };

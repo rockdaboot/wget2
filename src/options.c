@@ -164,6 +164,8 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --follow-tags       Scan additional tag/attributes for URLs, e.g. --follow-tags=\"img/data-500px,img/data-hires\n"
 		"      --ignore-tags       Ignore tag/attributes for URL scanning, e.g. --ignore-tags=\"img,a/href\n"
 		"      --backups           Make backups instead of overwriting/increasing number. (default: 0)\n"
+		"      --post-data         Data to be sent in a POST request.\n"
+		"      --post-file         File with data to be sent in a POST request.\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -664,6 +666,8 @@ static const struct option options[] = {
 	{ "page-requisites", &config.page_requisites, parse_bool, 0, 'p' },
 	{ "parent", &config.parent, parse_bool, 0, 0 },
 	{ "password", &config.password, parse_string, 1, 0 },
+	{ "post-data", &config.post_data, parse_string, 1, 0 },
+	{ "post-file", &config.post_file, parse_string, 1, 0 },
 	{ "prefer-family", &config.preferred_family, parse_prefer_family, 1, 0 },
 	{ "private-key", &config.private_key, parse_string, 1, 0 },
 	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0 },
@@ -692,7 +696,7 @@ static const struct option options[] = {
 	{ "timestamping", &config.timestamping, parse_bool, 0, 'N' },
 	{ "tries", &config.tries, parse_integer, 1, 't' },
 	{ "trust-server-names", &config.trust_server_names, parse_bool, 0, 0 },
-	{ "use-server-timestamp", &config.use_server_timestamps, parse_bool, 0, 0 },
+	{ "use-server-timestamps", &config.use_server_timestamps, parse_bool, 0, 0 },
 	{ "user", &config.username, parse_string, 1, 0 },
 	{ "user-agent", &config.user_agent, parse_string, 1, 'U' },
 	{ "verbose", &config.verbose, parse_bool, 0, 'v' },
@@ -1353,6 +1357,8 @@ void deinit(void)
 	xfree(config.http_username);
 	xfree(config.http_password);
 	xfree(config.progress);
+	xfree(config.post_data);
+	xfree(config.post_file);
 
 	mget_iri_free(&config.base);
 

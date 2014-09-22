@@ -216,10 +216,6 @@ MGET_BEGIN_DECLS
 #define MGET_HTTP_BODY_SAVEAS_FUNC 2014
 #define MGET_HTTP_HEADER_FUNC 2015
 
-// used by http_get()
-#define MGET_HTTP_METHOD_HEAD 0
-#define MGET_HTTP_METHOD_GET  1
-
 void
 	mget_global_init(int key, ...) G_GNUC_MGET_NULL_TERMINATED;
 void
@@ -1432,6 +1428,8 @@ void
 	mget_http_close(mget_http_connection_t **conn) G_GNUC_MGET_NONNULL_ALL;
 int
 	mget_http_send_request(mget_http_connection_t *conn, mget_http_request_t *req) G_GNUC_MGET_NONNULL_ALL;
+int
+	mget_http_send_request_with_body(mget_http_connection_t *conn, mget_http_request_t *req, const void *body, size_t length) G_GNUC_MGET_NONNULL((1,2));
 ssize_t
 	mget_http_request_to_buffer(mget_http_request_t *req, mget_buffer_t *buf) G_GNUC_MGET_NONNULL_ALL;
 
