@@ -85,23 +85,23 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 
 	if (attr) {
 		if (*dir == 0) { // /metalink/file
-			if (!strcasecmp(attr, "name")) {
+			if (!mget_strcasecmp_ascii(attr, "name")) {
 				ctx->metalink->name = strndup(val, len);
 			}
-		} else if (!strcasecmp(dir, "/pieces")) {
-			if (!strcasecmp(attr, "type")) {
+		} else if (!mget_strcasecmp_ascii(dir, "/pieces")) {
+			if (!mget_strcasecmp_ascii(attr, "type")) {
 				sscanf(value, "%15s", ctx->hash_type);
-			} else if (!strcasecmp(attr, "length")) {
+			} else if (!mget_strcasecmp_ascii(attr, "length")) {
 				ctx->length = atoll(value);
 			}
-		} else if (!strcasecmp(dir, "/hash")) {
-			if (!strcasecmp(attr, "type")) {
+		} else if (!mget_strcasecmp_ascii(dir, "/hash")) {
+			if (!mget_strcasecmp_ascii(attr, "type")) {
 				sscanf(value, "%15s", ctx->hash_type);
 			}
-		} else if (!strcasecmp(dir, "/url")) {
-			if (!strcasecmp(attr, "location")) {
+		} else if (!mget_strcasecmp_ascii(dir, "/url")) {
+			if (!mget_strcasecmp_ascii(attr, "location")) {
 				sscanf(value, " %2[a-zA-Z]", ctx->location); // ISO 3166-1 alpha-2 two letter country code
-			} else if (!strcasecmp(attr, "priority") || !strcasecmp(attr, "preference")) {
+			} else if (!mget_strcasecmp_ascii(attr, "priority") || !mget_strcasecmp_ascii(attr, "preference")) {
 				sscanf(value, " %6d", &ctx->priority);
 				if (ctx->priority < 1 || ctx->priority > 999999)
 					ctx->priority = 999999;
@@ -110,7 +110,7 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 	} else {
 		mget_metalink_t *metalink = ctx->metalink;
 
-		if (!strcasecmp(dir, "/pieces/hash")) {
+		if (!mget_strcasecmp_ascii(dir, "/pieces/hash")) {
 			sscanf(value, "%127s", ctx->hash);
 			if (ctx->length && *ctx->hash_type && *ctx->hash) {
 				// hash for a piece of the file
@@ -129,7 +129,7 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 				mget_vector_add(metalink->pieces, &piece, sizeof(mget_metalink_piece_t));
 			}
 			*ctx->hash = 0;
-		} else if (!strcasecmp(dir, "/hash")) {
+		} else if (!mget_strcasecmp_ascii(dir, "/hash")) {
 			sscanf(value, "%127s", ctx->hash);
 			if (*ctx->hash_type && *ctx->hash) {
 				// hashes for the complete file
@@ -144,9 +144,9 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 				mget_vector_add(metalink->hashes, &hash, sizeof(mget_metalink_hash_t));
 			}
 			*ctx->hash_type = *ctx->hash = 0;
-		} else if (!strcasecmp(dir, "/size")) {
+		} else if (!mget_strcasecmp_ascii(dir, "/size")) {
 			metalink->size = atoll(value);
-		} else if (!strcasecmp(dir, "/url")) {
+		} else if (!mget_strcasecmp_ascii(dir, "/url")) {
 			mget_metalink_mirror_t mirror;
 
 			memset(&mirror, 0, sizeof(mget_metalink_mirror_t));
@@ -192,29 +192,29 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 
 	if (attr) {
 		if (*dir == 0) { // /metalink/file
-			if (!strcasecmp(attr, "name")) {
+			if (!mget_strcasecmp_ascii(attr, "name")) {
 				ctx->metalink->name = strndup(val, len);
 			}
-		} else if (!strcasecmp(dir, "/verification/pieces")) {
-			if (!strcasecmp(attr, "type")) {
+		} else if (!mget_strcasecmp_ascii(dir, "/verification/pieces")) {
+			if (!mget_strcasecmp_ascii(attr, "type")) {
 				sscanf(value, "%15s", ctx->hash_type);
-			} else if (!strcasecmp(attr, "length")) {
+			} else if (!mget_strcasecmp_ascii(attr, "length")) {
 				ctx->length = atoll(value);
 			}
-//		} else if (!strcasecmp(dir, "/verification/pieces/hash")) {
-//			if (!strcasecmp(attr, "type")) {
+//		} else if (!mget_strcasecmp_ascii(dir, "/verification/pieces/hash")) {
+//			if (!mget_strcasecmp_ascii(attr, "type")) {
 //				ctx->id = atoi(value);
 //			}
-		} else if (!strcasecmp(dir, "/verification/hash")) {
-			if (!strcasecmp(attr, "type")) {
+		} else if (!mget_strcasecmp_ascii(dir, "/verification/hash")) {
+			if (!mget_strcasecmp_ascii(attr, "type")) {
 				sscanf(value, "%15s", ctx->hash_type);
 			}
-		} else if (!strcasecmp(dir, "/resources/url")) {
-			if (!strcasecmp(attr, "location")) {
+		} else if (!mget_strcasecmp_ascii(dir, "/resources/url")) {
+			if (!mget_strcasecmp_ascii(attr, "location")) {
 				sscanf(value, " %2[a-zA-Z]", ctx->location); // ISO 3166-1 alpha-2 two letter country code
 //			} else if (!strcasecmp(attr, "type")) {
 //				sscanf(value, " %2[a-zA-Z]", ctx->type); // type of URL, e.g. HTTP, FTP, ...
-			} else if (!strcasecmp(attr, "preference")) {
+			} else if (!mget_strcasecmp_ascii(attr, "preference")) {
 				sscanf(value, " %6d", &ctx->priority);
 				if (ctx->priority < 1 || ctx->priority > 999999)
 					ctx->priority = 999999;
@@ -223,7 +223,7 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 	} else {
 		mget_metalink_t *metalink = ctx->metalink;
 
-		if (!strcasecmp(dir, "/verification/pieces/hash")) {
+		if (!mget_strcasecmp_ascii(dir, "/verification/pieces/hash")) {
 			sscanf(value, "%127s", ctx->hash);
 			if (ctx->length && *ctx->hash_type && *ctx->hash) {
 				// hash for a piece of the file
@@ -243,7 +243,7 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 
 			}
 			*ctx->hash = 0;
-		} else if (!strcasecmp(dir, "/verification/hash")) {
+		} else if (!mget_strcasecmp_ascii(dir, "/verification/hash")) {
 			sscanf(value, "%127s", ctx->hash);
 			if (*ctx->hash_type && *ctx->hash) {
 				// hashes for the complete file
@@ -258,9 +258,9 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 				mget_vector_add(metalink->hashes, &hash, sizeof(mget_metalink_hash_t));
 			}
 			*ctx->hash_type = *ctx->hash = 0;
-		} else if (!strcasecmp(dir, "/size")) {
+		} else if (!mget_strcasecmp_ascii(dir, "/size")) {
 			metalink->size = atoll(value);
-		} else if (!strcasecmp(dir, "/resources/url")) {
+		} else if (!mget_strcasecmp_ascii(dir, "/resources/url")) {
 			mget_metalink_mirror_t mirror;
 
 			memset(&mirror, 0, sizeof(mget_metalink_mirror_t));

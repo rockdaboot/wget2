@@ -103,6 +103,101 @@ int mget_strcasecmp(const char *s1, const char *s2)
 	}
 }
 
+static const char _upper[256] = {
+	['a'] = 'A', ['b'] = 'B', ['c'] = 'C', ['d'] = 'D',
+	['e'] = 'E', ['f'] = 'F', ['g'] = 'G', ['h'] = 'H',
+	['i'] = 'I', ['j'] = 'J', ['k'] = 'K', ['l'] = 'L',
+	['m'] = 'M', ['n'] = 'N', ['o'] = 'O', ['p'] = 'P',
+	['q'] = 'Q', ['r'] = 'R', ['s'] = 'S', ['t'] = 'T',
+	['u'] = 'U', ['v'] = 'V', ['w'] = 'W', ['x'] = 'X',
+	['y'] = 'Y', ['z'] = 'Z', ['A'] = 'A', ['B'] = 'B',
+	['C'] = 'C', ['D'] = 'D', ['E'] = 'E', ['F'] = 'F',
+	['G'] = 'G', ['H'] = 'H', ['I'] = 'I', ['J'] = 'J',
+	['K'] = 'K', ['L'] = 'L', ['M'] = 'M', ['N'] = 'N',
+	['O'] = 'O', ['P'] = 'P', ['Q'] = 'Q', ['R'] = 'R',
+	['S'] = 'S', ['T'] = 'T', ['U'] = 'U', ['V'] = 'V',
+	['W'] = 'W', ['X'] = 'X', ['Y'] = 'Y', ['Z'] = 'Z',
+};
+
+/**
+ * mget_strcasecmp_ascii:
+ * @s1: String
+ * @s2: String
+ *
+ * This functions compares @s1 and @s2 case insensitive ignoring locale settings.
+ * It also accepts %NULL values.
+ *
+ * It returns 0 if both @s1 and @s2 are the same disregarding case for ASCII letters a-z.
+ * It returns 0 if both @s1 and @s2 are %NULL.
+ * It returns <0 if @s1 is %NULL and @s2 is not %NULL or s1 is smaller than s2.
+ * It returns >0 if @s2 is %NULL and @s1 is not %NULL or s1 is greater than s2.
+ *
+ * Returns: An integer value described above.
+ */
+int mget_strcasecmp_ascii(const char *s1, const char *s2)
+{
+	if (!s1) {
+		if (!s2)
+			return 0;
+		else
+			return -1;
+	} else {
+		if (!s2)
+			return 1;
+		else {
+			while (*s1 && (*s1 == *s2 || (_upper[(unsigned)*s1] && _upper[(unsigned)*s1] == _upper[(unsigned)*s2]))) {
+				s1++;
+				s2++;
+			}
+
+			if (*s1 || *s2)
+				return *s1 - *s2;
+
+			return 0;
+		}
+	}
+}
+
+/**
+ * mget_strncasecmp_ascii:
+ * @s1: String
+ * @s2: String
+ * @n: Max. number of chars to compare
+ *
+ * This functions compares @s1 and @s2 case insensitive ignoring locale settings up to a max number of @n chars.
+ * It also accepts %NULL values.
+ *
+ * It returns 0 if both @s1 and @s2 are the same disregarding case for ASCII letters a-z.
+ * It returns 0 if both @s1 and @s2 are %NULL.
+ * It returns <0 if @s1 is %NULL and @s2 is not %NULL or s1 is smaller than s2.
+ * It returns >0 if @s2 is %NULL and @s1 is not %NULL or s1 is greater than s2.
+ *
+ * Returns: An integer value described above.
+ */
+int mget_strncasecmp_ascii(const char *s1, const char *s2, size_t n)
+{
+	if (!s1) {
+		if (!s2)
+			return 0;
+		else
+			return -1;
+	} else {
+		if (!s2)
+			return 1;
+		else {
+			while ((ssize_t)(n--) > 0 && *s1 && (*s1 == *s2 || (_upper[(unsigned)*s1] && _upper[(unsigned)*s1] == _upper[(unsigned)*s2]))) {
+				s1++;
+				s2++;
+			}
+
+			if ((ssize_t)n >= 0 && (*s1 || *s2))
+				return *s1 - *s2;
+
+			return 0;
+		}
+	}
+}
+
 /**
  * mget_strncmp:
  * @s1: String
@@ -277,5 +372,5 @@ int mget_match_tail_nocase(const char *s, const char *tail)
 {
 	const char *p = s + strlen(s) - strlen(tail);
 
-	return p >= s && !strcasecmp(p, tail);
+	return p >= s && !mget_strcasecmp_ascii(p, tail);
 }

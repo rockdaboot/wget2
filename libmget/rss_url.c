@@ -52,9 +52,9 @@ static void _rss_get_url(void *context, int flags, const char *dir, const char *
 	url.p = NULL;
 
 	if ((flags & XML_FLG_ATTRIBUTE)) {
-		if (!strcasecmp(attr, "url") || !strcasecmp(attr, "href")
-			|| !strcasecmp(attr, "src") || !strcasecmp(attr, "domain")
-			|| !strcasecmp(attr, "xmlns") || !strncasecmp(attr, "xmlns:", 6))
+		if (!mget_strcasecmp_ascii(attr, "url") || !mget_strcasecmp_ascii(attr, "href")
+			|| !mget_strcasecmp_ascii(attr, "src") || !mget_strcasecmp_ascii(attr, "domain")
+			|| !mget_strcasecmp_ascii(attr, "xmlns") || !mget_strncasecmp_ascii(attr, "xmlns:", 6))
 		{
 			for (;len && isspace(*val); val++, len--); // skip leading spaces
 			for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces
@@ -74,8 +74,8 @@ static void _rss_get_url(void *context, int flags, const char *dir, const char *
 		if (elem) {
 			elem++;
 
-			if (!strcasecmp(elem, "guid") || !strcasecmp(elem, "link")
-				 || !strcasecmp(elem, "comments") || !strcasecmp(elem, "docs"))
+			if (!mget_strcasecmp_ascii(elem, "guid") || !mget_strcasecmp_ascii(elem, "link")
+				 || !mget_strcasecmp_ascii(elem, "comments") || !mget_strcasecmp_ascii(elem, "docs"))
 			{
 				for (;len && isspace(*val); val++, len--); // skip leading spaces
 				for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces

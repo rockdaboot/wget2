@@ -89,7 +89,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 	//
 	// Also ,we are interested in ROBOTS e.g.
 	//   <META name="ROBOTS" content="NOINDEX, NOFOLLOW">
-	if ((flags & XML_FLG_BEGIN) && (*tag|0x20) == 'm' && !strcasecmp(tag, "meta")) {
+	if ((flags & XML_FLG_BEGIN) && (*tag|0x20) == 'm' && !mget_strcasecmp_ascii(tag, "meta")) {
 		ctx->found_robots = ctx->found_content_type = 0;
 	}
 
@@ -98,13 +98,13 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 
 //		info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
 
-		if ((*tag|0x20) == 'm' && !strcasecmp(tag, "meta")) {
+		if ((*tag|0x20) == 'm' && !mget_strcasecmp_ascii(tag, "meta")) {
 			if (!ctx->found_robots) {
-				if (!strcasecmp(attr, "name") && !strncasecmp(val, "robots", len)) {
+				if (!mget_strcasecmp_ascii(attr, "name") && !mget_strncasecmp_ascii(val, "robots", len)) {
 					ctx->found_robots = 1;
 					return;
 				}
-			} else if (ctx->found_robots && !strcasecmp(attr, "content")) {
+			} else if (ctx->found_robots && !mget_strcasecmp_ascii(attr, "content")) {
 				char *p;
 				char valbuf[len + 1], *value = valbuf;
 
@@ -129,7 +129,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 			}
 
 			if (ctx->found_content_type && !res->encoding) {
-				if (!strcasecmp(attr, "content")) {
+				if (!mget_strcasecmp_ascii(attr, "content")) {
 					char valbuf[len + 1], *value = valbuf;
 
 					memcpy(value, val, len);
@@ -138,10 +138,10 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				}
 			}
 			else if (!ctx->found_content_type && !res->encoding) {
-				if (!strcasecmp(attr, "http-equiv") && !strncasecmp(val, "Content-Type", len)) {
+				if (!mget_strcasecmp_ascii(attr, "http-equiv") && !mget_strncasecmp_ascii(val, "Content-Type", len)) {
 					ctx->found_content_type = 1;
 				}
-				else if (!strcasecmp(attr, "charset")) {
+				else if (!mget_strcasecmp_ascii(attr, "charset")) {
 					res->encoding = mget_memdup(val, len);
 				}
 			}
@@ -160,7 +160,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 
 		// search the static list for a tag/attr match
 		if (maybe[(unsigned char)*attr|0x20] && attr[1] && attr[2])
-			found = bsearch(attr, attrs, countof(attrs), sizeof(attrs[0]), (int(*)(const void *, const void *))strcasecmp) != NULL;
+			found = bsearch(attr, attrs, countof(attrs), sizeof(attrs[0]), (int(*)(const void *, const void *))mget_strcasecmp_ascii) != NULL;
 
 		// search the dynamic list for a tag/attr match
 		if (!found && ctx->additional_tags) {
@@ -173,7 +173,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 			for (;len && isspace(*val); val++, len--); // skip leading spaces
 			for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces
 
-			if ((*tag|0x20) == 'b' && !strcasecmp(tag,"base")) {
+			if ((*tag|0x20) == 'b' && !mget_strcasecmp_ascii(tag,"base")) {
 				// found a <BASE href="...">
 				res->base.p = val;
 				res->base.len = len;

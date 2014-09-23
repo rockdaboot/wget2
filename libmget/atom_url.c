@@ -53,9 +53,9 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 	url.p = NULL;
 
 	if ((flags & XML_FLG_ATTRIBUTE)) {
-		if (!strcasecmp(attr, "href") || !strcasecmp(attr, "uri")
-			|| !strcasecmp(attr, "src") || !strcasecmp(attr, "scheme")
-			|| !strcasecmp(attr, "xmlns") || !strncasecmp(attr, "xmlns:", 6))
+		if (!mget_strcasecmp_ascii(attr, "href") || !mget_strcasecmp_ascii(attr, "uri")
+			|| !mget_strcasecmp_ascii(attr, "src") || !mget_strcasecmp_ascii(attr, "scheme")
+			|| !mget_strcasecmp_ascii(attr, "xmlns") || !mget_strncasecmp_ascii(attr, "xmlns:", 6))
 		{
 			for (;len && isspace(*val); val++, len--); // skip leading spaces
 			for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces
@@ -75,8 +75,8 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 		if (elem) {
 			elem++;
 
-			if (!strcasecmp(elem, "icon") || !strcasecmp(elem, "id")
-				 || !strcasecmp(elem, "logo"))
+			if (!mget_strcasecmp_ascii(elem, "icon") || !mget_strcasecmp_ascii(elem, "id")
+				 || !mget_strcasecmp_ascii(elem, "logo"))
 			{
 				for (;len && isspace(*val); val++, len--); // skip leading spaces
 				for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces

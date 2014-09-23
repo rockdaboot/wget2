@@ -77,10 +77,10 @@ static void html_dump(void *user_ctx, int flags, const char *dir G_GNUC_MGET_UNU
 		// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
 		switch (tolower(*attr)) {
 		case 'h':
-			found = !strcasecmp(attr, "href");
+			found = !mget_strcasecmp_ascii(attr, "href");
 			break;
 		case 's':
-			found = !strcasecmp(attr, "src");
+			found = !mget_strcasecmp_ascii(attr, "src");
 			break;
 		}
 
@@ -160,9 +160,9 @@ static void test_parse_files(void)
 		while ((dp = readdir(dirp)) != NULL) {
 			if (*dp->d_name == '.') continue;
 			if ((ext = strrchr(dp->d_name, '.'))) {
-				if (!strcasecmp(ext, ".xml"))
+				if (!mget_strcasecmp_ascii(ext, ".xml"))
 					type = 1;
-				else if (!strcasecmp(ext, ".html"))
+				else if (!mget_strcasecmp_ascii(ext, ".html"))
 					type = 2;
 				else
 					continue;

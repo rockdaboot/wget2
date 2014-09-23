@@ -86,7 +86,7 @@ char *mget_charset_transcode(const char *src, const char *src_encoding, const ch
 	if (!dst_encoding)
 		dst_encoding = "iso-8859-1"; // default character-set for most browsers
 
-	if (strcasecmp(src_encoding, dst_encoding)) {
+	if (mget_strcasecmp_ascii(src_encoding, dst_encoding)) {
 		char *ret = NULL;
 
 		iconv_t cd=iconv_open(dst_encoding, src_encoding);

@@ -530,7 +530,7 @@ void mget_ssl_init(void)
 
 			if (_config.direct_options) {
 				ret = gnutls_priority_init(&_priority_cache, _config.direct_options, NULL);
-			} else if (!strcasecmp(_config.secure_protocol, "PFS")) {
+			} else if (!mget_strcasecmp_ascii(_config.secure_protocol, "PFS")) {
 				priorities = "PFS";
 				// -RSA to force DHE/ECDHE key exchanges to have Perfect Forward Secrecy (PFS))
 				if ((ret = gnutls_priority_init(&_priority_cache, priorities, NULL)) != GNUTLS_E_SUCCESS) {
@@ -538,11 +538,11 @@ void mget_ssl_init(void)
 					ret = gnutls_priority_init(&_priority_cache, priorities, NULL);
 				}
 			} else {
-				if (!strncasecmp(_config.secure_protocol, "SSL", 3))
+				if (!mget_strncasecmp_ascii(_config.secure_protocol, "SSL", 3))
 					priorities = "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0";
-				else if (!strcasecmp(_config.secure_protocol, "TLSv1"))
+				else if (!mget_strcasecmp_ascii(_config.secure_protocol, "TLSv1"))
 					priorities = "NORMAL:-VERS-SSL3.0";
-				else if (!strcasecmp(_config.secure_protocol, "auto"))
+				else if (!mget_strcasecmp_ascii(_config.secure_protocol, "auto"))
 					priorities = "NORMAL:%COMPAT";
 				else if (*_config.secure_protocol)
 					priorities = _config.secure_protocol;

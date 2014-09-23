@@ -48,22 +48,22 @@ mget_digest_algorithm_t mget_hash_get_algorithm(const char *name)
 {
 	if (name) {
 		if (*name == 's' || *name == 'S') {
-			if (!strcasecmp(name, "sha-1") || !strcasecmp(name, "sha1"))
+			if (!mget_strcasecmp_ascii(name, "sha-1") || !mget_strcasecmp_ascii(name, "sha1"))
 				return MGET_DIGTYPE_SHA1;
-			else if (!strcasecmp(name, "sha-256") || !strcasecmp(name, "sha256"))
+			else if (!mget_strcasecmp_ascii(name, "sha-256") || !mget_strcasecmp_ascii(name, "sha256"))
 				return MGET_DIGTYPE_SHA256;
-			else if (!strcasecmp(name, "sha-512") || !strcasecmp(name, "sha512"))
+			else if (!mget_strcasecmp_ascii(name, "sha-512") || !mget_strcasecmp_ascii(name, "sha512"))
 				return MGET_DIGTYPE_SHA512;
-			else if (!strcasecmp(name, "sha-224") || !strcasecmp(name, "sha224"))
+			else if (!mget_strcasecmp_ascii(name, "sha-224") || !mget_strcasecmp_ascii(name, "sha224"))
 				return MGET_DIGTYPE_SHA224;
-			else if (!strcasecmp(name, "sha-384") || !strcasecmp(name, "sha384"))
+			else if (!mget_strcasecmp_ascii(name, "sha-384") || !mget_strcasecmp_ascii(name, "sha384"))
 				return MGET_DIGTYPE_SHA384;
 		}
-		else if (!strcasecmp(name, "md5"))
+		else if (!mget_strcasecmp_ascii(name, "md5"))
 			return MGET_DIGTYPE_MD5;
-		else if (!strcasecmp(name, "md2"))
+		else if (!mget_strcasecmp_ascii(name, "md2"))
 			return MGET_DIGTYPE_MD2;
-		else if (!strcasecmp(name, "rmd160"))
+		else if (!mget_strcasecmp_ascii(name, "rmd160"))
 			return MGET_DIGTYPE_RMD160;
 	}
 

@@ -213,7 +213,7 @@ mget_iri_t *mget_iri_parse(const char *url, const char *encoding)
 		// for later comparisons we compare pointers (avoiding strcasecmp())
 		iri->scheme = p;
 		for (it = 0; mget_iri_schemes[it]; it++) {
-			if (!strcasecmp(mget_iri_schemes[it], p)) {
+			if (!mget_strcasecmp_ascii(mget_iri_schemes[it], p)) {
 				iri->scheme = mget_iri_schemes[it];
 				default_port = iri_ports[it];
 				break;
@@ -691,7 +691,7 @@ char *mget_iri_get_path(const mget_iri_t *iri, mget_buffer_t *buf, const char *e
 		mget_buffer_memcat(buf, "/", 1);
 
 	if (iri->path) {
-		if (mget_strcasecmp(encoding, "utf-8")) {
+		if (mget_strcasecmp_ascii(encoding, "utf-8")) {
 			char *fname = mget_utf8_to_str(iri->path, encoding);
 			if (fname) {
 				mget_buffer_strcat(buf, fname);
@@ -716,7 +716,7 @@ char *mget_iri_get_query_as_filename(const mget_iri_t *iri, mget_buffer_t *buf, 
 
 		mget_buffer_memcat(buf, "?", 1);
 
-		if (mget_strcasecmp(encoding, "utf-8")) {
+		if (mget_strcasecmp_ascii(encoding, "utf-8")) {
 			if ((query = mget_utf8_to_str(iri->query, encoding)))
 				allocated = 1;
 		} else {
@@ -765,7 +765,7 @@ char *mget_iri_get_filename(const mget_iri_t *iri, mget_buffer_t *buf, const cha
 	if (iri->path) {
 		char *fname;
 
-		if (mget_strcasecmp(encoding, "utf-8")) {
+		if (mget_strcasecmp_ascii(encoding, "utf-8")) {
 			if ((fname = strrchr(iri->path, '/')))
 				fname = mget_utf8_to_str(fname + 1, encoding);
 			else

@@ -780,17 +780,17 @@ static void test_parser(void)
 			if (*dp->d_name == '.') continue;
 			if ((ext = strrchr(dp->d_name, '.'))) {
 				snprintf(fname, sizeof(fname), SRCDIR "/files/%s", dp->d_name);
-				if (!strcasecmp(ext, ".xml")) {
+				if (!mget_strcasecmp_ascii(ext, ".xml")) {
 					info_printf("parsing %s\n", fname);
 					mget_xml_parse_file(fname, NULL, NULL, 0);
 					xml++;
 				}
-/*				else if (!strcasecmp(ext, ".html")) {
+/*				else if (!mget_strcasecmp_ascii(ext, ".html")) {
 					info_printf("parsing %s\n", fname);
 					mget_html_parse_file(fname, NULL, NULL, 0);
 					html++;
 				}
-				else if (!strcasecmp(ext, ".css")) {
+				else if (!mget_strcasecmp_ascii(ext, ".css")) {
 					info_printf("parsing %s\n", fname);
 					mget_css_parse_file(fname, _css_dump_uri, _css_dump_charset, NULL);
 					css++;
@@ -1064,6 +1064,98 @@ static void test_utils(void)
 	}
 }
 
+static void test_strcasecmp_ascii(void)
+{
+	static const struct test_data {
+		const char *
+			s1;
+		const char *
+			s2;
+		int
+			result;
+	} test_data[] = {
+		{ NULL, NULL, 0 },
+		{ NULL, "x", -1 },
+		{ "x", NULL, 1 },
+		{ "Abc", "abc", 0 },
+		{ "abc", "abc", 0 },
+		{ "abc", "ab", 'c' },
+		{ "ab", "abc", -'c' },
+		{ "abc", "", 'a' },
+		{ "", "abc", -'a' },
+	};
+	static const struct test_data2 {
+		const char *
+			s1;
+		const char *
+			s2;
+		size_t
+			n;
+		int
+			result;
+	} test_data2[] = {
+		{ NULL, NULL, 1, 0 },
+		{ NULL, "x", 1, -1 },
+		{ "x", NULL, 1, 1 },
+		{ "Abc", "abc", 2, 0 },
+		{ "abc", "abc", 3, 0 },
+		{ "abc", "ab", 2, 0 },
+		{ "abc", "ab", 3, 'c' },
+		{ "ab", "abc", 2, 0 },
+		{ "ab", "abc", 3, -'c' },
+		{ "abc", "", 1, 'a' },
+		{ "", "abc", 1, -'a' },
+		{ "", "abc", 0, 0 },
+	};
+
+	for (unsigned it = 0; it < countof(test_data); it++) {
+		const struct test_data *t = &test_data[it];
+
+		int n = mget_strcasecmp_ascii(t->s1, t->s2);
+
+		if (n == t->result)
+			ok++;
+		else {
+			failed++;
+			info_printf("Failed [%u]: mget_strcasecmp_ascii(%s,%s) -> %d (expected %d)\n", it, t->s1, t->s2, n, t->result);
+		}
+	}
+
+	for (unsigned it = 0; it < countof(test_data2); it++) {
+		const struct test_data2 *t = &test_data2[it];
+
+		int n = mget_strncasecmp_ascii(t->s1, t->s2, t->n);
+
+		if (n == t->result)
+			ok++;
+		else {
+			failed++;
+			info_printf("Failed [%u]: mget_strncasecmp_ascii(%s,%s,%zd) -> %d (expected %d)\n", it, t->s1, t->s2, t->n, n, t->result);
+		}
+	}
+
+	for (unsigned it = 0; it < 26; it++) {
+		char s1[8], s2[8];
+
+		s1[0] = 'a' + it; s1[1] = 0;
+		s2[0] = 'A' + it; s2[1] = 0;
+
+		if (mget_strcasecmp_ascii(s1, s2) == 0)
+			ok++;
+		else {
+			failed++;
+			info_printf("Failed: mget_strcasecmp_ascii(%s,%s) != 0\n", s1, s2);
+		}
+
+		if (mget_strncasecmp_ascii(s1, s2, 1) == 0)
+			ok++;
+		else {
+			failed++;
+			info_printf("Failed: mget_strncasecmp_ascii(%s,%s) != 0\n", s1, s2);
+		}
+	}
+}
+
 struct ENTRY {
 	const char
 		*txt;
@@ -1071,7 +1163,7 @@ struct ENTRY {
 
 static int compare_txt(struct ENTRY *a1, struct ENTRY *a2)
 {
-	return strcasecmp(a1->txt, a2->txt);
+	return mget_strcasecmp_ascii(a1->txt, a2->txt);
 }
 
 static void test_vector(void)
@@ -1290,6 +1382,7 @@ int main(int argc, const char * const *argv)
 	test_buffer();
 	test_buffer_printf();
 	test_utils();
+	test_strcasecmp_ascii();
 	test_vector();
 	test_stringmap();
 

@@ -49,9 +49,9 @@ static void _sitemap_get_url(void *context, int flags, const char *dir, const ch
 	int type = 0;
 
 	if ((flags & XML_FLG_CONTENT) && len) {
-		if (!strcasecmp(dir, "/sitemapindex/sitemap/loc"))
+		if (!mget_strcasecmp_ascii(dir, "/sitemapindex/sitemap/loc"))
 			type = 1;
-		else if (!strcasecmp(dir, "/urlset/url/loc"))
+		else if (!mget_strcasecmp_ascii(dir, "/urlset/url/loc"))
 			type = 2;
 
 		if (type) {

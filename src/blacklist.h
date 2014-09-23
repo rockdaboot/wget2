@@ -31,7 +31,7 @@
 
 int
 	in_blacklist(mget_iri_t *iri) G_GNUC_MGET_NONNULL_ALL,
-	blacklist_size(void);
+	blacklist_size(void) G_GNUC_MGET_PURE;
 mget_iri_t
 	*blacklist_add(mget_iri_t *iri);
 void

@@ -153,7 +153,7 @@ static int G_GNUC_MGET_PURE _compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENT
 	int n;
 
 	if ((n = strcasecmp(a1->host, a2->host)) == 0)
-		return strcasecmp(a1->port, a2->port);
+		return mget_strcasecmp_ascii(a1->port, a2->port);
 
 	return n;
 }
@@ -247,11 +247,11 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 	char portbuf[16];
 
 	if (!isdigit(*port)) {
-		if (!strcasecmp(port, "http"))
+		if (!mget_strcasecmp_ascii(port, "http"))
 			port = "80";
-		else if (!strcasecmp(port, "https"))
+		else if (!mget_strcasecmp_ascii(port, "https"))
 			port = "443";
-		else if (!strcasecmp(port, "ftp"))
+		else if (!mget_strcasecmp_ascii(port, "ftp"))
 			port = "21";
 		else {
 			// TODO: check availability of getservbyname_r to use it

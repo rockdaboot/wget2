@@ -56,7 +56,7 @@ static void header_callback(void *context G_GNUC_MGET_UNUSED, mget_http_response
 		// won't work with split lines and not with empty values
 		for (char *p = strchr(resp->header->data, '\n'); p && sscanf(p + 1, " %63[a-zA-z-] : %127[^\r\n]", key, value) >= 1; p = strchr(p + 1, '\n')) {
 			// mget_info_printf("%s = %s\n", key, value);
-			if (!strcasecmp(key, "icy-name"))
+			if (!mget_strcasecmp_ascii(key, "icy-name"))
 				stream_name = strdup(value);
 			*value=0;
 		}
@@ -118,7 +118,7 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 		MGET_HTTP_URL, "http://listen.radionomy.com/gothica.m3u",
 		NULL);
 
-	if (resp && resp->code == 200 && !strcasecmp(resp->content_type, "audio/x-mpegurl")) {
+	if (resp && resp->code == 200 && !mget_strcasecmp_ascii(resp->content_type, "audio/x-mpegurl")) {
 		mget_buffer_trim(resp->body); // remove leading and trailing whitespace
 		stream_url = strndup(resp->body->data, resp->body->length);
 	}

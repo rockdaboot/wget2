@@ -389,7 +389,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 					if (context->callback)
 						context->callback(context->user_ctx, flags | XML_FLG_CLOSE, directory, NULL, NULL, 0, 0);
 					if (context->hints & XML_HINT_HTML) {
-						if (!strcasecmp(directory, "script")) {
+						if (!mget_strcasecmp_ascii(directory, "script")) {
 							// special HTML <script> content parsing
 							// see http://www.whatwg.org/specs/web-apps/current-work/multipage/scripting-1.html#the-script-element
 							// 4.3.1.2 Restrictions for contents of script elements

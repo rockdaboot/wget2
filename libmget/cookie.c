@@ -79,8 +79,8 @@ static int G_GNUC_MGET_NONNULL_ALL _compare_cookie(const mget_cookie_t *c1, cons
 	int n;
 
 	if (!(n = strcmp(c1->domain, c2->domain))) {
-		if (!(n = strcasecmp(c1->name, c2->name))) {
-			n = strcasecmp(c1->path, c2->path);
+		if (!(n = strcmp(c1->name, c2->name))) {
+			n = strcmp(c1->path, c2->path);
 		}
 	}
 
@@ -362,7 +362,7 @@ char *mget_cookie_create_request_header(mget_cookie_db_t *cookie_db, const mget_
 		mget_cookie_t *cookie = mget_vector_get(cookie_db->cookies, it);
 
 		if (((!cookie->host_only && _domain_match(cookie->domain, iri->host)) ||
-			(cookie->host_only && !strcasecmp(cookie->domain, iri->host))) &&
+			(cookie->host_only && !strcmp(cookie->domain, iri->host))) &&
 			(!cookie->expires || cookie->expires >= now) &&
 			(!cookie->secure_only || (cookie->secure_only && iri->scheme == MGET_IRI_SCHEME_HTTPS)) &&
 			_path_match(cookie->path, iri->path))

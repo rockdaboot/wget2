@@ -108,17 +108,17 @@ static void *_server_thread(void *ctx)
 				modified = 0;
 
 				for (p = strstr(buf, "\r\n"); sscanf(p, "\r\n%63[^:]: %255[^\r]", tag, value) == 2; p = strstr(p + 2, "\r\n")) {
-					if (!strcasecmp(tag, "Range")) {
+					if (!mget_strcasecmp_ascii(tag, "Range")) {
 						if ((byterange = sscanf(value, "bytes=%zd-%zd", &from_bytes, &to_bytes)) < 1)
 							byterange = 0;
 					}
-					else if (url && !strcasecmp(tag, "Authorization")) {
+					else if (url && !mget_strcasecmp_ascii(tag, "Authorization")) {
 						const char *auth_scheme, *s;
 
 						s=mget_http_parse_token(value, &auth_scheme);
 						while (isblank(*s)) s++;
 
-						if (!strcasecmp(auth_scheme, "basic")) {
+						if (!mget_strcasecmp_ascii(auth_scheme, "basic")) {
 							const char *encoded = mget_base64_encode_printf_alloc("%s:%s", url->auth_username, url->auth_password);
 
 							mget_error_printf("Auth check '%s' <-> '%s'\n", encoded, s);
@@ -130,7 +130,7 @@ static void *_server_thread(void *ctx)
 
 						mget_xfree(auth_scheme);
 					}
-					else if (!strcasecmp(tag, "If-Modified-Since")) {
+					else if (!mget_strcasecmp_ascii(tag, "If-Modified-Since")) {
 						modified = mget_http_parse_full_date(value);
 						mget_info_printf("modified = %ld\n", modified);
 					}
@@ -167,7 +167,7 @@ static void *_server_thread(void *ctx)
 				}
 
 				if (url->auth_method && !authorized) {
-					if (!strcasecmp(url->auth_method, "basic"))
+					if (!mget_strcasecmp_ascii(url->auth_method, "basic"))
 						mget_tcp_printf(tcp,
 							"HTTP/1.1 401 Unauthorized\r\n" \
 							"WWW-Authenticate: %s realm=\"Protected Page\"\r\n" \

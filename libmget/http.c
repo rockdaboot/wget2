@@ -219,7 +219,7 @@ const char *mget_parse_name_fixed(const char *s, const char **name, size_t *name
 
 static int G_GNUC_MGET_NONNULL_ALL compare_param(mget_http_header_param_t *p1, mget_http_header_param_t *p2)
 {
-	return strcasecmp(p1->name, p2->name);
+	return mget_strcasecmp_ascii(p1->name, p2->name);
 }
 
 void mget_http_add_param(mget_vector_t **params, mget_http_header_param_t *param)
@@ -279,14 +279,14 @@ const char *mget_http_parse_link(const char *s, mget_http_link_t *link)
 			while (*s == ';') {
 				s = mget_http_parse_param(s, &name, &value);
 				if (name && value) {
-					if (!strcasecmp(name, "rel")) {
-						if (!strcasecmp(value, "describedby"))
+					if (!mget_strcasecmp_ascii(name, "rel")) {
+						if (!mget_strcasecmp_ascii(value, "describedby"))
 							link->rel = link_rel_describedby;
-						else if (!strcasecmp(value, "duplicate"))
+						else if (!mget_strcasecmp_ascii(value, "duplicate"))
 							link->rel = link_rel_duplicate;
-					} else if (!strcasecmp(name, "pri")) {
+					} else if (!mget_strcasecmp_ascii(name, "pri")) {
 						link->pri = atoi(value);
-					} else if (!strcasecmp(name, "type")) {
+					} else if (!mget_strcasecmp_ascii(name, "type")) {
 						link->type = value;
 						value = NULL;
 					}
@@ -393,7 +393,7 @@ const char *mget_http_parse_transfer_encoding(const char *s, char *transfer_enco
 {
 	while (isblank(*s)) s++;
 
-	if (!strcasecmp(s, "identity"))
+	if (!mget_strcasecmp_ascii(s, "identity"))
 		*transfer_encoding = transfer_encoding_identity;
 	else
 		*transfer_encoding = transfer_encoding_chunked;
@@ -425,7 +425,7 @@ const char *mget_http_parse_content_type(const char *s, const char **content_typ
 
 		while (*s) {
 			s=mget_http_parse_param(s, &param.name, &param.value);
-			if (!mget_strcasecmp("charset", param.name)) {
+			if (!mget_strcasecmp_ascii("charset", param.name)) {
 				xfree(param.name);
 				*charset = param.value;
 				break;
@@ -463,7 +463,7 @@ const char *mget_http_parse_content_disposition(const char *s, const char **file
 
 		while (*s) {
 			s = mget_http_parse_param(s, &param.name, &param.value);
-			if (param.value && !mget_strcasecmp("filename", param.name)) {
+			if (param.value && !mget_strcasecmp_ascii("filename", param.name)) {
 				xfree(param.name);
 
 				//
@@ -473,7 +473,7 @@ const char *mget_http_parse_content_disposition(const char *s, const char **file
 				} else
 					*filename = param.value;
 				break;
-			} else if (param.value && !mget_strcasecmp("filename*", param.name)) {
+			} else if (param.value && !mget_strcasecmp_ascii("filename*", param.name)) {
 				// RFC5987
 				// ext-value     = charset  "'" [ language ] "'" value-chars
 				// ; like RFC 2231's <extended-initial-value>
@@ -547,7 +547,7 @@ const char *mget_http_parse_strict_transport_security(const char *s, time_t *max
 		s = mget_http_parse_param(s, &param.name, &param.value);
 
 		if (param.value) {
-			if (!mget_strcasecmp(param.name, "max-age")) {
+			if (!mget_strcasecmp_ascii(param.name, "max-age")) {
 				long offset = atol(param.value);
 
 				if (offset > 0)
@@ -556,7 +556,7 @@ const char *mget_http_parse_strict_transport_security(const char *s, time_t *max
 					*maxage = 0; // keep 0 as a special value: remove entry from HSTS database
 			}
 		} else {
-			if (!mget_strcasecmp(param.name, "includeSubDomains")) {
+			if (!mget_strcasecmp_ascii(param.name, "includeSubDomains")) {
 				*include_subdomains = 1;
 			}
 		}
@@ -574,13 +574,13 @@ const char *mget_http_parse_content_encoding(const char *s, char *content_encodi
 {
 	while (isblank(*s)) s++;
 
-	if (!strcasecmp(s, "gzip") || !strcasecmp(s, "x-gzip"))
+	if (!mget_strcasecmp_ascii(s, "gzip") || !mget_strcasecmp_ascii(s, "x-gzip"))
 		*content_encoding = mget_content_encoding_gzip;
-	else if (!strcasecmp(s, "deflate"))
+	else if (!mget_strcasecmp_ascii(s, "deflate"))
 		*content_encoding = mget_content_encoding_deflate;
-	else if (!strcasecmp(s, "bzip2"))
+	else if (!mget_strcasecmp_ascii(s, "bzip2"))
 		*content_encoding = mget_content_encoding_bzip2;
-	else if (!strcasecmp(s, "xz") || !strcasecmp(s, "lzma") || !strcasecmp(s, "x-lzma"))
+	else if (!mget_strcasecmp_ascii(s, "xz") || !mget_strcasecmp_ascii(s, "lzma") || !mget_strcasecmp_ascii(s, "x-lzma"))
 		// 'xz' is the tag currently understood by Firefox (2.1.2014)
 		// 'lzma' / 'x-lzma' are the tags currently understood by ELinks
 		*content_encoding = mget_content_encoding_lzma;
@@ -596,7 +596,7 @@ const char *mget_http_parse_connection(const char *s, char *keep_alive)
 {
 	while (isblank(*s)) s++;
 
-	if (!strcasecmp(s, "keep-alive"))
+	if (!mget_strcasecmp_ascii(s, "keep-alive"))
 		*keep_alive = 1;
 	else
 		*keep_alive = 0;
@@ -649,7 +649,7 @@ static long long NONNULL_ALL parse_rfc1123_date(const char *s)
 
 	if (*mname) {
 		for (it = 0; it < countof(mnames); it++) {
-			if (!strcasecmp(mname, mnames[it])) {
+			if (!mget_strcasecmp_ascii(mname, mnames[it])) {
 				mon = it + 1;
 				break;
 			}
@@ -745,7 +745,7 @@ time_t mget_http_parse_full_date(const char *s)
 		unsigned it;
 
 		for (it = 0; it < countof(mnames); it++) {
-			if (!strcasecmp(mname, mnames[it])) {
+			if (!mget_strcasecmp_ascii(mname, mnames[it])) {
 				mon = it + 1;
 				break;
 			}
@@ -958,9 +958,9 @@ const char *mget_http_parse_setcookie(const char *s, mget_cookie_t *cookie)
 					// find end of value
 					for (p = ++s; *s > 32 && *s <= 126 && *s != ';'; s++);
 
-					if (!strcasecmp(name, "expires")) {
+					if (!mget_strcasecmp_ascii(name, "expires")) {
 						cookie->expires = mget_http_parse_full_date(p);
-					} else if (!strcasecmp(name, "max-age")) {
+					} else if (!mget_strcasecmp_ascii(name, "max-age")) {
 						long offset = atol(p);
 
 						if (offset > 0)
@@ -968,7 +968,7 @@ const char *mget_http_parse_setcookie(const char *s, mget_cookie_t *cookie)
 							cookie->maxage = time(NULL) + offset;
 						else
 							cookie->maxage = 0;
-					} else if (!strcasecmp(name, "domain")) {
+					} else if (!mget_strcasecmp_ascii(name, "domain")) {
 						if (p != s) {
 							if (cookie->domain)
 								xfree(cookie->domain);
@@ -981,16 +981,16 @@ const char *mget_http_parse_setcookie(const char *s, mget_cookie_t *cookie)
 
 							cookie->domain = strndup(p, s - p);
 						}
-					} else if (!strcasecmp(name, "path")) {
+					} else if (!mget_strcasecmp_ascii(name, "path")) {
 						if (cookie->path)
 							xfree(cookie->path);
 						cookie->path = strndup(p, s - p);
 					} else {
 						debug_printf("Unsupported cookie-av '%s'\n", name);
 					}
-				} else if (!strcasecmp(name, "secure")) {
+				} else if (!mget_strcasecmp_ascii(name, "secure")) {
 					cookie->secure_only = 1;
-				} else if (!strcasecmp(name, "httponly")) {
+				} else if (!mget_strcasecmp_ascii(name, "httponly")) {
 					cookie->http_only = 1;
 				} else {
 					debug_printf("Unsupported cookie-av '%s'\n", name);
@@ -1153,7 +1153,7 @@ mget_http_response_t *mget_http_parse_response_header(char *buf)
 	// a workaround for broken server configurations
 	// see http://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
 	if (resp->content_encoding == mget_content_encoding_gzip &&
-		!strcasecmp(resp->content_type, "application/x-gzip"))
+		!mget_strcasecmp_ascii(resp->content_type, "application/x-gzip"))
 	{
 		debug_printf("Broken server configuration gzip workaround triggered\n");
 		resp->content_encoding =  mget_content_encoding_identity;
@@ -1289,12 +1289,12 @@ void mget_http_add_credentials(mget_http_request_t *req, mget_http_challenge_t *
 	if (!password)
 		password = "";
 
-	if (!strcasecmp(challenge->auth_scheme, "basic")) {
+	if (!mget_strcasecmp_ascii(challenge->auth_scheme, "basic")) {
 		const char *encoded = mget_base64_encode_printf_alloc("%s:%s", username, password);
 		mget_http_add_header_printf(req, "Authorization: Basic %s", encoded);
 		xfree(encoded);
 	}
-	else if (!strcasecmp(challenge->auth_scheme, "digest")) {
+	else if (!mget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
 #ifndef MD5_DIGEST_LENGTH
 #  define MD5_DIGEST_LENGTH 16
 #endif
@@ -1594,7 +1594,7 @@ mget_http_response_t *mget_http_get_response_cb(
 					goto cleanup; // stop requested by callback function
 			}
 
-			if (req && !strcasecmp(req->method, "HEAD"))
+			if (req && !mget_strcasecmp_ascii(req->method, "HEAD"))
 				goto cleanup; // a HEAD response won't have a body
 				
 			p += 4; // skip \r\n\r\n to point to body
@@ -1812,7 +1812,7 @@ mget_http_response_t *mget_http_get_response(
 
 	if (resp) {
 		resp->body = body;
-		if (!strcasecmp(req->method, "GET"))
+		if (!mget_strcasecmp_ascii(req->method, "GET"))
 			resp->content_length = body->length;
 	} else {
 		mget_buffer_free(&body);
