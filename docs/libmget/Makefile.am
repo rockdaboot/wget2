@@ -113,6 +113,9 @@ if ENABLE_MAN
 theMANS += libmget-xalloc.3 libmget-utils.3 libmget-list.3
 man_MANS += docs $(theMANS)
 
+# make distcheck -jn randomly breaks
+.NOTPARALLEL:
+
 %.3:
 #.xml.3:
 	@file=xml/`echo $@|cut -d'.' -f1`.xml; \
