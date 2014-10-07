@@ -6,7 +6,7 @@ libmget_@LIBMGET_API_VERSION@_la_SOURCES = \
  list.c log.c logger.c md5.c mem.c metalink.c net.c pipe.c printf.c robots.c rss_url.c sitemap_url.c ssl_gnutls.c\
  stringmap.c thread.c utils.c vector.c xalloc.c xml.c private.h http_highlevel.c
 
-libmget_@LIBMGET_API_VERSION@_la_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src
+libmget_@LIBMGET_API_VERSION@_la_CPPFLAGS = -I$(top_srcdir)/include -I$(srcdir)
 
 # include ABI version information
 libmget_@LIBMGET_API_VERSION@_la_LDFLAGS = -version-info $(LIBMGET_SO_VERSION)

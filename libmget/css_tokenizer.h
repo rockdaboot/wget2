@@ -53,6 +53,6 @@ enum {
   COMMENT
 };
 
-#define YY_FATAL_ERROR(msg) error_printf_exit(msg)
+#define YY_FATAL_ERROR(msg) mget_error_printf_exit(msg)
 
 #endif /* CSS_TOKENIZER_H */

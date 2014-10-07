@@ -15,7 +15,6 @@
 #include <libmget.h>
 
 #include "css_tokenizer.h"
-#include "log.h"
 
 %}
 

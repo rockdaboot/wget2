@@ -21,7 +21,7 @@ test_parse_html_LDADD = ../libmget/libmget-@LIBMGET_API_VERSION@.la ../src/mget-
 
 noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = libtest.c
-libtest_la_CPPFLAGS = -I$(top_srcdir)/tests -I$(top_srcdir)/include
+libtest_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include
 #libtest_LDADD = libtest.o
 
 EXTRA_DIST = files libtest.h certs/x509-ca.pem certs

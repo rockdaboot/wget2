@@ -46,8 +46,7 @@
 #include <string.h>
 
 #include <libmget.h>
-
-#include "mget.h"
+#include "private.h"
 
 typedef struct {
 	mget_metalink_t

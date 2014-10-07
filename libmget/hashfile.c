@@ -40,8 +40,6 @@
 #include <libmget.h>
 #include <private.h>
 
-#include "log.h"
-
 // Interfaces and types inspired by GnuTLS since it was my first used digest/hash interface
 
 mget_digest_algorithm_t mget_hash_get_algorithm(const char *name)
