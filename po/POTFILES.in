@@ -12,7 +12,6 @@ libmget/buffer_printf.c
 libmget/compat.c
 libmget/cookie.c
 libmget/css.c
-libmget/css_tokenizer.c
 libmget/css_url.c
 libmget/decompressor.c
 libmget/encoding.c
