@@ -143,8 +143,10 @@ AC_ARG_ENABLE(valgrind-tests,
 if test "${ac_enable_valgrind}" != "no" ; then
   AC_CHECK_PROG(HAVE_VALGRIND, valgrind, yes, no)
   if test "$HAVE_VALGRIND" = "yes" ; then
-    VALGRIND_ENVIRONMENT="valgrind --error-exitcode=1 --leak-check=yes --show-reachable=yes --track-origins=yes"
-    AC_SUBST(VALGRIND_ENVIRONMENT)
+#    VALGRIND_ENVIRONMENT="valgrind --error-exitcode=1 --leak-check=yes --show-reachable=yes --track-origins=yes"
+#    AC_SUBST(VALGRIND_ENVIRONMENT)
+    VALGRIND_TESTS="1"
+    AC_SUBST(VALGRIND_TESTS)
     TESTS_INFO="Test suite will be run under Valgrind"
   else
     TESTS_INFO="Valgrind not found"

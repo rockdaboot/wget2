@@ -403,7 +403,8 @@ static void test_iri_parse(void)
 		{ "http://example.com/index.html?#", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "", ""},
 		{ "碼標準萬國碼.com", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "xn--9cs565brid46mda086o.com", NULL, NULL, NULL, NULL},
 		//		{ "ftp://cnn.example.com&story=breaking_news@10.0.0.1/top_story.htm", NULL,"ftp",NULL,NULL,"cnn.example.com",NULL,NULL,"story=breaking_news@10.0.0.1/top_story.htm",NULL }
-		{ "ftp://cnn.example.com?story=breaking_news@10.0.0.1/top_story.htm", NULL, "ftp", NULL, NULL, "cnn.example.com", NULL, NULL, "story=breaking_news@10.0.0.1/top_story.htm", NULL}
+		{ "ftp://cnn.example.com?story=breaking_news@10.0.0.1/top_story.htm", NULL, "ftp", NULL, NULL, "cnn.example.com", NULL, NULL, "story=breaking_news@10.0.0.1/top_story.htm", NULL},
+//		{ "site;sub:.html", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "site", NULL, ";sub:.html", NULL, NULL},
 	};
 	unsigned it;
 
@@ -503,6 +504,7 @@ static void test_iri_relative_to_absolute(void)
 		{ H1, "/x.php?y=ftp://example.com/&z=1_2", H1"/x.php?y=ftp://example.com/&z=1_2" },
 		{ H1, "//x.y.com/", "http://x.y.com/" },
 		{ H1, "http://x.y.com/", "http://x.y.com/" },
+//		{ H1, "site;sub:.html", H1"/site;sub:.html" },
 #undef H1
 #define H1 "http://x.tld/"
 		{ H1, "", H1"" },
@@ -1363,15 +1365,21 @@ static void test_stringmap(void)
 int main(int argc, const char * const *argv)
 {
 	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
-	if (argc == 1) {
-		const char *valgrind = getenv("TESTS_VALGRIND");
+	const char *valgrind = getenv("VALGRIND_TESTS");
 
-		if (valgrind && *valgrind) {
-			char cmd[strlen(valgrind)+strlen(argv[0])+32];
+	if (!valgrind || !*valgrind || !strcmp(valgrind, "0")) {
+		// fallthrough
+	}
+	else if (!strcmp(valgrind, "1")) {
+		char cmd[strlen(argv[0]) + 256];
 
-			snprintf(cmd, sizeof(cmd), "TESTS_VALGRIND="" %s %s", valgrind, argv[0]);
-			return system(cmd) != 0;
-		}
+		snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s", argv[0]);
+		return system(cmd) != 0;
+	} else {
+		char cmd[strlen(valgrind) + strlen(argv[0]) + 32];
+
+		snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS="" %s %s", valgrind, argv[0]);
+		return system(cmd) != 0;
 	}
 
 	init(argc, argv); // allows us to test with options (e.g. with --debug)

@@ -30,5 +30,6 @@ dist-hook:
 #	cp $(top_srcdir)/data/public_suffixes.txt $(distdir)/files/
 #	rm -rf `find $(distdir)/files -name CVS`
 
-AM_TESTS_ENVIRONMENT = TESTS_VALGRIND="@VALGRIND_ENVIRONMENT@"
+#AM_TESTS_ENVIRONMENT = VALGRIND_TESTS"=@VALGRIND_ENVIRONMENT@"
+AM_TESTS_ENVIRONMENT = export VALGRIND_TESTS"=@VALGRIND_TESTS@";
 TESTS = $(MGET_TESTS)

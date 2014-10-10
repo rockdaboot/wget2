@@ -170,6 +170,26 @@ To create Mget HTML documentation and man pages
 		./configure --enable-gtk-doc --enable-man
 		make
 
+Valgrind Testing
+----------------
+
+To run the test suite with valgrind memcheck
+
+		TESTS_ENVIRONMENT="VALGRIND_TESTS=1" make check
+
+or if you want valgrind memcheck by default
+
+		./configure --enable-valgrind-tests
+		make check
+
+To run single tests with valgrind (e.g. test-k)
+
+		cd tests
+		VALGRIND_TESTS=1 ./test-k
+
+Why not directly using valgrind like 'valgrind --leak-check=full ./test-k' ?
+Well, you want to valgrind 'mget' and not the test program itself, right ?
+
 Documentation
 -------------
 
