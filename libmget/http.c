@@ -1499,7 +1499,7 @@ ssize_t mget_http_request_to_buffer(mget_http_request_t *req, mget_buffer_t *buf
 {
 	int use_proxy = 0;
 
-//	buffer_sprintf(buf, "%s /%s HTTP/1.1\r\nHOST: %s", req->method, req->esc_resource.data ? req->esc_resource.data : "",);
+//	buffer_sprintf(buf, "%s /%s HTTP/1.1\r\nHost: %s", req->method, req->esc_resource.data ? req->esc_resource.data : "",);
 
 	mget_buffer_strcpy(buf, req->method);
 	mget_buffer_memcat(buf, " ", 1);

@@ -2288,6 +2288,10 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 				mget_buffer_strcpy(&buf, referer->scheme);
 				mget_buffer_memcat(&buf, "://", 3);
 				mget_buffer_strcat(&buf, referer->host);
+				if (referer->resolv_port) {
+					mget_buffer_memcat(&buf, ":", 1);
+					mget_buffer_strcat(&buf, referer->resolv_port);
+				}
 				mget_buffer_memcat(&buf, "/", 1);
 				mget_iri_get_escaped_resource(referer, &buf);
 
