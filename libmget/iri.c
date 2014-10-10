@@ -57,6 +57,8 @@ const char
 #define IRI_CTYPE_UNRESERVED (1<<2)
 #define _iri_isunreserved(c) (iri_ctype[(unsigned char)(c)]&IRI_CTYPE_UNRESERVED)
 
+#define _iri_isscheme(c) (isalnum(c) || c == '+' || c == '-' || c == '.')
+
 static const unsigned char
 	iri_ctype[256] = {
 		[':'] = IRI_CTYPE_GENDELIM,
@@ -151,7 +153,7 @@ mget_iri_t *mget_iri_parse(const char *url, const char *encoding)
 	const char *default_port = NULL;
 	char *p, *s, *authority, c;
 	size_t slen, it;
-	int url_allocated;
+	int url_allocated, maybe_scheme;
 
 	if (!url)
 		return NULL;
@@ -202,10 +204,17 @@ mget_iri_t *mget_iri_parse(const char *url, const char *encoding)
 		xfree(url);
 
 	p = s;
-	while (*s && !_iri_isgendelim(*s))
-		s++;
+	if (isalpha(*p)) {
+		maybe_scheme = 1;
+		while (*s && !_iri_isgendelim(*s)) {
+			if (maybe_scheme && !_iri_isscheme(*s))
+				maybe_scheme = 0;
+			s++;
+		}
+	} else
+		maybe_scheme = 0;
 
-	if (*s == ':' && s[1]=='/') {
+	if (maybe_scheme && (*s == ':' && (s[1] == '/' || s[1] == 0))) {
 		// found a scheme
 		*s++ = 0;
 
