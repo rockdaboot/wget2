@@ -1047,7 +1047,8 @@ void *downloader_thread(void *p)
 			if (!resp)
 				goto ready;
 
-			if (resp->code == 404)
+			// Wget compatibility
+			if (resp->code/100 == 4)
 				set_exit_status(8);
 
 			if (config.spider || job->head_first) {
