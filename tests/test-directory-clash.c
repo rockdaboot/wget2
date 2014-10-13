@@ -88,6 +88,7 @@ int main(void)
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[3].name + 1, urls[3].body },
+			{ "subdir.1", urls[2].body, 0 }, // filename / directory clash appends .x to the file
 			{	NULL } },
 		0);
 
@@ -98,6 +99,7 @@ int main(void)
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[1].name + 1, urls[1].body },
 			{ urls[3].name + 1, urls[3].body },
+			{ "subdir.1", urls[2].body, 0 }, // filename / directory clash appends .x to the file
 			{	NULL } },
 		0);
 

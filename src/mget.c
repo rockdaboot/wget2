@@ -211,6 +211,65 @@ static char *restrict_file_name(char *fname, char *esc)
 	return fname;
 }
 
+// this function should be called protected by a mutex - else race conditions will happen
+static void mkdir_path(char *fname)
+{
+	char *p1, *p2;
+	int rc;
+
+	for (p1 = fname; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
+		*p2 = 0; // replace path separator
+
+		// relative paths should have been normalized earlier,
+		// but for security reasons, don't trust myself...
+		if (*p1 == '.' && p1[1] == '.')
+			error_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), fname);
+
+#if defined(_WIN32) || defined(_WIN64)
+		rc = mkdir(fname);
+#else
+		rc = mkdir(fname, 0755);
+#endif
+		debug_printf("mkdir(%s)=%d errno=%d\n",fname,rc,errno);
+		if (rc) {
+			struct stat st;
+
+			if (errno == EEXIST && stat(fname, &st) == 0 && (st.st_mode & S_IFMT) == S_IFREG) {
+				// we have a file in the way... move it away and retry
+				int renamed = 0;
+
+				for (int fnum = 1; fnum <= 999 && !renamed; fnum++) {
+					char dst[strlen(fname) + 1 + 32];
+
+					snprintf(dst, sizeof(dst), "%s.%d", fname, fnum);
+					if (access(dst, F_OK) != 0 && rename(fname, dst) == 0)
+						renamed = 1;
+				}
+
+				if (renamed) {
+#if defined(_WIN32) || defined(_WIN64)
+					rc = mkdir(fname);
+#else
+					rc = mkdir(fname, 0755);
+#endif
+					if (rc) {
+						error_printf(_("Failed to make directory '%s' (errno=%d)\n"), fname, errno);
+						*p2 = '/'; // restore path separator
+						break;
+					}
+				} else
+					error_printf(_("Failed to rename '%s' (errno=%d)\n"), fname, errno);
+			} else if (errno != EEXIST) {
+				error_printf(_("Failed to make directory '%s' (errno=%d)\n"), fname, errno);
+				*p2 = '/'; // restore path separator
+				break;
+			}
+		} else debug_printf("created dir %s\n", fname);
+
+		*p2 = '/'; // restore path separator
+	}
+}
+
 // generate the local filename corresponding to an URI
 // respect the following options:
 // --restrict-file-names (unix,windows,nocontrol,ascii,lowercase,uppercase)
@@ -301,31 +360,8 @@ const char * G_GNUC_MGET_NONNULL_ALL get_local_filename(mget_iri_t *iri)
 		}
 	}
 
-	// create the complete path
-	if (*fname) {
-		char *p1, *p2;
-
-		for (p1 = fname; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
-			*p2 = 0; // replace path separator
-
-			// relative paths should have been normalized earlier,
-			// but for security reasons, don't trust myself...
-			if (*p1 == '.' && p1[1] == '.')
-				error_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), fname);
-
-#if defined(_WIN32) || defined(_WIN64)
-			if (mkdir(fname) != 0 && errno != EEXIST) {
-#else
-			if (mkdir(fname, 0755) != 0 && errno != EEXIST) {
-#endif
-				error_printf(_("Failed to make directory '%s'\n"), fname);
-				*p2 = '/'; // restore path separator
-				return fname;
-			} else debug_printf("mkdir %s\n", fname);
-
-			*p2 = '/'; // restore path separator
-		}
-	}
+	// create the complete directory path
+//	mkdir_path(fname);
 
 	if (config.delete_after) {
 		mget_buffer_deinit(&buf);
@@ -1837,6 +1873,8 @@ static void set_file_mtime(const char *filename, time_t modified)
 
 static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, const char *fname, int flag)
 {
+	static mget_thread_mutex_t
+		savefile_mutex = MGET_THREAD_MUTEX_INITIALIZER;
 	char *alloced_fname = NULL;
 	int fd, multiple = 0, fnum, oflag = flag;
 	size_t fname_length;
@@ -1934,6 +1972,10 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 		return;
 	}
 
+	mget_thread_mutex_lock(&savefile_mutex);
+
+	fname_length += 16;
+
 	if (config.timestamping) {
 		if (oflag == O_TRUNC)
 			flag = O_TRUNC;
@@ -1943,7 +1985,6 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 	} else if (flag != O_APPEND) {
 		// wget compatibility: "clobber" means generating of .x files
 		multiple = 1;
-		fname_length += 16;
 		flag = O_EXCL;
 
 		if (config.backups) {
@@ -1962,8 +2003,10 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 		}
 	}
 
+	// create the complete directory path
+	mkdir_path((char *) fname);
 	fd = open(fname, O_WRONLY | flag | O_CREAT, 0644);
-//	info_printf("fd=%d flag=%02x (%02x %02x %02x)\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND);
+	// debug_printf("1 fd=%d flag=%02x (%02x %02x %02x) errno=%d %s\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND,errno,fname);
 
 	for (fnum = 0; fnum < 999;) { // just prevent endless loop
 		char unique[fname_length + 1];
@@ -1996,7 +2039,7 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 
 			close(fd);
 		}
-		else if (multiple && errno == EEXIST) {
+		else if ((multiple && errno == EEXIST) || errno == EISDIR) {
 			snprintf(unique, sizeof(unique), "%s.%d", fname, ++fnum);
 			fd = open(unique, O_WRONLY | flag | O_CREAT, 0644);
 			continue;
@@ -2004,6 +2047,8 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 
 		break;
 	}
+
+	mget_thread_mutex_unlock(&savefile_mutex);
 
 	if (fd == -1) {
 		if (errno == EEXIST && fnum < 999)
