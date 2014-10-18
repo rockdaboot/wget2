@@ -1577,6 +1577,28 @@ ROBOTS *
 void
 	mget_robots_free(ROBOTS **robots);
 
+/*
+ * Progress bar routines
+ */
+
+typedef struct _mget_bar_st mget_bar_t;
+
+mget_bar_t *
+	mget_bar_init(mget_bar_t *bar, int nslots, int max_width);
+void
+	mget_bar_deinit(mget_bar_t *bar);
+void
+	mget_bar_free(mget_bar_t **bar);
+void
+	mget_bar_update(const mget_bar_t *bar, int slotpos, int max, int cur);
+void
+	mget_bar_print(mget_bar_t *bar, int slotpos, const char *s);
+ssize_t
+	mget_bar_vprintf(mget_bar_t *bar, int slotpos, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(3,0) G_GNUC_MGET_NONNULL_ALL;
+ssize_t
+	mget_bar_printf(mget_bar_t *bar, int slotpos, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(3,4) G_GNUC_MGET_NONNULL_ALL;
+
+
 MGET_END_DECLS
 
 #endif /* _LIBMGET_LIBMGET_H */

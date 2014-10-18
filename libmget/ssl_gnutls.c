@@ -531,10 +531,10 @@ void mget_ssl_init(void)
 			if (_config.direct_options) {
 				ret = gnutls_priority_init(&_priority_cache, _config.direct_options, NULL);
 			} else if (!mget_strcasecmp_ascii(_config.secure_protocol, "PFS")) {
-				priorities = "PFS";
+				priorities = "PFS:-VERS-SSL3.0";
 				// -RSA to force DHE/ECDHE key exchanges to have Perfect Forward Secrecy (PFS))
 				if ((ret = gnutls_priority_init(&_priority_cache, priorities, NULL)) != GNUTLS_E_SUCCESS) {
-					priorities = "NORMAL:-RSA";
+					priorities = "NORMAL:-RSA:-VERS-SSL3.0";
 					ret = gnutls_priority_init(&_priority_cache, priorities, NULL);
 				}
 			} else {
@@ -543,7 +543,7 @@ void mget_ssl_init(void)
 				else if (!mget_strcasecmp_ascii(_config.secure_protocol, "TLSv1"))
 					priorities = "NORMAL:-VERS-SSL3.0";
 				else if (!mget_strcasecmp_ascii(_config.secure_protocol, "auto"))
-					priorities = "NORMAL:%COMPAT";
+					priorities = "NORMAL:%COMPAT:-VERS-SSL3.0";
 				else if (*_config.secure_protocol)
 					priorities = _config.secure_protocol;
 				
