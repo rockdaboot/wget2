@@ -74,6 +74,7 @@ struct config {
 		*ca_cert,
 		*ca_directory,
 		*cert_file,
+		*crl_file,
 		*egd_file,
 		*private_key,
 		*random_file,

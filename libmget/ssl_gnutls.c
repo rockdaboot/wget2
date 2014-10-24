@@ -60,7 +60,8 @@ static struct _config {
 		*ca_directory,
 		*ca_file,
 		*cert_file,
-		*key_file;
+		*key_file,
+		*crl_file;
 	char
 		check_certificate,
 		check_hostname,
@@ -91,6 +92,7 @@ void mget_ssl_set_config_string(int key, const char *value)
 	case MGET_SSL_CA_FILE: _config.ca_file = value; break;
 	case MGET_SSL_CERT_FILE: _config.cert_file = value; break;
 	case MGET_SSL_KEY_FILE: _config.key_file = value; break;
+	case MGET_SSL_CRL_FILE: _config.crl_file = value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
 	}
 }
@@ -506,7 +508,7 @@ void mget_ssl_init(void)
 
 								debug_printf("GnuTLS loading %s\n", fname);
 								if ((rc = gnutls_certificate_set_x509_trust_file(_credentials, fname, GNUTLS_X509_FMT_PEM)) <= 0)
-									debug_printf("Failed to load certs: (%d)\n", rc);
+									debug_printf("Failed to load cert '%s': (%d)\n", fname, rc);
 								else
 									ncerts += rc;
 							}
@@ -520,6 +522,13 @@ void mget_ssl_init(void)
 			}
 
 			debug_printf("Certificates loaded: %d\n", ncerts);
+		}
+
+		if (_config.crl_file) {
+			int rc;
+
+			if ((rc = gnutls_certificate_set_x509_crl_file(_credentials, _config.crl_file, GNUTLS_X509_FMT_PEM)) <= 0)
+				error_printf("Failed to load CRL '%s': (%d)\n", _config.crl_file, rc);
 		}
 
 		_set_credentials(&_credentials);

@@ -201,6 +201,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --private-key-type  Type of the private key (PEM or DER). (default: PEM)\n"
 		"      --ca-certificate    File with bundle of PEM CA certificates.\n"
 		"      --ca-directory      Directory with PEM CA certificates.\n"
+		"      --crl-file          File with PEM CRL certificates.\n"
 		"      --random-file       File to be used as source of random data.\n"
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
 		"      --https-only        Do not follow non-secure URLs. (default: off)"
@@ -614,6 +615,7 @@ static const struct option options[] = {
 	{ "convert-links", &config.convert_links, parse_bool, 0, 'k' },
 	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0 },
 	{ "cookies", &config.cookies, parse_bool, 0, 0 },
+	{ "crl-file", &config.crl_file, parse_string, 1, 0 },
 	{ "cut-dirs", &config.cut_directories, parse_integer, 1, 0 },
 	{ "debug", &config.debug, parse_bool, 0, 'd' },
 	{ "default-page", &config.default_page, parse_string, 1, 0 },
@@ -1315,6 +1317,7 @@ int init(int argc, const char *const *argv)
 	mget_ssl_set_config_string(MGET_SSL_CA_FILE, config.ca_cert);
 	mget_ssl_set_config_string(MGET_SSL_CERT_FILE, config.cert_file);
 	mget_ssl_set_config_string(MGET_SSL_KEY_FILE, config.private_key);
+	mget_ssl_set_config_string(MGET_SSL_CRL_FILE, config.crl_file);
 
 	return n;
 }
@@ -1342,6 +1345,7 @@ void deinit(void)
 	xfree(config.ca_cert);
 	xfree(config.ca_directory);
 	xfree(config.cert_file);
+	xfree(config.crl_file);
 	xfree(config.egd_file);
 	xfree(config.private_key);
 	xfree(config.random_file);

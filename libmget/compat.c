@@ -45,7 +45,7 @@ size_t strlcpy(char *dst, const char *src, size_t size)
 {
 	const char *old = src;
 
-	// Copy as many bytes as will fit */
+	// Copy as many bytes as will fit
 	if (size) {
 		while (--size) {
 			if (!(*dst++ = *src++))

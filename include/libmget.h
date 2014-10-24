@@ -1136,14 +1136,15 @@ ssize_t
 #define MGET_SSL_CA_DIRECTORY      2
 #define MGET_SSL_CA_FILE           3
 #define MGET_SSL_CERT_FILE         4
-#define MGET_SSL_KEY_FILE       5
+#define MGET_SSL_KEY_FILE          5
 #define MGET_SSL_CA_TYPE           6
 #define MGET_SSL_CERT_TYPE         7
-#define MGET_SSL_KEY_TYPE  8
+#define MGET_SSL_KEY_TYPE          8
 #define MGET_SSL_CHECK_CERTIFICATE 9
 #define MGET_SSL_CHECK_HOSTNAME    10
 #define MGET_SSL_PRINT_INFO        11
 #define MGET_SSL_DIRECT_OPTIONS    12
+#define MGET_SSL_CRL_FILE          13
 
 void
 	mget_ssl_init(void);
