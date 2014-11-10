@@ -290,7 +290,8 @@ AC_CHECK_FUNCS([\
  clock_gettime dprintf dup2 futimens gettimeofday localtime_r memchr\
  memmove memset mkdir munmap select setlocale socket strcasecmp\
  strchr strdup strerror strncasecmp strndup strrchr strstr strlcpy \
- vasprintf nanosleep usleep iconv nl_langinfo futimens glob pwrite])
+ vasprintf nanosleep usleep iconv nl_langinfo futimens glob pwrite \
+ qsort_r])
 
 AC_CONFIG_FILES([Makefile
                  include/Makefile

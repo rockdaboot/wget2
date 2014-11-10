@@ -374,9 +374,7 @@ void mget_vector_set_destructor(mget_vector_t *v, void (*destructor)(void *elem)
 		v->destructor = destructor;
 }
 
-#if defined(__clang__)
-void qsort_r (void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *, void *), void *arg) G_GNUC_MGET_NONNULL((1,4));
-
+#if HAVE_QSORT_R
 static int G_GNUC_MGET_NONNULL_ALL _compare(const void *p1, const void *p2, void *v)
 {
 	return ((mget_vector_t *)v)->cmp(*((void **)p1), *((void **)p2));
@@ -386,14 +384,20 @@ static int G_GNUC_MGET_NONNULL_ALL _compare(const void *p1, const void *p2, void
 void mget_vector_sort(mget_vector_t *v)
 {
 /*
- * without the intermediate _compare function below, v->cmp must take 'const void **elem{1|2}'
- * but than, the other calls to v->cmp must change as well
+ * Without the intermediate _compare function below, v->cmp must take 'const void **elem{1|2}'
+ * but than, the other calls to v->cmp must change as well.
  *
- * to work lock-less (e.g. with a mutex), we need 'nested functions' (GCC, Intel, IBM)
- * or BLOCKS (clang) or the GNU libc extension qsort_r()
+ * To work lock-less (e.g. with a mutex), we need 'nested functions' (GCC, Intel, IBM)
+ * or BLOCKS (clang) or the GNU libc extension qsort_r().
+ * Using BLOCKS would also need a qsort_b() function...
  *
  */
-#if !defined(__clang__)
+#if HAVE_QSORT_R
+	if (v && v->cmp) {
+		qsort_r(v->entry, v->cur, sizeof(void *), _compare, v);
+		v->sorted = 1;
+	}
+#elif !defined(__clang__)
 	int G_GNUC_MGET_NONNULL_ALL _compare(const void *p1, const void *p2)
 	{
 		return v->cmp(*((void **)p1), *((void **)p2));
@@ -404,6 +408,7 @@ void mget_vector_sort(mget_vector_t *v)
 		v->sorted = 1;
 	}
 #else
+#error You need gcc or qsort_r() to build Mget
 /*
 	// this should work as soon as the qsort_b() function is available ;-)
 	if (v && v->cmp) {
@@ -415,12 +420,7 @@ void mget_vector_sort(mget_vector_t *v)
 		v->sorted = 1;
 	}
 */
-	if (v && v->cmp) {
-		qsort_r(v->entry, v->cur, sizeof(void *), _compare, v);
-		v->sorted = 1;
-	}
 #endif
-
 }
 
 // Find first entry that matches spth specified element,
