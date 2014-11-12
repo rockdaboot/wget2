@@ -461,7 +461,7 @@ static void _set_credentials(gnutls_certificate_credentials_t *credentials)
 
 	if (_config.ca_file) {
 		if (gnutls_certificate_set_x509_trust_file(*credentials, _config.ca_file, _key_type(_config.ca_type)) <= 0)
-			error_printf(_("No CAs were found\n"));
+			error_printf(_("No CAs were found in '%s'\n"), _config.ca_file);
 	}
 }
 
@@ -520,8 +520,6 @@ void mget_ssl_init(void)
 					error_printf(_("Failed to opendir %s\n"), _config.ca_directory);
 				}
 			}
-
-			debug_printf("Certificates loaded: %d\n", ncerts);
 		}
 
 		if (_config.crl_file) {
@@ -532,6 +530,8 @@ void mget_ssl_init(void)
 		}
 
 		_set_credentials(&_credentials);
+
+		debug_printf("Certificates loaded: %d\n", ncerts);
 
 		if (_config.secure_protocol || _config.direct_options) {
 			const char *priorities = NULL;
