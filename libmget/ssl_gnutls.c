@@ -338,8 +338,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	/* This verification function uses the trusted CAs in the credentials
 	 * structure. So you must have installed one or more CA certificates.
 	 */
-//	if (gnutls_certificate_verify_peers2(session, &status) != GNUTLS_E_SUCCESS) {
+#if GNUTLS_VERSION_NUMBER >= 0x030104
 	if (gnutls_certificate_verify_peers3(session, hostname, &status) != GNUTLS_E_SUCCESS) {
+#else
+	if (gnutls_certificate_verify_peers2(session, &status) != GNUTLS_E_SUCCESS) {
+#endif
 //		if (mget_get_logger(MGET_LOGGER_DEBUG))
 //			_print_info(session);
 		error_printf(_("%s: Certificate verification error\n"), tag);
@@ -365,15 +368,26 @@ static int _verify_certificate_callback(gnutls_session_t session)
 			error_printf(_("%s: The certificate is not yet activated.\n"), tag);
 		if (status & GNUTLS_CERT_EXPIRED)
 			error_printf(_("%s: The certificate has expired.\n"), tag);
+#ifdef GNUTLS_CERT_SIGNATURE_FAILURE
 		if (status & GNUTLS_CERT_SIGNATURE_FAILURE)
 			error_printf(_("%s: The certificate signature is invalid.\n"), tag);
+#endif
+#ifdef GNUTLS_CERT_UNEXPECTED_OWNER
 		if (status & GNUTLS_CERT_UNEXPECTED_OWNER)
 			error_printf(_("%s: The certificate's owner does not match hostname '%s'.\n"), tag, hostname);
+#endif
 
 		// any other reason
 		if (status & ~(GNUTLS_CERT_INVALID|GNUTLS_CERT_REVOKED|GNUTLS_CERT_SIGNER_NOT_FOUND|
 			GNUTLS_CERT_SIGNER_NOT_CA|GNUTLS_CERT_INSECURE_ALGORITHM|GNUTLS_CERT_NOT_ACTIVATED|
-			GNUTLS_CERT_EXPIRED|GNUTLS_CERT_SIGNATURE_FAILURE|GNUTLS_CERT_UNEXPECTED_OWNER))
+			GNUTLS_CERT_EXPIRED
+#ifdef GNUTLS_CERT_SIGNATURE_FAILURE
+			|GNUTLS_CERT_SIGNATURE_FAILURE
+#endif
+#ifdef GNUTLS_CERT_UNEXPECTED_OWNER
+			|GNUTLS_CERT_UNEXPECTED_OWNER
+#endif
+			))
 			error_printf(_("%s: The certificate could not be verified (0x%X).\n"), tag, status);
 
 		ret = -1;
@@ -426,11 +440,13 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		ret = -1;
 	}
 
+#if GNUTLS_VERSION_NUMBER >= 0x030103
 	if (!gnutls_ocsp_status_request_is_checked(session, 0)) {
 		error_printf(_("%s: The certificate's (stapled) OCSP status has not been sent or is invalid\n"), tag);
 	} else {
 		error_printf(_("%s: The certificate's (stapled) OCSP status is valid\n"), tag);
 	}
+#endif
 
 	gnutls_x509_crt_deinit(cert);
 
@@ -495,7 +511,7 @@ void mget_ssl_init(void)
 		gnutls_certificate_set_verify_function(_credentials, _verify_certificate_callback);
 
 		if (_config.ca_directory && *_config.ca_directory && _config.check_certificate) {
-#if GNUTLS_VERSION_MAJOR >= 3
+#if GNUTLS_VERSION_NUMBER >= 0x030014
 			if (!strcmp(_config.ca_directory, "system"))
 				ncerts = gnutls_certificate_set_x509_system_trust(_credentials);
 #else
@@ -691,9 +707,11 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, _credentials);
 	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
 
+#if GNUTLS_VERSION_NUMBER >= 0x030103
 	if ((ret = gnutls_ocsp_status_request_enable_client(session, NULL, 0, NULL)) != GNUTLS_E_SUCCESS) {
 		error_printf("GnuTLS: %s\n", gnutls_strerror(ret));
 	}
+#endif
 
 	// Wait for socket being ready before we call gnutls_handshake().
 	// I had problems on a KVM Win7 + CygWin (gnutls 3.2.4-1).
