@@ -1174,6 +1174,12 @@ int init(int argc, const char *const *argv)
 	" -opie"
 #endif
 
+#if defined WITH_LIBPSL
+	" +psl"
+#else
+	" -psl"
+#endif
+
 #if defined WITH_GNUTLS
 	" +ssl/gnutls"
 #else
