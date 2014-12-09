@@ -251,6 +251,8 @@ int
 	mget_strcasecmp_ascii(const char *s1, const char *s2) G_GNUC_MGET_PURE;
 int
 	mget_strncasecmp_ascii(const char *s1, const char *s2, size_t n) G_GNUC_MGET_PURE;
+char *
+	mget_strtolower(char *s);
 int
 	mget_strncmp(const char *s1, const char *s2, size_t n) G_GNUC_MGET_PURE;
 int
@@ -260,7 +262,7 @@ void
 void
 	mget_millisleep(int ms);
 int
-	mget_percent_unescape(unsigned char *src);
+	mget_percent_unescape(char *src);
 int
 	mget_match_tail(const char *s, const char *tail) G_GNUC_MGET_PURE;
 int
@@ -531,6 +533,8 @@ int
 int
 	mget_vector_findext(const mget_vector_t *v, int start, int direction, int (*find)(void *)) G_GNUC_MGET_NONNULL((4));
 int
+	mget_vector_contains(const mget_vector_t *v, const void *elem) G_GNUC_MGET_NONNULL((2));
+int
 	mget_vector_insert(mget_vector_t *v, const void *elem, size_t size, int pos) G_GNUC_MGET_NONNULL((2));
 int
 	mget_vector_insert_noalloc(mget_vector_t *v, const void *elem, int pos) G_GNUC_MGET_NONNULL((2));
@@ -550,6 +554,8 @@ int
 	mget_vector_add_printf(mget_vector_t *v, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL((2));
 int
 	mget_vector_replace(mget_vector_t *v, const void *elem, size_t size, int pos) G_GNUC_MGET_NONNULL((2));
+int
+	mget_vector_replace_noalloc(mget_vector_t *v, const void *elem, int pos) G_GNUC_MGET_NONNULL((2));
 int
 	mget_vector_move(mget_vector_t *v, int old_pos, int new_pos);
 int

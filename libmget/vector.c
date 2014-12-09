@@ -178,7 +178,7 @@ int mget_vector_add_noalloc(mget_vector_t *v, const void *elem)
 	return v ? _vec_insert_private(v, elem, 0, v->cur, 0, 0) : -1;
 }
 
-int mget_vector_replace(mget_vector_t *v, const void *elem, size_t size, int pos)
+static int _mget_vector_replace(mget_vector_t *v, const void *elem, size_t size, int pos, int alloc)
 {
 	if (!v || pos < 0 || pos >= v->cur) return -1;
 
@@ -187,7 +187,17 @@ int mget_vector_replace(mget_vector_t *v, const void *elem, size_t size, int pos
 
 	xfree(v->entry[pos]);
 
-	return _vec_insert_private(v, elem, size, pos, 1, 1); // replace existing entry
+	return _vec_insert_private(v, elem, size, pos, 1, alloc); // replace existing entry
+}
+
+int mget_vector_replace(mget_vector_t *v, const void *elem, size_t size, int pos)
+{
+	return _mget_vector_replace(v, elem, size, pos, 1);
+}
+
+int mget_vector_replace_noalloc(mget_vector_t *v, const void *elem, int pos)
+{
+	return _mget_vector_replace(v, elem, 0, pos, 0);
 }
 
 int mget_vector_add_vprintf(mget_vector_t *v, const char *fmt, va_list args)
@@ -423,7 +433,7 @@ void mget_vector_sort(mget_vector_t *v)
 #endif
 }
 
-// Find first entry that matches spth specified element,
+// Find first entry that matches the specified element,
 // using the compare function of the vector
 
 int mget_vector_find(const mget_vector_t *v, const void *elem)
@@ -452,6 +462,11 @@ int mget_vector_find(const mget_vector_t *v, const void *elem)
 	}
 
 	return -1; // not found
+}
+
+int mget_vector_contains(const mget_vector_t *v, const void *elem)
+{
+	return mget_vector_find(v, elem) >= 0;
 }
 
 // Find entry, starting at specified position, scanning in the specified

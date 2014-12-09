@@ -399,10 +399,10 @@ static mget_thread_mutex_t
 
 static int in_pattern_list(const mget_vector_t *v, const char *url)
 {
-  for (int it = 0; it < mget_vector_size(v); it++) {
+	for (int it = 0; it < mget_vector_size(v); it++) {
 		const char *pattern = mget_vector_get(v, it);
 
-		debug_printf("pattern '%s' - %s\n", pattern, url);
+		debug_printf("pattern[%d] '%s' - %s\n", it, pattern, url);
 
 		if (strpbrk(pattern, "*?[]")) {
 			if (!fnmatch(pattern, url, config.ignore_case ? FNM_CASEFOLD : 0))
@@ -415,7 +415,25 @@ static int in_pattern_list(const mget_vector_t *v, const char *url)
 		}
 	}
 
-  return 0;
+	return 0;
+}
+
+static int in_host_pattern_list(const mget_vector_t *v, const char *hostname)
+{
+	for (int it = 0; it < mget_vector_size(v); it++) {
+		const char *pattern = mget_vector_get(v, it);
+
+		debug_printf("host_pattern[%d] '%s' - %s\n", it, pattern, hostname);
+
+		if (strpbrk(pattern, "*?[]")) {
+			if (!fnmatch(pattern, hostname, 0))
+				return 1;
+		} else if (!strcmp(hostname, pattern)) {
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 // Add URLs given by user (command line or -i option).
@@ -448,8 +466,8 @@ static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *enco
 	if (config.recursive) {
 		if (!config.span_hosts) {
 			// only download content from hosts given on the command line or from input file
-			if (!mget_stringmap_contains(config.exclude_domains, iri->host)) {
-				mget_stringmap_put(config.domains, iri->host, NULL, 0);
+			if (!mget_vector_contains(config.exclude_domains, iri->host)) {
+				mget_vector_add_str(config.domains, iri->host);
 			}
 		}
 
@@ -574,15 +592,15 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		}
 	}
 
-	if (config.recursive && !config.span_hosts) {
+	if (config.recursive) {
 		// only download content from given hosts
 		char *reason = NULL;
 
 		if (!iri->host) {
 			reason = _("missing ip/host/domain");
-		} else if (!mget_stringmap_contains(config.domains, iri->host)) {
+		} else if (!config.span_hosts && config.domains && !in_host_pattern_list(config.domains, iri->host)) {
 			reason = _("no host-spanning requested");
-		} else if (mget_stringmap_contains(config.exclude_domains, iri->host)) {
+		} else if (config.span_hosts && config.exclude_domains && in_host_pattern_list(config.exclude_domains, iri->host)) {
 			reason = _("domain explicitely excluded");
 		}
 
@@ -1555,7 +1573,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, mget_ir
 
 		// A Sitemap file located at http://example.com/catalog/sitemap.xml can include any URLs starting with http://example.com/catalog/
 		// but not any other.
-		if (baselen && (url->len <= baselen || !strncasecmp(url->p, base->uri, baselen))) {
+		if (baselen && (url->len <= baselen || strncasecmp(url->p, base->uri, baselen))) {
 			info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)url->len, url->p);
 			continue;
 		}
@@ -1649,7 +1667,7 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, mget_i
 		if (len) {
 			// A Sitemap file located at http://example.com/catalog/sitemap.txt can include any URLs starting with http://example.com/catalog/
 			// but not any other.
-			if (baselen && (len <= baselen || !strncasecmp(line, base->uri, baselen))) {
+			if (baselen && (len <= baselen || strncasecmp(line, base->uri, baselen))) {
 				info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)len, line);
 			} else {
 				char url[len + 1];
@@ -1681,7 +1699,7 @@ static void _add_urls(JOB *job, mget_vector_t *urls, const char *encoding, mget_
 	for (int it = 0; it < mget_vector_size(urls); it++) {
 		mget_string_t *url = mget_vector_get(urls, it);
 
-		if (baselen && (url->len <= baselen || !strncasecmp(url->p, base->uri, baselen))) {
+		if (baselen && (url->len <= baselen || strncasecmp(url->p, base->uri, baselen))) {
 			info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)url->len, url->p);
 			continue;
 		}

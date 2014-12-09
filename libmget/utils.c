@@ -103,6 +103,7 @@ int mget_strcasecmp(const char *s1, const char *s2)
 	}
 }
 
+/*
 static const char _upper[256] = {
 	['a'] = 'A', ['b'] = 'B', ['c'] = 'C', ['d'] = 'D',
 	['e'] = 'E', ['f'] = 'F', ['g'] = 'G', ['h'] = 'H',
@@ -117,6 +118,23 @@ static const char _upper[256] = {
 	['O'] = 'O', ['P'] = 'P', ['Q'] = 'Q', ['R'] = 'R',
 	['S'] = 'S', ['T'] = 'T', ['U'] = 'U', ['V'] = 'V',
 	['W'] = 'W', ['X'] = 'X', ['Y'] = 'Y', ['Z'] = 'Z',
+};
+*/
+
+static const char _lower[256] = {
+	['a'] = 'a', ['b'] = 'b', ['c'] = 'c', ['d'] = 'd',
+	['e'] = 'e', ['f'] = 'f', ['g'] = 'g', ['h'] = 'h',
+	['i'] = 'i', ['j'] = 'j', ['k'] = 'k', ['l'] = 'l',
+	['m'] = 'm', ['n'] = 'n', ['o'] = 'o', ['p'] = 'p',
+	['q'] = 'q', ['r'] = 'r', ['s'] = 's', ['t'] = 't',
+	['u'] = 'u', ['v'] = 'v', ['w'] = 'w', ['x'] = 'x',
+	['y'] = 'y', ['z'] = 'z', ['A'] = 'a', ['B'] = 'b',
+	['C'] = 'c', ['D'] = 'd', ['E'] = 'e', ['F'] = 'f',
+	['G'] = 'g', ['H'] = 'h', ['I'] = 'i', ['J'] = 'j',
+	['K'] = 'k', ['L'] = 'l', ['M'] = 'm', ['N'] = 'n',
+	['O'] = 'o', ['P'] = 'p', ['Q'] = 'q', ['R'] = 'r',
+	['S'] = 's', ['T'] = 't', ['U'] = 'u', ['V'] = 'v',
+	['W'] = 'w', ['X'] = 'x', ['Y'] = 'y', ['Z'] = 'z',
 };
 
 /**
@@ -145,7 +163,7 @@ int mget_strcasecmp_ascii(const char *s1, const char *s2)
 		if (!s2)
 			return 1;
 		else {
-			while (*s1 && (*s1 == *s2 || (_upper[(unsigned)*s1] && _upper[(unsigned)*s1] == _upper[(unsigned)*s2]))) {
+			while (*s1 && (*s1 == *s2 || (_lower[(unsigned)*s1] && _lower[(unsigned)*s1] == _lower[(unsigned)*s2]))) {
 				s1++;
 				s2++;
 			}
@@ -185,7 +203,7 @@ int mget_strncasecmp_ascii(const char *s1, const char *s2, size_t n)
 		if (!s2)
 			return 1;
 		else {
-			while ((ssize_t)(n--) > 0 && *s1 && (*s1 == *s2 || (_upper[(unsigned)*s1] && _upper[(unsigned)*s1] == _upper[(unsigned)*s2]))) {
+			while ((ssize_t)(n--) > 0 && *s1 && (*s1 == *s2 || (_lower[(unsigned)*s1] && _lower[(unsigned)*s1] == _lower[(unsigned)*s2]))) {
 				s1++;
 				s2++;
 			}
@@ -196,6 +214,26 @@ int mget_strncasecmp_ascii(const char *s1, const char *s2, size_t n)
 			return 0;
 		}
 	}
+}
+
+/**
+ * mget_strtolower:
+ * @s: String to convert
+ *
+ * Converts string @s to lowercase in place.
+ *
+ * Returns: Same value as @s.
+ */
+char *mget_strtolower(char *s)
+{
+	if (s) {
+		for (unsigned char *u = (unsigned char *)s; *u; u++) {
+			if (_lower[*u])
+				*u = _lower[*u];
+		}
+	}
+
+	return s;
 }
 
 /**
@@ -321,9 +359,10 @@ static inline unsigned char G_GNUC_MGET_CONST _unhex(unsigned char c)
  *
  * Returns: 0 if the string did not change, 1 if unescaping took place.
  */
-int mget_percent_unescape(unsigned char *src)
+int mget_percent_unescape(char *_src)
 {
 	int ret = 0;
+	unsigned char *src = (unsigned char *)_src; // just a helper to avoid casting a lot
 	unsigned char *dst = src;
 
 	while (*src) {

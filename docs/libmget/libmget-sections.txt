@@ -14,6 +14,7 @@ mget_strcmp
 mget_strcasecmp
 mget_strncmp
 mget_strncasecmp
+mget_strtolower
 mget_memtohex
 mget_millisleep
 mget_match_tail

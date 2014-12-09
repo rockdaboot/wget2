@@ -311,14 +311,26 @@ static int parse_stringlist(option_t opt, G_GNUC_MGET_UNUSED const char *const *
 		const char *s, *p;
 
 		if (!v)
-			v = *((mget_vector_t **)opt->var) = mget_vector_create(8, -2, NULL);
+			v = *((mget_vector_t **)opt->var) = mget_vector_create(8, -2, (int (*)(const void *, const void *))strcmp);
 
 		for (s = val; (p = strchr(s, ',')); s = p + 1) {
-			if (p != s)
-				mget_vector_add_noalloc(v, strndup(s, p - s));
+			if (p != s) {
+				const char *entry = strndup(s, p - s);
+
+				if (mget_vector_find(v, entry) == -1)
+					mget_vector_add_noalloc(v, entry);
+				else
+					xfree(entry);
+			}
 		}
-		if (*s)
-			mget_vector_add_noalloc(v, strdup(s));
+		if (*s) {
+			const char *entry = strdup(s);
+
+			if (mget_vector_find(v, entry) == -1)
+				mget_vector_add_noalloc(v, entry);
+			else
+				xfree(entry);
+		}
 	} else {
 		mget_vector_free(&v);
 	}
@@ -624,9 +636,9 @@ static const struct option options[] = {
 	{ "directory-prefix", &config.directory_prefix, parse_string, 1, 'P' },
 	{ "dns-cache", &config.dns_caching, parse_bool, 0, 0 },
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0 },
-	{ "domains", &config.domains, parse_stringset, 1, 'D' },
+	{ "domains", &config.domains, parse_stringlist, 1, 'D' },
 	{ "egd-file", &config.egd_file, parse_string, 1, 0 },
-	{ "exclude-domains", &config.exclude_domains, parse_stringset, 1, 0 },
+	{ "exclude-domains", &config.exclude_domains, parse_stringlist, 1, 0 },
 	{ "execute", NULL, parse_execute, 1, 'e' },
 	{ "follow-tags", &config.follow_tags, parse_taglist, 1, 0 },
 	{ "force-atom", &config.force_atom, parse_bool, 0, 0 },
@@ -1109,8 +1121,8 @@ int init(int argc, const char *const *argv)
 	config.https_proxy = mget_strdup(getenv("https_proxy"));
 	config.default_page = strdup(config.default_page);
 	config.hsts_file = strdup(config.hsts_file);
-	config.domains = mget_stringmap_create(16);
-	config.exclude_domains = mget_stringmap_create(16);
+	config.domains = mget_vector_create(16, -2, (int (*)(const void *, const void *))strcmp);
+//	config.exclude_domains = mget_vector_create(16, -2, NULL);
 
 	log_init();
 
@@ -1325,6 +1337,41 @@ int init(int argc, const char *const *argv)
 	mget_ssl_set_config_string(MGET_SSL_KEY_FILE, config.private_key);
 	mget_ssl_set_config_string(MGET_SSL_CRL_FILE, config.crl_file);
 
+	// convert host lists to lowercase
+	for (int it = 0; it < mget_vector_size(config.domains); it++) {
+		char *s, *hostname = mget_vector_get(config.domains, it);
+
+		mget_percent_unescape(hostname);
+
+		if (mget_str_needs_encoding(hostname)) {
+			if ((s = mget_str_to_utf8(hostname, config.local_encoding))) {
+				mget_vector_replace_noalloc(config.domains, s, it);
+				hostname = s;
+			}
+
+			if ((s = (char *)mget_str_to_ascii(hostname)) != hostname)
+				mget_vector_replace_noalloc(config.domains, s, it);
+		} else
+			mget_strtolower(hostname);
+	}
+
+	for (int it = 0; it < mget_vector_size(config.exclude_domains); it++) {
+		char *s, *hostname = mget_vector_get(config.exclude_domains, it);
+
+		mget_percent_unescape(hostname);
+
+		if (mget_str_needs_encoding(hostname)) {
+			if ((s = mget_str_to_utf8(hostname, config.local_encoding))) {
+				mget_vector_replace_noalloc(config.exclude_domains, s, it);
+				hostname = s;
+			}
+
+			if ((s = (char *)mget_str_to_ascii(hostname)) != hostname)
+				mget_vector_replace_noalloc(config.exclude_domains, s, it);
+		} else
+			mget_strtolower(hostname);
+	}
+
 	return n;
 }
 
@@ -1372,8 +1419,8 @@ void deinit(void)
 
 	mget_iri_free(&config.base);
 
-	mget_stringmap_free(&config.domains);
-	mget_stringmap_free(&config.exclude_domains);
+	mget_vector_free(&config.domains);
+	mget_vector_free(&config.exclude_domains);
 	mget_vector_free(&config.follow_tags);
 	mget_vector_free(&config.ignore_tags);
 

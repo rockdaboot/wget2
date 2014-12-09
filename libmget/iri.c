@@ -170,7 +170,7 @@ mget_iri_t *mget_iri_parse(const char *url, const char *encoding)
 	if (strchr(url, '%')) {
 		char *unesc_url = strdup(url);
 
-		mget_percent_unescape((unsigned char *)unesc_url);
+		mget_percent_unescape(unesc_url);
 
 		if (mget_str_needs_encoding(unesc_url)) {
 			if ((url = mget_str_to_utf8(unesc_url, encoding)))
@@ -231,9 +231,7 @@ mget_iri_t *mget_iri_parse(const char *url, const char *encoding)
 
 		if (iri->scheme == p) {
 			// convert scheme to lowercase
-			for (; *p; p++)
-				if (*p >= 'A' && *p <= 'Z')
-					*p |= 0x20;
+			mget_strtolower((char *)iri->scheme);
 		}
 
 	} else {
@@ -316,10 +314,7 @@ mget_iri_t *mget_iri_parse(const char *url, const char *encoding)
 
 	// now unescape all components (not interested in display, userinfo, password)
 	if (iri->host) {
-		for (p = (char *)iri->host; *p; p++) {
-			if (*p >= 'A' && *p <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
-				*p |= 0x20;
-		}
+		mget_strtolower((char *)iri->host);
 		if ((p = (char *)mget_str_to_ascii(iri->host)) != iri->host) {
 			iri->host = p;
 			iri->host_allocated = 1;

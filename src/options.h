@@ -79,10 +79,9 @@ struct config {
 		*private_key,
 		*random_file,
 		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
-	mget_stringmap_t
-		*domains,
-		*exclude_domains;
 	mget_vector_t
+		*domains,
+		*exclude_domains,
 		*accept_patterns,
 		*reject_patterns,
 		*follow_tags,

@@ -509,7 +509,7 @@ const char *mget_http_parse_content_disposition(const char *s, const char **file
 					if ((p = strchr(language, '\''))) {
 						*p++ = 0;
 						if (*p) {
-							mget_percent_unescape((unsigned char *)p);
+							mget_percent_unescape(p);
 							if (mget_str_needs_encoding(p))
 								*filename = mget_str_to_utf8(p, charset);
 							else

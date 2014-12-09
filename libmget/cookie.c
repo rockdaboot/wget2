@@ -200,14 +200,8 @@ static int _mget_cookie_normalize_cookie(const mget_iri_t *iri, mget_cookie_t *c
 
 	cookie->persistent = !!cookie->expires;
 
-	if (cookie->domain) {
-		char *p;
-
-		// convert domain to lowercase
-		for (p = (char *)cookie->domain; *p; p++)
-			if (*p >= 'A' && *p <= 'Z')
-				*p |= 0x20;
-	}
+	// convert domain to lowercase
+	mget_strtolower((char *)cookie->domain);
 
 	if (iri) {
 		// cookies comes from a HTTP header and needs checking

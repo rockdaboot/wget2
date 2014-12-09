@@ -198,7 +198,6 @@ AS_IF([test "x$with_libpsl" != xno], [
   PKG_CHECK_MODULES([LIBPSL], libpsl, [
     with_libpsl=yes
     # correct $LIBPSL_LIBS (in libpsl <= 0.6.0)
-    echo \"$LIBPSL_LIBS\"
     AS_IF([test "x$LIBPSL_LIBS" = "x-llibpsl "], [LIBPSL_LIBS="-lpsl"])
     LIBS="$LIBPSL_LIBS $LIBS"
     CFLAGS="$LIBPSL_CFLAGS $CFLAGS"
