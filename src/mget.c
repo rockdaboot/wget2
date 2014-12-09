@@ -428,7 +428,7 @@ static int in_host_pattern_list(const mget_vector_t *v, const char *hostname)
 		if (strpbrk(pattern, "*?[]")) {
 			if (!fnmatch(pattern, hostname, 0))
 				return 1;
-		} else if (!strcmp(hostname, pattern)) {
+		} else if (mget_match_tail(hostname, pattern)) {
 			return 1;
 		}
 	}
