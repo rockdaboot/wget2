@@ -48,6 +48,7 @@ Mget has already many features that go beyond what Wget provides.<br>
 
 An incomplete list of implemented features:
 
+- OCSP stapling + OCSP server querying as a fallback (experimental, needs GnuTLS >= 3.3.11)
 - Use [libpsl](https://github.com/rockdaboot/libpsl) for cookie domain checking (using Public Suffix List)
 - Support link conversion (-k/--convert-links and -K/--backup-converted)
 - Support for RFC 6266 compliant Content-Disposition

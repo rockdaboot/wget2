@@ -49,6 +49,8 @@
 */
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
+#include <gnutls/ocsp.h>
+#include <gnutls/crypto.h>
 
 #include <libmget.h>
 #include "private.h"
@@ -319,6 +321,331 @@ static int _print_info(gnutls_session_t session)
 	return 0;
 }
 
+static int
+_generate_ocsp_data(gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer,
+		  gnutls_datum_t * rdata, gnutls_datum_t *nonce)
+{
+	gnutls_ocsp_req_t req;
+	int ret = -1;
+
+	ret = gnutls_ocsp_req_init(&req);
+	if (ret < 0) {
+		error_printf("ocsp_req_init: %s", gnutls_strerror(ret));
+		return -1;
+	}
+
+	ret = gnutls_ocsp_req_add_cert(req, GNUTLS_DIG_SHA1, issuer, cert);
+	if (ret < 0) {
+		error_printf("ocsp_req_add_cert: %s", gnutls_strerror(ret));
+		goto error;
+	}
+
+	if (nonce) {
+		ret = gnutls_ocsp_req_set_nonce(req, 0, nonce);
+		if (ret < 0) {
+			error_printf("ocsp_req_set_nonce: %s", gnutls_strerror(ret));
+			goto error;
+		}
+	}
+
+	ret = gnutls_ocsp_req_export(req, rdata);
+	if (ret) {
+		error_printf("ocsp_req_export: %s", gnutls_strerror(ret));
+		goto error;
+	}
+
+	ret = 0;
+
+error:
+	gnutls_ocsp_req_deinit(req);
+	return -1;
+}
+
+/* Returns 0 on ok, and -1 on error */
+static int send_ocsp_request(const char *server,
+		      gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer,
+		      mget_buffer_t **ocsp_data, gnutls_datum_t *nonce)
+{
+	int ret = -1;
+	int server_allocated = 0;
+	gnutls_datum_t body;
+	mget_iri_t *iri;
+	mget_http_request_t *req;
+
+	if (!server) {
+		/* try to read URL from issuer certificate */
+		gnutls_datum_t data;
+
+		int rc = gnutls_x509_crt_get_authority_info_access(cert, 0, GNUTLS_IA_OCSP_URI, &data, NULL);
+
+		if (rc < 0)
+			rc = gnutls_x509_crt_get_authority_info_access(issuer, 0, GNUTLS_IA_OCSP_URI, &data, NULL);
+
+		if (rc < 0) {
+			error_printf("Cannot find URL from issuer: %s\n", gnutls_strerror(rc));
+			return -1;
+		}
+
+		server = strndup((char *)data.data, data.size);
+		server_allocated = 1;
+
+		gnutls_free(data.data);
+	}
+
+	iri = mget_iri_parse(server, NULL);
+
+	if (server_allocated)
+		xfree(server);
+
+	_generate_ocsp_data(cert, issuer, &body, nonce);
+
+	req = mget_http_create_request(iri, "POST");
+	mget_http_add_header_line(req, "Accept-Encoding: identity\r\n");
+	mget_http_add_header_line(req, "Accept: */*\r\n");
+	mget_http_add_header_line(req, "Content-Type: application/ocsp-request\r\n");
+	mget_http_add_header_printf(req, "Content-Length: %u", body.size);
+	mget_http_add_header_line(req, "Connection: close\r\n");
+
+	mget_http_connection_t *conn;
+	if ((conn = mget_http_open(iri))) {
+		if (mget_http_send_request_with_body(conn, req, body.data, body.size) == 0) {
+			mget_http_response_t *resp;
+			
+			if ((resp = mget_http_get_response(conn, NULL, req, 0))) {
+				*ocsp_data = resp->body;
+				resp->body = NULL;
+				mget_http_free_response(&resp);
+				ret = 0;
+			}
+		}
+		mget_http_close(&conn);
+	}
+
+	mget_http_free_request(&req);
+	gnutls_free(body.data);
+	return ret;
+}
+
+static void print_ocsp_verify_res(unsigned int output)
+{
+	info_printf("*** Verifying OCSP Response: ");
+
+	if (output) {
+		info_printf("Failure");
+
+		if (output & GNUTLS_OCSP_VERIFY_SIGNER_NOT_FOUND)
+			info_printf(", Signer cert not found");
+
+		if (output & GNUTLS_OCSP_VERIFY_SIGNER_KEYUSAGE_ERROR)
+			info_printf(", Signer cert keyusage error");
+
+		if (output & GNUTLS_OCSP_VERIFY_UNTRUSTED_SIGNER)
+			info_printf(", Signer cert is not trusted");
+
+		if (output & GNUTLS_OCSP_VERIFY_INSECURE_ALGORITHM)
+			info_printf(", Insecure algorithm");
+
+		if (output & GNUTLS_OCSP_VERIFY_SIGNATURE_FAILURE)
+			info_printf(", Signature failure");
+
+		if (output & GNUTLS_OCSP_VERIFY_CERT_NOT_ACTIVATED)
+			info_printf(", Signer cert not yet activated");
+
+		if (output & GNUTLS_OCSP_VERIFY_CERT_EXPIRED)
+			info_printf(", Signer cert expired");
+
+		info_printf("\n");
+	} else
+		info_printf("Success\n");
+}
+
+/* three days */
+#define OCSP_VALIDITY_SECS (3*60*60*24)
+
+/* Returns:
+ *  0: certificate is revoked
+ *  1: certificate is ok
+ *  -1: dunno
+ */
+static int check_ocsp_response(gnutls_x509_crt_t cert,
+	gnutls_x509_crt_t issuer, mget_buffer_t *data,
+	gnutls_datum_t *nonce)
+{
+	gnutls_ocsp_resp_t resp;
+	int ret;
+	unsigned int status, cert_status;
+	time_t rtime, vtime, ntime, now;
+
+	now = time(NULL);
+
+	if ((ret = gnutls_ocsp_resp_init(&resp)) < 0) {
+		error_printf("ocsp_resp_init: %s", gnutls_strerror(ret));
+		return -1;
+	}
+
+	ret = gnutls_ocsp_resp_import(resp, &(gnutls_datum_t){ .data = (unsigned char *) data->data, .size = data->length });
+	if (ret < 0) {
+		error_printf("importing response: %s", gnutls_strerror(ret));
+		ret = -1;
+		goto cleanup;
+	}
+
+	if ((ret = gnutls_ocsp_resp_check_crt(resp, 0, cert)) < 0) {
+		if (ret == GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE) {
+			info_printf("*** Got OCSP response with no data (ignoring)\n");
+		} else {
+			info_printf("*** Got OCSP response on an unrelated certificate (ignoring)\n");
+		}
+		ret = -1;
+		goto cleanup;
+	}
+
+	if ((ret = gnutls_ocsp_resp_verify_direct(resp, issuer, &status, 0)) < 0) {
+		error_printf("gnutls_ocsp_resp_verify_direct: %s", gnutls_strerror(ret));
+		ret =-1;
+		goto cleanup;
+	}
+
+	if (status) {
+		print_ocsp_verify_res(status);
+		ret = -1;
+		goto cleanup;
+	}
+
+	ret = gnutls_ocsp_resp_get_single(resp, 0, NULL, NULL, NULL, NULL,
+					  &cert_status, &vtime, &ntime,
+					  &rtime, NULL);
+	if (ret < 0) {
+		error_printf("reading response: %s", gnutls_strerror(ret));
+		ret =-1;
+		goto cleanup;
+	}
+
+	if (cert_status == GNUTLS_OCSP_CERT_REVOKED) {
+		info_printf("*** Certificate was revoked at %s", ctime(&rtime));
+		ret = 0;
+		goto cleanup;
+	}
+
+	if (ntime == -1) {
+		if (now - vtime > OCSP_VALIDITY_SECS) {
+			info_printf("*** The OCSP response is old (was issued at: %s) ignoring", ctime(&vtime));
+			ret = -1;
+			goto cleanup;
+		}
+	} else {
+		/* there is a newer OCSP answer, don't trust this one */
+		if (ntime < now) {
+			info_printf("*** The OCSP response was issued at: %s, but there is a newer issue at %s",
+				ctime(&vtime), ctime(&ntime));
+			ret = -1;
+			goto cleanup;
+		}
+	}
+
+	if (nonce) {
+		gnutls_datum_t rnonce;
+
+		ret = gnutls_ocsp_resp_get_nonce(resp, NULL, &rnonce);
+		if (ret == GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE) {
+			error_printf("*** The OCSP reply did not include the requested nonce.\n");
+			goto finish_ok;
+		}
+
+		if (ret < 0) {
+			error_printf("could not read response's nonce: %s\n", gnutls_strerror(ret));
+			ret = -1;
+			goto cleanup;
+		}
+
+		if (rnonce.size != nonce->size || memcmp(nonce->data, rnonce.data, nonce->size) != 0) {
+			error_printf("nonce in the response doesn't match\n");
+			ret = -1;
+			goto cleanup;
+		}
+
+		gnutls_free(rnonce.data);
+	}
+
+ finish_ok:
+	info_printf("- OCSP server flags certificate not revoked as of %s", ctime(&vtime));
+	ret = 1;
+
+cleanup:
+	gnutls_ocsp_resp_deinit(resp);
+
+	return ret;
+}
+
+/* OCSP check for the peer's certificate. Should be called
+ * only after the certificate list verication is complete.
+ * Returns:
+ * 0: certificate is revoked
+ * 1: certificate is ok
+ * -1: dunno
+ */
+static int cert_verify_ocsp(gnutls_session_t session)
+{
+	gnutls_x509_crt_t crt, issuer;
+	const gnutls_datum_t *cert_list;
+	unsigned int cert_list_size = 0;
+	int deinit_issuer = 0;
+	mget_buffer_t *resp = NULL;
+	unsigned char noncebuf[23];
+	gnutls_datum_t nonce = { noncebuf, sizeof(noncebuf) };
+	int ret;
+
+	if ((cert_list = gnutls_certificate_get_peers(session, &cert_list_size)) == 0) {
+		error_printf("No certificates found!\n");
+		return -1;
+	}
+
+	gnutls_x509_crt_init(&crt);
+	ret = gnutls_x509_crt_import(crt, &cert_list[0], GNUTLS_X509_FMT_DER);
+	if (ret < 0) {
+		error_printf("Decoding error: %s\n", gnutls_strerror(ret));
+		return -1;
+	}
+
+	ret = gnutls_certificate_get_issuer(_credentials, crt, &issuer, 0);
+	if (ret < 0 && cert_list_size > 1) {
+		gnutls_x509_crt_init(&issuer);
+		ret = gnutls_x509_crt_import(issuer, &cert_list[1], GNUTLS_X509_FMT_DER);
+		if (ret < 0) {
+			error_printf("Decoding error: %s\n", gnutls_strerror(ret));
+			return -1;
+		}
+		deinit_issuer = 1;
+	} else if (ret < 0) {
+		error_printf("Cannot find issuer\n");
+		ret = -1;
+		goto cleanup;
+	}
+
+	ret = gnutls_rnd(GNUTLS_RND_NONCE, nonce.data, nonce.size);
+	if (ret < 0) {
+		error_printf("gnutls_rnd: %s", gnutls_strerror(ret));
+		ret = -1;
+		goto cleanup;
+	}
+
+	if (send_ocsp_request(NULL, crt, issuer, &resp, &nonce) < 0) {
+		error_printf("Cannot contact OCSP server\n");
+		ret = -1;
+		goto cleanup;
+	}
+
+	/* verify and check the response for revoked cert */
+	ret = check_ocsp_response(crt, issuer, resp, &nonce);
+
+cleanup:
+	if (deinit_issuer)
+		gnutls_x509_crt_deinit(issuer);
+	gnutls_x509_crt_deinit(crt);
+
+	return ret;
+}
+
 /* This function will verify the peer's certificate, and check
  * if the hostname matches, as well as the activation, expiration dates.
  */
@@ -443,6 +770,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 #if GNUTLS_VERSION_NUMBER >= 0x030103
 	if (!gnutls_ocsp_status_request_is_checked(session, 0)) {
 		error_printf(_("%s: The certificate's (stapled) OCSP status has not been sent or is invalid\n"), tag);
+		int rc = cert_verify_ocsp(session);
+		if (rc == 0) {
+			error_printf(_("%s: Verifying (with OCSP) server certificate failed\n"), tag);
+		} else if (rc == -1)
+			error_printf(_("OCSP response ignored\n"));
 	} else {
 		error_printf(_("%s: The certificate's (stapled) OCSP status is valid\n"), tag);
 	}
