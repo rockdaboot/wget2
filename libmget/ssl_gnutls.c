@@ -49,7 +49,9 @@
 */
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
-#include <gnutls/ocsp.h>
+#ifdef HAVE_GNUTLS_OCSP_H
+#	include <gnutls/ocsp.h>
+#endif
 #include <gnutls/crypto.h>
 
 #include <libmget.h>
@@ -63,16 +65,19 @@ static struct _config {
 		*ca_file,
 		*cert_file,
 		*key_file,
-		*crl_file;
+		*crl_file,
+		*ocsp_server;
 	char
 		check_certificate,
 		check_hostname,
 		ca_type,
 		cert_type,
 		key_type,
-		print_info;
+		print_info,
+		ocsp_stapling;
 } _config = {
 	.check_certificate=1,
+	.ocsp_stapling=1,
 	.ca_type = MGET_SSL_X509_FMT_PEM,
 	.cert_type = MGET_SSL_X509_FMT_PEM,
 	.key_type = MGET_SSL_X509_FMT_PEM,
@@ -95,6 +100,7 @@ void mget_ssl_set_config_string(int key, const char *value)
 	case MGET_SSL_CERT_FILE: _config.cert_file = value; break;
 	case MGET_SSL_KEY_FILE: _config.key_file = value; break;
 	case MGET_SSL_CRL_FILE: _config.crl_file = value; break;
+	case MGET_SSL_OCSP_SERVER: _config.ocsp_server = value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
 	}
 }
@@ -108,6 +114,7 @@ void mget_ssl_set_config_int(int key, int value)
 	case MGET_SSL_CERT_TYPE: _config.cert_type = (char)value; break;
 	case MGET_SSL_KEY_TYPE: _config.key_type = (char)value; break;
 	case MGET_SSL_PRINT_INFO: _config.print_info = (char)value; break;
+	case MGET_SSL_OCSP_STAPLING: _config.ocsp_stapling = (char)value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an integer)\n"), key);
 	}
 }
@@ -321,6 +328,7 @@ static int _print_info(gnutls_session_t session)
 	return 0;
 }
 
+#ifdef HAVE_GNUTLS_OCSP_H
 static int
 _generate_ocsp_data(gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer,
 		  gnutls_datum_t * rdata, gnutls_datum_t *nonce)
@@ -490,6 +498,7 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 		goto cleanup;
 	}
 
+#if GNUTLS_VERSION_NUMBER >= 0x030103
 	if ((ret = gnutls_ocsp_resp_check_crt(resp, 0, cert)) < 0) {
 		if (ret == GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE) {
 			info_printf("*** Got OCSP response with no data (ignoring)\n");
@@ -499,6 +508,7 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 		ret = -1;
 		goto cleanup;
 	}
+#endif
 
 	if ((ret = gnutls_ocsp_resp_verify_direct(resp, issuer, &status, 0)) < 0) {
 		error_printf("gnutls_ocsp_resp_verify_direct: %s", gnutls_strerror(ret));
@@ -645,6 +655,7 @@ cleanup:
 
 	return ret;
 }
+#endif // HAVE_GNUTLS_OCSP_H
 
 /* This function will verify the peer's certificate, and check
  * if the hostname matches, as well as the activation, expiration dates.
@@ -770,11 +781,13 @@ static int _verify_certificate_callback(gnutls_session_t session)
 #if GNUTLS_VERSION_NUMBER >= 0x030103
 	if (!gnutls_ocsp_status_request_is_checked(session, 0)) {
 		error_printf(_("%s: The certificate's (stapled) OCSP status has not been sent or is invalid\n"), tag);
+#ifdef HAVE_GNUTLS_OCSP_H
 		int rc = cert_verify_ocsp(session);
 		if (rc == 0) {
 			error_printf(_("%s: Verifying (with OCSP) server certificate failed\n"), tag);
 		} else if (rc == -1)
 			error_printf(_("OCSP response ignored\n"));
+#endif
 	} else {
 		error_printf(_("%s: The certificate's (stapled) OCSP status is valid\n"), tag);
 	}

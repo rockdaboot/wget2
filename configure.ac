@@ -193,6 +193,10 @@ AS_IF([test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes], [
 ])
 AM_CONDITIONAL([WITH_LIBNETTLE], [test "x$with_libnettle" = xyes])
 
+AS_IF([test "x$with_gnutls" = xyes], [
+  AC_CHECK_HEADERS([gnutls/ocsp.h])
+])
+
 AC_ARG_WITH(libpsl, AS_HELP_STRING([--without-libpsl], [disable support for libpsl cookie checking]), with_libpsl=$withval, with_libpsl=yes)
 AS_IF([test "x$with_libpsl" != xno], [
   PKG_CHECK_MODULES([LIBPSL], libpsl, [

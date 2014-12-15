@@ -1151,6 +1151,8 @@ ssize_t
 #define MGET_SSL_PRINT_INFO        11
 #define MGET_SSL_DIRECT_OPTIONS    12
 #define MGET_SSL_CRL_FILE          13
+#define MGET_SSL_OCSP_STAPLING     14
+#define MGET_SSL_OCSP_SERVER       15
 
 void
 	mget_ssl_init(void);
@@ -1336,6 +1338,8 @@ const char *
 	mget_http_parse_digest(const char *s, mget_http_digest_t *digest) G_GNUC_MGET_NONNULL_ALL;
 const char *
 	mget_http_parse_challenge(const char *s, mget_http_challenge_t *challenge) G_GNUC_MGET_NONNULL_ALL;
+const char *
+	mget_http_parse_challenges(const char *s, mget_vector_t *challenges) G_GNUC_MGET_NONNULL_ALL;
 const char *
 	mget_http_parse_location(const char *s, const char **location) G_GNUC_MGET_NONNULL_ALL;
 const char *
