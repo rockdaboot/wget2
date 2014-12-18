@@ -175,7 +175,7 @@ AS_IF([test "x$with_gnutls" != "xno"], [
   PKG_CHECK_MODULES([GNUTLS], [gnutls], [
     with_gnutls=yes
     LIBS="$GNUTLS_LIBS $LIBS"
-    CFLAGS="$GNUTLS_CFLAGS -DHAVE_LIBGNUTLS $CFLAGS"
+    CFLAGS="$GNUTLS_CFLAGS $CFLAGS"
     AC_DEFINE([WITH_GNUTLS], [1], [Use GnuTLS])
   ], [
     AC_SEARCH_LIBS(gnutls_global_init, gnutls,

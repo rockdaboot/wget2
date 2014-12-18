@@ -165,13 +165,14 @@ const char *mget_http_parse_param(const char *s, const char **param, const char 
 		s++;
 		while (isblank(*s)) s++;
 	}
+	if (!*s) return s;
 
 	for (p = s; mget_http_istoken(*s); s++);
 	*param = strndup(p, s - p);
 
 	while (isblank(*s)) s++;
 
-	if (*s++ == '=') {
+	if (*s && *s++ == '=') {
 		while (isblank(*s)) s++;
 		if (*s == '\"') {
 			s = mget_http_parse_quoted_string(s, value);
@@ -364,8 +365,22 @@ const char *mget_http_parse_challenge(const char *s, mget_http_challenge_t *chal
 		while (isblank(*s)) s++;
 
 		if (*s != ',') break;
-		else s++;
+		else if (*s) s++;
 	} while (*s);
+
+	return s;
+}
+
+const char *mget_http_parse_challenges(const char *s, mget_vector_t *challenges)
+{
+	mget_http_challenge_t challenge;
+
+	while (*s) {
+		s = mget_http_parse_challenge(s, &challenge);
+		if (challenge.auth_scheme) {
+			mget_vector_add(challenges, &challenge, sizeof(challenge));
+		}
+	}
 
 	return s;
 }

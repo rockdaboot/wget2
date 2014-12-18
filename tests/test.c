@@ -1014,18 +1014,17 @@ static void test_hsts(void)
 	mget_hsts_db_t *hsts_db = mget_hsts_db_init(NULL);
 	time_t maxage;
 	char include_subdomains;
-	unsigned it;
 	int n;
 
 	// fill HSTS database with values
-	for (it = 0; it < countof(hsts_db_data); it++) {
+	for (unsigned it = 0; it < countof(hsts_db_data); it++) {
 		const struct hsts_db_data *t = &hsts_db_data[it];
 		mget_http_parse_strict_transport_security(t->hsts_params, &maxage, &include_subdomains);
 		mget_hsts_db_add(hsts_db, mget_hsts_new(t->host, t->port, maxage, include_subdomains));
 	}
 
 	// check HSTS database with values
-	for (it = 0; it < countof(hsts_data); it++) {
+	for (unsigned it = 0; it < countof(hsts_data); it++) {
 		const struct hsts_data *t = &hsts_data[it];
 
 		n = mget_hsts_host_match(hsts_db, t->host, t->port);
@@ -1041,13 +1040,69 @@ static void test_hsts(void)
 	mget_hsts_db_free(&hsts_db);
 }
 
+static void test_parse_challenge(void)
+{
+	static const struct test_data {
+		const char *
+			input;
+		const char *
+			scheme[2];
+	} test_data[] = {
+		{	// allowed cookie
+			"Basic realm=\"test realm\"",
+			{ "Basic", NULL }
+		},
+	};
+
+	mget_vector_t *challenges;
+	mget_http_challenge_t *challenge;
+
+	// Testcases found here http://greenbytes.de/tech/tc/httpauth/
+	challenges = mget_vector_create(2, 2, NULL);
+	mget_vector_set_destructor(challenges, (void(*)(void *))mget_http_free_challenge);
+
+	for (unsigned it = 0; it < countof(test_data); it++) {
+		const struct test_data *t = &test_data[it];
+
+		mget_http_parse_challenges(t->input, challenges);
+		for (unsigned nchal = 0; nchal < countof(test_data[0].scheme) && t->scheme[nchal]; nchal++) {
+			challenge = mget_vector_get(challenges, nchal);
+
+			if (!t->scheme[nchal]) {
+				if (challenge) {
+					failed++;
+					info_printf("Failed [%u]: mget_http_parse_challenges(%s) found %d challenges (expected %d)\n", it, t->input, mget_vector_size(challenges), nchal);
+				}
+				break;
+			}
+
+			if (!challenge) {
+				failed++;
+				info_printf("Failed [%u]: mget_http_parse_challenges(%s) did not find enough challenges\n", it, t->input);
+				break;
+			}
+
+			if (!strcmp(challenge->auth_scheme, t->scheme[nchal])) {
+				ok++;
+			} else {
+				failed++;
+				info_printf("Failed [%u]: mget_http_parse_challenges(%s) -> '%s' (expected '%s')\n", it, t->input, challenge->auth_scheme, t->scheme[nchal]);
+			}
+		}
+
+		mget_vector_clear(challenges);
+	}
+
+	mget_http_free_challenges(&challenges);
+}
+
 static void test_utils(void)
 {
-	int it, ndst;
+	int it;
 	unsigned char src[1];
 	char dst1[3], dst2[3];
 
-	for (ndst = 1; ndst <= 3; ndst++) {
+	for (int ndst = 1; ndst <= 3; ndst++) {
 		for (it = 0; it <= 255; it++) {
 			src[0] = (unsigned char) it;
 			mget_memtohex(src, 1, dst1, ndst);
@@ -1406,8 +1461,8 @@ int main(int argc, const char * const *argv)
 	test_parser();
 
 	test_cookies();
-
 	test_hsts();
+	test_parse_challenge();
 
 	selftest_options() ? failed++ : ok++;
 
