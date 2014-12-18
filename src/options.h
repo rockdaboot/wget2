@@ -109,6 +109,8 @@ struct config {
 	struct mget_cookie_db_st
 		*cookie_db;
 	char
+		ocsp_stapling,
+		ocsp,
 		mirror,
 		backup_converted,
 		convert_links,

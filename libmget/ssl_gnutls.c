@@ -74,6 +74,7 @@ static struct _config {
 		cert_type,
 		key_type,
 		print_info,
+		ocsp,
 		ocsp_stapling;
 } _config = {
 	.check_certificate=1,
@@ -114,6 +115,7 @@ void mget_ssl_set_config_int(int key, int value)
 	case MGET_SSL_CERT_TYPE: _config.cert_type = (char)value; break;
 	case MGET_SSL_KEY_TYPE: _config.key_type = (char)value; break;
 	case MGET_SSL_PRINT_INFO: _config.print_info = (char)value; break;
+	case MGET_SSL_OCSP: _config.ocsp = (char)value; break;
 	case MGET_SSL_OCSP_STAPLING: _config.ocsp_stapling = (char)value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an integer)\n"), key);
 	}
@@ -665,7 +667,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	unsigned int status;
 	const gnutls_datum_t *cert_list;
 	unsigned int cert_list_size;
-	int ret = 0, err;
+	int ret = 0, err, ocsp_ok = 0;
 	gnutls_x509_crt_t cert;
 	const char *hostname;
 	const char *tag = _config.check_certificate ? _("ERROR") : _("WARNING");
@@ -779,17 +781,20 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	}
 
 #if GNUTLS_VERSION_NUMBER >= 0x030103
-	if (!gnutls_ocsp_status_request_is_checked(session, 0)) {
-		error_printf(_("%s: The certificate's (stapled) OCSP status has not been sent or is invalid\n"), tag);
-#ifdef HAVE_GNUTLS_OCSP_H
-		int rc = cert_verify_ocsp(session);
-		if (rc == 0) {
-			error_printf(_("%s: Verifying (with OCSP) server certificate failed\n"), tag);
-		} else if (rc == -1)
-			error_printf(_("OCSP response ignored\n"));
+	if (_config.ocsp_stapling) {
+		if (!(ocsp_ok = gnutls_ocsp_status_request_is_checked(session, 0)))
+			error_printf(_("%s: The certificate's (stapled) OCSP status has not been sent or is invalid\n"), tag);
+		else
+			debug_printf(_("%s: The certificate's (stapled) OCSP status is valid\n"), tag);
+	}
 #endif
-	} else {
-		error_printf(_("%s: The certificate's (stapled) OCSP status is valid\n"), tag);
+#ifdef HAVE_GNUTLS_OCSP_H
+	if (!ocsp_ok && _config.ocsp_stapling) {
+		ocsp_ok = cert_verify_ocsp(session);
+		if (!ocsp_ok)
+			error_printf(_("%s: Verifying (with OCSP) server certificate failed\n"), tag);
+		else if (ocsp_ok == -1)
+			error_printf(_("OCSP response ignored\n"));
 	}
 #endif
 

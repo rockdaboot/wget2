@@ -1153,6 +1153,7 @@ ssize_t
 #define MGET_SSL_CRL_FILE          13
 #define MGET_SSL_OCSP_STAPLING     14
 #define MGET_SSL_OCSP_SERVER       15
+#define MGET_SSL_OCSP              16
 
 void
 	mget_ssl_init(void);

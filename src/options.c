@@ -210,6 +210,8 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --load-hsts         Load entries from HSTS file.\n"
 		"      --save-hsts         Save entries into HSTS file.\n"
 		"      --gnutls-options    Custom GnuTLS priority string. Interferes with --secure-protocol. (default: none)\n"
+		"      --ocsp-stapling     Use OCSP stapling to verify the server's certificate. (default: on)\n"
+		"      --ocsp              Use OCSP server access to verify server's certificate. (default: off)\n"
 		"\n");
 	puts(
 		"Directory options:\n"
@@ -596,6 +598,7 @@ struct config config = {
 	.tries = 20,
 	.hsts = 1,
 	.hsts_file = ".mget_hsts",
+        .ocsp_stapling = 1
 //	.load_hsts = 1,
 //	.save_hsts = 1
 };
@@ -675,6 +678,8 @@ static const struct option options[] = {
 	{ "mirror", &config.mirror, parse_mirror, 0, 'm' },
 	{ "n", NULL, parse_n_option, 1, 'n' }, // special Wget compatibility option
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0 },
+	{ "ocsp", &config.ocsp, parse_bool, 0, 0 },
+	{ "ocsp-stapling", &config.ocsp_stapling, parse_bool, 0, 0 },
 	{ "output-document", &config.output_document, parse_string, 1, 'O' },
 	{ "output-file", &config.logfile, parse_string, 1, 'o' },
 	{ "page-requisites", &config.page_requisites, parse_bool, 0, 'p' },
@@ -1329,6 +1334,8 @@ int init(int argc, const char *const *argv)
 	mget_ssl_set_config_int(MGET_SSL_CERT_TYPE, config.cert_type);
 	mget_ssl_set_config_int(MGET_SSL_KEY_TYPE, config.private_key_type);
 	mget_ssl_set_config_int(MGET_SSL_PRINT_INFO, config.debug);
+	mget_ssl_set_config_int(MGET_SSL_OCSP, config.ocsp);
+	mget_ssl_set_config_int(MGET_SSL_OCSP_STAPLING, config.ocsp_stapling);
 	mget_ssl_set_config_string(MGET_SSL_SECURE_PROTOCOL, config.secure_protocol);
 	mget_ssl_set_config_string(MGET_SSL_DIRECT_OPTIONS, config.gnutls_options);
 	mget_ssl_set_config_string(MGET_SSL_CA_DIRECTORY, config.ca_directory);
