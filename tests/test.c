@@ -1046,11 +1046,31 @@ static void test_parse_challenge(void)
 		const char *
 			input;
 		const char *
-			scheme[2];
+			scheme[3];
 	} test_data[] = {
-		{	// allowed cookie
+		{	// simplebasic
+			"Basic realm=\"foo\"",
+			{ "Basic", NULL }
+		},
+		{	// simplebasicucase
+			"BASIC REALM=\"foo\"",
+			{ "Basic", NULL }
+		},
+		{	// simplebasicucase
+			"Basic , realm=\"foo\"",
+			{ "Basic", NULL }
+		},
+		{	//
 			"Basic realm=\"test realm\"",
 			{ "Basic", NULL }
+		},
+		{	//
+			"Basic realm=\"test-הצü\"",
+			{ "Basic", NULL }
+		},
+		{	//
+			"Basic realm=\"basic\", Newauth realm=\"newauth\"",
+			{ "Basic", "Newauth", NULL }
 		},
 	};
 
@@ -1082,7 +1102,7 @@ static void test_parse_challenge(void)
 				break;
 			}
 
-			if (!strcmp(challenge->auth_scheme, t->scheme[nchal])) {
+			if (!mget_strcasecmp_ascii(challenge->auth_scheme, t->scheme[nchal])) {
 				ok++;
 			} else {
 				failed++;

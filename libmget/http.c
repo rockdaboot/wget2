@@ -348,15 +348,32 @@ const char *mget_http_parse_digest(const char *s, mget_http_digest_t *digest)
 
 const char *mget_http_parse_challenge(const char *s, mget_http_challenge_t *challenge)
 {
+	const char *old;
+
 	memset(challenge, 0, sizeof(*challenge));
 
 	while (isblank(*s)) s++;
 	s = mget_http_parse_token(s, &challenge->auth_scheme);
 
+	if (*s == ' ')
+		s++; // Auth scheme must have a space at the end of the token
+	else {
+		// parse/syntax error
+		xfree(challenge->auth_scheme);
+		return s;
+	}
+
 	mget_http_header_param_t param;
 	do {
+		old = s;
 		s = mget_http_parse_param(s, &param.name, &param.value);
 		if (param.name) {
+			if (*param.name && !param.value)
+				return old; // a new scheme detected
+
+			if (!param.value)
+				continue;
+
 			if (!challenge->params)
 				challenge->params = mget_stringmap_create_nocase(8);
 			mget_stringmap_put_noalloc(challenge->params, param.name, param.value);
