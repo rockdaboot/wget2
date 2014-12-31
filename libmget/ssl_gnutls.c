@@ -783,13 +783,13 @@ static int _verify_certificate_callback(gnutls_session_t session)
 #if GNUTLS_VERSION_NUMBER >= 0x030103
 	if (_config.ocsp_stapling) {
 		if (!(ocsp_ok = gnutls_ocsp_status_request_is_checked(session, 0)))
-			error_printf(_("%s: The certificate's (stapled) OCSP status has not been sent or is invalid\n"), tag);
+			error_printf(_("WARNING: The certificate's (stapled) OCSP status has not been sent or is invalid\n"));
 		else
-			debug_printf(_("%s: The certificate's (stapled) OCSP status is valid\n"), tag);
+			debug_printf(_("The certificate's (stapled) OCSP status is valid\n"));
 	}
 #endif
 #ifdef HAVE_GNUTLS_OCSP_H
-	if (!ocsp_ok && _config.ocsp_stapling) {
+	if (!ocsp_ok && _config.ocsp) {
 		ocsp_ok = cert_verify_ocsp(session);
 		if (!ocsp_ok)
 			error_printf(_("%s: Verifying (with OCSP) server certificate failed\n"), tag);
