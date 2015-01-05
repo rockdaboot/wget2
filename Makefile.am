@@ -1,6 +1,12 @@
 # got some hints from https://gitorious.org/openismus-playground/examplelib/source
 
-SUBDIRS = po include libmget src data examples docs/libmget tests
+if HAVE_PO
+SUBDIRS = po
+else
+SUBDIRS =
+endif
+
+SUBDIRS += include libmget src data examples docs/libmget tests
 #ACLOCAL_AMFLAGS = -I m4
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 

@@ -98,8 +98,16 @@ fi
 #
 # Gettext
 #
-AM_GNU_GETTEXT([external],[need-ngettext])
+m4_ifdef([AM_GNU_GETTEXT], [
+  AM_GNU_GETTEXT([external],[need-ngettext])
+  po_makefile_in=po/Makefile.in
+  AM_CONDITIONAL([HAVE_PO], [1])
+], [
+  AM_CONDITIONAL([HAVE_PO], [0])
+])
+m4_ifdef([AM_GNU_GETTEXT_VERSION], [
 AM_GNU_GETTEXT_VERSION([0.18.1])
+])
 
 #
 # check for gtk-doc
@@ -324,7 +332,7 @@ AC_CONFIG_FILES([Makefile
                  include/Makefile
                  libmget/Makefile
                  src/Makefile
-                 po/Makefile.in
+                 $po_makefile_in
                  docs/libmget/Makefile
                  data/Makefile
                  examples/Makefile
