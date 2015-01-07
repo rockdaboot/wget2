@@ -205,7 +205,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --random-file       File to be used as source of random data.\n"
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
 		"      --https-only        Do not follow non-secure URLs. (default: off)"
-		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)"
+		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)\n"
 		"      --hsts-file         Set file for HSTS saving/loading. (default: .mget_hsts)\n"
 		"      --load-hsts         Load entries from HSTS file.\n"
 		"      --save-hsts         Save entries into HSTS file.\n"
