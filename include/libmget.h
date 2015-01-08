@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2012 Tim Ruehsen
+ * Copyright(c) 2012,2013,2014,1015 Tim Ruehsen
  *
  * This file is part of libmget.
  *
@@ -928,6 +928,38 @@ int
 	mget_hsts_db_load(mget_hsts_db_t *hsts_db, const char *fname);
 
 /*
+ * Online Certificate Status Protocol (OCSP) routines
+ */
+
+// structure for Online Certificate Status Protocol (OCSP) entries
+typedef struct _mget_ocsp_st mget_ocsp_t;
+typedef struct _mget_ocsp_db_st mget_ocsp_db_t;
+
+mget_ocsp_t *
+	mget_ocsp_init(mget_ocsp_t *ocsp);
+void
+	mget_ocsp_deinit(mget_ocsp_t *ocsp);
+void
+	mget_ocsp_free(mget_ocsp_t **ocsp);
+mget_ocsp_t *
+	mget_ocsp_new(const char *host, time_t maxage);
+int
+	mget_ocsp_is_valid(const mget_ocsp_db_t *ocsp_db, const char *host);
+
+mget_ocsp_db_t *
+	mget_ocsp_db_init(mget_ocsp_db_t *ocsp_db);
+void
+	mget_ocsp_db_deinit(mget_ocsp_db_t *ocsp_db);
+void
+	mget_ocsp_db_free(mget_ocsp_db_t **ocsp_db);
+void
+	mget_ocsp_db_add(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp);
+int
+	mget_ocsp_db_save(mget_ocsp_db_t *ocsp_db, const char *fname);
+int
+	mget_ocsp_db_load(mget_ocsp_db_t *ocsp_db, const char *fname);
+
+/*
  * CSS parsing routines
  */
 
@@ -1154,6 +1186,7 @@ ssize_t
 #define MGET_SSL_OCSP_STAPLING     14
 #define MGET_SSL_OCSP_SERVER       15
 #define MGET_SSL_OCSP              16
+#define MGET_SSL_OCSP_CACHE        17
 
 void
 	mget_ssl_init(void);

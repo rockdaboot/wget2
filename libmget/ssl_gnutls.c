@@ -67,6 +67,8 @@ static struct _config {
 		*key_file,
 		*crl_file,
 		*ocsp_server;
+	mget_ocsp_db_t
+		*ocsp_cache;
 	char
 		check_certificate,
 		check_hostname,
@@ -102,6 +104,7 @@ void mget_ssl_set_config_string(int key, const char *value)
 	case MGET_SSL_KEY_FILE: _config.key_file = value; break;
 	case MGET_SSL_CRL_FILE: _config.crl_file = value; break;
 	case MGET_SSL_OCSP_SERVER: _config.ocsp_server = value; break;
+	case MGET_SSL_OCSP_CACHE: _config.ocsp_cache = (mget_ocsp_db_t *)value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
 	}
 }
@@ -769,30 +772,40 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		ret = -1;
 	}
 
-	if (ret == 0) {
+	if (ret == 0 && (_config.ocsp_stapling || _config.ocsp)) {
+		// Server certificate is valid regarding the local CA certificates
+		if (!mget_ocsp_is_valid(_config.ocsp_cache, hostname)) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
-		if (_config.ocsp_stapling) {
-			if (!(ocsp_ok = gnutls_ocsp_status_request_is_checked(session, 0)))
-				error_printf(_("WARNING: The certificate's (stapled) OCSP status has not been sent or is invalid\n"));
-			else
-				debug_printf("The certificate's (stapled) OCSP status is valid\n");
-		}
+			if (_config.ocsp_stapling) {
+				if (!(ocsp_ok = gnutls_ocsp_status_request_is_checked(session, 0))) {
+					if (!_config.ocsp)
+						error_printf(_("WARNING: The certificate's (stapled) OCSP status has not been sent or is invalid\n"));
+				}
+				else {
+					info_printf("The certificate's (stapled) OCSP status is valid\n");
+					mget_ocsp_db_add(_config.ocsp_cache, mget_ocsp_new(hostname, time(NULL) + 3600)); // 1h valid
+				}
+			}
 #endif
 #ifdef HAVE_GNUTLS_OCSP_H
-		if (!ocsp_ok && _config.ocsp) {
-			ocsp_ok = cert_verify_ocsp(session);
-			if (!ocsp_ok) {
-				error_printf(_("%s: Server certificate of '%s' has been revoked (via OCSP)\n"), tag, hostname);
-				ret = -1;
+			if (!ocsp_ok && _config.ocsp) {
+				ocsp_ok = cert_verify_ocsp(session);
+				if (!ocsp_ok) {
+					error_printf(_("%s: Server certificate of '%s' has been revoked (via OCSP)\n"), tag, hostname);
+					ret = -1;
+				}
+				else if (ocsp_ok == -1) {
+					error_printf(_("%s: OCSP response ignored\n"), tag);
+					ret = -1;
+				}
+				else { /* ret == 1 */
+					info_printf("Server certificate of '%s' is valid (via OCSP)\n", hostname);
+					mget_ocsp_db_add(_config.ocsp_cache, mget_ocsp_new(hostname, time(NULL) + 3600)); // 1h valid
+				}
 			}
-			else if (ocsp_ok == -1) {
-				error_printf(_("%s: OCSP response ignored\n"), tag);
-				ret = -1;
-			}
-			else /* ret == 1 */
-				debug_printf("Server certificate of '%s' is valid (via OCSP)\n", hostname);
-		}
 #endif
+		} else
+			error_printf(_("Valid OCSP cache entry found for '%s'\n"), hostname);
 	}
 
 	gnutls_x509_crt_deinit(cert);

@@ -67,6 +67,7 @@ struct config {
 		*load_cookies,
 		*save_cookies,
 		*hsts_file,
+		*ocsp_file,
 		*logfile,
 		*logfile_append,
 		*user_agent,
@@ -88,6 +89,8 @@ struct config {
 		*ignore_tags;
 	mget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
+	mget_ocsp_db_t
+		*ocsp_db; // in-memory OCSP database
 	size_t
 		chunk_size;
 	long long

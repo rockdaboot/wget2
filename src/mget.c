@@ -976,6 +976,9 @@ int main(int argc, const char *const *argv)
 	if (config.hsts && config.save_hsts && config.hsts_file && hsts_changed)
 		mget_hsts_db_save(config.hsts_db, config.hsts_file);
 
+	if (config.ocsp && config.ocsp_file)
+		mget_ocsp_db_save(config.ocsp_db, config.ocsp_file);
+
 	if (config.delete_after && config.output_document)
 		unlink(config.output_document);
 

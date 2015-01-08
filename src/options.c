@@ -206,12 +206,13 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
 		"      --https-only        Do not follow non-secure URLs. (default: off)"
 		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)\n"
-		"      --hsts-file         Set file for HSTS saving/loading. (default: .mget_hsts)\n"
+		"      --hsts-file         Set file for HSTS chaching. (default: .mget_hsts)\n"
 		"      --load-hsts         Load entries from HSTS file.\n"
 		"      --save-hsts         Save entries into HSTS file.\n"
 		"      --gnutls-options    Custom GnuTLS priority string. Interferes with --secure-protocol. (default: none)\n"
 		"      --ocsp-stapling     Use OCSP stapling to verify the server's certificate. (default: on)\n"
-		"      --ocsp              Use OCSP server access to verify server's certificate. (default: off)\n"
+		"      --ocsp              Use OCSP server access to verify server's certificate. (default: on)\n"
+		"      --ocsp-file         Set file for OCSP chaching. (default: .mget_ocsp)\n"
 		"\n");
 	puts(
 		"Directory options:\n"
@@ -598,9 +599,9 @@ struct config config = {
 	.tries = 20,
 	.hsts = 1,
 	.hsts_file = ".mget_hsts",
-        .ocsp_stapling = 1
-//	.load_hsts = 1,
-//	.save_hsts = 1
+	.ocsp = 1,
+	.ocsp_stapling = 1,
+	.ocsp_file = ".mget_ocsp"
 };
 
 static int parse_execute(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val);
@@ -679,6 +680,7 @@ static const struct option options[] = {
 	{ "n", NULL, parse_n_option, 1, 'n' }, // special Wget compatibility option
 	{ "num-threads", &config.num_threads, parse_integer, 1, 0 },
 	{ "ocsp", &config.ocsp, parse_bool, 0, 0 },
+	{ "ocsp-file", &config.ocsp_file, parse_string, 1, 0 },
 	{ "ocsp-stapling", &config.ocsp_stapling, parse_bool, 0, 0 },
 	{ "output-document", &config.output_document, parse_string, 1, 'O' },
 	{ "output-file", &config.logfile, parse_string, 1, 'o' },
@@ -1126,6 +1128,7 @@ int init(int argc, const char *const *argv)
 	config.https_proxy = mget_strdup(getenv("https_proxy"));
 	config.default_page = strdup(config.default_page);
 	config.hsts_file = strdup(config.hsts_file);
+	config.ocsp_file = strdup(config.ocsp_file);
 	config.domains = mget_vector_create(16, -2, (int (*)(const void *, const void *))strcmp);
 //	config.exclude_domains = mget_vector_create(16, -2, NULL);
 
@@ -1299,6 +1302,11 @@ int init(int argc, const char *const *argv)
 			mget_hsts_db_load(config.hsts_db, config.hsts_file);
 	}
 
+	if (config.ocsp) {
+		config.ocsp_db = mget_ocsp_db_init(NULL);
+		mget_ocsp_db_load(config.ocsp_db, config.ocsp_file);
+	}
+
 	if (config.base_url)
 		config.base = mget_iri_parse(config.base_url, config.local_encoding);
 
@@ -1343,6 +1351,7 @@ int init(int argc, const char *const *argv)
 	mget_ssl_set_config_string(MGET_SSL_CERT_FILE, config.cert_file);
 	mget_ssl_set_config_string(MGET_SSL_KEY_FILE, config.private_key);
 	mget_ssl_set_config_string(MGET_SSL_CRL_FILE, config.crl_file);
+	mget_ssl_set_config_string(MGET_SSL_OCSP_CACHE, (const char *)config.ocsp_db);
 
 	// convert host lists to lowercase
 	for (int it = 0; it < mget_vector_size(config.domains); it++) {
@@ -1392,12 +1401,14 @@ void deinit(void)
 
 	mget_cookie_db_free(&config.cookie_db);
 	mget_hsts_db_free(&config.hsts_db);
+	mget_ocsp_db_free(&config.ocsp_db);
 	mget_ssl_deinit();
 
 	xfree(config.cookie_suffixes);
 	xfree(config.load_cookies);
 	xfree(config.save_cookies);
 	xfree(config.hsts_file);
+	xfree(config.ocsp_file);
 	xfree(config.logfile);
 	xfree(config.logfile_append);
 	xfree(config.user_agent);
