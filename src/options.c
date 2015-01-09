@@ -207,8 +207,6 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --https-only        Do not follow non-secure URLs. (default: off)"
 		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)\n"
 		"      --hsts-file         Set file for HSTS chaching. (default: .mget_hsts)\n"
-		"      --load-hsts         Load entries from HSTS file.\n"
-		"      --save-hsts         Save entries into HSTS file.\n"
 		"      --gnutls-options    Custom GnuTLS priority string. Interferes with --secure-protocol. (default: none)\n"
 		"      --ocsp-stapling     Use OCSP stapling to verify the server's certificate. (default: on)\n"
 		"      --ocsp              Use OCSP server access to verify server's certificate. (default: on)\n"
@@ -673,7 +671,6 @@ static const struct option options[] = {
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0 },
 	{ "level", &config.level, parse_integer, 1, 'l' },
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0 },
-	{ "load-hsts", &config.load_hsts, parse_bool, 0, 0 },
 	{ "local-encoding", &config.local_encoding, parse_string, 1, 0 },
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0 },
 	{ "mirror", &config.mirror, parse_mirror, 0, 'm' },
@@ -707,7 +704,6 @@ static const struct option options[] = {
 	{ "robots", &config.robots, parse_bool, 0, 0 },
 	{ "save-cookies", &config.save_cookies, parse_string, 1, 0 },
 	{ "save-headers", &config.save_headers, parse_bool, 0, 0 },
-	{ "save-hsts", &config.save_hsts, parse_bool, 0, 0 },
 	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0 },
 	{ "server-response", &config.server_response, parse_bool, 0, 'S' },
 	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H' },
@@ -1298,8 +1294,7 @@ int init(int argc, const char *const *argv)
 
 	if (config.hsts) {
 		config.hsts_db = mget_hsts_db_init(NULL);
-		if (config.load_hsts)
-			mget_hsts_db_load(config.hsts_db, config.hsts_file);
+		mget_hsts_db_load(config.hsts_db, config.hsts_file);
 	}
 
 	if (config.ocsp) {

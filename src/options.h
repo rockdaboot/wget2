@@ -119,8 +119,6 @@ struct config {
 		convert_links,
 		ignore_case,
 		hsts, // if HSTS (HTTP Strict Transport Security) is enabled or not
-		load_hsts, // on startup, load HSTS entries from hsts_file
-		save_hsts, // on exit, save HSTS entries info hsts_file
 		random_wait,
 		trust_server_names,
 		robots,

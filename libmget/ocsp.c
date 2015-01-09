@@ -216,7 +216,7 @@ int mget_ocsp_db_save(mget_ocsp_db_t *ocsp_db, const char *fname)
 		if (ret)
 			error_printf(_("Failed to write to OCSP file '%s' (%d)\n"), fname, errno);
 		else
-			info_printf(_("saved %d OCSP entr%s into '%s'\n"), size, size != 1 ? "ies" : "y", fname);
+			debug_printf(_("saved %d OCSP entr%s into '%s'\n"), size, size != 1 ? "ies" : "y", fname);
 	} else
 		error_printf(_("Failed to open OCSP file '%s' (%d)\n"), fname, errno);
 
@@ -293,7 +293,7 @@ int mget_ocsp_db_load(mget_ocsp_db_t *ocsp_db, const char *fname)
 
 		nentries = mget_hashmap_size(ocsp_db->entries);
 
-		info_printf(_("have %d OCSP entr%s in cache\n"), nentries, nentries !=1 ? "ies" : "y");
+		debug_printf(_("have %d OCSP entr%s in cache\n"), nentries, nentries !=1 ? "ies" : "y");
 	} else if (errno != ENOENT)
 		error_printf(_("Failed to open OCSP file '%s' (%d)\n"), fname, errno);
 

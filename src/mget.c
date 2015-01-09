@@ -973,7 +973,7 @@ int main(int argc, const char *const *argv)
 	if (config.save_cookies)
 		mget_cookie_db_save(config.cookie_db, config.save_cookies, config.keep_session_cookies);
 
-	if (config.hsts && config.save_hsts && config.hsts_file && hsts_changed)
+	if (config.hsts && config.hsts_file && hsts_changed)
 		mget_hsts_db_save(config.hsts_db, config.hsts_file);
 
 	if (config.ocsp && config.ocsp_file)
