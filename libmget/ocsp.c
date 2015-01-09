@@ -50,6 +50,8 @@ struct _mget_ocsp_st {
 		host;
 	time_t
 		maxage; // expiry time
+	time_t
+		mtime; // creation time
 };
 
 static unsigned int G_GNUC_MGET_PURE _hash_ocsp(const mget_ocsp_t *ocsp)
@@ -73,7 +75,10 @@ mget_ocsp_t *mget_ocsp_init(mget_ocsp_t *ocsp)
 	if (!ocsp)
 		ocsp = xmalloc(sizeof(mget_ocsp_t));
 
-	return memset(ocsp, 0, sizeof(*ocsp));
+	memset(ocsp, 0, sizeof(*ocsp));
+	ocsp->mtime = time(NULL);
+
+	return ocsp;
 }
 
 void mget_ocsp_deinit(mget_ocsp_t *ocsp)
@@ -157,7 +162,8 @@ void mget_ocsp_db_add(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 		mget_ocsp_t *old = mget_hashmap_get(ocsp_db->entries, ocsp);
 
 		if (old) {
-			if (old->maxage < ocsp->maxage) {
+			if (old->mtime < ocsp->mtime) {
+				old->mtime = ocsp->mtime;
 				old->maxage = ocsp->maxage;
 				debug_printf("update OCSP %s (maxage=%ld)\n", old->host, old->maxage);
 			}
@@ -175,7 +181,7 @@ void mget_ocsp_db_add(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 
 static int G_GNUC_MGET_NONNULL_ALL _ocsp_save(FILE *fp, const mget_ocsp_t *ocsp)
 {
-	fprintf(fp, "%s %ld\n", ocsp->host, ocsp->maxage);
+	fprintf(fp, "%s %ld %ld\n", ocsp->host, ocsp->maxage, ocsp->mtime);
 	return 0;
 }
 
@@ -230,7 +236,7 @@ int mget_ocsp_db_load(mget_ocsp_db_t *ocsp_db, const char *fname)
 	time_t now = time(NULL);
 	int ok, nentries = 0;
 
-	if (!fname || !*fname)
+	if (!ocsp_db || !fname || !*fname)
 		return 0;
 
 	if ((fp = fopen(fname, "r"))) {
@@ -266,6 +272,12 @@ int mget_ocsp_db_load(mget_ocsp_db_t *ocsp_db, const char *fname)
 					continue;
 				}
 				ok = 1;
+			}
+
+			// parse mtime (age of this entry)
+			if (*linep) {
+				for (p = ++linep; *linep && !isspace(*linep);) linep++;
+				ocsp.mtime = atol(p);
 			}
 
 			if (ok) {
