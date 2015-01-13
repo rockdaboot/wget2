@@ -363,6 +363,11 @@ static int G_GNUC_MGET_CONST _family_to_value(int family)
 	}
 }
 
+void mget_tcp_set_tcp_fastopen(mget_tcp_t *tcp, int tcp_fastopen)
+{
+	(tcp ? tcp : &_global_tcp)->tcp_fastopen = tcp_fastopen;
+}
+
 void mget_tcp_set_dns_caching(mget_tcp_t *tcp, int caching)
 {
 	(tcp ? tcp : &_global_tcp)->caching = caching;
@@ -789,7 +794,7 @@ ssize_t mget_tcp_write(mget_tcp_t *tcp, const char *buf, size_t count)
 					&& errno != EAGAIN
 					&& errno != ENOTCONN
 #ifdef EINPROGRESS
-				&& errno != EINPROGRESS
+					&& errno != EINPROGRESS
 #endif
 			) {
 					error_printf(_("Failed to connect (%d)\n"), errno);

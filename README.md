@@ -105,6 +105,10 @@ The mid-range goal is to come as close to Wget, that Wget's units test work for 
 
 Some ideas of what could be done next (but contact me before you start bigger changes!):
 
+- [EFF HTTPS Everywhere](https://www.eff.org/https-everywhere)
+- SSH-style TOFU (Trust On First Use)
+- DANE / DNSSEC (waiting for Debian to have libdane from GnuTLS... but that needs libunbound work with GnuTLS, right
+  now it only works with OpenSSL.)
 - WARC support
 - read credentials from secure wallets (e.g. kwallet, firefox, http://sourceforge.net/projects/passwordsafe/)
   [Chromium HSTS domain list](http://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json)

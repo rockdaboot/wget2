@@ -152,6 +152,7 @@ struct config {
 		cookies,
 		spider,
 		dns_caching,
+		tcp_fastopen,
 		check_certificate,
 		check_hostname,
 		cert_type, // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)

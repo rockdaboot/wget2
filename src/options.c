@@ -157,6 +157,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --waitretry         Wait up to number of seconds after error (per thread). (default: 10)\n"
 		"      --random-wait       Wait 0.5 up to 1.5*<--wait> seconds between downloads (per thread). (default: off)\n"
 		"      --dns-cache         Caching of domain name lookups. (default: on)\n"
+		"      --tcp-fastopen      Enable TCP Fast Open (TFO). (default: on)\n"
 		"      --iri               Wget dummy option, you can't switch off international support\n"
 		"      --robots            Respect robots.txt standard for recursive downloads. (default: on)\n"
 		"      --restrict-file-names  unix, windows, nocontrol, ascii, lowercase, uppercase, none\n"
@@ -575,6 +576,7 @@ struct config config = {
 	.max_redirect = 20,
 	.num_threads = 5,
 	.dns_caching = 1,
+	.tcp_fastopen = 1,
 	.user_agent = "Mget/"PACKAGE_VERSION,
 	.verbose = 1,
 	.check_certificate=1,
@@ -709,6 +711,7 @@ static const struct option options[] = {
 	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H' },
 	{ "spider", &config.spider, parse_bool, 0, 0 },
 	{ "strict-comments", &config.strict_comments, parse_bool, 0, 0 },
+	{ "tcp-fastopen", &config.tcp_fastopen, parse_bool, 0, 0 },
 	{ "timeout", NULL, parse_timeout, 1, 'T' },
 	{ "timestamping", &config.timestamping, parse_bool, 0, 'N' },
 	{ "tries", &config.tries, parse_integer, 1, 't' },
@@ -1321,6 +1324,8 @@ int init(int argc, const char *const *argv)
 	mget_tcp_set_connect_timeout(NULL, config.connect_timeout);
 	mget_tcp_set_dns_timeout(NULL, config.dns_timeout);
 	mget_tcp_set_dns_caching(NULL, config.dns_caching);
+	mget_tcp_set_tcp_fastopen(NULL, config.tcp_fastopen);
+	mget_tcp_set_tcp_fastopen(NULL, config.tcp_fastopen);
 	mget_tcp_set_bind_address(NULL, config.bind_address);
 	if (config.inet4_only)
 		mget_tcp_set_family(NULL, MGET_NET_FAMILY_IPV4);

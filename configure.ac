@@ -49,23 +49,23 @@ esac
 #AC_PROG_CC
 AC_PROG_CC_STDC
 
-if test "$CFLAGS" = ""; then
-  if test "$GCC" = "yes"; then
-   CFLAGS="-g -std=gnu99 -pedantic -fPIC\
- -Wall -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes\
- -Wwrite-strings -Wformat=2 -Wformat -Wformat-security\
- -Wsign-compare -Wextra -D_FORTIFY_SOURCE=2\
- -Wcast-align -O2"
-  fi
-else
-  CFLAGS="$CFLAGS -fPIC"
-fi
-if test "$LDFLAGS" = ""; then
-  if test "$GCC" = "yes"; then
-#    LDFLAGS="-fPIE -pie -Wl,-z,relro,--as-needed"
-    LDFLAGS="-fPIE -pie -Wl,--as-needed -ffunction-sections"
-  fi
-fi
+#if test "$CFLAGS" = ""; then
+#  if test "$GCC" = "yes"; then
+#   CFLAGS="-g -std=gnu99 -pedantic -fPIC\
+# -Wall -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes\
+# -Wwrite-strings -Wformat=2 -Wformat -Wformat-security\
+# -Wsign-compare -Wextra -D_FORTIFY_SOURCE=2\
+# -Wcast-align -O2"
+#  fi
+#else
+#  CFLAGS="$CFLAGS -fPIC"
+#fi
+#if test "$LDFLAGS" = ""; then
+#  if test "$GCC" = "yes"; then
+##    LDFLAGS="-fPIE -pie -Wl,-z,relro,--as-needed"
+#    LDFLAGS="-fPIE -pie -Wl,--as-needed -ffunction-sections"
+#  fi
+#fi
 # Append EXTRA_CFLAGS to CFLAGS, if defined.
 if test "$EXTRA_CFLAGS" != ""; then
   CFLAGS="$CFLAGS $EXTRA_CFLAGS"
@@ -92,7 +92,7 @@ AM_PROG_CC_C_O
 #
 AC_PROG_CC_C99
 if test "$ac_cv_prog_cc_c99" = "no"; then
-   AC_ERROR([Compiler does not support C99. Aborting.])
+  AC_ERROR([Compiler does not support C99. Aborting.])
 fi
 
 #
@@ -106,7 +106,7 @@ m4_ifdef([AM_GNU_GETTEXT], [
   AM_CONDITIONAL([HAVE_PO], [0])
 ])
 m4_ifdef([AM_GNU_GETTEXT_VERSION], [
-AM_GNU_GETTEXT_VERSION([0.18.1])
+  AM_GNU_GETTEXT_VERSION([0.18.1])
 ])
 
 #
@@ -115,7 +115,7 @@ AM_GNU_GETTEXT_VERSION([0.18.1])
 m4_ifdef([GTK_DOC_CHECK], [
 GTK_DOC_CHECK([1.15],[--flavour no-tmpl])
 ],[
-AM_CONDITIONAL([ENABLE_GTK_DOC], false)
+  AM_CONDITIONAL([ENABLE_GTK_DOC], false)
 ])
 
 #

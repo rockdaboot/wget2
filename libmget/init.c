@@ -94,6 +94,9 @@ void mget_global_init(int first_key, ...)
 		case MGET_DNS_CACHING:
 			mget_tcp_set_dns_caching(NULL, va_arg(args, int));
 			break;
+		case MGET_TCP_FASTFORWARD:
+			mget_tcp_set_tcp_fastopen(NULL, va_arg(args, int));
+			break;
 		case MGET_COOKIE_SUFFIXES:
 			psl_file = va_arg(args, const char *);
 			_config.cookies_enabled = 1;

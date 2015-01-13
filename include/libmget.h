@@ -198,6 +198,7 @@ MGET_BEGIN_DECLS
 #define MGET_BIND_ADDRESS 1015
 #define MGET_NET_FAMILY_EXCLUSIVE 1016
 #define MGET_NET_FAMILY_PREFERRED 1017
+#define MGET_TCP_FASTFORWARD  1018
 
 #define MGET_HTTP_URL          2000
 #define MGET_HTTP_URL_ENCODING 2001
@@ -1118,6 +1119,8 @@ void
 	mget_tcp_set_dns_timeout(mget_tcp_t *tcp, int timeout);
 void
 	mget_tcp_set_dns_caching(mget_tcp_t *tcp, int caching);
+void
+	mget_tcp_set_tcp_fastopen(mget_tcp_t *tcp, int tcp_fastopen);
 void
 	mget_tcp_set_ssl(mget_tcp_t *tcp, int ssl);
 int
