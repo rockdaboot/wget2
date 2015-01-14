@@ -365,7 +365,9 @@ static int G_GNUC_MGET_CONST _family_to_value(int family)
 
 void mget_tcp_set_tcp_fastopen(mget_tcp_t *tcp, int tcp_fastopen)
 {
+#if defined(TCP_FASTOPEN) && defined(MSG_FASTOPEN)
 	(tcp ? tcp : &_global_tcp)->tcp_fastopen = tcp_fastopen;
+#endif
 }
 
 void mget_tcp_set_dns_caching(mget_tcp_t *tcp, int caching)
@@ -780,7 +782,7 @@ ssize_t mget_tcp_write(mget_tcp_t *tcp, const char *buf, size_t count)
 		return mget_ssl_write_timeout(tcp->ssl_session, buf, count, tcp->timeout);
 
 	while (count) {
-#ifdef TCP_FASTOPEN
+#ifdef MSG_FASTOPEN
 		if (tcp->tcp_fastopen && tcp->first_send) {
 			n = sendto(tcp->sockfd, buf, count, MSG_FASTOPEN,
 				tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
