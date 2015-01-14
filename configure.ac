@@ -106,7 +106,8 @@ m4_ifdef([AM_GNU_GETTEXT], [
   AM_CONDITIONAL([HAVE_PO], [0])
 ])
 m4_ifdef([AM_GNU_GETTEXT_VERSION], [
-  AM_GNU_GETTEXT_VERSION([0.18.1])
+#do not indent here
+AM_GNU_GETTEXT_VERSION([0.18.1])
 ])
 
 #
@@ -115,7 +116,8 @@ m4_ifdef([AM_GNU_GETTEXT_VERSION], [
 m4_ifdef([GTK_DOC_CHECK], [
 GTK_DOC_CHECK([1.15],[--flavour no-tmpl])
 ],[
-  AM_CONDITIONAL([ENABLE_GTK_DOC], false)
+# do not indent here
+AM_CONDITIONAL([ENABLE_GTK_DOC], false)
 ])
 
 #
