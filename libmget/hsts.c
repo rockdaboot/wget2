@@ -191,7 +191,7 @@ void mget_hsts_db_add(mget_hsts_db_t *hsts_db, mget_hsts_t *hsts)
 		} else {
 			// key and value are the same to make mget_hashmap_get() return old 'hsts'
 			mget_hashmap_put_noalloc(hsts_db->entries, hsts, hsts);
-			debug_printf("stored HSTS %s:%d (maxage=%ld, includeSubDomains=%d)\n", hsts->host, hsts->port, hsts->maxage, hsts->include_subdomains);
+			debug_printf("add HSTS %s:%d (maxage=%ld, includeSubDomains=%d)\n", hsts->host, hsts->port, hsts->maxage, hsts->include_subdomains);
 			// no need to free anything here
 		}
 	}

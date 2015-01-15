@@ -17,7 +17,7 @@
  * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * OCSP routines
+ * OCSP caching routines
  *
  * Changelog
  * 08.01.2015  Tim Ruehsen  created
@@ -171,7 +171,7 @@ void mget_ocsp_db_add(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 		} else {
 			// key and value are the same to make mget_hashmap_get() return old 'ocsp'
 			mget_hashmap_put_noalloc(ocsp_db->entries, ocsp, ocsp);
-			debug_printf("stored OCSP %s (maxage=%ld)\n", ocsp->host, ocsp->maxage);
+			debug_printf("add OCSP %s (maxage=%ld)\n", ocsp->host, ocsp->maxage);
 			// no need to free anything here
 		}
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2012 Tim Ruehsen
+ * Copyright(c) 2012-2015 Tim Ruehsen
  *
  * This file is part of libmget.
  *
@@ -18,10 +18,13 @@
  *
  *
  * gnutls SSL/TLS routines
+ * - some parts have been copied from GnuTLS example code
+ * - OCSP code has been copied from gnutls-cli/ocsptool code
  *
  * Changelog
  * 03.08.2012  Tim Ruehsen  created inspired from gnutls client example
  * 26.08.2012               mget compatibility regarding config options
+ * 15.01.2015               added OCSP fix from https://gitorious.org/gnutls/gnutls/commit/11eebe14b232ec198d1446a3720e6ed78d118c4b
  *
  *
  */
@@ -379,7 +382,7 @@ static int send_ocsp_request(const char *server,
 		      gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer,
 		      mget_buffer_t **ocsp_data, gnutls_datum_t *nonce)
 {
-	int ret = -1;
+	int ret = -1, rc;
 	int server_allocated = 0;
 	gnutls_datum_t body;
 	mget_iri_t *iri;
@@ -388,11 +391,18 @@ static int send_ocsp_request(const char *server,
 	if (!server) {
 		/* try to read URL from issuer certificate */
 		gnutls_datum_t data;
+		unsigned i = 0;
 
-		int rc = gnutls_x509_crt_get_authority_info_access(cert, 0, GNUTLS_IA_OCSP_URI, &data, NULL);
+		do {
+			rc = gnutls_x509_crt_get_authority_info_access(cert, i++, GNUTLS_IA_OCSP_URI, &data, NULL);
+		} while(rc < 0 && rc != GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE);
 
-		if (rc < 0)
-			rc = gnutls_x509_crt_get_authority_info_access(issuer, 0, GNUTLS_IA_OCSP_URI, &data, NULL);
+		if (rc < 0) {
+			i = 0;
+			do {
+				rc = gnutls_x509_crt_get_authority_info_access(issuer, i++, GNUTLS_IA_OCSP_URI, &data, NULL);
+			} while(rc < 0 && rc != GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE);
+		}
 
 		if (rc < 0) {
 			error_printf("Cannot find URL from issuer: %s\n", gnutls_strerror(rc));
@@ -591,7 +601,7 @@ cleanup:
  */
 static int cert_verify_ocsp(gnutls_session_t session)
 {
-	gnutls_x509_crt_t crt, issuer;
+	gnutls_x509_crt_t cert, issuer;
 	const gnutls_datum_t *cert_list;
 	unsigned int cert_list_size = 0;
 	int deinit_issuer = 0;
@@ -605,15 +615,16 @@ static int cert_verify_ocsp(gnutls_session_t session)
 		return -1;
 	}
 
-	gnutls_x509_crt_init(&crt);
-	ret = gnutls_x509_crt_import(crt, &cert_list[0], GNUTLS_X509_FMT_DER);
+	gnutls_x509_crt_init(&cert);
+	ret = gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER);
 	if (ret < 0) {
 		debug_printf("Decoding error: %s\n", gnutls_strerror(ret));
 		return -1;
 	}
 
-	ret = gnutls_certificate_get_issuer(_credentials, crt, &issuer, 0);
+	ret = gnutls_certificate_get_issuer(_credentials, cert, &issuer, 0);
 	if (ret < 0 && cert_list_size > 1) {
+		debug_printf("get_issuer: %s\n", gnutls_strerror(ret));
 		gnutls_x509_crt_init(&issuer);
 		ret = gnutls_x509_crt_import(issuer, &cert_list[1], GNUTLS_X509_FMT_DER);
 		if (ret < 0) {
@@ -634,19 +645,19 @@ static int cert_verify_ocsp(gnutls_session_t session)
 		goto cleanup;
 	}
 
-	if (send_ocsp_request(NULL, crt, issuer, &resp, &nonce) < 0) {
+	if (send_ocsp_request(NULL, cert, issuer, &resp, &nonce) < 0) {
 		debug_printf("Cannot contact OCSP server\n");
 		ret = -1;
 		goto cleanup;
 	}
 
 	/* verify and check the response for revoked cert */
-	ret = check_ocsp_response(crt, issuer, resp, &nonce);
+	ret = check_ocsp_response(cert, issuer, resp, &nonce);
 
 cleanup:
 	if (deinit_issuer)
 		gnutls_x509_crt_deinit(issuer);
-	gnutls_x509_crt_deinit(crt);
+	gnutls_x509_crt_deinit(cert);
 
 	return ret;
 }
@@ -796,7 +807,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 				}
 				else if (ocsp_ok == -1) {
 					error_printf(_("%s: OCSP response ignored\n"), tag);
-					ret = -1;
+					// ret = -1;
 				}
 				else { /* ret == 1 */
 					info_printf("Server certificate of '%s' is valid (via OCSP)\n", hostname);

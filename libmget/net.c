@@ -67,9 +67,6 @@
 # include <ws2tcpip.h>
 #endif /* not WINDOWS */
 
-//#include <netinet/tcp.h>
-//#include <netinet/in.h>
-
 #include <libmget.h>
 #include "private.h"
 
