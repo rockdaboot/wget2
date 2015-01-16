@@ -26,6 +26,9 @@
  * 26.08.2012               mget compatibility regarding config options
  * 15.01.2015               added OCSP fix from https://gitorious.org/gnutls/gnutls/commit/11eebe14b232ec198d1446a3720e6ed78d118c4b
  *
+ * Testing revocation:
+ * https://revoked.grc.com/
+ * https://test-sspev.verisign.com:2443/test-SSPEV-revoked-verisign.html
  *
  */
 
@@ -445,6 +448,7 @@ static int send_ocsp_request(const char *server,
 	}
 
 	mget_http_free_request(&req);
+	mget_iri_free(&iri);
 	gnutls_free(body.data);
 	return ret;
 }
@@ -603,8 +607,8 @@ static int cert_verify_ocsp(gnutls_session_t session)
 {
 	gnutls_x509_crt_t cert, issuer;
 	const gnutls_datum_t *cert_list;
-	unsigned int cert_list_size = 0;
-	int deinit_issuer = 0;
+	unsigned int cert_list_size = 0, ok = 0;
+	int deinit_issuer = 0, deinit_cert = 0;
 	mget_buffer_t *resp = NULL;
 	unsigned char noncebuf[23];
 	gnutls_datum_t nonce = { noncebuf, sizeof(noncebuf) };
@@ -615,51 +619,66 @@ static int cert_verify_ocsp(gnutls_session_t session)
 		return -1;
 	}
 
-	gnutls_x509_crt_init(&cert);
-	ret = gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER);
-	if (ret < 0) {
-		debug_printf("Decoding error: %s\n", gnutls_strerror(ret));
-		return -1;
-	}
-
-	ret = gnutls_certificate_get_issuer(_credentials, cert, &issuer, 0);
-	if (ret < 0 && cert_list_size > 1) {
-		debug_printf("get_issuer: %s\n", gnutls_strerror(ret));
-		gnutls_x509_crt_init(&issuer);
-		ret = gnutls_x509_crt_import(issuer, &cert_list[1], GNUTLS_X509_FMT_DER);
+	for (unsigned it = 0; it < cert_list_size; it++) {
+		if (deinit_cert)
+			gnutls_x509_crt_deinit(cert);
+		gnutls_x509_crt_init(&cert);
+		deinit_cert = 1;
+		ret = gnutls_x509_crt_import(cert, &cert_list[it], GNUTLS_X509_FMT_DER);
 		if (ret < 0) {
 			debug_printf("Decoding error: %s\n", gnutls_strerror(ret));
-			return -1;
+			goto cleanup;
 		}
-		deinit_issuer = 1;
-	} else if (ret < 0) {
-		debug_printf("Cannot find issuer\n");
-		ret = -1;
-		goto cleanup;
+
+		if (deinit_issuer) {
+			gnutls_x509_crt_deinit(issuer);
+			deinit_issuer = 0;
+		}
+		ret = gnutls_certificate_get_issuer(_credentials, cert, &issuer, 0);
+		if (ret < 0 && cert_list_size - it > 1) {
+			gnutls_x509_crt_init(&issuer);
+			deinit_issuer = 1;
+			ret = gnutls_x509_crt_import(issuer, &cert_list[it + 1], GNUTLS_X509_FMT_DER);
+			if (ret < 0) {
+				debug_printf("Decoding error: %s\n", gnutls_strerror(ret));
+				goto cleanup;
+			}
+		} else if (ret < 0) {
+			debug_printf("Cannot find issuer: %s\n", gnutls_strerror(ret));
+			goto cleanup;
+		}
+
+		ret = gnutls_rnd(GNUTLS_RND_NONCE, nonce.data, nonce.size);
+		if (ret < 0) {
+			debug_printf("gnutls_rnd: %s", gnutls_strerror(ret));
+			goto cleanup;
+		}
+
+		if (send_ocsp_request(NULL, cert, issuer, &resp, &nonce) < 0) {
+			debug_printf("Cannot contact OCSP server\n");
+			goto cleanup;
+		}
+
+		/* verify and check the response for revoked cert */
+		ret = check_ocsp_response(cert, issuer, resp, &nonce);
+		mget_buffer_free(&resp);
+		debug_printf("check_ocsp_response() returned %d\n",ret);
+		if (ret == 1)
+			ok++;
+		else
+			break;
 	}
 
-	ret = gnutls_rnd(GNUTLS_RND_NONCE, nonce.data, nonce.size);
-	if (ret < 0) {
-		debug_printf("gnutls_rnd: %s", gnutls_strerror(ret));
-		ret = -1;
-		goto cleanup;
-	}
-
-	if (send_ocsp_request(NULL, cert, issuer, &resp, &nonce) < 0) {
-		debug_printf("Cannot contact OCSP server\n");
-		ret = -1;
-		goto cleanup;
-	}
-
-	/* verify and check the response for revoked cert */
-	ret = check_ocsp_response(cert, issuer, resp, &nonce);
+	if (ok == cert_list_size)
+		ret = 0;
 
 cleanup:
 	if (deinit_issuer)
 		gnutls_x509_crt_deinit(issuer);
-	gnutls_x509_crt_deinit(cert);
+	if (deinit_cert)
+		gnutls_x509_crt_deinit(cert);
 
-	return ret;
+	return ok == cert_list_size;
 }
 #endif // HAVE_GNUTLS_OCSP_H
 
