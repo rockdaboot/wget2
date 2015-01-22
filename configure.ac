@@ -101,9 +101,9 @@ fi
 m4_ifdef([AM_GNU_GETTEXT], [
   AM_GNU_GETTEXT([external],[need-ngettext])
   po_makefile_in=po/Makefile.in
-  AM_CONDITIONAL([HAVE_PO], [1])
+  AM_CONDITIONAL([HAVE_PO], [true])
 ], [
-  AM_CONDITIONAL([HAVE_PO], [0])
+  AM_CONDITIONAL([HAVE_PO], [false])
 ])
 m4_ifdef([AM_GNU_GETTEXT_VERSION], [
 #do not indent here
