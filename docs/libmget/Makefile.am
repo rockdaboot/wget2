@@ -116,9 +116,8 @@ man_MANS += docs $(theMANS)
 # make distcheck -jn randomly breaks
 .NOTPARALLEL:
 
-%.3:
-#.xml.3:
-	@file=xml/`echo $@|cut -d'.' -f1`.xml; \
+%.3: sgml-build.stamp
+	@file=xml/`basename $@|cut -d'.' -f1`.xml; \
 	@XSLTPROC@ -nonet http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $$file
 
 endif
