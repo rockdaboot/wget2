@@ -40,18 +40,22 @@
 
 struct _mget_ocsp_db_st {
 	mget_hashmap_t *
-		entries;
+		fingerprints;
+	mget_hashmap_t *
+		hosts;
 	mget_thread_mutex_t
 		mutex;
 };
 
 struct _mget_ocsp_st {
 	const char *
-		host;
+		key;
 	time_t
 		maxage; // expiry time
 	time_t
 		mtime; // creation time
+	int
+		valid; // 1=valid, 0=revoked
 };
 
 static unsigned int G_GNUC_MGET_PURE _hash_ocsp(const mget_ocsp_t *ocsp)
@@ -59,7 +63,7 @@ static unsigned int G_GNUC_MGET_PURE _hash_ocsp(const mget_ocsp_t *ocsp)
 	unsigned int hash = 0;
 	const unsigned char *p;
 
-	for (p = (unsigned char *)ocsp->host; *p; p++)
+	for (p = (unsigned char *)ocsp->key; *p; p++)
 		hash = hash * 101 + *p;
 
 	return hash;
@@ -67,7 +71,7 @@ static unsigned int G_GNUC_MGET_PURE _hash_ocsp(const mget_ocsp_t *ocsp)
 
 static int G_GNUC_MGET_NONNULL_ALL _compare_ocsp(const mget_ocsp_t *h1, const mget_ocsp_t *h2)
 {
-	return strcmp(h1->host, h2->host);
+	return strcmp(h1->key, h2->key);
 }
 
 mget_ocsp_t *mget_ocsp_init(mget_ocsp_t *ocsp)
@@ -84,7 +88,7 @@ mget_ocsp_t *mget_ocsp_init(mget_ocsp_t *ocsp)
 void mget_ocsp_deinit(mget_ocsp_t *ocsp)
 {
 	if (ocsp) {
-		xfree(ocsp->host);
+		xfree(ocsp->key);
 	}
 }
 
@@ -96,25 +100,44 @@ void mget_ocsp_free(mget_ocsp_t **ocsp)
 	}
 }
 
-mget_ocsp_t *mget_ocsp_new(const char *host, time_t maxage)
+mget_ocsp_t *mget_ocsp_new(const char *fingerprint, time_t maxage, int valid)
 {
 	mget_ocsp_t *ocsp = mget_ocsp_init(NULL);
 
-	ocsp->host = mget_strdup(host);
+	ocsp->key = mget_strdup(fingerprint);
 	ocsp->maxage = maxage;
+	ocsp->valid = valid;
 
 	return ocsp;
 }
 
-int mget_ocsp_is_valid(const mget_ocsp_db_t *ocsp_db, const char *host)
+int mget_ocsp_fingerprint_in_cache(const mget_ocsp_db_t *ocsp_db, const char *fingerprint, int *revoked)
 {
 	if (ocsp_db) {
 		mget_ocsp_t ocsp, *ocspp;
 
 		// look for an exact match
-		ocsp.host = host;
-		if ((ocspp = mget_hashmap_get(ocsp_db->entries, &ocsp)) && ocspp->maxage >= time(NULL))
+		ocsp.key = fingerprint;
+		if ((ocspp = mget_hashmap_get(ocsp_db->fingerprints, &ocsp)) && ocspp->maxage >= time(NULL)) {
+			if (revoked)
+				*revoked = !ocspp->valid;
 			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int mget_ocsp_hostname_is_valid(const mget_ocsp_db_t *ocsp_db, const char *hostname)
+{
+	if (ocsp_db) {
+		mget_ocsp_t ocsp, *ocspp;
+
+		// look for an exact match
+		ocsp.key = hostname;
+		if ((ocspp = mget_hashmap_get(ocsp_db->hosts, &ocsp)) && ocspp->maxage >= time(NULL)) {
+			return 1;
+		}
 	}
 
 	return 0;
@@ -126,8 +149,10 @@ mget_ocsp_db_t *mget_ocsp_db_init(mget_ocsp_db_t *ocsp_db)
 		ocsp_db = xmalloc(sizeof(mget_ocsp_db_t));
 
 	memset(ocsp_db, 0, sizeof(*ocsp_db));
-	ocsp_db->entries = mget_hashmap_create(16, -2, (unsigned int(*)(const void *))_hash_ocsp, (int(*)(const void *, const void *))_compare_ocsp);
-	mget_hashmap_set_destructor(ocsp_db->entries, (void(*)(void *, void *))mget_ocsp_deinit);
+	ocsp_db->fingerprints = mget_hashmap_create(16, -2, (unsigned int(*)(const void *))_hash_ocsp, (int(*)(const void *, const void *))_compare_ocsp);
+	mget_hashmap_set_destructor(ocsp_db->fingerprints, (void(*)(void *, void *))mget_ocsp_deinit);
+	ocsp_db->hosts = mget_hashmap_create(16, -2, (unsigned int(*)(const void *))_hash_ocsp, (int(*)(const void *, const void *))_compare_ocsp);
+	mget_hashmap_set_destructor(ocsp_db->hosts, (void(*)(void *, void *))mget_ocsp_deinit);
 	mget_thread_mutex_init(&ocsp_db->mutex);
 
 	return ocsp_db;
@@ -137,7 +162,8 @@ void mget_ocsp_db_deinit(mget_ocsp_db_t *ocsp_db)
 {
 	if (ocsp_db) {
 		mget_thread_mutex_lock(&ocsp_db->mutex);
-		mget_hashmap_free(&ocsp_db->entries);
+		mget_hashmap_free(&ocsp_db->fingerprints);
+		mget_hashmap_free(&ocsp_db->hosts);
 		mget_thread_mutex_unlock(&ocsp_db->mutex);
 	}
 }
@@ -150,28 +176,29 @@ void mget_ocsp_db_free(mget_ocsp_db_t **ocsp_db)
 	}
 }
 
-void mget_ocsp_db_add(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
+void mget_ocsp_db_add_fingerprint(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 {
 	mget_thread_mutex_lock(&ocsp_db->mutex);
 
 	if (ocsp->maxage == 0) {
-		if (mget_hashmap_remove(ocsp_db->entries, ocsp))
-			debug_printf("removed OCSP %s\n", ocsp->host);
+		if (mget_hashmap_remove(ocsp_db->fingerprints, ocsp))
+			debug_printf("removed OCSP cert %s\n", ocsp->key);
 		mget_ocsp_free(&ocsp);
 	} else {
-		mget_ocsp_t *old = mget_hashmap_get(ocsp_db->entries, ocsp);
+		mget_ocsp_t *old = mget_hashmap_get(ocsp_db->fingerprints, ocsp);
 
 		if (old) {
 			if (old->mtime < ocsp->mtime) {
 				old->mtime = ocsp->mtime;
 				old->maxage = ocsp->maxage;
-				debug_printf("update OCSP %s (maxage=%ld)\n", old->host, old->maxage);
+				old->valid = ocsp->valid;
+				debug_printf("update OCSP cert %s (maxage=%ld,valid=%d)\n", old->key, old->maxage, old->valid);
 			}
 			mget_ocsp_free(&ocsp);
 		} else {
 			// key and value are the same to make mget_hashmap_get() return old 'ocsp'
-			mget_hashmap_put_noalloc(ocsp_db->entries, ocsp, ocsp);
-			debug_printf("add OCSP %s (maxage=%ld)\n", ocsp->host, ocsp->maxage);
+			mget_hashmap_put_noalloc(ocsp_db->fingerprints, ocsp, ocsp);
+			debug_printf("add OCSP cert %s (maxage=%ld,valid=%d)\n", ocsp->key, ocsp->maxage, ocsp->valid);
 			// no need to free anything here
 		}
 	}
@@ -179,54 +206,40 @@ void mget_ocsp_db_add(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 	mget_thread_mutex_unlock(&ocsp_db->mutex);
 }
 
-static int G_GNUC_MGET_NONNULL_ALL _ocsp_save(FILE *fp, const mget_ocsp_t *ocsp)
+void mget_ocsp_db_add_host(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 {
-	fprintf(fp, "%s %ld %ld\n", ocsp->host, ocsp->maxage, ocsp->mtime);
-	return 0;
-}
+	mget_thread_mutex_lock(&ocsp_db->mutex);
 
-// save the OCSP cache to a flat file
-// not thread-save
+	if (ocsp->maxage == 0) {
+		if (mget_hashmap_remove(ocsp_db->hosts, ocsp))
+			debug_printf("removed OCSP host %s\n", ocsp->key);
+		mget_ocsp_free(&ocsp);
+	} else {
+		mget_ocsp_t *old = mget_hashmap_get(ocsp_db->hosts, ocsp);
 
-int mget_ocsp_db_save(mget_ocsp_db_t *ocsp_db, const char *fname)
-{
-	FILE *fp;
-	int ret = -1, size;
+		if (old) {
+			if (old->mtime < ocsp->mtime) {
+				old->mtime = ocsp->mtime;
+				old->maxage = ocsp->maxage;
+				old->valid = ocsp->valid;
+				debug_printf("update OCSP host %s (maxage=%ld)\n", old->key, old->maxage);
+			}
+			mget_ocsp_free(&ocsp);
+		} else {
+			// key and value are the same to make mget_hashmap_get() return old 'ocsp'
+			mget_hashmap_put_noalloc(ocsp_db->hosts, ocsp, ocsp);
+			debug_printf("add OCSP host %s (maxage=%ld)\n", ocsp->key, ocsp->maxage);
+			// no need to free anything here
+		}
+	}
 
-	if (!fname || !*fname)
-		return -1;
-
-	mget_ocsp_db_load(ocsp_db, fname);
-
-	if ((size = mget_hashmap_size(ocsp_db->entries)) <= 0)
-		return -1;
-
-	if ((fp = fopen(fname, "w"))) {
-		fputs("#OCSP 1.0 file\n", fp);
-		fputs("#Generated by Mget " PACKAGE_VERSION ". Edit at your own risk.\n\n", fp);
-
-		mget_hashmap_browse(ocsp_db->entries, (int(*)(void *, const void *, void *))_ocsp_save, fp);
-
-		if (!ferror(fp))
-			ret = 0;
-
-		if (fclose(fp))
-			ret = -1;
-
-		if (ret)
-			error_printf(_("Failed to write to OCSP file '%s' (%d)\n"), fname, errno);
-		else
-			debug_printf(_("saved %d OCSP entr%s into '%s'\n"), size, size != 1 ? "ies" : "y", fname);
-	} else
-		error_printf(_("Failed to open OCSP file '%s' (%d)\n"), fname, errno);
-
-	return ret;
+	mget_thread_mutex_unlock(&ocsp_db->mutex);
 }
 
 // load the OCSP cache from a flat file
 // not thread-save
 
-int mget_ocsp_db_load(mget_ocsp_db_t *ocsp_db, const char *fname)
+static int _ocsp_db_load(mget_ocsp_db_t *ocsp_db, const char *fname, int load_hosts)
 {
 	mget_ocsp_t ocsp;
 	FILE *fp;
@@ -235,9 +248,6 @@ int mget_ocsp_db_load(mget_ocsp_db_t *ocsp_db, const char *fname)
 	ssize_t buflen;
 	time_t now = time(NULL);
 	int ok, nentries = 0;
-
-	if (!ocsp_db || !fname || !*fname)
-		return 0;
 
 	if ((fp = fopen(fname, "r"))) {
 		while ((buflen = mget_getline(&buf, &bufsize, fp)) >= 0) {
@@ -256,10 +266,10 @@ int mget_ocsp_db_load(mget_ocsp_db_t *ocsp_db, const char *fname)
 			mget_ocsp_init(&ocsp);
 			ok = 0;
 
-			// parse host
+			// parse cert's sha-256 checksum
 			if (*linep) {
 				for (p = linep; *linep && !isspace(*linep);) linep++;
-				ocsp.host = strndup(p, linep - p);
+				ocsp.key = strndup(p, linep - p);
 			}
 
 			// parse max age
@@ -280,8 +290,17 @@ int mget_ocsp_db_load(mget_ocsp_db_t *ocsp_db, const char *fname)
 				ocsp.mtime = atol(p);
 			}
 
+			// parse mtime (age of this entry)
+			if (*linep) {
+				for (p = ++linep; *linep && !isspace(*linep);) linep++;
+				ocsp.valid = atoi(p);
+			}
+
 			if (ok) {
-				mget_ocsp_db_add(ocsp_db, mget_memdup(&ocsp, sizeof(ocsp)));
+				if (load_hosts)
+					mget_ocsp_db_add_host(ocsp_db, mget_memdup(&ocsp, sizeof(ocsp)));
+				else
+					mget_ocsp_db_add_fingerprint(ocsp_db, mget_memdup(&ocsp, sizeof(ocsp)));
 			} else {
 				mget_ocsp_deinit(&ocsp);
 				error_printf(_("Failed to parse OCSP line: '%s'\n"), buf);
@@ -291,11 +310,88 @@ int mget_ocsp_db_load(mget_ocsp_db_t *ocsp_db, const char *fname)
 		xfree(buf);
 		fclose(fp);
 
-		nentries = mget_hashmap_size(ocsp_db->entries);
+		nentries = mget_hashmap_size(load_hosts ? ocsp_db->hosts : ocsp_db->fingerprints);
 
-		debug_printf(_("have %d OCSP entr%s in cache\n"), nentries, nentries !=1 ? "ies" : "y");
+		debug_printf(_("have %d OCSP %s%s in cache\n"), nentries, load_hosts ? "host" : "fingerprint", nentries !=1 ? "ies" : "y");
 	} else if (errno != ENOENT)
 		error_printf(_("Failed to open OCSP file '%s' (%d)\n"), fname, errno);
 
 	return nentries;
+}
+
+int mget_ocsp_db_load(mget_ocsp_db_t *ocsp_db, const char *fname)
+{
+	if (!ocsp_db || !fname || !*fname)
+		return -1;
+
+	char fname_hosts[strlen(fname) + 6 + 1];
+	snprintf(fname_hosts, sizeof(fname_hosts), "%s_hosts", fname);
+
+	return _ocsp_db_load(ocsp_db, fname, 0) + _ocsp_db_load(ocsp_db, fname_hosts, 1);
+}
+
+static int G_GNUC_MGET_NONNULL_ALL _ocsp_save_entry(FILE *fp, const mget_ocsp_t *ocsp)
+{
+	fprintf(fp, "%s %ld %ld %d\n", ocsp->key, ocsp->maxage, ocsp->mtime, ocsp->valid);
+	return 0;
+}
+
+static int G_GNUC_MGET_NONNULL_ALL _ocsp_save_host(FILE *fp, const mget_ocsp_t *ocsp)
+{
+	fprintf(fp, "%s %ld %ld\n", ocsp->key, ocsp->maxage, ocsp->mtime);
+	return 0;
+}
+
+// save the OCSP cache to a flat file
+// not thread-save
+
+static int _ocsp_db_save(mget_hashmap_t *map, const char *fname, int save_hosts)
+{
+	FILE *fp;
+	int ret = -1, size;
+
+	if ((size = mget_hashmap_size(map)) <= 0)
+		return -1;
+
+	if ((fp = fopen(fname, "w"))) {
+		fputs("#OCSP 1.0 file\n", fp);
+		fputs("#Generated by Mget " PACKAGE_VERSION ". Edit at your own risk.\n", fp);
+		if (save_hosts) {
+			fputs("<hostname> <time_t maxage> <time_t mtime>\n\n", fp);
+			mget_hashmap_browse(map, (int(*)(void *, const void *, void *))_ocsp_save_host, fp);
+		} else {
+			fputs("<sha256 fingerprint of cert> <time_t maxage> <time_t mtime> <valid>\n\n", fp);
+			mget_hashmap_browse(map, (int(*)(void *, const void *, void *))_ocsp_save_entry, fp);
+		}
+
+		if (!ferror(fp))
+			ret = 0;
+
+		if (fclose(fp))
+			ret = -1;
+
+		if (ret)
+			error_printf(_("Failed to write to OCSP file '%s' (%d)\n"), fname, errno);
+		else
+			debug_printf(_("saved %d OCSP entr%s into '%s'\n"), size, size != 1 ? "ies" : "y", fname);
+	} else
+		error_printf(_("Failed to open OCSP file '%s' (%d)\n"), fname, errno);
+
+	return ret;
+}
+
+int mget_ocsp_db_save(mget_ocsp_db_t *ocsp_db, const char *fname)
+{
+	if (!ocsp_db || !fname || !*fname)
+		return -1;
+
+	int nentries;
+	char fname_hosts[strlen(fname) + 6 + 1];
+	snprintf(fname_hosts, sizeof(fname_hosts), "%s_hosts", fname);
+
+	_ocsp_db_load(ocsp_db, fname, 0);
+	nentries = _ocsp_db_save(ocsp_db->fingerprints, fname, 0);
+
+	_ocsp_db_load(ocsp_db, fname_hosts, 1);
+	return nentries + _ocsp_db_save(ocsp_db->hosts, fname_hosts, 1);
 }

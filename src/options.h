@@ -90,7 +90,7 @@ struct config {
 	mget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
 	mget_ocsp_db_t
-		*ocsp_db; // in-memory OCSP database
+		*ocsp_db; // in-memory fingerprint OCSP database
 	size_t
 		chunk_size;
 	long long

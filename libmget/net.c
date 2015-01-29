@@ -23,6 +23,7 @@
  * 25.04.2012  Tim Ruehsen  created
  * 16.11.2012               new functions tcp_set_family() and tcp_set_preferred_family()
  *
+ * RFC 7413: TCP Fast Open
  */
 
 #ifndef _GNU_SOURCE

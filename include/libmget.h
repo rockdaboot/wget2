@@ -943,9 +943,11 @@ void
 void
 	mget_ocsp_free(mget_ocsp_t **ocsp);
 mget_ocsp_t *
-	mget_ocsp_new(const char *host, time_t maxage);
+	mget_ocsp_new(const char *fingerprint, time_t maxage, int valid);
 int
-	mget_ocsp_is_valid(const mget_ocsp_db_t *ocsp_db, const char *host);
+	mget_ocsp_fingerprint_in_cache(const mget_ocsp_db_t *ocsp_db, const char *fingerprint, int *valid);
+int
+	mget_ocsp_hostname_is_valid(const mget_ocsp_db_t *ocsp_db, const char *fingerprint);
 
 mget_ocsp_db_t *
 	mget_ocsp_db_init(mget_ocsp_db_t *ocsp_db);
@@ -954,7 +956,9 @@ void
 void
 	mget_ocsp_db_free(mget_ocsp_db_t **ocsp_db);
 void
-	mget_ocsp_db_add(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp);
+	mget_ocsp_db_add_fingerprint(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp);
+void
+	mget_ocsp_db_add_host(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp);
 int
 	mget_ocsp_db_save(mget_ocsp_db_t *ocsp_db, const char *fname);
 int

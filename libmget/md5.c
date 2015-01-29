@@ -48,7 +48,7 @@ void mget_md5_printf_hex(char *digest_hex, const char *fmt, ...)
 		unsigned char digest[mget_hash_get_len(MGET_DIGTYPE_MD5)];
 
 		if (mget_hash_fast(MGET_DIGTYPE_MD5, plaintext, size, digest) == 0) {
-			mget_memtohex(digest, sizeof(digest), digest_hex, sizeof(digest) * 2 +1);
+			mget_memtohex(digest, sizeof(digest), digest_hex, sizeof(digest) * 2 + 1);
 		}
 
 		xfree(plaintext);
