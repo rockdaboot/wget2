@@ -8,7 +8,7 @@
   <bookinfo>
     <title>LibMget Reference Manual</title>
     <releaseinfo>
-      for libmget [VERSION].
+      for libmget &version;.
       The latest version of this documentation can be found on-line at
       <ulink role="online-location" url="http://github.com/rockdaboot/mget">GitHub</ulink>.
     </releaseinfo>

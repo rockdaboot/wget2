@@ -107,7 +107,7 @@ m4_ifdef([AM_GNU_GETTEXT], [
 ])
 m4_ifdef([AM_GNU_GETTEXT_VERSION], [
 #do not indent here
-AM_GNU_GETTEXT_VERSION([0.18.1])
+AM_GNU_GETTEXT_VERSION([0.19.3])
 ])
 
 #
@@ -119,6 +119,16 @@ GTK_DOC_CHECK([1.15],[--flavour no-tmpl])
 # do not indent here
 AM_CONDITIONAL([ENABLE_GTK_DOC], false)
 ])
+# needed for some older versions of gtk-doc
+m4_ifdef([GTK_DOC_USE_LIBTOOL], [], [
+AM_CONDITIONAL([GTK_DOC_USE_LIBTOOL], false)
+])
+
+if test x"$have_gtk_doc" = xyes -a x"$enable_gtk_doc" = xyes; then
+  docdir_makefile=docs/libmget/Makefile
+  docdir_version_xml=docs/libmget/version.xml
+  AC_SUBST([LIBMGET_DOCS], [docs/libmget])
+fi
 
 #
 # enable creation of man pages
@@ -179,6 +189,10 @@ PKG_PROG_PKG_CONFIG
 AC_SEARCH_LIBS(socket, ws2_32)
 AC_SEARCH_LIBS(clock_gettime, rt)
 AC_SEARCH_LIBS(pthread_create, pthread, [AC_DEFINE([HAVE_LIBPTHREAD], [1], [Use pthreads])])
+
+# AM_ICONV sets @LIBICONV@ and @LTLIBICONV@ for use in Makefile.am
+# do not use AM_ICONV conditionally
+AM_ICONV
 
 AC_ARG_WITH(gnutls, AS_HELP_STRING([--without-gnutls], [disable GNUTLS SSL support]), with_gnutls=$withval, with_gnutls=yes)
 AS_IF([test "x$with_gnutls" != "xno"], [
@@ -334,8 +348,9 @@ AC_CONFIG_FILES([Makefile
                  include/Makefile
                  libmget/Makefile
                  src/Makefile
-                 $po_makefile_in
-                 docs/libmget/Makefile
+                 ${po_makefile_in}
+                 ${docdir_makefile}
+                 ${docdir_version_xml}
                  data/Makefile
                  examples/Makefile
                  tests/Makefile

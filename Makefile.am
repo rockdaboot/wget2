@@ -6,12 +6,12 @@ else
 SUBDIRS =
 endif
 
-SUBDIRS += include libmget src data examples docs/libmget tests
-#ACLOCAL_AMFLAGS = -I m4
-ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
+SUBDIRS += include libmget src data examples $(LIBMGET_DOCS) tests
+
+ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 
 # Enable GTK-Doc during make distcheck
-DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc --enable-man
+#DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc --enable-man
 
 ## Install the generated pkg-config file (.pc) into the expected location for
 ## architecture-dependent package configuration information. Occasionally,
@@ -19,3 +19,5 @@ DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc --enable-man
 ## in which case the correct install location would be $(datadir)/pkgconfig.
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libmget-$(LIBMGET_API_VERSION).pc
+
+EXTRA_DIST = config.rpath
