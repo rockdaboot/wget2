@@ -86,8 +86,10 @@ static struct _config {
 		ocsp,
 		ocsp_stapling;
 } _config = {
+#ifdef HAVE_GNUTLS_OCSP_H
 	.check_certificate=1,
 	.ocsp_stapling=1,
+#endif
 	.ca_type = MGET_SSL_X509_FMT_PEM,
 	.cert_type = MGET_SSL_X509_FMT_PEM,
 	.key_type = MGET_SSL_X509_FMT_PEM,
@@ -708,6 +710,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 			error_printf(_("%s: The certificate is not trusted.\n"), tag);
 		if (status & GNUTLS_CERT_REVOKED) {
 			error_printf(_("%s: The certificate has been revoked.\n"), tag);
+#ifdef HAVE_GNUTLS_OCSP_H
 			mget_ocsp_db_add_host(_config.ocsp_cert_cache, mget_ocsp_new(hostname, 0, 0)); // remove entry from cache
 			if (ctx->ocsp_stapling) {
 				if (gnutls_x509_crt_init(&cert) == GNUTLS_E_SUCCESS) {
@@ -719,6 +722,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 					gnutls_x509_crt_deinit(cert);
 				}
 			}
+#endif
 		}
 		if (status & GNUTLS_CERT_SIGNER_NOT_FOUND)
 			error_printf(_("%s: The certificate hasn't got a known issuer.\n"), tag);
@@ -787,7 +791,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 
 	// At this point, the cert chain has been found valid regarding the locally available CA certificates and CRLs.
 	// Now, we are going to check the revocation status via OCSP
-
+#ifdef HAVE_GNUTLS_OCSP_H
 	unsigned nvalid = 0, nrevoked = 0;
 
 	if (_config.ocsp_stapling) {
@@ -805,7 +809,6 @@ static int _verify_certificate_callback(gnutls_session_t session)
 			debug_printf("OCSP: Host '%s' is valid (from cache)\n", hostname);
 	}
 
-#ifdef HAVE_GNUTLS_OCSP_H
 	if (_config.ocsp) {
 		for (unsigned it = nvalid; it < cert_list_size; it++) {
 			char fingerprint[64 * 2 +1];
@@ -865,7 +868,6 @@ static int _verify_certificate_callback(gnutls_session_t session)
 			}
 		}
 	}
-#endif
 
 	if (_config.ocsp_stapling || _config.ocsp) {
 		if (nvalid == cert_list_size) {
@@ -875,6 +877,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 			ret = -1;
 		}
 	}
+#endif
 
 	// 0: continue handshake
 	// else: stop handshake
@@ -1140,6 +1143,7 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	struct _session_context *ctx = mget_calloc(1, sizeof(struct _session_context));
 	ctx->hostname = strdup(hostname);
 
+#ifdef HAVE_GNUTLS_OCSP_H
 	// If we know the cert chain for the hostname being valid at the moment,
 	// we don't ask for OCSP stapling to avoid unneeded IP traffic.
 	// In the unlikely case that the server's certificate chain changed right now,
@@ -1152,6 +1156,10 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 			error_printf("GnuTLS: %s\n", gnutls_strerror(ret));
 #endif
 	}
+#else
+	if (_config.ocsp || _config.ocsp_stapling)
+		error_printf("WARNING: OCSP is not available in this version of GnuTLS.\n");
+#endif
 
 	gnutls_session_set_ptr(session, ctx);
 
