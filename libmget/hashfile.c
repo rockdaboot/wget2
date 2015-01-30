@@ -33,6 +33,9 @@
 #include <strings.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#ifdef HAVE_ALLOCA_H
+#	include <alloca.h>
+#endif
 #ifdef HAVE_MMAP
 #	include <sys/mman.h>
 #endif
