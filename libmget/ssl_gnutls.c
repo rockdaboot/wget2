@@ -26,6 +26,11 @@
  * 26.08.2012               mget compatibility regarding config options
  * 15.01.2015               added OCSP fix from https://gitorious.org/gnutls/gnutls/commit/11eebe14b232ec198d1446a3720e6ed78d118c4b
  *
+ * Resources:
+ * RFC6066 Transport Layer Security (TLS) Extensions: Extension Definitions (defines OCSP stapling)
+ * RFC6960 Online Certificate Status Protocol - OCSP
+ * RFC6961 TLS Multiple Certificate Status Request Extension
+ *
  * Testing revocation:
  * https://revoked.grc.com/
  * https://test-sspev.verisign.com:2443/test-SSPEV-revoked-verisign.html
