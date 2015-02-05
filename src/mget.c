@@ -594,7 +594,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	if (config.recursive) {
 		// only download content from given hosts
-		char *reason = NULL;
+		const char *reason = NULL;
 
 		if (!iri->host) {
 			reason = _("missing ip/host/domain");

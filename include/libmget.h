@@ -159,8 +159,10 @@
 #endif
 
 #if ENABLE_NLS != 0
+#	undef gettext
 #	define _(STRING) gettext(STRING)
 #else
+#	undef ngettext
 #	define _(STRING) STRING
 #	define ngettext(STRING1,STRING2,N) STRING2
 #endif
