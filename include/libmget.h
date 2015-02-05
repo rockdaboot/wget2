@@ -153,8 +153,12 @@
 #	define MGET_END_DECLS
 #endif
 
-#if ENABLE_NLS != 0
+// Include libintl.h before we redefine gettext stuff
+#ifdef HAVE_LIBINTL_H
 #	include <libintl.h>
+#endif
+
+#if ENABLE_NLS != 0
 #	define _(STRING) gettext(STRING)
 #else
 #	define _(STRING) STRING
