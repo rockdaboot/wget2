@@ -189,6 +189,8 @@ PKG_PROG_PKG_CONFIG
 AC_SEARCH_LIBS(socket, ws2_32)
 AC_SEARCH_LIBS(clock_gettime, rt)
 AC_SEARCH_LIBS(pthread_create, pthread, [AC_DEFINE([HAVE_LIBPTHREAD], [1], [Use pthreads])])
+AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(nsl, getaddrinfo)
 
 # AM_ICONV sets @LIBICONV@ and @LTLIBICONV@ for use in Makefile.am
 # do not use AM_ICONV conditionally

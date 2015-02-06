@@ -15,7 +15,7 @@ libmget_@LIBMGET_API_VERSION@_la_LDFLAGS = -version-info $(LIBMGET_SO_VERSION)
 noinst_PROGRAMS = test_linking
 test_linking_SOURCES = test_linking.c
 test_linking_CPPFLAGS = -I$(top_srcdir)/include
-test_linking_LDADD = libmget-@LIBMGET_API_VERSION@.la
+test_linking_LDADD = libmget-@LIBMGET_API_VERSION@.la @LTLIBICONV@ @LTLIBINTL@ $(LIBS)
 test_linking_LDFLAGS = -static
 
 css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
