@@ -52,6 +52,9 @@
 #ifdef HAVE_GLOB_H
 #	include <glob.h>
 #endif
+#ifdef HAVE_ALLOCA_H
+#	include <alloca.h>
+#endif
 #include <fcntl.h>
 #include <time.h>
 #include <sys/stat.h>
