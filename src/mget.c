@@ -55,7 +55,7 @@
 #include "host.h"
 #include "bar.h"
 
-#if defined(HAVE_FNMATCH_H) && defined(HAVE_FNMATCH)
+#if defined(HAVE_FNMATCH_H) && defined(HAVE_FNMATCH) && defined(FNM_CASEFOLD)
 #	include <fnmatch.h>
 #else
 #	include "compat_fnmatch.c"
