@@ -58,7 +58,7 @@
 #if defined(HAVE_FNMATCH_H) && defined(HAVE_FNMATCH) && defined(FNM_CASEFOLD)
 #	include <fnmatch.h>
 #else
-#	include "compat_fnmatch.c"
+#	include "compat_fnmatch.h"
 #endif
 
 #define URL_FLG_REDIRECTION  (1<<0)
