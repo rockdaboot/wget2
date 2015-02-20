@@ -1200,6 +1200,7 @@ ssize_t
 #define MGET_SSL_OCSP_SERVER       15
 #define MGET_SSL_OCSP              16
 #define MGET_SSL_OCSP_CACHE        17
+#define MGET_SSL_ALPN              18
 
 void
 	mget_ssl_init(void);

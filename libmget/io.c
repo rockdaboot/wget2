@@ -36,10 +36,13 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <errno.h>
+
 #ifdef WIN32
 #	include <winsock2.h>
-#elif defined(HAVE_POLL_H)
+#elif defined(HAVE_SYS_POLL_H)
 #	include <sys/poll.h>
+#elif defined(HAVE_POLL_H)
+#	include <poll.h>
 #else
 #	include <sys/select.h>
 #endif

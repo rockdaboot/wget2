@@ -240,6 +240,21 @@ AS_IF([test "x$with_libpsl" != xno], [
 ])
 AM_CONDITIONAL([WITH_LIBPSL], [test "x$with_libpsl" = xyes])
 
+AC_ARG_WITH(libnghttp2, AS_HELP_STRING([--without-libnghttp2], [disable support for libnghttp2]), with_libnghttp2=$withval, with_libnghttp2=yes)
+AS_IF([test "x$with_libnghttp2" != xno], [
+  PKG_CHECK_MODULES([LIBNGHTTP2], libnghttp2, [
+    with_libnghttp2=yes
+    LIBS="$LIBNGHTTP2_LIBS $LIBS"
+    CFLAGS="$LIBNGHTTP2_CFLAGS $CFLAGS"
+    AC_DEFINE([WITH_LIBNGHTTP2], [1], [HTTP/2.0 support enabled via libnghttp2])
+  ], [
+    AC_SEARCH_LIBS(nghttp2_session_client_new, nghttp2,
+      [with_libnghttp2=yes; AC_DEFINE([WITH_LIBNGHTTP2], [1], [HTTP/2.0 support enabled via libnghttp2])],
+      [with_libnghttp2=no;  AC_MSG_WARN(*** libnghttp2 was not found. HTTP/2.0 support disabled.)])
+  ])
+])
+AM_CONDITIONAL([WITH_LIBNGHTTP2], [test "x$with_libnghttp2" = xyes])
+
 AC_ARG_WITH(bz2, AS_HELP_STRING([--without-bzip2], [disable bzip2 compression support]), with_bzip2=$withval, with_bzip2=yes)
 AS_IF([test "x$with_bzip2" != xno], [
   AC_SEARCH_LIBS(BZ2_bzDecompress, bz2,
@@ -313,7 +328,7 @@ AM_CONDITIONAL([WITH_LIBIDN], [test "x$with_libidn" = xyes])
 # Checks for header files.
 AC_CHECK_HEADERS([\
  fcntl.h inttypes.h libintl.h locale.h netdb.h netinet/in.h stddef.h stdlib.h string.h\
- strings.h sys/socket.h sys/time.h unistd.h crypt.h poll.h idna.h idn2.h stringprep.h\
+ strings.h sys/socket.h sys/time.h unistd.h crypt.h poll.h sys/poll.h idna.h idn2.h stringprep.h\
  langinfo.h unicase.h fnmatch.h glob.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -368,11 +383,12 @@ AC_MSG_NOTICE([Summary of build options:
   CFlags:            ${CFLAGS} ${CPPFLAGS}
   LDFlags:           ${LDFLAGS}
   Libs:              ${LIBS}
-  SSL support:       $with_gnutls
+  SSL/TLS support:   $with_gnutls
   GZIP compression:  $with_zlib
   BZIP2 compression: $with_bzip2
   LZMA compression:  $with_lzma
   IDNA support:      $IDNA_INFO
   PSL support:       $with_libpsl
+  HTTP/2.0 support:  $with_libnghttp2
   Tests:             ${TESTS_INFO}
 ])

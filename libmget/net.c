@@ -44,10 +44,6 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <fcntl.h>
-// #include <sys/ioctl.h>
-#ifdef HAVE_POLL_H
-#include <poll.h>
-#endif
 #include <time.h>
 #include <errno.h>
 
@@ -541,7 +537,7 @@ static void _set_async(int fd)
 	int flags;
 
 	if ((flags = fcntl(fd, F_GETFL)) < 0)
-		error_printf_exit(_("Failed to set socket flags\n"));
+		error_printf_exit(_("Failed to get socket flags\n"));
 
 	if (fcntl(fd, F_SETFL, flags | O_NDELAY) < 0)
 		error_printf_exit(_("Failed to set socket to non-blocking\n"));

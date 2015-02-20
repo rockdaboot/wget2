@@ -49,15 +49,6 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-/*
-#ifdef WIN32
-#	include <winsock2.h>
-#elif defined(HAVE_POLL_H)
-#	include <sys/poll.h>
-#else
-#	include <sys/select.h>
-#endif
-*/
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 #ifdef HAVE_GNUTLS_OCSP_H
@@ -77,7 +68,8 @@ static struct _config {
 		*cert_file,
 		*key_file,
 		*crl_file,
-		*ocsp_server;
+		*ocsp_server,
+		*alpn;
 	mget_ocsp_db_t
 		*ocsp_cert_cache,
 		*ocsp_host_cache;
@@ -127,6 +119,7 @@ void mget_ssl_set_config_string(int key, const char *value)
 	case MGET_SSL_CRL_FILE: _config.crl_file = value; break;
 	case MGET_SSL_OCSP_SERVER: _config.ocsp_server = value; break;
 	case MGET_SSL_OCSP_CACHE: _config.ocsp_cert_cache = (mget_ocsp_db_t *)value; break;
+	case MGET_SSL_ALPN: _config.alpn = value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
 	}
 }
@@ -950,7 +943,7 @@ void mget_ssl_init(void)
 		gnutls_certificate_set_verify_function(_credentials, _verify_certificate_callback);
 
 		if (_config.ca_directory && *_config.ca_directory && _config.check_certificate) {
-#if GNUTLS_VERSION_NUMBER >= 0x030014
+#if GNUTLS_VERSION_NUMBER >= 0x03000d
 			if (!strcmp(_config.ca_directory, "system"))
 				ncerts = gnutls_certificate_set_x509_system_trust(_credentials);
 #else
@@ -1066,63 +1059,6 @@ void mget_ssl_deinit(void)
 	mget_thread_mutex_unlock(&_mutex);
 }
 
-/*
-#ifdef POLLIN
-static int _ready_2_transfer(gnutls_session_t session, int timeout, int mode)
-{
-	// 0: no timeout / immediate
-	// -1: INFINITE timeout
-	if (timeout) {
-		int sockfd = (int)(ptrdiff_t)gnutls_transport_get_ptr(session);
-		int rc;
-
-		if (mode == MGET_IO_READABLE)
-			mode = POLLIN;
-		else
-			mode = POLLOUT;
-
-		// wait for socket to be ready to read
-		struct pollfd pollfd[1] = {
-			{ sockfd, mode, 0}};
-
-		if ((rc = poll(pollfd, 1, timeout)) <= 0)
-			return rc;
-
-		if (!(pollfd[0].revents & mode))
-			return -1;
-	}
-
-	return 1;
-}
-#else
-static int _ready_2_transfer(int fd, int timeout, int mode)
-{
-	// 0: no timeout / immediate
-	// -1: INFINITE timeout
-	// >0: number of milliseconds to wait
-	if (timeout) {
-		fd_set fdset;
-		struct timeval tmo = { timeout / 1000, (timeout % 1000) * 1000 };
-		int rc;
-
-		FD_ZERO(&fdset);
-		FD_SET(fd, &fdset);
-
-		if (mode == MGET_IO_READABLE) {
-			rc = select(fd + 1, &fdset, NULL, NULL, &tmo);
-		} else {
-			rc = select(fd + 1, NULL, &fdset, NULL, &tmo);
-		}
-
-		if (rc <= 0)
-			return rc;
-	}
-
-	return 1;
-}
-#endif
-*/
-
 void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 {
 	gnutls_session_t session;
@@ -1164,6 +1100,38 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 #else
 	if (_config.ocsp || _config.ocsp_stapling)
 		error_printf("WARNING: OCSP is not available in this version of GnuTLS.\n");
+#endif
+
+#if GNUTLS_VERSION_NUMBER >= 0x030200
+	if (_config.alpn) {
+		unsigned nprot;
+		const char *e, *s;
+
+		for (nprot = 0, s = _config.alpn; (e = strchr(s, ',')); s = e + 1)
+			if (e > s) nprot++;
+		if (*s && *s != ',')
+			nprot++;
+
+		gnutls_datum_t data[nprot];
+
+		for (nprot = 0, s = _config.alpn; (e = strchr(s, ',')); s = e + 1) {
+			if (e > s) {
+				data[nprot].data = (unsigned char *) s;
+				data[nprot].size = e -s;
+				debug_printf("ALPN offering %.*s\n", data[nprot].size, data[nprot].data);
+				nprot++;
+			}
+		}
+		if (*s && *s != ',') {
+			data[nprot].data = (unsigned char *) s;
+			data[nprot].size = strlen(s);
+			debug_printf("ALPN offering %.*s\n", data[nprot].size, data[nprot].data);
+			nprot++;
+		}
+
+		if ((ret = gnutls_alpn_set_protocols(session, data, nprot, 0)))
+			error_printf("GnuTLS: Set ALPN: %s\n", gnutls_strerror(ret));
+	}
 #endif
 
 	gnutls_session_set_ptr(session, ctx);
