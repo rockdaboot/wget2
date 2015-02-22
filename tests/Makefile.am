@@ -24,7 +24,7 @@ libtest_la_SOURCES = libtest.c
 libtest_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include
 #libtest_LDADD = libtest.o
 
-EXTRA_DIST = files libtest.h certs/x509-ca.pem certs
+EXTRA_DIST = files libtest.h certs
 dist-hook:
 	rm -f $(distdir)/files/elb_bibel.txt
 #	cp $(top_srcdir)/data/public_suffixes.txt $(distdir)/files/
