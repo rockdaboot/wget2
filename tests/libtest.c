@@ -359,8 +359,8 @@ void mget_test_start_http_server(int first_key, ...)
 
 	// init server SSL layer (default cert and key file types are PEM)
 	// SRCDIR is the (relative) path to the tests dir. Since we chdir()'ed into a subdirectory, we need "../"
-	mget_ssl_set_config_string(MGET_SSL_CA_FILE, "../" SRCDIR "/certs/x509-ca.pem");
-	mget_ssl_set_config_string(MGET_SSL_CERT_FILE, "../" SRCDIR "/certs/x509-server.pem");
+	mget_ssl_set_config_string(MGET_SSL_CA_FILE, "../" SRCDIR "/certs/x509-ca-cert.pem");
+	mget_ssl_set_config_string(MGET_SSL_CERT_FILE, "../" SRCDIR "/certs/x509-server-cert.pem");
 	mget_ssl_set_config_string(MGET_SSL_KEY_FILE, "../" SRCDIR "/certs/x509-server-key.pem");
 
 	// init HTTP server socket
