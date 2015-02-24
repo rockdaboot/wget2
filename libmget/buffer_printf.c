@@ -272,7 +272,8 @@ size_t mget_buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list 
 		// shortcut to %s and %p, handle %%
 
 		if (*++p == 's') {
-			mget_buffer_strcat(buf, va_arg(args, const char *));
+			const char *s = va_arg(args, const char *);
+			mget_buffer_strcat(buf, s ? s : "(null)");
 			p++;
 			continue;
 		}
