@@ -368,11 +368,15 @@ const char *mget_http_parse_challenge(const char *s, mget_http_challenge_t *chal
 		old = s;
 		s = mget_http_parse_param(s, &param.name, &param.value);
 		if (param.name) {
-			if (*param.name && !param.value)
+			if (*param.name && !param.value) {
+				xfree(param.name);
 				return old; // a new scheme detected
+			}
 
-			if (!param.value)
+			if (!param.value) {
+				xfree(param.name);
 				continue;
+			}
 
 			if (!challenge->params)
 				challenge->params = mget_stringmap_create_nocase(8);
