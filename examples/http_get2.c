@@ -111,10 +111,11 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 	// 4. establish connection to the host/port given by uri
 	// well, we could have done this directly after mget_iri_parse(), since
 	// http_open() works semi-async and returns immediately after domain name lookup.
-	conn = mget_http_open(uri);
+	mget_http_open(&conn, uri);
 
-	mget_http_response_t *resp;
 	if (conn) {
+		mget_http_response_t *resp;
+
 		if (mget_http_send_request(conn, req) == 0) {
 			resp = mget_http_get_response(conn, NULL, req, MGET_HTTP_RESPONSE_KEEPHEADER);
 

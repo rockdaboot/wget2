@@ -62,4 +62,4 @@ struct _mget_logger_st {
 	void (*write)(const mget_logger_t *logger, const char *buf, size_t bufsize);
 };
 
-#endif /* _MGET_INTERN_H */
+#endif /* _LIBMGET_PRIVATE_H */

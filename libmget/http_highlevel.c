@@ -162,8 +162,7 @@ mget_http_response_t *mget_http_get(int first_key, ...)
 				debug_printf("close connection %s\n", conn->esc_host);
 				mget_http_close(&conn);
 			}
-			conn = mget_http_open(uri);
-			if (conn)
+			if (mget_http_open(&conn, uri) == MGET_E_SUCCESS)
 				debug_printf("opened connection %s\n", conn->esc_host);
 		}
 

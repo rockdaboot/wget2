@@ -178,6 +178,14 @@ void mget_ocsp_db_free(mget_ocsp_db_t **ocsp_db)
 
 void mget_ocsp_db_add_fingerprint(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 {
+	if (!ocsp)
+		return;
+
+	if (!ocsp_db) {
+		mget_ocsp_free(&ocsp);
+		return;
+	}
+
 	mget_thread_mutex_lock(&ocsp_db->mutex);
 
 	if (ocsp->maxage == 0) {
@@ -208,6 +216,14 @@ void mget_ocsp_db_add_fingerprint(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 
 void mget_ocsp_db_add_host(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 {
+	if (!ocsp)
+		return;
+
+	if (!ocsp_db) {
+		mget_ocsp_free(&ocsp);
+		return;
+	}
+
 	mget_thread_mutex_lock(&ocsp_db->mutex);
 
 	if (ocsp->maxage == 0) {

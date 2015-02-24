@@ -58,6 +58,7 @@
 
 #include <libmget.h>
 #include "private.h"
+#include "net.h"
 
 static struct _config {
 	const char
@@ -442,7 +443,7 @@ static int send_ocsp_request(const char *server,
 	mget_http_add_header_line(req, "Connection: close\r\n");
 
 	mget_http_connection_t *conn;
-	if ((conn = mget_http_open(iri))) {
+	if ((rc = mget_http_open(&conn, iri)) == MGET_E_SUCCESS) {
 		if (mget_http_send_request_with_body(conn, req, body.data, body.size) == 0) {
 			mget_http_response_t *resp;
 			
@@ -629,10 +630,12 @@ static char *_get_cert_fingerprint(gnutls_x509_crt_t cert, char *fingerprint_hex
  */
 static void _add_cert_to_ocsp_cache(gnutls_x509_crt_t cert, int valid)
 {
-	char fingerprint_hex[64 * 2 +1];
+	if (_config.ocsp_cert_cache) {
+		char fingerprint_hex[64 * 2 +1];
 
-	_get_cert_fingerprint(cert, fingerprint_hex, sizeof(fingerprint_hex));
-	mget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, mget_ocsp_new(fingerprint_hex, time(NULL) + 3600, valid)); // 1h valid
+		_get_cert_fingerprint(cert, fingerprint_hex, sizeof(fingerprint_hex));
+		mget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, mget_ocsp_new(fingerprint_hex, time(NULL) + 3600, valid)); // 1h valid
+	}
 }
 
 /* OCSP check for the peer's certificate. Should be called
@@ -709,7 +712,8 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		if (status & GNUTLS_CERT_REVOKED) {
 			error_printf(_("%s: The certificate has been revoked.\n"), tag);
 #ifdef HAVE_GNUTLS_OCSP_H
-			mget_ocsp_db_add_host(_config.ocsp_cert_cache, mget_ocsp_new(hostname, 0, 0)); // remove entry from cache
+			if (_config.ocsp_cert_cache)
+				mget_ocsp_db_add_host(_config.ocsp_cert_cache, mget_ocsp_new(hostname, 0, 0)); // remove entry from cache
 			if (ctx->ocsp_stapling) {
 				if (gnutls_x509_crt_init(&cert) == GNUTLS_E_SUCCESS) {
 					if ((cert_list = gnutls_certificate_get_peers(session, &cert_list_size))) {
@@ -1059,13 +1063,23 @@ void mget_ssl_deinit(void)
 	mget_thread_mutex_unlock(&_mutex);
 }
 
-void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
+//void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
+int mget_ssl_open(mget_tcp_t *tcp)
 {
 	gnutls_session_t session;
-	int ret;
+	int ret = MGET_E_UNKNOWN;
+	int rc, sockfd, connect_timeout;
+	const char *hostname;
+
+	if (!tcp)
+		return MGET_E_INVALID;
 
 	if (!_init)
 		mget_ssl_init();
+
+	hostname = tcp->ssl_hostname;
+	sockfd= tcp->sockfd;
+	connect_timeout = tcp->connect_timeout;
 
 #ifdef GNUTLS_NONBLOCK
 	gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
@@ -1091,10 +1105,10 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 	// we fallback to OCSP responder request later.
 	if (!(ctx->valid = mget_ocsp_hostname_is_valid(_config.ocsp_host_cache, hostname))) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
-		if ((ret = gnutls_ocsp_status_request_enable_client(session, NULL, 0, NULL)) == GNUTLS_E_SUCCESS)
+		if ((rc = gnutls_ocsp_status_request_enable_client(session, NULL, 0, NULL)) == GNUTLS_E_SUCCESS)
 			ctx->ocsp_stapling = 1;
 		else
-			error_printf("GnuTLS: %s\n", gnutls_strerror(ret));
+			error_printf("GnuTLS: %s\n", gnutls_strerror(rc));
 #endif
 	}
 #else
@@ -1129,8 +1143,8 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 			nprot++;
 		}
 
-		if ((ret = gnutls_alpn_set_protocols(session, data, nprot, 0)))
-			error_printf("GnuTLS: Set ALPN: %s\n", gnutls_strerror(ret));
+		if ((rc = gnutls_alpn_set_protocols(session, data, nprot, 0)))
+			error_printf("GnuTLS: Set ALPN: %s\n", gnutls_strerror(rc));
 	}
 #endif
 
@@ -1138,46 +1152,54 @@ void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 
 	// Wait for socket being ready before we call gnutls_handshake().
 	// I had problems on a KVM Win7 + CygWin (gnutls 3.2.4-1).
-	ret = mget_ready_2_write(sockfd, connect_timeout);
+	rc = mget_ready_2_write(sockfd, connect_timeout);
 
 	// Perform the TLS handshake
-	while (ret > 0) {
-		ret = gnutls_handshake(session);
-		if (ret == 0 || gnutls_error_is_fatal(ret)) {
-			if (ret == 0)
-				ret = 1;
+	while (rc > 0) {
+		rc = gnutls_handshake(session);
+		if (rc == 0 || gnutls_error_is_fatal(rc)) {
+			if (rc == 0) {
+				ret = MGET_E_SUCCESS;
+			} else {
+				error_printf("GnuTLS: (%d) %s\n", rc, gnutls_strerror(rc));
+
+				if (rc == GNUTLS_E_CERTIFICATE_ERROR)
+					ret = MGET_E_CERTIFICATE;
+				else
+					ret = MGET_E_HANDSHAKE;
+			}
 			break;
 		}
 
 		if (gnutls_record_get_direction(session)) {
 			// wait for writeability
-			ret = mget_ready_2_write(sockfd, connect_timeout);
+			rc = mget_ready_2_write(sockfd, connect_timeout);
 		} else {
 			// wait for readability
-			ret = mget_ready_2_read(sockfd, connect_timeout);
+			rc = mget_ready_2_read(sockfd, connect_timeout);
 		}
 	}
 
 	if (_config.print_info)
 		_print_info(session);
 
-	if (ret <= 0) {
-		if (ret)
-			debug_printf("Handshake failed (%d)\n", ret);
-		else
+	if (ret == MGET_E_UNKNOWN) {
+		if (rc == 0) {
 			debug_printf("Handshake timed out\n");
+			ret = MGET_E_TIMEOUT;
+		}
+	}
 
-		error_printf("GnuTLS: %s\n", gnutls_strerror(ret));
-
+	if (ret == MGET_E_SUCCESS) {
+		debug_printf("Handshake completed\n");
+		tcp->ssl_session = session;
+	} else {
 		xfree(ctx->hostname);
 		xfree(ctx);
 		gnutls_deinit(session);
-		return NULL;
 	}
 
-	debug_printf("Handshake completed\n");
-
-	return session;
+	return ret;
 }
 
 void mget_ssl_close(void **session)
@@ -1364,7 +1386,7 @@ void mget_ssl_set_config_string(int key, const char *value) { }
 void mget_ssl_set_config_int(int key, int value) { }
 void mget_ssl_init(void) { }
 void mget_ssl_deinit(void) { }
-void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout) { return NULL; }
+int mget_ssl_open(mget_tcp_t *tcp) { return MGET_E_UNKNOWN; }
 void mget_ssl_close(void **session) { }
 ssize_t mget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout) { return 0; }
 ssize_t mget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout) { return 0; }

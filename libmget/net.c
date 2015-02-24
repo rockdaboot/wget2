@@ -66,36 +66,19 @@
 
 #include <libmget.h>
 #include "private.h"
+#include "net.h"
 
-static struct mget_tcp_st {
-	void *
-		ssl_session;
+// resolver / DNS cache entry
+struct ADDR_ENTRY {
+	const char *
+		host;
+	const char *
+		port;
 	struct addrinfo *
 		addrinfo;
-	struct addrinfo *
-		bind_addrinfo;
-	struct addrinfo *
-		connect_addrinfo; // needed for TCP_FASTOPEN delayed connect
-	const char *
-		ssl_hostname; // if set, do SSL hostname checking
-	int
-		sockfd,
-		// timeouts in milliseconds
-		// there is no real 'connect timeout', since connects are async
-		dns_timeout,
-		connect_timeout,
-		timeout, // read and write timeouts are the same
-		family,
-		preferred_family;
-	unsigned int
-		ssl : 1,
-		passive : 1,
-		caching : 1,
-		addrinfo_allocated : 1,
-		bind_addrinfo_allocated : 1,
-		tcp_fastopen : 1, // do we use TCP_FASTOPEN or not
-		first_send : 1; // TCP_FASTOPEN's first packet is sent different
-} _global_tcp = {
+};
+
+static struct mget_tcp_st _global_tcp = {
 	.sockfd = -1,
 	.dns_timeout = -1,
 	.connect_timeout = -1,
@@ -108,16 +91,6 @@ static struct mget_tcp_st {
 #endif
 };
 
-
-// resolver / DNS cache entry
-struct ADDR_ENTRY {
-	const char *
-		host;
-	const char *
-		port;
-	struct addrinfo *
-		addrinfo;
-};
 // resolver / DNS cache container
 static mget_vector_t
 	*dns_cache;
@@ -552,7 +525,7 @@ static void _set_async(int fd)
 int mget_tcp_connect(mget_tcp_t *tcp, const char *host, const char *port)
 {
 	struct addrinfo *ai;
-	int sockfd = -1, rc;
+	int sockfd = -1, rc, ret = MGET_E_UNKNOWN;
 	char adr[NI_MAXHOST], s_port[NI_MAXSERV];
 
 	if (tcp->addrinfo_allocated)
@@ -617,24 +590,28 @@ int mget_tcp_connect(mget_tcp_t *tcp, const char *host, const char *port)
 #endif
 			) {
 				error_printf(_("Failed to connect (%d)\n"), errno);
+				ret = MGET_E_CONNECT;
 				close(sockfd);
 			} else {
 				tcp->sockfd = sockfd;
 				if (tcp->ssl) {
-					tcp->ssl_session = mget_ssl_open(tcp->sockfd, tcp->ssl_hostname, tcp->connect_timeout);
-					if (!tcp->ssl_session) {
+//					tcp->ssl_session = mget_ssl_open(tcp->sockfd, tcp->ssl_hostname, tcp->connect_timeout);
+//					if (!tcp->ssl_session) {
+					if ((ret = mget_ssl_open(tcp))) {
 						mget_tcp_close(tcp);
+						if (ret == MGET_E_CERTIFICATE)
+							break; /* stop here - the server cert couldn't be validated */
 						continue;
 					}
 				}
 
-				return 0;
+				return MGET_E_SUCCESS;
 			}
 		} else
 			error_printf(_("Failed to create socket (%d)\n"), errno);
 	}
 
-	return -1;
+	return ret;
 }
 
 int mget_tcp_listen(mget_tcp_t *tcp, const char *host, const char *port, int backlog)

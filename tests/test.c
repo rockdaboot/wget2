@@ -1065,7 +1065,7 @@ static void test_parse_challenge(void)
 			{ "Basic", NULL }
 		},
 		{	//
-			"Basic realm=\"test-äöü\"",
+			"Basic realm=\"test-Ã¤Ã¶Ãœ\"",
 			{ "Basic", NULL }
 		},
 		{	//

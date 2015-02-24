@@ -179,7 +179,7 @@ const char *mget_http_parse_param(const char *s, const char **param, const char 
 		} else {
 			s = mget_http_parse_token(s, value);
 		}
-	} else *value = NULL;
+	}
 
 	return s;
 }
@@ -1422,7 +1422,7 @@ void http_set_config_int(int key, int value)
 }
 */
 
-mget_http_connection_t *mget_http_open(const mget_iri_t *iri)
+int mget_http_open(mget_http_connection_t **_conn, const mget_iri_t *iri)
 {
 	static int next_http_proxy = -1;
 	static int next_https_proxy = -1;
@@ -1432,15 +1432,19 @@ mget_http_connection_t *mget_http_open(const mget_iri_t *iri)
 	mget_iri_t
 		*proxy;
 	mget_http_connection_t
-		*conn = xcalloc(1, sizeof(mget_http_connection_t));
+		*conn;
 	const char
 		*port,
 		*host;
 	int
+		rc,
 		ssl = iri->scheme == MGET_IRI_SCHEME_HTTPS;
 
-	if (!conn)
-		return NULL;
+
+	if (!_conn)
+		return MGET_E_INVALID;
+
+	conn = *_conn = xcalloc(1, sizeof(mget_http_connection_t)); // convenience assignment
 
 	if (iri->scheme == MGET_IRI_SCHEME_HTTP && http_proxies) {
 		mget_thread_mutex_lock(&mutex);
@@ -1467,16 +1471,16 @@ mget_http_connection_t *mget_http_open(const mget_iri_t *iri)
 		mget_tcp_set_ssl_hostname(conn->tcp, host); // enable host name checking
 	}
 
-	if (mget_tcp_connect(conn->tcp, host, port) == 0) {
+	if ((rc = mget_tcp_connect(conn->tcp, host, port)) == MGET_E_SUCCESS) {
 		conn->esc_host = iri->host ? strdup(iri->host) : NULL;
 		conn->port = iri->resolv_port;
 		conn->scheme = iri->scheme;
 		conn->buf = mget_buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
-		return conn;
+	} else {
+		mget_http_close(_conn);
 	}
 
-	mget_http_close(&conn);
-	return NULL;
+	return rc;
 }
 
 void mget_http_close(mget_http_connection_t **conn)

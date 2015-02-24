@@ -223,6 +223,15 @@ MGET_BEGIN_DECLS
 #define MGET_HTTP_BODY_SAVEAS_FUNC 2014
 #define MGET_HTTP_HEADER_FUNC 2015
 
+// definition of error conditions
+#define MGET_E_SUCCESS 0 /* OK */
+#define MGET_E_UNKNOWN -1 /* general error if nothing else appropriate */
+#define MGET_E_INVALID -2 /* invalid value to function */
+#define MGET_E_TIMEOUT -3 /* timeout condition */
+#define MGET_E_CONNECT -4 /* connect failure */
+#define MGET_E_HANDSHAKE -5 /* general TLS handshake failure */
+#define MGET_E_CERTIFICATE -6 /* general TLS certificate failure */
+
 void
 	mget_global_init(int key, ...) G_GNUC_MGET_NULL_TERMINATED;
 void
@@ -1210,8 +1219,10 @@ void
 	mget_ssl_set_config_string(int key, const char *value);
 void
 	mget_ssl_set_config_int(int key, int value);
-void *
-	mget_ssl_open(int sockfd, const char *hostname, int connect_timeout) G_GNUC_MGET_NONNULL((2));
+//void *
+//	mget_ssl_open(int sockfd, const char *hostname, int connect_timeout) G_GNUC_MGET_NONNULL((2));
+int
+	mget_ssl_open(mget_tcp_t *tcp);
 void
 	mget_ssl_close(void **session);
 void
@@ -1483,8 +1494,8 @@ mget_http_response_t *
 		int(*header_callback)(void *, mget_http_response_t *),
 		int(*body_callback)(void *, const char *, size_t), void *context, unsigned int flags) G_GNUC_MGET_NONNULL((1,2));
 
-mget_http_connection_t *
-	mget_http_open(const mget_iri_t *iri) G_GNUC_MGET_NONNULL_ALL;
+int
+	mget_http_open(mget_http_connection_t **_conn, const mget_iri_t *iri);
 mget_http_request_t *
 	mget_http_create_request(const mget_iri_t *iri, const char *method) G_GNUC_MGET_NONNULL_ALL;
 void

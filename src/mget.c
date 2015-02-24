@@ -81,6 +81,8 @@ typedef struct {
 		id;
 	mget_thread_cond_t
 		cond;
+	char
+		final_error;
 } DOWNLOADER;
 
 #define _CONTENT_TYPE_HTML 1
@@ -1099,6 +1101,8 @@ void *downloader_thread(void *p)
 				resp = http_get(job->iri, NULL, downloader, "HEAD");
 				if (resp)
 					print_status(downloader, "%d %s\n", resp->code, resp->reason);
+				else if (downloader->final_error)
+					goto ready;
 			}
 
 			if (!resp)
@@ -1189,6 +1193,8 @@ void *downloader_thread(void *p)
 			resp = http_get(job->iri, NULL, downloader, NULL);
 			if (resp)
 				print_status(downloader, "%d %s\n", resp->code, resp->reason);
+			else if (downloader->final_error)
+				goto ready;
 		}
 
 		if (!resp) {
@@ -2243,6 +2249,8 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 	char sbuf[256];
 	int rc;
 
+	downloader->final_error = 0;
+
 	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	if (config.hsts && iri && iri->scheme == MGET_IRI_SCHEME_HTTP && mget_hsts_host_match(config.hsts_db, iri->host, atoi(iri->resolv_port))) {
@@ -2253,24 +2261,31 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 		iri_scheme = NULL;
 
 	while (iri) {
-		if (downloader->conn && !mget_strcmp(downloader->conn->esc_host, iri->host) &&
-			downloader->conn->scheme == iri->scheme &&
-			!mget_strcmp(downloader->conn->port, iri->resolv_port))
+		conn = downloader->conn;
+
+		if (conn && !mget_strcmp(conn->esc_host, iri->host) &&
+			conn->scheme == iri->scheme &&
+			!mget_strcmp(conn->port, iri->resolv_port))
 		{
-			debug_printf("reuse connection %s\n", downloader->conn->esc_host);
+			debug_printf("reuse connection %s\n", conn->esc_host);
 		} else {
-			if (downloader->conn) {
-				debug_printf("close connection %s\n", downloader->conn->esc_host);
+			if (conn) {
+				debug_printf("close connection %s\n", conn->esc_host);
 				mget_http_close(&downloader->conn);
 			}
 
-			downloader->conn = mget_http_open(iri);
-
-			if (downloader->conn) {
+			if ((rc = mget_http_open(&downloader->conn, iri)) == MGET_E_SUCCESS) {
 				debug_printf("opened connection %s\n", downloader->conn->esc_host);
+			} else {
+				debug_printf("Failed to http_open (%d)\n", rc);
+				if (rc == MGET_E_HANDSHAKE || rc == MGET_E_CERTIFICATE) {
+					downloader->final_error = 1;
+					set_exit_status(5);
+				}
 			}
+
+			conn = downloader->conn;
 		}
-		conn = downloader->conn;
 
 		if (conn) {
 			mget_http_request_t *req;
@@ -2422,7 +2437,7 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 				rc = mget_http_send_request(conn, req);
 			}
 
-			if (rc == 0) {
+			if (rc == MGET_E_SUCCESS) {
 				if (config.progress) {
 					mget_buffer_t *body = mget_buffer_alloc(102400);
 					struct _body_callback_context context = { .downloader = downloader, .body = body };
