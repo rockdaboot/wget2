@@ -38,6 +38,7 @@
 #include <libmget.h>
 #include "private.h"
 
+/*
 static void G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((1,2))
 _logger_vprintf_func(const mget_logger_t *logger, const char *fmt, va_list args)
 {
@@ -62,6 +63,22 @@ _logger_vprintf_func(const mget_logger_t *logger, const char *fmt, va_list args)
 			xfree(buf);
 		}
 	}
+
+	errno = err;
+}
+*/
+
+static void G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((1,2))
+_logger_vprintf_func(const mget_logger_t *logger, const char *fmt, va_list args)
+{
+	char sbuf[4096];
+	mget_buffer_t buf;
+	int err = errno;
+
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	mget_buffer_vprintf2(&buf, fmt, args);
+	logger->func(buf.data, buf.length);
+	mget_buffer_deinit(&buf);
 
 	errno = err;
 }
