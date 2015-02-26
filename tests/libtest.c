@@ -345,7 +345,7 @@ void mget_test_start_http_server(int first_key, ...)
 
 	atexit(mget_test_stop_http_server);
 
-	snprintf(tmpdir, sizeof(tmpdir), ".test_%d", getpid());
+	snprintf(tmpdir, sizeof(tmpdir), ".test_%d", (int) getpid());
 
 #if defined(_WIN32) || defined(_WIN64)
 	if (mkdir(tmpdir) != 0)
