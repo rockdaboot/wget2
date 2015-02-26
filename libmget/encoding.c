@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2012 Tim Ruehsen
+ * Copyright(c) 2012-2015 Tim Ruehsen
  *
  * This file is part of libmget.
  *
@@ -59,11 +59,16 @@
 const char *mget_local_charset_encoding(void)
 {
 #if defined(HAVE_STRINGPREP_H) && defined(WITH_LIBIDN)
-	return strdup(stringprep_locale_charset());
+	const char *encoding = stringprep_locale_charset();
+
+	// Solaris: unknown encoding '646' when locale is set to C or POSIX
+	if (strcmp(encoding, "646"))
+		return strdup(stringprep_locale_charset());
 #elif defined(HAVE_NL_LANGINFO)
 	const char *encoding = nl_langinfo(CODESET);
 
-	if (encoding && *encoding)
+	// Solaris: unknown encoding '646' when locale is set to C or POSIX
+	if (encoding && *encoding && strcmp(encoding, "646"))
 		return strdup(encoding);
 #elif defined(_WIN32) || defined(__WIN32__) || defined(_WIN64) || defined(__WIN64__)
 	static char buf[16];
@@ -92,7 +97,7 @@ char *mget_charset_transcode(const char *src, const char *src_encoding, const ch
 		iconv_t cd=iconv_open(dst_encoding, src_encoding);
 
 		if (cd != (iconv_t)-1) {
-			char *tmp = (char *)src; // iconv won't change where src points to, but changes tmp itself
+			char *tmp = (char *) src; // iconv won't change where src points to, but changes tmp itself
 			size_t tmp_len = strlen(src);
 			size_t dst_len = tmp_len * 6, dst_len_tmp = dst_len;
 			char *dst = xmalloc(dst_len + 1), *dst_tmp = dst;
