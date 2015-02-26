@@ -188,7 +188,10 @@ PKG_PROG_PKG_CONFIG
 # Check for needed libraries
 AC_SEARCH_LIBS(socket, ws2_32)
 AC_SEARCH_LIBS(clock_gettime, rt)
-AC_SEARCH_LIBS(pthread_create, pthread, [AC_DEFINE([HAVE_LIBPTHREAD], [1], [Use pthreads])])
+AC_SEARCH_LIBS(pthread_create, pthread, [
+  AC_DEFINE([HAVE_LIBPTHREAD], [1], [Use pthreads])
+  CFLAGS="-pthread $CFLAGS"
+])
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, getaddrinfo)
 
