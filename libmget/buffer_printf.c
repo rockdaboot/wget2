@@ -282,6 +282,12 @@ size_t mget_buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list 
 			p++;
 			continue;
 		}
+		else if (*p == 'c') {
+			char c = (char ) va_arg(args, int);
+			mget_buffer_memcat(buf, &c, 1);
+			p++;
+			continue;
+		}
 		else if (*p == 'p') {
 			_convert_pointer(buf, va_arg(args, void *));
 			p++;
@@ -382,6 +388,14 @@ size_t mget_buffer_vprintf_append2(mget_buffer_t *buf, const char *fmt, va_list 
 			p++;
 			_copy_string(buf, flags, field_width, precision, va_arg(args, const char *));
 			continue;
+
+		case 'c':
+		{
+			char c[2] = { (int) va_arg(args, int), 0 };
+			p++;
+			_copy_string(buf, flags, field_width, precision, c);
+			continue;
+		}
 
 		case 'p': // %p shortcut
 			p++;
