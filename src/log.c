@@ -40,13 +40,13 @@
 #include "options.h"
 #include "log.h"
 
-static void _write_debug(const char *buf, size_t len)
+static void _write_debug(const char *data, size_t len)
 {
 	FILE *fp;
 	struct timeval tv;
 	struct tm *tp, tbuf;
 
-	if (!buf || (ssize_t)len <= 0)
+	if (!data || (ssize_t)len <= 0)
 		return;
 
 	gettimeofday(&tv, NULL); // obsoleted by POSIX.1-2008, maybe use clock_gettime() ? needs -lrt
@@ -60,9 +60,17 @@ static void _write_debug(const char *buf, size_t len)
 		fp = fopen(config.logfile, "a");
 
 	if (fp) {
-		fprintf(fp, "%02d.%02d%02d%02d.%03ld %s%s",
-			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, tv.tv_usec / 1000,
-			buf, buf[len - 1] == '\n' ? "" : "\n");
+		char sbuf[4096];
+		mget_buffer_t buf;
+
+		mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+		mget_buffer_printf2(&buf, "%02d.%02d%02d%02d.%03ld ",
+			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, tv.tv_usec / 1000);
+		mget_buffer_memcat(&buf, data, len);
+		if (data[len -1] != '\n')
+			mget_buffer_memcat(&buf, "\n", 1);
+		fwrite(buf.data, 1, buf.length, fp);
+		mget_buffer_deinit(&buf);
 
 		if (fp != stderr && fp != stdout)
 			fclose(fp);

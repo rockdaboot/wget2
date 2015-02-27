@@ -89,9 +89,24 @@ static void _logger_write_func(const mget_logger_t *logger, const char *buf, siz
 }
 
 static void  G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((1,2))
+_logger_vfprintf(FILE *fp, const char *fmt, va_list args)
+{
+	char sbuf[4096];
+	mget_buffer_t buf;
+	int err = errno;
+
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	mget_buffer_vprintf2(&buf, fmt, args);
+	fwrite(buf.data, 1, buf.length, fp);
+	mget_buffer_deinit(&buf);
+
+	errno = err;
+}
+
+static void  G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL((1,2))
 _logger_vprintf_file(const mget_logger_t *logger, const char *fmt, va_list args)
 {
-	vfprintf(logger->fp, fmt, args);
+	_logger_vfprintf(logger->fp, fmt, args);
 }
 
 static void _logger_write_file(const mget_logger_t *logger, const char *buf, size_t len)
@@ -105,7 +120,7 @@ _logger_vprintf_fname(const mget_logger_t *logger, const char *fmt, va_list args
 	FILE *fp = fopen(logger->fname, "a");
 
 	if (fp) {
-		vfprintf(fp, fmt, args);
+		_logger_vfprintf(fp, fmt, args);
 		fclose(fp);
 	}
 }
