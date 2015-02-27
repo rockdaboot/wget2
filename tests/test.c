@@ -229,6 +229,7 @@ static void test_buffer_printf(void)
 				for (precision = -1; precision < 12; precision++) {
 
 					// testing %s stuff
+					// Solaris' sprintf uses spaces instead of 0s for e.g. %03s padding
 
 					if (width == -1) {
 						if (precision == -1) {
