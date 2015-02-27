@@ -188,7 +188,9 @@ PKG_PROG_PKG_CONFIG
 # Check for needed libraries
 AC_SEARCH_LIBS(socket, ws2_32)
 AC_SEARCH_LIBS(clock_gettime, rt)
+
 AC_SEARCH_LIBS(pthread_create, pthread, [
+  # for Solaris also see http://docs.oracle.com/cd/E18752_01/html/816-5137/compile-94611.html
   AC_DEFINE([HAVE_LIBPTHREAD], [1], [Use pthreads])
   CFLAGS="-pthread $CFLAGS"
 ])
