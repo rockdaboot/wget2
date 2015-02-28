@@ -65,7 +65,13 @@ size_t strlcpy(char *dst, const char *src, size_t size)
 
 char *strndup(const char *s, size_t n)
 {
-	char *dst = xmalloc(n + 1);
+	char *dst;
+	size_t slen = strlen(s);
+
+	if (slen > n)
+		n = slen;
+
+	dst = xmalloc(n + 1);
 
 	memcpy(dst, s, n);
 	dst[n] = 0;
