@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/rockdaboot/mget.png?branch=develop)](https://travis-ci.org/rockdaboot/mget)
+[![Coverity Scan Status](https://scan.coverity.com/projects/4414/badge.svg)](https://scan.coverity.com/projects/4414)
 
 Mget - multithreaded metalink / file / website downloader / spider and library
 ==============================================================================
