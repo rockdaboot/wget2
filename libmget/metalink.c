@@ -119,8 +119,8 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 					metalink->pieces = mget_vector_create(32, 32, NULL);
 
 				piece.length = ctx->length;
-				strcpy(piece.hash.type, ctx->hash_type);
-				strcpy(piece.hash.hash_hex, ctx->hash);
+				strlcpy(piece.hash.type, ctx->hash_type, sizeof(piece.hash.type));
+				strlcpy(piece.hash.hash_hex, ctx->hash, sizeof(piece.hash.hash_hex));
 
 				piecep = mget_vector_get(metalink->pieces, mget_vector_size(metalink->pieces) - 1);
 				if (piecep)
@@ -135,8 +135,8 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 				mget_metalink_hash_t hash;
 
 				memset(&hash, 0, sizeof(mget_metalink_hash_t));
-				strcpy(hash.type,ctx->hash_type);
-				strcpy(hash.hash_hex,ctx->hash);
+				strlcpy(hash.type, ctx->hash_type, sizeof(hash.type));
+				strlcpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
 
 				if (!metalink->hashes)
 					metalink->hashes = mget_vector_create(4, 4, NULL);
@@ -149,7 +149,7 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 			mget_metalink_mirror_t mirror;
 
 			memset(&mirror, 0, sizeof(mget_metalink_mirror_t));
-			strcpy(mirror.location, ctx->location);
+			strlcpy(mirror.location, ctx->location, sizeof(mirror.location));
 			mirror.priority = ctx->priority;
 			mirror.iri = mget_iri_parse(value, NULL);
 
@@ -232,8 +232,8 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 					metalink->pieces = mget_vector_create(32, 32, NULL);
 
 				piece.length = ctx->length;
-				strcpy(piece.hash.type, ctx->hash_type);
-				strcpy(piece.hash.hash_hex, ctx->hash);
+				strlcpy(piece.hash.type, ctx->hash_type, sizeof(piece.hash.type));
+				strlcpy(piece.hash.hash_hex, ctx->hash, sizeof(piece.hash.hash_hex));
 
 				piecep = mget_vector_get(metalink->pieces, mget_vector_size(metalink->pieces) - 1);
 				if (piecep)
@@ -249,8 +249,8 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 				mget_metalink_hash_t hash;
 
 				memset(&hash, 0, sizeof(mget_metalink_hash_t));
-				strcpy(hash.type,ctx->hash_type);
-				strcpy(hash.hash_hex,ctx->hash);
+				strlcpy(hash.type, ctx->hash_type, sizeof(hash.type));
+				strlcpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
 
 				if (!metalink->hashes)
 					metalink->hashes = mget_vector_create(4, 4, NULL);
@@ -263,7 +263,7 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 			mget_metalink_mirror_t mirror;
 
 			memset(&mirror, 0, sizeof(mget_metalink_mirror_t));
-			strcpy(mirror.location, ctx->location);
+			strlcpy(mirror.location, ctx->location, sizeof(mirror.location));
 			mirror.priority = ctx->priority;
 			mirror.iri = mget_iri_parse(value, NULL);
 

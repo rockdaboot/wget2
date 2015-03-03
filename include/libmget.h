@@ -1587,7 +1587,7 @@ typedef struct {
 	int
 		priority;
 	char
-		location[3]; // location of the mirror, e.g. 'de', 'fr' or 'jp'
+		location[8]; // location of the mirror, e.g. 'de', 'fr' or 'jp'
 } mget_metalink_mirror_t;
 
 typedef struct {
