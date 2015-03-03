@@ -89,6 +89,7 @@ int asprintf(char **buf, const char *fmt, ...)
 
 #endif
 
+#if 0
 // this is similar to vasprintf, but with buffer reuse
 
 size_t mget_vbsprintf(char **buf, size_t *bufsize, const char *fmt, va_list args)
@@ -129,6 +130,7 @@ size_t mget_bsprintf(char **buf, size_t *bufsize, const char *fmt, ...)
 	return mget_vbsprintf(buf, bufsize, fmt, args);
 	va_end(args);
 }
+#endif
 
 #ifndef HAVE_DPRINTF
 
@@ -163,6 +165,7 @@ int vdprintf(int fd, const char *fmt, va_list args)
 			buf = xmalloc((size *= 2));
 			va_copy(args, args2);
 			len = vsnprintf(buf, size, fmt, args);
+			va_end(args);
 		} while ((ssize_t)len == -1);
 	}
 

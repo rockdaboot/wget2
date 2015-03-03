@@ -297,10 +297,12 @@ pid_t
 	mget_fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv);
 pid_t
 	mget_popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *argv);
+/*
 size_t
 	mget_vbsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, va_list) G_GNUC_MGET_PRINTF_FORMAT(3,0);
 size_t
 	mget_bsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(3,4);
+*/
 char *
 	mget_read_file(const char *fname, size_t *size);
 const char
