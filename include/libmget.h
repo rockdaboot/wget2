@@ -338,13 +338,6 @@ size_t
 	strlcpy(char *restrict dst, const char *restrict src, size_t size) G_GNUC_MGET_NONNULL_ALL;
 #endif
 
-#ifndef HAVE_VASPRINTF
-int
-	vasprintf(char **restrict buf, const char *restrict fmt, va_list) G_GNUC_MGET_PRINTF_FORMAT(2,0);
-int
-	asprintf(char **restrict buf, const char *restrict fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3);
-#endif
-
 #ifndef HAVE_DPRINTF
 int
 	vdprintf(int fd, const char *restrict fmt, va_list) G_GNUC_MGET_PRINTF_FORMAT(2,0);
@@ -446,11 +439,11 @@ mget_buffer_t *
 void
 	mget_buffer_ensure_capacity(mget_buffer_t *buf, size_t size) G_GNUC_MGET_NONNULL((1));
 void
-	mget_buffer_deinit(mget_buffer_t *buf) G_GNUC_MGET_NONNULL((1));
+	mget_buffer_deinit(mget_buffer_t *buf);
 void
-	mget_buffer_free(mget_buffer_t **buf) G_GNUC_MGET_NONNULL((1));
+	mget_buffer_free(mget_buffer_t **buf);
 void
-	mget_buffer_free_data(mget_buffer_t *buf) G_GNUC_MGET_NONNULL((1));
+	mget_buffer_free_data(mget_buffer_t *buf);
 void
 	mget_buffer_realloc(mget_buffer_t *buf, size_t size) G_GNUC_MGET_NONNULL((1)) G_GNUC_MGET_ALLOC_SIZE(2);
 void

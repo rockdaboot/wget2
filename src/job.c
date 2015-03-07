@@ -235,11 +235,13 @@ int job_validate_file(JOB *job)
 
 		if (rc == 1) {
 			info_printf(_("Checksum OK for '%s'\n"), metalink->name);
+			close(fd);
 			return 1; // we are done
 		}
 		else if (rc == -1) {
 			// failed to check file, continue as if file is ok
 			info_printf(_("Failed to build checksum, assuming file to be OK\n"));
+			close(fd);
 			return 1; // we are done
 		} else
 			info_printf(_("Bad checksum for '%s'\n"), metalink->name);

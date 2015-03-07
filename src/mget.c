@@ -902,7 +902,7 @@ int main(int argc, const char *const *argv)
 			char *url;
 
 			// read URLs from input file
-			if ((fd = open(config.input_file, O_RDONLY))) {
+			if ((fd = open(config.input_file, O_RDONLY)) >= 0) {
 				while ((len = mget_fdgetline(&buf, &bufsize, fd)) >= 0) {
 					for (url = buf; len && isspace(*url); url++, len--); // skip leading spaces
 					if (*url == '#' || len <= 0) continue; // skip empty lines and comments
@@ -2074,6 +2074,9 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 
 		break;
 	}
+
+	if (fnum >= 999)
+		close(fd);
 
 	mget_thread_mutex_unlock(&savefile_mutex);
 

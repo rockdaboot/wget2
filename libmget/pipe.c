@@ -44,38 +44,15 @@
 FILE *mget_vpopenf(const char *type, const char *fmt, va_list args)
 {
 	FILE *fp = NULL;
-	char sbuf[4096], *bufp = NULL;
-	int len;
-	va_list args2;
+	char sbuf[1024];
+	mget_buffer_t buf;
 
-	// vsnprintf destroys args, so we need a copy for the fallback cases
-	va_copy(args2, args);
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	mget_buffer_vprintf2(&buf, fmt, args);
 
-	// first try without malloc
-	len = vsnprintf(sbuf, sizeof(sbuf), fmt, args);
+	fp = popen(buf.data, type);
 
-	if (len >= 0 && len < (int)sizeof(sbuf)) {
-		// message fits into buf - most likely case
-		bufp = sbuf;
-	} else if (len >= (int)sizeof(sbuf)) {
-		// POSIX compliant or glibc >= 2.1
-		bufp = xmalloc(len + 1);
-		vsnprintf(bufp, len + 1, fmt, args2);
-	} else if (len == -1) {
-		// oldstyle with ugly try-and-error fallback (maybe just truncate the msg ?)
-		size_t size = sizeof(sbuf);
-
-		do {
-			xfree(bufp);
-			bufp = xmalloc((size *= 2));
-			va_copy(args, args2);
-			len = vsnprintf(bufp, size, fmt, args);
-		} while (len == -1);
-	}
-
-	fp = popen(bufp, type);
-	if (bufp != sbuf)
-		xfree(bufp);
+	mget_buffer_deinit(&buf);
 
 	return fp;
 }

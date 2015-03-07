@@ -52,6 +52,7 @@ static void html_parse_localfile(const char *fname)
 		}
 
 		mget_xfree(data);
+		mget_html_free_urls_inline(&res);
 	}
 }
 

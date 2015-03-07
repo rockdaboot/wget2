@@ -40,144 +40,28 @@
 #include <libmget.h>
 #include "private.h"
 
-#ifndef HAVE_DPRINTF
-
-int vasprintf(char **buf, const char *fmt, va_list args)
-{
-	size_t len;
-	char sbuf[4096];
-	va_list args2;
-
-	// vsnprintf destroys args, so we need a copy for the fallback cases
-	va_copy(args2, args);
-
-	// first try without malloc
-	len = (ssize_t)vsnprintf(sbuf, sizeof(sbuf), fmt, args);
-
-	if (len<sizeof(sbuf)) {
-		// string fits into static buffer
-		*buf = xmalloc(len + 1);
-		strcpy(*buf, sbuf);
-	} else if ((ssize_t)len != -1) {
-		// POSIX compliant or glibc >= 2.1
-		*buf = xmalloc(len + 1);
-		len = vsnprintf(*buf, len + 1, fmt, args2);
-	} else {
-		// oldstyle with ugly try-and-error fallback (maybe just truncate the msg ?)
-		size_t size = sizeof(sbuf)*2;
-		*buf = NULL;
-
-		do {
-			xfree(*buf);
-			*buf = xmalloc((size *= 2));
-			va_copy(args, args2);
-			len = vsnprintf(*buf, size, fmt, args);
-		} while ((ssize_t)len == -1);
-	}
-
-	return(int)len;
-}
-
-int asprintf(char **buf, const char *fmt, ...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	return vasprintf(buf, fmt, args);
-	va_end(args);
-}
-
-#endif
-
-#if 0
-// this is similar to vasprintf, but with buffer reuse
-
-size_t mget_vbsprintf(char **buf, size_t *bufsize, const char *fmt, va_list args)
-{
-	size_t len;
-	va_list args2;
-
-	// vsnprintf destroys args, so we need a copy for the fallback cases
-	va_copy(args2, args);
-
-	// first try without malloc
-	len = (size_t)vsnprintf(*buf, *bufsize, fmt, args);
-
-	if (len >= *bufsize) {
-		// POSIX compliant or glibc >= 2.1
-		xfree(*buf);
-		*buf = xmalloc((*bufsize = len + 1));
-		len = vsnprintf(*buf, *bufsize, fmt, args2);
-	} else if ((ssize_t)len == -1) {
-		// oldstyle with ugly try-and-error fallback (maybe just truncate the msg ?)
-		*buf = NULL;
-		do {
-			xfree(*buf);
-			*buf = xmalloc((*bufsize *= 2));
-			va_copy(args, args2);
-			len = vsnprintf(*buf, *bufsize, fmt, args);
-		} while ((ssize_t)len == -1);
-	}
-
-	return len;
-}
-
-size_t mget_bsprintf(char **buf, size_t *bufsize, const char *fmt, ...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	return mget_vbsprintf(buf, bufsize, fmt, args);
-	va_end(args);
-}
-#endif
-
-#ifndef HAVE_DPRINTF
+#ifdef HAVE_DPRINTF
 
 // just a fallback, if dprintf/vdprintf do not exist
 
 int vdprintf(int fd, const char *fmt, va_list args)
 {
-	size_t len, nbytes;
+	size_t nbytes;
 	ssize_t ret;
-	char sbuf[4096], *buf = NULL;
-	va_list args2;
+	char sbuf[4096];
+	mget_buffer_t buf;
 
-	// vsnprintf destroys args, so we need a copy for the fallback cases
-	va_copy(args2, args);
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	mget_buffer_vprintf2(&buf, fmt, args);
 
-	// first try without malloc
-	len = (ssize_t)vsnprintf(sbuf, sizeof(sbuf), fmt, args);
-
-	if (len<sizeof(sbuf)) {
-		// string fits into static buffer - most likely case
-		buf = sbuf;
-	} else if ((ssize_t)len != -1) {
-		// POSIX compliant or glibc >= 2.1
-		buf = xmalloc(len + 1);
-		len = vsnprintf(buf, len + 1, fmt, args2);
-	} else {
-		// oldstyle with ugly try-and-error fallback (maybe just truncate the msg ?)
-		size_t size = sizeof(sbuf)*2;
-
-		do {
-			xfree(buf);
-			buf = xmalloc((size *= 2));
-			va_copy(args, args2);
-			len = vsnprintf(buf, size, fmt, args);
-			va_end(args);
-		} while ((ssize_t)len == -1);
-	}
-
-	for (nbytes = 0; nbytes < len; nbytes += ret) {
-		if ((ret = write(fd, buf + nbytes, len - nbytes)) < 0)
+	for (nbytes = 0; nbytes < buf.length; nbytes += ret) {
+		if ((ret = write(fd, buf.data + nbytes, buf.length - nbytes)) < 0)
 			break;
 	}
 
-	if (buf != sbuf)
-		xfree(buf);
+	mget_buffer_deinit(&buf);
 
-	return(int)len;
+	return (ret < 0 ? (int ) ret : (int) buf.length);
 }
 
 int dprintf(int fd, const char *fmt, ...)

@@ -812,42 +812,22 @@ ssize_t mget_tcp_write(mget_tcp_t *tcp, const char *buf, size_t count)
 
 ssize_t mget_tcp_vprintf(mget_tcp_t *tcp, const char *fmt, va_list args)
 {
-	char sbuf[4096], *bufp = NULL;
-	ssize_t len, len2 = 0;
+	char sbuf[4096];
+	mget_buffer_t buf;
+	ssize_t len2;
 
-	len = vsnprintf(sbuf, sizeof(sbuf), fmt, args);
+	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	mget_buffer_vprintf2(&buf, fmt, args);
 
-	if (len >= 0 && len < (ssize_t)sizeof(sbuf)) {
-		// message fits into buf - most likely case
-		bufp = sbuf;
-	} else if (len >= (ssize_t)sizeof(sbuf)) {
-		// POSIX compliant or glibc >= 2.1
-		bufp = xmalloc(len + 1);
+	len2 = mget_tcp_write(tcp, buf.data, buf.length);
 
-		len = vsnprintf(bufp, len + 1, fmt, args);
-	} else if (len == -1) {
-		// oldstyle with ugly try-and-error fallback (maybe just truncate the msg ?)
-		size_t size = sizeof(sbuf);
+	mget_buffer_deinit(&buf);
 
-		do {
-			xfree(bufp);
-			bufp = xmalloc(size *= 2);
-			len = vsnprintf(bufp, size, fmt, args);
-		} while (len == -1);
-	} else {
-		error_printf("tcp_send: internal error: unexpected length %zd\n", len);
-		return 0;
-	}
-
-	len2 = mget_tcp_write(tcp, bufp, len);
 	if (len2 > 0)
-		debug_write(bufp, len2);
+		debug_write(buf.data, len2);
 
-	if (bufp != sbuf)
-		xfree(bufp);
-
-	if (len2 > 0 && len != len2)
-		error_printf("tcp_send: internal error: length mismatch %zd != %zd\n", len, len2);
+	if (len2 > 0 && (ssize_t) buf.length != len2)
+		error_printf("tcp_send: internal error: length mismatch %zu != %zd\n", buf.length, len2);
 
 	return len2;
 }

@@ -99,22 +99,25 @@ void mget_buffer_ensure_capacity(mget_buffer_t *buf, size_t size)
 		mget_buffer_realloc(buf, size);
 }
 
-void mget_buffer_free(mget_buffer_t **buf)
+void mget_buffer_deinit(mget_buffer_t *buf)
 {
-	if (likely(buf && *buf)) {
-		if ((*buf)->release_data) {
-			xfree((*buf)->data);
-			(*buf)->release_data = 0;
+	if (likely(buf)) {
+		if (buf->release_data) {
+			xfree(buf->data);
+			buf->release_data = 0;
 		}
 
-		if ((*buf)->release_buf)
-			xfree(*buf);
+		if (buf->release_buf)
+			xfree(buf);
 	}
 }
 
-void mget_buffer_deinit(mget_buffer_t *buf)
+void mget_buffer_free(mget_buffer_t **buf)
 {
-	mget_buffer_free(&buf);
+	if (likely(buf)) {
+		mget_buffer_deinit(*buf);
+		*buf = NULL;
+	}
 }
 
 void mget_buffer_free_data(mget_buffer_t *buf)

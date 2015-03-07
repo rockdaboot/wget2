@@ -124,6 +124,7 @@ void mget_global_init(int first_key, ...)
 		default:
 			mget_thread_mutex_unlock(&_mutex);
 			mget_error_printf(_("%s: Unknown option %d"), __func__, key);
+			va_end(args);
 			return;
 		}
 	}

@@ -71,7 +71,7 @@ int main(int argc, const char *const *argv)
 		length = st.st_size;
 
 #ifdef HAVE_MMAP
-		if (!(buf = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0))) {
+		if (!(buf = mmap(NULL, length + 1, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0))) {
 			fprintf(stderr, "Failed to mmap %s (%d)\n", argv[it], errno);
 			close(fd);
 			continue;

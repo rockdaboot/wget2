@@ -172,7 +172,7 @@ static void test_buffer(void)
 		failed++;
 		info_printf("test_buffer.append: got %s (expected %s)\n", buf.data, "ABCDE");
 	}
-	mget_buffer_deinit(bufp);
+	mget_buffer_deinit(&buf);
 
 	// test mget_buffer_trim()
 
@@ -194,7 +194,7 @@ static void test_buffer(void)
 			}
 		}
 	}
-	mget_buffer_deinit(bufp);
+	mget_buffer_deinit(&buf);
 }
 
 static void test_buffer_printf(void)

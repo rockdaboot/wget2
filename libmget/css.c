@@ -166,7 +166,7 @@ void mget_css_parse_file(
 			if (fstat(fd, &st) == 0) {
 #ifdef HAVE_MMAP
 				size_t nread = st.st_size;
-				char *buf = mmap(NULL, nread, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+				char *buf = mmap(NULL, nread + 1, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
 #else
 				char *buf=xmalloc(st.st_size+1);
 				size_t nread=read(fd,buf,st.st_size);
