@@ -54,7 +54,9 @@ struct _mget_hashmap_st {
 	int
 		(*cmp)(const void *, const void *); // compare function
 	void
-		(*destructor)(void *, void *); // element destructor function
+		(*key_destructor)(void *); // key destructor function
+	void
+		(*value_destructor)(void *); // value destructor function
 	ENTRY
 		**entry; // pointer to array of pointers to entries
 	int
@@ -83,7 +85,8 @@ mget_hashmap_t *mget_hashmap_create(int max, int off, unsigned int (*hash)(const
 	h->off = off;
 	h->hash = hash;
 	h->cmp = cmp;
-	h->destructor=NULL;
+	h->key_destructor = free;
+	h->value_destructor = free;
 	h->factor = 0.75;
 	h->threshold = (int)(max * h->factor);
 
@@ -170,25 +173,20 @@ int mget_hashmap_put_noalloc(mget_hashmap_t *h, const void *key, const void *val
 	int pos = hash % h->max;
 
 	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		if (entry->value != value) {
-			if (entry->key != key) {
-				if (key != entry->value) {
-					if (h->destructor)
-						h->destructor((void *)key, entry->value);
-				} else {
-					if (h->destructor)
-						h->destructor(NULL, entry->value);
-				}
-			} else {
-				if (h->destructor)
-					h->destructor(NULL, entry->value);
-			}
-
-			xfree(entry->value);
-			entry->value = (void *)value;
+		if (entry->key != key && entry->key != value) {
+			if (h->key_destructor)
+				h->key_destructor(entry->key);
+			if (entry->key == entry->value)
+				entry->value = NULL;
+		}
+		if (entry->value != value && entry->value != key) {
+			if (h->value_destructor)
+				h->value_destructor(entry->value);
 		}
 
-		xfree(key);
+		entry->key = (void *) key;
+		entry->value = (void *) value;
+
 		return 1;
 	}
 
@@ -205,10 +203,8 @@ int mget_hashmap_put(mget_hashmap_t *h, const void *key, size_t keysize, const v
 	int pos = hash % h->max;
 
 	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		if (h->destructor)
-			h->destructor(NULL, entry->value);
-
-		xfree(entry->value);
+		if (h->value_destructor)
+			h->value_destructor(entry->value);
 
 		entry->value = mget_memdup(value, valuesize);
 
@@ -275,15 +271,14 @@ static int G_GNUC_MGET_NONNULL_ALL hashmap_remove_entry(mget_hashmap_t *h, const
 				h->entry[pos] = next;
 
 			if (free_kv) {
+				if (h->key_destructor)
+					h->key_destructor(entry->key);
 				if (entry->value != entry->key) {
-					if (h->destructor)
-						h->destructor(entry->key, entry->value);
-					xfree(entry->value);
-				} else {
-					if (h->destructor)
-						h->destructor(entry->key, NULL);
+					if (h->value_destructor)
+						h->value_destructor(entry->value);
 				}
-				xfree(entry->key);
+				entry->key = NULL;
+				entry->value = NULL;
 			}
 			xfree(entry);
 
@@ -329,17 +324,17 @@ void mget_hashmap_clear(mget_hashmap_t *h)
 		for (it = 0; it < h->max && cur; it++) {
 			for (entry = h->entry[it]; entry; entry = next) {
 				next = entry->next;
-				if (entry->value != entry->key) {
-					// key and value are different -> free both
-					if (h->destructor)
-						h->destructor(entry->key, entry->value);
-					xfree(entry->value);
-				} else {
-					// key and value are the same -> just free one of them
-					if (h->destructor)
-						h->destructor(entry->key, NULL);
-				}
-				xfree(entry->key);
+
+				if (h->key_destructor)
+					h->key_destructor(entry->key);
+
+				// free value if different from key
+				if (entry->value != entry->key && h->value_destructor)
+					h->value_destructor(entry->value);
+
+				entry->key = NULL;
+				entry->value = NULL;
+
 				xfree(entry);
 				cur--;
 			}
@@ -387,10 +382,16 @@ void mget_hashmap_sethashfunc(mget_hashmap_t *h, unsigned int (*hash)(const void
 	}
 }
 
-void mget_hashmap_set_destructor(mget_hashmap_t *h, void (*destructor)(void *key, void *value))
+void mget_hashmap_set_key_destructor(mget_hashmap_t *h, void (*destructor)(void *key))
 {
 	if (h)
-		h->destructor = destructor;
+		h->key_destructor = destructor;
+}
+
+void mget_hashmap_set_value_destructor(mget_hashmap_t *h, void (*destructor)(void *value))
+{
+	if (h)
+		h->value_destructor = destructor;
 }
 
 void mget_hashmap_setloadfactor(mget_hashmap_t *h, float factor)

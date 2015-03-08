@@ -141,3 +141,8 @@ void mget_stringmap_setloadfactor(mget_stringmap_t *h, float factor)
 {
 	mget_hashmap_setloadfactor(h, factor);
 }
+
+void mget_stringmap_set_value_destructor(mget_hashmap_t *h, void (*destructor)(void *value))
+{
+	mget_hashmap_set_value_destructor(h, destructor);
+}

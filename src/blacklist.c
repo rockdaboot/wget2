@@ -85,9 +85,9 @@ int blacklist_size(void)
 	return mget_hashmap_size(blacklist);
 }
 
-static void _free_entry(mget_iri_t *iri, G_GNUC_MGET_UNUSED void *value)
+static void _free_entry(mget_iri_t *iri)
 {
-	mget_iri_free_content(iri);
+	mget_iri_free(&iri);
 }
 
 mget_iri_t *blacklist_add(mget_iri_t *iri)
@@ -100,7 +100,7 @@ mget_iri_t *blacklist_add(mget_iri_t *iri)
 
 		if (!blacklist) {
 			blacklist = mget_hashmap_create(128, -2, (unsigned int(*)(const void *))hash_iri, (int(*)(const void *, const void *))mget_iri_compare);
-			mget_hashmap_set_destructor(blacklist, (void(*)(void *, void *))_free_entry);
+			mget_hashmap_set_key_destructor(blacklist, (void(*)(void *))_free_entry);
 		}
 
 		if (!mget_hashmap_contains(blacklist, iri)) {

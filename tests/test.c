@@ -1293,31 +1293,31 @@ static unsigned int hash_txt(G_GNUC_MGET_UNUSED const char *key)
 
 static void test_stringmap(void)
 {
-	mget_stringmap_t *h;
+	mget_stringmap_t *m;
 	char key[128], value[128], *val;
 	int run, it;
 	size_t valuesize;
 
 	// the initial size of 16 forces the internal reshashing function to be called twice
 
-	h = mget_stringmap_create(16);
+	m = mget_stringmap_create(16);
 
 	for (run = 0; run < 2; run++) {
 		if (run) {
-			mget_stringmap_clear(h);
-			mget_stringmap_sethashfunc(h, hash_txt);
+			mget_stringmap_clear(m);
+			mget_stringmap_sethashfunc(m, hash_txt);
 		}
 
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			valuesize = sprintf(value, "%d.html", it);
-			if (mget_stringmap_put(h, key, value, valuesize + 1)) {
+			if (mget_stringmap_put(m, key, value, valuesize + 1)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
 		}
 
-		if ((it = mget_stringmap_size(h)) != 26) {
+		if ((it = mget_stringmap_size(m)) != 26) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
 		} else ok++;
@@ -1326,7 +1326,7 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			sprintf(value, "%d.html", it);
-			if (!(val = mget_stringmap_get(h, key))) {
+			if (!(val = mget_stringmap_get(m, key))) {
 				failed++;
 				info_printf("stringmap_get(%s) didn't find entry\n", key);
 			} else if (strcmp(val, value)) {
@@ -1335,9 +1335,9 @@ static void test_stringmap(void)
 			} else ok++;
 		}
 
-		mget_stringmap_clear(h);
+		mget_stringmap_clear(m);
 
-		if ((it = mget_stringmap_size(h)) != 0) {
+		if ((it = mget_stringmap_size(m)) != 0) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected 0)\n", it);
 		} else ok++;
@@ -1345,13 +1345,13 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			valuesize = sprintf(value, "%d.html", it);
-			if (mget_stringmap_put(h, key, value, valuesize + 1)) {
+			if (mget_stringmap_put(m, key, value, valuesize + 1)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
 		}
 
-		if ((it = mget_stringmap_size(h)) != 26) {
+		if ((it = mget_stringmap_size(m)) != 26) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
 		} else ok++;
@@ -1360,10 +1360,10 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			sprintf(value, "%d.html", it);
-			mget_stringmap_remove(h, key);
+			mget_stringmap_remove(m, key);
 		}
 
-		if ((it = mget_stringmap_size(h)) != 0) {
+		if ((it = mget_stringmap_size(m)) != 0) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected 0)\n", it);
 		} else ok++;
@@ -1371,34 +1371,34 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			valuesize = sprintf(value, "%d.html", it);
-			if (mget_stringmap_put(h, key, value, valuesize + 1)) {
+			if (mget_stringmap_put(m, key, value, valuesize + 1)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
 		}
 
-		if ((it = mget_stringmap_size(h)) != 26) {
+		if ((it = mget_stringmap_size(m)) != 26) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
 		} else ok++;
 	}
 
 	// testing alloc/free in stringmap/hashmap
-	mget_stringmap_clear(h);
-	mget_stringmap_put(h, "thekey", NULL, 0) ? failed++ : ok++;
-	mget_stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
-	mget_stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
-	mget_stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
-	mget_stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
+	mget_stringmap_clear(m);
+	mget_stringmap_put(m, "thekey", NULL, 0) ? failed++ : ok++;
+	mget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
+	mget_stringmap_put(m, "thekey", "thevalue", 9) ? ok++ : failed++;
+	mget_stringmap_put(m, "thekey", "thevalue", 9) ? ok++ : failed++;
+	mget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
 
 	// testing key/value identity alloc/free in stringmap/hashmap
-	mget_stringmap_clear(h);
-	mget_stringmap_put(h, "thekey", NULL, 0) ? failed++ : ok++;
-	mget_stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
-	mget_stringmap_put(h, "thekey", "thevalue", 9) ? ok++ : failed++;
-	mget_stringmap_put(h, "thekey", NULL, 0) ? ok++ : failed++;
+	mget_stringmap_clear(m);
+	mget_stringmap_put(m, "thekey", NULL, 0) ? failed++ : ok++;
+	mget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
+	mget_stringmap_put(m, "thekey", "thevalue", 9) ? ok++ : failed++;
+	mget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
 
-	mget_stringmap_free(&h);
+	mget_stringmap_free(&m);
 
 	mget_http_challenge_t challenge;
 	mget_http_parse_challenge("Basic realm=\"test realm\"", &challenge);

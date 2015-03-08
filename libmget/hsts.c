@@ -97,11 +97,11 @@ void mget_hsts_deinit(mget_hsts_t *hsts)
 	}
 }
 
-void mget_hsts_free(mget_hsts_t **hsts)
+void mget_hsts_free(mget_hsts_t *hsts)
 {
 	if (hsts) {
-		mget_hsts_deinit(*hsts);
-		xfree(*hsts);
+		mget_hsts_deinit(hsts);
+		xfree(hsts);
 	}
 }
 
@@ -146,7 +146,8 @@ mget_hsts_db_t *mget_hsts_db_init(mget_hsts_db_t *hsts_db)
 
 	memset(hsts_db, 0, sizeof(*hsts_db));
 	hsts_db->entries = mget_hashmap_create(16, -2, (unsigned int(*)(const void *))_hash_hsts, (int(*)(const void *, const void *))_compare_hsts);
-	mget_hashmap_set_destructor(hsts_db->entries, (void(*)(void *, void *))mget_hsts_deinit);
+	mget_hashmap_set_key_destructor(hsts_db->entries, (void(*)(void *))mget_hsts_free);
+	mget_hashmap_set_value_destructor(hsts_db->entries, (void(*)(void *))mget_hsts_free);
 	mget_thread_mutex_init(&hsts_db->mutex);
 
 	return hsts_db;
@@ -176,7 +177,8 @@ void mget_hsts_db_add(mget_hsts_db_t *hsts_db, mget_hsts_t *hsts)
 	if (hsts->maxage == 0) {
 		if (mget_hashmap_remove(hsts_db->entries, hsts))
 			debug_printf("removed HSTS %s:%d\n", hsts->host, hsts->port);
-		mget_hsts_free(&hsts);
+		mget_hsts_free(hsts);
+		hsts = NULL;
 	} else {
 		mget_hsts_t *old = mget_hashmap_get(hsts_db->entries, hsts);
 
@@ -187,11 +189,12 @@ void mget_hsts_db_add(mget_hsts_db_t *hsts_db, mget_hsts_t *hsts)
 				old->include_subdomains = hsts->include_subdomains;
 				debug_printf("update HSTS %s:%d (maxage=%ld, includeSubDomains=%d)\n", old->host, old->port, old->maxage, old->include_subdomains);
 			}
-			mget_hsts_free(&hsts);
+			mget_hsts_free(hsts);
+			hsts = NULL;
 		} else {
 			// key and value are the same to make mget_hashmap_get() return old 'hsts'
-			mget_hashmap_put_noalloc(hsts_db->entries, hsts, hsts);
 			debug_printf("add HSTS %s:%d (maxage=%ld, includeSubDomains=%d)\n", hsts->host, hsts->port, hsts->maxage, hsts->include_subdomains);
+			mget_hashmap_put_noalloc(hsts_db->entries, hsts, hsts);
 			// no need to free anything here
 		}
 	}

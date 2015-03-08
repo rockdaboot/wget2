@@ -92,11 +92,11 @@ void mget_ocsp_deinit(mget_ocsp_t *ocsp)
 	}
 }
 
-void mget_ocsp_free(mget_ocsp_t **ocsp)
+void mget_ocsp_free(mget_ocsp_t *ocsp)
 {
 	if (ocsp) {
-		mget_ocsp_deinit(*ocsp);
-		xfree(*ocsp);
+		mget_ocsp_deinit(ocsp);
+		xfree(ocsp);
 	}
 }
 
@@ -149,10 +149,15 @@ mget_ocsp_db_t *mget_ocsp_db_init(mget_ocsp_db_t *ocsp_db)
 		ocsp_db = xmalloc(sizeof(mget_ocsp_db_t));
 
 	memset(ocsp_db, 0, sizeof(*ocsp_db));
+
 	ocsp_db->fingerprints = mget_hashmap_create(16, -2, (unsigned int(*)(const void *))_hash_ocsp, (int(*)(const void *, const void *))_compare_ocsp);
-	mget_hashmap_set_destructor(ocsp_db->fingerprints, (void(*)(void *, void *))mget_ocsp_deinit);
+	mget_hashmap_set_key_destructor(ocsp_db->fingerprints, (void(*)(void *))mget_ocsp_free);
+	mget_hashmap_set_value_destructor(ocsp_db->fingerprints, (void(*)(void *))mget_ocsp_free);
+
 	ocsp_db->hosts = mget_hashmap_create(16, -2, (unsigned int(*)(const void *))_hash_ocsp, (int(*)(const void *, const void *))_compare_ocsp);
-	mget_hashmap_set_destructor(ocsp_db->hosts, (void(*)(void *, void *))mget_ocsp_deinit);
+	mget_hashmap_set_key_destructor(ocsp_db->hosts, (void(*)(void *))mget_ocsp_free);
+	mget_hashmap_set_value_destructor(ocsp_db->hosts, (void(*)(void *))mget_ocsp_free);
+
 	mget_thread_mutex_init(&ocsp_db->mutex);
 
 	return ocsp_db;
@@ -182,7 +187,7 @@ void mget_ocsp_db_add_fingerprint(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 		return;
 
 	if (!ocsp_db) {
-		mget_ocsp_free(&ocsp);
+		mget_ocsp_free(ocsp);
 		return;
 	}
 
@@ -191,7 +196,7 @@ void mget_ocsp_db_add_fingerprint(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 	if (ocsp->maxage == 0) {
 		if (mget_hashmap_remove(ocsp_db->fingerprints, ocsp))
 			debug_printf("removed OCSP cert %s\n", ocsp->key);
-		mget_ocsp_free(&ocsp);
+		mget_ocsp_free(ocsp);
 	} else {
 		mget_ocsp_t *old = mget_hashmap_get(ocsp_db->fingerprints, ocsp);
 
@@ -202,11 +207,11 @@ void mget_ocsp_db_add_fingerprint(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 				old->valid = ocsp->valid;
 				debug_printf("update OCSP cert %s (maxage=%ld,valid=%d)\n", old->key, old->maxage, old->valid);
 			}
-			mget_ocsp_free(&ocsp);
+			mget_ocsp_free(ocsp);
 		} else {
 			// key and value are the same to make mget_hashmap_get() return old 'ocsp'
-			mget_hashmap_put_noalloc(ocsp_db->fingerprints, ocsp, ocsp);
 			debug_printf("add OCSP cert %s (maxage=%ld,valid=%d)\n", ocsp->key, ocsp->maxage, ocsp->valid);
+			mget_hashmap_put_noalloc(ocsp_db->fingerprints, ocsp, ocsp);
 			// no need to free anything here
 		}
 	}
@@ -220,7 +225,7 @@ void mget_ocsp_db_add_host(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 		return;
 
 	if (!ocsp_db) {
-		mget_ocsp_free(&ocsp);
+		mget_ocsp_free(ocsp);
 		return;
 	}
 
@@ -229,7 +234,7 @@ void mget_ocsp_db_add_host(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 	if (ocsp->maxage == 0) {
 		if (mget_hashmap_remove(ocsp_db->hosts, ocsp))
 			debug_printf("removed OCSP host %s\n", ocsp->key);
-		mget_ocsp_free(&ocsp);
+		mget_ocsp_free(ocsp);
 	} else {
 		mget_ocsp_t *old = mget_hashmap_get(ocsp_db->hosts, ocsp);
 
@@ -240,7 +245,7 @@ void mget_ocsp_db_add_host(mget_ocsp_db_t *ocsp_db, mget_ocsp_t *ocsp)
 				old->valid = ocsp->valid;
 				debug_printf("update OCSP host %s (maxage=%ld)\n", old->key, old->maxage);
 			}
-			mget_ocsp_free(&ocsp);
+			mget_ocsp_free(ocsp);
 		} else {
 			// key and value are the same to make mget_hashmap_get() return old 'ocsp'
 			mget_hashmap_put_noalloc(ocsp_db->hosts, ocsp, ocsp);

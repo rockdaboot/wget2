@@ -78,9 +78,12 @@ static unsigned int _host_hash(const HOST *host)
 	return hash;
 }
 
-static void _free_host_entry(HOST *host, G_GNUC_MGET_UNUSED void *dummy)
+static void _free_host_entry(HOST *host)
 {
-	mget_robots_free(&host->robots);
+	if (host) {
+		mget_robots_free(&host->robots);
+		mget_xfree(host);
+	}
 }
 
 HOST *hosts_add(mget_iri_t *iri)
@@ -89,7 +92,7 @@ HOST *hosts_add(mget_iri_t *iri)
 
 	if (!hosts) {
 		hosts = mget_hashmap_create(16, -2, (unsigned int (*)(const void *))_host_hash, (int (*)(const void *, const void *))_host_compare);
-		mget_hashmap_set_destructor(hosts, (void(*)(void *, void *))_free_host_entry);
+		mget_hashmap_set_key_destructor(hosts, (void(*)(void *))_free_host_entry);
 	}
 
 	HOST *hostp = NULL, host = { .scheme = iri->scheme, .host = iri->host };

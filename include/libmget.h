@@ -633,7 +633,9 @@ void
 void
 	mget_hashmap_sethashfunc(mget_hashmap_t *h, unsigned int (*hash)(const void *key));
 void
-	mget_hashmap_set_destructor(mget_hashmap_t *h, void (*destructor)(void *key, void *value));
+	mget_hashmap_set_key_destructor(mget_hashmap_t *h, void (*destructor)(void *key));
+void
+	mget_hashmap_set_value_destructor(mget_hashmap_t *h, void (*destructor)(void *value));
 void
 	mget_hashmap_setloadfactor(mget_hashmap_t *h, float factor);
 
@@ -679,6 +681,8 @@ void
 	mget_stringmap_sethashfunc(mget_stringmap_t *h, unsigned int (*hash)(const char *key));
 void
 	mget_stringmap_setloadfactor(mget_stringmap_t *h, float factor);
+void
+	mget_stringmap_set_value_destructor(mget_hashmap_t *h, void (*destructor)(void *value));
 
 /*
  * Thread wrapper routines
@@ -919,7 +923,7 @@ mget_hsts_t *
 void
 	mget_hsts_deinit(mget_hsts_t *hsts);
 void
-	mget_hsts_free(mget_hsts_t **hsts);
+	mget_hsts_free(mget_hsts_t *hsts);
 mget_hsts_t *
 	mget_hsts_new(const char *host, int port, time_t maxage, int include_subdomains);
 int
@@ -951,7 +955,7 @@ mget_ocsp_t *
 void
 	mget_ocsp_deinit(mget_ocsp_t *ocsp);
 void
-	mget_ocsp_free(mget_ocsp_t **ocsp);
+	mget_ocsp_free(mget_ocsp_t *ocsp);
 mget_ocsp_t *
 	mget_ocsp_new(const char *fingerprint, time_t maxage, int valid);
 int
