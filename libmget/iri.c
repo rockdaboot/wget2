@@ -344,7 +344,7 @@ mget_iri_t *mget_iri_clone(mget_iri_t *iri)
 	if (!iri)
 		return NULL;
 
-	size_t slen = strlen(iri->uri);
+	size_t slen = iri->uri ? strlen(iri->uri) : 0;
 	mget_iri_t *clone = mget_memdup(iri, sizeof(mget_iri_t) + slen * 2 + 2);
 
 	clone->connection_part = mget_strdup(iri->connection_part);

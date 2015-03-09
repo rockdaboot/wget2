@@ -1096,20 +1096,22 @@ int mget_ssl_open(mget_tcp_t *tcp)
 	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
 
 	struct _session_context *ctx = mget_calloc(1, sizeof(struct _session_context));
-	ctx->hostname = strdup(hostname);
+	ctx->hostname = mget_strdup(hostname);
 
 #ifdef HAVE_GNUTLS_OCSP_H
 	// If we know the cert chain for the hostname being valid at the moment,
 	// we don't ask for OCSP stapling to avoid unneeded IP traffic.
 	// In the unlikely case that the server's certificate chain changed right now,
 	// we fallback to OCSP responder request later.
-	if (!(ctx->valid = mget_ocsp_hostname_is_valid(_config.ocsp_host_cache, hostname))) {
+	if (hostname) {
+		if (!(ctx->valid = mget_ocsp_hostname_is_valid(_config.ocsp_host_cache, hostname))) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
-		if ((rc = gnutls_ocsp_status_request_enable_client(session, NULL, 0, NULL)) == GNUTLS_E_SUCCESS)
-			ctx->ocsp_stapling = 1;
-		else
-			error_printf("GnuTLS: %s\n", gnutls_strerror(rc));
+			if ((rc = gnutls_ocsp_status_request_enable_client(session, NULL, 0, NULL)) == GNUTLS_E_SUCCESS)
+				ctx->ocsp_stapling = 1;
+			else
+				error_printf("GnuTLS: %s\n", gnutls_strerror(rc));
 #endif
+		}
 	}
 #else
 	if (_config.ocsp || _config.ocsp_stapling)

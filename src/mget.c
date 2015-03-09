@@ -440,7 +440,7 @@ static int in_host_pattern_list(const mget_vector_t *v, const char *hostname)
 
 // Add URLs given by user (command line or -i option).
 // Needs to be thread-save.
-static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *encoding)
+static void add_url_to_queue(const char *url, mget_iri_t *base, const char *encoding)
 {
 	mget_iri_t *iri;
 	JOB *new_job = NULL, job_buf;
@@ -449,20 +449,19 @@ static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *enco
 
 	if (!iri) {
 		error_printf(_("Cannot resolve URI '%s'\n"), url);
-		return NULL;
+		return;
 	}
 
 	if (iri->scheme != MGET_IRI_SCHEME_HTTP && iri->scheme != MGET_IRI_SCHEME_HTTPS) {
 		mget_iri_free(&iri);
-		return NULL;
+		return;
 	}
 
 	mget_thread_mutex_lock(&downloader_mutex);
 
 	if (!blacklist_add(iri)) {
 		mget_thread_mutex_unlock(&downloader_mutex);
-		mget_iri_free(&iri);
-		return NULL;
+		return;
 	}
 
 	if (config.recursive) {
@@ -515,8 +514,6 @@ static JOB *add_url_to_queue(const char *url, mget_iri_t *base, const char *enco
 	queue_add_job(new_job);
 
 	mget_thread_mutex_unlock(&downloader_mutex);
-
-	return new_job;
 }
 
 static mget_thread_mutex_t
@@ -1903,7 +1900,7 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 	static mget_thread_mutex_t
 		savefile_mutex = MGET_THREAD_MUTEX_INITIALIZER;
 	char *alloced_fname = NULL;
-	int fd, multiple = 0, fnum, oflag = flag;
+	int fd, multiple = 0, fnum, oflag = flag, maxloop;
 	size_t fname_length;
 
 	if (!fname)
@@ -2035,61 +2032,55 @@ static void G_GNUC_MGET_NONNULL((1)) _save_file(mget_http_response_t *resp, cons
 	fd = open(fname, O_WRONLY | flag | O_CREAT, 0644);
 	// debug_printf("1 fd=%d flag=%02x (%02x %02x %02x) errno=%d %s\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND,errno,fname);
 
-	for (fnum = 0; fnum < 999;) { // just prevent endless loop
-		char unique[fname_length + 1];
+	// find a non-existing filename
+	char unique[fname_length + 1];
+	*unique = 0;
+	for (fnum = 0, maxloop = 999; fd < 0 && ((multiple && errno == EEXIST) || errno == EISDIR) && fnum < maxloop; fnum++) {
+		snprintf(unique, sizeof(unique), "%s.%d", fname, fnum + 1);
+		fd = open(unique, O_WRONLY | flag | O_CREAT, 0644);
+	}
 
-		if (fd != -1) {
-			ssize_t rc;
+	if (fd >= 0) {
+		ssize_t rc;
 
-			if (config.save_headers) {
-				if ((rc = write(fd, resp->header->data, resp->header->length)) != (ssize_t)resp->header->length) {
-					error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
-					set_exit_status(3);
-				}
-			}
-
-			if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length) {
+		if (config.save_headers) {
+			if ((rc = write(fd, resp->header->data, resp->header->length)) != (ssize_t)resp->header->length) {
 				error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
 				set_exit_status(3);
 			}
-
-			if ((flag & (O_TRUNC | O_EXCL)) && resp->last_modified)
-#ifdef HAVE_FUTIMENS
-				set_file_mtime(fd, resp->last_modified);
-#else
-				set_file_mtime(fname, resp->last_modified);
-#endif
-			if (flag == O_APPEND)
-				info_printf("appended to '%s'\n", fnum ? unique : fname);
-			else
-				info_printf("saved '%s'\n", fnum ? unique : fname);
-
-			close(fd);
-		}
-		else if ((multiple && errno == EEXIST) || errno == EISDIR) {
-			snprintf(unique, sizeof(unique), "%s.%d", fname, ++fnum);
-			fd = open(unique, O_WRONLY | flag | O_CREAT, 0644);
-			continue;
 		}
 
-		break;
-	}
-
-	if (fnum >= 999)
-		close(fd);
-
-	mget_thread_mutex_unlock(&savefile_mutex);
-
-	if (fd == -1) {
-		if (errno == EEXIST && fnum < 999)
-			error_printf(_("File '%s' already there; not retrieving.\n"), fname);
-		else if (errno == EISDIR)
-			info_printf(_("Directory / file name clash - not saving '%s'\n"), fname);
-		else {
-			error_printf(_("Failed to open '%s' (errno=%d): %s\n"), fname, errno, strerror(errno));
+		if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length) {
+			error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
 			set_exit_status(3);
 		}
+
+		if ((flag & (O_TRUNC | O_EXCL)) && resp->last_modified)
+#ifdef HAVE_FUTIMENS
+			set_file_mtime(fd, resp->last_modified);
+#else
+			set_file_mtime(fname, resp->last_modified);
+#endif
+		if (flag == O_APPEND)
+			info_printf("appended to '%s'\n", fnum ? unique : fname);
+		else
+			info_printf("saved '%s'\n", fnum ? unique : fname);
+
+		close(fd);
+	} else {
+		if (fd == -1) {
+			if (errno == EEXIST)
+				error_printf(_("File '%s' already there; not retrieving.\n"), fname);
+			else if (errno == EISDIR)
+				info_printf(_("Directory / file name clash - not saving '%s'\n"), fname);
+			else {
+				error_printf(_("Failed to open '%s' (errno=%d): %s\n"), fname, errno, strerror(errno));
+				set_exit_status(3);
+			}
+		}
 	}
+
+	mget_thread_mutex_unlock(&savefile_mutex);
 
 	xfree(alloced_fname);
 }

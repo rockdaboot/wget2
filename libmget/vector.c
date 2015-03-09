@@ -215,8 +215,10 @@ int mget_vector_add_printf(mget_vector_t *v, const char *fmt, ...)
 	va_list args;
 
 	va_start(args, fmt);
-	return mget_vector_add_vprintf(v, fmt, args);
+	int len = mget_vector_add_vprintf(v, fmt, args);
 	va_end(args);
+
+	return len;
 }
 
 int mget_vector_add_str(mget_vector_t *v, const char *s)

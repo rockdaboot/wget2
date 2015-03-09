@@ -69,7 +69,9 @@ int dprintf(int fd, const char *fmt, ...)
 	va_list args;
 
 	va_start(args, fmt);
-	return vdprintf(fd, fmt, args);
+	int rc = vdprintf(fd, fmt, args);
 	va_end(args);
+
+	return rc;
 }
 #endif // HAVE_DPRINTF

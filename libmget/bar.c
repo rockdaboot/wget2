@@ -177,6 +177,8 @@ ssize_t mget_bar_printf(mget_bar_t *bar, int slotpos, const char *fmt, ...)
 	va_list args;
 
 	va_start(args, fmt);
-	return mget_bar_vprintf(bar, slotpos, fmt, args);
+	ssize_t len = mget_bar_vprintf(bar, slotpos, fmt, args);
 	va_end(args);
+
+	return len;
 }

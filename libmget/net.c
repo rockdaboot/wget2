@@ -598,9 +598,15 @@ int mget_tcp_connect(mget_tcp_t *tcp, const char *host, const char *port)
 //					tcp->ssl_session = mget_ssl_open(tcp->sockfd, tcp->ssl_hostname, tcp->connect_timeout);
 //					if (!tcp->ssl_session) {
 					if ((ret = mget_ssl_open(tcp))) {
-						mget_tcp_close(tcp);
-						if (ret == MGET_E_CERTIFICATE)
+						if (ret == MGET_E_CERTIFICATE) {
+							mget_tcp_close(tcp);
 							break; /* stop here - the server cert couldn't be validated */
+						}
+						
+						// do not
+						struct addrinfo *ai_tmp = tcp->addrinfo;
+						mget_tcp_close(tcp);
+						tcp->addrinfo = ai_tmp;
 						continue;
 					}
 				}
@@ -837,8 +843,10 @@ ssize_t mget_tcp_printf(mget_tcp_t *tcp, const char *fmt, ...)
 	va_list args;
 
 	va_start(args, fmt);
-	return mget_tcp_vprintf(tcp, fmt, args);
+	ssize_t len = mget_tcp_vprintf(tcp, fmt, args);
 	va_end(args);
+
+	return len;
 }
 
 void mget_tcp_close(mget_tcp_t *tcp)
@@ -856,7 +864,7 @@ void mget_tcp_close(mget_tcp_t *tcp)
 		}
 		if (tcp->addrinfo_allocated) {
 			freeaddrinfo(tcp->addrinfo);
-			tcp->addrinfo = NULL;
 		}
+		tcp->addrinfo = NULL;
 	}
 }

@@ -962,7 +962,7 @@ const char *mget_http_parse_setcookie(const char *s, mget_cookie_t *cookie)
 {
 	const char *name, *p;
 
-	mget_cookie_init(cookie);
+	cookie = mget_cookie_init(cookie);
 
 	while (isspace(*s)) s++;
 	s = mget_http_parse_token(s, &cookie->name);

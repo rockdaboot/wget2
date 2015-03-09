@@ -455,8 +455,10 @@ size_t mget_buffer_printf2(mget_buffer_t *buf, const char *fmt, ...)
 	va_list args;
 
 	va_start(args, fmt);
-	return mget_buffer_vprintf2(buf, fmt, args);
+	size_t len = mget_buffer_vprintf2(buf, fmt, args);
 	va_end(args);
+
+	return len;
 }
 
 size_t mget_buffer_vprintf_append(mget_buffer_t *buf, const char *fmt, va_list args)
@@ -476,6 +478,8 @@ size_t mget_buffer_vprintf_append(mget_buffer_t *buf, const char *fmt, va_list a
 	} else
 		buf->length += length;
 
+	va_end(args);
+
 	return buf->length;
 }
 
@@ -484,10 +488,10 @@ size_t mget_buffer_printf_append(mget_buffer_t *buf, const char *fmt, ...)
 	va_list args;
 
 	va_start(args, fmt);
-	mget_buffer_vprintf_append(buf, fmt, args);
+	size_t len = mget_buffer_vprintf_append(buf, fmt, args);
 	va_end(args);
 
-	return buf->length;
+	return len;
 }
 
 size_t mget_buffer_vprintf(mget_buffer_t *buf, const char *fmt, va_list args)
@@ -502,8 +506,8 @@ size_t mget_buffer_printf(mget_buffer_t *buf, const char *fmt, ...)
 	va_list args;
 
 	va_start(args, fmt);
-	mget_buffer_vprintf(buf, fmt, args);
+	size_t len = mget_buffer_vprintf(buf, fmt, args);
 	va_end(args);
 
-	return buf->length;
+	return len;
 }
