@@ -161,8 +161,13 @@ static void _print_x509_certificate_info(gnutls_session_t session)
 	for (ncert = 0; ncert < cert_list_size; ncert++) {
 		if ((cert_type = gnutls_certificate_type_get(session)) == GNUTLS_CRT_X509) {
 
-			gnutls_x509_crt_init(&cert);
-			gnutls_x509_crt_import(cert, &cert_list[ncert], GNUTLS_X509_FMT_DER);
+			if (gnutls_x509_crt_init(&cert) != GNUTLS_E_SUCCESS)
+				continue;
+
+			if (gnutls_x509_crt_import(cert, &cert_list[ncert], GNUTLS_X509_FMT_DER) != GNUTLS_E_SUCCESS) {
+				gnutls_x509_crt_deinit(cert);
+				continue;
+			}
 
 			info_printf(_("Certificate info [%u]:\n"), ncert);
 

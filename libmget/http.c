@@ -961,6 +961,7 @@ static long long get_current_time(void)
 const char *mget_http_parse_setcookie(const char *s, mget_cookie_t *cookie)
 {
 	const char *name, *p;
+	int allocated_cookie = (cookie == NULL);
 
 	cookie = mget_cookie_init(cookie);
 
@@ -1036,8 +1037,14 @@ const char *mget_http_parse_setcookie(const char *s, mget_cookie_t *cookie)
 			}
 		} while (*s);
 
+		if (allocated_cookie)
+			mget_cookie_free(&cookie);
+
 	} else {
-		mget_cookie_deinit(cookie);
+		if (allocated_cookie)
+			mget_cookie_free(&cookie);
+		else
+			mget_cookie_deinit(cookie);
 		error_printf("Cookie without name or assignment ignored\n");
 	}
 

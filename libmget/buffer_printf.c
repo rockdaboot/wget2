@@ -478,7 +478,7 @@ size_t mget_buffer_vprintf_append(mget_buffer_t *buf, const char *fmt, va_list a
 	} else
 		buf->length += length;
 
-	va_end(args);
+	va_end(args2);
 
 	return buf->length;
 }

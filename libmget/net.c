@@ -130,12 +130,13 @@ static void _free_dns(struct ADDR_ENTRY *entry)
 	freeaddrinfo(entry->addrinfo);
 }
 
-static void _mget_dns_cache_add(const char *host, const char *port, struct addrinfo *addrinfo)
+static struct addrinfo * _mget_dns_cache_add(const char *host, const char *port, struct addrinfo *addrinfo)
 {
 	// insert addrinfo into dns cache
 	size_t hostlen = host ? strlen(host) + 1 : 1;
 	size_t portlen = port ? strlen(port) + 1 : 1;
 	struct ADDR_ENTRY *entryp = xmalloc(sizeof(struct ADDR_ENTRY) + hostlen + portlen);
+	int index;
 
 	entryp->host = ((char *)entryp) + sizeof(struct ADDR_ENTRY);
 	entryp->port = ((char *)entryp) + sizeof(struct ADDR_ENTRY) + hostlen;
@@ -149,14 +150,17 @@ static void _mget_dns_cache_add(const char *host, const char *port, struct addri
 		mget_vector_set_destructor(dns_cache, (void(*)(void *))_free_dns);
 	}
 
-	if (mget_vector_find(dns_cache, entryp) == -1)
+	if ((index = mget_vector_find(dns_cache, entryp)) == -1)
 		mget_vector_insert_sorted_noalloc(dns_cache, entryp);
 	else {
 		// race condition:
 		xfree(entryp);
 		freeaddrinfo(addrinfo);
+		addrinfo = mget_vector_get(dns_cache, index);
 	}
 	mget_thread_mutex_unlock(&dns_mutex);
+
+	return addrinfo;
 }
 
 void mget_dns_cache_free(void)
@@ -299,7 +303,9 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 	}
 
 	if (tcp->caching) {
-		_mget_dns_cache_add(host, port, addrinfo);
+		// In case of a race condition the already exisiting addrinfo is returned.
+		// The addrinfo argument given to _mget_dns_cache_add() will be freed in this case.
+		addrinfo = _mget_dns_cache_add(host, port, addrinfo);
 		mget_thread_mutex_unlock(&mutex);
 	}
 
@@ -605,6 +611,7 @@ int mget_tcp_connect(mget_tcp_t *tcp, const char *host, const char *port)
 						
 						// do not
 						struct addrinfo *ai_tmp = tcp->addrinfo;
+						tcp->addrinfo = NULL;
 						mget_tcp_close(tcp);
 						tcp->addrinfo = ai_tmp;
 						continue;
