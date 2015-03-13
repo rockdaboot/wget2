@@ -61,7 +61,7 @@ static void G_GNUC_MGET_NORETURN usage(const char *myname)
 		myname, myname, myname, myname, myname);
 }
 
-int main(int argc, const char *const *argv)
+int main(int argc, const char **argv)
 {
 	// Base URI for converting relative to absolute URIs
 	const char *

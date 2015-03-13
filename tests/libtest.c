@@ -241,7 +241,6 @@ static void _empty_directory(const char *dirname)
 {
 	DIR *dir;
 	struct dirent *dp;
-	struct stat st;
 	size_t dirlen = strlen(dirname);
 
 	if ((dir = opendir(dirname))) {
@@ -252,13 +251,11 @@ static void _empty_directory(const char *dirname)
 			char fname[dirlen + 1 + strlen(dp->d_name) + 1];
 			snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
 
-			if (stat(fname, &st) == 0) {
-				if (S_ISDIR(st.st_mode)) {
+			if (unlink(fname) == -1) {
+				if (errno == EISDIR)
 					_remove_directory(fname);
-				} else {
-					if (unlink(fname) == -1)
-						mget_error_printf(_("Failed to unlink %s\n"), fname);
-				}
+				else
+					mget_error_printf(_("Failed to unlink %s (%d)\n"), fname, errno);
 			}
 		}
 
