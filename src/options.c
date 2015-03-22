@@ -1110,7 +1110,7 @@ int init(int argc, const char *const *argv)
 	mget_set_oomfunc(_no_memory);
 
 	// seed random generator, used e.g. by Digest Authentication and --random-wait
-	srand(time(NULL) ^ getpid());
+	srandom(time(NULL) ^ getpid());
 
 	// this is a special case for switching on debugging before any config file is read
 	if (argc >= 2) {
