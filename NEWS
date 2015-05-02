@@ -1,3 +1,24 @@
+02.05.2015
+  New release v0.1.9
+  Made cross-compilable with MinGW on Linux
+  Fix for 'unsigned char' architectures
+  Add --follow-tags and --ignore-tags
+  Added multithreaded progress bar (--progress=bar)
+  Added --backups
+  Added --post-data and --post-file
+  Add port to Referer HTTP header
+  Fixed race condition when having a filename / directory clash
+  Added --crl-file option to respect CRLs 
+  Added OCSP (stapling + responder request)
+  Added --ocsp and --ocsp-stapling
+  Added OCSP response caching
+  Added pkg-config support for library searching
+  Added wildcard support for -D/--domains and --exclude-domains
+  Removed --load-hsts and --save-hsts (will be automatically done)
+  Compilable on Solaris
+  Fixed lots of Coverity scan issues
+  Fixed several small bugs
+
 27.08.2014
   New release v0.1.8
   forgot to bump up version
