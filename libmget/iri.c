@@ -484,7 +484,9 @@ const char *mget_iri_relative_to_abs(mget_iri_t *base, const char *val, size_t l
 		if (base) {
 			char path[len + 1];
 
-			strlcpy(path, val, len + 1);
+			// strlcpy or snprintf are ineffective here since they do strlen(val), which might be large
+			memcpy(path, val, len);
+			path[len] = 0;
 
 			if (len >= 2 && val[1] == '/') {
 				char *p;
