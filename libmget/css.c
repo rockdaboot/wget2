@@ -157,9 +157,6 @@ void mget_css_parse_file(
 {
 	int fd;
 
-	if (!fname)
-		return;
-
 	if (strcmp(fname,"-")) {
 		if ((fd = open(fname, O_RDONLY)) != -1) {
 			struct stat st;

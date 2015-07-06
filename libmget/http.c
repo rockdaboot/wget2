@@ -1496,7 +1496,7 @@ int mget_http_open(mget_http_connection_t **_conn, const mget_iri_t *iri)
 
 void mget_http_close(mget_http_connection_t **conn)
 {
-	if (conn && *conn) {
+	if (*conn) {
 		mget_tcp_deinit(&(*conn)->tcp);
 //		if (!mget_tcp_get_dns_caching())
 //			freeaddrinfo((*conn)->addrinfo);
