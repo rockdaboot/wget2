@@ -366,6 +366,33 @@ AC_CHECK_FUNCS([\
  vasprintf nanosleep usleep iconv nl_langinfo futimens glob pwrite \
  qsort_r])
 
+# BSD / OSX have a qsort_r with swapped arguments
+if test x$ac_cv_func_qsort_r = xyes ; then
+  AC_MSG_CHECKING([argument style of qsort_r])
+  AC_RUN_IFELSE([AC_LANG_SOURCE([[
+  #define _GNU_SOURCE
+  #include <stdlib.h>
+
+  static int cmp(const void *a, const void *b, void *c)
+  {
+    return *(const int *)a - *(const int *)b;
+  }
+  int main(void)
+  {
+    int arr[3] = { 1, 2, 0 };
+
+    qsort_r(arr, 3, sizeof(int), cmp, NULL);
+
+    return !(arr[0] == 0 && arr[1] == 1 && arr[2] == 2);
+  }]])],
+  [
+    AC_MSG_RESULT([GNU])
+  ],[
+    AC_DEFINE(HAVE_QSORT_R_BSD, 1, [Define to 1 if you have the 'qsort_r' function with BSD style arguments])
+    AC_MSG_RESULT([BSD])
+  ])
+fi
+
 AC_CONFIG_FILES([Makefile
                  include/Makefile
                  libmget/Makefile
