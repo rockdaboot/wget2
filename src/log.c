@@ -64,8 +64,8 @@ static void _write_debug(const char *data, size_t len)
 		mget_buffer_t buf;
 
 		mget_buffer_init(&buf, sbuf, sizeof(sbuf));
-		mget_buffer_printf2(&buf, "%02d.%02d%02d%02d.%03ld ",
-			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, tv.tv_usec / 1000);
+		mget_buffer_printf2(&buf, "%02d.%02d%02d%02d.%03d ",
+			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, (int) (tv.tv_usec / 1000));
 		mget_buffer_memcat(&buf, data, len);
 		if (data[len -1] != '\n')
 			mget_buffer_memcat(&buf, "\n", 1);
