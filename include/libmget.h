@@ -1413,7 +1413,7 @@ const char *
 const char *
 	mget_http_parse_connection(const char *s, char *keep_alive) G_GNUC_MGET_NONNULL_ALL;
 const char *
-	mget_http_parse_setcookie(const char *s, mget_cookie_t *cookie) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_parse_setcookie(const char *s, mget_cookie_t *cookie) G_GNUC_MGET_NONNULL((1));
 const char *
 	mget_http_parse_etag(const char *s, const char **etag) G_GNUC_MGET_NONNULL((1));
 
