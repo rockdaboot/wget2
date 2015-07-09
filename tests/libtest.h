@@ -41,6 +41,7 @@ extern "C" {
 // defines for mget_test_start_http_server()
 #define MGET_TEST_EXPECTED_REQUEST_HEADER 1001
 #define MGET_TEST_RESPONSE_URLS 1002
+#define MGET_TEST_FTP_IO 1003
 
 // defines for mget_test()
 #define MGET_TEST_REQUEST_URL 2001
@@ -100,10 +101,21 @@ typedef struct {
 		auth_password;
 } mget_test_url_t;
 
+typedef struct {
+	const char *
+		in;
+	const char *
+		out;
+	mget_test_url_t *
+		send_url;
+} mget_test_ftp_io_t;
+
 void mget_test_stop_http_server(void);
 void mget_test_start_http_server(int first_key, ...);
 void mget_test(int first_key, ...);
-int mget_test_get_server_port(void) G_GNUC_MGET_PURE;
+int mget_test_get_http_server_port(void) G_GNUC_MGET_PURE;
+int mget_test_get_https_server_port(void) G_GNUC_MGET_PURE;
+int mget_test_get_ftp_server_port(void) G_GNUC_MGET_PURE;
 
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 #	pragma GCC diagnostic ignored "-Wmissing-field-initializers"

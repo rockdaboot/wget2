@@ -58,7 +58,7 @@ int main(void)
 	// test-idn-cmd
 	snprintf(options, sizeof(options),
 		"--iri -rH -e http_proxy=localhost:%d --local-encoding=EUC-JP " euc_jp_hostname,
-		mget_test_get_server_port());
+		mget_test_get_http_server_port());
 
 	mget_test(
 //		MGET_TEST_KEEP_TMPFILES, 1,
@@ -73,7 +73,7 @@ int main(void)
 	// test-idn-cmd
 	snprintf(options, sizeof(options),
 		"--iri -rH -e http_proxy=localhost:%d --local-encoding=UTF-8 " utf8_hostname,
-		mget_test_get_server_port());
+		mget_test_get_http_server_port());
 
 	mget_test(
 //		MGET_TEST_KEEP_TMPFILES, 1,

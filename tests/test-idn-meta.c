@@ -69,7 +69,7 @@ int main(void)
 	// test-idn-meta
 	snprintf(options, sizeof(options),
 		"--iri -rH -e http_proxy=localhost:%d http://start-here.com/start.html",
-		mget_test_get_server_port());
+		mget_test_get_http_server_port());
 
 	mget_test(
 //		MGET_TEST_KEEP_TMPFILES, 1,

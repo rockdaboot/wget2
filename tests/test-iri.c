@@ -130,7 +130,7 @@ int main(void)
 	// test-iri
 	snprintf(request_header, sizeof(request_header),
 		"Referer: http://localhost:%d/p2_%%C3%%A9%%C3%%A9n.html",
-		mget_test_get_server_port());
+		mget_test_get_http_server_port());
 	urls[4].request_headers[0] = urls[7].request_headers[0] = request_header;
 
 	mget_test(
