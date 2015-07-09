@@ -148,8 +148,7 @@ char *mget_utf8_to_str(const char *src, const char *encoding)
  * [2] https://lists.gnu.org/archive/html/bug-wget/2015-06/msg00002.html
  * [3] http://curl.haxx.se/mail/lib-2015-06/0143.html
  */
-static int
-_utf8_is_valid(const char *utf8)
+static int _utf8_is_valid(const char *utf8)
 {
 	const unsigned char *s = (const unsigned char *) utf8;
 
@@ -233,7 +232,7 @@ const char *mget_str_to_ascii(const char *src)
 				error_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
 		}
 		else
-			error_printf(_("invalid UTF-8 sequence not converted: '%s'\n"), src);
+			error_printf(_("Invalid UTF-8 sequence not converted: '%s'\n"), src);
 	}
 #else
 	if (mget_str_needs_encoding(src)) {
