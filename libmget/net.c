@@ -180,10 +180,11 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 	if (!tcp)
 		tcp = &_global_tcp;
 
-	if (!port)
-		port = "0";
+//	if (!port)
+//		port = "0";
 
-	if (tcp->caching) {
+	// if port is NULL,
+	if (tcp->caching && port) {
 		if ((addrinfo = _mget_dns_cache_get(host, port)))
 			return addrinfo;
 
@@ -198,7 +199,7 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 	addrinfo = NULL;
 
 #if defined(AI_NUMERICSERV)
-	ai_flags |= (isdigit(*port) ? AI_NUMERICSERV : 0);
+	ai_flags |= (port && isdigit(*port) ? AI_NUMERICSERV : 0);
 #endif
 #if defined(AI_ADDRCONFIG)
 	ai_flags |= AI_ADDRCONFIG;
@@ -249,7 +250,7 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 	if (rc) {
 		error_printf(_("Failed to resolve %s:%s (%s)\n"), host, port, gai_strerror(rc));
 
-		if (tcp->caching)
+		if (tcp->caching && port)
 			mget_thread_mutex_unlock(&mutex);
 
 		return NULL;
@@ -302,7 +303,7 @@ struct addrinfo *mget_tcp_resolve(mget_tcp_t *tcp, const char *host, const char 
 		}
 	}
 
-	if (tcp->caching) {
+	if (tcp->caching && port) {
 		// In case of a race condition the already exisiting addrinfo is returned.
 		// The addrinfo argument given to _mget_dns_cache_add() will be freed in this case.
 		addrinfo = _mget_dns_cache_add(host, port, addrinfo);
