@@ -20,7 +20,7 @@ test_linking_LDADD = libmget-@LIBMGET_API_VERSION@.la @LTLIBICONV@ @LTLIBINTL@ $
 test_linking_LDFLAGS = -static
 
 css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
-	@$(LEX) -w -o $@ $<
+	@$(LEX) -w -o $@ $(srcdir)/css_tokenizer.lex
 
 clean-local:
 	-rm -f css_tokenizer.c
