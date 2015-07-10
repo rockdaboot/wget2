@@ -612,7 +612,8 @@ void mget_test(int first_key, ...)
 	for (key = first_key; key; key = va_arg(args, int)) {
 		switch (key) {
 		case MGET_TEST_REQUEST_URL:
-			mget_vector_add_str(request_urls, va_arg(args, const char *));
+			if ((request_url = va_arg(args, const char *)))
+				mget_vector_add_str(request_urls, request_url);
 			break;
 		case MGET_TEST_REQUEST_URLS:
 			while ((request_url = va_arg(args, const char *)))
