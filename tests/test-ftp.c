@@ -67,7 +67,6 @@ int main(void)
 		},
 		{	.in  = "PASV",
 			.out = "227 Entering Passive Mode {{pasvdata}}."
-//			.out = "227 Entering Passive Mode (141,76,2,4,152,139)."
 		},
 		{	.in  = "LIST -a",
 			.out = "150 Opening BINARY mode data connection for file list",
@@ -86,7 +85,7 @@ int main(void)
 //		"-d ftp://localhost:%d/info.txt",
 	// -O/dev/null to not generate HTML file from the listing
 	snprintf(options, sizeof(options),
-		"-d --no-remove-listing -O/dev/null ftp://localhost:%d",
+		"-d --inet4-only --no-remove-listing -O/dev/null ftp://localhost:%d",
 		mget_test_get_ftp_server_port());
 
 	// test-ftp
