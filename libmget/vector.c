@@ -396,6 +396,13 @@ static int G_GNUC_MGET_NONNULL_ALL _compare(const void *p1, const void *p2, void
 {
 	return ((mget_vector_t *)v)->cmp(*((void **)p1), *((void **)p2));
 }
+#else
+// fallback to non-reentrant code (e.g. for OpenBSD <= 5.8)
+static mget_vector_t *_v;
+static int G_GNUC_MGET_NONNULL_ALL _compare(const void *p1, const void *p2)
+{
+	return _v->cmp(*((void **)p1), *((void **)p2));
+}
 #endif
 
 void mget_vector_sort(mget_vector_t *v)
@@ -419,7 +426,23 @@ void mget_vector_sort(mget_vector_t *v)
 		qsort_r(v->entry, v->cur, sizeof(void *), _compare, v);
 		v->sorted = 1;
 	}
-#elif !defined(__clang__)
+#else
+	// fallback to non-reentrant code (e.g. for OpenBSD <= 5.8)
+	if (v && v->cmp) {
+		static mget_thread_mutex_t
+			mutex = MGET_THREAD_MUTEX_INITIALIZER;
+
+		mget_thread_mutex_lock(&mutex);
+		_v = v;
+		qsort(v->entry, v->cur, sizeof(void *), _compare);
+		v->sorted = 1;
+		mget_thread_mutex_unlock(&mutex);
+	}
+
+#endif
+
+/*
+	// trampoline version (e.g. gcc, but not on OpenBSD !)
 	int G_GNUC_MGET_NONNULL_ALL _compare(const void *p1, const void *p2)
 	{
 		return v->cmp(*((void **)p1), *((void **)p2));
@@ -429,9 +452,8 @@ void mget_vector_sort(mget_vector_t *v)
 		qsort(v->entry, v->cur, sizeof(void *), _compare);
 		v->sorted = 1;
 	}
-#else
-#error You need gcc or qsort_r() to build Mget
-/*
+
+	#error You need gcc or qsort_r() to build Mget
 	// this should work as soon as the qsort_b() function is available ;-)
 	if (v && v->cmp) {
 		int (^_compare)(const void *, const void *) = ^ int (const void *p1, const void *p2) {
@@ -442,7 +464,6 @@ void mget_vector_sort(mget_vector_t *v)
 		v->sorted = 1;
 	}
 */
-#endif
 }
 
 // Find first entry that matches the specified element,
