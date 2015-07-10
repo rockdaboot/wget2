@@ -282,8 +282,9 @@ static void *_ftp_server_thread(void *ctx)
 					break;
 				}
 
-				if (!strncmp(buf, "PASV", 4)) {
-					// init FTP PASV socket
+				if (!strncmp(buf, "PASV", 4) || !strncmp(buf, "EPSV", 4)) {
+					// init FTP PASV/EPSV socket
+					// we ignore EPSV address type here, we listen on IPv4 and IPv6 anyways
 					pasv_parent_tcp=mget_tcp_init();
 					mget_tcp_set_timeout(pasv_parent_tcp, -1); // INFINITE timeout
 					if (mget_tcp_listen(pasv_parent_tcp, "localhost", NULL, 5) != 0) {
@@ -293,13 +294,16 @@ static void *_ftp_server_thread(void *ctx)
 					pasv_port = mget_tcp_get_local_port(pasv_parent_tcp);
 
 					const char *src = ios[io_pos].out;
-					char *dst = mget_malloc(strlen(src) + 32 + 1);
-					char *dst2 = dst;
+					char *response = mget_malloc(strlen(src) + 32 + 1);
+					char *dst = response;
 
 					while (*src) {
 						if (*src == '{') {
 							if (!strncmp(src, "{{pasvdata}}", 12)) {
-								dst += sprintf(dst, "(127,0,0,1,%d,%d)", pasv_port / 256, pasv_port % 256);
+								if (!strncmp(buf, "EPSV", 4))
+									dst += sprintf(dst, "(|||%d|)", pasv_port);
+								else
+									dst += sprintf(dst, "(127,0,0,1,%d,%d)", pasv_port / 256, pasv_port % 256);
 								src += 12;
 								continue;
 							}
@@ -308,8 +312,8 @@ static void *_ftp_server_thread(void *ctx)
 					}
 					*dst = 0;
 
-					mget_tcp_printf(tcp, "%s\r\n", dst2);
-					mget_xfree(dst2);
+					mget_tcp_printf(tcp, "%s\r\n", response);
+					mget_xfree(response);
 
 					if (!(pasv_tcp = mget_tcp_accept(pasv_parent_tcp))) {
 						mget_error_printf(_("Failed to get PASV connection\n"));
