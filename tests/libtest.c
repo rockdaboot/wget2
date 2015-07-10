@@ -243,13 +243,9 @@ static void *_http_server_thread(void *ctx)
 static void *_ftp_server_thread(void *ctx)
 {
 	mget_tcp_t *tcp = NULL, *parent_tcp = ctx, *pasv_parent_tcp = NULL, *pasv_tcp = NULL;
-	mget_test_url_t *url = NULL;
-	char buf[4096], method[32], request_url[256], tag[64], value[256], *p;
-	ssize_t nbytes, from_bytes, to_bytes;
-	size_t body_len, request_url_length;
-	unsigned it;
-	int byterange, authorized, io_pos, pasv_port;
-	time_t modified;
+	char buf[4096];
+	ssize_t nbytes;
+	int authorized, io_pos, pasv_port;
 
 #if defined(_WIN32) || defined(_WIN64)
 	signal(SIGTERM, sigterm_handler);
