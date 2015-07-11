@@ -41,7 +41,9 @@ extern "C" {
 // defines for mget_test_start_http_server()
 #define MGET_TEST_EXPECTED_REQUEST_HEADER 1001
 #define MGET_TEST_RESPONSE_URLS 1002
-#define MGET_TEST_FTP_IO 1003
+#define MGET_TEST_FTP_IO_UNORDERED 1003
+#define MGET_TEST_FTP_IO_ORDERED 1004
+#define MGET_TEST_FTP_SERVER_HELLO 1005
 
 // defines for mget_test()
 #define MGET_TEST_REQUEST_URL 2001

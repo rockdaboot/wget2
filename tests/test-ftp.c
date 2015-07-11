@@ -47,9 +47,6 @@ int main(void)
 		},
 	};
 	mget_test_ftp_io_t io[]={
-		{	.in  = NULL, // NULL: send 220 prior receiving anything
-			.out = "220 FTP server ready"
-		},
 		{	.in  = "USER anonymous",
 			.out = "331 Anonymous login ok"
 		},
@@ -68,6 +65,9 @@ int main(void)
 		{	.in  = "PASV",
 			.out = "227 Entering Passive Mode {{pasvdata}}."
 		},
+		{	.in  = "EPSV 2",
+			.out = "229 Entering Passive Mode {{pasvdata}}."
+		},
 		{	.in  = "LIST -a",
 			.out = "150 Opening BINARY mode data connection for file list",
 			.send_url = &urls[1]
@@ -77,22 +77,20 @@ int main(void)
 	// functions won't come back if an error occurs
 	mget_test_start_http_server(
 		MGET_TEST_RESPONSE_URLS, &urls, countof(urls),
-		MGET_TEST_FTP_IO, &io, countof(io),
+		MGET_TEST_FTP_IO_UNORDERED, &io, countof(io),
 		0);
 
 	char options[128];
 
-//		"-d ftp://localhost:%d/info.txt",
-	// -O/dev/null to not generate HTML file from the listing
+	// without -O/dev/null Wget generates HTML output from the listing
 	snprintf(options, sizeof(options),
-		"-d --inet4-only --no-remove-listing -O/dev/null ftp://localhost:%d",
+		"-d --no-remove-listing -O/dev/null ftp://localhost:%d",
 		mget_test_get_ftp_server_port());
 
 	// test-ftp
 	mget_test(
-		MGET_TEST_KEEP_TMPFILES, 1,
+//		MGET_TEST_KEEP_TMPFILES, 1,
 		MGET_TEST_OPTIONS, options,
-//		MGET_TEST_REQUEST_URL, "index.html",
 		MGET_TEST_EXECUTABLE, "wget",
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {

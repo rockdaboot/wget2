@@ -72,8 +72,12 @@ static mget_test_ftp_io_t
 	*ios;
 static size_t
 	nios;
+static int
+	ios_ordered;
 static char
 	tmpdir[128];
+static const char
+	*server_hello;
 
 static void sigterm_handler(int sig G_GNUC_MGET_UNUSED)
 {
@@ -246,7 +250,7 @@ static void *_ftp_server_thread(void *ctx)
 	mget_tcp_t *tcp = NULL, *parent_tcp = ctx, *pasv_parent_tcp = NULL, *pasv_tcp = NULL;
 	char buf[4096];
 	ssize_t nbytes;
-	int authorized, io_pos, pasv_port;
+	int authorized, io_pos, pasv_port, found;
 
 #if defined(_WIN32) || defined(_WIN64)
 	signal(SIGTERM, sigterm_handler);
@@ -263,21 +267,31 @@ static void *_ftp_server_thread(void *ctx)
 			authorized = 0;
 			io_pos = 0;
 
-			if (!ios[0].in) {
-				// send server intro
-				mget_tcp_printf(tcp, "%s\r\n", ios[0].out);
-				io_pos++;
-			}
+			if (server_hello)
+				mget_tcp_printf(tcp, "%s\r\n", server_hello);
 
 			// as a quick hack, just assume that each line comes in one packet
 			while ((nbytes = mget_tcp_read(tcp, buf, sizeof(buf)-1)) > 0) {
-				buf[nbytes]=0;
+				buf[nbytes] = 0;
 
 				while (--nbytes >= 0 && (buf[nbytes] == '\r' || buf[nbytes] == '\n'))
 					buf[nbytes] = 0;
 
 				mget_debug_printf("### Got: '%s'\n", buf);
-				if (strcmp(buf, ios[io_pos].in)) {
+
+				found = 0;
+				if (ios_ordered) {
+					if (!strcmp(buf, ios[io_pos].in))
+						found = 1;
+				} else {
+					for (io_pos; io_pos < nios; io_pos++) {
+						if (!strcmp(buf, ios[io_pos].in)) {
+							found = 1;
+							break;
+						}
+					}
+				}
+				if (!found) {
 					mget_error_printf(_("Unexpected input: '%s'\n"), buf);
 					break;
 				}
@@ -287,6 +301,13 @@ static void *_ftp_server_thread(void *ctx)
 					// we ignore EPSV address type here, we listen on IPv4 and IPv6 anyways
 					pasv_parent_tcp=mget_tcp_init();
 					mget_tcp_set_timeout(pasv_parent_tcp, -1); // INFINITE timeout
+					if (!strncmp(buf, "EPSV", 4)) {
+						switch (atoi(buf+4)) {
+							case 1: mget_tcp_set_family(pasv_parent_tcp, MGET_NET_FAMILY_IPV4); break;
+							case 2: mget_tcp_set_family(pasv_parent_tcp, MGET_NET_FAMILY_IPV6); break;
+							default: mget_tcp_set_family(pasv_parent_tcp, MGET_NET_FAMILY_ANY); break;
+						}
+					}
 					if (mget_tcp_listen(pasv_parent_tcp, "localhost", NULL, 5) != 0) {
 						mget_tcp_printf(tcp, "500 failed to open port\r\n");
 						break;
@@ -443,7 +464,14 @@ void mget_test_start_http_server(int first_key, ...)
 			urls = va_arg(args, mget_test_url_t *);
 			nurls = va_arg(args, size_t);
 			break;
-		case MGET_TEST_FTP_IO:
+		case MGET_TEST_FTP_SERVER_HELLO:
+			server_hello = va_arg(args, const char *);
+		case MGET_TEST_FTP_IO_ORDERED:
+			ios_ordered = 1;
+			ios = va_arg(args, mget_test_ftp_io_t *);
+			nios = va_arg(args, size_t);
+		case MGET_TEST_FTP_IO_UNORDERED:
+			ios_ordered = 0;
 			ios = va_arg(args, mget_test_ftp_io_t *);
 			nios = va_arg(args, size_t);
 			break;
@@ -605,6 +633,7 @@ void mget_test(int first_key, ...)
 	va_list args;
 
 	keep_tmpfiles = 0;
+	server_hello = "220 FTP server ready";
 
 	if (!request_urls)
 		request_urls = mget_vector_create(8,8,NULL);
@@ -637,6 +666,9 @@ void mget_test(int first_key, ...)
 			break;
 		case MGET_TEST_EXECUTABLE:
 			executable = va_arg(args, const char *);
+			break;
+		case MGET_TEST_FTP_SERVER_HELLO:
+			server_hello = va_arg(args, const char *);
 			break;
 		default:
 			mget_error_printf_exit(_("Unknown option %d [%s]\n"), key, options);
