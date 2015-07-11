@@ -72,7 +72,7 @@ int main(void)
 	};
 
 	// functions won't come back if an error occurs
-	mget_test_start_http_server(
+	mget_test_start_server(
 		MGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 

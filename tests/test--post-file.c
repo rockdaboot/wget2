@@ -34,7 +34,7 @@
 int main(void)
 {
 	// functions won't come back if an error occurs
-	mget_test_start_http_server(0);
+	mget_test_start_server(0);
 
 	// test-i
 	mget_test(

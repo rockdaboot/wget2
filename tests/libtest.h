@@ -112,8 +112,8 @@ typedef struct {
 		send_url;
 } mget_test_ftp_io_t;
 
-void mget_test_stop_http_server(void);
-void mget_test_start_http_server(int first_key, ...);
+void mget_test_stop_server(void);
+void mget_test_start_server(int first_key, ...);
 void mget_test(int first_key, ...);
 int mget_test_get_http_server_port(void) G_GNUC_MGET_PURE;
 int mget_test_get_https_server_port(void) G_GNUC_MGET_PURE;

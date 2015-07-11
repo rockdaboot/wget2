@@ -50,11 +50,13 @@
 static mget_thread_t
 	http_server_tid,
 	https_server_tid,
-	ftp_server_tid;
+	ftp_server_tid,
+	ftps_server_tid;
 static int
 	http_server_port,
 	https_server_port,
 	ftp_server_port,
+	ftps_server_port,
 	terminate,
 	keep_tmpfiles;
 /*static const char
@@ -399,7 +401,7 @@ static void _remove_directory(const char *dirname)
 		mget_error_printf(_("Failed to rmdir %s\n"), dirname);
 }
 
-void mget_test_stop_http_server(void)
+void mget_test_stop_server(void)
 {
 	size_t it;
 
@@ -423,17 +425,19 @@ void mget_test_stop_http_server(void)
 	pthread_kill(http_server_tid, SIGTERM);
 	pthread_kill(https_server_tid, SIGTERM);
 	pthread_kill(ftp_server_tid, SIGTERM);
+	pthread_kill(ftps_server_tid, SIGTERM);
 
 	mget_thread_join(http_server_tid);
 	mget_thread_join(https_server_tid);
 	mget_thread_join(ftp_server_tid);
+	mget_thread_join(ftps_server_tid);
 
 	mget_global_deinit();
 }
 
-void mget_test_start_http_server(int first_key, ...)
+void mget_test_start_server(int first_key, ...)
 {
-	static mget_tcp_t *http_parent_tcp, *parent_tcp_ssl, *ftp_parent_tcp;
+	static mget_tcp_t *http_parent_tcp, *https_parent_tcp, *ftp_parent_tcp, *ftps_parent_tcp;
 	int rc, key;
 	size_t it;
 	va_list args;
@@ -481,7 +485,7 @@ void mget_test_start_http_server(int first_key, ...)
 	}
 	va_end(args);
 
-	atexit(mget_test_stop_http_server);
+	atexit(mget_test_stop_server);
 
 	snprintf(tmpdir, sizeof(tmpdir), ".test_%d", (int) getpid());
 
@@ -509,12 +513,12 @@ void mget_test_start_http_server(int first_key, ...)
 	http_server_port = mget_tcp_get_local_port(http_parent_tcp);
 
 	// init HTTPS server socket
-	parent_tcp_ssl=mget_tcp_init();
-	mget_tcp_set_ssl(parent_tcp_ssl, 1); // switch SSL on
-	mget_tcp_set_timeout(parent_tcp_ssl, -1); // INFINITE timeout
-	if (mget_tcp_listen(parent_tcp_ssl, "localhost", NULL, 5) != 0)
+	https_parent_tcp=mget_tcp_init();
+	mget_tcp_set_ssl(https_parent_tcp, 1); // switch SSL on
+	mget_tcp_set_timeout(https_parent_tcp, -1); // INFINITE timeout
+	if (mget_tcp_listen(https_parent_tcp, "localhost", NULL, 5) != 0)
 		exit(1);
-	https_server_port = mget_tcp_get_local_port(parent_tcp_ssl);
+	https_server_port = mget_tcp_get_local_port(https_parent_tcp);
 
 	// init FTP server socket
 	ftp_parent_tcp=mget_tcp_init();
@@ -523,9 +527,19 @@ void mget_test_start_http_server(int first_key, ...)
 		exit(1);
 	ftp_server_port = mget_tcp_get_local_port(ftp_parent_tcp);
 
+	// init FTPS server socket
+	ftps_parent_tcp=mget_tcp_init();
+	mget_tcp_set_ssl(ftps_parent_tcp, 1); // switch SSL on
+	mget_tcp_set_timeout(ftps_parent_tcp, -1); // INFINITE timeout
+	if (mget_tcp_listen(ftps_parent_tcp, "localhost", NULL, 5) != 0)
+		exit(1);
+	ftps_server_port = mget_tcp_get_local_port(ftps_parent_tcp);
+
 	// now replace {{port}} in the body by the actual server port
 	for (it = 0; it < nurls; it++) {
-		if (urls[it].body && (strstr(urls[it].body, "{{port}}") || strstr(urls[it].body, "{{sslport}}") || strstr(urls[it].body, "{{ftpport}}"))) {
+		if (urls[it].body && (strstr(urls[it].body, "{{port}}") || strstr(urls[it].body, "{{sslport}}")
+				  || strstr(urls[it].body, "{{ftpport}}") || strstr(urls[it].body, "{{ftpsport}}")))
+		{
 			const char *src = urls[it].body;
 			char *dst = mget_malloc(strlen(src) + 1);
 
@@ -549,6 +563,11 @@ void mget_test_start_http_server(int first_key, ...)
 						src += 11;
 						continue;
 					}
+					else if (!strncmp(src, "{{ftpsport}}", 12)) {
+						dst += sprintf(dst, "%d", ftps_server_port);
+						src += 12;
+						continue;
+					}
 				}
 				*dst++ = *src++;
 			}
@@ -561,11 +580,15 @@ void mget_test_start_http_server(int first_key, ...)
 		mget_error_printf_exit(_("Failed to start HTTP server, error %d\n"), rc);
 
 	// start thread for HTTPS
-	if ((rc = mget_thread_start(&https_server_tid, _http_server_thread, parent_tcp_ssl, 0)) != 0)
+	if ((rc = mget_thread_start(&https_server_tid, _http_server_thread, https_parent_tcp, 0)) != 0)
 		mget_error_printf_exit(_("Failed to start HTTPS server, error %d\n"), rc);
 
 	// start thread for FTP
 	if ((rc = mget_thread_start(&ftp_server_tid, _ftp_server_thread, ftp_parent_tcp, 0)) != 0)
+		mget_error_printf_exit(_("Failed to start FTP server, error %d\n"), rc);
+
+	// start thread for FTPS
+	if ((rc = mget_thread_start(&ftps_server_tid, _ftp_server_thread, ftps_parent_tcp, 0)) != 0)
 		mget_error_printf_exit(_("Failed to start FTP server, error %d\n"), rc);
 }
 
@@ -801,4 +824,9 @@ int mget_test_get_https_server_port(void)
 int mget_test_get_ftp_server_port(void)
 {
 	return ftp_server_port;
+}
+
+int mget_test_get_ftps_server_port(void)
+{
+	return ftps_server_port;
 }
