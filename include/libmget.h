@@ -1235,8 +1235,8 @@ void
 	mget_ssl_server_init(void);
 void
 	mget_ssl_server_deinit(void);
-void *
-	mget_ssl_server_open(int sockfd, int connect_timeout);
+int
+	mget_ssl_server_open(mget_tcp_t *tcp);
 void
 	mget_ssl_server_close(void **session);
 
