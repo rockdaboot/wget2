@@ -610,7 +610,7 @@ int mget_tcp_connect(mget_tcp_t *tcp, const char *host, const char *port)
 							break; /* stop here - the server cert couldn't be validated */
 						}
 						
-						// do not
+						// do not free tcp->addrinfo when calling mget_tcp_close()
 						struct addrinfo *ai_tmp = tcp->addrinfo;
 						tcp->addrinfo = NULL;
 						mget_tcp_close(tcp);
@@ -722,8 +722,7 @@ mget_tcp_t *mget_tcp_accept(mget_tcp_t *parent_tcp)
 		tcp->bind_addrinfo = NULL;
 
 		if (tcp->ssl) {
-			tcp->ssl_session = mget_ssl_server_open(tcp->sockfd, tcp->connect_timeout);
-			if (!tcp->ssl_session)
+			if (mget_tcp_tls_start(tcp))
 				mget_tcp_deinit(&tcp);
 		}
 
@@ -735,11 +734,38 @@ mget_tcp_t *mget_tcp_accept(mget_tcp_t *parent_tcp)
 	return NULL;
 }
 
+int mget_tcp_tls_start(mget_tcp_t *tcp)
+{
+	int ret;
+
+	// TODO: unify mget_ssl_open and mget_ssl_server_open
+	if (tcp->passive) {
+		if ((tcp->ssl_session = mget_ssl_server_open(tcp->sockfd, tcp->connect_timeout))) {
+			return 0;
+		}
+		ret = MGET_E_UNKNOWN;
+	} else {
+		return mget_ssl_open(tcp);
+	}
+
+	return ret;
+}
+
+void mget_tcp_tls_stop(mget_tcp_t *tcp)
+{
+	if (tcp->ssl_session) {
+		if (tcp->passive)
+			mget_ssl_server_close(&tcp->ssl_session);
+		else
+			mget_ssl_close(&tcp->ssl_session);
+	}
+}
+
 ssize_t mget_tcp_read(mget_tcp_t *tcp, char *buf, size_t count)
 {
 	ssize_t rc;
 
-	if (tcp->ssl) {
+	if (tcp->ssl_session) {
 		rc = mget_ssl_read_timeout(tcp->ssl_session, buf, count, tcp->timeout);
 	} else {
 		// 0: no timeout / immediate
@@ -763,7 +789,7 @@ ssize_t mget_tcp_write(mget_tcp_t *tcp, const char *buf, size_t count)
 	ssize_t nwritten = 0, n;
 	int rc;
 
-	if (tcp->ssl)
+	if (tcp->ssl_session)
 		return mget_ssl_write_timeout(tcp->ssl_session, buf, count, tcp->timeout);
 
 	while (count) {
@@ -860,12 +886,7 @@ ssize_t mget_tcp_printf(mget_tcp_t *tcp, const char *fmt, ...)
 void mget_tcp_close(mget_tcp_t *tcp)
 {
 	if (tcp) {
-		if (tcp->ssl && tcp->ssl_session) {
-			if (tcp->passive)
-				mget_ssl_server_close(&tcp->ssl_session);
-			else
-				mget_ssl_close(&tcp->ssl_session);
-		}
+		mget_tcp_tls_stop(tcp);
 		if (tcp->sockfd != -1) {
 			close(tcp->sockfd);
 			tcp->sockfd = -1;

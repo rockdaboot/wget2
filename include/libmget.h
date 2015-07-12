@@ -1174,7 +1174,11 @@ int
 int
 	mget_tcp_listen(mget_tcp_t *tcp, const char *host, const char *port, int backlog) G_GNUC_MGET_NONNULL((1));
 mget_tcp_t
-	*mget_tcp_accept(mget_tcp_t *parent_tcp)G_GNUC_MGET_NONNULL((1));
+	*mget_tcp_accept(mget_tcp_t *parent_tcp) G_GNUC_MGET_NONNULL((1));
+int
+	mget_tcp_tls_start(mget_tcp_t *tcp) G_GNUC_MGET_NONNULL((1));
+void
+	mget_tcp_tls_stop(mget_tcp_t *tcp) G_GNUC_MGET_NONNULL((1));
 ssize_t
 	mget_tcp_vprintf(mget_tcp_t *tcp, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL;
 ssize_t
