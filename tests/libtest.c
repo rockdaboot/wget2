@@ -57,6 +57,7 @@ static int
 	https_server_port,
 	ftp_server_port,
 	ftps_server_port,
+	ftps_implicit,
 	terminate,
 	keep_tmpfiles;
 /*static const char
@@ -252,7 +253,8 @@ static void *_ftp_server_thread(void *ctx)
 	mget_tcp_t *tcp = NULL, *parent_tcp = ctx, *pasv_parent_tcp = NULL, *pasv_tcp = NULL;
 	char buf[4096];
 	ssize_t nbytes;
-	int authorized, io_pos, pasv_port, found;
+	int pasv_port, found;
+	unsigned io_pos;
 
 #if defined(_WIN32) || defined(_WIN64)
 	signal(SIGTERM, sigterm_handler);
@@ -266,7 +268,6 @@ static void *_ftp_server_thread(void *ctx)
 		mget_tcp_deinit(&pasv_parent_tcp);
 
 		if ((tcp = mget_tcp_accept(parent_tcp))) {
-			authorized = 0;
 			io_pos = 0;
 
 			if (server_hello)
@@ -286,7 +287,7 @@ static void *_ftp_server_thread(void *ctx)
 					if (!strcmp(buf, ios[io_pos].in))
 						found = 1;
 				} else {
-					for (io_pos; io_pos < nios; io_pos++) {
+					for (io_pos = 0; io_pos < nios; io_pos++) {
 						if (!strcmp(buf, ios[io_pos].in)) {
 							found = 1;
 							break;
@@ -295,7 +296,17 @@ static void *_ftp_server_thread(void *ctx)
 				}
 				if (!found) {
 					mget_error_printf(_("Unexpected input: '%s'\n"), buf);
-					break;
+					mget_tcp_printf(tcp, "500 Unknown command\r\n");
+					continue;
+				}
+
+				if (!strncmp(buf, "AUTH", 4)) {
+					// assume TLS auth type
+					mget_tcp_printf(tcp, "%s\r\n", ios[io_pos].out);
+					if (atoi(ios[io_pos].out)/100 == 2)
+						mget_tcp_tls_start(tcp);
+					io_pos++;
+					continue;
 				}
 
 				if (!strncmp(buf, "PASV", 4) || !strncmp(buf, "EPSV", 4)) {
@@ -425,12 +436,14 @@ void mget_test_stop_server(void)
 	pthread_kill(http_server_tid, SIGTERM);
 	pthread_kill(https_server_tid, SIGTERM);
 	pthread_kill(ftp_server_tid, SIGTERM);
-	pthread_kill(ftps_server_tid, SIGTERM);
+	if (ftps_implicit)
+		pthread_kill(ftps_server_tid, SIGTERM);
 
 	mget_thread_join(http_server_tid);
 	mget_thread_join(https_server_tid);
 	mget_thread_join(ftp_server_tid);
-	mget_thread_join(ftps_server_tid);
+	if (ftps_implicit)
+		mget_thread_join(ftps_server_tid);
 
 	mget_global_deinit();
 }
@@ -478,6 +491,9 @@ void mget_test_start_server(int first_key, ...)
 			ios_ordered = 0;
 			ios = va_arg(args, mget_test_ftp_io_t *);
 			nios = va_arg(args, size_t);
+			break;
+		case MGET_TEST_FTPS_IMPLICIT:
+			ftps_implicit = va_arg(args, int);
 			break;
 		default:
 			mget_error_printf(_("Unknown option %d\n"), key);
@@ -588,8 +604,10 @@ void mget_test_start_server(int first_key, ...)
 		mget_error_printf_exit(_("Failed to start FTP server, error %d\n"), rc);
 
 	// start thread for FTPS
-	if ((rc = mget_thread_start(&ftps_server_tid, _ftp_server_thread, ftps_parent_tcp, 0)) != 0)
-		mget_error_printf_exit(_("Failed to start FTP server, error %d\n"), rc);
+	if (ftps_implicit) {
+		if ((rc = mget_thread_start(&ftps_server_tid, _ftp_server_thread, ftps_parent_tcp, 0)) != 0)
+			mget_error_printf_exit(_("Failed to start FTP server, error %d\n"), rc);
+	}
 }
 
 static void _scan_for_unexpected(const char *dirname, const mget_test_file_t *expected_files)

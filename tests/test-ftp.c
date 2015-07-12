@@ -72,6 +72,10 @@ int main(void)
 			.out = "150 Opening BINARY mode data connection for file list",
 			.send_url = &urls[1]
 		},
+		{	.in  = "RETR info.txt",
+			.out = "150 Opening BINARY mode data connection",
+			.send_url = &urls[0]
+		},
 	};
 
 	// functions won't come back if an error occurs
@@ -87,7 +91,7 @@ int main(void)
 		"-d --no-remove-listing -O/dev/null ftp://localhost:%d",
 		mget_test_get_ftp_server_port());
 
-	// test-ftp
+	// test downloading the top directory content
 	mget_test(
 //		MGET_TEST_KEEP_TMPFILES, 1,
 		MGET_TEST_OPTIONS, options,
@@ -95,6 +99,22 @@ int main(void)
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,
 		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
 			{ urls[1].name, urls[1].body },
+			{	NULL } },
+		0);
+
+	// without -O/dev/null Wget generates HTML output from the listing
+	snprintf(options, sizeof(options),
+		"-d ftp://localhost:%d/info.txt",
+		mget_test_get_ftp_server_port());
+
+	// test downloading a file
+	mget_test(
+//		MGET_TEST_KEEP_TMPFILES, 1,
+		MGET_TEST_OPTIONS, options,
+		MGET_TEST_EXECUTABLE, "wget",
+		MGET_TEST_EXPECTED_ERROR_CODE, 0,
+		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+			{ urls[0].name, urls[0].body },
 			{	NULL } },
 		0);
 

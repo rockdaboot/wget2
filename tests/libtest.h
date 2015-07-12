@@ -44,6 +44,7 @@ extern "C" {
 #define MGET_TEST_FTP_IO_UNORDERED 1003
 #define MGET_TEST_FTP_IO_ORDERED 1004
 #define MGET_TEST_FTP_SERVER_HELLO 1005
+#define MGET_TEST_FTPS_IMPLICIT 1006
 
 // defines for mget_test()
 #define MGET_TEST_REQUEST_URL 2001
@@ -118,6 +119,7 @@ void mget_test(int first_key, ...);
 int mget_test_get_http_server_port(void) G_GNUC_MGET_PURE;
 int mget_test_get_https_server_port(void) G_GNUC_MGET_PURE;
 int mget_test_get_ftp_server_port(void) G_GNUC_MGET_PURE;
+int mget_test_get_ftps_server_port(void) G_GNUC_MGET_PURE;
 
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 #	pragma GCC diagnostic ignored "-Wmissing-field-initializers"
