@@ -698,10 +698,14 @@ char *mget_iri_get_path(const mget_iri_t *iri, mget_buffer_t *buf, const char *e
 
 	if (iri->path) {
 		if (mget_strcasecmp_ascii(encoding, "utf-8")) {
-			char *fname = mget_utf8_to_str(iri->path, encoding);
-			if (fname) {
+			char *fname;
+
+			if ((fname = mget_utf8_to_str(iri->path, encoding))) {
 				mget_buffer_strcat(buf, fname);
 				xfree(fname);
+			} else {
+				// conversion failed, keep original string
+				mget_buffer_strcat(buf, iri->path);
 			}
 		} else {
 			mget_buffer_strcat(buf, iri->path);

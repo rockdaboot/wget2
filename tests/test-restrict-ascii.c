@@ -76,7 +76,7 @@ int main(void)
 	// test-restrict-ascii
 /*
 	mget_test(
-		MGET_TEST_KEEP_TMPFILES, 1,
+		// MGET_TEST_KEEP_TMPFILES, 1,
 		MGET_TEST_OPTIONS, "--local-encoding=utf-8",
 		MGET_TEST_REQUEST_URL, urls[0].name + 1,
 		MGET_TEST_EXPECTED_ERROR_CODE, 0,

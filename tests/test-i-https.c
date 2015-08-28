@@ -81,7 +81,7 @@ int main(void)
 	// test-i-https with loading CA Certificate and CRL
 	mget_test(
 		// MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, "-d --ca-certificate=../" SRCDIR "/certs/x509-ca-cert.pem --crl-file=../" SRCDIR "/certs/x509-server-crl.pem --no-ocsp -i urls.txt",
+		MGET_TEST_OPTIONS, "--ca-certificate=../" SRCDIR "/certs/x509-ca-cert.pem --crl-file=../" SRCDIR "/certs/x509-server-crl.pem --no-ocsp -i urls.txt",
 		MGET_TEST_REQUEST_URL, NULL,
 		MGET_TEST_EXPECTED_ERROR_CODE, 5,
 		MGET_TEST_EXISTING_FILES, &(mget_test_file_t []) {
