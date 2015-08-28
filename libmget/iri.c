@@ -725,38 +725,37 @@ char *mget_iri_get_query_as_filename(const mget_iri_t *iri, mget_buffer_t *buf, 
 		if (mget_strcasecmp_ascii(encoding, "utf-8")) {
 			if ((query = mget_utf8_to_str(iri->query, encoding)))
 				allocated = 1;
-		} else {
+			else
+				query = iri->query;
+		} else
 			query = iri->query;
+
+		int slashes = 0;
+		const char *src = query;
+
+		// count slashes in query string
+		while ((src = strchr(src, '/'))) {
+			slashes++;
+			src++;
 		}
 
-		if (query) {
-			int slashes = 0;
-			const char *src = query;
+		if (slashes) {
+			// escape slashes to use query as part of a filename
+			const char *begin;
 
-			// count slashes in query string
-			while ((src = strchr(src, '/'))) {
-				slashes++;
-				src++;
-			}
-
-			if (slashes) {
-				// escape slashes to use query as part of a filename
-				const char *begin;
-
-				for (src = begin = query; *src; src++) {
-					if (*src == '/') {
-						if (begin != src)
-							mget_buffer_memcat(buf, begin, src - begin);
-						begin = src + 1;
-						mget_buffer_memcat(buf, "%2F", 3);
-					}
+			for (src = begin = query; *src; src++) {
+				if (*src == '/') {
+					if (begin != src)
+						mget_buffer_memcat(buf, begin, src - begin);
+					begin = src + 1;
+					mget_buffer_memcat(buf, "%2F", 3);
 				}
-
-				if (begin != src)
-					mget_buffer_memcat(buf, begin, src - begin);
-			} else {
-				mget_buffer_strcat(buf, query);
 			}
+
+			if (begin != src)
+				mget_buffer_memcat(buf, begin, src - begin);
+		} else {
+			mget_buffer_strcat(buf, query);
 		}
 
 		if (allocated)
@@ -769,15 +768,19 @@ char *mget_iri_get_query_as_filename(const mget_iri_t *iri, mget_buffer_t *buf, 
 char *mget_iri_get_filename(const mget_iri_t *iri, mget_buffer_t *buf, const char *encoding)
 {
 	if (iri->path) {
-		char *fname;
+		char *fname, *p;
 
 		if (mget_strcasecmp_ascii(encoding, "utf-8")) {
-			if ((fname = strrchr(iri->path, '/')))
-				fname = mget_utf8_to_str(fname + 1, encoding);
-			else
-				fname = mget_utf8_to_str(iri->path, encoding);
+			if ((p = strrchr(iri->path, '/'))) {
+				if (!(fname = mget_utf8_to_str(p + 1, encoding)))
+					mget_buffer_strcat(buf, p + 1); // conversion failed, keep original string
+			} else {
+				if (!(fname = mget_utf8_to_str(iri->path, encoding)))
+					mget_buffer_strcat(buf, iri->path); // conversion failed, keep original string
+			}
 
 			if (fname) {
+				// conversion succeeded
 				mget_buffer_strcat(buf, fname);
 				xfree(fname);
 			}
