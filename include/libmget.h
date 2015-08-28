@@ -31,6 +31,7 @@
 #ifdef HAVE_LIBPTHREAD
 #	include <pthread.h>
 #endif
+#include <sys/types.h>
 #include <unistd.h>
 #include <stdarg.h>
 #include <stdio.h>
