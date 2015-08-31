@@ -127,6 +127,32 @@ int mget_str_needs_encoding(const char *s)
 	return !!*s;
 }
 
+int mget_str_is_valid_utf8(const char *utf8)
+{
+	const unsigned char *s = (const unsigned char *) utf8;
+
+	while (*s) {
+		if ((*s & 0x80) == 0) /* 0xxxxxxx ASCII char */
+			s++;
+		else if ((*s & 0xE0) == 0xC0) /* 110xxxxx 10xxxxxx */ {
+			if ((s[1] & 0xC0) != 0x80)
+				return 0;
+			s += 2;
+		} else if ((*s & 0xF0) == 0xE0) /* 1110xxxx 10xxxxxx 10xxxxxx */ {
+			if ((s[1] & 0xC0) != 0x80 || (s[2] & 0xC0) != 0x80)
+				return 0;
+			s += 3;
+		} else if ((*s & 0xF8) == 0xF0) /* 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx */ {
+			if ((s[1] & 0xC0) != 0x80 || (s[2] & 0xC0) != 0x80 || (s[3] & 0xC0) != 0x80)
+				return 0;
+			s += 4;
+		} else
+			return 0;
+	}
+
+	return 1;
+}
+
 char *mget_str_to_utf8(const char *src, const char *encoding)
 {
 	return mget_charset_transcode(src, encoding, "utf-8");

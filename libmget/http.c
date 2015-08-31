@@ -500,15 +500,26 @@ const char *mget_http_parse_content_disposition(const char *s, const char **file
 		while (*s) {
 			s = mget_http_parse_param(s, &param.name, &param.value);
 			if (param.value && !mget_strcasecmp_ascii("filename", param.name)) {
-				xfree(param.name);
+				// just take the last path part as filename
+				if (!*filename) {
+					if ((p = strpbrk(param.value,"/\\"))) {
+						p = strdup(p + 1);
+					} else {
+						p = (char *) param.value;
+						param.value = NULL;
+					}
 
-				//
-				if ((p = strpbrk(param.value,"/\\"))) {
-					*filename = strdup(p + 1);
-					xfree(param.value);
-				} else
-					*filename = param.value;
-				break;
+					mget_percent_unescape(p);
+					if (!mget_str_is_valid_utf8(p)) {
+						// if it is not UTF-8, assume ISO-8859-1
+						// see http://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
+						*filename = mget_str_to_utf8(p, "iso-8859-1");
+						xfree(p);
+					} else {
+						*filename = p;
+						p = NULL;
+					}
+				}
 			} else if (param.value && !mget_strcasecmp_ascii("filename*", param.name)) {
 				// RFC5987
 				// ext-value     = charset  "'" [ language ] "'" value-chars
@@ -550,9 +561,17 @@ const char *mget_http_parse_content_disposition(const char *s, const char **file
 								*filename = mget_str_to_utf8(p, charset);
 							else
 								*filename = strdup(p);
+
+							// just take the last path part as filename
+							if ((p = strpbrk(*filename, "/\\"))) {
+								p = strdup(p + 1);
+								xfree(*filename);
+								*filename = p;
+							}
+
 							xfree(param.name);
 							xfree(param.value);
-							break;
+							break; // stop looping, we found the final filename
 						}
 					}
 				}
