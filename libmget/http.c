@@ -42,6 +42,9 @@
 #if WITH_ZLIB
 //#include <zlib.h>
 #endif
+#ifdef WITH_LIBNGHTTP2
+	#include <nghttp2/nghttp2.h>
+#endif
 
 #ifdef __WIN32
 # include <winsock2.h>
@@ -1505,6 +1508,7 @@ int mget_http_open(mget_http_connection_t **_conn, const mget_iri_t *iri)
 		conn->esc_host = iri->host ? strdup(iri->host) : NULL;
 		conn->port = iri->resolv_port;
 		conn->scheme = iri->scheme;
+		conn->protocol = mget_tcp_get_protocol(conn->tcp);
 		conn->buf = mget_buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
 	} else {
 		mget_http_close(_conn);
@@ -1531,24 +1535,45 @@ static int  G_GNUC_MGET_NONNULL((1,2)) _http_send_request(mget_http_connection_t
 {
 	ssize_t nbytes;
 
-	if ((nbytes = mget_http_request_to_buffer(req, conn->buf)) < 0) {
-		error_printf(_("Failed to create request buffer\n"));
-		return -1;
+	if (mget_tcp_get_protocol(conn->tcp) == MGET_PROTOCOL_HTTP_2_0) {
+/*
+		int stream_id;
+		int use_proxy = (req->scheme == MGET_IRI_SCHEME_HTTPS && mget_vector_size(https_proxies) > 0);
+		int n = 4 + use_proxy + mget_vector_size(req->lines);
+		const nghttp2_nv nva[n];
+
+		stream_id = nghttp2_submit_request(connection->session, NULL, nva, countof(nva), NULL, req);
+
+		if (stream_id < 0) {
+			error_printf(_("Failed to submit HTTP2 request\n"));
+			return -1;
+		}
+
+		req->stream_id = stream_id;
+
+		debug_printf("HTTP2 stream id %d\n", stream_id);
+*/
+		return 0;
+	} else {
+		if ((nbytes = mget_http_request_to_buffer(req, conn->buf)) < 0) {
+			error_printf(_("Failed to create request buffer\n"));
+			return -1;
+		}
+
+		if (body && length) {
+			nbytes = mget_buffer_memcat(conn->buf, body, length);
+		}
+
+		if (mget_tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
+			// An error will be written by the mget_tcp_write function.
+			// error_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
+			return -1;
+		}
+
+		debug_printf("# sent %zd bytes:\n%s", nbytes, conn->buf->data);
+
+		return 0;
 	}
-
-	if (body && length) {
-		nbytes = mget_buffer_memcat(conn->buf, body, length);
-	}
-
-	if (mget_tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
-		// An error will be written by the mget_tcp_write function.
-		// error_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
-		return -1;
-	}
-
-	debug_printf("# sent %zd bytes:\n%s", nbytes, conn->buf->data);
-
-	return 0;
 }
 
 int mget_http_send_request(mget_http_connection_t *conn, mget_http_request_t *req)

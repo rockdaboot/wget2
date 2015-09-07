@@ -63,7 +63,8 @@ struct mget_tcp_st {
 		connect_timeout,
 		timeout, // read and write timeouts are the same
 		family,
-		preferred_family;
+		preferred_family,
+		protocol; // MGET_PROTOCOL_HTTP1_1, MGET_PROTOCOL_HTTP2_0
 	unsigned int
 		ssl : 1,
 		passive : 1,

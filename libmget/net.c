@@ -354,6 +354,16 @@ int mget_tcp_get_dns_caching(mget_tcp_t *tcp)
 	return (tcp ? tcp : &_global_tcp)->caching;
 }
 
+void mget_tcp_set_protocol(mget_tcp_t *tcp, int protocol)
+{
+	(tcp ? tcp : &_global_tcp)->protocol = protocol;
+}
+
+int mget_tcp_get_protocol(mget_tcp_t *tcp)
+{
+	return (tcp ? tcp : &_global_tcp)->protocol;
+}
+
 void mget_tcp_set_preferred_family(mget_tcp_t *tcp, int family)
 {
 	(tcp ? tcp : &_global_tcp)->preferred_family = _value_to_family(family);

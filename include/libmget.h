@@ -1122,6 +1122,9 @@ void
 #define MGET_NET_FAMILY_IPV4 1
 #define MGET_NET_FAMILY_IPV6 2
 
+#define MGET_PROTOCOL_HTTP_1_1  0
+#define MGET_PROTOCOL_HTTP_2_0  1
+
 typedef struct mget_tcp_st mget_tcp_t;
 
 mget_tcp_t *
@@ -1161,6 +1164,8 @@ int
 int
 	mget_tcp_get_preferred_family(mget_tcp_t *tcp) G_GNUC_MGET_PURE;
 int
+	mget_tcp_get_protocol(mget_tcp_t *tcp);
+int
 	mget_tcp_get_local_port(mget_tcp_t *tcp);
 void
 	mget_tcp_set_debug(mget_tcp_t *tcp, int debug);
@@ -1168,6 +1173,8 @@ void
 	mget_tcp_set_family(mget_tcp_t *tcp, int family);
 void
 	mget_tcp_set_preferred_family(mget_tcp_t *tcp, int family);
+void
+	mget_tcp_set_protocol(mget_tcp_t *tcp, int protocol);
 void
 	mget_tcp_set_bind_address(mget_tcp_t *tcp, const char *bind_address);
 struct addrinfo *
@@ -1376,6 +1383,8 @@ typedef struct {
 		scheme;
 	mget_buffer_t *
 		buf;
+	char
+		protocol; // MGET_PROTOCOL_HTTP_1_1 or MGET_PROTOCOL_HTTP_2_0
 	unsigned
 		print_response_headers : 1;
 } mget_http_connection_t;

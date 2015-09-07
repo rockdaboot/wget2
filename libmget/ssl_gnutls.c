@@ -1068,7 +1068,6 @@ void mget_ssl_deinit(void)
 	mget_thread_mutex_unlock(&_mutex);
 }
 
-//void *mget_ssl_open(int sockfd, const char *hostname, int connect_timeout)
 int mget_ssl_open(mget_tcp_t *tcp)
 {
 	gnutls_session_t session;
@@ -1186,6 +1185,19 @@ int mget_ssl_open(mget_tcp_t *tcp)
 			rc = mget_ready_2_read(sockfd, connect_timeout);
 		}
 	}
+
+#if GNUTLS_VERSION_NUMBER >= 0x030200
+	if (_config.alpn) {
+		gnutls_datum_t protocol;
+		if ((rc = gnutls_alpn_get_selected_protocol(session, &protocol)))
+			error_printf("GnuTLS: Get ALPN: %s\n", gnutls_strerror(rc));
+		else {
+			debug_printf("ALPN: Server accepted protocol '%.*s'\n", protocol.size, protocol.data);
+			if (!memcmp(protocol.data, "h2", 2))
+				tcp->protocol = MGET_PROTOCOL_HTTP_2_0;
+		}
+	}
+#endif
 
 	if (_config.print_info)
 		_print_info(session);

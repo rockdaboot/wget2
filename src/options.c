@@ -1355,6 +1355,7 @@ int init(int argc, const char *const *argv)
 	mget_ssl_set_config_string(MGET_SSL_KEY_FILE, config.private_key);
 	mget_ssl_set_config_string(MGET_SSL_CRL_FILE, config.crl_file);
 	mget_ssl_set_config_string(MGET_SSL_OCSP_CACHE, (const char *)config.ocsp_db);
+	mget_ssl_set_config_string(MGET_SSL_ALPN, "http/1.1,h2");
 
 	// convert host lists to lowercase
 	for (int it = 0; it < mget_vector_size(config.domains); it++) {
