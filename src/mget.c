@@ -2295,7 +2295,7 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 				const char *local_filename = downloader->job->local_filename;
 
 				if (config.continue_download)
-					mget_http_add_header_printf(req, "Range: bytes=%llu-",
+					mget_http_add_header_printf(req, "Range", "bytes=%llu-",
 						get_file_size(local_filename));
 
 				if (config.timestamping) {
@@ -2340,20 +2340,20 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 
 			mget_http_add_header(req, "Accept-Encoding", buf.data);
 
-			mget_http_add_header_line(req, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
+			mget_http_add_header(req, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 
 //			if (config.spider && !config.recursive)
 //				http_add_header_if_modified_since(time(NULL));
-//				http_add_header_line(req, "If-Modified-Since: Wed, 29 Aug 2012 00:00:00 GMT\r\n");
+//				http_add_header(req, "If-Modified-Since", "Wed, 29 Aug 2012 00:00:00 GMT");
 
 			if (config.user_agent)
 				mget_http_add_header(req, "User-Agent", config.user_agent);
 
 			if (config.keep_alive)
-				mget_http_add_header_line(req, "Connection: keep-alive\r\n");
+				mget_http_add_header(req, "Connection", "keep-alive");
 
 			if (!config.cache)
-				mget_http_add_header_line(req, "Pragma: no-cache\r\n");
+				mget_http_add_header(req, "Pragma", "no-cache");
 
 			if (config.referer)
 				mget_http_add_header(req, "Referer", config.referer);
@@ -2397,7 +2397,7 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 			}
 
 			if (part)
-				mget_http_add_header_printf(req, "Range: bytes=%llu-%llu",
+				mget_http_add_header_printf(req, "Range", "bytes=%llu-%llu",
 					(unsigned long long) part->position, (unsigned long long) part->position + part->length - 1);
 
 			// add cookies
@@ -2413,16 +2413,16 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 			if (config.post_data) {
 				size_t length = strlen(config.post_data);
 
-				mget_http_add_header_line(req, "Content-Type: application/x-www-form-urlencoded");
-				mget_http_add_header_printf(req, "Content-Length: %zu", length);
+				mget_http_add_header(req, "Content-Type", "application/x-www-form-urlencoded");
+				mget_http_add_header_printf(req, "Content-Length", "%zu", length);
 				rc = mget_http_send_request_with_body(conn, req, config.post_data, length);
 			} else if (config.post_file) {
 				size_t length;
 				char *data;
 
 				if ((data = mget_read_file(config.post_file, &length))) {
-					mget_http_add_header_line(req, "Content-Type: application/x-www-form-urlencoded");
-					mget_http_add_header_printf(req, "Content-Length: %zu", length);
+					mget_http_add_header(req, "Content-Type", "application/x-www-form-urlencoded");
+					mget_http_add_header_printf(req, "Content-Length", "%zu", length);
 					rc = mget_http_send_request_with_body(conn, req, data, length);
 					xfree(data);
 				} else

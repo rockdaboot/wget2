@@ -1301,7 +1301,7 @@ enum {
 // keep the request as simple as possible
 typedef struct {
 	mget_vector_t *
-		lines;
+		headers;
 	const char *
 		scheme;
 	mget_buffer_t
@@ -1439,13 +1439,13 @@ char *
 void
 	mget_http_add_param(mget_vector_t **params, mget_http_header_param_t *param) G_GNUC_MGET_NONNULL_ALL;
 void
-	mget_http_add_header_vprintf(mget_http_request_t *req, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(2,0) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_add_header_vprintf(mget_http_request_t *req, const char *name, const char *fmt, va_list args) G_GNUC_MGET_PRINTF_FORMAT(3,0) G_GNUC_MGET_NONNULL_ALL;
 void
-	mget_http_add_header_printf(mget_http_request_t *req, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(2,3) G_GNUC_MGET_NONNULL_ALL;
-void
-	mget_http_add_header_line(mget_http_request_t *req, const char *line) G_GNUC_MGET_NONNULL_ALL;
+	mget_http_add_header_printf(mget_http_request_t *req, const char *name, const char *fmt, ...) G_GNUC_MGET_PRINTF_FORMAT(3,4) G_GNUC_MGET_NONNULL_ALL;
 void
 	mget_http_add_header(mget_http_request_t *req, const char *name, const char *value) G_GNUC_MGET_NONNULL_ALL;
+void
+	mget_http_add_header_param(mget_http_request_t *req, mget_http_header_param_t *param) G_GNUC_MGET_NONNULL_ALL;
 void
 	mget_http_add_credentials(mget_http_request_t *req, mget_http_challenge_t *challenge, const char *username, const char *password) G_GNUC_MGET_NONNULL((1));
 void

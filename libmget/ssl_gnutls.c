@@ -441,11 +441,11 @@ static int send_ocsp_request(const char *server,
 	_generate_ocsp_data(cert, issuer, &body, nonce);
 
 	req = mget_http_create_request(iri, "POST");
-	mget_http_add_header_line(req, "Accept-Encoding: identity\r\n");
-	mget_http_add_header_line(req, "Accept: */*\r\n");
-	mget_http_add_header_line(req, "Content-Type: application/ocsp-request\r\n");
-	mget_http_add_header_printf(req, "Content-Length: %u", body.size);
-	mget_http_add_header_line(req, "Connection: close\r\n");
+	mget_http_add_header(req, "Accept-Encoding", "identity");
+	mget_http_add_header(req, "Accept", "*/*");
+	mget_http_add_header(req, "Content-Type", "application/ocsp-request");
+	mget_http_add_header_printf(req, "Content-Length", "%u", body.size);
+	mget_http_add_header(req, "Connection", "close");
 
 	mget_http_connection_t *conn;
 	if ((rc = mget_http_open(&conn, iri)) == MGET_E_SUCCESS) {

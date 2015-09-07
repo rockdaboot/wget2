@@ -74,8 +74,11 @@ mget_http_response_t *mget_http_get(int first_key, ...)
 			break;
 		case MGET_HTTP_HEADER_ADD:
 		{
-			const char *header = va_arg(args, const char *);
-			mget_vector_add_noalloc(headers, header);
+			mget_http_header_param_t param = {
+				.name = va_arg(args, const char *),
+				.value = va_arg(args, const char *)
+			};
+			mget_vector_add(headers, &param, sizeof(param));
 			break;
 		}
 		case MGET_HTTP_CONNECTION_PTR:
@@ -128,11 +131,11 @@ mget_http_response_t *mget_http_get(int first_key, ...)
 
 		// add HTTP headers
 		for (it = 0; it < mget_vector_size(headers); it++) {
-			mget_http_add_header_line(req, mget_vector_get(headers, it));
+			mget_http_add_header_param(req, mget_vector_get(headers, it));
 		}
 
 		if (challenges) {
-			// There might be more than one challenge, we could select the securest one.
+			// There might be more than one challenge, we could select the most secure one.
 			// For simplicity and testing we just take the first for now.
 			// the following adds an Authorization: HTTP header
 			mget_http_add_credentials(req, mget_vector_get(challenges, 0), http_username, http_password);
@@ -140,7 +143,7 @@ mget_http_response_t *mget_http_get(int first_key, ...)
 		}
 
 		// use keep-alive if you want to send more requests on the same connection
-		// http_add_header_line(req, "Connection: keep-alive\r\n");
+		// http_add_header(req, "Connection", "keep-alive");
 
 		// enrich the HTTP request with the uri-related cookies we have
 		if (cookie_db) {
@@ -242,7 +245,7 @@ out:
 
 	mget_http_free_challenges(&challenges);
 
-	mget_vector_clear_nofree(headers);
+//	mget_vector_clear_nofree(headers);
 	mget_vector_free(&headers);
 
 	if (bits.free_uri)

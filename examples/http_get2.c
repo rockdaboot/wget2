@@ -78,12 +78,12 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 	mget_http_add_header(req, "User-Agent", "TheUserAgent/0.5");
 
 	// libmget also supports gzip'ed or deflated response bodies
-	mget_http_add_header_line(req, "Accept-Encoding: gzip, deflate\r\n");
-	mget_http_add_header_line(req, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n");
-	mget_http_add_header_line(req, "Accept-Language: en-us,en;q=0.5\r\n");
+	mget_http_add_header(req, "Accept-Encoding", "gzip, deflate");
+	mget_http_add_header(req, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+	mget_http_add_header(req, "Accept-Language", "en-us,en;q=0.5");
 
 	// use keep-alive if you want to send more requests on the same connection
-	// http_add_header_line(req, "Connection: keep-alive\r\n");
+	// http_add_header(req, "Connection", "keep-alive");
 
 	// you need cookie support ? just #define COOKIE_SUPPORT or remove the #ifdef/#endif
 	// 'keep_session_cookies' should be 0 or 1

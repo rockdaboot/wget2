@@ -135,7 +135,7 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 	if (stream_url) {
 		resp = mget_http_get(
 			MGET_HTTP_URL, stream_url,
-			MGET_HTTP_HEADER_ADD, "Icy-Metadata: 1", // we want in-stream title/actor information
+			MGET_HTTP_HEADER_ADD, "Icy-Metadata", "1", // we want in-stream title/actor information
 			MGET_HTTP_HEADER_FUNC, header_callback, // callback used to parse special headers like 'Icy-Name'
 			// MGET_HTTP_HEADER_SAVEAS_STREAM, stdout,
 			MGET_HTTP_BODY_SAVEAS_FUNC, stream_callback, // callback to cut title info out of audio stream

@@ -1297,8 +1297,7 @@ void mget_http_free_request(mget_http_request_t **req)
 	if (req && *req) {
 		mget_buffer_deinit(&(*req)->esc_resource);
 		mget_buffer_deinit(&(*req)->esc_host);
-		mget_vector_free(&(*req)->lines);
-		(*req)->lines = NULL;
+		mget_vector_free(&(*req)->headers);
 		xfree(*req);
 	}
 }
@@ -1314,33 +1313,49 @@ mget_http_request_t *mget_http_create_request(const mget_iri_t *iri, const char 
 	strlcpy(req->method, method, sizeof(req->method));
 	mget_iri_get_escaped_resource(iri, &req->esc_resource);
 	mget_iri_get_escaped_host(iri, &req->esc_host);
-	req->lines = mget_vector_create(8, 8, NULL);
+	req->headers = mget_vector_create(8, 8, NULL);
+	mget_vector_set_destructor(req->headers, (void(*)(void *))mget_http_free_param);
 
 	return req;
 }
 
-void mget_http_add_header_vprintf(mget_http_request_t *req, const char *fmt, va_list args)
+void mget_http_add_header_vprintf(mget_http_request_t *req, const char *name, const char *fmt, va_list args)
 {
-	mget_vector_add_vprintf(req->lines, fmt, args);
+	mget_http_header_param_t param;
+
+	if (vasprintf((char **) &param.value, fmt, args) != -1) {
+		param.name = strdup(name);
+		mget_vector_add(req->headers, &param, sizeof(param));
+	}
 }
 
-void mget_http_add_header_printf(mget_http_request_t *req, const char *fmt, ...)
+void mget_http_add_header_printf(mget_http_request_t *req, const char *name, const char *fmt, ...)
 {
 	va_list args;
 
 	va_start(args, fmt);
-	mget_http_add_header_vprintf(req, fmt, args);
+	mget_http_add_header_vprintf(req, name, fmt, args);
 	va_end(args);
-}
-
-void mget_http_add_header_line(mget_http_request_t *req, const char *line)
-{
-	mget_vector_add_str(req->lines, line);
 }
 
 void mget_http_add_header(mget_http_request_t *req, const char *name, const char *value)
 {
-	mget_vector_add_printf(req->lines, "%s: %s", name, value);
+	mget_http_header_param_t param = {
+		.name = strdup(name),
+		.value = strdup(value)
+	};
+
+	mget_vector_add(req->headers, &param, sizeof(param));
+}
+
+void mget_http_add_header_param(mget_http_request_t *req, mget_http_header_param_t *param)
+{
+	mget_http_header_param_t _param = {
+		.name = strdup(param->name),
+		.value = strdup(param->value)
+	};
+
+	mget_vector_add(req->headers, &_param, sizeof(_param));
 }
 
 void mget_http_add_credentials(mget_http_request_t *req, mget_http_challenge_t *challenge, const char *username, const char *password)
@@ -1356,7 +1371,7 @@ void mget_http_add_credentials(mget_http_request_t *req, mget_http_challenge_t *
 
 	if (!mget_strcasecmp_ascii(challenge->auth_scheme, "basic")) {
 		const char *encoded = mget_base64_encode_printf_alloc("%s:%s", username, password);
-		mget_http_add_header_printf(req, "Authorization: Basic %s", encoded);
+		mget_http_add_header_printf(req, "Authorization", "Basic %s", encoded);
 		xfree(encoded);
 	}
 	else if (!mget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
@@ -1415,8 +1430,7 @@ void mget_http_add_credentials(mget_http_request_t *req, mget_http_challenge_t *
 		mget_buffer_init(&buf, NULL, 256);
 
 		mget_buffer_printf2(&buf,
-			"Authorization: Digest "\
-			"username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/%s\", response=\"%s\"",
+			"Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/%s\", response=\"%s\"",
 			username, realm, nonce, req->esc_resource.data, response_digest);
 
 		if (!mget_strcmp(qop,"auth"))
@@ -1428,7 +1442,7 @@ void mget_http_add_credentials(mget_http_request_t *req, mget_http_challenge_t *
 		if (algorithm)
 			mget_buffer_printf_append2(&buf, ", algorithm=%s", algorithm);
 
-		mget_http_add_header_line(req, buf.data);
+		mget_http_add_header(req, "Authorization", buf.data);
 
 		mget_buffer_deinit(&buf);
 	}
@@ -1612,8 +1626,13 @@ ssize_t mget_http_request_to_buffer(mget_http_request_t *req, mget_buffer_t *buf
 	mget_buffer_bufcat(buf, &req->esc_host);
 	mget_buffer_memcat(buf, "\r\n", 2);
 
-	for (int it = 0; it < mget_vector_size(req->lines); it++) {
-		mget_buffer_strcat(buf, mget_vector_get(req->lines, it));
+	for (int it = 0; it < mget_vector_size(req->headers); it++) {
+		mget_http_header_param_t *param = mget_vector_get(req->headers, it);
+
+		mget_buffer_strcat(buf, param->name);
+		mget_buffer_memcat(buf, ": ", 2);
+		mget_buffer_strcat(buf, param->value);
+
 		if (buf->data[buf->length - 1] != '\n') {
 			mget_buffer_memcat(buf, "\r\n", 2);
 		}
