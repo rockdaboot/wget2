@@ -2374,7 +2374,7 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 			}
 
 			if (challenges) {
-				// There might be more than one challenge, we could select the securest one.
+				// There might be more than one challenge, we could select the most secure one.
 				// Prefer 'Digest' over 'Basic'
 				// the following adds an Authorization: HTTP header
 				mget_http_challenge_t *challenge, *selected_challenge = NULL;
