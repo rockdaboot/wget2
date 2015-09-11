@@ -142,7 +142,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 					ctx->found_content_type = 1;
 				}
 				else if (!mget_strcasecmp_ascii(attr, "charset")) {
-					res->encoding = mget_memdup(val, len);
+					res->encoding = mget_strmemdup(val, len);
 				}
 			}
 
