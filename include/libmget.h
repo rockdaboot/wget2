@@ -40,6 +40,9 @@
 #ifdef HAVE_INTTYPES_H
 #	include <inttypes.h>
 #endif
+#ifdef WITH_LIBNGHTTP2
+	#include <nghttp2/nghttp2.h>
+#endif
 
 // transitional defines, remove when migration to libmget is done
 #define xmalloc mget_malloc
@@ -398,6 +401,10 @@ void *
 	mget_memdup(const void *s, size_t n) G_GNUC_MGET_ALLOC_SIZE(2);
 char *
 	mget_strdup(const char *s) G_GNUC_MGET_MALLOC;
+char *
+	mget_strmemdup(const void *s, size_t n) G_GNUC_MGET_ALLOC_SIZE(2);
+void
+	mget_strmemcpy(char *s, size_t ssize, const void *m, size_t n) G_GNUC_MGET_NONNULL_ALL;
 
 /*
  * Base64 routines
@@ -1304,10 +1311,14 @@ typedef struct {
 		headers;
 	const char *
 		scheme;
+	void *
+		nghttp2_context; // needed for nghttp2 callbacks
 	mget_buffer_t
 		esc_resource; // URI escaped resource
 	mget_buffer_t
 		esc_host; // URI escaped host
+	int32_t
+		stream_id; // HTTP2 stream id
 	char
 		esc_resource_buf[256];
 	char
@@ -1383,6 +1394,10 @@ typedef struct {
 		scheme;
 	mget_buffer_t *
 		buf;
+#ifdef WITH_LIBNGHTTP2
+	nghttp2_session *
+		http2_session;
+#endif
 	char
 		protocol; // MGET_PROTOCOL_HTTP_1_1 or MGET_PROTOCOL_HTTP_2_0
 	unsigned

@@ -49,6 +49,7 @@ Mget has already many features that go beyond what Wget provides.<br>
 
 An incomplete list of implemented features:
 
+- SPDY / HTTP2.0 basic support via nghttp2/GnuTLS ALPN (>= 1.3.0)
 - OCSP stapling + OCSP server querying as a fallback (experimental, needs GnuTLS >= 3.3.11)
 - Use [libpsl](https://github.com/rockdaboot/libpsl) for cookie domain checking (using Public Suffix List)
 - Support link conversion (-k/--convert-links and -K/--backup-converted)
@@ -114,7 +115,6 @@ Some ideas of what could be done next (but contact me before you start bigger ch
 - read credentials from secure wallets (e.g. kwallet, firefox, http://sourceforge.net/projects/passwordsafe/)
   [Chromium HSTS domain list](http://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json)
 - HTTP request pipelining
-- SPDY / HTTP2.0 protocol
 - respect data-urls
 - Streaming (.m3u, etc. formats)
 - ftp support
@@ -142,6 +142,7 @@ The following packages are needed to build Mget:
 * libidn2 >= 0.9 + libunistring >= 0.9.3 (libidn >= 1.25 if you don't have libidn2)
 * flex >= 2.5.35
 * libpsl >= 0.5.0
+* libnghttp2 >= 1.3.0 (optional, if you want HTTP/2 support)
 
 The versions are recommended, but older versions may also work.
 

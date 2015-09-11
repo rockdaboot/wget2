@@ -2241,7 +2241,7 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 //	int max_redirect = 3;
 	mget_buffer_t buf;
 	char sbuf[256];
-	int rc;
+	int rc, tries = 0;
 
 	downloader->final_error = 0;
 
@@ -2254,7 +2254,7 @@ mget_http_response_t *http_get(mget_iri_t *iri, PART *part, DOWNLOADER *download
 	} else
 		iri_scheme = NULL;
 
-	while (iri) {
+	while (iri && ++tries <= config.tries) {
 		conn = downloader->conn;
 
 		if (conn && !mget_strcmp(conn->esc_host, iri->host) &&

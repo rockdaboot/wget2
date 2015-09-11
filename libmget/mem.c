@@ -46,3 +46,27 @@ void *mget_memdup(const void *s, size_t n)
 {
 	return s ? memcpy(xmalloc(n), s, n) : NULL;
 }
+
+// convert memory chunk into allocated string
+
+char *mget_strmemdup(const void *s, size_t n)
+{
+	if (!s)
+		return NULL;
+
+	char *ret = memcpy(xmalloc(n + 1), s, n);
+	ret[n] = 0;
+
+	return ret;
+}
+
+// convert memory chunk to string
+
+void mget_strmemcpy(char *s, size_t ssize, const void *m, size_t n)
+{
+	if (n >= ssize)
+		n = ssize - 1; // truncate
+
+	memcpy(s, m, n);
+	s[n] = 0;
+}
