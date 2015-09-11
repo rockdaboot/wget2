@@ -1469,6 +1469,7 @@ void http_set_config_int(int key, int value)
 }
 */
 
+#ifdef WITH_LIBNGHTTP2
 static ssize_t _send_callback(nghttp2_session *session G_GNUC_MGET_UNUSED,
 	const uint8_t *data, size_t length, int flags G_GNUC_MGET_UNUSED, void *user_data)
 {
@@ -1741,6 +1742,7 @@ static void setup_nghttp2_callbacks(nghttp2_session_callbacks *callbacks)
 	nghttp2_session_callbacks_set_on_data_chunk_recv_callback(callbacks, _on_data_chunk_recv_callback);
 	nghttp2_session_callbacks_set_on_header_callback(callbacks, _on_header_callback);
 }
+#endif
 
 int mget_http_open(mget_http_connection_t **_conn, const mget_iri_t *iri)
 {
@@ -1795,6 +1797,7 @@ int mget_http_open(mget_http_connection_t **_conn, const mget_iri_t *iri)
 		conn->port = iri->resolv_port;
 		conn->scheme = iri->scheme;
 		conn->buf = mget_buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
+#ifdef WITH_LIBNGHTTP2
 		if ((conn->protocol = mget_tcp_get_protocol(conn->tcp)) == MGET_PROTOCOL_HTTP_2_0) {
 			nghttp2_session_callbacks *callbacks;
 
@@ -1820,6 +1823,7 @@ int mget_http_open(mget_http_connection_t **_conn, const mget_iri_t *iri)
 				return MGET_E_INVALID;
 			}
 		}
+#endif
 	} else {
 		mget_http_close(_conn);
 	}
@@ -1831,12 +1835,14 @@ void mget_http_close(mget_http_connection_t **conn)
 {
 	if (*conn) {
 		debug_printf("closing connection\n");
+#ifdef WITH_LIBNGHTTP2
 		if ((*conn)->http2_session) {
 			int rc = nghttp2_session_terminate_session((*conn)->http2_session, NGHTTP2_NO_ERROR);
 			if (rc)
 				error_printf(_("Failed to terminate HTTP2 session (%d)\n"), rc);
 			nghttp2_session_del((*conn)->http2_session);
 		}
+#endif
 		mget_tcp_deinit(&(*conn)->tcp);
 //		if (!mget_tcp_get_dns_caching())
 //			freeaddrinfo((*conn)->addrinfo);
@@ -1870,6 +1876,7 @@ static int  G_GNUC_MGET_NONNULL((1,2)) _http_send_request(mget_http_connection_t
 {
 	ssize_t nbytes;
 
+#ifdef WITH_LIBNGHTTP2
 	if (mget_tcp_get_protocol(conn->tcp) == MGET_PROTOCOL_HTTP_2_0) {
 		int n = 4 + mget_vector_size(req->headers);
 		nghttp2_nv nvs[n], *nvp;
@@ -1905,26 +1912,27 @@ static int  G_GNUC_MGET_NONNULL((1,2)) _http_send_request(mget_http_connection_t
 		debug_printf("HTTP2 stream id %d\n", req->stream_id);
 
 		return 0;
-	} else {
-		if ((nbytes = mget_http_request_to_buffer(req, conn->buf)) < 0) {
-			error_printf(_("Failed to create request buffer\n"));
-			return -1;
-		}
-
-		if (body && length) {
-			nbytes = mget_buffer_memcat(conn->buf, body, length);
-		}
-
-		if (mget_tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
-			// An error will be written by the mget_tcp_write function.
-			// error_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
-			return -1;
-		}
-
-		debug_printf("# sent %zd bytes:\n%s", nbytes, conn->buf->data);
-
-		return 0;
 	}
+#endif
+
+	if ((nbytes = mget_http_request_to_buffer(req, conn->buf)) < 0) {
+		error_printf(_("Failed to create request buffer\n"));
+		return -1;
+	}
+
+	if (body && length) {
+		nbytes = mget_buffer_memcat(conn->buf, body, length);
+	}
+
+	if (mget_tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
+		// An error will be written by the mget_tcp_write function.
+		// error_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
+		return -1;
+	}
+
+	debug_printf("# sent %zd bytes:\n%s", nbytes, conn->buf->data);
+
+	return 0;
 }
 
 int mget_http_send_request(mget_http_connection_t *conn, mget_http_request_t *req)
@@ -1997,6 +2005,7 @@ mget_http_response_t *mget_http_get_response_cb(
 	mget_http_response_t *resp = NULL;
 	mget_decompressor_t *dc = NULL;
 
+#ifdef WITH_LIBNGHTTP2
 	if (conn->protocol == MGET_PROTOCOL_HTTP_2_0) {
 		resp = xcalloc(1, sizeof(mget_http_response_t));
 		resp->major = 2;
@@ -2034,6 +2043,7 @@ mget_http_response_t *mget_http_get_response_cb(
 
 		return resp;
 	}
+#endif
 
 	// reuse generic connection buffer
 	buf = conn->buf->data;
