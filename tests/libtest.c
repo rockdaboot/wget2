@@ -483,10 +483,12 @@ void mget_test_start_server(int first_key, ...)
 			break;
 		case MGET_TEST_FTP_SERVER_HELLO:
 			server_hello = va_arg(args, const char *);
+			break;
 		case MGET_TEST_FTP_IO_ORDERED:
 			ios_ordered = 1;
 			ios = va_arg(args, mget_test_ftp_io_t *);
 			nios = va_arg(args, size_t);
+			break;
 		case MGET_TEST_FTP_IO_UNORDERED:
 			ios_ordered = 0;
 			ios = va_arg(args, mget_test_ftp_io_t *);
