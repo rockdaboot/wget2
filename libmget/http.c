@@ -1685,6 +1685,8 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_MGET_UNUSED,
 					}
 					break;
 				}
+
+				xfree(s);
 			}
 		}
 	}
