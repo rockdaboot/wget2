@@ -859,7 +859,7 @@ static void test_cookies(void)
 			0, 1, 0, 1, 0, 0,
 			0, 0
 		},
-		{	// illegal cookie
+		{	// illegal cookie (.com against .org)
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/; domain=.example.org",
 			"ID", "65=abcd", "example.org", "/", "Tue, 07 May 2013 07:48:53 GMT",
@@ -871,14 +871,14 @@ static void test_cookies(void)
 			"www.example.com",
 			"ID=65=abcd; expires=Mon, 29-Feb-2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
 			"ID", "65=abcd", "com", "/", "Mon, 29 Feb 2016 07:48:54 GMT",
-			1, 0, 1, 0, 1, 1,
+			1, 1, 1, 0, 1, 1,
 			0, -1
 		},
-		{	// supercookie, accepted by normalization  (rule '*.ar') but not by mget_cookie_check_psl())
+		{	// supercookie, accepted by normalization  (rule 'sa.gov.au') but not by mget_cookie_check_psl())
 			"www.sa.gov.au",
 			"ID=65=abcd; expires=Tue, 29-Feb-2000 07:48:55 GMT; path=/; domain=.sa.gov.au",
 			"ID", "65=abcd", "sa.gov.au", "/", "Tue, 29 Feb 2000 07:48:55 GMT",
-			1, 0, 1, 0, 0, 0,
+			1, 1, 1, 0, 0, 0,
 			0, -1
 		},
 #endif
@@ -914,9 +914,9 @@ static void test_cookies(void)
 			if ((result_psl = mget_cookie_check_psl(cookies, &cookie)) != t->psl_result) {
 				failed++;
 				info_printf("Failed [%u]: PSL check(%s) -> %d (expected %d)\n", it, t->set_cookie, result_psl, t->psl_result);
+				mget_cookie_deinit(&cookie);
+				goto next;
 			}
-			mget_cookie_deinit(&cookie);
-			goto next;
 		}
 
 		if (cookie.expires) {
