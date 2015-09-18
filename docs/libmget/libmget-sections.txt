@@ -41,5 +41,6 @@ mget_fdgetline
 mget_getline
 mget_ready_2_read
 mget_ready_2_write
+mget_ready_2_transfer
 mget_read_file
 </SECTION>

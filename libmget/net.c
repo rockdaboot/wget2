@@ -417,6 +417,11 @@ void mget_tcp_set_timeout(mget_tcp_t *tcp, int timeout)
 	(tcp ? tcp : &_global_tcp)->timeout = timeout;
 }
 
+int mget_tcp_get_timeout(mget_tcp_t *tcp)
+{
+	return (tcp ? tcp : &_global_tcp)->timeout;
+}
+
 void mget_tcp_set_bind_address(mget_tcp_t *tcp, const char *bind_address)
 {
 	if (!tcp)
@@ -539,6 +544,11 @@ static void _set_async(int fd)
 #endif
 }
 
+int mget_tcp_ready_2_transfer(mget_tcp_t *tcp, int flags)
+{
+	return mget_ready_2_transfer(tcp->sockfd, tcp->timeout, flags);
+}
+
 int mget_tcp_connect(mget_tcp_t *tcp, const char *host, const char *port)
 {
 	struct addrinfo *ai;
@@ -619,7 +629,7 @@ int mget_tcp_connect(mget_tcp_t *tcp, const char *host, const char *port)
 							mget_tcp_close(tcp);
 							break; /* stop here - the server cert couldn't be validated */
 						}
-						
+
 						// do not free tcp->addrinfo when calling mget_tcp_close()
 						struct addrinfo *ai_tmp = tcp->addrinfo;
 						tcp->addrinfo = NULL;

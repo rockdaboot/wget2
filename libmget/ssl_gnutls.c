@@ -1389,30 +1389,34 @@ void mget_ssl_server_close(void **session)
 ssize_t mget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 {
 	ssize_t nbytes;
-	int rc;
 
-	for (;;) {
-		if (gnutls_record_check_pending(session) <= 0 &&
-			(rc = mget_ready_2_read((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
-			return rc;
+	gnutls_record_set_timeout(session, timeout);
 
-		nbytes=gnutls_record_recv(session, buf, count);
-
-		if (nbytes >= 0 || nbytes != GNUTLS_E_AGAIN)
-			break;
+	if ((nbytes = gnutls_record_recv(session, buf, count)) < 0) {
+		if (nbytes == GNUTLS_E_AGAIN)
+			return 0; // indicate timeout
+		return -1;
 	}
 
-	return nbytes < -1 ? -1 : nbytes;
+	return nbytes;
 }
 
 ssize_t mget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout)
 {
+	ssize_t nbytes;
 	int rc;
 
 	if ((rc = mget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
 		return rc;
 
-	return gnutls_record_send(session, buf, count);
+	if ((nbytes = gnutls_record_send(session, buf, count)) < 0) {
+		if (nbytes == GNUTLS_E_AGAIN)
+			return 0; // indicate timeout
+
+		return -1;
+	}
+
+	return nbytes;
 }
 
 #else // WITH_GNUTLS

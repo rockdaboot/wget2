@@ -215,6 +215,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --ocsp-stapling     Use OCSP stapling to verify the server's certificate. (default: on)\n"
 		"      --ocsp              Use OCSP server access to verify server's certificate. (default: on)\n"
 		"      --ocsp-file         Set file for OCSP chaching. (default: .mget_ocsp)\n"
+		"      --http2             Use HTTP/2 protocol if possible. (default: on)\n"
 		"\n");
 	puts(
 		"Directory options:\n"
@@ -602,6 +603,9 @@ struct config config = {
 	.tries = 20,
 	.hsts = 1,
 	.hsts_file = ".mget_hsts",
+#if defined WITH_LIBNGHTTP2
+	.http2 = 1,
+#endif
 	.ocsp = 1,
 	.ocsp_stapling = 1,
 	.ocsp_file = ".mget_ocsp"
@@ -664,6 +668,7 @@ static const struct option options[] = {
 	{ "http-password", &config.http_password, parse_string, 1, 0 },
 	{ "http-proxy", &config.http_proxy, parse_string, 1, 0 },
 	{ "http-user", &config.http_username, parse_string, 1, 0 },
+	{ "http2", &config.http2, parse_bool, 0, 0 },
 	{ "https-only", &config.https_only, parse_bool, 0, 0 },
 	{ "https-proxy", &config.https_proxy, parse_string, 1, 0 },
 	{ "ignore-case", &config.ignore_case, parse_bool, 0, 0 },
@@ -1246,6 +1251,12 @@ int init(int argc, const char *const *argv)
 	" -bzip2"
 #endif
 
+#if defined WITH_LIBNGHTTP2
+	" +http2"
+#else
+	" -http2"
+#endif
+
 			"\n");
 	}
 
@@ -1355,7 +1366,8 @@ int init(int argc, const char *const *argv)
 	mget_ssl_set_config_string(MGET_SSL_KEY_FILE, config.private_key);
 	mget_ssl_set_config_string(MGET_SSL_CRL_FILE, config.crl_file);
 	mget_ssl_set_config_string(MGET_SSL_OCSP_CACHE, (const char *)config.ocsp_db);
-	mget_ssl_set_config_string(MGET_SSL_ALPN, "h2,h2-16,h2-14,spdy/3.1,http/1.1");
+	if (config.http2)
+		mget_ssl_set_config_string(MGET_SSL_ALPN, "h2,h2-16,h2-14,spdy/3.1,http/1.1");
 
 	// convert host lists to lowercase
 	for (int it = 0; it < mget_vector_size(config.domains); it++) {

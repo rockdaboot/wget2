@@ -1097,7 +1097,7 @@ void *downloader_thread(void *p)
 
 				resp = http_get(job->iri, NULL, downloader, "HEAD");
 				if (resp)
-					print_status(downloader, "%d %s\n", resp->code, resp->reason);
+					print_status(downloader, "HTTP response %d %s\n", resp->code, resp->reason);
 				else if (downloader->final_error)
 					goto ready;
 			}
@@ -1189,7 +1189,7 @@ void *downloader_thread(void *p)
 
 			resp = http_get(job->iri, NULL, downloader, NULL);
 			if (resp)
-				print_status(downloader, "%d %s\n", resp->code, resp->reason);
+				print_status(downloader, "HTTP response %d %s\n", resp->code, resp->reason);
 			else if (downloader->final_error)
 				goto ready;
 		}

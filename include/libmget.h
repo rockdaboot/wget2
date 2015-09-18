@@ -264,6 +264,8 @@ int
 int
 	mget_ready_2_write(int fd, int timeout);
 int
+	mget_ready_2_transfer(int fd, int timeout, short mode);
+int
 	mget_strcmp(const char *s1, const char *s2) G_GNUC_MGET_PURE;
 int
 	mget_strcasecmp(const char *s1, const char *s2) G_GNUC_MGET_PURE;
@@ -1144,6 +1146,8 @@ void
 	mget_tcp_close(mget_tcp_t *tcp);
 void
 	mget_tcp_set_timeout(mget_tcp_t *tcp, int timeout);
+int
+	mget_tcp_get_timeout(mget_tcp_t *tcp) G_GNUC_MGET_PURE;
 void
 	mget_tcp_set_connect_timeout(mget_tcp_t *tcp, int timeout);
 void
@@ -1204,6 +1208,8 @@ ssize_t
 	mget_tcp_write(mget_tcp_t *tcp, const char *buf, size_t count) G_GNUC_MGET_NONNULL_ALL;
 ssize_t
 	mget_tcp_read(mget_tcp_t *tcp, char *buf, size_t count) G_GNUC_MGET_NONNULL_ALL;
+int
+	mget_tcp_ready_2_transfer(mget_tcp_t *tcp, int flags) G_GNUC_MGET_NONNULL_ALL;
 
 /*
  * SSL routines

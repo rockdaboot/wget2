@@ -357,7 +357,7 @@ AC_FUNC_ALLOCA
 AC_FUNC_FORK
 #AC_FUNC_MALLOC
 AC_FUNC_MMAP
-AC_FUNC_REALLOC
+#AC_FUNC_REALLOC
 AC_FUNC_FNMATCH
 AC_CHECK_FUNCS([\
  clock_gettime dprintf dup2 futimens gettimeofday localtime_r memchr\

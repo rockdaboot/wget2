@@ -1476,13 +1476,13 @@ static ssize_t _send_callback(nghttp2_session *session G_GNUC_MGET_UNUSED,
 	mget_http_connection_t *conn = (mget_http_connection_t *)user_data;
 	int rc;
 
-	debug_printf("writing... %zd\n", length);
+	// debug_printf("writing... %zd\n", length);
 	if ((rc = mget_tcp_write(conn->tcp, (const char *)data, length)) <= 0) {
 		// An error will be written by the mget_tcp_write function.
-		debug_printf("write rc %d, errno=%d\n", rc, errno);
+		// debug_printf("write rc %d, errno=%d\n", rc, errno);
 		return rc ? NGHTTP2_ERR_CALLBACK_FAILURE : NGHTTP2_ERR_WOULDBLOCK;
 	}
-	debug_printf("write rc %d\n",rc);
+	// debug_printf("write rc %d\n",rc);
 
 	return rc;
 }
@@ -1493,57 +1493,59 @@ static ssize_t _recv_callback(nghttp2_session *session G_GNUC_MGET_UNUSED,
 	mget_http_connection_t *conn = (mget_http_connection_t *)user_data;
 	int rc;
 
-	debug_printf("reading... %zd\n", length);
+	// debug_printf("reading... %zd\n", length);
 	if ((rc = mget_tcp_read(conn->tcp, (char *)buf, length)) <= 0) {
 		//  0 = timeout resp. blocking
 		// -1 = failure
-		debug_printf("read rc %d, errno=%d\n", rc, errno);
+		// debug_printf("read rc %d, errno=%d\n", rc, errno);
 		return rc ? NGHTTP2_ERR_CALLBACK_FAILURE : NGHTTP2_ERR_WOULDBLOCK;
 	}
-	debug_printf("read rc %d\n",rc);
+	// debug_printf("read rc %d\n",rc);
 
 	return rc;
 }
 
-static int _on_frame_send_callback(nghttp2_session *session,
+static void _print_frame_type(int type, const char tag)
+{
+	static const char *name[] = {
+		[NGHTTP2_DATA] = "DATA",
+		[NGHTTP2_HEADERS] = "HEADERS",
+		[NGHTTP2_PRIORITY] = "PRIORITY",
+		[NGHTTP2_RST_STREAM] = "RST_STREAM",
+		[NGHTTP2_SETTINGS] = "SETTINGS",
+		[NGHTTP2_PUSH_PROMISE] = "PUSH_PROMISE",
+		[NGHTTP2_PING] = "PING",
+		[NGHTTP2_GOAWAY] = "GOAWAY",
+		[NGHTTP2_WINDOW_UPDATE] = "WINDOW_UPDATE",
+		[NGHTTP2_CONTINUATION] = "CONTINUATION"
+	};
+
+	if ((unsigned) type < countof(name))
+		debug_printf("[FRAME] %c %s\n", tag, name[type]);
+	else
+		debug_printf("[FRAME] %c Unknown type %d\n", tag, type);
+}
+
+static int _on_frame_send_callback(nghttp2_session *session G_GNUC_MGET_UNUSED,
 	const nghttp2_frame *frame, void *user_data G_GNUC_MGET_UNUSED)
 {
-	switch (frame->hd.type) {
-	case NGHTTP2_HEADERS:
-		if (nghttp2_session_get_stream_user_data(session, frame->hd.stream_id)) {
-			const nghttp2_nv *nva = frame->headers.nva;
-			debug_printf("[INFO] C ----------------------------> S (HEADERS)\n");
-			for (unsigned i = 0; i < frame->headers.nvlen; i++)
-				debug_printf("%.*s: %.*s\n", (int)nva[i].namelen, nva[i].name, (int)nva[i].valuelen, nva[i].value);
-		}
-		break;
-	case NGHTTP2_RST_STREAM:
-		debug_printf("[INFO] C ----------------------------> S (RST_STREAM)\n");
-		break;
-	case NGHTTP2_GOAWAY:
-		debug_printf("[INFO] C ----------------------------> S (GOAWAY)\n");
-		break;
+	_print_frame_type(frame->hd.type, '>');
+
+	if (frame->hd.type == NGHTTP2_HEADERS) {
+		const nghttp2_nv *nva = frame->headers.nva;
+
+		for (unsigned i = 0; i < frame->headers.nvlen; i++)
+			debug_printf("[FRAME] > %.*s: %.*s\n", (int)nva[i].namelen, nva[i].name, (int)nva[i].valuelen, nva[i].value);
 	}
+
 	return 0;
 }
 
 static int _on_frame_recv_callback(nghttp2_session *session G_GNUC_MGET_UNUSED,
 	const nghttp2_frame *frame, void *user_data G_GNUC_MGET_UNUSED)
 {
-	switch (frame->hd.type) {
-	case NGHTTP2_HEADERS:
-		debug_printf("[INFO] HEADERS cat %d\n", frame->headers.cat);
-		break;
-	case NGHTTP2_RST_STREAM:
-		debug_printf("[INFO] C <---------------------------- S (RST_STREAM)\n");
-		break;
-	case NGHTTP2_GOAWAY:
-		debug_printf("[INFO] C <---------------------------- S (GOAWAY)\n");
-		break;
-	default:
-		debug_printf("[INFO] C <---------------------------- S (hd.type %d)\n", frame->hd.type);
-		break;
-	}
+	_print_frame_type(frame->hd.type, '<');
+
 	return 0;
 }
 
@@ -2006,6 +2008,7 @@ mget_http_response_t *mget_http_get_response_cb(
 	char *buf, *p = NULL;
 	mget_http_response_t *resp = NULL;
 	mget_decompressor_t *dc = NULL;
+	int ioflags;
 
 #ifdef WITH_LIBNGHTTP2
 	if (conn->protocol == MGET_PROTOCOL_HTTP_2_0) {
@@ -2017,9 +2020,30 @@ mget_http_response_t *mget_http_get_response_cb(
 		struct _body_callback_context ctx = { .resp = resp, .context = context, .body_callback = body_callback };
 		req->nghttp2_context = &ctx;
 
-		mget_tcp_set_timeout(conn->tcp, 1); // 1ms timeout
+		int timeout = mget_tcp_get_timeout(conn->tcp);
+
 		for (int rc = 0; rc == 0 && !ctx.done;) {
-			debug_printf("0 response status %d done %d\n", resp->code, ctx.done);
+			ioflags = 0;
+			if (nghttp2_session_want_write(conn->http2_session))
+				ioflags |= MGET_IO_WRITABLE;
+			if (nghttp2_session_want_read(conn->http2_session))
+				ioflags |= MGET_IO_READABLE;
+
+			if (ioflags)
+				ioflags = mget_tcp_ready_2_transfer(conn->tcp, ioflags);
+			// debug_printf("ioflags=%d timeout=%d\n",ioflags,mget_tcp_get_timeout(conn->tcp));
+			if (ioflags <= 0) break; // error or timeout
+
+			mget_tcp_set_timeout(conn->tcp, 0); // 0 = immediate
+			rc = 0;
+			if (ioflags & MGET_IO_WRITABLE) {
+				rc = nghttp2_session_send(conn->http2_session);
+			}
+			if (!rc && (ioflags & MGET_IO_READABLE))
+				rc = nghttp2_session_recv(conn->http2_session);
+			mget_tcp_set_timeout(conn->tcp, timeout); // restore old timeout
+
+/*
 			while (nghttp2_session_want_write(conn->http2_session)) {
 				rc = nghttp2_session_send(conn->http2_session);
 			}
@@ -2027,9 +2051,7 @@ mget_http_response_t *mget_http_get_response_cb(
 			if (nghttp2_session_want_read(conn->http2_session)) {
 				rc = nghttp2_session_recv(conn->http2_session);
 			}
-			debug_printf("2 response status %d done %d\n", resp->code, ctx.done);
-			if (rc)
-				debug_printf("loop rc = %d\n", rc);
+*/
 		}
 
 		debug_printf("response status %d\n", resp->code);

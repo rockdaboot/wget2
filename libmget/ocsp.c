@@ -333,7 +333,7 @@ static int _ocsp_db_load(mget_ocsp_db_t *ocsp_db, const char *fname, int load_ho
 
 		nentries = mget_hashmap_size(load_hosts ? ocsp_db->hosts : ocsp_db->fingerprints);
 
-		debug_printf(_("have %d OCSP %s%s in cache\n"), nentries, load_hosts ? "host" : "fingerprint", nentries !=1 ? "ies" : "y");
+		debug_printf(_("have %d OCSP %s%s in cache\n"), nentries, load_hosts ? "host" : "fingerprint", nentries !=1 ? "s" : "");
 	} else if (errno != ENOENT)
 		error_printf(_("Failed to open OCSP file '%s' (%d)\n"), fname, errno);
 

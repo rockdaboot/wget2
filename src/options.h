@@ -112,6 +112,7 @@ struct config {
 	struct mget_cookie_db_st
 		*cookie_db;
 	char
+		http2,
 		ocsp_stapling,
 		ocsp,
 		mirror,

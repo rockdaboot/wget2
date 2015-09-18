@@ -206,34 +206,51 @@ ssize_t mget_getline(char **buf, size_t *bufsize, FILE *fp)
 	return -1;
 }
 
+/**
+ * mget_ready_2_transfer:
+ * @fd: File descriptor to wait for.
+ * @timeout: Max. duration in milliseconds to wait.
+ * A value of 0 means the function returns immediately.
+ * A value of -1 means infinite timeout.
+ *
+ * Wait for a file descriptor to become ready to read or write.
+ *
+ * Returns:
+ * -1 on error.
+ * 0 on timeout. The file descriptor is not ready for reading nor writing.
+ * >0 The file descriptor is ready for reading or writing. Check for
+ * the bitwise or'ing of MGET_IO_WRITABLE and MGET_IO_WRITABLE.
+ *
+ */
 #ifdef POLLIN
-static int _ready_2_transfer(int fd, int timeout, short mode)
+int mget_ready_2_transfer(int fd, int timeout, short mode)
 {
-	// 0: no timeout / immediate
-	// -1: INFINITE timeout
-	// >0: number of milliseconds to wait
-	if (timeout) {
-		int rc;
+	struct pollfd pollfd;
+	int rc;
 
-		if (mode == MGET_IO_READABLE)
-			mode = POLLIN;
-		else
-			mode = POLLOUT;
+	pollfd.fd = fd;
+	pollfd.events = 0;
+	pollfd.revents = 0;
 
-		// wait for socket to be ready to read
-		struct pollfd pollfd[1] = { { fd, mode, 0 } };
+	if (mode & MGET_IO_READABLE)
+		pollfd.events |= POLLIN;
+	if (mode & MGET_IO_WRITABLE)
+		pollfd.events |= POLLOUT;
 
-		if ((rc = poll(pollfd, 1, timeout)) <= 0)
-			return rc < 0 ? -1 : 0;
+	// wait for socket to be ready to read or write
+	if ((rc = poll(&pollfd, 1, timeout)) <= 0)
+		return rc;
 
-		if (!(pollfd[0].revents & mode))
-			return -1;
-	}
+	mode = 0;
+	if (pollfd.revents & POLLIN)
+		mode |= MGET_IO_READABLE;
+	if (pollfd.revents & POLLOUT)
+		mode |= MGET_IO_WRITABLE;
 
-	return 1;
+	return mode;
 }
 #else
-static int _ready_2_transfer(int fd, int timeout, int mode)
+int mget_ready_2_transfer(int fd, int timeout, int mode)
 {
 	// 0: no timeout / immediate
 	// -1: INFINITE timeout
@@ -247,7 +264,10 @@ static int _ready_2_transfer(int fd, int timeout, int mode)
 		FD_SET(fd, &fdset);
 
 		if (mode == MGET_IO_READABLE) {
-			rc = select(fd + 1, &fdset, NULL, NULL, &tmo);
+			if (mode == MGET_IO_WRITABLE)
+				rc = select(fd + 1, &fdset, &fdset, NULL, &tmo);
+			else
+				rc = select(fd + 1, &fdset, NULL, NULL, &tmo);
 		} else {
 			rc = select(fd + 1, NULL, &fdset, NULL, &tmo);
 		}
@@ -276,7 +296,7 @@ static int _ready_2_transfer(int fd, int timeout, int mode)
  */
 int mget_ready_2_read(int fd, int timeout)
 {
-	return _ready_2_transfer(fd, timeout, MGET_IO_READABLE);
+	return mget_ready_2_transfer(fd, timeout, MGET_IO_READABLE) > 0;
 }
 
 /**
@@ -295,7 +315,7 @@ int mget_ready_2_read(int fd, int timeout)
  */
 int mget_ready_2_write(int fd, int timeout)
 {
-	return _ready_2_transfer(fd, timeout, MGET_IO_WRITABLE);
+	return mget_ready_2_transfer(fd, timeout, MGET_IO_WRITABLE) > 0;
 }
 
 char *mget_read_file(const char *fname, size_t *size)
