@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
  *
- * This file is part of libmget.
+ * This file is part of libwget.
  *
- * Libmget is free software: you can redistribute it and/or modify
+ * Libwget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Libmget is distributed in the hope that it will be useful,
+ * Libwget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * Example for retrieving and parsing an HTTP URI
@@ -31,42 +31,42 @@
 #endif
 
 #include <stdlib.h>
-#include <libmget.h>
+#include <libwget.h>
 
-int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED)
+int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED)
 {
-	mget_http_connection_t *conn = NULL;
-	mget_http_response_t *resp;
+	wget_http_connection_t *conn = NULL;
+	wget_http_response_t *resp;
 
-	// set up libmget global configuration
-	mget_global_init(
-		MGET_DEBUG_STREAM, stderr,
-		MGET_ERROR_STREAM, stderr,
-		MGET_INFO_STREAM, stdout,
-		MGET_DNS_CACHING, 1,
-		MGET_COOKIES_ENABLED, 1,
-		MGET_COOKIE_SUFFIXES, "public_suffixes.txt",
-		MGET_COOKIE_FILE, "cookies.txt",
-		MGET_COOKIE_KEEPSESSIONCOOKIES, 1,
-		// MGET_BIND_ADDRESS, "127.0.0.1:6666",
-		// MGET_NET_FAMILY_EXCLUSIVE, MGET_NET_FAMILY_IPV4, // or MGET_NET_FAMILY_IPV6 or MGET_NET_FAMILY_ANY
-		// MGET_NET_FAMILY_PREFERRED, MGET_NET_FAMILY_IPV4, // or MGET_NET_FAMILY_IPV6 or MGET_NET_FAMILY_ANY
+	// set up libwget global configuration
+	wget_global_init(
+		WGET_DEBUG_STREAM, stderr,
+		WGET_ERROR_STREAM, stderr,
+		WGET_INFO_STREAM, stdout,
+		WGET_DNS_CACHING, 1,
+		WGET_COOKIES_ENABLED, 1,
+		WGET_COOKIE_SUFFIXES, "public_suffixes.txt",
+		WGET_COOKIE_FILE, "cookies.txt",
+		WGET_COOKIE_KEEPSESSIONCOOKIES, 1,
+		// WGET_BIND_ADDRESS, "127.0.0.1:6666",
+		// WGET_NET_FAMILY_EXCLUSIVE, WGET_NET_FAMILY_IPV4, // or WGET_NET_FAMILY_IPV6 or WGET_NET_FAMILY_ANY
+		// WGET_NET_FAMILY_PREFERRED, WGET_NET_FAMILY_IPV4, // or WGET_NET_FAMILY_IPV6 or WGET_NET_FAMILY_ANY
 		NULL);
 
 	// execute an HTTP GET request and return the response
-	resp = mget_http_get(
-		MGET_HTTP_URL, "http://example.com",
-		// MGET_HTTP_URL_ENCODING, "utf-8",
-		MGET_HTTP_HEADER_ADD, "User-Agent", "Mozilla/5.0",
-		MGET_HTTP_HEADER_ADD, "Accept-Encoding", "gzip, deflate",
-		MGET_HTTP_HEADER_ADD, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-		MGET_HTTP_HEADER_ADD, "Accept-Language", "en-us,en;q=0.5",
-		// MGET_HTTP_PROXY, "myproxy.com:9375",
-		// MGET_HTTP_HEADER_SAVEAS_STREAM, stdout,
-		// MGET_HTTP_BODY_SAVEAS_STREAM, stdout,
-		MGET_HTTP_MAX_REDIRECTIONS, 5,
-		MGET_HTTP_CONNECTION_PTR, &conn,
-		// MGET_HTTP_RESPONSE_PTR, &resp,
+	resp = wget_http_get(
+		WGET_HTTP_URL, "http://example.com",
+		// WGET_HTTP_URL_ENCODING, "utf-8",
+		WGET_HTTP_HEADER_ADD, "User-Agent", "Mozilla/5.0",
+		WGET_HTTP_HEADER_ADD, "Accept-Encoding", "gzip, deflate",
+		WGET_HTTP_HEADER_ADD, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+		WGET_HTTP_HEADER_ADD, "Accept-Language", "en-us,en;q=0.5",
+		// WGET_HTTP_PROXY, "myproxy.com:9375",
+		// WGET_HTTP_HEADER_SAVEAS_STREAM, stdout,
+		// WGET_HTTP_BODY_SAVEAS_STREAM, stdout,
+		WGET_HTTP_MAX_REDIRECTIONS, 5,
+		WGET_HTTP_CONNECTION_PTR, &conn,
+		// WGET_HTTP_RESPONSE_PTR, &resp,
 		NULL);
 
 	if (resp) {
@@ -74,14 +74,14 @@ int main(int argc G_GNUC_MGET_UNUSED, const char *const *argv G_GNUC_MGET_UNUSED
 		printf("%s%s\n", resp->header->data, resp->body->data);
 
 		// free the response
-		mget_http_free_response(&resp);
+		wget_http_free_response(&resp);
 	}
 
 	// close connection if still open
-	mget_http_close(&conn);
+	wget_http_close(&conn);
 
 	// free resources - needed for valgrind testing
-	mget_global_deinit();
+	wget_global_deinit();
 
 	return 0;
 }

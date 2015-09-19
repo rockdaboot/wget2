@@ -1,23 +1,23 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
  *
- * This file is part of libmget.
+ * This file is part of libwget.
  *
- * Libmget is free software: you can redistribute it and/or modify
+ * Libwget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Libmget is distributed in the hope that it will be useful,
+ * Libwget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Testing Mget
+ * Testing Wget
  *
  * Changelog
  * 08.07.2013  Tim Ruehsen  created
@@ -34,7 +34,7 @@
 
 int main(void)
 {
-	mget_test_url_t urls[]={
+	wget_test_url_t urls[]={
 		{	.name = "/index.html",
 			.code = "200 Dontcare",
 			.body =
@@ -87,16 +87,16 @@ int main(void)
 	};
 
 	// functions won't come back if an error occurs
-	mget_test_start_server(
-		MGET_TEST_RESPONSE_URLS, &urls, countof(urls),
+	wget_test_start_server(
+		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 
 	// --accept using just suffixes
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '.jpeg'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept '.jpeg'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[2].name + 1, urls[2].body },
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
@@ -104,11 +104,11 @@ int main(void)
 		0);
 
 	// --reject using just suffixes
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '.jpeg'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --reject '.jpeg'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
 			{ urls[5].name + 1, urls[5].body },
@@ -117,11 +117,11 @@ int main(void)
 		0);
 
 	// --accept using just suffixes and ignore case
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '.jpeg' --ignore-case",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept '.jpeg' --ignore-case",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[2].name + 1, urls[2].body },
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
@@ -130,11 +130,11 @@ int main(void)
 		0);
 
 	// --reject using just suffixes and ignore case
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '.jpeg' --ignore-case",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --reject '.jpeg' --ignore-case",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
 			{ urls[6].name + 1, urls[6].body },
@@ -142,11 +142,11 @@ int main(void)
 		0);
 
 	// --accept using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '*.jpeg'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept '*.jpeg'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[2].name + 1, urls[2].body },
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
@@ -154,11 +154,11 @@ int main(void)
 		0);
 
 	// --reject using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '*.jpeg'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --reject '*.jpeg'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
 			{ urls[5].name + 1, urls[5].body },
@@ -167,11 +167,11 @@ int main(void)
 		0);
 
 	// --accept using wildcards and ignore case
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '*.jpeg' --ignore-case",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept '*.jpeg' --ignore-case",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[2].name + 1, urls[2].body },
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
@@ -180,11 +180,11 @@ int main(void)
 		0);
 
 	// --reject using wildcards and ignore case
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '*.jpeg' --ignore-case",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --reject '*.jpeg' --ignore-case",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
 			{ urls[6].name + 1, urls[6].body },
@@ -192,11 +192,11 @@ int main(void)
 		0);
 
 	// --accept using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '*picture*'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept '*picture*'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[2].name + 1, urls[2].body },
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
@@ -206,33 +206,33 @@ int main(void)
 		0);
 
 	// --reject using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '*picture*'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --reject '*picture*'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
 			{	NULL } },
 		0);
 
 	// --accept using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '*picture_[ab]*'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept '*picture_[ab]*'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[2].name + 1, urls[2].body },
 			{ urls[4].name + 1, urls[4].body },
 			{	NULL } },
 		0);
 
 	// --reject using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '*picture_[ab]*'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --reject '*picture_[ab]*'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
 			{ urls[3].name + 1, urls[3].body },
@@ -242,22 +242,22 @@ int main(void)
 		0);
 
 	// --accept using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --accept '*picture_a*' --accept '*picture_c*'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept '*picture_a*' --accept '*picture_c*'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[2].name + 1, urls[2].body },
 			{ urls[6].name + 1, urls[6].body },
 			{	NULL } },
 		0);
 
 	// --reject using wildcards
-	mget_test(
-		MGET_TEST_OPTIONS, "-r -nH --reject '*picture_a*' --reject '*picture_c*'",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --reject '*picture_a*' --reject '*picture_c*'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
 			{ urls[3].name + 1, urls[3].body },

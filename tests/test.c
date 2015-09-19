@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of Wget.
  *
- * Mget is free software: you can redistribute it and/or modify
+ * Wget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Wget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * test routines
@@ -34,8 +34,8 @@
 #include <dirent.h>
 #include <time.h>
 
-#include <libmget.h>
-#include "../libmget/private.h"
+#include <libwget.h>
+#include "../libwget/private.h"
 
 #include "../src/options.h"
 #include "../src/log.h"
@@ -44,7 +44,7 @@ static int
 	ok,
 	failed;
 
-static void _test_buffer(mget_buffer_t *buf, const char *name)
+static void _test_buffer(wget_buffer_t *buf, const char *name)
 {
 	char test[256];
 	int it;
@@ -53,8 +53,8 @@ static void _test_buffer(mget_buffer_t *buf, const char *name)
 		test[it] = 'a' + it % 26;
 		test[it + 1] = 0;
 
-		mget_buffer_strcpy(buf, test);
-		mget_buffer_strcat(buf, test);
+		wget_buffer_strcpy(buf, test);
+		wget_buffer_strcat(buf, test);
 
 		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
 			ok++;
@@ -63,8 +63,8 @@ static void _test_buffer(mget_buffer_t *buf, const char *name)
 			info_printf("test_buffer.1 '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
 		}
 
-		mget_buffer_memcpy(buf, test, it + 1);
-		mget_buffer_memcat(buf, test, it + 1);
+		wget_buffer_memcpy(buf, test, it + 1);
+		wget_buffer_memcat(buf, test, it + 1);
 
 		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
 			ok++;
@@ -73,7 +73,7 @@ static void _test_buffer(mget_buffer_t *buf, const char *name)
 			info_printf("test_buffer.2 '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
 		}
 
-		mget_buffer_printf(buf, "%s%s", test, test);
+		wget_buffer_printf(buf, "%s%s", test, test);
 
 		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
 			ok++;
@@ -82,8 +82,8 @@ static void _test_buffer(mget_buffer_t *buf, const char *name)
 			info_printf("test_buffer.3 '%s': [%d] got %s (expected %s%s)\n", name, it, buf->data, test, test);
 		}
 
-		mget_buffer_printf(buf, "%s", test);
-		mget_buffer_printf_append(buf, "%s", test);
+		wget_buffer_printf(buf, "%s", test);
+		wget_buffer_printf_append(buf, "%s", test);
 
 		if (!strncmp(buf->data, test, it + 1) && !strncmp(buf->data + it + 1, test, it + 1)) {
 			ok++;
@@ -97,94 +97,94 @@ static void _test_buffer(mget_buffer_t *buf, const char *name)
 static void test_buffer(void)
 {
 	char sbuf[16];
-	mget_buffer_t buf, *bufp;
+	wget_buffer_t buf, *bufp;
 
 	// testing buffer on stack, using initial stack memory
 	// without resizing
 
-	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
-	mget_buffer_deinit(&buf);
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	wget_buffer_deinit(&buf);
 
 	// testing buffer on stack, using initial stack memory
 	// with resizing
 
-	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 	_test_buffer(&buf, "Test 1");
-	mget_buffer_deinit(&buf);
+	wget_buffer_deinit(&buf);
 
 	// testing buffer on stack, using initial heap memory
 	// without resizing
 
-	mget_buffer_init(&buf, NULL, 16);
-	mget_buffer_deinit(&buf);
+	wget_buffer_init(&buf, NULL, 16);
+	wget_buffer_deinit(&buf);
 
 	// testing buffer on stack, using initial heap memory
 	// with resizing
 
-	mget_buffer_init(&buf, NULL, 16);
+	wget_buffer_init(&buf, NULL, 16);
 	_test_buffer(&buf, "Test 2");
-	mget_buffer_deinit(&buf);
+	wget_buffer_deinit(&buf);
 
 	// testing buffer on heap, using initial stack memory
 	// without resizing
 
-	bufp = mget_buffer_init(NULL, sbuf, sizeof(sbuf));
-	mget_buffer_deinit(bufp);
+	bufp = wget_buffer_init(NULL, sbuf, sizeof(sbuf));
+	wget_buffer_deinit(bufp);
 
-	bufp = mget_buffer_init(NULL, sbuf, sizeof(sbuf));
-	mget_buffer_free(&bufp);
+	bufp = wget_buffer_init(NULL, sbuf, sizeof(sbuf));
+	wget_buffer_free(&bufp);
 
 	// testing buffer on heap, using initial stack memory
 	// with resizing
 
-	bufp = mget_buffer_init(NULL, sbuf, sizeof(sbuf));
+	bufp = wget_buffer_init(NULL, sbuf, sizeof(sbuf));
 	_test_buffer(bufp, "Test 3");
-	mget_buffer_deinit(bufp);
+	wget_buffer_deinit(bufp);
 
-	bufp = mget_buffer_init(NULL, sbuf, sizeof(sbuf));
+	bufp = wget_buffer_init(NULL, sbuf, sizeof(sbuf));
 	_test_buffer(bufp, "Test 4");
-	mget_buffer_free(&bufp);
+	wget_buffer_free(&bufp);
 
 	// testing buffer on heap, using initial heap memory
 	// without resizing
 
-	bufp = mget_buffer_alloc(16);
-	mget_buffer_free(&bufp);
+	bufp = wget_buffer_alloc(16);
+	wget_buffer_free(&bufp);
 
 	// testing buffer on heap, using initial heap memory
 	// with resizing
 
-	bufp = mget_buffer_alloc(16);
+	bufp = wget_buffer_alloc(16);
 	_test_buffer(bufp, "Test 5");
-	mget_buffer_free(&bufp);
+	wget_buffer_free(&bufp);
 
 	// check that appending works
 
-	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
-	mget_buffer_strcpy(&buf, "A");
-	mget_buffer_strcat(&buf, "B");
-	mget_buffer_memcat(&buf, "C", 1);
-	mget_buffer_memset_append(&buf, 'D', 1);
-	mget_buffer_printf_append2(&buf, "%s", "E");
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	wget_buffer_strcpy(&buf, "A");
+	wget_buffer_strcat(&buf, "B");
+	wget_buffer_memcat(&buf, "C", 1);
+	wget_buffer_memset_append(&buf, 'D', 1);
+	wget_buffer_printf_append2(&buf, "%s", "E");
 	if (!strcmp(buf.data, "ABCDE"))
 		ok++;
 	else {
 		failed++;
 		info_printf("test_buffer.append: got %s (expected %s)\n", buf.data, "ABCDE");
 	}
-	mget_buffer_deinit(&buf);
+	wget_buffer_deinit(&buf);
 
-	// test mget_buffer_trim()
+	// test wget_buffer_trim()
 
-	mget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 	for (int mid_ws = 0; mid_ws <= 2; mid_ws++) {
 		char expected[16];
 		snprintf(expected, sizeof(expected), "x%.*sy", mid_ws, "  ");
 
 		for (int lead_ws = 0; lead_ws <= 2; lead_ws++) {
 			for (int trail_ws = 0; trail_ws <= 2; trail_ws++) {
-				mget_buffer_printf2(&buf, "%.*sx%.*sy%.*s", lead_ws, "  ", mid_ws, "  ", trail_ws, "  ");
-				mget_buffer_trim(&buf);
+				wget_buffer_printf2(&buf, "%.*sx%.*sy%.*s", lead_ws, "  ", mid_ws, "  ", trail_ws, "  ");
+				wget_buffer_trim(&buf);
 				if (!strcmp(buf.data, expected))
 					ok++;
 				else {
@@ -194,13 +194,13 @@ static void test_buffer(void)
 			}
 		}
 	}
-	mget_buffer_deinit(&buf);
+	wget_buffer_deinit(&buf);
 }
 
 static void test_buffer_printf(void)
 {
 	char buf_static[32];
-	mget_buffer_t buf;
+	wget_buffer_t buf;
 
 	// testing buffer_printf() by comparing it with C standard function sprintf()
 
@@ -213,9 +213,9 @@ static void test_buffer_printf(void)
 	size_t z, a, it, n, c, m;
 	int width, precision;
 
-	mget_buffer_init(&buf, buf_static, sizeof(buf_static));
+	wget_buffer_init(&buf, buf_static, sizeof(buf_static));
 
-	mget_buffer_printf2(&buf, "%s://%s", "http", "host");
+	wget_buffer_printf2(&buf, "%s://%s", "http", "host");
 	if (strcmp("http://host", buf.data)) {
 		failed++;
 		info_printf("%s: Failed with format ('%%s://%%s','http','host'): '%s' != 'http://host'\n", __func__, buf.data);
@@ -254,7 +254,7 @@ static void test_buffer_printf(void)
 						#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
 						sprintf(result, fmt, string);
-						mget_buffer_printf2(&buf, fmt, string);
+						wget_buffer_printf2(&buf, fmt, string);
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 						#pragma GCC diagnostic pop
 #endif
@@ -293,18 +293,18 @@ static void test_buffer_printf(void)
 						if (width == -1) {
 							if (precision == -1) {
 								sprintf(result, fmt, string);
-								mget_buffer_printf2(&buf, fmt, string);
+								wget_buffer_printf2(&buf, fmt, string);
 							} else {
 								sprintf(result, fmt, precision, string);
-								mget_buffer_printf2(&buf, fmt, precision, string);
+								wget_buffer_printf2(&buf, fmt, precision, string);
 							}
 						} else {
 							if (precision == -1) {
 								sprintf(result, fmt, width, string);
-								mget_buffer_printf2(&buf, fmt, width, string);
+								wget_buffer_printf2(&buf, fmt, width, string);
 							} else {
 								sprintf(result, fmt, width, precision, string);
-								mget_buffer_printf2(&buf, fmt, width, precision, string);
+								wget_buffer_printf2(&buf, fmt, width, precision, string);
 							}
 						}
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
@@ -345,7 +345,7 @@ static void test_buffer_printf(void)
 							#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
 							sprintf(result, fmt, number[n]);
-							mget_buffer_printf2(&buf, fmt, number[n]);
+							wget_buffer_printf2(&buf, fmt, number[n]);
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 							#pragma GCC diagnostic pop
 #endif
@@ -366,7 +366,7 @@ static void test_buffer_printf(void)
 		}
 	}
 
-	mget_buffer_deinit(&buf);
+	wget_buffer_deinit(&buf);
 }
 
 static void test_iri_parse(void)
@@ -384,44 +384,44 @@ static void test_iri_parse(void)
 			*query,
 			*fragment;
 	} test_data[] = {
-		{ "1.2.3.4", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "1.2.3.4", NULL, NULL, NULL, NULL},
-		{ "1.2.3.4:987", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "1.2.3.4", "987", NULL, NULL, NULL},
-		{ "//example.com/thepath", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "thepath", NULL, NULL},
-		// { "///thepath", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, NULL, NULL, "thepath", NULL, NULL},
-		{ "example.com", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
-		{ "example.com:555", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "555", NULL, NULL, NULL},
-		{ "http://example.com", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
-		{ "http://example.com:", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
-		{ "http://example.com:/", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "", NULL, NULL},
-		{ "http://example.com:80/", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "", NULL, NULL},
-		{ "https://example.com", NULL, MGET_IRI_SCHEME_HTTPS, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
-		{ "https://example.com:443", NULL, MGET_IRI_SCHEME_HTTPS, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
-		{ "https://example.com:444", NULL, MGET_IRI_SCHEME_HTTPS, NULL, NULL, "example.com", "444", NULL, NULL, NULL},
-		{ "http://example.com:80", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
-		{ "http://example.com:81", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "81", NULL, NULL, NULL},
-		{ "http://example.com/index.html", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", NULL, NULL},
-		{ "http://example.com/index.html?query#frag", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "query", "frag"},
-		{ "http://example.com/index.html?#", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "", ""},
-		{ "碼標準萬國碼.com", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "xn--9cs565brid46mda086o.com", NULL, NULL, NULL, NULL},
+		{ "1.2.3.4", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "1.2.3.4", NULL, NULL, NULL, NULL},
+		{ "1.2.3.4:987", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "1.2.3.4", "987", NULL, NULL, NULL},
+		{ "//example.com/thepath", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "thepath", NULL, NULL},
+		// { "///thepath", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, NULL, NULL, "thepath", NULL, NULL},
+		{ "example.com", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "example.com:555", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "555", NULL, NULL, NULL},
+		{ "http://example.com", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "http://example.com:", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "http://example.com:/", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "", NULL, NULL},
+		{ "http://example.com:80/", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "", NULL, NULL},
+		{ "https://example.com", NULL, WGET_IRI_SCHEME_HTTPS, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "https://example.com:443", NULL, WGET_IRI_SCHEME_HTTPS, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "https://example.com:444", NULL, WGET_IRI_SCHEME_HTTPS, NULL, NULL, "example.com", "444", NULL, NULL, NULL},
+		{ "http://example.com:80", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "http://example.com:81", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "81", NULL, NULL, NULL},
+		{ "http://example.com/index.html", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", NULL, NULL},
+		{ "http://example.com/index.html?query#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "query", "frag"},
+		{ "http://example.com/index.html?#", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "", ""},
+		{ "碼標準萬國碼.com", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "xn--9cs565brid46mda086o.com", NULL, NULL, NULL, NULL},
 		//		{ "ftp://cnn.example.com&story=breaking_news@10.0.0.1/top_story.htm", NULL,"ftp",NULL,NULL,"cnn.example.com",NULL,NULL,"story=breaking_news@10.0.0.1/top_story.htm",NULL }
 		{ "ftp://cnn.example.com?story=breaking_news@10.0.0.1/top_story.htm", NULL, "ftp", NULL, NULL, "cnn.example.com", NULL, NULL, "story=breaking_news@10.0.0.1/top_story.htm", NULL},
-//		{ "site;sub:.html", NULL, MGET_IRI_SCHEME_HTTP, NULL, NULL, "site", NULL, ";sub:.html", NULL, NULL},
+//		{ "site;sub:.html", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "site", NULL, ";sub:.html", NULL, NULL},
 	};
 	unsigned it;
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
-		mget_iri_t *iri = mget_iri_parse(t->uri, "utf-8");
+		wget_iri_t *iri = wget_iri_parse(t->uri, "utf-8");
 
-		if (mget_strcmp(iri->display, t->display)
-			|| mget_strcmp(iri->scheme, t->scheme)
-			|| mget_strcmp(iri->userinfo, t->userinfo)
-			|| mget_strcmp(iri->password, t->password)
-			|| mget_strcmp(iri->host, t->host)
-			|| mget_strcmp(iri->port, t->port)
-			|| mget_strcmp(iri->path, t->path)
-			|| mget_strcmp(iri->query, t->query)
-			|| mget_strcmp(iri->fragment, t->fragment))
+		if (wget_strcmp(iri->display, t->display)
+			|| wget_strcmp(iri->scheme, t->scheme)
+			|| wget_strcmp(iri->userinfo, t->userinfo)
+			|| wget_strcmp(iri->password, t->password)
+			|| wget_strcmp(iri->host, t->host)
+			|| wget_strcmp(iri->port, t->port)
+			|| wget_strcmp(iri->path, t->path)
+			|| wget_strcmp(iri->query, t->query)
+			|| wget_strcmp(iri->fragment, t->fragment))
 		{
 			failed++;
 			printf("IRI test #%u failed:\n", it + 1);
@@ -439,7 +439,7 @@ static void test_iri_parse(void)
 			ok++;
 		}
 
-		mget_iri_free(&iri);
+		wget_iri_free(&iri);
 	}
 }
 
@@ -679,14 +679,14 @@ static void test_iri_relative_to_absolute(void)
 	};
 	unsigned it;
 	char uri_buf_static[32]; // use a size that forces allocation in some cases
-	mget_buffer_t *uri_buf = 	mget_buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
-	mget_iri_t *base;
+	wget_buffer_t *uri_buf = 	wget_buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
+	wget_iri_t *base;
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
 
-		base = mget_iri_parse(t->base, "utf-8");
-		mget_iri_relative_to_abs(base, t->relative, strlen(t->relative), uri_buf);
+		base = wget_iri_parse(t->base, "utf-8");
+		wget_iri_relative_to_abs(base, t->relative, strlen(t->relative), uri_buf);
 
 		if (!strcmp(uri_buf->data, t->result))
 			ok++;
@@ -695,10 +695,10 @@ static void test_iri_relative_to_absolute(void)
 			info_printf("Failed [%u]: %s+%s -> %s (expected %s)\n", it, t->base, t->relative, uri_buf->data, t->result);
 		}
 
-		mget_iri_free(&base);
+		wget_iri_free(&base);
 	}
 
-	mget_buffer_free(&uri_buf);
+	wget_buffer_free(&uri_buf);
 }
 
 static void test_iri_compare(void)
@@ -728,10 +728,10 @@ static void test_iri_compare(void)
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
-		mget_iri_t *iri1 = mget_iri_parse(t->url1, "utf-8");
-		mget_iri_t *iri2 = mget_iri_parse(t->url2, "utf-8");
+		wget_iri_t *iri1 = wget_iri_parse(t->url1, "utf-8");
+		wget_iri_t *iri2 = wget_iri_parse(t->url2, "utf-8");
 
-		n = mget_iri_compare(iri1, iri2);
+		n = wget_iri_compare(iri1, iri2);
 		if (n < -1) n = -1;
 		else if (n > 1) n = 1;
 
@@ -751,18 +751,18 @@ static void test_iri_compare(void)
 			printf("\n");
 		}
 
-		mget_iri_free(&iri2);
-		mget_iri_free(&iri1);
+		wget_iri_free(&iri2);
+		wget_iri_free(&iri1);
 	}
 }
 
 /*
-static void _css_dump_charset(G_GNUC_MGET_UNUSED void *user_ctx, const char *encoding, size_t len)
+static void _css_dump_charset(G_GNUC_WGET_UNUSED void *user_ctx, const char *encoding, size_t len)
 {
 	debug_printf(_("URI content encoding = '%.*s'\n"), (int)len, encoding);
 }
 
-static void _css_dump_uri(G_GNUC_MGET_UNUSED void *user_ctx, const char *url, size_t len, G_GNUC_MGET_UNUSED size_t pos)
+static void _css_dump_uri(G_GNUC_WGET_UNUSED void *user_ctx, const char *url, size_t len, G_GNUC_WGET_UNUSED size_t pos)
 {
 	debug_printf("*** %zu '%.*s'\n", len, (int)len, url);
 }
@@ -783,19 +783,19 @@ static void test_parser(void)
 			if (*dp->d_name == '.') continue;
 			if ((ext = strrchr(dp->d_name, '.'))) {
 				snprintf(fname, sizeof(fname), SRCDIR "/files/%s", dp->d_name);
-				if (!mget_strcasecmp_ascii(ext, ".xml")) {
+				if (!wget_strcasecmp_ascii(ext, ".xml")) {
 					info_printf("parsing %s\n", fname);
-					mget_xml_parse_file(fname, NULL, NULL, 0);
+					wget_xml_parse_file(fname, NULL, NULL, 0);
 					xml++;
 				}
-/*				else if (!mget_strcasecmp_ascii(ext, ".html")) {
+/*				else if (!wget_strcasecmp_ascii(ext, ".html")) {
 					info_printf("parsing %s\n", fname);
-					mget_html_parse_file(fname, NULL, NULL, 0);
+					wget_html_parse_file(fname, NULL, NULL, 0);
 					html++;
 				}
-				else if (!mget_strcasecmp_ascii(ext, ".css")) {
+				else if (!wget_strcasecmp_ascii(ext, ".css")) {
 					info_printf("parsing %s\n", fname);
-					mget_css_parse_file(fname, _css_dump_uri, _css_dump_charset, NULL);
+					wget_css_parse_file(fname, _css_dump_uri, _css_dump_charset, NULL);
 					css++;
 				} */
 			}
@@ -867,14 +867,14 @@ static void test_cookies(void)
 			-1, 0
 		},
 #ifdef WITH_LIBPSL
-		{	// supercookie, accepted by normalization (rule 'com') but not by mget_cookie_check_psl())
+		{	// supercookie, accepted by normalization (rule 'com') but not by wget_cookie_check_psl())
 			"www.example.com",
 			"ID=65=abcd; expires=Mon, 29-Feb-2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
 			"ID", "65=abcd", "com", "/", "Mon, 29 Feb 2016 07:48:54 GMT",
 			1, 1, 1, 0, 1, 1,
 			0, -1
 		},
-		{	// supercookie, accepted by normalization  (rule 'sa.gov.au') but not by mget_cookie_check_psl())
+		{	// supercookie, accepted by normalization  (rule 'sa.gov.au') but not by wget_cookie_check_psl())
 			"www.sa.gov.au",
 			"ID=65=abcd; expires=Tue, 29-Feb-2000 07:48:55 GMT; path=/; domain=.sa.gov.au",
 			"ID", "65=abcd", "sa.gov.au", "/", "Tue, 29 Feb 2000 07:48:55 GMT",
@@ -890,41 +890,41 @@ static void test_cookies(void)
 			0, 0
 		},
 	};
-	mget_cookie_t cookie;
-	mget_cookie_db_t *cookies;
-	mget_iri_t *iri;
+	wget_cookie_t cookie;
+	wget_cookie_db_t *cookies;
+	wget_iri_t *iri;
 	unsigned it;
 	int result, result_psl;
 
-	cookies = mget_cookie_db_init(NULL);
-	mget_cookie_db_load_psl(cookies, DATADIR "/effective_tld_names.dat");
+	cookies = wget_cookie_db_init(NULL);
+	wget_cookie_db_load_psl(cookies, DATADIR "/effective_tld_names.dat");
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
 		char thedate[32], *header;
 
-		iri = mget_iri_parse(t->uri, "utf-8");
-		mget_http_parse_setcookie(t->set_cookie, &cookie);
-		if ((result = mget_cookie_normalize(iri, &cookie)) != t->result) {
+		iri = wget_iri_parse(t->uri, "utf-8");
+		wget_http_parse_setcookie(t->set_cookie, &cookie);
+		if ((result = wget_cookie_normalize(iri, &cookie)) != t->result) {
 			failed++;
 			info_printf("Failed [%u]: normalize_cookie(%s) -> %d (expected %d)\n", it, t->set_cookie, result, t->result);
-			mget_cookie_deinit(&cookie);
+			wget_cookie_deinit(&cookie);
 			goto next;
 		} else {
-			if ((result_psl = mget_cookie_check_psl(cookies, &cookie)) != t->psl_result) {
+			if ((result_psl = wget_cookie_check_psl(cookies, &cookie)) != t->psl_result) {
 				failed++;
 				info_printf("Failed [%u]: PSL check(%s) -> %d (expected %d)\n", it, t->set_cookie, result_psl, t->psl_result);
-				mget_cookie_deinit(&cookie);
+				wget_cookie_deinit(&cookie);
 				goto next;
 			}
 		}
 
 		if (cookie.expires) {
-			mget_http_print_date(cookie.expires, thedate, sizeof(thedate));
+			wget_http_print_date(cookie.expires, thedate, sizeof(thedate));
 			if (strcmp(thedate, t->expires)) {
 				failed++;
 				info_printf("Failed [%u]: expires mismatch: '%s' != '%s' (time_t %lld)\n", it, thedate, t->expires, (long long)cookie.expires);
-				mget_cookie_deinit(&cookie);
+				wget_cookie_deinit(&cookie);
 				goto next;
 			}
 		}
@@ -964,22 +964,22 @@ static void test_cookies(void)
 			if (cookie.http_only != t->http_only)
 				info_printf("  http_only %d (expected %d)\n", cookie.http_only, t->http_only);
 
-			mget_cookie_deinit(&cookie);
+			wget_cookie_deinit(&cookie);
 			goto next;
 		}
 
-		mget_cookie_store_cookie(cookies, &cookie);
+		wget_cookie_store_cookie(cookies, &cookie);
 
-		info_printf("%s\n", header = mget_cookie_create_request_header(cookies, iri));
+		info_printf("%s\n", header = wget_cookie_create_request_header(cookies, iri));
 		xfree(header);
 
 		ok++;
 
 next:
-		mget_iri_free(&iri);
+		wget_iri_free(&iri);
 	}
 
-	mget_cookie_db_free(&cookies);
+	wget_cookie_db_free(&cookies);
 }
 
 static void test_hsts(void)
@@ -1012,7 +1012,7 @@ static void test_hsts(void)
 		{ "www.example2.com", 443, 0 }, // entry should have been removed due to maxage=0
 		{ "www.example.com", 80, 0 }, // wrong port
 	};
-	mget_hsts_db_t *hsts_db = mget_hsts_db_init(NULL);
+	wget_hsts_db_t *hsts_db = wget_hsts_db_init(NULL);
 	time_t maxage;
 	char include_subdomains;
 	int n;
@@ -1020,25 +1020,25 @@ static void test_hsts(void)
 	// fill HSTS database with values
 	for (unsigned it = 0; it < countof(hsts_db_data); it++) {
 		const struct hsts_db_data *t = &hsts_db_data[it];
-		mget_http_parse_strict_transport_security(t->hsts_params, &maxage, &include_subdomains);
-		mget_hsts_db_add(hsts_db, mget_hsts_new(t->host, t->port, maxage, include_subdomains));
+		wget_http_parse_strict_transport_security(t->hsts_params, &maxage, &include_subdomains);
+		wget_hsts_db_add(hsts_db, wget_hsts_new(t->host, t->port, maxage, include_subdomains));
 	}
 
 	// check HSTS database with values
 	for (unsigned it = 0; it < countof(hsts_data); it++) {
 		const struct hsts_data *t = &hsts_data[it];
 
-		n = mget_hsts_host_match(hsts_db, t->host, t->port);
+		n = wget_hsts_host_match(hsts_db, t->host, t->port);
 
 		if (n == t->result)
 			ok++;
 		else {
 			failed++;
-			info_printf("Failed [%u]: mget_hsts_host_match(%s,%d) -> %d (expected %d)\n", it, t->host, t->port, n, t->result);
+			info_printf("Failed [%u]: wget_hsts_host_match(%s,%d) -> %d (expected %d)\n", it, t->host, t->port, n, t->result);
 		}
 	}
 
-	mget_hsts_db_free(&hsts_db);
+	wget_hsts_db_free(&hsts_db);
 }
 
 static void test_parse_challenge(void)
@@ -1075,46 +1075,46 @@ static void test_parse_challenge(void)
 		},
 	};
 
-	mget_vector_t *challenges;
-	mget_http_challenge_t *challenge;
+	wget_vector_t *challenges;
+	wget_http_challenge_t *challenge;
 
 	// Testcases found here http://greenbytes.de/tech/tc/httpauth/
-	challenges = mget_vector_create(2, 2, NULL);
-	mget_vector_set_destructor(challenges, (void(*)(void *))mget_http_free_challenge);
+	challenges = wget_vector_create(2, 2, NULL);
+	wget_vector_set_destructor(challenges, (void(*)(void *))wget_http_free_challenge);
 
 	for (unsigned it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
 
-		mget_http_parse_challenges(t->input, challenges);
+		wget_http_parse_challenges(t->input, challenges);
 		for (unsigned nchal = 0; nchal < countof(test_data[0].scheme) && t->scheme[nchal]; nchal++) {
-			challenge = mget_vector_get(challenges, nchal);
+			challenge = wget_vector_get(challenges, nchal);
 
 			if (!t->scheme[nchal]) {
 				if (challenge) {
 					failed++;
-					info_printf("Failed [%u]: mget_http_parse_challenges(%s) found %d challenges (expected %d)\n", it, t->input, mget_vector_size(challenges), nchal);
+					info_printf("Failed [%u]: wget_http_parse_challenges(%s) found %d challenges (expected %d)\n", it, t->input, wget_vector_size(challenges), nchal);
 				}
 				break;
 			}
 
 			if (!challenge) {
 				failed++;
-				info_printf("Failed [%u]: mget_http_parse_challenges(%s) did not find enough challenges\n", it, t->input);
+				info_printf("Failed [%u]: wget_http_parse_challenges(%s) did not find enough challenges\n", it, t->input);
 				break;
 			}
 
-			if (!mget_strcasecmp_ascii(challenge->auth_scheme, t->scheme[nchal])) {
+			if (!wget_strcasecmp_ascii(challenge->auth_scheme, t->scheme[nchal])) {
 				ok++;
 			} else {
 				failed++;
-				info_printf("Failed [%u]: mget_http_parse_challenges(%s) -> '%s' (expected '%s')\n", it, t->input, challenge->auth_scheme, t->scheme[nchal]);
+				info_printf("Failed [%u]: wget_http_parse_challenges(%s) -> '%s' (expected '%s')\n", it, t->input, challenge->auth_scheme, t->scheme[nchal]);
 			}
 		}
 
-		mget_vector_clear(challenges);
+		wget_vector_clear(challenges);
 	}
 
-	mget_http_free_challenges(&challenges);
+	wget_http_free_challenges(&challenges);
 }
 
 static void test_utils(void)
@@ -1126,7 +1126,7 @@ static void test_utils(void)
 	for (int ndst = 1; ndst <= 3; ndst++) {
 		for (it = 0; it <= 255; it++) {
 			src[0] = (unsigned char) it;
-			mget_memtohex(src, 1, dst1, ndst);
+			wget_memtohex(src, 1, dst1, ndst);
 			snprintf(dst2, ndst, "%02x", src[0]);
 			if (strcmp(dst1, dst2)) {
 				info_printf("buffer_to_hex failed: '%s' instead of '%s' (ndst=%d)\n", dst1, dst2, ndst);
@@ -1189,26 +1189,26 @@ static void test_strcasecmp_ascii(void)
 	for (unsigned it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
 
-		int n = mget_strcasecmp_ascii(t->s1, t->s2);
+		int n = wget_strcasecmp_ascii(t->s1, t->s2);
 
 		if (n == t->result)
 			ok++;
 		else {
 			failed++;
-			info_printf("Failed [%u]: mget_strcasecmp_ascii(%s,%s) -> %d (expected %d)\n", it, t->s1, t->s2, n, t->result);
+			info_printf("Failed [%u]: wget_strcasecmp_ascii(%s,%s) -> %d (expected %d)\n", it, t->s1, t->s2, n, t->result);
 		}
 	}
 
 	for (unsigned it = 0; it < countof(test_data2); it++) {
 		const struct test_data2 *t = &test_data2[it];
 
-		int n = mget_strncasecmp_ascii(t->s1, t->s2, t->n);
+		int n = wget_strncasecmp_ascii(t->s1, t->s2, t->n);
 
 		if (n == t->result)
 			ok++;
 		else {
 			failed++;
-			info_printf("Failed [%u]: mget_strncasecmp_ascii(%s,%s,%zd) -> %d (expected %d)\n", it, t->s1, t->s2, t->n, n, t->result);
+			info_printf("Failed [%u]: wget_strncasecmp_ascii(%s,%s,%zd) -> %d (expected %d)\n", it, t->s1, t->s2, t->n, n, t->result);
 		}
 	}
 
@@ -1218,18 +1218,18 @@ static void test_strcasecmp_ascii(void)
 		s1[0] = 'a' + it; s1[1] = 0;
 		s2[0] = 'A' + it; s2[1] = 0;
 
-		if (mget_strcasecmp_ascii(s1, s2) == 0)
+		if (wget_strcasecmp_ascii(s1, s2) == 0)
 			ok++;
 		else {
 			failed++;
-			info_printf("Failed: mget_strcasecmp_ascii(%s,%s) != 0\n", s1, s2);
+			info_printf("Failed: wget_strcasecmp_ascii(%s,%s) != 0\n", s1, s2);
 		}
 
-		if (mget_strncasecmp_ascii(s1, s2, 1) == 0)
+		if (wget_strncasecmp_ascii(s1, s2, 1) == 0)
 			ok++;
 		else {
 			failed++;
-			info_printf("Failed: mget_strncasecmp_ascii(%s,%s) != 0\n", s1, s2);
+			info_printf("Failed: wget_strncasecmp_ascii(%s,%s) != 0\n", s1, s2);
 		}
 	}
 }
@@ -1241,7 +1241,7 @@ struct ENTRY {
 
 static int compare_txt(struct ENTRY *a1, struct ENTRY *a2)
 {
-	return mget_strcasecmp_ascii(a1->txt, a2->txt);
+	return wget_strcasecmp_ascii(a1->txt, a2->txt);
 }
 
 static void test_vector(void)
@@ -1250,8 +1250,8 @@ static void test_vector(void)
 		*tmp,
 		txt_sorted[5] = { {""}, {"four"}, {"one"}, {"three"}, {"two"} },
 		*txt[countof(txt_sorted)];
-	mget_vector_t
-		*v = mget_vector_create(2, -2, (int(*)(const void *, const void *))compare_txt);
+	wget_vector_t
+		*v = wget_vector_create(2, -2, (int(*)(const void *, const void *))compare_txt);
 	unsigned
 		it;
 	int
@@ -1270,54 +1270,54 @@ static void test_vector(void)
 	}
 
 	for (it = 0; it < countof(txt); it++) {
-		mget_vector_insert_sorted(v, txt[it], sizeof(struct ENTRY));
+		wget_vector_insert_sorted(v, txt[it], sizeof(struct ENTRY));
 	}
 
 	for (it = 0; it < countof(txt); it++) {
-		struct ENTRY *e = mget_vector_get(v, it);
+		struct ENTRY *e = wget_vector_get(v, it);
 		if (!strcmp(e->txt,txt_sorted[it].txt))
 			ok++;
 		else
 			failed++;
 	}
 
-	mget_vector_free(&v);
+	wget_vector_free(&v);
 }
 
 // this hash function generates collisions and reduces the map to a simple list.
 // O(1) insertion, but O(n) search and removal
-static unsigned int hash_txt(G_GNUC_MGET_UNUSED const char *key)
+static unsigned int hash_txt(G_GNUC_WGET_UNUSED const char *key)
 {
 	return 0;
 }
 
 static void test_stringmap(void)
 {
-	mget_stringmap_t *m;
+	wget_stringmap_t *m;
 	char key[128], value[128], *val;
 	int run, it;
 	size_t valuesize;
 
 	// the initial size of 16 forces the internal reshashing function to be called twice
 
-	m = mget_stringmap_create(16);
+	m = wget_stringmap_create(16);
 
 	for (run = 0; run < 2; run++) {
 		if (run) {
-			mget_stringmap_clear(m);
-			mget_stringmap_sethashfunc(m, hash_txt);
+			wget_stringmap_clear(m);
+			wget_stringmap_sethashfunc(m, hash_txt);
 		}
 
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			valuesize = sprintf(value, "%d.html", it);
-			if (mget_stringmap_put(m, key, value, valuesize + 1)) {
+			if (wget_stringmap_put(m, key, value, valuesize + 1)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
 		}
 
-		if ((it = mget_stringmap_size(m)) != 26) {
+		if ((it = wget_stringmap_size(m)) != 26) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
 		} else ok++;
@@ -1326,7 +1326,7 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			sprintf(value, "%d.html", it);
-			if (!(val = mget_stringmap_get(m, key))) {
+			if (!(val = wget_stringmap_get(m, key))) {
 				failed++;
 				info_printf("stringmap_get(%s) didn't find entry\n", key);
 			} else if (strcmp(val, value)) {
@@ -1335,9 +1335,9 @@ static void test_stringmap(void)
 			} else ok++;
 		}
 
-		mget_stringmap_clear(m);
+		wget_stringmap_clear(m);
 
-		if ((it = mget_stringmap_size(m)) != 0) {
+		if ((it = wget_stringmap_size(m)) != 0) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected 0)\n", it);
 		} else ok++;
@@ -1345,13 +1345,13 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			valuesize = sprintf(value, "%d.html", it);
-			if (mget_stringmap_put(m, key, value, valuesize + 1)) {
+			if (wget_stringmap_put(m, key, value, valuesize + 1)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
 		}
 
-		if ((it = mget_stringmap_size(m)) != 26) {
+		if ((it = wget_stringmap_size(m)) != 26) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
 		} else ok++;
@@ -1360,10 +1360,10 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			sprintf(value, "%d.html", it);
-			mget_stringmap_remove(m, key);
+			wget_stringmap_remove(m, key);
 		}
 
-		if ((it = mget_stringmap_size(m)) != 0) {
+		if ((it = wget_stringmap_size(m)) != 0) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected 0)\n", it);
 		} else ok++;
@@ -1371,45 +1371,45 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			sprintf(key, "http://www.example.com/subdir/%d.html", it);
 			valuesize = sprintf(value, "%d.html", it);
-			if (mget_stringmap_put(m, key, value, valuesize + 1)) {
+			if (wget_stringmap_put(m, key, value, valuesize + 1)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
 		}
 
-		if ((it = mget_stringmap_size(m)) != 26) {
+		if ((it = wget_stringmap_size(m)) != 26) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
 		} else ok++;
 	}
 
 	// testing alloc/free in stringmap/hashmap
-	mget_stringmap_clear(m);
-	mget_stringmap_put(m, "thekey", NULL, 0) ? failed++ : ok++;
-	mget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
-	mget_stringmap_put(m, "thekey", "thevalue", 9) ? ok++ : failed++;
-	mget_stringmap_put(m, "thekey", "thevalue", 9) ? ok++ : failed++;
-	mget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
+	wget_stringmap_clear(m);
+	wget_stringmap_put(m, "thekey", NULL, 0) ? failed++ : ok++;
+	wget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
+	wget_stringmap_put(m, "thekey", "thevalue", 9) ? ok++ : failed++;
+	wget_stringmap_put(m, "thekey", "thevalue", 9) ? ok++ : failed++;
+	wget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
 
 	// testing key/value identity alloc/free in stringmap/hashmap
-	mget_stringmap_clear(m);
-	mget_stringmap_put(m, "thekey", NULL, 0) ? failed++ : ok++;
-	mget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
-	mget_stringmap_put(m, "thekey", "thevalue", 9) ? ok++ : failed++;
-	mget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
+	wget_stringmap_clear(m);
+	wget_stringmap_put(m, "thekey", NULL, 0) ? failed++ : ok++;
+	wget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
+	wget_stringmap_put(m, "thekey", "thevalue", 9) ? ok++ : failed++;
+	wget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
 
-	mget_stringmap_free(&m);
+	wget_stringmap_free(&m);
 
-	mget_http_challenge_t challenge;
-	mget_http_parse_challenge("Basic realm=\"test realm\"", &challenge);
-	mget_http_free_challenge(&challenge);
+	wget_http_challenge_t challenge;
+	wget_http_parse_challenge("Basic realm=\"test realm\"", &challenge);
+	wget_http_free_challenge(&challenge);
 
-	mget_vector_t *challenges;
-	challenges = mget_vector_create(2, 2, NULL);
-	mget_vector_set_destructor(challenges, (void(*)(void *))mget_http_free_challenge);
-	mget_http_parse_challenge("Basic realm=\"test realm\"", &challenge);
-	mget_vector_add(challenges, &challenge, sizeof(challenge));
-	mget_http_free_challenges(&challenges);
+	wget_vector_t *challenges;
+	challenges = wget_vector_create(2, 2, NULL);
+	wget_vector_set_destructor(challenges, (void(*)(void *))wget_http_free_challenge);
+	wget_http_parse_challenge("Basic realm=\"test realm\"", &challenge);
+	wget_vector_add(challenges, &challenge, sizeof(challenge));
+	wget_http_free_challenges(&challenges);
 
 	char *response_text = strdup(
 "HTTP/1.1 401 Authorization Required\r\n"\
@@ -1422,16 +1422,16 @@ static void test_stringmap(void)
 "Connection: Keep-Alive\r\n"\
 "Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-	mget_iri_t *iri = mget_iri_parse("http://localhost/prot_digest_md5/", NULL);
-	mget_http_request_t *req = mget_http_create_request(iri, "GET");
-	mget_http_response_t *resp = mget_http_parse_response_header(response_text);
-	mget_http_add_credentials(req, mget_vector_get(resp->challenges, 0), "tim", "123");
+	wget_iri_t *iri = wget_iri_parse("http://localhost/prot_digest_md5/", NULL);
+	wget_http_request_t *req = wget_http_create_request(iri, "GET");
+	wget_http_response_t *resp = wget_http_parse_response_header(response_text);
+	wget_http_add_credentials(req, wget_vector_get(resp->challenges, 0), "tim", "123");
 //	for (it=0;it<vec_size(req->lines);it++) {
 //		info_printf("%s\n", (char *)vec_get(req->lines, it));
 //	}
-	mget_http_free_response(&resp);
-	mget_http_free_request(&req);
-	mget_iri_free(&iri);
+	wget_http_free_response(&resp);
+	wget_http_free_request(&req);
+	wget_iri_free(&iri);
 	xfree(response_text);
 
 // Authorization: Digest username="tim", realm="therealm", nonce="Ip6MaovRBAA=c4af733c51270698260f5d357724c2cbce20fa3d", uri="/prot_digest_md5/", response="a99e2012d507a73dd46eb044d3f4641c", qop=auth, nc=00000001, cnonce="3d20faa1"
@@ -1472,7 +1472,7 @@ int main(int argc, const char * const *argv)
 
 	if (failed) {
 		info_printf("ERROR: %d out of %d basic tests failed\n", failed, ok + failed);
-		info_printf("This may completely break Mget functionality !!!\n");
+		info_printf("This may completely break Wget functionality !!!\n");
 		return 1;
 	}
 

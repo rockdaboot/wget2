@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of Wget.
  *
- * Mget is free software: you can redistribute it and/or modify
+ * Wget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Wget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * Header file for option routines
@@ -24,12 +24,12 @@
  *
  */
 
-#ifndef _MGET_OPTIONS_H
-#define _MGET_OPTIONS_H
+#ifndef _WGET_OPTIONS_H
+#define _WGET_OPTIONS_H
 
 #include <stdarg.h>
 
-#include <libmget.h>
+#include <libwget.h>
 
 // types for --restrict-file-names
 #define RESTRICT_NAMES_NONE  0
@@ -41,7 +41,7 @@
 #define RESTRICT_NAMES_LOWERCASE  1<<5
 
 struct config {
-	mget_iri_t
+	wget_iri_t
 		*base;
 	const char
 		*post_file,
@@ -80,16 +80,16 @@ struct config {
 		*private_key,
 		*random_file,
 		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
-	mget_vector_t
+	wget_vector_t
 		*domains,
 		*exclude_domains,
 		*accept_patterns,
 		*reject_patterns,
 		*follow_tags,
 		*ignore_tags;
-	mget_hsts_db_t
+	wget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
-	mget_ocsp_db_t
+	wget_ocsp_db_t
 		*ocsp_db; // in-memory fingerprint OCSP database
 	size_t
 		chunk_size;
@@ -109,7 +109,7 @@ struct config {
 		read_timeout, // ms
 		max_redirect,
 		num_threads;
-	struct mget_cookie_db_st
+	struct wget_cookie_db_st
 		*cookie_db;
 	char
 		http2,
@@ -170,9 +170,9 @@ extern struct config
 	config;
 
 int
-	init(int argc, const char *const *argv) G_GNUC_MGET_NONNULL_ALL,
+	init(int argc, const char *const *argv) G_GNUC_WGET_NONNULL_ALL,
 	selftest_options(void);
 void
 	deinit(void);
 
-#endif /* _MGET_OPTIONS_H */
+#endif /* _WGET_OPTIONS_H */

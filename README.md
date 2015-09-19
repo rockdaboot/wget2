@@ -1,7 +1,7 @@
-[![Build Status](https://travis-ci.org/rockdaboot/mget.png?branch=develop)](https://travis-ci.org/rockdaboot/mget)
+[![Build Status](https://travis-ci.org/rockdaboot/wget.png?branch=develop)](https://travis-ci.org/rockdaboot/wget)
 [![Coverity Scan Status](https://scan.coverity.com/projects/4414/badge.svg)](https://scan.coverity.com/projects/4414)
 
-Mget - multithreaded metalink / file / website downloader / spider and library
+Wget - multithreaded metalink / file / website downloader / spider and library
 ==============================================================================
 
 This is a multithreaded Wget-like tool and library written in C.
@@ -9,13 +9,13 @@ This is a multithreaded Wget-like tool and library written in C.
 Designed and written from scratch it requires a C99 and Posix compliant
 development environment.
 
-Included is the stand-alone library libmget which provides an interface
-to many useful functions used by Mget.
+Included is the stand-alone library libwget which provides an interface
+to many useful functions used by Wget.
 
 The originally purpose was to help out on Wget2 development (refactoring,
 modern and clean code, new technology, new design).
 
-In many cases Mget downloads much faster than Wget1.14 due to HTTP zlib
+In many cases Wget downloads much faster than Wget1.14 due to HTTP zlib
 compression, parallel connections and use of If-Modified-Since HTTP header.
 
 It consumes less system and user CPU cycles due to larger buffers and
@@ -24,28 +24,28 @@ buffer recycling.
 License
 -------
 
-Mget is licensed under GPLv3+.<br>
-Libmget is licensed under LGPLv3+.
+Wget is licensed under GPLv3+.<br>
+Libwget is licensed under LGPLv3+.
 
 Contact
 -------
 
-[Project](https://github.com/rockdaboot/mget)<br>
-[Website](http://rockdaboot.github.io/mget)<br>
-[Mailing List](https://groups.google.com/forum/#!forum/mget-bugs)
+[Project](https://github.com/rockdaboot/wget)<br>
+[Website](http://rockdaboot.github.io/wget)<br>
+[Mailing List](https://groups.google.com/forum/#!forum/wget-bugs)
 
 To join the mailing list send an email to
 
-<mget-bugs+subscribe@googlegroups.com>
+<wget-bugs+subscribe@googlegroups.com>
 
 and follow the instructions provided by the answer mail.
 
-Or click [join](https://groups.google.com/forum/#!forum/mget-bugs/join).
+Or click [join](https://groups.google.com/forum/#!forum/wget-bugs/join).
 
 Development Status
 ------------------
 
-Mget has already many features that go beyond what Wget provides.<br>
+Wget has already many features that go beyond what Wget provides.<br>
 
 An incomplete list of implemented features:
 
@@ -76,7 +76,7 @@ sitemap index files.
 - autotools support
 - proxy support
 - cookies (session/non-session), detection of supercookies via Mozilla Public Suffix List
-  (use the new option --cookie-suffixes <filename>, better: put it into ~/.mgetrc)
+  (use the new option --cookie-suffixes <filename>, better: put it into ~/.wgetrc)
 - recursive download of websites with or without spanning hosts
 - download of single web pages / resources
 - zlib/gzip compressed HTTP/HTTPS downloads (gzip, deflate)
@@ -103,7 +103,7 @@ Not yet implemented
 -------------------
 
 The following is just a quick list of ideas and todos.<br>
-The mid-range goal is to come as close to Wget, that Wget's units test work for Mget.
+The mid-range goal is to come as close to Wget, that Wget's units test work for Wget.
 
 Some ideas of what could be done next (but contact me before you start bigger changes!):
 
@@ -128,7 +128,7 @@ Some ideas of what could be done next (but contact me before you start bigger ch
 Requirements
 ------------
 
-The following packages are needed to build Mget:
+The following packages are needed to build Wget:
 
 * autotools (autoconf, autogen, automake, autopoint, libtool)
 * pkg-config >= 0.28 (recommended)
@@ -152,10 +152,10 @@ Building from git
 
 Download project and prepare sources with
 
-		git clone http://github.com/rockdaboot/mget
+		git clone http://github.com/rockdaboot/wget
 		./autogen.sh
 
-Build Mget with
+Build Wget with
 
 		./configure
 		make
@@ -164,16 +164,16 @@ Test the functionality
 
 		make check
 
-Install Mget and libmget
+Install Wget and libwget
 
 		sudo make install (or su -c "make install")
 
-To create Mget HTML documentation
+To create Wget HTML documentation
 
 		./configure --enable-gtk-doc
 		make
 
-To create Mget HTML documentation and man pages
+To create Wget HTML documentation and man pages
 
 		./configure --enable-gtk-doc --enable-man
 		make
@@ -196,16 +196,16 @@ To run single tests with valgrind (e.g. test-k)
 		VALGRIND_TESTS=1 ./test-k
 
 Why not directly using valgrind like 'valgrind --leak-check=full ./test-k' ?
-Well, you want to valgrind 'mget' and not the test program itself, right ?
+Well, you want to valgrind 'wget' and not the test program itself, right ?
 
 Documentation
 -------------
 
-There is no own documentation yet, but Mget aims to be Wget1.14 compatible.
+There is no own documentation yet, but Wget aims to be Wget1.14 compatible.
 
-		mget --help
+		wget --help
 
 prints the usage and the current set of integrated options.
 For more info, see the man pages of Wget.
 
-The Mget library API documentation has been started.
+The Wget library API documentation has been started.

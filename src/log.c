@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of Wget.
  *
- * Mget is free software: you can redistribute it and/or modify
+ * Wget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Wget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * Logging routines
@@ -35,7 +35,7 @@
 #include <errno.h>
 #include <sys/time.h>
 
-#include <libmget.h>
+#include <libwget.h>
 
 #include "options.h"
 #include "log.h"
@@ -61,16 +61,16 @@ static void _write_debug(const char *data, size_t len)
 
 	if (fp) {
 		char sbuf[4096];
-		mget_buffer_t buf;
+		wget_buffer_t buf;
 
-		mget_buffer_init(&buf, sbuf, sizeof(sbuf));
-		mget_buffer_printf2(&buf, "%02d.%02d%02d%02d.%03d ",
+		wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+		wget_buffer_printf2(&buf, "%02d.%02d%02d%02d.%03d ",
 			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, (int) (tv.tv_usec / 1000));
-		mget_buffer_memcat(&buf, data, len);
+		wget_buffer_memcat(&buf, data, len);
 		if (data[len -1] != '\n')
-			mget_buffer_memcat(&buf, "\n", 1);
+			wget_buffer_memcat(&buf, "\n", 1);
 		fwrite(buf.data, 1, buf.length, fp);
-		mget_buffer_deinit(&buf);
+		wget_buffer_deinit(&buf);
 
 		if (fp != stderr && fp != stdout)
 			fclose(fp);
@@ -80,26 +80,26 @@ static void _write_debug(const char *data, size_t len)
 void log_init(void)
 {
 /*
-	MGET_LOGGER *logger = mget_get_logger(MGET_LOGGER_DEBUG);
+	WGET_LOGGER *logger = wget_get_logger(WGET_LOGGER_DEBUG);
 	if (config.debug) {
 		if (!config.logfile)
-			mget_logger_set_file(logger, stderr); // direct debug output to STDERR
+			wget_logger_set_file(logger, stderr); // direct debug output to STDERR
 		else if (*config.logfile == '-' && config.logfile[1] == 0)
-			mget_logger_set_file(logger, stdout); // direct debug output to STDIN
+			wget_logger_set_file(logger, stdout); // direct debug output to STDIN
 		else
-			mget_logger_set_filename(logger, config.logfile);  // direct debug output to logfile
+			wget_logger_set_filename(logger, config.logfile);  // direct debug output to logfile
 
-		mget_logger_set_timestamp(logger, 1); // switch timestamps on
+		wget_logger_set_timestamp(logger, 1); // switch timestamps on
 	} else
-		mget_logger_set_file(logger, NULL); // stop logging (if already started)
+		wget_logger_set_file(logger, NULL); // stop logging (if already started)
 */
 
 	// set debug logging
-	mget_logger_set_func(mget_get_logger(MGET_LOGGER_DEBUG), config.debug ? _write_debug : NULL);
+	wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), config.debug ? _write_debug : NULL);
 
 	// set error logging
-	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_ERROR), config.quiet ? NULL : stderr);
+	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : stderr);
 
 	// set info logging
-	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
+	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
 }

@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of Wget.
  *
- * Mget is free software: you can redistribute it and/or modify
+ * Wget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Wget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * testing performance of hashmap/stringmap routines
@@ -40,9 +40,9 @@
 #endif
 #include <errno.h>
 
-#include <libmget.h>
+#include <libwget.h>
 
-static int G_GNUC_MGET_NONNULL_ALL _print_word(G_GNUC_MGET_UNUSED void *ctx, const char *word)
+static int G_GNUC_WGET_NONNULL_ALL _print_word(G_GNUC_WGET_UNUSED void *ctx, const char *word)
 {
 	printf("%s\n", word);
 	return 0;
@@ -54,7 +54,7 @@ int main(int argc, const char *const *argv)
 	char *buf, *word, *end;
 	size_t length;
 	struct stat st;
-	mget_stringmap_t *map = mget_stringmap_create(1024);
+	wget_stringmap_t *map = wget_stringmap_create(1024);
 
 	for (it = 1; it < argc; it++) {
 		if ((fd = open(argv[it], O_RDONLY)) == -1) {
@@ -100,7 +100,7 @@ int main(int argc, const char *const *argv)
 					unique++;
 				}
 */
-				if (mget_stringmap_put(map, word, NULL, 0))
+				if (wget_stringmap_put(map, word, NULL, 0))
 					duple++;
 				else
 					unique++;
@@ -120,9 +120,9 @@ int main(int argc, const char *const *argv)
 	printf("read %u words, %u uniques, %u doubles\n", unique + duple, unique, duple);
 
 	// const void *keys = stringmap_get_keys(map);
-	mget_stringmap_browse(map, (int(*)(void *, const char *, void *))_print_word, NULL);
+	wget_stringmap_browse(map, (int(*)(void *, const char *, void *))_print_word, NULL);
 
-	mget_stringmap_free(&map);
+	wget_stringmap_free(&map);
 	
 	return 0;
 }

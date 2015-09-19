@@ -1,23 +1,23 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
  *
- * This file is part of libmget.
+ * This file is part of libwget.
  *
- * Libmget is free software: you can redistribute it and/or modify
+ * Libwget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Libmget is distributed in the hope that it will be useful,
+ * Libwget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Example for HTML parsing using libmget
+ * Example for HTML parsing using libwget
  *
  * Changelog
  * 03.01.2014  Tim Ruehsen  created
@@ -32,37 +32,37 @@
 #endif
 
 #include <unistd.h>
-#include <libmget.h>
+#include <libwget.h>
 
 static void html_parse_localfile(const char *fname)
 {
 	char *data;
 
-	if ((data = mget_read_file(fname, NULL))) {
-		MGET_HTML_PARSED_RESULT *res  = mget_html_get_urls_inline(data, NULL, NULL);
+	if ((data = wget_read_file(fname, NULL))) {
+		WGET_HTML_PARSED_RESULT *res  = wget_html_get_urls_inline(data, NULL, NULL);
 
 		if (res->encoding)
 			printf("URI encoding '%s'\n", res->encoding);
 
-		for (int it = 0; it < mget_vector_size(res->uris); it++) {
-			MGET_HTML_PARSED_URL *html_url = mget_vector_get(res->uris, it);
-			mget_string_t *url = &html_url->url;
+		for (int it = 0; it < wget_vector_size(res->uris); it++) {
+			WGET_HTML_PARSED_URL *html_url = wget_vector_get(res->uris, it);
+			wget_string_t *url = &html_url->url;
 
 			printf("  %s.%s '%.*s'\n", html_url->dir, html_url->attr, (int) url->len, url->p);
 		}
 
-		mget_xfree(data);
-		mget_html_free_urls_inline(&res);
+		wget_xfree(data);
+		wget_html_free_urls_inline(&res);
 	}
 }
 
 int main(int argc, const char *const *argv)
 {
 /*
-	mget_global_init(
-		MGET_DEBUG_STREAM, stderr,
-		MGET_ERROR_STREAM, stderr,
-		MGET_INFO_STREAM, stdout,
+	wget_global_init(
+		WGET_DEBUG_STREAM, stderr,
+		WGET_ERROR_STREAM, stderr,
+		WGET_INFO_STREAM, stdout,
 		NULL);
 */
 

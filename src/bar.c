@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2014 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of Wget.
  *
- * Mget is free software: you can redistribute it and/or modify
+ * Wget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Wget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * Progress bar routines
@@ -36,16 +36,16 @@
 #include <errno.h>
 #include <sys/time.h>
 
-#include <libmget.h>
+#include <libwget.h>
 
 #include "options.h"
 //#include "log.h"
 #include "bar.h"
 
-static mget_bar_t
+static wget_bar_t
 	*bar;
-static mget_thread_mutex_t
-	mutex = MGET_THREAD_MUTEX_INITIALIZER;
+static wget_thread_mutex_t
+	mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
 void bar_init(void)
 {
@@ -54,39 +54,39 @@ void bar_init(void)
 	memset(lf, '\n', config.num_threads + 1);
 	fwrite(lf, 1, config.num_threads + 1, stdout);
 
-	bar = mget_bar_init(NULL, config.num_threads + 1, 70);
+	bar = wget_bar_init(NULL, config.num_threads + 1, 70);
 	
 /*
 	// set debug logging
-	mget_logger_set_func(mget_get_logger(MGET_LOGGER_DEBUG), config.debug ? _write_debug : NULL);
+	wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), config.debug ? _write_debug : NULL);
 
 	// set error logging
-	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_ERROR), config.quiet ? NULL : stderr);
+	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : stderr);
 
 	// set info logging
-	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
+	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
 */
 }
 
 void bar_deinit(void)
 {
-	mget_bar_free(&bar);
+	wget_bar_free(&bar);
 }
 
 void bar_print(int slotpos, const char *s)
 {
 	// This function will be called async from threads.
 	// Cursor positioning might break without a mutex.
-	mget_thread_mutex_lock(&mutex);
-	mget_bar_print(bar, slotpos, s);
-	mget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_lock(&mutex);
+	wget_bar_print(bar, slotpos, s);
+	wget_thread_mutex_unlock(&mutex);
 }
 
 void bar_vprintf(int slotpos, const char *fmt, va_list args)
 {
-	mget_thread_mutex_lock(&mutex);
-	mget_bar_vprintf(bar, slotpos, fmt, args);
-	mget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_lock(&mutex);
+	wget_bar_vprintf(bar, slotpos, fmt, args);
+	wget_thread_mutex_unlock(&mutex);
 }
 
 void bar_printf(int slotpos, const char *fmt, ...)
@@ -100,7 +100,7 @@ void bar_printf(int slotpos, const char *fmt, ...)
 
 void bar_update(int slotpos, int max, int cur)
 {
-	mget_thread_mutex_lock(&mutex);
-	mget_bar_update(bar, slotpos, max, cur);
-	mget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_lock(&mutex);
+	wget_bar_update(bar, slotpos, max, cur);
+	wget_thread_mutex_unlock(&mutex);
 }

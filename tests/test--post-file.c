@@ -1,23 +1,23 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
  *
- * This file is part of libmget.
+ * This file is part of libwget.
  *
- * Libmget is free software: you can redistribute it and/or modify
+ * Libwget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Libmget is distributed in the hope that it will be useful,
+ * Libwget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Testing Mget
+ * Testing Wget
  *
  * Changelog
  * 15.07.2013  Tim Ruehsen  created
@@ -34,13 +34,13 @@
 int main(void)
 {
 	// functions won't come back if an error occurs
-	mget_test_start_server(0);
+	wget_test_start_server(0);
 
 	// test-i
-	mget_test(
-		MGET_TEST_OPTIONS, "-d --post-file=nofile",
-		MGET_TEST_REQUEST_URL, "",
-		MGET_TEST_EXPECTED_ERROR_CODE, 3, // fails with older Wget (<= 1.14)
+	wget_test(
+		WGET_TEST_OPTIONS, "-d --post-file=nofile",
+		WGET_TEST_REQUEST_URL, "",
+		WGET_TEST_EXPECTED_ERROR_CODE, 3, // fails with older Wget (<= 1.14)
 		0);
 
 	exit(0);

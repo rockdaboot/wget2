@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of Wget.
  *
- * Mget is free software: you can redistribute it and/or modify
+ * Wget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Wget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * Header file for HOST stuff
@@ -24,8 +24,8 @@
  *
  */
 
-#ifndef _MGET_HOST_H
-#define _MGET_HOST_H
+#ifndef _WGET_HOST_H
+#define _WGET_HOST_H
 
 #include <stdarg.h>
 
@@ -44,10 +44,10 @@ typedef struct {
 } HOST;
 
 HOST *
-	hosts_add(mget_iri_t *iri);
+	hosts_add(wget_iri_t *iri);
 HOST *
-	hosts_get(mget_iri_t *iri);
+	hosts_get(wget_iri_t *iri);
 void
 	hosts_free(void);
 
-#endif /* _MGET_HOST_H */
+#endif /* _WGET_HOST_H */

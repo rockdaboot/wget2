@@ -1,23 +1,23 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
  *
- * This file is part of libmget.
+ * This file is part of libwget.
  *
- * Libmget is free software: you can redistribute it and/or modify
+ * Libwget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Libmget is distributed in the hope that it will be useful,
+ * Libwget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Testing Mget
+ * Testing Wget
  *
  * Changelog
  * 15.07.2013  Tim Ruehsen  created
@@ -33,7 +33,7 @@
 
 int main(void)
 {
-	mget_test_url_t urls[]={
+	wget_test_url_t urls[]={
 		{	.name = "/index.html",
 			.code = "200 Dontcare",
 			.body =
@@ -72,16 +72,16 @@ int main(void)
 		"</p></body></html>";
 
 	// functions won't come back if an error occurs
-	mget_test_start_server(
-		MGET_TEST_RESPONSE_URLS, &urls, countof(urls),
+	wget_test_start_server(
+		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 
 	// test-k
-	mget_test(
-		MGET_TEST_OPTIONS, "-k -r -nH",
-		MGET_TEST_REQUEST_URL, "index.html",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+		WGET_TEST_OPTIONS, "-k -r -nH",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, converted },
 			{ urls[1].name + 1, urls[1].body },
 			{ urls[2].name + 1, urls[2].body },

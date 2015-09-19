@@ -1,23 +1,23 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
  *
- * This file is part of libmget.
+ * This file is part of libwget.
  *
- * Libmget is free software: you can redistribute it and/or modify
+ * Libwget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Libmget is distributed in the hope that it will be useful,
+ * Libwget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Example for CSS parsing using libmget
+ * Example for CSS parsing using libwget
  *
  * Changelog
  * 14.01.2013  Tim Ruehsen  created
@@ -32,21 +32,21 @@
 #endif
 
 #include <unistd.h>
-#include <libmget.h>
+#include <libwget.h>
 
-static void _css_parse_encoding(void *context G_GNUC_MGET_UNUSED, const char *encoding, size_t len)
+static void _css_parse_encoding(void *context G_GNUC_WGET_UNUSED, const char *encoding, size_t len)
 {
 	printf("URI encoding '%.*s'\n", (int)len, encoding);
 }
 
-static void _css_parse_uri(void *context G_GNUC_MGET_UNUSED, const char *url, size_t len, size_t pos G_GNUC_MGET_UNUSED)
+static void _css_parse_uri(void *context G_GNUC_WGET_UNUSED, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
 	printf("  %.*s\n", (int)len, url);
 }
 
 static void css_parse_localfile(const char *fname)
 {
-	mget_css_parse_file(fname, _css_parse_uri, _css_parse_encoding, NULL);
+	wget_css_parse_file(fname, _css_parse_uri, _css_parse_encoding, NULL);
 }
 
 int main(int argc, const char *const *argv)

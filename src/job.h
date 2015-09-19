@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of Wget.
  *
- * Mget is free software: you can redistribute it and/or modify
+ * Wget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Wget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * Header file for job routines
@@ -24,10 +24,10 @@
  *
  */
 
-#ifndef _MGET_JOB_H
-#define _MGET_JOB_H
+#ifndef _WGET_JOB_H
+#define _WGET_JOB_H
 
-#include <libmget.h>
+#include <libwget.h>
 
 #include "host.h"
 
@@ -45,15 +45,15 @@ typedef struct {
 } PART;
 
 struct JOB {
-	mget_iri_t
+	wget_iri_t
 		*iri,
 		*referer;
 
 	// Metalink information
-	mget_metalink_t
+	wget_metalink_t
 		*metalink;
 
-	mget_vector_t
+	wget_vector_t
 		*parts, // parts to download
 		*deferred; // IRIs that need to wait for this job to be done (while downloading robots.txt)
 	HOST
@@ -72,13 +72,13 @@ struct JOB {
 };
 
 JOB
-	*job_init(JOB *job, mget_iri_t *iri),
+	*job_init(JOB *job, wget_iri_t *iri),
 	*queue_add_job(JOB *job);
 PART
 	*job_add_part(JOB *job, PART *part);
 int
-	queue_size(void) G_GNUC_MGET_PURE,
-	queue_empty(void) G_GNUC_MGET_PURE,
+	queue_size(void) G_GNUC_WGET_PURE,
+	queue_empty(void) G_GNUC_WGET_PURE,
 	queue_get(JOB **job_out, PART **part_out),
 	job_validate_file(JOB *job);
 void
@@ -90,4 +90,4 @@ void
 	queue_free(void);
 
 
-#endif /* _MGET_JOB_H */
+#endif /* _WGET_JOB_H */

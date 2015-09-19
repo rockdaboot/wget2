@@ -1,26 +1,26 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of Wget.
  *
- * Mget is free software: you can redistribute it and/or modify
+ * Wget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Wget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * host routines
  *
  * Changelog
- * 28.09.2013  Tim Ruehsen  created, moved from mget.c
+ * 28.09.2013  Tim Ruehsen  created, moved from wget.c
  *
  */
 
@@ -30,15 +30,15 @@
 
 #include <string.h>
 
-#include <libmget.h>
+#include <libwget.h>
 
 #include "host.h"
 #include "options.h"
 
-static mget_hashmap_t
+static wget_hashmap_t
 	*hosts;
-static mget_thread_mutex_t
-	hosts_mutex = MGET_THREAD_MUTEX_INITIALIZER;
+static wget_thread_mutex_t
+	hosts_mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
 static int _host_compare(const HOST *host1, const HOST *host2)
 {
@@ -81,52 +81,52 @@ static unsigned int _host_hash(const HOST *host)
 static void _free_host_entry(HOST *host)
 {
 	if (host) {
-		mget_robots_free(&host->robots);
-		mget_xfree(host);
+		wget_robots_free(&host->robots);
+		wget_xfree(host);
 	}
 }
 
-HOST *hosts_add(mget_iri_t *iri)
+HOST *hosts_add(wget_iri_t *iri)
 {
-	mget_thread_mutex_lock(&hosts_mutex);
+	wget_thread_mutex_lock(&hosts_mutex);
 
 	if (!hosts) {
-		hosts = mget_hashmap_create(16, -2, (unsigned int (*)(const void *))_host_hash, (int (*)(const void *, const void *))_host_compare);
-		mget_hashmap_set_key_destructor(hosts, (void(*)(void *))_free_host_entry);
+		hosts = wget_hashmap_create(16, -2, (unsigned int (*)(const void *))_host_hash, (int (*)(const void *, const void *))_host_compare);
+		wget_hashmap_set_key_destructor(hosts, (void(*)(void *))_free_host_entry);
 	}
 
 	HOST *hostp = NULL, host = { .scheme = iri->scheme, .host = iri->host };
 
-	if (!mget_hashmap_contains(hosts, &host)) {
+	if (!wget_hashmap_contains(hosts, &host)) {
 		// info_printf("Add to hosts: %s\n", hostname);
-		mget_hashmap_put_noalloc(hosts, hostp = mget_memdup(&host, sizeof(host)), NULL);
+		wget_hashmap_put_noalloc(hosts, hostp = wget_memdup(&host, sizeof(host)), NULL);
 	}
 
-	mget_thread_mutex_unlock(&hosts_mutex);
+	wget_thread_mutex_unlock(&hosts_mutex);
 
 	return hostp;
 }
 
-HOST *hosts_get(mget_iri_t *iri)
+HOST *hosts_get(wget_iri_t *iri)
 {
 	HOST *hostp, host = { .scheme = iri->scheme, .host = iri->host };
 
-	mget_thread_mutex_lock(&hosts_mutex);
+	wget_thread_mutex_lock(&hosts_mutex);
 
 	if (hosts) {
-		hostp = mget_hashmap_get(hosts, &host);
+		hostp = wget_hashmap_get(hosts, &host);
 	} else {
 		hostp = NULL;
 	}
 
-	mget_thread_mutex_unlock(&hosts_mutex);
+	wget_thread_mutex_unlock(&hosts_mutex);
 
 	return hostp;
 }
 
 void hosts_free(void)
 {
-	mget_thread_mutex_lock(&hosts_mutex);
-	mget_hashmap_free(&hosts);
-	mget_thread_mutex_unlock(&hosts_mutex);
+	wget_thread_mutex_lock(&hosts_mutex);
+	wget_hashmap_free(&hosts);
+	wget_thread_mutex_unlock(&hosts_mutex);
 }

@@ -1,23 +1,23 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
  *
- * This file is part of libmget.
+ * This file is part of libwget.
  *
- * Libmget is free software: you can redistribute it and/or modify
+ * Libwget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Libmget is distributed in the hope that it will be useful,
+ * Libwget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Advanced example for CSS parsing using libmget
+ * Advanced example for CSS parsing using libwget
  *
  * Changelog
  * 15.01.2013  Tim Ruehsen  created
@@ -38,28 +38,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libmget.h>
+#include <libwget.h>
 
-// use the helper routines provided by libmget
-#define info_printf        mget_info_printf
-#define error_printf       mget_error_printf
-#define error_printf_exit  mget_error_printf_exit
+// use the helper routines provided by libwget
+#define info_printf        wget_info_printf
+#define error_printf       wget_error_printf
+#define error_printf_exit  wget_error_printf_exit
 
 // I try to never leave freed pointers hanging around
 #define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 
 struct css_context {
-	mget_iri_t
+	wget_iri_t
 		*base;
 	const char
 		*encoding;
-	mget_buffer_t
+	wget_buffer_t
 		uri_buf;
 	char
 		encoding_allocated;
 };
 
-static void G_GNUC_MGET_NORETURN usage(const char *myname)
+static void G_GNUC_WGET_NORETURN usage(const char *myname)
 {
 	error_printf_exit(
 		"\nUsage: %s [options] file...\n"\
@@ -81,7 +81,7 @@ static void css_parse_encoding(void *context, const char *encoding, size_t len)
 	struct css_context *ctx = context;
 
 	// take only the first @charset rule
-	if (!ctx->encoding_allocated && mget_strncasecmp(ctx->encoding, encoding, len)) {
+	if (!ctx->encoding_allocated && wget_strncasecmp(ctx->encoding, encoding, len)) {
 		if (ctx->encoding)
 			info_printf("Encoding changed from '%s' to '%.*s'\n", ctx->encoding, (int)len, encoding);
 		else
@@ -93,34 +93,34 @@ static void css_parse_encoding(void *context, const char *encoding, size_t len)
 }
 
 // Callback function, called from CSS parser for each URI found.
-static void css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_MGET_UNUSED)
+static void css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
 	struct css_context *ctx = context;
 
 	if (len > 1 || (len == 1 && *url != '#')) {
 		// ignore e.g. href='#'
 		if (!ctx->base) {
-			mget_info_printf("  %.*s\n", (int)len, url);
-		} else if (mget_iri_relative_to_abs(ctx->base, url, len, &ctx->uri_buf)) {
-			mget_info_printf("  %.*s -> %s\n", (int)len, url, ctx->uri_buf.data);
+			wget_info_printf("  %.*s\n", (int)len, url);
+		} else if (wget_iri_relative_to_abs(ctx->base, url, len, &ctx->uri_buf)) {
+			wget_info_printf("  %.*s -> %s\n", (int)len, url, ctx->uri_buf.data);
 		} else {
 			error_printf("Cannot resolve relative URI %.*s\n", (int)len, url);
 		}
 	}
 }
 
-static void css_parse_localfile(const char *fname, mget_iri_t *base, const char *encoding)
+static void css_parse_localfile(const char *fname, wget_iri_t *base, const char *encoding)
 {
 	struct css_context context = { .base = base, .encoding = encoding };
 
-	mget_buffer_init(&context.uri_buf, NULL, 128);
+	wget_buffer_init(&context.uri_buf, NULL, 128);
 
-	mget_css_parse_file(fname, css_parse_uri, css_parse_encoding, &context);
+	wget_css_parse_file(fname, css_parse_uri, css_parse_encoding, &context);
 
 	if (context.encoding_allocated)
 		xfree(context.encoding);
 
-	mget_buffer_deinit(&context.uri_buf);
+	wget_buffer_deinit(&context.uri_buf);
 }
 
 int main(int argc, const char *const *argv)
@@ -131,10 +131,10 @@ int main(int argc, const char *const *argv)
 
 	// We assume that base is encoded in the local charset.
 	const char *
-		local_encoding = mget_local_charset_encoding();
+		local_encoding = wget_local_charset_encoding();
 
 	// parsed 'base'
-	mget_iri_t
+	wget_iri_t
 		*base_uri;
 
 	// Character encoding of CSS file content
@@ -147,13 +147,13 @@ int main(int argc, const char *const *argv)
 	int
 		argpos;
 
-	// We want the libmget error messages be printed to STDERR.
-	// From here on, we can call mget_error_printf, etc.
-	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_ERROR), stderr);
+	// We want the libwget error messages be printed to STDERR.
+	// From here on, we can call wget_error_printf, etc.
+	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_ERROR), stderr);
 
-	// We want the libmget info messages be printed to STDOUT.
-	// From here on, we can call mget_info_printf, etc.
-	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_INFO), stdout);
+	// We want the libwget info messages be printed to STDOUT.
+	// From here on, we can call wget_info_printf, etc.
+	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), stdout);
 
 	// parse options
 	for (argpos = 1; argpos < argc; argpos++) {
@@ -173,14 +173,14 @@ int main(int argc, const char *const *argv)
 
 	// All URIs are converted into UTF-8 charset.
 	// That's why we need the local encoding (aka 'encoding of base URI') here.
-	base_uri = mget_iri_parse(base, local_encoding);
+	base_uri = wget_iri_parse(base, local_encoding);
 
 	for (;argpos < argc; argpos++) {
 		// use '-' as filename for STDIN
 		css_parse_localfile(argv[argpos], base_uri, css_encoding);
 	}
 
-	mget_iri_free(&base_uri);
+	wget_iri_free(&base_uri);
 
 	return 0;
 }

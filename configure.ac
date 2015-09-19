@@ -4,7 +4,7 @@ CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 
 AC_PREREQ([2.67])
-AC_INIT([mget], [0.1.9], [mget-bugs@googlegroups.com], [mget], [https://github.com/rockdaboot/mget])
+AC_INIT([wget], [2.0.0], [wget-bugs@googlegroups.com], [wget], [https://github.com/rockdaboot/wget])
 AM_INIT_AUTOMAKE
 
 CFLAGS=$CFLAGS
@@ -13,13 +13,21 @@ AC_USE_SYSTEM_EXTENSIONS
 LT_PREREQ([2.2])
 LT_INIT([dlopen])
 
-# Keep version info in configure.ac
-# see also "Updating library version information" at
-#   http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
-AC_SUBST([LIBMGET_SO_VERSION], [0:0:0])
-AC_SUBST([LIBMGET_API_VERSION], [0.1])
+# Define these substitions here to keep all version information in one place.
+# For information on how to properly maintain the library version information,
+# refer to the libtool manual, section "Updating library version information":
+# http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
+#
+# 1. Start with version information of ‘0:0:0’ for each libtool library.
+# 2. Update the version information only immediately before a public release of your software. More frequent updates are unnecessary, and only guarantee that the current interface number gets larger faster.
+# 3. If the library source code has changed at all since the last update, then increment revision (‘c:r:a’ becomes ‘c:r+1:a’).
+# 4. If any interfaces have been added, removed, or changed since the last update, increment current, and set revision to 0.
+# 5. If any interfaces have been added since the last public release, then increment age.
+# 6. If any existing interfaces have been removed or changed since the last public release, then set age to 0.
+AC_SUBST([LIBWGET_SO_VERSION], [0:0:0])
+AC_SUBST([LIBWGET_API_VERSION], [0.1])
 
-AC_CONFIG_SRCDIR([src/mget.c])
+AC_CONFIG_SRCDIR([src/wget.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -100,7 +108,7 @@ fi
 #
 m4_ifdef([AM_GNU_GETTEXT], [
   AM_GNU_GETTEXT([external],[need-ngettext])
-  po_makefile_in=po/Makefile.in
+  AC_CONFIG_FILES([po/Makefile.in])
   AM_CONDITIONAL([HAVE_PO], [true])
 ], [
   AM_CONDITIONAL([HAVE_PO], [false])
@@ -125,9 +133,8 @@ AM_CONDITIONAL([GTK_DOC_USE_LIBTOOL], false)
 ])
 
 if test x"$have_gtk_doc" = xyes -a x"$enable_gtk_doc" = xyes; then
-  docdir_makefile=docs/libmget/Makefile
-  docdir_version_xml=docs/libmget/version.xml
-  AC_SUBST([LIBMGET_DOCS], [docs/libmget])
+  AC_CONFIG_FILES([docs/libwget/Makefile docs/libwget/version.xml])
+  AC_SUBST([LIBWGET_DOCS], [docs/libwget])
 fi
 
 #
@@ -395,15 +402,12 @@ fi
 
 AC_CONFIG_FILES([Makefile
                  include/Makefile
-                 libmget/Makefile
+                 libwget/Makefile
                  src/Makefile
-                 ${po_makefile_in}
-                 ${docdir_makefile}
-                 ${docdir_version_xml}
                  data/Makefile
                  examples/Makefile
                  tests/Makefile
-                 libmget-${LIBMGET_API_VERSION}.pc:libmget.pc.in])
+                 libwget-${LIBWGET_API_VERSION}.pc:libwget.pc.in])
 AC_OUTPUT
 
 AC_MSG_NOTICE([Summary of build options:

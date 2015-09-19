@@ -1,0 +1,46 @@
+<SECTION>
+<FILE>libwget-xalloc</FILE>
+<TITLE>Memory Allocation Functions</TITLE>
+wget_set_oomfunc
+wget_malloc
+wget_calloc
+wget_realloc
+</SECTION>
+
+<SECTION>
+<FILE>libwget-utils</FILE>
+<TITLE>General utility functions</TITLE>
+wget_strcmp
+wget_strcasecmp
+wget_strncmp
+wget_strncasecmp
+wget_strtolower
+wget_memtohex
+wget_millisleep
+wget_match_tail
+wget_match_tail_nocase
+</SECTION>
+
+<SECTION>
+<FILE>libwget-list</FILE>
+<TITLE>Double Linked List</TITLE>
+wget_list_t
+wget_list_append
+wget_list_prepend
+wget_list_getfirst
+wget_list_getlast
+wget_list_remove
+wget_list_browse
+wget_list_free
+</SECTION>
+
+<SECTION>
+<FILE>libwget-io</FILE>
+<TITLE>IO helper routines</TITLE>
+wget_fdgetline
+wget_getline
+wget_ready_2_read
+wget_ready_2_write
+wget_ready_2_transfer
+wget_read_file
+</SECTION>

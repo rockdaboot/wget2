@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of Wget.
  *
- * Mget is free software: you can redistribute it and/or modify
+ * Wget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Wget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * test routines
@@ -39,8 +39,8 @@
 #include <sys/mman.h>
 #endif
 
-#include <libmget.h>
-#include "../libmget/private.h"
+#include <libwget.h>
+#include "../libwget/private.h"
 #include "../src/options.h"
 
 static int
@@ -65,7 +65,7 @@ static const char *test_data[] ={
 	"</html>\n"
 };
 
-static void html_dump(void *user_ctx, int flags, const char *dir G_GNUC_MGET_UNUSED, const char *attr, const char *val, size_t len, size_t pos)
+static void html_dump(void *user_ctx, int flags, const char *dir G_GNUC_WGET_UNUSED, const char *attr, const char *val, size_t len, size_t pos)
 {
 //	info_printf("\n%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
@@ -77,10 +77,10 @@ static void html_dump(void *user_ctx, int flags, const char *dir G_GNUC_MGET_UNU
 		// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
 		switch (tolower(*attr)) {
 		case 'h':
-			found = !mget_strcasecmp_ascii(attr, "href");
+			found = !wget_strcasecmp_ascii(attr, "href");
 			break;
 		case 's':
-			found = !mget_strcasecmp_ascii(attr, "src");
+			found = !wget_strcasecmp_ascii(attr, "src");
 			break;
 		}
 
@@ -142,7 +142,7 @@ static void test_parse_buffer(void)
 	unsigned it;
 
 	for (it = 0; it < countof(test_data); it++) {
-		mget_html_parse_buffer(test_data[it], html_dump, (void *)test_data[it], 0);
+		wget_html_parse_buffer(test_data[it], html_dump, (void *)test_data[it], 0);
 	}
 }
 
@@ -160,9 +160,9 @@ static void test_parse_files(void)
 		while ((dp = readdir(dirp)) != NULL) {
 			if (*dp->d_name == '.') continue;
 			if ((ext = strrchr(dp->d_name, '.'))) {
-				if (!mget_strcasecmp_ascii(ext, ".xml"))
+				if (!wget_strcasecmp_ascii(ext, ".xml"))
 					type = 1;
-				else if (!mget_strcasecmp_ascii(ext, ".html"))
+				else if (!wget_strcasecmp_ascii(ext, ".html"))
 					type = 2;
 				else
 					continue;
@@ -172,12 +172,12 @@ static void test_parse_files(void)
 
 				char *data;
 
-				if ((data = mget_read_file(fname, NULL))) {
+				if ((data = wget_read_file(fname, NULL))) {
 					if (type == 1) {
-						mget_xml_parse_buffer(data, html_dump, data, 0);
+						wget_xml_parse_buffer(data, html_dump, data, 0);
 						xml++;
 					} else {
-						mget_html_parse_buffer(data, html_dump, data, 0);
+						wget_html_parse_buffer(data, html_dump, data, 0);
 						html++;
 					}
 

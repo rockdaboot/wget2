@@ -1,23 +1,23 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
  *
- * This file is part of libmget.
+ * This file is part of libwget.
  *
- * Libmget is free software: you can redistribute it and/or modify
+ * Libwget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Libmget is distributed in the hope that it will be useful,
+ * Libwget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Testing Mget
+ * Testing Wget
  *
  * Changelog
  * 08.07.2015  Tim Ruehsen  created
@@ -33,7 +33,7 @@
 
 int main(void)
 {
-	mget_test_url_t urls[]={
+	wget_test_url_t urls[]={
 		{	.name = "info.txt",
 			.body = "Dummy file content"
 		},
@@ -46,7 +46,7 @@ int main(void)
 "-rw-r--r--   1 ftp      ftp           245 Jul  1  2013 info.txt\r\n"
 		},
 	};
-	mget_test_ftp_io_t io[]={
+	wget_test_ftp_io_t io[]={
 		{	.in  = "USER anonymous",
 			.out = "331 Anonymous login ok"
 		},
@@ -79,9 +79,9 @@ int main(void)
 	};
 
 	// functions won't come back if an error occurs
-	mget_test_start_server(
-		MGET_TEST_RESPONSE_URLS, &urls, countof(urls),
-		MGET_TEST_FTP_IO_UNORDERED, &io, countof(io),
+	wget_test_start_server(
+		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
+		WGET_TEST_FTP_IO_UNORDERED, &io, countof(io),
 		0);
 
 	char options[128];
@@ -89,15 +89,15 @@ int main(void)
 	// without -O/dev/null Wget generates HTML output from the listing
 	snprintf(options, sizeof(options),
 		"-d --no-remove-listing -O/dev/null ftp://localhost:%d",
-		mget_test_get_ftp_server_port());
+		wget_test_get_ftp_server_port());
 
 	// test downloading the top directory content
-	mget_test(
-//		MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, options,
-		MGET_TEST_EXECUTABLE, "wget",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, options,
+		WGET_TEST_EXECUTABLE, "wget",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[1].name, urls[1].body },
 			{	NULL } },
 		0);
@@ -105,15 +105,15 @@ int main(void)
 	// without -O/dev/null Wget generates HTML output from the listing
 	snprintf(options, sizeof(options),
 		"-d ftp://localhost:%d/info.txt",
-		mget_test_get_ftp_server_port());
+		wget_test_get_ftp_server_port());
 
 	// test downloading a file
-	mget_test(
-//		MGET_TEST_KEEP_TMPFILES, 1,
-		MGET_TEST_OPTIONS, options,
-		MGET_TEST_EXECUTABLE, "wget",
-		MGET_TEST_EXPECTED_ERROR_CODE, 0,
-		MGET_TEST_EXPECTED_FILES, &(mget_test_file_t []) {
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, options,
+		WGET_TEST_EXECUTABLE, "wget",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name, urls[0].body },
 			{	NULL } },
 		0);

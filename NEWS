@@ -54,7 +54,7 @@
 
 16.02.2014
   Made HTTPS test work with GnuTLS 2.12.
-  Added option -/t--tries to Mget.
+  Added option -/t--tries to Wget.
 
 12.02.2014
   Added HTTPS server code, used in test suite.
@@ -85,8 +85,8 @@
 02.01.2014
   Added support for bzip2 Content-Encoding / Accept-Encoding type.
     It was easy going after having gzip and lzma decompression implemented.
-  Created a mailing list for discussions around Mget.
-    Subscribe by sending a mail to mget-bugs+subscribe@googlegroups.com.
+  Created a mailing list for discussions around Wget.
+    Subscribe by sending a mail to wget-bugs+subscribe@googlegroups.com.
 
 31.12.2013
   Added support for XZ / LZMA Content-Encoding / Accept-Encoding type (LZMA2 compression).

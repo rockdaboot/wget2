@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of Wget.
  *
- * Mget is free software: you can redistribute it and/or modify
+ * Wget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Wget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * Options and related routines
@@ -60,9 +60,9 @@
 #include <sys/stat.h>
 //#include <netdb.h>
 
-#include <libmget.h>
+#include <libwget.h>
 
-#include "mget.h"
+#include "wget.h"
 #include "log.h"
 #include "options.h"
 
@@ -81,15 +81,15 @@ struct option {
 		short_name;
 };
 
-static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, G_GNUC_MGET_UNUSED const char *val)
+static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, G_GNUC_WGET_UNUSED const char *val)
 {
 	puts(
-		"Mget V" PACKAGE_VERSION " - multithreaded metalink/file/website downloader written in C\n"
+		"Wget V" PACKAGE_VERSION " - multithreaded metalink/file/website downloader written in C\n"
 		"\n"
-		"Usage: mget [options...] <url>...\n"
+		"Usage: wget [options...] <url>...\n"
 		"\n"
 		"Startup:\n"
-		"  -V  --version           Display the version of Mget and exit.\n"
+		"  -V  --version           Display the version of Wget and exit.\n"
 		"  -h  --help              Print this help.\n"
 		"  -v  --verbose           Print more messages. (default: on)\n"
 		"  -q  --quiet             Print no messages except debugging messages. (default: off)\n"
@@ -104,7 +104,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --force-atom        Treat input file as Atom Feed. (default: off) (NEW!)\n"
 		"      --force-rss         Treat input file as RSS Feed. (default: off) (NEW!)\n"
 		"  -B  --base              Base for relative URLs read from input-file or from command line\n"
-		"  -e  --execute           Wget compatibility option, not needed for Mget\n"
+		"  -e  --execute           Wget compatibility option, not needed for Wget\n"
 		"\n");
 	puts(
 		"Download:\n"
@@ -145,7 +145,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --parent            Ascend above parent directory. (default: on)\n"
 		"      --trust-server-names  On redirection use the server's filename. (default: off)\n"
 		"      --chunk-size        Download large files in multithreaded chunks. (default: 0 (=off))\n"
-		"                          Example: mget --chunk-size=1M\n");
+		"                          Example: wget --chunk-size=1M\n");
 	puts(
 		"      --progress          Type of progress bar (bar, dot, none). (default: none)\n"
 		"      --local-encoding    Character encoding of environment and filenames.\n"
@@ -180,7 +180,7 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --save-cookies      Save cookies from file.\n"
 		"      --cookie-suffixes   Load public suffixes from file. They prevent 'supercookie' vulnerabilities.\n"
 		"                          Download the list with:\n"
-		"                          mget -O suffixes.txt http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1\n"
+		"                          wget -O suffixes.txt http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1\n"
 		"      --http-keep-alive   Keep connection open for further requests. (default: on)\n"
 		"      --save-headers      Save the response headers in front of the response data. (default: off)\n"
 		"      --referer           Include Referer: url in HTTP requets. (default: off)\n"
@@ -210,11 +210,11 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
 		"      --https-only        Do not follow non-secure URLs. (default: off)"
 		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)\n"
-		"      --hsts-file         Set file for HSTS chaching. (default: .mget_hsts)\n"
+		"      --hsts-file         Set file for HSTS chaching. (default: .wget_hsts)\n"
 		"      --gnutls-options    Custom GnuTLS priority string. Interferes with --secure-protocol. (default: none)\n"
 		"      --ocsp-stapling     Use OCSP stapling to verify the server's certificate. (default: on)\n"
 		"      --ocsp              Use OCSP server access to verify server's certificate. (default: on)\n"
-		"      --ocsp-file         Set file for OCSP chaching. (default: .mget_ocsp)\n"
+		"      --ocsp-file         Set file for OCSP chaching. (default: .wget_ocsp)\n"
 		"      --http2             Use HTTP/2 protocol if possible. (default: on)\n"
 		"\n");
 	puts(
@@ -234,20 +234,20 @@ static int G_GNUC_MGET_NORETURN print_help(G_GNUC_MGET_UNUSED option_t opt, G_GN
 
 /*
  * -a / --append-output should be reduced to -o (with always appending to logfile)
- * Using rm logfile + mget achieves the old behaviour...
+ * Using rm logfile + wget achieves the old behaviour...
  *
  */
 	exit(0);
 }
 
-static int parse_integer(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_integer(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
 	*((int *)opt->var) = val ? atoi(val) : 0;
 
 	return 0;
 }
 
-static int parse_numbytes(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_numbytes(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
 	if (val) {
 		char modifier = 0, error = 0;
@@ -280,7 +280,7 @@ static int parse_numbytes(option_t opt, G_GNUC_MGET_UNUSED const char *const *ar
 	return 0;
 }
 
-static int parse_string(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_string(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
 	// the strdup'ed string will be released on program exit
 	xfree(*((const char **)opt->var));
@@ -289,42 +289,42 @@ static int parse_string(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv
 	return 0;
 }
 
-static int parse_stringset(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_stringset(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
-	mget_stringmap_t *map = *((mget_stringmap_t **)opt->var);
+	wget_stringmap_t *map = *((wget_stringmap_t **)opt->var);
 
 	if (val) {
 		const char *s, *p;
 
 		for (s = val; (p = strchr(s, ',')); s = p + 1) {
 			if (p != s)
-				mget_stringmap_put_noalloc(map, strndup(s, p - s), NULL);
+				wget_stringmap_put_noalloc(map, strndup(s, p - s), NULL);
 		}
 		if (*s)
-			mget_stringmap_put_noalloc(map, strdup(s), NULL);
+			wget_stringmap_put_noalloc(map, strdup(s), NULL);
 	} else {
-		mget_stringmap_clear(map);
+		wget_stringmap_clear(map);
 	}
 
 	return 0;
 }
 
-static int parse_stringlist(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_stringlist(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
-	mget_vector_t *v = *((mget_vector_t **)opt->var);
+	wget_vector_t *v = *((wget_vector_t **)opt->var);
 
 	if (val && *val) {
 		const char *s, *p;
 
 		if (!v)
-			v = *((mget_vector_t **)opt->var) = mget_vector_create(8, -2, (int (*)(const void *, const void *))strcmp);
+			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, -2, (int (*)(const void *, const void *))strcmp);
 
 		for (s = val; (p = strchr(s, ',')); s = p + 1) {
 			if (p != s) {
 				const char *entry = strndup(s, p - s);
 
-				if (mget_vector_find(v, entry) == -1)
-					mget_vector_add_noalloc(v, entry);
+				if (wget_vector_find(v, entry) == -1)
+					wget_vector_add_noalloc(v, entry);
 				else
 					xfree(entry);
 			}
@@ -332,19 +332,19 @@ static int parse_stringlist(option_t opt, G_GNUC_MGET_UNUSED const char *const *
 		if (*s) {
 			const char *entry = strdup(s);
 
-			if (mget_vector_find(v, entry) == -1)
-				mget_vector_add_noalloc(v, entry);
+			if (wget_vector_find(v, entry) == -1)
+				wget_vector_add_noalloc(v, entry);
 			else
 				xfree(entry);
 		}
 	} else {
-		mget_vector_free(&v);
+		wget_vector_free(&v);
 	}
 
 	return 0;
 }
 
-static void _free_tag(mget_html_tag_t *tag)
+static void _free_tag(wget_html_tag_t *tag)
 {
 	if (tag) {
 		xfree(tag->attribute);
@@ -352,9 +352,9 @@ static void _free_tag(mget_html_tag_t *tag)
 	}
 }
 
-static void G_GNUC_MGET_NONNULL_ALL _add_tag(mget_vector_t *v, const char *begin, const char *end)
+static void G_GNUC_WGET_NONNULL_ALL _add_tag(wget_vector_t *v, const char *begin, const char *end)
 {
-	mget_html_tag_t tag;
+	wget_html_tag_t tag;
 	const char *attribute;
 
 	if ((attribute = memchr(begin, '/', end - begin))) {
@@ -365,13 +365,13 @@ static void G_GNUC_MGET_NONNULL_ALL _add_tag(mget_vector_t *v, const char *begin
 		tag.attribute = NULL;
 	}
 
-	if (mget_vector_find(v, &tag) == -1)
-		mget_vector_insert_sorted(v, &tag, sizeof(tag));
+	if (wget_vector_find(v, &tag) == -1)
+		wget_vector_insert_sorted(v, &tag, sizeof(tag));
 	else
 		_free_tag(&tag); // avoid double entries
 }
 
-static int G_GNUC_MGET_NONNULL_ALL _compare_tag(const mget_html_tag_t *t1, const mget_html_tag_t *t2)
+static int G_GNUC_WGET_NONNULL_ALL _compare_tag(const wget_html_tag_t *t1, const wget_html_tag_t *t2)
 {
 	int n;
 
@@ -390,16 +390,16 @@ static int G_GNUC_MGET_NONNULL_ALL _compare_tag(const mget_html_tag_t *t1, const
 	return n;
 }
 
-static int parse_taglist(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_taglist(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
-	mget_vector_t *v = *((mget_vector_t **)opt->var);
+	wget_vector_t *v = *((wget_vector_t **)opt->var);
 
 	if (val && *val) {
 		const char *s, *p;
 
 		if (!v) {
-			v = *((mget_vector_t **)opt->var) = mget_vector_create(8, -2, (int(*)(const void *, const void *))_compare_tag);
-			mget_vector_set_destructor(v, (void(*)(void *))_free_tag);
+			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, -2, (int(*)(const void *, const void *))_compare_tag);
+			wget_vector_set_destructor(v, (void(*)(void *))_free_tag);
 		}
 
 		for (s = val; (p = strchr(s, ',')); s = p + 1) {
@@ -409,13 +409,13 @@ static int parse_taglist(option_t opt, G_GNUC_MGET_UNUSED const char *const *arg
 		if (*s)
 			_add_tag(v, s, s + strlen(s));
 	} else {
-		mget_vector_free(&v);
+		wget_vector_free(&v);
 	}
 
 	return 0;
 }
 
-static int parse_bool(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_bool(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
 	if (opt->var) {
 		if (!val)
@@ -432,7 +432,7 @@ static int parse_bool(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, 
 	return 0;
 }
 
-static int parse_mirror(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_mirror(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
 	parse_bool(opt, argv, val);
 
@@ -449,7 +449,7 @@ static int parse_mirror(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv
 	return 0;
 }
 
-static int parse_timeout(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_timeout(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
 	double fval;
 
@@ -488,12 +488,12 @@ static int parse_timeout(option_t opt, G_GNUC_MGET_UNUSED const char *const *arg
 	return 0;
 }
 
-static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL((1)) parse_cert_type(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_cert_type(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
 	if (!val || !strcasecmp(val, "PEM"))
-		*((char *)opt->var) = MGET_SSL_X509_FMT_PEM;
+		*((char *)opt->var) = WGET_SSL_X509_FMT_PEM;
 	else if (!strcasecmp(val, "DER") || !strcasecmp(val, "ASN1"))
-		*((char *)opt->var) = MGET_SSL_X509_FMT_DER;
+		*((char *)opt->var) = WGET_SSL_X509_FMT_DER;
 	else
 		error_printf_exit("Unknown cert type '%s'\n", val);
 
@@ -501,7 +501,7 @@ static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL((1)) parse_cert_type(option_t op
 }
 
 // legacy option, needed to succeed test suite
-static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL((1)) parse_restrict_names(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_restrict_names(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
 	if (!val || !*val || !strcasecmp(val, "none"))
 		*((int *)opt->var) = RESTRICT_NAMES_NONE;
@@ -524,8 +524,8 @@ static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL((1)) parse_restrict_names(option
 }
 
 // Wget compatibility: support -nv, -nc, -nd, -nH and -np
-// Mget supports --no-... to all boolean and string options
-static int parse_n_option(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+// Wget supports --no-... to all boolean and string options
+static int parse_n_option(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
 	if (val) {
 		const char *p;
@@ -558,14 +558,14 @@ static int parse_n_option(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED co
 	return 0;
 }
 
-static int parse_prefer_family(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_prefer_family(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
 	if (!val || !strcasecmp(val, "none"))
-		*((char *)opt->var) = MGET_NET_FAMILY_ANY;
+		*((char *)opt->var) = WGET_NET_FAMILY_ANY;
 	else if (!strcasecmp(val, "ipv4"))
-		*((char *)opt->var) = MGET_NET_FAMILY_IPV4;
+		*((char *)opt->var) = WGET_NET_FAMILY_IPV4;
 	else if (!strcasecmp(val, "ipv6"))
-		*((char *)opt->var) = MGET_NET_FAMILY_IPV6;
+		*((char *)opt->var) = WGET_NET_FAMILY_IPV6;
 	else
 		error_printf_exit("Unknown address family '%s'\n", val);
 
@@ -581,12 +581,12 @@ struct config config = {
 	.num_threads = 5,
 	.dns_caching = 1,
 	.tcp_fastopen = 1,
-	.user_agent = "Mget/"PACKAGE_VERSION,
+	.user_agent = "Wget/"PACKAGE_VERSION,
 	.verbose = 1,
 	.check_certificate=1,
 	.check_hostname=1,
-	.cert_type = MGET_SSL_X509_FMT_PEM,
-	.private_key_type = MGET_SSL_X509_FMT_PEM,
+	.cert_type = WGET_SSL_X509_FMT_PEM,
+	.private_key_type = WGET_SSL_X509_FMT_PEM,
 	.secure_protocol = "AUTO",
 	.ca_directory = "system",
 	.cookies = 1,
@@ -602,16 +602,16 @@ struct config config = {
 	.robots = 1,
 	.tries = 20,
 	.hsts = 1,
-	.hsts_file = ".mget_hsts",
+	.hsts_file = ".wget_hsts",
 #if defined WITH_LIBNGHTTP2
 	.http2 = 1,
 #endif
 	.ocsp = 1,
 	.ocsp_stapling = 1,
-	.ocsp_file = ".mget_ocsp"
+	.ocsp_file = ".wget_ocsp"
 };
 
-static int parse_execute(option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val);
+static int parse_execute(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val);
 
 static const struct option options[] = {
 	// long name, config variable, parse function, number of arguments, short name
@@ -733,12 +733,12 @@ static const struct option options[] = {
 	{ "waitretry", &config.waitretry, parse_timeout, 1, 0 }
 };
 
-static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL opt_compare(const void *key, const void *option)
+static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL opt_compare(const void *key, const void *option)
 {
 	return strcmp((const char *)key, ((const option_t)option)->long_name);
 }
 
-static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL opt_compare_execute(const void *key, const void *option)
+static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL opt_compare_execute(const void *key, const void *option)
 {
 	const char *s1 = (char *)key;
 	const char *s2 = ((const option_t)option)->long_name;
@@ -753,7 +753,7 @@ static int G_GNUC_MGET_PURE G_GNUC_MGET_NONNULL_ALL opt_compare_execute(const vo
 	return *s1 - *s2;
 }
 
-static int G_GNUC_MGET_NONNULL((1)) set_long_option(const char *name, const char *value)
+static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char *value)
 {
 	option_t opt;
 	int invert = 0, ret = 0;
@@ -827,7 +827,7 @@ static int G_GNUC_MGET_NONNULL((1)) set_long_option(const char *name, const char
 	return ret;
 }
 
-static int parse_execute(G_GNUC_MGET_UNUSED option_t opt, G_GNUC_MGET_UNUSED const char *const *argv, const char *val)
+static int parse_execute(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val)
 {
 	// info_printf("### argv=%s val=%s\n",argv[0],val);
 	set_long_option(val, NULL);
@@ -889,7 +889,7 @@ static int _parse_option(char *linep, char **name, char **val)
 // - format is 'name value', where value might be enclosed in ' or "
 // - values enclosed in " or ' might contain \\, \" and \'
 
-static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand)
+static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand)
 {
 	static int level; // level of recursions to prevent endless include loops
 	FILE *fp;
@@ -897,7 +897,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 	int append = 0, found;
 	size_t bufsize = 0;
 	ssize_t len;
-	mget_buffer_t linebuf;
+	wget_buffer_t linebuf;
 
 /*
 	if (expand) {
@@ -965,9 +965,9 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 	debug_printf("Reading %s\n", cfgfile);
 
-	mget_buffer_init(&linebuf, alloca(1024), 1024);
+	wget_buffer_init(&linebuf, alloca(1024), 1024);
 
-	while ((len = mget_getline(&buf, &bufsize, fp)) >= 0) {
+	while ((len = wget_getline(&buf, &bufsize, fp)) >= 0) {
 		if (len == 0 || *buf == '\r' || *buf == '\n') continue;
 
 		linep = buf;
@@ -987,14 +987,14 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 		if (linep[len - 1] == '\\') {
 			if (append) {
-				mget_buffer_memcat(&linebuf, linep, len - 1);
+				wget_buffer_memcat(&linebuf, linep, len - 1);
 			} else {
-				mget_buffer_memcpy(&linebuf, linep, len - 1);
+				wget_buffer_memcpy(&linebuf, linep, len - 1);
 				append = 1;
 			}
 			continue;
 		} else if (append) {
-			mget_buffer_strcat(&linebuf, linep);
+			wget_buffer_strcat(&linebuf, linep);
 			append = 0;
 			linep = linebuf.data;
 		}
@@ -1019,7 +1019,7 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 		}
 	}
 
-	mget_buffer_deinit(&linebuf);
+	wget_buffer_deinit(&linebuf);
 	xfree(buf);
 	fclose(fp);
 
@@ -1032,13 +1032,13 @@ static int G_GNUC_MGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 static void read_config(void)
 {
-	if (access(SYSCONFDIR"mgetrc", R_OK) == 0)
-		_read_config(SYSCONFDIR"mgetrc", 0);
+	if (access(SYSCONFDIR"wgetrc", R_OK) == 0)
+		_read_config(SYSCONFDIR"wgetrc", 0);
 
-	_read_config("~/.mgetrc", 1);
+	_read_config("~/.wgetrc", 1);
 }
 
-static int G_GNUC_MGET_NONNULL((2)) parse_command_line(int argc, const char *const *argv)
+static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char *const *argv)
 {
 	static short shortcut_to_option[128];
 	unsigned short it;
@@ -1098,7 +1098,7 @@ static int G_GNUC_MGET_NONNULL((2)) parse_command_line(int argc, const char *con
 	return n;
 }
 
-static void G_GNUC_MGET_NORETURN _no_memory(void)
+static void G_GNUC_WGET_NORETURN _no_memory(void)
 {
 	fprintf(stderr, "No memory\n");
 	exit(EXIT_FAILURE);
@@ -1111,8 +1111,8 @@ int init(int argc, const char *const *argv)
 {
 	int n, truncated = 1;
 
-	// set libmget out-of-memory function
-	mget_set_oomfunc(_no_memory);
+	// set libwget out-of-memory function
+	wget_set_oomfunc(_no_memory);
 
 	// seed random generator, used e.g. by Digest Authentication and --random-wait
 	srandom(time(NULL) ^ getpid());
@@ -1131,13 +1131,13 @@ int init(int argc, const char *const *argv)
 	config.user_agent = strdup(config.user_agent);
 	config.secure_protocol = strdup(config.secure_protocol);
 	config.ca_directory = strdup(config.ca_directory);
-	config.http_proxy = mget_strdup(getenv("http_proxy"));
-	config.https_proxy = mget_strdup(getenv("https_proxy"));
+	config.http_proxy = wget_strdup(getenv("http_proxy"));
+	config.https_proxy = wget_strdup(getenv("https_proxy"));
 	config.default_page = strdup(config.default_page);
 	config.hsts_file = strdup(config.hsts_file);
 	config.ocsp_file = strdup(config.ocsp_file);
-	config.domains = mget_vector_create(16, -2, (int (*)(const void *, const void *))strcmp);
-//	config.exclude_domains = mget_vector_create(16, -2, NULL);
+	config.domains = wget_vector_create(16, -2, (int (*)(const void *, const void *))strcmp);
+//	config.exclude_domains = wget_vector_create(16, -2, NULL);
 
 	log_init();
 
@@ -1165,7 +1165,7 @@ int init(int argc, const char *const *argv)
 	read_config();
 
 	if (config.print_version) {
-		info_printf("Mget " PACKAGE_VERSION " - C multithreaded metalink/file/website downloader\n\n");
+		info_printf("Wget " PACKAGE_VERSION " - C multithreaded metalink/file/website downloader\n\n");
 		info_printf("+digest"
 
 #if defined WITH_GNUTLS
@@ -1289,38 +1289,38 @@ int init(int argc, const char *const *argv)
 	}
 
 	if (!config.local_encoding)
-		config.local_encoding = mget_local_charset_encoding();
+		config.local_encoding = wget_local_charset_encoding();
 	if (!config.input_encoding)
 		config.input_encoding = strdup(config.local_encoding);
 
 	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
 	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
 
-	mget_http_set_http_proxy(config.http_proxy, config.local_encoding);
-	mget_http_set_https_proxy(config.https_proxy, config.local_encoding);
+	wget_http_set_http_proxy(config.http_proxy, config.local_encoding);
+	wget_http_set_https_proxy(config.https_proxy, config.local_encoding);
 	xfree(config.http_proxy);
 	xfree(config.https_proxy);
 
 	if (config.cookies) {
-		config.cookie_db = mget_cookie_db_init(NULL);
+		config.cookie_db = wget_cookie_db_init(NULL);
 		if (config.cookie_suffixes)
-			mget_cookie_db_load_psl(config.cookie_db, config.cookie_suffixes);
+			wget_cookie_db_load_psl(config.cookie_db, config.cookie_suffixes);
 		if (config.load_cookies)
-			mget_cookie_db_load(config.cookie_db, config.load_cookies, config.keep_session_cookies);
+			wget_cookie_db_load(config.cookie_db, config.load_cookies, config.keep_session_cookies);
 	}
 
 	if (config.hsts) {
-		config.hsts_db = mget_hsts_db_init(NULL);
-		mget_hsts_db_load(config.hsts_db, config.hsts_file);
+		config.hsts_db = wget_hsts_db_init(NULL);
+		wget_hsts_db_load(config.hsts_db, config.hsts_file);
 	}
 
 	if (config.ocsp) {
-		config.ocsp_db = mget_ocsp_db_init(NULL);
-		mget_ocsp_db_load(config.ocsp_db, config.ocsp_file);
+		config.ocsp_db = wget_ocsp_db_init(NULL);
+		wget_ocsp_db_load(config.ocsp_db, config.ocsp_file);
 	}
 
 	if (config.base_url)
-		config.base = mget_iri_parse(config.base_url, config.local_encoding);
+		config.base = wget_iri_parse(config.base_url, config.local_encoding);
 
 	if (config.username && !config.http_username)
 		config.http_username = strdup(config.username);
@@ -1334,74 +1334,74 @@ int init(int argc, const char *const *argv)
 	}
 
 	// set module specific options
-	mget_tcp_set_timeout(NULL, config.read_timeout);
-	mget_tcp_set_connect_timeout(NULL, config.connect_timeout);
-	mget_tcp_set_dns_timeout(NULL, config.dns_timeout);
-	mget_tcp_set_dns_caching(NULL, config.dns_caching);
-	mget_tcp_set_tcp_fastopen(NULL, config.tcp_fastopen);
-	mget_tcp_set_tcp_fastopen(NULL, config.tcp_fastopen);
-	mget_tcp_set_bind_address(NULL, config.bind_address);
+	wget_tcp_set_timeout(NULL, config.read_timeout);
+	wget_tcp_set_connect_timeout(NULL, config.connect_timeout);
+	wget_tcp_set_dns_timeout(NULL, config.dns_timeout);
+	wget_tcp_set_dns_caching(NULL, config.dns_caching);
+	wget_tcp_set_tcp_fastopen(NULL, config.tcp_fastopen);
+	wget_tcp_set_tcp_fastopen(NULL, config.tcp_fastopen);
+	wget_tcp_set_bind_address(NULL, config.bind_address);
 	if (config.inet4_only)
-		mget_tcp_set_family(NULL, MGET_NET_FAMILY_IPV4);
+		wget_tcp_set_family(NULL, WGET_NET_FAMILY_IPV4);
 	else if (config.inet6_only)
-		mget_tcp_set_family(NULL, MGET_NET_FAMILY_IPV6);
+		wget_tcp_set_family(NULL, WGET_NET_FAMILY_IPV6);
 	else
-		mget_tcp_set_preferred_family(NULL, config.preferred_family);
+		wget_tcp_set_preferred_family(NULL, config.preferred_family);
 
-	mget_iri_set_defaultpage(config.default_page);
+	wget_iri_set_defaultpage(config.default_page);
 
 	// SSL settings
-	mget_ssl_set_config_int(MGET_SSL_CHECK_CERTIFICATE, config.check_certificate);
-	mget_ssl_set_config_int(MGET_SSL_CHECK_HOSTNAME, config.check_hostname);
-	mget_ssl_set_config_int(MGET_SSL_CERT_TYPE, config.cert_type);
-	mget_ssl_set_config_int(MGET_SSL_KEY_TYPE, config.private_key_type);
-	mget_ssl_set_config_int(MGET_SSL_PRINT_INFO, config.debug);
-	mget_ssl_set_config_int(MGET_SSL_OCSP, config.ocsp);
-	mget_ssl_set_config_int(MGET_SSL_OCSP_STAPLING, config.ocsp_stapling);
-	mget_ssl_set_config_string(MGET_SSL_SECURE_PROTOCOL, config.secure_protocol);
-	mget_ssl_set_config_string(MGET_SSL_DIRECT_OPTIONS, config.gnutls_options);
-	mget_ssl_set_config_string(MGET_SSL_CA_DIRECTORY, config.ca_directory);
-	mget_ssl_set_config_string(MGET_SSL_CA_FILE, config.ca_cert);
-	mget_ssl_set_config_string(MGET_SSL_CERT_FILE, config.cert_file);
-	mget_ssl_set_config_string(MGET_SSL_KEY_FILE, config.private_key);
-	mget_ssl_set_config_string(MGET_SSL_CRL_FILE, config.crl_file);
-	mget_ssl_set_config_string(MGET_SSL_OCSP_CACHE, (const char *)config.ocsp_db);
+	wget_ssl_set_config_int(WGET_SSL_CHECK_CERTIFICATE, config.check_certificate);
+	wget_ssl_set_config_int(WGET_SSL_CHECK_HOSTNAME, config.check_hostname);
+	wget_ssl_set_config_int(WGET_SSL_CERT_TYPE, config.cert_type);
+	wget_ssl_set_config_int(WGET_SSL_KEY_TYPE, config.private_key_type);
+	wget_ssl_set_config_int(WGET_SSL_PRINT_INFO, config.debug);
+	wget_ssl_set_config_int(WGET_SSL_OCSP, config.ocsp);
+	wget_ssl_set_config_int(WGET_SSL_OCSP_STAPLING, config.ocsp_stapling);
+	wget_ssl_set_config_string(WGET_SSL_SECURE_PROTOCOL, config.secure_protocol);
+	wget_ssl_set_config_string(WGET_SSL_DIRECT_OPTIONS, config.gnutls_options);
+	wget_ssl_set_config_string(WGET_SSL_CA_DIRECTORY, config.ca_directory);
+	wget_ssl_set_config_string(WGET_SSL_CA_FILE, config.ca_cert);
+	wget_ssl_set_config_string(WGET_SSL_CERT_FILE, config.cert_file);
+	wget_ssl_set_config_string(WGET_SSL_KEY_FILE, config.private_key);
+	wget_ssl_set_config_string(WGET_SSL_CRL_FILE, config.crl_file);
+	wget_ssl_set_config_string(WGET_SSL_OCSP_CACHE, (const char *)config.ocsp_db);
 	if (config.http2)
-		mget_ssl_set_config_string(MGET_SSL_ALPN, "h2,h2-16,h2-14,spdy/3.1,http/1.1");
+		wget_ssl_set_config_string(WGET_SSL_ALPN, "h2,h2-16,h2-14,spdy/3.1,http/1.1");
 
 	// convert host lists to lowercase
-	for (int it = 0; it < mget_vector_size(config.domains); it++) {
-		char *s, *hostname = mget_vector_get(config.domains, it);
+	for (int it = 0; it < wget_vector_size(config.domains); it++) {
+		char *s, *hostname = wget_vector_get(config.domains, it);
 
-		mget_percent_unescape(hostname);
+		wget_percent_unescape(hostname);
 
-		if (mget_str_needs_encoding(hostname)) {
-			if ((s = mget_str_to_utf8(hostname, config.local_encoding))) {
-				mget_vector_replace_noalloc(config.domains, s, it);
+		if (wget_str_needs_encoding(hostname)) {
+			if ((s = wget_str_to_utf8(hostname, config.local_encoding))) {
+				wget_vector_replace_noalloc(config.domains, s, it);
 				hostname = s;
 			}
 
-			if ((s = (char *)mget_str_to_ascii(hostname)) != hostname)
-				mget_vector_replace_noalloc(config.domains, s, it);
+			if ((s = (char *)wget_str_to_ascii(hostname)) != hostname)
+				wget_vector_replace_noalloc(config.domains, s, it);
 		} else
-			mget_strtolower(hostname);
+			wget_strtolower(hostname);
 	}
 
-	for (int it = 0; it < mget_vector_size(config.exclude_domains); it++) {
-		char *s, *hostname = mget_vector_get(config.exclude_domains, it);
+	for (int it = 0; it < wget_vector_size(config.exclude_domains); it++) {
+		char *s, *hostname = wget_vector_get(config.exclude_domains, it);
 
-		mget_percent_unescape(hostname);
+		wget_percent_unescape(hostname);
 
-		if (mget_str_needs_encoding(hostname)) {
-			if ((s = mget_str_to_utf8(hostname, config.local_encoding))) {
-				mget_vector_replace_noalloc(config.exclude_domains, s, it);
+		if (wget_str_needs_encoding(hostname)) {
+			if ((s = wget_str_to_utf8(hostname, config.local_encoding))) {
+				wget_vector_replace_noalloc(config.exclude_domains, s, it);
 				hostname = s;
 			}
 
-			if ((s = (char *)mget_str_to_ascii(hostname)) != hostname)
-				mget_vector_replace_noalloc(config.exclude_domains, s, it);
+			if ((s = (char *)wget_str_to_ascii(hostname)) != hostname)
+				wget_vector_replace_noalloc(config.exclude_domains, s, it);
 		} else
-			mget_strtolower(hostname);
+			wget_strtolower(hostname);
 	}
 
 	return n;
@@ -1412,13 +1412,13 @@ int init(int argc, const char *const *argv)
 
 void deinit(void)
 {
-	mget_dns_cache_free(); // frees DNS cache
-	mget_tcp_set_bind_address(NULL, NULL); // free global bind address
+	wget_dns_cache_free(); // frees DNS cache
+	wget_tcp_set_bind_address(NULL, NULL); // free global bind address
 
-	mget_cookie_db_free(&config.cookie_db);
-	mget_hsts_db_free(&config.hsts_db);
-	mget_ocsp_db_free(&config.ocsp_db);
-	mget_ssl_deinit();
+	wget_cookie_db_free(&config.cookie_db);
+	wget_hsts_db_free(&config.hsts_db);
+	wget_ocsp_db_free(&config.ocsp_db);
+	wget_ssl_deinit();
 
 	xfree(config.cookie_suffixes);
 	xfree(config.load_cookies);
@@ -1451,15 +1451,15 @@ void deinit(void)
 	xfree(config.post_data);
 	xfree(config.post_file);
 
-	mget_iri_free(&config.base);
+	wget_iri_free(&config.base);
 
-	mget_vector_free(&config.domains);
-	mget_vector_free(&config.exclude_domains);
-	mget_vector_free(&config.follow_tags);
-	mget_vector_free(&config.ignore_tags);
+	wget_vector_free(&config.domains);
+	wget_vector_free(&config.exclude_domains);
+	wget_vector_free(&config.follow_tags);
+	wget_vector_free(&config.ignore_tags);
 
-	mget_http_set_http_proxy(NULL, NULL);
-	mget_http_set_https_proxy(NULL, NULL);
+	wget_http_set_http_proxy(NULL, NULL);
+	wget_http_set_https_proxy(NULL, NULL);
 }
 
 // self test some functions, called by using --self-test
@@ -1636,7 +1636,7 @@ int selftest_options(void)
 
 		for (it = 0; it < countof(test_string_short); it++) {
 			parse_command_line(3, test_string_short[it].argv);
-			if (mget_strcmp(config.user_agent, test_string_short[it].result)) {
+			if (wget_strcmp(config.user_agent, test_string_short[it].result)) {
 				error_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
 				ret = 1;
 			}
@@ -1655,7 +1655,7 @@ int selftest_options(void)
 
 		for (it = 0; it < countof(test_string); it++) {
 			parse_command_line(3, test_string[it].argv);
-			if (mget_strcmp(config.user_agent, test_string[it].result)) {
+			if (wget_strcmp(config.user_agent, test_string[it].result)) {
 				error_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
 				ret = 1;
 			}

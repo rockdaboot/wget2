@@ -5,9 +5,9 @@ $ certtool --generate-privkey --outfile x509-server-key.pem --rsa
 To create a self signed CA certificate:
 $ certtool --generate-privkey --outfile x509-ca-key.pem
 $ certtool --generate-self-signed --load-privkey x509-ca-key.pem --outfile x509-ca-cert.pem
-Common name: Mget
+Common name: Wget
 UID:
-Organizational unit name: Mget
+Organizational unit name: Wget
 Organization name: rockdaboot
 Locality name:
 State or province name:
@@ -42,7 +42,7 @@ To generate a server certificate using the private key only:
 $ certtool --generate-certificate --load-privkey x509-server-key.pem --outfile x509-server-cert.pem --load-ca-certificate x509-ca-cert.pem --load-ca-privkey x509-ca-key.pem
 Common name: 127.0.0.1
 UID:
-Organizational unit name: Mget
+Organizational unit name: Wget
 Organization name: rockdaboot
 Locality name:
 State or province name:

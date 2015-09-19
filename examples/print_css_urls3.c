@@ -1,23 +1,23 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
  *
- * This file is part of libmget.
+ * This file is part of libwget.
  *
- * Libmget is free software: you can redistribute it and/or modify
+ * Libwget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Libmget is distributed in the hope that it will be useful,
+ * Libwget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libmget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Advanced example for CSS parsing using libmget
+ * Advanced example for CSS parsing using libwget
  *
  * Changelog
  * 15.01.2013  Tim Ruehsen  created
@@ -34,17 +34,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libmget.h>
+#include <libwget.h>
 
-// use the helper routines provided by libmget
-#define info_printf        mget_info_printf
-// #define error_printf       mget_error_printf
-#define error_printf_exit  mget_error_printf_exit
+// use the helper routines provided by libwget
+#define info_printf        wget_info_printf
+// #define error_printf       wget_error_printf
+#define error_printf_exit  wget_error_printf_exit
 
 // I try to never leave freed pointers hanging around
 // #define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 
-static void G_GNUC_MGET_NORETURN usage(const char *myname)
+static void G_GNUC_WGET_NORETURN usage(const char *myname)
 {
 	error_printf_exit(
 		"\nUsage: %s [options] file...\n"\
@@ -69,10 +69,10 @@ int main(int argc, const char **argv)
 
 	// We assume that base is encoded in the local charset.
 	const char *
-		local_encoding = mget_local_charset_encoding();
+		local_encoding = wget_local_charset_encoding();
 
 	// parsed 'base'
-	mget_iri_t
+	wget_iri_t
 		*base_uri;
 
 	// Character encoding of CSS file content
@@ -84,13 +84,13 @@ int main(int argc, const char **argv)
 	int
 		argpos;
 
-	// We want the libmget error messages be printed to STDERR.
-	// From here on, we can call mget_error_printf, etc.
-	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_ERROR), stderr);
+	// We want the libwget error messages be printed to STDERR.
+	// From here on, we can call wget_error_printf, etc.
+	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_ERROR), stderr);
 
-	// We want the libmget info messages be printed to STDOUT.
-	// From here on, we can call mget_info_printf, etc.
-	mget_logger_set_stream(mget_get_logger(MGET_LOGGER_INFO), stdout);
+	// We want the libwget info messages be printed to STDOUT.
+	// From here on, we can call wget_info_printf, etc.
+	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), stdout);
 
 	// parse options
 	for (argpos = 1; argpos < argc; argpos++) {
@@ -110,17 +110,17 @@ int main(int argc, const char **argv)
 
 	// All URIs are converted into UTF-8 charset.
 	// That's why we need the local encoding (aka 'encoding of base URI') here.
-	base_uri = base ? mget_iri_parse(base, local_encoding) : NULL;
+	base_uri = base ? wget_iri_parse(base, local_encoding) : NULL;
 
 	for (;argpos < argc; argpos++) {
 		// use '-' as filename for STDIN
-		mget_vector_t *css_urls = mget_css_get_urls_from_localfile(argv[argpos], base_uri, &css_encoding);
+		wget_vector_t *css_urls = wget_css_get_urls_from_localfile(argv[argpos], base_uri, &css_encoding);
 
-		if (mget_vector_size(css_urls) > 0) {
+		if (wget_vector_size(css_urls) > 0) {
 			info_printf("URL encoding for %s is '%s':\n", argv[argpos], css_encoding ? css_encoding : "UTF-8");
 
-			for (int it = 0; it < mget_vector_size(css_urls); it++) {
-				MGET_PARSED_URL *css_url = mget_vector_get(css_urls, it);
+			for (int it = 0; it < wget_vector_size(css_urls); it++) {
+				WGET_PARSED_URL *css_url = wget_vector_get(css_urls, it);
 				if (css_url->abs_url)
 					info_printf("  %s -> %s\n", css_url->url, css_url->abs_url);
 				else
@@ -130,10 +130,10 @@ int main(int argc, const char **argv)
 			info_printf("\n");
 		}
 
-		mget_vector_free(&css_urls);
+		wget_vector_free(&css_urls);
 	}
 
-	mget_iri_free(&base_uri);
+	wget_iri_free(&base_uri);
 
 	return 0;
 }

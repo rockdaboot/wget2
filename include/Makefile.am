@@ -1,1 +1,1 @@
-include_HEADERS = libmget.h
+include_HEADERS = libwget.h

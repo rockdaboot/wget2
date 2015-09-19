@@ -1,20 +1,20 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
  *
- * This file is part of MGet.
+ * This file is part of Wget.
  *
- * Mget is free software: you can redistribute it and/or modify
+ * Wget is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Mget is distributed in the hope that it will be useful,
+ * Wget is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Mget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * Job routines
@@ -35,13 +35,13 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#include <libmget.h>
+#include <libwget.h>
 
-#include "mget.h"
+#include "wget.h"
 #include "log.h"
 #include "job.h"
 
-static mget_list_t
+static wget_list_t
 	*queue;
 static int
 	qsize;
@@ -49,10 +49,10 @@ static int
 void job_free(JOB *job)
 {
 	if (job) {
-		mget_metalink_free(&job->metalink);
-		mget_vector_free(&job->parts);
-		mget_vector_clear_nofree(job->deferred);
-		mget_vector_free(&job->deferred);
+		wget_metalink_free(&job->metalink);
+		wget_vector_free(&job->parts);
+		wget_vector_clear_nofree(job->deferred);
+		wget_vector_free(&job->deferred);
 		xfree(job->local_filename);
 	}
 }
@@ -60,7 +60,7 @@ void job_free(JOB *job)
 void job_create_parts(JOB *job)
 {
 	PART part;
-	mget_metalink_t *metalink;
+	wget_metalink_t *metalink;
 	ssize_t fsize;
 
 	if (!job || !(metalink = job->metalink))
@@ -70,14 +70,14 @@ void job_create_parts(JOB *job)
 
 	// create space to hold enough parts
 	if (!job->parts)
-		job->parts = mget_vector_create(mget_vector_size(metalink->pieces), 4, NULL);
+		job->parts = wget_vector_create(wget_vector_size(metalink->pieces), 4, NULL);
 	else
-		mget_vector_clear(job->parts);
+		wget_vector_clear(job->parts);
 
 	fsize = metalink->size;
 
-	for (int it = 0; it < mget_vector_size(metalink->pieces); it++) {
-		mget_metalink_piece_t *piece = mget_vector_get(metalink->pieces, it);
+	for (int it = 0; it < wget_vector_size(metalink->pieces); it++) {
+		wget_metalink_piece_t *piece = wget_vector_get(metalink->pieces, it);
 
 		if (fsize >= piece->length) {
 			part.length = piece->length;
@@ -87,7 +87,7 @@ void job_create_parts(JOB *job)
 
 		part.id = it + 1;
 
-		mget_vector_add(job->parts, &part, sizeof(PART));
+		wget_vector_add(job->parts, &part, sizeof(PART));
 
 		part.position += part.length;
 		fsize -= piece->length;
@@ -139,7 +139,7 @@ PART *job_add_part(JOB *job, PART *part)
 	if (!job->parts)
 		job_create_parts(job);
 
-	return mget_vector_get(job->parts, mget_vector_add(job->parts, part, sizeof(PART)));
+	return wget_vector_get(job->parts, wget_vector_add(job->parts, part, sizeof(PART)));
 }
 */
 
@@ -148,11 +148,11 @@ PART *job_add_part(JOB *job, PART *part)
 //  0: not ok
 //  1: ok
 
-static int check_piece_hash(mget_metalink_hash_t *hash, int fd, off_t offset, size_t length)
+static int check_piece_hash(wget_metalink_hash_t *hash, int fd, off_t offset, size_t length)
 {
 	char sum[128 + 1]; // large enough for sha-512 hex
 
-	if (mget_hash_file_fd(hash->type, fd, sum, sizeof(sum), offset, length) != -1) {
+	if (wget_hash_file_fd(hash->type, fd, sum, sizeof(sum), offset, length) != -1) {
 		return !strcasecmp(sum, hash->hash_hex);
 	}
 
@@ -175,11 +175,11 @@ static int check_file_hash(HASH *hash, const char *fname)
 }
 */
 
-static int check_file_fd(mget_metalink_hash_t *hash, int fd)
+static int check_file_fd(wget_metalink_hash_t *hash, int fd)
 {
 	char sum[128 + 1]; // large enough for sha-512 hex
 
-	if (mget_hash_file_fd(hash->type, fd, sum, sizeof(sum), 0, 0) != -1) {
+	if (wget_hash_file_fd(hash->type, fd, sum, sizeof(sum), 0, 0) != -1) {
 		return !strcasecmp(sum, hash->hash_hex);
 	}
 
@@ -189,7 +189,7 @@ static int check_file_fd(mget_metalink_hash_t *hash, int fd)
 int job_validate_file(JOB *job)
 {
 	PART part;
-	mget_metalink_t *metalink;
+	wget_metalink_t *metalink;
 	off_t fsize;
 	int fd, rc = -1;
 	struct stat st;
@@ -201,13 +201,13 @@ int job_validate_file(JOB *job)
 
 	// create space to hold enough parts
 	if (!job->parts)
-		job->parts = mget_vector_create(mget_vector_size(metalink->pieces), 4, NULL);
+		job->parts = wget_vector_create(wget_vector_size(metalink->pieces), 4, NULL);
 	else
-		mget_vector_clear(job->parts);
+		wget_vector_clear(job->parts);
 
 	fsize = metalink->size;
 
-	if (mget_vector_size(metalink->hashes) == 0) {
+	if (wget_vector_size(metalink->hashes) == 0) {
 		// multipart non-metalink download: do not clobber if file has expected size
 		if (stat(metalink->name, &st) == 0 && st.st_size == fsize) {
 			return 1; // we are done
@@ -224,8 +224,8 @@ int job_validate_file(JOB *job)
 	if ((fd = open(metalink->name, O_RDONLY)) != -1) {
 		// file exists, check which piece is invalid and requeue it
 
-		for (int it = 0; errno != EINTR && it < mget_vector_size(metalink->hashes); it++) {
-			mget_metalink_hash_t *hash = mget_vector_get(metalink->hashes, it);
+		for (int it = 0; errno != EINTR && it < wget_vector_size(metalink->hashes); it++) {
+			wget_metalink_hash_t *hash = wget_vector_get(metalink->hashes, it);
 
 			if ((rc = check_file_fd(hash, fd)) == -1)
 				continue; // hash type not available, try next
@@ -249,9 +249,9 @@ int job_validate_file(JOB *job)
 //		if (vec_size(metalink->pieces) < 1)
 //			return;
 
-		for (int it = 0; errno != EINTR && it < mget_vector_size(metalink->pieces); it++) {
-			mget_metalink_piece_t *piece = mget_vector_get(metalink->pieces, it);
-			mget_metalink_hash_t *hash = &piece->hash;
+		for (int it = 0; errno != EINTR && it < wget_vector_size(metalink->pieces); it++) {
+			wget_metalink_piece_t *piece = wget_vector_get(metalink->pieces, it);
+			wget_metalink_hash_t *hash = &piece->hash;
 
 			if (fsize >= piece->length) {
 				part.length = piece->length;
@@ -262,8 +262,8 @@ int job_validate_file(JOB *job)
 			part.id = it + 1;
 
 			if ((rc = check_piece_hash(hash, fd, part.position, part.length)) != 1) {
-				info_printf(_("Piece %d/%d not OK - requeuing\n"), it + 1, mget_vector_size(metalink->pieces));
-				mget_vector_add(job->parts, &part, sizeof(PART));
+				info_printf(_("Piece %d/%d not OK - requeuing\n"), it + 1, wget_vector_size(metalink->pieces));
+				wget_vector_add(job->parts, &part, sizeof(PART));
 				debug_printf("  need to download %llu bytes from pos=%llu\n",
 					(unsigned long long)part.length, (unsigned long long)part.position);
 			}
@@ -273,8 +273,8 @@ int job_validate_file(JOB *job)
 		}
 		close(fd);
 	} else {
-		for (int it = 0; it < mget_vector_size(metalink->pieces); it++) {
-			mget_metalink_piece_t *piece = mget_vector_get(metalink->pieces, it);
+		for (int it = 0; it < wget_vector_size(metalink->pieces); it++) {
+			wget_metalink_piece_t *piece = wget_vector_get(metalink->pieces, it);
 
 			if (fsize >= piece->length) {
 				part.length = piece->length;
@@ -284,7 +284,7 @@ int job_validate_file(JOB *job)
 
 			part.id = it + 1;
 
-			mget_vector_add(job->parts, &part, sizeof(PART));
+			wget_vector_add(job->parts, &part, sizeof(PART));
 
 			part.position += part.length;
 			fsize -= piece->length;
@@ -294,18 +294,18 @@ int job_validate_file(JOB *job)
 	return 0;
 }
 
-static mget_thread_mutex_t
-	mutex = MGET_THREAD_MUTEX_INITIALIZER;
+static wget_thread_mutex_t
+	mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
 JOB *queue_add_job(JOB *job)
 {
 	if (job) {
 		JOB *jobp;
 
-		mget_thread_mutex_lock(&mutex);
-		jobp = mget_list_append(&queue, job, sizeof(JOB));
+		wget_thread_mutex_lock(&mutex);
+		jobp = wget_list_append(&queue, job, sizeof(JOB));
 		qsize++;
-		mget_thread_mutex_unlock(&mutex);
+		wget_thread_mutex_unlock(&mutex);
 
 		debug_printf("queue_add_job %p %s\n", (void *)jobp, job->iri->uri);
 		return jobp;
@@ -325,11 +325,11 @@ void queue_del(JOB *job)
 
 			if (job->host)
 				job->host->robot_job = NULL;
-			mget_iri_free(&job->iri);
+			wget_iri_free(&job->iri);
 
 			// create a job for each deferred IRI
-			for (int it = 0; it < mget_vector_size(job->deferred); it++) {
-				new_job.iri = mget_vector_get(job->deferred, it);
+			for (int it = 0; it < wget_vector_size(job->deferred); it++) {
+				new_job.iri = wget_vector_get(job->deferred, it);
 				new_job.local_filename = get_local_filename(new_job.iri);
 				queue_add_job(&new_job);
 			}
@@ -337,10 +337,10 @@ void queue_del(JOB *job)
 
 		job_free(job);
 
-		mget_thread_mutex_lock(&mutex);
-		mget_list_remove(&queue, job);
+		wget_thread_mutex_lock(&mutex);
+		wget_list_remove(&queue, job);
 		qsize--;
-		mget_thread_mutex_unlock(&mutex);
+		wget_thread_mutex_unlock(&mutex);
 	}
 }
 
@@ -358,13 +358,13 @@ static int find_free_job(struct find_free_job_context *context, JOB *job)
 	if (context->part && job->parts) {
 		// debug_printf("nparts %d\n",vec_size(job->parts));
 
-		for (int it = 0; it < mget_vector_size(job->parts); it++) {
-			PART *part = mget_vector_get(job->parts, it);
+		for (int it = 0; it < wget_vector_size(job->parts); it++) {
+			PART *part = wget_vector_get(job->parts, it);
 			if (!part->inuse) {
 				part->inuse = 1;
 				*context->part = part;
 				*context->job = job;
-				debug_printf("queue_get part %d/%d %s\n", it + 1, mget_vector_size(job->parts), job->local_filename);
+				debug_printf("queue_get part %d/%d %s\n", it + 1, wget_vector_size(job->parts), job->local_filename);
 				return 1;
 			}
 		}
@@ -386,9 +386,9 @@ int queue_get(JOB **job, PART **part)
 	if (part)
 		*part = NULL;
 
-	mget_thread_mutex_lock(&mutex);
-	int ret = mget_list_browse(queue, (int(*)(void *, void *))find_free_job, &context);
-	mget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_lock(&mutex);
+	int ret = wget_list_browse(queue, (int(*)(void *, void *))find_free_job, &context);
+	wget_thread_mutex_unlock(&mutex);
 
 	return ret;
 }
@@ -401,7 +401,7 @@ int queue_empty(void)
 // did I say, that I like nested function instead using contexts !?
 // gcc, IBM and Intel support nested functions, just clang refuses it
 
-static int queue_free_func(void *context G_GNUC_MGET_UNUSED, JOB *job)
+static int queue_free_func(void *context G_GNUC_WGET_UNUSED, JOB *job)
 {
 	job_free(job);
 	return 0;
@@ -409,14 +409,14 @@ static int queue_free_func(void *context G_GNUC_MGET_UNUSED, JOB *job)
 
 void queue_free(void)
 {
-	mget_thread_mutex_lock(&mutex);
-	mget_list_browse(queue, (int(*)(void *, void *))queue_free_func, NULL);
-	mget_list_free(&queue);
+	wget_thread_mutex_lock(&mutex);
+	wget_list_browse(queue, (int(*)(void *, void *))queue_free_func, NULL);
+	wget_list_free(&queue);
 	qsize = 0;
-	mget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_unlock(&mutex);
 }
 
-static int queue_print_func(void *context G_GNUC_MGET_UNUSED, JOB *job)
+static int queue_print_func(void *context G_GNUC_WGET_UNUSED, JOB *job)
 {
 	info_printf("%s %d\n", job->local_filename, job->inuse);
 	return 0;
@@ -424,9 +424,9 @@ static int queue_print_func(void *context G_GNUC_MGET_UNUSED, JOB *job)
 
 void queue_print(void)
 {
-	mget_thread_mutex_lock(&mutex);
-	mget_list_browse(queue, (int(*)(void *, void *))queue_print_func, NULL);
-	mget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_lock(&mutex);
+	wget_list_browse(queue, (int(*)(void *, void *))queue_print_func, NULL);
+	wget_thread_mutex_unlock(&mutex);
 }
 
 int queue_size(void)
@@ -434,7 +434,7 @@ int queue_size(void)
 	return qsize;
 }
 
-JOB *job_init(JOB *job, mget_iri_t *iri)
+JOB *job_init(JOB *job, wget_iri_t *iri)
 {
 	if (iri) {
 		memset(job, 0, sizeof(JOB));
