@@ -21,6 +21,7 @@ nbproject
 git_push
 .depend
 src/wget
+ABOUT-NLS
 aclocal.m4
 autom4te.cache
 compile
@@ -42,6 +43,7 @@ examples/print_html_urls
 libwget/test_linking
 libwget/css_tokenizer.c
 gtk-doc.make
+INSTALL
 install-sh
 libwget-0.1.pc
 libtool
