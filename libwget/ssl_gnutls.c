@@ -1388,6 +1388,7 @@ void wget_ssl_server_close(void **session)
 
 ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 {
+#if GNUTLS_VERSION_NUMBER >= 0x030107
 	ssize_t nbytes;
 
 	gnutls_record_set_timeout(session, timeout);
@@ -1399,6 +1400,22 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 	}
 
 	return nbytes;
+#else
+	int rc;
+	ssize_t nbytes;
+
+	for (;;) {
+		if (gnutls_record_check_pending(session) <= 0 &&
+			(rc = mget_ready_2_read((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
+			return rc;
+
+		nbytes=gnutls_record_recv(session, buf, count);
+		if (nbytes >= 0 || nbytes != GNUTLS_E_AGAIN)
+			break;
+	}
+
+	return nbytes < -1 ? -1 : nbytes;
+#endif
 }
 
 ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout)
