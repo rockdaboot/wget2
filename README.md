@@ -1,51 +1,38 @@
-[![Build Status](https://travis-ci.org/rockdaboot/wget.png?branch=develop)](https://travis-ci.org/rockdaboot/wget)
-[![Coverity Scan Status](https://scan.coverity.com/projects/4414/badge.svg)](https://scan.coverity.com/projects/4414)
+Wget2 - multithreaded metalink / file / website downloader / spider and library
+===============================================================================
 
-Wget - multithreaded metalink / file / website downloader / spider and library
-==============================================================================
-
-This is a multithreaded Wget-like tool and library written in C.
+This is Wget2.
 
 Designed and written from scratch it requires a C99 and Posix compliant
 development environment.
 
 Included is the stand-alone library libwget which provides an interface
-to many useful functions used by Wget.
+to many useful functions used by Wget2.
 
-The originally purpose was to help out on Wget2 development (refactoring,
-modern and clean code, new technology, new design).
-
-In many cases Wget downloads much faster than Wget1.14 due to HTTP zlib
+In many cases Wget2 downloads much faster than Wget1.x due to HTTP zlib
 compression, parallel connections and use of If-Modified-Since HTTP header.
 
-It consumes less system and user CPU cycles due to larger buffers and
-buffer recycling.
+HTTP/2 has been implemented.
+
+Wget2 consumes less system and user CPU cycles than Wget1.x.
 
 License
 -------
 
-Wget is licensed under GPLv3+.<br>
+Wget2 is licensed under GPLv3+.<br>
 Libwget is licensed under LGPLv3+.
 
 Contact
 -------
 
-[Project](https://github.com/rockdaboot/wget)<br>
-[Website](http://rockdaboot.github.io/wget)<br>
-[Mailing List](https://groups.google.com/forum/#!forum/wget-bugs)
-
-To join the mailing list send an email to
-
-<wget-bugs+subscribe@googlegroups.com>
-
-and follow the instructions provided by the answer mail.
-
-Or click [join](https://groups.google.com/forum/#!forum/wget-bugs/join).
+[Project](https://savannah.gnu.org/projects/wget/)<br>
+[Mailing List](https://savannah.gnu.org/mail/?group=wget)<br>
+[Bug Tracker](https://savannah.gnu.org/bugs/?group=wget)
 
 Development Status
 ------------------
 
-Wget has already many features that go beyond what Wget provides.<br>
+Wget2 has already many features that go beyond what Wget1.x provides.<br>
 
 An incomplete list of implemented features:
 
@@ -103,9 +90,8 @@ Not yet implemented
 -------------------
 
 The following is just a quick list of ideas and todos.<br>
-The mid-range goal is to come as close to Wget, that Wget's units test work for Wget.
 
-Some ideas of what could be done next (but contact me before you start bigger changes!):
+Some ideas of what could be done next (but contact us via mailing list before you start bigger changes!):
 
 - [EFF HTTPS Everywhere](https://www.eff.org/https-everywhere)
 - SSH-style TOFU (Trust On First Use)
@@ -128,7 +114,7 @@ Some ideas of what could be done next (but contact me before you start bigger ch
 Requirements
 ------------
 
-The following packages are needed to build Wget:
+The following packages are needed to build Wget2:
 
 * autotools (autoconf, autogen, automake, autopoint, libtool)
 * pkg-config >= 0.28 (recommended)
@@ -152,10 +138,11 @@ Building from git
 
 Download project and prepare sources with
 
-		git clone http://github.com/rockdaboot/wget
+		git clone git://git.savannah.gnu.org/wget.git
+		git branch wget2
 		./autogen.sh
 
-Build Wget with
+Build Wget2 with
 
 		./configure
 		make
@@ -164,16 +151,16 @@ Test the functionality
 
 		make check
 
-Install Wget and libwget
+Install Wget2 and libwget
 
 		sudo make install (or su -c "make install")
 
-To create Wget HTML documentation
+To create Wget2 HTML documentation
 
 		./configure --enable-gtk-doc
 		make
 
-To create Wget HTML documentation and man pages
+To create Wget2 HTML documentation and man pages
 
 		./configure --enable-gtk-doc --enable-man
 		make
@@ -196,16 +183,16 @@ To run single tests with valgrind (e.g. test-k)
 		VALGRIND_TESTS=1 ./test-k
 
 Why not directly using valgrind like 'valgrind --leak-check=full ./test-k' ?
-Well, you want to valgrind 'wget' and not the test program itself, right ?
+Well, you want to valgrind 'wget2' and not the test program itself, right ?
 
 Documentation
 -------------
 
-There is no own documentation yet, but Wget aims to be Wget1.14 compatible.
+There is no own documentation yet, but Wget2 aims to be Wget1.x compatible.
 
-		wget --help
+		wget2 --help
 
 prints the usage and the current set of integrated options.
-For more info, see the man pages of Wget.
+For more info, see the man pages of Wget1.x.
 
-The Wget library API documentation has been started.
+The Wget2 library API documentation has been started.
