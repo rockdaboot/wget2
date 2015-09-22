@@ -967,8 +967,13 @@ int main(int argc, const char *const *argv)
 			error_printf(_("Failed to wait for downloader #%d (%d %d)\n"), n, rc, errno);
 	}
 
+	int downloaded_files = blacklist_size() - queue_size();
 	if (config.progress)
-		bar_printf(config.num_threads, "Files: %d/%d  Bytes: %llu", blacklist_size() - queue_size(), blacklist_size(), quota);
+		bar_printf(config.num_threads, "Files: %d/%d  Bytes: %llu", downloaded_files, blacklist_size(), quota);
+	else if ((config.recursive || config.page_requisites || (config.input_file && quota != 0)) && quota) {
+		info_printf(_("Downloaded: %d files, %llu bytes\n"), downloaded_files, quota);
+	}
+
 
 	if (config.save_cookies)
 		wget_cookie_db_save(config.cookie_db, config.save_cookies, config.keep_session_cookies);
@@ -1926,7 +1931,7 @@ static void G_GNUC_WGET_NONNULL((1)) _save_file(wget_http_response_t *resp, cons
 			debug_printf("not saved '%s' (quota of %lld reached)\n", fname, config.quota);
 			return;
 		}
-	} else if (config.progress) {
+	} else {
 		// just update number bytes read (body only) for display purposes
 		quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length);
 	}
@@ -2123,10 +2128,8 @@ int download_part(DOWNLOADER *downloader)
 			if (resp) {
 				wget_cookie_store_cookies(config.cookie_db, resp->cookies); // sanitize and store cookies
 
-				if (config.progress) {
-					// just update number bytes read (body only) for display purposes
-					quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length);
-				}
+				// just update number bytes read (body only) for display purposes
+				quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length);
 
 				if (resp->code != 200 && resp->code != 206) {
 					print_status(downloader, "part %d download error %d\n", part->id, resp->code);
