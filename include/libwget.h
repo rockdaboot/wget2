@@ -1,5 +1,6 @@
 /*
- * Copyright(c) 2012,2013,2014,1015 Tim Ruehsen
+ * Copyright(c) 2012-2015 Tim Ruehsen
+ * Copyright(c) 2015 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
