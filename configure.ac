@@ -4,7 +4,7 @@ CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 
 AC_PREREQ([2.67])
-AC_INIT([wget], [2.0.0], [wget-bugs@googlegroups.com], [wget], [https://github.com/rockdaboot/wget])
+AC_INIT([wget], [2.0.0], [bug-wget@gnu.org], [wget], [https://savannah.gnu.org/projects/wget])
 AM_INIT_AUTOMAKE
 
 CFLAGS=$CFLAGS
