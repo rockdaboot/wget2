@@ -1069,6 +1069,48 @@ void wget_ssl_deinit(void)
 	wget_thread_mutex_unlock(&_mutex);
 }
 
+static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
+{
+	int ret;
+
+	// Wait for socket being ready before we call gnutls_handshake().
+	// I had problems on a KVM Win7 + CygWin (gnutls 3.2.4-1).
+	int rc = wget_ready_2_write(sockfd, timeout);
+
+	if (rc == 0)
+		ret = WGET_E_TIMEOUT;
+	else
+		ret = WGET_E_HANDSHAKE;
+
+	// Perform the TLS handshake
+	while (rc > 0) {
+		rc = gnutls_handshake(session);
+		if (rc == 0 || gnutls_error_is_fatal(rc)) {
+			if (rc == 0) {
+				ret = WGET_E_SUCCESS;
+			} else {
+				error_printf("GnuTLS: (%d) %s\n", rc, gnutls_strerror(rc));
+
+				if (rc == GNUTLS_E_CERTIFICATE_ERROR)
+					ret = WGET_E_CERTIFICATE;
+				else
+					ret = WGET_E_HANDSHAKE;
+			}
+			break;
+		}
+
+		if (gnutls_record_get_direction(session)) {
+			// wait for writeability
+			rc = wget_ready_2_write(sockfd, timeout);
+		} else {
+			// wait for readability
+			rc = wget_ready_2_read(sockfd, timeout);
+		}
+	}
+
+	return ret;
+}
+
 int wget_ssl_open(wget_tcp_t *tcp)
 {
 	gnutls_session_t session;
@@ -1157,35 +1199,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 
 	gnutls_session_set_ptr(session, ctx);
 
-	// Wait for socket being ready before we call gnutls_handshake().
-	// I had problems on a KVM Win7 + CygWin (gnutls 3.2.4-1).
-	rc = wget_ready_2_write(sockfd, connect_timeout);
-
-	// Perform the TLS handshake
-	while (rc > 0) {
-		rc = gnutls_handshake(session);
-		if (rc == 0 || gnutls_error_is_fatal(rc)) {
-			if (rc == 0) {
-				ret = WGET_E_SUCCESS;
-			} else {
-				error_printf("GnuTLS: (%d) %s\n", rc, gnutls_strerror(rc));
-
-				if (rc == GNUTLS_E_CERTIFICATE_ERROR)
-					ret = WGET_E_CERTIFICATE;
-				else
-					ret = WGET_E_HANDSHAKE;
-			}
-			break;
-		}
-
-		if (gnutls_record_get_direction(session)) {
-			// wait for writeability
-			rc = wget_ready_2_write(sockfd, connect_timeout);
-		} else {
-			// wait for readability
-			rc = wget_ready_2_read(sockfd, connect_timeout);
-		}
-	}
+	ret = _do_handshake(session, sockfd, connect_timeout);
 
 #if GNUTLS_VERSION_NUMBER >= 0x030200
 	if (_config.alpn) {
@@ -1203,17 +1217,12 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	if (_config.print_info)
 		_print_info(session);
 
-	if (ret == WGET_E_UNKNOWN) {
-		if (rc == 0) {
-			debug_printf("Handshake timed out\n");
-			ret = WGET_E_TIMEOUT;
-		}
-	}
-
 	if (ret == WGET_E_SUCCESS) {
 		debug_printf("Handshake completed\n");
 		tcp->ssl_session = session;
 	} else {
+		if (ret == WGET_E_TIMEOUT)
+			debug_printf("Handshake timed out\n");
 		xfree(ctx->hostname);
 		xfree(ctx);
 		gnutls_deinit(session);
@@ -1296,7 +1305,7 @@ int wget_ssl_server_open(wget_tcp_t *tcp)
 {
 	gnutls_session_t session;
 	int ret = WGET_E_UNKNOWN;
-	int rc, sockfd, connect_timeout;
+	int sockfd, connect_timeout;
 
 	if (!tcp)
 		return WGET_E_INVALID;
@@ -1326,50 +1335,17 @@ int wget_ssl_server_open(wget_tcp_t *tcp)
 	// gnutls_transport_set_int(session, sockfd);
 	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
 
-	// Wait for socket being ready before we call gnutls_handshake().
-	// I had problems on a KVM Win7 + CygWin (gnutls 3.2.4-1).
-	rc = wget_ready_2_write(sockfd, connect_timeout);
-
-	// Perform the TLS handshake
-	while (rc > 0) {
-		rc = gnutls_handshake(session);
-		if (rc == 0 || gnutls_error_is_fatal(rc)) {
-			if (rc == 0) {
-				ret = WGET_E_SUCCESS;
-			} else {
-				error_printf("GnuTLS: (%d) %s\n", rc, gnutls_strerror(rc));
-
-				if (rc == GNUTLS_E_CERTIFICATE_ERROR)
-					ret = WGET_E_CERTIFICATE;
-				else
-					ret = WGET_E_HANDSHAKE;
-			}
-			break;
-		}
-
-		if (gnutls_record_get_direction(session)) {
-			// wait for writeability
-			rc = wget_ready_2_write(sockfd, connect_timeout);
-		} else {
-			// wait for readability
-			rc = wget_ready_2_read(sockfd, connect_timeout);
-		}
-	}
+	ret = _do_handshake(session, sockfd, connect_timeout);
 
 	if (_config.print_info)
 		_print_info(session);
-
-	if (ret == WGET_E_UNKNOWN) {
-		if (rc == 0) {
-			debug_printf("Server handshake timed out\n");
-			ret = WGET_E_TIMEOUT;
-		}
-	}
 
 	if (ret == WGET_E_SUCCESS) {
 		debug_printf("Server handshake completed\n");
 		tcp->ssl_session = session;
 	} else {
+		if (ret == WGET_E_TIMEOUT)
+			debug_printf("Server handshake timed out\n");
 		gnutls_deinit(session);
 	}
 
@@ -1394,13 +1370,23 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 
 	gnutls_record_set_timeout(session, timeout);
 
-	if ((nbytes = gnutls_record_recv(session, buf, count)) < 0) {
+	for (;;) {
+		if ((nbytes = gnutls_record_recv(session, buf, count)) >= 0)
+			return nbytes;
+
+		if (nbytes == GNUTLS_E_REHANDSHAKE) {
+			debug_printf("*** REHANDSHAKE while reading\n");
+			if ((nbytes = _do_handshake(session, (int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) == 0)
+				continue; /* restart reading */
+		}
+
 		if (nbytes == GNUTLS_E_AGAIN)
 			return 0; // indicate timeout
+
 		return -1;
 	}
 
-	return nbytes;
+	return -1;
 #else
 	int rc;
 	ssize_t nbytes;
@@ -1410,7 +1396,12 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 			(rc = mget_ready_2_read((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
 			return rc;
 
-		nbytes=gnutls_record_recv(session, buf, count);
+		nbytes = gnutls_record_recv(session, buf, count);
+		if (nbytes == GNUTLS_E_REHANDSHAKE) {
+			debug_printf("*** REHANDSHAKE while reading\n");
+			if ((nbytes = _do_handshake(session, (int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) == 0)
+				nbytes = GNUTLS_E_AGAIN; /* restart reading */
+		}
 		if (nbytes >= 0 || nbytes != GNUTLS_E_AGAIN)
 			break;
 	}
@@ -1424,17 +1415,25 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 	ssize_t nbytes;
 	int rc;
 
-	if ((rc = wget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
-		return rc;
+	for (;;) {
+		if ((rc = wget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
+			return rc;
 
-	if ((nbytes = gnutls_record_send(session, buf, count)) < 0) {
+		if ((nbytes = gnutls_record_send(session, buf, count)) >= 0)
+			return nbytes;
+
+		if (nbytes == GNUTLS_E_REHANDSHAKE) {
+			debug_printf("*** REHANDSHAKE while writing\n");
+			if ((nbytes = _do_handshake(session, (int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) == 0)
+				continue; /* restart writing */
+		}
 		if (nbytes == GNUTLS_E_AGAIN)
 			return 0; // indicate timeout
 
 		return -1;
 	}
 
-	return nbytes;
+	return -1;
 }
 
 #else // WITH_GNUTLS
