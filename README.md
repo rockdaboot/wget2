@@ -36,7 +36,7 @@ Wget2 has already many features that go beyond what Wget1.x provides.<br>
 
 An incomplete list of implemented features:
 
-- SPDY / HTTP2.0 basic support via nghttp2/GnuTLS ALPN (>= 1.3.0)
+- HTTP2 basic support via nghttp2/GnuTLS ALPN (>= 1.3.0)
 - OCSP stapling + OCSP server querying as a fallback (experimental, needs GnuTLS >= 3.3.11)
 - Use [libpsl](https://github.com/rockdaboot/libpsl) for cookie domain checking (using Public Suffix List)
 - Support link conversion (-k/--convert-links and -K/--backup-converted)
