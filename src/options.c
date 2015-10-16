@@ -1123,7 +1123,7 @@ int init(int argc, const char *const *argv)
 		if (!strcmp(argv[1],"-d"))
 			config.debug = 1;
 		else if (!strcmp(argv[1],"--debug")) {
-			set_long_option(argv[1], argv[2]);
+			set_long_option(argv[1] + 2, argv[2]);
 		}
 	}
 
