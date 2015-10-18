@@ -109,6 +109,7 @@ struct config {
 		dns_timeout, // ms
 		read_timeout, // ms
 		max_redirect,
+               max_threads,
 		num_threads;
 	struct wget_cookie_db_st
 		*cookie_db;

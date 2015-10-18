@@ -111,7 +111,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"Download:\n"
 		"  -r  --recursive         Recursive download. (default: off)\n"
 		"  -H  --span-hosts        Span hosts that were not given on the command line. (default: off)\n"
-		"      --num-threads       Max. concurrent download threads. (default: 5) (NEW!)\n"
+		"      --max-threads       Max. concurrent download threads. (default: 5) (NEW!)\n"
 		"      --max-redirect      Max. number of redirections to follow. (default: 20)\n"
 		"  -T  --timeout           General network timeout in seconds.\n"
 		"      --dns-timeout       DNS lookup timeout in seconds.\n"
@@ -579,7 +579,8 @@ struct config config = {
 	.dns_timeout = -1,
 	.read_timeout = -1,
 	.max_redirect = 20,
-	.num_threads = 5,
+	.max_threads = 5,
+	.num_threads = 1,
 	.dns_caching = 1,
 	.tcp_fastopen = 1,
 	.user_agent = "Wget/"PACKAGE_VERSION,
@@ -684,9 +685,9 @@ static const struct option options[] = {
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0 },
 	{ "local-encoding", &config.local_encoding, parse_string, 1, 0 },
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0 },
+	{ "max-threads", &config.max_threads, parse_integer, 1, 0 },
 	{ "mirror", &config.mirror, parse_mirror, 0, 'm' },
 	{ "n", NULL, parse_n_option, 1, 'n' }, // special Wget compatibility option
-	{ "num-threads", &config.num_threads, parse_integer, 1, 0 },
 	{ "ocsp", &config.ocsp, parse_bool, 0, 0 },
 	{ "ocsp-file", &config.ocsp_file, parse_string, 1, 0 },
 	{ "ocsp-stapling", &config.ocsp_stapling, parse_bool, 0, 0 },

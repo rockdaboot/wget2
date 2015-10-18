@@ -773,7 +773,6 @@ static void _convert_links(void)
 						data_ptr = url->p + url->len;
 					}
 				}
-				
 				xfree(filename);
 				wget_iri_free(&iri);
 			}
@@ -915,6 +914,11 @@ int main(int argc, const char *const *argv)
 				error_printf(_("Failed to open input file %s\n"), config.input_file);
 		}
 	}
+
+	// At this point, all values have been initialized and all URLs read.
+	// Perform any sanity checking or extra initialization here.
+
+	config.num_threads = (config.max_threads < queue_size()) ? config.max_threads : queue_size();
 
 	if (config.progress) {
 		wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), NULL);
@@ -1851,7 +1855,7 @@ void css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget
 static long long G_GNUC_WGET_NONNULL_ALL get_file_size(const char *fname)
 {
 	struct stat st;
-	
+
 	if (stat(fname, &st)==0) {
 		return st.st_size;
 	}
