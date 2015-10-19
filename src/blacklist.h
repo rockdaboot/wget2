@@ -26,17 +26,18 @@
  */
 
 #ifndef _WGET_BLACKLIST_H
-#define _WGET_BLACKLIST_H
+# define _WGET_BLACKLIST_H
 
-#include <libwget.h>
+# include <libwget.h>
 
 int
-	in_blacklist(wget_iri_t *iri) G_GNUC_WGET_NONNULL_ALL,
-	blacklist_size(void) G_GNUC_WGET_PURE;
-wget_iri_t
-	*blacklist_add(wget_iri_t *iri);
+in_blacklist (wget_iri_t * iri)
+  G_GNUC_WGET_NONNULL_ALL,
+  blacklist_size (void)
+  G_GNUC_WGET_PURE;
+wget_iri_t * blacklist_add (wget_iri_t * iri);
 void
-	blacklist_print(void),
-	blacklist_free(void);
+blacklist_print (void),
+  blacklist_free (void);
 
 #endif /* _WGET_BLACKLIST_H */

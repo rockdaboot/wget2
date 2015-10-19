@@ -34,55 +34,57 @@
 #include <stdlib.h>
 #include <libwget.h>
 
-int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED)
+int
+main (int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED)
 {
-	wget_http_connection_t *conn = NULL;
-	wget_http_response_t *resp;
+  wget_http_connection_t *conn = NULL;
+  wget_http_response_t *resp;
 
-	// set up libwget global configuration
-	wget_global_init(
-		WGET_DEBUG_STREAM, stderr,
-		WGET_ERROR_STREAM, stderr,
-		WGET_INFO_STREAM, stdout,
-		WGET_DNS_CACHING, 1,
-		WGET_COOKIES_ENABLED, 1,
-		WGET_COOKIE_SUFFIXES, "public_suffixes.txt",
-		WGET_COOKIE_FILE, "cookies.txt",
-		WGET_COOKIE_KEEPSESSIONCOOKIES, 1,
-		// WGET_BIND_ADDRESS, "127.0.0.1:6666",
-		// WGET_NET_FAMILY_EXCLUSIVE, WGET_NET_FAMILY_IPV4, // or WGET_NET_FAMILY_IPV6 or WGET_NET_FAMILY_ANY
-		// WGET_NET_FAMILY_PREFERRED, WGET_NET_FAMILY_IPV4, // or WGET_NET_FAMILY_IPV6 or WGET_NET_FAMILY_ANY
-		NULL);
+  // set up libwget global configuration
+  wget_global_init (WGET_DEBUG_STREAM, stderr,
+                    WGET_ERROR_STREAM, stderr,
+                    WGET_INFO_STREAM, stdout,
+                    WGET_DNS_CACHING, 1,
+                    WGET_COOKIES_ENABLED, 1,
+                    WGET_COOKIE_SUFFIXES, "public_suffixes.txt",
+                    WGET_COOKIE_FILE, "cookies.txt",
+                    WGET_COOKIE_KEEPSESSIONCOOKIES, 1,
+                    // WGET_BIND_ADDRESS, "127.0.0.1:6666",
+                    // WGET_NET_FAMILY_EXCLUSIVE, WGET_NET_FAMILY_IPV4, // or WGET_NET_FAMILY_IPV6 or WGET_NET_FAMILY_ANY
+                    // WGET_NET_FAMILY_PREFERRED, WGET_NET_FAMILY_IPV4, // or WGET_NET_FAMILY_IPV6 or WGET_NET_FAMILY_ANY
+                    NULL);
 
-	// execute an HTTP GET request and return the response
-	resp = wget_http_get(
-		WGET_HTTP_URL, "http://example.com",
-		// WGET_HTTP_URL_ENCODING, "utf-8",
-		WGET_HTTP_HEADER_ADD, "User-Agent", "Mozilla/5.0",
-		WGET_HTTP_HEADER_ADD, "Accept-Encoding", "gzip, deflate",
-		WGET_HTTP_HEADER_ADD, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-		WGET_HTTP_HEADER_ADD, "Accept-Language", "en-us,en;q=0.5",
-		// WGET_HTTP_PROXY, "myproxy.com:9375",
-		// WGET_HTTP_HEADER_SAVEAS_STREAM, stdout,
-		// WGET_HTTP_BODY_SAVEAS_STREAM, stdout,
-		WGET_HTTP_MAX_REDIRECTIONS, 5,
-		WGET_HTTP_CONNECTION_PTR, &conn,
-		// WGET_HTTP_RESPONSE_PTR, &resp,
-		NULL);
+  // execute an HTTP GET request and return the response
+  resp = wget_http_get (WGET_HTTP_URL, "http://example.com",
+                        // WGET_HTTP_URL_ENCODING, "utf-8",
+                        WGET_HTTP_HEADER_ADD, "User-Agent", "Mozilla/5.0",
+                        WGET_HTTP_HEADER_ADD, "Accept-Encoding",
+                        "gzip, deflate", WGET_HTTP_HEADER_ADD, "Accept",
+                        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                        WGET_HTTP_HEADER_ADD, "Accept-Language",
+                        "en-us,en;q=0.5",
+                        // WGET_HTTP_PROXY, "myproxy.com:9375",
+                        // WGET_HTTP_HEADER_SAVEAS_STREAM, stdout,
+                        // WGET_HTTP_BODY_SAVEAS_STREAM, stdout,
+                        WGET_HTTP_MAX_REDIRECTIONS, 5,
+                        WGET_HTTP_CONNECTION_PTR, &conn,
+                        // WGET_HTTP_RESPONSE_PTR, &resp,
+                        NULL);
 
-	if (resp) {
-		// let's assume the body is printable
-		printf("%s%s\n", resp->header->data, resp->body->data);
+  if (resp)
+    {
+      // let's assume the body is printable
+      printf ("%s%s\n", resp->header->data, resp->body->data);
 
-		// free the response
-		wget_http_free_response(&resp);
-	}
+      // free the response
+      wget_http_free_response (&resp);
+    }
 
-	// close connection if still open
-	wget_http_close(&conn);
+  // close connection if still open
+  wget_http_close (&conn);
 
-	// free resources - needed for valgrind testing
-	wget_global_deinit();
+  // free resources - needed for valgrind testing
+  wget_global_deinit ();
 
-	return 0;
+  return 0;
 }

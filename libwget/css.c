@@ -43,7 +43,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #ifdef HAVE_MMAP
-#include <sys/mman.h>
+# include <sys/mman.h>
 #endif
 
 #include <libwget.h>
@@ -52,152 +52,186 @@
 #include "css_tokenizer.h"
 
 // see css_tokenizer.c
-typedef void* yyscan_t;
-int yyget_leng(yyscan_t yyscanner);
-char *yyget_text(yyscan_t yyscanner);
+typedef void *yyscan_t;
+int yyget_leng (yyscan_t yyscanner);
+char *yyget_text (yyscan_t yyscanner);
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
-int yylex_init(yyscan_t* scanner);
-YY_BUFFER_STATE yy_scan_string(const char * yystr, yyscan_t yyscanner);
-YY_BUFFER_STATE yy_scan_bytes(const char * yystr, int len, yyscan_t yyscanner);
-int yylex(yyscan_t yyscanner);
-int yylex_destroy(yyscan_t yyscanner);
+int yylex_init (yyscan_t * scanner);
+YY_BUFFER_STATE yy_scan_string (const char *yystr, yyscan_t yyscanner);
+YY_BUFFER_STATE yy_scan_bytes (const char *yystr, int len,
+                               yyscan_t yyscanner);
+int yylex (yyscan_t yyscanner);
+int yylex_destroy (yyscan_t yyscanner);
 
-void wget_css_parse_buffer(
-	const char *buf,
-	void(*callback_uri)(void *user_ctx, const char *url, size_t len, size_t pos),
-	void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
-	void *user_ctx)
+void
+wget_css_parse_buffer (const char *buf,
+                       void (*callback_uri) (void *user_ctx, const char *url,
+                                             size_t len, size_t pos),
+                       void (*callback_encoding) (void *user_ctx,
+                                                  const char *url,
+                                                  size_t len), void *user_ctx)
 {
-	int token;
-	size_t length, pos = 0;
-	char *text;
-	yyscan_t scanner;
+  int token;
+  size_t length, pos = 0;
+  char *text;
+  yyscan_t scanner;
 
-	// let flex operate on buf as a 0 terminated string
-	// we could give buflen to this function and use yy_scan_bytes or yy_scan_buffer
-	yylex_init(&scanner);
-	yy_scan_string(buf, scanner);
+  // let flex operate on buf as a 0 terminated string
+  // we could give buflen to this function and use yy_scan_bytes or yy_scan_buffer
+  yylex_init (&scanner);
+  yy_scan_string (buf, scanner);
 
-	while ((token = yylex(scanner)) != CSSEOF) {
-		if (token == IMPORT_SYM) {
-			// e.g. @import "http:example.com/index.html"
-			pos += yyget_leng(scanner);
+  while ((token = yylex (scanner)) != CSSEOF)
+    {
+      if (token == IMPORT_SYM)
+        {
+          // e.g. @import "http:example.com/index.html"
+          pos += yyget_leng (scanner);
 
-			// skip whitespace before URI/STRING
-			while ((token = yylex(scanner)) == S)
-				pos += yyget_leng(scanner);
+          // skip whitespace before URI/STRING
+          while ((token = yylex (scanner)) == S)
+            pos += yyget_leng (scanner);
 
-			// now token should be STRING or URI
-			if (token == STRING)
-				token = URI;
-		}
+          // now token should be STRING or URI
+          if (token == STRING)
+            token = URI;
+        }
 
-		if (token == URI && callback_uri) {
-			// e.g. url(http:example.com/index.html)
-			text = yyget_text(scanner);
-			length = yyget_leng(scanner);
+      if (token == URI && callback_uri)
+        {
+          // e.g. url(http:example.com/index.html)
+          text = yyget_text (scanner);
+          length = yyget_leng (scanner);
 
-			if (*text == '\'' || *text == '\"') {
-				// a string - remove the quotes
-				callback_uri(user_ctx, text + 1, length - 2, pos + 1);
-			} else {
-				// extract URI from url(...)
-				if (!strncasecmp(text, "url(", 4)) {
-					char *otext = text;
+          if (*text == '\'' || *text == '\"')
+            {
+              // a string - remove the quotes
+              callback_uri (user_ctx, text + 1, length - 2, pos + 1);
+            }
+          else
+            {
+              // extract URI from url(...)
+              if (!strncasecmp (text, "url(", 4))
+                {
+                  char *otext = text;
 
-					// remove trailing ) and any spaces before
-					for (length--; isspace(text[length - 1]); length--);
+                  // remove trailing ) and any spaces before
+                  for (length--; isspace (text[length - 1]); length--);
 
-					// remove leading url( and any spaces after
-					for (length -= 4, text += 4; isspace(*text); text++, length--);
+                  // remove leading url( and any spaces after
+                  for (length -= 4, text += 4; isspace (*text);
+                       text++, length--);
 
-					// remove quotes
-					if (*text == '\'' || *text == '\"') {
-						text++;
-						length -= 2;
-					}
+                  // remove quotes
+                  if (*text == '\'' || *text == '\"')
+                    {
+                      text++;
+                      length -= 2;
+                    }
 
-					callback_uri(user_ctx, text, length, pos + (text - otext));
-				}
-			}
-		} else if (token == CHARSET_SYM && callback_encoding) {
-			// e.g. @charset "UTF-8"
-			pos += yyget_leng(scanner);
+                  callback_uri (user_ctx, text, length, pos + (text - otext));
+                }
+            }
+        }
+      else if (token == CHARSET_SYM && callback_encoding)
+        {
+          // e.g. @charset "UTF-8"
+          pos += yyget_leng (scanner);
 
-			// skip whitespace before charset name
-			while ((token = yylex(scanner)) == S)
-				pos += yyget_leng(scanner);
+          // skip whitespace before charset name
+          while ((token = yylex (scanner)) == S)
+            pos += yyget_leng (scanner);
 
-			// now token should be STRING
-			if (token == STRING) {
-				text = yyget_text(scanner);
-				length = yyget_leng(scanner);
+          // now token should be STRING
+          if (token == STRING)
+            {
+              text = yyget_text (scanner);
+              length = yyget_leng (scanner);
 
-				if (*text == '\'' || *text == '\"') {
-					// a string - remove the quotes
-					callback_encoding(user_ctx, text + 1, length - 2);
-				} else {
-					// a string without quotes
-					callback_encoding(user_ctx, text, length);
-				}
-			} else {
-				error_printf(_("Unknown token after @charset: %d\n"), token);
-			}
-		}
-		pos += yyget_leng(scanner);
-	}
+              if (*text == '\'' || *text == '\"')
+                {
+                  // a string - remove the quotes
+                  callback_encoding (user_ctx, text + 1, length - 2);
+                }
+              else
+                {
+                  // a string without quotes
+                  callback_encoding (user_ctx, text, length);
+                }
+            }
+          else
+            {
+              error_printf (_("Unknown token after @charset: %d\n"), token);
+            }
+        }
+      pos += yyget_leng (scanner);
+    }
 
-	yylex_destroy(scanner);
+  yylex_destroy (scanner);
 }
 
-void wget_css_parse_file(
-	const char *fname,
-	void(*callback_uri)(void *user_ctx, const char *url, size_t len, size_t pos),
-	void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
-	void *user_ctx)
+void
+wget_css_parse_file (const char *fname,
+                     void (*callback_uri) (void *user_ctx, const char *url,
+                                           size_t len, size_t pos),
+                     void (*callback_encoding) (void *user_ctx,
+                                                const char *url, size_t len),
+                     void *user_ctx)
 {
-	int fd;
+  int fd;
 
-	if (strcmp(fname,"-")) {
-		if ((fd = open(fname, O_RDONLY)) != -1) {
-			struct stat st;
-			if (fstat(fd, &st) == 0) {
+  if (strcmp (fname, "-"))
+    {
+      if ((fd = open (fname, O_RDONLY)) != -1)
+        {
+          struct stat st;
+          if (fstat (fd, &st) == 0)
+            {
 #ifdef HAVE_MMAP
-				size_t nread = st.st_size;
-				char *buf = mmap(NULL, nread + 1, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+              size_t nread = st.st_size;
+              char *buf =
+                mmap (NULL, nread + 1, PROT_READ | PROT_WRITE, MAP_PRIVATE,
+                      fd, 0);
 #else
-				char *buf=xmalloc(st.st_size+1);
-				size_t nread=read(fd,buf,st.st_size);
+              char *buf = xmalloc (st.st_size + 1);
+              size_t nread = read (fd, buf, st.st_size);
 #endif
 
-				if (nread > 0) {
-					buf[nread] = 0; // PROT_WRITE allows this write, MAP_PRIVATE prevents changes in underlying file system
-					wget_css_parse_buffer(buf, callback_uri, callback_encoding, user_ctx);
-				}
+              if (nread > 0)
+                {
+                  buf[nread] = 0;  // PROT_WRITE allows this write, MAP_PRIVATE prevents changes in underlying file system
+                  wget_css_parse_buffer (buf, callback_uri, callback_encoding,
+                                         user_ctx);
+                }
 
 #ifdef HAVE_MMAP
-				munmap(buf, nread);
+              munmap (buf, nread);
 #else
-				xfree(buf);
+              xfree (buf);
 #endif
-			}
-			close(fd);
-		} else
-			error_printf(_("Failed to open %s\n"), fname);
-	} else {
-		// read data from STDIN.
-		// maybe should use yy_scan_bytes instead of buffering into memory.
-		char tmp[4096];
-		ssize_t nbytes;
-		wget_buffer_t *buf = wget_buffer_alloc(4096);
+            }
+          close (fd);
+        }
+      else
+        error_printf (_("Failed to open %s\n"), fname);
+    }
+  else
+    {
+      // read data from STDIN.
+      // maybe should use yy_scan_bytes instead of buffering into memory.
+      char tmp[4096];
+      ssize_t nbytes;
+      wget_buffer_t *buf = wget_buffer_alloc (4096);
 
-		while ((nbytes = read(STDIN_FILENO, tmp, sizeof(tmp))) > 0) {
-			wget_buffer_memcat(buf, tmp, nbytes);
-		}
+      while ((nbytes = read (STDIN_FILENO, tmp, sizeof (tmp))) > 0)
+        {
+          wget_buffer_memcat (buf, tmp, nbytes);
+        }
 
-		if (buf->length)
-			wget_css_parse_buffer(buf->data, callback_uri, callback_encoding, user_ctx);
+      if (buf->length)
+        wget_css_parse_buffer (buf->data, callback_uri, callback_encoding,
+                               user_ctx);
 
-		wget_buffer_free(&buf);
-	}
+      wget_buffer_free (&buf);
+    }
 }

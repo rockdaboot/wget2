@@ -49,139 +49,157 @@
 // I try to never leave freed pointers hanging around
 #define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 
-struct css_context {
-	wget_iri_t
-		*base;
-	const char
-		*encoding;
-	wget_buffer_t
-		uri_buf;
-	char
-		encoding_allocated;
+struct css_context
+{
+  wget_iri_t * base;
+  const char *encoding;
+  wget_buffer_t uri_buf;
+  char encoding_allocated;
 };
 
-static void G_GNUC_WGET_NORETURN usage(const char *myname)
+static void G_GNUC_WGET_NORETURN
+usage (const char *myname)
 {
-	error_printf_exit(
-		"\nUsage: %s [options] file...\n"\
-		"  --base <URI>          Default base for relative URIs, default: http://www.example.com\n"\
-		"  --encoding <Encoding> Default file character encoding, default: iso-8859-1\n"\
-		"\n"\
-		"  Examples:\n"\
-		"    %s --base http://www.mydomain.com x.css\n"\
-		"    cat x.css | %s --base http://www.mydomain.com -\n"\
-		"\n"\
-		"  Print URIs as found (without a base):\n"\
-		"    %s --base \"\" x.css\n\n",
-		myname, myname, myname, myname);
+  error_printf_exit ("\nUsage: %s [options] file...\n"
+                     "  --base <URI>          Default base for relative URIs, default: http://www.example.com\n"
+                     "  --encoding <Encoding> Default file character encoding, default: iso-8859-1\n"
+                     "\n"
+                     "  Examples:\n"
+                     "    %s --base http://www.mydomain.com x.css\n"
+                     "    cat x.css | %s --base http://www.mydomain.com -\n"
+                     "\n"
+                     "  Print URIs as found (without a base):\n"
+                     "    %s --base \"\" x.css\n\n",
+                     myname, myname, myname, myname);
 }
 
 // Callback function, called from CSS parser for each @charset found.
-static void css_parse_encoding(void *context, const char *encoding, size_t len)
+static void
+css_parse_encoding (void *context, const char *encoding, size_t len)
 {
-	struct css_context *ctx = context;
+  struct css_context *ctx = context;
 
-	// take only the first @charset rule
-	if (!ctx->encoding_allocated && wget_strncasecmp(ctx->encoding, encoding, len)) {
-		if (ctx->encoding)
-			info_printf("Encoding changed from '%s' to '%.*s'\n", ctx->encoding, (int)len, encoding);
-		else
-			info_printf("Encoding set to '%.*s'\n", (int)len, encoding);
+  // take only the first @charset rule
+  if (!ctx->encoding_allocated
+      && wget_strncasecmp (ctx->encoding, encoding, len))
+    {
+      if (ctx->encoding)
+        info_printf ("Encoding changed from '%s' to '%.*s'\n", ctx->encoding,
+                     (int) len, encoding);
+      else
+        info_printf ("Encoding set to '%.*s'\n", (int) len, encoding);
 
-		ctx->encoding = strndup(encoding, len);
-		ctx->encoding_allocated = 1;
-	}
+      ctx->encoding = strndup (encoding, len);
+      ctx->encoding_allocated = 1;
+    }
 }
 
 // Callback function, called from CSS parser for each URI found.
-static void css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+static void
+css_parse_uri (void *context, const char *url, size_t len,
+               size_t pos G_GNUC_WGET_UNUSED)
 {
-	struct css_context *ctx = context;
+  struct css_context *ctx = context;
 
-	if (len > 1 || (len == 1 && *url != '#')) {
-		// ignore e.g. href='#'
-		if (!ctx->base) {
-			wget_info_printf("  %.*s\n", (int)len, url);
-		} else if (wget_iri_relative_to_abs(ctx->base, url, len, &ctx->uri_buf)) {
-			wget_info_printf("  %.*s -> %s\n", (int)len, url, ctx->uri_buf.data);
-		} else {
-			error_printf("Cannot resolve relative URI %.*s\n", (int)len, url);
-		}
-	}
+  if (len > 1 || (len == 1 && *url != '#'))
+    {
+      // ignore e.g. href='#'
+      if (!ctx->base)
+        {
+          wget_info_printf ("  %.*s\n", (int) len, url);
+        }
+      else if (wget_iri_relative_to_abs (ctx->base, url, len, &ctx->uri_buf))
+        {
+          wget_info_printf ("  %.*s -> %s\n", (int) len, url,
+                            ctx->uri_buf.data);
+        }
+      else
+        {
+          error_printf ("Cannot resolve relative URI %.*s\n", (int) len, url);
+        }
+    }
 }
 
-static void css_parse_localfile(const char *fname, wget_iri_t *base, const char *encoding)
+static void
+css_parse_localfile (const char *fname, wget_iri_t * base,
+                     const char *encoding)
 {
-	struct css_context context = { .base = base, .encoding = encoding };
+  struct css_context context = {.base = base,.encoding = encoding };
 
-	wget_buffer_init(&context.uri_buf, NULL, 128);
+  wget_buffer_init (&context.uri_buf, NULL, 128);
 
-	wget_css_parse_file(fname, css_parse_uri, css_parse_encoding, &context);
+  wget_css_parse_file (fname, css_parse_uri, css_parse_encoding, &context);
 
-	if (context.encoding_allocated)
-		xfree(context.encoding);
+  if (context.encoding_allocated)
+    xfree (context.encoding);
 
-	wget_buffer_deinit(&context.uri_buf);
+  wget_buffer_deinit (&context.uri_buf);
 }
 
-int main(int argc, const char *const *argv)
+int
+main (int argc, const char *const *argv)
 {
-	// Base URI for converting relative to absolute URIs
-	const char *
-		base = "http://www.example.com";
+  // Base URI for converting relative to absolute URIs
+  const char *base = "http://www.example.com";
 
-	// We assume that base is encoded in the local charset.
-	const char *
-		local_encoding = wget_local_charset_encoding();
+  // We assume that base is encoded in the local charset.
+  const char *local_encoding = wget_local_charset_encoding ();
 
-	// parsed 'base'
-	wget_iri_t
-		*base_uri;
+  // parsed 'base'
+  wget_iri_t * base_uri;
 
-	// Character encoding of CSS file content
-	// An HTTP response may contain the encoding in the Content-Type header,
-	// but if
-	// see http://stackoverflow.com/questions/2526033/why-specify-charset-utf-8-in-your-css-file
-	const char *
-		css_encoding = NULL;
+  // Character encoding of CSS file content
+  // An HTTP response may contain the encoding in the Content-Type header,
+  // but if
+  // see http://stackoverflow.com/questions/2526033/why-specify-charset-utf-8-in-your-css-file
+  const char *css_encoding = NULL;
 
-	int
-		argpos;
+  int argpos;
 
-	// We want the libwget error messages be printed to STDERR.
-	// From here on, we can call wget_error_printf, etc.
-	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_ERROR), stderr);
+  // We want the libwget error messages be printed to STDERR.
+  // From here on, we can call wget_error_printf, etc.
+  wget_logger_set_stream (wget_get_logger (WGET_LOGGER_ERROR), stderr);
 
-	// We want the libwget info messages be printed to STDOUT.
-	// From here on, we can call wget_info_printf, etc.
-	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), stdout);
+  // We want the libwget info messages be printed to STDOUT.
+  // From here on, we can call wget_info_printf, etc.
+  wget_logger_set_stream (wget_get_logger (WGET_LOGGER_INFO), stdout);
 
-	// parse options
-	for (argpos = 1; argpos < argc; argpos++) {
-		if (!strcmp(argv[argpos], "--base") && argc - argpos > 1) {
-			base = argv[++argpos];
-			info_printf("Base URL encoding = '%s'\n", local_encoding);
-		} else if (!strcmp(argv[argpos], "--encoding") && argc - argpos > 1) {
-			css_encoding = argv[++argpos];
-		} else if (!strcmp(argv[argpos], "--")) {
-			argpos++;
-			break;
-		} else if (argv[argpos][0] == '-') {
-			usage(argv[0]);
-		} else
-			break;
-	}
+  // parse options
+  for (argpos = 1; argpos < argc; argpos++)
+    {
+      if (!strcmp (argv[argpos], "--base") && argc - argpos > 1)
+        {
+          base = argv[++argpos];
+          info_printf ("Base URL encoding = '%s'\n", local_encoding);
+        }
+      else if (!strcmp (argv[argpos], "--encoding") && argc - argpos > 1)
+        {
+          css_encoding = argv[++argpos];
+        }
+      else if (!strcmp (argv[argpos], "--"))
+        {
+          argpos++;
+          break;
+        }
+      else if (argv[argpos][0] == '-')
+        {
+          usage (argv[0]);
+        }
+      else
+        break;
+    }
 
-	// All URIs are converted into UTF-8 charset.
-	// That's why we need the local encoding (aka 'encoding of base URI') here.
-	base_uri = wget_iri_parse(base, local_encoding);
+  // All URIs are converted into UTF-8 charset.
+  // That's why we need the local encoding (aka 'encoding of base URI') here.
+  base_uri = wget_iri_parse (base, local_encoding);
 
-	for (;argpos < argc; argpos++) {
-		// use '-' as filename for STDIN
-		css_parse_localfile(argv[argpos], base_uri, css_encoding);
-	}
+  for (; argpos < argc; argpos++)
+    {
+      // use '-' as filename for STDIN
+      css_parse_localfile (argv[argpos], base_uri, css_encoding);
+    }
 
-	wget_iri_free(&base_uri);
+  wget_iri_free (&base_uri);
 
-	return 0;
+  return 0;
 }

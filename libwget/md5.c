@@ -35,23 +35,27 @@
 #include <libwget.h>
 #include "private.h"
 
-void wget_md5_printf_hex(char *digest_hex, const char *fmt, ...)
+void
+wget_md5_printf_hex (char *digest_hex, const char *fmt, ...)
 {
-	char *plaintext;
-	va_list args;
-	int size;
+  char *plaintext;
+  va_list args;
+  int size;
 
-	va_start(args, fmt);
-	size = vasprintf(&plaintext, fmt, args);
-	va_end(args);
+  va_start (args, fmt);
+  size = vasprintf (&plaintext, fmt, args);
+  va_end (args);
 
-	if (plaintext) {
-		unsigned char digest[wget_hash_get_len(WGET_DIGTYPE_MD5)];
+  if (plaintext)
+    {
+      unsigned char digest[wget_hash_get_len (WGET_DIGTYPE_MD5)];
 
-		if (wget_hash_fast(WGET_DIGTYPE_MD5, plaintext, size, digest) == 0) {
-			wget_memtohex(digest, sizeof(digest), digest_hex, sizeof(digest) * 2 + 1);
-		}
+      if (wget_hash_fast (WGET_DIGTYPE_MD5, plaintext, size, digest) == 0)
+        {
+          wget_memtohex (digest, sizeof (digest), digest_hex,
+                         sizeof (digest) * 2 + 1);
+        }
 
-		xfree(plaintext);
-	}
+      xfree (plaintext);
+    }
 }

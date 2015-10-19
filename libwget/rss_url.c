@@ -37,69 +37,81 @@
 #include <libwget.h>
 #include "private.h"
 
-struct rss_context {
-	wget_vector_t
-		*urls;
+struct rss_context
+{
+  wget_vector_t * urls;
 };
 
-static void _rss_get_url(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+static void
+_rss_get_url (void *context, int flags, const char *dir, const char *attr,
+              const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
-	struct rss_context *ctx = context;
-	wget_string_t url;
+  struct rss_context *ctx = context;
+  wget_string_t url;
 
-	if (!val || !len)
-		return;
+  if (!val || !len)
+    return;
 
-	url.p = NULL;
+  url.p = NULL;
 
-	if ((flags & XML_FLG_ATTRIBUTE)) {
-		if (!wget_strcasecmp_ascii(attr, "url") || !wget_strcasecmp_ascii(attr, "href")
-			|| !wget_strcasecmp_ascii(attr, "src") || !wget_strcasecmp_ascii(attr, "domain")
-			|| !wget_strcasecmp_ascii(attr, "xmlns") || !wget_strncasecmp_ascii(attr, "xmlns:", 6))
-		{
-			for (;len && isspace(*val); val++, len--); // skip leading spaces
-			for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces
+  if ((flags & XML_FLG_ATTRIBUTE))
+    {
+      if (!wget_strcasecmp_ascii (attr, "url")
+          || !wget_strcasecmp_ascii (attr, "href")
+          || !wget_strcasecmp_ascii (attr, "src")
+          || !wget_strcasecmp_ascii (attr, "domain")
+          || !wget_strcasecmp_ascii (attr, "xmlns")
+          || !wget_strncasecmp_ascii (attr, "xmlns:", 6))
+        {
+          for (; len && isspace (*val); val++, len--);  // skip leading spaces
+          for (; len && isspace (val[len - 1]); len--);  // skip trailing spaces
 
-			url.p = val;
-			url.len = len;
+          url.p = val;
+          url.len = len;
 
-			if (!ctx->urls)
-				ctx->urls = wget_vector_create(32, -2, NULL);
+          if (!ctx->urls)
+            ctx->urls = wget_vector_create (32, -2, NULL);
 
-			wget_vector_add(ctx->urls, &url, sizeof(url));
-		}
-	}
-	else if ((flags & XML_FLG_CONTENT)) {
-		const char *elem = strrchr(dir, '/');
+          wget_vector_add (ctx->urls, &url, sizeof (url));
+        }
+    }
+  else if ((flags & XML_FLG_CONTENT))
+    {
+      const char *elem = strrchr (dir, '/');
 
-		if (elem) {
-			elem++;
+      if (elem)
+        {
+          elem++;
 
-			if (!wget_strcasecmp_ascii(elem, "guid") || !wget_strcasecmp_ascii(elem, "link")
-				 || !wget_strcasecmp_ascii(elem, "comments") || !wget_strcasecmp_ascii(elem, "docs"))
-			{
-				for (;len && isspace(*val); val++, len--); // skip leading spaces
-				for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces
+          if (!wget_strcasecmp_ascii (elem, "guid")
+              || !wget_strcasecmp_ascii (elem, "link")
+              || !wget_strcasecmp_ascii (elem, "comments")
+              || !wget_strcasecmp_ascii (elem, "docs"))
+            {
+              for (; len && isspace (*val); val++, len--);  // skip leading spaces
+              for (; len && isspace (val[len - 1]); len--);  // skip trailing spaces
 
-				// debug_printf("#2 %02X %s %s '%.*s' %zd\n", flags, dir, attr, (int) len, val, len);
+              // debug_printf("#2 %02X %s %s '%.*s' %zd\n", flags, dir, attr, (int) len, val, len);
 
-				url.p = val;
-				url.len = len;
+              url.p = val;
+              url.len = len;
 
-				if (!ctx->urls)
-					ctx->urls = wget_vector_create(32, -2, NULL);
+              if (!ctx->urls)
+                ctx->urls = wget_vector_create (32, -2, NULL);
 
-				wget_vector_add(ctx->urls, &url, sizeof(url));
-			}
-		}
-	}
+              wget_vector_add (ctx->urls, &url, sizeof (url));
+            }
+        }
+    }
 }
 
-void wget_rss_get_urls_inline(const char *rss, wget_vector_t **urls)
+void
+wget_rss_get_urls_inline (const char *rss, wget_vector_t ** urls)
 {
-	struct rss_context context = { .urls = NULL };
+  struct rss_context context = {.urls = NULL };
 
-	wget_xml_parse_buffer(rss, _rss_get_url, &context, XML_HINT_REMOVE_EMPTY_CONTENT);
+  wget_xml_parse_buffer (rss, _rss_get_url, &context,
+                         XML_HINT_REMOVE_EMPTY_CONTENT);
 
-	*urls = context.urls;
+  *urls = context.urls;
 }

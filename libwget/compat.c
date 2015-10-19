@@ -42,41 +42,45 @@
 // strlcpy is a BSD function that I really like.
 // it is the same as snprintf(dst,dstsize,"%s",src), but much faster
 
-size_t strlcpy(char *dst, const char *src, size_t size)
+size_t
+strlcpy (char *dst, const char *src, size_t size)
 {
-	const char *old = src;
+  const char *old = src;
 
-	// Copy as many bytes as will fit
-	if (size) {
-		while (--size) {
-			if (!(*dst++ = *src++))
-				return src - old - 1;
-		}
+  // Copy as many bytes as will fit
+  if (size)
+    {
+      while (--size)
+        {
+          if (!(*dst++ = *src++))
+            return src - old - 1;
+        }
 
-		*dst = 0;
-	}
+      *dst = 0;
+    }
 
-	while (*src++);
-	return src - old - 1;
+  while (*src++);
+  return src - old - 1;
 }
 #endif
 
 #ifndef HAVE_STRNDUP
 // I found no strndup on my old SUSE 7.3 test system (gcc 2.95)
 
-char *strndup(const char *s, size_t n)
+char *
+strndup (const char *s, size_t n)
 {
-	char *dst;
-	size_t slen = strlen(s);
+  char *dst;
+  size_t slen = strlen (s);
 
-	if (slen > n)
-		n = slen;
+  if (slen > n)
+    n = slen;
 
-	dst = xmalloc(n + 1);
+  dst = xmalloc (n + 1);
 
-	memcpy(dst, s, n);
-	dst[n] = 0;
+  memcpy (dst, s, n);
+  dst[n] = 0;
 
-	return dst;
+  return dst;
 }
 #endif

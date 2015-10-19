@@ -29,74 +29,77 @@
 # include <config.h>
 #endif
 
-#include <stdlib.h> // exit()
+#include <stdlib.h>    // exit()
 #include "libtest.h"
 
-int main(void)
+int
+main (void)
 {
-	wget_test_url_t urls[]={
-		{	.name = "/start.html",
-			.code = "200 Dontcare",
-			.body =
-				"<meta name= \"roBoTS\" content=\"noFolLow ,  foo, bar \">" \
-				"<a href=\"/bombshell.html\">Don't follow me!</a>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-		{	.name = "/mid.html",
-			.code = "200 Dontcare",
-			.body =
-				"<meta name=\"rObOts\" content=\" foo  ,  NOfOllow ,  bar \">" \
-				"<a href=\"/bombshell.html\">Don't follow me!</a>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-		{	.name = "/end.html",
-			.code = "200 Dontcare",
-			.body =
-				"<meta name=\"RoBotS\" content=\"foo,BAr,   nofOLLOw    \">" \
-				"<a href=\"/bombshell.html\">Don't follow me!</a>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-		{	.name = "/solo.html",
-			.code = "200 Dontcare",
-			.body =
-				"<meta name=\"robots\" content=\"nofollow\">" \
-				"<a href=\"/bombshell.html\">Don't follow me!</a>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-		{	.name = "/bombshell.html",
-			.code = "200 Dontcare",
-			.body = "What ever",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-	};
+  wget_test_url_t urls[] = {
+    {.name = "/start.html",
+     .code = "200 Dontcare",
+     .body =
+     "<meta name= \"roBoTS\" content=\"noFolLow ,  foo, bar \">"
+     "<a href=\"/bombshell.html\">Don't follow me!</a>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+    {.name = "/mid.html",
+     .code = "200 Dontcare",
+     .body =
+     "<meta name=\"rObOts\" content=\" foo  ,  NOfOllow ,  bar \">"
+     "<a href=\"/bombshell.html\">Don't follow me!</a>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+    {.name = "/end.html",
+     .code = "200 Dontcare",
+     .body =
+     "<meta name=\"RoBotS\" content=\"foo,BAr,   nofOLLOw    \">"
+     "<a href=\"/bombshell.html\">Don't follow me!</a>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+    {.name = "/solo.html",
+     .code = "200 Dontcare",
+     .body =
+     "<meta name=\"robots\" content=\"nofollow\">"
+     "<a href=\"/bombshell.html\">Don't follow me!</a>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+    {.name = "/bombshell.html",
+     .code = "200 Dontcare",
+     .body = "What ever",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+  };
 
-	// functions won't come back if an error occurs
-	wget_test_start_server(
-		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
-		0);
+  // functions won't come back if an error occurs
+  wget_test_start_server (WGET_TEST_RESPONSE_URLS, &urls, countof (urls), 0);
 
-	// test-meta-robots
-	wget_test(
-		WGET_TEST_OPTIONS, "-r -e robots=on -nd",
-		WGET_TEST_REQUEST_URLS, "start.html", "mid.html", "end.html", "solo.html", NULL,
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body },
-			{ urls[1].name + 1, urls[1].body },
-			{ urls[2].name + 1, urls[2].body },
-			{ urls[3].name + 1, urls[3].body },
-			{	NULL } },
-		0);
+  // test-meta-robots
+  wget_test (WGET_TEST_OPTIONS, "-r -e robots=on -nd",
+             WGET_TEST_REQUEST_URLS, "start.html", "mid.html", "end.html",
+             "solo.html", NULL, WGET_TEST_EXPECTED_ERROR_CODE, 0,
+             WGET_TEST_EXPECTED_FILES, &(wget_test_file_t[])
+             {
+               {
+                 urls[0].name + 1, urls[0].body},
+                 {
+                   urls[1].name + 1, urls[1].body},
+                   {
+                     urls[2].name + 1, urls[2].body},
+                     {
+                       urls[3].name + 1, urls[3].body},
+                       {
+                         NULL}}, 0);
 
-	exit(0);
+  exit (0);
 }

@@ -29,65 +29,68 @@
 # include <config.h>
 #endif
 
-#include <stdlib.h> // exit()
+#include <stdlib.h>    // exit()
 #include "libtest.h"
 
-int main(void)
+int
+main (void)
 {
-	wget_test_url_t urls[]={
-		{	.name = "/index.html",
-			.code = "200 Dontcare",
-			.body =
-				"<html><head><title>Main Page</title></head><body><p>A link to a" \
-				" <a href=\"second.html\">second page</a>." \
-				" <a href=\"htTp://localhost:{{port}}/second.html\">second page</a>." \
-				" <a href=\"subdir/third.html\">third page</a>." \
-				" <a href=\"htTp://localhost:{{port}}/subdir/third.html\">third page</a>." \
-				"</p></body></html>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-		{	.name = "/second.html",
-			.code = "200 Dontcare",
-			.body = "<html><head><title>Site</title></head><body>Some Text</body></html>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-		{	.name = "/subdir/third.html",
-			.code = "200 Dontcare",
-			.body = "<html><head><title>Site</title></head><body>Some Text</body></html>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-	};
+  wget_test_url_t urls[] = {
+    {.name = "/index.html",
+     .code = "200 Dontcare",
+     .body =
+     "<html><head><title>Main Page</title></head><body><p>A link to a"
+     " <a href=\"second.html\">second page</a>."
+     " <a href=\"htTp://localhost:{{port}}/second.html\">second page</a>."
+     " <a href=\"subdir/third.html\">third page</a>."
+     " <a href=\"htTp://localhost:{{port}}/subdir/third.html\">third page</a>."
+     "</p></body></html>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+    {.name = "/second.html",
+     .code = "200 Dontcare",
+     .body =
+     "<html><head><title>Site</title></head><body>Some Text</body></html>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+    {.name = "/subdir/third.html",
+     .code = "200 Dontcare",
+     .body =
+     "<html><head><title>Site</title></head><body>Some Text</body></html>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+  };
 
-	const char *converted =
-		"<html><head><title>Main Page</title></head><body><p>A link to a" \
-		" <a href=\"second.html\">second page</a>." \
-		" <a href=\"second.html\">second page</a>." \
-		" <a href=\"subdir/third.html\">third page</a>." \
-		" <a href=\"subdir/third.html\">third page</a>." \
-		"</p></body></html>";
+  const char *converted =
+    "<html><head><title>Main Page</title></head><body><p>A link to a"
+    " <a href=\"second.html\">second page</a>."
+    " <a href=\"second.html\">second page</a>."
+    " <a href=\"subdir/third.html\">third page</a>."
+    " <a href=\"subdir/third.html\">third page</a>." "</p></body></html>";
 
-	// functions won't come back if an error occurs
-	wget_test_start_server(
-		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
-		0);
+  // functions won't come back if an error occurs
+  wget_test_start_server (WGET_TEST_RESPONSE_URLS, &urls, countof (urls), 0);
 
-	// test-k
-	wget_test(
-		WGET_TEST_OPTIONS, "-k -r -nH",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, converted },
-			{ urls[1].name + 1, urls[1].body },
-			{ urls[2].name + 1, urls[2].body },
-			{	NULL } },
-		0);
+  // test-k
+  wget_test (WGET_TEST_OPTIONS, "-k -r -nH",
+             WGET_TEST_REQUEST_URL, "index.html",
+             WGET_TEST_EXPECTED_ERROR_CODE, 0,
+             WGET_TEST_EXPECTED_FILES, &(wget_test_file_t[])
+             {
+               {
+                 urls[0].name + 1, converted},
+                 {
+                   urls[1].name + 1, urls[1].body},
+                   {
+                     urls[2].name + 1, urls[2].body},
+                     {
+                       NULL}}, 0);
 
-	exit(0);
+  exit (0);
 }

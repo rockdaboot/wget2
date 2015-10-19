@@ -31,35 +31,36 @@
  */
 
 #ifndef _LIBWGET_LIBTEST_H
-#define _LIBWGET_LIBTEST_H
+# define _LIBWGET_LIBTEST_H
 
-#include <libwget.h>
+# include <libwget.h>
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
+# ifdef  __cplusplus
+extern "C"
+{
+# endif
 
-// defines for wget_test_start_http_server()
-#define WGET_TEST_EXPECTED_REQUEST_HEADER 1001
-#define WGET_TEST_RESPONSE_URLS 1002
-#define WGET_TEST_FTP_IO_UNORDERED 1003
-#define WGET_TEST_FTP_IO_ORDERED 1004
-#define WGET_TEST_FTP_SERVER_HELLO 1005
-#define WGET_TEST_FTPS_IMPLICIT 1006
+  // defines for wget_test_start_http_server()
+# define WGET_TEST_EXPECTED_REQUEST_HEADER 1001
+# define WGET_TEST_RESPONSE_URLS 1002
+# define WGET_TEST_FTP_IO_UNORDERED 1003
+# define WGET_TEST_FTP_IO_ORDERED 1004
+# define WGET_TEST_FTP_SERVER_HELLO 1005
+# define WGET_TEST_FTPS_IMPLICIT 1006
 
-// defines for wget_test()
-#define WGET_TEST_REQUEST_URL 2001
-#define WGET_TEST_OPTIONS 2002
-#define WGET_TEST_EXPECTED_ERROR_CODE 2003
-#define WGET_TEST_EXPECTED_FILES 2004
-#define WGET_TEST_EXISTING_FILES 2005
-#define WGET_TEST_KEEP_TMPFILES 2006
-#define WGET_TEST_REQUEST_URLS 2007
-#define WGET_TEST_EXECUTABLE 2008
+  // defines for wget_test()
+# define WGET_TEST_REQUEST_URL 2001
+# define WGET_TEST_OPTIONS 2002
+# define WGET_TEST_EXPECTED_ERROR_CODE 2003
+# define WGET_TEST_EXPECTED_FILES 2004
+# define WGET_TEST_EXISTING_FILES 2005
+# define WGET_TEST_KEEP_TMPFILES 2006
+# define WGET_TEST_REQUEST_URLS 2007
+# define WGET_TEST_EXECUTABLE 2008
 
-#define countof(a) (sizeof(a)/sizeof(*(a)))
+# define countof(a) (sizeof(a)/sizeof(*(a)))
 
-G_GNUC_WGET_UNUSED static const char *WGET_TEST_SOME_HTML_BODY = "\
+  G_GNUC_WGET_UNUSED static const char *WGET_TEST_SOME_HTML_BODY = "\
 <html>\n\
 <head>\n\
   <title>The Title</title>\n\
@@ -71,63 +72,50 @@ G_GNUC_WGET_UNUSED static const char *WGET_TEST_SOME_HTML_BODY = "\
 </body>\n\
 </html>\n";
 
-typedef struct {
-	const char *
-		name;
-	const char *
-		content;
-	time_t
-		timestamp;
-} wget_test_file_t;
+  typedef struct
+  {
+    const char *name;
+    const char *content;
+    time_t timestamp;
+  } wget_test_file_t;
 
-typedef struct {
-	const char *
-		name;
-	const char *
-		code;
-	const char *
-		body;
-	const char *
-		headers[10];
-	const char *
-		request_headers[10];
-	time_t
-		modified;
-	char
-		body_alloc; // if body has been allocated internally (and need to be freed on exit)
+  typedef struct
+  {
+    const char *name;
+    const char *code;
+    const char *body;
+    const char *headers[10];
+    const char *request_headers[10];
+    time_t modified;
+    char body_alloc;    // if body has been allocated internally (and need to be freed on exit)
 
-	// auth fields
-	const char *
-		auth_method;
-	const char *
-		auth_username;
-	const char *
-		auth_password;
-} wget_test_url_t;
+    // auth fields
+    const char *auth_method;
+    const char *auth_username;
+    const char *auth_password;
+  } wget_test_url_t;
 
-typedef struct {
-	const char *
-		in;
-	const char *
-		out;
-	wget_test_url_t *
-		send_url;
-} wget_test_ftp_io_t;
+  typedef struct
+  {
+    const char *in;
+    const char *out;
+    wget_test_url_t *send_url;
+  } wget_test_ftp_io_t;
 
-void wget_test_stop_server(void);
-void wget_test_start_server(int first_key, ...);
-void wget_test(int first_key, ...);
-int wget_test_get_http_server_port(void) G_GNUC_WGET_PURE;
-int wget_test_get_https_server_port(void) G_GNUC_WGET_PURE;
-int wget_test_get_ftp_server_port(void) G_GNUC_WGET_PURE;
-int wget_test_get_ftps_server_port(void) G_GNUC_WGET_PURE;
+  void wget_test_stop_server (void);
+  void wget_test_start_server (int first_key, ...);
+  void wget_test (int first_key, ...);
+  int wget_test_get_http_server_port (void) G_GNUC_WGET_PURE;
+  int wget_test_get_https_server_port (void) G_GNUC_WGET_PURE;
+  int wget_test_get_ftp_server_port (void) G_GNUC_WGET_PURE;
+  int wget_test_get_ftps_server_port (void) G_GNUC_WGET_PURE;
 
-#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
-#	pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#endif
+# if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+#  pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+# endif
 
-#ifdef	__cplusplus
+# ifdef  __cplusplus
 }
-#endif
+# endif
 
-#endif	/* _LIBWGET_LIBTEST_H */
+#endif        /* _LIBWGET_LIBTEST_H */

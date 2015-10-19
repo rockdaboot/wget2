@@ -54,10 +54,9 @@
  * See wget_list_append() for an example on how to use lists.
  */
 
-struct _wget_list_st {
-	wget_list_t
-		*next,
-		*prev;
+struct _wget_list_st
+{
+  wget_list_t * next, *prev;
 };
 
 /**
@@ -77,46 +76,49 @@ struct _wget_list_st {
  * <example>
  * <title>Example Usage</title>
  * <programlisting>
- *	WGET_LIST *list = NULL;
- *	struct mystruct mydata1 = { .x = 1, .y = 25 };
- *	struct mystruct mydata2 = { .x = 5, .y = 99 };
- *	struct mystruct *data;
+ *  WGET_LIST *list = NULL;
+ *  struct mystruct mydata1 = { .x = 1, .y = 25 };
+ *  struct mystruct mydata2 = { .x = 5, .y = 99 };
+ *  struct mystruct *data;
  *
- *	wget_list_append(&list, &mydata1, sizeof(mydata1)); // append mydata1 to list
- *	wget_list_append(&list, &mydata2, sizeof(mydata2)); // append mydata2 to list
+ *  wget_list_append(&list, &mydata1, sizeof(mydata1)); // append mydata1 to list
+ *  wget_list_append(&list, &mydata2, sizeof(mydata2)); // append mydata2 to list
  *
- *	data = wget_list_getfirst(list);
- *	printf("data=(%d,%d)\n", data->x, data->y); // prints 'data=(1,25)'
+ *  data = wget_list_getfirst(list);
+ *  printf("data=(%d,%d)\n", data->x, data->y); // prints 'data=(1,25)'
  *
- *	wget_list_remove(&list, data);
+ *  wget_list_remove(&list, data);
  *
- *	data = wget_list_getfirst(list);
- *	printf("data=(%d,%d)\n", data->x, data->y); // prints 'data=(5,99)'
+ *  data = wget_list_getfirst(list);
+ *  printf("data=(%d,%d)\n", data->x, data->y); // prints 'data=(5,99)'
  *
- *	wget_list_free(&list);
+ *  wget_list_free(&list);
  * </programlisting>
  * </example>
  */
 void *
-wget_list_append(wget_list_t **list, const void *data, size_t size)
+wget_list_append (wget_list_t ** list, const void *data, size_t size)
 {
-	// allocate space for node and data in one row
-	wget_list_t *node = wget_malloc(sizeof(wget_list_t) + size);
+  // allocate space for node and data in one row
+  wget_list_t *node = wget_malloc (sizeof (wget_list_t) + size);
 
-	memcpy(node + 1, data, size);
+  memcpy (node + 1, data, size);
 
-	if (!*list) {
-		// <*list> is an empty list
-		*list = node;
-		node->next = node->prev = node;
-	} else {
-		node->next = *list;
-		node->prev = (*list)->prev;
-		(*list)->prev->next = node;
-		(*list)->prev = node;
-	}
+  if (!*list)
+    {
+      // <*list> is an empty list
+      *list = node;
+      node->next = node->prev = node;
+    }
+  else
+    {
+      node->next = *list;
+      node->prev = (*list)->prev;
+      (*list)->prev->next = node;
+      (*list)->prev = node;
+    }
 
-	return node + 1;
+  return node + 1;
 }
 
 /**
@@ -133,13 +135,17 @@ wget_list_append(wget_list_t **list, const void *data, size_t size)
  *
  * Returns: Pointer to the new element.
  */
-void *wget_list_prepend(wget_list_t **list, const void *data, size_t size)
+void *
+wget_list_prepend (wget_list_t ** list, const void *data, size_t size)
 {
-	if (!*list) {
-		return wget_list_append(list, data, size);
-	} else {
-		return wget_list_append(&(*list)->prev, data, size);
-	}
+  if (!*list)
+    {
+      return wget_list_append (list, data, size);
+    }
+  else
+    {
+      return wget_list_append (&(*list)->prev, data, size);
+    }
 }
 
 /**
@@ -149,21 +155,25 @@ void *wget_list_prepend(wget_list_t **list, const void *data, size_t size)
  *
  * Remove an entry from the list.
  */
-void wget_list_remove(wget_list_t **list, void *elem)
+void
+wget_list_remove (wget_list_t ** list, void *elem)
 {
-	wget_list_t *node = ((wget_list_t *)elem) - 1;
+  wget_list_t *node = ((wget_list_t *) elem) - 1;
 
-	if (node->prev == node->next && node == node->prev) {
-		// removing the last node in the list
-		if (list && *list && node == *list)
-			*list = NULL;
-	} else {
-		node->prev->next = node->next;
-		node->next->prev = node->prev;
-		if (list && *list && node == *list)
-			*list = node->next;
-	}
-	xfree(node);
+  if (node->prev == node->next && node == node->prev)
+    {
+      // removing the last node in the list
+      if (list && *list && node == *list)
+        *list = NULL;
+    }
+  else
+    {
+      node->prev->next = node->next;
+      node->next->prev = node->prev;
+      if (list && *list && node == *list)
+        *list = node->next;
+    }
+  xfree (node);
 }
 
 /**
@@ -172,9 +182,10 @@ void wget_list_remove(wget_list_t **list, void *elem)
  *
  * Returns: Pointer to the first element of the list or %NULL if the list is empty.
  */
-void *wget_list_getfirst(const wget_list_t *list)
+void *
+wget_list_getfirst (const wget_list_t * list)
 {
-	return (void *)(list ? list + 1 : list);
+  return (void *) (list ? list + 1 : list);
 }
 
 /**
@@ -183,9 +194,10 @@ void *wget_list_getfirst(const wget_list_t *list)
  *
  * Returns: Pointer to the last element of the list or %NULL if the list is empty.
  */
-void *wget_list_getlast(const wget_list_t *list)
+void *
+wget_list_getlast (const wget_list_t * list)
 {
-	return (void *)(list ? list->prev + 1 : list);
+  return (void *) (list ? list->prev + 1 : list);
 }
 
 /**
@@ -207,29 +219,32 @@ void *wget_list_getlast(const wget_list_t *list)
  * WGET_LIST *list = NULL;
  * static int print_elem(void *context, const char *elem)
  * {
- *	  printf("%s\n",elem);
- *	  return 0;
+ *    printf("%s\n",elem);
+ *    return 0;
  * }
  *
  * void dump(WGET_LIST *list)
  * {
- *	  wget_list_browse(list, (int(*)(void *, void *))print_elem, NULL);
+ *    wget_list_browse(list, (int(*)(void *, void *))print_elem, NULL);
  * }
  *  </programlisting>
  * </example>
  */
-int wget_list_browse(const wget_list_t *list, int (*browse)(void *context, void *elem), void *context)
+int
+wget_list_browse (const wget_list_t * list,
+                  int (*browse) (void *context, void *elem), void *context)
 {
-	int ret = 0;
+  int ret = 0;
 
-	if (list) {
-		const wget_list_t *end = list->prev, *cur = list;
+  if (list)
+    {
+      const wget_list_t *end = list->prev, *cur = list;
 
-		while ((ret = browse(context, (void *)(cur + 1))) == 0 && cur != end)
-			cur = cur->next;
-	}
+      while ((ret = browse (context, (void *) (cur + 1))) == 0 && cur != end)
+        cur = cur->next;
+    }
 
-	return ret;
+  return ret;
 }
 
 /**
@@ -238,23 +253,24 @@ int wget_list_browse(const wget_list_t *list, int (*browse)(void *context, void 
  *
  * Freeing the list and it's entry.
  */
-void wget_list_free(wget_list_t **list)
+void
+wget_list_free (wget_list_t ** list)
 {
-	while (*list)
-		wget_list_remove(list, *list + 1);
+  while (*list)
+    wget_list_remove (list, *list + 1);
 }
 
 /*
-void wget_list_dump(const WGET_LIST *list)
-{
-	if (list) {
-		const WGET_LIST *cur = list;
+  void wget_list_dump(const WGET_LIST *list)
+  {
+  if (list) {
+  const WGET_LIST *cur = list;
 
-		do {
-			debug_printf("%p: next %p prev %p\n", cur, cur->next, cur->prev);
-			cur = cur->next;
-		} while (cur != list);
-	} else
-		debug_printf("empty\n");
-}
+  do {
+  debug_printf("%p: next %p prev %p\n", cur, cur->next, cur->prev);
+  cur = cur->next;
+  } while (cur != list);
+  } else
+  debug_printf("empty\n");
+  }
 */

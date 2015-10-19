@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 1992, 1993
- *	The Regents of the University of California.  All rights reserved.
+ *  The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -12,8 +12,8 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
+ *  This product includes software developed by the University of
+ *  California, Berkeley and its contributors.
  * 4. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
@@ -30,29 +30,29 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- *	@(#)fnmatch.h	8.1 (Berkeley) 6/2/93
+ *  @(#)fnmatch.h  8.1 (Berkeley) 6/2/93
  *
  * From FreeBSD fnmatch.h 1.7
  * $Id: fnmatch.h,v 1.4 2001/10/04 02:46:21 jdp Exp $
  */
 
-#ifndef	_FNMATCH_H_
-#define	_FNMATCH_H_
+#ifndef _FNMATCH_H_
+# define _FNMATCH_H_
 
-#define	FNM_NOMATCH	1	/* Match failed. */
+# define FNM_NOMATCH  1    /* Match failed. */
 
-#define	FNM_NOESCAPE	0x01	/* Disable backslash escaping. */
-#define	FNM_PATHNAME	0x02	/* Slash must be matched by slash. */
-#define	FNM_PERIOD	0x04	/* Period must be matched by period. */
-#define	FNM_LEADING_DIR	0x08	/* Ignore /<tail> after Imatch. */
-#define	FNM_CASEFOLD	0x10	/* Case insensitive search. */
-#define FNM_PREFIX_DIRS	0x20	/* Directory prefixes of pattern match too. */
+# define FNM_NOESCAPE  0x01  /* Disable backslash escaping. */
+# define FNM_PATHNAME  0x02  /* Slash must be matched by slash. */
+# define FNM_PERIOD  0x04  /* Period must be matched by period. */
+# define FNM_LEADING_DIR  0x08  /* Ignore /<tail> after Imatch. */
+# define FNM_CASEFOLD  0x10  /* Case insensitive search. */
+# define FNM_PREFIX_DIRS  0x20  /* Directory prefixes of pattern match too. */
 
 /* Make this compile successfully with "gcc -traditional" */
-#ifndef __STDC__
-#define const	/* empty */
-#endif
+# ifndef __STDC__
+#  define const      /* empty */
+# endif
 
-int	 fnmatch(const char *, const char *, int);
+int fnmatch (const char *, const char *, int);
 
 #endif /* !_FNMATCH_H_ */

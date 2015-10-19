@@ -29,7 +29,7 @@
 # include <config.h>
 #endif
 
-#include <stdlib.h> // exit()
+#include <stdlib.h>    // exit()
 #include "libtest.h"
 
 // Kon'nichiwa <dot> Japan
@@ -39,64 +39,77 @@
 // The charset in the document's META tag is stated wrong by purpose (UTF-8).
 // The charset in the response header has priority and is correct (EUC-JP)
 
-int main(void)
+int
+main (void)
 {
-	wget_test_url_t urls[]={
-		{	.name = "http://start-here.com/start.html",
-			.code = "200 Dontcare",
-			.body =
-				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />" \
-				"<a href=\"http://" euc_jp_hostname "/\">The link</a>",
-			.headers = {
-				"Content-Type: text/html; charset=EUC-JP",
-			}
-		},
-		{	.name = "http://" punycoded_hostname "/index.html",
-			.code = "200 Dontcare",
-			.body = "What ever",
-			.headers = {
-				"Content-Type: text/plain",
-			}
-		},
-	};
+  wget_test_url_t urls[] = {
+    {.name = "http://start-here.com/start.html",
+     .code = "200 Dontcare",
+     .body =
+     "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />"
+     "<a href=\"http://" euc_jp_hostname "/\">The link</a>",
+     .headers = {
+        "Content-Type: text/html; charset=EUC-JP",
+      }
+    },
+    {.name = "http://" punycoded_hostname "/index.html",
+     .code = "200 Dontcare",
+     .body = "What ever",
+     .headers = {
+        "Content-Type: text/plain",
+      }
+    },
+  };
 
-	char options[256];
+  char options[256];
 
-	// functions won't come back if an error occurs
-	wget_test_start_server(
-		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
-		0);
+  // functions won't come back if an error occurs
+  wget_test_start_server (WGET_TEST_RESPONSE_URLS, &urls, countof (urls), 0);
 
-	// test-idn-meta
-	snprintf(options, sizeof(options),
-		"--iri -rH -e http_proxy=localhost:%d http://start-here.com/start.html",
-		wget_test_get_http_server_port());
+  // test-idn-meta
+  snprintf (options, sizeof (options),
+            "--iri -rH -e http_proxy=localhost:%d http://start-here.com/start.html",
+            wget_test_get_http_server_port ());
 
-	wget_test(
-//		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, options,
-		WGET_TEST_REQUEST_URL, NULL,
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "start-here.com/start.html", urls[0].body },
-			{ punycoded_hostname "/index.html", urls[1].body },
-			{	NULL } },
-		0);
+  wget_test (
+             //    WGET_TEST_KEEP_TMPFILES, 1,
+             WGET_TEST_OPTIONS, options,
+             WGET_TEST_REQUEST_URL, NULL,
+             WGET_TEST_EXPECTED_ERROR_CODE, 0,
+             WGET_TEST_EXPECTED_FILES, &(wget_test_file_t[])
+             {
+               {
+                 "start-here.com/start.html", urls[0].body}
+               ,
+                 {
+                   punycoded_hostname "/index.html", urls[1].body}
+                 ,
+                   {
+                     NULL}
+             }
+             , 0);
 
-	// test-idn-headers
-	urls[0].body = "<a href=\"http://" euc_jp_hostname "/\">The link</a>";
-	urls[0].headers[0] = "Content-Type: text/html; charset=EUC-JP";
+  // test-idn-headers
+  urls[0].body = "<a href=\"http://" euc_jp_hostname "/\">The link</a>";
+  urls[0].headers[0] = "Content-Type: text/html; charset=EUC-JP";
 
-	wget_test(
-//		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, options,
-		WGET_TEST_REQUEST_URL, NULL,
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "start-here.com/start.html", urls[0].body },
-			{ punycoded_hostname "/index.html", urls[1].body },
-			{	NULL } },
-		0);
+  wget_test (
+             //    WGET_TEST_KEEP_TMPFILES, 1,
+             WGET_TEST_OPTIONS, options,
+             WGET_TEST_REQUEST_URL, NULL,
+             WGET_TEST_EXPECTED_ERROR_CODE, 0,
+             WGET_TEST_EXPECTED_FILES, &(wget_test_file_t[])
+             {
+               {
+                 "start-here.com/start.html", urls[0].body}
+               ,
+                 {
+                   punycoded_hostname "/index.html", urls[1].body}
+                 ,
+                   {
+                     NULL}
+             }
+             , 0);
 
-	exit(0);
+  exit (0);
 }

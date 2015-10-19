@@ -54,15 +54,15 @@
  * namely malloc(), calloc(), realloc().
  */
 
-static void
-	(*_oom_callback)(void);
+static void (*_oom_callback) (void);
 
-static inline void G_GNUC_WGET_NORETURN _no_memory(void)
+static inline void G_GNUC_WGET_NORETURN
+_no_memory (void)
 {
-	if (_oom_callback)
-		_oom_callback();
+  if (_oom_callback)
+    _oom_callback ();
 
-	exit(EXIT_FAILURE);
+  exit (EXIT_FAILURE);
 }
 
 /**
@@ -71,9 +71,10 @@ static inline void G_GNUC_WGET_NORETURN _no_memory(void)
  *
  * Set a custom out-of-memory function.
  */
-void wget_set_oomfunc(void (*oom_callback)(void))
+void
+wget_set_oomfunc (void (*oom_callback) (void))
 {
-	_oom_callback = oom_callback;
+  _oom_callback = oom_callback;
 }
 
 /**
@@ -86,12 +87,13 @@ void wget_set_oomfunc(void (*oom_callback)(void))
  *
  * Return: A pointer to the allocated (uninitialized) memory.
  */
-void *wget_malloc(size_t size)
+void *
+wget_malloc (size_t size)
 {
-	void *p = malloc(size);
-	if (!p)
-		_no_memory();
-	return p;
+  void *p = malloc (size);
+  if (!p)
+    _no_memory ();
+  return p;
 }
 
 /**
@@ -105,12 +107,13 @@ void *wget_malloc(size_t size)
  *
  * Return: A pointer to the allocated (initialized) memory.
  */
-void *wget_calloc(size_t nmemb, size_t size)
+void *
+wget_calloc (size_t nmemb, size_t size)
 {
-	void *p = calloc(nmemb, size);
-	if (!p)
-		_no_memory();
-	return p;
+  void *p = calloc (nmemb, size);
+  if (!p)
+    _no_memory ();
+  return p;
 }
 
 /**
@@ -124,28 +127,31 @@ void *wget_calloc(size_t nmemb, size_t size)
  *
  * Return: A pointer to the new memory area.
  */
-void *wget_realloc(void *ptr, size_t size)
+void *
+wget_realloc (void *ptr, size_t size)
 {
-	void *p = realloc(ptr, size);
-	if (!p)
-		_no_memory();
-	return p;
+  void *p = realloc (ptr, size);
+  if (!p)
+    _no_memory ();
+  return p;
 }
 
 /*void wget_free(const void **p)
-{
-	if (p && *p) {
-		free(*p);
-		*p = NULL;
-	}
-}*/
+  {
+  if (p && *p) {
+  free(*p);
+  *p = NULL;
+  }
+  }*/
 
-void *rpl_malloc (size_t n)
+void *
+rpl_malloc (size_t n)
 {
-	return malloc (n ? n : 1);
+  return malloc (n ? n : 1);
 }
 
-void *rpl_realloc (void *ptr, size_t n)
+void *
+rpl_realloc (void *ptr, size_t n)
 {
-	return realloc (ptr, n ? n : 1);
+  return realloc (ptr, n ? n : 1);
 }

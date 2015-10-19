@@ -37,19 +37,15 @@
 #include <libwget.h>
 #include "private.h"
 
-struct _wget_vector_st {
-	int
-		(*cmp)(const void *, const void *); // comparison function
-	void
-		(*destructor)(void *); // element destructor function
-	void
-		**entry; // pointer to array of pointers to elements
-	int
-		max,     // allocated elements
-		cur,     // number of elements in use
-		off;     // number of elements to add if resize occurs
-	char
-		sorted; // 1=list is sorted, 0=list is not sorted
+struct _wget_vector_st
+{
+  int (*cmp) (const void *, const void *);  // comparison function
+  void (*destructor) (void *);  // element destructor function
+  void **entry;      // pointer to array of pointers to elements
+  int max,      // allocated elements
+    cur,      // number of elements in use
+    off;      // number of elements to add if resize occurs
+  char sorted;      // 1=list is sorted, 0=list is not sorted
 };
 
 // create vector with initial size <max>
@@ -60,474 +56,600 @@ struct _wget_vector_st {
 //      or NULL if not needed.
 // the vector plus content is freed by vec_free()
 
-wget_vector_t *wget_vector_create(int max, int off, int (*cmp)(const void *, const void *))
+wget_vector_t *
+wget_vector_create (int max, int off, int (*cmp) (const void *, const void *))
 {
-	wget_vector_t *v = xcalloc(1, sizeof(wget_vector_t));
+  wget_vector_t *v = xcalloc (1, sizeof (wget_vector_t));
 
-	v->entry = xmalloc(max * sizeof(void *));
-	v->max = max;
-	v->off = off;
-	v->cmp = cmp;
+  v->entry = xmalloc (max * sizeof (void *));
+  v->max = max;
+  v->off = off;
+  v->cmp = cmp;
 
-	return v;
+  return v;
 }
 
-static int G_GNUC_WGET_NONNULL((2)) _vec_insert_private(wget_vector_t *v, const void *elem, size_t size, int pos, int replace, int alloc)
+static int
+G_GNUC_WGET_NONNULL ((2))
+  _vec_insert_private (wget_vector_t * v, const void *elem, size_t size,
+                       int pos, int replace, int alloc)
 {
-	void *elemp;
+  void *elemp;
 
-	if (pos < 0 || !v || pos > v->cur) return -1;
+  if (pos < 0 || !v || pos > v->cur)
+    return -1;
 
-	if (alloc) {
-		elemp = xmalloc(size);
-		memcpy(elemp, elem, size);
-	} else {
-		elemp = (void *)elem;
-	}
+  if (alloc)
+    {
+      elemp = xmalloc (size);
+      memcpy (elemp, elem, size);
+    }
+  else
+    {
+      elemp = (void *) elem;
+    }
 
-	if (!replace) {
-		if (v->max == v->cur) {
-			if (v->off > 0) {
-				v->entry = xrealloc(v->entry, (v->max += v->off) * sizeof(void *));
-			} else if (v->off<-1) {
-				v->entry = xrealloc(v->entry, (v->max *= -v->off) * sizeof(void *));
-			} else {
-				if (alloc)
-					free(elemp);
-				return -1;
-			}
-		}
+  if (!replace)
+    {
+      if (v->max == v->cur)
+        {
+          if (v->off > 0)
+            {
+              v->entry =
+                xrealloc (v->entry, (v->max += v->off) * sizeof (void *));
+            }
+          else if (v->off < -1)
+            {
+              v->entry =
+                xrealloc (v->entry, (v->max *= -v->off) * sizeof (void *));
+            }
+          else
+            {
+              if (alloc)
+                free (elemp);
+              return -1;
+            }
+        }
 
-		memmove(&v->entry[pos + 1], &v->entry[pos], (v->cur - pos) * sizeof(void *));
-		v->cur++;
-	}
+      memmove (&v->entry[pos + 1], &v->entry[pos],
+               (v->cur - pos) * sizeof (void *));
+      v->cur++;
+    }
 
-	v->entry[pos] = elemp;
+  v->entry[pos] = elemp;
 
-	if (v->cmp) {
-		if (v->cur == 1) v->sorted = 1;
-		else if (v->cur > 1 && v->sorted) {
-			if (pos == 0) {
-				if (v->cmp(elem, v->entry[1]) > 0) v->sorted = 0;
-			} else if (pos == v->cur - 1) {
-				if (v->cmp(elem, v->entry[v->cur - 2]) < 0) v->sorted = 0;
-			} else {
-				if (v->cmp(elem, v->entry[pos - 1]) < 0 ||
-					v->cmp(elem, v->entry[pos + 1]) > 0) {
-					v->sorted = 0;
-				}
-			}
-		}
-	}
+  if (v->cmp)
+    {
+      if (v->cur == 1)
+        v->sorted = 1;
+      else if (v->cur > 1 && v->sorted)
+        {
+          if (pos == 0)
+            {
+              if (v->cmp (elem, v->entry[1]) > 0)
+                v->sorted = 0;
+            }
+          else if (pos == v->cur - 1)
+            {
+              if (v->cmp (elem, v->entry[v->cur - 2]) < 0)
+                v->sorted = 0;
+            }
+          else
+            {
+              if (v->cmp (elem, v->entry[pos - 1]) < 0 ||
+                  v->cmp (elem, v->entry[pos + 1]) > 0)
+                {
+                  v->sorted = 0;
+                }
+            }
+        }
+    }
 
-	return pos; // return position of new element
+  return pos;      // return position of new element
 }
 
-int wget_vector_insert(wget_vector_t *v, const void *elem, size_t size, int pos)
+int
+wget_vector_insert (wget_vector_t * v, const void *elem, size_t size, int pos)
 {
-	return _vec_insert_private(v, elem, size, pos, 0, 1);
+  return _vec_insert_private (v, elem, size, pos, 0, 1);
 }
 
-int wget_vector_insert_noalloc(wget_vector_t *v, const void *elem, int pos)
+int
+wget_vector_insert_noalloc (wget_vector_t * v, const void *elem, int pos)
 {
-	return _vec_insert_private(v, elem, 0, pos, 0, 0);
+  return _vec_insert_private (v, elem, 0, pos, 0, 0);
 }
 
-static int G_GNUC_WGET_NONNULL((2)) _vec_insert_sorted_private(wget_vector_t *v, const void *elem, size_t size, int alloc)
+static int
+G_GNUC_WGET_NONNULL ((2))
+  _vec_insert_sorted_private (wget_vector_t * v, const void *elem, size_t size,
+                              int alloc)
 {
-	int m = 0;
+  int m = 0;
 
-	if (!v) return -1;
+  if (!v)
+    return -1;
 
-	if (!v->cmp)
-		return _vec_insert_private(v, elem, size, v->cur, 0, alloc);
+  if (!v->cmp)
+    return _vec_insert_private (v, elem, size, v->cur, 0, alloc);
 
-	if (!v->sorted) wget_vector_sort(v);
-	// vec_sort will leave v->sorted alone if it fails, so check again
-	if (v->sorted) {
-		// binary search for element
-		int l = 0, r = v->cur - 1, res = 0;
+  if (!v->sorted)
+    wget_vector_sort (v);
+  // vec_sort will leave v->sorted alone if it fails, so check again
+  if (v->sorted)
+    {
+      // binary search for element
+      int l = 0, r = v->cur - 1, res = 0;
 
-		while (l <= r) {
-			m = (l + r) / 2;
-			if ((res = v->cmp(elem, v->entry[m])) > 0) l = m + 1;
-			else if (res < 0) r = m - 1;
-			else return _vec_insert_private(v, elem, size, m, 0, alloc);
-		}
-		if (res > 0) m++;
-	}
-	return _vec_insert_private(v, elem, size, m, 0, alloc);
+      while (l <= r)
+        {
+          m = (l + r) / 2;
+          if ((res = v->cmp (elem, v->entry[m])) > 0)
+            l = m + 1;
+          else if (res < 0)
+            r = m - 1;
+          else
+            return _vec_insert_private (v, elem, size, m, 0, alloc);
+        }
+      if (res > 0)
+        m++;
+    }
+  return _vec_insert_private (v, elem, size, m, 0, alloc);
 }
 
-int wget_vector_insert_sorted(wget_vector_t *v, const void *elem, size_t size)
+int
+wget_vector_insert_sorted (wget_vector_t * v, const void *elem, size_t size)
 {
-	return _vec_insert_sorted_private(v, elem, size, 1);
+  return _vec_insert_sorted_private (v, elem, size, 1);
 }
 
-int wget_vector_insert_sorted_noalloc(wget_vector_t *v, const void *elem)
+int
+wget_vector_insert_sorted_noalloc (wget_vector_t * v, const void *elem)
 {
-	return _vec_insert_sorted_private(v, elem, 0, 0);
+  return _vec_insert_sorted_private (v, elem, 0, 0);
 }
 
-int wget_vector_add(wget_vector_t *v, const void *elem, size_t size)
+int
+wget_vector_add (wget_vector_t * v, const void *elem, size_t size)
 {
-	return v ? _vec_insert_private(v, elem, size, v->cur, 0, 1) : -1;
+  return v ? _vec_insert_private (v, elem, size, v->cur, 0, 1) : -1;
 }
 
-int wget_vector_add_noalloc(wget_vector_t *v, const void *elem)
+int
+wget_vector_add_noalloc (wget_vector_t * v, const void *elem)
 {
-	return v ? _vec_insert_private(v, elem, 0, v->cur, 0, 0) : -1;
+  return v ? _vec_insert_private (v, elem, 0, v->cur, 0, 0) : -1;
 }
 
-static int _wget_vector_replace(wget_vector_t *v, const void *elem, size_t size, int pos, int alloc)
+static int
+_wget_vector_replace (wget_vector_t * v, const void *elem, size_t size,
+                      int pos, int alloc)
 {
-	if (!v || pos < 0 || pos >= v->cur) return -1;
+  if (!v || pos < 0 || pos >= v->cur)
+    return -1;
 
-	if (v->destructor)
-		v->destructor(v->entry[pos]);
+  if (v->destructor)
+    v->destructor (v->entry[pos]);
 
-	xfree(v->entry[pos]);
+  xfree (v->entry[pos]);
 
-	return _vec_insert_private(v, elem, size, pos, 1, alloc); // replace existing entry
+  return _vec_insert_private (v, elem, size, pos, 1, alloc);  // replace existing entry
 }
 
-int wget_vector_replace(wget_vector_t *v, const void *elem, size_t size, int pos)
+int
+wget_vector_replace (wget_vector_t * v, const void *elem, size_t size,
+                     int pos)
 {
-	return _wget_vector_replace(v, elem, size, pos, 1);
+  return _wget_vector_replace (v, elem, size, pos, 1);
 }
 
-int wget_vector_replace_noalloc(wget_vector_t *v, const void *elem, int pos)
+int
+wget_vector_replace_noalloc (wget_vector_t * v, const void *elem, int pos)
 {
-	return _wget_vector_replace(v, elem, 0, pos, 0);
+  return _wget_vector_replace (v, elem, 0, pos, 0);
 }
 
-int wget_vector_add_vprintf(wget_vector_t *v, const char *fmt, va_list args)
+int
+wget_vector_add_vprintf (wget_vector_t * v, const char *fmt, va_list args)
 {
-	char *buf;
+  char *buf;
 
-	if (vasprintf(&buf, fmt, args) != -1)
-		return wget_vector_add_noalloc(v, buf);
+  if (vasprintf (&buf, fmt, args) != -1)
+    return wget_vector_add_noalloc (v, buf);
 
-	return -1;
+  return -1;
 }
 
-int wget_vector_add_printf(wget_vector_t *v, const char *fmt, ...)
+int
+wget_vector_add_printf (wget_vector_t * v, const char *fmt, ...)
 {
-	va_list args;
+  va_list args;
 
-	va_start(args, fmt);
-	int len = wget_vector_add_vprintf(v, fmt, args);
-	va_end(args);
+  va_start (args, fmt);
+  int len = wget_vector_add_vprintf (v, fmt, args);
+  va_end (args);
 
-	return len;
+  return len;
 }
 
-int wget_vector_add_str(wget_vector_t *v, const char *s)
+int
+wget_vector_add_str (wget_vector_t * v, const char *s)
 {
-	if (s)
-		return wget_vector_add(v, s, strlen(s) + 1);
-	else
-		return -1;
+  if (s)
+    return wget_vector_add (v, s, strlen (s) + 1);
+  else
+    return -1;
 }
 
-static int _vec_remove_private(wget_vector_t *v, int pos, int free_entry)
+static int
+_vec_remove_private (wget_vector_t * v, int pos, int free_entry)
 {
-	if (pos < 0 || !v || pos >= v->cur) return -1;
+  if (pos < 0 || !v || pos >= v->cur)
+    return -1;
 
-	if (free_entry) {
-		if (v->destructor)
-			v->destructor(v->entry[pos]);
+  if (free_entry)
+    {
+      if (v->destructor)
+        v->destructor (v->entry[pos]);
 
-		xfree(v->entry[pos]);
-	}
+      xfree (v->entry[pos]);
+    }
 
-	memmove(&v->entry[pos], &v->entry[pos + 1], (v->cur - pos - 1) * sizeof(void *));
-	v->cur--;
+  memmove (&v->entry[pos], &v->entry[pos + 1],
+           (v->cur - pos - 1) * sizeof (void *));
+  v->cur--;
 
-	return pos;
+  return pos;
 }
 
-int wget_vector_remove(wget_vector_t *v, int pos)
+int
+wget_vector_remove (wget_vector_t * v, int pos)
 {
-	return _vec_remove_private(v, pos, 1);
+  return _vec_remove_private (v, pos, 1);
 }
 
-int wget_vector_remove_nofree(wget_vector_t *v, int pos)
+int
+wget_vector_remove_nofree (wget_vector_t * v, int pos)
 {
-	return _vec_remove_private(v, pos, 0);
+  return _vec_remove_private (v, pos, 0);
 }
 
-int wget_vector_move(wget_vector_t *v, int old_pos, int new_pos)
+int
+wget_vector_move (wget_vector_t * v, int old_pos, int new_pos)
 {
-	void *tmp;
+  void *tmp;
 
-	if (!v) return -1;
-	if (old_pos < 0 || old_pos >= v->cur) return -1;
-	if (new_pos < 0 || new_pos >= v->cur) return -1;
-	if (old_pos == new_pos) return 0;
+  if (!v)
+    return -1;
+  if (old_pos < 0 || old_pos >= v->cur)
+    return -1;
+  if (new_pos < 0 || new_pos >= v->cur)
+    return -1;
+  if (old_pos == new_pos)
+    return 0;
 
-	if (v->sorted && v->cmp && v->cmp(v->entry[old_pos], v->entry[new_pos]))
-		v->sorted = 0;
+  if (v->sorted && v->cmp && v->cmp (v->entry[old_pos], v->entry[new_pos]))
+    v->sorted = 0;
 
-	if (old_pos < new_pos) {
-		tmp = v->entry[old_pos];
-		memmove(&v->entry[old_pos], &v->entry[old_pos + 1], (new_pos - old_pos) * sizeof(void *));
-		v->entry[new_pos] = tmp;
-	} else {
-		tmp = v->entry[old_pos];
-		memmove(&v->entry[new_pos + 1], &v->entry[new_pos], (old_pos - new_pos) * sizeof(void *));
-		v->entry[new_pos] = tmp;
-	}
+  if (old_pos < new_pos)
+    {
+      tmp = v->entry[old_pos];
+      memmove (&v->entry[old_pos], &v->entry[old_pos + 1],
+               (new_pos - old_pos) * sizeof (void *));
+      v->entry[new_pos] = tmp;
+    }
+  else
+    {
+      tmp = v->entry[old_pos];
+      memmove (&v->entry[new_pos + 1], &v->entry[new_pos],
+               (old_pos - new_pos) * sizeof (void *));
+      v->entry[new_pos] = tmp;
+    }
 
-	return 0;
+  return 0;
 }
 
-int wget_vector_swap(wget_vector_t *v, int pos1, int pos2)
+int
+wget_vector_swap (wget_vector_t * v, int pos1, int pos2)
 {
-	void *tmp;
+  void *tmp;
 
-	if (!v) return -1;
-	if (pos1 < 0 || pos1 >= v->cur) return -1;
-	if (pos2 < 0 || pos2 >= v->cur) return -1;
-	if (pos1 == pos2) return 0;
+  if (!v)
+    return -1;
+  if (pos1 < 0 || pos1 >= v->cur)
+    return -1;
+  if (pos2 < 0 || pos2 >= v->cur)
+    return -1;
+  if (pos1 == pos2)
+    return 0;
 
-	tmp = v->entry[pos1];
-	v->entry[pos1] = v->entry[pos2];
-	v->entry[pos2] = tmp;
+  tmp = v->entry[pos1];
+  v->entry[pos1] = v->entry[pos2];
+  v->entry[pos2] = tmp;
 
-	if (v->sorted && v->cmp && v->cmp(v->entry[pos1], v->entry[pos2]))
-		v->sorted = 0;
+  if (v->sorted && v->cmp && v->cmp (v->entry[pos1], v->entry[pos2]))
+    v->sorted = 0;
 
-	return 0;
+  return 0;
 }
 
-void wget_vector_free(wget_vector_t **v)
+void
+wget_vector_free (wget_vector_t ** v)
 {
-	if (v && *v) {
-		if ((*v)->entry) {
-			wget_vector_clear(*v);
-			xfree((*v)->entry);
-		}
-		xfree(*v);
-	}
+  if (v && *v)
+    {
+      if ((*v)->entry)
+        {
+          wget_vector_clear (*v);
+          xfree ((*v)->entry);
+        }
+      xfree (*v);
+    }
 }
 
 // remove all elements
 
-void wget_vector_clear(wget_vector_t *v)
+void
+wget_vector_clear (wget_vector_t * v)
 {
-	if (v) {
-		int it;
+  if (v)
+    {
+      int it;
 
-		if (v->destructor) {
-			for (it = 0; it < v->cur; it++) {
-				v->destructor(v->entry[it]);
-				xfree(v->entry[it]);
-			}
-		} else {
-			for (it = 0; it < v->cur; it++)
-				xfree(v->entry[it]);
-		}
+      if (v->destructor)
+        {
+          for (it = 0; it < v->cur; it++)
+            {
+              v->destructor (v->entry[it]);
+              xfree (v->entry[it]);
+            }
+        }
+      else
+        {
+          for (it = 0; it < v->cur; it++)
+            xfree (v->entry[it]);
+        }
 
-		v->cur = 0;
-	}
+      v->cur = 0;
+    }
 }
 
-void wget_vector_clear_nofree(wget_vector_t *v)
+void
+wget_vector_clear_nofree (wget_vector_t * v)
 {
-	if (v) {
-		int it;
+  if (v)
+    {
+      int it;
 
-		for (it = 0; it < v->cur; it++)
-			v->entry[it] = NULL;
-		v->cur = 0;
-	}
+      for (it = 0; it < v->cur; it++)
+        v->entry[it] = NULL;
+      v->cur = 0;
+    }
 }
 
-int wget_vector_size(const wget_vector_t *v)
+int
+wget_vector_size (const wget_vector_t * v)
 {
-	return v ? v->cur : 0;
+  return v ? v->cur : 0;
 }
 
-void *wget_vector_get(const wget_vector_t *v, int pos)
+void *
+wget_vector_get (const wget_vector_t * v, int pos)
 {
-	if (pos < 0 || !v || pos >= v->cur) return NULL;
+  if (pos < 0 || !v || pos >= v->cur)
+    return NULL;
 
-	return v->entry[pos];
+  return v->entry[pos];
 }
 
-int wget_vector_browse(const wget_vector_t *v, int (*browse)(void *ctx, void *elem), void *ctx)
+int
+wget_vector_browse (const wget_vector_t * v,
+                    int (*browse) (void *ctx, void *elem), void *ctx)
 {
-	if (v) {
-		int it, ret;
+  if (v)
+    {
+      int it, ret;
 
-		for (it = 0; it < v->cur; it++)
-			if ((ret = browse(ctx, v->entry[it])) != 0)
-				return ret;
-	}
+      for (it = 0; it < v->cur; it++)
+        if ((ret = browse (ctx, v->entry[it])) != 0)
+          return ret;
+    }
 
-	return 0;
+  return 0;
 }
 
-void wget_vector_setcmpfunc(wget_vector_t *v, int (*cmp)(const void *elem1, const void *elem2))
+void
+wget_vector_setcmpfunc (wget_vector_t * v,
+                        int (*cmp) (const void *elem1, const void *elem2))
 {
-	if (v) {
-		v->cmp = cmp;
+  if (v)
+    {
+      v->cmp = cmp;
 
-		if (v->cur == 1)
-			v->sorted = 1;
-		else
-			v->sorted = 0;
-	}
+      if (v->cur == 1)
+        v->sorted = 1;
+      else
+        v->sorted = 0;
+    }
 }
 
-void wget_vector_set_destructor(wget_vector_t *v, void (*destructor)(void *elem))
+void
+wget_vector_set_destructor (wget_vector_t * v,
+                            void (*destructor) (void *elem))
 {
-	if (v)
-		v->destructor = destructor;
+  if (v)
+    v->destructor = destructor;
 }
 
 #if HAVE_QSORT_R_BSD
-static int G_GNUC_WGET_NONNULL_ALL _compare(void *v, const void *p1, const void *p2)
+static int G_GNUC_WGET_NONNULL_ALL
+_compare (void *v, const void *p1, const void *p2)
 {
-	return ((wget_vector_t *)v)->cmp(*((void **)p1), *((void **)p2));
+  return ((wget_vector_t *) v)->cmp (*((void **) p1), *((void **) p2));
 }
 #elif HAVE_QSORT_R
-static int G_GNUC_WGET_NONNULL_ALL _compare(const void *p1, const void *p2, void *v)
+static int G_GNUC_WGET_NONNULL_ALL
+_compare (const void *p1, const void *p2, void *v)
 {
-	return ((wget_vector_t *)v)->cmp(*((void **)p1), *((void **)p2));
+  return ((wget_vector_t *) v)->cmp (*((void **) p1), *((void **) p2));
 }
 #else
 // fallback to non-reentrant code (e.g. for OpenBSD <= 5.8)
 static wget_vector_t *_v;
-static int G_GNUC_WGET_NONNULL_ALL _compare(const void *p1, const void *p2)
+static int G_GNUC_WGET_NONNULL_ALL
+_compare (const void *p1, const void *p2)
 {
-	return _v->cmp(*((void **)p1), *((void **)p2));
+  return _v->cmp (*((void **) p1), *((void **) p2));
 }
 #endif
 
-void wget_vector_sort(wget_vector_t *v)
+void
+wget_vector_sort (wget_vector_t * v)
 {
-/*
- * Without the intermediate _compare function below, v->cmp must take 'const void **elem{1|2}'
- * but than, the other calls to v->cmp must change as well.
- *
- * To work lock-less (e.g. with a mutex), we need 'nested functions' (GCC, Intel, IBM)
- * or BLOCKS (clang) or the GNU libc extension qsort_r().
- * Using BLOCKS would also need a qsort_b() function...
- *
- */
+  /*
+   * Without the intermediate _compare function below, v->cmp must take 'const void **elem{1|2}'
+   * but than, the other calls to v->cmp must change as well.
+   *
+   * To work lock-less (e.g. with a mutex), we need 'nested functions' (GCC, Intel, IBM)
+   * or BLOCKS (clang) or the GNU libc extension qsort_r().
+   * Using BLOCKS would also need a qsort_b() function...
+   *
+   */
 #if HAVE_QSORT_R_BSD
-	if (v && v->cmp) {
-		qsort_r(v->entry, v->cur, sizeof(void *), v, _compare);
-		v->sorted = 1;
-	}
+  if (v && v->cmp)
+    {
+      qsort_r (v->entry, v->cur, sizeof (void *), v, _compare);
+      v->sorted = 1;
+    }
 #elif HAVE_QSORT_R
-	if (v && v->cmp) {
-		qsort_r(v->entry, v->cur, sizeof(void *), _compare, v);
-		v->sorted = 1;
-	}
+  if (v && v->cmp)
+    {
+      qsort_r (v->entry, v->cur, sizeof (void *), _compare, v);
+      v->sorted = 1;
+    }
 #else
-	// fallback to non-reentrant code (e.g. for OpenBSD <= 5.8)
-	if (v && v->cmp) {
-		static wget_thread_mutex_t
-			mutex = WGET_THREAD_MUTEX_INITIALIZER;
+  // fallback to non-reentrant code (e.g. for OpenBSD <= 5.8)
+  if (v && v->cmp)
+    {
+      static wget_thread_mutex_t mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
-		wget_thread_mutex_lock(&mutex);
-		_v = v;
-		qsort(v->entry, v->cur, sizeof(void *), _compare);
-		v->sorted = 1;
-		wget_thread_mutex_unlock(&mutex);
-	}
+      wget_thread_mutex_lock (&mutex);
+      _v = v;
+      qsort (v->entry, v->cur, sizeof (void *), _compare);
+      v->sorted = 1;
+      wget_thread_mutex_unlock (&mutex);
+    }
 
 #endif
 
-/*
-	// trampoline version (e.g. gcc, but not on OpenBSD !)
-	int G_GNUC_WGET_NONNULL_ALL _compare(const void *p1, const void *p2)
-	{
-		return v->cmp(*((void **)p1), *((void **)p2));
-	}
+  /*
+  // trampoline version (e.g. gcc, but not on OpenBSD !)
+  int G_GNUC_WGET_NONNULL_ALL _compare(const void *p1, const void *p2)
+  {
+  return v->cmp(*((void **)p1), *((void **)p2));
+  }
 
-	if (v && v->cmp) {
-		qsort(v->entry, v->cur, sizeof(void *), _compare);
-		v->sorted = 1;
-	}
+  if (v && v->cmp) {
+  qsort(v->entry, v->cur, sizeof(void *), _compare);
+  v->sorted = 1;
+  }
 
-	#error You need gcc or qsort_r() to build Wget
-	// this should work as soon as the qsort_b() function is available ;-)
-	if (v && v->cmp) {
-		int (^_compare)(const void *, const void *) = ^ int (const void *p1, const void *p2) {
-			return v->cmp(*((void **)p1), *((void **)p2));
-		};
+  #error You need gcc or qsort_r() to build Wget
+  // this should work as soon as the qsort_b() function is available ;-)
+  if (v && v->cmp) {
+  int (^_compare)(const void *, const void *) = ^ int (const void *p1, const void *p2) {
+  return v->cmp(*((void **)p1), *((void **)p2));
+  };
 
-		qsort_b(v->pl, v->cur, sizeof(void *), _compare);
-		v->sorted = 1;
-	}
-*/
+  qsort_b(v->pl, v->cur, sizeof(void *), _compare);
+  v->sorted = 1;
+  }
+  */
 }
 
 // Find first entry that matches the specified element,
 // using the compare function of the vector
 
-int wget_vector_find(const wget_vector_t *v, const void *elem)
+int
+wget_vector_find (const wget_vector_t * v, const void *elem)
 {
-	if (v && v->cmp) {
-		if (v->cur == 1) {
-			if (v->cmp(elem, v->entry[0]) == 0) return 0;
-		} else if (v->sorted) {
-			int l, r, m;
-			int res;
+  if (v && v->cmp)
+    {
+      if (v->cur == 1)
+        {
+          if (v->cmp (elem, v->entry[0]) == 0)
+            return 0;
+        }
+      else if (v->sorted)
+        {
+          int l, r, m;
+          int res;
 
-			// binary search for element (exact match)
-			for (l = 0, r = v->cur - 1; l <= r;) {
-				m = (l + r) / 2;
-				if ((res = v->cmp(elem, v->entry[m])) > 0) l = m + 1;
-				else if (res < 0) r = m - 1;
-				else return m;
-			}
-		} else {
-			int it;
+          // binary search for element (exact match)
+          for (l = 0, r = v->cur - 1; l <= r;)
+            {
+              m = (l + r) / 2;
+              if ((res = v->cmp (elem, v->entry[m])) > 0)
+                l = m + 1;
+              else if (res < 0)
+                r = m - 1;
+              else
+                return m;
+            }
+        }
+      else
+        {
+          int it;
 
-			// linear search for element
-			for (it = 0; it < v->cur; it++)
-				if (v->cmp(elem, v->entry[it]) == 0) return it;
-		}
-	}
+          // linear search for element
+          for (it = 0; it < v->cur; it++)
+            if (v->cmp (elem, v->entry[it]) == 0)
+              return it;
+        }
+    }
 
-	return -1; // not found
+  return -1;      // not found
 }
 
-int wget_vector_contains(const wget_vector_t *v, const void *elem)
+int
+wget_vector_contains (const wget_vector_t * v, const void *elem)
 {
-	return wget_vector_find(v, elem) >= 0;
+  return wget_vector_find (v, elem) >= 0;
 }
 
 // Find entry, starting at specified position, scanning in the specified
 // direction (0=up, 1=down) and using a custom function which returns 0
 // when a matching element is passed to it.
 
-int wget_vector_findext(const wget_vector_t *v, int start, int direction, int (*find)(void *))
+int
+wget_vector_findext (const wget_vector_t * v, int start, int direction,
+                     int (*find) (void *))
 {
 
-	if (v) {
-		int it;
+  if (v)
+    {
+      int it;
 
-		switch (direction) {
-		case 0: // up
-			if (start >= 0) {
-				for (it = start; it < v->cur; it++)
-					if (find(v->entry[it]) == 0) return it;
-			}
-			break;
-		case 1: // down
-			if (start < v->cur) {
-				for (it = start; it >= 0; it--)
-					if (find(v->entry[it]) == 0) return it;
-			}
-			break;
-		}
-	}
+      switch (direction)
+        {
+        case 0:    // up
+          if (start >= 0)
+            {
+              for (it = start; it < v->cur; it++)
+                if (find (v->entry[it]) == 0)
+                  return it;
+            }
+          break;
+        case 1:    // down
+          if (start < v->cur)
+            {
+              for (it = start; it >= 0; it--)
+                if (find (v->entry[it]) == 0)
+                  return it;
+            }
+          break;
+        }
+    }
 
-	return -1;
+  return -1;
 }
