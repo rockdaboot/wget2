@@ -263,9 +263,11 @@ static int _print_info(gnutls_session_t session)
 		info_printf(_("TLS/IA session\n"));
 		break;
 
+#ifdef HAVE_GNUTLS_SRP_SERVER_GET_USERNAME
 	case GNUTLS_CRD_SRP:
 		info_printf(_("SRP session with username %s\n"), gnutls_srp_server_get_username(session));
 		break;
+#endif
 
 	case GNUTLS_CRD_PSK:
 		/* This returns NULL in server side.
