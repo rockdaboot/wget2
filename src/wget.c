@@ -807,7 +807,8 @@ static void nop(int sig)
 	if (sig == SIGTERM) {
 		terminate = 1; // set global termination flag
 	} else if (sig == SIGINT) {
-		abort();
+		terminate = 1; // set global termination flag
+		wget_http_abort_connection(NULL); // soft-abort all connections
 	}
 }
 

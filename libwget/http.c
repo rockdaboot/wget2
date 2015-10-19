@@ -91,6 +91,9 @@ static const unsigned char
 		['\t'] = HTTP_CTYPE_SEPERATOR
 	};
 
+static char
+	_abort_indicator;
+
 static wget_vector_t
 	*http_proxies,
 	*https_proxies;
@@ -2023,7 +2026,7 @@ wget_http_response_t *wget_http_get_response_cb(
 
 		int timeout = wget_tcp_get_timeout(conn->tcp);
 
-		for (int rc = 0; rc == 0 && !ctx.done;) {
+		for (int rc = 0; rc == 0 && !ctx.done && !conn->abort_indicator && !_abort_indicator;) {
 			ioflags = 0;
 			if (nghttp2_session_want_write(conn->http2_session))
 				ioflags |= WGET_IO_WRITABLE;
@@ -2191,6 +2194,9 @@ wget_http_response_t *wget_http_get_response_cb(
 			// debug_printf("#1 p='%.16s'\n",p);
 			// read: chunk-size [ chunk-extension ] CRLF
 			while ((!(end = strchr(p, '\r')) || end[1] != '\n')) {
+				if (conn->abort_indicator || _abort_indicator)
+					goto cleanup;
+
 				if ((nbytes = wget_tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)
 					goto cleanup;
 
@@ -2215,6 +2221,10 @@ wget_http_response_t *wget_http_get_response_cb(
 						memmove(buf, buf + body_len - 3, 4); // plus 0 terminator, just in case
 						body_len = 3;
 					}
+
+					if (conn->abort_indicator || _abort_indicator)
+						goto cleanup;
+
 					if ((nbytes = wget_tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)
 						goto cleanup;
 
@@ -2241,6 +2251,9 @@ wget_http_response_t *wget_http_get_response_cb(
 			debug_printf("need at least %zd more bytes\n", chunk_size);
 
 			while (chunk_size > 0) {
+				if (conn->abort_indicator || _abort_indicator)
+					goto cleanup;
+
 				if ((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) <= 0)
 					goto cleanup;
 				debug_printf("a nbytes=%zd chunk_size=%zd\n", nread, chunk_size);
@@ -2277,7 +2290,13 @@ wget_http_response_t *wget_http_get_response_cb(
 		if (body_len)
 			wget_decompress(dc, buf, body_len);
 
-		while (body_len < resp->content_length && ((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) > 0)) {
+		while (body_len < resp->content_length) {
+			if (conn->abort_indicator || _abort_indicator)
+				break;
+
+			if (((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) <= 0))
+				break;
+
 			body_len += nbytes;
 			debug_printf("nbytes %zd total %zd/%zd\n", nbytes, body_len, resp->content_length);
 			wget_decompress(dc, buf, nbytes);
@@ -2296,7 +2315,7 @@ wget_http_response_t *wget_http_get_response_cb(
 		if (body_len)
 			wget_decompress(dc, buf, body_len);
 
-		while ((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) > 0) {
+		while (!conn->abort_indicator && !_abort_indicator && (nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) > 0) {
 			body_len += nbytes;
 			debug_printf("nbytes %zd total %zd\n", nbytes, body_len);
 			wget_decompress(dc, buf, nbytes);
@@ -2504,4 +2523,12 @@ void wget_http_set_https_proxy(const char *proxy, const char *encoding)
 		wget_vector_free(&https_proxies);
 
 	https_proxies = _parse_proxies(proxy, encoding);
+}
+
+void wget_http_abort_connection(wget_http_connection_t *conn)
+{
+	if (conn)
+		conn->abort_indicator = 1; // stop single connection
+	else
+		_abort_indicator = 1; // stop all connections
 }

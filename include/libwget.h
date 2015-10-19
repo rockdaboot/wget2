@@ -1408,7 +1408,8 @@ typedef struct {
 	char
 		protocol; // WGET_PROTOCOL_HTTP_1_1 or WGET_PROTOCOL_HTTP_2_0
 	unsigned
-		print_response_headers : 1;
+		print_response_headers : 1,
+		abort_indicator : 1;
 } wget_http_connection_t;
 
 int
@@ -1474,6 +1475,8 @@ void
 	wget_http_set_http_proxy(const char *proxy, const char *encoding);
 void
 	wget_http_set_https_proxy(const char *proxy, const char *encoding);
+void
+	wget_http_abort_connection(wget_http_connection_t *conn);
 
 int
 	wget_http_free_param(wget_http_header_param_t *param);
