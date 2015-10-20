@@ -415,15 +415,20 @@ static void _remove_directory(const char *dirname)
 
 void wget_test_stop_server(void)
 {
-	size_t it;
-
 //	wget_vector_free(&response_headers);
 	wget_vector_free(&request_urls);
 
-	for (it = 0; it < nurls; it++) {
-		if (urls[it].body_alloc) {
-			wget_xfree(urls[it].body);
-			urls[it].body_alloc = 0;
+	for (wget_test_url_t *url = urls; url < urls + nurls; url++) {
+		if (url->body_alloc) {
+			wget_xfree(url->body);
+			url->body_alloc = 0;
+		}
+
+		for (size_t it = 0; it < countof(url->headers); it++) {
+			if (url->header_alloc[it]) {
+				wget_xfree(url->headers[it]);
+				url->header_alloc[it] = 0;
+			}
 		}
 	}
 
@@ -447,6 +452,45 @@ void wget_test_stop_server(void)
 		wget_thread_join(ftps_server_tid);
 
 	wget_global_deinit();
+}
+
+static char *_insert_ports(const char *src)
+{
+	if (!src || (!strstr(src, "{{port}}") && !strstr(src, "{{sslport}}")
+	    && !strstr(src, "{{ftpport}}") && !strstr(src, "{{ftpsport}}")))
+		return NULL;
+
+	char *ret = wget_malloc(strlen(src) + 1);
+	char *dst = ret;
+
+	while (*src) {
+		if (*src == '{') {
+			if (!strncmp(src, "{{port}}", 8)) {
+				dst += sprintf(dst, "%d", http_server_port);
+				src += 8;
+				continue;
+			}
+			else if (!strncmp(src, "{{sslport}}", 11)) {
+				dst += sprintf(dst, "%d", https_server_port);
+				src += 11;
+				continue;
+			}
+			else if (!strncmp(src, "{{ftpport}}", 11)) {
+				dst += sprintf(dst, "%d", ftp_server_port);
+				src += 11;
+				continue;
+			}
+			else if (!strncmp(src, "{{ftpsport}}", 12)) {
+				dst += sprintf(dst, "%d", ftps_server_port);
+				src += 12;
+				continue;
+			}
+		}
+		*dst++ = *src++;
+	}
+	*dst = 0;
+
+	return ret;
 }
 
 void wget_test_start_server(int first_key, ...)
@@ -525,14 +569,14 @@ void wget_test_start_server(int first_key, ...)
 	wget_ssl_set_config_string(WGET_SSL_KEY_FILE, "../" SRCDIR "/certs/x509-server-key.pem");
 
 	// init HTTP server socket
-	http_parent_tcp=wget_tcp_init();
+	http_parent_tcp = wget_tcp_init();
 	wget_tcp_set_timeout(http_parent_tcp, -1); // INFINITE timeout
 	if (wget_tcp_listen(http_parent_tcp, "localhost", NULL, 5) != 0)
 		exit(1);
 	http_server_port = wget_tcp_get_local_port(http_parent_tcp);
 
 	// init HTTPS server socket
-	https_parent_tcp=wget_tcp_init();
+	https_parent_tcp = wget_tcp_init();
 	wget_tcp_set_ssl(https_parent_tcp, 1); // switch SSL on
 	wget_tcp_set_timeout(https_parent_tcp, -1); // INFINITE timeout
 	if (wget_tcp_listen(https_parent_tcp, "localhost", NULL, 5) != 0)
@@ -540,14 +584,14 @@ void wget_test_start_server(int first_key, ...)
 	https_server_port = wget_tcp_get_local_port(https_parent_tcp);
 
 	// init FTP server socket
-	ftp_parent_tcp=wget_tcp_init();
+	ftp_parent_tcp = wget_tcp_init();
 	wget_tcp_set_timeout(ftp_parent_tcp, -1); // INFINITE timeout
 	if (wget_tcp_listen(ftp_parent_tcp, "localhost", NULL, 5) != 0)
 		exit(1);
 	ftp_server_port = wget_tcp_get_local_port(ftp_parent_tcp);
 
 	// init FTPS server socket
-	ftps_parent_tcp=wget_tcp_init();
+	ftps_parent_tcp = wget_tcp_init();
 	wget_tcp_set_ssl(ftps_parent_tcp, 1); // switch SSL on
 	wget_tcp_set_timeout(ftps_parent_tcp, -1); // INFINITE timeout
 	if (wget_tcp_listen(ftps_parent_tcp, "localhost", NULL, 5) != 0)
@@ -555,42 +599,21 @@ void wget_test_start_server(int first_key, ...)
 	ftps_server_port = wget_tcp_get_local_port(ftps_parent_tcp);
 
 	// now replace {{port}} in the body by the actual server port
-	for (it = 0; it < nurls; it++) {
-		if (urls[it].body && (strstr(urls[it].body, "{{port}}") || strstr(urls[it].body, "{{sslport}}")
-				  || strstr(urls[it].body, "{{ftpport}}") || strstr(urls[it].body, "{{ftpsport}}")))
-		{
-			const char *src = urls[it].body;
-			char *dst = wget_malloc(strlen(src) + 1);
+	for (wget_test_url_t *url = urls; url < urls + nurls; url++) {
+		char *p = _insert_ports(url->body);
 
-			urls[it].body = dst;
-			urls[it].body_alloc = 1;
+		if (p) {
+			url->body = p;
+			url->body_alloc = 1;
+		}
 
-			while (*src) {
-				if (*src == '{') {
-					if (!strncmp(src, "{{port}}", 8)) {
-						dst += sprintf(dst, "%d", http_server_port);
-						src += 8;
-						continue;
-					}
-					else if (!strncmp(src, "{{sslport}}", 11)) {
-						dst += sprintf(dst, "%d", https_server_port);
-						src += 11;
-						continue;
-					}
-					else if (!strncmp(src, "{{ftpport}}", 11)) {
-						dst += sprintf(dst, "%d", ftp_server_port);
-						src += 11;
-						continue;
-					}
-					else if (!strncmp(src, "{{ftpsport}}", 12)) {
-						dst += sprintf(dst, "%d", ftps_server_port);
-						src += 12;
-						continue;
-					}
-				}
-				*dst++ = *src++;
+		for (it = 0; it < countof(url->headers) && url->headers[it]; it++) {
+			p = _insert_ports(url->headers[it]);
+
+			if (p) {
+				url->headers[it] = p;
+				url->header_alloc[it] = 1;
 			}
-			*dst = 0;
 		}
 	}
 

@@ -95,6 +95,8 @@ typedef struct {
 		modified;
 	char
 		body_alloc; // if body has been allocated internally (and need to be freed on exit)
+	char
+		header_alloc[10]; // if header[n] has been allocated internally (and need to be freed on exit)
 
 	// auth fields
 	const char *
