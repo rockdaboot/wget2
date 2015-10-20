@@ -44,3 +44,10 @@ wget_ready_2_write
 wget_ready_2_transfer
 wget_read_file
 </SECTION>
+
+<SECTION>
+<FILE>libwget-hash</FILE>
+<TITLE>Hashing utilities</TITLE>
+wget_hash_get_algorithm
+wget_hash_file_fd
+</SECTION>

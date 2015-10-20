@@ -44,8 +44,64 @@
 #include <libwget.h>
 #include <private.h>
 
-// Interfaces and types inspired by GnuTLS since it was my first used digest/hash interface
+/**
+ * SECTION:libwget-hash
+ * @short_description: Hashing utilities
+ * @title: libwget-hash
+ * @stability: stable
+ * @include: libwget.h
+ *
+ * libwget's hashing utilities that support several hashing algorithms.
+ */
 
+/**
+ * wget_hash_get_algorithm:
+ * @name: name of the hashing algorithm. Supported names are listed in the table below.
+ *
+ * Get the hashing algorithms list item that corresponds to the named hashing algorithm.
+ *
+ * This function returns a constant that uniquely identifies a known supported hashing algorithm
+ * within libwget. The following table lists these constants and the corresponding algorithm names:
+ *
+ * <table>
+ * 	<tr>
+ * 		<td>Algorithm name</td>
+ * 		<td>Constant</td>
+ * 	</tr>
+ * 	<tr>
+ * 		<td><code>sha-1</code> or <code>sha1</code></td>
+ * 		<td>WGET_DIGTYPE_SHA1</td>
+ * 	</tr>
+ * 	<tr>
+ * 		<td><code>sha-256</code> or <code>sha256</code></td>
+ * 		<td>WGET_DIGTYPE_SHA256</td>
+ * 	</tr>
+ * 	<tr>
+ * 		<td><code>sha-512</code> or <code>sha512</code></td>
+ * 		<td>WGET_DIGTYPE_SHA512</td>
+ * 	</tr>
+ * 	<tr>
+ * 		<td><code>sha-224</code> or <code>sha224</code></td>
+ * 		<td>WGET_DIGTYPE_SHA224</td>
+ * 	</tr>
+ * 	<tr>
+ * 		<td><code>sha-384</code> or <code>sha384</code></td>
+ * 		<td>WGET_DIGTYPE_SHA384</td>
+ * 	</tr>
+ * 	<tr>
+ * 		<td><code>md5</code></td>
+ * 		<td>WGET_DIGTYPE_MD5</td>
+ * 	</tr>
+ * 	<tr>
+ * 		<td><code>md2</code></td>
+ * 		<td>WGET_DIGTYPE_MD2</td>
+ * 	</tr>
+ * 	<tr>
+ * 		<td><code>rmd160</code></td>
+ * 		<td>WGET_DIGTYPE_RMD160</td>
+ * 	</tr>
+ * </table>
+ */
 wget_digest_algorithm_t wget_hash_get_algorithm(const char *name)
 {
 	if (name) {
@@ -241,7 +297,22 @@ void wget_hash_deinit(_U wget_hash_hd_t *handle, _U void *digest)
 #undef _U
 #endif
 
-// return 0 = OK, -1 = failed
+/**
+ * wget_hash_file_fd:
+ * @type: name of the hashing algorithm. See wget_hash_get_algorithm().
+ * @fd: file descriptor for the target file.
+ * @digest_hex: caller-supplied buffer that will contain the resulting hex string.
+ * @digest_hex_size: length of @digest_hex.
+ * @offset: starting offset.
+ * @length: number of bytes to hash, starting from @offset.
+ *
+ * Compute the hash of the contents of the target file and return its hex representation.
+ *
+ * This function will encode the resulting hash in a string of hex digits, and
+ * place that string in the user-supplied buffer @digest_hex.
+ *
+ * The return value is 0 on success, or -1 in case of failure.
+ */
 int wget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
 {
 	wget_digest_algorithm_t algorithm;

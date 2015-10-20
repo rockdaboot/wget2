@@ -19,7 +19,8 @@
         <xi:include href="xml/libwget-xalloc.xml"/>
         <xi:include href="xml/libwget-list.xml"/>
         <xi:include href="xml/libwget-utils.xml"/>
-        <xi:include href="xml/libwget-io.xml"/>
+	<xi:include href="xml/libwget-io.xml"/>
+	<xi:include href="xml/libwget-hash.xml"/>
   </chapter>
   <chapter id="object-tree">
     <title>Object Hierarchy</title>
