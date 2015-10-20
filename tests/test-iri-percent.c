@@ -29,7 +29,7 @@
 # include <config.h>
 #endif
 
-#include <stdlib.h> // exit()
+#include <stdlib.h>    // exit()
 #include "libtest.h"
 
 // #define ccedilla_l15 "\xE7"
@@ -40,54 +40,58 @@
 #define eacute_u8 "\xC3\xA9"
 #define eacute_u8_pct "%C3%A9"
 
-int main(void)
+int
+main (void)
 {
-	wget_test_url_t urls[]={
-		{	.name = "/index.html",
-			.code = "200 Dontcare",
-			.body =
-				"<html><head><title>Main Page</title></head><body><p>" \
-				"Link to page 1 <a href=\"http://localhost:{{port}}/hello_" ccedilla_l15_pct eacute_l15 ".html\">La seule page en fran&ccedil;ais</a>." \
-				"</p></body></html>",
-			.headers = {
-				"Content-type: text/html; charset=ISO-8859-15",
-			}
-		},
-		{	.name = "/hello_" ccedilla_u8_pct eacute_u8_pct ".html",
-			.code = "200 Dontcare",
-			.body =
-				"<html><head><title>La seule page en fran" ccedilla_u8 "ais</title>" \
-				"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-15\"/></head><body>" \
-				"<p></p></body></html>",
-			.headers = {
-				"Content-type: text/html; charset=UTF-8",
-			}
-		},
-		{	.name = "/robots.txt",
-			.code = "200 Dontcare",
-			.body = "",
-			.headers = {
-				"Content-Type: text/plain",
-			}
-		},
-	};
+  wget_test_url_t urls[] = {
+    {.name = "/index.html",
+     .code = "200 Dontcare",
+     .body =
+     "<html><head><title>Main Page</title></head><body><p>"
+     "Link to page 1 <a href=\"http://localhost:{{port}}/hello_"
+     ccedilla_l15_pct eacute_l15
+     ".html\">La seule page en fran&ccedil;ais</a>." "</p></body></html>",
+     .headers = {
+        "Content-type: text/html; charset=ISO-8859-15",
+      }
+    },
+    {.name = "/hello_" ccedilla_u8_pct eacute_u8_pct ".html",
+     .code = "200 Dontcare",
+     .body =
+     "<html><head><title>La seule page en fran" ccedilla_u8 "ais</title>"
+     "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-15\"/></head><body>"
+     "<p></p></body></html>",
+     .headers = {
+        "Content-type: text/html; charset=UTF-8",
+      }
+    },
+    {.name = "/robots.txt",
+     .code = "200 Dontcare",
+     .body = "",
+     .headers = {
+        "Content-Type: text/plain",
+      }
+    },
+  };
 
-	// functions won't come back if an error occurs
-	wget_test_start_server(
-		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
-		0);
+  // functions won't come back if an error occurs
+  wget_test_start_server (WGET_TEST_RESPONSE_URLS, &urls, countof (urls), 0);
 
-	// test-iri-disabled
-	wget_test(
-		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--iri -e robots=off --restrict-file-names=nocontrol -nH -r",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body },
-			{ "hello_" ccedilla_u8 eacute_u8 ".html", urls[1].body },
-			{	NULL } },
-		0);
+  // test-iri-disabled
+  wget_test (
+             // WGET_TEST_KEEP_TMPFILES, 1,
+             WGET_TEST_OPTIONS,
+             "--iri -e robots=off --restrict-file-names=nocontrol -nH -r",
+             WGET_TEST_REQUEST_URL, "index.html",
+             WGET_TEST_EXPECTED_ERROR_CODE, 0, WGET_TEST_EXPECTED_FILES,
+             &(wget_test_file_t[])
+             {
+               {
+                 urls[0].name + 1, urls[0].body},
+                 {
+                   "hello_" ccedilla_u8 eacute_u8 ".html", urls[1].body},
+                   {
+                     NULL}}, 0);
 
-	exit(0);
+  exit (0);
 }

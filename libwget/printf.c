@@ -45,34 +45,37 @@
 
 // just a fallback, if dprintf/vdprintf do not exist
 
-int vdprintf(int fd, const char *fmt, va_list args)
+int
+vdprintf (int fd, const char *fmt, va_list args)
 {
-	size_t nbytes;
-	ssize_t ret;
-	char sbuf[4096];
-	wget_buffer_t buf;
+  size_t nbytes;
+  ssize_t ret;
+  char sbuf[4096];
+  wget_buffer_t buf;
 
-	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-	wget_buffer_vprintf2(&buf, fmt, args);
+  wget_buffer_init (&buf, sbuf, sizeof (sbuf));
+  wget_buffer_vprintf2 (&buf, fmt, args);
 
-	for (nbytes = 0; nbytes < buf.length; nbytes += ret) {
-		if ((ret = write(fd, buf.data + nbytes, buf.length - nbytes)) < 0)
-			break;
-	}
+  for (nbytes = 0; nbytes < buf.length; nbytes += ret)
+    {
+      if ((ret = write (fd, buf.data + nbytes, buf.length - nbytes)) < 0)
+        break;
+    }
 
-	wget_buffer_deinit(&buf);
+  wget_buffer_deinit (&buf);
 
-	return (ret < 0 ? (int ) ret : (int) buf.length);
+  return (ret < 0 ? (int) ret : (int) buf.length);
 }
 
-int dprintf(int fd, const char *fmt, ...)
+int
+dprintf (int fd, const char *fmt, ...)
 {
-	va_list args;
+  va_list args;
 
-	va_start(args, fmt);
-	int rc = vdprintf(fd, fmt, args);
-	va_end(args);
+  va_start (args, fmt);
+  int rc = vdprintf (fd, fmt, args);
+  va_end (args);
 
-	return rc;
+  return rc;
 }
 #endif // HAVE_DPRINTF

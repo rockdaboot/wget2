@@ -35,52 +35,62 @@
 #include <unistd.h>
 #include <libwget.h>
 
-static void html_parse_localfile(const char *fname)
+static void
+html_parse_localfile (const char *fname)
 {
-	char *data;
+  char *data;
 
-	if ((data = wget_read_file(fname, NULL))) {
-		WGET_HTML_PARSED_RESULT *res  = wget_html_get_urls_inline(data, NULL, NULL);
+  if ((data = wget_read_file (fname, NULL)))
+    {
+      WGET_HTML_PARSED_RESULT *res =
+        wget_html_get_urls_inline (data, NULL, NULL);
 
-		if (res->encoding)
-			printf("URI encoding '%s'\n", res->encoding);
+      if (res->encoding)
+        printf ("URI encoding '%s'\n", res->encoding);
 
-		for (int it = 0; it < wget_vector_size(res->uris); it++) {
-			WGET_HTML_PARSED_URL *html_url = wget_vector_get(res->uris, it);
-			wget_string_t *url = &html_url->url;
+      for (int it = 0; it < wget_vector_size (res->uris); it++)
+        {
+          WGET_HTML_PARSED_URL *html_url = wget_vector_get (res->uris, it);
+          wget_string_t *url = &html_url->url;
 
-			printf("  %s.%s '%.*s'\n", html_url->dir, html_url->attr, (int) url->len, url->p);
-		}
+          printf ("  %s.%s '%.*s'\n", html_url->dir, html_url->attr,
+                  (int) url->len, url->p);
+        }
 
-		wget_xfree(data);
-		wget_html_free_urls_inline(&res);
-	}
+      wget_xfree (data);
+      wget_html_free_urls_inline (&res);
+    }
 }
 
-int main(int argc, const char *const *argv)
+int
+main (int argc, const char *const *argv)
 {
-/*
-	wget_global_init(
-		WGET_DEBUG_STREAM, stderr,
-		WGET_ERROR_STREAM, stderr,
-		WGET_INFO_STREAM, stdout,
-		NULL);
-*/
+  /*
+    wget_global_init(
+    WGET_DEBUG_STREAM, stderr,
+    WGET_ERROR_STREAM, stderr,
+    WGET_INFO_STREAM, stdout,
+    NULL);
+  */
 
-	if (!isatty(STDIN_FILENO)) {
-		// read HTML data from STDIN
-		html_parse_localfile("-");
-	} else {
-		// parse CSS files given as arguments
-		int argpos;
+  if (!isatty (STDIN_FILENO))
+    {
+      // read HTML data from STDIN
+      html_parse_localfile ("-");
+    }
+  else
+    {
+      // parse CSS files given as arguments
+      int argpos;
 
-		for (argpos = 1; argpos < argc; argpos++) {
-			printf("%s:\n", argv[argpos]);
+      for (argpos = 1; argpos < argc; argpos++)
+        {
+          printf ("%s:\n", argv[argpos]);
 
-			// use '-' as filename for STDIN
-			html_parse_localfile(argv[argpos]);
-		}
-	}
+          // use '-' as filename for STDIN
+          html_parse_localfile (argv[argpos]);
+        }
+    }
 
-	return 0;
+  return 0;
 }

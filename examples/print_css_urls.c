@@ -35,37 +35,47 @@
 #include <unistd.h>
 #include <libwget.h>
 
-static void _css_parse_encoding(void *context G_GNUC_WGET_UNUSED, const char *encoding, size_t len)
+static void
+_css_parse_encoding (void *context G_GNUC_WGET_UNUSED, const char *encoding,
+                     size_t len)
 {
-	printf("URI encoding '%.*s'\n", (int)len, encoding);
+  printf ("URI encoding '%.*s'\n", (int) len, encoding);
 }
 
-static void _css_parse_uri(void *context G_GNUC_WGET_UNUSED, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+static void
+_css_parse_uri (void *context G_GNUC_WGET_UNUSED, const char *url, size_t len,
+                size_t pos G_GNUC_WGET_UNUSED)
 {
-	printf("  %.*s\n", (int)len, url);
+  printf ("  %.*s\n", (int) len, url);
 }
 
-static void css_parse_localfile(const char *fname)
+static void
+css_parse_localfile (const char *fname)
 {
-	wget_css_parse_file(fname, _css_parse_uri, _css_parse_encoding, NULL);
+  wget_css_parse_file (fname, _css_parse_uri, _css_parse_encoding, NULL);
 }
 
-int main(int argc, const char *const *argv)
+int
+main (int argc, const char *const *argv)
 {
-	if (!isatty(STDIN_FILENO)) {
-		// read CSS data from STDIN
-		css_parse_localfile("-");
-	} else {
-		// parse CSS files given as arguments
-		int argpos;
+  if (!isatty (STDIN_FILENO))
+    {
+      // read CSS data from STDIN
+      css_parse_localfile ("-");
+    }
+  else
+    {
+      // parse CSS files given as arguments
+      int argpos;
 
-		for (argpos = 1; argpos < argc; argpos++) {
-			printf("%s:\n", argv[argpos]);
+      for (argpos = 1; argpos < argc; argpos++)
+        {
+          printf ("%s:\n", argv[argpos]);
 
-			// use '-' as filename for STDIN
-			css_parse_localfile(argv[argpos]);
-		}
-	}
+          // use '-' as filename for STDIN
+          css_parse_localfile (argv[argpos]);
+        }
+    }
 
-	return 0;
+  return 0;
 }

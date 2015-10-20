@@ -39,89 +39,99 @@
 #include <libwget.h>
 #include "private.h"
 
-static wget_logger_t
-	_info,
-	_error,
-	_debug;
+static wget_logger_t _info, _error, _debug;
 
-void wget_info_vprintf(const char *fmt, va_list args)
+void
+wget_info_vprintf (const char *fmt, va_list args)
 {
-	if (_info.vprintf)
-		_info.vprintf(&_info, fmt, args);
+  if (_info.vprintf)
+    _info.vprintf (&_info, fmt, args);
 }
 
-void wget_info_printf(const char *fmt, ...)
+void
+wget_info_printf (const char *fmt, ...)
 {
-	if (_info.vprintf) {
-		va_list args;
+  if (_info.vprintf)
+    {
+      va_list args;
 
-		va_start(args, fmt);
-		_info.vprintf(&_info, fmt, args);
-		va_end(args);
-	}
+      va_start (args, fmt);
+      _info.vprintf (&_info, fmt, args);
+      va_end (args);
+    }
 }
 
-void wget_error_vprintf(const char *fmt, va_list args)
+void
+wget_error_vprintf (const char *fmt, va_list args)
 {
-	if (_error.vprintf)
-		_error.vprintf(&_error, fmt, args);
+  if (_error.vprintf)
+    _error.vprintf (&_error, fmt, args);
 }
 
-void wget_error_printf(const char *fmt, ...)
+void
+wget_error_printf (const char *fmt, ...)
 {
-	if (_error.vprintf) {
-		va_list args;
+  if (_error.vprintf)
+    {
+      va_list args;
 
-		va_start(args, fmt);
-		_error.vprintf(&_error, fmt, args);
-		va_end(args);
-	}
+      va_start (args, fmt);
+      _error.vprintf (&_error, fmt, args);
+      va_end (args);
+    }
 }
 
-void wget_error_printf_exit(const char *fmt, ...)
+void
+wget_error_printf_exit (const char *fmt, ...)
 {
-	if (_error.vprintf) {
-		va_list args;
+  if (_error.vprintf)
+    {
+      va_list args;
 
-		va_start(args, fmt);
-		_error.vprintf(&_error, fmt, args);
-		va_end(args);
-	}
+      va_start (args, fmt);
+      _error.vprintf (&_error, fmt, args);
+      va_end (args);
+    }
 
-	exit(EXIT_FAILURE);
+  exit (EXIT_FAILURE);
 }
 
-void wget_debug_vprintf(const char *fmt, va_list args)
+void
+wget_debug_vprintf (const char *fmt, va_list args)
 {
-	if (_debug.vprintf)
-		_debug.vprintf(&_debug, fmt, args);
+  if (_debug.vprintf)
+    _debug.vprintf (&_debug, fmt, args);
 }
 
-void wget_debug_printf(const char *fmt, ...)
+void
+wget_debug_printf (const char *fmt, ...)
 {
-	if (_debug.vprintf) {
-		va_list args;
+  if (_debug.vprintf)
+    {
+      va_list args;
 
-		va_start(args, fmt);
-		_debug.vprintf(&_debug, fmt, args);
-		va_end(args);
-	}
+      va_start (args, fmt);
+      _debug.vprintf (&_debug, fmt, args);
+      va_end (args);
+    }
 }
 
-void wget_debug_write(const char *buf, size_t len)
+void
+wget_debug_write (const char *buf, size_t len)
 {
-	if (_debug.write)
-		_debug.write(&_debug, buf, len);
+  if (_debug.write)
+    _debug.write (&_debug, buf, len);
 }
 
-wget_logger_t *wget_get_logger(int id)
+wget_logger_t *
+wget_get_logger (int id)
 {
-	if (id == WGET_LOGGER_DEBUG)
-		return &_debug;
-	else if (id == WGET_LOGGER_ERROR)
-		return &_error;
-	else if (id == WGET_LOGGER_INFO)
-		return &_info;
-	else
-		return NULL;
+  if (id == WGET_LOGGER_DEBUG)
+    return &_debug;
+  else if (id == WGET_LOGGER_ERROR)
+    return &_error;
+  else if (id == WGET_LOGGER_INFO)
+    return &_info;
+  else
+    return NULL;
 }

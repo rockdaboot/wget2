@@ -36,38 +36,42 @@
 
 // strdup which accepts NULL values
 
-char *wget_strdup(const char *s)
+char *
+wget_strdup (const char *s)
 {
-	return s ? strcpy(xmalloc(strlen(s) + 1), s) : NULL;
+  return s ? strcpy (xmalloc (strlen (s) + 1), s) : NULL;
 }
 
 // memdup sometimes comes in handy
 
-void *wget_memdup(const void *s, size_t n)
+void *
+wget_memdup (const void *s, size_t n)
 {
-	return s ? memcpy(xmalloc(n), s, n) : NULL;
+  return s ? memcpy (xmalloc (n), s, n) : NULL;
 }
 
 // convert memory chunk into allocated string
 
-char *wget_strmemdup(const void *s, size_t n)
+char *
+wget_strmemdup (const void *s, size_t n)
 {
-	if (!s)
-		return NULL;
+  if (!s)
+    return NULL;
 
-	char *ret = memcpy(xmalloc(n + 1), s, n);
-	ret[n] = 0;
+  char *ret = memcpy (xmalloc (n + 1), s, n);
+  ret[n] = 0;
 
-	return ret;
+  return ret;
 }
 
 // convert memory chunk to string
 
-void wget_strmemcpy(char *s, size_t ssize, const void *m, size_t n)
+void
+wget_strmemcpy (char *s, size_t ssize, const void *m, size_t n)
 {
-	if (n >= ssize)
-		n = ssize - 1; // truncate
+  if (n >= ssize)
+    n = ssize - 1;    // truncate
 
-	memcpy(s, m, n);
-	s[n] = 0;
+  memcpy (s, m, n);
+  s[n] = 0;
 }

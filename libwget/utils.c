@@ -62,19 +62,23 @@
  *
  * Returns: Same as strcmp() if none of @s1 or @s2 is %NULL. Else see above.
  */
-int wget_strcmp(const char *s1, const char *s2)
+int
+wget_strcmp (const char *s1, const char *s2)
 {
-	if (!s1) {
-		if (!s2)
-			return 0;
-		else
-			return -1;
-	} else {
-		if (!s2)
-			return 1;
-		else
-			return strcmp(s1, s2);
-	}
+  if (!s1)
+    {
+      if (!s2)
+        return 0;
+      else
+        return -1;
+    }
+  else
+    {
+      if (!s2)
+        return 1;
+      else
+        return strcmp (s1, s2);
+    }
 }
 
 /**
@@ -89,53 +93,57 @@ int wget_strcmp(const char *s1, const char *s2)
  *
  * Returns: Same as strcasecmp() if none of @s1 or @s2 is %NULL. Else see above.
  */
-int wget_strcasecmp(const char *s1, const char *s2)
+int
+wget_strcasecmp (const char *s1, const char *s2)
 {
-	if (!s1) {
-		if (!s2)
-			return 0;
-		else
-			return -1;
-	} else {
-		if (!s2)
-			return 1;
-		else
-			return strcasecmp(s1, s2);
-	}
+  if (!s1)
+    {
+      if (!s2)
+        return 0;
+      else
+        return -1;
+    }
+  else
+    {
+      if (!s2)
+        return 1;
+      else
+        return strcasecmp (s1, s2);
+    }
 }
 
 /*
-static const char _upper[256] = {
-	['a'] = 'A', ['b'] = 'B', ['c'] = 'C', ['d'] = 'D',
-	['e'] = 'E', ['f'] = 'F', ['g'] = 'G', ['h'] = 'H',
-	['i'] = 'I', ['j'] = 'J', ['k'] = 'K', ['l'] = 'L',
-	['m'] = 'M', ['n'] = 'N', ['o'] = 'O', ['p'] = 'P',
-	['q'] = 'Q', ['r'] = 'R', ['s'] = 'S', ['t'] = 'T',
-	['u'] = 'U', ['v'] = 'V', ['w'] = 'W', ['x'] = 'X',
-	['y'] = 'Y', ['z'] = 'Z', ['A'] = 'A', ['B'] = 'B',
-	['C'] = 'C', ['D'] = 'D', ['E'] = 'E', ['F'] = 'F',
-	['G'] = 'G', ['H'] = 'H', ['I'] = 'I', ['J'] = 'J',
-	['K'] = 'K', ['L'] = 'L', ['M'] = 'M', ['N'] = 'N',
-	['O'] = 'O', ['P'] = 'P', ['Q'] = 'Q', ['R'] = 'R',
-	['S'] = 'S', ['T'] = 'T', ['U'] = 'U', ['V'] = 'V',
-	['W'] = 'W', ['X'] = 'X', ['Y'] = 'Y', ['Z'] = 'Z',
-};
+  static const char _upper[256] = {
+  ['a'] = 'A', ['b'] = 'B', ['c'] = 'C', ['d'] = 'D',
+  ['e'] = 'E', ['f'] = 'F', ['g'] = 'G', ['h'] = 'H',
+  ['i'] = 'I', ['j'] = 'J', ['k'] = 'K', ['l'] = 'L',
+  ['m'] = 'M', ['n'] = 'N', ['o'] = 'O', ['p'] = 'P',
+  ['q'] = 'Q', ['r'] = 'R', ['s'] = 'S', ['t'] = 'T',
+  ['u'] = 'U', ['v'] = 'V', ['w'] = 'W', ['x'] = 'X',
+  ['y'] = 'Y', ['z'] = 'Z', ['A'] = 'A', ['B'] = 'B',
+  ['C'] = 'C', ['D'] = 'D', ['E'] = 'E', ['F'] = 'F',
+  ['G'] = 'G', ['H'] = 'H', ['I'] = 'I', ['J'] = 'J',
+  ['K'] = 'K', ['L'] = 'L', ['M'] = 'M', ['N'] = 'N',
+  ['O'] = 'O', ['P'] = 'P', ['Q'] = 'Q', ['R'] = 'R',
+  ['S'] = 'S', ['T'] = 'T', ['U'] = 'U', ['V'] = 'V',
+  ['W'] = 'W', ['X'] = 'X', ['Y'] = 'Y', ['Z'] = 'Z',
+  };
 */
 
 static const char _lower[256] = {
-	['a'] = 'a', ['b'] = 'b', ['c'] = 'c', ['d'] = 'd',
-	['e'] = 'e', ['f'] = 'f', ['g'] = 'g', ['h'] = 'h',
-	['i'] = 'i', ['j'] = 'j', ['k'] = 'k', ['l'] = 'l',
-	['m'] = 'm', ['n'] = 'n', ['o'] = 'o', ['p'] = 'p',
-	['q'] = 'q', ['r'] = 'r', ['s'] = 's', ['t'] = 't',
-	['u'] = 'u', ['v'] = 'v', ['w'] = 'w', ['x'] = 'x',
-	['y'] = 'y', ['z'] = 'z', ['A'] = 'a', ['B'] = 'b',
-	['C'] = 'c', ['D'] = 'd', ['E'] = 'e', ['F'] = 'f',
-	['G'] = 'g', ['H'] = 'h', ['I'] = 'i', ['J'] = 'j',
-	['K'] = 'k', ['L'] = 'l', ['M'] = 'm', ['N'] = 'n',
-	['O'] = 'o', ['P'] = 'p', ['Q'] = 'q', ['R'] = 'r',
-	['S'] = 's', ['T'] = 't', ['U'] = 'u', ['V'] = 'v',
-	['W'] = 'w', ['X'] = 'x', ['Y'] = 'y', ['Z'] = 'z',
+  ['a'] = 'a',['b'] = 'b',['c'] = 'c',['d'] = 'd',
+  ['e'] = 'e',['f'] = 'f',['g'] = 'g',['h'] = 'h',
+  ['i'] = 'i',['j'] = 'j',['k'] = 'k',['l'] = 'l',
+  ['m'] = 'm',['n'] = 'n',['o'] = 'o',['p'] = 'p',
+  ['q'] = 'q',['r'] = 'r',['s'] = 's',['t'] = 't',
+  ['u'] = 'u',['v'] = 'v',['w'] = 'w',['x'] = 'x',
+  ['y'] = 'y',['z'] = 'z',['A'] = 'a',['B'] = 'b',
+  ['C'] = 'c',['D'] = 'd',['E'] = 'e',['F'] = 'f',
+  ['G'] = 'g',['H'] = 'h',['I'] = 'i',['J'] = 'j',
+  ['K'] = 'k',['L'] = 'l',['M'] = 'm',['N'] = 'n',
+  ['O'] = 'o',['P'] = 'p',['Q'] = 'q',['R'] = 'r',
+  ['S'] = 's',['T'] = 't',['U'] = 'u',['V'] = 'v',
+  ['W'] = 'w',['X'] = 'x',['Y'] = 'y',['Z'] = 'z',
 };
 
 /**
@@ -153,28 +161,38 @@ static const char _lower[256] = {
  *
  * Returns: An integer value described above.
  */
-int wget_strcasecmp_ascii(const char *s1, const char *s2)
+int
+wget_strcasecmp_ascii (const char *s1, const char *s2)
 {
-	if (!s1) {
-		if (!s2)
-			return 0;
-		else
-			return -1;
-	} else {
-		if (!s2)
-			return 1;
-		else {
-			while (*s1 && (*s1 == *s2 || (_lower[(unsigned)*s1] && _lower[(unsigned)*s1] == _lower[(unsigned)*s2]))) {
-				s1++;
-				s2++;
-			}
+  if (!s1)
+    {
+      if (!s2)
+        return 0;
+      else
+        return -1;
+    }
+  else
+    {
+      if (!s2)
+        return 1;
+      else
+        {
+          while (*s1
+                 && (*s1 == *s2
+                     || (_lower[(unsigned) *s1]
+                         && _lower[(unsigned) *s1] ==
+                         _lower[(unsigned) *s2])))
+            {
+              s1++;
+              s2++;
+            }
 
-			if (*s1 || *s2)
-				return *s1 - *s2;
+          if (*s1 || *s2)
+            return *s1 - *s2;
 
-			return 0;
-		}
-	}
+          return 0;
+        }
+    }
 }
 
 /**
@@ -193,28 +211,38 @@ int wget_strcasecmp_ascii(const char *s1, const char *s2)
  *
  * Returns: An integer value described above.
  */
-int wget_strncasecmp_ascii(const char *s1, const char *s2, size_t n)
+int
+wget_strncasecmp_ascii (const char *s1, const char *s2, size_t n)
 {
-	if (!s1) {
-		if (!s2)
-			return 0;
-		else
-			return -1;
-	} else {
-		if (!s2)
-			return 1;
-		else {
-			while ((ssize_t)(n--) > 0 && *s1 && (*s1 == *s2 || (_lower[(unsigned)*s1] && _lower[(unsigned)*s1] == _lower[(unsigned)*s2]))) {
-				s1++;
-				s2++;
-			}
+  if (!s1)
+    {
+      if (!s2)
+        return 0;
+      else
+        return -1;
+    }
+  else
+    {
+      if (!s2)
+        return 1;
+      else
+        {
+          while ((ssize_t) (n--) > 0 && *s1
+                 && (*s1 == *s2
+                     || (_lower[(unsigned) *s1]
+                         && _lower[(unsigned) *s1] ==
+                         _lower[(unsigned) *s2])))
+            {
+              s1++;
+              s2++;
+            }
 
-			if ((ssize_t)n >= 0 && (*s1 || *s2))
-				return *s1 - *s2;
+          if ((ssize_t) n >= 0 && (*s1 || *s2))
+            return *s1 - *s2;
 
-			return 0;
-		}
-	}
+          return 0;
+        }
+    }
 }
 
 /**
@@ -225,16 +253,19 @@ int wget_strncasecmp_ascii(const char *s1, const char *s2, size_t n)
  *
  * Returns: Same value as @s.
  */
-char *wget_strtolower(char *s)
+char *
+wget_strtolower (char *s)
 {
-	if (s) {
-		for (unsigned char *u = (unsigned char *)s; *u; u++) {
-			if (_lower[*u])
-				*u = _lower[*u];
-		}
-	}
+  if (s)
+    {
+      for (unsigned char *u = (unsigned char *)s; *u; u++)
+        {
+          if (_lower[*u])
+            *u = _lower[*u];
+        }
+    }
 
-	return s;
+  return s;
 }
 
 /**
@@ -250,19 +281,23 @@ char *wget_strtolower(char *s)
  *
  * Returns: Same as strncmp() if none of @s1 or @s2 is %NULL. Else see above.
  */
-int wget_strncmp(const char *s1, const char *s2, size_t n)
+int
+wget_strncmp (const char *s1, const char *s2, size_t n)
 {
-	if (!s1) {
-		if (!s2)
-			return 0;
-		else
-			return -1;
-	} else {
-		if (!s2)
-			return 1;
-		else
-			return strncmp(s1, s2, n);
-	}
+  if (!s1)
+    {
+      if (!s2)
+        return 0;
+      else
+        return -1;
+    }
+  else
+    {
+      if (!s2)
+        return 1;
+      else
+        return strncmp (s1, s2, n);
+    }
 }
 
 /**
@@ -279,19 +314,23 @@ int wget_strncmp(const char *s1, const char *s2, size_t n)
  * Returns: Same as strncasecmp() if none of @s1 or @s2 is %NULL. Else see above.
  */
 
-int wget_strncasecmp(const char *s1, const char *s2, size_t n)
+int
+wget_strncasecmp (const char *s1, const char *s2, size_t n)
 {
-	if (!s1) {
-		if (!s2)
-			return 0;
-		else
-			return -1;
-	} else {
-		if (!s2)
-			return 1;
-		else
-			return strncasecmp(s1, s2, n);
-	}
+  if (!s1)
+    {
+      if (!s2)
+        return 0;
+      else
+        return -1;
+    }
+  else
+    {
+      if (!s2)
+        return 1;
+      else
+        return strncasecmp (s1, s2, n);
+    }
 }
 
 /**
@@ -303,27 +342,31 @@ int wget_strncasecmp(const char *s1, const char *s2, size_t n)
  *
  * Encodes a number of bytes into a lowercase hexadecimal string.
  */
-void wget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size)
+void
+wget_memtohex (const unsigned char *src, size_t src_len, char *dst,
+               size_t dst_size)
 {
-	size_t it;
-	int adjust = 0, c;
+  size_t it;
+  int adjust = 0, c;
 
-	if (dst_size == 0)
-		return;
+  if (dst_size == 0)
+    return;
 
-	if (src_len * 2 >= dst_size) {
-		src_len = (dst_size - 1) / 2;
-		adjust = 1;
-	}
+  if (src_len * 2 >= dst_size)
+    {
+      src_len = (dst_size - 1) / 2;
+      adjust = 1;
+    }
 
-	for (it = 0; it < src_len; it++, src++) {
-		*dst++ = (c = (*src >> 4)) >= 10 ? c + 'a' - 10 : c + '0';
-		*dst++ = (c = (*src & 0xf)) >= 10 ? c + 'a' - 10 : c + '0';
-	}
-	if (adjust && (dst_size & 1) == 0)
-		*dst++ = (c = (*src >> 4)) >= 10 ? c + 'a' - 10 : c + '0';
+  for (it = 0; it < src_len; it++, src++)
+    {
+      *dst++ = (c = (*src >> 4)) >= 10 ? c + 'a' - 10 : c + '0';
+      *dst++ = (c = (*src & 0xf)) >= 10 ? c + 'a' - 10 : c + '0';
+    }
+  if (adjust && (dst_size & 1) == 0)
+    *dst++ = (c = (*src >> 4)) >= 10 ? c + 'a' - 10 : c + '0';
 
-	*dst = 0;
+  *dst = 0;
 }
 
 /**
@@ -332,23 +375,27 @@ void wget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t d
  *
  * Pause for @ms milliseconds.
  */
-void wget_millisleep(int ms)
+void
+wget_millisleep (int ms)
 {
-	if (ms <= 0)
-		return;
+  if (ms <= 0)
+    return;
 
 #ifdef HAVE_NANOSLEEP
-	nanosleep(&(struct timespec){ .tv_sec = ms / 1000, .tv_nsec = (ms % 1000) * 1000000 }, NULL);
+  nanosleep (&(struct timespec)
+             {
+               .tv_sec = ms / 1000,.tv_nsec = (ms % 1000) * 1000000}, NULL);
 #elif defined HAVE_USLEEP
-	usleep(ms); // obsoleted by POSIX.1-2001, use nanosleep instead
+  usleep (ms);      // obsoleted by POSIX.1-2001, use nanosleep instead
 #else
-	sleep((ms + 500) / 1000);
+  sleep ((ms + 500) / 1000);
 #endif
 }
 
-static inline unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
+static inline unsigned char G_GNUC_WGET_CONST
+_unhex (unsigned char c)
 {
-	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
+  return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
 }
 
 /**
@@ -360,27 +407,31 @@ static inline unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
  *
  * Returns: 0 if the string did not change, 1 if unescaping took place.
  */
-int wget_percent_unescape(char *_src)
+int
+wget_percent_unescape (char *_src)
 {
-	int ret = 0;
-	unsigned char *src = (unsigned char *)_src; // just a helper to avoid casting a lot
-	unsigned char *dst = src;
+  int ret = 0;
+  unsigned char *src = (unsigned char *) _src;  // just a helper to avoid casting a lot
+  unsigned char *dst = src;
 
-	while (*src) {
-		if (*src == '%') {
-			if (isxdigit(src[1]) && isxdigit(src[2])) {
-				*dst++ = (_unhex(src[1]) << 4) | _unhex(src[2]);
-				src += 3;
-				ret = 1;
-				continue;
-			}
-		}
+  while (*src)
+    {
+      if (*src == '%')
+        {
+          if (isxdigit (src[1]) && isxdigit (src[2]))
+            {
+              *dst++ = (_unhex (src[1]) << 4) | _unhex (src[2]);
+              src += 3;
+              ret = 1;
+              continue;
+            }
+        }
 
-		*dst++ = *src++;
-	}
-	*dst = 0;
+      *dst++ = *src++;
+    }
+  *dst = 0;
 
-	return ret;
+  return ret;
 }
 
 /**
@@ -392,11 +443,12 @@ int wget_percent_unescape(char *_src)
  *
  * Returns: 1 if @tail matches the end of @s, 0 if not.
  */
-int wget_match_tail(const char *s, const char *tail)
+int
+wget_match_tail (const char *s, const char *tail)
 {
-	const char *p = s + strlen(s) - strlen(tail);
+  const char *p = s + strlen (s) - strlen (tail);
 
-	return p >= s && !strcmp(p, tail);
+  return p >= s && !strcmp (p, tail);
 }
 
 /**
@@ -408,9 +460,10 @@ int wget_match_tail(const char *s, const char *tail)
  *
  * Returns: 1 if @tail matches the end of @s, 0 if not.
  */
-int wget_match_tail_nocase(const char *s, const char *tail)
+int
+wget_match_tail_nocase (const char *s, const char *tail)
 {
-	const char *p = s + strlen(s) - strlen(tail);
+  const char *p = s + strlen (s) - strlen (tail);
 
-	return p >= s && !wget_strcasecmp_ascii(p, tail);
+  return p >= s && !wget_strcasecmp_ascii (p, tail);
 }

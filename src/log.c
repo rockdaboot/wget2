@@ -41,66 +41,73 @@
 #include "options.h"
 #include "log.h"
 
-static void _write_debug(const char *data, size_t len)
+static void
+_write_debug (const char *data, size_t len)
 {
-	FILE *fp;
-	struct timeval tv;
-	struct tm *tp, tbuf;
+  FILE *fp;
+  struct timeval tv;
+  struct tm *tp, tbuf;
 
-	if (!data || (ssize_t)len <= 0)
-		return;
+  if (!data || (ssize_t) len <= 0)
+    return;
 
-	gettimeofday(&tv, NULL); // obsoleted by POSIX.1-2008, maybe use clock_gettime() ? needs -lrt
-	tp = localtime_r((const time_t *)&tv.tv_sec, &tbuf); // cast avoids warning on OpenBSD
+  gettimeofday (&tv, NULL);  // obsoleted by POSIX.1-2008, maybe use clock_gettime() ? needs -lrt
+  tp = localtime_r ((const time_t *) &tv.tv_sec, &tbuf);  // cast avoids warning on OpenBSD
 
-	if (!config.logfile)
-		fp = stderr;
-	else if (*config.logfile == '-' && config.logfile[1] == 0)
-		fp = stdout;
-	else
-		fp = fopen(config.logfile, "a");
+  if (!config.logfile)
+    fp = stderr;
+  else if (*config.logfile == '-' && config.logfile[1] == 0)
+    fp = stdout;
+  else
+    fp = fopen (config.logfile, "a");
 
-	if (fp) {
-		char sbuf[4096];
-		wget_buffer_t buf;
+  if (fp)
+    {
+      char sbuf[4096];
+      wget_buffer_t buf;
 
-		wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-		wget_buffer_printf2(&buf, "%02d.%02d%02d%02d.%03d ",
-			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, (int) (tv.tv_usec / 1000));
-		wget_buffer_memcat(&buf, data, len);
-		if (data[len -1] != '\n')
-			wget_buffer_memcat(&buf, "\n", 1);
-		fwrite(buf.data, 1, buf.length, fp);
-		wget_buffer_deinit(&buf);
+      wget_buffer_init (&buf, sbuf, sizeof (sbuf));
+      wget_buffer_printf2 (&buf, "%02d.%02d%02d%02d.%03d ",
+                           tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec,
+                           (int) (tv.tv_usec / 1000));
+      wget_buffer_memcat (&buf, data, len);
+      if (data[len - 1] != '\n')
+        wget_buffer_memcat (&buf, "\n", 1);
+      fwrite (buf.data, 1, buf.length, fp);
+      wget_buffer_deinit (&buf);
 
-		if (fp != stderr && fp != stdout)
-			fclose(fp);
-	}
+      if (fp != stderr && fp != stdout)
+        fclose (fp);
+    }
 }
 
-void log_init(void)
+void
+log_init (void)
 {
-/*
-	WGET_LOGGER *logger = wget_get_logger(WGET_LOGGER_DEBUG);
-	if (config.debug) {
-		if (!config.logfile)
-			wget_logger_set_file(logger, stderr); // direct debug output to STDERR
-		else if (*config.logfile == '-' && config.logfile[1] == 0)
-			wget_logger_set_file(logger, stdout); // direct debug output to STDIN
-		else
-			wget_logger_set_filename(logger, config.logfile);  // direct debug output to logfile
+  /*
+    WGET_LOGGER *logger = wget_get_logger(WGET_LOGGER_DEBUG);
+    if (config.debug) {
+    if (!config.logfile)
+    wget_logger_set_file(logger, stderr); // direct debug output to STDERR
+    else if (*config.logfile == '-' && config.logfile[1] == 0)
+    wget_logger_set_file(logger, stdout); // direct debug output to STDIN
+    else
+    wget_logger_set_filename(logger, config.logfile);  // direct debug output to logfile
 
-		wget_logger_set_timestamp(logger, 1); // switch timestamps on
-	} else
-		wget_logger_set_file(logger, NULL); // stop logging (if already started)
-*/
+    wget_logger_set_timestamp(logger, 1); // switch timestamps on
+    } else
+    wget_logger_set_file(logger, NULL); // stop logging (if already started)
+  */
 
-	// set debug logging
-	wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), config.debug ? _write_debug : NULL);
+  // set debug logging
+  wget_logger_set_func (wget_get_logger (WGET_LOGGER_DEBUG),
+                        config.debug ? _write_debug : NULL);
 
-	// set error logging
-	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : stderr);
+  // set error logging
+  wget_logger_set_stream (wget_get_logger (WGET_LOGGER_ERROR),
+                          config.quiet ? NULL : stderr);
 
-	// set info logging
-	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
+  // set info logging
+  wget_logger_set_stream (wget_get_logger (WGET_LOGGER_INFO), config.verbose
+                          && !config.quiet ? stdout : NULL);
 }

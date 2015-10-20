@@ -29,80 +29,85 @@
 # include <config.h>
 #endif
 
-#include <stdlib.h> // exit()
+#include <stdlib.h>    // exit()
 #include "libtest.h"
 
-int main(void)
+int
+main (void)
 {
-	wget_test_url_t urls[]={
-		{	.name = "/index.html",
-			.code = "200 Dontcare",
-			.body =
-				"<html><head><title>Main Page</title></head><body><p>Moin" \
-				" <a href=\"http://localhost:{{port}}/subdir\">File with same name as directory</a>." \
-				" <a href=\"subdir/\">Directory again</a>." \
-				" <a href=\"subdir/index.html\">File in directory</a>." \
-				"</p></body></html>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-		{	.name = "/index2.html",
-			.code = "200 Dontcare",
-			.body =
-				"<html><head><title>Main Page</title></head><body><p>Moin" \
-				" <a href=\"subdir/\">Directory</a>." \
-				" <a href=\"subdir/index.html\">File in directory</a>." \
-				" <a href=\"http://localhost:{{port}}/subdir\">File with same name as directory</a>." \
-				"</p></body></html>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-		{	.name = "/subdir",
-			.code = "200 Dontcare",
-			.body =
-				"<html><head><title>Subdir Page 1</title></head><body><p>Hello 1</p></body></html>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-		{	.name = "/subdir/index.html",
-			.code = "200 Dontcare",
-			.body =
-				"<html><head><title>Second Page</title></head><body><p>Hello 2</p></body></html>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-	};
+  wget_test_url_t urls[] = {
+    {.name = "/index.html",
+     .code = "200 Dontcare",
+     .body =
+     "<html><head><title>Main Page</title></head><body><p>Moin"
+     " <a href=\"http://localhost:{{port}}/subdir\">File with same name as directory</a>."
+     " <a href=\"subdir/\">Directory again</a>."
+     " <a href=\"subdir/index.html\">File in directory</a>."
+     "</p></body></html>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+    {.name = "/index2.html",
+     .code = "200 Dontcare",
+     .body =
+     "<html><head><title>Main Page</title></head><body><p>Moin"
+     " <a href=\"subdir/\">Directory</a>."
+     " <a href=\"subdir/index.html\">File in directory</a>."
+     " <a href=\"http://localhost:{{port}}/subdir\">File with same name as directory</a>."
+     "</p></body></html>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+    {.name = "/subdir",
+     .code = "200 Dontcare",
+     .body =
+     "<html><head><title>Subdir Page 1</title></head><body><p>Hello 1</p></body></html>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+    {.name = "/subdir/index.html",
+     .code = "200 Dontcare",
+     .body =
+     "<html><head><title>Second Page</title></head><body><p>Hello 2</p></body></html>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+  };
 
-	// functions won't come back if an error occurs
-	wget_test_start_server(
-		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
-		0);
+  // functions won't come back if an error occurs
+  wget_test_start_server (WGET_TEST_RESPONSE_URLS, &urls, countof (urls), 0);
 
-	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body },
-			{ urls[3].name + 1, urls[3].body },
-			{ "subdir.1", urls[2].body, 0 }, // filename / directory clash appends .x to the file
-			{	NULL } },
-		0);
+  wget_test (WGET_TEST_OPTIONS, "-r -nH",
+             WGET_TEST_REQUEST_URL, "index.html",
+             WGET_TEST_EXPECTED_ERROR_CODE, 0,
+             WGET_TEST_EXPECTED_FILES, &(wget_test_file_t[])
+             {
+               {
+                 urls[0].name + 1, urls[0].body},
+                 {
+                   urls[3].name + 1, urls[3].body},
+                   {
+                     "subdir.1", urls[2].body, 0},  // filename / directory clash appends .x to the file
+                     {
+                       NULL}}, 0);
 
-	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH",
-		WGET_TEST_REQUEST_URL, "index2.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[1].name + 1, urls[1].body },
-			{ urls[3].name + 1, urls[3].body },
-			{ "subdir.1", urls[2].body, 0 }, // filename / directory clash appends .x to the file
-			{	NULL } },
-		0);
+  wget_test (WGET_TEST_OPTIONS, "-r -nH",
+             WGET_TEST_REQUEST_URL, "index2.html",
+             WGET_TEST_EXPECTED_ERROR_CODE, 0,
+             WGET_TEST_EXPECTED_FILES, &(wget_test_file_t[])
+             {
+               {
+                 urls[1].name + 1, urls[1].body},
+                 {
+                   urls[3].name + 1, urls[3].body},
+                   {
+                     "subdir.1", urls[2].body, 0},  // filename / directory clash appends .x to the file
+                     {
+                       NULL}}, 0);
 
-	exit(0);
+  exit (0);
 }

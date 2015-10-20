@@ -29,20 +29,18 @@
 # include <config.h>
 #endif
 
-#include <stdlib.h> // exit()
+#include <stdlib.h>    // exit()
 #include "libtest.h"
 
-int main(void)
+int
+main (void)
 {
-	// functions won't come back if an error occurs
-	wget_test_start_server(0);
+  // functions won't come back if an error occurs
+  wget_test_start_server (0);
 
-	// test-i
-	wget_test(
-		WGET_TEST_OPTIONS, "-d --post-file=nofile",
-		WGET_TEST_REQUEST_URL, "",
-		WGET_TEST_EXPECTED_ERROR_CODE, 3, // fails with older Wget (<= 1.14)
-		0);
+  // test-i
+  wget_test (WGET_TEST_OPTIONS, "-d --post-file=nofile", WGET_TEST_REQUEST_URL, "", WGET_TEST_EXPECTED_ERROR_CODE, 3,  // fails with older Wget (<= 1.14)
+             0);
 
-	exit(0);
+  exit (0);
 }

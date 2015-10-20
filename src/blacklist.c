@@ -37,91 +37,106 @@
 #include "log.h"
 #include "blacklist.h"
 
-static wget_hashmap_t
-	*blacklist;
+static wget_hashmap_t * blacklist;
 
-static wget_thread_mutex_t
-	mutex = WGET_THREAD_MUTEX_INITIALIZER;
+static wget_thread_mutex_t mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
 // Paul Larson's hash function from Microsoft Research
 // ~ O(1) insertion, search and removal
-static unsigned int G_GNUC_WGET_NONNULL_ALL hash_iri(const wget_iri_t *iri)
+static unsigned int G_GNUC_WGET_NONNULL_ALL
+hash_iri (const wget_iri_t * iri)
 {
-	unsigned int h = 0; // use 0 as SALT if hash table attacks doesn't matter
-	const unsigned char *p;
+  unsigned int h = 0;    // use 0 as SALT if hash table attacks doesn't matter
+  const unsigned char *p;
 
-	for (p = (unsigned char *)iri->scheme; p && *p; p++)
-		h = h * 101 + *p;
+  for (p = (unsigned char *) iri->scheme; p && *p; p++)
+    h = h * 101 + *p;
 
-	for (p = (unsigned char *)iri->port; p && *p; p++)
-		h = h * 101 + *p;
+  for (p = (unsigned char *) iri->port; p && *p; p++)
+    h = h * 101 + *p;
 
-	for (p = (unsigned char *)iri->host; p && *p; p++)
-		h = h * 101 + *p;
+  for (p = (unsigned char *) iri->host; p && *p; p++)
+    h = h * 101 + *p;
 
-	for (p = (unsigned char *)iri->path; p && *p; p++)
-		h = h * 101 + *p;
+  for (p = (unsigned char *) iri->path; p && *p; p++)
+    h = h * 101 + *p;
 
-	for (p = (unsigned char *)iri->query; p && *p; p++)
-		h = h * 101 + *p;
+  for (p = (unsigned char *) iri->query; p && *p; p++)
+    h = h * 101 + *p;
 
-	return h;
+  return h;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _blacklist_print(G_GNUC_WGET_UNUSED void *ctx, const wget_iri_t *iri)
+static int G_GNUC_WGET_NONNULL_ALL
+_blacklist_print (G_GNUC_WGET_UNUSED void *ctx, const wget_iri_t * iri)
 {
-	info_printf("blacklist %s\n", iri->uri);
-	return 0;
+  info_printf ("blacklist %s\n", iri->uri);
+  return 0;
 }
 
-void blacklist_print(void)
+void
+blacklist_print (void)
 {
-	wget_thread_mutex_lock(&mutex);
-	wget_hashmap_browse(blacklist, (int(*)(void *, const void *, void *))_blacklist_print, NULL);
-	wget_thread_mutex_unlock(&mutex);
+  wget_thread_mutex_lock (&mutex);
+  wget_hashmap_browse (blacklist,
+                       (int (*)(void *, const void *, void *))
+                       _blacklist_print, NULL);
+  wget_thread_mutex_unlock (&mutex);
 }
 
-int blacklist_size(void)
+int
+blacklist_size (void)
 {
-	return wget_hashmap_size(blacklist);
+  return wget_hashmap_size (blacklist);
 }
 
-static void _free_entry(wget_iri_t *iri)
+static void
+_free_entry (wget_iri_t * iri)
 {
-	wget_iri_free(&iri);
+  wget_iri_free (&iri);
 }
 
-wget_iri_t *blacklist_add(wget_iri_t *iri)
+wget_iri_t *
+blacklist_add (wget_iri_t * iri)
 {
-	if (!iri)
-		return NULL;
+  if (!iri)
+    return NULL;
 
-	if (wget_iri_supported(iri)) {
-		wget_thread_mutex_lock(&mutex);
+  if (wget_iri_supported (iri))
+    {
+      wget_thread_mutex_lock (&mutex);
 
-		if (!blacklist) {
-			blacklist = wget_hashmap_create(128, -2, (unsigned int(*)(const void *))hash_iri, (int(*)(const void *, const void *))wget_iri_compare);
-			wget_hashmap_set_key_destructor(blacklist, (void(*)(void *))_free_entry);
-		}
+      if (!blacklist)
+        {
+          blacklist =
+            wget_hashmap_create (128, -2,
+                                 (unsigned int (*)(const void *)) hash_iri,
+                                 (int (*)(const void *, const void *))
+                                 wget_iri_compare);
+          wget_hashmap_set_key_destructor (blacklist,
+                                           (void (*)(void *)) _free_entry);
+        }
 
-		if (!wget_hashmap_contains(blacklist, iri)) {
-			// info_printf("Add to blacklist: %s\n",iri->uri);
-			wget_hashmap_put_noalloc(blacklist, iri, NULL); // use hashmap as a hashset (without value)
-			wget_thread_mutex_unlock(&mutex);
-			return iri;
-		}
+      if (!wget_hashmap_contains (blacklist, iri))
+        {
+          // info_printf("Add to blacklist: %s\n",iri->uri);
+          wget_hashmap_put_noalloc (blacklist, iri, NULL);  // use hashmap as a hashset (without value)
+          wget_thread_mutex_unlock (&mutex);
+          return iri;
+        }
 
-		wget_thread_mutex_unlock(&mutex);
-	}
+      wget_thread_mutex_unlock (&mutex);
+    }
 
-	wget_iri_free(&iri);
+  wget_iri_free (&iri);
 
-	return NULL;
+  return NULL;
 }
 
-void blacklist_free(void)
+void
+blacklist_free (void)
 {
-	wget_thread_mutex_lock(&mutex);
-	wget_hashmap_free(&blacklist);
-	wget_thread_mutex_unlock(&mutex);
+  wget_thread_mutex_lock (&mutex);
+  wget_hashmap_free (&blacklist);
+  wget_thread_mutex_unlock (&mutex);
 }

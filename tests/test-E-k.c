@@ -29,63 +29,67 @@
 # include <config.h>
 #endif
 
-#include <stdlib.h> // exit()
+#include <stdlib.h>    // exit()
 #include "libtest.h"
 
-int main(void)
+int
+main (void)
 {
-	wget_test_url_t urls[]={
-		{	.name = "/index.php",
-			.code = "200 Dontcare",
-			.body =
-				"<html><head><title>Main Page</title></head><body><p>A link to a" \
-				" <a href=\"http://localhost:{{port}}/subpage.php\">second page</a>." \
-				"</p></body></html>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-		{	.name = "/subpage.php",
-			.code = "200 Dontcare",
-			.body = "<html><head><title>Sub Page</title></head><body>Some Text</body></html>",
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-	};
+  wget_test_url_t urls[] = {
+    {.name = "/index.php",
+     .code = "200 Dontcare",
+     .body =
+     "<html><head><title>Main Page</title></head><body><p>A link to a"
+     " <a href=\"http://localhost:{{port}}/subpage.php\">second page</a>."
+     "</p></body></html>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+    {.name = "/subpage.php",
+     .code = "200 Dontcare",
+     .body =
+     "<html><head><title>Sub Page</title></head><body>Some Text</body></html>",
+     .headers = {
+        "Content-Type: text/html",
+      }
+    },
+  };
 
-	const char *mainpagemangled =
-		"<html><head><title>Main Page</title></head><body><p>A link to a" \
-		" <a href=\"subpage.php.html\">second page</a>." \
-		"</p></body></html>";
+  const char *mainpagemangled =
+    "<html><head><title>Main Page</title></head><body><p>A link to a"
+    " <a href=\"subpage.php.html\">second page</a>." "</p></body></html>";
 
-	// functions won't come back if an error occurs
-	wget_test_start_server(
-		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
-		0);
+  // functions won't come back if an error occurs
+  wget_test_start_server (WGET_TEST_RESPONSE_URLS, &urls, countof (urls), 0);
 
-	// test-E-k
-	wget_test(
-		WGET_TEST_OPTIONS, "-r -nd -E -k",
-		WGET_TEST_REQUEST_URL, "index.php",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.php.html", mainpagemangled },
-			{ "subpage.php.html", urls[1].body },
-			{	NULL } },
-		0);
+  // test-E-k
+  wget_test (WGET_TEST_OPTIONS, "-r -nd -E -k",
+             WGET_TEST_REQUEST_URL, "index.php",
+             WGET_TEST_EXPECTED_ERROR_CODE, 0,
+             WGET_TEST_EXPECTED_FILES, &(wget_test_file_t[])
+             {
+               {
+                 "index.php.html", mainpagemangled},
+                 {
+                   "subpage.php.html", urls[1].body},
+                   {
+                     NULL}}, 0);
 
-	// test-E-k-K
-	wget_test(
-		WGET_TEST_OPTIONS, "-r -nd -E -k -K",
-		WGET_TEST_REQUEST_URL, "index.php",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.php.html", mainpagemangled },
-			{ "index.php.orig", urls[0].body },
-			{ "subpage.php.html", urls[1].body },
-			{	NULL } },
-		0);
+  // test-E-k-K
+  wget_test (WGET_TEST_OPTIONS, "-r -nd -E -k -K",
+             WGET_TEST_REQUEST_URL, "index.php",
+             WGET_TEST_EXPECTED_ERROR_CODE, 0,
+             WGET_TEST_EXPECTED_FILES, &(wget_test_file_t[])
+             {
+               {
+                 "index.php.html", mainpagemangled},
+                 {
+                   "index.php.orig", urls[0].body},
+                   {
+                     "subpage.php.html", urls[1].body},
+                     {
+                       NULL}}, 0);
 
-	exit(0);
+  exit (0);
 }

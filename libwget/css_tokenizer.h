@@ -20,39 +20,40 @@
  */
 
 #ifndef CSS_TOKENIZER_H
-#define CSS_TOKENIZER_H
+# define CSS_TOKENIZER_H
 
-enum {
-  CSSEOF,
-  S,
-  CDO,
-  CDC,
-  INCLUDES,
-  DASHMATCH,
-  STRING,
-  BAD_STRING,
-  IDENT,
-  HASH,
-  IMPORT_SYM,
-  PAGE_SYM,
-  MEDIA_SYM,
-  CHARSET_SYM,
-  IMPORTANT_SYM,
-  EMS,
-  EXS,
-  LENGTH,
-  ANGLE,
-  TIME,
-  FREQ,
-  DIMENSION,
-  PERCENTAGE,
-  NUMBER,
-  URI,
-  BAD_URI,
-  FUNCTION,
-  COMMENT
-};
+enum
+  {
+    CSSEOF,
+    S,
+    CDO,
+    CDC,
+    INCLUDES,
+    DASHMATCH,
+    STRING,
+    BAD_STRING,
+    IDENT,
+    HASH,
+    IMPORT_SYM,
+    PAGE_SYM,
+    MEDIA_SYM,
+    CHARSET_SYM,
+    IMPORTANT_SYM,
+    EMS,
+    EXS,
+    LENGTH,
+    ANGLE,
+    TIME,
+    FREQ,
+    DIMENSION,
+    PERCENTAGE,
+    NUMBER,
+    URI,
+    BAD_URI,
+    FUNCTION,
+    COMMENT
+  };
 
-#define YY_FATAL_ERROR(msg) wget_error_printf_exit(msg)
+# define YY_FATAL_ERROR(msg) wget_error_printf_exit(msg)
 
 #endif /* CSS_TOKENIZER_H */

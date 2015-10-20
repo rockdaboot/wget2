@@ -39,302 +39,345 @@
 #include <string.h>
 
 #if WITH_ZLIB
-#include <zlib.h>
+# include <zlib.h>
 #endif
 
 #if WITH_BZIP2
-#include <bzlib.h>
+# include <bzlib.h>
 #endif
 
 #if WITH_LZMA
-#include <lzma.h>
+# include <lzma.h>
 #endif
 
 #include <libwget.h>
 #include "private.h"
 
-struct _wget_decompressor_st {
+struct _wget_decompressor_st
+{
 #if WITH_ZLIB
-	z_stream
-		z_strm;
+  z_stream z_strm;
 #endif
 #if WITH_LZMA
-	lzma_stream
-		lzma_strm;
+  lzma_stream lzma_strm;
 #endif
 #if WITH_BZIP2
-	bz_stream
-		bz_strm;
+  bz_stream bz_strm;
 #endif
 
-	int
-		(*decompress)(wget_decompressor_t *dc, char *src, size_t srclen),
-		(*put_data)(void *context, const char *data, size_t length); // decompressed data goes here
-	void
-		(*exit)(wget_decompressor_t *dc),
-		*context; // given to put_data()
-	char
-		encoding;
+  int (*decompress) (wget_decompressor_t * dc, char *src, size_t srclen), (*put_data) (void *context, const char *data, size_t length);  // decompressed data goes here
+  void (*exit) (wget_decompressor_t * dc), *context;  // given to put_data()
+  char encoding;
 };
 
 #if WITH_ZLIB
-static int gzip_init(z_stream *strm)
+static int
+gzip_init (z_stream * strm)
 {
-	memset(strm, 0, sizeof(*strm));
+  memset (strm, 0, sizeof (*strm));
 
-	// +16: decode gzip format only
-	// +32: decode gzip and zlib (autodetect)
-	if (inflateInit2(strm, 15 + 32) != Z_OK) {
-		error_printf(_("Failed to init gzip decompression\n"));
-		return -1;
-	}
+  // +16: decode gzip format only
+  // +32: decode gzip and zlib (autodetect)
+  if (inflateInit2 (strm, 15 + 32) != Z_OK)
+    {
+      error_printf (_("Failed to init gzip decompression\n"));
+      return -1;
+    }
 
-	return 0;
+  return 0;
 }
 
-static int gzip_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
+static int
+gzip_decompress (wget_decompressor_t * dc, char *src, size_t srclen)
 {
-	z_stream *strm;
-	char dst[10240];
-	int status;
+  z_stream *strm;
+  char dst[10240];
+  int status;
 
-	if (!srclen) {
-		// special case to avoid decompress errors
-		if (dc->put_data)
-			dc->put_data(dc->context, "", 0);
+  if (!srclen)
+    {
+      // special case to avoid decompress errors
+      if (dc->put_data)
+        dc->put_data (dc->context, "", 0);
 
-		return 0;
-	}
+      return 0;
+    }
 
-	strm = &dc->z_strm;
-	strm->next_in = (unsigned char *) src;
-	strm->avail_in = (unsigned int) srclen;
+  strm = &dc->z_strm;
+  strm->next_in = (unsigned char *) src;
+  strm->avail_in = (unsigned int) srclen;
 
-	do {
-		strm->next_out = (unsigned char *) dst;
-		strm->avail_out = sizeof(dst);
+  do
+    {
+      strm->next_out = (unsigned char *) dst;
+      strm->avail_out = sizeof (dst);
 
-		status = inflate(strm, Z_SYNC_FLUSH);
-		if ((status == Z_OK || status == Z_STREAM_END) && strm->avail_out<sizeof(dst)) {
-			if (dc->put_data)
-				dc->put_data(dc->context, dst, sizeof(dst) - strm->avail_out);
-		}
-	} while (status == Z_OK && !strm->avail_out);
+      status = inflate (strm, Z_SYNC_FLUSH);
+      if ((status == Z_OK || status == Z_STREAM_END)
+          && strm->avail_out < sizeof (dst))
+        {
+          if (dc->put_data)
+            dc->put_data (dc->context, dst, sizeof (dst) - strm->avail_out);
+        }
+    }
+  while (status == Z_OK && !strm->avail_out);
 
-	if (status == Z_OK || status == Z_STREAM_END)
-		return 0;
+  if (status == Z_OK || status == Z_STREAM_END)
+    return 0;
 
-	error_printf(_("Failed to uncompress gzip stream (%d)\n"), status);
-	return -1;
+  error_printf (_("Failed to uncompress gzip stream (%d)\n"), status);
+  return -1;
 }
 
-static void gzip_exit(wget_decompressor_t *dc)
+static void
+gzip_exit (wget_decompressor_t * dc)
 {
-	int status;
+  int status;
 
-	if ((status = inflateEnd(&dc->z_strm)) != Z_OK) {
-		error_printf(_("Failed to close gzip stream (%d)\n"), status);
-	}
+  if ((status = inflateEnd (&dc->z_strm)) != Z_OK)
+    {
+      error_printf (_("Failed to close gzip stream (%d)\n"), status);
+    }
 }
 
-static int deflate_init(z_stream *strm)
+static int
+deflate_init (z_stream * strm)
 {
-	memset(strm, 0, sizeof(*strm));
+  memset (strm, 0, sizeof (*strm));
 
-	// -15: decode raw deflate data
-	if (inflateInit2(strm, -15) != Z_OK) {
-		error_printf(_("Failed to init deflate decompression\n"));
-		return -1;
-	}
+  // -15: decode raw deflate data
+  if (inflateInit2 (strm, -15) != Z_OK)
+    {
+      error_printf (_("Failed to init deflate decompression\n"));
+      return -1;
+    }
 
-	return 0;
+  return 0;
 }
 #endif // WITH_ZLIB
 
 #if WITH_LZMA
-static int lzma_init(lzma_stream *strm)
+static int
+lzma_init (lzma_stream * strm)
 {
-	memset(strm, 0, sizeof(*strm));
+  memset (strm, 0, sizeof (*strm));
 
-//	if (lzma_stream_decoder(strm, UINT64_MAX, LZMA_TELL_UNSUPPORTED_CHECK | LZMA_CONCATENATED) != LZMA_OK) {
-	if (lzma_stream_decoder(strm, UINT64_MAX, 0) != LZMA_OK) {
-		error_printf(_("Failed to init LZMA decompression\n"));
-		return -1;
-	}
+  //  if (lzma_stream_decoder(strm, UINT64_MAX, LZMA_TELL_UNSUPPORTED_CHECK | LZMA_CONCATENATED) != LZMA_OK) {
+  if (lzma_stream_decoder (strm, UINT64_MAX, 0) != LZMA_OK)
+    {
+      error_printf (_("Failed to init LZMA decompression\n"));
+      return -1;
+    }
 
-	return 0;
+  return 0;
 }
 
-static int lzma_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
+static int
+lzma_decompress (wget_decompressor_t * dc, char *src, size_t srclen)
 {
-	lzma_stream *strm;
-	char dst[10240];
-	int status;
+  lzma_stream *strm;
+  char dst[10240];
+  int status;
 
-	if (!srclen) {
-		// special case to avoid decompress errors
-		if (dc->put_data)
-			dc->put_data(dc->context, "", 0);
+  if (!srclen)
+    {
+      // special case to avoid decompress errors
+      if (dc->put_data)
+        dc->put_data (dc->context, "", 0);
 
-		return 0;
-	}
+      return 0;
+    }
 
-	strm = &dc->lzma_strm;
-	strm->next_in = (unsigned char *)src;
-	strm->avail_in = srclen;
+  strm = &dc->lzma_strm;
+  strm->next_in = (unsigned char *) src;
+  strm->avail_in = srclen;
 
-	do {
-		strm->next_out = (unsigned char *)dst;
-		strm->avail_out = sizeof(dst);
+  do
+    {
+      strm->next_out = (unsigned char *) dst;
+      strm->avail_out = sizeof (dst);
 
-		status = lzma_code(strm, LZMA_RUN);
-		if ((status == LZMA_OK || status == LZMA_STREAM_END) && strm->avail_out<sizeof(dst)) {
-			if (dc->put_data)
-				dc->put_data(dc->context, dst, sizeof(dst) - strm->avail_out);
-		}
-	} while (status == LZMA_OK && !strm->avail_out);
+      status = lzma_code (strm, LZMA_RUN);
+      if ((status == LZMA_OK || status == LZMA_STREAM_END)
+          && strm->avail_out < sizeof (dst))
+        {
+          if (dc->put_data)
+            dc->put_data (dc->context, dst, sizeof (dst) - strm->avail_out);
+        }
+    }
+  while (status == LZMA_OK && !strm->avail_out);
 
-	if (status == LZMA_OK || status == LZMA_STREAM_END)
-		return 0;
+  if (status == LZMA_OK || status == LZMA_STREAM_END)
+    return 0;
 
-	error_printf(_("Failed to uncompress LZMA stream (%d)\n"), status);
-	return -1;
+  error_printf (_("Failed to uncompress LZMA stream (%d)\n"), status);
+  return -1;
 }
 
-static void lzma_exit(wget_decompressor_t *dc)
+static void
+lzma_exit (wget_decompressor_t * dc)
 {
-	lzma_end(&dc->lzma_strm);
+  lzma_end (&dc->lzma_strm);
 }
 #endif // WITH_LZMA
 
 #if WITH_BZIP2
-static int bzip2_init(bz_stream *strm)
+static int
+bzip2_init (bz_stream * strm)
 {
-	memset(strm, 0, sizeof(*strm));
+  memset (strm, 0, sizeof (*strm));
 
-	if (BZ2_bzDecompressInit(strm, 0, 0) != BZ_OK) {
-		error_printf(_("Failed to init bzip2 decompression\n"));
-		return -1;
-	}
+  if (BZ2_bzDecompressInit (strm, 0, 0) != BZ_OK)
+    {
+      error_printf (_("Failed to init bzip2 decompression\n"));
+      return -1;
+    }
 
-	return 0;
+  return 0;
 }
 
-static int bzip2_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
+static int
+bzip2_decompress (wget_decompressor_t * dc, char *src, size_t srclen)
 {
-	bz_stream *strm;
-	char dst[10240];
-	int status;
+  bz_stream *strm;
+  char dst[10240];
+  int status;
 
-	if (!srclen) {
-		// special case to avoid decompress errors
-		if (dc->put_data)
-			dc->put_data(dc->context, "", 0);
+  if (!srclen)
+    {
+      // special case to avoid decompress errors
+      if (dc->put_data)
+        dc->put_data (dc->context, "", 0);
 
-		return 0;
-	}
+      return 0;
+    }
 
-	strm = &dc->bz_strm;
-	strm->next_in = src;
-	strm->avail_in = (unsigned int) srclen;
+  strm = &dc->bz_strm;
+  strm->next_in = src;
+  strm->avail_in = (unsigned int) srclen;
 
-	do {
-		strm->next_out = dst;
-		strm->avail_out = sizeof(dst);
+  do
+    {
+      strm->next_out = dst;
+      strm->avail_out = sizeof (dst);
 
-		status = BZ2_bzDecompress(strm);
-		if ((status == BZ_OK || status == BZ_STREAM_END) && strm->avail_out<sizeof(dst)) {
-			if (dc->put_data)
-				dc->put_data(dc->context, dst, sizeof(dst) - strm->avail_out);
-		}
-	} while (status == BZ_OK && !strm->avail_out);
+      status = BZ2_bzDecompress (strm);
+      if ((status == BZ_OK || status == BZ_STREAM_END)
+          && strm->avail_out < sizeof (dst))
+        {
+          if (dc->put_data)
+            dc->put_data (dc->context, dst, sizeof (dst) - strm->avail_out);
+        }
+    }
+  while (status == BZ_OK && !strm->avail_out);
 
-	if (status == BZ_OK || status == BZ_STREAM_END)
-		return 0;
+  if (status == BZ_OK || status == BZ_STREAM_END)
+    return 0;
 
-	error_printf(_("Failed to uncompress bzip2 stream (%d)\n"), status);
-	return -1;
+  error_printf (_("Failed to uncompress bzip2 stream (%d)\n"), status);
+  return -1;
 }
 
-static void bzip2_exit(wget_decompressor_t *dc)
+static void
+bzip2_exit (wget_decompressor_t * dc)
 {
-	BZ2_bzDecompressEnd(&dc->bz_strm);
+  BZ2_bzDecompressEnd (&dc->bz_strm);
 }
 #endif // WITH_BZIP2
 
-static int identity(wget_decompressor_t *dc, char *src, size_t srclen)
+static int
+identity (wget_decompressor_t * dc, char *src, size_t srclen)
 {
-	if (dc->put_data)
-		dc->put_data(dc->context, src, srclen);
+  if (dc->put_data)
+    dc->put_data (dc->context, src, srclen);
 
-	return 0;
+  return 0;
 }
 
-wget_decompressor_t *wget_decompress_open(int encoding,
-	int (*put_data)(void *context, const char *data, size_t length),
-	void *context)
+wget_decompressor_t *
+wget_decompress_open (int encoding,
+                      int (*put_data) (void *context, const char *data,
+                                       size_t length), void *context)
 {
-	wget_decompressor_t *dc = xcalloc(1, sizeof(wget_decompressor_t));
-	int rc = 0;
+  wget_decompressor_t *dc = xcalloc (1, sizeof (wget_decompressor_t));
+  int rc = 0;
 
-	if (encoding == wget_content_encoding_gzip) {
+  if (encoding == wget_content_encoding_gzip)
+    {
 #if WITH_ZLIB
-		if ((rc = gzip_init(&dc->z_strm)) == 0) {
-			dc->decompress = gzip_decompress;
-			dc->exit = gzip_exit;
-		}
+      if ((rc = gzip_init (&dc->z_strm)) == 0)
+        {
+          dc->decompress = gzip_decompress;
+          dc->exit = gzip_exit;
+        }
 #endif
-	} else if (encoding == wget_content_encoding_deflate) {
+    }
+  else if (encoding == wget_content_encoding_deflate)
+    {
 #if WITH_ZLIB
-		if ((rc = deflate_init(&dc->z_strm)) == 0) {
-			dc->decompress = gzip_decompress;
-			dc->exit = gzip_exit;
-		}
+      if ((rc = deflate_init (&dc->z_strm)) == 0)
+        {
+          dc->decompress = gzip_decompress;
+          dc->exit = gzip_exit;
+        }
 #endif
-	} else if (encoding == wget_content_encoding_bzip2) {
+    }
+  else if (encoding == wget_content_encoding_bzip2)
+    {
 #if WITH_BZIP2
-		if ((rc = bzip2_init(&dc->bz_strm)) == 0) {
-			dc->decompress = bzip2_decompress;
-			dc->exit = bzip2_exit;
-		}
+      if ((rc = bzip2_init (&dc->bz_strm)) == 0)
+        {
+          dc->decompress = bzip2_decompress;
+          dc->exit = bzip2_exit;
+        }
 #endif
-	} else if (encoding == wget_content_encoding_lzma) {
+    }
+  else if (encoding == wget_content_encoding_lzma)
+    {
 #if WITH_LZMA
-		if ((rc = lzma_init(&dc->lzma_strm)) == 0) {
-			dc->decompress = lzma_decompress;
-			dc->exit = lzma_exit;
-		}
+      if ((rc = lzma_init (&dc->lzma_strm)) == 0)
+        {
+          dc->decompress = lzma_decompress;
+          dc->exit = lzma_exit;
+        }
 #endif
-	} else {
-		// identity
-		dc->decompress = identity;
-	}
+    }
+  else
+    {
+      // identity
+      dc->decompress = identity;
+    }
 
-	if (rc) {
-		xfree(dc);
-		return NULL;
-	}
+  if (rc)
+    {
+      xfree (dc);
+      return NULL;
+    }
 
-	dc->encoding = (char)encoding;
-	dc->put_data = put_data;
-	dc->context = context;
-	return dc;
+  dc->encoding = (char) encoding;
+  dc->put_data = put_data;
+  dc->context = context;
+  return dc;
 }
 
-void wget_decompress_close(wget_decompressor_t *dc)
+void
+wget_decompress_close (wget_decompressor_t * dc)
 {
-	if (dc) {
-		if (dc->exit)
-			dc->exit(dc);
-		xfree(dc);
-	}
+  if (dc)
+    {
+      if (dc->exit)
+        dc->exit (dc);
+      xfree (dc);
+    }
 }
 
-int wget_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
+int
+wget_decompress (wget_decompressor_t * dc, char *src, size_t srclen)
 {
-	if (dc) {
-		return dc->decompress(dc, src, srclen);
-	}
+  if (dc)
+    {
+      return dc->decompress (dc, src, srclen);
+    }
 
-	return 0;
+  return 0;
 }

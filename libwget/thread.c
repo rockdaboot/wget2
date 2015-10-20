@@ -36,83 +36,139 @@
 
 #ifdef HAVE_LIBPTHREAD
 
-int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_WGET_UNUSED)
+int
+wget_thread_start (wget_thread_t * thread, void *(*start_routine) (void *),
+                   void *arg, int flags G_GNUC_WGET_UNUSED)
 {
-	int rc;
-	pthread_attr_t attr;
+  int rc;
+  pthread_attr_t attr;
 
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-	// pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
-	pthread_attr_setschedpolicy(&attr, SCHED_OTHER);
+  pthread_attr_init (&attr);
+  pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_JOINABLE);
+  // pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
+  pthread_attr_setschedpolicy (&attr, SCHED_OTHER);
 
-	rc = pthread_create(thread, &attr, start_routine, arg);
+  rc = pthread_create (thread, &attr, start_routine, arg);
 
-	pthread_attr_destroy(&attr);
+  pthread_attr_destroy (&attr);
 
-	return rc;
+  return rc;
 }
 
-int wget_thread_mutex_init(wget_thread_mutex_t *mutex)
+int
+wget_thread_mutex_init (wget_thread_mutex_t * mutex)
 {
-	return pthread_mutex_init(mutex, NULL);
+  return pthread_mutex_init (mutex, NULL);
 }
 
-void wget_thread_mutex_lock(wget_thread_mutex_t *mutex)
+void
+wget_thread_mutex_lock (wget_thread_mutex_t * mutex)
 {
-	pthread_mutex_lock(mutex);
+  pthread_mutex_lock (mutex);
 }
 
-void wget_thread_mutex_unlock(wget_thread_mutex_t *mutex)
+void
+wget_thread_mutex_unlock (wget_thread_mutex_t * mutex)
 {
-	pthread_mutex_unlock(mutex);
+  pthread_mutex_unlock (mutex);
 }
 
-int wget_thread_kill(wget_thread_t thread, int sig)
+int
+wget_thread_kill (wget_thread_t thread, int sig)
 {
-	return pthread_kill(thread, sig);
+  return pthread_kill (thread, sig);
 }
 
-int wget_thread_join(wget_thread_t thread)
+int
+wget_thread_join (wget_thread_t thread)
 {
-	return pthread_join(thread, NULL);
+  return pthread_join (thread, NULL);
 }
 
-wget_thread_t wget_thread_self(void)
+wget_thread_t
+wget_thread_self (void)
 {
-	return pthread_self();
+  return pthread_self ();
 }
 
-int wget_thread_cond_init(wget_thread_cond_t *cond)
+int
+wget_thread_cond_init (wget_thread_cond_t * cond)
 {
-	return pthread_cond_init(cond, NULL);
+  return pthread_cond_init (cond, NULL);
 }
 
-int wget_thread_cond_signal(wget_thread_cond_t *cond)
+int
+wget_thread_cond_signal (wget_thread_cond_t * cond)
 {
-	return pthread_cond_broadcast(cond);
+  return pthread_cond_broadcast (cond);
 }
 
-int wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex)
+int
+wget_thread_cond_wait (wget_thread_cond_t * cond, wget_thread_mutex_t * mutex)
 {
-	return pthread_cond_wait(cond, mutex);
+  return pthread_cond_wait (cond, mutex);
 }
 
 #else // HAVE_LIBPTHREAD
 
 // dummy thread functions
-int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_WGET_UNUSED)
+int
+wget_thread_start (wget_thread_t * thread, void *(*start_routine) (void *),
+                   void *arg, int flags G_GNUC_WGET_UNUSED)
 {
-	return -1;
+  return -1;
 }
-int wget_thread_mutex_init(wget_thread_mutex_t *mutex) { return 0; }
-void wget_thread_mutex_lock(wget_thread_mutex_t *mutex) { }
-void wget_thread_mutex_unlock(wget_thread_mutex_t *mutex) { }
-int wget_thread_kill(wget_thread_t thread, int sig) { return 0; }
-int wget_thread_join(wget_thread_t thread) { return 0; }
-wget_thread_t wget_thread_self(void) { return 0; }
-int wget_thread_cond_init(wget_thread_cond_t *cond) { return 0; }
-int wget_thread_cond_signal(wget_thread_cond_t *cond) { return 0; }
-int wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex) { return 0; }
+
+int
+wget_thread_mutex_init (wget_thread_mutex_t * mutex)
+{
+  return 0;
+}
+
+void
+wget_thread_mutex_lock (wget_thread_mutex_t * mutex)
+{
+}
+
+void
+wget_thread_mutex_unlock (wget_thread_mutex_t * mutex)
+{
+}
+
+int
+wget_thread_kill (wget_thread_t thread, int sig)
+{
+  return 0;
+}
+
+int
+wget_thread_join (wget_thread_t thread)
+{
+  return 0;
+}
+
+wget_thread_t
+wget_thread_self (void)
+{
+  return 0;
+}
+
+int
+wget_thread_cond_init (wget_thread_cond_t * cond)
+{
+  return 0;
+}
+
+int
+wget_thread_cond_signal (wget_thread_cond_t * cond)
+{
+  return 0;
+}
+
+int
+wget_thread_cond_wait (wget_thread_cond_t * cond, wget_thread_mutex_t * mutex)
+{
+  return 0;
+}
 
 #endif // HAVE_LIBPTHREAD

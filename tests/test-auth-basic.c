@@ -29,43 +29,45 @@
 # include <config.h>
 #endif
 
-#include <stdlib.h> // exit()
-#include <string.h> // strlen()
+#include <stdlib.h>    // exit()
+#include <string.h>    // strlen()
 #include "libtest.h"
 
 #define username "my_username"
 #define password "my_password"
 
-int main(void)
+int
+main (void)
 {
-	wget_test_url_t urls[] = {
-		{	.name = "/needs-auth.txt",
-			.auth_method = "Basic",
-			.auth_username = username,
-			.auth_password = password,
-			.code = "200 Dontcare",
-			.body = "You are authenticated.",
-			.headers = {
-				"Content-Type: text/plain",
-			}
-		}
-	};
+  wget_test_url_t urls[] = {
+    {.name = "/needs-auth.txt",
+     .auth_method = "Basic",
+     .auth_username = username,
+     .auth_password = password,
+     .code = "200 Dontcare",
+     .body = "You are authenticated.",
+     .headers = {
+        "Content-Type: text/plain",
+      }
+    }
+  };
 
-	// functions won't come back if an error occurs
-	wget_test_start_server(
-		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
-		0);
+  // functions won't come back if an error occurs
+  wget_test_start_server (WGET_TEST_RESPONSE_URLS, &urls, countof (urls), 0);
 
-	// test-auth-basic
-	wget_test(
-//		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --user=" username " --password=" password,
-		WGET_TEST_REQUEST_URL, urls[0].name + 1,
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body },
-			{	NULL } },
-		0);
+  // test-auth-basic
+  wget_test (
+             //    WGET_TEST_KEEP_TMPFILES, 1,
+             WGET_TEST_OPTIONS,
+             "-d --user=" username " --password=" password,
+             WGET_TEST_REQUEST_URL, urls[0].name + 1,
+             WGET_TEST_EXPECTED_ERROR_CODE, 0, WGET_TEST_EXPECTED_FILES,
+             &(wget_test_file_t[])
+             {
+               {
+                 urls[0].name + 1, urls[0].body},
+                 {
+                   NULL}}, 0);
 
-	exit(0);
+  exit (0);
 }

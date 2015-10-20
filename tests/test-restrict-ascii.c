@@ -29,8 +29,8 @@
 # include <config.h>
 #endif
 
-#include <stdlib.h> // exit()
-#include <string.h> // strlen()
+#include <stdlib.h>    // exit()
+#include <string.h>    // strlen()
 #include "libtest.h"
 
 static const char *mainpage = "\
@@ -45,46 +45,47 @@ static const char *mainpage = "\
 </body>\n\
 </html>\n";
 
-int main(void)
+int
+main (void)
 {
-	wget_test_url_t urls[]={
-//		{	.name = "/%CE%B3%CE%BD%CF%89%CF%83%CE%B9%CF%82.html", // "gnosis" in UTF-8 greek
-		{	.name = "/%CE%B3%CE%BD%E1%BF%B6%CF%83%CE%B9%CF%82.html", // "gnosis" in UTF-8 greek
-			.code = "200 Dontcare",
-			.body = mainpage,
-			.headers = {
-				"Content-Type: text/html",
-			}
-		}
-	};
+  wget_test_url_t urls[] = {
+    //    {  .name = "/%CE%B3%CE%BD%CF%89%CF%83%CE%B9%CF%82.html", // "gnosis" in UTF-8 greek
+    {.name = "/%CE%B3%CE%BD%E1%BF%B6%CF%83%CE%B9%CF%82.html",  // "gnosis" in UTF-8 greek
+     .code = "200 Dontcare",
+     .body = mainpage,
+     .headers = {
+        "Content-Type: text/html",
+      }
+    }
+  };
 
-	// functions won't come back if an error occurs
-	wget_test_start_server(
-		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
-		0);
+  // functions won't come back if an error occurs
+  wget_test_start_server (WGET_TEST_RESPONSE_URLS, &urls, countof (urls), 0);
 
-	// test-restrict-ascii
-	wget_test(
-//		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--restrict-file-names=ascii",
-		WGET_TEST_REQUEST_URL, urls[0].name + 1,
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body },
-			{	NULL } },
-		0);
+  // test-restrict-ascii
+  wget_test (
+             //    WGET_TEST_KEEP_TMPFILES, 1,
+             WGET_TEST_OPTIONS, "--restrict-file-names=ascii",
+             WGET_TEST_REQUEST_URL, urls[0].name + 1,
+             WGET_TEST_EXPECTED_ERROR_CODE, 0,
+             WGET_TEST_EXPECTED_FILES, &(wget_test_file_t[])
+             {
+               {
+                 urls[0].name + 1, urls[0].body},
+                 {
+                   NULL}}, 0);
 
-	// test-restrict-ascii
-/*
-	wget_test(
-		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--local-encoding=utf-8",
-		WGET_TEST_REQUEST_URL, urls[0].name + 1,
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body },
-			{	NULL } },
-		0);
-*/
-	exit(0);
+  // test-restrict-ascii
+  /*
+    wget_test(
+    // WGET_TEST_KEEP_TMPFILES, 1,
+    WGET_TEST_OPTIONS, "--local-encoding=utf-8",
+    WGET_TEST_REQUEST_URL, urls[0].name + 1,
+    WGET_TEST_EXPECTED_ERROR_CODE, 0,
+    WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+    { urls[0].name + 1, urls[0].body },
+    {  NULL } },
+    0);
+  */
+  exit (0);
 }

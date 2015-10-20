@@ -39,30 +39,23 @@
 
 typedef struct _ENTRY ENTRY;
 
-struct _ENTRY {
-	void
-		*key,
-		*value;
-	ENTRY
-		*next;
-	unsigned int
-		hash;
+struct _ENTRY
+{
+  void *key, *value;
+  ENTRY * next;
+  unsigned int hash;
 };
 
-struct _WGET_HASHMAP {
-	unsigned int
-		(*hash)(const void *); // hash function
-	int
-		(*cmp)(const void *, const void *); // compare function
-	ENTRY
-		**entry; // pointer to array of pointers to entries
-	int
-		max,     // allocated entries
-		cur,     // number of entries in use
-		off,     // resize strategy: >0: resize = max + off, <0: resize = -off * max
-		threshold; // resize when max reaches threshold
-	float
-		factor;
+struct _WGET_HASHMAP
+{
+  unsigned int (*hash) (const void *);  // hash function
+  int (*cmp) (const void *, const void *);  // compare function
+  ENTRY ** entry;    // pointer to array of pointers to entries
+  int max,      // allocated entries
+    cur,      // number of entries in use
+    off,      // resize strategy: >0: resize = max + off, <0: resize = -off * max
+    threshold;      // resize when max reaches threshold
+  float factor;
 };
 
 // create hashmap with initial size <max>
@@ -72,318 +65,385 @@ struct _WGET_HASHMAP {
 // cmp: comparison function for finding
 // the hashmap plus shallow content is freed by hashmap_free()
 
-WGET_HASHMAP *wget_hashmap_create(int max, int off, unsigned int (*hash)(const void *), int (*cmp)(const void *, const void *))
+WGET_HASHMAP *
+wget_hashmap_create (int max, int off, unsigned int (*hash) (const void *),
+                     int (*cmp) (const void *, const void *))
 {
-	WGET_HASHMAP *h = xmalloc(sizeof(WGET_HASHMAP));
+  WGET_HASHMAP *h = xmalloc (sizeof (WGET_HASHMAP));
 
-	h->entry = xcalloc(max, sizeof(ENTRY *));
-	h->max = max;
-	h->cur = 0;
-	h->off = off;
-	h->hash = hash;
-	h->cmp = cmp;
-	h->factor = 0.75;
-	h->threshold = (int)(max * h->factor);
+  h->entry = xcalloc (max, sizeof (ENTRY *));
+  h->max = max;
+  h->cur = 0;
+  h->off = off;
+  h->hash = hash;
+  h->cmp = cmp;
+  h->factor = 0.75;
+  h->threshold = (int) (max * h->factor);
 
-	return h;
+  return h;
 }
 
-static inline ENTRY * G_GNUC_WGET_NONNULL_ALL hashmap_find_entry(const WGET_HASHMAP *h, const char *key, unsigned int hash, int pos)
+static inline ENTRY *G_GNUC_WGET_NONNULL_ALL
+hashmap_find_entry (const WGET_HASHMAP * h, const char *key,
+                    unsigned int hash, int pos)
 {
-	ENTRY *e;
+  ENTRY *e;
 
-	// info_printf("find %s:  pos=%d cur=%d, max=%d hash=%08x\n",key,pos,h->cur,h->max,hash);
-	for (e = h->entry[pos]; e; e = e->next) {
-		if (hash == e->hash && (key == e->key || !h->cmp(key, e->key))) {
-			return e;
-		}
-	}
+  // info_printf("find %s:  pos=%d cur=%d, max=%d hash=%08x\n",key,pos,h->cur,h->max,hash);
+  for (e = h->entry[pos]; e; e = e->next)
+    {
+      if (hash == e->hash && (key == e->key || !h->cmp (key, e->key)))
+        {
+          return e;
+        }
+    }
 
-	// if (h->entry[pos])
-	// 	info_printf("collision on %s\n", key);
+  // if (h->entry[pos])
+  //   info_printf("collision on %s\n", key);
 
-	return NULL;
+  return NULL;
 }
 
-static inline void G_GNUC_WGET_NONNULL_ALL hashmap_free_entry(ENTRY **e)
+static inline void G_GNUC_WGET_NONNULL_ALL
+hashmap_free_entry (ENTRY ** e)
 {
-	if (*e) {
-		xfree((*e)->value);
-		xfree((*e)->key);
-		xfree(*e);
-	}
+  if (*e)
+    {
+      xfree ((*e)->value);
+      xfree ((*e)->key);
+      xfree (*e);
+    }
 }
 
-static void G_GNUC_WGET_NONNULL_ALL hashmap_rehash(WGET_HASHMAP *h, int newmax, int recalc_hash)
+static void G_GNUC_WGET_NONNULL_ALL
+hashmap_rehash (WGET_HASHMAP * h, int newmax, int recalc_hash)
 {
-	ENTRY **new_entry, *entry, *next;
-	int it, pos, cur = h->cur;
+  ENTRY **new_entry, *entry, *next;
+  int it, pos, cur = h->cur;
 
-	if (cur) {
-		new_entry = xcalloc(newmax, sizeof(ENTRY *));
+  if (cur)
+    {
+      new_entry = xcalloc (newmax, sizeof (ENTRY *));
 
-		for (it = 0; it < h->max && cur; it++) {
-			for (entry = h->entry[it]; entry; entry = next) {
-				next = entry->next;
+      for (it = 0; it < h->max && cur; it++)
+        {
+          for (entry = h->entry[it]; entry; entry = next)
+            {
+              next = entry->next;
 
-				// now move entry from 'h' to 'new_hashmap'
-				if (recalc_hash)
-					entry->hash = h->hash(entry->key);
-				pos = entry->hash % newmax;
-				entry->next = new_entry[pos];
-				new_entry[pos] = entry;
+              // now move entry from 'h' to 'new_hashmap'
+              if (recalc_hash)
+                entry->hash = h->hash (entry->key);
+              pos = entry->hash % newmax;
+              entry->next = new_entry[pos];
+              new_entry[pos] = entry;
 
-				cur--;
-			}
-		}
+              cur--;
+            }
+        }
 
-		xfree(h->entry);
-		h->entry = new_entry;
-		h->max = newmax;
-		h->threshold = (int)(newmax * h->factor);
-	}
+      xfree (h->entry);
+      h->entry = new_entry;
+      h->max = newmax;
+      h->threshold = (int) (newmax * h->factor);
+    }
 }
 
-static inline void G_GNUC_WGET_NONNULL((1,3)) hashmap_new_entry(WGET_HASHMAP *h, unsigned int hash, const char *key, const char *value)
+static inline void
+G_GNUC_WGET_NONNULL ((1, 3))
+  hashmap_new_entry (WGET_HASHMAP * h, unsigned int hash, const char *key,
+                     const char *value)
 {
-	ENTRY *entry;
-	int pos = hash % h->max;
+  ENTRY *entry;
+  int pos = hash % h->max;
 
-	entry = malloc(sizeof(ENTRY));
-	entry->key = (void *)key;
-	entry->value = (void *)value;
-	entry->hash = hash;
-	entry->next = h->entry[pos];
-	h->entry[pos] = entry;
+  entry = malloc (sizeof (ENTRY));
+  entry->key = (void *) key;
+  entry->value = (void *) value;
+  entry->hash = hash;
+  entry->next = h->entry[pos];
+  h->entry[pos] = entry;
 
-	if (++h->cur >= h->threshold) {
-		if (h->off > 0) {
-			hashmap_rehash(h, h->max + h->off, 0);
-		} else if (h->off<-1) {
-			hashmap_rehash(h, h->max * -h->off, 0);
-		} else {
-			// no resizing occurs
-		}
-	}
+  if (++h->cur >= h->threshold)
+    {
+      if (h->off > 0)
+        {
+          hashmap_rehash (h, h->max + h->off, 0);
+        }
+      else if (h->off < -1)
+        {
+          hashmap_rehash (h, h->max * -h->off, 0);
+        }
+      else
+        {
+          // no resizing occurs
+        }
+    }
 }
 
-int wget_hashmap_put_noalloc(WGET_HASHMAP *h, const void *key, const void *value)
+int
+wget_hashmap_put_noalloc (WGET_HASHMAP * h, const void *key,
+                          const void *value)
 {
-	ENTRY *entry;
-	unsigned int hash = h->hash(key);
-	int pos = hash % h->max;
+  ENTRY *entry;
+  unsigned int hash = h->hash (key);
+  int pos = hash % h->max;
 
-	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		if (entry->key == entry->value) {
-			if (key != value && entry->value != value)
-				entry->value = (void *)value;
-		} else if (entry->value != value) {
-			xfree(entry->value);
-			entry->value = (void *)value;
-		}
+  if ((entry = hashmap_find_entry (h, key, hash, pos)))
+    {
+      if (entry->key == entry->value)
+        {
+          if (key != value && entry->value != value)
+            entry->value = (void *) value;
+        }
+      else if (entry->value != value)
+        {
+          xfree (entry->value);
+          entry->value = (void *) value;
+        }
 
-		if (entry->key != key)
-			xfree(key);
+      if (entry->key != key)
+        xfree (key);
 
-		return 1;
-	}
+      return 1;
+    }
 
-	// a new entry
-	hashmap_new_entry(h, hash, key, value);
+  // a new entry
+  hashmap_new_entry (h, hash, key, value);
 
-	return 0;
+  return 0;
 }
 
-int wget_hashmap_put(WGET_HASHMAP *h, const void *key, size_t keysize, const void *value, size_t valuesize)
+int
+wget_hashmap_put (WGET_HASHMAP * h, const void *key, size_t keysize,
+                  const void *value, size_t valuesize)
 {
-	ENTRY *entry;
-	unsigned int hash = h->hash(key);
-	int pos = hash % h->max;
+  ENTRY *entry;
+  unsigned int hash = h->hash (key);
+  int pos = hash % h->max;
 
-	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		if (entry->key != entry->value)
-			xfree(entry->value);
+  if ((entry = hashmap_find_entry (h, key, hash, pos)))
+    {
+      if (entry->key != entry->value)
+        xfree (entry->value);
 
-		entry->value = wget_memdup(value, valuesize);
+      entry->value = wget_memdup (value, valuesize);
 
-		return 1;
-	}
+      return 1;
+    }
 
-	// a new entry
-	hashmap_new_entry(h, hash, wget_memdup(key, keysize), value ? wget_memdup(value, valuesize) : NULL);
-	
-	return 0;
-//	return hashmap_put_noalloc(h, xmemdup(key, keysize), wget_memdup(value, valuesize));
+  // a new entry
+  hashmap_new_entry (h, hash, wget_memdup (key, keysize),
+                     value ? wget_memdup (value, valuesize) : NULL);
+
+  return 0;
+  //  return hashmap_put_noalloc(h, xmemdup(key, keysize), wget_memdup(value, valuesize));
 }
 
-int wget_hashmap_put_ident(WGET_HASHMAP *h, const void *key, size_t keysize)
+int
+wget_hashmap_put_ident (WGET_HASHMAP * h, const void *key, size_t keysize)
 {
-	ENTRY *entry;
-	void *keydup;
-	unsigned int hash = h->hash(key);
-	int pos = hash % h->max;
+  ENTRY *entry;
+  void *keydup;
+  unsigned int hash = h->hash (key);
+  int pos = hash % h->max;
 
-	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		if (entry->key != entry->value) {
-			xfree(entry->value);
-			entry->value = entry->key;
-		}
+  if ((entry = hashmap_find_entry (h, key, hash, pos)))
+    {
+      if (entry->key != entry->value)
+        {
+          xfree (entry->value);
+          entry->value = entry->key;
+        }
 
-		return 1;
-	}
+      return 1;
+    }
 
-	// a new entry
-	keydup = wget_memdup(key, keysize);
-	hashmap_new_entry(h, hash, keydup, keydup);
+  // a new entry
+  keydup = wget_memdup (key, keysize);
+  hashmap_new_entry (h, hash, keydup, keydup);
 
-	return 0;
+  return 0;
 
-	// if the key is as well the value (e.g. for blacklists)
-//	void *keydup = xmemdup(key, keysize);
-//	return hashmap_put_noalloc(h, keydup, keydup);
+  // if the key is as well the value (e.g. for blacklists)
+  //  void *keydup = xmemdup(key, keysize);
+  //  return hashmap_put_noalloc(h, keydup, keydup);
 }
 
-int wget_hashmap_put_ident_noalloc(WGET_HASHMAP *h, const void *key)
+int
+wget_hashmap_put_ident_noalloc (WGET_HASHMAP * h, const void *key)
 {
-	// if the key is as well the value (e.g. for blacklists)
-	return wget_hashmap_put_noalloc(h, key, key);
+  // if the key is as well the value (e.g. for blacklists)
+  return wget_hashmap_put_noalloc (h, key, key);
 }
 
-void *wget_hashmap_get(const WGET_HASHMAP *h, const void *key)
+void *
+wget_hashmap_get (const WGET_HASHMAP * h, const void *key)
 {
-	ENTRY *entry;
-	unsigned int hash = h->hash(key);
-	int pos = hash % h->max;
+  ENTRY *entry;
+  unsigned int hash = h->hash (key);
+  int pos = hash % h->max;
 
-	if ((entry = hashmap_find_entry(h, key, hash, pos)))
-		return entry->value;
+  if ((entry = hashmap_find_entry (h, key, hash, pos)))
+    return entry->value;
 
-	return NULL;
+  return NULL;
 }
 
-static void G_GNUC_WGET_NONNULL_ALL hashmap_remove_entry(WGET_HASHMAP *h, const char *key, int free_kv)
+static void G_GNUC_WGET_NONNULL_ALL
+hashmap_remove_entry (WGET_HASHMAP * h, const char *key, int free_kv)
 {
-	ENTRY *e, *next, *prev = NULL;
-	unsigned int hash = h->hash(key);
-	int pos = hash % h->max;
+  ENTRY *e, *next, *prev = NULL;
+  unsigned int hash = h->hash (key);
+  int pos = hash % h->max;
 
-	for (e = h->entry[pos]; e; prev = e, e = next) {
-		next = e->next;
+  for (e = h->entry[pos]; e; prev = e, e = next)
+    {
+      next = e->next;
 
-		if (hash == e->hash && (key == e->key || !h->cmp(key, e->key))) {
-			if (prev)
-				prev->next = next;
-			else
-				h->entry[pos] = next;
+      if (hash == e->hash && (key == e->key || !h->cmp (key, e->key)))
+        {
+          if (prev)
+            prev->next = next;
+          else
+            h->entry[pos] = next;
 
-			if (free_kv) {
-				if (e->key == e->value) {
-					// special case: key/value identity
-					xfree(e->key);
-					e->value = NULL;
-				} else {
-					xfree(e->key);
-					xfree(e->value);
-				}
-			}
-			xfree(e);
+          if (free_kv)
+            {
+              if (e->key == e->value)
+                {
+                  // special case: key/value identity
+                  xfree (e->key);
+                  e->value = NULL;
+                }
+              else
+                {
+                  xfree (e->key);
+                  xfree (e->value);
+                }
+            }
+          xfree (e);
 
-			h->cur--;
-			return;
-		}
-	}
+          h->cur--;
+          return;
+        }
+    }
 }
 
-void wget_hashmap_remove(WGET_HASHMAP *h, const void *key)
+void
+wget_hashmap_remove (WGET_HASHMAP * h, const void *key)
 {
-	if (h)
-		hashmap_remove_entry(h, key, 1);
+  if (h)
+    hashmap_remove_entry (h, key, 1);
 }
 
-void wget_hashmap_remove_nofree(WGET_HASHMAP *h, const void *key)
+void
+wget_hashmap_remove_nofree (WGET_HASHMAP * h, const void *key)
 {
-	if (h)
-		hashmap_remove_entry(h, key, 0);
+  if (h)
+    hashmap_remove_entry (h, key, 0);
 }
 
-void wget_hashmap_free(WGET_HASHMAP **h)
+void
+wget_hashmap_free (WGET_HASHMAP ** h)
 {
-	if (h && *h) {
-		wget_hashmap_clear(*h);
-		xfree((*h)->entry);
-		xfree(*h);
-	}
+  if (h && *h)
+    {
+      wget_hashmap_clear (*h);
+      xfree ((*h)->entry);
+      xfree (*h);
+    }
 }
 
-void wget_hashmap_clear(WGET_HASHMAP *h)
+void
+wget_hashmap_clear (WGET_HASHMAP * h)
 {
-	if (h) {
-		ENTRY *entry, *next;
-		int it, cur = h->cur;
+  if (h)
+    {
+      ENTRY *entry, *next;
+      int it, cur = h->cur;
 
-		for (it = 0; it < h->max && cur; it++) {
-			for (entry = h->entry[it]; entry; entry = next) {
-				next = entry->next;
-				if (entry->key == entry->value) {
-					// special case: key/value identity
-					xfree(entry->value);
-					entry->key = NULL;
-				} else {
-					xfree(entry->value);
-					xfree(entry->key);
-				}
-				xfree(entry);
-				cur--;
-			}
-			h->entry[it] = NULL;
-		}
-		h->cur = 0;
-	}
+      for (it = 0; it < h->max && cur; it++)
+        {
+          for (entry = h->entry[it]; entry; entry = next)
+            {
+              next = entry->next;
+              if (entry->key == entry->value)
+                {
+                  // special case: key/value identity
+                  xfree (entry->value);
+                  entry->key = NULL;
+                }
+              else
+                {
+                  xfree (entry->value);
+                  xfree (entry->key);
+                }
+              xfree (entry);
+              cur--;
+            }
+          h->entry[it] = NULL;
+        }
+      h->cur = 0;
+    }
 }
 
-int wget_hashmap_size(const WGET_HASHMAP *h)
+int
+wget_hashmap_size (const WGET_HASHMAP * h)
 {
-	return h ? h->cur : 0;
+  return h ? h->cur : 0;
 }
 
-int wget_hashmap_browse(const WGET_HASHMAP *h, int (*browse)(const void *key, const void *value))
+int
+wget_hashmap_browse (const WGET_HASHMAP * h,
+                     int (*browse) (const void *key, const void *value))
 {
-	if (h) {
-		ENTRY *entry;
-		int it, ret, cur = h->cur;
+  if (h)
+    {
+      ENTRY *entry;
+      int it, ret, cur = h->cur;
 
-		for (it = 0; it < h->max && cur; it++) {
-			for (entry = h->entry[it]; entry; entry = entry->next) {
-				if ((ret = browse(entry->key, entry->value)) != 0)
-					return ret;
-				cur--;
-			}
-		}
-	}
+      for (it = 0; it < h->max && cur; it++)
+        {
+          for (entry = h->entry[it]; entry; entry = entry->next)
+            {
+              if ((ret = browse (entry->key, entry->value)) != 0)
+                return ret;
+              cur--;
+            }
+        }
+    }
 
-	return 0;
+  return 0;
 }
 
-void wget_hashmap_setcmpfunc(WGET_HASHMAP *h, int (*cmp)(const void *key1, const void *key2))
+void
+wget_hashmap_setcmpfunc (WGET_HASHMAP * h,
+                         int (*cmp) (const void *key1, const void *key2))
 {
-	if (h)
-		h->cmp = cmp;
+  if (h)
+    h->cmp = cmp;
 }
 
-void wget_hashmap_sethashfunc(WGET_HASHMAP *h, unsigned int (*hash)(const void *key))
+void
+wget_hashmap_sethashfunc (WGET_HASHMAP * h,
+                          unsigned int (*hash) (const void *key))
 {
-	if (h) {
-		h->hash = hash;
+  if (h)
+    {
+      h->hash = hash;
 
-		hashmap_rehash(h, h->max, 1);
-	}
+      hashmap_rehash (h, h->max, 1);
+    }
 }
 
-void wget_hashmap_setloadfactor(WGET_HASHMAP *h, float factor)
+void
+wget_hashmap_setloadfactor (WGET_HASHMAP * h, float factor)
 {
-	if (h) {
-		h->factor = factor;
-		h->threshold = (int)(h->max * h->factor);
-		// rehashing occurs earliest on next put()
-	}
+  if (h)
+    {
+      h->factor = factor;
+      h->threshold = (int) (h->max * h->factor);
+      // rehashing occurs earliest on next put()
+    }
 }

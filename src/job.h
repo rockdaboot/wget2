@@ -26,69 +26,55 @@
  */
 
 #ifndef _WGET_JOB_H
-#define _WGET_JOB_H
+# define _WGET_JOB_H
 
-#include <libwget.h>
+# include <libwget.h>
 
-#include "host.h"
+# include "host.h"
 
 // file part to download
-typedef struct {
-	off_t
-		position;
-	off_t
-		length;
-	int
-		id;
-	char
-		inuse,
-		done;
+typedef struct
+{
+  off_t position;
+  off_t length;
+  int id;
+  char inuse, done;
 } PART;
 
-struct JOB {
-	wget_iri_t
-		*iri,
-		*referer;
+struct JOB
+{
+  wget_iri_t * iri, *referer;
 
-	// Metalink information
-	wget_metalink_t
-		*metalink;
+  // Metalink information
+  wget_metalink_t * metalink;
 
-	wget_vector_t
-		*parts, // parts to download
-		*deferred; // IRIs that need to wait for this job to be done (while downloading robots.txt)
-	HOST
-		*host;
-	const char
-		*local_filename;
-	int
-		level, // current recursion level
-		redirection_level, // number of redirections occurred to create this job
-		mirror_pos, // where to look up the next (metalink) mirror to use
-		piece_pos; // where to look up the next (metalink) piece to download
-	char
-		inuse, // if job is already in use by another downloader thread
-		sitemap, // URL is a sitemap to be scanned in recursive mode
-		head_first; // first check mime type by using a HEAD request
+  wget_vector_t * parts,  // parts to download
+    *deferred;      // IRIs that need to wait for this job to be done (while downloading robots.txt)
+  HOST * host;
+  const char *local_filename;
+  int level,      // current recursion level
+    redirection_level,    // number of redirections occurred to create this job
+    mirror_pos,      // where to look up the next (metalink) mirror to use
+    piece_pos;      // where to look up the next (metalink) piece to download
+  char inuse,      // if job is already in use by another downloader thread
+    sitemap,      // URL is a sitemap to be scanned in recursive mode
+    head_first;      // first check mime type by using a HEAD request
 };
 
-JOB
-	*job_init(JOB *job, wget_iri_t *iri),
-	*queue_add_job(JOB *job);
-PART
-	*job_add_part(JOB *job, PART *part);
+JOB * job_init (JOB * job, wget_iri_t * iri), *queue_add_job (JOB * job);
+PART * job_add_part (JOB * job, PART * part);
 int
-	queue_size(void) G_GNUC_WGET_PURE,
-	queue_empty(void) G_GNUC_WGET_PURE,
-	queue_get(JOB **job_out, PART **part_out),
-	job_validate_file(JOB *job);
+queue_size (void)
+  G_GNUC_WGET_PURE,
+  queue_empty (void)
+  G_GNUC_WGET_PURE,
+  queue_get (JOB ** job_out, PART ** part_out),
+  job_validate_file (JOB * job);
 void
-	queue_print(void),
-	job_create_parts(JOB *job),
-	job_free(JOB *job),
-//	job_resume(JOB *job),
-	queue_del(JOB *job),
-	queue_free(void);
+queue_print (void), job_create_parts (JOB * job), job_free (JOB * job),
+//  job_resume(JOB *job),
+  queue_del (JOB * job),
+  queue_free (void);
 
 
 #endif /* _WGET_JOB_H */

@@ -36,80 +36,94 @@
 #include <libwget.h>
 #include "private.h"
 
-typedef struct {
-	const char
-		**encoding;
-	wget_vector_t
-		*uris;
+typedef struct
+{
+  const char **encoding;
+  wget_vector_t * uris;
 } _CSS_CONTEXT;
 
-static void _free_url(WGET_PARSED_URL *url)
+static void
+_free_url (WGET_PARSED_URL * url)
 {
-	xfree(url->url);
-	xfree(url->abs_url);
+  xfree (url->url);
+  xfree (url->abs_url);
 }
 
 // Callback function, called from CSS parser for each @charset found.
-static void _css_get_encoding(void *context, const char *encoding, size_t len)
+static void
+_css_get_encoding (void *context, const char *encoding, size_t len)
 {
-	_CSS_CONTEXT *ctx = context;
+  _CSS_CONTEXT *ctx = context;
 
-	// take only the first @charset rule
-	if (!*ctx->encoding) {
-		debug_printf(_("URI content encoding = '%.*s'\n"), (int)len, encoding);
-		*ctx->encoding = strndup(encoding, len);
-	}
+  // take only the first @charset rule
+  if (!*ctx->encoding)
+    {
+      debug_printf (_("URI content encoding = '%.*s'\n"), (int) len,
+                    encoding);
+      *ctx->encoding = strndup (encoding, len);
+    }
 }
 
 // Callback function, called from CSS parser for each URI found.
-static void _css_get_url(void *context, const char *url, size_t len, size_t pos)
+static void
+_css_get_url (void *context, const char *url, size_t len, size_t pos)
 {
-	_CSS_CONTEXT *ctx = context;
-	WGET_PARSED_URL parsed_url = { .len = len, .pos = pos, .url = strndup(url, len), .abs_url = NULL };
+  _CSS_CONTEXT *ctx = context;
+  WGET_PARSED_URL parsed_url = {.len = len,.pos = pos,.url =
+                                strndup (url, len),.abs_url = NULL };
 
-	if (!ctx->uris) {
-		ctx->uris = wget_vector_create(16, -2, NULL);
-		wget_vector_set_destructor(ctx->uris, (void(*)(void *))_free_url);
-	}
+  if (!ctx->uris)
+    {
+      ctx->uris = wget_vector_create (16, -2, NULL);
+      wget_vector_set_destructor (ctx->uris, (void (*)(void *)) _free_url);
+    }
 
-	wget_vector_add(ctx->uris, &parsed_url, sizeof(parsed_url));
+  wget_vector_add (ctx->uris, &parsed_url, sizeof (parsed_url));
 }
 
-static void _urls_to_absolute(wget_vector_t *urls, wget_iri_t *base)
+static void
+_urls_to_absolute (wget_vector_t * urls, wget_iri_t * base)
 {
-	if (base && urls) {
-		wget_buffer_t buf;
-		wget_buffer_init(&buf, NULL, 1024);
+  if (base && urls)
+    {
+      wget_buffer_t buf;
+      wget_buffer_init (&buf, NULL, 1024);
 
-		for (int it = 0; it < wget_vector_size(urls); it++) {
-			WGET_PARSED_URL *url = wget_vector_get(urls, it);
+      for (int it = 0; it < wget_vector_size (urls); it++)
+        {
+          WGET_PARSED_URL *url = wget_vector_get (urls, it);
 
-			if (wget_iri_relative_to_abs(base, url->url, url->len, &buf))
-				url->abs_url = strndup(buf.data, buf.length + 1);
-			else
-				error_printf("Cannot resolve relative URI '%s'\n", url->url);
-		}
+          if (wget_iri_relative_to_abs (base, url->url, url->len, &buf))
+            url->abs_url = strndup (buf.data, buf.length + 1);
+          else
+            error_printf ("Cannot resolve relative URI '%s'\n", url->url);
+        }
 
-		wget_buffer_deinit(&buf);
-	}
+      wget_buffer_deinit (&buf);
+    }
 }
 
-wget_vector_t *wget_css_get_urls(const char *css, wget_iri_t *base, const char **encoding)
+wget_vector_t *
+wget_css_get_urls (const char *css, wget_iri_t * base, const char **encoding)
 {
-	_CSS_CONTEXT context = { .encoding = encoding };
+  _CSS_CONTEXT context = {.encoding = encoding };
 
-	wget_css_parse_buffer(css, _css_get_url, encoding ? _css_get_encoding : NULL, &context);
-	_urls_to_absolute(context.uris, base);
+  wget_css_parse_buffer (css, _css_get_url,
+                         encoding ? _css_get_encoding : NULL, &context);
+  _urls_to_absolute (context.uris, base);
 
-	return context.uris;
+  return context.uris;
 }
 
-wget_vector_t *wget_css_get_urls_from_localfile(const char *fname, wget_iri_t *base, const char **encoding)
+wget_vector_t *
+wget_css_get_urls_from_localfile (const char *fname, wget_iri_t * base,
+                                  const char **encoding)
 {
-	_CSS_CONTEXT context = { .encoding = encoding };
+  _CSS_CONTEXT context = {.encoding = encoding };
 
-	wget_css_parse_file(fname, _css_get_url, encoding ? _css_get_encoding : NULL, &context);
-	_urls_to_absolute(context.uris, base);
+  wget_css_parse_file (fname, _css_get_url,
+                       encoding ? _css_get_encoding : NULL, &context);
+  _urls_to_absolute (context.uris, base);
 
-	return context.uris;
+  return context.uris;
 }
