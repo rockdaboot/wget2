@@ -1560,8 +1560,10 @@ wget_vector_t
 void
 	wget_md5_printf_hex(char *digest_hex, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3) G_GNUC_WGET_NONNULL_ALL;
 
-/*
- * Hash / digest routines
+/**
+ * WGET_HASH:
+ *
+ * Hash/digest routines
  */
 
 typedef struct _wget_hash_hd_st wget_hash_hd_t;
