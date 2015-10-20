@@ -18,7 +18,7 @@
  * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * a collection of i/o routines
+ * a collection of I/O routines
  *
  * Changelog
  * 25.04.2012  Tim Ruehsen  created
@@ -53,12 +53,12 @@
 
 /**
  * SECTION:libwget-io
- * @short_description: I\O helper routines
+ * @short_description: I/O helper routines
  * @title: libwget-io
  * @stability: unstable
  * @include: libwget.h
  *
- * Some general i/o helper functions that be handy for developers.
+ * Some general I/O helper functions that could be handy for developers.
  *
  */
 
