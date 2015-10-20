@@ -1660,9 +1660,8 @@ wget_metalink_t * metalink3_parse (const char *xml)
   G_GNUC_WGET_NONNULL ((1)), *
   metalink4_parse (const char *xml)
   G_GNUC_WGET_NONNULL ((1));
-void
-wget_metalink_free (wget_metalink_t ** metalink),
-  wget_metalink_sort_mirrors (wget_metalink_t * metalink);
+void wget_metalink_free (wget_metalink_t ** metalink);
+void wget_metalink_sort_mirrors (wget_metalink_t * metalink);
 
 /*
  * Robots types and routines
