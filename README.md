@@ -139,7 +139,7 @@ Building from git
 Download project and prepare sources with
 
 		git clone git://git.savannah.gnu.org/wget.git
-		git branch wget2
+		git checkout wget2
 		./autogen.sh
 
 Build Wget2 with

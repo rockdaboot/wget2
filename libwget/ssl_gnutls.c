@@ -263,9 +263,11 @@ static int _print_info(gnutls_session_t session)
 		info_printf(_("TLS/IA session\n"));
 		break;
 
+#ifdef HAVE_GNUTLS_SRP_SERVER_GET_USERNAME
 	case GNUTLS_CRD_SRP:
 		info_printf(_("SRP session with username %s\n"), gnutls_srp_server_get_username(session));
 		break;
+#endif
 
 	case GNUTLS_CRD_PSK:
 		/* This returns NULL in server side.
@@ -1365,7 +1367,10 @@ void wget_ssl_server_close(void **session)
 
 ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 {
-#if GNUTLS_VERSION_NUMBER >= 0x030107
+// #if GNUTLS_VERSION_NUMBER >= 0x030107
+#if 0
+	// GnuTLS <= 3.4.5 becomes slow with large timeouts (see loop in gnutls_system_recv_timeout()).
+	// A fix is proposed for 3.5.x, as well as a value for indefinite timeouts (-1).
 	ssize_t nbytes;
 
 	gnutls_record_set_timeout(session, timeout);
@@ -1393,7 +1398,7 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 
 	for (;;) {
 		if (gnutls_record_check_pending(session) <= 0 &&
-			(rc = mget_ready_2_read((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
+			(rc = wget_ready_2_read((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
 			return rc;
 
 		nbytes = gnutls_record_recv(session, buf, count);
