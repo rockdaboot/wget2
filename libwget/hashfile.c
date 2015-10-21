@@ -61,7 +61,7 @@
  * Get the hashing algorithms list item that corresponds to the named hashing algorithm.
  *
  * This function returns a constant that uniquely identifies a known supported hashing algorithm
- * within libwget. The following table lists these constants and the corresponding algorithm names:
+ * within libwget. All the supported algorithms are listed in the #wget_digest_algorithm_t enum.
  *
  * <table>
  * 	<tr>
@@ -304,7 +304,7 @@ void wget_hash_deinit(_U wget_hash_hd_t *handle, _U void *digest)
  * @digest_hex: caller-supplied buffer that will contain the resulting hex string.
  * @digest_hex_size: length of @digest_hex.
  * @offset: starting offset.
- * @length: number of bytes to hash, starting from @offset.
+ * @length: number of bytes to hash, starting from @offset. Zero will use the file length.
  *
  * Compute the hash of the contents of the target file and return its hex representation.
  *
@@ -381,6 +381,23 @@ int wget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_
 	return ret;
 }
 
+/**
+ * wget_hash_file_offset:
+ * @type: name of the hashing algorithm. See wget_hash_get_algorithm().
+ * @fname: target file name.
+ * @digest_hex: caller-supplied buffer that will contain the resulting hex string.
+ * @digest_hex_size: length of @digest_hex.
+ * @offset: starting offset.
+ * @length: number of bytes to hash, starting from @offset. Zero will use the file length.
+ *
+ * Compute the hash of the contents of the target file starting from @offset and up to @length bytes
+ * and return its hex representation.
+ *
+ * This function will encode the resulting hash in a string of hex digits, and
+ * place that string in the user-supplied buffer @digest_hex.
+ *
+ * The return value is 0 on success, or -1 in case of failure.
+ */
 int wget_hash_file_offset(const char *type, const char *fname, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
 {
  	int fd, ret;
@@ -397,6 +414,20 @@ int wget_hash_file_offset(const char *type, const char *fname, char *digest_hex,
 	return ret;
 }
 
+/**
+ * wget_hash_file:
+ * @type: name of the hashing algorithm. See wget_hash_get_algorithm().
+ * @fname: target file name.
+ * @digest_hex: caller-supplied buffer that will contain the resulting hex string.
+ * @digest_hex_size: length of @digest_hex.
+ *
+ * Compute the hash of the contents of the target file and return its hex representation.
+ *
+ * This function will encode the resulting hash in a string of hex digits, and
+ * place that string in the user-supplied buffer @digest_hex.
+ *
+ * The return value is 0 on success, or -1 in case of failure.
+ */
 int wget_hash_file(const char *type, const char *fname, char *digest_hex, size_t digest_hex_size)
 {
 	return wget_hash_file_offset(type, fname, digest_hex, digest_hex_size, 0, 0);
