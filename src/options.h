@@ -165,6 +165,7 @@ struct config {
 		quiet,
 		*hsts_file,
 		*ocsp_file,
+		*config_file,
 		debug;
 };
 

@@ -95,6 +95,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"  -v  --verbose           Print more messages. (default: on)\n"
 		"  -q  --quiet             Print no messages except debugging messages. (default: off)\n"
 		"  -d  --debug             Print debugging messages. (default: off)\n"
+		"      --config-file       Path to a wgetrc file.\n"
 		"  -o  --output-file       File where messages are printed to, '-' for STDOUT.\n"
 		"  -a  --append-output     File where messages are appended to, '-' for STDOUT.\n"
 		"  -i  --input-file        File where URLs are read from, - for STDIN.\n"
@@ -209,7 +210,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --crl-file          File with PEM CRL certificates.\n"
 		"      --random-file       File to be used as source of random data.\n"
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
-		"      --https-only        Do not follow non-secure URLs. (default: off)"
+		"      --https-only        Do not follow non-secure URLs. (default: off).\n"
 		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)\n"
 		"      --hsts-file         Set file for HSTS chaching. (default: .wget_hsts)\n"
 		"      --gnutls-options    Custom GnuTLS priority string. Interferes with --secure-protocol. (default: none)\n"
@@ -632,6 +633,7 @@ static const struct option options[] = {
 	{ "check-hostname", &config.check_hostname, parse_bool, 0, 0 },
 	{ "chunk-size", &config.chunk_size, parse_numbytes, 1, 0 },
 	{ "clobber", &config.clobber, parse_bool, 0, 0 },
+	{ "config-file", &config.config_file, parse_string, 1, 0},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0 },
 	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0 },
 	{ "continue-download", &config.continue_download, parse_bool, 0, 'c' },
@@ -1035,7 +1037,7 @@ static void read_config(void)
 	if (access(SYSCONFDIR"wgetrc", R_OK) == 0)
 		_read_config(SYSCONFDIR"wgetrc", 0);
 
-	_read_config("~/.wgetrc", 1);
+	_read_config(config.config_file, 1);
 }
 
 static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char *const *argv)
@@ -1165,6 +1167,7 @@ int init(int argc, const char *const *argv)
 	// Initialize some configuration values which depend on the Runtime environment
 	asprintf(&config.hsts_file, "%s/.wget_hsts", home_dir);
 	asprintf(&config.ocsp_file, "%s/.wget_ocsp", home_dir);
+	asprintf(&config.config_file, "%s/.wgetrc", home_dir);
 
 	log_init();
 
