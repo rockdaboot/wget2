@@ -67,8 +67,6 @@ struct config {
 		*cookie_suffixes,
 		*load_cookies,
 		*save_cookies,
-		*hsts_file,
-		*ocsp_file,
 		*logfile,
 		*logfile_append,
 		*user_agent,
@@ -109,7 +107,7 @@ struct config {
 		dns_timeout, // ms
 		read_timeout, // ms
 		max_redirect,
-               max_threads,
+		max_threads,
 		num_threads;
 	struct wget_cookie_db_st
 		*cookie_db;
@@ -165,6 +163,8 @@ struct config {
 		verbose,
 		print_version,
 		quiet,
+		*hsts_file,
+		*ocsp_file,
 		debug;
 };
 

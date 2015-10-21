@@ -48,7 +48,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
-//#include <pwd.h>
+#include <pwd.h>
 #include <errno.h>
 #ifdef HAVE_GLOB_H
 #	include <glob.h>
@@ -592,7 +592,7 @@ struct config config = {
 	.secure_protocol = "AUTO",
 	.ca_directory = "system",
 	.cookies = 1,
-	.keep_alive=1,
+	.keep_alive = 1,
 	.use_server_timestamps = 1,
 	.directories = 1,
 	.host_directories = 1,
@@ -604,13 +604,11 @@ struct config config = {
 	.robots = 1,
 	.tries = 20,
 	.hsts = 1,
-	.hsts_file = ".wget_hsts",
 #if defined WITH_LIBNGHTTP2
 	.http2 = 1,
 #endif
 	.ocsp = 1,
 	.ocsp_stapling = 1,
-	.ocsp_file = ".wget_ocsp"
 };
 
 static int parse_execute(option_t opt, G_GNUC_WGET_UNUSED const char *const *argv, const char *val);
@@ -1106,12 +1104,37 @@ static void G_GNUC_WGET_NORETURN _no_memory(void)
 	exit(EXIT_FAILURE);
 }
 
+
+// Return the user's home directory (strdup-ed), or NULL if none is found.
+// TODO: Read the XDG Base Directory variables first
+static char* get_home_dir(void)
+{
+	static char *home, *ret;
+
+	if (!home) {
+		home = getenv("HOME");
+		if (!home) {
+			// If HOME is not defined, try getting it from the password file.
+			struct passwd *pwd = getpwuid(getuid());
+			if (!pwd || !pwd->pw_dir) {
+				return NULL;
+			}
+			home = pwd->pw_dir;
+		}
+	}
+
+	ret = home ? strdup(home) : NULL;
+
+	return ret;
+}
+
 // read config, parse CLI options, check values, set module options
 // and return the number of arguments consumed
 
 int init(int argc, const char *const *argv)
 {
 	int n, truncated = 1;
+	char *home_dir = get_home_dir();
 
 	// set libwget out-of-memory function
 	wget_set_oomfunc(_no_memory);
@@ -1136,10 +1159,12 @@ int init(int argc, const char *const *argv)
 	config.http_proxy = wget_strdup(getenv("http_proxy"));
 	config.https_proxy = wget_strdup(getenv("https_proxy"));
 	config.default_page = strdup(config.default_page);
-	config.hsts_file = strdup(config.hsts_file);
-	config.ocsp_file = strdup(config.ocsp_file);
 	config.domains = wget_vector_create(16, -2, (int (*)(const void *, const void *))strcmp);
 //	config.exclude_domains = wget_vector_create(16, -2, NULL);
+
+	// Initialize some configuration values which depend on the Runtime environment
+	asprintf(&config.hsts_file, "%s/.wget_hsts", home_dir);
+	asprintf(&config.ocsp_file, "%s/.wget_ocsp", home_dir);
 
 	log_init();
 
@@ -1405,6 +1430,8 @@ int init(int argc, const char *const *argv)
 		} else
 			wget_strtolower(hostname);
 	}
+
+	xfree(home_dir);
 
 	return n;
 }
