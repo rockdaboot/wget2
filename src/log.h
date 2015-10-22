@@ -37,7 +37,6 @@
 #define debug_printf wget_debug_printf
 #define debug_write wget_debug_write
 
-void
-	log_init(void);
+void log_init(void);
 
 #endif /* _WGET_LOG_H */

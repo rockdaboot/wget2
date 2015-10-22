@@ -30,13 +30,10 @@
 
 #include <libwget.h>
 
-int
-	in_blacklist(wget_iri_t *iri) G_GNUC_WGET_NONNULL_ALL,
-	blacklist_size(void) G_GNUC_WGET_PURE;
-wget_iri_t
-	*blacklist_add(wget_iri_t *iri);
-void
-	blacklist_print(void),
-	blacklist_free(void);
+int in_blacklist(wget_iri_t *iri) G_GNUC_WGET_NONNULL_ALL;
+int blacklist_size(void) G_GNUC_WGET_PURE;
+wget_iri_t *blacklist_add(wget_iri_t *iri);
+void blacklist_print(void);
+void blacklist_free(void);
 
 #endif /* _WGET_BLACKLIST_H */
