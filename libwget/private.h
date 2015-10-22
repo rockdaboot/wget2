@@ -26,15 +26,15 @@
  */
 
 #ifndef _LIBWGET_PRIVATE_H
-#define _LIBWGET_PRIVATE_H
+# define _LIBWGET_PRIVATE_H
 
-#include <stdlib.h> // needed for free()
+# include <stdlib.h> // needed for free()
 
 // I try to never leave freed pointers hanging around
-#define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
+# define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 
 // number of elements within an array
-#define countof(a) (sizeof(a)/sizeof(*(a)))
+# define countof(a) (sizeof(a)/sizeof(*(a)))
 
 // allow us to use wget_* functions without it's wget_ prefix within the library code
 // #define _WGET_PREFIX wget_
@@ -43,15 +43,15 @@
 // #define _GET_ADDPREFIX(a) _WGET_CONCAT2(_WGET_PREFIX,a)
 // #define xmalloc _WGET_ADDPREFIX(xmalloc)
 
-#define xmalloc wget_malloc
-#define xcalloc wget_calloc
-#define xrealloc wget_realloc
+# define xmalloc wget_malloc
+# define xcalloc wget_calloc
+# define xrealloc wget_realloc
 
-#define info_printf wget_info_printf
-#define error_printf wget_error_printf
-#define error_printf_exit wget_error_printf_exit
-#define debug_printf wget_debug_printf
-#define debug_write wget_debug_write
+# define info_printf wget_info_printf
+# define error_printf wget_error_printf
+# define error_printf_exit wget_error_printf_exit
+# define debug_printf wget_debug_printf
+# define debug_write wget_debug_write
 
 // _WGET_LOGGER is shared between log.c and logger.c, but must not be exposed to the public
 struct _wget_logger_st {

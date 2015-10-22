@@ -26,7 +26,7 @@
  */
 
 #ifndef _WGET_BAR_H
-#define _WGET_BAR_H
+# define _WGET_BAR_H
 
 void bar_init(void);
 void bar_deinit(void);

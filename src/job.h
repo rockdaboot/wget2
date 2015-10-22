@@ -26,11 +26,11 @@
  */
 
 #ifndef _WGET_JOB_H
-#define _WGET_JOB_H
+# define _WGET_JOB_H
 
-#include <libwget.h>
+# include <libwget.h>
 
-#include "host.h"
+# include "host.h"
 
 // file part to download
 typedef struct {

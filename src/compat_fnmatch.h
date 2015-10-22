@@ -36,22 +36,22 @@
  * $Id: fnmatch.h,v 1.4 2001/10/04 02:46:21 jdp Exp $
  */
 
-#ifndef	_FNMATCH_H_
-#define	_FNMATCH_H_
+#ifndef _FNMATCH_H_
+# define _FNMATCH_H_
 
-#define	FNM_NOMATCH	1	/* Match failed. */
+# define FNM_NOMATCH	1	/* Match failed. */
 
-#define	FNM_NOESCAPE	0x01	/* Disable backslash escaping. */
-#define	FNM_PATHNAME	0x02	/* Slash must be matched by slash. */
-#define	FNM_PERIOD	0x04	/* Period must be matched by period. */
-#define	FNM_LEADING_DIR	0x08	/* Ignore /<tail> after Imatch. */
-#define	FNM_CASEFOLD	0x10	/* Case insensitive search. */
-#define FNM_PREFIX_DIRS	0x20	/* Directory prefixes of pattern match too. */
+# define FNM_NOESCAPE	0x01	/* Disable backslash escaping. */
+# define FNM_PATHNAME	0x02	/* Slash must be matched by slash. */
+# define FNM_PERIOD	0x04	/* Period must be matched by period. */
+# define FNM_LEADING_DIR	0x08	/* Ignore /<tail> after Imatch. */
+# define FNM_CASEFOLD	0x10	/* Case insensitive search. */
+# define FNM_PREFIX_DIRS	0x20	/* Directory prefixes of pattern match too. */
 
 /* Make this compile successfully with "gcc -traditional" */
-#ifndef __STDC__
-#define const	/* empty */
-#endif
+# ifndef __STDC__
+#  define const	/* empty */
+# endif
 
 int fnmatch(const char *, const char *, int);
 
