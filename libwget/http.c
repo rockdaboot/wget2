@@ -2493,15 +2493,29 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 			while (isspace(*s) && s < p) s++;
 
 			if (p != s) {
+				wget_iri_t *iri;
 				char host[p - s + 1];
 
 				memcpy(host, s, p -s);
 				host[p - s] = 0;
-				wget_vector_add_noalloc(proxies, wget_iri_parse(host, encoding));
+				iri = wget_iri_parse (host, encoding);
+				if (!iri) {
+					wget_vector_free (&proxies);
+					return NULL;
+				}
+				wget_vector_add_noalloc(proxies, iri);
 			}
 		}
 		if (*s)
-			wget_vector_add_noalloc(proxies, wget_iri_parse(s, encoding));
+		{
+			wget_iri_t *iri = wget_iri_parse(s, encoding);
+			if (!iri)
+			{
+				wget_vector_free (&proxies);
+				return NULL;
+			}
+			wget_vector_add_noalloc(proxies, iri);
+		}
 
 		return proxies;
 	}

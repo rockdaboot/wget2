@@ -441,6 +441,9 @@ static int send_ocsp_request(const char *server,
 	if (server_allocated)
 		xfree(server);
 
+	if (!iri)
+		return -1;
+
 	_generate_ocsp_data(cert, issuer, &body, nonce);
 
 	req = wget_http_create_request(iri, "POST");
