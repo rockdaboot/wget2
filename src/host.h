@@ -26,9 +26,9 @@
  */
 
 #ifndef _WGET_HOST_H
-#define _WGET_HOST_H
+# define _WGET_HOST_H
 
-#include <stdarg.h>
+# include <stdarg.h>
 
 struct JOB;
 typedef struct JOB JOB;
