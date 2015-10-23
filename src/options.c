@@ -1165,9 +1165,17 @@ int init(int argc, const char *const *argv)
 //	config.exclude_domains = wget_vector_create(16, -2, NULL);
 
 	// Initialize some configuration values which depend on the Runtime environment
-	asprintf(&config.hsts_file, "%s/.wget_hsts", home_dir);
-	asprintf(&config.ocsp_file, "%s/.wget_ocsp", home_dir);
-	asprintf(&config.config_file, "%s/.wgetrc", home_dir);
+	// Remember to check for return value of asprintf and explicitly set the
+	// values to NULL. Since contents of strp on error is undefined.
+	if (asprintf(&config.hsts_file, "%s/.wget_hsts", home_dir) == -1) {
+		config.hsts_file = NULL;
+	}
+	if (asprintf(&config.ocsp_file, "%s/.wget_ocsp", home_dir) == -1) {
+		config.ocsp_file = NULL;
+	}
+	if (asprintf(&config.config_file, "%s/.wgetrc", home_dir) == -1) {
+		config.config_file = NULL;
+	}
 
 	log_init();
 

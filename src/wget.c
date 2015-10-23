@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <strings.h>
 #include <signal.h>
@@ -817,6 +818,7 @@ int main(int argc, const char *const *argv)
 	int n, rc;
 	size_t bufsize = 0;
 	char *buf = NULL;
+	bool async_urls = false;
 
 	#include <locale.h>
 	setlocale(LC_ALL, "");
@@ -891,8 +893,11 @@ int main(int argc, const char *const *argv)
 				}
 			} else {
 				// read URLs asynchronously and process each URL immediately when it arrives
-				if ((rc = wget_thread_start(&input_tid, input_thread, NULL, 0)) != 0)
+				if ((rc = wget_thread_start(&input_tid, input_thread, NULL, 0)) != 0) {
 					error_printf(_("Failed to start downloader, error %d\n"), rc);
+				} else {
+					async_urls = true;
+				}
 			}
 		} else {
 			int fd;
@@ -919,7 +924,15 @@ int main(int argc, const char *const *argv)
 	// At this point, all values have been initialized and all URLs read.
 	// Perform any sanity checking or extra initialization here.
 
-	config.num_threads = (config.max_threads < queue_size()) ? config.max_threads : queue_size();
+	// Decide on the number of threads to spawn. In case we're reading
+	// asynchronously from STDIN or have are downloading recursively, we don't
+	// know the queue_size at startup, and hence spawn config.max_threads
+	// threads.
+	if (config.recursive || async_urls || config.max_threads < queue_size()) {
+		config.num_threads = config.max_threads;
+	} else {
+		config.num_threads = queue_size();
+	}
 
 	if (config.progress) {
 		wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), NULL);
