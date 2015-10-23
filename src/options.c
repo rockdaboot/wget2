@@ -1316,8 +1316,8 @@ int init(int argc, const char *const *argv)
 	log_init();
 
 	// check for correct settings
-	if (config.num_threads < 1)
-		config.num_threads = 1;
+	if (config.max_threads < 1)
+		config.max_threads = 1;
 
 	// truncate output document
 	if (config.output_document && strcmp(config.output_document,"-")) {
