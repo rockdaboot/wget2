@@ -194,8 +194,8 @@ static void test_parse_files(void)
 
 int main(int argc, const char * const *argv)
 {
-	init(argc, argv); // allows us to test with options (e.g. with --debug)
-
+	if (init(argc, argv) < 0) // allows us to test with options (e.g. with --debug)
+		return -1;
 	test_parse_buffer();
 	test_parse_files();
 
