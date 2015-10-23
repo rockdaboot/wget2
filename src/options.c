@@ -633,6 +633,7 @@ static const struct option options[] = {
 	{ "check-hostname", &config.check_hostname, parse_bool, 0, 0 },
 	{ "chunk-size", &config.chunk_size, parse_numbytes, 1, 0 },
 	{ "clobber", &config.clobber, parse_bool, 0, 0 },
+	{ "config", &config.config_file, parse_string, 1, 0}, // for backward compatibility only
 	{ "config-file", &config.config_file, parse_string, 1, 0},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0 },
 	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0 },
