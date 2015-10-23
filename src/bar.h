@@ -26,15 +26,14 @@
  */
 
 #ifndef _WGET_BAR_H
-#define _WGET_BAR_H
+# define _WGET_BAR_H
 
-void
-	bar_init(void),
-	bar_deinit(void),
-	bar_print(int slotpos, const char *s) G_GNUC_WGET_NONNULL_ALL,
-	bar_printf(int slotpos, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3) G_GNUC_WGET_NONNULL_ALL,
-	bar_vprintf(int slotpos, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL_ALL,
-	bar_update(int slotpos, int max, int cur);
+void bar_init(void);
+void bar_deinit(void);
+void bar_print(int slotpos, const char *s) G_GNUC_WGET_NONNULL_ALL;
+void bar_printf(int slotpos, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3) G_GNUC_WGET_NONNULL_ALL;
+void bar_vprintf(int slotpos, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL_ALL;
+void bar_update(int slotpos, int max, int cur);
 
 /*
 ssize_t

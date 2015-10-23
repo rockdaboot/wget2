@@ -2493,15 +2493,29 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 			while (isspace(*s) && s < p) s++;
 
 			if (p != s) {
+				wget_iri_t *iri;
 				char host[p - s + 1];
 
 				memcpy(host, s, p -s);
 				host[p - s] = 0;
-				wget_vector_add_noalloc(proxies, wget_iri_parse(host, encoding));
+				iri = wget_iri_parse (host, encoding);
+				if (!iri) {
+					wget_vector_free (&proxies);
+					return NULL;
+				}
+				wget_vector_add_noalloc(proxies, iri);
 			}
 		}
 		if (*s)
-			wget_vector_add_noalloc(proxies, wget_iri_parse(s, encoding));
+		{
+			wget_iri_t *iri = wget_iri_parse(s, encoding);
+			if (!iri)
+			{
+				wget_vector_free (&proxies);
+				return NULL;
+			}
+			wget_vector_add_noalloc(proxies, iri);
+		}
 
 		return proxies;
 	}
@@ -2509,20 +2523,28 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 	return NULL;
 }
 
-void wget_http_set_http_proxy(const char *proxy, const char *encoding)
+int wget_http_set_http_proxy(const char *proxy, const char *encoding)
 {
 	if (http_proxies)
 		wget_vector_free(&http_proxies);
 
 	http_proxies = _parse_proxies(proxy, encoding);
+	if (!http_proxies)
+		return -1;
+
+	return 0;
 }
 
-void wget_http_set_https_proxy(const char *proxy, const char *encoding)
+int wget_http_set_https_proxy(const char *proxy, const char *encoding)
 {
 	if (https_proxies)
 		wget_vector_free(&https_proxies);
 
 	https_proxies = _parse_proxies(proxy, encoding);
+	if (!https_proxies)
+		return -1;
+
+	return 0;
 }
 
 void wget_http_abort_connection(wget_http_connection_t *conn)

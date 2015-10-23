@@ -26,9 +26,9 @@
  */
 
 #ifndef _WGET_HOST_H
-#define _WGET_HOST_H
+# define _WGET_HOST_H
 
-#include <stdarg.h>
+# include <stdarg.h>
 
 struct JOB;
 typedef struct JOB JOB;
@@ -44,11 +44,8 @@ typedef struct {
 		*robots;
 } HOST;
 
-HOST *
-	hosts_add(wget_iri_t *iri);
-HOST *
-	hosts_get(wget_iri_t *iri);
-void
-	hosts_free(void);
+HOST *hosts_add(wget_iri_t *iri);
+HOST *hosts_get(wget_iri_t *iri);
+void hosts_free(void);
 
 #endif /* _WGET_HOST_H */

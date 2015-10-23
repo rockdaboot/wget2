@@ -26,18 +26,17 @@
  */
 
 #ifndef _WGET_LOG_H
-#define _WGET_LOG_H
+# define _WGET_LOG_H
 
-#include <stdarg.h>
+# include <stdarg.h>
 
 // use the helper routines provided by libwget
-#define info_printf wget_info_printf
-#define error_printf  wget_error_printf
-#define error_printf_exit  wget_error_printf_exit
-#define debug_printf wget_debug_printf
-#define debug_write wget_debug_write
+# define info_printf wget_info_printf
+# define error_printf  wget_error_printf
+# define error_printf_exit  wget_error_printf_exit
+# define debug_printf wget_debug_printf
+# define debug_write wget_debug_write
 
-void
-	log_init(void);
+void log_init(void);
 
 #endif /* _WGET_LOG_H */

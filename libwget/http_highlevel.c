@@ -114,6 +114,11 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 
 	if (url && !uri) {
 		uri = wget_iri_parse(url, url_encoding);
+		if (!uri)
+		{
+			error_printf (_("Error parsing URL\n"));
+			goto out;
+		}
 		bits.free_uri = 1;
 	}
 

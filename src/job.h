@@ -26,11 +26,11 @@
  */
 
 #ifndef _WGET_JOB_H
-#define _WGET_JOB_H
+# define _WGET_JOB_H
 
-#include <libwget.h>
+# include <libwget.h>
 
-#include "host.h"
+# include "host.h"
 
 // file part to download
 typedef struct {
@@ -72,23 +72,19 @@ struct JOB {
 		head_first; // first check mime type by using a HEAD request
 };
 
-JOB
-	*job_init(JOB *job, wget_iri_t *iri),
-	*queue_add_job(JOB *job);
-PART
-	*job_add_part(JOB *job, PART *part);
-int
-	queue_size(void) G_GNUC_WGET_PURE,
-	queue_empty(void) G_GNUC_WGET_PURE,
-	queue_get(JOB **job_out, PART **part_out),
-	job_validate_file(JOB *job);
-void
-	queue_print(void),
-	job_create_parts(JOB *job),
-	job_free(JOB *job),
-//	job_resume(JOB *job),
-	queue_del(JOB *job),
-	queue_free(void);
+JOB *job_init(JOB *job, wget_iri_t *iri);
+JOB *queue_add_job(JOB *job);
+PART *job_add_part(JOB *job, PART *part);
+int queue_size(void) G_GNUC_WGET_PURE;
+int queue_empty(void) G_GNUC_WGET_PURE;
+int queue_get(JOB **job_out, PART **part_out);
+int job_validate_file(JOB *job);
+void queue_print(void);
+void job_create_parts(JOB *job);
+void job_free(JOB *job);
+//void	job_resume(JOB *job);
+void queue_del(JOB *job);
+void queue_free(void);
 
 
 #endif /* _WGET_JOB_H */

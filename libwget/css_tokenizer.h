@@ -20,7 +20,7 @@
  */
 
 #ifndef CSS_TOKENIZER_H
-#define CSS_TOKENIZER_H
+# define CSS_TOKENIZER_H
 
 enum {
   CSSEOF,
@@ -53,6 +53,6 @@ enum {
   COMMENT
 };
 
-#define YY_FATAL_ERROR(msg) wget_error_printf_exit(msg)
+# define YY_FATAL_ERROR(msg) wget_error_printf_exit(msg)
 
 #endif /* CSS_TOKENIZER_H */
