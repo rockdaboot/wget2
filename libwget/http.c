@@ -2523,20 +2523,28 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 	return NULL;
 }
 
-void wget_http_set_http_proxy(const char *proxy, const char *encoding)
+int wget_http_set_http_proxy(const char *proxy, const char *encoding)
 {
 	if (http_proxies)
 		wget_vector_free(&http_proxies);
 
 	http_proxies = _parse_proxies(proxy, encoding);
+	if (!http_proxies)
+		return -1;
+
+	return 0;
 }
 
-void wget_http_set_https_proxy(const char *proxy, const char *encoding)
+int wget_http_set_https_proxy(const char *proxy, const char *encoding)
 {
 	if (https_proxies)
 		wget_vector_free(&https_proxies);
 
 	https_proxies = _parse_proxies(proxy, encoding);
+	if (!https_proxies)
+		return -1;
+
+	return 0;
 }
 
 void wget_http_abort_connection(wget_http_connection_t *conn)

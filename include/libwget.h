@@ -1471,9 +1471,9 @@ void
 	wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param_t *param) G_GNUC_WGET_NONNULL_ALL;
 void
 	wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *challenge, const char *username, const char *password) G_GNUC_WGET_NONNULL((1));
-void
+int
 	wget_http_set_http_proxy(const char *proxy, const char *encoding);
-void
+int
 	wget_http_set_https_proxy(const char *proxy, const char *encoding);
 void
 	wget_http_abort_connection(wget_http_connection_t *conn);
