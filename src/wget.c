@@ -806,8 +806,11 @@ static void print_status(DOWNLOADER *downloader G_GNUC_WGET_UNUSED, const char *
 static void nop(int sig)
 {
 	if (sig == SIGTERM) {
-		terminate = 1; // set global termination flag
+		abort(); // hard stop if got a SIGTERM
 	} else if (sig == SIGINT) {
+		if (terminate)
+			abort(); // hard stop if pressed CTRL-C a second time
+
 		terminate = 1; // set global termination flag
 		wget_http_abort_connection(NULL); // soft-abort all connections
 	}
