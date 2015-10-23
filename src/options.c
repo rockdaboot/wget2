@@ -1298,8 +1298,16 @@ int init(int argc, const char *const *argv)
 	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
 	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
 
-	wget_http_set_http_proxy(config.http_proxy, config.local_encoding);
-	wget_http_set_https_proxy(config.https_proxy, config.local_encoding);
+	if (config.http_proxy && wget_http_set_http_proxy(config.http_proxy, config.local_encoding) < 0)
+	{
+		error_printf("%s: Failed to set http proxies %s\n", __func__, config.http_proxy);
+		return -1;
+	}
+	if (config.https_proxy && wget_http_set_https_proxy(config.https_proxy, config.local_encoding) < 0)
+	{
+		error_printf("%s: Failed to set https proxies %s\n", __func__, config.https_proxy);
+		return -1;
+	}
 	xfree(config.http_proxy);
 	xfree(config.https_proxy);
 

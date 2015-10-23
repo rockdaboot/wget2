@@ -1459,7 +1459,8 @@ int main(int argc, const char * const *argv)
 		return system(cmd) != 0;
 	}
 
-	init(argc, argv); // allows us to test with options (e.g. with --debug)
+	if (init(argc, argv) < 0) // allows us to test with options (e.g. with --debug)
+		return -1;
 
 	srand((unsigned int) time(NULL));
 

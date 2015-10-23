@@ -846,6 +846,10 @@ int main(int argc, const char *const *argv)
 	known_urls = wget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
 
 	n = init(argc, argv);
+	if (n < 0) {
+		set_exit_status(1);
+		goto out;
+	}
 
 	for (; n < argc; n++) {
 		add_url_to_queue(argv[n], config.base, config.local_encoding);
@@ -1013,6 +1017,7 @@ int main(int argc, const char *const *argv)
 	wget_stringmap_free(&etags);
 	deinit();
 
+ out:
 	return exit_status;
 }
 
