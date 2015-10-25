@@ -1546,13 +1546,21 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, wge
 
 	info_printf(_("URI content encoding = '%s' (%s)\n"), encoding, reason);
 
-	if (parsed->base.p) {
-		char base_url[parsed->base.len + 1];
-		strlcpy(base_url, parsed->base.p, parsed->base.len + 1);
-		base = allocated_base = wget_iri_parse(base_url, encoding);
-	}
-
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
+	if (parsed->base.p) {
+		if (parsed->base.len > 1 || (parsed->base.len == 1 && *parsed->base.p != '#')) { // ignore e.g. href='#'
+			if (wget_iri_relative_to_abs(base, parsed->base.p, parsed->base.len, &buf)) {
+				// info_printf("%.*s -> %s\n", (int)parsed->base.len, parsed->base.p, buf.data);
+				if (!base && !buf.length)
+					info_printf(_("BASE '%.*s' not usable (missing absolute base URI)\n"), (int)parsed->base.len, parsed->base.p);
+				else
+					base = allocated_base = wget_iri_parse(buf.data, encoding);
+			} else {
+				error_printf(_("Cannot resolve BASE URI %.*s\n"), (int)parsed->base.len, parsed->base.p);
+			}
+		}
+	}
 
 	int page_requisites = config.recursive && config.page_requisites && config.level && level < config.level;
 //	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
