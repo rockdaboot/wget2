@@ -102,6 +102,22 @@ typedef struct {
 } _conversion_t;
 static wget_vector_t *conversions;
 
+typedef struct {
+	int
+		ndownloads; // file downloads with 200 response
+	int
+		nredirects; // 301, 302
+	int
+		nnotmodified; // 304
+	int
+		nerrors;
+	int
+		nchunks; // chunk downloads with 200 response
+	long long
+		bytes_body_uncompressed; // uncompressed bytes in body
+} _statistics_t;
+static _statistics_t stats;
+
 static void
 	save_file(wget_http_response_t *resp, const char *fname),
 	append_file(wget_http_response_t *resp, const char *fname),
@@ -376,24 +392,42 @@ const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
 	return fname;
 }
 
+static long long _fetch_and_add_longlong(long long *p, long long n)
+{
+#ifdef WITH_SYNC_FETCH_AND_ADD
+	return __sync_fetch_and_add(p, n);
+#else
+	static wget_thread_mutex_t
+		mutex = WGET_THREAD_MUTEX_INITIALIZER;
+
+	wget_thread_mutex_lock(&mutex);
+	long long old_value = *p;
+	*p += n;
+	wget_thread_mutex_unlock(&mutex);
+
+	return old_value;
+#endif
+}
+
+static void _atomic_increment_int(int *p)
+{
+#ifdef WITH_SYNC_FETCH_AND_ADD
+	__sync_fetch_and_add(p, 1);
+#else
+	static wget_thread_mutex_t
+		mutex = WGET_THREAD_MUTEX_INITIALIZER;
+
+	wget_thread_mutex_lock(&mutex);
+	*p += 1;
+	wget_thread_mutex_unlock(&mutex);
+#endif
+}
+
 // Since quota may change at any time in a threaded environment,
 // we have to modify and check the quota in one (protected) step.
 static long long quota_modify_read(size_t nbytes)
 {
-#ifdef WITH_SYNC_FETCH_AND_ADD
-	return __sync_fetch_and_add(&quota, nbytes);
-#else
-	static wget_thread_mutex_t
-		mutex = WGET_THREAD_MUTEX_INITIALIZER;
-	size_t old_quota;
-
-	wget_thread_mutex_lock(&mutex);
-	old_quota = quota;
-	quota += nbytes;
-	wget_thread_mutex_unlock(&mutex);
-
-	return old_quota;
-#endif
+	return _fetch_and_add_longlong(&quota, (long long )nbytes);
 }
 
 static wget_vector_t
@@ -965,7 +999,7 @@ int main(int argc, const char *const *argv)
 		}
 
 		if (config.progress)
-			bar_printf(config.num_threads, "Files: %d/%d  Bytes: %llu", blacklist_size() - queue_size(), blacklist_size(), quota);
+			bar_printf(config.num_threads, "Files: %d  Bytes: %llu  Redirects: %d  Todo: %d", stats.ndownloads, quota, stats.nredirects, queue_size());
 
 		if (config.quota && quota >= config.quota) {
 			info_printf(_("Quota of %llu bytes reached - stopping.\n"), config.quota);
@@ -992,13 +1026,11 @@ int main(int argc, const char *const *argv)
 			error_printf(_("Failed to wait for downloader #%d (%d %d)\n"), n, rc, errno);
 	}
 
-	int downloaded_files = blacklist_size() - queue_size();
 	if (config.progress)
-		bar_printf(config.num_threads, "Files: %d/%d  Bytes: %llu", downloaded_files, blacklist_size(), quota);
+		bar_printf(config.num_threads, "Files: %d  Bytes: %llu  Redirects: %d  Todo: %d", stats.ndownloads, quota, stats.nredirects, queue_size());
 	else if ((config.recursive || config.page_requisites || (config.input_file && quota != 0)) && quota) {
-		info_printf(_("Downloaded: %d files, %llu bytes\n"), downloaded_files, quota);
+		info_printf(_("Downloaded: %d files, %llu bytes, %d redirects, %d errors\n"), stats.ndownloads, quota, stats.nredirects, stats.nerrors);
 	}
-
 
 	if (config.save_cookies)
 		wget_cookie_db_save(config.cookie_db, config.save_cookies, config.keep_session_cookies);
@@ -2494,6 +2526,20 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 		// server doesn't support keep-alive or want us to close the connection
 		if (!resp->keep_alive)
 			wget_http_close(&downloader->conn);
+
+		// do some statistics
+		if (resp->code == 200) {
+			if (part)
+				_atomic_increment_int(&stats.nchunks);
+			else
+				_atomic_increment_int(&stats.ndownloads);
+		}
+		else if (resp->code == 301 || resp->code == 302)
+			_atomic_increment_int(&stats.nredirects);
+		else if (resp->code == 304)
+			_atomic_increment_int(&stats.nnotmodified);
+		else
+			_atomic_increment_int(&stats.nerrors);
 
 		if (resp->code == 302 && resp->links && resp->digests)
 			break; // 302 with Metalink information
