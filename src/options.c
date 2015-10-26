@@ -188,7 +188,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --referer           Include Referer: url in HTTP requets. (default: off)\n"
 		"  -E  --adjust-extension  Append extension to saved file (.html or .css). (default: off)\n"
 		/* For Wget compatibility we also understand --html-extension */
-		"      --default_page      Default file name. (default: index.html)\n"
+		"      --default-page      Default file name. (default: index.html)\n"
 		"  -Q  --quota             Download quota, 0 = no quota. (default: 0)\n"
 		"      --http-user         Username for HTTP Authentication. (default: empty username)\n"
 		"      --http-password     Password for HTTP Authentication. (default: empty password)\n"
