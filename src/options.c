@@ -118,7 +118,6 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --dns-timeout       DNS lookup timeout in seconds.\n"
 		"      --connect-timeout   Connect timeout in seconds.\n"
 		"      --read-timeout      Read and write timeout in seconds.\n"
-		"      --dns-caching       Enable DNS cache. (default: on)\n"
 		"  -O  --output-document   File where downloaded content is written to, '-'  for STDOUT.\n"
 		"      --spider            Enable web spider mode. (default: off)\n"
 		"      --proxy             Enable support for *_proxy environment variables. (default: on)\n"
@@ -161,7 +160,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"  -w  --wait              Wait number of seconds between downloads (per thread). (default: 0)\n"
 		"      --waitretry         Wait up to number of seconds after error (per thread). (default: 10)\n"
 		"      --random-wait       Wait 0.5 up to 1.5*<--wait> seconds between downloads (per thread). (default: off)\n"
-		"      --dns-cache         Caching of domain name lookups. (default: on)\n"
+		"      --dns-caching       Caching of domain name lookups. (default: on)\n"
 		"      --tcp-fastopen      Enable TCP Fast Open (TFO). (default: on)\n"
 		"      --iri               Wget dummy option, you can't switch off international support\n"
 		"      --robots            Respect robots.txt standard for recursive downloads. (default: on)\n"
@@ -648,7 +647,7 @@ static const struct option options[] = {
 	{ "delete-after", &config.delete_after, parse_bool, 0, 0 },
 	{ "directories", &config.directories, parse_bool, 0, 0 },
 	{ "directory-prefix", &config.directory_prefix, parse_string, 1, 'P' },
-	{ "dns-cache", &config.dns_caching, parse_bool, 0, 0 },
+	{ "dns-caching", &config.dns_caching, parse_bool, 0, 0 },
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0 },
 	{ "domains", &config.domains, parse_stringlist, 1, 'D' },
 	{ "egd-file", &config.egd_file, parse_string, 1, 0 },
