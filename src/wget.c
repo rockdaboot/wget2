@@ -484,11 +484,12 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 	iri = wget_iri_parse_base(base, url, encoding);
 
 	if (!iri) {
-		error_printf(_("Cannot resolve URI '%s'\n"), url);
+		error_printf(_("Failed to parse URI '%s'\n"), url);
 		return;
 	}
 
 	if (iri->scheme != WGET_IRI_SCHEME_HTTP && iri->scheme != WGET_IRI_SCHEME_HTTPS) {
+		error_printf(_("URI scheme not supported: '%s'\n"), url);
 		wget_iri_free(&iri);
 		return;
 	}
