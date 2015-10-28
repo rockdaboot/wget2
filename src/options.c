@@ -1471,6 +1471,7 @@ void deinit(void)
 	xfree(config.save_cookies);
 	xfree(config.hsts_file);
 	xfree(config.ocsp_file);
+	xfree(config.config_file);
 	xfree(config.logfile);
 	xfree(config.logfile_append);
 	xfree(config.user_agent);
