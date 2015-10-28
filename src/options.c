@@ -1037,7 +1037,8 @@ static void read_config(void)
 	if (access(SYSCONFDIR"wgetrc", R_OK) == 0)
 		_read_config(SYSCONFDIR"wgetrc", 0);
 
-	_read_config(config.config_file, 1);
+	if (config.config_file)
+		_read_config(config.config_file, 1);
 }
 
 static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char *const *argv)
@@ -1109,25 +1110,24 @@ static void G_GNUC_WGET_NORETURN _no_memory(void)
 
 // Return the user's home directory (strdup-ed), or NULL if none is found.
 // TODO: Read the XDG Base Directory variables first
-static char* get_home_dir(void)
+static char *get_home_dir(void)
 {
-	static char *home, *ret;
+	static char *home;
 
 	if (!home) {
 		home = getenv("HOME");
 		if (!home) {
 			// If HOME is not defined, try getting it from the password file.
 			struct passwd *pwd = getpwuid(getuid());
-			if (!pwd || !pwd->pw_dir) {
-				return NULL;
-			}
-			home = pwd->pw_dir;
+
+			if (pwd)
+				home = pwd->pw_dir;
 		}
+
+		home = wget_strdup(home);
 	}
 
-	ret = home ? strdup(home) : NULL;
-
-	return ret;
+	return home;
 }
 
 // read config, parse CLI options, check values, set module options
@@ -1136,7 +1136,6 @@ static char* get_home_dir(void)
 int init(int argc, const char *const *argv)
 {
 	int n, truncated = 1;
-	char *home_dir = get_home_dir();
 
 	// set libwget out-of-memory function
 	wget_set_oomfunc(_no_memory);
@@ -1164,19 +1163,6 @@ int init(int argc, const char *const *argv)
 	config.domains = wget_vector_create(16, -2, (int (*)(const void *, const void *))strcmp);
 //	config.exclude_domains = wget_vector_create(16, -2, NULL);
 
-	// Initialize some configuration values which depend on the Runtime environment
-	// Remember to check for return value of asprintf and explicitly set the
-	// values to NULL. Since contents of strp on error is undefined.
-	if (asprintf(&config.hsts_file, "%s/.wget_hsts", home_dir) == -1) {
-		config.hsts_file = NULL;
-	}
-	if (asprintf(&config.ocsp_file, "%s/.wget_ocsp", home_dir) == -1) {
-		config.ocsp_file = NULL;
-	}
-	if (asprintf(&config.config_file, "%s/.wgetrc", home_dir) == -1) {
-		config.config_file = NULL;
-	}
-
 	log_init();
 
 	// first processing, to respect options that might influence output
@@ -1197,6 +1183,29 @@ int init(int argc, const char *const *argv)
 		truncated = 1;
 	}
 	log_init();
+
+	// Initialize some configuration values which depend on the Runtime environment
+	// Remember to check for return value of asprintf and explicitly set the
+	// values to NULL. Since contents of strp on error is undefined.
+	char *home_dir = get_home_dir();
+
+	if (!config.hsts_file && asprintf(&config.hsts_file, "%s/.wget_hsts", home_dir) == -1) {
+		config.hsts_file = NULL;
+	}
+	if (!config.ocsp_file && asprintf(&config.ocsp_file, "%s/.wget_ocsp", home_dir) == -1) {
+		config.ocsp_file = NULL;
+	}
+	if (!config.config_file) {
+		if (asprintf(&config.config_file, "%s/.wgetrc", home_dir) == -1)
+			config.config_file = NULL;
+		else if (access(config.config_file, R_OK))
+			xfree(config.config_file); // we don't want to complain about missing home .wgetrc
+	} else if (access(config.config_file, R_OK)) {
+		error_printf(_("Failed to open config file '%s'\n"), config.config_file);
+		xfree(config.config_file);
+	}
+
+	xfree(home_dir);
 
 	// read global config and user's config
 	// settings in user's config override global settings
@@ -1335,11 +1344,11 @@ int init(int argc, const char *const *argv)
 	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
 
 	if (config.http_proxy && wget_http_set_http_proxy(config.http_proxy, config.local_encoding) < 0) {
-		error_printf("%s: Failed to set http proxies %s\n", __func__, config.http_proxy);
+		error_printf(_("Failed to set http proxies %s\n"), config.http_proxy);
 		return -1;
 	}
 	if (config.https_proxy && wget_http_set_https_proxy(config.https_proxy, config.local_encoding) < 0) {
-		error_printf("%s: Failed to set https proxies %s\n", __func__, config.https_proxy);
+		error_printf(_("Failed to set https proxies %s\n"), config.https_proxy);
 		return -1;
 	}
 	xfree(config.http_proxy);
@@ -1447,8 +1456,6 @@ int init(int argc, const char *const *argv)
 		} else
 			wget_strtolower(hostname);
 	}
-
-	xfree(home_dir);
 
 	return n;
 }
