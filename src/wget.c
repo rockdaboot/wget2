@@ -963,6 +963,11 @@ int main(int argc, const char *const *argv)
 		}
 	}
 
+	if (queue_size() == 0 && !input_tid) {
+		error_printf(_("Nothing to do - goodbye\n"));
+		goto out;
+	}
+
 	// At this point, all values have been initialized and all URLs read.
 	// Perform any sanity checking or extra initialization here.
 
@@ -1053,6 +1058,7 @@ int main(int argc, const char *const *argv)
 		wget_vector_free(&conversions);
 	}
 
+ out:
 	// freeing to avoid disguising valgrind output
 	xfree(buf);
 	queue_free();
@@ -1066,7 +1072,6 @@ int main(int argc, const char *const *argv)
 	wget_stringmap_free(&etags);
 	deinit();
 
- out:
 	return exit_status;
 }
 
