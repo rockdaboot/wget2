@@ -2512,7 +2512,7 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 					wget_buffer_t *body = wget_buffer_alloc(102400);
 					struct _body_callback_context context = { .downloader = downloader, .body = body };
 
-					resp = wget_http_get_response_func(conn, _get_header, _get_body, &context, config.save_headers || config.server_response ? WGET_HTTP_RESPONSE_KEEPHEADER : 0);
+					resp = wget_http_get_response_cb(conn, req, config.save_headers || config.server_response ? WGET_HTTP_RESPONSE_KEEPHEADER : 0, _get_header, _get_body, &context);
 
 					if (resp) {
 						resp->body = body;
