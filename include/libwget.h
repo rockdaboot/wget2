@@ -245,6 +245,8 @@ const void *
 	wget_global_get_ptr(int key);
 int
 	wget_global_get_int(int key);
+void
+	(*wget_global_get_func(int key))(const char *, size_t);
 
 /*
  * Utility functions

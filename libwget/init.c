@@ -185,26 +185,35 @@ const void *wget_global_get_ptr(int key)
 	switch (key) {
 	case WGET_DEBUG_STREAM:
 		return wget_logger_get_stream(wget_get_logger(WGET_LOGGER_DEBUG));
-	case WGET_DEBUG_FUNC:
-		return (void *)wget_logger_get_func(wget_get_logger(WGET_LOGGER_DEBUG));
 	case WGET_DEBUG_FILE:
 		return wget_logger_get_file(wget_get_logger(WGET_LOGGER_DEBUG));
 	case WGET_ERROR_STREAM:
 		return wget_logger_get_stream(wget_get_logger(WGET_LOGGER_ERROR));
-	case WGET_ERROR_FUNC:
-		return (void *)wget_logger_get_func(wget_get_logger(WGET_LOGGER_ERROR));
 	case WGET_ERROR_FILE:
 		return wget_logger_get_file(wget_get_logger(WGET_LOGGER_ERROR));
 	case WGET_INFO_STREAM:
 		return wget_logger_get_stream(wget_get_logger(WGET_LOGGER_INFO));
-	case WGET_INFO_FUNC:
-		return (void *)wget_logger_get_func(wget_get_logger(WGET_LOGGER_INFO));
 	case WGET_INFO_FILE:
 		return wget_logger_get_file(wget_get_logger(WGET_LOGGER_INFO));
 	case WGET_COOKIE_FILE:
 		return _config.cookie_file;
 	case WGET_COOKIE_DB:
 		return &_config.cookie_db;
+	default:
+		wget_error_printf(_("%s: Unknown option %d"), __func__, key);
+		return NULL;
+	}
+}
+
+void (*wget_global_get_func(int key))(const char *, size_t)
+{
+	switch (key) {
+	case WGET_DEBUG_FUNC:
+		return wget_logger_get_func(wget_get_logger(WGET_LOGGER_DEBUG));
+	case WGET_ERROR_FUNC:
+		return wget_logger_get_func(wget_get_logger(WGET_LOGGER_ERROR));
+	case WGET_INFO_FUNC:
+		return wget_logger_get_func(wget_get_logger(WGET_LOGGER_INFO));
 	default:
 		wget_error_printf(_("%s: Unknown option %d"), __func__, key);
 		return NULL;
