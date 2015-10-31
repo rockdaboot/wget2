@@ -2325,8 +2325,7 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 
 	if (config.hsts && iri && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, atoi(iri->resolv_port))) {
 		info_printf("HSTS in effect for %s:%s\n", iri->host, iri->resolv_port);
-		iri_scheme = iri->scheme;
-		iri->scheme = WGET_IRI_SCHEME_HTTPS;
+		iri_scheme = wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
 	} else
 		iri_scheme = NULL;
 
@@ -2597,8 +2596,7 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 				// apply the HSTS check to the location URL
 				if (config.hsts && iri && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, atoi(iri->resolv_port))) {
 					info_printf("HSTS in effect for %s:%s\n", iri->host, iri->resolv_port);
-					iri_scheme = iri->scheme;
-					iri->scheme = WGET_IRI_SCHEME_HTTPS;
+					iri_scheme = wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
 				} else
 					iri_scheme = NULL;
 			}
@@ -2611,7 +2609,7 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 		if (iri != dont_free)
 			wget_iri_free(&iri);
 		else if (iri_scheme)
-			iri->scheme = iri_scheme; // may have been changed by HSTS
+			wget_iri_set_scheme(iri, iri_scheme);	// may have been changed by HSTS
 	}
 
 	wget_http_free_challenges(&challenges);
