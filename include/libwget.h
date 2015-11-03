@@ -852,6 +852,8 @@ char *
 	wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
 char *
 	wget_iri_get_filename(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
+const char *
+	wget_iri_set_scheme(wget_iri_t *iri, const char *scheme);
 
 /*
  * Cookie routines

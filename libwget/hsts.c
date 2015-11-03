@@ -125,7 +125,9 @@ int wget_hsts_host_match(const wget_hsts_db_t *hsts_db, const char *host, int po
 	time_t now = time(NULL);
 
 	// first look for an exact match
-	hsts.port = port;
+	// if it's the default port, "normalize" it
+	// we assume the scheme is HTTP
+	hsts.port = (port == 80 ? 443 : port);
 	hsts.host = host;
 	if ((hstsp = wget_hashmap_get(hsts_db->entries, &hsts)) && hstsp->maxage >= now)
 		return 1;

@@ -47,7 +47,7 @@ static size_t
 
 const char
 	* const wget_iri_schemes[] = { "http", "https", NULL },
-	* const iri_ports[]   = { "80",   "443" };
+	* const iri_ports[]   = { "80", "443" }; // default port numbers for the above schemes
 
 #define IRI_CTYPE_GENDELIM (1<<0)
 #define _iri_isgendelim(c) (iri_ctype[(unsigned char)(c)]&IRI_CTYPE_GENDELIM)
@@ -823,4 +823,28 @@ void wget_iri_set_defaultpage(const char *page)
 {
 	default_page = page;
 	default_page_length = default_page ? strlen(default_page) : 0;
+}
+
+const char *wget_iri_set_scheme(wget_iri_t *iri, const char *scheme)
+{
+	int index;
+	const char *cur_scheme, *old_scheme = iri->scheme;
+
+	for (index = 0; (cur_scheme = wget_iri_schemes[index]); index++) {
+		if (cur_scheme == scheme)
+			break;
+	}
+
+	if (!cur_scheme)
+		goto end;
+
+	iri->scheme = cur_scheme;
+
+	// if the IRI is using a port other than the default, keep it untouched
+	// otherwise, if the IRI is using the default port, this should be modified as well
+	if (iri->resolv_port != iri->port)
+		iri->resolv_port = iri_ports[index];
+
+end:
+	return old_scheme;
 }
