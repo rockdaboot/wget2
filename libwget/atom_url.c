@@ -48,7 +48,7 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 	struct atom_context *ctx = context;
 	wget_string_t url;
 
-	if (!val | !len)
+	if (!val || !len)
 		return;
 
 	url.p = NULL;
