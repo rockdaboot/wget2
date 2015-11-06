@@ -314,6 +314,9 @@ size_t
 */
 char *
 	wget_read_file(const char *fname, size_t *size);
+int
+	wget_update_file(const char *fname,
+		int (*load_func)(void *, FILE *fp), int (*save_func)(void *, FILE *fp), void *context);
 const char
 	*wget_local_charset_encoding(void);
 char *
