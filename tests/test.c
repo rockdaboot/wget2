@@ -1011,7 +1011,8 @@ static void test_hsts(void)
 		{ "sub.www.example.com", 443, 1 }, // subdomain
 		{ "sub1.sub2.www.example.com", 443, 1 }, // subdomain
 		{ "www.example2.com", 443, 0 }, // entry should have been removed due to maxage=0
-		{ "www.example.com", 80, 0 }, // wrong port
+		{ "www.example.com", 80, 1 }, // default port
+		{ "www.example.com", 8080, 0 }, // wrong port
 	};
 	wget_hsts_db_t *hsts_db = wget_hsts_db_init(NULL);
 	time_t maxage;
