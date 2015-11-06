@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <errno.h>
 
 #ifdef WIN32
@@ -375,4 +376,108 @@ char *wget_read_file(const char *fname, size_t *size)
 	}
 
 	return buf;
+}
+
+int wget_update_file(const char *fname,
+	int (*load_func)(void *, FILE *fp), int (*save_func)(void *, FILE *fp), void *context)
+{
+	FILE *fp;
+	const char *tmpdir, *p, *basename;
+	int lockfd, fd;
+
+	char tmpfile[strlen(fname) + 6 + 1];
+	snprintf(tmpfile, sizeof(tmpfile), "%sXXXXXX", fname);
+
+	// find out system temp directory
+	if (!(tmpdir = getenv("TMPDIR")) && !(tmpdir = getenv("TMP"))
+		&& !(tmpdir = getenv("TEMP")) && !(tmpdir = getenv("TEMPDIR")))
+		tmpdir = "/tmp";
+
+	if (*fname && (p = strrchr(fname + 1, '/')))
+		basename = p + 1;
+
+	// create a per-usr tmp file name for HSTS
+	char lockfile[strlen(tmpdir) + strlen(basename) + 32];
+	snprintf(lockfile, sizeof(lockfile), "%s/%s_lck_%d", tmpdir, basename, getuid());
+
+	// create & open the lock file
+	if ((lockfd = creat(lockfile, 0644)) == -1) {
+		error_printf(_("Failed to create '%s' (%d)\n"), lockfile, errno);
+		return -1;
+	}
+
+	// set the lock
+	if (flock(lockfd, LOCK_EX) == -1) {
+		close(lockfd);
+		error_printf(_("Failed to lock '%s' (%d)\n"), lockfile, errno);
+		return -1;
+	}
+
+	if (load_func) {
+		// open fname for reading
+		if (!(fp = fopen(fname, "r"))) {
+			if (errno != ENOENT) {
+				close(lockfd);
+				error_printf(_("Failed to read open '%s' (%d)\n"), fname, errno);
+				return -1;
+			}
+		}
+
+		if (fp) {
+			// read fname data
+			if (load_func(context, fp)) {
+				close(lockfd);
+				return -1;
+			}
+
+			fclose(fp);
+		}
+	}
+
+	if (save_func) {
+		// creat & open temp file to write data into
+		if ((fd = mkstemp(tmpfile)) == -1) {
+			close(lockfd);
+			error_printf(_("Failed to open tmpfile '%s' (%d)\n"), tmpfile, errno);
+			return -1;
+		}
+
+		// open the output stream from fd
+		if (!(fp = fdopen(fd, "w"))) {
+			unlink(tmpfile);
+			close(fd);
+			close(lockfd);
+			error_printf(_("Failed to write open '%s' (%d)\n"), tmpfile, errno);
+			return -1;
+		}
+
+		// write into temp file
+		if (save_func(context, fp)) {
+			unlink(tmpfile);
+			fclose(fp);
+			close(lockfd);
+			return -1;
+		}
+
+		// write buffers and close temp file
+		if (fclose(fp)) {
+			unlink(tmpfile);
+			close(lockfd);
+			error_printf(_("Failed to write/close '%s' (%d)\n"), tmpfile, errno);
+			return -1;
+		}
+
+		// rename written file (now complete without errors) to FNAME
+		if (rename(tmpfile, fname) == -1) {
+			close(lockfd);
+			error_printf(_("Failed to rename '%s' to '%s' (%d)\n"), tmpfile, fname, errno);
+			error_printf(_("Take manually care for '%s'\n"), tmpfile);
+			return -1;
+		}
+	}
+
+	close(lockfd);
+
+	debug_printf("Successfully updated '%s'.\n", fname);
+	return 0;
 }
