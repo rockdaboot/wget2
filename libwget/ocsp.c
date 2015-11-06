@@ -261,98 +261,115 @@ void wget_ocsp_db_add_host(wget_ocsp_db_t *ocsp_db, wget_ocsp_t *ocsp)
 // load the OCSP cache from a flat file
 // not thread-save
 
-static int _ocsp_db_load(wget_ocsp_db_t *ocsp_db, const char *fname, int load_hosts)
+static int _ocsp_db_load(wget_ocsp_db_t *ocsp_db, FILE *fp, int load_hosts)
 {
 	wget_ocsp_t ocsp;
-	FILE *fp;
 	char *buf = NULL, *linep, *p;
 	size_t bufsize = 0;
 	ssize_t buflen;
 	time_t now = time(NULL);
-	int ok, nentries = 0;
+	int ok;
 
-	if ((fp = fopen(fname, "r"))) {
-		while ((buflen = wget_getline(&buf, &bufsize, fp)) >= 0) {
-			linep = buf;
+	while ((buflen = wget_getline(&buf, &bufsize, fp)) >= 0) {
+		linep = buf;
 
-			while (isspace(*linep)) linep++; // ignore leading whitespace
-			if (!*linep) continue; // skip empty lines
+		while (isspace(*linep)) linep++; // ignore leading whitespace
+		if (!*linep) continue; // skip empty lines
 
-			if (*linep == '#')
-				continue; // skip comments
+		if (*linep == '#')
+			continue; // skip comments
 
-			// strip off \r\n
-			while (buflen > 0 && (buf[buflen] == '\n' || buf[buflen] == '\r'))
-				buf[--buflen] = 0;
+		// strip off \r\n
+		while (buflen > 0 && (buf[buflen] == '\n' || buf[buflen] == '\r'))
+			buf[--buflen] = 0;
 
-			wget_ocsp_init(&ocsp);
-			ok = 0;
+		wget_ocsp_init(&ocsp);
+		ok = 0;
 
-			// parse cert's sha-256 checksum
-			if (*linep) {
-				for (p = linep; *linep && !isspace(*linep);) linep++;
-				ocsp.key = strndup(p, linep - p);
-			}
-
-			// parse max age
-			if (*linep) {
-				for (p = ++linep; *linep && !isspace(*linep);) linep++;
-				ocsp.maxage = atol(p);
-				if (ocsp.maxage < now) {
-					// drop expired entry
-					wget_ocsp_deinit(&ocsp);
-					continue;
-				}
-				ok = 1;
-			}
-
-			// parse mtime (age of this entry)
-			if (*linep) {
-				for (p = ++linep; *linep && !isspace(*linep);) linep++;
-				ocsp.mtime = atol(p);
-			}
-
-			// parse mtime (age of this entry)
-			if (*linep) {
-				for (p = ++linep; *linep && !isspace(*linep);) linep++;
-				ocsp.valid = atoi(p);
-			}
-
-			if (ok) {
-				if (load_hosts)
-					wget_ocsp_db_add_host(ocsp_db, wget_memdup(&ocsp, sizeof(ocsp)));
-				else
-					wget_ocsp_db_add_fingerprint(ocsp_db, wget_memdup(&ocsp, sizeof(ocsp)));
-			} else {
-				wget_ocsp_deinit(&ocsp);
-				error_printf(_("Failed to parse OCSP line: '%s'\n"), buf);
-			}
+		// parse cert's sha-256 checksum
+		if (*linep) {
+			for (p = linep; *linep && !isspace(*linep);) linep++;
+			ocsp.key = strndup(p, linep - p);
 		}
 
-		xfree(buf);
-		fclose(fp);
+		// parse max age
+		if (*linep) {
+			for (p = ++linep; *linep && !isspace(*linep);) linep++;
+			ocsp.maxage = atol(p);
+			if (ocsp.maxage < now) {
+				// drop expired entry
+				wget_ocsp_deinit(&ocsp);
+				continue;
+			}
+			ok = 1;
+		}
 
-		nentries = wget_hashmap_size(load_hosts ? ocsp_db->hosts : ocsp_db->fingerprints);
+		// parse mtime (age of this entry)
+		if (*linep) {
+			for (p = ++linep; *linep && !isspace(*linep);) linep++;
+			ocsp.mtime = atol(p);
+		}
 
-		debug_printf(_("have %d OCSP %s%s in cache\n"), nentries, load_hosts ? "host" : "fingerprint", nentries !=1 ? "s" : "");
-	} else if (errno != ENOENT)
-		error_printf(_("Failed to open OCSP file '%s' (%d)\n"), fname, errno);
+		// parse mtime (age of this entry)
+		if (*linep) {
+			for (p = ++linep; *linep && !isspace(*linep);) linep++;
+			ocsp.valid = atoi(p);
+		}
 
-	return nentries;
+		if (ok) {
+			if (load_hosts)
+				wget_ocsp_db_add_host(ocsp_db, wget_memdup(&ocsp, sizeof(ocsp)));
+			else
+				wget_ocsp_db_add_fingerprint(ocsp_db, wget_memdup(&ocsp, sizeof(ocsp)));
+		} else {
+			wget_ocsp_deinit(&ocsp);
+			error_printf(_("Failed to parse OCSP line: '%s'\n"), buf);
+		}
+	}
+
+	xfree(buf);
+
+	if (ferror(fp))
+		return -1;
+
+	return 0;
+}
+
+static int _ocsp_db_load_hosts(void *ocsp_db, FILE *fp)
+{
+	return _ocsp_db_load(ocsp_db, fp, 1);
+}
+
+static int _ocsp_db_load_fingerprints(void *ocsp_db, FILE *fp)
+{
+	return _ocsp_db_load(ocsp_db, fp, 0);
 }
 
 int wget_ocsp_db_load(wget_ocsp_db_t *ocsp_db, const char *fname)
 {
+	int ret;
+
 	if (!ocsp_db || !fname || !*fname)
 		return -1;
 
 	char fname_hosts[strlen(fname) + 6 + 1];
 	snprintf(fname_hosts, sizeof(fname_hosts), "%s_hosts", fname);
 
-	return _ocsp_db_load(ocsp_db, fname, 0) + _ocsp_db_load(ocsp_db, fname_hosts, 1);
+	if ((ret = wget_update_file(fname_hosts, _ocsp_db_load_hosts, NULL, ocsp_db)))
+		error_printf(_("Failed to read OCSP hosts\n"));
+	else
+		debug_printf(_("Fetched OCSP hosts from '%s'\n"), fname_hosts);
+
+	if (wget_update_file(fname, _ocsp_db_load_fingerprints, NULL, ocsp_db)) {
+		error_printf(_("Failed to read to OCSP fingerprints\n"));
+		ret = -1;
+	} else
+		debug_printf(_("Fetched OCSP fingerprints from '%s'\n"), fname);
+
+	return ret;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _ocsp_save_entry(FILE *fp, const wget_ocsp_t *ocsp)
+static int G_GNUC_WGET_NONNULL_ALL _ocsp_save_fingerprint(FILE *fp, const wget_ocsp_t *ocsp)
 {
 	fprintf(fp, "%s %ld %ld %d\n", ocsp->key, ocsp->maxage, ocsp->mtime, ocsp->valid);
 	return 0;
@@ -364,56 +381,64 @@ static int G_GNUC_WGET_NONNULL_ALL _ocsp_save_host(FILE *fp, const wget_ocsp_t *
 	return 0;
 }
 
-// save the OCSP cache to a flat file
-// not thread-save
-
-static int _ocsp_db_save(wget_hashmap_t *map, const char *fname, int save_hosts)
+static int _ocsp_db_save_hosts(void *ocsp_db, FILE *fp)
 {
-	FILE *fp;
-	int ret = -1, size;
+	wget_hashmap_t *map = ((wget_ocsp_db_t *)ocsp_db)->hosts;
 
-	if ((size = wget_hashmap_size(map)) <= 0)
-		return -1;
-
-	if ((fp = fopen(fname, "w"))) {
+	if ((wget_hashmap_size(map)) > 0) {
 		fputs("#OCSP 1.0 file\n", fp);
 		fputs("#Generated by Wget " PACKAGE_VERSION ". Edit at your own risk.\n", fp);
-		if (save_hosts) {
-			fputs("<hostname> <time_t maxage> <time_t mtime>\n\n", fp);
-			wget_hashmap_browse(map, (int(*)(void *, const void *, void *))_ocsp_save_host, fp);
-		} else {
-			fputs("<sha256 fingerprint of cert> <time_t maxage> <time_t mtime> <valid>\n\n", fp);
-			wget_hashmap_browse(map, (int(*)(void *, const void *, void *))_ocsp_save_entry, fp);
-		}
+		fputs("<hostname> <time_t maxage> <time_t mtime>\n\n", fp);
+		wget_hashmap_browse(map, (int(*)(void *, const void *, void *))_ocsp_save_host, fp);
 
-		if (!ferror(fp))
-			ret = 0;
+		if (ferror(fp))
+			return -1;
+	}
 
-		if (fclose(fp))
-			ret = -1;
-
-		if (ret)
-			error_printf(_("Failed to write to OCSP file '%s' (%d)\n"), fname, errno);
-		else
-			debug_printf(_("saved %d OCSP entr%s into '%s'\n"), size, size != 1 ? "ies" : "y", fname);
-	} else
-		error_printf(_("Failed to open OCSP file '%s' (%d)\n"), fname, errno);
-
-	return ret;
+	return 0;
 }
+
+static int _ocsp_db_save_fingerprints(void *ocsp_db, FILE *fp)
+{
+	wget_hashmap_t *map = ((wget_ocsp_db_t *)ocsp_db)->fingerprints;
+
+	if ((wget_hashmap_size(map)) > 0) {
+
+		fputs("#OCSP 1.0 file\n", fp);
+		fputs("#Generated by Wget " PACKAGE_VERSION ". Edit at your own risk.\n", fp);
+		fputs("<sha256 fingerprint of cert> <time_t maxage> <time_t mtime> <valid>\n\n", fp);
+		wget_hashmap_browse(map, (int(*)(void *, const void *, void *))_ocsp_save_fingerprint, fp);
+
+		if (ferror(fp))
+			return -1;
+	}
+
+	return 0;
+}
+
+// Save the OCSP hosts and fingerprints to flat files.
+// Protected by flock()
 
 int wget_ocsp_db_save(wget_ocsp_db_t *ocsp_db, const char *fname)
 {
+	int ret;
+
 	if (!ocsp_db || !fname || !*fname)
 		return -1;
 
-	int nentries;
 	char fname_hosts[strlen(fname) + 6 + 1];
 	snprintf(fname_hosts, sizeof(fname_hosts), "%s_hosts", fname);
 
-	_ocsp_db_load(ocsp_db, fname, 0);
-	nentries = _ocsp_db_save(ocsp_db->fingerprints, fname, 0);
+	if ((ret = wget_update_file(fname_hosts, _ocsp_db_load_hosts, _ocsp_db_save_hosts, ocsp_db)))
+		error_printf(_("Failed to write to OCSP hosts to '%s'\n"), fname_hosts);
+	else
+		debug_printf(_("Saved OCSP hosts to '%s'\n"), fname_hosts);
 
-	_ocsp_db_load(ocsp_db, fname_hosts, 1);
-	return nentries + _ocsp_db_save(ocsp_db->hosts, fname_hosts, 1);
+	if (wget_update_file(fname, _ocsp_db_load_fingerprints, _ocsp_db_save_fingerprints, ocsp_db)) {
+		error_printf(_("Failed to write to OCSP fingerprints to '%s'\n"), fname);
+		ret = -1;
+	} else
+		debug_printf(_("Saved OCSP fingerprints to '%s'\n"), fname);
+
+	return ret;
 }
