@@ -741,6 +741,7 @@ void wget_test(int first_key, ...)
 			wget_error_printf_exit(_("Unknown option %d [%s]\n"), key, options);
 		}
 	}
+	va_end(args);
 
 	// clean directory
 	wget_buffer_printf2(cmd, "../%s", tmpdir);
