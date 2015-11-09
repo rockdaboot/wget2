@@ -474,10 +474,11 @@ int wget_update_file(const char *fname,
 			error_printf(_("Take manually care for '%s'\n"), tmpfile);
 			return -1;
 		}
+
+		debug_printf("Successfully updated '%s'.\n", fname);
 	}
 
 	close(lockfd);
 
-	debug_printf("Successfully updated '%s'.\n", fname);
 	return 0;
 }
