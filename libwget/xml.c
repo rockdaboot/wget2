@@ -40,7 +40,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #ifdef HAVE_MMAP
@@ -68,6 +67,11 @@ struct XML_CONTEXT {
 		*callback;
 };
 
+#define ascii_isspace(c) (c == ' ' || (c >= 9 && c <=  13))
+
+// working only for consecutive alphabets, e.g. EBCDIC would not work
+#define ascii_isalpha(c) ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+
 // append a char to token buffer
 
 static const char *getToken(XML_CONTEXT *context)
@@ -75,16 +79,15 @@ static const char *getToken(XML_CONTEXT *context)
 	int c;
 	const char *p;
 
-	// skip leading spaces
-	while ((c = *context->p++) && isspace(c));
+	// skip leading whitespace
+	while ((c = *context->p++) && ascii_isspace(c));
 	if (!c) return NULL;
-
 	context->token = context->p - 1;
 
 //	info_printf("a c=%c\n", c);
 
-	if (isalpha(c) || c == '_') {
-		while ((c = *context->p++) && !isspace(c) && c != '>' && c != '=');
+	if (ascii_isalpha(c) || c == '_') {
+		while ((c = *context->p++) && !ascii_isspace(c) && c != '>' && c != '=');
 		if (!c) return NULL;
 		context->p--;
 		context->token_len = context->p - context->token;
@@ -177,7 +180,7 @@ static const char *getToken(XML_CONTEXT *context)
 		}
 	}
 
-	while ((c = *context->p++) && !isspace(c));
+	while ((c = *context->p++) && !ascii_isspace(c));
 
 	if (c) {
 		context->p--;
@@ -196,7 +199,7 @@ static int getValue(XML_CONTEXT *context)
 	context->token = context->p;
 
 	// remove leading spaces
-	while ((c = *context->p++) && isspace(c));
+	while ((c = *context->p++) && ascii_isspace(c));
 	if (!c) return EOF;
 
 	if (c == '=') {
@@ -234,7 +237,7 @@ static const char *getScriptContent(XML_CONTEXT *context)
 			} else if (*p == '<' && !strncasecmp(p, "</script", 8)) {
 				context->token_len = p - context->token;
 				length_valid = 1;
-				for (p += 8; isspace(*p); p++);
+				for (p += 8; ascii_isspace(*p); p++);
 				if (*p == '>') {
 					p++;
 					break; // found end of <script>
@@ -281,7 +284,7 @@ static const char *getUnparsed(XML_CONTEXT *context, int flags, const char *end,
 		char *p;
 
 		for (p = context->token; *p; p++) {
-			if (!isspace(*p)) {
+			if (!ascii_isspace(*p)) {
 				notempty = 1;
 				break;
 			}
