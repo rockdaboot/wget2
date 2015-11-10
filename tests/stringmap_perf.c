@@ -97,7 +97,7 @@ int main(int argc, const char *const *argv)
 /*				if (stringmap_get(map, word)) {
 					duple++;
 				} else {
-					stringmap_put_ident_noalloc(map, strndup(word, end - word));
+					stringmap_put_ident_noalloc(map, wget_strmemdup(word, end - word));
 					unique++;
 				}
 */

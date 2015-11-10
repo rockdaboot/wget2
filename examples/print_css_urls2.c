@@ -88,7 +88,7 @@ static void css_parse_encoding(void *context, const char *encoding, size_t len)
 		else
 			info_printf("Encoding set to '%.*s'\n", (int)len, encoding);
 
-		ctx->encoding = strndup(encoding, len);
+		ctx->encoding = wget_strmemdup(encoding, len);
 		ctx->encoding_allocated = 1;
 	}
 }

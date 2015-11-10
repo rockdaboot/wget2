@@ -299,7 +299,7 @@ static int parse_stringset(option_t opt, const char *val)
 
 		for (s = val; (p = strchr(s, ',')); s = p + 1) {
 			if (p != s)
-				wget_stringmap_put_noalloc(map, strndup(s, p - s), NULL);
+				wget_stringmap_put_noalloc(map, wget_strmemdup(s, p - s), NULL);
 		}
 		if (*s)
 			wget_stringmap_put_noalloc(map, strdup(s), NULL);
@@ -322,7 +322,7 @@ static int parse_stringlist(option_t opt, const char *val)
 
 		for (s = val; (p = strchr(s, ',')); s = p + 1) {
 			if (p != s) {
-				const char *entry = strndup(s, p - s);
+				const char *entry = wget_strmemdup(s, p - s);
 
 				if (wget_vector_find(v, entry) == -1)
 					wget_vector_add_noalloc(v, entry);
@@ -359,10 +359,10 @@ static void G_GNUC_WGET_NONNULL_ALL _add_tag(wget_vector_t *v, const char *begin
 	const char *attribute;
 
 	if ((attribute = memchr(begin, '/', end - begin))) {
-		tag.name = strndup(begin, attribute - begin);
-		tag.attribute = strndup(attribute + 1, (end - begin) - (attribute - begin) - 1);
+		tag.name = wget_strmemdup(begin, attribute - begin);
+		tag.attribute = wget_strmemdup(attribute + 1, (end - begin) - (attribute - begin) - 1);
 	} else {
-		tag.name = strndup(begin, end - begin);
+		tag.name = wget_strmemdup(begin, end - begin);
 		tag.attribute = NULL;
 	}
 

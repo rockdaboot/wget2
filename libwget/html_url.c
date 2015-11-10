@@ -205,7 +205,7 @@ static void _urls_to_absolute(WGET_VECTOR *urls, WGET_IRI *base)
 			WGET_PARSED_URL *url = wget_vector_get(urls, it);
 
 			if (wget_iri_relative_to_abs(base, url->url, url->len, &buf))
-				url->abs_url = strndup(buf.data, buf.length + 1);
+				url->abs_url = wget_strmemdup(buf.data, buf.length);
 			else
 				error_printf("Cannot resolve relative URI '%s'\n", url->url);
 		}

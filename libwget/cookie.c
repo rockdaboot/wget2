@@ -226,7 +226,7 @@ static int _wget_cookie_normalize_cookie(const wget_iri_t *iri, wget_cookie_t *c
 			const char *p = iri->path ? strrchr(iri->path, '/') : NULL;
 
 			if (p && p != iri->path) {
-				cookie->path = strndup(iri->path, p - iri->path);
+				cookie->path = wget_strmemdup(iri->path, p - iri->path);
 			} else {
 				cookie->path = strdup("/");
 				// err_printf(_("Unexpected URI without '/': %s\n"), iri->path);
@@ -513,7 +513,7 @@ int wget_cookie_db_load(wget_cookie_db_t *cookie_db, const char *fname, int keep
 				p++;
 				cookie.domain_dot = 1;
 			}
-			cookie.domain = strndup(p, linep - p);
+			cookie.domain = wget_strmemdup(p, linep - p);
 
 			// parse inverse host_only (FALSE: host_only=1)
 			for (p = *linep ? ++linep : linep; *linep && *linep != '\t';) linep++;
@@ -522,9 +522,9 @@ int wget_cookie_db_load(wget_cookie_db_t *cookie_db, const char *fname, int keep
 			// parse path
 			for (p = *linep ? ++linep : linep; *linep && *linep != '\t';) linep++;
 			if (p != linep)
-				cookie.path = strndup(p, linep - p);
+				cookie.path = wget_strmemdup(p, linep - p);
 			else
-				cookie.path = strdup("/"); // allow empty paths
+				cookie.path = wget_strmemdup("/", 1); // allow empty paths
 
 			// parse secure_only
 			for (p = *linep ? ++linep : linep; *linep && *linep != '\t';) linep++;
@@ -551,11 +551,11 @@ int wget_cookie_db_load(wget_cookie_db_t *cookie_db, const char *fname, int keep
 				wget_cookie_deinit(&cookie);
 				continue;
 			}
-			cookie.name = strndup(p, linep - p);
+			cookie.name = wget_strmemdup(p, linep - p);
 
 			// parse value, until end of line
 			for (p = *linep ? ++linep : linep; *linep;) linep++;
-			cookie.value = strndup(p, linep - p);
+			cookie.value = wget_strmemdup(p, linep - p);
 
 			if (wget_cookie_normalize(NULL, &cookie) == 0 && wget_cookie_check_psl(cookie_db, &cookie) == 0) {
 				ncookies++;

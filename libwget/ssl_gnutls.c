@@ -430,7 +430,7 @@ static int send_ocsp_request(const char *server,
 			return -1;
 		}
 
-		server = strndup((char *)data.data, data.size);
+		server = wget_strmemdup((char *)data.data, data.size);
 		server_allocated = 1;
 
 		gnutls_free(data.data);

@@ -1577,7 +1577,7 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, wge
 		wget_string_t *url = &html_url->url;
 
 		// Blacklist for URLs before they are processed
-		if (wget_hashmap_put_noalloc(known_urls, strndup(url->p, url->len), NULL)) {
+		if (wget_hashmap_put_noalloc(known_urls, wget_strmemdup(url->p, url->len), NULL)) {
 			// error_printf(_("URL '%.*s' already known\n"), (int)url->len, url->p);
 			continue;
 		} else {
@@ -1663,8 +1663,8 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 		}
 
 		// Blacklist for URLs before they are processed
-		if (wget_hashmap_put_noalloc(known_urls, (p = strndup(url->p, url->len)), NULL)) {
-			// the strndup'ed url has already been freed when we come here
+		if (wget_hashmap_put_noalloc(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL)) {
+			// the dup'ed url has already been freed when we come here
 			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
 			continue;
 		}
@@ -1680,8 +1680,8 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 		// TODO: url must have same scheme, port and host as base
 
 		// Blacklist for URLs before they are processed
-		if (wget_hashmap_put_noalloc(known_urls, (p = strndup(url->p, url->len)), NULL)) {
-			// the strndup'ed url has already been freed when we come here
+		if (wget_hashmap_put_noalloc(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL)) {
+			// the dup'ed url has already been freed when we come here
 			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
 			continue;
 		}
@@ -1789,8 +1789,8 @@ static void _add_urls(JOB *job, wget_vector_t *urls, const char *encoding, wget_
 		}
 
 		// Blacklist for URLs before they are processed
-		if (wget_hashmap_put_noalloc(known_urls, (p = strndup(url->p, url->len)), NULL)) {
-			// the strndup'ed url has already been freed when we come here
+		if (wget_hashmap_put_noalloc(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL)) {
+			// the dup'ed url has already been freed when we come here
 			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
 			continue;
 		}
@@ -1859,7 +1859,7 @@ static void _css_parse_encoding(void *context, const char *encoding, size_t len)
 
 	// take only the first @charset rule
 	if (!ctx->encoding_allocated && wget_strncasecmp(ctx->encoding, encoding, len)) {
-		ctx->encoding = strndup(encoding, len);
+		ctx->encoding = wget_strmemdup(encoding, len);
 		ctx->encoding_allocated = 1;
 		info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
 	}

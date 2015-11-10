@@ -104,7 +104,7 @@ char *wget_charset_transcode(const char *src, const char *src_encoding, const ch
 			char *dst = xmalloc(dst_len + 1), *dst_tmp = dst;
 
 			if (iconv(cd, &tmp, &tmp_len, &dst_tmp, &dst_len_tmp) != (size_t)-1) {
-				ret = strndup(dst, dst_len - dst_len_tmp);
+				ret = wget_strmemdup(dst, dst_len - dst_len_tmp);
 				debug_printf("converted '%s' (%s) -> '%s' (%s)\n", src, src_encoding, ret, dst_encoding);
 			} else
 				error_printf(_("Failed to convert '%s' string into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
@@ -224,7 +224,7 @@ const char *wget_str_to_ascii(const char *src)
 			lower[len]=0;
 		} else {
 			uint8_t *tmp = lower;
-			lower = (uint8_t *)strndup((char *)lower, len);
+			lower = (uint8_t *)wget_strmemdup((char *)lower, len);
 			xfree(tmp);
 		}
 

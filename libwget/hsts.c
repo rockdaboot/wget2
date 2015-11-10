@@ -249,7 +249,7 @@ static int _hsts_db_load(wget_hsts_db_t *hsts_db, FILE *fp)
 		if (*linep) {
 			for (p = linep; *linep && !isspace(*linep); )
 				linep++;
-			hsts.host = strndup(p, linep - p);
+			hsts.host = wget_strmemdup(p, linep - p);
 		}
 
 		// parse port

@@ -484,7 +484,7 @@ int main(void)
 
 	{
 		// server sends same length content with slightly different content
-		char *partial = strndup(urls[3].body, strlen(urls[3].body)-2);
+		char *partial = wget_strmemdup(urls[3].body, strlen(urls[3].body)-2);
 
 		// test-c-partial
 		wget_test(
@@ -507,7 +507,7 @@ int main(void)
  * this test needs a broken server ... I don't have one right now.
 	{
 		// server sends same length content with slightly different content
-		char *partial = strndup(urls[3].body, strlen(urls[3].body)-2);
+		char *partial = wget_strmemdup(urls[3].body, strlen(urls[3].body)-2);
 		const char *old_body = urls[3].body;
 		urls[3].body = "";
 

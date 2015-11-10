@@ -289,7 +289,7 @@ static int _ocsp_db_load(wget_ocsp_db_t *ocsp_db, FILE *fp, int load_hosts)
 		// parse cert's sha-256 checksum
 		if (*linep) {
 			for (p = linep; *linep && !isspace(*linep);) linep++;
-			ocsp.key = strndup(p, linep - p);
+			ocsp.key = wget_strmemdup(p, linep - p);
 		}
 
 		// parse max age

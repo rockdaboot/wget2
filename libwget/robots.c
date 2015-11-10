@@ -79,7 +79,7 @@ ROBOTS *wget_robots_parse(const char *data)
 				}
 				for (p = data; !isspace(*p); p++);
 				path.len = p - data;
-				path.path = strndup(data, path.len);
+				path.path = wget_strmemdup(data, path.len);
 				wget_vector_add(robots->paths, &path, sizeof(path));
 			}
 		}
@@ -89,7 +89,7 @@ ROBOTS *wget_robots_parse(const char *data)
 
 			if (!robots->sitemaps)
 				robots->sitemaps = wget_vector_create(4, -2, NULL);
-			wget_vector_add_noalloc(robots->sitemaps, strndup(data, p - data));
+			wget_vector_add_noalloc(robots->sitemaps, wget_strmemdup(data, p - data));
 		}
 
 		if ((data = strchr(data, '\n')))

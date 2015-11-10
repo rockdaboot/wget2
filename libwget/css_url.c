@@ -56,8 +56,8 @@ static void _css_get_encoding(void *context, const char *encoding, size_t len)
 
 	// take only the first @charset rule
 	if (!*ctx->encoding) {
-		debug_printf(_("URI content encoding = '%.*s'\n"), (int)len, encoding);
-		*ctx->encoding = strndup(encoding, len);
+		*ctx->encoding = wget_strmemdup(encoding, len);
+		debug_printf(_("URI content encoding = '%s'\n"), *ctx->encoding);
 	}
 }
 
@@ -65,7 +65,7 @@ static void _css_get_encoding(void *context, const char *encoding, size_t len)
 static void _css_get_url(void *context, const char *url, size_t len, size_t pos)
 {
 	_CSS_CONTEXT *ctx = context;
-	WGET_PARSED_URL parsed_url = { .len = len, .pos = pos, .url = strndup(url, len), .abs_url = NULL };
+	WGET_PARSED_URL parsed_url = { .len = len, .pos = pos, .url = wget_strmemdup(url, len), .abs_url = NULL };
 
 	if (!ctx->uris) {
 		ctx->uris = wget_vector_create(16, -2, NULL);
@@ -85,7 +85,7 @@ static void _urls_to_absolute(wget_vector_t *urls, wget_iri_t *base)
 			WGET_PARSED_URL *url = wget_vector_get(urls, it);
 
 			if (wget_iri_relative_to_abs(base, url->url, url->len, &buf))
-				url->abs_url = strndup(buf.data, buf.length + 1);
+				url->abs_url = wget_strmemdup(buf.data, buf.length);
 			else
 				error_printf("Cannot resolve relative URI '%s'\n", url->url);
 		}

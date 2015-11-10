@@ -123,7 +123,7 @@ const char *wget_http_parse_token(const char *s, const char **token)
 
 	for (p = s; wget_http_istoken(*s); s++);
 
-	*token = strndup(p, s - p);
+	*token = wget_strmemdup(p, s - p);
 
 	return s;
 }
@@ -149,7 +149,7 @@ const char *wget_http_parse_quoted_string(const char *s, const char **qstring)
 				s++;
 		}
 
-		*qstring = strndup(p, s - p);
+		*qstring = wget_strmemdup(p, s - p);
 		if (*s == '\"') s++;
 	} else
 		*qstring = NULL;
@@ -175,7 +175,7 @@ const char *wget_http_parse_param(const char *s, const char **param, const char 
 	if (!*s) return s;
 
 	for (p = s; wget_http_istoken(*s); s++);
-	*param = strndup(p, s - p);
+	*param = wget_strmemdup(p, s - p);
 
 	while (isblank(*s)) s++;
 
@@ -279,7 +279,7 @@ const char *wget_http_parse_link(const char *s, wget_http_link_t *link)
 		if ((s = strchr(p, '>')) != NULL) {
 			const char *name = NULL, *value = NULL;
 
-			link->uri = strndup(p, s - p);
+			link->uri = wget_strmemdup(p, s - p);
 			s++;
 
 			while (isblank(*s)) s++;
@@ -339,7 +339,7 @@ const char *wget_http_parse_digest(const char *s, wget_http_digest_t *digest)
 			s = wget_http_parse_quoted_string(s, &digest->encoded_digest);
 		} else {
 			for (p = s; *s && !isblank(*s) && *s != ',' && *s != ';'; s++);
-			digest->encoded_digest = strndup(p, s - p);
+			digest->encoded_digest = wget_strmemdup(p, s - p);
 		}
 	}
 
@@ -420,7 +420,7 @@ const char *wget_http_parse_location(const char *s, const char **location)
 	while (isblank(*s)) s++;
 
 	for (p = s; *s && !isblank(*s); s++);
-	*location = strndup(p, s - p);
+	*location = wget_strmemdup(p, s - p);
 
 	return s;
 }
@@ -461,7 +461,7 @@ const char *wget_http_parse_content_type(const char *s, const char **content_typ
 
 	for (p = s; *s && (wget_http_istoken(*s) || *s == '/'); s++);
 	if (content_type)
-		*content_type = strndup(p, s - p);
+		*content_type = wget_strmemdup(p, s - p);
 
 	if (charset) {
 		*charset = NULL;
@@ -675,7 +675,7 @@ const char *wget_http_parse_etag(const char *s, const char **etag)
 	while (isblank(*s)) s++;
 
 	for (p = s; *s && !isblank(*s); s++);
-	*etag = strndup(p, s - p);
+	*etag = wget_strmemdup(p, s - p);
 
 	return s;
 }
@@ -1004,7 +1004,7 @@ const char *wget_http_parse_setcookie(const char *s, wget_cookie_t *cookie)
 
 		// cookie-octet      = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
 		for (p = s; *s > 32 && *s <= 126 && *s != '\\' && *s != ',' && *s != ';' && *s != '\"'; s++);
-		cookie->value = strndup(p, s - p);
+		cookie->value = wget_strmemdup(p, s - p);
 
 		do {
 			while (*s && *s != ';') s++;
@@ -1042,12 +1042,12 @@ const char *wget_http_parse_setcookie(const char *s, wget_cookie_t *cookie)
 							} else
 								cookie->domain_dot = 0;
 
-							cookie->domain = strndup(p, s - p);
+							cookie->domain = wget_strmemdup(p, s - p);
 						}
 					} else if (!wget_strcasecmp_ascii(name, "path")) {
 						if (cookie->path)
 							xfree(cookie->path);
-						cookie->path = strndup(p, s - p);
+						cookie->path = wget_strmemdup(p, s - p);
 					} else {
 						debug_printf("Unsupported cookie-av '%s'\n", name);
 					}

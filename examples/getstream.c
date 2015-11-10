@@ -123,7 +123,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 
 	if (resp && resp->code == 200 && !wget_strcasecmp_ascii(resp->content_type, "audio/x-mpegurl")) {
 		wget_buffer_trim(resp->body); // remove leading and trailing whitespace
-		stream_url = strndup(resp->body->data, resp->body->length);
+		stream_url = wget_strmemdup(resp->body->data, resp->body->length);
 	}
 
 	// free the response
