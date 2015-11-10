@@ -372,10 +372,10 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 			} else {
 				// snprintf(directory, sizeof(directory), "%.*s", (int)context->token_len, tok);
 				if (context->token_len < sizeof(directory)) {
-					strncpy(directory, tok, context->token_len);
+					memcpy(directory, tok, context->token_len);
 					directory[context->token_len] = 0;
 				} else {
-					strncpy(directory, tok, sizeof(directory) - 1);
+					memcpy(directory, tok, sizeof(directory) - 1);
 					directory[sizeof(directory) - 1] = 0;
 				}
 			}
@@ -405,7 +405,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 				} else {
 //					snprintf(attribute, sizeof(attribute), "%.*s", (int)context->token_len, tok);
 					char attribute[context->token_len + 1];
-					strncpy(attribute, tok, context->token_len);
+					memcpy(attribute, tok, context->token_len);
 					attribute[context->token_len] = 0;
 
 					if (getValue(context) == 0) return;
