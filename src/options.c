@@ -768,7 +768,8 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 
 	if ((p = strchr(name, '='))) {
 		// option with appended value
-		strlcpy(namebuf, name, p - name + 1);
+		memcpy(namebuf, name, p - name);
+		namebuf[p - name] = 0;
 		name = namebuf;
 		value = p + 1;
 	}
