@@ -999,6 +999,43 @@ int
 	wget_ocsp_db_load(wget_ocsp_db_t *ocsp_db, const char *fname);
 
 /*
+ * .netrc routines
+ */
+
+// structure for .netrc entries
+typedef struct _wget_netrc_db_st wget_netrc_db_t;
+typedef struct {
+	const char *
+		key;
+	const char *
+		login;
+	const char *
+		password;
+} wget_netrc_t;
+
+wget_netrc_t *
+	wget_netrc_init(wget_netrc_t *netrc);
+void
+	wget_netrc_deinit(wget_netrc_t *netrc);
+void
+	wget_netrc_free(wget_netrc_t *netrc);
+wget_netrc_t *
+	wget_netrc_new(const char *machine, const char *login, const char *password);
+
+wget_netrc_db_t *
+	wget_netrc_db_init(wget_netrc_db_t *netrc_db);
+void
+	wget_netrc_db_deinit(wget_netrc_db_t *netrc_db);
+void
+	wget_netrc_db_free(wget_netrc_db_t **netrc_db);
+void
+	wget_netrc_db_add(wget_netrc_db_t *netrc_db, wget_netrc_t *netrc);
+wget_netrc_t *
+	wget_netrc_get(const wget_netrc_db_t *netrc_db, const char *host);
+int
+	wget_netrc_db_load(wget_netrc_db_t *netrc_db, const char *fname);
+
+/*
  * CSS parsing routines
  */
 

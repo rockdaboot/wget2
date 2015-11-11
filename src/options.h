@@ -90,6 +90,8 @@ struct config {
 		*hsts_db; // in-memory HSTS database
 	wget_ocsp_db_t
 		*ocsp_db; // in-memory fingerprint OCSP database
+	wget_netrc_db_t
+		*netrc_db; // in-memory .netrc database
 	size_t
 		chunk_size;
 	long long
@@ -112,6 +114,11 @@ struct config {
 	struct wget_cookie_db_st
 		*cookie_db;
 	char
+		*hsts_file,
+		*ocsp_file,
+		*config_file,
+		*netrc_file,
+		netrc,
 		http2,
 		ocsp_stapling,
 		ocsp,
@@ -163,9 +170,6 @@ struct config {
 		verbose,
 		print_version,
 		quiet,
-		*hsts_file,
-		*ocsp_file,
-		*config_file,
 		debug;
 };
 

@@ -26,6 +26,7 @@ int main(void)
 	wget_debug_write("", 0); // log.c
 	wget_logger_set_file(NULL, ""); // logger.c
 	wget_tcp_set_connect_timeout(NULL, 0); // net.c
+	wget_netrc_deinit(NULL); // netrc.c
 	wget_strdup(""); // mem.c
 //	wget_popenf("r", "%s", ""); // pipe.c
 //	wget_bsprintf(NULL, NULL, "%s", ""); // printf.c

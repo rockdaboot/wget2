@@ -50,6 +50,10 @@ int main(void)
 			}
 		}
 	};
+	wget_test_file_t netrc = {
+		.name = ".netrc",
+		.content = "default\r\nlogin " username "\r\npassword " password "\r\n"
+	};
 
 	// functions won't come back if an error occurs
 	wget_test_start_server(
@@ -65,6 +69,21 @@ int main(void)
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{	NULL } },
+		0);
+
+	// test-auth-basic with .netrc
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "-d --netrc-file=.netrc",
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{ netrc.name, netrc.content },
+			{ NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ netrc.name, netrc.content },
+			{ NULL } },
 		0);
 
 	exit(0);

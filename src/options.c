@@ -171,6 +171,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --backups           Make backups instead of overwriting/increasing number. (default: 0)\n"
 		"      --post-data         Data to be sent in a POST request.\n"
 		"      --post-file         File with data to be sent in a POST request.\n"
+		"      --netrc             Load credentials from ~/.netrc if not given. (default: on)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -193,6 +194,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --http-password     Password for HTTP Authentication. (default: empty password)\n"
 		"      --content-disposition  Take filename from Content-Disposition. (default: off)\n"
 		"      --default-page      Default file name if name isn't known. (default: index.html)\n"
+		"      --netrc-file        Set file for login/password to use instead of ~/.netrc. (default: ~/.netrc)\n"
 		"\n");
 	puts(
 		"HTTPS (SSL/TLS) related options:\n"
@@ -609,6 +611,7 @@ struct config config = {
 #endif
 	.ocsp = 1,
 	.ocsp_stapling = 1,
+	.netrc = 1,
 };
 
 static int parse_execute(option_t opt, const char *val);
@@ -688,6 +691,8 @@ static const struct option options[] = {
 	{ "max-threads", &config.max_threads, parse_integer, 1, 0 },
 	{ "mirror", &config.mirror, parse_mirror, 0, 'm' },
 	{ "n", NULL, parse_n_option, 1, 'n' }, // special Wget compatibility option
+	{ "netrc", &config.netrc, parse_bool, 0, 0 },
+	{ "netrc-file", &config.netrc_file, parse_string, 1, 0 },
 	{ "ocsp", &config.ocsp, parse_bool, 0, 0 },
 	{ "ocsp-file", &config.ocsp_file, parse_string, 1, 0 },
 	{ "ocsp-stapling", &config.ocsp_stapling, parse_bool, 0, 0 },
@@ -1196,6 +1201,9 @@ int init(int argc, const char *const *argv)
 	if (!config.ocsp_file && asprintf(&config.ocsp_file, "%s/.wget_ocsp", home_dir) == -1) {
 		config.ocsp_file = NULL;
 	}
+	if (config.netrc && !config.netrc_file && asprintf(&config.netrc_file, "%s/.netrc", home_dir) == -1) {
+		config.netrc_file = NULL;
+	}
 	if (!config.config_file) {
 		if (asprintf(&config.config_file, "%s/.wgetrc", home_dir) == -1)
 			config.config_file = NULL;
@@ -1472,6 +1480,7 @@ void deinit(void)
 	wget_cookie_db_free(&config.cookie_db);
 	wget_hsts_db_free(&config.hsts_db);
 	wget_ocsp_db_free(&config.ocsp_db);
+	wget_netrc_db_free(&config.netrc_db);
 	wget_ssl_deinit();
 
 	xfree(config.cookie_suffixes);
@@ -1479,6 +1488,7 @@ void deinit(void)
 	xfree(config.save_cookies);
 	xfree(config.hsts_file);
 	xfree(config.ocsp_file);
+	xfree(config.netrc_file);
 	xfree(config.config_file);
 	xfree(config.logfile);
 	xfree(config.logfile_append);

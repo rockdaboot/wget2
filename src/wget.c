@@ -2467,8 +2467,33 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 					}
 				}
 
-				if (selected_challenge)
-					wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
+				if (selected_challenge) {
+					if (config.http_username) {
+						wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
+					} else if (config.netrc_file) {
+						static wget_thread_mutex_t
+							mutex = WGET_THREAD_MUTEX_INITIALIZER;
+
+						wget_thread_mutex_lock(&mutex);
+						if (!config.netrc_db) {
+							config.netrc_db = wget_netrc_db_init(NULL);
+							wget_netrc_db_load(config.netrc_db, config.netrc_file);
+						}
+						wget_thread_mutex_unlock(&mutex);
+
+						wget_netrc_t *netrc = wget_netrc_get(config.netrc_db, iri->host);
+						if (!netrc)
+							netrc = wget_netrc_get(config.netrc_db, "default");
+
+						if (netrc) {
+							wget_http_add_credentials(req, selected_challenge, netrc->login, netrc->password);
+						} else {
+							wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
+						}
+					} else {
+						wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
+					}
+				}
 			}
 
 			if (part)
