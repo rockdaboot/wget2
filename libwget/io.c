@@ -393,8 +393,10 @@ int wget_update_file(const char *fname,
 		&& !(tmpdir = getenv("TEMP")) && !(tmpdir = getenv("TEMPDIR")))
 		tmpdir = "/tmp";
 
-	if (*fname && (p = strrchr(fname + 1, '/')))
+	if (*fname && (p = strrchr(fname, '/')))
 		basename = p + 1;
+	else
+		basename = fname;
 
 	// create a per-usr tmp file name for HSTS
 	char lockfile[strlen(tmpdir) + strlen(basename) + 32];
