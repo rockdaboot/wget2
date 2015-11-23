@@ -317,7 +317,7 @@ int wget_hsts_db_load(wget_hsts_db_t *hsts_db, const char *fname)
 		return 0;
 
 	if (wget_update_file(fname, (int(*)(void *, FILE *))_hsts_db_load, NULL, hsts_db)) {
-		error_printf(_("Failed to read to HSTS data\n"));
+		error_printf(_("Failed to read HSTS data\n"));
 		ret = -1;
 	} else
 		debug_printf(_("Fetched HSTS data from '%s'\n"), fname);
@@ -356,7 +356,7 @@ int wget_hsts_db_save(wget_hsts_db_t *hsts_db, const char *fname)
 {
 	int ret = -1, size;
 
-	if (!fname || !*fname)
+	if (!hsts_db || !fname || !*fname)
 		return -1;
 
 	if (wget_update_file(fname, (int(*)(void *, FILE *))_hsts_db_load, _hsts_db_save, hsts_db)) {
