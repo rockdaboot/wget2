@@ -376,6 +376,25 @@ static void *_ftp_server_thread(void *ctx)
 	return NULL;
 }
 
+#if defined(__CYGWIN__)
+// Using opendir/readdir loop plus unlink() has a race condition
+// with CygWin. Not sure if this also happens on other systems as well.
+// Since we don't have valgrind, we can use system() without issues.
+static void _remove_directory(const char *dirname)
+{
+	char cmd[strlen(dirname) + 16];
+
+	snprintf(cmd, sizeof(cmd), "rm -rf %s", dirname);
+	system(cmd);
+}
+static void _empty_directory(const char *dirname)
+{
+	_remove_directory(dirname);
+
+	if (mkdir(dirname, 0755) != 0)
+		wget_error_printf_exit(_("Failed to re-create directory (%d)\n"), errno);
+}
+#else
 // To reduce the verbosity of 'valgrind --trace-children=yes' output,
 //   we avoid system("rm -rf ...") calls.
 static void _remove_directory(const char *dirname);
@@ -412,6 +431,7 @@ static void _remove_directory(const char *dirname)
 	if (rmdir(dirname) == -1)
 		wget_error_printf(_("Failed to rmdir %s\n"), dirname);
 }
+#endif
 
 void wget_test_stop_server(void)
 {
@@ -432,12 +452,6 @@ void wget_test_stop_server(void)
 		}
 	}
 
-	if (chdir("..") != 0)
-		wget_error_printf(_("Failed to chdir ..\n"));
-
-	if (!keep_tmpfiles)
-		_remove_directory(tmpdir);
-
 	// free resources - needed for valgrind testing
 	pthread_kill(http_server_tid, SIGTERM);
 	pthread_kill(https_server_tid, SIGTERM);
@@ -450,6 +464,12 @@ void wget_test_stop_server(void)
 	wget_thread_join(ftp_server_tid);
 	if (ftps_implicit)
 		wget_thread_join(ftps_server_tid);
+
+	if (chdir("..") != 0)
+		wget_error_printf(_("Failed to chdir ..\n"));
+
+	if (!keep_tmpfiles)
+		_remove_directory(tmpdir);
 
 	wget_global_deinit();
 }
@@ -853,7 +873,7 @@ void wget_test(int first_key, ...)
 	wget_vector_clear(request_urls);
 	wget_buffer_free(&cmd);
 
-	//	system("ls -la");
+	// system("ls -la");
 }
 
 int wget_test_get_http_server_port(void)
