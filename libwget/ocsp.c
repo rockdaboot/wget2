@@ -361,7 +361,7 @@ int wget_ocsp_db_load(wget_ocsp_db_t *ocsp_db, const char *fname)
 		debug_printf(_("Fetched OCSP hosts from '%s'\n"), fname_hosts);
 
 	if (wget_update_file(fname, _ocsp_db_load_fingerprints, NULL, ocsp_db)) {
-		error_printf(_("Failed to read to OCSP fingerprints\n"));
+		error_printf(_("Failed to read OCSP fingerprints\n"));
 		ret = -1;
 	} else
 		debug_printf(_("Fetched OCSP fingerprints from '%s'\n"), fname);
