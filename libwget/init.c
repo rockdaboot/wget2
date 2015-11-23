@@ -133,7 +133,8 @@ void wget_global_init(int first_key, ...)
 
 	if (_config.cookies_enabled && _config.cookie_file) {
 		_config.cookie_db = wget_cookie_db_init(NULL);
-		wget_cookie_db_load(_config.cookie_db, _config.cookie_file, _config.keep_session_cookies);
+		wget_cookie_set_keep_session_cookies(_config.cookie_db, _config.keep_session_cookies);
+		wget_cookie_db_load(_config.cookie_db, _config.cookie_file);
 		wget_cookie_db_load_psl(_config.cookie_db, psl_file);
 	}
 
@@ -147,7 +148,7 @@ void wget_global_deinit(void)
 	if (_init == 1) {
 		// free resources here
 		if (_config.cookie_db && _config.cookies_enabled && _config.cookie_file) {
-			wget_cookie_db_save(_config.cookie_db, _config.cookie_file, _config.keep_session_cookies);
+			wget_cookie_db_save(_config.cookie_db, _config.cookie_file);
 			wget_cookie_db_deinit(_config.cookie_db);
 			_config.cookie_db = NULL;
 		}

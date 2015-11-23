@@ -1039,7 +1039,7 @@ int main(int argc, const char *const *argv)
 	}
 
 	if (config.save_cookies)
-		wget_cookie_db_save(config.cookie_db, config.save_cookies, config.keep_session_cookies);
+		wget_cookie_db_save(config.cookie_db, config.save_cookies);
 
 	if (config.hsts && config.hsts_file && hsts_changed)
 		wget_hsts_db_save(config.hsts_db, config.hsts_file);

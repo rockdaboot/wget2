@@ -1365,10 +1365,11 @@ int init(int argc, const char *const *argv)
 
 	if (config.cookies) {
 		config.cookie_db = wget_cookie_db_init(NULL);
+		wget_cookie_set_keep_session_cookies(config.cookie_db, config.keep_session_cookies);
 		if (config.cookie_suffixes)
 			wget_cookie_db_load_psl(config.cookie_db, config.cookie_suffixes);
 		if (config.load_cookies)
-			wget_cookie_db_load(config.cookie_db, config.load_cookies, config.keep_session_cookies);
+			wget_cookie_db_load(config.cookie_db, config.load_cookies);
 	}
 
 	if (config.hsts) {

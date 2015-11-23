@@ -921,10 +921,12 @@ void
 	wget_cookie_db_deinit(wget_cookie_db_t *cookie_db);
 void
 	wget_cookie_db_free(wget_cookie_db_t **cookie_db);
+void
+	wget_cookie_set_keep_session_cookies(wget_cookie_db_t *cookie_db, int keep);
 int
-	wget_cookie_db_save(wget_cookie_db_t *cookie_db, const char *fname, int keep_session_cookies);
+	wget_cookie_db_save(wget_cookie_db_t *cookie_db, const char *fname);
 int
-	wget_cookie_db_load(wget_cookie_db_t *cookie_db, const char *fname, int keep_session_cookies);
+	wget_cookie_db_load(wget_cookie_db_t *cookie_db, const char *fname);
 int
 	wget_cookie_db_load_psl(wget_cookie_db_t *cookie_db, const char *fname);
 char *

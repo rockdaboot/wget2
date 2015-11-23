@@ -89,18 +89,18 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 	// you need cookie support ? just #define COOKIE_SUPPORT or remove the #ifdef/#endif
 	// 'keep_session_cookies' should be 0 or 1
 #ifdef COOKIE_SUPPORT
-	int keep_session_cookies = 1;
 	const char *cookie_string;
 
 	// init cookie database
 	cookies = wget_cookie_db_init(NULL);
+	wget_cookie_set_keep_session_cookies(cookies, 1);
 
 	// load public suffixes for cookie validation from file (instead of using internal PSL data)
 	// just works if Wget has been compiled with libpsl
 	wget_cookie_db_load_psl(cookies, "public_suffixes.txt");
 
 	// load cookie-store
-	wget_cookie_db_load(cookies, "cookies.txt", keep_session_cookies);
+	wget_cookie_db_load(cookies, "cookies.txt");
 
 	// enrich the HTTP request with the uri-related cookies we have
 	if ((cookie_string = wget_cookie_create_request_header(cookies, uri))) {
@@ -135,7 +135,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 			wget_cookie_store_cookies(cookies, resp->cookies);
 
 			// save cookie-store to file
-			wget_cookie_db_save(cookies, "cookies.txt", keep_session_cookies);
+			wget_cookie_db_save(cookies, "cookies.txt");
 #endif
 
 			// let's assume the body isn't binary (doesn't contain \0)
