@@ -311,18 +311,16 @@ static int _hsts_db_load(wget_hsts_db_t *hsts_db, FILE *fp)
 
 int wget_hsts_db_load(wget_hsts_db_t *hsts_db, const char *fname)
 {
-	int ret;
-
 	if (!hsts_db || !fname || !*fname)
 		return 0;
 
 	if (wget_update_file(fname, (int(*)(void *, FILE *))_hsts_db_load, NULL, hsts_db)) {
 		error_printf(_("Failed to read HSTS data\n"));
-		ret = -1;
-	} else
+		return -1;
+	} else {
 		debug_printf(_("Fetched HSTS data from '%s'\n"), fname);
-
-	return ret;
+		return 0;
+	}
 }
 
 static int G_GNUC_WGET_NONNULL_ALL _hsts_save(FILE *fp, const wget_hsts_t *hsts)
@@ -354,7 +352,7 @@ static int _hsts_db_save(void *hsts_db, FILE *fp)
 
 int wget_hsts_db_save(wget_hsts_db_t *hsts_db, const char *fname)
 {
-	int ret = -1, size;
+	int size;
 
 	if (!hsts_db || !fname || !*fname)
 		return -1;
@@ -369,5 +367,5 @@ int wget_hsts_db_save(wget_hsts_db_t *hsts_db, const char *fname)
 	else
 		debug_printf(_("No HSTS entries to save. Table is empty.\n"));
 
-	return ret;
+	return 0;
 }

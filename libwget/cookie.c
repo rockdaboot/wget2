@@ -523,18 +523,16 @@ static int _cookie_db_load(wget_cookie_db_t *cookie_db, FILE *fp)
 
 int wget_cookie_db_load(wget_cookie_db_t *cookie_db, const char *fname)
 {
-	int ret;
-
 	if (!cookie_db || !fname || !*fname)
 		return 0;
 
 	if (wget_update_file(fname, (int(*)(void *, FILE *))_cookie_db_load, NULL, cookie_db)) {
 		error_printf(_("Failed to read cookies\n"));
-		ret = -1;
-	} else
+		return -1;
+	} else {
 		debug_printf(_("Fetched cookies from '%s'\n"), fname);
-
-	return ret;
+		return 0;
+	}
 }
 
 // save the cookie store to a flat file
@@ -579,7 +577,7 @@ static int _cookie_db_save(wget_cookie_db_t *cookie_db, FILE *fp)
 
 int wget_cookie_db_save(wget_cookie_db_t *cookie_db, const char *fname)
 {
-	int ret = -1, size;
+	int size;
 
 	if (!cookie_db || !fname || !*fname)
 		return -1;
@@ -597,5 +595,5 @@ int wget_cookie_db_save(wget_cookie_db_t *cookie_db, const char *fname)
 	else
 		debug_printf(_("No cookies to save. Table is empty.\n"));
 
-	return ret;
+	return 0;
 }
