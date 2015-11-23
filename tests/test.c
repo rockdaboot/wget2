@@ -212,7 +212,7 @@ static void test_buffer_printf(void)
 	static const char *conversion[] = { "d", "i", "u", "o", "x", "X" };
 	char fmt[32], result[64], string[32];
 	size_t z, a, it, n, c, m;
-	int width, precision;
+	int width, precision, skip_left_string_padding;
 
 	wget_buffer_init(&buf, buf_static, sizeof(buf_static));
 
@@ -224,13 +224,27 @@ static void test_buffer_printf(void)
 	} else
 		ok++;
 
+	// sprintf on Solaris and Windows uses spaces instead of 0s for e.g. %03s padding
+	// we skip those test when we detect such behavior
+#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wformat"
+#endif
+	sprintf(result, "%02s", "1");
+	skip_left_string_padding = (*result != ' ');
+#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+	#pragma GCC diagnostic pop
+#endif
+
 	for (z = 0; z < countof(zero_padded); z++) {
 		for (a = 0; a < countof(left_adjust); a++) {
 			for (width = -1; width < 12; width++) {
 				for (precision = -1; precision < 12; precision++) {
 
 					// testing %s stuff
-					// Solaris' sprintf uses spaces instead of 0s for e.g. %03s padding
+
+					if (skip_left_string_padding && z == 1)
+						goto integer_tests;
 
 					if (width == -1) {
 						if (precision == -1) {
@@ -323,7 +337,7 @@ static void test_buffer_printf(void)
 					}
 
 					// testing integer stuff
-
+integer_tests:
 					for (m = 0; m < countof(modifier); m++) {
 					for (c = 0; c < countof(conversion); c++) {
 						if (width == -1) {
