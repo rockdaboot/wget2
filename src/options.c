@@ -213,11 +213,11 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
 		"      --https-only        Do not follow non-secure URLs. (default: off).\n"
 		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)\n"
-		"      --hsts-file         Set file for HSTS chaching. (default: .wget_hsts)\n"
+		"      --hsts-file         Set file for HSTS chaching. (default: ~/.wget-hsts)\n"
 		"      --gnutls-options    Custom GnuTLS priority string. Interferes with --secure-protocol. (default: none)\n"
 		"      --ocsp-stapling     Use OCSP stapling to verify the server's certificate. (default: on)\n"
 		"      --ocsp              Use OCSP server access to verify server's certificate. (default: on)\n"
-		"      --ocsp-file         Set file for OCSP chaching. (default: .wget_ocsp)\n"
+		"      --ocsp-file         Set file for OCSP chaching. (default: ~/.wget-ocsp)\n"
 		"      --http2             Use HTTP/2 protocol if possible. (default: on)\n"
 		"\n");
 	puts(
@@ -1195,10 +1195,10 @@ int init(int argc, const char *const *argv)
 	// values to NULL. Since contents of strp on error is undefined.
 	char *home_dir = get_home_dir();
 
-	if (!config.hsts_file && asprintf(&config.hsts_file, "%s/.wget_hsts", home_dir) == -1) {
+	if (!config.hsts_file && asprintf(&config.hsts_file, "%s/.wget-hsts", home_dir) == -1) {
 		config.hsts_file = NULL;
 	}
-	if (!config.ocsp_file && asprintf(&config.ocsp_file, "%s/.wget_ocsp", home_dir) == -1) {
+	if (!config.ocsp_file && asprintf(&config.ocsp_file, "%s/.wget-ocsp", home_dir) == -1) {
 		config.ocsp_file = NULL;
 	}
 	if (config.netrc && !config.netrc_file && asprintf(&config.netrc_file, "%s/.netrc", home_dir) == -1) {
