@@ -2020,9 +2020,10 @@ wget_http_response_t *wget_http_get_response_cb(
 	char *buf, *p = NULL;
 	wget_http_response_t *resp = NULL;
 	wget_decompressor_t *dc = NULL;
-	int ioflags;
 
 #ifdef WITH_LIBNGHTTP2
+	int ioflags;
+
 	if (conn->protocol == WGET_PROTOCOL_HTTP_2_0) {
 		resp = xcalloc(1, sizeof(wget_http_response_t));
 		resp->major = 2;
