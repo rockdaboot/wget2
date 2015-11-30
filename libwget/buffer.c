@@ -18,7 +18,7 @@
  * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Memory buffer datastructure routines
+ * Memory buffer data structure routines
  *
  * Changelog
  * 22.08.2012  Tim Ruehsen  created

@@ -52,94 +52,20 @@
 #include <libwget.h>
 #include "private.h"
 
-/**
- * SECTION:libwget-io
- * @short_description: I/O helper routines
- * @title: libwget-io
- * @stability: unstable
- * @include: libwget.h
- *
- * Some general I/O helper functions that could be handy for developers.
- *
- */
-
-// similar to getline(), but:
-// - using a file descriptor
-// - returns line without trailing \n
-// *buf holds size_t[2] at it's end'
-//
-// casts like '(size_t *)(void *)' are to silence clang
-
-ssize_t wget_fdgetline(char **buf, size_t *bufsize, int fd)
+static ssize_t __read(const void *fp, char *dst, size_t len)
 {
-	ssize_t nbytes = 0;
-	size_t *sizep, length = 0;
-	char *p;
-
-	if (!*buf || !*bufsize) {
-		// first call
-		*buf = malloc(*bufsize = 10240);
-		sizep = (size_t *)(void *)(*buf + *bufsize - 2 * sizeof(size_t));
-		sizep[0] = sizep[1] = 0;
-	} else {
-		sizep = (size_t *)(void*)(*buf + *bufsize - 2 * sizeof(size_t));
-		if (sizep[1]) {
-			// take care of remaining data from last call
-			if ((p = memchr(*buf + sizep[0], '\n', sizep[1]))) {
-				*p++ = 0;
-				length = p - (*buf + sizep[0]);
-				if (sizep[0])
-					memmove(*buf, *buf + sizep[0], length); // copy line to beginning of buffer
-				sizep[0] += length; // position of extra chars
-				sizep[1] -= length; // number of extra chars
-				return length - 1; // length of line in *buf
-			}
-
-			length = sizep[1];
-			memmove(*buf, *buf + sizep[0], length + 1);
-			sizep[0] = sizep[1] = 0;
-		} else **buf = 0;
-	}
-
-	while ((nbytes = read(fd, *buf + length, *bufsize - 2 * sizeof(size_t) - length - 1)) > 0) {
-		length += nbytes;
-		if ((p = memchr(*buf + length - nbytes, '\n', nbytes))) {
-			*p++ = 0;
-			sizep[0] = p - *buf; // position of extra chars
-			sizep[1] = length - sizep[0]; // number of extra chars
-			return sizep[0] - 1; // length of line in *buf
-		}
-
-		if (length >= *bufsize - 2 * sizeof(size_t) - 1) {
-			ptrdiff_t off = ((char *)sizep)-*buf;
-			size_t *old;
-
-			*buf = xrealloc(*buf, *bufsize = *bufsize * 2);
-			old = (size_t *)(void *)(*buf + off);
-			sizep = (size_t *)(void *)(*buf + *bufsize - 2 * sizeof(size_t));
-			sizep[0] = old[0];
-			sizep[1] = old[1];
-		}
-	}
-
-	if (nbytes == -1 && errno != EAGAIN) {
-		// file/socket descriptor is broken
-		// if (errno != EBADF)
-		// 	error_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
-	}
-
-	if (length) {
-		if ((*buf)[length - 1] == '\n')
-			(*buf)[length - 1] = 0;
-		else
-			(*buf)[length] = 0;
-		return length;
-	} else **buf = 0;
-
-	return -1;
+	return fread(dst, 1, len, (FILE *)fp);
 }
 
-ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
+static ssize_t __readfd(const void *f, char *dst, size_t len)
+{
+	int *fd = (int *)f;
+	return read(*fd, dst, len);
+}
+
+static ssize_t wget_getline_internal(char **buf, size_t *bufsize,
+		       const void *f,
+		       ssize_t (*reader)(const void *f, char *dst, size_t len))
 {
 	ssize_t nbytes = 0;
 	size_t *sizep, length = 0;
@@ -167,10 +93,11 @@ ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
 			length = sizep[1];
 			memmove(*buf, *buf + sizep[0], length + 1);
 			sizep[0] = sizep[1] = 0;
-		} else **buf = 0;
+		} else
+			**buf = 0;
 	}
 
-	while ((nbytes = fread(*buf + length, 1, *bufsize - 2 * sizeof(size_t) - length - 1, fp)) > 0) {
+	while ((nbytes = reader(f, *buf + length, *bufsize - 2 * sizeof(size_t) - length - 1)) > 0) {
 		length += nbytes;
 		if ((p = memchr(*buf + length - nbytes, '\n', nbytes))) {
 			*p++ = 0;
@@ -193,8 +120,8 @@ ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
 
 	if (nbytes == -1 && errno != EAGAIN) {
 		// socket is broken
-		// if (errno != EBADF)
-		//	error_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
+		if (errno != EBADF)
+			error_printf(_("%s: Failed to read, error %d\n"), __func__, errno);
 	}
 
 	if (length) {
@@ -203,15 +130,78 @@ ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
 		else
 			(*buf)[length] = 0;
 		return length;
-	} else **buf = 0;
+	} else
+		**buf = 0;
 
 	return -1;
+}
+
+
+/**
+ * SECTION:libwget-io
+ * @short_description: I/O helper routines
+ * @title: libwget-io
+ * @stability: unstable
+ * @include: libwget.h
+ *
+ * Some general I/O helper functions that could be handy for developers.
+ *
+ */
+
+/**
+ * wget_fdgetline:
+ * @buf: a pointer to a pointer that will be set up by the function to point to the read line
+ * @bufsize: pointer to a variable where the length of the read line will be put
+ * @fd: file descriptor for an open file
+ *
+ * Behaves identically as wget_getline(), but uses a file descriptor instead of a stream.
+ *
+ * Returns:
+ * the length of the last line read
+ */
+ssize_t wget_fdgetline(char **buf, size_t *bufsize, int fd)
+{
+	return wget_getline_internal(buf, bufsize, (void *)&fd, __readfd);
+}
+
+/**
+ * wget_getline:
+ * @buf: a pointer to a pointer that will be set up by the function to point to the read line
+ * @bufsize: pointer to a variable where the length of the read line will be put
+ * @fp: pointer to an open file's stream handle (`FILE *`)
+ *
+ * This function will read a line from the open file handle @fp. This function reads input characters
+ * until either a newline character (`\n`) is found or EOF is reached. A block of memory large enough to hold the read line
+ * will be implicitly allocated by the function, and its address placed at the pointer pointed to by @buf.
+ * The length of the aforementioned memory block will be stored in the variable pointed at by @bufsize.
+ *
+ * The caller is not expected to allocate memory as that will be automatically done by wget_getline(),
+ * but it is responsibility of the caller free the memory allocated by a previous invocation of this function.
+ * The caller is also responsible for opening and closing the file to read from.
+ *
+ * Subsequent calls to wget_getline() that use the same block of memory allocated by previous calls (that is,
+ * the caller did not free the buffer returned by a previous call to wget_getline()) will try to reuse as much as possible
+ * from the available memory.
+ * The block of memory allocated by wget_getline() may be larger than the length of the line read, and might even contain additional lines
+ * in it. When wget_getline() returns, the contents of the buffer (pointed at by @buf) are guaranteed to start with the first
+ * character of the last line read, and such line is also guaranteed to end with a NULL termination character (`\0`).
+ * The length of the last read line will be returned by wget_getline(), whereas the actual length of the buffer will be placed in the variable
+ * pointed at by @bufsize.
+ * The newline character (`\n`) will not be included in the last read line.
+ *
+ * Returns:
+ * the length of the last line read
+ */
+ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
+{
+	return wget_getline_internal(buf, bufsize, (void *)fp, __read);
 }
 
 /**
  * wget_ready_2_transfer:
  * @fd: File descriptor to wait for.
  * @timeout: Max. duration in milliseconds to wait.
+ * @mode: either `WGET_IO_WRITABLE` or `WGET_IO_READABLE`.
  * A value of 0 means the function returns immediately.
  * A value of -1 means infinite timeout.
  *
@@ -219,9 +209,9 @@ ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
  *
  * Returns:
  * -1 on error.
- * 0 on timeout. The file descriptor is not ready for reading nor writing.
- * >0 The file descriptor is ready for reading or writing. Check for
- * the bitwise or'ing of WGET_IO_WRITABLE and WGET_IO_WRITABLE.
+ * 0 on timeout. The file descriptor is not ready for reading or writing.
+ * &gt;0 The file descriptor is ready for reading or writing. Check for
+ * the bitwise or of `WGET_IO_WRITABLE` and `WGET_IO_READABLE`.
  *
  */
 #ifdef POLLIN
@@ -320,6 +310,25 @@ int wget_ready_2_write(int fd, int timeout)
 	return wget_ready_2_transfer(fd, timeout, WGET_IO_WRITABLE) > 0;
 }
 
+/**
+ * wget_read_file:
+ * @fname: the name of the file to read from, or a dash (`-`) to read from STDIN.
+ * @size: pointer to a variable where the length of the contents read will be stored.
+ *
+ * Reads the content of a file, or from STDIN.
+ * When reading from STDIN, the behavior is the same as for regular files: input is read
+ * until an EOF character is found.
+ *
+ * Memory will be accordingly allocated by wget_read_file() and a pointer to it returned when the read finishes,
+ * but the caller is responsible for freeing that memory.
+ * The length of the allocated block of memory, which is guaranteed to be the same as the length of the data read,
+ * will be placed in the variable pointed at by @size.
+ *
+ * The read data is guaranteed to be appended a NULL termination character (`\0`).
+ *
+ * Returns:
+ * pointer to the read data, as a NULL-terminated C string
+ */
 char *wget_read_file(const char *fname, size_t *size)
 {
 	int fd;
@@ -359,7 +368,7 @@ char *wget_read_file(const char *fname, size_t *size)
 		// read data from STDIN.
 		char tmp[4096];
 		wget_buffer_t buffer;
-		
+
 		wget_buffer_init(&buffer, NULL, 4096);
 
 		while ((nread = read(STDIN_FILENO, tmp, sizeof(tmp))) > 0) {
@@ -378,6 +387,26 @@ char *wget_read_file(const char *fname, size_t *size)
 	return buf;
 }
 
+/**
+ * wget_update_file:
+ * @fname: file name to update
+ * @load_func: pointer to the loader function
+ * @save_func: pointer to the saver function
+ * @context: context data
+ *
+ * This function updates the file named @fname atomically. It lets two caller-provided functions do the actual updating.
+ * A lock file is created first under `/tmp` to ensure exclusive access to the file. Other processes attempting to call
+ * wget_update_file() with the same @fname parameter will block until the current calling process has finished (that is,
+ * until wget_update_file() has returned).
+ * Then, the file is opened with read access first, and the @load_func function is called. When it returns, the file is closed
+ * and opened again with write access, and the @save_func function is called.
+ * Both callback functions are passed the context data @context, and a stream descriptor for the file.
+ * If either function @load_func or @save_func returns a non-zero value, wget_update_file() closes the file and returns -1,
+ * performing no further actions.
+ *
+ * Returns:
+ * 0 on success, or -1 on error
+ */
 int wget_update_file(const char *fname,
 	int (*load_func)(void *, FILE *fp), int (*save_func)(void *, FILE *fp), void *context)
 {

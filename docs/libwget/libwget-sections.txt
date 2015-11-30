@@ -43,6 +43,7 @@ wget_ready_2_read
 wget_ready_2_write
 wget_ready_2_transfer
 wget_read_file
+wget_update_file
 </SECTION>
 
 <SECTION>
