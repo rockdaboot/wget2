@@ -52,9 +52,13 @@
 #include <libwget.h>
 #include "private.h"
 
-static ssize_t __read(const void *fp, char *dst, size_t len)
+static ssize_t __read(const void *f, char *dst, size_t len)
 {
-	return fread(dst, 1, len, (FILE *)fp);
+	FILE *fp = (FILE *)f;
+	ssize_t ret = (ssize_t)fread(dst, 1, len, fp);
+	if (ferror(fp))
+		return -1;
+	return ret;
 }
 
 static ssize_t __readfd(const void *f, char *dst, size_t len)
