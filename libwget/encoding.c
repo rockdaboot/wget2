@@ -103,7 +103,9 @@ char *wget_charset_transcode(const char *src, const char *src_encoding, const ch
 			size_t dst_len = tmp_len * 6, dst_len_tmp = dst_len;
 			char *dst = xmalloc(dst_len + 1), *dst_tmp = dst;
 
-			if (iconv(cd, &tmp, &tmp_len, &dst_tmp, &dst_len_tmp) != (size_t)-1) {
+			if (iconv(cd, &tmp, &tmp_len, &dst_tmp, &dst_len_tmp) != (size_t)-1
+				&& iconv(cd, NULL, NULL, &dst_tmp, &dst_len_tmp) != (size_t)-1)
+			{
 				ret = wget_strmemdup(dst, dst_len - dst_len_tmp);
 				debug_printf("converted '%s' (%s) -> '%s' (%s)\n", src, src_encoding, ret, dst_encoding);
 			} else
