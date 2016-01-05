@@ -2,8 +2,6 @@
 
 if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
   echo Linux
-  sudo apt-get -qq update
-  sudo apt-get -q install autoconf automake autopoint libtool gtk-doc-tools gettext flex liblzma5 liblzma-dev libidn2-0 libidn2-0-dev libunistring0 
 elif [[ $TRAVIS_OS_NAME == 'osx' ]]; then
   echo OSX
   brew update
