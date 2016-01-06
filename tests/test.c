@@ -1252,6 +1252,46 @@ static void test_strcasecmp_ascii(void)
 	}
 }
 
+static void test_hashing(void)
+{
+	static const struct test_data {
+		const char *
+			text;
+		const char *
+			result;
+		int
+			algo;
+	} test_data[] = {
+		{ "moin", "06a998cdd13c50b7875775d4e7e9fa74", WGET_DIGTYPE_MD5 },
+		{ "moin", "ba3cffcc93a92e08f82c33c55d887666fdf364ae", WGET_DIGTYPE_SHA1 },
+		{ "moin", "2500d0ed4d0ea1b3ea9f7f57a5f16c2fba8ad15d05d3c057d42f9796f1250169", WGET_DIGTYPE_SHA256 },
+		{ "moin", "e3ab1c142d6136fd938c810d13deaf47ccdb176687fab916611302ceb6a89787f45fdda2df544fec4f5a9a2a40916f316fcdf57bc27b5b757b7598da24c7c4c4", WGET_DIGTYPE_SHA512 },
+	};
+	unsigned char digest[64];
+	char digest_hex[sizeof(digest) * 2 + 1];
+	int rc;
+
+	for (unsigned it = 0; it < countof(test_data); it++) {
+		const struct test_data *t = &test_data[it];
+
+		if ((rc = wget_hash_fast(t->algo, t->text, strlen(t->text), digest)) == 0) {
+			int len = wget_hash_get_len(t->algo);
+
+			wget_memtohex(digest, len, digest_hex, len * 2 + 1);
+
+			if (!strcmp(digest_hex, t->result))
+				ok++;
+			else {
+				failed++;
+				info_printf("Failed [%u]: wget_hash_fast(%s,%d) -> %s (expected %s)\n", it, t->text, t->algo, digest_hex, t->result);
+			}
+		} else {
+			failed++;
+			info_printf("Failed [%u]: wget_hash_fast(%s,%d) failed with %d\n", it, t->text, t->algo, rc);
+		}
+	}
+}
+
 struct ENTRY {
 	const char
 		*txt;
@@ -1486,6 +1526,7 @@ int main(int argc, const char * const *argv)
 	test_buffer_printf();
 	test_utils();
 	test_strcasecmp_ascii();
+	test_hashing();
 	test_vector();
 	test_stringmap();
 

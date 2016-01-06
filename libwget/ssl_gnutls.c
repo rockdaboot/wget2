@@ -109,13 +109,6 @@ static gnutls_certificate_credentials_t
 static gnutls_priority_t
 	_priority_cache;
 
-// Avoid automatic initialization by the GnuTLS library.
-// We explicitly init the library when needed.
-// Should work with GnuTLS 3.3.19+ and 3.4.7+
-#ifdef GNUTLS_SKIP_GLOBAL_INIT
-  GNUTLS_SKIP_GLOBAL_INIT
-#endif
-
 void wget_ssl_set_config_string(int key, const char *value)
 {
 	switch (key) {

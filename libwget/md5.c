@@ -39,7 +39,7 @@ void wget_md5_printf_hex(char *digest_hex, const char *fmt, ...)
 {
 	char *plaintext;
 	va_list args;
-	int size;
+	int size, rc;
 
 	va_start(args, fmt);
 	size = vasprintf(&plaintext, fmt, args);
@@ -48,8 +48,11 @@ void wget_md5_printf_hex(char *digest_hex, const char *fmt, ...)
 	if (plaintext) {
 		unsigned char digest[wget_hash_get_len(WGET_DIGTYPE_MD5)];
 
-		if (wget_hash_fast(WGET_DIGTYPE_MD5, plaintext, size, digest) == 0) {
+		if ((rc = wget_hash_fast(WGET_DIGTYPE_MD5, plaintext, size, digest)) == 0) {
 			wget_memtohex(digest, sizeof(digest), digest_hex, sizeof(digest) * 2 + 1);
+		} else {
+			*digest_hex = 0;
+			error_printf(_("Failed to MD5 hash (%d)\n"), rc);
 		}
 
 		xfree(plaintext);
