@@ -25,7 +25,16 @@ LT_INIT([dlopen])
 # 5. If any interfaces have been added since the last public release, then increment age.
 # 6. If any existing interfaces have been removed or changed since the last public release, then set age to 0.
 AC_SUBST([LIBWGET_SO_VERSION], [0:0:0])
-AC_SUBST([LIBWGET_API_VERSION], [0.1])
+AC_SUBST([LIBWGET_VERSION], [0.0.1])
+
+#
+# Generate version defines for include file
+#
+AC_SUBST([LIBWGET_VERSION_MAJOR], [`echo $LIBWGET_VERSION|cut -d'.' -f1`])
+AC_SUBST([LIBWGET_VERSION_MINOR], [`echo $LIBWGET_VERSION|cut -d'.' -f2`])
+AC_SUBST([LIBWGET_VERSION_PATCH], [`echo $LIBWGET_VERSION|cut -d'.' -f3`])
+AC_SUBST([LIBWGET_VERSION_NUMBER], [`printf '0x%02x%02x%02x' $LIBWGET_VERSION_MAJOR $LIBWGET_VERSION_MINOR $LIBWGET_VERSION_PATCH`])
+AC_CONFIG_FILES([include/libwget.h])
 
 AC_CONFIG_SRCDIR([src/wget.c])
 AC_CONFIG_HEADERS([config.h])
@@ -408,7 +417,7 @@ AC_CONFIG_FILES([Makefile
                  data/Makefile
                  examples/Makefile
                  tests/Makefile
-                 libwget-${LIBWGET_API_VERSION}.pc:libwget.pc.in])
+                 libwget-${LIBWGET_VERSION}.pc:libwget.pc.in])
 AC_OUTPUT
 
 AC_MSG_NOTICE([Summary of build options:

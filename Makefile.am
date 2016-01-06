@@ -18,6 +18,6 @@ ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 ## pkg-config files are also used for architecture-independent data packages,
 ## in which case the correct install location would be $(datadir)/pkgconfig.
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libwget-$(LIBWGET_API_VERSION).pc
+pkgconfig_DATA = libwget-$(LIBWGET_VERSION).pc
 
 EXTRA_DIST = config.rpath

@@ -2,7 +2,7 @@
 DEFS = @DEFS@ -DDATADIR=\"$(top_srcdir)/data\" -DSRCDIR=\"$(srcdir)\"
 AM_CPPFLAGS = -Wno-missing-field-initializers -I$(top_srcdir)/include
 AM_LDFLAGS = -static
-LDADD = libtest.la ../libwget/libwget-@LIBWGET_API_VERSION@.la @LTLIBICONV@ @LTLIBINTL@
+LDADD = libtest.la ../libwget/libwget-@LIBWGET_VERSION@.la @LTLIBICONV@ @LTLIBINTL@
 
 # test-iri-disabled removed since Wget always uses IRIs
 WGET_TESTS = test test-wget-1 test-restrict-ascii test-i-http test-i-https test-np test--spider-r \
@@ -16,8 +16,8 @@ WGET_TESTS = test test-wget-1 test-restrict-ascii test-i-http test-i-https test-
 check_PROGRAMS = buffer_printf2_perf stringmap_perf $(WGET_TESTS)
 
 test_SOURCES = test.c
-test_LDADD = ../libwget/libwget-@LIBWGET_API_VERSION@.la ../src/wget2-log.o ../src/wget2-options.o @LTLIBICONV@ @LTLIBINTL@
-test_parse_html_LDADD = ../libwget/libwget-@LIBWGET_API_VERSION@.la ../src/wget2-log.o ../src/wget2-options.o @LTLIBICONV@ @LTLIBINTL@
+test_LDADD = ../libwget/libwget-@LIBWGET_VERSION@.la ../src/wget2-log.o ../src/wget2-options.o @LTLIBICONV@ @LTLIBINTL@
+test_parse_html_LDADD = ../libwget/libwget-@LIBWGET_VERSION@.la ../src/wget2-log.o ../src/wget2-options.o @LTLIBICONV@ @LTLIBINTL@
 
 noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = libtest.c
