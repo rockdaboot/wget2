@@ -36,7 +36,7 @@ int main(void)
 			.body =
 				"<html><head><title>Main Page</title><base href=\"/subdir/\"></head><body><p>A link to a" \
 				" <A hreF=\"http://localhost:{{port}}/secondpage.html\">second page</a>." \
-				" <a  HreF=\"thirdpage.html\">third page</a>." \
+				" <a  HreF=\"thirdpage.html?query&param#frag\">third page</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -46,7 +46,7 @@ int main(void)
 			.code = "200 Dontcare",
 			.body = "second"
 		},
-		{	.name = "/subdir/thirdpage.html",
+		{	.name = "/subdir/thirdpage.html?query&param",
 			.code = "200 Dontcare",
 			.body = "third"
 		},

@@ -803,8 +803,14 @@ typedef struct wget_iri_st {
 		connection_part; // helper, e.g. http://www.example.com:8080
 	size_t
 		dirlen; // length of directory part in 'path' (needed/initialized with --no-parent)
-	char
-		host_allocated; // if set, free host in iri_free()
+	unsigned int
+		host_allocated : 1; // if set, free host in iri_free()
+	unsigned int
+		path_allocated : 1; // if set, free path in iri_free()
+	unsigned int
+		query_allocated : 1; // if set, free query in iri_free()
+	unsigned int
+		fragment_allocated : 1; // if set, free fragment in iri_free()
 } wget_iri_t;
 
 void
@@ -829,6 +835,8 @@ int
 	wget_iri_isunreserved_path(char c) G_GNUC_WGET_PURE;
 int
 	wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2) G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL;
+char *
+	wget_iri_unescape_inline(char *src) G_GNUC_WGET_NONNULL_ALL;
 wget_iri_t *
 	wget_iri_parse(const char *uri, const char *encoding);
 wget_iri_t *

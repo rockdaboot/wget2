@@ -128,12 +128,51 @@ int wget_iri_isunreserved_path(char c)
 	return c > 32 && c < 127 && (isalnum(c) || _iri_isunreserved(c) || c == '/');
 }
 
+static inline unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
+{
+	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
+}
+
+char *wget_iri_unescape_inline(char *src)
+{
+	char *ret = NULL;
+	unsigned char *s = (unsigned char *)src; // just a helper to avoid casting a lot
+	unsigned char *d = s;
+
+	while (*s) {
+		if (*s == '%') {
+			if (isxdigit(s[1]) && isxdigit(s[2])) {
+				*d++ = (_unhex(s[1]) << 4) | _unhex(s[2]);
+				s += 3;
+				ret = src;
+				continue;
+			}
+		} else if (*s == '+') {
+			*d++ = ' ';
+			s++;
+			ret = src;
+			continue;
+		}
+
+		*d++ = *s++;
+	}
+	*d = 0;
+
+	return ret;
+}
+
 // needed as helper for blacklist.c/blacklist_free()
 void wget_iri_free_content(wget_iri_t *iri)
 {
 	if (iri) {
 		if (iri->host_allocated)
 			xfree(iri->host);
+		if (iri->path_allocated)
+			xfree(iri->path);
+		if (iri->query_allocated)
+			xfree(iri->query);
+		if (iri->fragment_allocated)
+			xfree(iri->fragment);
 		xfree(iri->connection_part);
 	}
 }
@@ -154,7 +193,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 	const char *default_port = NULL;
 	char *p, *s, *authority, c;
 	size_t slen, it;
-	int url_allocated, maybe_scheme;
+	int maybe_scheme;
 
 	if (!url)
 		return NULL;
@@ -166,7 +205,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 	 */
 	while (isspace(*url)) url++;
 	if (!*url) return NULL;
-
+/*
 	// first unescape, than convert to UTF-8
 	if (strchr(url, '%')) {
 		char *unesc_url = strdup(url);
@@ -192,17 +231,16 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 			}
 		}
 	}
-
+*/
 	// just use one block of memory for all parsed URI parts
 	slen = strlen(url);
 	iri = xmalloc(sizeof(wget_iri_t) + slen * 2 + 2);
 	memset(iri, 0, sizeof(wget_iri_t));
-	strcpy(((char *)iri) + sizeof(wget_iri_t), url);
-	iri->uri = ((char *)iri) + sizeof(wget_iri_t);
-	s = ((char *)iri) + sizeof(wget_iri_t) + slen + 1;
-	strcpy(s, url);
-	if (url_allocated)
-		xfree(url);
+	iri->uri = memcpy(((char *)iri) + sizeof(wget_iri_t), url, slen + 1);
+	s = memcpy((char *)iri->uri + slen + 1, url, slen + 1);
+
+//	if (url_allocated)
+//		xfree(url);
 
 	p = s;
 	if (isalpha(*p)) {
@@ -222,6 +260,8 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 		// find the scheme in our static list of supported schemes
 		// for later comparisons we compare pointers (avoiding strcasecmp())
 		iri->scheme = p;
+		wget_iri_unescape_inline((char *)iri->scheme);
+
 		for (it = 0; wget_iri_schemes[it]; it++) {
 			if (!wget_strcasecmp_ascii(wget_iri_schemes[it], p)) {
 				iri->scheme = wget_iri_schemes[it];
@@ -251,6 +291,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 		s++;
 	c = *s;
 	if (c) *s++ = 0;
+	wget_iri_unescape_inline(authority);
 
 	// left over: [path][?query][#fragment]
 	if (c == '/') {
@@ -259,6 +300,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 			s++;
 		c = *s;
 		if (c) *s++ = 0;
+		wget_iri_unescape_inline((char *)iri->path);
 	}
 
 	if (c == '?') {
@@ -267,11 +309,13 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 			s++;
 		c = *s;
 		if (c) *s++ = 0;
+		/* do not unescape query else we get ambiguity for chars like &, =, +, ... */
 	}
 
 	if (c == '#') {
 		iri->fragment = s;
 		s += strlen(s);
+		wget_iri_unescape_inline((char *)iri->fragment);
 	}
 
 	if (*s) {
@@ -313,10 +357,19 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 
 	iri->resolv_port = iri->port ? iri->port : default_port;
 
-	// now unescape all components (not interested in display, userinfo, password)
+	// now unescape all components (not interested in display, userinfo, password right now)
+
 	if (iri->host) {
 		wget_strtolower((char *)iri->host);
+		if (wget_str_needs_encoding(iri->host)) {
+			if ((s = wget_str_to_utf8(iri->host, encoding))) {
+				iri->host = s;
+				iri->host_allocated = 1;
+			}
+		}
 		if ((p = (char *)wget_str_to_ascii(iri->host)) != iri->host) {
+			if (iri->host_allocated)
+				xfree(iri->host);
 			iri->host = p;
 			iri->host_allocated = 1;
 		}
@@ -326,6 +379,27 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 			error_printf(_("Missing host/domain in URI '%s'\n"), iri->uri);
 			wget_iri_free(&iri);
 			return NULL;
+		}
+	}
+
+	if (iri->path && wget_str_needs_encoding(iri->path)) {
+		if ((s = wget_str_to_utf8(iri->path, encoding))) {
+			iri->path = s;
+			iri->path_allocated = 1;
+		}
+	}
+
+	if (iri->query && wget_str_needs_encoding(iri->query)) {
+		if ((s = wget_str_to_utf8(iri->query, encoding))) {
+			iri->query = s;
+			iri->query_allocated = 1;
+		}
+	}
+
+	if (iri->fragment && wget_str_needs_encoding(iri->fragment)) {
+		if ((s = wget_str_to_utf8(iri->fragment, encoding))) {
+			iri->fragment = s;
+			iri->fragment_allocated = 1;
 		}
 	}
 
@@ -674,6 +748,7 @@ const char *wget_iri_get_escaped_host(const wget_iri_t *iri, wget_buffer_t *buf)
 	return wget_iri_escape(iri->host, buf);
 }
 
+// return the 'resource' string for HTTP requests
 const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer_t *buf)
 {
 	if (iri->path)
@@ -681,12 +756,7 @@ const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer_t *
 
 	if (iri->query) {
 		wget_buffer_memcat(buf, "?", 1);
-		wget_iri_escape_query(iri->query, buf);
-	}
-
-	if (iri->fragment) {
-		wget_buffer_memcat(buf, "#", 1);
-		wget_iri_escape(iri->fragment, buf);
+		wget_buffer_strcat(buf, iri->query);
 	}
 
 	return buf->data;

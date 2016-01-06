@@ -416,6 +416,8 @@ static void test_iri_parse(void)
 		{ "http://example.com:81", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "81", NULL, NULL, NULL},
 		{ "http://example.com/index.html", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", NULL, NULL},
 		{ "http://example.com/index.html?query#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "query", "frag"},
+		{ "http://example.com/index.html?query&param#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "query&param", "frag"},
+		{ "http://example.com/index.html?query&par%26am%61x=1#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "query&par%26am%61x=1", "frag"},
 		{ "http://example.com/index.html?#", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, "index.html", "", ""},
 		{ "碼標準萬國碼.com", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "xn--9cs565brid46mda086o.com", NULL, NULL, NULL, NULL},
 		//		{ "ftp://cnn.example.com&story=breaking_news@10.0.0.1/top_story.htm", NULL,"ftp",NULL,NULL,"cnn.example.com",NULL,NULL,"story=breaking_news@10.0.0.1/top_story.htm",NULL }
