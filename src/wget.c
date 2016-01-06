@@ -466,7 +466,7 @@ static int in_host_pattern_list(const wget_vector_t *v, const char *hostname)
 		if (strpbrk(pattern, "*?[]")) {
 			if (!fnmatch(pattern, hostname, 0))
 				return 1;
-		} else if (wget_match_tail(hostname, pattern)) {
+		} else if (wget_match_tail(pattern, hostname)) {
 			return 1;
 		}
 	}
