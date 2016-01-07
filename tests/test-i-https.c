@@ -58,6 +58,10 @@ int main(void)
 		}
 	};
 
+#ifndef WITH_GNUTLS
+	exit(77);
+#endif
+
 	// functions won't come back if an error occurs
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
