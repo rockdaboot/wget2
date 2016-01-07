@@ -186,6 +186,10 @@ void wget_hash_deinit(wget_hash_hd_t *handle, void *digest)
 }
 #elif defined (WITH_LIBNETTLE)
 #include <nettle/nettle-meta.h>
+#include <nettle/md2.h>
+#include <nettle/md5.h>
+#include <nettle/ripemd160.h>
+#include <nettle/sha2.h>
 
 struct _wget_hash_hd_st {
 	const struct nettle_hash
@@ -253,16 +257,16 @@ int wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm)
 	}
 }
 
-int wget_hash(wget_hash_hd_t *handle, const void *text, size_t textlen)
+int wget_hash(wget_hash_hd_t *dig, const void *text, size_t textlen)
 {
-	handle->hash->update(handle->context, textlen, text);
+	dig->hash->update(dig->context, textlen, text);
 	return 0;
 }
 
-void wget_hash_deinit(wget_hash_hd_t *handle, void *digest)
+void wget_hash_deinit(wget_hash_hd_t *dig, void *digest)
 {
-	handle->hash->update(handle->context, handle->hash->digest_size, digest);
-	xfree(handle->context);
+	dig->hash->digest(dig->context, dig->hash->digest_size, digest);
+	xfree(dig->context);
 }
 #else // empty functions which return error
 #define _U G_GNUC_WGET_UNUSED
