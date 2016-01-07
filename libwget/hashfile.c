@@ -184,6 +184,7 @@ void wget_hash_deinit(wget_hash_hd_t *handle, void *digest)
 {
 	gnutls_hash_deinit(handle->dig, digest);
 }
+
 #elif defined (WITH_LIBNETTLE)
 #include <nettle/nettle-meta.h>
 #include <nettle/md2.h>
@@ -267,6 +268,77 @@ void wget_hash_deinit(wget_hash_hd_t *dig, void *digest)
 {
 	dig->hash->digest(dig->context, dig->hash->digest_size, digest);
 	xfree(dig->context);
+}
+
+#elif defined (WITH_GCRYPT)
+#include <gcrypt.h>
+#define MD5_CTX    gcry_md_hd_t
+#define SHA_CTX    gcry_md_hd_t
+#define SHA256_CTX gcry_md_hd_t
+
+struct _wget_hash_hd_st {
+	int
+		algorithm;
+	gcry_md_hd_t
+		context;
+};
+
+static const int _gcrypt_algorithm[] = {
+	[WGET_DIGTYPE_UNKNOWN] = GCRY_MD_NONE,
+	[WGET_DIGTYPE_MD2] = GCRY_MD_MD2,
+	[WGET_DIGTYPE_MD5] = GCRY_MD_MD5,
+	[WGET_DIGTYPE_RMD160] = GCRY_MD_RMD160,
+	[WGET_DIGTYPE_SHA1] = GCRY_MD_SHA1,
+	[WGET_DIGTYPE_SHA224] = GCRY_MD_SHA224,
+	[WGET_DIGTYPE_SHA256] = GCRY_MD_SHA256,
+	[WGET_DIGTYPE_SHA384] = GCRY_MD_SHA384,
+	[WGET_DIGTYPE_SHA512] = GCRY_MD_SHA512
+};
+
+int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
+{
+	wget_hash_hd_t dig;
+
+	if (wget_hash_init(&dig, algorithm) == 0) {
+		if (wget_hash(&dig, text, textlen) == 0) {
+			wget_hash_deinit(&dig, digest);
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+int wget_hash_get_len(wget_digest_algorithm_t algorithm)
+{
+	if (algorithm >= 0 && algorithm < countof(_gcrypt_algorithm))
+		return gcry_md_get_algo_dlen(_gcrypt_algorithm[algorithm]);
+	else
+		return 0;
+}
+
+int wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm)
+{
+	if (algorithm >= 0 && algorithm < countof(_gcrypt_algorithm)) {
+		dig->algorithm = _gcrypt_algorithm[algorithm];
+		gcry_md_open(&dig->context, dig->algorithm, 0);
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
+int wget_hash(wget_hash_hd_t *dig, const void *text, size_t textlen)
+{
+	gcry_md_write(dig->context, text, textlen);
+	return 0;
+}
+
+void wget_hash_deinit(wget_hash_hd_t *dig, void *digest)
+{
+	gcry_md_final(dig->context);
+	void *ret = gcry_md_read(dig->context, dig->algorithm);
+	memcpy(digest, ret, gcry_md_get_algo_dlen(dig->algorithm));
 }
 #else // empty functions which return error
 #define _U G_GNUC_WGET_UNUSED

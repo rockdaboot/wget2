@@ -227,7 +227,7 @@ AS_IF([test "x$with_gnutls" != "xno"], [
   ], [
     AC_SEARCH_LIBS(gnutls_global_init, gnutls,
       [with_gnutls=yes; AC_DEFINE([WITH_GNUTLS], [1], [Use GnuTLS])],
-      [with_gnutls=no;  AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS. Fallback to libnettle for Metalink checksumming.)])
+      [with_gnutls=no;  AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS. Fallback to libnettle for hashing and checksumming.)])
   ])
   AC_SEARCH_LIBS(gnutls_hash, gnutls, [with_gnutls_hash=yes])
   AC_CHECK_FUNCS(gnutls_srp_server_get_username, gnutls)
@@ -235,11 +235,18 @@ AS_IF([test "x$with_gnutls" != "xno"], [
 AM_CONDITIONAL([WITH_GNUTLS], [test "x$with_gnutls" = xyes])
 
 AS_IF([test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes], [
-  AC_SEARCH_LIBS(nettle_md5_init, nettle,
-    [with_libnettle=yes; AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])],
-    [with_libnettle=no;  AC_MSG_WARN(*** LIBNETTLE was not found. Metalink checksumming is not available.)])
+#  AC_SEARCH_LIBS(nettle_md5_init, nettle,
+#    [with_libnettle=yes; AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])],
+#    [with_libnettle=no;  AC_MSG_WARN(*** LIBNETTLE was not found. Fallback to libgcrypt for hashing and checksumming.)])
+
+  AS_IF([test "x$with_libnettle" != xyes], [
+    AC_SEARCH_LIBS(gcry_check_version, gcrypt,
+      [with_gcrypt=yes; AC_DEFINE([WITH_GCRYPT], [1], [Use libgcrypt])],
+      [with_gcrypt=no;  AC_MSG_WARN(*** LIBGCRYPT was not found. Metalink checksumming and HTTP authentication are not available.)])
+  ])
 ])
 AM_CONDITIONAL([WITH_LIBNETTLE], [test "x$with_libnettle" = xyes])
+AM_CONDITIONAL([WITH_CRYPT], [test "x$with_gcrypt" = xyes])
 
 AS_IF([test "x$with_gnutls" = xyes], [
   AC_CHECK_HEADERS([gnutls/ocsp.h])
