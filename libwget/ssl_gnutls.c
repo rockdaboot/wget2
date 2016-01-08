@@ -1455,13 +1455,13 @@ void wget_ssl_set_config_string(int key, const char *value) { }
 void wget_ssl_set_config_int(int key, int value) { }
 void wget_ssl_init(void) { }
 void wget_ssl_deinit(void) { }
-int wget_ssl_open(wget_tcp_t *tcp) { return WGET_E_UNKNOWN; }
+int wget_ssl_open(wget_tcp_t *tcp) { return WGET_E_TLS_DISABLED; }
 void wget_ssl_close(void **session) { }
 ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout) { return 0; }
 ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout) { return 0; }
 void wget_ssl_server_init(void) { }
 void wget_ssl_server_deinit(void) { }
-int wget_ssl_server_open(wget_tcp_t *tcp) { return WGET_E_UNKNOWN; }
+int wget_ssl_server_open(wget_tcp_t *tcp) { return WGET_E_TLS_DISABLED; }
 void wget_ssl_server_close(void **session) { }
 
 #endif // WITH_GNUTLS
