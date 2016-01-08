@@ -987,7 +987,8 @@ static void test_cookies(void)
 
 		wget_cookie_store_cookie(cookies, &cookie);
 
-		info_printf("%s\n", header = wget_cookie_create_request_header(cookies, iri));
+		// just check for memory issues
+		header = wget_cookie_create_request_header(cookies, iri);
 		xfree(header);
 
 		ok++;
