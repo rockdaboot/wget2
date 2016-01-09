@@ -1,5 +1,7 @@
 DEFS = @DEFS@ -DSYSCONFDIR=\"$(sysconfdir)/@PACKAGE@\" -DLOCALEDIR=\"$(localedir)\"
 
+LDADD = $(LIBOBJS) ../lib/libgnu.a
+
 bin_PROGRAMS = wget2
 wget2_SOURCES = bar.c bar.h blacklist.c blacklist.h host.c host.h job.c job.h log.c log.h\
  wget.c wget.h options.c options.h compat_fnmatch.c compat_fnmatch.h

@@ -10,6 +10,63 @@ AM_INIT_AUTOMAKE
 CFLAGS=$CFLAGS
 AC_USE_SYSTEM_EXTENSIONS
 
+AC_CANONICAL_HOST
+case $host_os in
+  linux*)
+    ;;
+  mingw*)
+    XTRA_CFLAGS="-Wno-attributes -fno-PIC"
+#    XTRA_LIBS=-lws2_32
+    ;;
+  cygwin*)
+    XTRA_CFLAGS="-Wno-char-subscripts -fno-PIC"
+    ;;
+#  *)
+#    AC_MSG_ERROR([$host_os is not currently supported])
+#    ;;
+esac
+
+#if test "$CFLAGS" = ""; then
+#  if test "$GCC" = "yes"; then
+#   CFLAGS="-g -std=gnu99 -pedantic -fPIC\
+# -Wall -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes\
+# -Wwrite-strings -Wformat=2 -Wformat -Wformat-security\
+# -Wsign-compare -Wextra -D_FORTIFY_SOURCE=2\
+# -Wcast-align -O2"
+#  fi
+#else
+#  CFLAGS="$CFLAGS -fPIC"
+#fi
+#if test "$LDFLAGS" = ""; then
+#  if test "$GCC" = "yes"; then
+##    LDFLAGS="-fPIE -pie -Wl,-z,relro,--as-needed"
+#    LDFLAGS="-fPIE -pie -Wl,--as-needed -ffunction-sections"
+#  fi
+#fi
+# Append EXTRA_CFLAGS to CFLAGS, if defined.
+if test "$EXTRA_CFLAGS" != ""; then
+  CFLAGS="$CFLAGS $EXTRA_CFLAGS"
+fi
+if test "$XTRA_CFLAGS" != ""; then
+  CFLAGS="$CFLAGS $XTRA_CFLAGS"
+fi
+
+# If CFLAGS isn't defined and using gcc, set CFLAGS to something reasonable.
+# Otherwise, just prevent autoconf from molesting CFLAGS.
+#AC_PROG_CC
+AC_PROG_CC_STDC
+
+#
+# Require C99 support
+#
+AC_PROG_CC_C99
+if test "$ac_cv_prog_cc_c99" = "no"; then
+  AC_ERROR([Compiler does not support C99. Aborting.])
+fi
+
+gl_EARLY
+gl_INIT
+
 LT_PREREQ([2.2])
 LT_INIT([dlopen])
 
@@ -43,59 +100,13 @@ AC_CONFIG_MACRO_DIR([m4])
 # Non-verbose make
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-AC_CANONICAL_HOST
-case $host_os in
-  linux*)
-    ;;
-  mingw*)
-    XTRA_CFLAGS="-Wno-attributes -fno-PIC"
-#    XTRA_LIBS=-lws2_32
-    ;;
-  cygwin*)
-    XTRA_CFLAGS="-Wno-char-subscripts -fno-PIC"
-    ;;
-#  *)
-#    AC_MSG_ERROR([$host_os is not currently supported])
-#    ;;
-esac
-
-# Checks for programs.
-
-# If CFLAGS isn't defined and using gcc, set CFLAGS to something reasonable.
-# Otherwise, just prevent autoconf from molesting CFLAGS.
-#AC_PROG_CC
-AC_PROG_CC_STDC
-
-#if test "$CFLAGS" = ""; then
-#  if test "$GCC" = "yes"; then
-#   CFLAGS="-g -std=gnu99 -pedantic -fPIC\
-# -Wall -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes\
-# -Wwrite-strings -Wformat=2 -Wformat -Wformat-security\
-# -Wsign-compare -Wextra -D_FORTIFY_SOURCE=2\
-# -Wcast-align -O2"
-#  fi
-#else
-#  CFLAGS="$CFLAGS -fPIC"
-#fi
-#if test "$LDFLAGS" = ""; then
-#  if test "$GCC" = "yes"; then
-##    LDFLAGS="-fPIE -pie -Wl,-z,relro,--as-needed"
-#    LDFLAGS="-fPIE -pie -Wl,--as-needed -ffunction-sections"
-#  fi
-#fi
-# Append EXTRA_CFLAGS to CFLAGS, if defined.
-if test "$EXTRA_CFLAGS" != ""; then
-  CFLAGS="$CFLAGS $EXTRA_CFLAGS"
-fi
-if test "$XTRA_CFLAGS" != ""; then
-  CFLAGS="$CFLAGS $XTRA_CFLAGS"
-fi
-
 # Check for large file support.  This check needs to come fairly
 # early because it could (in principle) affect whether functions and
 # headers are available, whether they work, etc.
 AC_SYS_LARGEFILE
 AC_CHECK_SIZEOF(off_t)
+
+# Checks for programs.
 
 #AM_NLS
 #IT_PROG_INTLTOOL([0.40.0])
@@ -103,14 +114,6 @@ AC_PROG_LEX
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AM_PROG_CC_C_O
-
-#
-# Require C99 support
-#
-AC_PROG_CC_C99
-if test "$ac_cv_prog_cc_c99" = "no"; then
-  AC_ERROR([Compiler does not support C99. Aborting.])
-fi
 
 #
 # Gettext
@@ -418,6 +421,7 @@ if test x$ac_cv_func_qsort_r = xyes ; then
 fi
 
 AC_CONFIG_FILES([Makefile
+                 lib/Makefile
                  include/Makefile
                  libwget/Makefile
                  src/Makefile

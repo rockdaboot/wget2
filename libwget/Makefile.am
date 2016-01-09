@@ -1,3 +1,4 @@
+LDADD = $(LIBOBJS) ../lib/libgnu.a
 lib_LTLIBRARIES = libwget-@LIBWGET_VERSION@.la
 libwget_@LIBWGET_VERSION@_la_SOURCES = \
  atom_url.c bar.c buffer.c buffer_printf.c base64.c compat.c cookie.c\

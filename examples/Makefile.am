@@ -3,7 +3,7 @@ noinst_PROGRAMS = print_css_urls print_css_urls2 print_css_urls3 http_get\
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_LDFLAGS = -static
-LDADD = ../libwget/libwget-@LIBWGET_VERSION@.la @LTLIBICONV@ @LTLIBINTL@
+LDADD = $(LIBOBJS) ../libwget/libwget-@LIBWGET_VERSION@.la @LTLIBICONV@ @LTLIBINTL@ ../lib/libgnu.a
 # local_ldadd = $(top_srcdir)/libwget/libwget.la
 
 #print_css_urls_SOURCES = print_css_urls.c

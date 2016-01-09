@@ -23,6 +23,7 @@ git_push
 src/wget2
 ABOUT-NLS
 aclocal.m4
+ar-lib
 autom4te.cache
 compile
 config.guess
@@ -45,6 +46,7 @@ libwget/css_tokenizer.c
 gtk-doc.make
 INSTALL
 install-sh
+lib
 libwget-0.1.pc
 libtool
 ltmain.sh
@@ -60,9 +62,10 @@ po/en@quot.header
 po/insert-header.sin
 po/quot.sed
 po/remove-potcdate.sin
-po/wget.pot
+po/wget2.pot
 po/remove-potcdate.sed
 po/stamp-po
+snippet
 stamp-h1
 test-driver
 tests/buffer_printf2_perf

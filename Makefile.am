@@ -6,7 +6,7 @@ else
 SUBDIRS =
 endif
 
-SUBDIRS += include libwget src data examples $(LIBWGET_DOCS) tests
+SUBDIRS += lib include libwget src data examples $(LIBWGET_DOCS) tests
 
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 
@@ -20,4 +20,4 @@ ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libwget-$(LIBWGET_VERSION).pc
 
-EXTRA_DIST = config.rpath
+EXTRA_DIST = config.rpath m4/gnulib-cache.m4

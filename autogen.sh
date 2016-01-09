@@ -6,6 +6,12 @@ if test $? -ne 0; then
   exit 1
 fi
 
+GIT=$(which git 2>/dev/null)
+if test $? -ne 0; then
+  echo "No 'git' found. You must install the git package."
+  exit 1
+fi
+
 # create m4 before gtkdocize
 mkdir m4 2>/dev/null
 
@@ -20,6 +26,16 @@ if test $? -ne 0; then
 else
   $GTKDOCIZE || exit $?
 fi
+
+$GIT submodule init
+$GIT submodule update
+
+gnulib_modules="
+fcntl
+strdup
+"
+
+gnulib/gnulib-tool --import $gnulib_modules
 
 $AUTORECONF --install --force --symlink || exit $?
 
