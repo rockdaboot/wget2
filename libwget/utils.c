@@ -169,10 +169,10 @@ int wget_strcasecmp_ascii(const char *s1, const char *s2)
 				s2++;
 			}
 
-			if (*s1 || *s2)
+			if (_lower[(unsigned)*s1] && _lower[(unsigned)*s2])
 				return _lower[(unsigned)*s1] - _lower[(unsigned)*s2];
-
-			return 0;
+			else
+				return *s1 - *s2;
 		}
 	}
 }
@@ -209,8 +209,12 @@ int wget_strncasecmp_ascii(const char *s1, const char *s2, size_t n)
 				s2++;
 			}
 
-			if ((ssize_t)n >= 0 && (*s1 || *s2))
-				return _lower[(unsigned)*s1] - _lower[(unsigned)*s2];
+			if ((ssize_t)n >= 0) {
+				if (_lower[(unsigned)*s1] && _lower[(unsigned)*s2])
+					return _lower[(unsigned)*s1] - _lower[(unsigned)*s2];
+				else
+					return *s1 - *s2;
+			}
 
 			return 0;
 		}
