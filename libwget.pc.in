@@ -3,9 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: @PACKAGE_NAME@
+Name: libwget
 Description: Wget downloader C library.
 Version: @LIBWGET_VERSION@
 URL: @PACKAGE_URL@
-Libs: -L${libdir} -llibwget
+Libs: -L${libdir} -lwget
 Cflags: -I${includedir}/libwget -I${libdir}/libwget/include
