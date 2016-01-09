@@ -16,8 +16,8 @@ WGET_TESTS = test test-wget-1 test-restrict-ascii test-i-http test-i-https test-
 check_PROGRAMS = buffer_printf2_perf stringmap_perf $(WGET_TESTS)
 
 test_SOURCES = test.c
-test_LDADD = ../libwget/libwget.la ../src/wget2-log.o ../src/wget2-options.o @LTLIBICONV@ @LTLIBINTL@
-test_parse_html_LDADD = ../libwget/libwget.la ../src/wget2-log.o ../src/wget2-options.o @LTLIBICONV@ @LTLIBINTL@
+test_LDADD = ../libwget/libwget.la ../src/log.o ../src/options.o @LTLIBICONV@ @LTLIBINTL@ ../lib/libgnu.a
+test_parse_html_LDADD = ../libwget/libwget.la ../src/log.o ../src/options.o @LTLIBICONV@ @LTLIBINTL@ ../lib/libgnu.a
 
 noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = libtest.c

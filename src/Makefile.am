@@ -1,12 +1,12 @@
 DEFS = @DEFS@ -DSYSCONFDIR=\"$(sysconfdir)/@PACKAGE@\" -DLOCALEDIR=\"$(localedir)\"
 
 LDADD = $(LIBOBJS) ../lib/libgnu.a
+AM_CPPFLAGS = -I$(top_srcdir)/include -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib
 
 bin_PROGRAMS = wget2
 wget2_SOURCES = bar.c bar.h blacklist.c blacklist.h host.c host.h job.c job.h log.c log.h\
  wget.c wget.h options.c options.h compat_fnmatch.c compat_fnmatch.h
-wget2_CPPFLAGS = -I$(top_srcdir)/include
-wget2_LDADD = ../libwget/libwget.la @LTLIBICONV@ @LTLIBINTL@
+wget2_LDADD = ../libwget/libwget.la @LTLIBICONV@ @LTLIBINTL@ ../lib/libgnu.a
 wget2_LDFLAGS = -static
 
 #x_SOURCES = test_linking.c

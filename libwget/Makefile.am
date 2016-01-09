@@ -1,4 +1,6 @@
 LDADD = $(LIBOBJS) ../lib/libgnu.a
+AM_CPPFLAGS = -I$(top_srcdir)/include -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib
+
 lib_LTLIBRARIES = libwget.la
 libwget_la_SOURCES = \
  atom_url.c bar.c buffer.c buffer_printf.c base64.c compat.c cookie.c\
@@ -8,7 +10,7 @@ libwget_la_SOURCES = \
  robots.c rss_url.c sitemap_url.c ssl_gnutls.c stringmap.c thread.c utils.c vector.c xalloc.c\
  xml.c private.h http_highlevel.c
 
-libwget_la_CPPFLAGS = -I$(top_srcdir)/include -I$(srcdir)
+#libwget_la_CPPFLAGS = -I$(top_srcdir)/include -I$(srcdir)
 
 # include ABI version information
 libwget_la_LDFLAGS = -version-info $(LIBWGET_SO_VERSION)
@@ -16,8 +18,7 @@ libwget_la_LDFLAGS = -version-info $(LIBWGET_SO_VERSION)
 #bin_PROGRAMS = test_linking
 noinst_PROGRAMS = test_linking
 test_linking_SOURCES = test_linking.c
-test_linking_CPPFLAGS = -I$(top_srcdir)/include
-test_linking_LDADD = libwget.la @LTLIBICONV@ @LTLIBINTL@ $(LIBS)
+test_linking_LDADD = libwget.la @LTLIBICONV@ @LTLIBINTL@ $(LIBS) ../lib/libgnu.a
 test_linking_LDFLAGS = -static
 
 css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
