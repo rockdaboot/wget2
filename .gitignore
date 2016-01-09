@@ -47,7 +47,7 @@ gtk-doc.make
 INSTALL
 install-sh
 lib
-libwget-0.1.pc
+libwget.pc
 libtool
 ltmain.sh
 m4

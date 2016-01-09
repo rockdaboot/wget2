@@ -5,7 +5,7 @@ includedir=@includedir@
 
 Name: @PACKAGE_NAME@
 Description: Wget downloader C library.
-Version: @PACKAGE_VERSION@
+Version: @LIBWGET_VERSION@
 URL: @PACKAGE_URL@
-Libs: -L${libdir} -llibwget-@LIBWGET_API_VERSION@
-Cflags: -I${includedir}/libwget-@LIBWGET_API_VERSION@ -I${libdir}/libwget-@LIBWGET_API_VERSION@/include
+Libs: -L${libdir} -llibwget
+Cflags: -I${includedir}/libwget -I${libdir}/libwget/include

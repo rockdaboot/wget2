@@ -428,7 +428,7 @@ AC_CONFIG_FILES([Makefile
                  data/Makefile
                  examples/Makefile
                  tests/Makefile
-                 libwget-${LIBWGET_VERSION}.pc:libwget.pc.in])
+                 libwget.pc])
 AC_OUTPUT
 
 AC_MSG_NOTICE([Summary of build options:
