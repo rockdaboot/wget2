@@ -170,7 +170,7 @@ int wget_strcasecmp_ascii(const char *s1, const char *s2)
 			}
 
 			if (*s1 || *s2)
-				return *s1 - *s2;
+				return _lower[(unsigned)*s1] - _lower[(unsigned)*s2];
 
 			return 0;
 		}
@@ -210,7 +210,7 @@ int wget_strncasecmp_ascii(const char *s1, const char *s2, size_t n)
 			}
 
 			if ((ssize_t)n >= 0 && (*s1 || *s2))
-				return *s1 - *s2;
+				return _lower[(unsigned)*s1] - _lower[(unsigned)*s2];
 
 			return 0;
 		}
