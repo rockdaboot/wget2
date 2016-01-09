@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/rockdaboot/wget2.png?branch=master)](https://travis-ci.org/rockdaboot/wget2)
+
 Wget2 - multithreaded metalink / file / website downloader / spider and library
 ===============================================================================
 
