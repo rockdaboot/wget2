@@ -47,6 +47,9 @@
 # include <idn2.h>
 #elif defined(HAVE_IDNA_H) && defined(WITH_LIBIDN)
 # include <idna.h>
+#elif defined(HAVE_IDN_IDNA_H) && defined(WITH_LIBIDN)
+// OpenSolaris uses the idn subdir
+# include <idn/idna.h>
 #endif
 
 #if defined(HAVE_UNICASE_H) && defined(WITH_LIBUNISTRING)
