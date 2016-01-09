@@ -68,7 +68,7 @@ gl_EARLY
 gl_INIT
 
 LT_PREREQ([2.2])
-LT_INIT([dlopen])
+LT_INIT([dlopen disable-static])
 
 # Define these substitions here to keep all version information in one place.
 # For information on how to properly maintain the library version information,
