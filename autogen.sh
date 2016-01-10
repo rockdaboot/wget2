@@ -33,6 +33,7 @@ $GIT submodule update
 gnulib_modules="
 fcntl
 flock
+fnmatch
 strdup
 "
 

@@ -41,6 +41,8 @@
 #include <errno.h>
 #include <ctype.h>
 #include <time.h>
+#include <fnmatch.h>
+
 //#include <sys/socket.h>
 //#include <sys/select.h>
 #include <sys/stat.h>
@@ -56,12 +58,6 @@
 #include "blacklist.h"
 #include "host.h"
 #include "bar.h"
-
-#if defined(HAVE_FNMATCH_H) && defined(HAVE_FNMATCH) && defined(FNM_CASEFOLD)
-#	include <fnmatch.h>
-#else
-#	include "compat_fnmatch.h"
-#endif
 
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)
