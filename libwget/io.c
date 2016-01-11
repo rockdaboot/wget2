@@ -38,16 +38,7 @@
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <errno.h>
-
-#ifdef WIN32
-#	include <winsock2.h>
-#elif defined(HAVE_SYS_POLL_H)
-#	include <sys/poll.h>
-#elif defined(HAVE_POLL_H)
-#	include <poll.h>
-#else
-#	include <sys/select.h>
-#endif
+#include <poll.h>
 
 #include <libwget.h>
 #include "private.h"
@@ -218,7 +209,6 @@ ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
  * the bitwise or of `WGET_IO_WRITABLE` and `WGET_IO_READABLE`.
  *
  */
-#ifdef POLLIN
 int wget_ready_2_transfer(int fd, int timeout, short mode)
 {
 	struct pollfd pollfd;
@@ -245,36 +235,6 @@ int wget_ready_2_transfer(int fd, int timeout, short mode)
 
 	return mode;
 }
-#else
-int wget_ready_2_transfer(int fd, int timeout, int mode)
-{
-	// 0: no timeout / immediate
-	// -1: INFINITE timeout
-	// >0: number of milliseconds to wait
-	if (timeout) {
-		fd_set fdset;
-		struct timeval tmo = { timeout / 1000, (timeout % 1000) * 1000 };
-		int rc;
-
-		FD_ZERO(&fdset);
-		FD_SET(fd, &fdset);
-
-		if (mode == WGET_IO_READABLE) {
-			if (mode == WGET_IO_WRITABLE)
-				rc = select(fd + 1, &fdset, &fdset, NULL, &tmo);
-			else
-				rc = select(fd + 1, &fdset, NULL, NULL, &tmo);
-		} else {
-			rc = select(fd + 1, NULL, &fdset, NULL, &tmo);
-		}
-
-		if (rc <= 0)
-			return rc;
-	}
-
-	return 1;
-}
-#endif
 
 /**
  * wget_ready_2_read:
