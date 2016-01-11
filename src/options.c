@@ -51,9 +51,6 @@
 #include <pwd.h>
 #include <errno.h>
 #include <glob.h>
-#ifdef HAVE_ALLOCA_H
-#	include <alloca.h>
-#endif
 #include <fcntl.h>
 #include <time.h>
 #include <sys/stat.h>
@@ -965,7 +962,8 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 	debug_printf("Reading %s\n", cfgfile);
 
-	wget_buffer_init(&linebuf, alloca(1024), 1024);
+	char tmp[1024];
+	wget_buffer_init(&linebuf, tmp, sizeof(tmp));
 
 	while ((len = wget_getline(&buf, &bufsize, fp)) >= 0) {
 		if (len == 0 || *buf == '\r' || *buf == '\n') continue;

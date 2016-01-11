@@ -379,7 +379,6 @@ AC_TYPE_UINT8_T
 AC_CHECK_TYPES([ptrdiff_t])
 
 # Checks for library functions.
-AC_FUNC_ALLOCA
 AC_FUNC_FORK
 #AC_FUNC_MALLOC
 AC_FUNC_MMAP
@@ -388,8 +387,7 @@ AC_CHECK_FUNCS([\
  dprintf dup2 memchr\
  memmove memset mkdir munmap select setlocale socket strcasecmp\
  strchr strerror strncasecmp strrchr strstr strlcpy \
- vasprintf nl_langinfo pwrite \
- qsort_r])
+ vasprintf nl_langinfo pwrite qsort_r])
 
 # BSD / OSX have a qsort_r with swapped arguments
 if test x$ac_cv_func_qsort_r = xyes ; then

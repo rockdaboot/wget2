@@ -34,9 +34,6 @@
 #include <strings.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#ifdef HAVE_ALLOCA_H
-#	include <alloca.h>
-#endif
 #ifdef HAVE_MMAP
 #	include <sys/mman.h>
 #endif
@@ -411,10 +408,9 @@ int wget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_
 
 	if ((algorithm = wget_hash_get_algorithm(type)) != WGET_DIGTYPE_UNKNOWN) {
 		unsigned char digest[wget_hash_get_len(algorithm)];
-		char *buf;
 
 #ifdef HAVE_MMAP
-		buf = mmap(NULL, length, PROT_READ, MAP_PRIVATE, fd, offset);
+		char *buf = mmap(NULL, length, PROT_READ, MAP_PRIVATE, fd, offset);
 
 		if (buf != MAP_FAILED) {
 			if (wget_hash_fast(algorithm, buf, length, digest) == 0) {
@@ -427,12 +423,11 @@ int wget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_
 			// Fallback to read
 			ssize_t nbytes = 0;
 			wget_hash_hd_t dig;
-
-			buf = alloca(65536);
+			char tmp[65536];
 
 			wget_hash_init(&dig, algorithm);
-			while (length > 0 && (nbytes = read(fd, buf, 65536)) > 0) {
-				wget_hash(&dig, buf, nbytes);
+			while (length > 0 && (nbytes = read(fd, tmp, sizeof(tmp))) > 0) {
+				wget_hash(&dig, tmp, nbytes);
 				
 				if (nbytes <= length)
 					length -= nbytes;
