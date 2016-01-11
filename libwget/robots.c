@@ -54,10 +54,10 @@ ROBOTS *wget_robots_parse(const char *data)
 	robots = xcalloc(1, sizeof (ROBOTS));
 
 	do {
-		if (collect < 2 && !strncasecmp(data, "User-agent:", 11)) {
+		if (collect < 2 && !wget_strncasecmp_ascii(data, "User-agent:", 11)) {
 			if (!collect) {
 				for (data += 11; *data == ' ' || *data == '\t'; data++);
-				if (!strncasecmp(data, "wget", 4)) {
+				if (!wget_strncasecmp_ascii(data, "wget", 4)) {
 					collect = 1;
 				}
 				else if (*data == '*') {
@@ -66,7 +66,7 @@ ROBOTS *wget_robots_parse(const char *data)
 			} else
 				collect = 2;
 		}
-		else if (collect == 1 && !strncasecmp(data, "Disallow:", 9)) {
+		else if (collect == 1 && !wget_strncasecmp_ascii(data, "Disallow:", 9)) {
 			for (data += 9; *data == ' ' || *data == '\t'; data++);
 			if (*data == '\r' || *data == '\n' || !*data) {
 				// all allowed
@@ -83,7 +83,7 @@ ROBOTS *wget_robots_parse(const char *data)
 				wget_vector_add(robots->paths, &path, sizeof(path));
 			}
 		}
-		else if (!strncasecmp(data, "Sitemap:", 8)) {
+		else if (!wget_strncasecmp_ascii(data, "Sitemap:", 8)) {
 			for (data += 8; *data==' ' || *data == '\t'; data++);
 			for (p = data; !isspace(*p); p++);
 

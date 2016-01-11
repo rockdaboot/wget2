@@ -1123,27 +1123,27 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 
 		switch (*name | 0x20) {
 		case 'c':
-			if (!strncasecmp(name, "Content-Encoding", namelen)) {
+			if (!wget_strncasecmp_ascii(name, "Content-Encoding", namelen)) {
 				wget_http_parse_content_encoding(s, &resp->content_encoding);
-			} else if (!strncasecmp(name, "Content-Type", namelen)) {
+			} else if (!wget_strncasecmp_ascii(name, "Content-Type", namelen)) {
 				wget_http_parse_content_type(s, &resp->content_type, &resp->content_type_encoding);
-			} else if (!strncasecmp(name, "Content-Length", namelen)) {
+			} else if (!wget_strncasecmp_ascii(name, "Content-Length", namelen)) {
 				resp->content_length = (size_t)atoll(s);
 				resp->content_length_valid = 1;
-			} else if (!strncasecmp(name, "Content-Disposition", namelen)) {
+			} else if (!wget_strncasecmp_ascii(name, "Content-Disposition", namelen)) {
 				wget_http_parse_content_disposition(s, &resp->content_filename);
-			} else if (!strncasecmp(name, "Connection", namelen)) {
+			} else if (!wget_strncasecmp_ascii(name, "Connection", namelen)) {
 				wget_http_parse_connection(s, &resp->keep_alive);
 			}
 			break;
 		case 'l':
-			if (!strncasecmp(name, "Last-Modified", namelen)) {
+			if (!wget_strncasecmp_ascii(name, "Last-Modified", namelen)) {
 				// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
 				resp->last_modified = wget_http_parse_full_date(s);
-			} else if (resp->code / 100 == 3 && !strncasecmp(name, "Location", namelen)) {
+			} else if (resp->code / 100 == 3 && !wget_strncasecmp_ascii(name, "Location", namelen)) {
 				xfree(resp->location);
 				wget_http_parse_location(s, &resp->location);
-			} else if (resp->code / 100 == 3 && !strncasecmp(name, "Link", namelen)) {
+			} else if (resp->code / 100 == 3 && !wget_strncasecmp_ascii(name, "Link", namelen)) {
 				// debug_printf("s=%.31s\n",s);
 				wget_http_link_t link;
 				wget_http_parse_link(s, &link);
@@ -1156,12 +1156,12 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 			}
 			break;
 		case 't':
-			if (!strncasecmp(name, "Transfer-Encoding", namelen)) {
+			if (!wget_strncasecmp_ascii(name, "Transfer-Encoding", namelen)) {
 				wget_http_parse_transfer_encoding(s, &resp->transfer_encoding);
 			}
 			break;
 		case 's':
-			if (!strncasecmp(name, "Set-Cookie", namelen)) {
+			if (!wget_strncasecmp_ascii(name, "Set-Cookie", namelen)) {
 				// this is a parser. content validation must be done by higher level functions.
 				wget_cookie_t cookie;
 				wget_http_parse_setcookie(s, &cookie);
@@ -1174,13 +1174,13 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 					wget_vector_add(resp->cookies, &cookie, sizeof(cookie));
 				}
 			}
-			else if (!strncasecmp(name, "Strict-Transport-Security", namelen)) {
+			else if (!wget_strncasecmp_ascii(name, "Strict-Transport-Security", namelen)) {
 				resp->hsts = 1;
 				wget_http_parse_strict_transport_security(s, &resp->hsts_maxage, &resp->hsts_include_subdomains);
 			}
 			break;
 		case 'w':
-			if (!strncasecmp(name, "WWW-Authenticate", namelen)) {
+			if (!wget_strncasecmp_ascii(name, "WWW-Authenticate", namelen)) {
 				wget_http_challenge_t challenge;
 				wget_http_parse_challenge(s, &challenge);
 
@@ -1192,7 +1192,7 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 			}
 			break;
 		case 'd':
-			if (!strncasecmp(name, "Digest", namelen)) {
+			if (!wget_strncasecmp_ascii(name, "Digest", namelen)) {
 				// http://tools.ietf.org/html/rfc3230
 				wget_http_digest_t digest;
 				wget_http_parse_digest(s, &digest);
@@ -1205,12 +1205,12 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 			}
 			break;
 		case 'i':
-			if (!strncasecmp(name, "ICY-Metaint", namelen)) {
+			if (!wget_strncasecmp_ascii(name, "ICY-Metaint", namelen)) {
 				resp->icy_metaint = atoi(s);
 			}
 			break;
 		case 'e':
-			if (!strncasecmp(name, "ETag", namelen)) {
+			if (!wget_strncasecmp_ascii(name, "ETag", namelen)) {
 				wget_http_parse_etag(s, &resp->etag);
 			}
 			break;

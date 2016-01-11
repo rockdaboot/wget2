@@ -76,7 +76,7 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 	// info_printf("\n%02X %s %s '%s'\n", flags, dir, attr, value);
 	if (!(flags & (XML_FLG_CONTENT | XML_FLG_ATTRIBUTE))) return; // ignore comments
 
-	if (strncasecmp(dir, "/metalink/file", 14)) return;
+	if (wget_strncasecmp_ascii(dir, "/metalink/file", 14)) return;
 
 	dir += 14;
 
@@ -183,7 +183,7 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 	// info_printf("\n%02X %s %s '%s'\n", flags, dir, attr, value);
 	if (!(flags & (XML_FLG_CONTENT | XML_FLG_ATTRIBUTE))) return; // ignore comments
 
-	if (strncasecmp(dir, "/metalink/files/file", 20)) return;
+	if (wget_strncasecmp_ascii(dir, "/metalink/files/file", 20)) return;
 
 	dir += 20;
 
@@ -212,7 +212,7 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 		} else if (!wget_strcasecmp_ascii(dir, "/resources/url")) {
 			if (!wget_strcasecmp_ascii(attr, "location")) {
 				sscanf(value, " %2[a-zA-Z]", ctx->location); // ISO 3166-1 alpha-2 two letter country code
-//			} else if (!strcasecmp(attr, "type")) {
+//			} else if (!wget_strcasecmp_ascii(attr, "type")) {
 //				sscanf(value, " %2[a-zA-Z]", ctx->type); // type of URL, e.g. HTTP, FTP, ...
 			} else if (!wget_strcasecmp_ascii(attr, "preference")) {
 				sscanf(value, " %6d", &ctx->priority);

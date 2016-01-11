@@ -65,12 +65,12 @@ static unsigned int G_GNUC_WGET_PURE hash_string_nocase(const char *key)
 
 wget_stringmap_t *wget_stringmap_create(int max)
 {
-	return wget_hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string, (int (*)(const void *, const void *))strcmp);
+	return wget_hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string, (int (*)(const void *, const void *))wget_strcmp);
 }
 
 wget_stringmap_t *wget_stringmap_create_nocase(int max)
 {
-	return wget_hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string_nocase, (int (*)(const void *, const void *))strcasecmp);
+	return wget_hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string_nocase, (int (*)(const void *, const void *))wget_strcasecmp);
 }
 
 int wget_stringmap_put_noalloc(wget_stringmap_t *h, const char *key, const void *value)

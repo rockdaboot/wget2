@@ -465,7 +465,7 @@ static int _cookie_db_load(wget_cookie_db_t *cookie_db, FILE *fp)
 
 		// parse inverse host_only (FALSE: host_only=1)
 		for (p = *linep ? ++linep : linep; *linep && *linep != '\t';) linep++;
-		cookie.host_only = strncasecmp(p, "TRUE", 4);
+		cookie.host_only = wget_strncasecmp_ascii(p, "TRUE", 4);
 
 		// parse path
 		for (p = *linep ? ++linep : linep; *linep && *linep != '\t';) linep++;
@@ -476,7 +476,7 @@ static int _cookie_db_load(wget_cookie_db_t *cookie_db, FILE *fp)
 
 		// parse secure_only
 		for (p = *linep ? ++linep : linep; *linep && *linep != '\t';) linep++;
-		cookie.secure_only = !strncasecmp(p, "TRUE", 4);
+		cookie.secure_only = !wget_strncasecmp_ascii(p, "TRUE", 4);
 
 		// parse expires
 		for (p = *linep ? ++linep : linep; *linep && *linep != '\t';) linep++;

@@ -119,9 +119,9 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 					if (p == value) break;
 
 					// debug_printf("ROBOTS='%.*s'\n", (int)(p - value), value);
-					if (!strncasecmp(value, "all", p - value) || !strncasecmp(value, "follow", p - value))
+					if (!wget_strncasecmp_ascii(value, "all", p - value) || !wget_strncasecmp_ascii(value, "follow", p - value))
 						res->follow = 1;
-					else if (!strncasecmp(value, "nofollow", p - value) || !strncasecmp(value, "none", p - value))
+					else if (!wget_strncasecmp_ascii(value, "nofollow", p - value) || !wget_strncasecmp_ascii(value, "none", p - value))
 						res->follow = 0;
 
 					value = *p  ? p + 1 : p;

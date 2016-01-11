@@ -251,7 +251,7 @@ static int parse_numbytes(option_t opt, const char *val)
 		char modifier = 0, error = 0;
 		double num = 0;
 
-		if (!strcasecmp(val, "INF") || !strcasecmp(val, "INFINITY")) {
+		if (!wget_strcasecmp_ascii(val, "INF") || !wget_strcasecmp_ascii(val, "INFINITY")) {
 			*((long long *)opt->var) = 0;
 			return 0;
 		}
@@ -373,7 +373,7 @@ static int G_GNUC_WGET_NONNULL_ALL _compare_tag(const wget_html_tag_t *t1, const
 {
 	int n;
 
-	if (!(n = strcasecmp(t1->name, t2->name))) {
+	if (!(n = wget_strcasecmp_ascii(t1->name, t2->name))) {
 		if (!t1->attribute) {
 			if (!t2->attribute)
 				n = 0;
@@ -382,7 +382,7 @@ static int G_GNUC_WGET_NONNULL_ALL _compare_tag(const wget_html_tag_t *t1, const
 		} else if (!t2->attribute) {
 			n = 1;
 		} else
-			n = strcasecmp(t1->attribute, t2->attribute);
+			n = wget_strcasecmp_ascii(t1->attribute, t2->attribute);
 	}
 
 	return n;
@@ -417,11 +417,11 @@ static int parse_bool(option_t opt, const char *val)
 {
 	if (opt->var) {
 		if (!val)
-			*((char *)opt->var) = 1;
-		else if (!strcmp(val,"1") || !strcasecmp(val,"y") || !strcasecmp(val,"yes") || !strcasecmp(val,"on"))
-			*((char *)opt->var) = 1;
-		else if (!strcmp(val,"0") || !strcasecmp(val,"n") || !strcasecmp(val,"no") || !strcasecmp(val,"off"))
-			*((char *)opt->var) = 0;
+			*((char *) opt->var) = 1;
+		else if (!strcmp(val, "1") || !wget_strcasecmp_ascii(val, "y") || !wget_strcasecmp_ascii(val, "yes") || !wget_strcasecmp_ascii(val, "on"))
+			*((char *) opt->var) = 1;
+		else if (!strcmp(val, "0") || !wget_strcasecmp_ascii(val, "n") || !wget_strcasecmp_ascii(val, "no") || !wget_strcasecmp_ascii(val, "off"))
+			*((char *) opt->var) = 0;
 		else {
 			error_printf(_("Boolean value '%s' not recognized\n"), val);
 		}
@@ -451,7 +451,7 @@ static int parse_timeout(option_t opt, const char *val)
 {
 	double fval;
 
-	if (!strcasecmp(val, "INF") || !strcasecmp(val, "INFINITY"))
+	if (!wget_strcasecmp_ascii(val, "INF") || !wget_strcasecmp_ascii(val, "INFINITY"))
 		fval = -1;
 	else {
 		char modifier = 0;
@@ -488,9 +488,9 @@ static int parse_timeout(option_t opt, const char *val)
 
 static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_cert_type(option_t opt, const char *val)
 {
-	if (!val || !strcasecmp(val, "PEM"))
+	if (!val || !wget_strcasecmp_ascii(val, "PEM"))
 		*((char *)opt->var) = WGET_SSL_X509_FMT_PEM;
-	else if (!strcasecmp(val, "DER") || !strcasecmp(val, "ASN1"))
+	else if (!wget_strcasecmp_ascii(val, "DER") || !wget_strcasecmp_ascii(val, "ASN1"))
 		*((char *)opt->var) = WGET_SSL_X509_FMT_DER;
 	else
 		error_printf_exit("Unknown cert type '%s'\n", val);
@@ -501,19 +501,19 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_cert_type(option_t op
 // legacy option, needed to succeed test suite
 static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_restrict_names(option_t opt, const char *val)
 {
-	if (!val || !*val || !strcasecmp(val, "none"))
+	if (!val || !*val || !wget_strcasecmp_ascii(val, "none"))
 		*((int *)opt->var) = RESTRICT_NAMES_NONE;
-	else if (!strcasecmp(val, "unix"))
+	else if (!wget_strcasecmp_ascii(val, "unix"))
 		*((int *)opt->var) = RESTRICT_NAMES_UNIX;
-	else if (!strcasecmp(val, "windows"))
+	else if (!wget_strcasecmp_ascii(val, "windows"))
 		*((int *)opt->var) = RESTRICT_NAMES_WINDOWS;
-	else if (!strcasecmp(val, "nocontrol"))
+	else if (!wget_strcasecmp_ascii(val, "nocontrol"))
 		*((int *)opt->var) = RESTRICT_NAMES_NOCONTROL;
-	else if (!strcasecmp(val, "ascii"))
+	else if (!wget_strcasecmp_ascii(val, "ascii"))
 		*((int *)opt->var) = RESTRICT_NAMES_ASCII;
-	else if (!strcasecmp(val, "uppercase"))
+	else if (!wget_strcasecmp_ascii(val, "uppercase"))
 		*((int *)opt->var) = RESTRICT_NAMES_UPPERCASE;
-	else if (!strcasecmp(val, "lowercase"))
+	else if (!wget_strcasecmp_ascii(val, "lowercase"))
 		*((int *)opt->var) = RESTRICT_NAMES_LOWERCASE;
 	else
 		error_printf_exit("Unknown restrict-file-name type '%s'\n", val);
@@ -558,11 +558,11 @@ static int parse_n_option(G_GNUC_WGET_UNUSED option_t opt, const char *val)
 
 static int parse_prefer_family(option_t opt, const char *val)
 {
-	if (!val || !strcasecmp(val, "none"))
+	if (!val || !wget_strcasecmp_ascii(val, "none"))
 		*((char *)opt->var) = WGET_NET_FAMILY_ANY;
-	else if (!strcasecmp(val, "ipv4"))
+	else if (!wget_strcasecmp_ascii(val, "ipv4"))
 		*((char *)opt->var) = WGET_NET_FAMILY_IPV4;
-	else if (!strcasecmp(val, "ipv6"))
+	else if (!wget_strcasecmp_ascii(val, "ipv6"))
 		*((char *)opt->var) = WGET_NET_FAMILY_IPV6;
 	else
 		error_printf_exit("Unknown address family '%s'\n", val);

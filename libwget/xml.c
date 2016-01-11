@@ -234,7 +234,7 @@ static const char *getScriptContent(XML_CONTEXT *context)
 			if (*p == '<' && !strncmp(p, "<!--", 4)) {
 				p += 4 - 1;
 				comment = 1;
-			} else if (*p == '<' && !strncasecmp(p, "</script", 8)) {
+			} else if (*p == '<' && !wget_strncasecmp_ascii(p, "</script", 8)) {
 				context->token_len = p - context->token;
 				length_valid = 1;
 				for (p += 8; ascii_isspace(*p); p++);

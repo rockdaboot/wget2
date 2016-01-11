@@ -154,7 +154,7 @@ static int check_piece_hash(wget_metalink_hash_t *hash, int fd, off_t offset, si
 	char sum[128 + 1]; // large enough for sha-512 hex
 
 	if (wget_hash_file_fd(hash->type, fd, sum, sizeof(sum), offset, length) != -1) {
-		return !strcasecmp(sum, hash->hash_hex);
+		return !wget_strcasecmp_ascii(sum, hash->hash_hex);
 	}
 
 	return -1;
@@ -170,7 +170,7 @@ static int check_file_hash(HASH *hash, const char *fname)
 	char sum[128 + 1]; // large enough for sha-512 hex
 
 	if (hash_file(hash->type, fname, sum, sizeof(sum)) != -1) {
-		return !strcasecmp(sum, hash->hash_hex);
+		return !wget_strcasecmp_ascii(sum, hash->hash_hex);
 	}
  	return -1;
 }
@@ -181,7 +181,7 @@ static int check_file_fd(wget_metalink_hash_t *hash, int fd)
 	char sum[128 + 1]; // large enough for sha-512 hex
 
 	if (wget_hash_file_fd(hash->type, fd, sum, sizeof(sum), 0, 0) != -1) {
-		return !strcasecmp(sum, hash->hash_hex);
+		return !wget_strcasecmp_ascii(sum, hash->hash_hex);
 	}
 
 	return -1;

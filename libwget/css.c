@@ -102,7 +102,7 @@ void wget_css_parse_buffer(
 				callback_uri(user_ctx, text + 1, length - 2, pos + 1);
 			} else {
 				// extract URI from url(...)
-				if (!strncasecmp(text, "url(", 4)) {
+				if (!wget_strncasecmp_ascii(text, "url(", 4)) {
 					char *otext = text;
 
 					// remove trailing ) and any spaces before

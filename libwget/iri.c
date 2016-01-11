@@ -677,7 +677,7 @@ int wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2)
 	if ((n = strcmp(iri1->host, iri2->host)))
 		return n;
 
-	// if ((n = null_strcasecmp(iri1->fragment, iri2->fragment)))
+	// if ((n = wget_strcasecmp(iri1->fragment, iri2->fragment)))
 	//		return n;
 
 	return 0;

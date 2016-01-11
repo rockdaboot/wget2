@@ -39,8 +39,8 @@
 //#include <sys/socket.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <string.h>  // on old systems we need this for strcasecmp()...
-#include <strings.h> // ...on newer systems we need this
+#include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <stdarg.h>
 #include <ctype.h>
@@ -120,7 +120,7 @@ static int G_GNUC_WGET_PURE _compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENT
 {
 	int n;
 
-	if ((n = strcasecmp(a1->host, a2->host)) == 0)
+	if ((n = wget_strcasecmp(a1->host, a2->host)) == 0)
 		return wget_strcasecmp_ascii(a1->port, a2->port);
 
 	return n;

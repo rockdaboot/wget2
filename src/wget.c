@@ -909,7 +909,7 @@ int main(int argc, const char *const *argv)
 			// read URLs from RSS Feed XML file
 			rss_parse_localfile(NULL, config.input_file, "utf-8", config.base);
 		}
-//		else if (!strcasecmp(config.input_file, "http://", 7)) {
+//		else if (!wget_strcasecmp_ascii(config.input_file, "http://", 7)) {
 //		}
 		else if (!strcmp(config.input_file, "-")) {
 			if (isatty(STDIN_FILENO)) {
@@ -1178,14 +1178,14 @@ void *downloader_thread(void *p)
 				if (resp->code != 200 || !resp->content_type)
 					goto ready;
 
-				if (strcasecmp(resp->content_type, "text/html")
-					&& strcasecmp(resp->content_type, "text/css")
-					&& strcasecmp(resp->content_type, "application/xhtml+xml")
-					&& strcasecmp(resp->content_type, "application/atom+xml")
-					&& strcasecmp(resp->content_type, "application/rss+xml")
-					&& (!job->sitemap || !strcasecmp(resp->content_type, "application/xml"))
-					&& (!job->sitemap || !strcasecmp(resp->content_type, "application/x-gzip"))
-					&& (!job->sitemap || !strcasecmp(resp->content_type, "text/plain")))
+				if (wget_strcasecmp_ascii(resp->content_type, "text/html")
+					&& wget_strcasecmp_ascii(resp->content_type, "text/css")
+					&& wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")
+					&& wget_strcasecmp_ascii(resp->content_type, "application/atom+xml")
+					&& wget_strcasecmp_ascii(resp->content_type, "application/rss+xml")
+					&& (!job->sitemap || !wget_strcasecmp_ascii(resp->content_type, "application/xml"))
+					&& (!job->sitemap || !wget_strcasecmp_ascii(resp->content_type, "application/x-gzip"))
+					&& (!job->sitemap || !wget_strcasecmp_ascii(resp->content_type, "text/plain")))
 					goto ready;
 
 				if (resp->etag) {
@@ -1303,8 +1303,8 @@ void *downloader_thread(void *p)
 			for (it = 0; it < wget_vector_size(resp->links); it++) {
 				wget_http_link_t *link = wget_vector_get(resp->links, it);
 				if (link->rel == link_rel_describedby) {
-					if (link->type && (!strcasecmp(link->type, "application/metalink4+xml") ||
-						 !strcasecmp(link->type, "application/metalink+xml")))
+					if (link->type && (!wget_strcasecmp_ascii(link->type, "application/metalink4+xml") ||
+						 !wget_strcasecmp_ascii(link->type, "application/metalink+xml")))
 					{
 						// found a link to a metalink4 description
 						metalink = link;
@@ -1329,12 +1329,12 @@ void *downloader_thread(void *p)
 		}
 
 		if (resp->content_type) {
-			if (!strcasecmp(resp->content_type, "application/metalink4+xml")) {
+			if (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml")) {
 				// print_status(downloader, "get metalink4 info\n");
 				// save_file(resp, job->local_filename, O_TRUNC);
 				job->metalink = metalink4_parse(resp->body->data);
 			}
-			else if (!strcasecmp(resp->content_type, "application/metalink+xml")) {
+			else if (!wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml")) {
 				// print_status(downloader, "get metalink3 info\n");
 				// save_file(resp, job->local_filename, O_TRUNC);
 				job->metalink = metalink3_parse(resp->body->data);
@@ -1370,25 +1370,25 @@ void *downloader_thread(void *p)
 
 			if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
 				if (resp->content_type) {
-					if (!strcasecmp(resp->content_type, "text/html")) {
+					if (!wget_strcasecmp_ascii(resp->content_type, "text/html")) {
 						html_parse(job, job->level, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
-					} else if (!strcasecmp(resp->content_type, "application/xhtml+xml")) {
+					} else if (!wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")) {
 						html_parse(job, job->level, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 						// xml_parse(sockfd, resp, job->iri);
-					} else if (!strcasecmp(resp->content_type, "text/css")) {
+					} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
 						css_parse(job, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
-					} else if (!strcasecmp(resp->content_type, "application/atom+xml")) { // see RFC4287, http://de.wikipedia.org/wiki/Atom_%28Format%29
+					} else if (!wget_strcasecmp_ascii(resp->content_type, "application/atom+xml")) { // see RFC4287, http://de.wikipedia.org/wiki/Atom_%28Format%29
 						atom_parse(job, resp->body->data, "utf-8", job->iri);
-					} else if (!strcasecmp(resp->content_type, "application/rss+xml")) { // see http://cyber.law.harvard.edu/rss/rss.html
+					} else if (!wget_strcasecmp_ascii(resp->content_type, "application/rss+xml")) { // see http://cyber.law.harvard.edu/rss/rss.html
 						rss_parse(job, resp->body->data, "utf-8", job->iri);
 					} else if (job->sitemap) {
-						if (!strcasecmp(resp->content_type, "application/xml"))
+						if (!wget_strcasecmp_ascii(resp->content_type, "application/xml"))
 							sitemap_parse_xml(job, resp->body->data, "utf-8", job->iri);
-						else if (!strcasecmp(resp->content_type, "application/x-gzip"))
+						else if (!wget_strcasecmp_ascii(resp->content_type, "application/x-gzip"))
 							sitemap_parse_xml_gz(job, resp->body, "utf-8", job->iri);
-						else if (!strcasecmp(resp->content_type, "text/plain"))
+						else if (!wget_strcasecmp_ascii(resp->content_type, "text/plain"))
 							sitemap_parse_text(job, resp->body->data, "utf-8", job->iri);
-					} else if (job->deferred && !strcasecmp(resp->content_type, "text/plain")) {
+					} else if (job->deferred && !wget_strcasecmp_ascii(resp->content_type, "text/plain")) {
 						debug_printf("Scanning robots.txt ...\n");
 						if ((job->host->robots = wget_robots_parse(resp->body->data))) {
 							// add sitemaps to be downloaded (format http://www.sitemaps.org/protocol.html)
@@ -1421,9 +1421,9 @@ void *downloader_thread(void *p)
 					ext = strrchr(job->local_filename, '.');
 
 				if (ext) {
-					if (!strcasecmp(ext, ".html") || !strcasecmp(ext, ".htm")) {
+					if (!wget_strcasecmp_ascii(ext, ".html") || !wget_strcasecmp_ascii(ext, ".htm")) {
 						html_parse_localfile(job, job->level, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
-					} else if (!strcasecmp(ext, ".css")) {
+					} else if (!wget_strcasecmp_ascii(ext, ".css")) {
 						css_parse_localfile(job, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 					}
 				}
@@ -1578,9 +1578,10 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, wge
 		}
 
 		// with --page-requisites: just load inline URLs from the deepest level documents
-		if (page_requisites && !strcasecmp(html_url->attr, "href")) {
+		if (page_requisites && !wget_strcasecmp_ascii(html_url->attr, "href")) {
 			// don't load from dir 'A', 'AREA' and 'EMBED'
-			if (tolower(*html_url->dir) == 'a' && (html_url->dir[1] == 0 || !strcasecmp(html_url->dir,"area") || !strcasecmp(html_url->dir,"embed"))) {
+			if (tolower(*html_url->dir) == 'a'
+				&& (html_url->dir[1] == 0 || !wget_strcasecmp_ascii(html_url->dir,"area") || !wget_strcasecmp_ascii(html_url->dir,"embed"))) {
 				info_printf(_("URL '%.*s' not followed (page requisites + level)\n"), (int)url->len, url->p);
 				continue;
 			}
@@ -1650,7 +1651,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 
 		// A Sitemap file located at http://example.com/catalog/sitemap.xml can include any URLs starting with http://example.com/catalog/
 		// but not any other.
-		if (baselen && (url->len <= baselen || strncasecmp(url->p, base->uri, baselen))) {
+		if (baselen && (url->len <= baselen || wget_strncasecmp(url->p, base->uri, baselen))) {
 			info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)url->len, url->p);
 			continue;
 		}
@@ -1744,7 +1745,7 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, wget_i
 		if (len) {
 			// A Sitemap file located at http://example.com/catalog/sitemap.txt can include any URLs starting with http://example.com/catalog/
 			// but not any other.
-			if (baselen && (len <= baselen || strncasecmp(line, base->uri, baselen))) {
+			if (baselen && (len <= baselen || wget_strncasecmp(line, base->uri, baselen))) {
 				info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)len, line);
 			} else {
 				char url[len + 1];
@@ -1776,7 +1777,7 @@ static void _add_urls(JOB *job, wget_vector_t *urls, const char *encoding, wget_
 	for (int it = 0; it < wget_vector_size(urls); it++) {
 		wget_string_t *url = wget_vector_get(urls, it);
 
-		if (baselen && (url->len <= baselen || strncasecmp(url->p, base->uri, baselen))) {
+		if (baselen && (url->len <= baselen || wget_strncasecmp(url->p, base->uri, baselen))) {
 			info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)url->len, url->p);
 			continue;
 		}
@@ -1851,7 +1852,7 @@ static void _css_parse_encoding(void *context, const char *encoding, size_t len)
 	struct css_context *ctx = context;
 
 	// take only the first @charset rule
-	if (!ctx->encoding_allocated && wget_strncasecmp(ctx->encoding, encoding, len)) {
+	if (!ctx->encoding_allocated && wget_strncasecmp_ascii(ctx->encoding, encoding, len)) {
 		ctx->encoding = wget_strmemdup(encoding, len);
 		ctx->encoding_allocated = 1;
 		info_printf(_("URI content encoding = '%s'\n"), ctx->encoding);
@@ -2014,13 +2015,13 @@ static void G_GNUC_WGET_NONNULL((1)) _save_file(wget_http_response_t *resp, cons
 	if (config.adjust_extension && resp->content_type) {
 		const char *ext;
 
-		if (!strcasecmp(resp->content_type, "text/html") || !strcasecmp(resp->content_type, "application/xhtml+xml")) {
+		if (!wget_strcasecmp_ascii(resp->content_type, "text/html") || !wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")) {
 			ext = ".html";
-		} else if (!strcasecmp(resp->content_type, "text/css")) {
+		} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
 			ext = ".css";
-		} else if (!strcasecmp(resp->content_type, "application/atom+xml")) {
+		} else if (!wget_strcasecmp_ascii(resp->content_type, "application/atom+xml")) {
 			ext = ".atom";
-		} else if (!strcasecmp(resp->content_type, "application/rss+xml")) {
+		} else if (!wget_strcasecmp_ascii(resp->content_type, "application/rss+xml")) {
 			ext = ".rss";
 		} else
 			ext = NULL;
@@ -2028,7 +2029,7 @@ static void G_GNUC_WGET_NONNULL((1)) _save_file(wget_http_response_t *resp, cons
 		if (ext) {
 			size_t ext_length = strlen(ext);
 
-			if (fname_length >= ext_length && strcasecmp(fname + fname_length - ext_length, ext)) {
+			if (fname_length >= ext_length && wget_strcasecmp(fname + fname_length - ext_length, ext)) {
 				alloced_fname = xmalloc(fname_length + ext_length + 1);
 				strcpy(alloced_fname, fname);
 				strcpy(alloced_fname + fname_length, ext);
@@ -2429,11 +2430,11 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 				for (int it = 0; it < wget_vector_size(challenges); it++) {
 					challenge = wget_vector_get(challenges, it);
 
-					if (strcasecmp(challenge->auth_scheme, "digest")) {
+					if (wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
 						selected_challenge = challenge;
 						break;
 					}
-					else if (strcasecmp(challenge->auth_scheme, "basic")) {
+					else if (wget_strcasecmp_ascii(challenge->auth_scheme, "basic")) {
 						if (!selected_challenge)
 							selected_challenge = challenge;
 					}
@@ -2512,7 +2513,7 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 
 					if (resp) {
 						resp->body = body;
-						if (!strcasecmp(req->method, "GET"))
+						if (!wget_strcasecmp_ascii(req->method, "GET"))
 							resp->content_length = body->length;
 					} else {
 						wget_buffer_free(&body);

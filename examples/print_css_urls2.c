@@ -82,7 +82,7 @@ static void css_parse_encoding(void *context, const char *encoding, size_t len)
 	struct css_context *ctx = context;
 
 	// take only the first @charset rule
-	if (!ctx->encoding_allocated && wget_strncasecmp(ctx->encoding, encoding, len)) {
+	if (!ctx->encoding_allocated && wget_strncasecmp_ascii(ctx->encoding, encoding, len)) {
 		if (ctx->encoding)
 			info_printf("Encoding changed from '%s' to '%.*s'\n", ctx->encoding, (int)len, encoding);
 		else

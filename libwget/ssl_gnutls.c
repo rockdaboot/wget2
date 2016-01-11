@@ -978,7 +978,7 @@ void wget_ssl_init(void)
 					while ((dp = readdir(dir))) {
 						size_t len = strlen(dp->d_name);
 
-						if (len >= 4 && !strncasecmp(dp->d_name + len - 4, ".pem", 4)) {
+						if (len >= 4 && !wget_strncasecmp_ascii(dp->d_name + len - 4, ".pem", 4)) {
 							struct stat st;
 							char fname[dirlen + 1 + len + 1];
 
