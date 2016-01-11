@@ -349,13 +349,6 @@ size_t
 	strlcpy(char *restrict dst, const char *restrict src, size_t size) G_GNUC_WGET_NONNULL_ALL;
 #endif
 
-#ifndef HAVE_DPRINTF
-int
-	vdprintf(int fd, const char *restrict fmt, va_list) G_GNUC_WGET_PRINTF_FORMAT(2,0);
-int
-	dprintf(int fd, const char *restrict fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
-#endif /* HAVE_DPRINTF */
-
 /*
  * Double linked list
  */
