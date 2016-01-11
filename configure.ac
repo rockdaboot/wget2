@@ -385,7 +385,7 @@ AC_FUNC_MMAP
 #AC_FUNC_REALLOC
 AC_CHECK_FUNCS([\
  memchr memmove memset mkdir munmap select setlocale socket\
- strchr strerror strrchr strstr strlcpy vasprintf nl_langinfo pwrite])
+ strchr strerror strrchr strstr strlcpy vasprintf nl_langinfo])
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile

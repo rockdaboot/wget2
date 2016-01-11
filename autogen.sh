@@ -41,6 +41,7 @@ fnmatch
 futimens
 glob
 nanosleep
+pwrite
 qsort_r
 strcase
 strdup

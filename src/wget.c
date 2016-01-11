@@ -2188,13 +2188,8 @@ int download_part(DOWNLOADER *downloader)
 
 					print_status(downloader, "part %d downloaded\n", part->id);
 					if ((fd = open(metalink->name, O_WRONLY | O_CREAT, 0644)) != -1) {
-#ifdef HAVE_PWRITE
 						ssize_t nbytes;
 						if ((nbytes = pwrite(fd, resp->body->data, resp->body->length, part->position)) == (ssize_t)resp->body->length)
-#else
-						ssize_t nbytes = -1;
-						if (fseek(fd, part->position, SEEK_SET) == 0 && (nbytes = write(fd, resp->body->data, resp->body->length)) == (ssize_t)resp->body->length)
-#endif
 							part->done = 1; // set this when downloaded ok
 						else
 							error_printf(_("Failed to pwrite %zd bytes at pos %lld (%zd)\n"), resp->body->length, (long long)part->position, nbytes);
