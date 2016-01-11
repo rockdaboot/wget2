@@ -34,7 +34,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <errno.h>
-#include <sys/time.h>
 
 #include <libwget.h>
 
@@ -44,14 +43,14 @@
 static void _write_debug(const char *data, size_t len)
 {
 	FILE *fp;
-	struct timeval tv;
+	struct timespec ts;
 	struct tm *tp, tbuf;
 
 	if (!data || (ssize_t)len <= 0)
 		return;
 
-	gettimeofday(&tv, NULL); // obsoleted by POSIX.1-2008, maybe use clock_gettime() ? needs -lrt
-	tp = localtime_r((const time_t *)&tv.tv_sec, &tbuf); // cast avoids warning on OpenBSD
+	clock_gettime(CLOCK_REALTIME, &ts);
+	tp = localtime_r((const time_t *)&ts.tv_sec, &tbuf); // cast avoids warning on OpenBSD
 
 	if (!config.logfile)
 		fp = stderr;
@@ -66,7 +65,7 @@ static void _write_debug(const char *data, size_t len)
 
 		wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 		wget_buffer_printf2(&buf, "%02d.%02d%02d%02d.%03d ",
-			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, (int) (tv.tv_usec / 1000));
+			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, (int) (ts.tv_nsec / 1000000));
 		wget_buffer_memcat(&buf, data, len);
 		if (data[len -1] != '\n')
 			wget_buffer_memcat(&buf, "\n", 1);
