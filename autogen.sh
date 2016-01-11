@@ -35,6 +35,7 @@ clock-time
 fcntl
 flock
 fnmatch
+futimens
 strdup
 "
 

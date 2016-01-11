@@ -385,10 +385,10 @@ AC_FUNC_FORK
 AC_FUNC_MMAP
 #AC_FUNC_REALLOC
 AC_CHECK_FUNCS([\
- dprintf dup2 futimens memchr\
+ dprintf dup2 memchr\
  memmove memset mkdir munmap select setlocale socket strcasecmp\
  strchr strdup strerror strncasecmp strndup strrchr strstr strlcpy \
- vasprintf nanosleep usleep nl_langinfo futimens glob pwrite \
+ vasprintf nanosleep usleep nl_langinfo glob pwrite \
  qsort_r])
 
 # BSD / OSX have a qsort_r with swapped arguments

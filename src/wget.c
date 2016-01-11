@@ -46,9 +46,6 @@
 //#include <sys/socket.h>
 //#include <sys/select.h>
 #include <sys/stat.h>
-#ifndef HAVE_FUTIMENS
-#	include <utime.h>
-#endif
 #include <libwget.h>
 
 #include "wget.h"
@@ -1938,7 +1935,6 @@ static time_t G_GNUC_WGET_NONNULL_ALL get_file_mtime(const char *fname)
 	return 0;
 }
 
-#ifdef HAVE_FUTIMENS
 static void set_file_mtime(int fd, time_t modified)
 {
 	struct timespec timespecs[2]; // [0]=last access  [1]=last modified
@@ -1951,18 +1947,6 @@ static void set_file_mtime(int fd, time_t modified)
 	if (futimens(fd, timespecs) == -1)
 		error_printf (_("Failed to set file date: %s\n"), strerror (errno));
 }
-#else
-static void set_file_mtime(const char *filename, time_t modified)
-{
-	struct utimbuf utimbuf;
-
-	utimbuf.actime = time(NULL);
-	utimbuf.modtime = modified;
-
-	if (utime(filename, &utimbuf) == -1)
-		error_printf (_("Failed to set file date: %s\n"), strerror (errno));
-}
-#endif
 
 static void G_GNUC_WGET_NONNULL((1)) _save_file(wget_http_response_t *resp, const char *fname, int flag)
 {
@@ -2125,11 +2109,8 @@ static void G_GNUC_WGET_NONNULL((1)) _save_file(wget_http_response_t *resp, cons
 		}
 
 		if ((flag & (O_TRUNC | O_EXCL)) && resp->last_modified)
-#ifdef HAVE_FUTIMENS
 			set_file_mtime(fd, resp->last_modified);
-#else
-			set_file_mtime(fname, resp->last_modified);
-#endif
+
 		if (flag == O_APPEND)
 			info_printf("appended to '%s'\n", fnum ? unique : fname);
 		else
