@@ -31,6 +31,7 @@ $GIT submodule init
 $GIT submodule update
 
 gnulib_modules="
+clock-time
 fcntl
 flock
 fnmatch

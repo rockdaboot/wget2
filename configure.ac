@@ -206,7 +206,6 @@ PKG_PROG_PKG_CONFIG
 
 # Check for needed libraries
 AC_SEARCH_LIBS(socket, ws2_32)
-AC_SEARCH_LIBS(clock_gettime, rt)
 
 AC_SEARCH_LIBS(pthread_create, pthread, [
   # for Solaris also see http://docs.oracle.com/cd/E18752_01/html/816-5137/compile-94611.html
@@ -387,7 +386,7 @@ AC_FUNC_MMAP
 #AC_FUNC_REALLOC
 AC_FUNC_FNMATCH
 AC_CHECK_FUNCS([\
- clock_gettime dprintf dup2 futimens gettimeofday localtime_r memchr\
+ dprintf dup2 futimens gettimeofday localtime_r memchr\
  memmove memset mkdir munmap select setlocale socket strcasecmp\
  strchr strdup strerror strncasecmp strndup strrchr strstr strlcpy \
  vasprintf nanosleep usleep nl_langinfo futimens glob pwrite \

@@ -1943,12 +1943,7 @@ static void set_file_mtime(int fd, time_t modified)
 {
 	struct timespec timespecs[2]; // [0]=last access  [1]=last modified
 
-#ifdef CLOCK_REALTIME
 	clock_gettime(CLOCK_REALTIME, &timespecs[0]);
-#else
-	timespecs[0].tv_sec = time(NULL);
-	timespecs[0].tv_nsec = 0;
-#endif
 
 	timespecs[1].tv_sec = modified;
 	timespecs[1].tv_nsec = 0;
