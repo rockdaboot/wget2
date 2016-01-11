@@ -50,9 +50,7 @@
 #include <ctype.h>
 #include <pwd.h>
 #include <errno.h>
-#ifdef HAVE_GLOB_H
-#	include <glob.h>
-#endif
+#include <glob.h>
 #ifdef HAVE_ALLOCA_H
 #	include <alloca.h>
 #endif
@@ -929,15 +927,10 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 	}
 */
 
-#ifdef HAVE_GLOB
 	if (expand) {
 		glob_t globbuf;
 //		struct stat st;
-		int flags = GLOB_MARK;
-
-#ifdef GLOB_TILDE
-		flags |= GLOB_TILDE;
-#endif
+		int flags = GLOB_MARK | GLOB_TILDE;
 
 		if (glob(cfgfile, flags, NULL, &globbuf) == 0) {
 			size_t it;
@@ -964,7 +957,6 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 		
 		return 0;
 	}
-#endif
 
 	if ((fp = fopen(cfgfile, "r")) == NULL) {
 		error_printf(_("Failed to open %s\n"), cfgfile);
