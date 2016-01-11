@@ -232,7 +232,7 @@ AS_IF([test "x$with_gnutls" != "xno"], [
       [with_gnutls=no;  AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS. Fallback to libnettle for hashing and checksumming.)])
   ])
   AC_SEARCH_LIBS(gnutls_hash, gnutls, [with_gnutls_hash=yes])
-  AC_CHECK_FUNCS(gnutls_srp_server_get_username, gnutls)
+  AC_CHECK_FUNCS(gnutls_srp_server_get_username)
 ])
 AM_CONDITIONAL([WITH_GNUTLS], [test "x$with_gnutls" = xyes])
 
