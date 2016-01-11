@@ -32,7 +32,6 @@ libwget/mem.c
 libwget/metalink.c
 libwget/net.c
 libwget/pipe.c
-libwget/printf.c
 libwget/robots.c
 libwget/rss_url.c
 libwget/sitemap_url.c
@@ -44,9 +43,11 @@ libwget/utils.c
 libwget/vector.c
 libwget/xalloc.c
 libwget/xml.c
+src/bar.c
 src/blacklist.c
 src/host.c
 src/job.c
 src/log.c
+src/options.c
 src/wget.c
 src/options.c
