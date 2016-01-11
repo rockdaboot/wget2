@@ -341,13 +341,7 @@ void wget_millisleep(int ms)
 	if (ms <= 0)
 		return;
 
-#ifdef HAVE_NANOSLEEP
 	nanosleep(&(struct timespec){ .tv_sec = ms / 1000, .tv_nsec = (ms % 1000) * 1000000 }, NULL);
-#elif defined HAVE_USLEEP
-	usleep(ms); // obsoleted by POSIX.1-2001, use nanosleep instead
-#else
-	sleep((ms + 500) / 1000);
-#endif
 }
 
 static inline unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)

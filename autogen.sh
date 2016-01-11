@@ -36,6 +36,7 @@ fcntl
 flock
 fnmatch
 futimens
+nanosleep
 strdup
 "
 

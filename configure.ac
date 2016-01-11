@@ -388,7 +388,7 @@ AC_CHECK_FUNCS([\
  dprintf dup2 memchr\
  memmove memset mkdir munmap select setlocale socket strcasecmp\
  strchr strdup strerror strncasecmp strndup strrchr strstr strlcpy \
- vasprintf nanosleep usleep nl_langinfo glob pwrite \
+ vasprintf usleep nl_langinfo glob pwrite \
  qsort_r])
 
 # BSD / OSX have a qsort_r with swapped arguments
