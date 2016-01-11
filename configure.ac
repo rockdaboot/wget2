@@ -387,7 +387,7 @@ AC_FUNC_MMAP
 AC_CHECK_FUNCS([\
  dprintf dup2 memchr\
  memmove memset mkdir munmap select setlocale socket strcasecmp\
- strchr strdup strerror strncasecmp strndup strrchr strstr strlcpy \
+ strchr strerror strncasecmp strrchr strstr strlcpy \
  vasprintf nl_langinfo pwrite \
  qsort_r])
 

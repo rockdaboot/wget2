@@ -39,6 +39,7 @@ futimens
 glob
 nanosleep
 strdup
+strndup
 "
 
 gnulib/gnulib-tool --import $gnulib_modules

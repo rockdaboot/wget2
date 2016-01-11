@@ -30,11 +30,6 @@
 #endif
 
 #include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
 
 #include <libwget.h>
 
@@ -58,25 +53,5 @@ size_t strlcpy(char *dst, const char *src, size_t size)
 
 	while (*src++);
 	return src - old - 1;
-}
-#endif
-
-#ifndef HAVE_STRNDUP
-// I found no strndup on my old SUSE 7.3 test system (gcc 2.95)
-
-char *strndup(const char *s, size_t n)
-{
-	char *dst;
-	size_t slen = strlen(s);
-
-	if (slen > n)
-		n = slen;
-
-	dst = xmalloc(n + 1);
-
-	memcpy(dst, s, n);
-	dst[n] = 0;
-
-	return dst;
 }
 #endif
