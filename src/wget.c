@@ -42,10 +42,8 @@
 #include <ctype.h>
 #include <time.h>
 #include <fnmatch.h>
-
-//#include <sys/socket.h>
-//#include <sys/select.h>
 #include <sys/stat.h>
+
 #include <libwget.h>
 
 #include "wget.h"
