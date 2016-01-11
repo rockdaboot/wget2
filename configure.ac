@@ -358,8 +358,8 @@ AM_CONDITIONAL([WITH_LIBIDN], [test "x$with_libidn" = xyes])
 
 # Checks for header files.
 AC_CHECK_HEADERS([\
- inttypes.h libintl.h locale.h netdb.h netinet/in.h stddef.h stdlib.h string.h\
- strings.h sys/socket.h sys/time.h unistd.h crypt.h poll.h sys/poll.h idna.h idn/idna.h idn2.h stringprep.h\
+ inttypes.h libintl.h locale.h netdb.h netinet/in.h stddef.h stdlib.h\
+ sys/socket.h sys/time.h unistd.h crypt.h poll.h sys/poll.h idna.h idn/idna.h idn2.h stringprep.h\
  langinfo.h unicase.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -384,9 +384,8 @@ AC_FUNC_FORK
 AC_FUNC_MMAP
 #AC_FUNC_REALLOC
 AC_CHECK_FUNCS([\
- memchr memmove memset mkdir munmap select setlocale socket strcasecmp\
- strchr strerror strncasecmp strrchr strstr strlcpy \
- vasprintf nl_langinfo pwrite qsort_r])
+ memchr memmove memset mkdir munmap select setlocale socket\
+ strchr strerror strrchr strstr strlcpy vasprintf nl_langinfo pwrite qsort_r])
 
 # BSD / OSX have a qsort_r with swapped arguments
 if test x$ac_cv_func_qsort_r = xyes ; then

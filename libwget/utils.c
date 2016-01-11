@@ -34,7 +34,9 @@
 #include <strings.h>
 #include <unistd.h>
 #include <time.h>
-#include <ctype.h>
+
+#include "c-ctype.h"
+#include "c-strcase.h"
 
 #include <libwget.h>
 #include "private.h"
@@ -104,40 +106,6 @@ int wget_strcasecmp(const char *s1, const char *s2)
 	}
 }
 
-/*
-static const char _upper[256] = {
-	['a'] = 'A', ['b'] = 'B', ['c'] = 'C', ['d'] = 'D',
-	['e'] = 'E', ['f'] = 'F', ['g'] = 'G', ['h'] = 'H',
-	['i'] = 'I', ['j'] = 'J', ['k'] = 'K', ['l'] = 'L',
-	['m'] = 'M', ['n'] = 'N', ['o'] = 'O', ['p'] = 'P',
-	['q'] = 'Q', ['r'] = 'R', ['s'] = 'S', ['t'] = 'T',
-	['u'] = 'U', ['v'] = 'V', ['w'] = 'W', ['x'] = 'X',
-	['y'] = 'Y', ['z'] = 'Z', ['A'] = 'A', ['B'] = 'B',
-	['C'] = 'C', ['D'] = 'D', ['E'] = 'E', ['F'] = 'F',
-	['G'] = 'G', ['H'] = 'H', ['I'] = 'I', ['J'] = 'J',
-	['K'] = 'K', ['L'] = 'L', ['M'] = 'M', ['N'] = 'N',
-	['O'] = 'O', ['P'] = 'P', ['Q'] = 'Q', ['R'] = 'R',
-	['S'] = 'S', ['T'] = 'T', ['U'] = 'U', ['V'] = 'V',
-	['W'] = 'W', ['X'] = 'X', ['Y'] = 'Y', ['Z'] = 'Z',
-};
-*/
-
-static const char _lower[256] = {
-	['a'] = 'a', ['b'] = 'b', ['c'] = 'c', ['d'] = 'd',
-	['e'] = 'e', ['f'] = 'f', ['g'] = 'g', ['h'] = 'h',
-	['i'] = 'i', ['j'] = 'j', ['k'] = 'k', ['l'] = 'l',
-	['m'] = 'm', ['n'] = 'n', ['o'] = 'o', ['p'] = 'p',
-	['q'] = 'q', ['r'] = 'r', ['s'] = 's', ['t'] = 't',
-	['u'] = 'u', ['v'] = 'v', ['w'] = 'w', ['x'] = 'x',
-	['y'] = 'y', ['z'] = 'z', ['A'] = 'a', ['B'] = 'b',
-	['C'] = 'c', ['D'] = 'd', ['E'] = 'e', ['F'] = 'f',
-	['G'] = 'g', ['H'] = 'h', ['I'] = 'i', ['J'] = 'j',
-	['K'] = 'k', ['L'] = 'l', ['M'] = 'm', ['N'] = 'n',
-	['O'] = 'o', ['P'] = 'p', ['Q'] = 'q', ['R'] = 'r',
-	['S'] = 's', ['T'] = 't', ['U'] = 'u', ['V'] = 'v',
-	['W'] = 'w', ['X'] = 'x', ['Y'] = 'y', ['Z'] = 'z',
-};
-
 /**
  * wget_strcasecmp_ascii:
  * @s1: String
@@ -163,17 +131,8 @@ int wget_strcasecmp_ascii(const char *s1, const char *s2)
 	} else {
 		if (!s2)
 			return 1;
-		else {
-			while (*s1 && (*s1 == *s2 || (_lower[(unsigned)*s1] && _lower[(unsigned)*s1] == _lower[(unsigned)*s2]))) {
-				s1++;
-				s2++;
-			}
-
-			if (_lower[(unsigned)*s1] && _lower[(unsigned)*s2])
-				return _lower[(unsigned)*s1] - _lower[(unsigned)*s2];
-			else
-				return *s1 - *s2;
-		}
+		else
+			return c_strcasecmp(s1, s2);
 	}
 }
 
@@ -203,21 +162,8 @@ int wget_strncasecmp_ascii(const char *s1, const char *s2, size_t n)
 	} else {
 		if (!s2)
 			return 1;
-		else {
-			while ((ssize_t)(n--) > 0 && *s1 && (*s1 == *s2 || (_lower[(unsigned)*s1] && _lower[(unsigned)*s1] == _lower[(unsigned)*s2]))) {
-				s1++;
-				s2++;
-			}
-
-			if ((ssize_t)n >= 0) {
-				if (_lower[(unsigned)*s1] && _lower[(unsigned)*s2])
-					return _lower[(unsigned)*s1] - _lower[(unsigned)*s2];
-				else
-					return *s1 - *s2;
-			}
-
-			return 0;
-		}
+		else
+			return c_strncasecmp(s1, s2, n);
 	}
 }
 
@@ -232,9 +178,9 @@ int wget_strncasecmp_ascii(const char *s1, const char *s2, size_t n)
 char *wget_strtolower(char *s)
 {
 	if (s) {
-		for (unsigned char *u = (unsigned char *)s; *u; u++) {
-			if (_lower[*u])
-				*u = _lower[*u];
+		for (char *d = s; *d; d++) {
+			if (c_isupper(*d))
+				*d = c_tolower(*d);
 		}
 	}
 
@@ -366,7 +312,7 @@ int wget_percent_unescape(char *_src)
 
 	while (*src) {
 		if (*src == '%') {
-			if (isxdigit(src[1]) && isxdigit(src[2])) {
+			if (c_isxdigit(src[1]) && c_isxdigit(src[2])) {
 				*dst++ = (_unhex(src[1]) << 4) | _unhex(src[2]);
 				src += 3;
 				ret = 1;

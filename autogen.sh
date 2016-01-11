@@ -31,6 +31,8 @@ $GIT submodule init
 $GIT submodule update
 
 gnulib_modules="
+c-strcase
+c-ctype
 clock-time
 dup2
 fcntl
@@ -39,6 +41,7 @@ fnmatch
 futimens
 glob
 nanosleep
+strcase
 strdup
 strndup
 "
