@@ -32,6 +32,7 @@ $GIT submodule update
 
 gnulib_modules="
 clock-time
+dup2
 fcntl
 flock
 fnmatch
