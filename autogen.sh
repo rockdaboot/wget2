@@ -39,6 +39,7 @@ clock-time
 close
 connect
 dup2
+errno
 fcntl
 flock
 fnmatch
