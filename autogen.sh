@@ -72,6 +72,7 @@ strcase
 strdup-posix
 strndup
 sys_socket
+sys_time
 write
 "
 
