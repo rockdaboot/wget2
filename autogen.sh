@@ -50,6 +50,7 @@ getsockname
 gettext-h
 glob
 iconv
+inline
 inttypes
 listen
 malloc-posix

@@ -94,7 +94,7 @@ wget_hashmap_t *wget_hashmap_create(int max, int off, unsigned int (*hash)(const
 	return h;
 }
 
-static inline ENTRY * G_GNUC_WGET_NONNULL_ALL hashmap_find_entry(const wget_hashmap_t *h, const char *key, unsigned int hash, int pos)
+static _GL_INLINE ENTRY * G_GNUC_WGET_NONNULL_ALL hashmap_find_entry(const wget_hashmap_t *h, const char *key, unsigned int hash, int pos)
 {
 	ENTRY *e;
 
@@ -141,7 +141,7 @@ static void G_GNUC_WGET_NONNULL_ALL hashmap_rehash(wget_hashmap_t *h, int newmax
 	}
 }
 
-static inline void G_GNUC_WGET_NONNULL((1,3)) hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *key, const char *value)
+static _GL_INLINE void G_GNUC_WGET_NONNULL((1,3)) hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *key, const char *value)
 {
 	ENTRY *entry;
 	int pos = hash % h->max;

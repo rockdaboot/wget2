@@ -359,9 +359,6 @@ AM_CONDITIONAL([WITH_LIBIDN], [test "x$with_libidn" = xyes])
 AC_CHECK_HEADERS([\
  crypt.h idna.h idn/idna.h idn2.h unicase.h netinet/tcp.h])
 
-# Checks for typedefs, structures, and compiler characteristics.
-AC_C_INLINE
-
 # Checks for library functions.
 AC_FUNC_FORK
 AC_FUNC_MMAP

@@ -54,10 +54,14 @@
  * namely malloc(), calloc(), realloc().
  */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 static void
 	(*_oom_callback)(void);
 
-static inline void G_GNUC_WGET_NORETURN _no_memory(void)
+static _GL_INLINE void G_GNUC_WGET_NORETURN _no_memory(void)
 {
 	if (_oom_callback)
 		_oom_callback();

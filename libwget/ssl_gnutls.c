@@ -906,7 +906,7 @@ out:
 static int _init, _server_init;
 static wget_thread_mutex_t _mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
-static inline int _key_type(int type)
+static _GL_INLINE int _key_type(int type)
 {
 	if (type == WGET_SSL_X509_FMT_DER)
 		return GNUTLS_X509_FMT_DER;

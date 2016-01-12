@@ -290,7 +290,7 @@ void wget_millisleep(int ms)
 	nanosleep(&(struct timespec){ .tv_sec = ms / 1000, .tv_nsec = (ms % 1000) * 1000000 }, NULL);
 }
 
-static inline unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
+static _GL_INLINE unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
 {
 	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
 }

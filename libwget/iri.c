@@ -128,7 +128,7 @@ int wget_iri_isunreserved_path(char c)
 	return c > 32 && c < 127 && (isalnum(c) || _iri_isunreserved(c) || c == '/');
 }
 
-static inline unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
+static _GL_INLINE unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
 {
 	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
 }
