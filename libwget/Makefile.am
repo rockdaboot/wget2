@@ -22,7 +22,7 @@ test_linking_LDADD = libwget.la @LTLIBICONV@ $(LIBOBJS) $(LIBSOCKET) $(LIB_NANOS
 test_linking_LDFLAGS = -static
 
 css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
-	@$(LEX) -w -o $@ $(srcdir)/css_tokenizer.lex
+	@$(LEX) -w -o$@ $(srcdir)/css_tokenizer.lex
 
 clean-local:
 	-rm -f css_tokenizer.c
