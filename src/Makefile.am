@@ -7,10 +7,10 @@ bin_PROGRAMS = wget2
 wget2_SOURCES = bar.c bar.h blacklist.c blacklist.h host.c host.h job.c job.h log.c log.h\
  wget.c wget.h options.c options.h
 wget2_LDFLAGS = -static
-wget2_LDADD = ../libwget/libwget.la @LTLIBICONV@\
+wget2_LDADD = ../libwget/libwget.la\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL)\
- $(LIB_SELECT) $(LIBINTL) $(SERVENT_LIB) $(LIBS) ../lib/libgnu.a
+ $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(SERVENT_LIB) $(LIBS) ../lib/libgnu.a
 
 #x_SOURCES = test_linking.c
 #x_CPPFLAGS = -I$(top_srcdir)/include

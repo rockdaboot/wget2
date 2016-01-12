@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(srcdir) -I$(top_builddir)/lib -I$(top_
 LDADD = \
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL)\
- $(LIB_SELECT) $(LIBINTL) $(SERVENT_LIB) $(LIBS) ../lib/libgnu.a
+ $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(SERVENT_LIB) $(LIBS) ../lib/libgnu.a
 
 lib_LTLIBRARIES = libwget.la
 libwget_la_SOURCES = \
@@ -23,10 +23,10 @@ libwget_la_LDFLAGS = -version-info $(LIBWGET_SO_VERSION)
 noinst_PROGRAMS = test_linking
 test_linking_SOURCES = test_linking.c
 test_linking_LDFLAGS = -static
-test_linking_LDADD = libwget.la @LTLIBICONV@\
+test_linking_LDADD = libwget.la\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL)\
- $(LIB_SELECT) $(LIBINTL) $(SERVENT_LIB) $(LIBS) ../lib/libgnu.a
+ $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(SERVENT_LIB) $(LIBS) ../lib/libgnu.a
 
 css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
 	@$(LEX) -w -o$@ $(srcdir)/css_tokenizer.lex

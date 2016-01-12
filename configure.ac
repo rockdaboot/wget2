@@ -218,10 +218,6 @@ AC_SEARCH_LIBS(pthread_create, pthread, [
   CFLAGS="-pthread $CFLAGS"
 ])
 
-# AM_ICONV sets @LIBICONV@ and @LTLIBICONV@ for use in Makefile.am
-# do not use AM_ICONV conditionally
-AM_ICONV
-
 AC_ARG_WITH(gnutls, AS_HELP_STRING([--without-gnutls], [disable GNUTLS SSL support]), with_gnutls=$withval, with_gnutls=yes)
 AS_IF([test "x$with_gnutls" != "xno"], [
   PKG_CHECK_MODULES([GNUTLS], [gnutls], [

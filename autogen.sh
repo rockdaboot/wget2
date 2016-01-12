@@ -47,6 +47,7 @@ getaddrinfo
 getsockname
 gettext-h
 glob
+iconv
 inttypes
 listen
 netdb
