@@ -3,23 +3,7 @@ noinst_PROGRAMS = print_css_urls print_css_urls2 print_css_urls3 http_get\
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib
 AM_LDFLAGS = -static
-LDADD = $(LIBOBJS) ../libwget/libwget.la @LTLIBICONV@ $(LIBSOCKET) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_SELECT) $(LIBINTL) ../lib/libgnu.a
-# local_ldadd = $(top_srcdir)/libwget/libwget.la
-
-#print_css_urls_SOURCES = print_css_urls.c
-#print_css_urls_LDADD = $(local_ldadd)
-
-#print_css_urls2_SOURCES = print_css_urls2.c
-#print_css_urls2_LDADD = $(local_ldadd)
-
-#print_css_urls3_SOURCES = print_css_urls3.c
-#print_css_urls3_LDADD = $(local_ldadd)
-
-#http_get_SOURCES = http_get.c
-#http_get_LDADD = $(local_ldadd)
-
-#http_get2_SOURCES = http_get2.c
-#http_get2_LDADD = $(local_ldadd)
-
-#getstream_SOURCES = getstream.c
-#getstream_LDADD = $(local_ldadd)
+LDADD = ../libwget/libwget.la @LTLIBICONV@\
+ $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
+ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL)\
+ $(LIB_SELECT) $(LIBINTL) $(SERVENT_LIB) $(LIBS) ../lib/libgnu.a

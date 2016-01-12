@@ -40,26 +40,13 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #if WITH_ZLIB
 //#include <zlib.h>
 #endif
 #ifdef WITH_LIBNGHTTP2
 	#include <nghttp2/nghttp2.h>
-#endif
-
-#ifdef __WIN32
-# include <winsock2.h>
-#else
-# ifdef __VMS
-#  include "vms_ip.h"
-# else /* def __VMS */
-// #  include <netdb.h>
-# endif /* def __VMS [else] */
-# include <sys/socket.h>
-# include <netinet/in.h>
-#ifndef __BEOS__
-# include <arpa/inet.h>
-#endif
 #endif
 
 #include <libwget.h>

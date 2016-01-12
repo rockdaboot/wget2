@@ -32,38 +32,27 @@
 #endif
 
 #if HAVE_CONFIG_H
-# include <config.h>
+#	include <config.h>
 #endif
 
 #include <sys/types.h>
-//#include <sys/socket.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
 #include <stdarg.h>
-#include <ctype.h>
+#include <c-ctype.h>
 #include <fcntl.h>
 #include <time.h>
 #include <errno.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <netinet/in.h>
 
-#ifndef __WIN32
-# ifdef __VMS
-#  include "vms_ip.h"
-# else /* def __VMS */
-#  include <netdb.h>
-# endif /* def __VMS [else] */
-# include <sys/socket.h>
-# include <netinet/tcp.h>
-# include <netinet/in.h>
-# ifndef __BEOS__
-#  include <arpa/inet.h>
-# endif
-#else
-# include <winsock2.h>
-# include <ws2tcpip.h>
-#endif /* not WINDOWS */
+#ifdef HAVE_NETINET_TCP_H
+#	include <netinet/tcp.h>
+#endif
 
 #include <libwget.h>
 #include "private.h"
@@ -200,7 +189,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 	addrinfo = NULL;
 
 #if defined(AI_NUMERICSERV)
-	ai_flags |= (port && isdigit(*port) ? AI_NUMERICSERV : 0);
+	ai_flags |= (port && c_isdigit(*port) ? AI_NUMERICSERV : 0);
 #endif
 #if defined(AI_ADDRCONFIG)
 	ai_flags |= AI_ADDRCONFIG;
@@ -524,12 +513,6 @@ void wget_tcp_deinit(wget_tcp_t **_tcp)
 
 static void _set_async(int fd)
 {
-#ifdef WIN32
-	unsigned long on = 1;
-
-	if (ioctlsocket(fd, FIONBIO, &on) < 0)
-		error_printf_exit(_("Failed to set socket to non-blocking\n"));
-#elif defined(F_SETFL)
 	int flags;
 
 	if ((flags = fcntl(fd, F_GETFL)) < 0)
@@ -537,12 +520,6 @@ static void _set_async(int fd)
 
 	if (fcntl(fd, F_SETFL, flags | O_NDELAY) < 0)
 		error_printf_exit(_("Failed to set socket to non-blocking\n"));
-#else
-	int on = 1;
-
-	if (ioctl(fd, FIONBIO, &on) < 0)
-		error_printf_exit(_("Failed to set socket to non-blocking\n"));
-#endif
 }
 
 int wget_tcp_ready_2_transfer(wget_tcp_t *tcp, int flags)

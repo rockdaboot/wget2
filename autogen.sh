@@ -31,27 +31,45 @@ $GIT submodule init
 $GIT submodule update
 
 gnulib_modules="
+accept
+bind
 c-strcase
 c-ctype
 clock-time
+close
+connect
 dup2
 fcntl
 flock
 fnmatch
 futimens
+getaddrinfo
+getsockname
 gettext-h
 glob
 inttypes
+listen
+netdb
+netinet_in
 nanosleep
+open
 poll
 pwrite
 qsort_r
+read
+send
+sendto
+servent
+setsockopt
+socket
 stdarg
 stddef
 stdint
 strcase
 strdup-posix
 strndup
+sys_socket
+write
 "
 
 gnulib/gnulib-tool --import $gnulib_modules

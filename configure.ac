@@ -212,16 +212,11 @@ AC_LINK_IFELSE(
 
 PKG_PROG_PKG_CONFIG
 
-# Check for needed libraries
-AC_SEARCH_LIBS(socket, ws2_32)
-
 AC_SEARCH_LIBS(pthread_create, pthread, [
   # for Solaris also see http://docs.oracle.com/cd/E18752_01/html/816-5137/compile-94611.html
   AC_DEFINE([HAVE_LIBPTHREAD], [1], [Use pthreads])
   CFLAGS="-pthread $CFLAGS"
 ])
-AC_CHECK_LIB(socket, socket)
-AC_CHECK_LIB(nsl, getaddrinfo)
 
 # AM_ICONV sets @LIBICONV@ and @LTLIBICONV@ for use in Makefile.am
 # do not use AM_ICONV conditionally
@@ -366,8 +361,7 @@ AM_CONDITIONAL([WITH_LIBIDN], [test "x$with_libidn" = xyes])
 
 # Checks for header files.
 AC_CHECK_HEADERS([\
- locale.h netdb.h netinet/in.h sys/socket.h sys/time.h\
- crypt.h idna.h idn/idna.h idn2.h stringprep.h langinfo.h unicase.h])
+ locale.h sys/time.h crypt.h idna.h idn/idna.h idn2.h stringprep.h langinfo.h unicase.h netinet/tcp.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
@@ -378,7 +372,7 @@ AC_FUNC_FORK
 AC_FUNC_MMAP
 #AC_FUNC_REALLOC
 AC_CHECK_FUNCS([\
- memchr memmove memset mkdir munmap setlocale socket\
+ memchr memmove memset mkdir munmap setlocale\
  strchr strerror strrchr strstr strlcpy vasprintf nl_langinfo])
 
 AC_CONFIG_FILES([Makefile

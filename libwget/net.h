@@ -28,22 +28,8 @@
 #ifndef _LIBWGET_NET_H
 # define _LIBWGET_NET_H
 
-# ifndef __WIN32
-#  ifdef __VMS
-#   include "vms_ip.h"
-#  else /* def __VMS */
-#   include <netdb.h>
-#  endif /* def __VMS [else] */
-#  include <sys/socket.h>
-#  include <netinet/tcp.h>
-#  include <netinet/in.h>
-#  ifndef __BEOS__
-#   include <arpa/inet.h>
-#  endif
-# else
-#  include <winsock2.h>
-#  include <ws2tcpip.h>
-# endif /* not WINDOWS */
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 struct wget_tcp_st {
 	void *
