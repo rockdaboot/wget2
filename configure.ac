@@ -358,25 +358,11 @@ AM_CONDITIONAL([WITH_LIBIDN], [test "x$with_libidn" = xyes])
 
 # Checks for header files.
 AC_CHECK_HEADERS([\
- inttypes.h libintl.h locale.h netdb.h netinet/in.h stddef.h \
- sys/socket.h sys/time.h crypt.h idna.h idn/idna.h idn2.h stringprep.h\
- langinfo.h unicase.h])
+ locale.h netdb.h netinet/in.h sys/socket.h sys/time.h\
+ crypt.h idna.h idn/idna.h idn2.h stringprep.h langinfo.h unicase.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
-#AC_CHECK_HEADER_STDBOOL
 AC_C_INLINE
-AC_TYPE_INT16_T
-AC_TYPE_INT32_T
-AC_TYPE_INT8_T
-AC_TYPE_OFF_T
-AC_TYPE_PID_T
-AC_C_RESTRICT
-AC_TYPE_SIZE_T
-AC_TYPE_SSIZE_T
-AC_TYPE_UINT16_T
-AC_TYPE_UINT32_T
-AC_TYPE_UINT8_T
-AC_CHECK_TYPES([ptrdiff_t])
 
 # Checks for library functions.
 AC_FUNC_FORK

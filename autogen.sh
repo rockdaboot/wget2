@@ -39,11 +39,16 @@ fcntl
 flock
 fnmatch
 futimens
+gettext-h
 glob
+inttypes
 nanosleep
 poll
 pwrite
 qsort_r
+stdarg
+stddef
+stdint
 strcase
 strdup
 strndup

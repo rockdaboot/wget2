@@ -164,10 +164,8 @@
 #	define WGET_END_DECLS
 #endif
 
-// Include libintl.h before we redefine gettext stuff
-#ifdef HAVE_LIBINTL_H
-#	include <libintl.h>
-#endif
+// gnulib convenience header for libintl.h
+#include <gettext.h>
 
 #if ENABLE_NLS != 0
 #	undef gettext

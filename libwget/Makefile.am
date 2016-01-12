@@ -1,4 +1,4 @@
-LDADD = $(LIBOBJS) ../lib/libgnu.a
+LDADD = $(LIBOBJS) $(LIBSOCKET) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_SELECT) $(LTLIBINTL) ../lib/libgnu.a
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib
 
 lib_LTLIBRARIES = libwget.la
@@ -18,7 +18,7 @@ libwget_la_LDFLAGS = -version-info $(LIBWGET_SO_VERSION)
 #bin_PROGRAMS = test_linking
 noinst_PROGRAMS = test_linking
 test_linking_SOURCES = test_linking.c
-test_linking_LDADD = libwget.la @LTLIBICONV@ @LTLIBINTL@ $(LIBS) ../lib/libgnu.a
+test_linking_LDADD = libwget.la @LTLIBICONV@ $(LIBOBJS) $(LIBSOCKET) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_SELECT) $(LIBINTL) $(LIBS) ../lib/libgnu.a
 test_linking_LDFLAGS = -static
 
 css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h

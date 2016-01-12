@@ -1,8 +1,8 @@
 #DEFS = @DEFS@ -DDATADIR=\"$(datadir)/@PACKAGE@\" -DSRCDIR=\"$(srcdir)\"
 DEFS = @DEFS@ -DDATADIR=\"$(abs_top_srcdir)/data\" -DSRCDIR=\"$(srcdir)\"
-AM_CPPFLAGS = -Wno-missing-field-initializers -I$(top_srcdir)/include
+AM_CPPFLAGS = -Wno-missing-field-initializers -I$(top_srcdir)/include -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib
 AM_LDFLAGS = -static
-LDADD = $(LIBOBJS) libtest.la ../libwget/libwget.la @LTLIBICONV@ @LTLIBINTL@ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_SELECT) ../lib/libgnu.a
+LDADD = $(LIBOBJS) libtest.la ../libwget/libwget.la @LTLIBICONV@ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_SELECT) $(LIBINTL) ../lib/libgnu.a
 
 # test-iri-disabled removed since Wget always uses IRIs
 WGET_TESTS = test test-wget-1 test-restrict-ascii test-i-http test-i-https test-np test--spider-r \
@@ -16,12 +16,12 @@ WGET_TESTS = test test-wget-1 test-restrict-ascii test-i-http test-i-https test-
 check_PROGRAMS = buffer_printf2_perf stringmap_perf $(WGET_TESTS)
 
 test_SOURCES = test.c
-test_LDADD = ../libwget/libwget.la ../src/log.o ../src/options.o @LTLIBICONV@ @LTLIBINTL@ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_SELECT) ../lib/libgnu.a
-test_parse_html_LDADD = ../libwget/libwget.la ../src/log.o ../src/options.o @LTLIBICONV@ @LTLIBINTL@ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_SELECT) ../lib/libgnu.a
+test_LDADD = ../libwget/libwget.la ../src/log.o ../src/options.o @LTLIBICONV@ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_SELECT) $(LIBINTL) ../lib/libgnu.a
+test_parse_html_LDADD = ../libwget/libwget.la ../src/log.o ../src/options.o @LTLIBICONV@ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_SELECT) $(LIBINTL) ../lib/libgnu.a
 
 noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = libtest.c
-libtest_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include
+libtest_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include -I$(top_builddir)/lib -I$(top_srcdir)/lib
 #libtest_LDADD = libtest.o
 
 EXTRA_DIST = files libtest.h certs
