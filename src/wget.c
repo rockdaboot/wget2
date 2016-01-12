@@ -43,6 +43,7 @@
 #include <time.h>
 #include <fnmatch.h>
 #include <sys/stat.h>
+#include <locale.h>
 
 #include <libwget.h>
 
@@ -849,7 +850,6 @@ int main(int argc, const char *const *argv)
 	char *buf = NULL;
 	bool async_urls = false;
 
-	#include <locale.h>
 	setlocale(LC_ALL, "");
 
 #if ENABLE_NLS != 0

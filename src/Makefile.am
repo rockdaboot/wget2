@@ -10,7 +10,8 @@ wget2_LDFLAGS = -static
 wget2_LDADD = ../libwget/libwget.la\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL)\
- $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(SERVENT_LIB) $(LIBS) ../lib/libgnu.a
+ $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(LIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
+ $(LIBS) ../lib/libgnu.a
 
 #x_SOURCES = test_linking.c
 #x_CPPFLAGS = -I$(top_srcdir)/include

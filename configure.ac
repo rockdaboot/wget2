@@ -357,7 +357,7 @@ AM_CONDITIONAL([WITH_LIBIDN], [test "x$with_libidn" = xyes])
 
 # Checks for header files.
 AC_CHECK_HEADERS([\
- locale.h sys/time.h crypt.h idna.h idn/idna.h idn2.h unicase.h netinet/tcp.h])
+ crypt.h idna.h idn/idna.h idn2.h unicase.h netinet/tcp.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
@@ -368,8 +368,7 @@ AC_FUNC_FORK
 AC_FUNC_MMAP
 #AC_FUNC_REALLOC
 AC_CHECK_FUNCS([\
- memchr memmove memset mkdir munmap setlocale\
- strchr strerror strrchr strstr strlcpy vasprintf])
+ memchr memmove memset mkdir munmap strchr strerror strrchr strstr strlcpy vasprintf])
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile

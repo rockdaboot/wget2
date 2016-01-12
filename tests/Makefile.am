@@ -5,7 +5,8 @@ AM_LDFLAGS = -static
 LDADD = libtest.la ../libwget/libwget.la\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL)\
- $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(SERVENT_LIB) $(LIBS) ../lib/libgnu.a
+ $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(LIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
+ $(LIBS) ../lib/libgnu.a
 
 # test-iri-disabled removed since Wget always uses IRIs
 WGET_TESTS = test test-wget-1 test-restrict-ascii test-i-http test-i-https test-np test--spider-r \
@@ -22,11 +23,13 @@ test_SOURCES = test.c
 test_LDADD = ../libwget/libwget.la ../src/log.o ../src/options.o\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL)\
- $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(SERVENT_LIB) $(LIBS) ../lib/libgnu.a
+ $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(LIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
+ $(LIBS) ../lib/libgnu.a
 test_parse_html_LDADD = ../libwget/libwget.la ../src/log.o ../src/options.o\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL)\
- $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(SERVENT_LIB) $(LIBS) ../lib/libgnu.a
+ $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(LIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
+ $(LIBS) ../lib/libgnu.a
 
 noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = libtest.c

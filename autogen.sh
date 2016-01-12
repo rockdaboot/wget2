@@ -63,6 +63,7 @@ read
 send
 sendto
 servent
+setlocale
 setsockopt
 socket
 stdarg
