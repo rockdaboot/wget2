@@ -363,7 +363,7 @@ AC_CHECK_HEADERS([\
 AC_FUNC_FORK
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([\
- memchr memmove memset mkdir munmap strchr strerror strrchr strstr strlcpy vasprintf])
+ munmap strlcpy vasprintf])
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile

@@ -54,6 +54,10 @@ inline
 inttypes
 listen
 malloc-posix
+memchr
+memmove
+memset
+mkdir
 nanosleep
 netdb
 netinet_in
@@ -75,7 +79,9 @@ stddef
 stdint
 strcase
 strdup-posix
+strerror
 strndup
+strstr
 sys_file
 sys_socket
 sys_stat
