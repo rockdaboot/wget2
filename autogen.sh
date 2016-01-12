@@ -71,8 +71,11 @@ stdint
 strcase
 strdup-posix
 strndup
+sys_file
 sys_socket
+sys_stat
 sys_time
+sys_types
 write
 "
 
