@@ -193,12 +193,20 @@ AS_IF([test "x${ac_enable_valgrind}" != xno], [
 ])
 
 # check for gcc's atomic read-add-write functionality
-AC_MSG_CHECKING([for __sync_fetch_and_add])
+AC_MSG_CHECKING([for __sync_fetch_and_add (int)])
 AC_LINK_IFELSE(
    [AC_LANG_SOURCE([
     int main(void) { return __sync_fetch_and_add((int *)0, 0); }
    ])],
    [AC_DEFINE([WITH_SYNC_FETCH_AND_ADD], [1], [use __sync_fetch_and_add]) AC_MSG_RESULT([yes])],
+   [AC_MSG_RESULT([no])]
+)
+AC_MSG_CHECKING([for __sync_fetch_and_add (long long)])
+AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([
+    int main(void) { return __sync_fetch_and_add((long long *)0, 0); }
+   ])],
+   [AC_DEFINE([WITH_SYNC_FETCH_AND_ADD_LONGLONG], [1], [use __sync_fetch_and_add]) AC_MSG_RESULT([yes])],
    [AC_MSG_RESULT([no])]
 )
 

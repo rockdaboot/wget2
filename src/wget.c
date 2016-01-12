@@ -385,7 +385,7 @@ const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
 
 static long long _fetch_and_add_longlong(long long *p, long long n)
 {
-#ifdef WITH_SYNC_FETCH_AND_ADD
+#ifdef WITH_SYNC_FETCH_AND_ADD_LONGLONG
 	return __sync_fetch_and_add(p, n);
 #else
 	static wget_thread_mutex_t
