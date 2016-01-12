@@ -50,7 +50,7 @@ stdarg
 stddef
 stdint
 strcase
-strdup
+strdup-posix
 strndup
 "
 
