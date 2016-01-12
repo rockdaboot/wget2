@@ -50,9 +50,10 @@ glob
 iconv
 inttypes
 listen
+nanosleep
 netdb
 netinet_in
-nanosleep
+nl_langinfo
 open
 poll
 pwrite

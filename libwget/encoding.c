@@ -37,11 +37,7 @@
 # include <iconv.h>
 #endif
 
-#if defined(HAVE_STRINGPREP_H) && defined(WITH_LIBIDN)
-# include <stringprep.h>
-#elif defined(HAVE_LANGINFO_H)
-# include <langinfo.h>
-#endif
+#include <langinfo.h>
 
 #if defined(HAVE_IDN2_H) && defined(WITH_LIBIDN2)
 # include <idn2.h>
@@ -62,25 +58,11 @@
 
 const char *wget_local_charset_encoding(void)
 {
-#if defined(HAVE_STRINGPREP_H) && defined(WITH_LIBIDN)
-	const char *encoding = stringprep_locale_charset();
-
-	// Solaris: unknown encoding '646' when locale is set to C or POSIX
-	if (strcmp(encoding, "646"))
-		return strdup(stringprep_locale_charset());
-#elif defined(HAVE_NL_LANGINFO)
 	const char *encoding = nl_langinfo(CODESET);
 
-	// Solaris: unknown encoding '646' when locale is set to C or POSIX
-	if (encoding && *encoding && strcmp(encoding, "646"))
+	if (encoding && *encoding)
 		return strdup(encoding);
-#elif defined(_WIN32) || defined(__WIN32__) || defined(_WIN64) || defined(__WIN64__)
-	static char buf[16];
 
-	 // GetACP() returns the codepage.
-	 snprintf(buf, sizeof(buf), "CP%u", GetACP ());
-	 return buf;
-#endif
 	return strdup("ASCII");
 }
 
