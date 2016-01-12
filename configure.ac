@@ -364,9 +364,7 @@ AC_C_INLINE
 
 # Checks for library functions.
 AC_FUNC_FORK
-#AC_FUNC_MALLOC
 AC_FUNC_MMAP
-#AC_FUNC_REALLOC
 AC_CHECK_FUNCS([\
  memchr memmove memset mkdir munmap strchr strerror strrchr strstr strlcpy vasprintf])
 

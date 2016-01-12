@@ -139,13 +139,3 @@ void *wget_realloc(void *ptr, size_t size)
 		*p = NULL;
 	}
 }*/
-
-void *rpl_malloc (size_t n)
-{
-	return malloc (n ? n : 1);
-}
-
-void *rpl_realloc (void *ptr, size_t n)
-{
-	return realloc (ptr, n ? n : 1);
-}

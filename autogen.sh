@@ -35,6 +35,7 @@ accept
 bind
 c-strcase
 c-ctype
+calloc-posix
 clock-time
 close
 connect
@@ -51,6 +52,7 @@ glob
 iconv
 inttypes
 listen
+malloc-posix
 nanosleep
 netdb
 netinet_in
@@ -60,6 +62,7 @@ poll
 pwrite
 qsort_r
 read
+realloc-posix
 send
 sendto
 servent
