@@ -162,23 +162,12 @@ size_t wget_buffer_strcpy(wget_buffer_t *buf, const char *s)
 {
 	buf->length = 0;
 
-	return wget_buffer_strcat(buf, s);
+	return wget_buffer_memcat(buf, s, strlen(s));
 }
 
 size_t wget_buffer_strcat(wget_buffer_t *buf, const char *s)
 {
-	size_t length = strlen(s);
-
-	if (length) {
-		if (buf->size < buf->length + length)
-			wget_buffer_realloc(buf, buf->size * 2 + length);
-
-		strcpy(buf->data + buf->length, s);
-		buf->length += length;
-	} else
-		buf->data[buf->length] = 0;
-
-	return buf->length;
+	return wget_buffer_memcat(buf, s, strlen(s));
 }
 
 size_t wget_buffer_bufcpy(wget_buffer_t *buf, wget_buffer_t *src)
