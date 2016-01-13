@@ -33,7 +33,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+#include <c-ctype.h>
 
 #include <libwget.h>
 #include "private.h"
@@ -58,8 +58,8 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 			|| !wget_strcasecmp_ascii(attr, "src") || !wget_strcasecmp_ascii(attr, "scheme")
 			|| !wget_strcasecmp_ascii(attr, "xmlns") || !wget_strncasecmp_ascii(attr, "xmlns:", 6))
 		{
-			for (;len && isspace(*val); val++, len--); // skip leading spaces
-			for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces
+			for (;len && c_isspace(*val); val++, len--); // skip leading spaces
+			for (;len && c_isspace(val[len - 1]); len--);  // skip trailing spaces
 
 			url.p = val;
 			url.len = len;
@@ -79,8 +79,8 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 			if (!wget_strcasecmp_ascii(elem, "icon") || !wget_strcasecmp_ascii(elem, "id")
 				 || !wget_strcasecmp_ascii(elem, "logo"))
 			{
-				for (;len && isspace(*val); val++, len--); // skip leading spaces
-				for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces
+				for (;len && c_isspace(*val); val++, len--); // skip leading spaces
+				for (;len && c_isspace(val[len - 1]); len--);  // skip trailing spaces
 
 				// debug_printf("#2 %02X %s %s '%.*s' %zd\n", flags, dir, attr, (int) len, val, len);
 

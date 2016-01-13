@@ -39,7 +39,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <strings.h>
-#include <ctype.h>
+#include <c-ctype.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #ifdef HAVE_MMAP
@@ -106,10 +106,10 @@ void wget_css_parse_buffer(
 					char *otext = text;
 
 					// remove trailing ) and any spaces before
-					for (length--; isspace(text[length - 1]); length--);
+					for (length--; c_isspace(text[length - 1]); length--);
 
 					// remove leading url( and any spaces after
-					for (length -= 4, text += 4; isspace(*text); text++, length--);
+					for (length -= 4, text += 4; c_isspace(*text); text++, length--);
 
 					// remove quotes
 					if (*text == '\'' || *text == '\"') {

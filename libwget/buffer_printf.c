@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+#include <c-ctype.h>
 
 #include <libwget.h>
 #include "private.h"
@@ -323,7 +323,7 @@ size_t wget_buffer_vprintf_append2(wget_buffer_t *buf, const char *fmt, va_list 
 			}
 			p++;
 		} else {
-			for (field_width = 0; isdigit(*p); p++)
+			for (field_width = 0; c_isdigit(*p); p++)
 				field_width = field_width * 10 + (*p - '0');
 		}
 
@@ -335,11 +335,11 @@ size_t wget_buffer_vprintf_append2(wget_buffer_t *buf, const char *fmt, va_list 
 				if (precision < 0 )
 					precision = 0;
 				p++;
-			} else if (isdigit(*p)) {
+			} else if (c_isdigit(*p)) {
 				precision = 0;
 				do {
 					precision = precision * 10 + (*p - '0');
-				} while (isdigit(*++p));
+				} while (c_isdigit(*++p));
 			} else {
 				precision = -1;
 			}

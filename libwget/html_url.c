@@ -32,7 +32,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+#include <c-ctype.h>
 
 #include <libwget.h>
 #include "private.h"
@@ -113,9 +113,9 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				value[len] = 0;
 
 				while (*value) {
-					while (isspace(*value)) value++;
+					while (c_isspace(*value)) value++;
 					if (*value == ',') { value++; continue; }
-					for (p = value; *p && !isspace(*p) && *p != ','; p++);
+					for (p = value; *p && !c_isspace(*p) && *p != ','; p++);
 					if (p == value) break;
 
 					// debug_printf("ROBOTS='%.*s'\n", (int)(p - value), value);
@@ -171,8 +171,8 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 		}
 
 		if (found) {
-			for (;len && isspace(*val); val++, len--); // skip leading spaces
-			for (;len && isspace(val[len - 1]); len--);  // skip trailing spaces
+			for (;len && c_isspace(*val); val++, len--); // skip leading spaces
+			for (;len && c_isspace(val[len - 1]); len--);  // skip trailing spaces
 
 			if ((*tag|0x20) == 'b' && !wget_strcasecmp_ascii(tag,"base")) {
 				// found a <BASE href="...">

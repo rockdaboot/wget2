@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+#include <c-ctype.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -76,7 +76,7 @@ static void html_dump(void *user_ctx, int flags, const char *dir G_GNUC_WGET_UNU
 
 		// very simplified
 		// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
-		switch (tolower(*attr)) {
+		switch (c_tolower(*attr)) {
 		case 'h':
 			found = !wget_strcasecmp_ascii(attr, "href");
 			break;

@@ -40,7 +40,7 @@
 #include <signal.h>
 #include <utime.h>
 #include <dirent.h>
-#include <ctype.h>
+#include <c-ctype.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/wait.h>
@@ -131,7 +131,7 @@ static void *_http_server_thread(void *ctx)
 						const char *auth_scheme, *s;
 
 						s=wget_http_parse_token(value, &auth_scheme);
-						while (isblank(*s)) s++;
+						while (c_isblank(*s)) s++;
 
 						if (!wget_strcasecmp_ascii(auth_scheme, "basic")) {
 							const char *encoded = wget_base64_encode_printf_alloc("%s:%s", url->auth_username, url->auth_password);

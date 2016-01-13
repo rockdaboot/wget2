@@ -47,6 +47,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <c-ctype.h>
 #include <ctype.h>
 #include <pwd.h>
 #include <errno.h>
@@ -258,7 +259,7 @@ static int parse_numbytes(option_t opt, const char *val)
 
 		if (sscanf(val, " %lf%c", &num, &modifier) >= 1) {
 			if (modifier) {
-				switch (tolower(modifier)) {
+				switch (c_tolower(modifier)) {
 				case 'k': num *= 1024; break;
 				case 'm': num *= 1024*1024; break;
 				case 'g': num *= 1024*1024*1024; break;
@@ -854,7 +855,7 @@ static int _parse_option(char *linep, char **name, char **val)
 	if (*linep == '=') {
 		// option with value, e.g. debug=y
 		*linep++ = 0;
-		// while (isspace(linep)) linep++;
+		// while (c_isspace(linep)) linep++;
 
 		*val = linep;
 

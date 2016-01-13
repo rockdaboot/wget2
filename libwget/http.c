@@ -37,7 +37,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+#include <c-ctype.h>
 #include <time.h>
 #include <errno.h>
 #include <sys/socket.h>
@@ -153,21 +153,21 @@ const char *wget_http_parse_param(const char *s, const char **param, const char 
 
 	*param = *value = NULL;
 
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 
 	if (*s == ';') {
 		s++;
-		while (isblank(*s)) s++;
+		while (c_isblank(*s)) s++;
 	}
 	if (!*s) return s;
 
 	for (p = s; wget_http_istoken(*s); s++);
 	*param = wget_strmemdup(p, s - p);
 
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 
 	if (*s && *s++ == '=') {
-		while (isblank(*s)) s++;
+		while (c_isblank(*s)) s++;
 		if (*s == '\"') {
 			s = wget_http_parse_quoted_string(s, value);
 		} else {
@@ -187,7 +187,7 @@ const char *wget_http_parse_param(const char *s, const char **param, const char 
 
 const char *wget_http_parse_name(const char *s, const char **name)
 {
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 
 	s = wget_http_parse_token(s, name);
 
@@ -198,7 +198,7 @@ const char *wget_http_parse_name(const char *s, const char **name)
 
 const char *wget_parse_name_fixed(const char *s, const char **name, size_t *namelen)
 {
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 
 	*name = s;
 
@@ -258,7 +258,7 @@ const char *wget_http_parse_link(const char *s, wget_http_link_t *link)
 {
 	memset(link, 0, sizeof(*link));
 
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 
 	if (*s == '<') {
 		// URI reference as of RFC 3987 (if relative, resolve as of RFC 3986)
@@ -269,7 +269,7 @@ const char *wget_http_parse_link(const char *s, wget_http_link_t *link)
 			link->uri = wget_strmemdup(p, s - p);
 			s++;
 
-			while (isblank(*s)) s++;
+			while (c_isblank(*s)) s++;
 
 			while (*s == ';') {
 				s = wget_http_parse_param(s, &name, &value);
@@ -286,7 +286,7 @@ const char *wget_http_parse_link(const char *s, wget_http_link_t *link)
 						value = NULL;
 					}
 					//				http_add_param(&link->params,&param);
-					while (isblank(*s)) s++;
+					while (c_isblank(*s)) s++;
 				}
 
 				xfree(name);
@@ -296,7 +296,7 @@ const char *wget_http_parse_link(const char *s, wget_http_link_t *link)
 			//			if (!msg->contacts) msg->contacts=vec_create(1,1,NULL);
 			//			vec_add(msg->contacts,&contact,sizeof(contact));
 
-			while (*s && !isblank(*s)) s++;
+			while (*s && !c_isblank(*s)) s++;
 		}
 	}
 
@@ -314,23 +314,23 @@ const char *wget_http_parse_digest(const char *s, wget_http_digest_t *digest)
 
 	memset(digest, 0, sizeof(*digest));
 
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 	s = wget_http_parse_token(s, &digest->algorithm);
 
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 
 	if (*s == '=') {
 		s++;
-		while (isblank(*s)) s++;
+		while (c_isblank(*s)) s++;
 		if (*s == '\"') {
 			s = wget_http_parse_quoted_string(s, &digest->encoded_digest);
 		} else {
-			for (p = s; *s && !isblank(*s) && *s != ',' && *s != ';'; s++);
+			for (p = s; *s && !c_isblank(*s) && *s != ',' && *s != ';'; s++);
 			digest->encoded_digest = wget_strmemdup(p, s - p);
 		}
 	}
 
-	while (*s && !isblank(*s)) s++;
+	while (*s && !c_isblank(*s)) s++;
 
 	return s;
 }
@@ -346,7 +346,7 @@ const char *wget_http_parse_challenge(const char *s, wget_http_challenge_t *chal
 
 	memset(challenge, 0, sizeof(*challenge));
 
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 	s = wget_http_parse_token(s, &challenge->auth_scheme);
 
 	if (*s == ' ')
@@ -377,7 +377,7 @@ const char *wget_http_parse_challenge(const char *s, wget_http_challenge_t *chal
 			wget_stringmap_put_noalloc(challenge->params, param.name, param.value);
 		}
 
-		while (isblank(*s)) s++;
+		while (c_isblank(*s)) s++;
 
 		if (*s != ',') break;
 		else if (*s) s++;
@@ -404,9 +404,9 @@ const char *wget_http_parse_location(const char *s, const char **location)
 {
 	const char *p;
 
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 
-	for (p = s; *s && !isblank(*s); s++);
+	for (p = s; *s && !c_isblank(*s); s++);
 	*location = wget_strmemdup(p, s - p);
 
 	return s;
@@ -421,7 +421,7 @@ const char *wget_http_parse_location(const char *s, const char **location)
 
 const char *wget_http_parse_transfer_encoding(const char *s, char *transfer_encoding)
 {
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 
 	if (!wget_strcasecmp_ascii(s, "identity"))
 		*transfer_encoding = transfer_encoding_identity;
@@ -444,7 +444,7 @@ const char *wget_http_parse_content_type(const char *s, const char **content_typ
 	wget_http_header_param_t param;
 	const char *p;
 
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 
 	for (p = s; *s && (wget_http_istoken(*s) || *s == '/'); s++);
 	if (content_type)
@@ -621,7 +621,7 @@ const char *wget_http_parse_strict_transport_security(const char *s, time_t *max
 
 const char *wget_http_parse_content_encoding(const char *s, char *content_encoding)
 {
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 
 	if (!wget_strcasecmp_ascii(s, "gzip") || !wget_strcasecmp_ascii(s, "x-gzip"))
 		*content_encoding = wget_content_encoding_gzip;
@@ -643,7 +643,7 @@ const char *wget_http_parse_content_encoding(const char *s, char *content_encodi
 
 const char *wget_http_parse_connection(const char *s, char *keep_alive)
 {
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 
 	if (!wget_strcasecmp_ascii(s, "keep-alive"))
 		*keep_alive = 1;
@@ -659,9 +659,9 @@ const char *wget_http_parse_etag(const char *s, const char **etag)
 {
 	const char *p;
 
-	while (isblank(*s)) s++;
+	while (c_isblank(*s)) s++;
 
-	for (p = s; *s && !isblank(*s); s++);
+	for (p = s; *s && !c_isblank(*s); s++);
 	*etag = wget_strmemdup(p, s - p);
 
 	return s;
@@ -978,13 +978,13 @@ const char *wget_http_parse_setcookie(const char *s, wget_cookie_t *cookie)
 
 	cookie = wget_cookie_init(cookie);
 
-	while (isspace(*s)) s++;
+	while (c_isspace(*s)) s++;
 	s = wget_http_parse_token(s, &cookie->name);
-	while (isspace(*s)) s++;
+	while (c_isspace(*s)) s++;
 
 	if (cookie->name && *cookie->name && *s == '=') {
 		// *cookie-octet / ( DQUOTE *cookie-octet DQUOTE )
-		for (s++; isspace(*s);) s++;
+		for (s++; c_isspace(*s);) s++;
 
 		if (*s == '\"')
 			s++;
@@ -997,7 +997,7 @@ const char *wget_http_parse_setcookie(const char *s, wget_cookie_t *cookie)
 			while (*s && *s != ';') s++;
 			if (!*s) break;
 
-			for (s++; isspace(*s);) s++;
+			for (s++; c_isspace(*s);) s++;
 			s = wget_http_parse_token(s, &name);
 
 			if (name) {
@@ -1095,7 +1095,7 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 
 	for (line = eol + 1; eol && *line && *line != '\r'; line = eol + 1) {
 		eol = strchr(line + 1, '\n');
-		while (eol && isblank(eol[1])) { // handle split lines
+		while (eol && c_isblank(eol[1])) { // handle split lines
 			*eol = eol[-1] = ' ';
 			eol = strchr(eol + 1, '\n');
 		}
@@ -2486,7 +2486,7 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 		wget_vector_set_destructor(proxies, (void(*)(void *))wget_iri_free_content);
 
 		for (s = proxy; (p = strchr(s, ',')); s = p + 1) {
-			while (isspace(*s) && s < p) s++;
+			while (c_isspace(*s) && s < p) s++;
 
 			if (p != s) {
 				wget_iri_t *iri;
@@ -2496,7 +2496,7 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 				host[p - s] = 0;
 				iri = wget_iri_parse (host, encoding);
 				if (!iri) {
-					wget_vector_free (&proxies);
+					wget_vector_free(&proxies);
 					return NULL;
 				}
 				wget_vector_add_noalloc(proxies, iri);
@@ -2505,7 +2505,7 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 		if (*s) {
 			wget_iri_t *iri = wget_iri_parse(s, encoding);
 			if (!iri) {
-				wget_vector_free (&proxies);
+				wget_vector_free(&proxies);
 				return NULL;
 			}
 			wget_vector_add_noalloc(proxies, iri);

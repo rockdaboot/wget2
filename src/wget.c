@@ -39,6 +39,7 @@
 #include <strings.h>
 #include <signal.h>
 #include <errno.h>
+#include <c-ctype.h>
 #include <ctype.h>
 #include <time.h>
 #include <fnmatch.h>
@@ -1572,7 +1573,7 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, wge
 		// with --page-requisites: just load inline URLs from the deepest level documents
 		if (page_requisites && !wget_strcasecmp_ascii(html_url->attr, "href")) {
 			// don't load from dir 'A', 'AREA' and 'EMBED'
-			if (tolower(*html_url->dir) == 'a'
+			if (c_tolower(*html_url->dir) == 'a'
 				&& (html_url->dir[1] == 0 || !wget_strcasecmp_ascii(html_url->dir,"area") || !wget_strcasecmp_ascii(html_url->dir,"embed"))) {
 				info_printf(_("URL '%.*s' not followed (page requisites + level)\n"), (int)url->len, url->p);
 				continue;
