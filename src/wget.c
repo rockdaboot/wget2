@@ -2021,7 +2021,7 @@ static void G_GNUC_WGET_NONNULL((1)) _save_file(wget_http_response_t *resp, cons
 		if (ext) {
 			size_t ext_length = strlen(ext);
 
-			if (fname_length >= ext_length && wget_strcasecmp(fname + fname_length - ext_length, ext)) {
+			if (fname_length >= ext_length && wget_strcasecmp_ascii(fname + fname_length - ext_length, ext)) {
 				alloced_fname = xmalloc(fname_length + ext_length + 1);
 				memcpy(alloced_fname, fname, fname_length);
 				memcpy(alloced_fname + fname_length, ext, ext_length + 1);
