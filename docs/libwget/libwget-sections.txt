@@ -60,3 +60,12 @@ wget_hash_init
 wget_hash
 wget_hash_deinit
 </SECTION>
+
+<SECTION>
+<FILE>libwget-printf</FILE>
+<TITLE>Printf-style functions</TITLE>
+wget_vasprintf
+wget_asprintf
+wget_str_vasprintf
+wget_str_asprintf
+</SECTION>

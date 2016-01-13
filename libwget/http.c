@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2016 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -1322,10 +1322,9 @@ void wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, co
 {
 	wget_http_header_param_t param;
 
-	if (vasprintf((char **) &param.value, fmt, args) != -1) {
-		param.name = strdup(name);
-		wget_vector_add(req->headers, &param, sizeof(param));
-	}
+	param.value = wget_str_vasprintf(fmt, args);
+	param.name = strdup(name);
+	wget_vector_add(req->headers, &param, sizeof(param));
 }
 
 void wget_http_add_header_printf(wget_http_request_t *req, const char *name, const char *fmt, ...)

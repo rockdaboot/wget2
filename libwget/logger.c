@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
- * Copyright(c) 2015 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2016 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -31,43 +31,10 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <stdlib.h>
-#include <time.h>
 #include <errno.h>
-#include <sys/time.h>
 
 #include <libwget.h>
 #include "private.h"
-
-/*
-static void G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))
-_logger_vprintf_func(const wget_logger_t *logger, const char *fmt, va_list args)
-{
-	char sbuf[4096];
-	int err = errno, len;
-	va_list args2;
-
-	// vsnprintf destroys args, so we need a copy for the fallback case
-	va_copy(args2, args);
-
-	// first try without malloc
-	len = vsnprintf(sbuf, sizeof(sbuf), fmt, args);
-
-	if (len >= 0 && len < (int)sizeof(sbuf)) {
-		logger->func(sbuf, len);
-	} else {
-		// fallback to memory allocation, print without timestamp
-		char *buf;
-		len = vasprintf(&buf, fmt, args2);
-		if (len != -1) {
-			logger->func(buf, len);
-			xfree(buf);
-		}
-	}
-
-	errno = err;
-}
-*/
 
 static void G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))
 _logger_vprintf_func(const wget_logger_t *logger, const char *fmt, va_list args)

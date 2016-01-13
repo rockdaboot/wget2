@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2016 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -30,7 +30,6 @@
 #endif
 
 #include <stddef.h>
-#include <stdio.h>
 
 #include <libwget.h>
 #include "private.h"
@@ -42,7 +41,7 @@ void wget_md5_printf_hex(char *digest_hex, const char *fmt, ...)
 	int size, rc;
 
 	va_start(args, fmt);
-	size = vasprintf(&plaintext, fmt, args);
+	size = wget_vasprintf(&plaintext, fmt, args);
 	va_end(args);
 
 	if (plaintext) {

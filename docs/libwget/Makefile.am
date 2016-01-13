@@ -110,7 +110,7 @@ man_MANS =
 if ENABLE_GTK_DOC
 if ENABLE_MAN
 
-theMANS += libwget-xalloc.3 libwget-utils.3 libwget-list.3
+theMANS += libwget-xalloc.3 libwget-utils.3 libwget-list.3 libwget-io.3 libwget-hash.3 libwget-printf.3
 man_MANS += docs $(theMANS)
 
 # make distcheck -jn randomly breaks

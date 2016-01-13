@@ -444,31 +444,16 @@ wget_iri_t *wget_iri_clone(wget_iri_t *iri)
 	return clone;
 }
 
-static char *_iri_build_connection_part(wget_iri_t *iri)
-{
-	char *tag;
-	size_t len;
-
-	if (iri->port) {
-		len = strlen(iri->scheme) + strlen(iri->host) + strlen(iri->port) + 4 + 1;
-		tag = xmalloc(len);
-
-		sprintf(tag, "%s://%s:%s", iri->scheme, iri->host, iri->port);
-	} else {
-		len = strlen(iri->scheme) + strlen(iri->host) + 3 + 1;
-		tag = xmalloc(len);
-
-		sprintf(tag, "%s://%s", iri->scheme, iri->host);
-	}
-
-	return tag;
-}
-
 const char *wget_iri_get_connection_part(wget_iri_t *iri)
 {
 	if (iri) {
-		if (!iri->connection_part)
-			iri->connection_part = _iri_build_connection_part(iri);
+		if (!iri->connection_part) {
+			if (iri->port) {
+				iri->connection_part =  wget_str_asprintf("%s://%s:%s", iri->scheme, iri->host, iri->port);
+			} else {
+				iri->connection_part = wget_str_asprintf("%s://%s", iri->scheme, iri->host);
+			}
+		}
 
 		return iri->connection_part;
 	}

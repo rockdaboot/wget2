@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2016 Free Software Foundation, Inc.
  *
  * This file is part of Wget.
  *
@@ -1182,23 +1182,20 @@ int init(int argc, const char *const *argv)
 	log_init();
 
 	// Initialize some configuration values which depend on the Runtime environment
-	// Remember to check for return value of asprintf and explicitly set the
-	// values to NULL. Since contents of strp on error is undefined.
 	char *home_dir = get_home_dir();
 
-	if (!config.hsts_file && asprintf(&config.hsts_file, "%s/.wget-hsts", home_dir) == -1) {
-		config.hsts_file = NULL;
-	}
-	if (!config.ocsp_file && asprintf(&config.ocsp_file, "%s/.wget-ocsp", home_dir) == -1) {
-		config.ocsp_file = NULL;
-	}
-	if (config.netrc && !config.netrc_file && asprintf(&config.netrc_file, "%s/.netrc", home_dir) == -1) {
-		config.netrc_file = NULL;
-	}
+	if (!config.hsts_file)
+		config.hsts_file = wget_str_asprintf("%s/.wget-hsts", home_dir);
+
+	if (!config.ocsp_file)
+		config.ocsp_file = wget_str_asprintf("%s/.wget-ocsp", home_dir);
+
+	if (config.netrc && !config.netrc_file)
+		config.netrc_file = wget_str_asprintf("%s/.netrc", home_dir);
+
 	if (!config.config_file) {
-		if (asprintf(&config.config_file, "%s/.wgetrc", home_dir) == -1)
-			config.config_file = NULL;
-		else if (access(config.config_file, R_OK))
+		config.config_file = wget_str_asprintf("%s/.wgetrc", home_dir);
+		if (access(config.config_file, R_OK))
 			xfree(config.config_file); // we don't want to complain about missing home .wgetrc
 	} else if (access(config.config_file, R_OK)) {
 		error_printf(_("Failed to open config file '%s'\n"), config.config_file);

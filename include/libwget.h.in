@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012-2015 Tim Ruehsen
- * Copyright(c) 2015 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2016 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -310,12 +310,6 @@ pid_t
 	wget_fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv);
 pid_t
 	wget_popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *argv);
-/*
-size_t
-	wget_vbsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, va_list) G_GNUC_WGET_PRINTF_FORMAT(3,0);
-size_t
-	wget_bsprintf(char **restrict buf, size_t *restrict bufsize, const char *restrict fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4);
-*/
 char *
 	wget_read_file(const char *fname, size_t *size);
 int
@@ -488,6 +482,19 @@ size_t
 	wget_buffer_vprintf2(wget_buffer_t *buf, const char *fmt, va_list args) G_GNUC_WGET_NONNULL((1,2)) G_GNUC_WGET_PRINTF_FORMAT(2,0);
 size_t
 	wget_buffer_printf2(wget_buffer_t *buf, const char *fmt, ...) G_GNUC_WGET_NONNULL((1,2)) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+
+/*
+ * Printf-style routines
+ */
+
+size_t
+	wget_vasprintf(char **strp, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+size_t
+	wget_asprintf(char **strp, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+char *
+	wget_str_vasprintf(const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(1,0);
+char *
+	wget_str_asprintf(const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(1,2);
 
 /*
  * Logger routines

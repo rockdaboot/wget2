@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2016 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -30,7 +30,6 @@
 #endif
 
 #include <stddef.h>
-#include <stdio.h>
 #include <stdarg.h>
 
 #include <libwget.h>
@@ -176,7 +175,7 @@ char *wget_base64_encode_vprintf_alloc(const char *fmt, va_list args)
 	char *data = NULL;
 	int n;
 
-	n = vasprintf(&data, fmt, args);
+	n = wget_vasprintf(&data, fmt, args);
 
 	if (data) {
 		char *dst = wget_base64_encode_alloc(data, n);

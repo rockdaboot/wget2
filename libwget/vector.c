@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2016 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -29,7 +29,6 @@
 # include <config.h>
 #endif
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -203,12 +202,7 @@ int wget_vector_replace_noalloc(wget_vector_t *v, const void *elem, int pos)
 
 int wget_vector_add_vprintf(wget_vector_t *v, const char *fmt, va_list args)
 {
-	char *buf;
-
-	if (vasprintf(&buf, fmt, args) != -1)
-		return wget_vector_add_noalloc(v, buf);
-
-	return -1;
+	return wget_vector_add_noalloc(v, wget_str_vasprintf(fmt, args));
 }
 
 int wget_vector_add_printf(wget_vector_t *v, const char *fmt, ...)
