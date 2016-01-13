@@ -59,7 +59,7 @@ size_t wget_vasprintf(char **strp, const char *fmt, va_list args)
 
 	wget_buffer_init(&buf, NULL, 128);
 
-	size_t len = wget_buffer_vprintf2(&buf, fmt, args);
+	size_t len = wget_buffer_vprintf(&buf, fmt, args);
 
 	if (strp) {
 		// shrink memory to real usage

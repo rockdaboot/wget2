@@ -844,7 +844,7 @@ ssize_t wget_tcp_vprintf(wget_tcp_t *tcp, const char *fmt, va_list args)
 	ssize_t len2;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-	wget_buffer_vprintf2(&buf, fmt, args);
+	wget_buffer_vprintf(&buf, fmt, args);
 
 	len2 = wget_tcp_write(tcp, buf.data, buf.length);
 

@@ -166,7 +166,7 @@ static void test_buffer(void)
 	wget_buffer_strcat(&buf, "B");
 	wget_buffer_memcat(&buf, "C", 1);
 	wget_buffer_memset_append(&buf, 'D', 1);
-	wget_buffer_printf_append2(&buf, "%s", "E");
+	wget_buffer_printf_append(&buf, "%s", "E");
 	if (!strcmp(buf.data, "ABCDE"))
 		ok++;
 	else {
@@ -184,7 +184,7 @@ static void test_buffer(void)
 
 		for (int lead_ws = 0; lead_ws <= 2; lead_ws++) {
 			for (int trail_ws = 0; trail_ws <= 2; trail_ws++) {
-				wget_buffer_printf2(&buf, "%.*sx%.*sy%.*s", lead_ws, "  ", mid_ws, "  ", trail_ws, "  ");
+				wget_buffer_printf(&buf, "%.*sx%.*sy%.*s", lead_ws, "  ", mid_ws, "  ", trail_ws, "  ");
 				wget_buffer_trim(&buf);
 				if (!strcmp(buf.data, expected))
 					ok++;
@@ -216,7 +216,7 @@ static void test_buffer_printf(void)
 
 	wget_buffer_init(&buf, buf_static, sizeof(buf_static));
 
-	wget_buffer_printf2(&buf, "%s://%s", "http", "host");
+	wget_buffer_printf(&buf, "%s://%s", "http", "host");
 	if (strcmp("http://host", buf.data)) {
 		failed++;
 		info_printf("%s: Failed with format ('%%s://%%s','http','host'): '%s' != 'http://host'\n", __func__, buf.data);
@@ -269,7 +269,7 @@ static void test_buffer_printf(void)
 						#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
 						sprintf(result, fmt, string);
-						wget_buffer_printf2(&buf, fmt, string);
+						wget_buffer_printf(&buf, fmt, string);
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 						#pragma GCC diagnostic pop
 #endif
@@ -308,18 +308,18 @@ static void test_buffer_printf(void)
 						if (width == -1) {
 							if (precision == -1) {
 								sprintf(result, fmt, string);
-								wget_buffer_printf2(&buf, fmt, string);
+								wget_buffer_printf(&buf, fmt, string);
 							} else {
 								sprintf(result, fmt, precision, string);
-								wget_buffer_printf2(&buf, fmt, precision, string);
+								wget_buffer_printf(&buf, fmt, precision, string);
 							}
 						} else {
 							if (precision == -1) {
 								sprintf(result, fmt, width, string);
-								wget_buffer_printf2(&buf, fmt, width, string);
+								wget_buffer_printf(&buf, fmt, width, string);
 							} else {
 								sprintf(result, fmt, width, precision, string);
-								wget_buffer_printf2(&buf, fmt, width, precision, string);
+								wget_buffer_printf(&buf, fmt, width, precision, string);
 							}
 						}
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
@@ -360,7 +360,7 @@ integer_tests:
 							#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
 							sprintf(result, fmt, number[n]);
-							wget_buffer_printf2(&buf, fmt, number[n]);
+							wget_buffer_printf(&buf, fmt, number[n]);
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 							#pragma GCC diagnostic pop
 #endif

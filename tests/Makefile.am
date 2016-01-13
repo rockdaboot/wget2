@@ -17,7 +17,7 @@ WGET_TESTS = test test-wget-1 test-restrict-ascii test-i-http test-i-https test-
 
 #test--post-file test-E-k
 
-check_PROGRAMS = buffer_printf2_perf stringmap_perf $(WGET_TESTS)
+check_PROGRAMS = buffer_printf_perf stringmap_perf $(WGET_TESTS)
 
 test_SOURCES = test.c
 test_LDADD = ../libwget/libwget.la ../src/log.o ../src/options.o\

@@ -1427,18 +1427,18 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 
 		wget_buffer_init(&buf, NULL, 256);
 
-		wget_buffer_printf2(&buf,
+		wget_buffer_printf(&buf,
 			"Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/%s\", response=\"%s\"",
 			username, realm, nonce, req->esc_resource.data, response_digest);
 
 		if (!wget_strcmp(qop,"auth"))
-			wget_buffer_printf_append2(&buf, ", qop=auth, nc=00000001, cnonce=\"%s\"", cnonce);
+			wget_buffer_printf_append(&buf, ", qop=auth, nc=00000001, cnonce=\"%s\"", cnonce);
 
 		if (opaque)
-			wget_buffer_printf_append2(&buf, ", opaque=\"%s\"", opaque);
+			wget_buffer_printf_append(&buf, ", opaque=\"%s\"", opaque);
 
 		if (algorithm)
-			wget_buffer_printf_append2(&buf, ", algorithm=%s", algorithm);
+			wget_buffer_printf_append(&buf, ", algorithm=%s", algorithm);
 
 		wget_http_add_header(req, "Authorization", buf.data);
 

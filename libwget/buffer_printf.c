@@ -252,7 +252,7 @@ static void _convert_pointer(wget_buffer_t *buf, void *pointer)
 	wget_buffer_memcat(buf, dst, length);
 }
 
-size_t wget_buffer_vprintf_append2(wget_buffer_t *buf, const char *fmt, va_list args)
+size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list args)
 {
 	const char *p = fmt, *begin;
 	int field_width, precision;
@@ -433,55 +433,11 @@ size_t wget_buffer_vprintf_append2(wget_buffer_t *buf, const char *fmt, va_list 
 	return buf->length;
 }
 
-size_t wget_buffer_vprintf2(wget_buffer_t *buf, const char *fmt, va_list args)
+size_t wget_buffer_vprintf(wget_buffer_t *buf, const char *fmt, va_list args)
 {
 	buf->length = 0;
 
-	return wget_buffer_vprintf_append2(buf, fmt, args);
-}
-
-size_t wget_buffer_printf_append2(wget_buffer_t *buf, const char *fmt, ...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	wget_buffer_vprintf_append2(buf, fmt, args);
-	va_end(args);
-
-	return buf->length;
-}
-
-size_t wget_buffer_printf2(wget_buffer_t *buf, const char *fmt, ...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	size_t len = wget_buffer_vprintf2(buf, fmt, args);
-	va_end(args);
-
-	return len;
-}
-
-size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list args)
-{
-	ssize_t length;
-	va_list args2;
-
-	// vsnprintf destroys args, so we need a copy for the realloc case
-	va_copy(args2, args);
-
-	// first try
-	length = vsnprintf(buf->data + buf->length, buf->size - buf->length, fmt, args);
-
-	if (length == -1 || (size_t)length >= buf->size - buf->length) {
-		wget_buffer_realloc(buf, buf->size * 2 + length);
-		buf->length += vsnprintf(buf->data + buf->length, buf->size - buf->length, fmt, args2);
-	} else
-		buf->length += length;
-
-	va_end(args2);
-
-	return buf->length;
+	return wget_buffer_vprintf_append(buf, fmt, args);
 }
 
 size_t wget_buffer_printf_append(wget_buffer_t *buf, const char *fmt, ...)
@@ -489,17 +445,10 @@ size_t wget_buffer_printf_append(wget_buffer_t *buf, const char *fmt, ...)
 	va_list args;
 
 	va_start(args, fmt);
-	size_t len = wget_buffer_vprintf_append(buf, fmt, args);
+	wget_buffer_vprintf_append(buf, fmt, args);
 	va_end(args);
 
-	return len;
-}
-
-size_t wget_buffer_vprintf(wget_buffer_t *buf, const char *fmt, va_list args)
-{
-	buf->length = 0;
-
-	return wget_buffer_vprintf_append(buf, fmt, args);
+	return buf->length;
 }
 
 size_t wget_buffer_printf(wget_buffer_t *buf, const char *fmt, ...)

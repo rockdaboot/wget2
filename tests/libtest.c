@@ -764,7 +764,7 @@ void wget_test(int first_key, ...)
 	va_end(args);
 
 	// clean directory
-	wget_buffer_printf2(cmd, "../%s", tmpdir);
+	wget_buffer_printf(cmd, "../%s", tmpdir);
 	_empty_directory(cmd->data);
 
 	// create files
@@ -795,14 +795,14 @@ void wget_test(int first_key, ...)
 
 	const char *valgrind = getenv("VALGRIND_TESTS");
 	if (!valgrind || !*valgrind || !strcmp(valgrind, "0")) {
-		wget_buffer_printf2(cmd, "%s %s", executable, options);
+		wget_buffer_printf(cmd, "%s %s", executable, options);
 	} else if (!strcmp(valgrind, "1")) {
-		wget_buffer_printf2(cmd, "valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s %s", executable, options);
+		wget_buffer_printf(cmd, "valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s %s", executable, options);
 	} else
-		wget_buffer_printf2(cmd, "%s %s %s", valgrind, executable, options);
+		wget_buffer_printf(cmd, "%s %s %s", valgrind, executable, options);
 
 	for (it = 0; it < (size_t)wget_vector_size(request_urls); it++) {
-		wget_buffer_printf_append2(cmd, " 'http://localhost:%d/%s'",
+		wget_buffer_printf_append(cmd, " 'http://localhost:%d/%s'",
 			http_server_port, (char *)wget_vector_get(request_urls, it));
 	}
 //	for (it = 0; it < (size_t)wget_vector_size(ftp_files); it++) {

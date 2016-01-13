@@ -47,7 +47,7 @@ FILE *wget_vpopenf(const char *type, const char *fmt, va_list args)
 	wget_buffer_t buf;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-	wget_buffer_vprintf2(&buf, fmt, args);
+	wget_buffer_vprintf(&buf, fmt, args);
 
 	fp = popen(buf.data, type);
 

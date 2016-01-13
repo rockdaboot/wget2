@@ -677,7 +677,7 @@ const char *wget_iri_escape(const char *src, wget_buffer_t *buf)
 			if (begin != src)
 				wget_buffer_memcat(buf, begin, src - begin);
 			begin = src + 1;
-			wget_buffer_printf_append2(buf, "%%%02X", (unsigned char)*src);
+			wget_buffer_printf_append(buf, "%%%02X", (unsigned char)*src);
 		}
 	}
 
@@ -696,7 +696,7 @@ const char *wget_iri_escape_path(const char *src, wget_buffer_t *buf)
 			if (begin != src)
 				wget_buffer_memcat(buf, begin, src - begin);
 			begin = src + 1;
-			wget_buffer_printf_append2(buf, "%%%02X", (unsigned char)*src);
+			wget_buffer_printf_append(buf, "%%%02X", (unsigned char)*src);
 		}
 	}
 
@@ -718,7 +718,7 @@ const char *wget_iri_escape_query(const char *src, wget_buffer_t *buf)
 			if (*src == ' ')
 				wget_buffer_memcat(buf, "+", 1);
 			else
-				wget_buffer_printf_append2(buf, "%%%02X", (unsigned char)*src);
+				wget_buffer_printf_append(buf, "%%%02X", (unsigned char)*src);
 		}
 	}
 

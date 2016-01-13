@@ -44,7 +44,7 @@ _logger_vprintf_func(const wget_logger_t *logger, const char *fmt, va_list args)
 	int err = errno;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-	wget_buffer_vprintf2(&buf, fmt, args);
+	wget_buffer_vprintf(&buf, fmt, args);
 	logger->func(buf.data, buf.length);
 	wget_buffer_deinit(&buf);
 
@@ -64,7 +64,7 @@ _logger_vfprintf(FILE *fp, const char *fmt, va_list args)
 	int err = errno;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-	wget_buffer_vprintf2(&buf, fmt, args);
+	wget_buffer_vprintf(&buf, fmt, args);
 	fwrite(buf.data, 1, buf.length, fp);
 	wget_buffer_deinit(&buf);
 

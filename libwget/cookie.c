@@ -370,9 +370,9 @@ char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_
 			}
 
 			if (buf.length)
-				wget_buffer_printf_append2(&buf, "; %s=%s", cookie->name, cookie->value);
+				wget_buffer_printf_append(&buf, "; %s=%s", cookie->name, cookie->value);
 			else
-				wget_buffer_printf_append2(&buf, "%s=%s", cookie->name, cookie->value);
+				wget_buffer_printf_append(&buf, "%s=%s", cookie->name, cookie->value);
 		}
 	}
 
