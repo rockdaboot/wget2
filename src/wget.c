@@ -785,8 +785,7 @@ static void _convert_links(void)
 						if (config.backup_converted) {
 							char dstfile[strlen(conversion->filename) + 5 + 1];
 
-							strcpy(dstfile, conversion->filename);
-							strcpy(dstfile + sizeof(dstfile) - 6, ".orig");
+							snprintf(dstfile, sizeof(dstfile), "%s.orig", conversion->filename);
 
 							if (rename(conversion->filename, dstfile) == -1) {
 								wget_error_printf(_("Failed to rename %s to %s (%d)"), conversion->filename, dstfile, errno);
@@ -1202,7 +1201,7 @@ void *downloader_thread(void *p)
 			} else if (config.chunk_size && resp->content_length > config.chunk_size) {
 				// create metalink structure without hashing
 				wget_metalink_piece_t piece = { .length = config.chunk_size };
-				wget_metalink_mirror_t mirror;
+				wget_metalink_mirror_t mirror = { .location = "-", .iri = job->iri };
 				wget_metalink_t *metalink = xcalloc(1, sizeof(wget_metalink_t));
 				metalink->size = resp->content_length; // total file size
 				metalink->name = wget_strdup(job->local_filename);
@@ -1215,12 +1214,7 @@ void *downloader_thread(void *p)
 				}
 
 				metalink->mirrors = wget_vector_create(1, 1, NULL);
-				// wget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
 
-				memset(&mirror, 0, sizeof(wget_metalink_mirror_t));
-				strcpy(mirror.location, "-");
-				// mirror.iri = wget_iri_parse(job->iri, NULL);
-				mirror.iri = job->iri;
 				wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
 
 				job->metalink = metalink;
@@ -2029,8 +2023,8 @@ static void G_GNUC_WGET_NONNULL((1)) _save_file(wget_http_response_t *resp, cons
 
 			if (fname_length >= ext_length && wget_strcasecmp(fname + fname_length - ext_length, ext)) {
 				alloced_fname = xmalloc(fname_length + ext_length + 1);
-				strcpy(alloced_fname, fname);
-				strcpy(alloced_fname + fname_length, ext);
+				memcpy(alloced_fname, fname, fname_length);
+				memcpy(alloced_fname + fname_length, ext, ext_length + 1);
 				fname = alloced_fname;
 			}
 		}

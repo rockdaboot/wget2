@@ -312,7 +312,7 @@ int main(void)
 		// server sends same length content with slightly different content
 		char modified[strlen(urls[3].body) + 1];
 
-		strcpy(modified,urls[3].body);
+		memcpy(modified, urls[3].body, sizeof(modified));
 		modified[3] = 'x';
 
 		urls[3].modified = 1097310600;

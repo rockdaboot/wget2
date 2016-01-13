@@ -131,8 +131,8 @@ static struct addrinfo * _wget_dns_cache_add(const char *host, const char *port,
 	entryp->host = ((char *)entryp) + sizeof(struct ADDR_ENTRY);
 	entryp->port = ((char *)entryp) + sizeof(struct ADDR_ENTRY) + hostlen;
 	entryp->addrinfo = addrinfo;
-	strcpy((char *)entryp->host, host ? host : ""); // ugly cast, but semantically ok
-	strcpy((char *)entryp->port, port ? port : ""); // ugly cast, but semantically ok
+	memcpy((char *)entryp->host, host ? host : "", hostlen); // ugly cast, but semantically ok
+	memcpy((char *)entryp->port, port ? port : "", portlen); // ugly cast, but semantically ok
 
 	wget_thread_mutex_lock(&dns_mutex);
 	if (!dns_cache) {
@@ -426,7 +426,7 @@ void wget_tcp_set_bind_address(wget_tcp_t *tcp, const char *bind_address)
 		char copy[strlen(bind_address) + 1], *s = copy;
 		const char *host;
 
-		strcpy(copy, bind_address);
+		memcpy(copy, bind_address, sizeof(copy));
 
 		if (*s == '[') {
 			// IPv6 address within brackets
