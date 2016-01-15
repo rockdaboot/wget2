@@ -362,7 +362,7 @@ size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list a
 				argu = (unsigned long long)arg;
 			} else {
 				p++;
-				arg = (long)va_arg(args, long long);
+				arg = (long)va_arg(args, long);
 				argu = (unsigned long)arg;
 			}
 			break;
