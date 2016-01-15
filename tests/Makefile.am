@@ -20,16 +20,16 @@ WGET_TESTS = test test-wget-1 test-restrict-ascii test-i-http test-i-https test-
 check_PROGRAMS = buffer_printf_perf stringmap_perf $(WGET_TESTS)
 
 test_SOURCES = test.c
-test_LDADD = ../src/log.o ../src/options.o ../libwget/libwget.la\
+test_LDADD = ../src/log.o ../src/options.o libtest.la\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL)\
  $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(LIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS) ../lib/libgnu.la
-test_parse_html_LDADD = ../src/log.o ../src/options.o ../libwget/libwget.la\
+ $(LIBS)
+test_parse_html_LDADD = ../src/log.o ../src/options.o libtest.la\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL)\
  $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(LIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS) ../lib/libgnu.la
+ $(LIBS)
 
 noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = libtest.c
