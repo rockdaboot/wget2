@@ -30,7 +30,8 @@ fi
 $GIT submodule init
 $GIT submodule update
 
-gnulib_modules="
+# gnulib modules needed for libwget
+libwget_gnulib_modules="
 accept
 bind
 c-strcase
@@ -58,6 +59,7 @@ glob
 iconv
 inline
 inttypes
+lib-symbol-visibility
 listen
 malloc-posix
 memchr
@@ -105,7 +107,7 @@ unlink
 write
 "
 
-gnulib/gnulib-tool --import $gnulib_modules
+gnulib/gnulib-tool --libtool --import $libwget_gnulib_modules
 
 $AUTORECONF --install --force --symlink || exit $?
 
