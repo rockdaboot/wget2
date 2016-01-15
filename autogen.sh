@@ -71,6 +71,7 @@ netinet_in
 nl_langinfo
 open
 opendir
+progname
 spawn-pipe
 popen
 poll
