@@ -23,8 +23,9 @@ test_linking_LDFLAGS = -static
 test_linking_CPPFLAGS = -I$(top_srcdir)/include -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib
 test_linking_LDADD = libwget.la
 
+# gnulib needs config.h included before any gnulib header files
 css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
-	@$(LEX) -w -o$@ $(srcdir)/css_tokenizer.lex
+	@(echo '#include "config.h"'; $(LEX) -w -t $(srcdir)/css_tokenizer.lex) >$@
 
 clean-local:
 	-rm -f css_tokenizer.c
