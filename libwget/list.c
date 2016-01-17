@@ -36,20 +36,19 @@
 #include "private.h"
 
 /**
- * SECTION:libwget-list
- * @short_description: Double linked list routines
- * @title: libwget-list
- * @stability: stable
- * @include: libwget.h
+ * \file
+ * \brief Double linked list routines
+ * \defgroup libwget-list Double linked list
+ * @{
  *
- * Double linked lists provide fast insertion and removal and
+ * Double linked lists provide fast insertion, removal and
  * iteration in either direction.
  *
- * Each entry has pointers to the next and the previous entry.
+ * Each element has pointers to the next and the previous element.<br>
  * Iteration can be done by calling the wget_list_browse() function,
  * so the list structure doesn't need to be exposed.
  *
- * This datatype is used by the Wget tool to implement the job queue.
+ * This datatype is used by the Wget tool to implement the job queue (append and remove).
  *
  * See wget_list_append() for an example on how to use lists.
  */
@@ -61,23 +60,22 @@ struct _wget_list_st {
 };
 
 /**
- * wget_list_append:
- * @list: Pointer to Pointer to a double linked list.
- * @data: Pointer to data to be inserted.
- * @size: Size of data in bytes.
+ * \param[in] list Pointer to Pointer to a double linked list
+ * \param[in] data Pointer to data to be inserted
+ * \param[in] size Size of data in bytes
+ * \return Pointer to the new element
  *
- * Append an entry to the end of the list.
- * @size bytes at @data will be copied and appended to the list.
+ * Append an element to the end of the list.<br>
+ * \p size bytes at \p data will be copied and appended to the list.
  *
  * A pointer to the new element will be returned.
- * It must be freed by wget_list_remove() or implicitly by wget_list_free().
  *
- * Returns: Pointer to the new element.
+ * \note The returned pointer must be freed by wget_list_remove() or implicitly by wget_list_free().
  *
- * <example>
- * <title>Example Usage</title>
- * <programlisting>
- *	WGET_LIST *list = NULL;
+ * Example:
+ *
+ * \code{.c}
+ *	wget_list_t *list = NULL;
  *	struct mystruct mydata1 = { .x = 1, .y = 25 };
  *	struct mystruct mydata2 = { .x = 5, .y = 99 };
  *	struct mystruct *data;
@@ -94,8 +92,7 @@ struct _wget_list_st {
  *	printf("data=(%d,%d)\n", data->x, data->y); // prints 'data=(5,99)'
  *
  *	wget_list_free(&list);
- * </programlisting>
- * </example>
+ * \endcode
  */
 void *
 wget_list_append(wget_list_t **list, const void *data, size_t size)
@@ -120,18 +117,16 @@ wget_list_append(wget_list_t **list, const void *data, size_t size)
 }
 
 /**
- * wget_list_prepend:
- * @list: Pointer to Pointer to a double linked list.
- * @data: Pointer to data to be inserted.
- * @size: Size of data in bytes.
+ * \param[in] list Pointer to Pointer to a double linked list
+ * \param[in] data Pointer to data to be inserted
+ * \param[in] size Size of data in bytes
+ * \return Pointer to the new element
  *
  * Insert an entry at the beginning of the list.
- * @size bytes at @data will be copied and prepended to the list.
+ * \p size bytes at \p data will be copied and prepended to the list.
  *
  * A pointer to the new element will be returned.
  * It must be freed by wget_list_remove() or implicitely by wget_list_free().
- *
- * Returns: Pointer to the new element.
  */
 void *wget_list_prepend(wget_list_t **list, const void *data, size_t size)
 {
@@ -143,11 +138,10 @@ void *wget_list_prepend(wget_list_t **list, const void *data, size_t size)
 }
 
 /**
- * wget_list_remove:
- * @list: Pointer to Pointer to a double linked list.
- * @elem: Pointer to a list element returned by wget_list_append() or wget_list_prepend().
+ * \param[in] list Pointer to Pointer to a double linked list
+ * \param[in] elem Pointer to a list element returned by wget_list_append() or wget_list_prepend()
  *
- * Remove an entry from the list.
+ * Remove an element from the list.
  */
 void wget_list_remove(wget_list_t **list, void *elem)
 {
@@ -167,10 +161,10 @@ void wget_list_remove(wget_list_t **list, void *elem)
 }
 
 /**
- * wget_list_getfirst:
- * @list: Pointer to a double linked list.
+ * \param[in] list Pointer to a double linked list
+ * \return Pointer to the first element of the list or %NULL if the list is empty
  *
- * Returns: Pointer to the first element of the list or %NULL if the list is empty.
+ * Get the first element of a list.
  */
 void *wget_list_getfirst(const wget_list_t *list)
 {
@@ -178,10 +172,10 @@ void *wget_list_getfirst(const wget_list_t *list)
 }
 
 /**
- * wget_list_getlast:
- * @list: Pointer to a double linked list.
+ * \param[in] list Pointer to a double linked list
+ * \return Pointer to the last element of the list or %NULL if the list is empty
  *
- * Returns: Pointer to the last element of the list or %NULL if the list is empty.
+ * Get the last element of a list.
  */
 void *wget_list_getlast(const wget_list_t *list)
 {
@@ -189,22 +183,20 @@ void *wget_list_getlast(const wget_list_t *list)
 }
 
 /**
- * wget_list_browse:
- * @list: Pointer to a double linked list.
- * @browse: Pointer to callback function which is called for every element in the list.
- * If the callback functions returns a value not equal to zero, browsing is stopped and
- * this value will be returned by wget_list_browse.
- * @context: The context handle that will be passed to the callback function.
+ * \param[in] list Pointer to a double linked list
+ * \param[in] browse Pointer to callback function which is called for every element in the list.
+ *  If the callback functions returns a value not equal to zero, browsing is stopped and
+ *  this value will be returned by wget_list_browse.
+ * \param[in] context The context handle that will be passed to the callback function
+ * \return The return value of the last call to the browse function
  *
- * Iterate through all entries of the @list and call the function @browse for each.
+ * Iterate through all entries of the \p list and call the function \p browse for each.
  *
- * Returns: The return value of the last call to the browse function.
  *
- * <example>
- *  <title>Example Usage</title>
- *  <programlisting>
+ * \code{.c}
  * // assume that list contains C strings.
- * WGET_LIST *list = NULL;
+ * wget_list_t *list = NULL;
+ *
  * static int print_elem(void *context, const char *elem)
  * {
  *	  printf("%s\n",elem);
@@ -215,8 +207,7 @@ void *wget_list_getlast(const wget_list_t *list)
  * {
  *	  wget_list_browse(list, (int(*)(void *, void *))print_elem, NULL);
  * }
- *  </programlisting>
- * </example>
+ * \endcode
  */
 int wget_list_browse(const wget_list_t *list, int (*browse)(void *context, void *elem), void *context)
 {
@@ -233,8 +224,7 @@ int wget_list_browse(const wget_list_t *list, int (*browse)(void *context, void 
 }
 
 /**
- * wget_list_free:
- * @list: Pointer to Pointer to a double linked list.
+ * \param[in] list Pointer to Pointer to a double linked list
  *
  * Freeing the list and it's entry.
  */
@@ -248,7 +238,7 @@ void wget_list_free(wget_list_t **list)
 void wget_list_dump(const WGET_LIST *list)
 {
 	if (list) {
-		const WGET_LIST *cur = list;
+		const wget_list_t *cur = list;
 
 		do {
 			debug_printf("%p: next %p prev %p\n", cur, cur->next, cur->prev);
@@ -258,3 +248,5 @@ void wget_list_dump(const WGET_LIST *list)
 		debug_printf("empty\n");
 }
 */
+
+/**@}*/

@@ -120,8 +120,7 @@ The following packages are needed to build Wget2:
 
 * autotools (autoconf, autogen, automake, autopoint, libtool)
 * pkg-config >= 0.28 (recommended)
-* gtk-doc-tools (when creating the HTML documentation)
-* xsltproc (when creating man pages)
+* doxygen (for creating the documentation)
 * gettext >= 0.18.1
 * libz >= 1.2.3 (the distribution may call the package zlib*, eg. zlib1g on Debian)
 * liblzma >= 5.1.1alpha (optional, if you want HTTP lzma decompression)
@@ -156,16 +155,6 @@ Test the functionality
 Install Wget2 and libwget
 
 		sudo make install (or su -c "make install")
-
-To create Wget2 HTML documentation
-
-		./configure --enable-gtk-doc
-		make
-
-To create Wget2 HTML documentation and man pages
-
-		./configure --enable-gtk-doc --enable-man
-		make
 
 Valgrind Testing
 ----------------

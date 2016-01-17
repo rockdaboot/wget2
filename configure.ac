@@ -131,48 +131,28 @@ AM_GNU_GETTEXT_VERSION([0.18.1])
 ])
 
 #
-# check for gtk-doc
+# check for doxygen
 #
-m4_ifdef([GTK_DOC_CHECK], [
-GTK_DOC_CHECK([1.15],[--flavour no-tmpl])
-],[
-# do not indent here
-AM_CONDITIONAL([ENABLE_GTK_DOC], false)
+AC_CHECK_PROGS([DOXYGEN], [doxygen])
+AS_IF([test -n "$DOXYGEN"], [
+  AC_CONFIG_FILES([docs/Makefile docs/libwget.doxy])
+  AC_SUBST([LIBWGET_DOCS], [docs])
+], [
 ])
-# needed for some older versions of gtk-doc
-m4_ifdef([GTK_DOC_USE_LIBTOOL], [], [
-AM_CONDITIONAL([GTK_DOC_USE_LIBTOOL], false)
-])
-
-if test x"$have_gtk_doc" = xyes -a x"$enable_gtk_doc" = xyes; then
-  AC_CONFIG_FILES([docs/libwget/Makefile docs/libwget/version.xml])
-  AC_SUBST([LIBWGET_DOCS], [docs/libwget])
-fi
 
 #
 # enable creation of man pages
 #
-AC_ARG_ENABLE(man,[AC_HELP_STRING([--enable-man],
-                                  [generate man pages [default=auto]])],enable_man=yes,enable_man=no)
+#AC_ARG_ENABLE(man,[AC_HELP_STRING([--enable-man],
+#                                  [generate man pages [default=auto]])],enable_man=yes,enable_man=no)
 
-AS_IF([test "x$enable_man" != xno], [
-  AC_PATH_PROG([XSLTPROC], [xsltproc])
-  AS_IF([test -z "$XSLTPROC"], [
-    AS_IF([test "$enable_man" = yes], [
-      AC_MSG_ERROR([xsltproc is required for --enable-man])
-    ])
-    enable_man=no
-  ])
-])
-
-#AC_PATH_PROG([XSLTPROC], [xsltproc])
-AM_CONDITIONAL(ENABLE_MAN, test x$enable_man != xno)
-AC_MSG_CHECKING([whether to generate man pages])
-AS_IF([test "$enable_man" != no], [
-  AC_MSG_RESULT([yes])
-], [
-  AC_MSG_RESULT([no])
-])
+#AM_CONDITIONAL(ENABLE_MAN, test x$enable_man != xno)
+#AC_MSG_CHECKING([whether to generate man pages])
+#AS_IF([test "$enable_man" != no], [
+#  AC_MSG_RESULT([yes])
+#], [
+#  AC_MSG_RESULT([no])
+#])
 
 
 # Check for valgrind
