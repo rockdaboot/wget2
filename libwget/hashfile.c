@@ -336,6 +336,7 @@ void wget_hash_deinit(wget_hash_hd_t *dig, void *digest)
 	gcry_md_final(dig->context);
 	void *ret = gcry_md_read(dig->context, dig->algorithm);
 	memcpy(digest, ret, gcry_md_get_algo_dlen(dig->algorithm));
+	gcry_md_close(dig->context);
 }
 #else // empty functions which return error
 #define _U G_GNUC_WGET_UNUSED
