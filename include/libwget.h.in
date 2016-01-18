@@ -353,11 +353,9 @@ size_t
 	strlcpy(char *restrict dst, const char *restrict src, size_t size) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 #endif
 
-/*
- * Double linked list
- */
-
 /**
+ * \ingroup libwget-list
+ *
  * Type for double linked lists and list entries.
  */
 typedef struct _wget_list_st wget_list_t;
