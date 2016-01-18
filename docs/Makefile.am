@@ -1,7 +1,11 @@
 EXTRA_DIST = DoxygenLayout.xml
 
-man3_MANS = $(builddir)/man/man3/libwget-list.3
+man3_MANS =\
+ $(builddir)/man/man3/libwget-list.3\
+ $(builddir)/man/man3/libwget-hash.3
+
 $(builddir)/man/man3/libwget-list.3: doxy.stamp
+$(builddir)/man/man3/libwget-hash.3: doxy.stamp
 
 doxy.stamp:
 	$(DOXYGEN) $(builddir)/libwget.doxy

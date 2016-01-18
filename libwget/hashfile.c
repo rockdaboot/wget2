@@ -42,87 +42,57 @@
 #include <private.h>
 
 /**
- * SECTION:libwget-hash
- * @short_description: Hashing utilities
- * @title: libwget-hash
- * @stability: stable
- * @include: libwget.h
+ * \file
+ * \brief Hashing functions
+ * \defgroup libwget-hash Hashing functions
+ * @{
  *
- * libwget's hashing utilities that support several hashing algorithms.
  */
 
 /**
- * wget_hash_get_algorithm:
- * @name: name of the hashing algorithm. Supported names are listed in the table below.
+ * \param[in] hashname Name of the hashing algorithm (see table below)
+ * \return A constant to be used by libwget hashing functions
  *
  * Get the hashing algorithms list item that corresponds to the named hashing algorithm.
  *
  * This function returns a constant that uniquely identifies a known supported hashing algorithm
- * within libwget. All the supported algorithms are listed in the #wget_digest_algorithm_t enum.
+ * within libwget. All the supported algorithms are listed in the ::wget_digest_algorithm_t enum.
  *
- * <table>
- * 	<tr>
- * 		<td>Algorithm name</td>
- * 		<td>Constant</td>
- * 	</tr>
- * 	<tr>
- * 		<td><code>sha-1</code> or <code>sha1</code></td>
- * 		<td>WGET_DIGTYPE_SHA1</td>
- * 	</tr>
- * 	<tr>
- * 		<td><code>sha-256</code> or <code>sha256</code></td>
- * 		<td>WGET_DIGTYPE_SHA256</td>
- * 	</tr>
- * 	<tr>
- * 		<td><code>sha-512</code> or <code>sha512</code></td>
- * 		<td>WGET_DIGTYPE_SHA512</td>
- * 	</tr>
- * 	<tr>
- * 		<td><code>sha-224</code> or <code>sha224</code></td>
- * 		<td>WGET_DIGTYPE_SHA224</td>
- * 	</tr>
- * 	<tr>
- * 		<td><code>sha-384</code> or <code>sha384</code></td>
- * 		<td>WGET_DIGTYPE_SHA384</td>
- * 	</tr>
- * 	<tr>
- * 		<td><code>md5</code></td>
- * 		<td>WGET_DIGTYPE_MD5</td>
- * 	</tr>
- * 	<tr>
- * 		<td><code>md2</code></td>
- * 		<td>WGET_DIGTYPE_MD2</td>
- * 	</tr>
- * 	<tr>
- * 		<td><code>rmd160</code></td>
- * 		<td>WGET_DIGTYPE_RMD160</td>
- * 	</tr>
- * </table>
+ * Algorithm name | Constant
+ * -------------- | --------
+ * sha1 or sha-1|WGET_DIGTYPE_SHA1
+ * sha256 or sha-256|WGET_DIGTYPE_SHA256
+ * sha512 or sha-512|WGET_DIGTYPE_SHA512
+ * sha224 or sha-224|WGET_DIGTYPE_SHA224
+ * sha384 or sha-384|WGET_DIGTYPE_SHA384
+ * md5|WGET_DIGTYPE_MD5
+ * md2|WGET_DIGTYPE_MD2
+ * rmd160|WGET_DIGTYPE_RMD160
  */
-wget_digest_algorithm_t wget_hash_get_algorithm(const char *name)
+wget_digest_algorithm_t wget_hash_get_algorithm(const char *hashname)
 {
-	if (name) {
-		if (*name == 's' || *name == 'S') {
-			if (!wget_strcasecmp_ascii(name, "sha-1") || !wget_strcasecmp_ascii(name, "sha1"))
+	if (hashname) {
+		if (*hashname == 's' || *hashname == 'S') {
+			if (!wget_strcasecmp_ascii(hashname, "sha-1") || !wget_strcasecmp_ascii(hashname, "sha1"))
 				return WGET_DIGTYPE_SHA1;
-			else if (!wget_strcasecmp_ascii(name, "sha-256") || !wget_strcasecmp_ascii(name, "sha256"))
+			else if (!wget_strcasecmp_ascii(hashname, "sha-256") || !wget_strcasecmp_ascii(hashname, "sha256"))
 				return WGET_DIGTYPE_SHA256;
-			else if (!wget_strcasecmp_ascii(name, "sha-512") || !wget_strcasecmp_ascii(name, "sha512"))
+			else if (!wget_strcasecmp_ascii(hashname, "sha-512") || !wget_strcasecmp_ascii(hashname, "sha512"))
 				return WGET_DIGTYPE_SHA512;
-			else if (!wget_strcasecmp_ascii(name, "sha-224") || !wget_strcasecmp_ascii(name, "sha224"))
+			else if (!wget_strcasecmp_ascii(hashname, "sha-224") || !wget_strcasecmp_ascii(hashname, "sha224"))
 				return WGET_DIGTYPE_SHA224;
-			else if (!wget_strcasecmp_ascii(name, "sha-384") || !wget_strcasecmp_ascii(name, "sha384"))
+			else if (!wget_strcasecmp_ascii(hashname, "sha-384") || !wget_strcasecmp_ascii(hashname, "sha384"))
 				return WGET_DIGTYPE_SHA384;
 		}
-		else if (!wget_strcasecmp_ascii(name, "md5"))
+		else if (!wget_strcasecmp_ascii(hashname, "md5"))
 			return WGET_DIGTYPE_MD5;
-		else if (!wget_strcasecmp_ascii(name, "md2"))
+		else if (!wget_strcasecmp_ascii(hashname, "md2"))
 			return WGET_DIGTYPE_MD2;
-		else if (!wget_strcasecmp_ascii(name, "rmd160"))
+		else if (!wget_strcasecmp_ascii(hashname, "rmd160"))
 			return WGET_DIGTYPE_RMD160;
 	}
 
-	error_printf(_("Unknown hash type '%s'\n"), name);
+	error_printf(_("Unknown hash type '%s'\n"), hashname);
 	return WGET_DIGTYPE_UNKNOWN;
 }
 
@@ -148,6 +118,23 @@ static const gnutls_digest_algorithm_t
 		[WGET_DIGTYPE_SHA512] = GNUTLS_DIG_SHA512
 };
 
+/**
+ * \param[in] algorithm One of the hashing algorithms returned by wget_hash_get_algorithm()
+ * \param[in] text Input data to hash
+ * \param[in] textlen Length of the input data
+ * \param[in] digest Caller-supplied buffer where the output hash will be placed
+ * \return Zero on success or a negative value on error
+ *
+ * Convenience function to hash the given data in a single call.
+ *
+ * The caller must ensure that the provided output buffer \p digest is large enough
+ * to store the hash. A particular hash algorithm is guaranteed to always generate
+ * the same amount of data (e.g. 512 bits) but different hash algorithms will output
+ * different lengths of data. To get the output length of the chosen algorithm \p algorithm,
+ * call wget_hash_get_len().
+ *
+ * \note This function's behavior depends on the underlying cryptographic engine libwget was compiled with.
+ */
 int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
 {
 	if ((unsigned)algorithm < countof(_gnutls_algorithm))
@@ -156,6 +143,16 @@ int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t t
 		return -1;
 }
 
+/**
+ * \param[in] algorithm One of the hashing algorithms returned by wget_hash_get_algorithm()
+ * \return The length of the output data generated by the algorithm
+ *
+ * Determines the output length of the given hashing algorithm.
+ *
+ * A particular hash algorithm is guaranteed to always generate
+ * the same amount of data (e.g. 512 bits) but different hash algorithms will output
+ * different lengths of data.
+ */
 int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 {
 	if ((unsigned)algorithm < countof(_gnutls_algorithm))
@@ -164,19 +161,50 @@ int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 		return 0;
 }
 
-int wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm)
+/**
+ * \param[out] handle Caller-provided pointer to a ::wget_hash_hd_t structure where the handle to this
+ * hashing primitive will be stored, needed in subsequent calls to wget_hash()
+ * \param[in] algorithm One of the hashing algorithms returned by wget_hash_get_algorithm()
+ * \return Zero on success or a negative value on error
+ *
+ * Initialize the cryptographic engine to compute hashes with the given hashing algorithm,
+ * as well as the hashing algorithm itself.
+ *
+ * After this function returns, wget_hash() might be called as many times as desired.
+ */
+int wget_hash_init(wget_hash_hd_t *handle, wget_digest_algorithm_t algorithm)
 {
 	if ((unsigned)algorithm < countof(_gnutls_algorithm))
-		return gnutls_hash_init(&dig->dig, _gnutls_algorithm[algorithm]) == 0 ? 0 : -1;
+		return gnutls_hash_init(&handle->dig, _gnutls_algorithm[algorithm]) == 0 ? 0 : -1;
 	else
 		return -1;
 }
 
+/**
+ * \param[in] handle Handle to the hashing primitive returned by a subsequent call to wget_hash_init()
+ * \param[in] text Input data
+ * \param[in] textlen Length of the input data
+ * \return Zero on success or a negative value on error
+ *
+ * Update the digest by adding additional input data to it. This method can be called
+ * as many times as desired. Once finished, call wget_hash_deinit() to complete
+ * the computation and get the resulting hash.
+ */
 int wget_hash(wget_hash_hd_t *handle, const void *text, size_t textlen)
 {
 	return gnutls_hash(handle->dig, text, textlen) == 0 ? 0 : -1;
 }
 
+/**
+ * \param[in] handle Handle to the hashing primitive returned by a subsequent call to wget_hash_init()
+ * \param[out] digest Caller-supplied buffer where the output hash will be placed.
+ *
+ * Complete the hash computation by performing final operations, such as padding,
+ * and obtain the final result. The result will be placed in the caller-supplied
+ * buffer \p digest. The caller must ensure that the provided output buffer \p digest
+ * is large enough to store the hash. To get the output length of the chosen algorithm
+ * \p algorithm, call wget_hash_get_len().
+ */
 void wget_hash_deinit(wget_hash_hd_t *handle, void *digest)
 {
 	gnutls_hash_deinit(handle->dig, digest);
@@ -372,22 +400,20 @@ void wget_hash_deinit(_U wget_hash_hd_t *handle, _U void *digest)
 #endif
 
 /**
- * wget_hash_file_fd:
- * @type: name of the hashing algorithm. See wget_hash_get_algorithm().
- * @fd: file descriptor for the target file.
- * @digest_hex: caller-supplied buffer that will contain the resulting hex string.
- * @digest_hex_size: length of @digest_hex.
- * @offset: starting offset.
- * @length: number of bytes to hash, starting from @offset. Zero will use the file length.
+ * \param[in] hashname Name of the hashing algorithm. See wget_hash_get_algorithm()
+ * \param[in] fd File descriptor for the target file
+ * \param[out] digest_hex caller-supplied buffer that will contain the resulting hex string
+ * \param[in] digest_hex_size Length of \p digest_hex
+ * \param[in] offset File offset to start hashing at
+ * \param[in] length Number of bytes to hash, starting from \p offset. Zero will hash up to the end of the file
+ * \return 0 on success or -1 in case of failure
  *
  * Compute the hash of the contents of the target file and return its hex representation.
  *
  * This function will encode the resulting hash in a string of hex digits, and
- * place that string in the user-supplied buffer @digest_hex.
- *
- * The return value is 0 on success, or -1 in case of failure.
+ * place that string in the user-supplied buffer \p digest_hex.
  */
-int wget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
+int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
 {
 	wget_digest_algorithm_t algorithm;
 	int ret=-1;
@@ -405,9 +431,9 @@ int wget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_
 	if (offset + length > st.st_size)
 		return -1;
 	
-	debug_printf("%s hashing pos %llu, length %llu...\n", type, (unsigned long long)offset, (unsigned long long)length);
+	debug_printf("%s hashing pos %llu, length %llu...\n", hashname, (unsigned long long)offset, (unsigned long long)length);
 
-	if ((algorithm = wget_hash_get_algorithm(type)) != WGET_DIGTYPE_UNKNOWN) {
+	if ((algorithm = wget_hash_get_algorithm(hashname)) != WGET_DIGTYPE_UNKNOWN) {
 		unsigned char digest[wget_hash_get_len(algorithm)];
 
 #ifdef HAVE_MMAP
@@ -454,23 +480,21 @@ int wget_hash_file_fd(const char *type, int fd, char *digest_hex, size_t digest_
 }
 
 /**
- * wget_hash_file_offset:
- * @type: name of the hashing algorithm. See wget_hash_get_algorithm().
- * @fname: target file name.
- * @digest_hex: caller-supplied buffer that will contain the resulting hex string.
- * @digest_hex_size: length of @digest_hex.
- * @offset: starting offset.
- * @length: number of bytes to hash, starting from @offset. Zero will use the file length.
+ * \param[in] hashname Name of the hashing algorithm. See wget_hash_get_algorithm()
+ * \param[in] fname Target file name
+ * \param[out] digest_hex Caller-supplied buffer that will contain the resulting hex string
+ * \param[in] digest_hex_size Length of \p digest_hex
+ * \param[in] offset File offset to start hashing at
+ * \param[in] length Number of bytes to hash, starting from \p offset.  Zero will hash up to the end of the file
+ * \return 0 on success or -1 in case of failure
  *
- * Compute the hash of the contents of the target file starting from @offset and up to @length bytes
+ * Compute the hash of the contents of the target file starting from \p offset and up to \p length bytes
  * and return its hex representation.
  *
  * This function will encode the resulting hash in a string of hex digits, and
- * place that string in the user-supplied buffer @digest_hex.
- *
- * The return value is 0 on success, or -1 in case of failure.
+ * place that string in the user-supplied buffer \p digest_hex.
  */
-int wget_hash_file_offset(const char *type, const char *fname, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
+int wget_hash_file_offset(const char *hashname, const char *fname, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
 {
  	int fd, ret;
 
@@ -480,27 +504,27 @@ int wget_hash_file_offset(const char *type, const char *fname, char *digest_hex,
 		return 0;
 	}
 
-	ret = wget_hash_file_fd(type, fd, digest_hex, digest_hex_size, offset, length);
+	ret = wget_hash_file_fd(hashname, fd, digest_hex, digest_hex_size, offset, length);
 	close(fd);
 	
 	return ret;
 }
 
 /**
- * wget_hash_file:
- * @type: name of the hashing algorithm. See wget_hash_get_algorithm().
- * @fname: target file name.
- * @digest_hex: caller-supplied buffer that will contain the resulting hex string.
- * @digest_hex_size: length of @digest_hex.
+ * \param[in] hashname Name of the hashing algorithm. See wget_hash_get_algorithm()
+ * \param[in] fname Target file name
+ * \param[out] digest_hex Caller-supplied buffer that will contain the resulting hex string
+ * \param[in] digest_hex_size Length of \p digest_hex
+ * \return 0 on success or -1 in case of failure
  *
  * Compute the hash of the contents of the target file and return its hex representation.
  *
  * This function will encode the resulting hash in a string of hex digits, and
- * place that string in the user-supplied buffer @digest_hex.
- *
- * The return value is 0 on success, or -1 in case of failure.
+ * place that string in the user-supplied buffer \p digest_hex.
  */
-int wget_hash_file(const char *type, const char *fname, char *digest_hex, size_t digest_hex_size)
+int wget_hash_file(const char *hashname, const char *fname, char *digest_hex, size_t digest_hex_size)
 {
-	return wget_hash_file_offset(type, fname, digest_hex, digest_hex_size, 0, 0);
+	return wget_hash_file_offset(hashname, fname, digest_hex, digest_hex_size, 0, 0);
 }
+
+/**@}*/
