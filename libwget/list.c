@@ -149,12 +149,12 @@ void wget_list_remove(wget_list_t **list, void *elem)
 
 	if (node->prev == node->next && node == node->prev) {
 		// removing the last node in the list
-		if (list && *list && node == *list)
+		if (*list && node == *list)
 			*list = NULL;
 	} else {
 		node->prev->next = node->next;
 		node->next->prev = node->prev;
-		if (list && *list && node == *list)
+		if (*list && node == *list)
 			*list = node->next;
 	}
 	xfree(node);
