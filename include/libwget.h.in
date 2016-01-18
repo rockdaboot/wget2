@@ -251,6 +251,7 @@ WGET_BEGIN_DECLS
 #define WGET_E_CONNECT -4 /* connect failure */
 #define WGET_E_HANDSHAKE -5 /* general TLS handshake failure */
 #define WGET_E_CERTIFICATE -6 /* general TLS certificate failure */
+#define WGET_E_TLS_DISABLED -7 /* TLS was not enabled at compile time */
 
 void
 	wget_global_init(int key, ...) G_GNUC_WGET_NULL_TERMINATED LIBWGET_EXPORT;
