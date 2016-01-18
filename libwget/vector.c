@@ -218,10 +218,7 @@ int wget_vector_add_printf(wget_vector_t *v, const char *fmt, ...)
 
 int wget_vector_add_str(wget_vector_t *v, const char *s)
 {
-	if (s)
-		return wget_vector_add(v, s, strlen(s) + 1);
-	else
-		return -1;
+	return wget_vector_add(v, s, strlen(s) + 1);
 }
 
 static int _vec_remove_private(wget_vector_t *v, int pos, int free_entry)
