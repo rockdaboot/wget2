@@ -42,27 +42,26 @@
 #include "private.h"
 
 /**
- * SECTION:libwget-utils
- * @short_description: General utility functions
- * @title: libwget-utils
- * @stability: stable
- * @include: libwget.h
+ * \file
+ * \brief General utility functions
+ * \defgroup libwget-utils General utility functions
+ * @{
  *
  * This is a collections of short routines that are used with libwget and/or Wget code.
  * They may be useful to other developers that is why they are exported.
  */
 
 /**
- * wget_strcmp:
- * @s1: String
- * @s2: String
+ * \param[in] s1 String
+ * \param[in] s2 String
+ * \return
+ * 0 if both \p s1 and \p s2 are NULL<br>
+ * -1 if \p s1 is NULL and @s2 is not NULL<br>
+ * 1 if \p s1 is not NULL and \p s2 is NULL
+ * else it returns strcmp(\p s1, \p s2)
  *
- * This functions compares @s1 and @s2 in the same way as strcmp() does,
- * except that it also handles %NULL values. It returns 0 if both @s1 and @s2
- * are %NULL. It returns -1 if @s1 is %NULL and @s2 is not %NULL. It returns 1 if
- * @s2 is %NULL and @s1 is not %NULL.
- *
- * Returns: Same as strcmp() if none of @s1 or @s2 is %NULL. Else see above.
+ * This functions compares \p s1 and \p s2 in the same way as strcmp() does,
+ * except that it also handles NULL values.
  */
 int wget_strcmp(const char *s1, const char *s2)
 {
@@ -80,16 +79,16 @@ int wget_strcmp(const char *s1, const char *s2)
 }
 
 /**
- * wget_strcasecmp:
- * @s1: String
- * @s2: String
+ * \param[in] s1 String
+ * \param[in] s2 String
+ * \return
+ * 0 if both \p s1 and \p s2 are NULL<br>
+ * -1 if \p s1 is NULL and @s2 is not NULL<br>
+ * 1 if \p s1 is not NULL and \p s2 is NULL
+ * else it returns strcasecmp(\p s1, \p s2)
  *
- * This functions compares @s1 and @s2 in the same way as strcasecmp() does,
- * except that it also handles %NULL values. It returns 0 if both @s1 and @s2
- * are %NULL. It returns -1 if @s1 is %NULL and @s2 is not %NULL. It returns 1 if
- * @s2 is %NULL and @s1 is not %NULL.
- *
- * Returns: Same as strcasecmp() if none of @s1 or @s2 is %NULL. Else see above.
+ * This functions compares \p s1 and \p s2 in the same way as strcasecmp() does,
+ * except that it also handles NULL values.
  */
 int wget_strcasecmp(const char *s1, const char *s2)
 {
@@ -107,19 +106,16 @@ int wget_strcasecmp(const char *s1, const char *s2)
 }
 
 /**
- * wget_strcasecmp_ascii:
- * @s1: String
- * @s2: String
+ * \param[in] s1 String
+ * \param[in] s2 String
+ * \return
+ * 0 if both \p s1 and \p s2 are the same disregarding case for ASCII letters a-z<br>
+ * 0 if both \p s1 and \p s2 are NULL<br>
+ * <0 if \p s1 is NULL and \p s2 is not NULL or \p s1 is smaller than \p s2<br>
+ * >0 if \p s2 is NULL and \p s1 is not NULL or \p s1 is greater than \p s2.
  *
- * This functions compares @s1 and @s2 case insensitive ignoring locale settings.
- * It also accepts %NULL values.
- *
- * It returns 0 if both @s1 and @s2 are the same disregarding case for ASCII letters a-z.
- * It returns 0 if both @s1 and @s2 are %NULL.
- * It returns <0 if @s1 is %NULL and @s2 is not %NULL or s1 is smaller than s2.
- * It returns >0 if @s2 is %NULL and @s1 is not %NULL or s1 is greater than s2.
- *
- * Returns: An integer value described above.
+ * This functions compares \p s1 and \p s2 as ASCII strings, case insensitive.
+ * It also accepts NULL values.
  */
 int wget_strcasecmp_ascii(const char *s1, const char *s2)
 {
@@ -137,20 +133,17 @@ int wget_strcasecmp_ascii(const char *s1, const char *s2)
 }
 
 /**
- * wget_strncasecmp_ascii:
- * @s1: String
- * @s2: String
- * @n: Max. number of chars to compare
+ * \param[in] s1 String
+ * \param[in] s2 String
+ * \param[in] n Max. number of chars to compare
+ * \return
+ * 0 if both \p s1 and \p s2 are the same disregarding case for ASCII letters a-z<br>
+ * 0 if both \p s1 and \p s2 are NULL<br>
+ * <0 if \p s1 is NULL and \p s2 is not NULL or \p s1 is smaller than \p s2<br>
+ * >0 if \p s2 is NULL and \p s1 is not NULL or \p s1 is greater than \p s2.
  *
- * This functions compares @s1 and @s2 case insensitive ignoring locale settings up to a max number of @n chars.
- * It also accepts %NULL values.
- *
- * It returns 0 if both @s1 and @s2 are the same disregarding case for ASCII letters a-z.
- * It returns 0 if both @s1 and @s2 are %NULL.
- * It returns <0 if @s1 is %NULL and @s2 is not %NULL or s1 is smaller than s2.
- * It returns >0 if @s2 is %NULL and @s1 is not %NULL or s1 is greater than s2.
- *
- * Returns: An integer value described above.
+ * This functions compares \p s1 and \p s2 as ASCII strings, case insensitive, up to a max number of \p n chars.
+ * It also accepts NULL values.
  */
 int wget_strncasecmp_ascii(const char *s1, const char *s2, size_t n)
 {
@@ -168,12 +161,10 @@ int wget_strncasecmp_ascii(const char *s1, const char *s2, size_t n)
 }
 
 /**
- * wget_strtolower:
- * @s: String to convert
+ * @param[in,out] s String to convert
+ * \return Value of s
  *
- * Converts string @s to lowercase in place.
- *
- * Returns: Same value as @s.
+ * Converts ASCII string \p s to lowercase in place.
  */
 char *wget_strtolower(char *s)
 {
@@ -188,17 +179,16 @@ char *wget_strtolower(char *s)
 }
 
 /**
- * wget_strncmp:
- * @s1: String
- * @s2: String
- * @n: Max. number of chars to compare
+ * \param[in] s1 String
+ * \param[in] s2 String
+ * \param[in] n Max. number of chars to compare
+ * \return
+ * 0 if both \p s1 and \p s2 are the same or if both \p s1 and \p s2 are NULL<br>
+ * <0 if \p s1 is NULL and \p s2 is not NULL or \p s1 is smaller than \p s2<br>
+ * >0 if \p s2 is NULL and \p s1 is not NULL or \p s1 is greater than \p s2.
  *
- * This functions compares @s1 and @s2 in the same way as strncmp() does,
- * except that it also handles %NULL values. It returns 0 if both @s1 and @s2
- * are %NULL. It returns -1 if @s1 is %NULL and @s2 is not %NULL. It returns 1 if
- * @s2 is %NULL and @s1 is not %NULL.
- *
- * Returns: Same as strncmp() if none of @s1 or @s2 is %NULL. Else see above.
+ * This functions compares \p s1 and \p s2 in the same way as strncmp() does,
+ * except that it also handles NULL values.
  */
 int wget_strncmp(const char *s1, const char *s2, size_t n)
 {
@@ -216,19 +206,17 @@ int wget_strncmp(const char *s1, const char *s2, size_t n)
 }
 
 /**
- * wget_strncasecmp:
- * @s1: String
- * @s2: String
- * @n: Max. number of chars to compare
+ * \param[in] s1 String
+ * \param[in] s2 String
+ * \param[in] n Max. number of chars to compare
+ * \return
+ * 0 if both \p s1 and \p s2 are the same disregarding case or if both \p s1 and \p s2 are NULL<br>
+ * <0 if \p s1 is NULL and \p s2 is not NULL or \p s1 is smaller than \p s2<br>
+ * >0 if \p s2 is NULL and \p s1 is not NULL or \p s1 is greater than \p s2.
  *
- * This functions compares @s1 and @s2 in the same way as strncasecmp() does,
- * except that it also handles %NULL values. It returns 0 if both @s1 and @s2
- * are %NULL. It returns -1 if @s1 is %NULL and @s2 is not %NULL. It returns 1 if
- * @s2 is %NULL and @s1 is not %NULL.
- *
- * Returns: Same as strncasecmp() if none of @s1 or @s2 is %NULL. Else see above.
+ * This functions compares \p s1 and \p s2 in the same way as strncasecmp() does,
+ * except that it also handles NULL values.
  */
-
 int wget_strncasecmp(const char *s1, const char *s2, size_t n)
 {
 	if (!s1) {
@@ -245,13 +233,12 @@ int wget_strncasecmp(const char *s1, const char *s2, size_t n)
 }
 
 /**
- * wget_memtohex:
- * @src: Pointer to bytes to encode
- * @src_len: Number of bytes to encode
- * @dst: Buffer to hold the encoded string
- * @dst_size: Size in bytes of @dst
+ * \param[in] src Pointer to input buffer
+ * \param[in] src_len Number of bytes to encode
+ * \param[out] dst Buffer to hold the encoded string
+ * \param[in] dst_size Size of \p dst in bytes
  *
- * Encodes a number of bytes into a lowercase hexadecimal string.
+ * Encodes a number of bytes into a lowercase hexadecimal C string.
  */
 void wget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size)
 {
@@ -277,10 +264,9 @@ void wget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t d
 }
 
 /**
- * wget_millisleep:
- * @ms: Number of milliseconds to sleep
+ * \param[in] ms Number of milliseconds to sleep
  *
- * Pause for @ms milliseconds.
+ * Pause for \p ms milliseconds.
  */
 void wget_millisleep(int ms)
 {
@@ -296,13 +282,13 @@ static _GL_INLINE unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
 }
 
 /**
- * wget_percent_unescape:
- * @src: String to unescape
+ * \param[in,out] src String to unescape
+ * \return
+ * 0 if the string did not change<br>
+ * 1 if unescaping took place
  *
  * Does an inline percent unescape.
  * Each occurrence of %xx (x = hex digit) will converted into it's byte representation.
- *
- * Returns: 0 if the string did not change, 1 if unescaping took place.
  */
 int wget_percent_unescape(char *_src)
 {
@@ -328,13 +314,11 @@ int wget_percent_unescape(char *_src)
 }
 
 /**
- * wget_match_tail:
- * @s: String
- * @tail: String
+ * \param[in] s String
+ * \param[in] tail String
+ * \return 1 if \p tail matches the end of \ps, 0 if not
  *
- * Checks if @tail matches the end of the string @s.
- *
- * Returns: 1 if @tail matches the end of @s, 0 if not.
+ * Checks if \p tail matches the end of the string \p s.
  */
 int wget_match_tail(const char *s, const char *tail)
 {
@@ -344,13 +328,12 @@ int wget_match_tail(const char *s, const char *tail)
 }
 
 /**
- * wget_match_tail_nocase:
- * @s: String
- * @tail: String
+ * \param[in] s String
+ * \param[in] tail String
+ * \return 1 if \p tail matches the end of \p s, 0 if not
  *
- * Checks if @tail matches the end of the string @s, disregarding the case.
+ * Checks if \p tail matches the end of the string \p s, disregarding the case, ASCII only.
  *
- * Returns: 1 if @tail matches the end of @s, 0 if not.
  */
 int wget_match_tail_nocase(const char *s, const char *tail)
 {
@@ -358,3 +341,5 @@ int wget_match_tail_nocase(const char *s, const char *tail)
 
 	return p >= s && !wget_strcasecmp_ascii(p, tail);
 }
+
+/**@}*/
