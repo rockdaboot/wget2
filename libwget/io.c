@@ -133,26 +133,21 @@ static ssize_t wget_getline_internal(char **buf, size_t *bufsize,
 
 
 /**
- * SECTION:libwget-io
- * @short_description: I/O helper routines
- * @title: libwget-io
- * @stability: unstable
- * @include: libwget.h
+ * \file
+ * \brief I/O helper routines
+ * \defgroup libwget-io I/O helper routines
+ * @{
  *
  * Some general I/O helper functions that could be handy for developers.
- *
  */
 
 /**
- * wget_fdgetline:
- * @buf: a pointer to a pointer that will be set up by the function to point to the read line
- * @bufsize: pointer to a variable where the length of the read line will be put
- * @fd: file descriptor for an open file
+ * \param[out] buf Pointer to a pointer that will be set up by the function to point to the read line
+ * \param[out] bufsize Pointer to a variable where the length of the read line will be put
+ * \param[in] fd File descriptor for an open file
+ * \return The length of the last line read
  *
  * Behaves identically as wget_getline(), but uses a file descriptor instead of a stream.
- *
- * Returns:
- * the length of the last line read
  */
 ssize_t wget_fdgetline(char **buf, size_t *bufsize, int fd)
 {
@@ -160,15 +155,15 @@ ssize_t wget_fdgetline(char **buf, size_t *bufsize, int fd)
 }
 
 /**
- * wget_getline:
- * @buf: a pointer to a pointer that will be set up by the function to point to the read line
- * @bufsize: pointer to a variable where the length of the read line will be put
- * @fp: pointer to an open file's stream handle (`FILE *`)
+ * \param[out] buf Pointer to a pointer that will be set up by the function to point to the read line
+ * \param[out] bufsize Pointer to a variable where the length of the read line will be put
+ * \param[in] fp Pointer to an open file's stream handle (`FILE *`)
+ * \return The length of the last line read
  *
- * This function will read a line from the open file handle @fp. This function reads input characters
+ * This function will read a line from the open file handle \p fp. This function reads input characters
  * until either a newline character (`\n`) is found or EOF is reached. A block of memory large enough to hold the read line
- * will be implicitly allocated by the function, and its address placed at the pointer pointed to by @buf.
- * The length of the aforementioned memory block will be stored in the variable pointed at by @bufsize.
+ * will be implicitly allocated by the function, and its address placed at the pointer pointed to by \p buf.
+ * The length of the aforementioned memory block will be stored in the variable pointed at by \p bufsize.
  *
  * The caller is not expected to allocate memory as that will be automatically done by wget_getline(),
  * but it is responsibility of the caller free the memory allocated by a previous invocation of this function.
@@ -178,14 +173,11 @@ ssize_t wget_fdgetline(char **buf, size_t *bufsize, int fd)
  * the caller did not free the buffer returned by a previous call to wget_getline()) will try to reuse as much as possible
  * from the available memory.
  * The block of memory allocated by wget_getline() may be larger than the length of the line read, and might even contain additional lines
- * in it. When wget_getline() returns, the contents of the buffer (pointed at by @buf) are guaranteed to start with the first
+ * in it. When wget_getline() returns, the contents of the buffer (pointed at by \p buf) are guaranteed to start with the first
  * character of the last line read, and such line is also guaranteed to end with a NULL termination character (`\0`).
  * The length of the last read line will be returned by wget_getline(), whereas the actual length of the buffer will be placed in the variable
- * pointed at by @bufsize.
+ * pointed at by \p bufsize.
  * The newline character (`\n`) will not be included in the last read line.
- *
- * Returns:
- * the length of the last line read
  */
 ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
 {
@@ -193,21 +185,19 @@ ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
 }
 
 /**
- * wget_ready_2_transfer:
- * @fd: File descriptor to wait for.
- * @timeout: Max. duration in milliseconds to wait.
- * @mode: either `WGET_IO_WRITABLE` or `WGET_IO_READABLE`.
- * A value of 0 means the function returns immediately.
- * A value of -1 means infinite timeout.
+ * \param[in] fd File descriptor to wait for
+ * \param[in] timeout Max. duration in milliseconds to wait
+ * \param[in] mode Either `WGET_IO_WRITABLE` or `WGET_IO_READABLE`
+ * \return
+ * -1 on error<br>
+ * 0 on timeout - the file descriptor is not ready for reading or writing<br>
+ * >0 The file descriptor is ready for reading or writing. Check for
+ * the bitwise or of `WGET_IO_WRITABLE` and `WGET_IO_READABLE`.
  *
  * Wait for a file descriptor to become ready to read or write.
  *
- * Returns:
- * -1 on error.
- * 0 on timeout. The file descriptor is not ready for reading or writing.
- * &gt;0 The file descriptor is ready for reading or writing. Check for
- * the bitwise or of `WGET_IO_WRITABLE` and `WGET_IO_READABLE`.
- *
+ * A \p timeout value of 0 means the function returns immediately.<br>
+ * A \p timeout value of -1 means infinite timeout.
  */
 int wget_ready_2_transfer(int fd, int timeout, short mode)
 {
@@ -237,18 +227,17 @@ int wget_ready_2_transfer(int fd, int timeout, short mode)
 }
 
 /**
- * wget_ready_2_read:
- * @fd: File descriptor to wait for.
- * @timeout: Max. duration in milliseconds to wait.
- * A value of 0 means the function returns immediately.
- * A value of -1 means infinite timeout.
+ * \param[in] fd File descriptor to wait for
+ * \param[in] timeout Max. duration in milliseconds to wait
+ * \return
+ * -1 on error<br>
+ * 0 on timeout - the file descriptor is not ready for reading<br>
+ * 1 on success - the file descriptor is ready for reading<br>
  *
  * Wait for a file descriptor to become ready to read.
  *
- * Returns:
- * -1 on error.
- * 0 on timeout. The file descriptor is not ready for reading.
- * 1 on success. The file descriptor is ready for reading.
+ * A \p timeout value of 0 means the function returns immediately.<br>
+ * A \p timeout value of -1 means infinite timeout.
  */
 int wget_ready_2_read(int fd, int timeout)
 {
@@ -256,18 +245,19 @@ int wget_ready_2_read(int fd, int timeout)
 }
 
 /**
- * wget_ready_2_write:
  * @fd: File descriptor to wait for.
  * @timeout: Max. duration in milliseconds to wait.
- * A value of 0 means the function returns immediately.
- * A value of -1 means infinite timeout.
+ * \param[in] fd File descriptor to wait for
+ * \param[in] timeout Max. duration in milliseconds to wait
+ * \return
+ * -1 on error<br>
+ * 0 on timeout - the file descriptor is not ready for writing<br>
+ * 1 on success - the file descriptor is ready for writing
  *
  * Wait for a file descriptor to become ready to write.
  *
- * Returns:
- * -1 on error.
- * 0 on timeout. The file descriptor is not ready for reading.
- * 1 on success. The file descriptor is ready for reading.
+ * A \p timeout value of 0 means the function returns immediately.<br>
+ * A \p timeout value of -1 means infinite timeout.
  */
 int wget_ready_2_write(int fd, int timeout)
 {
@@ -275,9 +265,9 @@ int wget_ready_2_write(int fd, int timeout)
 }
 
 /**
- * wget_read_file:
- * @fname: the name of the file to read from, or a dash (`-`) to read from STDIN.
- * @size: pointer to a variable where the length of the contents read will be stored.
+ * \param[in] fname The name of the file to read from, or a dash (`-`) to read from STDIN
+ * \param[out] Size pointer to a variable where the length of the contents read will be stored
+ * \return Pointer to the read data, as a NULL-terminated C string
  *
  * Reads the content of a file, or from STDIN.
  * When reading from STDIN, the behavior is the same as for regular files: input is read
@@ -286,12 +276,9 @@ int wget_ready_2_write(int fd, int timeout)
  * Memory will be accordingly allocated by wget_read_file() and a pointer to it returned when the read finishes,
  * but the caller is responsible for freeing that memory.
  * The length of the allocated block of memory, which is guaranteed to be the same as the length of the data read,
- * will be placed in the variable pointed at by @size.
+ * will be placed in the variable pointed at by \p size.
  *
  * The read data is guaranteed to be appended a NULL termination character (`\0`).
- *
- * Returns:
- * pointer to the read data, as a NULL-terminated C string
  */
 char *wget_read_file(const char *fname, size_t *size)
 {
@@ -352,24 +339,21 @@ char *wget_read_file(const char *fname, size_t *size)
 }
 
 /**
- * wget_update_file:
- * @fname: file name to update
- * @load_func: pointer to the loader function
- * @save_func: pointer to the saver function
- * @context: context data
+ * \param[in] fname File name to update
+ * \param[in] load_func Pointer to the loader function
+ * \param[in] save_func Pointer to the saver function
+ * \param[in] context Context data
+ * \return 0 on success, or -1 on error
  *
- * This function updates the file named @fname atomically. It lets two caller-provided functions do the actual updating.
+ * This function updates the file named \p fname atomically. It lets two caller-provided functions do the actual updating.
  * A lock file is created first under `/tmp` to ensure exclusive access to the file. Other processes attempting to call
- * wget_update_file() with the same @fname parameter will block until the current calling process has finished (that is,
- * until wget_update_file() has returned).
- * Then, the file is opened with read access first, and the @load_func function is called. When it returns, the file is closed
- * and opened again with write access, and the @save_func function is called.
- * Both callback functions are passed the context data @context, and a stream descriptor for the file.
- * If either function @load_func or @save_func returns a non-zero value, wget_update_file() closes the file and returns -1,
+ * wget_update_file() with the same \p fname parameter will block until the current calling process has finished (that is,
+ * until wget_update_file() has returned).<br>
+ * Then, the file is opened with read access first, and the \p load_func function is called. When it returns, the file is closed
+ * and opened again with write access, and the \p save_func function is called.
+ * Both callback functions are passed the context data \p context, and a stream descriptor for the file.
+ * If either function \p load_func or \p save_func returns a non-zero value, wget_update_file() closes the file and returns -1,
  * performing no further actions.
- *
- * Returns:
- * 0 on success, or -1 on error
  */
 int wget_update_file(const char *fname,
 	int (*load_func)(void *, FILE *fp), int (*save_func)(void *, FILE *fp), void *context)
@@ -477,3 +461,5 @@ int wget_update_file(const char *fname,
 
 	return 0;
 }
+
+/**@}*/
