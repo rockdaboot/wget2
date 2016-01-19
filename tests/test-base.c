@@ -69,5 +69,14 @@ int main(void)
 			{	NULL } },
 		0);
 
+	// test-O/dev/null
+	wget_test(
+		WGET_TEST_OPTIONS, "-O/dev/null",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+
 	exit(0);
 }

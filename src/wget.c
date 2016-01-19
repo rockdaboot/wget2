@@ -230,7 +230,7 @@ static void mkdir_path(char *fname)
 	char *p1, *p2;
 	int rc;
 
-	for (p1 = fname; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
+	for (p1 = fname + 1; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
 		*p2 = 0; // replace path separator
 
 		// relative paths should have been normalized earlier,
