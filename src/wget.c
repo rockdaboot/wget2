@@ -238,11 +238,8 @@ static void mkdir_path(char *fname)
 		if (*p1 == '.' && p1[1] == '.')
 			error_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), fname);
 
-#if defined(_WIN32) || defined(_WIN64)
-		rc = mkdir(fname);
-#else
 		rc = mkdir(fname, 0755);
-#endif
+
 		debug_printf("mkdir(%s)=%d errno=%d\n",fname,rc,errno);
 		if (rc) {
 			struct stat st;
@@ -260,11 +257,8 @@ static void mkdir_path(char *fname)
 				}
 
 				if (renamed) {
-#if defined(_WIN32) || defined(_WIN64)
-					rc = mkdir(fname);
-#else
 					rc = mkdir(fname, 0755);
-#endif
+
 					if (rc) {
 						error_printf(_("Failed to make directory '%s' (errno=%d)\n"), fname, errno);
 						*p2 = '/'; // restore path separator
