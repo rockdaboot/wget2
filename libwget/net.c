@@ -91,13 +91,15 @@ static struct addrinfo *_wget_dns_cache_get(const char *host, const char *port)
 {
 	if (dns_cache) {
 		struct ADDR_ENTRY *entryp, entry = { .host = host, .port = port };
+		int index;
 
 		wget_thread_mutex_lock(&dns_mutex);
-		entryp = wget_vector_get(dns_cache, wget_vector_find(dns_cache, &entry));
+		entryp = wget_vector_get(dns_cache, (index = wget_vector_find(dns_cache, &entry)));
 		wget_thread_mutex_unlock(&dns_mutex);
 
 		if (entryp) {
 			// DNS cache entry found
+			debug_printf("Found dns cache entry #%d\n", index);
 			return entryp->addrinfo;
 		}
 	}
@@ -123,16 +125,24 @@ static void _free_dns(struct ADDR_ENTRY *entry)
 static struct addrinfo * _wget_dns_cache_add(const char *host, const char *port, struct addrinfo *addrinfo)
 {
 	// insert addrinfo into dns cache
-	size_t hostlen = host ? strlen(host) + 1 : 1;
-	size_t portlen = port ? strlen(port) + 1 : 1;
+	size_t hostlen = host ? strlen(host) + 1 : 0;
+	size_t portlen = port ? strlen(port) + 1 : 0;
 	struct ADDR_ENTRY *entryp = xmalloc(sizeof(struct ADDR_ENTRY) + hostlen + portlen);
 	int index;
 
-	entryp->host = ((char *)entryp) + sizeof(struct ADDR_ENTRY);
-	entryp->port = ((char *)entryp) + sizeof(struct ADDR_ENTRY) + hostlen;
+	if (host) {
+		entryp->host = ((char *)entryp) + sizeof(struct ADDR_ENTRY);
+		memcpy((char *)entryp->host, host, hostlen); // ugly cast, but semantically ok
+	} else
+		entryp->host = NULL;
+
+	if (port) {
+		entryp->port = ((char *)entryp) + sizeof(struct ADDR_ENTRY) + hostlen;
+		memcpy((char *)entryp->port, port, portlen); // ugly cast, but semantically ok
+	} else
+		entryp->port = NULL;
+
 	entryp->addrinfo = addrinfo;
-	memcpy((char *)entryp->host, host ? host : "", hostlen); // ugly cast, but semantically ok
-	memcpy((char *)entryp->port, port ? port : "", portlen); // ugly cast, but semantically ok
 
 	wget_thread_mutex_lock(&dns_mutex);
 	if (!dns_cache) {
@@ -140,9 +150,10 @@ static struct addrinfo * _wget_dns_cache_add(const char *host, const char *port,
 		wget_vector_set_destructor(dns_cache, (void(*)(void *))_free_dns);
 	}
 
-	if ((index = wget_vector_find(dns_cache, entryp)) == -1)
+	if ((index = wget_vector_find(dns_cache, entryp)) == -1) {
+		debug_printf("Add dns cache entry %s:%s\n", host, port);
 		wget_vector_insert_sorted_noalloc(dns_cache, entryp);
-	else {
+	} else {
 		// race condition:
 		xfree(entryp);
 		freeaddrinfo(addrinfo);
@@ -174,7 +185,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 //		port = "0";
 
 	// if port is NULL,
-	if (tcp->caching && port) {
+	if (tcp->caching) {
 		if ((addrinfo = _wget_dns_cache_get(host, port)))
 			return addrinfo;
 
@@ -188,12 +199,8 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 	}
 	addrinfo = NULL;
 
-#if defined(AI_NUMERICSERV)
 	ai_flags |= (port && c_isdigit(*port) ? AI_NUMERICSERV : 0);
-#endif
-#if defined(AI_ADDRCONFIG)
 	ai_flags |= AI_ADDRCONFIG;
-#endif
 
 	if (tcp->passive) {
 		ai_flags |= AI_PASSIVE;
@@ -204,29 +211,10 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = ai_flags;
 
-#if !defined(AI_NUMERICSERV)
-	// to make the function work on old systems
-	char portbuf[16];
-
-	if (!isdigit(*port)) {
-		if (!wget_strcasecmp_ascii(port, "http"))
-			port = "80";
-		else if (!wget_strcasecmp_ascii(port, "https"))
-			port = "443";
-		else if (!wget_strcasecmp_ascii(port, "ftp"))
-			port = "21";
-		else {
-			// TODO: check availability of getservbyname_r to use it
-			struct servent *s = getservbyname(port, "tcp");
-			if (s) {
-				snprintf(portbuf, sizeof(portbuf), "%d", s->s_port);
-				port = portbuf;
-			}
-		}
-	}
-#endif
-
-	debug_printf("resolving %s:%s...\n", host, port);
+	if (port)
+		debug_printf("resolving %s:%s...\n", host, port);
+	else
+		debug_printf("resolving %s...\n", host);
 
 	// get the IP address for the server
 	for (tries = 0; tries < 3; tries++) {
@@ -240,7 +228,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 	if (rc) {
 		error_printf(_("Failed to resolve %s:%s (%s)\n"), host, port, gai_strerror(rc));
 
-		if (tcp->caching && port)
+		if (tcp->caching)
 			wget_thread_mutex_unlock(&mutex);
 
 		return NULL;
@@ -250,7 +238,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 		struct addrinfo *preferred = NULL, *preferred_tail = NULL;
 		struct addrinfo *unpreferred = NULL, *unpreferred_tail = NULL;
 
-		// split address list into preferred and unpreferred, keeping the original order
+		// split address list into preferred and not preferred, keeping the original order
 		for (ai = addrinfo; ai;) {
 			if (ai->ai_family == tcp->preferred_family) {
 				if (preferred_tail)
@@ -273,7 +261,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 			}
 		}
 
-		// merge preferred + unpreferred
+		// merge preferred + not preferred
 		if (preferred) {
 			preferred_tail->ai_next = unpreferred;
 			addrinfo = preferred;
@@ -293,8 +281,8 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 		}
 	}
 
-	if (tcp->caching && port) {
-		// In case of a race condition the already exisiting addrinfo is returned.
+	if (tcp->caching) {
+		// In case of a race condition the already existing addrinfo is returned.
 		// The addrinfo argument given to _wget_dns_cache_add() will be freed in this case.
 		addrinfo = _wget_dns_cache_add(host, port, addrinfo);
 		wget_thread_mutex_unlock(&mutex);
@@ -590,9 +578,7 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, const char *port)
 
 			if (rc < 0
 				&& errno != EAGAIN
-#ifdef EINPROGRESS
 				&& errno != EINPROGRESS
-#endif
 			) {
 				error_printf(_("Failed to connect (%d)\n"), errno);
 				ret = WGET_E_CONNECT;
@@ -644,7 +630,7 @@ int wget_tcp_listen(wget_tcp_t *tcp, const char *host, const char *port, int bac
 			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
 				debug_printf("try to listen on %s:%s...\n", adr, s_port);
 			else
-				debug_printf("try to listen on %s:%s (%s)...\n", host, s_port, gai_strerror(rc));
+				debug_printf("failed to listen on %s:%s (%s)...\n", host, s_port, gai_strerror(rc));
 		}
 
 		if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) != -1) {
@@ -793,9 +779,7 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 				if (rc < 0
 					&& errno != EAGAIN
 					&& errno != ENOTCONN
-#ifdef EINPROGRESS
 					&& errno != EINPROGRESS
-#endif
 			) {
 					error_printf(_("Failed to connect (%d)\n"), errno);
 					return -1;
@@ -817,9 +801,7 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 		} else {
 			if (errno != EAGAIN
 				&& errno != ENOTCONN
-#ifdef EINPROGRESS
 				&& errno != EINPROGRESS
-#endif
 			) {
 				error_printf(_("Failed to write %zu bytes (%d)\n"), count, errno);
 				return -1;
