@@ -40,6 +40,7 @@ futimens
 getaddrinfo
 getsockname
 gettext-h
+gettime
 glob
 iconv
 inline
@@ -60,6 +61,7 @@ progname
 spawn-pipe
 popen
 poll
+pthread
 pwrite
 qsort_r
 random_r
