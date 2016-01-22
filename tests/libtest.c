@@ -93,7 +93,7 @@ static void *_http_server_thread(void *ctx)
 	wget_tcp_t *tcp=NULL, *parent_tcp = ctx;
 	wget_test_url_t *url = NULL;
 	char buf[4096], method[32], request_url[256], tag[64], value[256], *p;
-	ssize_t nbytes, from_bytes, to_bytes;
+	ssize_t nbytes, from_bytes, to_bytes, n;
 	size_t body_len, request_url_length;
 	unsigned it;
 	int byterange, authorized;
@@ -111,9 +111,20 @@ static void *_http_server_thread(void *ctx)
 		if ((tcp = wget_tcp_accept(parent_tcp))) {
 			authorized = 0;
 
-			// as a quick hack, just assume that request comes in one packet
-			if ((nbytes = wget_tcp_read(tcp, buf, sizeof(buf)-1)) > 0) {
+			n = nbytes = 0;
+			while ((n = wget_tcp_read(tcp, buf + nbytes, sizeof(buf) - 1 - nbytes)) > 0) {
+				nbytes += n;
 				buf[nbytes]=0;
+				wget_info_printf(_("[SERVER] got %zd bytes (total %zd)\n"), n, nbytes);
+				if (strstr(buf,"\r\n\r\n"))
+					break;
+			}
+			wget_info_printf(_("[SERVER] total %zd bytes (total %zd) (errno=%d)\n"), n, nbytes, errno);
+
+			// as a quick hack, just assume that request comes in one packet
+//			if ((nbytes = wget_tcp_read(tcp, buf, sizeof(buf)-1)) > 0) {
+//				buf[nbytes]=0;
+			if (nbytes > 0) {
 				if (sscanf(buf, "%31s %255s", method, request_url) !=2) {
 					wget_tcp_printf(tcp, "HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");
 					continue;
@@ -413,7 +424,8 @@ static void _empty_directory(const char *dirname)
 			snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
 
 			if (unlink(fname) == -1) {
-				if (errno == EISDIR)
+				// in case fname is a directory glibc returns EISDIR but correct POSIX value would be EPERM
+				if (errno == EISDIR || errno == EPERM)
 					_remove_directory(fname);
 				else
 					wget_error_printf(_("Failed to unlink %s (%d)\n"), fname, errno);
@@ -422,14 +434,14 @@ static void _empty_directory(const char *dirname)
 
 		closedir(dir);
 	} else
-		wget_error_printf(_("Failed to opendir %s\n"), dirname);
+		wget_error_printf(_("Failed to opendir %s (%d)\n"), dirname, errno);
 }
 
 static void _remove_directory(const char *dirname)
 {
 	_empty_directory(dirname);
 	if (rmdir(dirname) == -1)
-		wget_error_printf(_("Failed to rmdir %s\n"), dirname);
+		wget_error_printf(_("Failed to rmdir %s (%d)\n"), dirname, errno);
 }
 #endif
 
@@ -572,11 +584,10 @@ void wget_test_start_server(int first_key, ...)
 
 	snprintf(tmpdir, sizeof(tmpdir), ".test_%d", (int) getpid());
 
-#if defined(_WIN32) || defined(_WIN64)
-	if (mkdir(tmpdir) != 0)
-#else
+	// remove tmpdir if exists from previous tests
+	_remove_directory(tmpdir);
+
 	if (mkdir(tmpdir, 0755) != 0)
-#endif
 		wget_error_printf_exit(_("Failed to create tmpdir (%d)\n"), errno);
 
 	if (chdir(tmpdir) != 0)
@@ -591,6 +602,7 @@ void wget_test_start_server(int first_key, ...)
 	// init HTTP server socket
 	http_parent_tcp = wget_tcp_init();
 	wget_tcp_set_timeout(http_parent_tcp, -1); // INFINITE timeout
+	wget_tcp_set_preferred_family(http_parent_tcp, WGET_NET_FAMILY_IPV4); // to have a defined order of IPs
 	if (wget_tcp_listen(http_parent_tcp, "localhost", NULL, 5) != 0)
 		exit(1);
 	http_server_port = wget_tcp_get_local_port(http_parent_tcp);
@@ -599,6 +611,7 @@ void wget_test_start_server(int first_key, ...)
 	https_parent_tcp = wget_tcp_init();
 	wget_tcp_set_ssl(https_parent_tcp, 1); // switch SSL on
 	wget_tcp_set_timeout(https_parent_tcp, -1); // INFINITE timeout
+	wget_tcp_set_preferred_family(https_parent_tcp, WGET_NET_FAMILY_IPV4); // to have a defined order of IPs
 	if (wget_tcp_listen(https_parent_tcp, "localhost", NULL, 5) != 0)
 		exit(1);
 	https_server_port = wget_tcp_get_local_port(https_parent_tcp);
@@ -606,17 +619,21 @@ void wget_test_start_server(int first_key, ...)
 	// init FTP server socket
 	ftp_parent_tcp = wget_tcp_init();
 	wget_tcp_set_timeout(ftp_parent_tcp, -1); // INFINITE timeout
+	wget_tcp_set_preferred_family(ftp_parent_tcp, WGET_NET_FAMILY_IPV4); // to have a defined order of IPs
 	if (wget_tcp_listen(ftp_parent_tcp, "localhost", NULL, 5) != 0)
 		exit(1);
 	ftp_server_port = wget_tcp_get_local_port(ftp_parent_tcp);
 
-	// init FTPS server socket
-	ftps_parent_tcp = wget_tcp_init();
-	wget_tcp_set_ssl(ftps_parent_tcp, 1); // switch SSL on
-	wget_tcp_set_timeout(ftps_parent_tcp, -1); // INFINITE timeout
-	if (wget_tcp_listen(ftps_parent_tcp, "localhost", NULL, 5) != 0)
-		exit(1);
-	ftps_server_port = wget_tcp_get_local_port(ftps_parent_tcp);
+	if (ftps_implicit) {
+		// init FTPS server socket
+		ftps_parent_tcp = wget_tcp_init();
+		wget_tcp_set_ssl(ftps_parent_tcp, 1); // switch SSL on
+		wget_tcp_set_timeout(ftps_parent_tcp, -1); // INFINITE timeout
+		wget_tcp_set_preferred_family(ftps_parent_tcp, WGET_NET_FAMILY_IPV4); // to have a defined order of IPs
+		if (wget_tcp_listen(ftps_parent_tcp, "localhost", NULL, 5) != 0)
+			exit(1);
+		ftps_server_port = wget_tcp_get_local_port(ftps_parent_tcp);
+	}
 
 	// now replace {{port}} in the body by the actual server port
 	for (wget_test_url_t *url = urls; url < urls + nurls; url++) {
@@ -684,12 +701,17 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 			}
 
 			if (expected_files) {
+// Mac OS X converts to NFD, so we might find an unexpected file name, e.g. when using accents.
+// Example: cedilla (%C3%A7) will be converted to c+composed_cedilla (%63%CC%A7)
+// Since there are a few pitfalls with Apple's NFD, just skip the check here.
+#if !(defined __APPLE__ && defined __MACH__)
 				wget_info_printf("search %s\n", fname);
 
 				for (it = 0; expected_files[it].name && strcmp(expected_files[it].name, fname); it++);
 
 				if (!expected_files[it].name)
 					wget_error_printf_exit(_("Unexpected file %s/%s found\n"), tmpdir, fname);
+#endif
 			} else
 				wget_error_printf_exit(_("Unexpected file %s/%s found\n"), tmpdir, fname);
 		}
@@ -795,7 +817,9 @@ void wget_test(int first_key, ...)
 
 	const char *valgrind = getenv("VALGRIND_TESTS");
 	if (!valgrind || !*valgrind || !strcmp(valgrind, "0")) {
-		wget_buffer_printf(cmd, "%s %s", executable, options);
+		// On some system we get random IP order (v4, v6) for localhost, so we need --prefer-family for testing since
+		// the test servers will listen only on the first IP and also prefers IPv4
+		wget_buffer_printf(cmd, "%s --max-threads=1 --prefer-family=ipv4 %s", executable, options);
 	} else if (!strcmp(valgrind, "1")) {
 		wget_buffer_printf(cmd, "valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s %s", executable, options);
 	} else
@@ -814,22 +838,6 @@ void wget_test(int first_key, ...)
 	wget_error_printf("\n  Testing '%s'\n", cmd->data);
 	rc = system(cmd->data);
 
-#if defined(_WIN32) || defined(_WIN64)
-	if (rc) {
-		wget_error_printf_exit(_("Failed to execute command (%d)\n"), errno);
-	}/* else {
-		if ((fp = fopen("exit_code", "r"))) {
-			if (fscanf(fp, "%d", &rc) != 1)
-				wget_error_printf_exit(_("Failed to fetch exit code\n"));
-			else if (rc != expected_error_code) {
-				wget_error_printf_exit(_("Unexpected error code %d, expected %d [%s]\n"),
-					rc, expected_error_code, options);
-			fclose(fp);
-		} else
-			wget_error_printf_exit(_("Failed to execute command (%d)\n"), errno);
-	}
-	unlink("exit_code"); */
-#else
 	if (!WIFEXITED(rc)) {
 		wget_error_printf_exit(_("Unexpected error code %d, expected %d [%s]\n"), rc, expected_error_code, options);
 	}
@@ -837,7 +845,6 @@ void wget_test(int first_key, ...)
 		wget_error_printf_exit(_("Unexpected error code %d, expected %d [%s]\n"),
 			WEXITSTATUS(rc), expected_error_code, options);
 	}
-#endif
 
 	if (expected_files) {
 		for (it = 0; expected_files[it].name; it++) {
