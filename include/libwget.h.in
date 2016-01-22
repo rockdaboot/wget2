@@ -1607,6 +1607,13 @@ void
 	wget_md5_printf_hex(char *digest_hex, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 
 
+/*
+ * random routines
+ */
+
+long wget_random(void);
+void wget_srandom(unsigned int seed);
+
 /**
  * \ingroup libwget-hash
  * \brief Type for hash / digest routines

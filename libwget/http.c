@@ -1404,7 +1404,7 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 
 		if (!wget_strcmp(algorithm, "MD5-sess")) {
 			// A1BUF = H( H(user ":" realm ":" password) ":" nonce ":" cnonce )
-			snprintf(cnonce, sizeof(cnonce), "%08lx", random()); // create random hex string
+			snprintf(cnonce, sizeof(cnonce), "%08lx", wget_random()); // create random hex string
 			wget_md5_printf_hex(a1buf, "%s:%s:%s", a1buf, nonce, cnonce);
 		}
 
@@ -1414,7 +1414,7 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		if (!wget_strcmp(qop, "auth") || !wget_strcmp(qop, "auth-int")) {
 			// RFC 2617 Digest Access Authentication
 			if (!*cnonce)
-				snprintf(cnonce, sizeof(cnonce), "%08lx", random()); // create random hex string
+				snprintf(cnonce, sizeof(cnonce), "%08lx", wget_random()); // create random hex string
 
 			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" nc ":" cnonce ":" qop ": " A2BUF)
 			wget_md5_printf_hex(response_digest, "%s:%s:00000001:%s:%s:%s", a1buf, nonce, /* nc, */ cnonce, qop, a2buf);

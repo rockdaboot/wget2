@@ -1137,9 +1137,6 @@ int init(int argc, const char *const *argv)
 	// set libwget out-of-memory function
 	wget_set_oomfunc(_no_memory);
 
-	// seed random generator, used e.g. by Digest Authentication and --random-wait
-	srandom(time(NULL) ^ getpid());
-
 	// this is a special case for switching on debugging before any config file is read
 	if (argc >= 2) {
 		if (!strcmp(argv[1],"-d"))
