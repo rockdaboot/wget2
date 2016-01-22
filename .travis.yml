@@ -10,10 +10,6 @@ compiler:
   - gcc
   - clang
 
-matrix:
-  allow_failures:
-    - os: osx
-
 addons:
     apt:
         packages:
@@ -21,7 +17,6 @@ addons:
             - automake
             - autopoint
             - libtool
-            - gtk-doc-tools
             - gettext
             - flex
             - liblzma5
@@ -31,7 +26,20 @@ addons:
             - libunistring0
 
 # Change this to your needs
-script: ./autogen.sh && ./configure --enable-gtk-doc && make -j4 && make check -j4 && make distcheck
+script: ./.travis.sh
 before_install:
   - echo $TRAVIS_OS_NAME
-  - ./.travis.sh
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install gnutls; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install nettle; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew outdated autoconf || brew upgrade autoconf; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew outdated automake || brew upgrade automake; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew outdated libtool || brew upgrade libtool; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install doxygen; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew outdated gettext || brew upgrade gettext; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install flex; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install libidn; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install xz; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install lbzip2; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install graphviz; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew link --force gettext; fi
