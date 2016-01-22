@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <errno.h>
+#include "timespec.h" // gnulib gettime()
 
 #include <libwget.h>
 
@@ -49,7 +50,7 @@ static void _write_debug(const char *data, size_t len)
 	if (!data || (ssize_t)len <= 0)
 		return;
 
-	clock_gettime(CLOCK_REALTIME, &ts);
+	gettime(&ts);
 	tp = localtime_r((const time_t *)&ts.tv_sec, &tbuf); // cast avoids warning on OpenBSD
 
 	if (!config.logfile)

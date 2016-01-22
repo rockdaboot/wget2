@@ -45,6 +45,7 @@
 #include <fnmatch.h>
 #include <sys/stat.h>
 #include <locale.h>
+#include "timespec.h" // gnulib gettime()
 
 #include <libwget.h>
 
@@ -1008,7 +1009,7 @@ int main(int argc, const char *const *argv)
 
 	for (n = 0; n < config.num_threads; n++) {
 		//		struct timespec ts;
-		//		clock_gettime(CLOCK_REALTIME, &ts);
+		//		gettime(&ts);
 		//		ts.tv_sec += 1;
 		// if the thread is not detached, we have to call pthread_join()/pthread_timedjoin_np()
 		// else we will have a huge memory leak
@@ -1927,7 +1928,7 @@ static void set_file_mtime(int fd, time_t modified)
 {
 	struct timespec timespecs[2]; // [0]=last access  [1]=last modified
 
-	clock_gettime(CLOCK_REALTIME, &timespecs[0]);
+	gettime(&timespecs[0]);
 
 	timespecs[1].tv_sec = modified;
 	timespecs[1].tv_nsec = 0;
