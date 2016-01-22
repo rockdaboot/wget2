@@ -29,7 +29,7 @@
 #define _LIBWGET_LIBWGET_H
 
 #include <stddef.h>
-#ifdef HAVE_LIBPTHREAD
+#ifdef HAVE_PTHREAD_H
 #	include <pthread.h>
 #endif
 #include <sys/types.h>
@@ -178,13 +178,10 @@
 // gnulib convenience header for libintl.h
 #include <gettext.h>
 
-#if ENABLE_NLS != 0
-#	undef gettext
+#ifdef ENABLE_NLS
 #	define _(STRING) gettext(STRING)
 #else
-#	undef ngettext
 #	define _(STRING) STRING
-#	define ngettext(STRING1,STRING2,N) STRING2
 #endif
 
 //#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901

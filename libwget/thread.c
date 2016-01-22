@@ -34,7 +34,7 @@
 #include <libwget.h>
 #include "private.h"
 
-#ifdef HAVE_LIBPTHREAD
+#ifdef GNULIB_PTHREAD
 
 int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_WGET_UNUSED)
 {

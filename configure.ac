@@ -192,12 +192,6 @@ AC_LINK_IFELSE(
 
 PKG_PROG_PKG_CONFIG
 
-AC_SEARCH_LIBS(pthread_create, pthread, [
-  # for Solaris also see http://docs.oracle.com/cd/E18752_01/html/816-5137/compile-94611.html
-  AC_DEFINE([HAVE_LIBPTHREAD], [1], [Use pthreads])
-  CFLAGS="-pthread $CFLAGS"
-])
-
 AC_ARG_WITH(gnutls, AS_HELP_STRING([--without-gnutls], [disable GNUTLS SSL support]), with_gnutls=$withval, with_gnutls=yes)
 AS_IF([test "x$with_gnutls" != "xno"], [
   PKG_CHECK_MODULES([GNUTLS], [gnutls], [
