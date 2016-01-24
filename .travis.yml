@@ -24,6 +24,7 @@ addons:
             - libidn2-0
             - libidn2-0-dev
             - libunistring0
+            - valgrind
 
 # Change this to your needs
 script: ./.travis.sh

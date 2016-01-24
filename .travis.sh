@@ -8,11 +8,12 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 fi
 export VALGRIND_TESTS=1
 make check -j3
-#if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
+if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
+  cat tests/test.log
 # ls -la tests/.test_*
 # for log in tests/*.log; do
 #   echo -e "\n#### $log ####"
 #   cat $log
 # done
-#fi
+fi
 make distcheck
