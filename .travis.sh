@@ -1,11 +1,12 @@
 #!/bin/bash
 
 ./autogen.sh || exit 1
-./configure || exit 1
+./configure --enable-valgrind-tests || exit 1
 make -j3 || exit 1
 if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
   make install || exit 1
 fi
+export VALGRIND_TESTS=1
 make check -j3
 #if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 # ls -la tests/.test_*

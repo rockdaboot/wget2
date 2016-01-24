@@ -37,6 +37,7 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew outdated libtool || brew upgrade libtool; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install doxygen; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew outdated gettext || brew upgrade gettext; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install valgrind; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install flex; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install libidn; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install xz; fi
