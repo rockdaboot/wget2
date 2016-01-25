@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2015 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2016 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
