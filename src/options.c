@@ -608,6 +608,7 @@ struct config config = {
 	.ocsp = 1,
 	.ocsp_stapling = 1,
 	.netrc = 1,
+	.waitretry = 10 * 1000,
 };
 
 static int parse_execute(option_t opt, const char *val);
