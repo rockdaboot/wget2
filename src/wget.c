@@ -1107,6 +1107,9 @@ void *downloader_thread(void *p)
 					wget_millisleep(rand() % config.wait + config.wait / 2); // (0.5 - 1.5) * config.wait
 				else
 					wget_millisleep(config.wait);
+
+				if (terminate)
+					break;
 			} else
 				do_wait = 1;
 		}
@@ -1148,8 +1151,11 @@ void *downloader_thread(void *p)
 			// In spider mode, we first make a HEAD request.
 			// If the Content-Type header gives us not a parsable type, we are done.
 			print_status(downloader, "[%d] Checking '%s' ...\n", downloader->id, job->iri->uri);
-			for (int tries = 0; !resp && tries < config.tries; tries++) {
+			for (int tries = 0; !resp && tries < config.tries && !terminate; tries++) {
 				wget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
+
+				if (terminate)
+					break;
 
 				resp = http_get(job->iri, NULL, downloader, "HEAD");
 				if (resp)
@@ -1235,8 +1241,11 @@ void *downloader_thread(void *p)
 		else
 			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->iri->uri);
 
-		for (int tries = 0; !resp && tries < config.tries; tries++) {
+		for (int tries = 0; !resp && tries < config.tries && !terminate; tries++) {
 			wget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
+
+			if (terminate)
+				break;
 
 			resp = http_get(job->iri, NULL, downloader, NULL);
 			if (resp)
@@ -2143,8 +2152,11 @@ int download_part(DOWNLOADER *downloader)
 	int ret = -1;
 
 	// we try every mirror max. 'config.tries' number of times
-	for (int tries = 0; tries < config.tries && !part->done; tries++) {
+	for (int tries = 0; tries < config.tries && !part->done && !terminate; tries++) {
 		wget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
+
+		if (terminate)
+			break;
 
 		for (int mirrors = 0; mirrors < wget_vector_size(metalink->mirrors) && !part->done; mirrors++) {
 			wget_http_response_t *resp;
