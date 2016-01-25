@@ -1,0 +1,4 @@
+#!/bin/sh
+
+files=`git ls-files|egrep -v 'COPYING|gnulib'`
+sed -i "s/2015 Free Soft/2015-2016 Free Soft/g" $files
