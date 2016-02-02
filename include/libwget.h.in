@@ -701,13 +701,14 @@ void
  */
 
 #ifdef PTHREAD_MUTEX_INITIALIZER
-#define WGET_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
-#define WGET_THREAD_COND_INITIALIZER PTHREAD_COND_INITIALIZER
+# define WGET_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
+# define WGET_THREAD_COND_INITIALIZER PTHREAD_COND_INITIALIZER
 typedef pthread_t wget_thread_t;
 typedef pthread_mutex_t wget_thread_mutex_t;
 typedef pthread_cond_t wget_thread_cond_t;
 #else
-#define WGET_THREAD_MUTEX_INITIALIZER 0
+# define WGET_THREAD_MUTEX_INITIALIZER 0
+# define WGET_THREAD_COND_INITIALIZER 0
 typedef unsigned long int wget_thread_t;
 typedef int wget_thread_mutex_t;
 typedef int wget_thread_cond_t;
