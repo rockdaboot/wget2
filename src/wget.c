@@ -961,6 +961,9 @@ int main(int argc, const char *const *argv)
 	// asynchronously from STDIN or have are downloading recursively, we don't
 	// know the queue_size at startup, and hence spawn config.max_threads
 	// threads.
+	if (! wget_thread_support ()) {
+		config.num_threads = 1;
+	}
 	if (config.recursive || async_urls || config.max_threads < queue_size()) {
 		config.num_threads = config.max_threads;
 	} else {
@@ -974,32 +977,34 @@ int main(int argc, const char *const *argv)
 
 	downloaders = xcalloc(config.num_threads, sizeof(DOWNLOADER));
 
-	for (n = 0; n < config.num_threads; n++) {
-		downloaders[n].id = n;
+	while (!queue_empty() || input_tid) {
+		for (n = 0; n < config.num_threads; n++) {
+			downloaders[n].id = n;
 
-		// start worker threads (I call them 'downloaders')
-		if ((rc = wget_thread_start(&downloaders[n].tid, downloader_thread, &downloaders[n], 0)) != 0) {
-			error_printf(_("Failed to start downloader, error %d\n"), rc);
-		}
-	}
-
-	wget_thread_mutex_lock(&main_mutex);
-	while (!terminate) {
-		// queue_print();
-		if (queue_empty() && !input_tid) {
-			break;
+			// start worker threads (I call them 'downloaders')
+			if ((rc = wget_thread_start(&downloaders[n].tid, downloader_thread, &downloaders[n], 0)) != 0) {
+				error_printf(_("Failed to start downloader, error %d\n"), rc);
+			}
 		}
 
-		if (config.progress)
-			bar_printf(config.num_threads, "Files: %d  Bytes: %llu  Redirects: %d  Todo: %d", stats.ndownloads, quota, stats.nredirects, queue_size());
+		wget_thread_mutex_lock(&main_mutex);
+		while (!terminate) {
+			// queue_print();
+			if (queue_empty() && !input_tid) {
+				break;
+			}
 
-		if (config.quota && quota >= config.quota) {
-			info_printf(_("Quota of %llu bytes reached - stopping.\n"), config.quota);
-			break;
+			if (config.progress)
+				bar_printf(config.num_threads, "Files: %d  Bytes: %llu  Redirects: %d  Todo: %d", stats.ndownloads, quota, stats.nredirects, queue_size());
+
+			if (config.quota && quota >= config.quota) {
+				info_printf(_("Quota of %llu bytes reached - stopping.\n"), config.quota);
+				break;
+			}
+
+			// here we sit and wait for an event from our worker threads
+			wget_thread_cond_wait(&main_cond, &main_mutex);
 		}
-
-		// here we sit and wait for an event from our worker threads
-		wget_thread_cond_wait(&main_cond, &main_mutex);
 	}
 
 	// stop downloaders
@@ -1095,6 +1100,11 @@ void *downloader_thread(void *p)
 
 	while (!terminate) {
 		if (queue_get(&downloader->job, &downloader->part) == 0) {
+			if (!wget_thread_support()) {
+				// not needed, but do not leave the lock not matched.
+				wget_thread_mutex_unlock(&main_mutex);
+				return NULL;
+			}
 			// here we sit and wait for a job
 			wget_thread_cond_wait(&worker_cond, &main_mutex);
 			continue;

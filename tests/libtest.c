@@ -532,6 +532,12 @@ void wget_test_start_server(int first_key, ...)
 	size_t it;
 	va_list args;
 
+	/* Skip any test that use this function if threads are not present.  */
+	if (!wget_thread_support()) {
+		wget_error_printf("THREADS NOT SUPPORTED: Skip\n");
+		exit(77);
+	}
+
 	wget_global_init(
 		WGET_DEBUG_STREAM, stderr,
 		WGET_ERROR_STREAM, stderr,

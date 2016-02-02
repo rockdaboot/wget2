@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdbool.h>
 #ifdef HAVE_INTTYPES_H
 #	include <inttypes.h>
 #endif
@@ -700,7 +701,7 @@ void
  * Thread wrapper routines
  */
 
-#ifdef PTHREAD_MUTEX_INITIALIZER
+#if USE_POSIX_THREADS || USE_PTH_THREADS
 # define WGET_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 # define WGET_THREAD_COND_INITIALIZER PTHREAD_COND_INITIALIZER
 typedef pthread_t wget_thread_t;
@@ -734,6 +735,8 @@ int
 	wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex) LIBWGET_EXPORT;
 wget_thread_t
 	wget_thread_self(void) G_GNUC_WGET_CONST LIBWGET_EXPORT;
+bool
+	wget_thread_support(void) G_GNUC_WGET_CONST LIBWGET_EXPORT;
 
 /*
  * Decompressor routines

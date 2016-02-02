@@ -34,7 +34,7 @@
 #include <libwget.h>
 #include "private.h"
 
-#ifdef GNULIB_PTHREAD
+#if USE_POSIX_THREADS || USE_PTH_THREADS
 
 int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_WGET_UNUSED)
 {
@@ -98,12 +98,22 @@ int wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex)
 	return pthread_cond_wait(cond, mutex);
 }
 
-#else // HAVE_LIBPTHREAD
+bool wget_thread_support(void)
+{
+	return true;
+}
 
-// dummy thread functions
+#else // USE_POSIX_THREADS || USE_PTH_THREADS
+
+bool wget_thread_support(void)
+{
+	return false;
+}
+
 int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_WGET_UNUSED)
 {
-	return -1;
+	start_routine(arg);
+	return 0;
 }
 int wget_thread_mutex_init(wget_thread_mutex_t *mutex) { return 0; }
 void wget_thread_mutex_lock(wget_thread_mutex_t *mutex) { }
