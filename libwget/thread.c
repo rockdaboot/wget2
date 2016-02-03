@@ -125,4 +125,4 @@ int wget_thread_cond_init(wget_thread_cond_t *cond) { return 0; }
 int wget_thread_cond_signal(wget_thread_cond_t *cond) { return 0; }
 int wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex) { return 0; }
 
-#endif // HAVE_LIBPTHREAD
+#endif // USE_POSIX_THREADS || USE_PTH_THREADS

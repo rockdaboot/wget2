@@ -961,7 +961,7 @@ int main(int argc, const char *const *argv)
 	// asynchronously from STDIN or have are downloading recursively, we don't
 	// know the queue_size at startup, and hence spawn config.max_threads
 	// threads.
-	if (! wget_thread_support ()) {
+	if (!wget_thread_support()) {
 		config.num_threads = 1;
 	}
 	if (config.recursive || async_urls || config.max_threads < queue_size()) {
