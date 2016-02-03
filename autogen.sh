@@ -76,6 +76,7 @@ setlocale
 setsockopt
 socket
 stdarg
+stdbool
 stddef
 stdint
 stat
