@@ -63,7 +63,7 @@ long wget_random(void)
 
 	if (!seeded) {
 		// seed random generator, used e.g. by Digest Authentication and --random-wait
-		srandom(time(NULL) ^ getpid());
+		srandom((unsigned)(time(NULL) ^ getpid()));
 		seeded = 1;
 	}
 
