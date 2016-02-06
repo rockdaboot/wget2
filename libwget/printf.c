@@ -32,26 +32,23 @@
 #include "private.h"
 
 /**
- * SECTION:libwget-printf
- * @short_description: Wget printf functions
- * @title: libwget-printf
- * @stability: stable
- * @include: libwget.h
+ * \file
+ * \brief Wget printf functions
+ * \defgroup libwget-printf Wget printf functions
+ * @{
  *
  * This is a collection of printf-style functions that are used with libwget and/or Wget code.
  * They may be useful to other developers that is why they are exported.
  */
 
 /**
- * wget_vasprintf:
- * @strp: Pointer to hold the string output
- * @fmt: Printf-like format string
- * @ap: va_list object
+ * \param[in] strp Pointer to hold the string output
+ * \param[in] fmt Printf-like format specifier
+ * \param[in] args va_list of arguments
+ * \return Length of the string returned via \p strp
  *
  * Prints arguments to allocated memory and 0-terminates it. The string is returned via the first argument.
  * It has to be free()'d by the caller when it is no longer needed.
- *
- * Returns: Length of the string returned via @strp.
  */
 size_t wget_vasprintf(char **strp, const char *fmt, va_list args)
 {
@@ -73,15 +70,13 @@ size_t wget_vasprintf(char **strp, const char *fmt, va_list args)
 }
 
 /**
- * wget_asprintf:
- * @strp: Pointer to hold the string output
- * @fmt: Printf-like format string
- * @...: List of arguments
+ * \param[in] strp Pointer to hold the string output
+ * \param[in] fmt Printf-like format specifier
+ * \param[in] ... List of arguments
+ * \return Length of the string returned via \p strp
  *
  * Prints arguments to allocated memory and 0-terminates it. The string is returned via the first argument.
  * It has to be free()'d by the caller when it is no longer needed.
- *
- * Returns: Length of the string returned via @strp.
  */
 size_t wget_asprintf(char **strp, const char *fmt, ...)
 {
@@ -95,14 +90,12 @@ size_t wget_asprintf(char **strp, const char *fmt, ...)
 }
 
 /**
- * wget_str_vasprintf:
- * @fmt: Printf-like format string
- * @ap: va_list object
+ * \param[in] fmt Printf-like format specifier
+ * \param[in] args va_list of arguments
+ * \return Pointer to 0-terminated string in memory
  *
  * Prints arguments to memory and returns a pointer to allocated and 0-terminated chunk of memory
  * or %NULL on error. The return value has to be free()'d by the caller when it is no longer needed.
- *
- * Returns: Pointer to 0-terminated string in memory.
  */
 char *wget_str_vasprintf(const char *fmt, va_list args)
 {
@@ -114,14 +107,12 @@ char *wget_str_vasprintf(const char *fmt, va_list args)
 }
 
 /**
- * wget_str_asprintf:
- * @fmt: Printf-like format string
- * @...: List of arguments
+ * \param[in] fmt Printf-like format specifier
+ * \param[in] ... List of arguments
+ * \return Pointer to 0-terminated string in memory
  *
  * Prints arguments to memory and returns a pointer to allocated and 0-terminated chunk of memory
  * or %NULL on error. The return value has to be free()'d by the caller when it is no longer needed.
- *
- * Returns: Pointer to 0-terminated string in memory.
  */
 char *wget_str_asprintf(const char *fmt, ...)
 {
@@ -134,3 +125,5 @@ char *wget_str_asprintf(const char *fmt, ...)
 
 	return s;
 }
+
+/**@}*/
