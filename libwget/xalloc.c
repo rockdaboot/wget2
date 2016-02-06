@@ -35,11 +35,10 @@
 #include "private.h"
 
 /**
- * SECTION:libwget-xalloc
- * @short_description: Memory allocation functions
- * @title: libwget-xalloc
- * @stability: stable
- * @include: libwget.h
+ * \file
+ * \brief Memory allocation functions
+ * \defgroup libwget-xalloc Memory allocation functions
+ * @{
  *
  * The provided memory allocation functions are used by explicit libwget memory
  * allocations.
@@ -70,8 +69,7 @@ static _GL_INLINE void G_GNUC_WGET_NORETURN _no_memory(void)
 }
 
 /**
- * wget_set_oomfunc:
- * @oom_callback: Pointer to your custom out-of-memory function.
+ * \param[in] oom_callback Pointer to your custom out-of-memory function
  *
  * Set a custom out-of-memory function.
  */
@@ -81,14 +79,12 @@ void wget_set_oomfunc(void (*oom_callback)(void))
 }
 
 /**
- * wget_malloc:
- * @size: Number of bytes to allocate.
+ * \param[in] size Number of bytes to allocate
+ * \return A pointer to the allocated (uninitialized) memory
  *
  * Like the standard malloc(), except that it doesn't return %NULL values.
  * If an out-of-memory condition occurs the oom callback function is called (if set).
  * Thereafter the application is terminated by exit(%EXIT_FAILURE);
- *
- * Return: A pointer to the allocated (uninitialized) memory.
  */
 void *wget_malloc(size_t size)
 {
@@ -99,15 +95,13 @@ void *wget_malloc(size_t size)
 }
 
 /**
- * wget_calloc:
- * @nmemb: Number of elements (each of size @size) to allocate.
- * @size: Size of element.
+ * \param[in] nmemb Number of elements (each of size \p size) to allocate
+ * \param[in] size Size of element
+ * \return A pointer to the allocated (initialized) memory
  *
  * Like the standard calloc(), except that it doesn't return %NULL values.
  * If an out-of-memory condition occurs the oom callback function is called (if set).
  * Thereafter the application is terminated by exit(%EXIT_FAILURE);
- *
- * Return: A pointer to the allocated (initialized) memory.
  */
 void *wget_calloc(size_t nmemb, size_t size)
 {
@@ -118,15 +112,13 @@ void *wget_calloc(size_t nmemb, size_t size)
 }
 
 /**
- * wget_realloc:
- * @ptr: Pointer to old memory area.
- * @size: Number of bytes to allocate for the new memory area.
+ * \param[in] ptr Pointer to old memory area
+ * \param[in] size Number of bytes to allocate for the new memory area
+ * \return A pointer to the new memory area
  *
  * Like the standard realloc(), except that it doesn't return %NULL values.
  * If an out-of-memory condition occurs the oom callback function is called (if set).
  * Thereafter the application is terminated by exit(%EXIT_FAILURE);
- *
- * Return: A pointer to the new memory area.
  */
 void *wget_realloc(void *ptr, size_t size)
 {
@@ -143,3 +135,5 @@ void *wget_realloc(void *ptr, size_t size)
 		*p = NULL;
 	}
 }*/
+
+/**@}*/
