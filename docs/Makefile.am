@@ -14,6 +14,7 @@ $(builddir)/man/man3/libwget-hash.3: doxy.stamp
 $(builddir)/man/man3/libwget-io.3: doxy.stamp
 $(builddir)/man/man3/libwget-utils.3: doxy.stamp
 $(builddir)/man/man3/libwget-random.3: doxy.stamp
+$(builddir)/man/man3/libwget-xalloc.3: doxy.stamp
 $(builddir)/man/man3/libwget-printf.3: doxy.stamp
 
 doxy.stamp:
