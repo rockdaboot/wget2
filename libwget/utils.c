@@ -56,7 +56,7 @@
  * \param[in] s2 String
  * \return
  * 0 if both \p s1 and \p s2 are NULL<br>
- * -1 if \p s1 is NULL and @s2 is not NULL<br>
+ * -1 if \p s1 is NULL and \p s2 is not NULL<br>
  * 1 if \p s1 is not NULL and \p s2 is NULL
  * else it returns strcmp(\p s1, \p s2)
  *
@@ -83,7 +83,7 @@ int wget_strcmp(const char *s1, const char *s2)
  * \param[in] s2 String
  * \return
  * 0 if both \p s1 and \p s2 are NULL<br>
- * -1 if \p s1 is NULL and @s2 is not NULL<br>
+ * -1 if \p s1 is NULL and \p s2 is not NULL<br>
  * 1 if \p s1 is not NULL and \p s2 is NULL
  * else it returns strcasecmp(\p s1, \p s2)
  *
@@ -290,25 +290,25 @@ static _GL_INLINE unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
  * Does an inline percent unescape.
  * Each occurrence of %xx (x = hex digit) will converted into it's byte representation.
  */
-int wget_percent_unescape(char *_src)
+int wget_percent_unescape(char *src)
 {
 	int ret = 0;
-	unsigned char *src = (unsigned char *)_src; // just a helper to avoid casting a lot
-	unsigned char *dst = src;
+	unsigned char *s = (unsigned char *)src; // just a helper to avoid casting a lot
+	unsigned char *d = s;
 
-	while (*src) {
-		if (*src == '%') {
-			if (c_isxdigit(src[1]) && c_isxdigit(src[2])) {
-				*dst++ = (_unhex(src[1]) << 4) | _unhex(src[2]);
-				src += 3;
+	while (*s) {
+		if (*s == '%') {
+			if (c_isxdigit(s[1]) && c_isxdigit(s[2])) {
+				*d++ = (_unhex(s[1]) << 4) | _unhex(s[2]);
+				s += 3;
 				ret = 1;
 				continue;
 			}
 		}
 
-		*dst++ = *src++;
+		*d++ = *s++;
 	}
-	*dst = 0;
+	*d = 0;
 
 	return ret;
 }
@@ -316,7 +316,7 @@ int wget_percent_unescape(char *_src)
 /**
  * \param[in] s String
  * \param[in] tail String
- * \return 1 if \p tail matches the end of \ps, 0 if not
+ * \return 1 if \p tail matches the end of \p s, 0 if not
  *
  * Checks if \p tail matches the end of the string \p s.
  */
