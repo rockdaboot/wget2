@@ -1437,9 +1437,11 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 		}
 		if (nbytes == GNUTLS_E_AGAIN)
 			return 0; // indicate timeout
+
+		return -1;
 	}
 
-	return -1;
+	return -1; // never comes here
 }
 
 #else // WITH_GNUTLS
