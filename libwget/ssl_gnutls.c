@@ -692,7 +692,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	const gnutls_datum_t *cert_list = 0;
 	unsigned int cert_list_size;
 	int ret = -1, err, ocsp_ok = 0;
-	gnutls_x509_crt_t cert, issuer;
+	gnutls_x509_crt_t cert = NULL, issuer = NULL;
 	const char *hostname;
 	const char *tag = _config.check_certificate ? _("ERROR") : _("WARNING");
 
@@ -1437,8 +1437,6 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 		}
 		if (nbytes == GNUTLS_E_AGAIN)
 			return 0; // indicate timeout
-
-		return -1;
 	}
 
 	return -1;
