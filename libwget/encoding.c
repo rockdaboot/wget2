@@ -151,7 +151,7 @@ char *wget_utf8_to_str(const char *src, const char *encoding)
 	return wget_charset_transcode(src, "utf-8", encoding);
 }
 
-#if WITH_LIBIDN
+#ifdef WITH_LIBIDN
 /*
  * Work around a libidn <= 1.30 vulnerability.
  *
