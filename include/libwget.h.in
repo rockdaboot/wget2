@@ -58,9 +58,9 @@
 #define xrealloc wget_realloc
 
 // see https://www.gnu.org/software/gnulib/manual/html_node/Exported-Symbols-of-Shared-Libraries.html
-#if BUILDING_LIBWGET && HAVE_VISIBILITY
+#if defined BUILDING_LIBWGET && HAVE_VISIBILITY
 #	define LIBWGET_EXPORT __attribute__ ((__visibility__("default")))
-#elif BUILDING_LIBWGET && defined _MSC_VER
+#elif defined BUILDING_LIBWGET && defined _MSC_VER
 #	define LIBWGET_EXPORT __declspec(dllexport)
 #elif defined _MSC_VER
 #	define LIBWGET_EXPORT __declspec(dllimport)
