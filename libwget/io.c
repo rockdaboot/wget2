@@ -161,7 +161,7 @@ ssize_t wget_fdgetline(char **buf, size_t *bufsize, int fd)
  * \return The length of the last line read
  *
  * This function will read a line from the open file handle \p fp. This function reads input characters
- * until either a newline character (`\n`) is found or EOF is reached. A block of memory large enough to hold the read line
+ * until either a newline character (`\\n`) is found or EOF is reached. A block of memory large enough to hold the read line
  * will be implicitly allocated by the function, and its address placed at the pointer pointed to by \p buf.
  * The length of the aforementioned memory block will be stored in the variable pointed at by \p bufsize.
  *
@@ -177,7 +177,7 @@ ssize_t wget_fdgetline(char **buf, size_t *bufsize, int fd)
  * character of the last line read, and such line is also guaranteed to end with a NULL termination character (`\0`).
  * The length of the last read line will be returned by wget_getline(), whereas the actual length of the buffer will be placed in the variable
  * pointed at by \p bufsize.
- * The newline character (`\n`) will not be included in the last read line.
+ * The newline character (`\\n`) will not be included in the last read line.
  */
 ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
 {
@@ -245,8 +245,6 @@ int wget_ready_2_read(int fd, int timeout)
 }
 
 /**
- * @fd: File descriptor to wait for.
- * @timeout: Max. duration in milliseconds to wait.
  * \param[in] fd File descriptor to wait for
  * \param[in] timeout Max. duration in milliseconds to wait
  * \return
@@ -266,7 +264,7 @@ int wget_ready_2_write(int fd, int timeout)
 
 /**
  * \param[in] fname The name of the file to read from, or a dash (`-`) to read from STDIN
- * \param[out] Size pointer to a variable where the length of the contents read will be stored
+ * \param[out] size Pointer to a variable where the length of the contents read will be stored
  * \return Pointer to the read data, as a NULL-terminated C string
  *
  * Reads the content of a file, or from STDIN.
