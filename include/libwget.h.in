@@ -396,11 +396,11 @@ void
  */
 
 void *
-	wget_memdup(const void *s, size_t n) G_GNUC_WGET_ALLOC_SIZE(2) LIBWGET_EXPORT;
+	wget_memdup(const void *m, size_t n) G_GNUC_WGET_ALLOC_SIZE(2) LIBWGET_EXPORT;
 char *
 	wget_strdup(const char *s) G_GNUC_WGET_MALLOC LIBWGET_EXPORT;
 char *
-	wget_strmemdup(const void *s, size_t n) G_GNUC_WGET_ALLOC_SIZE(2) LIBWGET_EXPORT;
+	wget_strmemdup(const void *m, size_t n) G_GNUC_WGET_ALLOC_SIZE(2) LIBWGET_EXPORT;
 void
 	wget_strmemcpy(char *s, size_t ssize, const void *m, size_t n) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 

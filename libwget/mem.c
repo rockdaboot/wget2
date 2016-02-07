@@ -34,35 +34,74 @@
 #include <libwget.h>
 #include "private.h"
 
-// strdup which accepts NULL values
+/**
+ * \file
+ * \brief Memory functions
+ * \defgroup libwget-mem Memory functions
+ * @{
+ *
+ * This is a collections of short memory function not available in standard libraries.
+ */
 
+/**
+ * \param[in] m Memory to clone
+ * \param[in] n Length of memory
+ * \return Cloned memory
+ *
+ * Clone's the memory region \p m with length \p n.
+ * Returns NULL if \p m is NULL.
+ *
+ * You should free() the returned pointer when not needed any more.
+ */
+void *wget_memdup(const void *m, size_t n)
+{
+	return m ? memcpy(xmalloc(n), m, n) : NULL;
+}
+
+/**
+ * \param[in] s String to clone
+ * \return Cloned string
+ *
+ * Clone's the string \p s like strdup() does.
+ * Returns NULL if \p s is NULL.
+ *
+ * You should free() the returned string when not needed any more.
+ */
 char *wget_strdup(const char *s)
 {
-	return s ? strcpy(xmalloc(strlen(s) + 1), s) : NULL;
+	return s ? wget_memdup(s, strlen(s) + 1) : NULL;
 }
 
-// memdup sometimes comes in handy
-
-void *wget_memdup(const void *s, size_t n)
+/**
+ * \param[in] m Memory to convert into string
+ * \param[in] n Length of memory
+ * \return Created string
+ *
+ * Convert the given memory region \p m with length \p n into a C string.
+ * Returns NULL if \p m is NULL.
+ *
+ * You should free() the returned string when not needed any more.
+ */
+char *wget_strmemdup(const void *m, size_t n)
 {
-	return s ? memcpy(xmalloc(n), s, n) : NULL;
-}
-
-// convert memory chunk into allocated string
-
-char *wget_strmemdup(const void *s, size_t n)
-{
-	if (!s)
+	if (!m)
 		return NULL;
 
-	char *ret = memcpy(xmalloc(n + 1), s, n);
+	char *ret = memcpy(xmalloc(n + 1), m, n);
 	ret[n] = 0;
 
 	return ret;
 }
 
-// convert memory chunk to string
-
+/**
+ * \param[out] s Buffer to hold the C string output
+ * \param[in] ssize Size of the output buffer
+ * \param[in] m Memory to read from
+ * \param[in] n Length of memory
+ *
+ * Convert the given memory region \p m with length \p n into a C string at \p s.
+ * A max. of \p ssize - 1  is copied into \p s.
+ */
 void wget_strmemcpy(char *s, size_t ssize, const void *m, size_t n)
 {
 	if (n >= ssize)
@@ -71,3 +110,5 @@ void wget_strmemcpy(char *s, size_t ssize, const void *m, size_t n)
 	memcpy(s, m, n);
 	s[n] = 0;
 }
+
+/**@}*/
