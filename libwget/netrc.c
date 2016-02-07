@@ -218,6 +218,8 @@ int wget_netrc_db_load(wget_netrc_db_t *netrc_db, const char *fname)
 			} else if (!strcmp(key, "password")) {
 				if (!netrc.password)
 					netrc.password = wget_strmemdup(p, linep - p);
+			} else if (!strcmp(key, "macdef")) {
+				in_macdef = 1; // the above code skips until next empty line
 			}
 		}
 

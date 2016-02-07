@@ -188,7 +188,7 @@ void *wget_list_getlast(const wget_list_t *list)
  *  If the callback functions returns a value not equal to zero, browsing is stopped and
  *  this value will be returned by wget_list_browse.
  * \param[in] context The context handle that will be passed to the callback function
- * \return The return value of the last call to the browse function
+ * \return The return value of the last call to the browse function or -1 if \p list is NULL (empty)
  *
  * Iterate through all entries of the \p list and call the function \p browse for each.
  *

@@ -373,13 +373,19 @@ int wget_update_file(const char *fname,
 	else
 		basename = fname;
 
-	// create a per-usr tmp file name for HSTS
-	char lockfile[strlen(tmpdir) + strlen(basename) + 32];
-	snprintf(lockfile, sizeof(lockfile), "%s/%s_lck_%d", tmpdir, basename, getuid());
+	// create a per-usr tmp file name
+	size_t tmplen = strlen(tmpdir);
+	char *lockfile = xmalloc(tmplen + strlen(basename) + 32);
+
+	if (!tmplen)
+		snprintf(lockfile, sizeof(lockfile), "%s_lck_%d", basename, getuid());
+	else
+		snprintf(lockfile, sizeof(lockfile), "%s/%s_lck_%d", tmpdir, basename, getuid());
 
 	// create & open the lock file
 	if ((lockfd = creat(lockfile, 0644)) == -1) {
 		error_printf(_("Failed to create '%s' (%d)\n"), lockfile, errno);
+		xfree(lockfile);
 		return -1;
 	}
 
@@ -387,8 +393,11 @@ int wget_update_file(const char *fname,
 	if (flock(lockfd, LOCK_EX) == -1) {
 		close(lockfd);
 		error_printf(_("Failed to lock '%s' (%d)\n"), lockfile, errno);
+		xfree(lockfile);
 		return -1;
 	}
+
+	xfree(lockfile);
 
 	if (load_func) {
 		// open fname for reading

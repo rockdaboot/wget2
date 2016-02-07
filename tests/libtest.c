@@ -133,7 +133,7 @@ static void *_http_server_thread(void *ctx)
 				byterange = from_bytes = to_bytes = 0;
 				modified = 0;
 
-				for (p = strstr(buf, "\r\n"); sscanf(p, "\r\n%63[^:]: %255[^\r]", tag, value) == 2; p = strstr(p + 2, "\r\n")) {
+				for (p = strstr(buf, "\r\n"); p && sscanf(p, "\r\n%63[^:]: %255[^\r]", tag, value) == 2; p = strstr(p + 2, "\r\n")) {
 					if (!wget_strcasecmp_ascii(tag, "Range")) {
 						if ((byterange = sscanf(value, "bytes=%zd-%zd", &from_bytes, &to_bytes)) < 1)
 							byterange = 0;

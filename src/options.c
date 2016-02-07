@@ -904,40 +904,14 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 	ssize_t len;
 	wget_buffer_t linebuf;
 
-/*
 	if (expand) {
-		#include <wordexp.h>
-		// do tilde, wildcard, command and variable expansion
-		wordexp_t wp;
-		struct stat st;
+		glob_t globbuf = { .gl_pathc = 0 };
 
-		if (wordexp(cfgfile, &wp, 0) == 0) {
-			size_t it;
-
-			for (it = 0; it < wp.we_wordc; it++) {
-				if (stat(wp.we_wordv[it], &st) == 0 && S_ISREG(st.st_mode))
-					_read_config(wp.we_wordv[it], 0);
-			}
-			wordfree(&wp);
-		} else
-			err_printf(_("Failed to expand %s\n"), cfgfile);
-
-		return 0;
-	}
-*/
-
-	if (expand) {
-		glob_t globbuf;
-//		struct stat st;
-		int flags = GLOB_MARK | GLOB_TILDE;
-
-		if (glob(cfgfile, flags, NULL, &globbuf) == 0) {
+		if (glob(cfgfile, GLOB_MARK | GLOB_TILDE, NULL, &globbuf) == 0) {
 			size_t it;
 
 			for (it = 0; it < globbuf.gl_pathc; it++) {
 				if (globbuf.gl_pathv[it][strlen(globbuf.gl_pathv[it])-1] != '/') {
-				// if (stat(globbuf.gl_pathv[it], &st) == 0 && S_ISREG(st.st_mode)) {
-
 					_read_config(globbuf.gl_pathv[it], 0);
 
 					level--;
@@ -1309,7 +1283,7 @@ int init(int argc, const char *const *argv)
 		config.logfile = config.logfile_append;
 		config.logfile_append = NULL;
 	}
-	else if (config.logfile && strcmp(config.logfile,"-") && !truncated) {
+	else if (config.logfile && strcmp(config.logfile,"-")) {
 		// truncate logfile
 		int fd = open(config.logfile, O_WRONLY | O_TRUNC);
 
