@@ -34,20 +34,41 @@
 #include <libwget.h>
 #include "private.h"
 
+/**
+ * \file
+ * \brief MD5 convenience functions
+ * \defgroup libwget-md5 MD5 convenience functions
+ * @{
+ *
+ * Provides MD5 helper functions
+ */
+
+/**
+ * \param[out] digest_hex Output string buffer
+ * \param[in] fmt Printf-like format specifier
+ * \param[in] ... List of arguments
+ *
+ * Calculate the hexadecimal MD5 digest from the string generated via the
+ * printf-style \p fmt and the following arguments.
+ *
+ * \p digest_hex must at least have a size of 33 bytes and will be zero terminated.
+ * 33 calculates from wget_hash_get_len(WGET_DIGTYPE_MD5) * 2 + 1.
+ */
 void wget_md5_printf_hex(char *digest_hex, const char *fmt, ...)
 {
 	char *plaintext;
 	va_list args;
-	int size, rc;
+	size_t len;
+	int rc;
 
 	va_start(args, fmt);
-	size = wget_vasprintf(&plaintext, fmt, args);
+	len = wget_vasprintf(&plaintext, fmt, args);
 	va_end(args);
 
 	if (plaintext) {
 		unsigned char digest[wget_hash_get_len(WGET_DIGTYPE_MD5)];
 
-		if ((rc = wget_hash_fast(WGET_DIGTYPE_MD5, plaintext, size, digest)) == 0) {
+		if ((rc = wget_hash_fast(WGET_DIGTYPE_MD5, plaintext, len, digest)) == 0) {
 			wget_memtohex(digest, sizeof(digest), digest_hex, sizeof(digest) * 2 + 1);
 		} else {
 			*digest_hex = 0;
@@ -57,3 +78,5 @@ void wget_md5_printf_hex(char *digest_hex, const char *fmt, ...)
 		xfree(plaintext);
 	}
 }
+
+/**@}*/
