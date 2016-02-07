@@ -375,12 +375,13 @@ int wget_update_file(const char *fname,
 
 	// create a per-usr tmp file name
 	size_t tmplen = strlen(tmpdir);
-	char *lockfile = xmalloc(tmplen + strlen(basename) + 32);
+	size_t lockfilesize = tmplen + strlen(basename) + 32;
+	char *lockfile = xmalloc(lockfilesize);
 
 	if (!tmplen)
-		snprintf(lockfile, sizeof(lockfile), "%s_lck_%d", basename, getuid());
+		snprintf(lockfile, lockfilesize, "%s_lck_%d", basename, getuid());
 	else
-		snprintf(lockfile, sizeof(lockfile), "%s/%s_lck_%d", tmpdir, basename, getuid());
+		snprintf(lockfile, lockfilesize, "%s/%s_lck_%d", tmpdir, basename, getuid());
 
 	// create & open the lock file
 	if ((lockfd = creat(lockfile, 0644)) == -1) {
