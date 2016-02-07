@@ -1373,11 +1373,9 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		xfree(encoded);
 	}
 	else if (!wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
-#ifndef MD5_DIGEST_LENGTH
-#  define MD5_DIGEST_LENGTH 16
-#endif
-		char a1buf[MD5_DIGEST_LENGTH * 2 + 1], a2buf[MD5_DIGEST_LENGTH * 2 + 1];
-		char response_digest[MD5_DIGEST_LENGTH * 2 + 1], cnonce[16] = "";
+		int md5size = wget_hash_get_len(WGET_DIGTYPE_MD5);
+		char a1buf[md5size * 2 + 1], a2buf[md5size * 2 + 1];
+		char response_digest[md5size * 2 + 1], cnonce[16] = "";
 		wget_buffer_t buf;
 		const char
 			*realm = wget_stringmap_get(challenge->params, "realm"),
