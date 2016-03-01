@@ -75,7 +75,7 @@ static const char attrs[][12] = {
 	"lowsrc", "longdesc",
 	"manifest",
 	"profile", "poster",
-	"src",
+	"src", "srcset",
 	"usemap"
 };
 
@@ -174,7 +174,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 			for (;len && c_isspace(*val); val++, len--); // skip leading spaces
 			for (;len && c_isspace(val[len - 1]); len--);  // skip trailing spaces
 
-			if ((*tag|0x20) == 'b' && !wget_strcasecmp_ascii(tag,"base")) {
+			if ((*tag|0x20) == 'b' && !wget_strcasecmp_ascii(tag, "base")) {
 				// found a <BASE href="...">
 				res->base.p = val;
 				res->base.len = len;
@@ -185,11 +185,33 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				res->uris = wget_vector_create(32, -2, NULL);
 
 			WGET_HTML_PARSED_URL url;
-			strlcpy(url.attr, attr, sizeof(url.attr));
-			strlcpy(url.dir, tag, sizeof(url.dir));
-			url.url.p = val;
-			url.url.len = len;
-			wget_vector_add(res->uris, &url, sizeof(url));
+
+			if (!wget_strcasecmp_ascii(attr, "srcset")) {
+				// value is a list of URLs, see https://html.spec.whatwg.org/multipage/embedded-content.html#attr-img-srcset
+				while (len) {
+					const char *p;
+
+					for (;len && c_isspace(*val); val++, len--); // skip leading spaces
+					for (p = val;len && !c_isspace(*val) && *val != ','; val++, len--); // find end of URL
+					if (p != val) {
+						strlcpy(url.attr, attr, sizeof(url.attr));
+						strlcpy(url.dir, tag, sizeof(url.dir));
+						url.url.p = p;
+						url.url.len = val - p;
+						wget_vector_add(res->uris, &url, sizeof(url));
+					}
+					for (;len && *val != ','; val++, len--); // skip optional width/density descriptor
+					if (len && *val == ',') { val++; len--; }
+				}
+
+			} else {
+				// value is a single URL
+				strlcpy(url.attr, attr, sizeof(url.attr));
+				strlcpy(url.dir, tag, sizeof(url.dir));
+				url.url.p = val;
+				url.url.len = len;
+				wget_vector_add(res->uris, &url, sizeof(url));
+			}
 		}
 	}
 }

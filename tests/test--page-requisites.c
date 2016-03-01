@@ -41,6 +41,7 @@ int main(void)
 				"<html><head><title>Main Page</title></head><body><p>A link to a" \
 				" <a href=\"http://localhost:{{port}}/secondpage.html\">second page</a>." \
 				" Hey, a picture <img src=\"picture.png\"/>." \
+				" Hey, a srcset <img srcset=\"picture1.png, picture2.png 150w,picture3.png 100x\"/>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -76,6 +77,27 @@ int main(void)
 				"Content-Type: image/png",
 			}
 		},
+		{	.name = "/picture1.png",
+			.code = "200 Dontcare",
+			.body = "PNG  descriptor 1",
+			.headers = {
+				"Content-Type: image/png",
+			}
+		},
+		{	.name = "/picture2.png",
+			.code = "200 Dontcare",
+			.body = "PNG descriptor 2",
+			.headers = {
+				"Content-Type: image/png",
+			}
+		},
+		{	.name = "/picture3.png",
+			.code = "200 Dontcare",
+			.body = "PNG descriptor 3",
+			.headers = {
+				"Content-Type: image/png",
+			}
+		},
 		{	.name = "/dummy.txt",
 			.code = "200 Dontcare",
 			.body = "What ever",
@@ -99,6 +121,9 @@ int main(void)
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "localhost/index.html", urls[0].body },
 			{ "localhost/picture.png", urls[3].body },
+			{ "localhost/picture1.png", urls[4].body },
+			{ "localhost/picture2.png", urls[5].body },
+			{ "localhost/picture3.png", urls[6].body },
 			{	NULL } },
 		0);
 
