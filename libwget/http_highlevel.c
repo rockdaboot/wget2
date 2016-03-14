@@ -44,13 +44,16 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 	wget_vector_t *challenges = NULL;
 	wget_cookie_db_t *cookie_db = NULL;
 	FILE *saveas_stream = NULL;
-	int(*saveas_callback)(void *, const char *, size_t) = NULL;
+	int (*saveas_callback)(void *, const char *, size_t) = NULL;
 	int saveas_fd = -1;
 	int (*header_callback)(void *, wget_http_response_t *) = NULL;
 	va_list args;
-	const char *url = NULL,	*url_encoding = NULL;
+	const char *url = NULL,	*url_encoding = NULL, *scheme = "GET";
 	const char *http_username = NULL, *http_password = NULL;
+	const char *saveas_name = NULL;
 	int key, it, max_redirections = 5, redirection_level = 0;
+	size_t bodylen = 0;
+	const void *body = NULL;
 
 	struct {
 		unsigned int
@@ -93,6 +96,9 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 		case WGET_HTTP_MAX_REDIRECTIONS:
 			max_redirections = va_arg(args, int);
 			break;
+		case WGET_HTTP_BODY_SAVEAS:
+			saveas_name = va_arg(args, const char *);
+			break;
 		case WGET_HTTP_BODY_SAVEAS_STREAM:
 			saveas_stream = va_arg(args, FILE *);
 			break;
@@ -104,6 +110,13 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 			break;
 		case WGET_HTTP_HEADER_FUNC:
 			header_callback = va_arg(args, int (*)(void *, wget_http_response_t *));
+			break;
+		case WGET_HTTP_SCHEME:
+			scheme = va_arg(args, const char *);
+			break;
+		case WGET_HTTP_BODY:
+			body = va_arg(args, const void *);
+			bodylen = va_arg(args, size_t);
 			break;
 		default:
 			error_printf(_("Unknown option %d\n"), key);
@@ -132,7 +145,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 	while (uri && redirection_level <= max_redirections) {
 		// create a HTTP/1.1 GET request.
 		// the only default header is 'Host: domain' (taken from uri)
-		req = wget_http_create_request(uri, "GET");
+		req = wget_http_create_request(uri, scheme);
 
 		// add HTTP headers
 		for (it = 0; it < wget_vector_size(headers); it++) {
@@ -159,6 +172,14 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 			}
 		}
 
+		if (body && bodylen) {
+			wget_http_add_header_printf(req, "Content-Length", "%zd", bodylen);
+		}
+
+		if (connp) {
+			wget_http_add_header(req, "Connection", "keepalive");
+		}
+
 		// open/reopen/reuse HTTP/HTTPS connection
 		if (conn && !wget_strcmp(conn->esc_host, uri->host) &&
 			conn->scheme == uri->scheme &&
@@ -175,8 +196,23 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 		}
 
 		if (conn) {
-			if (wget_http_send_request(conn, req) == 0) {
-				if (saveas_stream)
+			int rc;
+
+			if (body && bodylen)
+				rc = wget_http_send_request_with_body(conn, req, body, bodylen);
+			else
+				rc = wget_http_send_request(conn, req);
+
+			if (rc == 0) {
+				if (saveas_name) {
+					FILE *fp;
+					if ((fp = fopen(saveas_name, "w"))) {
+						resp = wget_http_get_response_stream(conn, header_callback, fp, WGET_HTTP_RESPONSE_KEEPHEADER);
+						fclose(fp);
+					} else
+						debug_printf("Failed to open '%s' for writing\n", saveas_name);
+				}
+				else if (saveas_stream)
 					resp = wget_http_get_response_stream(conn, header_callback, saveas_stream, WGET_HTTP_RESPONSE_KEEPHEADER);
 				else if (saveas_callback)
 					resp = wget_http_get_response_func(conn, header_callback, saveas_callback, NULL, WGET_HTTP_RESPONSE_KEEPHEADER);

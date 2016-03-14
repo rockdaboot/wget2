@@ -240,6 +240,9 @@ WGET_BEGIN_DECLS
 #define WGET_HTTP_BODY_SAVEAS_FD 2013
 #define WGET_HTTP_BODY_SAVEAS_FUNC 2014
 #define WGET_HTTP_HEADER_FUNC 2015
+#define WGET_HTTP_SCHEME      2016
+#define WGET_HTTP_BODY        2017
+#define WGET_HTTP_BODY_SAVEAS      2018
 
 // definition of error conditions
 #define WGET_E_SUCCESS 0 /* OK */
