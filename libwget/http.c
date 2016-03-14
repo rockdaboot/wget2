@@ -998,6 +998,8 @@ const char *wget_http_parse_setcookie(const char *s, wget_cookie_t *cookie)
 			if (!*s) break;
 
 			for (s++; c_isspace(*s);) s++;
+			if (!*s) break;
+
 			s = wget_http_parse_token(s, &name);
 
 			if (name) {
