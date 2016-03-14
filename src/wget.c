@@ -1050,18 +1050,23 @@ int main(int argc, const char *const *argv)
 	}
 
  out:
-	// freeing to avoid disguising valgrind output
-	xfree(buf);
-	queue_free();
-	blacklist_free();
-	hosts_free();
-	xfree(downloaders);
-	bar_deinit();
-	wget_vector_clear_nofree(parents);
-	wget_vector_free(&parents);
-	wget_hashmap_free(&known_urls);
-	wget_stringmap_free(&etags);
-	deinit();
+	if (wget_match_tail(argv[0], "wget2_noinstall")) {
+		// freeing to avoid disguising valgrind output
+
+		xfree(buf);
+		queue_free();
+		blacklist_free();
+		hosts_free();
+		xfree(downloaders);
+		bar_deinit();
+		wget_vector_clear_nofree(parents);
+		wget_vector_free(&parents);
+		wget_hashmap_free(&known_urls);
+		wget_stringmap_free(&etags);
+		deinit();
+
+		wget_global_deinit();
+	}
 
 	return exit_status;
 }

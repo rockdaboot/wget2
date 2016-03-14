@@ -732,7 +732,7 @@ void wget_test(int first_key, ...)
 	const char
 		*request_url,
 		*options="",
-		*executable="../../src/wget2 --max-threads=1 --prefer-family=ipv4";
+		*executable="../../src/wget2_noinstall --max-threads=1 --prefer-family=ipv4";
 	const wget_test_file_t
 		*expected_files = NULL,
 		*existing_files = NULL;
