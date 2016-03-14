@@ -42,6 +42,8 @@ examples/print_css_urls
 examples/print_css_urls2
 examples/print_css_urls3
 examples/print_html_urls
+examples/websequencediagram
+examples/websequencediagram_high
 git_push
 include/libwget.h
 install-sh
@@ -69,9 +71,10 @@ po/stamp-po
 po/wget2.pot
 snippet
 src/wget2
+src/wget2_noinstall
 stamp-h1
 test-driver
-tests/buffer_printf2_perf
+tests/buffer_printf_perf
 tests/stringmap_perf
 tests/test
 tests/test--accept
@@ -79,6 +82,7 @@ tests/test--follow-tags
 tests/test--page-requisites
 tests/test--post-file
 tests/test--spider-r
+tests/test-base
 tests/test-E-k
 tests/test-auth-basic
 tests/test-directory-clash
@@ -97,6 +101,7 @@ tests/test-meta-robots
 tests/test-np
 tests/test-parse-html
 tests/test-parse-rss
+tests/test-redirection
 tests/test-restrict-ascii
 tests/test-wget-1
 tmp
