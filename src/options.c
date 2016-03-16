@@ -1107,7 +1107,7 @@ static char *get_home_dir(void)
 
 int init(int argc, const char *const *argv)
 {
-	int n, truncated = 1;
+	int n;
 
 	// set libwget out-of-memory function
 	wget_set_oomfunc(_no_memory);
@@ -1148,8 +1148,6 @@ int init(int argc, const char *const *argv)
 
 		if (fd != -1)
 			close(fd);
-
-		truncated = 1;
 	}
 	log_init();
 
