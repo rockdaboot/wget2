@@ -43,7 +43,7 @@
 typedef struct {
 	double
 		ratio;
-	int
+	size_t
 		max,
 		cur,
 		cols;
@@ -57,16 +57,16 @@ struct _wget_bar_st {
 	char
 		*filled,
 		*spaces;
-	int
+	size_t
 		nslots,
 		max_width;
 	char
 		allocated;
 };
 
-wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
+wget_bar_t *wget_bar_init(wget_bar_t *bar, size_t nslots, size_t max_width)
 {
-	int allocated = 0, it;
+	size_t allocated = 0, it;
 
 	if (!bar) {
 		if (!(bar = calloc(1, sizeof(*bar))))
@@ -130,18 +130,18 @@ void wget_bar_free(wget_bar_t **bar)
 	}
 }
 
-void wget_bar_update(const wget_bar_t *bar, int slotpos, int max, int cur)
+void wget_bar_update(const wget_bar_t *bar, size_t slotpos, size_t max, size_t cur)
 {
 	_bar_slot_t *slot = &bar->slots[slotpos];
 	double ratio = max ? cur / (double) max : 0;
-	int cols = bar->max_width * ratio;
+	size_t cols = bar->max_width * ratio;
 
 	if (cols > bar->max_width)
 		cols = bar->max_width;
 
 	slot->max = max;
 
-	if (slot->cols != cols || (int)(slot->ratio * 100) != (int)(ratio * 100) || slot->first) {
+	if (slot->cols != cols || (size_t)(slot->ratio * 100) != (size_t)(ratio * 100) || slot->first) {
 		slot->cols = cols;
 		slot->ratio = ratio;
 		slot->first = 0;
@@ -151,19 +151,19 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos, int max, int cur)
 
 //		printf("col=%d bar->max_width=%d\n",cols,bar->max_width);
 		printf("\033[s\033[%dA\033[1G", bar->nslots - slotpos);
-		printf("%3d%% [%.*s>%.*s]", (int)(ratio * 100), cols - 1, bar->filled, bar->max_width - cols, bar->spaces);
+		printf("%3d%% [%.*s>%.*s]", (size_t)(ratio * 100), cols - 1, bar->filled, bar->max_width - cols, bar->spaces);
 		printf("\033[u");
 		fflush(stdout);
 	}
 }
 
-void wget_bar_print(wget_bar_t *bar, int slotpos, const char *s)
+void wget_bar_print(wget_bar_t *bar, size_t slotpos, const char *s)
 {
 	printf("\033[s\033[%dA\033[6G[%-*.*s]\033[u", bar->nslots - slotpos, bar->max_width, bar->max_width, s);
 	fflush(stdout);
 }
 
-ssize_t wget_bar_vprintf(wget_bar_t *bar, int slotpos, const char *fmt, va_list args)
+ssize_t wget_bar_vprintf(wget_bar_t *bar, size_t slotpos, const char *fmt, va_list args)
 {
 	char text[bar->max_width + 1];
 
@@ -173,7 +173,7 @@ ssize_t wget_bar_vprintf(wget_bar_t *bar, int slotpos, const char *fmt, va_list 
 	return len;
 }
 
-ssize_t wget_bar_printf(wget_bar_t *bar, int slotpos, const char *fmt, ...)
+ssize_t wget_bar_printf(wget_bar_t *bar, size_t slotpos, const char *fmt, ...)
 {
 	va_list args;
 

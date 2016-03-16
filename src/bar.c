@@ -99,7 +99,7 @@ void bar_printf(int slotpos, const char *fmt, ...)
 	va_end(args);
 }
 
-void bar_update(int slotpos, int max, int cur)
+void bar_update(int slotpos, size_t max, size_t cur)
 {
 	wget_thread_mutex_lock(&mutex);
 	wget_bar_update(bar, slotpos, max, cur);

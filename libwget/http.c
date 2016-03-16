@@ -52,30 +52,30 @@
 #include <libwget.h>
 #include "private.h"
 
-#define HTTP_CTYPE_SEPERATOR (1<<0)
-#define _http_isseperator(c) (http_ctype[(unsigned char)(c)]&HTTP_CTYPE_SEPERATOR)
+#define HTTP_CTYPE_SEPARATOR (1<<0)
+#define _http_isseperator(c) (http_ctype[(unsigned char)(c)]&HTTP_CTYPE_SEPARATOR)
 
 static const unsigned char
 	http_ctype[256] = {
-		['('] = HTTP_CTYPE_SEPERATOR,
-		[')'] = HTTP_CTYPE_SEPERATOR,
-		['<'] = HTTP_CTYPE_SEPERATOR,
-		['>'] = HTTP_CTYPE_SEPERATOR,
-		['@'] = HTTP_CTYPE_SEPERATOR,
-		[','] = HTTP_CTYPE_SEPERATOR,
-		[';'] = HTTP_CTYPE_SEPERATOR,
-		[':'] = HTTP_CTYPE_SEPERATOR,
-		['\\'] = HTTP_CTYPE_SEPERATOR,
-		['\"'] = HTTP_CTYPE_SEPERATOR,
-		['/'] = HTTP_CTYPE_SEPERATOR,
-		['['] = HTTP_CTYPE_SEPERATOR,
-		[']'] = HTTP_CTYPE_SEPERATOR,
-		['?'] = HTTP_CTYPE_SEPERATOR,
-		['='] = HTTP_CTYPE_SEPERATOR,
-		['{'] = HTTP_CTYPE_SEPERATOR,
-		['}'] = HTTP_CTYPE_SEPERATOR,
-		[' '] = HTTP_CTYPE_SEPERATOR,
-		['\t'] = HTTP_CTYPE_SEPERATOR
+		['('] = HTTP_CTYPE_SEPARATOR,
+		[')'] = HTTP_CTYPE_SEPARATOR,
+		['<'] = HTTP_CTYPE_SEPARATOR,
+		['>'] = HTTP_CTYPE_SEPARATOR,
+		['@'] = HTTP_CTYPE_SEPARATOR,
+		[','] = HTTP_CTYPE_SEPARATOR,
+		[';'] = HTTP_CTYPE_SEPARATOR,
+		[':'] = HTTP_CTYPE_SEPARATOR,
+		['\\'] = HTTP_CTYPE_SEPARATOR,
+		['\"'] = HTTP_CTYPE_SEPARATOR,
+		['/'] = HTTP_CTYPE_SEPARATOR,
+		['['] = HTTP_CTYPE_SEPARATOR,
+		[']'] = HTTP_CTYPE_SEPARATOR,
+		['?'] = HTTP_CTYPE_SEPARATOR,
+		['='] = HTTP_CTYPE_SEPARATOR,
+		['{'] = HTTP_CTYPE_SEPARATOR,
+		['}'] = HTTP_CTYPE_SEPARATOR,
+		[' '] = HTTP_CTYPE_SEPARATOR,
+		['\t'] = HTTP_CTYPE_SEPARATOR
 	};
 
 static char
