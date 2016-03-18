@@ -978,37 +978,61 @@ const char *wget_http_parse_setcookie(const char *s, wget_cookie_t *cookie)
 
 	cookie = wget_cookie_init(cookie);
 
+	// remove leading whitespace from cookie name
 	while (c_isspace(*s)) s++;
-	s = wget_http_parse_token(s, &cookie->name);
+
+	// s = wget_http_parse_token(s, &cookie->name);
+	// also accept UTF-8 (NON-ASCII) characters in cookie name
+	for (p = s; (*s >= 32 && *s <= 126 && *s != '=' && *s != ';') || *s < 0; s++);
+
+	// remove trailing whitespace from cookie name
+	while (s > p && c_isspace(s[-1])) s--;
+	cookie->name = wget_strmemdup(p, s - p);
+
+	// advance to next delimiter
 	while (c_isspace(*s)) s++;
 
 	if (cookie->name && *cookie->name && *s == '=') {
 		// *cookie-octet / ( DQUOTE *cookie-octet DQUOTE )
+
+		// skip over delimiter and remove leading whitespace from cookie value
 		for (s++; c_isspace(*s);) s++;
 
+/* RFC compliancy is too strict
 		if (*s == '\"')
 			s++;
-
 		// cookie-octet      = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
 		for (p = s; *s > 32 && *s <= 126 && *s != '\\' && *s != ',' && *s != ';' && *s != '\"'; s++);
+*/
+
+		// also accept UTF-8 (NON-ASCII) characters in cookie value
+		for (p = s; (*s >= 32 && *s <= 126 && *s != ';') || *s < 0; s++);
+
+		// remove trailing whitespace from cookie value
+		while (s > p && c_isspace(s[-1])) s--;
+
 		cookie->value = wget_strmemdup(p, s - p);
 
 		do {
+			// find next delimiter
 			while (*s && *s != ';') s++;
 			if (!*s) break;
 
+			// skip delimiter and remove leading spaces from attribute name
 			for (s++; c_isspace(*s);) s++;
 			if (!*s) break;
 
 			s = wget_http_parse_token(s, &name);
 
 			if (name) {
+				// find next delimiter
 				while (*s && *s != '=' && *s != ';') s++;
 				// if (!*s) break;
 
 				if (*s == '=') {
 					// find end of value
-					for (p = ++s; *s > 32 && *s <= 126 && *s != ';'; s++);
+					for (s++; c_isspace(*s);) s++;
+					for (p = s; (*s >= 32 && *s <= 126 && *s != ';') || *s < 0; s++);
 
 					if (!wget_strcasecmp_ascii(name, "expires")) {
 						cookie->expires = wget_http_parse_full_date(p);
@@ -1022,21 +1046,30 @@ const char *wget_http_parse_setcookie(const char *s, wget_cookie_t *cookie)
 							cookie->maxage = 0;
 					} else if (!wget_strcasecmp_ascii(name, "domain")) {
 						if (p != s) {
-							if (cookie->domain)
-								xfree(cookie->domain);
-
 							if (*p == '.') { // RFC 6265 5.2.3
 								do { p++; } while (*p == '.');
 								cookie->domain_dot = 1;
 							} else
 								cookie->domain_dot = 0;
 
+							// remove trailing whitespace from attribute value
+							while (s > p && c_isspace(s[-1])) s--;
+
+							xfree(cookie->domain);
 							cookie->domain = wget_strmemdup(p, s - p);
 						}
 					} else if (!wget_strcasecmp_ascii(name, "path")) {
-						if (cookie->path)
-							xfree(cookie->path);
+						// remove trailing whitespace from attribute value
+						while (s > p && c_isspace(s[-1])) s--;
+
+						xfree(cookie->path);
 						cookie->path = wget_strmemdup(p, s - p);
+					} else if (!wget_strcasecmp_ascii(name, "secure")) {
+						// here we ignore the value
+						cookie->secure_only = 1;
+					} else if (!wget_strcasecmp_ascii(name, "httponly")) {
+						// here we ignore the value
+						cookie->http_only = 1;
 					} else {
 						debug_printf("Unsupported cookie-av '%s'\n", name);
 					}
@@ -1095,15 +1128,19 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 		return NULL;
 	}
 
-	for (line = eol + 1; eol && *line && *line != '\r'; line = eol + 1) {
-		eol = strchr(line + 1, '\n');
+	for (line = eol + 1; eol && *line && *line != '\r' && *line != '\n'; line = eol + 1) {
+		eol = strchr(line, '\n');
 		while (eol && c_isblank(eol[1])) { // handle split lines
 			*eol = eol[-1] = ' ';
-			eol = strchr(eol + 1, '\n');
+			eol = strchr(eol, '\n');
 		}
 
-		if (eol)
-			eol[-1] = 0;
+		if (eol) {
+			if (eol[-1] == '\r')
+				eol[-1] = 0;
+			else
+				*eol = 0;
+		}
 
 		// debug_printf("# %p %s\n",eol,line);
 

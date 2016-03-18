@@ -28,7 +28,9 @@
 #ifndef _LIBWGET_PRIVATE_H
 # define _LIBWGET_PRIVATE_H
 
+# include <stdio.h> // needed for FILE
 # include <stdlib.h> // needed for free()
+# include <stdarg.h> // needed for va_list
 
 // I try to never leave freed pointers hanging around
 # define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)

@@ -15,7 +15,7 @@ WGET_TESTS = test test-wget-1 test-restrict-ascii test-i-http test-i-https test-
  test-auth-basic test-parse-html test-parse-rss test--page-requisites test--accept \
  test-k test--follow-tags test-directory-clash test-redirection test-base
 
-#test--post-file test-E-k
+#test--post-file test-E-k test-cookies-http_state
 
 check_PROGRAMS = buffer_printf_perf stringmap_perf $(WGET_TESTS)
 
@@ -26,6 +26,11 @@ test_LDADD = ../src/log.o ../src/options.o libtest.la\
  $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(LIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
  $(LIBS)
 test_parse_html_LDADD = ../src/log.o ../src/options.o libtest.la\
+ $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
+ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
+ $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(LIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
+ $(LIBS)
+test_cookies_http_state_LDADD = ../src/log.o ../src/options.o libtest.la\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
  $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(LIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\

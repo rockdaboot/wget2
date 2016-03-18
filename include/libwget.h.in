@@ -895,6 +895,8 @@ typedef struct wget_cookie_st {
 	time_t
 		creation;
 	unsigned int
+		sort_age; // need for sorting on Cookie: header construction
+	unsigned int
 		domain_dot : 1; // for compatibility with Netscape cookie format
 	unsigned int
 		normalized : 1;

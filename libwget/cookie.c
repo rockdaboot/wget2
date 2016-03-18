@@ -23,6 +23,8 @@
  * Changelog
  * 23.10.2012  Tim Ruehsen  created
  *
+ * see http://tools.ietf.org/html/rfc6265
+ *
  */
 
 #if HAVE_CONFIG_H
@@ -52,7 +54,9 @@ struct wget_cookie_db_st {
 	wget_thread_mutex_t
 		mutex;
 	unsigned int
-		keep_session_cookies : 1; // whether or not session are kept
+		age;
+	unsigned int
+		keep_session_cookies : 1; // whether or not session cookies are saved
 };
 
 // by this kind of sorting, we can easily see if a domain matches or not (match = supercookie !)
@@ -77,6 +81,7 @@ int wget_cookie_db_load_psl(wget_cookie_db_t *cookie_db, const char *fname)
 #endif
 }
 
+// this is how we sort the entries in a cookie db
 static int G_GNUC_WGET_NONNULL_ALL _compare_cookie(const wget_cookie_t *c1, const wget_cookie_t *c2)
 {
 	int n;
@@ -85,6 +90,21 @@ static int G_GNUC_WGET_NONNULL_ALL _compare_cookie(const wget_cookie_t *c1, cons
 		if (!(n = strcmp(c1->name, c2->name))) {
 			n = strcmp(c1->path, c2->path);
 		}
+	}
+
+	return n;
+}
+
+// this is how we sort the entries when constructing a Cookie: header field
+static int G_GNUC_WGET_NONNULL_ALL _compare_cookie2(const wget_cookie_t *c1, const wget_cookie_t *c2)
+{
+	int n;
+
+	// RFC 6265 5.4 demands sorting by 1. longer paths first, 2. earlier creation time first.
+
+	if (!(n = strlen(c2->path) - strlen(c1->path))) {
+		n = c1->sort_age - c2->sort_age;
+		// n = c1->creation - c2->creation;
 	}
 
 	return n;
@@ -118,13 +138,22 @@ static int G_GNUC_WGET_NONNULL((1)) _path_match(const char *cookie_path, const c
 	const char *last_slash;
 	size_t cookie_path_length, iri_path_length;
 
-	debug_printf("path_match(%s,%s)", cookie_path, request_path);
+	if (*cookie_path == '/')
+		cookie_path++;
+
+	if (request_path && *request_path == '/')
+		request_path++;
+
+	debug_printf("path_match(/%s,/%s)\n", cookie_path, request_path ? request_path : "");
 
 	// algorithm as described in RFC 6265 5.1.4
 
-	if (!request_path || *request_path != '/' || !(last_slash = strrchr(request_path + 1, '/'))) {
-		request_path = "/";
-		iri_path_length = 1;
+//	if (!request_path || *request_path != '/' || !(last_slash = strrchr(request_path + 1, '/'))) {
+//		request_path = "/";
+//		iri_path_length = 1;
+	if (!request_path || !(last_slash = strrchr(request_path, '/'))) {
+		request_path = "";
+		iri_path_length = 0;
 	} else {
 		iri_path_length = last_slash - request_path;
 	}
@@ -134,6 +163,10 @@ static int G_GNUC_WGET_NONNULL((1)) _path_match(const char *cookie_path, const c
 	if (iri_path_length < cookie_path_length)
 		// cookie-path is not a prefix of request-path
 		return 0;
+
+	if (iri_path_length == 0 && cookie_path_length == 0)
+		// slash matches slash
+		return 1;
 
 	if (!strncmp(cookie_path, request_path, cookie_path_length)) {
 		if (!request_path[cookie_path_length])
@@ -277,7 +310,12 @@ int wget_cookie_check_psl(const wget_cookie_db_t *cookie_db, const wget_cookie_t
 //	wget_thread_mutex_lock(&_cookies_mutex);
 
 #ifdef WITH_LIBPSL
-	int ret = psl_is_public_suffix(cookie_db->psl, cookie->domain) ? -1 : 0;
+	int ret;
+
+	if (cookie_db->psl)
+		ret = psl_is_public_suffix(cookie_db->psl, cookie->domain) ? -1 : 0;
+	else
+		ret = 0;
 #else
 	int ret = 0;
 #endif
@@ -317,9 +355,11 @@ int wget_cookie_store_cookie(wget_cookie_db_t *cookie_db, wget_cookie_t *cookie)
 	if (old) {
 		debug_printf("replace old cookie %s=%s\n", cookie->name, cookie->value);
 		cookie->creation = old->creation;
+		cookie->sort_age = old->sort_age;
 		wget_vector_replace(cookie_db->cookies, cookie, sizeof(*cookie), pos);
 	} else {
 		debug_printf("store new cookie %s=%s\n", cookie->name, cookie->value);
+		cookie->sort_age = ++cookie_db->age;
 		wget_vector_insert_sorted(cookie_db->cookies, cookie, sizeof(*cookie));
 	}
 
@@ -333,12 +373,14 @@ void wget_cookie_store_cookies(wget_cookie_db_t *cookie_db, wget_vector_t *cooki
 	if (cookie_db) {
 		int it;
 
-		for (it = wget_vector_size(cookies) - 1; it >= 0; it--) {
+		for (it = 0; it < wget_vector_size(cookies); it++) {
 			wget_cookie_t *cookie = wget_vector_get(cookies, it);
 			wget_cookie_store_cookie(cookie_db, cookie); // stores a shallow copy of 'cookie'
-			wget_vector_remove_nofree(cookies, it);
-			xfree(cookie); // shallow free of 'cookie'
 		}
+
+		// shallow free of all 'cookie' entries
+		wget_vector_set_destructor(cookies, NULL);
+		wget_vector_clear(cookies);
 	}
 }
 
@@ -346,35 +388,74 @@ char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_
 {
 	int it, init = 0;
 	time_t now = time(NULL);
+	wget_vector_t *cookies = NULL;
 	wget_buffer_t buf;
 
 	if (!cookie_db || !iri)
 		return NULL;
 
-	debug_printf("cookie_create_request_header for host=%s path=%s\n",iri->host,iri->path);
+	debug_printf("cookie_create_request_header for host=%s path=%s\n", iri->host, iri->path);
 
 	wget_thread_mutex_lock(&cookie_db->mutex);
 
 	for (it = 0; it < wget_vector_size(cookie_db->cookies); it++) {
 		wget_cookie_t *cookie = wget_vector_get(cookie_db->cookies, it);
 
-		if (((!cookie->host_only && _domain_match(cookie->domain, iri->host)) ||
-			(cookie->host_only && !strcmp(cookie->domain, iri->host))) &&
-			(!cookie->expires || cookie->expires >= now) &&
-			(!cookie->secure_only || (cookie->secure_only && iri->scheme == WGET_IRI_SCHEME_HTTPS)) &&
-			_path_match(cookie->path, iri->path))
-		{
-			if (!init) {
-				wget_buffer_init(&buf, NULL, 128);
-				init = 1;
-			}
-
-			if (buf.length)
-				wget_buffer_printf_append(&buf, "; %s=%s", cookie->name, cookie->value);
-			else
-				wget_buffer_printf_append(&buf, "%s=%s", cookie->name, cookie->value);
+		if (cookie->host_only && strcmp(cookie->domain, iri->host)) {
+			debug_printf("cookie host match failed (%s,%s)\n", cookie->domain, iri->host);
+			continue;
 		}
+
+		if (!cookie->host_only && !_domain_match(cookie->domain, iri->host)) {
+			debug_printf("cookie domain match failed (%s,%s)\n", cookie->domain, iri->host);
+			continue;
+		}
+
+		if (cookie->expires && cookie->expires <= now) {
+			debug_printf("cookie expired (%ld <= %ld)\n", cookie->expires, now);
+			continue;
+		}
+
+		if (cookie->secure_only && iri->scheme != WGET_IRI_SCHEME_HTTPS) {
+			debug_printf("cookie ignored, not secure\n");
+			continue;
+		}
+
+		if (!_path_match(cookie->path, iri->path)) {
+			debug_printf("cookie path doesn't match (%s, %s)\n", cookie->path, iri->path);
+			continue;
+		}
+
+		debug_printf("found %s=%s\n", cookie->name, cookie->value);
+
+		if (!cookies)
+			cookies = wget_vector_create(16, -2, (int(*)(const void *, const void *))_compare_cookie2);
+
+		// collect matching cookies (just pointers, no allocation)
+		wget_vector_add_noalloc(cookies, cookie);
 	}
+
+	// sort cookies regarding RFC 6265
+	wget_vector_sort(cookies);
+
+	// now create cookie header value
+	for (it = 0; it < wget_vector_size(cookies); it++) {
+		wget_cookie_t *cookie = wget_vector_get(cookies, it);
+
+		if (!init) {
+			wget_buffer_init(&buf, NULL, 128);
+			init = 1;
+		}
+
+		if (buf.length)
+			wget_buffer_printf_append(&buf, "; %s=%s", cookie->name, cookie->value);
+		else
+			wget_buffer_printf_append(&buf, "%s=%s", cookie->name, cookie->value);
+	}
+
+	// free vector with free'ing the content
+	wget_vector_clear_nofree(cookies);
+	wget_vector_free(&cookies);
 
 	wget_thread_mutex_unlock(&cookie_db->mutex);
 
@@ -481,7 +562,7 @@ static int _cookie_db_load(wget_cookie_db_t *cookie_db, FILE *fp)
 		// parse expires
 		for (p = *linep ? ++linep : linep; *linep && *linep != '\t';) linep++;
 		cookie.expires = atol(p);
-		if (cookie.expires && cookie.expires < now) {
+		if (cookie.expires && cookie.expires <= now) {
 			// drop expired cookie
 			wget_cookie_deinit(&cookie);
 			continue;
@@ -550,7 +631,7 @@ static int _cookie_db_save(wget_cookie_db_t *cookie_db, FILE *fp)
 			wget_cookie_t *cookie = wget_vector_get(cookie_db->cookies, it);
 
 			if (cookie->persistent) {
-				if (cookie->expires < now)
+				if (cookie->expires <= now)
 					continue;
 			} else if (!cookie_db->keep_session_cookies)
 				continue;
