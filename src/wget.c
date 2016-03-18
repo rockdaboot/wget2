@@ -1375,11 +1375,6 @@ void *downloader_thread(void *p)
 		}
 
 		if (resp->code == 200) {
-			if (config.content_disposition && resp->content_filename)
-				save_file(resp, resp->content_filename);
-			else
-				save_file(resp, config.output_document ? config.output_document : job->local_filename);
-
 			if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
 				if (resp->content_type) {
 					if (!wget_strcasecmp_ascii(resp->content_type, "text/html")) {
@@ -1416,12 +1411,6 @@ void *downloader_thread(void *p)
 					}
 				}
 			}
-		}
-		else if (resp->code == 206 && config.continue_download) { // partial content
-			if (config.content_disposition && resp->content_filename)
-				append_file(resp, resp->content_filename);
-			else
-				append_file(resp, config.output_document ? config.output_document : job->local_filename);
 		}
 		else if (resp->code == 304 && config.timestamping) { // local document is up-to-date
 			if (config.recursive && (!config.level || job->level < config.level + config.page_requisites) && job->local_filename) {
@@ -1961,7 +1950,7 @@ static void set_file_mtime(int fd, time_t modified)
 		error_printf (_("Failed to set file date: %s\n"), strerror (errno));
 }
 
-static void G_GNUC_WGET_NONNULL((1)) _save_file(wget_http_response_t *resp, const char *fname, int flag)
+static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag)
 {
 	static wget_thread_mutex_t
 		savefile_mutex = WGET_THREAD_MUTEX_INITIALIZER;
@@ -1970,55 +1959,50 @@ static void G_GNUC_WGET_NONNULL((1)) _save_file(wget_http_response_t *resp, cons
 	size_t fname_length;
 
 	if (!fname)
-		return;
+		return -1;
 
 	if (config.spider) {
 		debug_printf("not saved '%s' (spider mode enabled)\n", fname);
-		return;
+		return -1;
 	}
 
 	// do not save into directories
 	fname_length = strlen(fname);
 	if (fname[fname_length - 1] == '/') {
 		debug_printf("not saved '%s' (file is a directory)\n", fname);
-		return;
+		return -1;
 	}
 
 	// - optimistic approach expects data being written without error
 	// - to be Wget compatible: quota_modify_read() returns old quota value
 	if (config.quota) {
-		if (quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length) >= config.quota) {
+		if (quota_modify_read(config.save_headers ? resp->header->length : 0) >= config.quota) {
 			debug_printf("not saved '%s' (quota of %lld reached)\n", fname, config.quota);
-			return;
+			return -1;
 		}
 	} else {
 		// just update number bytes read (body only) for display purposes
-		quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length);
+		quota_modify_read(config.save_headers ? resp->header->length : 0);
 	}
 
 	if (fname == config.output_document) {
 		// <fname> can only be NULL if config.delete_after is set
 		if (!strcmp(fname, "-")) {
-			size_t rc;
-
 			if (config.save_headers) {
-				if ((rc = fwrite(resp->header->data, 1, resp->header->length, stdout)) != resp->header->length) {
+				// FIXME; use safewrite
+				int rc = write(1, resp->header->data, resp->header->length);
+				if (rc < 0) {
 					error_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
 					set_exit_status(3);
 				}
 			}
 
-			if ((rc = fwrite(resp->body->data, 1, resp->body->length, stdout)) != resp->body->length) {
-				error_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
-				set_exit_status(3);
-			}
-
-			return;
+			return dup (1);
 		}
 
 		if (config.delete_after) {
 			debug_printf("not saved '%s' (--delete-after)\n", fname);
-			return;
+			return -2;
 		}
 
 		flag = O_APPEND;
@@ -2053,13 +2037,13 @@ static void G_GNUC_WGET_NONNULL((1)) _save_file(wget_http_response_t *resp, cons
 	if (config.accept_patterns && !in_pattern_list(config.accept_patterns, fname)) {
 		debug_printf("not saved '%s' (doesn't match accept pattern)\n", fname);
 		xfree(alloced_fname);
-		return;
+		return -2;
 	}
 
 	if (config.reject_patterns && in_pattern_list(config.reject_patterns, fname)) {
 		debug_printf("not saved '%s' (matches reject pattern)\n", fname);
 		xfree(alloced_fname);
-		return;
+		return -2;
 	}
 
 	wget_thread_mutex_lock(&savefile_mutex);
@@ -2115,21 +2099,6 @@ static void G_GNUC_WGET_NONNULL((1)) _save_file(wget_http_response_t *resp, cons
 				set_exit_status(3);
 			}
 		}
-
-		if ((rc = write(fd, resp->body->data, resp->body->length)) != (ssize_t)resp->body->length) {
-			error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
-			set_exit_status(3);
-		}
-
-		if ((flag & (O_TRUNC | O_EXCL)) && resp->last_modified)
-			set_file_mtime(fd, resp->last_modified);
-
-		if (flag == O_APPEND)
-			info_printf("appended to '%s'\n", fnum ? unique : fname);
-		else
-			info_printf("saved '%s'\n", fnum ? unique : fname);
-
-		close(fd);
 	} else {
 		if (fd == -1) {
 			if (errno == EEXIST)
@@ -2146,16 +2115,7 @@ static void G_GNUC_WGET_NONNULL((1)) _save_file(wget_http_response_t *resp, cons
 	wget_thread_mutex_unlock(&savefile_mutex);
 
 	xfree(alloced_fname);
-}
-
-static void G_GNUC_WGET_NONNULL((1)) save_file(wget_http_response_t *resp, const char *fname)
-{
-	_save_file(resp, fname, O_TRUNC);
-}
-
-static void G_GNUC_WGET_NONNULL((1)) append_file(wget_http_response_t *resp, const char *fname)
-{
-	_save_file(resp, fname, O_APPEND);
+	return fd;
 }
 
 int download_part(DOWNLOADER *downloader)
@@ -2268,14 +2228,30 @@ int download_part(DOWNLOADER *downloader)
 struct _body_callback_context {
 	DOWNLOADER *downloader;
 	wget_buffer_t *body;
-	size_t expected_length;
+	int outfd;
+	size_t max_memory;
+	off_t length;
+	off_t expected_length;
 };
 static int _get_header(void *context, wget_http_response_t *resp)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
 
+	const char *dest = NULL;
+	if (config.content_disposition && resp->content_filename)
+		dest = resp->content_filename;
+	else
+		dest = config.output_document ? config.output_document : ctx->downloader->job->local_filename;
+
+	if (dest && (resp->code == 200 || resp->code == 206)) {
+		ctx->outfd = _prepare_file (resp, dest, resp->code == 206 ? O_APPEND : O_TRUNC);
+		if (ctx->outfd == -1)
+			return -1;
+	}
+
 	// initialize the expected max. number of bytes for bar display
-	bar_update(ctx->downloader->id, ctx->expected_length = resp->content_length, 0);
+	if (config.progress)
+		bar_update(ctx->downloader->id, ctx->expected_length = resp->content_length, 0);
 
 	return 0;
 }
@@ -2283,9 +2259,20 @@ static int _get_body(void *context, const char *data, size_t length)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
 
-	wget_buffer_memcat(ctx->body, data, length); // append new data to body
+	ctx->length += length;
+	if (ctx->outfd >= 0) {
+		//FIXME: use safewrite
+		if (write (ctx->outfd, data, length) < 0) {
+			error_printf(_("Failed to write errno=%d\n"), errno);
+			set_exit_status(3);
+			return -1;
+		}
+	}
+	if (ctx->max_memory == 0 || ctx->length < (off_t) ctx->max_memory)
+		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
-	bar_update(ctx->downloader->id, ctx->expected_length, ctx->body->length);
+	if (config.progress)
+		bar_update(ctx->downloader->id, ctx->expected_length, ctx->length);
 
 	return 0;
 }
@@ -2515,24 +2502,28 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 			}
 
 			if (rc == WGET_E_SUCCESS) {
-				if (config.progress) {
-					wget_buffer_t *body = wget_buffer_alloc(102400);
-					struct _body_callback_context context = { .downloader = downloader, .body = body };
-
-					resp = wget_http_get_response_cb(conn, req, config.save_headers || config.server_response ? WGET_HTTP_RESPONSE_KEEPHEADER : 0, _get_header, _get_body, &context);
-
-					if (resp) {
-						resp->body = body;
-						if (!wget_strcasecmp_ascii(req->method, "GET"))
-							resp->content_length = body->length;
-					} else {
-						wget_buffer_free(&body);
+				wget_buffer_t *body = wget_buffer_alloc(102400);
+				struct _body_callback_context context = { .downloader = downloader, .max_memory = 10 * (1 << 20), .outfd = -1, .body = body, .length = 0 };
+				resp = wget_http_get_response_cb(conn, req, config.save_headers || config.server_response ? WGET_HTTP_RESPONSE_KEEPHEADER : 0, _get_header, _get_body, &context);
+				if (resp) {
+					if (context.outfd != -1 && resp->last_modified)
+						set_file_mtime(context.outfd, resp->last_modified);
+					resp->body = body;
+					if (!wget_strcasecmp_ascii(req->method, "GET"))
+						resp->content_length = context.length;
+				}
+				else {
+					wget_buffer_free(&body);
+				}
+				if (context.outfd != -1) {
+					if (fsync(context.outfd) < 0 && errno == EIO) {
+						error_printf(_("Failed to fsync errno=%d\n"), errno);
+						set_exit_status(3);
 					}
-
-				} else
-					resp = wget_http_get_response(conn, NULL, req, config.save_headers || config.server_response ? WGET_HTTP_RESPONSE_KEEPHEADER : 0);
+					close(context.outfd);
+					context.outfd = -1;
+				}
 			}
-
 			wget_http_free_request(&req);
 		} else break;
 
