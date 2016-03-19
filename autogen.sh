@@ -69,6 +69,7 @@ read
 readdir
 realloc-posix
 rename
+safe-write
 send
 sendto
 servent
