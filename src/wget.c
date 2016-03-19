@@ -47,6 +47,8 @@
 #include <locale.h>
 #include "timespec.h" // gnulib gettime()
 
+#include "safe-write.h" // gnulib gettime()
+
 #include <libwget.h>
 
 #include "wget.h"
@@ -1989,9 +1991,8 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		// <fname> can only be NULL if config.delete_after is set
 		if (!strcmp(fname, "-")) {
 			if (config.save_headers) {
-				// FIXME; use safewrite
-				int rc = write(1, resp->header->data, resp->header->length);
-				if (rc < 0) {
+				int rc = safe_write(1, resp->header->data, resp->header->length);
+				if (rc == SAFE_WRITE_ERROR) {
 					error_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
 					set_exit_status(3);
 				}
@@ -2261,8 +2262,7 @@ static int _get_body(void *context, const char *data, size_t length)
 
 	ctx->length += length;
 	if (ctx->outfd >= 0) {
-		//FIXME: use safewrite
-		if (write (ctx->outfd, data, length) < 0) {
+		if (safe_write (ctx->outfd, data, length) == SAFE_WRITE_ERROR) {
 			error_printf(_("Failed to write errno=%d\n"), errno);
 			set_exit_status(3);
 			return -1;
