@@ -114,9 +114,10 @@ typedef struct {
 } _statistics_t;
 static _statistics_t stats;
 
+static int G_GNUC_WGET_NONNULL((1))
+	_prepare_file(wget_http_response_t *resp, const char *fname, int flag);
+
 static void
-	save_file(wget_http_response_t *resp, const char *fname),
-	append_file(wget_http_response_t *resp, const char *fname),
 	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
 	sitemap_parse_xml_gz(JOB *job, wget_buffer_t *data, const char *encoding, wget_iri_t *base),
 	sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, wget_iri_t *base),
@@ -1991,7 +1992,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		// <fname> can only be NULL if config.delete_after is set
 		if (!strcmp(fname, "-")) {
 			if (config.save_headers) {
-				int rc = safe_write(1, resp->header->data, resp->header->length);
+				size_t rc = safe_write(1, resp->header->data, resp->header->length);
 				if (rc == SAFE_WRITE_ERROR) {
 					error_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
 					set_exit_status(3);
