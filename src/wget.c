@@ -47,7 +47,7 @@
 #include <locale.h>
 #include "timespec.h" // gnulib gettime()
 
-#include "safe-write.h" // gnulib gettime()
+#include "safe-write.h"
 
 #include <libwget.h>
 
@@ -2161,21 +2161,8 @@ int download_part(DOWNLOADER *downloader)
 					print_status(downloader, "part %d download error '%zd bytes of %lld expected'\n",
 						part->id, resp->body->length, (long long)part->length);
 				} else {
-					int fd;
-
 					print_status(downloader, "part %d downloaded\n", part->id);
-					if ((fd = open(metalink->name, O_WRONLY | O_CREAT, 0644)) != -1) {
-						ssize_t nbytes;
-						if ((nbytes = pwrite(fd, resp->body->data, resp->body->length, part->position)) == (ssize_t)resp->body->length)
-							part->done = 1; // set this when downloaded ok
-						else
-							error_printf(_("Failed to pwrite %zd bytes at pos %lld (%zd)\n"), resp->body->length, (long long)part->position, nbytes);
-
-						close(fd);
-					} else {
-						error_printf(_("Failed to write open %s\n"), metalink->name);
-						set_exit_status(3);
-					}
+					part->done = 1; // set this when downloaded ok
 				}
 
 				wget_http_free_response(&resp);
@@ -2234,13 +2221,29 @@ struct _body_callback_context {
 	size_t max_memory;
 	off_t length;
 	off_t expected_length;
+	bool head;
+	PART *part;
 };
 static int _get_header(void *context, wget_http_response_t *resp)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
 
 	const char *dest = NULL;
-	if (config.content_disposition && resp->content_filename)
+	if (ctx->head)
+		dest = NULL;
+	else if (ctx->part) {
+		ctx->outfd = open(ctx->downloader->job->metalink->name, O_WRONLY | O_CREAT, 0644);
+		if (ctx->outfd == -1) {
+			set_exit_status(3);
+			return -1;
+		}
+		if (lseek(ctx->outfd, ctx->part->position, SEEK_SET) == (off_t) -1) {
+			close(ctx->outfd);
+			set_exit_status(3);
+			return -1;
+		}
+	}
+	else if (config.content_disposition && resp->content_filename)
 		dest = resp->content_filename;
 	else
 		dest = config.output_document ? config.output_document : ctx->downloader->job->local_filename;
@@ -2504,7 +2507,14 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 
 			if (rc == WGET_E_SUCCESS) {
 				wget_buffer_t *body = wget_buffer_alloc(102400);
-				struct _body_callback_context context = { .downloader = downloader, .max_memory = 10 * (1 << 20), .outfd = -1, .body = body, .length = 0 };
+				struct _body_callback_context context = {
+					.downloader = downloader,
+					.max_memory = part ? 0 : 10 * (1 << 20),
+					.outfd = -1,
+					.body = body,
+					.length = 0,
+					.head = method && strcmp(method, "HEAD") == 0,
+					.part = part};
 				resp = wget_http_get_response_cb(conn, req, config.save_headers || config.server_response ? WGET_HTTP_RESPONSE_KEEPHEADER : 0, _get_header, _get_body, &context);
 				if (resp) {
 					if (context.outfd != -1 && resp->last_modified)

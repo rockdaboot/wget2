@@ -43,6 +43,7 @@ typedef struct {
 	char
 		inuse,
 		done;
+
 } PART;
 
 struct JOB {
