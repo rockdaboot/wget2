@@ -2229,7 +2229,15 @@ static int _get_header(void *context, wget_http_response_t *resp)
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
 
 	const char *dest = NULL;
-	if (ctx->head)
+	bool metalink = false;
+
+	if (resp->content_type
+	    && (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml") ||
+		!wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml"))) {
+		metalink = true;
+	}
+
+	if (ctx->head || metalink)
 		dest = NULL;
 	else if (ctx->part) {
 		ctx->outfd = open(ctx->downloader->job->metalink->name, O_WRONLY | O_CREAT, 0644);
