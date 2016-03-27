@@ -200,6 +200,23 @@ int job_validate_file(JOB *job)
 
 	memset(&part, 0, sizeof(PART));
 
+	// Metalink may be used without pieces...
+	if (!metalink->pieces) {
+		wget_metalink_piece_t piece;
+		wget_metalink_hash_t *hash = wget_vector_get(metalink->hashes, 0);
+
+		if (!hash)
+			return 1;
+
+		piece.length = metalink->size;
+		piece.position = 0;
+		strlcpy(piece.hash.type, hash->type, sizeof(piece.hash.type));
+		strlcpy(piece.hash.hash_hex, hash->hash_hex, sizeof(piece.hash.hash_hex));
+
+		metalink->pieces = wget_vector_create(1, 1, NULL);
+		wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
+	}
+
 	// create space to hold enough parts
 	if (!job->parts)
 		job->parts = wget_vector_create(wget_vector_size(metalink->pieces), 4, NULL);
