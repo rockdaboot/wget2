@@ -126,6 +126,8 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 				piecep = wget_vector_get(metalink->pieces, wget_vector_size(metalink->pieces) - 1);
 				if (piecep)
 					piece.position = piecep->position + piecep->length;
+				else
+					piece.position = 0;
 				wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
 			}
 			*ctx->hash = 0;
@@ -239,8 +241,9 @@ static void _metalink3_parse(void *context, int flags, const char *dir, const ch
 				piecep = wget_vector_get(metalink->pieces, wget_vector_size(metalink->pieces) - 1);
 				if (piecep)
 					piece.position = piecep->position + piecep->length;
+				else
+					piece.position = 0;
 				wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
-
 			}
 			*ctx->hash = 0;
 		} else if (!wget_strcasecmp_ascii(dir, "/verification/hash")) {
