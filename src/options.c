@@ -1013,15 +1013,15 @@ static void read_config(void)
 		_read_config(config.config_file, 1);
 }
 
-static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char *const *argv)
+static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **argv)
 {
 	static short shortcut_to_option[128];
-	unsigned short it;
+	const char *first_arg = NULL;
 	int n;
 
 	// init the short option lookup table
 	if (!shortcut_to_option[0]) {
-		for (it = 0; it < countof(options); it++) {
+		for (unsigned it = 0; it < countof(options); it++) {
 			if (options[it].short_name > 0)
 				shortcut_to_option[(unsigned char)options[it].short_name] = it + 1;
 		}
@@ -1029,11 +1029,24 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char *con
 
 	// I like the idea of getopt() but not it's implementation (e.g. global variables).
 	// Therefore I implement my own getopt() behaviour.
-	for (n = 1; n < argc; n++) {
+	for (n = 1; n < argc && first_arg != argv[n]; n++) {
 		const char *argp = argv[n];
 
-		if (argp[0] != '-')
-			return n;
+		if (argp[0] != '-') {
+			// Move args behind options to allow mixed args/options like getopt().
+			// In the end, the order of the args is as before.
+			const char *cur = argv[n];
+			for (int it = n; it < argc - 1; it++)
+				argv[it] = argv[it + 1];
+			argv[argc - 1] = cur;
+
+			// Once we see the first arg again, we are done
+			if (!first_arg)
+				first_arg = cur;
+
+			n--;
+			continue;
+		}
 
 		if (argp[1] == '-') {
 			// long option
@@ -1044,9 +1057,7 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char *con
 
 		} else if (argp[1]) {
 			// short option(s)
-			int pos;
-
-			for (pos = 1; argp[pos]; pos++) {
+			for (int pos = 1; argp[pos]; pos++) {
 				option_t opt;
 				int idx;
 
@@ -1105,7 +1116,7 @@ static char *get_home_dir(void)
 // read config, parse CLI options, check values, set module options
 // and return the number of arguments consumed
 
-int init(int argc, const char *const *argv)
+int init(int argc, const char **argv)
 {
 	int n;
 

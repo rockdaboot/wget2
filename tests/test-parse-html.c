@@ -192,7 +192,7 @@ static void test_parse_files(void)
 	info_printf("%d XML, %d HTML and %d CSS files parsed\n", xml, html, css);
 }
 
-int main(int argc, const char * const *argv)
+int main(int argc, const char **argv)
 {
 	if (init(argc, argv) < 0) // allows us to test with options (e.g. with --debug)
 		return -1;

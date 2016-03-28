@@ -176,7 +176,7 @@ struct config {
 extern struct config
 	config;
 
-int init(int argc, const char *const *argv) G_GNUC_WGET_NONNULL_ALL;
+int init(int argc, const char **argv) G_GNUC_WGET_NONNULL_ALL;
 int selftest_options(void);
 void deinit(void);
 

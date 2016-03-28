@@ -1497,7 +1497,7 @@ static void test_stringmap(void)
 
 }
 
-int main(int argc, const char * const *argv)
+int main(int argc, const char **argv)
 {
 	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
 	const char *valgrind = getenv("VALGRIND_TESTS");

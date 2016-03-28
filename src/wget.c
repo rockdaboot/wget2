@@ -841,7 +841,7 @@ static void nop(int sig)
 	}
 }
 
-int main(int argc, const char *const *argv)
+int main(int argc, const char **argv)
 {
 	int n, rc;
 	size_t bufsize = 0;
