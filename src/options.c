@@ -655,7 +655,7 @@ static const struct option options[] = {
 	{ "egd-file", &config.egd_file, parse_string, 1, 0 },
 	{ "exclude-domains", &config.exclude_domains, parse_stringlist, 1, 0 },
 	{ "execute", NULL, parse_execute, 1, 'e' },
-	{ "follow-metalink", &config.follow_metalink, parse_bool, 1, 0 },
+	{ "follow-metalink", &config.follow_metalink, parse_bool, 0, 0 },
 	{ "follow-tags", &config.follow_tags, parse_taglist, 1, 0 },
 	{ "force-atom", &config.force_atom, parse_bool, 0, 0 },
 	{ "force-css", &config.force_css, parse_bool, 0, 0 },
