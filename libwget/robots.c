@@ -41,10 +41,11 @@ static void _free_path(ROBOTS_PATH *path)
 	xfree(path->path);
 }
 
-ROBOTS *wget_robots_parse(const char *data)
+ROBOTS *wget_robots_parse(const char *data, const char *client)
 {
 	ROBOTS *robots;
 	ROBOTS_PATH path;
+	size_t client_length = client ? strlen(client) : 0;
 	int collect = 0;
 	const char *p;
 
@@ -57,7 +58,7 @@ ROBOTS *wget_robots_parse(const char *data)
 		if (collect < 2 && !wget_strncasecmp_ascii(data, "User-agent:", 11)) {
 			if (!collect) {
 				for (data += 11; *data == ' ' || *data == '\t'; data++);
-				if (!wget_strncasecmp_ascii(data, "wget", 4)) {
+				if (client && !wget_strncasecmp_ascii(data, client, client_length)) {
 					collect = 1;
 				}
 				else if (*data == '*') {

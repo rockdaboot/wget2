@@ -1400,7 +1400,7 @@ void *downloader_thread(void *p)
 							sitemap_parse_text(job, resp->body->data, "utf-8", job->iri);
 					} else if (job->deferred && !wget_strcasecmp_ascii(resp->content_type, "text/plain")) {
 						debug_printf("Scanning robots.txt ...\n");
-						if ((job->host->robots = wget_robots_parse(resp->body->data))) {
+						if ((job->host->robots = wget_robots_parse(resp->body->data, PACKAGE_NAME))) {
 							// add sitemaps to be downloaded (format http://www.sitemaps.org/protocol.html)
 							for (int it = 0; it < wget_vector_size(job->host->robots->sitemaps); it++) {
 								const char *sitemap = wget_vector_get(job->host->robots->sitemaps, it);

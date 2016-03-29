@@ -1737,7 +1737,7 @@ typedef struct ROBOTS {
 } ROBOTS;
 
 ROBOTS *
-	wget_robots_parse(const char *data) LIBWGET_EXPORT;
+	wget_robots_parse(const char *data, const char *client) LIBWGET_EXPORT;
 void
 	wget_robots_free(ROBOTS **robots) LIBWGET_EXPORT;
 
