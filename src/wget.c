@@ -126,6 +126,7 @@ static void
 	atom_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri_t *base),
 	rss_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
 	rss_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri_t *base),
+	metalink_parse_localfile(const char *fname),
 	html_parse(JOB *job, int level, const char *data, const char *encoding, wget_iri_t *base),
 	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, wget_iri_t *base),
 	css_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
@@ -905,6 +906,10 @@ int main(int argc, const char **argv)
 			// read URLs from RSS Feed XML file
 			rss_parse_localfile(NULL, config.input_file, "utf-8", config.base);
 		}
+		else if (config.force_metalink) {
+			// read URLs from metalink XML file
+			metalink_parse_localfile(config.input_file);
+		}
 //		else if (!wget_strcasecmp_ascii(config.input_file, "http://", 7)) {
 //		}
 		else if (!strcmp(config.input_file, "-")) {
@@ -1344,15 +1349,12 @@ void *downloader_thread(void *p)
 		}
 
 		if (config.follow_metalink && resp->content_type) {
-			if (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml")) {
-				// print_status(downloader, "get metalink4 info\n");
+			if (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml")
+				|| !wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml"))
+			{
+				// print_status(downloader, "get metalink info\n");
 				// save_file(resp, job->local_filename, O_TRUNC);
-				job->metalink = metalink4_parse(resp->body->data);
-			}
-			else if (!wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml")) {
-				// print_status(downloader, "get metalink3 info\n");
-				// save_file(resp, job->local_filename, O_TRUNC);
-				job->metalink = metalink3_parse(resp->body->data);
+				job->metalink = wget_metalink_parse(resp->body->data);
 			}
 			if (job->metalink) {
 				if (job->metalink->size <= 0) {
@@ -1838,6 +1840,35 @@ void rss_parse_localfile(JOB *job, const char *fname, const char *encoding, wget
 	xfree(data);
 }
 
+void metalink_parse_localfile(const char *fname)
+{
+	char *data;
+
+	if ((data = wget_read_file(fname, NULL))) {
+		wget_metalink_t *metalink = wget_metalink_parse(data);
+
+		if (metalink->size <= 0) {
+			error_printf("Invalid file length %llu\n", (unsigned long long)metalink->size);
+		} else if (!metalink->mirrors) {
+			error_printf("No download mirrors found\n");
+		} else {
+			// create parts and sort mirrors
+			JOB job = { .metalink = metalink };
+
+			// start or resume downloading
+			if (!job_validate_file(&job)) {
+				// sort mirrors by priority to download from highest priority first
+				wget_metalink_sort_mirrors(metalink);
+				queue_add_job(&job);
+			} else { // file already downloaded and checksum ok
+				wget_metalink_free(&metalink);
+			}
+		}
+
+		xfree(data);
+	}
+}
+
 struct css_context {
 	JOB
 		*job;
@@ -2190,6 +2221,8 @@ int download_part(DOWNLOADER *downloader)
 			// check integrity of complete file
 			if (config.progress)
 				bar_print(downloader->id, "Checksumming...");
+			else if (job->metalink)
+				print_status(downloader, "%s checking...\n", job->metalink->name);
 			else
 				print_status(downloader, "%s checking...\n", job->local_filename);
 			if (job_validate_file(job)) {

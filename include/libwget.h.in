@@ -1710,9 +1710,7 @@ typedef struct {
 } wget_metalink_t;
 
 wget_metalink_t
-	*metalink3_parse(const char *xml) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
-wget_metalink_t
-	*metalink4_parse(const char *xml) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
+	*wget_metalink_parse(const char *xml) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
 void
 	wget_metalink_free(wget_metalink_t **metalink) LIBWGET_EXPORT;
 void

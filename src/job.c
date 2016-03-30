@@ -325,7 +325,10 @@ JOB *queue_add_job(JOB *job)
 		qsize++;
 		wget_thread_mutex_unlock(&mutex);
 
-		debug_printf("queue_add_job %p %s\n", (void *)jobp, job->iri->uri);
+		if (job->iri)
+			debug_printf("queue_add_job %p %s\n", (void *)jobp, job->iri->uri);
+		else if (job->metalink)
+			debug_printf("queue_add_job %p %s\n", (void *)jobp, job->metalink->name);
 		return jobp;
 	}
 

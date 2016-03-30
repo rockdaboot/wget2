@@ -101,6 +101,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --force-sitemap     Treat input file as Sitemap. (default: off) (NEW!)\n"
 		"      --force-atom        Treat input file as Atom Feed. (default: off) (NEW!)\n"
 		"      --force-rss         Treat input file as RSS Feed. (default: off) (NEW!)\n"
+		"      --force-metalink    Treat input file as Metalink. (default: off) (NEW!)\n"
 		"  -B  --base              Base for relative URLs read from input-file or from command line\n"
 		"  -e  --execute           Wget compatibility option, not needed for Wget\n"
 		"\n");
@@ -661,6 +662,7 @@ static const struct option options[] = {
 	{ "force-css", &config.force_css, parse_bool, 0, 0 },
 	{ "force-directories", &config.force_directories, parse_bool, 0, 'x' },
 	{ "force-html", &config.force_html, parse_bool, 0, 'F' },
+	{ "force-metalink", &config.force_metalink, parse_bool, 0, 0 },
 	{ "force-rss", &config.force_rss, parse_bool, 0, 0 },
 	{ "force-sitemap", &config.force_sitemap, parse_bool, 0, 0 },
 	{ "gnutls-options", &config.gnutls_options, parse_string, 1, 0 },

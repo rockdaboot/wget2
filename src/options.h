@@ -139,6 +139,7 @@ struct config {
 		force_sitemap,
 		force_css,
 		force_html,
+		force_metalink,
 		adjust_extension,
 		save_headers,
 		clobber,

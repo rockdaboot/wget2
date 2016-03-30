@@ -68,7 +68,7 @@ static void _free_mirror(wget_metalink_mirror_t *mirror)
 	wget_iri_free(&mirror->iri);
 }
 
-static void _metalink4_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+static void _metalink_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
 	_metalink_context_t *ctx = context;
 	char value[len + 1];
@@ -83,210 +83,199 @@ static void _metalink4_parse(void *context, int flags, const char *dir, const ch
 	memcpy(value, val, len);
 	value[len] = 0;
 
-	if (attr) {
-		if (*dir == 0) { // /metalink/file
-			if (!wget_strcasecmp_ascii(attr, "name")) {
-				ctx->metalink->name = wget_strmemdup(val, len);
+	if (!wget_strncasecmp_ascii(dir, "s/file", 6)) {
+		// metalink 3 XML format
+		dir += 6;
+
+		if (attr) {
+			if (*dir == 0) { // /metalink/file
+				if (!wget_strcasecmp_ascii(attr, "name")) {
+					ctx->metalink->name = wget_strmemdup(val, len);
+				}
+			} else if (!wget_strcasecmp_ascii(dir, "/verification/pieces")) {
+				if (!wget_strcasecmp_ascii(attr, "type")) {
+					sscanf(value, "%15s", ctx->hash_type);
+				} else if (!wget_strcasecmp_ascii(attr, "length")) {
+					ctx->length = atoll(value);
+				}
+//			} else if (!wget_strcasecmp_ascii(dir, "/verification/pieces/hash")) {
+//				if (!wget_strcasecmp_ascii(attr, "type")) {
+//					ctx->id = atoi(value);
+//				}
+			} else if (!wget_strcasecmp_ascii(dir, "/verification/hash")) {
+				if (!wget_strcasecmp_ascii(attr, "type")) {
+					sscanf(value, "%15s", ctx->hash_type);
+				}
+			} else if (!wget_strcasecmp_ascii(dir, "/resources/url")) {
+				if (!wget_strcasecmp_ascii(attr, "location")) {
+					sscanf(value, " %2[a-zA-Z]", ctx->location); // ISO 3166-1 alpha-2 two letter country code
+//				} else if (!wget_strcasecmp_ascii(attr, "protocol")) {
+//					sscanf(value, " %7[a-zA-Z]", ctx->protocol); // type of URL, e.g. HTTP, HTTPS, FTP, ...
+//				} else if (!wget_strcasecmp_ascii(attr, "type")) {
+//					sscanf(value, " %2[a-zA-Z]", ctx->type); // type of URL, e.g. HTTP, FTP, ...
+				} else if (!wget_strcasecmp_ascii(attr, "preference")) {
+					sscanf(value, " %6d", &ctx->priority);
+					if (ctx->priority < 1 || ctx->priority > 999999)
+						ctx->priority = 999999;
+				}
 			}
-		} else if (!wget_strcasecmp_ascii(dir, "/pieces")) {
-			if (!wget_strcasecmp_ascii(attr, "type")) {
-				sscanf(value, "%15s", ctx->hash_type);
-			} else if (!wget_strcasecmp_ascii(attr, "length")) {
-				ctx->length = atoll(value);
-			}
-		} else if (!wget_strcasecmp_ascii(dir, "/hash")) {
-			if (!wget_strcasecmp_ascii(attr, "type")) {
-				sscanf(value, "%15s", ctx->hash_type);
-			}
-		} else if (!wget_strcasecmp_ascii(dir, "/url")) {
-			if (!wget_strcasecmp_ascii(attr, "location")) {
-				sscanf(value, " %2[a-zA-Z]", ctx->location); // ISO 3166-1 alpha-2 two letter country code
-			} else if (!wget_strcasecmp_ascii(attr, "priority") || !wget_strcasecmp_ascii(attr, "preference")) {
-				sscanf(value, " %6d", &ctx->priority);
-				if (ctx->priority < 1 || ctx->priority > 999999)
-					ctx->priority = 999999;
+		} else {
+			wget_metalink_t *metalink = ctx->metalink;
+
+			if (!wget_strcasecmp_ascii(dir, "/verification/pieces/hash")) {
+				sscanf(value, "%127s", ctx->hash);
+				if (ctx->length && *ctx->hash_type && *ctx->hash) {
+					// hash for a piece of the file
+					wget_metalink_piece_t piece, *piecep;
+
+					if (!metalink->pieces)
+						metalink->pieces = wget_vector_create(32, 32, NULL);
+
+					piece.length = ctx->length;
+					strlcpy(piece.hash.type, ctx->hash_type, sizeof(piece.hash.type));
+					strlcpy(piece.hash.hash_hex, ctx->hash, sizeof(piece.hash.hash_hex));
+
+					piecep = wget_vector_get(metalink->pieces, wget_vector_size(metalink->pieces) - 1);
+					if (piecep)
+						piece.position = piecep->position + piecep->length;
+					else
+						piece.position = 0;
+					wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
+				}
+				*ctx->hash = 0;
+			} else if (!wget_strcasecmp_ascii(dir, "/verification/hash")) {
+				sscanf(value, "%127s", ctx->hash);
+				if (*ctx->hash_type && *ctx->hash) {
+					// hashes for the complete file
+					wget_metalink_hash_t hash;
+
+					memset(&hash, 0, sizeof(wget_metalink_hash_t));
+					strlcpy(hash.type, ctx->hash_type, sizeof(hash.type));
+					strlcpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
+
+					if (!metalink->hashes)
+						metalink->hashes = wget_vector_create(4, 4, NULL);
+					wget_vector_add(metalink->hashes, &hash, sizeof(wget_metalink_hash_t));
+				}
+				*ctx->hash_type = *ctx->hash = 0;
+			} else if (!wget_strcasecmp_ascii(dir, "/size")) {
+				metalink->size = atoll(value);
+			} else if (!wget_strcasecmp_ascii(dir, "/resources/url")) {
+				if (wget_strncasecmp_ascii(value, "http:", 5) && wget_strncasecmp_ascii(value, "https:", 6))
+					return;
+
+				wget_metalink_mirror_t mirror;
+
+				memset(&mirror, 0, sizeof(wget_metalink_mirror_t));
+				strlcpy(mirror.location, ctx->location, sizeof(mirror.location));
+				mirror.priority = ctx->priority;
+				mirror.iri = wget_iri_parse(value, NULL);
+
+				if (!metalink->mirrors)
+					metalink->mirrors = wget_vector_create(4, 4, NULL);
+				wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
+
+				*ctx->location = 0;
+				ctx->priority = 999999;
 			}
 		}
 	} else {
-		wget_metalink_t *metalink = ctx->metalink;
-
-		if (!wget_strcasecmp_ascii(dir, "/pieces/hash")) {
-			sscanf(value, "%127s", ctx->hash);
-			if (ctx->length && *ctx->hash_type && *ctx->hash) {
-				// hash for a piece of the file
-				wget_metalink_piece_t piece, *piecep;
-
-				if (!metalink->pieces)
-					metalink->pieces = wget_vector_create(32, 32, NULL);
-
-				piece.length = ctx->length;
-				strlcpy(piece.hash.type, ctx->hash_type, sizeof(piece.hash.type));
-				strlcpy(piece.hash.hash_hex, ctx->hash, sizeof(piece.hash.hash_hex));
-
-				piecep = wget_vector_get(metalink->pieces, wget_vector_size(metalink->pieces) - 1);
-				if (piecep)
-					piece.position = piecep->position + piecep->length;
-				else
-					piece.position = 0;
-				wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
+		// metalink 4 XML format
+		if (attr) {
+			if (*dir == 0) { // /metalink/file
+				if (!wget_strcasecmp_ascii(attr, "name")) {
+					ctx->metalink->name = wget_strmemdup(val, len);
+				}
+			} else if (!wget_strcasecmp_ascii(dir, "/pieces")) {
+				if (!wget_strcasecmp_ascii(attr, "type")) {
+					sscanf(value, "%15s", ctx->hash_type);
+				} else if (!wget_strcasecmp_ascii(attr, "length")) {
+					ctx->length = atoll(value);
+				}
+			} else if (!wget_strcasecmp_ascii(dir, "/hash")) {
+				if (!wget_strcasecmp_ascii(attr, "type")) {
+					sscanf(value, "%15s", ctx->hash_type);
+				}
+			} else if (!wget_strcasecmp_ascii(dir, "/url")) {
+				if (!wget_strcasecmp_ascii(attr, "location")) {
+					sscanf(value, " %2[a-zA-Z]", ctx->location); // ISO 3166-1 alpha-2 two letter country code
+				} else if (!wget_strcasecmp_ascii(attr, "priority") || !wget_strcasecmp_ascii(attr, "preference")) {
+					sscanf(value, " %6d", &ctx->priority);
+					if (ctx->priority < 1 || ctx->priority > 999999)
+						ctx->priority = 999999;
+				}
 			}
-			*ctx->hash = 0;
-		} else if (!wget_strcasecmp_ascii(dir, "/hash")) {
-			sscanf(value, "%127s", ctx->hash);
-			if (*ctx->hash_type && *ctx->hash) {
-				// hashes for the complete file
-				wget_metalink_hash_t hash;
+		} else {
+			wget_metalink_t *metalink = ctx->metalink;
 
-				memset(&hash, 0, sizeof(wget_metalink_hash_t));
-				strlcpy(hash.type, ctx->hash_type, sizeof(hash.type));
-				strlcpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
+			if (!wget_strcasecmp_ascii(dir, "/pieces/hash")) {
+				sscanf(value, "%127s", ctx->hash);
+				if (ctx->length && *ctx->hash_type && *ctx->hash) {
+					// hash for a piece of the file
+					wget_metalink_piece_t piece, *piecep;
 
-				if (!metalink->hashes)
-					metalink->hashes = wget_vector_create(4, 4, NULL);
-				wget_vector_add(metalink->hashes, &hash, sizeof(wget_metalink_hash_t));
+					if (!metalink->pieces)
+						metalink->pieces = wget_vector_create(32, 32, NULL);
+
+					piece.length = ctx->length;
+					strlcpy(piece.hash.type, ctx->hash_type, sizeof(piece.hash.type));
+					strlcpy(piece.hash.hash_hex, ctx->hash, sizeof(piece.hash.hash_hex));
+
+					piecep = wget_vector_get(metalink->pieces, wget_vector_size(metalink->pieces) - 1);
+					if (piecep)
+						piece.position = piecep->position + piecep->length;
+					else
+						piece.position = 0;
+					wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
+				}
+				*ctx->hash = 0;
+			} else if (!wget_strcasecmp_ascii(dir, "/hash")) {
+				sscanf(value, "%127s", ctx->hash);
+				if (*ctx->hash_type && *ctx->hash) {
+					// hashes for the complete file
+					wget_metalink_hash_t hash;
+
+					memset(&hash, 0, sizeof(wget_metalink_hash_t));
+					strlcpy(hash.type, ctx->hash_type, sizeof(hash.type));
+					strlcpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
+
+					if (!metalink->hashes)
+						metalink->hashes = wget_vector_create(4, 4, NULL);
+					wget_vector_add(metalink->hashes, &hash, sizeof(wget_metalink_hash_t));
+				}
+				*ctx->hash_type = *ctx->hash = 0;
+			} else if (!wget_strcasecmp_ascii(dir, "/size")) {
+				metalink->size = atoll(value);
+			} else if (!wget_strcasecmp_ascii(dir, "/url")) {
+				if (wget_strncasecmp_ascii(value, "http:", 5) && wget_strncasecmp_ascii(value, "https:", 6))
+					return;
+
+				wget_metalink_mirror_t mirror;
+
+				memset(&mirror, 0, sizeof(wget_metalink_mirror_t));
+				strlcpy(mirror.location, ctx->location, sizeof(mirror.location));
+				mirror.priority = ctx->priority;
+				mirror.iri = wget_iri_parse(value, NULL);
+
+				if (!metalink->mirrors) {
+					metalink->mirrors = wget_vector_create(4, 4, NULL);
+					wget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
+				}
+				wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
+
+				*ctx->location = 0;
+				ctx->priority = 999999;
 			}
-			*ctx->hash_type = *ctx->hash = 0;
-		} else if (!wget_strcasecmp_ascii(dir, "/size")) {
-			metalink->size = atoll(value);
-		} else if (!wget_strcasecmp_ascii(dir, "/url")) {
-			wget_metalink_mirror_t mirror;
-
-			memset(&mirror, 0, sizeof(wget_metalink_mirror_t));
-			strlcpy(mirror.location, ctx->location, sizeof(mirror.location));
-			mirror.priority = ctx->priority;
-			mirror.iri = wget_iri_parse(value, NULL);
-
-			if (!metalink->mirrors) {
-				metalink->mirrors = wget_vector_create(4, 4, NULL);
-				wget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
-			}
-			wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
-
-			*ctx->location = 0;
-			ctx->priority = 999999;
 		}
 	}
 }
 
-wget_metalink_t *metalink4_parse(const char *xml)
+wget_metalink_t *wget_metalink_parse(const char *xml)
 {
 	wget_metalink_t *metalink = xcalloc(1, sizeof(wget_metalink_t));
 	_metalink_context_t ctx = { .metalink = metalink, .priority = 999999, .location = "-" };
 
-	wget_xml_parse_buffer(xml, _metalink4_parse, &ctx, 0);
-	return metalink;
-}
-
-static void _metalink3_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
-{
-	_metalink_context_t *ctx = context;
-	char value[len + 1];
-
-	// info_printf("\n%02X %s %s '%s'\n", flags, dir, attr, value);
-	if (!(flags & (XML_FLG_CONTENT | XML_FLG_ATTRIBUTE))) return; // ignore comments
-
-	if (wget_strncasecmp_ascii(dir, "/metalink/files/file", 20)) return;
-
-	dir += 20;
-
-	memcpy(value, val, len);
-	value[len] = 0;
-
-	if (attr) {
-		if (*dir == 0) { // /metalink/file
-			if (!wget_strcasecmp_ascii(attr, "name")) {
-				ctx->metalink->name = wget_strmemdup(val, len);
-			}
-		} else if (!wget_strcasecmp_ascii(dir, "/verification/pieces")) {
-			if (!wget_strcasecmp_ascii(attr, "type")) {
-				sscanf(value, "%15s", ctx->hash_type);
-			} else if (!wget_strcasecmp_ascii(attr, "length")) {
-				ctx->length = atoll(value);
-			}
-//		} else if (!wget_strcasecmp_ascii(dir, "/verification/pieces/hash")) {
-//			if (!wget_strcasecmp_ascii(attr, "type")) {
-//				ctx->id = atoi(value);
-//			}
-		} else if (!wget_strcasecmp_ascii(dir, "/verification/hash")) {
-			if (!wget_strcasecmp_ascii(attr, "type")) {
-				sscanf(value, "%15s", ctx->hash_type);
-			}
-		} else if (!wget_strcasecmp_ascii(dir, "/resources/url")) {
-			if (!wget_strcasecmp_ascii(attr, "location")) {
-				sscanf(value, " %2[a-zA-Z]", ctx->location); // ISO 3166-1 alpha-2 two letter country code
-//			} else if (!wget_strcasecmp_ascii(attr, "type")) {
-//				sscanf(value, " %2[a-zA-Z]", ctx->type); // type of URL, e.g. HTTP, FTP, ...
-			} else if (!wget_strcasecmp_ascii(attr, "preference")) {
-				sscanf(value, " %6d", &ctx->priority);
-				if (ctx->priority < 1 || ctx->priority > 999999)
-					ctx->priority = 999999;
-			}
-		}
-	} else {
-		wget_metalink_t *metalink = ctx->metalink;
-
-		if (!wget_strcasecmp_ascii(dir, "/verification/pieces/hash")) {
-			sscanf(value, "%127s", ctx->hash);
-			if (ctx->length && *ctx->hash_type && *ctx->hash) {
-				// hash for a piece of the file
-				wget_metalink_piece_t piece, *piecep;
-
-				if (!metalink->pieces)
-					metalink->pieces = wget_vector_create(32, 32, NULL);
-
-				piece.length = ctx->length;
-				strlcpy(piece.hash.type, ctx->hash_type, sizeof(piece.hash.type));
-				strlcpy(piece.hash.hash_hex, ctx->hash, sizeof(piece.hash.hash_hex));
-
-				piecep = wget_vector_get(metalink->pieces, wget_vector_size(metalink->pieces) - 1);
-				if (piecep)
-					piece.position = piecep->position + piecep->length;
-				else
-					piece.position = 0;
-				wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
-			}
-			*ctx->hash = 0;
-		} else if (!wget_strcasecmp_ascii(dir, "/verification/hash")) {
-			sscanf(value, "%127s", ctx->hash);
-			if (*ctx->hash_type && *ctx->hash) {
-				// hashes for the complete file
-				wget_metalink_hash_t hash;
-
-				memset(&hash, 0, sizeof(wget_metalink_hash_t));
-				strlcpy(hash.type, ctx->hash_type, sizeof(hash.type));
-				strlcpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
-
-				if (!metalink->hashes)
-					metalink->hashes = wget_vector_create(4, 4, NULL);
-				wget_vector_add(metalink->hashes, &hash, sizeof(wget_metalink_hash_t));
-			}
-			*ctx->hash_type = *ctx->hash = 0;
-		} else if (!wget_strcasecmp_ascii(dir, "/size")) {
-			metalink->size = atoll(value);
-		} else if (!wget_strcasecmp_ascii(dir, "/resources/url")) {
-			wget_metalink_mirror_t mirror;
-
-			memset(&mirror, 0, sizeof(wget_metalink_mirror_t));
-			strlcpy(mirror.location, ctx->location, sizeof(mirror.location));
-			mirror.priority = ctx->priority;
-			mirror.iri = wget_iri_parse(value, NULL);
-
-			if (!metalink->mirrors)
-				metalink->mirrors = wget_vector_create(4, 4, NULL);
-			wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
-
-			*ctx->location = 0;
-			ctx->priority = 999999;
-		}
-	}
-}
-
-wget_metalink_t *metalink3_parse(const char *xml)
-{
-	wget_metalink_t *metalink = xcalloc(1, sizeof(wget_metalink_t));
-	_metalink_context_t ctx = { .metalink = metalink, .priority = 999999, .location = "-" };
-
-	wget_xml_parse_buffer(xml, _metalink3_parse, &ctx, 0);
+	wget_xml_parse_buffer(xml, _metalink_parse, &ctx, 0);
 	return metalink;
 }
 
