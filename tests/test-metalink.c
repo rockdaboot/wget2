@@ -74,9 +74,55 @@ int main(void)
 				"Content-Type: text/plain",
 			}
 		},
+
+		/**** RFC 6249 Metalink/HTTP: Mirrors and Hashes  - with metalink description ****/
+		{	.name = "/archiveH1.gz",
+			.code = "302 Not found",
+			.body = "",
+			.headers = {
+				"Content-Type: text/plain",
+				"Link: <http://localhost:{{port}}/archiveH1.meta4>; rel=describedby; type=\"application/metalink4+xml\"",
+				"Link: <http://localhost:{{port}}/download/archiveH1.gz>; rel=duplicate; pri=1; geo=de",
+				"Location: http://localhost:{{port}}/download/archiveH1.gz",
+//				"Digest: MD5=/sr/WFcZH1MKTyt3JHL2tA==",
+			}
+		},
+		{	.name = "/archiveH1.meta4",
+			.code = "200 Dontcare",
+			.headers = {
+				"Content-Type: application/metalink4+xml",
+			}
+		},
+		{	.name = "/download/archiveH1.gz",
+			.code = "200 Dontcare",
+			.body = "1112223334",
+			.headers = {
+				"Content-Type: text/plain",
+			}
+		},
+
+		/**** RFC 6249 Metalink/HTTP: Mirrors and Hashes  - without metalink description ****/
+		{	.name = "/archiveH2.gz",
+			.code = "302 Not found",
+			.body = "",
+			.headers = {
+				"Content-Type: text/plain",
+				"Link: <http://localhost:{{port}}/download/archiveH2.gz>; rel=duplicate; pri=1; geo=de",
+				"Location: http://localhost:{{port}}/download/archiveH2.gz",
+//				"Digest: MD5=/sr/WFcZH1MKTyt3JHL2tA==",
+			}
+		},
+		{	.name = "/download/archiveH2.gz",
+			.code = "200 Dontcare",
+			.body = "1115553334",
+			.headers = {
+				"Content-Type: text/plain",
+			}
+		},
 	};
 
 	char md5hex[32 + 1], md5hex_p1[32 + 1], md5hex_p2[32 + 1];
+	unsigned char digest[wget_hash_get_len(WGET_DIGTYPE_MD5)];
 
 	wget_md5_printf_hex(md5hex, "%s", urls[1].body);
 	urls[0].body = wget_str_asprintf(
@@ -130,6 +176,26 @@ int main(void)
 		urls[5].name + 1, strlen(urls[5].body), md5hex, strlen(urls[5].body) / 2,
 		md5hex_p1, md5hex_p2, urls[5].name + 1);
 
+	wget_md5_printf_hex(md5hex, "%s", urls[8].body);
+	wget_md5_printf_hex(md5hex_p1, "%.5s", urls[8].body);
+	wget_md5_printf_hex(md5hex_p2, "%.5s", urls[8].body + 5);
+	urls[7].body = wget_str_asprintf(
+		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+		"<metalink version=\"3.0\">"
+		"<file name=\"%s\">"
+		"<size>%zu</size>"
+		"<hash type=\"md5\">%s</hash>"
+		"<pieces length=\"%zu\" type=\"md5\">"
+		"<hash>%s</hash>"
+		"<hash>%s</hash>"
+		"</pieces>"
+		"<url location=\"DE\" preference=\"100\">rsync://host/fake.gz</url>"
+		"<url location=\"DE\" preference=\"99\">http://localhost:{{port}}/%s</url>"
+		"</file>"
+		"</metalink>",
+		urls[6].name + 1, strlen(urls[8].body), md5hex, strlen(urls[8].body) / 2,
+		md5hex_p1, md5hex_p2, urls[8].name + 1);
+
 	// functions won't come back if an error occurs
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
@@ -174,5 +240,32 @@ int main(void)
 			{ urls[5].name + 1, urls[5].body },
 			{ NULL } },
 		0);
+
+	/**** RFC 6249 Metalink/HTTP: Mirrors and Hashes  - with metalink description ****/
+	wget_hash_fast(WGET_DIGTYPE_MD5, urls[8].body, strlen(urls[8].body), digest);
+	urls[6].headers[4] = wget_str_asprintf("Digest: MD5=%s", wget_base64_encode_alloc((const char *)digest, sizeof(digest)));
+
+	wget_test(
+//		WGET_TEST_OPTIONS, "-d --tries=1",
+		WGET_TEST_REQUEST_URL, urls[6].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[6].name + 1, urls[8].body },
+			{ NULL } },
+		0);
+
+	/**** RFC 6249 Metalink/HTTP: Mirrors and Hashes  - without metalink description ****/
+	wget_hash_fast(WGET_DIGTYPE_MD5, urls[10].body, strlen(urls[10].body), digest);
+	urls[9].headers[3] = wget_str_asprintf("Digest: MD5=%s", wget_base64_encode_alloc((const char *)digest, sizeof(digest)));
+
+	wget_test(
+		WGET_TEST_OPTIONS, "-d --tries=1",
+		WGET_TEST_REQUEST_URL, urls[9].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[9].name + 1, urls[10].body },
+			{ NULL } },
+		0);
+
 	exit(0);
 }
