@@ -171,8 +171,10 @@ static void _metalink_parse(void *context, int flags, const char *dir, const cha
 				mirror.priority = ctx->priority;
 				mirror.iri = wget_iri_parse(value, NULL);
 
-				if (!metalink->mirrors)
+				if (!metalink->mirrors) {
 					metalink->mirrors = wget_vector_create(4, 4, NULL);
+					wget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
+				}
 				wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
 
 				*ctx->location = 0;
