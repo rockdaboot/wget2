@@ -68,6 +68,79 @@ static void _free_mirror(wget_metalink_mirror_t *mirror)
 	wget_iri_free(&mirror->iri);
 }
 
+static void _add_piece(_metalink_context_t *ctx, const char *value)
+{
+	wget_metalink_t *metalink = ctx->metalink;
+
+	sscanf(value, "%127s", ctx->hash);
+
+	if (ctx->length && *ctx->hash_type && *ctx->hash) {
+		// hash for a piece of the file
+		wget_metalink_piece_t piece, *piecep;
+
+		if (!metalink->pieces)
+			metalink->pieces = wget_vector_create(32, 32, NULL);
+
+		piece.length = ctx->length;
+		strlcpy(piece.hash.type, ctx->hash_type, sizeof(piece.hash.type));
+		strlcpy(piece.hash.hash_hex, ctx->hash, sizeof(piece.hash.hash_hex));
+
+		piecep = wget_vector_get(metalink->pieces, wget_vector_size(metalink->pieces) - 1);
+		if (piecep)
+			piece.position = piecep->position + piecep->length;
+		else
+			piece.position = 0;
+		wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
+	}
+
+	*ctx->hash = 0;
+}
+
+static void _add_file_hash(_metalink_context_t *ctx, const char *value)
+{
+	wget_metalink_t *metalink = ctx->metalink;
+
+	sscanf(value, "%127s", ctx->hash);
+
+	if (*ctx->hash_type && *ctx->hash) {
+		// hashes for the complete file
+		wget_metalink_hash_t hash;
+
+		memset(&hash, 0, sizeof(wget_metalink_hash_t));
+		strlcpy(hash.type, ctx->hash_type, sizeof(hash.type));
+		strlcpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
+
+		if (!metalink->hashes)
+			metalink->hashes = wget_vector_create(4, 4, NULL);
+		wget_vector_add(metalink->hashes, &hash, sizeof(wget_metalink_hash_t));
+	}
+
+	*ctx->hash_type = *ctx->hash = 0;
+}
+
+static void _add_mirror(_metalink_context_t *ctx, const char *value)
+{
+	if (wget_strncasecmp_ascii(value, "http:", 5) && wget_strncasecmp_ascii(value, "https:", 6))
+		return;
+
+	wget_metalink_t *metalink = ctx->metalink;
+	wget_metalink_mirror_t mirror;
+
+	memset(&mirror, 0, sizeof(wget_metalink_mirror_t));
+	strlcpy(mirror.location, ctx->location, sizeof(mirror.location));
+	mirror.priority = ctx->priority;
+	mirror.iri = wget_iri_parse(value, NULL);
+
+	if (!metalink->mirrors) {
+		metalink->mirrors = wget_vector_create(4, 4, NULL);
+		wget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
+	}
+	wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
+
+	*ctx->location = 0;
+	ctx->priority = 999999;
+}
+
 static void _metalink_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
 	_metalink_context_t *ctx = context;
@@ -120,65 +193,14 @@ static void _metalink_parse(void *context, int flags, const char *dir, const cha
 				}
 			}
 		} else {
-			wget_metalink_t *metalink = ctx->metalink;
-
 			if (!wget_strcasecmp_ascii(dir, "/verification/pieces/hash")) {
-				sscanf(value, "%127s", ctx->hash);
-				if (ctx->length && *ctx->hash_type && *ctx->hash) {
-					// hash for a piece of the file
-					wget_metalink_piece_t piece, *piecep;
-
-					if (!metalink->pieces)
-						metalink->pieces = wget_vector_create(32, 32, NULL);
-
-					piece.length = ctx->length;
-					strlcpy(piece.hash.type, ctx->hash_type, sizeof(piece.hash.type));
-					strlcpy(piece.hash.hash_hex, ctx->hash, sizeof(piece.hash.hash_hex));
-
-					piecep = wget_vector_get(metalink->pieces, wget_vector_size(metalink->pieces) - 1);
-					if (piecep)
-						piece.position = piecep->position + piecep->length;
-					else
-						piece.position = 0;
-					wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
-				}
-				*ctx->hash = 0;
+				_add_piece(ctx, value);
 			} else if (!wget_strcasecmp_ascii(dir, "/verification/hash")) {
-				sscanf(value, "%127s", ctx->hash);
-				if (*ctx->hash_type && *ctx->hash) {
-					// hashes for the complete file
-					wget_metalink_hash_t hash;
-
-					memset(&hash, 0, sizeof(wget_metalink_hash_t));
-					strlcpy(hash.type, ctx->hash_type, sizeof(hash.type));
-					strlcpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
-
-					if (!metalink->hashes)
-						metalink->hashes = wget_vector_create(4, 4, NULL);
-					wget_vector_add(metalink->hashes, &hash, sizeof(wget_metalink_hash_t));
-				}
-				*ctx->hash_type = *ctx->hash = 0;
+				_add_file_hash(ctx, value);
 			} else if (!wget_strcasecmp_ascii(dir, "/size")) {
-				metalink->size = atoll(value);
+				ctx->metalink->size = atoll(value);
 			} else if (!wget_strcasecmp_ascii(dir, "/resources/url")) {
-				if (wget_strncasecmp_ascii(value, "http:", 5) && wget_strncasecmp_ascii(value, "https:", 6))
-					return;
-
-				wget_metalink_mirror_t mirror;
-
-				memset(&mirror, 0, sizeof(wget_metalink_mirror_t));
-				strlcpy(mirror.location, ctx->location, sizeof(mirror.location));
-				mirror.priority = ctx->priority;
-				mirror.iri = wget_iri_parse(value, NULL);
-
-				if (!metalink->mirrors) {
-					metalink->mirrors = wget_vector_create(4, 4, NULL);
-					wget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
-				}
-				wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
-
-				*ctx->location = 0;
-				ctx->priority = 999999;
+				_add_mirror(ctx, value);
 			}
 		}
 	} else {
@@ -208,65 +230,14 @@ static void _metalink_parse(void *context, int flags, const char *dir, const cha
 				}
 			}
 		} else {
-			wget_metalink_t *metalink = ctx->metalink;
-
 			if (!wget_strcasecmp_ascii(dir, "/pieces/hash")) {
-				sscanf(value, "%127s", ctx->hash);
-				if (ctx->length && *ctx->hash_type && *ctx->hash) {
-					// hash for a piece of the file
-					wget_metalink_piece_t piece, *piecep;
-
-					if (!metalink->pieces)
-						metalink->pieces = wget_vector_create(32, 32, NULL);
-
-					piece.length = ctx->length;
-					strlcpy(piece.hash.type, ctx->hash_type, sizeof(piece.hash.type));
-					strlcpy(piece.hash.hash_hex, ctx->hash, sizeof(piece.hash.hash_hex));
-
-					piecep = wget_vector_get(metalink->pieces, wget_vector_size(metalink->pieces) - 1);
-					if (piecep)
-						piece.position = piecep->position + piecep->length;
-					else
-						piece.position = 0;
-					wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
-				}
-				*ctx->hash = 0;
+				_add_piece(ctx, value);
 			} else if (!wget_strcasecmp_ascii(dir, "/hash")) {
-				sscanf(value, "%127s", ctx->hash);
-				if (*ctx->hash_type && *ctx->hash) {
-					// hashes for the complete file
-					wget_metalink_hash_t hash;
-
-					memset(&hash, 0, sizeof(wget_metalink_hash_t));
-					strlcpy(hash.type, ctx->hash_type, sizeof(hash.type));
-					strlcpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
-
-					if (!metalink->hashes)
-						metalink->hashes = wget_vector_create(4, 4, NULL);
-					wget_vector_add(metalink->hashes, &hash, sizeof(wget_metalink_hash_t));
-				}
-				*ctx->hash_type = *ctx->hash = 0;
+				_add_file_hash(ctx, value);
 			} else if (!wget_strcasecmp_ascii(dir, "/size")) {
-				metalink->size = atoll(value);
+				ctx->metalink->size = atoll(value);
 			} else if (!wget_strcasecmp_ascii(dir, "/url")) {
-				if (wget_strncasecmp_ascii(value, "http:", 5) && wget_strncasecmp_ascii(value, "https:", 6))
-					return;
-
-				wget_metalink_mirror_t mirror;
-
-				memset(&mirror, 0, sizeof(wget_metalink_mirror_t));
-				strlcpy(mirror.location, ctx->location, sizeof(mirror.location));
-				mirror.priority = ctx->priority;
-				mirror.iri = wget_iri_parse(value, NULL);
-
-				if (!metalink->mirrors) {
-					metalink->mirrors = wget_vector_create(4, 4, NULL);
-					wget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
-				}
-				wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
-
-				*ctx->location = 0;
-				ctx->priority = 999999;
+				_add_mirror(ctx, value);
 			}
 		}
 	}
