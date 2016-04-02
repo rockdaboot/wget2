@@ -192,7 +192,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --content-disposition  Take filename from Content-Disposition. (default: off)\n"
 		"      --default-page      Default file name if name isn't known. (default: index.html)\n"
 		"      --netrc-file        Set file for login/password to use instead of ~/.netrc. (default: ~/.netrc)\n"
-		"      --follow-metalink   Follow a metalink file instead of storing it (default: on)\n"
+		"      --metalink          Follow a metalink file instead of storing it (default: on)\n"
 		"\n");
 	puts(
 		"HTTPS (SSL/TLS) related options:\n"
@@ -611,7 +611,7 @@ struct config config = {
 	.ocsp_stapling = 1,
 	.netrc = 1,
 	.waitretry = 10 * 1000,
-	.follow_metalink = 1,
+	.metalink = 1,
 };
 
 static int parse_execute(option_t opt, const char *val);
@@ -656,7 +656,6 @@ static const struct option options[] = {
 	{ "egd-file", &config.egd_file, parse_string, 1, 0 },
 	{ "exclude-domains", &config.exclude_domains, parse_stringlist, 1, 0 },
 	{ "execute", NULL, parse_execute, 1, 'e' },
-	{ "follow-metalink", &config.follow_metalink, parse_bool, 0, 0 },
 	{ "follow-tags", &config.follow_tags, parse_taglist, 1, 0 },
 	{ "force-atom", &config.force_atom, parse_bool, 0, 0 },
 	{ "force-css", &config.force_css, parse_bool, 0, 0 },
@@ -691,6 +690,7 @@ static const struct option options[] = {
 	{ "local-encoding", &config.local_encoding, parse_string, 1, 0 },
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0 },
 	{ "max-threads", &config.max_threads, parse_integer, 1, 0 },
+	{ "metalink", &config.metalink, parse_bool, 0, 0 },
 	{ "mirror", &config.mirror, parse_mirror, 0, 'm' },
 	{ "n", NULL, parse_n_option, 1, 'n' }, // special Wget compatibility option
 	{ "netrc", &config.netrc, parse_bool, 0, 0 },
@@ -1371,7 +1371,7 @@ int init(int argc, const char **argv)
 	}
 
 	if (config.mirror)
-		config.follow_metalink = 0;
+		config.metalink = 0;
 
 	// set module specific options
 	wget_tcp_set_timeout(NULL, config.read_timeout);

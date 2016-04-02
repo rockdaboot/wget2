@@ -18,10 +18,10 @@
  *
  *
  * Test Metalink functionality
- * - --no-follow-metalink
- * - Metalink V3
- * - Metalink V4
- * - Metalink HTTP
+ * - --no-metalink
+ * - Metalink V3 (single file & pieces)
+ * - Metalink V4 (single file & pieces)
+ * - Metalink HTTP (direct & via metalink xml)
  *
  */
 
@@ -201,9 +201,9 @@ int main(void)
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 
-	// --no-follow-metalink
+	// --no-metalink
 	wget_test(
-		WGET_TEST_OPTIONS, "--no-follow-metalink",
+		WGET_TEST_OPTIONS, "--no-metalink",
 		WGET_TEST_REQUEST_URL, "archive.meta",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {

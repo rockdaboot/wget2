@@ -1348,7 +1348,7 @@ void *downloader_thread(void *p)
 			}
 		}
 
-		if (config.follow_metalink && resp->content_type) {
+		if (config.metalink && resp->content_type) {
 			if (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml")
 				|| !wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml"))
 			{
@@ -2270,7 +2270,7 @@ static int _get_header(void *context, wget_http_response_t *resp)
 		metalink = true;
 	}
 
-	if (ctx->head || (config.follow_metalink && metalink))
+	if (ctx->head || (config.metalink && metalink))
 		dest = NULL;
 	else if (ctx->part) {
 		ctx->outfd = open(ctx->downloader->job->metalink->name, O_WRONLY | O_CREAT, 0644);

@@ -172,7 +172,7 @@ struct config {
 		print_version,
 		quiet,
 		debug,
-		follow_metalink;
+		metalink;
 };
 
 extern struct config
