@@ -9,7 +9,7 @@ libwget/atom_url.c
 libwget/base64.c
 libwget/buffer.c
 libwget/buffer_printf.c
-libwget/compat.c
+libwget/strlcpy.c
 libwget/cookie.c
 libwget/css.c
 libwget/css_url.c
