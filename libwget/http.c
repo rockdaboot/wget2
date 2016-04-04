@@ -2336,7 +2336,7 @@ wget_http_response_t *wget_http_get_response_cb(
 		if (nbytes < 0)
 			error_printf(_("Failed to read %zd bytes (%d)\n"), nbytes, errno);
 		if (body_len < resp->content_length)
-			error_printf(_("Just got %zu of %zu bytes\n"), body_len, body_size);
+			error_printf(_("Just got %zu of %zu bytes\n"), body_len, resp->content_length);
 		else if (body_len > resp->content_length)
 			error_printf(_("Body too large: %zu instead of %zu bytes\n"), body_len, resp->content_length);
 		resp->content_length = body_len;
