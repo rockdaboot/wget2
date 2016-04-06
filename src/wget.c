@@ -2581,9 +2581,11 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 					wget_buffer_free(&context.body);
 
 				if (context.outfd != -1) {
-					if (fsync(context.outfd) < 0 && errno == EIO) {
-						error_printf(_("Failed to fsync errno=%d\n"), errno);
-						set_exit_status(3);
+					if (config.fsync_policy) {
+						if (fsync(context.outfd) < 0 && errno == EIO) {
+							error_printf(_("Failed to fsync errno=%d\n"), errno);
+							set_exit_status(3);
+						}
 					}
 					close(context.outfd);
 					context.outfd = -1;

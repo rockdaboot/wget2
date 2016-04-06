@@ -104,6 +104,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --force-metalink    Treat input file as Metalink. (default: off) (NEW!)\n"
 		"  -B  --base              Base for relative URLs read from input-file or from command line\n"
 		"  -e  --execute           Wget compatibility option, not needed for Wget\n"
+		"      --fsync-policy      Use fsync() to wait for data being written to the pysical layer. (default: off) (NEW!)\n"
 		"\n");
 	puts(
 		"Download:\n"
@@ -664,6 +665,7 @@ static const struct option options[] = {
 	{ "force-metalink", &config.force_metalink, parse_bool, 0, 0 },
 	{ "force-rss", &config.force_rss, parse_bool, 0, 0 },
 	{ "force-sitemap", &config.force_sitemap, parse_bool, 0, 0 },
+	{ "fsync-policy", &config.fsync_policy, parse_bool, 0, 0 },
 	{ "gnutls-options", &config.gnutls_options, parse_string, 1, 0 },
 	{ "help", NULL, print_help, 0, 'h' },
 	{ "host-directories", &config.host_directories, parse_bool, 0, 0 },
