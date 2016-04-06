@@ -2112,7 +2112,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 
 	// create the complete directory path
 	mkdir_path((char *) fname);
-	fd = open(fname, O_WRONLY | flag | O_CREAT, 0644);
+	fd = open(fname, O_WRONLY | flag | O_CREAT | O_NONBLOCK, 0644);
 	// debug_printf("1 fd=%d flag=%02x (%02x %02x %02x) errno=%d %s\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND,errno,fname);
 
 	// find a non-existing filename
@@ -2120,7 +2120,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	*unique = 0;
 	for (fnum = 0, maxloop = 999; fd < 0 && ((multiple && errno == EEXIST) || errno == EISDIR) && fnum < maxloop; fnum++) {
 		snprintf(unique, sizeof(unique), "%s.%d", fname, fnum + 1);
-		fd = open(unique, O_WRONLY | flag | O_CREAT, 0644);
+		fd = open(unique, O_WRONLY | flag | O_CREAT | O_NONBLOCK, 0644);
 	}
 
 	if (fd >= 0) {
@@ -2273,7 +2273,7 @@ static int _get_header(void *context, wget_http_response_t *resp)
 	if (ctx->head || (config.metalink && metalink))
 		dest = NULL;
 	else if (ctx->part) {
-		ctx->outfd = open(ctx->downloader->job->metalink->name, O_WRONLY | O_CREAT, 0644);
+		ctx->outfd = open(ctx->downloader->job->metalink->name, O_WRONLY | O_CREAT | O_NONBLOCK, 0644);
 		if (ctx->outfd == -1) {
 			set_exit_status(3);
 			return -1;
@@ -2306,13 +2306,26 @@ static int _get_body(void *context, const char *data, size_t length)
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
 
 	ctx->length += length;
+
 	if (ctx->outfd >= 0) {
-		if (safe_write (ctx->outfd, data, length) == SAFE_WRITE_ERROR) {
-			error_printf(_("Failed to write errno=%d\n"), errno);
+		size_t written = safe_write(ctx->outfd, data, length);
+
+		if (written == SAFE_WRITE_ERROR) {
+			if ((errno == EAGAIN || errno == EWOULDBLOCK) && !terminate) {
+				if (wget_ready_2_write(ctx->outfd, 1000) > 0) {
+					written = safe_write(ctx->outfd, data, length);
+				}
+			}
+		}
+
+		if (written == SAFE_WRITE_ERROR) {
+			if (!terminate)
+				error_printf(_("Failed to write errno=%d\n"), errno);
 			set_exit_status(3);
 			return -1;
 		}
 	}
+
 	if (ctx->max_memory == 0 || ctx->length < (off_t) ctx->max_memory)
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
@@ -2547,26 +2560,26 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 			}
 
 			if (rc == WGET_E_SUCCESS) {
-				wget_buffer_t *body = wget_buffer_alloc(102400);
 				struct _body_callback_context context = {
 					.downloader = downloader,
 					.max_memory = part ? 0 : 10 * (1 << 20),
 					.outfd = -1,
-					.body = body,
+					.body = wget_buffer_alloc(102400),
 					.length = 0,
 					.head = method && strcmp(method, "HEAD") == 0,
-					.part = part};
+					.part = part,
+				};
+
 				resp = wget_http_get_response_cb(conn, req, config.save_headers || config.server_response ? WGET_HTTP_RESPONSE_KEEPHEADER : 0, _get_header, _get_body, &context);
 				if (resp) {
 					if (context.outfd != -1 && resp->last_modified)
 						set_file_mtime(context.outfd, resp->last_modified);
-					resp->body = body;
+					resp->body = context.body;
 					if (!wget_strcasecmp_ascii(req->method, "GET"))
 						resp->content_length = context.length;
-				}
-				else {
-					wget_buffer_free(&body);
-				}
+				} else
+					wget_buffer_free(&context.body);
+
 				if (context.outfd != -1) {
 					if (fsync(context.outfd) < 0 && errno == EIO) {
 						error_printf(_("Failed to fsync errno=%d\n"), errno);
