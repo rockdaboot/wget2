@@ -748,7 +748,8 @@ ssize_t wget_tcp_read(wget_tcp_t *tcp, char *buf, size_t count)
 				return rc;
 		}
 
-		rc = read(tcp->sockfd, buf, count);
+//		rc = read(tcp->sockfd, buf, count);
+		rc = recvfrom(tcp->sockfd, buf, count, 0, NULL, NULL);
 	}
 
 	if (rc < 0)
