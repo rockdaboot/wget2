@@ -9,7 +9,8 @@ man3_MANS =\
  $(builddir)/man/man3/libwget-xalloc.3\
  $(builddir)/man/man3/libwget-printf.3\
  $(builddir)/man/man3/libwget-md5.3\
- $(builddir)/man/man3/libwget-mem.3
+ $(builddir)/man/man3/libwget-mem.3\
+ $(builddir)/man/man3/libwget-base64.3
 
 $(man3_MANS): doxy.stamp
 

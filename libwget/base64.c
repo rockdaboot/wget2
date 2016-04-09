@@ -35,6 +35,14 @@
 #include <libwget.h>
 #include "private.h"
 
+/**
+ * \file
+ * \brief Base64 functions
+ * \defgroup libwget-base64 Base64 functions
+ * @{
+ *
+ * This is a collections of short memory function not available in standard libraries.
+ */
 
 static const unsigned char base64_2_bin[256] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -61,6 +69,13 @@ static int G_GNUC_WGET_CONST _isbase64(char c)
 	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '+' || c == '/';
 }
 
+/**
+ * \param[in] src String to be checked
+ * \return 1 if \p src is a base64 string, 0 otherwise
+ *
+ * Checks wether \p src is a base64 string.
+ * Returns 0 if \p src is NULL.
+ */
 int wget_base64_is_string(const char *src)
 {
 	if (src) {
@@ -73,7 +88,17 @@ int wget_base64_is_string(const char *src)
 	return 0;
 }
 
-// dst size must be at least ((n+3)/4)*3+1 bytes
+/**
+ * \param[out] dst Output buffer
+ * \param[in] src Base64 string to be decoded
+ * \param[in] n Length of \p src
+ * \return Number of bytes written into \p dst
+ *
+ * Decodes \p n bytes of the base64 string \p src.
+ * The decoded bytes are written into \p dst and are 0-terminated.
+ *
+ * The size of \p dst has to be at minimum ((\p n + 3) / 4) * 3 + 1 bytes.
+ */
 size_t wget_base64_decode(char *dst, const char *src, int n)
 {
 	const unsigned char *usrc = (const unsigned char *)src;
@@ -114,6 +139,16 @@ size_t wget_base64_decode(char *dst, const char *src, int n)
 	return (size_t) (dst - old);
 }
 
+/**
+ * \param[in] src Base64 string to be decoded
+ * \param[in] n Length of \p src
+ * \return Decoded bytes, zero terminated
+ *
+ * Decodes \p n bytes of the base64 string \p src.
+ * The decoded bytes are returned in an allocated buffer.
+ *
+ * You should free() the returned string when not needed any more.
+ */
 char *wget_base64_decode_alloc(const char *src, int n)
 {
 	char *dst = xmalloc(((n + 3) / 4) * 3 + 1);
@@ -123,7 +158,17 @@ char *wget_base64_decode_alloc(const char *src, int n)
 	return dst;
 }
 
-// dst size must be at least ((n+2)/3)*4+1 bytes
+/**
+ * \param[out] dst Base64 output string
+ * \param[in] src Input buffer
+ * \param[in] n Number of bytes to be encoded
+ * \return Length of output string \p dst
+ *
+ * Encodes \p n bytes from \p src into a base64 string.
+ * The encoded string is written into \p dst (0-terminated).
+ *
+ * The length of \p dst has to be at minimum ((\p n + 2) / 3) * 4 + 1 bytes.
+ */
 size_t wget_base64_encode(char *dst, const char *src, int n)
 {
 	static const char base64[64] =
@@ -161,6 +206,16 @@ size_t wget_base64_encode(char *dst, const char *src, int n)
 	return (size_t) (dst - start);
 }
 
+/**
+ * \param[in] src Input buffer
+ * \param[in] n Number of bytes to be encoded
+ * \return Base64 encoded string
+ *
+ * Encodes \p n bytes from input buffer \p src.
+ * The encoded string is returned in an allocated buffer.
+ *
+ * You should free() the returned string when not needed any more.
+ */
 char *wget_base64_encode_alloc(const char *src, int n)
 {
 	char *dst = xmalloc(((n + 2) / 3) * 4 + 1);
@@ -170,6 +225,16 @@ char *wget_base64_encode_alloc(const char *src, int n)
 	return dst;
 }
 
+/**
+ * \param[in] fmt Printf-like format string
+ * \param[in] args Argument list
+ * \return Base64 encoded string
+ *
+ * Encodes the string constructed by \p fmt and \p args.
+ * The encoded string is returned in an allocated buffer.
+ *
+ * You should free() the returned string when not needed any more.
+ */
 char *wget_base64_encode_vprintf_alloc(const char *fmt, va_list args)
 {
 	char *data = NULL;
@@ -186,6 +251,16 @@ char *wget_base64_encode_vprintf_alloc(const char *fmt, va_list args)
 	return NULL;
 }
 
+/**
+ * \param[in] fmt Printf-like format string
+ * \param[in] ... Argument list
+ * \return Base64 encoded string
+ *
+ * Encodes the string constructed by \p fmt and the arguments.
+ * The encoded string is returned in an allocated buffer.
+ *
+ * You should free() the returned string when not needed any more.
+ */
 char *wget_base64_encode_printf_alloc(const char *fmt, ...)
 {
 	char *dst;
@@ -197,3 +272,5 @@ char *wget_base64_encode_printf_alloc(const char *fmt, ...)
 
 	return dst;
 }
+
+/**@}*/
