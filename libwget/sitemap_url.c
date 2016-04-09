@@ -37,6 +37,15 @@
 #include <libwget.h>
 #include "private.h"
 
+/**
+ * \file
+ * \brief URL extraction from Sitemap XML data
+ * \defgroup libwget-parse_sitemap Sitemap URL extraction routines
+ * @{
+ *
+ * Routines for URL extraction from Sitemap XML data.
+ */
+
 struct sitemap_context {
 	wget_vector_t
 		*sitemap_urls,
@@ -79,6 +88,15 @@ static void _sitemap_get_url(void *context, int flags, const char *dir, const ch
 	}
 }
 
+/**
+ * \param[in] sitemap Sitemap XML data
+ * \param[in,out] urls Pointer to return vector of URLs
+ * \param[in,out] sitemap_urls Pointer to return vector of sitemap URLs
+ *
+ * Finds all URLs and sitemap URLs within the Sitemap XML data \p sitemap and returns them
+ * as vector in \p urls and/or \p sitemap_urls.
+ *
+ */
 void wget_sitemap_get_urls_inline(const char *sitemap, wget_vector_t **urls, wget_vector_t **sitemap_urls)
 {
 	struct sitemap_context context = { .urls = NULL, .sitemap_urls = NULL };
@@ -88,3 +106,5 @@ void wget_sitemap_get_urls_inline(const char *sitemap, wget_vector_t **urls, wge
 	*urls = context.urls;
 	*sitemap_urls = context.sitemap_urls;
 }
+
+/**@}*/

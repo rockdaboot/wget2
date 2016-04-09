@@ -41,7 +41,7 @@
  * \defgroup libwget-base64 Base64 functions
  * @{
  *
- * This is a collections of short memory function not available in standard libraries.
+ * This is a collection base64 encoding/decoding functions used in Wget2.
  */
 
 static const unsigned char base64_2_bin[256] = {

@@ -38,6 +38,15 @@
 #include <libwget.h>
 #include "private.h"
 
+/**
+ * \file
+ * \brief URL extraction from Atom feed XML data
+ * \defgroup libwget-parse_atom Atom URL extraction routines
+ * @{
+ *
+ * Routines for URL extraction from Atom feeds.
+ */
+
 struct atom_context {
 	wget_vector_t
 		*urls;
@@ -96,6 +105,14 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 	}
 }
 
+/**
+ * \param[in] atom Atom XML data
+ * \param[in,out] urls Pointer to return vector of URLs
+ *
+ * Finds all URLs within the Atom XML data \p atom and returns them
+ * as vector in \p urls.
+ *
+ */
 void wget_atom_get_urls_inline(const char *atom, wget_vector_t **urls)
 {
 	struct atom_context context = { .urls = NULL };
@@ -104,3 +121,5 @@ void wget_atom_get_urls_inline(const char *atom, wget_vector_t **urls)
 
 	*urls = context.urls;
 }
+
+/**@}*/
