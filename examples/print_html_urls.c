@@ -38,12 +38,57 @@
 static void html_parse_localfile(const char *fname)
 {
 	char *data;
+	const char *encoding = NULL;
+	size_t len;
 
-	if ((data = wget_read_file(fname, NULL))) {
+	if ((data = wget_read_file(fname, &len))) {
+		if ((unsigned char)data[0] == 0xFE && (unsigned char)data[1] == 0xFF) {
+			// Big-endian UTF-16
+			encoding = "UTF-16BE";
+
+			// adjust behind BOM, ignore trailing single byte
+			data += 2;
+			len -= 2;
+		} else if ((unsigned char)data[0] == 0xFF && (unsigned char)data[1] == 0xFE) {
+			// Little-endian UTF-16
+			encoding = "UTF-16LE";
+
+			// adjust behind BOM
+			data += 2;
+			len -= 2;
+		} else if ((unsigned char)data[0] == 0xEF && (unsigned char)data[1] == 0xBB && (unsigned char)data[2] == 0xBF) {
+			// UTF-8
+			encoding = "UTF-8";
+
+			// adjust behind BOM
+			data += 3;
+			len -= 3;
+		}
+
+		if (encoding)
+			printf("URI encoding '%s' set by BOM\n", encoding);
+
+		if (!wget_strncasecmp_ascii(encoding, "UTF-16", 6)) {
+			size_t n;
+			char *utf8;
+
+			len -= len & 1; // ignore single trailing byte, else charset conversion fails
+
+			if (wget_memiconv(encoding, data, len, "UTF-8", &utf8, &n) == 0) {
+				printf("Convert non-ASCII encoding '%s' to UTF-8\n", encoding);
+				data = utf8;
+			} else {
+				printf("Failed to convert non-ASCII encoding '%s' to UTF-8, skip parsing\n", encoding);
+				return;
+			}
+		}
+
 		WGET_HTML_PARSED_RESULT *res  = wget_html_get_urls_inline(data, NULL, NULL);
 
-		if (res->encoding)
-			printf("URI encoding '%s'\n", res->encoding);
+		if (encoding) {
+			if (res->encoding && wget_strcasecmp_ascii(encoding, res->encoding))
+				printf("Encoding '%s' as stated in document has been ignored\n", encoding);
+		}
 
 		for (int it = 0; it < wget_vector_size(res->uris); it++) {
 			WGET_HTML_PARSED_URL *html_url = wget_vector_get(res->uris, it);

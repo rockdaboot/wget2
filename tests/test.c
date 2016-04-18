@@ -1497,6 +1497,29 @@ static void test_stringmap(void)
 
 }
 
+static void test_striconv(void)
+{
+	const char *utf8 = "abcßüäö";
+	char *utf16be, *utf16le, *result;
+	size_t n;
+
+	// convert utf-8 to utf-16be
+	if (wget_memiconv("utf-8", utf8, strlen(utf8), "UTF-16BE", &utf16be, &n) ||
+		wget_memiconv("UTF-16BE", utf16be, n, "UTF-16LE", &utf16le, &n) ||
+		wget_memiconv("UTF-16LE", utf16le, n, "UTF-8", &result, &n) ||
+		strcmp(utf8, result))
+	{
+		info_printf("Character conversion of '%s' failed (got '%s')\n", utf8, result);
+		failed++;
+	} else {
+		ok++;
+	}
+
+	xfree(result);
+	xfree(utf16le);
+	xfree(utf16be);
+}
+
 int main(int argc, const char **argv)
 {
 	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
@@ -1530,6 +1553,7 @@ int main(int argc, const char **argv)
 	test_hashing();
 	test_vector();
 	test_stringmap();
+	test_striconv();
 
 	if (failed) {
 		info_printf("ERROR: %d out of %d basic tests failed\n", failed, ok + failed);

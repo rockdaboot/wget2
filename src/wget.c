@@ -127,7 +127,7 @@ static void
 	rss_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
 	rss_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri_t *base),
 	metalink_parse_localfile(const char *fname),
-	html_parse(JOB *job, int level, const char *data, const char *encoding, wget_iri_t *base),
+	html_parse(JOB *job, int level, const char *data, size_t len, const char *encoding, wget_iri_t *base),
 	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, wget_iri_t *base),
 	css_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri_t *base);
@@ -1383,9 +1383,9 @@ void *downloader_thread(void *p)
 			if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
 				if (resp->content_type) {
 					if (!wget_strcasecmp_ascii(resp->content_type, "text/html")) {
-						html_parse(job, job->level, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+						html_parse(job, job->level, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 					} else if (!wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")) {
-						html_parse(job, job->level, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+						html_parse(job, job->level, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 						// xml_parse(sockfd, resp, job->iri);
 					} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
 						css_parse(job, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
@@ -1500,16 +1500,14 @@ static unsigned int G_GNUC_WGET_PURE hash_url(const char *url)
 	return hash;
 }
 
-void html_parse(JOB *job, int level, const char *html, const char *encoding, wget_iri_t *base)
+void html_parse(JOB *job, int level, const char *html, size_t html_len, const char *encoding, wget_iri_t *base)
 {
-	WGET_HTML_PARSED_RESULT *parsed  = wget_html_get_urls_inline(html, config.follow_tags, config.ignore_tags);
 	wget_iri_t *allocated_base = NULL;
 	const char *reason;
+	char *utf8 = NULL;
 	wget_buffer_t buf;
 	char sbuf[1024];
-
-	if (config.robots && !parsed->follow)
-		goto cleanup;
+	int convert_links = config.convert_links && !config.delete_after;
 
 	// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
 	if (encoding && encoding == config.remote_encoding) {
@@ -1519,33 +1517,62 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, wge
 			// Big-endian UTF-16
 			encoding = "UTF-16BE";
 			reason = _("set by BOM");
+
+			// adjust behind BOM, ignore trailing single byte
+			html += 2;
+			html_len -= 2;
 		} else if ((unsigned char)html[0] == 0xFF && (unsigned char)html[1] == 0xFE) {
 			// Little-endian UTF-16
 			encoding = "UTF-16LE";
 			reason = _("set by BOM");
+
+			// adjust behind BOM
+			html += 2;
+			html_len -= 2;
 		} else if ((unsigned char)html[0] == 0xEF && (unsigned char)html[1] == 0xBB && (unsigned char)html[2] == 0xBF) {
 			// UTF-8
 			encoding = "UTF-8";
 			reason = _("set by BOM");
+
+			// adjust behind BOM
+			html += 3;
+			html_len -= 3;
 		} else {
 			reason = _("set by server response");
 		}
+	}
 
-		if (!wget_strncasecmp(parsed->encoding, "UTF-16", 6) || !wget_strncasecmp(encoding, "UTF-16", 6)) {
-			// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
-			// we found an encoding in the HTML, so it can't be UTF-16*.
-			encoding = "UTF-8";
-			reason = _("wrong stated UTF-16* changed to UTF-8");
-		}
+	if (!wget_strncasecmp_ascii(encoding, "UTF-16", 6)) {
+		size_t n;
 
-		if (!encoding) {
-			if (parsed->encoding) {
-				encoding = parsed->encoding;
-				reason = _("set by document");
-			} else {
-				encoding = "CP1252"; // default encoding for HTML5 (pre-HTML5 is iso-8859-1)
-				reason = _("default, encoding not specified");
+		html_len -= html_len & 1; // ignore single trailing byte, else charset conversion fails
+
+		if (wget_memiconv(encoding, html, html_len, "UTF-8", &utf8, &n) == 0) {
+			info_printf(_("Convert non-ASCII encoding '%s' (%s) to UTF-8\n"), encoding, reason);
+			html = utf8;
+			if (convert_links) {
+				convert_links = 0; // prevent link conversion
+				info_printf(_("Link conversion disabled for '%s'\n"), job->local_filename);
 			}
+
+		} else {
+			info_printf(_("Failed to convert non-ASCII encoding '%s' (%s) to UTF-8, skip parsing\n"), encoding, reason);
+			return;
+		}
+	}
+
+	WGET_HTML_PARSED_RESULT *parsed  = wget_html_get_urls_inline(html, config.follow_tags, config.ignore_tags);
+
+	if (config.robots && !parsed->follow)
+		goto cleanup;
+
+	if (!encoding) {
+		if (parsed->encoding) {
+			encoding = parsed->encoding;
+			reason = _("set by document");
+		} else {
+			encoding = "CP1252"; // default encoding for HTML5 (pre-HTML5 is iso-8859-1)
+			reason = _("default, encoding not specified");
 		}
 	}
 
@@ -1609,7 +1636,7 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, wge
 
 	wget_buffer_deinit(&buf);
 
-	if (config.convert_links && !config.delete_after) {
+	if (convert_links && !config.delete_after) {
 		for (int it = 0; it < wget_vector_size(parsed->uris); it++) {
 			WGET_HTML_PARSED_URL *html_url = wget_vector_get(parsed->uris, it);
 			html_url->url.p = (const char *) (html_url->url.p - html); // convert pointer to offset
@@ -1622,14 +1649,17 @@ void html_parse(JOB *job, int level, const char *html, const char *encoding, wge
 
 cleanup:
 	wget_html_free_urls_inline(&parsed);
+	xfree(utf8);
 }
 
 void html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, wget_iri_t *base)
 {
 	char *data;
+	size_t n;
 
-	if ((data = wget_read_file(fname, NULL)))
-		html_parse(job, level, data, encoding, base);
+	if ((data = wget_read_file(fname, &n))) {
+		html_parse(job, level, data, n, encoding, base);
+	}
 
 	xfree(data);
 }

@@ -66,10 +66,11 @@ const char *wget_local_charset_encoding(void)
 	return strdup("ASCII");
 }
 
-char *wget_charset_transcode(const char *src, const char *src_encoding, const char *dst_encoding)
+// void *wget_memiconv(const void *src, size_t length, const char *src_encoding, const char *dst_encoding)
+int wget_memiconv(const char *src_encoding, const void *src, size_t srclen, const char *dst_encoding, char **out, size_t *outlen)
 {
 	if (!src)
-		return NULL;
+		return -1;
 
 #ifdef HAVE_ICONV
 	if (!src_encoding)
@@ -77,35 +78,64 @@ char *wget_charset_transcode(const char *src, const char *src_encoding, const ch
 	if (!dst_encoding)
 		dst_encoding = "iso-8859-1"; // default character-set for most browsers
 
-	if (wget_strcasecmp_ascii(src_encoding, dst_encoding)) {
-		char *ret = NULL;
+	int ret = -1;
 
-		iconv_t cd=iconv_open(dst_encoding, src_encoding);
+	if (wget_strcasecmp_ascii(src_encoding, dst_encoding)) {
+		iconv_t cd = iconv_open(dst_encoding, src_encoding);
 
 		if (cd != (iconv_t)-1) {
 			char *tmp = (char *) src; // iconv won't change where src points to, but changes tmp itself
-			size_t tmp_len = strlen(src);
+			size_t tmp_len = srclen;
 			size_t dst_len = tmp_len * 6, dst_len_tmp = dst_len;
 			char *dst = xmalloc(dst_len + 1), *dst_tmp = dst;
 
 			if (iconv(cd, &tmp, &tmp_len, &dst_tmp, &dst_len_tmp) != (size_t)-1
 				&& iconv(cd, NULL, NULL, &dst_tmp, &dst_len_tmp) != (size_t)-1)
 			{
-				ret = wget_strmemdup(dst, dst_len - dst_len_tmp);
-				debug_printf("converted '%s' (%s) -> '%s' (%s)\n", src, src_encoding, ret, dst_encoding);
-			} else
-				error_printf(_("Failed to convert '%s' string into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
+				debug_printf("transcoded %zu bytes from '%s' to '%s'\n", srclen, src_encoding, dst_encoding);
+				if (out) {
+					*out = xrealloc(dst, dst_len - dst_len_tmp + 1);
+					(*out)[dst_len - dst_len_tmp] = 0;
+				}
+				if (outlen)
+					*outlen = dst_len - dst_len_tmp;
+				ret = 0; // return OK
+			} else {
+				error_printf(_("Failed to transcode '%s' string into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
+				xfree(dst);
+				if (out)
+					*out = NULL;
+				if (outlen)
+					*outlen = 0;
+			}
 
-			xfree(dst);
 			iconv_close(cd);
 		} else
-			error_printf(_("Failed to prepare encoding '%s' into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
+			error_printf(_("Failed to prepare transcoding '%s' into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
 
 		return ret;
 	}
 #endif
 
-	return strdup(src);
+	if (out)
+		*out = wget_strmemdup(src, srclen);
+	if (outlen)
+		*outlen = srclen;
+
+	return 0;
+}
+
+// src must be a ASCII compatible C string
+char *wget_striconv(const char *src, const char *src_encoding, const char *dst_encoding)
+{
+	if (!src)
+		return NULL;
+
+	char *dst;
+	if (wget_memiconv(src_encoding, src, strlen(src), dst_encoding, &dst, NULL))
+		return NULL;
+
+	return dst;
 }
 
 int wget_str_needs_encoding(const char *s)
@@ -143,12 +173,12 @@ int wget_str_is_valid_utf8(const char *utf8)
 
 char *wget_str_to_utf8(const char *src, const char *encoding)
 {
-	return wget_charset_transcode(src, encoding, "utf-8");
+	return wget_striconv(src, encoding, "utf-8");
 }
 
 char *wget_utf8_to_str(const char *src, const char *encoding)
 {
-	return wget_charset_transcode(src, "utf-8", encoding);
+	return wget_striconv(src, "utf-8", encoding);
 }
 
 #ifdef WITH_LIBIDN

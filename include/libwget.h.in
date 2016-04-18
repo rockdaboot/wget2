@@ -330,8 +330,10 @@ int
 		int (*load_func)(void *, FILE *fp), int (*save_func)(void *, FILE *fp), void *context) LIBWGET_EXPORT;
 const char
 	*wget_local_charset_encoding(void) LIBWGET_EXPORT;
+int
+	wget_memiconv(const char *src_encoding, const void *src, size_t srclen, const char *dst_encoding, char **out, size_t *outlen) LIBWGET_EXPORT;
 char *
-	wget_charset_transcode(const char *src, const char *src_encoding, const char *dst_encoding) G_GNUC_WGET_MALLOC LIBWGET_EXPORT;
+	wget_striconv(const char *src, const char *src_encoding, const char *dst_encoding) G_GNUC_WGET_MALLOC LIBWGET_EXPORT;
 int
 	wget_str_needs_encoding(const char *s) G_GNUC_WGET_NONNULL((1)) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 int
