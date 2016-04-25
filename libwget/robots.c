@@ -36,11 +36,33 @@
 #include <libwget.h>
 #include "private.h"
 
+/**
+ * \file
+ * \brief Robots Exclusion file parser
+ * \defgroup libwget-robots Robots Exclusion file parser
+ * @{
+ *
+ * The purpose of this set of functions is to parse a
+ * Robots Exlusion Standard file into a data structure
+ * for easy access.
+ */
+
 static void _free_path(ROBOTS_PATH *path)
 {
 	xfree(path->path);
 }
 
+/**
+ * \param[in] data Memory with robots.txt content (with trailing 0-byte)
+ * \param[in] client Name of the client / user-agent
+ * \return Return an allocated ROBOTS structure or NULL on error
+ *
+ * The function parses the robots.txt \p data and returns a ROBOTS structure
+ * including a list of the disallowed paths and including a list of the sitemap
+ * files.
+ *
+ * The ROBOTS structure has to be freed by calling wget_robots_free().
+ */
 ROBOTS *wget_robots_parse(const char *data, const char *client)
 {
 	ROBOTS *robots;
@@ -111,10 +133,18 @@ ROBOTS *wget_robots_parse(const char *data, const char *client)
 	return robots;
 }
 
+/**
+ * \param[in,out] robots Pointer to Pointer to ROBOTS structure
+ *
+ * wget_robots_free() free's the formerly allocated ROBOTS structure.
+ */
 void wget_robots_free(ROBOTS **robots)
 {
 	if (robots && *robots) {
 		wget_vector_free(&(*robots)->paths);
 		wget_vector_free(&(*robots)->sitemaps);
+		*robots = NULL;
 	}
 }
+
+/**@}*/
