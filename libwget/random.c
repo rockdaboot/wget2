@@ -74,6 +74,8 @@ long wget_random(void)
 }
 
 /**
+ * \param[in] seed Value to seed the random generator
+ *
  * This functions wraps around srandom() to make seeding the random generator thread-safe.
  */
 void wget_srandom(unsigned int seed)
