@@ -337,7 +337,7 @@ AC_CHECK_HEADERS([\
 AC_FUNC_FORK
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([\
- munmap strlcpy])
+ munmap strlcpy getuid])
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile

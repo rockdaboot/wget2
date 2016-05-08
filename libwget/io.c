@@ -378,10 +378,17 @@ int wget_update_file(const char *fname,
 	size_t lockfilesize = tmplen + strlen(basename) + 32;
 	char *lockfile = xmalloc(lockfilesize);
 
+#ifdef HAVE_GETUID
 	if (!tmplen)
 		snprintf(lockfile, lockfilesize, "%s_lck_%d", basename, getuid());
 	else
 		snprintf(lockfile, lockfilesize, "%s/%s_lck_%d", tmpdir, basename, getuid());
+#else
+	if (!tmplen)
+		snprintf(lockfile, lockfilesize, "%s_lck", basename);
+	else
+		snprintf(lockfile, lockfilesize, "%s/%s_lck", tmpdir, basename);
+#endif
 
 	// create & open the lock file
 	if ((lockfd = creat(lockfile, 0644)) == -1) {
