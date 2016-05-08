@@ -501,6 +501,12 @@ void wget_tcp_deinit(wget_tcp_t **_tcp)
 
 static void _set_async(int fd)
 {
+#if ((defined _WIN32 || defined __WIN32__) && !defined __CYGWIN__)
+	unsigned long blocking = 0;
+
+	if (ioctlsocket(fd, FIONBIO, &blocking))
+		error_printf_exit(_("Failed to set socket to non-blocking\n"));
+#else
 	int flags;
 
 	if ((flags = fcntl(fd, F_GETFL)) < 0)
@@ -508,6 +514,7 @@ static void _set_async(int fd)
 
 	if (fcntl(fd, F_SETFL, flags | O_NDELAY) < 0)
 		error_printf_exit(_("Failed to set socket to non-blocking\n"));
+#endif
 }
 
 int wget_tcp_ready_2_transfer(wget_tcp_t *tcp, int flags)
