@@ -40,7 +40,11 @@
 #include <c-ctype.h>
 #include <time.h>
 #include <errno.h>
-#include <sys/socket.h>
+#if HAVE_SYS_SOCKET_H
+# include <sys/socket.h>
+#elif HAVE_WS2TCPIP_H
+# include <ws2tcpip.h>
+#endif
 #include <netinet/in.h>
 #if WITH_ZLIB
 //#include <zlib.h>
