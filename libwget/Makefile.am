@@ -15,7 +15,7 @@ libwget_la_LIBADD =\
  $(LIBS) ../lib/libgnu.la
 
 # include ABI version information
-libwget_la_LDFLAGS = -version-info $(LIBWGET_SO_VERSION)
+libwget_la_LDFLAGS = -no-undefined -version-info $(LIBWGET_SO_VERSION)
 
 noinst_PROGRAMS = test_linking
 test_linking_SOURCES = test_linking.c
