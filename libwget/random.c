@@ -18,7 +18,7 @@
  * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * a multi-thread safe wrapper around random()
+ * a multi-thread safe wrapper around gnulib random_r()
  *
  * Changelog
  * 22.01.2016  Tim Ruehsen  created
@@ -43,46 +43,50 @@
  * \defgroup libwget-random Random functions
  * @{
  *
- * This is wrapper code around srandom() and random() with automatic seeding
+ * This is wrapper code around gnulib's srandom_r() and random_r() with automatic seeding
  */
 
 static wget_thread_mutex_t mutex = WGET_THREAD_MUTEX_INITIALIZER;
 static int seeded;
+static char statebuf[64];
+static struct random_data state;
 
 /**
  * \return Random value between 0 and RAND_MAX
  *
- * This functions wraps around random() to make it thread-safe and seed it on the first use,
+ * This functions wraps around gnulib's random_r(). It performs a thread-safe seeding on the first use,
  * if not done before by wget_srandom();
  */
-long wget_random(void)
+int wget_random(void)
 {
-	long r;
+	int32_t r;
 
 	wget_thread_mutex_lock(&mutex);
 
 	if (!seeded) {
 		// seed random generator, used e.g. by Digest Authentication and --random-wait
-		srandom((unsigned)(time(NULL) ^ getpid()));
+		initstate_r((unsigned)(time(NULL) ^ getpid()), statebuf, sizeof(statebuf), &state);
 		seeded = 1;
 	}
 
-	r = random();
+	if (random_r(&state, &r))
+		r = 0; // return 0 on failure
 
 	wget_thread_mutex_unlock(&mutex);
-	return r;
+
+	return (int)r;
 }
 
 /**
  * \param[in] seed Value to seed the random generator
  *
- * This functions wraps around srandom() to make seeding the random generator thread-safe.
+ * This functions wraps around srandom_r() to make a thread-safe seeding for wget_random().
  */
 void wget_srandom(unsigned int seed)
 {
 	wget_thread_mutex_lock(&mutex);
 
-	srandom(seed);
+	initstate_r(seed, statebuf, sizeof(statebuf), &state);
 	seeded = 1;
 
 	wget_thread_mutex_unlock(&mutex);
