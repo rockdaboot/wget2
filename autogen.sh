@@ -36,6 +36,7 @@ flock
 fnmatch
 fopen
 fstat
+fsync
 futimens
 getaddrinfo
 getsockname
@@ -68,6 +69,8 @@ random_r
 read
 readdir
 realloc-posix
+recv
+recvfrom
 rename
 safe-write
 send
@@ -76,6 +79,7 @@ servent
 setlocale
 setsockopt
 socket
+socklen
 stdarg
 stdbool
 stddef
