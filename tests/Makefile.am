@@ -1,4 +1,4 @@
-DEFS = @DEFS@ -DDATADIR=\"$(abs_top_srcdir)/data\" -DSRCDIR=\"$(srcdir)\"
+DEFS = @DEFS@ -DDATADIR=\"$(abs_top_srcdir)/data\" -DSRCDIR=\"$(srcdir)\" -DEXEEXT=\"$(EXEEXT)\"
 
 AM_CPPFLAGS = -Wno-missing-field-initializers -I$(top_srcdir)/include -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib
 AM_LDFLAGS = -static
@@ -9,11 +9,12 @@ LDADD = libtest.la\
  $(LIBS)
 
 # test-iri-disabled removed since Wget2 always uses IRIs
-WGET_TESTS = test test-wget-1 test-restrict-ascii test-i-http test-i-https test-np test--spider-r \
- test-meta-robots test-idn-robots test-idn-meta test-idn-cmd \
- test-iri test-iri-percent test-iri-list test-iri-forced-remote \
- test-auth-basic test-parse-html test-parse-rss test--page-requisites test--accept \
- test-k test--follow-tags test-directory-clash test-redirection test-base test-metalink
+WGET_TESTS = test$(EXEEXT) test-wget-1$(EXEEXT) test-restrict-ascii$(EXEEXT) test-i-http$(EXEEXT) test-i-https$(EXEEXT)\
+ test-np$(EXEEXT) test--spider-r$(EXEEXT) test-meta-robots$(EXEEXT) test-idn-robots$(EXEEXT) test-idn-meta$(EXEEXT)\
+ test-idn-cmd$(EXEEXT) test-iri$(EXEEXT) test-iri-percent$(EXEEXT) test-iri-list$(EXEEXT) test-iri-forced-remote$(EXEEXT)\
+ test-auth-basic$(EXEEXT) test-parse-html$(EXEEXT) test-parse-rss$(EXEEXT) test--page-requisites$(EXEEXT)\
+ test--accept$(EXEEXT) test-k$(EXEEXT) test--follow-tags$(EXEEXT) test-directory-clash$(EXEEXT) test-redirection$(EXEEXT)\
+ test-base$(EXEEXT) test-metalink$(EXEEXT)
 
 #test--post-file test-E-k test-cookies-http_state
 

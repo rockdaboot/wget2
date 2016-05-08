@@ -42,7 +42,6 @@
 #include <dirent.h>
 #include <c-ctype.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/wait.h>
 
 #include <libwget.h>
@@ -732,7 +731,7 @@ void wget_test(int first_key, ...)
 	const char
 		*request_url,
 		*options="",
-		*executable="../../src/wget2_noinstall --max-threads=1 --prefer-family=ipv4";
+		*executable="../../src/wget2_noinstall" EXEEXT " --max-threads=1 --prefer-family=ipv4";
 	const wget_test_file_t
 		*expected_files = NULL,
 		*existing_files = NULL;
@@ -825,7 +824,12 @@ void wget_test(int first_key, ...)
 	if (!valgrind || !*valgrind || !strcmp(valgrind, "0")) {
 		// On some system we get random IP order (v4, v6) for localhost, so we need --prefer-family for testing since
 		// the test servers will listen only on the first IP and also prefers IPv4
-		wget_buffer_printf(cmd, "%s %s", executable, options);
+		const char *emulator = getenv("EMULATOR");
+		if (emulator && *emulator)
+			wget_buffer_printf(cmd, "%s %s%s %s", emulator, executable, EXEEXT, options);
+		else
+			wget_buffer_printf(cmd, "%s%s %s", executable, EXEEXT, options);
+		wget_info_printf("cmd=%s\n", cmd->data);
 	} else if (!strcmp(valgrind, "1")) {
 		wget_buffer_printf(cmd, "valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s %s", executable, options);
 	} else
