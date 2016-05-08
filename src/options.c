@@ -49,7 +49,6 @@
 #include <unistd.h>
 #include <c-ctype.h>
 #include <ctype.h>
-#include <pwd.h>
 #include <errno.h>
 #include <glob.h>
 #include <fcntl.h>
@@ -1105,16 +1104,17 @@ static char *get_home_dir(void)
 	static char *home;
 
 	if (!home) {
-		home = getenv("HOME");
-		if (!home) {
-			// If HOME is not defined, try getting it from the password file.
-			struct passwd *pwd = getpwuid(getuid());
+		glob_t globbuf = { .gl_pathc = 0 };
 
-			if (pwd)
-				home = pwd->pw_dir;
+		// Gnulib covers all the gory details for non-Linux systems
+		if (glob("~", GLOB_TILDE_CHECK, NULL, &globbuf) == 0) {
+			if (globbuf.gl_pathc > 0)
+				home = wget_strdup(globbuf.gl_pathv[0]);
+
+			globfree(&globbuf);
+		} else {
+			home = wget_strdup("."); // Use the current directory as 'home' directory
 		}
-
-		home = wget_strdup(home);
 	}
 
 	return home;
