@@ -2026,8 +2026,10 @@ ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf
 		}
 	}
 
+/* The use of Proxy-Connection has been discouraged in RFC 7230 A.1.2.
 	if (use_proxy)
 		wget_buffer_strcat(buf, "Proxy-Connection: keep-alive\r\n");
+*/
 
 	wget_buffer_memcat(buf, "\r\n", 2); // end-of-header
 
