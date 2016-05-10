@@ -1,0 +1,44 @@
+#!/bin/sh
+
+set -e
+
+#PREFIX=i686-w64-mingw32
+
+PREFIX=x86_64-w64-mingw32
+export CC=$PREFIX-gcc
+export CXX=$PREFIX-g++
+export CPP=$PREFIX-cpp
+export RANLIB=$PREFIX-ranlib
+export PATH="/usr/$PREFIX/bin:$PATH"
+
+# let mingw compiler be less verbose
+export CFLAGS="-O2 -Wall -Wno-format"
+
+# compile & install dependencies first (example: libidn)
+# apt-get source libidn
+# cd libidn-*
+# ./configure --host=$PREFIX
+# make
+# sudo make install
+# rm -rf libidn-*
+
+# if you compiled&installed dependencies into /usr/local:
+export CPPFLAGS="-I/usr/local/include"
+export LDFLAGS="-L/usr/local/lib"
+
+./autogen.sh
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --without-libpsl --without-gnutls --without-libnghttp2 --without-zlib --without-lzma --without-bzip2 --without-libidn
+make clean
+make -j4
+
+# Add the library path for wine in ~/.wine/system.reg:
+# search for 
+#   [System\\CurrentControlSet\\Control\\Session Manager\\Environment]
+# within this section you'll find a PATH variable
+#   "PATH"=str(2):"C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\wbem"
+# add your path like e.g.
+#   "PATH"=str(2):"C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\wbem;Z:\\usr\\x86_64-w64-mingw32\\lib"
+#
+# Now wine is able to find the mingw DLLs.
+
+wine src/wget2.exe --help
