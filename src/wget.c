@@ -2319,7 +2319,7 @@ static int _get_header(void *context, wget_http_response_t *resp)
 	else
 		dest = config.output_document ? config.output_document : ctx->downloader->job->local_filename;
 
-	if (dest && (resp->code == 200 || resp->code == 206)) {
+	if (dest && (resp->code == 200 || resp->code == 206 || config.content_on_error)) {
 		ctx->outfd = _prepare_file (resp, dest, resp->code == 206 ? O_APPEND : O_TRUNC);
 		if (ctx->outfd == -1)
 			return -1;

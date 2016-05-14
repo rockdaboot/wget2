@@ -84,6 +84,18 @@ static const char *dummypage = "\
 </body>\n\
 </html>\n";
 
+static const char *errorpage = "\
+<html>\n\
+<head>\n\
+  <title>Main Page</title>\n\
+</head>\n\
+<body>\n\
+  <p>\n\
+    Error.\n\
+  </p>\n\
+</body>\n\
+</html>\n";
+
 int main(void)
 {
 	wget_test_url_t urls[]={
@@ -129,6 +141,13 @@ int main(void)
 			.headers = {
 				"Content-Type: text/plain",
             "Content-Disposition: attachment; filename*=UTF-8''%66ile_fran%c3%A7ais.html",
+			}
+		},
+		{	.name = "/error.html",
+			.code = "404 Not exist",
+			.body = errorpage,
+			.headers = {
+				"Content-Type: text/html",
 			}
 		}
 	};
@@ -547,6 +566,25 @@ int main(void)
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{	"index.html", urls[0].body },
+			{	NULL } },
+		0);
+
+	// test --content-on-error
+	wget_test(
+		WGET_TEST_OPTIONS, "--content-on-error",
+		WGET_TEST_REQUEST_URL, "error.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 8,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	urls[6].name + 1, urls[6].body },
+			{	NULL } },
+		0);
+
+	// test not saving file on error
+	wget_test(
+		WGET_TEST_OPTIONS, "",
+		WGET_TEST_REQUEST_URL, "error.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 8,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{	NULL } },
 		0);
 

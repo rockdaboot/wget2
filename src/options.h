@@ -118,6 +118,7 @@ struct config {
 		*ocsp_file,
 		*config_file,
 		*netrc_file,
+		content_on_error,
 		fsync_policy,
 		netrc,
 		http2,

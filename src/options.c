@@ -169,6 +169,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --post-data         Data to be sent in a POST request.\n"
 		"      --post-file         File with data to be sent in a POST request.\n"
 		"      --netrc             Load credentials from ~/.netrc if not given. (default: on)\n"
+		"      --content-on-error  Save response body even on error status. (default: off)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -639,6 +640,7 @@ static const struct option options[] = {
 	{ "config-file", &config.config_file, parse_string, 1, 0},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0 },
 	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0 },
+	{ "content-on-error", &config.content_on_error, parse_bool, 0, 0 },
 	{ "continue", &config.continue_download, parse_bool, 0, 'c' },
 	{ "convert-links", &config.convert_links, parse_bool, 0, 'k' },
 	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0 },
