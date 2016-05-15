@@ -20,6 +20,7 @@ libwget_gnulib_modules="
 accept
 bind
 c-strcase
+c-strcasestr
 c-ctype
 calloc-posix
 clock-time
