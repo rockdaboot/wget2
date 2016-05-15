@@ -1126,6 +1126,14 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 			// empty HTTP header
 			return resp;
 		}
+	} else if (sscanf(buf, " ICY %3hd %31[^\r\n] ", &resp->code, resp->reason) >= 1) {
+		if ((eol = strchr(buf + 5, '\n'))) {
+			// eol[-1]=0;
+			// debug_printf("# %s\n",buf);
+		} else {
+			// empty HTTP header
+			return resp;
+		}
 	} else {
 		error_printf(_("HTTP response header not found\n"));
 		xfree(resp);
