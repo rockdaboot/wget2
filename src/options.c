@@ -502,6 +502,18 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_cert_type(option_t op
 	return 0;
 }
 
+static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_progress_type(option_t opt, const char *val)
+{
+	if (!val || !*val || !wget_strcasecmp_ascii(val, "none"))
+		*((char *)opt->var) = 0;
+	else if (!wget_strcasecmp_ascii(val, "bar"))
+		*((char *)opt->var) = 1;
+	else
+		error_printf_exit("Unknown progress type '%s'\n", val);
+
+	return 0;
+}
+
 // legacy option, needed to succeed test suite
 static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_restrict_names(option_t opt, const char *val)
 {
@@ -711,7 +723,7 @@ static const struct option options[] = {
 	{ "prefer-family", &config.preferred_family, parse_prefer_family, 1, 0 },
 	{ "private-key", &config.private_key, parse_string, 1, 0 },
 	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0 },
-	{ "progress", &config.progress, parse_string, 1, 0 },
+	{ "progress", &config.progress, parse_progress_type, 1, 0 },
 	{ "protocol-directories", &config.protocol_directories, parse_bool, 0, 0 },
 	{ "quiet", &config.quiet, parse_bool, 0, 'q' },
 	{ "quota", &config.quota, parse_numbytes, 1, 'Q' },
@@ -1494,7 +1506,6 @@ void deinit(void)
 	xfree(config.password);
 	xfree(config.http_username);
 	xfree(config.http_password);
-	xfree(config.progress);
 	xfree(config.post_data);
 	xfree(config.post_file);
 

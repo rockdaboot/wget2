@@ -47,7 +47,6 @@ struct config {
 	const char
 		*post_file,
 		*post_data,
-		*progress,
 		*gnutls_options,
 		*username,
 		*password,
@@ -118,6 +117,7 @@ struct config {
 		*ocsp_file,
 		*config_file,
 		*netrc_file,
+		progress,
 		content_on_error,
 		fsync_policy,
 		netrc,
