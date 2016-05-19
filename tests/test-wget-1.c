@@ -157,6 +157,9 @@ int main(void)
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 
+	// some tests are not working on file systems that mangle filenames to lower- or uppercase
+	int fs_flags = wget_test_check_filesystem();
+
 	// test-noop
 	wget_test(
 		WGET_TEST_REQUEST_URL, "index.html",
@@ -466,27 +469,31 @@ int main(void)
 			{	NULL } },
 		0);
 
-	// test-restrict-lowercase
-	urls[3].name="/DuMmy.Txt";
-	wget_test(
-		WGET_TEST_OPTIONS, "--restrict-file-names=lowercase",
-		WGET_TEST_REQUEST_URL, "DuMmy.Txt",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{	"dummy.txt", urls[3].body },
-			{	NULL } },
-		0);
+	if ((fs_flags & WGET_TEST_FS_CASEMATTERS) == 0) {
+		urls[3].name="/DuMmy.Txt";
 
-	// test-restrict-uppercase
-	wget_test(
-		WGET_TEST_OPTIONS, "--restrict-file-names=uppercase",
-		WGET_TEST_REQUEST_URL, "DuMmy.Txt",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{	"DUMMY.TXT", urls[3].body },
-			{	NULL } },
-		0);
-	urls[3].name="/dummy.txt";
+		// test-restrict-lowercase
+		wget_test(
+			WGET_TEST_OPTIONS, "--restrict-file-names=lowercase",
+			WGET_TEST_REQUEST_URL, "DuMmy.Txt",
+			WGET_TEST_EXPECTED_ERROR_CODE, 0,
+			WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+				{	"dummy.txt", urls[3].body },
+				{	NULL } },
+			0);
+
+		// test-restrict-uppercase
+		wget_test(
+			WGET_TEST_OPTIONS, "--restrict-file-names=uppercase",
+			WGET_TEST_REQUEST_URL, "DuMmy.Txt",
+			WGET_TEST_EXPECTED_ERROR_CODE, 0,
+			WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+				{	"DUMMY.TXT", urls[3].body },
+				{	NULL } },
+			0);
+
+		urls[3].name="/dummy.txt";
+	}
 
 	// test-c-full
 	wget_test(

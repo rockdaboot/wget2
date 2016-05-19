@@ -432,14 +432,16 @@ static void _empty_directory(const char *dirname)
 		}
 
 		closedir(dir);
-	} else
+
+		wget_debug_printf("Created test directory '%s'\n", dirname);
+	} else if (errno != ENOENT)
 		wget_error_printf(_("Failed to opendir %s (%d)\n"), dirname, errno);
 }
 
 static void _remove_directory(const char *dirname)
 {
 	_empty_directory(dirname);
-	if (rmdir(dirname) == -1)
+	if (rmdir(dirname) == -1 && errno != ENOENT)
 		wget_error_printf(_("Failed to rmdir %s (%d)\n"), dirname, errno);
 }
 #endif
@@ -911,4 +913,60 @@ int wget_test_get_ftp_server_port(void)
 int wget_test_get_ftps_server_port(void)
 {
 	return ftps_server_port;
+}
+
+// assume that we are in 'tmpdir'
+int wget_test_check_filesystem(void)
+{
+	static char fname[3][3] = { "Ab", "ab", "AB" };
+	char buf[sizeof(fname[0])];
+	int flags = 0, fd, rc;
+
+	_empty_directory(tmpdir);
+
+	// Create 3 files with differently cased names with different content.
+	// On a case-sensitive filesystem like HFS+ there will be just one file with the contents of the last write.
+	for (unsigned it = 0; it < countof(fname); it++) {
+		if ((fd = open(fname[it], O_WRONLY | O_TRUNC | O_CREAT, 0644)) != -1) {
+			rc = write(fd, fname[it], sizeof(fname[0]));
+			close(fd);
+
+			if (rc != sizeof(fname[0])) {
+				wget_debug_printf("%s: Failed to write to '%s/%s' (%d) %d %zd\n", __func__, tmpdir, fname[it], errno, rc, sizeof(fname[0]));
+				goto out;
+			}
+		} else {
+			wget_debug_printf("%s: Failed to write open '%s/%s'\n", __func__, tmpdir, fname[it]);
+			goto out;
+		}
+	}
+
+	// Check file content to see if FS is case-sensitive
+	for (unsigned it = 0; it < countof(fname); it++) {
+		if ((fd = open(fname[it], O_RDONLY, 0644)) != -1) {
+			rc = read(fd, buf, sizeof(fname[0]));
+			close(fd);
+
+			if (rc != sizeof(fname[0])) {
+				wget_debug_printf("%s: Failed to read from '%s/%s'\n", __func__, tmpdir, fname[it]);
+				goto out;
+			}
+
+			if (strcmp(buf, fname[it])) {
+				wget_debug_printf("%s: Found case-sensitive filesystem\n", __func__);
+				flags = WGET_TEST_FS_CASEMATTERS;
+				goto out; // we can stop here
+			}
+		} else {
+			wget_debug_printf("%s: Failed to read open '%s/%s'\n", __func__, tmpdir, fname[it]);
+			goto out;
+		}
+	}
+
+	wget_debug_printf("%s: Found case-insensitive filesystem\n", __func__);
+
+out:
+	_empty_directory(tmpdir);
+
+	return flags;
 }

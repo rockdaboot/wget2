@@ -57,6 +57,9 @@ extern "C" {
 #define WGET_TEST_REQUEST_URLS 2007
 #define WGET_TEST_EXECUTABLE 2008
 
+// defines for wget_test_check_filesystem()
+#define WGET_TEST_FS_CASEMATTERS 3001 // filesystem is case-sensitive
+
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
 G_GNUC_WGET_UNUSED static const char *WGET_TEST_SOME_HTML_BODY = "\
@@ -119,6 +122,7 @@ typedef struct {
 void wget_test_stop_server(void) LIBWGET_EXPORT;
 void wget_test_start_server(int first_key, ...) LIBWGET_EXPORT;
 void wget_test(int first_key, ...) LIBWGET_EXPORT;
+int wget_test_check_filesystem(void) LIBWGET_EXPORT;
 int wget_test_get_http_server_port(void) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 int wget_test_get_https_server_port(void) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 int wget_test_get_ftp_server_port(void) G_GNUC_WGET_PURE LIBWGET_EXPORT;

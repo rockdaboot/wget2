@@ -42,7 +42,7 @@ int main(void)
 				"<html><head><title>Main Page</title></head><body><p>A link to a" \
 				" <A hreF=\"http://localhost:{{port}}/secondpage.html\">second page</a>." \
 				" <a href=\"picture_a.jpeg\">Picture a</a>." \
-				" <a href=\"picture_A.jpeg\">Picture A</a>." \
+				" <a href=\"picture_aa.jpeg\">Picture aa</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -53,8 +53,8 @@ int main(void)
 			.body =
 				"<html><head><title>Second Page</title></head><body><p>A link to a" \
 				" <a href=\"picture_b.jpeg\">Picture b</a>." \
-				" <a href=\"picture_B.JpeG\">Picture B</a>." \
-				" <a href=\"picture_c.png\">Picture C</a>." \
+				" <a href=\"picture_bb.JpeG\">Picture bb</a>." \
+				" <a href=\"picture_c.png\">Picture c</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -65,7 +65,7 @@ int main(void)
 			.body = "don't care",
 			.headers = { "Content-Type: image/jpeg" }
 		},
-		{	.name = "/picture_A.jpeg",
+		{	.name = "/picture_aa.jpeg",
 			.code = "200 Dontcare",
 			.body = "don't care",
 			.headers = { "Content-Type: image/jpeg" }
@@ -75,7 +75,7 @@ int main(void)
 			.body = "don't care",
 			.headers = { "Content-Type: image/jpeg" }
 		},
-		{	.name = "/picture_B.JpeG",
+		{	.name = "/picture_bb.JpeG",
 			.code = "200 Dontcare",
 			.body = "don't care",
 			.headers = { "Content-Type: image/jpeg" }
@@ -224,7 +224,9 @@ int main(void)
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[2].name + 1, urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
+			{ urls[5].name + 1, urls[5].body },
 			{	NULL } },
 		0);
 
@@ -236,8 +238,6 @@ int main(void)
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
-			{ urls[3].name + 1, urls[3].body },
-			{ urls[5].name + 1, urls[5].body },
 			{ urls[6].name + 1, urls[6].body },
 			{	NULL } },
 		0);
@@ -249,6 +249,7 @@ int main(void)
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[2].name + 1, urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
 			{ urls[6].name + 1, urls[6].body },
 			{	NULL } },
 		0);
@@ -261,7 +262,6 @@ int main(void)
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
-			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
 			{ urls[5].name + 1, urls[5].body },
 			{	NULL } },
