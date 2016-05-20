@@ -165,17 +165,19 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 	// check for common playlist formats and do a naive parsing
 	if (!wget_strcasecmp_ascii(resp->content_type, "audio/x-mpegurl") || !wget_strcasecmp_ascii(resp->content_type, "audio/x-pn-realaudio")) {
 		// .m3u and .ram format
-		char *p, *e;
+		char *e, *s;
 
 		e = resp->body->data;
 		do {
-			p = e + (*e != 0);
-			while (c_isspace(*p)) p++;
-			for (e = p; *e && *e != '\r' && *e != '\n'; e++)
+			s = e;
+			while (c_isspace(*s)) s++;
+			if (!*s) break;
+
+			for (e = s; *e && *e != '\r' && *e != '\n'; e++)
 				;
 
-			if (*p != '#' && p < e) {
-				stream_url = wget_strmemdup(p, e - p);
+			if (*s != '#' && s < e) {
+				stream_url = wget_strmemdup(s, e - s);
 				break;
 			}
 		} while (*e);
@@ -189,7 +191,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		} else
 			fprintf(stderr, "Failed to parse playlist URL\n");
 
-	} else if (!wget_strcasecmp_ascii(resp->content_type, "application/pls+xml")) {
+	} else if (!wget_strcasecmp_ascii(resp->content_type, "application/pls+xml") || !wget_strcasecmp_ascii(resp->content_type, "audio/x-scpls")) {
 		// .pls
 		char *p, url[128];
 
