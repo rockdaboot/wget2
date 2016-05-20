@@ -146,16 +146,11 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		return EXIT_FAILURE;
 	}
 
-	// get and parse the m3u playlist file, but sometimes we get a direct audio stream (e.g. type audio/mpeg)
+	// get and parse the m3u playlist file
 	resp = wget_http_get(
+//		WGET_HTTP_URL, "http://listen.radionomy.com/gothica.m3u",
 		WGET_HTTP_URL, argv[1],
-		WGET_HTTP_HEADER_ADD, "Icy-Metadata", "1", // we want in-stream title/actor information
-		WGET_HTTP_HEADER_FUNC, header_callback, // callback used to parse special headers like 'Icy-Name'
-		WGET_HTTP_BODY_SAVEAS_FUNC, stream_callback, // callback to cut title info out of audio stream
 		NULL);
-
-	if (metaint)
-		return EXIT_SUCCESS;
 
 	if (!resp) {
 		fprintf(stderr, "Failed to get response from %s\n", argv[1]);
