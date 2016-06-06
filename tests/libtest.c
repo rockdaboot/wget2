@@ -332,7 +332,7 @@ static void *_ftp_server_thread(void *ctx)
 							default: wget_tcp_set_family(pasv_parent_tcp, WGET_NET_FAMILY_ANY); break;
 						}
 					}
-					if (wget_tcp_listen(pasv_parent_tcp, "localhost", NULL, 5) != 0) {
+					if (wget_tcp_listen(pasv_parent_tcp, "localhost", "0", 5) != 0) {
 						wget_tcp_printf(tcp, "500 failed to open port\r\n");
 						break;
 					}
