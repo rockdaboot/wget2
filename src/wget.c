@@ -1508,6 +1508,9 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 	wget_buffer_t buf;
 	char sbuf[1024];
 	int convert_links = config.convert_links && !config.delete_after;
+	int page_requisites = config.recursive && config.page_requisites && config.level && level < config.level;
+
+	//	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
 
 	// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
 	if (encoding && encoding == config.remote_encoding) {
@@ -1593,9 +1596,6 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 			}
 		}
 	}
-
-	int page_requisites = config.recursive && config.page_requisites && config.level && level < config.level;
-//	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
 
 	wget_thread_mutex_lock(&known_urls_mutex);
 	for (int it = 0; it < wget_vector_size(parsed->uris); it++) {

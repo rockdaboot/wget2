@@ -695,6 +695,9 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	gnutls_x509_crt_t cert = NULL, issuer = NULL;
 	const char *hostname;
 	const char *tag = _config.check_certificate ? _("ERROR") : _("WARNING");
+#ifdef HAVE_GNUTLS_OCSP_H
+	unsigned nvalid = 0, nrevoked = 0;
+#endif
 
 	// read hostname
 	struct _session_context *ctx = gnutls_session_get_ptr(session);
@@ -805,8 +808,6 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	// At this point, the cert chain has been found valid regarding the locally available CA certificates and CRLs.
 	// Now, we are going to check the revocation status via OCSP
 #ifdef HAVE_GNUTLS_OCSP_H
-	unsigned nvalid = 0, nrevoked = 0;
-
 	if (_config.ocsp_stapling) {
 		if (!ctx->valid && ctx->ocsp_stapling) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
