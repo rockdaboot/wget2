@@ -173,7 +173,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 		}
 
 		if (body && bodylen) {
-			wget_http_add_header_printf(req, "Content-Length", "%zd", bodylen);
+			wget_http_add_header_printf(req, "Content-Length", "%zu", bodylen);
 		}
 
 		if (connp) {

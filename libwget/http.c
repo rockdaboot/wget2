@@ -1453,7 +1453,7 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 
 		if (!wget_strcmp(algorithm, "MD5-sess")) {
 			// A1BUF = H( H(user ":" realm ":" password) ":" nonce ":" cnonce )
-			snprintf(cnonce, sizeof(cnonce), "%08x", wget_random()); // create random hex string
+			snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
 			wget_md5_printf_hex(a1buf, "%s:%s:%s", a1buf, nonce, cnonce);
 		}
 
@@ -1463,7 +1463,7 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		if (!wget_strcmp(qop, "auth") || !wget_strcmp(qop, "auth-int")) {
 			// RFC 2617 Digest Access Authentication
 			if (!*cnonce)
-				snprintf(cnonce, sizeof(cnonce), "%08x", wget_random()); // create random hex string
+				snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
 
 			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" nc ":" cnonce ":" qop ": " A2BUF)
 			wget_md5_printf_hex(response_digest, "%s:%s:00000001:%s:%s:%s", a1buf, nonce, /* nc, */ cnonce, qop, a2buf);
@@ -1774,7 +1774,7 @@ static int _on_data_chunk_recv_callback(nghttp2_session *session,
 	if (req) {
 		struct _body_callback_context *ctx = req->nghttp2_context;
 //		debug_printf("[INFO] C <---------------------------- S%d (DATA chunk - %zu bytes)\n", stream_id, len);
-		debug_printf("nbytes %zd\n", len);
+		debug_printf("nbytes %zu\n", len);
 		if (ctx && ctx->body_callback)
 			ctx->body_callback(ctx->context, (char *)data, (ssize_t)len);
 		// debug_write((char *)data, len);
@@ -2124,7 +2124,7 @@ wget_http_response_t *wget_http_get_response_cb(
 	bufsize = conn->buf->size;
 
 	while ((nbytes = wget_tcp_read(conn->tcp, buf + nread, bufsize - nread)) > 0) {
-		debug_printf("nbytes %zd nread %zd %zd\n", nbytes, nread, bufsize);
+		debug_printf("nbytes %zd nread %zd %zu\n", nbytes, nread, bufsize);
 		nread += nbytes;
 		buf[nread] = 0; // 0-terminate to allow string functions
 
@@ -2197,7 +2197,7 @@ wget_http_response_t *wget_http_get_response_cb(
 		size_t chunk_size = 0;
 		char *end;
 
-		debug_printf("method 1 %zd %zd:\n", body_len, body_size);
+		debug_printf("method 1 %zu %zu:\n", body_len, body_size);
 		// RFC 2616 3.6.1
 		// Chunked-Body   = *chunk last-chunk trailer CRLF
 		// chunk          = chunk-size [ chunk-extension ] CRLF chunk-data CRLF
@@ -2248,13 +2248,13 @@ wget_http_response_t *wget_http_get_response_cb(
 
 				body_len += nbytes;
 				buf[body_len] = 0;
-				debug_printf("a nbytes %zd body_len %zd\n", nbytes, body_len);
+				debug_printf("a nbytes %zd body_len %zu\n", nbytes, body_len);
 			}
 			end += 2;
 
 			// now p points to chunk-size (hex)
 			chunk_size = strtoll(p, NULL, 16);
-			debug_printf("chunk size is %zd\n", chunk_size);
+			debug_printf("chunk size is %zu\n", chunk_size);
 			if (chunk_size == 0) {
 				// now read 'trailer CRLF' which is '*(entity-header CRLF) CRLF'
 				if (*end == '\r' && end[1] == '\n') // shortcut for the most likely case (empty trailer)
@@ -2285,7 +2285,7 @@ wget_http_response_t *wget_http_get_response_cb(
 
 			p = end + chunk_size + 2;
 			if (p <= buf + body_len) {
-				debug_printf("1 skip chunk_size %zd\n", chunk_size);
+				debug_printf("1 skip chunk_size %zu\n", chunk_size);
 				wget_decompress(dc, end, chunk_size);
 				continue;
 			}
@@ -2294,7 +2294,7 @@ wget_http_response_t *wget_http_get_response_cb(
 
 			chunk_size = p - (buf + body_len); // in fact needed bytes to have chunk_size+2 in buf
 
-			debug_printf("need at least %zd more bytes\n", chunk_size);
+			debug_printf("need at least %zu more bytes\n", chunk_size);
 
 			while (chunk_size > 0) {
 				if (conn->abort_indicator || _abort_indicator)
@@ -2302,7 +2302,7 @@ wget_http_response_t *wget_http_get_response_cb(
 
 				if ((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) <= 0)
 					goto cleanup;
-				debug_printf("a nbytes=%zd chunk_size=%zd\n", nread, chunk_size);
+				debug_printf("a nbytes=%zd chunk_size=%zu\n", nread, chunk_size);
 
 				if (chunk_size <= (size_t)nbytes) {
 					if (chunk_size == 1 || !strncmp(buf + chunk_size - 2, "\r\n", 2)) {
@@ -2344,7 +2344,7 @@ wget_http_response_t *wget_http_get_response_cb(
 				break;
 
 			body_len += nbytes;
-			debug_printf("nbytes %zd total %zd/%zd\n", nbytes, body_len, resp->content_length);
+			debug_printf("nbytes %zd total %zu/%zu\n", nbytes, body_len, resp->content_length);
 			wget_decompress(dc, buf, nbytes);
 		}
 		if (nbytes < 0)
@@ -2363,7 +2363,7 @@ wget_http_response_t *wget_http_get_response_cb(
 
 		while (!conn->abort_indicator && !_abort_indicator && (nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) > 0) {
 			body_len += nbytes;
-			debug_printf("nbytes %zd total %zd\n", nbytes, body_len);
+			debug_printf("nbytes %zd total %zu\n", nbytes, body_len);
 			wget_decompress(dc, buf, nbytes);
 		}
 		resp->content_length = body_len;

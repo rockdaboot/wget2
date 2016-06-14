@@ -198,10 +198,10 @@ static void _print_x509_certificate_info(gnutls_session_t session)
 			algo = gnutls_x509_crt_get_pk_algorithm(cert, &bits);
 			if (algo == GNUTLS_PK_RSA) {
 				info_printf(_("RSA\n    "));
-				info_printf(ngettext("- Modulus: %d bit\n", "- Modulus: %d bits\n", bits), bits);
+				info_printf(ngettext("- Modulus: %u bit\n", "- Modulus: %u bits\n", bits), bits);
 			} else if (algo == GNUTLS_PK_DSA) {
 				info_printf(_("DSA\n    "));
-				info_printf(ngettext("- Exponent: %d bit\n", "- Exponent: %d bits\n", bits), bits);
+				info_printf(ngettext("- Exponent: %u bit\n", "- Exponent: %u bits\n", bits), bits);
 			} else
 				info_printf(_("UNKNOWN\n"));
 
@@ -233,7 +233,7 @@ static void _print_x509_certificate_info(gnutls_session_t session)
 */
 			gnutls_x509_crt_deinit(cert);
 		} else {
-			info_printf(_("  Unknown certificate type %d\n"), cert_type);
+			info_printf(_("  Unknown certificate type %d\n"), (int) cert_type);
 		}
 	}
 }
@@ -832,7 +832,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 				gnutls_x509_crt_deinit(cert);
 			gnutls_x509_crt_init(&cert);
 			if ((err = gnutls_x509_crt_import(cert, &cert_list[it], GNUTLS_X509_FMT_DER)) != GNUTLS_E_SUCCESS) {
-				error_printf(_("%s: Failed to parse certificate[%d]: %s\n"), tag, it, gnutls_strerror (err));
+				error_printf(_("%s: Failed to parse certificate[%u]: %s\n"), tag, it, gnutls_strerror (err));
 				continue;
 			}
 
@@ -1187,14 +1187,14 @@ int wget_ssl_open(wget_tcp_t *tcp)
 			if (e > s) {
 				data[nprot].data = (unsigned char *) s;
 				data[nprot].size = e -s;
-				debug_printf("ALPN offering %.*s\n", data[nprot].size, data[nprot].data);
+				debug_printf("ALPN offering %.*s\n", (int) data[nprot].size, data[nprot].data);
 				nprot++;
 			}
 		}
 		if (*s && *s != ',') {
 			data[nprot].data = (unsigned char *) s;
 			data[nprot].size = strlen(s);
-			debug_printf("ALPN offering %.*s\n", data[nprot].size, data[nprot].data);
+			debug_printf("ALPN offering %.*s\n", (int) data[nprot].size, data[nprot].data);
 			nprot++;
 		}
 
@@ -1213,7 +1213,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		if ((rc = gnutls_alpn_get_selected_protocol(session, &protocol)))
 			error_printf("GnuTLS: Get ALPN: %s\n", gnutls_strerror(rc));
 		else {
-			debug_printf("ALPN: Server accepted protocol '%.*s'\n", protocol.size, protocol.data);
+			debug_printf("ALPN: Server accepted protocol '%.*s'\n", (int) protocol.size, protocol.data);
 			if (!memcmp(protocol.data, "h2", 2))
 				tcp->protocol = WGET_PROTOCOL_HTTP_2_0;
 		}

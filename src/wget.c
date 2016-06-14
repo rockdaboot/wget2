@@ -1003,10 +1003,10 @@ int main(int argc, const char **argv)
 			}
 
 			if (config.progress)
-				bar_printf(config.num_threads, "Files: %d  Bytes: %llu  Redirects: %d  Todo: %d", stats.ndownloads, quota, stats.nredirects, queue_size());
+				bar_printf(config.num_threads, "Files: %d  Bytes: %lld  Redirects: %d  Todo: %d", stats.ndownloads, quota, stats.nredirects, queue_size());
 
 			if (config.quota && quota >= config.quota) {
-				info_printf(_("Quota of %llu bytes reached - stopping.\n"), config.quota);
+				info_printf(_("Quota of %lld bytes reached - stopping.\n"), config.quota);
 				break;
 			}
 
@@ -1032,9 +1032,9 @@ int main(int argc, const char **argv)
 	}
 
 	if (config.progress)
-		bar_printf(config.num_threads, "Files: %d  Bytes: %llu  Redirects: %d  Todo: %d", stats.ndownloads, quota, stats.nredirects, queue_size());
+		bar_printf(config.num_threads, "Files: %d  Bytes: %lld  Redirects: %d  Todo: %d", stats.ndownloads, quota, stats.nredirects, queue_size());
 	else if ((config.recursive || config.page_requisites || (config.input_file && quota != 0)) && quota) {
-		info_printf(_("Downloaded: %d files, %llu bytes, %d redirects, %d errors\n"), stats.ndownloads, quota, stats.nredirects, stats.nerrors);
+		info_printf(_("Downloaded: %d files, %lld bytes, %d redirects, %d errors\n"), stats.ndownloads, quota, stats.nredirects, stats.nerrors);
 	}
 
 	if (config.save_cookies)
@@ -2219,7 +2219,7 @@ int download_part(DOWNLOADER *downloader)
 				} else if (!resp->body) {
 					print_status(downloader, "part %d download error 'empty body'\n", part->id);
 				} else if (resp->body->length != (size_t)part->length) {
-					print_status(downloader, "part %d download error '%zd bytes of %lld expected'\n",
+					print_status(downloader, "part %d download error '%zu bytes of %lld expected'\n",
 						part->id, resp->body->length, (long long)part->length);
 				} else {
 					print_status(downloader, "part %d downloaded\n", part->id);
@@ -2428,7 +2428,7 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 				const char *local_filename = downloader->job->local_filename;
 
 				if (config.continue_download)
-					wget_http_add_header_printf(req, "Range", "bytes=%llu-",
+					wget_http_add_header_printf(req, "Range", "bytes=%lld-",
 						get_file_size(local_filename));
 
 				if (config.timestamping) {
@@ -2630,7 +2630,7 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 		}
 
 		if (config.server_response)
-			info_printf("# got header %zd bytes:\n%s\n\n", resp->header->length, resp->header->data);
+			info_printf("# got header %zu bytes:\n%s\n\n", resp->header->length, resp->header->data);
 
 		// server doesn't support keep-alive or want us to close the connection
 		if (!resp->keep_alive)

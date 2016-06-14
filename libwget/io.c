@@ -380,9 +380,9 @@ int wget_update_file(const char *fname,
 
 #ifdef HAVE_GETUID
 	if (!tmplen)
-		snprintf(lockfile, lockfilesize, "%s_lck_%d", basename, getuid());
+		snprintf(lockfile, lockfilesize, "%s_lck_%u", basename, (unsigned) getuid());
 	else
-		snprintf(lockfile, lockfilesize, "%s/%s_lck_%d", tmpdir, basename, getuid());
+		snprintf(lockfile, lockfilesize, "%s/%s_lck_%u", tmpdir, basename, (unsigned) getuid());
 #else
 	if (!tmplen)
 		snprintf(lockfile, lockfilesize, "%s_lck", basename);
