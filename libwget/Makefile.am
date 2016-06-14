@@ -1,3 +1,5 @@
+AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS)
+
 lib_LTLIBRARIES = libwget.la
 libwget_la_SOURCES = \
  atom_url.c bar.c buffer.c buffer_printf.c base64.c cookie.c\

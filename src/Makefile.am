@@ -1,6 +1,7 @@
 DEFS = @DEFS@ -DSYSCONFDIR=\"$(sysconfdir)/@PACKAGE@\" -DLOCALEDIR=\"$(localedir)\"
 
 LDADD = $(LIBOBJS) ../lib/libgnu.a
+AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS)
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib
 
 bin_PROGRAMS = wget2 wget2_noinstall

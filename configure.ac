@@ -116,6 +116,31 @@ AC_PROG_LN_S
 AM_PROG_CC_C_O
 
 #
+# check if compiler warnings are requested
+#
+AC_ARG_ENABLE([gcc-warnings],
+  [AS_HELP_STRING([--enable-gcc-warnings], [Turn on extra GCC warnings (for developers)])],
+  [gl_gcc_warnings=yes], [gl_gcc_warnings=no])
+
+if test "$gl_gcc_warnings" = yes; then
+  gl_WARN_ADD([-Werror], [WERROR_CFLAGS])
+
+  # Set up list of unwanted warnings
+  nw=
+  nw="$nw -Wsystem-headers"       # System headers may trigger lot's of useless warnings
+  nw="$nw -Wvla"                  # This project is C99
+
+  # Enable all GCC warnings not in this list.
+  gl_MANYWARN_ALL_GCC([warnings])
+  gl_MANYWARN_COMPLEMENT([warnings], [$warnings], [$nw])
+  for w in $warnings; do
+    gl_WARN_ADD([$w])
+  done
+  gl_WARN_ADD([-fdiagnostics-show-option])
+  gl_WARN_ADD([-Wno-missing-field-initializers]) # Rely on missing field = 0.
+fi
+
+#
 # Gettext
 #
 m4_ifdef([AM_GNU_GETTEXT], [
@@ -356,7 +381,7 @@ AC_MSG_NOTICE([Summary of build options:
   Host OS:           ${host_os}
   Install prefix:    ${prefix}
   Compiler:          ${CC}
-  CFlags:            ${CFLAGS} ${CPPFLAGS}
+  CFlags:            ${CFLAGS} ${CPPFLAGS} ${WARN_CFLAGS}
   LDFlags:           ${LDFLAGS}
   Libs:              ${LIBS}
   SSL/TLS support:   $with_gnutls

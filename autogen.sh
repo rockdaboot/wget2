@@ -50,6 +50,7 @@ inttypes
 lib-symbol-visibility
 listen
 malloc-posix
+manywarnings
 memchr
 mkdir
 mkstemp
