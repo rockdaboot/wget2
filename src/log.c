@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <errno.h>
+#include <fcntl.h>
 #include "timespec.h" // gnulib gettime()
 
 #include <libwget.h>
@@ -41,41 +42,87 @@
 #include "options.h"
 #include "log.h"
 
-static void _write_debug(const char *data, size_t len)
+static void _write_out(FILE *default_fp, const char *data, size_t len, int with_timestamp, const char *colorstring)
 {
 	FILE *fp;
-	struct timespec ts;
-	struct tm *tp, tbuf;
+	int fd = -1;
+	int tty = 0;
 
 	if (!data || (ssize_t)len <= 0)
 		return;
 
-	gettime(&ts);
-	tp = localtime_r((const time_t *)&ts.tv_sec, &tbuf); // cast avoids warning on OpenBSD
-
-	if (!config.logfile)
-		fp = stderr;
-	else if (*config.logfile == '-' && config.logfile[1] == 0)
+	if (!config.logfile) {
+		fp = default_fp;
+	} else if (!strcmp(config.logfile, "-")) {
 		fp = stdout;
-	else
-		fp = fopen(config.logfile, "a");
+	} else {
+		fp = NULL;
+		fd = open(config.logfile, O_WRONLY | O_APPEND | O_CREAT, 0644);
+		if (fd == -1)
+			fp = default_fp;
+	}
+
+	if (fp)
+		tty = isatty(fileno(fp));
+
+	char sbuf[4096];
+	wget_buffer_t buf;
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
+	if (tty && colorstring)
+		wget_buffer_strcpy(&buf, colorstring);
+
+	if (with_timestamp) {
+		struct timespec ts;
+		struct tm *tp, tbuf;
+
+		gettime(&ts);
+		tp = localtime_r((const time_t *)&ts.tv_sec, &tbuf); // cast avoids warning on OpenBSD
+
+		wget_buffer_printf_append(&buf, "%02d.%02d%02d%02d.%03d ",
+			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, (int) (ts.tv_nsec / 1000000));
+	}
+
+	wget_buffer_memcat(&buf, data, len);
+	if (data[len -1] != '\n')
+		wget_buffer_memcat(&buf, "\n", 1);
+
+	if (tty && colorstring)
+		wget_buffer_strcat(&buf, "\033[m"); // reset text color
 
 	if (fp) {
-		char sbuf[4096];
-		wget_buffer_t buf;
-
-		wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-		wget_buffer_printf(&buf, "%02d.%02d%02d%02d.%03d ",
-			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, (int) (ts.tv_nsec / 1000000));
-		wget_buffer_memcat(&buf, data, len);
-		if (data[len -1] != '\n')
-			wget_buffer_memcat(&buf, "\n", 1);
 		fwrite(buf.data, 1, buf.length, fp);
-		wget_buffer_deinit(&buf);
-
-		if (fp != stderr && fp != stdout)
-			fclose(fp);
+	} else if (fd != -1) {
+		if (write(fd, buf.data, buf.length) == -1)
+			fwrite(buf.data, 1, buf.length, stderr);
+		close(fd);
 	}
+
+	wget_buffer_deinit(&buf);
+}
+
+static void _write_debug(const char *data, size_t len)
+{
+	if (!data || (ssize_t)len <= 0)
+		return;
+
+	_write_out(stderr, data, len, 1, "\033[35m"); // magenta/purple text
+}
+
+static void _write_error(const char *data, size_t len)
+{
+	if (!data || (ssize_t)len <= 0)
+		return;
+
+	_write_out(stderr, data, len, 0, "\033[31m"); // red text
+}
+
+static void _write_info(const char *data, size_t len)
+{
+	if (!data || (ssize_t)len <= 0)
+		return;
+
+	_write_out(stdout, data, len, 0, NULL);
 }
 
 void log_init(void)
@@ -98,9 +145,13 @@ void log_init(void)
 	// set debug logging
 	wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), config.debug ? _write_debug : NULL);
 
+	// set debug logging
+	wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : _write_error);
+
 	// set error logging
-	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : stderr);
+//	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : stderr);
 
 	// set info logging
-	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
+	wget_logger_set_func(wget_get_logger(WGET_LOGGER_INFO), config.verbose && !config.quiet ? _write_info : NULL);
+//	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
 }
