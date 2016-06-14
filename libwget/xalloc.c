@@ -60,7 +60,7 @@
 static void
 	(*_oom_callback)(void);
 
-static _GL_INLINE void G_GNUC_WGET_NORETURN _no_memory(void)
+static void G_GNUC_WGET_NORETURN _no_memory(void)
 {
 	if (_oom_callback)
 		_oom_callback();
