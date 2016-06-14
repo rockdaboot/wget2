@@ -35,13 +35,12 @@
 
 int main(void)
 {
-	int it;
 	wget_buffer_t buf;
 	char sbuf[128];
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
-	for (it = 0; it < 10000000; it++) {
+	for (unsigned it = 0; it < 10000000; it++) {
 		// buffer: 0.239s  libc: 0.018s (gcc replaces sprintf(%s) by strcpy())
 //		snprintf(sbuf,sizeof(sbuf),"%s", "teststring sabbeldi heidewitzka\n");
 //		buffer_printf(&buf,"%s", "teststring sabbeldi heidewitzka\n");

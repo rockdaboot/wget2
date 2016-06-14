@@ -118,7 +118,7 @@ int main(int argc, const char *const *argv)
 		close(fd);
 	}
 
-	printf("read %u words, %u uniques, %u doubles\n", unique + duple, unique, duple);
+	printf("read %d words, %d uniques, %d doubles\n", unique + duple, unique, duple);
 
 	// const void *keys = stringmap_get_keys(map);
 	wget_stringmap_browse(map, (int(*)(void *, const char *, void *))_print_word, NULL);

@@ -1111,7 +1111,7 @@ static void test_parse_challenge(void)
 			if (!t->scheme[nchal]) {
 				if (challenge) {
 					failed++;
-					info_printf("Failed [%u]: wget_http_parse_challenges(%s) found %d challenges (expected %d)\n", it, t->input, wget_vector_size(challenges), nchal);
+					info_printf("Failed [%u]: wget_http_parse_challenges(%s) found %d challenges (expected %u)\n", it, t->input, wget_vector_size(challenges), nchal);
 				}
 				break;
 			}
@@ -1227,7 +1227,7 @@ static void test_strcasecmp_ascii(void)
 			ok++;
 		else {
 			failed++;
-			info_printf("Failed [%u]: wget_strncasecmp_ascii(%s,%s,%zd) -> %d (expected %d)\n", it, t->s1, t->s2, t->n, n, t->result);
+			info_printf("Failed [%u]: wget_strncasecmp_ascii(%s,%s,%zu) -> %d (expected %d)\n", it, t->s1, t->s2, t->n, n, t->result);
 		}
 	}
 
