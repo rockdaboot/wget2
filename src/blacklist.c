@@ -70,7 +70,7 @@ static unsigned int G_GNUC_WGET_NONNULL_ALL hash_iri(const wget_iri_t *iri)
 
 static int G_GNUC_WGET_NONNULL_ALL _blacklist_print(G_GNUC_WGET_UNUSED void *ctx, const wget_iri_t *iri)
 {
-	info_printf("blacklist %s\n", iri->uri);
+	debug_printf("blacklist %s\n", iri->uri);
 	return 0;
 }
 
