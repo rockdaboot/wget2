@@ -1733,6 +1733,8 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 						wget_http_parse_strict_transport_security(s, &resp->hsts_maxage, &resp->hsts_include_subdomains);
 					}
 					break;
+				default:
+					break;
 				}
 
 				xfree(s);
@@ -1998,19 +2000,15 @@ int wget_http_send_request_with_body(wget_http_connection_t *conn, wget_http_req
 
 ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf)
 {
-	int use_proxy = 0;
-
 //	buffer_sprintf(buf, "%s /%s HTTP/1.1\r\nHost: %s", req->method, req->esc_resource.data ? req->esc_resource.data : "",);
 
 	wget_buffer_strcpy(buf, req->method);
 	wget_buffer_memcat(buf, " ", 1);
 	if (req->scheme == WGET_IRI_SCHEME_HTTP && wget_vector_size(http_proxies) > 0) {
-		use_proxy = 1;
 		wget_buffer_strcat(buf, req->scheme);
 		wget_buffer_memcat(buf, "://", 3);
 		wget_buffer_bufcat(buf, &req->esc_host);
 	} else if (req->scheme == WGET_IRI_SCHEME_HTTPS && wget_vector_size(https_proxies) > 0) {
-		use_proxy = 1;
 		wget_buffer_strcat(buf, req->scheme);
 		wget_buffer_memcat(buf, "://", 3);
 		wget_buffer_bufcat(buf, &req->esc_host);

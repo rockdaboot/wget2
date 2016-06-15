@@ -314,9 +314,11 @@ static int _print_info(gnutls_session_t session)
 		 * print some information about it.
 		 */
 		_print_x509_certificate_info(session);
-
 		break;
 
+	default:
+		info_printf(_("Unsupported authentication %u.\n"), cred);
+		break;
 	} /* switch */
 
 	if (dhe != 0)

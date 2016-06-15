@@ -1232,7 +1232,7 @@ int
 int
 	wget_tcp_get_preferred_family(wget_tcp_t *tcp) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 int
-	wget_tcp_get_protocol(wget_tcp_t *tcp) LIBWGET_EXPORT;
+	wget_tcp_get_protocol(wget_tcp_t *tcp) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 int
 	wget_tcp_get_local_port(wget_tcp_t *tcp) LIBWGET_EXPORT;
 void

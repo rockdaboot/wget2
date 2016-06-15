@@ -2341,7 +2341,11 @@ static int _get_body(void *context, const char *data, size_t length)
 		size_t written = safe_write(ctx->outfd, data, length);
 
 		if (written == SAFE_WRITE_ERROR) {
+#if EAGAIN != EWOULDBLOCK
 			if ((errno == EAGAIN || errno == EWOULDBLOCK) && !terminate) {
+#else
+			if (errno == EAGAIN && !terminate) {
+#endif
 				if (wget_ready_2_write(ctx->outfd, 1000) > 0) {
 					written = safe_write(ctx->outfd, data, length);
 				}

@@ -133,6 +133,8 @@ size_t wget_base64_decode(char *dst, const char *src, int n)
 		*dst = (base64_2_bin[usrc[2]]&0x03) << 6;
 		if (*dst) dst++;
 		break;
+	default: // 0: ignore
+		break;
 	}
 
 	*dst = 0;
@@ -187,14 +189,12 @@ size_t wget_base64_encode(char *dst, const char *src, int n)
 	}
 
 	// special case
-	switch (extra) {
-	case 1:
+	if (extra == 1) {
 		*dst++ = base64[usrc[0] >> 2];
 		*dst++ = base64[(usrc[0]&3) << 4];
 		*dst++ = '=';
 		*dst++ = '=';
-		break;
-	case 2:
+	} else if (extra == 2) {
 		*dst++ = base64[usrc[0] >> 2];
 		*dst++ = base64[((usrc[0]&3) << 4) | (usrc[1] >> 4)];
 		*dst++ = base64[((usrc[1]&15) << 2)];

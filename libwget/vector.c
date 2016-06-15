@@ -435,21 +435,16 @@ int wget_vector_findext(const wget_vector_t *v, int start, int direction, int (*
 {
 
 	if (v) {
-		int it;
-
-		switch (direction) {
-		case 0: // up
-			if (start >= 0) {
-				for (it = start; it < v->cur; it++)
-					if (find(v->entry[it]) == 0) return it;
-			}
-			break;
-		case 1: // down
+		if (direction) { // down
 			if (start < v->cur) {
-				for (it = start; it >= 0; it--)
+				for (int it = start; it >= 0; it--)
 					if (find(v->entry[it]) == 0) return it;
 			}
-			break;
+		} else { // up
+			if (start >= 0) {
+				for (int it = start; it < v->cur; it++)
+					if (find(v->entry[it]) == 0) return it;
+			}
 		}
 	}
 
