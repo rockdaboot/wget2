@@ -5,7 +5,7 @@ LDFLAGS=$LDFLAGS
 
 AC_PREREQ([2.67])
 AC_INIT([wget2], [1.0.0], [bug-wget@gnu.org], [wget2], [https://savannah.gnu.org/projects/wget])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([subdir-objects])
 
 CFLAGS=$CFLAGS
 AC_USE_SYSTEM_EXTENSIONS
@@ -116,14 +116,53 @@ AC_PROG_LN_S
 AM_PROG_CC_C_O
 
 #
+# gl_GCC_VERSION_IFELSE([major], [minor], [run-if-found], [run-if-not-found])
+# ------------------------------------------------
+# If $CPP is gcc-MAJOR.MINOR or newer, then run RUN-IF-FOUND.
+# Otherwise, run RUN-IF-NOT-FOUND.
+AC_DEFUN([gl_GCC_VERSION_IFELSE],
+  [AC_PREPROC_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[
+#if ($1) < __GNUC__ || (($1) == __GNUC__ && ($2) <= __GNUC_MINOR__)
+/* ok */
+#else
+# error "your version of gcc is older than $1.$2"
+#endif
+      ]]),
+    ], [$3], [$4])
+  ]
+)
+
+#
 # check if compiler warnings are requested
 #
 AC_ARG_ENABLE([gcc-warnings],
   [AS_HELP_STRING([--enable-gcc-warnings], [Turn on extra GCC warnings (for developers)])],
   [gl_gcc_warnings=yes], [gl_gcc_warnings=no])
+AC_ARG_ENABLE([gcc-warnings],
+  [AS_HELP_STRING([--enable-gcc-warnings], [Turn on extra GCC warnings (for developers)])],
+  [case $enableval in
+     yes|no) ;;
+     *) AC_MSG_ERROR([bad value $enableval for gcc-warnings option]) ;;
+   esac
+     gl_gcc_warnings=$enableval
+  ], [
+    # GCC provides fine-grained control over diagnostics which
+    # is used in gnulib for example to suppress warnings from
+    # certain sections of code.  So if this is available and
+    # we're running from a git repo, then auto enable the warnings.
+    gl_gcc_warnings=no
+    gl_GCC_VERSION_IFELSE([4], [6],
+      [test -d "$srcdir"/.git \
+       && ! test -f "$srcdir"/.tarball-version \
+       && gl_gcc_warnings=yes]
+    )
+  ]
+)
 
 if test "$gl_gcc_warnings" = yes; then
-  gl_WARN_ADD([-Werror], [WERROR_CFLAGS])
+  # gl_WARN_ADD([-Werror], [WERROR_CFLAGS])
 
   # Set up list of unwanted warnings
   nw=
@@ -138,6 +177,31 @@ if test "$gl_gcc_warnings" = yes; then
   done
   gl_WARN_ADD([-fdiagnostics-show-option])
   gl_WARN_ADD([-Wno-missing-field-initializers]) # Rely on missing field = 0.
+  AC_SUBST([WARN_CFLAGS])
+
+  # We use a slightly smaller set of warning options for lib/.
+  # Remove the following and save the result in GNULIB_WARN_CFLAGS.
+  # Removing is not enough if these switches are implicitly set by other
+  #  flags like -Wall or -Wextra. We have to explicitely unset them
+  #  with -Wno-....
+  nw=
+  nw="$nw -Wpedantic"
+  nw="$nw -Wunused-macros"
+  nw="$nw -Wsign-compare"
+  nw="$nw -Wunused-parameter"
+  nw="$nw -Wswitch-default"
+  nw="$nw -Wformat-nonliteral"
+  nw="$nw -Wsuggest-attribute=pure"
+  nw="$nw -Wunsafe-loop-optimizations"
+  gl_MANYWARN_COMPLEMENT([GNULIB_WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
+
+  # disable options implicitly set by other options
+  GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-sign-compare -Wno-unused-parameter"
+#  bak="$WARN_CFLAGS"
+#  gl_WARN_ADD([-Wno-sign-compare])
+ # gl_WARN_ADD([-Wno-unused-parameter])
+  AC_SUBST([GNULIB_WARN_CFLAGS])
+#  WARN_CFLAGS="$bak"
 fi
 
 #

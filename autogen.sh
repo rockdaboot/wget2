@@ -103,7 +103,7 @@ unlink
 write
 "
 
-gnulib/gnulib-tool --libtool --import $libwget_gnulib_modules
+gnulib/gnulib-tool --libtool --import --makefile-name=gnulib.mk $libwget_gnulib_modules
 
 $AUTORECONF --install --force --symlink || exit $?
 
