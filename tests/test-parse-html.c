@@ -70,33 +70,33 @@ static void html_dump(void *user_ctx, int flags, const char *dir G_GNUC_WGET_UNU
 {
 //	info_printf("\n%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
-		int found = 0;
-
 		// info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
 
 		// very simplified
 		// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
 		switch (c_tolower(*attr)) {
 		case 'h':
-			found = !wget_strcasecmp_ascii(attr, "href");
+			if (wget_strcasecmp_ascii(attr, "href"))
+				return;
 			break;
 		case 's':
-			found = !wget_strcasecmp_ascii(attr, "src");
+			if (wget_strcasecmp_ascii(attr, "src"))
+				return;
 			break;
+		default:
+			return;
 		}
 
-		if (found) {
-			// check if len and pos matches
-			const char *doc = (const char *)user_ctx;
+		// check if len and pos matches
+		const char *doc = (const char *)user_ctx;
 
-			if (memcmp(doc + pos, val, len)) {
-				failed++;
-				error_printf_exit("Not found: '%.*s' expected at pos %zd with length %zd\n", (int) len, val, pos, len);
-			} else
-				ok++;
-		}
+		if (memcmp(doc + pos, val, len)) {
+			failed++;
+			error_printf_exit("Not found: '%.*s' expected at pos %zu with length %zu\n", (int) len, val, pos, len);
+		} else
+			ok++;
 	}
-	return;
+
 /*
 	if (flags & XML_FLG_BEGIN) {
 		const char *p = *dir == '/' ? strrchr(dir, '/') : dir;

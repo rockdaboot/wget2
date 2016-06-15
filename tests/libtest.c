@@ -932,7 +932,7 @@ int wget_test_check_filesystem(void)
 			close(fd);
 
 			if (rc != sizeof(fname[0])) {
-				wget_debug_printf("%s: Failed to write to '%s/%s' (%d) %d %zd\n", __func__, tmpdir, fname[it], errno, rc, sizeof(fname[0]));
+				wget_debug_printf("%s: Failed to write to '%s/%s' (%d) %d %zu\n", __func__, tmpdir, fname[it], errno, rc, sizeof(fname[0]));
 				goto out;
 			}
 		} else {
