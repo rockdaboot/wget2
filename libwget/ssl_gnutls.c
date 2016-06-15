@@ -1146,8 +1146,12 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	if (hostname)
 		gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
 	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, _credentials);
+#ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
+	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
+	gnutls_transport_set_int(session, sockfd);
+#else
 	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
-
+#endif
 	struct _session_context *ctx = wget_calloc(1, sizeof(struct _session_context));
 	ctx->hostname = wget_strdup(hostname);
 
@@ -1338,8 +1342,12 @@ int wget_ssl_server_open(wget_tcp_t *tcp)
 	 */
 	gnutls_certificate_server_set_request(session, GNUTLS_CERT_IGNORE);
 
-	// gnutls_transport_set_int(session, sockfd);
+#ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
+	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
+	gnutls_transport_set_int(session, sockfd);
+#else
 	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
+#endif
 
 	ret = _do_handshake(session, sockfd, connect_timeout);
 
@@ -1371,6 +1379,13 @@ void wget_ssl_server_close(void **session)
 
 ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 {
+#ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
+	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
+	int sockfd = gnutls_transport_get_int(session);
+#else
+	int sockfd = (int)(ptrdiff_t)gnutls_transport_get_ptr(session);
+#endif
+
 // #if GNUTLS_VERSION_NUMBER >= 0x030107
 #if 0
 	// GnuTLS <= 3.4.5 becomes slow with large timeouts (see loop in gnutls_system_recv_timeout()).
@@ -1385,7 +1400,7 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 
 		if (nbytes == GNUTLS_E_REHANDSHAKE) {
 			debug_printf("*** REHANDSHAKE while reading\n");
-			if ((nbytes = _do_handshake(session, (int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) == 0)
+			if ((nbytes = _do_handshake(session, sockfd, timeout)) == 0)
 				continue; /* restart reading */
 		}
 
@@ -1402,13 +1417,13 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 
 	for (;;) {
 		if (gnutls_record_check_pending(session) <= 0 &&
-			(rc = wget_ready_2_read((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
+			(rc = wget_ready_2_read(sockfd, timeout)) <= 0)
 			return rc;
 
 		nbytes = gnutls_record_recv(session, buf, count);
 		if (nbytes == GNUTLS_E_REHANDSHAKE) {
 			debug_printf("*** REHANDSHAKE while reading\n");
-			if ((nbytes = _do_handshake(session, (int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) == 0)
+			if ((nbytes = _do_handshake(session, sockfd, timeout)) == 0)
 				nbytes = GNUTLS_E_AGAIN; /* restart reading */
 		}
 		if (nbytes >= 0 || nbytes != GNUTLS_E_AGAIN)
@@ -1423,9 +1438,15 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 {
 	ssize_t nbytes;
 	int rc;
+#ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
+	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
+	int sockfd = gnutls_transport_get_int(session);
+#else
+	int sockfd = (int)(ptrdiff_t)gnutls_transport_get_ptr(session);
+#endif
 
 	for (;;) {
-		if ((rc = wget_ready_2_write((int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) <= 0)
+		if ((rc = wget_ready_2_write(sockfd, timeout)) <= 0)
 			return rc;
 
 		if ((nbytes = gnutls_record_send(session, buf, count)) >= 0)
@@ -1433,7 +1454,7 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 
 		if (nbytes == GNUTLS_E_REHANDSHAKE) {
 			debug_printf("*** REHANDSHAKE while writing\n");
-			if ((nbytes = _do_handshake(session, (int)(ptrdiff_t)gnutls_transport_get_ptr(session), timeout)) == 0)
+			if ((nbytes = _do_handshake(session, sockfd, timeout)) == 0)
 				continue; /* restart writing */
 		}
 		if (nbytes == GNUTLS_E_AGAIN)

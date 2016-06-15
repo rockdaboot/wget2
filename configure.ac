@@ -294,7 +294,10 @@ AS_IF([test "x$with_gnutls" != "xno"], [
       [with_gnutls=no;  AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS. Fallback to libnettle for hashing and checksumming.)])
   ])
   AC_SEARCH_LIBS(gnutls_hash, gnutls, [with_gnutls_hash=yes])
-  AC_CHECK_FUNCS(gnutls_srp_server_get_username)
+  AS_IF([test "x$with_gnutls" = xyes], [
+    AC_CHECK_HEADERS([gnutls/ocsp.h])
+    AC_CHECK_FUNCS(gnutls_srp_server_get_username gnutls_transport_get_int)
+  ])
 ])
 AM_CONDITIONAL([WITH_GNUTLS], [test "x$with_gnutls" = xyes])
 
@@ -311,10 +314,6 @@ AS_IF([test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes], [
 ])
 AM_CONDITIONAL([WITH_LIBNETTLE], [test "x$with_libnettle" = xyes])
 AM_CONDITIONAL([WITH_CRYPT], [test "x$with_gcrypt" = xyes])
-
-AS_IF([test "x$with_gnutls" = xyes], [
-  AC_CHECK_HEADERS([gnutls/ocsp.h])
-])
 
 AC_ARG_WITH(libpsl, AS_HELP_STRING([--without-libpsl], [disable support for libpsl cookie checking]), with_libpsl=$withval, with_libpsl=yes)
 AS_IF([test "x$with_libpsl" != xno], [
