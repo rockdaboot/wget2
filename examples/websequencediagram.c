@@ -67,7 +67,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		if (wget_http_send_request_with_body(conn, req, body->data, body->length))
 			goto out;
 
-		resp = wget_http_get_response(conn, NULL, req, 0);
+		resp = wget_http_get_response(conn);
 
 		if (!resp)
 			goto out;
@@ -95,7 +95,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		if (wget_http_send_request(conn, req))
 			goto out;
 
-		resp = wget_http_get_response(conn, NULL, req, 0);
+		resp = wget_http_get_response(conn);
 
 		if (!resp)
 			goto out;

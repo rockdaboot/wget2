@@ -1352,6 +1352,17 @@ void wget_http_free_request(wget_http_request_t **req)
 	}
 }
 
+// This is the default function for collecting body data
+static int _body_callback(wget_http_response_t *resp, void *user_data G_GNUC_WGET_UNUSED, const char *data, size_t length)
+{
+	if (!resp->body)
+		resp->body = wget_buffer_alloc(102400);
+
+	wget_buffer_memcat(resp->body, data, length);
+
+	return 0;
+}
+
 wget_http_request_t *wget_http_create_request(const wget_iri_t *iri, const char *method)
 {
 	wget_http_request_t *req = xcalloc(1, sizeof(wget_http_request_t));
@@ -1366,7 +1377,29 @@ wget_http_request_t *wget_http_create_request(const wget_iri_t *iri, const char 
 	req->headers = wget_vector_create(8, 8, NULL);
 	wget_vector_set_destructor(req->headers, (void(*)(void *))wget_http_free_param);
 
+	wget_http_request_set_body_cb(req, _body_callback, NULL);
+
 	return req;
+}
+
+void wget_http_request_set_header_cb(wget_http_request_t *req, wget_http_header_callback_t callback, void *user_data)
+{
+	req->header_callback = callback;
+	req->header_user_data = user_data;
+}
+
+void wget_http_request_set_body_cb(wget_http_request_t *req, wget_http_body_callback_t callback, void *user_data)
+{
+	req->body_callback = callback;
+	req->body_user_data = user_data;
+}
+
+void wget_http_request_set_int(wget_http_request_t *req, int key, int value)
+{
+	switch (key) {
+	case WGET_HTTP_RESPONSE_KEEPHEADER: req->response_keepheader = !!value; break;
+	default: error_printf(_("%s: Unknown key %d (or value must not be an integer)\n"), __func__, key);
+	}
 }
 
 void wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, const char *fmt, va_list args)
@@ -1593,15 +1626,23 @@ static int _on_frame_recv_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 {
 	_print_frame_type(frame->hd.type, '<');
 
+	// header callback after receiving all header tags
+	if (frame->hd.type == NGHTTP2_HEADERS) {
+		wget_http_response_t *resp = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+
+		if (resp->header && resp->req->header_callback) {
+			resp->req->header_callback(resp, resp->req->header_user_data);
+		}
+	}
+
 	return 0;
 }
 
 
 // the following is just needed for the progress bar
 struct _body_callback_context {
+	wget_http_connection_t *conn;
 	wget_http_response_t *resp;
-	void *context;
-	int (*body_callback)(void *, const char *, size_t);
 	char done;
 };
 
@@ -1610,16 +1651,22 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	const uint8_t *value, size_t valuelen,
 	uint8_t flags G_GNUC_WGET_UNUSED, void *user_data G_GNUC_WGET_UNUSED)
 {
-	wget_http_request_t *req = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+	wget_http_response_t *resp = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
 
-	if (req) {
+	if (resp) {
+		if (resp->req->response_keepheader || resp->req->header_callback) {
+			if (!resp->header)
+				resp->header = wget_buffer_alloc(1024);
+		}
+
 		if (frame->hd.type == NGHTTP2_HEADERS) {
 			if (frame->headers.cat == NGHTTP2_HCAT_RESPONSE) {
-				struct _body_callback_context *ctx = req->nghttp2_context;
-				wget_http_response_t *resp = ctx->resp;
 				const char *s = wget_strmemdup((char *)value, valuelen);
 
-				debug_printf("%.*s: %s\n", (int)namelen, name, s);
+				debug_printf("%.*s: %s\n", (int) namelen, name, s);
+
+				if (resp->header)
+					wget_buffer_printf_append(resp->header, "%.*s: %s\n", (int) namelen, name, s);
 
 				switch (namelen) {
 				case 4:
@@ -1653,7 +1700,7 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 					break;
 				case 7:
 					if (!memcmp(name, ":status", namelen) && valuelen == 3) {
-						ctx->resp->code = ((value[0] - '0') * 10 + (value[1] - '0')) * 10 + (value[2] - '0');
+						resp->code = ((value[0] - '0') * 10 + (value[1] - '0')) * 10 + (value[2] - '0');
 					}
 					break;
 				case 8:
@@ -1751,14 +1798,13 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 static int _on_stream_close_callback(nghttp2_session *session, int32_t stream_id,
 	uint32_t error_code G_GNUC_WGET_UNUSED, void *user_data G_GNUC_WGET_UNUSED)
 {
-	wget_http_request_t *req = nghttp2_session_get_stream_user_data(session, stream_id);
+	wget_http_response_t *resp = nghttp2_session_get_stream_user_data(session, stream_id);
 
 	debug_printf("closing stream %d\n", stream_id);
-	if (req) {
-		struct _body_callback_context *ctx = req->nghttp2_context;
+	if (resp) {
+		wget_http_connection_t *conn = (wget_http_connection_t *) user_data;
 
-		if (ctx)
-			ctx->done = 1;
+		wget_vector_add_noalloc(conn->received_http2_responses, resp);
 	}
 
 	return 0;
@@ -1771,14 +1817,15 @@ static int _on_data_chunk_recv_callback(nghttp2_session *session,
 	uint8_t flags G_GNUC_WGET_UNUSED, int32_t stream_id,
 	const uint8_t *data, size_t len,	void *user_data G_GNUC_WGET_UNUSED)
 {
-	wget_http_request_t *req = nghttp2_session_get_stream_user_data(session, stream_id);
+	wget_http_response_t *resp = nghttp2_session_get_stream_user_data(session, stream_id);
 
-	if (req) {
-		struct _body_callback_context *ctx = req->nghttp2_context;
+	if (resp) {
+		// wget_http_connection_t *conn = (wget_http_connection_t *)user_data;
+		// struct _body_callback_context *ctx = req->nghttp2_context;
 //		debug_printf("[INFO] C <---------------------------- S%d (DATA chunk - %zu bytes)\n", stream_id, len);
 		debug_printf("nbytes %zu\n", len);
-		if (ctx && ctx->body_callback)
-			ctx->body_callback(ctx->context, (char *)data, (ssize_t)len);
+		if (resp->req->body_callback)
+			resp->req->body_callback(resp, resp->req->body_user_data, (const char *) data, len);
 		// debug_write((char *)data, len);
 		// debug_printf("\n");
 	}
@@ -1875,7 +1922,12 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 				wget_http_close(_conn);
 				return WGET_E_INVALID;
 			}
-		}
+
+			conn->received_http2_responses = wget_vector_create(16, -2, NULL);
+		} else
+			conn->pending_requests = wget_vector_create(16, -2, NULL);
+#else
+		conn->pending_requests = wget_vector_create(16, -2, NULL);
 #endif
 	} else {
 		wget_http_close(_conn);
@@ -1895,6 +1947,8 @@ void wget_http_close(wget_http_connection_t **conn)
 				error_printf(_("Failed to terminate HTTP2 session (%d)\n"), rc);
 			nghttp2_session_del((*conn)->http2_session);
 		}
+		wget_vector_clear_nofree((*conn)->received_http2_responses);
+		wget_vector_free(&(*conn)->received_http2_responses);
 #endif
 		wget_tcp_deinit(&(*conn)->tcp);
 //		if (!wget_tcp_get_dns_caching())
@@ -1903,6 +1957,8 @@ void wget_http_close(wget_http_connection_t **conn)
 		// xfree((*conn)->port);
 		// xfree((*conn)->scheme);
 		wget_buffer_free(&(*conn)->buf);
+		wget_vector_clear_nofree((*conn)->pending_requests);
+		wget_vector_free(&(*conn)->pending_requests);
 		xfree(*conn);
 	}
 }
@@ -1954,13 +2010,23 @@ static int  G_GNUC_WGET_NONNULL((1,2)) _http_send_request(wget_http_connection_t
 			nvp++;
 		}
 
+		// HTTP/2.0 has the streamid as link between
+		wget_http_response_t *resp = xcalloc(1, sizeof(wget_http_response_t));
+		resp->req = req;
+		resp->major = 2;
+		// we do not get a Keep-Alive header in HTTP2 - let's assume the connection stays open
+		resp->keep_alive = 1;
+
 		// nghttp2 does strdup of name+value and lowercase conversion of 'name'
-		req->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, NULL, req);
+		req->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, NULL, resp);
 
 		if (req->stream_id < 0) {
 			error_printf(_("Failed to submit HTTP2 request\n"));
+			wget_http_free_response(&resp);
 			return -1;
 		}
+
+		conn->pending_http2_requests++;
 
 		debug_printf("HTTP2 stream id %d\n", req->stream_id);
 
@@ -1982,6 +2048,8 @@ static int  G_GNUC_WGET_NONNULL((1,2)) _http_send_request(wget_http_connection_t
 		// error_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
 		return -1;
 	}
+
+	wget_vector_add_noalloc(conn->pending_requests, req);
 
 	debug_printf("# sent %zd bytes:\n%s", nbytes, conn->buf->data);
 
@@ -2042,35 +2110,33 @@ ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf
 	return buf->length;
 }
 
-wget_http_response_t *wget_http_get_response_cb(
-	wget_http_connection_t *conn,
-	wget_http_request_t *req,
-	unsigned int flags,
-	int (*header_callback)(void *context, wget_http_response_t *resp),
-	int (*body_callback)(void *context, const char *data, size_t length),
-	void *context) // given to body_callback and header_callback
+static int _get_body(void *userdata, const char *data, size_t length)
+{
+	wget_http_response_t *resp = (wget_http_response_t *) userdata;
+
+	return resp->req->body_callback(resp, resp->req->body_user_data, data, length);
+}
+
+wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 {
 	size_t bufsize, body_len = 0, body_size = 0;
 	ssize_t nbytes, nread = 0;
 	char *buf, *p = NULL;
 	wget_http_response_t *resp = NULL;
-	wget_decompressor_t *dc = NULL;
 
 #ifdef WITH_LIBNGHTTP2
-	int ioflags;
-
 	if (conn->protocol == WGET_PROTOCOL_HTTP_2_0) {
-		resp = xcalloc(1, sizeof(wget_http_response_t));
-		resp->major = 2;
-		// we do not get a Keep-Alive header in HTTP2 - let's assume the connection stays open
-		resp->keep_alive = 1;
-
-		struct _body_callback_context ctx = { .resp = resp, .context = context, .body_callback = body_callback };
-		req->nghttp2_context = &ctx;
+		debug_printf("  ##  pending_requests = %d\n", conn->pending_http2_requests);
+		if (conn->pending_http2_requests > 0)
+			conn->pending_http2_requests--;
+		else
+			return NULL;
 
 		int timeout = wget_tcp_get_timeout(conn->tcp);
+		int ioflags;
 
-		for (int rc = 0; rc == 0 && !ctx.done && !conn->abort_indicator && !_abort_indicator;) {
+		for (int rc = 0; rc == 0 && !wget_vector_size(conn->received_http2_responses) && !conn->abort_indicator && !_abort_indicator;) {
+			debug_printf("  ##  loop responses=%d\n", wget_vector_size(conn->received_http2_responses));
 			ioflags = 0;
 			if (nghttp2_session_want_write(conn->http2_session))
 				ioflags |= WGET_IO_WRITABLE;
@@ -2102,20 +2168,32 @@ wget_http_response_t *wget_http_get_response_cb(
 */
 		}
 
-		debug_printf("response status %d\n", resp->code);
+		resp = wget_vector_get(conn->received_http2_responses, 0); // should use double linked lists here
+		if (resp) {
+			debug_printf("  ##  response status %d\n", resp->code);
+			wget_vector_remove_nofree(conn->received_http2_responses, 0);
 
-		// a workaround for broken server configurations
-		// see http://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
-		if (resp->content_encoding == wget_content_encoding_gzip &&
-			!wget_strcasecmp_ascii(resp->content_type, "application/x-gzip"))
-		{
-			debug_printf("Broken server configuration gzip workaround triggered\n");
-			resp->content_encoding =  wget_content_encoding_identity;
+			// a workaround for broken server configurations
+			// see http://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
+			if (resp->content_encoding == wget_content_encoding_gzip &&
+				!wget_strcasecmp_ascii(resp->content_type, "application/x-gzip"))
+			{
+				debug_printf("Broken server configuration gzip workaround triggered\n");
+				resp->content_encoding =  wget_content_encoding_identity;
+			}
 		}
 
 		return resp;
 	}
 #endif
+
+	wget_decompressor_t *dc = NULL;
+	wget_http_request_t *req = wget_vector_get(conn->pending_requests, 0); // should use double linked lists here
+
+	if (!req)
+		goto cleanup;
+
+	wget_vector_remove_nofree(conn->pending_requests, 0);
 
 	// reuse generic connection buffer
 	buf = conn->buf->data;
@@ -2139,7 +2217,7 @@ wget_http_response_t *wget_http_get_response_cb(
 
 			debug_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 
-			if (flags&WGET_HTTP_RESPONSE_KEEPHEADER) {
+			if (req->response_keepheader) {
 				wget_buffer_t *header = wget_buffer_alloc(p - buf + 4);
 				wget_buffer_memcpy(header, buf, p - buf);
 				wget_buffer_memcat(header, "\r\n\r\n", 4);
@@ -2156,8 +2234,10 @@ wget_http_response_t *wget_http_get_response_cb(
 					goto cleanup; // something is wrong with the header
 			}
 
-			if (header_callback) {
-				if (header_callback(context, resp))
+			resp->req = req;
+
+			if (req->header_callback) {
+				if (req->header_callback(resp, req->header_user_data))
 					goto cleanup; // stop requested by callback function
 			}
 
@@ -2183,7 +2263,7 @@ wget_http_response_t *wget_http_get_response_cb(
 		goto cleanup;
 	}
 
-	dc = wget_decompress_open(resp->content_encoding, body_callback, context);
+	dc = wget_decompress_open(resp->content_encoding, _get_body, resp);
 
 	// calculate number of body bytes so far read
 	body_len = nread - (p - buf);
@@ -2373,156 +2453,21 @@ cleanup:
 	return resp;
 }
 
-static int _get_body(void *userdata, const char *data, size_t length)
-{
-	wget_buffer_memcat((wget_buffer_t *)userdata, data, length);
-
-	return 0;
-}
-
 // get response, resp->body points to body in memory
 
-wget_http_response_t *wget_http_get_response(
-	wget_http_connection_t *conn,
-	int (*header_callback)(void *context, wget_http_response_t *resp),
-	wget_http_request_t *req,
-	unsigned int flags)
+wget_http_response_t *wget_http_get_response(wget_http_connection_t *conn)
 {
 	wget_http_response_t *resp;
-	wget_buffer_t *body = wget_buffer_alloc(102400);
 
-	resp = wget_http_get_response_cb(conn, req, flags, header_callback, _get_body, body);
-
-	if (resp) {
-		resp->body = body;
-		if (!wget_strcasecmp_ascii(req->method, "GET"))
-			resp->content_length = body->length;
-	} else {
-		wget_buffer_free(&body);
-	}
-
-	return resp;
-}
-
-static int _get_fd(void *context, const char *data, size_t length)
-{
-	int fd = *(int *)context;
-	ssize_t nbytes = write(fd, data, length);
-
-	if (nbytes == -1 || (size_t)nbytes != length)
-		error_printf(_("Failed to write %zu bytes of data (%d)\n"), length, errno);
-
-	return 0;
-}
-
-wget_http_response_t *wget_http_get_response_fd(
-	wget_http_connection_t *conn,
-	int (*header_callback)(void *, wget_http_response_t *),
-	int fd,
-	unsigned int flags)
-{
-	 wget_http_response_t *resp = wget_http_get_response_cb(conn, NULL, flags, header_callback, _get_fd, &fd);
-
-	return resp;
-}
-
-static int _get_stream(void *context, const char *data, size_t length)
-{
-	FILE *stream = (FILE *)context;
-	size_t nbytes = fwrite(data, 1, length, stream);
-
-	if (nbytes != length) {
-		error_printf(_("Failed to write %zu bytes of data (%d)\n"), length, errno);
-
-		if (feof(stream))
-			return -1;
-	}
-
-	return 0;
-}
-
-wget_http_response_t *wget_http_get_response_stream(
-	wget_http_connection_t *conn,
-	int (*header_callback)(void *, wget_http_response_t *),
-	FILE *stream, unsigned int flags)
-{
-	wget_http_response_t *resp = wget_http_get_response_cb(conn, NULL, flags, header_callback, _get_stream, stream);
-
-	return resp;
-}
-
-wget_http_response_t *wget_http_get_response_func(
-	wget_http_connection_t *conn,
-	int (*header_callback)(void *, wget_http_response_t *),
-	int (*body_callback)(void *, const char *, size_t),
-	void *context, unsigned int flags)
-{
-	wget_http_response_t *resp = wget_http_get_response_cb(conn, NULL, flags, header_callback, body_callback, context);
-
-	return resp;
-}
-
-/*
-// get response, resp->body points to body in memory (nested func/trampoline version)
-HTTP_RESPONSE *http_get_response(HTTP_CONNECTION *conn, HTTP_REQUEST *req)
-{
-	size_t bodylen=0, bodysize=102400;
-	char *body=xmalloc(bodysize+1);
-
-	int get_body(char *data, size_t length)
-	{
-		while (bodysize<bodylen+length)
-			body=xrealloc(body,(bodysize*=2)+1);
-
-		memcpy(body+bodylen,data,length);
-		bodylen+=length;
-		body[bodylen]=0;
-		return 0;
-	}
-
-	HTTP_RESPONSE *resp=http_get_response_cb(conn,req,get_body);
+	resp = wget_http_get_response_cb(conn);
 
 	if (resp) {
-		resp->body=body;
-		resp->content_length=bodylen;
-	} else {
-		xfree(body);
+		if (!wget_strcasecmp_ascii(resp->req->method, "GET"))
+			resp->content_length = resp->body->length;
 	}
 
 	return resp;
 }
-
-HTTP_RESPONSE *http_get_response_fd(HTTP_CONNECTION *conn, int fd)
-{
-	int get_file(char *data, size_t length) {
-		if (write(fd,data,length)!=length)
-			err_printf(_("Failed to write %zu bytes of data (%d)\n"),length,errno);
-		return 0;
-	}
-
-	HTTP_RESPONSE *resp=http_get_response_cb(conn,NULL,get_file);
-
-	return resp;
-}
- */
-
-/*
-HTTP_RESPONSE *http_get_response_file(HTTP_CONNECTION *conn, const char *fname)
-{
-	size_t bodylen=0, bodysize=102400;
-	char *body=xmalloc(bodysize+1);
-
-	int get_file(char *data, size_t length) {
-		if (write(fd,data,length)!=length)
-			err_printf(_("Failed to write %zu bytes of data (%d)\n"),length,errno);
-		return 0;
-	}
-
-	HTTP_RESPONSE *resp=http_get_response_cb(conn,NULL,get_file);
-
-	return resp;
-}
- */
 
 static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 {

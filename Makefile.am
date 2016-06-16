@@ -6,7 +6,7 @@ else
 SUBDIRS =
 endif
 
-SUBDIRS += lib include libwget src data examples $(LIBWGET_DOCS) tests
+SUBDIRS += lib include libwget examples src data $(LIBWGET_DOCS) tests
 
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 

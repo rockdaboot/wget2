@@ -38,6 +38,7 @@ docs/libwget.doxy
 examples/getstream
 examples/http_get
 examples/http_get2
+examples/http_multi_get
 examples/print_css_urls
 examples/print_css_urls2
 examples/print_css_urls3

@@ -29,10 +29,39 @@
 # include <config.h>
 #endif
 
+#include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 #include <libwget.h>
 #include "private.h"
+
+static int _stream_callback(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *user_data, const char *data, size_t length)
+{
+	FILE *stream = (FILE *) user_data;
+
+	size_t nbytes = fwrite(data, 1, length, stream);
+
+	if (nbytes != length) {
+		error_printf(_("Failed to write %zu bytes of data (%d)\n"), length, errno);
+
+		if (feof(stream))
+			return -1;
+	}
+
+	return 0;
+}
+
+static int _fd_callback(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *user_data, const char *data, size_t length)
+{
+	int fd = *(int *) user_data;
+	ssize_t nbytes = write(fd, data, length);
+
+	if (nbytes == -1 || (size_t) nbytes != length)
+		error_printf(_("Failed to write %zu bytes of data (%d)\n"), length, errno);
+
+	return 0;
+}
 
 wget_http_response_t *wget_http_get(int first_key, ...)
 {
@@ -44,9 +73,9 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 	wget_vector_t *challenges = NULL;
 	wget_cookie_db_t *cookie_db = NULL;
 	FILE *saveas_stream = NULL;
-	int (*saveas_callback)(void *, const char *, size_t) = NULL;
+	wget_http_body_callback_t saveas_callback = NULL;
 	int saveas_fd = -1;
-	int (*header_callback)(void *, wget_http_response_t *) = NULL;
+	wget_http_header_callback_t header_callback = NULL;
 	va_list args;
 	const char *url = NULL,	*url_encoding = NULL, *scheme = "GET";
 	const char *http_username = NULL, *http_password = NULL;
@@ -54,6 +83,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 	int key, it, max_redirections = 5, redirection_level = 0;
 	size_t bodylen = 0;
 	const void *body = NULL;
+	void *header_user_data = NULL, *body_user_data = NULL;
 
 	struct {
 		unsigned int
@@ -103,13 +133,15 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 			saveas_stream = va_arg(args, FILE *);
 			break;
 		case WGET_HTTP_BODY_SAVEAS_FUNC:
-			saveas_callback = va_arg(args, int(*)(void *, const char *, size_t));
+			saveas_callback = va_arg(args, wget_http_body_callback_t);
+			body_user_data = va_arg(args, void *);
 			break;
 		case WGET_HTTP_BODY_SAVEAS_FD:
 			saveas_fd = va_arg(args, int);
 			break;
 		case WGET_HTTP_HEADER_FUNC:
-			header_callback = va_arg(args, int (*)(void *, wget_http_response_t *));
+			header_callback = va_arg(args, wget_http_header_callback_t);
+			header_user_data = va_arg(args, void *);
 			break;
 		case WGET_HTTP_SCHEME:
 			scheme = va_arg(args, const char *);
@@ -204,22 +236,28 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 				rc = wget_http_send_request(conn, req);
 
 			if (rc == 0) {
+				wget_http_request_set_header_cb(req, header_callback, header_user_data);
+				wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, 1);
 				if (saveas_name) {
 					FILE *fp;
 					if ((fp = fopen(saveas_name, "w"))) {
-						resp = wget_http_get_response_stream(conn, header_callback, fp, WGET_HTTP_RESPONSE_KEEPHEADER);
+						wget_http_request_set_body_cb(req, _stream_callback, fp);
+						resp = wget_http_get_response(conn);
 						fclose(fp);
 					} else
 						debug_printf("Failed to open '%s' for writing\n", saveas_name);
 				}
-				else if (saveas_stream)
-					resp = wget_http_get_response_stream(conn, header_callback, saveas_stream, WGET_HTTP_RESPONSE_KEEPHEADER);
-				else if (saveas_callback)
-					resp = wget_http_get_response_func(conn, header_callback, saveas_callback, NULL, WGET_HTTP_RESPONSE_KEEPHEADER);
-				else if (saveas_fd != -1)
-					resp = wget_http_get_response_fd(conn, header_callback, saveas_fd, WGET_HTTP_RESPONSE_KEEPHEADER);
-				else
-					resp = wget_http_get_response(conn, header_callback, req, WGET_HTTP_RESPONSE_KEEPHEADER);
+				else if (saveas_stream)  {
+					wget_http_request_set_body_cb(req, _stream_callback, saveas_stream);
+					resp = wget_http_get_response(conn);
+				} else if (saveas_callback) {
+					wget_http_request_set_body_cb(req, saveas_callback, body_user_data);
+					resp = wget_http_get_response(conn);
+				} else if (saveas_fd != -1) {
+					wget_http_request_set_body_cb(req, _fd_callback, &saveas_fd);
+					resp = wget_http_get_response(conn);
+				} else
+					resp = wget_http_get_response(conn);
 			}
 		}
 

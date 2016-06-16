@@ -1366,14 +1366,24 @@ enum {
 	transfer_encoding_chunked
 };
 
+typedef struct wget_http_response_t wget_http_response_t;
+typedef int (*wget_http_header_callback_t)(wget_http_response_t *, void *);
+typedef int (*wget_http_body_callback_t)(wget_http_response_t *, void *, const char *, size_t);
+
 // keep the request as simple as possible
 typedef struct {
 	wget_vector_t *
 		headers;
 	const char *
 		scheme;
-	void *
-		nghttp2_context; // needed for nghttp2 callbacks
+	wget_http_header_callback_t
+		header_callback; // called after HTTP header has been received
+	wget_http_body_callback_t
+		body_callback; // called for each body data packet received
+	void
+		*header_user_data; // meant to be used in header callback function
+	void
+		*body_user_data; // meant to be used in body callback function
 	wget_buffer_t
 		esc_resource; // URI escaped resource
 	wget_buffer_t
@@ -1386,12 +1396,14 @@ typedef struct {
 		esc_host_buf[64];
 	char
 		method[8]; // we just need HEAD, GET and POST
-	char
-		save_headers;
+	unsigned char
+		response_keepheader : 1;
 } wget_http_request_t;
 
 // just parse the header lines that we need
-typedef struct {
+struct wget_http_response_t {
+	wget_http_request_t *
+		req;
 	wget_vector_t *
 		links;
 	wget_vector_t *
@@ -1442,7 +1454,7 @@ typedef struct {
 		content_length_valid;
 	char
 		keep_alive;
-} wget_http_response_t;
+};
 
 typedef struct {
 	wget_tcp_t *
@@ -1459,6 +1471,12 @@ typedef struct {
 	nghttp2_session *
 		http2_session;
 #endif
+	wget_vector_t
+		*pending_requests; // List of unresponsed requests (HTTP1 only)
+	wget_vector_t
+		*received_http2_responses; // List of received (but yet unprocessed) responses (HTTP2 only)
+	int
+		pending_http2_requests; // Number of unresponsed requests (HTTP2 only)
 	char
 		protocol; // WGET_PROTOCOL_HTTP_1_1 or WGET_PROTOCOL_HTTP_2_0
 	unsigned
@@ -1565,28 +1583,11 @@ wget_http_response_t *
 wget_http_response_t *
 	wget_http_parse_response_header(char *buf) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 wget_http_response_t *
-	wget_http_get_response_cb(wget_http_connection_t *conn, wget_http_request_t *req, unsigned int flags,
-		int (*header_callback)(void *context, wget_http_response_t *),
-		int (*body_callback)(void *context, const char *data, size_t length),
-		void *context) G_GNUC_WGET_NONNULL((1,5)) LIBWGET_EXPORT;
+	wget_http_get_response_cb(wget_http_connection_t *conn) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
 //HTTP_RESPONSE *
 //	http_get_response_mem(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL_ALL LIBWGET_EXPORT;
 wget_http_response_t *
-	wget_http_get_response(wget_http_connection_t *conn,
-		int(*header_callback)(void *, wget_http_response_t *),
-		wget_http_request_t *req, unsigned int flags) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
-wget_http_response_t *
-	wget_http_get_response_fd(wget_http_connection_t *conn,
-		int(*header_callback)(void *, wget_http_response_t *),
-		int fd, unsigned int flags) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
-wget_http_response_t *
-	wget_http_get_response_stream(wget_http_connection_t *conn,
-		int(*header_callback)(void *, wget_http_response_t *),
-		FILE *stream, unsigned int flags) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
-wget_http_response_t *
-	wget_http_get_response_func(wget_http_connection_t *conn,
-		int(*header_callback)(void *, wget_http_response_t *),
-		int(*body_callback)(void *, const char *, size_t), void *context, unsigned int flags) G_GNUC_WGET_NONNULL((1,2)) LIBWGET_EXPORT;
+	wget_http_get_response(wget_http_connection_t *conn) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
 
 int
 	wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri) LIBWGET_EXPORT;
@@ -1594,6 +1595,12 @@ wget_http_request_t *
 	wget_http_create_request(const wget_iri_t *iri, const char *method) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
 	wget_http_close(wget_http_connection_t **conn) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+void
+	wget_http_request_set_header_cb(wget_http_request_t *req, wget_http_header_callback_t cb, void *user_data) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
+void
+	wget_http_request_set_body_cb(wget_http_request_t *req, wget_http_body_callback_t cb, void *user_data) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
+void
+	wget_http_request_set_int(wget_http_request_t *req, int key, int value) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
 int
 	wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *req) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 int

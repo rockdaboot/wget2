@@ -85,15 +85,18 @@ static struct _config {
 		ocsp,
 		ocsp_stapling;
 } _config = {
-#ifdef HAVE_GNUTLS_OCSP_H
 	.check_certificate=1,
+	.check_hostname = 1,
+#ifdef HAVE_GNUTLS_OCSP_H
+	.ocsp = 1,
 	.ocsp_stapling=1,
 #endif
 	.ca_type = WGET_SSL_X509_FMT_PEM,
 	.cert_type = WGET_SSL_X509_FMT_PEM,
 	.key_type = WGET_SSL_X509_FMT_PEM,
 	.secure_protocol = "AUTO",
-	.ca_directory = "system"
+	.ca_directory = "system",
+	.alpn = "h2,h2-16,h2-14,http/1.1",
 };
 
 struct _session_context {
@@ -460,7 +463,7 @@ static int send_ocsp_request(const char *server,
 		if (wget_http_send_request_with_body(conn, req, body.data, body.size) == 0) {
 			wget_http_response_t *resp;
 			
-			if ((resp = wget_http_get_response(conn, NULL, req, 0))) {
+			if ((resp = wget_http_get_response(conn))) {
 				*ocsp_data = resp->body;
 				resp->body = NULL;
 				wget_http_free_response(&resp);
@@ -802,7 +805,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		goto out;
 	}
 
-	if (_config.check_hostname && hostname && gnutls_x509_crt_check_hostname(cert, hostname))
+	if (!_config.check_hostname || (_config.check_hostname && hostname && gnutls_x509_crt_check_hostname(cert, hostname)))
 		ret = 0;
 	else
 		goto out;
@@ -1097,7 +1100,7 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 			if (rc == 0) {
 				ret = WGET_E_SUCCESS;
 			} else {
-				error_printf("GnuTLS: (%d) %s\n", rc, gnutls_strerror(rc));
+				error_printf("gnutls_handshake: (%d) %s\n", rc, gnutls_strerror(rc));
 
 				if (rc == GNUTLS_E_CERTIFICATE_ERROR)
 					ret = WGET_E_CERTIFICATE;

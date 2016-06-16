@@ -46,9 +46,9 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 /*
  * todo: create a libwget init function like this:
 	wget_global_init(
-		WGET_DEBUG_FILE, stderr,
-		WGET_ERROR_FILE, stderr,
-		WGET_INFO_FILE, stdout,
+		WGET_DEBUG_STREAM, stderr,
+		WGET_ERROR_STREAM, stderr,
+		WGET_INFO_STREAM, stdout,
 		WGET_DNS_CACHING, 1,
 		NULL);
  */
@@ -82,6 +82,8 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 	wget_http_add_header(req, "Accept-Encoding", "gzip, deflate");
 	wget_http_add_header(req, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 	wget_http_add_header(req, "Accept-Language", "en-us,en;q=0.5");
+
+	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, 1);
 
 	// use keep-alive if you want to send more requests on the same connection
 	// http_add_header(req, "Connection", "keep-alive");
@@ -118,7 +120,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		wget_http_response_t *resp;
 
 		if (wget_http_send_request(conn, req) == 0) {
-			resp = wget_http_get_response(conn, NULL, req, WGET_HTTP_RESPONSE_KEEPHEADER);
+			resp = wget_http_get_response(conn);
 
 			if (!resp)
 				goto out;

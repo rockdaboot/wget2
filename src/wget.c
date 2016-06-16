@@ -2287,7 +2287,8 @@ struct _body_callback_context {
 	bool head;
 	PART *part;
 };
-static int _get_header(void *context, wget_http_response_t *resp)
+
+static int _get_header(wget_http_response_t *resp, void *context)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
 
@@ -2331,7 +2332,8 @@ static int _get_header(void *context, wget_http_response_t *resp)
 
 	return 0;
 }
-static int _get_body(void *context, const char *data, size_t length)
+
+static int _get_body(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *context, const char *data, size_t length)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
 
@@ -2604,7 +2606,14 @@ wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *download
 					.part = part,
 				};
 
-				resp = wget_http_get_response_cb(conn, req, config.save_headers || config.server_response ? WGET_HTTP_RESPONSE_KEEPHEADER : 0, _get_header, _get_body, &context);
+				// set callback functions
+				wget_http_request_set_header_cb(req, _get_header, &context);
+				wget_http_request_set_body_cb(req, _get_body, &context);
+
+				// keep the received response header in 'resp->header'
+				wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, config.save_headers || config.server_response);
+
+				resp = wget_http_get_response_cb(conn);
 				if (resp) {
 					if (context.outfd != -1 && resp->last_modified)
 						set_file_mtime(context.outfd, resp->last_modified);
