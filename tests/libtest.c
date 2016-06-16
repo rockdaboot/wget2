@@ -866,7 +866,7 @@ void wget_test(int first_key, ...)
 				wget_error_printf_exit(_("Missing expected file %s/%s [%s]\n"), tmpdir, expected_files[it].name, options);
 
 			if (expected_files[it].content) {
-				char content[st.st_size];
+				char content[st.st_size ? st.st_size : 1];
 
 				if ((fd = open(expected_files[it].name, O_RDONLY)) != -1) {
 					ssize_t nbytes = read(fd, content, st.st_size);
