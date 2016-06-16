@@ -176,10 +176,6 @@ if test "$gl_gcc_warnings" = yes; then
     gl_WARN_ADD([$w])
   done
   gl_WARN_ADD([-fdiagnostics-show-option])
-  gl_WARN_ADD([-fsanitize=undefined])
-  gl_WARN_ADD([-fsanitize=address])
-  gl_WARN_ADD([-fno-omit-frame-pointer])
-  gl_WARN_ADD([-fno-sanitize-recover=undefined])
   gl_WARN_ADD([-Wno-missing-field-initializers]) # Rely on missing field = 0.
   AC_SUBST([WARN_CFLAGS])
 
@@ -206,6 +202,17 @@ if test "$gl_gcc_warnings" = yes; then
  # gl_WARN_ADD([-Wno-unused-parameter])
   AC_SUBST([GNULIB_WARN_CFLAGS])
 #  WARN_CFLAGS="$bak"
+fi
+
+AC_ARG_ENABLE([fsanitize],
+  [AS_HELP_STRING([--enable-fsanitize], [Turn on extra compiler Sanitization flags (for developers)])],
+  [gl_cc_sanitize=yes], [gl_cc_sanitize=no])
+
+if test "$gl_cc_sanitize" = yes; then
+  gl_WARN_ADD([-fsanitize=undefined])
+  gl_WARN_ADD([-fsanitize=address])
+  gl_WARN_ADD([-fno-omit-frame-pointer])
+  gl_WARN_ADD([-fno-sanitize-recover=undefined])
 fi
 
 #
