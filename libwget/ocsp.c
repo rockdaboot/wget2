@@ -55,8 +55,8 @@ struct _wget_ocsp_st {
 		maxage; // expiry time
 	time_t
 		mtime; // creation time
-	int
-		valid; // 1=valid, 0=revoked
+	unsigned char
+		valid : 1; // 1=valid, 0=revoked
 };
 
 static unsigned int G_GNUC_WGET_PURE _hash_ocsp(const wget_ocsp_t *ocsp)

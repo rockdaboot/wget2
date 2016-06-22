@@ -40,10 +40,9 @@ typedef struct {
 		length;
 	int
 		id;
-	char
-		inuse,
-		done;
-
+	unsigned char
+		inuse : 1,
+		done : 1;
 } PART;
 
 struct JOB {
@@ -67,10 +66,10 @@ struct JOB {
 		redirection_level, // number of redirections occurred to create this job
 		mirror_pos, // where to look up the next (metalink) mirror to use
 		piece_pos; // where to look up the next (metalink) piece to download
-	char
-		inuse, // if job is already in use by another downloader thread
-		sitemap, // URL is a sitemap to be scanned in recursive mode
-		head_first; // first check mime type by using a HEAD request
+	unsigned char
+		inuse : 1, // if job is already in use by another downloader thread
+		sitemap : 1, // URL is a sitemap to be scanned in recursive mode
+		head_first : 1; // first check mime type by using a HEAD request
 };
 
 JOB *job_init(JOB *job, wget_iri_t *iri);

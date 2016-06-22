@@ -47,8 +47,8 @@ struct _wget_vector_st {
 		max,     // allocated elements
 		cur,     // number of elements in use
 		off;     // number of elements to add if resize occurs
-	char
-		sorted; // 1=list is sorted, 0=list is not sorted
+	unsigned char
+		sorted : 1; // 1=list is sorted, 0=list is not sorted
 };
 
 // create vector with initial size <max>

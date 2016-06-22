@@ -55,7 +55,7 @@ struct wget_cookie_db_st {
 		mutex;
 	unsigned int
 		age;
-	unsigned int
+	unsigned char
 		keep_session_cookies : 1; // whether or not session cookies are saved
 };
 

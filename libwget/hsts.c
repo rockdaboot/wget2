@@ -59,7 +59,7 @@ struct _wget_hsts_st {
 		mtime; // creation time
 	int
 		port;
-	unsigned int
+	unsigned char
 		include_subdomains : 1; // whether or not subdomains are included
 };
 

@@ -440,8 +440,7 @@ typedef struct {
 	size_t
 		size; // capacity of 'data' (terminating 0 byte doesn't count here)
 	unsigned int
-		release_data : 1; // 'data' has been malloc'ed and must be freed
-	unsigned int
+		release_data : 1, // 'data' has been malloc'ed and must be freed
 		release_buf : 1; // buffer_t structure has been malloc'ed and must be freed
 } wget_buffer_t;
 
@@ -1108,8 +1107,8 @@ typedef struct {
 		encoding;
 	wget_string_t
 		base;
-	char
-		follow;
+	unsigned char
+		follow : 1;
 } WGET_HTML_PARSED_RESULT;
 
 typedef struct {
@@ -1433,10 +1432,6 @@ struct wget_http_response_t {
 	time_t
 		hsts_maxage;
 	char
-		hsts_include_subdomains;
-	char
-		hsts; // if hsts_maxage and hsts_include_subdomains are valid
-	char
 		reason[32];
 	int
 		icy_metaint;
@@ -1447,13 +1442,14 @@ struct wget_http_response_t {
 	short
 		code; // request only status code
 	char
-		transfer_encoding;
-	char
-		content_encoding;
-	char
-		content_length_valid;
-	char
+		transfer_encoding,
+		content_encoding,
+		content_length_valid,
 		keep_alive;
+	char
+		hsts_include_subdomains;
+	unsigned char
+		hsts : 1; // if hsts_maxage and hsts_include_subdomains are valid
 };
 
 typedef struct {
@@ -1479,7 +1475,7 @@ typedef struct {
 		pending_http2_requests; // Number of unresponsed requests (HTTP2 only)
 	char
 		protocol; // WGET_PROTOCOL_HTTP_1_1 or WGET_PROTOCOL_HTTP_2_0
-	unsigned
+	unsigned char
 		print_response_headers : 1,
 		abort_indicator : 1;
 } wget_http_connection_t;

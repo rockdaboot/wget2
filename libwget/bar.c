@@ -47,8 +47,8 @@ typedef struct {
 		max,
 		cur,
 		cols;
-	char
-		first;
+	unsigned char
+		first : 1;
 } _bar_slot_t;
 
 struct _wget_bar_st {
@@ -60,8 +60,8 @@ struct _wget_bar_st {
 	int
 		nslots,
 		max_width;
-	char
-		allocated;
+	unsigned char
+		allocated : 1;
 };
 
 wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
