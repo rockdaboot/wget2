@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ./autogen.sh || exit 1
-./configure || exit 1
+./configure --enable-gcc-warnings --enable-fsanitize || exit 1
 make -j3 || exit 1
 if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
   make install || exit 1

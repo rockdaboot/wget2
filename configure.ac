@@ -204,6 +204,17 @@ if test "$gl_gcc_warnings" = yes; then
 #  WARN_CFLAGS="$bak"
 fi
 
+AC_ARG_ENABLE([fsanitize],
+  [AS_HELP_STRING([--enable-fsanitize], [Turn on extra compiler Sanitization flags (for developers)])],
+  [gl_cc_sanitize=yes], [gl_cc_sanitize=no])
+
+if test "$gl_cc_sanitize" = yes; then
+  gl_WARN_ADD([-fsanitize=undefined])
+  gl_WARN_ADD([-fsanitize=address])
+  gl_WARN_ADD([-fno-omit-frame-pointer])
+  gl_WARN_ADD([-fno-sanitize-recover=undefined])
+fi
+
 #
 # Gettext
 #
