@@ -26,16 +26,23 @@
  */
 
 #ifndef _WGET_WGET_H
-# define _WGET_WGET_H
+#define _WGET_WGET_H
 
-# include <stddef.h>
-# include <stdlib.h> // needed for free()
+#include <stddef.h>
+#include <stdlib.h> // needed for free()
+
+// use the helper routines provided by libwget
+#define info_printf wget_info_printf
+#define error_printf  wget_error_printf
+#define error_printf_exit  wget_error_printf_exit
+#define debug_printf wget_debug_printf
+#define debug_write wget_debug_write
 
 // I try to never leave freed pointers hanging around
-# define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
+#define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 
 // number of elements within an array
-# define countof(a) (sizeof(a)/sizeof(*(a)))
+#define countof(a) (sizeof(a)/sizeof(*(a)))
 
 void set_exit_status(int status);
 const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri);

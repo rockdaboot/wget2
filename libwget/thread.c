@@ -30,6 +30,7 @@
 #endif
 
 #include <signal.h>
+#include "timespec.h" // gnulib gettime()
 
 #include <libwget.h>
 #include "private.h"
@@ -93,9 +94,15 @@ int wget_thread_cond_signal(wget_thread_cond_t *cond)
 	return pthread_cond_broadcast(cond);
 }
 
-int wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex)
+int wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex, long long ms)
 {
-	return pthread_cond_wait(cond, mutex);
+	if (ms <= 0)
+		return pthread_cond_wait(cond, mutex);
+
+	// pthread_cond_timedwait() wants an absolute time
+	ms += wget_get_timemillis();
+
+	return pthread_cond_timedwait(cond, mutex, &(struct timespec){ .tv_sec = ms / 1000, .tv_nsec = (ms % 1000) * 1000000 });
 }
 
 bool wget_thread_support(void)
@@ -123,6 +130,6 @@ int wget_thread_join(wget_thread_t thread) { return 0; }
 wget_thread_t wget_thread_self(void) { return 0; }
 int wget_thread_cond_init(wget_thread_cond_t *cond) { return 0; }
 int wget_thread_cond_signal(wget_thread_cond_t *cond) { return 0; }
-int wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex) { return 0; }
+int wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex, long long ms) { return 0; }
 
 #endif // USE_POSIX_THREADS || USE_PTH_THREADS

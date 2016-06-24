@@ -34,7 +34,7 @@
 
 #include <libwget.h>
 
-#include "log.h"
+#include "wget.h"
 #include "blacklist.h"
 
 static wget_hashmap_t

@@ -117,7 +117,15 @@ static void _write_error(const char *data, size_t len)
 	_write_out(stderr, data, len, 0, "\033[31m"); // red text
 }
 
-static void _write_info(const char *data, size_t len)
+static void _write_info_stderr(const char *data, size_t len)
+{
+	if (!data || (ssize_t)len <= 0)
+		return;
+
+	_write_out(stderr, data, len, 0, NULL);
+}
+
+static void _write_info_stdout(const char *data, size_t len)
 {
 	if (!data || (ssize_t)len <= 0)
 		return;
@@ -152,6 +160,7 @@ void log_init(void)
 //	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : stderr);
 
 	// set info logging
-	wget_logger_set_func(wget_get_logger(WGET_LOGGER_INFO), config.verbose && !config.quiet ? _write_info : NULL);
+	wget_logger_set_func(wget_get_logger(WGET_LOGGER_INFO),
+		config.verbose && !config.quiet ? (fileno(stdout) == fileno(stderr) ? _write_info_stderr : _write_info_stdout) : NULL);
 //	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
 }

@@ -211,14 +211,14 @@ void *wget_list_getlast(const wget_list_t *list)
  */
 int wget_list_browse(const wget_list_t *list, int (*browse)(void *context, void *elem), void *context)
 {
-	int ret = 0;
+	if (!list)
+		return -1;
 
-	if (list) {
-		const wget_list_t *end = list->prev, *cur = list;
+	int ret;
+	const wget_list_t *end = list->prev, *cur = list;
 
-		while ((ret = browse(context, (void *)(cur + 1))) == 0 && cur != end)
-			cur = cur->next;
-	}
+	while ((ret = browse(context, (void *)(cur + 1))) == 0 && cur != end)
+		cur = cur->next;
 
 	return ret;
 }

@@ -221,6 +221,19 @@ int main(void)
 			{ NULL } },
 		0);
 
+	// metalink V3, no pieces, as input file
+	wget_test(
+		WGET_TEST_OPTIONS, "--force-metalink -i archive.meta",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{ "archive.meta", urls[0].body },
+			{ NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "archive.meta", urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ NULL } },
+		0);
+
 	// metalink V4, no pieces
 	wget_test(
 		// WGET_TEST_OPTIONS, "-d",
@@ -237,6 +250,19 @@ int main(void)
 		WGET_TEST_REQUEST_URL, "archiveP.meta4",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[5].name + 1, urls[5].body },
+			{ NULL } },
+		0);
+
+	// metalink V4, two pieces, as input file
+	wget_test(
+		WGET_TEST_OPTIONS, "--force-metalink -i archiveP.meta4",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{ "archiveP.meta4", urls[4].body },
+			{ NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "archiveP.meta4", urls[4].body },
 			{ urls[5].name + 1, urls[5].body },
 			{ NULL } },
 		0);

@@ -204,10 +204,6 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 			}
 		}
 
-		if (body && bodylen) {
-			wget_http_add_header_printf(req, "Content-Length", "%zu", bodylen);
-		}
-
 		if (connp) {
 			wget_http_add_header(req, "Connection", "keepalive");
 		}
@@ -231,9 +227,9 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 			int rc;
 
 			if (body && bodylen)
-				rc = wget_http_send_request_with_body(conn, req, body, bodylen);
-			else
-				rc = wget_http_send_request(conn, req);
+				wget_http_request_set_body(req, NULL, wget_memdup(body, bodylen), bodylen);
+
+			rc = wget_http_send_request(conn, req);
 
 			if (rc == 0) {
 				wget_http_request_set_header_cb(req, header_callback, header_user_data);

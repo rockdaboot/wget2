@@ -26,9 +26,9 @@
  */
 
 #ifndef _WGET_HOST_H
-# define _WGET_HOST_H
+#define _WGET_HOST_H
 
-# include <stdarg.h>
+#include <libwget.h>
 
 struct JOB;
 typedef struct JOB JOB;
@@ -37,15 +37,37 @@ typedef struct JOB JOB;
 typedef struct {
 	const char
 		*scheme,
-		*host;
+		*host,
+		*port;
 	JOB
-		*robot_job;
+		*robot_job; // special job for downloading robots.txt (before anything else)
 	ROBOTS
 		*robots;
+	wget_list_t
+		*queue; // host specific job queue
+	long long
+		retry_ts; // timestamp of earliest retry in milliseconds
+	int
+		qsize, // number of jobs in queue
+		failures; // number of consequent connection failures
+	unsigned char
+		blocked : 1; // host may be blocked after too many errors or even one final error
 } HOST;
 
-HOST *hosts_add(wget_iri_t *iri);
-HOST *hosts_get(wget_iri_t *iri);
+HOST *host_add(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
+HOST *host_get(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
+JOB *host_get_job(HOST *host, long long *pause);
+JOB *host_add_job(HOST *host, JOB *job) G_GNUC_WGET_NONNULL((1,2));
+void host_remove_job(HOST *host, JOB *job) G_GNUC_WGET_NONNULL((1,2));
+void host_queue_free(HOST *host) G_GNUC_WGET_NONNULL((1));
 void hosts_free(void);
+void host_increase_failure(HOST *host) G_GNUC_WGET_NONNULL((1));
+void host_final_failure(HOST *host) G_GNUC_WGET_NONNULL((1));
+void host_reset_failure(HOST *host) G_GNUC_WGET_NONNULL((1));
+
+int queue_size(void) G_GNUC_WGET_PURE;
+int queue_empty(void) G_GNUC_WGET_PURE;
+void queue_print(HOST *host);
+void host_remove_job(HOST *host, JOB *job) G_GNUC_WGET_NONNULL((1,2));
 
 #endif /* _WGET_HOST_H */

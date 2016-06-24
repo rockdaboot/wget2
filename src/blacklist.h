@@ -26,9 +26,9 @@
  */
 
 #ifndef _WGET_BLACKLIST_H
-# define _WGET_BLACKLIST_H
+#define _WGET_BLACKLIST_H
 
-# include <libwget.h>
+#include <libwget.h>
 
 int in_blacklist(wget_iri_t *iri) G_GNUC_WGET_NONNULL_ALL;
 int blacklist_size(void) G_GNUC_WGET_PURE;

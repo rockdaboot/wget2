@@ -67,8 +67,6 @@ typedef struct {
 		tid;
 	JOB
 		*job;
-	PART
-		*part;
 	wget_http_connection_t
 		*conn;
 	char
@@ -131,12 +129,12 @@ static void
 	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, wget_iri_t *base),
 	css_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri_t *base);
-static int
-	download_part(DOWNLOADER *downloader);
 static unsigned int G_GNUC_WGET_PURE
 	hash_url(const char *url);
+static int
+	http_send_request(wget_iri_t *iri, DOWNLOADER *downloader);
 wget_http_response_t
-	*http_get(wget_iri_t *iri, PART *part, DOWNLOADER *downloader, const char *method);
+	*http_receive_response(wget_http_connection_t *conn);
 
 static wget_stringmap_t
 	*etags;
@@ -466,12 +464,13 @@ static int in_host_pattern_list(const wget_vector_t *v, const char *hostname)
 	return 0;
 }
 
-// Add URLs given by user (command line or -i option).
+// Add URLs given by user (command line, file or -i option).
 // Needs to be thread-save.
 static void add_url_to_queue(const char *url, wget_iri_t *base, const char *encoding)
 {
 	wget_iri_t *iri;
 	JOB *new_job = NULL, job_buf;
+	HOST *host;
 
 	iri = wget_iri_parse_base(base, url, encoding);
 
@@ -489,31 +488,34 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 	wget_thread_mutex_lock(&downloader_mutex);
 
 	if (!blacklist_add(iri)) {
+		// we know this URL already
 		wget_thread_mutex_unlock(&downloader_mutex);
 		return;
 	}
 
+	// only download content from hosts given on the command line or from input file
+	if (wget_vector_contains(config.exclude_domains, iri->host)) {
+		// download from this scheme://domain are explicitely not wanted
+		wget_thread_mutex_unlock(&downloader_mutex);
+		return;
+	}
+
+	if ((host = host_add(iri))) {
+		// a new host entry has been created
+		if (config.recursive && config.robots) {
+			// create a special job for downloading robots.txt (before anything else)
+			host->robot_job = job_init(NULL, wget_iri_parse_base(iri, "/robots.txt", encoding));
+			host->robot_job->host = host;
+			host->robot_job->local_filename = get_local_filename(host->robot_job->iri);
+			host->robot_job->robotstxt = 1;
+		}
+	} else
+		host = host_get(iri);
+
 	if (config.recursive) {
 		if (!config.span_hosts) {
-			// only download content from hosts given on the command line or from input file
-			if (!wget_vector_contains(config.exclude_domains, iri->host)) {
+			if (wget_vector_find(config.domains, iri->host) == -1)
 				wget_vector_add_str(config.domains, iri->host);
-			}
-		}
-
-		if (config.robots) {
-			HOST * host;
-
-			if ((host = hosts_add(iri))) {
-				// a new host entry has been created
-				new_job = job_init(&job_buf, wget_iri_parse_base(iri, "/robots.txt", encoding));
-				new_job->host = host;
-				host->robot_job = new_job;
-				new_job->deferred = wget_vector_create(2, -2, NULL);
-				wget_vector_add_noalloc(new_job->deferred, iri);
-			} else if ((host = hosts_get(iri)) && (new_job = host->robot_job)) {
-				wget_vector_add_noalloc(new_job->deferred, iri);
-			}
 		}
 
 		if (!config.parent) {
@@ -532,15 +534,21 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 		}
 	}
 
-	if (!new_job)
-		new_job = job_init(&job_buf, iri);
+	new_job = job_init(&job_buf, iri);
+	new_job->local_filename = get_local_filename(iri);
 
-	if (!new_job->deferred)
-		new_job->local_filename = get_local_filename(iri);
-	else
-		new_job->local_filename = get_local_filename(new_job->iri);
+	if (config.recursive) {
+		if (config.accept_patterns && !in_pattern_list(config.accept_patterns, new_job->iri->uri))
+			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
 
-	queue_add_job(new_job);
+		if (config.reject_patterns && in_pattern_list(config.reject_patterns, new_job->iri->uri))
+			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+	}
+
+	if (config.spider || config.chunk_size)
+		new_job->head_first = 1;
+
+	host_add_job(host, new_job);
 
 	wget_thread_mutex_unlock(&downloader_mutex);
 }
@@ -556,11 +564,13 @@ static wget_thread_t
 static void
 	*input_thread(void *p);
 
+// Add URLs parsed from downloaded files
 // Needs to be thread-save
 static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 {
 	JOB *new_job = NULL, job_buf;
 	wget_iri_t *iri;
+	HOST *host;
 
 	if (flags & URL_FLG_REDIRECTION) { // redirect
 		if (config.max_redirect && job && job->redirection_level >= config.max_redirect) {
@@ -595,6 +605,12 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	wget_thread_mutex_lock(&downloader_mutex);
 
+	if (!blacklist_add(iri)) {
+		// we know this URL already
+		wget_thread_mutex_unlock(&downloader_mutex);
+		return;
+	}
+
 	if (config.recursive && !config.parent) {
 		// do not ascend above the parent directory
 		int ok = 0;
@@ -614,7 +630,6 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 		if (!ok) {
 			wget_thread_mutex_unlock(&downloader_mutex);
-			wget_iri_free(&iri);
 			info_printf(_("URL '%s' not followed (parent ascending not allowed)\n"), url);
 			return;
 		}
@@ -635,76 +650,75 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		if (reason) {
 			wget_thread_mutex_unlock(&downloader_mutex);
 			info_printf(_("URL '%s' not followed (%s)\n"), iri->uri, reason);
-			wget_iri_free(&iri);
+//			wget_iri_free(&iri);
 			return;
 		}
 	}
 
-	if (config.recursive && config.robots) {
-		HOST * host;
-
-		if ((host = hosts_add(iri))) {
-			// a new host entry has been created
-			new_job = job_init(&job_buf, wget_iri_parse_base(iri, "/robots.txt", encoding));
-			new_job->host = host;
-			host->robot_job = new_job;
-			new_job->deferred = wget_vector_create(2, -2, NULL);
-			wget_vector_add_noalloc(new_job->deferred, iri);
-			blacklist_add(iri);
-		} else if ((host = hosts_get(iri))) {
-			if (host->robot_job) {
-				wget_vector_add_noalloc(host->robot_job->deferred, iri);
-				wget_thread_mutex_unlock(&downloader_mutex);
-				return;
-			}
-
-			if (host->robots && iri->path) {
-				for (int it = 0; it < wget_vector_size(host->robots->paths); it++) {
-					ROBOTS_PATH *path = wget_vector_get(host->robots->paths, it);
-					if (!strncmp(path->path, iri->path, path->len)) {
-						wget_thread_mutex_unlock(&downloader_mutex);
-						info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), iri->uri);
-						wget_iri_free(&iri);
-						return;
-					}
-//					info_printf("checked robot path '%.*s'\n", path->path, path->len);
+	if ((host = host_add(iri))) {
+		// a new host entry has been created
+		if (config.recursive && config.robots) {
+			// create a special job for downloading robots.txt (before anything else)
+			host->robot_job = job_init(NULL, wget_iri_parse_base(iri, "/robots.txt", encoding));
+			host->robot_job->host = host;
+			host->robot_job->local_filename = get_local_filename(host->robot_job->iri);
+			host->robot_job->robotstxt = 1;
+		}
+	} else if ((host = host_get(iri))) {
+		if (host->robots && iri->path) {
+			for (int it = 0; it < wget_vector_size(host->robots->paths); it++) {
+				ROBOTS_PATH *path = wget_vector_get(host->robots->paths, it);
+				if (!strncmp(path->path, iri->path, path->len)) {
+					wget_thread_mutex_unlock(&downloader_mutex);
+					info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), iri->uri);
+//					wget_iri_free(&iri);
+					return;
 				}
+//				info_printf("checked robot path '%.*s'\n", path->path, path->len);
 			}
 		}
 	}
 
-	if (!new_job)
-		new_job = job_init(&job_buf, blacklist_add(iri));
+	new_job = job_init(&job_buf, iri);
 
-	if (new_job) {
-		if (!config.output_document) {
-			if (!(flags & URL_FLG_REDIRECTION) || config.trust_server_names || !job)
-				new_job->local_filename = get_local_filename(new_job->iri);
-			else
-				new_job->local_filename = wget_strdup(job->local_filename);
-		}
-
-		if (job) {
-			if (flags & URL_FLG_REDIRECTION) {
-				new_job->redirection_level = job->redirection_level + 1;
-				new_job->referer = job->referer;
-			} else {
-				new_job->level = job->level + 1;
-				new_job->referer = job->iri;
-				job->iri = NULL;
-			}
-		}
-
-		// mark this job as a Sitemap job, but not if it is a robot.txt job
-		if (flags & URL_FLG_SITEMAP && !new_job->deferred)
-			new_job->sitemap = 1;
-
-		// now add the new job to the queue (thread-safe))
-		queue_add_job(new_job);
-
-		// and wake up all waiting threads
-		wget_thread_cond_signal(&worker_cond);
+	if (!config.output_document) {
+		if (!(flags & URL_FLG_REDIRECTION) || config.trust_server_names || !job)
+			new_job->local_filename = get_local_filename(new_job->iri);
+		else
+			new_job->local_filename = wget_strdup(job->local_filename);
 	}
+
+	if (job) {
+		if (flags & URL_FLG_REDIRECTION) {
+			new_job->redirection_level = job->redirection_level + 1;
+			new_job->referer = job->referer;
+		} else {
+			new_job->level = job->level + 1;
+			new_job->referer = job->iri;
+			job->iri = NULL;
+		}
+	}
+
+	if (config.recursive) {
+		if (config.accept_patterns && !in_pattern_list(config.accept_patterns, new_job->iri->uri))
+			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+
+		if (config.reject_patterns && in_pattern_list(config.reject_patterns, new_job->iri->uri))
+			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+	}
+
+	if (config.spider || config.chunk_size)
+		new_job->head_first = 1;
+
+	// mark this job as a Sitemap job, but not if it is a robot.txt job
+	if (flags & URL_FLG_SITEMAP)
+		new_job->sitemap = 1;
+
+	// now add the new job to the queue (thread-safe))
+	new_job = host_add_job(host, new_job);
+
+	// and wake up all waiting threads
+	wget_thread_cond_signal(&worker_cond);
 
 	wget_thread_mutex_unlock(&downloader_mutex);
 }
@@ -1011,7 +1025,7 @@ int main(int argc, const char **argv)
 			}
 
 			// here we sit and wait for an event from our worker threads
-			wget_thread_cond_wait(&main_cond, &main_mutex);
+			wget_thread_cond_wait(&main_cond, &main_mutex, 0);
 		}
 	}
 
@@ -1062,7 +1076,6 @@ int main(int argc, const char **argv)
 		// freeing to avoid disguising valgrind output
 
 		xfree(buf);
-		queue_free();
 		blacklist_free();
 		hosts_free();
 		xfree(downloaders);
@@ -1096,6 +1109,182 @@ void *input_thread(void *p G_GNUC_WGET_UNUSED)
 	return NULL;
 }
 
+static int try_connection(DOWNLOADER *downloader, wget_iri_t *iri)
+{
+	wget_http_connection_t *conn;
+	int rc;
+
+	if (config.hsts && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, atoi(iri->resolv_port))) {
+		info_printf("HSTS in effect for %s:%s\n", iri->host, iri->resolv_port);
+		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
+	}
+
+	if ((conn = downloader->conn)) {
+		if (!wget_strcmp(conn->esc_host, iri->host) &&
+			conn->scheme == iri->scheme &&
+			!wget_strcmp(conn->port, iri->resolv_port))
+		{
+			debug_printf("reuse connection %s\n", conn->esc_host);
+			return WGET_E_SUCCESS;
+		}
+
+		debug_printf("close connection %s\n", conn->esc_host);
+		wget_http_close(&downloader->conn);
+	}
+
+	if ((rc = wget_http_open(&downloader->conn, iri)) == WGET_E_SUCCESS) {
+		debug_printf("established connection %s\n", downloader->conn->esc_host);
+	} else {
+		debug_printf("Failed to connect (%d)\n", rc);
+	}
+
+	return rc;
+}
+
+static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
+{
+	int rc = WGET_E_UNKNOWN;
+
+	downloader->final_error = 0;
+
+	if (downloader->job->part) {
+		JOB *job = downloader->job;
+		wget_metalink_t *metalink = job->metalink;
+		PART *part = job->part;
+		int mirror_index = downloader->id % wget_vector_size(metalink->mirrors);
+
+		// we try every mirror max. 'config.tries' number of times
+		for (int tries = 0; tries < config.tries && !part->done && !terminate; tries++) {
+			wget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
+
+			if (terminate)
+				break;
+
+			for (int mirrors = 0; mirrors < wget_vector_size(metalink->mirrors) && !part->done; mirrors++) {
+				wget_metalink_mirror_t *mirror = wget_vector_get(metalink->mirrors, mirror_index);
+
+				mirror_index = (mirror_index + 1) % wget_vector_size(metalink->mirrors);
+
+				rc = try_connection(downloader, mirror->iri);
+
+				if (rc == WGET_E_SUCCESS) {
+					if (iri)
+						*iri = mirror->iri;
+					return rc;
+				}
+			}
+		}
+	} else {
+		rc = try_connection(downloader, *iri);
+	}
+
+	if (rc == WGET_E_HANDSHAKE || rc == WGET_E_CERTIFICATE) {
+		// TLS  failure
+		wget_http_close(&downloader->conn);
+		host_final_failure(downloader->job->host);
+		set_exit_status(5);
+	}
+
+	return rc;
+}
+
+static void add_statistics(wget_http_response_t *resp)
+{
+	// do some statistics
+	if (resp->code == 200) {
+		JOB *job = resp->req->user_data;
+
+		if (job->part)
+			_atomic_increment_int(&stats.nchunks);
+		else
+			_atomic_increment_int(&stats.ndownloads);
+	}
+	else if (resp->code == 301 || resp->code == 302)
+		_atomic_increment_int(&stats.nredirects);
+	else if (resp->code == 304)
+		_atomic_increment_int(&stats.nnotmodified);
+	else
+		_atomic_increment_int(&stats.nerrors);
+}
+
+static int process_response_header(DOWNLOADER *downloader, wget_http_response_t *resp)
+{
+	JOB *job = resp->req->user_data;
+	wget_iri_t *iri = job->iri;
+
+	print_status(downloader, "HTTP response %d %s\n", resp->code, resp->reason);
+
+	if (config.server_response)
+		info_printf("# got header %zu bytes:\n%s\n\n", resp->header->length, resp->header->data);
+
+	// Wget1.x compatibility
+	if (resp->code/100 == 4) {
+		if (job->head_first)
+			set_exit_status(8);
+		else if (resp->code == 404 && !job->robotstxt)
+			set_exit_status(8);
+	}
+
+	// server doesn't support keep-alive or want us to close the connection
+	if (!resp->keep_alive)
+		wget_http_close(&downloader->conn);
+
+	// do some statistics
+	add_statistics(resp);
+
+	if (resp->code == 302 && resp->links && resp->digests)
+		return 0; // 302 with Metalink information
+
+	if (resp->code == 401) { // Unauthorized
+		wget_http_free_challenges(&job->challenges);
+
+		if (!(job->challenges = resp->challenges))
+			return 1; // no challenges offered
+
+		resp->challenges = NULL;
+		job->inuse = 0; // try again, but with challenge reponses
+		return 1;
+	}
+
+	// 304 Not Modified
+	if (resp->code / 100 == 2 || resp->code / 100 >= 4 || resp->code == 304)
+		return 0; // final response
+
+	if (resp->location) {
+		wget_buffer_t uri_buf;
+		char uri_sbuf[1024];
+
+		wget_cookie_normalize_cookies(job->iri, resp->cookies);
+		wget_cookie_store_cookies(config.cookie_db, resp->cookies);
+
+		wget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
+
+		wget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
+
+//			if (!part) {
+		add_url(downloader->job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION);
+		wget_buffer_deinit(&uri_buf);
+//			break;
+//			} else {
+				// directly follow when using metalink
+/*				if (iri != dont_free)
+					wget_iri_free(&iri);
+				iri = wget_iri_parse(uri_buf.data, NULL);
+				wget_buffer_deinit(&uri_buf);
+
+				// apply the HSTS check to the location URL
+				if (config.hsts && iri && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, atoi(iri->resolv_port))) {
+					info_printf("HSTS in effect for %s:%s\n", iri->host, iri->resolv_port);
+					iri_scheme = wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
+				} else
+					iri_scheme = NULL;
+			}
+*/
+	}
+
+	return 0;
+}
+
 void *downloader_thread(void *p)
 {
 	static wget_thread_mutex_t
@@ -1104,26 +1293,36 @@ void *downloader_thread(void *p)
 	DOWNLOADER *downloader = p;
 	wget_http_response_t *resp = NULL;
 	JOB *job;
-	PART *part;
+	HOST *host = NULL;
 	int do_wait = 0;
+	long long pause;
 
 	downloader->tid = wget_thread_self(); // to avoid race condition
 
 	wget_thread_mutex_lock(&main_mutex);
 
 	while (!terminate) {
-		if (queue_get(&downloader->job, &downloader->part) == 0) {
+		// If downloader->conn is set, we only get jobs for the established connection.
+		// If downloader->conn is NULL, we might get a job for any host
+		if (!(job = downloader->job = host_get_job(host, &pause))) {
+			// there were no more jobs for this host, close the connection and try again
+			if (host) {
+				wget_http_close(&downloader->conn);
+				host = NULL;
+				continue;
+			}
 			if (!wget_thread_support()) {
 				// not needed, but do not leave the lock not matched.
 				wget_thread_mutex_unlock(&main_mutex);
 				return NULL;
 			}
 			// here we sit and wait for a job
-			wget_thread_cond_wait(&worker_cond, &main_mutex);
+			wget_thread_cond_wait(&worker_cond, &main_mutex, pause);
 			continue;
 		}
 		wget_thread_mutex_unlock(&main_mutex);
 
+		// wait between retrievals
 		if (config.wait) {
 			if (do_wait) {
 				if (config.random_wait)
@@ -1137,66 +1336,56 @@ void *downloader_thread(void *p)
 				do_wait = 1;
 		}
 
+		// hey, we got a job...
+		host = job->host;
+
 //		if (config.progress)
 //			bar_print(downloader->id, "Send header...");
 //			bar_update(downloader->id, 0, 0); // update to empty bar
 
-		if ((part = downloader->part)) {
-			// download metalink part
-			if (download_part(downloader) == 0) {
-				wget_thread_mutex_lock(&main_mutex);
-				queue_del(downloader->job);
-				wget_thread_cond_signal(&main_cond);
-			} else {
-				wget_thread_mutex_lock(&main_mutex);
-				if (config.progress)
-					wget_thread_cond_signal(&main_cond); // needed for progress bar updates
-			}
-
-			continue;
+		wget_iri_t *iri = job->iri;
+		if (establish_connection(downloader, &iri)) {
+			host_increase_failure(host);
+			job->inuse = 0; // release job
+			host = NULL;
+			goto ready;
 		}
 
-		// hey, we got a job...
-		job = downloader->job;
-
-		if (config.accept_patterns && !in_pattern_list(config.accept_patterns, job->iri->uri)) {
-			if (config.recursive)
-				job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+		if (http_send_request(iri, downloader)) {
+			host_increase_failure(host);
+			job->inuse = 0; // release job
+			host = NULL;
+			goto ready;
 		}
 
-		if (config.reject_patterns && in_pattern_list(config.reject_patterns, job->iri->uri)) {
-			if (config.recursive)
-				job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+		host_reset_failure(host);
+
+		resp = http_receive_response(downloader->conn);
+
+		if (!resp) {
+			// likely that the other side closed the connection, try again
+			wget_http_close(&downloader->conn);
+			job->inuse = 0; // try again later
+			goto ready;
 		}
 
-//		info_printf("head_first=%d deferred=%d iri=%s\n", job->head_first, !!job->deferred, job->iri->uri);
-		if ((config.spider || config.chunk_size || job->head_first) && !job->deferred) {
-			// In spider mode, we first make a HEAD request.
-			// If the Content-Type header gives us not a parsable type, we are done.
-			print_status(downloader, "[%d] Checking '%s' ...\n", downloader->id, job->iri->uri);
-			for (int tries = 0; !resp && tries < config.tries && !terminate; tries++) {
-				wget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
+		if (downloader->final_error)
+			goto ready;
 
-				if (terminate)
-					break;
+		// check the response header
+		if (process_response_header(downloader, resp))
+			goto ready;
 
-				resp = http_get(job->iri, NULL, downloader, "HEAD");
-				if (resp)
-					print_status(downloader, "HTTP response %d %s\n", resp->code, resp->reason);
-				else if (downloader->final_error)
-					goto ready;
-			}
+		// server doesn't support keep-alive or want us to close the connection
+		if (!resp->keep_alive)
+			wget_http_close(&downloader->conn);
 
-			if (!resp)
-				goto ready;
+		job = resp->req->user_data;
 
-			// Wget compatibility
-			if (resp->code/100 == 4)
-				set_exit_status(8);
+		if (job->head_first) {
+			job->head_first = 0;
 
-			if (config.spider || job->head_first) {
-				job->head_first = 0;
-
+			if (config.spider || !config.chunk_size) {
 				if (resp->code != 200 || !resp->content_type)
 					goto ready;
 
@@ -1223,6 +1412,8 @@ void *downloader_thread(void *p)
 						goto ready;
 					}
 				}
+
+				job->inuse = 0; // do this job again with GET request
 			} else if (config.chunk_size && resp->content_length > config.chunk_size) {
 				// create metalink structure without hashing
 				wget_metalink_piece_t piece = { .length = config.chunk_size };
@@ -1248,37 +1439,10 @@ void *downloader_thread(void *p)
 				if (!job_validate_file(job)) {
 					// wake up sleeping workers
 					wget_thread_cond_signal(&worker_cond);
-					job = NULL; // do not remove this job from queue yet
+					job->inuse = 0; // do not remove this job from queue yet
 				} // else file already downloaded and checksum ok
-				goto ready;
 			}
 
-			wget_http_free_response(&resp);
-		}
-
-//		if (job->local_filename)
-//			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->local_filename);
-//		else
-		if (config.progress)
-			bar_print(downloader->id, job->iri->uri);
-		else
-			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, job->iri->uri);
-
-		for (int tries = 0; !resp && tries < config.tries && !terminate; tries++) {
-			wget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
-
-			if (terminate)
-				break;
-
-			resp = http_get(job->iri, NULL, downloader, NULL);
-			if (resp)
-				print_status(downloader, "HTTP response %d %s\n", resp->code, resp->reason);
-			else if (downloader->final_error)
-				goto ready;
-		}
-
-		if (!resp) {
-			print_status(downloader, "[%d] Failed to download\n", downloader->id);
 			goto ready;
 		}
 
@@ -1286,9 +1450,83 @@ void *downloader_thread(void *p)
 		wget_cookie_store_cookies(config.cookie_db, resp->cookies); // store cookies
 
 		// care for HSTS feature
-		if (config.hsts && job->iri->scheme == WGET_IRI_SCHEME_HTTPS && resp->hsts) {
-			wget_hsts_db_add(config.hsts_db, wget_hsts_new(job->iri->host, atoi(job->iri->resolv_port), resp->hsts_maxage, resp->hsts_include_subdomains));
+		if (config.hsts && iri->scheme == WGET_IRI_SCHEME_HTTPS && resp->hsts) {
+			wget_hsts_db_add(config.hsts_db, wget_hsts_new(iri->host, atoi(iri->resolv_port), resp->hsts_maxage, resp->hsts_include_subdomains));
 			hsts_changed = 1;
+		}
+
+		if (job->part) {
+			// chunked or metalink partial download
+			PART *part = job->part;
+			int ret = -1;
+
+			// just update number bytes read (body only) for display purposes
+			quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length);
+
+			if (resp->code != 200 && resp->code != 206) {
+				print_status(downloader, "part %d download error %d\n", part->id, resp->code);
+			} else if (!resp->body) {
+				print_status(downloader, "part %d download error 'empty body'\n", part->id);
+			} else if (resp->body->length != (size_t)part->length) {
+				print_status(downloader, "part %d download error '%zu bytes of %lld expected'\n",
+					part->id, resp->body->length, (long long)part->length);
+			} else {
+				print_status(downloader, "part %d downloaded\n", part->id);
+				part->done = 1; // set this when downloaded ok
+			}
+
+			if (part->done) {
+				// check if all parts are done (downloaded + hash-checked)
+				int all_done = 1, it;
+
+				wget_thread_mutex_lock(&downloader_mutex);
+				for (it = 0; it < wget_vector_size(job->parts); it++) {
+					PART *partp = wget_vector_get(job->parts, it);
+					if (!partp->done) {
+						all_done = 0;
+						break;
+					}
+				}
+				wget_thread_mutex_unlock(&downloader_mutex);
+
+				// debug_printf("all_done=%d\n",all_done);
+				if (all_done) {
+		//		if (all_done && wget_vector_size(job->metalink->hashes) > 0) {
+					// check integrity of complete file
+					if (config.progress)
+						bar_print(downloader->id, "Checksumming...");
+					else if (job->metalink)
+						print_status(downloader, "%s checking...\n", job->metalink->name);
+					else
+						print_status(downloader, "%s checking...\n", job->local_filename);
+					if (job_validate_file(job)) {
+						if (config.progress)
+							bar_print(downloader->id, "Checksum OK");
+						else
+							debug_printf("checksum ok\n");
+						ret = 0;
+					} else {
+						if (config.progress)
+							bar_print(downloader->id, "Checksum FAILED");
+						else
+							debug_printf("checksum failed\n");
+					}
+				}
+			} else {
+				print_status(downloader, "part %d failed\n", part->id);
+				part->inuse = 0; // something was wrong, reload again later
+			}
+
+			wget_http_free_request(&resp->req);
+			wget_http_free_response(&resp);
+
+			wget_thread_mutex_lock(&main_mutex);
+			if (ret == 0) {
+				host_remove_job(host, downloader->job);
+			}
+			wget_thread_cond_signal(&main_cond);
+
+			continue;
 		}
 
 		// check if we got a RFC 6249 Metalink response
@@ -1372,7 +1610,7 @@ void *downloader_thread(void *p)
 						// wake up sleeping workers
 						wget_thread_cond_signal(&worker_cond);
 
-						job = NULL; // do not remove this job from queue yet
+						job->inuse = 0; // do not remove this job from queue yet
 					} // else file already downloaded and checksum ok
 				}
 				goto ready;
@@ -1400,7 +1638,7 @@ void *downloader_thread(void *p)
 							sitemap_parse_xml_gz(job, resp->body, "utf-8", job->iri);
 						else if (!wget_strcasecmp_ascii(resp->content_type, "text/plain"))
 							sitemap_parse_text(job, resp->body->data, "utf-8", job->iri);
-					} else if (job->deferred && !wget_strcasecmp_ascii(resp->content_type, "text/plain")) {
+					} else if (job->robotstxt) {
 						debug_printf("Scanning robots.txt ...\n");
 						if ((job->host->robots = wget_robots_parse(resp->body->data, PACKAGE_NAME))) {
 							// add sitemaps to be downloaded (format http://www.sitemaps.org/protocol.html)
@@ -1434,18 +1672,22 @@ void *downloader_thread(void *p)
 					}
 				}
 			}
-		} else if (resp->code == 404) {
-			if (!job->deferred) // ignore errors on robots.txt
-				set_exit_status(8);
 		}
 
 		// regular download
 ready:
-		wget_http_free_response(&resp);
+		if (resp) {
+			wget_http_free_request(&resp->req);
+			wget_http_free_response(&resp);
+		}
+
+		wget_thread_mutex_lock(&main_mutex);
 
 		// download of single-part file complete, remove from job queue
-		wget_thread_mutex_lock(&main_mutex);
-		queue_del(job);
+		if (job->inuse) {
+			host_remove_job(host, job);
+		}
+
 		wget_thread_cond_signal(&main_cond);
 	}
 
@@ -1889,7 +2131,15 @@ void metalink_parse_localfile(const char *fname)
 			if (!job_validate_file(&job)) {
 				// sort mirrors by priority to download from highest priority first
 				wget_metalink_sort_mirrors(metalink);
-				queue_add_job(&job);
+
+				// we have to attach the job to a host - take the first mirror for this purpose
+				wget_metalink_mirror_t *mirror = wget_vector_get(metalink->mirrors, 0);
+
+				HOST *host;
+				if (!(host = host_add(mirror->iri)))
+					host = host_get(mirror->iri);
+
+				host_add_job(host, &job);
 			} else { // file already downloaded and checksum ok
 				wget_metalink_free(&metalink);
 			}
@@ -2156,6 +2406,8 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	if (fd >= 0) {
 		ssize_t rc;
 
+		info_printf(_("Saving '%s'\n"), fnum ? unique : fname);
+
 		if (config.save_headers) {
 			if ((rc = write(fd, resp->header->data, resp->header->length)) != (ssize_t)resp->header->length) {
 				error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), fnum ? unique : fname, rc, errno);
@@ -2181,101 +2433,6 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	return fd;
 }
 
-int download_part(DOWNLOADER *downloader)
-{
-	JOB *job = downloader->job;
-	wget_metalink_t *metalink = job->metalink;
-	PART *part = downloader->part;
-	int mirror_index = downloader->id % wget_vector_size(metalink->mirrors);
-	int ret = -1;
-
-	// we try every mirror max. 'config.tries' number of times
-	for (int tries = 0; tries < config.tries && !part->done && !terminate; tries++) {
-		wget_millisleep(tries * 1000 > config.waitretry ? config.waitretry : tries * 1000);
-
-		if (terminate)
-			break;
-
-		for (int mirrors = 0; mirrors < wget_vector_size(metalink->mirrors) && !part->done; mirrors++) {
-			wget_http_response_t *resp;
-			wget_metalink_mirror_t *mirror = wget_vector_get(metalink->mirrors, mirror_index);
-
-			print_status(downloader, "downloading part %d/%d (%lld-%lld) %s from %s (mirror %d)\n",
-				part->id, wget_vector_size(job->parts),
-				(long long)part->position, (long long)(part->position + part->length - 1),
-				metalink->name, mirror->iri->host, mirror_index);
-
-			mirror_index = (mirror_index + 1) % wget_vector_size(metalink->mirrors);
-
-			resp = http_get(mirror->iri, part, downloader, "GET");
-			if (resp) {
-				wget_cookie_store_cookies(config.cookie_db, resp->cookies); // sanitize and store cookies
-
-				// just update number bytes read (body only) for display purposes
-				quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length);
-
-				if (resp->code != 200 && resp->code != 206) {
-					print_status(downloader, "part %d download error %d\n", part->id, resp->code);
-				} else if (!resp->body) {
-					print_status(downloader, "part %d download error 'empty body'\n", part->id);
-				} else if (resp->body->length != (size_t)part->length) {
-					print_status(downloader, "part %d download error '%zu bytes of %lld expected'\n",
-						part->id, resp->body->length, (long long)part->length);
-				} else {
-					print_status(downloader, "part %d downloaded\n", part->id);
-					part->done = 1; // set this when downloaded ok
-				}
-
-				wget_http_free_response(&resp);
-			}
-		}
-	}
-
-	if (part->done) {
-		// check if all parts are done (downloaded + hash-checked)
-		int all_done = 1, it;
-
-		wget_thread_mutex_lock(&downloader_mutex);
-		for (it = 0; it < wget_vector_size(job->parts); it++) {
-			PART *p = wget_vector_get(job->parts, it);
-			if (!p->done) {
-				all_done = 0;
-				break;
-			}
-		}
-		wget_thread_mutex_unlock(&downloader_mutex);
-
-		// debug_printf("all_done=%d\n",all_done);
-		if (all_done) {
-//		if (all_done && wget_vector_size(job->metalink->hashes) > 0) {
-			// check integrity of complete file
-			if (config.progress)
-				bar_print(downloader->id, "Checksumming...");
-			else if (job->metalink)
-				print_status(downloader, "%s checking...\n", job->metalink->name);
-			else
-				print_status(downloader, "%s checking...\n", job->local_filename);
-			if (job_validate_file(job)) {
-				if (config.progress)
-					bar_print(downloader->id, "Checksum OK");
-				else
-					debug_printf("checksum ok\n");
-				ret = 0;
-			} else {
-				if (config.progress)
-					bar_print(downloader->id, "Checksum FAILED");
-				else
-					debug_printf("checksum failed\n");
-			}
-		}
-	} else {
-		print_status(downloader, "part %d failed\n", part->id);
-		part->inuse = 0; // something was wrong, reload again later
-	}
-
-	return ret;
-}
-
 // the following is just needed for the progress bar
 struct _body_callback_context {
 	DOWNLOADER *downloader;
@@ -2285,31 +2442,27 @@ struct _body_callback_context {
 	off_t length;
 	off_t expected_length;
 	bool head;
-	PART *part;
 };
 
 static int _get_header(wget_http_response_t *resp, void *context)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
-
+	PART *part;
 	const char *dest = NULL;
-	bool metalink = false;
 
-	if (resp->content_type
+	bool metalink = resp->content_type
 	    && (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml") ||
-		!wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml"))) {
-		metalink = true;
-	}
+		!wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml"));
 
 	if (ctx->head || (config.metalink && metalink))
 		dest = NULL;
-	else if (ctx->part) {
+	else if ((part = ctx->downloader->job->part)) {
 		ctx->outfd = open(ctx->downloader->job->metalink->name, O_WRONLY | O_CREAT | O_NONBLOCK, 0644);
 		if (ctx->outfd == -1) {
 			set_exit_status(3);
 			return -1;
 		}
-		if (lseek(ctx->outfd, ctx->part->position, SEEK_SET) == (off_t) -1) {
+		if (lseek(ctx->outfd, part->position, SEEK_SET) == (off_t) -1) {
 			close(ctx->outfd);
 			set_exit_status(3);
 			return -1;
@@ -2371,358 +2524,270 @@ static int _get_body(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *contex
 	return 0;
 }
 
-wget_http_response_t *http_get(wget_iri_t *iri, PART *part, DOWNLOADER *downloader, const char *method)
+static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 {
-	wget_iri_t *dont_free = iri;
-	wget_http_connection_t *conn;
-	wget_http_response_t *resp = NULL;
-	wget_vector_t *challenges = NULL;
-	const char *iri_scheme;
-//	int max_redirect = 3;
+	wget_http_request_t *req;
 	wget_buffer_t buf;
 	char sbuf[256];
-	int rc, tries = 0;
-
-	downloader->final_error = 0;
+	const char *method;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
-	if (config.hsts && iri && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, atoi(iri->resolv_port))) {
-		info_printf("HSTS in effect for %s:%s\n", iri->host, iri->resolv_port);
-		iri_scheme = wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
-	} else
-		iri_scheme = NULL;
+	if (job->head_first) {
+		method = "HEAD";
+	} else {
+		if (config.post_data || config.post_file)
+			method = "POST";
+		else
+			method = "GET";
+	}
 
-	while (iri && ++tries <= config.tries) {
-		conn = downloader->conn;
+	if (!(req = wget_http_create_request(iri, method)))
+		return req;
 
-		if (conn && !wget_strcmp(conn->esc_host, iri->host) &&
-			conn->scheme == iri->scheme &&
-			!wget_strcmp(conn->port, iri->resolv_port))
-		{
-			debug_printf("reuse connection %s\n", conn->esc_host);
-		} else {
-			if (conn) {
-				debug_printf("close connection %s\n", conn->esc_host);
-				wget_http_close(&downloader->conn);
+	if (config.continue_download || config.timestamping) {
+		const char *local_filename = job->local_filename;
+
+		if (config.continue_download)
+			wget_http_add_header_printf(req, "Range", "bytes=%lld-",
+				get_file_size(local_filename));
+
+		if (config.timestamping) {
+			time_t mtime = get_file_mtime(local_filename);
+
+			if (mtime) {
+				char http_date[32];
+
+				wget_http_print_date(mtime + 1, http_date, sizeof(http_date));
+				wget_http_add_header(req, "If-Modified-Since", http_date);
 			}
-
-			if ((rc = wget_http_open(&downloader->conn, iri)) == WGET_E_SUCCESS) {
-				debug_printf("opened connection %s\n", downloader->conn->esc_host);
-			} else {
-				debug_printf("Failed to http_open (%d)\n", rc);
-				if (rc == WGET_E_HANDSHAKE || rc == WGET_E_CERTIFICATE) {
-					downloader->final_error = 1;
-					set_exit_status(5);
-				}
-			}
-
-			conn = downloader->conn;
 		}
+	}
 
-		if (conn) {
-			wget_http_request_t *req;
+	// 20.06.2012: www.google.de only sends gzip responses with one of the
+	// following header lines in the request.
+	// User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20100101 Firefox/10.0.5 Iceweasel/10.0.5
+	// User-Agent: Mozilla/5.0 (X11; Linux) KHTML/4.8.3 (like Gecko) Konqueror/4.8
+	// User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.34 Safari/536.11
+	// User-Agent: Opera/9.80 (X11; Linux x86_64; U; en) Presto/2.10.289 Version/12.00
+	// User-Agent: Wget/1.13.4 (linux-gnu)
+	//
+	// Accept: prefer XML over HTML
+	/*				"Accept-Encoding: gzip\r\n"\
+	"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20100101 Firefox/10.0.5 Iceweasel/10.0.5\r\n"\
+	"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8\r\n"
+	"Accept-Language: en-us,en;q=0.5\r\n");
+	 */
 
-			if (method)
-				req = wget_http_create_request(iri, method);
-			else if (config.post_data || config.post_file)
-				req = wget_http_create_request(iri, "POST");
-			else
-				req = wget_http_create_request(iri, "GET");
-
-			if (config.continue_download || config.timestamping) {
-				const char *local_filename = downloader->job->local_filename;
-
-				if (config.continue_download)
-					wget_http_add_header_printf(req, "Range", "bytes=%lld-",
-						get_file_size(local_filename));
-
-				if (config.timestamping) {
-					time_t mtime = get_file_mtime(local_filename);
-
-					if (mtime) {
-						char http_date[32];
-
-						wget_http_print_date(mtime + 1, http_date, sizeof(http_date));
-						wget_http_add_header(req, "If-Modified-Since", http_date);
-					}
-				}
-			}
-
-			// 20.06.2012: www.google.de only sends gzip responses with one of the
-			// following header lines in the request.
-			// User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20100101 Firefox/10.0.5 Iceweasel/10.0.5
-			// User-Agent: Mozilla/5.0 (X11; Linux) KHTML/4.8.3 (like Gecko) Konqueror/4.8
-			// User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.34 Safari/536.11
-			// User-Agent: Opera/9.80 (X11; Linux x86_64; U; en) Presto/2.10.289 Version/12.00
-			// User-Agent: Wget/1.13.4 (linux-gnu)
-			//
-			// Accept: prefer XML over HTML
-			/*				"Accept-Encoding: gzip\r\n"\
-			"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20100101 Firefox/10.0.5 Iceweasel/10.0.5\r\n"\
-			"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8\r\n"
-			"Accept-Language: en-us,en;q=0.5\r\n");
-			 */
-
-			wget_buffer_reset(&buf);
+	wget_buffer_reset(&buf);
 #if WITH_ZLIB
-			wget_buffer_strcat(&buf, buf.length ? ", gzip, deflate" : "gzip, deflate");
+	wget_buffer_strcat(&buf, buf.length ? ", gzip, deflate" : "gzip, deflate");
 #endif
 #if WITH_BZIP2
-			wget_buffer_strcat(&buf, buf.length ? ", bzip2" : "bzip2");
+	wget_buffer_strcat(&buf, buf.length ? ", bzip2" : "bzip2");
 #endif
 #if WITH_LZMA
-			wget_buffer_strcat(&buf, buf.length ? ", xz, lzma" : "xz, lzma");
+	wget_buffer_strcat(&buf, buf.length ? ", xz, lzma" : "xz, lzma");
 #endif
-			if (!buf.length)
-				wget_buffer_strcat(&buf, "identity");
+	if (!buf.length)
+		wget_buffer_strcat(&buf, "identity");
 
-			wget_http_add_header(req, "Accept-Encoding", buf.data);
+	wget_http_add_header(req, "Accept-Encoding", buf.data);
 
-			wget_http_add_header(req, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+	wget_http_add_header(req, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 
-//			if (config.spider && !config.recursive)
-//				http_add_header_if_modified_since(time(NULL));
-//				http_add_header(req, "If-Modified-Since", "Wed, 29 Aug 2012 00:00:00 GMT");
+//	if (config.spider && !config.recursive)
+//		http_add_header_if_modified_since(time(NULL));
+//		http_add_header(req, "If-Modified-Since", "Wed, 29 Aug 2012 00:00:00 GMT");
 
-			if (config.user_agent)
-				wget_http_add_header(req, "User-Agent", config.user_agent);
+	if (config.user_agent)
+		wget_http_add_header(req, "User-Agent", config.user_agent);
 
-			if (config.keep_alive)
-				wget_http_add_header(req, "Connection", "keep-alive");
+	if (config.keep_alive)
+		wget_http_add_header(req, "Connection", "keep-alive");
 
-			if (!config.cache)
-				wget_http_add_header(req, "Pragma", "no-cache");
+	if (!config.cache)
+		wget_http_add_header(req, "Pragma", "no-cache");
 
-			if (config.referer)
-				wget_http_add_header(req, "Referer", config.referer);
-			else if (downloader->job->referer) {
-				wget_iri_t *referer = downloader->job->referer;
+	if (config.referer)
+		wget_http_add_header(req, "Referer", config.referer);
+	else if (job->referer) {
+		wget_iri_t *referer = job->referer;
 
-				wget_buffer_strcpy(&buf, referer->scheme);
-				wget_buffer_memcat(&buf, "://", 3);
-				wget_buffer_strcat(&buf, referer->host);
-				if (referer->resolv_port) {
-					wget_buffer_memcat(&buf, ":", 1);
-					wget_buffer_strcat(&buf, referer->resolv_port);
-				}
-				wget_buffer_memcat(&buf, "/", 1);
-				wget_iri_get_escaped_resource(referer, &buf);
-
-				wget_http_add_header(req, "Referer", buf.data);
-			}
-
-			if (challenges) {
-				// There might be more than one challenge, we could select the most secure one.
-				// Prefer 'Digest' over 'Basic'
-				// the following adds an Authorization: HTTP header
-				wget_http_challenge_t *challenge, *selected_challenge = NULL;
-
-				for (int it = 0; it < wget_vector_size(challenges); it++) {
-					challenge = wget_vector_get(challenges, it);
-
-					if (wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
-						selected_challenge = challenge;
-						break;
-					}
-					else if (wget_strcasecmp_ascii(challenge->auth_scheme, "basic")) {
-						if (!selected_challenge)
-							selected_challenge = challenge;
-					}
-				}
-
-				if (selected_challenge) {
-					if (config.http_username) {
-						wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
-					} else if (config.netrc_file) {
-						static wget_thread_mutex_t
-							mutex = WGET_THREAD_MUTEX_INITIALIZER;
-
-						wget_thread_mutex_lock(&mutex);
-						if (!config.netrc_db) {
-							config.netrc_db = wget_netrc_db_init(NULL);
-							wget_netrc_db_load(config.netrc_db, config.netrc_file);
-						}
-						wget_thread_mutex_unlock(&mutex);
-
-						wget_netrc_t *netrc = wget_netrc_get(config.netrc_db, iri->host);
-						if (!netrc)
-							netrc = wget_netrc_get(config.netrc_db, "default");
-
-						if (netrc) {
-							wget_http_add_credentials(req, selected_challenge, netrc->login, netrc->password);
-						} else {
-							wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
-						}
-					} else {
-						wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
-					}
-				}
-			}
-
-			if (part)
-				wget_http_add_header_printf(req, "Range", "bytes=%llu-%llu",
-					(unsigned long long) part->position, (unsigned long long) part->position + part->length - 1);
-
-			// add cookies
-			if (config.cookies) {
-				const char *cookie_string;
-
-				if ((cookie_string = wget_cookie_create_request_header(config.cookie_db, iri))) {
-					wget_http_add_header(req, "Cookie", cookie_string);
-					xfree(cookie_string);
-				}
-			}
-
-			if (config.post_data) {
-				size_t length = strlen(config.post_data);
-
-				wget_http_add_header(req, "Content-Type", "application/x-www-form-urlencoded");
-				wget_http_add_header_printf(req, "Content-Length", "%zu", length);
-				rc = wget_http_send_request_with_body(conn, req, config.post_data, length);
-			} else if (config.post_file) {
-				size_t length;
-				char *data;
-
-				if ((data = wget_read_file(config.post_file, &length))) {
-					wget_http_add_header(req, "Content-Type", "application/x-www-form-urlencoded");
-					wget_http_add_header_printf(req, "Content-Length", "%zu", length);
-					rc = wget_http_send_request_with_body(conn, req, data, length);
-					xfree(data);
-				} else
-					break;
-			} else {
-				rc = wget_http_send_request(conn, req);
-			}
-
-			if (rc == WGET_E_SUCCESS) {
-				struct _body_callback_context context = {
-					.downloader = downloader,
-					.max_memory = part ? 0 : 10 * (1 << 20),
-					.outfd = -1,
-					.body = wget_buffer_alloc(102400),
-					.length = 0,
-					.head = method && strcmp(method, "HEAD") == 0,
-					.part = part,
-				};
-
-				// set callback functions
-				wget_http_request_set_header_cb(req, _get_header, &context);
-				wget_http_request_set_body_cb(req, _get_body, &context);
-
-				// keep the received response header in 'resp->header'
-				wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, config.save_headers || config.server_response);
-
-				resp = wget_http_get_response_cb(conn);
-				if (resp) {
-					if (context.outfd != -1 && resp->last_modified)
-						set_file_mtime(context.outfd, resp->last_modified);
-					resp->body = context.body;
-					if (!wget_strcasecmp_ascii(req->method, "GET"))
-						resp->content_length = context.length;
-				} else
-					wget_buffer_free(&context.body);
-
-				if (context.outfd != -1) {
-					if (config.fsync_policy) {
-						if (fsync(context.outfd) < 0 && errno == EIO) {
-							error_printf(_("Failed to fsync errno=%d\n"), errno);
-							set_exit_status(3);
-						}
-					}
-					close(context.outfd);
-					context.outfd = -1;
-				}
-			}
-			wget_http_free_request(&req);
-		} else break;
-
-		if (!resp) {
-			wget_http_close(&downloader->conn);
-			break;
+		wget_buffer_strcpy(&buf, referer->scheme);
+		wget_buffer_memcat(&buf, "://", 3);
+		wget_buffer_strcat(&buf, referer->host);
+		if (referer->resolv_port) {
+			wget_buffer_memcat(&buf, ":", 1);
+			wget_buffer_strcat(&buf, referer->resolv_port);
 		}
+		wget_buffer_memcat(&buf, "/", 1);
+		wget_iri_get_escaped_resource(referer, &buf);
 
-		if (config.server_response)
-			info_printf("# got header %zu bytes:\n%s\n\n", resp->header->length, resp->header->data);
+		wget_http_add_header(req, "Referer", buf.data);
+	}
 
-		// server doesn't support keep-alive or want us to close the connection
-		if (!resp->keep_alive)
-			wget_http_close(&downloader->conn);
+	if (job->challenges) {
+		// There might be more than one challenge, we could select the most secure one.
+		// Prefer 'Digest' over 'Basic'
+		// the following adds an Authorization: HTTP header
+		wget_http_challenge_t *selected_challenge = NULL;
 
-		// do some statistics
-		if (resp->code == 200) {
-			if (part)
-				_atomic_increment_int(&stats.nchunks);
-			else
-				_atomic_increment_int(&stats.ndownloads);
-		}
-		else if (resp->code == 301 || resp->code == 302)
-			_atomic_increment_int(&stats.nredirects);
-		else if (resp->code == 304)
-			_atomic_increment_int(&stats.nnotmodified);
-		else
-			_atomic_increment_int(&stats.nerrors);
+		for (int it = 0; it < wget_vector_size(job->challenges); it++) {
+			wget_http_challenge_t *challenge = wget_vector_get(job->challenges, it);
 
-		if (resp->code == 302 && resp->links && resp->digests)
-			break; // 302 with Metalink information
-
-		if (resp->code == 401 && !challenges) { // Unauthorized
-			wget_http_free_challenges(&challenges);
-			if ((challenges = resp->challenges)) {
-				resp->challenges = NULL;
-				wget_http_free_response(&resp);
-				continue; // try again with credentials
-			}
-			break;
-		}
-
-		// 304 Not Modified
-		if (resp->code / 100 == 2 || resp->code / 100 >= 4 || resp->code == 304)
-			break; // final response
-
-		if (resp->location) {
-			wget_buffer_t uri_buf;
-			char uri_sbuf[1024];
-
-			wget_cookie_normalize_cookies(iri, resp->cookies);
-			wget_cookie_store_cookies(config.cookie_db, resp->cookies);
-
-			wget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
-
-			wget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
-
-			if (!part) {
-				add_url(downloader->job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION);
-				wget_buffer_deinit(&uri_buf);
+			if (wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
+				selected_challenge = challenge;
 				break;
-			} else {
-				// directly follow when using metalink
-				if (iri != dont_free)
-					wget_iri_free(&iri);
-				iri = wget_iri_parse(uri_buf.data, NULL);
-				wget_buffer_deinit(&uri_buf);
-
-				// apply the HSTS check to the location URL
-				if (config.hsts && iri && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, atoi(iri->resolv_port))) {
-					info_printf("HSTS in effect for %s:%s\n", iri->host, iri->resolv_port);
-					iri_scheme = wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
-				} else
-					iri_scheme = NULL;
+			}
+			else if (wget_strcasecmp_ascii(challenge->auth_scheme, "basic")) {
+				if (!selected_challenge)
+					selected_challenge = challenge;
 			}
 		}
 
-		wget_http_free_response(&resp);
+		if (selected_challenge) {
+			if (config.http_username) {
+				wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
+			} else if (config.netrc_file) {
+				static wget_thread_mutex_t
+					mutex = WGET_THREAD_MUTEX_INITIALIZER;
+
+				wget_thread_mutex_lock(&mutex);
+				if (!config.netrc_db) {
+					config.netrc_db = wget_netrc_db_init(NULL);
+					wget_netrc_db_load(config.netrc_db, config.netrc_file);
+				}
+				wget_thread_mutex_unlock(&mutex);
+
+				wget_netrc_t *netrc = wget_netrc_get(config.netrc_db, iri->host);
+				if (!netrc)
+					netrc = wget_netrc_get(config.netrc_db, "default");
+
+				if (netrc) {
+					wget_http_add_credentials(req, selected_challenge, netrc->login, netrc->password);
+				} else {
+					wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
+				}
+			} else {
+				wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
+			}
+		}
 	}
 
-	if (iri) {
-		if (iri != dont_free)
-			wget_iri_free(&iri);
-		else if (iri_scheme)
-			wget_iri_set_scheme(iri, iri_scheme);	// may have been changed by HSTS
+	if (job->part)
+		wget_http_add_header_printf(req, "Range", "bytes=%llu-%llu",
+			(unsigned long long) job->part->position, (unsigned long long) job->part->position + job->part->length - 1);
+
+	// add cookies
+	if (config.cookies) {
+		const char *cookie_string;
+
+		if ((cookie_string = wget_cookie_create_request_header(config.cookie_db, iri))) {
+			wget_http_add_header(req, "Cookie", cookie_string);
+			xfree(cookie_string);
+		}
 	}
 
-	wget_http_free_challenges(&challenges);
+	if (config.post_data) {
+		size_t length = strlen(config.post_data);
+
+		wget_http_request_set_body(req, "application/x-www-form-urlencoded", wget_memdup(config.post_data, length), length);
+	} else if (config.post_file) {
+		size_t length;
+		char *data;
+
+		if ((data = wget_read_file(config.post_file, &length))) {
+			wget_http_request_set_body(req, "application/x-www-form-urlencoded", data, length);
+		} else {
+			wget_http_free_request(&req);
+		}
+	}
+
 	wget_buffer_deinit(&buf);
+
+	return req;
+}
+
+int http_send_request(wget_iri_t *iri, DOWNLOADER *downloader)
+{
+	wget_http_connection_t *conn = downloader->conn;
+	JOB *job = downloader->job;
+	int rc;
+
+	if (job->head_first) {
+		// In spider mode, we first make a HEAD request.
+		// If the Content-Type header gives us not a parseable type, we are done.
+		print_status(downloader, "[%d] Checking '%s' ...\n", downloader->id, iri->uri);
+	} else {
+/*		if (job->part)
+			print_status(downloader, "downloading part %d/%d (%lld-%lld) %s from %s (mirror %d)\n",
+				part->id, wget_vector_size(job->parts),
+				(long long)part->position, (long long)(part->position + part->length - 1),
+				metalink->name, iri->host, mirror_index);
+		else
+*/		if (config.progress)
+			bar_print(downloader->id, iri->uri);
+		else
+			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, iri->uri);
+	}
+
+	wget_http_request_t *req = http_create_request(iri, downloader->job);
+
+	if (!req)
+		return WGET_E_UNKNOWN;
+
+	wget_http_request_set_ptr(req, WGET_HTTP_USER_DATA, downloader->job);
+
+	if ((rc = wget_http_send_request(conn, req))) {
+		wget_http_free_request(&req);
+		return rc;
+	}
+
+	struct _body_callback_context *context = xcalloc(1, sizeof(struct _body_callback_context));
+
+	context->downloader = downloader;
+	context->max_memory = downloader->job->part ? 0 : 10 * (1 << 20);
+	context->outfd = -1;
+	context->body = wget_buffer_alloc(102400);
+	context->length = 0;
+	context->head = downloader->job->head_first;
+
+	// set callback functions
+	wget_http_request_set_header_cb(req, _get_header, context);
+	wget_http_request_set_body_cb(req, _get_body, context);
+
+	// keep the received response header in 'resp->header'
+	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, config.save_headers || config.server_response);
+
+	return WGET_E_SUCCESS;
+}
+
+wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
+{
+	wget_http_response_t *resp = wget_http_get_response_cb(conn);
+
+	if (!resp)
+		return NULL;
+
+	struct _body_callback_context *context = resp->req->body_user_data;
+
+	if (context->outfd != -1 && resp->last_modified)
+		set_file_mtime(context->outfd, resp->last_modified);
+
+	resp->body = context->body;
+
+	if (context->outfd != -1) {
+		if (config.fsync_policy) {
+			if (fsync(context->outfd) < 0 && errno == EIO) {
+				error_printf(_("Failed to fsync errno=%d\n"), errno);
+				set_exit_status(3);
+			}
+		}
+		close(context->outfd);
+	}
+
+	xfree(context);
 
 	return resp;
 }

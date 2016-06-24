@@ -1348,6 +1348,7 @@ void wget_http_free_request(wget_http_request_t **req)
 		wget_buffer_deinit(&(*req)->esc_resource);
 		wget_buffer_deinit(&(*req)->esc_host);
 		wget_vector_free(&(*req)->headers);
+		xfree((*req)->body);
 		xfree(*req);
 	}
 }
@@ -1400,6 +1401,43 @@ void wget_http_request_set_int(wget_http_request_t *req, int key, int value)
 	case WGET_HTTP_RESPONSE_KEEPHEADER: req->response_keepheader = !!value; break;
 	default: error_printf(_("%s: Unknown key %d (or value must not be an integer)\n"), __func__, key);
 	}
+}
+
+int wget_http_request_get_int(wget_http_request_t *req, int key)
+{
+	switch (key) {
+	case WGET_HTTP_RESPONSE_KEEPHEADER: return req->response_keepheader;
+	default:
+		error_printf(_("%s: Unknown key %d (or value must not be an integer)\n"), __func__, key);
+		return -1;
+	}
+}
+
+void wget_http_request_set_ptr(wget_http_request_t *req, int key, void *value)
+{
+	switch (key) {
+	case WGET_HTTP_USER_DATA: req->user_data = value; break;
+	default: error_printf(_("%s: Unknown key %d (or value must not be an integer)\n"), __func__, key);
+	}
+}
+
+void *wget_http_request_get_ptr(wget_http_request_t *req, int key)
+{
+	switch (key) {
+	case WGET_HTTP_USER_DATA: return req->user_data;
+	default:
+		error_printf(_("%s: Unknown key %d (or value must not be an integer)\n"), __func__, key);
+		return NULL;
+	}
+}
+
+void wget_http_request_set_body(wget_http_request_t *req, const char *mimetype, char *body, size_t length)
+{
+	if (mimetype)
+		wget_http_add_header(req, "Content-Type", mimetype);
+
+	req->body = body;
+	req->body_length = length;
 }
 
 void wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, const char *fmt, va_list args)
@@ -1981,7 +2019,7 @@ void wget_http_close(wget_http_connection_t **conn)
 	(nv)->flags = NGHTTP2_NV_FLAG_NONE; \
 }
 
-static int  G_GNUC_WGET_NONNULL((1,2)) _http_send_request(wget_http_connection_t *conn, wget_http_request_t *req, const void *body, size_t length)
+int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *req)
 {
 	ssize_t nbytes;
 
@@ -2039,10 +2077,6 @@ static int  G_GNUC_WGET_NONNULL((1,2)) _http_send_request(wget_http_connection_t
 		return -1;
 	}
 
-	if (body && length) {
-		nbytes = wget_buffer_memcat(conn->buf, body, length);
-	}
-
 	if (wget_tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
 		// An error will be written by the wget_tcp_write function.
 		// error_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
@@ -2054,16 +2088,6 @@ static int  G_GNUC_WGET_NONNULL((1,2)) _http_send_request(wget_http_connection_t
 	debug_printf("# sent %zd bytes:\n%s", nbytes, conn->buf->data);
 
 	return 0;
-}
-
-int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *req)
-{
-	return _http_send_request(conn, req, NULL, 0);
-}
-
-int wget_http_send_request_with_body(wget_http_connection_t *conn, wget_http_request_t *req, const void *body, size_t length)
-{
-	return _http_send_request(conn, req, body, length);
 }
 
 ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf)
@@ -2104,8 +2128,13 @@ ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf
 	if (use_proxy)
 		wget_buffer_strcat(buf, "Proxy-Connection: keep-alive\r\n");
 */
+	if (req->body && req->body_length)
+		wget_buffer_printf_append(buf, "Content-Length: %zu\r\n", req->body_length);
 
 	wget_buffer_memcat(buf, "\r\n", 2); // end-of-header
+
+	if (req->body && req->body_length)
+		wget_buffer_memcat(buf, req->body, req->body_length);
 
 	return buf->length;
 }
@@ -2190,6 +2219,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 	wget_decompressor_t *dc = NULL;
 	wget_http_request_t *req = wget_vector_get(conn->pending_requests, 0); // should use double linked lists here
 
+	debug_printf("### req %p pending requests = %d\n", req, wget_vector_size(conn->pending_requests));
 	if (!req)
 		goto cleanup;
 

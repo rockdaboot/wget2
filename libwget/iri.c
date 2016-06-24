@@ -34,8 +34,8 @@
 #endif
 
 #include <string.h>
-#include <ctype.h>
 #include <errno.h>
+#include "c-ctype.h"
 
 #include <libwget.h>
 #include "private.h"
@@ -59,7 +59,7 @@ static const char
 #define IRI_CTYPE_UNRESERVED (1<<2)
 #define _iri_isunreserved(c) (iri_ctype[(unsigned char)(c)]&IRI_CTYPE_UNRESERVED)
 
-#define _iri_isscheme(c) (isalnum(c) || c == '+' || c == '-' || c == '.')
+#define _iri_isscheme(c) (c_isalnum(c) || c == '+' || c == '-' || c == '.')
 
 static const unsigned char
 	iri_ctype[256] = {
@@ -121,12 +121,12 @@ int wget_iri_isreserved(char c)
 
 int wget_iri_isunreserved(char c)
 {
-	return c > 32 && c < 127 && (isalnum(c) || _iri_isunreserved(c));
+	return c > 32 && c < 127 && (c_isalnum(c) || _iri_isunreserved(c));
 }
 
 int wget_iri_isunreserved_path(char c)
 {
-	return c > 32 && c < 127 && (isalnum(c) || _iri_isunreserved(c) || c == '/');
+	return c > 32 && c < 127 && (c_isalnum(c) || _iri_isunreserved(c) || c == '/');
 }
 
 static _GL_INLINE unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
@@ -142,7 +142,7 @@ char *wget_iri_unescape_inline(char *src)
 
 	while (*s) {
 		if (*s == '%') {
-			if (isxdigit(s[1]) && isxdigit(s[2])) {
+			if (c_isxdigit(s[1]) && c_isxdigit(s[2])) {
 				*d++ = (_unhex(s[1]) << 4) | _unhex(s[2]);
 				s += 3;
 				ret = src;
@@ -204,7 +204,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 		hier-part   = "//" authority path-abempty / path-absolute / path-rootless / path-empty
 		scheme      =  ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
 	 */
-	while (isspace(*url)) url++;
+	while (c_isspace(*url)) url++;
 	if (!*url) return NULL;
 /*
 	// first unescape, than convert to UTF-8
@@ -244,7 +244,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 //		xfree(url);
 
 	p = s;
-	if (isalpha(*p)) {
+	if (c_isalpha(*p)) {
 		maybe_scheme = 1;
 		while (*s && !_iri_isgendelim(*s)) {
 			if (maybe_scheme && !_iri_isscheme(*s))
@@ -254,7 +254,8 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 	} else
 		maybe_scheme = 0;
 
-	if (maybe_scheme && (*s == ':' && (s[1] == '/' || s[1] == 0))) {
+//	if (maybe_scheme && (*s == ':' && (s[1] == '/' || s[1] == 0))) {
+	if (maybe_scheme && (*s == ':' && !c_isdigit(s[1]))) {
 		// found a scheme
 		*s++ = 0;
 
@@ -282,9 +283,9 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 		s = p; // rewind
 	}
 
-	// this is true for http, https, ftp, file
-	if (s[0] == '/' && s[1] == '/')
-		s += 2;
+	// this is true for http, https, ftp, file (accept any number of /, like most browsers)
+	while (*s == '/')
+		s++;
 
 	// authority
 	authority = s;

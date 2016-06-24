@@ -131,6 +131,9 @@ static void _add_mirror(_metalink_context_t *ctx, const char *value)
 	mirror.priority = ctx->priority;
 	mirror.iri = wget_iri_parse(value, NULL);
 
+	if (!mirror.iri)
+		return;
+
 	if (!metalink->mirrors) {
 		metalink->mirrors = wget_vector_create(4, 4, NULL);
 		wget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);

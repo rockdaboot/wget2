@@ -454,13 +454,12 @@ static int send_ocsp_request(const char *server,
 	req = wget_http_create_request(iri, "POST");
 	wget_http_add_header(req, "Accept-Encoding", "identity");
 	wget_http_add_header(req, "Accept", "*/*");
-	wget_http_add_header(req, "Content-Type", "application/ocsp-request");
-	wget_http_add_header_printf(req, "Content-Length", "%u", body.size);
 	wget_http_add_header(req, "Connection", "close");
 
 	wget_http_connection_t *conn;
 	if ((rc = wget_http_open(&conn, iri)) == WGET_E_SUCCESS) {
-		if (wget_http_send_request_with_body(conn, req, body.data, body.size) == 0) {
+		wget_http_request_set_body(req, "application/ocsp-request", wget_memdup(body.data, body.size), body.size);
+		if (wget_http_send_request(conn, req) == 0) {
 			wget_http_response_t *resp;
 			
 			if ((resp = wget_http_get_response(conn))) {
@@ -1100,7 +1099,7 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 			if (rc == 0) {
 				ret = WGET_E_SUCCESS;
 			} else {
-				error_printf("gnutls_handshake: (%d) %s\n", rc, gnutls_strerror(rc));
+				debug_printf("gnutls_handshake: (%d) %s\n", rc, gnutls_strerror(rc));
 
 				if (rc == GNUTLS_E_CERTIFICATE_ERROR)
 					ret = WGET_E_CERTIFICATE;
@@ -1220,7 +1219,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	if (_config.alpn) {
 		gnutls_datum_t protocol;
 		if ((rc = gnutls_alpn_get_selected_protocol(session, &protocol)))
-			error_printf("GnuTLS: Get ALPN: %s\n", gnutls_strerror(rc));
+			debug_printf("GnuTLS: Get ALPN: %s\n", gnutls_strerror(rc));
 		else {
 			debug_printf("ALPN: Server accepted protocol '%.*s'\n", (int) protocol.size, protocol.data);
 			if (!memcmp(protocol.data, "h2", 2))

@@ -92,8 +92,8 @@ static void *_http_server_thread(void *ctx)
 	wget_tcp_t *tcp=NULL, *parent_tcp = ctx;
 	wget_test_url_t *url = NULL;
 	char buf[4096], method[32], request_url[256], tag[64], value[256], *p;
-	ssize_t nbytes, from_bytes, to_bytes, n;
-	size_t body_len, request_url_length;
+	ssize_t from_bytes, to_bytes, n;
+	size_t nbytes, body_len, request_url_length;
 	unsigned it;
 	int byterange, authorized;
 	time_t modified;
@@ -110,19 +110,16 @@ static void *_http_server_thread(void *ctx)
 		if ((tcp = wget_tcp_accept(parent_tcp))) {
 			authorized = 0;
 
-			n = nbytes = 0;
+			nbytes = 0;
 			while ((n = wget_tcp_read(tcp, buf + nbytes, sizeof(buf) - 1 - nbytes)) > 0) {
 				nbytes += n;
 				buf[nbytes]=0;
-				wget_info_printf(_("[SERVER] got %zd bytes (total %zd)\n"), n, nbytes);
+				wget_info_printf(_("[SERVER] got %zd bytes (total %zu)\n"), n, nbytes);
 				if (strstr(buf,"\r\n\r\n"))
 					break;
 			}
-			wget_info_printf(_("[SERVER] total %zd bytes (total %zd) (errno=%d)\n"), n, nbytes, errno);
+			wget_info_printf(_("[SERVER] total %zd bytes (total %zu) (errno=%d)\n"), n, nbytes, errno);
 
-			// as a quick hack, just assume that request comes in one packet
-//			if ((nbytes = wget_tcp_read(tcp, buf, sizeof(buf)-1)) > 0) {
-//				buf[nbytes]=0;
 			if (nbytes > 0) {
 				if (sscanf(buf, "%31s %255s", method, request_url) !=2) {
 					wget_tcp_printf(tcp, "HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");
@@ -433,7 +430,7 @@ static void _empty_directory(const char *dirname)
 
 		closedir(dir);
 
-		wget_debug_printf("Created test directory '%s'\n", dirname);
+		wget_debug_printf("Removed test directory '%s'\n", dirname);
 	} else if (errno != ENOENT)
 		wget_error_printf(_("Failed to opendir %s (%d)\n"), dirname, errno);
 }
@@ -526,6 +523,17 @@ static char *_insert_ports(const char *src)
 	return ret;
 }
 
+static void _write_msg(const char *msg, size_t len)
+{
+	if (isatty(fileno(stderr))) {
+		if (len && msg[len - 1] == '\n')
+			len--;
+
+		fprintf(stderr, "\033[33m%.*s\033[m\n", (int) len, msg);
+	} else
+		fwrite(msg, 1, len, stderr);
+}
+
 void wget_test_start_server(int first_key, ...)
 {
 	static wget_tcp_t *http_parent_tcp, *https_parent_tcp, *ftp_parent_tcp, *ftps_parent_tcp;
@@ -540,9 +548,9 @@ void wget_test_start_server(int first_key, ...)
 	}
 
 	wget_global_init(
-		WGET_DEBUG_STREAM, stderr,
-		WGET_ERROR_STREAM, stderr,
-//		WGET_INFO_STREAM, stdout,
+		WGET_DEBUG_FUNC, _write_msg,
+		WGET_ERROR_FUNC, _write_msg,
+		WGET_INFO_FUNC, _write_msg,
 		NULL);
 
 	va_start(args, first_key);
@@ -733,7 +741,7 @@ void wget_test(int first_key, ...)
 	const char
 		*request_url,
 		*options="",
-		*executable="../../src/wget2_noinstall" EXEEXT " --max-threads=1 --prefer-family=ipv4";
+		*executable="../../src/wget2_noinstall" EXEEXT " -d --max-threads=1 --prefer-family=ipv4";
 	const wget_test_file_t
 		*expected_files = NULL,
 		*existing_files = NULL;

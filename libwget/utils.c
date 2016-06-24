@@ -37,6 +37,7 @@
 
 #include "c-ctype.h"
 #include "c-strcase.h"
+#include "timespec.h" // gnulib gettime()
 
 #include <libwget.h>
 #include "private.h"
@@ -274,6 +275,18 @@ void wget_millisleep(int ms)
 		return;
 
 	nanosleep(&(struct timespec){ .tv_sec = ms / 1000, .tv_nsec = (ms % 1000) * 1000000 }, NULL);
+}
+
+/**
+ * Return the current milliseconds since the epoch.
+ */
+long long wget_get_timemillis(void)
+{
+	struct timespec ts;
+
+	gettime(&ts);
+
+	return ts.tv_sec * 1000LL + ts.tv_nsec / 1000000;
 }
 
 static _GL_INLINE unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)

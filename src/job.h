@@ -26,11 +26,12 @@
  */
 
 #ifndef _WGET_JOB_H
-# define _WGET_JOB_H
+#define _WGET_JOB_H
 
-# include <libwget.h>
+#include <sys/types.h> // for off_t
 
-# include "host.h"
+#include <libwget.h>
+#include "host.h"
 
 // file part to download
 typedef struct {
@@ -55,12 +56,16 @@ struct JOB {
 		*metalink;
 
 	wget_vector_t
-		*parts, // parts to download
-		*deferred; // IRIs that need to wait for this job to be done (while downloading robots.txt)
+		*challenges; // challenges from 401 response
+
+	wget_vector_t
+		*parts; // parts to download
 	HOST
 		*host;
 	const char
 		*local_filename;
+	PART
+		*part; // current chunk to download
 	int
 		level, // current recursion level
 		redirection_level, // number of redirections occurred to create this job
@@ -69,22 +74,13 @@ struct JOB {
 	unsigned char
 		inuse : 1, // if job is already in use by another downloader thread
 		sitemap : 1, // URL is a sitemap to be scanned in recursive mode
+		robotstxt : 1, // URL is a robots.txt to be scanned
 		head_first : 1; // first check mime type by using a HEAD request
 };
 
-JOB *job_init(JOB *job, wget_iri_t *iri);
-JOB *queue_add_job(JOB *job);
-PART *job_add_part(JOB *job, PART *part);
-int queue_size(void) G_GNUC_WGET_PURE;
-int queue_empty(void) G_GNUC_WGET_PURE;
-int queue_get(JOB **job_out, PART **part_out);
-int job_validate_file(JOB *job);
-void queue_print(void);
-void job_create_parts(JOB *job);
-void job_free(JOB *job);
-//void	job_resume(JOB *job);
-void queue_del(JOB *job);
-void queue_free(void);
-
+JOB *job_init(JOB *job, wget_iri_t *iri) G_GNUC_WGET_NONNULL((2));
+int job_validate_file(JOB *job) G_GNUC_WGET_NONNULL((1));
+void job_create_parts(JOB *job) G_GNUC_WGET_NONNULL((1));
+void job_free(JOB *job) G_GNUC_WGET_NONNULL((1));
 
 #endif /* _WGET_JOB_H */

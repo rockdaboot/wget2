@@ -423,6 +423,7 @@ static void test_iri_parse(void)
 		//		{ "ftp://cnn.example.com&story=breaking_news@10.0.0.1/top_story.htm", NULL,"ftp",NULL,NULL,"cnn.example.com",NULL,NULL,"story=breaking_news@10.0.0.1/top_story.htm",NULL }
 		{ "ftp://cnn.example.com?story=breaking_news@10.0.0.1/top_story.htm", NULL, "ftp", NULL, NULL, "cnn.example.com", NULL, NULL, "story=breaking_news@10.0.0.1/top_story.htm", NULL},
 //		{ "site;sub:.html", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "site", NULL, ";sub:.html", NULL, NULL},
+		{ "mailto:info@example.com", NULL, "mailto", "info", NULL, "example.com", NULL, NULL, NULL, NULL},
 	};
 	unsigned it;
 

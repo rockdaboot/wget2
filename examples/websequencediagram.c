@@ -61,10 +61,12 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 	wget_http_add_header_printf(req, "Content-Length", "%lu", body->length);
 	wget_http_add_header(req, "Connection", "keepalive");
 
+	wget_http_request_set_body(req, "application/x-www-form-urlencoded", wget_memdup(body->data, body->length), body->length);
+
 	wget_http_open(&conn, iri);
 
 	if (conn) {
-		if (wget_http_send_request_with_body(conn, req, body->data, body->length))
+		if (wget_http_send_request(conn, req))
 			goto out;
 
 		resp = wget_http_get_response(conn);

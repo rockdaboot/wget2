@@ -224,25 +224,26 @@ WGET_BEGIN_DECLS
 #define WGET_NET_FAMILY_PREFERRED 1017
 #define WGET_TCP_FASTFORWARD  1018
 
-#define WGET_HTTP_URL          2000
-#define WGET_HTTP_URL_ENCODING 2001
-#define WGET_HTTP_URI          2002
-#define WGET_HTTP_COOKIE_STORE 2003
-#define WGET_HTTP_HEADER_ADD   2004
-//#define WGET_HTTP_HEADER_DEL   2005
-//#define WGET_HTTP_HEADER_SET   2006
-//#define WGET_HTTP_BIND_ADDRESS 2007
-#define WGET_HTTP_CONNECTION_PTR 2008
+#define WGET_HTTP_URL                 2000
+#define WGET_HTTP_URL_ENCODING        2001
+#define WGET_HTTP_URI                 2002
+#define WGET_HTTP_COOKIE_STORE        2003
+#define WGET_HTTP_HEADER_ADD          2004
+//#define WGET_HTTP_HEADER_DEL        2005
+//#define WGET_HTTP_HEADER_SET        2006
+//#define WGET_HTTP_BIND_ADDRESS      2007
+#define WGET_HTTP_CONNECTION_PTR      2008
 #define WGET_HTTP_RESPONSE_KEEPHEADER 2009
-#define WGET_HTTP_MAX_REDIRECTIONS 2010
-#define WGET_HTTP_BODY_SAVEAS_STREAM 2011
-#define WGET_HTTP_BODY_SAVEAS_FILE 2012
-#define WGET_HTTP_BODY_SAVEAS_FD 2013
-#define WGET_HTTP_BODY_SAVEAS_FUNC 2014
-#define WGET_HTTP_HEADER_FUNC 2015
-#define WGET_HTTP_SCHEME      2016
-#define WGET_HTTP_BODY        2017
-#define WGET_HTTP_BODY_SAVEAS      2018
+#define WGET_HTTP_MAX_REDIRECTIONS    2010
+#define WGET_HTTP_BODY_SAVEAS_STREAM  2011
+#define WGET_HTTP_BODY_SAVEAS_FILE    2012
+#define WGET_HTTP_BODY_SAVEAS_FD      2013
+#define WGET_HTTP_BODY_SAVEAS_FUNC    2014
+#define WGET_HTTP_HEADER_FUNC         2015
+#define WGET_HTTP_SCHEME              2016
+#define WGET_HTTP_BODY                2017
+#define WGET_HTTP_BODY_SAVEAS         2018
+#define WGET_HTTP_USER_DATA           2019
 
 // definition of error conditions
 #define WGET_E_SUCCESS 0 /* OK */
@@ -303,6 +304,8 @@ void
    wget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
 	wget_millisleep(int ms) LIBWGET_EXPORT;
+long long
+	wget_get_timemillis(void) LIBWGET_EXPORT;
 int
 	wget_percent_unescape(char *src) LIBWGET_EXPORT;
 int
@@ -736,7 +739,7 @@ int
 int
 	wget_thread_cond_signal(wget_thread_cond_t *cond) LIBWGET_EXPORT;
 int
-	wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex) LIBWGET_EXPORT;
+	wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex, long long ms) LIBWGET_EXPORT;
 wget_thread_t
 	wget_thread_self(void) G_GNUC_WGET_CONST LIBWGET_EXPORT;
 bool
@@ -1375,18 +1378,24 @@ typedef struct {
 		headers;
 	const char *
 		scheme;
+	const char *
+		body;
 	wget_http_header_callback_t
 		header_callback; // called after HTTP header has been received
 	wget_http_body_callback_t
 		body_callback; // called for each body data packet received
-	void
-		*header_user_data; // meant to be used in header callback function
-	void
-		*body_user_data; // meant to be used in body callback function
+	void *
+		user_data;
+	void *
+		header_user_data; // meant to be used in header callback function
+	void *
+		body_user_data; // meant to be used in body callback function
 	wget_buffer_t
 		esc_resource; // URI escaped resource
 	wget_buffer_t
 		esc_host; // URI escaped host
+	size_t
+		body_length;
 	int32_t
 		stream_id; // HTTP2 stream id
 	char
@@ -1598,9 +1607,15 @@ void
 void
 	wget_http_request_set_int(wget_http_request_t *req, int key, int value) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
 int
-	wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *req) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+	wget_http_request_get_int(wget_http_request_t *req, int key) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
+void
+	wget_http_request_set_ptr(wget_http_request_t *req, int key, void *value) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
+void *
+	wget_http_request_get_ptr(wget_http_request_t *req, int key) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
+void
+	wget_http_request_set_body(wget_http_request_t *req, const char *mimetype, char *body, size_t length) G_GNUC_WGET_NONNULL((1)) LIBWGET_EXPORT;
 int
-	wget_http_send_request_with_body(wget_http_connection_t *conn, wget_http_request_t *req, const void *body, size_t length) G_GNUC_WGET_NONNULL((1,2)) LIBWGET_EXPORT;
+	wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *req) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 ssize_t
 	wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 
