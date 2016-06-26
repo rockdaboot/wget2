@@ -5,6 +5,10 @@ LDFLAGS=$LDFLAGS
 
 AC_PREREQ([2.67])
 AC_INIT([wget2], [1.0.0], [bug-wget@gnu.org], [wget2], [https://savannah.gnu.org/projects/wget])
+
+AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_AUX_DIR([build-aux])
+
 AM_INIT_AUTOMAKE([subdir-objects])
 
 CFLAGS=$CFLAGS
