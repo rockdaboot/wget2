@@ -320,7 +320,7 @@ static int _print_info(gnutls_session_t session)
 		break;
 
 	default:
-		info_printf(_("Unsupported authentication %u.\n"), cred);
+		info_printf(_("Unsupported authentication %d.\n"), (int) cred);
 		break;
 	} /* switch */
 
@@ -1121,6 +1121,64 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 	return ret;
 }
 
+#ifdef MSG_FASTOPEN
+#if HAVE_SYS_SOCKET_H
+#	include <sys/socket.h>
+#elif HAVE_WS2TCPIP_H
+#	include <ws2tcpip.h>
+#endif
+#include <netdb.h>
+#include <errno.h>
+static ssize_t _ssl_writev(gnutls_transport_ptr_t *p, const giovec_t *iov, int iovcnt)
+{
+	wget_tcp_t *tcp = (wget_tcp_t *) p;
+	ssize_t ret;
+
+	// info_printf("%s: %d %zu\n", __func__, iovcnt, iov[0].iov_len);
+	if (tcp->first_send) {
+		struct msghdr hdr = {
+			.msg_name = tcp->connect_addrinfo->ai_addr,
+			.msg_namelen = tcp->connect_addrinfo->ai_addrlen,
+			.msg_iov = (struct iovec *) iov,
+			.msg_iovlen = iovcnt,
+		};
+
+//		ret = sendto(tcp->sockfd, iov[0].iov_base, iov[0].iov_len, MSG_FASTOPEN,
+//				tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
+		ret = sendmsg(tcp->sockfd, &hdr, MSG_FASTOPEN);
+		if (ret < 0) {
+			if (errno == EINPROGRESS) {
+				errno = EAGAIN; // GnuTLS does not handle EINPROGRESS
+			} else if (errno == EOPNOTSUPP) {
+				// fallback from fastopen, e.g. when fastopen is disabled in system
+				debug_printf("Fallback from TCP Fast Open... TFO is disabled at system level\n");
+				tcp->tcp_fastopen = 0;
+				ret = connect(tcp->sockfd, tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
+				if (errno == ENOTCONN || errno == EINPROGRESS)
+					errno = EAGAIN;
+			}
+		}
+
+		tcp->first_send = 0;
+	} else {
+		ret = writev(tcp->sockfd, (struct iovec *) iov, iovcnt);
+	}
+	// info_printf("errno=%d ret=%d\n", errno, ret);
+
+	// after the first write we set back the transport push function and the transport pointer to standard functions
+#ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
+	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
+	gnutls_transport_set_int(tcp->ssl_session, tcp->sockfd);
+#else
+	gnutls_transport_set_ptr(tcp->ssl_session, (gnutls_transport_ptr_t)(ptrdiff_t)tcp->sockfd);
+#endif
+
+	gnutls_transport_set_vec_push_function(tcp->ssl_session, (ssize_t (*) (gnutls_transport_ptr_t, const giovec_t * iov, int iovcnt)) writev);
+
+	return ret;
+}
+#endif
+
 int wget_ssl_open(wget_tcp_t *tcp)
 {
 	gnutls_session_t session;
@@ -1150,12 +1208,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	if (hostname)
 		gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
 	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, _credentials);
-#ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
-	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
-	gnutls_transport_set_int(session, sockfd);
-#else
-	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
-#endif
+
 	struct _session_context *ctx = wget_calloc(1, sizeof(struct _session_context));
 	ctx->hostname = wget_strdup(hostname);
 
@@ -1211,7 +1264,27 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	}
 #endif
 
+	tcp->ssl_session = session;
 	gnutls_session_set_ptr(session, ctx);
+
+#ifdef MSG_FASTOPEN
+	if (wget_tcp_get_tcp_fastopen(tcp)) {
+		// prepare for TCP FASTOPEN... sendmsg() instead of connect/write on first write
+		gnutls_transport_set_vec_push_function(session, (ssize_t (*)(gnutls_transport_ptr_t, const giovec_t *iov, int iovcnt)) _ssl_writev);
+		gnutls_transport_set_ptr(session, tcp);
+	} else {
+#endif
+
+#ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
+	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
+	gnutls_transport_set_int(session, sockfd);
+#else
+	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
+#endif
+
+#ifdef MSG_FASTOPEN
+	}
+#endif
 
 	ret = _do_handshake(session, sockfd, connect_timeout);
 
@@ -1233,13 +1306,13 @@ int wget_ssl_open(wget_tcp_t *tcp)
 
 	if (ret == WGET_E_SUCCESS) {
 		debug_printf("Handshake completed\n");
-		tcp->ssl_session = session;
 	} else {
 		if (ret == WGET_E_TIMEOUT)
 			debug_printf("Handshake timed out\n");
 		xfree(ctx->hostname);
 		xfree(ctx);
 		gnutls_deinit(session);
+		tcp->ssl_session = NULL;
 	}
 
 	return ret;

@@ -1230,6 +1230,8 @@ void
 int
 	wget_tcp_get_dns_caching(wget_tcp_t *tcp) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 int
+	wget_tcp_get_tcp_fastopen(wget_tcp_t *tcp) G_GNUC_WGET_PURE LIBWGET_EXPORT;
+int
 	wget_tcp_get_family(wget_tcp_t *tcp) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 int
 	wget_tcp_get_preferred_family(wget_tcp_t *tcp) G_GNUC_WGET_PURE LIBWGET_EXPORT;

@@ -326,6 +326,11 @@ void wget_tcp_set_tcp_fastopen(wget_tcp_t *tcp, int tcp_fastopen)
 #endif
 }
 
+int wget_tcp_get_tcp_fastopen(wget_tcp_t *tcp)
+{
+	return (tcp ? tcp : &_global_tcp)->tcp_fastopen;
+}
+
 void wget_tcp_set_dns_caching(wget_tcp_t *tcp, int caching)
 {
 	(tcp ? tcp : &_global_tcp)->caching = caching;
@@ -573,18 +578,14 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, const char *port)
 				}
 			}
 
-			if (tcp->ssl)  {
+			if (tcp->tcp_fastopen) {
+				rc = 0;
+				errno = 0;
+				tcp->connect_addrinfo = ai;
+				tcp->first_send = 1;
+			} else {
 				rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
 				tcp->first_send = 0;
-			} else {
-				if (tcp->tcp_fastopen) {
-					rc = 0;
-					errno = 0;
-					tcp->connect_addrinfo = ai;
-				} else {
-					rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
-					tcp->first_send = 0;
-				}
 			}
 
 			if (rc < 0
@@ -791,8 +792,8 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 				if (rc < 0
 					&& errno != EAGAIN
 					&& errno != ENOTCONN
-					&& errno != EINPROGRESS
-			) {
+					&& errno != EINPROGRESS)
+				{
 					error_printf(_("Failed to connect (%d)\n"), errno);
 					return -1;
 				}
