@@ -41,11 +41,14 @@ typedef struct {
 		length;
 	int
 		id;
+	wget_thread_t
+		used_by;
 	unsigned char
 		inuse : 1,
 		done : 1;
 } PART;
 
+typedef struct DOWNLOADER DOWNLOADER;
 struct JOB {
 	wget_iri_t
 		*iri,
@@ -66,13 +69,18 @@ struct JOB {
 		*local_filename;
 	PART
 		*part; // current chunk to download
+	DOWNLOADER
+		*downloader;
+
+	wget_thread_t
+		used_by; // keep track of who uses this job, for host_release_jobs()
 	int
 		level, // current recursion level
 		redirection_level, // number of redirections occurred to create this job
 		mirror_pos, // where to look up the next (metalink) mirror to use
 		piece_pos; // where to look up the next (metalink) piece to download
 	unsigned char
-		inuse : 1, // if job is already in use by another downloader thread
+		inuse : 1, // if job is already in use, 'used_by' holds the thread id of the downloader
 		sitemap : 1, // URL is a sitemap to be scanned in recursive mode
 		robotstxt : 1, // URL is a robots.txt to be scanned
 		head_first : 1; // first check mime type by using a HEAD request

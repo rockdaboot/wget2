@@ -619,6 +619,8 @@ struct config config = {
 	.hsts = 1,
 #if defined WITH_LIBNGHTTP2
 	.http2 = 1,
+	.http2_request_window = 30,
+	.http1_request_window = 10,
 #endif
 	.ocsp = 1,
 	.ocsp_stapling = 1,
@@ -1514,6 +1516,8 @@ void deinit(void)
 	wget_vector_free(&config.exclude_domains);
 	wget_vector_free(&config.follow_tags);
 	wget_vector_free(&config.ignore_tags);
+	wget_vector_free(&config.accept_patterns);
+	wget_vector_free(&config.reject_patterns);
 
 	wget_http_set_http_proxy(NULL, NULL);
 	wget_http_set_https_proxy(NULL, NULL);

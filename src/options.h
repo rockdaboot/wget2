@@ -96,6 +96,8 @@ struct config {
 	long long
 		quota;
 	int
+		http2_request_window,
+		http1_request_window,
 		backups,
 		tries,
 		wait,
