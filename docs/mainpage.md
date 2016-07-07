@@ -48,7 +48,7 @@ Download project and prepare sources with
 
 		git clone git://git.savannah.gnu.org/wget/wget2.git
 		cd wget2
-		./autogen.sh
+		./bootstrap
 
 Build with
 

@@ -19,8 +19,8 @@ CACHEFILE=$PWD/config_check.cache
 # measure time consumed and print it at the end of the script
 START=$(date +%s.%N)
 
-echo "Running: ./autogen.sh"
-./autogen.sh > /dev/null
+echo "Running: ./bootstrap"
+./bootstrap > /dev/null
 echo
 
 for CC in gcc clang; do
