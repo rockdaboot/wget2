@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./autogen.sh || exit 1
+./bootstrap || exit 1
 ./configure || exit 1
 make -j3 || exit 1
 if [[ $TRAVIS_OS_NAME == 'osx' ]]; then

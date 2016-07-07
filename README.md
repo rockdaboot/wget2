@@ -141,7 +141,7 @@ Download project and prepare sources with
 
 		git clone git://git.savannah.gnu.org/wget.git
 		git checkout wget2
-		./autogen.sh
+		./bootstrap
 
 Build Wget2 with
 
