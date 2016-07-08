@@ -139,8 +139,8 @@ Building from git
 
 Download project and prepare sources with
 
-		git clone git://git.savannah.gnu.org/wget.git
-		git checkout wget2
+		git clone git://git.savannah.gnu.org/wget/wget2.git
+		cd wget2
 		./bootstrap
 
 Build Wget2 with
