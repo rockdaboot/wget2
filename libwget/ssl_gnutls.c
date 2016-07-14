@@ -1323,13 +1323,20 @@ void wget_ssl_close(void **session)
 	if (session && *session) {
 		gnutls_session_t s = *session;
 		struct _session_context *ctx = gnutls_session_get_ptr(s);
+		int ret;
+
+		do
+			ret = gnutls_bye(s, GNUTLS_SHUT_WR);
+		while (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN);
+
+		if (ret < 0)
+			debug_printf("TLS shutdown failed: %s\n", gnutls_strerror(ret));
+
+		gnutls_deinit(s);
+		*session = NULL;
 
 		xfree(ctx->hostname);
 		xfree(ctx);
-
-		gnutls_bye(s, GNUTLS_SHUT_RDWR);
-		gnutls_deinit(s);
-		*session = NULL;
 	}
 }
 
