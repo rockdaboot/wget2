@@ -146,6 +146,7 @@ void wget_ssl_set_config_int(int key, int value)
 
 static void _print_x509_certificate_info(gnutls_session_t session)
 {
+	const char *name;
 	char dn[128];
 	unsigned char digest[20];
 	unsigned char serial[40];
@@ -176,17 +177,17 @@ static void _print_x509_certificate_info(gnutls_session_t session)
 			info_printf(_("Certificate info [%u]:\n"), ncert);
 
 			activet = gnutls_x509_crt_get_activation_time(cert);
-			info_printf(_("  Certificate is valid since: %s"), ctime(&activet));
+			info_printf(_("  Valid since: %s"), ctime(&activet));
 
 			expiret = gnutls_x509_crt_get_expiration_time(cert);
-			info_printf(_("  Certificate expires: %s"), ctime(&expiret));
+			info_printf(_("  Expires: %s"), ctime(&expiret));
 
 			if (!gnutls_fingerprint(GNUTLS_DIG_MD5, &cert_list[ncert], digest, &digest_size)) {
 				char digest_hex[digest_size * 2 + 1];
 
 				wget_memtohex(digest, digest_size, digest_hex, sizeof(digest_hex));
 
-				info_printf(_("  Certificate fingerprint: %s\n"), digest_hex);
+				info_printf(_("  Fingerprint: %s\n"), digest_hex);
 			}
 
 			if (!gnutls_x509_crt_get_serial(cert, serial, &serial_size)) {
@@ -194,21 +195,17 @@ static void _print_x509_certificate_info(gnutls_session_t session)
 
 				wget_memtohex(digest, digest_size, serial_hex, sizeof(serial_hex));
 
-				info_printf(_("  Certificate serial number: %s\n"), serial_hex);
+				info_printf(_("  Serial number: %s\n"), serial_hex);
 			}
 
-			info_printf(_("  Certificate public key: "));
 			algo = gnutls_x509_crt_get_pk_algorithm(cert, &bits);
-			if (algo == GNUTLS_PK_RSA) {
-				info_printf(_("RSA\n    "));
-				info_printf(ngettext("- Modulus: %u bit\n", "- Modulus: %u bits\n", bits), bits);
-			} else if (algo == GNUTLS_PK_DSA) {
-				info_printf(_("DSA\n    "));
-				info_printf(ngettext("- Exponent: %u bit\n", "- Exponent: %u bits\n", bits), bits);
-			} else
-				info_printf(_("UNKNOWN\n"));
+			name = gnutls_pk_algorithm_get_name(algo);
+			info_printf(_("  Public key: %s, %s (%u bits)\n"),
+				name ? name : "Unknown",
+				gnutls_sec_param_get_name(gnutls_pk_bits_to_sec_param(algo, bits)),
+				bits);
 
-			info_printf(_("  Certificate version: #%d\n"), gnutls_x509_crt_get_version(cert));
+			info_printf(_("  Version: #%d\n"), gnutls_x509_crt_get_version(cert));
 
 			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_dn(cert, dn, &dn_size);
@@ -216,15 +213,15 @@ static void _print_x509_certificate_info(gnutls_session_t session)
 
 			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_issuer_dn(cert, dn, &dn_size);
-			info_printf(_("  Certificate Issuer's DN: %s\n"), dn);
+			info_printf(_("  Issuer's DN: %s\n"), dn);
 
 			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_issuer_dn_oid(cert, 0, dn, &dn_size);
-			info_printf(_("  Certificate Issuer's OID: %s\n"), dn);
+			info_printf(_("  Issuer's OID: %s\n"), dn);
 
 			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_issuer_unique_id(cert, dn, &dn_size);
-			info_printf(_("  Certificate Issuer's UID: %s\n"), dn);
+			info_printf(_("  Issuer's UID: %s\n"), dn);
 /*
 			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_subject_key_id(cert, dn, &dn_size, NULL);
@@ -251,11 +248,9 @@ static int _print_info(gnutls_session_t session)
 	int ecdh = 0;
 #endif
 
-	/* print the key exchange's algorithm name
-	 */
 	kx = gnutls_kx_get(session);
-	tmp = gnutls_kx_get_name(kx);
-	info_printf(_("----\nKey Exchange: %s\n"), tmp);
+
+	info_printf(_("----\n"));
 
 	/* Check the authentication type used and switch
 	 * to the appropriate.
@@ -324,6 +319,8 @@ static int _print_info(gnutls_session_t session)
 		break;
 	} /* switch */
 
+	info_printf(_("----\n"));
+
 	if (dhe != 0)
 		info_printf(_("Ephemeral DH using prime of %d bits\n"), gnutls_dh_get_prime_bits(session));
 #if GNUTLS_VERSION_MAJOR >= 3
@@ -331,33 +328,31 @@ static int _print_info(gnutls_session_t session)
 		info_printf(_("Ephemeral ECDH using curve %s\n"), gnutls_ecc_curve_get_name(gnutls_ecc_curve_get(session)));
 #endif
 
-	/* print the protocol's name (ie TLS 1.0)
-	 */
+	/* print the key exchange's algorithm name */
+	tmp = gnutls_kx_get_name(kx);
+	info_printf(_("Key Exchange: %s\n"), tmp);
+
+	/* print the protocol's name (ie TLS 1.0) */
 	tmp = gnutls_protocol_get_name(gnutls_protocol_get_version(session));
 	info_printf(_("Protocol: %s\n"), tmp);
 
-	/* print the certificate type of the peer.
-	 * ie X.509
-	 */
+	/* print the certificate type of the peer, ie X.509 */
 	tmp = gnutls_certificate_type_get_name(gnutls_certificate_type_get(session));
 	info_printf(_("Certificate Type: %s\n"), tmp);
 
-	/* print the compression algorithm (if any)
-	 */
+	/* print the compression algorithm (if any) */
 	tmp = gnutls_compression_get_name(gnutls_compression_get(session));
 	info_printf(_("Compression: %s\n"), tmp);
 
-	/* print the name of the cipher used.
-	 * ie 3DES.
-	 */
+	/* print the name of the cipher used, ie 3DES. */
 	tmp = gnutls_cipher_get_name(gnutls_cipher_get(session));
 	info_printf(_("Cipher: %s\n"), tmp);
 
-	/* Print the MAC algorithms name.
-	 * ie SHA1
-	 */
+	/* Print the MAC algorithms name, ie SHA1 */
 	tmp = gnutls_mac_get_name(gnutls_mac_get(session));
 	info_printf(_("MAC: %s\n"), tmp);
+
+	info_printf(_("----\n"));
 
 	return 0;
 }
