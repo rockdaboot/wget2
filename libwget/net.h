@@ -58,6 +58,7 @@ struct wget_tcp_st {
 		caching : 1,
 		addrinfo_allocated : 1,
 		bind_addrinfo_allocated : 1,
+		tls_false_start : 1,
 		tcp_fastopen : 1, // do we use TCP_FASTOPEN or not
 		first_send : 1; // TCP_FASTOPEN's first packet is sent different
 };

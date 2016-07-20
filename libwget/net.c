@@ -331,6 +331,16 @@ int wget_tcp_get_tcp_fastopen(wget_tcp_t *tcp)
 	return (tcp ? tcp : &_global_tcp)->tcp_fastopen;
 }
 
+void wget_tcp_set_tls_false_start(wget_tcp_t *tcp, int false_start)
+{
+	(tcp ? tcp : &_global_tcp)->tls_false_start = false_start;
+}
+
+int wget_tcp_get_tls_false_start(wget_tcp_t *tcp)
+{
+	return (tcp ? tcp : &_global_tcp)->tls_false_start;
+}
+
 void wget_tcp_set_dns_caching(wget_tcp_t *tcp, int caching)
 {
 	(tcp ? tcp : &_global_tcp)->caching = caching;

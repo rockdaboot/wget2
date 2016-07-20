@@ -1216,6 +1216,8 @@ void
 void
 	wget_tcp_set_tcp_fastopen(wget_tcp_t *tcp, int tcp_fastopen) LIBWGET_EXPORT;
 void
+	wget_tcp_set_tls_false_start(wget_tcp_t *tcp, int false_start) LIBWGET_EXPORT;
+void
 	wget_tcp_set_ssl(wget_tcp_t *tcp, int ssl) LIBWGET_EXPORT;
 int
 	wget_tcp_get_ssl(wget_tcp_t *tcp) G_GNUC_WGET_PURE LIBWGET_EXPORT;
@@ -1231,6 +1233,8 @@ int
 	wget_tcp_get_dns_caching(wget_tcp_t *tcp) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 int
 	wget_tcp_get_tcp_fastopen(wget_tcp_t *tcp) G_GNUC_WGET_PURE LIBWGET_EXPORT;
+int
+	wget_tcp_get_tls_false_start(wget_tcp_t *tcp) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 int
 	wget_tcp_get_family(wget_tcp_t *tcp) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 int

@@ -1118,6 +1118,11 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 		}
 	}
 
+#if GNUTLS_VERSION_NUMBER >= 0x030500
+	debug_printf("TLS False Start: %s\n",
+		(gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START) ? "on" : "off");
+#endif
+
 	return ret;
 }
 
@@ -1196,7 +1201,14 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	sockfd= tcp->sockfd;
 	connect_timeout = tcp->connect_timeout;
 
-#ifdef GNUTLS_NONBLOCK
+#if GNUTLS_VERSION_NUMBER >= 0x030500
+	if (tcp->tls_false_start)
+		gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK | GNUTLS_ENABLE_FALSE_START);
+	else {
+		error_printf("TLS False Start requested but Wget built with insufficient GnuTLS version\n");
+		gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
+	}
+#elif GNUTLS_NONBLOCK
 	gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
 #else
 	// very old gnutls version, likely to not work.
@@ -1305,7 +1317,8 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		_print_info(session);
 
 	if (ret == WGET_E_SUCCESS) {
-		debug_printf("Handshake completed\n");
+		debug_printf("Handshake completed%s\n",
+			gnutls_session_is_resumed(session) ? " (resumed session)" : "");
 	} else {
 		if (ret == WGET_E_TIMEOUT)
 			debug_printf("Handshake timed out\n");

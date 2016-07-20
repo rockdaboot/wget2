@@ -218,6 +218,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --ocsp              Use OCSP server access to verify server's certificate. (default: on)\n"
 		"      --ocsp-file         Set file for OCSP chaching. (default: ~/.wget-ocsp)\n"
 		"      --http2             Use HTTP/2 protocol if possible. (default: on)\n"
+		"      --tls-false-start   Enable TLS False Start (needs GnuTLS 3.5+). (default: on)"
 		"\n");
 	puts(
 		"Directory options:\n"
@@ -627,6 +628,7 @@ struct config config = {
 	.netrc = 1,
 	.waitretry = 10 * 1000,
 	.metalink = 1,
+	.tls_false_start = 1,
 };
 
 static int parse_execute(option_t opt, const char *val);
@@ -748,6 +750,7 @@ static const struct option options[] = {
 	{ "tcp-fastopen", &config.tcp_fastopen, parse_bool, 0, 0 },
 	{ "timeout", NULL, parse_timeout, 1, 'T' },
 	{ "timestamping", &config.timestamping, parse_bool, 0, 'N' },
+	{ "tls-false-start", &config.tls_false_start, parse_bool, 0, 0 },
 	{ "tries", &config.tries, parse_integer, 1, 't' },
 	{ "trust-server-names", &config.trust_server_names, parse_bool, 0, 0 },
 	{ "use-server-timestamps", &config.use_server_timestamps, parse_bool, 0, 0 },
@@ -1397,7 +1400,7 @@ int init(int argc, const char **argv)
 	wget_tcp_set_dns_timeout(NULL, config.dns_timeout);
 	wget_tcp_set_dns_caching(NULL, config.dns_caching);
 	wget_tcp_set_tcp_fastopen(NULL, config.tcp_fastopen);
-	wget_tcp_set_tcp_fastopen(NULL, config.tcp_fastopen);
+	wget_tcp_set_tls_false_start(NULL, config.tls_false_start);
 	wget_tcp_set_bind_address(NULL, config.bind_address);
 	if (config.inet4_only)
 		wget_tcp_set_family(NULL, WGET_NET_FAMILY_IPV4);

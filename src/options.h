@@ -119,6 +119,7 @@ struct config {
 		*ocsp_file,
 		*config_file,
 		*netrc_file,
+		tls_false_start,
 		progress,
 		content_on_error,
 		fsync_policy,
