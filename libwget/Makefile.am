@@ -6,8 +6,8 @@ libwget_la_SOURCES = \
  css.c css_tokenizer.c css_tokenizer.h css_tokenizer.lex css_url.c\
  decompressor.c encoding.c hashfile.c hashmap.c io.c hsts.c html_url.c http.c init.c iri.c\
  list.c log.c logger.c md5.c mem.c metalink.c net.c net.h netrc.c ocsp.c pipe.c printf.c random.c \
- robots.c rss_url.c sitemap_url.c ssl_gnutls.c stringmap.c strlcpy.c thread.c utils.c vector.c xalloc.c\
- xml.c private.h http_highlevel.c
+ robots.c rss_url.c sitemap_url.c ssl_gnutls.c stringmap.c strlcpy.c thread.c tls_session.c utils.c \
+ vector.c xalloc.c xml.c private.h http_highlevel.c
 libwget_la_CPPFLAGS =\
  -fPIC -I$(top_srcdir)/include -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib $(CFLAG_VISIBILITY) -DBUILDING_LIBWGET
 libwget_la_LIBADD =\

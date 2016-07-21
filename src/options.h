@@ -87,10 +87,20 @@ struct config {
 		*ignore_tags;
 	wget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
+	wget_tls_session_db_t
+		*tls_session_db; // in-memory TLS session database
 	wget_ocsp_db_t
 		*ocsp_db; // in-memory fingerprint OCSP database
 	wget_netrc_db_t
 		*netrc_db; // in-memory .netrc database
+	struct wget_cookie_db_st
+		*cookie_db;
+	char
+		*hsts_file,
+		*tls_session_file,
+		*ocsp_file,
+		*config_file,
+		*netrc_file;
 	size_t
 		chunk_size;
 	long long
@@ -112,13 +122,8 @@ struct config {
 		max_redirect,
 		max_threads,
 		num_threads;
-	struct wget_cookie_db_st
-		*cookie_db;
 	char
-		*hsts_file,
-		*ocsp_file,
-		*config_file,
-		*netrc_file,
+		tls_resume,            // if TLS session resumption is enabled or not
 		tls_false_start,
 		progress,
 		content_on_error,
@@ -131,7 +136,7 @@ struct config {
 		backup_converted,
 		convert_links,
 		ignore_case,
-		hsts, // if HSTS (HTTP Strict Transport Security) is enabled or not
+		hsts,                  // if HSTS (HTTP Strict Transport Security) is enabled or not
 		random_wait,
 		trust_server_names,
 		robots,
@@ -169,8 +174,8 @@ struct config {
 		tcp_fastopen,
 		check_certificate,
 		check_hostname,
-		cert_type, // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
-		private_key_type, // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
+		cert_type,             // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
+		private_key_type,      // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
 		span_hosts,
 		recursive,
 		verbose,

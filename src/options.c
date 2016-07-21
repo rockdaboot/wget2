@@ -212,13 +212,15 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
 		"      --https-only        Do not follow non-secure URLs. (default: off).\n"
 		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)\n"
-		"      --hsts-file         Set file for HSTS chaching. (default: ~/.wget-hsts)\n"
+		"      --hsts-file         Set file for HSTS caching. (default: ~/.wget-hsts)\n"
 		"      --gnutls-options    Custom GnuTLS priority string. Interferes with --secure-protocol. (default: none)\n"
 		"      --ocsp-stapling     Use OCSP stapling to verify the server's certificate. (default: on)\n"
 		"      --ocsp              Use OCSP server access to verify server's certificate. (default: on)\n"
 		"      --ocsp-file         Set file for OCSP chaching. (default: ~/.wget-ocsp)\n"
 		"      --http2             Use HTTP/2 protocol if possible. (default: on)\n"
 		"      --tls-false-start   Enable TLS False Start (needs GnuTLS 3.5+). (default: on)"
+		"      --tls-resume        Enable TLS Session Resumption. (default: on)"
+		"      --tls-session-file  Set file for TLS Session caching. (default: ~/.wget-session)\n"
 		"\n");
 	puts(
 		"Directory options:\n"
@@ -629,6 +631,7 @@ struct config config = {
 	.waitretry = 10 * 1000,
 	.metalink = 1,
 	.tls_false_start = 1,
+	.tls_resume = 1,
 };
 
 static int parse_execute(option_t opt, const char *val);
@@ -751,6 +754,8 @@ static const struct option options[] = {
 	{ "timeout", NULL, parse_timeout, 1, 'T' },
 	{ "timestamping", &config.timestamping, parse_bool, 0, 'N' },
 	{ "tls-false-start", &config.tls_false_start, parse_bool, 0, 0 },
+	{ "tls-resume", &config.tls_resume, parse_bool, 0, 0 },
+	{ "tls-session-file", &config.tls_session_file, parse_string, 1, 0 },
 	{ "tries", &config.tries, parse_integer, 1, 't' },
 	{ "trust-server-names", &config.trust_server_names, parse_bool, 0, 0 },
 	{ "use-server-timestamps", &config.use_server_timestamps, parse_bool, 0, 0 },
@@ -1194,6 +1199,9 @@ int init(int argc, const char **argv)
 	if (!config.hsts_file)
 		config.hsts_file = wget_str_asprintf("%s/.wget-hsts", home_dir);
 
+	if (config.tls_resume && !config.tls_session_file)
+		config.tls_session_file = wget_str_asprintf("%s/.wget-session", home_dir);
+
 	if (!config.ocsp_file)
 		config.ocsp_file = wget_str_asprintf("%s/.wget-ocsp", home_dir);
 
@@ -1372,6 +1380,11 @@ int init(int argc, const char **argv)
 		wget_hsts_db_load(config.hsts_db, config.hsts_file);
 	}
 
+	if (config.tls_resume) {
+		config.tls_session_db = wget_tls_session_db_init(NULL);
+		wget_tls_session_db_load(config.tls_session_db, config.tls_session_file);
+	}
+
 	if (config.ocsp) {
 		config.ocsp_db = wget_ocsp_db_init(NULL);
 		wget_ocsp_db_load(config.ocsp_db, config.ocsp_file);
@@ -1428,6 +1441,7 @@ int init(int argc, const char **argv)
 	wget_ssl_set_config_string(WGET_SSL_CRL_FILE, config.crl_file);
 	wget_ssl_set_config_string(WGET_SSL_OCSP_CACHE, (const char *)config.ocsp_db);
 	wget_ssl_set_config_string(WGET_SSL_ALPN, config.http2 ? "h2,h2-16,h2-14,http/1.1" : NULL);
+	wget_ssl_set_config_string(WGET_SSL_SESSION_CACHE, (const char *)config.tls_session_db);
 
 	// convert host lists to lowercase
 	for (int it = 0; it < wget_vector_size(config.domains); it++) {
@@ -1477,6 +1491,7 @@ void deinit(void)
 
 	wget_cookie_db_free(&config.cookie_db);
 	wget_hsts_db_free(&config.hsts_db);
+	wget_tls_session_db_free(&config.tls_session_db);
 	wget_ocsp_db_free(&config.ocsp_db);
 	wget_netrc_db_free(&config.netrc_db);
 	wget_ssl_deinit();
@@ -1485,6 +1500,7 @@ void deinit(void)
 	xfree(config.load_cookies);
 	xfree(config.save_cookies);
 	xfree(config.hsts_file);
+	xfree(config.tls_session_file);
 	xfree(config.ocsp_file);
 	xfree(config.netrc_file);
 	xfree(config.config_file);

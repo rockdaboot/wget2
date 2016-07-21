@@ -979,6 +979,39 @@ int
 	wget_hsts_db_load(wget_hsts_db_t *hsts_db, const char *fname) LIBWGET_EXPORT;
 
 /*
+ * TLS session resumption
+ */
+
+// structure for TLS resumption cache entries
+typedef struct _wget_tls_session_st wget_tls_session_t;
+typedef struct _wget_tls_session_db_st wget_tls_session_db_t;
+
+wget_tls_session_t *
+	wget_tls_session_init(wget_tls_session_t *tls_session) LIBWGET_EXPORT;
+void
+	wget_tls_session_deinit(wget_tls_session_t *tls_session) LIBWGET_EXPORT;
+void
+	wget_tls_session_free(wget_tls_session_t *tls_session) LIBWGET_EXPORT;
+wget_tls_session_t *
+	wget_tls_session_new(const char *host, time_t maxage, const void *data, size_t data_size) LIBWGET_EXPORT;
+int
+	wget_tls_session_get(const wget_tls_session_db_t *tls_session_db, const char *host, void **data, size_t *size) LIBWGET_EXPORT;
+wget_tls_session_db_t *
+	wget_tls_session_db_init(wget_tls_session_db_t *tls_session_db) LIBWGET_EXPORT;
+void
+	wget_tls_session_db_deinit(wget_tls_session_db_t *tls_session_db) LIBWGET_EXPORT;
+void
+	wget_tls_session_db_free(wget_tls_session_db_t **tls_session_db) LIBWGET_EXPORT;
+void
+	wget_tls_session_db_add(wget_tls_session_db_t *tls_session_db, wget_tls_session_t *tls_session) LIBWGET_EXPORT;
+int
+	wget_tls_session_db_save(wget_tls_session_db_t *tls_session_db, const char *fname) LIBWGET_EXPORT;
+int
+	wget_tls_session_db_load(wget_tls_session_db_t *tls_session_db, const char *fname) LIBWGET_EXPORT;
+int
+	wget_tls_session_db_changed(wget_tls_session_db_t *tls_session_db) G_GNUC_WGET_PURE LIBWGET_EXPORT;
+
+/*
  * Online Certificate Status Protocol (OCSP) routines
  */
 
@@ -1301,6 +1334,7 @@ int
 #define WGET_SSL_OCSP              16
 #define WGET_SSL_OCSP_CACHE        17
 #define WGET_SSL_ALPN              18
+#define WGET_SSL_SESSION_CACHE     19
 
 void
 	wget_ssl_init(void) LIBWGET_EXPORT;

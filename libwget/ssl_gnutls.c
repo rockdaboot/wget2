@@ -75,6 +75,8 @@ static struct _config {
 	wget_ocsp_db_t
 		*ocsp_cert_cache,
 		*ocsp_host_cache;
+	wget_tls_session_db_t
+		*tls_session_cache;
 	char
 		check_certificate,
 		check_hostname,
@@ -102,9 +104,10 @@ static struct _config {
 struct _session_context {
 	const char *
 		hostname;
-	char
-		ocsp_stapling,
-		valid;
+	unsigned char
+		ocsp_stapling : 1,
+		valid : 1,
+		delayed_session_data : 1;
 };
 
 static gnutls_certificate_credentials_t
@@ -124,6 +127,7 @@ void wget_ssl_set_config_string(int key, const char *value)
 	case WGET_SSL_CRL_FILE: _config.crl_file = value; break;
 	case WGET_SSL_OCSP_SERVER: _config.ocsp_server = value; break;
 	case WGET_SSL_OCSP_CACHE: _config.ocsp_cert_cache = (wget_ocsp_db_t *)value; break;
+	case WGET_SSL_SESSION_CACHE: _config.tls_session_cache = (wget_tls_session_db_t *)value; break;
 	case WGET_SSL_ALPN: _config.alpn = value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
 	}
@@ -1197,16 +1201,19 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	connect_timeout = tcp->connect_timeout;
 
 #if GNUTLS_VERSION_NUMBER >= 0x030500
-	if (tcp->tls_false_start)
+	if (tcp->tls_false_start) {
+		debug_printf("TLS False Start requested\n");
 		gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK | GNUTLS_ENABLE_FALSE_START);
-	else {
-		error_printf("TLS False Start requested but Wget built with insufficient GnuTLS version\n");
+	} else
 		gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
-	}
 #elif defined(GNUTLS_NONBLOCK)
+	if (tcp->tls_false_start)
+		error_printf("TLS False Start requested but Wget built with insufficient GnuTLS version\n");
 	gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
 #else
 	// very old gnutls version, likely to not work.
+	if (tcp->tls_false_start)
+		error_printf("TLS False Start requested but Wget built with insufficient GnuTLS version\n");
 	gnutls_init(&session, GNUTLS_CLIENT);
 #endif
 
@@ -1293,6 +1300,18 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	}
 #endif
 
+	{
+		void *data;
+		size_t size;
+
+		if (wget_tls_session_get(_config.tls_session_cache, ctx->hostname, &data, &size) == 0) {
+			info_printf("found cached session data for %s\n", ctx->hostname);
+			if ((rc = gnutls_session_set_data(session, data, size)) != GNUTLS_E_SUCCESS)
+				error_printf("GnuTLS: Failed to set session data: %s\n", gnutls_strerror(rc));
+			xfree(data);
+		}
+	}
+
 	ret = _do_handshake(session, sockfd, connect_timeout);
 
 #if GNUTLS_VERSION_NUMBER >= 0x030200
@@ -1312,8 +1331,24 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		_print_info(session);
 
 	if (ret == WGET_E_SUCCESS) {
-		debug_printf("Handshake completed%s\n",
-			gnutls_session_is_resumed(session) ? " (resumed session)" : "");
+		int resumed = gnutls_session_is_resumed(session);
+
+		debug_printf("Handshake completed%s\n", resumed ? " (resumed session)" : "");
+
+		if (!resumed && _config.tls_session_cache) {
+			if (tcp->tls_false_start) {
+				ctx->delayed_session_data = 1;
+			} else {
+				gnutls_datum_t session_data;
+
+				if ((rc = gnutls_session_get_data2(session, &session_data)) == GNUTLS_E_SUCCESS) {
+					wget_tls_session_db_add(_config.tls_session_cache,
+						wget_tls_session_new(ctx->hostname, time(NULL) + 18 * 3600, session_data.data, session_data.size)); // 18h valid
+					gnutls_free(session_data.data);
+				} else
+					info_printf("Failed to get session data: %s", gnutls_strerror(rc));
+			}
+		}
 	} else {
 		if (ret == WGET_E_TIMEOUT)
 			debug_printf("Handshake timed out\n");
@@ -1513,6 +1548,22 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 			return rc;
 
 		nbytes = gnutls_record_recv(session, buf, count);
+
+		// If False Start + Session Resumption are enabled, we get the session data after the first read()
+		struct _session_context *ctx = gnutls_session_get_ptr(session);
+		if (ctx && ctx->delayed_session_data) {
+			gnutls_datum_t session_data;
+
+			if ((rc = gnutls_session_get_data2(session, &session_data)) == GNUTLS_E_SUCCESS) {
+				info_printf("Got delayed session data\n");
+				ctx->delayed_session_data = 0;
+				wget_tls_session_db_add(_config.tls_session_cache,
+					wget_tls_session_new(ctx->hostname, time(NULL) + 18 * 3600, session_data.data, session_data.size)); // 18h valid
+				gnutls_free(session_data.data);
+			} else
+				info_printf("No delayed session data%s\n", gnutls_strerror(rc));
+		}
+
 		if (nbytes == GNUTLS_E_REHANDSHAKE) {
 			debug_printf("*** REHANDSHAKE while reading\n");
 			if ((nbytes = _do_handshake(session, sockfd, timeout)) == 0)

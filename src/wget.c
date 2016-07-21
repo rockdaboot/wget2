@@ -1053,6 +1053,9 @@ int main(int argc, const char **argv)
 	if (config.hsts && config.hsts_file && hsts_changed)
 		wget_hsts_db_save(config.hsts_db, config.hsts_file);
 
+	if (config.tls_resume && config.tls_session_file && wget_tls_session_db_changed(config.tls_session_db))
+		wget_tls_session_db_save(config.tls_session_db, config.tls_session_file);
+
 	if (config.ocsp && config.ocsp_file)
 		wget_ocsp_db_save(config.ocsp_db, config.ocsp_file);
 
