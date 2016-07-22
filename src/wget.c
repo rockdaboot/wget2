@@ -2579,7 +2579,7 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 		return req;
 
 	if (config.continue_download || config.timestamping) {
-		const char *local_filename = job->local_filename;
+		const char *local_filename = config.output_document ? config.output_document : job->local_filename;
 
 		if (config.continue_download)
 			wget_http_add_header_printf(req, "Range", "bytes=%lld-",
