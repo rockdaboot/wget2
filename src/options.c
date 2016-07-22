@@ -218,8 +218,8 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --ocsp              Use OCSP server access to verify server's certificate. (default: on)\n"
 		"      --ocsp-file         Set file for OCSP chaching. (default: ~/.wget-ocsp)\n"
 		"      --http2             Use HTTP/2 protocol if possible. (default: on)\n"
-		"      --tls-false-start   Enable TLS False Start (needs GnuTLS 3.5+). (default: on)"
-		"      --tls-resume        Enable TLS Session Resumption. (default: on)"
+		"      --tls-false-start   Enable TLS False Start (needs GnuTLS 3.5+). (default: on)\n"
+		"      --tls-resume        Enable TLS Session Resumption. (default: on)\n"
 		"      --tls-session-file  Set file for TLS Session caching. (default: ~/.wget-session)\n"
 		"\n");
 	puts(
