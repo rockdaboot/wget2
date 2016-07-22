@@ -130,7 +130,7 @@ void wget_bar_free(wget_bar_t **bar)
 	}
 }
 
-void wget_bar_update(const wget_bar_t *bar, int slotpos, off_t max, off_t cur)
+void wget_bar_update(const wget_bar_t *bar, int slotpos, off_t max, off_t cur, const char *filename)
 {
 	_bar_slot_t *slot = &bar->slots[slotpos];
 	double ratio = max ? cur / (double) max : 0;
@@ -151,7 +151,7 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos, off_t max, off_t cur)
 
 //		printf("col=%d bar->max_width=%d\n",cols,bar->max_width);
 		printf("\033[s\033[%dA\033[1G", bar->nslots - slotpos);
-		printf("%3d%% [%.*s>%.*s]", (int) (ratio * 100), cols - 1, bar->filled, bar->max_width - cols, bar->spaces);
+		printf("%-20.20s %3d%% [%.*s>%.*s]", filename, (int) (ratio * 100), cols - 1, bar->filled, bar->max_width - cols, bar->spaces);
 		printf("\033[u");
 		fflush(stdout);
 	}

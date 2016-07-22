@@ -2475,6 +2475,7 @@ struct _body_callback_context {
 	off_t length;
 	off_t expected_length;
 	bool head;
+	char *dest;
 };
 
 static int _get_header(wget_http_response_t *resp, void *context)
@@ -2506,6 +2507,8 @@ static int _get_header(wget_http_response_t *resp, void *context)
 	else
 		dest = config.output_document ? config.output_document : ctx->downloader->job->local_filename;
 
+	ctx->dest = dest;
+
 	if (dest && (resp->code == 200 || resp->code == 206 || config.content_on_error)) {
 		ctx->outfd = _prepare_file (resp, dest, resp->code == 206 ? O_APPEND : O_TRUNC);
 		if (ctx->outfd == -1)
@@ -2514,7 +2517,7 @@ static int _get_header(wget_http_response_t *resp, void *context)
 
 	// initialize the expected max. number of bytes for bar display
 	if (config.progress)
-		bar_update(ctx->downloader->id, ctx->expected_length = resp->content_length, 0);
+		bar_update(ctx->downloader->id, ctx->expected_length = resp->content_length, 0, dest);
 
 	return 0;
 }
@@ -2552,7 +2555,7 @@ static int _get_body(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *contex
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
 	if (config.progress)
-		bar_update(ctx->downloader->id, ctx->expected_length, ctx->length);
+		bar_update(ctx->downloader->id, ctx->expected_length, ctx->length, ctx->dest);
 
 	return 0;
 }
@@ -2784,6 +2787,7 @@ int http_send_request(wget_iri_t *iri, DOWNLOADER *downloader)
 	context->body = wget_buffer_alloc(102400);
 	context->length = 0;
 	context->head = downloader->job->head_first;
+	context->dest = config.output_document ? config.output_document : downloader->job->local_filename;
 
 	// set callback functions
 	wget_http_request_set_header_cb(req, _get_header, context);
