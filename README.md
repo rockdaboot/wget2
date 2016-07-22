@@ -21,7 +21,8 @@ Wget2 consumes less system and user CPU cycles than Wget1.x.
 License
 -------
 
-Wget2 is licensed under GPLv3+.<br>
+Wget2 is licensed under GPLv3+.
+
 Libwget is licensed under LGPLv3+.
 
 Contact
@@ -38,14 +39,17 @@ Wget2 has already many features that go beyond what Wget1.x provides.<br>
 
 An incomplete list of implemented features:
 
-- HTTP2 basic support via nghttp2/GnuTLS ALPN (>= 1.3.0)
+- TCP Fast Open for plain text *and* for HTTPS
+- TLS Session Resumption including persistent session data cache
+- TLS False Start (with GnuTLS >= 3.5.0)
+- HTTP2 support via nghttp2 and GnuTLS ALPN including streaming/pipelining
 - OCSP stapling + OCSP server querying as a fallback (experimental, needs GnuTLS >= 3.3.11)
 - Use [libpsl](https://github.com/rockdaboot/libpsl) for cookie domain checking (using Public Suffix List)
 - Support link conversion (-k/--convert-links and -K/--backup-converted)
 - Support for RFC 6266 compliant Content-Disposition
 - RFC 6797 HSTS (HTTP Strict Transport Security)
 - Support for bzip2 Content-Encoding / Accept-Encoding compression type
-- New Year gimmick: added support for XZ Content-Encoding / Accept-Encoding compression type
+- New Year 2014 gimmick: added support for XZ Content-Encoding / Accept-Encoding compression type
 - Character encoding of input files may be specified despite from local and remote encoding (--input-encoding)
 - Support scanning RSS 2.0 feeds from local files (--force-rss -i <filename>)
 - Support scanning RSS 2.0 feeds.
@@ -60,7 +64,6 @@ sitemap index files.
 - ICEcast / SHOUTcast support via library (see examples/getstream.c)
 - respect /robots.txt "Robot Exclusion Standard" and `<META name="robots" ...>`
 - new option --secure-protocol=PFS to have TLS only plus forcing Perfect Forward Secrecy (PFS)
-- use TCP Fast Open if available
 - IDN support for international domains
 - autotools support
 - proxy support
@@ -102,11 +105,9 @@ Some ideas of what could be done next (but contact us via mailing list before yo
 - WARC support
 - read credentials from secure wallets (e.g. kwallet, firefox, http://sourceforge.net/projects/passwordsafe/)
   [Chromium HSTS domain list](http://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json)
-- HTTP request pipelining
 - respect data-urls
 - Streaming (.m3u, etc. formats)
-- ftp support
-- https with openssl
+- FTP support
 - a progress display
 - Documentation docbook with free Serna WYSIWYG/WYMIWYG editor (conversion to texinfo possible)
   and/or with doxygen (API docs embedded into source code)
@@ -140,6 +141,8 @@ Building from git
 Download project and prepare sources with
 
 		git clone git://git.savannah.gnu.org/wget/wget2.git
+		# or from Gitlab: git clone git@gitlab.com:rockdaboot/wget2.git
+		# or from Github: git clone git@github.com:rockdaboot/wget2.git
 		cd wget2
 		./bootstrap
 
