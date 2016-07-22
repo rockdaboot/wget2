@@ -253,18 +253,19 @@ Go to background immediately after startup. If no output file is specified via t
   is used as file, documents will be printed to standard output, disabling link conversion.  (Use ./- to print to a file
   literally named -.)
 
-  Use of -O is not intended to mean simply "use the name file instead of the one in the URL;" rather, it is analogous to shell
-  redirection: wget -O file http://foo is intended to work like wget -O - http://foo > file; file will be truncated immediately,
-  and all downloaded content will be written there.
-
-  For this reason, -N (for timestamp-checking) is not supported in combination with -O: since file is always newly created, it
-  will always have a very new timestamp. A warning will be issued if this combination is used.
+  Since the file is always newly created, it will always have a very new timestamp. For this reason, -N (for timestamp-checking)
+  is not supported in combination with -O. A warning will be issued if this combination is used. This behavior may change in the
+  future and timestamping may be supported along with -O.
 
   Similarly, using -r or -p with -O may not work as you expect: Wget won't just download the first file to file and then
   download the rest to their normal names: all downloaded content will be placed in file. This was disabled in version 1.11, but
   has been reinstated (with a warning) in 1.11.2, as there are some cases where this behavior can actually have some use.
 
   A combination with -nc is only accepted if the given output file does not exist.
+
+  When used along with the -c option, Wget will attempt to continue downloading the file whose name is passed to the option,
+  irrespective of whether the actual file already exists on disk or not. This allows users to download a file with a
+  temporary name alongside the actual file.
 
   Note that a combination with -k is only permitted when downloading a single document, as in that case it will just convert all
   relative URIs to external ones; -k makes no sense for multiple URIs when they're all being downloaded to a single file; -k can
