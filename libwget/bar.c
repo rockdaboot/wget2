@@ -64,9 +64,20 @@ struct _wget_bar_st {
 		allocated : 1;
 };
 
+#define _BAR_FILENAME_SIZE 20
+#define _BAR_RATIO_SIZE 4
+#define _BAR_METER_COST 2
+#define _BAR_N_ELEMENTS 3
+#define _BAR_TOTAL_SIZE (_BAR_FILENAME_SIZE + _BAR_RATIO_SIZE + _BAR_METER_COST + _BAR_N_ELEMENTS - 1)
+
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+#define FMT_STR "%-"STR(_BAR_FILENAME_SIZE)"."STR(_BAR_FILENAME_SIZE)"s %3d%% [%.*s>%.*s]"
+
 wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 {
 	int allocated = 0, it;
+	max_width = max_width - _BAR_TOTAL_SIZE;
 
 	if (!bar) {
 		if (!(bar = calloc(1, sizeof(*bar))))
@@ -130,6 +141,7 @@ void wget_bar_free(wget_bar_t **bar)
 	}
 }
 
+
 void wget_bar_update(const wget_bar_t *bar, int slotpos, off_t max, off_t cur, const char *filename)
 {
 	_bar_slot_t *slot = &bar->slots[slotpos];
@@ -151,7 +163,7 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos, off_t max, off_t cur, c
 
 //		printf("col=%d bar->max_width=%d\n",cols,bar->max_width);
 		printf("\033[s\033[%dA\033[1G", bar->nslots - slotpos);
-		printf("%-20.20s %3d%% [%.*s>%.*s]", filename, (int) (ratio * 100), cols - 1, bar->filled, bar->max_width - cols, bar->spaces);
+		printf(FMT_STR, filename, (int) (ratio * 100), cols - 1, bar->filled, bar->max_width - cols, bar->spaces);
 		printf("\033[u");
 		fflush(stdout);
 	}
@@ -183,3 +195,6 @@ ssize_t wget_bar_printf(wget_bar_t *bar, size_t slotpos, const char *fmt, ...)
 
 	return len;
 }
+
+#undef STR
+#undef STR_HELPER

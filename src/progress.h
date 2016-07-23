@@ -32,6 +32,10 @@
 #include "job.h"
 #include "wget.h"
 
+#define DEFAULT_SCREEN_WIDTH 70
+
+#define MINIMUM_SCREEN_WIDTH 45
+
 // the following is just needed for the progress bar
 struct _body_callback_context {
 	DOWNLOADER *downloader;
