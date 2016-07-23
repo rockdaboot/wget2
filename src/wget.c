@@ -2475,7 +2475,7 @@ struct _body_callback_context {
 	off_t length;
 	off_t expected_length;
 	bool head;
-	char *dest;
+	const char *dest;
 };
 
 static int _get_header(wget_http_response_t *resp, void *context)
