@@ -2488,6 +2488,7 @@ static int _get_header(wget_http_response_t *resp, void *context)
     // Initialize some of the context values
 	ctx->expected_length = resp->content_length;
 	ctx->length = 0;
+	ctx->raw_downloaded = 0;
 
 	// initialize the expected max. number of bytes for bar display
 	if (config.progress)
@@ -2528,6 +2529,7 @@ static int _get_body(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *contex
 	if (ctx->max_memory == 0 || ctx->length < (off_t) ctx->max_memory)
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
+	ctx->raw_downloaded = resp->cur_downloaded;
 	if (config.progress)
 		bar_update(ctx);
 

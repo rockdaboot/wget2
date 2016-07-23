@@ -44,6 +44,7 @@ struct _body_callback_context {
 	size_t max_memory;
 	off_t length;
 	off_t expected_length;
+	size_t raw_downloaded;
 	bool head;
 	const char *dest;
 };

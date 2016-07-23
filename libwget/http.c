@@ -2300,6 +2300,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 	// move already read body data to buf
 	memmove(buf, p, body_len);
 	buf[body_len] = 0;
+	resp->cur_downloaded = body_len;
 
 	if (resp->transfer_encoding != transfer_encoding_identity) {
 		size_t chunk_size = 0;
@@ -2452,6 +2453,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 				break;
 
 			body_len += nbytes;
+			resp->cur_downloaded = body_len;
 			debug_printf("nbytes %zd total %zu/%zu\n", nbytes, body_len, resp->content_length);
 			wget_decompress(dc, buf, nbytes);
 		}

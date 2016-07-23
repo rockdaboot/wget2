@@ -113,6 +113,6 @@ void bar_printf(int slotpos, const char *fmt, ...)
 void bar_update(struct _body_callback_context *ctx)
 {
 	wget_thread_mutex_lock(&mutex);
-	wget_bar_update(bar, ctx->downloader->id, ctx->expected_length, ctx->length, ctx->dest);
+	wget_bar_update(bar, ctx->downloader->id, ctx->expected_length, ctx->raw_downloaded, ctx->dest);
 	wget_thread_mutex_unlock(&mutex);
 }
