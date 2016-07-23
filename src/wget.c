@@ -62,25 +62,6 @@
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)
 
-struct DOWNLOADER {
-	wget_thread_t
-		tid;
-	JOB
-		*job;
-	wget_http_connection_t
-		*conn;
-	char
-		*buf;
-	size_t
-		bufsize;
-	int
-		id;
-	wget_thread_cond_t
-		cond;
-	char
-		final_error;
-};
-
 #define _CONTENT_TYPE_HTML 1
 typedef struct {
 	const char *
@@ -2466,17 +2447,6 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	return fd;
 }
 
-// the following is just needed for the progress bar
-struct _body_callback_context {
-	DOWNLOADER *downloader;
-	wget_buffer_t *body;
-	int outfd;
-	size_t max_memory;
-	off_t length;
-	off_t expected_length;
-	bool head;
-	const char *dest;
-};
 
 static int _get_header(wget_http_response_t *resp, void *context)
 {
@@ -2515,9 +2485,13 @@ static int _get_header(wget_http_response_t *resp, void *context)
 			return -1;
 	}
 
+    // Initialize some of the context values
+	ctx->expected_length = resp->content_length;
+	ctx->length = 0;
+
 	// initialize the expected max. number of bytes for bar display
 	if (config.progress)
-		bar_update(ctx->downloader->id, ctx->expected_length = resp->content_length, 0, dest);
+		bar_update(ctx);
 
 	return 0;
 }
@@ -2555,7 +2529,7 @@ static int _get_body(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *contex
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
 	if (config.progress)
-		bar_update(ctx->downloader->id, ctx->expected_length, ctx->length, ctx->dest);
+		bar_update(ctx);
 
 	return 0;
 }

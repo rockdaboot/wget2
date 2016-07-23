@@ -99,9 +99,9 @@ void bar_printf(int slotpos, const char *fmt, ...)
 	va_end(args);
 }
 
-void bar_update(int slotpos, off_t max, off_t cur, const char *filename)
+void bar_update(struct _body_callback_context *ctx)
 {
 	wget_thread_mutex_lock(&mutex);
-	wget_bar_update(bar, slotpos, max, cur, filename);
+	wget_bar_update(bar, ctx->downloader->id, ctx->expected_length, ctx->length, ctx->dest);
 	wget_thread_mutex_unlock(&mutex);
 }
