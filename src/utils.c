@@ -21,3 +21,4 @@ determine_screen_width (void)
 
   return wsz.ws_col;
 }
+

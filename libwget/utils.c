@@ -355,4 +355,65 @@ int wget_match_tail_nocase(const char *s, const char *tail)
 	return p >= s && !wget_strcasecmp_ascii(p, tail);
 }
 
+/* N, a byte quantity, is converted to a human-readable abberviated
+   form a la sizes printed by `ls -lh'.  The result is written to a
+   static buffer, a pointer to which is returned.
+
+   Unlike `with_thousand_seps', this approximates to the nearest unit.
+   Quoting GNU libit: "Most people visually process strings of 3-4
+   digits effectively, but longer strings of digits are more prone to
+   misinterpretation.  Hence, converting to an abbreviated form
+   usually improves readability."
+
+   This intentionally uses kilobyte (KB), megabyte (MB), etc. in their
+   original computer-related meaning of "powers of 1024".  We don't
+   use the "*bibyte" names invented in 1998, and seldom used in
+   practice.  Wikipedia's entry on "binary prefix" discusses this in
+   some detail.  */
+
+char *
+wget_human_readable (size_t n, const int acc, const int decimals)
+{
+  /* These suffixes are compatible with those of GNU `ls -lh'. */
+  static char powers[] =
+    {
+      'K',                      /* kilobyte, 2^10 bytes */
+      'M',                      /* megabyte, 2^20 bytes */
+      'G',                      /* gigabyte, 2^30 bytes */
+      'T',                      /* terabyte, 2^40 bytes */
+      'P',                      /* petabyte, 2^50 bytes */
+      'E',                      /* exabyte,  2^60 bytes */
+    };
+  static char buf[8];
+  size_t i;
+
+  /* If the quantity is smaller than 1K, just print it. */
+  if (n < 1024)
+    {
+      snprintf (buf, sizeof (buf), "%d", (int) n);
+      return buf;
+    }
+
+  /* Loop over powers, dividing N with 1024 in each iteration.  This
+     works unchanged for all sizes of wgint, while still avoiding
+     non-portable `long double' arithmetic.  */
+  for (i = 0; i < countof (powers); i++)
+    {
+      /* At each iteration N is greater than the *subsequent* power.
+         That way N/1024.0 produces a decimal number in the units of
+         *this* power.  */
+      if ((n / 1024) < 1024 || i == countof (powers) - 1)
+        {
+          double val = n / 1024.0;
+          /* Print values smaller than the accuracy level (acc) with (decimal)
+           * decimal digits, and others without any decimals.  */
+          snprintf (buf, sizeof (buf), "%.*f%c",
+                    val < acc ? decimals : 0, val, powers[i]);
+          return buf;
+        }
+      n /= 1024;
+    }
+  return NULL;                  /* unreached */
+}
+
 /**@}*/
