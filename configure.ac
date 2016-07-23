@@ -208,6 +208,41 @@ if test "$gl_gcc_warnings" = yes; then
 #  WARN_CFLAGS="$bak"
 fi
 
+AC_ARG_ENABLE([fsanitize-ubsan],
+  [AS_HELP_STRING([--enable-fsanitize-ubsan], [Turn on Undefined Behavior Sanitizer (for developers)])],
+  [gl_cc_sanitize_ubsan=yes], [gl_cc_sanitize_ubsan=no])
+
+AC_ARG_ENABLE([fsanitize-asan],
+  [AS_HELP_STRING([--enable-fsanitize-asan], [Turn on Address Sanitizer (for developers)])],
+  [gl_cc_sanitize_asan=yes], [gl_cc_sanitize_asan=no])
+
+AC_ARG_ENABLE([fsanitize-msan],
+  [AS_HELP_STRING([--enable-fsanitize-msan], [Turn on Memory Sanitizer (for developers)])],
+  [gl_cc_sanitize_msan=yes], [gl_cc_sanitize_msan=no])
+
+if test "$gl_cc_sanitize_asan" = yes; then
+  if test "$gl_cc_sanitize_msan" = yes; then
+    AC_MSG_ERROR([Address Sanitizer and Memory Sanitizer are mutually exclusive])
+  fi
+fi
+
+if test "$gl_cc_sanitize_ubsan" = yes; then
+  gl_WARN_ADD([-fsanitize=undefined])
+  gl_WARN_ADD([-fno-sanitize-recover=undefined])
+fi
+
+if test "$gl_cc_sanitize_asan" = yes; then
+  gl_WARN_ADD([-fsanitize=address])
+  gl_WARN_ADD([-fno-omit-frame-pointer])
+fi
+
+if test "$gl_cc_sanitize_msan" = yes; then
+  gl_WARN_ADD([-fsanitize=memory])
+  gl_WARN_ADD([-fno-omit-frame-pointer])
+  gl_WARN_ADD([-fsanitize-memory-track-origins])
+  gl_WARN_ADD([-fPIE])
+fi
+
 #
 # Gettext
 #
