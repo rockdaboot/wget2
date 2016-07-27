@@ -90,36 +90,6 @@ struct _wget_bar_st {
                          _BAR_DOWNBYTES_SIZE       \
                         )
 
-// These are helper macros to allow us to create a "string literal" dynamically
-// at compile time. printf() does not like using a dynamically generated string
-// as its format string, so we must work around that and generate it at compile
-// time.
-//
-// _STR_HELPER(x) simply prints out the argument as a string
-// _STR(x) uses _STR_HELPER(x) to print out its argument. This level of
-// indirection allows us to expand macros. This is used to generate the format
-// stirng using sizes for each component as defined above.
-#define _STR_HELPER(x) #x
-#define _STR(x) _STR_HELPER(x)
-
-// Define the format string for the progress bar. See above for an explanation
-// of why we do this in preprocessor macros.
-//
-// The progress bar looks like this:
-//
-// filename   xxx% [======>      ] xxx.xxK
-//
-// It is made of the following elements:
-// filename		_BAR_FILENAME_SIZE		Name of local file
-// xxx%			_BAR_RATIO_SIZE + 1		Amount of file downloaded
-// []			_BAR_METER_COST			Bar Decorations
-// xxx.xxK		_BAR_DOWNBYTES_SIZE		Number of downloaded bytes
-// ===>			Remaining				Progress Meter
-//
-// The final format string after the preprocessor magic should be:
-// %-20.20s %3d%% [%.*s>%.*s] %8s
-#define _FMT_STR "%-"_STR(_BAR_FILENAME_SIZE)"."_STR(_BAR_FILENAME_SIZE)"s %"_STR(_BAR_RATIO_SIZE)"d%% [%.*s>%.*s] %"_STR(_BAR_DOWNBYTES_SIZE)"s"
-
 
 /**
  * \param[in] bar Pointer to a \p wget_bar_t object
@@ -244,7 +214,24 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos, off_t max, off_t cur, c
 
 //		printf("col=%d bar->max_width=%d\n",cols,bar->max_width);
 		printf("\033[s\033[%dA\033[1G", bar->nslots - slotpos);
-		printf(_FMT_STR, filename, (int) (ratio * 100), cols - 1, bar->filled, bar->max_width - cols, bar->spaces, wget_human_readable(cur, 1000, 2));
+
+		// The progress bar looks like this:
+		//
+		// filename   xxx% [======>      ] xxx.xxK
+		//
+		// It is made of the following elements:
+		// filename		_BAR_FILENAME_SIZE		Name of local file
+		// xxx%			_BAR_RATIO_SIZE + 1		Amount of file downloaded
+		// []			_BAR_METER_COST			Bar Decorations
+		// xxx.xxK		_BAR_DOWNBYTES_SIZE		Number of downloaded bytes
+		// ===>			Remaining				Progress Meter
+
+		printf("%-*.*s %*d%% [%.*s>%.*s] %*s", _BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, filename,
+		                                       _BAR_RATIO_SIZE, (int) (ratio * 100),
+											   cols - 1, bar->filled,
+											   bar->max_width - cols, bar->spaces,
+											   _BAR_DOWNBYTES_SIZE, wget_human_readable(cur, 1000, 2));
+
 		printf("\033[u");
 		fflush(stdout);
 	}
@@ -277,7 +264,3 @@ ssize_t wget_bar_printf(wget_bar_t *bar, size_t slotpos, const char *fmt, ...)
 
 	return len;
 }
-
-#undef _STR
-#undef _STR_HELPER
-#undef _FMT_STR
