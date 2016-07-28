@@ -1501,7 +1501,7 @@ static void test_stringmap(void)
 static void test_striconv(void)
 {
 	const char *utf8 = "abcßüäö";
-	char *utf16be, *utf16le, *result;
+	char *utf16be = NULL, *utf16le = NULL, *result = NULL;
 	size_t n;
 
 	// convert utf-8 to utf-16be
