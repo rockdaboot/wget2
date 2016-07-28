@@ -40,6 +40,15 @@
 #include <libwget.h>
 #include "private.h"
 
+/**
+ * \file
+ * \brief Progress Bar Routines
+ * \defgroup libwget-progress Progress Display Functions
+ * @{
+ *
+ * Methods for creating and printing a progress bar display.
+ */
+
 typedef struct {
 	double
 		ratio;
@@ -49,6 +58,8 @@ typedef struct {
 		cols;
 	unsigned char
 		first : 1;
+	wget_bar_ctx
+		*ctx;
 } _bar_slot_t;
 
 struct _wget_bar_st {
@@ -62,11 +73,66 @@ struct _wget_bar_st {
 		max_width;
 	unsigned char
 		allocated : 1;
+	wget_thread_t
+		progress_thread;
+	volatile bool
+		terminate;
 };
 
+//Forward declaration for progress bar thread
+static void *wget_bar_update_thread(void *p) G_GNUC_WGET_FLATTEN;
+
+// We use enums to define the progress bar paramters because they are the
+// closest thing we have to defining true constants in C without using
+// preprocessor macros. The advantage of enums is that they will create a
+// symbol in the symbol table making debugging a whole lot easier.
+
+// Define the parameters for how the progress bar looks
+enum {
+	_BAR_FILENAME_SIZE	= 20,
+	_BAR_RATIO_SIZE		=  3,
+	_BAR_METER_COST		=  2,
+	_BAR_DOWNBYTES_SIZE	=  8,
+};
+
+// Define the cost (in number of columns) of the progress bar decorations. This
+// includes all the elements that are not the progress indicator itself.
+enum {
+	_BAR_DECOR_COST		= _BAR_FILENAME_SIZE	+ 1 + \
+						  _BAR_RATIO_SIZE		+ 2 + \
+						  _BAR_METER_COST		+ 1 + \
+						  _BAR_DOWNBYTES_SIZE
+};
+
+// Rate at which progress thread it updated. This is the amount of time (in us)
+// for which the thread will sleep before waking up and redrawing the progress
+enum { _BAR_THREAD_SLEEP_DURATION = 125000 };
+
+/**
+ * \param[in] bar Pointer to a \p wget_bar_t object
+ * \param[in] nslots Number of progress bars
+ * \param[in] max_width Maximum width of the progress bars
+ * \return Pointer to a \p wget_bar_t object
+ *
+ * Initialize a new progress bar instance for Wget. If \p bar is a NULL
+ * pointer, it will be allocated on the heap and a pointer to the newly
+ * allocated memory will be returned.
+ *
+ * \p nslots is the number of screen lines to reserve for printing the progress
+ * bars. This may be any number, but you generally want atleast as many slots
+ * as there are downloader threads.
+ *
+ * \p max_width is the maximum number of screen columns that the progress bar
+ * may occupy.
+ */
 wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 {
 	int allocated = 0, it;
+
+	// While the API defines max_width to be the total size of the progress
+	// bar, the code assume sit to be the size of the [===> ] actual bar
+	// drawing. So compute that early enough.
+	max_width -= _BAR_DECOR_COST;
 
 	if (!bar) {
 		if (!(bar = calloc(1, sizeof(*bar))))
@@ -101,6 +167,9 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 	for (it = 0; it < nslots; it++)
 		bar->slots[it].first = 1;
 
+	bar->terminate = false;
+	wget_thread_start(&bar->progress_thread, wget_bar_update_thread, bar, 0);
+
 	return bar;
 
 cleanup:
@@ -113,6 +182,106 @@ cleanup:
 	return NULL;
 }
 
+void wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx)
+{
+	ctx->final = 0;
+	bar->slots[ctx->slotpos].ctx = ctx;
+	/* printf("Context registered for slotpos: %ld %p %p %p\n\n\n\n", ctx->slotpos, bar, &bar->slots[ctx->slotpos], bar->slots[ctx->slotpos].ctx); */
+}
+
+void wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx)
+{
+	bar->slots[ctx->slotpos].ctx->final = 1;
+	while(bar->slots[ctx->slotpos].ctx->final != 2)
+		usleep(20000);
+	bar->slots[ctx->slotpos].ctx = NULL;
+}
+
+static inline G_GNUC_WGET_ALWAYS_INLINE void
+_wget_bar_return_cursor_position() {
+	printf("\033[u");
+}
+
+static inline G_GNUC_WGET_ALWAYS_INLINE void
+_wget_bar_print_slot(wget_bar_t *bar, int slotpos) {
+	printf("\033[s\033[%dA\033[1G", bar->nslots - slotpos);
+}
+
+static void *wget_bar_update_thread(void *p)
+{
+	wget_bar_t *bar = (wget_bar_t *) p;
+	wget_bar_ctx *ctx;
+	off_t
+		max,
+		cur;
+	double ratio;
+	int cols;
+
+	while (!bar->terminate) {
+		for (int slotpos = 0; slotpos < bar->nslots; slotpos++) {
+			_bar_slot_t *slot = &bar->slots[slotpos];
+            // We only print a progress bar for the slot if a context has been
+            // registered for it
+			if ((ctx = slot->ctx)) {
+
+				wget_thread_mutex_lock(&ctx->mutex);
+				max = ctx->expected_size;
+				cur = ctx->raw_downloaded;
+				wget_thread_mutex_unlock(&ctx->mutex);
+
+				ratio = max ? cur / (double) max : 0;
+				cols = bar->max_width * ratio;
+
+				if (cols > bar->max_width)
+					cols = bar->max_width;
+
+				slot->max = max;
+
+				if (slot->cols != cols || (slot->ratio * 100) != (ratio * 100) || slot->first) {
+					slot->cols = cols;
+					slot->ratio = ratio;
+					slot->first = 0;
+
+					if (cols <= 0)
+						cols = 1;
+
+					_wget_bar_print_slot(bar, slotpos);
+
+					// The progress bar looks like this:
+					//
+					// filename   xxx% [======>      ] xxx.xxK
+					//
+					// It is made of the following elements:
+					// filename		_BAR_FILENAME_SIZE		Name of local file
+					// xxx%			_BAR_RATIO_SIZE + 1		Amount of file downloaded
+					// []			_BAR_METER_COST			Bar Decorations
+					// xxx.xxK		_BAR_DOWNBYTES_SIZE		Number of downloaded bytes
+					// ===>			Remaining				Progress Meter
+
+					printf("%-*.*s %*d%% [%.*s>%.*s] %*s", _BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, ctx->filename,
+							_BAR_RATIO_SIZE, (int) (ratio * 100),
+							cols - 1, bar->filled,
+							bar->max_width - cols, bar->spaces,
+							_BAR_DOWNBYTES_SIZE, wget_human_readable(cur, 1000, 2));
+
+					_wget_bar_return_cursor_position();
+					fflush(stdout);
+				}
+
+				if (ctx->final == 1)
+					ctx->final = 2;
+			}
+		}
+		usleep(_BAR_THREAD_SLEEP_DURATION);
+	}
+	return NULL;
+}
+
+/**
+ * \param[in] bar Pointer to \p wget_bar_t
+ *
+ * Free the various progress bar data structures
+ */
 void wget_bar_deinit(wget_bar_t *bar)
 {
 	if (bar) {
@@ -120,8 +289,13 @@ void wget_bar_deinit(wget_bar_t *bar)
 		free(bar->filled);
 		free(bar->slots);
 	}
+	bar->terminate = true;
+	wget_thread_join(bar->progress_thread);
 }
 
+/**
+ * Free the pointer holding the \p *wget_bar_t structure as well
+ */
 void wget_bar_free(wget_bar_t **bar)
 {
 	if (bar && *bar) {
@@ -130,36 +304,11 @@ void wget_bar_free(wget_bar_t **bar)
 	}
 }
 
-void wget_bar_update(const wget_bar_t *bar, int slotpos, off_t max, off_t cur)
-{
-	_bar_slot_t *slot = &bar->slots[slotpos];
-	double ratio = max ? cur / (double) max : 0;
-	int cols = bar->max_width * ratio;
-
-	if (cols > bar->max_width)
-		cols = bar->max_width;
-
-	slot->max = max;
-
-	if (slot->cols != cols || (slot->ratio * 100) != (ratio * 100) || slot->first) {
-		slot->cols = cols;
-		slot->ratio = ratio;
-		slot->first = 0;
-
-		if (cols <= 0)
-			cols = 1;
-
-//		printf("col=%d bar->max_width=%d\n",cols,bar->max_width);
-		printf("\033[s\033[%dA\033[1G", bar->nslots - slotpos);
-		printf("%3d%% [%.*s>%.*s]", (int) (ratio * 100), cols - 1, bar->filled, bar->max_width - cols, bar->spaces);
-		printf("\033[u");
-		fflush(stdout);
-	}
-}
-
 void wget_bar_print(wget_bar_t *bar, int slotpos, const char *s)
 {
-	printf("\033[s\033[%dA\033[6G[%-*.*s]\033[u", bar->nslots - slotpos, bar->max_width, bar->max_width, s);
+	_wget_bar_print_slot(bar, slotpos);
+	printf("\033[27G[%-*.*s]", bar->max_width, bar->max_width, s);
+	_wget_bar_return_cursor_position();
 	fflush(stdout);
 }
 

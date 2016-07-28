@@ -118,9 +118,15 @@
 
 #if GCC_VERSION_AT_LEAST(3,1)
 #	define G_GNUC_WGET_ALWAYS_INLINE __attribute__ ((always_inline))
+#   define G_GNUC_WGET_FLATTEN __attribute__ ((flatten))
+#   define G_GNUC_WGET_DEPRECATED __attribute__ ((deprecated))
+#elif defined(__clang__)
+#   define G_GNUC_WGET_ALWAYS_INLINE __attribute__ ((always_inline))
+#   define G_GNUC_WGET_FLATTEN __attribute__ ((flatten))
 #	define G_GNUC_WGET_DEPRECATED __attribute__ ((deprecated))
 #else
 #	define G_GNUC_WGET_ALWAYS_INLINE
+#	define G_GNUC_WGET_FLATTEN
 #	define G_GNUC_WGET_DEPRECATED
 #endif
 
@@ -312,6 +318,8 @@ int
 	wget_match_tail(const char *s, const char *tail) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 int
 	wget_match_tail_nocase(const char *s, const char *tail) G_GNUC_WGET_PURE LIBWGET_EXPORT;
+char *
+	wget_human_readable(size_t n, const int acc, const int decimals) G_GNUC_WGET_CONST LIBWGET_EXPORT;
 ssize_t
 	wget_fdgetline(char **buf, size_t *bufsize, int fd) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 ssize_t
@@ -1499,6 +1507,8 @@ struct wget_http_response_t {
 		hsts_include_subdomains;
 	unsigned char
 		hsts : 1; // if hsts_maxage and hsts_include_subdomains are valid
+	size_t
+		cur_downloaded;
 };
 
 typedef struct {
@@ -1803,7 +1813,22 @@ void
  * Progress bar routines
  */
 
+struct _wget_bar_ctx {
+	off_t
+		slotpos;
+	size_t
+		expected_size,
+		raw_downloaded;
+	const char *
+		filename;
+	int
+		final;
+	wget_thread_mutex_t
+		mutex;
+};
+
 typedef struct _wget_bar_st wget_bar_t;
+typedef struct _wget_bar_ctx wget_bar_ctx;
 
 wget_bar_t *
 	wget_bar_init(wget_bar_t *bar, int nslots, int max_width) LIBWGET_EXPORT;
@@ -1812,13 +1837,15 @@ void
 void
 	wget_bar_free(wget_bar_t **bar) LIBWGET_EXPORT;
 void
-	wget_bar_update(const wget_bar_t *bar, int slotpos, off_t max, off_t cur) LIBWGET_EXPORT;
-void
 	wget_bar_print(wget_bar_t *bar, int slotpos, const char *s) LIBWGET_EXPORT;
 ssize_t
 	wget_bar_vprintf(wget_bar_t *bar, size_t slotpos, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 ssize_t
 	wget_bar_printf(wget_bar_t *bar, size_t slotpos, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+void
+	wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+void
+	wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 
 
 WGET_END_DECLS

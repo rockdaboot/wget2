@@ -42,11 +42,14 @@
 #include "options.h"
 //#include "log.h"
 #include "bar.h"
+#include "utils.h"
 
 static wget_bar_t
 	*bar;
 static wget_thread_mutex_t
 	mutex = WGET_THREAD_MUTEX_INITIALIZER;
+
+static int screen_width;
 
 void bar_init(void)
 {
@@ -55,8 +58,16 @@ void bar_init(void)
 	memset(lf, '\n', config.num_threads + 1);
 	fwrite(lf, 1, config.num_threads + 1, stdout);
 
-	bar = wget_bar_init(NULL, config.num_threads + 1, 70);
-	
+	/* Initialize screen_width if this hasn't been done or if it might
+	   have changed, as indicated by receiving SIGWINCH.  */
+	screen_width = determine_screen_width ();
+	if (!screen_width)
+		screen_width = DEFAULT_SCREEN_WIDTH;
+	else if (screen_width < MINIMUM_SCREEN_WIDTH)
+		screen_width = MINIMUM_SCREEN_WIDTH;
+
+	bar = wget_bar_init(NULL, config.num_threads + 1, screen_width - 1);
+
 /*
 	// set debug logging
 	wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), config.debug ? _write_debug : NULL);
@@ -99,9 +110,16 @@ void bar_printf(int slotpos, const char *fmt, ...)
 	va_end(args);
 }
 
-void bar_update(int slotpos, off_t max, off_t cur)
+void bar_register(wget_bar_ctx *bar_ctx)
 {
 	wget_thread_mutex_lock(&mutex);
-	wget_bar_update(bar, slotpos, max, cur);
+	wget_bar_register(bar, bar_ctx);
+	wget_thread_mutex_unlock(&mutex);
+}
+
+void bar_deregister(wget_bar_ctx *bar_ctx)
+{
+	wget_thread_mutex_lock(&mutex);
+	wget_bar_deregister(bar, bar_ctx);
 	wget_thread_mutex_unlock(&mutex);
 }
