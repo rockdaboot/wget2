@@ -49,6 +49,7 @@ typedef struct {
 } PART;
 
 typedef struct DOWNLOADER DOWNLOADER;
+
 struct JOB {
 	wget_iri_t
 		*iri,
@@ -84,6 +85,25 @@ struct JOB {
 		sitemap : 1, // URL is a sitemap to be scanned in recursive mode
 		robotstxt : 1, // URL is a robots.txt to be scanned
 		head_first : 1; // first check mime type by using a HEAD request
+};
+
+struct DOWNLOADER {
+	wget_thread_t
+		tid;
+	JOB
+		*job;
+	wget_http_connection_t
+		*conn;
+	char
+		*buf;
+	size_t
+		bufsize;
+	int
+		id;
+	wget_thread_cond_t
+		cond;
+	char
+		final_error;
 };
 
 JOB *job_init(JOB *job, wget_iri_t *iri) G_GNUC_WGET_NONNULL((2));
