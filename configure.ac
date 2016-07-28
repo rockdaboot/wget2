@@ -220,9 +220,16 @@ AC_ARG_ENABLE([fsanitize-msan],
   [AS_HELP_STRING([--enable-fsanitize-msan], [Turn on Memory Sanitizer (for developers)])],
   [gl_cc_sanitize_msan=yes], [gl_cc_sanitize_msan=no])
 
+AC_ARG_ENABLE([fsanitize-tsan],
+  [AS_HELP_STRING([--enable-fsanitize-tsan], [Turn on Thread Sanitizer (for developers)])],
+  [gl_cc_sanitize_tsan=yes], [gl_cc_sanitize_tsan=no])
+
+
 if test "$gl_cc_sanitize_asan" = yes; then
   if test "$gl_cc_sanitize_msan" = yes; then
     AC_MSG_ERROR([Address Sanitizer and Memory Sanitizer are mutually exclusive])
+  elif test "gl_cc_sanitize_tsan" = yes; then
+    AC_MSG_ERROR([Address Sanitizer and Thread Sanitizer are mutually exclusive])
   fi
 fi
 
@@ -241,6 +248,10 @@ if test "$gl_cc_sanitize_msan" = yes; then
   gl_WARN_ADD([-fno-omit-frame-pointer])
   gl_WARN_ADD([-fsanitize-memory-track-origins])
   gl_WARN_ADD([-fPIE])
+fi
+
+if test "$gl_cc_sanitize_tsan" = yes; then
+  gl_WARN_ADD([-fsanitize=thread])
 fi
 
 #
