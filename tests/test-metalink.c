@@ -267,9 +267,11 @@ int main(void)
 			{ NULL } },
 		0);
 
+	char *digest_str = NULL;
 	/**** RFC 6249 Metalink/HTTP: Mirrors and Hashes  - with metalink description ****/
 	wget_hash_fast(WGET_DIGTYPE_MD5, urls[8].body, strlen(urls[8].body), digest);
-	urls[6].headers[4] = wget_str_asprintf("Digest: MD5=%s", wget_base64_encode_alloc((const char *)digest, sizeof(digest)));
+	digest_str = wget_base64_encode_alloc((const char *)digest, sizeof(digest));
+	urls[6].headers[4] = wget_str_asprintf("Digest: MD5=%s", digest_str);
 
 	wget_test(
 //		WGET_TEST_OPTIONS, "-d --tries=1",
@@ -280,9 +282,12 @@ int main(void)
 			{ NULL } },
 		0);
 
+	free(digest_str);
+
 	/**** RFC 6249 Metalink/HTTP: Mirrors and Hashes  - without metalink description ****/
 	wget_hash_fast(WGET_DIGTYPE_MD5, urls[10].body, strlen(urls[10].body), digest);
-	urls[9].headers[3] = wget_str_asprintf("Digest: MD5=%s", wget_base64_encode_alloc((const char *)digest, sizeof(digest)));
+	digest_str = wget_base64_encode_alloc((const char *)digest, sizeof(digest));
+	urls[9].headers[3] = wget_str_asprintf("Digest: MD5=%s", digest_str);
 
 	wget_test(
 		WGET_TEST_OPTIONS, "-d --tries=1",
@@ -292,6 +297,8 @@ int main(void)
 			{ urls[9].name + 1, urls[10].body },
 			{ NULL } },
 		0);
+
+	free(digest_str);
 
 	exit(0);
 }
