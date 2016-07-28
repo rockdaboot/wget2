@@ -62,25 +62,6 @@
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)
 
-struct DOWNLOADER {
-	wget_thread_t
-		tid;
-	JOB
-		*job;
-	wget_http_connection_t
-		*conn;
-	char
-		*buf;
-	size_t
-		bufsize;
-	int
-		id;
-	wget_thread_cond_t
-		cond;
-	char
-		final_error;
-};
-
 #define _CONTENT_TYPE_HTML 1
 typedef struct {
 	const char *
@@ -2466,16 +2447,6 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	return fd;
 }
 
-// the following is just needed for the progress bar
-struct _body_callback_context {
-	DOWNLOADER *downloader;
-	wget_buffer_t *body;
-	int outfd;
-	size_t max_memory;
-	off_t length;
-	off_t expected_length;
-	bool head;
-};
 
 static int _get_header(wget_http_response_t *resp, void *context)
 {
@@ -2506,15 +2477,22 @@ static int _get_header(wget_http_response_t *resp, void *context)
 	else
 		dest = config.output_document ? config.output_document : ctx->downloader->job->local_filename;
 
+	ctx->dest = dest;
+
 	if (dest && (resp->code == 200 || resp->code == 206 || config.content_on_error)) {
 		ctx->outfd = _prepare_file (resp, dest, resp->code == 206 ? O_APPEND : O_TRUNC);
 		if (ctx->outfd == -1)
 			return -1;
 	}
 
+    // Initialize some of the context values
+	ctx->expected_length = resp->content_length;
+	ctx->length = 0;
+	ctx->raw_downloaded = 0;
+
 	// initialize the expected max. number of bytes for bar display
 	if (config.progress)
-		bar_update(ctx->downloader->id, ctx->expected_length = resp->content_length, 0);
+		bar_update(ctx);
 
 	return 0;
 }
@@ -2551,8 +2529,9 @@ static int _get_body(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *contex
 	if (ctx->max_memory == 0 || ctx->length < (off_t) ctx->max_memory)
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
+	ctx->raw_downloaded = resp->cur_downloaded;
 	if (config.progress)
-		bar_update(ctx->downloader->id, ctx->expected_length, ctx->length);
+		bar_update(ctx);
 
 	return 0;
 }
@@ -2784,6 +2763,7 @@ int http_send_request(wget_iri_t *iri, DOWNLOADER *downloader)
 	context->body = wget_buffer_alloc(102400);
 	context->length = 0;
 	context->head = downloader->job->head_first;
+	context->dest = config.output_document ? config.output_document : downloader->job->local_filename;
 
 	// set callback functions
 	wget_http_request_set_header_cb(req, _get_header, context);
