@@ -1846,6 +1846,8 @@ void
 	wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
 	wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+void
+	wget_bar_update(const wget_bar_t *bar, int slotpos) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 
 
 WGET_END_DECLS

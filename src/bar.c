@@ -44,12 +44,24 @@
 #include "bar.h"
 #include "utils.h"
 
+
+// Rate at which progress thread it updated. This is the amount of time (in us)
+// for which the thread will sleep before waking up and redrawing the progress
+enum { _BAR_THREAD_SLEEP_DURATION = 125000 };
+
+//Forward declaration for progress bar thread
+static void *wget_bar_update_thread(void *p) G_GNUC_WGET_FLATTEN;
+
 static wget_bar_t
 	*bar;
 static wget_thread_mutex_t
 	mutex = WGET_THREAD_MUTEX_INITIALIZER;
-
-static int screen_width;
+static wget_thread_t
+	progress_thread;
+static volatile bool
+	terminate;
+static int
+	screen_width;
 
 void bar_init(void)
 {
@@ -68,6 +80,10 @@ void bar_init(void)
 
 	bar = wget_bar_init(NULL, config.num_threads + 1, screen_width - 1);
 
+	terminate = false;
+	wget_thread_start(&progress_thread, wget_bar_update_thread, bar, 0);
+
+
 /*
 	// set debug logging
 	wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), config.debug ? _write_debug : NULL);
@@ -82,6 +98,9 @@ void bar_init(void)
 
 void bar_deinit(void)
 {
+	wget_bar_deinit(bar);
+	terminate = true;
+	wget_thread_join(progress_thread);
 	wget_bar_free(&bar);
 }
 
@@ -122,4 +141,17 @@ void bar_deregister(wget_bar_ctx *bar_ctx)
 	wget_thread_mutex_lock(&mutex);
 	wget_bar_deregister(bar, bar_ctx);
 	wget_thread_mutex_unlock(&mutex);
+}
+
+static void *wget_bar_update_thread(void *p)
+{
+	wget_bar_t *bar = (wget_bar_t *) p;
+
+	while (!terminate) {
+		for (int i = 0; i < config.num_threads; i++) {
+			wget_bar_update(bar, i);
+		}
+		usleep(_BAR_THREAD_SLEEP_DURATION);
+	}
+	return NULL;
 }
