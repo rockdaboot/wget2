@@ -172,16 +172,19 @@ cleanup:
 void wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx)
 {
 	ctx->final = 0;
+	wget_thread_cond_init(&ctx->cond);
 	bar->slots[ctx->slotpos].ctx = ctx;
 	/* printf("Context registered for slotpos: %ld %p %p %p\n\n\n\n", ctx->slotpos, bar, &bar->slots[ctx->slotpos], bar->slots[ctx->slotpos].ctx); */
 }
 
 void wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx)
 {
+	wget_thread_mutex_lock(&ctx->mutex);
 	bar->slots[ctx->slotpos].ctx->final = 1;
 	while(bar->slots[ctx->slotpos].ctx->final != 2)
-		usleep(20000);
+		wget_thread_cond_wait(&ctx->cond, &ctx->mutex, 0);
 	bar->slots[ctx->slotpos].ctx = NULL;
+	wget_thread_mutex_unlock(&ctx->mutex);
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
@@ -252,8 +255,12 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 			fflush(stdout);
 		}
 
-		if (ctx->final == 1)
+		wget_thread_mutex_lock(&ctx->mutex);
+		if (ctx->final == 1) {
 			ctx->final = 2;
+			wget_thread_cond_signal(&ctx->cond);
+		}
+		wget_thread_mutex_unlock(&ctx->mutex);
 	}
 }
 
@@ -277,7 +284,6 @@ void wget_bar_deinit(wget_bar_t *bar)
 void wget_bar_free(wget_bar_t **bar)
 {
 	if (bar) {
-		/* wget_bar_deinit(*bar); */
 		free(*bar);
 	}
 }
