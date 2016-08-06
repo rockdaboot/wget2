@@ -1059,7 +1059,8 @@ int main(int argc, const char **argv)
 		blacklist_free();
 		hosts_free();
 		xfree(downloaders);
-		bar_deinit();
+		if (config.progress)
+			bar_deinit();
 		wget_vector_clear_nofree(parents);
 		wget_vector_free(&parents);
 		wget_hashmap_free(&known_urls);
