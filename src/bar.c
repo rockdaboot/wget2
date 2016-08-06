@@ -45,9 +45,9 @@
 #include "utils.h"
 
 
-// Rate at which progress thread it updated. This is the amount of time (in us)
+// Rate at which progress thread it updated. This is the amount of time (in ms)
 // for which the thread will sleep before waking up and redrawing the progress
-enum { _BAR_THREAD_SLEEP_DURATION = 125000 };
+enum { _BAR_THREAD_SLEEP_DURATION = 125 };
 
 //Forward declaration for progress bar thread
 static void *wget_bar_update_thread(void *p) G_GNUC_WGET_FLATTEN;
@@ -151,7 +151,7 @@ static void *wget_bar_update_thread(void *p)
 		for (int i = 0; i < config.num_threads; i++) {
 			wget_bar_update(bar, i);
 		}
-		usleep(_BAR_THREAD_SLEEP_DURATION);
+		wget_millisleep(_BAR_THREAD_SLEEP_DURATION);
 	}
 	return NULL;
 }
