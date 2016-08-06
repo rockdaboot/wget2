@@ -741,6 +741,8 @@ void
 int
 	wget_thread_kill(wget_thread_t thread, int sig) LIBWGET_EXPORT;
 int
+	wget_thread_cancel(wget_thread_t thread) LIBWGET_EXPORT;
+int
 	wget_thread_join(wget_thread_t thread) LIBWGET_EXPORT;
 int
 	wget_thread_cond_init(wget_thread_cond_t *cond) LIBWGET_EXPORT;
