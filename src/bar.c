@@ -33,6 +33,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <time.h>
 #include <errno.h>
 #include <sys/time.h>
@@ -58,7 +59,7 @@ static wget_thread_mutex_t
 	mutex = WGET_THREAD_MUTEX_INITIALIZER;
 static wget_thread_t
 	progress_thread;
-static volatile bool
+static volatile sig_atomic_t
 	terminate;
 static int
 	screen_width;
