@@ -69,6 +69,11 @@ void wget_thread_mutex_unlock(wget_thread_mutex_t *mutex)
 	pthread_mutex_unlock(mutex);
 }
 
+int wget_thread_cancel(wget_thread_t thread)
+{
+	return pthread_cancel(thread);
+}
+
 int wget_thread_kill(wget_thread_t thread, int sig)
 {
 	return pthread_kill(thread, sig);

@@ -59,8 +59,6 @@ static wget_thread_mutex_t
 	mutex = WGET_THREAD_MUTEX_INITIALIZER;
 static wget_thread_t
 	progress_thread;
-static volatile sig_atomic_t
-	terminate;
 static int
 	screen_width;
 
@@ -81,7 +79,6 @@ void bar_init(void)
 
 	bar = wget_bar_init(NULL, config.num_threads + 1, screen_width - 1);
 
-	terminate = false;
 	wget_thread_start(&progress_thread, wget_bar_update_thread, bar, 0);
 
 
@@ -100,7 +97,7 @@ void bar_init(void)
 void bar_deinit(void)
 {
 	wget_bar_deinit(bar);
-	terminate = true;
+	wget_thread_cancel(progress_thread);
 	wget_thread_join(progress_thread);
 	wget_bar_free(&bar);
 }
@@ -148,7 +145,8 @@ static void *wget_bar_update_thread(void *p)
 {
 	wget_bar_t *bar = (wget_bar_t *) p;
 
-	while (!terminate) {
+	/* while (!terminate) { */
+	while (true) {
 		for (int i = 0; i < config.num_threads; i++) {
 			wget_bar_update(bar, i);
 		}
