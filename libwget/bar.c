@@ -75,6 +75,9 @@ struct _wget_bar_st {
 		allocated : 1;
 };
 
+// Forward declarations for static methods
+static inline G_GNUC_WGET_ALWAYS_INLINE void
+	_wget_bar_return_cursor_position(void);
 
 // We use enums to define the progress bar paramters because they are the
 // closest thing we have to defining true constants in C without using
@@ -188,7 +191,7 @@ void wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx)
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
-_wget_bar_return_cursor_position() {
+_wget_bar_return_cursor_position(void) {
 	printf("\033[u");
 }
 
