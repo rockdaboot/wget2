@@ -1710,7 +1710,7 @@ wget_digest_algorithm_t
 int
 	wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest) LIBWGET_EXPORT;
 int
-	wget_hash_get_len(wget_digest_algorithm_t algorithm) LIBWGET_EXPORT;
+	wget_hash_get_len(wget_digest_algorithm_t algorithm) G_GNUC_WGET_CONST LIBWGET_EXPORT;
 int
 	wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm) LIBWGET_EXPORT;
 int
