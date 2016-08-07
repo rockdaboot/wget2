@@ -146,7 +146,7 @@ static _GL_INLINE void G_GNUC_WGET_NONNULL((1,3)) hashmap_new_entry(wget_hashmap
 	ENTRY *entry;
 	int pos = hash % h->max;
 
-	entry = malloc(sizeof(ENTRY));
+	entry = xmalloc(sizeof(ENTRY));
 	entry->key = (void *)key;
 	entry->value = (void *)value;
 	entry->hash = hash;
