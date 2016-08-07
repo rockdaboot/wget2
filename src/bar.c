@@ -142,11 +142,11 @@ void bar_deregister(wget_bar_ctx *bar_ctx)
 
 static void *wget_bar_update_thread(void *p)
 {
-	wget_bar_t *bar = (wget_bar_t *) p;
+	wget_bar_t *prog_bar = (wget_bar_t *) p;
 
 	while (true) {
 		for (int i = 0; i < config.num_threads; i++) {
-			wget_bar_update(bar, i);
+			wget_bar_update(prog_bar, i);
 		}
 		wget_millisleep(_BAR_THREAD_SLEEP_DURATION);
 	}
