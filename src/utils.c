@@ -39,19 +39,15 @@
 int
 determine_screen_width (void)
 {
+#ifdef HAVE_IOCTL
   /* If there's a way to get the terminal size using POSIX
      tcgetattr(), somebody please tell me.  */
-  int fd;
   struct winsize wsz;
+  int fd = fileno (stderr);
 
-  fd = fileno (stderr);
-
-#ifdef HAVE_IOCTL
-  if (ioctl (fd, TIOCGWINSZ, &wsz) < 0)
-    return 0;                   /* most likely ENOTTY */
-#else
-  return 0;
+  if (ioctl (fd, TIOCGWINSZ, &wsz) >= 0)
+         return wsz.ws_col;
 #endif
 
-  return wsz.ws_col;
+        return 0;
 }
