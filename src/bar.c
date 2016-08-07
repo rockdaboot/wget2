@@ -51,7 +51,7 @@
 enum { _BAR_THREAD_SLEEP_DURATION = 125 };
 
 //Forward declaration for progress bar thread
-static void *wget_bar_update_thread(void *p) G_GNUC_WGET_FLATTEN;
+static void *_bar_update_thread(void *p) G_GNUC_WGET_FLATTEN;
 
 static wget_bar_t
 	*bar;
@@ -79,7 +79,7 @@ void bar_init(void)
 
 	bar = wget_bar_init(NULL, config.num_threads + 1, screen_width - 1);
 
-	wget_thread_start(&progress_thread, wget_bar_update_thread, bar, 0);
+	wget_thread_start(&progress_thread, _bar_update_thread, bar, 0);
 
 
 /*
@@ -141,7 +141,7 @@ void bar_deregister(wget_bar_ctx *bar_ctx)
 	wget_thread_mutex_unlock(&mutex);
 }
 
-static void *wget_bar_update_thread(void *p)
+static void *_bar_update_thread(void *p)
 {
 	wget_bar_t *prog_bar = (wget_bar_t *) p;
 
