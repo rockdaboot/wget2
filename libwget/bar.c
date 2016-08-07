@@ -275,9 +275,9 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 void wget_bar_deinit(wget_bar_t *bar)
 {
 	if (bar) {
-		free(bar->spaces);
-		free(bar->filled);
-		free(bar->slots);
+		xfree(bar->spaces);
+		xfree(bar->filled);
+		xfree(bar->slots);
 	}
 }
 
@@ -287,7 +287,7 @@ void wget_bar_deinit(wget_bar_t *bar)
 void wget_bar_free(wget_bar_t **bar)
 {
 	if (bar) {
-		free(*bar);
+		xfree(*bar);
 	}
 }
 
