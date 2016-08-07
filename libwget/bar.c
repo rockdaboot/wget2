@@ -75,7 +75,7 @@ struct _wget_bar_st {
 
 // Forward declarations for static methods
 static inline G_GNUC_WGET_ALWAYS_INLINE void
-	_wget_bar_return_cursor_position(void);
+	_return_cursor_position(void);
 
 // We use enums to define the progress bar paramters because they are the
 // closest thing we have to defining true constants in C without using
@@ -187,7 +187,7 @@ void wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx)
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
-_wget_bar_return_cursor_position(void) {
+_return_cursor_position(void) {
 	printf("\033[u");
 }
 
@@ -250,7 +250,7 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 					bar->max_width - cols, bar->spaces,
 					_BAR_DOWNBYTES_SIZE, wget_human_readable(cur, 1000, 2));
 
-			_wget_bar_return_cursor_position();
+			_return_cursor_position();
 			fflush(stdout);
 		}
 
@@ -291,7 +291,7 @@ void wget_bar_print(wget_bar_t *bar, int slotpos, const char *s)
 {
 	_wget_bar_print_slot(bar, slotpos);
 	printf("\033[27G[%-*.*s]", bar->max_width, bar->max_width, s);
-	_wget_bar_return_cursor_position();
+	_return_cursor_position();
 	fflush(stdout);
 }
 
