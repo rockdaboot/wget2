@@ -86,19 +86,19 @@ static inline G_GNUC_WGET_ALWAYS_INLINE void
 
 // Define the parameters for how the progress bar looks
 enum {
-	_BAR_FILENAME_SIZE	= 20,
-	_BAR_RATIO_SIZE		=  3,
-	_BAR_METER_COST		=  2,
-	_BAR_DOWNBYTES_SIZE	=  8,
+	_BAR_FILENAME_SIZE  = 20,
+	_BAR_RATIO_SIZE     =  3,
+	_BAR_METER_COST     =  2,
+	_BAR_DOWNBYTES_SIZE =  8,
 };
 
 // Define the cost (in number of columns) of the progress bar decorations. This
 // includes all the elements that are not the progress indicator itself.
 enum {
-	_BAR_DECOR_COST		= _BAR_FILENAME_SIZE	+ 1 + \
-						  _BAR_RATIO_SIZE		+ 2 + \
-						  _BAR_METER_COST		+ 1 + \
-						  _BAR_DOWNBYTES_SIZE
+	_BAR_DECOR_COST = _BAR_FILENAME_SIZE    + 1 + \
+					  _BAR_RATIO_SIZE       + 2 + \
+					  _BAR_METER_COST       + 1 + \
+					  _BAR_DOWNBYTES_SIZE
 };
 
 /**
