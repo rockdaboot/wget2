@@ -71,8 +71,6 @@ struct _wget_bar_st {
 	int
 		nslots,
 		max_width;
-	unsigned char
-		allocated : 1;
 };
 
 // Forward declarations for static methods
@@ -163,11 +161,9 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 	return bar;
 
 cleanup:
-	free(bar->spaces);
-	free(bar->filled);
-	free(bar->slots);
+	wget_bar_deinit(bar);
 	if (allocated)
-		free(bar);
+		wget_bar_free(&bar);
 
 	return NULL;
 }
