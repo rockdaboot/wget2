@@ -96,7 +96,6 @@ void bar_init(void)
 
 void bar_deinit(void)
 {
-	wget_bar_deinit(bar);
 	wget_thread_cancel(progress_thread);
 	wget_thread_join(progress_thread);
 	wget_bar_free(&bar);
@@ -146,7 +145,7 @@ static void *_bar_update_thread(void *p)
 	wget_bar_t *prog_bar = (wget_bar_t *) p;
 
 	/* while (!terminate) { */
-	while (true) {
+	for (;;) {
 		for (int i = 0; i < config.num_threads; i++) {
 			wget_bar_update(prog_bar, i);
 		}
