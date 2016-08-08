@@ -93,10 +93,11 @@ enum {
 // Define the cost (in number of columns) of the progress bar decorations. This
 // includes all the elements that are not the progress indicator itself.
 enum {
-	_BAR_DECOR_COST = _BAR_FILENAME_SIZE    + 1 + \
-					  _BAR_RATIO_SIZE       + 2 + \
-					  _BAR_METER_COST       + 1 + \
-					  _BAR_DOWNBYTES_SIZE
+	_BAR_DECOR_COST =
+		_BAR_FILENAME_SIZE  + 1 + \
+		_BAR_RATIO_SIZE     + 2 + \
+		_BAR_METER_COST     + 1 + \
+		_BAR_DOWNBYTES_SIZE
 };
 
 /**
@@ -118,7 +119,7 @@ enum {
  */
 wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 {
-	int allocated = 0, it;
+	int allocated = 0;
 
 	// While the API defines max_width to be the total size of the progress
 	// bar, the code assume sit to be the size of the [===> ] actual bar
@@ -155,15 +156,16 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 		bar->max_width = max_width;
 	}
 
-	for (it = 0; it < nslots; it++)
+	for (int it = 0; it < nslots; it++)
 		bar->slots[it].first = 1;
 
 	return bar;
 
 cleanup:
-	wget_bar_deinit(bar);
 	if (allocated)
 		wget_bar_free(&bar);
+	else
+		wget_bar_deinit(bar);
 
 	return NULL;
 }
@@ -283,6 +285,7 @@ void wget_bar_deinit(wget_bar_t *bar)
 void wget_bar_free(wget_bar_t **bar)
 {
 	if (bar) {
+		wget_bar_deinit(*bar);
 		xfree(*bar);
 	}
 }
