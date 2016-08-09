@@ -76,6 +76,10 @@ struct _wget_bar_st {
 // Forward declarations for static methods
 static inline G_GNUC_WGET_ALWAYS_INLINE void
 	_return_cursor_position(void);
+static inline G_GNUC_WGET_ALWAYS_INLINE void
+	_bar_print_slot(const wget_bar_t *bar, int slotpos);
+static inline G_GNUC_WGET_ALWAYS_INLINE void
+	_bar_print_final(wget_bar_t *bar, wget_bar_ctx *ctx);
 
 // We use enums to define the progress bar paramters because they are the
 // closest thing we have to defining true constants in C without using
@@ -99,6 +103,9 @@ enum {
 		_BAR_METER_COST     + 1 + \
 		_BAR_DOWNBYTES_SIZE
 };
+
+static wget_thread_mutex_t
+	stdout_mutex;
 
 /**
  * \param[in] bar Pointer to a \p wget_bar_t object
@@ -159,6 +166,8 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 	for (int it = 0; it < nslots; it++)
 		bar->slots[it].first = 1;
 
+	wget_thread_mutex_init(&stdout_mutex);
+
 	return bar;
 
 cleanup:
@@ -172,8 +181,6 @@ cleanup:
 
 void wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx)
 {
-	ctx->final = 0;
-	wget_thread_cond_init(&ctx->cond);
 	bar->slots[ctx->slotpos].ctx = ctx;
 	/* printf("Context registered for slotpos: %ld %p %p %p\n\n\n\n", ctx->slotpos, bar, &bar->slots[ctx->slotpos], bar->slots[ctx->slotpos].ctx); */
 }
@@ -181,9 +188,7 @@ void wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx)
 void wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx)
 {
 	wget_thread_mutex_lock(&ctx->mutex);
-	bar->slots[ctx->slotpos].ctx->final = 1;
-	while(bar->slots[ctx->slotpos].ctx->final != 2)
-		wget_thread_cond_wait(&ctx->cond, &ctx->mutex, 0);
+	_bar_print_final(bar, ctx);
 	bar->slots[ctx->slotpos].ctx = NULL;
 	wget_thread_mutex_unlock(&ctx->mutex);
 }
@@ -194,7 +199,7 @@ _return_cursor_position(void) {
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
-_wget_bar_print_slot(const wget_bar_t *bar, int slotpos) {
+_bar_print_slot(const wget_bar_t *bar, int slotpos) {
 	printf("\033[s\033[%dA\033[1G", bar->nslots - slotpos);
 }
 
@@ -215,7 +220,6 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 		wget_thread_mutex_lock(&ctx->mutex);
 		max = ctx->expected_size;
 		cur = ctx->raw_downloaded;
-		wget_thread_mutex_unlock(&ctx->mutex);
 
 		ratio = max ? cur / (double) max : 0;
 		cols = bar->max_width * ratio;
@@ -233,7 +237,8 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 			if (cols <= 0)
 				cols = 1;
 
-			_wget_bar_print_slot(bar, slotpos);
+			wget_thread_mutex_lock(&stdout_mutex);
+			_bar_print_slot(bar, slotpos);
 
 			// The progress bar looks like this:
 			//
@@ -246,7 +251,8 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 			// xxx.xxK		_BAR_DOWNBYTES_SIZE		Number of downloaded bytes
 			// ===>			Remaining				Progress Meter
 
-			printf("%-*.*s %*d%% [%.*s>%.*s] %*s", _BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, ctx->filename,
+			printf("%-*.*s %*d%% [%.*s>%.*s] %*s",
+					_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, ctx->filename,
 					_BAR_RATIO_SIZE, (int) (ratio * 100),
 					cols - 1, bar->filled,
 					bar->max_width - cols, bar->spaces,
@@ -254,15 +260,26 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 
 			_return_cursor_position();
 			fflush(stdout);
-		}
-
-		wget_thread_mutex_lock(&ctx->mutex);
-		if (ctx->final == 1) {
-			ctx->final = 2;
-			wget_thread_cond_signal(&ctx->cond);
+			wget_thread_mutex_unlock(&stdout_mutex);
 		}
 		wget_thread_mutex_unlock(&ctx->mutex);
 	}
+}
+
+static void _bar_print_final(wget_bar_t *bar, wget_bar_ctx *ctx) {
+	int slotpos = ctx->slotpos;
+
+	wget_thread_mutex_lock(&stdout_mutex);
+	_bar_print_slot(bar, slotpos);
+	printf("%-*.*s 100%% [%.*s>%.*s] %*s",
+			_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, ctx->filename,
+			bar->max_width - 1, bar->filled,
+			0, bar->spaces,
+			_BAR_DOWNBYTES_SIZE, wget_human_readable(ctx->raw_downloaded, 1000, 2));
+
+	_return_cursor_position();
+	fflush(stdout);
+	wget_thread_mutex_unlock(&stdout_mutex);
 }
 
 /**
@@ -292,10 +309,12 @@ void wget_bar_free(wget_bar_t **bar)
 
 void wget_bar_print(wget_bar_t *bar, int slotpos, const char *s)
 {
-	_wget_bar_print_slot(bar, slotpos);
+	wget_thread_mutex_lock(&stdout_mutex);
+	_bar_print_slot(bar, slotpos);
 	printf("\033[27G[%-*.*s]", bar->max_width, bar->max_width, s);
 	_return_cursor_position();
 	fflush(stdout);
+	wget_thread_mutex_unlock(&stdout_mutex);
 }
 
 ssize_t wget_bar_vprintf(wget_bar_t *bar, size_t slotpos, const char *fmt, va_list args)
