@@ -907,6 +907,86 @@ static void test_cookies(void)
 			1, 1, 0, 0, 0, 0,
 			0, 0
 		},
+
+		// Examples from draft-ietf-httpbis-cookie-prefixes-00
+		{	// Rejected due to missing 'secure' flag
+			"http://example.com",
+			"__Secure-SID=12345; Domain=example.com",
+			"__Secure-SID", "12345", "example.com", NULL, NULL,
+			0, 0, 0, 0, 0, 0,
+			-1, 0
+		},
+		{	// Rejected due to missing 'secure' flag
+			"https://example.com",
+			"__Secure-SID=12345; Domain=example.com",
+			"__Secure-SID", "12345", "example.com", NULL, NULL,
+			0, 0, 0, 0, 0, 0,
+			-1, 0
+		},
+		{	// Rejected due to set from a insecure origin
+			"http://example.com",
+			"__Secure-SID=12345; Secure; Domain=example.com",
+			"__Secure-SID", "12345", "example.com", NULL, NULL,
+			0, 0, 0, 0, 1, 0,
+			-1, 0
+		},
+		{	// Accepted
+			"https://example.com",
+			"__Secure-SID=12345; Secure; Domain=example.com",
+			"__Secure-SID", "12345", "example.com", "/", NULL,
+			0, 1, 0, 0, 1, 0,
+			0, 0
+		},
+		{	// Rejected (missing 'secure', path not /)
+			"https://example.com",
+			"__Host-SID=12345",
+			"__Host-SID", "12345", NULL, NULL, NULL,
+			0, 0, 0, 0, 0, 0,
+			-1, -1
+		},
+		{	// Rejected (path not /)
+			"https://example.com",
+			"__Host-SID=12345; Secure",
+			"__Host-SID", "12345", NULL, NULL, NULL,
+			0, 0, 0, 0, 1, 0,
+			-1, -1
+		},
+		{	// Rejected (missing secure, domain given, path not /)
+			"https://example.com",
+			"__Host-SID=12345; Domain=example.com",
+			"__Host-SID", "12345", "example.com", NULL, NULL,
+			0, 0, 0, 0, 0, 0,
+			-1, 0
+		},
+		{	// Rejected (missing secure, domain given)
+			"https://example.com",
+			"__Host-SID=12345; Domain=example.com; Path=/",
+			"__Host-SID", "12345", "example.com", "/", NULL,
+			0, 0, 0, 0, 0, 0,
+			-1, 0
+		},
+		{	// Rejected (domain given)
+			"https://example.com",
+			"__Host-SID=12345; Secure; Domain=example.com; Path=/",
+			"__Host-SID", "12345", "example.com", "/", NULL,
+			0, 0, 0, 0, 1, 0,
+			-1, 0
+		},
+		{	// Rejected (insecure origin)
+			"http://example.com",
+			"__Host-SID=12345; Secure; Path=/",
+			"__Host-SID", "12345", NULL, "/", NULL,
+			0, 0, 0, 0, 1, 0,
+			-1, -1
+		},
+		{	// Accepted
+			"https://example.com",
+			"__Host-SID=12345; Secure; Path=/",
+			"__Host-SID", "12345", NULL, "/", NULL,
+			0, 0, 0, 0, 1, 0,
+			-1, -1
+		},
+
 	};
 	wget_cookie_t cookie;
 	wget_cookie_db_t *cookies;
@@ -949,8 +1029,8 @@ static void test_cookies(void)
 
 		if (strcmp(cookie.name, t->name) ||
 			strcmp(cookie.value, t->value) ||
-			strcmp(cookie.domain, t->domain) ||
-			strcmp(cookie.path, t->path) ||
+			wget_strcmp(cookie.domain, t->domain) ||
+			wget_strcmp(cookie.path, t->path) ||
 			cookie.domain_dot != t->domain_dot ||
 			cookie.normalized != t->normalized ||
 			cookie.persistent != t->persistent ||
@@ -965,9 +1045,9 @@ static void test_cookies(void)
 				info_printf("  name %s (expected %s)\n", cookie.name, t->name);
 			if (strcmp(cookie.value, t->value))
 				info_printf("  value %s (expected %s)\n", cookie.value, t->value);
-			if (strcmp(cookie.domain, t->domain))
+			if (wget_strcmp(cookie.domain, t->domain))
 				info_printf("  domain %s (expected %s)\n", cookie.domain, t->domain);
-			if (strcmp(cookie.path, t->path))
+			if (wget_strcmp(cookie.path, t->path))
 				info_printf("  path %s (expected %s)\n", cookie.path, t->path);
 			if (cookie.domain_dot != t->domain_dot)
 				info_printf("  domain_dot %d (expected %d)\n", cookie.domain_dot, t->domain_dot);

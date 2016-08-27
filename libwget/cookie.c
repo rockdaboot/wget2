@@ -241,6 +241,29 @@ static int _wget_cookie_normalize_cookie(const wget_iri_t *iri, wget_cookie_t *c
 
 	if (iri) {
 		// cookies comes from a HTTP header and needs checking
+
+		// check prefixes as proposed in https://tools.ietf.org/html/draft-ietf-httpbis-cookie-prefixes-00
+		if (!wget_strncmp(cookie->name, "__Secure-", 9)) {
+			if (!cookie->secure_only || iri->scheme != WGET_IRI_SCHEME_HTTPS) {
+				debug_printf("Cookie prefix requires secure origin: %s %s\n", cookie->name, iri->host);
+				return -1; // ignore cookie
+			}
+		}
+		else if (!wget_strncmp(cookie->name, "__Host-", 7)) {
+			if (!cookie->secure_only || iri->scheme != WGET_IRI_SCHEME_HTTPS) {
+				debug_printf("Cookie prefix requires secure origin: %s %s\n", cookie->name, iri->host);
+				return -1; // ignore cookie
+			}
+			if (!cookie->host_only) {
+				debug_printf("Cookie prefix requires hostonly flag: %s %s\n", cookie->name, iri->host);
+				return -1; // ignore cookie
+			}
+			if (wget_strcmp(cookie->path, "/")) {
+				debug_printf("Cookie prefix requires path \"/\": %s %s\n", cookie->name, iri->host);
+				return -1; // ignore cookie
+			}
+		}
+
 		if (!cookie->domain)
 			cookie->domain = strdup("");
 
