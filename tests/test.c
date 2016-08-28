@@ -826,6 +826,11 @@ static void test_parser(void)
 
 static void test_cookies(void)
 {
+#ifdef WITH_LIBPSL
+	#define _PSL_RESULT_FAIL -1
+#else
+	#define _PSL_RESULT_FAIL 0
+#endif
 	static const struct test_data {
 		const char
 			*uri,
@@ -884,22 +889,22 @@ static void test_cookies(void)
 			1, 0, 1, 0, 0, 0,
 			-1, 0
 		},
-#ifdef WITH_LIBPSL
+//#ifdef WITH_LIBPSL
 		{	// supercookie, accepted by normalization (rule 'com') but not by wget_cookie_check_psl())
 			"www.example.com",
 			"ID=65=abcd; expires=Mon, 29-Feb-2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
 			"ID", "65=abcd", "com", "/", "Mon, 29 Feb 2016 07:48:54 GMT",
 			1, 1, 1, 0, 1, 1,
-			0, -1
+			0, _PSL_RESULT_FAIL
 		},
 		{	// supercookie, accepted by normalization  (rule 'sa.gov.au') but not by wget_cookie_check_psl())
 			"www.sa.gov.au",
 			"ID=65=abcd; expires=Tue, 29-Feb-2000 07:48:55 GMT; path=/; domain=.sa.gov.au",
 			"ID", "65=abcd", "sa.gov.au", "/", "Tue, 29 Feb 2000 07:48:55 GMT",
 			1, 1, 1, 0, 0, 0,
-			0, -1
+			0, _PSL_RESULT_FAIL
 		},
-#endif
+//#endif
 		{	// exception rule '!educ.ar', accepted by normalization
 			"www.educ.ar",
 			"ID=65=abcd; path=/; domain=.educ.ar",
@@ -942,14 +947,14 @@ static void test_cookies(void)
 			"__Host-SID=12345",
 			"__Host-SID", "12345", NULL, NULL, NULL,
 			0, 0, 0, 0, 0, 0,
-			-1, -1
+			-1, _PSL_RESULT_FAIL
 		},
 		{	// Rejected (path not /)
 			"https://example.com",
 			"__Host-SID=12345; Secure",
 			"__Host-SID", "12345", NULL, NULL, NULL,
 			0, 0, 0, 0, 1, 0,
-			-1, -1
+			-1, _PSL_RESULT_FAIL
 		},
 		{	// Rejected (missing secure, domain given, path not /)
 			"https://example.com",
@@ -977,14 +982,14 @@ static void test_cookies(void)
 			"__Host-SID=12345; Secure; Path=/",
 			"__Host-SID", "12345", NULL, "/", NULL,
 			0, 0, 0, 0, 1, 0,
-			-1, -1
+			-1, _PSL_RESULT_FAIL
 		},
 		{	// Accepted
 			"https://example.com",
 			"__Host-SID=12345; Secure; Path=/",
 			"__Host-SID", "12345", NULL, "/", NULL,
 			0, 0, 0, 0, 1, 0,
-			-1, -1
+			-1, _PSL_RESULT_FAIL
 		},
 
 	};
