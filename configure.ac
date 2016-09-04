@@ -180,6 +180,7 @@ if test "$gl_gcc_warnings" = yes; then
     gl_WARN_ADD([$w])
   done
   gl_WARN_ADD([-fdiagnostics-show-option])
+  gl_WARN_ADD([-fdiagnostics-color=always])
   gl_WARN_ADD([-Wno-missing-field-initializers]) # Rely on missing field = 0.
   AC_SUBST([WARN_CFLAGS])
 
