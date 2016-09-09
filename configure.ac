@@ -13,6 +13,7 @@ AM_INIT_AUTOMAKE([subdir-objects parallel-tests gnu])
 
 CFLAGS=$CFLAGS
 AC_USE_SYSTEM_EXTENSIONS
+AC_GNU_SOURCE
 
 AC_CANONICAL_HOST
 case $host_os in
