@@ -58,7 +58,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 	iri = wget_iri_parse("http://www.websequencediagrams.com", NULL);
 	req = wget_http_create_request(iri, "POST");
 	wget_http_add_header(req, "Content-Type", "application/x-www-form-urlencoded");
-	wget_http_add_header_printf(req, "Content-Length", "%lu", body->length);
+	wget_http_add_header_printf(req, "Content-Length", "%zu", body->length);
 	wget_http_add_header(req, "Connection", "keepalive");
 
 	wget_http_request_set_body(req, "application/x-www-form-urlencoded", wget_memdup(body->data, body->length), body->length);

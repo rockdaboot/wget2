@@ -95,3 +95,5 @@ tests/test-restrict-ascii
 tests/test-wget-1
 tmp
 wget2-*
+/GNUmakefile
+/maint.mk
