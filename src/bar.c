@@ -40,7 +40,7 @@
 #include <libwget.h>
 
 #include "options.h"
-//#include "log.h"
+#include "log.h"
 #include "bar.h"
 #include "utils.h"
 
@@ -51,6 +51,8 @@ enum { _BAR_THREAD_SLEEP_DURATION = 125 };
 
 //Forward declaration for progress bar thread
 static void *_bar_update_thread(void *p) G_GNUC_WGET_FLATTEN;
+
+static void _error_write(const char *buf, size_t len);
 
 static wget_bar_t
 	*bar;
@@ -75,6 +77,9 @@ void bar_init(void)
 		screen_width = DEFAULT_SCREEN_WIDTH;
 	else if (screen_width < MINIMUM_SCREEN_WIDTH)
 		screen_width = MINIMUM_SCREEN_WIDTH;
+
+    // set custom write function for wget_error_printf()
+    wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), _error_write);
 
 	bar = wget_bar_init(NULL, config.num_threads + 1, screen_width - 1);
 
@@ -150,4 +155,16 @@ static void *_bar_update_thread(void *p)
 		wget_millisleep(_BAR_THREAD_SLEEP_DURATION);
 	}
 	return NULL;
+}
+
+static void _error_write(const char *buf, size_t len)
+{
+//  printf("\033[s\033[1S\033[%dA\033[1G\033[2K", config.num_threads + 2);
+    printf("\033[s\033[1S\033[%dA\033[1G\033[0J", config.num_threads + 2);
+	log_write_error(buf, len);
+    printf("\033[u");
+    fflush(stdout);
+    for (int i = 0; i < config.num_threads; i++) {
+        wget_bar_update(bar, i);
+    }
 }
