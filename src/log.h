@@ -32,4 +32,6 @@
 
 void log_init(void);
 
+void log_write_error(const char *data, size_t len);
+
 #endif /* _WGET_LOG_H */
