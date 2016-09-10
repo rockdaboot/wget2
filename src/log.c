@@ -117,6 +117,14 @@ static void _write_error(const char *data, size_t len)
 	_write_out(stderr, data, len, 0, "\033[31m"); // red text
 }
 
+void log_write_error(const char *data, size_t len)
+{
+	if (!data || (ssize_t)len <= 0)
+		return;
+
+	_write_out(stdout, data, len, 0, "\033[31m"); // red text
+}
+
 static void _write_info_stderr(const char *data, size_t len)
 {
 	if (!data || (ssize_t)len <= 0)
