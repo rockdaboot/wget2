@@ -267,15 +267,41 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 }
 
 static void _bar_print_final(wget_bar_t *bar, wget_bar_ctx *ctx) {
+
+	off_t
+		max,
+		cur;
+	double ratio;
+	int cols;
 	int slotpos = ctx->slotpos;
+	_bar_slot_t *slot = &bar->slots[slotpos];
+
+	max = ctx->expected_size;
+	cur = ctx->raw_downloaded;
+
+	ratio = max ? cur / (double) max : 0;
+	cols = bar->max_width * ratio;
+
+	slot->max = max;
+	slot->cols = cols;
+	slot->ratio = ratio;
+	slot->first = 0;
+
+	if (cols <= 0)
+		cols = 1;
+	else if (cols > bar->max_width)
+		cols = bar->max_width;
+
 
 	wget_thread_mutex_lock(&stdout_mutex);
 	_bar_print_slot(bar, slotpos);
-	printf("%-*.*s 100%% [%.*s>%.*s] %*s",
+
+	printf("%-*.*s %*d%% [%.*s>%.*s] %*s",
 			_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, ctx->filename,
-			bar->max_width - 1, bar->filled,
-			0, bar->spaces,
-			_BAR_DOWNBYTES_SIZE, wget_human_readable(ctx->raw_downloaded, 1000, 2));
+			_BAR_RATIO_SIZE, (int) (ratio * 100),
+			cols - 1, bar->filled,
+			bar->max_width - cols, bar->spaces,
+			_BAR_DOWNBYTES_SIZE, wget_human_readable(cur, 1000, 2));
 
 	_return_cursor_position();
 	fflush(stdout);
