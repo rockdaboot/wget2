@@ -1693,7 +1693,7 @@ void *downloader_thread(void *p)
 			wget_thread_mutex_lock(&main_mutex);
 
 			// download of single-part file complete, remove from job queue
-			if (job->inuse) {
+			if (job && job->inuse) {
 				host_remove_job(host, job);
 			}
 
