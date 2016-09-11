@@ -163,7 +163,7 @@ static void _error_write(const char *buf, size_t len)
 {
 //  printf("\033[s\033[1S\033[%dA\033[1G\033[2K", config.num_threads + 2);
     printf("\033[s\033[1S\033[%dA\033[1G\033[0J", config.num_threads + 2);
-	log_write_error(buf, len);
+	log_write_error_stdout(buf, len);
     printf("\033[u");
     fflush(stdout);
     for (int i = 0; i < config.num_threads; i++) {
