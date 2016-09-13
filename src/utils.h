@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2012 Tim Ruehsen
+ * Copyright(c) 2014 Tim Ruehsen
  * Copyright(c) 2015-2016 Free Software Foundation, Inc.
  *
  * This file is part of Wget.
@@ -18,20 +18,15 @@
  * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Header file for logging routines
+ * Some utlity methods for use within LibWget
  *
  * Changelog
- * 27.04.2012  Tim Ruehsen  created
- *
+ * 23/07/2016	Darshit Shah	created
  */
 
-#ifndef _WGET_LOG_H
-#define _WGET_LOG_H
+#ifndef _WGET_UTILS_H
+# define _WGET_UTILS_H
 
-#include <stdarg.h>
+int determine_screen_width (void);
 
-void log_init(void);
-
-void log_write_error_stdout(const char *data, size_t len);
-
-#endif /* _WGET_LOG_H */
+#endif /* _WGET_UTILS_H */
