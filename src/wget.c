@@ -1372,7 +1372,10 @@ static void process_response_part(wget_http_response_t *resp)
 	PART *part = job->part;
 
 	// just update number bytes read (body only) for display purposes
-	quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length);
+	if (resp->body)
+		quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length);
+	else if (config.save_headers)
+		quota_modify_read(resp->header->length);
 
 	if (resp->code != 200 && resp->code != 206) {
 		print_status(downloader, "part %d download error %d\n", part->id, resp->code);
