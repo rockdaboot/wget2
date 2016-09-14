@@ -647,7 +647,6 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		if (reason) {
 			wget_thread_mutex_unlock(&downloader_mutex);
 			info_printf(_("URL '%s' not followed (%s)\n"), iri->uri, reason);
-//			wget_iri_free(&iri);
 			return;
 		}
 	}
@@ -665,12 +664,16 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 				if (!strncmp(path->path, iri->path, path->len)) {
 					wget_thread_mutex_unlock(&downloader_mutex);
 					info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), iri->uri);
-//					wget_iri_free(&iri);
 					return;
 				}
 //				info_printf("checked robot path '%.*s'\n", path->path, path->len);
 			}
 		}
+	} else {
+		// this should really not ever happen
+		wget_thread_mutex_unlock(&downloader_mutex);
+		error_printf(_("Failed to get '%s' from hosts\n"), iri->host);
+		return;
 	}
 
 	new_job = job_init(&job_buf, iri);
