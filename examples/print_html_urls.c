@@ -76,6 +76,7 @@ static void html_parse_localfile(const char *fname)
 
 			if (wget_memiconv(encoding, data, len, "UTF-8", &utf8, &n) == 0) {
 				printf("Convert non-ASCII encoding '%s' to UTF-8\n", encoding);
+				wget_xfree(data);
 				data = utf8;
 			} else {
 				printf("Failed to convert non-ASCII encoding '%s' to UTF-8, skip parsing\n", encoding);
