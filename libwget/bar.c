@@ -128,29 +128,29 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 	max_width -= _BAR_DECOR_COST;
 
 	if (!bar) {
-		if (!(bar = calloc(1, sizeof(*bar))))
+		if (!(bar = xcalloc(1, sizeof(*bar))))
 			return NULL;
 		allocated = 1;
 	} else
 		memset(bar, 0, sizeof(*bar));
 
 	if (bar->nslots < nslots) {
-		free(bar->slots);
+		xfree(bar->slots);
 		bar->nslots = nslots;
-		if (!(bar->slots = calloc(nslots, sizeof(_bar_slot_t) * nslots)))
+		if (!(bar->slots = xcalloc(nslots, sizeof(_bar_slot_t) * nslots)))
 			goto cleanup;
 	} else {
 		memset(bar->slots, 0, sizeof(_bar_slot_t) * nslots);
 	}
 
 	if (bar->max_width < max_width) {
-		free(bar->filled);
-		if (!(bar->filled = malloc(max_width)))
+		xfree(bar->filled);
+		if (!(bar->filled = xmalloc(max_width)))
 			goto cleanup;
 		memset(bar->filled, '=', max_width);
 
-		free(bar->spaces);
-		if (!(bar->spaces = malloc(max_width)))
+		xfree(bar->spaces);
+		if (!(bar->spaces = xmalloc(max_width)))
 			goto cleanup;
 		memset(bar->spaces, ' ', max_width);
 
@@ -275,9 +275,9 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 void wget_bar_deinit(wget_bar_t *bar)
 {
 	if (bar) {
-		free(bar->spaces);
-		free(bar->filled);
-		free(bar->slots);
+		xfree(bar->spaces);
+		xfree(bar->filled);
+		xfree(bar->slots);
 	}
 }
 
@@ -287,7 +287,7 @@ void wget_bar_deinit(wget_bar_t *bar)
 void wget_bar_free(wget_bar_t **bar)
 {
 	if (bar) {
-		free(*bar);
+		xfree(*bar);
 	}
 }
 
