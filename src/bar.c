@@ -83,8 +83,13 @@ void bar_init(void)
 
 	bar = wget_bar_init(NULL, config.num_threads + 1, screen_width - 1);
 
-	wget_thread_start(&progress_thread, _bar_update_thread, bar, 0);
-
+	int rc = wget_thread_start(&progress_thread, _bar_update_thread, bar, 0);
+	if (rc != 0)
+	{
+		error_printf("Cannot create progress bar thread. Disabling progess bar");
+		wget_bar_free(&bar);
+		config.progress = 0;
+	}
 
 /*
 	// set debug logging
