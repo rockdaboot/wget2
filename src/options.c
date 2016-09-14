@@ -62,9 +62,9 @@
 #include "log.h"
 #include "options.h"
 
-typedef const struct option *option_t; // forward declaration
+typedef const struct optionw *option_t; // forward declaration
 
-struct option {
+struct optionw {
 	const char
 		*long_name;
 	void
@@ -636,7 +636,7 @@ struct config config = {
 
 static int parse_execute(option_t opt, const char *val);
 
-static const struct option options[] = {
+static const struct optionw options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
 	{ "accept", &config.accept_patterns, parse_stringlist, 1, 'A' },

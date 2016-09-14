@@ -36,6 +36,7 @@
 #include <time.h>
 #include <errno.h>
 #include <sys/time.h>
+#include "human.h"
 
 #include <libwget.h>
 #include "private.h"
@@ -60,6 +61,8 @@ typedef struct {
 		first : 1;
 	wget_bar_ctx
 		*ctx;
+	char *
+		human_size;
 } _bar_slot_t;
 
 struct _wget_bar_st {
@@ -163,8 +166,10 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 		bar->max_width = max_width;
 	}
 
-	for (int it = 0; it < nslots; it++)
+	for (int it = 0; it < nslots; it++) {
 		bar->slots[it].first = 1;
+		bar->slots[it].human_size = malloc(LONGEST_HUMAN_READABLE + 1);
+	}
 
 	wget_thread_mutex_init(&stdout_mutex);
 
@@ -211,6 +216,7 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 		cur;
 	double ratio;
 	int cols;
+	char *human_readable_bytes;
 
 	_bar_slot_t *slot = &bar->slots[slotpos];
 	// We only print a progress bar for the slot if a context has been
@@ -237,6 +243,8 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 			if (cols <= 0)
 				cols = 1;
 
+			human_readable_bytes = wget_human_readable(cur, slot->human_size);
+
 			wget_thread_mutex_lock(&stdout_mutex);
 			_bar_print_slot(bar, slotpos);
 
@@ -256,7 +264,7 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 					_BAR_RATIO_SIZE, (int) (ratio * 100),
 					cols - 1, bar->filled,
 					bar->max_width - cols, bar->spaces,
-					_BAR_DOWNBYTES_SIZE, wget_human_readable(cur, 1000, 2));
+					_BAR_DOWNBYTES_SIZE, human_readable_bytes);
 
 			_return_cursor_position();
 			fflush(stdout);
@@ -275,6 +283,7 @@ static void _bar_print_final(wget_bar_t *bar, wget_bar_ctx *ctx) {
 	int cols;
 	int slotpos = ctx->slotpos;
 	_bar_slot_t *slot = &bar->slots[slotpos];
+	char *human_readable_bytes;
 
 	max = ctx->expected_size;
 	cur = ctx->raw_downloaded;
@@ -292,6 +301,7 @@ static void _bar_print_final(wget_bar_t *bar, wget_bar_ctx *ctx) {
 	else if (cols > bar->max_width)
 		cols = bar->max_width;
 
+	human_readable_bytes = wget_human_readable(cur, slot->human_size);
 
 	wget_thread_mutex_lock(&stdout_mutex);
 	_bar_print_slot(bar, slotpos);
@@ -301,7 +311,7 @@ static void _bar_print_final(wget_bar_t *bar, wget_bar_ctx *ctx) {
 			_BAR_RATIO_SIZE, (int) (ratio * 100),
 			cols - 1, bar->filled,
 			bar->max_width - cols, bar->spaces,
-			_BAR_DOWNBYTES_SIZE, wget_human_readable(cur, 1000, 2));
+			_BAR_DOWNBYTES_SIZE, human_readable_bytes);
 
 	_return_cursor_position();
 	fflush(stdout);
@@ -316,6 +326,8 @@ static void _bar_print_final(wget_bar_t *bar, wget_bar_ctx *ctx) {
 void wget_bar_deinit(wget_bar_t *bar)
 {
 	if (bar) {
+		for (int i = 0; i < bar->nslots; i++)
+			xfree(bar->slots[i].human_size);
 		xfree(bar->spaces);
 		xfree(bar->filled);
 		xfree(bar->slots);
