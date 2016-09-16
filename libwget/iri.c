@@ -528,6 +528,8 @@ static size_t G_GNUC_WGET_NONNULL_ALL _normalize_path(char *path)
 			*p1++ = *p2++;
 
 		*p1 = 0;
+	} else {
+		p1 += strlen(p1);
 	}
 
 	debug_printf("     %s\n", path);
