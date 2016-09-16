@@ -34,9 +34,10 @@ int main(void)
 		{	.name = "/index.html",
 			.code = "200 Dontcare",
 			.body =
-				"<html><head><title>Main Page</title><base href=\"/subdir/\"></head><body><p>A link to a" \
+				"<html><head><title>Main Page</title><base href=\"/subdir1/\"></head><body><p>A link to a" \
 				" <A hreF=\"http://localhost:{{port}}/secondpage.html\">second page</a>." \
-				" <a  HreF=\"thirdpage.html?query&param#frag\">third page</a>." \
+				" <a  HreF=\"subpage1.html?query&param#frag\">page in subdir1</a>." \
+				" <a href=\"./subpage2.html\">page in subdir1</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -44,11 +45,31 @@ int main(void)
 		},
 		{	.name = "/secondpage.html",
 			.code = "200 Dontcare",
-			.body = "second"
+			.body =
+				"<html><head><title>Main Page</title><base href=\"/subdir2/\"></head><body><p>A link to a" \
+				" <A hreF=\"../secondpage.html\">second page</a>." \
+				" <a  HreF=\"subpage1.html?query&param#frag\">page in subdir2</a>." \
+				" <a href=\"./subpage2.html\">page in subdir2</a>." \
+				"</p></body></html>",
+			.headers = {
+				"Content-Type: text/html",
+			}
 		},
-		{	.name = "/subdir/thirdpage.html?query&param",
+		{	.name = "/subdir1/subpage1.html?query&param",
 			.code = "200 Dontcare",
-			.body = "third"
+			.body = "sub1_1"
+		},
+		{	.name = "/subdir2/subpage1.html?query&param",
+			.code = "200 Dontcare",
+			.body = "sub2_1"
+		},
+		{	.name = "/subdir1/subpage2.html",
+			.code = "200 Dontcare",
+			.body = "sub1_2"
+		},
+		{	.name = "/subdir2/subpage2.html",
+			.code = "200 Dontcare",
+			.body = "sub2_2"
 		},
 	};
 
@@ -66,6 +87,9 @@ int main(void)
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
 			{ urls[2].name + 1, urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
+			{ urls[4].name + 1, urls[4].body },
+			{ urls[5].name + 1, urls[5].body },
 			{	NULL } },
 		0);
 

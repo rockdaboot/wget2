@@ -1883,14 +1883,6 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 		WGET_HTML_PARSED_URL *html_url = wget_vector_get(parsed->uris, it);
 		wget_string_t *url = &html_url->url;
 
-		// Blacklist for URLs before they are processed
-		if (wget_hashmap_put_noalloc(known_urls, wget_strmemdup(url->p, url->len), NULL)) {
-			// error_printf(_("URL '%.*s' already known\n"), (int)url->len, url->p);
-			continue;
-		} else {
-			// error_printf(_("URL '%.*s' added\n"), (int)url->len, url->p);
-		}
-
 		// with --page-requisites: just load inline URLs from the deepest level documents
 		if (page_requisites && !wget_strcasecmp_ascii(html_url->attr, "href")) {
 			// don't load from dir 'A', 'AREA' and 'EMBED'
@@ -1906,8 +1898,11 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 				// info_printf("%.*s -> %s\n", (int)url->len, url->p, buf.data);
 				if (!base && !buf.length)
 					info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)url->len, url->p);
-				else
-					add_url(job, encoding, buf.data, 0);
+				else {
+					// Blacklist for URLs before they are processed
+					if (wget_hashmap_put_noalloc(known_urls, wget_memdup(buf.data, buf.length + 1), NULL) == 0)
+						add_url(job, encoding, buf.data, 0);
+				}
 			} else {
 				error_printf(_("Cannot resolve relative URI %.*s\n"), (int)url->len, url->p);
 			}
@@ -2816,7 +2811,6 @@ wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
 
 	resp->body = context->body;
 
-	info_printf(_("Closing %d\n"), context->outfd);
 	if (context->outfd != -1) {
 		if (config.fsync_policy) {
 			if (fsync(context->outfd) < 0 && errno == EIO) {
