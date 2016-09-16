@@ -608,6 +608,25 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		return;
 	}
 
+	if (config.recursive) {
+		// only download content from given hosts
+		const char *reason = NULL;
+
+		if (!iri->host) {
+			reason = _("missing ip/host/domain");
+		} else if (!config.span_hosts && config.domains && !in_host_pattern_list(config.domains, iri->host)) {
+			reason = _("no host-spanning requested");
+		} else if (config.span_hosts && config.exclude_domains && in_host_pattern_list(config.exclude_domains, iri->host)) {
+			reason = _("domain explicitely excluded");
+		}
+
+		if (reason) {
+			wget_thread_mutex_unlock(&downloader_mutex);
+			info_printf(_("URL '%s' not followed (%s)\n"), iri->uri, reason);
+			return;
+		}
+	}
+
 	if (config.recursive && !config.parent) {
 		// do not ascend above the parent directory
 		int ok = 0;
@@ -628,25 +647,6 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		if (!ok) {
 			wget_thread_mutex_unlock(&downloader_mutex);
 			info_printf(_("URL '%s' not followed (parent ascending not allowed)\n"), url);
-			return;
-		}
-	}
-
-	if (config.recursive) {
-		// only download content from given hosts
-		const char *reason = NULL;
-
-		if (!iri->host) {
-			reason = _("missing ip/host/domain");
-		} else if (!config.span_hosts && config.domains && !in_host_pattern_list(config.domains, iri->host)) {
-			reason = _("no host-spanning requested");
-		} else if (config.span_hosts && config.exclude_domains && in_host_pattern_list(config.exclude_domains, iri->host)) {
-			reason = _("domain explicitely excluded");
-		}
-
-		if (reason) {
-			wget_thread_mutex_unlock(&downloader_mutex);
-			info_printf(_("URL '%s' not followed (%s)\n"), iri->uri, reason);
 			return;
 		}
 	}
@@ -2517,6 +2517,7 @@ static int _get_header(wget_http_response_t *resp, void *context)
 		if (ctx->outfd == -1)
 			return -1;
 	}
+//	info_printf("Opened %d\n", ctx->outfd);
 
 	// initialize the expected max. number of bytes for bar display
 	if (config.progress)
@@ -2815,6 +2816,7 @@ wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
 
 	resp->body = context->body;
 
+	info_printf(_("Closing %d\n"), context->outfd);
 	if (context->outfd != -1) {
 		if (config.fsync_policy) {
 			if (fsync(context->outfd) < 0 && errno == EIO) {
