@@ -101,37 +101,67 @@ static void _write_out(FILE *default_fp, const char *data, size_t len, int with_
 	wget_buffer_deinit(&buf);
 }
 
-static void _write_debug(const char *data, size_t len)
+static void _write_debug(FILE *fp, const char *data, size_t len)
 {
 	if (!data || (ssize_t)len <= 0)
 		return;
 
-	_write_out(stderr, data, len, 1, "\033[35m"); // magenta/purple text
+	_write_out(fp, data, len, 1, "\033[35m"); // magenta/purple text
 }
 
-static void _write_error(const char *data, size_t len)
+static void _write_error(FILE *fp, const char *data, size_t len)
 {
 	if (!data || (ssize_t)len <= 0)
 		return;
 
-	_write_out(stderr, data, len, 0, "\033[31m"); // red text
+	_write_out(fp, data, len, 0, "\033[31m"); // red text
+}
+
+static void _write_info(FILE *fp, const char *data, size_t len)
+{
+	if (!data || (ssize_t)len <= 0)
+		return;
+
+	_write_out(fp, data, len, 0, NULL);
+
+}
+
+static void _write_debug_stderr(const char *data, size_t len)
+{
+	_write_debug(stderr, data, len);
+}
+
+static void G_GNUC_WGET_UNUSED _write_debug_stdout(const char *data, size_t len)
+{
+	_write_debug(stdout, data, len);
+}
+
+static void _write_error_stderr(const char *data, size_t len)
+{
+	_write_error(stderr, data, len);
+}
+
+static void _write_error_stdout(const char *data, size_t len)
+{
+	_write_error(stdout, data, len);
 }
 
 static void _write_info_stderr(const char *data, size_t len)
 {
-	if (!data || (ssize_t)len <= 0)
-		return;
-
-	_write_out(stderr, data, len, 0, NULL);
+	_write_info(stderr, data, len);
 }
 
 static void _write_info_stdout(const char *data, size_t len)
 {
-	if (!data || (ssize_t)len <= 0)
-		return;
-
-	_write_out(stdout, data, len, 0, NULL);
+	_write_info(stdout, data, len);
 }
+
+
+void log_write_error_stdout(const char *data, size_t len)
+{
+	_write_error_stdout(data, len);
+}
+
 
 void log_init(void)
 {
@@ -151,10 +181,10 @@ void log_init(void)
 */
 
 	// set debug logging
-	wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), config.debug ? _write_debug : NULL);
+	wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), config.debug ? _write_debug_stderr : NULL);
 
 	// set debug logging
-	wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : _write_error);
+	wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : _write_error_stderr);
 
 	// set error logging
 //	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : stderr);

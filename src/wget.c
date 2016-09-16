@@ -62,25 +62,6 @@
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)
 
-struct DOWNLOADER {
-	wget_thread_t
-		tid;
-	JOB
-		*job;
-	wget_http_connection_t
-		*conn;
-	char
-		*buf;
-	size_t
-		bufsize;
-	int
-		id;
-	wget_thread_cond_t
-		cond;
-	char
-		final_error;
-};
-
 #define _CONTENT_TYPE_HTML 1
 typedef struct {
 	const char *
@@ -1081,7 +1062,8 @@ int main(int argc, const char **argv)
 		blacklist_free();
 		hosts_free();
 		xfree(downloaders);
-		bar_deinit();
+		if (config.progress)
+			bar_deinit();
 		wget_vector_clear_nofree(parents);
 		wget_vector_free(&parents);
 		wget_hashmap_free(&known_urls);
@@ -2467,16 +2449,6 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	return fd;
 }
 
-// the following is just needed for the progress bar
-struct _body_callback_context {
-	DOWNLOADER *downloader;
-	wget_buffer_t *body;
-	int outfd;
-	size_t max_memory;
-	off_t length;
-	off_t expected_length;
-	bool head;
-};
 
 static int _get_header(wget_http_response_t *resp, void *context)
 {
@@ -2514,14 +2486,19 @@ static int _get_header(wget_http_response_t *resp, void *context)
 	}
 //	info_printf("Opened %d\n", ctx->outfd);
 
-	// initialize the expected max. number of bytes for bar display
-	if (config.progress)
-		bar_update(ctx->downloader->id, ctx->expected_length = resp->content_length, 0);
+	wget_thread_mutex_lock(&ctx->bar.mutex);
+	ctx->bar.expected_size = resp->content_length;
+	ctx->bar.filename = dest;
+	wget_thread_mutex_unlock(&ctx->bar.mutex);
+
+	if (config.progress) {
+		bar_register(&ctx->bar);
+	}
 
 	return 0;
 }
 
-static int _get_body(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *context, const char *data, size_t length)
+static int _get_body(wget_http_response_t *resp, void *context, const char *data, size_t length)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
 
@@ -2553,8 +2530,9 @@ static int _get_body(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *contex
 	if (ctx->max_memory == 0 || ctx->length < (off_t) ctx->max_memory)
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
-	if (config.progress)
-		bar_update(ctx->downloader->id, ctx->expected_length, ctx->length);
+	wget_thread_mutex_lock(&ctx->bar.mutex);
+	ctx->bar.raw_downloaded = resp->cur_downloaded;
+	wget_thread_mutex_unlock(&ctx->bar.mutex);
 
 	return 0;
 }
@@ -2787,6 +2765,12 @@ int http_send_request(wget_iri_t *iri, DOWNLOADER *downloader)
 	context->length = 0;
 	context->head = downloader->job->head_first;
 
+	wget_thread_mutex_init(&context->bar.mutex);
+	context->bar.slotpos = downloader->id;
+	context->bar.expected_size = 0;
+	context->bar.raw_downloaded = 0;
+	context->bar.filename = config.output_document ? config.output_document : downloader->job->local_filename;
+
 	// set callback functions
 	wget_http_request_set_header_cb(req, _get_header, context);
 	wget_http_request_set_body_cb(req, _get_body, context);
@@ -2821,6 +2805,8 @@ wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
 		close(context->outfd);
 	}
 
+	if (config.progress)
+		bar_deregister(&context->bar);
 	xfree(context);
 
 	return resp;

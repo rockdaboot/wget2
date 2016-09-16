@@ -1,6 +1,5 @@
 /*
- * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2016 Free Software Foundation, Inc.
  *
  * This file is part of Wget.
  *
@@ -18,20 +17,36 @@
  * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Header file for logging routines
+ * Some utlity methods for use within LibWget
  *
  * Changelog
- * 27.04.2012  Tim Ruehsen  created
- *
+ * 23/07/2016	Darshit Shah	created
  */
 
-#ifndef _WGET_LOG_H
-#define _WGET_LOG_H
+#include "utils.h"
 
-#include <stdarg.h>
+#include <config.h>
+#include <libwget.h>
 
-void log_init(void);
+#ifdef HAVE_IOCTL
+#	include <sys/ioctl.h>
+#	include <termios.h>
+#endif
 
-void log_write_error_stdout(const char *data, size_t len);
+/* Determine the width of the terminal we're running on.  If that's
+   not possible, return 0.  */
+int
+determine_screen_width (void)
+{
+#ifdef HAVE_IOCTL
+  /* If there's a way to get the terminal size using POSIX
+     tcgetattr(), somebody please tell me.  */
+  struct winsize wsz;
+  int fd = fileno (stderr);
 
-#endif /* _WGET_LOG_H */
+  if (ioctl (fd, TIOCGWINSZ, &wsz) >= 0)
+         return wsz.ws_col;
+#endif
+
+        return 0;
+}

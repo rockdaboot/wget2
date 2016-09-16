@@ -1,6 +1,5 @@
 /*
- * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2016 Free Software Foundation, Inc.
  *
  * This file is part of Wget.
  *
@@ -18,20 +17,33 @@
  * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Header file for logging routines
+ * Header file for Progress routines and structures
  *
  * Changelog
- * 27.04.2012  Tim Ruehsen  created
+ * 23/07/2016	Darshit Shah	created
  *
  */
 
-#ifndef _WGET_LOG_H
-#define _WGET_LOG_H
 
-#include <stdarg.h>
+#ifndef _WGET_PROGRESS_H
+# define _WGET_PROGRESS_H
 
-void log_init(void);
+#include "job.h"
+#include "wget.h"
 
-void log_write_error_stdout(const char *data, size_t len);
+#define DEFAULT_SCREEN_WIDTH 70
 
-#endif /* _WGET_LOG_H */
+#define MINIMUM_SCREEN_WIDTH 45
+
+// the following is just needed for the progress bar
+struct _body_callback_context {
+	DOWNLOADER *downloader;
+	wget_buffer_t *body;
+	int outfd;
+	size_t max_memory;
+	off_t length;
+	bool head;
+	wget_bar_ctx bar;
+};
+
+#endif /* _WGET_PROGRESS_H */
