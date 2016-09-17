@@ -60,7 +60,8 @@ typedef struct {
 	unsigned char
 		first : 1;
 	wget_bar_ctx
-		*ctx;
+		*ctx,
+		last_ctx;
 	char *
 		human_size;
 } _bar_slot_t;
@@ -82,7 +83,7 @@ static inline G_GNUC_WGET_ALWAYS_INLINE void
 static inline G_GNUC_WGET_ALWAYS_INLINE void
 	_bar_print_slot(const wget_bar_t *bar, int slotpos);
 static inline G_GNUC_WGET_ALWAYS_INLINE void
-	_bar_print_final(wget_bar_t *bar, wget_bar_ctx *ctx);
+	_bar_print_final(const wget_bar_t *bar, int slotpos);
 
 // We use enums to define the progress bar paramters because they are the
 // closest thing we have to defining true constants in C without using
@@ -187,14 +188,30 @@ cleanup:
 void wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx)
 {
 	bar->slots[ctx->slotpos].ctx = ctx;
-	/* printf("Context registered for slotpos: %ld %p %p %p\n\n\n\n", ctx->slotpos, bar, &bar->slots[ctx->slotpos], bar->slots[ctx->slotpos].ctx); */
+	/* error_printf("Context registered for slotpos: %ld %p %p %p\n", ctx->slotpos, bar, &bar->slots[ctx->slotpos], bar->slots[ctx->slotpos].ctx); */
 }
 
 void wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx)
 {
+	wget_bar_ctx *last_ctx;
 	wget_thread_mutex_lock(&ctx->mutex);
-	_bar_print_final(bar, ctx);
 	bar->slots[ctx->slotpos].ctx = NULL;
+
+	// Copy all the members of ctx to last_ctx
+	{
+		last_ctx = &bar->slots[ctx->slotpos].last_ctx;
+		// If last_ctx has been used before, then free the memory allocated for
+		// its filename member.
+		xfree(last_ctx->filename);
+		last_ctx->slotpos = ctx->slotpos;
+		last_ctx->expected_size = ctx->expected_size;
+		last_ctx->raw_downloaded = ctx->raw_downloaded;
+		// Filename will be overwritten when a new file is downloaded by the same
+		// downloader thread. Hence, we make a copy here.
+		last_ctx->filename = strdup(ctx->filename);
+	}
+
+	_bar_print_final(bar, ctx->slotpos);
 	wget_thread_mutex_unlock(&ctx->mutex);
 }
 
@@ -271,18 +288,20 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 			wget_thread_mutex_unlock(&stdout_mutex);
 		}
 		wget_thread_mutex_unlock(&ctx->mutex);
+	} else {
+		_bar_print_final(bar, slotpos);
 	}
 }
 
-static void _bar_print_final(wget_bar_t *bar, wget_bar_ctx *ctx) {
+static void _bar_print_final(const wget_bar_t *bar, int slotpos) {
 
 	off_t
 		max,
 		cur;
 	double ratio;
 	int cols;
-	int slotpos = ctx->slotpos;
 	_bar_slot_t *slot = &bar->slots[slotpos];
+	wget_bar_ctx *ctx = &slot->last_ctx;
 	char *human_readable_bytes;
 
 	max = ctx->expected_size;
@@ -326,8 +345,10 @@ static void _bar_print_final(wget_bar_t *bar, wget_bar_ctx *ctx) {
 void wget_bar_deinit(wget_bar_t *bar)
 {
 	if (bar) {
-		for (int i = 0; i < bar->nslots; i++)
+		for (int i = 0; i < bar->nslots; i++) {
 			xfree(bar->slots[i].human_size);
+			xfree(bar->slots[i].last_ctx.filename);
+		}
 		xfree(bar->spaces);
 		xfree(bar->filled);
 		xfree(bar->slots);
