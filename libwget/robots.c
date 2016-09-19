@@ -143,6 +143,7 @@ void wget_robots_free(ROBOTS **robots)
 	if (robots && *robots) {
 		wget_vector_free(&(*robots)->paths);
 		wget_vector_free(&(*robots)->sitemaps);
+		xfree(*robots);
 		*robots = NULL;
 	}
 }

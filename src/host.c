@@ -311,8 +311,41 @@ void host_remove_job(HOST *host, JOB *job)
 
 	wget_thread_mutex_lock(&hosts_mutex);
 	if (job == host->robot_job) {
-		// special handling for automatic robots.txt jobs
-		error_printf("TODO (%s): cleanup queue regarding robots.txt\n", __func__);
+		// Special handling for automatic robots.txt jobs
+		// ==============================================
+		// What can happen with --recursive and --span-hosts is that a document from hostA
+		// has links to hostB. All these links might go into the hostB queue before robots.txt
+		// is downloaded and parsed. Right here we have downloaded and parsed robots.txt for hostB -
+		// and only now we know if we should follow these links or not.
+		// If any of these links that are disallowed have been explicitly requested by the user,
+		// we should download them.
+		if (host->robots) {
+			JOB *next, *thejob = wget_list_getfirst(host->queue);
+
+			for (int max = host->qsize - 1; max > 0; max--, thejob = next) {
+				next = wget_list_getnext(thejob);
+
+				// info_printf("%s: checking '%s' / '%s'\n", __func__, thejob->iri->path, thejob->iri->uri);
+				if (thejob->requested_by_user)
+						continue;
+
+				if (thejob->sitemap)
+						continue;
+
+				for (int it = 0; it < wget_vector_size(host->robots->paths); it++) {
+					ROBOTS_PATH *path = wget_vector_get(host->robots->paths, it);
+
+					// info_printf("%s: checked robot path '%.*s' / '%s' / '%s'\n", __func__, (int)path->len, path->path, thejob->iri->path, thejob->iri->uri);
+
+					if (path->len && !strncmp(path->path + 1, thejob->iri->path ? thejob->iri->path : "", path->len - 1)) {
+						info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), thejob->iri->uri);
+						host_remove_job(host, thejob);
+						break;
+					}
+				}
+			}
+		}
+
 		wget_iri_free(&job->iri);
 		job_free(job);
 		xfree(host->robot_job);

@@ -521,6 +521,8 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 
 		if (config.reject_patterns && in_pattern_list(config.reject_patterns, new_job->iri->uri))
 			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+
+		new_job->requested_by_user = 1; // download even if disallowed by robots.txt
 	}
 
 	if (config.spider || config.chunk_size)
@@ -640,14 +642,15 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		}
 	} else if ((host = host_get(iri))) {
 		if (host->robots && iri->path) {
+			// info_printf("%s: checking '%s' / '%s'\n", __func__, iri->path, iri->uri);
 			for (int it = 0; it < wget_vector_size(host->robots->paths); it++) {
 				ROBOTS_PATH *path = wget_vector_get(host->robots->paths, it);
-				if (!strncmp(path->path, iri->path, path->len)) {
+				// info_printf("%s: checked robot path '%.*s' / '%s' / '%s'\n", __func__, (int)path->len, path->path, iri->path, iri->uri);
+				if (path->len && !strncmp(path->path + 1, iri->path ? iri->path : "", path->len - 1)) {
 					wget_thread_mutex_unlock(&downloader_mutex);
 					info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), iri->uri);
 					return;
 				}
-//				info_printf("checked robot path '%.*s'\n", path->path, path->len);
 			}
 		}
 	} else {

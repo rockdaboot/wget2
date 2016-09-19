@@ -183,6 +183,21 @@ void *wget_list_getlast(const wget_list_t *list)
 }
 
 /**
+ * \param[in] elem Pointer to an element of a linked list
+ * \return Pointer to the next element of the list or %NULL if the list is empty
+ *
+ * Get the next element of a list.
+ */
+void *wget_list_getnext(const void *elem)
+{
+	if (elem) {
+		wget_list_t *node = ((wget_list_t *)elem) - 1;
+		return node->next + 1;
+	}
+	return NULL;
+}
+
+/**
  * \param[in] list Pointer to a double linked list
  * \param[in] browse Pointer to callback function which is called for every element in the list.
  *  If the callback functions returns a value not equal to zero, browsing is stopped and

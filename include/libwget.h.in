@@ -382,6 +382,8 @@ void *
 	wget_list_getfirst(const wget_list_t *list) G_GNUC_WGET_CONST LIBWGET_EXPORT;
 void *
 	wget_list_getlast(const wget_list_t *list) G_GNUC_WGET_PURE LIBWGET_EXPORT;
+void *
+	wget_list_getnext(const void *elem) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 void
 	wget_list_remove(wget_list_t **list, void *elem) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
