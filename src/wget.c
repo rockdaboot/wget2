@@ -398,7 +398,7 @@ static void _atomic_increment_int(int *p)
 // we have to modify and check the quota in one (protected) step.
 static long long quota_modify_read(size_t nbytes)
 {
-	return _fetch_and_add_longlong(&quota, (long long )nbytes);
+	return _fetch_and_add_longlong(&quota, (long long)nbytes);
 }
 
 static wget_vector_t
@@ -1361,9 +1361,7 @@ static void process_response_part(wget_http_response_t *resp)
 
 	// just update number bytes read (body only) for display purposes
 	if (resp->body)
-		quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length);
-	else if (config.save_headers)
-		quota_modify_read(resp->header->length);
+		quota_modify_read(resp->body->length);
 
 	if (resp->code != 200 && resp->code != 206) {
 		print_status(downloader, "part %d download error %d\n", part->id, resp->code);
@@ -1421,6 +1419,10 @@ static void process_response_part(wget_http_response_t *resp)
 static void process_response(wget_http_response_t *resp)
 {
 	JOB *job = resp->req->user_data;
+
+	// just update number bytes read (body only) for display purposes
+	if (resp->body)
+		quota_modify_read(resp->body->length);
 
 	// check if we got a RFC 6249 Metalink response
 	// HTTP/1.1 302 Found
