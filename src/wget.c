@@ -46,6 +46,7 @@
 #include <sys/stat.h>
 #include <locale.h>
 #include "timespec.h" // gnulib gettime()
+#include "human.h"
 
 #include "safe-write.h"
 
@@ -126,7 +127,8 @@ static DOWNLOADER
 static void
 	*downloader_thread(void *p);
 static long long
-	quota;
+	quota,
+	total_download;
 static int
 	exit_status,
 	hsts_changed;
@@ -399,6 +401,11 @@ static void _atomic_increment_int(int *p)
 static long long quota_modify_read(size_t nbytes)
 {
 	return _fetch_and_add_longlong(&quota, (long long )nbytes);
+}
+
+static long long total_download_modify_read(size_t nbytes)
+{
+	return _fetch_and_add_longlong(&total_download, (long long )nbytes);
 }
 
 static wget_vector_t
@@ -843,6 +850,7 @@ int main(int argc, const char **argv)
 	size_t bufsize = 0;
 	char *buf = NULL;
 	bool async_urls = false;
+	char *download_buf = xmalloc(LONGEST_HUMAN_READABLE + 1);
 
 	setlocale(LC_ALL, "");
 
@@ -998,7 +1006,7 @@ int main(int argc, const char **argv)
 			}
 
 			if (config.progress)
-				bar_printf(config.num_threads, "Files: %d  Bytes: %lld  Redirects: %d  Todo: %d", stats.ndownloads, quota, stats.nredirects, queue_size());
+				bar_printf(config.num_threads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d", stats.ndownloads, wget_human_readable(total_download, download_buf), stats.nredirects, queue_size());
 
 			if (config.quota && quota >= config.quota) {
 				info_printf(_("Quota of %lld bytes reached - stopping.\n"), config.quota);
@@ -1029,9 +1037,9 @@ int main(int argc, const char **argv)
 	}
 
 	if (config.progress)
-		bar_printf(config.num_threads, "Files: %d  Bytes: %lld  Redirects: %d  Todo: %d", stats.ndownloads, quota, stats.nredirects, queue_size());
-	else if ((config.recursive || config.page_requisites || (config.input_file && quota != 0)) && quota) {
-		info_printf(_("Downloaded: %d files, %lld bytes, %d redirects, %d errors\n"), stats.ndownloads, quota, stats.nredirects, stats.nerrors);
+		bar_printf(config.num_threads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d", stats.ndownloads, wget_human_readable(total_download, download_buf), stats.nredirects, queue_size());
+	else if ((config.recursive || config.page_requisites || (config.input_file && total_download != 0)) && total_download) {
+		info_printf(_("Downloaded: %d files, %s, %d redirects, %d errors\n"), stats.ndownloads, wget_human_readable(total_download, download_buf), stats.nredirects, stats.nerrors);
 	}
 
 	if (config.save_cookies)
@@ -1062,6 +1070,7 @@ int main(int argc, const char **argv)
 		// freeing to avoid disguising valgrind output
 
 		xfree(buf);
+		xfree(download_buf);
 		blacklist_free();
 		hosts_free();
 		xfree(downloaders);
@@ -1360,9 +1369,10 @@ static void process_response_part(wget_http_response_t *resp)
 	PART *part = job->part;
 
 	// just update number bytes read (body only) for display purposes
-	if (resp->body)
+	if (resp->body) {
 		quota_modify_read(config.save_headers ? resp->header->length + resp->body->length : resp->body->length);
-	else if (config.save_headers)
+		total_download_modify_read(resp->body->length);
+	} else if (config.save_headers)
 		quota_modify_read(resp->header->length);
 
 	if (resp->code != 200 && resp->code != 206) {
@@ -2808,6 +2818,7 @@ wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
 		close(context->outfd);
 	}
 
+	total_download_modify_read(context->bar.raw_downloaded);
 	if (config.progress)
 		bar_deregister(&context->bar);
 	xfree(context);
