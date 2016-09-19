@@ -104,7 +104,7 @@ Some ideas of what could be done next (but contact us via mailing list before yo
   now it only works with OpenSSL.)
 - WARC support
 - read credentials from secure wallets (e.g. kwallet, firefox, http://sourceforge.net/projects/passwordsafe/)
-  [Chromium HSTS domain list](http://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json)
+- [Chromium HSTS domain preload list](http://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json)
 - respect data-urls
 - Streaming (.m3u, etc. formats)
 - FTP support
