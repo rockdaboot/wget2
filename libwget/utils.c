@@ -404,7 +404,7 @@ char *wget_human_readable(char *buf, size_t bufsize, size_t n)
 		'Z', /* zettabyte, 2^70 bytes */
 		'Y', /* yottabyte, 2^80 bytes */
 	};
-	int acc = 10, decimals = 1;
+	int acc = 1000, decimals = 2;
 
 	/* If the quantity is smaller than 1K, just print it. */
 	if (n < 1024) {

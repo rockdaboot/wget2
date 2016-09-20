@@ -49,40 +49,6 @@
  * Methods for creating and printing a progress bar display.
  */
 
-typedef struct {
-	double
-		ratio;
-	int
-		max,
-		cur,
-		cols;
-	unsigned char
-		first : 1;
-	wget_bar_ctx
-		*ctx,
-		last_ctx;
-	char
-		human_size[16];
-} _bar_slot_t;
-
-struct _wget_bar_st {
-	_bar_slot_t
-		*slots;
-	char
-		*filled,
-		*spaces;
-	int
-		nslots,
-		max_width;
-};
-
-// Forward declarations for static methods
-static inline G_GNUC_WGET_ALWAYS_INLINE void
-	_return_cursor_position(void);
-static inline G_GNUC_WGET_ALWAYS_INLINE void
-	_bar_print_slot(const wget_bar_t *bar, int slotpos);
-static inline G_GNUC_WGET_ALWAYS_INLINE void
-	_bar_print_final(const wget_bar_t *bar, int slotpos);
 
 // We use enums to define the progress bar paramters because they are the
 // closest thing we have to defining true constants in C without using
@@ -106,6 +72,41 @@ enum {
 		_BAR_METER_COST     + 1 + \
 		_BAR_DOWNBYTES_SIZE
 };
+
+typedef struct {
+	double
+		ratio;
+	int
+		max,
+		cur,
+		cols;
+	unsigned char
+		first : 1;
+	wget_bar_ctx
+		*ctx,
+		last_ctx;
+	char
+		human_size[_BAR_DOWNBYTES_SIZE];
+} _bar_slot_t;
+
+struct _wget_bar_st {
+	_bar_slot_t
+		*slots;
+	char
+		*filled,
+		*spaces;
+	int
+		nslots,
+		max_width;
+};
+
+// Forward declarations for static methods
+static inline G_GNUC_WGET_ALWAYS_INLINE void
+	_return_cursor_position(void);
+static inline G_GNUC_WGET_ALWAYS_INLINE void
+	_bar_print_slot(const wget_bar_t *bar, int slotpos);
+static inline G_GNUC_WGET_ALWAYS_INLINE void
+	_bar_print_final(const wget_bar_t *bar, int slotpos);
 
 static wget_thread_mutex_t
 	stdout_mutex;
