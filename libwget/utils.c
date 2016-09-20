@@ -38,7 +38,6 @@
 #include "c-ctype.h"
 #include "c-strcase.h"
 #include "timespec.h" // gnulib gettime()
-#include "human.h"
 
 #include <libwget.h>
 #include "private.h"
@@ -356,14 +355,7 @@ int wget_match_tail_nocase(const char *s, const char *tail)
 	return p >= s && !wget_strcasecmp_ascii(p, tail);
 }
 
-/**
- * \param[in] N Number to convert
- * \param[in] buf Result buffer
- * \return Pointer to printable representation of \p N
- *
- * Returns a human readable representation of \p N.
- */
-char *wget_human_readable(size_t N, char *buf)
+/*char *wget_human_readable(size_t N, char *buf)
 {
 	static int opts = human_autoscale |
 		human_base_1024 |
@@ -374,16 +366,70 @@ char *wget_human_readable(size_t N, char *buf)
 
 	return human_readable(N, buf, opts, 1, 1);
 }
+*/
 
 /**
- * \return Buffer usable by wget_human_readable()
+ * \param[in] buf Result buffer
+ * \param[in] bufsize Size of /p buf
+ * \param[in] n Number to convert
+ * \return Pointer to printable representation of \p n
  *
- * Allocates a reusable buffer with appropriate size for wget_human_readable().
- * It must be freed when not used any more.
+ * Returns a human readable representation of \p n.
+ * \p n, a byte quantity, is converted to a human-readable abbreviated
+ * form a la sizes printed by `ls -lh'.  The result is written into the
+ * provided buffer.
+ *
+ * Unlike `with_thousand_seps', this approximates to the nearest unit.
+ * Quoting GNU libit: "Most people visually process strings of 3-4
+ * digits effectively, but longer strings of digits are more prone to
+ * misinterpretation.  Hence, converting to an abbreviated form
+ * usually improves readability."
+ *
+ * This intentionally uses kilobyte (KB), megabyte (MB), etc. in their
+ * original computer-related meaning of "powers of 1024".  We don't
+ * use the "*bibyte" names invented in 1998, and seldom used in
+ * practice.  Wikipedia's entry on "binary prefix" discusses this in
+ * some detail.
  */
-void *wget_human_readable_alloc(void)
+char *wget_human_readable(char *buf, size_t bufsize, size_t n)
 {
-	return xmalloc(LONGEST_HUMAN_READABLE + 1);
+	/* These suffixes are compatible with those of GNU `ls -lh'. */
+	static char powers[] = {
+		'K', /* kilobyte,  2^10 bytes */
+		'M', /* megabyte,  2^20 bytes */
+		'G', /* gigabyte,  2^30 bytes */
+		'T', /* terabyte,  2^40 bytes */
+		'P', /* petabyte,  2^50 bytes */
+		'E', /* exabyte,   2^60 bytes */
+		'Z', /* zettabyte, 2^70 bytes */
+		'Y', /* yottabyte, 2^80 bytes */
+	};
+	int acc = 10, decimals = 1;
+
+	/* If the quantity is smaller than 1K, just print it. */
+	if (n < 1024) {
+		snprintf(buf, bufsize, "%zu", n);
+		return buf;
+	}
+
+	/* Loop over powers, dividing N with 1024 in each iteration.  This
+		works unchanged for all sizes of wgint, while still avoiding
+		non-portable `long double' arithmetic.  */
+	for (unsigned i = 0; i < countof(powers); i++) {
+		/* At each iteration N is greater than the *subsequent* power.
+			That way N/1024.0 produces a decimal number in the units of
+		 *this* power.  */
+		if ((n / 1024) < 1024 || i == countof(powers) - 1) {
+			double val = n / 1024.0;
+			/* Print values smaller than the accuracy level (acc) with (decimal)
+			 * decimal digits, and others without any decimals.  */
+			snprintf(buf, bufsize, "%.*f%c", val < acc ? decimals : 0, val, powers[i]);
+			return buf;
+		}
+		n /= 1024;
+	}
+
+	return NULL; /* unreached */
 }
 
 /**@}*/

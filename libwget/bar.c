@@ -61,8 +61,8 @@ typedef struct {
 	wget_bar_ctx
 		*ctx,
 		last_ctx;
-	char *
-		human_size;
+	char
+		human_size[16];
 } _bar_slot_t;
 
 struct _wget_bar_st {
@@ -168,7 +168,6 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 
 	for (int it = 0; it < nslots; it++) {
 		bar->slots[it].first = 1;
-		bar->slots[it].human_size = wget_human_readable_alloc();
 	}
 
 	wget_thread_mutex_init(&stdout_mutex);
@@ -259,7 +258,7 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 			if (cols <= 0)
 				cols = 1;
 
-			human_readable_bytes = wget_human_readable(cur, slot->human_size);
+			human_readable_bytes = wget_human_readable(slot->human_size, sizeof(slot->human_size), cur);
 
 			wget_thread_mutex_lock(&stdout_mutex);
 			_bar_print_slot(bar, slotpos);
@@ -319,7 +318,7 @@ static void _bar_print_final(const wget_bar_t *bar, int slotpos) {
 	else if (cols > bar->max_width)
 		cols = bar->max_width;
 
-	human_readable_bytes = wget_human_readable(cur, slot->human_size);
+	human_readable_bytes = wget_human_readable(slot->human_size, sizeof(slot->human_size), cur);
 
 	wget_thread_mutex_lock(&stdout_mutex);
 	_bar_print_slot(bar, slotpos);
@@ -345,7 +344,6 @@ void wget_bar_deinit(wget_bar_t *bar)
 {
 	if (bar) {
 		for (int i = 0; i < bar->nslots; i++) {
-			xfree(bar->slots[i].human_size);
 			xfree(bar->slots[i].last_ctx.filename);
 		}
 		xfree(bar->spaces);
