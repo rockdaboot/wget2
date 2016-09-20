@@ -46,6 +46,7 @@
 #include <sys/stat.h>
 #include <locale.h>
 #include "timespec.h" // gnulib gettime()
+#include "human.h" // gnulib LONGEST_HUMAN_READABLE
 
 #include "safe-write.h"
 
@@ -843,6 +844,7 @@ int main(int argc, const char **argv)
 	size_t bufsize = 0;
 	char *buf = NULL;
 	bool async_urls = false;
+	char quota_buf[LONGEST_HUMAN_READABLE + 1];
 
 	setlocale(LC_ALL, "");
 
@@ -998,7 +1000,8 @@ int main(int argc, const char **argv)
 			}
 
 			if (config.progress)
-				bar_printf(config.num_threads, "Files: %d  Bytes: %lld  Redirects: %d  Todo: %d", stats.ndownloads, quota, stats.nredirects, queue_size());
+				bar_printf(config.num_threads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d",
+					stats.ndownloads, wget_human_readable(quota, quota_buf), stats.nredirects, queue_size());
 
 			if (config.quota && quota >= config.quota) {
 				info_printf(_("Quota of %lld bytes reached - stopping.\n"), config.quota);
@@ -1029,9 +1032,11 @@ int main(int argc, const char **argv)
 	}
 
 	if (config.progress)
-		bar_printf(config.num_threads, "Files: %d  Bytes: %lld  Redirects: %d  Todo: %d", stats.ndownloads, quota, stats.nredirects, queue_size());
+		bar_printf(config.num_threads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d",
+			stats.ndownloads, wget_human_readable(quota, quota_buf), stats.nredirects, queue_size());
 	else if ((config.recursive || config.page_requisites || (config.input_file && quota != 0)) && quota) {
-		info_printf(_("Downloaded: %d files, %lld bytes, %d redirects, %d errors\n"), stats.ndownloads, quota, stats.nredirects, stats.nerrors);
+		info_printf(_("Downloaded: %d files, %s bytes, %d redirects, %d errors\n"),
+			stats.ndownloads, wget_human_readable(quota, quota_buf), stats.nredirects, stats.nerrors);
 	}
 
 	if (config.save_cookies)

@@ -356,17 +356,34 @@ int wget_match_tail_nocase(const char *s, const char *tail)
 	return p >= s && !wget_strcasecmp_ascii(p, tail);
 }
 
-char *
-wget_human_readable(size_t N, char *buf)
+/**
+ * \param[in] N Number to convert
+ * \param[in] buf Result buffer
+ * \return Pointer to printable representation of \p N
+ *
+ * Returns a human readable representation of \p N.
+ */
+char *wget_human_readable(size_t N, char *buf)
 {
-
 	static int opts = human_autoscale |
 		human_base_1024 |
 		human_SI |
 		human_B |
 		human_round_to_nearest |
 		human_group_digits;
+
 	return human_readable(N, buf, opts, 1, 1);
+}
+
+/**
+ * \return Buffer usable by wget_human_readable()
+ *
+ * Allocates a reusable buffer with appropriate size for wget_human_readable().
+ * It must be freed when not used any more.
+ */
+void *wget_human_readable_alloc(void)
+{
+	return xmalloc(LONGEST_HUMAN_READABLE + 1);
 }
 
 /**@}*/

@@ -36,7 +36,6 @@
 #include <time.h>
 #include <errno.h>
 #include <sys/time.h>
-#include "human.h"
 
 #include <libwget.h>
 #include "private.h"
@@ -169,7 +168,7 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 
 	for (int it = 0; it < nslots; it++) {
 		bar->slots[it].first = 1;
-		bar->slots[it].human_size = malloc(LONGEST_HUMAN_READABLE + 1);
+		bar->slots[it].human_size = wget_human_readable_alloc();
 	}
 
 	wget_thread_mutex_init(&stdout_mutex);

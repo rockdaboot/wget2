@@ -78,10 +78,11 @@ void bar_init(void)
 	else if (screen_width < MINIMUM_SCREEN_WIDTH)
 		screen_width = MINIMUM_SCREEN_WIDTH;
 
-    // set custom write function for wget_error_printf()
-    wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), _error_write);
-
 	bar = wget_bar_init(NULL, config.num_threads + 1, screen_width - 1);
+
+	// set custom write function for wget_error_printf()
+	// _error_write uses 'bar', so that has to initialized before
+	wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), _error_write);
 
 	int rc = wget_thread_start(&progress_thread, _bar_update_thread, bar, 0);
 	if (rc != 0)
@@ -165,11 +166,11 @@ static void *_bar_update_thread(void *p)
 static void _error_write(const char *buf, size_t len)
 {
 //  printf("\033[s\033[1S\033[%dA\033[1G\033[2K", config.num_threads + 2);
-    printf("\033[s\033[1S\033[%dA\033[1G\033[0J", config.num_threads + 2);
+	printf("\033[s\033[1S\033[%dA\033[1G\033[0J", config.num_threads + 2);
 	log_write_error_stdout(buf, len);
-    printf("\033[u");
-    fflush(stdout);
-    for (int i = 0; i < config.num_threads; i++) {
-        wget_bar_update(bar, i);
-    }
+	printf("\033[u");
+	fflush(stdout);
+	for (int i = 0; i < config.num_threads; i++) {
+		wget_bar_update(bar, i);
+	}
 }
