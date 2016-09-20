@@ -1,5 +1,6 @@
 %option case-insensitive
 %option noyywrap
+%option noyyalloc noyyrealloc
 %option never-interactive
 %option nounput
 %option reentrant

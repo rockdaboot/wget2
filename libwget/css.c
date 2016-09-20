@@ -61,6 +61,15 @@ YY_BUFFER_STATE yy_scan_string(const char * yystr, yyscan_t yyscanner);
 YY_BUFFER_STATE yy_scan_bytes(const char * yystr, int len, yyscan_t yyscanner);
 int yylex(yyscan_t yyscanner);
 int yylex_destroy(yyscan_t yyscanner);
+void *yyalloc(size_t size);
+void *yyrealloc(void *p, size_t size);
+
+void *yyalloc(size_t size) {
+	return wget_malloc(size);
+}
+void *yyrealloc(void *p, size_t size) {
+	return wget_realloc(p, size);
+}
 
 void wget_css_parse_buffer(
 	const char *buf,
