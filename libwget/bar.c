@@ -74,14 +74,6 @@ enum {
 };
 
 typedef struct {
-	double
-		ratio;
-	int
-		max,
-		cur,
-		cols;
-	unsigned char
-		first : 1;
 	wget_bar_ctx
 		*ctx,
 		last_ctx;
@@ -173,10 +165,6 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 		bar->max_width = max_width;
 	}
 
-	for (int it = 0; it < nslots; it++) {
-		bar->slots[it].first = 1;
-	}
-
 	wget_thread_mutex_init(&stdout_mutex);
 
 	return bar;
@@ -256,50 +244,41 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 
 		if (cols > bar->max_width)
 			cols = bar->max_width;
+		else if (cols <= 0)
+			cols = 1;
 
-		slot->max = max;
-
-		if (slot->cols != cols || (slot->ratio * 100) != (ratio * 100) || slot->first) {
-			slot->cols = cols;
-			slot->ratio = ratio;
-			slot->first = 0;
-
-			if (cols <= 0)
-				cols = 1;
-
-			human_readable_bytes = wget_human_readable(slot->human_size, sizeof(slot->human_size), cur);
-			if (max > 0)
-				filled = bar->known_size;
-			else {
-				filled = bar->unknown_size;
-				cols = bar->max_width;
-			}
-
-			wget_thread_mutex_lock(&stdout_mutex);
-			_bar_print_slot(bar, slotpos);
-
-			// The progress bar looks like this:
-			//
-			// filename   xxx% [======>      ] xxx.xxK
-			//
-			// It is made of the following elements:
-			// filename		_BAR_FILENAME_SIZE		Name of local file
-			// xxx%			_BAR_RATIO_SIZE + 1		Amount of file downloaded
-			// []			_BAR_METER_COST			Bar Decorations
-			// xxx.xxK		_BAR_DOWNBYTES_SIZE		Number of downloaded bytes
-			// ===>			Remaining				Progress Meter
-
-			printf("%-*.*s %*d%% [%.*s>%.*s] %*s",
-					_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, ctx->filename,
-					_BAR_RATIO_SIZE, (int) (ratio * 100),
-					cols - 1, filled,
-					bar->max_width - cols, bar->spaces,
-					_BAR_DOWNBYTES_SIZE, human_readable_bytes);
-
-			_return_cursor_position();
-			fflush(stdout);
-			wget_thread_mutex_unlock(&stdout_mutex);
+		human_readable_bytes = wget_human_readable(slot->human_size, sizeof(slot->human_size), cur);
+		if (max > 0)
+			filled = bar->known_size;
+		else {
+			filled = bar->unknown_size;
+			cols = bar->max_width;
 		}
+
+		wget_thread_mutex_lock(&stdout_mutex);
+		_bar_print_slot(bar, slotpos);
+
+		// The progress bar looks like this:
+		//
+		// filename   xxx% [======>      ] xxx.xxK
+		//
+		// It is made of the following elements:
+		// filename		_BAR_FILENAME_SIZE		Name of local file
+		// xxx%			_BAR_RATIO_SIZE + 1		Amount of file downloaded
+		// []			_BAR_METER_COST			Bar Decorations
+		// xxx.xxK		_BAR_DOWNBYTES_SIZE		Number of downloaded bytes
+		// ===>			Remaining				Progress Meter
+
+		printf("%-*.*s %*d%% [%.*s>%.*s] %*s",
+				_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, ctx->filename,
+				_BAR_RATIO_SIZE, (int) (ratio * 100),
+				cols - 1, filled,
+				bar->max_width - cols, bar->spaces,
+				_BAR_DOWNBYTES_SIZE, human_readable_bytes);
+
+		_return_cursor_position();
+		fflush(stdout);
+		wget_thread_mutex_unlock(&stdout_mutex);
 		wget_thread_mutex_unlock(&ctx->mutex);
 	} else {
 		_bar_print_final(bar, slotpos);
@@ -327,11 +306,6 @@ static void _bar_print_final(const wget_bar_t *bar, int slotpos) {
 
 	ratio = max ? cur / (double) max : 0;
 	cols = bar->max_width * ratio;
-
-	slot->max = max;
-	slot->cols = cols;
-	slot->ratio = ratio;
-	slot->first = 0;
 
 	if (cols <= 0)
 		cols = 1;
