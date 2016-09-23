@@ -78,6 +78,7 @@ typedef struct {
 		*ctx,
 		last_ctx;
 	char
+		*progress,
 		human_size[_BAR_DOWNBYTES_SIZE];
 } _bar_slot_t;
 
@@ -162,6 +163,12 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 			goto cleanup;
 		memset(bar->spaces, ' ', max_width);
 
+		for(int i = 0; i < bar->nslots; i++) {
+			xfree(bar->slots[i].progress);
+			if(!(bar->slots[i].progress = xmalloc(max_width + 1)))
+				goto cleanup;
+		}
+
 		bar->max_width = max_width;
 	}
 
@@ -218,17 +225,40 @@ _bar_print_slot(const wget_bar_t *bar, int slotpos) {
 	printf("\033[s\033[%dA\033[1G", bar->nslots - slotpos);
 }
 
+static inline G_GNUC_WGET_ALWAYS_INLINE void
+_bar_set_progress(const wget_bar_t *bar, int slotpos) {
+
+	int cols;
+	wget_bar_ctx *ctx;
+	_bar_slot_t *slot = &bar->slots[slotpos];
+
+	ctx = (slot->ctx != NULL) ? slot->ctx : &slot->last_ctx;
+
+	if(ctx->expected_size > 0) {
+		cols = (ctx->raw_downloaded / (double) ctx->expected_size) * bar->max_width;
+		if (cols > bar->max_width)
+			cols = bar->max_width;
+		else if (cols <= 0)
+			cols = 1;
+
+		snprintf(slot->progress, bar->max_width + 1, "%.*s>%.*s",
+				cols - 1, bar->known_size,
+				bar->max_width - cols, bar->spaces);
+	} else {
+		snprintf(slot->progress, bar->max_width + 1, "%.*s>%.*s",
+				bar->max_width, bar->unknown_size,
+				0, bar->spaces);
+	}
+}
+
 void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 
 	wget_bar_ctx *ctx;
 	off_t
 		max,
 		cur;
-	double ratio;
-	int cols;
-	char
-		*human_readable_bytes,
-		*filled;
+	int ratio;
+	char *human_readable_bytes;
 
 	_bar_slot_t *slot = &bar->slots[slotpos];
 	// We only print a progress bar for the slot if a context has been
@@ -239,21 +269,10 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 		max = ctx->expected_size;
 		cur = ctx->raw_downloaded;
 
-		ratio = max ? cur / (double) max : 0;
-		cols = bar->max_width * ratio;
-
-		if (cols > bar->max_width)
-			cols = bar->max_width;
-		else if (cols <= 0)
-			cols = 1;
+		ratio = max ? (100 * cur) / max : 0;
 
 		human_readable_bytes = wget_human_readable(slot->human_size, sizeof(slot->human_size), cur);
-		if (max > 0)
-			filled = bar->known_size;
-		else {
-			filled = bar->unknown_size;
-			cols = bar->max_width;
-		}
+		_bar_set_progress(bar, slotpos);
 
 		wget_thread_mutex_lock(&stdout_mutex);
 		_bar_print_slot(bar, slotpos);
@@ -269,11 +288,10 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 		// xxx.xxK		_BAR_DOWNBYTES_SIZE		Number of downloaded bytes
 		// ===>			Remaining				Progress Meter
 
-		printf("%-*.*s %*d%% [%.*s>%.*s] %*s",
+		printf("%-*.*s %*d%% [%s] %*s",
 				_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, ctx->filename,
-				_BAR_RATIO_SIZE, (int) (ratio * 100),
-				cols - 1, filled,
-				bar->max_width - cols, bar->spaces,
+				_BAR_RATIO_SIZE, ratio,
+				slot->progress,
 				_BAR_DOWNBYTES_SIZE, human_readable_bytes);
 
 		_return_cursor_position();
@@ -290,45 +308,29 @@ static void _bar_print_final(const wget_bar_t *bar, int slotpos) {
 	off_t
 		max,
 		cur;
-	double ratio;
-	int cols;
+	int ratio;
 	_bar_slot_t *slot = &bar->slots[slotpos];
 	wget_bar_ctx *ctx = &slot->last_ctx;
-	char
-		*filled,
-		*human_readable_bytes;
+	char *human_readable_bytes;
 
-	if (! ctx->filename)
+	if (!ctx->filename)
 		return;
 
 	max = ctx->expected_size;
 	cur = ctx->raw_downloaded;
 
-	ratio = max ? cur / (double) max : 0;
-	cols = bar->max_width * ratio;
-
-	if (cols <= 0)
-		cols = 1;
-	else if (cols > bar->max_width)
-		cols = bar->max_width;
-
-	if (max > 0)
-		filled = bar->known_size;
-	else {
-		filled = bar->unknown_size;
-		cols = bar->max_width;
-	}
+	ratio = max ? (100 * cur) / max : 0;
 
 	human_readable_bytes = wget_human_readable(slot->human_size, sizeof(slot->human_size), cur);
+	_bar_set_progress(bar, slotpos);
 
 	wget_thread_mutex_lock(&stdout_mutex);
 	_bar_print_slot(bar, slotpos);
 
-	printf("%-*.*s %*d%% [%.*s>%.*s] %*s",
+	printf("%-*.*s %*d%% [%s] %*s",
 			_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, ctx->filename,
-			_BAR_RATIO_SIZE, (int) (ratio * 100),
-			cols - 1, filled,
-			bar->max_width - cols, bar->spaces,
+			_BAR_RATIO_SIZE, ratio,
+			slot->progress,
 			_BAR_DOWNBYTES_SIZE, human_readable_bytes);
 
 	_return_cursor_position();
@@ -346,6 +348,7 @@ void wget_bar_deinit(wget_bar_t *bar)
 	if (bar) {
 		for (int i = 0; i < bar->nslots; i++) {
 			xfree(bar->slots[i].last_ctx.filename);
+			xfree(bar->slots[i].progress);
 		}
 		xfree(bar->spaces);
 		xfree(bar->known_size);
