@@ -172,7 +172,9 @@ static void _error_write(const char *buf, size_t len)
 	log_write_error_stdout(buf, len);
 	printf("\033[u");
 	fflush(stdout);
+	wget_thread_mutex_lock(&mutex);
 	for (int i = 0; i < config.num_threads; i++) {
 		wget_bar_update(bar, i);
 	}
+	wget_thread_mutex_unlock(&mutex);
 }
