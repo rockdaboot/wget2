@@ -40,8 +40,8 @@ clean-lcov:
 
 check-coverage: clean clean-lcov
 	$(MAKE) CFLAGS="$(CFLAGS) --coverage" LDFLAGS="$(LDFLAGS) --coverage"
-	lcov --no-external --capture --initial --directory src/ --directory libwget/ --output-file wget2_base.info
+	lcov --capture --no-external --initial --directory src/ --directory libwget/ --output-file wget2_base.info
 	$(MAKE) CFLAGS="$(CFLAGS) --coverage" LDFLAGS="$(LDFLAGS) --coverage" check
-	lcov --no-external --capture --directory src/ --directory libwget/ --output-file wget2_test.info
+	lcov --capture --no-external --ignore-errors source --directory src/ --directory libwget/ --output-file wget2_test.info
 	lcov -a wget2_base.info -a wget2_test.info -o wget2_total.info
 	genhtml --prefix . --ignore-errors source wget2_total.info --legend --title "Wget2" --output-directory=lcov

@@ -18,3 +18,6 @@ make check -j3
 # done
 #fi
 make distcheck
+if [[ $CC == "gcc" ]]; then
+	make check-coverage
+fi
