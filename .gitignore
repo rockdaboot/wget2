@@ -15,6 +15,8 @@
 */.deps
 */.libs
 */Makefile
+*/*.gcda
+*/*.gcno
 *~
 .depend
 ABOUT-NLS
@@ -49,6 +51,7 @@ examples/websequencediagram_high
 git_push
 include/libwget.h
 install-sh
+lcov
 lib
 libtool
 libwget.pc
@@ -95,5 +98,6 @@ tests/test-restrict-ascii
 tests/test-wget-1
 tmp
 wget2-*
+wget2_*.info
 /GNUmakefile
 /maint.mk
