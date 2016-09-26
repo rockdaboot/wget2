@@ -80,6 +80,8 @@ typedef struct {
 	char
 		*progress,
 		human_size[_BAR_DOWNBYTES_SIZE];
+	int
+		tick;
 } _bar_slot_t;
 
 struct _wget_bar_st {
@@ -188,6 +190,7 @@ cleanup:
 void wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx)
 {
 	bar->slots[ctx->slotpos].ctx = ctx;
+	bar->slots[ctx->slotpos].tick = 0;
 	/* error_printf("Context registered for slotpos: %ld %p %p %p\n", ctx->slotpos, bar, &bar->slots[ctx->slotpos], bar->slots[ctx->slotpos].ctx); */
 }
 
@@ -245,9 +248,15 @@ _bar_set_progress(const wget_bar_t *bar, int slotpos) {
 				cols - 1, bar->known_size,
 				bar->max_width - cols, bar->spaces);
 	} else {
-		snprintf(slot->progress, bar->max_width + 1, "%.*s>%.*s",
-				bar->max_width, bar->unknown_size,
-				0, bar->spaces);
+		int ind = slot->tick % ((bar->max_width * 2) - 6);
+		int pre_space;
+		if(ind <= bar->max_width - 3)
+			pre_space = ind;
+		else
+			pre_space = bar->max_width - (ind - bar->max_width + 5);
+		snprintf(slot->progress, bar->max_width + 1, "%.*s<=>%.*s",
+				pre_space, bar->spaces,
+				bar->max_width - pre_space - 3, bar->spaces);
 	}
 }
 
@@ -298,6 +307,7 @@ void wget_bar_update(const wget_bar_t *bar, int slotpos) {
 		fflush(stdout);
 		wget_thread_mutex_unlock(&stdout_mutex);
 		wget_thread_mutex_unlock(&ctx->mutex);
+		slot->tick++;
 	} else {
 		_bar_print_final(bar, slotpos);
 	}
