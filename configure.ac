@@ -257,6 +257,15 @@ if test "$gl_cc_sanitize_tsan" = yes; then
 fi
 
 #
+# Assertions
+#
+AC_ARG_ENABLE([assert],
+  [AS_HELP_STRING([--enable-assert], [Enable assertions in code (for developers)])],
+  [ENABLE_ASSERT=$enableval], [ENABLE_ASSERT=no])
+
+AS_IF([test "$ENABLE_ASSERT" != "yes"], [CFLAGS="-DNDEBUG $CFLAGS"], [])
+
+#
 # Gettext
 #
 m4_ifdef([AM_GNU_GETTEXT], [
@@ -507,4 +516,5 @@ AC_MSG_NOTICE([Summary of build options:
   PSL support:       $with_libpsl
   HTTP/2.0 support:  $with_libnghttp2
   Tests:             ${TESTS_INFO}
+  Assertions:        $ENABLE_ASSERT
 ])
