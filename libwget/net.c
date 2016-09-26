@@ -184,6 +184,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 //	if (!port)
 //		port = "0";
 
+restart_tcp_resolve:
 	// if port is NULL,
 	if (tcp->caching) {
 		if ((addrinfo = _wget_dns_cache_get(host, port)))
@@ -221,8 +222,11 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 		if ((rc = getaddrinfo(host, port, &hints, &addrinfo)) == 0 || rc != EAI_AGAIN)
 			break;
 
-		if (tries < 2)
+		if (tries < 2) {
+			wget_thread_mutex_unlock(&mutex);
 			wget_millisleep(100);
+			goto restart_tcp_resolve;
+		}
 	}
 
 	if (rc) {
