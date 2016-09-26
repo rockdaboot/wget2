@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.org/rockdaboot/wget2.svg?branch=wget2)](https://travis-ci.org/rockdaboot/wget2)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/7852/badge.svg)](https://scan.coverity.com/projects/rockdaboot-wget2)
+[![Coverage Status](https://coveralls.io/repos/github/rockdaboot/wget2/badge.svg?branch=master)](https://coveralls.io/github/rockdaboot/wget2?branch=master)
 
 Wget2 - multithreaded metalink / file / website downloader / spider and library
 ===============================================================================
