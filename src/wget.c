@@ -1142,7 +1142,16 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 		JOB *job = downloader->job;
 		wget_metalink_t *metalink = job->metalink;
 		PART *part = job->part;
-		int mirror_index = downloader->id % wget_vector_size(metalink->mirrors);
+		int mirror_count = wget_vector_size(metalink->mirrors);
+		int mirror_index;
+
+		if(mirror_count > 0)
+			mirror_index = downloader->id % mirror_count;
+		else {
+			host_final_failure(downloader->job->host);
+			set_exit_status(1);
+			return rc;
+		}
 
 		// we try every mirror max. 'config.tries' number of times
 		for (int tries = 0; tries < config.tries && !part->done && !terminate; tries++) {
