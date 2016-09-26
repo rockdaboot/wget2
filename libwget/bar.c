@@ -103,7 +103,8 @@ static inline G_GNUC_WGET_ALWAYS_INLINE void
 	_bar_print_slot(const wget_bar_t *bar, int slotpos);
 static inline G_GNUC_WGET_ALWAYS_INLINE void
 	_bar_print_final(const wget_bar_t *bar, int slotpos);
-
+static void
+	_bar_update_slot(const wget_bar_t *bar, int slotpos);
 static wget_thread_mutex_t
 	stdout_mutex;
 
@@ -260,7 +261,13 @@ _bar_set_progress(const wget_bar_t *bar, int slotpos) {
 	}
 }
 
-void wget_bar_update(const wget_bar_t *bar, int slotpos) {
+void wget_bar_update(const wget_bar_t *bar) {
+	for(int i = 0; i < bar->nslots; i++)
+		_bar_update_slot(bar, i);
+}
+
+static void
+_bar_update_slot(const wget_bar_t *bar, int slotpos) {
 
 	wget_bar_ctx *ctx;
 	off_t

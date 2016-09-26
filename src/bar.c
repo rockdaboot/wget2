@@ -155,11 +155,9 @@ static void *_bar_update_thread(void *p)
 	wget_bar_t *prog_bar = (wget_bar_t *) p;
 
 	for (;;) {
-		for (int i = 0; i < config.num_threads; i++) {
-			wget_thread_mutex_lock(&mutex);
-			wget_bar_update(prog_bar, i);
-			wget_thread_mutex_unlock(&mutex);
-		}
+		wget_thread_mutex_lock(&mutex);
+		wget_bar_update(prog_bar);
+		wget_thread_mutex_unlock(&mutex);
 		wget_millisleep(_BAR_THREAD_SLEEP_DURATION);
 	}
 	return NULL;
@@ -173,8 +171,6 @@ static void _error_write(const char *buf, size_t len)
 	printf("\033[u");
 	fflush(stdout);
 	wget_thread_mutex_lock(&mutex);
-	for (int i = 0; i < config.num_threads; i++) {
-		wget_bar_update(bar, i);
-	}
+	wget_bar_update(bar);
 	wget_thread_mutex_unlock(&mutex);
 }
