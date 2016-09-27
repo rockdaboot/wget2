@@ -424,6 +424,11 @@ static void test_iri_parse(void)
 		{ "ftp://cnn.example.com?story=breaking_news@10.0.0.1/top_story.htm", NULL, "ftp", NULL, NULL, "cnn.example.com", NULL, NULL, "story=breaking_news@10.0.0.1/top_story.htm", NULL},
 //		{ "site;sub:.html", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "site", NULL, ";sub:.html", NULL, NULL},
 		{ "mailto:info@example.com", NULL, "mailto", "info", NULL, "example.com", NULL, NULL, NULL, NULL},
+		{ "http://example.com?query#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, "query", "frag"},
+		{ "http://example.com#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, "frag"},
+		{ "http://example.com?#", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, "", ""},
+		{ "http://example+.com/pa+th?qu+ery#fr+ag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example+.com", NULL, "pa+th", "qu ery", "fr+ag"},
+		{ "http://example.com#frag?x", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", NULL, NULL, NULL, "frag?x"},
 	};
 	unsigned it;
 
@@ -460,6 +465,118 @@ static void test_iri_parse(void)
 		wget_iri_free(&iri);
 	}
 }
+
+/*
+// testing with https://github.com/annevk/url/blob/master/urltests.txt
+static void test_iri_parse_urltests(void)
+{
+	FILE *fp;
+	char *buf = NULL;
+	size_t bufsize;
+	wget_iri_t *iri = NULL;
+	int theline = 0;
+	char f[8][128];
+
+	if (!(fp = fopen("urltests.txt", "r"))) {
+		failed++;
+		info_printf("Failed to open urltests.txt");
+		return;
+	}
+
+	while (wget_getline(&buf, &bufsize, fp) >= 0) {
+		theline++;
+
+		int n = sscanf(buf, "%127s %127s %127s %127s %127s %127s %127s %127s",
+			f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7]);
+
+		if (n < 1)
+			continue;
+
+		if (*f[0] == '#')
+			continue; // skip comments
+
+		// parse URL
+		if (!(iri = wget_iri_parse(f[0], "iso-8859-1"))) {
+			info_printf("%s: Failed to parse '%s'\n", __func__, f[0]);
+			continue;
+		}
+
+		// set defaults
+		const char *scheme = "http";
+		const char *host = "example.org";
+		const char *port = NULL;
+		const char *path = NULL;
+		const char *query = NULL;
+		const char *frag = NULL;
+		const char *user = NULL;
+		const char *pass = NULL;
+		const char *display = NULL;
+
+		for (int it = 1; it < n; it++) {
+			const char *s = f[it];
+
+			if (!strncmp(s, "s:", 2)) { // scheme
+				scheme = s + 2;
+			} else if (!strncmp(s, "h:", 2)) { // host
+				host = s + 2;
+			} else if (!strncmp(s, "port:", 5)) { // port
+				port = s + 5;
+			} else if (!strncmp(s, "p:", 2)) { // path
+				if (s[2] == '/')
+					path = s + 3;
+				else
+					path = s + 2;
+			} else if (!strncmp(s, "q:", 2)) { // query
+				if (s[2] == '?')
+					query = s + 3;
+				else
+					query = s + 2;
+			} else if (!strncmp(s, "f:", 2)) { // fragment
+				if (s[2] == '#')
+					frag = s + 3;
+				else
+					frag = s + 2;
+			} else if (!strncmp(s, "u:", 2)) { // user
+				user = s + 2;
+			} else if (!strncmp(s, "pass:", 5)) { // pass
+				pass = s + 5;
+			} else
+				info_printf("%s: Unknown tag '%s'\n", __func__, s);
+		}
+
+		if (wget_strcmp(iri->display, display)
+			|| wget_strcmp(iri->scheme, scheme)
+			|| wget_strcmp(iri->userinfo, user)
+			|| wget_strcmp(iri->password, pass)
+			|| wget_strcmp(iri->host, host)
+			|| (wget_strcmp(iri->port, port) && iri->port && port && atoi(iri->port) != atoi(port))
+			|| (wget_strcmp(iri->path, path) && iri->path && path && *path)
+			|| wget_strcmp(iri->query, query)
+			|| wget_strcmp(iri->fragment, frag))
+		{
+			failed++;
+			printf("IRI urltests.txt line #%d failed:\n", theline + 1);
+			printf(" [%s]\n", iri->uri);
+			printf("  display %s (expected %s)\n", iri->display, display);
+			printf("  scheme %s (expected %s)\n", iri->scheme, scheme);
+			printf("  user %s (expected %s)\n", iri->userinfo, user);
+			printf("  pass %s (expected %s)\n", iri->password, pass);
+			printf("  host %s (expected %s)\n", iri->host, host);
+			printf("  port %s (expected %s)\n", iri->port, port);
+			printf("  path %s (expected %s)\n", iri->path, path);
+			printf("  query %s (expected %s)\n", iri->query, query);
+			printf("  fragment %s (expected %s)\n", iri->fragment, frag);
+			printf("\n");
+		} else {
+			ok++;
+		}
+
+		wget_iri_free(&iri);
+	}
+
+	fclose(fp);
+}
+*/
 
 static void test_iri_relative_to_absolute(void)
 {
@@ -1648,6 +1765,7 @@ int main(int argc, const char **argv)
 	}
 
 	test_iri_parse();
+//	test_iri_parse_urltests();
 	test_iri_relative_to_absolute();
 	test_iri_compare();
 	test_parser();

@@ -148,11 +148,6 @@ char *wget_iri_unescape_inline(char *src)
 				ret = src;
 				continue;
 			}
-		} else if (*s == '+') {
-			*d++ = ' ';
-			s++;
-			ret = src;
-			continue;
 		}
 
 		*d++ = *s++;
@@ -307,8 +302,11 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 
 	if (c == '?') {
 		iri->query = s;
-		while (*s && *s != '#')
+		while (*s && *s != '#') {
+			if (*s == '+')
+				*s = ' ';
 			s++;
+		}
 		c = *s;
 		if (c) *s++ = 0;
 		/* do not unescape query else we get ambiguity for chars like &, =, +, ... */
