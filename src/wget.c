@@ -839,7 +839,7 @@ static void nop(int sig)
 
 int main(int argc, const char **argv)
 {
-	int n, rc;
+	int n, rc, nthreads = 0;
 	size_t bufsize = 0;
 	char *buf = NULL;
 	bool async_urls = false;
@@ -981,36 +981,34 @@ int main(int argc, const char **argv)
 
 	downloaders = xcalloc(config.num_threads, sizeof(DOWNLOADER));
 
-	while (!queue_empty() || input_tid) {
-		for (n = 0; n < config.num_threads; n++) {
-			downloaders[n].id = n;
+	wget_thread_mutex_lock(&main_mutex);
+	while (!terminate) {
+		// queue_print();
+		if (queue_empty() && !input_tid) {
+			break;
+		}
+
+		for (;nthreads < config.num_threads && nthreads < queue_size(); nthreads++) {
+			downloaders[nthreads].id = nthreads;
 
 			// start worker threads (I call them 'downloaders')
-			if ((rc = wget_thread_start(&downloaders[n].tid, downloader_thread, &downloaders[n], 0)) != 0) {
+			if ((rc = wget_thread_start(&downloaders[nthreads].tid, downloader_thread, &downloaders[nthreads], 0)) != 0) {
 				error_printf(_("Failed to start downloader, error %d\n"), rc);
 			}
 		}
 
-		wget_thread_mutex_lock(&main_mutex);
-		while (!terminate) {
-			// queue_print();
-			if (queue_empty() && !input_tid) {
-				break;
-			}
+		if (config.progress)
+			bar_printf(config.num_threads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d",
+				stats.ndownloads, wget_human_readable(quota_buf, sizeof(quota_buf), quota), stats.nredirects, queue_size());
 
-			if (config.progress)
-				bar_printf(config.num_threads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d",
-					stats.ndownloads, wget_human_readable(quota_buf, sizeof(quota_buf), quota), stats.nredirects, queue_size());
-
-			if (config.quota && quota >= config.quota) {
-				info_printf(_("Quota of %lld bytes reached - stopping.\n"), config.quota);
-				break;
-			}
-
-			// here we sit and wait for an event from our worker threads
-			wget_thread_cond_wait(&main_cond, &main_mutex, 0);
-			debug_printf("%s: wake up\n", __func__);
+		if (config.quota && quota >= config.quota) {
+			info_printf(_("Quota of %lld bytes reached - stopping.\n"), config.quota);
+			break;
 		}
+
+		// here we sit and wait for an event from our worker threads
+		wget_thread_cond_wait(&main_cond, &main_mutex, 0);
+		debug_printf("%s: wake up\n", __func__);
 	}
 	debug_printf("%s: done\n", __func__);
 
@@ -1019,7 +1017,7 @@ int main(int argc, const char **argv)
 	wget_thread_cond_signal(&worker_cond);
 	wget_thread_mutex_unlock(&main_mutex);
 
-	for (n = 0; n < config.num_threads; n++) {
+	for (n = 0; n < nthreads; n++) {
 		//		struct timespec ts;
 		//		gettime(&ts);
 		//		ts.tv_sec += 1;
