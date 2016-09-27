@@ -132,6 +132,8 @@ static int
 	hsts_changed;
 static volatile int
 	terminate;
+int
+	nthreads;
 
 void set_exit_status(int status)
 {
@@ -839,7 +841,7 @@ static void nop(int sig)
 
 int main(int argc, const char **argv)
 {
-	int n, rc, nthreads = 0;
+	int n, rc;
 	size_t bufsize = 0;
 	char *buf = NULL;
 	char quota_buf[16];
@@ -1579,6 +1581,9 @@ void *downloader_thread(void *p)
 	enum actions action = ACTION_GET_JOB;
 
 	downloader->tid = wget_thread_self(); // to avoid race condition
+
+	if (config.progress)
+		bar_update_slots();
 
 	wget_thread_mutex_lock(&main_mutex);
 
