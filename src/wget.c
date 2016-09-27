@@ -842,7 +842,6 @@ int main(int argc, const char **argv)
 	int n, rc, nthreads = 0;
 	size_t bufsize = 0;
 	char *buf = NULL;
-	bool async_urls = false;
 	char quota_buf[16];
 
 	setlocale(LC_ALL, "");
@@ -927,8 +926,6 @@ int main(int argc, const char **argv)
 				// read URLs asynchronously and process each URL immediately when it arrives
 				if ((rc = wget_thread_start(&input_tid, input_thread, NULL, 0)) != 0) {
 					error_printf(_("Failed to start downloader, error %d\n"), rc);
-				} else {
-					async_urls = true;
 				}
 			}
 		} else {
@@ -966,12 +963,7 @@ int main(int argc, const char **argv)
 	// know the queue_size at startup, and hence spawn config.max_threads
 	// threads.
 	if (!wget_thread_support()) {
-		config.num_threads = 1;
-	}
-	if (config.recursive || async_urls || config.max_threads < queue_size()) {
-		config.num_threads = config.max_threads;
-	} else {
-		config.num_threads = queue_size();
+		config.max_threads = 1;
 	}
 
 	if (config.progress) {
@@ -979,7 +971,7 @@ int main(int argc, const char **argv)
 		bar_init();
 	}
 
-	downloaders = xcalloc(config.num_threads, sizeof(DOWNLOADER));
+	downloaders = xcalloc(config.max_threads, sizeof(DOWNLOADER));
 
 	wget_thread_mutex_lock(&main_mutex);
 	while (!terminate) {
@@ -988,7 +980,7 @@ int main(int argc, const char **argv)
 			break;
 		}
 
-		for (;nthreads < config.num_threads && nthreads < queue_size(); nthreads++) {
+		for (;nthreads < config.max_threads && nthreads < queue_size(); nthreads++) {
 			downloaders[nthreads].id = nthreads;
 
 			// start worker threads (I call them 'downloaders')
@@ -998,7 +990,7 @@ int main(int argc, const char **argv)
 		}
 
 		if (config.progress)
-			bar_printf(config.num_threads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d",
+			bar_printf(nthreads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d",
 				stats.ndownloads, wget_human_readable(quota_buf, sizeof(quota_buf), quota), stats.nredirects, queue_size());
 
 		if (config.quota && quota >= config.quota) {
@@ -1029,7 +1021,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (config.progress)
-		bar_printf(config.num_threads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d",
+		bar_printf(nthreads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d",
 			stats.ndownloads, wget_human_readable(quota_buf, sizeof(quota_buf), quota), stats.nredirects, queue_size());
 	else if ((config.recursive || config.page_requisites || (config.input_file && quota != 0)) && quota) {
 		info_printf(_("Downloaded: %d files, %s bytes, %d redirects, %d errors\n"),

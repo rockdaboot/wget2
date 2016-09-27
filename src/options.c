@@ -596,7 +596,6 @@ struct config config = {
 	.read_timeout = -1,
 	.max_redirect = 20,
 	.max_threads = 5,
-	.num_threads = 1,
 	.dns_caching = 1,
 	.tcp_fastopen = 1,
 	.user_agent = PACKAGE_NAME"/"PACKAGE_VERSION,

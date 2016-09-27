@@ -120,8 +120,7 @@ struct config {
 		dns_timeout, // ms
 		read_timeout, // ms
 		max_redirect,
-		max_threads,
-		num_threads;
+		max_threads;
 	char
 		tls_resume,            // if TLS session resumption is enabled or not
 		tls_false_start,
