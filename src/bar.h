@@ -37,6 +37,7 @@ void bar_printf(int slotpos, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3
 void bar_vprintf(int slotpos, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL_ALL;
 void bar_register(wget_bar_ctx *bar_ctx);
 void bar_deregister(wget_bar_ctx *bar_ctx);
+void bar_update_slots(void);
 
 /*
 ssize_t

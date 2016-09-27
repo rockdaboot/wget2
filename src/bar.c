@@ -65,11 +65,6 @@ static int
 
 void bar_init(void)
 {
-	char lf[config.max_threads + 1];
-
-	memset(lf, '\n', sizeof(lf));
-	fwrite(lf, 1, sizeof(lf), stdout);
-
 	/* Initialize screen_width if this hasn't been done or if it might
 	   have changed, as indicated by receiving SIGWINCH.  */
 	screen_width = determine_screen_width ();
@@ -78,7 +73,7 @@ void bar_init(void)
 	else if (screen_width < MINIMUM_SCREEN_WIDTH)
 		screen_width = MINIMUM_SCREEN_WIDTH;
 
-	bar = wget_bar_init(NULL, sizeof(lf), screen_width - 1);
+	bar = wget_bar_init(NULL, config.max_threads + 1, screen_width - 1);
 
 	// set custom write function for wget_error_printf()
 	// _error_write uses 'bar', so that has to initialized before
@@ -150,6 +145,13 @@ void bar_deregister(wget_bar_ctx *bar_ctx)
 	wget_thread_mutex_unlock(&mutex);
 }
 
+void bar_update_slots(void)
+{
+	wget_thread_mutex_lock(&mutex);
+	wget_bar_set_slots(bar, nthreads + 1);
+	wget_thread_mutex_unlock(&mutex);
+}
+
 static void *_bar_update_thread(void *p)
 {
 	wget_bar_t *prog_bar = (wget_bar_t *) p;
@@ -166,11 +168,11 @@ static void *_bar_update_thread(void *p)
 static void _error_write(const char *buf, size_t len)
 {
 //  printf("\033[s\033[1S\033[%dA\033[1G\033[2K", config.num_threads + 2);
-	printf("\033[s\033[1S\033[%dA\033[1G\033[0J", config.max_threads + 2);
+	wget_thread_mutex_lock(&mutex);
+	printf("\033[s\033[1S\033[%dA\033[1G\033[0J", nthreads + 2);
 	log_write_error_stdout(buf, len);
 	printf("\033[u");
 	fflush(stdout);
-	wget_thread_mutex_lock(&mutex);
 	wget_bar_update(bar);
 	wget_thread_mutex_unlock(&mutex);
 }

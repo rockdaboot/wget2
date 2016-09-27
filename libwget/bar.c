@@ -36,6 +36,7 @@
 #include <time.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <assert.h>
 
 #include <libwget.h>
 #include "private.h"
@@ -93,6 +94,7 @@ struct _wget_bar_st {
 		*spaces;
 	int
 		nslots,
+		max_slots,
 		max_width;
 };
 
@@ -141,9 +143,9 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 	} else
 		memset(bar, 0, sizeof(*bar));
 
-	if (bar->nslots < nslots) {
+	if (bar->max_slots < nslots) {
 		xfree(bar->slots);
-		bar->nslots = nslots;
+		bar->max_slots = nslots;
 		if (!(bar->slots = xcalloc(nslots, sizeof(_bar_slot_t) * nslots)))
 			goto cleanup;
 	} else {
@@ -166,7 +168,7 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 			goto cleanup;
 		memset(bar->spaces, ' ', max_width);
 
-		for(int i = 0; i < bar->nslots; i++) {
+		for(int i = 0; i < bar->max_slots; i++) {
 			xfree(bar->slots[i].progress);
 			if(!(bar->slots[i].progress = xmalloc(max_width + 1)))
 				goto cleanup;
@@ -188,8 +190,22 @@ cleanup:
 	return NULL;
 }
 
+void wget_bar_set_slots(wget_bar_t *bar, int nslots)
+{
+	char lf[nslots];
+    memset(lf, '\n', sizeof(lf));
+
+	if (nslots <= bar->nslots)
+		return;
+	/* _bar_print_slot(bar, 0); */
+	fwrite(lf, 1, nslots - bar->nslots, stdout);
+	bar->nslots = nslots;
+	wget_bar_update(bar);
+}
+
 void wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx)
 {
+	assert (ctx->slotpos <= bar->nslots);
 	bar->slots[ctx->slotpos].ctx = ctx;
 	bar->slots[ctx->slotpos].tick = 0;
 	/* error_printf("Context registered for slotpos: %ld %p %p %p\n", ctx->slotpos, bar, &bar->slots[ctx->slotpos], bar->slots[ctx->slotpos].ctx); */
