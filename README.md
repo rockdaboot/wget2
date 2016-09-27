@@ -2,6 +2,12 @@
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/7852/badge.svg)](https://scan.coverity.com/projects/rockdaboot-wget2)
 [![Coverage Status](https://coveralls.io/repos/github/rockdaboot/wget2/badge.svg?branch=master)](https://coveralls.io/github/rockdaboot/wget2?branch=master)
 
+Solaris OpenCSW [![Build Status Solaris amd64](https://buildfarm.opencsw.org/buildbot/png?builder=wget2-solaris10-amd64)](https://buildfarm.opencsw.org/buildbot/builders/wget2-solaris10-amd64)
+[![Build Status Solaris i386](https://buildfarm.opencsw.org/buildbot/png?builder=wget2-solaris10-i386)](https://buildfarm.opencsw.org/buildbot/builders/wget2-solaris10-i386)
+[![Build Status Solaris Sparc](https://buildfarm.opencsw.org/buildbot/png?builder=wget2-solaris10-sparc)](https://buildfarm.opencsw.org/buildbot/builders/wget2-solaris10-sparc)
+[![Build Status Solaris SparcV9](https://buildfarm.opencsw.org/buildbot/png?builder=wget2-solaris10-sparcv9)](https://buildfarm.opencsw.org/buildbot/builders/wget2-solaris10-sparcv9)
+
+
 Wget2 - multithreaded metalink / file / website downloader / spider and library
 ===============================================================================
 
