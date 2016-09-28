@@ -2002,6 +2002,7 @@ void wget_http_close(wget_http_connection_t **conn)
 	}
 }
 
+#ifdef WITH_LIBNGHTTP2
 static void _init_nv(nghttp2_nv *nv, const char *name, const char *value)
 {
 	nv->name = (uint8_t *)name;
@@ -2010,6 +2011,7 @@ static void _init_nv(nghttp2_nv *nv, const char *name, const char *value)
 	nv->valuelen = strlen(value);
 	nv->flags = NGHTTP2_NV_FLAG_NONE;
 }
+#endif
 
 int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *req)
 {
