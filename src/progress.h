@@ -37,12 +37,11 @@
 
 // the following is just needed for the progress bar
 struct _body_callback_context {
-	DOWNLOADER *downloader;
+	JOB *job;
 	wget_buffer_t *body;
 	int outfd;
 	size_t max_memory;
 	off_t length;
-	bool head;
 	wget_bar_ctx bar;
 };
 

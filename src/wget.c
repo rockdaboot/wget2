@@ -1585,7 +1585,7 @@ void *downloader_thread(void *p)
 	wget_http_response_t *resp = NULL;
 	JOB *job;
 	HOST *host = NULL;
-	int pending = 0, max_pending = 1;
+	int pending = 0, max_pending = 1, locked;
 	long long pause = 0;
 	enum actions action = ACTION_GET_JOB;
 
@@ -1594,7 +1594,7 @@ void *downloader_thread(void *p)
 	if (config.progress)
 		bar_update_slots();
 
-	wget_thread_mutex_lock(&main_mutex);
+	wget_thread_mutex_lock(&main_mutex); locked = 1;
 
 	while (!terminate) {
 		debug_printf("[%d] action=%d pending=%d host=%p\n", downloader->id, (int) action, pending, host);
@@ -1603,7 +1603,7 @@ void *downloader_thread(void *p)
 		case ACTION_GET_JOB: // Get a job, connect, send request
 			if (!(job = host_get_job(host, &pause))) {
 				if (pending) {
-					wget_thread_mutex_unlock(&main_mutex);
+					wget_thread_mutex_unlock(&main_mutex); locked = 0;
 					action = ACTION_GET_RESPONSE;
 				} else if (host) {
 					wget_http_close(&downloader->conn);
@@ -1612,12 +1612,12 @@ void *downloader_thread(void *p)
 					if (!wget_thread_support()) {
 						goto out;
 					}
-					wget_thread_cond_wait(&worker_cond, &main_mutex, pause);
+					wget_thread_cond_wait(&worker_cond, &main_mutex, pause); locked = 1;
 				}
 				break;
 			}
 
-			wget_thread_mutex_unlock(&main_mutex);
+			wget_thread_mutex_unlock(&main_mutex); locked = 0;
 
 			{
 				wget_iri_t *iri = job->iri;
@@ -1658,10 +1658,11 @@ void *downloader_thread(void *p)
 					break;
 				}
 
-				if (pending >= max_pending)
+				if (pending >= max_pending) {
 					action = ACTION_GET_RESPONSE;
-				else
-					wget_thread_mutex_lock(&main_mutex);
+				} else {
+					wget_thread_mutex_lock(&main_mutex); locked = 1;
+				}
 			}
 			break;
 
@@ -1691,7 +1692,7 @@ void *downloader_thread(void *p)
 			wget_http_free_request(&resp->req);
 			wget_http_free_response(&resp);
 
-			wget_thread_mutex_lock(&main_mutex);
+			wget_thread_mutex_lock(&main_mutex); locked = 1;
 
 			// download of single-part file complete, remove from job queue
 			if (job && job->inuse) {
@@ -1708,7 +1709,7 @@ void *downloader_thread(void *p)
 		case ACTION_ERROR:
 			wget_http_close(&downloader->conn);
 
-			wget_thread_mutex_lock(&main_mutex);
+			wget_thread_mutex_lock(&main_mutex); locked = 1;
 			host_release_jobs(host);
 			wget_thread_cond_signal(&main_cond);
 
@@ -1725,7 +1726,8 @@ void *downloader_thread(void *p)
 	}
 
 out:
-	wget_thread_mutex_unlock(&main_mutex);
+	if (locked)
+		wget_thread_mutex_unlock(&main_mutex);
 	wget_http_close(&downloader->conn);
 
 	// if we terminate, tell the other downloaders
@@ -2473,10 +2475,10 @@ static int _get_header(wget_http_response_t *resp, void *context)
 	    && (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml") ||
 		!wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml"));
 
-	if (ctx->head || (config.metalink && metalink))
+	if (ctx->job->head_first || (config.metalink && metalink))
 		dest = NULL;
-	else if ((part = ctx->downloader->job->part)) {
-		ctx->outfd = open(ctx->downloader->job->metalink->name, O_WRONLY | O_CREAT | O_NONBLOCK, 0644);
+	else if ((part = ctx->job->part)) {
+		ctx->outfd = open(ctx->job->metalink->name, O_WRONLY | O_CREAT | O_NONBLOCK, 0644);
 		if (ctx->outfd == -1) {
 			set_exit_status(3);
 			return -1;
@@ -2490,7 +2492,7 @@ static int _get_header(wget_http_response_t *resp, void *context)
 	else if (config.content_disposition && resp->content_filename)
 		dest = resp->content_filename;
 	else
-		dest = config.output_document ? config.output_document : ctx->downloader->job->local_filename;
+		dest = config.output_document ? config.output_document : ctx->job->local_filename;
 
 	if (dest && (resp->code == 200 || resp->code == 206 || config.content_on_error)) {
 		ctx->outfd = _prepare_file (resp, dest, resp->code == 206 ? O_APPEND : O_TRUNC);
@@ -2771,18 +2773,17 @@ int http_send_request(wget_iri_t *iri, DOWNLOADER *downloader)
 
 	struct _body_callback_context *context = xcalloc(1, sizeof(struct _body_callback_context));
 
-	context->downloader = downloader;
+	context->job = downloader->job;
 	context->max_memory = downloader->job->part ? 0 : 10 * (1 << 20);
 	context->outfd = -1;
 	context->body = wget_buffer_alloc(102400);
 	context->length = 0;
-	context->head = downloader->job->head_first;
 
 	wget_thread_mutex_init(&context->bar.mutex);
 	context->bar.slotpos = downloader->id;
 	context->bar.expected_size = 0;
 	context->bar.raw_downloaded = 0;
-	context->bar.filename = config.output_document ? config.output_document : downloader->job->local_filename;
+	context->bar.filename = config.output_document ? config.output_document : context->job->local_filename;
 
 	// set callback functions
 	wget_http_request_set_header_cb(req, _get_header, context);

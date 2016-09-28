@@ -1623,7 +1623,7 @@ static ssize_t _recv_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	return rc;
 }
 
-static void _print_frame_type(int type, const char tag)
+static void _print_frame_type(int type, const char tag, int streamid)
 {
 	static const char *name[] = {
 		[NGHTTP2_DATA] = "DATA",
@@ -1639,21 +1639,22 @@ static void _print_frame_type(int type, const char tag)
 	};
 
 	if ((unsigned) type < countof(name))
-		debug_printf("[FRAME] %c %s\n", tag, name[type]);
+		debug_printf("[FRAME %d] %c %s\n", streamid, tag, name[type]);
 	else
-		debug_printf("[FRAME] %c Unknown type %d\n", tag, type);
+		debug_printf("[FRAME %d] %c Unknown type %d\n", streamid, tag, type);
 }
 
 static int _on_frame_send_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	const nghttp2_frame *frame, void *user_data G_GNUC_WGET_UNUSED)
 {
-	_print_frame_type(frame->hd.type, '>');
+	_print_frame_type(frame->hd.type, '>', frame->hd.stream_id);
 
 	if (frame->hd.type == NGHTTP2_HEADERS) {
 		const nghttp2_nv *nva = frame->headers.nva;
 
 		for (unsigned i = 0; i < frame->headers.nvlen; i++)
-			debug_printf("[FRAME] > %.*s: %.*s\n", (int)nva[i].namelen, nva[i].name, (int)nva[i].valuelen, nva[i].value);
+			debug_printf("[FRAME %d] > %.*s: %.*s\n", frame->hd.stream_id,
+				(int)nva[i].namelen, nva[i].name, (int)nva[i].valuelen, nva[i].value);
 	}
 
 	return 0;
@@ -1662,7 +1663,7 @@ static int _on_frame_send_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 static int _on_frame_recv_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	const nghttp2_frame *frame, void *user_data G_GNUC_WGET_UNUSED)
 {
-	_print_frame_type(frame->hd.type, '<');
+	_print_frame_type(frame->hd.type, '<', frame->hd.stream_id);
 
 	// header callback after receiving all header tags
 	if (frame->hd.type == NGHTTP2_HEADERS) {
@@ -2001,22 +2002,13 @@ void wget_http_close(wget_http_connection_t **conn)
 	}
 }
 
-#define INIT_NV(nv, NAME, VALUE) \
-{ \
-	(nv)->name = (uint8_t *) NAME; \
-	(nv)->value = (uint8_t *) VALUE; \
-	(nv)->namelen = sizeof(NAME) - 1; \
-	(nv)->valuelen = sizeof(VALUE) - 1; \
-	(nv)->flags = NGHTTP2_NV_FLAG_NONE; \
-}
-
-#define INIT_NV_CS(nv, NAME, VALUE) \
-{ \
-	(nv)->name = (uint8_t *) NAME; \
-	(nv)->value = (uint8_t *) VALUE; \
-	(nv)->namelen = strlen((char *)(nv)->name); \
-	(nv)->valuelen = strlen(VALUE); \
-	(nv)->flags = NGHTTP2_NV_FLAG_NONE; \
+static void _init_nv(nghttp2_nv *nv, const char *name, const char *value)
+{
+	nv->name = (uint8_t *)name;
+	nv->namelen = strlen(name);
+	nv->value = (uint8_t *)value;
+	nv->valuelen = strlen(value);
+	nv->flags = NGHTTP2_NV_FLAG_NONE;
 }
 
 int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *req)
@@ -2031,10 +2023,10 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 
 		resource[0] = '/';
 		memcpy(resource + 1, req->esc_resource.data, req->esc_resource.length + 1);
-		INIT_NV(&nvs[0], ":method", "GET")
-		INIT_NV_CS(&nvs[1], ":path", resource)
-		INIT_NV(&nvs[2], ":scheme", "https")
-		INIT_NV_CS(&nvs[3], ":authority", req->esc_host.data)
+		_init_nv(&nvs[0], ":method", "GET");
+		_init_nv(&nvs[1], ":path", resource);
+		_init_nv(&nvs[2], ":scheme", "https");
+		_init_nv(&nvs[3], ":authority", req->esc_host.data);
 		nvp = &nvs[4];
 
 		for (int it = 0; it < wget_vector_size(req->headers); it++) {
@@ -2044,8 +2036,7 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 			if (!wget_strcasecmp_ascii(param->name, "Accept-Encoding"))
 				continue;
 
-			INIT_NV_CS(nvp, param->name, param->value)
-			nvp++;
+			_init_nv(nvp++, param->name, param->value);
 		}
 
 		// HTTP/2.0 has the streamid as link between
