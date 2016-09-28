@@ -620,7 +620,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		for (int it = 0; it < wget_vector_size(parents); it++) {
 			wget_iri_t *parent = wget_vector_get(parents, it);
 
-			if (!strcmp(parent->host, iri->host)) {
+			if (!wget_strcmp(parent->host, iri->host)) {
 				if (!parent->dirlen || !strncmp(parent->path, iri->path, parent->dirlen)) {
 					// info_printf("found\n");
 					ok = 1;
@@ -1518,7 +1518,7 @@ static void process_response(wget_http_response_t *resp)
 
 	if (resp->code == 200) {
 		if (config.recursive && (!config.level || job->level < config.level + config.page_requisites)) {
-			if (resp->content_type) {
+			if (resp->content_type && resp->body) {
 				if (!wget_strcasecmp_ascii(resp->content_type, "text/html")) {
 					html_parse(job, job->level, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")) {
