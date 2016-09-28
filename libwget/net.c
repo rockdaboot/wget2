@@ -175,8 +175,8 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 {
 	static wget_thread_mutex_t
 		mutex = WGET_THREAD_MUTEX_INITIALIZER;
-	struct addrinfo *addrinfo, *ai, hints;
-	int tries, rc = 0, ai_flags = 0;
+	struct addrinfo *addrinfo, hints;
+	int rc = 0, ai_flags = 0;
 
 	if (!tcp)
 		tcp = &_global_tcp;
@@ -184,48 +184,47 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 //	if (!port)
 //		port = "0";
 
-restart_tcp_resolve:
-	// if port is NULL,
-	if (tcp->caching) {
-		if ((addrinfo = _wget_dns_cache_get(host, port)))
-			return addrinfo;
-
-		// prevent multiple address resolutions of the same host/port
-		wget_thread_mutex_lock(&mutex);
-		// now try again
-		if ((addrinfo = _wget_dns_cache_get(host, port))) {
-			wget_thread_mutex_unlock(&mutex);
-			return addrinfo;
-		}
-	}
-	addrinfo = NULL;
-
-	ai_flags |= (port && c_isdigit(*port) ? AI_NUMERICSERV : 0);
-	ai_flags |= AI_ADDRCONFIG;
-
-	if (tcp->passive) {
-		ai_flags |= AI_PASSIVE;
-	}
-
-	memset(&hints, 0 ,sizeof(hints));
-	hints.ai_family = tcp->family;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = ai_flags;
-
-	if (port)
-		debug_printf("resolving %s:%s...\n", host, port);
-	else
-		debug_printf("resolving %s...\n", host);
-
 	// get the IP address for the server
-	for (tries = 0; tries < 3; tries++) {
+	for (int tries = 0, max = 3; tries < max; tries++) {
+		// if port is NULL,
+		if (tcp->caching) {
+			if ((addrinfo = _wget_dns_cache_get(host, port)))
+				return addrinfo;
+
+			// prevent multiple address resolutions of the same host/port
+			wget_thread_mutex_lock(&mutex);
+			// now try again
+			if ((addrinfo = _wget_dns_cache_get(host, port))) {
+				wget_thread_mutex_unlock(&mutex);
+				return addrinfo;
+			}
+		}
+		addrinfo = NULL;
+
+		ai_flags |= (port && c_isdigit(*port) ? AI_NUMERICSERV : 0);
+		ai_flags |= AI_ADDRCONFIG;
+
+		if (tcp->passive) {
+			ai_flags |= AI_PASSIVE;
+		}
+
+		memset(&hints, 0 ,sizeof(hints));
+		hints.ai_family = tcp->family;
+		hints.ai_socktype = SOCK_STREAM;
+		hints.ai_flags = ai_flags;
+
+		if (port)
+			debug_printf("resolving %s:%s...\n", host, port);
+		else
+			debug_printf("resolving %s...\n", host);
+
 		if ((rc = getaddrinfo(host, port, &hints, &addrinfo)) == 0 || rc != EAI_AGAIN)
 			break;
 
-		if (tries < 2) {
-			wget_thread_mutex_unlock(&mutex);
+		if (tries < max - 1) {
+			if (tcp->caching)
+				wget_thread_mutex_unlock(&mutex);
 			wget_millisleep(100);
-			goto restart_tcp_resolve;
 		}
 	}
 
@@ -243,7 +242,7 @@ restart_tcp_resolve:
 		struct addrinfo *unpreferred = NULL, *unpreferred_tail = NULL;
 
 		// split address list into preferred and not preferred, keeping the original order
-		for (ai = addrinfo; ai;) {
+		for (struct addrinfo *ai = addrinfo; ai;) {
 			if (ai->ai_family == tcp->preferred_family) {
 				if (preferred_tail)
 					preferred_tail->ai_next = ai;
@@ -275,7 +274,7 @@ restart_tcp_resolve:
 	}
 
 	if (wget_get_logger(WGET_LOGGER_DEBUG)->vprintf) {
-		for (ai = addrinfo; ai; ai = ai->ai_next) {
+		for (struct addrinfo *ai = addrinfo; ai; ai = ai->ai_next) {
 			char adr[NI_MAXHOST], sport[NI_MAXSERV];
 
 			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
