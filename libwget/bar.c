@@ -226,7 +226,7 @@ void wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx)
 		last_ctx->raw_downloaded = ctx->raw_downloaded;
 		// Filename will be overwritten when a new file is downloaded by the same
 		// downloader thread. Hence, we make a copy here.
-		last_ctx->filename = strdup(ctx->filename);
+		last_ctx->filename = wget_strdup(ctx->filename);
 	}
 
 	_bar_print_final(bar, ctx->slotpos);
