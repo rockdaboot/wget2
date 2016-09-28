@@ -82,6 +82,8 @@ static char
 static const char
 	*server_hello;
 
+static void wget_test_final(int first_key, const char *switchval, va_list args);
+
 static void sigterm_handler(int sig G_GNUC_WGET_UNUSED)
 {
 	terminate = 1;
@@ -738,6 +740,17 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 
 void wget_test(int first_key, ...)
 {
+	const char *switches[]={"", "--progress bar"};
+	va_list argptr;
+	for(unsigned int i = 0; i < countof(switches); i++) {
+		va_start(argptr, first_key);
+		wget_test_final(first_key, switches[i], argptr);
+		va_end(argptr);
+	}
+}
+
+static void wget_test_final(int first_key, const char *switchval, va_list args)
+{
 	const char
 		*request_url,
 		*options="",
@@ -754,7 +767,7 @@ void wget_test(int first_key, ...)
 		fd,
 		rc,
 		expected_error_code = 0;
-	va_list args;
+	/* va_list args; */
 
 	keep_tmpfiles = 0;
 	server_hello = "220 FTP server ready";
@@ -762,7 +775,7 @@ void wget_test(int first_key, ...)
 	if (!request_urls)
 		request_urls = wget_vector_create(8,8,NULL);
 
-	va_start (args, first_key);
+	/* va_start (args, first_key); */
 	for (key = first_key; key; key = va_arg(args, int)) {
 		switch (key) {
 		case WGET_TEST_REQUEST_URL:
@@ -836,14 +849,14 @@ void wget_test(int first_key, ...)
 		// the test servers will listen only on the first IP and also prefers IPv4
 		const char *emulator = getenv("EMULATOR");
 		if (emulator && *emulator)
-			wget_buffer_printf(cmd, "%s %s%s %s", emulator, executable, EXEEXT, options);
+			wget_buffer_printf(cmd, "%s %s%s %s %s", emulator, executable, EXEEXT, options, switchval);
 		else
-			wget_buffer_printf(cmd, "%s%s %s", executable, EXEEXT, options);
+			wget_buffer_printf(cmd, "%s%s %s %s", executable, EXEEXT, options, switchval);
 		wget_info_printf("cmd=%s\n", cmd->data);
 	} else if (!strcmp(valgrind, "1")) {
-		wget_buffer_printf(cmd, "valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s %s", executable, options);
+		wget_buffer_printf(cmd, "valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s %s %s", executable, options, switchval);
 	} else
-		wget_buffer_printf(cmd, "%s %s %s", valgrind, executable, options);
+		wget_buffer_printf(cmd, "%s %s %s %s", valgrind, executable, options, switchval);
 
 	for (it = 0; it < (size_t)wget_vector_size(request_urls); it++) {
 		wget_buffer_printf_append(cmd, " 'http://localhost:%d/%s'",
