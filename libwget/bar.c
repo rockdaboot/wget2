@@ -128,49 +128,43 @@ static wget_thread_mutex_t
  */
 wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 {
-	int allocated = 0;
-
 	// While the API defines max_width to be the total size of the progress
 	// bar, the code assume sit to be the size of the [===> ] actual bar
 	// drawing. So compute that early enough.
 	max_width -= _BAR_DECOR_COST;
 
+	if (nslots < 1 || max_width < 1)
+		return NULL;
+
 	if (!bar) {
-		if (!(bar = xcalloc(1, sizeof(*bar))))
-			return NULL;
-		allocated = 1;
+		bar = xcalloc(1, sizeof(*bar));
 	} else
 		memset(bar, 0, sizeof(*bar));
 
 	if (bar->max_slots < nslots) {
 		xfree(bar->slots);
 		bar->max_slots = nslots;
-		if (!(bar->slots = xcalloc(nslots, sizeof(_bar_slot_t) * nslots)))
-			goto cleanup;
+		bar->slots = xcalloc(nslots, sizeof(_bar_slot_t) * nslots);
 	} else {
 		memset(bar->slots, 0, sizeof(_bar_slot_t) * nslots);
 	}
 
 	if (bar->max_width < max_width) {
 		xfree(bar->known_size);
-		if (!(bar->known_size = xmalloc(max_width)))
-			goto cleanup;
+		bar->known_size = xmalloc(max_width);
 		memset(bar->known_size, '=', max_width);
 
 		xfree(bar->unknown_size);
-		if (!(bar->unknown_size = xmalloc(max_width)))
-			goto cleanup;
+		bar->unknown_size = xmalloc(max_width);
 		memset(bar->unknown_size, '*', max_width);
 
 		xfree(bar->spaces);
-		if (!(bar->spaces = xmalloc(max_width)))
-			goto cleanup;
+		bar->spaces = xmalloc(max_width);
 		memset(bar->spaces, ' ', max_width);
 
-		for(int i = 0; i < bar->max_slots; i++) {
+		for (int i = 0; i < bar->max_slots; i++) {
 			xfree(bar->slots[i].progress);
-			if(!(bar->slots[i].progress = xmalloc(max_width + 1)))
-				goto cleanup;
+			bar->slots[i].progress = xmalloc(max_width + 1);
 		}
 
 		bar->max_width = max_width;
@@ -179,14 +173,6 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 	wget_thread_mutex_init(&stdout_mutex);
 
 	return bar;
-
-cleanup:
-	if (allocated)
-		wget_bar_free(&bar);
-	else
-		wget_bar_deinit(bar);
-
-	return NULL;
 }
 
 void wget_bar_set_slots(wget_bar_t *bar, int nslots)
@@ -196,6 +182,7 @@ void wget_bar_set_slots(wget_bar_t *bar, int nslots)
 
 	if (nslots <= bar->nslots)
 		return;
+
 	/* _bar_print_slot(bar, 0); */
 	fwrite(lf, 1, nslots - bar->nslots, stdout);
 	bar->nslots = nslots;
@@ -234,26 +221,27 @@ void wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx)
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
-_return_cursor_position(void) {
+_return_cursor_position(void)
+{
 	printf("\033[u");
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
-_bar_print_slot(const wget_bar_t *bar, int slotpos) {
+_bar_print_slot(const wget_bar_t *bar, int slotpos)
+{
 	printf("\033[s\033[%dA\033[1G", bar->nslots - slotpos);
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
-_bar_set_progress(const wget_bar_t *bar, int slotpos) {
-
-	int cols;
+_bar_set_progress(const wget_bar_t *bar, int slotpos)
+{
 	wget_bar_ctx *ctx;
 	_bar_slot_t *slot = &bar->slots[slotpos];
 
 	ctx = (slot->ctx != NULL) ? slot->ctx : &slot->last_ctx;
 
-	if(ctx->expected_size > 0) {
-		cols = (ctx->raw_downloaded / (double) ctx->expected_size) * bar->max_width;
+	if (ctx->expected_size > 0) {
+		int cols = (ctx->raw_downloaded / (double) ctx->expected_size) * bar->max_width;
 		if (cols > bar->max_width)
 			cols = bar->max_width;
 		else if (cols <= 0)
@@ -265,36 +253,38 @@ _bar_set_progress(const wget_bar_t *bar, int slotpos) {
 	} else {
 		int ind = slot->tick % ((bar->max_width * 2) - 6);
 		int pre_space;
-		if(ind <= bar->max_width - 3)
+
+		if (ind <= bar->max_width - 3)
 			pre_space = ind;
 		else
 			pre_space = bar->max_width - (ind - bar->max_width + 5);
+
 		snprintf(slot->progress, bar->max_width + 1, "%.*s<=>%.*s",
 				pre_space, bar->spaces,
 				bar->max_width - pre_space - 3, bar->spaces);
 	}
 }
 
-void wget_bar_update(const wget_bar_t *bar) {
-	for(int i = 0; i < bar->nslots; i++)
+void wget_bar_update(const wget_bar_t *bar)
+{
+	for (int i = 0; i < bar->nslots; i++)
 		_bar_update_slot(bar, i);
 }
 
 static void
-_bar_update_slot(const wget_bar_t *bar, int slotpos) {
-
+_bar_update_slot(const wget_bar_t *bar, int slotpos)
+{
 	wget_bar_ctx *ctx;
 	off_t
 		max,
 		cur;
 	int ratio;
 	char *human_readable_bytes;
-
 	_bar_slot_t *slot = &bar->slots[slotpos];
+
 	// We only print a progress bar for the slot if a context has been
 	// registered for it
 	if ((ctx = slot->ctx)) {
-
 		wget_thread_mutex_lock(&ctx->mutex);
 		max = ctx->expected_size;
 		cur = ctx->raw_downloaded;
