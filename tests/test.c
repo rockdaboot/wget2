@@ -1723,6 +1723,34 @@ static void test_striconv(void)
 	xfree(utf16be);
 }
 
+static void test_bar(void)
+{
+	wget_bar_t *bar;
+
+	/* testing unexpected values */
+	for (int i = -2; i <= 2; i++) {
+		for (int j = -2; j <= 2; j++) {
+			bar = wget_bar_init(NULL, i, j);
+			wget_bar_free(&bar);
+		}
+	}
+
+	/* testing unexpected values */
+	bar = NULL;
+	for (int i = -2; i <= 2; i++) {
+		for (int j = -2; j <= 2; j++) {
+			bar = wget_bar_init(bar, i, j);
+			wget_bar_free(&bar);
+		}
+	}
+
+	bar = wget_bar_init(NULL, 1, 1);
+	wget_bar_free(&bar);
+
+	bar = wget_bar_init(NULL, 1, 40);
+	wget_bar_free(&bar);
+}
+
 int main(int argc, const char **argv)
 {
 	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
@@ -1747,6 +1775,7 @@ int main(int argc, const char **argv)
 		return -1;
 
 	srand((unsigned int) time(NULL));
+	wget_set_oomfunc(abort);
 
 	// testing basic library functionality
 	test_buffer();
@@ -1773,6 +1802,7 @@ int main(int argc, const char **argv)
 	test_cookies();
 	test_hsts();
 	test_parse_challenge();
+	test_bar();
 
 	selftest_options() ? failed++ : ok++;
 
