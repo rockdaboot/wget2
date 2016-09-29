@@ -31,10 +31,8 @@ addons:
             - valgrind
             - lcov
 
-# Change this to your needs
 before_install:
   - echo $TRAVIS_OS_NAME
   - ./.travis_setup.sh
+
 script: ./.travis.sh
-after_success:
-  - coveralls --include libwget/ --include src/ -e "libwget/<stdout>" -e lib/ -e tests/

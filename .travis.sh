@@ -18,6 +18,7 @@ make check -j3
 # done
 #fi
 make distcheck
-if [[ $CC == "gcc" ]]; then
-	make check-coverage
+if [[ $CC == "gcc" && $TRAVIS_OS_NAME == 'linux' ]]; then
+  make check-coverage
+  coveralls --include libwget/ --include src/ -e "libwget/<stdout>" -e lib/ -e tests/
 fi
