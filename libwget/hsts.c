@@ -74,7 +74,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_hsts(const wget_hsts_t *hsts)
 	return hash;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _compare_hsts(const wget_hsts_t *h1, const wget_hsts_t *h2)
+static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_hsts(const wget_hsts_t *h1, const wget_hsts_t *h2)
 {
 	int n;
 

@@ -78,7 +78,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_tls_session(const wget_tls_session_t 
 	return hash;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _compare_tls_session(const wget_tls_session_t *s1, const wget_tls_session_t *s2)
+static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_tls_session(const wget_tls_session_t *s1, const wget_tls_session_t *s2)
 {
 	int n;
 

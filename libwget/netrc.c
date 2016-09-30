@@ -54,7 +54,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_netrc(const wget_netrc_t *netrc)
 	return hash;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _compare_netrc(const wget_netrc_t *h1, const wget_netrc_t *h2)
+static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_netrc(const wget_netrc_t *h1, const wget_netrc_t *h2)
 {
 	return strcmp(h1->key, h2->key);
 }

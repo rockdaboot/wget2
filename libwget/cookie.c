@@ -82,7 +82,7 @@ int wget_cookie_db_load_psl(wget_cookie_db_t *cookie_db, const char *fname)
 }
 
 // this is how we sort the entries in a cookie db
-static int G_GNUC_WGET_NONNULL_ALL _compare_cookie(const wget_cookie_t *c1, const wget_cookie_t *c2)
+static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_cookie(const wget_cookie_t *c1, const wget_cookie_t *c2)
 {
 	int n;
 
@@ -96,7 +96,7 @@ static int G_GNUC_WGET_NONNULL_ALL _compare_cookie(const wget_cookie_t *c1, cons
 }
 
 // this is how we sort the entries when constructing a Cookie: header field
-static int G_GNUC_WGET_NONNULL_ALL _compare_cookie2(const wget_cookie_t *c1, const wget_cookie_t *c2)
+static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_cookie2(const wget_cookie_t *c1, const wget_cookie_t *c2)
 {
 	int n;
 

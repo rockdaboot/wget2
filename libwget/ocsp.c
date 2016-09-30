@@ -70,7 +70,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_ocsp(const wget_ocsp_t *ocsp)
 	return hash;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _compare_ocsp(const wget_ocsp_t *h1, const wget_ocsp_t *h2)
+static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_ocsp(const wget_ocsp_t *h1, const wget_ocsp_t *h2)
 {
 	return strcmp(h1->key, h2->key);
 }

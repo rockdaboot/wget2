@@ -193,7 +193,7 @@ char *wget_utf8_to_str(const char *src, const char *encoding)
  * [2] https://lists.gnu.org/archive/html/bug-wget/2015-06/msg00002.html
  * [3] http://curl.haxx.se/mail/lib-2015-06/0143.html
  */
-static int _utf8_is_valid(const char *utf8)
+static int G_GNUC_WGET_PURE _utf8_is_valid(const char *utf8)
 {
 	const unsigned char *s = (const unsigned char *) utf8;
 
