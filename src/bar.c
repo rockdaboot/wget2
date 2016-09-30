@@ -70,10 +70,8 @@ void bar_init(void)
 	screen_width = determine_screen_width ();
 	if (!screen_width)
 		screen_width = DEFAULT_SCREEN_WIDTH;
-	else if (screen_width < MINIMUM_SCREEN_WIDTH)
-		screen_width = MINIMUM_SCREEN_WIDTH;
 
-	bar = wget_bar_init(NULL, config.max_threads + 1, screen_width - 1);
+	bar = wget_bar_init(NULL, config.max_threads + 1);
 
 	// set custom write function for wget_error_printf()
 	// _error_write uses 'bar', so that has to initialized before
@@ -111,15 +109,16 @@ void bar_print(int slotpos, const char *s)
 	// This function will be called async from threads.
 	// Cursor positioning might break without a mutex.
 	wget_thread_mutex_lock(&mutex);
-	wget_bar_print(bar, slotpos, s);
+	wget_bar_printf(bar, slotpos, "\033[27G[%s]", s);
 	wget_thread_mutex_unlock(&mutex);
 }
 
 void bar_vprintf(int slotpos, const char *fmt, va_list args)
 {
-	wget_thread_mutex_lock(&mutex);
-	wget_bar_vprintf(bar, slotpos, fmt, args);
-	wget_thread_mutex_unlock(&mutex);
+	char text[1024];
+
+	vsnprintf(text, sizeof(text), fmt, args);
+	bar_print(slotpos, text);
 }
 
 void bar_printf(int slotpos, const char *fmt, ...)
@@ -131,24 +130,24 @@ void bar_printf(int slotpos, const char *fmt, ...)
 	va_end(args);
 }
 
-void bar_register(wget_bar_ctx *bar_ctx)
-{
-	wget_thread_mutex_lock(&mutex);
-	wget_bar_register(bar, bar_ctx);
-	wget_thread_mutex_unlock(&mutex);
-}
+/* void bar_register(wget_bar_ctx *bar_ctx) */
+/* { */
+/* 	wget_thread_mutex_lock(&mutex); */
+/* 	wget_bar_register(bar, bar_ctx); */
+/* 	wget_thread_mutex_unlock(&mutex); */
+/* } */
 
-void bar_deregister(wget_bar_ctx *bar_ctx)
-{
-	wget_thread_mutex_lock(&mutex);
-	wget_bar_deregister(bar, bar_ctx);
-	wget_thread_mutex_unlock(&mutex);
-}
+/* void bar_deregister(wget_bar_ctx *bar_ctx) */
+/* { */
+/* 	wget_thread_mutex_lock(&mutex); */
+/* 	wget_bar_deregister(bar, bar_ctx); */
+/* 	wget_thread_mutex_unlock(&mutex); */
+/* } */
 
 void bar_update_slots(void)
 {
 	wget_thread_mutex_lock(&mutex);
-	wget_bar_set_slots(bar, nthreads + 1);
+	wget_bar_set_slot_count(bar, nthreads + 1);
 	wget_thread_mutex_unlock(&mutex);
 }
 

@@ -132,7 +132,7 @@ static int
 	hsts_changed;
 static volatile int
 	terminate;
-int
+volatile int
 	nthreads;
 
 void set_exit_status(int status)
