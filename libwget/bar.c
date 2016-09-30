@@ -50,51 +50,53 @@
  */
 
 
-// We use enums to define the progress bar paramters because they are the
-// closest thing we have to defining true constants in C without using
-// preprocessor macros. The advantage of enums is that they will create a
-// symbol in the symbol table making debugging a whole lot easier.
+// Move all of this client side
 
-// Define the parameters for how the progress bar looks
-enum {
-	_BAR_FILENAME_SIZE  = 20,
-	_BAR_RATIO_SIZE     =  3,
-	_BAR_METER_COST     =  2,
-	_BAR_DOWNBYTES_SIZE =  8,
-};
+/* // We use enums to define the progress bar paramters because they are the */
+/* // closest thing we have to defining true constants in C without using */
+/* // preprocessor macros. The advantage of enums is that they will create a */
+/* // symbol in the symbol table making debugging a whole lot easier. */
 
-// Define the cost (in number of columns) of the progress bar decorations. This
-// includes all the elements that are not the progress indicator itself.
-enum {
-	_BAR_DECOR_COST =
-		_BAR_FILENAME_SIZE  + 1 + \
-		_BAR_RATIO_SIZE     + 2 + \
-		_BAR_METER_COST     + 1 + \
-		_BAR_DOWNBYTES_SIZE
-};
+/* // Define the parameters for how the progress bar looks */
+/* enum { */
+/* 	_BAR_FILENAME_SIZE  = 20, */
+/* 	_BAR_RATIO_SIZE     =  3, */
+/* 	_BAR_METER_COST     =  2, */
+/* 	_BAR_DOWNBYTES_SIZE =  8, */
+/* }; */
 
-typedef struct {
-	wget_bar_ctx
-		*ctx,
-		last_ctx;
-	char
-		*progress,
-		human_size[_BAR_DOWNBYTES_SIZE];
-	int
-		tick;
-} _bar_slot_t;
+/* // Define the cost (in number of columns) of the progress bar decorations. This */
+/* // includes all the elements that are not the progress indicator itself. */
+/* enum { */
+/* 	_BAR_DECOR_COST = */
+/* 		_BAR_FILENAME_SIZE  + 1 + \ */
+/* 		_BAR_RATIO_SIZE     + 2 + \ */
+/* 		_BAR_METER_COST     + 1 + \ */
+/* 		_BAR_DOWNBYTES_SIZE */
+/* }; */
+
+/* typedef struct { */
+/* 	wget_bar_ctx */
+/* 		*ctx, */
+/* 		last_ctx; */
+/* 	char */
+/* 		*progress, */
+/* 		human_size[_BAR_DOWNBYTES_SIZE]; */
+/* 	int */
+/* 		tick; */
+/* } _bar_slot_t; */
 
 struct _wget_bar_st {
-	_bar_slot_t
-		*slots;
-	char
-		*unknown_size,
-		*known_size,
-		*spaces;
+	/* _bar_slot_t */
+	/* 	*slots; */
+	/* char */
+	/* 	*unknown_size, */
+	/* 	*known_size, */
+	/* 	*spaces; */
 	int
-		nslots,
-		max_slots,
-		max_width;
+		nslots;
+		/* max_slots; */
+		/* max_width; */
 };
 
 // Forward declarations for static methods
@@ -126,14 +128,14 @@ static wget_thread_mutex_t
  * \p max_width is the maximum number of screen columns that the progress bar
  * may occupy.
  */
-wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
+wget_bar_t *wget_bar_init(wget_bar_t *bar)
 {
 	// While the API defines max_width to be the total size of the progress
 	// bar, the code assume sit to be the size of the [===> ] actual bar
 	// drawing. So compute that early enough.
-	max_width -= _BAR_DECOR_COST;
+	/* max_width -= _BAR_DECOR_COST; */
 
-	if (nslots < 1 || max_width < 1)
+	if (nslots < 1)
 		return NULL;
 
 	if (!bar) {
@@ -141,41 +143,43 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 	} else
 		memset(bar, 0, sizeof(*bar));
 
-	if (bar->max_slots < nslots) {
-		xfree(bar->slots);
-		bar->max_slots = nslots;
-		bar->slots = xcalloc(nslots, sizeof(_bar_slot_t) * nslots);
-	} else {
-		memset(bar->slots, 0, sizeof(_bar_slot_t) * nslots);
-	}
+	/* bar->max_slots = nslots; */
 
-	if (bar->max_width < max_width) {
-		xfree(bar->known_size);
-		bar->known_size = xmalloc(max_width);
-		memset(bar->known_size, '=', max_width);
+	/* if (bar->max_slots < nslots) { */
+	/* 	xfree(bar->slots); */
+	/* 	bar->max_slots = nslots; */
+	/* 	bar->slots = xcalloc(nslots, sizeof(_bar_slot_t) * nslots); */
+	/* } else { */
+	/* 	memset(bar->slots, 0, sizeof(_bar_slot_t) * nslots); */
+	/* } */
 
-		xfree(bar->unknown_size);
-		bar->unknown_size = xmalloc(max_width);
-		memset(bar->unknown_size, '*', max_width);
+	/* if (bar->max_width < max_width) { */
+	/* 	xfree(bar->known_size); */
+	/* 	bar->known_size = xmalloc(max_width); */
+	/* 	memset(bar->known_size, '=', max_width); */
 
-		xfree(bar->spaces);
-		bar->spaces = xmalloc(max_width);
-		memset(bar->spaces, ' ', max_width);
+	/* 	xfree(bar->unknown_size); */
+	/* 	bar->unknown_size = xmalloc(max_width); */
+	/* 	memset(bar->unknown_size, '*', max_width); */
 
-		for (int i = 0; i < bar->max_slots; i++) {
-			xfree(bar->slots[i].progress);
-			bar->slots[i].progress = xmalloc(max_width + 1);
-		}
+	/* 	xfree(bar->spaces); */
+	/* 	bar->spaces = xmalloc(max_width); */
+	/* 	memset(bar->spaces, ' ', max_width); */
 
-		bar->max_width = max_width;
-	}
+	/* 	for (int i = 0; i < bar->max_slots; i++) { */
+	/* 		xfree(bar->slots[i].progress); */
+	/* 		bar->slots[i].progress = xmalloc(max_width + 1); */
+	/* 	} */
+
+	/* 	bar->max_width = max_width; */
+	/* } */
 
 	wget_thread_mutex_init(&stdout_mutex);
 
 	return bar;
 }
 
-void wget_bar_set_slots(wget_bar_t *bar, int nslots)
+void wget_bar_set_slot_count(wget_bar_t *bar, int nslots)
 {
 	char lf[nslots];
 	memset(lf, '\n', sizeof(lf));
@@ -189,36 +193,36 @@ void wget_bar_set_slots(wget_bar_t *bar, int nslots)
 	wget_bar_update(bar);
 }
 
-void wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx)
-{
-	bar->slots[ctx->slotpos].ctx = ctx;
-	bar->slots[ctx->slotpos].tick = 0;
-	/* error_printf("Context registered for slotpos: %ld %p %p %p\n", ctx->slotpos, bar, &bar->slots[ctx->slotpos], bar->slots[ctx->slotpos].ctx); */
-}
+/* void wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx) */
+/* { */
+/* 	bar->slots[ctx->slotpos].ctx = ctx; */
+/* 	bar->slots[ctx->slotpos].tick = 0; */
+/* 	/1* error_printf("Context registered for slotpos: %ld %p %p %p\n", ctx->slotpos, bar, &bar->slots[ctx->slotpos], bar->slots[ctx->slotpos].ctx); *1/ */
+/* } */
 
-void wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx)
-{
-	wget_bar_ctx *last_ctx;
-	wget_thread_mutex_lock(&ctx->mutex);
-	bar->slots[ctx->slotpos].ctx = NULL;
+/* void wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx) */
+/* { */
+/* 	wget_bar_ctx *last_ctx; */
+/* 	wget_thread_mutex_lock(&ctx->mutex); */
+/* 	bar->slots[ctx->slotpos].ctx = NULL; */
 
-	// Copy all the members of ctx to last_ctx
-	{
-		last_ctx = &bar->slots[ctx->slotpos].last_ctx;
-		// If last_ctx has been used before, then free the memory allocated for
-		// its filename member.
-		xfree(last_ctx->filename);
-		last_ctx->slotpos = ctx->slotpos;
-		last_ctx->expected_size = ctx->expected_size;
-		last_ctx->raw_downloaded = ctx->raw_downloaded;
-		// Filename will be overwritten when a new file is downloaded by the same
-		// downloader thread. Hence, we make a copy here.
-		last_ctx->filename = wget_strdup(ctx->filename);
-	}
+/* 	// Copy all the members of ctx to last_ctx */
+/* 	{ */
+/* 		last_ctx = &bar->slots[ctx->slotpos].last_ctx; */
+/* 		// If last_ctx has been used before, then free the memory allocated for */
+/* 		// its filename member. */
+/* 		xfree(last_ctx->filename); */
+/* 		last_ctx->slotpos = ctx->slotpos; */
+/* 		last_ctx->expected_size = ctx->expected_size; */
+/* 		last_ctx->raw_downloaded = ctx->raw_downloaded; */
+/* 		// Filename will be overwritten when a new file is downloaded by the same */
+/* 		// downloader thread. Hence, we make a copy here. */
+/* 		last_ctx->filename = wget_strdup(ctx->filename); */
+/* 	} */
 
-	_bar_print_final(bar, ctx->slotpos);
-	wget_thread_mutex_unlock(&ctx->mutex);
-}
+/* 	_bar_print_final(bar, ctx->slotpos); */
+/* 	wget_thread_mutex_unlock(&ctx->mutex); */
+/* } */
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
 _return_cursor_position(void)
@@ -232,38 +236,38 @@ _bar_print_slot(const wget_bar_t *bar, int slotpos)
 	printf("\033[s\033[%dA\033[1G", bar->nslots - slotpos);
 }
 
-static inline G_GNUC_WGET_ALWAYS_INLINE void
-_bar_set_progress(const wget_bar_t *bar, int slotpos)
-{
-	wget_bar_ctx *ctx;
-	_bar_slot_t *slot = &bar->slots[slotpos];
+/* static inline G_GNUC_WGET_ALWAYS_INLINE void */
+/* _bar_set_progress(const wget_bar_t *bar, int slotpos) */
+/* { */
+/* 	wget_bar_ctx *ctx; */
+/* 	_bar_slot_t *slot = &bar->slots[slotpos]; */
 
-	ctx = (slot->ctx != NULL) ? slot->ctx : &slot->last_ctx;
+/* 	ctx = (slot->ctx != NULL) ? slot->ctx : &slot->last_ctx; */
 
-	if (ctx->expected_size > 0) {
-		int cols = (ctx->raw_downloaded / (double) ctx->expected_size) * bar->max_width;
-		if (cols > bar->max_width)
-			cols = bar->max_width;
-		else if (cols <= 0)
-			cols = 1;
+/* 	if (ctx->expected_size > 0) { */
+/* 		int cols = (ctx->raw_downloaded / (double) ctx->expected_size) * bar->max_width; */
+/* 		if (cols > bar->max_width) */
+/* 			cols = bar->max_width; */
+/* 		else if (cols <= 0) */
+/* 			cols = 1; */
 
-		snprintf(slot->progress, bar->max_width + 1, "%.*s>%.*s",
-				cols - 1, bar->known_size,
-				bar->max_width - cols, bar->spaces);
-	} else {
-		int ind = slot->tick % ((bar->max_width * 2) - 6);
-		int pre_space;
+/* 		snprintf(slot->progress, bar->max_width + 1, "%.*s>%.*s", */
+/* 				cols - 1, bar->known_size, */
+/* 				bar->max_width - cols, bar->spaces); */
+/* 	} else { */
+/* 		int ind = slot->tick % ((bar->max_width * 2) - 6); */
+/* 		int pre_space; */
 
-		if (ind <= bar->max_width - 3)
-			pre_space = ind;
-		else
-			pre_space = bar->max_width - (ind - bar->max_width + 5);
+/* 		if (ind <= bar->max_width - 3) */
+/* 			pre_space = ind; */
+/* 		else */
+/* 			pre_space = bar->max_width - (ind - bar->max_width + 5); */
 
-		snprintf(slot->progress, bar->max_width + 1, "%.*s<=>%.*s",
-				pre_space, bar->spaces,
-				bar->max_width - pre_space - 3, bar->spaces);
-	}
-}
+/* 		snprintf(slot->progress, bar->max_width + 1, "%.*s<=>%.*s", */
+/* 				pre_space, bar->spaces, */
+/* 				bar->max_width - pre_space - 3, bar->spaces); */
+/* 	} */
+/* } */
 
 void wget_bar_update(const wget_bar_t *bar)
 {
@@ -271,6 +275,7 @@ void wget_bar_update(const wget_bar_t *bar)
 		_bar_update_slot(bar, i);
 }
 
+// Move this code to client side as well
 static void
 _bar_update_slot(const wget_bar_t *bar, int slotpos)
 {
@@ -366,16 +371,16 @@ static void _bar_print_final(const wget_bar_t *bar, int slotpos) {
  */
 void wget_bar_deinit(wget_bar_t *bar)
 {
-	if (bar) {
-		for (int i = 0; i < bar->max_slots; i++) {
-			xfree(bar->slots[i].last_ctx.filename);
-			xfree(bar->slots[i].progress);
-		}
-		xfree(bar->spaces);
-		xfree(bar->known_size);
-		xfree(bar->unknown_size);
-		xfree(bar->slots);
-	}
+	/* if (bar) { */
+	/* 	for (int i = 0; i < bar->max_slots; i++) { */
+	/* 		xfree(bar->slots[i].last_ctx.filename); */
+	/* 		xfree(bar->slots[i].progress); */
+	/* 	} */
+	/* 	xfree(bar->spaces); */
+	/* 	xfree(bar->known_size); */
+	/* 	xfree(bar->unknown_size); */
+	/* 	xfree(bar->slots); */
+	/* } */
 }
 
 /**

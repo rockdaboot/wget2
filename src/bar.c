@@ -70,10 +70,8 @@ void bar_init(void)
 	screen_width = determine_screen_width ();
 	if (!screen_width)
 		screen_width = DEFAULT_SCREEN_WIDTH;
-	else if (screen_width < MINIMUM_SCREEN_WIDTH)
-		screen_width = MINIMUM_SCREEN_WIDTH;
 
-	bar = wget_bar_init(NULL, config.max_threads + 1, screen_width - 1);
+	bar = wget_bar_init(NULL, config.max_threads + 1);
 
 	// set custom write function for wget_error_printf()
 	// _error_write uses 'bar', so that has to initialized before
@@ -132,24 +130,24 @@ void bar_printf(int slotpos, const char *fmt, ...)
 	va_end(args);
 }
 
-void bar_register(wget_bar_ctx *bar_ctx)
-{
-	wget_thread_mutex_lock(&mutex);
-	wget_bar_register(bar, bar_ctx);
-	wget_thread_mutex_unlock(&mutex);
-}
+/* void bar_register(wget_bar_ctx *bar_ctx) */
+/* { */
+/* 	wget_thread_mutex_lock(&mutex); */
+/* 	wget_bar_register(bar, bar_ctx); */
+/* 	wget_thread_mutex_unlock(&mutex); */
+/* } */
 
-void bar_deregister(wget_bar_ctx *bar_ctx)
-{
-	wget_thread_mutex_lock(&mutex);
-	wget_bar_deregister(bar, bar_ctx);
-	wget_thread_mutex_unlock(&mutex);
-}
+/* void bar_deregister(wget_bar_ctx *bar_ctx) */
+/* { */
+/* 	wget_thread_mutex_lock(&mutex); */
+/* 	wget_bar_deregister(bar, bar_ctx); */
+/* 	wget_thread_mutex_unlock(&mutex); */
+/* } */
 
 void bar_update_slots(void)
 {
 	wget_thread_mutex_lock(&mutex);
-	wget_bar_set_slots(bar, nthreads + 1);
+	wget_bar_set_slot_count(bar, nthreads + 1);
 	wget_thread_mutex_unlock(&mutex);
 }
 
