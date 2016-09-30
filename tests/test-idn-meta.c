@@ -51,6 +51,17 @@ int main(void)
 				"Content-Type: text/html; charset=EUC-JP",
 			}
 		},
+		// HTML5 version with meta charset
+		{	.name = "http://start-here.com/start2.html",
+			.code = "200 Dontcare",
+			.body =
+				"<meta http-equiv=\"Content-Type\" content=\"text/html\" />" \
+				"<meta charset=\"UTF-8\" />" \
+				"<a href=\"http://" euc_jp_hostname "/\">The link</a>",
+			.headers = {
+				"Content-Type: text/html; charset=EUC-JP",
+			}
+		},
 		{	.name = "http://" punycoded_hostname "/index.html",
 			.code = "200 Dontcare",
 			.body = "What ever",
@@ -79,7 +90,7 @@ int main(void)
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "start-here.com/start.html", urls[0].body },
-			{ punycoded_hostname "/index.html", urls[1].body },
+			{ punycoded_hostname "/index.html", urls[2].body },
 			{	NULL } },
 		0);
 
@@ -94,7 +105,38 @@ int main(void)
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "start-here.com/start.html", urls[0].body },
-			{ punycoded_hostname "/index.html", urls[1].body },
+			{ punycoded_hostname "/index.html", urls[2].body },
+			{	NULL } },
+		0);
+
+	// test-idn-meta with HTML5 meta charset
+	snprintf(options, sizeof(options),
+		"--iri -rH -e http_proxy=localhost:%d http://start-here.com/start2.html",
+		wget_test_get_http_server_port());
+
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, options,
+		WGET_TEST_REQUEST_URL, NULL,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "start-here.com/start2.html", urls[1].body },
+			{ punycoded_hostname "/index.html", urls[2].body },
+			{	NULL } },
+		0);
+
+	// test-idn-headers
+	urls[1].body = "<a href=\"http://" euc_jp_hostname "/\">The link</a>";
+	urls[1].headers[0] = "Content-Type: text/html; charset=EUC-JP";
+
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, options,
+		WGET_TEST_REQUEST_URL, NULL,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "start-here.com/start2.html", urls[1].body },
+			{ punycoded_hostname "/index.html", urls[2].body },
 			{	NULL } },
 		0);
 
