@@ -393,7 +393,7 @@ void wget_bar_print(wget_bar_t *bar, int slotpos, const char *s)
 {
 	wget_thread_mutex_lock(&stdout_mutex);
 	_bar_print_slot(bar, slotpos);
-	printf("\033[27G[%-*.*s]", bar->max_width, bar->max_width, s);
+	printf("%s", s);
 	_return_cursor_position();
 	fflush(stdout);
 	wget_thread_mutex_unlock(&stdout_mutex);
