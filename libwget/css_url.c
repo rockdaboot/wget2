@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 typedef struct {

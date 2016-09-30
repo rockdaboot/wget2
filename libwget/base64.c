@@ -32,7 +32,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 /**

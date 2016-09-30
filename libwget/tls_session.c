@@ -37,7 +37,7 @@
 #include <sys/stat.h>
 #include <sys/file.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 struct _wget_tls_session_db_st {

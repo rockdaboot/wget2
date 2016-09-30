@@ -23,10 +23,10 @@
  * 23/07/2016	Darshit Shah	created
  */
 
-#include "utils.h"
+#include "wget_utils.h"
 
 #include <config.h>
-#include <libwget.h>
+#include <wget.h>
 
 #ifdef HAVE_IOCTL
 #	include <sys/ioctl.h>

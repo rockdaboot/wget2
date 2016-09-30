@@ -50,7 +50,7 @@
 #include <lzma.h>
 #endif
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 struct _wget_decompressor_st {

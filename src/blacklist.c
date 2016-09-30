@@ -32,10 +32,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libwget.h>
+#include <wget.h>
 
-#include "wget.h"
-#include "blacklist.h"
+#include "wget_main.h"
+#include "wget_blacklist.h"
 
 static wget_hashmap_t
 	*blacklist;

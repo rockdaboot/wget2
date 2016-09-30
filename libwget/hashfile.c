@@ -38,7 +38,7 @@
 #	include <sys/mman.h>
 #endif
 
-#include <libwget.h>
+#include <wget.h>
 #include <private.h>
 
 /**

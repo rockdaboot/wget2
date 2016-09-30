@@ -34,7 +34,7 @@
 #endif
 
 #include <stdlib.h>
-#include <libwget.h>
+#include <wget.h>
 
 // number of elements within an array
 #define countof(a) (sizeof(a)/sizeof(*(a)))

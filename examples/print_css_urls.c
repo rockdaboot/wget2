@@ -33,7 +33,7 @@
 #endif
 
 #include <unistd.h>
-#include <libwget.h>
+#include <wget.h>
 
 static void _css_parse_encoding(void *context G_GNUC_WGET_UNUSED, const char *encoding, size_t len)
 {

@@ -7,7 +7,7 @@
 #endif
 
 #include <string.h> // CygWin strlcpy() declaration
-#include <libwget.h>
+#include <wget.h>
 
 int main(void)
 {

@@ -1,1 +1,2 @@
-include_HEADERS = libwget.h
+SUBDIRS = wget
+AUTOMAKE_OPTIONS = foreign no-dependencies

@@ -31,7 +31,7 @@
 
 #include <stdlib.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 /**

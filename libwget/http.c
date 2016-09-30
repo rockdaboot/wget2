@@ -53,7 +53,7 @@
 	#include <nghttp2/nghttp2.h>
 #endif
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 #define HTTP_CTYPE_SEPARATOR (1<<0)

@@ -96,7 +96,7 @@ AC_SUBST([LIBWGET_VERSION_MAJOR], [`echo $LIBWGET_VERSION|cut -d'.' -f1`])
 AC_SUBST([LIBWGET_VERSION_MINOR], [`echo $LIBWGET_VERSION|cut -d'.' -f2`])
 AC_SUBST([LIBWGET_VERSION_PATCH], [`echo $LIBWGET_VERSION|cut -d'.' -f3`])
 AC_SUBST([LIBWGET_VERSION_NUMBER], [`printf '0x%02x%02x%02x' $LIBWGET_VERSION_MAJOR $LIBWGET_VERSION_MINOR $LIBWGET_VERSION_PATCH`])
-AC_CONFIG_FILES([include/libwget.h])
+AC_CONFIG_FILES([include/wget/wgetver.h])
 
 AC_CONFIG_SRCDIR([src/wget.c])
 AC_CONFIG_HEADERS([config.h])
@@ -491,6 +491,7 @@ AC_CHECK_FUNCS([\
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  include/Makefile
+                 include/wget/Makefile
                  libwget/Makefile
                  src/Makefile
                  data/Makefile

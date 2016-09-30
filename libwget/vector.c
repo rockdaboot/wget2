@@ -33,7 +33,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 struct _wget_vector_st {

@@ -49,7 +49,7 @@ examples/print_html_urls
 examples/websequencediagram
 examples/websequencediagram_high
 git_push
-include/libwget.h
+include/wget/wgetver.h
 install-sh
 lcov
 lib

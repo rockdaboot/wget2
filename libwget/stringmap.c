@@ -35,7 +35,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 // Paul Larson's hash function from Microsoft Research

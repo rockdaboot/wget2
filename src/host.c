@@ -31,12 +31,12 @@
 
 #include <string.h>
 
-#include <libwget.h>
+#include <wget.h>
 
-#include "wget.h"
-#include "host.h"
-#include "options.h"
-#include "job.h"
+#include "wget_main.h"
+#include "wget_host.h"
+#include "wget_options.h"
+#include "wget_job.h"
 
 static wget_hashmap_t
 	*hosts;

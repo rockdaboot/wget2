@@ -28,7 +28,7 @@
 #ifndef _WGET_HOST_H
 #define _WGET_HOST_H
 
-#include <libwget.h>
+#include <wget.h>
 
 struct JOB;
 typedef struct JOB JOB;

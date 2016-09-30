@@ -40,9 +40,9 @@
 #include <sys/mman.h>
 #endif
 
-#include <libwget.h>
+#include <wget.h>
 #include "../libwget/private.h"
-#include "../src/options.h"
+#include "../src/wget_options.h"
 
 static int
 	ok,

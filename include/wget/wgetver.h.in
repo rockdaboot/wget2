@@ -1,6 +1,5 @@
 /*
- * Copyright(c) 2013 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2016 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -18,40 +17,16 @@
  * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * a collection of compatibility routines
- *
- * Changelog
- * 11.01.2013  Tim Ruehsen  created
- *
+ * Libwget version information
  */
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
+#ifndef _LIBWGET_WGETVER_H
+#define _LIBWGET_WGETVER_H
 
-#include <stddef.h>
+#define LIBWGET_VERSION "@LIBWGET_VERSION@"
+#define LIBWGET_VERSION_MAJOR @LIBWGET_VERSION_MAJOR@
+#define LIBWGET_VERSION_MINOR @LIBWGET_VERSION_MINOR@
+#define LIBWGET_VERSION_PATCH @LIBWGET_VERSION_PATCH@
+#define LIBWGET_VERSION_NUMBER @LIBWGET_VERSION_NUMBER@
 
-#include <wget.h>
-
-#ifndef HAVE_STRLCPY
-// strlcpy is a BSD function that I really like.
-// it is the same as snprintf(dst,dstsize,"%s",src), but much faster
-
-size_t strlcpy(char *dst, const char *src, size_t size)
-{
-	const char *old = src;
-
-	// Copy as many bytes as will fit
-	if (size) {
-		while (--size) {
-			if (!(*dst++ = *src++))
-				return src - old - 1;
-		}
-
-		*dst = 0;
-	}
-
-	while (*src++);
-	return src - old - 1;
-}
-#endif
+#endif /* _LIBWGET_WGETVER_H */

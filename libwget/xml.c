@@ -46,7 +46,7 @@
 #include <sys/mman.h>
 #endif
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 typedef struct XML_CONTEXT XML_CONTEXT;

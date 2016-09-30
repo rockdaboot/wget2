@@ -54,7 +54,7 @@
 #	include <netinet/tcp.h>
 #endif
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 #include "net.h"
 

@@ -28,7 +28,7 @@
 # include <config.h>
 #endif
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 /**

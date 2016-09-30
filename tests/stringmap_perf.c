@@ -41,7 +41,7 @@
 #endif
 #include <errno.h>
 
-#include <libwget.h>
+#include <wget.h>
 
 static int G_GNUC_WGET_NONNULL_ALL _print_word(G_GNUC_WGET_UNUSED void *ctx, const char *word)
 {

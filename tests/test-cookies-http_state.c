@@ -37,11 +37,11 @@
 #include <dirent.h>
 #include <time.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "../libwget/private.h"
 
-#include "../src/options.h"
-#include "../src/log.h"
+#include "../src/wget_options.h"
+#include "../src/wget_log.h"
 
 #define COOKIETESTDIR SRCDIR"/http-state/tests/data/parser"
 

@@ -44,11 +44,7 @@
 #	include <nghttp2/nghttp2.h>
 #endif
 
-#define LIBWGET_VERSION "@LIBWGET_VERSION@"
-#define LIBWGET_VERSION_MAJOR @LIBWGET_VERSION_MAJOR@
-#define LIBWGET_VERSION_MINOR @LIBWGET_VERSION_MINOR@
-#define LIBWGET_VERSION_PATCH @LIBWGET_VERSION_PATCH@
-#define LIBWGET_VERSION_NUMBER @LIBWGET_VERSION_NUMBER@
+#include "wgetver.h"
 
 // transitional defines, remove when migration to libwget is done
 #define xmalloc wget_malloc

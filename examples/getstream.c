@@ -52,7 +52,7 @@
 #include "c-strcasestr.h"
 #include "c-ctype.h"
 
-#include <libwget.h>
+#include <wget.h>
 
 static char *stream_name;
 static char *streamdata;

@@ -30,7 +30,7 @@
 
 # include <stdarg.h>
 
-# include <libwget.h>
+# include <wget.h>
 
 // types for --restrict-file-names
 # define RESTRICT_NAMES_NONE  0

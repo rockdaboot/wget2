@@ -53,7 +53,7 @@
 #include <unistr.h>
 #endif
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 const char *wget_local_charset_encoding(void)

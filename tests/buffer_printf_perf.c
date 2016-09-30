@@ -31,7 +31,7 @@
 
 #include <stdio.h>
 
-#include <libwget.h>
+#include <wget.h>
 
 int main(void)
 {

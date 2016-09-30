@@ -40,7 +40,7 @@
 #include <errno.h>
 #include <poll.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 static ssize_t __read(const void *f, char *dst, size_t len)

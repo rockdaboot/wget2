@@ -32,7 +32,7 @@
 #endif
 
 #include <stdlib.h>
-#include <libwget.h>
+#include <wget.h>
 
 #define COOKIE_SUPPORT
 

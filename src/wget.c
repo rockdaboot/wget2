@@ -49,15 +49,15 @@
 
 #include "safe-write.h"
 
-#include <libwget.h>
+#include <wget.h>
 
-#include "wget.h"
-#include "log.h"
-#include "job.h"
-#include "options.h"
-#include "blacklist.h"
-#include "host.h"
-#include "bar.h"
+#include "wget_main.h"
+#include "wget_log.h"
+#include "wget_job.h"
+#include "wget_options.h"
+#include "wget_blacklist.h"
+#include "wget_host.h"
+#include "wget_bar.h"
 
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)

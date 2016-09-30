@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libwget.h>
+#include <wget.h>
 
 // use the helper routines provided by libwget
 #define info_printf        wget_info_printf

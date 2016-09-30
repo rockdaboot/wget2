@@ -46,7 +46,7 @@
 #include <sys/mman.h>
 #endif
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 #include "css_tokenizer.h"

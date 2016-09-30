@@ -39,7 +39,7 @@
 #include "c-strcase.h"
 #include "timespec.h" // gnulib gettime()
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 /**

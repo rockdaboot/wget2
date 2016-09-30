@@ -36,7 +36,7 @@
 #include <errno.h>
 #include <sys/time.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 static wget_logger_t

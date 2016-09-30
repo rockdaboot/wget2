@@ -37,10 +37,10 @@
 #include <fcntl.h>
 #include "timespec.h" // gnulib gettime()
 
-#include <libwget.h>
+#include <wget.h>
 
-#include "options.h"
-#include "log.h"
+#include "wget_options.h"
+#include "wget_log.h"
 
 static void _write_out(FILE *default_fp, const char *data, size_t len, int with_timestamp, const char *colorstring)
 {

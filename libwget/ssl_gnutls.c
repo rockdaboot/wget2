@@ -57,7 +57,7 @@
 #endif
 #include <gnutls/crypto.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 #include "net.h"
 
@@ -1613,7 +1613,7 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 
 #include <stddef.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 void wget_ssl_set_config_string(int key, const char *value) { }

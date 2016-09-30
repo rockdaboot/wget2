@@ -33,7 +33,7 @@
 #endif
 
 #include <unistd.h>
-#include <libwget.h>
+#include <wget.h>
 
 static void html_parse_localfile(const char *fname)
 {

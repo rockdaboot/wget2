@@ -36,7 +36,7 @@
 #include <time.h>
 #include <errno.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 struct _wget_ocsp_db_st {

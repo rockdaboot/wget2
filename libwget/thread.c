@@ -32,7 +32,7 @@
 #include <signal.h>
 #include "timespec.h" // gnulib gettime()
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 #if USE_POSIX_THREADS || USE_PTH_THREADS

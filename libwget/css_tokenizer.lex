@@ -13,7 +13,7 @@
 # include <config.h>
 #endif
 
-#include <libwget.h>
+#include <wget.h>
 
 #include "css_tokenizer.h"
 

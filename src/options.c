@@ -56,11 +56,11 @@
 #include <sys/stat.h>
 //#include <netdb.h>
 
-#include <libwget.h>
+#include <wget.h>
 
-#include "wget.h"
-#include "log.h"
-#include "options.h"
+#include "wget_main.h"
+#include "wget_log.h"
+#include "wget_options.h"
 
 typedef const struct optionw *option_t; // forward declaration
 

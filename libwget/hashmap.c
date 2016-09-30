@@ -34,7 +34,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 typedef struct _ENTRY ENTRY;

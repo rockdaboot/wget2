@@ -33,7 +33,7 @@
 #ifndef _LIBWGET_LIBTEST_H
 #define _LIBWGET_LIBTEST_H
 
-#include <libwget.h>
+#include <wget.h>
 
 #ifdef	__cplusplus
 extern "C" {

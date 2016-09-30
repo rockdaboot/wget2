@@ -37,7 +37,7 @@
 #include <errno.h>
 #include "c-ctype.h"
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 static const char

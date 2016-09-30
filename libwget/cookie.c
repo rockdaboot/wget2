@@ -41,7 +41,7 @@
 #	include <libpsl.h>
 #endif
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 struct wget_cookie_db_st {

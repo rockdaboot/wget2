@@ -33,7 +33,7 @@
 #include <stdarg.h>
 #include <errno.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 static void G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))

@@ -33,7 +33,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 /**

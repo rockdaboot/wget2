@@ -28,7 +28,7 @@
 #ifndef _WGET_BAR_H
 # define _WGET_BAR_H
 
-#include "progress.h"
+#include "wget_progress.h"
 
 void bar_init(void);
 void bar_deinit(void);

@@ -30,8 +30,8 @@
 
 #include <sys/types.h> // for off_t
 
-#include <libwget.h>
-#include "host.h"
+#include <wget.h>
+#include "wget_host.h"
 
 // file part to download
 typedef struct {

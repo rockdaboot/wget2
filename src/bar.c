@@ -37,12 +37,12 @@
 #include <errno.h>
 #include <sys/time.h>
 
-#include <libwget.h>
+#include <wget.h>
 
-#include "options.h"
-#include "log.h"
-#include "bar.h"
-#include "utils.h"
+#include "wget_options.h"
+#include "wget_log.h"
+#include "wget_bar.h"
+#include "wget_utils.h"
 
 
 // Rate at which progress thread it updated. This is the amount of time (in ms)

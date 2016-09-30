@@ -35,7 +35,7 @@
 #include <time.h>
 #include <errno.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 struct _wget_netrc_db_st {

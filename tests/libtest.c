@@ -44,7 +44,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "libtest.h"
 
 static wget_thread_t

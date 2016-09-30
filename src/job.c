@@ -36,11 +36,11 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#include <libwget.h>
+#include <wget.h>
 
-#include "wget.h"
-//#include "log.h"
-#include "job.h"
+#include "wget_main.h"
+//#include "wget_log.h"
+#include "wget_job.h"
 
 void job_free(JOB *job)
 {

@@ -34,7 +34,7 @@
 #include <string.h>
 #include <c-ctype.h>
 
-#include <libwget.h>
+#include <wget.h>
 #include "private.h"
 
 #define FLAG_ZERO_PADDED   1
