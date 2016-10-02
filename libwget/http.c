@@ -1678,13 +1678,6 @@ static int _on_frame_recv_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 }
 
 
-// the following is just needed for the progress bar
-struct _body_callback_context {
-	wget_http_connection_t *conn;
-	wget_http_response_t *resp;
-	char done;
-};
-
 static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	const nghttp2_frame *frame, const uint8_t *name, size_t namelen,
 	const uint8_t *value, size_t valuelen,
