@@ -1729,25 +1729,21 @@ static void test_bar(void)
 
 	/* testing unexpected values */
 	for (int i = -2; i <= 2; i++) {
-		for (int j = -2; j <= 2; j++) {
-			bar = wget_bar_init(NULL, i, j);
-			wget_bar_free(&bar);
-		}
+		bar = wget_bar_init(NULL, i);
+		wget_bar_free(&bar);
 	}
 
 	/* testing unexpected values */
 	bar = NULL;
 	for (int i = -2; i <= 2; i++) {
-		for (int j = -2; j <= 2; j++) {
-			bar = wget_bar_init(bar, i, j);
-			wget_bar_free(&bar);
-		}
+		bar = wget_bar_init(bar, i);
+		wget_bar_free(&bar);
 	}
 
-	bar = wget_bar_init(NULL, 1, 1);
+	bar = wget_bar_init(NULL, 1);
 	wget_bar_free(&bar);
 
-	bar = wget_bar_init(NULL, 1, 40);
+	bar = wget_bar_init(NULL, 1);
 	wget_bar_free(&bar);
 }
 

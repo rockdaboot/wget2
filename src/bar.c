@@ -42,7 +42,6 @@
 #include "wget_options.h"
 #include "wget_log.h"
 #include "wget_bar.h"
-#include "wget_utils.h"
 
 
 // Rate at which progress thread it updated. This is the amount of time (in ms)
@@ -60,20 +59,10 @@ static wget_thread_mutex_t
 	bar_mutex = WGET_THREAD_MUTEX_INITIALIZER;
 static wget_thread_t
 	progress_thread;
-static int
-	screen_width;
 
 void bar_init(void)
 {
-	/* Initialize screen_width if this hasn't been done or if it might
-	   have changed, as indicated by receiving SIGWINCH.  */
-	screen_width = determine_screen_width ();
-	if (!screen_width)
-		screen_width = DEFAULT_SCREEN_WIDTH;
-	else if (screen_width < MINIMUM_SCREEN_WIDTH)
-		screen_width = MINIMUM_SCREEN_WIDTH;
-
-	bar = wget_bar_init(NULL, config.max_threads + 1, screen_width - 1);
+	bar = wget_bar_init(NULL, config.max_threads + 1);
 
 	// set custom write function for wget_error_printf()
 	// _error_write uses 'bar', so that has to initialized before

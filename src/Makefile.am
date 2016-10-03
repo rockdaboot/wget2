@@ -14,7 +14,6 @@ wget2_SOURCES =\
  log.c wget_log.h\
  wget.c wget_main.h\
  options.c wget_options.h\
- utils.c wget_utils.h\
  wget_progress.h
 
 wget2_LDADD = ../libwget/libwget.la\

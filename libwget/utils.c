@@ -39,6 +39,11 @@
 #include "c-strcase.h"
 #include "timespec.h" // gnulib gettime()
 
+#ifdef HAVE_IOCTL
+#	include <sys/ioctl.h>
+#	include <termios.h>
+#endif
+
 #include <wget.h>
 #include "private.h"
 
@@ -430,6 +435,24 @@ char *wget_human_readable(char *buf, size_t bufsize, size_t n)
 	}
 
 	return NULL; /* unreached */
+}
+
+/* Determine the width of the terminal we're running on.  If that's
+   not possible, return 0.  */
+int
+wget_determine_screen_width (void)
+{
+#ifdef HAVE_IOCTL
+  /* If there's a way to get the terminal size using POSIX
+     tcgetattr(), somebody please tell me.  */
+  struct winsize wsz;
+  int fd = fileno (stderr);
+
+  if (ioctl (fd, TIOCGWINSZ, &wsz) >= 0)
+         return wsz.ws_col;
+#endif
+
+        return 0;
 }
 
 /**@}*/

@@ -38,7 +38,6 @@
 #include <sys/time.h>
 
 #include <wget.h>
-#include "utils.h"
 #include "private.h"
 
 /**
@@ -72,6 +71,11 @@ enum {
 		_BAR_RATIO_SIZE     + 2 + \
 		_BAR_METER_COST     + 1 + \
 		_BAR_DOWNBYTES_SIZE
+};
+
+enum {
+	DEFAULT_SCREEN_WIDTH = 70,
+	MINIMUM_SCREEN_WIDTH = 45,
 };
 
 enum _bar_slot_status_t {
@@ -134,12 +138,21 @@ static void
  * \p max_width is the maximum number of screen columns that the progress bar
  * may occupy.
  */
-wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
+wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 {
+
+	/* Initialize screen_width if this hasn't been done or if it might
+	   have changed, as indicated by receiving SIGWINCH.  */
+	int screen_width = wget_determine_screen_width ();
+	if (!screen_width)
+		screen_width = DEFAULT_SCREEN_WIDTH;
+	else if (screen_width < MINIMUM_SCREEN_WIDTH)
+		screen_width = MINIMUM_SCREEN_WIDTH;
+
 	// While the API defines max_width to be the total size of the progress
 	// bar, the code assume sit to be the size of the [===> ] actual bar
 	// drawing. So compute that early enough.
-	max_width -= _BAR_DECOR_COST;
+	int max_width = screen_width - _BAR_DECOR_COST;
 
 	if (nslots < 1 || max_width < 1)
 		return NULL;

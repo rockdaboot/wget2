@@ -314,6 +314,8 @@ int
 	wget_match_tail_nocase(const char *s, const char *tail) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 char *
 	wget_human_readable(char *buf, size_t bufsize, size_t n) G_GNUC_WGET_CONST LIBWGET_EXPORT;
+int
+	wget_determine_screen_width (void) G_GNUC_WGET_CONST;
 ssize_t
 	wget_fdgetline(char **buf, size_t *bufsize, int fd) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 ssize_t
@@ -1824,7 +1826,7 @@ typedef struct _wget_bar_st wget_bar_t;
 typedef struct _wget_bar_ctx wget_bar_ctx;
 
 wget_bar_t *
-	wget_bar_init(wget_bar_t *bar, int nslots, int max_width) LIBWGET_EXPORT;
+	wget_bar_init(wget_bar_t *bar, int nslots) LIBWGET_EXPORT;
 void
 	wget_bar_deinit(wget_bar_t *bar) LIBWGET_EXPORT;
 void
