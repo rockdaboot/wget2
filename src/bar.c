@@ -57,7 +57,7 @@ static void _error_write(const char *buf, size_t len);
 static wget_bar_t
 	*bar;
 static wget_thread_mutex_t
-	mutex = WGET_THREAD_MUTEX_INITIALIZER;
+	bar_mutex = WGET_THREAD_MUTEX_INITIALIZER;
 static wget_thread_t
 	progress_thread;
 static int
@@ -110,16 +110,16 @@ void bar_print(int slotpos, const char *s)
 {
 	// This function will be called async from threads.
 	// Cursor positioning might break without a mutex.
-	wget_thread_mutex_lock(&mutex);
+	wget_thread_mutex_lock(&bar_mutex);
 	wget_bar_print(bar, slotpos, s);
-	wget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_unlock(&bar_mutex);
 }
 
 void bar_vprintf(int slotpos, const char *fmt, va_list args)
 {
-	wget_thread_mutex_lock(&mutex);
+	wget_thread_mutex_lock(&bar_mutex);
 	wget_bar_vprintf(bar, slotpos, fmt, args);
-	wget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_unlock(&bar_mutex);
 }
 
 void bar_printf(int slotpos, const char *fmt, ...)
@@ -133,23 +133,23 @@ void bar_printf(int slotpos, const char *fmt, ...)
 
 void bar_register(wget_bar_ctx *bar_ctx)
 {
-	wget_thread_mutex_lock(&mutex);
+	wget_thread_mutex_lock(&bar_mutex);
 	wget_bar_register(bar, bar_ctx);
-	wget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_unlock(&bar_mutex);
 }
 
 void bar_deregister(wget_bar_ctx *bar_ctx)
 {
-	wget_thread_mutex_lock(&mutex);
+	wget_thread_mutex_lock(&bar_mutex);
 	wget_bar_deregister(bar, bar_ctx);
-	wget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_unlock(&bar_mutex);
 }
 
 void bar_update_slots(void)
 {
-	wget_thread_mutex_lock(&mutex);
+	wget_thread_mutex_lock(&bar_mutex);
 	wget_bar_set_slots(bar, nthreads + 1);
-	wget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_unlock(&bar_mutex);
 }
 
 static void *_bar_update_thread(void *p)
@@ -157,9 +157,9 @@ static void *_bar_update_thread(void *p)
 	wget_bar_t *prog_bar = (wget_bar_t *) p;
 
 	for (;;) {
-		wget_thread_mutex_lock(&mutex);
+		wget_thread_mutex_lock(&bar_mutex);
 		wget_bar_update(prog_bar);
-		wget_thread_mutex_unlock(&mutex);
+		wget_thread_mutex_unlock(&bar_mutex);
 		wget_millisleep(_BAR_THREAD_SLEEP_DURATION);
 	}
 	return NULL;
@@ -168,11 +168,11 @@ static void *_bar_update_thread(void *p)
 static void _error_write(const char *buf, size_t len)
 {
 //  printf("\033[s\033[1S\033[%dA\033[1G\033[2K", config.num_threads + 2);
-	wget_thread_mutex_lock(&mutex);
+	wget_thread_mutex_lock(&bar_mutex);
 	printf("\033[s\033[1S\033[%dA\033[1G\033[0J", nthreads + 2);
 	log_write_error_stdout(buf, len);
 	printf("\033[u");
 	fflush(stdout);
 	wget_bar_update(bar);
-	wget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_unlock(&bar_mutex);
 }
