@@ -1812,15 +1812,12 @@ void
  */
 
 struct _wget_bar_ctx {
-	off_t
-		slotpos;
 	size_t
-		expected_size,
 		raw_downloaded;
-	const char *
-		filename;
 	wget_thread_mutex_t
 		mutex;
+	off_t
+		_slotpos;
 };
 
 typedef struct _wget_bar_st wget_bar_t;
@@ -1839,9 +1836,11 @@ ssize_t
 ssize_t
 	wget_bar_printf(wget_bar_t *bar, size_t slotpos, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
-	wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+	wget_bar_slot_begin(wget_bar_t *bar, wget_bar_ctx *ctx, const char *filename, ssize_t filesize) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
-	wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+	wget_bar_slot_register(wget_bar_t *bar, wget_bar_ctx *ctx, int slotpos) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+void
+	wget_bar_slot_deregister(wget_bar_t *bar, wget_bar_ctx *ctx) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
 	wget_bar_update(const wget_bar_t *bar) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void

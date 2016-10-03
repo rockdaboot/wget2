@@ -2501,13 +2501,8 @@ static int _get_header(wget_http_response_t *resp, void *context)
 	}
 //	info_printf("Opened %d\n", ctx->outfd);
 
-	wget_thread_mutex_lock(&ctx->bar.mutex);
-	ctx->bar.expected_size = resp->content_length;
-	ctx->bar.filename = dest;
-	wget_thread_mutex_unlock(&ctx->bar.mutex);
-
 	if (config.progress) {
-		bar_register(&ctx->bar);
+		bar_slot_begin(&ctx->bar, dest, resp->content_length);
 	}
 
 	return 0;
@@ -2779,11 +2774,10 @@ int http_send_request(wget_iri_t *iri, DOWNLOADER *downloader)
 	context->body = wget_buffer_alloc(102400);
 	context->length = 0;
 
-	wget_thread_mutex_init(&context->bar.mutex);
-	context->bar.slotpos = downloader->id;
-	context->bar.expected_size = 0;
-	context->bar.raw_downloaded = 0;
-	context->bar.filename = config.output_document ? config.output_document : context->job->local_filename;
+	if (config.progress) {
+		wget_thread_mutex_init(&context->bar.mutex);
+		bar_slot_register(&context->bar, downloader->id);
+	}
 
 	// set callback functions
 	wget_http_request_set_header_cb(req, _get_header, context);
@@ -2820,7 +2814,7 @@ wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
 	}
 
 	if (config.progress)
-		bar_deregister(&context->bar);
+		bar_slot_deregister(&context->bar);
 	xfree(context);
 
 	return resp;

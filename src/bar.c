@@ -131,17 +131,24 @@ void bar_printf(int slotpos, const char *fmt, ...)
 	va_end(args);
 }
 
-void bar_register(wget_bar_ctx *bar_ctx)
+void bar_slot_register(wget_bar_ctx *bar_ctx, int slotpos)
 {
 	wget_thread_mutex_lock(&bar_mutex);
-	wget_bar_register(bar, bar_ctx);
+	wget_bar_slot_register(bar, bar_ctx, slotpos);
 	wget_thread_mutex_unlock(&bar_mutex);
 }
 
-void bar_deregister(wget_bar_ctx *bar_ctx)
+void bar_slot_begin(wget_bar_ctx *bar_ctx, const char *filename, ssize_t filesize)
 {
 	wget_thread_mutex_lock(&bar_mutex);
-	wget_bar_deregister(bar, bar_ctx);
+	wget_bar_slot_begin(bar, bar_ctx, filename, filesize);
+	wget_thread_mutex_unlock(&bar_mutex);
+}
+
+void bar_slot_deregister(wget_bar_ctx *bar_ctx)
+{
+	wget_thread_mutex_lock(&bar_mutex);
+	wget_bar_slot_deregister(bar, bar_ctx);
 	wget_thread_mutex_unlock(&bar_mutex);
 }
 

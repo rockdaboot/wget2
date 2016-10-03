@@ -38,6 +38,7 @@
 #include <sys/time.h>
 
 #include <wget.h>
+#include "utils.h"
 #include "private.h"
 
 /**
@@ -73,15 +74,24 @@ enum {
 		_BAR_DOWNBYTES_SIZE
 };
 
+enum _bar_slot_status_t {
+	EMPTY, REGISTERED, DOWNLOADING, COMPLETE
+};
+
 typedef struct {
 	wget_bar_ctx
-		*ctx,
-		last_ctx;
+		*ctx;
 	char
 		*progress,
+		*filename,
 		human_size[_BAR_DOWNBYTES_SIZE];
 	int
 		tick;
+	size_t
+		file_size,
+		bytes_downloaded;
+	enum _bar_slot_status_t
+		status;
 } _bar_slot_t;
 
 struct _wget_bar_st {
@@ -163,6 +173,7 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots, int max_width)
 		for (int i = 0; i < bar->max_slots; i++) {
 			xfree(bar->slots[i].progress);
 			bar->slots[i].progress = xmalloc(max_width + 1);
+			bar->slots[i].status = EMPTY;
 		}
 
 		bar->max_width = max_width;
@@ -186,35 +197,32 @@ void wget_bar_set_slots(wget_bar_t *bar, int nslots)
 	wget_bar_update(bar);
 }
 
-void wget_bar_register(wget_bar_t *bar, wget_bar_ctx *ctx)
+void wget_bar_slot_begin(wget_bar_t *bar, wget_bar_ctx *ctx, const char *filename, ssize_t file_size)
 {
-	bar->slots[ctx->slotpos].ctx = ctx;
-	bar->slots[ctx->slotpos].tick = 0;
-	/* error_printf("Context registered for slotpos: %ld %p %p %p\n", ctx->slotpos, bar, &bar->slots[ctx->slotpos], bar->slots[ctx->slotpos].ctx); */
+	int slotpos = ctx->_slotpos;
+	bar->slots[slotpos].filename = wget_strdup(filename);
+	bar->slots[slotpos].file_size = file_size;
+	bar->slots[slotpos].status = DOWNLOADING;
 }
 
-void wget_bar_deregister(wget_bar_t *bar, wget_bar_ctx *ctx)
+void wget_bar_slot_register(wget_bar_t *bar, wget_bar_ctx *ctx, int slotpos)
 {
-	wget_bar_ctx *last_ctx;
+	ctx->_slotpos = slotpos;
+	xfree(bar->slots[slotpos].filename);
+	bar->slots[slotpos].ctx = ctx;
+	bar->slots[slotpos].tick = 0;
+	bar->slots[slotpos].status = REGISTERED;
+	/* error_printf("Context registered for slotpos: %d %p %p %p\n", slotpos, bar, &bar->slots[slotpos], bar->slots[slotpos].ctx); */
+}
+
+void wget_bar_slot_deregister(wget_bar_t *bar, wget_bar_ctx *ctx)
+{
+	bar->slots[ctx->_slotpos].ctx = NULL;
 	wget_thread_mutex_lock(&ctx->mutex);
-	bar->slots[ctx->slotpos].ctx = NULL;
-
-	// Copy all the members of ctx to last_ctx
-	{
-		last_ctx = &bar->slots[ctx->slotpos].last_ctx;
-		// If last_ctx has been used before, then free the memory allocated for
-		// its filename member.
-		xfree(last_ctx->filename);
-		last_ctx->slotpos = ctx->slotpos;
-		last_ctx->expected_size = ctx->expected_size;
-		last_ctx->raw_downloaded = ctx->raw_downloaded;
-		// Filename will be overwritten when a new file is downloaded by the same
-		// downloader thread. Hence, we make a copy here.
-		last_ctx->filename = wget_strdup(ctx->filename);
-	}
-
-	_bar_print_final(bar, ctx->slotpos);
+	bar->slots[ctx->_slotpos].bytes_downloaded = ctx->raw_downloaded;
 	wget_thread_mutex_unlock(&ctx->mutex);
+	bar->slots[ctx->_slotpos].status = COMPLETE;
+	_bar_update_slot(bar, ctx->_slotpos);
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
@@ -232,13 +240,11 @@ _bar_print_slot(const wget_bar_t *bar, int slotpos)
 static inline G_GNUC_WGET_ALWAYS_INLINE void
 _bar_set_progress(const wget_bar_t *bar, int slotpos)
 {
-	wget_bar_ctx *ctx;
 	_bar_slot_t *slot = &bar->slots[slotpos];
 
-	ctx = (slot->ctx != NULL) ? slot->ctx : &slot->last_ctx;
-
-	if (ctx->expected_size > 0) {
-		int cols = (ctx->raw_downloaded / (double) ctx->expected_size) * bar->max_width;
+	if (slot->file_size > 0) {
+		size_t bytes = (slot->status == DOWNLOADING) ? slot->ctx->raw_downloaded : slot->bytes_downloaded;
+		int cols = (bytes / (double) slot->file_size) * bar->max_width;
 		if (cols > bar->max_width)
 			cols = bar->max_width;
 		else if (cols <= 0)
@@ -271,19 +277,19 @@ void wget_bar_update(const wget_bar_t *bar)
 static void
 _bar_update_slot(const wget_bar_t *bar, int slotpos)
 {
-	wget_bar_ctx *ctx;
 	off_t
 		max,
 		cur;
 	int ratio;
 	char *human_readable_bytes;
 	_bar_slot_t *slot = &bar->slots[slotpos];
+	wget_bar_ctx *ctx = slot->ctx;
 
 	// We only print a progress bar for the slot if a context has been
 	// registered for it
-	if ((ctx = slot->ctx)) {
+	if (slot->status == DOWNLOADING) {
 		wget_thread_mutex_lock(&ctx->mutex);
-		max = ctx->expected_size;
+		max = slot->file_size;
 		cur = ctx->raw_downloaded;
 
 		ratio = max ? (100 * cur) / max : 0;
@@ -305,7 +311,7 @@ _bar_update_slot(const wget_bar_t *bar, int slotpos)
 		// ===>			Remaining				Progress Meter
 
 		printf("%-*.*s %*d%% [%s] %*s",
-				_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, ctx->filename,
+				_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, slot->filename,
 				_BAR_RATIO_SIZE, ratio,
 				slot->progress,
 				_BAR_DOWNBYTES_SIZE, human_readable_bytes);
@@ -314,7 +320,7 @@ _bar_update_slot(const wget_bar_t *bar, int slotpos)
 		fflush(stdout);
 		wget_thread_mutex_unlock(&ctx->mutex);
 		slot->tick++;
-	} else {
+	} else if (slot->status == COMPLETE) {
 		_bar_print_final(bar, slotpos);
 	}
 }
@@ -326,14 +332,10 @@ static void _bar_print_final(const wget_bar_t *bar, int slotpos) {
 		cur;
 	int ratio;
 	_bar_slot_t *slot = &bar->slots[slotpos];
-	wget_bar_ctx *ctx = &slot->last_ctx;
 	char *human_readable_bytes;
 
-	if (!ctx->filename)
-		return;
-
-	max = ctx->expected_size;
-	cur = ctx->raw_downloaded;
+	max = slot->file_size;
+	cur = slot->bytes_downloaded;
 
 	ratio = max ? (100 * cur) / max : 0;
 
@@ -343,7 +345,7 @@ static void _bar_print_final(const wget_bar_t *bar, int slotpos) {
 	_bar_print_slot(bar, slotpos);
 
 	printf("%-*.*s %*d%% [%s] %*s",
-			_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, ctx->filename,
+			_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, slot->filename,
 			_BAR_RATIO_SIZE, ratio,
 			slot->progress,
 			_BAR_DOWNBYTES_SIZE, human_readable_bytes);
@@ -361,8 +363,8 @@ void wget_bar_deinit(wget_bar_t *bar)
 {
 	if (bar) {
 		for (int i = 0; i < bar->max_slots; i++) {
-			xfree(bar->slots[i].last_ctx.filename);
 			xfree(bar->slots[i].progress);
+			xfree(bar->slots[i].filename);
 		}
 		xfree(bar->spaces);
 		xfree(bar->known_size);
