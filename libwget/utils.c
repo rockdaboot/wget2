@@ -437,22 +437,38 @@ char *wget_human_readable(char *buf, size_t bufsize, size_t n)
 	return NULL; /* unreached */
 }
 
-/* Determine the width of the terminal we're running on.  If that's
-   not possible, return 0.  */
+/**
+ * \param[out] width Number of columns in terminal
+ * \param[out] height Number of rows in terminal
+ * \return Upon successful completion, \p wget_get_screen_size will return 0,
+ * and the values of \p width and \p height will be set accordingly.
+ * If an error was encountered, the function will return -1 without touching
+ * the values of \p width and \p height.
+ *
+ * Get the size of the terminal to which the output is currently printed
+ * (stderr). This function accepts two int pointers and will set their values
+ * to the width and height of the active terminal in number of columns. If
+ * either of the parameter is NULL, its value will not be set by the function.
+ */
 int
-wget_determine_screen_width (void)
+wget_get_screen_size (int *width, int *height)
 {
+	int retval = -1;
+	if (!width && !height)
+		return -1;
 #ifdef HAVE_IOCTL
-  /* If there's a way to get the terminal size using POSIX
-     tcgetattr(), somebody please tell me.  */
-  struct winsize wsz;
-  int fd = fileno (stderr);
+	struct winsize wsz;
+	int fd = fileno(stderr);
 
-  if (ioctl (fd, TIOCGWINSZ, &wsz) >= 0)
-         return wsz.ws_col;
+	if (ioctl (fd, TIOCGWINSZ, &wsz) >= 0) {
+		if (width)
+			*width = wsz.ws_col;
+		if (height)
+			*height = wsz.ws_row;
+		retval = 0;
+	}
 #endif
-
-        return 0;
+	return retval;
 }
 
 /**@}*/

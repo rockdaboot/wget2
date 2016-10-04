@@ -391,12 +391,13 @@ static void _bar_print_final(const wget_bar_t *bar, int slotpos) {
 
 static int _bar_get_width(void)
 {
-	int screen_width = wget_determine_screen_width ();
-	if (!screen_width)
-		screen_width = DEFAULT_SCREEN_WIDTH;
-	else if (screen_width < MINIMUM_SCREEN_WIDTH)
-		screen_width = MINIMUM_SCREEN_WIDTH;
-	return screen_width - _BAR_DECOR_COST;
+	int width = DEFAULT_SCREEN_WIDTH;
+	if (!wget_get_screen_size(&width, NULL)) {
+		width = DEFAULT_SCREEN_WIDTH;
+	} else if (width < MINIMUM_SCREEN_WIDTH)
+		width = MINIMUM_SCREEN_WIDTH;
+
+	return width - _BAR_DECOR_COST;
 }
 
 /**
