@@ -36,6 +36,7 @@
 #include <time.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <signal.h>
 
 #include <wget.h>
 #include "private.h"
@@ -108,8 +109,11 @@ struct _wget_bar_st {
 	int
 		nslots,
 		max_slots,
+		screen_width,
 		max_width;
 };
+
+static volatile sig_atomic_t winsize_changed;
 
 // Forward declarations for static methods
 static inline G_GNUC_WGET_ALWAYS_INLINE void
@@ -120,6 +124,8 @@ static inline G_GNUC_WGET_ALWAYS_INLINE void
 	_bar_print_final(const wget_bar_t *bar, int slotpos);
 static void
 	_bar_update_slot(const wget_bar_t *bar, int slotpos);
+static int
+	_bar_get_width(void);
 
 /**
  * \param[in] bar Pointer to a \p wget_bar_t object
@@ -143,16 +149,7 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 
 	/* Initialize screen_width if this hasn't been done or if it might
 	   have changed, as indicated by receiving SIGWINCH.  */
-	int screen_width = wget_determine_screen_width ();
-	if (!screen_width)
-		screen_width = DEFAULT_SCREEN_WIDTH;
-	else if (screen_width < MINIMUM_SCREEN_WIDTH)
-		screen_width = MINIMUM_SCREEN_WIDTH;
-
-	// While the API defines max_width to be the total size of the progress
-	// bar, the code assume sit to be the size of the [===> ] actual bar
-	// drawing. So compute that early enough.
-	int max_width = screen_width - _BAR_DECOR_COST;
+	int max_width = _bar_get_width();
 
 	if (nslots < 1 || max_width < 1)
 		return NULL;
@@ -281,8 +278,33 @@ _bar_set_progress(const wget_bar_t *bar, int slotpos)
 	}
 }
 
-void wget_bar_update(const wget_bar_t *bar)
+void wget_bar_update(wget_bar_t *bar)
 {
+	if (winsize_changed == 1) {
+		int max_width = _bar_get_width();
+
+		if (bar->max_width < max_width) {
+			xfree(bar->known_size);
+			bar->known_size = xmalloc(max_width);
+			memset(bar->known_size, '=', max_width);
+
+			xfree(bar->unknown_size);
+			bar->unknown_size = xmalloc(max_width);
+			memset(bar->unknown_size, '*', max_width);
+
+			xfree(bar->spaces);
+			bar->spaces = xmalloc(max_width);
+			memset(bar->spaces, ' ', max_width);
+
+			for (int i = 0; i < bar->max_slots; i++) {
+				xfree(bar->slots[i].progress);
+				bar->slots[i].progress = xmalloc(max_width + 1);
+			}
+
+		}
+		bar->max_width = max_width;
+		winsize_changed = 0;
+	}
 	for (int i = 0; i < bar->nslots; i++)
 		_bar_update_slot(bar, i);
 }
@@ -367,6 +389,16 @@ static void _bar_print_final(const wget_bar_t *bar, int slotpos) {
 	fflush(stdout);
 }
 
+static int _bar_get_width(void)
+{
+	int screen_width = wget_determine_screen_width ();
+	if (!screen_width)
+		screen_width = DEFAULT_SCREEN_WIDTH;
+	else if (screen_width < MINIMUM_SCREEN_WIDTH)
+		screen_width = MINIMUM_SCREEN_WIDTH;
+	return screen_width - _BAR_DECOR_COST;
+}
+
 /**
  * \param[in] bar Pointer to \p wget_bar_t
  *
@@ -424,4 +456,9 @@ ssize_t wget_bar_printf(wget_bar_t *bar, size_t slotpos, const char *fmt, ...)
 	va_end(args);
 
 	return len;
+}
+
+void wget_bar_screen_resized(void)
+{
+	winsize_changed = 1;
 }

@@ -836,6 +836,8 @@ static void nop(int sig)
 
 		terminate = 1; // set global termination flag
 		wget_http_abort_connection(NULL); // soft-abort all connections
+	} else if (sig == SIGWINCH) {
+		wget_bar_screen_resized();
 	}
 }
 
@@ -868,6 +870,7 @@ int main(int argc, const char **argv)
 	sig_action.sa_handler = nop;
 	sigaction(SIGTERM, &sig_action, NULL);
 	sigaction(SIGINT, &sig_action, NULL);
+	sigaction(SIGWINCH, &sig_action, NULL);
 #endif
 
 	known_urls = wget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);

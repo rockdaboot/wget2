@@ -1844,10 +1844,11 @@ void
 void
 	wget_bar_slot_deregister(wget_bar_t *bar, wget_bar_ctx *ctx) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
-	wget_bar_update(const wget_bar_t *bar) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+	wget_bar_update(wget_bar_t *bar) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
 	wget_bar_set_slots(wget_bar_t *bar, int nslots) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
-
+void
+	wget_bar_screen_resized(void) LIBWGET_EXPORT;
 
 WGET_END_DECLS
 
