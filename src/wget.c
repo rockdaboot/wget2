@@ -836,8 +836,10 @@ static void nop(int sig)
 
 		terminate = 1; // set global termination flag
 		wget_http_abort_connection(NULL); // soft-abort all connections
+#ifdef SIGWINCH
 	} else if (sig == SIGWINCH) {
 		wget_bar_screen_resized();
+#endif
 	}
 }
 
