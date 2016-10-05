@@ -413,7 +413,7 @@ char *wget_human_readable(char *buf, size_t bufsize, size_t n)
 
 	/* If the quantity is smaller than 1K, just print it. */
 	if (n < 1024) {
-		snprintf(buf, bufsize, "%zu", n);
+		snprintf(buf, bufsize, "%zu ", n);
 		return buf;
 	}
 
@@ -450,12 +450,8 @@ char *wget_human_readable(char *buf, size_t bufsize, size_t n)
  * to the width and height of the active terminal in number of columns. If
  * either of the parameter is NULL, its value will not be set by the function.
  */
-int
-wget_get_screen_size (int *width, int *height)
+int wget_get_screen_size(int *width, int *height)
 {
-	int retval = -1;
-	if (!width && !height)
-		return -1;
 #ifdef HAVE_IOCTL
 	struct winsize wsz;
 	int fd = fileno(stderr);
@@ -465,10 +461,12 @@ wget_get_screen_size (int *width, int *height)
 			*width = wsz.ws_col;
 		if (height)
 			*height = wsz.ws_row;
-		retval = 0;
+
+		return 0;
 	}
 #endif
-	return retval;
+
+	return -1;
 }
 
 /**@}*/

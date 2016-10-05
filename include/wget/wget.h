@@ -315,7 +315,7 @@ int
 char *
 	wget_human_readable(char *buf, size_t bufsize, size_t n) G_GNUC_WGET_CONST LIBWGET_EXPORT;
 int
-	wget_get_screen_size (int *width, int *height) G_GNUC_WGET_PURE LIBWGET_EXPORT;
+	wget_get_screen_size(int *width, int *height) LIBWGET_EXPORT;
 ssize_t
 	wget_fdgetline(char **buf, size_t *bufsize, int fd) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 ssize_t

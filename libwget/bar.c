@@ -280,7 +280,7 @@ _bar_set_progress(const wget_bar_t *bar, int slotpos)
 
 void wget_bar_update(wget_bar_t *bar)
 {
-	if (winsize_changed == 1) {
+	if (winsize_changed) {
 		int max_width = _bar_get_width();
 
 		if (bar->max_width < max_width) {
@@ -392,10 +392,13 @@ static void _bar_print_final(const wget_bar_t *bar, int slotpos) {
 static int _bar_get_width(void)
 {
 	int width = DEFAULT_SCREEN_WIDTH;
-	if (!wget_get_screen_size(&width, NULL)) {
-		width = DEFAULT_SCREEN_WIDTH;
-	} else if (width < MINIMUM_SCREEN_WIDTH)
-		width = MINIMUM_SCREEN_WIDTH;
+
+	if (wget_get_screen_size(&width, NULL) == 0) {
+		if (width < MINIMUM_SCREEN_WIDTH)
+			width = MINIMUM_SCREEN_WIDTH;
+		else
+			width--; // leave one space at the end, else we see a linebreak on Windows
+	}
 
 	return width - _BAR_DECOR_COST;
 }
