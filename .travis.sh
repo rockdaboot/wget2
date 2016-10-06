@@ -1,7 +1,11 @@
 #!/bin/bash
 
 ./bootstrap || exit 1
-./configure --enable-fsanitize-ubsan --enable-fsanitize-asan || exit 1
+if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
+	./configure || exit 1
+else
+	./configure --enable-fsanitize-ubsan --enable-fsanitize-asan || exit 1
+fi
 make -j3 || exit 1
 if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
   make install || exit 1

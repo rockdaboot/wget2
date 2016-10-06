@@ -14,6 +14,11 @@ compiler:
 git:
     depth: 3
 
+matrix:
+    exclude:
+        - os: osx
+          compiler: gcc
+
 addons:
     apt:
         packages:
