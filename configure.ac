@@ -173,6 +173,7 @@ if test "$gl_gcc_warnings" = yes; then
   nw=
   nw="$nw -Wsystem-headers"       # System headers may trigger lot's of useless warnings
   nw="$nw -Wvla"                  # This project is C99
+  nw="$nw -Wstack-protector"
 
   # Enable all GCC warnings not in this list.
   gl_MANYWARN_ALL_GCC([warnings])
