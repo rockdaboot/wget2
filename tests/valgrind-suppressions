@@ -1,0 +1,34 @@
+{
+   Valgrind/LibC bug suppression - Travis
+   Memcheck:Free
+   fun:free
+   fun:__libc_freeres
+   fun:_vgnU_freeres
+   fun:__run_exit_handlers
+   fun:exit
+   fun:(below main)
+}
+
+{
+   Reachable pointer from within GnuTLS - 1
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   ...
+   fun:gnutls_global_init
+   fun:wget_ssl_init
+   fun:wget_ssl_open
+   ...
+}
+
+{
+   Reachable pointer from within GnuTLS - 2
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   ...
+   fun:gnutls_global_init
+   fun:wget_ssl_init
+   fun:wget_ssl_open
+   ...
+}

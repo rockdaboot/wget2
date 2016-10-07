@@ -1,24 +1,34 @@
 #!/bin/bash
 
-./bootstrap || exit 1
-./configure --enable-fsanitize-ubsan --enable-fsanitize-asan || exit 1
-make -j3 || exit 1
+set -e
+
+BOOTSTRAP_OPTIONS=
+CONFIGURE_OPTIONS=()
+
 if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
-  make install || exit 1
+	CONFIGURE_OPTIONS+=("")
 else
-  export VALGRIND_TESTS=1
+	CONFIGURE_OPTIONS+=("--enable-fsanitize-asan --enable-fsanitize-ubsan")
+	CONFIGURE_OPTIONS+=("--enable-valgrind-tests")
 fi
-make check -j3
-#if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
-# cat tests/test.log
-# ls -la tests/.test_*
-# for log in tests/*.log; do
-#   echo -e "\n#### $log ####"
-#   cat $log
-# done
-#fi
-make distcheck
-if [[ $CC == "gcc" && $TRAVIS_OS_NAME == 'linux' ]]; then
-  make check-coverage
-  coveralls --include libwget/ --include src/ -e "libwget/<stdout>" -e lib/ -e tests/
+
+./bootstrap ${BOOTSTRAP_OPTIONS}
+
+# On OSX we are unable to find the Wget2 dylibs without installing first
+# However `make install` on linux systems fail due to insufficient permissions
+if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
+	./configure -C
+	make install -j3
+fi
+
+for OPTS in "${CONFIGURE_OPTIONS[@]}"; do
+	./configure -C $OPTS
+	make clean check -j3 || (cat tests/test-suite.log && exit 1)
+done
+
+make distcheck -j3
+
+if [[ $CC == 'gcc' && $TRAVIS_OS_NAME == 'linux' ]]; then
+	make check-coverage
+	coveralls --include libwget/ --include src/ -e "libwget/<stdout>" -e lib/ -e tests/
 fi
