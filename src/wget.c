@@ -2546,7 +2546,10 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
 	wget_thread_mutex_lock(&ctx->bar.mutex);
-	ctx->bar.raw_downloaded = resp->cur_downloaded;
+	if(ctx->job->downloader->conn->protocol == WGET_PROTOCOL_HTTP_2_0)
+		ctx->bar.raw_downloaded = ctx->length;
+	else
+		ctx->bar.raw_downloaded = resp->cur_downloaded;
 	wget_thread_mutex_unlock(&ctx->bar.mutex);
 
 	return 0;
