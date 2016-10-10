@@ -1587,6 +1587,20 @@ void http_set_config_int(int key, int value)
 }
 */
 
+struct _http2_stream_context {
+	wget_http_response_t
+		*resp;
+	wget_decompressor_t
+		*decompressor;
+};
+
+static int _get_body(void *userdata, const char *data, size_t length)
+{
+	wget_http_response_t *resp = (wget_http_response_t *) userdata;
+
+	return resp->req->body_callback(resp, resp->req->body_user_data, data, length);
+}
+
 #ifdef WITH_LIBNGHTTP2
 static ssize_t _send_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	const uint8_t *data, size_t length, int flags G_GNUC_WGET_UNUSED, void *user_data)
@@ -1667,157 +1681,155 @@ static int _on_frame_recv_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 
 	// header callback after receiving all header tags
 	if (frame->hd.type == NGHTTP2_HEADERS) {
-		wget_http_response_t *resp = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+		struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+		wget_http_response_t *resp = ctx->resp;
 
 		if (resp->header && resp->req->header_callback) {
 			resp->req->header_callback(resp, resp->req->header_user_data);
+			if (!ctx->decompressor)
+				ctx->decompressor = wget_decompress_open(resp->content_encoding, _get_body, resp);
 		}
 	}
 
 	return 0;
 }
 
-
 static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	const nghttp2_frame *frame, const uint8_t *name, size_t namelen,
 	const uint8_t *value, size_t valuelen,
 	uint8_t flags G_GNUC_WGET_UNUSED, void *user_data G_GNUC_WGET_UNUSED)
 {
-	wget_http_response_t *resp = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+	struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+	wget_http_response_t *resp = ctx->resp;
 
-	if (resp) {
-		if (resp->req->response_keepheader || resp->req->header_callback) {
-			if (!resp->header)
-				resp->header = wget_buffer_alloc(1024);
-		}
+	if (resp->req->response_keepheader || resp->req->header_callback) {
+		if (!resp->header)
+			resp->header = wget_buffer_alloc(1024);
+	}
 
-		if (frame->hd.type == NGHTTP2_HEADERS) {
-			if (frame->headers.cat == NGHTTP2_HCAT_RESPONSE) {
-				const char *s = wget_strmemdup((char *)value, valuelen);
+	if (frame->hd.type == NGHTTP2_HEADERS) {
+		if (frame->headers.cat == NGHTTP2_HCAT_RESPONSE) {
+			const char *s = wget_strmemdup((char *) value, valuelen);
 
-				debug_printf("%.*s: %s\n", (int) namelen, name, s);
+			debug_printf("%.*s: %s\n", (int) namelen, name, s);
 
-				if (resp->header)
-					wget_buffer_printf_append(resp->header, "%.*s: %s\n", (int) namelen, name, s);
+			if (resp->header)
+				wget_buffer_printf_append(resp->header, "%.*s: %s\n", (int) namelen, name, s);
 
-				switch (namelen) {
-				case 4:
-					if (!memcmp(name, "etag", namelen)) {
-						wget_http_parse_etag(s, &resp->etag);
+			switch (namelen) {
+			case 4:
+				if (!memcmp(name, "etag", namelen)) {
+					wget_http_parse_etag(s, &resp->etag);
+				} else if (!memcmp(name, "link", namelen) && resp->code / 100 == 3) {
+					// debug_printf("s=%.31s\n",s);
+					wget_http_link_t link;
+					wget_http_parse_link(s, &link);
+					// debug_printf("link->uri=%s\n",link.uri);
+					if (!resp->links) {
+						resp->links = wget_vector_create(8, 8, NULL);
+						wget_vector_set_destructor(resp->links, (void(*)(void *))wget_http_free_link);
 					}
-					else if (!memcmp(name, "link", namelen) && resp->code / 100 == 3) {
-						// debug_printf("s=%.31s\n",s);
-						wget_http_link_t link;
-						wget_http_parse_link(s, &link);
-						// debug_printf("link->uri=%s\n",link.uri);
-						if (!resp->links) {
-							resp->links = wget_vector_create(8, 8, NULL);
-							wget_vector_set_destructor(resp->links, (void(*)(void *))wget_http_free_link);
-						}
-						wget_vector_add(resp->links, &link, sizeof(link));
-					}
-					break;
-				case 6:
-					if (!memcmp(name, "digest", namelen)) {
-						// http://tools.ietf.org/html/rfc3230
-						wget_http_digest_t digest;
-						wget_http_parse_digest(s, &digest);
-						// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
-						if (!resp->digests) {
-							resp->digests = wget_vector_create(4, 4, NULL);
-							wget_vector_set_destructor(resp->digests, (void(*)(void *))wget_http_free_digest);
-						}
-						wget_vector_add(resp->digests, &digest, sizeof(digest));
-					}
-					break;
-				case 7:
-					if (!memcmp(name, ":status", namelen) && valuelen == 3) {
-						resp->code = ((value[0] - '0') * 10 + (value[1] - '0')) * 10 + (value[2] - '0');
-					}
-					break;
-				case 8:
-					if (resp->code / 100 == 3 && !memcmp(name, "location", namelen)) {
-						xfree(resp->location);
-						wget_http_parse_location(s, &resp->location);
-					}
-					break;
-				case 10:
-					if (!memcmp(name, "set-cookie", namelen)) {
-						// this is a parser. content validation must be done by higher level functions.
-						wget_cookie_t cookie;
-						wget_http_parse_setcookie(s, &cookie);
-
-						if (cookie.name) {
-							if (!resp->cookies) {
-								resp->cookies = wget_vector_create(4, 4, NULL);
-								wget_vector_set_destructor(resp->cookies, (void(*)(void *))wget_cookie_deinit);
-							}
-							wget_vector_add(resp->cookies, &cookie, sizeof(cookie));
-						}
-					}
-					else if (!memcmp(name, "connection", namelen)) {
-						wget_http_parse_connection(s, &resp->keep_alive);
-					}
-					break;
-				case 11:
-					if (!memcmp(name, "icy-metaint", namelen)) {
-						resp->icy_metaint = atoi(s);
-					}
-					break;
-				case 12:
-					if (!memcmp(name, "content-type", namelen)) {
-						wget_http_parse_content_type(s, &resp->content_type, &resp->content_type_encoding);
-					}
-					break;
-				case 13:
-					if (!memcmp(name, "last-modified", namelen)) {
-						// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
-						resp->last_modified = wget_http_parse_full_date(s);
-					}
-					break;
-				case 14:
-					if (!memcmp(name, "content-length", namelen)) {
-						resp->content_length = (size_t)atoll(s);
-						resp->content_length_valid = 1;
-					}
-					break;
-				case 16:
-					if (!memcmp(name, "content-encoding", namelen)) {
-						wget_http_parse_content_encoding(s, &resp->content_encoding);
-					}
-					else if (!memcmp(name, "www-authenticate", namelen)) {
-						wget_http_challenge_t challenge;
-						wget_http_parse_challenge(s, &challenge);
-
-						if (!resp->challenges) {
-							resp->challenges = wget_vector_create(2, 2, NULL);
-							wget_vector_set_destructor(resp->challenges, (void(*)(void *))wget_http_free_challenge);
-						}
-						wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
-					}
-					break;
-				case 17:
-					if (!memcmp(name, "transfer-encoding", namelen)) {
-						wget_http_parse_transfer_encoding(s, &resp->transfer_encoding);
-					}
-					break;
-				case 19:
-					if (!memcmp(name, "content-disposition", namelen)) {
-						wget_http_parse_content_disposition(s, &resp->content_filename);
-					}
-					break;
-				case 25:
-					if (!memcmp(name, "strict-transport-security", namelen)) {
-						resp->hsts = 1;
-						wget_http_parse_strict_transport_security(s, &resp->hsts_maxage, &resp->hsts_include_subdomains);
-					}
-					break;
-				default:
-					break;
+					wget_vector_add(resp->links, &link, sizeof(link));
 				}
+				break;
+			case 6:
+				if (!memcmp(name, "digest", namelen)) {
+					// http://tools.ietf.org/html/rfc3230
+					wget_http_digest_t digest;
+					wget_http_parse_digest(s, &digest);
+					// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
+					if (!resp->digests) {
+						resp->digests = wget_vector_create(4, 4, NULL);
+						wget_vector_set_destructor(resp->digests, (void(*)(void *))wget_http_free_digest);
+					}
+					wget_vector_add(resp->digests, &digest, sizeof(digest));
+				}
+				break;
+			case 7:
+				if (!memcmp(name, ":status", namelen) && valuelen == 3) {
+					resp->code = ((value[0] - '0') * 10 + (value[1] - '0')) * 10 + (value[2] - '0');
+				}
+				break;
+			case 8:
+				if (resp->code / 100 == 3 && !memcmp(name, "location", namelen)) {
+					xfree(resp->location);
+					wget_http_parse_location(s, &resp->location);
+				}
+				break;
+			case 10:
+				if (!memcmp(name, "set-cookie", namelen)) {
+					// this is a parser. content validation must be done by higher level functions.
+					wget_cookie_t cookie;
+					wget_http_parse_setcookie(s, &cookie);
 
-				xfree(s);
+					if (cookie.name) {
+						if (!resp->cookies) {
+							resp->cookies = wget_vector_create(4, 4, NULL);
+							wget_vector_set_destructor(resp->cookies, (void(*)(void *))wget_cookie_deinit);
+						}
+						wget_vector_add(resp->cookies, &cookie, sizeof(cookie));
+					}
+				} else if (!memcmp(name, "connection", namelen)) {
+					wget_http_parse_connection(s, &resp->keep_alive);
+				}
+				break;
+			case 11:
+				if (!memcmp(name, "icy-metaint", namelen)) {
+					resp->icy_metaint = atoi(s);
+				}
+				break;
+			case 12:
+				if (!memcmp(name, "content-type", namelen)) {
+					wget_http_parse_content_type(s, &resp->content_type, &resp->content_type_encoding);
+				}
+				break;
+			case 13:
+				if (!memcmp(name, "last-modified", namelen)) {
+					// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
+					resp->last_modified = wget_http_parse_full_date(s);
+				}
+				break;
+			case 14:
+				if (!memcmp(name, "content-length", namelen)) {
+					resp->content_length = (size_t) atoll(s);
+					resp->content_length_valid = 1;
+				}
+				break;
+			case 16:
+				if (!memcmp(name, "content-encoding", namelen)) {
+					wget_http_parse_content_encoding(s, &resp->content_encoding);
+				} else if (!memcmp(name, "www-authenticate", namelen)) {
+					wget_http_challenge_t challenge;
+					wget_http_parse_challenge(s, &challenge);
+
+					if (!resp->challenges) {
+						resp->challenges = wget_vector_create(2, 2, NULL);
+						wget_vector_set_destructor(resp->challenges, (void(*)(void *))wget_http_free_challenge);
+					}
+					wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
+				}
+				break;
+			case 17:
+				if (!memcmp(name, "transfer-encoding", namelen)) {
+					wget_http_parse_transfer_encoding(s, &resp->transfer_encoding);
+				}
+				break;
+			case 19:
+				if (!memcmp(name, "content-disposition", namelen)) {
+					wget_http_parse_content_disposition(s, &resp->content_filename);
+				}
+				break;
+			case 25:
+				if (!memcmp(name, "strict-transport-security", namelen)) {
+					resp->hsts = 1;
+					wget_http_parse_strict_transport_security(s, &resp->hsts_maxage, &resp->hsts_include_subdomains);
+				}
+				break;
+			default:
+				break;
 			}
+
+			xfree(s);
 		}
 	}
 
@@ -1830,13 +1842,15 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 static int _on_stream_close_callback(nghttp2_session *session, int32_t stream_id,
 	uint32_t error_code G_GNUC_WGET_UNUSED, void *user_data G_GNUC_WGET_UNUSED)
 {
-	wget_http_response_t *resp = nghttp2_session_get_stream_user_data(session, stream_id);
+	struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, stream_id);
 
 	debug_printf("closing stream %d\n", stream_id);
-	if (resp) {
+	if (ctx) {
 		wget_http_connection_t *conn = (wget_http_connection_t *) user_data;
 
-		wget_vector_add_noalloc(conn->received_http2_responses, resp);
+		wget_vector_add_noalloc(conn->received_http2_responses, ctx->resp);
+		wget_decompress_close(ctx->decompressor);
+		xfree(ctx);
 	}
 
 	return 0;
@@ -1849,15 +1863,16 @@ static int _on_data_chunk_recv_callback(nghttp2_session *session,
 	uint8_t flags G_GNUC_WGET_UNUSED, int32_t stream_id,
 	const uint8_t *data, size_t len,	void *user_data G_GNUC_WGET_UNUSED)
 {
-	wget_http_response_t *resp = nghttp2_session_get_stream_user_data(session, stream_id);
+	struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, stream_id);
 
-	if (resp) {
+	if (ctx) {
 		// wget_http_connection_t *conn = (wget_http_connection_t *)user_data;
 		// struct _body_callback_context *ctx = req->nghttp2_context;
 //		debug_printf("[INFO] C <---------------------------- S%d (DATA chunk - %zu bytes)\n", stream_id, len);
 		debug_printf("nbytes %zu\n", len);
-		if (resp->req->body_callback)
-			resp->req->body_callback(resp, resp->req->body_user_data, (const char *) data, len);
+//		if (resp->req->body_callback)
+//			resp->req->body_callback(resp, resp->req->body_user_data, (const char *) data, len);
+		wget_decompress(ctx->decompressor, (char *) data, len);
 		// debug_write((char *)data, len);
 		// debug_printf("\n");
 	}
@@ -2028,25 +2043,25 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 			wget_http_header_param_t *param = wget_vector_get(req->headers, it);
 			if (!wget_strcasecmp_ascii(param->name, "Connection"))
 				continue;
-			if (!wget_strcasecmp_ascii(param->name, "Accept-Encoding"))
-				continue;
 
 			_init_nv(nvp++, param->name, param->value);
 		}
 
+		struct _http2_stream_context *ctx = xcalloc(1, sizeof(struct _http2_stream_context));
 		// HTTP/2.0 has the streamid as link between
-		wget_http_response_t *resp = xcalloc(1, sizeof(wget_http_response_t));
-		resp->req = req;
-		resp->major = 2;
+		ctx->resp = xcalloc(1, sizeof(wget_http_response_t));
+		ctx->resp->req = req;
+		ctx->resp->major = 2;
 		// we do not get a Keep-Alive header in HTTP2 - let's assume the connection stays open
-		resp->keep_alive = 1;
+		ctx->resp->keep_alive = 1;
 
 		// nghttp2 does strdup of name+value and lowercase conversion of 'name'
-		req->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, NULL, resp);
+		req->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, NULL, ctx);
 
 		if (req->stream_id < 0) {
 			error_printf(_("Failed to submit HTTP2 request\n"));
-			wget_http_free_response(&resp);
+			wget_http_free_response(&ctx->resp);
+			xfree(ctx);
 			return -1;
 		}
 
@@ -2125,13 +2140,6 @@ ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf
 	return buf->length;
 }
 
-static int _get_body(void *userdata, const char *data, size_t length)
-{
-	wget_http_response_t *resp = (wget_http_response_t *) userdata;
-
-	return resp->req->body_callback(resp, resp->req->body_user_data, data, length);
-}
-
 wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 {
 	size_t bufsize, body_len = 0, body_size = 0;
@@ -2203,7 +2211,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 #endif
 
 	wget_decompressor_t *dc = NULL;
-	wget_http_request_t *req = wget_vector_get(conn->pending_requests, 0); // should use double linked lists here
+	wget_http_request_t *req = wget_vector_get(conn->pending_requests, 0); // TODO: should use double linked lists here
 
 	debug_printf("### req %p pending requests = %d\n", req, wget_vector_size(conn->pending_requests));
 	if (!req)
