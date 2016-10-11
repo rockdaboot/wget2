@@ -434,6 +434,11 @@ void host_queue_free(HOST *host)
 	wget_thread_mutex_lock(&hosts_mutex);
 	wget_list_browse(host->queue, (int(*)(void *, void *))_queue_free_func, NULL);
 	wget_list_free(&host->queue);
+	if (host->robot_job) {
+		wget_iri_free(&host->robot_job->iri);
+		job_free(host->robot_job);
+		xfree(host->robot_job);
+	}
 	if (!host->blocked)
 		qsize -= host->qsize;
 	host->qsize = 0;
