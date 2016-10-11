@@ -1866,15 +1866,10 @@ static int _on_data_chunk_recv_callback(nghttp2_session *session,
 	struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, stream_id);
 
 	if (ctx) {
-		// wget_http_connection_t *conn = (wget_http_connection_t *)user_data;
-		// struct _body_callback_context *ctx = req->nghttp2_context;
 //		debug_printf("[INFO] C <---------------------------- S%d (DATA chunk - %zu bytes)\n", stream_id, len);
 		debug_printf("nbytes %zu\n", len);
-//		if (resp->req->body_callback)
-//			resp->req->body_callback(resp, resp->req->body_user_data, (const char *) data, len);
+		ctx->resp->cur_downloaded += len;
 		wget_decompress(ctx->decompressor, (char *) data, len);
-		// debug_write((char *)data, len);
-		// debug_printf("\n");
 	}
 	return 0;
 }
@@ -2389,10 +2384,12 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 			p = end + chunk_size + 2;
 			if (p <= buf + body_len) {
 				debug_printf("1 skip chunk_size %zu\n", chunk_size);
+				resp->cur_downloaded += chunk_size;
 				wget_decompress(dc, end, chunk_size);
 				continue;
 			}
 
+			resp->cur_downloaded += (buf + body_len) - end;
 			wget_decompress(dc, end, (buf + body_len) - end);
 
 			chunk_size = p - (buf + body_len); // in fact needed bytes to have chunk_size+2 in buf
@@ -2415,8 +2412,10 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 						error_printf(_("Expected end-of-chunk not found\n"));
 						goto cleanup;
 					}
-					if (chunk_size > 2)
+					if (chunk_size > 2) {
+						resp->cur_downloaded += chunk_size - 2;
 						wget_decompress(dc, buf, chunk_size - 2);
+					}
 					body_len = nbytes - chunk_size;
 					if (body_len)
 						memmove(buf, buf + chunk_size, body_len);
@@ -2425,10 +2424,14 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 					break;
 				} else {
 					chunk_size -= nbytes;
-					if (chunk_size >= 2)
+					if (chunk_size >= 2) {
+						resp->cur_downloaded += nbytes;
 						wget_decompress(dc, buf, nbytes);
-					else
-						wget_decompress(dc, buf, nbytes - 1); // special case: we got a partial end-of-chunk
+					} else {
+						// special case: we got a partial end-of-chunk
+						resp->cur_downloaded += nbytes - 1;
+						wget_decompress(dc, buf, nbytes - 1);
+					}
 				}
 			}
 		}
@@ -2447,8 +2450,8 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 				break;
 
 			body_len += nbytes;
-			resp->cur_downloaded = body_len;
 			debug_printf("nbytes %zd total %zu/%zu\n", nbytes, body_len, resp->content_length);
+			resp->cur_downloaded += nbytes;
 			wget_decompress(dc, buf, nbytes);
 		}
 		if (nbytes < 0)
@@ -2468,6 +2471,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 		while (!conn->abort_indicator && !_abort_indicator && (nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) > 0) {
 			body_len += nbytes;
 			debug_printf("nbytes %zd total %zu\n", nbytes, body_len);
+			resp->cur_downloaded += nbytes;
 			wget_decompress(dc, buf, nbytes);
 		}
 		resp->content_length = body_len;
