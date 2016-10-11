@@ -1371,7 +1371,7 @@ static void process_response_part(wget_http_response_t *resp)
 
 	// just update number bytes read (body only) for display purposes
 	if (resp->body)
-		quota_modify_read(resp->body->length);
+		quota_modify_read(resp->cur_downloaded);
 
 	if (resp->code != 200 && resp->code != 206) {
 		print_status(downloader, "part %d download error %d\n", part->id, resp->code);
@@ -1432,7 +1432,7 @@ static void process_response(wget_http_response_t *resp)
 
 	// just update number bytes read (body only) for display purposes
 	if (resp->body)
-		quota_modify_read(resp->body->length);
+		quota_modify_read(resp->cur_downloaded);
 
 	// check if we got a RFC 6249 Metalink response
 	// HTTP/1.1 302 Found
