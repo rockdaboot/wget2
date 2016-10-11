@@ -80,7 +80,7 @@ struct optionw {
 static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val)
 {
 	puts(
-		"Wget V" PACKAGE_VERSION " - multithreaded metalink/file/website downloader written in C\n"
+		"GNU Wget2 V" PACKAGE_VERSION " - multithreaded metalink/file/website downloader\n"
 		"\n"
 		"Usage: wget [options...] <url>...\n"
 		"\n"
@@ -1223,7 +1223,7 @@ int init(int argc, const char **argv)
 	read_config();
 
 	if (config.print_version) {
-		info_printf("Wget " PACKAGE_VERSION " - C multithreaded metalink/file/website downloader\n\n");
+		info_printf("GNU Wget2 " PACKAGE_VERSION " - multithreaded metalink/file/website downloader\n\n");
 		info_printf("+digest"
 
 #if defined WITH_GNUTLS
