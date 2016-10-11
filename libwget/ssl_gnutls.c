@@ -815,7 +815,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		if (!ctx->valid && ctx->ocsp_stapling) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
 			if (gnutls_ocsp_status_request_is_checked(session, 0)) {
-				info_printf("Server certificate is valid regarding OCSP stapling\n");
+				debug_printf("Server certificate is valid regarding OCSP stapling\n");
 //				_get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
 				_add_cert_to_ocsp_cache(cert, 1);
 				nvalid = 1;
@@ -1305,7 +1305,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		size_t size;
 
 		if (wget_tls_session_get(_config.tls_session_cache, ctx->hostname, &data, &size) == 0) {
-			info_printf("found cached session data for %s\n", ctx->hostname);
+			debug_printf("found cached session data for %s\n", ctx->hostname);
 			if ((rc = gnutls_session_set_data(session, data, size)) != GNUTLS_E_SUCCESS)
 				error_printf("GnuTLS: Failed to set session data: %s\n", gnutls_strerror(rc));
 			xfree(data);
@@ -1346,7 +1346,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 						wget_tls_session_new(ctx->hostname, time(NULL) + 18 * 3600, session_data.data, session_data.size)); // 18h valid
 					gnutls_free(session_data.data);
 				} else
-					info_printf("Failed to get session data: %s", gnutls_strerror(rc));
+					debug_printf("Failed to get session data: %s", gnutls_strerror(rc));
 			}
 		}
 	} else {
@@ -1555,13 +1555,13 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 			gnutls_datum_t session_data;
 
 			if ((rc = gnutls_session_get_data2(session, &session_data)) == GNUTLS_E_SUCCESS) {
-				info_printf("Got delayed session data\n");
+				debug_printf("Got delayed session data\n");
 				ctx->delayed_session_data = 0;
 				wget_tls_session_db_add(_config.tls_session_cache,
 					wget_tls_session_new(ctx->hostname, time(NULL) + 18 * 3600, session_data.data, session_data.size)); // 18h valid
 				gnutls_free(session_data.data);
 			} else
-				info_printf("No delayed session data%s\n", gnutls_strerror(rc));
+				debug_printf("No delayed session data%s\n", gnutls_strerror(rc));
 		}
 
 		if (nbytes == GNUTLS_E_REHANDSHAKE) {
