@@ -140,10 +140,10 @@ void bar_slot_deregister(wget_bar_ctx *bar_ctx)
 	wget_thread_mutex_unlock(&bar_mutex);
 }
 
-void bar_update_slots(void)
+void bar_update_slots(int nslots)
 {
 	wget_thread_mutex_lock(&bar_mutex);
-	wget_bar_set_slots(bar, nthreads + 1);
+	wget_bar_set_slots(bar, nslots);
 	wget_thread_mutex_unlock(&bar_mutex);
 }
 

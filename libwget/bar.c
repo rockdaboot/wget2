@@ -51,7 +51,7 @@
  */
 
 
-// We use enums to define the progress bar paramters because they are the
+// We use enums to define the progress bar parameters because they are the
 // closest thing we have to defining true constants in C without using
 // preprocessor macros. The advantage of enums is that they will create a
 // symbol in the symbol table making debugging a whole lot easier.
@@ -138,7 +138,7 @@ static int
  * allocated memory will be returned.
  *
  * \p nslots is the number of screen lines to reserve for printing the progress
- * bars. This may be any number, but you generally want atleast as many slots
+ * bars. This may be any number, but you generally want at least as many slots
  * as there are downloader threads.
  *
  * \p max_width is the maximum number of screen columns that the progress bar
@@ -195,11 +195,11 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 
 void wget_bar_set_slots(wget_bar_t *bar, int nslots)
 {
-	char lf[nslots];
-	memset(lf, '\n', sizeof(lf));
-
 	if (nslots <= bar->nslots)
 		return;
+
+	char lf[nslots];
+	memset(lf, '\n', sizeof(lf));
 
 	/* _bar_print_slot(bar, 0); */
 	fwrite(lf, 1, nslots - bar->nslots, stdout);
@@ -238,12 +238,16 @@ void wget_bar_slot_deregister(wget_bar_t *bar, wget_bar_ctx *ctx)
 static inline G_GNUC_WGET_ALWAYS_INLINE void
 _return_cursor_position(void)
 {
+	// CSI u: Restore cursor position
 	printf("\033[u");
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
 _bar_print_slot(const wget_bar_t *bar, int slotpos)
 {
+	// CSI s: Save cursor
+	// CSI <n> A: Cursor up
+	// CSI <n> G: Cursor horizontal absolute
 	printf("\033[s\033[%dA\033[1G", bar->nslots - slotpos);
 }
 
@@ -436,6 +440,7 @@ void wget_bar_free(wget_bar_t **bar)
 void wget_bar_print(wget_bar_t *bar, int slotpos, const char *s)
 {
 	_bar_print_slot(bar, slotpos);
+	// CSI <n> G: Cursor horizontal absolute
 	printf("\033[27G[%-*.*s]", bar->max_width, bar->max_width, s);
 	_return_cursor_position();
 	fflush(stdout);

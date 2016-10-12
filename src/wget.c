@@ -990,6 +990,9 @@ int main(int argc, const char **argv)
 		for (;nthreads < config.max_threads && nthreads < queue_size(); nthreads++) {
 			downloaders[nthreads].id = nthreads;
 
+			if (config.progress)
+				bar_update_slots(nthreads + 2);
+
 			// start worker threads (I call them 'downloaders')
 			if ((rc = wget_thread_start(&downloaders[nthreads].tid, downloader_thread, &downloaders[nthreads], 0)) != 0) {
 				error_printf(_("Failed to start downloader, error %d\n"), rc);
@@ -1595,9 +1598,6 @@ void *downloader_thread(void *p)
 	enum actions action = ACTION_GET_JOB;
 
 	downloader->tid = wget_thread_self(); // to avoid race condition
-
-	if (config.progress)
-		bar_update_slots();
 
 	wget_thread_mutex_lock(&main_mutex); locked = 1;
 

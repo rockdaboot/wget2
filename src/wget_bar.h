@@ -38,7 +38,7 @@ void bar_vprintf(int slotpos, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_
 void bar_slot_register(wget_bar_ctx *bar_ctx, int slotpos) G_GNUC_WGET_NONNULL_ALL;
 void bar_slot_begin(wget_bar_ctx *bar_ctx, const char *filename, ssize_t filesize) G_GNUC_WGET_NONNULL_ALL;
 void bar_slot_deregister(wget_bar_ctx *bar_ctx) G_GNUC_WGET_NONNULL_ALL;
-void bar_update_slots(void);
+void bar_update_slots(int nslots);
 
 /*
 ssize_t
