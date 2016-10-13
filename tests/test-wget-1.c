@@ -526,8 +526,21 @@ int main(void)
 				{	NULL } },
 			0);
 
+		wget_test(
+			WGET_TEST_OPTIONS, "--header Range:bytes=9-",
+			WGET_TEST_REQUEST_URL, "dummy.txt",
+			WGET_TEST_EXPECTED_ERROR_CODE, 0,
+			WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+				{	"dummy.txt", partial },
+				{	NULL } },
+			WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+				{	"dummy.txt", urls[3].body },
+				{	NULL } },
+			0);
+
 		wget_xfree(partial);
 	}
+
 
 /*
  * this test needs a broken server ... I don't have one right now.

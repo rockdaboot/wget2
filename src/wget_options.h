@@ -84,7 +84,8 @@ struct config {
 		*accept_patterns,
 		*reject_patterns,
 		*follow_tags,
-		*ignore_tags;
+		*ignore_tags,
+		*headers;
 	wget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
 	wget_tls_session_db_t

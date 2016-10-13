@@ -26,7 +26,7 @@
  *
  * How to add a new command line option
  * ====================================
- * - extend option.h/struct config with the needed variable
+ * - extend wget_options.h/struct config with the needed variable
  * - add a default value for your variable in the 'config' initializer if needed (in this file)
  * - add the long option into 'options[]' (in this file). keep alphabetical order !
  * - if appropriate, add a new parse function (examples see below)
@@ -182,6 +182,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"                          Download the list with:\n"
 		"                          wget -O suffixes.txt http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1\n"
 		"      --http-keep-alive   Keep connection open for further requests. (default: on)\n"
+		"      --header            Insert input string as a HTTP header in all requests\n"
 		"      --save-headers      Save the response headers in front of the response data. (default: off)\n"
 		"      --referer           Include Referer: url in HTTP requets. (default: off)\n"
 		"  -E  --adjust-extension  Append extension to saved file (.html or .css). (default: off)\n"
@@ -309,6 +310,64 @@ static int parse_stringset(option_t opt, const char *val)
 			wget_stringmap_put_noalloc(map, strdup(s), NULL);
 	} else {
 		wget_stringmap_clear(map);
+	}
+
+	return 0;
+}
+
+static int compare_wget_http_param(wget_http_header_param_t *a, wget_http_header_param_t *b)
+{
+	if (wget_strcasecmp_ascii(a->name, b->name) == 0)
+		if (wget_strcasecmp_ascii(a->value, b->value) == 0)
+			return 0;
+	return 1;
+}
+
+static int parse_header(option_t opt, const char *val)
+{
+	wget_vector_t *v = *((wget_vector_t **)opt->var);
+
+	if (val && *val) {
+		char *value, *delim_pos;
+		wget_http_header_param_t _param;
+
+		if (!v) {
+			v = *((wget_vector_t **)opt->var) =
+				wget_vector_create(8, 4, (int (*)(const void *, const void *))compare_wget_http_param);
+			wget_vector_set_destructor(v, (void(*)(void *))wget_http_free_param);
+		}
+
+		// If user submits empty string
+		if (*val == '\0') {
+			wget_vector_clear(v);
+			return 0;
+		}
+
+		delim_pos = strchr(val, ':');
+
+		if (!delim_pos || delim_pos == val) {
+			wget_error_printf("Ignoring invalid header: %s\n", val);
+			return 0;
+		}
+
+		value = delim_pos + 1;
+		while (*value == ' ')
+			value++;
+
+		if (*value == '\0') {
+			wget_error_printf("No value in header (ignoring): %s\n", val);
+			return 0;
+		}
+
+		_param.name = wget_strmemdup(val, delim_pos - val);
+		_param.value = wget_strdup(value);
+
+		if (wget_vector_find(v, &_param) == -1)
+			wget_vector_add(v, &_param, sizeof(_param));
+		else {
+			wget_http_free_param(&_param);
+		}
+
 	}
 
 	return 0;
@@ -686,6 +745,7 @@ static const struct optionw options[] = {
 	{ "force-sitemap", &config.force_sitemap, parse_bool, 0, 0 },
 	{ "fsync-policy", &config.fsync_policy, parse_bool, 0, 0 },
 	{ "gnutls-options", &config.gnutls_options, parse_string, 1, 0 },
+	{ "header", &config.headers, parse_header, 1, 0 },
 	{ "help", NULL, print_help, 0, 'h' },
 	{ "host-directories", &config.host_directories, parse_bool, 0, 0 },
 	{ "hsts", &config.hsts, parse_bool, 0, 0 },
@@ -953,10 +1013,10 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 				error_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
 
 			_read_config(cfgfile, 0);
-			
+
 			level--;
 		}
-		
+
 		return 0;
 	}
 
@@ -1536,6 +1596,7 @@ void deinit(void)
 	wget_vector_free(&config.ignore_tags);
 	wget_vector_free(&config.accept_patterns);
 	wget_vector_free(&config.reject_patterns);
+	wget_vector_free(&config.headers);
 
 	wget_http_set_http_proxy(NULL, NULL);
 	wget_http_set_https_proxy(NULL, NULL);
@@ -1696,6 +1757,52 @@ int selftest_options(void)
 		config.read_timeout = read_timeout;
 	}
 
+	// Test parsing --header option
+	{
+		static struct {
+			const char
+				*argv[3];
+			const char
+				*result[2];
+		} test_header[] = {
+			{ { "", "--header", "Hello: World" }, {"hello", "world" } }
+		};
+
+		for (it = 0; it < countof(test_header); it++) {
+			parse_command_line(3, test_header[it].argv);
+			wget_http_header_param_t *config_value = wget_vector_get(config.headers, it);
+			if (!(wget_strcmp(config_value->name, test_header[it].result[0]) &&
+					wget_strcmp(config_value->value, test_header[it].result[1]))) {
+				error_printf("%s: Failed to parse header option #%zu\n", __func__, it);
+				ret = 1;
+			}
+
+			// Empty the header list before proceeding
+			wget_vector_clear(config.headers);
+		}
+
+		// Test illegal values
+		static struct {
+			const char
+				*argv[3];
+		} test_header_illegal[] = {
+			{ { "", "--header", "Hello World" } },
+			{ { "", "--header", "Hello:" } },
+			{ { "", "--header", "Hello:  " } },
+			{ { "", "--header", ":World" } },
+			{ { "", "--header", ":" } },
+			{ { "", "--header", "" } },
+		};
+
+		for (it = 0; it < countof(test_header_illegal); it++) {
+			parse_command_line(3, test_header_illegal[it].argv);
+			if (wget_vector_size(config.headers) != 0) {
+				error_printf("%s: Accepted illegal header option #%zu\n", __func__, it);
+				ret = 1;
+			}
+		}
+
+	}
 	// test parsing string short and long option
 
 	{
