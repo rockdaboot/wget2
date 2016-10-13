@@ -1813,17 +1813,7 @@ void
  * Progress bar routines
  */
 
-struct _wget_bar_ctx {
-	size_t
-		raw_downloaded;
-	wget_thread_mutex_t
-		mutex;
-	off_t
-		_slotpos;
-};
-
 typedef struct _wget_bar_st wget_bar_t;
-typedef struct _wget_bar_ctx wget_bar_ctx;
 
 wget_bar_t *
 	wget_bar_init(wget_bar_t *bar, int nslots) LIBWGET_EXPORT;
@@ -1832,23 +1822,25 @@ void
 void
 	wget_bar_free(wget_bar_t **bar) LIBWGET_EXPORT;
 void
-	wget_bar_print(wget_bar_t *bar, int slotpos, const char *s) LIBWGET_EXPORT;
+	wget_bar_print(wget_bar_t *bar, int slot, const char *s) LIBWGET_EXPORT;
 ssize_t
-	wget_bar_vprintf(wget_bar_t *bar, size_t slotpos, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+	wget_bar_vprintf(wget_bar_t *bar, size_t slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 ssize_t
-	wget_bar_printf(wget_bar_t *bar, size_t slotpos, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+	wget_bar_printf(wget_bar_t *bar, size_t slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
-	wget_bar_slot_begin(wget_bar_t *bar, wget_bar_ctx *ctx, const char *filename, ssize_t filesize) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+	wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_t filesize) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
-	wget_bar_slot_register(wget_bar_t *bar, wget_bar_ctx *ctx, int slotpos) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+	wget_bar_slot_downloaded(wget_bar_t *bar, int slot, size_t nbytes) LIBWGET_EXPORT;
 void
-	wget_bar_slot_deregister(wget_bar_t *bar, wget_bar_ctx *ctx) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+	wget_bar_slot_deregister(wget_bar_t *bar, int slot) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
 	wget_bar_update(wget_bar_t *bar) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
 	wget_bar_set_slots(wget_bar_t *bar, int nslots) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
 	wget_bar_screen_resized(void) LIBWGET_EXPORT;
+void
+	wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 
 WGET_END_DECLS
 

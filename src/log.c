@@ -103,17 +103,11 @@ static void _write_out(FILE *default_fp, const char *data, size_t len, int with_
 
 static void _write_debug(FILE *fp, const char *data, size_t len)
 {
-	if (!data || (ssize_t)len <= 0)
-		return;
-
 	_write_out(fp, data, len, 1, "\033[35m"); // magenta/purple text
 }
 
 static void _write_error(FILE *fp, const char *data, size_t len)
 {
-	if (!data || (ssize_t)len <= 0)
-		return;
-
 	_write_out(fp, data, len, 0, "\033[31m"); // red text
 }
 

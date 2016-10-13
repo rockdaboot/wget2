@@ -2469,48 +2469,61 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	return fd;
 }
 
+// context used for header and body callback
+struct _body_callback_context {
+	JOB *job;
+	wget_buffer_t *body;
+	size_t max_memory;
+	off_t length;
+	int outfd;
+	int progress_slot;
+};
 
 static int _get_header(wget_http_response_t *resp, void *context)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
 	PART *part;
-	const char *dest = NULL;
+	const char *dest = NULL, *name;
+	int ret = 0;
 
 	bool metalink = resp->content_type
 	    && (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml") ||
 		!wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml"));
 
-	if (ctx->job->head_first || (config.metalink && metalink))
-		dest = NULL;
-	else if ((part = ctx->job->part)) {
+	if (ctx->job->head_first || (config.metalink && metalink)) {
+		name = ctx->job->local_filename;
+	} else if ((part = ctx->job->part)) {
+		name = ctx->job->metalink->name;
 		ctx->outfd = open(ctx->job->metalink->name, O_WRONLY | O_CREAT | O_NONBLOCK, 0644);
 		if (ctx->outfd == -1) {
 			set_exit_status(3);
-			return -1;
+			ret = -1;
+			goto out;
 		}
 		if (lseek(ctx->outfd, part->position, SEEK_SET) == (off_t) -1) {
 			close(ctx->outfd);
 			set_exit_status(3);
-			return -1;
+			ret = -1;
+			goto out;
 		}
 	}
 	else if (config.content_disposition && resp->content_filename)
-		dest = resp->content_filename;
+		name = dest = resp->content_filename;
 	else
-		dest = config.output_document ? config.output_document : ctx->job->local_filename;
+		name = dest = config.output_document ? config.output_document : ctx->job->local_filename;
 
 	if (dest && (resp->code == 200 || resp->code == 206 || config.content_on_error)) {
 		ctx->outfd = _prepare_file (resp, dest, resp->code == 206 ? O_APPEND : O_TRUNC);
 		if (ctx->outfd == -1)
-			return -1;
+			ret = -1;
 	}
 //	info_printf("Opened %d\n", ctx->outfd);
 
-	if (config.progress) {
-		bar_slot_begin(&ctx->bar, dest, resp->content_length);
-	}
+out:
+	if (config.progress)
+		bar_slot_begin(ctx->progress_slot, name, resp->content_length);
 
-	return 0;
+	return ret;
 }
 
 static int _get_body(wget_http_response_t *resp, void *context, const char *data, size_t length)
@@ -2545,9 +2558,8 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 	if (ctx->max_memory == 0 || ctx->length < (off_t) ctx->max_memory)
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
-	wget_thread_mutex_lock(&ctx->bar.mutex);
-	ctx->bar.raw_downloaded = resp->cur_downloaded;
-	wget_thread_mutex_unlock(&ctx->bar.mutex);
+	if (config.progress)
+		bar_set_downloaded(ctx->progress_slot, resp->cur_downloaded);
 
 	return 0;
 }
@@ -2778,11 +2790,7 @@ int http_send_request(wget_iri_t *iri, DOWNLOADER *downloader)
 	context->outfd = -1;
 	context->body = wget_buffer_alloc(102400);
 	context->length = 0;
-
-	if (config.progress) {
-		wget_thread_mutex_init(&context->bar.mutex);
-		bar_slot_register(&context->bar, downloader->id);
-	}
+	context->progress_slot = downloader->id;
 
 	// set callback functions
 	wget_http_request_set_header_cb(req, _get_header, context);
@@ -2819,7 +2827,8 @@ wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
 	}
 
 	if (config.progress)
-		bar_slot_deregister(&context->bar);
+		bar_slot_deregister(context->progress_slot);
+
 	xfree(context);
 
 	return resp;

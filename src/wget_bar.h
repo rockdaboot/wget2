@@ -28,24 +28,22 @@
 #ifndef _WGET_BAR_H
 # define _WGET_BAR_H
 
-#include "wget_progress.h"
-
 void bar_init(void);
 void bar_deinit(void);
-void bar_print(int slotpos, const char *s) G_GNUC_WGET_NONNULL_ALL;
-void bar_printf(int slotpos, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3) G_GNUC_WGET_NONNULL_ALL;
-void bar_vprintf(int slotpos, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL_ALL;
-void bar_slot_register(wget_bar_ctx *bar_ctx, int slotpos) G_GNUC_WGET_NONNULL_ALL;
-void bar_slot_begin(wget_bar_ctx *bar_ctx, const char *filename, ssize_t filesize) G_GNUC_WGET_NONNULL_ALL;
-void bar_slot_deregister(wget_bar_ctx *bar_ctx) G_GNUC_WGET_NONNULL_ALL;
+void bar_print(int slot, const char *s) G_GNUC_WGET_NONNULL_ALL;
+void bar_printf(int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3) G_GNUC_WGET_NONNULL_ALL;
+void bar_vprintf(int slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL_ALL;
+void bar_slot_begin(int slot, const char *filename, ssize_t filesize) G_GNUC_WGET_NONNULL_ALL;
+void bar_set_downloaded(int slot, size_t nbytes);
+void bar_slot_deregister(int slot);
 void bar_update_slots(int nslots);
 
 /*
 ssize_t
-	wget_bar_vprintf(wget_bar_t *bar, int slotpos, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_vprintf(wget_bar_t *bar, int slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
 ssize_t
-	wget_bar_printf(wget_bar_t *bar, int slotpos, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_printf(wget_bar_t *bar, int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL;
 void
-	wget_bar_print(wget_bar_t *bar, int slotpos, const char *s)G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_print(wget_bar_t *bar, int slot, const char *s)G_GNUC_WGET_NONNULL_ALL;
 */
 #endif /* _WGET_BAR_H */
