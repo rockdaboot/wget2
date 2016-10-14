@@ -363,37 +363,138 @@ void wget_hash_deinit(wget_hash_hd_t *dig, void *digest)
 	memcpy(digest, ret, gcry_md_get_algo_dlen(dig->algorithm));
 	gcry_md_close(dig->context);
 }
-#else // empty functions which return error
-#define _U G_GNUC_WGET_UNUSED
+#else // use the gnulib functions
+#include "md2.h"
+#include "md5.h"
+#include "sha1.h"
+#include "sha256.h"
+#include "sha512.h"
 
-struct _wget_hash_hd_st {
-	char dig;
+typedef void (*_hash_init_t)(void *);
+typedef void (*_hash_process_t)(const void *, size_t, void *);
+typedef void (*_hash_finish_t)(void *, void *);
+typedef void (*_hash_read_t)(const void *, void *);
+
+static struct _algorithm {
+	_hash_init_t init;
+	_hash_process_t process;
+	_hash_finish_t finish;
+	_hash_read_t read;
+	size_t ctx_len;
+	size_t digest_len;
+} _algorithm[] = {
+	[WGET_DIGTYPE_MD2] = {
+		(_hash_init_t)md2_init_ctx,
+		(_hash_process_t)md2_process_bytes,
+		(_hash_finish_t)md2_finish_ctx,
+		(_hash_read_t)md2_read_ctx,
+		sizeof(struct md2_ctx),
+		MD2_DIGEST_SIZE
+	},
+	[WGET_DIGTYPE_MD5] = {
+		(_hash_init_t)md5_init_ctx,
+		(_hash_process_t)md5_process_bytes,
+		(_hash_finish_t)md5_finish_ctx,
+		(_hash_read_t)md5_read_ctx,
+		sizeof(struct md5_ctx),
+		MD5_DIGEST_SIZE
+	},
+	[WGET_DIGTYPE_SHA1] = {
+		(_hash_init_t)sha1_init_ctx,
+		(_hash_process_t)sha1_process_bytes,
+		(_hash_finish_t)sha1_finish_ctx,
+		(_hash_read_t)sha1_read_ctx,
+		sizeof(struct sha1_ctx),
+		SHA1_DIGEST_SIZE
+	},
+	[WGET_DIGTYPE_SHA224] = {
+		(_hash_init_t)sha224_init_ctx,
+		(_hash_process_t)sha256_process_bytes, // sha256 is intentional
+		(_hash_finish_t)sha224_finish_ctx,
+		(_hash_read_t)sha224_read_ctx,
+		sizeof(struct sha256_ctx), // sha256 is intentional
+		SHA224_DIGEST_SIZE
+	},
+	[WGET_DIGTYPE_SHA256] = {
+		(_hash_init_t)sha256_init_ctx,
+		(_hash_process_t)sha256_process_bytes,
+		(_hash_finish_t)sha256_finish_ctx,
+		(_hash_read_t)sha256_read_ctx,
+		sizeof(struct sha256_ctx),
+		SHA256_DIGEST_SIZE
+	},
+	[WGET_DIGTYPE_SHA384] = {
+		(_hash_init_t)sha384_init_ctx,
+		(_hash_process_t)sha512_process_bytes, // sha512 is intentional
+		(_hash_finish_t)sha384_finish_ctx,
+		(_hash_read_t)sha384_read_ctx,
+		sizeof(struct sha512_ctx), // sha512 is intentional
+		SHA384_DIGEST_SIZE
+	},
+	[WGET_DIGTYPE_SHA512] = {
+		(_hash_init_t)sha512_init_ctx,
+		(_hash_process_t)sha512_process_bytes,
+		(_hash_finish_t)sha512_finish_ctx,
+		(_hash_read_t)sha512_read_ctx,
+		sizeof(struct sha512_ctx),
+		SHA512_DIGEST_SIZE
+	}
 };
 
-int wget_hash_fast(_U wget_digest_algorithm_t algorithm, _U const void *text, _U size_t textlen, _U void *digest)
+struct _wget_hash_hd_st {
+	const struct _algorithm
+		*algorithm;
+	void
+		*context;
+};
+
+int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
 {
+	wget_hash_hd_t dig;
+
+	if (wget_hash_init(&dig, algorithm) == 0) {
+		if (wget_hash(&dig, text, textlen) == 0) {
+			wget_hash_deinit(&dig, digest);
+			return 0;
+		}
+	}
+
 	return -1;
 }
 
-int wget_hash_get_len(_U wget_digest_algorithm_t algorithm)
+int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 {
+	if (algorithm >= 0 && algorithm < countof(_algorithm))
+		return _algorithm[algorithm].digest_len;
+	else
+		return 0;
+}
+
+int wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm)
+{
+	if (algorithm >= 0 && algorithm < countof(_algorithm)) {
+		if (_algorithm[algorithm].ctx_len) {
+			dig->algorithm = &_algorithm[algorithm];
+			dig->context = xmalloc(dig->algorithm->ctx_len);
+			dig->algorithm->init(dig->context);
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+int wget_hash(wget_hash_hd_t *dig, const void *text, size_t textlen)
+{
+	dig->algorithm->process(text, textlen, dig->context);
 	return 0;
 }
 
-int wget_hash_init(_U wget_hash_hd_t *dig, _U wget_digest_algorithm_t algorithm)
+void wget_hash_deinit(wget_hash_hd_t *dig, void *digest)
 {
-	return -1;
+	dig->algorithm->finish(dig->context, digest);
+	xfree(dig->context);
 }
-
-int wget_hash(_U wget_hash_hd_t *handle, _U const void *text, _U size_t textlen)
-{
-	return -1;
-}
-
-void wget_hash_deinit(_U wget_hash_hd_t *handle, _U void *digest)
-{
-}
-#undef _U
 #endif
 
 /**
