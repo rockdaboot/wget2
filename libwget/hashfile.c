@@ -297,9 +297,6 @@ void wget_hash_deinit(wget_hash_hd_t *dig, void *digest)
 
 #elif defined (WITH_GCRYPT)
 #include <gcrypt.h>
-#define MD5_CTX    gcry_md_hd_t
-#define SHA_CTX    gcry_md_hd_t
-#define SHA256_CTX gcry_md_hd_t
 
 struct _wget_hash_hd_st {
 	int
