@@ -2605,12 +2605,6 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 
 	}
 
-	if (config.headers) {
-		for (int i = 0; i < wget_vector_size(config.headers); i++) {
-			wget_http_header_param_t *param = wget_vector_get(config.headers, i);
-			wget_http_add_header_param(req, param);
-		}
-	}
 	// 20.06.2012: www.google.de only sends gzip responses with one of the
 	// following header lines in the request.
 	// User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20100101 Firefox/10.0.5 Iceweasel/10.0.5
@@ -2733,6 +2727,30 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 		if ((cookie_string = wget_cookie_create_request_header(config.cookie_db, iri))) {
 			wget_http_add_header(req, "Cookie", cookie_string);
 			xfree(cookie_string);
+		}
+	}
+
+	if (config.headers) {
+		for (int i = 0; i < wget_vector_size(config.headers); i++) {
+			wget_http_header_param_t *param = wget_vector_get(config.headers, i);
+			char replaced = 0;
+
+			// replace wget's HTTP headers by user-provided headers, except Cookie (which will just be added))
+			if (wget_strcasecmp_ascii(param->name, "Cookie")) {
+				for (int j = 0; j < wget_vector_size(req->headers); j++) {
+					wget_http_header_param_t *h = wget_vector_get(req->headers, j);
+
+					if (!wget_strcasecmp_ascii(param->name, h->name)) {
+						wget_http_free_param(h);
+						h->name = wget_strdup(param->name);
+						h->value = wget_strdup(param->value);
+						replaced = 1;
+					}
+				}
+			}
+
+			if (!replaced)
+				wget_http_add_header_param(req, param);
 		}
 	}
 

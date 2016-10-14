@@ -1378,6 +1378,7 @@ wget_http_request_t *wget_http_create_request(const wget_iri_t *iri, const char 
 	req->headers = wget_vector_create(8, 8, NULL);
 	wget_vector_set_destructor(req->headers, (void(*)(void *))wget_http_free_param);
 
+	wget_http_add_header(req, "Host", req->esc_host.data);
 	wget_http_request_set_body_cb(req, _body_callback, NULL);
 
 	return req;
@@ -2031,13 +2032,17 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 		_init_nv(&nvs[0], ":method", "GET");
 		_init_nv(&nvs[1], ":path", resource);
 		_init_nv(&nvs[2], ":scheme", "https");
-		_init_nv(&nvs[3], ":authority", req->esc_host.data);
+		// _init_nv(&nvs[3], ":authority", req->esc_host.data);
 		nvp = &nvs[4];
 
 		for (int it = 0; it < wget_vector_size(req->headers); it++) {
 			wget_http_header_param_t *param = wget_vector_get(req->headers, it);
 			if (!wget_strcasecmp_ascii(param->name, "Connection"))
 				continue;
+			if (!wget_strcasecmp_ascii(param->name, "Host")) {
+				_init_nv(&nvs[3], ":authority", param->value);
+				continue;
+			}
 
 			_init_nv(nvp++, param->name, param->value);
 		}
@@ -2088,6 +2093,9 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 
 ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf)
 {
+	char have_content_length = 0;
+	char check_content_length = req->body && req->body_length;
+
 //	buffer_sprintf(buf, "%s /%s HTTP/1.1\r\nHost: %s", req->method, req->esc_resource.data ? req->esc_resource.data : "",);
 
 	wget_buffer_strcpy(buf, req->method);
@@ -2104,9 +2112,6 @@ ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf
 	wget_buffer_memcat(buf, "/", 1);
 	wget_buffer_bufcat(buf, &req->esc_resource);
 	wget_buffer_memcat(buf, " HTTP/1.1\r\n", 11);
-	wget_buffer_memcat(buf, "Host: ", 6);
-	wget_buffer_bufcat(buf, &req->esc_host);
-	wget_buffer_memcat(buf, "\r\n", 2);
 
 	for (int it = 0; it < wget_vector_size(req->headers); it++) {
 		wget_http_header_param_t *param = wget_vector_get(req->headers, it);
@@ -2118,13 +2123,17 @@ ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf
 		if (buf->data[buf->length - 1] != '\n') {
 			wget_buffer_memcat(buf, "\r\n", 2);
 		}
+
+		if (check_content_length && !wget_strcasecmp_ascii(param->name, "Content-Length"))
+			have_content_length = 1; // User supplied Content-Length header, keep it unchecked
 	}
 
 /* The use of Proxy-Connection has been discouraged in RFC 7230 A.1.2.
 	if (use_proxy)
 		wget_buffer_strcat(buf, "Proxy-Connection: keep-alive\r\n");
 */
-	if (req->body && req->body_length)
+
+	if (check_content_length && !have_content_length)
 		wget_buffer_printf_append(buf, "Content-Length: %zu\r\n", req->body_length);
 
 	wget_buffer_memcat(buf, "\r\n", 2); // end-of-header
