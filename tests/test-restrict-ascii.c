@@ -66,7 +66,7 @@ int main(void)
 	// test-restrict-ascii
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--restrict-file-names=ascii",
+		WGET_TEST_OPTIONS, "--restrict-file-names=ascii --local-encoding=utf-8",
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
