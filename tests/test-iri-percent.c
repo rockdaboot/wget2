@@ -80,7 +80,7 @@ int main(void)
 	// test-iri-disabled
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--iri -e robots=off --restrict-file-names=nocontrol -nH -r",
+		WGET_TEST_OPTIONS, "--iri -e robots=off --local-encoding=utf-8 --restrict-file-names=nocontrol -nH -r",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
