@@ -370,7 +370,7 @@ AS_IF([test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes], [
 
   AS_IF([test "x$with_libnettle" != xyes], [
     AC_SEARCH_LIBS(gcry_check_version, gcrypt,
-      [with_gcrypt=yes; AC_DEFINE([WITH_GCRYPT], [1], [Use libgcrypt])],
+      [with_gcrypt=yes; AC_DEFINE([WITH_GCRYPT], [1], [Use libgcrypt]) AC_CHECK_HEADERS([gcrypt.h])],
       [with_gcrypt=no;  AC_MSG_WARN(*** LIBGCRYPT was not found. Metalink checksumming and HTTP authentication are not available.)])
   ])
 ])
