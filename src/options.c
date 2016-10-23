@@ -337,12 +337,6 @@ static int parse_header(option_t opt, const char *val)
 			wget_vector_set_destructor(v, (void(*)(void *))wget_http_free_param);
 		}
 
-		// If user submits empty string
-		if (*val == '\0') {
-			wget_vector_clear(v);
-			return 0;
-		}
-
 		delim_pos = strchr(val, ':');
 
 		if (!delim_pos || delim_pos == val) {
@@ -368,6 +362,9 @@ static int parse_header(option_t opt, const char *val)
 			wget_http_free_param(&_param);
 		}
 
+	} else if (*val == '\0') {
+		wget_vector_clear(v);
+		return 0;
 	}
 
 	return 0;
@@ -1761,18 +1758,28 @@ int selftest_options(void)
 	{
 		static struct {
 			const char
-				*argv[3];
+				*argv[5];
 			const char
 				*result[2];
 		} test_header[] = {
-			{ { "", "--header", "Hello: World" }, {"hello", "world" } }
+			{ { "", "--header", "Hello: World", "", "" }, {"Hello", "World" } },
+			{ { "", "--header=Hello: World", "--header", "", "" }, {NULL, NULL} },
+			{ { "", "--header=Hello: World", "--header", "", "--header=Test: Passed" }, {"Test", "Passed"} },
 		};
 
 		for (it = 0; it < countof(test_header); it++) {
-			parse_command_line(3, test_header[it].argv);
-			wget_http_header_param_t *config_value = wget_vector_get(config.headers, it);
-			if (!(wget_strcmp(config_value->name, test_header[it].result[0]) &&
-					wget_strcmp(config_value->value, test_header[it].result[1]))) {
+			const char *res_name = test_header[it].result[0];
+			const char *res_value = test_header[it].result[1];
+
+			parse_command_line(5, test_header[it].argv);
+			wget_http_header_param_t *config_value = wget_vector_get(config.headers, 0);
+			if (res_name == NULL) {
+				if (wget_vector_size(config.headers) != 0) {
+					error_printf("%s: Extra headers found in option #%zu\n", __func__, it);
+					ret = 1;
+				}
+			} else if (wget_strcmp(config_value->name, res_name) &&
+					wget_strcmp(config_value->value, res_value)) {
 				error_printf("%s: Failed to parse header option #%zu\n", __func__, it);
 				ret = 1;
 			}
@@ -1791,7 +1798,6 @@ int selftest_options(void)
 			{ { "", "--header", "Hello:  " } },
 			{ { "", "--header", ":World" } },
 			{ { "", "--header", ":" } },
-			{ { "", "--header", "" } },
 		};
 
 		for (it = 0; it < countof(test_header_illegal); it++) {
