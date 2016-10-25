@@ -582,6 +582,46 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 	return s;
 }
 
+// RFC 7469
+// Example:
+// 	Public-Key-Pins:
+//     	       pin-sha256="d6qzRu9zOECb90Uez27xWltNsj0e1Md7GkYYkVoZWmM=";
+//	       pin-sha256="E9CZ9INDbd+2eRQozYqqbQ2yXLVKB9+xcprMF+44U1g=";
+//	       pin-sha256="LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ=";
+//	       max-age=10000; includeSubDomains
+#define SET_OUT(p, v) if (*p) *p = v
+// TODO this function and most of the others starting with wget_http_parse_* do not check
+// the out arguments for != NULL. Most of them are marked with G_GNUC_NONNULL((1)).
+// We should use a macro like SET_OUT(), above, to make the parameters optional. If the caller
+// is not interested in some output argument, he just passes NULL.
+// TODO Use coccinelle for instance, to catch out all these cases.
+wget_list_t *wget_http_parse_public_key_pins(const char *s, time_t *maxage, char *include_subdomains)
+{
+	long offset;
+	wget_list_t *pins = NULL;
+	wget_http_header_param_t param;
+
+	SET_OUT(maxage, 0);
+	SET_OUT(include_subdomains, 0);
+
+	while (*s) {
+		s = wget_http_parse_param(s, &param.name, &param.value);
+
+		if (!param.value && !wget_strcasecmp_ascii(param.name, "includeSubDomains")) {
+			*include_subdomains = 1;
+		} else if (param.value) {
+			if (!wget_strcasecmp(param.name, "max-age")) {
+				if ((offset = atol(param.value)) > 0)
+					*maxage = time(NULL) + offset;
+			} else if (!wget_strcasecmp(param.name, "pin-sha256")) {
+				wget_list_append(&pins, param.value, strlen(param.value));
+			}
+		}
+	}
+
+	return pins;
+}
+
 // RFC 6797
 //
 // Strict-Transport-Security = "Strict-Transport-Security" ":" [ directive ]  *( ";" [ directive ] )
@@ -1191,6 +1231,15 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 					wget_vector_set_destructor(resp->links, (wget_vector_destructor_t)wget_http_free_link);
 				}
 				wget_vector_add(resp->links, &link, sizeof(link));
+			}
+			break;
+		case 'p':
+			if (!wget_strncasecmp_ascii(name, "Public-Key-Pins", namelen)) {
+				// TODO HPKP: parse "Public-Key-Pins" header here
+				resp->hpkp = 1;
+				resp->hpkp_pins = wget_http_parse_public_key_pins(s,
+						&resp->hpkp_maxage,
+						&resp->hpkp_include_subdomains);
 			}
 			break;
 		case 't':
