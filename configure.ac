@@ -139,12 +139,37 @@ AC_DEFUN([gl_GCC_VERSION_IFELSE],
   ]
 )
 
+# gl_WORD_SET(RESULT, SET, WORDS)
+# --------------------------------------------------
+# Add each word in WORDS to SET if not already there.
+# Words separated by whitespace.
+AC_DEFUN([gl_WORD_SET],
+[
+  ret=$2
+  words=" $2 "
+  for word in $3; do
+    if test "${words#*" $word "}" = "$words"; then ret="$ret $word"; fi
+  done
+  $1=$ret
+])
+
+# gl_WORD_REMOVE(RESULT, SET, WORDS)
+# --------------------------------------------------
+# Remove each word in WORDS from SET.
+# Words separated by whitespace.
+AC_DEFUN([gl_WORD_REMOVE],
+[
+  ret=
+  words=" $3 "
+  for word in $2; do
+     if test "${words#*" $word "}" = "$words"; then ret="$ret $word"; fi
+  done
+  $1=$ret
+])
+
 #
 # check if compiler warnings are requested
 #
-AC_ARG_ENABLE([gcc-warnings],
-  [AS_HELP_STRING([--enable-gcc-warnings], [Turn on extra GCC warnings (for developers)])],
-  [gl_gcc_warnings=yes], [gl_gcc_warnings=no])
 AC_ARG_ENABLE([gcc-warnings],
   [AS_HELP_STRING([--enable-gcc-warnings], [Turn on extra GCC warnings (for developers)])],
   [case $enableval in
@@ -158,57 +183,84 @@ AC_ARG_ENABLE([gcc-warnings],
     # certain sections of code.  So if this is available and
     # we're running from a git repo, then auto enable the warnings.
     gl_gcc_warnings=no
-    gl_GCC_VERSION_IFELSE([4], [6],
-      [test -d "$srcdir"/.git \
-       && ! test -f "$srcdir"/.tarball-version \
-       && gl_gcc_warnings=yes]
-    )
+    test -f .manywarnings && gl_gcc_warnings=yes
   ]
 )
 
 if test "$gl_gcc_warnings" = yes; then
-  # gl_WARN_ADD([-Werror], [WERROR_CFLAGS])
+  WARN_CFLAGS=$CFLAGS
+  GNULIB_WARN_CFLAGS=$CFLAGS
 
-  # Set up list of unwanted warnings
-  nw=
-  nw="$nw -Wsystem-headers"       # System headers may trigger lot's of useless warnings
-  nw="$nw -Wvla"                  # This project is C99
-  nw="$nw -Wstack-protector"
+  CCNAME=$($CC --version| { read name _; echo $name; })
 
-  # Enable all GCC warnings not in this list.
-  gl_MANYWARN_ALL_GCC([warnings])
-  gl_MANYWARN_COMPLEMENT([warnings], [$warnings], [$nw])
-  for w in $warnings; do
-    gl_WARN_ADD([$w])
-  done
-  gl_WARN_ADD([-fdiagnostics-show-option])
-  gl_WARN_ADD([-fdiagnostics-color=always])
-  gl_WARN_ADD([-Wno-missing-field-initializers]) # Rely on missing field = 0.
+  if test "$CCNAME" = "gcc"; then
+    # add -Wall -Wextra to reduce number of warn flags
+    gl_WORD_SET([WARN_CFLAGS], [$CFLAGS], ["-Wall -Wextra"])
+
+    # collect all disabled warn flags in $WARN_CFLAGS
+    WARN_CFLAGS=[$(gcc $WARN_CFLAGS -Q --help=warning,C|\
+      awk '{ if (($2 == "[disabled]" || $2 == "") && index($1,"=")==0 && $1~/^-W/) print $1 }')]
+
+    # Set up list of unwanted warnings
+    nw=
+    nw="$nw -Wsystem-headers"       # System headers may trigger lot's of useless warnings
+    nw="$nw -Wvla"                  # This project is C99
+    nw="$nw -Wstack-protector"
+    nw="$nw -Wmissing-field-initializer"
+    nw="$nw -Wtraditional"
+    nw="$nw -Wtraditional-conversion"
+    nw="$nw -Wc++-compat"
+    nw="$nw -Wcast-qual"
+    nw="$nw -Wconversion"
+    nw="$nw -Wsign-conversion"
+
+    # remove unwanted warn flags
+    gl_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
+
+    # add more flags as you like
+    WARN_CFLAGS="$WARN_CFLAGS -fdiagnostics-color=always"
+    #WARN_CFLAGS="$WARN_CFLAGS -Werror"
+
+    # We use a slightly smaller set of warning options for lib/.
+    # Remove the following and save the result in GNULIB_WARN_CFLAGS.
+    # Removing is not enough if these switches are implicitly set by other
+    #  flags like -Wall or -Wextra. We have to explicitely unset them
+    #  with -Wno-....
+    nw=
+    nw="$nw -Wpedantic"
+    nw="$nw -Wunused-macros"
+    nw="$nw -Wsign-compare"
+    nw="$nw -Wunused-parameter"
+    nw="$nw -Wswitch-default"
+    nw="$nw -Wformat-nonliteral"
+    nw="$nw -Wsuggest-attribute=pure"
+    nw="$nw -Wunsafe-loop-optimizations"
+    nw="$nw -Wundef"
+    nw="$nw -Wswitch-enum"
+    gl_WORD_REMOVE([GNULIB_WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
+
+    # disable options implicitly set by other options
+    GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-sign-compare -Wno-unused-parameter"
+
+  elif test "$CCNAME" = "clang"; then
+    # setup flags for this project
+	 gl_WORD_SET([WARN_CFLAGS], [$CFLAGS], ["-Weverything"])
+    WARN_CFLAGS="$WARN_CFLAGS -Wno-system-headers -Wno-vla -Wno-cast-qual -Wno-padded"
+    WARN_CFLAGS="$WARN_CFLAGS -Wno-reserved-id-macro -Wno-sign-conversion"
+
+    # remove all flags from WARN_FLAGS that are already in CFLAGS
+    gl_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])
+
+    # disable verbose options
+    GNULIB_WARN_CFLAGS="$WARN_CFLAGS -Wno-sign-compare -Wno-unused-parameter -Wno-undef -Wno-format-nonliteral"
+    GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-conversion -Wno-disabled-macro-expansion -Wno-c++98-compat -Wno-gnu-statement-expression"
+
+    # remove all flags from GNULIB_WARN_FLAGS that are already in CFLAGS
+    gl_WORD_REMOVE([GNULIB_WARN_CFLAGS], [$GNULIB_WARN_CFLAGS], [$CFLAGS])
+  fi
+
   AC_SUBST([WARN_CFLAGS])
-
-  # We use a slightly smaller set of warning options for lib/.
-  # Remove the following and save the result in GNULIB_WARN_CFLAGS.
-  # Removing is not enough if these switches are implicitly set by other
-  #  flags like -Wall or -Wextra. We have to explicitely unset them
-  #  with -Wno-....
-  nw=
-  nw="$nw -Wpedantic"
-  nw="$nw -Wunused-macros"
-  nw="$nw -Wsign-compare"
-  nw="$nw -Wunused-parameter"
-  nw="$nw -Wswitch-default"
-  nw="$nw -Wformat-nonliteral"
-  nw="$nw -Wsuggest-attribute=pure"
-  nw="$nw -Wunsafe-loop-optimizations"
-  gl_MANYWARN_COMPLEMENT([GNULIB_WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
-
-  # disable options implicitly set by other options
-  GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-sign-compare -Wno-unused-parameter"
-#  bak="$WARN_CFLAGS"
-#  gl_WARN_ADD([-Wno-sign-compare])
- # gl_WARN_ADD([-Wno-unused-parameter])
   AC_SUBST([GNULIB_WARN_CFLAGS])
-#  WARN_CFLAGS="$bak"
 fi
 
 AC_ARG_ENABLE([fsanitize-ubsan],
