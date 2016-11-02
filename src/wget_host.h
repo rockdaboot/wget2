@@ -70,6 +70,5 @@ void host_reset_failure(HOST *host) G_GNUC_WGET_NONNULL((1));
 int queue_size(void) G_GNUC_WGET_PURE;
 int queue_empty(void) G_GNUC_WGET_PURE;
 void queue_print(HOST *host);
-void host_remove_job(HOST *host, JOB *job) G_GNUC_WGET_NONNULL((1,2));
 
 #endif /* _WGET_HOST_H */

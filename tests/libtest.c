@@ -928,7 +928,8 @@ int wget_test_check_filesystem(void)
 {
 	static char fname[3][3] = { "Ab", "ab", "AB" };
 	char buf[sizeof(fname[0])];
-	int flags = 0, fd, rc;
+	int flags = 0, fd;
+	ssize_t rc;
 
 	_empty_directory(tmpdir);
 
@@ -940,7 +941,7 @@ int wget_test_check_filesystem(void)
 			close(fd);
 
 			if (rc != sizeof(fname[0])) {
-				wget_debug_printf("%s: Failed to write to '%s/%s' (%d) %d %zu\n", __func__, tmpdir, fname[it], errno, rc, sizeof(fname[0]));
+				wget_debug_printf("%s: Failed to write to '%s/%s' (%d) %zd %zu\n", __func__, tmpdir, fname[it], errno, rc, sizeof(fname[0]));
 				goto out;
 			}
 		} else {

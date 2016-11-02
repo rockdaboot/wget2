@@ -92,7 +92,7 @@ int main(void)
 		"--iri -e robots=on -rH -e http_proxy=localhost:%d --local-encoding=UTF-8 http://" utf8_hostname "/",
 		wget_test_get_http_server_port());
 
-	urls[0].body = "<a href=\"http://" utf8_hostname "/foo.txt\">The link</a>",
+	urls[0].body = "<a href=\"http://" utf8_hostname "/foo.txt\">The link</a>";
 	urls[0].headers[0] = "Content-Type: text/html; charset=UTF-8";
 
 	wget_test(

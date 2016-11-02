@@ -129,7 +129,7 @@ static int stream_callback(void *context G_GNUC_WGET_UNUSED, const char *data, s
 	return 0; // OK, continue
 }
 
-int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED)
+int main(int argc, const char *const *argv)
 {
 	wget_http_response_t *resp;
 	char *stream_url = NULL;

@@ -1583,8 +1583,7 @@ enum actions {
 	ACTION_GET_JOB = 1,
 //	ACTION_WAIT_JOB,
 	ACTION_GET_RESPONSE,
-	ACTION_ERROR,
-	ACTION_DONE
+	ACTION_ERROR
 };
 
 void *downloader_thread(void *p)
@@ -1602,7 +1601,7 @@ void *downloader_thread(void *p)
 	wget_thread_mutex_lock(&main_mutex); locked = 1;
 
 	while (!terminate) {
-		debug_printf("[%d] action=%d pending=%d host=%p\n", downloader->id, (int) action, pending, host);
+		debug_printf("[%d] action=%d pending=%d host=%p\n", downloader->id, (int) action, pending, (void *) host);
 
 		switch (action) {
 		case ACTION_GET_JOB: // Get a job, connect, send request

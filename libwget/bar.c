@@ -95,7 +95,7 @@ typedef struct {
 		tick;
 	enum _bar_slot_status_t
 		status;
-	int
+	unsigned
 		redraw : 1;
 } _bar_slot_t;
 
@@ -141,7 +141,7 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 	if (slotp->file_size > 0) {
 //		size_t bytes = (slot->status == DOWNLOADING) ? slot->raw_downloaded : slot->bytes_downloaded;
 		size_t bytes = slotp->bytes_downloaded;
-		int cols = (bytes / (double) slotp->file_size) * bar->max_width;
+		int cols = (int) (bytes / (double) slotp->file_size) * bar->max_width;
 		if (cols > bar->max_width)
 			cols = bar->max_width;
 		else if (cols <= 0)
@@ -180,7 +180,7 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 		max = slotp->file_size;
 		cur = slotp->bytes_downloaded;
 
-		ratio = max ? (100 * cur) / max : 0;
+		ratio = max ? (int) (100 * cur) / max : 0;
 
 		human_readable_bytes = wget_human_readable(slotp->human_size, sizeof(slotp->human_size), cur);
 		_bar_set_progress(bar, slot);
@@ -423,7 +423,7 @@ void wget_bar_print(wget_bar_t *bar, int slot, const char *s)
 	wget_thread_mutex_unlock(&bar->mutex);
 }
 
-ssize_t wget_bar_vprintf(wget_bar_t *bar, size_t slot, const char *fmt, va_list args)
+ssize_t wget_bar_vprintf(wget_bar_t *bar, int slot, const char *fmt, va_list args)
 {
 	char text[bar->max_width + 1];
 
@@ -433,7 +433,7 @@ ssize_t wget_bar_vprintf(wget_bar_t *bar, size_t slot, const char *fmt, va_list 
 	return len;
 }
 
-ssize_t wget_bar_printf(wget_bar_t *bar, size_t slot, const char *fmt, ...)
+ssize_t wget_bar_printf(wget_bar_t *bar, int slot, const char *fmt, ...)
 {
 	va_list args;
 

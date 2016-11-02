@@ -1824,9 +1824,9 @@ void
 void
 	wget_bar_print(wget_bar_t *bar, int slot, const char *s) LIBWGET_EXPORT;
 ssize_t
-	wget_bar_vprintf(wget_bar_t *bar, size_t slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+	wget_bar_vprintf(wget_bar_t *bar, int slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 ssize_t
-	wget_bar_printf(wget_bar_t *bar, size_t slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+	wget_bar_printf(wget_bar_t *bar, int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void
 	wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_t filesize) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 void

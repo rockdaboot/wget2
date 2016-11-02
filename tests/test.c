@@ -1434,7 +1434,7 @@ static void test_strcasecmp_ascii(void)
 		}
 	}
 
-	for (unsigned it = 0; it < 26; it++) {
+	for (unsigned char it = 0; it < 26; it++) {
 		char s1[8], s2[8];
 
 		s1[0] = 'a' + it; s1[1] = 0;

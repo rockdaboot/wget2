@@ -213,6 +213,7 @@ if test "$gl_gcc_warnings" = yes; then
     nw="$nw -Wcast-qual"
     nw="$nw -Wconversion"
     nw="$nw -Wsign-conversion"
+    nw="$nw -Wunsuffixed-float-constants"
 
     # remove unwanted warn flags
     gl_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
@@ -246,7 +247,7 @@ if test "$gl_gcc_warnings" = yes; then
     # setup flags for this project
 	 gl_WORD_SET([WARN_CFLAGS], [$CFLAGS], ["-Weverything"])
     WARN_CFLAGS="$WARN_CFLAGS -Wno-system-headers -Wno-vla -Wno-cast-qual -Wno-padded"
-    WARN_CFLAGS="$WARN_CFLAGS -Wno-reserved-id-macro -Wno-sign-conversion"
+    WARN_CFLAGS="$WARN_CFLAGS -Wno-reserved-id-macro -Wno-sign-conversion  -Wno-disabled-macro-expansion"
 
     # remove all flags from WARN_FLAGS that are already in CFLAGS
     gl_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])

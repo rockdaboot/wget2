@@ -2217,7 +2217,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 	wget_decompressor_t *dc = NULL;
 	wget_http_request_t *req = wget_vector_get(conn->pending_requests, 0); // TODO: should use double linked lists here
 
-	debug_printf("### req %p pending requests = %d\n", req, wget_vector_size(conn->pending_requests));
+	debug_printf("### req %p pending requests = %d\n", (void *) req, wget_vector_size(conn->pending_requests));
 	if (!req)
 		goto cleanup;
 
