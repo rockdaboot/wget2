@@ -191,7 +191,14 @@ if test "$gl_gcc_warnings" = yes; then
   WARN_CFLAGS=$CFLAGS
   GNULIB_WARN_CFLAGS=$CFLAGS
 
-  CCNAME=$($CC --version| { read name _; echo $name; })
+  CCNAME=$($CC --version | {
+    IFS=' -' read name x _
+    if test "$x" = clang; then
+      echo $x
+    else
+      echo $name
+    fi
+  })
 
   if test "$CCNAME" = "gcc"; then
     # add -Wall -Wextra to reduce number of warn flags
