@@ -1754,8 +1754,8 @@ static void _remember_for_conversion(const char *filename, wget_iri_t *base_url,
 		mutex = WGET_THREAD_MUTEX_INITIALIZER;
 	_conversion_t conversion;
 
-	conversion.filename = strdup(filename);
-	conversion.encoding = strdup(encoding);
+	conversion.filename = wget_strdup(filename);
+	conversion.encoding = wget_strdup(encoding);
 	conversion.base_url = wget_iri_clone(base_url);
 	conversion.content_type = content_type;
 	conversion.parsed = parsed;

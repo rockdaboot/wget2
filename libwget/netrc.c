@@ -203,7 +203,7 @@ int wget_netrc_db_load(wget_netrc_db_t *netrc_db, const char *fname)
 				in_machine = 1;
 
 				if (!strcmp(key, "default")) {
-					netrc.key = strdup("default");
+					netrc.key = wget_strdup("default");
 					continue;
 				}
 			} else if (!in_machine)

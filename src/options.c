@@ -290,7 +290,7 @@ static int parse_string(option_t opt, const char *val)
 {
 	// the strdup'ed string will be released on program exit
 	xfree(*((const char **)opt->var));
-	*((const char **)opt->var) = val ? strdup(val) : NULL;
+	*((const char **)opt->var) = val ? wget_strdup(val) : NULL;
 
 	return 0;
 }
@@ -307,7 +307,7 @@ static int parse_stringset(option_t opt, const char *val)
 				wget_stringmap_put_noalloc(map, wget_strmemdup(s, p - s), NULL);
 		}
 		if (*s)
-			wget_stringmap_put_noalloc(map, strdup(s), NULL);
+			wget_stringmap_put_noalloc(map, wget_strdup(s), NULL);
 	} else {
 		wget_stringmap_clear(map);
 	}
@@ -391,7 +391,7 @@ static int parse_stringlist(option_t opt, const char *val)
 			}
 		}
 		if (*s) {
-			const char *entry = strdup(s);
+			const char *entry = wget_strdup(s);
 
 			if (wget_vector_find(v, entry) == -1)
 				wget_vector_add_noalloc(v, entry);
@@ -1221,12 +1221,12 @@ int init(int argc, const char **argv)
 
 	// the following strdup's are just needed for reallocation/freeing purposes to
 	// satisfy valgrind
-	config.user_agent = strdup(config.user_agent);
-	config.secure_protocol = strdup(config.secure_protocol);
-	config.ca_directory = strdup(config.ca_directory);
+	config.user_agent = wget_strdup(config.user_agent);
+	config.secure_protocol = wget_strdup(config.secure_protocol);
+	config.ca_directory = wget_strdup(config.ca_directory);
 	config.http_proxy = wget_strdup(getenv("http_proxy"));
 	config.https_proxy = wget_strdup(getenv("https_proxy"));
-	config.default_page = strdup(config.default_page);
+	config.default_page = wget_strdup(config.default_page);
 	config.domains = wget_vector_create(16, -2, (int (*)(const void *, const void *))strcmp);
 //	config.exclude_domains = wget_vector_create(16, -2, NULL);
 
@@ -1406,7 +1406,7 @@ int init(int argc, const char **argv)
 	if (!config.local_encoding)
 		config.local_encoding = wget_local_charset_encoding();
 	if (!config.input_encoding)
-		config.input_encoding = strdup(config.local_encoding);
+		config.input_encoding = wget_strdup(config.local_encoding);
 
 	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
 	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
@@ -1449,11 +1449,11 @@ int init(int argc, const char **argv)
 	if (config.base_url)
 		config.base = wget_iri_parse(config.base_url, config.local_encoding);
 
-	if (config.username && !config.http_username)
-		config.http_username = strdup(config.username);
+	if (!config.http_username)
+		config.http_username = wget_strdup(config.username);
 
-	if (config.password && !config.http_password)
-		config.http_password = strdup(config.password);
+	if (!config.http_password)
+		config.http_password = wget_strdup(config.password);
 
 	if (config.page_requisites && !config.recursive) {
 		config.recursive = 1;

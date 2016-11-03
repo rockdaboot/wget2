@@ -61,9 +61,9 @@ const char *wget_local_charset_encoding(void)
 	const char *encoding = nl_langinfo(CODESET);
 
 	if (encoding && *encoding)
-		return strdup(encoding);
+		return wget_strdup(encoding);
 
-	return strdup("ASCII");
+	return wget_strdup("ASCII");
 }
 
 // void *wget_memiconv(const void *src, size_t length, const char *src_encoding, const char *dst_encoding)

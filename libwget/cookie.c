@@ -265,7 +265,7 @@ static int _wget_cookie_normalize_cookie(const wget_iri_t *iri, wget_cookie_t *c
 		}
 
 		if (!cookie->domain)
-			cookie->domain = strdup("");
+			cookie->domain = wget_strdup("");
 
 		if (*cookie->domain) {
 			if (_domain_match(cookie->domain, iri->host)) {
@@ -276,7 +276,7 @@ static int _wget_cookie_normalize_cookie(const wget_iri_t *iri, wget_cookie_t *c
 			}
 		} else {
 			xfree(cookie->domain);
-			cookie->domain = strdup(iri->host);
+			cookie->domain = wget_strdup(iri->host);
 			cookie->host_only = 1;
 		}
 
@@ -286,7 +286,7 @@ static int _wget_cookie_normalize_cookie(const wget_iri_t *iri, wget_cookie_t *c
 			if (p && p != iri->path) {
 				cookie->path = wget_strmemdup(iri->path, p - iri->path);
 			} else {
-				cookie->path = strdup("/");
+				cookie->path = wget_strdup("/");
 				// err_printf(_("Unexpected URI without '/': %s\n"), iri->path);
 				// return -1; // ignore cookie
 			}

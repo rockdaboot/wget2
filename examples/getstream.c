@@ -74,7 +74,7 @@ static int header_callback(void *context G_GNUC_WGET_UNUSED, wget_http_response_
 		for (char *p = strchr(resp->header->data, '\n'); p && sscanf(p + 1, " %63[a-zA-z-] : %127[^\r\n]", key, value) >= 1; p = strchr(p + 1, '\n')) {
 			// wget_info_printf("%s = %s\n", key, value);
 			if (!wget_strcasecmp_ascii(key, "icy-name")) {
-				stream_name = strdup(value);
+				stream_name = wget_strdup(value);
 				break;
 			}
 			*value=0;

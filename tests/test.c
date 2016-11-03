@@ -1673,7 +1673,7 @@ static void test_stringmap(void)
 	wget_vector_add(challenges, &challenge, sizeof(challenge));
 	wget_http_free_challenges(&challenges);
 
-	char *response_text = strdup(
+	char *response_text = wget_strdup(
 "HTTP/1.1 401 Authorization Required\r\n"\
 "Date: Sun, 23 Dec 2012 21:03:45 GMT\r\n"\
 "Server: Apache/2.2.22 (Debian)\r\n"\

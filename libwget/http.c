@@ -501,7 +501,7 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 				// just take the last path part as filename
 				if (!*filename) {
 					if ((p = strpbrk(param.value,"/\\"))) {
-						p = strdup(p + 1);
+						p = wget_strdup(p + 1);
 					} else {
 						p = (char *) param.value;
 						param.value = NULL;
@@ -558,11 +558,11 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 							if (wget_str_needs_encoding(p))
 								*filename = wget_str_to_utf8(p, charset);
 							else
-								*filename = strdup(p);
+								*filename = wget_strdup(p);
 
 							// just take the last path part as filename
 							if ((p = strpbrk(*filename, "/\\"))) {
-								p = strdup(p + 1);
+								p = wget_strdup(p + 1);
 								xfree(*filename);
 								*filename = p;
 							}
@@ -1446,7 +1446,7 @@ void wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, co
 	wget_http_header_param_t param;
 
 	param.value = wget_str_vasprintf(fmt, args);
-	param.name = strdup(name);
+	param.name = wget_strdup(name);
 	wget_vector_add(req->headers, &param, sizeof(param));
 }
 
@@ -1462,8 +1462,8 @@ void wget_http_add_header_printf(wget_http_request_t *req, const char *name, con
 void wget_http_add_header(wget_http_request_t *req, const char *name, const char *value)
 {
 	wget_http_header_param_t param = {
-		.name = strdup(name),
-		.value = strdup(value)
+		.name = wget_strdup(name),
+		.value = wget_strdup(value)
 	};
 
 	wget_vector_add(req->headers, &param, sizeof(param));
@@ -1472,8 +1472,8 @@ void wget_http_add_header(wget_http_request_t *req, const char *name, const char
 void wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param_t *param)
 {
 	wget_http_header_param_t _param = {
-		.name = strdup(param->name),
-		.value = strdup(param->value)
+		.name = wget_strdup(param->name),
+		.value = wget_strdup(param->value)
 	};
 
 	wget_vector_add(req->headers, &_param, sizeof(_param));
@@ -1936,7 +1936,7 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 	}
 
 	if ((rc = wget_tcp_connect(conn->tcp, host, port)) == WGET_E_SUCCESS) {
-		conn->esc_host = iri->host ? strdup(iri->host) : NULL;
+		conn->esc_host = iri->host ? wget_strdup(iri->host) : NULL;
 		conn->port = iri->resolv_port;
 		conn->scheme = iri->scheme;
 		conn->buf = wget_buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
