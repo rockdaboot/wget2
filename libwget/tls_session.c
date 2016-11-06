@@ -297,7 +297,7 @@ static int _tls_session_db_load(wget_tls_session_db_t *tls_session_db, FILE *fp)
 				linep++;
 
 			size_t len = linep - p;
-			char *data = xmalloc(((len + 3) / 4) * 3 + 1);
+			char *data = xmalloc(wget_base64_get_decoded_length(len));
 			tls_session.data_size = wget_base64_decode(data, p, len);
 			tls_session.data = data;
 
