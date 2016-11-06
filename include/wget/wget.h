@@ -829,6 +829,8 @@ typedef struct wget_iri_st {
 		query_allocated : 1; // if set, free query in iri_free()
 	unsigned int
 		fragment_allocated : 1; // if set, free fragment in iri_free()
+	unsigned int
+		is_ip_address : 1; // if set, the hostname part is a literal IPv4 or IPv6 address
 } wget_iri_t;
 
 void
@@ -1321,6 +1323,9 @@ ssize_t
 	wget_tcp_read(wget_tcp_t *tcp, char *buf, size_t count) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 int
 	wget_tcp_ready_2_transfer(wget_tcp_t *tcp, int flags) G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
+
+int
+	wget_ip_is_family(const char *host, int family) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 
 /*
  * SSL routines

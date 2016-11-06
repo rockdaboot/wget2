@@ -373,6 +373,10 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 			iri->host = p;
 			iri->host_allocated = 1;
 		}
+
+		// Finally, if the host is a literal IPv4 or IPv6 address, mark it as so
+		if (wget_ip_is_family(iri->host, WGET_NET_FAMILY_IPV4) || wget_ip_is_family(iri->host, WGET_NET_FAMILY_IPV6))
+			iri->is_ip_address = 1;
 	}
 	else {
 		if (iri->scheme == WGET_IRI_SCHEME_HTTP || iri->scheme == WGET_IRI_SCHEME_HTTPS) {
