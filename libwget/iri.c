@@ -35,6 +35,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <arpa/inet.h>
 #include "c-ctype.h"
 
 #include <wget.h>
@@ -127,6 +128,30 @@ int wget_iri_isunreserved(char c)
 int wget_iri_isunreserved_path(char c)
 {
 	return c > 32 && c < 127 && (c_isalnum(c) || _iri_isunreserved(c) || c == '/');
+}
+
+int wget_iri_is_ipv4_address(const char *host)
+{
+	struct in_addr dst;
+
+	if (!host)
+		return 0;
+
+	return inet_pton(AF_INET, host, &dst);
+}
+
+int wget_iri_is_ipv6_address(const char *host)
+{
+#ifdef HAVE_IPV6
+	struct in6_addr dst;
+
+	if (!host)
+		return 0;
+
+	return inet_pton(AF_INET6, host, &dst);
+#else
+	return 0;
+#endif
 }
 
 static _GL_INLINE unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
@@ -373,6 +398,10 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 			iri->host = p;
 			iri->host_allocated = 1;
 		}
+
+		// Finally, if the host is a literal IPv4 or IPv6 address, mark it as so
+		if (wget_iri_is_ipv4_address(iri->host) || wget_iri_is_ipv6_address(iri->host))
+			iri->is_ip_address = 1;
 	}
 	else {
 		if (iri->scheme == WGET_IRI_SCHEME_HTTP || iri->scheme == WGET_IRI_SCHEME_HTTPS) {
