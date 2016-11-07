@@ -117,13 +117,13 @@ void *wget_calloc(size_t nmemb, size_t size)
  * \return A pointer to the new memory area
  *
  * Like the standard realloc(), except that it doesn't return %NULL values.
- * If an out-of-memory condition occurs the oom callback function is called (if set).
+ * If an out-of-memory condition occurs *or* size is 0, the oom callback function is called (if set).
  * Thereafter the application is terminated by exit(%EXIT_FAILURE);
  */
 void *wget_realloc(void *ptr, size_t size)
 {
-	void *p = realloc(ptr, size);
-	if (!p)
+	void *p;
+	if (!size || !(p = realloc(ptr, size)))
 		_no_memory();
 	return p;
 }
