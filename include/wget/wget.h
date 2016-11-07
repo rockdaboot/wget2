@@ -54,9 +54,9 @@
 // see https://www.gnu.org/software/gnulib/manual/html_node/Exported-Symbols-of-Shared-Libraries.html
 #if defined BUILDING_LIBWGET && HAVE_VISIBILITY
 #	define LIBWGET_EXPORT __attribute__ ((__visibility__("default")))
-#elif defined BUILDING_LIBWGET && defined _MSC_VER
+#elif defined BUILDING_LIBWGET && defined _MSC_VER && !defined LIBWGET_STATIC
 #	define LIBWGET_EXPORT __declspec(dllexport)
-#elif defined _MSC_VER
+#elif defined _MSC_VER !defined LIBWGET_STATIC
 #	define LIBWGET_EXPORT __declspec(dllimport)
 #else
 #	define LIBWGET_EXPORT
