@@ -56,7 +56,7 @@
 #	define LIBWGET_EXPORT __attribute__ ((__visibility__("default")))
 #elif defined BUILDING_LIBWGET && defined _MSC_VER && !defined LIBWGET_STATIC
 #	define LIBWGET_EXPORT __declspec(dllexport)
-#elif defined _MSC_VER !defined LIBWGET_STATIC
+#elif defined _MSC_VER && !defined LIBWGET_STATIC
 #	define LIBWGET_EXPORT __declspec(dllimport)
 #else
 #	define LIBWGET_EXPORT
