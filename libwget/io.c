@@ -30,8 +30,6 @@
 #endif
 
 #include <stddef.h>
-//#include <stdio.h>
-//#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -39,6 +37,7 @@
 #include <sys/file.h>
 #include <errno.h>
 #include <poll.h>
+#include "dirname.h"
 
 #include <wget.h>
 #include "private.h"
@@ -357,7 +356,7 @@ int wget_update_file(const char *fname,
 	int (*load_func)(void *, FILE *fp), int (*save_func)(void *, FILE *fp), void *context)
 {
 	FILE *fp;
-	const char *tmpdir, *p, *basename;
+	const char *tmpdir, *basename;
 	int lockfd, fd;
 
 	char tmpfile[strlen(fname) + 6 + 1];
@@ -368,10 +367,7 @@ int wget_update_file(const char *fname,
 		&& !(tmpdir = getenv("TEMP")) && !(tmpdir = getenv("TEMPDIR")))
 		tmpdir = "/tmp";
 
-	if (*fname && (p = strrchr(fname, '/')))
-		basename = p + 1;
-	else
-		basename = fname;
+	basename = base_name(fname);
 
 	// create a per-usr tmp file name
 	size_t tmplen = strlen(tmpdir);
@@ -389,6 +385,8 @@ int wget_update_file(const char *fname,
 	else
 		snprintf(lockfile, lockfilesize, "%s/%s_lck", tmpdir, basename);
 #endif
+
+	xfree(basename);
 
 	// create & open the lock file
 	if ((lockfd = creat(lockfile, 0644)) == -1) {
