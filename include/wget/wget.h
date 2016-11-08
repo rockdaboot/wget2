@@ -90,7 +90,7 @@
 #	define G_GNUC_WGET_PRINTF_FORMAT(a, b) __attribute__ ((format (printf, a, b)))
 #	define G_GNUC_WGET_UNUSED __attribute__ ((unused))
 #else
-#	define G_GNUC_WGET_PRINT_FORMAT(a, b)
+#	define G_GNUC_WGET_PRINTF_FORMAT(a, b)
 #	define G_GNUC_WGET_UNUSED
 #endif
 
