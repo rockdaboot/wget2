@@ -31,23 +31,6 @@ case $host_os in
 #    ;;
 esac
 
-#if test "$CFLAGS" = ""; then
-#  if test "$GCC" = "yes"; then
-#   CFLAGS="-g -std=gnu99 -pedantic -fPIC\
-# -Wall -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes\
-# -Wwrite-strings -Wformat=2 -Wformat -Wformat-security\
-# -Wsign-compare -Wextra -D_FORTIFY_SOURCE=2\
-# -Wcast-align -O2"
-#  fi
-#else
-#  CFLAGS="$CFLAGS -fPIC"
-#fi
-#if test "$LDFLAGS" = ""; then
-#  if test "$GCC" = "yes"; then
-##    LDFLAGS="-fPIE -pie -Wl,-z,relro,--as-needed"
-#    LDFLAGS="-fPIE -pie -Wl,--as-needed -ffunction-sections"
-#  fi
-#fi
 # Append EXTRA_CFLAGS to CFLAGS, if defined.
 if test "$EXTRA_CFLAGS" != ""; then
   CFLAGS="$CFLAGS $EXTRA_CFLAGS"
