@@ -1239,7 +1239,9 @@ static int process_response_header(wget_http_response_t *resp)
 	wget_cookie_store_cookies(config.cookie_db, resp->cookies); // store cookies
 
 	// care for HSTS feature
-	if (config.hsts && iri->scheme == WGET_IRI_SCHEME_HTTPS && resp->hsts) {
+	if (config.hsts &&
+			iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address &&
+			resp->hsts) {
 		wget_hsts_db_add(config.hsts_db, wget_hsts_new(iri->host, atoi(iri->resolv_port), resp->hsts_maxage, resp->hsts_include_subdomains));
 		hsts_changed = 1;
 	}

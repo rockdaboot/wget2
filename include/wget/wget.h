@@ -829,6 +829,8 @@ typedef struct wget_iri_st {
 		query_allocated : 1; // if set, free query in iri_free()
 	unsigned int
 		fragment_allocated : 1; // if set, free fragment in iri_free()
+	unsigned int
+		is_ip_address : 1; // if set, the hostname part is a literal IPv4 or IPv6 address
 } wget_iri_t;
 
 void
@@ -851,6 +853,10 @@ int
 	wget_iri_isunreserved(char c) G_GNUC_WGET_CONST LIBWGET_EXPORT;
 int
 	wget_iri_isunreserved_path(char c) G_GNUC_WGET_CONST LIBWGET_EXPORT;
+int
+	wget_iri_is_ipv4_address(const char *host) G_GNUC_WGET_PURE LIBWGET_EXPORT;
+int
+	wget_iri_is_ipv6_address(const char *host) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 int
 	wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2) G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL LIBWGET_EXPORT;
 char *
