@@ -39,7 +39,6 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <c-ctype.h>
-#include <fcntl.h>
 #include <time.h>
 #include <errno.h>
 #if HAVE_SYS_SOCKET_H
@@ -52,6 +51,12 @@
 
 #ifdef HAVE_NETINET_TCP_H
 #	include <netinet/tcp.h>
+#endif
+
+#if ((defined _WIN32 || defined __WIN32__) && !defined __CYGWIN__)
+# include <sys/ioctl.h>
+#else
+# include <fcntl.h>
 #endif
 
 #include <wget.h>
@@ -522,7 +527,7 @@ static void _set_async(int fd)
 #if ((defined _WIN32 || defined __WIN32__) && !defined __CYGWIN__)
 	unsigned long blocking = 0;
 
-	if (ioctlsocket(fd, FIONBIO, &blocking))
+	if (ioctl(fd, FIONBIO, &blocking))
 		error_printf_exit(_("Failed to set socket to non-blocking\n"));
 #else
 	int flags;
