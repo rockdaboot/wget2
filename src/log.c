@@ -57,7 +57,7 @@ static void _write_out(FILE *default_fp, const char *data, size_t len, int with_
 		fp = stdout;
 	} else {
 		fp = NULL;
-		fd = open(config.logfile, O_WRONLY | O_APPEND | O_CREAT, 0644);
+		fd = open(config.logfile, O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 		if (fd == -1)
 			fp = default_fp;
 	}

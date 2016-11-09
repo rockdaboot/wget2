@@ -2429,7 +2429,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 
 	// create the complete directory path
 	mkdir_path((char *) fname);
-	fd = open(fname, O_WRONLY | flag | O_CREAT | O_NONBLOCK, 0644);
+	fd = open(fname, O_WRONLY | flag | O_CREAT | O_NONBLOCK, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	// debug_printf("1 fd=%d flag=%02x (%02x %02x %02x) errno=%d %s\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND,errno,fname);
 
 	// find a non-existing filename
@@ -2437,7 +2437,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	*unique = 0;
 	for (fnum = 0, maxloop = 999; fd < 0 && ((multiple && errno == EEXIST) || errno == EISDIR) && fnum < maxloop; fnum++) {
 		snprintf(unique, sizeof(unique), "%s.%d", fname, fnum + 1);
-		fd = open(unique, O_WRONLY | flag | O_CREAT | O_NONBLOCK, 0644);
+		fd = open(unique, O_WRONLY | flag | O_CREAT | O_NONBLOCK, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	}
 
 	if (fd >= 0) {
@@ -2495,7 +2495,7 @@ static int _get_header(wget_http_response_t *resp, void *context)
 		name = ctx->job->local_filename;
 	} else if ((part = ctx->job->part)) {
 		name = ctx->job->metalink->name;
-		ctx->outfd = open(ctx->job->metalink->name, O_WRONLY | O_CREAT | O_NONBLOCK, 0644);
+		ctx->outfd = open(ctx->job->metalink->name, O_WRONLY | O_CREAT | O_NONBLOCK, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 		if (ctx->outfd == -1) {
 			set_exit_status(3);
 			ret = -1;
