@@ -389,7 +389,7 @@ int wget_update_file(const char *fname,
 	xfree(basename);
 
 	// create & open the lock file
-	if ((lockfd = creat(lockfile, 0644)) == -1) {
+	if ((lockfd = open(lockfile, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1) {
 		error_printf(_("Failed to create '%s' (%d)\n"), lockfile, errno);
 		xfree(lockfile);
 		return -1;
