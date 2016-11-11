@@ -44,7 +44,7 @@
  * \param[in] host Host/IP String
  * \param[in] family IP address family
  * \return
- * 1 if \host matches is of \p family<br>
+ * 1 if \p host matches is of \p family<br>
  * 0 if \p host does not match \p family<br>
  *
  * This functions checks if \p host matches the given \p family or not.
