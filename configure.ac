@@ -122,12 +122,11 @@ AC_DEFUN([gl_GCC_VERSION_IFELSE],
   ]
 )
 
-# gl_WORD_SET(RESULT, SET, WORDS)
+# wget_WORD_SET(RESULT, SET, WORDS)
 # --------------------------------------------------
 # Add each word in WORDS to SET if not already there.
 # Words separated by whitespace.
-AC_DEFUN([gl_WORD_SET],
-[
+AC_DEFUN([wget_WORD_SET], [
   ret=$2
   words=" $2 "
   for word in $3; do
@@ -136,12 +135,11 @@ AC_DEFUN([gl_WORD_SET],
   $1=$ret
 ])
 
-# gl_WORD_REMOVE(RESULT, SET, WORDS)
+# wget_WORD_REMOVE(RESULT, SET, WORDS)
 # --------------------------------------------------
 # Remove each word in WORDS from SET.
 # Words separated by whitespace.
-AC_DEFUN([gl_WORD_REMOVE],
-[
+AC_DEFUN([wget_WORD_REMOVE], [
   ret=
   words=" $3 "
   for word in $2; do
@@ -150,47 +148,71 @@ AC_DEFUN([gl_WORD_REMOVE],
   $1=$ret
 ])
 
-#
-# check if compiler warnings are requested
-#
-AC_ARG_ENABLE([gcc-warnings],
-  [AS_HELP_STRING([--enable-gcc-warnings], [Turn on extra GCC warnings (for developers)])],
-  [case $enableval in
-     yes|no) ;;
-     *) AC_MSG_ERROR([bad value $enableval for gcc-warnings option]) ;;
-   esac
-     gl_gcc_warnings=$enableval
-  ], [
-    # GCC provides fine-grained control over diagnostics which
-    # is used in gnulib for example to suppress warnings from
-    # certain sections of code.  So if this is available and
-    # we're running from a git repo, then auto enable the warnings.
-    gl_gcc_warnings=no
-    test -f .manywarnings && gl_gcc_warnings=yes
-  ]
-)
+# wget_MANYWARNINGS(VARIABLE, LANGUAGE)
+# -----------------------------
+# Add LANGUAGE related GCC warnings to VARIABLE.
+# This only works for gcc >= 4.3.
+AC_DEFUN([wget_MANYWARNINGS], [
+  #
+  # check if manywarnings is requested
+  #
+  AC_ARG_ENABLE([manywarnings],
+    [AS_HELP_STRING([--enable-manywarnings], [Turn on extra compiler warnings (for developers)])],
+    [case $enableval in
+       yes|no) ;;
+       *) AC_MSG_ERROR([Bad value $enableval for --enable-manywarnings option]) ;;
+     esac
+       wget_manywarnings=$enableval
+    ], [
+      test -f .manywarnings && wget_manywarnings=yes || wget_manywarnings=no
+    ]
+  )
 
-if test "$gl_gcc_warnings" = yes; then
-  WARN_CFLAGS=$CFLAGS
-  GNULIB_WARN_CFLAGS=$CFLAGS
+  $1=""
 
-  CCNAME=$($CC --version | {
-    IFS=' -' read name x _
-    if test "$x" = clang; then
-      echo $x
-    else
-      echo $name
+  if test "$wget_manywarnings" = yes; then
+    # AC_PROG_CC sets $GCC to 'yes' if compiler is gcc
+    # AC_REQUIRE([AC_PROG_CC])
+
+    CCNAME=$($CC --version | {
+      IFS=' -' read name x _
+      if test "$x" = clang; then
+        echo $x
+      else
+        echo $name
+      fi
+    })
+
+    if test "$CCNAME" = "gcc"; then
+      test -n "$2" && wget_LANGUAGE=$2 || wget_LANGUAGE=C
+
+      # add -Wall -Wextra to reduce number of warn flags
+      wget_WORD_SET([wget_WARN_CFLAGS], [$CFLAGS], ["-Wall -Wextra -Wformat=2"])
+
+      # collect all disabled warn flags in $WARN_CFLAGS
+      wget_WARN_CFLAGS=$wget_WARN_CFLAGS" "$(gcc $wget_WARN_CFLAGS -Q --help=warning,$wget_LANGUAGE|\
+        awk '{ if (([$]2 == "[[disabled]]" || [$]2 == "") && [$]1!~/=/ && [$]1~/^-W/&& [$]1!="-Wall") print [$]1 }')
+
+      wget_WARN_CFLAGS=$wget_WARN_CFLAGS" -Warray-bounds=2 -Wnormalized=nfc -Wshift-overflow=2 -Wunused-const-variable=2"
+
+    elif test "$CCNAME" = "clang"; then
+      # set all warn flags on
+      wget_WORD_SET([wget_WARN_CFLAGS], [$CFLAGS], ["-Weverything"])
     fi
-  })
 
+    $1=$wget_WARN_CFLAGS
+  fi
+])
+
+# enable all possible compiler warnings in WARN_FLAGS
+#
+# to enable by default: create a file '.manywarnings'
+# enable explicitly : ./configure --enable-manywarnings
+# disable explicitly: ./configure --disable-manywarnings
+wget_MANYWARNINGS(WARN_CFLAGS, C)
+
+if test -n "$WARN_CFLAGS"; then
   if test "$CCNAME" = "gcc"; then
-    # add -Wall -Wextra to reduce number of warn flags
-    gl_WORD_SET([WARN_CFLAGS], [$CFLAGS], ["-Wall -Wextra"])
-
-    # collect all disabled warn flags in $WARN_CFLAGS
-    WARN_CFLAGS=[$(gcc $WARN_CFLAGS -Q --help=warning,C|\
-      awk '{ if (($2 == "[disabled]" || $2 == "") && index($1,"=")==0 && $1~/^-W/) print $1 }')]
-
     # Set up list of unwanted warnings
     nw=
     nw="$nw -Wsystem-headers"       # System headers may trigger lot's of useless warnings
@@ -206,11 +228,11 @@ if test "$gl_gcc_warnings" = yes; then
     nw="$nw -Wunsuffixed-float-constants"
 
     # remove unwanted warn flags
-    gl_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
+    wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
 
     # add more flags as you like
     WARN_CFLAGS="$WARN_CFLAGS -fdiagnostics-color=always"
-    #WARN_CFLAGS="$WARN_CFLAGS -Werror"
+    # WARN_CFLAGS="$WARN_CFLAGS -Werror"
 
     # We use a slightly smaller set of warning options for lib/.
     # Remove the following and save the result in GNULIB_WARN_CFLAGS.
@@ -228,26 +250,25 @@ if test "$gl_gcc_warnings" = yes; then
     nw="$nw -Wunsafe-loop-optimizations"
     nw="$nw -Wundef"
     nw="$nw -Wswitch-enum"
-    gl_WORD_REMOVE([GNULIB_WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
+    wget_WORD_REMOVE([GNULIB_WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
 
     # disable options implicitly set by other options
     GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-sign-compare -Wno-unused-parameter"
 
   elif test "$CCNAME" = "clang"; then
     # setup flags for this project
-	 gl_WORD_SET([WARN_CFLAGS], [$CFLAGS], ["-Weverything"])
     WARN_CFLAGS="$WARN_CFLAGS -Wno-system-headers -Wno-vla -Wno-cast-qual -Wno-padded"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-reserved-id-macro -Wno-sign-conversion  -Wno-disabled-macro-expansion"
 
     # remove all flags from WARN_FLAGS that are already in CFLAGS
-    gl_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])
+    # wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])
 
     # disable verbose options
     GNULIB_WARN_CFLAGS="$WARN_CFLAGS -Wno-sign-compare -Wno-unused-parameter -Wno-undef -Wno-format-nonliteral"
     GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-conversion -Wno-disabled-macro-expansion -Wno-c++98-compat -Wno-gnu-statement-expression"
 
     # remove all flags from GNULIB_WARN_FLAGS that are already in CFLAGS
-    gl_WORD_REMOVE([GNULIB_WARN_CFLAGS], [$GNULIB_WARN_CFLAGS], [$CFLAGS])
+    # wget_WORD_REMOVE([GNULIB_WARN_CFLAGS], [$GNULIB_WARN_CFLAGS], [$CFLAGS])
   fi
 
   AC_SUBST([WARN_CFLAGS])
