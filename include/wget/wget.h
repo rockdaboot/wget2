@@ -1357,6 +1357,9 @@ WGETAPI int
 WGETAPI int
 	wget_ip_is_family(const char *host, int family) G_GNUC_WGET_PURE;
 
+int
+	wget_ip_is_family(const char *host, int family) G_GNUC_WGET_PURE LIBWGET_EXPORT;
+
 /*
  * SSL routines
  */
