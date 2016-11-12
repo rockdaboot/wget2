@@ -89,6 +89,8 @@ struct config {
 		*headers;
 	wget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
+	wget_hpkp_db_t
+		*hpkp_db; // in-memory HPKP database
 	wget_tls_session_db_t
 		*tls_session_db; // in-memory TLS session database
 	wget_ocsp_db_t
@@ -137,6 +139,7 @@ struct config {
 		convert_links,
 		ignore_case,
 		hsts,                  // if HSTS (HTTP Strict Transport Security) is enabled or not
+		hpkp,			// HTTP Public Key Pinning (HPKP)
 		random_wait,
 		trust_server_names,
 		robots,

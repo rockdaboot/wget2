@@ -213,6 +213,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --https-only        Do not follow non-secure URLs. (default: off).\n"
 		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)\n"
 		"      --hsts-file         Set file for HSTS caching. (default: ~/.wget-hsts)\n"
+		"      --hpkp              Use HTTP Public Key Pinning (HPKP). (default: on)\n"
 		"      --gnutls-options    Custom GnuTLS priority string. Interferes with --secure-protocol. (default: none)\n"
 		"      --ocsp-stapling     Use OCSP stapling to verify the server's certificate. (default: on)\n"
 		"      --ocsp              Use OCSP server access to verify server's certificate. (default: on)\n"
@@ -726,6 +727,7 @@ static const struct optionw options[] = {
 	{ "host-directories", &config.host_directories, parse_bool, 0, 0 },
 	{ "hsts", &config.hsts, parse_bool, 0, 0 },
 	{ "hsts-file", &config.hsts_file, parse_string, 1, 0 },
+	{ "hpkp", &config.hpkp, parse_bool, 0, 0 },
 	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0 }, // obsolete, replaced by --adjust-extension
 	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0 },
 	{ "http-password", &config.http_password, parse_string, 1, 0 },
@@ -1420,6 +1422,11 @@ int init(int argc, const char **argv)
 	if (config.hsts) {
 		config.hsts_db = wget_hsts_db_init(NULL);
 		wget_hsts_db_load(config.hsts_db, config.hsts_file);
+	}
+
+	if (config.hpkp) {
+		config.hpkp_db = wget_hpkp_db_init();
+		// TODO HPKP: wget_hpkp_db_load()
 	}
 
 	if (config.tls_resume) {
