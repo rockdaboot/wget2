@@ -139,7 +139,7 @@ struct config {
 		convert_links,
 		ignore_case,
 		hsts,                  // if HSTS (HTTP Strict Transport Security) is enabled or not
-		hpkp,			// HTTP Public Key Pinning (HPKP)
+		hpkp,                  // HTTP Public Key Pinning (HPKP)
 		random_wait,
 		trust_server_names,
 		robots,

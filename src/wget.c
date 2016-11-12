@@ -129,7 +129,8 @@ static long long
 	quota;
 static int
 	exit_status,
-	hsts_changed;
+	hsts_changed,
+	hpkp_changed;
 static volatile int
 	terminate;
 int
@@ -1044,6 +1045,8 @@ int main(int argc, const char **argv)
 	if (config.hsts && config.hsts_file && hsts_changed)
 		wget_hsts_db_save(config.hsts_db, config.hsts_file);
 
+	/* TODO HPKP: save the HPKP pins to a file here */
+
 	if (config.tls_resume && config.tls_session_file && wget_tls_session_db_changed(config.tls_session_db))
 		wget_tls_session_db_save(config.tls_session_db, config.tls_session_file);
 
@@ -1244,6 +1247,27 @@ static int process_response_header(wget_http_response_t *resp)
 			resp->hsts) {
 		wget_hsts_db_add(config.hsts_db, wget_hsts_new(iri->host, atoi(iri->resolv_port), resp->hsts_maxage, resp->hsts_include_subdomains));
 		hsts_changed = 1;
+	}
+
+	// HTTP Public-Key Pinning (RFC 7469)
+	if (config.hpkp &&
+			iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address &&
+			resp->hpkp) {
+		wget_hpkp_t *hpkp = wget_hpkp_new(iri->host, resp->hpkp_maxage, resp->hpkp_include_subdomains);
+
+		/* Iterate the pin list and add them one-by-one */
+		char *pin = wget_list_getfirst(resp->hpkp_pins);
+		while (pin) {
+			wget_hpkp_add_public_key_base64(hpkp, pin);
+			wget_list_remove(&resp->hpkp_pins, pin);
+
+			pin = wget_list_getfirst(resp->hpkp_pins);
+		}
+
+		wget_hpkp_db_add(config.hpkp_db, hpkp);
+
+		wget_list_free(&resp->hpkp_pins);
+		hpkp_changed = 1;
 	}
 
 	if (resp->code == 302 && resp->links && resp->digests)

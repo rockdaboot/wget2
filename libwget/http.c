@@ -595,10 +595,9 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 // We should use a macro like SET_OUT(), above, to make the parameters optional. If the caller
 // is not interested in some output argument, he just passes NULL.
 // TODO Use coccinelle for instance, to catch out all these cases.
-wget_list_t *wget_http_parse_public_key_pins(const char *s, time_t *maxage, char *include_subdomains)
+void wget_http_parse_public_key_pins(const char *s, time_t *maxage, char *include_subdomains, wget_list_t **pin_list)
 {
 	long offset;
-	wget_list_t *pins = NULL;
 	wget_http_header_param_t param;
 
 	SET_OUT(maxage, 0);
@@ -614,12 +613,11 @@ wget_list_t *wget_http_parse_public_key_pins(const char *s, time_t *maxage, char
 				if ((offset = atol(param.value)) > 0)
 					*maxage = time(NULL) + offset;
 			} else if (!wget_strcasecmp(param.name, "pin-sha256")) {
-				wget_list_append(&pins, param.value, strlen(param.value));
+				/* +1 for the NULL-terminator */
+				wget_list_append(pin_list, param.value, strlen(param.value) + 1);
 			}
 		}
 	}
-
-	return pins;
 }
 
 // RFC 6797
@@ -1237,9 +1235,10 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 			if (!wget_strncasecmp_ascii(name, "Public-Key-Pins", namelen)) {
 				// TODO HPKP: parse "Public-Key-Pins" header here
 				resp->hpkp = 1;
-				resp->hpkp_pins = wget_http_parse_public_key_pins(s,
+				wget_http_parse_public_key_pins(s,
 						&resp->hpkp_maxage,
-						&resp->hpkp_include_subdomains);
+						&resp->hpkp_include_subdomains,
+						&resp->hpkp_pins);
 			}
 			break;
 		case 't':
@@ -1371,6 +1370,11 @@ void wget_http_free_cookies(wget_vector_t **cookies)
 	wget_vector_free(cookies);
 }
 
+void wget_http_free_hpkp_entries(wget_list_t **hpkp_pins)
+{
+	wget_list_free(hpkp_pins);
+}
+
 void wget_http_free_response(wget_http_response_t **resp)
 {
 	if (resp && *resp) {
@@ -1378,6 +1382,7 @@ void wget_http_free_response(wget_http_response_t **resp)
 		wget_http_free_digests(&(*resp)->digests);
 		wget_http_free_challenges(&(*resp)->challenges);
 		wget_http_free_cookies(&(*resp)->cookies);
+		wget_http_free_hpkp_entries(&(*resp)->hpkp_pins);
 		xfree((*resp)->content_type);
 		xfree((*resp)->content_type_encoding);
 		xfree((*resp)->content_filename);

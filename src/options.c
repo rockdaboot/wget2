@@ -655,6 +655,7 @@ struct config config = {
 	.robots = 1,
 	.tries = 20,
 	.hsts = 1,
+	.hpkp = 1,
 #if defined WITH_LIBNGHTTP2
 	.http2 = 1,
 	.http2_request_window = 30,
@@ -666,7 +667,7 @@ struct config config = {
 	.waitretry = 10 * 1000,
 	.metalink = 1,
 	.tls_false_start = 1,
-	.tls_resume = 1,
+	.tls_resume = 1
 };
 
 static int parse_execute(option_t opt, const char *val);
@@ -1543,6 +1544,7 @@ void deinit(void)
 
 	wget_cookie_db_free(&config.cookie_db);
 	wget_hsts_db_free(&config.hsts_db);
+	wget_hpkp_db_deinit(&config.hpkp_db);
 	wget_tls_session_db_free(&config.tls_session_db);
 	wget_ocsp_db_free(&config.ocsp_db);
 	wget_netrc_db_free(&config.netrc_db);
