@@ -141,7 +141,7 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 	if (slotp->file_size > 0) {
 //		size_t bytes = (slot->status == DOWNLOADING) ? slot->raw_downloaded : slot->bytes_downloaded;
 		size_t bytes = slotp->bytes_downloaded;
-		int cols = (int) (bytes / (double) slotp->file_size) * bar->max_width;
+		int cols = (int) ((bytes / (double) slotp->file_size) * bar->max_width);
 		if (cols > bar->max_width)
 			cols = bar->max_width;
 		else if (cols <= 0)
