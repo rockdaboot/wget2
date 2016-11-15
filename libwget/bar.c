@@ -180,7 +180,7 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 		max = slotp->file_size;
 		cur = slotp->bytes_downloaded;
 
-		ratio = max ? (int) (100 * cur) / max : 0;
+		ratio = max ? (int) ((100 * cur) / max) : 0;
 
 		human_readable_bytes = wget_human_readable(slotp->human_size, sizeof(slotp->human_size), cur);
 		_bar_set_progress(bar, slot);
