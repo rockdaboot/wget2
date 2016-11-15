@@ -2599,7 +2599,7 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 			if (mtime) {
 				char http_date[32];
 
-				wget_http_print_date(mtime + 1, http_date, sizeof(http_date));
+				wget_http_print_date(mtime, http_date, sizeof(http_date));
 				wget_http_add_header(req, "If-Modified-Since", http_date);
 			}
 		}
