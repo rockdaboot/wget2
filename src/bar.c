@@ -72,17 +72,23 @@ static void _error_write(const char *buf, size_t len)
 
 void bar_init(void)
 {
-	bar = wget_bar_init(NULL, config.max_threads + 1);
+	if (wget_thread_support()) {
+		bar = wget_bar_init(NULL, config.max_threads + 1);
 
-	// set custom write function for wget_error_printf()
-	wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), _error_write);
+		// set custom write function for wget_error_printf()
+		wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), _error_write);
 
-	int rc = wget_thread_start(&progress_thread, _bar_update_thread, NULL, 0);
-	if (rc) {
-		wget_error_printf("Cannot create progress bar thread. Disabling progess bar\n");
-		wget_bar_free(&bar);
-		config.progress = 0;
+		if (wget_thread_start(&progress_thread, _bar_update_thread, NULL, 0)) {
+			wget_bar_free(&bar);
+			goto nobar;
+		}
+
+		return;
 	}
+
+nobar:
+	wget_error_printf("Cannot create progress bar thread. Disabling progess bar.\n");
+	config.progress = 0;
 }
 
 void bar_deinit(void)
