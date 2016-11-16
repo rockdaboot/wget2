@@ -119,14 +119,14 @@ typedef struct {
 		send_url;
 } wget_test_ftp_io_t;
 
-void wget_test_stop_server(void) LIBWGET_EXPORT;
-void wget_test_start_server(int first_key, ...) LIBWGET_EXPORT;
-void wget_test(int first_key, ...) LIBWGET_EXPORT;
-int wget_test_check_filesystem(void) LIBWGET_EXPORT;
-int wget_test_get_http_server_port(void) G_GNUC_WGET_PURE LIBWGET_EXPORT;
-int wget_test_get_https_server_port(void) G_GNUC_WGET_PURE LIBWGET_EXPORT;
-int wget_test_get_ftp_server_port(void) G_GNUC_WGET_PURE LIBWGET_EXPORT;
-int wget_test_get_ftps_server_port(void) G_GNUC_WGET_PURE LIBWGET_EXPORT;
+void wget_test_stop_server(void) WGETAPI;
+void wget_test_start_server(int first_key, ...) WGETAPI;
+void wget_test(int first_key, ...) WGETAPI;
+int wget_test_check_filesystem(void) WGETAPI;
+int wget_test_get_http_server_port(void) G_GNUC_WGET_PURE WGETAPI;
+int wget_test_get_https_server_port(void) G_GNUC_WGET_PURE WGETAPI;
+int wget_test_get_ftp_server_port(void) G_GNUC_WGET_PURE WGETAPI;
+int wget_test_get_ftps_server_port(void) G_GNUC_WGET_PURE WGETAPI;
 
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 #	pragma GCC diagnostic ignored "-Wmissing-field-initializers"
