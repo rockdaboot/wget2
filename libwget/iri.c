@@ -45,7 +45,7 @@ static const char
 static size_t
 	default_page_length = 10;
 
-LIBWGET_EXPORT const char
+const char
 	* const wget_iri_schemes[] = { "http", "https", NULL };
 static const char
 	* const iri_ports[]   = { "80", "443" }; // default port numbers for the above schemes

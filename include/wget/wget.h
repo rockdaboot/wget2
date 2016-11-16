@@ -782,7 +782,7 @@ int
  */
 
 // TODO: i have to move this away from libwget.h
-extern const char * const
+LIBWGET_EXPORT extern const char * const
 	wget_iri_schemes[];
 
 #define WGET_IRI_SCHEME_HTTP    (wget_iri_schemes[0])
