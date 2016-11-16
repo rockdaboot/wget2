@@ -978,7 +978,7 @@ int main(int argc, const char **argv)
 		bar_init();
 	}
 
-	downloaders = xcalloc(config.max_threads, sizeof(DOWNLOADER));
+	downloaders = wget_calloc(config.max_threads, sizeof(DOWNLOADER));
 
 	wget_thread_mutex_lock(&main_mutex);
 	while (!terminate) {
@@ -1341,7 +1341,7 @@ static void process_head_response(wget_http_response_t *resp)
 		// create metalink structure without hashing
 		wget_metalink_piece_t piece = { .length = config.chunk_size };
 		wget_metalink_mirror_t mirror = { .location = "-", .iri = job->iri };
-		wget_metalink_t *metalink = xcalloc(1, sizeof(wget_metalink_t));
+		wget_metalink_t *metalink = wget_calloc(1, sizeof(wget_metalink_t));
 		metalink->size = resp->content_length; // total file size
 		metalink->name = wget_strdup(job->local_filename);
 
@@ -2376,7 +2376,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 			size_t ext_length = strlen(ext);
 
 			if (fname_length >= ext_length && wget_strcasecmp_ascii(fname + fname_length - ext_length, ext)) {
-				alloced_fname = xmalloc(fname_length + ext_length + 1);
+				alloced_fname = wget_malloc(fname_length + ext_length + 1);
 				memcpy(alloced_fname, fname, fname_length);
 				memcpy(alloced_fname + fname_length, ext, ext_length + 1);
 				fname = alloced_fname;
@@ -2809,7 +2809,7 @@ int http_send_request(wget_iri_t *iri, DOWNLOADER *downloader)
 		return rc;
 	}
 
-	struct _body_callback_context *context = xcalloc(1, sizeof(struct _body_callback_context));
+	struct _body_callback_context *context = wget_calloc(1, sizeof(struct _body_callback_context));
 
 	context->job = downloader->job;
 	context->max_memory = downloader->job->part ? 0 : 10 * (1 << 20);

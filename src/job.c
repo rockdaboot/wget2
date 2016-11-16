@@ -258,7 +258,7 @@ int job_validate_file(JOB *job)
 JOB *job_init(JOB *job, wget_iri_t *iri)
 {
 	if (!job)
-		job = xcalloc(1, sizeof(JOB));
+		job = wget_calloc(1, sizeof(JOB));
 	else
 		memset(job, 0, sizeof(JOB));
 

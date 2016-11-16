@@ -46,10 +46,6 @@
 
 #include "wgetver.h"
 
-// transitional defines, remove when migration to libwget is done
-#define xmalloc wget_malloc
-#define xcalloc wget_calloc
-#define xrealloc wget_realloc
 
 // see https://www.gnu.org/software/gnulib/manual/html_node/Exported-Symbols-of-Shared-Libraries.html
 #if defined BUILDING_LIBWGET && HAVE_VISIBILITY
