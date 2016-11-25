@@ -1,12 +1,12 @@
 GNU Wget2 NEWS -- history of user-visible changes.
 
 Copyright (C) 2012-2015 Tim Ruehsen
-Copyright (C) 2015-2016 Free Software Foundation, Inc.
+Copyright (C) 2015-2018 Free Software Foundation, Inc.
 See the end for copying conditions.
 
 Please send GNU Wget2 bug reports to <bug-wget@gnu.org>.
 
-xx.03.2017 Release 1.99.0 (alpha)
+11.01.2018 Release 1.99.0 (alpha)
   * Add HTTP/2.0
   * Add IDNA 2008 / TR46
   * Add Travis-CI .yml file for Linux and MacOS
@@ -21,7 +21,14 @@ xx.03.2017 Release 1.99.0 (alpha)
   * Add 'make check-coverage' for viewing test code coverage
   * Add Public Key Pinning (HPKP)
   * Add brotli (br) compression method
+  * Add mime type filtering
+  * Add GPG signature checking
+  * Add fuzzing
+  * Add plugins
+  * Add statistic functions
+  * Use libmicrohttpd (MHD) for testing
 
+*** Previous Mget releases ***
 02.05.2015
   New release v0.1.9
   Made cross-compilable with MinGW on Linux
