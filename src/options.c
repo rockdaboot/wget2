@@ -1092,7 +1092,13 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 static void read_config(void)
 {
-	if (access(SYSCONFDIR"wgetrc", R_OK) == 0)
+	char *env = getenv ("SYSTEM_WGETRC");
+
+	if (env) {
+		if (*env)
+			_read_config(env, 0);
+		// else (empty SYSTEM_WGETRC): do not read from system config
+	} else if (access(SYSCONFDIR"wgetrc", R_OK) == 0)
 		_read_config(SYSCONFDIR"wgetrc", 0);
 
 	if (config.config_file)
@@ -1219,6 +1225,9 @@ int init(int argc, const char **argv)
 		}
 	}
 
+	// Initialize some configuration values which depend on the Runtime environment
+	char *home_dir = get_home_dir();
+
 	// the following strdup's are just needed for reallocation/freeing purposes to
 	// satisfy valgrind
 	config.user_agent = wget_strdup(config.user_agent);
@@ -1229,6 +1238,16 @@ int init(int argc, const char **argv)
 	config.default_page = wget_strdup(config.default_page);
 	config.domains = wget_vector_create(16, -2, (int (*)(const void *, const void *))strcmp);
 //	config.exclude_domains = wget_vector_create(16, -2, NULL);
+
+	// set default config file name
+	char *env = getenv ("WGETRC");
+	if (env && *env)
+		config.config_file = wget_strdup(env);
+	else {
+		config.config_file = wget_str_asprintf("%s/.wgetrc", home_dir);
+		if (access(config.config_file, R_OK))
+			xfree(config.config_file); // we don't want to complain about missing home .wgetrc
+	}
 
 	log_init();
 
@@ -1249,9 +1268,6 @@ int init(int argc, const char **argv)
 	}
 	log_init();
 
-	// Initialize some configuration values which depend on the Runtime environment
-	char *home_dir = get_home_dir();
-
 	if (!config.hsts_file)
 		config.hsts_file = wget_str_asprintf("%s/.wget-hsts", home_dir);
 
@@ -1264,11 +1280,7 @@ int init(int argc, const char **argv)
 	if (config.netrc && !config.netrc_file)
 		config.netrc_file = wget_str_asprintf("%s/.netrc", home_dir);
 
-	if (!config.config_file) {
-		config.config_file = wget_str_asprintf("%s/.wgetrc", home_dir);
-		if (access(config.config_file, R_OK))
-			xfree(config.config_file); // we don't want to complain about missing home .wgetrc
-	} else if (access(config.config_file, R_OK)) {
+	if (config.config_file && access(config.config_file, R_OK)) {
 		error_printf(_("Failed to open config file '%s'\n"), config.config_file);
 		xfree(config.config_file);
 	}
