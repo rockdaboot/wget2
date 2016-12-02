@@ -2039,6 +2039,8 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 			wget_http_header_param_t *param = wget_vector_get(req->headers, it);
 			if (!wget_strcasecmp_ascii(param->name, "Connection"))
 				continue;
+			if (!wget_strcasecmp_ascii(param->name, "Transfer-Encoding"))
+				continue;
 			if (!wget_strcasecmp_ascii(param->name, "Host")) {
 				_init_nv(&nvs[3], ":authority", param->value);
 				continue;
