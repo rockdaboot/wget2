@@ -64,7 +64,6 @@ int main(void)
 
 	// test negative chunk size (32bit system only)
 	wget_test(
-		WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, "",
 		WGET_TEST_REQUEST_URLS, "1.txt", "2.txt", "3.txt", NULL,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
