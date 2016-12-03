@@ -53,6 +53,7 @@
 #include <fcntl.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <wordexp.h>
 //#include <netdb.h>
 
 #include <wget.h>
@@ -246,6 +247,24 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 	exit(0);
 }
 
+static char *_shell_expand(const char *str)
+{
+	char *expanded_str = NULL;
+
+	if (*str == '~') {
+		char *pathptr = strchrnul(str, '/');
+		expanded_str = wget_strnglob(str, pathptr - str, GLOB_TILDE|GLOB_ONLYDIR|GLOB_NOCHECK);
+	}
+
+	// Either the string does not start with a "~", or the glob expansion
+	// failed. In both cases, return the original string back
+	if (!expanded_str) {
+		expanded_str = wget_strdup(str);
+	}
+
+	return expanded_str;
+}
+
 static int parse_integer(option_t opt, const char *val)
 {
 	*((int *)opt->var) = val ? atoi(val) : 0;
@@ -283,6 +302,15 @@ static int parse_numbytes(option_t opt, const char *val)
 			error_printf_exit(_("Invalid byte specifier: %s\n"), val);
 	}
 
+	return 0;
+}
+
+static int parse_filename(option_t opt, const char *val)
+{
+	xfree(*((const char **)opt->var));
+	*((const char **)opt->var) = val ? _shell_expand(val) : NULL;
+
+	debug_printf("Expanded value = %s\n", *(const char **)opt->var);
 	return 0;
 }
 
@@ -691,8 +719,8 @@ static const struct optionw options[] = {
 	{ "check-hostname", &config.check_hostname, parse_bool, 0, 0 },
 	{ "chunk-size", &config.chunk_size, parse_numbytes, 1, 0 },
 	{ "clobber", &config.clobber, parse_bool, 0, 0 },
-	{ "config", &config.config_files, parse_stringlist, 1, 0}, // for backward compatibility only
-	{ "config-file", &config.config_files, parse_stringlist, 1, 0},
+	{ "config", &config.config_file, parse_filename, 1, 0}, // for backward compatibility only
+	{ "config-file", &config.config_file, parse_filename, 1, 0},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0 },
 	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0 },
 	{ "content-on-error", &config.content_on_error, parse_bool, 0, 0 },
@@ -700,7 +728,7 @@ static const struct optionw options[] = {
 	{ "convert-links", &config.convert_links, parse_bool, 0, 'k' },
 	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0 },
 	{ "cookies", &config.cookies, parse_bool, 0, 0 },
-	{ "crl-file", &config.crl_file, parse_string, 1, 0 },
+	{ "crl-file", &config.crl_file, parse_filename, 1, 0 },
 	{ "cut-dirs", &config.cut_directories, parse_integer, 1, 0 },
 	{ "debug", &config.debug, parse_bool, 0, 'd' },
 	{ "default-page", &config.default_page, parse_string, 1, 0 },
@@ -710,7 +738,7 @@ static const struct optionw options[] = {
 	{ "dns-caching", &config.dns_caching, parse_bool, 0, 0 },
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0 },
 	{ "domains", &config.domains, parse_stringlist, 1, 'D' },
-	{ "egd-file", &config.egd_file, parse_string, 1, 0 },
+	{ "egd-file", &config.egd_file, parse_filename, 1, 0 },
 	{ "exclude-domains", &config.exclude_domains, parse_stringlist, 1, 0 },
 	{ "execute", NULL, parse_execute, 1, 'e' },
 	{ "follow-tags", &config.follow_tags, parse_taglist, 1, 0 },
@@ -729,7 +757,7 @@ static const struct optionw options[] = {
 	{ "hpkp", &config.hpkp, parse_bool, 0, 0 },
 	{ "hpkp-file", &config.hpkp_file, parse_string, 1, 0 },
 	{ "hsts", &config.hsts, parse_bool, 0, 0 },
-	{ "hsts-file", &config.hsts_file, parse_string, 1, 0 },
+	{ "hsts-file", &config.hsts_file, parse_filename, 1, 0 },
 	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0 }, // obsolete, replaced by --adjust-extension
 	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0 },
 	{ "http-password", &config.http_password, parse_string, 1, 0 },
@@ -755,9 +783,9 @@ static const struct optionw options[] = {
 	{ "mirror", &config.mirror, parse_mirror, 0, 'm' },
 	{ "n", NULL, parse_n_option, 1, 'n' }, // special Wget compatibility option
 	{ "netrc", &config.netrc, parse_bool, 0, 0 },
-	{ "netrc-file", &config.netrc_file, parse_string, 1, 0 },
+	{ "netrc-file", &config.netrc_file, parse_filename, 1, 0 },
 	{ "ocsp", &config.ocsp, parse_bool, 0, 0 },
-	{ "ocsp-file", &config.ocsp_file, parse_string, 1, 0 },
+	{ "ocsp-file", &config.ocsp_file, parse_filename, 1, 0 },
 	{ "ocsp-stapling", &config.ocsp_stapling, parse_bool, 0, 0 },
 	{ "output-document", &config.output_document, parse_string, 1, 'O' },
 	{ "output-file", &config.logfile, parse_string, 1, 'o' },
@@ -773,7 +801,7 @@ static const struct optionw options[] = {
 	{ "protocol-directories", &config.protocol_directories, parse_bool, 0, 0 },
 	{ "quiet", &config.quiet, parse_bool, 0, 'q' },
 	{ "quota", &config.quota, parse_numbytes, 1, 'Q' },
-	{ "random-file", &config.random_file, parse_string, 1, 0 },
+	{ "random-file", &config.random_file, parse_filename, 1, 0 },
 	{ "random-wait", &config.random_wait, parse_bool, 0, 0 },
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0 },
 	{ "recursive", &config.recursive, parse_bool, 0, 'r' },
@@ -794,7 +822,7 @@ static const struct optionw options[] = {
 	{ "timestamping", &config.timestamping, parse_bool, 0, 'N' },
 	{ "tls-false-start", &config.tls_false_start, parse_bool, 0, 0 },
 	{ "tls-resume", &config.tls_resume, parse_bool, 0, 0 },
-	{ "tls-session-file", &config.tls_session_file, parse_string, 1, 0 },
+	{ "tls-session-file", &config.tls_session_file, parse_filename, 1, 0 },
 	{ "tries", &config.tries, parse_integer, 1, 't' },
 	{ "trust-server-names", &config.trust_server_names, parse_bool, 0, 0 },
 	{ "use-server-timestamps", &config.use_server_timestamps, parse_bool, 0, 0 },
@@ -1167,15 +1195,7 @@ static char *get_home_dir(void)
 	static char *home;
 
 	if (!home) {
-		glob_t globbuf = { .gl_pathc = 0 };
-
-		// Gnulib covers all the gory details for non-Linux systems
-		if (glob("~", GLOB_TILDE_CHECK, NULL, &globbuf) == 0) {
-			if (globbuf.gl_pathc > 0)
-				home = wget_strdup(globbuf.gl_pathv[0]);
-
-			globfree(&globbuf);
-		} else {
+		if ((home = wget_strnglob("~", 1, GLOB_TILDE_CHECK)) == NULL) {
 			home = wget_strdup("."); // Use the current directory as 'home' directory
 		}
 	}

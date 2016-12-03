@@ -231,6 +231,9 @@ Go to background immediately after startup. If no output file is specified via t
   So if you want to prevent reading any config files, give --no-config-file on the command line.
   --no-config-file followed by --config-file=file just reads `file` and skips reading the default config files.
 
+  Wget will attempt to tilde expand filenames written in the configuration file on supported platforms. To use a file that starts with
+  the character literal '~', use "./~" or an absolute path.
+
 *--rejected-log=logfile
 
   Logs all URL rejections to logfile as comma separated values.  The values include the reason of rejection, the URL and the
