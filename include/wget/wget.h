@@ -309,6 +309,8 @@ WGETAPI int
 WGETAPI int
 	wget_match_tail_nocase(const char *s, const char *tail) G_GNUC_WGET_PURE;
 WGETAPI char *
+	wget_strnglob(const char *str, size_t n, int flags) G_GNUC_WGET_PURE;
+WGETAPI char *
 	wget_human_readable(char *buf, size_t bufsize, size_t n) G_GNUC_WGET_CONST;
 WGETAPI int
 	wget_get_screen_size(int *width, int *height);
