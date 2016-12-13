@@ -1028,6 +1028,8 @@ wget_hpkp_t *
 	wget_hpkp_new(const char *host, time_t max_age, int include_subdomains) LIBWGET_EXPORT;
 void
 	wget_hpkp_add_public_key_base64(wget_hpkp_t *hpkp, const char *b64_pubkey) LIBWGET_EXPORT;
+int
+	wget_hpkp_db_save(const char *filename, wget_hpkp_db_t *hpkp_db) LIBWGET_EXPORT;
 
 /*
  * TLS session resumption

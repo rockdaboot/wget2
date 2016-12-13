@@ -251,7 +251,7 @@ static int __hashtable_browse_cb(void *ctx, const void *key, void *value)
 
 	unsigned int num_pins = wget_vector_size(hpkp->pins);
 	if (num_pins > 0) {
-		fprintf(fp, "%s\t%lu\t%lu\t%c\t%du\n",
+		fprintf(fp, "%s\t%lu\t%lu\t%u\t%u\n",
 				url,
 				hpkp->created, hpkp->max_age,
 				hpkp->include_subdomains,
@@ -273,7 +273,7 @@ int wget_hpkp_db_save(const char *filename, wget_hpkp_db_t *hpkp_db)
 	FILE *fp;
 	int retval;
 
-	if (!filename || !hpkp_db || !hpkp_db->entries)
+	if (!filename || !*filename || !hpkp_db || !hpkp_db->entries)
 		return -1;
 
 	fp = fopen(filename, "w");
@@ -372,7 +372,7 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 	unsigned int num_pins = 0;
 	enum hpkp_parse_state state = PARSING_HOST;
 
-	if (!filename || !hpkp_db)
+	if (!filename || !*filename || !hpkp_db)
 		return -1;
 
 	fp = fopen(filename, "r");

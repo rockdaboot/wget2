@@ -1047,7 +1047,7 @@ int main(int argc, const char **argv)
 
 	/* TODO HPKP: save the HPKP pins to a file here */
 	if (config.hpkp && config.hpkp_file && hpkp_changed)
-		wget_hpkp_db_save(config.hpkp_db, config.hpkp_file);
+		wget_hpkp_db_save(config.hpkp_file, config.hpkp_db);
 
 	if (config.tls_resume && config.tls_session_file && wget_tls_session_db_changed(config.tls_session_db))
 		wget_tls_session_db_save(config.tls_session_db, config.tls_session_file);
