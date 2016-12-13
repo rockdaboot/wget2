@@ -729,6 +729,7 @@ static const struct optionw options[] = {
 	{ "hsts", &config.hsts, parse_bool, 0, 0 },
 	{ "hsts-file", &config.hsts_file, parse_string, 1, 0 },
 	{ "hpkp", &config.hpkp, parse_bool, 0, 0 },
+	{ "hpkp-file", &config.hpkp_file, parse_string, 1, 0 },
 	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0 }, // obsolete, replaced by --adjust-extension
 	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0 },
 	{ "http-password", &config.http_password, parse_string, 1, 0 },
@@ -1253,6 +1254,9 @@ int init(int argc, const char **argv)
 	if (!config.hsts_file)
 		config.hsts_file = wget_aprintf("%s/.wget-hsts", home_dir);
 
+	if (!config.hpkp_file)
+		config.hpkp_file = wget_str_asprintf("%s/.wget-hpkp", home_dir);
+
 	if (config.tls_resume && !config.tls_session_file)
 		config.tls_session_file = wget_aprintf("%s/.wget-session", home_dir);
 
@@ -1554,6 +1558,7 @@ void deinit(void)
 	xfree(config.load_cookies);
 	xfree(config.save_cookies);
 	xfree(config.hsts_file);
+	xfree(config.hpkp_file);
 	xfree(config.tls_session_file);
 	xfree(config.ocsp_file);
 	xfree(config.netrc_file);
