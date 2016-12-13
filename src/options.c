@@ -48,7 +48,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <c-ctype.h>
-#include <ctype.h>
 #include <errno.h>
 #include <glob.h>
 #include <fcntl.h>
@@ -521,7 +520,7 @@ static int parse_timeout(option_t opt, const char *val)
 
 		if (sscanf(val, " %lf%c", &fval, &modifier) >= 1 && fval > 0) {
 			if (modifier) {
-				switch (tolower(modifier)) {
+				switch (c_tolower(modifier)) {
 				case 's': fval *= 1000; break;
 				case 'm': fval *= 60 * 1000; break;
 				case 'h': fval *= 60 * 60 * 1000; break;
@@ -930,8 +929,8 @@ static int _parse_option(char *linep, char **name, char **val)
 {
 	int quote;
 
-	while (isspace(*linep)) linep++;
-	for (*name = linep; isalnum(*linep) || *linep == '-'; linep++);
+	while (c_isspace(*linep)) linep++;
+	for (*name = linep; c_isalnum(*linep) || *linep == '-'; linep++);
 
 	if (!**name) {
 		error_printf(_("Failed to parse: '%s'\n"), linep);
@@ -939,10 +938,15 @@ static int _parse_option(char *linep, char **name, char **val)
 		return 0;
 	}
 
+	if (c_isspace(*linep)) {
+		*linep++ = 0;
+		while (c_isspace(*linep)) linep++;
+	}
+
 	if (*linep == '=') {
 		// option with value, e.g. debug=y
 		*linep++ = 0;
-		// while (c_isspace(linep)) linep++;
+		while (c_isspace(*linep)) linep++;
 
 		*val = linep;
 
@@ -963,7 +967,7 @@ static int _parse_option(char *linep, char **name, char **val)
 	} else {
 		// statement (e.g. include ".wgetrc.d") or boolean option without value (e.g. no-recursive)
 		if (*linep) *linep++ = 0;
-		while (isspace(*linep)) linep++;
+		while (c_isspace(*linep)) linep++;
 		*val = linep;
 		return 2;
 	}
@@ -1034,14 +1038,14 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 		// remove leading whitespace (only on non-continuation lines)
 		if (!append)
-			while (isspace(*linep)) {
+			while (c_isspace(*linep)) {
 				linep++;
 				len--;
 			}
 		if (*linep == '#') continue;
 
 		// remove trailing whitespace
-		while (len > 0 && isspace(linep[len - 1]))
+		while (len > 0 && c_isspace(linep[len - 1]))
 			len--;
 		linep[len] = 0;
 
@@ -1153,7 +1157,7 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 				option_t opt;
 				int idx;
 
-				if (isalnum(argp[pos]) && (idx = shortcut_to_option[(unsigned char)argp[pos]])) {
+				if (c_isalnum(argp[pos]) && (idx = shortcut_to_option[(unsigned char)argp[pos]])) {
 					opt = &options[idx - 1];
 					// info_printf("opt=%p [%c]\n",(void *)opt,argp[pos]);
 					// info_printf("name=%s\n",opt->long_name);
