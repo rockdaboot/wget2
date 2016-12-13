@@ -1783,6 +1783,9 @@ int selftest_options(void)
 			{ { "", "--header=Hello: World", "--header", "", "--header=Test: Passed" }, {"Test", "Passed"} },
 		};
 
+		// Empty the header list before proceeding
+		wget_vector_clear(config.headers);
+
 		for (it = 0; it < countof(test_header); it++) {
 			const char *res_name = test_header[it].result[0];
 			const char *res_value = test_header[it].result[1];
@@ -1799,9 +1802,6 @@ int selftest_options(void)
 				error_printf("%s: Failed to parse header option #%zu\n", __func__, it);
 				ret = 1;
 			}
-
-			// Empty the header list before proceeding
-			wget_vector_clear(config.headers);
 		}
 
 		// Test illegal values
@@ -1816,6 +1816,9 @@ int selftest_options(void)
 			{ { "", "--header", ":" } },
 		};
 
+		// Empty the header list before proceeding
+		wget_vector_clear(config.headers);
+
 		for (it = 0; it < countof(test_header_illegal); it++) {
 			parse_command_line(3, test_header_illegal[it].argv);
 			if (wget_vector_size(config.headers) != 0) {
@@ -1824,6 +1827,8 @@ int selftest_options(void)
 			}
 		}
 
+		// Empty the header list before proceeding
+		wget_vector_clear(config.headers);
 	}
 	// test parsing string short and long option
 
