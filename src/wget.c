@@ -1550,11 +1550,14 @@ static void process_response(wget_http_response_t *resp)
 				} else if (job->robotstxt) {
 					debug_printf("Scanning robots.txt ...\n");
 					if ((job->host->robots = wget_robots_parse(resp->body->data, PACKAGE_NAME))) {
-						// add sitemaps to be downloaded (format http://www.sitemaps.org/protocol.html)
-						for (int it = 0; it < wget_vector_size(job->host->robots->sitemaps); it++) {
-							const char *sitemap = wget_vector_get(job->host->robots->sitemaps, it);
-							info_printf("adding sitemap '%s'\n", sitemap);
-							add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see http://www.sitemaps.org/protocol.html#escaping
+						// the sitemaps are not relevant as page requisites
+						if (!config.page_requisites) {
+							// add sitemaps to be downloaded (format http://www.sitemaps.org/protocol.html)
+							for (int it = 0; it < wget_vector_size(job->host->robots->sitemaps); it++) {
+								const char *sitemap = wget_vector_get(job->host->robots->sitemaps, it);
+								info_printf("adding sitemap '%s'\n", sitemap);
+								add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see http://www.sitemaps.org/protocol.html#escaping
+							}
 						}
 					}
 				}
