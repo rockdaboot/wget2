@@ -130,7 +130,7 @@ int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), voi
 int wget_thread_mutex_init(wget_thread_mutex_t *mutex) { return 0; }
 void wget_thread_mutex_lock(wget_thread_mutex_t *mutex) { }
 void wget_thread_mutex_unlock(wget_thread_mutex_t *mutex) { }
-int wget_thread_cancel(wget_thread_t thread) { }
+int wget_thread_cancel(wget_thread_t thread) { return 0; }
 int wget_thread_kill(wget_thread_t thread, int sig) { return 0; }
 int wget_thread_join(wget_thread_t thread) { return 0; }
 wget_thread_t wget_thread_self(void) { return 0; }
