@@ -224,6 +224,9 @@ Go to background immediately after startup. If no output file is specified via t
 
   Specify the location of a startup file you wish to use.
 
+  Wget will attempt to tilde expand filenames written in the configuration file on supported platforms. To use a file that starts with
+  the character literal '~', use "./~" or an absolute path.
+
 *--rejected-log=logfile
 
   Logs all URL rejections to logfile as comma separated values.  The values include the reason of rejection, the URL and the
