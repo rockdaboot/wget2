@@ -379,23 +379,9 @@ static int parse_stringlist(option_t opt, const char *val)
 		if (!v)
 			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, -2, (int (*)(const void *, const void *))strcmp);
 
-		for (s = val; (p = strchr(s, ',')); s = p + 1) {
-			if (p != s) {
-				const char *entry = wget_strmemdup(s, p - s);
-
-				if (wget_vector_find(v, entry) == -1)
-					wget_vector_add_noalloc(v, entry);
-				else
-					xfree(entry);
-			}
-		}
-		if (*s) {
-			const char *entry = wget_strdup(s);
-
-			if (wget_vector_find(v, entry) == -1)
-				wget_vector_add_noalloc(v, entry);
-			else
-				xfree(entry);
+		for (s = p = val; *p; s = p + 1) {
+			if ((p = strchrnul(s, ',')) != s)
+				wget_vector_add_noalloc(v, wget_strmemdup(s, p - s));
 		}
 	} else {
 		wget_vector_free(&v);
@@ -1124,7 +1110,7 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 	}
 
 	// I like the idea of getopt() but not it's implementation (e.g. global variables).
-	// Therefore I implement my own getopt() behaviour.
+	// Therefore I implement my own getopt() behavior.
 	for (n = 1; n < argc && first_arg != argv[n]; n++) {
 		const char *argp = argv[n];
 
