@@ -2519,10 +2519,10 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 		proxies = wget_vector_create(8, -2, NULL);
 		wget_vector_set_destructor(proxies, (void(*)(void *))wget_iri_free_content);
 
-		for (s = proxy; (p = strchr(s, ',')); s = p + 1) {
+		for (s = p = proxy; *p; s = p + 1) {
 			while (c_isspace(*s) && s < p) s++;
 
-			if (p != s) {
+			if ((p = strchrnul(s, ',')) != s && p - s < 256) {
 				wget_iri_t *iri;
 				char host[p - s + 1];
 
@@ -2535,14 +2535,6 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 				}
 				wget_vector_add_noalloc(proxies, iri);
 			}
-		}
-		if (*s) {
-			wget_iri_t *iri = wget_iri_parse(s, encoding);
-			if (!iri) {
-				wget_vector_free(&proxies);
-				return NULL;
-			}
-			wget_vector_add_noalloc(proxies, iri);
 		}
 
 		return proxies;

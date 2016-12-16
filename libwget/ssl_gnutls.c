@@ -1251,26 +1251,19 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		unsigned nprot;
 		const char *e, *s;
 
-		for (nprot = 0, s = _config.alpn; (e = strchr(s, ',')); s = e + 1)
-			if (e > s) nprot++;
-		if (*s && *s != ',')
-			nprot++;
+		for (nprot = 0, s = e = _config.alpn; *e; s = e + 1)
+			if ((e = strchrnul(s, ',')) != s)
+				nprot++;
 
 		gnutls_datum_t data[nprot];
 
-		for (nprot = 0, s = _config.alpn; (e = strchr(s, ',')); s = e + 1) {
-			if (e > s) {
+		for (nprot = 0, s = e = _config.alpn; *e; s = e + 1) {
+			if ((e = strchrnul(s, ',')) != s) {
 				data[nprot].data = (unsigned char *) s;
-				data[nprot].size = e -s;
+				data[nprot].size = e - s;
 				debug_printf("ALPN offering %.*s\n", (int) data[nprot].size, data[nprot].data);
 				nprot++;
 			}
-		}
-		if (*s && *s != ',') {
-			data[nprot].data = (unsigned char *) s;
-			data[nprot].size = strlen(s);
-			debug_printf("ALPN offering %.*s\n", (int) data[nprot].size, data[nprot].data);
-			nprot++;
 		}
 
 		if ((rc = gnutls_alpn_set_protocols(session, data, nprot, 0)))
