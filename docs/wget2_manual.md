@@ -220,9 +220,16 @@ Go to background immediately after startup. If no output file is specified via t
   For instance, if you specify http://foo/bar/a.html for URL, and Wget2 reads ../baz/b.html from the input file, it would be
   resolved to http://foo/baz/b.html.
 
-* --config=FILE
+* --config-file=FILE
 
-  Specify the location of a startup file you wish to use.
+  Specify the location of a configuration file you wish to use. If you specify more than one file, either by using a
+  comma-separated list or several --config-file options, these files are read in left-to-right order.
+  Before the first given file is read, the files given in $SYSTEM_WGET2RC, $WGET2RC and ~/.wget2rc are read in that
+  order.
+
+  --no-config-file empties the internal list of config files.
+  So if you want to prevent reading any config files, give --no-config-file on the command line.
+  --no-config-file followed by --config-file=file just reads `file` and skips reading the default config files.
 
 *--rejected-log=logfile
 
