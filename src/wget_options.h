@@ -79,6 +79,7 @@ struct config {
 		*random_file,
 		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
 	wget_vector_t
+		*config_files,
 		*domains,
 		*exclude_domains,
 		*accept_patterns,
@@ -100,7 +101,6 @@ struct config {
 		*hsts_file,
 		*tls_session_file,
 		*ocsp_file,
-		*config_file,
 		*netrc_file;
 	size_t
 		chunk_size;

@@ -301,12 +301,10 @@ static int parse_stringset(option_t opt, const char *val)
 	if (val) {
 		const char *s, *p;
 
-		for (s = val; (p = strchr(s, ',')); s = p + 1) {
-			if (p != s)
+		for (s = p = val; *p; s = p + 1) {
+			if ((p = strchrnul(s, ',')) != s)
 				wget_stringmap_put_noalloc(map, wget_strmemdup(s, p - s), NULL);
 		}
-		if (*s)
-			wget_stringmap_put_noalloc(map, wget_strdup(s), NULL);
 	} else {
 		wget_stringmap_clear(map);
 	}
@@ -371,9 +369,8 @@ static int parse_header(option_t opt, const char *val)
 
 static int parse_stringlist(option_t opt, const char *val)
 {
-	wget_vector_t *v = *((wget_vector_t **)opt->var);
-
 	if (val && *val) {
+		wget_vector_t *v = *((wget_vector_t **)opt->var);
 		const char *s, *p;
 
 		if (!v)
@@ -384,7 +381,7 @@ static int parse_stringlist(option_t opt, const char *val)
 				wget_vector_add_noalloc(v, wget_strmemdup(s, p - s));
 		}
 	} else {
-		wget_vector_free(&v);
+		wget_vector_free(opt->var);
 	}
 
 	return 0;
@@ -438,9 +435,8 @@ static int G_GNUC_WGET_NONNULL_ALL _compare_tag(const wget_html_tag_t *t1, const
 
 static int parse_taglist(option_t opt, const char *val)
 {
-	wget_vector_t *v = *((wget_vector_t **)opt->var);
-
 	if (val && *val) {
+		wget_vector_t *v = *((wget_vector_t **)opt->var);
 		const char *s, *p;
 
 		if (!v) {
@@ -448,14 +444,12 @@ static int parse_taglist(option_t opt, const char *val)
 			wget_vector_set_destructor(v, (void(*)(void *))_free_tag);
 		}
 
-		for (s = val; (p = strchr(s, ',')); s = p + 1) {
-			if (p != s)
+		for (s = p = val; *p; s = p + 1) {
+			if ((p = strchrnul(s, ',')) != s)
 				_add_tag(v, s, p);
 		}
-		if (*s)
-			_add_tag(v, s, s + strlen(s));
 	} else {
-		wget_vector_free(&v);
+		wget_vector_free(opt->var);
 	}
 
 	return 0;
@@ -695,8 +689,8 @@ static const struct optionw options[] = {
 	{ "check-hostname", &config.check_hostname, parse_bool, 0, 0 },
 	{ "chunk-size", &config.chunk_size, parse_numbytes, 1, 0 },
 	{ "clobber", &config.clobber, parse_bool, 0, 0 },
-	{ "config", &config.config_file, parse_string, 1, 0}, // for backward compatibility only
-	{ "config-file", &config.config_file, parse_string, 1, 0},
+	{ "config", &config.config_files, parse_stringlist, 1, 0}, // for backward compatibility only
+	{ "config-file", &config.config_files, parse_stringlist, 1, 0},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0 },
 	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0 },
 	{ "content-on-error", &config.content_on_error, parse_bool, 0, 0 },
@@ -862,19 +856,12 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 
 	debug_printf("name=%s value=%s invert=%d\n", opt->long_name, value, invert);
 
-	if (opt->parser == parse_string && invert) {
-		// allow no-<string-option> to set value to NULL
+	if (invert && (opt->parser == parse_string || opt->parser == parse_stringset || opt->parser == parse_stringlist)) {
+		// allow no-<option> to set value to NULL
 		if (value && name == namebuf)
 			error_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
 
-		parse_string(opt, NULL);
-	}
-	else if (opt->parser == parse_stringset && invert) {
-		// allow no-<string-option> to set value to NULL
-		if (value && name == namebuf)
-			error_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
-
-		parse_stringset(opt, NULL);
+		opt->parser(opt, NULL);
 	}
 	else {
 		if (value && !opt->args && opt->parser != parse_bool)
@@ -1082,17 +1069,10 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 static void read_config(void)
 {
-	char *env = getenv ("SYSTEM_WGETRC");
-
-	if (env) {
-		if (*env)
-			_read_config(env, 0);
-		// else (empty SYSTEM_WGETRC): do not read from system config
-	} else if (access(SYSCONFDIR"wgetrc", R_OK) == 0)
-		_read_config(SYSCONFDIR"wgetrc", 0);
-
-	if (config.config_file)
-		_read_config(config.config_file, 1);
+	for (int it = 0; it < wget_vector_size(config.config_files); it++) {
+		const char *cfgfile = wget_vector_get(config.config_files, it);
+		_read_config(cfgfile, 1);
+	}
 }
 
 static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **argv)
@@ -1229,14 +1209,20 @@ int init(int argc, const char **argv)
 	config.domains = wget_vector_create(16, -2, (int (*)(const void *, const void *))strcmp);
 //	config.exclude_domains = wget_vector_create(16, -2, NULL);
 
-	// set default config file name
-	char *env = getenv ("WGETRC");
-	if (env && *env)
-		config.config_file = wget_strdup(env);
+	// create list of default config file names
+	char *env;
+	config.config_files = wget_vector_create(8, -2, NULL);
+	if ((env = getenv ("SYSTEM_WGET2RC")) && *env)
+		wget_vector_add_str(config.config_files, env);
+	if ((env = getenv ("WGET2RC")) && *env)
+		wget_vector_add_str(config.config_files, env);
 	else {
-		config.config_file = wget_str_asprintf("%s/.wgetrc", home_dir);
-		if (access(config.config_file, R_OK))
-			xfree(config.config_file); // we don't want to complain about missing home .wgetrc
+		// we don't want to complain about missing home .wget2rc
+		const char *cfgfile = wget_str_asprintf("%s/.wget2rc", home_dir);
+		if (access(cfgfile, R_OK) == 0)
+			wget_vector_add_noalloc(config.config_files, cfgfile);
+		else
+			xfree(cfgfile);
 	}
 
 	log_init();
@@ -1269,11 +1255,6 @@ int init(int argc, const char **argv)
 
 	if (config.netrc && !config.netrc_file)
 		config.netrc_file = wget_str_asprintf("%s/.netrc", home_dir);
-
-	if (config.config_file && access(config.config_file, R_OK)) {
-		error_printf(_("Failed to open config file '%s'\n"), config.config_file);
-		xfree(config.config_file);
-	}
 
 	xfree(home_dir);
 
@@ -1561,7 +1542,6 @@ void deinit(void)
 	xfree(config.tls_session_file);
 	xfree(config.ocsp_file);
 	xfree(config.netrc_file);
-	xfree(config.config_file);
 	xfree(config.logfile);
 	xfree(config.logfile_append);
 	xfree(config.user_agent);
@@ -1596,6 +1576,7 @@ void deinit(void)
 	wget_vector_free(&config.accept_patterns);
 	wget_vector_free(&config.reject_patterns);
 	wget_vector_free(&config.headers);
+	wget_vector_free(&config.config_files);
 
 	wget_http_set_http_proxy(NULL, NULL);
 	wget_http_set_https_proxy(NULL, NULL);
