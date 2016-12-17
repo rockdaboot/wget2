@@ -97,7 +97,7 @@ size_t wget_asprintf(char **strp, const char *fmt, ...)
  * Prints arguments to memory and returns a pointer to allocated and 0-terminated chunk of memory
  * or %NULL on error. The return value has to be free()'d by the caller when it is no longer needed.
  */
-char *wget_str_vasprintf(const char *fmt, va_list args)
+char *wget_vaprintf(const char *fmt, va_list args)
 {
 	char *s;
 
@@ -114,7 +114,7 @@ char *wget_str_vasprintf(const char *fmt, va_list args)
  * Prints arguments to memory and returns a pointer to allocated and 0-terminated chunk of memory
  * or %NULL on error. The return value has to be free()'d by the caller when it is no longer needed.
  */
-char *wget_str_asprintf(const char *fmt, ...)
+char *wget_aprintf(const char *fmt, ...)
 {
 	va_list args;
 	char *s;

@@ -125,7 +125,7 @@ int main(void)
 	unsigned char digest[wget_hash_get_len(WGET_DIGTYPE_MD5)];
 
 	wget_md5_printf_hex(md5hex, "%s", urls[1].body);
-	urls[0].body = wget_str_asprintf(
+	urls[0].body = wget_aprintf(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<metalink version=\"3.0\">"
 		"<files>"
@@ -144,7 +144,7 @@ int main(void)
 		urls[1].name + 1, strlen(urls[1].body), md5hex, urls[1].name + 1);
 
 	wget_md5_printf_hex(md5hex, "%s", urls[3].body);
-	urls[2].body = wget_str_asprintf(
+	urls[2].body = wget_aprintf(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<metalink version=\"3.0\">"
 		"<file name=\"%s\">"
@@ -159,7 +159,7 @@ int main(void)
 	wget_md5_printf_hex(md5hex, "%s", urls[5].body);
 	wget_md5_printf_hex(md5hex_p1, "%.5s", urls[5].body);
 	wget_md5_printf_hex(md5hex_p2, "%.5s", urls[5].body + 5);
-	urls[4].body = wget_str_asprintf(
+	urls[4].body = wget_aprintf(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<metalink version=\"3.0\">"
 		"<file name=\"%s\">"
@@ -179,7 +179,7 @@ int main(void)
 	wget_md5_printf_hex(md5hex, "%s", urls[8].body);
 	wget_md5_printf_hex(md5hex_p1, "%.5s", urls[8].body);
 	wget_md5_printf_hex(md5hex_p2, "%.5s", urls[8].body + 5);
-	urls[7].body = wget_str_asprintf(
+	urls[7].body = wget_aprintf(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<metalink version=\"3.0\">"
 		"<file name=\"%s\">"
@@ -271,7 +271,7 @@ int main(void)
 	/**** RFC 6249 Metalink/HTTP: Mirrors and Hashes  - with metalink description ****/
 	wget_hash_fast(WGET_DIGTYPE_MD5, urls[8].body, strlen(urls[8].body), digest);
 	digest_str = wget_base64_encode_alloc((const char *)digest, sizeof(digest));
-	urls[6].headers[4] = wget_str_asprintf("Digest: MD5=%s", digest_str);
+	urls[6].headers[4] = wget_aprintf("Digest: MD5=%s", digest_str);
 
 	wget_test(
 //		WGET_TEST_OPTIONS, "-d --tries=1",
@@ -287,7 +287,7 @@ int main(void)
 	/**** RFC 6249 Metalink/HTTP: Mirrors and Hashes  - without metalink description ****/
 	wget_hash_fast(WGET_DIGTYPE_MD5, urls[10].body, strlen(urls[10].body), digest);
 	digest_str = wget_base64_encode_alloc((const char *)digest, sizeof(digest));
-	urls[9].headers[3] = wget_str_asprintf("Digest: MD5=%s", digest_str);
+	urls[9].headers[3] = wget_aprintf("Digest: MD5=%s", digest_str);
 
 	wget_test(
 		WGET_TEST_OPTIONS, "-d --tries=1",

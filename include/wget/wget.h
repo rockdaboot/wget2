@@ -506,9 +506,9 @@ WGETAPI size_t
 WGETAPI size_t
 	wget_asprintf(char **strp, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
 WGETAPI char *
-	wget_str_vasprintf(const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(1,0);
+	wget_vaprintf(const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(1,0);
 WGETAPI char *
-	wget_str_asprintf(const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(1,2);
+	wget_aprintf(const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(1,2);
 
 /*
  * Logger routines

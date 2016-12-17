@@ -453,9 +453,9 @@ const char *wget_iri_get_connection_part(wget_iri_t *iri)
 	if (iri) {
 		if (!iri->connection_part) {
 			if (iri->port) {
-				iri->connection_part =  wget_str_asprintf("%s://%s:%s", iri->scheme, iri->host, iri->port);
+				iri->connection_part =  wget_aprintf("%s://%s:%s", iri->scheme, iri->host, iri->port);
 			} else {
-				iri->connection_part = wget_str_asprintf("%s://%s", iri->scheme, iri->host);
+				iri->connection_part = wget_aprintf("%s://%s", iri->scheme, iri->host);
 			}
 		}
 

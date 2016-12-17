@@ -202,7 +202,7 @@ int wget_vector_replace_noalloc(wget_vector_t *v, const void *elem, int pos)
 
 int wget_vector_add_vprintf(wget_vector_t *v, const char *fmt, va_list args)
 {
-	return wget_vector_add_noalloc(v, wget_str_vasprintf(fmt, args));
+	return wget_vector_add_noalloc(v, wget_vaprintf(fmt, args));
 }
 
 int wget_vector_add_printf(wget_vector_t *v, const char *fmt, ...)

@@ -1218,7 +1218,7 @@ int init(int argc, const char **argv)
 		wget_vector_add_str(config.config_files, env);
 	else {
 		// we don't want to complain about missing home .wget2rc
-		const char *cfgfile = wget_str_asprintf("%s/.wget2rc", home_dir);
+		const char *cfgfile = wget_aprintf("%s/.wget2rc", home_dir);
 		if (access(cfgfile, R_OK) == 0)
 			wget_vector_add_noalloc(config.config_files, cfgfile);
 		else
@@ -1245,16 +1245,16 @@ int init(int argc, const char **argv)
 	log_init();
 
 	if (!config.hsts_file)
-		config.hsts_file = wget_str_asprintf("%s/.wget-hsts", home_dir);
+		config.hsts_file = wget_aprintf("%s/.wget-hsts", home_dir);
 
 	if (config.tls_resume && !config.tls_session_file)
-		config.tls_session_file = wget_str_asprintf("%s/.wget-session", home_dir);
+		config.tls_session_file = wget_aprintf("%s/.wget-session", home_dir);
 
 	if (!config.ocsp_file)
-		config.ocsp_file = wget_str_asprintf("%s/.wget-ocsp", home_dir);
+		config.ocsp_file = wget_aprintf("%s/.wget-ocsp", home_dir);
 
 	if (config.netrc && !config.netrc_file)
-		config.netrc_file = wget_str_asprintf("%s/.netrc", home_dir);
+		config.netrc_file = wget_aprintf("%s/.netrc", home_dir);
 
 	xfree(home_dir);
 
