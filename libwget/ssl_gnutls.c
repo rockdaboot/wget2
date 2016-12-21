@@ -951,7 +951,7 @@ static void _set_credentials(gnutls_certificate_credentials_t *credentials)
 
 void wget_ssl_init(void)
 {
-	int ncerts = -1;
+	int ncerts = -1, rc;
 
 	wget_thread_mutex_lock(&_mutex);
 
@@ -988,8 +988,6 @@ void wget_ssl_init(void)
 
 							snprintf(fname, sizeof(fname), "%s/%s", _config.ca_directory, dp->d_name);
 							if (stat(fname, &st) == 0 && S_ISREG(st.st_mode)) {
-								int rc;
-
 								debug_printf("GnuTLS loading %s\n", fname);
 								if ((rc = gnutls_certificate_set_x509_trust_file(_credentials, fname, GNUTLS_X509_FMT_PEM)) <= 0)
 									debug_printf("Failed to load cert '%s': (%d)\n", fname, rc);
@@ -1007,8 +1005,6 @@ void wget_ssl_init(void)
 		}
 
 		if (_config.crl_file) {
-			int rc;
-
 			if ((rc = gnutls_certificate_set_x509_crl_file(_credentials, _config.crl_file, GNUTLS_X509_FMT_PEM)) <= 0)
 				error_printf("Failed to load CRL '%s': (%d)\n", _config.crl_file, rc);
 		}
@@ -1019,37 +1015,36 @@ void wget_ssl_init(void)
 
 		if (_config.secure_protocol || _config.direct_options) {
 			const char *priorities = NULL;
-			int ret;
 
 			if (_config.direct_options) {
-				ret = gnutls_priority_init(&_priority_cache, _config.direct_options, NULL);
+				priorities = _config.direct_options;
+				rc = gnutls_priority_init(&_priority_cache, priorities, NULL);
 			} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "PFS")) {
 				priorities = "PFS:-VERS-SSL3.0";
 				// -RSA to force DHE/ECDHE key exchanges to have Perfect Forward Secrecy (PFS))
-				if ((ret = gnutls_priority_init(&_priority_cache, priorities, NULL)) != GNUTLS_E_SUCCESS) {
+				if ((rc = gnutls_priority_init(&_priority_cache, priorities, NULL)) != GNUTLS_E_SUCCESS) {
 					priorities = "NORMAL:-RSA:-VERS-SSL3.0";
-					ret = gnutls_priority_init(&_priority_cache, priorities, NULL);
+					rc = gnutls_priority_init(&_priority_cache, priorities, NULL);
 				}
 			} else {
 				if (!wget_strncasecmp_ascii(_config.secure_protocol, "SSL", 3))
 					priorities = "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0";
 				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1"))
 					priorities = "NORMAL:-VERS-SSL3.0";
-				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "auto"))
-					priorities = "NORMAL:%COMPAT:-VERS-SSL3.0";
-				else if (*_config.secure_protocol)
+				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "auto")) {
+					/* use system default, priorities = NULL */
+				} else if (*_config.secure_protocol)
 					priorities = _config.secure_protocol;
 				
-				if (priorities) {
-					ret = gnutls_priority_init(&_priority_cache, priorities, NULL);
-				} else {
-					// use GnuTLS defaults, which might hold insecure ciphers
-					ret = 0;
-				}
+				rc = gnutls_priority_init(&_priority_cache, priorities, NULL);
 			}
 
-			if (ret < 0)
-				error_printf("GnuTLS: Unsupported priority string '%s': %s\n", priorities, gnutls_strerror(ret));
+			if (rc != GNUTLS_E_SUCCESS)
+				error_printf("GnuTLS: Unsupported priority string '%s': %s\n", priorities ? "(null)" : priorities, gnutls_strerror(rc));
+		} else {
+			// use GnuTLS defaults, which might hold insecure ciphers
+			if ((rc = gnutls_priority_init(&_priority_cache, NULL, NULL)))
+				error_printf("GnuTLS: Unsupported default priority 'NULL': %s\n", gnutls_strerror(rc));
 		}
 
 		_init++;
@@ -1217,7 +1212,12 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	gnutls_init(&session, GNUTLS_CLIENT);
 #endif
 
-	gnutls_priority_set(session, _priority_cache);
+	if ((rc = gnutls_priority_set(session, _priority_cache)) != GNUTLS_E_SUCCESS)
+		error_printf("GnuTLS: Failed to set priorities: %s\n", gnutls_strerror(rc));
+
+	if (!wget_strcasecmp_ascii(_config.secure_protocol, "auto"))
+		gnutls_session_enable_compatibility_mode(session);
+
 	// RFC 6066 SNI Server Name Indication
 	if (hostname)
 		gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
