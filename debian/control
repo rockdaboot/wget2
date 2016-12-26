@@ -1,0 +1,55 @@
+Source: wget2
+Section: web
+Priority: optional
+Maintainer: Tim Rühsen <tim.ruehsen@gmx.de>
+Build-Depends: debhelper (>=10~),autotools-dev
+Build-Depends-Arch:
+ automake,
+ dh-autoreconf,
+ pkg-config,
+ doxygen,
+ libidn2-dev,
+Standards-Version: 3.9.8
+Homepage: https://github.com/rockdaboot/wget2
+Vcs-Git: https://github.com/rockdaboot/wget2
+Vcs-Browser: https://github.com/rockdaboot/wget2
+
+Package: libwget-dev
+Section: libdevel
+Architecture: any
+Depends:
+ libwget (= ${binary:Version}),
+ ${misc:Depends},
+Description: Library for web client development
+ Wget2 is based on libwget2.
+ .
+ This package contains development header files and documentation for
+ developers.
+
+Package: libwget
+Architecture: any
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
+Multi-Arch: same
+Description: Library for web client development (shared libraries)
+ Wget2 is based on libwget2.
+ .
+ This package contains runtime libraries.
+
+Package: wget2
+Section: net
+Architecture: any
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
+Multi-Arch: foreign
+Description: Multi-threaded recursive downloader
+ Wget2 is the official successor of Wget.
+ .
+ It supports new features like HTTP/2, parallel downloads,
+ compression, Metalink, OCSP, HSTS, PSL, TFO, TLS
+ session resumption, TLS False Start.
+ .
+ For recursive downloading, Wget2 scans HTML, CSS, Sitemaps, RSS
+ and Atom feeds.
