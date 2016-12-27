@@ -1045,7 +1045,6 @@ int main(int argc, const char **argv)
 	if (config.hsts && config.hsts_file && hsts_changed)
 		wget_hsts_db_save(config.hsts_db, config.hsts_file);
 
-	/* TODO HPKP: save the HPKP pins to a file here */
 	if (config.hpkp && config.hpkp_file && hpkp_changed)
 		wget_hpkp_db_save(config.hpkp_file, config.hpkp_db);
 

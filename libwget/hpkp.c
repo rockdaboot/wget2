@@ -110,22 +110,10 @@ static void wget_hpkp_free(wget_hpkp_t *hpkp)
  */
 static wget_hpkp_t *__wget_hpkp_new(const char *host, time_t created, time_t max_age, int include_subdomains)
 {
-	return NULL;
-}
+	wget_hpkp_t *hpkp = xcalloc(1, sizeof(wget_hpkp_t));
 
-/*
- * TODO HPKP: wget_hpkp_new() should get an IRI rather than a string, and check by itself
- * whether it is HTTPS, not an IP literal, etc.
- *
- * This is also applicable to HSTS.
- */
-wget_hpkp_t *wget_hpkp_new(const char *host, time_t max_age, int include_subdomains)
-{
-	wget_hpkp_t *hpkp = xmalloc(sizeof(wget_hpkp_t));
-
-	memset(hpkp, 0, sizeof(wget_hpkp_t));
 	hpkp->host = wget_strdup(host);
-	hpkp->created = time(NULL);
+	hpkp->created = created;
 	hpkp->max_age = max_age;
 	hpkp->include_subdomains = include_subdomains;
 
@@ -142,9 +130,27 @@ wget_hpkp_t *wget_hpkp_new(const char *host, time_t max_age, int include_subdoma
 	return hpkp;
 }
 
+/*
+ * TODO HPKP: wget_hpkp_new() should get an IRI rather than a string, and check by itself
+ * whether it is HTTPS, not an IP literal, etc.
+ *
+ * This is also applicable to HSTS.
+ */
+wget_hpkp_t *wget_hpkp_new(const char *host, time_t max_age, int include_subdomains)
+{
+	wget_hpkp_t *hpkp;
+	time_t created = time(NULL);
+
+	if (created == -1)
+		created = 0;
+	hpkp = __wget_hpkp_new(host, created, max_age, include_subdomains);
+
+	return hpkp;
+}
+
 wget_hpkp_db_t *wget_hpkp_db_init()
 {
-	wget_hpkp_db_t *hpkp_db = xmalloc(sizeof(wget_hpkp_db_t));
+	wget_hpkp_db_t *hpkp_db = xcalloc(1, sizeof(wget_hpkp_db_t));
 
 	hpkp_db->entries = wget_hashmap_create(16, -2,
 			(unsigned int (*) (const void *)) _hash_hpkp,
@@ -165,30 +171,38 @@ wget_hpkp_db_t *wget_hpkp_db_init()
 	return hpkp_db;
 }
 
+void wget_hpkp_db_free(wget_hpkp_db_t *hpkp_db)
+{
+	if (hpkp_db) {
+		wget_thread_mutex_lock(&hpkp_db->mutex);
+		wget_hashmap_free(&hpkp_db->entries);
+		wget_thread_mutex_unlock(&hpkp_db->mutex);
+	}
+}
 
 void wget_hpkp_db_deinit(wget_hpkp_db_t **hpkp_db)
 {
 	if (hpkp_db && *hpkp_db) {
-		wget_thread_mutex_lock(&(*hpkp_db)->mutex);
-		wget_hashmap_free(&(*hpkp_db)->entries);
-		wget_thread_mutex_unlock(&(*hpkp_db)->mutex);
-
+		wget_hpkp_db_free(*hpkp_db);
 		xfree(*hpkp_db);
 	}
 }
 
 void wget_hpkp_add_public_key_base64(wget_hpkp_t *hpkp, const char *b64_pubkey)
 {
-	if (!hpkp || !b64_pubkey)
+	if (!hpkp || !hpkp->pins || !b64_pubkey)
 		return;
 
 	//size_t pubkey_len = wget_base64_get_decoded_length(strlen(b64_pubkey));
 	char *pubkey = wget_base64_decode_alloc(b64_pubkey, strlen(b64_pubkey));
 
-	if (!wget_vector_contains(hpkp->pins, pubkey))
+	if (!wget_vector_contains(hpkp->pins, pubkey)) {
 		wget_vector_add_noalloc(hpkp->pins, pubkey);
-	else
+		wget_debug_printf("Added public key pin '%s'\n", b64_pubkey);
+	} else {
 		xfree(pubkey);
+		wget_debug_printf("Public key pin '%s' already in list. Skipping.\n", b64_pubkey);
+	}
 }
 
 /*
@@ -308,7 +322,10 @@ static enum hpkp_parse_state __wget_hpkp_parse_host_line(const char *line, ssize
 	char host[len + 1];
 	enum hpkp_parse_state new_state = ERROR;
 
-	sscanf(line, "%s\t", host);
+	sscanf(line, "%s\t%lu\t%lu\t%u\t%u",
+			host,
+			created, max_age, (unsigned int *) include_subdomains,
+			num_pins);
 	/* We try to parse the host here to verify if it's valid */
 	/* TODO should we store the encoding in the database file as well? */
 	/* TODO maybe we should add a new field 'encoding' to wget_iri_t */
@@ -317,16 +334,21 @@ static enum hpkp_parse_state __wget_hpkp_parse_host_line(const char *line, ssize
 		goto end;
 	if (iri->is_ip_address) {
 		new_state = ERROR_CONTINUE;
+		wget_error_printf("Host '%s' is a literal IP address. Skipping.\n", iri->host);
 		goto end;
 	}
 	*host_out = wget_strdup(host);
 
-	sscanf(line, "%lu\t%lu\t%c\t%du",
-			created, max_age, include_subdomains,
-			num_pins);
+//	sscanf(line, "%lu\t%lu\t%c\t%u",
+//			created, max_age, include_subdomains,
+//			num_pins);
 
-	if (num_pins > 0)
+	if (*num_pins > 0) {
 		new_state = PARSING_PIN;
+		wget_info_printf("Found %u public key pins\n", *num_pins);
+	} else {
+		wget_error_printf("No pins found\n");
+	}
 
 end:
 	if (iri)
@@ -337,17 +359,21 @@ end:
 static enum hpkp_parse_state __wget_hpkp_parse_pin_line(const char *line, ssize_t len, wget_hpkp_t *hpkp, unsigned int *num_pins)
 {
 	enum hpkp_parse_state new_state = ERROR;
+	char sha256_magic[len + 1];
 	/* Same as before. Only SHA-256 is supported for now. */
-	char *b64_pin;
+	char *b64_pin = NULL;
 
-	if (sscanf(line, "sha-256\t") == EOF)
+	if (sscanf(line, "%s\t%ms", sha256_magic, &b64_pin) != 2)
 		goto end;
+	if (wget_strcmp(sha256_magic, "sha-256")) {
+		wget_error_printf("Only 'sha-256' hashes are supported.\n");
+		goto end;
+	}
 //	if (strcmp(hash_alg, "sha-256"))
 //		goto end;
 
-	sscanf(line, "%ms", &b64_pin);
+//	sscanf(line, "%ms", &b64_pin);
 	wget_hpkp_add_public_key_base64(hpkp, b64_pin);
-	xfree(b64_pin);
 
 	if (--*num_pins > 0)
 		new_state = PARSING_PIN;
@@ -355,6 +381,7 @@ static enum hpkp_parse_state __wget_hpkp_parse_pin_line(const char *line, ssize_
 		new_state = PARSING_HOST;
 
 end:
+	xfree(b64_pin);
 	return new_state;
 }
 
@@ -366,7 +393,7 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 	char *buf, should_continue = 1;
 	size_t bufsize = 0;
 	ssize_t buflen;
-	char *host;
+	char *host = NULL;
 	time_t created, max_age;
 	char include_subdomains;
 	unsigned int num_pins = 0;
@@ -381,14 +408,16 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 
 	do {
 		buflen = wget_getline(&buf, &bufsize, fp);
-		if (buflen >= 0) {
+		if (buflen >= 0 && buf[0] != '#') {
 			if (state == PARSING_HOST) {
 				state = __wget_hpkp_parse_host_line(buf, buflen,
 						&host,
 						&created, &max_age, &include_subdomains,
 						&num_pins);
-				if (state == ERROR)
-					goto iteration_end;
+				if (state == ERROR) {
+					wget_error_printf("Error parsing host in line '%s'\n", buf);
+					goto fail;
+				}
 
 				if (state != ERROR_CONTINUE) {
 					hpkp = __wget_hpkp_new(host, created, max_age, include_subdomains);
@@ -398,22 +427,20 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 					wget_thread_mutex_unlock(&hpkp_db->mutex);
 				}
 
-iteration_end:
 				xfree(host);
-				break;
 			} else if (state == PARSING_PIN) {
 				state = __wget_hpkp_parse_pin_line(buf, buflen,
 						hpkp,
 						&num_pins);
-				if (state == ERROR)
-					// TODO error out here
+				if (state == ERROR) {
+					wget_error_printf("Error parsing pin in line '%s'\n", buf);
 					goto fail;
-				break;
+				}
 			}
 
 			if (state == ERROR)
 				should_continue = 0;
-		} else {
+		} else if (buflen < 0) {
 			if (state == PARSING_HOST)
 				wget_hpkp_free(hpkp);
 			should_continue = 0;
@@ -423,8 +450,10 @@ iteration_end:
 	goto end;
 
 fail:
-	// TODO this is an error condition.
-	// Should free 'hpkp' here, if allocated.
+	if (hpkp)
+		wget_hpkp_free(hpkp);
+	wget_hpkp_db_free(hpkp_db);
+	xfree(host);
 	retval = -1;
 end:
 	fclose(fp);

@@ -1434,7 +1434,7 @@ int init(int argc, const char **argv)
 
 	if (config.hpkp) {
 		config.hpkp_db = wget_hpkp_db_init();
-		// TODO HPKP: wget_hpkp_db_load()
+		wget_hpkp_db_load(config.hpkp_file, config.hpkp_db);
 	}
 
 	if (config.tls_resume) {
