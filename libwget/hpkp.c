@@ -198,7 +198,7 @@ void wget_hpkp_add_public_key_base64(wget_hpkp_t *hpkp, const char *b64_pubkey)
 
 	if (!wget_vector_contains(hpkp->pins, pubkey)) {
 		wget_vector_add_noalloc(hpkp->pins, pubkey);
-		wget_debug_printf("Added public key pin '%s'\n", b64_pubkey);
+		wget_debug_printf("Added public key pin '%s' for host '%s'\n", b64_pubkey, hpkp->host);
 	} else {
 		xfree(pubkey);
 		wget_debug_printf("Public key pin '%s' already in list. Skipping.\n", b64_pubkey);
@@ -322,10 +322,11 @@ static enum hpkp_parse_state __wget_hpkp_parse_host_line(const char *line, ssize
 	char host[len + 1];
 	enum hpkp_parse_state new_state = ERROR;
 
-	sscanf(line, "%s\t%lu\t%lu\t%u\t%u",
+	if (sscanf(line, "%s\t%lu\t%lu\t%u\t%u",
 			host,
 			created, max_age, (unsigned int *) include_subdomains,
-			num_pins);
+			num_pins) != 5)
+		goto end;
 	/* We try to parse the host here to verify if it's valid */
 	/* TODO should we store the encoding in the database file as well? */
 	/* TODO maybe we should add a new field 'encoding' to wget_iri_t */
@@ -345,7 +346,7 @@ static enum hpkp_parse_state __wget_hpkp_parse_host_line(const char *line, ssize
 
 	if (*num_pins > 0) {
 		new_state = PARSING_PIN;
-		wget_info_printf("Found %u public key pins\n", *num_pins);
+		wget_info_printf("Processing %u public key pins for host '%s'\n", *num_pins, host);
 	} else {
 		wget_error_printf("No pins found\n");
 	}
@@ -423,7 +424,7 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 					hpkp = __wget_hpkp_new(host, created, max_age, include_subdomains);
 
 					wget_thread_mutex_lock(&hpkp_db->mutex);
-					wget_hashmap_put_noalloc(hpkp_db->entries, host, hpkp);
+					wget_hashmap_put_noalloc(hpkp_db->entries, hpkp->host, hpkp);
 					wget_thread_mutex_unlock(&hpkp_db->mutex);
 				}
 
@@ -441,8 +442,8 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 			if (state == ERROR)
 				should_continue = 0;
 		} else if (buflen < 0) {
-			if (state == PARSING_HOST)
-				wget_hpkp_free(hpkp);
+			if (state != PARSING_HOST)
+				goto fail;
 			should_continue = 0;
 		}
 	} while (should_continue);
@@ -453,7 +454,7 @@ fail:
 	if (hpkp)
 		wget_hpkp_free(hpkp);
 	wget_hpkp_db_free(hpkp_db);
-	xfree(host);
+	xfree(buf);
 	retval = -1;
 end:
 	fclose(fp);
