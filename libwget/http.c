@@ -595,7 +595,7 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 // We should use a macro like SET_OUT(), above, to make the parameters optional. If the caller
 // is not interested in some output argument, he just passes NULL.
 // TODO Use coccinelle for instance, to catch out all these cases.
-int wget_http_parse_public_key_pins(const char *s, time_t *ma, char *is, wget_list_t **pin_list)
+int wget_http_parse_public_key_pins(const char *s, time_t *ma, char *is, wget_vector_t *pin_list)
 {
 	int retval = 1;
 	wget_http_header_param_t param;
@@ -613,8 +613,9 @@ int wget_http_parse_public_key_pins(const char *s, time_t *ma, char *is, wget_li
 				if (max_age == 0 && errno == EINVAL)
 					goto fail;
 			} else if (!wget_strcasecmp(param.name, "pin-sha256") && pin_list) {
+				wget_vector_add_str(pin_list, param.value);
 				/* +1 for the NULL-terminator */
-				wget_list_append(pin_list, param.value, strlen(param.value) + 1);
+//				wget_list_append(pin_list, param.value, strlen(param.value) + 1);
 			}
 		}
 	}
@@ -1245,14 +1246,17 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 			break;
 		case 'p':
 			if (!wget_strncasecmp_ascii(name, "Public-Key-Pins", namelen)) {
-				if (!resp->hpkp &&
-					wget_http_parse_public_key_pins(s,
+				if (!resp->hpkp) {
+					if (resp->hpkp_pins == NULL)
+						resp->hpkp_pins = wget_vector_create(5, -2, (int (*) (const void *, const void *)) strcmp);
+					if (wget_http_parse_public_key_pins(s,
 						&resp->hpkp_maxage,
 						&resp->hpkp_include_subdomains,
-						&resp->hpkp_pins))
-					resp->hpkp = 1;
-				else
+						resp->hpkp_pins))
+						resp->hpkp = 1;
+				} else {
 					wget_error_printf("Invalid 'Public-Key-Pins' header\n");
+				}
 			}
 			break;
 		case 't':
@@ -1384,9 +1388,9 @@ void wget_http_free_cookies(wget_vector_t **cookies)
 	wget_vector_free(cookies);
 }
 
-void wget_http_free_hpkp_entries(wget_list_t **hpkp_pins)
+void wget_http_free_hpkp_entries(wget_vector_t **hpkp_pins)
 {
-	wget_list_free(hpkp_pins);
+	wget_vector_free(hpkp_pins);
 }
 
 void wget_http_free_response(wget_http_response_t **resp)

@@ -1045,8 +1045,10 @@ int main(int argc, const char **argv)
 	if (config.hsts && config.hsts_file && hsts_changed)
 		wget_hsts_db_save(config.hsts_db, config.hsts_file);
 
-	if (config.hpkp && config.hpkp_file && hpkp_changed)
-		wget_hpkp_db_save(config.hpkp_file, config.hpkp_db);
+	if (config.hpkp && config.hpkp_file && hpkp_changed) {
+		int written_pins = wget_hpkp_db_save(config.hpkp_file, config.hpkp_db);
+		wget_info_printf("HPKP: %d public key pins written\n", written_pins);
+	}
 
 	if (config.tls_resume && config.tls_session_file && wget_tls_session_db_changed(config.tls_session_db))
 		wget_tls_session_db_save(config.tls_session_db, config.tls_session_file);
@@ -1254,21 +1256,30 @@ static int process_response_header(wget_http_response_t *resp)
 	if (config.hpkp &&
 			iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address &&
 			resp->hpkp) {
-		wget_hpkp_t *hpkp = wget_hpkp_new(iri->host, resp->hpkp_maxage, resp->hpkp_include_subdomains);
-
-		/* Iterate the pin list and add them one-by-one */
-		char *pin = wget_list_getfirst(resp->hpkp_pins);
-		while (pin) {
-			wget_hpkp_add_public_key_base64(hpkp, pin);
-			wget_list_remove(&resp->hpkp_pins, pin);
-
-			pin = wget_list_getfirst(resp->hpkp_pins);
+		switch (wget_hpkp_db_add(config.hpkp_db, iri->host, resp->hpkp_maxage, resp->hpkp_include_subdomains, resp->hpkp_pins)) {
+		case 0:
+			wget_info_printf("HPKP: Host '%s' added to known pinned hosts list\n", iri->host);
+			hpkp_changed = 1;
+			break;
+		case -1:
+			wget_info_printf("HPKP: Host '%s' already a known pinned host\n", iri->host);
+			break;
+		case -2:
+			wget_info_printf("HPKP: Host '%s' expired. Ignoring.\n", iri->host);
+			break;
+		case -3:
+			wget_info_printf("HPKP: Host '%s' removed from known pinned host list\n", iri->host);
+			hpkp_changed = 1;
+			break;
+		case -4:
+			wget_info_printf("HPKP: Not enough pins for host '%s'. Ignoring.\n", iri->host);
+			break;
+		default:
+			wget_info_printf("HPKP: unknown error. Host '%s' could not be added.\n", iri->host);
+			break;
 		}
 
-		wget_hpkp_db_add(config.hpkp_db, hpkp);
-
-		wget_list_free(&resp->hpkp_pins);
-		hpkp_changed = 1;
+		wget_vector_clear(resp->hpkp_pins);
 	}
 
 	if (resp->code == 302 && resp->links && resp->digests)
