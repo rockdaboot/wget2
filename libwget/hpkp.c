@@ -32,14 +32,14 @@
 #include <sys/stat.h>
 #include "private.h"
 
-struct _wget_hpkp_db_st {
+struct __wget_hpkp_db_st {
 	wget_hashmap_t *
 		entries;
 	wget_thread_mutex_t
 		mutex;
 };
 
-struct _wget_hpkp_st {
+struct __wget_hpkp_st {
 	const char *
 		host;
 	time_t
@@ -55,7 +55,7 @@ struct _wget_hpkp_st {
 /*
  * TODO HPKP: include target port as well.
  */
-static unsigned int G_GNUC_WGET_PURE _hash_hpkp(const void *data)
+static unsigned int G_GNUC_WGET_PURE __hash_hpkp_cb(const void *data)
 {
 	unsigned int hash = 1;
 	const unsigned char *p;
@@ -69,7 +69,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_hpkp(const void *data)
 /*
  * TODO HPKP: include target port as well.
  */
-static int _cmp_hpkp(const void *h1, const void *h2)
+static int __cmp_hpkp_cb(const void *h1, const void *h2)
 {
 	const char *H1 = h1, *H2 = h2;
 	return strcmp(H1, H2);
@@ -81,7 +81,7 @@ static int _cmp_hpkp(const void *h1, const void *h2)
  * This gives us 256 bits == 32 bytes output.
  * So we test byte-for-byte 32 times.
  */
-static int _cmp_pins(const void *P1, const void *P2)
+static int __cmp_pins_cb(const void *P1, const void *P2)
 {
 	const uint8_t *p1 = P1, *p2 = P2;
 	uint8_t all_equal = 1;
@@ -138,7 +138,7 @@ static wget_hpkp_t *wget_hpkp_new(const char *host, time_t created, time_t max_a
 	 * Also, we don't need a destructor. Default behavior is to xfree() the values,
 	 * which is OK, since wget_hpkp_add_public_key_base64() allocates new copies.
 	 */
-	hpkp->pins = wget_vector_create(5, -2, _cmp_pins);
+	hpkp->pins = wget_vector_create(5, -2, __cmp_pins_cb);
 
 	return hpkp;
 }
@@ -148,8 +148,8 @@ wget_hpkp_db_t *wget_hpkp_db_init()
 	wget_hpkp_db_t *hpkp_db = xcalloc(1, sizeof(wget_hpkp_db_t));
 
 	hpkp_db->entries = wget_hashmap_create(16, -2,
-			(unsigned int (*) (const void *)) _hash_hpkp,
-			_cmp_hpkp);
+			(unsigned int (*) (const void *)) __hash_hpkp_cb,
+			__cmp_hpkp_cb);
 	/*
 	 * Keys are hosts: the hpkp->host field, which is strdup-ed in wget_hpkp_new(),
 	 * so we have to free it. But the default key destructor is free(),
@@ -214,36 +214,43 @@ static int __wget_hpkp_db_put_base64_spki(wget_hpkp_t *hpkp, const char *b64_pub
 
 /*
  * Return values:
- * 	 0 : new entry was created and added, or an existing entry was updated
- * 	-2 : entry is expired (created + max_age < cur_time)
- * 	-3 : entry was deleted (max_age == 0 || num_pins == 0)
- * 	-4 : not enough pins were in the list (there must be at least 2)
- * 	-5 : excl was == 1 and an entry already existed for hpkp->host
+ * 	WGET_HPKP_OK : new entry was created and added, or an existing entry was updated
+ * 	WGET_HPKP_WAS_DELETED : entry was deleted (max_age == 0 || num_pins == 0)
+ * 	WGET_HPKP_ENTRY_EXPIRED : entry is expired (created + max_age < cur_time)
+ * 	WGET_HPKP_NOT_ENOUGH_PINS : not enough pins were in the list (there must be at least 2)
+ * 	WGET_HPKP_ENTRY_EXISTS : excl was == 1 and an entry already existed for hpkp->host
+ *
+ * This function should be guaranteed to create a new entry if it does not exist, is not expired
+ * and has more than two public key pinnings, or do nothing and return WGET_HPKP_ENTRY_EXISTS
+ * if any of the conditions is not met.
+ *
+ * A negative value means the caller should free 'hpkp_new', it does not necessarily signal
+ * an error condition. All the return values except WGET_HPKP_OK are negative.
  */
 static int __wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t *hpkp_new, char excl)
 {
 	wget_hpkp_t *hpkp = NULL;
 	time_t curtime = time(NULL);
-	int num_pins = 0, retval = -1;
+	int num_pins = 0, retval = WGET_HPKP_ERROR;
 
 	if (curtime == -1)
 		curtime = 0;
 
 	/* Check whether entry is expired already */
 	if ((hpkp_new->created + hpkp_new->max_age) < curtime)
-		return -2;
+		return WGET_HPKP_ENTRY_EXPIRED;
 
 	num_pins = wget_vector_size(hpkp_new->pins);
 	hpkp = wget_hashmap_get(hpkp_db->entries, hpkp_new->host);
 	if (hpkp && excl)
-		return -5;
+		return WGET_HPKP_ENTRY_EXISTS;
 
 	if (hpkp == NULL && hpkp_new->max_age != 0 && num_pins >= 2) {
 		/* This entry is not a known pinned host, so we add it */
 		wget_thread_mutex_lock(&hpkp_db->mutex);
 		wget_hashmap_put_noalloc(hpkp_db->entries, hpkp_new->host, hpkp_new);
 		wget_thread_mutex_unlock(&hpkp_db->mutex);
-		retval = 0;
+		retval = WGET_HPKP_OK;
 	} else if (hpkp && hpkp_new->max_age != 0 && num_pins >= 2 &&
 			hpkp->created < hpkp_new->created &&
 			(hpkp->include_subdomains != hpkp_new->include_subdomains ||
@@ -253,17 +260,17 @@ static int __wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t *hpkp_new, ch
 		wget_hashmap_put_noalloc(hpkp_db->entries, hpkp_new->host, hpkp_new);
 		wget_thread_mutex_unlock(&hpkp_db->mutex);
 //		__wget_hpkp_free(hpkp, 0);
-		retval = 0;
+		retval = WGET_HPKP_OK;
 	} else if (hpkp && (hpkp_new->max_age == 0 || num_pins == 0)) {
 		/* A value of max-age == 0 or no SPKIs means delete the entry */
 		wget_thread_mutex_lock(&hpkp_db->mutex);
 		wget_hashmap_remove(hpkp_db->entries, hpkp->host);
 		wget_thread_mutex_unlock(&hpkp_db->mutex);
 //		__wget_hpkp_free(hpkp, 1);
-		retval = -3;
+		retval = WGET_HPKP_WAS_DELETED;
 	} else if (num_pins < 2) {
 		/* There must be at least two SPKIs (one active and one backup) */
-		retval = -4;
+		retval = WGET_HPKP_NOT_ENOUGH_PINS;
 	}
 
 	return retval;
@@ -276,7 +283,7 @@ int wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, const char *host, time_t max_age, 
 	wget_hpkp_t *hpkp;
 
 	if (!hpkp_db || !hpkp_db->entries || !host || !b64_pins)
-		return -1;
+		return WGET_HPKP_ERROR;
 
 	if (cur_time == -1)
 		cur_time = 0;
@@ -348,7 +355,7 @@ int wget_hpkp_db_save(const char *filename, wget_hpkp_db_t *hpkp_db)
 	struct browser_ctx bctx;
 
 	if (!filename || !*filename || !hpkp_db || !hpkp_db->entries)
-		return -1;
+		return WGET_HPKP_ERROR;
 
 	bctx.fp = NULL;
 	bctx.written_pins = 0;
@@ -362,7 +369,7 @@ int wget_hpkp_db_save(const char *filename, wget_hpkp_db_t *hpkp_db)
 
 	bctx.fp = fopen(filename, "w");
 	if (!bctx.fp)
-		return -1;
+		return WGET_HPKP_ERROR_FILE_OPEN;
 
 	fprintf(bctx.fp, "# HTTP Public Key Pinning database (RFC 7469)\n");
 	fprintf(bctx.fp, "# Generated by wget2\n");
@@ -555,11 +562,11 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 	wget_hpkp_t *hpkp = NULL;
 
 	if (!filename || !*filename || !hpkp_db)
-		return -1;
+		return WGET_HPKP_ERROR;
 
 	fp = fopen(filename, "r");
 	if (!fp)
-		return -1;
+		return WGET_HPKP_ERROR_FILE_OPEN;
 
 	do {
 		buflen = wget_getline(&buf, &bufsize, fp);
@@ -570,6 +577,7 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 					&num_pins);
 			if (retval == -1) {
 				wget_error_printf("HPKP: could not parse host line '%s'\n", buf);
+				retval = WGET_HPKP_ERROR;
 				should_continue = 0;
 				goto end;
 			}
@@ -580,7 +588,7 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 				buflen = wget_getline(&buf, &bufsize, fp);
 				if (buflen < 0) {
 					wget_error_printf("HPKP: %d SPKIs were specified but only %d were found\n", num_pins, pin + 1);
-					retval = -1;
+					retval = WGET_HPKP_ERROR;
 					should_continue = 0;
 					goto end;
 				}
@@ -589,6 +597,7 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 				retval = __wget_hpkp_parse_pin_line(buf, buflen, &b64_pin);
 				if (retval == -1) {
 					wget_error_printf("HPKP: could not parse pin line '%s'\n", buf);
+					retval = WGET_HPKP_ERROR;
 					should_continue = 0;
 					goto end;
 				}
@@ -596,18 +605,18 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 			}
 
 			switch (__wget_hpkp_db_add(hpkp_db, hpkp, 1)) {
-			case 0:
+			case WGET_HPKP_OK:
 				wget_info_printf("HPKP: Added pinned SPKIs for host '%s'.\n", host);
 				break;
-			case -2:
+			case WGET_HPKP_ENTRY_EXPIRED:
 				wget_info_printf("HPKP: Pinned SPKIs for host '%s' have expired. Ignored.\n", host);
 				__wget_hpkp_free(hpkp, 1);
 				break;
-			case -4:
+			case WGET_HPKP_NOT_ENOUGH_PINS:
 				wget_error_printf("HPKP: Host '%s' must have at least 2 pinned SPKIs. Ignored.\n", host);
 				__wget_hpkp_free(hpkp, 1);
 				break;
-			case -5:
+			case WGET_HPKP_ENTRY_EXISTS:
 				wget_error_printf("HPKP: Host '%s' is repeated. Ignored.\n", host);
 				__wget_hpkp_free(hpkp, 1);
 				break;

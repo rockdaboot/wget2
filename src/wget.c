@@ -1257,21 +1257,21 @@ static int process_response_header(wget_http_response_t *resp)
 			iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address &&
 			resp->hpkp) {
 		switch (wget_hpkp_db_add(config.hpkp_db, iri->host, resp->hpkp_maxage, resp->hpkp_include_subdomains, resp->hpkp_pins)) {
-		case 0:
+		case WGET_HPKP_OK:
 			wget_info_printf("HPKP: Host '%s' added to known pinned hosts list\n", iri->host);
 			hpkp_changed = 1;
 			break;
-		case -1:
+		case WGET_HPKP_ENTRY_EXISTS:
 			wget_info_printf("HPKP: Host '%s' already a known pinned host\n", iri->host);
 			break;
-		case -2:
+		case WGET_HPKP_ENTRY_EXPIRED:
 			wget_info_printf("HPKP: Host '%s' expired. Ignoring.\n", iri->host);
 			break;
-		case -3:
+		case WGET_HPKP_WAS_DELETED:
 			wget_info_printf("HPKP: Host '%s' removed from known pinned host list\n", iri->host);
 			hpkp_changed = 1;
 			break;
-		case -4:
+		case WGET_HPKP_NOT_ENOUGH_PINS:
 			wget_info_printf("HPKP: Not enough pins for host '%s'. Ignoring.\n", iri->host);
 			break;
 		default:

@@ -1015,13 +1015,22 @@ WGETAPI int
 /*
  * HTTP Public Key Pinning (HPKP)
  */
-typedef struct _wget_hpkp_st wget_hpkp_t;
-typedef struct _wget_hpkp_db_st wget_hpkp_db_t;
+typedef struct __wget_hpkp_st wget_hpkp_t;
+typedef struct __wget_hpkp_db_st wget_hpkp_db_t;
+
+/* Return values */
+#define WGET_HPKP_OK			 0
+#define WGET_HPKP_ERROR			-1
+#define WGET_HPKP_ENTRY_EXPIRED		-2
+#define WGET_HPKP_WAS_DELETED		-3
+#define WGET_HPKP_NOT_ENOUGH_PINS	-4
+#define WGET_HPKP_ENTRY_EXISTS		-5
+#define WGET_HPKP_ERROR_FILE_OPEN	-6
 
 wget_hpkp_db_t *
 	wget_hpkp_db_init(void) LIBWGET_EXPORT;
 void
-	wget_hpkp_db_deinit(wget_hpkp_db_t **) LIBWGET_EXPORT;
+	wget_hpkp_db_deinit(wget_hpkp_db_t **hpkp_db) LIBWGET_EXPORT;
 int
 	wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, const char *host, time_t max_age, char include_subdomains, wget_vector_t *b64_pins) LIBWGET_EXPORT;
 int
