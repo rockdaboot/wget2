@@ -1181,7 +1181,7 @@ static char *get_home_dir(void)
 
 int init(int argc, const char **argv)
 {
-	int n;
+	int n, rc;
 
 	// set libwget out-of-memory function
 	wget_set_oomfunc(_no_memory);
@@ -1445,6 +1445,9 @@ int init(int argc, const char **argv)
 
 	if (config.mirror)
 		config.metalink = 0;
+
+	if ((rc = wget_net_init()))
+		wget_error_printf_exit(_("Failed to init networking (%d)"), rc);
 
 	// set module specific options
 	wget_tcp_set_timeout(NULL, config.read_timeout);
