@@ -52,7 +52,7 @@ static wget_thread_mutex_t _mutex = WGET_THREAD_MUTEX_INITIALIZER;
 void wget_global_init(int first_key, ...)
 {
 	va_list args;
-	int key;
+	int key, rc;
 	const char *psl_file = NULL;
 
 	wget_thread_mutex_lock(&_mutex);
@@ -138,11 +138,18 @@ void wget_global_init(int first_key, ...)
 		wget_cookie_db_load_psl(_config.cookie_db, psl_file);
 	}
 
+	rc = wget_net_init();
+
 	wget_thread_mutex_unlock(&_mutex);
+
+	if (rc)
+		wget_error_printf_exit(_("%s: Failed to init networking (%d)"), __func__, rc);
 }
 
 void wget_global_deinit(void)
 {
+	int rc = 0;
+
 	wget_thread_mutex_lock(&_mutex);
 
 	if (_init == 1) {
@@ -155,11 +162,16 @@ void wget_global_deinit(void)
 		wget_tcp_set_bind_address(NULL, NULL);
 		wget_tcp_set_dns_caching(NULL, 0);
 		wget_dns_cache_free();
+
+		rc = wget_net_deinit();
 	}
 
 	if (_init > 0) _init--;
 
 	wget_thread_mutex_unlock(&_mutex);
+
+	if (rc)
+		wget_error_printf(_("%s: Failed to deinit networking (%d)"), __func__, rc);
 }
 
 int wget_global_get_int(int key)

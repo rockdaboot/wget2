@@ -1239,6 +1239,10 @@ WGETAPI void
 
 typedef struct wget_tcp_st wget_tcp_t;
 
+WGETAPI int
+	wget_net_init(void);
+WGETAPI int
+	wget_net_deinit(void);
 WGETAPI wget_tcp_t *
 	wget_tcp_init(void);
 WGETAPI void

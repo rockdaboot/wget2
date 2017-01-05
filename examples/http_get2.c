@@ -65,6 +65,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 	// From here on, we can call wget_info_printf, etc.
 	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), stdout);
 
+	wget_net_init(); // needed for Windows Sockets
 
 	// 1. parse the URL into a URI
 	//    if you want use a non-ascii (international) domain, the second
@@ -166,6 +167,8 @@ out:
 	wget_http_close(&conn);
 	wget_http_free_request(&req);
 	wget_iri_free(&uri);
+
+	wget_net_deinit(); // needed for Windows Sockets
 
 	return 0;
 }

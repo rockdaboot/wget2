@@ -893,3 +893,15 @@ void wget_tcp_close(wget_tcp_t *tcp)
 		tcp->addrinfo = NULL;
 	}
 }
+
+// for Windows compatibility
+#include "sockets.h"
+int wget_net_init(void)
+{
+	return gl_sockets_startup(SOCKETS_2_2);
+}
+
+int wget_net_deinit(void)
+{
+	return gl_sockets_cleanup();
+}
