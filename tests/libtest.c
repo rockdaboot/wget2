@@ -98,7 +98,7 @@ static void *_http_server_thread(void *ctx)
 	int byterange, authorized;
 	time_t modified;
 
-#if defined(_WIN32) || defined(_WIN64)
+#ifdef _WIN32
 	signal(SIGTERM, sigterm_handler);
 #else
 	sigaction(SIGTERM, &(struct sigaction) { .sa_handler = sigterm_handler }, NULL);

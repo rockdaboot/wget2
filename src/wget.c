@@ -857,7 +857,7 @@ int main(int argc, const char **argv)
 	textdomain("wget");
 #endif
 
-#if defined(_WIN32) || defined(_WIN64)
+#ifdef _WIN32
 	// not sure if this is needed for Windows
 	// signal(SIGPIPE, SIG_IGN);
 	signal(SIGTERM, nop);
