@@ -236,8 +236,8 @@ static int __wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t *hpkp_new, ch
 	if (curtime == -1)
 		curtime = 0;
 
-	/* Check whether entry is expired already */
-	if ((hpkp_new->created + hpkp_new->max_age) < curtime)
+	/* Check whether entry is expired */
+	if (hpkp_new->max_age > 0 && (hpkp_new->created + hpkp_new->max_age) < curtime)
 		return WGET_HPKP_ENTRY_EXPIRED;
 
 	num_pins = wget_vector_size(hpkp_new->pins);
@@ -251,16 +251,19 @@ static int __wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t *hpkp_new, ch
 		wget_hashmap_put_noalloc(hpkp_db->entries, hpkp_new->host, hpkp_new);
 		wget_thread_mutex_unlock(&hpkp_db->mutex);
 		retval = WGET_HPKP_OK;
-	} else if (hpkp && hpkp_new->max_age != 0 && num_pins >= 2 &&
-			hpkp->created < hpkp_new->created &&
+	} else if (hpkp && hpkp_new->max_age != 0 && num_pins >= 2) {
+		retval = WGET_HPKP_ENTRY_EXISTS;
+
+		if (hpkp->created < hpkp_new->created &&
 			(hpkp->include_subdomains != hpkp_new->include_subdomains ||
-			hpkp->max_age != hpkp_new->max_age ||
-			__wget_hpkp_compare_spkis(hpkp, hpkp_new))) {
-		wget_thread_mutex_lock(&hpkp_db->mutex);
-		wget_hashmap_put_noalloc(hpkp_db->entries, hpkp_new->host, hpkp_new);
-		wget_thread_mutex_unlock(&hpkp_db->mutex);
-//		__wget_hpkp_free(hpkp, 0);
-		retval = WGET_HPKP_OK;
+				hpkp->max_age != hpkp_new->max_age ||
+				__wget_hpkp_compare_spkis(hpkp, hpkp_new))) {
+			wget_thread_mutex_lock(&hpkp_db->mutex);
+			wget_hashmap_put_noalloc(hpkp_db->entries, hpkp_new->host, hpkp_new);
+			wget_thread_mutex_unlock(&hpkp_db->mutex);
+	//		__wget_hpkp_free(hpkp, 0);
+			retval = WGET_HPKP_OK;
+		}
 	} else if (hpkp && (hpkp_new->max_age == 0 || num_pins == 0)) {
 		/* A value of max-age == 0 or no SPKIs means delete the entry */
 		wget_thread_mutex_lock(&hpkp_db->mutex);
