@@ -519,13 +519,12 @@ typedef void (*wget_logger_func_t)(const char *buf , size_t len) G_GNUC_WGET_NON
 
 WGETAPI void
 	wget_logger_set_func(wget_logger_t *logger, wget_logger_func_t);
-//	wget_logger_set_func(wget_logger_t *logger, void (*func)(const char *buf G_GNUC_WGET_NONNULL, size_t len));
 WGETAPI void
 	wget_logger_set_stream(wget_logger_t *logger, FILE *fp);
 WGETAPI void
 	wget_logger_set_file(wget_logger_t *logger, const char *fname);
-WGETAPI void
-	(*wget_logger_get_func(wget_logger_t *logger))(const char *, size_t) G_GNUC_WGET_PURE;
+WGETAPI wget_logger_func_t
+	wget_logger_get_func(wget_logger_t *logger) G_GNUC_WGET_PURE;
 WGETAPI FILE *
 	wget_logger_get_stream(wget_logger_t *logger) G_GNUC_WGET_PURE;
 WGETAPI const char *

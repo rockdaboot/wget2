@@ -103,7 +103,7 @@ static void _logger_write_fname(const wget_logger_t *logger, const char *buf, si
 	}
 }
 
-void wget_logger_set_func(wget_logger_t *logger, void (*func)(const char *buf, size_t len))
+void wget_logger_set_func(wget_logger_t *logger, wget_logger_func_t func)
 {
 	if (logger) {
 		logger->func = func;
@@ -112,7 +112,8 @@ void wget_logger_set_func(wget_logger_t *logger, void (*func)(const char *buf, s
 	}
 }
 
-void (*wget_logger_get_func(wget_logger_t *logger))(const char *, size_t)
+wget_logger_func_t wget_logger_get_func(wget_logger_t *logger)
+//void (*wget_logger_get_func(wget_logger_t *logger))(const char *, size_t)
 {
 	return logger ? logger->func : NULL;
 }

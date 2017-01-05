@@ -54,6 +54,7 @@ void wget_global_init(int first_key, ...)
 	va_list args;
 	int key, rc;
 	const char *psl_file = NULL;
+	wget_logger_func_t func; // intermediate var to satisfy MSVC
 
 	wget_thread_mutex_lock(&_mutex);
 
@@ -69,7 +70,8 @@ void wget_global_init(int first_key, ...)
 			wget_logger_set_stream(wget_get_logger(WGET_LOGGER_DEBUG), va_arg(args, FILE *));
 			break;
 		case WGET_DEBUG_FUNC:
-			wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), va_arg(args, void (*)(const char *, size_t)));
+			func = va_arg(args, wget_logger_func_t);
+			wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), func);
 			break;
 		case WGET_DEBUG_FILE:
 			wget_logger_set_file(wget_get_logger(WGET_LOGGER_DEBUG), va_arg(args, const char *));
@@ -78,7 +80,8 @@ void wget_global_init(int first_key, ...)
 			wget_logger_set_stream(wget_get_logger(WGET_LOGGER_ERROR), va_arg(args, FILE *));
 			break;
 		case WGET_ERROR_FUNC:
-			wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), va_arg(args, void (*)(const char *, size_t)));
+			func = va_arg(args, wget_logger_func_t);
+			wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), func);
 			break;
 		case WGET_ERROR_FILE:
 			wget_logger_set_file(wget_get_logger(WGET_LOGGER_ERROR), va_arg(args, const char *));
@@ -87,7 +90,8 @@ void wget_global_init(int first_key, ...)
 			wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), va_arg(args, FILE *));
 			break;
 		case WGET_INFO_FUNC:
-			wget_logger_set_func(wget_get_logger(WGET_LOGGER_INFO), va_arg(args, void (*)(const char *, size_t)));
+			func = va_arg(args, wget_logger_func_t);
+			wget_logger_set_func(wget_get_logger(WGET_LOGGER_INFO), func);
 			break;
 		case WGET_INFO_FILE:
 			wget_logger_set_file(wget_get_logger(WGET_LOGGER_INFO), va_arg(args, const char *));
