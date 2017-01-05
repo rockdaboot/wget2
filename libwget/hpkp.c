@@ -52,6 +52,15 @@ struct __wget_hpkp_st {
 		pins;
 };
 
+/**
+ * \file
+ * \brief HTTP Public Key Pinning (RFC 7469) routines
+ * \defgroup libwget-hpkp HTTP Public Key Pinning (RFC 7469) routines
+ * @{
+ *
+ * This is an implementation of RFC 7469.
+ */
+
 /*
  * TODO HPKP: include target port as well.
  */
@@ -143,6 +152,11 @@ static wget_hpkp_t *wget_hpkp_new(const char *host, time_t created, time_t max_a
 	return hpkp;
 }
 
+/**
+ * \return Handle (pointer) to an HPKP database
+ *
+ * Initializes a new HPKP database.
+ */
 wget_hpkp_db_t *wget_hpkp_db_init()
 {
 	wget_hpkp_db_t *hpkp_db = xcalloc(1, sizeof(wget_hpkp_db_t));
@@ -166,7 +180,7 @@ wget_hpkp_db_t *wget_hpkp_db_init()
 	return hpkp_db;
 }
 
-void wget_hpkp_db_free(wget_hpkp_db_t *hpkp_db)
+static void wget_hpkp_db_free(wget_hpkp_db_t *hpkp_db)
 {
 	if (hpkp_db) {
 		wget_thread_mutex_lock(&hpkp_db->mutex);
@@ -175,6 +189,12 @@ void wget_hpkp_db_free(wget_hpkp_db_t *hpkp_db)
 	}
 }
 
+/**
+ * \param[in] hpkp_db Pointer to the pointer of an HPKP database, provided by wget_hpkp_db_init()
+ *
+ * Closes and frees the HPKP database. A double pointer is required because this function will
+ * set the handle (pointer) to the HPKP database to NULL to prevent potential use-after-free conditions.
+ */
 void wget_hpkp_db_deinit(wget_hpkp_db_t **hpkp_db)
 {
 	if (hpkp_db && *hpkp_db) {
@@ -218,7 +238,9 @@ static int __wget_hpkp_db_put_base64_spki(wget_hpkp_t *hpkp, const char *b64_pub
  * 	WGET_HPKP_WAS_DELETED : entry was deleted (max_age == 0 || num_pins == 0)
  * 	WGET_HPKP_ENTRY_EXPIRED : entry is expired (created + max_age < cur_time)
  * 	WGET_HPKP_NOT_ENOUGH_PINS : not enough pins were in the list (there must be at least 2)
- * 	WGET_HPKP_ENTRY_EXISTS : excl was == 1 and an entry already existed for hpkp->host
+ * 	WGET_HPKP_ENTRY_EXISTS : excl was == 1 and an entry already existed for hpkp->host, or
+ * 	an entry exists, but the information conveyed by the server is equal to that we already stored,
+ * 	so there's no need to update.
  *
  * This function should be guaranteed to create a new entry if it does not exist, is not expired
  * and has more than two public key pinnings, or do nothing and return WGET_HPKP_ENTRY_EXISTS
@@ -279,6 +301,37 @@ static int __wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t *hpkp_new, ch
 	return retval;
 }
 
+/**
+ * \param[in] hpkp_db Handle to an HPKP database, obtained with wget_hpkp_db_init()
+ * \param[in] host Host name the following information refers to
+ * \param[in] max_age Value of the `max-age` field
+ * \param[in] include_subdomains Value of the `includeSubDomains` field
+ * \param[in] b64_pins Values of all the `pin-sha256` fields
+ * \return either `WGET_HPKP_OK`, `WGET_HPKP_ENTRY_EXISTS`, `WGET_HPKP_WAS_DELETED`, `WGET_HPKP_ENTRY_EXPIRED`
+ * or `WGET_HPKP_NOT_ENOUGH_PINS`
+ *
+ * Adds a new entry to the HPKP database if no such entry already existed, or updates or deletes an existing entry.
+ * An existing entry is updated only if the information provided is different from that we already have in the database
+ * (either `max-age`, `includeSubDomains` or the SPKI list have changed). Similarly, an existing entry is deleted if either
+ * `max_age == 0` or `b64_pins` is empty.
+ *
+ * If a non-existing entry is added or an existing entry is updated `WGET_HPKP_OK` is returned. If an entry for that host exists
+ * but it was not updated because the information provided is identical, `WGET_HPKP_ENTRY_EXISTS` is returned. If an existing entry
+ * was deleted `WGET_HPKP_WAS_DELETED` is returned.
+ *
+ * If the parameters provided would make for an expired entry (`cur_time + max_age > cur_time`) this function
+ * will immediately return `WGET_HPKP_ENTRY_EXPIRED` and no changes will be made to the database.
+ *
+ * If the `b64_pins` list contains less than two different values, `WGET_HPKP_NOT_ENOUGH_PINS` is returned and
+ * no changes will be made to the database.
+ *
+ * In any other case, `WGET_HPKP_ERROR` is returned.
+ *
+ * Entries in the HPKP database are identified by the host name. Internally, entries are stored in a hash table where the
+ * provided host name is the key, and all the other parameters form the value for that key, effectively linking that host
+ * to its public key pinning information. This description is provided for illustrative purposes only, and client code
+ * should never rely on the fact that entries are stored in a hash table.
+ */
 int wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, const char *host, time_t max_age, char include_subdomains, wget_vector_t *b64_pins)
 {
 	int retval;
@@ -352,6 +405,27 @@ static int __hashtable_browse_cb(void *ctx, const void *key, void *value)
 	return retval;
 }
 
+/**
+ * \param[in] filename Path to a file
+ * \param[in] hpkp_db Handle to an HPKP database, obtained with wget_hpkp_db_init()
+ * \return The number of SPKIs written to the file, or a negative number on error.
+ *
+ * Saves the current HPKP database to the specified file.
+ *
+ * The information will be stored in a human-readable format for inspection,
+ * but it is discouraged to rely on it for external processing. In particular,
+ * no application other than wget2 should modify the contents of the file
+ * as the format might change between releases without notice.
+ *
+ * This function returns the number of SPKIs written to the file, which is effectively
+ * equal to the number of SPKIs in the database when this function was called, and thus,
+ * might be zero. If the file specified by `filename` exists, all its contents
+ * will be overwritten with the current contents of the database. Otherwise, if the file exists
+ * but there are no SPKIs in the database, the file will be deleted to avoid leaving an empty file.
+ *
+ * If the file cannot be opened for writing `WGET_HPKP_ERROR_FILE_OPEN` is returned, and
+ * `WGET_HPKP_ERROR` in any other case.
+ */
 int wget_hpkp_db_save(const char *filename, wget_hpkp_db_t *hpkp_db)
 {
 	struct stat st;
@@ -550,6 +624,29 @@ end:
 	return retval;
 }
 
+/**
+ * \param[in] filename Path to a file
+ * \param[in] hpkp_db Handle to an HPKP database, obtained with wget_hpkp_db_init()
+ * \return WGET_HPKP_OK on success, or a negative number on error
+ *
+ * Reads the file specified by `filename` and loads its contents into the HPKP database
+ * provided by `hpkp_db`.
+ *
+ * If this function cannot correctly parse the whole file, `WGET_HPKP_ERROR` is returned.
+ * Since the format of the file might change without notice, hand-crafted files are discouraged.
+ * To create an HPKP database file that is guaranteed to be correctly parsed by this function,
+ * wget_hpkp_db_save() should be used.
+ *
+ * The entries in the file are subject to sanity checks as if they were added to the HPKP database
+ * via wget_hpkp_db_add(). In particular, if an entry is expired due to `creation_time + max_age > cur_time`
+ * it will not be added to the database, and a subsequent call to wget_hpkp_db_save() with the same `hpkp_db` handle
+ * and file name will overwrite the file without all the expired entries. Thus, if all the entries in the file are
+ * expired, the database will be empty and a subsequent call to wget_hpkp_db_save() with the same parameters will
+ * cause the file to be deleted.
+ *
+ * If the file cannot be opened for writing `WGET_HPKP_ERROR_FILE_OPEN` is returned,
+ * or `WGET_HPKP_ERROR` in any other case.
+ */
 int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 {
 	int retval = 0;
@@ -639,5 +736,7 @@ end:
 	xfree(buf);
 
 	fclose(fp);
-	return retval;
+	return (retval == 0 ? WGET_HPKP_OK : retval);
 }
+
+/**@}*/
