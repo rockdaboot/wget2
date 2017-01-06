@@ -328,9 +328,11 @@ WGETAPI pid_t
 	wget_popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *argv);
 WGETAPI char *
 	wget_read_file(const char *fname, size_t *size);
-int
-WGETAPI 	wget_update_file(const char *fname,
+WGETAPI int
+	wget_update_file(const char *fname,
 		int (*load_func)(void *, FILE *fp), int (*save_func)(void *, FILE *fp), void *context);
+WGETAPI int
+	wget_truncate(const char *path, off_t length) G_GNUC_WGET_NONNULL((1));
 WGETAPI const char
 	*wget_local_charset_encoding(void);
 WGETAPI int

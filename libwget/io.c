@@ -476,4 +476,28 @@ int wget_update_file(const char *fname,
 	return 0;
 }
 
+/**
+ * \param[in] path File path
+ * \param[in] length New file size
+ * \return 0 on success, or -1 on error
+ *
+ * Set \p path to a size of exactly \p length bytes.
+ *
+ * If the file was previously larger, the extra data is lost.
+ * If the file was previously shorter, extra zero bytes are added.
+ *
+ * On POSIX, this is a wrapper around ftruncate() (see 'man ftruncate' for details).
+ */
+int wget_truncate(const char *path, off_t length)
+{
+	int rc, fd = open(path, O_RDWR);
+
+	if (fd == -1)
+		return -1;
+
+	rc = ftruncate(fd, length);
+	close(fd);
+	return rc;
+}
+
 /**@}*/
