@@ -671,7 +671,7 @@ static int _cookie_db_save(wget_cookie_db_t *cookie_db, FILE *fp)
 				(int64_t)cookie->expires,
 				cookie->name, cookie->value);
 
-			if (!ferror(fp))
+			if (ferror(fp))
 				return -1;
 		}
 	}
