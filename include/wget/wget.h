@@ -1853,6 +1853,28 @@ WGETAPI void
 WGETAPI void
 	wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len) G_GNUC_WGET_NONNULL_ALL;
 
+/*
+ * Console routines
+ */
+
+// console color definitions
+typedef enum {
+	WGET_CONSOLE_COLOR_RESET = 0,
+	WGET_CONSOLE_COLOR_WHITE = 1,
+	WGET_CONSOLE_COLOR_BLUE = 2,
+	WGET_CONSOLE_COLOR_GREEN = 3,
+	WGET_CONSOLE_COLOR_RED = 4
+} wget_console_color_t;
+
+WGETAPI int
+	wget_console_init(void);
+WGETAPI int
+	wget_console_deinit(void);
+WGETAPI void
+	wget_console_set_fg_color(wget_console_color_t colorid);
+WGETAPI void
+	wget_console_reset_fg_color(void);
+
 WGET_END_DECLS
 
 #endif /* _LIBWGET_LIBWGET_H */

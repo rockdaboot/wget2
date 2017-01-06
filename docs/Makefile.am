@@ -14,7 +14,8 @@ man3_MANS =\
  $(builddir)/man/man3/libwget-parse_atom.3\
  $(builddir)/man/man3/libwget-parse_sitemap.3\
  $(builddir)/man/man3/libwget-robots.3\
- $(builddir)/man/man3/libwget-ip.3
+ $(builddir)/man/man3/libwget-ip.3\
+ $(builddir)/man/man3/libwget-console.3
 
 $(man3_MANS): doxy.stamp
 

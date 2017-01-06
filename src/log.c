@@ -37,6 +37,11 @@
 #include <fcntl.h>
 #include "timespec.h" // gnulib gettime()
 
+#ifdef _WIN32
+#	include <windows.h>
+	static CRITICAL_SECTION g_crit;
+#endif
+
 #include <wget.h>
 
 #include "wget_options.h"
@@ -46,7 +51,6 @@ static void _write_out(FILE *default_fp, const char *data, size_t len, int with_
 {
 	FILE *fp;
 	int fd = -1;
-	int tty = 0;
 
 	if (!data || (ssize_t)len <= 0)
 		return;
@@ -62,15 +66,19 @@ static void _write_out(FILE *default_fp, const char *data, size_t len, int with_
 			fp = default_fp;
 	}
 
-	if (fp)
-		tty = isatty(fileno(fp));
-
 	char sbuf[4096];
 	wget_buffer_t buf;
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
-	if (tty && colorstring)
+#ifndef _WIN32
+	int use_color = 0;
+
+	if (fp && colorstring && isatty(fileno(fp)))
+		use_color = 1;
+
+	if (use_color)
 		wget_buffer_strcpy(&buf, colorstring);
+#endif
 
 	if (with_timestamp) {
 		struct timespec ts;
@@ -87,11 +95,22 @@ static void _write_out(FILE *default_fp, const char *data, size_t len, int with_
 	if (data[len -1] != '\n')
 		wget_buffer_memcat(&buf, "\n", 1);
 
-	if (tty && colorstring)
+#ifndef _WIN32
+	if (use_color)
 		wget_buffer_strcat(&buf, "\033[m"); // reset text color
+#endif
 
 	if (fp) {
+#ifndef _WIN32
 		fwrite(buf.data, 1, buf.length, fp);
+#else
+		EnterCriticalSection(&g_crit);
+		wget_console_set_fg_color(WGET_CONSOLE_COLOR_WHITE);
+		fwrite(buf.data, 1, buf.length, fp);
+		fflush(fp);
+		wget_console_reset_fg_color();
+		LeaveCriticalSection (&g_crit);
+#endif
 	} else if (fd != -1) {
 		if (write(fd, buf.data, buf.length) == -1)
 			fwrite(buf.data, 1, buf.length, stderr);
@@ -156,9 +175,14 @@ void log_write_error_stdout(const char *data, size_t len)
 	_write_error_stdout(data, len);
 }
 
-
 void log_init(void)
 {
+#ifdef _WIN32
+	InitializeCriticalSection (&g_crit);
+#endif
+
+	wget_console_init();
+
 /*
 	WGET_LOGGER *logger = wget_get_logger(WGET_LOGGER_DEBUG);
 	if (config.debug) {
