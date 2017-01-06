@@ -78,7 +78,7 @@ int main(int argc, const char *const *argv)
 			continue;
 		}
 #else
-		if (!(buf = xmalloc(length + 1)) || read(fd, buf, length) != (signed)length) {
+		if (!(buf = wget_malloc(length + 1)) || read(fd, buf, length) != (signed)length) {
 			fprintf(stderr, "Failed to read %s (%d)\n", argv[it], errno);
 			close(fd);
 			continue;
