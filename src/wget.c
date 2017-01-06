@@ -1679,6 +1679,7 @@ void *downloader_thread(void *p)
 			resp = http_receive_response(downloader->conn);
 			if (!resp) {
 				// likely that the other side closed the connection, try again
+				host_increase_failure(host);
 				action = ACTION_ERROR;
 				break;
 			}
