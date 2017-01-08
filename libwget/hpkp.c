@@ -108,7 +108,7 @@ static void __wget_hpkp_free(wget_hpkp_t *hpkp, char free_host)
 {
 	if (free_host)
 		xfree(hpkp->host);
-	wget_vector_clear(hpkp->pins);
+	wget_vector_free(&hpkp->pins);
 	xfree(hpkp);
 }
 
@@ -702,6 +702,7 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 					goto end;
 				}
 				__wget_hpkp_db_put_base64_spki(hpkp, b64_pin);
+				xfree(b64_pin);
 			}
 
 			switch (__wget_hpkp_db_add(hpkp_db, hpkp, 1)) {

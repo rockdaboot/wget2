@@ -618,6 +618,9 @@ int wget_http_parse_public_key_pins(const char *s, time_t *ma, char *is, wget_ve
 //				wget_list_append(pin_list, param.value, strlen(param.value) + 1);
 			}
 		}
+
+		xfree(param.name);
+		xfree(param.value);
 	}
 
 	goto end;
@@ -629,6 +632,9 @@ fail:
 end:
 	SET_OUT(ma, max_age);
 	SET_OUT(is, include_subdomains);
+
+	xfree(param.name);
+	xfree(param.value);
 
 	return retval;
 }

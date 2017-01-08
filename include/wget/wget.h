@@ -1018,7 +1018,12 @@ WGETAPI int
 typedef struct __wget_hpkp_st wget_hpkp_t;
 typedef struct __wget_hpkp_db_st wget_hpkp_db_t;
 
-/* Return values */
+/* FIXME this doesn't work */
+/**
+ * \addtogroup libwget-hpkp
+ * Return values
+ * @{
+ */
 #define WGET_HPKP_OK			 0
 #define WGET_HPKP_ERROR			-1
 #define WGET_HPKP_ENTRY_EXPIRED		-2
@@ -1026,6 +1031,7 @@ typedef struct __wget_hpkp_db_st wget_hpkp_db_t;
 #define WGET_HPKP_NOT_ENOUGH_PINS	-4
 #define WGET_HPKP_ENTRY_EXISTS		-5
 #define WGET_HPKP_ERROR_FILE_OPEN	-6
+/* @} */
 
 wget_hpkp_db_t *
 	wget_hpkp_db_init(void) LIBWGET_EXPORT;

@@ -1047,7 +1047,7 @@ int main(int argc, const char **argv)
 
 	if (config.hpkp && config.hpkp_file && hpkp_changed) {
 		int written_pins = wget_hpkp_db_save(config.hpkp_file, config.hpkp_db);
-		wget_info_printf("HPKP: %d public key pins written\n", written_pins);
+		wget_debug_printf("HPKP: %d public key pins written\n", written_pins);
 	}
 
 	if (config.tls_resume && config.tls_session_file && wget_tls_session_db_changed(config.tls_session_db))
@@ -1258,24 +1258,24 @@ static int process_response_header(wget_http_response_t *resp)
 			resp->hpkp) {
 		switch (wget_hpkp_db_add(config.hpkp_db, iri->host, resp->hpkp_maxage, resp->hpkp_include_subdomains, resp->hpkp_pins)) {
 		case WGET_HPKP_OK:
-			wget_info_printf("HPKP: Host '%s' added to known pinned hosts list\n", iri->host);
+			wget_debug_printf("HPKP: Host '%s' added to known pinned hosts list\n", iri->host);
 			hpkp_changed = 1;
 			break;
 		case WGET_HPKP_ENTRY_EXISTS:
-			wget_info_printf("HPKP: Host '%s' already a known pinned host\n", iri->host);
+			wget_debug_printf("HPKP: Host '%s' already a known pinned host\n", iri->host);
 			break;
 		case WGET_HPKP_ENTRY_EXPIRED:
-			wget_info_printf("HPKP: Host '%s' expired. Ignoring.\n", iri->host);
+			wget_debug_printf("HPKP: Host '%s' expired. Ignoring.\n", iri->host);
 			break;
 		case WGET_HPKP_WAS_DELETED:
-			wget_info_printf("HPKP: Host '%s' removed from known pinned host list\n", iri->host);
+			wget_debug_printf("HPKP: Host '%s' removed from known pinned host list\n", iri->host);
 			hpkp_changed = 1;
 			break;
 		case WGET_HPKP_NOT_ENOUGH_PINS:
-			wget_info_printf("HPKP: Not enough pins for host '%s'. Ignoring.\n", iri->host);
+			wget_debug_printf("HPKP: Not enough pins for host '%s'. Ignoring.\n", iri->host);
 			break;
 		default:
-			wget_info_printf("HPKP: unknown error. Host '%s' could not be added.\n", iri->host);
+			wget_debug_printf("HPKP: unknown error. Host '%s' could not be added.\n", iri->host);
 			break;
 		}
 
