@@ -30,6 +30,7 @@
 #include <stddef.h>
 #include <ctype.h>
 #include <sys/stat.h>
+#include <limits.h>
 #include "private.h"
 
 struct __wget_hpkp_db_st {
@@ -430,6 +431,8 @@ int wget_hpkp_db_save(const char *filename, wget_hpkp_db_t *hpkp_db)
 {
 	struct stat st;
 	struct browser_ctx bctx;
+	int retval;
+	char fullpath[PATH_MAX];
 
 	if (!filename || !*filename || !hpkp_db || !hpkp_db->entries)
 		return WGET_HPKP_ERROR;
@@ -437,10 +440,25 @@ int wget_hpkp_db_save(const char *filename, wget_hpkp_db_t *hpkp_db)
 	bctx.fp = NULL;
 	bctx.written_pins = 0;
 
+	retval = stat(filename, &st);
+	if (retval == 0 && !S_ISREG(st.st_mode) && !S_ISLNK(st.st_mode)) {
+		wget_error_printf("HPKP: Target file not a regular file or symbolic link\n");
+		goto end;
+	}
+
 	if (wget_hashmap_size(hpkp_db->entries) == 0) {
 		/* No entries. If the file exists, remove it. */
-		if (stat(filename, &st) == 0)
-			unlink(filename);
+		if (retval == 0) {
+			if (S_ISLNK(st.st_mode)) {
+				/* unlink(2) does not follow symlinks, so we have to resolve them */
+				readlink(filename, fullpath, sizeof(fullpath) - 1);
+				fullpath[sizeof(fullpath) - 1] = '\0';
+				unlink(fullpath);
+			} else {
+				unlink(filename);
+			}
+		}
+
 		goto end;
 	}
 
