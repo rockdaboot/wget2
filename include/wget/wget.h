@@ -302,7 +302,7 @@ WGETAPI int
 WGETAPI int
 	wget_strncasecmp(const char *s1, const char *s2, size_t n) G_GNUC_WGET_PURE;
 WGETAPI void
-   wget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size) G_GNUC_WGET_NONNULL_ALL;
+	wget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
 	wget_millisleep(int ms);
 WGETAPI long long
@@ -1648,8 +1648,8 @@ WGETAPI const char *
 	wget_http_parse_content_disposition(const char *s, const char **filename) G_GNUC_WGET_NONNULL((1));
 WGETAPI const char *
 	wget_http_parse_strict_transport_security(const char *s, time_t *maxage, char *include_subdomains) G_GNUC_WGET_NONNULL((1));
-WGETAPI wget_list_t *
-        wget_http_parse_public_key_pins(const char *s, time_t *maxage, char *include_subdomains) G_GNUC_WGET_NONNULL((1));
+WGETAPI int
+	wget_http_parse_public_key_pins(const char *s, time_t *maxage, char *is, wget_vector_t *pin_list) G_GNUC_WGET_NONNULL((1));
 WGETAPI const char *
 	wget_http_parse_connection(const char *s, char *keep_alive) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
@@ -1692,6 +1692,8 @@ WGETAPI void
 
 WGETAPI void
 	wget_http_free_cookies(wget_vector_t **cookies);
+WGETAPI void
+	wget_http_free_hpkp_entries(wget_vector_t **hpkp_pins);
 WGETAPI void
 	wget_http_free_digests(wget_vector_t **digests);
 WGETAPI void
