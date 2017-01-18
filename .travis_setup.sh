@@ -11,9 +11,11 @@ if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
 	brew outdated gettext || brew upgrade gettext
 	brew install flex
 	brew install libidn
+	brew install libidn2
 	brew install xz
 	brew install lbzip2
 	brew link --force gettext
+	brew install graphviz
 elif [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
 	pip install --user cpp-coveralls
 fi
