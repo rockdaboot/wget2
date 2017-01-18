@@ -1033,16 +1033,16 @@ typedef struct __wget_hpkp_db_st wget_hpkp_db_t;
 #define WGET_HPKP_ERROR_FILE_OPEN	-6
 /* @} */
 
-wget_hpkp_db_t *
-	wget_hpkp_db_init(void) LIBWGET_EXPORT;
-void
-	wget_hpkp_db_deinit(wget_hpkp_db_t **hpkp_db) LIBWGET_EXPORT;
-int
-	wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, const char *host, time_t max_age, char include_subdomains, wget_vector_t *b64_pins) LIBWGET_EXPORT;
-int
-	wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db) LIBWGET_EXPORT;
-int
-	wget_hpkp_db_save(const char *filename, wget_hpkp_db_t *hpkp_db) LIBWGET_EXPORT;
+WGETAPI wget_hpkp_db_t *
+	wget_hpkp_db_init(void);
+WGETAPI void
+	wget_hpkp_db_deinit(wget_hpkp_db_t **hpkp_db);
+WGETAPI int
+	wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, const char *host, time_t max_age, char include_subdomains, wget_vector_t *b64_pins);
+WGETAPI int
+	wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db);
+WGETAPI int
+	wget_hpkp_db_save(const char *filename, wget_hpkp_db_t *hpkp_db);
 
 /*
  * TLS session resumption
@@ -1380,9 +1380,6 @@ WGETAPI int
 
 WGETAPI int
 	wget_ip_is_family(const char *host, int family) G_GNUC_WGET_PURE;
-
-int
-	wget_ip_is_family(const char *host, int family) G_GNUC_WGET_PURE LIBWGET_EXPORT;
 
 /*
  * SSL routines
