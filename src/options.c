@@ -1255,10 +1255,10 @@ int init(int argc, const char **argv)
 		config.hsts_file = wget_aprintf("%s/.wget-hsts", home_dir);
 
 	if (!config.hpkp_file)
-		config.hpkp_file = wget_str_asprintf("%s/.wget-hpkp", home_dir);
+		config.hpkp_file = wget_aprintf("%s/.wget-hpkp", home_dir);
 
 	if (!config.hpkp_file)
-		config.hpkp_file = wget_str_asprintf("%s/.wget-hpkp", home_dir);
+		config.hpkp_file = wget_aprintf("%s/.wget-hpkp", home_dir);
 
 	if (config.tls_resume && !config.tls_session_file)
 		config.tls_session_file = wget_aprintf("%s/.wget-session", home_dir);
