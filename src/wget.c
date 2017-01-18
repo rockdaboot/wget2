@@ -2841,19 +2841,21 @@ wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
 
 	struct _body_callback_context *context = resp->req->body_user_data;
 
-	if (context->outfd != -1 && resp->last_modified)
-		set_file_mtime(context->outfd, resp->last_modified);
-
 	resp->body = context->body;
 
 	if (context->outfd != -1) {
+		if (resp->last_modified)
+			set_file_mtime(context->outfd, resp->last_modified);
+
 		if (config.fsync_policy) {
 			if (fsync(context->outfd) < 0 && errno == EIO) {
 				error_printf(_("Failed to fsync errno=%d\n"), errno);
 				set_exit_status(3);
 			}
 		}
+
 		close(context->outfd);
+		context->outfd = -1;
 	}
 
 	if (config.progress)
