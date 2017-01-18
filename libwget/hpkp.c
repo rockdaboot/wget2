@@ -724,7 +724,7 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 				/* Read next line */
 				buflen = wget_getline(&buf, &bufsize, fp);
 				if (buflen < 0) {
-					wget_error_printf("HPKP: %u SPKIs were specified but only %d were found\n", num_pins, pin + 1);
+					wget_error_printf("HPKP: %u SPKIs were specified but only %u were found\n", num_pins, pin + 1);
 					retval = WGET_HPKP_ERROR;
 					should_continue = 0;
 					goto end;
