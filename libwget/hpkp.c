@@ -389,7 +389,7 @@ static int __hashtable_browse_cb(void *ctx, const void *key, void *value)
 
 	unsigned int num_pins = wget_vector_size(hpkp->pins);
 	if (num_pins > 0) {
-		fprintf(fp, "%s\t%lu\t%lu\t%u\t%u\n",
+		fprintf(fp, "%s\t%ld\t%ld\t%d\t%u\n",
 				url,
 				hpkp->created, hpkp->max_age,
 				hpkp->include_subdomains,
@@ -724,7 +724,7 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 				/* Read next line */
 				buflen = wget_getline(&buf, &bufsize, fp);
 				if (buflen < 0) {
-					wget_error_printf("HPKP: %d SPKIs were specified but only %d were found\n", num_pins, pin + 1);
+					wget_error_printf("HPKP: %u SPKIs were specified but only %d were found\n", num_pins, pin + 1);
 					retval = WGET_HPKP_ERROR;
 					should_continue = 0;
 					goto end;
