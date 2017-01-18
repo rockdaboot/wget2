@@ -36,7 +36,12 @@
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <errno.h>
-#include <poll.h>
+#ifdef HAVE_POLL
+	#include <poll.h>
+#else
+	#include <sys/time.h>
+	#include <sys/select.h>
+#endif
 #include "dirname.h"
 
 #include <wget.h>
@@ -200,10 +205,13 @@ ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
  */
 int wget_ready_2_transfer(int fd, int timeout, short mode)
 {
+	int rc = -1;
+
+#ifdef HAVE_POLL
 	struct pollfd pollfd;
-	int rc;
 
 	pollfd.fd = fd;
+
 	pollfd.events = 0;
 	pollfd.revents = 0;
 
@@ -213,16 +221,43 @@ int wget_ready_2_transfer(int fd, int timeout, short mode)
 		pollfd.events |= POLLOUT;
 
 	// wait for socket to be ready to read or write
-	if ((rc = poll(&pollfd, 1, timeout)) <= 0)
-		return rc;
+	if ((rc = poll(&pollfd, 1, timeout)) > 0) {
+		rc = 0;
+		if (pollfd.revents & POLLIN)
+			rc |= WGET_IO_READABLE;
+		if (pollfd.revents & POLLOUT)
+			rc |= WGET_IO_WRITABLE;
+	}
 
-	mode = 0;
-	if (pollfd.revents & POLLIN)
-		mode |= WGET_IO_READABLE;
-	if (pollfd.revents & POLLOUT)
-		mode |= WGET_IO_WRITABLE;
+#else
+	fd_set fdset;
+	fd_set *rd = NULL, *wr = NULL;
+	struct timeval tmo = { timeout / 1000L, (timeout % 1000) * 1000 };
 
-	return mode;
+	if (fd >= FD_SETSIZE) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	FD_ZERO(&fdset);
+	FD_SET(fd, &fdset);
+
+	if (mode & WGET_IO_READABLE)
+		rd = &fdset;
+	if (mode & WGET_IO_WRITABLE)
+		wr = &fdset;
+
+	if ((rc = select (fd + 1, rd, wr, NULL, &tmo)) > 0) {
+		rc = 0;
+		if (rd && FD_ISSET(fd, rd))
+			rc |= WGET_IO_READABLE;
+		if (wr && FD_ISSET(fd, wr))
+			rc |= WGET_IO_WRITABLE;
+	}
+
+#endif
+
+  return rc;
 }
 
 /**
