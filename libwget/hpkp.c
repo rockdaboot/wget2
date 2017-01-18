@@ -158,7 +158,7 @@ static wget_hpkp_t *wget_hpkp_new(const char *host, time_t created, time_t max_a
  *
  * Initializes a new HPKP database.
  */
-wget_hpkp_db_t *wget_hpkp_db_init()
+wget_hpkp_db_t *wget_hpkp_db_init(void)
 {
 	wget_hpkp_db_t *hpkp_db = xcalloc(1, sizeof(wget_hpkp_db_t));
 
