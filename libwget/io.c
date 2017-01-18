@@ -247,7 +247,7 @@ int wget_ready_2_transfer(int fd, int timeout, short mode)
 	if (mode & WGET_IO_WRITABLE)
 		wr = &fdset;
 
-	if ((rc = select (fd + 1, rd, wr, NULL, &tmo)) > 0) {
+	if ((rc = select (fd + 1, rd, wr, NULL, timeout >= 0 ? &tmo : NULL)) > 0) {
 		rc = 0;
 		if (rd && FD_ISSET(fd, rd))
 			rc |= WGET_IO_READABLE;
