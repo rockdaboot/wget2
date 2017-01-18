@@ -720,7 +720,7 @@ int wget_hpkp_db_load(const char *filename, wget_hpkp_db_t *hpkp_db)
 			}
 
 			hpkp = wget_hpkp_new(host, created, max_age, include_subdomains);
-			for (int pin = 0; pin < num_pins; pin++) {
+			for (unsigned pin = 0; pin < num_pins; pin++) {
 				/* Read next line */
 				buflen = wget_getline(&buf, &bufsize, fp);
 				if (buflen < 0) {
