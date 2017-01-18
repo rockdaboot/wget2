@@ -807,11 +807,8 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL opt_compare(const void *key,
 	return strcmp((const char *)key, ((const option_t)option)->long_name);
 }
 
-static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL opt_compare_execute(const void *key, const void *option)
+static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL opt_compare_execute(const char *s1, const char *s2)
 {
-	const char *s1 = (char *)key;
-	const char *s2 = ((const option_t)option)->long_name;
-
 	while (*s1 && *s2) {
 		if (*s1 == '-' || *s1 == '_') s1++;
 		if (*s2 == '-' || *s2 == '_') s2++;
@@ -843,9 +840,15 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 
 	opt = bsearch(name, options, countof(options), sizeof(options[0]), opt_compare);
 	if (!opt) {
+		// Fallback to linear search for 'unsharp' searching.
 		// Maybe the user asked for e.g. https_only or httpsonly instead of https-only
 		// opt_compare_execute() will find these. Wget -e/--execute compatibility.
-		opt = bsearch(name, options, countof(options), sizeof(options[0]), opt_compare_execute);
+		for (unsigned it = 0; it < countof(options); it++) {
+			if (opt_compare_execute(name, options[it].long_name) == 0) {
+				opt = &options[it];
+				break;
+			}
+		}
 	}
 
 	if (!opt)
