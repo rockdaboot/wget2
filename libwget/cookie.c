@@ -633,7 +633,7 @@ int wget_cookie_db_load(wget_cookie_db_t *cookie_db, const char *fname)
 	if (!cookie_db || !fname || !*fname)
 		return 0;
 
-	if (wget_update_file(fname, (int(*)(void *, FILE *))_cookie_db_load, NULL, cookie_db)) {
+	if (wget_update_file(fname, (wget_update_cb_t)_cookie_db_load, NULL, cookie_db)) {
 		error_printf(_("Failed to read cookies\n"));
 		return -1;
 	} else {
@@ -690,8 +690,8 @@ int wget_cookie_db_save(wget_cookie_db_t *cookie_db, const char *fname)
 		return -1;
 
 	if (wget_update_file(fname,
-		(int(*)(void *, FILE *))_cookie_db_load,
-		(int(*)(void *, FILE *))_cookie_db_save, cookie_db))
+		(wget_update_cb_t)_cookie_db_load,
+		(wget_update_cb_t)_cookie_db_save, cookie_db))
 	{
 		error_printf(_("Failed to write cookie file '%s'\n"), fname);
 		return -1;

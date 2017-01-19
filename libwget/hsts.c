@@ -314,7 +314,7 @@ int wget_hsts_db_load(wget_hsts_db_t *hsts_db, const char *fname)
 	if (!hsts_db || !fname || !*fname)
 		return 0;
 
-	if (wget_update_file(fname, (int(*)(void *, FILE *))_hsts_db_load, NULL, hsts_db)) {
+	if (wget_update_file(fname, (wget_update_cb_t)_hsts_db_load, NULL, hsts_db)) {
 		error_printf(_("Failed to read HSTS data\n"));
 		return -1;
 	} else {
@@ -357,7 +357,7 @@ int wget_hsts_db_save(wget_hsts_db_t *hsts_db, const char *fname)
 	if (!hsts_db || !fname || !*fname)
 		return -1;
 
-	if (wget_update_file(fname, (int(*)(void *, FILE *))_hsts_db_load, _hsts_db_save, hsts_db)) {
+	if (wget_update_file(fname, (wget_update_cb_t)_hsts_db_load, _hsts_db_save, hsts_db)) {
 		error_printf(_("Failed to write HSTS file '%s'\n"), fname);
 		return -1;
 	}

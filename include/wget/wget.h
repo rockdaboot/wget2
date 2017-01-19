@@ -276,6 +276,8 @@ WGETAPI void
 #define WGET_IO_READABLE 1
 #define WGET_IO_WRITABLE 2
 
+typedef int (*wget_update_cb_t)(void *, FILE *fp);
+
 WGETAPI int
 	wget_ready_2_read(int fd, int timeout);
 WGETAPI int
@@ -329,8 +331,7 @@ WGETAPI pid_t
 WGETAPI char *
 	wget_read_file(const char *fname, size_t *size);
 WGETAPI int
-	wget_update_file(const char *fname,
-		int (*load_func)(void *, FILE *fp), int (*save_func)(void *, FILE *fp), void *context);
+	wget_update_file(const char *fname, wget_update_cb_t load_func, wget_update_cb_t save_func, void *context);
 WGETAPI int
 	wget_truncate(const char *path, off_t length) G_GNUC_WGET_NONNULL((1));
 WGETAPI const char
