@@ -224,7 +224,7 @@ void *wget_list_getnext(const void *elem)
  * }
  * \endcode
  */
-int wget_list_browse(const wget_list_t *list, int (*browse)(void *context, void *elem), void *context)
+int wget_list_browse(const wget_list_t *list, wget_list_browse_cb_t browse, void *context)
 {
 	if (!list)
 		return -1;
