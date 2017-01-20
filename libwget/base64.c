@@ -99,7 +99,7 @@ int wget_base64_is_string(const char *src)
  *
  * The size of \p dst has to be at minimum ((\p n + 3) / 4) * 3 + 1 bytes.
  */
-size_t wget_base64_decode(char *dst, const char *src, int n)
+size_t wget_base64_decode(char *dst, const char *src, size_t n)
 {
 	const unsigned char *usrc = (const unsigned char *)src;
 	char *old = dst;
@@ -111,26 +111,26 @@ size_t wget_base64_decode(char *dst, const char *src, int n)
 
 	extra = n & 3;
 
-	for (n /= 4; --n >= 0; usrc += 4) {
-		*dst++ = base64_2_bin[usrc[0]] << 2 | base64_2_bin[usrc[1]] >> 4;
-		*dst++ = (base64_2_bin[usrc[1]]&0x0F) << 4 | base64_2_bin[usrc[2]] >> 2;
-		*dst++ = (base64_2_bin[usrc[2]]&0x03) << 6 | base64_2_bin[usrc[3]];
+	for (n /= 4; n > 0; n--, usrc += 4) {
+		*dst++ = (char)(base64_2_bin[usrc[0]] << 2 | base64_2_bin[usrc[1]] >> 4);
+		*dst++ = (char)((base64_2_bin[usrc[1]]&0x0F) << 4 | base64_2_bin[usrc[2]] >> 2);
+		*dst++ = (char)((base64_2_bin[usrc[2]]&0x03) << 6 | base64_2_bin[usrc[3]]);
 	}
 
 	switch (extra) {
 	case 1:
 		// this should not happen
-		*dst++ = base64_2_bin[usrc[0]] << 2;
+		*dst++ = (char) (base64_2_bin[usrc[0]] << 2);
 		break;
 	case 2:
-		*dst++ = base64_2_bin[usrc[0]] << 2 | base64_2_bin[usrc[1]] >> 4;
-		*dst = (base64_2_bin[usrc[1]]&0x0F) << 4;
+		*dst++ = (char)(base64_2_bin[usrc[0]] << 2 | base64_2_bin[usrc[1]] >> 4);
+		*dst = (char)((base64_2_bin[usrc[1]]&0x0F) << 4);
 		if (*dst) dst++;
 		break;
 	case 3:
-		*dst++ = base64_2_bin[usrc[0]] << 2 | base64_2_bin[usrc[1]] >> 4;
-		*dst++ = (base64_2_bin[usrc[1]]&0x0F) << 4 | base64_2_bin[usrc[2]] >> 2;
-		*dst = (base64_2_bin[usrc[2]]&0x03) << 6;
+		*dst++ = (char)(base64_2_bin[usrc[0]] << 2 | base64_2_bin[usrc[1]] >> 4);
+		*dst++ = (char)((base64_2_bin[usrc[1]]&0x0F) << 4 | base64_2_bin[usrc[2]] >> 2);
+		*dst = (char)((base64_2_bin[usrc[2]]&0x03) << 6);
 		if (*dst) dst++;
 		break;
 	default: // 0: ignore
@@ -151,7 +151,7 @@ size_t wget_base64_decode(char *dst, const char *src, int n)
  *
  * You should free() the returned string when not needed any more.
  */
-char *wget_base64_decode_alloc(const char *src, int n)
+char *wget_base64_decode_alloc(const char *src, size_t n)
 {
 	char *dst = xmalloc(((n + 3) / 4) * 3 + 1);
 
@@ -171,7 +171,7 @@ char *wget_base64_decode_alloc(const char *src, int n)
  *
  * The length of \p dst has to be at minimum ((\p n + 2) / 3) * 4 + 1 bytes.
  */
-size_t wget_base64_encode(char *dst, const char *src, int n)
+size_t wget_base64_encode(char *dst, const char *src, size_t n)
 {
 	static const char base64[64] =
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -181,7 +181,7 @@ size_t wget_base64_encode(char *dst, const char *src, int n)
 	int extra = n % 3;
 
 	// convert line by line
-	for (n /= 3; --n >= 0; usrc += 3) {
+	for (n /= 3; n > 0; n--, usrc += 3) {
 		*dst++ = base64[usrc[0] >> 2];
 		*dst++ = base64[((usrc[0]&3) << 4) | (usrc[1] >> 4)];
 		*dst++ = base64[((usrc[1]&15) << 2) | (usrc[2] >> 6)];
@@ -216,7 +216,7 @@ size_t wget_base64_encode(char *dst, const char *src, int n)
  *
  * You should free() the returned string when not needed any more.
  */
-char *wget_base64_encode_alloc(const char *src, int n)
+char *wget_base64_encode_alloc(const char *src, size_t n)
 {
 	char *dst = xmalloc(((n + 2) / 3) * 4 + 1);
 
@@ -238,7 +238,7 @@ char *wget_base64_encode_alloc(const char *src, int n)
 char *wget_base64_encode_vprintf_alloc(const char *fmt, va_list args)
 {
 	char *data = NULL;
-	int n;
+	size_t n;
 
 	n = wget_vasprintf(&data, fmt, args);
 

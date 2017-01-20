@@ -430,13 +430,13 @@ static inline unsigned int wget_base64_get_decoded_length(unsigned int len)
 WGETAPI int
 	wget_base64_is_string(const char *src) G_GNUC_WGET_PURE;
 WGETAPI size_t
-	wget_base64_decode(char *restrict dst, const char *restrict src, int n) G_GNUC_WGET_NONNULL_ALL;
+	wget_base64_decode(char *restrict dst, const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI size_t
-	wget_base64_encode(char *restrict dst, const char *restrict src, int n) G_GNUC_WGET_NONNULL_ALL;
+	wget_base64_encode(char *restrict dst, const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI char *
-	wget_base64_decode_alloc(const char *restrict src, int n) G_GNUC_WGET_NONNULL_ALL;
+	wget_base64_decode_alloc(const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI char *
-	wget_base64_encode_alloc(const char *restrict src, int n) G_GNUC_WGET_NONNULL_ALL;
+	wget_base64_encode_alloc(const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI char *
 	wget_base64_encode_vprintf_alloc(const char *restrict fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(1,0) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI char *
