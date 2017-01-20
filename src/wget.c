@@ -156,8 +156,8 @@ void set_exit_status(int status)
  */
 static char *restrict_file_name(char *fname, char *esc)
 {
-	char *s, *dst;
-	int escaped, c;
+	char *s, *dst, c;
+	int escaped;
 
 	switch (config.restrict_file_names) {
 	case RESTRICT_NAMES_WINDOWS:
