@@ -136,7 +136,7 @@ static void _add_mirror(_metalink_context_t *ctx, const char *value)
 
 	if (!metalink->mirrors) {
 		metalink->mirrors = wget_vector_create(4, 4, NULL);
-		wget_vector_set_destructor(metalink->mirrors, (void(*)(void *))_free_mirror);
+		wget_vector_set_destructor(metalink->mirrors, (wget_vector_destructor_t)_free_mirror);
 	}
 	wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
 
@@ -274,7 +274,7 @@ static int G_GNUC_WGET_PURE _compare_mirror(wget_metalink_mirror_t **m1, wget_me
 void wget_metalink_sort_mirrors(wget_metalink_t *metalink)
 {
 	if (metalink) {
-		wget_vector_setcmpfunc(metalink->mirrors, (int(*)(const void *, const void *))_compare_mirror);
+		wget_vector_setcmpfunc(metalink->mirrors, (wget_vector_compare_t)_compare_mirror);
 		wget_vector_sort(metalink->mirrors);
 	}
 }

@@ -251,6 +251,8 @@ WGET_BEGIN_DECLS
 #define WGET_E_CERTIFICATE -6 /* general TLS certificate failure */
 #define WGET_E_TLS_DISABLED -7 /* TLS was not enabled at compile time */
 
+typedef void (*wget_global_get_func_t)(const char *, size_t);
+
 WGETAPI void
 	wget_global_init(int key, ...) G_GNUC_WGET_NULL_TERMINATED;
 WGETAPI void
@@ -259,8 +261,8 @@ WGETAPI const void *
 	wget_global_get_ptr(int key);
 WGETAPI int
 	wget_global_get_int(int key);
-WGETAPI void
-	(*wget_global_get_func(int key))(const char *, size_t);
+WGETAPI wget_global_get_func_t
+	wget_global_get_func(int key);
 
 /*
  * Utility functions
@@ -276,7 +278,8 @@ WGETAPI void
 #define WGET_IO_READABLE 1
 #define WGET_IO_WRITABLE 2
 
-typedef int (*wget_update_cb_t)(void *, FILE *fp);
+typedef int (*wget_update_load_t)(void *, FILE *fp);
+typedef int (*wget_update_save_t)(void *, FILE *fp);
 
 WGETAPI int
 	wget_ready_2_read(int fd, int timeout);
@@ -331,7 +334,7 @@ WGETAPI pid_t
 WGETAPI char *
 	wget_read_file(const char *fname, size_t *size);
 WGETAPI int
-	wget_update_file(const char *fname, wget_update_cb_t load_func, wget_update_cb_t save_func, void *context);
+	wget_update_file(const char *fname, wget_update_load_t load_func, wget_update_save_t save_func, void *context);
 WGETAPI int
 	wget_truncate(const char *path, off_t length) G_GNUC_WGET_NONNULL((1));
 WGETAPI const char
@@ -368,7 +371,7 @@ WGETAPI size_t
  * Type for double linked lists and list entries.
  */
 typedef struct _wget_list_st wget_list_t;
-typedef int (*wget_list_browse_cb_t)(void *context, void *elem);
+typedef int (*wget_list_browse_t)(void *context, void *elem);
 
 WGETAPI void *
 	wget_list_append(wget_list_t **list, const void *data, size_t size) G_GNUC_WGET_NONNULL_ALL;
@@ -385,7 +388,7 @@ WGETAPI void
 WGETAPI void
 	wget_list_free(wget_list_t **list) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
-	wget_list_browse(const wget_list_t *list, wget_list_browse_cb_t browse, void *context) G_GNUC_WGET_NONNULL((2));
+	wget_list_browse(const wget_list_t *list, wget_list_browse_t browse, void *context) G_GNUC_WGET_NONNULL((2));
 
 /*
  * Memory allocation routines
@@ -566,13 +569,17 @@ WGETAPI wget_logger_t *
  */
 
 typedef struct _wget_vector_st wget_vector_t;
+typedef int (*wget_vector_compare_t)(const void *elem1, const void *elem2);
+typedef int (*wget_vector_find_t)(void *elem);
+typedef int (*wget_vector_browse_t)(void *ctx, void *elem);
+typedef int (*wget_vector_destructor_t)(void *elem);
 
 WGETAPI wget_vector_t *
-	wget_vector_create(int max, int off, int (*cmp)(const void *, const void *)) G_GNUC_WGET_MALLOC;
+	wget_vector_create(int max, int off, wget_vector_compare_t cmp) G_GNUC_WGET_MALLOC;
 WGETAPI int
 	wget_vector_find(const wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_findext(const wget_vector_t *v, int start, int direction, int (*find)(void *)) G_GNUC_WGET_NONNULL((4));
+	wget_vector_findext(const wget_vector_t *v, int start, int direction, wget_vector_find_t find) G_GNUC_WGET_NONNULL((4));
 WGETAPI int
 	wget_vector_contains(const wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
@@ -608,7 +615,7 @@ WGETAPI int
 WGETAPI int
 	wget_vector_size(const wget_vector_t *v) G_GNUC_WGET_PURE;
 WGETAPI int
-	wget_vector_browse(const wget_vector_t *v, int (*browse)(void *ctx, void *elem), void *ctx) G_GNUC_WGET_NONNULL((2));
+	wget_vector_browse(const wget_vector_t *v, wget_vector_browse_t browse, void *ctx) G_GNUC_WGET_NONNULL((2));
 WGETAPI void
 	wget_vector_free(wget_vector_t **v);
 WGETAPI void
@@ -618,9 +625,9 @@ WGETAPI void
 WGETAPI void *
 	wget_vector_get(const wget_vector_t *v, int pos) G_GNUC_WGET_PURE;
 WGETAPI void
-	wget_vector_setcmpfunc(wget_vector_t *v, int (*cmp)(const void *elem1, const void *elem2)) G_GNUC_WGET_NONNULL((2));
+	wget_vector_setcmpfunc(wget_vector_t *v, wget_vector_compare_t cmp) G_GNUC_WGET_NONNULL((2));
 WGETAPI void
-	wget_vector_set_destructor(wget_vector_t *v, void (*destructor)(void *elem));
+	wget_vector_set_destructor(wget_vector_t *v, wget_vector_destructor_t destructor);
 WGETAPI void
 	wget_vector_sort(wget_vector_t *v);
 
@@ -629,9 +636,14 @@ WGETAPI void
  */
 
 typedef struct _wget_hashmap_st wget_hashmap_t;
+typedef int (*wget_hashmap_compare_t)(const void *key1, const void *key2);
+typedef unsigned int (*wget_hashmap_hash_t)(const void *value);
+typedef int (*wget_hashmap_browse_t)(void *ctx, const void *key, void *value);
+typedef void (*wget_hashmap_key_destructor_t)(void *key);
+typedef void (*wget_hashmap_value_destructor_t)(void *value);
 
 WGETAPI wget_hashmap_t
-	*wget_hashmap_create(int max, int off, unsigned int (*hash)(const void *), int (*cmp)(const void *, const void *)) G_GNUC_WGET_MALLOC;
+	*wget_hashmap_create(int max, int off, wget_hashmap_hash_t hash, wget_hashmap_compare_t cmp) G_GNUC_WGET_MALLOC;
 WGETAPI int
 	wget_hashmap_put(wget_hashmap_t *h, const void *key, size_t keysize, const void *value, size_t valuesize);
 WGETAPI int
@@ -643,7 +655,7 @@ WGETAPI int
 WGETAPI int
 	wget_hashmap_size(const wget_hashmap_t *h) G_GNUC_WGET_PURE;
 WGETAPI int
-	wget_hashmap_browse(const wget_hashmap_t *h, int (*browse)(void *ctx, const void *key, void *value), void *ctx) G_GNUC_WGET_NONNULL((2));
+	wget_hashmap_browse(const wget_hashmap_t *h, wget_hashmap_browse_t browse, void *ctx) G_GNUC_WGET_NONNULL((2));
 WGETAPI void
 	wget_hashmap_free(wget_hashmap_t **h);
 WGETAPI void
@@ -659,13 +671,13 @@ WGETAPI int
 WGETAPI int
 	wget_hashmap_remove_nofree(wget_hashmap_t *h, const void *key);
 WGETAPI void
-	wget_hashmap_setcmpfunc(wget_hashmap_t *h, int (*cmp)(const void *key1, const void *key2));
+	wget_hashmap_setcmpfunc(wget_hashmap_t *h, wget_hashmap_compare_t cmp);
 WGETAPI void
-	wget_hashmap_sethashfunc(wget_hashmap_t *h, unsigned int (*hash)(const void *key));
+	wget_hashmap_sethashfunc(wget_hashmap_t *h, wget_hashmap_hash_t hash);
 WGETAPI void
-	wget_hashmap_set_key_destructor(wget_hashmap_t *h, void (*destructor)(void *key));
+	wget_hashmap_set_key_destructor(wget_hashmap_t *h, wget_hashmap_key_destructor_t destructor);
 WGETAPI void
-	wget_hashmap_set_value_destructor(wget_hashmap_t *h, void (*destructor)(void *value));
+	wget_hashmap_set_value_destructor(wget_hashmap_t *h, wget_hashmap_value_destructor_t destructor);
 WGETAPI void
 	wget_hashmap_setloadfactor(wget_hashmap_t *h, float factor);
 
@@ -674,6 +686,11 @@ WGETAPI void
  */
 
 typedef wget_hashmap_t wget_stringmap_t;
+typedef int (*wget_stringmap_compare_t)(const char *key1, const char *key2);
+typedef unsigned int (*wget_stringmap_hash_t)(const char *value);
+typedef int (*wget_stringmap_browse_t)(void *ctx, const char *key, void *value);
+//typedef void (*wget_stringmap_key_destructor_t)(char *key);
+typedef void (*wget_stringmap_value_destructor_t)(void *value);
 
 WGETAPI wget_stringmap_t *
 	wget_stringmap_create(int max) G_GNUC_WGET_MALLOC;
@@ -690,7 +707,7 @@ WGETAPI int
 WGETAPI int
 	wget_stringmap_size(const wget_stringmap_t *h) G_GNUC_WGET_PURE;
 WGETAPI int
-	wget_stringmap_browse(const wget_stringmap_t *h, int (*browse)(void *ctx, const char *key, void *value), void *ctx) G_GNUC_WGET_NONNULL((2));
+	wget_stringmap_browse(const wget_stringmap_t *h, wget_stringmap_browse_t browse, void *ctx) G_GNUC_WGET_NONNULL((2));
 WGETAPI void
 	wget_stringmap_free(wget_stringmap_t **h);
 WGETAPI void
@@ -706,13 +723,13 @@ WGETAPI int
 WGETAPI int
 	wget_stringmap_remove_nofree(wget_stringmap_t *h, const char *key);
 WGETAPI void
-	wget_stringmap_setcmpfunc(wget_stringmap_t *h, int (*cmp)(const char *key1, const char *key2));
+	wget_stringmap_setcmpfunc(wget_stringmap_t *h, wget_stringmap_compare_t cmp);
 WGETAPI void
-	wget_stringmap_sethashfunc(wget_stringmap_t *h, unsigned int (*hash)(const char *key));
+	wget_stringmap_sethashfunc(wget_stringmap_t *h, wget_stringmap_hash_t hash);
 WGETAPI void
 	wget_stringmap_setloadfactor(wget_stringmap_t *h, float factor);
 WGETAPI void
-	wget_stringmap_set_value_destructor(wget_hashmap_t *h, void (*destructor)(void *value));
+	wget_stringmap_set_value_destructor(wget_hashmap_t *h, wget_stringmap_value_destructor_t destructor);
 
 /*
  * Thread wrapper routines
@@ -762,6 +779,7 @@ WGETAPI bool
  */
 
 typedef struct _wget_decompressor_st wget_decompressor_t;
+typedef int (*wget_decompressor_sink_t)(void *context, const char *data, size_t length);
 
 enum {
 	wget_content_encoding_identity,
@@ -773,7 +791,7 @@ enum {
 
 WGETAPI wget_decompressor_t *
 	wget_decompress_open(int encoding,
-						 int (*put_data)(void *context, const char *data, size_t length),
+						 wget_decompressor_sink_t data_sink,
 						 void *context);
 WGETAPI void
 	wget_decompress_close(wget_decompressor_t *dc);
@@ -1111,17 +1129,20 @@ typedef struct {
 		abs_url;
 } WGET_PARSED_URL;
 
+typedef void (*wget_css_parse_uri_cb_t)(void *user_ctx, const char *url, size_t len, size_t pos);
+typedef void (*wget_css_parse_encoding_cb_t)(void *user_ctx, const char *url, size_t len);
+
 WGETAPI void
 	wget_css_parse_buffer(
 		const char *buf,
-		void(*callback_uri)(void *user_ctx, const char *url, size_t len, size_t pos),
-		void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
+		wget_css_parse_uri_cb_t callback_uri,
+		wget_css_parse_encoding_cb_t callback_encoding,
 		void *user_ctx) G_GNUC_WGET_NONNULL((1));
 WGETAPI void
 	wget_css_parse_file(
 		const char *fname,
-		void(*callback_uri)(void *user_ctx, const char *url, size_t len, size_t pos),
-		void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
+		wget_css_parse_uri_cb_t callback_uri,
+		wget_css_parse_encoding_cb_t callback_encoding,
 		void *user_ctx) G_GNUC_WGET_NONNULL((1));
 WGETAPI wget_vector_t *
 	wget_css_get_urls(
@@ -1198,34 +1219,30 @@ WGETAPI void
 
 #define HTML_HINT_REMOVE_EMPTY_CONTENT XML_HINT_REMOVE_EMPTY_CONTENT
 
-typedef void wget_xml_callback_t(void *, int, const char *, const char *, const char *, size_t, size_t);
+typedef void (*wget_xml_callback_t)(void *, int, const char *, const char *, const char *, size_t, size_t);
 
 WGETAPI void
 	wget_xml_parse_buffer(
 		const char *buf,
-		wget_xml_callback_t *callback,
-//		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
+		wget_xml_callback_t callback,
 		void *user_ctx,
 		int hints) G_GNUC_WGET_NONNULL((1));
 WGETAPI void
 	wget_xml_parse_file(
 		const char *fname,
-		wget_xml_callback_t *callback,
-//		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *val),
+		wget_xml_callback_t callback,
 		void *user_ctx,
 		int hints) G_GNUC_WGET_NONNULL((1));
 WGETAPI void
 	wget_html_parse_buffer(
 		const char *buf,
-		wget_xml_callback_t *callback,
-//		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
+		wget_xml_callback_t callback,
 		void *user_ctx,
 		int hints) G_GNUC_WGET_NONNULL((1));
 WGETAPI void
 	wget_html_parse_file(
 		const char *fname,
-		wget_xml_callback_t *callback,
-//		void(*callback)(void *user_ctx, int flags, const char *dir, const char *attr, const char *tok),
+		wget_xml_callback_t callback,
 		void *user_ctx,
 		int hints) G_GNUC_WGET_NONNULL((1));
 

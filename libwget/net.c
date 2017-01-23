@@ -151,8 +151,8 @@ static struct addrinfo * _wget_dns_cache_add(const char *host, const char *port,
 
 	wget_thread_mutex_lock(&dns_mutex);
 	if (!dns_cache) {
-		dns_cache = wget_vector_create(4, -2, (int(*)(const void *, const void *))_compare_addr);
-		wget_vector_set_destructor(dns_cache, (void(*)(void *))_free_dns);
+		dns_cache = wget_vector_create(4, -2, (wget_vector_compare_t)_compare_addr);
+		wget_vector_set_destructor(dns_cache, (wget_vector_destructor_t)_free_dns);
 	}
 
 	if ((index = wget_vector_find(dns_cache, entryp)) == -1) {

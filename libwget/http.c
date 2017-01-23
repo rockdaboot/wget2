@@ -223,7 +223,7 @@ static int G_GNUC_WGET_NONNULL_ALL compare_param(wget_http_header_param_t *p1, w
 
 void wget_http_add_param(wget_vector_t **params, wget_http_header_param_t *param)
 {
-	if (!*params) *params = wget_vector_create(4, 4, (int(*)(const void *, const void *))compare_param);
+	if (!*params) *params = wget_vector_create(4, 4, (wget_vector_compare_t)compare_param);
 	wget_vector_add(*params, param, sizeof(*param));
 }
 
@@ -1188,7 +1188,7 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 				// debug_printf("link->uri=%s\n",link.uri);
 				if (!resp->links) {
 					resp->links = wget_vector_create(8, 8, NULL);
-					wget_vector_set_destructor(resp->links, (void(*)(void *))wget_http_free_link);
+					wget_vector_set_destructor(resp->links, (wget_vector_destructor_t)wget_http_free_link);
 				}
 				wget_vector_add(resp->links, &link, sizeof(link));
 			}
@@ -1207,7 +1207,7 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 				if (cookie.name) {
 					if (!resp->cookies) {
 						resp->cookies = wget_vector_create(4, 4, NULL);
-						wget_vector_set_destructor(resp->cookies, (void(*)(void *))wget_cookie_deinit);
+						wget_vector_set_destructor(resp->cookies, (wget_vector_destructor_t)wget_cookie_deinit);
 					}
 					wget_vector_add(resp->cookies, &cookie, sizeof(cookie));
 				}
@@ -1224,7 +1224,7 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 
 				if (!resp->challenges) {
 					resp->challenges = wget_vector_create(2, 2, NULL);
-					wget_vector_set_destructor(resp->challenges, (void(*)(void *))wget_http_free_challenge);
+					wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
 				}
 				wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
 			}
@@ -1237,7 +1237,7 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 				// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
 				if (!resp->digests) {
 					resp->digests = wget_vector_create(4, 4, NULL);
-					wget_vector_set_destructor(resp->digests, (void(*)(void *))wget_http_free_digest);
+					wget_vector_set_destructor(resp->digests, (wget_vector_destructor_t)wget_http_free_digest);
 				}
 				wget_vector_add(resp->digests, &digest, sizeof(digest));
 			}
@@ -1376,7 +1376,7 @@ wget_http_request_t *wget_http_create_request(const wget_iri_t *iri, const char 
 	wget_iri_get_escaped_resource(iri, &req->esc_resource);
 	wget_iri_get_escaped_host(iri, &req->esc_host);
 	req->headers = wget_vector_create(8, 8, NULL);
-	wget_vector_set_destructor(req->headers, (void(*)(void *))wget_http_free_param);
+	wget_vector_set_destructor(req->headers, (wget_vector_destructor_t)wget_http_free_param);
 
 	wget_http_add_header(req, "Host", req->esc_host.data);
 	wget_http_request_set_body_cb(req, _body_callback, NULL);
@@ -1595,6 +1595,7 @@ struct _http2_stream_context {
 		*decompressor;
 };
 
+// static int _get_body(void *userdata, const char *data, size_t length)
 static int _get_body(void *userdata, const char *data, size_t length)
 {
 	wget_http_response_t *resp = (wget_http_response_t *) userdata;
@@ -1728,7 +1729,7 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 					// debug_printf("link->uri=%s\n",link.uri);
 					if (!resp->links) {
 						resp->links = wget_vector_create(8, 8, NULL);
-						wget_vector_set_destructor(resp->links, (void(*)(void *))wget_http_free_link);
+						wget_vector_set_destructor(resp->links, (wget_vector_destructor_t)wget_http_free_link);
 					}
 					wget_vector_add(resp->links, &link, sizeof(link));
 				}
@@ -1741,7 +1742,7 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 					// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
 					if (!resp->digests) {
 						resp->digests = wget_vector_create(4, 4, NULL);
-						wget_vector_set_destructor(resp->digests, (void(*)(void *))wget_http_free_digest);
+						wget_vector_set_destructor(resp->digests, (wget_vector_destructor_t)wget_http_free_digest);
 					}
 					wget_vector_add(resp->digests, &digest, sizeof(digest));
 				}
@@ -1766,7 +1767,7 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 					if (cookie.name) {
 						if (!resp->cookies) {
 							resp->cookies = wget_vector_create(4, 4, NULL);
-							wget_vector_set_destructor(resp->cookies, (void(*)(void *))wget_cookie_deinit);
+							wget_vector_set_destructor(resp->cookies, (wget_vector_destructor_t)wget_cookie_deinit);
 						}
 						wget_vector_add(resp->cookies, &cookie, sizeof(cookie));
 					}
@@ -1805,7 +1806,7 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 
 					if (!resp->challenges) {
 						resp->challenges = wget_vector_create(2, 2, NULL);
-						wget_vector_set_destructor(resp->challenges, (void(*)(void *))wget_http_free_challenge);
+						wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
 					}
 					wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
 				}
@@ -2517,7 +2518,7 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 		const char *s, *p;
 
 		proxies = wget_vector_create(8, -2, NULL);
-		wget_vector_set_destructor(proxies, (void(*)(void *))wget_iri_free_content);
+		wget_vector_set_destructor(proxies, (wget_vector_destructor_t)wget_iri_free_content);
 
 		for (s = p = proxy; *p; s = p + 1) {
 			while (c_isspace(*s) && s < p) s++;

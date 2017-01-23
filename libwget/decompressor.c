@@ -67,12 +67,13 @@ struct _wget_decompressor_st {
 		bz_strm;
 #endif
 
+	wget_decompressor_sink_t
+		sink; // decompressed data goes here
 	int
-		(*decompress)(wget_decompressor_t *dc, char *src, size_t srclen),
-		(*put_data)(void *context, const char *data, size_t length); // decompressed data goes here
+		(*decompress)(wget_decompressor_t *dc, char *src, size_t srclen);
 	void
 		(*exit)(wget_decompressor_t *dc),
-		*context; // given to put_data()
+		*context; // given to sink()
 	char
 		encoding;
 };
@@ -100,8 +101,8 @@ static int gzip_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 
 	if (!srclen) {
 		// special case to avoid decompress errors
-		if (dc->put_data)
-			dc->put_data(dc->context, "", 0);
+		if (dc->sink)
+			dc->sink(dc->context, "", 0);
 
 		return 0;
 	}
@@ -116,8 +117,8 @@ static int gzip_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 
 		status = inflate(strm, Z_SYNC_FLUSH);
 		if ((status == Z_OK || status == Z_STREAM_END) && strm->avail_out<sizeof(dst)) {
-			if (dc->put_data)
-				dc->put_data(dc->context, dst, sizeof(dst) - strm->avail_out);
+			if (dc->sink)
+				dc->sink(dc->context, dst, sizeof(dst) - strm->avail_out);
 		}
 	} while (status == Z_OK && !strm->avail_out);
 
@@ -173,8 +174,8 @@ static int lzma_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 
 	if (!srclen) {
 		// special case to avoid decompress errors
-		if (dc->put_data)
-			dc->put_data(dc->context, "", 0);
+		if (dc->sink)
+			dc->sink(dc->context, "", 0);
 
 		return 0;
 	}
@@ -189,8 +190,8 @@ static int lzma_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 
 		status = lzma_code(strm, LZMA_RUN);
 		if ((status == LZMA_OK || status == LZMA_STREAM_END) && strm->avail_out<sizeof(dst)) {
-			if (dc->put_data)
-				dc->put_data(dc->context, dst, sizeof(dst) - strm->avail_out);
+			if (dc->sink)
+				dc->sink(dc->context, dst, sizeof(dst) - strm->avail_out);
 		}
 	} while (status == LZMA_OK && !strm->avail_out);
 
@@ -228,8 +229,8 @@ static int bzip2_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 
 	if (!srclen) {
 		// special case to avoid decompress errors
-		if (dc->put_data)
-			dc->put_data(dc->context, "", 0);
+		if (dc->sink)
+			dc->sink(dc->context, "", 0);
 
 		return 0;
 	}
@@ -244,8 +245,8 @@ static int bzip2_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 
 		status = BZ2_bzDecompress(strm);
 		if ((status == BZ_OK || status == BZ_STREAM_END) && strm->avail_out<sizeof(dst)) {
-			if (dc->put_data)
-				dc->put_data(dc->context, dst, sizeof(dst) - strm->avail_out);
+			if (dc->sink)
+				dc->sink(dc->context, dst, sizeof(dst) - strm->avail_out);
 		}
 	} while (status == BZ_OK && !strm->avail_out);
 
@@ -264,14 +265,14 @@ static void bzip2_exit(wget_decompressor_t *dc)
 
 static int identity(wget_decompressor_t *dc, char *src, size_t srclen)
 {
-	if (dc->put_data)
-		dc->put_data(dc->context, src, srclen);
+	if (dc->sink)
+		dc->sink(dc->context, src, srclen);
 
 	return 0;
 }
 
 wget_decompressor_t *wget_decompress_open(int encoding,
-	int (*put_data)(void *context, const char *data, size_t length),
+	wget_decompressor_sink_t sink,
 	void *context)
 {
 	wget_decompressor_t *dc = xcalloc(1, sizeof(wget_decompressor_t));
@@ -316,7 +317,7 @@ wget_decompressor_t *wget_decompress_open(int encoding,
 	}
 
 	dc->encoding = (char)encoding;
-	dc->put_data = put_data;
+	dc->sink = sink;
 	dc->context = context;
 	return dc;
 }

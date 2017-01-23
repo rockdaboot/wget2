@@ -98,8 +98,8 @@ HOST *host_add(wget_iri_t *iri)
 	wget_thread_mutex_lock(&hosts_mutex);
 
 	if (!hosts) {
-		hosts = wget_hashmap_create(16, -2, (unsigned int (*)(const void *))_host_hash, (int (*)(const void *, const void *))_host_compare);
-		wget_hashmap_set_key_destructor(hosts, (void(*)(void *))_free_host_entry);
+		hosts = wget_hashmap_create(16, -2, (wget_hashmap_hash_t)_host_hash, (wget_hashmap_compare_t)_host_compare);
+		wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor_t)_free_host_entry);
 	}
 
 	HOST *hostp = NULL, host = { .scheme = iri->scheme, .host = iri->host, .port = iri->resolv_port };
@@ -191,7 +191,7 @@ static int G_GNUC_WGET_NONNULL_ALL _search_host_for_free_job(struct _find_free_j
 		return 0; // someone is still working on robots.txt
 	}
 
-	wget_list_browse(host->queue, (int(*)(void *, void *))_search_queue_for_free_job, ctx);
+	wget_list_browse(host->queue, (wget_list_browse_t)_search_queue_for_free_job, ctx);
 
 	return !!ctx->job;
 }
@@ -204,7 +204,7 @@ JOB *host_get_job(HOST *host, long long *pause)
 		_search_host_for_free_job(&ctx, host);
 	} else {
 		wget_thread_mutex_lock(&hosts_mutex);
-		wget_hashmap_browse(hosts, (int(*)(void *, const void *, void *))_search_host_for_free_job, &ctx);
+		wget_hashmap_browse(hosts, (wget_hashmap_browse_t)_search_host_for_free_job, &ctx);
 		wget_thread_mutex_unlock(&hosts_mutex);
 	}
 
@@ -254,7 +254,7 @@ void host_release_jobs(HOST *host)
 		}
 	}
 
-	wget_list_browse(host->queue, (int(*)(void *, void *))_release_job, &self);
+	wget_list_browse(host->queue, (wget_list_browse_t)_release_job, &self);
 
 	wget_thread_mutex_unlock(&hosts_mutex);
 }
@@ -432,7 +432,7 @@ static int _queue_free_func(void *context G_GNUC_WGET_UNUSED, JOB *job)
 void host_queue_free(HOST *host)
 {
 	wget_thread_mutex_lock(&hosts_mutex);
-	wget_list_browse(host->queue, (int(*)(void *, void *))_queue_free_func, NULL);
+	wget_list_browse(host->queue, (wget_list_browse_t)_queue_free_func, NULL);
 	wget_list_free(&host->queue);
 	if (host->robot_job) {
 		wget_iri_free(&host->robot_job->iri);
@@ -459,7 +459,7 @@ void queue_print(HOST *host)
 		info_printf("%s://%s\n", host->scheme, host->host);
 
 	wget_thread_mutex_lock(&hosts_mutex);
-	wget_list_browse(host->queue, (int(*)(void *, void *))_queue_print_func, NULL);
+	wget_list_browse(host->queue, (wget_list_browse_t)_queue_print_func, NULL);
 	wget_thread_mutex_unlock(&hosts_mutex);
 }
 

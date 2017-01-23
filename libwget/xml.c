@@ -64,7 +64,7 @@ struct XML_CONTEXT {
 	void
 		*user_ctx; // user context (not needed if we were using nested functions)
 	wget_xml_callback_t
-		*callback;
+		callback;
 };
 
 #define ascii_isspace(c) (c == ' ' || (c >= 9 && c <=  13))
@@ -465,7 +465,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 
 void wget_xml_parse_buffer(
 	const char *buf,
-	wget_xml_callback_t *callback,
+	wget_xml_callback_t callback,
 	void *user_ctx,
 	int hints)
 {
@@ -485,7 +485,7 @@ void wget_xml_parse_buffer(
 
 void wget_html_parse_buffer(
 	const char *buf,
-	wget_xml_callback_t *callback,
+	wget_xml_callback_t callback,
 	void *user_ctx,
 	int hints)
 {
@@ -494,7 +494,7 @@ void wget_html_parse_buffer(
 
 void wget_xml_parse_file(
 	const char *fname,
-	wget_xml_callback_t *callback,
+	wget_xml_callback_t callback,
 	void *user_ctx,
 	int hints)
 {
@@ -546,7 +546,7 @@ void wget_xml_parse_file(
 
 void wget_html_parse_file(
 	const char *fname,
-	wget_xml_callback_t *callback,
+	wget_xml_callback_t callback,
 	void *user_ctx,
 	int hints)
 {

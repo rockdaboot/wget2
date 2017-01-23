@@ -50,14 +50,14 @@ struct _ENTRY {
 };
 
 struct _wget_hashmap_st {
-	unsigned int
-		(*hash)(const void *); // hash function
-	int
-		(*cmp)(const void *, const void *); // compare function
-	void
-		(*key_destructor)(void *); // key destructor function
-	void
-		(*value_destructor)(void *); // value destructor function
+	wget_hashmap_hash_t
+		hash; // hash function
+	wget_hashmap_compare_t
+		cmp; // compare function
+	wget_hashmap_key_destructor_t
+		key_destructor; // key destructor function
+	wget_hashmap_value_destructor_t
+		value_destructor; // value destructor function
 	ENTRY
 		**entry; // pointer to array of pointers to entries
 	int
@@ -76,7 +76,7 @@ struct _wget_hashmap_st {
 // cmp: comparison function for finding
 // the hashmap plus shallow content is freed by hashmap_free()
 
-wget_hashmap_t *wget_hashmap_create(int max, int off, unsigned int (*hash)(const void *), int (*cmp)(const void *, const void *))
+wget_hashmap_t *wget_hashmap_create(int max, int off, wget_hashmap_hash_t hash, wget_hashmap_compare_t cmp)
 {
 	wget_hashmap_t *h = xmalloc(sizeof(wget_hashmap_t));
 
@@ -350,7 +350,7 @@ int wget_hashmap_size(const wget_hashmap_t *h)
 	return h ? h->cur : 0;
 }
 
-int wget_hashmap_browse(const wget_hashmap_t *h, int (*browse)(void *ctx, const void *key, void *value), void *ctx)
+int wget_hashmap_browse(const wget_hashmap_t *h, wget_hashmap_browse_t browse, void *ctx)
 {
 	if (h) {
 		ENTRY *entry;
@@ -368,13 +368,13 @@ int wget_hashmap_browse(const wget_hashmap_t *h, int (*browse)(void *ctx, const 
 	return 0;
 }
 
-void wget_hashmap_setcmpfunc(wget_hashmap_t *h, int (*cmp)(const void *key1, const void *key2))
+void wget_hashmap_setcmpfunc(wget_hashmap_t *h, wget_hashmap_compare_t cmp)
 {
 	if (h)
 		h->cmp = cmp;
 }
 
-void wget_hashmap_sethashfunc(wget_hashmap_t *h, unsigned int (*hash)(const void *key))
+void wget_hashmap_sethashfunc(wget_hashmap_t *h, wget_hashmap_hash_t hash)
 {
 	if (h) {
 		h->hash = hash;
@@ -383,13 +383,13 @@ void wget_hashmap_sethashfunc(wget_hashmap_t *h, unsigned int (*hash)(const void
 	}
 }
 
-void wget_hashmap_set_key_destructor(wget_hashmap_t *h, void (*destructor)(void *key))
+void wget_hashmap_set_key_destructor(wget_hashmap_t *h, wget_hashmap_key_destructor_t destructor)
 {
 	if (h)
 		h->key_destructor = destructor;
 }
 
-void wget_hashmap_set_value_destructor(wget_hashmap_t *h, void (*destructor)(void *value))
+void wget_hashmap_set_value_destructor(wget_hashmap_t *h, wget_hashmap_value_destructor_t destructor)
 {
 	if (h)
 		h->value_destructor = destructor;

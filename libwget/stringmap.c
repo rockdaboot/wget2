@@ -65,12 +65,12 @@ static unsigned int G_GNUC_WGET_PURE hash_string_nocase(const char *key)
 
 wget_stringmap_t *wget_stringmap_create(int max)
 {
-	return wget_hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string, (int (*)(const void *, const void *))wget_strcmp);
+	return wget_hashmap_create(max, -2, (wget_hashmap_hash_t)hash_string, (wget_hashmap_compare_t)wget_strcmp);
 }
 
 wget_stringmap_t *wget_stringmap_create_nocase(int max)
 {
-	return wget_hashmap_create(max, -2, (unsigned int (*)(const void *))hash_string_nocase, (int (*)(const void *, const void *))wget_strcasecmp);
+	return wget_hashmap_create(max, -2, (wget_hashmap_hash_t)hash_string_nocase, (wget_hashmap_compare_t)wget_strcasecmp);
 }
 
 int wget_stringmap_put_noalloc(wget_stringmap_t *h, const char *key, const void *value)
@@ -123,19 +123,19 @@ int wget_stringmap_size(const wget_stringmap_t *h)
 	return wget_hashmap_size(h);
 }
 
-int wget_stringmap_browse(const wget_stringmap_t *h, int (*browse)(void *ctx, const char *key, void *value), void *ctx)
+int wget_stringmap_browse(const wget_stringmap_t *h, wget_stringmap_browse_t browse, void *ctx)
 {
-	return wget_hashmap_browse(h, (int (*)(void *, const void *, void *))browse, ctx);
+	return wget_hashmap_browse(h, (wget_hashmap_browse_t)browse, ctx);
 }
 
-void wget_stringmap_setcmpfunc(wget_stringmap_t *h, int (*cmp)(const char *key1, const char *key2))
+void wget_stringmap_setcmpfunc(wget_stringmap_t *h, wget_stringmap_compare_t cmp)
 {
-	wget_hashmap_setcmpfunc(h, (int (*)(const void *, const void *))cmp);
+	wget_hashmap_setcmpfunc(h, (wget_hashmap_compare_t)cmp);
 }
 
-void wget_stringmap_sethashfunc(wget_stringmap_t *h, unsigned int (*hash)(const char *key))
+void wget_stringmap_sethashfunc(wget_stringmap_t *h, wget_stringmap_hash_t hash)
 {
-	wget_hashmap_sethashfunc(h, (unsigned int (*)(const void *))hash);
+	wget_hashmap_sethashfunc(h, (wget_hashmap_hash_t)hash);
 }
 
 void wget_stringmap_setloadfactor(wget_stringmap_t *h, float factor)
@@ -143,7 +143,7 @@ void wget_stringmap_setloadfactor(wget_stringmap_t *h, float factor)
 	wget_hashmap_setloadfactor(h, factor);
 }
 
-void wget_stringmap_set_value_destructor(wget_hashmap_t *h, void (*destructor)(void *value))
+void wget_stringmap_set_value_destructor(wget_hashmap_t *h, wget_stringmap_value_destructor_t destructor)
 {
-	wget_hashmap_set_value_destructor(h, destructor);
+	wget_hashmap_set_value_destructor(h, (wget_hashmap_value_destructor_t)destructor);
 }

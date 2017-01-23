@@ -69,7 +69,7 @@ static void _css_get_url(void *context, const char *url, size_t len, size_t pos)
 
 	if (!ctx->uris) {
 		ctx->uris = wget_vector_create(16, -2, NULL);
-		wget_vector_set_destructor(ctx->uris, (void(*)(void *))_free_url);
+		wget_vector_set_destructor(ctx->uris, (wget_vector_destructor_t)_free_url);
 	}
 
 	wget_vector_add(ctx->uris, &parsed_url, sizeof(parsed_url));

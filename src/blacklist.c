@@ -77,7 +77,7 @@ static int G_GNUC_WGET_NONNULL_ALL _blacklist_print(G_GNUC_WGET_UNUSED void *ctx
 void blacklist_print(void)
 {
 	wget_thread_mutex_lock(&mutex);
-	wget_hashmap_browse(blacklist, (int(*)(void *, const void *, void *))_blacklist_print, NULL);
+	wget_hashmap_browse(blacklist, (wget_hashmap_browse_t)_blacklist_print, NULL);
 	wget_thread_mutex_unlock(&mutex);
 }
 
@@ -100,8 +100,8 @@ wget_iri_t *blacklist_add(wget_iri_t *iri)
 		wget_thread_mutex_lock(&mutex);
 
 		if (!blacklist) {
-			blacklist = wget_hashmap_create(128, -2, (unsigned int(*)(const void *))hash_iri, (int(*)(const void *, const void *))wget_iri_compare);
-			wget_hashmap_set_key_destructor(blacklist, (void(*)(void *))_free_entry);
+			blacklist = wget_hashmap_create(128, -2, (wget_hashmap_hash_t)hash_iri, (wget_hashmap_compare_t)wget_iri_compare);
+			wget_hashmap_set_key_destructor(blacklist, (wget_hashmap_key_destructor_t)_free_entry);
 		}
 
 		if (!wget_hashmap_contains(blacklist, iri)) {

@@ -113,7 +113,6 @@ void wget_logger_set_func(wget_logger_t *logger, wget_logger_func_t func)
 }
 
 wget_logger_func_t wget_logger_get_func(wget_logger_t *logger)
-//void (*wget_logger_get_func(wget_logger_t *logger))(const char *, size_t)
 {
 	return logger ? logger->func : NULL;
 }

@@ -73,8 +73,8 @@ void *yyrealloc(void *p, size_t size) {
 
 void wget_css_parse_buffer(
 	const char *buf,
-	void(*callback_uri)(void *user_ctx, const char *url, size_t len, size_t pos),
-	void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
+	wget_css_parse_uri_cb_t callback_uri,
+	wget_css_parse_encoding_cb_t callback_encoding,
 	void *user_ctx)
 {
 	int token;
@@ -161,8 +161,8 @@ void wget_css_parse_buffer(
 
 void wget_css_parse_file(
 	const char *fname,
-	void(*callback_uri)(void *user_ctx, const char *url, size_t len, size_t pos),
-	void(*callback_encoding)(void *user_ctx, const char *url, size_t len),
+	wget_css_parse_uri_cb_t callback_uri,
+	wget_css_parse_encoding_cb_t callback_encoding,
 	void *user_ctx)
 {
 	int fd;

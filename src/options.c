@@ -330,8 +330,8 @@ static int parse_header(option_t opt, const char *val)
 
 		if (!v) {
 			v = *((wget_vector_t **)opt->var) =
-				wget_vector_create(8, 4, (int (*)(const void *, const void *))compare_wget_http_param);
-			wget_vector_set_destructor(v, (void(*)(void *))wget_http_free_param);
+				wget_vector_create(8, 4, (wget_vector_compare_t)compare_wget_http_param);
+			wget_vector_set_destructor(v, (wget_vector_destructor_t)wget_http_free_param);
 		}
 
 		delim_pos = strchr(val, ':');
@@ -374,7 +374,7 @@ static int parse_stringlist(option_t opt, const char *val)
 		const char *s, *p;
 
 		if (!v)
-			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, -2, (int (*)(const void *, const void *))strcmp);
+			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, -2, (wget_vector_compare_t)strcmp);
 
 		for (s = p = val; *p; s = p + 1) {
 			if ((p = strchrnul(s, ',')) != s)
@@ -440,8 +440,8 @@ static int parse_taglist(option_t opt, const char *val)
 		const char *s, *p;
 
 		if (!v) {
-			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, -2, (int(*)(const void *, const void *))_compare_tag);
-			wget_vector_set_destructor(v, (void(*)(void *))_free_tag);
+			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, -2, (wget_vector_compare_t)_compare_tag);
+			wget_vector_set_destructor(v, (wget_vector_destructor_t)_free_tag);
 		}
 
 		for (s = p = val; *p; s = p + 1) {
@@ -1209,7 +1209,7 @@ int init(int argc, const char **argv)
 	config.http_proxy = wget_strdup(getenv("http_proxy"));
 	config.https_proxy = wget_strdup(getenv("https_proxy"));
 	config.default_page = wget_strdup(config.default_page);
-	config.domains = wget_vector_create(16, -2, (int (*)(const void *, const void *))strcmp);
+	config.domains = wget_vector_create(16, -2, (wget_vector_compare_t)strcmp);
 //	config.exclude_domains = wget_vector_create(16, -2, NULL);
 
 	// create list of default config file names

@@ -220,11 +220,11 @@ void *wget_list_getnext(const void *elem)
  *
  * void dump(WGET_LIST *list)
  * {
- *	  wget_list_browse(list, (int(*)(void *, void *))print_elem, NULL);
+ *	  wget_list_browse(list, (wget_list_browse_t)print_elem, NULL);
  * }
  * \endcode
  */
-int wget_list_browse(const wget_list_t *list, wget_list_browse_cb_t browse, void *context)
+int wget_list_browse(const wget_list_t *list, wget_list_browse_t browse, void *context)
 {
 	if (!list)
 		return -1;

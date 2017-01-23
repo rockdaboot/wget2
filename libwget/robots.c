@@ -98,7 +98,7 @@ ROBOTS *wget_robots_parse(const char *data, const char *client)
 			} else {
 				if (!robots->paths) {
 					robots->paths = wget_vector_create(32, -2, NULL);
-					wget_vector_set_destructor(robots->paths, (void(*)(void *))_free_path);
+					wget_vector_set_destructor(robots->paths, (wget_vector_destructor_t)_free_path);
 				}
 				for (p = data; !isspace(*p); p++);
 				path.len = p - data;

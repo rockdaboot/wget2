@@ -875,7 +875,7 @@ int main(int argc, const char **argv)
 	sigaction(SIGWINCH, &sig_action, NULL);
 #endif
 
-	known_urls = wget_hashmap_create(128, -2, (unsigned int (*)(const void *))hash_url, (int (*)(const void *, const void *))strcmp);
+	known_urls = wget_hashmap_create(128, -2, (wget_hashmap_hash_t)hash_url, (wget_hashmap_compare_t)strcmp);
 
 	n = init(argc, argv);
 	if (n < 0) {
@@ -1770,7 +1770,7 @@ static void _remember_for_conversion(const char *filename, wget_iri_t *base_url,
 
 	if (!conversions) {
 		conversions = wget_vector_create(128, -2, NULL);
-		wget_vector_set_destructor(conversions, (void(*)(void *))_free_conversion_entry);
+		wget_vector_set_destructor(conversions, (wget_vector_destructor_t)_free_conversion_entry);
 	}
 
 	wget_vector_add(conversions, &conversion, sizeof(conversion));

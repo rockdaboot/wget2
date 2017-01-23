@@ -388,7 +388,7 @@ char *wget_read_file(const char *fname, size_t *size)
  * performing no further actions.
  */
 int wget_update_file(const char *fname,
-	int (*load_func)(void *, FILE *fp), int (*save_func)(void *, FILE *fp), void *context)
+	wget_update_load_t load_func, wget_update_load_t save_func, void *context)
 {
 	FILE *fp;
 	const char *tmpdir, *basename;
