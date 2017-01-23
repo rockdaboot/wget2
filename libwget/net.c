@@ -278,7 +278,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 		}
 	}
 
-	if (wget_get_logger(WGET_LOGGER_DEBUG)->vprintf) {
+	if (wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG))) {
 		for (struct addrinfo *ai = addrinfo; ai; ai = ai->ai_next) {
 			char adr[NI_MAXHOST], sport[NI_MAXSERV];
 
@@ -550,6 +550,7 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, const char *port)
 	struct addrinfo *ai;
 	int sockfd = -1, rc, ret = WGET_E_UNKNOWN;
 	char adr[NI_MAXHOST], s_port[NI_MAXSERV];
+	int debug = wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG));
 
 	if (tcp->addrinfo_allocated)
 		freeaddrinfo(tcp->addrinfo);
@@ -558,7 +559,7 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, const char *port)
 	tcp->addrinfo_allocated = !tcp->caching;
 
 	for (ai = tcp->addrinfo; ai; ai = ai->ai_next) {
-		if (wget_get_logger(WGET_LOGGER_DEBUG)->vprintf) {
+		if (debug) {
 			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
 				debug_printf("trying %s:%s...\n", adr, s_port);
 			else
@@ -578,7 +579,7 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, const char *port)
 				error_printf(_("Failed to set socket option NODELAY\n"));
 
 			if (tcp->bind_addrinfo) {
-				if (wget_get_logger(WGET_LOGGER_DEBUG)->vprintf) {
+				if (debug) {
 					if ((rc = getnameinfo(tcp->bind_addrinfo->ai_addr, tcp->bind_addrinfo->ai_addrlen, adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
 						debug_printf("binding to %s:%s...\n", adr, s_port);
 					else
@@ -643,6 +644,7 @@ int wget_tcp_listen(wget_tcp_t *tcp, const char *host, const char *port, int bac
 	struct addrinfo *ai;
 	int sockfd = -1, rc;
 	char adr[NI_MAXHOST], s_port[NI_MAXSERV];
+	int debug = wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG));
 
 	if (tcp->bind_addrinfo_allocated)
 		freeaddrinfo(tcp->bind_addrinfo);
@@ -652,7 +654,7 @@ int wget_tcp_listen(wget_tcp_t *tcp, const char *host, const char *port, int bac
 	tcp->bind_addrinfo_allocated = !tcp->caching;
 
 	for (ai = tcp->bind_addrinfo; ai; ai = ai->ai_next) {
-		if (wget_get_logger(WGET_LOGGER_DEBUG)->vprintf) {
+		if (debug) {
 			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
 				debug_printf("try to listen on %s:%s...\n", adr, s_port);
 			else
@@ -689,7 +691,7 @@ int wget_tcp_listen(wget_tcp_t *tcp, const char *host, const char *port, int bac
 			if (listen(sockfd, backlog) == 0) {
 				tcp->sockfd = sockfd;
 
-				if (wget_get_logger(WGET_LOGGER_DEBUG)->vprintf) {
+				if (debug) {
 					if (!port)
 						snprintf(s_port, sizeof(s_port), "%d", wget_tcp_get_local_port(tcp));
 

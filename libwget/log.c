@@ -38,6 +38,7 @@
 
 #include <wget.h>
 #include "private.h"
+#include "logger.h"
 
 static wget_logger_t
 	_info,

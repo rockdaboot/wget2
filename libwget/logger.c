@@ -35,6 +35,7 @@
 
 #include <wget.h>
 #include "private.h"
+#include "logger.h"
 
 static void G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))
 _logger_vprintf_func(const wget_logger_t *logger, const char *fmt, va_list args)
@@ -143,4 +144,9 @@ void wget_logger_set_file(wget_logger_t *logger, const char *fname)
 const char *wget_logger_get_file(wget_logger_t *logger)
 {
 	return logger ? logger->fname : NULL;
+}
+
+int wget_logger_is_active(wget_logger_t *logger)
+{
+	return !!logger->vprintf;
 }

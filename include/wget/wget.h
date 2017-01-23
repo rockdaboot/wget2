@@ -536,6 +536,8 @@ WGETAPI FILE *
 	wget_logger_get_stream(wget_logger_t *logger) G_GNUC_WGET_PURE;
 WGETAPI const char *
 	wget_logger_get_file(wget_logger_t *logger) G_GNUC_WGET_PURE;
+WGETAPI int
+	wget_logger_is_active(wget_logger_t *logger) G_GNUC_WGET_PURE;
 
 /*
  * Logging routines
