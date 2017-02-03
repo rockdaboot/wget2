@@ -1,0 +1,121 @@
+#!/bin/bash -e
+#
+# Written 2016 by Tim Ruehsen
+
+# Find out the archive extensions
+for archive in $(grep "^DIST_ARCHIVES =" Makefile|cut -d '=' -f2); do
+  extensions=$extensions" "$(echo $archive|cut -s -d'.' -f3)
+done
+echo "The following archive types will be created/uploaded: " $extensions
+
+app_name=$(grep "^PACKAGE_NAME='" configure|cut -d "'" -f2)
+app_ver=$(grep "^PACKAGE_VERSION='" configure|cut -d "'" -f2)
+
+echo "Current version of $app_name is $app_ver"
+echo
+echo -n "Enter Y if that is OK, else enter N and edit configure.ac: "
+read x
+[ "$x" != "y" -a "$x" != "Y" ] && exit 0
+
+echo
+grep -i "Changes in $app_name" NEWS|head -1
+echo -n "Did you edit the NEWS file ? [y/N] "
+read x
+[ "$x" != "y" -a "$x" != "Y" ] && exit 0
+
+echo
+
+export CFLAGS="-g -O2 -Wall"
+
+echo "* Bootstrap"
+./bootstrap >/dev/null
+
+echo "* Configure"
+./configure -q
+
+echo "* Make"
+make -s clean
+make -s
+
+echo "* Make distcheck"
+make -s distcheck >/dev/null
+
+echo "* Make dist"
+make -s dist-$ext >/dev/null
+
+while true; do
+  echo "Alpha or Regular release ? [r/A] "
+  read x
+  if test "$x" = "r" || test "$x" = "R"; then
+    directory="/incoming/ftp"
+    break
+  elif test "$x" = "a" || test "$x" = "A"; then
+    directory="/incoming/alpha"
+    break
+  fi
+done
+
+x=$(gpg --list-secret-keys 2>/dev/null|grep ^sec|awk '{ print $2 }')
+echo $x
+if [ "$x" = "" ]; then
+  echo No signing key found - please check with 'gpg --list-secret-keys'
+  exit 1
+fi
+
+# arrays just work in Bash
+keys=($x)
+if [ ${#keys[@]} -eq 1 ]; then
+  IFS='/' arr=($x)
+  signing_key=${arr[1]}
+else
+  for ((i=0; i < ${#keys[@]}; i++)); do
+    echo "$((i+1))) ${keys[i]}"
+  done
+  while true; do
+    echo -n "Enter 1-${#keys[@]}: "
+    read x
+
+    # check for digits only
+    if [ -n "${i//[0-9]/}" ]; then continue; fi
+
+    if test $x -ge 1 || test $x -le ${#keys[@]}; then
+      IFS='/' arr=(${keys[$((x-1))]})
+      signing_key=${arr[1]}
+      break
+    fi
+  done
+fi
+unset IFS
+echo $signing_key
+
+# fetch app_version again, just in case
+app_ver=$(grep "^PACKAGE_VERSION='" configure|cut -d "'" -f2)
+
+for ext in $extensions; do
+  app_tarball="${app_name}-${app_ver}.tar.$ext"
+  gpg --default-key $signing_key --yes -b $app_tarball
+
+  echo -e "version: 1.2\nfilename: ${app_tarball}\ndirectory: ${app_name}\n" >${app_tarball}.directive
+  gpg --default-key $signing_key --yes --clearsign ${app_tarball}.directive
+
+ftp -v -n -i -p ftp-upload.gnu.org <<EOF
+user anonymous
+cd $directory
+put ${app_tarball}
+put ${app_tarball}.sig
+put ${app_tarball}.directive.asc
+EOF
+
+done
+
+prev_tag=`git tag|tail -2|head -1`
+echo "Don't forget to mention the following contributors in the announcement:"
+(
+  if [ -n $prev_tag ]; then
+    git log --format="%aN" --reverse
+    git log --reverse|grep -i reported|cut -d':' -f2|cut -d'<' -f1|cut -d' ' -f2-|tr -d '"'
+  else
+    git log ${prev_tag}.. --format="%aN" --reverse
+    git log ${prev_tag}.. --reverse|grep -i reported|cut -d':' -f2|cut -d'<' -f1|cut -d' ' -f2-|tr -d '"'
+  fi
+) | sort -u
