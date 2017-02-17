@@ -1045,10 +1045,8 @@ int main(int argc, const char **argv)
 	if (config.hsts && config.hsts_file && hsts_changed)
 		wget_hsts_db_save(config.hsts_db, config.hsts_file);
 
-	if (config.hpkp && config.hpkp_file && hpkp_changed) {
-		int written_pins = wget_hpkp_db_save(config.hpkp_file, config.hpkp_db);
-		wget_debug_printf("HPKP: %d public key pins written\n", written_pins);
-	}
+	if (config.hpkp && config.hpkp_file && hpkp_changed)
+		wget_hpkp_db_save(config.hpkp_db, config.hpkp_file);
 
 	if (config.tls_resume && config.tls_session_file && wget_tls_session_db_changed(config.tls_session_db))
 		wget_tls_session_db_save(config.tls_session_db, config.tls_session_file);
@@ -1247,7 +1245,8 @@ static int process_response_header(wget_http_response_t *resp)
 	// care for HSTS feature
 	if (config.hsts &&
 			iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address &&
-			resp->hsts) {
+			resp->hsts)
+	{
 		wget_hsts_db_add(config.hsts_db, wget_hsts_new(iri->host, atoi(iri->resolv_port), resp->hsts_maxage, resp->hsts_include_subdomains));
 		hsts_changed = 1;
 	}
@@ -1255,31 +1254,13 @@ static int process_response_header(wget_http_response_t *resp)
 	// HTTP Public-Key Pinning (RFC 7469)
 	if (config.hpkp &&
 			iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address &&
-			resp->hpkp) {
-		switch (wget_hpkp_db_add(config.hpkp_db, iri->host, resp->hpkp_maxage, resp->hpkp_include_subdomains, resp->hpkp_pins)) {
-		case WGET_HPKP_OK:
-			wget_debug_printf("HPKP: Host '%s' added to known pinned hosts list\n", iri->host);
-			hpkp_changed = 1;
-			break;
-		case WGET_HPKP_ENTRY_EXISTS:
-			wget_debug_printf("HPKP: Host '%s' already a known pinned host\n", iri->host);
-			break;
-		case WGET_HPKP_ENTRY_EXPIRED:
-			wget_debug_printf("HPKP: Host '%s' expired. Ignoring.\n", iri->host);
-			break;
-		case WGET_HPKP_WAS_DELETED:
-			wget_debug_printf("HPKP: Host '%s' removed from known pinned host list\n", iri->host);
-			hpkp_changed = 1;
-			break;
-		case WGET_HPKP_NOT_ENOUGH_PINS:
-			wget_debug_printf("HPKP: Not enough pins for host '%s'. Ignoring.\n", iri->host);
-			break;
-		default:
-			wget_debug_printf("HPKP: unknown error. Host '%s' could not be added.\n", iri->host);
-			break;
-		}
-
-		wget_vector_clear(resp->hpkp_pins);
+			resp->hpkp)
+	{
+		wget_hpkp_set_host(resp->hpkp, iri->host);
+		wget_hpkp_set_port(resp->hpkp, atoi(iri->resolv_port));
+		wget_hpkp_db_add(config.hpkp_db, &resp->hpkp);
+		hpkp_changed = 1;
+		// wget_vector_clear(resp->hpkp_pins);
 	}
 
 	if (resp->code == 302 && resp->links && resp->digests)

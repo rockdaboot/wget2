@@ -1433,8 +1433,8 @@ int init(int argc, const char **argv)
 	}
 
 	if (config.hpkp) {
-		config.hpkp_db = wget_hpkp_db_init();
-		wget_hpkp_db_load(config.hpkp_file, config.hpkp_db);
+		config.hpkp_db = wget_hpkp_db_init(NULL);
+		wget_hpkp_db_load(config.hpkp_db, config.hpkp_file);
 	}
 
 	if (config.tls_resume) {
@@ -1551,7 +1551,7 @@ void deinit(void)
 
 	wget_cookie_db_free(&config.cookie_db);
 	wget_hsts_db_free(&config.hsts_db);
-	wget_hpkp_db_deinit(&config.hpkp_db);
+	wget_hpkp_db_free(&config.hpkp_db);
 	wget_tls_session_db_free(&config.tls_session_db);
 	wget_ocsp_db_free(&config.ocsp_db);
 	wget_netrc_db_free(&config.netrc_db);

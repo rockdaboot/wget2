@@ -589,54 +589,31 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 //	       pin-sha256="E9CZ9INDbd+2eRQozYqqbQ2yXLVKB9+xcprMF+44U1g=";
 //	       pin-sha256="LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ=";
 //	       max-age=10000; includeSubDomains
-#define SET_OUT(p, v) if (p) *p = v
-// TODO this function and most of the others starting with wget_http_parse_* do not check
-// the out arguments for != NULL. Most of them are marked with G_GNUC_NONNULL((1)).
-// We should use a macro like SET_OUT(), above, to make the parameters optional. If the caller
-// is not interested in some output argument, he just passes NULL.
-// TODO Use coccinelle for instance, to catch out all these cases.
-int wget_http_parse_public_key_pins(const char *s, time_t *ma, char *is, wget_vector_t *pin_list)
+const char *wget_http_parse_public_key_pins(const char *s, wget_hpkp_t *hpkp)
 {
-	int retval = 1;
 	wget_http_header_param_t param;
-	time_t max_age = 0;
-	char include_subdomains = 0;
+
+	wget_hpkp_set_include_subdomains(hpkp, 0);
 
 	while (*s) {
 		s = wget_http_parse_param(s, &param.name, &param.value);
 
-		if (!param.value && !wget_strcasecmp_ascii(param.name, "includeSubDomains")) {
-			include_subdomains = 1;
-		} else if (param.value) {
-			if (!wget_strcasecmp(param.name, "max-age")) {
-				max_age = strtoul(param.value, NULL, 10);
-				if (max_age == 0 && errno == EINVAL)
-					goto fail;
-			} else if (!wget_strcasecmp(param.name, "pin-sha256") && pin_list) {
-				wget_vector_add_str(pin_list, param.value);
-				/* +1 for the NULL-terminator */
-//				wget_list_append(pin_list, param.value, strlen(param.value) + 1);
+		if (param.value) {
+			if (!wget_strcasecmp_ascii(param.name, "max-age")) {
+				wget_hpkp_set_maxage(hpkp, atol(param.value));
+			} else if (!wget_strncasecmp_ascii(param.name, "pin-", 4)) {
+				wget_hpkp_pin_add(hpkp, param.name + 4, param.value);
 			}
+		} else {
+			if (!wget_strcasecmp_ascii(param.name, "includeSubDomains"))
+				wget_hpkp_set_include_subdomains(hpkp, 1);
 		}
 
 		xfree(param.name);
 		xfree(param.value);
 	}
 
-	goto end;
-
-fail:
-	max_age = 0;
-	include_subdomains = 0;
-	retval = 0;
-end:
-	SET_OUT(ma, max_age);
-	SET_OUT(is, include_subdomains);
-
-	xfree(param.name);
-	xfree(param.value);
-
-	return retval;
+	return s;
 }
 
 // RFC 6797
@@ -1253,15 +1230,8 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 		case 'p':
 			if (!wget_strncasecmp_ascii(name, "Public-Key-Pins", namelen)) {
 				if (!resp->hpkp) {
-					if (resp->hpkp_pins == NULL)
-						resp->hpkp_pins = wget_vector_create(5, -2, (int (*) (const void *, const void *)) strcmp);
-					if (wget_http_parse_public_key_pins(s,
-						&resp->hpkp_maxage,
-						&resp->hpkp_include_subdomains,
-						resp->hpkp_pins))
-						resp->hpkp = 1;
-				} else {
-					wget_error_printf("Invalid 'Public-Key-Pins' header\n");
+					resp->hpkp = wget_hpkp_new();
+					wget_http_parse_public_key_pins(s, resp->hpkp);
 				}
 			}
 			break;
@@ -1394,9 +1364,9 @@ void wget_http_free_cookies(wget_vector_t **cookies)
 	wget_vector_free(cookies);
 }
 
-void wget_http_free_hpkp_entries(wget_vector_t **hpkp_pins)
+void wget_http_free_hpkp_entries(wget_hpkp_t **hpkp)
 {
-	wget_vector_free(hpkp_pins);
+	wget_hpkp_free(hpkp);
 }
 
 void wget_http_free_response(wget_http_response_t **resp)
@@ -1406,7 +1376,7 @@ void wget_http_free_response(wget_http_response_t **resp)
 		wget_http_free_digests(&(*resp)->digests);
 		wget_http_free_challenges(&(*resp)->challenges);
 		wget_http_free_cookies(&(*resp)->cookies);
-		wget_http_free_hpkp_entries(&(*resp)->hpkp_pins);
+		wget_http_free_hpkp_entries(&(*resp)->hpkp);
 		xfree((*resp)->content_type);
 		xfree((*resp)->content_type_encoding);
 		xfree((*resp)->content_filename);
@@ -1873,6 +1843,14 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 				if (!memcmp(name, "content-length", namelen)) {
 					resp->content_length = (size_t) atoll(s);
 					resp->content_length_valid = 1;
+				}
+				break;
+			case 15:
+				if (!memcmp(name, "public-key-pins", namelen)) {
+					if (!resp->hpkp) {
+						resp->hpkp = wget_hpkp_new();
+						wget_http_parse_public_key_pins(s, resp->hpkp);
+					}
 				}
 				break;
 			case 16:
