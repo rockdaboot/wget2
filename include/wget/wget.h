@@ -1059,6 +1059,8 @@ WGETAPI void
 	wget_hpkp_db_deinit(wget_hpkp_db_t *hpkp_db);
 WGETAPI void
 	wget_hpkp_db_free(wget_hpkp_db_t **hpkp_db);
+WGETAPI int
+	wget_hpkp_db_check_pubkey(wget_hpkp_db_t *hpkp_db, const char *host, const void *pubkey, size_t pubkeysize);
 WGETAPI void
 	wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **hpkp);
 WGETAPI int
@@ -1429,6 +1431,7 @@ WGETAPI int
 #define WGET_SSL_OCSP_CACHE        17
 #define WGET_SSL_ALPN              18
 #define WGET_SSL_SESSION_CACHE     19
+#define WGET_SSL_HPKP_CACHE     20
 
 WGETAPI void
 	wget_ssl_init(void);

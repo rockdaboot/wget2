@@ -56,6 +56,7 @@
 #	include <gnutls/ocsp.h>
 #endif
 #include <gnutls/crypto.h>
+#include <gnutls/abstract.h>
 
 #include <wget.h>
 #include "private.h"
@@ -77,6 +78,8 @@ static struct _config {
 		*ocsp_host_cache;
 	wget_tls_session_db_t
 		*tls_session_cache;
+	wget_hpkp_db_t
+		*hpkp_cache;
 	char
 		check_certificate,
 		check_hostname,
@@ -128,6 +131,7 @@ void wget_ssl_set_config_string(int key, const char *value)
 	case WGET_SSL_OCSP_SERVER: _config.ocsp_server = value; break;
 	case WGET_SSL_OCSP_CACHE: _config.ocsp_cert_cache = (wget_ocsp_db_t *)value; break;
 	case WGET_SSL_SESSION_CACHE: _config.tls_session_cache = (wget_tls_session_db_t *)value; break;
+	case WGET_SSL_HPKP_CACHE: _config.hpkp_cache = (wget_hpkp_db_t *)value; break;
 	case WGET_SSL_ALPN: _config.alpn = value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
 	}
@@ -686,6 +690,45 @@ static int cert_verify_ocsp(gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer)
 }
 #endif // HAVE_GNUTLS_OCSP_H
 
+static int _cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname)
+{
+	gnutls_pubkey_t key = NULL;
+	gnutls_datum_t pubkey;
+	int rc, ret = -1;
+
+	if (!_config.hpkp_cache)
+		return 0;
+
+	gnutls_pubkey_init(&key);
+
+	if ((rc = gnutls_pubkey_import_x509(key, cert, 0)) != GNUTLS_E_SUCCESS) {
+		error_printf(_("Failed to import pubkey: %s\n"), gnutls_strerror (rc));
+		return 0;
+	}
+
+	if ((rc = gnutls_pubkey_export2 (key, GNUTLS_X509_FMT_DER, &pubkey))  != GNUTLS_E_SUCCESS) {
+		error_printf(_("Failed to export pubkey: %s\n"), gnutls_strerror (rc));
+		ret = 0;
+		goto out;
+	}
+
+	if ((rc = wget_hpkp_db_check_pubkey(_config.hpkp_cache, hostname, pubkey.data, pubkey.size)) != -2) {
+		if (rc == 0)
+			wget_debug_printf("host has no pubkey pinnings\n");
+		else if (rc == 1)
+			wget_debug_printf("pubkey is matching a pinning\n");
+		else if (rc == -1)
+			wget_error_printf("Error while checking pubkey pinning\n");
+		ret = 0;
+	}
+
+	gnutls_free(pubkey.data);
+
+out:
+	gnutls_pubkey_deinit(key);
+	return ret; // Pubkey not found
+}
+
 /* This function will verify the peer's certificate, and check
  * if the hostname matches, as well as the activation, expiration dates.
  */
@@ -800,6 +843,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		}
 	} else {
 		error_printf(_("%s: No certificate was found!\n"), tag);
+		goto out;
+	}
+
+	if (_cert_verify_hpkp(cert, hostname)) {
+		error_printf(_("%s: Pubkey pinning mismatch!\n"), tag);
 		goto out;
 	}
 

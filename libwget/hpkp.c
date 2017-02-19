@@ -60,7 +60,7 @@ struct _wget_hpkp_st {
 struct _wget_hpkp_pin_st {
 	const char *
 		pin_b64; /* base64 encoded <pin> */
-	const unsigned char *
+	const void *
 		pin; /* binary hash */
 	const char *
 		hash_type; /* type of <pin>, e.g. 'sha-256' */
@@ -268,6 +268,30 @@ static int _wget_hpkp_compare_pins(wget_hpkp_t *hpkp1, wget_hpkp_t *hpkp2)
 	return wget_vector_browse(hpkp1->pins, (wget_vector_browse_t)_wget_hpkp_contains_pin, hpkp2);
 }
 */
+
+int wget_hpkp_db_check_pubkey(wget_hpkp_db_t *hpkp_db, const char *host, const void *pubkey, size_t pubkeysize)
+{
+	wget_hpkp_t key = { .host = host, .port = 443 };
+	wget_hpkp_t *hpkp = wget_hashmap_get(hpkp_db->entries, &key);
+	char digest[wget_hash_get_len(WGET_DIGTYPE_SHA256)];
+
+	if (!hpkp)
+		return 0; // OK, no pubkey pinned
+
+	if (wget_hash_fast(WGET_DIGTYPE_SHA256, pubkey, pubkeysize, digest))
+		return -1;
+
+//		char pin[wget_base64_get_encoded_length(sizeof(digest)) + 1];
+//		size_t pinsize = wget_base64_encode(pin, digest, sizeof(digest));
+//		wget_hpkp_pin_t pinkey = { .pin = pin, .pinsize = pinsize, .hash_type = "sha256" };
+
+	wget_hpkp_pin_t pinkey = { .pin = digest, .pinsize = sizeof(digest), .hash_type = "sha256" };
+
+	if (wget_vector_find(hpkp->pins, &pinkey) != -1)
+		return 1; // OK, pinned pubkey found
+
+	return -2;
+}
 
 /* We 'consume' _hpkp and thus set *_hpkp to NULL, so that the calling function
  * can't access it any more */

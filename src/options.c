@@ -1502,6 +1502,7 @@ int init(int argc, const char **argv)
 	wget_ssl_set_config_string(WGET_SSL_OCSP_CACHE, (const char *)config.ocsp_db);
 	wget_ssl_set_config_string(WGET_SSL_ALPN, config.http2 ? "h2,h2-16,h2-14,http/1.1" : NULL);
 	wget_ssl_set_config_string(WGET_SSL_SESSION_CACHE, (const char *)config.tls_session_db);
+	wget_ssl_set_config_string(WGET_SSL_HPKP_CACHE, (const char *)config.hpkp_db);
 
 	// convert host lists to lowercase
 	for (int it = 0; it < wget_vector_size(config.domains); it++) {
