@@ -185,6 +185,7 @@ wget_hpkp_t *wget_hpkp_new(void)
 
 void wget_hpkp_set_host(wget_hpkp_t *hpkp, const char *host)
 {
+	xfree(hpkp->host);
 	hpkp->host = wget_strdup(host);
 }
 
