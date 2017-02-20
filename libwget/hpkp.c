@@ -272,19 +272,30 @@ static int _wget_hpkp_compare_pins(wget_hpkp_t *hpkp1, wget_hpkp_t *hpkp2)
 
 int wget_hpkp_db_check_pubkey(wget_hpkp_db_t *hpkp_db, const char *host, const void *pubkey, size_t pubkeysize)
 {
-	wget_hpkp_t key = { .host = host, .port = 443 };
-	wget_hpkp_t *hpkp = wget_hashmap_get(hpkp_db->entries, &key);
+	wget_hpkp_t key = { .port = 443 };
+	wget_hpkp_t *hpkp = NULL;
 	char digest[wget_hash_get_len(WGET_DIGTYPE_SHA256)];
+	int subdomain = 1;
+
+	for (const char *domain = host; *domain && !hpkp; domain = strchrnul(domain, '.')) {
+		while (*domain == '.')
+			domain++;
+
+		key.host = domain;
+		hpkp = wget_hashmap_get(hpkp_db->entries, &key);
+
+		if (!hpkp)
+			subdomain = 1;
+	}
 
 	if (!hpkp)
-		return 0; // OK, no pubkey pinned
+		return 0; // OK, host is not in database
+
+	if (subdomain && !hpkp->include_subdomains)
+		return 0; // OK, found a matching super domain which isn't responsible for <host>
 
 	if (wget_hash_fast(WGET_DIGTYPE_SHA256, pubkey, pubkeysize, digest))
 		return -1;
-
-//		char pin[wget_base64_get_encoded_length(sizeof(digest)) + 1];
-//		size_t pinsize = wget_base64_encode(pin, digest, sizeof(digest));
-//		wget_hpkp_pin_t pinkey = { .pin = pin, .pinsize = pinsize, .hash_type = "sha256" };
 
 	wget_hpkp_pin_t pinkey = { .pin = digest, .pinsize = sizeof(digest), .hash_type = "sha256" };
 
