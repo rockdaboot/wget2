@@ -1042,7 +1042,7 @@ typedef struct _wget_hpkp_st wget_hpkp_t;
 WGETAPI wget_hpkp_t *
 	wget_hpkp_new(void);
 WGETAPI void
-	wget_hpkp_free(wget_hpkp_t **hpkp);
+	wget_hpkp_free(wget_hpkp_t *hpkp);
 WGETAPI void
 	wget_hpkp_pin_add(wget_hpkp_t *hpkp, const char *pin_type, const char *pin_b64);
 WGETAPI void

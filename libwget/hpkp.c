@@ -140,22 +140,15 @@ void wget_hpkp_pin_add(wget_hpkp_t *hpkp, const char *pin_type, const char *pin_
 }
 
 /*
- * This is a callback function to destroy an hpkp entry.
- * It will be invoked by the hash table.
+ * Free hpkp_t instance created by wget_hpkp_new()
+ * It can be used as destructor function in vectors and hashmaps.
  */
-static void _hpkp_free(wget_hpkp_t *hpkp)
+void wget_hpkp_free(wget_hpkp_t *hpkp)
 {
 	if (hpkp) {
 		xfree(hpkp->host);
 		wget_vector_free(&hpkp->pins);
-	}
-}
-
-void wget_hpkp_free(wget_hpkp_t **hpkp)
-{
-	if (hpkp) {
-		_hpkp_free(*hpkp);
-		xfree(*hpkp);
+		xfree(hpkp);
 	}
 }
 
@@ -220,7 +213,7 @@ wget_hpkp_db_t *wget_hpkp_db_init(wget_hpkp_db_t *hpkp_db)
 		memset(hpkp_db, 0, sizeof(*hpkp_db));
 
 	hpkp_db->entries = wget_hashmap_create(16, -2, (wget_hashmap_hash_t)_hash_hpkp, (wget_hashmap_compare_t)_compare_hpkp);
-	wget_hashmap_set_value_destructor(hpkp_db->entries, (wget_hashmap_value_destructor_t)_hpkp_free);
+	wget_hashmap_set_key_destructor(hpkp_db->entries, (wget_hashmap_key_destructor_t)wget_hpkp_free);
 
 	/*
 	 * Keys and values for the hashmap are 'hpkp' entries, so value == key.
@@ -319,7 +312,7 @@ void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
 	if (hpkp->maxage == 0) {
 		if (wget_hashmap_remove(hpkp_db->entries, hpkp))
 			debug_printf("removed HPKP %s\n", hpkp->host);
-		wget_hpkp_free(_hpkp);
+		wget_hpkp_free(hpkp);
 	} else {
 		wget_hpkp_t *old = wget_hashmap_get(hpkp_db->entries, hpkp);
 
@@ -333,7 +326,7 @@ void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
 				hpkp->pins = NULL;
 				debug_printf("update HPKP %s:%d (maxage=%ld, includeSubDomains=%d)\n", old->host, old->port, old->maxage, old->include_subdomains);
 			}
-			wget_hpkp_free(_hpkp);
+			wget_hpkp_free(hpkp);
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'hpkp'
 			debug_printf("add HPKP %s:%d (maxage=%ld, includeSubDomains=%d)\n", hpkp->host, hpkp->port, hpkp->maxage, hpkp->include_subdomains);

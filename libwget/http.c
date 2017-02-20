@@ -1366,7 +1366,10 @@ void wget_http_free_cookies(wget_vector_t **cookies)
 
 void wget_http_free_hpkp_entries(wget_hpkp_t **hpkp)
 {
-	wget_hpkp_free(hpkp);
+	if (hpkp) {
+		wget_hpkp_free(*hpkp);
+		*hpkp = NULL;
+	}
 }
 
 void wget_http_free_response(wget_http_response_t **resp)
