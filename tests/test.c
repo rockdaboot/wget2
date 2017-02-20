@@ -1286,6 +1286,102 @@ static void test_hsts(void)
 	wget_hsts_db_free(&hsts_db);
 }
 
+/* need to create pin-sha256 values for Public-Key-Pins: HTTP header */
+/*
+static const char *_sha256_base64(const void *src)
+{
+	char digest[wget_hash_get_len(WGET_DIGTYPE_SHA256)];
+//	static char base64[wget_base64_get_encoded_length(sizeof(digest)) + 1];
+	static char base64[128];
+	size_t len = strlen(src);
+
+	if (wget_hash_fast(WGET_DIGTYPE_SHA256, src, len, digest))
+		return "";
+
+	wget_base64_encode(base64, digest, sizeof(digest));
+	base64[sizeof(base64)] = 0;
+
+	return base64;
+}
+*/
+
+#define HPKP_PUBKEY_1 "pubkey1"
+#define HPKP_PUBKEY_2 "pubkey2"
+#define HPKP_PUBKEY_3 "pubkey3"
+#define HPKP_PIN_1 "RxmgXsIrtjMhR8zanWqTw+QUWqeJj4fCvmOyoKbw5lg="
+#define HPKP_PIN_2 "Ic8LNwKypu+EXTi/ld8yp6P7lEH1jDVNIly8P/ykeWo="
+#define HPKP_PIN_3 "/szJ2BMcM2l9Ypapui03ZcpqNJUvwsfi2uMKHZBTuaw="
+
+static void test_hpkp(void)
+{
+	struct hpkp_db_data {
+		const char *
+			host;
+		int
+			port;
+		const char *
+			hpkp_params;
+	} hpkp_db_data[] = {
+		{ "www.example.com", 443, "max-age=14400; includeSubDomains; "\
+		  "pin-sha256=\"" HPKP_PIN_1 "\"; pin-sha256=\"" HPKP_PIN_2 "\"; pin-sha256=\"" HPKP_PIN_3 "\"" },
+		{ "www.example2.com", 443, "max-age=14400"\
+		  "pin-sha256=\"" HPKP_PIN_1 "\"; pin-sha256=\"" HPKP_PIN_2 "\"" },
+		{ "www.example2.com", 443, "max-age=0" }, // this removes the previous entry
+	};
+	static const struct hpkp_data {
+		const char *
+			host;
+		const char *
+			pubkey;
+		int
+			result;
+	} hpkp_data[] = {
+		{ "www.example.com", HPKP_PUBKEY_1, 1 }, // host match, pubkey #1
+		{ "www.example.com", HPKP_PUBKEY_2, 1 }, // host match, pubkey #2
+		{ "www.example.com", HPKP_PUBKEY_3, 1 }, // host match, pubkey #3
+		{ "www.example.com", "nomatch", -2 }, // host match, pubkey does not match
+		{ "ftp.example.com", HPKP_PUBKEY_1, 0 }, // no match at all
+		{ "example.com", HPKP_PUBKEY_1, 0 }, // super domain, no match at all
+		{ "sub.www.example.com", HPKP_PUBKEY_1, 1 }, // single subdomain
+		{ "sub1.sub2.www.example.com", HPKP_PUBKEY_1, 1 }, // double subdomain
+		{ "www.example2.com", HPKP_PUBKEY_1, 0 }, // entry should have been removed due to max-age=0
+	};
+	wget_hpkp_db_t *hpkp_db = wget_hpkp_db_init(NULL);
+	int n;
+
+	/* generate values for pin-sha256 */
+	// printf("#define HPKP_PIN_1 \"%s\"\n", _sha256_base64(HPKP_PUBKEY_1));
+	// printf("#define HPKP_PIN_2 \"%s\"\n", _sha256_base64(HPKP_PUBKEY_2));
+	// printf("#define HPKP_PIN_3 \"%s\"\n", _sha256_base64(HPKP_PUBKEY_3));
+	
+	// fill HPKP database with values
+	for (unsigned it = 0; it < countof(hpkp_db_data); it++) {
+		const struct hpkp_db_data *t = &hpkp_db_data[it];
+		wget_hpkp_t *hpkp = wget_hpkp_new();
+
+		wget_hpkp_set_host(hpkp, t->host);
+		wget_hpkp_set_port(hpkp, t->port);
+		wget_http_parse_public_key_pins(t->hpkp_params, hpkp);
+		wget_hpkp_db_add(hpkp_db, &hpkp);
+	}
+
+	// check HSTS database with values
+	for (unsigned it = 0; it < countof(hpkp_data); it++) {
+		const struct hpkp_data *t = &hpkp_data[it];
+
+		n = wget_hpkp_db_check_pubkey(hpkp_db, t->host, t->pubkey, strlen(t->pubkey));
+
+		if (n == t->result)
+			ok++;
+		else {
+			failed++;
+			info_printf("Failed [%u]: wget_hpkp_check_pubkey(%s,%s) -> %d (expected %d)\n", it, t->host, t->pubkey, n, t->result);
+		}
+	}
+
+	wget_hpkp_db_free(&hpkp_db);
+}
+
 static void test_parse_challenge(void)
 {
 	static const struct test_data {
@@ -1820,6 +1916,7 @@ int main(int argc, const char **argv)
 
 	test_cookies();
 	test_hsts();
+	test_hpkp();
 	test_parse_challenge();
 	test_bar();
 
