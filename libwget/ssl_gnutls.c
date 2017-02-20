@@ -693,7 +693,6 @@ static int cert_verify_ocsp(gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer)
 static int _cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname)
 {
 	gnutls_pubkey_t key = NULL;
-	gnutls_datum_t pubkey;
 	int rc, ret = -1;
 
 	if (!_config.hpkp_cache)
@@ -702,27 +701,52 @@ static int _cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname)
 	gnutls_pubkey_init(&key);
 
 	if ((rc = gnutls_pubkey_import_x509(key, cert, 0)) != GNUTLS_E_SUCCESS) {
-		error_printf(_("Failed to import pubkey: %s\n"), gnutls_strerror (rc));
+		error_printf(_("Failed to import pubkey: %s\n"), gnutls_strerror(rc));
 		return 0;
 	}
 
-	if ((rc = gnutls_pubkey_export2 (key, GNUTLS_X509_FMT_DER, &pubkey))  != GNUTLS_E_SUCCESS) {
-		error_printf(_("Failed to export pubkey: %s\n"), gnutls_strerror (rc));
+#if GNUTLS_VERSION_NUMBER >= 0x030103
+	gnutls_datum_t pubkey;
+
+	if ((rc = gnutls_pubkey_export2(key, GNUTLS_X509_FMT_DER, &pubkey)) != GNUTLS_E_SUCCESS) {
+		error_printf(_("Failed to export pubkey: %s\n"), gnutls_strerror(rc));
 		ret = 0;
 		goto out;
 	}
 
-	if ((rc = wget_hpkp_db_check_pubkey(_config.hpkp_cache, hostname, pubkey.data, pubkey.size)) != -2) {
-		if (rc == 0)
-			wget_debug_printf("host has no pubkey pinnings\n");
-		else if (rc == 1)
-			wget_debug_printf("pubkey is matching a pinning\n");
-		else if (rc == -1)
-			wget_error_printf("Error while checking pubkey pinning\n");
+	rc = wget_hpkp_db_check_pubkey(_config.hpkp_cache, hostname, pubkey.data, pubkey.size);
+	gnutls_free(pubkey.data);
+#else
+	size_t size = 0;
+	void *data = NULL;
+
+	if ((rc = gnutls_pubkey_export(key, GNUTLS_X509_FMT_DER, NULL, &size)) != GNUTLS_E_SHORT_MEMORY_BUFFER) {
+		error_printf(_("Failed to export pubkey: %s\n"), gnutls_strerror(rc));
 		ret = 0;
+		goto out;
 	}
 
-	gnutls_free(pubkey.data);
+	data = xmalloc(size);
+
+	if ((rc = gnutls_pubkey_export(key, GNUTLS_X509_FMT_DER, NULL, &size)) != GNUTLS_E_SHORT_MEMORY_BUFFER) {
+		error_printf(_("Failed to export pubkey: %s\n"), gnutls_strerror(rc));
+		ret = 0;
+		goto out;
+	}
+
+	rc = wget_hpkp_db_check_pubkey(_config.hpkp_cache, hostname, data, size);
+	xfree(data);
+#endif
+
+	if (rc != -2) {
+		if (rc == 0)
+			debug_printf("host has no pubkey pinnings\n");
+		else if (rc == 1)
+			debug_printf("pubkey is matching a pinning\n");
+		else if (rc == -1)
+			error_printf("Error while checking pubkey pinning\n");
+		ret = 0;
+	}
 
 out:
 	gnutls_pubkey_deinit(key);
