@@ -75,3 +75,8 @@ Generating a signed CRL...
 Update times.
 The certificate will expire in (days): -1
 CRL Number (default: 6080006793650397145):
+
+To create sha256+base64 pin-sha256 info for HPKP:
+$ certtool --pubkey-info --outder --infile x509-server-cert.pem|sha256sum|cut -d' ' -f1|xxd -r -p|base64
+or with newer versions of certtool:
+$ certtool --key-id --hash sha256 --infile x509-server-cert.pem|xxd -r -p|base64
