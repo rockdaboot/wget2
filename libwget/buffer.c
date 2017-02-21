@@ -127,6 +127,7 @@ void wget_buffer_free_data(wget_buffer_t *buf)
 		if (buf->release_data) {
 			xfree(buf->data);
 			buf->release_data = 0;
+			buf->size = 0;
 		}
 	}
 }
