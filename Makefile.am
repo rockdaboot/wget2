@@ -38,11 +38,11 @@ clean-lcov:
 	rm -rf wget2_base.info wget2_test.info wget2_total.info */*.gc?? lcov/
 	lcov --zerocounters --directory src/ --directory libwget/
 
+LCOV_INFO=wget2.info
 check-coverage: clean clean-lcov
 	$(MAKE) CFLAGS="$(CFLAGS) --coverage" LDFLAGS="$(LDFLAGS) --coverage"
-	lcov --capture --no-external --initial --directory src/ --directory libwget/ --output-file wget2_base.info
+	lcov --capture --initial --directory src/ --directory libwget/.libs --output-file $(LCOV_INFO)
 	$(MAKE) CFLAGS="$(CFLAGS) --coverage" LDFLAGS="$(LDFLAGS) --coverage" VALGRIND_TESTS=0 check
-	lcov --capture --no-external --ignore-errors source --directory src/ --directory libwget/ --output-file wget2_test.info
-	lcov -a wget2_base.info -a wget2_test.info -o wget2_total.info
-	lcov --remove wget2_total.info 'libwget/test_linking.c' 'libwget/css_tokenizer.lex' 'libwget/<stdout>' -o wget2_total.info
-	genhtml --prefix . --ignore-errors source wget2_total.info --legend --title "Wget2" --output-directory=lcov
+	lcov --capture --directory src/ --directory libwget/.libs --output-file $(LCOV_INFO)
+	lcov --remove $(LCOV_INFO) '*/test_linking.c' '*/css_tokenizer.lex' '*/<stdout>' -o $(LCOV_INFO)
+	genhtml --prefix . --ignore-errors source $(LCOV_INFO) --legend --title "Wget2" --output-directory=lcov
