@@ -146,6 +146,15 @@ static void test_buffer(void)
 	_test_buffer(bufp, "Test 4");
 	wget_buffer_free(&bufp);
 
+	// testing buffer on stack, forcing internal allocation
+
+	wget_buffer_init(&buf, sbuf, 0);
+	wget_buffer_deinit(&buf);
+
+	wget_buffer_init(&buf, sbuf, 0);
+	_test_buffer(&buf, "Test 5");
+	wget_buffer_deinit(&buf);
+
 	// testing buffer on heap, using initial heap memory
 	// without resizing
 
@@ -196,6 +205,20 @@ static void test_buffer(void)
 		}
 	}
 	wget_buffer_deinit(&buf);
+
+	// force reallocation
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	wget_buffer_memset(&buf, 0, 4096);
+	wget_buffer_free_data(&buf);
+	wget_buffer_ensure_capacity(&buf, 256);
+	wget_buffer_memset(&buf, 0, 4096);
+	bufp = wget_buffer_init(NULL, NULL, 0);
+	wget_buffer_bufcpy(&buf, bufp);
+	wget_buffer_strcpy(bufp, "moin");
+	wget_buffer_bufcpy(&buf, bufp);
+	wget_buffer_free(&bufp);
+	wget_buffer_deinit(&buf);
+
 }
 
 static void test_buffer_printf(void)
