@@ -268,7 +268,7 @@ int wget_hpkp_db_check_pubkey(wget_hpkp_db_t *hpkp_db, const char *host, const v
 	wget_hpkp_t key = { .port = 443 };
 	wget_hpkp_t *hpkp = NULL;
 	char digest[wget_hash_get_len(WGET_DIGTYPE_SHA256)];
-	int subdomain = 1;
+	int subdomain = 0;
 
 	for (const char *domain = host; *domain && !hpkp; domain = strchrnul(domain, '.')) {
 		while (*domain == '.')
@@ -309,7 +309,7 @@ void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
 
 	wget_thread_mutex_lock(&hpkp_db->mutex);
 
-	if (hpkp->maxage == 0) {
+	if (hpkp->maxage == 0 || wget_vector_size(hpkp->pins) == 0) {
 		if (wget_hashmap_remove(hpkp_db->entries, hpkp))
 			debug_printf("removed HPKP %s\n", hpkp->host);
 		wget_hpkp_free(hpkp);

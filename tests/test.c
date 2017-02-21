@@ -1324,9 +1324,12 @@ static void test_hpkp(void)
 	} hpkp_db_data[] = {
 		{ "www.example.com", 443, "max-age=14400; includeSubDomains; "\
 		  "pin-sha256=\"" HPKP_PIN_1 "\"; pin-sha256=\"" HPKP_PIN_2 "\"; pin-sha256=\"" HPKP_PIN_3 "\"" },
-		{ "www.example2.com", 443, "max-age=14400"\
+		{ "www.example2.com", 443, "max-age=14400; "\
 		  "pin-sha256=\"" HPKP_PIN_1 "\"; pin-sha256=\"" HPKP_PIN_2 "\"" },
-		{ "www.example2.com", 443, "max-age=0" }, // this removes the previous entry
+		{ "www.example2.com", 443, "max-age=0" }, // this removes the previous entry due to max-age=0
+		{ "www.example3.com", 443, "max-age=14400; "\
+		  "pin-sha256=\"" HPKP_PIN_1 "\"; pin-sha256=\"" HPKP_PIN_2 "\"" },
+		{ "www.example3.com", 443, "max-age=14400" }, // this removes the previous entry, due to no PINs
 	};
 	static const struct hpkp_data {
 		const char *
@@ -1345,6 +1348,7 @@ static void test_hpkp(void)
 		{ "sub.www.example.com", HPKP_PUBKEY_1, 1 }, // single subdomain
 		{ "sub1.sub2.www.example.com", HPKP_PUBKEY_1, 1 }, // double subdomain
 		{ "www.example2.com", HPKP_PUBKEY_1, 0 }, // entry should have been removed due to max-age=0
+		{ "www.example3.com", HPKP_PUBKEY_1, 0 }, // entry should have been removed due to no PINs
 	};
 	wget_hpkp_db_t *hpkp_db = wget_hpkp_db_init(NULL);
 	int n;
@@ -1353,7 +1357,7 @@ static void test_hpkp(void)
 	// printf("#define HPKP_PIN_1 \"%s\"\n", _sha256_base64(HPKP_PUBKEY_1));
 	// printf("#define HPKP_PIN_2 \"%s\"\n", _sha256_base64(HPKP_PUBKEY_2));
 	// printf("#define HPKP_PIN_3 \"%s\"\n", _sha256_base64(HPKP_PUBKEY_3));
-	
+
 	// fill HPKP database with values
 	for (unsigned it = 0; it < countof(hpkp_db_data); it++) {
 		const struct hpkp_db_data *t = &hpkp_db_data[it];

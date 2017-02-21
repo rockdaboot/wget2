@@ -1260,7 +1260,6 @@ static int process_response_header(wget_http_response_t *resp)
 		wget_hpkp_set_port(resp->hpkp, atoi(iri->resolv_port));
 		wget_hpkp_db_add(config.hpkp_db, &resp->hpkp);
 		hpkp_changed = 1;
-		// wget_vector_clear(resp->hpkp_pins);
 	}
 
 	if (resp->code == 302 && resp->links && resp->digests)
