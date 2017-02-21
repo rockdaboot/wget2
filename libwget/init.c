@@ -160,8 +160,7 @@ void wget_global_deinit(void)
 		// free resources here
 		if (_config.cookie_db && _config.cookies_enabled && _config.cookie_file) {
 			wget_cookie_db_save(_config.cookie_db, _config.cookie_file);
-			wget_cookie_db_deinit(_config.cookie_db);
-			_config.cookie_db = NULL;
+			wget_cookie_db_free(&_config.cookie_db);
 		}
 		wget_tcp_set_bind_address(NULL, NULL);
 		wget_tcp_set_dns_caching(NULL, 0);

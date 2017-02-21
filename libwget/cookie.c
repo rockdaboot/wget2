@@ -497,8 +497,9 @@ wget_cookie_db_t *wget_cookie_db_init(wget_cookie_db_t *cookie_db)
 #ifdef WITH_LIBPSL
 #if ((PSL_VERSION_MAJOR > 0) || (PSL_VERSION_MAJOR == 0 && PSL_VERSION_MINOR >= 16))
 	cookie_db->psl = psl_latest(NULL);
-#endif
+#else
 	cookie_db->psl = (psl_ctx_t *)psl_builtin();
+#endif
 #endif
 
 	return cookie_db;

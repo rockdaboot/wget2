@@ -162,7 +162,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 
 out:
 #ifdef COOKIE_SUPPORT
-	wget_cookie_db_deinit(cookies);
+	wget_cookie_db_free(&cookies);
 #endif
 	wget_http_close(&conn);
 	wget_http_free_request(&req);
