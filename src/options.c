@@ -396,7 +396,7 @@ static int parse_header(option_t opt, const char *val)
 	return 0;
 }
 
-static int parse_stringlist(option_t opt, const char *val)
+static int parse_stringlist_expand(option_t opt, const char *val, int expand)
 {
 	if (val && *val) {
 		wget_vector_t *v = *((wget_vector_t **)opt->var);
@@ -406,14 +406,31 @@ static int parse_stringlist(option_t opt, const char *val)
 			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, -2, (wget_vector_compare_t)strcmp);
 
 		for (s = p = val; *p; s = p + 1) {
-			if ((p = strchrnul(s, ',')) != s)
-				wget_vector_add_noalloc(v, wget_strmemdup(s, p - s));
+			if ((p = strchrnul(s, ',')) != s) {
+				const char *fname = wget_strmemdup(s, p - s);
+
+				if (expand && *s == '~') {
+					wget_vector_add_noalloc(v, _shell_expand(fname));
+					xfree(fname);
+				} else
+					wget_vector_add_noalloc(v, fname);
+			}
 		}
 	} else {
 		wget_vector_free(opt->var);
 	}
 
 	return 0;
+}
+
+static int parse_stringlist(option_t opt, const char *val)
+{
+	return parse_stringlist_expand(opt, val, 0);
+}
+
+static int parse_filenames(option_t opt, const char *val)
+{
+	return parse_stringlist_expand(opt, val, 1);
 }
 
 static void _free_tag(wget_html_tag_t *tag)
@@ -719,8 +736,8 @@ static const struct optionw options[] = {
 	{ "check-hostname", &config.check_hostname, parse_bool, 0, 0 },
 	{ "chunk-size", &config.chunk_size, parse_numbytes, 1, 0 },
 	{ "clobber", &config.clobber, parse_bool, 0, 0 },
-	{ "config", &config.config_file, parse_filename, 1, 0}, // for backward compatibility only
-	{ "config-file", &config.config_file, parse_filename, 1, 0},
+	{ "config", &config.config_files, parse_filenames, 1, 0}, // for backward compatibility only
+	{ "config-file", &config.config_files, parse_filenames, 1, 0},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0 },
 	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0 },
 	{ "content-on-error", &config.content_on_error, parse_bool, 0, 0 },
