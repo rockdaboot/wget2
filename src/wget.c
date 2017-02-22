@@ -1219,9 +1219,6 @@ static int process_response_header(wget_http_response_t *resp)
 
 	print_status(downloader, "HTTP response %d %s\n", resp->code, resp->reason);
 
-	if (config.server_response)
-		info_printf("# got header %zu bytes:\n%s\n\n", resp->header->length, resp->header->data);
-
 	// Wget1.x compatibility
 	if (resp->code/100 == 4) {
 		if (job->head_first)
@@ -1702,10 +1699,10 @@ void *downloader_thread(void *p)
 
 			host_reset_failure(host);
 
+			job = resp->req->user_data;
+
 			// general response check to see if we need further processing
 			if (process_response_header(resp) == 0) {
-				job = resp->req->user_data;
-
 				if (job->head_first) {
 					process_head_response(resp); // HEAD request/response
 				} else if (job->part) {
@@ -2550,6 +2547,12 @@ out:
 static int _get_body(wget_http_response_t *resp, void *context, const char *data, size_t length)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
+
+	if (ctx->length == 0) {
+		// first call to _get_body
+		if (config.server_response)
+			info_printf("# got header %zu bytes:\n%s\n", resp->header->length, resp->header->data);
+	}
 
 	ctx->length += length;
 
