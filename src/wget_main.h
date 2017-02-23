@@ -31,6 +31,8 @@
 #include <stddef.h>
 #include <stdlib.h> // needed for free()
 
+#include <wget.h>
+
 // use the helper routines provided by libwget
 #define info_printf wget_info_printf
 #define error_printf  wget_error_printf
