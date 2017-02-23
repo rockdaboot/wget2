@@ -1799,6 +1799,39 @@ static unsigned int G_GNUC_WGET_PURE hash_url(const char *url)
 	return hash;
 }
 
+/*
+ * helper function: percent-unescape, convert to utf-8, create URL string using base
+ */
+static int _normalize_uri(wget_iri_t *base, wget_string_t *url, const char *encoding, wget_buffer_t *buf)
+{
+	char *urlpart = wget_strmemdup(url->p, url->len);
+	char *urlpart_encoded;
+	size_t urlpart_encoded_length;
+	int rc;
+
+	if (url->len == 0 || (url->len == 1 && *url->p == '#')) // ignore e.g. href='#'
+		return -1;
+
+	wget_iri_unescape_inline(urlpart);
+	rc = wget_memiconv(encoding, urlpart, strlen(urlpart), "utf-8", &urlpart_encoded, &urlpart_encoded_length);
+	xfree(urlpart);
+
+	if (rc) {
+		info_printf(_("URL '%.*s' not followed (conversion failed)\n"), (int)url->len, url->p);
+		return -2;
+	}
+
+	rc = !wget_iri_relative_to_abs(base, urlpart_encoded, urlpart_encoded_length, buf);
+	xfree(urlpart_encoded);
+
+	if (rc) {
+		error_printf(_("Cannot resolve relative URI %.*s\n"), (int)url->len, url->p);
+		return -3;
+	}
+
+	return 0;
+}
+
 void html_parse(JOB *job, int level, const char *html, size_t html_len, const char *encoding, wget_iri_t *base)
 {
 	wget_iri_t *allocated_base = NULL;
@@ -1883,16 +1916,14 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	if (parsed->base.p) {
-		if (parsed->base.len > 1 || (parsed->base.len == 1 && *parsed->base.p != '#')) { // ignore e.g. href='#'
-			if (wget_iri_relative_to_abs(base, parsed->base.p, parsed->base.len, &buf)) {
-				// info_printf("%.*s -> %s\n", (int)parsed->base.len, parsed->base.p, buf.data);
-				if (!base && !buf.length)
-					info_printf(_("BASE '%.*s' not usable (missing absolute base URI)\n"), (int)parsed->base.len, parsed->base.p);
-				else
-					base = allocated_base = wget_iri_parse(buf.data, encoding);
-			} else {
-				error_printf(_("Cannot resolve BASE URI %.*s\n"), (int)parsed->base.len, parsed->base.p);
-			}
+		if (_normalize_uri(base, &parsed->base, encoding, &buf) == 0) {
+			// info_printf("%.*s -> %s\n", (int)parsed->base.len, parsed->base.p, buf.data);
+			if (!base && !buf.length)
+				info_printf(_("BASE '%.*s' not usable (missing absolute base URI)\n"), (int)parsed->base.len, parsed->base.p);
+			else
+				base = allocated_base = wget_iri_parse(buf.data, "utf-8");
+		} else {
+			error_printf(_("Cannot resolve BASE URI %.*s\n"), (int)parsed->base.len, parsed->base.p);
 		}
 	}
 
@@ -1911,19 +1942,16 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 			}
 		}
 
-		if (url->len > 1 || (url->len == 1 && *url->p != '#')) { // ignore e.g. href='#'
-			if (wget_iri_relative_to_abs(base, url->p, url->len, &buf)) {
-				// info_printf("%.*s -> %s\n", (int)url->len, url->p, buf.data);
-				if (!base && !buf.length)
-					info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)url->len, url->p);
-				else {
-					// Blacklist for URLs before they are processed
-					if (wget_hashmap_put_noalloc(known_urls, wget_memdup(buf.data, buf.length + 1), NULL) == 0)
-						add_url(job, encoding, buf.data, 0);
-				}
-			} else {
-				error_printf(_("Cannot resolve relative URI %.*s\n"), (int)url->len, url->p);
-			}
+		if (_normalize_uri(base, url, encoding, &buf))
+			continue;
+
+		// info_printf("%.*s -> %s\n", (int)url->len, url->p, buf.data);
+		if (!base && !buf.length)
+			info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)url->len, url->p);
+		else {
+			// Blacklist for URLs before they are processed
+			if (wget_hashmap_put_noalloc(known_urls, wget_strmemdup(buf.data, buf.length), NULL) == 0)
+				add_url(job, "utf-8", buf.data, 0);
 		}
 	}
 	wget_thread_mutex_unlock(&known_urls_mutex);
@@ -2077,13 +2105,17 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, wget_i
 			// but not any other.
 			if (baselen && (len <= baselen || wget_strncasecmp(line, base->uri, baselen))) {
 				info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)len, line);
-			} else {
+			} else if (len < 1024) {
 				char url[len + 1];
 
 				memcpy(url, line, len);
 				url[len] = 0;
 
 				add_url(job, encoding, url, 0);
+			} else {
+				char *url = wget_strmemdup(line, len);
+				add_url(job, encoding, url, 0);
+				xfree(url);
 			}
 		}
 	}
