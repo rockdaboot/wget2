@@ -2261,7 +2261,7 @@ static void _css_parse_encoding(void *context, const char *encoding, size_t len)
 static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
 	struct css_context *ctx = context;
-	wget_string_t *u = { url, len };
+	wget_string_t u = { url, len };
 
 	if (_normalize_uri(ctx->base, &u, ctx->encoding, &ctx->uri_buf))
 		return;
