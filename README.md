@@ -47,6 +47,8 @@ Wget2 has already many features that go beyond what Wget1.x provides.<br>
 
 An incomplete list of implemented features:
 
+- [brotli](https://github.com/google/brotli) decompression support (Accept-Encdoing: br)
+- HPKP - HTTP Public Key Pinning (RFC7469) with persistent database
 - TCP Fast Open for plain text *and* for HTTPS
 - TLS Session Resumption including persistent session data cache
 - TLS False Start (with GnuTLS >= 3.5.0)
@@ -134,6 +136,7 @@ The following packages are needed to build Wget2:
 * libz >= 1.2.3 (the distribution may call the package zlib*, eg. zlib1g on Debian)
 * liblzma >= 5.1.1alpha (optional, if you want HTTP lzma decompression)
 * libbz2 >= 1.0.6 (optional, if you want HTTP bzip2 decompression)
+* libbrotlidec >= 1.0.0 (optional, if you want HTTP brotli decompression)
 * libgnutls >= 2.10.0
 * libidn2 >= 0.9 + libunistring >= 0.9.3 (libidn >= 1.25 if you don't have libidn2)
 * flex >= 2.5.35
