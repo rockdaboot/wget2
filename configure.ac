@@ -410,6 +410,21 @@ AS_IF([test "x$with_lzma" != xno], [
 ])
 AM_CONDITIONAL([WITH_LZMA], [test "x$with_lzma" = xyes])
 
+AC_ARG_WITH(brotlidec, AS_HELP_STRING([--without-brotlidec], [disable Brotli compression support]), with_brotlidec=$withval, with_brotlidec=yes)
+AS_IF([test "x$with_brotlidec" != xno], [
+  PKG_CHECK_MODULES([BROTLIDEC], libbrotlidec, [
+    with_brotlidec=yes
+    LIBS="$BROTLIDEC_LIBS $LIBS"
+    CFLAGS="$BROTLIDEC_CFLAGS $CFLAGS"
+    AC_DEFINE([WITH_BROTLIDEC], [1], [Use brotlidec])
+  ], [
+    AC_SEARCH_LIBS(BrotliDecoderCreateInstance, brotlidec,
+      [with_brotlidec=yes; AC_DEFINE([WITH_BROTLIDEC], [1], [Use libbrotlidec])],
+      [with_brotlidec=no;  AC_MSG_WARN(*** libbrotlidec was not found. You will not be able to use Brotli decompression)])
+  ])
+])
+AM_CONDITIONAL([WITH_BROTLIDEC], [test "x$with_brotlidec" = xyes])
+
 AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support]), with_libidn2=$withval, with_libidn2=yes)
 AS_IF([test "x$with_libidn2" != xno], [
   AC_SEARCH_LIBS(idn2_lookup_u8, idn2,
@@ -466,20 +481,21 @@ AC_OUTPUT
 
 AC_MSG_NOTICE([Summary of build options:
 
-  Version:           ${PACKAGE_VERSION}
-  Host OS:           ${host_os}
-  Install prefix:    ${prefix}
-  Compiler:          ${CC}
-  CFlags:            ${CFLAGS} ${CPPFLAGS} ${WARN_CFLAGS}
-  LDFlags:           ${LDFLAGS}
-  Libs:              ${LIBS}
-  SSL/TLS support:   $with_gnutls
-  GZIP compression:  $with_zlib
-  BZIP2 compression: $with_bzip2
-  LZMA compression:  $with_lzma
-  IDNA support:      $IDNA_INFO
-  PSL support:       $with_libpsl
-  HTTP/2.0 support:  $with_libnghttp2
-  Tests:             ${TESTS_INFO}
-  Assertions:        $ENABLE_ASSERT
+  Version:            ${PACKAGE_VERSION}
+  Host OS:            ${host_os}
+  Install prefix:     ${prefix}
+  Compiler:           ${CC}
+  CFlags:             ${CFLAGS} ${CPPFLAGS} ${WARN_CFLAGS}
+  LDFlags:            ${LDFLAGS}
+  Libs:               ${LIBS}
+  SSL/TLS support:    $with_gnutls
+  GZIP compression:   $with_zlib
+  BZIP2 compression:  $with_bzip2
+  LZMA compression:   $with_lzma
+  Brotli compression: $with_brotlidec
+  IDNA support:       $IDNA_INFO
+  PSL support:        $with_libpsl
+  HTTP/2.0 support:   $with_libnghttp2
+  Tests:              ${TESTS_INFO}
+  Assertions:         $ENABLE_ASSERT
 ])

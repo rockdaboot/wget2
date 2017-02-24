@@ -795,7 +795,8 @@ enum {
 	wget_content_encoding_gzip,
 	wget_content_encoding_deflate,
 	wget_content_encoding_lzma,
-	wget_content_encoding_bzip2
+	wget_content_encoding_bzip2,
+	wget_content_encoding_brotli,
 };
 
 WGETAPI wget_decompressor_t *

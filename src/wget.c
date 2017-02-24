@@ -2681,6 +2681,9 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 #if WITH_LZMA
 	wget_buffer_strcat(&buf, buf.length ? ", xz, lzma" : "xz, lzma");
 #endif
+#if WITH_BROTLIDEC
+	wget_buffer_strcat(&buf, buf.length ? ", br" : "br");
+#endif
 	if (!buf.length)
 		wget_buffer_strcat(&buf, "identity");
 

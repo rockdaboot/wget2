@@ -1393,6 +1393,12 @@ int init(int argc, const char **argv)
 	" -lzma"
 #endif
 
+#if defined WITH_BROTLIDEC
+	" +brotlidec"
+#else
+	" -brotlidec"
+#endif
+
 #if defined WITH_BZIP2
 	" +bzip2"
 #else

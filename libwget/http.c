@@ -671,6 +671,8 @@ const char *wget_http_parse_content_encoding(const char *s, char *content_encodi
 		// 'xz' is the tag currently understood by Firefox (2.1.2014)
 		// 'lzma' / 'x-lzma' are the tags currently understood by ELinks
 		*content_encoding = wget_content_encoding_lzma;
+	else if (!wget_strcasecmp_ascii(s, "br"))
+		*content_encoding = wget_content_encoding_brotli;
 	else
 		*content_encoding = wget_content_encoding_identity;
 

@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2017 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -24,11 +24,13 @@
  * 20.06.2012  Tim Ruehsen  created
  * 31.12.2013  Tim Ruehsen  added XZ / LZMA decompression
  * 02.01.2014  Tim Ruehsen  added BZIP2 decompression
+ * 24.02.2017  Tim Ruehsen  added Brotli decompression
  *
  * References
  *   http://en.wikipedia.org/wiki/HTTP_compression
  *   https://wiki.mozilla.org/LZMA2_Compression
  *   https://groups.google.com/forum/#!topic/mozilla.dev.platform/CBhSPWs3HS8
+ *   https://github.com/google/brotli
  */
 
 #if HAVE_CONFIG_H
@@ -50,6 +52,10 @@
 #include <lzma.h>
 #endif
 
+#if WITH_BROTLIDEC
+#include <brotli/decode.h>
+#endif
+
 #include <wget.h>
 #include "private.h"
 
@@ -65,6 +71,10 @@ struct _wget_decompressor_st {
 #if WITH_BZIP2
 	bz_stream
 		bz_strm;
+#endif
+#if WITH_BROTLIDEC
+	BrotliDecoderState
+		*brotli_strm;
 #endif
 
 	wget_decompressor_sink_t
@@ -208,6 +218,64 @@ static void lzma_exit(wget_decompressor_t *dc)
 }
 #endif // WITH_LZMA
 
+#if WITH_BROTLIDEC
+static int brotli_init(BrotliDecoderState **strm)
+{
+	if ((*strm = BrotliDecoderCreateInstance(NULL, NULL, NULL)) == NULL) {
+		error_printf(_("Failed to init Brotli decompression\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+static int brotli_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
+{
+	BrotliDecoderState *strm;
+	BrotliDecoderResult status;
+	uint8_t dst[10240];
+	size_t available_in, available_out;
+	const uint8_t *next_in;
+	uint8_t *next_out;
+
+	if (!srclen) {
+		// special case to avoid decompress errors
+		if (dc->sink)
+			dc->sink(dc->context, "", 0);
+
+		return 0;
+	}
+
+	strm = dc->brotli_strm;
+	next_in = (uint8_t *)src;
+	available_in = srclen;
+
+	do {
+		next_out = (unsigned char *)dst;
+		available_out = sizeof(dst);
+
+		status = BrotliDecoderDecompressStream(strm, &available_in, &next_in, &available_out, &next_out, NULL);
+		if (available_out != sizeof(dst)) {
+			if (dc->sink)
+				dc->sink(dc->context, (char *)dst, sizeof(dst) - available_out);
+		}
+	} while (status == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT);
+
+	if (status == BROTLI_DECODER_RESULT_SUCCESS || BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT)
+		return 0;
+
+	BrotliDecoderErrorCode err = BrotliDecoderGetErrorCode(strm);
+	error_printf(_("Failed to uncompress Brotli stream (%u): %s\n"), status, BrotliDecoderErrorString(err));
+
+	return -1;
+}
+
+static void brotli_exit(wget_decompressor_t *dc)
+{
+	BrotliDecoderDestroyInstance(dc->brotli_strm);
+}
+#endif // WITH_BROTLIDEC
+
 #if WITH_BZIP2
 static int bzip2_init(bz_stream *strm)
 {
@@ -304,6 +372,13 @@ wget_decompressor_t *wget_decompress_open(int encoding,
 		if ((rc = lzma_init(&dc->lzma_strm)) == 0) {
 			dc->decompress = lzma_decompress;
 			dc->exit = lzma_exit;
+		}
+#endif
+	} else if (encoding == wget_content_encoding_brotli) {
+#if WITH_BROTLIDEC
+		if ((rc = brotli_init(&dc->brotli_strm)) == 0) {
+			dc->decompress = brotli_decompress;
+			dc->exit = brotli_exit;
 		}
 #endif
 	} else {
