@@ -2261,18 +2261,15 @@ static void _css_parse_encoding(void *context, const char *encoding, size_t len)
 static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
 	struct css_context *ctx = context;
+	wget_string_t *u = { url, len };
 
-	if (len > 1 || (len == 1 && *url != '#')) {
-		// ignore e.g. href='#'
-		if (wget_iri_relative_to_abs(ctx->base, url, len, &ctx->uri_buf)) {
-			if (!ctx->base && !ctx->uri_buf.length)
-				info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)len, url);
-			else
-				add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
-		} else {
-			error_printf(_("Cannot resolve relative URI %.*s\n"), (int)len, url);
-		}
-	}
+	if (_normalize_uri(ctx->base, &u, ctx->encoding, &ctx->uri_buf))
+		return;
+
+	if (!ctx->base && !ctx->uri_buf.length)
+		info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)len, url);
+	else
+		add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
 }
 
 void css_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base)
