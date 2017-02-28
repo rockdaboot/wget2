@@ -113,8 +113,8 @@ Some ideas of what could be done next (but contact us via mailing list before yo
 - DANE / DNSSEC (waiting for Debian to have libdane from GnuTLS... but that needs libunbound work with GnuTLS, right
   now it only works with OpenSSL.)
 - WARC support
-- read credentials from secure wallets (e.g. kwallet, firefox, http://sourceforge.net/projects/passwordsafe/)
-- [Chromium HSTS domain preload list](http://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json)
+- read credentials from secure wallets (e.g. kwallet, firefox, https://sourceforge.net/projects/passwordsafe/)
+- [Chromium HSTS domain preload list](https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json)
 - respect data-urls
 - Streaming (.m3u, etc. formats)
 - FTP support
