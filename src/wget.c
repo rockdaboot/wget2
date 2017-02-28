@@ -1932,11 +1932,21 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 		WGET_HTML_PARSED_URL *html_url = wget_vector_get(parsed->uris, it);
 		wget_string_t *url = &html_url->url;
 
+		/* do not follow action and formation at all */
+		if (!wget_strcasecmp_ascii(html_url->attr, "action") || !wget_strcasecmp_ascii(html_url->attr, "formaction")) {
+			info_printf(_("URL '%.*s' not followed (action/formaction attribute)\n"), (int)url->len, url->p);
+			continue;
+		}
+
 		// with --page-requisites: just load inline URLs from the deepest level documents
 		if (page_requisites && !wget_strcasecmp_ascii(html_url->attr, "href")) {
 			// don't load from dir 'A', 'AREA' and 'EMBED'
-			if (c_tolower(*html_url->dir) == 'a'
-				&& (html_url->dir[1] == 0 || !wget_strcasecmp_ascii(html_url->dir,"area") || !wget_strcasecmp_ascii(html_url->dir,"embed"))) {
+			// only load from dir 'LINK' when rel was 'icon shortcut' or 'stylesheet'
+			if ((c_tolower(*html_url->dir) == 'a'
+				&& (html_url->dir[1] == 0 || !wget_strcasecmp_ascii(html_url->dir,"area")))
+				|| html_url->link_inline
+				|| !wget_strcasecmp_ascii(html_url->dir,"embed"))
+			{
 				info_printf(_("URL '%.*s' not followed (page requisites + level)\n"), (int)url->len, url->p);
 				continue;
 			}

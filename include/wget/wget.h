@@ -1230,6 +1230,8 @@ typedef struct {
 		attr[16];
 	char
 		dir[16];
+	unsigned char
+		link_inline : 1; // 1 = rel was 'stylesheet' or 'shortcut icon'
 } WGET_HTML_PARSED_URL;
 
 typedef struct {

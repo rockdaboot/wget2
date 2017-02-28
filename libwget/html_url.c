@@ -46,7 +46,8 @@ typedef struct {
 		ignore_tags;
 	char
 		found_robots,
-		found_content_type;
+		found_content_type,
+		link_inline;
 } _html_context_t;
 
 // see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
@@ -90,8 +91,11 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 	//
 	// Also ,we are interested in ROBOTS e.g.
 	//   <META name="ROBOTS" content="NOINDEX, NOFOLLOW">
-	if ((flags & XML_FLG_BEGIN) && (*tag|0x20) == 'm' && !wget_strcasecmp_ascii(tag, "meta")) {
-		ctx->found_robots = ctx->found_content_type = 0;
+	if ((flags & XML_FLG_BEGIN)) {
+		if ((*tag|0x20) == 'm' && !wget_strcasecmp_ascii(tag, "meta"))
+			ctx->found_robots = ctx->found_content_type = 0;
+		else if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link"))
+			ctx->link_inline = 0;
 	}
 
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
@@ -156,6 +160,15 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				return;
 		}
 
+		if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link")) {
+			if (!wget_strcasecmp_ascii(attr, "rel")) {
+				if (!wget_strncasecmp_ascii(val, "icon shortcut", len) || wget_strncasecmp_ascii(val, "stylesheet", len))
+					ctx->link_inline = 1;
+				else
+					ctx->link_inline = 0;
+			}
+		}
+
 		// shortcut to avoid unneeded calls to bsearch()
 		int found = 0;
 
@@ -206,6 +219,8 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 
 			} else {
 				// value is a single URL
+				url.link_inline = ctx->link_inline;
+				ctx->link_inline = 0;
 				strlcpy(url.attr, attr, sizeof(url.attr));
 				strlcpy(url.dir, tag, sizeof(url.dir));
 				url.url.p = val;
@@ -251,7 +266,7 @@ WGET_HTML_PARSED_RESULT *wget_html_get_urls_inline(const char *html, wget_vector
 	_html_context_t context = {
 		.result.follow = 1,
 		.additional_tags = additional_tags,
-		.ignore_tags = ignore_tags
+		.ignore_tags = ignore_tags,
 	};
 
 //	context.result.uris = wget_vector_create(32, -2, NULL);
