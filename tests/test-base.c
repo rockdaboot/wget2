@@ -38,6 +38,8 @@ int main(void)
 				" <A hreF=\"http://localhost:{{port}}/secondpage.html\">second page</a>." \
 				" <a  HreF=\"subpage1.html?query&param#frag\">page in subdir1</a>." \
 				" <a href=\"./subpage2.html\">page in subdir1</a>." \
+				" <a href=\"http://localhost:{{port}}/page+with+spaces.html\">page with spaces</a>." \
+				" <a href=\"http://localhost:{{port}}/css?query+with+spaces&param=bla+blubb\">query with spaces</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -71,6 +73,16 @@ int main(void)
 			.code = "200 Dontcare",
 			.body = "sub2_2"
 		},
+		{
+			.name = "/page%2Bwith%2Bspaces.html",
+			.code = "200 Dontcare",
+			.body = "page with spaces"
+		},
+		{
+			.name = "/css?query+with+spaces&param=bla+blubb",
+			.code = "200 Dontcare",
+			.body = "query with spaces"
+		},
 	};
 
 	// functions won't come back if an error occurs
@@ -90,6 +102,8 @@ int main(void)
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
 			{ urls[5].name + 1, urls[5].body },
+			{ "page+with+spaces.html", urls[6].body },
+			{ "css?query with spaces&param=bla blubb", urls[7].body },
 			{	NULL } },
 		0);
 

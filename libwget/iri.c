@@ -717,7 +717,7 @@ const char *wget_iri_escape_query(const char *src, wget_buffer_t *buf)
 	const char *begin;
 
 	for (begin = src; *src; src++) {
-		if (!wget_iri_isunreserved(*src) && *src != '=') {
+		if (!wget_iri_isunreserved(*src) && *src != '=' && *src != '&') {
 			if (begin != src)
 				wget_buffer_memcat(buf, begin, src - begin);
 			begin = src + 1;
@@ -747,7 +747,7 @@ const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer_t *
 
 	if (iri->query) {
 		wget_buffer_memcat(buf, "?", 1);
-		wget_buffer_strcat(buf, iri->query);
+		wget_iri_escape_query(iri->query, buf);
 	}
 
 	return buf->data;
