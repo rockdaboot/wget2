@@ -2566,7 +2566,8 @@ wget_http_response_t *wget_http_get_response(wget_http_connection_t *conn)
 
 	if (resp) {
 		if (!wget_strcasecmp_ascii(resp->req->method, "GET"))
-			resp->content_length = resp->body->length;
+			if (resp->body)
+				resp->content_length = resp->body->length;
 	}
 
 	return resp;
