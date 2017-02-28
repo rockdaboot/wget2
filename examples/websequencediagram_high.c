@@ -14,7 +14,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * Demo how to create a diagram from a text using www.websequencediagrams.com.
@@ -54,7 +54,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 	wget_buffer_printf_append(body, "&style=%s&apiVersion=1", style);
 
 	resp = wget_http_get(
-		WGET_HTTP_URL, "http://www.websequencediagrams.com",
+		WGET_HTTP_URL, "https://www.websequencediagrams.com",
 		WGET_HTTP_SCHEME, "POST",
 		WGET_HTTP_HEADER_ADD, "Content-Type", "application/x-www-form-urlencoded",
 		WGET_HTTP_BODY, body->data, body->length,
@@ -72,7 +72,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 			goto out;
 
 		p += 8;
-		wget_buffer_printf(url, "http://www.websequencediagrams.com/%.*s", (int) (e - p), p);
+		wget_buffer_printf(url, "https://www.websequencediagrams.com/%.*s", (int) (e - p), p);
 
 		// free the response
 		wget_http_free_response(&resp);
