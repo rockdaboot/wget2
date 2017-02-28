@@ -15,7 +15,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * Extracting URLs from HTML
@@ -50,7 +50,7 @@ typedef struct {
 		link_inline;
 } _html_context_t;
 
-// see http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
+// see https://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
 static const char maybe[256] = {
 	['a'] = 1,
 	['b'] = 1,

@@ -15,7 +15,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  * 
  *
  * css parsing routines
@@ -24,7 +24,7 @@
  * 03.07.2012  Tim Ruehsen  created
  *
  * A parser using the flex tokenizer, created with flex tokens from
- *   http://www.w3.org/TR/css3-syntax/
+ *   https://www.w3.org/TR/css3-syntax/
  *
  * TODO:
  *  - since we are just interested in @import ... and url(...), we could use
@@ -89,7 +89,7 @@ void wget_css_parse_buffer(
 
 	while ((token = yylex(scanner)) != CSSEOF) {
 		if (token == IMPORT_SYM) {
-			// e.g. @import "http:example.com/index.html"
+			// e.g. @import "https://example.com/index.html"
 			pos += yyget_leng(scanner);
 
 			// skip whitespace before URI/STRING
@@ -102,7 +102,7 @@ void wget_css_parse_buffer(
 		}
 
 		if (token == URI && callback_uri) {
-			// e.g. url(http:example.com/index.html)
+			// e.g. url(https://example.com/index.html)
 			text = yyget_text(scanner);
 			length = yyget_leng(scanner);
 

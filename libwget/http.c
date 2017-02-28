@@ -15,7 +15,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * HTTP routines
@@ -510,7 +510,7 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 					wget_percent_unescape(p);
 					if (!wget_str_is_valid_utf8(p)) {
 						// if it is not UTF-8, assume ISO-8859-1
-						// see http://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
+						// see https://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
 						*filename = wget_str_to_utf8(p, "iso-8859-1");
 						xfree(p);
 					} else {
@@ -767,7 +767,7 @@ static long long NONNULL_ALL parse_rfc1123_date(const char *s)
 */
 
 // copied this routine from
-// http://ftp.netbsd.org/pub/pkgsrc/current/pkgsrc/pkgtools/libnbcompat/files/timegm.c
+// https://ftp.netbsd.org/pub/pkgsrc/current/pkgsrc/pkgtools/libnbcompat/files/timegm.c
 
 static int leap_days(int y1, int y2)
 {
@@ -1275,7 +1275,7 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 			break;
 		case 'd':
 			if (!wget_strncasecmp_ascii(name, "Digest", namelen)) {
-				// http://tools.ietf.org/html/rfc3230
+				// https://tools.ietf.org/html/rfc3230
 				wget_http_digest_t digest;
 				wget_http_parse_digest(s, &digest);
 				// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
@@ -1303,7 +1303,7 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 
 /*
  * A workaround for broken server configurations
- * see http://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
+ * see https://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
  * 24.10.15: It turns out that some servers (stupidly) double-gzip the data and correctly have
  *              Content-Encoding: gzip
  *              Content-Type: application/x-gzip
@@ -1789,7 +1789,7 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 				break;
 			case 6:
 				if (!memcmp(name, "digest", namelen)) {
-					// http://tools.ietf.org/html/rfc3230
+					// https://tools.ietf.org/html/rfc3230
 					wget_http_digest_t digest;
 					wget_http_parse_digest(s, &digest);
 					// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
@@ -2265,7 +2265,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 			wget_vector_remove_nofree(conn->received_http2_responses, 0);
 
 			// a workaround for broken server configurations
-			// see http://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
+			// see https://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
 			if (resp->content_encoding == wget_content_encoding_gzip &&
 				!wget_strcasecmp_ascii(resp->content_type, "application/x-gzip"))
 			{

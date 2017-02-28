@@ -15,7 +15,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * xml parsing routines
@@ -28,7 +28,7 @@
  * It has to be replaced by e.g. libxml2 or something better.
  *
  * HTML parsing is (very) different from XML parsing, see here:
- * http://www.whatwg.org/specs/web-apps/current-work/multipage/parsing.html
+ * https://html.spec.whatwg.org/multipage/syntax.html
  * It is a PITA and should be handled by a specialized, external library !
  *
  */
@@ -216,7 +216,7 @@ static int getValue(XML_CONTEXT *context)
 }
 
 // special HTML <script> content parsing
-// see http://www.whatwg.org/specs/web-apps/current-work/multipage/scripting-1.html#the-script-element
+// see https://html.spec.whatwg.org/multipage/scripting.html#the-script-element
 // 4.3.1.2 Restrictions for contents of script elements
 
 static const char *getScriptContent(XML_CONTEXT *context)
@@ -395,7 +395,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 					if (context->hints & XML_HINT_HTML) {
 						if (!wget_strcasecmp_ascii(directory, "script")) {
 							// special HTML <script> content parsing
-							// see http://www.whatwg.org/specs/web-apps/current-work/multipage/scripting-1.html#the-script-element
+							// see https://html.spec.whatwg.org/multipage/scripting.html#the-script-element
 							// 4.3.1.2 Restrictions for contents of script elements
 							debug_printf("*** need special <script> handling\n");
 							getScriptContent(context);

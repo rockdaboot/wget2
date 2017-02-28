@@ -15,7 +15,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * HTTP decompression routines
@@ -27,7 +27,7 @@
  * 24.02.2017  Tim Ruehsen  added Brotli decompression
  *
  * References
- *   http://en.wikipedia.org/wiki/HTTP_compression
+ *   https://en.wikipedia.org/wiki/HTTP_compression
  *   https://wiki.mozilla.org/LZMA2_Compression
  *   https://groups.google.com/forum/#!topic/mozilla.dev.platform/CBhSPWs3HS8
  *   https://github.com/google/brotli

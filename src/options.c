@@ -15,7 +15,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * Options and related routines
@@ -180,7 +180,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --save-cookies      Save cookies from file.\n"
 		"      --cookie-suffixes   Load public suffixes from file. They prevent 'supercookie' vulnerabilities.\n"
 		"                          Download the list with:\n"
-		"                          wget -O suffixes.txt http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1\n"
+		"                          wget -O suffixes.txt https://publicsuffix.org/list/effective_tld_names.dat\n"
 		"      --http-keep-alive   Keep connection open for further requests. (default: on)\n"
 		"      --header            Insert input string as a HTTP header in all requests\n"
 		"      --save-headers      Save the response headers in front of the response data. (default: off)\n"

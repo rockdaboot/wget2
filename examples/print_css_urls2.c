@@ -15,7 +15,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * Advanced example for CSS parsing using libwget
@@ -27,7 +27,7 @@
  * if needed, converting relative URIs to absolute.
  *
  * We ignore the BOM (Byte Order Mark) here.
- * BOM see: http://www.w3.org/International/questions/qa-byte-order-mark
+ * BOM see: https://www.w3.org/International/questions/qa-byte-order-mark
  *
  */
 
@@ -141,7 +141,7 @@ int main(int argc, const char *const *argv)
 	// Character encoding of CSS file content
 	// An HTTP response may contain the encoding in the Content-Type header,
 	// but if
-	// see http://stackoverflow.com/questions/2526033/why-specify-charset-utf-8-in-your-css-file
+	// see https://stackoverflow.com/questions/2526033/why-specify-charset-utf-8-in-your-css-file
 	const char *
 		css_encoding = NULL;
 

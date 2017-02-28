@@ -15,7 +15,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * Cookie routines
@@ -23,7 +23,7 @@
  * Changelog
  * 23.10.2012  Tim Ruehsen  created
  *
- * see http://tools.ietf.org/html/rfc6265
+ * see https://tools.ietf.org/html/rfc6265
  *
  */
 

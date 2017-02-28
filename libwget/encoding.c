@@ -15,7 +15,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * a collection of charset encoding routines
@@ -189,9 +189,9 @@ char *wget_utf8_to_str(const char *src, const char *encoding)
  * The function checks for a valid UTF-8 character sequence before
  * passing it to idna_to_ascii_8z().
  *
- * [1] http://lists.gnu.org/archive/html/help-libidn/2015-05/msg00002.html
+ * [1] https://lists.gnu.org/archive/html/help-libidn/2015-05/msg00002.html
  * [2] https://lists.gnu.org/archive/html/bug-wget/2015-06/msg00002.html
- * [3] http://curl.haxx.se/mail/lib-2015-06/0143.html
+ * [3] https://curl.haxx.se/mail/lib-2015-06/0143.html
  */
 static int G_GNUC_WGET_PURE _utf8_is_valid(const char *utf8)
 {

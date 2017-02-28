@@ -15,12 +15,12 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * URI/IRI routines
  * about encoding see http://nikitathespider.com/articles/EncodingDivination.html
- * about GET encoding see http://stackoverflow.com/questions/1549213/whats-the-correct-encoding-of-http-get-request-strings
+ * about GET encoding see https://stackoverflow.com/questions/1549213/whats-the-correct-encoding-of-http-get-request-strings
  * RFC 3986: URI generic syntax
  *
  *
@@ -632,7 +632,7 @@ wget_iri_t *wget_iri_parse_base(wget_iri_t *base, const char *url, const char *e
 	return iri;
 }
 
-// RFC conform comparison as described in http://tools.ietf.org/html/rfc2616#section-3.2.3
+// RFC conform comparison as described in https://tools.ietf.org/html/rfc2616#section-3.2.3
 int wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2)
 {
 	int n;
@@ -864,7 +864,7 @@ char *wget_iri_get_filename(const wget_iri_t *iri, wget_buffer_t *buf, const cha
 	return wget_iri_get_query_as_filename(iri, buf, encoding);
 }
 
-// escaping: see http://tools.ietf.org/html/rfc2396#2 following (especially 2.4.2)
+// escaping: see https://tools.ietf.org/html/rfc2396#2 following (especially 2.4.2)
 /*const char *iri_escape(const char *uri)
 {
 	int esc = 0;

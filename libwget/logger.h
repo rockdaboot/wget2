@@ -14,7 +14,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Libwget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * Header file shared between logger.c and log.c

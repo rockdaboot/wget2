@@ -15,7 +15,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * Main file
@@ -151,7 +151,7 @@ void set_exit_status(int status)
  * This functions exists to pass the Wget test suite.
  * All we really need (Wget is targeted for Unix/Linux), is UNIX restriction (\NUL and /)
  *  with escaping of control characters.
- * See http://en.wikipedia.org/wiki/Comparison_of_file_systems
+ * See https://en.wikipedia.org/wiki/Comparison_of_file_systems
  */
 static char *restrict_file_name(char *fname, char *esc)
 {
@@ -1547,9 +1547,9 @@ static void process_response(wget_http_response_t *resp)
 					// xml_parse(sockfd, resp, job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
 					css_parse(job, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
-				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/atom+xml")) { // see RFC4287, http://de.wikipedia.org/wiki/Atom_%28Format%29
+				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/atom+xml")) { // see RFC4287, https://de.wikipedia.org/wiki/Atom_%28Format%29
 					atom_parse(job, resp->body->data, "utf-8", job->iri);
-				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/rss+xml")) { // see http://cyber.law.harvard.edu/rss/rss.html
+				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/rss+xml")) { // see https://cyber.harvard.edu/rss/rss.html
 					rss_parse(job, resp->body->data, "utf-8", job->iri);
 				} else if (job->sitemap) {
 					if (!wget_strcasecmp_ascii(resp->content_type, "application/xml"))
@@ -1563,11 +1563,11 @@ static void process_response(wget_http_response_t *resp)
 					if ((job->host->robots = wget_robots_parse(resp->body->data, PACKAGE_NAME))) {
 						// the sitemaps are not relevant as page requisites
 						if (!config.page_requisites) {
-							// add sitemaps to be downloaded (format http://www.sitemaps.org/protocol.html)
+							// add sitemaps to be downloaded (format https://www.sitemaps.org/protocol.html)
 							for (int it = 0; it < wget_vector_size(job->host->robots->sitemaps); it++) {
 								const char *sitemap = wget_vector_get(job->host->robots->sitemaps, it);
 								info_printf("adding sitemap '%s'\n", sitemap);
-								add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see http://www.sitemaps.org/protocol.html#escaping
+								add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see https://www.sitemaps.org/protocol.html#escaping
 							}
 						}
 					}
@@ -1844,7 +1844,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 
 	//	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
 
-	// http://www.whatwg.org/specs/web-apps/current-work/, 12.2.2.2
+	// https://html.spec.whatwg.org/#determining-the-character-encoding
 	if (encoding && encoding == config.remote_encoding) {
 		reason = _("set by user");
 	} else {
@@ -2017,7 +2017,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 	for (int it = 0; it < wget_vector_size(urls); it++) {
 		wget_string_t *url = wget_vector_get(urls, it);;
 
-		// A Sitemap file located at http://example.com/catalog/sitemap.xml can include any URLs starting with http://example.com/catalog/
+		// A Sitemap file located at https://example.com/catalog/sitemap.xml can include any URLs starting with https://example.com/catalog/
 		// but not any other.
 		if (baselen && (url->len <= baselen || wget_strncasecmp(url->p, base->uri, baselen))) {
 			info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)url->len, url->p);
@@ -2111,7 +2111,7 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, wget_i
 		for (;len && isspace(line[len - 1]); len--);  // skip trailing spaces
 
 		if (len) {
-			// A Sitemap file located at http://example.com/catalog/sitemap.txt can include any URLs starting with http://example.com/catalog/
+			// A Sitemap file located at https://example.com/catalog/sitemap.txt can include any URLs starting with https://example.com/catalog/
 			// but not any other.
 			if (baselen && (len <= baselen || wget_strncasecmp(line, base->uri, baselen))) {
 				info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)len, line);

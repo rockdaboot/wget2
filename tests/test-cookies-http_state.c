@@ -14,7 +14,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Wget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Wget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * Test cookies regarding https://github.com/abarth/http-state/
