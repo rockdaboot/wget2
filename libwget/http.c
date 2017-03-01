@@ -1741,9 +1741,10 @@ static int _on_frame_recv_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 
 		if (resp->header && resp->req->header_callback) {
 			resp->req->header_callback(resp, resp->req->header_user_data);
-			if (!ctx->decompressor)
-				ctx->decompressor = wget_decompress_open(resp->content_encoding, _get_body, resp);
 		}
+
+		if (!ctx->decompressor)
+			ctx->decompressor = wget_decompress_open(resp->content_encoding, _get_body, resp);
 	}
 
 	return 0;
