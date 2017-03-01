@@ -167,6 +167,9 @@ void wget_global_deinit(void)
 		wget_dns_cache_free();
 
 		rc = wget_net_deinit();
+		wget_ssl_deinit();
+		wget_http_set_http_proxy(NULL, NULL);
+		wget_http_set_https_proxy(NULL, NULL);
 	}
 
 	if (_init > 0) _init--;
