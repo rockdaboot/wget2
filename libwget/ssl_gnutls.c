@@ -820,11 +820,9 @@ static int _verify_certificate_callback(gnutls_session_t session)
 			error_printf(_("%s: The certificate is not yet activated.\n"), tag);
 		if (status & GNUTLS_CERT_EXPIRED)
 			error_printf(_("%s: The certificate has expired.\n"), tag);
-#ifdef GNUTLS_CERT_SIGNATURE_FAILURE
+#if GNUTLS_VERSION_NUMBER >= 0x030100
 		if (status & GNUTLS_CERT_SIGNATURE_FAILURE)
 			error_printf(_("%s: The certificate signature is invalid.\n"), tag);
-#endif
-#ifdef GNUTLS_CERT_UNEXPECTED_OWNER
 		if (status & GNUTLS_CERT_UNEXPECTED_OWNER)
 			error_printf(_("%s: The certificate's owner does not match hostname '%s'.\n"), tag, hostname);
 #endif
@@ -833,10 +831,8 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		if (status & ~(GNUTLS_CERT_INVALID|GNUTLS_CERT_REVOKED|GNUTLS_CERT_SIGNER_NOT_FOUND|
 			GNUTLS_CERT_SIGNER_NOT_CA|GNUTLS_CERT_INSECURE_ALGORITHM|GNUTLS_CERT_NOT_ACTIVATED|
 			GNUTLS_CERT_EXPIRED
-#ifdef GNUTLS_CERT_SIGNATURE_FAILURE
+#if GNUTLS_VERSION_NUMBER >= 0x030100
 			|GNUTLS_CERT_SIGNATURE_FAILURE
-#endif
-#ifdef GNUTLS_CERT_UNEXPECTED_OWNER
 			|GNUTLS_CERT_UNEXPECTED_OWNER
 #endif
 			))
