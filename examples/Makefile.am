@@ -7,7 +7,8 @@ noinst_PROGRAMS = \
  print_css_urls3 http_get\
  print_html_urls\
  websequencediagram\
- websequencediagram_high
+ websequencediagram_high\
+ check_url_types
 
 
 AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS)
