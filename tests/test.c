@@ -1015,6 +1015,13 @@ static void test_cookies(void)
 			0, 1, 1, 1, 0, 0,
 			0, 0
 		},
+		{	// non-standard expires (found in reality)
+			"www.example.com",
+			"ID=65=abcd; expires=1 Mar 2027 09:23:12 GMT; path=/",
+			"ID", "65=abcd", "www.example.com", "/", "Mon, 01 Mar 2027 09:23:12 GMT",
+			0, 1, 1, 1, 0, 0,
+			0, 0
+		},
 		{	// allowed cookie without domain, path and expires
 			"www.example.com",
 			"ID=65=abcd",
