@@ -278,7 +278,10 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 			if ((challenges = resp->challenges)) {
 				resp->challenges = NULL;
 				wget_http_free_response(&resp);
-				continue; // try again with credentials
+				if (redirection_level == 0 && max_redirections) {
+					redirection_level = max_redirections; // just try one more time with authentication
+					continue; // try again with credentials
+				}
 			}
 			break;
 		}
