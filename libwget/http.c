@@ -1740,14 +1740,16 @@ static int _on_frame_recv_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	// header callback after receiving all header tags
 	if (frame->hd.type == NGHTTP2_HEADERS) {
 		struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
-		wget_http_response_t *resp = ctx->resp;
+		wget_http_response_t *resp = ctx ? ctx->resp : NULL;
 
-		if (resp->header && resp->req->header_callback) {
-			resp->req->header_callback(resp, resp->req->header_user_data);
+		if (resp) {
+			if (resp->header && resp->req->header_callback) {
+				resp->req->header_callback(resp, resp->req->header_user_data);
+			}
+
+			if (!ctx->decompressor)
+				ctx->decompressor = wget_decompress_open(resp->content_encoding, _get_body, resp);
 		}
-
-		if (!ctx->decompressor)
-			ctx->decompressor = wget_decompress_open(resp->content_encoding, _get_body, resp);
 	}
 
 	return 0;
@@ -1759,11 +1761,13 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	uint8_t flags G_GNUC_WGET_UNUSED, void *user_data G_GNUC_WGET_UNUSED)
 {
 	struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
-	wget_http_response_t *resp = ctx->resp;
+	wget_http_response_t *resp = ctx ? ctx->resp : NULL;
 
-	if (resp->req->response_keepheader || resp->req->header_callback) {
-		if (!resp->header)
-			resp->header = wget_buffer_alloc(1024);
+	if (resp) {
+		if (resp->req->response_keepheader || resp->req->header_callback) {
+			if (!resp->header)
+				resp->header = wget_buffer_alloc(1024);
+		}
 	}
 
 	if (frame->hd.type == NGHTTP2_HEADERS) {
@@ -1771,6 +1775,8 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 			const char *s = wget_strmemdup((char *) value, valuelen);
 
 			debug_printf("%.*s: %s\n", (int) namelen, name, s);
+			if (!resp)
+				return 0;
 
 			if (resp->header)
 				wget_buffer_printf_append(resp->header, "%.*s: %s\n", (int) namelen, name, s);
