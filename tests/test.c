@@ -1371,7 +1371,6 @@ static void test_hpkp(void)
 		wget_hpkp_t *hpkp = wget_hpkp_new();
 
 		wget_hpkp_set_host(hpkp, t->host);
-		wget_hpkp_set_port(hpkp, t->port);
 		wget_http_parse_public_key_pins(t->hpkp_params, hpkp);
 		wget_hpkp_db_add(hpkp_db, &hpkp);
 	}
