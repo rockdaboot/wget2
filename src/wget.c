@@ -1252,7 +1252,6 @@ static int process_response_header(wget_http_response_t *resp)
 			resp->hpkp)
 	{
 		wget_hpkp_set_host(resp->hpkp, iri->host);
-		wget_hpkp_set_port(resp->hpkp, atoi(iri->resolv_port));
 		wget_hpkp_db_add(config.hpkp_db, &resp->hpkp);
 		hpkp_changed = 1;
 	}
