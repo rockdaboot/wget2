@@ -790,26 +790,42 @@ static int _verify_certificate_callback(gnutls_session_t session)
 //	if (wget_get_logger(WGET_LOGGER_DEBUG))
 //		_print_info(session);
 
+#ifdef HAVE_GNUTLS_OCSP_H
+	if (status & GNUTLS_CERT_REVOKED) {
+		if (_config.ocsp_cert_cache)
+			wget_ocsp_db_add_host(_config.ocsp_cert_cache, wget_ocsp_new(hostname, 0, 0)); // remove entry from cache
+		if (ctx->ocsp_stapling) {
+			if (gnutls_x509_crt_init(&cert) == GNUTLS_E_SUCCESS) {
+				if ((cert_list = gnutls_certificate_get_peers(session, &cert_list_size))) {
+					if (gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER) == GNUTLS_E_SUCCESS) {
+						_add_cert_to_ocsp_cache(cert, 0);
+					}
+				}
+				gnutls_x509_crt_deinit(cert);
+			}
+		}
+	}
+#endif
+
+#if GNUTLS_VERSION_NUMBER >= 0x030104
+	if (status) {
+		gnutls_datum_t out;
+
+		if (gnutls_certificate_verification_status_print(
+			status, gnutls_certificate_type_get(session), &out, 0) == GNUTLS_E_SUCCESS)
+		{
+			error_printf("%s: %s\n", tag, out.data);
+			gnutls_free(out.data);
+		}
+
+		goto out;
+	}
+#else
 	if (status) {
 		if (status & GNUTLS_CERT_INVALID)
 			error_printf(_("%s: The certificate is not trusted.\n"), tag);
-		if (status & GNUTLS_CERT_REVOKED) {
+		if (status & GNUTLS_CERT_REVOKED)
 			error_printf(_("%s: The certificate has been revoked.\n"), tag);
-#ifdef HAVE_GNUTLS_OCSP_H
-			if (_config.ocsp_cert_cache)
-				wget_ocsp_db_add_host(_config.ocsp_cert_cache, wget_ocsp_new(hostname, 0, 0)); // remove entry from cache
-			if (ctx->ocsp_stapling) {
-				if (gnutls_x509_crt_init(&cert) == GNUTLS_E_SUCCESS) {
-					if ((cert_list = gnutls_certificate_get_peers(session, &cert_list_size))) {
-						if (gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER) == GNUTLS_E_SUCCESS) {
-							_add_cert_to_ocsp_cache(cert, 0);
-						}
-					}
-					gnutls_x509_crt_deinit(cert);
-				}
-			}
-#endif
-		}
 		if (status & GNUTLS_CERT_SIGNER_NOT_FOUND)
 			error_printf(_("%s: The certificate hasn't got a known issuer.\n"), tag);
 		if (status & GNUTLS_CERT_SIGNER_NOT_CA)
@@ -840,6 +856,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 
 		goto out;
 	}
+#endif
 
 	/* Up to here the process is the same for X.509 certificates and
 	 * OpenPGP keys. From now on X.509 certificates are assumed. This can
