@@ -389,7 +389,7 @@ static int _hpkp_db_load(wget_hpkp_db_t *hpkp_db, FILE *fp)
 		if (*linep != '*') {
 			wget_hpkp_db_add(hpkp_db, &hpkp);
 
-			if (sscanf(linep, "%255s %ld %d %ld", host, &max_age, &include_subdomains, &created) == 5) {
+			if (sscanf(linep, "%255s %ld %d %ld", host, &max_age, &include_subdomains, &created) == 4) {
 				if (max_age >= now) {
 					hpkp = wget_hpkp_new();
 					hpkp->host = wget_strdup(host);
