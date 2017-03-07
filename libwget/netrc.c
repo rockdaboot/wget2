@@ -48,7 +48,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_netrc(const wget_netrc_t *netrc)
 	unsigned int hash = 0;
 	const unsigned char *p;
 
-	for (p = (unsigned char *)netrc->key; *p; p++)
+	for (p = (unsigned char *)netrc->host; *p; p++)
 		hash = hash * 101 + *p;
 
 	return hash;
@@ -56,7 +56,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_netrc(const wget_netrc_t *netrc)
 
 static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_netrc(const wget_netrc_t *h1, const wget_netrc_t *h2)
 {
-	return strcmp(h1->key, h2->key);
+	return wget_strcmp(h1->host, h2->host);
 }
 
 wget_netrc_t *wget_netrc_init(wget_netrc_t *netrc)
@@ -72,7 +72,7 @@ wget_netrc_t *wget_netrc_init(wget_netrc_t *netrc)
 void wget_netrc_deinit(wget_netrc_t *netrc)
 {
 	if (netrc) {
-		xfree(netrc->key);
+		xfree(netrc->host);
 		xfree(netrc->login);
 		xfree(netrc->password);
 	}
@@ -90,7 +90,7 @@ wget_netrc_t *wget_netrc_new(const char *machine, const char *login, const char 
 {
 	wget_netrc_t *netrc = wget_netrc_init(NULL);
 
-	netrc->key = wget_strdup(machine);
+	netrc->host = wget_strdup(machine);
 	netrc->login = wget_strdup(login);
 	netrc->password = wget_strdup(password);
 
@@ -103,7 +103,7 @@ wget_netrc_t *wget_netrc_get(const wget_netrc_db_t *netrc_db, const char *host)
 		wget_netrc_t netrc;
 
 		// look for an exact match
-		netrc.key = host;
+		netrc.host = host;
 		return wget_hashmap_get(netrc_db->machines, &netrc);
 	}
 
@@ -150,7 +150,7 @@ void wget_netrc_db_add(wget_netrc_db_t *netrc_db, wget_netrc_t *netrc)
 	}
 
 	// key and value are the same to make wget_hashmap_get() return old 'netrc'
-	debug_printf("add .netrc %s (login=%s, password=*)\n", netrc->key, netrc->login);
+	debug_printf("add .netrc %s (login=%s, password=*)\n", netrc->host, netrc->login);
 	wget_hashmap_put_noalloc(netrc_db->machines, netrc, netrc);
 	// no need to free anything here
 }
@@ -191,42 +191,49 @@ int wget_netrc_db_load(wget_netrc_db_t *netrc_db, const char *fname)
 				continue; // still processing 'macdef' macro
 
 			// now we expect key value pairs, e.g.: machine example.com
-			xfree(key);
-			for (p = linep; *linep && !isspace(*linep);) linep++;
-			key = wget_strmemdup(p, linep - p);
+			do {
+				xfree(key);
+				while (isspace(*linep)) linep++;
+				for (p = linep; *linep && !isspace(*linep);) linep++;
+				key = wget_strmemdup(p, linep - p);
 
-			if (!strcmp(key, "machine") || !strcmp(key, "default")) {
-				if (in_machine)
-					wget_netrc_db_add(netrc_db, wget_memdup(&netrc, sizeof(netrc)));
+				if (!strcmp(key, "machine") || !strcmp(key, "default")) {
+					if (in_machine)
+						wget_netrc_db_add(netrc_db, wget_memdup(&netrc, sizeof(netrc)));
 
-				wget_netrc_init(&netrc);
-				in_machine = 1;
+					wget_netrc_init(&netrc);
+					in_machine = 1;
 
-				if (!strcmp(key, "default")) {
-					netrc.key = wget_strdup("default");
-					continue;
+					if (!strcmp(key, "default")) {
+						netrc.host = wget_strdup("default");
+						continue;
+					}
+				} else if (!in_machine)
+					continue; // token outside of machine or default
+
+				while (isspace(*linep)) linep++;
+				for (p = linep; *linep && !isspace(*linep);) linep++;
+
+				if (!strcmp(key, "machine")) {
+					if (!netrc.host)
+						netrc.host = wget_strmemdup(p, linep - p);
+				} else if (!strcmp(key, "login")) {
+					if (!netrc.login)
+						netrc.login = wget_strmemdup(p, linep - p);
+				} else if (!strcmp(key, "password")) {
+					if (!netrc.password)
+						netrc.password = wget_strmemdup(p, linep - p);
+				} else if (!strcmp(key, "macdef")) {
+					in_macdef = 1; // the above code skips until next empty line
 				}
-			} else if (!in_machine)
-				continue; // token outside of machine or default
+			} while (*linep);
 
-			while (isspace(*linep)) linep++;
-			for (p = linep; *linep && !isspace(*linep);) linep++;
-
-			if (!strcmp(key, "login")) {
-				if (!netrc.login)
-					netrc.login = wget_strmemdup(p, linep - p);
-			} else if (!strcmp(key, "password")) {
-				if (!netrc.password)
-					netrc.password = wget_strmemdup(p, linep - p);
-			} else if (!strcmp(key, "macdef")) {
-				in_macdef = 1; // the above code skips until next empty line
-			}
+			xfree(key);
 		}
 
 		if (in_machine)
 			wget_netrc_db_add(netrc_db, wget_memdup(&netrc, sizeof(netrc)));
 
-		xfree(key);
 		xfree(buf);
 		fclose(fp);
 

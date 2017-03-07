@@ -1145,7 +1145,7 @@ WGETAPI int
 typedef struct _wget_netrc_db_st wget_netrc_db_t;
 typedef struct {
 	const char *
-		key;
+		host;
 	const char *
 		login;
 	const char *

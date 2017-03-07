@@ -34,6 +34,9 @@
 #include <string.h>
 #include <dirent.h>
 #include <time.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <wget.h>
 #include "../libwget/private.h"
@@ -1876,6 +1879,117 @@ static void test_bar(void)
 	wget_bar_free(&bar);
 }
 
+static void test_netrc(void)
+{
+	struct test_entry {
+		const char
+			*host, *login, *password;
+	};
+	static const struct test_data {
+		const char *
+			text;
+		int
+			entries;
+		struct test_entry
+			entry[5];
+	} test_data[] = {
+		{
+			"machine localhost\n"
+			"login theuser\n"
+			"password thepw",
+			1,
+			{ 
+				{ "localhost", "theuser", "thepw" }
+			}
+		},
+		{
+			"machine localhost\n"
+			"login theuser\n"
+			"password thepw\n",
+			1,
+			{
+				{ "localhost", "theuser", "thepw" }
+			}
+		},
+		{
+			"machine localhost\n"
+			"login theuser password thepw\n",
+			1,
+			{
+				{ "localhost", "theuser", "thepw" }
+			}
+		},
+		{
+			"machine localhost login theuser password thepw",
+			1,
+			{
+				{ "localhost", "theuser", "thepw" }
+			}
+		},
+		{
+			"machine localhost login theuser password thepw\n"
+			"machine localhost2 login theuser2 password thepw2\n"
+			"machine abc login 111 password 222\n",
+			3,
+			{
+				{ "localhost", "theuser", "thepw" },
+				{ "localhost2", "theuser2", "thepw2" }
+			}
+		},
+	};
+	FILE *fp;
+	wget_netrc_db_t *netrc_db;
+	wget_netrc_t *netrc;
+	int rc;
+
+	mkdir(".test", 0700);
+
+	for (unsigned it = 0; it < countof(test_data); it++) {
+		const struct test_data *t = &test_data[it];
+
+		if ((fp = fopen(".test/.netrc", "w"))) {
+			fwrite(t->text, 1, strlen(t->text), fp);
+			fclose(fp);
+		} else {
+			info_printf("Failed to w-open .test/.netrc\n");
+			failed++;
+			continue;
+		}
+
+		netrc_db = wget_netrc_db_init(NULL);
+
+		if ((rc = wget_netrc_db_load(netrc_db, ".test/.netrc")) != t->entries) {
+			info_printf("[%u] Failed to read %d .netrc entries, found %d\n", it, t->entries, rc);
+			failed++;
+		} else {
+			for (unsigned it2 = 0; it2 < countof(t->entry); it2++) {
+				const struct test_entry *e = &t->entry[it2];
+				if (!e->host) break;
+
+				if (!(netrc = wget_netrc_get(netrc_db, e->host))) {
+					info_printf("[%u] Failed to get host '%s' from netrc_db\n", it, e->host);
+					failed++;
+				}
+				else if (strcmp(netrc->login, e->login)) {
+					info_printf("[%u] Login mismatch '%s' / '%s' in netrc_db\n", it, netrc->login, e->login);
+					failed++;
+				}
+				else if (strcmp(netrc->password, e->password)) {
+					info_printf("[%u] Password mismatch '%s' / '%s' in netrc_db\n", it, netrc->login, e->login);
+					failed++;
+				} else
+					ok++;
+			}
+		}
+
+
+		wget_netrc_db_free(&netrc_db);
+	}
+
+	unlink(".test/.netrc");
+	rmdir(".test");
+}
+
 int main(int argc, const char **argv)
 {
 	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
@@ -1929,6 +2043,7 @@ int main(int argc, const char **argv)
 	test_hpkp();
 	test_parse_challenge();
 	test_bar();
+	test_netrc();
 
 	selftest_options() ? failed++ : ok++;
 
