@@ -904,7 +904,12 @@ static int _verify_certificate_callback(gnutls_session_t session)
 //				_get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
 				_add_cert_to_ocsp_cache(cert, 1);
 				nvalid = 1;
-			} else if (!_config.ocsp)
+			}
+#if GNUTLS_VERSION_NUMBER >= 0x030400
+			else if (gnutls_ocsp_status_request_is_checked(session, GNUTLS_OCSP_SR_IS_AVAIL))
+				error_printf(_("WARNING: The certificate's (stapled) OCSP status is invalid\n"));
+#endif
+			else if (!_config.ocsp)
 				error_printf(_("WARNING: The certificate's (stapled) OCSP status has not been sent\n"));
 #endif
 		} else if (ctx->valid)
