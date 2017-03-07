@@ -1238,18 +1238,18 @@ static int process_response_header(wget_http_response_t *resp)
 	wget_cookie_store_cookies(config.cookie_db, resp->cookies); // store cookies
 
 	// care for HSTS feature
-	if (config.hsts &&
-			iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address &&
-			resp->hsts)
+	if (config.hsts
+		&& iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address
+		&& resp->hsts)
 	{
 		wget_hsts_db_add(config.hsts_db, wget_hsts_new(iri->host, atoi(iri->resolv_port), resp->hsts_maxage, resp->hsts_include_subdomains));
 		hsts_changed = 1;
 	}
 
 	// HTTP Public-Key Pinning (RFC 7469)
-	if (config.hpkp &&
-			iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address &&
-			resp->hpkp)
+	if (config.hpkp
+		&& iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address
+		&& resp->hpkp)
 	{
 		wget_hpkp_set_host(resp->hpkp, iri->host);
 		wget_hpkp_db_add(config.hpkp_db, &resp->hpkp);
