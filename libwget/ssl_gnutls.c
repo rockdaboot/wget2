@@ -1426,7 +1426,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 
 				if ((rc = gnutls_session_get_data2(session, &session_data)) == GNUTLS_E_SUCCESS) {
 					wget_tls_session_db_add(_config.tls_session_cache,
-						wget_tls_session_new(ctx->hostname, time(NULL) + 18 * 3600, session_data.data, session_data.size)); // 18h valid
+						wget_tls_session_new(ctx->hostname, 18 * 3600, session_data.data, session_data.size)); // 18h valid
 					gnutls_free(session_data.data);
 				} else
 					debug_printf("Failed to get session data: %s", gnutls_strerror(rc));
@@ -1641,7 +1641,7 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 				debug_printf("Got delayed session data\n");
 				ctx->delayed_session_data = 0;
 				wget_tls_session_db_add(_config.tls_session_cache,
-					wget_tls_session_new(ctx->hostname, time(NULL) + 18 * 3600, session_data.data, session_data.size)); // 18h valid
+					wget_tls_session_new(ctx->hostname, 18 * 3600, session_data.data, session_data.size)); // 18h valid
 				gnutls_free(session_data.data);
 			} else
 				debug_printf("No delayed session data%s\n", gnutls_strerror(rc));

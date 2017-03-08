@@ -119,7 +119,7 @@ wget_hsts_t *wget_hsts_new(const char *host, int port, time_t maxage, int includ
 	hsts->host = wget_strdup(host);
 	hsts->port = port ? port : 443;
 	hsts->maxage = maxage;
-	hsts->expires = maxage ? time(NULL) + maxage : 0;
+	hsts->expires = maxage ? hsts->created + maxage : 0;
 	hsts->include_subdomains = !!include_subdomains;
 
 	return hsts;
