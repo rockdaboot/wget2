@@ -635,12 +635,7 @@ const char *wget_http_parse_strict_transport_security(const char *s, time_t *max
 
 		if (param.value) {
 			if (!wget_strcasecmp_ascii(param.name, "max-age")) {
-				long offset = atol(param.value);
-
-				if (offset > 0)
-					*maxage = time(NULL) + offset;
-				else
-					*maxage = 0; // keep 0 as a special value: remove entry from HSTS database
+				*maxage = atol(param.value);
 			}
 		} else {
 			if (!wget_strcasecmp_ascii(param.name, "includeSubDomains")) {
