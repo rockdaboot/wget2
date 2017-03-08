@@ -320,9 +320,10 @@ void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
 			debug_printf("add HPKP %s (maxage=%ld, includeSubDomains=%d)\n", hpkp->host, hpkp->maxage, hpkp->include_subdomains);
 			wget_hashmap_put_noalloc(hpkp_db->entries, hpkp, hpkp);
 			// no need to free anything here
-			*_hpkp = NULL;
 		}
 	}
+
+	*_hpkp = NULL;
 
 	wget_thread_mutex_unlock(&hpkp_db->mutex);
 }
