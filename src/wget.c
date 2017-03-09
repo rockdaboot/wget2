@@ -1919,8 +1919,11 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 			// info_printf("%.*s -> %s\n", (int)parsed->base.len, parsed->base.p, buf.data);
 			if (!base && !buf.length)
 				info_printf(_("BASE '%.*s' not usable (missing absolute base URI)\n"), (int)parsed->base.len, parsed->base.p);
-			else
-				base = allocated_base = wget_iri_parse(buf.data, "utf-8");
+			else {
+				wget_iri_t *newbase = wget_iri_parse(buf.data, "utf-8");
+				if (newbase)
+					base = allocated_base = newbase;
+			}
 		} else {
 			error_printf(_("Cannot resolve BASE URI %.*s\n"), (int)parsed->base.len, parsed->base.p);
 		}

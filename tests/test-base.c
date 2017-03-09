@@ -83,6 +83,18 @@ int main(void)
 			.code = "200 Dontcare",
 			.body = "query with spaces"
 		},
+		{	.name = "/index2.html",
+			.code = "200 Dontcare",
+			.body =
+				"<html><head><base href=\"http://\"></head><body><p>A link to a" \
+				" <A href=\"http://localhost:{{port}}/subdir2/subpage2.html\">page2 in subdir2</a>." \
+				" <a href=\"//localhost:{{port}}/subdir1/subpage1.html?query&param#frag\">page1 in subdir1</a>." \
+				" <a href=\"/subdir1/subpage2.html\">page2 in subdir1</a>." \
+				"</p></body></html>",
+			.headers = {
+				"Content-Type: text/html",
+			}
+		},
 	};
 
 	// functions won't come back if an error occurs
@@ -113,6 +125,19 @@ int main(void)
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+
+	// test with incomplete base
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --no-robots",
+		WGET_TEST_REQUEST_URL, urls[8].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[8].name + 1, urls[8].body },
+			{ urls[2].name + 1, urls[2].body },
+			{ urls[4].name + 1, urls[4].body },
+			{ urls[5].name + 1, urls[5].body },
 			{	NULL } },
 		0);
 
