@@ -1,13 +1,21 @@
-Authors of and contributors to Wget.
+Authors of and contributors to Wget2.
 Thank you very much for spending your time !
 
+Design and implementation of Wget2 and libwget:
+Tim Rühsen (rockdaboot)
 
-Tim Ruehsen: Design and implementation of Wget and libwget.
-Anthony Brian
-Ander Juaristi
+Maintainers:
 Darshit Shah
 Giuseppe Scrivano
-Dagobert Michelsen
+Tim Rühsen
+
+Contributors:
+Ander Juaristi
+Andries E. Brouwer
+Anthony Brian
 Benoit Goudreault-Emond
-Jaaap@github.com
+Dagobert Michelsen
+Eli Zaretskii
 Gisle Vanem
+Jaaap@github.com
+magemore

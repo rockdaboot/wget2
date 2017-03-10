@@ -4,10 +4,22 @@ Copyright (C) 2012-2015 Tim Ruehsen
 Copyright (C) 2015-2016 Free Software Foundation, Inc.
 See the end for copying conditions.
 
-Please send GNU Wget bug reports to <bug-wget@gnu.org>.
+Please send GNU Wget2 bug reports to <bug-wget@gnu.org>.
 
-xx.xx.2015 Release 2.0.0
-  Add HTTP/2.0 support
+xx.03.2017 Release 1.99.0 (alpha)
+  * Add HTTP/2.0
+  * Add IDNA 2008 / TR46
+  * Add Travis-CI .yml file for Linux and MacOS
+  * Build with gnulib
+  * Moved to Doxygen (from GTK-Doc)
+  * Support Shoutcast response (ICY)
+  * Use colors for debug and error messages
+  * Use TCP Fast Open (TFO) for TLS handshakes
+  * Add TLS False Start
+  * Add TLS Session resumption
+  * Add sanitizer configure options
+  * Add 'make check-coverage' for viewing test code coverage
+  * Add Public Key Pinning (HPKP)
 
 02.05.2015
   New release v0.1.9
