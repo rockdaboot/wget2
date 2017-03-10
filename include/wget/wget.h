@@ -895,7 +895,7 @@ WGETAPI const char *
 WGETAPI const char *
 	wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t len, wget_buffer_t *buf);
 WGETAPI const char *
-	wget_iri_escape(const char *src, wget_buffer_t *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_escape(const char *src, wget_buffer_t *buf);
 WGETAPI const char *
 	wget_iri_escape_path(const char *src, wget_buffer_t *buf) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *

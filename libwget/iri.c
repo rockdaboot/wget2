@@ -678,6 +678,9 @@ const char *wget_iri_escape(const char *src, wget_buffer_t *buf)
 {
 	const char *begin;
 
+	if (!src)
+		return buf->data;
+
 	for (begin = src; *src; src++) {
 		if (!wget_iri_isunreserved(*src)) {
 			if (begin != src)
