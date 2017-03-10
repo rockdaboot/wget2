@@ -179,8 +179,11 @@ static void html_parse(const char *html, size_t html_len, const char *encoding, 
 		wget_info_printf("  base='%.*s'\n", (int) parsed->base.len, parsed->base.p);
 		if (_normalize_uri(base, &parsed->base, encoding, &buf) == 0) {
 			if (buf.length) {
-				wget_iri_free(&base);
-				base = wget_iri_parse(buf.data, "utf-8");
+				wget_iri_t *newbase = wget_iri_parse(buf.data, "utf-8");
+				if (newbase) {
+					wget_iri_free(&base);
+					base = newbase;
+				}
 			}
 		}
 	}
@@ -282,6 +285,9 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 				WGET_HTTP_URL, url,
 				WGET_HTTP_HEADER_ADD, "User-Agent", "Mozilla/5.0",
 				WGET_HTTP_HEADER_ADD, "Accept-Encoding", "gzip, br",
+				WGET_HTTP_HEADER_ADD, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", /* some sites need this */
+				WGET_HTTP_HEADER_ADD, "Accept-Encoding", "gzip, br",
+//				WGET_HTTP_HEADER_ADD, "Upgrade-Insecure-Requests", "1",
 				WGET_HTTP_MAX_REDIRECTIONS, 0,
 //				WGET_HTTP_CONNECTION_PTR, &conn,
 				NULL);
@@ -321,6 +327,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 
 //			wget_info_printf("conn %p\n", conn);
 //			stats.landed_on_https = 1 + (conn->protocol == WGET_PROTOCOL_HTTP_2_0);
+			stats.landed_on_https = 1;
 
 			if (wget_strcasecmp_ascii(resp->content_type, "text/html")) {
 				wget_info_printf("  No HTML: %s\n", resp->content_type);
