@@ -43,6 +43,7 @@ int main(void)
 				" <a href=\"htTp://localhost:{{port}}/second.html\">second page</a>." \
 				" <a href=\"subdir/third.html\">third page</a>." \
 				" <a href=\"htTp://localhost:{{port}}/subdir/third.html\">third page</a>." \
+				" <SCRIPT LANGUAGE=\"JavaScript\">document.write(\"<img src=\\\"rw1\\\"\");</SCRIPT>" \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -70,6 +71,7 @@ int main(void)
 		" <a href=\"second.html\">second page</a>." \
 		" <a href=\"subdir/third.html\">third page</a>." \
 		" <a href=\"subdir/third.html\">third page</a>." \
+		" <SCRIPT LANGUAGE=\"JavaScript\">document.write(\"<img src=\\\"rw1\\\"\");</SCRIPT>" \
 		"</p></body></html>";
 
 	// functions won't come back if an error occurs
@@ -77,8 +79,9 @@ int main(void)
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 
-	// test-k
+	// test-k, links in <script> shouldn't be converted
 	wget_test(
+		// WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, "-k -r -nH",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
