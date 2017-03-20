@@ -1375,12 +1375,6 @@ int init(int argc, const char **argv)
 	" -idn"
 #endif
 
-#if defined WITH_LIBUNISTRING
-	" +unistring"
-#else
-	" -unistring"
-#endif
-
 #if defined WITH_ZLIB
 	" +zlib"
 #else

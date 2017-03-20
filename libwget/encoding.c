@@ -41,16 +41,17 @@
 
 #if defined(HAVE_IDN2_H) && defined(WITH_LIBIDN2)
 # include <idn2.h>
+# if IDN2_VERSION_NUMBER < 0x00140000
+#  if defined(HAVE_UNICASE_H) && defined(WITH_LIBUNISTRING)
+#   include <unicase.h>
+#   include <unistr.h>
+#  endif
+# endif
 #elif defined(HAVE_IDNA_H) && defined(WITH_LIBIDN)
 # include <idna.h>
 #elif defined(HAVE_IDN_IDNA_H) && defined(WITH_LIBIDN)
 // OpenSolaris uses the idn subdir
 # include <idn/idna.h>
-#endif
-
-#if defined(HAVE_UNICASE_H) && defined(WITH_LIBUNISTRING)
-#include <unicase.h>
-#include <unistr.h>
 #endif
 
 #include <wget.h>
@@ -226,7 +227,7 @@ const char *wget_str_to_ascii(const char *src)
 	if (wget_str_needs_encoding(src)) {
 		char *asc = NULL;
 		int rc;
-#ifdef WITH_LIBUNISTRING
+#if defined WITH_LIBUNISTRING && IDN2_VERSION_NUMBER < 0x00140000
 		uint8_t *lower, resbuf[256];
 		size_t len = sizeof(resbuf) - 1; // leave space for additional \0 byte
 
@@ -255,7 +256,11 @@ const char *wget_str_to_ascii(const char *src)
 		if (lower != resbuf)
 			xfree(lower);
 #else
+#if IDN2_VERSION_NUMBER < 0x00140000
 		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, 0)) == IDN2_OK) {
+#else
+		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_NONTRANSITIONAL)) == IDN2_OK) {
+#endif
 			debug_printf("idn2 '%s' -> '%s'\n", src, asc);
 			src = asc;
 		} else
