@@ -47,7 +47,7 @@
 #include "wget_options.h"
 #include "wget_log.h"
 
-static void _write_out(FILE *default_fp, const char *data, size_t len, int with_timestamp, const char *colorstring)
+static void _write_out(FILE *default_fp, const char *data, size_t len, int with_timestamp, const char *colorstring, wget_console_color_t color_id)
 {
 	FILE *fp;
 	int fd = -1;
@@ -105,7 +105,7 @@ static void _write_out(FILE *default_fp, const char *data, size_t len, int with_
 		fwrite(buf.data, 1, buf.length, fp);
 #else
 		EnterCriticalSection(&g_crit);
-		wget_console_set_fg_color(WGET_CONSOLE_COLOR_WHITE);
+		wget_console_set_fg_color(color_id);
 		fwrite(buf.data, 1, buf.length, fp);
 		fflush(fp);
 		wget_console_reset_fg_color();
@@ -122,12 +122,12 @@ static void _write_out(FILE *default_fp, const char *data, size_t len, int with_
 
 static void _write_debug(FILE *fp, const char *data, size_t len)
 {
-	_write_out(fp, data, len, 1, "\033[35m"); // magenta/purple text
+	_write_out(fp, data, len, 1, "\033[35m", WGET_CONSOLE_COLOR_MAGENTA); // magenta/purple text
 }
 
 static void _write_error(FILE *fp, const char *data, size_t len)
 {
-	_write_out(fp, data, len, 0, "\033[31m"); // red text
+	_write_out(fp, data, len, 0, "\033[31m", WGET_CONSOLE_COLOR_RED); // red text
 }
 
 static void _write_info(FILE *fp, const char *data, size_t len)
@@ -135,7 +135,7 @@ static void _write_info(FILE *fp, const char *data, size_t len)
 	if (!data || (ssize_t)len <= 0)
 		return;
 
-	_write_out(fp, data, len, 0, NULL);
+	_write_out(fp, data, len, 0, NULL, WGET_CONSOLE_COLOR_WHITE /* Or 'WGET_CONSOLE_COLOR_RESET'? */);
 
 }
 
