@@ -64,9 +64,9 @@ static void _reset_color(void)
  *
  * Sets the console foreground (text) color.
  */
+#ifdef _WIN32
 void wget_console_set_fg_color(wget_console_color_t colorid)
 {
-#ifdef _WIN32
 	static short color[] = {
 		[WGET_CONSOLE_COLOR_WHITE] = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED,
 		[WGET_CONSOLE_COLOR_BLUE] = FOREGROUND_BLUE,
@@ -85,8 +85,12 @@ void wget_console_set_fg_color(wget_console_color_t colorid)
 			SetConsoleTextAttribute (g_stdout_hnd, attr | FOREGROUND_INTENSITY);
 		}
 	}
-#endif
 }
+#else
+void wget_console_set_fg_color(wget_console_color_t colorid G_GNUC_WGET_UNUSED)
+{
+}
+#endif
 
 /**
  * Resets the console foreground (text) color.
@@ -110,11 +114,12 @@ int wget_console_init(void)
 		return 0;
 
 	g_stdout_hnd = GetStdHandle(STD_OUTPUT_HANDLE);
-	if (g_stdout_hnd != INVALID_HANDLE_VALUE)
+	if (g_stdout_hnd != INVALID_HANDLE_VALUE) {
 		GetConsoleScreenBufferInfo(g_stdout_hnd, &g_console_info);
 
-	if (GetFileType(g_stdout_hnd) != FILE_TYPE_CHAR) /* The console is redirected */
-		g_stdout_hnd = INVALID_HANDLE_VALUE;
+		if (GetFileType(g_stdout_hnd) != FILE_TYPE_CHAR) /* The console is redirected */
+			g_stdout_hnd = INVALID_HANDLE_VALUE;
+	}
 
 	win_init = 1;
 #endif
