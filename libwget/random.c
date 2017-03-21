@@ -33,6 +33,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#ifdef _WIN32
+#  include <process.h>  /* getpid() */
+#endif
 
 #include <wget.h>
 #include "private.h"
