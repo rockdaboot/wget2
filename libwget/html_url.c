@@ -101,7 +101,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
 		WGET_HTML_PARSED_RESULT *res = &ctx->result;
 
-//		info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
+//		info_printf("%02X %s %s '%.*s' %zu %zu\n", (unsigned) flags, tag, attr, (int) len, val, len, pos);
 
 		if ((*tag|0x20) == 'm' && !wget_strcasecmp_ascii(tag, "meta")) {
 			if (!ctx->found_robots) {
