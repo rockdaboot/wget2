@@ -53,7 +53,6 @@
 #include <fcntl.h>
 #include <time.h>
 #include <sys/stat.h>
-#include <wordexp.h>
 //#include <netdb.h>
 
 #include <wget.h>
