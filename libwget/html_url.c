@@ -66,8 +66,8 @@ static const char maybe[256] = {
 	['u'] = 1,
 };
 static const char attrs[][12] = {
-	"action", "archive",
-	"background",
+	"action", "archive",						// Add new entry in sorted position
+	"background",								// as binary search is performed on attrs[][]
 	"code", "codebase", "cite", "classid",
 	"data",
 	"formaction",
@@ -76,9 +76,21 @@ static const char attrs[][12] = {
 	"lowsrc", "longdesc",
 	"manifest",
 	"profile", "poster",
-	"src", "srcset",
+	"src", "srcset", "style",
 	"usemap"
 };
+
+//This callback function shouldn't be here
+static void _css_parse_encoding(void *context G_GNUC_WGET_UNUSED, const char *encoding, size_t len)
+{
+	printf("URI encoding '%.*s'\n", (int)len, encoding);
+}
+
+//This callback function shouldn't be here
+static void _css_parse_uri(void *context G_GNUC_WGET_UNUSED, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+{
+	printf("  %.*s\n", (int)len, url);
+}
 
 // Callback function, called from HTML parser for each URI found.
 static void _html_get_url(void *context, int flags, const char *tag, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
@@ -173,7 +185,11 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 		int found = 0;
 
 		// search the static list for a tag/attr match
-		if (maybe[(unsigned char)*attr|0x20] && attr[1] && attr[2])
+		if (wget_strcasecmp_ascii(attr, "style")) {
+			if (maybe[(unsigned char)*attr|0x20] && attr[1] && attr[2])
+				found = bsearch(attr, attrs, countof(attrs), sizeof(attrs[0]), (int(*)(const void *, const void *))wget_strcasecmp_ascii) != NULL;
+		}
+		else
 			found = bsearch(attr, attrs, countof(attrs), sizeof(attrs[0]), (int(*)(const void *, const void *))wget_strcasecmp_ascii) != NULL;
 
 		// search the dynamic list for a tag/attr match
@@ -226,6 +242,31 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				url.url.p = val;
 				url.url.len = len;
 				wget_vector_add(res->uris, &url, sizeof(url));
+			}
+
+			char end_char = '"';
+			if (!wget_strcasecmp_ascii(attr, "style")) {
+
+				for (;len && c_isspace(*val); val++, len--); // skip leading spaces
+/*
+				if(len && (*val != '\'') && (*val != '"'))
+					end_char = ' ';							 // https://www.w3.org/TR/html51/syntax.html#elements-attributes
+				else if(len)								 // attribute values can have no quotes at all!
+					end_char = *val;
+
+				val++; len--;
+*/
+
+				char * buf, *temp;
+				if(temp = buf = malloc((len+1) * sizeof(char))) {
+				for(;len && (*val != end_char); len--)
+					*temp++ = *val++;
+				*temp = '\0';
+
+				wget_css_parse_buffer(buf, _css_parse_uri, _css_parse_encoding, NULL);  // ugly
+				} else
+					printf("malloc failed.\n");
+
 			}
 		}
 	}
