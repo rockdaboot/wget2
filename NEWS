@@ -20,6 +20,7 @@ xx.03.2017 Release 1.99.0 (alpha)
   * Add sanitizer configure options
   * Add 'make check-coverage' for viewing test code coverage
   * Add Public Key Pinning (HPKP)
+  * Add brotli (br) compression method
 
 02.05.2015
   New release v0.1.9
