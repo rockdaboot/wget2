@@ -67,7 +67,7 @@ static const char maybe[256] = {
 };
 static const char attrs[][12] = {
 	"action", "archive",						// Add new entry in sorted position
-	"background",								// as binary search is performed on attrs[][]
+	"background",							// as binary search is performed on attrs[][]
 	"code", "codebase", "cite", "classid",
 	"data",
 	"formaction",
