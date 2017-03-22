@@ -1445,7 +1445,7 @@ int init(int argc, const char **argv)
 	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
 	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
 
-	if(config.proxy) {                                                     // This needs inspection!
+	if (config.proxy) {                                                     // This needs inspection!
 		char *ptr;
 		if ((ptr = getenv("http_proxy")) && wget_http_set_http_proxy(ptr, config.local_encoding) < 0) {
 			error_printf(_("Failed to set environment http proxies %s\n"), ptr);
