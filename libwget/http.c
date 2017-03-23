@@ -2459,12 +2459,16 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 				goto cleanup;
 			}
 
+			// check for pointer overflow
+			if (end > end + chunk_size || end >= end + chunk_size + 2) {
+				error_printf(_("Chunk size overflow #1: %lX\n"), chunk_size);
+				goto cleanup;
+			}
+
 			p = end + chunk_size + 2;
 			if (p <= buf + body_len) {
-				debug_printf("1 skip chunk_size %zu\n", chunk_size);
-				resp->cur_downloaded += chunk_size;
-				wget_decompress(dc, end, chunk_size);
-				continue;
+				error_printf(_("Chunk size overflow #2: %lX\n"), chunk_size);
+				goto cleanup;
 			}
 
 			resp->cur_downloaded += (buf + body_len) - end;

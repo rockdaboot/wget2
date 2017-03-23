@@ -41,7 +41,7 @@ int main(void)
 		},
 		{	.name = "/2.txt",
 			.code = "200 Dontcare",
-			.body = "FFFFFFF4\r\nGarbage",
+			.body = "FFFFFFFE\r\nGarbage",
 			.headers = {
 				"Content-Type: text/plain",
 				"Transfer-Encoding: chunked",
@@ -68,9 +68,9 @@ int main(void)
 		WGET_TEST_REQUEST_URLS, "1.txt", "2.txt", "3.txt", NULL,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, "" },
-			{ urls[1].name + 1, "Garbage" },
-			{ urls[2].name + 1, "Garbage" },
+			{ urls[0].name + 1, NULL }, // do not check content
+			{ urls[1].name + 1, NULL }, // do not check content
+			{ urls[2].name + 1, NULL }, // do not check content
 			{	NULL } },
 		0);
 
