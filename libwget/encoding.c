@@ -227,7 +227,7 @@ const char *wget_str_to_ascii(const char *src)
 	if (wget_str_needs_encoding(src)) {
 		char *asc = NULL;
 		int rc;
-#if defined WITH_LIBUNISTRING && IDN2_VERSION_NUMBER < 0x00140000
+# if defined WITH_LIBUNISTRING && IDN2_VERSION_NUMBER < 0x00140000
 		uint8_t *lower, resbuf[256];
 		size_t len = sizeof(resbuf) - 1; // leave space for additional \0 byte
 
@@ -255,17 +255,23 @@ const char *wget_str_to_ascii(const char *src)
 
 		if (lower != resbuf)
 			xfree(lower);
-#else
-#if IDN2_VERSION_NUMBER < 0x00140000
-		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, 0)) == IDN2_OK) {
-#else
-		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_NONTRANSITIONAL)) == IDN2_OK) {
-#endif
+# else
+#  if IDN2_VERSION_NUMBER < 0x00140000
+		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, 0)) == IDN2_OK)
+#  else
+		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_NONTRANSITIONAL)) == IDN2_OK)
+#  endif
+		{
 			debug_printf("idn2 '%s' -> '%s'\n", src, asc);
-			src = asc;
+#  ifdef _WIN32
+				src = wget_strdup(asc);
+				idn2_free(asc);
+#  else
+				src = asc;
+#  endif
 		} else
 			error_printf(_("toASCII(%s) failed (%d): %s\n"), src, rc, idn2_strerror(rc));
-#endif
+# endif
 	}
 #elif WITH_LIBIDN
 	if (wget_str_needs_encoding(src)) {
@@ -277,7 +283,12 @@ const char *wget_str_to_ascii(const char *src)
 
 			if ((rc = idna_to_ascii_8z(src, &asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
 				// debug_printf("toASCII '%s' -> '%s'\n", src, asc);
+# ifdef _WIN32
+				src = wget_strdup(asc);
+				idn_free(asc);
+# else
 				src = asc;
+# endif
 			} else
 				error_printf(_("toASCII failed (%d): %s\n"), rc, idna_strerror(rc));
 		}
