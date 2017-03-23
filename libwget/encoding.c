@@ -49,6 +49,9 @@
 # endif
 #elif defined(HAVE_IDNA_H) && defined(WITH_LIBIDN)
 # include <idna.h>
+# ifdef _WIN32
+#   include <idn-free.h>
+# endif
 #elif defined(HAVE_IDN_IDNA_H) && defined(WITH_LIBIDN)
 // OpenSolaris uses the idn subdir
 # include <idn/idna.h>
