@@ -122,9 +122,14 @@ void *wget_calloc(size_t nmemb, size_t size)
  */
 void *wget_realloc(void *ptr, size_t size)
 {
-	void *p = NULL;
-	if (!size || !(p = realloc(ptr, size)))
+	void *p;
+
+	if (!size)
 		_no_memory();
+
+	if (!(p = realloc(ptr, size)))
+		_no_memory();
+
 	return p;
 }
 
