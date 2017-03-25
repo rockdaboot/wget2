@@ -2369,7 +2369,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 	buf[body_len] = 0;
 	resp->cur_downloaded = body_len;
 
-	if (resp->transfer_encoding != transfer_encoding_identity) {
+	if (resp->transfer_encoding == transfer_encoding_chunked) {
 		size_t chunk_size = 0;
 		char *end;
 
@@ -2413,7 +2413,6 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 		// read each chunk, stripping the chunk info
 		p = buf;
 		for (;;) {
-			// debug_printf("#1 p='%.16s'\n",p);
 			// read: chunk-size [ chunk-extension ] CRLF
 			while ((!(end = strchr(p, '\r')) || end[1] != '\n')) {
 				if (conn->abort_indicator || _abort_indicator)
@@ -2461,14 +2460,16 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 			// check for pointer overflow
 			if (end > end + chunk_size || end >= end + chunk_size + 2) {
-				error_printf(_("Chunk size overflow #1: %lX\n"), chunk_size);
+				error_printf(_("Chunk size overflow: %lX\n"), chunk_size);
 				goto cleanup;
 			}
 
 			p = end + chunk_size + 2;
 			if (p <= buf + body_len) {
-				error_printf(_("Chunk size overflow #2: %lX\n"), chunk_size);
-				goto cleanup;
+				debug_printf("write full chunk, %zu bytes\n", chunk_size);
+				resp->cur_downloaded += chunk_size;
+				wget_decompress(dc, end, chunk_size);
+				continue;
 			}
 
 			resp->cur_downloaded += (buf + body_len) - end;
