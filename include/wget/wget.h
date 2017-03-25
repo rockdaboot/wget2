@@ -44,8 +44,11 @@
 #	include <nghttp2/nghttp2.h>
 #endif
 
-#include "wgetver.h"
-
+#ifdef WGETVER_FILE
+#   include WGETVER_FILE
+#else //not WGETVER_FILE
+#   include "wgetver.h"
+#endif //WGETVER_FILE
 
 // see https://www.gnu.org/software/gnulib/manual/html_node/Exported-Symbols-of-Shared-Libraries.html
 #if defined BUILDING_LIBWGET && HAVE_VISIBILITY
