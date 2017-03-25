@@ -28,6 +28,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef WIN32
+#	include <signal.h>
+#endif
 #include <wget.h>
 
 typedef struct {
@@ -240,7 +243,6 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		NULL);
 
 #ifndef WIN32
-	#include <signal.h>
 	struct sigaction sig_action;
 	memset(&sig_action, 0, sizeof(sig_action));
 	sig_action.sa_sigaction = (void (*)(int, siginfo_t *, void *))SIG_IGN;
