@@ -9,7 +9,8 @@ libwget_la_SOURCES = \
  robots.c rss_url.c sitemap_url.c ssl_gnutls.c stringmap.c strlcpy.c thread.c tls_session.c utils.c \
  vector.c xalloc.c xml.c private.h http_highlevel.c
 libwget_la_CPPFLAGS =\
- -fPIC -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib $(CFLAG_VISIBILITY) -DBUILDING_LIBWGET
+ -fPIC -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib $(CFLAG_VISIBILITY) -DBUILDING_LIBWGET \
+ -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
 libwget_la_LIBADD =\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB) $(INET_PTON_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_CRYPTO) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
@@ -22,7 +23,8 @@ libwget_la_LDFLAGS = -no-undefined -version-info $(LIBWGET_SO_VERSION)
 noinst_PROGRAMS = test_linking
 test_linking_SOURCES = test_linking.c
 test_linking_LDFLAGS = -static
-test_linking_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib
+test_linking_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib \
+ -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
 test_linking_LDADD = libwget.la ../lib/libgnu.la
 
 # gnulib needs config.h included before any gnulib header files
