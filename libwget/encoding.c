@@ -276,7 +276,7 @@ const char *wget_str_to_ascii(const char *src)
 			error_printf(_("toASCII(%s) failed (%d): %s\n"), src, rc, idn2_strerror(rc));
 # endif
 	}
-#elif WITH_LIBIDN
+#elif defined WITH_LIBIDN
 	if (wget_str_needs_encoding(src)) {
 		char *asc = NULL;
 		int rc;
