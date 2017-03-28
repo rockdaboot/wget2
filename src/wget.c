@@ -1808,8 +1808,11 @@ static int _normalize_uri(wget_iri_t *base, wget_string_t *url, const char *enco
 	size_t urlpart_encoded_length;
 	int rc;
 
-	if (url->len == 0 || (url->len == 1 && *url->p == '#')) // ignore e.g. href='#'
+	// ignore e.g. href='#'
+	if (url->len == 0 || (url->len == 1 && *url->p == '#')) {
+		xfree(urlpart);
 		return -1;
+	}
 
 	wget_iri_unescape_inline(urlpart);
 	rc = wget_memiconv(encoding, urlpart, strlen(urlpart), "utf-8", &urlpart_encoded, &urlpart_encoded_length);
