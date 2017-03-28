@@ -387,7 +387,7 @@ static int parse_header(option_t opt, const char *val)
 			wget_http_free_param(&_param);
 		}
 
-	} else if (*val == '\0') {
+	} else if (val && *val == '\0') {
 		wget_vector_clear(v);
 		return 0;
 	}
