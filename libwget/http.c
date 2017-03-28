@@ -1770,8 +1770,10 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 			const char *s = wget_strmemdup((char *) value, valuelen);
 
 			debug_printf("%.*s: %s\n", (int) namelen, name, s);
-			if (!resp)
+			if (!resp) {
+				xfree(s);
 				return 0;
+			}
 
 			if (resp->header)
 				wget_buffer_printf_append(resp->header, "%.*s: %s\n", (int) namelen, name, s);
