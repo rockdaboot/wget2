@@ -588,7 +588,7 @@ static int _cookie_db_load(wget_cookie_db_t *cookie_db, FILE *fp)
 
 		// parse expires
 		for (p = *linep ? ++linep : linep; *linep && *linep != '\t';) linep++;
-		cookie.expires = atol(p);
+		cookie.expires = (time_t)atoll(p);
 		if (cookie.expires && cookie.expires <= now) {
 			// drop expired cookie
 			wget_cookie_deinit(&cookie);

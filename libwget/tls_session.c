@@ -260,14 +260,14 @@ static int _tls_session_db_load(wget_tls_session_db_t *tls_session_db, FILE *fp)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			tls_session.created = atol(p);
+			tls_session.created = (time_t)atoll(p);
 		}
 
 		// parse max age
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			tls_session.maxage = atol(p);
+			tls_session.maxage = (time_t)atoll(p);
 			tls_session.expires = tls_session.maxage ? tls_session.created + tls_session.maxage : 0;
 			if (tls_session.expires < now) {
 				// drop expired entry

@@ -295,7 +295,7 @@ static int _ocsp_db_load(wget_ocsp_db_t *ocsp_db, FILE *fp, int load_hosts)
 		// parse max age
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep);) linep++;
-			ocsp.maxage = atol(p);
+			ocsp.maxage = (time_t)atoll(p);
 			if (ocsp.maxage < now) {
 				// drop expired entry
 				wget_ocsp_deinit(&ocsp);
@@ -307,7 +307,7 @@ static int _ocsp_db_load(wget_ocsp_db_t *ocsp_db, FILE *fp, int load_hosts)
 		// parse mtime (age of this entry)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep);) linep++;
-			ocsp.mtime = atol(p);
+			ocsp.mtime = (time_t)atoll(p);
 		}
 
 		// parse mtime (age of this entry)
