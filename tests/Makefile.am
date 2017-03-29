@@ -43,7 +43,8 @@ test_cookies_http_state_LDADD = ../src/log.o ../src/options.o libtest.la\
 noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = libtest.c
 libtest_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include/wget -I$(top_builddir)/lib -I$(top_srcdir)/lib $(CFLAG_VISIBILITY) -DBUILDING_LIBWGET \
- -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
+ -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\" \
+ -DVGSUPPFILE=\"$(abs_srcdir)/valgrind-suppressions\"
 libtest_la_LIBADD = ../libwget/libwget.la\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
