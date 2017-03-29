@@ -4,6 +4,7 @@ set -e
 
 BOOTSTRAP_OPTIONS=
 CONFIGURE_OPTIONS=()
+export CFLAGS="-O0 -g"
 
 if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 	CONFIGURE_OPTIONS+=("")
