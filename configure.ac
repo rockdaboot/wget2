@@ -125,6 +125,7 @@ if test -n "$WARN_CFLAGS"; then
     nw="$nw -Wconversion"
     nw="$nw -Wsign-conversion"
     nw="$nw -Wunsuffixed-float-constants"
+    nw="$nw -Wdeclaration-after-statement" # C89 only, messing up gcc < 5
 
     # remove unwanted warn flags
     wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$nw])

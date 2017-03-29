@@ -276,14 +276,14 @@ static int _hsts_db_load(wget_hsts_db_t *hsts_db, FILE *fp)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			hsts.created = atol(p);
+			hsts.created = (time_t)atoll(p);
 		}
 
 		// parse max age
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			hsts.maxage = atol(p);
+			hsts.maxage = (time_t)atoll(p);
 			hsts.expires = hsts.maxage ? hsts.created + hsts.maxage : 0;
 			if (hsts.expires < now) {
 				// drop expired entry

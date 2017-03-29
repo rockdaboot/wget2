@@ -74,10 +74,13 @@ AC_DEFUN([wget_MANYWARNINGS], [
       wget_WORD_SET([wget_WARN_CFLAGS], [$CFLAGS], ["-Wall -Wextra -Wformat=2"])
 
       # collect all disabled warn flags in $WARN_CFLAGS
-      wget_WARN_CFLAGS=$wget_WARN_CFLAGS" "$(gcc $wget_WARN_CFLAGS -Q --help=warning,$wget_LANGUAGE|\
+      wget_WARN_CFLAGS=$wget_WARN_CFLAGS" "$($CC $wget_WARN_CFLAGS -Q --help=warning,$wget_LANGUAGE|\
         awk '{ if (([$]2 == "[[disabled]]" || [$]2 == "") && [$]1!~/=/ && [$]1~/^-W/&& [$]1!="-Wall") print [$]1 }')
 
-      wget_WARN_CFLAGS=$wget_WARN_CFLAGS" -Warray-bounds=2 -Wnormalized=nfc -Wshift-overflow=2 -Wunused-const-variable=2"
+      GCC_VERSION=$($CC -dumpversion | cut -f1 -d.)
+      if test $GCC_VERSION -ge 6; then
+        wget_WARN_CFLAGS=$wget_WARN_CFLAGS" -Warray-bounds=2 -Wnormalized=nfc -Wshift-overflow=2 -Wunused-const-variable=2"
+      fi
 
     elif test "$CCNAME" = "clang"; then
       # set all warn flags on
