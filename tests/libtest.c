@@ -841,7 +841,7 @@ void wget_test(int first_key, ...)
 			wget_buffer_printf(cmd, "%s%s %s", executable, EXEEXT, options);
 		wget_info_printf("cmd=%s\n", cmd->data);
 	} else if (!strcmp(valgrind, "1")) {
-		wget_buffer_printf(cmd, "valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=../valgrind-suppressions %s %s", executable, options);
+		wget_buffer_printf(cmd, "valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=" VGSUPPFILE " %s %s", executable, options);
 	} else
 		wget_buffer_printf(cmd, "%s %s %s", valgrind, executable, options);
 
