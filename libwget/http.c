@@ -600,7 +600,7 @@ const char *wget_http_parse_public_key_pins(const char *s, wget_hpkp_t *hpkp)
 
 		if (param.value) {
 			if (!wget_strcasecmp_ascii(param.name, "max-age")) {
-				wget_hpkp_set_maxage(hpkp, atol(param.value));
+				wget_hpkp_set_maxage(hpkp, (time_t)atoll(param.value));
 			} else if (!wget_strncasecmp_ascii(param.name, "pin-", 4)) {
 				wget_hpkp_pin_add(hpkp, param.name + 4, param.value);
 			}
@@ -635,7 +635,7 @@ const char *wget_http_parse_strict_transport_security(const char *s, time_t *max
 
 		if (param.value) {
 			if (!wget_strcasecmp_ascii(param.name, "max-age")) {
-				*maxage = atol(param.value);
+				*maxage = (time_t)atoll(param.value);
 			}
 		} else {
 			if (!wget_strcasecmp_ascii(param.name, "includeSubDomains")) {

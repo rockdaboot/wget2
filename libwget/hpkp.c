@@ -177,7 +177,7 @@ void wget_hpkp_set_host(wget_hpkp_t *hpkp, const char *host)
 	hpkp->host = wget_strdup(host);
 }
 
-void wget_hpkp_set_maxage(wget_hpkp_t *hpkp, long maxage)
+void wget_hpkp_set_maxage(wget_hpkp_t *hpkp, time_t maxage)
 {
 	hpkp->maxage = maxage;
 	hpkp->expires = maxage ? time(NULL) + maxage : 0;
