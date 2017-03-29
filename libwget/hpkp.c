@@ -312,11 +312,11 @@ void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
 			wget_vector_free(&old->pins);
 			old->pins = hpkp->pins;
 			hpkp->pins = NULL;
-			debug_printf("update HPKP %s (maxage=%ld, includeSubDomains=%d)\n", old->host, old->maxage, old->include_subdomains);
+			debug_printf("update HPKP %s (maxage=%lld, includeSubDomains=%d)\n", old->host, (long long)old->maxage, old->include_subdomains);
 			wget_hpkp_free(hpkp);
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'hpkp'
-			debug_printf("add HPKP %s (maxage=%ld, includeSubDomains=%d)\n", hpkp->host, hpkp->maxage, hpkp->include_subdomains);
+			debug_printf("add HPKP %s (maxage=%lld, includeSubDomains=%d)\n", hpkp->host, (long long)hpkp->maxage, hpkp->include_subdomains);
 			wget_hashmap_put_noalloc(hpkp_db->entries, hpkp, hpkp);
 			// no need to free anything here
 		}
@@ -353,6 +353,7 @@ void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
 static int _hpkp_db_load(wget_hpkp_db_t *hpkp_db, FILE *fp)
 {
 	time_t created, max_age;
+	long long int _created, _max_age;
 	int include_subdomains;
 
 	wget_hpkp_t *hpkp = NULL;
@@ -389,7 +390,9 @@ static int _hpkp_db_load(wget_hpkp_db_t *hpkp_db, FILE *fp)
 		if (*linep != '*') {
 			wget_hpkp_db_add(hpkp_db, &hpkp);
 
-			if (sscanf(linep, "%255s %d %ld %ld", host, &include_subdomains, &created, &max_age) == 4) {
+			if (sscanf(linep, "%255s %d %lld %lld", host, &include_subdomains, &_created, &_max_age) == 4) {
+				created = (time_t)_created;
+				max_age = (time_t) _max_age;
 				if (max_age && (created + max_age) >= now) {
 					hpkp = wget_hpkp_new();
 					hpkp->host = wget_strdup(host);
@@ -456,7 +459,7 @@ static int G_GNUC_WGET_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp_t *hpkp)
 	else if (hpkp->expires < time(NULL))
 		debug_printf("HPKP: drop '%s', expired\n", hpkp->host);
 	else {
-		fprintf(fp, "%s %d %ld %ld\n", hpkp->host, hpkp->include_subdomains, hpkp->created, hpkp->maxage);
+		fprintf(fp, "%s %d %lld %lld\n", hpkp->host, hpkp->include_subdomains, (long long)hpkp->created, (long long)hpkp->maxage);
 
 		if (ferror(fp))
 			return -1;

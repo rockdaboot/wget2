@@ -206,12 +206,12 @@ void wget_ocsp_db_add_fingerprint(wget_ocsp_db_t *ocsp_db, wget_ocsp_t *ocsp)
 				old->mtime = ocsp->mtime;
 				old->maxage = ocsp->maxage;
 				old->valid = ocsp->valid;
-				debug_printf("update OCSP cert %s (maxage=%ld,valid=%d)\n", old->key, old->maxage, old->valid);
+				debug_printf("update OCSP cert %s (maxage=%lld,valid=%d)\n", old->key, (long long)old->maxage, old->valid);
 			}
 			wget_ocsp_free(ocsp);
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'ocsp'
-			debug_printf("add OCSP cert %s (maxage=%ld,valid=%d)\n", ocsp->key, ocsp->maxage, ocsp->valid);
+			debug_printf("add OCSP cert %s (maxage=%lld,valid=%d)\n", ocsp->key, (long long)ocsp->maxage, ocsp->valid);
 			wget_hashmap_put_noalloc(ocsp_db->fingerprints, ocsp, ocsp);
 			// no need to free anything here
 		}
@@ -244,13 +244,13 @@ void wget_ocsp_db_add_host(wget_ocsp_db_t *ocsp_db, wget_ocsp_t *ocsp)
 				old->mtime = ocsp->mtime;
 				old->maxage = ocsp->maxage;
 				old->valid = ocsp->valid;
-				debug_printf("update OCSP host %s (maxage=%ld)\n", old->key, old->maxage);
+				debug_printf("update OCSP host %s (maxage=%lld)\n", old->key, (long long)old->maxage);
 			}
 			wget_ocsp_free(ocsp);
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'ocsp'
 			wget_hashmap_put_noalloc(ocsp_db->hosts, ocsp, ocsp);
-			debug_printf("add OCSP host %s (maxage=%ld)\n", ocsp->key, ocsp->maxage);
+			debug_printf("add OCSP host %s (maxage=%lld)\n", ocsp->key, (long long)ocsp->maxage);
 			// no need to free anything here
 		}
 	}
@@ -371,13 +371,13 @@ int wget_ocsp_db_load(wget_ocsp_db_t *ocsp_db, const char *fname)
 
 static int G_GNUC_WGET_NONNULL_ALL _ocsp_save_fingerprint(FILE *fp, const wget_ocsp_t *ocsp)
 {
-	fprintf(fp, "%s %ld %ld %d\n", ocsp->key, ocsp->maxage, ocsp->mtime, ocsp->valid);
+	fprintf(fp, "%s %lld %lld %d\n", ocsp->key, (long long)ocsp->maxage, (long long)ocsp->mtime, ocsp->valid);
 	return 0;
 }
 
 static int G_GNUC_WGET_NONNULL_ALL _ocsp_save_host(FILE *fp, const wget_ocsp_t *ocsp)
 {
-	fprintf(fp, "%s %ld %ld\n", ocsp->key, ocsp->maxage, ocsp->mtime);
+	fprintf(fp, "%s %lld %lld\n", ocsp->key, (long long)ocsp->maxage, (long long)ocsp->mtime);
 	return 0;
 }
 

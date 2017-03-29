@@ -223,7 +223,7 @@ static int _wget_cookie_normalize_cookie(const wget_iri_t *iri, wget_cookie_t *c
 /*
 	debug_printf("normalize cookie %s=%s\n", cookie->name, cookie->value);
 	debug_printf("<  %s=%s\n", cookie->name, cookie->value);
-	debug_printf("<  expires=%ld max-age=%ld\n", cookie->expires, cookie->maxage);
+	debug_printf("<  expires=%lld max-age=%lld\n", (long long)cookie->expires, (long long)cookie->maxage);
 	debug_printf("<  domain=%s\n", cookie->domain);
 	debug_printf("<  path=%s\n", cookie->path);
 	debug_printf("<  normalized=%d persistent=%d hostonly=%d secure=%d httponly=%d\n",
@@ -297,7 +297,7 @@ static int _wget_cookie_normalize_cookie(const wget_iri_t *iri, wget_cookie_t *c
 
 /*
 	debug_printf(">  %s=%s\n", cookie->name, cookie->value);
-	debug_printf(">  expires=%ld max-age=%ld\n", cookie->expires, cookie->maxage);
+	debug_printf(">  expires=%lld max-age=%lld\n", (long long)cookie->expires, (long long)cookie->maxage);
 	debug_printf(">  domain=%s\n", cookie->domain);
 	debug_printf(">  path=%s\n", cookie->path);
 	debug_printf(">  normalized=%d persistent=%d hostonly=%d secure=%d httponly=%d\n",
@@ -435,7 +435,7 @@ char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_
 		}
 
 		if (cookie->expires && cookie->expires <= now) {
-			debug_printf("cookie expired (%ld <= %ld)\n", cookie->expires, now);
+			debug_printf("cookie expired (%lld <= %lld)\n", (long long)cookie->expires, (long long)now);
 			continue;
 		}
 

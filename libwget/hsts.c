@@ -198,13 +198,13 @@ void wget_hsts_db_add(wget_hsts_db_t *hsts_db, wget_hsts_t *hsts)
 				old->expires = hsts->expires;
 				old->maxage = hsts->maxage;
 				old->include_subdomains = hsts->include_subdomains;
-				debug_printf("update HSTS %s:%d (maxage=%ld, includeSubDomains=%d)\n", old->host, old->port, old->maxage, old->include_subdomains);
+				debug_printf("update HSTS %s:%d (maxage=%lld, includeSubDomains=%d)\n", old->host, old->port, (long long)old->maxage, old->include_subdomains);
 			}
 			wget_hsts_free(hsts);
 			hsts = NULL;
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'hsts'
-			debug_printf("add HSTS %s:%d (maxage=%ld, includeSubDomains=%d)\n", hsts->host, hsts->port, hsts->maxage, hsts->include_subdomains);
+			debug_printf("add HSTS %s:%d (maxage=%lld, includeSubDomains=%d)\n", hsts->host, hsts->port, (long long)hsts->maxage, hsts->include_subdomains);
 			wget_hashmap_put_noalloc(hsts_db->entries, hsts, hsts);
 			// no need to free anything here
 		}
@@ -330,7 +330,7 @@ int wget_hsts_db_load(wget_hsts_db_t *hsts_db, const char *fname)
 
 static int G_GNUC_WGET_NONNULL_ALL _hsts_save(FILE *fp, const wget_hsts_t *hsts)
 {
-	fprintf(fp, "%s %d %d %ld %ld\n", hsts->host, hsts->port, hsts->include_subdomains, hsts->created, hsts->maxage);
+	fprintf(fp, "%s %d %d %lld %lld\n", hsts->host, hsts->port, hsts->include_subdomains, (long long)hsts->created, (long long)hsts->maxage);
 	return 0;
 }
 

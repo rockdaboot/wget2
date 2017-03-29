@@ -205,7 +205,7 @@ void wget_tls_session_db_add(wget_tls_session_db_t *tls_session_db, wget_tls_ses
 				debug_printf("removed TLS session data for %s\n", tls_session->host);
 		}
 
-		debug_printf("add TLS session data for %s (maxage=%ld, size=%zu)\n", tls_session->host, tls_session->maxage, tls_session->data_size);
+		debug_printf("add TLS session data for %s (maxage=%lld, size=%zu)\n", tls_session->host, (long long)tls_session->maxage, tls_session->data_size);
 		wget_hashmap_put_noalloc(tls_session_db->entries, tls_session, tls_session);
 		tls_session_db->changed = 1;
 	}
@@ -330,7 +330,7 @@ static int G_GNUC_WGET_NONNULL_ALL _tls_session_save(FILE *fp, const wget_tls_se
 
 	wget_base64_encode(session_b64, (const char *) tls_session->data, tls_session->data_size);
 
-	fprintf(fp, "%s %ld %ld %s\n", tls_session->host, tls_session->created, tls_session->maxage, session_b64);
+	fprintf(fp, "%s %lld %lld %s\n", tls_session->host, (long long)tls_session->created, (long long)tls_session->maxage, session_b64);
 	return 0;
 }
 
