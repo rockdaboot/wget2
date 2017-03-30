@@ -261,7 +261,7 @@ static int brotli_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 		}
 	} while (status == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT);
 
-	if (status == BROTLI_DECODER_RESULT_SUCCESS || BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT)
+	if (status == BROTLI_DECODER_RESULT_SUCCESS || status == BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT)
 		return 0;
 
 	BrotliDecoderErrorCode err = BrotliDecoderGetErrorCode(strm);
