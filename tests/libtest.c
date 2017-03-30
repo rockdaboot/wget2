@@ -609,10 +609,9 @@ void wget_test_start_server(int first_key, ...)
 		wget_error_printf_exit(_("Failed to change to tmpdir (%d)\n"), errno);
 
 	// init server SSL layer (default cert and key file types are PEM)
-	// SRCDIR is the (relative) path to the tests dir. Since we chdir()'ed into a subdirectory, we need "../"
-	wget_ssl_set_config_string(WGET_SSL_CA_FILE, "../" SRCDIR "/certs/x509-ca-cert.pem");
-	wget_ssl_set_config_string(WGET_SSL_CERT_FILE, "../" SRCDIR "/certs/x509-server-cert.pem");
-	wget_ssl_set_config_string(WGET_SSL_KEY_FILE, "../" SRCDIR "/certs/x509-server-key.pem");
+	wget_ssl_set_config_string(WGET_SSL_CA_FILE, SRCDIR "/certs/x509-ca-cert.pem");
+	wget_ssl_set_config_string(WGET_SSL_CERT_FILE, SRCDIR "/certs/x509-server-cert.pem");
+	wget_ssl_set_config_string(WGET_SSL_KEY_FILE, SRCDIR "/certs/x509-server-key.pem");
 
 	// init HTTP server socket
 	http_parent_tcp = wget_tcp_init();

@@ -70,7 +70,7 @@ int main(void)
 	// test-i-https with loading CA Certificate
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--ca-certificate=../" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp -i urls.txt",
+		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp -i urls.txt",
 		WGET_TEST_REQUEST_URL, NULL,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
@@ -86,7 +86,7 @@ int main(void)
 	// test-i-https with loading CA Certificate and CRL
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--ca-certificate=../" SRCDIR "/certs/x509-ca-cert.pem --crl-file=../" SRCDIR "/certs/x509-server-crl.pem --no-ocsp -i urls.txt",
+		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --crl-file=" SRCDIR "/certs/x509-server-crl.pem --no-ocsp -i urls.txt",
 		WGET_TEST_REQUEST_URL, NULL,
 		WGET_TEST_EXPECTED_ERROR_CODE, 5,
 		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
@@ -116,7 +116,7 @@ int main(void)
 	// test-i-https ignoring unknown certificate (with CRL)
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--no-check-certificate --crl-file=../" SRCDIR "/certs/x509-server-crl.pem -i urls.txt",
+		WGET_TEST_OPTIONS, "--no-check-certificate --crl-file=" SRCDIR "/certs/x509-server-crl.pem -i urls.txt",
 		WGET_TEST_REQUEST_URL, NULL,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
