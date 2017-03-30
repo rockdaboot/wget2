@@ -123,9 +123,10 @@ int main(void)
 
 	char md5hex[32 + 1], md5hex_p1[32 + 1], md5hex_p2[32 + 1];
 	unsigned char digest[wget_hash_get_len(WGET_DIGTYPE_MD5)];
+	char *body0, *body2, *body4, *body7; // to be freed later
 
 	wget_md5_printf_hex(md5hex, "%s", urls[1].body);
-	urls[0].body = wget_aprintf(
+	urls[0].body = body0 = wget_aprintf(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<metalink version=\"3.0\">"
 		"<files>"
@@ -144,7 +145,7 @@ int main(void)
 		urls[1].name + 1, strlen(urls[1].body), md5hex, urls[1].name + 1);
 
 	wget_md5_printf_hex(md5hex, "%s", urls[3].body);
-	urls[2].body = wget_aprintf(
+	urls[2].body = body2 = wget_aprintf(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<metalink version=\"3.0\">"
 		"<file name=\"%s\">"
@@ -159,7 +160,7 @@ int main(void)
 	wget_md5_printf_hex(md5hex, "%s", urls[5].body);
 	wget_md5_printf_hex(md5hex_p1, "%.5s", urls[5].body);
 	wget_md5_printf_hex(md5hex_p2, "%.5s", urls[5].body + 5);
-	urls[4].body = wget_aprintf(
+	urls[4].body = body4 = wget_aprintf(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<metalink version=\"3.0\">"
 		"<file name=\"%s\">"
@@ -179,7 +180,7 @@ int main(void)
 	wget_md5_printf_hex(md5hex, "%s", urls[8].body);
 	wget_md5_printf_hex(md5hex_p1, "%.5s", urls[8].body);
 	wget_md5_printf_hex(md5hex_p2, "%.5s", urls[8].body + 5);
-	urls[7].body = wget_aprintf(
+	urls[7].body = body7 = wget_aprintf(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<metalink version=\"3.0\">"
 		"<file name=\"%s\">"
@@ -299,6 +300,13 @@ int main(void)
 		0);
 
 	free(digest_str);
+
+	free(body0);
+	free(body2);
+	free(body4);
+	free(body7);
+	free((void *)urls[6].headers[4]);
+	free((void *)urls[9].headers[3]);
 
 	exit(0);
 }
