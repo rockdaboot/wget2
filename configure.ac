@@ -211,9 +211,14 @@ if test "$gl_cc_sanitize_asan" = yes; then
 fi
 
 if test "$gl_cc_sanitize_msan" = yes; then
+  # clang options
   gl_WARN_ADD([-fsanitize=memory])
-  gl_WARN_ADD([-fno-omit-frame-pointer])
   gl_WARN_ADD([-fsanitize-memory-track-origins])
+
+  # gcc options
+  gl_WARN_ADD([-fsanitize=leak])
+
+  gl_WARN_ADD([-fno-omit-frame-pointer])
   gl_WARN_ADD([-fPIE])
 fi
 
