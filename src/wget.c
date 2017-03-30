@@ -1511,7 +1511,7 @@ static void process_response(wget_http_response_t *resp)
 		{
 			// print_status(downloader, "get metalink info\n");
 			// save_file(resp, job->local_filename, O_TRUNC);
-			job->metalink = wget_metalink_parse(resp->body->data);
+			job->metalink = resp->body && resp->body->data ? wget_metalink_parse(resp->body->data) : NULL;
 		}
 		if (job->metalink) {
 			if (job->metalink->size <= 0) {
