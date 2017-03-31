@@ -201,3 +201,16 @@ prints the usage and the current set of integrated options.
 For more info, see the man pages of Wget1.x.
 
 The Wget2 library API documentation has been started.
+
+
+Control Flow Integrity with clang
+---------------------------------
+
+To instrument clang's [CFI](https://clang.llvm.org/docs/ControlFlowIntegrity.html):
+
+		CC="clang-5.0" CFLAGS="-g -fsanitize=cfi -fno-sanitize-trap=all -fno-sanitize=cfi-icall -flto -fvisibility=hidden" NM=/usr/bin/llvm-nm-5.0 RANLIB=/usr/bin/llvm-ranlib-5.0 AR=/usr/bin/llvm-ar-5.0 LD=/usr/bin/gold ./configure
+		make clean
+		make check
+
+With clang-5.0 `-fsanitize=cfi-icall` does not work as expected.
+Our logger callback functions are typed correctly, but falsely cause a hiccup.
