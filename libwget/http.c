@@ -2477,7 +2477,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 			resp->cur_downloaded += (buf + body_len) - end;
 			wget_decompress(dc, end, (buf + body_len) - end);
 
-			chunk_size = p - (buf + body_len); // in fact needed bytes to have chunk_size+2 in buf
+			chunk_size = (((uintptr_t) p) - ((uintptr_t) (buf + body_len))); // in fact needed bytes to have chunk_size+2 in buf
 
 			debug_printf("need at least %zu more bytes\n", chunk_size);
 
