@@ -100,7 +100,7 @@ ROBOTS *wget_robots_parse(const char *data, const char *client)
 					robots->paths = wget_vector_create(32, -2, NULL);
 					wget_vector_set_destructor(robots->paths, (wget_vector_destructor_t)_free_path);
 				}
-				for (p = data; !isspace(*p); p++);
+				for (p = data; *p && !isspace(*p); p++);
 				path.len = p - data;
 				path.path = wget_strmemdup(data, path.len);
 				wget_vector_add(robots->paths, &path, sizeof(path));
@@ -108,7 +108,7 @@ ROBOTS *wget_robots_parse(const char *data, const char *client)
 		}
 		else if (!wget_strncasecmp_ascii(data, "Sitemap:", 8)) {
 			for (data += 8; *data==' ' || *data == '\t'; data++);
-			for (p = data; !isspace(*p); p++);
+			for (p = data; *p && !isspace(*p); p++);
 
 			if (!robots->sitemaps)
 				robots->sitemaps = wget_vector_create(4, -2, NULL);
