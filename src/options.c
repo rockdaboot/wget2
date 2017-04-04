@@ -697,6 +697,7 @@ struct config config = {
 	.level = 5,
 	.parent = 1,
 	.robots = 1,
+	.proxy = 1,
 	.tries = 20,
 	.hsts = 1,
 	.hpkp = 1,
@@ -815,6 +816,7 @@ static const struct optionw options[] = {
 	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0 },
 	{ "progress", &config.progress, parse_progress_type, 1, 0 },
 	{ "protocol-directories", &config.protocol_directories, parse_bool, 0, 0 },
+	{ "proxy", &config.proxy, parse_bool, 0, 0 },
 	{ "quiet", &config.quiet, parse_bool, 0, 'q' },
 	{ "quota", &config.quota, parse_numbytes, 1, 'Q' },
 	{ "random-file", &config.random_file, parse_filename, 1, 0 },
@@ -1443,6 +1445,18 @@ int init(int argc, const char **argv)
 	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
 	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
 
+	if (config.proxy) {                                                     // This needs inspection!
+		char *ptr;
+		if ((ptr = getenv("http_proxy")) && wget_http_set_http_proxy(ptr, config.local_encoding) < 0) {
+			error_printf(_("Failed to set environment http proxies %s\n"), ptr);
+			return -1;
+		}
+		if ((ptr = getenv("https_proxy")) && wget_http_set_https_proxy(ptr, config.local_encoding) < 0) {
+			error_printf(_("Failed to set environment https proxies %s\n"), ptr);
+			return -1;
+		}
+	}
+
 	if (config.http_proxy && wget_http_set_http_proxy(config.http_proxy, config.local_encoding) < 0) {
 		error_printf(_("Failed to set http proxies %s\n"), config.http_proxy);
 		return -1;
@@ -1451,6 +1465,7 @@ int init(int argc, const char **argv)
 		error_printf(_("Failed to set https proxies %s\n"), config.https_proxy);
 		return -1;
 	}
+
 	xfree(config.http_proxy);
 	xfree(config.https_proxy);
 

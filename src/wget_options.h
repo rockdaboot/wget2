@@ -174,6 +174,7 @@ struct config {
 		keep_session_cookies,
 		cookies,
 		spider,
+		proxy,
 		dns_caching,
 		tcp_fastopen,
 		check_certificate,
