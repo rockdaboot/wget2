@@ -1054,7 +1054,7 @@ WGETAPI void
 WGETAPI void
 	wget_hpkp_set_host(wget_hpkp_t *hpkp, const char *host);
 WGETAPI void
-	wget_hpkp_set_maxage(wget_hpkp_t *hpkp, long maxage);
+	wget_hpkp_set_maxage(wget_hpkp_t *hpkp, time_t maxage);
 WGETAPI void
 	wget_hpkp_set_include_subdomains(wget_hpkp_t *hpkp, int include_subdomains);
 WGETAPI wget_hpkp_db_t *
