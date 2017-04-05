@@ -63,6 +63,7 @@ struct config {
 		*directory_prefix,
 		*http_proxy,
 		*https_proxy,
+		*no_proxy,
 		*cookie_suffixes,
 		*load_cookies,
 		*save_cookies,

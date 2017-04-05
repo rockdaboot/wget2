@@ -87,7 +87,8 @@ static char
 
 static wget_vector_t
 	*http_proxies,
-	*https_proxies;
+	*https_proxies,
+	*no_proxies;
 
 int wget_http_isseperator(char c)
 {
@@ -1963,8 +1964,6 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 	static wget_thread_mutex_t
 		mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
-	wget_iri_t
-		*proxy;
 	wget_http_connection_t
 		*conn;
 	const char
@@ -1979,23 +1978,25 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 
 	conn = *_conn = xcalloc(1, sizeof(wget_http_connection_t)); // convenience assignment
 
-	if (iri->scheme == WGET_IRI_SCHEME_HTTP && http_proxies) {
-		wget_thread_mutex_lock(&mutex);
-		proxy = wget_vector_get(http_proxies, (++next_http_proxy) % wget_vector_size(http_proxies));
-		wget_thread_mutex_unlock(&mutex);
+	host = iri->host;
+	port = iri->resolv_port;
 
-		host = proxy->host;
-		port = proxy->resolv_port;
-	} else if (iri->scheme == WGET_IRI_SCHEME_HTTPS && https_proxies) {
-		wget_thread_mutex_lock(&mutex);
-		proxy = wget_vector_get(https_proxies, (++next_https_proxy) % wget_vector_size(https_proxies));
-		wget_thread_mutex_unlock(&mutex);
+	if (!wget_http_match_no_proxy(no_proxies, iri->host)) {
+		wget_iri_t *proxy;
 
-		host = proxy->host;
-		port = proxy->resolv_port;
-	} else {
-		host = iri->host;
-		port = iri->resolv_port;
+		wget_thread_mutex_lock(&mutex);
+		if (iri->scheme == WGET_IRI_SCHEME_HTTP && http_proxies) {
+			proxy = wget_vector_get(http_proxies, (++next_http_proxy) % wget_vector_size(http_proxies));
+			host = proxy->host;
+			port = proxy->resolv_port;
+			conn->proxied = 1;
+		} else if (iri->scheme == WGET_IRI_SCHEME_HTTPS && https_proxies) {
+			proxy = wget_vector_get(https_proxies, (++next_https_proxy) % wget_vector_size(https_proxies));
+			host = proxy->host;
+			port = proxy->resolv_port;
+			conn->proxied = 1;
+		}
+		wget_thread_mutex_unlock(&mutex);
 	}
 
 	conn->tcp = wget_tcp_init();
@@ -2144,7 +2145,7 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 	}
 #endif
 
-	if ((nbytes = wget_http_request_to_buffer(req, conn->buf)) < 0) {
+	if ((nbytes = wget_http_request_to_buffer(req, conn->buf, conn->proxied)) < 0) {
 		error_printf(_("Failed to create request buffer\n"));
 		return -1;
 	}
@@ -2162,7 +2163,7 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 	return 0;
 }
 
-ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf)
+ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf, int proxied)
 {
 	char have_content_length = 0;
 	char check_content_length = req->body && req->body_length;
@@ -2171,11 +2172,7 @@ ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf
 
 	wget_buffer_strcpy(buf, req->method);
 	wget_buffer_memcat(buf, " ", 1);
-	if (req->scheme == WGET_IRI_SCHEME_HTTP && wget_vector_size(http_proxies) > 0) {
-		wget_buffer_strcat(buf, req->scheme);
-		wget_buffer_memcat(buf, "://", 3);
-		wget_buffer_bufcat(buf, &req->esc_host);
-	} else if (req->scheme == WGET_IRI_SCHEME_HTTPS && wget_vector_size(https_proxies) > 0) {
+	if (proxied) {
 		wget_buffer_strcat(buf, req->scheme);
 		wget_buffer_memcat(buf, "://", 3);
 		wget_buffer_bufcat(buf, &req->esc_host);
@@ -2587,35 +2584,75 @@ wget_http_response_t *wget_http_get_response(wget_http_connection_t *conn)
 
 static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 {
-	if (proxy) {
-		wget_vector_t *proxies;
-		const char *s, *p;
+	if (!proxy)
+		return NULL;
 
-		proxies = wget_vector_create(8, -2, NULL);
-		wget_vector_set_destructor(proxies, (wget_vector_destructor_t)wget_iri_free_content);
+	wget_vector_t *proxies;
+	const char *s, *p;
 
-		for (s = p = proxy; *p; s = p + 1) {
-			while (c_isspace(*s) && s < p) s++;
+	proxies = wget_vector_create(8, -2, NULL);
+	wget_vector_set_destructor(proxies, (wget_vector_destructor_t)wget_iri_free_content);
 
-			if ((p = strchrnul(s, ',')) != s && p - s < 256) {
-				wget_iri_t *iri;
-				char host[p - s + 1];
+	for (s = p = proxy; *p; s = p + 1) {
+		while (c_isspace(*s) && s < p) s++;
 
-				memcpy(host, s, p -s);
-				host[p - s] = 0;
-				iri = wget_iri_parse (host, encoding);
-				if (!iri) {
-					wget_vector_free(&proxies);
-					return NULL;
-				}
-				wget_vector_add_noalloc(proxies, iri);
+		if ((p = strchrnul(s, ',')) != s && p - s < 256) {
+			wget_iri_t *iri;
+			char host[p - s + 1];
+
+			memcpy(host, s, p - s);
+			host[p - s] = 0;
+			iri = wget_iri_parse (host, encoding);
+			if (!iri) {
+				wget_vector_free(&proxies);
+				return NULL;
 			}
+			wget_vector_add_noalloc(proxies, iri);
 		}
-
-		return proxies;
 	}
 
-	return NULL;
+	return proxies;
+}
+
+static wget_vector_t *_parse_no_proxies(const char *no_proxy, const char *encoding)
+{
+	if (!no_proxy)
+		return NULL;
+
+	wget_vector_t *proxies;
+	const char *s, *p;
+
+	proxies = wget_vector_create(8, -2, NULL);
+	wget_vector_set_destructor(proxies, (wget_vector_destructor_t)wget_iri_free_content);
+
+	for (s = p = no_proxy; *p; s = p + 1) {
+		while (c_isspace(*s) && s < p) s++;
+
+		if ((p = strchrnul(s, ',')) != s && p - s < 256) {
+			char *host, *hostp;
+
+			host = wget_strmemdup(s, p - s);
+
+			// May be a hostname, domainname (optional with leading dot or wildcard), IP address.
+			// We do not support network address (CIDR) for now.
+
+			hostp = wget_strtolower(host);
+			if (wget_str_needs_encoding(host)) {
+				if ((hostp = wget_str_to_utf8(host, encoding))) {
+					xfree(host);
+					host = hostp;
+				}
+			}
+			if ((hostp = (char *) wget_str_to_ascii(host)) != host) {
+				xfree(host);
+				host = hostp;
+			}
+
+			wget_vector_add_noalloc(proxies, host);
+		}
+	}
+
+	return proxies;
 }
 
 int wget_http_set_http_proxy(const char *proxy, const char *encoding)
@@ -2638,6 +2675,38 @@ int wget_http_set_https_proxy(const char *proxy, const char *encoding)
 	https_proxies = _parse_proxies(proxy, encoding);
 	if (!https_proxies)
 		return -1;
+
+	return 0;
+}
+
+int wget_http_set_no_proxy(const char *no_proxy, const char *encoding)
+{
+	if (no_proxies)
+		wget_vector_free(&no_proxies);
+
+	no_proxies = _parse_no_proxies(no_proxy, encoding);
+	if (!no_proxies)
+		return -1;
+
+	return 0;
+}
+
+int wget_http_match_no_proxy(wget_vector_t *no_proxies, const char *host)
+{
+	if (!no_proxies || !host)
+		return 0;
+
+	// https://www.gnu.org/software/emacs/manual/html_node/url/Proxies.html
+	for (int it = 0; it < wget_vector_size(no_proxies); it++) {
+		const char *no_proxy = wget_vector_get(no_proxies, it);
+
+		if (!strcmp(no_proxy, host))
+			return 1; // exact match
+
+		// check for subdomain match
+		if (*no_proxy == '.' && wget_match_tail(host, no_proxy))
+			return 1;
+	}
 
 	return 0;
 }

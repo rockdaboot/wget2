@@ -1248,6 +1248,7 @@ int init(int argc, const char **argv)
 	config.ca_directory = wget_strdup(config.ca_directory);
 	config.http_proxy = wget_strdup(getenv("http_proxy"));
 	config.https_proxy = wget_strdup(getenv("https_proxy"));
+	config.no_proxy = wget_strdup(getenv("no_proxy"));
 	config.default_page = wget_strdup(config.default_page);
 	config.domains = wget_vector_create(16, -2, (wget_vector_compare_t)strcmp);
 //	config.exclude_domains = wget_vector_create(16, -2, NULL);
@@ -1451,8 +1452,13 @@ int init(int argc, const char **argv)
 		error_printf(_("Failed to set https proxies %s\n"), config.https_proxy);
 		return -1;
 	}
+	if (config.no_proxy && wget_http_set_no_proxy(config.no_proxy, config.local_encoding) < 0) {
+		error_printf(_("Failed to set proxy exceptions %s\n"), config.no_proxy);
+		return -1;
+	}
 	xfree(config.http_proxy);
 	xfree(config.https_proxy);
+	xfree(config.no_proxy);
 
 	if (config.cookies) {
 		config.cookie_db = wget_cookie_db_init(NULL);
@@ -1640,6 +1646,7 @@ void deinit(void)
 
 	wget_http_set_http_proxy(NULL, NULL);
 	wget_http_set_https_proxy(NULL, NULL);
+	wget_http_set_no_proxy(NULL, NULL);
 }
 
 // self test some functions, called by using --self-test

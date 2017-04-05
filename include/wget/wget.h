@@ -1633,7 +1633,8 @@ typedef struct {
 		protocol; // WGET_PROTOCOL_HTTP_1_1 or WGET_PROTOCOL_HTTP_2_0
 	unsigned char
 		print_response_headers : 1,
-		abort_indicator : 1;
+		abort_indicator : 1,
+		proxied : 1;
 } wget_http_connection_t;
 
 WGETAPI int
@@ -1701,6 +1702,10 @@ WGETAPI int
 	wget_http_set_http_proxy(const char *proxy, const char *encoding);
 WGETAPI int
 	wget_http_set_https_proxy(const char *proxy, const char *encoding);
+WGETAPI int
+	wget_http_set_no_proxy(const char *no_proxy, const char *encoding);
+WGETAPI int
+	wget_http_match_no_proxy(wget_vector_t *no_proxies, const char *host);
 WGETAPI void
 	wget_http_abort_connection(wget_http_connection_t *conn);
 
@@ -1768,7 +1773,7 @@ WGETAPI void
 WGETAPI int
 	wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *req) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI ssize_t
-	wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf, int proxied) G_GNUC_WGET_NONNULL_ALL;
 
 /*
  * Highlevel HTTP routines
