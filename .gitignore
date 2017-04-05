@@ -19,6 +19,7 @@
 */*.gcno
 *~
 .depend
+.manywarnings
 ABOUT-NLS
 INSTALL
 Makefile
@@ -38,6 +39,7 @@ configure
 depcomp
 docs/html
 docs/libwget.doxy
+examples/check_url_types
 examples/getstream
 examples/http_get
 examples/http_get2
@@ -75,9 +77,11 @@ tests/test--follow-tags
 tests/test--page-requisites
 tests/test--post-file
 tests/test--spider-r
-tests/test-base
 tests/test-E-k
 tests/test-auth-basic
+tests/test-bad-chunk
+tests/test-base
+tests/test-chunked
 tests/test-directory-clash
 tests/test-i-http
 tests/test-i-https
@@ -89,13 +93,17 @@ tests/test-iri-disabled
 tests/test-iri-forced-remote
 tests/test-iri-list
 tests/test-iri-percent
+tests/test-iri-subdir
 tests/test-k
 tests/test-meta-robots
+tests/test-metalink
 tests/test-np
+tests/test-parse-css
 tests/test-parse-html
 tests/test-parse-rss
 tests/test-redirection
 tests/test-restrict-ascii
+tests/test-robots
 tests/test-wget-1
 tmp
 wget2-*
