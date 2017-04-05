@@ -214,6 +214,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)\n"
 		"      --hsts-file         Set file for HSTS caching. (default: ~/.wget-hsts)\n"
 		"      --hpkp              Use HTTP Public Key Pinning (HPKP). (default: on)\n"
+		"      --hpkp-file         Set file for storing HPKP data (default: ~/.wget-hpkp)\n"
 		"      --gnutls-options    Custom GnuTLS priority string. Interferes with --secure-protocol. (default: none)\n"
 		"      --ocsp-stapling     Use OCSP stapling to verify the server's certificate. (default: on)\n"
 		"      --ocsp              Use OCSP server access to verify server's certificate. (default: on)\n"
