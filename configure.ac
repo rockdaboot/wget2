@@ -126,12 +126,18 @@ if test -n "$WARN_CFLAGS"; then
     nw="$nw -Wsign-conversion"
     nw="$nw -Wunsuffixed-float-constants"
     nw="$nw -Wdeclaration-after-statement" # C89 only, messing up gcc < 5
+    if test "$cross_compiling" = yes; then
+      nw="$nw -Wformat"
+    fi
 
     # remove unwanted warn flags
     wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
 
     # add more flags as you like
     WARN_CFLAGS="$WARN_CFLAGS -fdiagnostics-color=always"
+    if test "$cross_compiling" = yes; then
+      WARN_CFLAGS="$WARN_CFLAGS -Wno-format"
+    fi
     # WARN_CFLAGS="$WARN_CFLAGS -Werror"
 
     # We use a slightly smaller set of warning options for lib/.
