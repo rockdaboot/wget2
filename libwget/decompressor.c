@@ -40,19 +40,19 @@
 #include <stdio.h>
 #include <string.h>
 
-#if WITH_ZLIB
+#ifdef WITH_ZLIB
 #include <zlib.h>
 #endif
 
-#if WITH_BZIP2
+#ifdef WITH_BZIP2
 #include <bzlib.h>
 #endif
 
-#if WITH_LZMA
+#ifdef WITH_LZMA
 #include <lzma.h>
 #endif
 
-#if WITH_BROTLIDEC
+#ifdef WITH_BROTLIDEC
 #include <brotli/decode.h>
 #endif
 
@@ -60,19 +60,19 @@
 #include "private.h"
 
 struct _wget_decompressor_st {
-#if WITH_ZLIB
+#ifdef WITH_ZLIB
 	z_stream
 		z_strm;
 #endif
-#if WITH_LZMA
+#ifdef WITH_LZMA
 	lzma_stream
 		lzma_strm;
 #endif
-#if WITH_BZIP2
+#ifdef WITH_BZIP2
 	bz_stream
 		bz_strm;
 #endif
-#if WITH_BROTLIDEC
+#ifdef WITH_BROTLIDEC
 	BrotliDecoderState
 		*brotli_strm;
 #endif
@@ -88,7 +88,7 @@ struct _wget_decompressor_st {
 		encoding;
 };
 
-#if WITH_ZLIB
+#ifdef WITH_ZLIB
 static int gzip_init(z_stream *strm)
 {
 	memset(strm, 0, sizeof(*strm));
@@ -162,7 +162,7 @@ static int deflate_init(z_stream *strm)
 }
 #endif // WITH_ZLIB
 
-#if WITH_LZMA
+#ifdef WITH_LZMA
 static int lzma_init(lzma_stream *strm)
 {
 	memset(strm, 0, sizeof(*strm));
@@ -218,7 +218,7 @@ static void lzma_exit(wget_decompressor_t *dc)
 }
 #endif // WITH_LZMA
 
-#if WITH_BROTLIDEC
+#ifdef WITH_BROTLIDEC
 static int brotli_init(BrotliDecoderState **strm)
 {
 	if ((*strm = BrotliDecoderCreateInstance(NULL, NULL, NULL)) == NULL) {
@@ -276,7 +276,7 @@ static void brotli_exit(wget_decompressor_t *dc)
 }
 #endif // WITH_BROTLIDEC
 
-#if WITH_BZIP2
+#ifdef WITH_BZIP2
 static int bzip2_init(bz_stream *strm)
 {
 	memset(strm, 0, sizeof(*strm));
@@ -347,35 +347,35 @@ wget_decompressor_t *wget_decompress_open(int encoding,
 	int rc = 0;
 
 	if (encoding == wget_content_encoding_gzip) {
-#if WITH_ZLIB
+#ifdef WITH_ZLIB
 		if ((rc = gzip_init(&dc->z_strm)) == 0) {
 			dc->decompress = gzip_decompress;
 			dc->exit = gzip_exit;
 		}
 #endif
 	} else if (encoding == wget_content_encoding_deflate) {
-#if WITH_ZLIB
+#ifdef WITH_ZLIB
 		if ((rc = deflate_init(&dc->z_strm)) == 0) {
 			dc->decompress = gzip_decompress;
 			dc->exit = gzip_exit;
 		}
 #endif
 	} else if (encoding == wget_content_encoding_bzip2) {
-#if WITH_BZIP2
+#ifdef WITH_BZIP2
 		if ((rc = bzip2_init(&dc->bz_strm)) == 0) {
 			dc->decompress = bzip2_decompress;
 			dc->exit = bzip2_exit;
 		}
 #endif
 	} else if (encoding == wget_content_encoding_lzma) {
-#if WITH_LZMA
+#ifdef WITH_LZMA
 		if ((rc = lzma_init(&dc->lzma_strm)) == 0) {
 			dc->decompress = lzma_decompress;
 			dc->exit = lzma_exit;
 		}
 #endif
 	} else if (encoding == wget_content_encoding_brotli) {
-#if WITH_BROTLIDEC
+#ifdef WITH_BROTLIDEC
 		if ((rc = brotli_init(&dc->brotli_strm)) == 0) {
 			dc->decompress = brotli_decompress;
 			dc->exit = brotli_exit;

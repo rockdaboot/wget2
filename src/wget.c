@@ -851,7 +851,7 @@ int main(int argc, const char **argv)
 
 	setlocale(LC_ALL, "");
 
-#if ENABLE_NLS != 0
+#ifdef ENABLE_NLS
 	bindtextdomain("wget", LOCALEDIR);
 	textdomain("wget");
 #endif
@@ -2714,16 +2714,16 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 	 */
 
 	wget_buffer_reset(&buf);
-#if WITH_ZLIB
+#ifdef WITH_ZLIB
 	wget_buffer_strcat(&buf, buf.length ? ", gzip, deflate" : "gzip, deflate");
 #endif
-#if WITH_BZIP2
+#ifdef WITH_BZIP2
 	wget_buffer_strcat(&buf, buf.length ? ", bzip2" : "bzip2");
 #endif
-#if WITH_LZMA
+#ifdef WITH_LZMA
 	wget_buffer_strcat(&buf, buf.length ? ", xz, lzma" : "xz, lzma");
 #endif
-#if WITH_BROTLIDEC
+#ifdef WITH_BROTLIDEC
 	wget_buffer_strcat(&buf, buf.length ? ", br" : "br");
 #endif
 	if (!buf.length)

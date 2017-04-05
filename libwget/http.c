@@ -40,13 +40,13 @@
 #include <c-ctype.h>
 #include <time.h>
 #include <errno.h>
-#if HAVE_SYS_SOCKET_H
+#ifdef HAVE_SYS_SOCKET_H
 # include <sys/socket.h>
-#elif HAVE_WS2TCPIP_H
+#elif defined HAVE_WS2TCPIP_H
 # include <ws2tcpip.h>
 #endif
 #include <netinet/in.h>
-#if WITH_ZLIB
+#ifdef WITH_ZLIB
 //#include <zlib.h>
 #endif
 #ifdef WITH_LIBNGHTTP2
