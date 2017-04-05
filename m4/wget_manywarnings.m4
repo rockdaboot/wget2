@@ -58,14 +58,10 @@ AC_DEFUN([wget_MANYWARNINGS], [
     # AC_PROG_CC sets $GCC to 'yes' if compiler is gcc
     # AC_REQUIRE([AC_PROG_CC])
 
-    CCNAME=$($CC --version | {
-      IFS=' -' read name x _
-      if test "$x" = clang; then
-        echo $x
-      else
-        echo $name
-      fi
-    })
+    case $CC in
+      *gcc*) CCNAME="gcc";;
+      *clang*) CCNAME="clang";;
+    esac
 
     if test "$CCNAME" = "gcc"; then
       test -n "$2" && wget_LANGUAGE=$2 || wget_LANGUAGE=C
