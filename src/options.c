@@ -772,7 +772,7 @@ static const struct optionw options[] = {
 	{ "help", NULL, print_help, 0, 'h' },
 	{ "host-directories", &config.host_directories, parse_bool, 0, 0 },
 	{ "hpkp", &config.hpkp, parse_bool, 0, 0 },
-	{ "hpkp-file", &config.hpkp_file, parse_string, 1, 0 },
+	{ "hpkp-file", &config.hpkp_file, parse_filename, 1, 0 },
 	{ "hsts", &config.hsts, parse_bool, 0, 0 },
 	{ "hsts-file", &config.hsts_file, parse_filename, 1, 0 },
 	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0 }, // obsolete, replaced by --adjust-extension
