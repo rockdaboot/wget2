@@ -1248,7 +1248,11 @@ int init(int argc, const char **argv)
 	config.ca_directory = wget_strdup(config.ca_directory);
 	config.http_proxy = wget_strdup(getenv("http_proxy"));
 	config.https_proxy = wget_strdup(getenv("https_proxy"));
-	config.no_proxy = wget_strdup(getenv("no_proxy"));
+	if (config.http_proxy || config.https_proxy) {
+		config.no_proxy = wget_strdup(getenv("no_proxy"));
+		if (!config.no_proxy || !*config.no_proxy)
+			config.no_proxy = wget_strdup(getenv("NO_PROXY"));
+	}
 	config.default_page = wget_strdup(config.default_page);
 	config.domains = wget_vector_create(16, -2, (wget_vector_compare_t)strcmp);
 //	config.exclude_domains = wget_vector_create(16, -2, NULL);
