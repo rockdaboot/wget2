@@ -156,6 +156,8 @@ if test -n "$WARN_CFLAGS"; then
     nw="$nw -Wunsafe-loop-optimizations"
     nw="$nw -Wundef"
     nw="$nw -Wswitch-enum"
+    nw="$nw -Wbad-function-cast"
+    nw="$nw -Wredundant-decls"
     wget_WORD_REMOVE([GNULIB_WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
 
     # disable options implicitly set by other options
