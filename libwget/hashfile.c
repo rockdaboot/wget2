@@ -365,12 +365,17 @@ void wget_hash_deinit(wget_hash_hd_t *dig, void *digest)
 	memcpy(digest, ret, gcry_md_get_algo_dlen(dig->algorithm));
 	gcry_md_close(dig->context);
 }
+
 #else // use the gnulib functions
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wundef"
 #include "md2.h"
 #include "md5.h"
 #include "sha1.h"
 #include "sha256.h"
 #include "sha512.h"
+#pragma GCC diagnostic pop
 
 typedef void (*_hash_init_t)(void *);
 typedef void (*_hash_process_t)(const void *, size_t, void *);
