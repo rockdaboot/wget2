@@ -2365,7 +2365,7 @@ int futimens(int fd, const struct timespec times[2])
 	mt.dwHighDateTime = ll >> 32;
 
 	BOOL success = SetFileTime(
-		(HANDLE) _get_osfhandle (fd),
+		(HANDLE) (intptr_t) _get_osfhandle (fd),
 		&mt,  // creation
 		&at,  // last access
 		&mt); // last modification
