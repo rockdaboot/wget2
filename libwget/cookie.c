@@ -39,6 +39,9 @@
 #include <errno.h>
 #ifdef WITH_LIBPSL
 #	include <libpsl.h>
+#  define _U
+#else
+#  define _U G_GNUC_WGET_UNUSED
 #endif
 
 #include <wget.h>
@@ -61,7 +64,7 @@ struct wget_cookie_db_st {
 
 // by this kind of sorting, we can easily see if a domain matches or not (match = supercookie !)
 
-int wget_cookie_db_load_psl(wget_cookie_db_t *cookie_db, const char *fname)
+int wget_cookie_db_load_psl(wget_cookie_db_t *cookie_db _U, const char *fname _U)
 {
 #ifdef WITH_LIBPSL
 		if (fname) {
@@ -328,7 +331,7 @@ void wget_cookie_normalize_cookies(const wget_iri_t *iri, const wget_vector_t *c
 //	wget_thread_mutex_unlock(&_cookies_mutex);
 }
 
-int wget_cookie_check_psl(const wget_cookie_db_t *cookie_db, const wget_cookie_t *cookie)
+int wget_cookie_check_psl(const wget_cookie_db_t *cookie_db _U, const wget_cookie_t *cookie _U)
 {
 //	wget_thread_mutex_lock(&_cookies_mutex);
 
