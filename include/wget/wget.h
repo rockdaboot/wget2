@@ -175,8 +175,11 @@
 #	define WGET_END_DECLS
 #endif
 
-// gnulib convenience header for libintl.h
+// gnulib convenience header for libintl.h, turn of annoying warnings
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wundef"
 #include <gettext.h>
+#pragma GCC diagnostic pop
 
 #ifdef ENABLE_NLS
 #	define _(STRING) gettext(STRING)
