@@ -481,6 +481,8 @@ int wget_get_screen_size(int *width, int *height)
 
 		return 0;
 	}
+
+	return -1;
 }
 #else
 int wget_get_screen_size(int *width G_GNUC_WGET_UNUSED, int *height G_GNUC_WGET_UNUSED)
