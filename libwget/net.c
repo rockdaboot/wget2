@@ -325,9 +325,7 @@ static int G_GNUC_WGET_CONST _family_to_value(int family)
 
 void wget_tcp_set_tcp_fastopen(wget_tcp_t *tcp, int tcp_fastopen)
 {
-#if defined(TCP_FASTOPEN) && defined(MSG_FASTOPEN)
 	(tcp ? tcp : &_global_tcp)->tcp_fastopen = tcp_fastopen;
-#endif
 }
 
 int wget_tcp_get_tcp_fastopen(wget_tcp_t *tcp)
@@ -593,6 +591,7 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, const char *port)
 				}
 			}
 
+#ifdef TCP_FASTOPEN
 			if (tcp->tcp_fastopen) {
 				rc = 0;
 				errno = 0;
@@ -602,6 +601,10 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, const char *port)
 				rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
 				tcp->first_send = 0;
 			}
+#else
+			rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
+			tcp->first_send = 0;
+#endif
 
 			if (rc < 0
 				&& errno != EAGAIN
@@ -724,7 +727,7 @@ wget_tcp_t *wget_tcp_accept(wget_tcp_t *parent_tcp)
 			return NULL;
 	}
 
-	if ((sockfd = accept(parent_tcp->sockfd, parent_tcp->bind_addrinfo->ai_addr, &parent_tcp->bind_addrinfo->ai_addrlen)) != -1) {
+	if ((sockfd = accept(parent_tcp->sockfd, parent_tcp->bind_addrinfo->ai_addr, (socklen_t *) &parent_tcp->bind_addrinfo->ai_addrlen)) != -1) {
 		wget_tcp_t *tcp = xmalloc(sizeof(wget_tcp_t));
 
 		*tcp = *parent_tcp;
