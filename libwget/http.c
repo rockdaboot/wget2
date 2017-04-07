@@ -2030,7 +2030,12 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 				return WGET_E_INVALID;
 			}
 
-			if ((rc = nghttp2_submit_settings(conn->http2_session, NGHTTP2_FLAG_NONE, NULL, 0))) {
+			nghttp2_settings_entry iv[] = {
+				// {NGHTTP2_SETTINGS_MAX_CONCURRENT_STREAMS, 100},
+				{NGHTTP2_SETTINGS_ENABLE_PUSH, 0},
+			};
+
+			if ((rc = nghttp2_submit_settings(conn->http2_session, NGHTTP2_FLAG_NONE, iv, countof(iv)))) {
 				error_printf(_("Failed to submit HTTP2 client settings (%d)\n"), rc);
 				wget_http_close(_conn);
 				return WGET_E_INVALID;
