@@ -180,7 +180,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 {
 	static wget_thread_mutex_t
 		mutex = WGET_THREAD_MUTEX_INITIALIZER;
-	struct addrinfo *addrinfo, hints;
+	struct addrinfo *addrinfo = NULL, hints;
 	int rc = 0, ai_flags = 0;
 
 	if (!tcp)
