@@ -59,6 +59,12 @@
 # include <fcntl.h>
 #endif
 
+#if defined __APPLE__ && defined __MACH__ && defined CONNECT_DATA_IDEMPOTENT && defined CONNECT_RESUME_ON_READ_WRITE
+# define TCP_FASTOPEN_OSX
+#elif defined TCP_FASTOPEN && defined MSG_FASTOPEN
+# define TCP_FASTOPEN_LINUX
+#endif
+
 #include <wget.h>
 #include "private.h"
 #include "net.h"
@@ -80,7 +86,9 @@ static struct wget_tcp_st _global_tcp = {
 	.timeout = -1,
 	.family = AF_UNSPEC,
 	.caching = 1,
-#if defined(TCP_FASTOPEN) && defined(MSG_FASTOPEN)
+#if defined TCP_FASTOPEN_OSX
+	.tcp_fastopen = 1,
+#elif defined TCP_FASTOPEN_LINUX
 	.tcp_fastopen = 1,
 	.first_send = 1
 #endif
@@ -325,7 +333,7 @@ static int G_GNUC_WGET_CONST _family_to_value(int family)
 
 void wget_tcp_set_tcp_fastopen(wget_tcp_t *tcp, int tcp_fastopen)
 {
-#if defined(TCP_FASTOPEN) && defined(MSG_FASTOPEN)
+#if defined TCP_FASTOPEN_OSX || defined TCP_FASTOPEN_LINUX
 	(tcp ? tcp : &_global_tcp)->tcp_fastopen = tcp_fastopen;
 #endif
 }
@@ -594,10 +602,16 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, const char *port)
 			}
 
 			if (tcp->tcp_fastopen) {
+#ifdef TCP_FASTOPEN_OSX
+				sa_endpoints_t endpoints = { .sae_dstaddr = ai->ai_addr, .sae_dstaddrlen = ai->ai_addrlen };
+				rc = connectx(sockfd, &endpoints, SAE_ASSOCID_ANY, CONNECT_RESUME_ON_READ_WRITE | CONNECT_DATA_IDEMPOTENT, NULL, 0, NULL, NULL);
+				tcp->first_send = 0;
+#else
 				rc = 0;
 				errno = 0;
 				tcp->connect_addrinfo = ai;
 				tcp->first_send = 1;
+#endif
 			} else {
 				rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
 				tcp->first_send = 0;
@@ -673,7 +687,7 @@ int wget_tcp_listen(wget_tcp_t *tcp, const char *host, const char *port, int bac
 			if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == -1)
 				error_printf(_("Failed to set socket option NODELAY\n"));
 
-#ifdef TCP_FASTOPEN
+#ifdef TCP_FASTOPEN_LINUX
 			if (tcp->tcp_fastopen)  {
 				on = 1;
 				if (setsockopt(sockfd, IPPROTO_TCP, TCP_FASTOPEN, &on, sizeof(on)) == -1)
@@ -795,7 +809,7 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 		return wget_ssl_write_timeout(tcp->ssl_session, buf, count, tcp->timeout);
 
 	while (count) {
-#ifdef MSG_FASTOPEN
+#ifdef TCP_FASTOPEN_LINUX
 		if (tcp->tcp_fastopen && tcp->first_send) {
 			n = sendto(tcp->sockfd, buf, count, MSG_FASTOPEN,
 				tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
