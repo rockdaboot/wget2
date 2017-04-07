@@ -1728,7 +1728,7 @@ static int _on_frame_send_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	return 0;
 }
 
-static int _on_frame_recv_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
+static int _on_frame_recv_callback(nghttp2_session *session,
 	const nghttp2_frame *frame, void *user_data G_GNUC_WGET_UNUSED)
 {
 	_print_frame_type(frame->hd.type, '<', frame->hd.stream_id);
@@ -1751,7 +1751,7 @@ static int _on_frame_recv_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	return 0;
 }
 
-static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
+static int _on_header_callback(nghttp2_session *session,
 	const nghttp2_frame *frame, const uint8_t *name, size_t namelen,
 	const uint8_t *value, size_t valuelen,
 	uint8_t flags G_GNUC_WGET_UNUSED, void *user_data G_GNUC_WGET_UNUSED)
@@ -1911,7 +1911,7 @@ static int _on_header_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
  * This function is called to indicate that a stream is closed.
  */
 static int _on_stream_close_callback(nghttp2_session *session, int32_t stream_id,
-	uint32_t error_code G_GNUC_WGET_UNUSED, void *user_data G_GNUC_WGET_UNUSED)
+	uint32_t error_code G_GNUC_WGET_UNUSED, void *user_data)
 {
 	struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, stream_id);
 
