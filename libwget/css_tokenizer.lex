@@ -18,12 +18,15 @@
 #include "css_tokenizer.h"
 
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+	#pragma GCC diagnostic ignored "-Wunknown-pragmas" // clang mourns about the next one
+	#pragma GCC diagnostic ignored "-Wsuggest-attribute=pure"
 	#pragma GCC diagnostic ignored "-Wunused-function"
 	#pragma GCC diagnostic ignored "-Wunused-macros"
 	#pragma GCC diagnostic ignored "-Wunused-parameter"
 	#pragma GCC diagnostic ignored "-Wsign-compare"
-	#pragma GCC diagnostic ignored "-Wsuggest-attribute=pure"
 	#pragma GCC diagnostic ignored "-Wswitch-default"
+	#pragma GCC diagnostic ignored "-Wunreachable-code" // clang
+	#pragma GCC diagnostic ignored "-Wshorten-64-to-32" // clang
 #endif
 
 %}
