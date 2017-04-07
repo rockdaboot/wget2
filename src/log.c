@@ -40,6 +40,9 @@
 #ifdef _WIN32
 #	include <windows.h>
 	static CRITICAL_SECTION g_crit;
+#	define _U
+#else
+#	define _U G_GNUC_WGET_UNUSED
 #endif
 
 #include <wget.h>
@@ -47,7 +50,7 @@
 #include "wget_options.h"
 #include "wget_log.h"
 
-static void _write_out(FILE *default_fp, const char *data, size_t len, int with_timestamp, const char *colorstring, wget_console_color_t color_id)
+static void _write_out(FILE *default_fp, const char *data, size_t len, int with_timestamp, const char *colorstring, wget_console_color_t _U color_id)
 {
 	FILE *fp;
 	int fd = -1;
