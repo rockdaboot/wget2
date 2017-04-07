@@ -1135,7 +1135,7 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 
 	// init the short option lookup table
 	if (!shortcut_to_option[0]) {
-		for (unsigned it = 0; it < countof(options); it++) {
+		for (short it = 0; it < (short) countof(options); it++) {
 			if (options[it].short_name > 0)
 				shortcut_to_option[(unsigned char)options[it].short_name] = it + 1;
 		}
