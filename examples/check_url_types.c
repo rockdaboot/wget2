@@ -272,7 +272,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		stats.http_links = stats. https_links = 0;
 		stats.http_links_same_host = stats.https_links_same_host = 0;
 		stats.status = -1;
-		stats.redirs = stats.redir_insecure = 0, stats.landed_on_https = 0;
+		stats.redirs = stats.redir_insecure = stats.landed_on_https = 0;
 
 		// follow up to max 10 redirections, stop if one is plain text
 		for (int redirs = 0, max = 10; redirs < max; redirs++) {
