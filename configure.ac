@@ -168,6 +168,7 @@ if test -n "$WARN_CFLAGS"; then
     WARN_CFLAGS="$WARN_CFLAGS -Wno-system-headers -Wno-vla -Wno-cast-qual -Wno-padded"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-reserved-id-macro -Wno-sign-conversion  -Wno-disabled-macro-expansion"
 	WARN_CFLAGS="$WARN_CFLAGS -Wno-documentation -Wno-documentation-unknown-command"
+	WARN_CFLAGS="$WARN_CFLAGS -Wno-covered-switch-default"
 
     # remove all flags from WARN_FLAGS that are already in CFLAGS
     # wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])
