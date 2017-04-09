@@ -194,18 +194,18 @@ AC_ARG_ENABLE([fsanitize-asan],
   [gl_cc_sanitize_asan=yes], [gl_cc_sanitize_asan=no])
 
 AC_ARG_ENABLE([fsanitize-msan],
-  [AS_HELP_STRING([--enable-fsanitize-msan], [Turn on Memory Sanitizer (for developers) (mutually exclusive with Address sanitizer or Valgrind tests)])],
+  [AS_HELP_STRING([--enable-fsanitize-msan], [Turn on Memory Sanitizer (for developers) (mutually exclusive with Address/Thread sanitizer or Valgrind tests)])],
   [gl_cc_sanitize_msan=yes], [gl_cc_sanitize_msan=no])
 
 AC_ARG_ENABLE([fsanitize-tsan],
-  [AS_HELP_STRING([--enable-fsanitize-tsan], [Turn on Thread Sanitizer (for developers) (mutually exclusive with Address sanitizer or Valgrind tests)])],
+  [AS_HELP_STRING([--enable-fsanitize-tsan], [Turn on Thread Sanitizer (for developers) (mutually exclusive with Address/Memory sanitizer or Valgrind tests)])],
   [gl_cc_sanitize_tsan=yes], [gl_cc_sanitize_tsan=no])
 
 
 if test "$gl_cc_sanitize_asan" = yes; then
   if test "$gl_cc_sanitize_msan" = yes; then
     AC_MSG_ERROR([Address Sanitizer and Memory Sanitizer are mutually exclusive])
-  elif test "gl_cc_sanitize_tsan" = yes; then
+  elif test "$gl_cc_sanitize_tsan" = yes; then
     AC_MSG_ERROR([Address Sanitizer and Thread Sanitizer are mutually exclusive])
   fi
 fi
