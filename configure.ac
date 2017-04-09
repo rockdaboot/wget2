@@ -210,6 +210,14 @@ if test "$gl_cc_sanitize_asan" = yes; then
   fi
 fi
 
+
+if test "$gl_cc_sanitize_msan" = yes; then
+  if test "$gl_cc_sanitize_tsan" = yes; then
+    AC_MSG_ERROR([Memory Sanitizer and Thread Sanitizer are mutually exclusive])
+  fi
+fi
+
+
 if test "$gl_cc_sanitize_ubsan" = yes; then
   gl_WARN_ADD([-fsanitize=undefined])
   gl_WARN_ADD([-fno-sanitize-recover=undefined])
