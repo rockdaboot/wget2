@@ -190,15 +190,15 @@ AC_ARG_ENABLE([fsanitize-ubsan],
   [gl_cc_sanitize_ubsan=yes], [gl_cc_sanitize_ubsan=no])
 
 AC_ARG_ENABLE([fsanitize-asan],
-  [AS_HELP_STRING([--enable-fsanitize-asan], [Turn on Address Sanitizer (for developers)])],
+  [AS_HELP_STRING([--enable-fsanitize-asan], [Turn on Address Sanitizer (for developers) (mutually exclusive with Memory/Thread sanitizer or Valgrind tests)])],
   [gl_cc_sanitize_asan=yes], [gl_cc_sanitize_asan=no])
 
 AC_ARG_ENABLE([fsanitize-msan],
-  [AS_HELP_STRING([--enable-fsanitize-msan], [Turn on Memory Sanitizer (for developers)])],
+  [AS_HELP_STRING([--enable-fsanitize-msan], [Turn on Memory Sanitizer (for developers) (mutually exclusive with Address sanitizer or Valgrind tests)])],
   [gl_cc_sanitize_msan=yes], [gl_cc_sanitize_msan=no])
 
 AC_ARG_ENABLE([fsanitize-tsan],
-  [AS_HELP_STRING([--enable-fsanitize-tsan], [Turn on Thread Sanitizer (for developers)])],
+  [AS_HELP_STRING([--enable-fsanitize-tsan], [Turn on Thread Sanitizer (for developers) (mutually exclusive with Address sanitizer or Valgrind tests)])],
   [gl_cc_sanitize_tsan=yes], [gl_cc_sanitize_tsan=no])
 
 
@@ -287,7 +287,7 @@ AS_IF([test -n "$DOXYGEN"], [
 
 # Check for valgrind
 AC_ARG_ENABLE(valgrind-tests,
-  AS_HELP_STRING([--enable-valgrind-tests], [enable using Valgrind for tests]),
+  AS_HELP_STRING([--enable-valgrind-tests], [enable using Valgrind for tests (mutually exclusive with Address/Memory/Thread sanitizer)]),
   [ac_enable_valgrind=$enableval], [ac_enable_valgrind=no])
 AS_IF([test "x${ac_enable_valgrind}" != xno], [
   AC_CHECK_PROG(HAVE_VALGRIND, valgrind, yes, no)
@@ -301,6 +301,17 @@ AS_IF([test "x${ac_enable_valgrind}" != xno], [
 ], [
   TESTS_INFO="Valgrind testing not enabled"
 ])
+
+
+if test "$VALGRIND_TESTS" = 1; then
+  if test "$gl_cc_sanitize_asan" = yes; then
+    AC_MSG_ERROR([Valgrind and Address Sanitizer are mutually exclusive])
+  elif test "$gl_cc_sanitize_msan" = yes; then
+    AC_MSG_ERROR([Valgrind and Memory Sanitizer are mutually exclusive])
+  elif test "$gl_cc_sanitize_tsan" = yes; then
+    AC_MSG_ERROR([Valgrind and Thread Sanitizer are mutually exclusive])
+  fi
+fi
 
 # check for gcc's atomic read-add-write functionality
 AC_MSG_CHECKING([for __sync_fetch_and_add (int)])
