@@ -302,6 +302,17 @@ AS_IF([test "x${ac_enable_valgrind}" != xno], [
   TESTS_INFO="Valgrind testing not enabled"
 ])
 
+
+if test "$VALGRIND_TESTS" = 1; then
+  if test "$gl_cc_sanitize_asan" = yes; then
+    AC_MSG_ERROR([Valgrind and Address Sanitizer are mutually exclusive])
+  elif test "gl_cc_sanitize_msan" = yes; then
+    AC_MSG_ERROR([Valgrind and Memory Sanitizer are mutually exclusive])
+  elif test "gl_cc_sanitize_tsan" = yes; then
+    AC_MSG_ERROR([Valgrind and Thread Sanitizer are mutually exclusive])
+  fi
+fi
+
 # check for gcc's atomic read-add-write functionality
 AC_MSG_CHECKING([for __sync_fetch_and_add (int)])
 AC_LINK_IFELSE(
