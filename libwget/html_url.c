@@ -80,6 +80,30 @@ static const char attrs[][12] = {
 	"usemap"
 };
 
+static void _css_parse_encoding(void *context, const char *encoding, size_t len)
+{
+
+}
+
+static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+{
+    _html_context_t *ctx = context;
+    
+    WGET_HTML_PARSED_RESULT *res = &ctx->result;
+    
+	if (!res->uris)
+		res->uris = wget_vector_create(32, -2, NULL);
+
+	WGET_HTML_PARSED_URL parsed_url;
+	parsed_url.link_inline = 0;
+	strlcpy(parsed_url.attr, "", sizeof(parsed_url.attr));
+	strlcpy(parsed_url.dir, "style", sizeof(parsed_url.dir));
+	parsed_url.url.p = url;
+	parsed_url.url.len = len;
+	
+	wget_vector_add(res->uris, &parsed_url, sizeof(parsed_url));
+}
+
 // Callback function, called from HTML parser for each URI found.
 static void _html_get_url(void *context, int flags, const char *tag, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
@@ -228,6 +252,16 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				wget_vector_add(res->uris, &url, sizeof(url));
 			}
 		}
+	}
+	
+	if (flags & XML_FLG_CONTENT && val && !wget_strcasecmp_ascii(tag, "style")) {
+	    
+	    wget_buffer_t *tmpData = wget_buffer_init(NULL, NULL, len+1);
+	    wget_buffer_memcpy(tmpData, val, len);
+ 
+	    wget_css_parse_buffer(tmpData->data, _css_parse_uri, _css_parse_encoding, context);
+	    
+	    wget_buffer_free(&tmpData);
 	}
 }
 
