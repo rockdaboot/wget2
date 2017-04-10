@@ -24,11 +24,10 @@ dist-hook: gen-ChangeLog
 .PHONY: gen-ChangeLog check-valgrind
 
 gen-ChangeLog:
-	$(AM_V_GEN)if test -d .git; then              \
-	  log_fix="$(srcdir)/build-aux/git-log-fix";  \
-	  test -e "$$log_fix" || amend_git_log=;      \
-	  $(top_srcdir)/build-aux/gitlog-to-changelog \
-	    $$amend_git_log > $(distdir)/ChangeLog;   \
+	$(AM_V_GEN)if test -d .git; then \
+	  git log --no-merges --date=short \
+	    --pretty='format:%ad %an <%ae>%w(0,0,5)%+B' \
+	    > $(distdir)/ChangeLog; \
 	fi
 
 check-valgrind:
