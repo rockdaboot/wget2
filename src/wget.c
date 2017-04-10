@@ -2441,6 +2441,18 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 			return -2;
 		}
 
+#ifdef _WIN32
+		if (!strcmp(fname, "NUL")) {
+			// skip saving to NUL device, also suppresses error message from setting file date
+			return -1;
+		}
+#else
+		if (!strcmp(fname, "/dev/null")) {
+			// skip saving to /dev/null device, also suppresses error message from setting file date
+			return -1;
+		}
+#endif
+
 		flag = O_APPEND;
 	}
 
