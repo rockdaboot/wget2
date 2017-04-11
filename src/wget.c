@@ -1353,7 +1353,7 @@ static void process_head_response(wget_http_response_t *resp)
 		wget_metalink_mirror_t mirror = { .location = "-", .iri = job->iri };
 		wget_metalink_t *metalink = wget_calloc(1, sizeof(wget_metalink_t));
 		metalink->size = resp->content_length; // total file size
-		metalink->name = wget_strdup(job->local_filename);
+		metalink->name = wget_strdup(config.output_document ? config.output_document : job->local_filename);
 
 		ssize_t npieces = (resp->content_length + config.chunk_size - 1) / config.chunk_size;
 		metalink->pieces = wget_vector_create((int) npieces, 1, NULL);
