@@ -302,9 +302,8 @@ const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
 			wget_buffer_memcat(&buf, "/", 1);
 		}
 		if (config.host_directories && iri->host && *iri->host) {
-			// wget_iri_get_host(iri, &buf);
 			wget_buffer_strcat(&buf, iri->host);
-			// buffer_memcat(&buf, "/", 1);
+			wget_buffer_memcat(&buf, "/", 1);
 		}
 
 		if (config.cut_directories) {
@@ -320,17 +319,25 @@ const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
 			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
 				p = strchr(*p == '/' ? p + 1 : p, '/');
 			}
+
 			if (!p && path_buf.data) {
 				// we can't strip this many path elements, just use the filename
 				p = strrchr(path_buf.data, '/');
 				if (!p) {
 					p = path_buf.data;
-					if (*p != '/')
-						wget_buffer_memcat(&buf, "/", 1);
+				}
+			}
+			
+			if(p) {
+				while (*p == '/') {
+					p++;
+				}
+				
+				if(*p) {
 					wget_buffer_strcat(&buf, p);
 				}
 			}
-
+			
 			wget_buffer_deinit(&path_buf);
 		} else {
 			wget_iri_get_path(iri, &buf, config.local_encoding);
