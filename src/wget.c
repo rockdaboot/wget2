@@ -106,7 +106,7 @@ static void
 	metalink_parse_localfile(const char *fname),
 	html_parse(JOB *job, int level, const char *data, size_t len, const char *encoding, wget_iri_t *base),
 	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, wget_iri_t *base),
-	css_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
+	css_parse(JOB *job, const char *data, size_t len, const char *encoding, wget_iri_t *base),
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri_t *base);
 static unsigned int G_GNUC_WGET_PURE
 	hash_url(const char *url);
@@ -1545,7 +1545,7 @@ static void process_response(wget_http_response_t *resp)
 					html_parse(job, job->level, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 					// xml_parse(sockfd, resp, job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
-					css_parse(job, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					css_parse(job, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/atom+xml")) { // see RFC4287, https://de.wikipedia.org/wiki/Atom_%28Format%29
 					atom_parse(job, resp->body->data, "utf-8", job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/rss+xml")) { // see https://cyber.harvard.edu/rss/rss.html
@@ -1949,7 +1949,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 			// only load from dir 'LINK' when rel was 'icon shortcut' or 'stylesheet'
 			if ((c_tolower(*html_url->dir) == 'a'
 				&& (html_url->dir[1] == 0 || !wget_strcasecmp_ascii(html_url->dir,"area")))
-				|| html_url->link_inline
+				|| !html_url->link_inline
 				|| !wget_strcasecmp_ascii(html_url->dir,"embed"))
 			{
 				info_printf(_("URL '%.*s' not followed (page requisites + level)\n"), (int)url->len, url->p);
@@ -2287,7 +2287,7 @@ static void _css_parse_uri(void *context, const char *url, size_t len, size_t po
 		add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
 }
 
-void css_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base)
+void css_parse(JOB *job, const char *data, size_t len, const char *encoding, wget_iri_t *base)
 {
 	// create scheme://authority that will be prepended to relative paths
 	struct css_context context = { .base = base, .job = job, .encoding = encoding };
@@ -2298,7 +2298,7 @@ void css_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *bas
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
 
-	wget_css_parse_buffer(data, _css_parse_uri, _css_parse_encoding, &context);
+	wget_css_parse_buffer(data, len, _css_parse_uri, _css_parse_encoding, &context);
 
 	if (context.encoding_allocated)
 		xfree(context.encoding);

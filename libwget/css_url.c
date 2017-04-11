@@ -94,11 +94,11 @@ static void _urls_to_absolute(wget_vector_t *urls, wget_iri_t *base)
 	}
 }
 
-wget_vector_t *wget_css_get_urls(const char *css, wget_iri_t *base, const char **encoding)
+wget_vector_t *wget_css_get_urls(const char *css, size_t len, wget_iri_t *base, const char **encoding)
 {
 	_CSS_CONTEXT context = { .encoding = encoding };
 
-	wget_css_parse_buffer(css, _css_get_url, encoding ? _css_get_encoding : NULL, &context);
+	wget_css_parse_buffer(css, len, _css_get_url, encoding ? _css_get_encoding : NULL, &context);
 	_urls_to_absolute(context.uris, base);
 
 	return context.uris;

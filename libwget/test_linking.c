@@ -17,7 +17,7 @@ int main(void)
 	wget_buffer_alloc(0); // buffer.c
 	wget_buffer_printf((wget_buffer_t *)1, "%s", ""); // buffer_printf.c
 	strlcpy((char *)"", "", 0); // strlcpy.c
-	wget_css_parse_buffer((const char *)1, NULL, NULL, NULL); // css.c
+	wget_css_parse_buffer((const char *)1, 0, NULL, NULL, NULL); // css.c
 	wget_decompress_close(NULL); // decompressor.c
 	wget_hashmap_create(0, 0, NULL, NULL); // hashmap.c
 	wget_fdgetline(&empty, (size_t *)1, 0); // io.c
