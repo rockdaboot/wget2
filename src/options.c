@@ -908,7 +908,11 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 
 	debug_printf("name=%s value=%s invert=%d\n", opt->long_name, value, invert);
 
-	if (invert && (opt->parser == parse_string || opt->parser == parse_stringset || opt->parser == parse_stringlist)) {
+	if (invert && (opt->parser == parse_string ||
+				opt->parser == parse_stringset ||
+				opt->parser == parse_stringlist ||
+				opt->parser == parse_filename ||
+				opt->parser == parse_filenames)) {
 		// allow no-<option> to set value to NULL
 		if (value && name == namebuf)
 			error_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
