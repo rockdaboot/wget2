@@ -2444,14 +2444,15 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 #ifdef _WIN32
 		if (!strcmp(fname, "NUL")) {
 			// skip saving to NUL device, also suppresses error message from setting file date
-			return -1;
-		}
-#else
-		if (!strcmp(fname, "/dev/null")) {
-			// skip saving to /dev/null device, also suppresses error message from setting file date
-			return -1;
+			return -2;
 		}
 #endif
+
+		// Gnulib accepts the /dev/null syntax on Windows too.
+		if (!strcmp(fname, "/dev/null")) {
+			// skip saving to /dev/null device, also suppresses error message from setting file date
+			return -2;
+		}
 
 		flag = O_APPEND;
 	}
@@ -2946,7 +2947,7 @@ wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
 
 	resp->body = context->body;
 
-	if (context->outfd != -1) {
+	if (context->outfd >= 0) {
 		if (resp->last_modified)
 			set_file_mtime(context->outfd, resp->last_modified);
 
