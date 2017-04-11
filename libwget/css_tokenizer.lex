@@ -26,7 +26,7 @@
 	#pragma GCC diagnostic ignored "-Wsign-compare"
 	#pragma GCC diagnostic ignored "-Wswitch-default"
 	#pragma GCC diagnostic ignored "-Wunreachable-code" // clang
-	#pragma GCC diagnostic ignored "-Wshorten-64-to-32" // clang
+	#pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #endif
 
 %}
