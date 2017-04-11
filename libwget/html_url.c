@@ -94,7 +94,10 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 	if ((flags & XML_FLG_BEGIN)) {
 		if ((*tag|0x20) == 'm' && !wget_strcasecmp_ascii(tag, "meta"))
 			ctx->found_robots = ctx->found_content_type = 0;
-		else if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link"))
+		
+		if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link"))
+			ctx->link_inline = 1;
+		else
 			ctx->link_inline = 0;
 	}
 
@@ -160,15 +163,6 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				return;
 		}
 
-		if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link")) {
-			if (!wget_strcasecmp_ascii(attr, "rel")) {
-				if (!wget_strncasecmp_ascii(val, "icon shortcut", len) || wget_strncasecmp_ascii(val, "stylesheet", len))
-					ctx->link_inline = 1;
-				else
-					ctx->link_inline = 0;
-			}
-		}
-
 		// shortcut to avoid unneeded calls to bsearch()
 		int found = 0;
 
@@ -220,7 +214,6 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 			} else {
 				// value is a single URL
 				url.link_inline = ctx->link_inline;
-				ctx->link_inline = 0;
 				strlcpy(url.attr, attr, sizeof(url.attr));
 				strlcpy(url.dir, tag, sizeof(url.dir));
 				url.url.p = val;
