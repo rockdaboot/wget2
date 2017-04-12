@@ -552,6 +552,22 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_cert_type(option_t op
 	return 0;
 }
 
+static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_regex_type(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
+{
+	if (!val || !wget_strcasecmp_ascii(val, "posix"))
+		*((char *)opt->var) = WGET_REGEX_TYPE_POSIX;
+		
+#if defined(WITH_LIBPCRE2) || defined(WITH_LIBPCRE)
+	else if (!wget_strcasecmp_ascii(val, "pcre"))
+		*((char *)opt->var) = WGET_REGEX_TYPE_PCRE;
+#endif
+
+	else
+		error_printf_exit("Unsupported regex type '%s'\n", val);
+
+	return 0;
+}
+
 static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_progress_type(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (!val || !*val || !wget_strcasecmp_ascii(val, "none"))
@@ -875,6 +891,11 @@ static const struct optionw options[] = {
 		SECTION_DOWNLOAD,
 		{ "Comma-separated list of file name suffixes or\n",
 		  "patterns.\n"
+		}
+	},
+	{ "accept-regex", &config.accept_regex, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Regex matching accepted URLs.\n"
 		}
 	},
 	{ "adjust-extension", &config.adjust_extension, parse_bool, -1, 'E',
@@ -1515,9 +1536,17 @@ static const struct optionw options[] = {
 	},
 	{ "referer", &config.referer, parse_string, 1, 0,
 		SECTION_HTTP,
-		{ "Include Referer: url in HTTP requets.\n",
+		{ "Include Referer: url in HTTP request.\n",
 		  "(default: off)\n"
 		}
+	},
+	{ "regex-type", &config.regex_type, parse_regex_type, 1, 0,
+		SECTION_DOWNLOAD,
+#if defined(WITH_LIBPCRE2) || defined(WITH_LIBPCRE)
+		{ "Regular expression type. Possible types are posix or pcre. (default: posix)\n" }
+#else
+		{ "Regular expression type. This build only supports posix. (default: posix)\n" }
+#endif
 	},
 	{ "reject", &config.reject_patterns, parse_stringlist, 1, 'R',
 		SECTION_DOWNLOAD,
@@ -1525,6 +1554,13 @@ static const struct optionw options[] = {
 		  "patterns.\n"
 		}
 	},
+	{ "reject-regex", &config.reject_regex, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Regex matching rejected URLs.\n"
+		}
+	},
+
+
 	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Character encoding of remote files\n",

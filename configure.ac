@@ -551,6 +551,40 @@ AS_IF([test "x$with_libidn2" != xyes], [
 ])
 AM_CONDITIONAL([WITH_LIBIDN], [test "x$with_libidn" = xyes])
 
+AC_ARG_WITH(libpcre2, AS_HELP_STRING([--without-libpcre2], [disable support for libpcre2]), with_libpcre2=$withval, with_libpcre2=yes)
+AS_IF([test "x$with_libpcre2" != xno], [
+  PKG_CHECK_MODULES([LIBPCRE2], libpcre2, [
+    with_libpcre2=yes
+    LIBS="$LIBPCRE2_LIBS $LIBS"
+    CFLAGS="$LIBPCRE2_CFLAGS $CFLAGS"
+    AC_DEFINE([WITH_LIBPCRE2], [1], [PCRE regex support enabled via libpcre2])
+  ], [
+    AC_SEARCH_LIBS(pcre2_compile_8, pcre2-8,
+      [with_libpcre2=yes; AC_DEFINE([WITH_LIBPCRE2], [1], [PCRE regex support enabled via libpcre2])],
+      [with_libpcre2=no; AC_MSG_WARN(*** libpcre2 was not found. PCRE2 regex support disabled.)])
+  ])
+])
+AM_CONDITIONAL([WITH_LIBPCRE2], [test "x$with_libpcre2" = xyes])
+
+AS_IF([test "x$with_libpcre2" != xyes], [
+ AC_ARG_WITH(libpcre, AS_HELP_STRING([--without-libpcre], [disable support for libpcre]), with_libpcre=$withval, with_libpcre=yes)
+ AS_IF([test "x$with_libpcre" != xno], [
+   PKG_CHECK_MODULES([LIBPCRE], libpcre, [
+     with_libpcre=yes
+     LIBS="$LIBPCRE_LIBS $LIBS"
+     CFLAGS="$LIBPCRE_CFLAGS $CFLAGS"
+     AC_DEFINE([WITH_LIBPCRE], [1], [PCRE regex support enabled via libpcre])
+   ], [
+     AC_SEARCH_LIBS(pcre_compile, pcre,
+       [with_libpcre=yes; AC_DEFINE([WITH_LIBPCRE], [1], [PCRE regex support enabled via libpcre])],
+       [with_libpcre=no; AC_MSG_WARN(*** libpcre was not found. PCRE regex support disabled.)])
+   ])
+ ])
+])
+AM_CONDITIONAL([WITH_LIBPCRE], [test "x$with_libpcre" = xyes])
+
+AS_IF([test "x$with_libpcre" = xyes], [HAVE_PCRE="yes"], [test "x$with_libpcre2" = xyes], [HAVE_PCRE=yes], [HAVE_PCRE=no])
+
 AC_ARG_WITH(libmicrohttpd, AS_HELP_STRING([--without-libmicrohttpd], [disable support for libmicrohttpd]), with_libmicrohttpd=$withval, with_libmicrohttpd=yes)
 AS_IF([test "x$with_libmicrohttpd" != xno], [
   old_LIBS=$LIBS
@@ -663,6 +697,7 @@ AC_MSG_NOTICE([Summary of build options:
   PSL support:        $with_libpsl
   HTTP/2.0 support:   $with_libnghttp2
   Documentation:      $DOCS_INFO
+  PCRE support:       ${HAVE_PCRE}
   Tests:              ${TESTS_INFO}
   Assertions:         $ENABLE_ASSERT
   POSIX xattr:        $ENABLE_XATTR

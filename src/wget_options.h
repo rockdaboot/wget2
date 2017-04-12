@@ -72,7 +72,9 @@ struct config {
 		*egd_file,
 		*private_key,
 		*random_file,
-		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
+		*secure_protocol, // auto, SSLv2, SSLv3, TLSv1
+		*accept_regex,
+		*reject_regex;
 	wget_vector_t
 		*config_files,
 		*domains,
@@ -193,7 +195,8 @@ struct config {
 		stats_site,
 		stats_all,
 		local_db,
-		dont_write; // fuzzers and unit/fuzz tests set this to 1, so they won't write any files
+		dont_write, // fuzzers and unit/fuzz tests set this to 1, so they won't write any files
+		regex_type;
 };
 
 extern struct config
