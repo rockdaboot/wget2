@@ -196,7 +196,8 @@ struct config {
 		stats_all,
 		local_db,
 		dont_write, // fuzzers and unit/fuzz tests set this to 1, so they won't write any files
-		regex_type;
+		regex_type,
+		filter_urls;
 };
 
 extern struct config

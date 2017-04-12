@@ -1502,12 +1502,16 @@ Go to background immediately after startup. If no output file is specified via t
 
 * --accept-regex urlregex, --reject-regex urlregex
 
-  Specify a regular expression to accept or reject the complete URL.
+  Specify a regular expression to accept or reject file names.
 
 * --regex-type regextype
 
-  Specify the regular expression type.  Possible types are posix or pcre.  Note that to be able to use pcre type,
+  Specify the regular expression type. Possible types are posix or pcre.  Note that to be able to use pcre type,
   wget2 has to be compiled with libpcre support.
+
+* --filter-urls
+
+  Apply the accept and reject filters on the URL before starting a download.
 
 * -D domain-list, --domains=domain-list
 

@@ -399,7 +399,6 @@ static int in_host_pattern_list(const wget_vector_t *v, const char *hostname)
 	return 0;
 }
 
-
 static int regex_match_posix(const char *string, const char *pattern)
 {
 	int	status;
@@ -407,14 +406,14 @@ static int regex_match_posix(const char *string, const char *pattern)
 
 	if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0)
 		return 0;
-	
+
 	status = regexec(&re, string, (size_t) 0, NULL, 0);
-	
+
 	regfree(&re);
-	
+
 	if (status != 0)
 		return 0;
-	
+
 	return 1;
 }
 
@@ -430,16 +429,16 @@ static int regex_match_pcre(const char *string, const char *pattern)
 	re = pcre2_compile(pattern, PCRE2_ZERO_TERMINATED, 0, &errornumber, &erroroffset, NULL);
 	if (re == NULL)
 		return 0;
-	
+
 	match_data = pcre2_match_data_create_from_pattern(re, NULL);
 
 	rc = pcre2_match(re, string, strlen(string), 0, 0, match_data, NULL);
 	if (rc >= 0)
 		result = 1;
-	
+
 	pcre2_match_data_free(match_data);
 	pcre2_code_free(re);
-		
+
 	return result;
 }
 #elif WITH_LIBPCRE
@@ -455,9 +454,9 @@ static int regex_match_pcre(const char *string, const char *pattern)
 	re = pcre_compile(pattern, 0, &error_msg, &error, NULL);
 	if (re == NULL)
 		return 0;
-	
+
 	error_msg = NULL;
-  	extra = pcre_study(re, 0, &error_msg);
+	extra = pcre_study(re, 0, &error_msg);
 	if (error_msg != NULL) {
 		pcre_free(re);
 		return 0;
@@ -466,15 +465,15 @@ static int regex_match_pcre(const char *string, const char *pattern)
 	rc = pcre_exec(re, extra, string, strlen(string), 0, 0, offsets, 8);
 	if (rc >= 0)
 		result = 1;
-	
+
 	if (extra != NULL)
 #ifdef PCRE_CONFIG_JIT
 		pcre_free_study(extra);
 #else
 		pcre_free(extra);
 #endif
-  	
-  	pcre_free(re);
+
+	pcre_free(re);
 
 	return result;
 }
@@ -482,7 +481,7 @@ static int regex_match_pcre(const char *string, const char *pattern)
 
 static int regex_match(const char *string, const char *pattern)
 {
-#if defined(WITH_LIBPCRE2) || defined(WITH_LIBPCRE)
+#if defined WITH_LIBPCRE2 || defined WITH_LIBPCRE
 	if (config.regex_type == WGET_REGEX_TYPE_PCRE)
 		return regex_match_pcre(string, pattern);
 	else
@@ -590,11 +589,11 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 		new_job->ignore_patterns = 1;
 	} else if (config.recursive) {
 		if ((config.accept_patterns && !in_pattern_list(config.accept_patterns, new_job->iri->uri))
-				|| (config.accept_regex && !regex_match(new_job->iri->uri, config.accept_regex)))		
+				|| (config.accept_regex && !regex_match(new_job->iri->uri, config.accept_regex)))
 			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
 
 		if ((config.reject_patterns && in_pattern_list(config.reject_patterns, new_job->iri->uri))
-				|| (config.reject_regex && regex_match(new_job->iri->uri, config.reject_regex)))			
+				|| (config.reject_regex && regex_match(new_job->iri->uri, config.reject_regex)))
 			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
 	}
 
@@ -779,6 +778,24 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		return;
 	}
 
+	if (config.recursive && config.filter_urls) {
+		if ((config.accept_patterns && !in_pattern_list(config.accept_patterns, iri->uri))
+				|| (config.accept_regex && !regex_match(iri->uri, config.accept_regex))) {
+
+			debug_printf("not requesting '%s' (doesn't match accept pattern)\n", iri->uri);
+			wget_thread_mutex_unlock(&downloader_mutex);
+			return;
+		}
+
+		if ((config.reject_patterns && in_pattern_list(config.reject_patterns, iri->uri))
+				|| (config.reject_regex && regex_match(iri->uri, config.reject_regex))) {
+
+			debug_printf("not requesting '%s' (matches reject pattern)\n", iri->uri);
+			wget_thread_mutex_unlock(&downloader_mutex);
+			return;
+		}
+	}
+
 	new_job = job_init(&job_buf, iri);
 
 	if (!config.output_document) {
@@ -807,11 +824,11 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		new_job->ignore_patterns = 1;
 	} else if (config.recursive) {
 		if ((config.accept_patterns && !in_pattern_list(config.accept_patterns, new_job->iri->uri))
-				|| (config.accept_regex && !regex_match(new_job->iri->uri, config.accept_regex)))		
+				|| (config.accept_regex && !regex_match(new_job->iri->uri, config.accept_regex)))
 			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
 
 		if ((config.reject_patterns && in_pattern_list(config.reject_patterns, new_job->iri->uri))
-				|| (config.reject_regex && regex_match(new_job->iri->uri, config.reject_regex)))		
+				|| (config.reject_regex && regex_match(new_job->iri->uri, config.reject_regex)))
 			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
 	}
 

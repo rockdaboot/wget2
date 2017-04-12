@@ -303,7 +303,7 @@ int main(void)
 		0);
 
 
-#if defined(WITH_LIBPCRE2) || defined(WITH_LIBPCRE)
+#if defined WITH_LIBPCRE2 || defined WITH_LIBPCRE
 	// --accept-regex (pcre)
 	wget_test(
 		WGET_TEST_OPTIONS, "-r -nH --accept-regex '^(.*)(\\/)?picture_[ab]+\\.jpeg$' --regex-type pcre",
