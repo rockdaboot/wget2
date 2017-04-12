@@ -2445,7 +2445,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		}
 
 #ifdef _WIN32
-		if (!strcmp(fname, "NUL")) {
+		if (!wget_strcasecmp_ascii(fname, "NUL")) {
 			// skip saving to NUL device, also suppresses error message from setting file date
 			return -2;
 		}
