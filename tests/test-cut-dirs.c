@@ -35,7 +35,9 @@ int main(void)
 		{	.name = "/page1.html",
 			.code = "200 Dontcare",
 			.body =
-				"<html><head><title>Page 1</title></head><body><p>Hello 1</p></body></html>",
+				"<html><head><title>Page 1</title></head><body>"
+				"<p>Hello 1</p><a href=\"subdir/page2.html\">page in subdir</a>"
+				"</body></html>",
 			.headers = {
 				"Content-Type: text/html",
 			}
@@ -60,8 +62,18 @@ int main(void)
 		WGET_TEST_REQUEST_URL, "page1.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "page1.html", urls[0].body },
-			{	NULL } },
+			{ urls[0].name + 1, urls[0].body },
+			{ "page2.html", urls[1].body },
+			{ NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --cut-dirs=0",
+		WGET_TEST_REQUEST_URL, "subdir/page2.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[1].name + 1, urls[1].body },
+			{ NULL } },
 		0);
 
 	wget_test(
@@ -70,8 +82,26 @@ int main(void)
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "page2.html", urls[1].body },
-			{	NULL } },
+			{ NULL } },
 		0);
-		
+
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --cut-dirs=2",
+		WGET_TEST_REQUEST_URL, "subdir/page2.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "page2.html", urls[1].body },
+			{ NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --cut-dirs=-1",
+		WGET_TEST_REQUEST_URL, "subdir/page2.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[1].name + 1, urls[1].body },
+			{ NULL } },
+		0);
+
 	exit(0);
 }
