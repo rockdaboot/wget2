@@ -48,6 +48,9 @@ typedef struct {
 		found_robots,
 		found_content_type,
 		link_inline;
+	const char
+		* css_attr,
+		* css_dir;
 } _html_context_t;
 
 // see https://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
@@ -80,6 +83,31 @@ static const char attrs[][12] = {
 	"usemap"
 };
 
+static void _css_parse_encoding(void *context, const char *encoding, size_t len)
+{
+
+}
+
+static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+{
+	_html_context_t *ctx = context;
+	
+	WGET_HTML_PARSED_RESULT *res = &ctx->result;
+	
+	if (!res->uris)
+		res->uris = wget_vector_create(32, -2, NULL);
+
+	WGET_HTML_PARSED_URL parsed_url;
+	parsed_url.link_inline = 1;
+	strlcpy(parsed_url.attr, ctx->css_attr, sizeof(parsed_url.attr));
+	strlcpy(parsed_url.dir, ctx->css_dir, sizeof(parsed_url.dir));
+	parsed_url.url.p = wget_strmemdup(url, len);
+	parsed_url.url.len = len;
+	parsed_url.must_free_url = 1;
+	
+	wget_vector_add(res->uris, &parsed_url, sizeof(parsed_url));
+}
+
 // Callback function, called from HTML parser for each URI found.
 static void _html_get_url(void *context, int flags, const char *tag, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
@@ -94,7 +122,10 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 	if ((flags & XML_FLG_BEGIN)) {
 		if ((*tag|0x20) == 'm' && !wget_strcasecmp_ascii(tag, "meta"))
 			ctx->found_robots = ctx->found_content_type = 0;
-		else if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link"))
+		
+		if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link"))
+			ctx->link_inline = 1;
+		else
 			ctx->link_inline = 0;
 	}
 
@@ -159,14 +190,12 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				|| wget_vector_find(ctx->ignore_tags, &(wget_html_tag_t){ .name = tag, .attribute = attr } ) != -1)
 				return;
 		}
-
-		if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link")) {
-			if (!wget_strcasecmp_ascii(attr, "rel")) {
-				if (!wget_strncasecmp_ascii(val, "icon shortcut", len) || wget_strncasecmp_ascii(val, "stylesheet", len))
-					ctx->link_inline = 1;
-				else
-					ctx->link_inline = 0;
-			}
+		
+		if ((*attr|0x20) == 's' && !wget_strcasecmp_ascii(attr, "style") && len) {
+			ctx->css_dir = tag;
+			ctx->css_attr = "style";
+			wget_css_parse_buffer(val, len, _css_parse_uri, _css_parse_encoding, context);
+			return;
 		}
 
 		// shortcut to avoid unneeded calls to bsearch()
@@ -198,6 +227,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				res->uris = wget_vector_create(32, -2, NULL);
 
 			WGET_HTML_PARSED_URL url;
+			url.must_free_url = 0;
 
 			if (!wget_strcasecmp_ascii(attr, "srcset")) {
 				// value is a list of URLs, see https://html.spec.whatwg.org/multipage/embedded-content.html#attr-img-srcset
@@ -220,7 +250,6 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 			} else {
 				// value is a single URL
 				url.link_inline = ctx->link_inline;
-				ctx->link_inline = 0;
 				strlcpy(url.attr, attr, sizeof(url.attr));
 				strlcpy(url.dir, tag, sizeof(url.dir));
 				url.url.p = val;
@@ -228,6 +257,12 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				wget_vector_add(res->uris, &url, sizeof(url));
 			}
 		}
+	}
+	
+	if (flags & XML_FLG_CONTENT && val && len && !wget_strcasecmp_ascii(tag, "style")) {
+		ctx->css_dir = "style";
+		ctx->css_attr = "";
+		wget_css_parse_buffer(val, len, _css_parse_uri, _css_parse_encoding, context);
 	}
 }
 
@@ -256,7 +291,16 @@ void wget_html_free_urls_inline (WGET_HTML_PARSED_RESULT **res)
 {
 	if (res && *res) {
 		xfree((*res)->encoding);
+		
+		for (int it = 0; it < wget_vector_size((*res)->uris); it++) {
+			WGET_HTML_PARSED_URL *html_url = wget_vector_get((*res)->uris, it);
+			
+			if(html_url->must_free_url) {
+				xfree(html_url->url.p);
+			}
+		}
 		wget_vector_free(&(*res)->uris);
+		
 		xfree(*res);
 	}
 }
