@@ -54,7 +54,8 @@ static void _reset_color(void)
 		g_stdout_hnd = INVALID_HANDLE_VALUE;
 	}
 #else
-	fputs("\033[m", stdout);
+	if (isatty(fileno(stdout)))
+		fputs("\033[m", stdout);
 	fflush(stdout);
 #endif
 }
