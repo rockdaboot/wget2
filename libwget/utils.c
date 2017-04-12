@@ -413,7 +413,7 @@ char *wget_strnglob(const char *str, size_t n, int flags)
  * practice.  Wikipedia's entry on "binary prefix" discusses this in
  * some detail.
  */
-char *wget_human_readable(char *buf, size_t bufsize, size_t n)
+char *wget_human_readable(char *buf, size_t bufsize, uint64_t n)
 {
 	/* These suffixes are compatible with those of GNU `ls -lh'. */
 	static char powers[] = {
@@ -430,7 +430,7 @@ char *wget_human_readable(char *buf, size_t bufsize, size_t n)
 
 	/* If the quantity is smaller than 1K, just print it. */
 	if (n < 1024) {
-		snprintf(buf, bufsize, "%zu ", n);
+		snprintf(buf, bufsize, "%u ", (unsigned int) n);
 		return buf;
 	}
 

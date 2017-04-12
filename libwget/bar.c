@@ -88,7 +88,7 @@ typedef struct {
 		*progress,
 		*filename,
 		human_size[_BAR_DOWNBYTES_SIZE];
-	size_t
+	uint64_t
 		file_size,
 		bytes_downloaded;
 	int
@@ -167,9 +167,7 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 
 static void _bar_update_slot(const wget_bar_t *bar, int slot)
 {
-	off_t
-		max,
-		cur;
+	uint64_t max, cur;
 	int ratio;
 	char *human_readable_bytes;
 	_bar_slot_t *slotp = &bar->slots[slot];
