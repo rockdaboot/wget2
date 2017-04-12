@@ -190,7 +190,8 @@ struct config {
 		print_version,
 		quiet,
 		debug,
-		metalink;
+		metalink,
+		filter_urls;
 };
 
 extern struct config

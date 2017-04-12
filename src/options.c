@@ -150,13 +150,14 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"  -t  --tries             Number of tries for each download. (default 20)\n"
 		"  -A  --accept            Comma-separated list of file name suffixes or patterns.\n"
 		"  -R  --reject            Comma-separated list of file name suffixes or patterns.\n"
-		"      --accept-regex      Regex matching accepted URLs.\n"
-		"      --reject-regex      Regex matching rejected URLs.\n"
+		"      --accept-regex      Regex matching accepted file names.\n"
+		"      --reject-regex      Regex matching rejected file names.\n"
 #if defined(WITH_LIBPCRE2) || defined(WITH_LIBPCRE)
 		"      --regex-type        Regular expression type. Possible types are posix or pcre. (default: posix)\n"
 #else
 		"      --regex-type        Regular expression type. This build only supports posix. (default: posix)\n"
 #endif
+		"      --filter-urls       Apply the accept and reject filters on the URL before starting a download. (default: off)\n"
 		"      --ignore-case       Ignore case when matching files. (default: off)\n"
 		"  -k  --convert-links     Convert embedded URLs to local URLs. (default: off)\n"
 		"  -K  --backup-converted  When converting, keep the original file with a .orig suffix. (default: off)\n"
@@ -766,6 +767,7 @@ static const struct optionw options[] = {
 	{ "egd-file", &config.egd_file, parse_filename, 1, 0 },
 	{ "exclude-domains", &config.exclude_domains, parse_stringlist, 1, 0 },
 	{ "execute", NULL, parse_execute, 1, 'e' },
+	{ "filter-urls", &config.filter_urls, parse_bool, 0, 0 },
 	{ "follow-tags", &config.follow_tags, parse_taglist, 1, 0 },
 	{ "force-atom", &config.force_atom, parse_bool, 0, 0 },
 	{ "force-css", &config.force_css, parse_bool, 0, 0 },

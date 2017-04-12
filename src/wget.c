@@ -770,6 +770,24 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		return;
 	}
 
+	if (config.recursive && config.filter_urls) {
+		if ((config.accept_patterns && !in_pattern_list(config.accept_patterns, iri->uri))
+				|| (config.accept_regex && !regex_match(iri->uri, config.accept_regex))) {
+			
+			debug_printf("not requesting '%s' (doesn't match accept pattern)\n", iri->uri);
+			wget_thread_mutex_unlock(&downloader_mutex);
+			return;
+		}
+
+		if ((config.reject_patterns && in_pattern_list(config.reject_patterns, iri->uri))
+				|| (config.reject_regex && regex_match(iri->uri, config.reject_regex))) {
+			
+			debug_printf("not requesting '%s' (matches reject pattern)\n", iri->uri);
+			wget_thread_mutex_unlock(&downloader_mutex);
+			return;
+		}
+	}
+
 	new_job = job_init(&job_buf, iri);
 
 	if (!config.output_document) {
