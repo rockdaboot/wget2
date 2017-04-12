@@ -44,6 +44,8 @@ typedef struct {
 		additional_tags;
 	wget_vector_t *
 		ignore_tags;
+	int
+		uri_index;
 	char
 		found_robots,
 		found_content_type,
@@ -94,8 +96,10 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 	if ((flags & XML_FLG_BEGIN)) {
 		if ((*tag|0x20) == 'm' && !wget_strcasecmp_ascii(tag, "meta"))
 			ctx->found_robots = ctx->found_content_type = 0;
-		else if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link"))
+		else if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link")) {
 			ctx->link_inline = 0;
+			ctx->uri_index = -1;
+		}
 	}
 
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
@@ -162,10 +166,16 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 
 		if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link")) {
 			if (!wget_strcasecmp_ascii(attr, "rel")) {
-				if (!wget_strncasecmp_ascii(val, "icon shortcut", len) || wget_strncasecmp_ascii(val, "stylesheet", len))
+				if (!wget_strncasecmp_ascii(val, "shortcut icon", len) || !wget_strncasecmp_ascii(val, "stylesheet", len))
 					ctx->link_inline = 1;
 				else
 					ctx->link_inline = 0;
+
+				if (ctx->uri_index >= 0) {
+					// href= came before rel=
+					WGET_HTML_PARSED_URL *url = wget_vector_get(res->uris, ctx->uri_index);
+					url->link_inline = ctx->link_inline;
+				}
 			}
 		}
 
@@ -225,7 +235,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				strlcpy(url.dir, tag, sizeof(url.dir));
 				url.url.p = val;
 				url.url.len = len;
-				wget_vector_add(res->uris, &url, sizeof(url));
+				ctx->uri_index = wget_vector_add(res->uris, &url, sizeof(url));
 			}
 		}
 	}

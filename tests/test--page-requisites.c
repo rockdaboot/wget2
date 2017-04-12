@@ -45,6 +45,7 @@ int main(void)
 				"<link rel=\"stylesheet\" href=\"test1.css\" />"
 				"<link href=\"test2.css\" rel=\"stylesheet\" />"
 				"<link rel=\"shortcut icon\" href=\"myfavicon.ico\" />"
+				"<link href=\"not.txt\" rel=\"whatever\" />"
 			"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -129,6 +130,13 @@ int main(void)
 				"Content-Type: image/x-icon",
 			}
 		},
+		{	.name = "/not.txt",
+			.code = "200 Dontcare",
+			.body = "Not to be followed",
+			.headers = {
+				"Content-Type: text/plain",
+			}
+		},
 	};
 
 	// functions won't come back if an error occurs
@@ -139,6 +147,7 @@ int main(void)
 	// test--page-requisites
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
+//		WGET_TEST_EXECUTABLE, "wget",
 		WGET_TEST_OPTIONS, "--page-requisites -nH",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
@@ -148,8 +157,9 @@ int main(void)
 			{ urls[4].name + 1, urls[4].body },
 			{ urls[5].name + 1, urls[5].body },
 			{ urls[6].name + 1, urls[6].body },
-			{ urls[8].name + 1, urls[8].body },
-			{ urls[9].name + 1, urls[9].body },
+			{ urls[8].name + 1, urls[8].body },   // test1.css
+			{ urls[9].name + 1, urls[9].body },   // test2.css
+			{ urls[10].name + 1, urls[10].body }, // myfavicon.ico
 			{	NULL } },
 		0);
 

@@ -1952,7 +1952,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 			// only load from dir 'LINK' when rel was 'icon shortcut' or 'stylesheet'
 			if ((c_tolower(*html_url->dir) == 'a'
 				&& (html_url->dir[1] == 0 || !wget_strcasecmp_ascii(html_url->dir,"area")))
-				|| html_url->link_inline
+				|| !html_url->link_inline
 				|| !wget_strcasecmp_ascii(html_url->dir,"embed"))
 			{
 				info_printf(_("URL '%.*s' not followed (page requisites + level)\n"), (int)url->len, url->p);
