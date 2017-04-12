@@ -302,9 +302,8 @@ const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
 			wget_buffer_memcat(&buf, "/", 1);
 		}
 		if (config.host_directories && iri->host && *iri->host) {
-			// wget_iri_get_host(iri, &buf);
 			wget_buffer_strcat(&buf, iri->host);
-			// buffer_memcat(&buf, "/", 1);
+			wget_buffer_memcat(&buf, "/", 1);
 		}
 
 		if (config.cut_directories) {
@@ -320,17 +319,21 @@ const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
 			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
 				p = strchr(*p == '/' ? p + 1 : p, '/');
 			}
+
 			if (!p && path_buf.data) {
 				// we can't strip this many path elements, just use the filename
 				p = strrchr(path_buf.data, '/');
-				if (!p) {
+				if (!p)
 					p = path_buf.data;
-					if (*p != '/')
-						wget_buffer_memcat(&buf, "/", 1);
-					wget_buffer_strcat(&buf, p);
-				}
 			}
-
+			
+			if (p) {
+				while (*p == '/')
+					p++;
+				
+				wget_buffer_strcat(&buf, p);
+			}
+			
 			wget_buffer_deinit(&path_buf);
 		} else {
 			wget_iri_get_path(iri, &buf, config.local_encoding);
@@ -2442,7 +2445,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		}
 
 #ifdef _WIN32
-		if (!strcmp(fname, "NUL")) {
+		if (!wget_strcasecmp_ascii(fname, "NUL")) {
 			// skip saving to NUL device, also suppresses error message from setting file date
 			return -2;
 		}

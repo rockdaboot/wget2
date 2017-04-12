@@ -26,7 +26,7 @@ dist-hook: gen-ChangeLog
 gen-ChangeLog:
 	$(AM_V_GEN)if test -d .git; then \
 	  git log --no-merges --date=short \
-	    --pretty='format:%ad %an <%ae>%w(0,0,5)%+B' \
+	    --pretty='format:%ad %an <%ae>%w(0,0,5)%+B' | sed '/^[1-9].*/G' \
 	    > $(distdir)/ChangeLog; \
 	fi
 
