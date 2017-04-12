@@ -166,7 +166,9 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 
 		if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link")) {
 			if (!wget_strcasecmp_ascii(attr, "rel")) {
-				if (!wget_strncasecmp_ascii(val, "shortcut icon", len) || !wget_strncasecmp_ascii(val, "stylesheet", len))
+				if (!wget_strncasecmp_ascii(val, "shortcut icon", len)
+					|| !wget_strncasecmp_ascii(val, "stylesheet", len)
+					|| !wget_strncasecmp_ascii(val, "preload", len))
 					ctx->link_inline = 1;
 				else
 					ctx->link_inline = 0;

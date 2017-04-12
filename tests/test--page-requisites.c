@@ -46,6 +46,7 @@ int main(void)
 				"<link href=\"test2.css\" rel=\"stylesheet\" />"
 				"<link rel=\"shortcut icon\" href=\"myfavicon.ico\" />"
 				"<link href=\"not.txt\" rel=\"whatever\" />"
+				"<link href=\"preload.css\" rel=\"preload\" as=\"style\"/>"
 			"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -137,6 +138,13 @@ int main(void)
 				"Content-Type: text/plain",
 			}
 		},
+		{	.name = "/preload.css",
+			.code = "200 Dontcare",
+			.body = "PRELOAD",
+			.headers = {
+				"Content-Type: text/css",
+			}
+		},
 	};
 
 	// functions won't come back if an error occurs
@@ -160,6 +168,7 @@ int main(void)
 			{ urls[8].name + 1, urls[8].body },   // test1.css
 			{ urls[9].name + 1, urls[9].body },   // test2.css
 			{ urls[10].name + 1, urls[10].body }, // myfavicon.ico
+			{ urls[12].name + 1, urls[12].body }, // preload.css
 			{	NULL } },
 		0);
 
