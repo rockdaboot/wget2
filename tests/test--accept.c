@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2017 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -23,6 +23,7 @@
  * Changelog
  * 08.07.2013  Tim Ruehsen  created
  * 02.07.2014  Tim Ruehsen  added uppercase combinations of <a href...> (issue #21)
+ * 12.04.2017  Michael Heerklotz added accept-regex and reject-regex tests  
  *
  */
 
@@ -266,6 +267,82 @@ int main(void)
 			{ urls[5].name + 1, urls[5].body },
 			{	NULL } },
 		0);
+
+	// --accept-regex (posix)
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept-regex '^(.*)(\\/)?picture_[ab]+\\.jpeg$'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[2].name + 1, urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
+			{ urls[4].name + 1, urls[4].body },
+			{	NULL } },
+		0);
+
+	// --reject-regex (posix)
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --reject-regex '^(.*)picture_[a]+\\.jpeg$'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[4].name + 1, urls[4].body },
+			{ urls[5].name + 1, urls[5].body },
+			{ urls[6].name + 1, urls[6].body },
+			{	NULL } },
+		0);
+
+	// --accept-regex and --reject-regex (posix)
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept-regex '^(.*)picture_(.*)$' --reject-regex '\\.(jpeg|JpeG)+'",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[6].name + 1, urls[6].body },
+			{	NULL } },
+		0);
+
+
+#if defined(WITH_LIBPCRE2) || defined(WITH_LIBPCRE)
+	// --accept-regex (pcre)
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept-regex '^(.*)(\\/)?picture_[ab]+\\.jpeg$' --regex-type pcre",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[2].name + 1, urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
+			{ urls[4].name + 1, urls[4].body },
+			{	NULL } },
+		0);
+
+	// --reject-regex (pcre)
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --reject-regex '^(.*)picture_[a]+\\.jpeg$' --regex-type pcre",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[4].name + 1, urls[4].body },
+			{ urls[5].name + 1, urls[5].body },
+			{ urls[6].name + 1, urls[6].body },
+			{	NULL } },
+		0);
+
+	// --accept-regex and --reject-regex (pcre)
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept-regex '^(.*)picture_(.*)$' --reject-regex '(?i)\\.jpeg' --regex-type pcre",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[6].name + 1, urls[6].body },
+			{	NULL } },
+		0);
+#endif
+
 
 	exit(0);
 }

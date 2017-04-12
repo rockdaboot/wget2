@@ -78,7 +78,10 @@ struct config {
 		*egd_file,
 		*private_key,
 		*random_file,
-		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
+		*secure_protocol, // auto, SSLv2, SSLv3, TLSv1
+		*accept_regex,
+		*reject_regex,
+		*regex_type;
 	wget_vector_t
 		*config_files,
 		*domains,

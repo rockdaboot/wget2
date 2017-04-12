@@ -150,6 +150,13 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"  -t  --tries             Number of tries for each download. (default 20)\n"
 		"  -A  --accept            Comma-separated list of file name suffixes or patterns.\n"
 		"  -R  --reject            Comma-separated list of file name suffixes or patterns.\n"
+		"      --accept-regex      Regex matching accepted URLs.\n"
+		"      --reject-regex      Regex matching rejected URLs.\n"
+#if defined(WITH_LIBPCRE2) || defined(WITH_LIBPCRE)
+		"      --regex-type        Regular expression type. Possible types are posix or pcre. (default: posix)\n"
+#else
+		"      --regex-type        Regular expression type. This build only supports posix. (default: posix)\n"
+#endif
 		"      --ignore-case       Ignore case when matching files. (default: off)\n"
 		"  -k  --convert-links     Convert embedded URLs to local URLs. (default: off)\n"
 		"  -K  --backup-converted  When converting, keep the original file with a .orig suffix. (default: off)\n"
@@ -721,6 +728,7 @@ static const struct optionw options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
 	{ "accept", &config.accept_patterns, parse_stringlist, 1, 'A' },
+	{ "accept-regex", &config.accept_regex, parse_string, 1, 0 },
 	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E' },
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a' },
 	{ "backup-converted", &config.backup_converted, parse_bool, 0, 'K' },
@@ -823,7 +831,9 @@ static const struct optionw options[] = {
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0 },
 	{ "recursive", &config.recursive, parse_bool, 0, 'r' },
 	{ "referer", &config.referer, parse_string, 1, 0 },
+	{ "regex-type", &config.regex_type, parse_string, 1, 0 },
 	{ "reject", &config.reject_patterns, parse_stringlist, 1, 'R' },
+	{ "reject-regex", &config.reject_regex, parse_string, 1, 0 },
 	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0 },
 	{ "restrict-file-names", &config.restrict_file_names, parse_restrict_names, 1, 0 },
 	{ "robots", &config.robots, parse_bool, 0, 0 },
