@@ -1233,8 +1233,6 @@ typedef struct {
 	wget_string_t
 		url;
 	char
-		must_free_url;
-	char
 		attr[16];
 	char
 		dir[16];

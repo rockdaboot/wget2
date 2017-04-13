@@ -46,11 +46,14 @@ typedef struct {
 		ignore_tags;
 	int
 		uri_index;
+	size_t
+		css_start_offset;
 	char
 		found_robots,
 		found_content_type,
 		link_inline;
 	const char
+		* html,
 		* css_attr,
 		* css_dir;
 } _html_context_t;
@@ -85,7 +88,7 @@ static const char attrs[][12] = {
 	"usemap"
 };
 
-static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos)
 {
 	_html_context_t *ctx = context;
 
@@ -98,9 +101,8 @@ static void _css_parse_uri(void *context, const char *url, size_t len, size_t po
 	parsed_url.link_inline = 1;
 	strlcpy(parsed_url.attr, ctx->css_attr, sizeof(parsed_url.attr));
 	strlcpy(parsed_url.dir, ctx->css_dir, sizeof(parsed_url.dir));
-	parsed_url.url.p = wget_strmemdup(url, len);
+	parsed_url.url.p = (const char *) (ctx->html + ctx->css_start_offset + pos);
 	parsed_url.url.len = len;
-	parsed_url.must_free_url = 1;
 
 	wget_vector_add(res->uris, &parsed_url, sizeof(parsed_url));
 }
@@ -190,6 +192,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 		if ((*attr|0x20) == 's' && !wget_strcasecmp_ascii(attr, "style") && len) {
 			ctx->css_dir = tag;
 			ctx->css_attr = "style";
+			ctx->css_start_offset = val - ctx->html;
 			wget_css_parse_buffer(val, len, _css_parse_uri, NULL, context);
 			return;
 		}
@@ -240,7 +243,6 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				res->uris = wget_vector_create(32, -2, NULL);
 
 			WGET_HTML_PARSED_URL url;
-			url.must_free_url = 0;
 
 			if (!wget_strcasecmp_ascii(attr, "srcset")) {
 				// value is a list of URLs, see https://html.spec.whatwg.org/multipage/embedded-content.html#attr-img-srcset
@@ -275,6 +277,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 	if (flags & XML_FLG_CONTENT && val && len && !wget_strcasecmp_ascii(tag, "style")) {
 		ctx->css_dir = "style";
 		ctx->css_attr = "";
+		ctx->css_start_offset = val - ctx->html;
 		wget_css_parse_buffer(val, len, _css_parse_uri, NULL, context);
 	}
 }
@@ -304,15 +307,7 @@ void wget_html_free_urls_inline (WGET_HTML_PARSED_RESULT **res)
 {
 	if (res && *res) {
 		xfree((*res)->encoding);
-
-		for (int it = 0; it < wget_vector_size((*res)->uris); it++) {
-			WGET_HTML_PARSED_URL *html_url = wget_vector_get((*res)->uris, it);
-
-			if (html_url->must_free_url)
-				xfree(html_url->url.p);
-		}
 		wget_vector_free(&(*res)->uris);
-
 		xfree(*res);
 	}
 }
@@ -323,6 +318,7 @@ WGET_HTML_PARSED_RESULT *wget_html_get_urls_inline(const char *html, wget_vector
 		.result.follow = 1,
 		.additional_tags = additional_tags,
 		.ignore_tags = ignore_tags,
+		.html = html,
 	};
 
 //	context.result.uris = wget_vector_create(32, -2, NULL);
