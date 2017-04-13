@@ -85,10 +85,6 @@ static const char attrs[][12] = {
 	"usemap"
 };
 
-static void _css_parse_encoding(void *context, const char *encoding, size_t len)
-{
-}
-
 static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
 	_html_context_t *ctx = context;
@@ -194,7 +190,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 		if ((*attr|0x20) == 's' && !wget_strcasecmp_ascii(attr, "style") && len) {
 			ctx->css_dir = tag;
 			ctx->css_attr = "style";
-			wget_css_parse_buffer(val, len, _css_parse_uri, _css_parse_encoding, context);
+			wget_css_parse_buffer(val, len, _css_parse_uri, NULL, context);
 			return;
 		}
 
@@ -279,7 +275,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 	if (flags & XML_FLG_CONTENT && val && len && !wget_strcasecmp_ascii(tag, "style")) {
 		ctx->css_dir = "style";
 		ctx->css_attr = "";
-		wget_css_parse_buffer(val, len, _css_parse_uri, _css_parse_encoding, context);
+		wget_css_parse_buffer(val, len, _css_parse_uri, NULL, context);
 	}
 }
 
