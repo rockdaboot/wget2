@@ -92,9 +92,9 @@ static void _css_parse_encoding(void *context, const char *encoding, size_t len)
 static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
 	_html_context_t *ctx = context;
-	
+
 	WGET_HTML_PARSED_RESULT *res = &ctx->result;
-	
+
 	if (!res->uris)
 		res->uris = wget_vector_create(32, -2, NULL);
 
@@ -105,7 +105,7 @@ static void _css_parse_uri(void *context, const char *url, size_t len, size_t po
 	parsed_url.url.p = wget_strmemdup(url, len);
 	parsed_url.url.len = len;
 	parsed_url.must_free_url = 1;
-	
+
 	wget_vector_add(res->uris, &parsed_url, sizeof(parsed_url));
 }
 
@@ -190,7 +190,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				|| wget_vector_find(ctx->ignore_tags, &(wget_html_tag_t){ .name = tag, .attribute = attr } ) != -1)
 				return;
 		}
-		
+
 		if ((*attr|0x20) == 's' && !wget_strcasecmp_ascii(attr, "style") && len) {
 			ctx->css_dir = tag;
 			ctx->css_attr = "style";
@@ -275,7 +275,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 			}
 		}
 	}
-	
+
 	if (flags & XML_FLG_CONTENT && val && len && !wget_strcasecmp_ascii(tag, "style")) {
 		ctx->css_dir = "style";
 		ctx->css_attr = "";
@@ -308,15 +308,15 @@ void wget_html_free_urls_inline (WGET_HTML_PARSED_RESULT **res)
 {
 	if (res && *res) {
 		xfree((*res)->encoding);
-		
+
 		for (int it = 0; it < wget_vector_size((*res)->uris); it++) {
 			WGET_HTML_PARSED_URL *html_url = wget_vector_get((*res)->uris, it);
-			
+
 			if (html_url->must_free_url)
 				xfree(html_url->url.p);
 		}
 		wget_vector_free(&(*res)->uris);
-		
+
 		xfree(*res);
 	}
 }
