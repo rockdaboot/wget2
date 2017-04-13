@@ -1979,3 +1979,10 @@ WGETAPI void
 WGET_END_DECLS
 
 #endif /* _LIBWGET_LIBWGET_H */
+
+/*
+ * Regex Types
+ */
+
+#define WGET_REGEX_TYPE_POSIX 0
+#define WGET_REGEX_TYPE_PCRE 1

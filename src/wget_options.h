@@ -78,7 +78,9 @@ struct config {
 		*egd_file,
 		*private_key,
 		*random_file,
-		*secure_protocol; // auto, SSLv2, SSLv3, TLSv1
+		*secure_protocol, // auto, SSLv2, SSLv3, TLSv1
+		*accept_regex,
+		*reject_regex;
 	wget_vector_t
 		*config_files,
 		*domains,
@@ -187,7 +189,9 @@ struct config {
 		print_version,
 		quiet,
 		debug,
-		metalink;
+		metalink,
+		filter_urls,
+		regex_type;
 };
 
 extern struct config
