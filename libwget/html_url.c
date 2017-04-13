@@ -88,7 +88,7 @@ static const char attrs[][12] = {
 	"usemap"
 };
 
-static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos)
+static void _css_parse_uri(void *context, const char *url G_GNUC_WGET_UNUSED, size_t len, size_t pos)
 {
 	_html_context_t *ctx = context;
 
