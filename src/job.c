@@ -134,7 +134,7 @@ int job_validate_file(JOB *job)
 {
 	PART part;
 	wget_metalink_t *metalink;
-	off_t fsize;
+	off_t fsize, real_fsize = 0;
 	int fd, rc = -1;
 	struct stat st;
 
@@ -167,6 +167,9 @@ int job_validate_file(JOB *job)
 		wget_vector_clear(job->parts);
 
 	fsize = metalink->size;
+//	info_printf("metalink->name = %s\n", metalink->name);
+//	info_printf("metalink->size = %zu\n", metalink->size);
+//	info_printf("metalink->hashes = %d\n", wget_vector_size(metalink->hashes));
 
 	if (wget_vector_size(metalink->hashes) == 0) {
 		// multipart non-metalink download: do not clobber if file has expected size
@@ -176,14 +179,16 @@ int job_validate_file(JOB *job)
 	}
 
 	// truncate file if needed
-	if (stat(metalink->name, &st) == 0 && st.st_size > fsize) {
+	if (stat(metalink->name, &st) == 0 && (real_fsize = st.st_size) > fsize) {
 		if (wget_truncate(metalink->name, fsize) == -1)
 			error_printf(_("Failed to truncate %s\n from %llu to %llu bytes\n"),
 				metalink->name, (unsigned long long)st.st_size, (unsigned long long)fsize);
+		else
+			real_fsize = fsize;
 	}
 
-	if ((fd = open(metalink->name, O_RDONLY)) != -1) {
-		// file exists, check which piece is invalid and requeue it
+	if (wget_vector_size(metalink->hashes) > 0 && (fd = open(metalink->name, O_RDONLY)) != -1) {
+		// file exists, check which piece is invalid and re-queue it
 
 		for (int it = 0; errno != EINTR && it < wget_vector_size(metalink->hashes); it++) {
 			wget_metalink_hash_t *hash = wget_vector_get(metalink->hashes, it);
@@ -199,13 +204,15 @@ int job_validate_file(JOB *job)
 			close(fd);
 			return 1; // we are done
 		}
-		else if (rc == -1) {
+
+		if (rc == -1) {
 			// failed to check file, continue as if file is ok
 			info_printf(_("Failed to build checksum, assuming file to be OK\n"));
 			close(fd);
 			return 1; // we are done
-		} else
-			info_printf(_("Bad checksum for '%s'\n"), metalink->name);
+		}
+
+		info_printf(_("Bad checksum for '%s'\n"), metalink->name);
 
 //		if (vec_size(metalink->pieces) < 1)
 //			return;
@@ -234,6 +241,8 @@ int job_validate_file(JOB *job)
 		}
 		close(fd);
 	} else {
+//		info_printf("real_fsize = %lld\n", (long long) real_fsize);
+
 		for (int it = 0; it < wget_vector_size(metalink->pieces); it++) {
 			wget_metalink_piece_t *piece = wget_vector_get(metalink->pieces, it);
 
@@ -245,7 +254,17 @@ int job_validate_file(JOB *job)
 
 			part.id = it + 1;
 
-			wget_vector_add(job->parts, &part, sizeof(PART));
+//			info_printf("real_fsize = %lld %lld\n", (long long) real_fsize, part.position + part.length);
+
+			if (real_fsize < part.position + part.length) {
+				int idx = wget_vector_add(job->parts, &part, sizeof(PART));
+
+				if (real_fsize > part.position) {
+					PART *p = wget_vector_get(job->parts, idx);
+					p->position = real_fsize;
+					p->length = (part.position + part.length) - real_fsize;
+				}
+			}
 
 			part.position += part.length;
 			fsize -= piece->length;
