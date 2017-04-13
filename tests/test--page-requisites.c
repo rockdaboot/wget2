@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2017 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -18,7 +18,7 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- * Testing Wget
+ * Testing --page-requisites
  *
  * Changelog
  * 27.05.2014  Tim Ruehsen  created
@@ -42,7 +42,12 @@ int main(void)
 				" <a href=\"http://localhost:{{port}}/secondpage.html\">second page</a>." \
 				" Hey, a picture <img src=\"picture.png\"/>." \
 				" Hey, a srcset <img srcset=\"picture1.png, picture2.png 150w,picture3.png 100x\"/>." \
-				"</p></body></html>",
+				"<link rel=\"stylesheet\" href=\"test1.css\" />"
+				"<link href=\"test2.css\" rel=\"stylesheet\" />"
+				"<link rel=\"shortcut icon\" href=\"myfavicon.ico\" />"
+				"<link href=\"not.txt\" rel=\"whatever\" />"
+				"<link href=\"preload.css\" rel=\"preload\" as=\"style\"/>"
+			"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
 			}
@@ -105,6 +110,41 @@ int main(void)
 				"Content-Type: text/plain",
 			}
 		},
+		{	.name = "/test1.css",
+			.code = "200 Dontcare",
+			.body = "CSS1",
+			.headers = {
+				"Content-Type: text/css",
+			}
+		},
+		{	.name = "/test2.css",
+			.code = "200 Dontcare",
+			.body = "CSS2",
+			.headers = {
+				"Content-Type: text/css",
+			}
+		},
+		{	.name = "/myfavicon.ico",
+			.code = "200 Dontcare",
+			.body = "MYFAVICON",
+			.headers = {
+				"Content-Type: image/x-icon",
+			}
+		},
+		{	.name = "/not.txt",
+			.code = "200 Dontcare",
+			.body = "Not to be followed",
+			.headers = {
+				"Content-Type: text/plain",
+			}
+		},
+		{	.name = "/preload.css",
+			.code = "200 Dontcare",
+			.body = "PRELOAD",
+			.headers = {
+				"Content-Type: text/css",
+			}
+		},
 	};
 
 	// functions won't come back if an error occurs
@@ -115,15 +155,20 @@ int main(void)
 	// test--page-requisites
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--page-requisites",
+//		WGET_TEST_EXECUTABLE, "wget",
+		WGET_TEST_OPTIONS, "--page-requisites -nH",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "localhost/index.html", urls[0].body },
-			{ "localhost/picture.png", urls[3].body },
-			{ "localhost/picture1.png", urls[4].body },
-			{ "localhost/picture2.png", urls[5].body },
-			{ "localhost/picture3.png", urls[6].body },
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[3].name + 1, urls[3].body },
+			{ urls[4].name + 1, urls[4].body },
+			{ urls[5].name + 1, urls[5].body },
+			{ urls[6].name + 1, urls[6].body },
+			{ urls[8].name + 1, urls[8].body },   // test1.css
+			{ urls[9].name + 1, urls[9].body },   // test2.css
+			{ urls[10].name + 1, urls[10].body }, // myfavicon.ico
+			{ urls[12].name + 1, urls[12].body }, // preload.css
 			{	NULL } },
 		0);
 

@@ -322,7 +322,7 @@ WGETAPI int
 WGETAPI char *
 	wget_strnglob(const char *str, size_t n, int flags) G_GNUC_WGET_PURE;
 WGETAPI char *
-	wget_human_readable(char *buf, size_t bufsize, size_t n) G_GNUC_WGET_CONST;
+	wget_human_readable(char *buf, size_t bufsize, uint64_t n) G_GNUC_WGET_CONST;
 WGETAPI int
 	wget_get_screen_size(int *width, int *height);
 WGETAPI ssize_t
@@ -1200,6 +1200,7 @@ typedef void (*wget_css_parse_encoding_cb_t)(void *user_ctx, const char *url, si
 WGETAPI void
 	wget_css_parse_buffer(
 		const char *buf,
+		size_t len,
 		wget_css_parse_uri_cb_t callback_uri,
 		wget_css_parse_encoding_cb_t callback_encoding,
 		void *user_ctx) G_GNUC_WGET_NONNULL((1));
@@ -1212,6 +1213,7 @@ WGETAPI void
 WGETAPI wget_vector_t *
 	wget_css_get_urls(
 		const char *css,
+		size_t len,
 		wget_iri_t *base,
 		const char **encoding) G_GNUC_WGET_NONNULL((1));
 WGETAPI wget_vector_t *
@@ -1230,6 +1232,8 @@ typedef struct {
 typedef struct {
 	wget_string_t
 		url;
+	char
+		must_free_url;
 	char
 		attr[16];
 	char

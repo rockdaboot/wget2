@@ -73,6 +73,7 @@ void *yyrealloc(void *p, size_t size) {
 
 void wget_css_parse_buffer(
 	const char *buf,
+	size_t len,
 	wget_css_parse_uri_cb_t callback_uri,
 	wget_css_parse_encoding_cb_t callback_encoding,
 	void *user_ctx)
@@ -82,10 +83,8 @@ void wget_css_parse_buffer(
 	char *text;
 	yyscan_t scanner;
 
-	// let flex operate on buf as a 0 terminated string
-	// we could give buflen to this function and use yy_scan_bytes or yy_scan_buffer
 	yylex_init(&scanner);
-	yy_scan_string(buf, scanner);
+	yy_scan_bytes(buf, len, scanner);
 
 	while ((token = yylex(scanner)) != CSSEOF) {
 		if (token == IMPORT_SYM) {
@@ -181,7 +180,7 @@ void wget_css_parse_file(
 
 				if (nread > 0) {
 					buf[nread] = 0; // PROT_WRITE allows this write, MAP_PRIVATE prevents changes in underlying file system
-					wget_css_parse_buffer(buf, callback_uri, callback_encoding, user_ctx);
+					wget_css_parse_buffer(buf, st.st_size, callback_uri, callback_encoding, user_ctx);
 				}
 
 #ifdef HAVE_MMAP
@@ -205,7 +204,7 @@ void wget_css_parse_file(
 		}
 
 		if (buf->length)
-			wget_css_parse_buffer(buf->data, callback_uri, callback_encoding, user_ctx);
+			wget_css_parse_buffer(buf->data, buf->length, callback_uri, callback_encoding, user_ctx);
 
 		wget_buffer_free(&buf);
 	}

@@ -63,6 +63,8 @@ void wget_global_init(int first_key, ...)
 		return;
 	}
 
+	wget_console_init();
+
 	va_start (args, first_key);
 	for (key = first_key; key; key = va_arg(args, int)) {
 		switch (key) {

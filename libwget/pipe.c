@@ -29,7 +29,7 @@
 # include <config.h>
 #endif
 
-#if !defined(_WIN32) && !defined(__WIN32__) && !defined(_WIN64) && !defined(__WIN64__)
+#ifndef _WIN32
 
 #include <stddef.h>
 #include <stdio.h>
