@@ -1235,7 +1235,10 @@ static int process_response_header(wget_http_response_t *resp)
 	DOWNLOADER *downloader = job->downloader;
 	wget_iri_t *iri = job->iri;
 
-	print_status(downloader, "HTTP response %d %s\n", resp->code, resp->reason);
+	if (resp->code < 400 || resp->code > 599)
+		print_status(downloader, "HTTP response %d %s [%s]\n", resp->code, resp->reason, iri->uri);
+	else
+		print_status(downloader, "HTTP ERROR response %d %s [%s]\n", resp->code, resp->reason, iri->uri);
 
 	// Wget1.x compatibility
 	if (resp->code/100 == 4 && resp->code!=416) {
