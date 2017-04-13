@@ -339,9 +339,15 @@ const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
 			wget_iri_get_path(iri, &buf, config.local_encoding);
 		}
 
-		fname = wget_iri_get_query_as_filename(iri, &buf, config.local_encoding);
+		if (config.cut_file_get_vars)
+			fname = buf.data;
+		else
+			fname = wget_iri_get_query_as_filename(iri, &buf, config.local_encoding);
 	} else {
-		fname = wget_iri_get_filename(iri, &buf, config.local_encoding);
+		if (config.cut_file_get_vars)
+			fname = wget_iri_get_path(iri, &buf, config.local_encoding);
+		else
+			fname = wget_iri_get_filename(iri, &buf, config.local_encoding);
 	}
 
 	// do the filename escaping here
@@ -568,8 +574,19 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 //		}
 	}
 
-	iri = wget_iri_parse(url, encoding);
-
+	const char *p = NULL;
+	
+	if (config.cut_url_get_vars)
+		p = strchr(url, '?');
+	
+	if (p) {
+		char *url_cut = wget_strmemdup(url, p - url);
+		iri = wget_iri_parse(url_cut, encoding);
+		xfree(url_cut);
+	}
+	else
+		iri = wget_iri_parse(url, encoding);
+	
 	if (!iri) {
 		error_printf(_("Cannot resolve URI '%s'\n"), url);
 		return;
