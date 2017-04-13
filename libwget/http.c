@@ -90,6 +90,14 @@ static wget_vector_t
 	*https_proxies,
 	*no_proxies;
 
+static void call_wget_decompress(wget_http_response_t *resp, wget_decompressor_t *dc, char *src, size_t srclen)
+{
+	if (wget_decompress(dc, src, srclen)) {
+		error_printf(_("Decompress failed [host: %s - resource: %s].\n"),
+						resp->req->esc_host.data, resp->req->esc_resource.data);
+	}
+}
+
 int wget_http_isseperator(char c)
 {
 	// return strchr("()<>@,;:\\\"/[]?={} \t", c) != NULL;
@@ -1940,7 +1948,7 @@ static int _on_data_chunk_recv_callback(nghttp2_session *session,
 //		debug_printf("[INFO] C <---------------------------- S%d (DATA chunk - %zu bytes)\n", stream_id, len);
 		debug_printf("nbytes %zu\n", len);
 		ctx->resp->cur_downloaded += len;
-		wget_decompress(ctx->decompressor, (char *) data, len);
+		call_wget_decompress(ctx->resp, ctx->decompressor, (char *) data, len);
 	}
 	return 0;
 }
@@ -2472,12 +2480,12 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 			if (p <= buf + body_len) {
 				debug_printf("write full chunk, %zu bytes\n", chunk_size);
 				resp->cur_downloaded += chunk_size;
-				wget_decompress(dc, end, chunk_size);
+				call_wget_decompress(resp, dc, end, chunk_size);
 				continue;
 			}
 
 			resp->cur_downloaded += (buf + body_len) - end;
-			wget_decompress(dc, end, (buf + body_len) - end);
+			call_wget_decompress(resp, dc, end, (buf + body_len) - end);
 
 			chunk_size = (((uintptr_t) p) - ((uintptr_t) (buf + body_len))); // in fact needed bytes to have chunk_size+2 in buf
 
@@ -2501,7 +2509,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 					}
 					if (chunk_size > 2) {
 						resp->cur_downloaded += chunk_size - 2;
-						wget_decompress(dc, buf, chunk_size - 2);
+						call_wget_decompress(resp, dc, buf, chunk_size - 2);
 					}
 					body_len = nbytes - chunk_size;
 					if (body_len)
@@ -2513,11 +2521,11 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 					chunk_size -= nbytes;
 					if (chunk_size >= 2) {
 						resp->cur_downloaded += nbytes;
-						wget_decompress(dc, buf, nbytes);
+						call_wget_decompress(resp, dc, buf, nbytes);
 					} else {
 						// special case: we got a partial end-of-chunk
 						resp->cur_downloaded += nbytes - 1;
-						wget_decompress(dc, buf, nbytes - 1);
+						call_wget_decompress(resp, dc, buf, nbytes - 1);
 					}
 				}
 			}
@@ -2527,7 +2535,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 		debug_printf("method 2\n");
 
 		if (body_len)
-			wget_decompress(dc, buf, body_len);
+			call_wget_decompress(resp, dc, buf, body_len);
 
 		while (body_len < resp->content_length) {
 			if (conn->abort_indicator || _abort_indicator)
@@ -2539,7 +2547,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 			body_len += nbytes;
 			debug_printf("nbytes %zd total %zu/%zu\n", nbytes, body_len, resp->content_length);
 			resp->cur_downloaded += nbytes;
-			wget_decompress(dc, buf, nbytes);
+			call_wget_decompress(resp, dc, buf, nbytes);
 		}
 		if (nbytes < 0)
 			error_printf(_("Failed to read %zd bytes (%d)\n"), nbytes, errno);
@@ -2553,13 +2561,13 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 		debug_printf("method 3\n");
 
 		if (body_len)
-			wget_decompress(dc, buf, body_len);
+			call_wget_decompress(resp, dc, buf, body_len);
 
 		while (!conn->abort_indicator && !_abort_indicator && (nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) > 0) {
 			body_len += nbytes;
 			debug_printf("nbytes %zd total %zu\n", nbytes, body_len);
 			resp->cur_downloaded += nbytes;
-			wget_decompress(dc, buf, nbytes);
+			call_wget_decompress(resp, dc, buf, nbytes);
 		}
 		resp->content_length = body_len;
 	}
