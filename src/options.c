@@ -169,6 +169,8 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 		"      --post-file         File with data to be sent in a POST request.\n"
 		"      --netrc             Load credentials from ~/.netrc if not given. (default: on)\n"
 		"      --content-on-error  Save response body even on error status. (default: off)\n"
+		"      --cut-url-get-vars  Cut HTTP GET vars from URLs. (default: off)\n"
+		"      --cut-file-get-vars Cut HTTP GET vars from file names. (default: off)\n"
 		"\n");
 	puts(
 		"HTTP related options:\n"
@@ -724,7 +726,7 @@ static const struct optionw options[] = {
 	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E' },
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a' },
 	{ "backup-converted", &config.backup_converted, parse_bool, 0, 'K' },
-	{ "backups", &config.backups, parse_integer, 0, 0 },
+	{ "backups", &config.backups, parse_integer, 1, 0 },
 	{ "base", &config.base_url, parse_string, 1, 'B' },
 	{ "bind-address", &config.bind_address, parse_string, 1, 0 },
 	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0 },
@@ -747,6 +749,8 @@ static const struct optionw options[] = {
 	{ "cookies", &config.cookies, parse_bool, 0, 0 },
 	{ "crl-file", &config.crl_file, parse_filename, 1, 0 },
 	{ "cut-dirs", &config.cut_directories, parse_integer, 1, 0 },
+	{ "cut-file-get-vars", &config.cut_file_get_vars, parse_bool, 0, 0 },
+	{ "cut-url-get-vars", &config.cut_url_get_vars, parse_bool, 0, 0 },
 	{ "debug", &config.debug, parse_bool, 0, 'd' },
 	{ "default-page", &config.default_page, parse_string, 1, 0 },
 	{ "delete-after", &config.delete_after, parse_bool, 0, 0 },

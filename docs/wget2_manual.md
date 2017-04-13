@@ -673,7 +673,26 @@ Go to background immediately after startup. If no output file is specified via t
   Force Wget2 to unlink file instead of clobbering existing file. This option is useful for downloading to the
   directory with hardlinks.
 
+* --cut-url-get-vars
 
+  Remove HTTP GET Variables from URLs.
+  For example "main.css?v=123" will be changed to "main.css".
+  Be aware that this may have unintended side effects, for example "image.php?name=sun" will be changed 
+  to "image.php". The cutting happens before adding the URL to the download queue.
+
+* --cut-file-get-vars
+
+  Remove HTTP GET Variables from filenames.
+  For example "main.css?v=123" will be changed to "main.css".
+  
+  Be aware that this may have unintended side effects, for example "image.php?name=sun" will be changed 
+  to "image.php". The cutting happens when saving the file, after downloading.
+  
+  File names obtained from a "Content-Disposition" header are not affected by this setting (see --content-disposition),
+  and can be a solution for this problem.
+  
+  When "--trust-server-names" is used, the redirection URL is affected by this setting.
+  
 ### <a name="Directory Options"/>Directory Options
 
 * -nd, --no-directories

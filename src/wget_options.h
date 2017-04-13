@@ -187,7 +187,9 @@ struct config {
 		print_version,
 		quiet,
 		debug,
-		metalink;
+		metalink,
+		cut_url_get_vars,
+		cut_file_get_vars;
 };
 
 extern struct config
