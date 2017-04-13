@@ -38,7 +38,10 @@ int main(void)
 		{	.name = "/index.html",
 			.code = "200 Dontcare",
 			.body =
-				"<html><head><title>Main Page</title></head><body><p>A link to a" \
+				"<html><head><title>Main Page</title>" \
+				"<style> html { background: url(htTp://localhost:{{port}}/second.html); }</style>" \
+				"<style> div { background: url(htTp://localhost:{{port}}/second.html); }</style>" \
+				"</head><body><p>A link to a" \
 				" <a href=\"second.html\">second page</a>." \
 				" <a href=\"htTp://localhost:{{port}}/second.html\">second page</a>." \
 				" <a href=\"subdir/third.html\">third page</a>." \
@@ -66,7 +69,10 @@ int main(void)
 	};
 
 	const char *converted =
-		"<html><head><title>Main Page</title></head><body><p>A link to a" \
+		"<html><head><title>Main Page</title>" \
+		"<style> html { background: url(second.html); }</style>" \
+		"<style> div { background: url(second.html); }</style>" \
+		"</head><body><p>A link to a" \
 		" <a href=\"second.html\">second page</a>." \
 		" <a href=\"second.html\">second page</a>." \
 		" <a href=\"subdir/third.html\">third page</a>." \
