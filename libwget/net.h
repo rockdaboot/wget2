@@ -50,7 +50,6 @@ struct wget_tcp_st {
 		connect_timeout,
 		timeout, // read and write timeouts are the same
 		family,
-		preferred_family,
 		protocol; // WGET_PROTOCOL_HTTP1_1, WGET_PROTOCOL_HTTP2_0
 	unsigned char
 		ssl : 1,
@@ -61,6 +60,8 @@ struct wget_tcp_st {
 		tls_false_start : 1,
 		tcp_fastopen : 1, // do we use TCP_FASTOPEN or not
 		first_send : 1; // TCP_FASTOPEN's first packet is sent different
+	WGET_INET_FAMILY
+		preferred_family;
 };
 
 #endif /* _LIBWGET_NET_H */

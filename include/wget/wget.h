@@ -1319,9 +1319,11 @@ WGETAPI void
  * TCP network routines
  */
 
-#define WGET_NET_FAMILY_ANY  0
-#define WGET_NET_FAMILY_IPV4 1
-#define WGET_NET_FAMILY_IPV6 2
+typedef enum {
+    WGET_NET_FAMILY_ANY,
+    WGET_NET_FAMILY_IPV4,
+    WGET_NET_FAMILY_IPV6
+} WGET_INET_FAMILY;
 
 #define WGET_PROTOCOL_HTTP_1_1  0
 #define WGET_PROTOCOL_HTTP_2_0  1
