@@ -544,7 +544,7 @@ static int regex_match_pcre(const char *string, const char *pattern)
 static int regex_match(const char *string, const char *pattern)
 {
 #if defined(WITH_LIBPCRE2) || defined(WITH_LIBPCRE)
-	if(config.regex_type && !wget_strcmp(config.regex_type, "pcre"))
+	if (config.regex_type == WGET_REGEX_TYPE_PCRE)
 		return regex_match_pcre(string, pattern);
 	else
 		return regex_match_posix(string, pattern);

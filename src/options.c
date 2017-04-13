@@ -594,6 +594,22 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_cert_type(option_t op
 	return 0;
 }
 
+static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_regex_type(option_t opt, const char *val)
+{
+	if (!val || !wget_strcasecmp_ascii(val, "posix"))
+		*((char *)opt->var) = WGET_REGEX_TYPE_POSIX;
+		
+#if defined(WITH_LIBPCRE2) || defined(WITH_LIBPCRE)
+	else if (!wget_strcasecmp_ascii(val, "pcre"))
+		*((char *)opt->var) = WGET_REGEX_TYPE_PCRE;
+#endif
+
+	else
+		error_printf_exit("Unsupported regex type '%s'\n", val);
+
+	return 0;
+}
+
 static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_progress_type(option_t opt, const char *val)
 {
 	if (!val || !*val || !wget_strcasecmp_ascii(val, "none"))
@@ -833,7 +849,7 @@ static const struct optionw options[] = {
 	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0 },
 	{ "recursive", &config.recursive, parse_bool, 0, 'r' },
 	{ "referer", &config.referer, parse_string, 1, 0 },
-	{ "regex-type", &config.regex_type, parse_string, 1, 0 },
+	{ "regex-type", &config.regex_type, parse_regex_type, 1, 0 },
 	{ "reject", &config.reject_patterns, parse_stringlist, 1, 'R' },
 	{ "reject-regex", &config.reject_regex, parse_string, 1, 0 },
 	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0 },

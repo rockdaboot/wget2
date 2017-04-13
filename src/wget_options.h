@@ -80,8 +80,7 @@ struct config {
 		*random_file,
 		*secure_protocol, // auto, SSLv2, SSLv3, TLSv1
 		*accept_regex,
-		*reject_regex,
-		*regex_type;
+		*reject_regex;
 	wget_vector_t
 		*config_files,
 		*domains,
@@ -191,7 +190,8 @@ struct config {
 		quiet,
 		debug,
 		metalink,
-		filter_urls;
+		filter_urls,
+		regex_type;
 };
 
 extern struct config
