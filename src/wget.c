@@ -2593,8 +2593,8 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 struct _body_callback_context {
 	JOB *job;
 	wget_buffer_t *body;
-	size_t max_memory;
-	off_t length;
+	uint64_t max_memory;
+	uint64_t length;
 	int outfd;
 	int progress_slot;
 };
@@ -2681,7 +2681,7 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 		}
 	}
 
-	if (ctx->max_memory == 0 || ctx->length < (off_t) ctx->max_memory)
+	if (ctx->max_memory == 0 || ctx->length < ctx->max_memory)
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
 	if (config.progress)
@@ -2940,7 +2940,7 @@ int http_send_request(wget_iri_t *iri, DOWNLOADER *downloader)
 	struct _body_callback_context *context = wget_calloc(1, sizeof(struct _body_callback_context));
 
 	context->job = downloader->job;
-	context->max_memory = downloader->job->part ? 0 : 10 * (1 << 20);
+	context->max_memory = downloader->job->part ? 0 : ((uint64_t) 10) * (1 << 20);
 	context->outfd = -1;
 	context->body = wget_buffer_alloc(102400);
 	context->length = 0;
