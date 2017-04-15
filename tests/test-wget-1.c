@@ -593,6 +593,30 @@ int main(void)
 			{	NULL } },
 		0);
 
+	// test -c --chunk-size, new file
+	wget_test(
+		WGET_TEST_OPTIONS, "--chunk-size=3 -c",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		// no existing file
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
+	// test -c --chunk-size, existing file
+	wget_test(
+		WGET_TEST_OPTIONS, "--chunk-size=3 -c",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{ "dummy.txt",  urls[3].body },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
 	// test--https-only
 	wget_test(
 		WGET_TEST_OPTIONS, "--https-only -r -nH",

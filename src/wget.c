@@ -1238,7 +1238,7 @@ static int process_response_header(wget_http_response_t *resp)
 	print_status(downloader, "HTTP response %d %s\n", resp->code, resp->reason);
 
 	// Wget1.x compatibility
-	if (resp->code/100 == 4) {
+	if (resp->code/100 == 4 && resp->code!=416) {
 		if (job->head_first)
 			set_exit_status(8);
 		else if (resp->code == 404 && !job->robotstxt)
