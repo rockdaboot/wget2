@@ -93,8 +93,9 @@ int wget_memiconv(const char *src_encoding, const void *src, size_t srclen, cons
 			size_t dst_len = tmp_len * 6, dst_len_tmp = dst_len;
 			char *dst = xmalloc(dst_len + 1), *dst_tmp = dst;
 
-			if (iconv(cd, (ICONV_CONST char **)&tmp, &tmp_len, &dst_tmp, &dst_len_tmp) != (size_t)-1
-				&& iconv(cd, NULL, NULL, &dst_tmp, &dst_len_tmp) != (size_t)-1)
+			errno = 0;
+			if (iconv(cd, (ICONV_CONST char **)&tmp, &tmp_len, &dst_tmp, &dst_len_tmp) == 0
+				&& iconv(cd, NULL, NULL, &dst_tmp, &dst_len_tmp) == 0)
 			{
 				debug_printf("transcoded %zu bytes from '%s' to '%s'\n", srclen, src_encoding, dst_encoding);
 				if (out) {
@@ -106,6 +107,7 @@ int wget_memiconv(const char *src_encoding, const void *src, size_t srclen, cons
 					*outlen = dst_len - dst_len_tmp;
 				ret = 0; // return OK
 			} else {
+				// erno == 0 means some codepoints were encoded non-reversible, treat as error
 				error_printf(_("Failed to transcode '%s' string into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
 				xfree(dst);
 				if (out)
