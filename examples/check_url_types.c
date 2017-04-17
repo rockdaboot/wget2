@@ -70,7 +70,7 @@ static int _normalize_uri(wget_iri_t *base, wget_string_t *url, const char *enco
 	size_t urlpart_encoded_length;
 	int rc;
 
-	if (url->len == 0 || (url->len == 1 && *url->p == '#')) // ignore e.g. href='#'
+	if (url->len == 0 || (url->len >= 1 && *url->p == '#')) // ignore e.g. href='#'
 		return -1;
 
 	char *urlpart = wget_strmemdup(url->p, url->len);

@@ -753,7 +753,7 @@ static void _convert_links(void)
 
 			url->p = (size_t) url->p + data; // convert offset to pointer
 
-			if (url->len == 1 && *url->p == '#') // ignore e.g. href='#'
+			if (url->len >= 1 && *url->p == '#') // ignore e.g. href='#'
 				continue;
 
 			if (wget_iri_relative_to_abs(conversion->base_url, url->p, url->len, &buf)) {
@@ -1829,7 +1829,7 @@ static int _normalize_uri(wget_iri_t *base, wget_string_t *url, const char *enco
 	int rc;
 
 	// ignore e.g. href='#'
-	if (url->len == 0 || (url->len == 1 && *url->p == '#')) {
+	if (url->len == 0 || (url->len >= 1 && *url->p == '#')) {
 		xfree(urlpart);
 		return -1;
 	}
