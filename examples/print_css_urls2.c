@@ -98,15 +98,13 @@ static void css_parse_uri(void *context, const char *url, size_t len, size_t pos
 {
 	struct css_context *ctx = context;
 
-	if (len > 1 || (len == 1 && *url != '#')) {
-		// ignore e.g. href='#'
-		if (!ctx->base) {
-			wget_info_printf("  %.*s\n", (int)len, url);
-		} else if (wget_iri_relative_to_abs(ctx->base, url, len, &ctx->uri_buf)) {
-			wget_info_printf("  %.*s -> %s\n", (int)len, url, ctx->uri_buf.data);
-		} else {
-			error_printf("Cannot resolve relative URI %.*s\n", (int)len, url);
-		}
+	// ignore e.g. href='#'
+	if (!ctx->base) {
+		wget_info_printf("  %.*s\n", (int)len, url);
+	} else if (wget_iri_relative_to_abs(ctx->base, url, len, &ctx->uri_buf)) {
+		wget_info_printf("  %.*s -> %s\n", (int)len, url, ctx->uri_buf.data);
+	} else {
+		error_printf("Cannot resolve relative URI %.*s\n", (int)len, url);
 	}
 }
 
