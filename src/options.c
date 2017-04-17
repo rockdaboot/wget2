@@ -76,6 +76,103 @@ struct optionw {
 		short_name;
 };
 
+static int G_GNUC_WGET_NORETURN print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val)
+{
+	puts("GNU Wget2 " PACKAGE_VERSION " - multithreaded metalink/file/website downloader\n");
+	puts("+digest"
+
+#if defined WITH_GNUTLS
+	" +https"
+#else
+	" -https"
+#endif
+
+	" +ipv6"
+	" +iri"
+
+#if SIZEOF_OFF_T >= 8
+	" +large-file"
+#else
+	" -large-file"
+#endif
+
+#if defined ENABLE_NLS
+	" +nls"
+#else
+	" -nls"
+#endif
+
+#if defined ENABLE_NTLM
+  " +ntlm"
+#else
+  " -ntlm"
+#endif
+
+#if defined ENABLE_OPIE
+	" +opie"
+#else
+	" -opie"
+#endif
+
+#if defined WITH_LIBPSL
+	" +psl"
+#else
+	" -psl"
+#endif
+
+#if defined WITH_GNUTLS
+	" +ssl/gnutls"
+#else
+	" -ssl"
+#endif
+
+#if defined HAVE_ICONV
+	" +iconv"
+#else
+	" -iconv"
+#endif
+
+#if defined WITH_LIBIDN2
+	" +idn2"
+#elif defined WITH_LIBIDN
+	" +idn"
+#else
+	" -idn"
+#endif
+
+#if defined WITH_ZLIB
+	" +zlib"
+#else
+	" -zlib"
+#endif
+
+#if defined WITH_LZMA
+	" +lzma"
+#else
+	" -lzma"
+#endif
+
+#if defined WITH_BROTLIDEC
+	" +brotlidec"
+#else
+	" -brotlidec"
+#endif
+
+#if defined WITH_BZIP2
+	" +bzip2"
+#else
+	" -bzip2"
+#endif
+
+#if defined WITH_LIBNGHTTP2
+	" +http2"
+#else
+	" -http2"
+#endif
+	);
+	exit(0);
+}
+
 static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val)
 {
 	puts(
@@ -850,7 +947,8 @@ static const struct optionw options[] = {
 	{ "user", &config.username, parse_string, 1, 0 },
 	{ "user-agent", &config.user_agent, parse_string, 1, 'U' },
 	{ "verbose", &config.verbose, parse_bool, 0, 'v' },
-	{ "version", &config.print_version, parse_bool, 0, 'V' },
+	{ "version", NULL, print_version, 0, 'V' },
+	{ "help", NULL, print_help, 0, 'h' },
 	{ "wait", &config.wait, parse_timeout, 1, 'w' },
 	{ "waitretry", &config.waitretry, parse_timeout, 1, 0 }
 };
@@ -1324,102 +1422,6 @@ int init(int argc, const char **argv)
 	// read global config and user's config
 	// settings in user's config override global settings
 	read_config();
-
-	if (config.print_version) {
-		info_printf("GNU Wget2 " PACKAGE_VERSION " - multithreaded metalink/file/website downloader\n\n");
-		info_printf("+digest"
-
-#if defined WITH_GNUTLS
-	" +https"
-#else
-	" -https"
-#endif
-
-	" +ipv6"
-	" +iri"
-
-#if SIZEOF_OFF_T >= 8
-	" +large-file"
-#else
-	" -large-file"
-#endif
-
-#if defined ENABLE_NLS
-	" +nls"
-#else
-	" -nls"
-#endif
-
-#if defined ENABLE_NTLM
-  " +ntlm"
-#else
-  " -ntlm"
-#endif
-
-#if defined ENABLE_OPIE
-	" +opie"
-#else
-	" -opie"
-#endif
-
-#if defined WITH_LIBPSL
-	" +psl"
-#else
-	" -psl"
-#endif
-
-#if defined WITH_GNUTLS
-	" +ssl/gnutls"
-#else
-	" -ssl"
-#endif
-
-#if defined HAVE_ICONV
-	" +iconv"
-#else
-	" -iconv"
-#endif
-
-#if defined WITH_LIBIDN2
-	" +idn2"
-#elif defined WITH_LIBIDN
-	" +idn"
-#else
-	" -idn"
-#endif
-
-#if defined WITH_ZLIB
-	" +zlib"
-#else
-	" -zlib"
-#endif
-
-#if defined WITH_LZMA
-	" +lzma"
-#else
-	" -lzma"
-#endif
-
-#if defined WITH_BROTLIDEC
-	" +brotlidec"
-#else
-	" -brotlidec"
-#endif
-
-#if defined WITH_BZIP2
-	" +bzip2"
-#else
-	" -bzip2"
-#endif
-
-#if defined WITH_LIBNGHTTP2
-	" +http2"
-#else
-	" -http2"
-#endif
-
-			"\n");
-	}
 
 	// now read command line options which override the settings of the config files
 	n = parse_command_line(argc, argv);
