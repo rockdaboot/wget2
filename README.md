@@ -156,6 +156,7 @@ Download project and prepare sources with
 		# or from Github: git clone git@github.com:rockdaboot/wget2.git
 		cd wget2
 		./bootstrap
+		# sometimes you have to execute 'bash ./bootstrap'
 
 Build Wget2 with
 
