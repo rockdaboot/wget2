@@ -106,7 +106,7 @@ static void
 	metalink_parse_localfile(const char *fname),
 	html_parse(JOB *job, int level, const char *data, size_t len, const char *encoding, wget_iri_t *base),
 	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, wget_iri_t *base),
-	css_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
+	css_parse(JOB *job, const char *data, size_t len, const char *encoding, wget_iri_t *base),
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri_t *base);
 static unsigned int G_GNUC_WGET_PURE
 	hash_url(const char *url);
@@ -139,7 +139,7 @@ void set_exit_status(int status)
 	// use Wget exit status scheme:
 	// - error code 0 is default
 	// - error code 1 is used directly by exit() (fatal errors)
-	// - error codes 2... : lower numbers preceed higher numbers
+	// - error codes 2... : lower numbers preced higher numbers
 	if (exit_status) {
 		if (status < exit_status)
 			exit_status = status;
@@ -339,9 +339,15 @@ const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
 			wget_iri_get_path(iri, &buf, config.local_encoding);
 		}
 
-		fname = wget_iri_get_query_as_filename(iri, &buf, config.local_encoding);
+		if (config.cut_file_get_vars)
+			fname = buf.data;
+		else
+			fname = wget_iri_get_query_as_filename(iri, &buf, config.local_encoding);
 	} else {
-		fname = wget_iri_get_filename(iri, &buf, config.local_encoding);
+		if (config.cut_file_get_vars)
+			fname = wget_iri_get_path(iri, &buf, config.local_encoding);
+		else
+			fname = wget_iri_get_filename(iri, &buf, config.local_encoding);
 	}
 
 	// do the filename escaping here
@@ -480,7 +486,7 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 
 	// only download content from hosts given on the command line or from input file
 	if (wget_vector_contains(config.exclude_domains, iri->host)) {
-		// download from this scheme://domain are explicitely not wanted
+		// download from this scheme://domain are explicitly not wanted
 		wget_thread_mutex_unlock(&downloader_mutex);
 		return;
 	}
@@ -568,8 +574,19 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 //		}
 	}
 
-	iri = wget_iri_parse(url, encoding);
-
+	const char *p = NULL;
+	
+	if (config.cut_url_get_vars)
+		p = strchr(url, '?');
+	
+	if (p) {
+		char *url_cut = wget_strmemdup(url, p - url);
+		iri = wget_iri_parse(url_cut, encoding);
+		xfree(url_cut);
+	}
+	else
+		iri = wget_iri_parse(url, encoding);
+	
 	if (!iri) {
 		error_printf(_("Cannot resolve URI '%s'\n"), url);
 		return;
@@ -604,7 +621,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		} else if (!config.span_hosts && config.domains && !in_host_pattern_list(config.domains, iri->host)) {
 			reason = _("no host-spanning requested");
 		} else if (config.span_hosts && config.exclude_domains && in_host_pattern_list(config.exclude_domains, iri->host)) {
-			reason = _("domain explicitely excluded");
+			reason = _("domain explicitly excluded");
 		}
 
 		if (reason) {
@@ -1150,7 +1167,7 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 		int mirror_count = wget_vector_size(metalink->mirrors);
 		int mirror_index;
 
-		if(mirror_count > 0)
+		if (mirror_count > 0)
 			mirror_index = downloader->id % mirror_count;
 		else {
 			host_final_failure(downloader->job->host);
@@ -1224,7 +1241,7 @@ static int process_response_header(wget_http_response_t *resp)
 		print_status(downloader, "HTTP ERROR response %d %s [%s]\n", resp->code, resp->reason, iri->uri);
 
 	// Wget1.x compatibility
-	if (resp->code/100 == 4) {
+	if (resp->code/100 == 4 && resp->code!=416) {
 		if (job->head_first)
 			set_exit_status(8);
 		else if (resp->code == 404 && !job->robotstxt)
@@ -1551,7 +1568,7 @@ static void process_response(wget_http_response_t *resp)
 					html_parse(job, job->level, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 					// xml_parse(sockfd, resp, job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
-					css_parse(job, resp->body->data, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					css_parse(job, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/atom+xml")) { // see RFC4287, https://de.wikipedia.org/wiki/Atom_%28Format%29
 					atom_parse(job, resp->body->data, "utf-8", job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/rss+xml")) { // see https://cyber.harvard.edu/rss/rss.html
@@ -2293,7 +2310,7 @@ static void _css_parse_uri(void *context, const char *url, size_t len, size_t po
 		add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
 }
 
-void css_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base)
+void css_parse(JOB *job, const char *data, size_t len, const char *encoding, wget_iri_t *base)
 {
 	// create scheme://authority that will be prepended to relative paths
 	struct css_context context = { .base = base, .job = job, .encoding = encoding };
@@ -2304,7 +2321,7 @@ void css_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *bas
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
 
-	wget_css_parse_buffer(data, _css_parse_uri, _css_parse_encoding, &context);
+	wget_css_parse_buffer(data, len, _css_parse_uri, _css_parse_encoding, &context);
 
 	if (context.encoding_allocated)
 		xfree(context.encoding);
@@ -2579,8 +2596,8 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 struct _body_callback_context {
 	JOB *job;
 	wget_buffer_t *body;
-	size_t max_memory;
-	off_t length;
+	uint64_t max_memory;
+	uint64_t length;
 	int outfd;
 	int progress_slot;
 };
@@ -2667,7 +2684,7 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 		}
 	}
 
-	if (ctx->max_memory == 0 || ctx->length < (off_t) ctx->max_memory)
+	if (ctx->max_memory == 0 || ctx->length < ctx->max_memory)
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
 	if (config.progress)
@@ -2926,7 +2943,7 @@ int http_send_request(wget_iri_t *iri, DOWNLOADER *downloader)
 	struct _body_callback_context *context = wget_calloc(1, sizeof(struct _body_callback_context));
 
 	context->job = downloader->job;
-	context->max_memory = downloader->job->part ? 0 : 10 * (1 << 20);
+	context->max_memory = downloader->job->part ? 0 : ((uint64_t) 10) * (1 << 20);
 	context->outfd = -1;
 	context->body = wget_buffer_alloc(102400);
 	context->length = 0;

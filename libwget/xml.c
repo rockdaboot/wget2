@@ -402,6 +402,11 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 							if (context->token_len)
 								debug_printf("%s=%.*s\n", directory, (int)context->token_len, context->token);
 						}
+						else if (!wget_strcasecmp_ascii(directory, "style")) {
+							getContent(context, "style");
+							if (context->token_len)
+								debug_printf("%s=%.*s\n", directory, (int)context->token_len, context->token);
+						}
 					} else
 						parseXML(directory, context); // descend one level
 					break;

@@ -57,7 +57,7 @@
 #include "private.h"
 
 #define HTTP_CTYPE_SEPARATOR (1<<0)
-#define _http_isseperator(c) (http_ctype[(unsigned char)(c)]&HTTP_CTYPE_SEPARATOR)
+#define _http_isseparator(c) (http_ctype[(unsigned char)(c)]&HTTP_CTYPE_SEPARATOR)
 
 static const unsigned char
 	http_ctype[256] = {
@@ -98,10 +98,10 @@ static void call_wget_decompress(wget_http_response_t *resp, wget_decompressor_t
 	}
 }
 
-int wget_http_isseperator(char c)
+int wget_http_isseparator(char c)
 {
 	// return strchr("()<>@,;:\\\"/[]?={} \t", c) != NULL;
-	return _http_isseperator(c);
+	return _http_isseparator(c);
 }
 
 // TEXT           = <any OCTET except CTLs, but including LWS>
@@ -114,7 +114,7 @@ int wget_http_isseperator(char c)
 
 int wget_http_istoken(char c)
 {
-	return c > 32 && c <= 126 && !_http_isseperator(c);
+	return c > 32 && c <= 126 && !_http_isseparator(c);
 }
 
 const char *wget_http_parse_token(const char *s, const char **token)
@@ -713,7 +713,7 @@ const char *wget_http_parse_etag(const char *s, const char **etag)
 
 /*
 // returns GMT/UTC time as an integer of format YYYYMMDDHHMMSS
-// this makes us independant from size of time_t - work around possible year 2038 problems
+// this makes us independent from size of time_t - work around possible year 2038 problems
 static long long NONNULL_ALL parse_rfc1123_date(const char *s)
 {
 	// we simply can't use strptime() since it requires us to setlocale()
