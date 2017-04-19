@@ -1643,7 +1643,7 @@ typedef struct {
 } wget_http_connection_t;
 
 WGETAPI int
-	wget_http_isseperator(char c) G_GNUC_WGET_CONST;
+	wget_http_isseparator(char c) G_GNUC_WGET_CONST;
 WGETAPI int
 	wget_http_istoken(char c) G_GNUC_WGET_CONST;
 

@@ -139,7 +139,7 @@ void set_exit_status(int status)
 	// use Wget exit status scheme:
 	// - error code 0 is default
 	// - error code 1 is used directly by exit() (fatal errors)
-	// - error codes 2... : lower numbers preceed higher numbers
+	// - error codes 2... : lower numbers preced higher numbers
 	if (exit_status) {
 		if (status < exit_status)
 			exit_status = status;
@@ -486,7 +486,7 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 
 	// only download content from hosts given on the command line or from input file
 	if (wget_vector_contains(config.exclude_domains, iri->host)) {
-		// download from this scheme://domain are explicitely not wanted
+		// download from this scheme://domain are explicitly not wanted
 		wget_thread_mutex_unlock(&downloader_mutex);
 		return;
 	}
@@ -621,7 +621,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		} else if (!config.span_hosts && config.domains && !in_host_pattern_list(config.domains, iri->host)) {
 			reason = _("no host-spanning requested");
 		} else if (config.span_hosts && config.exclude_domains && in_host_pattern_list(config.exclude_domains, iri->host)) {
-			reason = _("domain explicitely excluded");
+			reason = _("domain explicitly excluded");
 		}
 
 		if (reason) {
