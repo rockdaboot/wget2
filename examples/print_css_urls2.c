@@ -98,7 +98,7 @@ static void css_parse_uri(void *context, const char *url, size_t len, size_t pos
 {
 	struct css_context *ctx = context;
 
-	if (len > 1 || (len == 1 && *url != '#')) {
+	if (len >= 1 && *url != '#') {
 		// ignore e.g. href='#'
 		if (!ctx->base) {
 			wget_info_printf("  %.*s\n", (int)len, url);
