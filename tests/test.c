@@ -980,14 +980,7 @@ static void test_cookies(void)
 		const char
 			*uri,
 			*set_cookie,
-			*name, *value, *domain, *path, *expires;
-		unsigned int
-			domain_dot : 1, // for compatibility with Netscape cookie format
-			normalized : 1,
-			persistent : 1,
-			host_only : 1,
-			secure_only : 1, // cookie should be used over secure connections only (TLS/HTTPS)
-			http_only : 1; // just use the cookie via HTTP/HTTPS protocol
+			*expected_set_cookie;
 		int
 			result,
 			psl_result;
@@ -995,73 +988,63 @@ static void test_cookies(void)
 		{	// allowed cookie
 			"www.example.com",
 			"ID=65=abcd; expires=Tuesday, 07-May-2013 07:48:53 GMT; path=/; domain=.example.com; HttpOnly",
-			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
-			1, 1, 1, 0, 0, 1,
+			"ID=65=abcd; expires=Tue, 07 May 2013 07:48:53 GMT; path=/; domain=.example.com; HttpOnly",
 			0, 0
 		},
 		{	// allowed cookie ANSI C's asctime format
 			"www.example.com",
 			"ID=65=abcd; expires=Tue May 07 07:48:53 2013; path=/; domain=.example.com",
-			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
-			1, 1, 1, 0, 0, 0,
+			"ID=65=abcd; expires=Tue, 07 May 2013 07:48:53 GMT; path=/; domain=.example.com",
 			0, 0
 		},
 		{	// allowed cookie without path
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; domain=.example.com",
-			"ID", "65=abcd", "example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
-			1, 1, 1, 0, 0, 0,
+			"ID=65=abcd; expires=Tue, 07 May 2013 07:48:53 GMT; path=/; domain=.example.com",
 			0, 0
 		},
 		{	// allowed cookie without domain
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/",
-			"ID", "65=abcd", "www.example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
-			0, 1, 1, 1, 0, 0,
+			"ID=65=abcd; expires=Tue, 07 May 2013 07:48:53 GMT; path=/; domain=www.example.com",
 			0, 0
 		},
 		{	// non-standard expires (found in reality)
 			"www.example.com",
 			"ID=65=abcd; expires=1 Mar 2027 09:23:12 GMT; path=/",
-			"ID", "65=abcd", "www.example.com", "/", "Mon, 01 Mar 2027 09:23:12 GMT",
-			0, 1, 1, 1, 0, 0,
+			"ID=65=abcd; expires=Mon, 01 Mar 2027 09:23:12 GMT; path=/; domain=www.example.com",
 			0, 0
 		},
 		{	// allowed cookie without domain, path and expires
 			"www.example.com",
 			"ID=65=abcd",
-			"ID", "65=abcd", "www.example.com", "/", "Tue, 07 May 2013 07:48:53 GMT",
-			0, 1, 0, 1, 0, 0,
+			"ID=65=abcd; path=/; domain=www.example.com",
 			0, 0
 		},
 		{	// illegal cookie (.com against .org)
 			"www.example.com",
 			"ID=65=abcd; expires=Tue, 07-May-2013 07:48:53 GMT; path=/; domain=.example.org",
-			"ID", "65=abcd", "example.org", "/", "Tue, 07 May 2013 07:48:53 GMT",
-			1, 0, 1, 0, 0, 0,
+			NULL,
 			-1, 0
 		},
 //#ifdef WITH_LIBPSL
 		{	// supercookie, accepted by normalization (rule 'com') but not by wget_cookie_check_psl())
 			"www.example.com",
 			"ID=65=abcd; expires=Mon, 29-Feb-2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
-			"ID", "65=abcd", "com", "/", "Mon, 29 Feb 2016 07:48:54 GMT",
-			1, 1, 1, 0, 1, 1,
+			"ID=65=abcd; expires=Mon, 29 Feb 2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
 			0, _PSL_RESULT_FAIL
 		},
 		{	// supercookie, accepted by normalization  (rule 'sa.gov.au') but not by wget_cookie_check_psl())
 			"www.sa.gov.au",
 			"ID=65=abcd; expires=Tue, 29-Feb-2000 07:48:55 GMT; path=/; domain=.sa.gov.au",
-			"ID", "65=abcd", "sa.gov.au", "/", "Tue, 29 Feb 2000 07:48:55 GMT",
-			1, 1, 1, 0, 0, 0,
+			"ID=65=abcd; expires=Tue, 29 Feb 2000 07:48:55 GMT; path=/; domain=.sa.gov.au",
 			0, _PSL_RESULT_FAIL
 		},
 //#endif
 		{	// exception rule '!educ.ar', accepted by normalization
 			"www.educ.ar",
 			"ID=65=abcd; path=/; domain=.educ.ar",
-			"ID", "65=abcd", "educ.ar", "/", NULL,
-			1, 1, 0, 0, 0, 0,
+			"ID=65=abcd; path=/; domain=.educ.ar",
 			0, 0
 		},
 
@@ -1069,85 +1052,73 @@ static void test_cookies(void)
 		{	// Rejected due to missing 'secure' flag
 			"http://example.com",
 			"__Secure-SID=12345; Domain=example.com",
-			"__Secure-SID", "12345", "example.com", NULL, NULL,
-			0, 0, 0, 0, 0, 0,
+			NULL,
 			-1, 0
 		},
 		{	// Rejected due to missing 'secure' flag
 			"https://example.com",
 			"__Secure-SID=12345; Domain=example.com",
-			"__Secure-SID", "12345", "example.com", NULL, NULL,
-			0, 0, 0, 0, 0, 0,
+			NULL,
 			-1, 0
 		},
 		{	// Rejected due to set from a insecure origin
 			"http://example.com",
 			"__Secure-SID=12345; Secure; Domain=example.com",
-			"__Secure-SID", "12345", "example.com", NULL, NULL,
-			0, 0, 0, 0, 1, 0,
+			NULL,
 			-1, 0
 		},
 		{	// Accepted
 			"https://example.com",
 			"__Secure-SID=12345; Secure; Domain=example.com",
-			"__Secure-SID", "12345", "example.com", "/", NULL,
-			0, 1, 0, 0, 1, 0,
+			"__Secure-SID=12345; path=/; domain=example.com; Secure",
 			0, 0
 		},
 		{	// Rejected (missing 'secure', path not /)
 			"https://example.com",
 			"__Host-SID=12345",
-			"__Host-SID", "12345", NULL, NULL, NULL,
-			0, 0, 0, 0, 0, 0,
+			NULL,
 			-1, _PSL_RESULT_FAIL
 		},
 		{	// Rejected (path not /)
 			"https://example.com",
 			"__Host-SID=12345; Secure",
-			"__Host-SID", "12345", NULL, NULL, NULL,
-			0, 0, 0, 0, 1, 0,
+			NULL,
 			-1, _PSL_RESULT_FAIL
 		},
 		{	// Rejected (missing secure, domain given, path not /)
 			"https://example.com",
 			"__Host-SID=12345; Domain=example.com",
-			"__Host-SID", "12345", "example.com", NULL, NULL,
-			0, 0, 0, 0, 0, 0,
+			NULL,
 			-1, 0
 		},
 		{	// Rejected (missing secure, domain given)
 			"https://example.com",
 			"__Host-SID=12345; Domain=example.com; Path=/",
-			"__Host-SID", "12345", "example.com", "/", NULL,
-			0, 0, 0, 0, 0, 0,
+			NULL,
 			-1, 0
 		},
 		{	// Rejected (domain given)
 			"https://example.com",
 			"__Host-SID=12345; Secure; Domain=example.com; Path=/",
-			"__Host-SID", "12345", "example.com", "/", NULL,
-			0, 0, 0, 0, 1, 0,
+			NULL,
 			-1, 0
 		},
 		{	// Rejected (insecure origin)
 			"http://example.com",
 			"__Host-SID=12345; Secure; Path=/",
-			"__Host-SID", "12345", NULL, "/", NULL,
-			0, 0, 0, 0, 1, 0,
+			NULL,
 			-1, _PSL_RESULT_FAIL
 		},
 		{	// Accepted
 			"https://example.com",
 			"__Host-SID=12345; Secure; Path=/",
-			"__Host-SID", "12345", NULL, "/", NULL,
-			0, 0, 0, 0, 1, 0,
+			NULL,
 			-1, _PSL_RESULT_FAIL
 		},
 
 	};
-	wget_cookie_t cookie;
+	wget_cookie_t *cookie = NULL;
 	wget_cookie_db_t *cookies;
-	wget_iri_t *iri;
 	unsigned it;
 	int result, result_psl;
 
@@ -1155,75 +1126,54 @@ static void test_cookies(void)
 	wget_cookie_db_load_psl(cookies, DATADIR "/effective_tld_names.dat");
 
 	for (it = 0; it < countof(test_data); it++) {
+		char *header, *set_cookie;
 		const struct test_data *t = &test_data[it];
-		char thedate[32], *header;
+		wget_iri_t *iri = wget_iri_parse(t->uri, "utf-8");
 
-		iri = wget_iri_parse(t->uri, "utf-8");
 		wget_http_parse_setcookie(t->set_cookie, &cookie);
-		if ((result = wget_cookie_normalize(iri, &cookie)) != t->result) {
+
+		if ((result = wget_cookie_normalize(iri, cookie)) != t->result) {
 			failed++;
 			info_printf("Failed [%u]: normalize_cookie(%s) -> %d (expected %d)\n", it, t->set_cookie, result, t->result);
-			wget_cookie_deinit(&cookie);
 			goto next;
-		} else {
-			if ((result_psl = wget_cookie_check_psl(cookies, &cookie)) != t->psl_result) {
+		} else if (result == 0) {
+			if ((result_psl = wget_cookie_check_psl(cookies, cookie)) != t->psl_result) {
 				failed++;
 				info_printf("Failed [%u]: PSL check(%s) -> %d (expected %d)\n", it, t->set_cookie, result_psl, t->psl_result);
-				wget_cookie_deinit(&cookie);
 				goto next;
 			}
-		}
+		} else
+			goto next;
 
-		if (cookie.expires) {
-			wget_http_print_date(cookie.expires, thedate, sizeof(thedate));
+/*		if (cookie->expires) {
+			char thedate[32];
+
+ 			wget_http_print_date(cookie->expires, thedate, sizeof(thedate));
 			if (strcmp(thedate, t->expires)) {
 				failed++;
 				info_printf("Failed [%u]: expires mismatch: '%s' != '%s' (time_t %lld)\n", it, thedate, t->expires, (long long)cookie.expires);
-				wget_cookie_deinit(&cookie);
 				goto next;
 			}
 		}
+*/
 
-		if (strcmp(cookie.name, t->name) ||
-			strcmp(cookie.value, t->value) ||
-			wget_strcmp(cookie.domain, t->domain) ||
-			wget_strcmp(cookie.path, t->path) ||
-			cookie.domain_dot != t->domain_dot ||
-			cookie.normalized != t->normalized ||
-			cookie.persistent != t->persistent ||
-			cookie.host_only != t->host_only ||
-			cookie.secure_only != t->secure_only ||
-			cookie.http_only != t->http_only)
-		{
+		set_cookie = wget_cookie_to_setcookie(cookie);
+
+		if (wget_strcmp(set_cookie, t->expected_set_cookie)) {
 			failed++;
 
 			info_printf("Failed [%u]: cookie (%s) differs:\n", it, t->set_cookie);
-			if (strcmp(cookie.name, t->name))
-				info_printf("  name %s (expected %s)\n", cookie.name, t->name);
-			if (strcmp(cookie.value, t->value))
-				info_printf("  value %s (expected %s)\n", cookie.value, t->value);
-			if (wget_strcmp(cookie.domain, t->domain))
-				info_printf("  domain %s (expected %s)\n", cookie.domain, t->domain);
-			if (wget_strcmp(cookie.path, t->path))
-				info_printf("  path %s (expected %s)\n", cookie.path, t->path);
-			if (cookie.domain_dot != t->domain_dot)
-				info_printf("  domain_dot %d (expected %d)\n", cookie.domain_dot, t->domain_dot);
-			if (cookie.normalized != t->normalized)
-				info_printf("  normalized %d (expected %d)\n", cookie.normalized, t->normalized);
-			if (cookie.persistent != t->persistent)
-				info_printf("  persistent %d (expected %d)\n", cookie.persistent, t->persistent);
-			if (cookie.host_only != t->host_only)
-				info_printf("  host_only %d (expected %d)\n", cookie.host_only, t->host_only);
-			if (cookie.secure_only != t->secure_only)
-				info_printf("  secure_only %d (expected %d)\n", cookie.secure_only, t->secure_only);
-			if (cookie.http_only != t->http_only)
-				info_printf("  http_only %d (expected %d)\n", cookie.http_only, t->http_only);
+			info_printf("-%s\n", t->expected_set_cookie);
+			info_printf("+%s\n", set_cookie);
 
-			wget_cookie_deinit(&cookie);
+			xfree(set_cookie);
 			goto next;
 		}
 
-		wget_cookie_store_cookie(cookies, &cookie);
+		xfree(set_cookie);
+
+		wget_cookie_store_cookie(cookies, cookie);
+		xfree(cookie);
 
 		// just check for memory issues
 		header = wget_cookie_create_request_header(cookies, iri);
@@ -1232,6 +1182,7 @@ static void test_cookies(void)
 		ok++;
 
 next:
+		wget_cookie_free(&cookie);
 		wget_iri_free(&iri);
 	}
 

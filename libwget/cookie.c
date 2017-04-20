@@ -44,8 +44,43 @@
 #  define _U G_GNUC_WGET_UNUSED
 #endif
 
+#include <c-ctype.h>
+
 #include <wget.h>
 #include "private.h"
+
+struct wget_cookie_st {
+	const char *
+		name;
+	const char *
+		value;
+	const char *
+		domain;
+	const char *
+		path;
+	time_t
+		expires; // time of expiration (format YYYYMMDDHHMMSS)
+	time_t
+		maxage; // like expires, but precedes it if set
+	time_t
+		last_access;
+	time_t
+		creation;
+	unsigned int
+		sort_age; // need for sorting on Cookie: header construction
+	unsigned int
+		domain_dot : 1; // for compatibility with Netscape cookie format
+	unsigned int
+		normalized : 1;
+	unsigned int
+		persistent : 1;
+	unsigned int
+		host_only : 1;
+	unsigned int
+		secure_only : 1; // cookie should be used over secure connections only (TLS/HTTPS)
+	unsigned int
+		http_only : 1; // just use the cookie via HTTP/HTTPS protocol
+};
 
 struct wget_cookie_db_st {
 	wget_vector_t *
@@ -194,9 +229,10 @@ static int G_GNUC_WGET_NONNULL((1)) _path_match(const char *cookie_path, const c
 wget_cookie_t *wget_cookie_init(wget_cookie_t *cookie)
 {
 	if (!cookie)
-		cookie = xmalloc(sizeof(wget_cookie_t));
+		cookie = xcalloc(1, sizeof(wget_cookie_t));
+	else
+		memset(cookie, 0, sizeof(*cookie));
 
-	memset(cookie, 0, sizeof(*cookie));
 	cookie->last_access = cookie->creation = time(NULL);
 
 	return cookie;
@@ -218,6 +254,212 @@ void wget_cookie_free(wget_cookie_t **cookie)
 		wget_cookie_deinit(*cookie);
 		xfree(*cookie);
 	}
+}
+
+/*
+int wget_cookie_equals(wget_cookie_t *cookie1, wget_cookie_t *cookie2)
+{
+	if (!cookie1)
+		return !cookie2;
+
+	if (!cookie2)
+		return 0;
+
+	if (wget_strcmp(cookie1->name, cookie2->name) ||
+		wget_strcmp(cookie1->value, cookie2->value) ||
+		wget_strcmp(cookie1->domain, cookie2->domain) ||
+		wget_strcmp(cookie1->path, cookie2->path) ||
+		cookie1->domain_dot != cookie2->domain_dot ||
+		cookie1->normalized != cookie2->normalized ||
+		cookie1->persistent != cookie2->persistent ||
+		cookie1->host_only != cookie2->host_only ||
+		cookie1->secure_only != cookie2->secure_only ||
+		cookie1->http_only != cookie2->http_only)
+	{
+		return 0;
+	}
+
+	return 1;
+}
+*/
+
+char *wget_cookie_to_setcookie(wget_cookie_t *cookie)
+{
+	char expires[32] = "";
+
+	if (!cookie)
+		return wget_strdup("(null)");
+
+	if (cookie->expires)
+		wget_http_print_date(cookie->expires, expires, sizeof(expires)); // date format from RFC 6265
+
+	return wget_aprintf("%s=%s%s%s%s%s; domain=%s%s%s%s",
+		cookie->name, cookie->value,
+		*expires ? "; expires=" : "", *expires ? expires : "",
+		cookie->path ? "; path=" : "", cookie->path ? cookie->path : "",
+		cookie->host_only ? "" : ".", cookie->domain,
+		cookie->http_only ? "; HttpOnly" : "",
+		cookie->secure_only ? "; Secure" : "");
+}
+
+/*
+ RFC 6265
+
+ set-cookie-header = "Set-Cookie:" SP set-cookie-string
+ set-cookie-string = cookie-pair *( ";" SP cookie-av )
+ cookie-pair       = cookie-name "=" cookie-value
+ cookie-name       = token
+ cookie-value      = *cookie-octet / ( DQUOTE *cookie-octet DQUOTE )
+ cookie-octet      = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
+                       ; US-ASCII characters excluding CTLs,
+                       ; whitespace DQUOTE, comma, semicolon,
+                       ; and backslash
+ token             = <token, defined in [RFC2616], Section 2.2>
+
+ cookie-av         = expires-av / max-age-av / domain-av /
+                     path-av / secure-av / httponly-av /
+                     extension-av
+ expires-av        = "Expires=" sane-cookie-date
+ sane-cookie-date  = <rfc1123-date, defined in [RFC2616], Section 3.3.1>
+ max-age-av        = "Max-Age=" non-zero-digit *DIGIT
+                       ; In practice, both expires-av and max-age-av
+                       ; are limited to dates representable by the
+                       ; user agent.
+ non-zero-digit    = %x31-39
+                       ; digits 1 through 9
+ domain-av         = "Domain=" domain-value
+ domain-value      = <subdomain>
+                       ; defined in [RFC1034], Section 3.5, as
+                       ; enhanced by [RFC1123], Section 2.1
+ path-av           = "Path=" path-value
+ path-value        = <any CHAR except CTLs or ";">
+ secure-av         = "Secure"
+ httponly-av       = "HttpOnly"
+ extension-av      = <any CHAR except CTLs or ";">
+*/
+const char *wget_cookie_parse_setcookie(const char *s, wget_cookie_t **_cookie)
+{
+	const char *name, *p;
+	wget_cookie_t *cookie = wget_cookie_init(NULL);
+
+	// remove leading whitespace from cookie name
+	while (c_isspace(*s)) s++;
+
+	// s = wget_http_parse_token(s, &cookie->name);
+	// also accept UTF-8 (NON-ASCII) characters in cookie name
+	for (p = s; (*s >= 32 && *s <= 126 && *s != '=' && *s != ';') || *s < 0; s++);
+
+	// remove trailing whitespace from cookie name
+	while (s > p && c_isspace(s[-1])) s--;
+	cookie->name = wget_strmemdup(p, s - p);
+
+	// advance to next delimiter
+	while (c_isspace(*s)) s++;
+
+	if (cookie->name && *cookie->name && *s == '=') {
+		// *cookie-octet / ( DQUOTE *cookie-octet DQUOTE )
+
+		// skip over delimiter and remove leading whitespace from cookie value
+		for (s++; c_isspace(*s);) s++;
+
+/* RFC compliancy is too strict
+		if (*s == '\"')
+			s++;
+		// cookie-octet      = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
+		for (p = s; *s > 32 && *s <= 126 && *s != '\\' && *s != ',' && *s != ';' && *s != '\"'; s++);
+*/
+
+		// also accept UTF-8 (NON-ASCII) characters in cookie value
+		for (p = s; (*s >= 32 && *s <= 126 && *s != ';') || *s < 0; s++);
+
+		// remove trailing whitespace from cookie value
+		while (s > p && c_isspace(s[-1])) s--;
+
+		cookie->value = wget_strmemdup(p, s - p);
+
+		do {
+			// find next delimiter
+			while (*s && *s != ';') s++;
+			if (!*s) break;
+
+			// skip delimiter and remove leading spaces from attribute name
+			for (s++; c_isspace(*s);) s++;
+			if (!*s) break;
+
+			s = wget_http_parse_token(s, &name);
+
+			if (name) {
+				// find next delimiter
+				while (*s && *s != '=' && *s != ';') s++;
+				// if (!*s) break;
+
+				if (*s == '=') {
+					// find end of value
+					for (s++; c_isspace(*s);) s++;
+					for (p = s; (*s >= 32 && *s <= 126 && *s != ';') || *s < 0; s++);
+
+					if (!wget_strcasecmp_ascii(name, "expires")) {
+						cookie->expires = wget_http_parse_full_date(p);
+					} else if (!wget_strcasecmp_ascii(name, "max-age")) {
+						long offset = atol(p);
+
+						if (offset > 0)
+							// cookie->maxage = adjust_time(get_current_time(), offset);
+							cookie->maxage = time(NULL) + offset;
+						else
+							cookie->maxage = 0;
+					} else if (!wget_strcasecmp_ascii(name, "domain")) {
+						if (p != s) {
+							if (*p == '.') { // RFC 6265 5.2.3
+								do { p++; } while (*p == '.');
+								cookie->domain_dot = 1;
+							} else
+								cookie->domain_dot = 0;
+
+							// remove trailing whitespace from attribute value
+							while (s > p && c_isspace(s[-1])) s--;
+
+							xfree(cookie->domain);
+							cookie->domain = wget_strmemdup(p, s - p);
+						}
+					} else if (!wget_strcasecmp_ascii(name, "path")) {
+						// remove trailing whitespace from attribute value
+						while (s > p && c_isspace(s[-1])) s--;
+
+						xfree(cookie->path);
+						cookie->path = wget_strmemdup(p, s - p);
+					} else if (!wget_strcasecmp_ascii(name, "secure")) {
+						// here we ignore the value
+						cookie->secure_only = 1;
+					} else if (!wget_strcasecmp_ascii(name, "httponly")) {
+						// here we ignore the value
+						cookie->http_only = 1;
+					} else {
+						debug_printf("Unsupported cookie-av '%s'\n", name);
+					}
+				} else if (!wget_strcasecmp_ascii(name, "secure")) {
+					cookie->secure_only = 1;
+				} else if (!wget_strcasecmp_ascii(name, "httponly")) {
+					cookie->http_only = 1;
+				} else {
+					debug_printf("Unsupported cookie-av '%s'\n", name);
+				}
+
+				xfree(name);
+			}
+		} while (*s);
+
+	} else {
+		wget_cookie_free(&cookie);
+		error_printf("Cookie without name or assignment ignored\n");
+	}
+
+	if (_cookie)
+		*_cookie = cookie;
+	else
+		wget_cookie_free(&cookie);
+
+	return s;
 }
 
 // normalize/sanitize and store cookies
@@ -271,7 +513,9 @@ static int _wget_cookie_normalize_cookie(const wget_iri_t *iri, wget_cookie_t *c
 			cookie->domain = wget_strdup("");
 
 		if (*cookie->domain) {
-			if (_domain_match(cookie->domain, iri->host)) {
+			if (!strcmp(cookie->domain, iri->host)) {
+				cookie->host_only = 1;
+			} else if (_domain_match(cookie->domain, iri->host)) {
 				cookie->host_only = 0;
 			} else {
 				debug_printf("Domain mismatch: %s %s\n", cookie->domain, iri->host);

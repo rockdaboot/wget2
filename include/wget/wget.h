@@ -923,44 +923,11 @@ WGETAPI const char *
  * Cookie routines
  */
 
-// typedef and structure for cookie database
+// typedef for cookie database
 typedef struct wget_cookie_db_st wget_cookie_db_t;
 
-// structure for cookie store
-//typedef struct wget_cookie_db_st wget_cookie_db_t;
-
-typedef struct wget_cookie_st {
-	const char *
-		name;
-	const char *
-		value;
-	const char *
-		domain;
-	const char *
-		path;
-	time_t
-		expires; // time of expiration (format YYYYMMDDHHMMSS)
-	time_t
-		maxage; // like expires, but precedes it if set
-	time_t
-		last_access;
-	time_t
-		creation;
-	unsigned int
-		sort_age; // need for sorting on Cookie: header construction
-	unsigned int
-		domain_dot : 1; // for compatibility with Netscape cookie format
-	unsigned int
-		normalized : 1;
-	unsigned int
-		persistent : 1;
-	unsigned int
-		host_only : 1;
-	unsigned int
-		secure_only : 1; // cookie should be used over secure connections only (TLS/HTTPS)
-	unsigned int
-		http_only : 1; // just use the cookie via HTTP/HTTPS protocol
-} wget_cookie_t;
+// typedef for cookie
+typedef struct wget_cookie_st wget_cookie_t;
 
 WGETAPI wget_cookie_t *
 	wget_cookie_init(wget_cookie_t *cookie);
@@ -968,6 +935,10 @@ WGETAPI void
 	wget_cookie_deinit(wget_cookie_t *cookie);
 WGETAPI void
 	wget_cookie_free(wget_cookie_t **cookie);
+WGETAPI char *
+	wget_cookie_to_setcookie(wget_cookie_t *cookie);
+WGETAPI const char *
+	wget_cookie_parse_setcookie(const char *s, wget_cookie_t **cookie) G_GNUC_WGET_NONNULL((1));
 WGETAPI void
 	wget_cookie_normalize_cookies(const wget_iri_t *iri, const wget_vector_t *cookies);
 WGETAPI int
@@ -1684,7 +1655,7 @@ WGETAPI const char *
 WGETAPI const char *
 	wget_http_parse_connection(const char *s, char *keep_alive) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_setcookie(const char *s, wget_cookie_t *cookie) G_GNUC_WGET_NONNULL((1));
+	wget_http_parse_setcookie(const char *s, wget_cookie_t **cookie) G_GNUC_WGET_NONNULL((1));
 WGETAPI const char *
 	wget_http_parse_etag(const char *s, const char **etag) G_GNUC_WGET_NONNULL((1));
 
