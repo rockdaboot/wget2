@@ -56,6 +56,7 @@ extern "C" {
 #define WGET_TEST_KEEP_TMPFILES 2006
 #define WGET_TEST_REQUEST_URLS 2007
 #define WGET_TEST_EXECUTABLE 2008
+#define WGET_TEST_SERVER_SEND_CONTENT_LENGTH 2009
 
 // defines for wget_test_check_filesystem()
 #define WGET_TEST_FS_CASEMATTERS 3001 // filesystem is case-sensitive

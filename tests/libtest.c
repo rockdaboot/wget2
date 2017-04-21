@@ -81,6 +81,8 @@ static char
 	tmpdir[128];
 static const char
 	*server_hello;
+static char
+	server_send_content_length = 1;
 
 static void sigterm_handler(int sig G_GNUC_WGET_UNUSED)
 {
@@ -217,12 +219,10 @@ static void *_http_server_thread(void *ctx)
 
 					// create response
 					body_len = to_bytes - from_bytes + 1;
-					nbytes = snprintf(buf, sizeof(buf),
-						"HTTP/1.1 206 Partial Content\r\n"\
-						"Content-Length: %zu\r\n"\
-						"Accept-Ranges: bytes\r\n"\
-						"Content-Range: %zd-%zd/%zu\r\n",
-						body_len, from_bytes, to_bytes, body_len);
+					nbytes = snprintf(buf, sizeof(buf), "HTTP/1.1 206 Partial Content\r\n");
+					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "Content-Length: %zu\r\n", body_len);
+					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "Accept-Ranges: bytes\r\n");
+					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "Content-Range: %zd-%zd/%zu\r\n", from_bytes, to_bytes, body_len);
 					for (it = 0; it < countof(url->headers) && url->headers[it]; it++) {
 						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s\r\n", url->headers[it]);
 					}
@@ -232,10 +232,9 @@ static void *_http_server_thread(void *ctx)
 				} else {
 					// create response
 					body_len = strlen(url->body ? url->body : "");
-					nbytes = snprintf(buf, sizeof(buf),
-						"HTTP/1.1 %s\r\n"\
-						"Content-Length: %zu\r\n",
-						url->code ? url->code : "200 OK\r\n", body_len);
+					nbytes = snprintf(buf, sizeof(buf), "HTTP/1.1 %s\r\n", url->code ? url->code : "200 OK");
+					if (server_send_content_length)
+						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "Content-Length: %zu\r\n", body_len);
 					for (it = 0; it < countof(url->headers) && url->headers[it]; it++) {
 						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s\r\n", url->headers[it]);
 					}
@@ -589,6 +588,9 @@ void wget_test_start_server(int first_key, ...)
 		case WGET_TEST_FTPS_IMPLICIT:
 			ftps_implicit = va_arg(args, int);
 			break;
+		case WGET_TEST_SERVER_SEND_CONTENT_LENGTH:
+			server_send_content_length = va_arg(args, int);
+			break;
 		default:
 			wget_error_printf(_("Unknown option %d\n"), key);
 		}
@@ -753,7 +755,10 @@ void wget_test(int first_key, ...)
 		fd,
 		rc,
 		expected_error_code = 0;
-	va_list args;
+	va_list
+		args;
+	char
+		server_send_content_length_old = server_send_content_length;
 
 	keep_tmpfiles = 0;
 	server_hello = "220 FTP server ready";
@@ -792,6 +797,9 @@ void wget_test(int first_key, ...)
 			break;
 		case WGET_TEST_FTP_SERVER_HELLO:
 			server_hello = va_arg(args, const char *);
+			break;
+		case WGET_TEST_SERVER_SEND_CONTENT_LENGTH:
+			server_send_content_length = va_arg(args, int);
 			break;
 		default:
 			wget_error_printf_exit(_("Unknown option %d [%s]\n"), key, options);
@@ -898,6 +906,8 @@ void wget_test(int first_key, ...)
 
 	wget_vector_clear(request_urls);
 	wget_buffer_free(&cmd);
+
+	server_send_content_length = server_send_content_length_old;
 
 	// system("ls -la");
 }

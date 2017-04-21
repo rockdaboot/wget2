@@ -1394,6 +1394,9 @@ static void process_head_response(wget_http_response_t *resp)
 			wget_thread_cond_signal(&worker_cond);
 			job->inuse = 0; // do not remove this job from queue yet
 		} // else file already downloaded and checksum ok
+	} else if (config.chunk_size) {
+		// server did not send Content-Length or chunk size <= Content-Length
+		job->inuse = 0; // do not remove this job from queue yet
 	}
 }
 
