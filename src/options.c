@@ -83,8 +83,10 @@ static int G_GNUC_WGET_NORETURN print_version(G_GNUC_WGET_UNUSED option_t opt, G
 
 #if defined WITH_GNUTLS
 	" +https"
+	" +ssl/gnutls"
 #else
 	" -https"
+	" -ssl"
 #endif
 
 	" +ipv6"
@@ -118,12 +120,6 @@ static int G_GNUC_WGET_NORETURN print_version(G_GNUC_WGET_UNUSED option_t opt, G
 	" +psl"
 #else
 	" -psl"
-#endif
-
-#if defined WITH_GNUTLS
-	" +ssl/gnutls"
-#else
-	" -ssl"
 #endif
 
 #if defined HAVE_ICONV
