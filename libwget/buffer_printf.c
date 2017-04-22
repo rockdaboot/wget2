@@ -376,12 +376,12 @@ size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list a
 		case 'h':
 			if (p[1] == 'h') {
 				p += 2;
-				arg = (char)va_arg(args, /* char */ int);
-				argu = (unsigned char)arg;
+				arg = (char) va_arg(args, int);
+				argu = (unsigned char) arg;
 			} else {
 				p++;
-				arg = (short)va_arg(args, /* short */ int);
-				argu = (unsigned short)arg;
+				arg = (short) va_arg(args, int);
+				argu = (unsigned short) arg;
 			}
 			break;
 
@@ -392,7 +392,7 @@ size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list a
 
 		case 'c':
 		{
-			char c[2] = { (int) va_arg(args, int), 0 };
+			char c[2] = { (char) va_arg(args, int), 0 };
 			p++;
 			_copy_string(buf, flags, field_width, precision, c);
 			continue;
