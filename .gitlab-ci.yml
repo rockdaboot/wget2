@@ -1,0 +1,120 @@
+variables:
+  BUILD_IMAGES_PROJECT: gnuwget/build-images
+  DEBIAN_BUILD: buildenv-debian-stretch
+  FEDORA_BUILD: buildenv-f25
+  CENTOS7_BUILD: buildenv-centos7
+  GET_SOURCES_ATTEMPTS: "3"
+
+# In this build we combine
+#  * syntax-check
+#  * abi-check
+#  * build/valgrind-check
+#  * build/asan-check
+#  * build w/Werror and ubsan-check
+Debian GNU/Linux build:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+  script:
+  - touch .manywarnings
+  - alias make="make -j$(nproc)"
+  - ./bootstrap
+  - touch .manywarnings
+  - ./configure -C
+#  - make syntax-check
+  - make check
+#  - make abi-check
+  - make distcheck
+  - make check-valgrind
+  - ./configure -C --enable-fsanitize-asan
+  - make clean
+  - make check
+  - ./configure -C --enable-fsanitize-ubsan
+  - make clean
+  - make check
+  - ./configure -C --enable-fsanitize-msan
+  - make clean
+  - make check
+  tags:
+  - shared
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - tests/*.log
+#      - compat_reports/
+
+#Centos7 build:
+#  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$CENTOS7_BUILD
+#  script:
+#  - sed -i 's/AM_GNU_GETTEXT_VERSION(0.19.3)/AM_GNU_GETTEXT_VERSION(0.18.2)/g' configure.ac
+#  - ./bootstrap && ./configure --enable-gcc-warnings --disable-doc && make -j$(nproc) check
+#  tags:
+#  - shared
+#  artifacts:
+#    expire_in: 2 weeks
+#    when: on_failure
+#    paths:
+#      - tests/*.log
+#      - compat_reports/
+
+#clang-analyzer/Fedora:
+#  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
+#  script:
+#  - ./bootstrap
+#  - scan-build ./configure --disable-doc --enable-gcc-warnings
+#  - make -j$(nproc) -C gl
+#  - scan-build --status-bugs -o scan-build-lib make -j$(nproc) -C lib
+#  tags:
+#  - shared
+#  except:
+#  - tags
+#  artifacts:
+#    expire_in: 2 weeks
+#    when: on_failure
+#    paths:
+#      - scan-build-lib/*
+
+#pages:
+#  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+#  script:
+#  - ./bootstrap
+#  - CFLAGS="-g -O0" ./configure --enable-gtk-doc --enable-code-coverage --disable-gcc-warnings
+#  - make -j$(nproc) check
+#  - make local-code-coverage-output
+#  - mkdir -p public
+#  - rm -rf public/coverage
+#  - mv libidn2-*-coverage public/coverage
+#  - rm -rf public/reference
+#  - mv doc/reference/html public/reference
+#  - make -C doc manual
+#  - rm -rf public/manual
+#  - mv doc/manual public/manual
+#  tags:
+#  - shared
+#  artifacts:
+#    when: on_success
+#    paths:
+#      - public
+#  only:
+#    - master
+
+#MinGW64:
+#  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
+#  before_script:
+#  - mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc &&
+#    echo ':DOSWin:M::MZ::/usr/bin/wine64:' > /proc/sys/fs/binfmt_misc/register
+#  script:
+#  - ./bootstrap
+#  - mingw64-configure --disable-valgrind-tests --disable-doc
+#  - mingw64-make -j$(nproc)
+#  - mingw64-make -j$(nproc) check
+#  tags:
+#  - shared
+#  - docker
+#  except:
+#  - tags
+#  artifacts:
+#    expire_in: 2 weeks
+#    when: on_failure
+#    paths:
+#      - ./*.log
+#      - tests/*.log
