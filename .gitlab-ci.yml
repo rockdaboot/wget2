@@ -81,29 +81,25 @@ clang/Fedora:
 #      - tests/*.log
 #      - compat_reports/
 
-#pages:
-#  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
-#  script:
-#  - ./bootstrap
-#  - CFLAGS="-g -O0" ./configure --enable-gtk-doc --enable-code-coverage --disable-gcc-warnings
-#  - make -j$(nproc) check
-#  - make local-code-coverage-output
-#  - mkdir -p public
-#  - rm -rf public/coverage
-#  - mv libidn2-*-coverage public/coverage
-#  - rm -rf public/reference
-#  - mv doc/reference/html public/reference
-#  - make -C doc manual
-#  - rm -rf public/manual
-#  - mv doc/manual public/manual
-#  tags:
-#  - shared
-#  artifacts:
-#    when: on_success
-#    paths:
-#      - public
-#  only:
-#    - master
+pages:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+  script:
+    - ./bootstrap
+    - CFLAGS="-g -O0" ./configure
+    - make -j$(nproc) check-coverage
+    - mkdir -p public
+    - rm -rf public/coverage
+    - mv lcov public/coverage
+    - rm -rf public/reference
+    - mv docs/html public/reference
+  tags:
+    - shared
+  artifacts:
+    when: on_success
+    paths:
+      - public
+  only:
+    - master
 
 #MinGW64:
 #  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
