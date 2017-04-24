@@ -264,7 +264,9 @@ const char *wget_str_to_ascii(const char *src)
 #  if IDN2_VERSION_NUMBER < 0x00140000
 		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, 0)) == IDN2_OK)
 #  else
-		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_NONTRANSITIONAL)) == IDN2_OK)
+		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_NONTRANSITIONAL)) != IDN2_OK)
+			rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_TRANSITIONAL);
+		if (rc == IDN2_OK)
 #  endif
 		{
 			debug_printf("idn2 '%s' -> '%s'\n", src, asc);
