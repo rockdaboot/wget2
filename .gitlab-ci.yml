@@ -4,43 +4,68 @@ variables:
   FEDORA_BUILD: buildenv-f25
   CENTOS7_BUILD: buildenv-centos7
   GET_SOURCES_ATTEMPTS: "3"
+  CONFIGURE_BASE_FLAGS: --enable-assert
+
+
+# We organize the CI runners as thus:
+#   1. Debian Stretch Build:
+#       * ASan and UBSan builds
+#       * make syntax-check
+#       * make distcheck
+#
+#   2. Fedora 25 Build
+#       * LLVM/Clang Build
+#       * Valgrind Tests
+#
+#   3. CentOS7 Build
+#       * Build with musl / newlib
+#       * Minimal Build (All features disabled)
+#
+#   This way we split most of the different build options across different
+#   platforms as well. Other builds we would like to have:
+#
+#   1. Windows
+#   2. OSX
+#   3. Documentation Generation and Gitlab pages
+#   4. Code coverage stats
 
 # In this build we combine
 #  * syntax-check
-#  * abi-check
-#  * build/valgrind-check
-#  * build/asan-check
-#  * build w/Werror and ubsan-check
+#  * ASan, UBSan, Msan
+#  * distcheck
 Debian GNU/Linux build:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
-  - touch .manywarnings
-  - alias make="make -j$(nproc)"
-  - ./bootstrap
-  - touch .manywarnings
-  - ./configure -C
-#  - make syntax-check
-  - make check
-#  - make abi-check
-  - make distcheck
-  - make check-valgrind
-  - ./configure -C --enable-fsanitize-asan
-  - make clean
-  - make check
-  - ./configure -C --enable-fsanitize-ubsan
-  - make clean
-  - make check
-  - ./configure -C --enable-fsanitize-msan
-  - make clean
-  - make check
+    - ./bootstrap && touch .manywarnings
+    - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan -C
+    # - make syntax-check
+    - make -j$(nproc) distcheck
+    - ./configure -C --enable-fsanitize-msan
+    - make clean check
   tags:
-  - shared
+    - shared
   artifacts:
     expire_in: 2 weeks
     when: on_failure
     paths:
       - tests/*.log
-#      - compat_reports/
+
+clang/Fedora:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
+  script:
+    - export CC=clang
+    - ./bootstrap && touch .manywarnings
+    - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
+    - make -j$(nproc) check
+  tags:
+    - shared
+  except:
+    - tags
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - tests/*
 
 #Centos7 build:
 #  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$CENTOS7_BUILD
@@ -55,23 +80,6 @@ Debian GNU/Linux build:
 #    paths:
 #      - tests/*.log
 #      - compat_reports/
-
-#clang-analyzer/Fedora:
-#  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
-#  script:
-#  - ./bootstrap
-#  - scan-build ./configure --disable-doc --enable-gcc-warnings
-#  - make -j$(nproc) -C gl
-#  - scan-build --status-bugs -o scan-build-lib make -j$(nproc) -C lib
-#  tags:
-#  - shared
-#  except:
-#  - tags
-#  artifacts:
-#    expire_in: 2 weeks
-#    when: on_failure
-#    paths:
-#      - scan-build-lib/*
 
 #pages:
 #  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
