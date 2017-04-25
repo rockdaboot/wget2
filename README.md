@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/rockdaboot/wget2.svg?branch=wget2)](https://travis-ci.org/rockdaboot/wget2)
+[![Build status](https://gitlab.com/gnuwget/wget2/badges/master/build.svg)](https://gitlab.com/gnuwget/wget2/pipelines)
+[![Coverage status](https://gitlab.com/gnuwget/wget2/badges/master/coverage.svg)](https://gnuwget.gitlab.io/wget2/coverage)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/7852/badge.svg)](https://scan.coverity.com/projects/rockdaboot-wget2)
-[![Coverage Status](https://coveralls.io/repos/github/rockdaboot/wget2/badge.svg?branch=master)](https://coveralls.io/github/rockdaboot/wget2?branch=master)
 
 Solaris OpenCSW [![Build Status Solaris amd64](https://buildfarm.opencsw.org/buildbot/png?builder=wget2-solaris10-amd64)](https://buildfarm.opencsw.org/buildbot/builders/wget2-solaris10-amd64)
 [![Build Status Solaris i386](https://buildfarm.opencsw.org/buildbot/png?builder=wget2-solaris10-i386)](https://buildfarm.opencsw.org/buildbot/builders/wget2-solaris10-i386)
@@ -8,45 +8,28 @@ Solaris OpenCSW [![Build Status Solaris amd64](https://buildfarm.opencsw.org/bui
 [![Build Status Solaris SparcV9](https://buildfarm.opencsw.org/buildbot/png?builder=wget2-solaris10-sparcv9)](https://buildfarm.opencsw.org/buildbot/builders/wget2-solaris10-sparcv9)
 
 
-Wget2 - multithreaded metalink / file / website downloader / spider and library
-===============================================================================
+# GNU Wget2 - Introduction
 
-This is Wget2.
+GNU Wget2 is the successor of GNU Wget, a file and recursive website downloader.
 
-Designed and written from scratch it requires a C99 and Posix compliant
-development environment.
+Designed and written from scratch it wraps around libwget, that provides the basic
+functions needed by a web client.
 
-Included is the stand-alone library libwget which provides an interface
-to many useful functions used by Wget2.
+Wget2 works multi-threaded and uses many features to allow fast operation.
 
 In many cases Wget2 downloads much faster than Wget1.x due to HTTP zlib
 compression, parallel connections and use of If-Modified-Since HTTP header.
 
-HTTP/2 has been implemented.
-
-Wget2 consumes less system and user CPU cycles than Wget1.x.
-
-License
--------
-
-Wget2 is licensed under GPLv3+.
+GNU Wget2 is licensed under GPLv3+.
 
 Libwget is licensed under LGPLv3+.
 
-Contact
--------
 
-[Project](https://savannah.gnu.org/projects/wget/)<br>
-[Mailing List](https://savannah.gnu.org/mail/?group=wget)<br>
-[Bug Tracker](https://savannah.gnu.org/bugs/?group=wget)
+# Features
 
-Development Status
-------------------
+A non-exhaustive list of features
 
-Wget2 has already many features that go beyond what Wget1.x provides.<br>
-
-An incomplete list of implemented features:
-
+- Support for HTTP/1.1 and HTTP/2.0 protocol
 - [brotli](https://github.com/google/brotli) decompression support (Accept-Encdoing: br)
 - HPKP - HTTP Public Key Pinning (RFC7469) with persistent database
 - TCP Fast Open for plain text *and* for HTTPS
@@ -99,35 +82,23 @@ sitemap index files.
 - tested regularly with static analysis tools
 - compiled and linked with hardening options proposed by the Debian project
 
-Anybody should feel free to contribute ideas, opinions, knowledge, code, tests, etc.
 
-Not yet implemented
--------------------
+# Links
 
-The following is just a quick list of ideas and todos.<br>
+[Online Docs](https://gnuwget.gitlab.io/wget2/reference/)
 
-Some ideas of what could be done next (but contact us via mailing list before you start bigger changes!):
+[Mailing List](https://savannah.gnu.org/mail/?group=wget)
 
-- [EFF HTTPS Everywhere](https://www.eff.org/https-everywhere)
-- SSH-style TOFU (Trust On First Use)
-- DANE / DNSSEC (waiting for Debian to have libdane from GnuTLS... but that needs libunbound work with GnuTLS, right
-  now it only works with OpenSSL.)
-- WARC support
-- read credentials from secure wallets (e.g. kwallet, firefox, https://sourceforge.net/projects/passwordsafe/)
-- [Chromium HSTS domain preload list](https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json)
-- respect data-urls
-- Streaming (.m3u, etc. formats)
-- FTP support
-- a progress display
-- Documentation docbook with free Serna WYSIWYG/WYMIWYG editor (conversion to texinfo possible)
-  and/or with doxygen (API docs embedded into source code)
-- plugin technology to plug in user-specific code
+[Bug Tracker](https://gitlab.com/gnuwget/wget2/issues)
+
+[Development](https://gitlab.com/gnuwget/wget2)
+
+[Code Coverage](https://gnuwget.gitlab.io/wget2/coverage/)
 
 
-Requirements
-------------
+# Build Requirements
 
-The following packages are needed to build Wget2:
+The following packages are needed to build the software
 
 * autotools (autoconf, autogen, automake, autopoint, libtool)
 * pkg-config >= 0.28 (recommended)
@@ -146,17 +117,14 @@ The following packages are needed to build Wget2:
 The versions are recommended, but older versions may also work.
 
 
-Building from git
------------------
+# Building from git
 
 Download project and prepare sources with
 
-		git clone git://git.savannah.gnu.org/wget/wget2.git
-		# or from Gitlab: git clone git@gitlab.com:rockdaboot/wget2.git
-		# or from Github: git clone git@github.com:rockdaboot/wget2.git
+		git clone git@gitlab.com:gnuwget/wget2.git
 		cd wget2
 		./bootstrap
-		# sometimes you have to execute 'bash ./bootstrap'
+		# on shell failure try 'bash ./bootstrap'
 
 Build Wget2 with
 
@@ -171,12 +139,12 @@ Install Wget2 and libwget
 
 		sudo make install (or su -c "make install")
 
-Valgrind Testing
-----------------
+
+# Valgrind Testing
 
 To run the test suite with valgrind memcheck
 
-		TESTS_ENVIRONMENT="VALGRIND_TESTS=1" make check
+		make check-valgrind
 
 or if you want valgrind memcheck by default
 
@@ -191,21 +159,16 @@ To run single tests with valgrind (e.g. test-k)
 Why not directly using valgrind like 'valgrind --leak-check=full ./test-k' ?
 Well, you want to valgrind 'wget2' and not the test program itself, right ?
 
-Documentation
--------------
 
-There is no own documentation yet, but Wget2 aims to be Wget1.x compatible.
+# Coverage Report
 
-		wget2 --help
+To generate and view the test code coverage
 
-prints the usage and the current set of integrated options.
-For more info, see the man pages of Wget1.x.
-
-The Wget2 library API documentation has been started.
+		make check-coverage
+		<browser> lcov/index.html
 
 
-Control Flow Integrity with clang
----------------------------------
+# Control Flow Integrity with clang
 
 To instrument clang's [CFI](https://clang.llvm.org/docs/ControlFlowIntegrity.html):
 
