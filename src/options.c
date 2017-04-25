@@ -944,7 +944,6 @@ static const struct optionw options[] = {
 	{ "user-agent", &config.user_agent, parse_string, 1, 'U' },
 	{ "verbose", &config.verbose, parse_bool, 0, 'v' },
 	{ "version", NULL, print_version, 0, 'V' },
-	{ "help", NULL, print_help, 0, 'h' },
 	{ "wait", &config.wait, parse_timeout, 1, 'w' },
 	{ "waitretry", &config.waitretry, parse_timeout, 1, 0 }
 };
@@ -1666,6 +1665,15 @@ int selftest_options(void)
 {
 	int ret = 0;
 	size_t it;
+
+	// check if all options are in order
+
+	for (it = 1; it < countof(options); it++) {
+		if (opt_compare(options[it - 1].long_name, &options[it]) > 0) {
+			error_printf("%s: Option not in order '%s' after '%s'\n", __func__, options[it].long_name, options[it - 1].long_name);
+			ret = 1;
+		}
+	}
 
 	// check if all options are available
 
