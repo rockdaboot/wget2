@@ -307,7 +307,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, const char 
 	return addrinfo;
 }
 
-static int G_GNUC_WGET_CONST _value_to_family(int value)
+static int G_GNUC_WGET_CONST _value_to_family(WGET_INET_FAMILY value)
 {
 	switch (value) {
 	case WGET_NET_FAMILY_IPV4:
@@ -319,7 +319,7 @@ static int G_GNUC_WGET_CONST _value_to_family(int value)
 	}
 }
 
-static int G_GNUC_WGET_CONST _family_to_value(int family)
+static WGET_INET_FAMILY G_GNUC_WGET_CONST _family_to_value(int family)
 {
 	switch (family) {
 	case AF_INET:

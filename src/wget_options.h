@@ -119,7 +119,6 @@ struct config {
 		waitretry,
 		restrict_file_names,
 		level,
-		preferred_family,
 		cut_directories,
 		connect_timeout, // ms
 		dns_timeout, // ms
@@ -190,6 +189,8 @@ struct config {
 		metalink,
 		cut_url_get_vars,
 		cut_file_get_vars;
+	WGET_INET_FAMILY
+		preferred_family;
 };
 
 extern struct config
