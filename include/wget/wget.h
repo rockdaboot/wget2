@@ -77,7 +77,7 @@
 #	define GCC_VERSION_AT_LEAST(major, minor) 0
 #endif
 
-#if GCC_VERSION_AT_LEAST(2,5)
+#if GCC_VERSION_AT_LEAST(2,5) || defined(__clang__)
 #	define G_GNUC_WGET_CONST __attribute__ ((const))
 #	define G_GNUC_WGET_NORETURN __attribute__ ((noreturn))
 #else
@@ -93,7 +93,7 @@
 #	define G_GNUC_WGET_UNUSED
 #endif
 
-#if GCC_VERSION_AT_LEAST(2,96)
+#if GCC_VERSION_AT_LEAST(2,96) || defined(__clang__)
 #	define G_GNUC_WGET_PURE __attribute__ ((pure))
 #else
 #	define G_GNUC_WGET_PURE
@@ -109,14 +109,10 @@
 #	define likely(expr) expr
 #endif
 
-#if GCC_VERSION_AT_LEAST(3,1)
+#if GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
 #	define G_GNUC_WGET_ALWAYS_INLINE __attribute__ ((always_inline))
 #   define G_GNUC_WGET_FLATTEN __attribute__ ((flatten))
 #   define G_GNUC_WGET_DEPRECATED __attribute__ ((deprecated))
-#elif defined(__clang__)
-#   define G_GNUC_WGET_ALWAYS_INLINE __attribute__ ((always_inline))
-#   define G_GNUC_WGET_FLATTEN __attribute__ ((flatten))
-#	define G_GNUC_WGET_DEPRECATED __attribute__ ((deprecated))
 #else
 #	define G_GNUC_WGET_ALWAYS_INLINE
 #	define G_GNUC_WGET_FLATTEN
