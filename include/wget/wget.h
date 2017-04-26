@@ -795,6 +795,7 @@ WGETAPI bool
 
 typedef struct _wget_decompressor_st wget_decompressor_t;
 typedef int (*wget_decompressor_sink_t)(void *context, const char *data, size_t length);
+typedef int (*wget_decompressor_error_handler_t)(wget_decompressor_t *dc, int err);
 
 enum {
 	wget_content_encoding_identity,
@@ -806,13 +807,15 @@ enum {
 };
 
 WGETAPI wget_decompressor_t *
-	wget_decompress_open(int encoding,
-						 wget_decompressor_sink_t data_sink,
-						 void *context);
+	wget_decompress_open(int encoding, wget_decompressor_sink_t data_sink, void *context);
 WGETAPI void
 	wget_decompress_close(wget_decompressor_t *dc);
 WGETAPI int
 	wget_decompress(wget_decompressor_t *dc, char *src, size_t srclen);
+WGETAPI void
+	wget_decompress_set_error_handler(wget_decompressor_t *dc, wget_decompressor_error_handler_t error_handler);
+WGETAPI void *
+	wget_decompress_get_context(wget_decompressor_t *dc);
 
 /*
  * URI/IRI routines

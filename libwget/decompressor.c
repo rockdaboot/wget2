@@ -59,6 +59,9 @@
 #include <wget.h>
 #include "private.h"
 
+typedef int (*wget_decompressor_decompress_t)(wget_decompressor_t *dc, char *src, size_t srclen);
+typedef void (*wget_decompressor_exit_t)(wget_decompressor_t *dc);
+
 struct _wget_decompressor_st {
 #ifdef WITH_ZLIB
 	z_stream
@@ -79,10 +82,13 @@ struct _wget_decompressor_st {
 
 	wget_decompressor_sink_t
 		sink; // decompressed data goes here
-	int
-		(*decompress)(wget_decompressor_t *dc, char *src, size_t srclen);
+	wget_decompressor_error_handler_t
+		error_handler; // called on error
+	wget_decompressor_decompress_t
+		decompress;
+	wget_decompressor_exit_t
+		exit;
 	void
-		(*exit)(wget_decompressor_t *dc),
 		*context; // given to sink()
 	char
 		encoding;
@@ -409,8 +415,22 @@ void wget_decompress_close(wget_decompressor_t *dc)
 int wget_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 {
 	if (dc) {
-		return dc->decompress(dc, src, srclen);
+		int rc = dc->decompress(dc, src, srclen);
+
+		if (rc && dc->error_handler)
+			dc->error_handler(dc->context, rc);
 	}
 
 	return 0;
+}
+
+void wget_decompress_set_error_handler(wget_decompressor_t *dc, wget_decompressor_error_handler_t error_handler)
+{
+	if (dc)
+		dc->error_handler = error_handler;
+}
+
+void *wget_decompress_get_context(wget_decompressor_t *dc)
+{
+	return dc ? dc->context : NULL;
 }

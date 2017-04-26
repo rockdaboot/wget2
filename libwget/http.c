@@ -1524,7 +1524,17 @@ struct _http2_stream_context {
 		*decompressor;
 };
 
-// static int _get_body(void *userdata, const char *data, size_t length)
+static int _decompress_error_handler(wget_decompressor_t *dc, int err G_GNUC_WGET_UNUSED)
+{
+	wget_http_response_t *resp = (wget_http_response_t *) wget_decompress_get_context(dc);
+
+	if (resp && resp->req)
+		error_printf(_("Decompress failed [host: %s - resource: %s]\n"),
+			resp->req->esc_host.data, resp->req->esc_resource.data);
+
+	return 0;
+}
+
 static int _get_body(void *userdata, const char *data, size_t length)
 {
 	wget_http_response_t *resp = (wget_http_response_t *) userdata;
@@ -1620,8 +1630,10 @@ static int _on_frame_recv_callback(nghttp2_session *session,
 				resp->req->header_callback(resp, resp->req->header_user_data);
 			}
 
-			if (!ctx->decompressor)
+			if (!ctx->decompressor) {
 				ctx->decompressor = wget_decompress_open(resp->content_encoding, _get_body, resp);
+				wget_decompress_set_error_handler(ctx->decompressor, _decompress_error_handler);
+			}
 		}
 	}
 
@@ -2242,6 +2254,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 	}
 
 	dc = wget_decompress_open(resp->content_encoding, _get_body, resp);
+	wget_decompress_set_error_handler(dc, _decompress_error_handler);
 
 	// calculate number of body bytes so far read
 	body_len = nread - (p - buf);
