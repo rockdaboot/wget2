@@ -1,11 +1,11 @@
 #!/bin/bash
 
 title="HTTPS via HTTP/1.1"
-wget_options="-q -O/dev/null"
+wget_options="-q --no-config -O/dev/null"
 wget_version=$(wget --version|head -1|cut -d' ' -f3)
-wget2_options="-q -O/dev/null --no-http2"
+wget2_options="-q --no-config -O/dev/null --no-http2"
 wget2_version=$(../src/wget2_noinstall --version 2>/dev/null|head -1|cut -d' ' -f3)
-curl_options="-s -o/dev/null --cert-status --no-http2 -o/dev/null"
+curl_options="-s -o/dev/null --cert-status --http1.1 -o/dev/null"
 curl_version=$(curl --version|head -1|cut -d' ' -f2)
 
 NCHECKS=3
@@ -15,7 +15,7 @@ SLEEP=0.5
 
 rm -f wget.data wget2.data curl.data
 
-for ((nreq=$MINX;nreq<=$MAXX;nreq++)); do
+for ((nreq=MINX;nreq<=MAXX;nreq++)); do
   urls=""
   for ((i=1;i<=nreq;i++)); do
     urls="$urls https://www.google.com/a${i}.html"
@@ -29,7 +29,7 @@ for ((nreq=$MINX;nreq<=$MAXX;nreq++)); do
   fi
 
   # timings for wget
-  for ((i=0;i<$NCHECKS;i++)); do
+  for ((i=0;i<NCHECKS;i++)); do
     t1=$(date +%s%3N)
     wget ${wget_options} $urls
     t2=$(date +%s%3N)

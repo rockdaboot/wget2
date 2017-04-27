@@ -1,9 +1,9 @@
 #!/bin/bash
 
 title="HTTPS via HTTP/2.0"
-wget_options="-q -O/dev/null"
+wget_options="-q --no-config -O/dev/null"
 wget_version=$(wget --version|head -1|cut -d' ' -f3)
-wget2_options="-q -O/dev/null"
+wget2_options="-q --no-config -O/dev/null"
 wget2_version=$(../src/wget2_noinstall --version 2>/dev/null|head -1|cut -d' ' -f3)
 curl_options="-s --cert-status --http2 -o/dev/null"
 curl_version=$(curl --version|head -1|cut -d' ' -f2)
