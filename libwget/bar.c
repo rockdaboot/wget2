@@ -103,6 +103,7 @@ struct _wget_bar_st {
 	_bar_slot_t
 		*slots;
 	char
+		*progress_mem_holder,
 		*unknown_size,
 		*known_size,
 		*spaces;
@@ -240,9 +241,10 @@ static void _bar_update(wget_bar_t *bar)
 			bar->spaces = xmalloc(max_width);
 			memset(bar->spaces, ' ', max_width);
 
+			xfree(bar->progress_mem_holder);
+			bar->progress_mem_holder = xcalloc(bar->max_slots, max_width+1);
 			for (int i = 0; i < bar->max_slots; i++) {
-				xfree(bar->slots[i].progress);
-				bar->slots[i].progress = xmalloc(max_width + 1);
+				bar->slots[i].progress = bar->progress_mem_holder + (i * (max_width+1));
 			}
 		}
 
@@ -312,9 +314,10 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 		bar->spaces = xmalloc(max_width);
 		memset(bar->spaces, ' ', max_width);
 
+		xfree(bar->progress_mem_holder);
+		bar->progress_mem_holder = xcalloc(bar->max_slots, max_width+1);
 		for (int i = 0; i < bar->max_slots; i++) {
-			xfree(bar->slots[i].progress);
-			bar->slots[i].progress = xmalloc(max_width + 1);
+			bar->slots[i].progress = bar->progress_mem_holder + (i*(max_width+1));
 			bar->slots[i].status = EMPTY;
 		}
 
@@ -389,9 +392,9 @@ void wget_bar_deinit(wget_bar_t *bar)
 {
 	if (bar) {
 		for (int i = 0; i < bar->max_slots; i++) {
-			xfree(bar->slots[i].progress);
 			xfree(bar->slots[i].filename);
 		}
+		xfree(bar->progress_mem_holder);
 		xfree(bar->spaces);
 		xfree(bar->known_size);
 		xfree(bar->unknown_size);
