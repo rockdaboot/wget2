@@ -342,17 +342,12 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 	exit(0);
 }
 
-static char *_shell_expand(const char *str)
+static _GL_INLINE char *_shell_expand(const char *str)
 {
 	char *expanded_str = NULL;
 
-	if (*str == '~') {
-		char *pathptr = strchrnul(str, '/');
-		expanded_str = wget_strnglob(str, pathptr - str, GLOB_TILDE|GLOB_ONLYDIR|GLOB_NOCHECK);
-	}
+	expanded_str = wget_strglob(str, GLOB_TILDE|GLOB_ONLYDIR|GLOB_NOCHECK);
 
-	// Either the string does not start with a "~", or the glob expansion
-	// failed. In both cases, return the original string back
 	if (!expanded_str) {
 		expanded_str = wget_strdup(str);
 	}
@@ -1313,7 +1308,7 @@ static char *get_home_dir(void)
 	static char *home;
 
 	if (!home) {
-		if ((home = wget_strnglob("~", 1, GLOB_TILDE_CHECK)) == NULL) {
+		if ((home = wget_strglob("~", GLOB_TILDE_CHECK)) == NULL) {
 			home = wget_strdup("."); // Use the current directory as 'home' directory
 		}
 	}
