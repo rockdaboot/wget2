@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+if [[ "$TRAVIS_OS_NAME" = "osx" ]]; then
 	brew update
 	brew install gnutls
 	brew install nettle
@@ -14,6 +14,6 @@ if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
 	brew install xz
 	brew install lbzip2
 	brew link --force gettext
-elif [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+elif [[ "$TRAVIS_OS_NAME" = "linux" ]]; then
 	pip install --user cpp-coveralls
 fi
