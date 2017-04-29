@@ -31,7 +31,6 @@
 
 #include <unistd.h>
 #include <stdlib.h>
-#include <strings.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #ifdef HAVE_MMAP

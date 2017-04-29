@@ -35,7 +35,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-#include <strings.h>
 #include <unistd.h>
 #include <stdarg.h>
 #include <c-ctype.h>

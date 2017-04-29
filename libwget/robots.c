@@ -29,7 +29,6 @@
 # include <config.h>
 #endif
 
-#include <strings.h>
 #include <string.h>
 #include <ctype.h>
 

@@ -30,7 +30,6 @@
 #endif
 
 #include <string.h>
-#include <strings.h>
 #include <errno.h>
 
 #ifdef HAVE_ICONV

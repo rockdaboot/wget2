@@ -36,7 +36,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <strings.h>
 #include <signal.h>
 #include <errno.h>
 #include <c-ctype.h>
