@@ -2046,7 +2046,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 	info_printf(_("found %d url(s) (base=%s)\n"), wget_vector_size(urls), base ? base->uri : NULL);
 	wget_thread_mutex_lock(&known_urls_mutex);
 	for (int it = 0; it < wget_vector_size(urls); it++) {
-		wget_string_t *url = wget_vector_get(urls, it);;
+		wget_string_t *url = wget_vector_get(urls, it);
 
 		// A Sitemap file located at https://example.com/catalog/sitemap.xml can include any URLs starting with https://example.com/catalog/
 		// but not any other.
@@ -2068,7 +2068,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 	// process the sitemap index urls here
 	info_printf(_("found %d sitemap url(s) (base=%s)\n"), wget_vector_size(sitemap_urls), base ? base->uri : NULL);
 	for (int it = 0; it < wget_vector_size(sitemap_urls); it++) {
-		wget_string_t *url = wget_vector_get(sitemap_urls, it);;
+		wget_string_t *url = wget_vector_get(sitemap_urls, it);
 
 		// TODO: url must have same scheme, port and host as base
 
