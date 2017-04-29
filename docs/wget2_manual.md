@@ -1293,7 +1293,7 @@ Go to background immediately after startup. If no output file is specified via t
   directories to download them recursively, though this feature may be added in the future.
 
   When --retr-symlinks=no is specified, the linked-to file is not downloaded.  Instead, a matching symbolic link is
-  created on the local filesystem.  The pointed-to file will not be retrieved unless this recursive retrieval would
+  created on the local file system.  The pointed-to file will not be retrieved unless this recursive retrieval would
   have encountered it separately and downloaded it anyway.  This option poses a security risk where a malicious FTP
   Server may cause Wget2 to write to files outside of the intended directories through a specially crafted .LISTING
   file.

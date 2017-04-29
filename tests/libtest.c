@@ -933,7 +933,7 @@ int wget_test_get_ftps_server_port(void)
 }
 
 // assume that we are in 'tmpdir'
-int wget_test_check_filesystem(void)
+int wget_test_check_file_system(void)
 {
 	static char fname[3][3] = { "Ab", "ab", "AB" };
 	char buf[sizeof(fname[0])];
@@ -943,7 +943,7 @@ int wget_test_check_filesystem(void)
 	_empty_directory(tmpdir);
 
 	// Create 3 files with differently cased names with different content.
-	// On a case-sensitive filesystem like HFS+ there will be just one file with the contents of the last write.
+	// On a case-sensitive file system like HFS+ there will be just one file with the contents of the last write.
 	for (unsigned it = 0; it < countof(fname); it++) {
 		if ((fd = open(fname[it], O_WRONLY | O_TRUNC | O_CREAT, 0644)) != -1) {
 			rc = write(fd, fname[it], sizeof(fname[0]));
@@ -971,7 +971,7 @@ int wget_test_check_filesystem(void)
 			}
 
 			if (strcmp(buf, fname[it])) {
-				wget_debug_printf("%s: Found case-sensitive filesystem\n", __func__);
+				wget_debug_printf("%s: Found case-sensitive file system\n", __func__);
 				flags = WGET_TEST_FS_CASEMATTERS;
 				goto out; // we can stop here
 			}
@@ -981,7 +981,7 @@ int wget_test_check_filesystem(void)
 		}
 	}
 
-	wget_debug_printf("%s: Found case-insensitive filesystem\n", __func__);
+	wget_debug_printf("%s: Found case-insensitive file system\n", __func__);
 
 out:
 	_empty_directory(tmpdir);

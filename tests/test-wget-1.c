@@ -158,7 +158,7 @@ int main(void)
 		0);
 
 	// some tests are not working on file systems that mangle filenames to lower- or uppercase
-	int fs_flags = wget_test_check_filesystem();
+	int fs_flags = wget_test_check_file_system();
 
 	// test-noop
 	wget_test(

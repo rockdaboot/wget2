@@ -58,8 +58,8 @@ extern "C" {
 #define WGET_TEST_EXECUTABLE 2008
 #define WGET_TEST_SERVER_SEND_CONTENT_LENGTH 2009
 
-// defines for wget_test_check_filesystem()
-#define WGET_TEST_FS_CASEMATTERS 3001 // filesystem is case-sensitive
+// defines for wget_test_check_file_system()
+#define WGET_TEST_FS_CASEMATTERS 3001 // file system is case-sensitive
 
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
@@ -123,7 +123,7 @@ typedef struct {
 WGETAPI void wget_test_stop_server(void);
 WGETAPI void wget_test_start_server(int first_key, ...);
 WGETAPI void wget_test(int first_key, ...);
-WGETAPI int wget_test_check_filesystem(void);
+WGETAPI int wget_test_check_file_system(void);
 WGETAPI int wget_test_get_http_server_port(void) G_GNUC_WGET_PURE;
 WGETAPI int wget_test_get_https_server_port(void) G_GNUC_WGET_PURE;
 WGETAPI int wget_test_get_ftp_server_port(void) G_GNUC_WGET_PURE;
