@@ -71,7 +71,7 @@
  * Using G_GNU_ as prefix to let gtk-doc recognize the attributes.
  */
 
-#if defined(__GNUC__) && defined(__GNUC_MINOR__)
+#if defined __GNUC__ && defined __GNUC_MINOR__
 #	define GCC_VERSION_AT_LEAST(major, minor) ((__GNUC__ > (major)) || (__GNUC__ == (major) && __GNUC_MINOR__ >= (minor)))
 #else
 #	define GCC_VERSION_AT_LEAST(major, minor) 0
@@ -127,7 +127,7 @@
 // see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=17308
 // we have to use e.g. the clang analyzer if we want NONNULL.
 // but even clang is not perfect - don't use nonnull in production
-#if defined(__clang__)
+#if defined __clang__
 #	if GCC_VERSION_AT_LEAST(3,3)
 #		define G_GNUC_WGET_NONNULL_ALL __attribute__ ((nonnull))
 #		define G_GNUC_WGET_NONNULL(a) __attribute__ ((nonnull a))
@@ -155,7 +155,7 @@
 #	define G_GNUC_WGET_NULL_TERMINATED
 #endif
 
-#if defined(__clang__)
+#if defined __clang__
 #	define G_GNUC_WGET_ALLOC_SIZE(a)
 #	define G_GNUC_WGET_ALLOC_SIZE2(a, b)
 #elif GCC_VERSION_AT_LEAST(4,3)

@@ -95,7 +95,7 @@ wget_digest_algorithm_t wget_hash_get_algorithm(const char *hashname)
 	return WGET_DIGTYPE_UNKNOWN;
 }
 
-#if defined(WITH_GNUTLS) && !defined(WITH_LIBNETTLE)
+#if defined WITH_GNUTLS && !defined WITH_LIBNETTLE
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -209,7 +209,7 @@ void wget_hash_deinit(wget_hash_hd_t *handle, void *digest)
 	gnutls_hash_deinit(handle->dig, digest);
 }
 
-#elif defined (WITH_LIBNETTLE)
+#elif defined WITH_LIBNETTLE
 #include <nettle/nettle-meta.h>
 #include <nettle/md2.h>
 #include <nettle/md5.h>
@@ -294,7 +294,7 @@ void wget_hash_deinit(wget_hash_hd_t *dig, void *digest)
 	xfree(dig->context);
 }
 
-#elif defined (WITH_GCRYPT)
+#elif defined WITH_GCRYPT
 #ifdef HAVE_GCRYPT_H
   #include <gcrypt.h>
 #endif

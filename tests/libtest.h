@@ -129,7 +129,7 @@ WGETAPI int wget_test_get_https_server_port(void) G_GNUC_WGET_PURE;
 WGETAPI int wget_test_get_ftp_server_port(void) G_GNUC_WGET_PURE;
 WGETAPI int wget_test_get_ftps_server_port(void) G_GNUC_WGET_PURE;
 
-#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 #	pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #endif
 

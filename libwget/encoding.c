@@ -38,20 +38,20 @@
 
 #include <langinfo.h>
 
-#if defined(HAVE_IDN2_H) && defined(WITH_LIBIDN2)
+#if defined HAVE_IDN2_H && defined WITH_LIBIDN2
 # include <idn2.h>
 # if IDN2_VERSION_NUMBER < 0x00140000
-#  if defined(HAVE_UNICASE_H) && defined(WITH_LIBUNISTRING)
+#  if defined HAVE_UNICASE_H && defined WITH_LIBUNISTRING
 #   include <unicase.h>
 #   include <unistr.h>
 #  endif
 # endif
-#elif defined(HAVE_IDNA_H) && defined(WITH_LIBIDN)
+#elif defined HAVE_IDNA_H && defined WITH_LIBIDN
 # include <idna.h>
 # ifdef _WIN32
 #   include <idn-free.h>
 # endif
-#elif defined(HAVE_IDN_IDNA_H) && defined(WITH_LIBIDN)
+#elif defined HAVE_IDN_IDNA_H && defined WITH_LIBIDN
 // OpenSolaris uses the idn subdir
 # include <idn/idna.h>
 #endif

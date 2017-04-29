@@ -382,7 +382,7 @@ static void *_ftp_server_thread(void *ctx)
 	return NULL;
 }
 
-#if defined(__CYGWIN__)
+#if defined __CYGWIN__
 // Using opendir/readdir loop plus unlink() has a race condition
 // with CygWin. Not sure if this also happens on other systems as well.
 // Since we don't have valgrind, we can use system() without issues.
