@@ -13,10 +13,10 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
- * 
+ *
  * Changelog
  * 16.07.2012  Tim Ruehsen  created
- * 
+ *
  */
 
 #ifndef CSS_TOKENIZER_H

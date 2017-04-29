@@ -32,7 +32,7 @@ make clean
 make -j4
 
 # Add the library path for wine in ~/.wine/system.reg:
-# search for 
+# search for
 #   [System\\CurrentControlSet\\Control\\Session Manager\\Environment]
 # within this section you'll find a PATH variable
 #   "PATH"=str(2):"C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\wbem"

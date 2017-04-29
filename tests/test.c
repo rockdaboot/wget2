@@ -1851,7 +1851,7 @@ static void test_netrc(void)
 			"login theuser\n"
 			"password thepw",
 			1,
-			{ 
+			{
 				{ "localhost", "theuser", "thepw" }
 			}
 		},

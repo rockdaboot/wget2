@@ -93,7 +93,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 	} bits = {
 		.cookies_enabled = !!wget_global_get_int(WGET_COOKIES_ENABLED)
 	};
-	
+
 	va_start(args, first_key);
 	for (key = first_key; key; key = va_arg(args, int)) {
 		switch (key) {

@@ -325,14 +325,14 @@ const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
 				if (!p)
 					p = path_buf.data;
 			}
-			
+
 			if (p) {
 				while (*p == '/')
 					p++;
-				
+
 				wget_buffer_strcat(&buf, p);
 			}
-			
+
 			wget_buffer_deinit(&path_buf);
 		} else {
 			wget_iri_get_path(iri, &buf, config.local_encoding);
@@ -574,10 +574,10 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	}
 
 	const char *p = NULL;
-	
+
 	if (config.cut_url_get_vars)
 		p = strchr(url, '?');
-	
+
 	if (p) {
 		char *url_cut = wget_strmemdup(url, p - url);
 		iri = wget_iri_parse(url_cut, encoding);
@@ -585,7 +585,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	}
 	else
 		iri = wget_iri_parse(url, encoding);
-	
+
 	if (!iri) {
 		error_printf(_("Cannot resolve URI '%s'\n"), url);
 		return;

@@ -124,6 +124,6 @@ int main(int argc, const char *const *argv)
 	wget_stringmap_browse(map, (wget_stringmap_browse_t)_print_word, NULL);
 
 	wget_stringmap_free(&map);
-	
+
 	return 0;
 }

@@ -32,7 +32,7 @@ xx.03.2017 Release 1.99.0 (alpha)
   Added --post-data and --post-file
   Add port to Referer HTTP header
   Fixed race condition when having a filename / directory clash
-  Added --crl-file option to respect CRLs 
+  Added --crl-file option to respect CRLs
   Added OCSP (stapling + responder request)
   Added --ocsp and --ocsp-stapling
   Added OCSP response caching
@@ -88,7 +88,7 @@ xx.03.2017 Release 1.99.0 (alpha)
   Changed the naming convention of types.
   Support pkg-config.
   Fixed generating of man pages.
-  
+
 01.02.2014
   Added support for RFC 6797 HTTP Strict Transport Security (HSTS).
   Do not download robots.txt twice for HTTP and HTTPS if --protocol-directories

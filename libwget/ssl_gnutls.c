@@ -464,7 +464,7 @@ static int send_ocsp_request(const char *server,
 		wget_http_request_set_body(req, "application/ocsp-request", wget_memdup(body.data, body.size), body.size);
 		if (wget_http_send_request(conn, req) == 0) {
 			wget_http_response_t *resp;
-			
+
 			if ((resp = wget_http_get_response(conn))) {
 				*ocsp_data = resp->body;
 				resp->body = NULL;
@@ -1125,7 +1125,7 @@ void wget_ssl_init(void)
 					/* use system default, priorities = NULL */
 				} else if (*_config.secure_protocol)
 					priorities = _config.secure_protocol;
-				
+
 				rc = gnutls_priority_init(&_priority_cache, priorities, NULL);
 			}
 

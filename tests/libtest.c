@@ -25,7 +25,7 @@
  *
  * To create the X.509 stuff, I followed the instructions at
  *   gnutls.org/manual/html_node/gnutls_002dserv-Invocation.html
- * 
+ *
  */
 
 #if HAVE_CONFIG_H

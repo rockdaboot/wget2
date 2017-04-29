@@ -534,7 +534,7 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 
 	if (offset + length > st.st_size)
 		return -1;
-	
+
 	debug_printf("%s hashing pos %llu, length %llu...\n", hashname, (unsigned long long)offset, (unsigned long long)length);
 
 	if ((algorithm = wget_hash_get_algorithm(hashname)) != WGET_DIGTYPE_UNKNOWN) {
@@ -559,7 +559,7 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 			wget_hash_init(&dig, algorithm);
 			while (length > 0 && (nbytes = read(fd, tmp, sizeof(tmp))) > 0) {
 				wget_hash(&dig, tmp, nbytes);
-				
+
 				if (nbytes <= length)
 					length -= nbytes;
 				else
@@ -579,7 +579,7 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 		}
 #endif
 	}
-	
+
 	return ret;
 }
 
@@ -610,7 +610,7 @@ int wget_hash_file_offset(const char *hashname, const char *fname, char *digest_
 
 	ret = wget_hash_file_fd(hashname, fd, digest_hex, digest_hex_size, offset, length);
 	close(fd);
-	
+
 	return ret;
 }
 
