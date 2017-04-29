@@ -271,12 +271,20 @@ AM_GNU_GETTEXT_VERSION([0.18.1])
 #
 # check for doxygen
 #
-AC_CHECK_PROGS([DOXYGEN], [doxygen])
-AS_IF([test -n "$DOXYGEN"], [
-  AC_CONFIG_FILES([docs/Makefile docs/libwget.doxy])
-  AC_SUBST([LIBWGET_DOCS], [docs])
-], [
-])
+AC_ARG_ENABLE(doc, AS_HELP_STRING([--disable-doc], [don't generate any documentation]),
+  enable_doc=$enableval, enable_doc=yes)
+if test "$enable_doc" = yes; then
+  AC_CHECK_PROGS([DOXYGEN], [doxygen])
+  AS_IF([test -n "$DOXYGEN"], [
+    AC_CONFIG_FILES([docs/Makefile docs/libwget.doxy])
+    AC_SUBST([LIBWGET_DOCS], [docs])
+    DOCS_INFO="yes"
+  ], [
+    DOCS_INFO="no (requested but Doxygen not found)"
+  ])
+else
+  DOCS_INFO="no (disabled)"
+fi
 
 #
 # enable creation of man pages
@@ -531,6 +539,7 @@ AC_MSG_NOTICE([Summary of build options:
   IDNA support:       $IDNA_INFO
   PSL support:        $with_libpsl
   HTTP/2.0 support:   $with_libnghttp2
+  Documentation:      $DOCS_INFO
   Tests:              ${TESTS_INFO}
   Assertions:         $ENABLE_ASSERT
 ])
