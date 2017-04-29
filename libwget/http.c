@@ -585,8 +585,8 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 
 // RFC 7469
 // Example:
-// 	Public-Key-Pins:
-//     	       pin-sha256="d6qzRu9zOECb90Uez27xWltNsj0e1Md7GkYYkVoZWmM=";
+//   Public-Key-Pins:
+//        pin-sha256="d6qzRu9zOECb90Uez27xWltNsj0e1Md7GkYYkVoZWmM=";
 //	       pin-sha256="E9CZ9INDbd+2eRQozYqqbQ2yXLVKB9+xcprMF+44U1g=";
 //	       pin-sha256="LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ=";
 //	       max-age=10000; includeSubDomains

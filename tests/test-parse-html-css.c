@@ -33,7 +33,7 @@ int main(void)
 	wget_test_url_t urls[]={
 		{	.name = "/page1.html",
 			.code = "200 Dontcare",
-			.body = 	"<html>\n"\
+			.body =	"<html>\n"\
 						"<head>\n"\
 						"  <style> #test1{background:url(/page2.html) no-repeat center} </style>\n"\
 						"  <style> #test2{background:url(\"/page3.html\") no-repeat center} </style>\n"\

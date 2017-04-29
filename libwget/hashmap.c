@@ -105,8 +105,8 @@ static _GL_INLINE ENTRY * G_GNUC_WGET_NONNULL_ALL hashmap_find_entry(const wget_
 		}
 	}
 
-	// if (h->entry[pos])
-	// 	info_printf("collision on %s\n", key);
+//	if (h->entry[pos])
+//		info_printf("collision on %s\n", key);
 
 	return NULL;
 }

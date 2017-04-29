@@ -842,7 +842,7 @@ static void test_iri_relative_to_absolute(void)
 	};
 	unsigned it;
 	char uri_buf_static[32]; // use a size that forces allocation in some cases
-	wget_buffer_t *uri_buf = 	wget_buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
+	wget_buffer_t *uri_buf = wget_buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
 	wget_iri_t *base;
 
 	for (it = 0; it < countof(test_data); it++) {
@@ -1148,7 +1148,7 @@ static void test_cookies(void)
 /*		if (cookie->expires) {
 			char thedate[32];
 
- 			wget_http_print_date(cookie->expires, thedate, sizeof(thedate));
+			wget_http_print_date(cookie->expires, thedate, sizeof(thedate));
 			if (strcmp(thedate, t->expires)) {
 				failed++;
 				info_printf("Failed [%u]: expires mismatch: '%s' != '%s' (time_t %lld)\n", it, thedate, t->expires, (long long)cookie.expires);

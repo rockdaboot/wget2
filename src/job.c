@@ -115,7 +115,7 @@ static int check_file_hash(HASH *hash, const char *fname)
 	if (hash_file(hash->type, fname, sum, sizeof(sum)) != -1) {
 		return !wget_strcasecmp_ascii(sum, hash->hash_hex);
 	}
- 	return -1;
+	return -1;
 }
 */
 

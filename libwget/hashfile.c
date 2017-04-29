@@ -600,7 +600,7 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
  */
 int wget_hash_file_offset(const char *hashname, const char *fname, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
 {
- 	int fd, ret;
+	int fd, ret;
 
 	if ((fd = open(fname, O_RDONLY)) == -1) {
 		if (digest_hex_size)

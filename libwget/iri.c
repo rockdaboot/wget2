@@ -353,7 +353,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 			}
 		}
 		*s = 0;
- 	}
+	}
 
 	iri->resolv_port = iri->port ? iri->port : default_port;
 
