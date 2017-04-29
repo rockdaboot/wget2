@@ -543,7 +543,7 @@ static void _set_async(int fd)
 	if ((flags = fcntl(fd, F_GETFL)) < 0)
 		error_printf_exit(_("Failed to get socket flags\n"));
 
-	if (fcntl(fd, F_SETFL, flags | O_NDELAY) < 0)
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
 		error_printf_exit(_("Failed to set socket to non-blocking\n"));
 #endif
 }
