@@ -166,7 +166,7 @@ static int G_GNUC_WGET_NORETURN print_version(G_GNUC_WGET_UNUSED option_t opt, G
 	" -http2"
 #endif
 	);
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val)
@@ -339,7 +339,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
  * Using rm logfile + wget achieves the old behaviour...
  *
  */
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 static _GL_INLINE char *_shell_expand(const char *str)
