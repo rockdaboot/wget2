@@ -175,18 +175,6 @@
 #	define WGET_END_DECLS
 #endif
 
-// gnulib convenience header for libintl.h, turn of annoying warnings
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wundef"
-#include <gettext.h>
-#pragma GCC diagnostic pop
-
-#ifdef ENABLE_NLS
-#	define _(STRING) gettext(STRING)
-#else
-#	define _(STRING) STRING
-#endif
-
 //#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901
 //#	define restrict
 //#endif
@@ -750,7 +738,7 @@ WGETAPI void
  * Thread wrapper routines
  */
 
-#if USE_POSIX_THREADS || USE_PTH_THREADS
+#if defined USE_POSIX_THREADS || defined USE_PTH_THREADS
 # define WGET_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 # define WGET_THREAD_COND_INITIALIZER PTHREAD_COND_INITIALIZER
 typedef pthread_t wget_thread_t;

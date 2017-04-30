@@ -12,7 +12,7 @@ noinst_PROGRAMS = \
 
 
 AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS)
-AM_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib \
+AM_CPPFLAGS = -I$(top_srcdir)/include/wget \
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
 AM_LDFLAGS = -no-install
 LDADD = ../libwget/libwget.la\

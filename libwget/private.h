@@ -32,6 +32,18 @@
 # include <stdlib.h> // needed for free()
 # include <stdarg.h> // needed for va_list
 
+// gnulib convenience header for libintl.h, turn of annoying warnings
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wundef"
+#include <gettext.h>
+#pragma GCC diagnostic pop
+
+#ifdef ENABLE_NLS
+#	define _(STRING) gettext(STRING)
+#else
+#	define _(STRING) STRING
+#endif
+
 // I try to never leave freed pointers hanging around
 # define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 

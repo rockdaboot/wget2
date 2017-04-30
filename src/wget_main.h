@@ -33,6 +33,18 @@
 
 #include <wget.h>
 
+// gnulib convenience header for libintl.h, turn of annoying warnings
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wundef"
+#include <gettext.h>
+#pragma GCC diagnostic pop
+
+#ifdef ENABLE_NLS
+#	define _(STRING) gettext(STRING)
+#else
+#	define _(STRING) STRING
+#endif
+
 // use the helper routines provided by libwget
 #define info_printf wget_info_printf
 #define error_printf  wget_error_printf

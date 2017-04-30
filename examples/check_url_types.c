@@ -22,13 +22,10 @@
  *
  */
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
-#ifndef WIN32
+#include <string.h>
+#ifndef _WIN32
 #	include <signal.h>
 #endif
 #include <wget.h>
@@ -242,7 +239,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		WGET_DNS_CACHING, 1,
 		NULL);
 
-#ifndef WIN32
+#ifndef _WIN32
 	struct sigaction sig_action;
 	memset(&sig_action, 0, sizeof(sig_action));
 	sig_action.sa_sigaction = (void (*)(int, siginfo_t *, void *))SIG_IGN;

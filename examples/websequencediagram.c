@@ -22,12 +22,9 @@
  *
  */
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wget.h>
 
 int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED)

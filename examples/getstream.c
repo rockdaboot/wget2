@@ -40,17 +40,10 @@
  *
  */
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "c-strcasestr.h"
-#include "c-ctype.h"
-
 #include <wget.h>
 
 static char *stream_name;
@@ -128,6 +121,19 @@ static int stream_callback(void *context G_GNUC_WGET_UNUSED, const char *data, s
 	return 0; // OK, continue
 }
 
+static char *strcasestr_ascii(const char *haystack, const char *needle)
+{
+	size_t needle_len = strlen(needle);
+
+	while (*haystack) {
+		if (!wget_strncasecmp_ascii(haystack, needle, needle_len))
+			return (char *) haystack;
+		haystack++;
+	}
+
+	return NULL;
+}
+
 int main(int argc, const char *const *argv)
 {
 	wget_http_response_t *resp;
@@ -169,7 +175,7 @@ int main(int argc, const char *const *argv)
 		e = resp->body->data;
 		do {
 			s = e;
-			while (c_isspace(*s)) s++;
+			while (isspace(*s)) s++;
 			if (!*s) break;
 
 			for (e = s; *e && *e != '\r' && *e != '\n'; e++)
@@ -185,7 +191,7 @@ int main(int argc, const char *const *argv)
 		// .wax/.asx format <ASX VERSION="3.0">
 		char *p, url[128];
 
-		if ((p = c_strcasestr(resp->body->data, " HREF=\"")) && sscanf(p + 7, "%127[^\"]", url) == 1) {
+		if ((p = strcasestr_ascii(resp->body->data, " HREF=\"")) && sscanf(p + 7, "%127[^\"]", url) == 1) {
 			stream_url = wget_strdup(url);
 		} else
 			fprintf(stderr, "Failed to parse playlist URL\n");
@@ -194,7 +200,7 @@ int main(int argc, const char *const *argv)
 		// .pls
 		char *p, url[128];
 
-		if ((p = c_strcasestr(resp->body->data, "File1=")) && sscanf(p + 6, "%127[^\r\n]", url) == 1) {
+		if ((p = strcasestr_ascii(resp->body->data, "File1=")) && sscanf(p + 6, "%127[^\r\n]", url) == 1) {
 			stream_url = wget_strdup(url);
 		} else
 			fprintf(stderr, "Failed to parse playlist URL\n");
@@ -203,7 +209,7 @@ int main(int argc, const char *const *argv)
 		// .xspf
 		char *p, url[128];
 
-		if ((p = c_strcasestr(resp->body->data, "<location>")) && sscanf(p + 10, " %127[^< \t\r\n]", url) == 1) {
+		if ((p = strcasestr_ascii(resp->body->data, "<location>")) && sscanf(p + 10, " %127[^< \t\r\n]", url) == 1) {
 			stream_url = wget_strdup(url);
 		} else
 			fprintf(stderr, "Failed to parse playlist URL\n");

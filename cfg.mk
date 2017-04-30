@@ -16,3 +16,5 @@ exclude_file_name_regexp--sc_po_check = ^examples/|^tests/.*.c$$
 exclude_file_name_regexp--sc_prohibit_magic_number_exit = ^tests/.*.c$$
 exclude_file_name_regexp--sc_trailing_blank = docs/DoxygenLayout.xml|docs/libwget.doxy.in$$
 exclude_file_name_regexp--sc_two_space_separator_in_usage = docs/wget2_manual.md$$
+exclude_file_name_regexp--sc_require_config_h = examples/.*.c$$
+exclude_file_name_regexp--sc_require_config_h_first = examples/.*.c$$
