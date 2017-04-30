@@ -113,7 +113,7 @@
 #	define G_GNUC_WGET_ALWAYS_INLINE __attribute__ ((always_inline))
 #   define G_GNUC_WGET_FLATTEN __attribute__ ((flatten))
 #   define G_GNUC_WGET_DEPRECATED __attribute__ ((deprecated))
-#elif defined(__clang__)
+#elif defined __clang__
 #   define G_GNUC_WGET_ALWAYS_INLINE __attribute__ ((always_inline))
 #   define G_GNUC_WGET_FLATTEN __attribute__ ((flatten))
 #	define G_GNUC_WGET_DEPRECATED __attribute__ ((deprecated))

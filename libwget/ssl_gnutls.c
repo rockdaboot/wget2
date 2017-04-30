@@ -1291,7 +1291,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK | GNUTLS_ENABLE_FALSE_START);
 	} else
 		gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
-#elif defined(GNUTLS_NONBLOCK)
+#elif defined GNUTLS_NONBLOCK
 	if (tcp->tls_false_start)
 		error_printf("TLS False Start requested but Wget built with insufficient GnuTLS version\n");
 	gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
