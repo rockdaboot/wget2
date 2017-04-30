@@ -26,9 +26,7 @@
  * Example: http://ceciliaschola.org/feed/atom/
  */
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
+#include <config.h>
 
 #include <unistd.h>
 #include <stdlib.h>

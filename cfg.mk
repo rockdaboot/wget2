@@ -7,7 +7,6 @@ local-checks-to-skip = \
   sc_makefile_at_at_check \
   sc_prohibit_always_true_header_tests \
   sc_prohibit_atoi_atof \
-  sc_prohibit_have_config_h \
   sc_prohibit_strcmp
 
 # Explicit syntax-check exceptions.

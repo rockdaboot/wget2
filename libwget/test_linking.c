@@ -2,9 +2,7 @@
 // We call one function from each object file in libwget.
 // Unresolved references should come up on linking.
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
+#include <config.h>
 
 #include <string.h> // CygWin strlcpy() declaration
 #include <wget.h>

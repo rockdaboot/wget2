@@ -37,9 +37,7 @@
  * http://go-oo.mirrorbrain.org/evolution/stable/Evolution-2.24.0.exe
  */
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
+#include <config.h>
 
 #include <stdio.h>
 #include <stdlib.h>

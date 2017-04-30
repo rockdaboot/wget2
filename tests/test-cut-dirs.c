@@ -22,9 +22,7 @@
  *
  */
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
+#include <config.h>
 
 #include <stdlib.h> // exit()
 #include "libtest.h"

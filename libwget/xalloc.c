@@ -25,9 +25,7 @@
  *
  */
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
+#include <config.h>
 
 #include <stdlib.h>
 
@@ -52,10 +50,6 @@
  * To work around this behavior, provide your own allocation routines,
  * namely malloc(), calloc(), realloc().
  */
-
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 
 static void
 	(*_oom_callback)(void);
