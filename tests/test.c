@@ -2090,6 +2090,53 @@ static void test_robots(void)
 	}
 }
 
+static void test_set_proxy(void)
+{
+	static const struct test_data {
+		const char *
+			proxy;
+		const char *
+			encoding;
+		int
+			result;
+	} test_data[] = {
+		{ "http://192.168.8.253:3128", "ASCII", 1 },
+		{ "", "ASCII", 0 },
+		{ " ", "ASCII", -1 },
+		{ NULL, "ASCII", -1 },
+		{ "http://192.168.8.253:3128,http://foo.xyz", "ASCII", 2},
+		{ ",,", "ASCII", 0 },
+		{ ", http://192.168.8.253:3128", "ASCII", 1 },
+		{ ", http://192.168.8.253:3128 ,, http://foo.xyz", "ASCII", 2 },
+	};
+
+	for (unsigned it = 0; it < countof(test_data); it++) {
+		const struct test_data *t = &test_data[it];
+
+		int n = wget_http_set_http_proxy(t->proxy, t->encoding);
+
+		if (n == t->result)
+			ok++;
+		else {
+			failed++;
+			info_printf("Failed [%u]: wget_http_set_http_proxy(%s,%s) -> %d (expected %d)\n", it, t->proxy, t->encoding, n, t->result);
+		}
+	}
+
+	for (unsigned it = 0; it < countof(test_data); it++) {
+		const struct test_data *t = &test_data[it];
+
+		int n = wget_http_set_https_proxy(t->proxy, t->encoding);
+
+		if (n == t->result)
+			ok++;
+		else {
+			failed++;
+			info_printf("Failed [%u]: wget_http_set_https_proxy(%s,%s) -> %d (expected %d)\n", it, t->proxy, t->encoding, n, t->result);
+		}
+	}
+}
+
 int main(int argc, const char **argv)
 {
 	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
@@ -2145,6 +2192,7 @@ int main(int argc, const char **argv)
 	test_bar();
 	test_netrc();
 	test_robots();
+	test_set_proxy();
 
 	selftest_options() ? failed++ : ok++;
 

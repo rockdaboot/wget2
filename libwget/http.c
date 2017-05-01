@@ -2557,7 +2557,10 @@ int wget_http_set_http_proxy(const char *proxy, const char *encoding)
 	if (!http_proxies)
 		return -1;
 
-	return 0;
+	if (wget_vector_size(http_proxies) == 0)
+		wget_vector_free(&http_proxies);
+
+	return wget_vector_size(http_proxies);
 }
 
 int wget_http_set_https_proxy(const char *proxy, const char *encoding)
@@ -2569,7 +2572,10 @@ int wget_http_set_https_proxy(const char *proxy, const char *encoding)
 	if (!https_proxies)
 		return -1;
 
-	return 0;
+	if (wget_vector_size(https_proxies) == 0)
+		wget_vector_free(&https_proxies);
+
+	return wget_vector_size(https_proxies);
 }
 
 int wget_http_set_no_proxy(const char *no_proxy, const char *encoding)
