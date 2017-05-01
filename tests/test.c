@@ -2100,14 +2100,15 @@ static void test_set_proxy(void)
 		int
 			result;
 	} test_data[] = {
-		{ "http://192.168.8.253:3128", "ASCII", 1 },
-		{ "", "ASCII", 0 },
-		{ " ", "ASCII", -1 },
-		{ NULL, "ASCII", -1 },
-		{ "http://192.168.8.253:3128,http://foo.xyz", "ASCII", 2},
-		{ ",,", "ASCII", 0 },
-		{ ", http://192.168.8.253:3128", "ASCII", 1 },
-		{ ", http://192.168.8.253:3128 ,, http://foo.xyz", "ASCII", 2 },
+		{ "http://192.168.8.253:3128", NULL, 1 },
+		{ "  http://192.168.8.253:3128", NULL, 1 },
+		{ "", NULL, 0 },
+		{ " ", NULL, -1 },
+		{ NULL, NULL, -1 },
+		{ "http://192.168.8.253:3128,http://foo.xyz", NULL, 2},
+		{ ",,", NULL, 0 },
+		{ ", http://192.168.8.253:3128", NULL, 1 },
+		{ ", http://192.168.8.253:3128 ,, http://foo.xyz", NULL, 2 },
 	};
 
 	for (unsigned it = 0; it < countof(test_data); it++) {

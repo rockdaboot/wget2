@@ -2487,7 +2487,6 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 	wget_vector_set_destructor(proxies, (wget_vector_destructor_t)wget_iri_free_content);
 
 	for (s = p = proxy; *p; s = p + 1) {
-		while (c_isspace(*s) && s < p) s++;
 
 		if ((p = strchrnul(s, ',')) != s && p - s < 256) {
 			wget_iri_t *iri;
