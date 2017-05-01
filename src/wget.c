@@ -2370,33 +2370,6 @@ static time_t G_GNUC_WGET_NONNULL_ALL get_file_mtime(const char *fname)
 	return 0;
 }
 
-#ifdef _WIN32
-#include <windows.h>
-
-int futimens(int fd, const struct timespec times[2])
-{
-	FILETIME mt, at;
-	LONGLONG ll;
-
-	// convert time_t to FILETIME
-	ll = Int32x32To64(times[0].tv_sec, 10000000) + 116444736000000000;
-	at.dwLowDateTime = (DWORD) ll;
-	at.dwHighDateTime = ll >> 32;
-
-	ll = Int32x32To64(times[1].tv_sec, 10000000) + 116444736000000000;
-	mt.dwLowDateTime = (DWORD) ll;
-	mt.dwHighDateTime = ll >> 32;
-
-	BOOL success = SetFileTime(
-		(HANDLE) (intptr_t) _get_osfhandle (fd),
-		&mt,  // creation
-		&at,  // last access
-		&mt); // last modification
-
-	return success ? 0 : -1;
-}
-#endif
-
 static void set_file_mtime(int fd, time_t modified)
 {
 	struct timespec timespecs[2]; // [0]=last access  [1]=last modified
