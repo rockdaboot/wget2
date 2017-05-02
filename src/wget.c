@@ -995,6 +995,9 @@ int main(int argc, const char **argv)
 		config.max_threads = 1;
 	}
 
+	if (config.progress && !isatty(STDOUT_FILENO))
+		config.progress = 0;
+
 	if (config.progress) {
 		wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), NULL);
 		bar_init();
