@@ -800,7 +800,8 @@ struct config config = {
 	.waitretry = 10 * 1000,
 	.metalink = 1,
 	.tls_false_start = 1,
-	.tls_resume = 1
+	.tls_resume = 1,
+	.proxy = 1
 };
 
 static int parse_execute(option_t opt, const char *val);
@@ -906,6 +907,7 @@ static const struct optionw options[] = {
 	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0 },
 	{ "progress", &config.progress, parse_progress_type, 1, 0 },
 	{ "protocol-directories", &config.protocol_directories, parse_bool, 0, 0 },
+	{ "proxy", &config.proxy, parse_bool, 0, 0 },
 	{ "quiet", &config.quiet, parse_bool, 0, 'q' },
 	{ "quota", &config.quota, parse_numbytes, 1, 'Q' },
 	{ "random-file", &config.random_file, parse_filename, 1, 0 },
@@ -1363,13 +1365,6 @@ int init(int argc, const char **argv)
 	config.user_agent = wget_strdup(config.user_agent);
 	config.secure_protocol = wget_strdup(config.secure_protocol);
 	config.ca_directory = wget_strdup(config.ca_directory);
-	config.http_proxy = wget_strdup(getenv("http_proxy"));
-	config.https_proxy = wget_strdup(getenv("https_proxy"));
-	if (config.http_proxy || config.https_proxy) {
-		config.no_proxy = wget_strdup(getenv("no_proxy"));
-		if (!config.no_proxy || !*config.no_proxy)
-			config.no_proxy = wget_strdup(getenv("NO_PROXY"));
-	}
 	config.default_page = wget_strdup(config.default_page);
 	config.domains = wget_vector_create(16, -2, (wget_vector_compare_t)strcmp);
 //	config.exclude_domains = wget_vector_create(16, -2, NULL);
@@ -1468,6 +1463,16 @@ int init(int argc, const char **argv)
 
 	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
 	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
+
+//Set environ proxy var only if a corresponding command-line proxy var isn't supplied
+	if (config.proxy) {
+		if (!config.http_proxy)
+			config.http_proxy = wget_strdup(getenv("http_proxy"));
+		if (!config.https_proxy)
+			config.https_proxy = wget_strdup(getenv("https_proxy"));
+		if (!config.no_proxy)
+			config.no_proxy = wget_strdup(getenv("no_proxy"));
+	}
 
 	if (config.http_proxy && *config.http_proxy && !wget_http_set_http_proxy(config.http_proxy, config.local_encoding)) {
 		error_printf(_("Failed to set http proxies %s\n"), config.http_proxy);
