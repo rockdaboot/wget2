@@ -2480,26 +2480,25 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 	if (!proxy)
 		return NULL;
 
-	wget_vector_t *proxies;
+	wget_vector_t *proxies = NULL;
 	const char *s, *p;
 
-	proxies = wget_vector_create(8, -2, NULL);
-	wget_vector_set_destructor(proxies, (wget_vector_destructor_t)wget_iri_free_content);
-
 	for (s = p = proxy; *p; s = p + 1) {
-
 		if ((p = strchrnul(s, ',')) != s && p - s < 256) {
 			wget_iri_t *iri;
 			char host[p - s + 1];
 
 			memcpy(host, s, p - s);
 			host[p - s] = 0;
+
 			iri = wget_iri_parse (host, encoding);
-			if (!iri) {
-				wget_vector_free(&proxies);
-				return NULL;
+			if (iri) {
+				if (!proxies) {
+					proxies = wget_vector_create(8, -2, NULL);
+					wget_vector_set_destructor(proxies, (wget_vector_destructor_t)wget_iri_free_content);
+				}
+				wget_vector_add_noalloc(proxies, iri);
 			}
-			wget_vector_add_noalloc(proxies, iri);
 		}
 	}
 
@@ -2553,11 +2552,6 @@ int wget_http_set_http_proxy(const char *proxy, const char *encoding)
 		wget_vector_free(&http_proxies);
 
 	http_proxies = _parse_proxies(proxy, encoding);
-	if (!http_proxies)
-		return -1;
-
-	if (wget_vector_size(http_proxies) == 0)
-		wget_vector_free(&http_proxies);
 
 	return wget_vector_size(http_proxies);
 }
@@ -2568,11 +2562,6 @@ int wget_http_set_https_proxy(const char *proxy, const char *encoding)
 		wget_vector_free(&https_proxies);
 
 	https_proxies = _parse_proxies(proxy, encoding);
-	if (!https_proxies)
-		return -1;
-
-	if (wget_vector_size(https_proxies) == 0)
-		wget_vector_free(&https_proxies);
 
 	return wget_vector_size(https_proxies);
 }

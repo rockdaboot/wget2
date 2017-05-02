@@ -1447,11 +1447,11 @@ int init(int argc, const char **argv)
 	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
 	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
 
-	if (config.http_proxy && wget_http_set_http_proxy(config.http_proxy, config.local_encoding) < 0) {
+	if (config.http_proxy && *config.http_proxy && !wget_http_set_http_proxy(config.http_proxy, config.local_encoding)) {
 		error_printf(_("Failed to set http proxies %s\n"), config.http_proxy);
 		return -1;
 	}
-	if (config.https_proxy && wget_http_set_https_proxy(config.https_proxy, config.local_encoding) < 0) {
+	if (config.https_proxy && *config.https_proxy && !wget_http_set_https_proxy(config.https_proxy, config.local_encoding)) {
 		error_printf(_("Failed to set https proxies %s\n"), config.https_proxy);
 		return -1;
 	}
