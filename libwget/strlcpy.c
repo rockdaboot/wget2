@@ -55,6 +55,6 @@ size_t wget_strlcpy(char *dst, const char *src, size_t size)
 	while (*src++);
 	return src - old - 1;
 #else
-	return wget_strlcpy(dst, src, size);
+	return strlcpy(dst, src, size);
 #endif
 }
