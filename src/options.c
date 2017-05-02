@@ -1023,6 +1023,12 @@ static const struct optionw options[] = {
 		  "(default: off) (NEW!)\n"
 		}
 	},
+	{ "force-progress", &config.force_progress, parse_bool, -1, 0,
+		SECTION_DOWNLOAD,
+		{ "Force progress bar.\n",
+		  "(default: off)\n"
+		}
+	},
 	{ "force-rss", &config.force_rss, parse_bool, -1, 0,
 		SECTION_STARTUP,
 		{ "Treat input file as RSS Feed.\n",
