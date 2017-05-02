@@ -356,10 +356,8 @@ WGETAPI const char *
  * General compatibility functions
  */
 
-#ifndef HAVE_STRLCPY
 WGETAPI size_t
-	strlcpy(char *restrict dst, const char *restrict src, size_t size) G_GNUC_WGET_NONNULL_ALL;
-#endif
+	wget_strlcpy(char *restrict dst, const char *restrict src, size_t size) G_GNUC_WGET_NONNULL_ALL;
 
 /**
  * \ingroup libwget-list

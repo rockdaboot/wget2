@@ -2513,7 +2513,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 				if (it > 1)
 					snprintf(src, sizeof(src), "%s.%d", fname, it - 1);
 				else
-					strlcpy(src, fname, sizeof(src));
+					wget_strlcpy(src, fname, sizeof(src));
 				snprintf(dst, sizeof(dst), "%s.%d", fname, it);
 
 				if (rename(src, dst) == -1 && errno != ENOENT)

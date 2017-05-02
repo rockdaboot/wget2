@@ -151,8 +151,8 @@ int job_validate_file(JOB *job)
 
 		piece.length = metalink->size;
 		piece.position = 0;
-		strlcpy(piece.hash.type, hash->type, sizeof(piece.hash.type));
-		strlcpy(piece.hash.hash_hex, hash->hash_hex, sizeof(piece.hash.hash_hex));
+		wget_strlcpy(piece.hash.type, hash->type, sizeof(piece.hash.type));
+		wget_strlcpy(piece.hash.hash_hex, hash->hash_hex, sizeof(piece.hash.hash_hex));
 
 		metalink->pieces = wget_vector_create(1, 1, NULL);
 		wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));

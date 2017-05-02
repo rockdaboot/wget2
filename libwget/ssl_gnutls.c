@@ -633,7 +633,7 @@ static char *_get_cert_fingerprint(gnutls_x509_crt_t cert, char *fingerprint_hex
 
 	if ((err = gnutls_x509_crt_get_fingerprint(cert, GNUTLS_DIG_SHA256, fingerprint, &fingerprint_size)) < 0) {
 		debug_printf("Failed to get fingerprint: %s\n", gnutls_strerror(err));
-		strlcpy(fingerprint_hex, "00", length);
+		wget_strlcpy(fingerprint_hex, "00", length);
 	} else {
 		wget_memtohex(fingerprint, fingerprint_size, fingerprint_hex, length);
 	}

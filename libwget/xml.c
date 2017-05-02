@@ -346,7 +346,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 	size_t pos = 0;
 
 	if (!(context->hints & XML_HINT_HTML)) {
-		pos = strlcpy(directory, dir, sizeof(directory));
+		pos = wget_strlcpy(directory, dir, sizeof(directory));
 		if (pos >= sizeof(directory)) pos = sizeof(directory) - 1;
 	}
 

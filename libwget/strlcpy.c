@@ -28,15 +28,18 @@
 #include <config.h>
 
 #include <stddef.h>
+#ifndef HAVE_STRLCPY
+#  include <string.h>
+#endif
 
 #include <wget.h>
 
-#ifndef HAVE_STRLCPY
 // strlcpy is a BSD function that I really like.
 // it is the same as snprintf(dst,dstsize,"%s",src), but much faster
 
-size_t strlcpy(char *dst, const char *src, size_t size)
+size_t wget_strlcpy(char *dst, const char *src, size_t size)
 {
+#ifndef HAVE_STRLCPY
 	const char *old = src;
 
 	// Copy as many bytes as will fit
@@ -51,5 +54,7 @@ size_t strlcpy(char *dst, const char *src, size_t size)
 
 	while (*src++);
 	return src - old - 1;
-}
+#else
+	return wget_strlcpy(dst, src, size);
 #endif
+}
