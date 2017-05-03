@@ -37,7 +37,7 @@
  * But now I think, it is ok to say 'each option may just have 0 or 1 option'.
  * An option with a list of values might then look like: --whatever="arg1 arg2 arg3" or use
  * any other argument separator. I remove the legacy code as soon as I am 100% sure...
- *
+ * Set args to -1 if value for an option is optional.
  */
 
 #include <config.h>
@@ -958,16 +958,12 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL opt_compare_execute(const ch
 	return *s1 - *s2;
 }
 
-static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char *value)
+static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char *value, int value_is_next_arg)
 {
 	option_t opt;
 	int invert = 0, ret = 0;
 	char namebuf[strlen(name) + 1], *p;
-
-	if (!strncmp(name, "no-", 3)) {
-		invert = 1;
-		name += 3;
-	}
+	int value_present = 0;
 
 	if ((p = strchr(name, '='))) {
 		// option with appended value
@@ -975,9 +971,20 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 		namebuf[p - name] = 0;
 		name = namebuf;
 		value = p + 1;
+		value_present = 1;
 	}
 
 	opt = bsearch(name, options, countof(options), sizeof(options[0]), opt_compare);
+	if (!opt) {
+		// If the option is negated (--no-) delete the "no-" prefix 
+		// and try again
+		if (!strncmp(name, "no-", 3)) {
+			invert = 1;
+			name += 3;
+			opt = bsearch(name, options, countof(options), sizeof(options[0]), opt_compare);
+		}
+	}
+
 	if (!opt) {
 		// Fallback to linear search for 'unsharp' searching.
 		// Maybe the user asked for e.g. https_only or httpsonly instead of https-only
@@ -993,7 +1000,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 	if (!opt)
 		error_printf_exit(_("Unknown option '%s'\n"), name);
 
-	if (name != namebuf && opt->parser == parse_bool)
+	if (!value_present && opt->parser == parse_bool)
 		value = NULL;
 
 	debug_printf("name=%s value=%s invert=%d\n", opt->long_name, value, invert);
@@ -1004,7 +1011,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 				opt->parser == parse_filename ||
 				opt->parser == parse_filenames)) {
 		// allow no-<option> to set value to NULL
-		if (value && name == namebuf)
+		if (value && value_present)
 			error_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
 
 		opt->parser(opt, NULL);
@@ -1013,16 +1020,16 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 		if (value && !opt->args && opt->parser != parse_bool)
 			error_printf_exit(_("Option '%s' doesn't allow an argument\n"), name);
 
-		if (opt->args) {
+		if (opt->args > 0) {
 			if (!value)
 				error_printf_exit(_("Missing argument for option '%s'\n"), name);
 
 			opt->parser(opt, value);
 
-			if (name != namebuf)
+			if (!value_present)
 				ret = opt->args;
 		}
-		else {
+		else if (opt->args == 0) {
 			if (opt->parser == parse_bool) {
 				opt->parser(opt, value);
 
@@ -1030,6 +1037,14 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 					*((char *)opt->var) = !*((char *)opt->var); // invert boolean value
 			} else
 				opt->parser(opt, NULL);
+		}
+		else {
+			//option with optional argument cannot consume next
+			//commandline argument.
+			if (!value_present && value_is_next_arg)
+				value = NULL;
+
+			opt->parser(opt, value);
 		}
 	}
 
@@ -1039,7 +1054,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 static int parse_execute(G_GNUC_WGET_UNUSED option_t opt, const char *val)
 {
 	// info_printf("### argv=%s val=%s\n",argv[0],val);
-	set_long_option(val, NULL);
+	set_long_option(val, NULL, 0);
 
 	return 0;
 }
@@ -1186,7 +1201,7 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 		if (found == 1) {
 			// debug_printf("%s = %s\n",name,val);
-			set_long_option(name, val);
+			set_long_option(name, val, 0);
 		} else if (found == 2) {
 			// debug_printf("%s %s\n",name,val);
 			if (!strcmp(name, "include")) {
@@ -1197,7 +1212,7 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 				level--;
 			} else {
-				set_long_option(name, NULL);
+				set_long_option(name, NULL, 0);
 			}
 		}
 	}
@@ -1261,7 +1276,7 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 			if (argp[2] == 0)
 				return n + 1;
 
-			n += set_long_option(argp + 2, n < argc - 1 ? argv[n+1] : NULL);
+			n += set_long_option(argp + 2, n < argc - 1 ? argv[n+1] : NULL, 1);
 
 		} else if (argp[1]) {
 			// short option(s)
@@ -1273,7 +1288,7 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 					opt = &options[idx - 1];
 					// info_printf("opt=%p [%c]\n",(void *)opt,argp[pos]);
 					// info_printf("name=%s\n",opt->long_name);
-					if (opt->args) {
+					if (opt->args > 0) {
 						const char *val;
 
 						if (!argp[pos + 1] && argc <= n + opt->args)
@@ -1281,8 +1296,15 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 						val = argp[pos + 1] ? argp + pos + 1 : argv[++n];
 						n += opt->parser(opt, val);
 						break;
-					} else
+					} else if (opt->args == 0)
 						opt->parser(opt, NULL);
+					else
+					{
+						const char *val;
+						val = argp[pos + 1] ? argp + pos + 1 : NULL;
+						n += opt->parser(opt, val);
+						break;
+					}
 				} else
 					error_printf_exit(_("Unknown option '-%c'\n"), argp[pos]);
 			}
@@ -1329,7 +1351,7 @@ int init(int argc, const char **argv)
 		if (!strcmp(argv[1],"-d"))
 			config.debug = 1;
 		else if (!strcmp(argv[1],"--debug")) {
-			set_long_option(argv[1] + 2, argv[2]);
+			set_long_option(argv[1] + 2, argv[2], 0);
 		}
 	}
 
