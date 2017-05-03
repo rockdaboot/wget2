@@ -132,7 +132,7 @@ void *wget_realloc(void *ptr, size_t size)
  *
  * This function is like free().
  *
- * Is is basically needed on systems where the library malloc heap is different
+ * It is basically needed on systems where the library malloc heap is different
  * from the caller's malloc heap, which happens on Windows when the library
  * is a separate DLL.
  *
@@ -140,8 +140,7 @@ void *wget_realloc(void *ptr, size_t size)
  */
 void wget_free(void *ptr)
 {
-	if (ptr)
-		free(ptr);
+	free(ptr);
 }
 
 /**@}*/
