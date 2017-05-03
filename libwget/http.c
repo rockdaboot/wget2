@@ -1124,6 +1124,29 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 				wget_http_parse_connection(s, &resp->keep_alive);
 			}
 			break;
+		case 'd':
+			if (!wget_strncasecmp_ascii(name, "Digest", namelen)) {
+				// https://tools.ietf.org/html/rfc3230
+				wget_http_digest_t digest;
+				wget_http_parse_digest(s, &digest);
+				// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
+				if (!resp->digests) {
+					resp->digests = wget_vector_create(4, 4, NULL);
+					wget_vector_set_destructor(resp->digests, (wget_vector_destructor_t)wget_http_free_digest);
+				}
+				wget_vector_add(resp->digests, &digest, sizeof(digest));
+			}
+			break;
+		case 'e':
+			if (!wget_strncasecmp_ascii(name, "ETag", namelen)) {
+				wget_http_parse_etag(s, &resp->etag);
+			}
+			break;
+		case 'i':
+			if (!wget_strncasecmp_ascii(name, "ICY-Metaint", namelen)) {
+				resp->icy_metaint = atoi(s);
+			}
+			break;
 		case 'l':
 			if (!wget_strncasecmp_ascii(name, "Last-Modified", namelen)) {
 				// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
@@ -1151,11 +1174,6 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 				}
 			}
 			break;
-		case 't':
-			if (!wget_strncasecmp_ascii(name, "Transfer-Encoding", namelen)) {
-				wget_http_parse_transfer_encoding(s, &resp->transfer_encoding);
-			}
-			break;
 		case 's':
 			if (!wget_strncasecmp_ascii(name, "Set-Cookie", namelen)) {
 				// this is a parser. content validation must be done by higher level functions.
@@ -1175,6 +1193,11 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 				wget_http_parse_strict_transport_security(s, &resp->hsts_maxage, &resp->hsts_include_subdomains);
 			}
 			break;
+		case 't':
+			if (!wget_strncasecmp_ascii(name, "Transfer-Encoding", namelen)) {
+				wget_http_parse_transfer_encoding(s, &resp->transfer_encoding);
+			}
+			break;
 		case 'w':
 			if (!wget_strncasecmp_ascii(name, "WWW-Authenticate", namelen)) {
 				wget_http_challenge_t challenge;
@@ -1187,32 +1210,9 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 				wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
 			}
 			break;
-		case 'd':
-			if (!wget_strncasecmp_ascii(name, "Digest", namelen)) {
-				// https://tools.ietf.org/html/rfc3230
-				wget_http_digest_t digest;
-				wget_http_parse_digest(s, &digest);
-				// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
-				if (!resp->digests) {
-					resp->digests = wget_vector_create(4, 4, NULL);
-					wget_vector_set_destructor(resp->digests, (wget_vector_destructor_t)wget_http_free_digest);
-				}
-				wget_vector_add(resp->digests, &digest, sizeof(digest));
-			}
-			break;
-		case 'i':
-			if (!wget_strncasecmp_ascii(name, "ICY-Metaint", namelen)) {
-				resp->icy_metaint = atoi(s);
-			}
-			break;
-		case 'e':
-			if (!wget_strncasecmp_ascii(name, "ETag", namelen)) {
-				wget_http_parse_etag(s, &resp->etag);
-			}
-			break;
 		case 'x':
 			if (!wget_strncasecmp_ascii(name, "X-Archive-Orig-last-modified", namelen))
-				resp->last_modified = wget_http_parse_full_date(s);
+					resp->last_modified = wget_http_parse_full_date(s);
 			break;
 		default:
 			break;
