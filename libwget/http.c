@@ -1210,6 +1210,10 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 				wget_http_parse_etag(s, &resp->etag);
 			}
 			break;
+		case 'x':
+			if (!wget_strncasecmp_ascii(name, "X-Archive-Orig-last-modified", namelen))
+				resp->last_modified = wget_http_parse_full_date(s);
+			break;
 		default:
 			break;
 		}

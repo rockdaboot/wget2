@@ -598,9 +598,8 @@ static int parse_bool(option_t opt, const char *val)
 			*((char *) opt->var) = 1;
 		else if (!strcmp(val, "0") || !wget_strcasecmp_ascii(val, "n") || !wget_strcasecmp_ascii(val, "no") || !wget_strcasecmp_ascii(val, "off"))
 			*((char *) opt->var) = 0;
-		else {
+		else
 			error_printf(_("Boolean value '%s' not recognized\n"), val);
-		}
 	}
 
 	return 0;
