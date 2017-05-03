@@ -627,7 +627,7 @@ int wget_cookie_store_cookie(wget_cookie_db_t *cookie_db, wget_cookie_t *cookie)
 		return -1;
 	}
 
-	wget_thread_mutex_lock(&cookie_db->mutex);
+	wget_thread_mutex_lock(cookie_db->mutex);
 
 	old = wget_vector_get(cookie_db->cookies, pos = wget_vector_find(cookie_db->cookies, cookie));
 
@@ -642,7 +642,7 @@ int wget_cookie_store_cookie(wget_cookie_db_t *cookie_db, wget_cookie_t *cookie)
 		wget_vector_insert_sorted(cookie_db->cookies, cookie, sizeof(*cookie));
 	}
 
-	wget_thread_mutex_unlock(&cookie_db->mutex);
+	wget_thread_mutex_unlock(cookie_db->mutex);
 
 	return 0;
 }
@@ -675,7 +675,7 @@ char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_
 
 	debug_printf("cookie_create_request_header for host=%s path=%s\n", iri->host, iri->path);
 
-	wget_thread_mutex_lock(&cookie_db->mutex);
+	wget_thread_mutex_lock(cookie_db->mutex);
 
 	for (it = 0; it < wget_vector_size(cookie_db->cookies); it++) {
 		wget_cookie_t *cookie = wget_vector_get(cookie_db->cookies, it);
@@ -736,7 +736,7 @@ char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_
 	wget_vector_clear_nofree(cookies);
 	wget_vector_free(&cookies);
 
-	wget_thread_mutex_unlock(&cookie_db->mutex);
+	wget_thread_mutex_unlock(cookie_db->mutex);
 
 	return init ? buf.data : NULL;
 }
@@ -768,9 +768,10 @@ void wget_cookie_db_deinit(wget_cookie_db_t *cookie_db)
 		psl_free(cookie_db->psl);
 		cookie_db->psl = NULL;
 #endif
-		wget_thread_mutex_lock(&cookie_db->mutex);
+		wget_thread_mutex_lock(cookie_db->mutex);
 		wget_vector_free(&cookie_db->cookies);
-		wget_thread_mutex_unlock(&cookie_db->mutex);
+		wget_thread_mutex_unlock(cookie_db->mutex);
+		wget_thread_mutex_destroy(&cookie_db->mutex);
 	}
 }
 

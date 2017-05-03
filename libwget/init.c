@@ -45,8 +45,31 @@ static struct _CONFIG {
 };
 
 static int _init;
-static wget_thread_mutex_t _mutex = WGET_THREAD_MUTEX_INITIALIZER;
+static wget_thread_mutex_t _mutex;
+static bool initialized;
 
+static void __attribute__ ((constructor)) _wget_global_init(void)
+{
+	if (!initialized) {
+		wget_thread_mutex_init(&_mutex);
+		initialized = 1;
+	}
+}
+
+static void __attribute__ ((destructor)) _wget_global_exit(void)
+{
+	if (initialized) {
+		wget_thread_mutex_destroy(&_mutex);
+		initialized = 0;
+	}
+}
+
+/**
+ * Global library initialization, allocating/preparing all resources.
+ *
+ * This function is not thread-safe on systems without automatic library
+ * initialization.
+ */
 void wget_global_init(int first_key, ...)
 {
 	va_list args;
@@ -54,14 +77,21 @@ void wget_global_init(int first_key, ...)
 	const char *psl_file = NULL;
 	wget_logger_func_t func; // intermediate var to satisfy MSVC
 
-	wget_thread_mutex_lock(&_mutex);
+	// just in case that automatic initializers didn't work,
+	// e.g. maybe a static build
+	_wget_global_init();
+
+	wget_thread_mutex_lock(_mutex);
 
 	if (_init++) {
-		wget_thread_mutex_unlock(&_mutex);
+		wget_thread_mutex_unlock(_mutex);
 		return;
 	}
 
 	wget_console_init();
+	wget_dns_init();
+	wget_random_init();
+	wget_http_init();
 
 	va_start (args, first_key);
 	for (key = first_key; key; key = va_arg(args, int)) {
@@ -127,7 +157,7 @@ void wget_global_init(int first_key, ...)
 			wget_tcp_set_preferred_family(NULL, va_arg(args, int));
 			break;
 		default:
-			wget_thread_mutex_unlock(&_mutex);
+			wget_thread_mutex_unlock(_mutex);
 			wget_error_printf(_("%s: Unknown option %d"), __func__, key);
 			va_end(args);
 			return;
@@ -144,17 +174,22 @@ void wget_global_init(int first_key, ...)
 
 	rc = wget_net_init();
 
-	wget_thread_mutex_unlock(&_mutex);
+	wget_thread_mutex_unlock(_mutex);
 
 	if (rc)
 		wget_error_printf_exit(_("%s: Failed to init networking (%d)"), __func__, rc);
 }
 
+/**
+ * Global library deinitialization, free'ing all allocated resources.
+ *
+ * This function is not thread-safe.
+ */
 void wget_global_deinit(void)
 {
 	int rc = 0;
 
-	wget_thread_mutex_lock(&_mutex);
+	// we need to lock a static mutex here
 
 	if (_init == 1) {
 		// free resources here
@@ -166,6 +201,7 @@ void wget_global_deinit(void)
 		wget_tcp_set_dns_caching(NULL, 0);
 		wget_dns_cache_free();
 
+		wget_dns_exit();
 		rc = wget_net_deinit();
 		wget_ssl_deinit();
 		wget_http_set_http_proxy(NULL, NULL);
@@ -175,10 +211,14 @@ void wget_global_deinit(void)
 
 	if (_init > 0) _init--;
 
-	wget_thread_mutex_unlock(&_mutex);
+	_wget_global_exit();
+
+	// we need to unlock a static mutex here
 
 	if (rc)
 		wget_error_printf(_("%s: Failed to deinit networking (%d)"), __func__, rc);
+
+	wget_console_deinit();
 }
 
 int wget_global_get_int(int key)

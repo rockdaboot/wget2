@@ -216,10 +216,12 @@ void wget_ocsp_db_deinit(wget_ocsp_db_t *ocsp_db)
 
 	if (ocsp_db_priv) {
 		xfree(ocsp_db_priv->fname);
-		wget_thread_mutex_lock(&ocsp_db_priv->mutex);
+		wget_thread_mutex_lock(ocsp_db_priv->mutex);
 		wget_hashmap_free(&ocsp_db_priv->fingerprints);
 		wget_hashmap_free(&ocsp_db_priv->hosts);
-		wget_thread_mutex_unlock(&ocsp_db_priv->mutex);
+		wget_thread_mutex_unlock(ocsp_db_priv->mutex);
+
+		wget_thread_mutex_destroy(&ocsp_db_priv->mutex);
 	}
 }
 
@@ -262,7 +264,7 @@ static void _ocsp_db_add_fingerprint_entry(_ocsp_db_impl_t *ocsp_db_priv, _ocsp_
 		return;
 	}
 
-	wget_thread_mutex_lock(&ocsp_db_priv->mutex);
+	wget_thread_mutex_lock(ocsp_db_priv->mutex);
 
 	if (ocsp->maxage == 0) {
 		if (wget_hashmap_remove(ocsp_db_priv->fingerprints, ocsp))
@@ -287,7 +289,7 @@ static void _ocsp_db_add_fingerprint_entry(_ocsp_db_impl_t *ocsp_db_priv, _ocsp_
 		}
 	}
 
-	wget_thread_mutex_unlock(&ocsp_db_priv->mutex);
+	wget_thread_mutex_unlock(ocsp_db_priv->mutex);
 }
 
 /**
@@ -329,7 +331,7 @@ static void _ocsp_db_add_host_entry(_ocsp_db_impl_t *ocsp_db_priv, _ocsp_t *ocsp
 		return;
 	}
 
-	wget_thread_mutex_lock(&ocsp_db_priv->mutex);
+	wget_thread_mutex_lock(ocsp_db_priv->mutex);
 
 	if (ocsp->maxage == 0) {
 		if (wget_hashmap_remove(ocsp_db_priv->hosts, ocsp))
@@ -354,7 +356,7 @@ static void _ocsp_db_add_host_entry(_ocsp_db_impl_t *ocsp_db_priv, _ocsp_t *ocsp
 		}
 	}
 
-	wget_thread_mutex_unlock(&ocsp_db_priv->mutex);
+	wget_thread_mutex_unlock(ocsp_db_priv->mutex);
 }
 
 /**

@@ -1165,7 +1165,19 @@ out:
 }
 
 static int _init;
-static wget_thread_mutex_t _mutex = WGET_THREAD_MUTEX_INITIALIZER;
+static wget_thread_mutex_t _mutex;
+
+static void __attribute__ ((constructor)) _wget_tls_init(void)
+{
+	if (!_mutex)
+		wget_thread_mutex_init(&_mutex);
+}
+
+static void __attribute__ ((destructor)) _wget_tls_exit(void)
+{
+	if (_mutex)
+		wget_thread_mutex_destroy(&_mutex);
+}
 
 static _GL_INLINE int _key_type(int type)
 {
@@ -1219,10 +1231,18 @@ static void _set_credentials(gnutls_certificate_credentials_t *credentials)
  * printed to the debug log stream).
  *
  * CLRs and private keys and their certificates are also loaded here.
+ *
+ * On systems with automatic library constructors/destructors, this function
+ * is thread-safe. On other systems it is not thread-safe.
+ *
+ * This function may be called several times. Only the first call really
+ * takes action.
  */
 void wget_ssl_init(void)
 {
-	wget_thread_mutex_lock(&_mutex);
+	_wget_tls_init();
+
+	wget_thread_mutex_lock(_mutex);
 
 	if (!_init) {
 		int rc, ncerts = -1;
@@ -1323,7 +1343,7 @@ void wget_ssl_init(void)
 		debug_printf("GnuTLS init done\n");
 	}
 
-	wget_thread_mutex_unlock(&_mutex);
+	wget_thread_mutex_unlock(_mutex);
 }
 
 /**
@@ -1332,12 +1352,15 @@ void wget_ssl_init(void)
  *
  * This function unloads everything that was loaded in wget_ssl_init().
  *
- * This function is thread-safe and may be called several times. Only the
- * last deinit really takes action.
+ * On systems with automatic library constructors/destructors, this function
+ * is thread-safe. On other systems it is not thread-safe.
+ *
+ * This function may be called several times. Only the last deinit really
+ * takes action.
  */
 void wget_ssl_deinit(void)
 {
-	wget_thread_mutex_lock(&_mutex);
+	wget_thread_mutex_lock(_mutex);
 
 	if (_init == 1) {
 		gnutls_certificate_free_credentials(_credentials);
@@ -1347,7 +1370,7 @@ void wget_ssl_deinit(void)
 
 	if (_init > 0) _init--;
 
-	wget_thread_mutex_unlock(&_mutex);
+	wget_thread_mutex_unlock(_mutex);
 }
 
 static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)

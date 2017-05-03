@@ -94,7 +94,7 @@ nobar:
 void bar_deinit(void)
 {
 	wget_thread_cancel(progress_thread);
-	wget_thread_join(progress_thread);
+	wget_thread_join(&progress_thread);
 	wget_bar_free(&bar);
 }
 

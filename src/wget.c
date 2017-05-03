@@ -73,6 +73,7 @@
 #include "wget_dl.h"
 #include "wget_plugin.h"
 #include "wget_stats.h"
+#include "wget_testing.h"
 
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)
@@ -142,6 +143,8 @@ static DOWNLOADER
 	*downloaders;
 static void
 	*downloader_thread(void *p);
+static wget_thread_mutex_t
+	quota_mutex;
 static long long
 	quota;
 static int
@@ -322,13 +325,10 @@ static long long _fetch_and_add_longlong(long long *p, long long n)
 #ifdef WITH_SYNC_FETCH_AND_ADD_LONGLONG
 	return __sync_fetch_and_add(p, n);
 #else
-	static wget_thread_mutex_t
-		mutex = WGET_THREAD_MUTEX_INITIALIZER;
-
-	wget_thread_mutex_lock(&mutex);
+	wget_thread_mutex_lock(quota_mutex);
 	long long old_value = *p;
 	*p += n;
-	wget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_unlock(quota_mutex);
 
 	return old_value;
 #endif
@@ -339,12 +339,9 @@ static void _atomic_increment_int(int *p)
 #ifdef WITH_SYNC_FETCH_AND_ADD
 	__sync_fetch_and_add(p, 1);
 #else
-	static wget_thread_mutex_t
-		mutex = WGET_THREAD_MUTEX_INITIALIZER;
-
-	wget_thread_mutex_lock(&mutex);
+	wget_thread_mutex_lock(quota_mutex);
 	*p += 1;
-	wget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_unlock(quota_mutex);
 #endif
 }
 
@@ -355,10 +352,112 @@ static long long quota_modify_read(size_t nbytes)
 	return _fetch_and_add_longlong(&quota, (long long)nbytes);
 }
 
+static void nop(int sig)
+{
+	if (sig == SIGTERM) {
+		abort(); // hard stop if got a SIGTERM
+	} else if (sig == SIGINT) {
+		if (terminate)
+			abort(); // hard stop if pressed CTRL-C a second time
+
+		terminate = 1; // set global termination flag
+		wget_http_abort_connection(NULL); // soft-abort all connections
+#ifdef SIGWINCH
+	} else if (sig == SIGWINCH) {
+		wget_bar_screen_resized();
+#endif
+	}
+}
+
+static void
+	*input_thread(void *p);
+static wget_thread_t
+	input_tid;
 static wget_vector_t
 	*parents;
 static wget_thread_mutex_t
-	downloader_mutex = WGET_THREAD_MUTEX_INITIALIZER;
+	downloader_mutex,
+	main_mutex,
+	known_urls_mutex,
+	etag_mutex,
+	savefile_mutex,
+	netrc_mutex,
+	conversion_mutex;
+
+
+static wget_thread_cond_t
+	main_cond,   // is signaled whenever a job is done
+	worker_cond; // is signaled whenever a job is added
+
+static void _wget_init(void)
+{
+	wget_global_init(0);
+	blacklist_init();
+	host_init();
+	stats_init();
+
+	wget_thread_mutex_init(&downloader_mutex);
+	wget_thread_mutex_init(&main_mutex);
+	wget_thread_mutex_init(&known_urls_mutex);
+	wget_thread_mutex_init(&etag_mutex);
+	wget_thread_mutex_init(&savefile_mutex);
+	wget_thread_mutex_init(&netrc_mutex);
+	wget_thread_mutex_init(&conversion_mutex);
+	wget_thread_mutex_init(&quota_mutex);
+	wget_thread_cond_init(&main_cond);
+	wget_thread_cond_init(&worker_cond);
+
+	setlocale(LC_ALL, "");
+
+#ifdef ENABLE_NLS
+	bindtextdomain("wget", LOCALEDIR);
+	textdomain("wget");
+#endif
+
+#ifdef _WIN32
+	// not sure if this is needed for Windows
+	// signal(SIGPIPE, SIG_IGN);
+	signal(SIGTERM, nop);
+	signal(SIGINT, nop);
+#else
+	// need to set some signals
+	struct sigaction sig_action;
+	memset(&sig_action, 0, sizeof(sig_action));
+
+	sig_action.sa_sigaction = (void (*)(int, siginfo_t *, void *))SIG_IGN;
+	sigaction(SIGPIPE, &sig_action, NULL); // this forces socket error return
+	sig_action.sa_handler = nop;
+	sigaction(SIGTERM, &sig_action, NULL);
+	sigaction(SIGINT, &sig_action, NULL);
+	sigaction(SIGWINCH, &sig_action, NULL);
+#endif
+
+	known_urls = wget_hashmap_create(128, (wget_hashmap_hash_t)hash_url, (wget_hashmap_compare_t)strcmp);
+
+	// Initialize the plugin system
+	plugin_db_init();
+#ifdef WGET_PLUGIN_DIR
+	plugin_db_add_search_paths(WGET_PLUGIN_DIR, 0);
+#endif
+}
+
+static void _wget_deinit(void)
+{
+	stats_exit();
+	host_exit();
+	blacklist_exit();
+
+	wget_thread_mutex_destroy(&downloader_mutex);
+	wget_thread_mutex_destroy(&main_mutex);
+	wget_thread_mutex_destroy(&known_urls_mutex);
+	wget_thread_mutex_destroy(&etag_mutex);
+	wget_thread_mutex_destroy(&savefile_mutex);
+	wget_thread_mutex_destroy(&netrc_mutex);
+	wget_thread_mutex_destroy(&conversion_mutex);
+	wget_thread_mutex_destroy(&quota_mutex);
+	wget_thread_cond_destroy(&main_cond);
+	wget_thread_cond_destroy(&worker_cond);
+}
 
 static int in_pattern_list(const wget_vector_t *v, const char *url)
 {
@@ -527,11 +626,11 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 		return;
 	}
 
-	wget_thread_mutex_lock(&downloader_mutex);
+	wget_thread_mutex_lock(downloader_mutex);
 
 	if (!blacklist_add(iri)) {
 		// we know this URL already
-		wget_thread_mutex_unlock(&downloader_mutex);
+		wget_thread_mutex_unlock(downloader_mutex);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
 	}
@@ -539,7 +638,7 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 	// only download content from hosts given on the command line or from input file
 	if (wget_vector_contains(config.exclude_domains, iri->host)) {
 		// download from this scheme://domain are explicitly not wanted
-		wget_thread_mutex_unlock(&downloader_mutex);
+		wget_thread_mutex_unlock(downloader_mutex);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
 	}
@@ -610,21 +709,10 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 
 	host_add_job(host, new_job);
 
-	wget_thread_mutex_unlock(&downloader_mutex);
+	wget_thread_mutex_unlock(downloader_mutex);
 
 	plugin_db_forward_url_verdict_free(&plugin_verdict);
 }
-
-static wget_thread_mutex_t
-	main_mutex = WGET_THREAD_MUTEX_INITIALIZER,
-	known_urls_mutex = WGET_THREAD_MUTEX_INITIALIZER;
-static wget_thread_cond_t
-	main_cond = WGET_THREAD_COND_INITIALIZER, // is signalled whenever a job is done
-	worker_cond = WGET_THREAD_COND_INITIALIZER;  // is signalled whenever a job is added
-static wget_thread_t
-	input_tid;
-static void
-	*input_thread(void *p);
 
 // Add URLs parsed from downloaded files
 // Needs to be thread-save
@@ -694,11 +782,11 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		return;
 	}
 
-	wget_thread_mutex_lock(&downloader_mutex);
+	wget_thread_mutex_lock(downloader_mutex);
 
 	if (!blacklist_add(iri)) {
 		// we know this URL already
-		wget_thread_mutex_unlock(&downloader_mutex);
+		wget_thread_mutex_unlock(downloader_mutex);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
 	}
@@ -715,7 +803,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			reason = _("domain explicitly excluded");
 
 		if (reason) {
-			wget_thread_mutex_unlock(&downloader_mutex);
+			wget_thread_mutex_unlock(downloader_mutex);
 			info_printf(_("URL '%s' not followed (%s)\n"), iri->uri, reason);
 			plugin_db_forward_url_verdict_free(&plugin_verdict);
 			return;
@@ -740,7 +828,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		}
 
 		if (!ok) {
-			wget_thread_mutex_unlock(&downloader_mutex);
+			wget_thread_mutex_unlock(downloader_mutex);
 			info_printf(_("URL '%s' not followed (parent ascending not allowed)\n"), url);
 			plugin_db_forward_url_verdict_free(&plugin_verdict);
 			return;
@@ -763,7 +851,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 				wget_string_t *path = wget_vector_get(host->robots->paths, it);
 				// info_printf("%s: checked robot path '%.*s' / '%s' / '%s'\n", __func__, (int)path->len, path->path, iri->path, iri->uri);
 				if (path->len && !strncmp(path->p + 1, iri->path ? iri->path : "", path->len - 1)) {
-					wget_thread_mutex_unlock(&downloader_mutex);
+					wget_thread_mutex_unlock(downloader_mutex);
 					info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), iri->uri);
 					plugin_db_forward_url_verdict_free(&plugin_verdict);
 					return;
@@ -772,7 +860,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		}
 	} else {
 		// this should really not ever happen
-		wget_thread_mutex_unlock(&downloader_mutex);
+		wget_thread_mutex_unlock(downloader_mutex);
 		error_printf(_("Failed to get '%s' from hosts\n"), iri->host);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
@@ -783,7 +871,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 				|| (config.accept_regex && !regex_match(iri->uri, config.accept_regex))) {
 
 			debug_printf("not requesting '%s' (doesn't match accept pattern)\n", iri->uri);
-			wget_thread_mutex_unlock(&downloader_mutex);
+			wget_thread_mutex_unlock(downloader_mutex);
 			return;
 		}
 
@@ -791,7 +879,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 				|| (config.reject_regex && regex_match(iri->uri, config.reject_regex))) {
 
 			debug_printf("not requesting '%s' (matches reject pattern)\n", iri->uri);
-			wget_thread_mutex_unlock(&downloader_mutex);
+			wget_thread_mutex_unlock(downloader_mutex);
 			return;
 		}
 	}
@@ -846,9 +934,9 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	host_add_job(host, new_job);
 
 	// and wake up all waiting threads
-	wget_thread_cond_signal(&worker_cond);
+	wget_thread_cond_signal(worker_cond);
 
-	wget_thread_mutex_unlock(&downloader_mutex);
+	wget_thread_mutex_unlock(downloader_mutex);
 	plugin_db_forward_url_verdict_free(&plugin_verdict);
 }
 
@@ -991,23 +1079,6 @@ static void print_progress_report(long long start_time)
 		rs_type, stats.nredirects, queue_size());
 }
 
-static void nop(int sig)
-{
-	if (sig == SIGTERM) {
-		abort(); // hard stop if got a SIGTERM
-	} else if (sig == SIGINT) {
-		if (terminate)
-			abort(); // hard stop if pressed CTRL-C a second time
-
-		terminate = 1; // set global termination flag
-		wget_http_abort_connection(NULL); // soft-abort all connections
-#ifdef SIGWINCH
-	} else if (sig == SIGWINCH) {
-		wget_bar_screen_resized();
-#endif
-	}
-}
-
 int main(int argc, const char **argv)
 {
 	int n, rc;
@@ -1016,38 +1087,7 @@ int main(int argc, const char **argv)
 	char quota_buf[16];
 	long long start_time = 0;
 
-	setlocale(LC_ALL, "");
-
-#ifdef ENABLE_NLS
-	bindtextdomain("wget", LOCALEDIR);
-	textdomain("wget");
-#endif
-
-#ifdef _WIN32
-	// not sure if this is needed for Windows
-	// signal(SIGPIPE, SIG_IGN);
-	signal(SIGTERM, nop);
-	signal(SIGINT, nop);
-#else
-	// need to set some signals
-	struct sigaction sig_action;
-	memset(&sig_action, 0, sizeof(sig_action));
-
-	sig_action.sa_sigaction = (void (*)(int, siginfo_t *, void *))SIG_IGN;
-	sigaction(SIGPIPE, &sig_action, NULL); // this forces socket error return
-	sig_action.sa_handler = nop;
-	sigaction(SIGTERM, &sig_action, NULL);
-	sigaction(SIGINT, &sig_action, NULL);
-	sigaction(SIGWINCH, &sig_action, NULL);
-#endif
-
-	known_urls = wget_hashmap_create(128, (wget_hashmap_hash_t)hash_url, (wget_hashmap_compare_t)strcmp);
-
-	// Initialize the plugin system
-	plugin_db_init();
-#ifdef WGET_PLUGIN_DIR
-	plugin_db_add_search_paths(WGET_PLUGIN_DIR, 0);
-#endif
+	_wget_init(); // initialize any resources belonging to this object file
 
 	set_exit_status(WG_EXIT_STATUS_PARSE_INIT); // --version, --help etc might set the status to OK
 	n = init(argc, argv);
@@ -1055,8 +1095,6 @@ int main(int argc, const char **argv)
 		goto out;
 	}
 	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
-
-	stats_init();
 
 	for (; n < argc; n++) {
 		add_url_to_queue(argv[n], config.base, config.local_encoding);
@@ -1162,7 +1200,7 @@ int main(int argc, const char **argv)
 
 	downloaders = wget_calloc(config.max_threads, sizeof(DOWNLOADER));
 
-	wget_thread_mutex_lock(&main_mutex);
+	wget_thread_mutex_lock(main_mutex);
 
 	while (!terminate) {
 		// queue_print();
@@ -1177,7 +1215,7 @@ int main(int argc, const char **argv)
 				bar_update_slots(nthreads + 2);
 
 			// start worker threads (I call them 'downloaders')
-			if ((rc = wget_thread_start(&downloaders[nthreads].tid, downloader_thread, &downloaders[nthreads], 0)) != 0) {
+			if ((rc = wget_thread_start(&downloaders[nthreads].thread, downloader_thread, &downloaders[nthreads], 0)) != 0) {
 				error_printf(_("Failed to start downloader, error %d\n"), rc);
 			}
 		}
@@ -1191,24 +1229,21 @@ int main(int argc, const char **argv)
 		}
 
 		// here we sit and wait for an event from our worker threads
-		wget_thread_cond_wait(&main_cond, &main_mutex, 0);
+		wget_thread_cond_wait(main_cond, main_mutex, 0);
 		debug_printf("%s: wake up\n", __func__);
 	}
 	debug_printf("%s: done\n", __func__);
 
 	// stop downloaders
 	terminate = 1;
-	wget_thread_cond_signal(&worker_cond);
-	wget_thread_mutex_unlock(&main_mutex);
+	wget_thread_cond_signal(worker_cond);
+	wget_thread_mutex_unlock(main_mutex);
 
 	for (n = 0; n < nthreads; n++) {
-		//		struct timespec ts;
-		//		gettime(&ts);
-		//		ts.tv_sec += 1;
-		// if the thread is not detached, we have to call pthread_join()/pthread_timedjoin_np()
+		// if the thread is not detached, we have to call wget_thread_join()/wget_thread_timedjoin_np()
 		// else we will have a huge memory leak
-		//		if ((rc=pthread_timedjoin_np(downloader[n].tid, NULL, &ts))!=0)
-		if ((rc = wget_thread_join(downloaders[n].tid)) != 0)
+		//		if ((rc=wget_thread_timedjoin_np(downloader[n].tid, NULL, ms))!=0)
+		if ((rc = wget_thread_join(&downloaders[n].thread)) != 0)
 			error_printf(_("Failed to wait for downloader #%d (%d %d)\n"), n, rc, errno);
 	}
 
@@ -1248,9 +1283,8 @@ int main(int argc, const char **argv)
 	stats_print();
 
  out:
-	if (wget_match_tail(argv[0], "wget2_noinstall")) {
+	if (is_testing() || wget_match_tail(argv[0], "wget2_noinstall")) {
 		// freeing to avoid disguising valgrind output
-
 		xfree(buf);
 		blacklist_free();
 		hosts_free();
@@ -1262,9 +1296,9 @@ int main(int argc, const char **argv)
 		wget_vector_free(&parents);
 		wget_hashmap_free(&known_urls);
 		wget_stringmap_free(&etags);
-		deinit();
 
-		wget_global_deinit();
+		deinit();
+		_wget_deinit(); // destroy any resources belonging to this object file
 	}
 
 	// Shutdown plugin system
@@ -1281,7 +1315,7 @@ void *input_thread(void *p G_GNUC_WGET_UNUSED)
 
 	while ((len = wget_fdgetline(&buf, &bufsize, STDIN_FILENO)) >= 0) {
 		add_url_to_queue(buf, config.base, config.local_encoding);
-		wget_thread_cond_signal(&worker_cond);
+		wget_thread_cond_signal(worker_cond);
 	}
 
 	// input closed, don't read from it any more
@@ -1520,9 +1554,6 @@ static int process_response_header(wget_http_response_t *resp)
 
 static void process_head_response(wget_http_response_t *resp)
 {
-	static wget_thread_mutex_t
-		etag_mutex = WGET_THREAD_MUTEX_INITIALIZER;
-
 	JOB *job = resp->req->user_data;
 
 	job->head_first = 0;
@@ -1542,12 +1573,12 @@ static void process_head_response(wget_http_response_t *resp)
 			return;
 
 		if (resp->etag) {
-			wget_thread_mutex_lock(&etag_mutex);
+			wget_thread_mutex_lock(etag_mutex);
 			if (!etags)
 				etags = wget_stringmap_create(128);
 			int rc = wget_stringmap_put_noalloc(etags, resp->etag, NULL);
 			resp->etag = NULL;
-			wget_thread_mutex_unlock(&etag_mutex);
+			wget_thread_mutex_unlock(etag_mutex);
 
 			if (rc) {
 				info_printf("Not scanning '%s' (known ETag)\n", job->iri->uri);
@@ -1583,7 +1614,7 @@ static void process_head_response(wget_http_response_t *resp)
 		// start or resume downloading
 		if (!job_validate_file(job)) {
 			// wake up sleeping workers
-			wget_thread_cond_signal(&worker_cond);
+			wget_thread_cond_signal(worker_cond);
 			job->done = 0; // do not remove this job from queue yet
 		} // else file already downloaded and checksum ok
 	} else if (config.chunk_size) {
@@ -1619,7 +1650,7 @@ static void process_response_part(wget_http_response_t *resp)
 		// check if all parts are done (downloaded + hash-checked)
 		int all_done = 1, it;
 
-		wget_thread_mutex_lock(&downloader_mutex);
+		wget_thread_mutex_lock(downloader_mutex);
 		for (it = 0; it < wget_vector_size(job->parts); it++) {
 			PART *partp = wget_vector_get(job->parts, it);
 			if (!partp->done) {
@@ -1627,7 +1658,7 @@ static void process_response_part(wget_http_response_t *resp)
 				break;
 			}
 		}
-		wget_thread_mutex_unlock(&downloader_mutex);
+		wget_thread_mutex_unlock(downloader_mutex);
 
 		if (all_done) {
 			// check integrity of complete file
@@ -1743,7 +1774,7 @@ static void process_response(wget_http_response_t *resp)
 					wget_metalink_sort_mirrors(job->metalink);
 
 					// wake up sleeping workers
-					wget_thread_cond_signal(&worker_cond);
+					wget_thread_cond_signal(worker_cond);
 
 					job->done = 0; // do not remove this job from queue yet
 				} // else file already downloaded and checksum ok
@@ -1868,9 +1899,9 @@ void *downloader_thread(void *p)
 	long long pause = 0;
 	enum actions action = ACTION_GET_JOB;
 
-	downloader->tid = wget_thread_self(); // to avoid race condition
+	// downloader->thread = wget_thread_self(); // to avoid race condition
 
-	wget_thread_mutex_lock(&main_mutex); locked = 1;
+	wget_thread_mutex_lock(main_mutex); locked = 1;
 
 	while (!terminate) {
 		debug_printf("[%d] action=%d pending=%d host=%p\n", downloader->id, (int) action, pending, (void *) host);
@@ -1879,7 +1910,7 @@ void *downloader_thread(void *p)
 		case ACTION_GET_JOB: // Get a job, connect, send request
 			if (!(job = host_get_job(host, &pause))) {
 				if (pending) {
-					wget_thread_mutex_unlock(&main_mutex); locked = 0;
+					wget_thread_mutex_unlock(main_mutex); locked = 0;
 					action = ACTION_GET_RESPONSE;
 				} else if (host) {
 					wget_http_close(&downloader->conn);
@@ -1888,12 +1919,12 @@ void *downloader_thread(void *p)
 					if (!wget_thread_support()) {
 						goto out;
 					}
-					wget_thread_cond_wait(&worker_cond, &main_mutex, pause); locked = 1;
+					wget_thread_cond_wait(worker_cond, main_mutex, pause); locked = 1;
 				}
 				break;
 			}
 
-			wget_thread_mutex_unlock(&main_mutex); locked = 0;
+			wget_thread_mutex_unlock(main_mutex); locked = 0;
 
 			{
 				wget_iri_t *iri = job->iri;
@@ -1936,10 +1967,11 @@ void *downloader_thread(void *p)
 					break;
 				}
 
-				if (pending >= max_pending)
+				if (pending >= max_pending) {
 					action = ACTION_GET_RESPONSE;
-				else
-					{ wget_thread_mutex_lock(&main_mutex); locked = 1; }
+				} else {
+					wget_thread_mutex_lock(main_mutex); locked = 1;
+				}
 			}
 			break;
 
@@ -1969,7 +2001,7 @@ void *downloader_thread(void *p)
 			wget_http_free_request(&resp->req);
 			wget_http_free_response(&resp);
 
-			wget_thread_mutex_lock(&main_mutex); locked = 1;
+			wget_thread_mutex_lock(main_mutex); locked = 1;
 
 			// download of single-part file complete, remove from job queue
 			if (job->done) {
@@ -1978,7 +2010,7 @@ void *downloader_thread(void *p)
 				job->inuse = 0;
 			}
 
-			wget_thread_cond_signal(&main_cond);
+			wget_thread_cond_signal(main_cond);
 
 			pending--;
 			action = ACTION_GET_JOB;
@@ -1988,9 +2020,9 @@ void *downloader_thread(void *p)
 		case ACTION_ERROR:
 			wget_http_close(&downloader->conn);
 
-			wget_thread_mutex_lock(&main_mutex); locked = 1;
+			wget_thread_mutex_lock(main_mutex); locked = 1;
 			host_release_jobs(host);
-			wget_thread_cond_signal(&main_cond);
+			wget_thread_cond_signal(main_cond);
 
 			host = NULL;
 			pending = 0;
@@ -2005,11 +2037,11 @@ void *downloader_thread(void *p)
 
 out:
 	if (locked)
-		wget_thread_mutex_unlock(&main_mutex);
+		wget_thread_mutex_unlock(main_mutex);
 	wget_http_close(&downloader->conn);
 
 	// if we terminate, tell the other downloaders
-	wget_thread_cond_signal(&worker_cond);
+	wget_thread_cond_signal(worker_cond);
 
 	return NULL;
 }
@@ -2024,8 +2056,6 @@ static void _free_conversion_entry(_conversion_t *conversion)
 
 static void _remember_for_conversion(const char *filename, wget_iri_t *base_url, int content_type, const char *encoding, wget_html_parsed_result_t *parsed)
 {
-	static wget_thread_mutex_t
-		mutex = WGET_THREAD_MUTEX_INITIALIZER;
 	_conversion_t conversion;
 
 	conversion.filename = wget_strdup(filename);
@@ -2034,7 +2064,7 @@ static void _remember_for_conversion(const char *filename, wget_iri_t *base_url,
 	conversion.content_type = content_type;
 	conversion.parsed = parsed;
 
-	wget_thread_mutex_lock(&mutex);
+	wget_thread_mutex_lock(conversion_mutex);
 
 	if (!conversions) {
 		conversions = wget_vector_create(128, -2, NULL);
@@ -2043,7 +2073,7 @@ static void _remember_for_conversion(const char *filename, wget_iri_t *base_url,
 
 	wget_vector_add(conversions, &conversion, sizeof(conversion));
 
-	wget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_unlock(conversion_mutex);
 }
 
 #ifdef __clang__
@@ -2192,7 +2222,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 		}
 	}
 
-	wget_thread_mutex_lock(&known_urls_mutex);
+	wget_thread_mutex_lock(known_urls_mutex);
 	for (int it = 0; it < wget_vector_size(parsed->uris); it++) {
 		wget_html_parsed_url_t *html_url = wget_vector_get(parsed->uris, it);
 		wget_string_t *url = &html_url->url;
@@ -2228,7 +2258,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 				add_url(job, "utf-8", buf.data, 0);
 		}
 	}
-	wget_thread_mutex_unlock(&known_urls_mutex);
+	wget_thread_mutex_unlock(known_urls_mutex);
 
 	wget_buffer_deinit(&buf);
 
@@ -2277,7 +2307,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 
 	// process the sitemap urls here
 	info_printf(_("found %d url(s) (base=%s)\n"), wget_vector_size(urls), base ? base->uri : NULL);
-	wget_thread_mutex_lock(&known_urls_mutex);
+	wget_thread_mutex_lock(known_urls_mutex);
 	for (int it = 0; it < wget_vector_size(urls); it++) {
 		wget_string_t *url = wget_vector_get(urls, it);
 
@@ -2314,7 +2344,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 
 		add_url(job, encoding, p, URL_FLG_SITEMAP);
 	}
-	wget_thread_mutex_unlock(&known_urls_mutex);
+	wget_thread_mutex_unlock(known_urls_mutex);
 
 	wget_vector_free(&urls);
 	wget_vector_free(&sitemap_urls);
@@ -2409,7 +2439,7 @@ static void _add_urls(JOB *job, wget_vector_t *urls, const char *encoding, wget_
 
 	info_printf(_("found %d url(s) (base=%s)\n"), wget_vector_size(urls), base ? base->uri : NULL);
 
-	wget_thread_mutex_lock(&known_urls_mutex);
+	wget_thread_mutex_lock(known_urls_mutex);
 	for (int it = 0; it < wget_vector_size(urls); it++) {
 		wget_string_t *url = wget_vector_get(urls, it);
 
@@ -2427,7 +2457,7 @@ static void _add_urls(JOB *job, wget_vector_t *urls, const char *encoding, wget_
 
 		add_url(job, encoding, p, 0);
 	}
-	wget_thread_mutex_unlock(&known_urls_mutex);
+	wget_thread_mutex_unlock(known_urls_mutex);
 }
 
 void atom_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base)
@@ -2667,8 +2697,6 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		const char *uri, const char *original_url, int ignore_patterns, wget_buffer_t *partial_content,
 		size_t max_partial_content)
 {
-	static wget_thread_mutex_t
-		savefile_mutex = WGET_THREAD_MUTEX_INITIALIZER;
 	char *alloced_fname = NULL;
 	int fd, multiple = 0, oflag = flag;
 	size_t fname_length;
@@ -2777,7 +2805,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		}
 	}
 
-	wget_thread_mutex_lock(&savefile_mutex);
+	wget_thread_mutex_lock(savefile_mutex);
 
 	fname_length += 16;
 
@@ -2879,7 +2907,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		}
 	}
 
-	wget_thread_mutex_unlock(&savefile_mutex);
+	wget_thread_mutex_unlock(savefile_mutex);
 
 	xfree(alloced_fname);
 	return fd;
@@ -3033,15 +3061,12 @@ static void _add_authorize_header(
 		if (username) {
 			wget_http_add_credentials(req, selected_challenge, username, password, proxied);
 		} else if (config.netrc_file) {
-			static wget_thread_mutex_t
-				mutex = WGET_THREAD_MUTEX_INITIALIZER;
-
-			wget_thread_mutex_lock(&mutex);
+			wget_thread_mutex_lock(netrc_mutex);
 			if (!config.netrc_db) {
 				config.netrc_db = wget_netrc_db_init(NULL);
 				wget_netrc_db_load(config.netrc_db, config.netrc_file);
 			}
-			wget_thread_mutex_unlock(&mutex);
+			wget_thread_mutex_unlock(netrc_mutex);
 
 			wget_netrc_t *netrc = wget_netrc_get(config.netrc_db, req->esc_host.data);
 			if (!netrc)

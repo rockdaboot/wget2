@@ -2798,8 +2798,7 @@ int init(int argc, const char **argv)
 
 void deinit(void)
 {
-	wget_dns_cache_free(); // frees DNS cache
-	wget_tcp_set_bind_address(NULL, NULL); // free global bind address
+	wget_global_deinit();
 
 	wget_cookie_db_free(&config.cookie_db);
 	wget_hsts_db_free(&config.hsts_db);
@@ -2807,7 +2806,6 @@ void deinit(void)
 	wget_tls_session_db_free(&config.tls_session_db);
 	wget_ocsp_db_free(&config.ocsp_db);
 	wget_netrc_db_free(&config.netrc_db);
-	wget_ssl_deinit();
 
 	xfree(config.base_url);
 	xfree(config.bind_address);
@@ -2850,8 +2848,6 @@ void deinit(void)
 	xfree(config.user_agent);
 	xfree(config.use_askpass_bin);
 	xfree(config.username);
-
-	stats_exit();
 
 	wget_iri_free(&config.base);
 

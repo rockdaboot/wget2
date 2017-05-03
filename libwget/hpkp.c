@@ -337,9 +337,11 @@ void wget_hpkp_db_deinit(wget_hpkp_db_t *hpkp_db)
 
 	if (hpkp_db_priv) {
 		xfree(hpkp_db_priv->fname);
-		wget_thread_mutex_lock(&hpkp_db_priv->mutex);
+		wget_thread_mutex_lock(hpkp_db_priv->mutex);
 		wget_hashmap_free(&hpkp_db_priv->entries);
-		wget_thread_mutex_unlock(&hpkp_db_priv->mutex);
+		wget_thread_mutex_unlock(hpkp_db_priv->mutex);
+
+		wget_thread_mutex_destroy(&hpkp_db_priv->mutex);
 	}
 }
 
@@ -450,7 +452,7 @@ static void impl_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t *hpkp)
 	if (!hpkp)
 		return;
 
-	wget_thread_mutex_lock(&hpkp_db_priv->mutex);
+	wget_thread_mutex_lock(hpkp_db_priv->mutex);
 
 	if (hpkp->maxage == 0 || wget_vector_size(hpkp->pins) == 0) {
 		if (wget_hashmap_remove(hpkp_db_priv->entries, hpkp))
@@ -477,7 +479,7 @@ static void impl_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t *hpkp)
 		}
 	}
 
-	wget_thread_mutex_unlock(&hpkp_db_priv->mutex);
+	wget_thread_mutex_unlock(hpkp_db_priv->mutex);
 }
 
 static int _hpkp_db_load(_hpkp_db_impl_t *hpkp_db_priv, FILE *fp)

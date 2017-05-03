@@ -169,6 +169,7 @@ wget_tls_session_db_t *wget_tls_session_db_init(wget_tls_session_db_t *tls_sessi
 	tls_session_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_t)_hash_tls_session, (wget_hashmap_compare_t)_compare_tls_session);
 	wget_hashmap_set_key_destructor(tls_session_db->entries, (wget_hashmap_key_destructor_t)wget_tls_session_free);
 	wget_hashmap_set_value_destructor(tls_session_db->entries, (wget_hashmap_value_destructor_t)wget_tls_session_free);
+
 	wget_thread_mutex_init(&tls_session_db->mutex);
 
 	return tls_session_db;
@@ -177,9 +178,11 @@ wget_tls_session_db_t *wget_tls_session_db_init(wget_tls_session_db_t *tls_sessi
 void wget_tls_session_db_deinit(wget_tls_session_db_t *tls_session_db)
 {
 	if (tls_session_db) {
-		wget_thread_mutex_lock(&tls_session_db->mutex);
+		wget_thread_mutex_lock(tls_session_db->mutex);
 		wget_hashmap_free(&tls_session_db->entries);
-		wget_thread_mutex_unlock(&tls_session_db->mutex);
+		wget_thread_mutex_unlock(tls_session_db->mutex);
+
+		wget_thread_mutex_destroy(&tls_session_db->mutex);
 	}
 }
 
@@ -193,7 +196,7 @@ void wget_tls_session_db_free(wget_tls_session_db_t **tls_session_db)
 
 void wget_tls_session_db_add(wget_tls_session_db_t *tls_session_db, wget_tls_session_t *tls_session)
 {
-	wget_thread_mutex_lock(&tls_session_db->mutex);
+	wget_thread_mutex_lock(tls_session_db->mutex);
 
 	if (tls_session->maxage == 0) {
 		if (wget_hashmap_remove(tls_session_db->entries, tls_session)) {
@@ -216,7 +219,7 @@ void wget_tls_session_db_add(wget_tls_session_db_t *tls_session_db, wget_tls_ses
 		tls_session_db->changed = 1;
 	}
 
-	wget_thread_mutex_unlock(&tls_session_db->mutex);
+	wget_thread_mutex_unlock(tls_session_db->mutex);
 }
 
 static int _tls_session_db_load(wget_tls_session_db_t *tls_session_db, FILE *fp)

@@ -29,9 +29,6 @@
 #define _LIBWGET_LIBWGET_H
 
 #include <stddef.h>
-#ifdef HAVE_PTHREAD_H
-#	include <pthread.h>
-#endif
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdarg.h>
@@ -767,41 +764,36 @@ WGETAPI void
  * Thread wrapper routines
  */
 
-#if defined USE_POSIX_THREADS || defined USE_PTH_THREADS
-# define WGET_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
-# define WGET_THREAD_COND_INITIALIZER PTHREAD_COND_INITIALIZER
-typedef pthread_t wget_thread_t;
-typedef pthread_mutex_t wget_thread_mutex_t;
-typedef pthread_cond_t wget_thread_cond_t;
-#else
-# define WGET_THREAD_MUTEX_INITIALIZER 0
-# define WGET_THREAD_COND_INITIALIZER 0
-typedef unsigned long int wget_thread_t;
-typedef int wget_thread_mutex_t;
-typedef int wget_thread_cond_t;
-#endif
+typedef unsigned long wget_thread_id_t;
+typedef struct _wget_thread_st *wget_thread_t;
+typedef struct _wget_thread_mutex_st *wget_thread_mutex_t;
+typedef struct _wget_thread_cond_st *wget_thread_cond_t;
 
 WGETAPI int
 	wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags);
 WGETAPI int
 	wget_thread_mutex_init(wget_thread_mutex_t *mutex);
+WGETAPI int
+	wget_thread_mutex_destroy(wget_thread_mutex_t *mutex);
 WGETAPI void
-	wget_thread_mutex_lock(wget_thread_mutex_t *);
+	wget_thread_mutex_lock(wget_thread_mutex_t mutex);
 WGETAPI void
-	wget_thread_mutex_unlock(wget_thread_mutex_t *);
+	wget_thread_mutex_unlock(wget_thread_mutex_t mutex);
 WGETAPI int
 	wget_thread_kill(wget_thread_t thread, int sig);
 WGETAPI int
 	wget_thread_cancel(wget_thread_t thread);
 WGETAPI int
-	wget_thread_join(wget_thread_t thread);
+	wget_thread_join(wget_thread_t *thread);
 WGETAPI int
 	wget_thread_cond_init(wget_thread_cond_t *cond);
 WGETAPI int
-	wget_thread_cond_signal(wget_thread_cond_t *cond);
+	wget_thread_cond_destroy(wget_thread_cond_t *cond);
 WGETAPI int
-	wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex, long long ms);
-WGETAPI wget_thread_t
+	wget_thread_cond_signal(wget_thread_cond_t cond);
+WGETAPI int
+	wget_thread_cond_wait(wget_thread_cond_t cond, wget_thread_mutex_t mutex, long long ms);
+WGETAPI wget_thread_id_t
 	wget_thread_self(void) G_GNUC_WGET_CONST;
 WGETAPI bool
 	wget_thread_support(void) G_GNUC_WGET_CONST;
@@ -1698,6 +1690,11 @@ WGETAPI void
 
 typedef struct wget_tcp_st wget_tcp_t;
 
+WGETAPI void
+	wget_dns_init(void);
+WGETAPI void
+	wget_dns_exit(void);
+
 WGETAPI int
 	wget_net_init(void);
 WGETAPI int
@@ -2125,6 +2122,10 @@ WGETAPI wget_http_response_t *
 WGETAPI wget_http_response_t *
 	wget_http_get_response(wget_http_connection_t *conn) G_GNUC_WGET_NONNULL((1));
 
+WGETAPI void
+	wget_http_init(void);
+WGETAPI void
+	wget_http_exit(void);
 WGETAPI int
 	wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri);
 WGETAPI wget_http_request_t *
@@ -2164,8 +2165,14 @@ WGETAPI wget_vector_t
  * random routines
  */
 
-int wget_random(void);
-void wget_srandom(unsigned int seed);
+WGETAPI void
+	wget_random_init(void);
+WGETAPI void
+	wget_random_exit(void);
+WGETAPI int
+	wget_random(void);
+WGETAPI void
+	wget_srandom(unsigned int seed);
 
 
 /**

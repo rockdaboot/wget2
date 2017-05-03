@@ -47,10 +47,53 @@
  * This is wrapper code around gnulib's srandom_r() and random_r() with automatic seeding
  */
 
-static wget_thread_mutex_t mutex = WGET_THREAD_MUTEX_INITIALIZER;
 static int seeded;
 static char statebuf[64];
 static struct random_data state;
+static wget_thread_mutex_t mutex;
+static bool initialized;
+
+static void __attribute__ ((constructor)) _wget_random_init(void)
+{
+	if (!initialized) {
+		wget_thread_mutex_init(&mutex);
+		initialized = 1;
+	}
+}
+
+static void __attribute__ ((destructor)) _wget_random_exit(void)
+{
+	if (initialized) {
+		wget_thread_mutex_destroy(&mutex);
+		initialized = 0;
+	}
+}
+
+/**
+ * Random API initialization, allocating/preparing the internal resources.
+ *
+ * On systems with automatic library constructors, this function
+ * doesn't have to be called explictly.
+ *
+ * This function is not thread-safe.
+ */
+void wget_random_init(void)
+{
+	_wget_random_init();
+}
+
+/**
+ * Random API deinitialization, free'ing all internal resources.
+ *
+ * On systems with automatic library destructors, this function
+ * doesn't have to be called explictly.
+ *
+ * This function is not thread-safe.
+ */
+void wget_random_exit(void)
+{
+	_wget_random_exit();
+}
 
 /**
  * \return Random value between 0 and RAND_MAX
@@ -62,7 +105,7 @@ int wget_random(void)
 {
 	int32_t r;
 
-	wget_thread_mutex_lock(&mutex);
+	wget_thread_mutex_lock(mutex);
 
 	if (!seeded) {
 		// seed random generator, used e.g. by Digest Authentication and --random-wait
@@ -73,7 +116,7 @@ int wget_random(void)
 	if (random_r(&state, &r))
 		r = 0; // return 0 on failure
 
-	wget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_unlock(mutex);
 
 	return (int)r;
 }
@@ -85,12 +128,12 @@ int wget_random(void)
  */
 void wget_srandom(unsigned int seed)
 {
-	wget_thread_mutex_lock(&mutex);
+	wget_thread_mutex_lock(mutex);
 
 	initstate_r(seed, statebuf, sizeof(statebuf), &state);
 	seeded = 1;
 
-	wget_thread_mutex_unlock(&mutex);
+	wget_thread_mutex_unlock(mutex);
 }
 
 /**@}*/

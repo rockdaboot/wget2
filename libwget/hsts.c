@@ -209,9 +209,11 @@ void wget_hsts_db_deinit(wget_hsts_db_t *hsts_db)
 
 	if (hsts_db_priv) {
 		xfree(hsts_db_priv->fname);
-		wget_thread_mutex_lock(&hsts_db_priv->mutex);
+		wget_thread_mutex_lock(hsts_db_priv->mutex);
 		wget_hashmap_free(&hsts_db_priv->entries);
-		wget_thread_mutex_unlock(&hsts_db_priv->mutex);
+		wget_thread_mutex_unlock(hsts_db_priv->mutex);
+
+		wget_thread_mutex_destroy(&hsts_db_priv->mutex);
 	}
 }
 
@@ -243,7 +245,7 @@ static void impl_hsts_db_free(wget_hsts_db_t *hsts_db)
 
 static void _hsts_db_add_entry(_hsts_db_impl_t *hsts_db_priv, _hsts_t *hsts)
 {
-	wget_thread_mutex_lock(&hsts_db_priv->mutex);
+	wget_thread_mutex_lock(hsts_db_priv->mutex);
 
 	if (hsts->maxage == 0) {
 		if (wget_hashmap_remove(hsts_db_priv->entries, hsts))
@@ -271,7 +273,7 @@ static void _hsts_db_add_entry(_hsts_db_impl_t *hsts_db_priv, _hsts_t *hsts)
 		}
 	}
 
-	wget_thread_mutex_unlock(&hsts_db_priv->mutex);
+	wget_thread_mutex_unlock(hsts_db_priv->mutex);
 }
 
 /**

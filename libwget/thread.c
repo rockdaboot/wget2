@@ -27,126 +27,144 @@
 
 #include <config.h>
 
-#include <signal.h>
 #include <errno.h>
 #include "timespec.h" // gnulib gettime()
+#include <glthread/thread.h>
+#include <glthread/lock.h>
+#include <glthread/cond.h>
 
 #include <wget.h>
 #include "private.h"
 
-#if USE_POSIX_THREADS || USE_PTH_THREADS
+struct _wget_thread_st {
+	gl_thread_t tid;
+};
 
-int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_WGET_UNUSED)
+struct _wget_thread_mutex_st {
+	gl_lock_t mutex;
+};
+
+struct _wget_thread_cond_st {
+	gl_cond_t cond;
+};
+
+int wget_thread_mutex_init(wget_thread_mutex_t *mutex)
 {
 	int rc;
-	pthread_attr_t attr;
+	struct _wget_thread_mutex_st _mutex;
 
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-	// pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
-	pthread_attr_setschedpolicy(&attr, SCHED_OTHER);
-
-	rc = pthread_create(thread, &attr, start_routine, arg);
-
-	pthread_attr_destroy(&attr);
+	if ((rc = glthread_lock_init(&_mutex.mutex)) == 0)
+		*mutex = wget_memdup(&_mutex, sizeof(_mutex));
 
 	return rc;
 }
 
-int wget_thread_mutex_init(wget_thread_mutex_t *mutex)
+void wget_thread_mutex_lock(wget_thread_mutex_t mutex)
 {
-	return pthread_mutex_init(mutex, NULL);
+	glthread_lock_lock(&mutex->mutex);
 }
 
-void wget_thread_mutex_lock(wget_thread_mutex_t *mutex)
+void wget_thread_mutex_unlock(wget_thread_mutex_t mutex)
 {
-	pthread_mutex_lock(mutex);
+	glthread_lock_unlock(&mutex->mutex);
 }
 
-void wget_thread_mutex_unlock(wget_thread_mutex_t *mutex)
+int wget_thread_mutex_destroy(wget_thread_mutex_t *mutex)
 {
-	pthread_mutex_unlock(mutex);
+	if (mutex && *mutex) {
+		int rc = glthread_lock_destroy(&(*mutex)->mutex);
+		xfree(*mutex);
+		return rc;
+	}
+	return -1;
 }
 
-int wget_thread_cancel(wget_thread_t thread)
+int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_WGET_UNUSED)
 {
-	if (thread)
-		return pthread_cancel(thread);
+	int rc;
+	struct _wget_thread_st _thr;
+
+	if ((rc = glthread_create(&_thr.tid, start_routine, arg)) == 0)
+		*thread = wget_memdup(&_thr, sizeof(_thr));
+
+	return rc;
+}
+
+int wget_thread_cancel(wget_thread_t thread G_GNUC_WGET_UNUSED)
+{
+/*
+	if (thread && thread->tid)
+		return glthread_cancel(thread->tid);
+
+	errno = ESRCH;
+	return -1;
+*/
+	return 0;
+}
+
+int wget_thread_kill(wget_thread_t thread G_GNUC_WGET_UNUSED, int sig G_GNUC_WGET_UNUSED)
+{
+/*	if (thread && thread->tid)
+		return glthread_kill(thread->tid, sig);
+
+	errno = ESRCH;
+	return -1;
+*/
+	return 0;
+}
+
+int wget_thread_join(wget_thread_t *thread)
+{
+	if (thread && *thread && (*thread)->tid) {
+		int rc = glthread_join((*thread)->tid, NULL);
+		xfree(*thread);
+		return rc;
+	}
 
 	errno = ESRCH;
 	return -1;
 }
 
-int wget_thread_kill(wget_thread_t thread, int sig)
+wget_thread_id_t wget_thread_self(void)
 {
-	if (thread)
-		return pthread_kill(thread, sig);
-
-	errno = ESRCH;
-	return -1;
-}
-
-int wget_thread_join(wget_thread_t thread)
-{
-	if (thread)
-		return pthread_join(thread, NULL);
-
-	errno = ESRCH;
-	return -1;
-}
-
-wget_thread_t wget_thread_self(void)
-{
-	return pthread_self();
+	return gl_thread_self();
 }
 
 int wget_thread_cond_init(wget_thread_cond_t *cond)
 {
-	return pthread_cond_init(cond, NULL);
+	int rc;
+	struct _wget_thread_cond_st _cond;
+
+	if ((rc = glthread_cond_init(&_cond.cond)) == 0)
+		*cond = wget_memdup(&_cond, sizeof(_cond));
+
+	return rc;
 }
 
-int wget_thread_cond_signal(wget_thread_cond_t *cond)
+int wget_thread_cond_signal(wget_thread_cond_t cond)
 {
-	return pthread_cond_broadcast(cond);
+	return glthread_cond_broadcast(&cond->cond);
 }
 
-int wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex, long long ms)
+int wget_thread_cond_wait(wget_thread_cond_t cond, wget_thread_mutex_t mutex, long long ms)
 {
 	if (ms <= 0)
-		return pthread_cond_wait(cond, mutex);
+		return glthread_cond_wait(&cond->cond, &mutex->mutex);
 
 	// pthread_cond_timedwait() wants an absolute time
 	ms += wget_get_timemillis();
 
-	return pthread_cond_timedwait(cond, mutex, &(struct timespec){ .tv_sec = ms / 1000, .tv_nsec = (ms % 1000) * 1000000 });
+	return glthread_cond_timedwait(&cond->cond, &mutex->mutex, (&(struct timespec){ .tv_sec = ms / 1000, .tv_nsec = (ms % 1000) * 1000000 }));
+}
+
+int wget_thread_cond_destroy(wget_thread_cond_t *cond)
+{
+	int rc = glthread_cond_destroy(&(*cond)->cond);
+	xfree(*cond);
+	return rc;
 }
 
 bool wget_thread_support(void)
 {
 	return true;
 }
-
-#else // USE_POSIX_THREADS || USE_PTH_THREADS
-
-bool wget_thread_support(void)
-{
-	return false;
-}
-
-int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_WGET_UNUSED)
-{
-	start_routine(arg);
-	return 0;
-}
-int wget_thread_mutex_init(wget_thread_mutex_t *mutex) { return 0; }
-void wget_thread_mutex_lock(wget_thread_mutex_t *mutex) { }
-void wget_thread_mutex_unlock(wget_thread_mutex_t *mutex) { }
-int wget_thread_cancel(wget_thread_t thread) { return 0; }
-int wget_thread_kill(wget_thread_t thread, int sig) { return 0; }
-int wget_thread_join(wget_thread_t thread) { return 0; }
-wget_thread_t wget_thread_self(void) { return 0; }
-int wget_thread_cond_init(wget_thread_cond_t *cond) { return 0; }
-int wget_thread_cond_signal(wget_thread_cond_t *cond) { return 0; }
-int wget_thread_cond_wait(wget_thread_cond_t *cond, wget_thread_mutex_t *mutex, long long ms) { return 0; }
-
-#endif // USE_POSIX_THREADS || USE_PTH_THREADS

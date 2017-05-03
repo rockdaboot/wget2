@@ -66,8 +66,57 @@ static wget_vector_t
 
 static wget_hashmap_t
 	*hosts;
+
+// protect access to the above vectors
 static wget_thread_mutex_t
-	hosts_mutex = WGET_THREAD_MUTEX_INITIALIZER;
+	proxy_mutex,
+	hosts_mutex;
+static bool
+	initialized;
+
+static void __attribute__ ((constructor)) _wget_http_init(void)
+{
+	if (!initialized) {
+		wget_thread_mutex_init(&proxy_mutex);
+		wget_thread_mutex_init(&hosts_mutex);
+		initialized = 1;
+	}
+}
+
+static void __attribute__ ((destructor)) _wget_http_exit(void)
+{
+	if (initialized) {
+		wget_thread_mutex_destroy(&proxy_mutex);
+		wget_thread_mutex_destroy(&hosts_mutex);
+		initialized = 0;
+	}
+}
+
+/**
+ * HTTP API initialization, allocating/preparing the internal resources.
+ *
+ * On systems with automatic library constructors, this function
+ * doesn't have to be called explictly.
+ *
+ * This function is not thread-safe.
+ */
+void wget_http_init(void)
+{
+	_wget_http_init();
+}
+
+/**
+ * HTTP API deinitialization, free'ing all internal resources.
+ *
+ * On systems with automatic library destructors, this function
+ * doesn't have to be called explictly.
+ *
+ * This function is not thread-safe.
+ */
+void wget_http_exit(void)
+{
+	_wget_http_exit();
+}
 
 typedef struct {
 	const char
@@ -613,7 +662,7 @@ void host_ips_free(void)
 
 static void _server_stats_add(wget_http_connection_t *conn, wget_http_response_t *resp)
 {
-	wget_thread_mutex_lock(&hosts_mutex);
+	wget_thread_mutex_lock(hosts_mutex);
 
 	HOST *hostp = wget_malloc(sizeof(HOST));
 	hostp->hostname = wget_strdup(wget_http_get_host(conn));
@@ -636,15 +685,13 @@ static void _server_stats_add(wget_http_connection_t *conn, wget_http_response_t
 	} else
 		_free_host_entry(hostp);
 
-	wget_thread_mutex_unlock(&hosts_mutex);
+	wget_thread_mutex_unlock(hosts_mutex);
 }
 
 int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 {
 	static int next_http_proxy = -1;
 	static int next_https_proxy = -1;
-	static wget_thread_mutex_t
-		mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
 	wget_http_connection_t
 		*conn;
@@ -664,10 +711,10 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 	host = iri->host;
 	port = iri->port;
 
+	wget_thread_mutex_lock(proxy_mutex);
 	if (!wget_http_match_no_proxy(no_proxies, iri->host)) {
 		wget_iri_t *proxy;
 
-		wget_thread_mutex_lock(&mutex);
 		if (iri->scheme == WGET_IRI_SCHEME_HTTP && http_proxies) {
 			proxy = wget_vector_get(http_proxies, (++next_http_proxy) % wget_vector_size(http_proxies));
 			host = proxy->host;
@@ -679,8 +726,8 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 			port = proxy->port;
 			conn->proxied = 1;
 		}
-		wget_thread_mutex_unlock(&mutex);
 	}
+	wget_thread_mutex_unlock(proxy_mutex);
 
 	conn->tcp = wget_tcp_init();
 	if (ssl) {

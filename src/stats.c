@@ -45,13 +45,13 @@ static wget_vector_t
 	*ocsp_stats_v;
 
 static wget_thread_mutex_t
-	dns_mutex = WGET_THREAD_MUTEX_INITIALIZER,
-	tls_mutex = WGET_THREAD_MUTEX_INITIALIZER,
-	server_mutex = WGET_THREAD_MUTEX_INITIALIZER,
-	ocsp_mutex = WGET_THREAD_MUTEX_INITIALIZER,
-	host_docs_mutex = WGET_THREAD_MUTEX_INITIALIZER,
-	tree_docs_mutex = WGET_THREAD_MUTEX_INITIALIZER,
-	*hosts_mutex;
+	dns_mutex,
+	tls_mutex,
+	server_mutex,
+	ocsp_mutex,
+	host_docs_mutex,
+	tree_docs_mutex,
+	hosts_mutex;
 
 typedef struct {
 	const char
@@ -77,7 +77,7 @@ static wget_hashmap_t
 
 static char tabs[] = "\t\t\t\t\t\t\t\t\t\t";
 
-void stats_set_hosts(wget_hashmap_t *_hosts, wget_thread_mutex_t *_hosts_mutex)
+void stats_set_hosts(wget_hashmap_t *_hosts, wget_thread_mutex_t _hosts_mutex)
 {
 	hosts = _hosts;
 	hosts_mutex = _hosts_mutex;
@@ -193,7 +193,7 @@ DOC *stats_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
 		return NULL;
 	}
 
-	wget_thread_mutex_lock(&host_docs_mutex);
+	wget_thread_mutex_lock(host_docs_mutex);
 
 	if (!(host_docs = hostp->host_docs)) {
 		host_docs = wget_hashmap_create(16, (wget_hashmap_hash_t)_host_docs_hash, (wget_hashmap_compare_t)_host_docs_compare);
@@ -243,7 +243,7 @@ DOC *stats_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
 		doc->size_decompressed = resp->body->length;
 	}
 
-	wget_thread_mutex_unlock(&host_docs_mutex);
+	wget_thread_mutex_unlock(host_docs_mutex);
 
 	return doc;
 }
@@ -263,7 +263,7 @@ TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, wget_htt
 		return NULL;
 	}
 
-	wget_thread_mutex_lock(&tree_docs_mutex);
+	wget_thread_mutex_lock(tree_docs_mutex);
 
 	if (parent_iri) {
 		if (!(parent_node = stats_docs_get(hostp->tree_docs, parent_iri))) {
@@ -319,7 +319,7 @@ TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, wget_htt
 	}
 
 out:
-	wget_thread_mutex_unlock(&tree_docs_mutex);
+	wget_thread_mutex_unlock(tree_docs_mutex);
 
 	return child_node;
 }
@@ -343,9 +343,9 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		if (wget_tcp_get_stats_dns(WGET_STATS_DNS_SECS, stats))
 			dns_stats.millisecs = *((long long *)wget_tcp_get_stats_dns(WGET_STATS_DNS_SECS, stats));
 
-		wget_thread_mutex_lock(&dns_mutex);
+		wget_thread_mutex_lock(dns_mutex);
 		wget_vector_add(dns_stats_v, &dns_stats, sizeof(dns_stats_t));
-		wget_thread_mutex_unlock(&dns_mutex);
+		wget_thread_mutex_unlock(dns_mutex);
 
 		break;
 	}
@@ -382,9 +382,9 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_SECS, stats))
 			tls_stats.millisecs = *((long long *)wget_tcp_get_stats_tls(WGET_STATS_TLS_SECS, stats));
 
-		wget_thread_mutex_lock(&tls_mutex);
+		wget_thread_mutex_lock(tls_mutex);
 		wget_vector_add(tls_stats_v, &tls_stats, sizeof(tls_stats_t));
-		wget_thread_mutex_unlock(&tls_mutex);
+		wget_thread_mutex_unlock(tls_mutex);
 
 		break;
 	}
@@ -412,9 +412,9 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats))
 			server_stats.hpkp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats));
 
-		wget_thread_mutex_lock(&server_mutex);
+		wget_thread_mutex_lock(server_mutex);
 		wget_vector_add(server_stats_v, &server_stats, sizeof(server_stats_t));
-		wget_thread_mutex_unlock(&server_mutex);
+		wget_thread_mutex_unlock(server_mutex);
 
 		break;
 	}
@@ -434,9 +434,9 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		if (wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats))
 			ocsp_stats.nignored = *((int *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats));
 
-		wget_thread_mutex_lock(&ocsp_mutex);
+		wget_thread_mutex_lock(ocsp_mutex);
 		wget_vector_add(ocsp_stats_v, &ocsp_stats, sizeof(ocsp_stats_t));
-		wget_thread_mutex_unlock(&ocsp_mutex);
+		wget_thread_mutex_unlock(ocsp_mutex);
 
 		break;
 	}
@@ -485,8 +485,10 @@ static void free_ocsp_stats(server_stats_t *stats)
 
 void stats_set_option(int type, bool status, int format, const char *filename)
 {
-	if (type < 0 || type >= (int) countof(stats_opts))
+	if (type < 0 || type >= (int) countof(stats_opts)) {
+		xfree(filename);
 		return;
+	}
 
 	stats_opts_t *opts = &stats_opts[type];
 	opts->status = status;
@@ -506,6 +508,13 @@ bool stats_is_enabled(int type)
 
 void stats_init(void)
 {
+	wget_thread_mutex_init(&dns_mutex);
+	wget_thread_mutex_init(&tls_mutex);
+	wget_thread_mutex_init(&server_mutex);
+	wget_thread_mutex_init(&ocsp_mutex);
+	wget_thread_mutex_init(&host_docs_mutex);
+	wget_thread_mutex_init(&tree_docs_mutex);
+
 	if (stats_opts[WGET_STATS_TYPE_DNS].status) {
 		dns_stats_v = wget_vector_create(8, -2, NULL);
 		wget_vector_set_destructor(dns_stats_v, (wget_vector_destructor_t) free_dns_stats);
@@ -541,6 +550,13 @@ void stats_exit(void)
 	for (unsigned it = 0; it < countof(stats_opts); it++) {
 		xfree(stats_opts[it].file);
 	}
+
+	wget_thread_mutex_destroy(&dns_mutex);
+	wget_thread_mutex_destroy(&tls_mutex);
+	wget_thread_mutex_destroy(&server_mutex);
+	wget_thread_mutex_destroy(&ocsp_mutex);
+	wget_thread_mutex_destroy(&host_docs_mutex);
+	wget_thread_mutex_destroy(&tree_docs_mutex);
 }
 
 static const char *print_encoding(char encoding)
@@ -1064,7 +1080,7 @@ void stats_print(void)
 
 		if (config.stats_all && stats_opts[type].format == WGET_STATS_FORMAT_CSV && wget_strcmp(stats_opts[type].file, "-")) {
 			filename = wget_malloc(strlen(stats_opts[type].file) + 3);
-			snprintf(filename, strlen(stats_opts[type].file) + 3, "%d-%s", (int)type, stats_opts[type].file);
+			snprintf(filename, strlen(stats_opts[type].file) + 3, "%d-%s", (int) type, stats_opts[type].file);
 		} else
 			filename = wget_strdup(stats_opts[type].file);
 

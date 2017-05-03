@@ -41,7 +41,7 @@ typedef struct {
 		length;
 	int
 		id;
-	wget_thread_t
+	wget_thread_id_t
 		used_by;
 	bool
 		inuse : 1,
@@ -77,7 +77,7 @@ struct JOB {
 	DOWNLOADER
 		*downloader;
 
-	wget_thread_t
+	wget_thread_id_t
 		used_by; // keep track of who uses this job, for host_release_jobs()
 	int
 		level, // current recursion level
@@ -98,7 +98,7 @@ struct JOB {
 
 struct DOWNLOADER {
 	wget_thread_t
-		tid;
+		thread;
 	JOB
 		*job;
 	wget_http_connection_t

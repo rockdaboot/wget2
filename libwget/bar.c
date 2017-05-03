@@ -303,7 +303,6 @@ static void _bar_update(wget_bar_t *bar)
  */
 wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 {
-
 	/* Initialize screen_width if this hasn't been done or if it might
 	   have changed, as indicated by receiving SIGWINCH.  */
 	int max_width = _bar_get_width();
@@ -311,11 +310,12 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 	if (nslots < 1 || max_width < 1)
 		return NULL;
 
-	if (!bar) {
+	if (!bar)
 		bar = xcalloc(1, sizeof(*bar));
-	} else
+	else
 		memset(bar, 0, sizeof(*bar));
 
+	wget_thread_mutex_init(&bar->mutex);
 	wget_bar_set_slots(bar, nslots);
 
 	return bar;
@@ -333,7 +333,7 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
  */
 void wget_bar_set_slots(wget_bar_t *bar, int nslots)
 {
-	wget_thread_mutex_lock(&bar->mutex);
+	wget_thread_mutex_lock(bar->mutex);
 	int more_slots = nslots - bar->nslots;
 
 	if (more_slots > 0) {
@@ -346,7 +346,7 @@ void wget_bar_set_slots(wget_bar_t *bar, int nslots)
 		_bar_update_winsize(bar, true);
 		_bar_update(bar);
 	}
-	wget_thread_mutex_unlock(&bar->mutex);
+	wget_thread_mutex_unlock(bar->mutex);
 }
 
 /**
@@ -360,7 +360,7 @@ void wget_bar_set_slots(wget_bar_t *bar, int nslots)
  */
 void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_t file_size)
 {
-	wget_thread_mutex_lock(&bar->mutex);
+	wget_thread_mutex_lock(bar->mutex);
 	_bar_slot_t *slotp = &bar->slots[slot];
 
 	xfree(slotp->filename);
@@ -370,7 +370,7 @@ void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_
 	slotp->bytes_downloaded = 0;
 	slotp->status = DOWNLOADING;
 	slotp->redraw = 1;
-	wget_thread_mutex_unlock(&bar->mutex);
+	wget_thread_mutex_unlock(bar->mutex);
 }
 
 /**
@@ -383,10 +383,10 @@ void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_
  */
 void wget_bar_slot_downloaded(wget_bar_t *bar, int slot, size_t nbytes)
 {
-	wget_thread_mutex_lock(&bar->mutex);
+	wget_thread_mutex_lock(bar->mutex);
 	bar->slots[slot].bytes_downloaded = nbytes;
 	bar->slots[slot].redraw = 1;
-	wget_thread_mutex_unlock(&bar->mutex);
+	wget_thread_mutex_unlock(bar->mutex);
 }
 
 /**
@@ -397,14 +397,14 @@ void wget_bar_slot_downloaded(wget_bar_t *bar, int slot, size_t nbytes)
  */
 void wget_bar_slot_deregister(wget_bar_t *bar, int slot)
 {
-	wget_thread_mutex_lock(&bar->mutex);
+	wget_thread_mutex_lock(bar->mutex);
 	if (slot >= 0 && slot < bar->nslots) {
 		_bar_slot_t *slotp = &bar->slots[slot];
 
 		slotp->status = COMPLETE;
 		_bar_update_slot(bar, slot);
 	}
-	wget_thread_mutex_unlock(&bar->mutex);
+	wget_thread_mutex_unlock(bar->mutex);
 }
 
 /**
@@ -414,9 +414,9 @@ void wget_bar_slot_deregister(wget_bar_t *bar, int slot)
  */
 void wget_bar_update(wget_bar_t *bar)
 {
-	wget_thread_mutex_lock(&bar->mutex);
+	wget_thread_mutex_lock(bar->mutex);
 	_bar_update(bar);
-	wget_thread_mutex_unlock(&bar->mutex);
+	wget_thread_mutex_unlock(bar->mutex);
 }
 
 /**
@@ -436,6 +436,7 @@ void wget_bar_deinit(wget_bar_t *bar)
 		xfree(bar->known_size);
 		xfree(bar->unknown_size);
 		xfree(bar->slots);
+		wget_thread_mutex_destroy(&bar->mutex);
 	}
 }
 
@@ -462,13 +463,13 @@ void wget_bar_free(wget_bar_t **bar)
  */
 void wget_bar_print(wget_bar_t *bar, int slot, const char *display)
 {
-	wget_thread_mutex_lock(&bar->mutex);
+	wget_thread_mutex_lock(bar->mutex);
 	_bar_print_slot(bar, slot);
 	// CSI <n> G: Cursor horizontal absolute
 	printf("\033[27G[%-*.*s]", bar->max_width, bar->max_width, display);
 	_restore_cursor_position();
 	fflush(stdout);
-	wget_thread_mutex_unlock(&bar->mutex);
+	wget_thread_mutex_unlock(bar->mutex);
 }
 
 /**
@@ -530,7 +531,7 @@ void wget_bar_screen_resized(void)
  */
 void wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len)
 {
-	wget_thread_mutex_lock(&bar->mutex);
+	wget_thread_mutex_lock(bar->mutex);
 	// CSI s:    Save cursor
 	// CSI <n>S: Scroll up whole screen
 	// CSI <n>A: Cursor up
@@ -543,7 +544,7 @@ void wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len)
 	_restore_cursor_position();
 
 	_bar_update(bar);
-	wget_thread_mutex_unlock(&bar->mutex);
+	wget_thread_mutex_unlock(bar->mutex);
 }
 
 /**

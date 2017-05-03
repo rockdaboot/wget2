@@ -136,6 +136,9 @@ struct json_stats {
 		ntabs;
 };
 
+void host_init(void);
+void host_exit(void);
+
 HOST *host_add(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
 HOST *host_get(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
 

@@ -154,7 +154,38 @@ static wget_stats_callback_t stats_callback;
 static wget_vector_t
 	*dns_cache;
 static wget_thread_mutex_t
-	dns_mutex = WGET_THREAD_MUTEX_INITIALIZER;
+	dns_mutex,
+	resolve_mutex;
+static bool
+	initialized;
+
+static void __attribute__ ((constructor)) _wget_dns_init(void)
+{
+	if (!initialized) {
+		wget_thread_mutex_init(&dns_mutex);
+		wget_thread_mutex_init(&resolve_mutex);
+		initialized = 1;
+	}
+}
+
+static void __attribute__ ((destructor)) _wget_dns_exit(void)
+{
+	if (initialized) {
+		wget_thread_mutex_destroy(&dns_mutex);
+		wget_thread_mutex_destroy(&resolve_mutex);
+		initialized = 0;
+	}
+}
+
+void wget_dns_init(void)
+{
+	_wget_dns_init();
+}
+
+void wget_dns_exit(void)
+{
+	_wget_dns_exit();
+}
 
 static struct addrinfo *_wget_dns_cache_get(const char *host, uint16_t port)
 {
@@ -162,9 +193,9 @@ static struct addrinfo *_wget_dns_cache_get(const char *host, uint16_t port)
 		struct _dns_entry *entryp, entry = { .host = host, .port = port };
 		int index;
 
-		wget_thread_mutex_lock(&dns_mutex);
+		wget_thread_mutex_lock(dns_mutex);
 		entryp = wget_vector_get(dns_cache, (index = wget_vector_find(dns_cache, &entry)));
-		wget_thread_mutex_unlock(&dns_mutex);
+		wget_thread_mutex_unlock(dns_mutex);
 
 		if (entryp) {
 			// DNS cache entry found
@@ -208,7 +239,7 @@ static struct addrinfo * _wget_dns_cache_add(const char *host, uint16_t port, st
 
 	entryp->addrinfo = addrinfo;
 
-	wget_thread_mutex_lock(&dns_mutex);
+	wget_thread_mutex_lock(dns_mutex);
 	if (!dns_cache) {
 		dns_cache = wget_vector_create(4, -2, (wget_vector_compare_t)_compare_addr);
 		wget_vector_set_destructor(dns_cache, (wget_vector_destructor_t)_free_dns);
@@ -224,7 +255,7 @@ static struct addrinfo * _wget_dns_cache_add(const char *host, uint16_t port, st
 		entryp = wget_vector_get(dns_cache, index);
 		addrinfo = entryp ? entryp->addrinfo : NULL;
 	}
-	wget_thread_mutex_unlock(&dns_mutex);
+	wget_thread_mutex_unlock(dns_mutex);
 
 	return addrinfo;
 }
@@ -372,9 +403,9 @@ static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, s
  */
 void wget_dns_cache_free(void)
 {
-	wget_thread_mutex_lock(&dns_mutex);
+	wget_thread_mutex_lock(dns_mutex);
 	wget_vector_free(&dns_cache);
-	wget_thread_mutex_unlock(&dns_mutex);
+	wget_thread_mutex_unlock(dns_mutex);
 }
 
 /**
@@ -413,8 +444,6 @@ void wget_dns_cache_free(void)
  */
 struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port)
 {
-	static wget_thread_mutex_t
-		mutex = WGET_THREAD_MUTEX_INITIALIZER;
 	struct addrinfo *addrinfo = NULL;
 	int rc = 0;
 	char adr[NI_MAXHOST], sport[NI_MAXSERV];
@@ -433,10 +462,11 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 				return addrinfo;
 
 			// prevent multiple address resolutions of the same host
-			wget_thread_mutex_lock(&mutex);
+			wget_thread_mutex_lock(resolve_mutex);
+
 			// now try again
 			if ((addrinfo = _wget_dns_cache_get(host, port))) {
-				wget_thread_mutex_unlock(&mutex);
+				wget_thread_mutex_unlock(resolve_mutex);
 				return addrinfo;
 			}
 		}
@@ -449,7 +479,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 
 		if (tries < max - 1) {
 			if (tcp->caching)
-				wget_thread_mutex_unlock(&mutex);
+				wget_thread_mutex_unlock(resolve_mutex);
 			wget_millisleep(100);
 		}
 	}
@@ -466,7 +496,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 				(host ? host : ""), gai_strerror(rc));
 
 		if (tcp->caching)
-			wget_thread_mutex_unlock(&mutex);
+			wget_thread_mutex_unlock(resolve_mutex);
 
 		if (stats_callback) {
 			stats.ip = NULL;
@@ -504,7 +534,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 		 * The addrinfo argument given to _wget_dns_cache_add() will be freed in this case.
 		 */
 		addrinfo = _wget_dns_cache_add(host, port, addrinfo);
-		wget_thread_mutex_unlock(&mutex);
+		wget_thread_mutex_unlock(resolve_mutex);
 	}
 
 	return addrinfo;
@@ -1416,11 +1446,15 @@ void wget_tcp_close(wget_tcp_t *tcp)
 #include "sockets.h"
 int wget_net_init(void)
 {
-	return gl_sockets_startup(SOCKETS_2_2);
+	int rc = gl_sockets_startup(SOCKETS_2_2);
+
+	return rc ? -1 : 0;
 }
 
 int wget_net_deinit(void)
 {
-	return gl_sockets_cleanup();
+	int rc = gl_sockets_cleanup();
+
+	return rc ? -1 : 0;
 }
 /** @} */
