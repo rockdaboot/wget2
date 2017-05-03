@@ -59,6 +59,14 @@
 #include "wget_log.h"
 #include "wget_options.h"
 
+typedef enum {
+	SECTION_STARTUP = 0,
+	SECTION_DOWNLOAD,
+	SECTION_HTTP,
+	SECTION_SSL,
+	SECTION_DIRECTORY
+} help_section_t;
+
 typedef const struct optionw *option_t; // forward declaration
 
 struct optionw {
@@ -72,8 +80,12 @@ struct optionw {
 		args;
 	char
 		short_name;
+	help_section_t
+	    section;
+	const char
+	    *help_str[4];
 };
-
+static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val);
 static int G_GNUC_WGET_NORETURN print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val)
 {
 	puts("GNU Wget2 " PACKAGE_VERSION " - multithreaded metalink/file/website downloader\n");
@@ -167,177 +179,17 @@ static int G_GNUC_WGET_NORETURN print_version(G_GNUC_WGET_UNUSED option_t opt, G
 	exit(EXIT_SUCCESS);
 }
 
-static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val)
+static inline void print_first(const char s, const char *l, const char *msg)
 {
-	puts(
-		"GNU Wget2 V" PACKAGE_VERSION " - multithreaded metalink/file/website downloader\n"
-		"\n"
-		"Usage: wget [options...] <url>...\n"
-		"\n"
-		"Startup:\n"
-		"  -V  --version           Display the version of Wget and exit.\n"
-		"  -h  --help              Print this help.\n"
-		"  -v  --verbose           Print more messages. (default: on)\n"
-		"  -q  --quiet             Print no messages except debugging messages. (default: off)\n"
-		"  -d  --debug             Print debugging messages. (default: off)\n"
-		"      --config-file       Path to a wgetrc file.\n"
-		"  -o  --output-file       File where messages are printed to, '-' for STDOUT.\n"
-		"  -a  --append-output     File where messages are appended to, '-' for STDOUT.\n"
-		"  -i  --input-file        File where URLs are read from, - for STDIN.\n"
-		"      --input-encoding    Character encoding of the file contents read with --input-file. (default: local encoding)\n"
-		"  -F  --force-html        Treat input file as HTML. (default: off)\n"
-		"      --force-css         Treat input file as CSS. (default: off) (NEW!)\n"
-		"      --force-sitemap     Treat input file as Sitemap. (default: off) (NEW!)\n"
-		"      --force-atom        Treat input file as Atom Feed. (default: off) (NEW!)\n"
-		"      --force-rss         Treat input file as RSS Feed. (default: off) (NEW!)\n"
-		"      --force-metalink    Treat input file as Metalink. (default: off) (NEW!)\n"
-		"  -B  --base              Base for relative URLs read from input-file or from command line\n"
-		"  -e  --execute           Wget compatibility option, not needed for Wget\n"
-		"      --fsync-policy      Use fsync() to wait for data being written to the pysical layer. (default: off) (NEW!)\n"
-		"\n");
-	puts(
-		"Download:\n"
-		"  -r  --recursive         Recursive download. (default: off)\n"
-		"  -H  --span-hosts        Span hosts that were not given on the command line. (default: off)\n"
-		"      --max-threads       Max. concurrent download threads. (default: 5) (NEW!)\n"
-		"      --max-redirect      Max. number of redirections to follow. (default: 20)\n"
-		"  -T  --timeout           General network timeout in seconds.\n"
-		"      --dns-timeout       DNS lookup timeout in seconds.\n"
-		"      --connect-timeout   Connect timeout in seconds.\n"
-		"      --read-timeout      Read and write timeout in seconds.\n"
-		"  -O  --output-document   File where downloaded content is written to, '-'  for STDOUT.\n"
-		"      --spider            Enable web spider mode. (default: off)\n"
-		"      --proxy             Enable support for *_proxy environment variables. (default: on)\n"
-		"      --http-proxy        Set HTTP proxy/proxies, overriding environment variables.\n"
-		"                          Use comma to separate proxies\n"
-		"      --https-proxy       Set HTTPS proxy/proxies, overriding environment variables.\n"
-		"                          Use comma to separate proxies\n"
-		"  -S  --server-response   Print the server response headers. (default: off)\n"
-		"  -c  --continue-download Continue download for given files. (default: off)\n"
-		"      --use-server-timestamps Set local file's timestamp to server's timestamp. (default: on)\n"
-		"  -N  --timestamping      Just retrieve younger files than the local ones. (default: off)\n"
-		"      --strict-comments   A dummy option. Parsing always works non-strict.\n"
-		"      --delete-after      Don't save downloaded files. (default: off)\n"
-		"  -4  --inet4-only        Use IPv4 connections only. (default: off)\n"
-		"  -6  --inet6-only        Use IPv6 connections only. (default: off)\n"
-		"      --prefer-family     Prefer IPv4 or IPv6. (default: none)\n"
-		"      --cache             Enabled using of server cache. (default: on)\n"
-		"      --clobber           Enable file clobbering. (default: on)\n"
-		"      --bind-address      Bind to sockets to local address. (default: automatic)\n"
-		"  -D  --domains           Comma-separated list of domains to follow.\n"
-		"      --exclude-domains   Comma-separated list of domains NOT to follow.\n"
-		"      --user              Username for Authentication. (default: empty username)\n"
-		"      --password          Password for Authentication. (default: empty password)\n"
-		"  -l  --level             Maximum recursion depth. (default: 5)\n"
-		"  -p  --page-requisites   Download all necessary files to display a HTML page\n"
-		"      --parent            Ascend above parent directory. (default: on)\n"
-		"      --trust-server-names  On redirection use the server's filename. (default: off)\n"
-		"      --chunk-size        Download large files in multithreaded chunks. (default: 0 (=off))\n"
-		"                          Example: wget --chunk-size=1M\n");
-	puts(
-		"      --progress          Type of progress bar (bar, dot, none). (default: none)\n"
-		"      --local-encoding    Character encoding of environment and filenames.\n"
-		"      --remote-encoding   Character encoding of remote files (if not specified in Content-Type HTTP header or in document itself)\n"
-		"  -t  --tries             Number of tries for each download. (default 20)\n"
-		"  -A  --accept            Comma-separated list of file name suffixes or patterns.\n"
-		"  -R  --reject            Comma-separated list of file name suffixes or patterns.\n"
-		"      --ignore-case       Ignore case when matching files. (default: off)\n"
-		"  -k  --convert-links     Convert embedded URLs to local URLs. (default: off)\n"
-		"  -K  --backup-converted  When converting, keep the original file with a .orig suffix. (default: off)\n"
-		"  -w  --wait              Wait number of seconds between downloads (per thread). (default: 0)\n"
-		"      --waitretry         Wait up to number of seconds after error (per thread). (default: 10)\n"
-		"      --random-wait       Wait 0.5 up to 1.5*<--wait> seconds between downloads (per thread). (default: off)\n"
-		"      --dns-caching       Caching of domain name lookups. (default: on)\n"
-		"      --tcp-fastopen      Enable TCP Fast Open (TFO). (default: on)\n"
-		"      --iri               Wget dummy option, you can't switch off international support\n"
-		"      --robots            Respect robots.txt standard for recursive downloads. (default: on)\n"
-		"      --restrict-file-names  unix, windows, nocontrol, ascii, lowercase, uppercase, none\n"
-		"  -m  --mirror            Turn on mirroring options -r -N -l inf\n"
-		"      --follow-tags       Scan additional tag/attributes for URLs, e.g. --follow-tags=\"img/data-500px,img/data-hires\n"
-		"      --ignore-tags       Ignore tag/attributes for URL scanning, e.g. --ignore-tags=\"img,a/href\n"
-		"      --backups           Make backups instead of overwriting/increasing number. (default: 0)\n"
-		"      --post-data         Data to be sent in a POST request.\n"
-		"      --post-file         File with data to be sent in a POST request.\n"
-		"      --netrc             Load credentials from ~/.netrc if not given. (default: on)\n"
-		"      --content-on-error  Save response body even on error status. (default: off)\n"
-		"      --cut-url-get-vars  Cut HTTP GET vars from URLs. (default: off)\n"
-		"      --cut-file-get-vars Cut HTTP GET vars from file names. (default: off)\n"
-		"\n");
-	puts(
-		"HTTP related options:\n"
-		"  -U  --user-agent        Set User-Agent: header in requests.\n"
-		"      --cookies           Enable use of cookies. (default: on)\n"
-		"      --keep-session-cookies  Also save session cookies. (default: off)\n"
-		"      --load-cookies      Load cookies from file.\n"
-		"      --save-cookies      Save cookies from file.\n"
-		"      --cookie-suffixes   Load public suffixes from file. They prevent 'supercookie' vulnerabilities.\n"
-		"                          Download the list with:\n"
-		"                          wget -O suffixes.txt https://publicsuffix.org/list/effective_tld_names.dat\n"
-		"      --http-keep-alive   Keep connection open for further requests. (default: on)\n"
-		"      --header            Insert input string as a HTTP header in all requests\n"
-		"      --save-headers      Save the response headers in front of the response data. (default: off)\n"
-		"      --referer           Include Referer: url in HTTP requets. (default: off)\n"
-		"  -E  --adjust-extension  Append extension to saved file (.html or .css). (default: off)\n"
-		/* For Wget compatibility we also understand --html-extension */
-		"      --default-page      Default file name. (default: index.html)\n"
-		"  -Q  --quota             Download quota, 0 = no quota. (default: 0)\n"
-		"      --http-user         Username for HTTP Authentication. (default: empty username)\n"
-		"      --http-password     Password for HTTP Authentication. (default: empty password)\n"
-		"      --content-disposition  Take filename from Content-Disposition. (default: off)\n"
-		"      --default-page      Default file name if name isn't known. (default: index.html)\n"
-		"      --netrc-file        Set file for login/password to use instead of ~/.netrc. (default: ~/.netrc)\n"
-		"      --metalink          Follow a metalink file instead of storing it (default: on)\n"
-		"\n");
-	puts(
-		"HTTPS (SSL/TLS) related options:\n"
-		"      --secure-protocol   Set protocol to be used (auto, SSLv3, TLSv1, PFS). (default: auto)\n"
-		"                          Or use GnuTLS priority strings, e.g. NORMAL:-VERS-SSL3.0:-RSA\n"
-		"      --check-certificate Check the server's certificate. (default: on)\n"
-		"      --check-hostname    Check the server's certificate's hostname. (default: on)\n"
-		"      --certificate       File with client certificate.\n"
-		"      --certificate-type  Certificate type: PEM or DER (known as ASN1). (default: PEM)\n"
-		"      --private-key       File with private key.\n"
-		"      --private-key-type  Type of the private key (PEM or DER). (default: PEM)\n"
-		"      --ca-certificate    File with bundle of PEM CA certificates.\n"
-		"      --ca-directory      Directory with PEM CA certificates.\n"
-		"      --crl-file          File with PEM CRL certificates.\n"
-		"      --random-file       File to be used as source of random data.\n"
-		"      --egd-file          File to be used as socket for random data from Entropy Gathering Daemon.\n"
-		"      --https-only        Do not follow non-secure URLs. (default: off).\n"
-		"      --hsts              Use HTTP Strict Transport Security (HSTS). (default: on)\n"
-		"      --hsts-file         Set file for HSTS caching. (default: ~/.wget-hsts)\n"
-		"      --hpkp              Use HTTP Public Key Pinning (HPKP). (default: on)\n"
-		"      --hpkp-file         Set file for storing HPKP data (default: ~/.wget-hpkp)\n"
-		"      --gnutls-options    Custom GnuTLS priority string. Interferes with --secure-protocol. (default: none)\n"
-		"      --ocsp-stapling     Use OCSP stapling to verify the server's certificate. (default: on)\n"
-		"      --ocsp              Use OCSP server access to verify server's certificate. (default: on)\n"
-		"      --ocsp-file         Set file for OCSP chaching. (default: ~/.wget-ocsp)\n"
-		"      --http2             Use HTTP/2 protocol if possible. (default: on)\n"
-		"      --tls-false-start   Enable TLS False Start (needs GnuTLS 3.5+). (default: on)\n"
-		"      --tls-resume        Enable TLS Session Resumption. (default: on)\n"
-		"      --tls-session-file  Set file for TLS Session caching. (default: ~/.wget-session)\n"
-		"\n");
-	puts(
-		"Directory options:\n"
-		"      --directories       Create hierarchy of directories when retrieving recursively. (default: on)\n"
-		"  -x  --force-directories Create hierarchy of directories when not retrieving recursively. (default: off)\n"
-		"      --host-directories  Create host directories when retrieving recursively. (default: on)\n"
-		"      --protocol-directories  Force creating protocol directories. (default: off)\n"
-		"      --cut-dirs          Skip creating given number of directory components. (default: 0)\n"
-		"  -P  --directory-prefix  Set directory prefix.\n"
-		"\n"
-		"Example boolean option: --quiet=no is the same as --no-quiet or --quiet=off or --quiet off\n"
-		"Example string option: --user-agent=SpecialAgent/1.3.5 or --user-agent \"SpecialAgent/1.3.5\"\n"
-		"\n"
-		"To reset string options use --[no-]option\n"
-		"\n");
+	printf("  %c%-4c  --%-16.16s  %s",
+		(s ? '-' : ' '),
+		(s ? s : ' '),
+		l, msg);
+}
 
-/*
- * -a / --append-output should be reduced to -o (with always appending to logfile)
- * Using rm logfile + wget achieves the old behaviour...
- *
- */
-	exit(EXIT_SUCCESS);
+static inline void print_next(const char *msg)
+{
+	printf("%33s%s", "", msg);
 }
 
 static _GL_INLINE char *_shell_expand(const char *str)
@@ -808,139 +660,806 @@ static int parse_execute(option_t opt, const char *val);
 static const struct optionw options[] = {
 	// long name, config variable, parse function, number of arguments, short name
 	// leave the entries in alphabetical order of 'long_name' !
-	{ "accept", &config.accept_patterns, parse_stringlist, 1, 'A' },
-	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E' },
-	{ "append-output", &config.logfile_append, parse_string, 1, 'a' },
-	{ "backup-converted", &config.backup_converted, parse_bool, 0, 'K' },
-	{ "backups", &config.backups, parse_integer, 1, 0 },
-	{ "base", &config.base_url, parse_string, 1, 'B' },
-	{ "bind-address", &config.bind_address, parse_string, 1, 0 },
-	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0 },
-	{ "ca-directory", &config.ca_directory, parse_string, 1, 0 },
-	{ "cache", &config.cache, parse_bool, 0, 0 },
-	{ "certificate", &config.cert_file, parse_string, 1, 0 },
-	{ "certificate-type", &config.cert_type, parse_cert_type, 1, 0 },
-	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0 },
-	{ "check-hostname", &config.check_hostname, parse_bool, 0, 0 },
-	{ "chunk-size", &config.chunk_size, parse_numbytes, 1, 0 },
-	{ "clobber", &config.clobber, parse_bool, 0, 0 },
-	{ "config", &config.config_files, parse_filenames, 1, 0}, // for backward compatibility only
-	{ "config-file", &config.config_files, parse_filenames, 1, 0},
-	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0 },
-	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0 },
-	{ "content-on-error", &config.content_on_error, parse_bool, 0, 0 },
-	{ "continue", &config.continue_download, parse_bool, 0, 'c' },
-	{ "convert-links", &config.convert_links, parse_bool, 0, 'k' },
-	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0 },
-	{ "cookies", &config.cookies, parse_bool, 0, 0 },
-	{ "crl-file", &config.crl_file, parse_filename, 1, 0 },
-	{ "cut-dirs", &config.cut_directories, parse_integer, 1, 0 },
-	{ "cut-file-get-vars", &config.cut_file_get_vars, parse_bool, 0, 0 },
-	{ "cut-url-get-vars", &config.cut_url_get_vars, parse_bool, 0, 0 },
-	{ "debug", &config.debug, parse_bool, 0, 'd' },
-	{ "default-page", &config.default_page, parse_string, 1, 0 },
-	{ "delete-after", &config.delete_after, parse_bool, 0, 0 },
-	{ "directories", &config.directories, parse_bool, 0, 0 },
-	{ "directory-prefix", &config.directory_prefix, parse_string, 1, 'P' },
-	{ "dns-caching", &config.dns_caching, parse_bool, 0, 0 },
-	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0 },
-	{ "domains", &config.domains, parse_stringlist, 1, 'D' },
-	{ "egd-file", &config.egd_file, parse_filename, 1, 0 },
-	{ "exclude-domains", &config.exclude_domains, parse_stringlist, 1, 0 },
-	{ "execute", NULL, parse_execute, 1, 'e' },
-	{ "follow-tags", &config.follow_tags, parse_taglist, 1, 0 },
-	{ "force-atom", &config.force_atom, parse_bool, 0, 0 },
-	{ "force-css", &config.force_css, parse_bool, 0, 0 },
-	{ "force-directories", &config.force_directories, parse_bool, 0, 'x' },
-	{ "force-html", &config.force_html, parse_bool, 0, 'F' },
-	{ "force-metalink", &config.force_metalink, parse_bool, 0, 0 },
-	{ "force-rss", &config.force_rss, parse_bool, 0, 0 },
-	{ "force-sitemap", &config.force_sitemap, parse_bool, 0, 0 },
-	{ "fsync-policy", &config.fsync_policy, parse_bool, 0, 0 },
-	{ "gnutls-options", &config.gnutls_options, parse_string, 1, 0 },
-	{ "header", &config.headers, parse_header, 1, 0 },
-	{ "help", NULL, print_help, 0, 'h' },
-	{ "host-directories", &config.host_directories, parse_bool, 0, 0 },
-	{ "hpkp", &config.hpkp, parse_bool, 0, 0 },
-	{ "hpkp-file", &config.hpkp_file, parse_filename, 1, 0 },
-	{ "hsts", &config.hsts, parse_bool, 0, 0 },
-	{ "hsts-file", &config.hsts_file, parse_filename, 1, 0 },
-	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0 }, // obsolete, replaced by --adjust-extension
-	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0 },
-	{ "http-password", &config.http_password, parse_string, 1, 0 },
-	{ "http-proxy", &config.http_proxy, parse_string, 1, 0 },
-	{ "http-user", &config.http_username, parse_string, 1, 0 },
-	{ "http2", &config.http2, parse_bool, 0, 0 },
-	{ "https-only", &config.https_only, parse_bool, 0, 0 },
-	{ "https-proxy", &config.https_proxy, parse_string, 1, 0 },
-	{ "ignore-case", &config.ignore_case, parse_bool, 0, 0 },
-	{ "ignore-tags", &config.ignore_tags, parse_taglist, 1, 0 },
-	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4' },
-	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6' },
-	{ "input-encoding", &config.input_encoding, parse_string, 1, 0 },
-	{ "input-file", &config.input_file, parse_string, 1, 'i' },
-	{ "iri", NULL, parse_bool, 0, 0 }, // Wget compatibility, in fact a do-nothing option
-	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0 },
-	{ "level", &config.level, parse_integer, 1, 'l' },
-	{ "load-cookies", &config.load_cookies, parse_string, 1, 0 },
-	{ "local-encoding", &config.local_encoding, parse_string, 1, 0 },
-	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0 },
-	{ "max-threads", &config.max_threads, parse_integer, 1, 0 },
-	{ "metalink", &config.metalink, parse_bool, 0, 0 },
-	{ "mirror", &config.mirror, parse_mirror, 0, 'm' },
-	{ "n", NULL, parse_n_option, 1, 'n' }, // special Wget compatibility option
-	{ "netrc", &config.netrc, parse_bool, 0, 0 },
-	{ "netrc-file", &config.netrc_file, parse_filename, 1, 0 },
-	{ "ocsp", &config.ocsp, parse_bool, 0, 0 },
-	{ "ocsp-file", &config.ocsp_file, parse_filename, 1, 0 },
-	{ "ocsp-stapling", &config.ocsp_stapling, parse_bool, 0, 0 },
-	{ "output-document", &config.output_document, parse_string, 1, 'O' },
-	{ "output-file", &config.logfile, parse_string, 1, 'o' },
-	{ "page-requisites", &config.page_requisites, parse_bool, 0, 'p' },
-	{ "parent", &config.parent, parse_bool, 0, 0 },
-	{ "password", &config.password, parse_string, 1, 0 },
-	{ "post-data", &config.post_data, parse_string, 1, 0 },
-	{ "post-file", &config.post_file, parse_string, 1, 0 },
-	{ "prefer-family", &config.preferred_family, parse_prefer_family, 1, 0 },
-	{ "private-key", &config.private_key, parse_string, 1, 0 },
-	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0 },
-	{ "progress", &config.progress, parse_progress_type, 1, 0 },
-	{ "protocol-directories", &config.protocol_directories, parse_bool, 0, 0 },
-	{ "proxy", &config.proxy, parse_bool, 0, 0 },
-	{ "quiet", &config.quiet, parse_bool, 0, 'q' },
-	{ "quota", &config.quota, parse_numbytes, 1, 'Q' },
-	{ "random-file", &config.random_file, parse_filename, 1, 0 },
-	{ "random-wait", &config.random_wait, parse_bool, 0, 0 },
-	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0 },
-	{ "recursive", &config.recursive, parse_bool, 0, 'r' },
-	{ "referer", &config.referer, parse_string, 1, 0 },
-	{ "reject", &config.reject_patterns, parse_stringlist, 1, 'R' },
-	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0 },
-	{ "restrict-file-names", &config.restrict_file_names, parse_restrict_names, 1, 0 },
-	{ "robots", &config.robots, parse_bool, 0, 0 },
-	{ "save-cookies", &config.save_cookies, parse_string, 1, 0 },
-	{ "save-headers", &config.save_headers, parse_bool, 0, 0 },
-	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0 },
-	{ "server-response", &config.server_response, parse_bool, 0, 'S' },
-	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H' },
-	{ "spider", &config.spider, parse_bool, 0, 0 },
-	{ "strict-comments", &config.strict_comments, parse_bool, 0, 0 },
-	{ "tcp-fastopen", &config.tcp_fastopen, parse_bool, 0, 0 },
-	{ "timeout", NULL, parse_timeout, 1, 'T' },
-	{ "timestamping", &config.timestamping, parse_bool, 0, 'N' },
-	{ "tls-false-start", &config.tls_false_start, parse_bool, 0, 0 },
-	{ "tls-resume", &config.tls_resume, parse_bool, 0, 0 },
-	{ "tls-session-file", &config.tls_session_file, parse_filename, 1, 0 },
-	{ "tries", &config.tries, parse_integer, 1, 't' },
-	{ "trust-server-names", &config.trust_server_names, parse_bool, 0, 0 },
-	{ "use-server-timestamps", &config.use_server_timestamps, parse_bool, 0, 0 },
-	{ "user", &config.username, parse_string, 1, 0 },
-	{ "user-agent", &config.user_agent, parse_string, 1, 'U' },
-	{ "verbose", &config.verbose, parse_bool, 0, 'v' },
-	{ "version", NULL, print_version, 0, 'V' },
-	{ "wait", &config.wait, parse_timeout, 1, 'w' },
-	{ "waitretry", &config.waitretry, parse_timeout, 1, 0 }
+	{ "accept", &config.accept_patterns, parse_stringlist, 1, 'A',
+		SECTION_DOWNLOAD,
+		{ "Comma-separated list of file name suffixes or\n",
+		  "patterns.\n"
+		}
+	},
+	{ "adjust-extension", &config.adjust_extension, parse_bool, 0, 'E',
+		SECTION_HTTP,
+		{ "Append extension to saved file (.html or .css).\n",
+		  "(default: off)\n"
+		}
+	},
+	{ "append-output", &config.logfile_append, parse_string, 1, 'a',
+		SECTION_STARTUP,
+		{ "File where messages are appended to,\n",
+		  "'-' for STDOUT.\n"
+		}
+	},
+	{ "backup-converted", &config.backup_converted, parse_bool, 0, 'K',
+		SECTION_HTTP,
+		{ "When converting, keep the original file with\n",
+		  "a .orig suffix. (default: off)\n"
+		}
+	},
+	{ "backups", &config.backups, parse_integer, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Make backups instead of overwriting/increasing\n",
+		  "number. (default: 0)\n"
+		}
+	},
+	{ "base", &config.base_url, parse_string, 1, 'B',
+		SECTION_STARTUP,
+		{ "Base for relative URLs read from input-file\n",
+		  "or from command line\n"
+		}
+	},
+	{ "bind-address", &config.bind_address, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Bind to sockets to local address.\n",
+		  "(default: automatic)\n"
+		}
+	},
+	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0,
+		SECTION_SSL,
+		{ "File with bundle of PEM CA certificates.\n"
+		}
+	},
+	{ "ca-directory", &config.ca_directory, parse_string, 1, 0,
+		SECTION_SSL,
+		{ "Directory with PEM CA certificates.\n"
+		}
+	},
+	{ "cache", &config.cache, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Enabled using of server cache. (default: on)\n"
+		}
+	},
+	{ "certificate", &config.cert_file, parse_string, 1, 0,
+		SECTION_SSL,
+		{ "File with client certificate.\n"
+		}
+	},
+	{ "certificate-type", &config.cert_type, parse_cert_type, 1, 0,
+		SECTION_SSL,
+		{ "Certificate type: PEM or DER (known as ASN1).\n",
+		  "(default: PEM)\n"
+		}
+	},
+	{ "check-certificate", &config.check_certificate, parse_bool, 0, 0,
+		SECTION_SSL,
+		{ "Check the server's certificate. (default: on)\n"
+		}
+	},
+	{ "check-hostname", &config.check_hostname, parse_bool, 0, 0,
+		SECTION_SSL,
+		{ "Check the server's certificate's hostname.\n",
+		  "(default: on)\n"
+		}
+	},
+	{ "chunk-size", &config.chunk_size, parse_numbytes, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Download large files in multithreaded chunks.\n",
+			"(default: 0 (=off)) Example:\n",
+			"wget --chunk-size=1M\n"
+		}
+	},
+	{ "clobber", &config.clobber, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Enable file clobbering. (default: on)\n"
+		}
+	},
+	{ "config", &config.config_files, parse_filenames, 1, 0,
+		SECTION_STARTUP,
+		{ "Backward compatibility\n"
+		}
+	}, // for backward compatibility only
+	{ "config-file", &config.config_files, parse_filenames, 1, 0,
+		SECTION_STARTUP,
+		{ "Path to a wgetrc file.\n"
+		}
+	},
+	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Connect timeout in seconds.\n"
+		}
+	},
+	{ "content-disposition", &config.content_disposition, parse_bool, 0, 0,
+		SECTION_HTTP,
+		{ "Take filename from Content-Disposition.\n",
+		  "(default: off)\n"
+		}
+	},
+	{ "content-on-error", &config.content_on_error, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Save response body even on error status.\n",
+		  "(default: off)\n"
+		}
+	},
+	{ "continue", &config.continue_download, parse_bool, 0, 'c',
+		SECTION_DOWNLOAD,
+		{ "Continue download for given files. (default: off)\n"
+		}
+	},
+	{ "convert-links", &config.convert_links, parse_bool, 0, 'k',
+		SECTION_DOWNLOAD,
+		{ "Convert embedded URLs to local URLs.\n",
+		  "(default: off)\n"
+		}
+	},
+	{ "cookie-suffixes", &config.cookie_suffixes, parse_string, 1, 0,
+		SECTION_HTTP,
+		{ "Load public suffixes from file. \n",
+		  "They prevent 'supercookie' vulnerabilities.\n",
+		  "Download the list with:\n",
+		  "wget -O suffixes.txt https://publicsuffix.org/list/effective_tld_names.dat\n"
+		}
+	},
+	{ "cookies", &config.cookies, parse_bool, 0, 0,
+		SECTION_HTTP,
+		{ "Enable use of cookies. (default: on)\n"
+		}
+	},
+	{ "crl-file", &config.crl_file, parse_filename, 1, 0,
+		SECTION_SSL,
+		{ "File with PEM CRL certificates.\n"
+		}
+	},
+	{ "cut-dirs", &config.cut_directories, parse_integer, 1, 0,
+		SECTION_DIRECTORY,
+		{ "Skip creating given number of directory\n",
+		  "components. (default: 0)\n"
+		}
+	},
+	{ "cut-file-get-vars", &config.cut_file_get_vars, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Cut HTTP GET vars from file names. (default: off)\n"
+		}
+	},
+	{ "cut-url-get-vars", &config.cut_url_get_vars, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Cut HTTP GET vars from URLs. (default: off)\n"
+		}
+	},
+	{ "debug", &config.debug, parse_bool, 0, 'd',
+		SECTION_STARTUP,
+		{ "Print debugging messages.(default: off)\n"
+		}
+	},
+	{ "default-page", &config.default_page, parse_string, 1, 0,
+		SECTION_HTTP,
+		{ "Default file name. (default: index.html)\n"
+		}
+	},
+	{ "delete-after", &config.delete_after, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Don't save downloaded files. (default: off)\n"
+		}
+	},
+	{ "directories", &config.directories, parse_bool, 0, 0,
+		SECTION_DIRECTORY,
+		{ "Create hierarchy of directories when retrieving\n",
+		  "recursively. (default: on)\n"
+		}
+	},
+	{ "directory-prefix", &config.directory_prefix, parse_string, 1, 'P',
+		SECTION_DIRECTORY,
+		{ "Set directory prefix.\n"
+		}
+	},
+	{ "dns-caching", &config.dns_caching, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Caching of domain name lookups. (default: on)\n"
+		}
+	},
+	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "DNS lookup timeout in seconds.\n"
+		}
+	},
+	{ "domains", &config.domains, parse_stringlist, 1, 'D',
+		SECTION_DOWNLOAD,
+		{ "Comma-separated list of domains to follow.\n"
+		}
+	},
+	{ "egd-file", &config.egd_file, parse_filename, 1, 0,
+		SECTION_SSL,
+		{ "File to be used as socket for random data from\n",
+		  "Entropy Gathering Daemon.\n"
+		}
+	},
+	{ "exclude-domains", &config.exclude_domains, parse_stringlist, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Comma-separated list of domains NOT to follow.\n"
+		}
+	},
+	{ "execute", NULL, parse_execute, 1, 'e',
+		SECTION_STARTUP,
+		{ "Wget compatibility option, not needed for Wget\n"
+		}
+	},
+	{ "follow-tags", &config.follow_tags, parse_taglist, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Scan additional tag/attributes for URLs,\n",
+		  "e.g. --follow-tags=\"img/data-500px,img/data-hires\n"
+		}
+	},
+	{ "force-atom", &config.force_atom, parse_bool, 0, 0,
+		SECTION_STARTUP,
+		{ "Treat input file as Atom Feed.\n",
+		  "(default: off) (NEW!)\n"
+		}
+	},
+	{ "force-css", &config.force_css, parse_bool, 0, 0,
+		SECTION_STARTUP,
+		{ "Treat input file as CSS. (default: off) (NEW!)\n"
+		}
+	},
+	{ "force-directories", &config.force_directories, parse_bool, 0, 'x',
+		SECTION_DIRECTORY,
+		{ "Create hierarchy of directories when not\n",
+		  "retrieving recursively. (default: off)\n"
+		}
+	},
+	{ "force-html", &config.force_html, parse_bool, 0, 'F',
+		SECTION_STARTUP,
+		{ "Treat input file as HTML. (default: off)\n"
+		}
+	},
+	{ "force-metalink", &config.force_metalink, parse_bool, 0, 0,
+		SECTION_STARTUP,
+		{ "Treat input file as Metalink.\n",
+		  "(default: off) (NEW!)\n"
+		}
+	},
+	{ "force-rss", &config.force_rss, parse_bool, 0, 0,
+		SECTION_STARTUP,
+		{ "Treat input file as RSS Feed.\n",
+		  "(default: off) (NEW!)\n"
+		}
+	},
+	{ "force-sitemap", &config.force_sitemap, parse_bool, 0, 0,
+		SECTION_STARTUP,
+		{ "Treat input file as Sitemap. (default: off) (NEW!)\n"
+		}
+	},
+	{ "fsync-policy", &config.fsync_policy, parse_bool, 0, 0,
+		SECTION_STARTUP,
+		{ "Use fsync() to wait for data being written to\n",
+		  "the pysical layer. (default: off) (NEW!)\n"
+		}
+	},
+	{ "gnutls-options", &config.gnutls_options, parse_string, 1, 0,
+		SECTION_SSL,
+		{ "Custom GnuTLS priority string.\n",
+		  "Interferes with --secure-protocol.\n",
+		  "(default: none)\n"
+		}
+	},
+	{ "header", &config.headers, parse_header, 1, 0,
+		SECTION_HTTP,
+		{ "Insert input string as a HTTP header in\n",
+		  "all requests\n"
+		}
+	},
+	{ "help", NULL, print_help, 0, 'h',
+		SECTION_STARTUP,
+		{ "Print this help.\n"
+		}
+	},
+	{ "host-directories", &config.host_directories, parse_bool, 0, 0,
+		SECTION_DIRECTORY,
+		{ "Create host directories when retrieving\n",
+		  "recursively. (default: on)\n"
+		}
+	},
+	{ "hpkp", &config.hpkp, parse_bool, 0, 0,
+		SECTION_SSL,
+		{ "Use HTTP Public Key Pinning (HPKP). (default: on)\n"
+		}
+	},
+	{ "hpkp-file", &config.hpkp_file, parse_filename, 1, 0,
+		SECTION_SSL,
+		{ "Set file for storing HPKP data\n",
+		  "(default: ~/.wget-hpkp)\n"
+		}
+	},
+	{ "hsts", &config.hsts, parse_bool, 0, 0,
+		SECTION_SSL,
+		{ "Use HTTP Strict Transport Security (HSTS).\n",
+		  "(default: on)\n"
+		}
+	},
+	{ "hsts-file", &config.hsts_file, parse_filename, 1, 0,
+		SECTION_SSL,
+		{ "Set file for HSTS caching. (default: ~/.wget-hsts)\n"
+		}
+	},
+	{ "html-extension", &config.adjust_extension, parse_bool, 0, 0,
+		SECTION_HTTP,
+		{ "Obsoleted by --adjust-extension\n"
+		}
+	}, // obsolete, replaced by --adjust-extension
+	{ "http-keep-alive", &config.keep_alive, parse_bool, 0, 0,
+		SECTION_HTTP,
+		{ "Keep connection open for further requests.\n",
+		  "(default: on)\n"
+		}
+	},
+	{ "http-password", &config.http_password, parse_string, 1, 0,
+		SECTION_HTTP,
+		{ "Password for HTTP Authentication.\n",
+		  "(default: empty password)\n"
+		}
+	},
+	{ "http-proxy", &config.http_proxy, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Set HTTP proxy/proxies, overriding environment\n",
+		  "variables. Use comma to separate proxies.\n"
+		}
+	},
+	{ "http-user", &config.http_username, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Username for HTTP Authentication.\n",
+		  "(default: empty username)\n"
+		}
+	},
+	{ "http2", &config.http2, parse_bool, 0, 0,
+		SECTION_SSL,
+		{ "Use HTTP/2 protocol if possible. (default: on)\n"
+		}
+	},
+	{ "https-only", &config.https_only, parse_bool, 0, 0,
+		SECTION_SSL,
+		{ "Do not follow non-secure URLs. (default: off).\n"
+		}
+	},
+	{ "https-proxy", &config.https_proxy, parse_string, 1, 0,
+		SECTION_SSL,
+		{ "Set HTTPS proxy/proxies, overriding environment\n",
+		  "variables. Use comma to separate proxies.\n"
+		}
+	},
+	{ "ignore-case", &config.ignore_case, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Ignore case when matching files. (default: off)\n"
+		}
+	},
+	{ "ignore-tags", &config.ignore_tags, parse_taglist, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Ignore tag/attributes for URL scanning,\n",
+		  "e.g. --ignore-tags=\"img,a/href\n"
+		}
+	},
+	{ "inet4-only", &config.inet4_only, parse_bool, 0, '4',
+		SECTION_DOWNLOAD,
+		{ "Use IPv4 connections only. (default: off)\n"
+		}
+	},
+	{ "inet6-only", &config.inet6_only, parse_bool, 0, '6',
+		SECTION_DOWNLOAD,
+		{ "Use IPv6 connections only. (default: off)\n"
+		}
+	},
+	{ "input-encoding", &config.input_encoding, parse_string, 1, 0,
+		SECTION_STARTUP,
+		{ "Character encoding of the file contents read with\n",
+		  "--input-file. (default: local encoding)\n"
+		}
+	},
+	{ "input-file", &config.input_file, parse_string, 1, 'i',
+		SECTION_STARTUP,
+		{ "File where URLs are read from, - for STDIN.\n"
+		}
+	},
+	{ "iri", NULL, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Wget dummy option, you can't switch off\n",
+		  "international support\n"
+		}
+	}, // Wget compatibility, in fact a do-nothing option
+	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, 0, 0,
+		SECTION_HTTP,
+		{ "Also save session cookies. (default: off)\n"
+		}
+	},
+	{ "level", &config.level, parse_integer, 1, 'l',
+		SECTION_DOWNLOAD,
+		{ "Maximum recursion depth. (default: 5)\n"
+		}
+	},
+	{ "load-cookies", &config.load_cookies, parse_string, 1, 0,
+		SECTION_HTTP,
+		{ "Load cookies from file.\n"
+		}
+	},
+	{ "local-encoding", &config.local_encoding, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Character encoding of environment and filenames.\n"
+		}
+	},
+	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Max. number of redirections to follow.\n",
+		  "(default: 20)\n"
+		}
+	},
+	{ "max-threads", &config.max_threads, parse_integer, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Max. concurrent download threads.\n",
+		  "(default: 5) (NEW!)\n"
+		}
+	},
+	{ "metalink", &config.metalink, parse_bool, 0, 0,
+		SECTION_HTTP,
+		{ "Follow a metalink file instead of storing it\n",
+		  "(default: on)\n"
+		}
+	},
+	{ "mirror", &config.mirror, parse_mirror, 0, 'm',
+		SECTION_DOWNLOAD,
+		{ "Turn on mirroring options -r -N -l inf\n"
+		}
+	},
+	{ "n", NULL, parse_n_option, 1, 'n',
+		SECTION_STARTUP,
+		{ "Special compatibility option\n"
+		}
+	}, // special Wget compatibility option
+	{ "netrc", &config.netrc, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Load credentials from ~/.netrc if not given.\n",
+	      "(default: on)\n"
+	    }
+	},
+	{ "netrc-file", &config.netrc_file, parse_filename, 1, 0,
+		SECTION_HTTP,
+		{ "Set file for login/password to use instead of\n",
+		  "~/.netrc. (default: ~/.netrc)\n"
+		}
+	},
+	{ "ocsp", &config.ocsp, parse_bool, 0, 0,
+		SECTION_SSL,
+		{ "Use OCSP server access to verify server's\n",
+		  "certificate. (default: on)\n"
+		}
+	},
+	{ "ocsp-file", &config.ocsp_file, parse_filename, 1, 0,
+		SECTION_SSL,
+		{ "Set file for OCSP chaching.\n",
+		  "(default: ~/.wget-ocsp)\n"
+		}
+	},
+	{ "ocsp-stapling", &config.ocsp_stapling, parse_bool, 0, 0,
+		SECTION_SSL,
+		{ "Use OCSP stapling to verify the server's\n",
+		  "certificate. (default: on)\n"
+		}
+	},
+	{ "output-document", &config.output_document, parse_string, 1, 'O',
+		SECTION_DOWNLOAD,
+		{ "File where downloaded content is written to,\n",
+		  "'-O'  for STDOUT.\n"
+		}
+	},
+	{ "output-file", &config.logfile, parse_string, 1, 'o',
+		SECTION_STARTUP,
+		{ "File where messages are printed to,\n",
+		  "'-' for STDOUT.\n"
+		}
+	},
+	{ "page-requisites", &config.page_requisites, parse_bool, 0, 'p',
+		SECTION_DOWNLOAD,
+		{ "Download all necessary files to display a\n",
+		  "HTML page\n"
+		}
+	},
+	{ "parent", &config.parent, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Ascend above parent directory. (default: on)\n"
+		}
+	},
+	{ "password", &config.password, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Password for Authentication.\n",
+		  "(default: empty password)\n"
+		}
+	},
+	{ "post-data", &config.post_data, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Data to be sent in a POST request.\n"
+		}
+	},
+	{ "post-file", &config.post_file, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "File with data to be sent in a POST request.\n"
+		}
+	},
+	{ "prefer-family", &config.preferred_family, parse_prefer_family, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Prefer IPv4 or IPv6. (default: none)\n"
+		}
+	},
+	{ "private-key", &config.private_key, parse_string, 1, 0,
+		SECTION_SSL,
+		{ "File with private key.\n"
+		}
+	},
+	{ "private-key-type", &config.private_key_type, parse_cert_type, 1, 0,
+		SECTION_SSL,
+		{ "Type of the private key (PEM or DER).\n",
+		  "(default: PEM)\n"
+		}
+	},
+	{ "progress", &config.progress, parse_progress_type, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Type of progress bar (bar, dot, none).\n",
+		  "(default: none)\n"
+		}
+	},
+	{ "protocol-directories", &config.protocol_directories, parse_bool, 0, 0,
+		SECTION_DIRECTORY,
+		{ "Force creating protocol directories.\n",
+		  "(default: off)\n"
+		}
+	},
+	{ "proxy", &config.proxy, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Enable support for *_proxy environment variables.\n",
+		  "(default: on)\n"
+		}
+	},
+	{ "quiet", &config.quiet, parse_bool, 0, 'q',
+		SECTION_STARTUP,
+		{ "Print no messages except debugging messages.\n",
+		  "(default: off)\n"
+		}
+	},
+	{ "quota", &config.quota, parse_numbytes, 1, 'Q',
+		SECTION_HTTP,
+		{ "Download quota, 0 = no quota. (default: 0)\n"
+		}
+	},
+	{ "random-file", &config.random_file, parse_filename, 1, 0,
+		SECTION_SSL,
+		{ "File to be used as source of random data.\n"
+		}
+	},
+	{ "random-wait", &config.random_wait, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Wait 0.5 up to 1.5*<--wait> seconds between\n",
+		  "downloads (per thread). (default: off)\n"
+		}
+	},
+	{ "read-timeout", &config.read_timeout, parse_timeout, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Read and write timeout in seconds.\n"
+		}
+	},
+	{ "recursive", &config.recursive, parse_bool, 0, 'r',
+		SECTION_DOWNLOAD,
+		{ "Recursive download. (default: off)\n"
+		}
+	},
+	{ "referer", &config.referer, parse_string, 1, 0,
+		SECTION_HTTP,
+		{ "Include Referer: url in HTTP requets.\n",
+		  "(default: off)\n"
+		}
+	},
+	{ "reject", &config.reject_patterns, parse_stringlist, 1, 'R',
+		SECTION_DOWNLOAD,
+		{ "Comma-separated list of file name suffixes or\n",
+		  "patterns.\n"
+		}
+	},
+	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Character encoding of remote files\n",
+		  "(if not specified in Content-Type HTTP header\n",
+		  "or in document itself)\n"
+		}
+	},
+	{ "restrict-file-names", &config.restrict_file_names, parse_restrict_names, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "unix, windows, nocontrol, ascii, lowercase,\n",
+		  "uppercase, none\n"
+		}
+	},
+	{ "robots", &config.robots, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Respect robots.txt standard for recursive\n",
+		  "downloads. (default: on)\n"
+		}
+	},
+	{ "save-cookies", &config.save_cookies, parse_string, 1, 0,
+		SECTION_HTTP,
+		{ "Save cookies to file.\n"
+		}
+	},
+	{ "save-headers", &config.save_headers, parse_bool, 0, 0,
+		SECTION_HTTP,
+		{ "Save the response headers in front of the response\n",
+		  "data. (default: off)\n"
+		}
+	},
+	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0,
+		SECTION_SSL,
+		{ "Set protocol to be used (auto, SSLv3, TLSv1, PFS).\n",
+		  "(default: auto). Or use GnuTLS priority\n",
+		  "strings, e.g. NORMAL:-VERS-SSL3.0:-RSA\n"
+		}
+	},
+	{ "server-response", &config.server_response, parse_bool, 0, 'S',
+		SECTION_DOWNLOAD,
+		{ "Print the server response headers. (default: off)\n"
+		}
+	},
+	{ "span-hosts", &config.span_hosts, parse_bool, 0, 'H',
+		SECTION_DOWNLOAD,
+		{ "Span hosts that were not given on the\n",
+		  "command line. (default: off)\n"
+		}
+	},
+	{ "spider", &config.spider, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Enable web spider mode. (default: off)\n"
+		}
+	},
+	{ "strict-comments", &config.strict_comments, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "A dummy option. Parsing always works non-strict.\n"
+		}
+	},
+	{ "tcp-fastopen", &config.tcp_fastopen, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Enable TCP Fast Open (TFO). (default: on)\n"
+		}
+	},
+	{ "timeout", NULL, parse_timeout, 1, 'T',
+		SECTION_DOWNLOAD,
+		{ "General network timeout in seconds.\n"
+		}
+	},
+	{ "timestamping", &config.timestamping, parse_bool, 0, 'N',
+		SECTION_DOWNLOAD,
+		{ "Just retrieve younger files than the local ones.\n",
+		  "(default: off)\n"
+		}
+	},
+	{ "tls-false-start", &config.tls_false_start, parse_bool, 0, 0,
+		SECTION_SSL,
+		{ "Enable TLS False Start (needs GnuTLS 3.5+).\n",
+		          "(default: on)\n"
+		        }
+	},
+	{ "tls-resume", &config.tls_resume, parse_bool, 0, 0,
+		SECTION_SSL,
+		{ "Enable TLS Session Resumption. (default: on)\n"
+		}
+	},
+	{ "tls-session-file", &config.tls_session_file, parse_filename, 1, 0,
+		SECTION_SSL,
+		{ "Set file for TLS Session caching.\n",
+		  "(default: ~/.wget-session)\n"
+		}
+	},
+	{ "tries", &config.tries, parse_integer, 1, 't',
+		SECTION_DOWNLOAD,
+		{ "Number of tries for each download. (default 20)\n"
+		}
+	},
+	{ "trust-server-names", &config.trust_server_names, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "On redirection use the server's filename.\n",
+		  "(default: off)\n"
+		}
+	},
+	{ "use-server-timestamps", &config.use_server_timestamps, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Set local file's timestamp to server's timestamp.\n",
+		  "(default: on)\n"
+		}
+	},
+	{ "user", &config.username, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Username for Authentication.\n",
+		  "(default: empty username)\n"
+		}
+	},
+	{ "user-agent", &config.user_agent, parse_string, 1, 'U',
+		SECTION_HTTP,
+		{ "Username for Authentication.\n",
+		  "(default: empty username)\n"
+		}
+	},
+	{ "verbose", &config.verbose, parse_bool, 0, 'v',
+		SECTION_STARTUP,
+		{ "Print more messages. (default: on)\n"\
+		}
+	},
+	{ "version", NULL, print_version, 0, 'V',
+		SECTION_STARTUP,
+		{ "Display the version of Wget and exit.\n"
+		}
+	},
+	{ "wait", &config.wait, parse_timeout, 1, 'w',
+		SECTION_DOWNLOAD,
+		{ "Wait number of seconds between downloads\n",
+		  "(per thread). (default: 0)\n"
+		}
+	},
+	{ "waitretry", &config.waitretry, parse_timeout, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Wait up to number of seconds after error\n",
+		  "(per thread). (default: 10)\n"
+		}
+	}
 };
+
+static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val)
+{
+	printf(
+		"GNU Wget2 V" PACKAGE_VERSION " - multithreaded metalink/file/website downloader\n"
+		"\n"
+		"Usage: wget [options...] <url>...\n"
+		"\n");
+
+	for (help_section_t sect = SECTION_STARTUP; sect <= SECTION_DIRECTORY; sect++) {
+		switch (sect) {
+		case SECTION_STARTUP:
+			printf("Startup:\n");
+			break;
+
+		case SECTION_DOWNLOAD:
+			printf("Download:\n");
+			break;
+
+		case SECTION_HTTP:
+			printf("HTTP related options:\n");
+			break;
+
+		case SECTION_SSL:
+			printf("HTTPS (SSL/TLS) related options:\n");
+			break;
+
+		case SECTION_DIRECTORY:
+			printf("Directory options:\n");
+			break;
+
+		default:
+			printf("Unknown FIXME Vijo\n");
+			break;
+		}
+		for (unsigned it = 0; it < countof(options); it++) {
+			if (options[it].section == sect) {
+				print_first(options[it].short_name,
+				            options[it].long_name,
+				            options[it].help_str[0]);
+				for (unsigned int i = 1; options[it].help_str[i] != NULL && i < countof(options[it].help_str); i++){
+					print_next(options[it].help_str[i]);
+				}
+			}
+		}
+		printf("\n");
+	}
+
+	printf("\n");
+	printf("Example boolean option:\n --quiet=no is the same as --no-quiet or --quiet=off or --quiet off\n");
+	printf("Example string option:\n --user-agent=SpecialAgent/1.3.5 or --user-agent \"SpecialAgent/1.3.5\"\n");
+	printf("\n");
+	printf("To reset string options use --[no-]option\n");
+	printf("\n");
+
+/*
+ * -a / --append-output should be reduced to -o (with always appending to logfile)
+ * Using rm logfile + wget achieves the old behaviour...
+ *
+ */
+	exit(EXIT_SUCCESS);
+}
 
 static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL opt_compare(const void *key, const void *option)
 {
