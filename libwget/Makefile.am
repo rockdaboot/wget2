@@ -4,7 +4,7 @@ lib_LTLIBRARIES = libwget.la
 libwget_la_SOURCES = \
  atom_url.c bar.c buffer.c buffer_printf.c base64.c console.c cookie.c\
  css.c css_tokenizer.c css_tokenizer.h css_tokenizer.lex css_url.c\
- decompressor.c encoding.c hashfile.c hashmap.c io.c hsts.c hpkp.c html_url.c http.c init.c ip.c iri.c\
+ decompressor.c encoding.c hashfile.c hashmap.c io.c hsts.c hpkp.c html_url.c http.c http.h init.c ip.c iri.c\
  list.c log.c logger.c logger.h md5.c mem.c metalink.c net.c net.h netrc.c ocsp.c pipe.c printf.c random.c \
  robots.c rss_url.c sitemap_url.c ssl_gnutls.c stringmap.c strlcpy.c thread.c tls_session.c utils.c \
  vector.c xalloc.c xml.c private.h http_highlevel.c

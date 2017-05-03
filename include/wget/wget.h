@@ -40,9 +40,6 @@
 #include <time.h>
 #include <stdbool.h>
 #include <inttypes.h>
-#ifdef WITH_LIBNGHTTP2
-#	include <nghttp2/nghttp2.h>
-#endif
 
 #ifdef WGETVER_FILE
 #   include WGETVER_FILE
@@ -1575,34 +1572,16 @@ struct wget_http_response_t {
 		cur_downloaded;
 };
 
-typedef struct {
-	wget_tcp_t *
-		tcp;
-	const char *
-		esc_host;
-	const char *
-		port;
-	const char *
-		scheme;
-	wget_buffer_t *
-		buf;
-#ifdef WITH_LIBNGHTTP2
-	nghttp2_session *
-		http2_session;
-#endif
-	wget_vector_t
-		*pending_requests; // List of unresponsed requests (HTTP1 only)
-	wget_vector_t
-		*received_http2_responses; // List of received (but yet unprocessed) responses (HTTP2 only)
-	int
-		pending_http2_requests; // Number of unresponsed requests (HTTP2 only)
-	char
-		protocol; // WGET_PROTOCOL_HTTP_1_1 or WGET_PROTOCOL_HTTP_2_0
-	unsigned char
-		print_response_headers : 1,
-		abort_indicator : 1,
-		proxied : 1;
-} wget_http_connection_t;
+typedef struct _wget_http_connection_st wget_http_connection_t;
+
+WGETAPI const char *
+	wget_http_get_host(const wget_http_connection_t *conn);
+WGETAPI const char *
+	wget_http_get_port(const wget_http_connection_t *conn);
+WGETAPI const char *
+	wget_http_get_scheme(const wget_http_connection_t *conn);
+WGETAPI int
+	wget_http_get_protocol(const wget_http_connection_t *conn);
 
 WGETAPI int
 	wget_http_isseparator(char c) G_GNUC_WGET_CONST;

@@ -67,4 +67,5 @@
 # define debug_printf wget_debug_printf
 # define debug_write wget_debug_write
 
+
 #endif /* _LIBWGET_PRIVATE_H */

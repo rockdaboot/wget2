@@ -1130,20 +1130,21 @@ static int try_connection(DOWNLOADER *downloader, wget_iri_t *iri)
 	}
 
 	if ((conn = downloader->conn)) {
-		if (!wget_strcmp(conn->esc_host, iri->host) &&
-			conn->scheme == iri->scheme &&
-			!wget_strcmp(conn->port, iri->resolv_port))
+		if (!wget_strcmp(wget_http_get_host(conn), iri->host) &&
+			wget_http_get_scheme(conn) == iri->scheme &&
+			!wget_strcmp(wget_http_get_port(conn), iri->resolv_port))
 		{
-			debug_printf("reuse connection %s\n", conn->esc_host);
+			debug_printf("reuse connection %s\n", wget_http_get_host(conn));
 			return WGET_E_SUCCESS;
 		}
 
-		debug_printf("close connection %s\n", conn->esc_host);
+		debug_printf("close connection %s\n", wget_http_get_host(conn));
 		wget_http_close(&downloader->conn);
 	}
 
 	if ((rc = wget_http_open(&downloader->conn, iri)) == WGET_E_SUCCESS) {
-		debug_printf("established connection %s\n", downloader->conn->esc_host);
+		debug_printf("established connection %s\n",
+				wget_http_get_host(downloader->conn));
 	} else {
 		debug_printf("Failed to connect (%d)\n", rc);
 	}
@@ -1677,7 +1678,7 @@ void *downloader_thread(void *p)
 
 					job->iri = iri;
 
-					if (config.wait || job->metalink || !downloader->conn || downloader->conn->protocol != WGET_PROTOCOL_HTTP_2_0)
+					if (config.wait || job->metalink || !downloader->conn || wget_http_get_protocol(downloader->conn) != WGET_PROTOCOL_HTTP_2_0)
 						max_pending = 1;
 					else
 						max_pending = config.http2_request_window;

@@ -33,6 +33,7 @@
 
 #include <wget.h>
 #include "private.h"
+#include "http.h"
 
 static int _stream_callback(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *user_data, const char *data, size_t length)
 {
