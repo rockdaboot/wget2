@@ -74,7 +74,7 @@ static int header_callback(void *context G_GNUC_WGET_UNUSED, wget_http_response_
 	}
 
 	if ((metaint = resp->icy_metaint)) {
-		streamdata = malloc(metaint);
+		streamdata = wget_malloc(metaint);
 	}
 
 	return 0; // OK, continue
