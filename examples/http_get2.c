@@ -27,7 +27,6 @@
  *
  */
 
-#include <stdlib.h>
 #include <wget.h>
 
 #define COOKIE_SUPPORT
@@ -104,7 +103,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 	// enrich the HTTP request with the uri-related cookies we have
 	if ((cookie_string = wget_cookie_create_request_header(cookies, uri))) {
 		wget_http_add_header(req, "Cookie", cookie_string);
-		free((void *)cookie_string);
+		wget_xfree(cookie_string);
 	}
 #endif
 

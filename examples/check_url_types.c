@@ -23,7 +23,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #ifndef _WIN32
 #	include <signal.h>
@@ -74,13 +73,13 @@ static int _normalize_uri(wget_iri_t *base, wget_string_t *url, const char *enco
 
 	wget_iri_unescape_inline(urlpart);
 	rc = wget_memiconv(encoding, urlpart, strlen(urlpart), "utf-8", &urlpart_encoded, &urlpart_encoded_length);
-	free(urlpart);
+	wget_xfree(urlpart);
 
 	if (rc)
 		return -2;
 
 	rc = !wget_iri_relative_to_abs(base, urlpart_encoded, urlpart_encoded_length, buf);
-	free(urlpart_encoded);
+	wget_xfree(urlpart_encoded);
 
 	if (rc)
 		return -3;
@@ -219,7 +218,7 @@ static void html_parse(const char *html, size_t html_len, const char *encoding, 
 	wget_iri_free(&allocated_base);
 	wget_html_free_urls_inline(&parsed);
 	wget_iri_free(&base);
-	free(utf8);
+	wget_xfree(utf8);
 
 	wget_info_printf("  same host: http=%d https=%d\n", stats.http_links_same_host, stats.https_links_same_host);
 	wget_info_printf("      total: http=%d https=%d\n", stats.http_links, stats.https_links);
@@ -258,7 +257,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 
 	while (fscanf(stdin, "%d,%255s", &stats.id, stats.host) == 2) {
 
-		free(url);
+		wget_xfree(url);
 		if (!wget_strncasecmp_ascii(stats.host, "http://", 7))
 			url = wget_aprintf("https://%s", stats.host + 7);
 		else if (wget_strncasecmp_ascii(stats.host, "https://", 8))
@@ -308,7 +307,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 						wget_info_printf("  Failed to normalize '%s', '%s'\n", url, resp->location);
 						break;
 					}
-					free(url);
+					wget_xfree(url);
 					url = newurl;
 
 					if (wget_strncasecmp(url, "https://", 8))
@@ -348,7 +347,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		write_stats();
 	}
 
-	free(url);
+	wget_xfree(url);
 
 	// free resources - needed for valgrind testing
 	wget_global_deinit();

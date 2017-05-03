@@ -127,12 +127,21 @@ void *wget_realloc(void *ptr, size_t size)
 	return p;
 }
 
-/*void wget_free(const void **p)
+/**
+ * \param[in] ptr Pointer to memory-pointer to be freed
+ *
+ * This function is like free().
+ *
+ * Is is basically needed on systems where the library malloc heap is different
+ * from the caller's malloc heap, which happens on Windows when the library
+ * is a separate DLL.
+ *
+ * To prevent typical use-after-free issues, use the macro wget_xfree().
+ */
+void wget_free(void *ptr)
 {
-	if (p && *p) {
-		free(*p);
-		*p = NULL;
-	}
-}*/
+	if (ptr)
+		free(ptr);
+}
 
 /**@}*/

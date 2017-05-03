@@ -42,9 +42,6 @@
 #define error_printf       wget_error_printf
 #define error_printf_exit  wget_error_printf_exit
 
-// I try to never leave freed pointers hanging around
-#define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
-
 struct css_context {
 	wget_iri_t
 		*base;
@@ -113,7 +110,7 @@ static void css_parse_localfile(const char *fname, wget_iri_t *base, const char 
 	wget_css_parse_file(fname, css_parse_uri, css_parse_encoding, &context);
 
 	if (context.encoding_allocated)
-		xfree(context.encoding);
+		wget_xfree(context.encoding);
 
 	wget_buffer_deinit(&context.uri_buf);
 }

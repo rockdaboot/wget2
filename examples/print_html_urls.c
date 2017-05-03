@@ -33,11 +33,11 @@
 
 static void html_parse_localfile(const char *fname)
 {
-	char *data;
+	char *data, *data_allocated;
 	const char *encoding = NULL;
 	size_t len;
 
-	if ((data = wget_read_file(fname, &len))) {
+	if ((data_allocated = data = wget_read_file(fname, &len))) {
 		if ((unsigned char)data[0] == 0xFE && (unsigned char)data[1] == 0xFF) {
 			// Big-endian UTF-16
 			encoding = "UTF-16BE";
@@ -72,8 +72,8 @@ static void html_parse_localfile(const char *fname)
 
 			if (wget_memiconv(encoding, data, len, "UTF-8", &utf8, &n) == 0) {
 				printf("Convert non-ASCII encoding '%s' to UTF-8\n", encoding);
-				wget_xfree(data);
-				data = utf8;
+				wget_xfree(data_allocated);
+				data_allocated = data = utf8;
 			} else {
 				printf("Failed to convert non-ASCII encoding '%s' to UTF-8, skip parsing\n", encoding);
 				return;
@@ -94,7 +94,7 @@ static void html_parse_localfile(const char *fname)
 			printf("  %s.%s '%.*s'\n", html_url->dir, html_url->attr, (int) url->len, url->p);
 		}
 
-		wget_xfree(data);
+		wget_xfree(data_allocated);
 		wget_html_free_urls_inline(&res);
 	}
 }
