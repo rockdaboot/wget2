@@ -45,3 +45,6 @@ check-coverage: clean clean-lcov
 	lcov --capture --directory src/ --directory libwget/.libs --output-file $(LCOV_INFO)
 	lcov --remove $(LCOV_INFO) '*/test_linking.c' '*/css_tokenizer.lex' '*/<stdout>' -o $(LCOV_INFO)
 	genhtml --prefix . --ignore-errors source $(LCOV_INFO) --legend --title "Wget2" --output-directory=lcov
+
+check-local:
+	$(MAKE) -s syntax-check >/dev/null
