@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2013 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2017 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -39,6 +39,12 @@
 
 size_t wget_strlcpy(char *dst, const char *src, size_t size)
 {
+	if (!src)
+		return 0;
+
+	if (!dst)
+		return strlen(src);
+
 #ifndef HAVE_STRLCPY
 	const char *old = src;
 

@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2017 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -250,7 +250,7 @@ void wget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t d
 	size_t it;
 	int adjust = 0, c;
 
-	if (dst_size == 0)
+	if (dst_size == 0 || !dst || !src)
 		return;
 
 	if (src_len * 2 >= dst_size) {

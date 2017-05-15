@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012-2015 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2017 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -144,6 +144,9 @@ char *wget_striconv(const char *src, const char *src_encoding, const char *dst_e
 
 int wget_str_needs_encoding(const char *s)
 {
+	if (!s)
+		return 0;
+
 	while (*s && (*s & ~0x7f) == 0) s++;
 
 	return !!*s;
@@ -152,6 +155,9 @@ int wget_str_needs_encoding(const char *s)
 int wget_str_is_valid_utf8(const char *utf8)
 {
 	const unsigned char *s = (const unsigned char *) utf8;
+
+	if (!s)
+		return 0;
 
 	while (*s) {
 		if ((*s & 0x80) == 0) /* 0xxxxxxx ASCII char */

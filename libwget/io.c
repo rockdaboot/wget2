@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2017 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -60,13 +60,16 @@ static ssize_t __readfd(const void *f, char *dst, size_t len)
 	return read(*fd, dst, len);
 }
 
-static ssize_t wget_getline_internal(char **buf, size_t *bufsize,
+static ssize_t _getline_internal(char **buf, size_t *bufsize,
 		       const void *f,
 		       ssize_t (*reader)(const void *f, char *dst, size_t len))
 {
 	ssize_t nbytes = 0;
 	size_t *sizep, length = 0;
 	char *p;
+
+	if (!buf || !bufsize)
+		return -1;
 
 	if (!*buf || !*bufsize) {
 		// first call
@@ -153,7 +156,7 @@ static ssize_t wget_getline_internal(char **buf, size_t *bufsize,
  */
 ssize_t wget_fdgetline(char **buf, size_t *bufsize, int fd)
 {
-	return wget_getline_internal(buf, bufsize, (void *)&fd, __readfd);
+	return _getline_internal(buf, bufsize, (void *)&fd, __readfd);
 }
 
 /**
@@ -183,7 +186,7 @@ ssize_t wget_fdgetline(char **buf, size_t *bufsize, int fd)
  */
 ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
 {
-	return wget_getline_internal(buf, bufsize, (void *)fp, __read);
+	return _getline_internal(buf, bufsize, (void *)fp, __read);
 }
 
 /**
@@ -523,9 +526,12 @@ int wget_update_file(const char *fname,
  */
 int wget_truncate(const char *path, off_t length)
 {
-	int rc, fd = open(path, O_RDWR);
+	int fd, rc;
 
-	if (fd == -1)
+	if (!path)
+		return -1;
+
+	if ((fd = open(path, O_RDWR)) == -1)
 		return -1;
 
 	rc = ftruncate(fd, length);

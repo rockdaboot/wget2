@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012-2015 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2017 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -293,7 +293,7 @@ WGETAPI int
 WGETAPI int
 	wget_strncasecmp(const char *s1, const char *s2, size_t n) G_GNUC_WGET_PURE;
 WGETAPI void
-	wget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size) G_GNUC_WGET_NONNULL_ALL;
+	wget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size);
 WGETAPI void
 	wget_millisleep(int ms);
 WGETAPI long long
@@ -311,15 +311,15 @@ WGETAPI char *
 WGETAPI int
 	wget_get_screen_size(int *width, int *height);
 WGETAPI ssize_t
-	wget_fdgetline(char **buf, size_t *bufsize, int fd) G_GNUC_WGET_NONNULL_ALL;
+	wget_fdgetline(char **buf, size_t *bufsize, int fd);
 WGETAPI ssize_t
-	wget_getline(char **buf, size_t *bufsize, FILE *fp) G_GNUC_WGET_NONNULL_ALL;
+	wget_getline(char **buf, size_t *bufsize, FILE *fp);
 WGETAPI FILE *
-	wget_vpopenf(const char *type, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2));
+	wget_vpopenf(const char *type, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
 WGETAPI FILE *
-	wget_popenf(const char *type, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3) G_GNUC_WGET_NONNULL((1,2));
+	wget_popenf(const char *type, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
 WGETAPI FILE *
-	wget_popen2f(FILE **fpin, FILE **fpout, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL((3));
+	wget_popen2f(FILE **fpin, FILE **fpout, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4);
 WGETAPI pid_t
 	wget_fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv);
 WGETAPI pid_t
@@ -329,7 +329,7 @@ WGETAPI char *
 WGETAPI int
 	wget_update_file(const char *fname, wget_update_load_t load_func, wget_update_save_t save_func, void *context);
 WGETAPI int
-	wget_truncate(const char *path, off_t length) G_GNUC_WGET_NONNULL((1));
+	wget_truncate(const char *path, off_t length);
 WGETAPI const char
 	*wget_local_charset_encoding(void);
 WGETAPI int
@@ -337,9 +337,9 @@ WGETAPI int
 WGETAPI char *
 	wget_striconv(const char *src, const char *src_encoding, const char *dst_encoding) G_GNUC_WGET_MALLOC;
 WGETAPI int
-	wget_str_needs_encoding(const char *s) G_GNUC_WGET_NONNULL((1)) G_GNUC_WGET_PURE;
+	wget_str_needs_encoding(const char *s) G_GNUC_WGET_PURE;
 WGETAPI int
-	wget_str_is_valid_utf8(const char *utf8) G_GNUC_WGET_NONNULL((1)) G_GNUC_WGET_PURE;
+	wget_str_is_valid_utf8(const char *utf8) G_GNUC_WGET_PURE;
 WGETAPI char *
 	wget_str_to_utf8(const char *src, const char *encoding) G_GNUC_WGET_MALLOC;
 WGETAPI char *
@@ -354,7 +354,7 @@ WGETAPI const char *
  */
 
 WGETAPI size_t
-	wget_strlcpy(char *restrict dst, const char *restrict src, size_t size) G_GNUC_WGET_NONNULL_ALL;
+	wget_strlcpy(char *restrict dst, const char *restrict src, size_t size);
 
 /**
  * \ingroup libwget-list

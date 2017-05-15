@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2017 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -44,6 +44,9 @@ FILE *wget_vpopenf(const char *type, const char *fmt, va_list args)
 	char sbuf[1024];
 	wget_buffer_t buf;
 
+	if (!type || !fmt)
+		return NULL;
+
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 	wget_buffer_vprintf(&buf, fmt, args);
 
@@ -72,6 +75,9 @@ pid_t wget_fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv)
 	int pipefd_out[2]; // child's STDOUT
 	int pipefd_err[2]; // child's STDERR
 	pid_t pid;
+
+	if (!argv)
+		return -1;
 
 	// create a pipe. the child writes into it and the parent read from it.
 	// pipefd[0]=reader pipefd[1]=writer
