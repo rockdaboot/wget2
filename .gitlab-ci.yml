@@ -38,7 +38,6 @@ Debian GNU/Linux build:
   script:
     - ./bootstrap && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan -C
-    - make syntax-check
     - make -j$(nproc) distcheck
     - ./configure -C --enable-fsanitize-msan
     - make clean check
