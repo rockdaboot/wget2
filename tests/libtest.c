@@ -841,9 +841,9 @@ void wget_test(int first_key, ...)
 		// the test servers will listen only on the first IP and also prefers IPv4
 		const char *emulator = getenv("EMULATOR");
 		if (emulator && *emulator)
-			wget_buffer_printf(cmd, "%s %s%s %s", emulator, executable, EXEEXT, options);
+			wget_buffer_printf(cmd, "%s %s %s", emulator, executable, options);
 		else
-			wget_buffer_printf(cmd, "%s%s %s", executable, EXEEXT, options);
+			wget_buffer_printf(cmd, "%s %s", executable, options);
 		wget_info_printf("cmd=%s\n", cmd->data);
 	} else if (!strcmp(valgrind, "1")) {
 		wget_buffer_printf(cmd, "valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=" SRCDIR "/valgrind-suppressions %s %s", executable, options);
