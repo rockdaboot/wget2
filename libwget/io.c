@@ -233,7 +233,7 @@ int wget_ready_2_transfer(int fd, int timeout, short mode)
 #else
 	fd_set fdset;
 	fd_set *rd = NULL, *wr = NULL;
-	struct timeval tmo = { timeout / 1000L, (timeout % 1000) * 1000 };
+	struct timeval tmoval, *tmo = NULL;
 
 	if (fd >= FD_SETSIZE) {
 		errno = EINVAL;
@@ -248,7 +248,18 @@ int wget_ready_2_transfer(int fd, int timeout, short mode)
 	if (mode & WGET_IO_WRITABLE)
 		wr = &fdset;
 
-	if ((rc = select (fd + 1, rd, wr, NULL, timeout >= 0 ? &tmo : NULL)) > 0) {
+	if (timeout >= 0) {
+		tmoval.tv_sec = timeout / 1000L;
+		tmoval.tv_usec = (timeout % 1000) * 1000;
+		tmo = &tmoval;
+	}
+
+#if defined __MINGW32__ || defined __MINGW64__
+	// fixes timing issue with MinGW + Wine
+	wget_millisleep(10);
+#endif
+
+	if ((rc = select (fd + 1, rd, wr, NULL, tmo)) >= 0) {
 		rc = 0;
 		if (rd && FD_ISSET(fd, rd))
 			rc |= WGET_IO_READABLE;

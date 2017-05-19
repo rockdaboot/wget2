@@ -23,15 +23,16 @@ export CFLAGS="-O2 -Wall -Wno-format"
 # rm -rf libidn-*
 
 # if you compiled&installed dependencies into /usr/local:
-export CPPFLAGS="-I/usr/local/include"
-export LDFLAGS="-L/usr/local/lib"
+#export CPPFLAGS="-I/usr/local/include"
+#export LDFLAGS="-L/usr/local/lib"
 
 ./bootstrap
 ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --without-libpsl --without-gnutls --without-libnghttp2 --without-zlib --without-lzma --without-bzip2 --without-libidn
 make clean
 make -j4
 
-# Add the library path for wine in ~/.wine/system.reg:
+export WINEPATH="/usr/$PREFIX/bin;$HOME/src/wget2/libwget/.libs"
+# Alternatively, add the library path for wine in ~/.wine/system.reg:
 # search for
 #   [System\\CurrentControlSet\\Control\\Session Manager\\Environment]
 # within this section you'll find a PATH variable
@@ -41,4 +42,8 @@ make -j4
 #
 # Now wine is able to find the mingw DLLs.
 
+# This should print out the help messages now
 wine src/wget2.exe --help
+
+# execute test suite
+make check LOG_COMPILER=wine

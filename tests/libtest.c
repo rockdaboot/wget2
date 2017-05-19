@@ -56,8 +56,9 @@ static int
 	ftp_server_port,
 	ftps_server_port,
 	ftps_implicit,
-	terminate,
 	keep_tmpfiles;
+static volatile sig_atomic_t
+	terminate;
 /*static const char
 	*response_code = "200 Dontcare",
 	*response_body = "";
@@ -107,7 +108,9 @@ static void *_http_server_thread(void *ctx)
 	while (!terminate) {
 		wget_tcp_deinit(&tcp);
 
+		wget_info_printf("[SERVER] accept...\n");
 		if ((tcp = wget_tcp_accept(parent_tcp))) {
+			wget_info_printf("[SERVER] accepted\n");
 			authorized = 0;
 
 			nbytes = 0;
@@ -250,6 +253,7 @@ static void *_http_server_thread(void *ctx)
 
 	wget_tcp_deinit(&parent_tcp);
 
+	wget_info_printf("[SERVER] stopped\n");
 	return NULL;
 }
 
@@ -417,8 +421,9 @@ static void _empty_directory(const char *dirname)
 			snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
 
 			if (unlink(fname) == -1) {
-				// in case fname is a directory glibc returns EISDIR but correct POSIX value would be EPERM
-				if (errno == EISDIR || errno == EPERM)
+				// in case fname is a directory glibc returns EISDIR but correct POSIX value would be EPERM.
+				// MinGW + Wine returns EACCESS here.
+				if (errno == EISDIR || errno == EPERM || errno == EACCES)
 					_remove_directory(fname);
 				else
 					wget_error_printf(_("Failed to unlink %s (%d)\n"), fname, errno);
@@ -460,18 +465,23 @@ void wget_test_stop_server(void)
 	}
 
 	// free resources - needed for valgrind testing
-	pthread_kill(http_server_tid, SIGTERM);
-	pthread_kill(https_server_tid, SIGTERM);
-	pthread_kill(ftp_server_tid, SIGTERM);
-	if (ftps_implicit)
-		pthread_kill(ftps_server_tid, SIGTERM);
+	terminate = 1;
+	wget_info_printf("*** Kill server\n");
+//	pthread_kill(http_server_tid, SIGTERM);
+//	pthread_kill(https_server_tid, SIGTERM);
+//	pthread_kill(ftp_server_tid, SIGTERM);
+//	if (ftps_implicit)
+//		pthread_kill(ftps_server_tid, SIGTERM);
 
-	wget_thread_join(http_server_tid);
-	wget_thread_join(https_server_tid);
-	wget_thread_join(ftp_server_tid);
-	if (ftps_implicit)
-		wget_thread_join(ftps_server_tid);
+	wget_info_printf("*** wait server...\n");
+	wget_thread_cancel(http_server_tid);
+//	wget_thread_join(http_server_tid);
+//	wget_thread_join(https_server_tid);
+//	wget_thread_join(ftp_server_tid);
+//	if (ftps_implicit)
+//		wget_thread_join(ftps_server_tid);
 
+	wget_info_printf("*** server done\n");
 	if (chdir("..") != 0)
 		wget_error_printf(_("Failed to chdir ..\n"));
 
@@ -522,6 +532,9 @@ static char *_insert_ports(const char *src)
 
 static void _write_msg(const char *msg, size_t len)
 {
+#ifdef _WIN32
+	fwrite(msg, 1, len, stderr);
+#else
 	if (isatty(fileno(stderr))) {
 		if (len && msg[len - 1] == '\n')
 			len--;
@@ -529,6 +542,7 @@ static void _write_msg(const char *msg, size_t len)
 		fprintf(stderr, "\033[33m%.*s\033[m\n", (int) len, msg);
 	} else
 		fwrite(msg, 1, len, stderr);
+#endif
 }
 
 void wget_test_start_server(int first_key, ...)
@@ -671,7 +685,7 @@ void wget_test_start_server(int first_key, ...)
 	// start thread for HTTP
 	if ((rc = wget_thread_start(&http_server_tid, _http_server_thread, http_parent_tcp, 0)) != 0)
 		wget_error_printf_exit(_("Failed to start HTTP server, error %d\n"), rc);
-
+/*
 	// start thread for HTTPS
 	if ((rc = wget_thread_start(&https_server_tid, _http_server_thread, https_parent_tcp, 0)) != 0)
 		wget_error_printf_exit(_("Failed to start HTTPS server, error %d\n"), rc);
@@ -685,6 +699,7 @@ void wget_test_start_server(int first_key, ...)
 		if ((rc = wget_thread_start(&ftps_server_tid, _ftp_server_thread, ftps_parent_tcp, 0)) != 0)
 			wget_error_printf_exit(_("Failed to start FTP server, error %d\n"), rc);
 	}
+*/
 }
 
 static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *expected_files)
@@ -844,14 +859,13 @@ void wget_test(int first_key, ...)
 			wget_buffer_printf(cmd, "%s %s %s", emulator, executable, options);
 		else
 			wget_buffer_printf(cmd, "%s %s", executable, options);
-		wget_info_printf("cmd=%s\n", cmd->data);
 	} else if (!strcmp(valgrind, "1")) {
 		wget_buffer_printf(cmd, "valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=" SRCDIR "/valgrind-suppressions %s %s", executable, options);
 	} else
 		wget_buffer_printf(cmd, "%s %s %s", valgrind, executable, options);
 
 	for (it = 0; it < (size_t)wget_vector_size(request_urls); it++) {
-		wget_buffer_printf_append(cmd, " 'http://localhost:%d/%s'",
+		wget_buffer_printf_append(cmd, " \"http://localhost:%d/%s\"",
 			http_server_port, (char *)wget_vector_get(request_urls, it));
 	}
 //	for (it = 0; it < (size_t)wget_vector_size(ftp_files); it++) {
@@ -860,6 +874,7 @@ void wget_test(int first_key, ...)
 //	}
 	wget_buffer_strcat(cmd, " 2>&1");
 
+	wget_info_printf("cmd=%s\n", cmd->data);
 	wget_error_printf("\n  Testing '%s'\n", cmd->data);
 	rc = system(cmd->data);
 
