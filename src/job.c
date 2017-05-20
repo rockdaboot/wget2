@@ -185,7 +185,7 @@ int job_validate_file(JOB *job)
 			real_fsize = fsize;
 	}
 
-	if (wget_vector_size(metalink->hashes) > 0 && (fd = open(metalink->name, O_RDONLY)) != -1) {
+	if (wget_vector_size(metalink->hashes) > 0 && (fd = open(metalink->name, O_RDONLY|O_BINARY)) != -1) {
 		// file exists, check which piece is invalid and re-queue it
 
 		for (int it = 0; errno != EINTR && it < wget_vector_size(metalink->hashes); it++) {

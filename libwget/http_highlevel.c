@@ -235,7 +235,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 				wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, 1);
 				if (saveas_name) {
 					FILE *fp;
-					if ((fp = fopen(saveas_name, "w"))) {
+					if ((fp = fopen(saveas_name, "wb"))) {
 						wget_http_request_set_body_cb(req, _stream_callback, fp);
 						resp = wget_http_get_response(conn);
 						fclose(fp);

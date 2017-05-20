@@ -98,7 +98,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 			goto out;
 
 		FILE *fp;
-		if ((fp = fopen("out.png", "w"))) {
+		if ((fp = fopen("out.png", "wb"))) {
 			fwrite(resp->body->data, 1, resp->body->length, fp);
 			fclose(fp);
 			wget_info_printf("Saved out.png\n");

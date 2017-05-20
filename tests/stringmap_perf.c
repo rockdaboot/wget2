@@ -56,7 +56,7 @@ int main(int argc, const char *const *argv)
 	wget_stringmap_t *map = wget_stringmap_create(1024);
 
 	for (it = 1; it < argc; it++) {
-		if ((fd = open(argv[it], O_RDONLY)) == -1) {
+		if ((fd = open(argv[it], O_RDONLY | O_BINARY)) == -1) {
 			fprintf(stderr, "Failed to read open %s\n", argv[it]);
 			continue;
 		}

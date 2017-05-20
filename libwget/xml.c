@@ -504,7 +504,7 @@ void wget_xml_parse_file(
 	int fd;
 
 	if (strcmp(fname,"-")) {
-		if ((fd = open(fname, O_RDONLY)) != -1) {
+		if ((fd = open(fname, O_RDONLY|O_BINARY)) != -1) {
 			struct stat st;
 			if (fstat(fd, &st) == 0) {
 #ifdef HAVE_MMAP

@@ -334,7 +334,7 @@ char *wget_read_file(const char *fname, size_t *size)
 		return NULL;
 
 	if (strcmp(fname,"-")) {
-		if ((fd = open(fname, O_RDONLY)) != -1) {
+		if ((fd = open(fname, O_RDONLY|O_BINARY)) != -1) {
 			struct stat st;
 
 			if (fstat(fd, &st) == 0) {
@@ -542,7 +542,7 @@ int wget_truncate(const char *path, off_t length)
 	if (!path)
 		return -1;
 
-	if ((fd = open(path, O_RDWR)) == -1)
+	if ((fd = open(path, O_RDWR|O_BINARY)) == -1)
 		return -1;
 
 	rc = ftruncate(fd, length);

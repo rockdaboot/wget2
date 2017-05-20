@@ -827,7 +827,7 @@ void wget_test(int first_key, ...)
 	// create files
 	if (existing_files) {
 		for (it = 0; existing_files[it].name; it++) {
-			if ((fd = open(existing_files[it].name, O_CREAT|O_WRONLY|O_TRUNC, 0644)) != -1) {
+			if ((fd = open(existing_files[it].name, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY, 0644)) != -1) {
 				ssize_t nbytes = write(fd, existing_files[it].content, strlen(existing_files[it].content));
 				close(fd);
 
@@ -891,18 +891,18 @@ void wget_test(int first_key, ...)
 			struct stat st;
 
 			if (stat(expected_files[it].name, &st) != 0)
-				wget_error_printf_exit(_("Missing expected file %s/%s [%s]\n"), tmpdir, expected_files[it].name, options);
+				wget_error_printf_exit(_("Missing expected file '%s/%s' [%s]\n"), tmpdir, expected_files[it].name, options);
 
 			if (expected_files[it].content) {
 				char content[st.st_size ? st.st_size : 1];
 
-				if ((fd = open(expected_files[it].name, O_RDONLY)) != -1) {
+				if ((fd = open(expected_files[it].name, O_RDONLY | O_BINARY)) != -1) {
 					ssize_t nbytes = read(fd, content, st.st_size);
 					close(fd);
 
 					if (nbytes != st.st_size)
-						wget_error_printf_exit(_("Failed to read %lld bytes from file %s/%s [%s]\n"),
-							(long long)st.st_size, tmpdir, expected_files[it].name, options);
+						wget_error_printf_exit(_("Failed to read %lld bytes from file '%s/%s', just got %zd [%s]\n"),
+							(long long)st.st_size, tmpdir, expected_files[it].name, nbytes, options);
 
 					if (strlen(expected_files[it].content) != (size_t)nbytes || memcmp(expected_files[it].content, content, nbytes) != 0)
 						wget_error_printf_exit(_("Unexpected content in %s [%s]\n"), expected_files[it].name, options);
@@ -910,7 +910,7 @@ void wget_test(int first_key, ...)
 			}
 
 			if (expected_files[it].timestamp && st.st_mtime != expected_files[it].timestamp)
-				wget_error_printf_exit(_("Unexpected timestamp %s/%s [%s]\n"), tmpdir, expected_files[it].name, options);
+				wget_error_printf_exit(_("Unexpected timestamp '%s/%s' [%s]\n"), tmpdir, expected_files[it].name, options);
 		}
 	}
 
@@ -956,9 +956,9 @@ int wget_test_check_file_system(void)
 	_empty_directory(tmpdir);
 
 	// Create 3 files with differently cased names with different content.
-	// On a case-sensitive file system like HFS+ there will be just one file with the contents of the last write.
+	// On a case-mangling file system like HFS+ there will be just one file with the contents of the last write.
 	for (unsigned it = 0; it < countof(fname); it++) {
-		if ((fd = open(fname[it], O_WRONLY | O_TRUNC | O_CREAT, 0644)) != -1) {
+		if ((fd = open(fname[it], O_WRONLY | O_TRUNC | O_CREAT | O_BINARY, 0644)) != -1) {
 			rc = write(fd, fname[it], sizeof(fname[0]));
 			close(fd);
 
@@ -972,9 +972,9 @@ int wget_test_check_file_system(void)
 		}
 	}
 
-	// Check file content to see if FS is case-sensitive
+	// Check file content to see if FS is case-mangling
 	for (unsigned it = 0; it < countof(fname); it++) {
-		if ((fd = open(fname[it], O_RDONLY, 0644)) != -1) {
+		if ((fd = open(fname[it], O_RDONLY | O_BINARY, 0644)) != -1) {
 			rc = read(fd, buf, sizeof(fname[0]));
 			close(fd);
 
@@ -984,7 +984,7 @@ int wget_test_check_file_system(void)
 			}
 
 			if (strcmp(buf, fname[it])) {
-				wget_debug_printf("%s: Found case-sensitive file system\n", __func__);
+				wget_debug_printf("%s: Found case-mangling file system\n", __func__);
 				flags = WGET_TEST_FS_CASEMATTERS;
 				goto out; // we can stop here
 			}
@@ -994,7 +994,7 @@ int wget_test_check_file_system(void)
 		}
 	}
 
-	wget_debug_printf("%s: Found case-insensitive file system\n", __func__);
+	wget_debug_printf("%s: Found case-respecting file system\n", __func__);
 
 out:
 	_empty_directory(tmpdir);
