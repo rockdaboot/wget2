@@ -475,6 +475,7 @@ void wget_test_stop_server(void)
 
 	wget_info_printf("*** wait server...\n");
 	wget_thread_cancel(http_server_tid);
+	wget_thread_cancel(https_server_tid);
 //	wget_thread_join(http_server_tid);
 //	wget_thread_join(https_server_tid);
 //	wget_thread_join(ftp_server_tid);
@@ -685,11 +686,11 @@ void wget_test_start_server(int first_key, ...)
 	// start thread for HTTP
 	if ((rc = wget_thread_start(&http_server_tid, _http_server_thread, http_parent_tcp, 0)) != 0)
 		wget_error_printf_exit(_("Failed to start HTTP server, error %d\n"), rc);
-/*
+
 	// start thread for HTTPS
 	if ((rc = wget_thread_start(&https_server_tid, _http_server_thread, https_parent_tcp, 0)) != 0)
 		wget_error_printf_exit(_("Failed to start HTTPS server, error %d\n"), rc);
-
+/*
 	// start thread for FTP
 	if ((rc = wget_thread_start(&ftp_server_tid, _ftp_server_thread, ftp_parent_tcp, 0)) != 0)
 		wget_error_printf_exit(_("Failed to start FTP server, error %d\n"), rc);
