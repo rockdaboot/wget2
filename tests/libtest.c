@@ -541,8 +541,10 @@ static void _write_msg(const char *msg, size_t len)
 			len--;
 
 		fprintf(stderr, "\033[33m%.*s\033[m\n", (int) len, msg);
-	} else
+	} else {
 		fwrite(msg, 1, len, stderr);
+		fflush(stderr);
+	}
 #endif
 }
 
