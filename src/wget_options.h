@@ -181,7 +181,8 @@ struct config {
 		metalink,
 		cut_url_get_vars,
 		cut_file_get_vars,
-		proxy;
+		proxy,
+		xattr;
 };
 
 extern struct config

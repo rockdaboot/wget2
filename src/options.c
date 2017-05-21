@@ -656,6 +656,7 @@ struct config config = {
 #ifdef _WIN32
 	.restrict_file_names = WGET_RESTRICT_NAMES_WINDOWS,
 #endif
+	.xattr = 1
 };
 
 static int parse_execute(option_t opt, const char *val);
@@ -1398,6 +1399,11 @@ static const struct optionw options[] = {
 		SECTION_DOWNLOAD,
 		{ "Wait up to number of seconds after error\n",
 		  "(per thread). (default: 10)\n"
+		}
+	},
+	{ "xattr", &config.xattr, parse_bool, 0, 0,
+		SECTION_DOWNLOAD,
+		{ "Save extended file attributes. (default: on)\n"\
 		}
 	}
 };

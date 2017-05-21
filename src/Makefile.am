@@ -14,7 +14,8 @@ wget2_SOURCES =\
  job.c wget_job.h\
  log.c wget_log.h\
  wget.c wget_main.h\
- options.c wget_options.h
+ options.c wget_options.h\
+ wget_xattr.h
 
 wget2_LDADD = ../libwget/libwget.la\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\

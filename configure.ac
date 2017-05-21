@@ -254,6 +254,31 @@ AC_ARG_ENABLE([assert],
 AS_IF([test "$ENABLE_ASSERT" != "yes"], [CFLAGS="-DNDEBUG $CFLAGS"], [])
 
 #
+# xattr
+#
+AC_ARG_ENABLE([xattr],
+  [AS_HELP_STRING([--disable-xattr], [disable support for POSIX Extended Attributes])],
+  [ENABLE_XATTR=$enableval],
+  [ENABLE_XATTR=yes])
+
+case "$host_os" in
+  *linux* | *darwin*) xattr_syscalls="fsetxattr" ;;
+  freebsd*)           xattr_syscalls="extattr_set_fd" ;;
+  *)  AC_MSG_NOTICE([Disabling Extended Attribute support: your system is not known to support extended attributes.])
+      ENABLE_XATTR=no
+esac
+
+if test "X${ENABLE_XATTR}" = "Xyes"; then
+  AC_CHECK_FUNCS([$xattr_syscalls], [], [
+    AC_MSG_NOTICE([Disabling Extended Attribute support: your system does not support $xattr_syscalls])
+    ENABLE_XATTR=no
+  ])
+fi
+
+test "X${ENABLE_XATTR}" = "Xyes" && AC_DEFINE([ENABLE_XATTR], 1,
+    [Define if you want file meta-data storing into POSIX Extended Attributes compiled in.])
+
+#
 # Gettext
 #
 m4_ifdef([AM_GNU_GETTEXT], [
@@ -542,4 +567,5 @@ AC_MSG_NOTICE([Summary of build options:
   Documentation:      $DOCS_INFO
   Tests:              ${TESTS_INFO}
   Assertions:         $ENABLE_ASSERT
+  POSIX xattr:        $ENABLE_XATTR
 ])

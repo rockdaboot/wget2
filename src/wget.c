@@ -56,6 +56,7 @@
 #include "wget_blacklist.h"
 #include "wget_host.h"
 #include "wget_bar.h"
+#include "wget_xattr.h"
 
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)
@@ -91,8 +92,7 @@ typedef struct {
 } _statistics_t;
 static _statistics_t stats;
 
-static int G_GNUC_WGET_NONNULL((1))
-	_prepare_file(wget_http_response_t *resp, const char *fname, int flag);
+static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag, const char *uri, const char *original_url);
 
 static void
 	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
@@ -111,7 +111,7 @@ static void
 static unsigned int G_GNUC_WGET_PURE
 	hash_url(const char *url);
 static int
-	http_send_request(wget_iri_t *iri, DOWNLOADER *downloader);
+	http_send_request(wget_iri_t *iri, wget_iri_t *original_url, DOWNLOADER *downloader);
 wget_http_response_t
 	*http_receive_response(wget_http_connection_t *conn);
 
@@ -632,6 +632,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		if (flags & URL_FLG_REDIRECTION) {
 			new_job->redirection_level = job->redirection_level + 1;
 			new_job->referer = job->referer;
+			new_job->original_url = job->iri;
 		} else {
 			new_job->level = job->level + 1;
 			new_job->referer = job->iri;
@@ -1618,6 +1619,8 @@ void *downloader_thread(void *p)
 					}
 
 					job->iri = iri;
+					if (!job->original_url)
+						job->original_url = iri;
 
 					if (config.wait || job->metalink || !downloader->conn || wget_http_get_protocol(downloader->conn) != WGET_PROTOCOL_HTTP_2_0)
 						max_pending = 1;
@@ -1636,7 +1639,7 @@ void *downloader_thread(void *p)
 						break;
 				}
 
-				if (http_send_request(job->iri, downloader)) {
+				if (http_send_request(job->iri, job->original_url, downloader)) {
 					host_increase_failure(host);
 					action = ACTION_ERROR;
 					break;
@@ -2325,7 +2328,7 @@ static void set_file_mtime(int fd, time_t modified)
 		error_printf (_("Failed to set file date: %s\n"), strerror (errno));
 }
 
-static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag)
+static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag, const char *uri, const char *original_url)
 {
 	static wget_thread_mutex_t
 		savefile_mutex = WGET_THREAD_MUTEX_INITIALIZER;
@@ -2509,6 +2512,18 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		}
 	}
 
+	if (config.xattr) {
+		FILE *fp;
+		fname = fnum ? unique : fname;
+		if ((fp = fopen(fname, "ab"))) {
+			set_file_metadata(uri, original_url, resp->content_type, resp->content_type_encoding, fp);
+			fclose(fp);
+		} else {
+			error_printf(_("Failed to save extended attribute %s\n"), fname);
+			set_exit_status(3);
+		}
+	}
+
 	wget_thread_mutex_unlock(&savefile_mutex);
 
 	xfree(alloced_fname);
@@ -2569,7 +2584,10 @@ static int _get_header(wget_http_response_t *resp, void *context)
 		name = dest = config.output_document ? config.output_document : ctx->job->local_filename;
 
 	if (dest && (resp->code == 200 || resp->code == 206 || config.content_on_error)) {
-		ctx->outfd = _prepare_file (resp, dest, resp->code == 206 ? O_APPEND : O_TRUNC);
+		ctx->outfd = _prepare_file(resp, dest,
+			resp->code == 206 ? O_APPEND : O_TRUNC,
+			ctx->job->iri->uri,
+			ctx->job->original_url->uri);
 		if (ctx->outfd == -1)
 			ret = -1;
 	}
@@ -2843,9 +2861,10 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 	return req;
 }
 
-int http_send_request(wget_iri_t *iri, DOWNLOADER *downloader)
+int http_send_request(wget_iri_t *iri, wget_iri_t *original_url, DOWNLOADER *downloader)
 {
 	wget_http_connection_t *conn = downloader->conn;
+
 	JOB *job = downloader->job;
 	int rc;
 
@@ -2885,6 +2904,7 @@ int http_send_request(wget_iri_t *iri, DOWNLOADER *downloader)
 	context->body = wget_buffer_alloc(102400);
 	context->length = 0;
 	context->progress_slot = downloader->id;
+	context->job->original_url = original_url;
 
 	// set callback functions
 	wget_http_request_set_header_cb(req, _get_header, context);
@@ -2928,4 +2948,59 @@ wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
 	xfree(context);
 
 	return resp;
+}
+
+#ifdef USE_XATTR
+
+static int write_xattr_metadata(const char *name, const char *value,
+								FILE *fname)
+{
+	int retval = -1;
+
+	if (name && value && fname) {
+		retval = fsetxattr(fileno (fname), name, value, strlen (value), 0);
+		/* FreeBSD's extattr_set_fd returns the length of the extended attribute. */
+		retval = (retval < 0) ? retval : 0;
+		if (retval)
+			debug_printf("Failed to set xattr %s.\n", name);
+	}
+
+	return retval;
+}
+
+#else /* USE_XATTR */
+
+static int write_xattr_metadata(const char *name, const char *value,
+								FILE *fname)
+{
+	(void)name;
+	(void)value;
+	(void)fname;
+
+	return 0;
+}
+
+#endif /* USE_XATTR */
+
+int set_file_metadata(const char *origin_url, const char *referrer_url,
+					  const char *mime_type, const char *charset, FILE *fname)
+{
+	/* Save metadata about where the file came from (requested, final URLs) to
+	 * user POSIX Extended Attributes of retrieved file.
+	 *
+	 * For more details about the user namespace see
+	 * [http://freedesktop.org/wiki/CommonExtendedAttributes] and
+	 * [http://0pointer.de/lennart/projects/mod_mime_xattr/].
+	 */
+	int retval = -1;
+
+	if (!origin_url || !fname)
+		return retval;
+
+	retval = write_xattr_metadata("user.xdg.origin.url", origin_url, fname);
+	retval = write_xattr_metadata("user.xdg.referrer.url", referrer_url, fname);
+	retval = write_xattr_metadata("user.mime_type", mime_type, fname);
+	retval = write_xattr_metadata("user.charset", charset, fname);
+
+	return retval;
 }

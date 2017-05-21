@@ -53,6 +53,7 @@ typedef struct DOWNLOADER DOWNLOADER;
 struct JOB {
 	wget_iri_t
 		*iri,
+		*original_url,
 		*referer;
 
 	// Metalink information
