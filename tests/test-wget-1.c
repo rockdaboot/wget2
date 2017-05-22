@@ -175,11 +175,16 @@ int main(void)
 		0);
 
 	// test-stdouterr
-	wget_test(
-		WGET_TEST_OPTIONS, "-c -O /dev/full",
-		WGET_TEST_REQUEST_URL, "dummy.txt",
-		WGET_TEST_EXPECTED_ERROR_CODE, 3,
-		0);
+#ifdef __linux__
+	if (access("/dev/full", W_OK)) {
+		// TODO: Find better file to use for other operating systems.
+		wget_test(
+			WGET_TEST_OPTIONS, "-c -O /dev/full",
+			WGET_TEST_REQUEST_URL, "dummy.txt",
+			WGET_TEST_EXPECTED_ERROR_CODE, 3,
+			0);
+	}
+#endif
 
 	// test--spider
 	wget_test(
