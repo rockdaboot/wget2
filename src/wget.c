@@ -42,10 +42,13 @@
 #include <fnmatch.h>
 #include <sys/stat.h>
 #include <locale.h>
+
+#ifdef _WIN32
+#include <windows.h> // GetFileAttributes()
+#endif
+
 #include "timespec.h" // gnulib gettime()
-
 #include "safe-write.h"
-
 #include "wget_main.h"
 #include "wget_log.h"
 #include "wget_job.h"
@@ -2549,6 +2552,14 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		}
 	} else {
 		if (fd == -1) {
+#ifdef _WIN32
+			// On windows, open() and fopen() return EACCES instead of EISDIR.
+			if (errno == EACCES) {
+				DWORD attrs = GetFileAttributes(unique);
+				if (attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY))
+					errno = EISDIR;
+			}
+#endif
 			if (errno == EEXIST)
 				error_printf(_("File '%s' already there; not retrieving.\n"), fname);
 			else if (errno == EISDIR)
