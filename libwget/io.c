@@ -36,6 +36,9 @@
 #include <errno.h>
 #ifdef HAVE_POLL
 	#include <poll.h>
+#elif defined _WIN32
+	#include <io.h>
+	#include <winsock2.h>
 #else
 	#include <sys/time.h>
 	#include <sys/select.h>
@@ -231,6 +234,8 @@ int wget_ready_2_transfer(int fd, int timeout, short mode)
 	}
 
 #else
+	//Get OS specific handle
+	int pfd = _get_osfhandle(fd);
 	fd_set fdset;
 	fd_set *rd = NULL, *wr = NULL;
 	struct timeval tmoval, *tmo = NULL;
@@ -241,7 +246,7 @@ int wget_ready_2_transfer(int fd, int timeout, short mode)
 	}
 
 	FD_ZERO(&fdset);
-	FD_SET(fd, &fdset);
+	FD_SET(pfd, &fdset);
 
 	if (mode & WGET_IO_READABLE)
 		rd = &fdset;
@@ -254,16 +259,11 @@ int wget_ready_2_transfer(int fd, int timeout, short mode)
 		tmo = &tmoval;
 	}
 
-#if defined __MINGW32__ || defined __MINGW64__
-	// fixes timing issue with MinGW + Wine
-	wget_millisleep(10);
-#endif
-
-	if ((rc = select (fd + 1, rd, wr, NULL, tmo)) >= 0) {
+	if ((rc = select (pfd + 1, rd, wr, NULL, tmo)) >= 0) {
 		rc = 0;
-		if (rd && FD_ISSET(fd, rd))
+		if (rd && FD_ISSET(pfd, rd))
 			rc |= WGET_IO_READABLE;
-		if (wr && FD_ISSET(fd, wr))
+		if (wr && FD_ISSET(pfd, wr))
 			rc |= WGET_IO_WRITABLE;
 	}
 
