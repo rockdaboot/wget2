@@ -92,7 +92,7 @@ int main(void)
 
 	// --accept using just suffixes
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --accept '.jpeg'",
+		WGET_TEST_OPTIONS, "-r -nH --accept \".jpeg\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -104,7 +104,7 @@ int main(void)
 
 	// --reject using just suffixes
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --reject '.jpeg'",
+		WGET_TEST_OPTIONS, "-r -nH --reject \".jpeg\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -117,7 +117,7 @@ int main(void)
 
 	// --accept using just suffixes and ignore case
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --accept '.jpeg' --ignore-case",
+		WGET_TEST_OPTIONS, "-r -nH --accept \".jpeg\" --ignore-case",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -130,7 +130,7 @@ int main(void)
 
 	// --reject using just suffixes and ignore case
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --reject '.jpeg' --ignore-case",
+		WGET_TEST_OPTIONS, "-r -nH --reject \".jpeg\" --ignore-case",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -142,7 +142,7 @@ int main(void)
 
 	// --accept using wildcards
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --accept '*.jpeg'",
+		WGET_TEST_OPTIONS, "-r -nH --accept \"*.jpeg\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -154,7 +154,7 @@ int main(void)
 
 	// --reject using wildcards
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --reject '*.jpeg'",
+		WGET_TEST_OPTIONS, "-r -nH --reject \"*.jpeg\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -167,7 +167,7 @@ int main(void)
 
 	// --accept using wildcards and ignore case
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --accept '*.jpeg' --ignore-case",
+		WGET_TEST_OPTIONS, "-r -nH --accept \"*.jpeg\" --ignore-case",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -180,7 +180,7 @@ int main(void)
 
 	// --reject using wildcards and ignore case
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --reject '*.jpeg' --ignore-case",
+		WGET_TEST_OPTIONS, "-r -nH --reject \"*.jpeg\" --ignore-case",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -192,7 +192,7 @@ int main(void)
 
 	// --accept using wildcards
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --accept '*picture*'",
+		WGET_TEST_OPTIONS, "-r -nH --accept \"*picture*\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -206,7 +206,7 @@ int main(void)
 
 	// --reject using wildcards
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --reject '*picture*'",
+		WGET_TEST_OPTIONS, "-r -nH --reject \"*picture*\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -217,7 +217,7 @@ int main(void)
 
 	// --accept using wildcards
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --accept '*picture_[ab]*'",
+		WGET_TEST_OPTIONS, "-r -nH --accept \"*picture_[ab]*\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -230,7 +230,7 @@ int main(void)
 
 	// --reject using wildcards
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --reject '*picture_[ab]*'",
+		WGET_TEST_OPTIONS, "-r -nH --reject \"*picture_[ab]*\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -242,7 +242,7 @@ int main(void)
 
 	// --accept using wildcards
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --accept '*picture_a*' --accept '*picture_c*'",
+		WGET_TEST_OPTIONS, "-r -nH --accept \"*picture_a*\" --accept \"*picture_c*\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -254,7 +254,7 @@ int main(void)
 
 	// --reject using wildcards
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --reject '*picture_a*' --reject '*picture_c*'",
+		WGET_TEST_OPTIONS, "-r -nH --reject \"*picture_a*\" --reject \"*picture_c*\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {

@@ -96,7 +96,7 @@ int main(void)
 
 	// --follow-tags single entry
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --follow-tags 'img/data-500px'",
+		WGET_TEST_OPTIONS, "-r -nH --follow-tags img/data-500px",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -110,7 +110,7 @@ int main(void)
 
 	// --follow-tags single entry without attribute
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --follow-tags 'img'",
+		WGET_TEST_OPTIONS, "-r -nH --follow-tags img",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -125,7 +125,7 @@ int main(void)
 
 	// --follow-tags two entries
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --follow-tags 'img/data-500px,img/data-highres'",
+		WGET_TEST_OPTIONS, "-r -nH --follow-tags img/data-500px,img/data-highres",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -140,7 +140,7 @@ int main(void)
 
 	// --follow-tags two entries
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --follow-tags 'img/data-highres,img/data-500px'",
+		WGET_TEST_OPTIONS, "-r -nH --follow-tags img/data-highres,img/data-500px",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -155,7 +155,7 @@ int main(void)
 
 	// --ignore-tags single entry
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --ignore-tags 'img/src'",
+		WGET_TEST_OPTIONS, "-r -nH --ignore-tags img/src",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -167,7 +167,7 @@ int main(void)
 
 	// --ignore-tags single entry without attribute
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --ignore-tags 'img'",
+		WGET_TEST_OPTIONS, "-r -nH --ignore-tags img",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -179,7 +179,7 @@ int main(void)
 
 	// --ignore-tags two entries
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --ignore-tags 'img/src,a/href'",
+		WGET_TEST_OPTIONS, "-r -nH --ignore-tags img/src,a/href",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -189,7 +189,7 @@ int main(void)
 
 	// --ignore-tags two entries
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --ignore-tags 'a/href,img/src'",
+		WGET_TEST_OPTIONS, "-r -nH --ignore-tags a/href,img/src",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -199,7 +199,7 @@ int main(void)
 
 	// --ignore-tags and --follow-tags combined
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --ignore-tags 'img/src' --follow-tags='img/data-500px'",
+		WGET_TEST_OPTIONS, "-r -nH --ignore-tags img/src --follow-tags=img/data-500px",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
