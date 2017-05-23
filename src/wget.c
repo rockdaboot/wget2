@@ -2472,7 +2472,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	// find a non-existing filename
 	char unique[fname_length + 1];
 	*unique = 0;
-	for (fnum = 0, maxloop = 999; fd < 0 && ((multiple && errno == EEXIST) || errno == EISDIR) && fnum < maxloop; fnum++) {
+	for (fnum = 0, maxloop = 999; fd < 0 && ((multiple && errno == EEXIST) || errno == EISDIR || errno == EACCES) && fnum < maxloop; fnum++) {
 		snprintf(unique, sizeof(unique), "%s.%d", fname, fnum + 1);
 		fd = open(unique, O_WRONLY | flag | O_CREAT | O_NONBLOCK | O_BINARY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	}
