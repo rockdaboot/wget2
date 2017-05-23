@@ -2531,6 +2531,9 @@ static int _get_header(wget_http_response_t *resp, void *context)
 	PART *part;
 	const char *dest = NULL, *name;
 	int ret = 0;
+#ifdef _WIN32
+	char *fname_allocated = NULL;
+#endif
 
 	bool metalink = resp->content_type
 	    && (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml") ||
@@ -2553,9 +2556,16 @@ static int _get_header(wget_http_response_t *resp, void *context)
 			goto out;
 		}
 	}
-	else if (config.content_disposition && resp->content_filename)
+	else if (config.content_disposition && resp->content_filename) {
+#ifdef _WIN32
+		fname_allocated = wget_malloc(strlen(resp->content_filename) * 3 + 1);
+		name = dest = wget_restrict_file_name(resp->content_filename, fname_allocated, WGET_RESTRICT_NAMES_WINDOWS);
+		if (name != fname_allocated)
+			xfree(fname_allocated);
+#else
 		name = dest = resp->content_filename;
-	else
+#endif
+	} else
 		name = dest = config.output_document ? config.output_document : ctx->job->local_filename;
 
 	if (dest && (resp->code == 200 || resp->code == 206 || config.content_on_error)) {
@@ -2564,6 +2574,10 @@ static int _get_header(wget_http_response_t *resp, void *context)
 			ret = -1;
 	}
 //	info_printf("Opened %d\n", ctx->outfd);
+
+#ifdef _WIN32
+	xfree(fname_allocated);
+#endif
 
 out:
 	if (config.progress)
