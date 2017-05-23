@@ -140,10 +140,10 @@ int main(void)
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
-			{ "p1_fran" ccedilla_u8 "ais.html", urls[3].body },
-			{ "p2_" eacute_u8 eacute_u8 "n.html", urls[4].body },
-			{ "p3_" eurosign_u8 eurosign_u8 eurosign_u8 ".html", urls[5].body },
-			{ "p4_m" eacute_u8 eacute_u8 "r.html", urls[7].body },
+			{ "p1_fran" ccedilla_u8 "ais.html", urls[3].body, 0, WGET_RESTRICT_NAMES_NOCONTROL },
+			{ "p2_" eacute_u8 eacute_u8 "n.html", urls[4].body, 0, WGET_RESTRICT_NAMES_NOCONTROL },
+			{ "p3_" eurosign_u8 eurosign_u8 eurosign_u8 ".html", urls[5].body, 0, WGET_RESTRICT_NAMES_NOCONTROL },
+			{ "p4_m" eacute_u8 eacute_u8 "r.html", urls[7].body, 0, WGET_RESTRICT_NAMES_NOCONTROL },
 			{	NULL } },
 		0);
 

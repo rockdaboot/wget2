@@ -740,7 +740,8 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 				for (it = 0; expected_files[it].name; it++) {
 #ifdef _WIN32
 					char buf[strlen(expected_files[it].name) * 3 + 1];
-					char *restricted_fname = wget_restrict_file_name(expected_files[it].name, buf, WGET_RESTRICT_NAMES_WINDOWS);
+					char *restricted_fname = wget_restrict_file_name(expected_files[it].name, buf,
+						expected_files[it].restricted_mode ? expected_files[it].restricted_mode : WGET_RESTRICT_NAMES_WINDOWS);
 #else
 					char *restricted_fname = expected_files[it].name;
 #endif
@@ -914,7 +915,8 @@ void wget_test(int first_key, ...)
 			struct stat st;
 #ifdef _WIN32
 			char buf[strlen(expected_files[it].name) * 3 + 1];
-			char *fname = wget_restrict_file_name(expected_files[it].name, buf, WGET_RESTRICT_NAMES_WINDOWS);
+			char *fname = wget_restrict_file_name(expected_files[it].name, buf,
+				expected_files[it].restricted_mode ? expected_files[it].restricted_mode : WGET_RESTRICT_NAMES_WINDOWS);
 #else
 			char *fname = expected_files[it].name;
 #endif

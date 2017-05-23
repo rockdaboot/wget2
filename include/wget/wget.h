@@ -270,7 +270,7 @@ WGETAPI wget_global_get_func_t
 #define WGET_IO_WRITABLE 2
 
 // types for --restrict-file-names / wget_restrict_file_name()
-#define WGET_RESTRICT_NAMES_NONE     0
+#define WGET_RESTRICT_NAMES_NONE          0
 #define WGET_RESTRICT_NAMES_UNIX       1<<0
 #define WGET_RESTRICT_NAMES_WINDOWS    1<<1
 #define WGET_RESTRICT_NAMES_NOCONTROL  1<<2
