@@ -504,7 +504,8 @@ int wget_get_screen_size(int *width G_GNUC_WGET_UNUSED, int *height G_GNUC_WGET_
  */
 char *wget_restrict_file_name(char *fname, char *esc, int mode)
 {
-	char *s, *dst, c;
+	signed char *s;
+	char *dst, c;
 	int escaped;
 
 	if (!fname || !esc)
@@ -512,7 +513,7 @@ char *wget_restrict_file_name(char *fname, char *esc, int mode)
 
 	switch (mode) {
 	case WGET_RESTRICT_NAMES_WINDOWS:
-		for (escaped = 0, dst = esc, s = fname; *s; s++) {
+		for (escaped = 0, dst = esc, s = (signed char *) fname; *s; s++) {
 			if (*s < 32 || strchr("\\<>:\"|?*", *s)) {
 				*dst++ = '%';
 				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
@@ -529,7 +530,7 @@ char *wget_restrict_file_name(char *fname, char *esc, int mode)
 	case WGET_RESTRICT_NAMES_NOCONTROL:
 		break;
 	case WGET_RESTRICT_NAMES_ASCII:
-		for (escaped = 0, dst = esc, s = fname; *s; s++) {
+		for (escaped = 0, dst = esc, s = (signed char *) fname; *s; s++) {
 			if (*s < 32) {
 				*dst++ = '%';
 				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
@@ -544,18 +545,18 @@ char *wget_restrict_file_name(char *fname, char *esc, int mode)
 			return esc;
 		break;
 	case WGET_RESTRICT_NAMES_UPPERCASE:
-		for (s = fname; *s; s++)
+		for (s = (signed char *) fname; *s; s++)
 			if (*s >= 'a' && *s <= 'z') // islower() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
 				*s &= ~0x20;
 		break;
 	case WGET_RESTRICT_NAMES_LOWERCASE:
-		for (s = fname; *s; s++)
+		for (s = (signed char *) fname; *s; s++)
 			if (*s >= 'A' && *s <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
 				*s |= 0x20;
 		break;
 	case WGET_RESTRICT_NAMES_UNIX:
 	default:
-		for (escaped = 0, dst = esc, s = fname; *s; s++) {
+		for (escaped = 0, dst = esc, s = (signed char *) fname; *s; s++) {
 			if (*s >= 1 && *s <= 31) {
 				*dst++ = '%';
 				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
