@@ -27,11 +27,11 @@ export CFLAGS="-O2 -Wall -Wno-format"
 #export LDFLAGS="-L/usr/local/lib"
 
 ./bootstrap
-./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --without-libpsl --without-gnutls --without-libnghttp2 --without-zlib --without-lzma --without-bzip2 --without-libidn
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --enable-static
 make clean
 make -j4
 
-export WINEPATH="/usr/$PREFIX/bin;$HOME/src/wget2/libwget/.libs"
+export WINEPATH="/usr/$PREFIX/bin;/usr/$PREFIX/lib;$HOME/src/wget2/libwget/.libs"
 # Alternatively, add the library path for wine in ~/.wine/system.reg:
 # search for
 #   [System\\CurrentControlSet\\Control\\Session Manager\\Environment]
