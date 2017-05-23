@@ -541,10 +541,8 @@ static void _write_msg(const char *msg, size_t len)
 			len--;
 
 		fprintf(stderr, "\033[33m%.*s\033[m\n", (int) len, msg);
-	} else {
+	} else
 		fwrite(msg, 1, len, stderr);
-		fflush(stderr);
-	}
 #endif
 }
 
@@ -888,8 +886,21 @@ void wget_test(int first_key, ...)
 
 	wget_info_printf("cmd=%s\n", cmd->data);
 	wget_error_printf("\n  Testing '%s'\n", cmd->data);
-	rc = system(cmd->data);
 
+	// catch stdout and write to stderr so all output is in sync
+	FILE *pp;
+	if ((pp = popen(cmd->data, "rb"))) {
+		char buf[4096];
+
+		while (fgets(buf, sizeof(buf), pp))
+			fputs(buf, stderr);
+
+		rc = pclose(pp);
+	} else
+		wget_error_printf_exit(_("Failed to execute test (%d) [%s]\n"), errno, expected_error_code, options);
+/*
+	rc = system(cmd->data);
+*/
 	if (!WIFEXITED(rc)) {
 		wget_error_printf_exit(_("Unexpected error code %d, expected %d [%s]\n"), rc, expected_error_code, options);
 	}
