@@ -147,68 +147,6 @@ void set_exit_status(int status)
 		exit_status = status;
 }
 
-/*
- * This functions exists to pass the Wget test suite.
- * All we really need (Wget is targeted for Unix/Linux), is UNIX restriction (\NUL and /)
- *  with escaping of control characters.
- * See https://en.wikipedia.org/wiki/Comparison_of_file_systems
- */
-static char *restrict_file_name(char *fname, char *esc)
-{
-	char *s, *dst, c;
-	int escaped;
-
-	switch (config.restrict_file_names) {
-	case RESTRICT_NAMES_WINDOWS:
-		break;
-	case RESTRICT_NAMES_NOCONTROL:
-		break;
-	case RESTRICT_NAMES_ASCII:
-		for (escaped = 0, dst = esc, s = fname; *s; s++) {
-			if (*s < 32) {
-				*dst++ = '%';
-				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
-				*dst++ = (c = (*s & 0xf)) >= 10 ? c + 'A' - 10 : c + '0';
-				escaped = 1;
-			} else
-				*dst++ = *s;
-		}
-		*dst = 0;
-
-		if (escaped)
-			return esc;
-		break;
-	case RESTRICT_NAMES_UPPERCASE:
-		for (s = fname; *s; s++)
-			if (*s >= 'a' && *s <= 'z') // islower() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
-				*s &= ~0x20;
-		break;
-	case RESTRICT_NAMES_LOWERCASE:
-		for (s = fname; *s; s++)
-			if (*s >= 'A' && *s <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
-				*s |= 0x20;
-		break;
-	case RESTRICT_NAMES_UNIX:
-	default:
-		for (escaped = 0, dst = esc, s = fname; *s; s++) {
-			if (*s >= 1 && *s <= 31) {
-				*dst++ = '%';
-				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
-				*dst++ = (c = (*s & 0xf)) >= 10 ? c + 'A' - 10 : c + '0';
-				escaped = 1;
-			} else
-				*dst++ = *s;
-		}
-		*dst = 0;
-
-		if (escaped)
-			return esc;
-		break;
-	}
-
-	return fname;
-}
-
 // this function should be called protected by a mutex - else race conditions will happen
 static void mkdir_path(char *fname)
 {
@@ -354,7 +292,7 @@ const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
 	if (config.restrict_file_names) {
 		char fname_esc[buf.length * 3 + 1];
 
-		if (restrict_file_name(fname, fname_esc) != fname) {
+		if (wget_restrict_file_name(fname, fname_esc, config.restrict_file_names) != fname) {
 			// escaping was really done, replace fname
 			wget_buffer_strcpy(&buf, fname_esc);
 			fname = buf.data;

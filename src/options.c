@@ -541,19 +541,19 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_progress_type(option_
 static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_restrict_names(option_t opt, const char *val)
 {
 	if (!val || !*val || !wget_strcasecmp_ascii(val, "none"))
-		*((int *)opt->var) = RESTRICT_NAMES_NONE;
+		*((int *)opt->var) = WGET_RESTRICT_NAMES_NONE;
 	else if (!wget_strcasecmp_ascii(val, "unix"))
-		*((int *)opt->var) = RESTRICT_NAMES_UNIX;
+		*((int *)opt->var) = WGET_RESTRICT_NAMES_UNIX;
 	else if (!wget_strcasecmp_ascii(val, "windows"))
-		*((int *)opt->var) = RESTRICT_NAMES_WINDOWS;
+		*((int *)opt->var) = WGET_RESTRICT_NAMES_WINDOWS;
 	else if (!wget_strcasecmp_ascii(val, "nocontrol"))
-		*((int *)opt->var) = RESTRICT_NAMES_NOCONTROL;
+		*((int *)opt->var) = WGET_RESTRICT_NAMES_NOCONTROL;
 	else if (!wget_strcasecmp_ascii(val, "ascii"))
-		*((int *)opt->var) = RESTRICT_NAMES_ASCII;
+		*((int *)opt->var) = WGET_RESTRICT_NAMES_ASCII;
 	else if (!wget_strcasecmp_ascii(val, "uppercase"))
-		*((int *)opt->var) = RESTRICT_NAMES_UPPERCASE;
+		*((int *)opt->var) = WGET_RESTRICT_NAMES_UPPERCASE;
 	else if (!wget_strcasecmp_ascii(val, "lowercase"))
-		*((int *)opt->var) = RESTRICT_NAMES_LOWERCASE;
+		*((int *)opt->var) = WGET_RESTRICT_NAMES_LOWERCASE;
 	else
 		error_printf_exit("Unknown restrict-file-name type '%s'\n", val);
 
@@ -652,7 +652,10 @@ struct config config = {
 	.metalink = 1,
 	.tls_false_start = 1,
 	.tls_resume = 1,
-	.proxy = 1
+	.proxy = 1,
+#ifdef _WIN32
+	.restrict_file_names = WGET_RESTRICT_NAMES_WINDOWS,
+#endif
 };
 
 static int parse_execute(option_t opt, const char *val);

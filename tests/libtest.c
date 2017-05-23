@@ -739,7 +739,16 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 #if !(defined __APPLE__ && defined __MACH__)
 				wget_info_printf("search %s\n", fname);
 
-				for (it = 0; expected_files[it].name && strcmp(expected_files[it].name, fname); it++);
+				for (it = 0; expected_files[it].name; it++) {
+#ifdef _WIN32
+					char buf[strlen(expected_files[it].name) * 3 + 1];
+					char *restricted_fname = wget_restrict_file_name(expected_files[it].name, buf, WGET_RESTRICT_NAMES_WINDOWS);
+#else
+					char *restricted_fname = expected_files[it].name;
+#endif
+					if (!strcmp(restricted_fname, fname))
+						break;
+				}
 
 				if (!expected_files[it].name)
 					wget_error_printf_exit(_("Unexpected file %s/%s found\n"), tmpdir, fname);
@@ -892,28 +901,34 @@ void wget_test(int first_key, ...)
 	if (expected_files) {
 		for (it = 0; expected_files[it].name; it++) {
 			struct stat st;
+#ifdef _WIN32
+			char buf[strlen(expected_files[it].name) * 3 + 1];
+			char *fname = wget_restrict_file_name(expected_files[it].name, buf, WGET_RESTRICT_NAMES_WINDOWS);
+#else
+			char *fname = expected_files[it].name;
+#endif
 
-			if (stat(expected_files[it].name, &st) != 0)
-				wget_error_printf_exit(_("Missing expected file '%s/%s' [%s]\n"), tmpdir, expected_files[it].name, options);
+			if (stat(fname, &st) != 0)
+				wget_error_printf_exit(_("Missing expected file '%s/%s' [%s]\n"), tmpdir, fname, options);
 
 			if (expected_files[it].content) {
 				char content[st.st_size ? st.st_size : 1];
 
-				if ((fd = open(expected_files[it].name, O_RDONLY | O_BINARY)) != -1) {
+				if ((fd = open(fname, O_RDONLY | O_BINARY)) != -1) {
 					ssize_t nbytes = read(fd, content, st.st_size);
 					close(fd);
 
 					if (nbytes != st.st_size)
 						wget_error_printf_exit(_("Failed to read %lld bytes from file '%s/%s', just got %zd [%s]\n"),
-							(long long)st.st_size, tmpdir, expected_files[it].name, nbytes, options);
+							(long long)st.st_size, tmpdir, fname, nbytes, options);
 
 					if (strlen(expected_files[it].content) != (size_t)nbytes || memcmp(expected_files[it].content, content, nbytes) != 0)
-						wget_error_printf_exit(_("Unexpected content in %s [%s]\n"), expected_files[it].name, options);
+						wget_error_printf_exit(_("Unexpected content in %s [%s]\n"), fname, options);
 				}
 			}
 
 			if (expected_files[it].timestamp && st.st_mtime != expected_files[it].timestamp)
-				wget_error_printf_exit(_("Unexpected timestamp '%s/%s' [%s]\n"), tmpdir, expected_files[it].name, options);
+				wget_error_printf_exit(_("Unexpected timestamp '%s/%s' [%s]\n"), tmpdir, fname, options);
 		}
 	}
 
