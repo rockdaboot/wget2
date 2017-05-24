@@ -502,14 +502,14 @@ int wget_get_screen_size(int *width G_GNUC_WGET_UNUSED, int *height G_GNUC_WGET_
  *
  * Sanitizes file names by percent-escaping platform-specific illegal characters.
  */
-char *wget_restrict_file_name(char *fname, char *esc, int mode)
+char *wget_restrict_file_name(const char *fname, char *esc, int mode)
 {
 	signed char *s;
 	char *dst, c;
 	int escaped;
 
 	if (!fname || !esc)
-		return fname;
+		return (char *) fname;
 
 	switch (mode) {
 	case WGET_RESTRICT_NAMES_WINDOWS:
@@ -572,7 +572,7 @@ char *wget_restrict_file_name(char *fname, char *esc, int mode)
 		break;
 	}
 
-	return fname;
+	return (char *)fname;
 }
 
 /**@}*/

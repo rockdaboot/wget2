@@ -119,6 +119,16 @@ int main(void)
 		},
 	};
 
+#ifdef _WIN32
+	// Skip test on Windows because gnulib's open() emulation does not respect UNICODE on Windows.
+	// As a result this test fails or succeeds depending on the current locale.
+	// See also: https://stackoverflow.com/questions/2050973/what-encoding-are-filenames-in-ntfs-stored-as
+	//
+	// MinGW+Wine succeeds: TESTS_ENVIRONMENT="LC_ALL=de_DE.UTF-8" make check TESTS=test-iri
+	// MinGW+Wine fails: TESTS_ENVIRONMENT="LC_ALL=C" make check TESTS=test-iri
+	return 77;
+#endif
+
 	char request_header[256];
 
 	// functions won't come back if an error occurs

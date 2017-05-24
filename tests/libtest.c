@@ -466,23 +466,23 @@ void wget_test_stop_server(void)
 
 	// free resources - needed for valgrind testing
 	terminate = 1;
-	wget_info_printf("*** Kill server\n");
 //	pthread_kill(http_server_tid, SIGTERM);
 //	pthread_kill(https_server_tid, SIGTERM);
 //	pthread_kill(ftp_server_tid, SIGTERM);
 //	if (ftps_implicit)
 //		pthread_kill(ftps_server_tid, SIGTERM);
 
-	wget_info_printf("*** wait server...\n");
 	wget_thread_cancel(http_server_tid);
 	wget_thread_cancel(https_server_tid);
+	wget_thread_cancel(ftp_server_tid);
+	if (ftps_implicit)
+		wget_thread_cancel(ftps_server_tid);
 //	wget_thread_join(http_server_tid);
 //	wget_thread_join(https_server_tid);
 //	wget_thread_join(ftp_server_tid);
 //	if (ftps_implicit)
 //		wget_thread_join(ftps_server_tid);
 
-	wget_info_printf("*** server done\n");
 	if (chdir("..") != 0)
 		wget_error_printf(_("Failed to chdir ..\n"));
 
@@ -690,7 +690,7 @@ void wget_test_start_server(int first_key, ...)
 	// start thread for HTTPS
 	if ((rc = wget_thread_start(&https_server_tid, _http_server_thread, https_parent_tcp, 0)) != 0)
 		wget_error_printf_exit(_("Failed to start HTTPS server, error %d\n"), rc);
-/*
+
 	// start thread for FTP
 	if ((rc = wget_thread_start(&ftp_server_tid, _ftp_server_thread, ftp_parent_tcp, 0)) != 0)
 		wget_error_printf_exit(_("Failed to start FTP server, error %d\n"), rc);
@@ -700,7 +700,6 @@ void wget_test_start_server(int first_key, ...)
 		if ((rc = wget_thread_start(&ftps_server_tid, _ftp_server_thread, ftps_parent_tcp, 0)) != 0)
 			wget_error_printf_exit(_("Failed to start FTP server, error %d\n"), rc);
 	}
-*/
 }
 
 static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *expected_files)
@@ -740,11 +739,22 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 				for (it = 0; expected_files[it].name; it++) {
 #ifdef _WIN32
 					char buf[strlen(expected_files[it].name) * 3 + 1];
-					char *restricted_fname = wget_restrict_file_name(expected_files[it].name, buf,
+					const char *restricted_fname = wget_restrict_file_name(expected_files[it].name, buf,
 						expected_files[it].restricted_mode ? expected_files[it].restricted_mode : WGET_RESTRICT_NAMES_WINDOWS);
 #else
-					char *restricted_fname = expected_files[it].name;
+					const char *restricted_fname = expected_files[it].name;
 #endif
+/*
+					{
+						char b[256];
+						if (it==0) {
+							wget_memtohex(fname, strlen(fname), b, sizeof(b));
+							wget_error_printf("f %s\n", b);
+						}
+						wget_memtohex(restricted_fname, strlen(restricted_fname), b, sizeof(b));
+						wget_error_printf("r %s\n", b);
+					}
+*/
 					if (!strcmp(restricted_fname, fname))
 						break;
 				}
@@ -890,7 +900,7 @@ void wget_test(int first_key, ...)
 
 	// catch stdout and write to stderr so all output is in sync
 	FILE *pp;
-	if ((pp = popen(cmd->data, "rb"))) {
+	if ((pp = popen(cmd->data, "r"))) {
 		char buf[4096];
 
 		while (fgets(buf, sizeof(buf), pp))
@@ -898,7 +908,7 @@ void wget_test(int first_key, ...)
 
 		rc = pclose(pp);
 	} else
-		wget_error_printf_exit(_("Failed to execute test (%d) [%s]\n"), errno, expected_error_code, options);
+		wget_error_printf_exit(_("Failed to execute test (%d) [%s]\n"), errno, options);
 /*
 	rc = system(cmd->data);
 */
@@ -915,10 +925,10 @@ void wget_test(int first_key, ...)
 			struct stat st;
 #ifdef _WIN32
 			char buf[strlen(expected_files[it].name) * 3 + 1];
-			char *fname = wget_restrict_file_name(expected_files[it].name, buf,
+			const char *fname = wget_restrict_file_name(expected_files[it].name, buf,
 				expected_files[it].restricted_mode ? expected_files[it].restricted_mode : WGET_RESTRICT_NAMES_WINDOWS);
 #else
-			char *fname = expected_files[it].name;
+			const char *fname = expected_files[it].name;
 #endif
 
 			if (stat(fname, &st) != 0)

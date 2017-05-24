@@ -320,7 +320,7 @@ WGETAPI char *
 WGETAPI int
 	wget_get_screen_size(int *width, int *height);
 WGETAPI char *
-	wget_restrict_file_name(char *fname, char *esc, int mode);
+	wget_restrict_file_name(const char *fname, char *esc, int mode);
 WGETAPI ssize_t
 	wget_fdgetline(char **buf, size_t *bufsize, int fd);
 WGETAPI ssize_t
