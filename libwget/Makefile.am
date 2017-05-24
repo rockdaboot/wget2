@@ -23,7 +23,7 @@ libwget_la_LDFLAGS = -no-undefined -version-info $(LIBWGET_SO_VERSION)
 # convenience library to avoid warnings about unused macros
 noinst_LTLIBRARIES = libcsstokenizer.la
 libcsstokenizer_la_SOURCES = css_tokenizer.c css_tokenizer.lex
-libcsstokenizer_la_CPPFLAGS = $(libwget_la_CPPFLAGS) -Wno-unused-macros
+libcsstokenizer_la_CFLAGS = $(AM_CFLAGS) -Wno-unused-macros
 
 noinst_PROGRAMS = test_linking
 test_linking_SOURCES = test_linking.c
