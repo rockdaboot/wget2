@@ -39,6 +39,7 @@
 #elif defined _WIN32
 	#include <io.h>
 	#include <winsock2.h>
+	#include <msvc-nothrow.h> // make _get_osfhandle() return error
 #else
 	#include <sys/time.h>
 	#include <sys/select.h>
@@ -234,8 +235,12 @@ int wget_ready_2_transfer(int fd, int timeout, short mode)
 	}
 
 #else
+#ifdef _WIN32
 	//Get OS specific handle
 	int pfd = _get_osfhandle(fd);
+#else
+	int pfd = fd;
+#endif
 	fd_set fdset;
 	fd_set *rd = NULL, *wr = NULL;
 	struct timeval tmoval, *tmo = NULL;
