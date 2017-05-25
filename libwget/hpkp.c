@@ -183,7 +183,7 @@ void wget_hpkp_set_maxage(wget_hpkp_t *hpkp, time_t maxage)
 
 void wget_hpkp_set_include_subdomains(wget_hpkp_t *hpkp, int include_subdomains)
 {
-	hpkp->include_subdomains = include_subdomains;
+	hpkp->include_subdomains = !!include_subdomains;
 }
 
 /**
@@ -397,7 +397,7 @@ static int _hpkp_db_load(wget_hpkp_db_t *hpkp_db, FILE *fp)
 					hpkp->maxage = max_age;
 					hpkp->created = created;
 					hpkp->expires = created + max_age;
-					hpkp->include_subdomains = include_subdomains;
+					hpkp->include_subdomains = !!include_subdomains;
 				} else
 					debug_printf("HPKP: entry '%s' is expired\n", host);
 			} else {

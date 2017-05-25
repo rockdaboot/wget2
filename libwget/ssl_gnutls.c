@@ -1320,7 +1320,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	// In the unlikely case that the server's certificate chain changed right now,
 	// we fallback to OCSP responder request later.
 	if (hostname) {
-		if (!(ctx->valid = wget_ocsp_hostname_is_valid(_config.ocsp_host_cache, hostname))) {
+		if (!(ctx->valid = !!wget_ocsp_hostname_is_valid(_config.ocsp_host_cache, hostname))) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
 			if ((rc = gnutls_ocsp_status_request_enable_client(session, NULL, 0, NULL)) == GNUTLS_E_SUCCESS)
 				ctx->ocsp_stapling = 1;

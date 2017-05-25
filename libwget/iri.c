@@ -141,7 +141,7 @@ char *wget_iri_unescape_inline(char *src)
 	while (*s) {
 		if (*s == '%') {
 			if (c_isxdigit(s[1]) && c_isxdigit(s[2])) {
-				*d++ = (_unhex(s[1]) << 4) | _unhex(s[2]);
+				*d++ = (unsigned char) (_unhex(s[1]) << 4) | _unhex(s[2]);
 				s += 3;
 				ret = src;
 				continue;

@@ -208,7 +208,7 @@ ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
  * A \p timeout value of 0 means the function returns immediately.<br>
  * A \p timeout value of -1 means infinite timeout.
  */
-int wget_ready_2_transfer(int fd, int timeout, short mode)
+int wget_ready_2_transfer(int fd, int timeout, int mode)
 {
 	int rc = -1;
 

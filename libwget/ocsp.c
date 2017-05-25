@@ -105,7 +105,7 @@ wget_ocsp_t *wget_ocsp_new(const char *fingerprint, time_t maxage, int valid)
 
 	ocsp->key = wget_strdup(fingerprint);
 	ocsp->maxage = maxage;
-	ocsp->valid = valid;
+	ocsp->valid = !!valid;
 
 	return ocsp;
 }
@@ -311,7 +311,7 @@ static int _ocsp_db_load(wget_ocsp_db_t *ocsp_db, FILE *fp, int load_hosts)
 		// parse mtime (age of this entry)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep);) linep++;
-			ocsp.valid = atoi(p);
+			ocsp.valid = !!atoi(p);
 		}
 
 		if (ok) {

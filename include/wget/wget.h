@@ -286,7 +286,7 @@ WGETAPI int
 WGETAPI int
 	wget_ready_2_write(int fd, int timeout);
 WGETAPI int
-	wget_ready_2_transfer(int fd, int timeout, short mode);
+	wget_ready_2_transfer(int fd, int timeout, int mode);
 WGETAPI int
 	wget_strcmp(const char *s1, const char *s2) G_GNUC_WGET_PURE;
 WGETAPI int

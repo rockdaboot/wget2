@@ -1942,7 +1942,7 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 		conn->scheme = iri->scheme;
 		conn->buf = wget_buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
 #ifdef WITH_LIBNGHTTP2
-		if ((conn->protocol = wget_tcp_get_protocol(conn->tcp)) == WGET_PROTOCOL_HTTP_2_0) {
+		if ((conn->protocol = (char) wget_tcp_get_protocol(conn->tcp)) == WGET_PROTOCOL_HTTP_2_0) {
 			nghttp2_session_callbacks *callbacks;
 
 			if (nghttp2_session_callbacks_new(&callbacks)) {

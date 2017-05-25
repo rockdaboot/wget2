@@ -331,7 +331,7 @@ static int G_GNUC_WGET_CONST _family_to_value(int family)
 void wget_tcp_set_tcp_fastopen(wget_tcp_t *tcp, int tcp_fastopen)
 {
 #if defined TCP_FASTOPEN_OSX || defined TCP_FASTOPEN_LINUX
-	(tcp ? tcp : &_global_tcp)->tcp_fastopen = tcp_fastopen;
+	(tcp ? tcp : &_global_tcp)->tcp_fastopen = !!tcp_fastopen;
 #endif
 }
 
@@ -342,7 +342,7 @@ int wget_tcp_get_tcp_fastopen(wget_tcp_t *tcp)
 
 void wget_tcp_set_tls_false_start(wget_tcp_t *tcp, int false_start)
 {
-	(tcp ? tcp : &_global_tcp)->tls_false_start = false_start;
+	(tcp ? tcp : &_global_tcp)->tls_false_start = !!false_start;
 }
 
 int wget_tcp_get_tls_false_start(wget_tcp_t *tcp)
@@ -352,7 +352,7 @@ int wget_tcp_get_tls_false_start(wget_tcp_t *tcp)
 
 void wget_tcp_set_dns_caching(wget_tcp_t *tcp, int caching)
 {
-	(tcp ? tcp : &_global_tcp)->caching = caching;
+	(tcp ? tcp : &_global_tcp)->caching = !!caching;
 }
 
 int wget_tcp_get_dns_caching(wget_tcp_t *tcp)
@@ -472,7 +472,7 @@ void wget_tcp_set_bind_address(wget_tcp_t *tcp, const char *bind_address)
 
 void wget_tcp_set_ssl(wget_tcp_t *tcp, int ssl)
 {
-	(tcp ? tcp : &_global_tcp)->ssl = ssl;
+	(tcp ? tcp : &_global_tcp)->ssl = !!ssl;
 }
 
 int wget_tcp_get_ssl(wget_tcp_t *tcp)

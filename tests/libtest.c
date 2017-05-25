@@ -602,7 +602,7 @@ void wget_test_start_server(int first_key, ...)
 			ftps_implicit = va_arg(args, int);
 			break;
 		case WGET_TEST_SERVER_SEND_CONTENT_LENGTH:
-			server_send_content_length = va_arg(args, int);
+			server_send_content_length = !!va_arg(args, int);
 			break;
 		default:
 			wget_error_printf(_("Unknown option %d\n"), key);
@@ -833,7 +833,7 @@ void wget_test(int first_key, ...)
 			server_hello = va_arg(args, const char *);
 			break;
 		case WGET_TEST_SERVER_SEND_CONTENT_LENGTH:
-			server_send_content_length = va_arg(args, int);
+			server_send_content_length = !!va_arg(args, int);
 			break;
 		default:
 			wget_error_printf_exit(_("Unknown option %d [%s]\n"), key, options);

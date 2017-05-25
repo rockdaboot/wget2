@@ -176,7 +176,7 @@ char *wget_strtolower(char *s)
 	if (s) {
 		for (char *d = s; *d; d++) {
 			if (c_isupper(*d))
-				*d = c_tolower(*d);
+				*d = (char) c_tolower(*d);
 		}
 	}
 
@@ -259,11 +259,11 @@ void wget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t d
 	}
 
 	for (it = 0; it < src_len; it++, src++) {
-		*dst++ = (c = (*src >> 4)) >= 10 ? c + 'a' - 10 : c + '0';
-		*dst++ = (c = (*src & 0xf)) >= 10 ? c + 'a' - 10 : c + '0';
+		*dst++ = (char) ((c = (*src >> 4)) >= 10 ? c + 'a' - 10 : c + '0');
+		*dst++ = (char) ((c = (*src & 0xf)) >= 10 ? c + 'a' - 10 : c + '0');
 	}
 	if (adjust && (dst_size & 1) == 0)
-		*dst++ = (c = (*src >> 4)) >= 10 ? c + 'a' - 10 : c + '0';
+		*dst++ = (char) ((c = (*src >> 4)) >= 10 ? c + 'a' - 10 : c + '0');
 
 	*dst = 0;
 }
@@ -316,7 +316,7 @@ int wget_percent_unescape(char *src)
 	while (*s) {
 		if (*s == '%') {
 			if (c_isxdigit(s[1]) && c_isxdigit(s[2])) {
-				*d++ = (_unhex(s[1]) << 4) | _unhex(s[2]);
+				*d++ = (unsigned char) (_unhex(s[1]) << 4) | _unhex(s[2]);
 				s += 3;
 				ret = 1;
 				continue;
