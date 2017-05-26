@@ -100,24 +100,22 @@ pages:
   only:
     - master
 
-#MinGW64:
-#  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
-#  before_script:
-#  - mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc &&
-#    echo ':DOSWin:M::MZ::/usr/bin/wine64:' > /proc/sys/fs/binfmt_misc/register
-#  script:
-#  - ./bootstrap
-#  - mingw64-configure --disable-valgrind-tests --disable-doc
-#  - mingw64-make -j$(nproc)
-#  - mingw64-make -j$(nproc) check
-#  tags:
-#  - shared
-#  - docker
-#  except:
-#  - tags
-#  artifacts:
-#    expire_in: 2 weeks
-#    when: on_failure
-#    paths:
-#      - ./*.log
-#      - tests/*.log
+MinGW64:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
+  script:
+  - ./bootstrap
+  - mingw64-configure --disable-valgrind-tests --disable-doc
+  - mingw64-make -j$(nproc)
+  - WINEPATH="/usr/x86_64-w64-mingw32/sys-root/mingw/bin;$PWD/libwget/.libs"
+        mingw64-make -j$(nproc) LOG_COMPILER=wine check
+  tags:
+  - shared
+  - docker
+  except:
+  - tags
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./*.log
+      - tests/*.log
