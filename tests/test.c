@@ -46,6 +46,54 @@ static int
 	ok,
 	failed;
 
+static void check(int result, const char *msg)
+{
+	if (result) {
+		ok++;
+	} else {
+		failed++;
+		wget_info_printf("%s\n", msg);
+	}
+}
+
+#define CHECK(e) check(!!(e), #e)
+
+static void test_mem(void)
+{
+	void *p;
+
+	CHECK(!wget_memdup(NULL, 0));
+	CHECK(!wget_memdup(NULL, 4));
+	CHECK(p = wget_memdup("xxx", 0)); xfree(p);
+	CHECK(p = wget_memdup("xxx", 4));
+	CHECK(!memcmp(p, "xxx", 4)); xfree(p);
+
+	CHECK(!wget_strdup(NULL));
+	CHECK(p = wget_strdup("xxx"));
+	CHECK(!strcmp(p, "xxx")); xfree(p);
+
+	CHECK(!wget_strmemdup(NULL, 0));
+	CHECK(p = wget_strmemdup("xxx", 1));
+	CHECK(!strcmp(p, "x")); xfree(p);
+	CHECK(p = wget_strmemdup("xxx", 0));
+	CHECK(!strcmp(p, "")); xfree(p);
+
+	wget_strmemcpy(NULL, 0, NULL, 0);
+	wget_strmemcpy(NULL, 5, NULL, 3);
+
+	char buf[32] = "x";
+	wget_strmemcpy(buf, 0, "xxx", 0);
+	CHECK(!strcmp(buf, "x"));
+	wget_strmemcpy(buf, 0, "xxx", 1);
+	CHECK(!strcmp(buf, "x"));
+	wget_strmemcpy(buf, sizeof(buf), "xxx", 0);
+	CHECK(!strcmp(buf, ""));
+	wget_strmemcpy(buf, 1, "xxx", 3);
+	CHECK(!strcmp(buf, ""));
+	wget_strmemcpy(buf, 2, "xxx", 3);
+	CHECK(!strcmp(buf, "x"));
+}
+
 static void _test_buffer(wget_buffer_t *buf, const char *name)
 {
 	char test[256];
@@ -2165,6 +2213,7 @@ int main(int argc, const char **argv)
 	wget_set_oomfunc(abort);
 
 	// testing basic library functionality
+	test_mem();
 	test_buffer();
 	test_buffer_printf();
 	test_utils();

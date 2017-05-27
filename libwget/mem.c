@@ -102,10 +102,18 @@ char *wget_strmemdup(const void *m, size_t n)
  */
 void wget_strmemcpy(char *s, size_t ssize, const void *m, size_t n)
 {
-	if (n >= ssize)
-		n = ssize - 1; // truncate
+	if (!s || !ssize)
+		return;
 
-	memcpy(s, m, n);
+	if (likely(n > 0)) {
+		if (n >= ssize)
+			n = ssize - 1; // truncate
+
+		if (m)
+			memmove(s, m, n);
+		else
+			n = 0;
+	}
 	s[n] = 0;
 }
 
