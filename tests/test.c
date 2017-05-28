@@ -96,6 +96,20 @@ static void test_mem(void)
 	CHECK(!strcmp(buf, ""));
 }
 
+static void test_strlcpy(void)
+{
+	char buf[4] = "x";
+
+	CHECK(wget_strlcpy(buf, NULL, 5) == 0);
+	CHECK(!strcmp(buf, "x"));
+	CHECK(wget_strlcpy(NULL, "x", sizeof(buf)) == 1);
+	CHECK(!strcmp(buf, "x"));
+	CHECK(wget_strlcpy(buf, "xx", sizeof(buf)) == 2);
+	CHECK(!strcmp(buf, "xx"));
+	CHECK(wget_strlcpy(buf, "xxxxx", sizeof(buf)) == 5);
+	CHECK(!strcmp(buf, "xxx"));
+}
+
 static void _test_buffer(wget_buffer_t *buf, const char *name)
 {
 	char test[256];
@@ -2216,6 +2230,7 @@ int main(int argc, const char **argv)
 
 	// testing basic library functionality
 	test_mem();
+	test_strlcpy();
 	test_buffer();
 	test_buffer_printf();
 	test_utils();
