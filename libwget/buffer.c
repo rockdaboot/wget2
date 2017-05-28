@@ -35,9 +35,6 @@
 #include <wget.h>
 #include "private.h"
 
-//#define ALIGNMENT 16
-//#define PADDING(n) ((n) + (ALIGNMENT - (n)%ALIGNMENT))
-
 wget_buffer_t *wget_buffer_init(wget_buffer_t *buf, char *data, size_t size)
 {
 	if (!buf) {
@@ -70,12 +67,11 @@ wget_buffer_t *wget_buffer_alloc(size_t size)
 	return wget_buffer_init(NULL, NULL, size);
 }
 
-void wget_buffer_realloc(wget_buffer_t *buf, size_t size)
+static void _buffer_realloc(wget_buffer_t *buf, size_t size)
 {
 	const char *old_data = buf->data;
 
 	buf->size = size;
-	// buf->size = buf->size ? (size / buf->size + 1) * buf->size : size;
 	buf->data = xmalloc(buf->size + 1);
 
 	if (likely(old_data)) {
@@ -95,7 +91,7 @@ void wget_buffer_realloc(wget_buffer_t *buf, size_t size)
 void wget_buffer_ensure_capacity(wget_buffer_t *buf, size_t size)
 {
 	if (buf->size < size)
-		wget_buffer_realloc(buf, size);
+		_buffer_realloc(buf, size);
 }
 
 void wget_buffer_deinit(wget_buffer_t *buf)
@@ -147,7 +143,7 @@ size_t wget_buffer_memcat(wget_buffer_t *buf, const void *data, size_t length)
 {
 	if (length) {
 		if (buf->size < buf->length + length)
-			wget_buffer_realloc(buf, buf->size * 2 + length);
+			_buffer_realloc(buf, buf->size * 2 + length);
 
 		memcpy(buf->data + buf->length, data, length);
 		buf->length += length;
@@ -190,7 +186,7 @@ size_t wget_buffer_memset_append(wget_buffer_t *buf, char c, size_t length)
 {
 	if (likely(length)) {
 		if (unlikely(buf->size < buf->length + length))
-			wget_buffer_realloc(buf, buf->size * 2 + length);
+			_buffer_realloc(buf, buf->size * 2 + length);
 
 		memset(buf->data + buf->length, c, length);
 		buf->length += length;

@@ -483,8 +483,6 @@ WGETAPI void
 WGETAPI void
 	wget_buffer_free_data(wget_buffer_t *buf);
 WGETAPI void
-	wget_buffer_realloc(wget_buffer_t *buf, size_t size) G_GNUC_WGET_NONNULL((1)) G_GNUC_WGET_ALLOC_SIZE(2);
-WGETAPI void
 	wget_buffer_reset(wget_buffer_t *buf);
 WGETAPI size_t
 	wget_buffer_memcpy(wget_buffer_t *buf, const void *data, size_t length) G_GNUC_WGET_NONNULL((1,2));
