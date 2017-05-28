@@ -92,6 +92,8 @@ static void test_mem(void)
 	CHECK(!strcmp(buf, ""));
 	wget_strmemcpy(buf, 2, "xxx", 3);
 	CHECK(!strcmp(buf, "x"));
+	wget_strmemcpy(buf, 2, NULL, 3);
+	CHECK(!strcmp(buf, ""));
 }
 
 static void _test_buffer(wget_buffer_t *buf, const char *name)
