@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metalink version="3.0" xmlns="http://www.metalinker.org/">
+  <publisher>
+    <name>GNU Wget</name>
+  </publisher>
+  <license>
+    <name>GNU GPL</name>
+    <url>http://www.gnu.org/licenses/gpl.html</url>
+  </license>
+  <identity>Wget Test Files</identity>
+  <version>1.2.3</version>
+  <description>Wget Test Files description</description>
+  <files>
+    <file name="dir/File1">
+      <verification>
+        <hash type="sha256">0</hash>
+      </verification>
+      <resources>
+        <url type="http" preference="35">http://example.com/wrong_file</url>
+        <url type="http" preference="40">http:///404</url>
+        <url type="http" preference="25">http:///File1_lowPref</url>
+        <url type="http" preference="30">http:///File1</url>
+      </resources>
+    </file>
+    <file name="dir/File2">
+      <verification>
+        <hash type="sha256">567</hash>
+      </verification>
+      <resources>
+        <url type="http" preference="35">http://example.com/wrong_file</url>
+        <url type="http" preference="40">http://example.com/404</url>
+        <url type="http" preference="25">http://example.com/File2_lowPref</url>
+        <url type="http" preference="30">http://example.com/File2</url>
+      </resources>
+    </file>
+    <file name="/dir/File3"> <!-- rejected by libmetalink -->
+      <verification>
+        <hash type="sha256">bla</hash>
+      </verification>
+      <resources>
+        <url type="http" preference="35">http://example.com/wrong_file</url>
+        <url type="http" preference="40">http://example.com/404</url>
+        <url type="http" preference="25">http://example.com/File3_lowPref</url>
+        <url type="http" preference="30">http://example.com/File</url>
+      </resources>
+    </file>
+    <file name="dir/File4">
+      <verification>
+        <hash type="sha256"></hash>
+      </verification>
+      <resources>
+        <url type="http" preference="35">http://{{SRV_HOST}}:{{SRV_PORT}}/wrong_file</url>
+        <url type="http" preference="40">http://{{SRV_HOST}}:{{SRV_PORT}}/404</url>
+        <url type="http" preference="25">http://{{SRV_HOST}}:{{SRV_PORT}}/File4_lowPref</url>
+        <url type="http" preference="30">http://{{SRV_HOST}}:{{SRV_PORT}}/File4</url>
+      </resources>
+    </file>
+    <file name="dir/File5">
+      <verification>
+        <hash type="sha256">x</hash>
+      </verification>
+      <resources>
+        <url type="http" preference="35">http://{{SRV_HOST}}:{{SRV_PORT}}/wrong_file</url>
+        <url type="http" preference="40">http://{{SRV_HOST}}:{{SRV_PORT}}/404</url>
+        <url type="http" preference="25">http://{{SRV_HOST}}:{{SRV_PORT}}/File5_lowPref</url>
+        <url type="http" preference="30">http://{{SRV_HOST}}:{{SRV_PORT}}/File5</url>
+      </resources>
+    </file>
+  </files>
+</metalink>
