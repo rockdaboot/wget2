@@ -11,9 +11,8 @@ are taken from the $NAME.in directory.
 Use the following commands on top dir:
 
 ```
-#$ CC="afl-gcc" ./configure
-$ CC="afl-clang-fast" ./configure
-$ make -j$(nproc)
+$ CC=afl-clang-fast ./configure --disable-doc
+$ make -j$(nproc) clean all
 $ cd fuzz
 $ ./run-afl.sh libwget_xml_parse_buffer_fuzzer
 ```

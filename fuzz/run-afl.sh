@@ -43,8 +43,7 @@ if test -d $TEST.in; then
   for i in `ls $TEST.in`; do
     fin="$TEST.in/$i"
     fmin="$TEST.min/$i"
-    echo $fin / $fmin
-    if ! test -e $fmin || $fin -nt $fmin; then
+    if ! test -e $fmin || test $fin -nt $fmin; then
       afl-tmin -i $fin -o $fmin -- ./${TEST}_fuzzer
     fi
   done
