@@ -2188,8 +2188,10 @@ void metalink_parse_localfile(const char *fname)
 
 		if (metalink->size <= 0) {
 			error_printf("Invalid file length %llu\n", (unsigned long long)metalink->size);
+			wget_metalink_free(&metalink);
 		} else if (!metalink->mirrors) {
 			error_printf("No download mirrors found\n");
+			wget_metalink_free(&metalink);
 		} else {
 			// create parts and sort mirrors
 			JOB job = { .metalink = metalink };
