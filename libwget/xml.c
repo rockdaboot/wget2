@@ -78,22 +78,24 @@ static const char *getToken(XML_CONTEXT *context)
 	const char *p;
 
 	// skip leading whitespace
-	while ((c = *context->p++) && ascii_isspace(c));
+	while ((c = *context->p) && ascii_isspace(c))
+		context->p++;
 	if (!c) return NULL;
-	context->token = context->p - 1;
+	context->token = context->p++;
 
 //	info_printf("a c=%c\n", c);
 
 	if (ascii_isalpha(c) || c == '_') {
-		while ((c = *context->p++) && !ascii_isspace(c) && c != '>' && c != '=');
+		while ((c = *context->p) && !ascii_isspace(c) && c != '>' && c != '=')
+			context->p++;
 		if (!c) return NULL;
-		context->p--;
 		context->token_len = context->p - context->token;
 		return context->token;
 	}
 
 	if (c == '/') {
-		if (!(c = *context->p++)) return NULL;
+		if (!(c = *context->p)) return NULL;
+		context->p++;
 		if (c == '>') {
 			context->token_len = 2;
 			return context->token;
@@ -114,7 +116,8 @@ static const char *getToken(XML_CONTEXT *context)
 	}
 
 	if (c == '<') { // fetch specials, e.g. start of comments '<!--'
-		if (!(c = *context->p++)) return NULL;
+		if (!(c = *context->p)) return NULL;
+		context->p++;
 		if (c == '?' || c == '/') {
 			context->token_len = 2;
 			return context->token;
@@ -122,9 +125,11 @@ static const char *getToken(XML_CONTEXT *context)
 
 		if (c == '!') {
 			// left: <!--, <![CDATA[ and <!WHATEVER
-			if (!(c = *context->p++)) return NULL;
+			if (!(c = *context->p)) return NULL;
 			if (c == '-') {
-				if (!(c = *context->p++)) return NULL;
+				context->p++;
+				if (!(c = *context->p)) return NULL;
+				context->p++;
 				if (c == '-') {
 					context->token_len = 4;
 					return context->token;
@@ -134,7 +139,6 @@ static const char *getToken(XML_CONTEXT *context)
 					return context->token;
 				}
 			} else {
-				context->p--;
 				context->token_len = 2;
 				return context->token;
 			}
@@ -151,12 +155,13 @@ static const char *getToken(XML_CONTEXT *context)
 	}
 
 	if (c == '-') { // fetch specials, e.g. end of comments '-->'
-		if (!(c = *context->p++)) return NULL;
+		if (!(c = *context->p)) return NULL;
 		if (c != '-') {
-			context->p--;
 			c = '-';
 		} else {
-			if (!(c = *context->p++)) return NULL;
+			context->p++;
+			if (!(c = *context->p)) return NULL;
+			context->p++;
 			if (c != '>') {
 				context->p -= 2;
 				c = '-';
@@ -168,20 +173,20 @@ static const char *getToken(XML_CONTEXT *context)
 	}
 
 	if (c == '?') { // fetch specials, e.g. '?>'
-		if (!(c = *context->p++)) return NULL;
+		if (!(c = *context->p)) return NULL;
 		if (c != '>') {
-			context->p--;
 			// c = '?';
 		} else {
+			context->p++;
 			context->token_len = 2;
 			return context->token;
 		}
 	}
 
-	while ((c = *context->p++) && !ascii_isspace(c));
+	while ((c = *context->p) && !ascii_isspace(c))
+		context->p++;
 
 	if (c) {
-		context->p--;
 		context->token_len = context->p - context->token;
 		return context->token;
 	}
@@ -353,10 +358,10 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 	do {
 		getContent(context, directory);
 		if (context->token_len)
-			debug_printf("%s=%.*s\n", directory, (int)context->token_len, context->token);
+			debug_printf("%s='%.*s'\n", directory, (int)context->token_len, context->token);
 
 		if (!(tok = getToken(context))) return;
-		// debug_printf("A Token '%.*s'\n", (int)context->token_len, context->token);
+		// debug_printf("A Token '%.*s' len=%d tok='%s'\n", (int)context->token_len, context->token, context->token_len, tok);
 
 		if (context->token_len == 1 && *tok == '<') {
 			// get element name and add it to directory
