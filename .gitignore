@@ -50,6 +50,9 @@ examples/print_css_urls3
 examples/print_html_urls
 examples/websequencediagram
 examples/websequencediagram_high
+fuzz/*.min
+fuzz/*_fuzzer
+fuzz/*.out
 git_push
 include/wget/wgetver.h
 install-sh
