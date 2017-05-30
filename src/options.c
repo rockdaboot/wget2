@@ -58,6 +58,8 @@
 #include "wget_main.h"
 #include "wget_log.h"
 #include "wget_options.h"
+#include "wget_dl.h"
+#include "wget_plugin.h"
 
 typedef enum {
 	SECTION_STARTUP = 0,
@@ -609,6 +611,75 @@ static int parse_prefer_family(option_t opt, const char *val)
 	return 0;
 }
 
+static int plugin_loading_enabled = 0;
+
+static int parse_plugin(G_GNUC_WGET_UNUSED option_t opt, const char *val)
+{
+	dl_error_t e[1];
+
+	if (! plugin_loading_enabled)
+		return 0;
+
+	dl_error_init(e);
+
+	if (! plugin_db_load_from_name(val, e)) {
+		error_printf("Plugin '%s' failed to load: %s\n",
+				val, dl_error_get_msg(e));
+		dl_error_set(e, NULL);
+	}
+
+	return 0;
+}
+
+static int parse_plugin_local(G_GNUC_WGET_UNUSED option_t opt, const char *val)
+{
+	dl_error_t e[1];
+
+	if (! plugin_loading_enabled)
+		return 0;
+
+	dl_error_init(e);
+
+	if (! plugin_db_load_from_path(val, e)) {
+		error_printf("Plugin '%s' failed to load: %s\n",
+				val, dl_error_get_msg(e));
+		dl_error_set(e, NULL);
+	}
+
+	return 0;
+}
+
+static int parse_plugin_dirs(G_GNUC_WGET_UNUSED option_t opt, const char *val)
+{
+	if (! plugin_loading_enabled)
+		return 0;
+
+	plugin_db_clear_search_paths();
+	plugin_db_add_search_paths(val, ',');
+
+	return 0;
+}
+
+static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
+		G_GNUC_WGET_UNUSED const char *val)
+{
+	char **names = NULL;
+	size_t n_names = 0, i;
+
+	if (! plugin_loading_enabled)
+		return 0;
+
+	plugin_db_list(&names, &n_names);
+	for (i = 0; i < n_names; i++) {
+		printf("%s\n", names[i]);
+		wget_free(names[i]);
+	}
+	wget_xfree(names);
+
+	exit(EXIT_SUCCESS);
+	return 0;
+}
+
 // default values for config options (if not 0 or NULL)
 struct config config = {
 	.connect_timeout = -1,
@@ -1074,6 +1145,11 @@ static const struct optionw options[] = {
 		{ "Maximum recursion depth. (default: 5)\n"
 		}
 	},
+	{ "list-plugins", NULL, list_plugins, 0, 0,
+		SECTION_STARTUP,
+		{ "Lists all the plugins in the plugin search paths.\n"
+		}
+	},
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0,
 		SECTION_HTTP,
 		{ "Load cookies from file.\n"
@@ -1082,6 +1158,11 @@ static const struct optionw options[] = {
 	{ "local-encoding", &config.local_encoding, parse_string, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Character encoding of environment and filenames.\n"
+		}
+	},
+	{ "local-plugin", NULL, parse_plugin_local, 1, 0,
+		SECTION_STARTUP,
+		{ "Loads a plugin with a given path.\n"
 		}
 	},
 	{ "max-redirect", &config.max_redirect, parse_integer, 1, 0,
@@ -1169,6 +1250,17 @@ static const struct optionw options[] = {
 		SECTION_DOWNLOAD,
 		{ "Password for Authentication.\n",
 		  "(default: empty password)\n"
+		}
+	},
+	{ "plugin", NULL, parse_plugin, 1, 0,
+		SECTION_STARTUP,
+		{ "Loads a plugin with a given name.\n"
+		}
+	},
+	{ "plugin-dirs", NULL, parse_plugin_dirs, 1, 0,
+		SECTION_STARTUP,
+		{ "Specify alternative directories to look\n",
+		  "for plugins, separated by ','\n"
 		}
 	},
 	{ "post-data", &config.post_data, parse_string, 1, 0,
@@ -1946,6 +2038,24 @@ int init(int argc, const char **argv)
 		config.netrc_file = wget_aprintf("%s/.netrc", home_dir);
 
 	xfree(home_dir);
+
+	//Enable plugin loading
+	{
+		const char *env;
+
+		plugin_loading_enabled = 1;
+		env = getenv("WGET2_PLUGIN_DIRS");
+		if (env) {
+			plugin_db_clear_search_paths();
+#ifdef _WIN32
+			plugin_db_add_search_paths(env, ';');
+#else
+			plugin_db_add_search_paths(env, ':');
+#endif
+		}
+
+		plugin_db_load_from_envvar();
+	}
 
 	// read global config and user's config
 	// settings in user's config override global settings

@@ -17,11 +17,13 @@ WGET_TESTS = test-wget-1$(EXEEXT) test-restrict-ascii$(EXEEXT) test-i-http$(EXEE
  test-auth-basic$(EXEEXT) test-parse-rss$(EXEEXT) test--page-requisites$(EXEEXT)\
  test--accept$(EXEEXT) test-k$(EXEEXT) test--follow-tags$(EXEEXT) test-directory-clash$(EXEEXT) test-redirection$(EXEEXT)\
  test-base$(EXEEXT) test-metalink$(EXEEXT) test-robots$(EXEEXT) test-parse-css$(EXEEXT) test-bad-chunk$(EXEEXT)\
- test-iri-subdir$(EXEEXT) test-chunked$(EXEEXT) test-cut-dirs$(EXEEXT) test-parse-html-css$(EXEEXT)
+ test-iri-subdir$(EXEEXT) test-chunked$(EXEEXT) test-cut-dirs$(EXEEXT) test-parse-html-css$(EXEEXT) \
+ test-plugin$(EXEEXT)
 
 #test--post-file test-E-k test-cookies-http_state
 
 check_PROGRAMS = buffer_printf_perf stringmap_perf $(WGET_TESTS)
+check_LTLIBRARIES = libpluginname.la libpluginexit.la
 
 test_cookies_http_state_LDADD = ../src/log.o ../src/options.o libtest.la\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
@@ -46,3 +48,25 @@ clean-local:
 
 AM_TESTS_ENVIRONMENT = export VALGRIND_TESTS"=@VALGRIND_TESTS@";
 TESTS = $(WGET_TESTS)
+
+#Test plugins for plugin related testing
+dummy_ldflags = -avoid-version -module -shared -no-undefined \
+	-rpath $(abs_builddir)
+
+libpluginname_la_SOURCES = test-plugin-dummy.c
+libpluginname_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_NAME
+libpluginname_la_LDFLAGS = $(dummy_ldflags)
+libpluginname_la_LIBADD = ../libwget/libwget.la\
+ $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
+ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
+ $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
+ $(LIBS) ../lib/libgnu.la
+
+libpluginexit_la_SOURCES = test-plugin-dummy.c
+libpluginexit_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_EXITSTATUS
+libpluginexit_la_LDFLAGS = $(dummy_ldflags)
+libpluginexit_la_LIBADD = ../libwget/libwget.la\
+ $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
+ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
+ $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
+ $(LIBS) ../lib/libgnu.la

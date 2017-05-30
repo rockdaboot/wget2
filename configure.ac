@@ -540,6 +540,42 @@ AS_IF([test "x$with_libidn2" != xyes], [
 ])
 AM_CONDITIONAL([WITH_LIBIDN], [test "x$with_libidn" = xyes])
 
+# Check for plugin support
+AC_CANONICAL_HOST
+case "$host_os" in
+	mingw*)
+		dl_impl="windows";
+		;;
+	win32*)
+		dl_impl="windows";
+		;;
+	*)
+		dl_impl="libdl";
+		;;
+esac
+AC_ARG_WITH(plugin_support,
+	AS_HELP_STRING([--without-plugin-support],
+		[Disable plugin support]),
+		[plugin_support="$withval"],
+		[plugin_support="yes"])
+if test "x$plugin_support" = "xno"; then
+	:
+elif test "x$dl_impl" = "xlibdl"; then
+	AC_SEARCH_LIBS([dlopen], [dl], [:], [dl_impl="none"])
+fi
+if test "x$plugin_support" = "xyes" && test "x$dl_impl" = "xnone"; then
+	AC_MSG_WARN(*** No working backend for plugin support found)
+	plugin_support="no"
+fi
+if test "x$plugin_support" = "xyes"; then
+	AC_DEFINE([PLUGIN_SUPPORT], [1], [Enable plugin support])
+	if test "x$dl_impl" = "xwindows"; then
+		AC_DEFINE([PLUGIN_SUPPORT_WINDOWS], [1], [Use windows API for plugins])
+	else
+		AC_DEFINE([PLUGIN_SUPPORT_LIBDL], [1], [Use libdl for plugins])
+	fi
+fi
+
 # Checks for header files.
 AC_CHECK_HEADERS([\
  crypt.h idna.h idn/idna.h idn2.h unicase.h netinet/tcp.h])

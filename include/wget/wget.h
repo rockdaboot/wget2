@@ -1926,6 +1926,81 @@ WGETAPI void
 WGETAPI void
 	wget_console_reset_fg_color(void);
 
+/*
+ * Plugin support
+ */
+
+/**\ingroup libwget-plugin
+ *
+ * Mark a function to be exported.
+ * A common use for this is to mark wget_plugin_initializer().
+ *
+ *     WGET_EXPORT void wget_plugin_initializer(wget_plugin_t *plugin);
+ */
+#ifdef _WIN32
+#	define WGET_EXPORT __declspec(dllexport)
+#elif __GNUC__ > 4
+#	define WGET_EXPORT __attribute__ ((__visibility__("default")))
+#else
+#	define WGET_EXPORT
+#endif
+
+struct wget_plugin_vtable;
+
+/**\ingroup libwget-plugin
+ *
+ * A handle used to identify the plugin.
+ *
+ * Only two members shown here are public, and only plugin_data is writable.
+ */
+typedef struct
+{
+	///Plugin specific data. Plugins are free to assign any value to this.
+	void *plugin_data;
+
+	///Pointer to the vtable. Used by wget to implement functions.
+	struct wget_plugin_vtable *vtable;
+} wget_plugin_t;
+
+
+/**\ingroup libwget-plugin
+ *
+ * Prototype for the initializer function
+* \param[in] plugin The plugin handle
+* \return Should return 0 if initialization succeded,
+*         or any other value to indicate failure.
+*         On failure, wget2 will continue without the plugin
+*         and will not call the finalizer function even if registered.
+*/
+typedef int
+(*wget_plugin_initializer_t)(wget_plugin_t *plugin);
+
+/**\ingroup libwget-plugin
+ *
+ * Prototype of the finalizer function
+* \param[in] plugin The plugin handle
+* \param[in] exit_status The exit status wget will exit with
+*/
+typedef void
+(*wget_plugin_finalizer_t)(wget_plugin_t *plugin, int exit_status);
+
+WGETAPI const char *
+wget_plugin_get_name(wget_plugin_t *plugin);
+
+WGETAPI void
+wget_plugin_register_finalizer
+		(wget_plugin_t *plugin, wget_plugin_finalizer_t fn);
+
+/**\ingroup libwget-plugin
+ *
+ * vtable for implementing plugin API in wget
+ */
+struct wget_plugin_vtable
+{
+	const char * (* get_name)(wget_plugin_t *);
+	void (* register_finalizer)(wget_plugin_t *, wget_plugin_finalizer_t);
+};
+
 WGET_END_DECLS
 
 #endif /* _LIBWGET_LIBWGET_H */

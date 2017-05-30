@@ -10,11 +10,12 @@
 int main(void)
 {
 	char *empty = (char *)"";
+	char buf[1];
 
 	wget_info_printf("%d\n", wget_base64_is_string("")); // base64.c
-	wget_buffer_alloc(0); // buffer.c
+	wget_buffer_alloc(1); // buffer.c
 	wget_buffer_printf((wget_buffer_t *)1, "%s", ""); // buffer_printf.c
-	wget_strlcpy((char *)"", "", 0); // strlcpy.c
+	wget_strlcpy(buf, "", 0); // strlcpy.c
 	wget_css_parse_buffer((const char *)1, 0, NULL, NULL, NULL); // css.c
 	wget_decompress_close(NULL); // decompressor.c
 	wget_hashmap_create(0, 0, NULL, NULL); // hashmap.c

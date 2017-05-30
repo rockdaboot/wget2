@@ -57,6 +57,8 @@
 #include "wget_host.h"
 #include "wget_bar.h"
 #include "wget_xattr.h"
+#include "wget_dl.h"
+#include "wget_plugin.h"
 
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)
@@ -835,6 +837,12 @@ int main(int argc, const char **argv)
 
 	known_urls = wget_hashmap_create(128, -2, (wget_hashmap_hash_t)hash_url, (wget_hashmap_compare_t)strcmp);
 
+	// Initialize the plugin system
+	plugin_db_init();
+#ifdef WGET_PLUGIN_DIR
+	plugin_db_add_search_paths(WGET_PLUGIN_DIR, 0);
+#endif
+
 	n = init(argc, argv);
 	if (n < 0) {
 		set_exit_status(1);
@@ -1040,6 +1048,9 @@ int main(int argc, const char **argv)
 
 		wget_global_deinit();
 	}
+
+	// Shutdown plugin system
+	plugin_db_finalize(exit_status);
 
 	return exit_status;
 }
