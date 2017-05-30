@@ -202,10 +202,12 @@ static int getValue(XML_CONTEXT *context)
 	context->token = context->p;
 
 	// remove leading spaces
-	while ((c = *context->p++) && ascii_isspace(c));
+	while ((c = *context->p) && ascii_isspace(c))
+		context->p++;
 	if (!c) return EOF;
 
 	if (c == '=') {
+		context->p++;
 		if (!getToken(context))
 			return EOF;
 		else
@@ -213,7 +215,6 @@ static int getValue(XML_CONTEXT *context)
 	}
 
 	// attribute without value
-	context->p--;
 	context->token = context->p;
 	return 1;
 }
@@ -330,7 +331,7 @@ static const char *getContent(XML_CONTEXT *context, const char *directory)
 {
 	int c;
 
-	for (context->token = context->p; (c = *context->p) && c != '<'; context->p++);
+		for (context->token = context->p; (c = *context->p) && c != '<'; context->p++);
 
 	context->token_len = context->p - context->token;
 
