@@ -11,10 +11,10 @@ LDADD = libtest.la\
  $(LIBS)
 
 # test-iri-disabled removed since Wget2 always uses IRIs
-WGET_TESTS = test$(EXEEXT) test-wget-1$(EXEEXT) test-restrict-ascii$(EXEEXT) test-i-http$(EXEEXT) test-i-https$(EXEEXT)\
+WGET_TESTS = test-wget-1$(EXEEXT) test-restrict-ascii$(EXEEXT) test-i-http$(EXEEXT) test-i-https$(EXEEXT)\
  test-np$(EXEEXT) test--spider-r$(EXEEXT) test-meta-robots$(EXEEXT) test-idn-robots$(EXEEXT) test-idn-meta$(EXEEXT)\
  test-idn-cmd$(EXEEXT) test-iri$(EXEEXT) test-iri-percent$(EXEEXT) test-iri-list$(EXEEXT) test-iri-forced-remote$(EXEEXT)\
- test-auth-basic$(EXEEXT) test-parse-html$(EXEEXT) test-parse-rss$(EXEEXT) test--page-requisites$(EXEEXT)\
+ test-auth-basic$(EXEEXT) test-parse-rss$(EXEEXT) test--page-requisites$(EXEEXT)\
  test--accept$(EXEEXT) test-k$(EXEEXT) test--follow-tags$(EXEEXT) test-directory-clash$(EXEEXT) test-redirection$(EXEEXT)\
  test-base$(EXEEXT) test-metalink$(EXEEXT) test-robots$(EXEEXT) test-parse-css$(EXEEXT) test-bad-chunk$(EXEEXT)\
  test-iri-subdir$(EXEEXT) test-chunked$(EXEEXT) test-cut-dirs$(EXEEXT) test-parse-html-css$(EXEEXT)
@@ -23,17 +23,6 @@ WGET_TESTS = test$(EXEEXT) test-wget-1$(EXEEXT) test-restrict-ascii$(EXEEXT) tes
 
 check_PROGRAMS = buffer_printf_perf stringmap_perf $(WGET_TESTS)
 
-test_SOURCES = test.c
-test_LDADD = ../src/log.o ../src/options.o libtest.la\
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS)
-test_parse_html_LDADD = ../src/log.o ../src/options.o libtest.la\
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS)
 test_cookies_http_state_LDADD = ../src/log.o ../src/options.o libtest.la\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
@@ -50,11 +39,7 @@ libtest_la_LIBADD = ../libwget/libwget.la\
  $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
  $(LIBS) ../lib/libgnu.la
 
-EXTRA_DIST = files libtest.h certs
-dist-hook:
-	rm -f $(distdir)/files/elb_bibel.txt
-#	cp $(top_srcdir)/data/public_suffixes.txt $(distdir)/files/
-#	rm -rf `find $(distdir)/files -name CVS`
+EXTRA_DIST = libtest.h certs
 
 clean-local:
 	rm -rf $(srcdir)/.test_*

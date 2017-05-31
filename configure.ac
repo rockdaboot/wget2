@@ -543,6 +543,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  data/Makefile
                  examples/Makefile
+                 unit-tests/Makefile
                  tests/Makefile
                  libwget.pc])
 AC_OUTPUT
