@@ -998,7 +998,6 @@ static void test_parser(void)
 	DIR *dirp;
 	struct dirent *dp;
 	const char *ext;
-	char fname[296];
 	int xml = 0, html = 0, css = 0;
 
 	// test the XML / HTML parser, you should start the test with valgrind
@@ -1007,6 +1006,7 @@ static void test_parser(void)
 		while ((dp = readdir(dirp)) != NULL) {
 			if (*dp->d_name == '.') continue;
 			if ((ext = strrchr(dp->d_name, '.'))) {
+				char fname[strlen(SRCDIR) + strlen(dp->d_name) + 8];
 				snprintf(fname, sizeof(fname), "%s/files/%s", SRCDIR, dp->d_name);
 				if (!wget_strcasecmp_ascii(ext, ".xml")) {
 					info_printf("parsing %s\n", fname);

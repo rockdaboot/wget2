@@ -150,7 +150,6 @@ static void test_parse_files(void)
 	DIR *dirp;
 	struct dirent *dp;
 	const char *ext;
-	char fname[296];
 	int xml = 0, html = 0, css = 0, type;
 
 	// test the XML / HTML parser, you should start the test with valgrind
@@ -166,6 +165,7 @@ static void test_parse_files(void)
 				else
 					continue;
 
+				char fname[strlen(SRCDIR) + strlen(dp->d_name) + 8];
 				snprintf(fname, sizeof(fname), "%s/files/%s", SRCDIR, dp->d_name);
 				info_printf("parsing %s\n", fname);
 
