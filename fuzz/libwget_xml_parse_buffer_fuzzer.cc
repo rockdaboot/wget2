@@ -30,13 +30,7 @@
 extern "C" int
 LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-	char inbuf[2048];
-	char *in;
-
-	if (size < sizeof(inbuf))
-		in = inbuf;
-	else
-		in = (char *) malloc(size + 1);
+	char *in = (char *) malloc(size + 1);
 
 	assert(in != NULL);
 
@@ -49,8 +43,7 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	wget_xml_parse_buffer(in, NULL, NULL, XML_HINT_HTML);
 	wget_xml_parse_buffer(in, NULL, NULL, XML_HINT_HTML | XML_HINT_REMOVE_EMPTY_CONTENT);
 
-	if (in != inbuf)
-		free(in);
+	free(in);
 
 	return 0;
 }

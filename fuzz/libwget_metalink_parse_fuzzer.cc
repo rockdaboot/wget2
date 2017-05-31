@@ -30,13 +30,7 @@
 extern "C" int
 LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-	char inbuf[2048];
-	char *in;
-
-	if (size < sizeof(inbuf))
-		in = inbuf;
-	else
-		in = (char *) malloc(size + 1);
+	char *in = (char *) malloc(size + 1);
 
 	assert(in != NULL);
 
@@ -48,8 +42,7 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	metalink = wget_metalink_parse(in);
 	wget_metalink_free(&metalink);
 
-	if (in != inbuf)
-		free(in);
+	free(in);
 
 	return 0;
 }

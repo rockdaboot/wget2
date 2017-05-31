@@ -29,18 +29,10 @@
 extern "C" int
 LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-	wget_bar_t *bar;
-	char inbuf[2048];
-	char *in;
+	wget_bar_t *bar = wget_bar_init(NULL, 3);
+	char *in = (char *) malloc(size + 1);
 
-	bar = wget_bar_init(NULL, 3);
 //	assert(bar != NULL);
-
-	if (size < sizeof(inbuf))
-		in = inbuf;
-	else
-		in = (char *) malloc(size + 1);
-
 	assert(in != NULL);
 
 	// 0 terminate
@@ -52,8 +44,7 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	wget_bar_printf(bar, 1, "%s", in);
 	wget_bar_write_line(bar, (char *) data, size);
 
-	if (in != inbuf)
-		free(in);
+	free(in);
 
 	return 0;
 }
