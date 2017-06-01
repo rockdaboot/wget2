@@ -121,7 +121,7 @@ The versions are recommended, but older versions may also work.
 
 Download project and prepare sources with
 
-		git clone git@gitlab.com:gnuwget/wget2.git
+		git clone https://gitlab.com/gnuwget/wget2.git
 		cd wget2
 		./bootstrap
 		# on shell failure try 'bash ./bootstrap'
