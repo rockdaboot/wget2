@@ -34,12 +34,19 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	char dst3[3];
 	char dst4[4];
 	char dst5[8];
+	char *dst = (char *) malloc(size * 2 + 1);
 
+	assert(dst != NULL);
+
+	wget_memtohex(NULL, 0, NULL, 0);
 	wget_memtohex(data, size, dst1, sizeof(dst1));
 	wget_memtohex(data, size, dst2, sizeof(dst2));
 	wget_memtohex(data, size, dst3, sizeof(dst3));
 	wget_memtohex(data, size, dst4, sizeof(dst4));
 	wget_memtohex(data, size, dst5, sizeof(dst5));
+	wget_memtohex(data, size, dst, size * 2 + 1);
+
+	free(dst);
 
 	return 0;
 }
