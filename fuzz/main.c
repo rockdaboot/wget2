@@ -27,13 +27,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 #ifndef __AFL_LOOP
 static int __AFL_LOOP(int n)
 {
-	static int it = -1;
+	static int first = 1;
 
-	if (it < 0)
-		it = n;
-
-	if (it) {
-		it--;
+	if (first) {
+		first = 0;
 		return 1;
 	}
 

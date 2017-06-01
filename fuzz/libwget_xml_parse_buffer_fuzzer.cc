@@ -30,6 +30,9 @@
 extern "C" int
 LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
+	if (size > 10000) // same as max_len = 10000 in .options file
+		return 0;
+
 	char *in = (char *) malloc(size + 1);
 
 	assert(in != NULL);

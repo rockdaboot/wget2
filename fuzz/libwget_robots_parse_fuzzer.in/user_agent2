@@ -1,0 +1,3 @@
+User-Agent: wget2
+Disallow: /x
+User-Agent: next

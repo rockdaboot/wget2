@@ -17,6 +17,10 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/*
+ * covers code in libwget/robots.c
+ */
+
 #include "../config.h"
 
 #include <assert.h> // assert

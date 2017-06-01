@@ -30,7 +30,10 @@ TESTS = \
 all: $(TESTS)
 
 %: %.cc
-	AFL_HARDEN=1 $(CC) $(CFLAGS) main.c $^ $(COMMON) -o $@
+	AFL_HARDEN=1 $(CC) $(CFLAGS) main.c $^ $(COMMON) -o $@ -lstdc++
+
+fuzz-coverage: $(TESTS)
+	find . -name '*_fuzzer' -exec ./coverage.sh '{}' ';'
 
 clean:
-	rm -f $(TESTS)
+	rm -f $(TESTS) *.gcda *.gcov
