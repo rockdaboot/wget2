@@ -52,6 +52,11 @@ if test "$ac_cv_prog_cc_c99" = "no"; then
   AC_ERROR([Compiler does not support C99. Aborting.])
 fi
 
+#
+# Require C++ support (for fuzz targets)
+#
+AC_PROG_CXX
+
 gl_EARLY
 gl_INIT
 
@@ -545,6 +550,7 @@ AC_CONFIG_FILES([Makefile
                  examples/Makefile
                  unit-tests/Makefile
                  tests/Makefile
+                 fuzz/Makefile
                  libwget.pc])
 AC_OUTPUT
 
