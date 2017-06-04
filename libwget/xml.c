@@ -245,7 +245,8 @@ static const char *getScriptContent(XML_CONTEXT *context)
 				if (*p == '>') {
 					p++;
 					break; // found end of <script>
-				}
+				} else if (!*p)
+					break; // end of input
 			}
 		}
 	}
@@ -362,7 +363,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 			debug_printf("%s='%.*s'\n", directory, (int)context->token_len, context->token);
 
 		if (!(tok = getToken(context))) return;
-		// debug_printf("A Token '%.*s' len=%d tok='%s'\n", (int)context->token_len, context->token, context->token_len, tok);
+		// debug_printf("A Token '%.*s' len=%zu tok='%s'\n", (int)context->token_len, context->token, context->token_len, tok);
 
 		if (context->token_len == 1 && *tok == '<') {
 			// get element name and add it to directory
@@ -388,7 +389,7 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 			}
 
 			while ((tok = getToken(context))) {
-				// debug_printf("C Token %.*s\n", (int)context->token_len, context->token);
+				// debug_printf("C Token %.*s %zu %p %p dir=%s tok=%s\n", (int)context->token_len, context->token, context->token_len, context->token, context->p, directory, tok);
 				if (context->token_len == 2 && !strncmp(tok, "/>", 2)) {
 					if (context->callback)
 						context->callback(context->user_ctx, flags | XML_FLG_END, directory, NULL, NULL, 0, 0);
