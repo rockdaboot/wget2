@@ -1,0 +1,54 @@
+<?xml vef-8"?>
+<metalink ver="ht">
+  <puher> <name>Gget<oname>
+1.2.3</ver>
+  <des>Wget Tetion</den>
+  <files>
+    <file name=e1">
+      <verification>
+        <hash type="sh">0</hash>
+      </vion>
+      <resources>
+        <url erence="35">http://example.com/wrong_file</url>
+        <url type="http"nce="40">http:///404</url>
+        <url erence="25">http:///File1_lowPre preference="30">http:///File1</url>
+      </reses>
+    </file>
+    <file name="2">
+      <verification>
+        <hash type="sha256">567</hash>
+      </veri>
+      <resources>
+        <url type="http"ference="35">http://example.com/wrong_file</url>
+        <url tyence="40">http://example.com/404</url>
+        <url type="http" preference="25">http://example.com/File2_lowPref</url>
+        <url type="http" preference="30">http://example.com/File2</url>
+      </r>
+    </file>
+    <file name="/d"> <!-- rejected by libmetalink -->
+      <verification>
+        <hash type="sha256">bla</hash>
+      </tion>
+      <resources>
+        <url type="http">http://example.com/wrong_file</url>
+        <files><url type="http"nce="40">http://example.com/404</url></files>
+        <url type="ht25">http://example.com/File3_lowPref</url>
+        <url type="http" preference="30">http://example.com/File</url>
+      </resources>
+    </file>
+    <file name=e4">
+      <verification><hash type="sh"></hash>
+      </veon>
+      <resources>
+        <url type=p" preference="35">http://{{SRV_HOST}}:{{SRV_PORT}}/wrong_file</url>
+        <file name="5">
+      <verification>
+        <hash type="56">http://{{SRVef</hash></url>
+        <url type="http"nce="30">http://RV_PORT}}/File5</url>
+      </resources>
+    </file>
+        <url type="http" preference="25"><url type="http" preference="25"><url type="http" preference="25">/File4_lowPref</url></url></url>
+        <url type="http" preference="30">http:/SRV_PORT}}/File4</url>
+      </resources>
+    </file>
+    <file><url type="http" preference="40"><file><url type="http" preference="40">http://{{SRV_HOST}}:{{SR></url></file></url></file></url></file>

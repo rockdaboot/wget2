@@ -32,11 +32,32 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 
 #include <dirent.h>
 
-int main(int argc, char **argv)
+static void test_all_from(const char *dirname)
 {
 	DIR *dirp;
 	struct dirent *dp;
 
+	if ((dirp = opendir(dirname))) {
+		while ((dp = readdir(dirp))) {
+			if (*dp->d_name == '.') continue;
+
+			char fname[strlen(dirname) + strlen(dp->d_name) + 2];
+			snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
+
+			uint8_t *data;
+			size_t size;
+			if ((data = (uint8_t *) wget_read_file(fname, &size))) {
+				wget_info_printf("testing %zu bytes from '%s'\n", size, fname);
+				LLVMFuzzerTestOneInput(data, size);
+				wget_free(data);
+			}
+		}
+		closedir(dirp);
+	}
+}
+
+int main(int argc, char **argv)
+{
 	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
 	const char *valgrind = getenv("VALGRIND_TESTS");
 
@@ -64,26 +85,14 @@ int main(int argc, char **argv)
 	const char *target = strrchr(argv[0], '/');
 	target = target ? target + 1 : argv[0];
 
-	char corporadir[sizeof(SRCDIR) + 1 + strlen(target) + 4];
+	char corporadir[sizeof(SRCDIR) + 1 + strlen(target) + 8];
 	snprintf(corporadir, sizeof(corporadir), SRCDIR "/%s.in", target);
 
-	if ((dirp = opendir(corporadir))) {
-		while ((dp = readdir(dirp))) {
-			if (*dp->d_name == '.') continue;
+	test_all_from(corporadir);
 
-			char fname[strlen(corporadir) + strlen(dp->d_name) + 2];
-			snprintf(fname, sizeof(fname), "%s/%s", corporadir, dp->d_name);
+	snprintf(corporadir, sizeof(corporadir), SRCDIR "/%s.repro", target);
 
-			uint8_t *data;
-			size_t size;
-			if ((data = (uint8_t *) wget_read_file(fname, &size))) {
-				wget_info_printf("testing %zu bytes from '%s'\n", size, fname);
-				LLVMFuzzerTestOneInput(data, size);
-				wget_free(data);
-			}
-		}
-		closedir(dirp);
-	}
+	test_all_from(corporadir);
 
 	wget_global_deinit();
 

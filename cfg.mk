@@ -1,5 +1,5 @@
 # Explicit syntax-check exceptions.
-VC_LIST_ALWAYS_EXCLUDE_REGEX = ^data/.*|tests/files/.*|.*.png|^fuzz/.*.in/.*$$
+VC_LIST_ALWAYS_EXCLUDE_REGEX = ^data/.*|tests/files/.*|.*.png|^fuzz/.*.in/.*|.*.repro/.*$$
 
 local-checks-to-skip = \
   sc_cast_of_argument_to_free \

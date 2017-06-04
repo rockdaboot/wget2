@@ -24,7 +24,9 @@ libwget_metalink_parse_fuzzer_SOURCES = libwget_metalink_parse_fuzzer.cc main.c
 libwget_robots_parse_fuzzer_SOURCES = libwget_robots_parse_fuzzer.cc main.c
 libwget_xml_parse_buffer_fuzzer_SOURCES = libwget_xml_parse_buffer_fuzzer.cc main.c
 
-EXTRA_DIST = $(wildcard *.options) $(wildcard *.dict) $(wildcard *.in/*)
+EXTRA_DIST = $(wildcard *.options) $(wildcard *.dict) \
+ $(wildcard *.in/*) $(wildcard *.repro/*)
+
 #dist-hook:
 #	rm -f $(distdir)/files/elb_bibel.txt
 
