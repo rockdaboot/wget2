@@ -48,7 +48,9 @@ Debian GNU/Linux build:
     when: on_failure
     paths:
       - ./*.log
-      - */*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
 
 clang/Fedora:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
@@ -119,4 +121,6 @@ MinGW64:
     when: on_failure
     paths:
       - ./*.log
-      - */*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
