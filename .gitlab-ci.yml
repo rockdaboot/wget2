@@ -47,7 +47,8 @@ Debian GNU/Linux build:
     expire_in: 2 weeks
     when: on_failure
     paths:
-      - tests/*.log
+      - ./*.log
+      - */*.log
 
 clang/Fedora:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
@@ -118,4 +119,4 @@ MinGW64:
     when: on_failure
     paths:
       - ./*.log
-      - tests/*.log
+      - */*.log
