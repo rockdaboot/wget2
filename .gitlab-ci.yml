@@ -34,6 +34,8 @@ variables:
 #  * ASan, UBSan, Msan
 #  * distcheck
 Debian GNU/Linux build:
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq libmicrohttpd-dev
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - ./bootstrap && touch .manywarnings
@@ -56,6 +58,8 @@ Debian GNU/Linux build:
       - tests/*.log
 
 clang/Fedora:
+  before_script:
+    - dnf -y install libmicrohttpd-devel
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
     - export CC=clang
@@ -117,15 +121,28 @@ pages:
 MinGW64:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
-  - apt-get -y install gcc-mingw-w64-x86-64 binutils-mingw-w64-x86-64 mingw-w64-x86-64-dev pkg-config-mingw-w64-x86-64 win-iconv-mingw-w64-dev wine
-  - ./bootstrap
+  - dpkg --add-architecture i386
+  - apt-get -y update
+  - apt-get -y install gcc-mingw-w64-x86-64 binutils-mingw-w64-x86-64 mingw-w64-x86-64-dev pkg-config-mingw-w64-x86-64 win-iconv-mingw-w64-dev wine wine32 wget
+  - cd ..
   - export PREFIX=x86_64-w64-mingw32
   - export CC=$PREFIX-gcc
-  - export CXX=$PREFIX-g++
   - export CPP=$PREFIX-cpp
   - export RANLIB=$PREFIX-ranlib
   - export PATH="/usr/$PREFIX/bin:$PATH"
   - export CFLAGS="-O2 -Wall -Wno-format"
+  # Install Libmicrohttpd from source
+  - git clone https://gnunet.org/git/libmicrohttpd.git
+  - cd libmicrohttpd
+  - git checkout c0168fde5043523
+  - ./bootstrap
+  - ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=/usr/$PREFIX --disable-doc --disable-examples --enable-shared --enable-static
+  - make clean
+  - make -j$(nproc)
+  - make install
+  - cd - && cd wget2
+  - ./bootstrap
+  - export CXX=$PREFIX-g++
   - export WINEPATH="/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs"
   - ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --enable-static
   - make clean
