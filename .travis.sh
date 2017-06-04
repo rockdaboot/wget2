@@ -15,16 +15,19 @@ fi
 
 ./bootstrap ${BOOTSTRAP_OPTIONS}
 
-# On OSX we are unable to find the Wget2 dylibs without installing first
-# However `make install` on linux systems fail due to insufficient permissions
-if [[ $TRAVIS_OS_NAME = 'osx' ]]; then
-	./configure -C
-	make install -j3
-fi
-
 for OPTS in "${CONFIGURE_OPTIONS[@]}"; do
 	./configure -C $OPTS
-	make clean check -j3 || (cat tests/test-suite.log && exit 1)
+	if test "$TRAVIS_OS_NAME" = 'osx'; then
+		# On OSX we are unable to find the Wget2 dylibs without
+		# installing first. However `make install` on linux systems
+		# fail due to insufficient permissions
+		make install -j3
+	fi
+	if make clean check -j3; then :; else
+		test -f unit-tests/test-suite.log && cat unit-tests/test-suite.log
+		test -f tests/test-suite.log && cat tests/test-suite.log
+		exit 1
+	fi
 done
 
 make distcheck -j3
