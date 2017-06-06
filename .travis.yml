@@ -38,6 +38,7 @@ addons:
             - libc6
             - valgrind
             - lcov
+            - lzip
 
 before_install:
   - echo $TRAVIS_OS_NAME

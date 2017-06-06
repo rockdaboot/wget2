@@ -38,9 +38,11 @@ Debian GNU/Linux build:
   script:
     - ./bootstrap && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan -C
-    - make -j$(nproc) distcheck
+    - make -j$(nproc) check
+    - make -j$(nproc) clean
     - ./configure -C --enable-fsanitize-msan
-    - make -j$(nproc) clean check
+    - make -j$(nproc) check
+    - make -j$(nproc) distcheck
   tags:
     - shared
   artifacts:
@@ -56,6 +58,7 @@ clang/Fedora:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
     - export CC=clang
+    - export CXX=clang++
     - ./bootstrap && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
     - make -j$(nproc) check
