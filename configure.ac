@@ -9,7 +9,7 @@ AC_INIT([wget2], [1.0.0], [bug-wget@gnu.org], [wget2], [https://savannah.gnu.org
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
-AM_INIT_AUTOMAKE([subdir-objects parallel-tests gnu dist-xz])
+AM_INIT_AUTOMAKE([subdir-objects parallel-tests gnu dist-lzip])
 
 CFLAGS=$CFLAGS
 AC_USE_SYSTEM_EXTENSIONS
