@@ -22,7 +22,7 @@ WGET_TESTS = test-wget-1$(EXEEXT) test-restrict-ascii$(EXEEXT) test-i-http$(EXEE
 
 #test--post-file test-E-k test-cookies-http_state
 
-check_PROGRAMS = buffer_printf_perf stringmap_perf $(WGET_TESTS)
+check_PROGRAMS = $(WGET_TESTS)
 check_LTLIBRARIES = libpluginname.la libpluginexit.la
 
 test_cookies_http_state_LDADD = ../src/log.o ../src/options.o libtest.la\
