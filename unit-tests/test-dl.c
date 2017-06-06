@@ -80,7 +80,7 @@ static void free_list(char **list, size_t list_len)
 	wget_free(list);
 }
 
-static int rpl_remove(const char *filename)
+static int remove_rpl(const char *filename)
 {
 	int res;
 
@@ -106,13 +106,13 @@ static void remove_object_dir(void)
 				|| strcmp(ent->d_name, "..") == 0)
 			continue;
 		char *filename = wget_aprintf(OBJECT_DIR "/%s", ent->d_name);
-		libassert(rpl_remove(filename) == 0);
+		libassert(remove_rpl(filename) == 0);
 		wget_free(filename);
 	}
 
 	closedir(dirp);
 
-	rpl_remove(OBJECT_DIR);
+	remove_rpl(OBJECT_DIR);
 }
 
 static void copy_file(const char *src, const char *dst)

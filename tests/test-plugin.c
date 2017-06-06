@@ -36,8 +36,11 @@
 #endif
 
 #ifdef _WIN32
-#define setenv(name, value, ignored) _putenv(name "=" value)
-#define unsetenv(name) _putenv(name "=")
+#define setenv_rpl(name, value, ignored) _putenv(name "=" value)
+#define unsetenv_rpl(name) _putenv(name "=")
+#else
+#define setenv_rpl setenv
+#define unsetenv_rpl unsetenv
 #endif
 
 int main(void)
@@ -83,8 +86,8 @@ int main(void)
 		0);
 
 	//Check whether WGET2_PLUGINS works
-	setenv("WGET2_PLUGIN_DIRS", OBJECT_DIR, 1);
-	setenv("WGET2_PLUGINS", "pluginname", 1);
+	setenv_rpl("WGET2_PLUGIN_DIRS", OBJECT_DIR, 1);
+	setenv_rpl("WGET2_PLUGINS", "pluginname", 1);
 	wget_test(
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
@@ -93,9 +96,9 @@ int main(void)
 			{ "plugin-loaded.txt", "Plugin loaded\n" },
 			{	NULL } },
 		0);
-	unsetenv("WGET2_PLUGIN_DIRS");
-	unsetenv("WGET2_PLUGINS");
-	setenv("WGET2_PLUGINS", LOCAL_NAME("pluginname") , 1);
+	unsetenv_rpl("WGET2_PLUGIN_DIRS");
+	unsetenv_rpl("WGET2_PLUGINS");
+	setenv_rpl("WGET2_PLUGINS", LOCAL_NAME("pluginname") , 1);
 	wget_test(
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
@@ -104,7 +107,7 @@ int main(void)
 			{ "plugin-loaded.txt", "Plugin loaded\n" },
 			{	NULL } },
 		0);
-	unsetenv("WGET2_PLUGINS");
+	unsetenv_rpl("WGET2_PLUGINS");
 
 	//Check whether wget_plugin_register_finalizer works properly
 	wget_test(
