@@ -52,11 +52,6 @@ if test "$ac_cv_prog_cc_c99" = "no"; then
   AC_ERROR([Compiler does not support C99. Aborting.])
 fi
 
-#
-# Require C++ support (for fuzz targets)
-#
-AC_PROG_CXX
-
 gl_EARLY
 gl_INIT
 
@@ -226,37 +221,27 @@ fi
 if test "$gl_cc_sanitize_ubsan" = yes; then
   gl_WARN_ADD([-fsanitize=undefined])
   gl_WARN_ADD([-fno-sanitize-recover=undefined])
-  gl_WARN_ADD([-fsanitize=undefined], CXXFLAGS)
-  gl_WARN_ADD([-fno-sanitize-recover=undefined], CXXFLAGS)
 fi
 
 if test "$gl_cc_sanitize_asan" = yes; then
   gl_WARN_ADD([-fsanitize=address])
   gl_WARN_ADD([-fno-omit-frame-pointer])
-  gl_WARN_ADD([-fsanitize=address], CXXFLAGS)
-  gl_WARN_ADD([-fno-omit-frame-pointer], CXXFLAGS)
 fi
 
 if test "$gl_cc_sanitize_msan" = yes; then
   # clang options
   gl_WARN_ADD([-fsanitize=memory])
   gl_WARN_ADD([-fsanitize-memory-track-origins])
-  gl_WARN_ADD([-fsanitize=memory], CXXFLAGS)
-  gl_WARN_ADD([-fsanitize-memory-track-origins], CXXFLAGS)
 
   # gcc options
   gl_WARN_ADD([-fsanitize=leak])
-  gl_WARN_ADD([-fsanitize=leak], CXXFLAGS)
 
   gl_WARN_ADD([-fno-omit-frame-pointer])
   gl_WARN_ADD([-fPIE])
-  gl_WARN_ADD([-fno-omit-frame-pointer], CXXFLAGS)
-  gl_WARN_ADD([-fPIE], CXXFLAGS)
 fi
 
 if test "$gl_cc_sanitize_tsan" = yes; then
   gl_WARN_ADD([-fsanitize=thread -fPIC -pie])
-  gl_WARN_ADD([-fsanitize=thread -fPIC -pie], CXXFLAGS)
 fi
 
 #
@@ -607,7 +592,6 @@ AC_MSG_NOTICE([Summary of build options:
   Install prefix:     ${prefix}
   Compiler:           ${CC}
   CFlags:             ${CFLAGS} ${CPPFLAGS} ${WARN_CFLAGS}
-  CXXFlags:           ${CXXFLAGS} ${CPPFLAGS}
   LDFlags:            ${LDFLAGS}
   Libs:               ${LIBS}
   SSL/TLS support:    $with_gnutls

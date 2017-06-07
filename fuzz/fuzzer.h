@@ -17,36 +17,7 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../config.h"
+#include <stddef.h> // size_t
+#include <stdint.h> // uint8_t
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "wget.h"
-
-extern "C" int
-LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
-{
-	if (size > 10000) // same as max_len = 10000 in .options file
-		return 0;
-
-	char *in = (char *) malloc(size + 1);
-
-	assert(in != NULL);
-
-	// 0 terminate
-	memcpy(in, data, size);
-	in[size] = 0;
-
-	wget_xml_parse_buffer(in, NULL, NULL, 0);
-	wget_xml_parse_buffer(in, NULL, NULL, XML_HINT_REMOVE_EMPTY_CONTENT);
-	wget_xml_parse_buffer(in, NULL, NULL, XML_HINT_HTML);
-	wget_xml_parse_buffer(in, NULL, NULL, XML_HINT_HTML | XML_HINT_REMOVE_EMPTY_CONTENT);
-
-	free(in);
-
-	return 0;
-}
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);

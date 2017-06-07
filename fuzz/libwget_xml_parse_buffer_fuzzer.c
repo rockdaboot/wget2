@@ -17,7 +17,7 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../config.h"
+#include <config.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -26,9 +26,9 @@
 #include <string.h>
 
 #include "wget.h"
+#include "fuzzer.h"
 
-extern "C" int
-LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
 	if (size > 10000) // same as max_len = 10000 in .options file
 		return 0;
@@ -41,9 +41,10 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	memcpy(in, data, size);
 	in[size] = 0;
 
-	wget_metalink_t *metalink;
-	metalink = wget_metalink_parse(in);
-	wget_metalink_free(&metalink);
+	wget_xml_parse_buffer(in, NULL, NULL, 0);
+	wget_xml_parse_buffer(in, NULL, NULL, XML_HINT_REMOVE_EMPTY_CONTENT);
+	wget_xml_parse_buffer(in, NULL, NULL, XML_HINT_HTML);
+	wget_xml_parse_buffer(in, NULL, NULL, XML_HINT_HTML | XML_HINT_REMOVE_EMPTY_CONTENT);
 
 	free(in);
 

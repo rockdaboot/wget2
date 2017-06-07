@@ -1,6 +1,5 @@
 AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS) -Wno-unused-parameter
-AM_CXXFLAGS = $(WERROR_CFLAGS) -Wall -Wextra
-AM_CPPFLAGS = -Wno-missing-field-initializers -I$(top_srcdir)/include/wget -I$(srcdir) \
+AM_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(srcdir) \
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\" -DSRCDIR=\"$(abs_srcdir)\" -DTEST_RUN
 AM_LDFLAGS = -static
 LDADD = ../lib/libgnu.la ../libwget/libwget.la \
@@ -18,20 +17,37 @@ WGET_TESTS = \
 
 check_PROGRAMS = $(WGET_TESTS)
 
-libwget_memtohex_fuzzer_SOURCES = libwget_memtohex_fuzzer.cc main.c
-libwget_bar_fuzzer_SOURCES = libwget_bar_fuzzer.cc main.c
-libwget_metalink_parse_fuzzer_SOURCES = libwget_metalink_parse_fuzzer.cc main.c
-libwget_robots_parse_fuzzer_SOURCES = libwget_robots_parse_fuzzer.cc main.c
-libwget_xml_parse_buffer_fuzzer_SOURCES = libwget_xml_parse_buffer_fuzzer.cc main.c
+libwget_memtohex_fuzzer_SOURCES = libwget_memtohex_fuzzer.c main.c fuzzer.h
+libwget_bar_fuzzer_SOURCES = libwget_bar_fuzzer.c main.c fuzzer.h
+libwget_metalink_parse_fuzzer_SOURCES = libwget_metalink_parse_fuzzer.c main.c fuzzer.h
+libwget_robots_parse_fuzzer_SOURCES = libwget_robots_parse_fuzzer.c main.c fuzzer.h
+libwget_xml_parse_buffer_fuzzer_SOURCES = libwget_xml_parse_buffer_fuzzer.c main.c fuzzer.h
 
-EXTRA_DIST = $(wildcard *.options) $(wildcard *.dict) \
- $(wildcard *.in) $(wildcard *.repro)
+#EXTRA_DIST = $(wildcard *.options) $(wildcard *.dict) \
+# $(wildcard *.in) $(wildcard *.repro)
 
-#dist-hook:
-#	rm -f $(distdir)/files/elb_bibel.txt
+dist-hook:
+	find . -name '*.options' -exec cp -v '{}' $(distdir) ';'
+	find . -name '*.dict' -exec cp -v '{}' $(distdir) ';'
+	find . -name '*.in' -exec cp -vr '{}' $(distdir) ';'
+	find . -name '*.repro' -exec cp -vr '{}' $(distdir) ';'
 
 AM_TESTS_ENVIRONMENT = export VALGRIND_TESTS"=@VALGRIND_TESTS@";
 TESTS = $(WGET_TESTS)
 
 fuzz-coverage: $(WGET_TESTS)
 	find . -name '*_fuzzer' -exec ./coverage.sh '{}' ';'
+
+oss-fuzz:
+	if test "$$OUT" != ""; then \
+	for ccfile in *_fuzzer.c; do \
+	fuzzer=$$(basename $$ccfile .c); \
+	$$CXX $$CXXFLAGS -I$(top_srcdir)/include/wget/ -I$(top_srcdir) \
+	"$${fuzzer}.c" -o "$${fuzzer}" \
+	../libwget/.libs/libwget.a $${LIB_FUZZING_ENGINE} -Wl,-Bstatic \
+	-lidn2 -lunistring \
+	-Wl,-Bdynamic; \
+	done; \
+	fi
+
+.PHONY: oss-fuzz

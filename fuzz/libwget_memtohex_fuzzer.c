@@ -17,34 +17,34 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../config.h"
+#include <config.h>
 
 #include <assert.h> // assert
-#include <stdint.h> // uint8_t
 #include <stdlib.h> // malloc, free
-#include <string.h> // memcpy
 
 #include "wget.h"
+#include "fuzzer.h"
 
-extern "C" int
-LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-	char *in = (char *) malloc(size + 1);
+	char dst1[1];
+	char dst2[2];
+	char dst3[3];
+	char dst4[4];
+	char dst5[8];
+	char *dst = (char *) malloc(size * 2 + 1);
 
-	assert(in != NULL);
+	assert(dst != NULL);
 
-	// 0 terminate
-	memcpy(in, data, size);
-	in[size] = 0;
+	wget_memtohex(NULL, 0, NULL, 0);
+	wget_memtohex(data, size, dst1, sizeof(dst1));
+	wget_memtohex(data, size, dst2, sizeof(dst2));
+	wget_memtohex(data, size, dst3, sizeof(dst3));
+	wget_memtohex(data, size, dst4, sizeof(dst4));
+	wget_memtohex(data, size, dst5, sizeof(dst5));
+	wget_memtohex(data, size, dst, size * 2 + 1);
 
-	wget_bar_t *bar = wget_bar_init(NULL, 3);
-	wget_bar_slot_begin(bar, 1, "test", 64000);
-	wget_bar_slot_downloaded(bar, 1, atoi(in));
-	wget_bar_printf(bar, 1, "%s", in);
-	wget_bar_write_line(bar, (char *) data, size);
-	wget_bar_free(&bar);
-
-	free(in);
+	free(dst);
 
 	return 0;
 }

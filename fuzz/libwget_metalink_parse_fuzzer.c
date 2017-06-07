@@ -17,23 +17,22 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/*
- * covers code in libwget/robots.c
- */
+#include <config.h>
 
-#include "../config.h"
-
-#include <assert.h> // assert
-#include <stdint.h> // uint8_t
-#include <stdlib.h> // malloc, free
-#include <string.h> // memcpy
+#include <assert.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "wget.h"
+#include "fuzzer.h"
 
-extern "C" int
-LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-	ROBOTS *robots;
+	if (size > 10000) // same as max_len = 10000 in .options file
+		return 0;
+
 	char *in = (char *) malloc(size + 1);
 
 	assert(in != NULL);
@@ -42,8 +41,9 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	memcpy(in, data, size);
 	in[size] = 0;
 
-	robots = wget_robots_parse(in, "wget2");
-	wget_robots_free(&robots);
+	wget_metalink_t *metalink;
+	metalink = wget_metalink_parse(in);
+	wget_metalink_free(&metalink);
 
 	free(in);
 
