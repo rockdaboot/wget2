@@ -28,6 +28,11 @@
 #include "wget.h"
 #include "fuzzer.h"
 
+static void _cb(void *context, int flags, const char *tag, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+{
+
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
 	if (size > 10000) // same as max_len = 10000 in .options file
@@ -42,9 +47,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	in[size] = 0;
 
 	wget_xml_parse_buffer(in, NULL, NULL, 0);
-	wget_xml_parse_buffer(in, NULL, NULL, XML_HINT_REMOVE_EMPTY_CONTENT);
-	wget_xml_parse_buffer(in, NULL, NULL, XML_HINT_HTML);
-	wget_xml_parse_buffer(in, NULL, NULL, XML_HINT_HTML | XML_HINT_REMOVE_EMPTY_CONTENT);
+	wget_xml_parse_buffer(in, _cb, NULL, XML_HINT_REMOVE_EMPTY_CONTENT);
+	wget_html_parse_buffer(in, _cb, NULL, 0);
+	wget_html_parse_buffer(in, _cb, NULL, XML_HINT_REMOVE_EMPTY_CONTENT);
 
 	free(in);
 
