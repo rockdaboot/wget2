@@ -35,6 +35,9 @@ dist-hook:
 AM_TESTS_ENVIRONMENT = export VALGRIND_TESTS"=@VALGRIND_TESTS@";
 TESTS = $(WGET_TESTS)
 
+clean-local:
+	rm -rf *.gc?? *.log lcov
+
 fuzz-coverage: $(WGET_TESTS)
 	find . -name '*_fuzzer' -exec ./coverage.sh '{}' ';'
 
