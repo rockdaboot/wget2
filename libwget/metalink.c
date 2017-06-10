@@ -83,9 +83,12 @@ static void _add_piece(_metalink_context_t *ctx, const char *value)
 		wget_strlcpy(piece.hash.hash_hex, ctx->hash, sizeof(piece.hash.hash_hex));
 
 		piecep = wget_vector_get(metalink->pieces, wget_vector_size(metalink->pieces) - 1);
-		if (piecep)
-			piece.position = piecep->position + piecep->length;
-		else
+		if (piecep && piecep->length > 0) {
+			if (piecep->position <= LONG_MAX - piecep->length)
+				piece.position = piecep->position + piecep->length;
+			else
+				piece.position = 0; // integer overflow
+		} else
 			piece.position = 0;
 		wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
 	}
