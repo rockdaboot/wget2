@@ -141,6 +141,11 @@ void wget_stringmap_setloadfactor(wget_stringmap_t *h, float factor)
 	wget_hashmap_setloadfactor(h, factor);
 }
 
+void wget_stringmap_set_key_destructor(wget_hashmap_t *h, wget_stringmap_key_destructor_t destructor)
+{
+	wget_hashmap_set_key_destructor(h, (wget_hashmap_key_destructor_t)destructor);
+}
+
 void wget_stringmap_set_value_destructor(wget_hashmap_t *h, wget_stringmap_value_destructor_t destructor)
 {
 	wget_hashmap_set_value_destructor(h, (wget_hashmap_value_destructor_t)destructor);
