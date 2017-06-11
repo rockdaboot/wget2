@@ -1634,7 +1634,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 		opt->parser(opt, NULL);
 	}
 	else {
-		if (value && !opt->args && opt->parser != parse_bool)
+		if (value && !opt->args && opt->parser != parse_bool && !value_is_next_arg)
 			error_printf_exit(_("Option '%s' doesn't allow an argument\n"), name);
 
 		if (opt->args > 0) {
