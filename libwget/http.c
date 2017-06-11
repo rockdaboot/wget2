@@ -1212,7 +1212,7 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 			break;
 		case 'x':
 			if (!wget_strncasecmp_ascii(name, "X-Archive-Orig-last-modified", namelen))
-					resp->last_modified = wget_http_parse_full_date(s);
+				resp->last_modified = wget_http_parse_full_date(s);
 			break;
 		default:
 			break;

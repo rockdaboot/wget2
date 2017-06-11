@@ -2212,6 +2212,53 @@ static void test_set_proxy(void)
 	}
 }
 
+static void test_parse_response_header(void)
+{
+	char *response_text = wget_strdup(
+			"HTTP/1.1 200 OK\r\n"\
+			"Server: Apache/2.2.22 (Debian)\r\n"\
+			"Date: Sun, 11 Jun 2017 09:45:54 GMT\r\n"\
+			"Content-Length: 476\r\n"\
+			"Connection: keep-alive\r\n"\
+			"X-Archive-Orig-last-modified: Sun, 25 May 2003 16:55:12 GMT\r\n"\
+			"Content-Type: text/plain; charset=utf-8\r\n\r\n");
+
+	wget_http_response_t *resp = wget_http_parse_response_header(response_text);
+
+	if (resp->keep_alive)
+		ok++;
+	else {
+		failed++;
+		info_printf("HTTP keep-alive Connection header could not be set.\n");
+	}
+
+	if (resp->content_length == 476)
+		ok++;
+	else {
+		failed++;
+		info_printf("Content-Length mismatch.\n");
+	}
+
+	if (!strcmp(resp->content_type, "text/plain"))
+		ok++;
+	else {
+		failed++;
+		info_printf("Content-Type mismatch.\n");
+	}
+
+	if (resp->last_modified == wget_http_parse_full_date("Sun, 25 May 2003 16:55:12 GMT"))
+		ok++;
+	else {
+		failed++;
+		info_printf("X-Archive-Orig-last-modified mismatch\n");
+	}
+
+	xfree(resp->content_type);
+	xfree(resp->content_type_encoding);
+	xfree(resp);
+	xfree(response_text);
+}
+
 int main(int argc, const char **argv)
 {
 	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
@@ -2270,6 +2317,7 @@ int main(int argc, const char **argv)
 	test_netrc();
 	test_robots();
 	test_set_proxy();
+	test_parse_response_header();
 
 	selftest_options() ? failed++ : ok++;
 
