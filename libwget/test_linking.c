@@ -18,7 +18,7 @@ int main(void)
 	wget_strlcpy(buf, "", 0); // strlcpy.c
 	wget_css_parse_buffer((const char *)1, 0, NULL, NULL, NULL); // css.c
 	wget_decompress_close(NULL); // decompressor.c
-	wget_hashmap_create(0, 0, NULL, NULL); // hashmap.c
+	wget_hashmap_create(0, NULL, NULL); // hashmap.c
 	wget_fdgetline(&empty, (size_t *)1, 0); // io.c
 	wget_iri_parse("", NULL); // iri.c
 	wget_list_free((wget_list_t **)1); // list.c

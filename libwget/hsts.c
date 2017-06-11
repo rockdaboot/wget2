@@ -153,7 +153,7 @@ wget_hsts_db_t *wget_hsts_db_init(wget_hsts_db_t *hsts_db)
 		hsts_db = xmalloc(sizeof(wget_hsts_db_t));
 
 	memset(hsts_db, 0, sizeof(*hsts_db));
-	hsts_db->entries = wget_hashmap_create(16, -2, (wget_hashmap_hash_t)_hash_hsts, (wget_hashmap_compare_t)_compare_hsts);
+	hsts_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_t)_hash_hsts, (wget_hashmap_compare_t)_compare_hsts);
 	wget_hashmap_set_key_destructor(hsts_db->entries, (wget_hashmap_key_destructor_t)wget_hsts_free);
 	wget_hashmap_set_value_destructor(hsts_db->entries, (wget_hashmap_value_destructor_t)wget_hsts_free);
 	wget_thread_mutex_init(&hsts_db->mutex);

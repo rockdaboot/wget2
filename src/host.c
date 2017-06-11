@@ -96,7 +96,7 @@ HOST *host_add(wget_iri_t *iri)
 	wget_thread_mutex_lock(&hosts_mutex);
 
 	if (!hosts) {
-		hosts = wget_hashmap_create(16, -2, (wget_hashmap_hash_t)_host_hash, (wget_hashmap_compare_t)_host_compare);
+		hosts = wget_hashmap_create(16, (wget_hashmap_hash_t)_host_hash, (wget_hashmap_compare_t)_host_compare);
 		wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor_t)_free_host_entry);
 	}
 

@@ -149,11 +149,11 @@ wget_ocsp_db_t *wget_ocsp_db_init(wget_ocsp_db_t *ocsp_db)
 
 	memset(ocsp_db, 0, sizeof(*ocsp_db));
 
-	ocsp_db->fingerprints = wget_hashmap_create(16, -2, (wget_hashmap_hash_t)_hash_ocsp, (wget_hashmap_compare_t)_compare_ocsp);
+	ocsp_db->fingerprints = wget_hashmap_create(16, (wget_hashmap_hash_t)_hash_ocsp, (wget_hashmap_compare_t)_compare_ocsp);
 	wget_hashmap_set_key_destructor(ocsp_db->fingerprints, (wget_hashmap_key_destructor_t)wget_ocsp_free);
 	wget_hashmap_set_value_destructor(ocsp_db->fingerprints, (wget_hashmap_value_destructor_t)wget_ocsp_free);
 
-	ocsp_db->hosts = wget_hashmap_create(16, -2, (wget_hashmap_hash_t)_hash_ocsp, (wget_hashmap_compare_t)_compare_ocsp);
+	ocsp_db->hosts = wget_hashmap_create(16, (wget_hashmap_hash_t)_hash_ocsp, (wget_hashmap_compare_t)_compare_ocsp);
 	wget_hashmap_set_key_destructor(ocsp_db->hosts, (wget_hashmap_key_destructor_t)wget_ocsp_free);
 	wget_hashmap_set_value_destructor(ocsp_db->hosts, (wget_hashmap_value_destructor_t)wget_ocsp_free);
 

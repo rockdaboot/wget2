@@ -198,7 +198,7 @@ wget_hpkp_db_t *wget_hpkp_db_init(wget_hpkp_db_t *hpkp_db)
 	else
 		memset(hpkp_db, 0, sizeof(*hpkp_db));
 
-	hpkp_db->entries = wget_hashmap_create(16, -2, (wget_hashmap_hash_t)_hash_hpkp, (wget_hashmap_compare_t)_compare_hpkp);
+	hpkp_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_t)_hash_hpkp, (wget_hashmap_compare_t)_compare_hpkp);
 	wget_hashmap_set_key_destructor(hpkp_db->entries, (wget_hashmap_key_destructor_t)wget_hpkp_free);
 
 	/*

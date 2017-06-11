@@ -652,7 +652,9 @@ typedef void (*wget_hashmap_key_destructor_t)(void *key);
 typedef void (*wget_hashmap_value_destructor_t)(void *value);
 
 WGETAPI wget_hashmap_t
-	*wget_hashmap_create(int max, int off, wget_hashmap_hash_t hash, wget_hashmap_compare_t cmp) G_GNUC_WGET_MALLOC;
+	*wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hashmap_compare_t cmp) G_GNUC_WGET_MALLOC;
+WGETAPI void
+	wget_hashmap_set_growth_policy(wget_hashmap_t *h, int off);
 WGETAPI int
 	wget_hashmap_put(wget_hashmap_t *h, const void *key, size_t keysize, const void *value, size_t valuesize);
 WGETAPI int

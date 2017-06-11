@@ -68,20 +68,17 @@ struct _wget_hashmap_st {
 };
 
 // create hashmap with initial size <max>
-// hashmap growth is specified by off:
-//   positive values: increase hashmap by <off> entries on each resize
-//   negative values: increase hashmap by *<-off>, e.g. -2 doubles the size on each resize
 // cmp: comparison function for finding
 // the hashmap plus shallow content is freed by hashmap_free()
 
-wget_hashmap_t *wget_hashmap_create(int max, int off, wget_hashmap_hash_t hash, wget_hashmap_compare_t cmp)
+wget_hashmap_t *wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hashmap_compare_t cmp)
 {
 	wget_hashmap_t *h = xmalloc(sizeof(wget_hashmap_t));
 
 	h->entry = xcalloc(max, sizeof(ENTRY *));
 	h->max = max;
 	h->cur = 0;
-	h->off = off;
+	h->off = -2;
 	h->hash = hash;
 	h->cmp = cmp;
 	h->key_destructor = free;
@@ -90,6 +87,14 @@ wget_hashmap_t *wget_hashmap_create(int max, int off, wget_hashmap_hash_t hash, 
 	h->threshold = (int)(max * h->factor);
 
 	return h;
+}
+
+// hashmap growth is specified by off:
+//   positive values: increase hashmap by <off> entries on each resize
+//   negative values: increase hashmap by *<-off>, e.g. -2 doubles the size on each resize
+void wget_hashmap_set_growth_policy(wget_hashmap_t *h, int off)
+{
+	h->off = off;
 }
 
 static _GL_INLINE ENTRY * G_GNUC_WGET_NONNULL_ALL hashmap_find_entry(const wget_hashmap_t *h, const char *key, unsigned int hash, int pos)

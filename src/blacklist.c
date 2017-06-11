@@ -98,7 +98,7 @@ wget_iri_t *blacklist_add(wget_iri_t *iri)
 		wget_thread_mutex_lock(&mutex);
 
 		if (!blacklist) {
-			blacklist = wget_hashmap_create(128, -2, (wget_hashmap_hash_t)hash_iri, (wget_hashmap_compare_t)wget_iri_compare);
+			blacklist = wget_hashmap_create(128, (wget_hashmap_hash_t)hash_iri, (wget_hashmap_compare_t)wget_iri_compare);
 			wget_hashmap_set_key_destructor(blacklist, (wget_hashmap_key_destructor_t)_free_entry);
 		}
 

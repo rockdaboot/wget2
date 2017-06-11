@@ -158,7 +158,7 @@ wget_tls_session_db_t *wget_tls_session_db_init(wget_tls_session_db_t *tls_sessi
 		tls_session_db = xmalloc(sizeof(wget_tls_session_db_t));
 
 	memset(tls_session_db, 0, sizeof(*tls_session_db));
-	tls_session_db->entries = wget_hashmap_create(16, -2, (wget_hashmap_hash_t)_hash_tls_session, (wget_hashmap_compare_t)_compare_tls_session);
+	tls_session_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_t)_hash_tls_session, (wget_hashmap_compare_t)_compare_tls_session);
 	wget_hashmap_set_key_destructor(tls_session_db->entries, (wget_hashmap_key_destructor_t)wget_tls_session_free);
 	wget_hashmap_set_value_destructor(tls_session_db->entries, (wget_hashmap_value_destructor_t)wget_tls_session_free);
 	wget_thread_mutex_init(&tls_session_db->mutex);
