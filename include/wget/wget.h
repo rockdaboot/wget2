@@ -828,44 +828,101 @@ WGETAPI extern const char * const
 #define WGET_IRI_SCHEME_FTP     (wget_iri_schemes[2])
 #define WGET_IRI_SCHEME_DEFAULT WGET_IRI_SCHEME_HTTP
 
+/**
+ * \ingroup libwget-iri
+ *
+ * @{
+ *
+ * Internal representation of a URI/IRI.
+ */
 typedef struct wget_iri_st {
+	/**
+	 * Pointer to the original URI string, unescaped and converted to UTF-8.
+	 */
 	const char *
-		uri;      // pointer to original URI string, unescaped and converted to UTF-8
+		uri;
 	const char *
 		display;
+	/**
+	 * URI/IRI scheme (`http` or `https`).
+	 */
 	const char *
 		scheme;
+	/**
+	 * Username, if present.
+	 */
 	const char *
 		userinfo;
+	/**
+	 * Password, if present.
+	 */
 	const char *
 		password;
+	/**
+	 * Hostname (or literal IP address). Lowercase and unescaped.
+	 */
 	const char *
-		host; // unescaped, toASCII converted, lowercase host (or IP address) part
+		host;
+	/**
+	 * Explicit port, if present.
+	 */
 	const char *
 		port;
+	/**
+	 * Default port for the scheme. This will be used
+	 * if `port` is omitted.
+	 */
 	const char *
 		resolv_port;
+	/**
+	 * Path, if present. Unescaped.
+	 */
 	const char *
-		path; // unescaped path part or NULL
+		path;
+	/**
+	 * Query part, if present. Unescaped.
+	 */
 	const char *
-		query; // unescaped query part or NULL
+		query;
+	/**
+	 * Fragment part, if present. Unescaped.
+	 */
 	const char *
-		fragment; // unescaped fragment part or NULL
+		fragment;
+	/**
+	 * Connection part. This is not specified by the spec, it's just a helper.
+	 *
+	 * The connection part is formed by the scheme, the hostname and the port together. Example:
+	 *
+	 *     http://www.example.com:8080
+	 *
+	 */
 	const char *
-		connection_part; // helper, e.g. http://www.example.com:8080
+		connection_part;
+	/**
+	 * Length of the directory part in `path`.
+	 *
+	 * This is the length from the beginning up to the last slash (`/`).
+	 */
 	size_t
-		dirlen; // length of directory part in 'path' (needed/initialized with --no-parent)
+		dirlen;
+	/* If set, free host in iri_free() */
 	unsigned int
-		host_allocated : 1; // if set, free host in iri_free()
+		host_allocated : 1;
+	/* If set, free path in iri_free() */
 	unsigned int
-		path_allocated : 1; // if set, free path in iri_free()
+		path_allocated : 1;
+	/* If set, free query in iri_free() */
 	unsigned int
-		query_allocated : 1; // if set, free query in iri_free()
+		query_allocated : 1;
+	/* If set, free fragment in iri_free() */
 	unsigned int
-		fragment_allocated : 1; // if set, free fragment in iri_free()
+		fragment_allocated : 1;
+	/* If set, the hostname part is a literal IPv4/IPv6 address */
 	unsigned int
-		is_ip_address : 1; // if set, the hostname part is a literal IPv4 or IPv6 address
+		is_ip_address : 1;
 } wget_iri_t;
+/** @} */
 
 WGETAPI void
 	wget_iri_test(void);

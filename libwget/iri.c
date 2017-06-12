@@ -38,6 +38,37 @@
 #include <wget.h>
 #include "private.h"
 
+/**
+ * \file
+ * \brief Functions to work with URIs and IRIs
+ * \defgroup libwget-iri URIs/IRIs
+ *
+ * @{
+ *
+ * URI/IRI parsing and manipulation functions.
+ *
+ * IRIs are processed according to [RFC 3987](https://datatracker.ietf.org/doc/rfc3987/).
+ * Functions that escape certain characters (such as wget_iri_escape()) work according to
+ * [RFC 3986](https://datatracker.ietf.org/doc/rfc3986/).
+ *
+ * The \ref wget_iri_st "wget_iri_t" structure represents an IRI. You generate one from a string with wget_iri_parse() or
+ * wget_iri_parse_base(). You can use wget_iri_clone() to generate another identical \ref wget_iri_st "wget_iri_t".
+ *
+ * You can access each of the fields of a \ref wget_iri_st "wget_iri_t" (such as `path`) independently, and you can use
+ * the getters here to escape each of those parts, or for convenience (e.g wget_iri_get_escaped_host(),
+ * wget_iri_get_escaped_resource(), etc.).
+ *
+ * URIs/IRIs are all internally treated in UTF-8. The parsing functions that generate a \ref wget_iri_st "wget_iri_t" structure
+ * (wget_iri_parse() and wget_iri_parse_base()) thus convert the input string to UTF-8 before anything else.
+ * These functions take an `encoding` parameter that tells which is the original encoding of that string.
+ *
+ * Conversely, the getters (for example, wget_iri_get_path()) can convert the output string from UTF-8
+ * to an encoding of choice. The desired encoding is also specified in the `encoding` parameter.
+ *
+ * The `encoding` parameter, in all functions that accept it, is a string with the name of a character set
+ * supported by GNU libiconv. You can find such a list elsewhere, but popular examples are "utf-8", "utf-16" or "iso-8859-1".
+ */
+
 static const char
 	*default_page = "index.html";
 static size_t
@@ -49,13 +80,13 @@ static const char
 	* const iri_ports[]   = { "80", "443" }; // default port numbers for the above schemes
 
 #define IRI_CTYPE_GENDELIM (1<<0)
-#define _iri_isgendelim(c) (iri_ctype[(unsigned char)(c)]&IRI_CTYPE_GENDELIM)
+#define _iri_isgendelim(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_GENDELIM)
 
 #define IRI_CTYPE_SUBDELIM (1<<1)
-#define _iri_issubdelim(c) (iri_ctype[(unsigned char)(c)]&IRI_CTYPE_SUBDELIM)
+#define _iri_issubdelim(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_SUBDELIM)
 
 #define IRI_CTYPE_UNRESERVED (1<<2)
-#define _iri_isunreserved(c) (iri_ctype[(unsigned char)(c)]&IRI_CTYPE_UNRESERVED)
+#define _iri_isunreserved(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_UNRESERVED)
 
 #define _iri_isscheme(c) (c_isalnum(c) || c == '+' || c == '-' || c == '.')
 
@@ -88,6 +119,12 @@ static const unsigned char
 		['~'] = IRI_CTYPE_UNRESERVED
 	};
 
+/**
+ * \param[in] An IRI
+ * \return 1 if the scheme is supported, 0 if not
+ *
+ * Tells whether the IRI's scheme is supported or not.
+ */
 int wget_iri_supported(const wget_iri_t *iri)
 {
 	int it;
@@ -100,28 +137,70 @@ int wget_iri_supported(const wget_iri_t *iri)
 	return 0;
 }
 
+/**
+ * \param[in] c A character
+ * \return 1 if \p c is a generic delimiter, 0 if not
+ *
+ * Tests whether \p c is a generic delimiter (gen-delim),
+ * according to [RFC 3986, sect. 2.2](https://tools.ietf.org/html/rfc3986#section-2.2).
+ */
 int wget_iri_isgendelim(char c)
 {
 	// return strchr(":/?#[]@",c)!=NULL;
 	return _iri_isgendelim(c);
 }
 
+/**
+ * \param[in] c A character
+ * \return 1 if \p c is a subcomponent delimiter, 0 if not
+ *
+ * Tests whether \p c is a subcomponent delimiter (sub-delim)
+ * according to [RFC 3986, sect. 2.2](https://tools.ietf.org/html/rfc3986#section-2.2).
+ */
 int wget_iri_issubdelim(char c)
 {
 	// return strchr("!$&\'()*+,;=",c)!=NULL;
 	return _iri_issubdelim(c);
 }
 
+/**
+ * \param[in] c A character
+ * \return 1 if \p c is a reserved character, 0 if not
+ *
+ * Tests whether \p c is a reserved character.
+ *
+ * According to [RFC 3986, sect. 2.2](https://tools.ietf.org/html/rfc3986#section-2.2),
+ * the set of reserved characters is formed
+ * by the generic delimiters (gen-delims, wget_iri_isgendelim()) and the
+ * subcomponent delimiters (sub-delims, wget_iri_is_subdelim()).
+ *
+ * This function is thus equivalent to:
+ *
+ *     return wget_iri_isgendelim(c) || wget_iri_issubdelim(c);
+ *
+ */
 int wget_iri_isreserved(char c)
 {
 	return wget_iri_isgendelim(c) || wget_iri_issubdelim(c);
 }
 
+/**
+ * \param[in] c A character
+ * \return 1 if \p c is an unreserved character, 0 if not
+ *
+ * Tests whether \p c is an unreserved character.
+ */
 int wget_iri_isunreserved(char c)
 {
 	return c > 32 && c < 127 && (c_isalnum(c) || _iri_isunreserved(c));
 }
 
+/**
+ * \param[in] c A character
+ * \return 1 if \p c is an unreserved character or a path separator, 0 if not
+ *
+ * Tests whether \p c is an unreserved character **or a path separator (`/`)**.
+ */
 int wget_iri_isunreserved_path(char c)
 {
 	return c > 32 && c < 127 && (c_isalnum(c) || _iri_isunreserved(c) || c == '/');
@@ -132,6 +211,16 @@ static _GL_INLINE unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
 	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
 }
 
+/**
+ * \param[in] src A string
+ * \return A pointer to \p src, after the transformation is done
+ *
+ * Unescape a string. All the percent-encoded characters (`%XX`) are converted
+ * back to their original form.
+ *
+ * **The transformation is done inline**, so `src` will be modified after this function returns.
+ * If no percent-encoded characters are found, the string is left untouched.
+ */
 char *wget_iri_unescape_inline(char *src)
 {
 	char *ret = NULL;
@@ -155,7 +244,20 @@ char *wget_iri_unescape_inline(char *src)
 	return ret;
 }
 
-// needed as helper for blacklist.c/blacklist_free()
+/**
+ * \param[in] iri An IRI
+ *
+ * Free the heap-allocated content of the provided IRI, but leave the rest
+ * of the fields.
+ *
+ * This function frees the following fields of \ref wget_iri_st "wget_iri_t":
+ *
+ *  - `host`
+ *  - `path`
+ *  - `query`
+ *  - `fragment`
+ *  - `connection_part`
+ */
 void wget_iri_free_content(wget_iri_t *iri)
 {
 	if (iri) {
@@ -171,6 +273,13 @@ void wget_iri_free_content(wget_iri_t *iri)
 	}
 }
 
+/**
+ * \param[in] iri A pointer to a pointer to an IRI (a \ref wget_iri_st "wget_iri_t")
+ *
+ * Destroy a \ref wget_iri_st "wget_iri_t" structure.
+ *
+ * The provided pointer is set to NULL.
+ */
 void wget_iri_free(wget_iri_t **iri)
 {
 	if (iri && *iri) {
@@ -181,6 +290,16 @@ void wget_iri_free(wget_iri_t **iri)
 
 // URIs are assumed to be unescaped at this point
 
+/**
+ * \param[in] url A URL/IRI
+ * \param[in] encoding Original encoding of \p url
+ * \return A libwget IRI (`wget_iri_t`)
+ *
+ * The host, path, query and fragment parts will be converted to UTF-8 from
+ * the encoding given in the paramter \p encoding. GNU libiconv is used
+ * to perform the conversion, so this value should be the name of a valid character set
+ * supported by that library, such as "utf-8" or "iso-8859-1".
+ */
 wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 {
 	wget_iri_t *iri;
@@ -416,6 +535,12 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 	return iri;
 }
 
+/**
+ * \param[in] iri An IRI
+ * \return A new IRI, with the exact same contents as the provided one.
+ *
+ * Clone the provided IRI.
+ */
 wget_iri_t *wget_iri_clone(wget_iri_t *iri)
 {
 	if (!iri)
@@ -446,6 +571,20 @@ wget_iri_t *wget_iri_clone(wget_iri_t *iri)
 	return clone;
 }
 
+/**
+ * \param[in] iri An IRI
+ * \return A string with the connection part of the IRI.
+ *
+ * Return the connection part of the IRI \p iri.
+ *
+ * The connection part is formed by the scheme, the hostname, and optionally the port. For example:
+ *
+ *     https://localhost:8080
+ *     http://www.example.com
+ *
+ * It may be of the form `http://example.com:8080` if the port was provided when creating the IRI
+ * or of the form `http://example.com` otherwise.
+ */
 const char *wget_iri_get_connection_part(wget_iri_t *iri)
 {
 	if (iri) {
@@ -540,6 +679,27 @@ static size_t G_GNUC_WGET_NONNULL_ALL _normalize_path(char *path)
 // create an absolute URI from a base + relative URI
 
 //char *iri_relative_to_absolute(IRI *iri, const char *tag, const char *val, size_t len, char *dst, size_t dst_size)
+/**
+ * \param[in] base A base IRI
+ * \param[in] val A path, or another URI
+ * \param[in] len Length of the string \p val
+ * \param[in] buf Destination buffer, where the result will be copied.
+ * \return A new URI (string) which is based on the base IRI \p base provided, or NULL in case of error.
+ *
+ * Calculates a new URI which is based on the provided IRI \p base.
+ *
+ * Taking the IRI \p base as a starting point, a new URI is created with the path \p val, which may be
+ * a relative or absolute path, or even a whole URI. The result is returned as a string, and if the buffer
+ * \p buf is provided, it is also placed there.
+ *
+ * If \p val is an absolute path (it begins with a `/`), it is normalized first. Then the provided IRI's
+ * path is replaced by that new path. If it's a relative path, the file name of the \p base IRI's path
+ * is replaced by that path. Finally, if \p val begins with a scheme (such as `http://`) that string is returned
+ * untouched, and placed in the buffer if provided.
+ *
+ * If \p base is NULL, then \p val must itself be an absolute URI. Likewise, if \p buf is NULL,
+ * then \p val must also be an absolute URI.
+ */
 const char *wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t len, wget_buffer_t *buf)
 {
 	debug_printf("*url = %.*s\n", (int)len, val);
@@ -572,8 +732,9 @@ const char *wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t l
 				wget_buffer_strcat(buf, path);
 				debug_printf("*2 %s\n", buf->data);
 			}
-		} else
+		} else {
 			return NULL;
+		}
 	} else {
 		// see if URI begins with a scheme:
 		if (memchr(val, ':', len)) {
@@ -604,13 +765,31 @@ const char *wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t l
 			debug_printf("*4 %s %zu\n", buf->data, buf->length);
 		} else if (val[len] == 0) {
 			return val;
-		} else
+		} else {
 			return NULL;
+		}
 	}
 
 	return buf->data;
 }
 
+/**
+ * \param[in] base The base IRI
+ * \param[in] url A relative/absolute path (or a URI) to be appended to \p base
+ * \param[in] encoding The encoding of \p url (e.g. "utf-8" or "iso-8859-1")
+ * \return A new IRI
+ *
+ * Generate a new IRI by using the provided IRI \p base as a base and the path \p url.
+ *
+ * This is equivalent to:
+ *
+ *     wget_iri_t *iri = wget_iri_parse(wget_iri_relative_to_abs(base, url, strlen(url), NULL), encoding);
+ *     return iri;
+ *
+ * As such, \p url can be a relative or absolute path, or another URI.
+ *
+ * If \p base is NULL, then the parameter \p url must itself be an absolute URI.
+ */
 wget_iri_t *wget_iri_parse_base(wget_iri_t *base, const char *url, const char *encoding)
 {
 	wget_iri_t *iri;
@@ -631,6 +810,18 @@ wget_iri_t *wget_iri_parse_base(wget_iri_t *base, const char *url, const char *e
 }
 
 // RFC conform comparison as described in https://tools.ietf.org/html/rfc2616#section-3.2.3
+/**
+ * \param[in] iri1 An IRI
+ * \param[in] iri2 Another IRI
+ * \return 0 if both IRIs are equal according to RFC 2616 or a non-zero value otherwise
+ *
+ * Compare two IRIs.
+ *
+ * Comparison is performed according to [RFC 2616, sect. 3.2.3](https://tools.ietf.org/html/rfc2616#section-3.2.3).
+ *
+ * This function uses wget_strcasecmp() to compare the various parts of the IRIs so a non-zero negative return value
+ * indicates that \p iri1 is less than \p iri2, whereas a positive value indicates \p iri1 is greater than \p iri2.
+ */
 int wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2)
 {
 	int n;
@@ -672,6 +863,15 @@ int wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2)
 	return 0;
 }
 
+/**
+ * \param[in] src A string, whose reserved characters are to be percent-encoded
+ * \param[in] buf A buffer where the result will be copied.
+ * \return The contents of the buffer \p buf after \p src has been encoded.
+ *
+ * Escapes (using percent-encoding) all the reserved characters in the string \p src.
+ *
+ * If \p src is NULL, the contents of the buffer \p buf are returned. \p buf cannot be NULL.
+ */
 const char *wget_iri_escape(const char *src, wget_buffer_t *buf)
 {
 	const char *begin;
@@ -694,6 +894,15 @@ const char *wget_iri_escape(const char *src, wget_buffer_t *buf)
 	return buf->data;
 }
 
+/**
+ * \param[in] src A string, whose reserved characters are to be percent-encoded
+ * \param[in] buf A buffer where the result will be copied.
+ * \return The contents of the buffer \p buf after \p src has been encoded.
+ *
+ * Escapes (using percent-encoding) all the reserved characters in the string \p src
+ * (just like wget_iri_escape()), **plus the path separator character `/`**. This function
+ * is thus ideally suited for paths.
+ */
 const char *wget_iri_escape_path(const char *src, wget_buffer_t *buf)
 {
 	const char *begin;
@@ -713,6 +922,15 @@ const char *wget_iri_escape_path(const char *src, wget_buffer_t *buf)
 	return buf->data;
 }
 
+/**
+ * \param[in] src A string, whose reserved characters are to be percent-encoded
+ * \param[in] buf A buffer where the result will be copied.
+ * \return The contents of the buffer \p buf after \p src has been encoded.
+ *
+ * Escapes (using percent-encoding) all the reserved characters in the string \p src
+ * (just like wget_iri_escape()), but **excluding the equal sign `=` and the ampersand `&`**.
+ * This function is thus ideally suited for query parts of URIs.
+ */
 const char *wget_iri_escape_query(const char *src, wget_buffer_t *buf)
 {
 	const char *begin;
@@ -735,12 +953,36 @@ const char *wget_iri_escape_query(const char *src, wget_buffer_t *buf)
 	return buf->data;
 }
 
+/**
+ * \param[in] iri An IRI
+ * \param[in] buf A buffer, where the resulting string will be put
+ * \return The contents of the buffer \p buf
+ *
+ * Return the host part of the provided IRI. It is placed in the buffer \p buf
+ * and also returned as a `const char *`.
+ *
+ * The host is escaped using wget_iri_escape().
+ */
 const char *wget_iri_get_escaped_host(const wget_iri_t *iri, wget_buffer_t *buf)
 {
 	return wget_iri_escape(iri->host, buf);
 }
 
-// return the 'resource' string for HTTP requests
+/**
+ * \param[in] iri An IRI
+ * \param[in] buf A buffer, where the resulting string will be put
+ * \return The contents of the buffer \p buf
+ *
+ * Return the resource string, suitable for use in HTTP requests.
+ * The resource string is comprised of the path, plus the query part, if present. Example:
+ *
+ *     /foo/bar/?param_1=one&param_2=two
+ *
+ * Both the path and the query are escaped using wget_iri_escape_path() and
+ * wget_iri_escape_query(), respectively.
+ *
+ * The resulting string is placed in the buffer \p buf and also returned as a `const char *`.
+ */
 const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer_t *buf)
 {
 	if (iri->path)
@@ -753,6 +995,21 @@ const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer_t *
 
 	return buf->data;
 }
+
+/**
+ * \param[in] iri An IRI
+ * \param[in] buf A buffer, where the resulting string will be put
+ * \param[in] encoding Character set the string should be converted to
+ * \return The contents of the buffer \p buf
+ *
+ * Get the path part of the provided IRI.
+ *
+ * The path is copied into \p buf if it's empty. If the buffer \p buf is not empty,
+ * it is appended to it after a path separator (`/`).
+ *
+ * If \p encoding is provided, this function will try to convert the path (which is originally
+ * in UTF-8) to that encoding.
+ */
 
 char *wget_iri_get_path(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding)
 {
@@ -781,6 +1038,22 @@ char *wget_iri_get_path(const wget_iri_t *iri, wget_buffer_t *buf, const char *e
 	return buf->data;
 }
 
+/**
+ * \param[in] iri An IRI
+ * \param[in] buf A buffer, where the resulting string will be put
+ * \param[in] encoding Character set the string should be converted to
+ * \return The contents of the buffer \p buf
+ *
+ * Take the query part, and escape the path separators (`/`), so that it can be used as part
+ * of a filename.
+ *
+ * The resulting string will be placed in the buffer \p buf and also returned as a `const char *`.
+ * If the provided IRI has no query part, then the original contents of \p buf are returned and \p buf
+ * is kept untouched.
+ *
+ * If \p encoding is provided, this function will try to convert the query (which is originally
+ * in UTF-8) to that encoding.
+ */
 char *wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding)
 {
 	if (iri->query) {
@@ -794,8 +1067,9 @@ char *wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer_t *buf, 
 				allocated = 1;
 			else
 				query = iri->query;
-		} else
+		} else {
 			query = iri->query;
+		}
 
 		int slashes = 0;
 		const char *src = query;
@@ -832,6 +1106,27 @@ char *wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer_t *buf, 
 	return buf->data;
 }
 
+/**
+ * \param[in] iri An IRI
+ * \param[in] buf A buffer, where the resulting string will be put
+ * \param[in] encoding Character set the string should be converted to
+ * \return The contents of the buffer \p buf
+ *
+ * Get the filename of the path of the provided IRI.
+ *
+ * This is similar to wget_iri_get_path(), but instead of returning the whole path
+ * it only returns the substring after the last occurrence of `/`. In other words, the
+ * filename of the path.
+ *
+ * This is also known as the "basename" in the UNIX world, and the output of this function
+ * would be equivalent to the output of the `basename(1)` tool.
+ *
+ * The path is copied into \p buf if it's empty. If the buffer \p buf is not empty,
+ * it is appended to it after a path separator (`/`).
+ *
+ * If \p encoding is provided, this function will try to convert the path (which is originally
+ * in UTF-8) to that encoding.
+ */
 char *wget_iri_get_filename(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding)
 {
 	if (iri->path) {
@@ -887,6 +1182,18 @@ void wget_iri_set_defaultpage(const char *page)
 	default_page_length = default_page ? strlen(default_page) : 0;
 }
 
+/**
+ * \param[in] iri An IRI
+ * \param[in] scheme A scheme, such as `http` or `https`.
+ * \return The original scheme of IRI (ie. before the replacement)
+ *
+ * Set the scheme of the provided IRI. The IRI's original scheme
+ * is replaced by the new one.
+ *
+ * If the IRI was using a default port (such as 80 for HTTP or 443 for HTTPS)
+ * that port is modified as well to match the default port of the new scheme.
+ * Otherwise the port is left untouched.
+ */
 const char *wget_iri_set_scheme(wget_iri_t *iri, const char *scheme)
 {
 	int index;
@@ -902,11 +1209,15 @@ const char *wget_iri_set_scheme(wget_iri_t *iri, const char *scheme)
 
 	iri->scheme = cur_scheme;
 
-	// if the IRI is using a port other than the default, keep it untouched
-	// otherwise, if the IRI is using the default port, this should be modified as well
+	/*
+	 * If the IRI is using a port other than the default, keep it untouched
+	 * otherwise, if the IRI is using the default port, this should be modified as well.
+	 */
 	if (iri->resolv_port != iri->port)
 		iri->resolv_port = iri_ports[index];
 
 end:
 	return old_scheme;
 }
+
+/** @} */
