@@ -432,7 +432,7 @@ static int send_ocsp_request(const char *server,
 		}
 
 		if (rc < 0) {
-			error_printf("Cannot find URL from issuer: %s\n", gnutls_strerror(rc));
+			debug_printf("Cannot find URL from issuer: %s\n", gnutls_strerror(rc));
 			return -1;
 		}
 
@@ -969,7 +969,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, wget_ocsp_new(fingerprint, time(NULL) + 3600, 0));  // cert has been revoked
 				nrevoked++;
 			} else {
-				error_printf(_("WARNING: OCSP response ignored\n"));
+				debug_printf("WARNING: OCSP response not available or ignored\n");
 			}
 		}
 	}
