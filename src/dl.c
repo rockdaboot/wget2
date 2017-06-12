@@ -32,44 +32,44 @@
 
 #include "wget_dl.h"
 
-//Error reporting functions
+// Error reporting functions
 
-//Set an error message. Call with msg=NULL to clear error.
+// Set an error message. Call with msg=NULL to clear error.
 void dl_error_set(dl_error_t *e, const char *msg)
 {
 	if (msg && e->msg)
-		wget_error_printf_exit
-			("Piling up error '%s' over error '%s'", msg, e->msg);
+		wget_error_printf_exit("Piling up error '%s' over error '%s'", msg, e->msg);
 
 	wget_xfree(e->msg);
 	if (msg)
 		e->msg = wget_strdup(msg);
 }
-//Set an error message with printf format.
+// Set an error message with printf format.
 void dl_error_set_printf
 	(dl_error_t *e, const char *format, ...)
 {
 	va_list arglist;
 	va_start(arglist, format);
 	if (e->msg)
-		wget_error_printf_exit
-			("Piling up error '%s' over error '%s'", format, e->msg);
+		wget_error_printf_exit("Piling up error '%s' over error '%s'", format, e->msg);
 
 	e->msg = wget_vaprintf(format, arglist);
 	va_end(arglist);
 }
 
-//If the string is not a path, converts to path by prepending "./" to it,
-//else returns NULL
+// If the string is not a path, converts to path by prepending "./" to it,
+// else returns NULL
 static char *convert_to_path_if_not(const char *str)
 {
 	if (str) {
 		char *buf;
 		int fw_slash_absent = 1;
 		int i, str_len;
-		for (i = 0; str[i]; i++)
+		for (i = 0; str[i]; i++) {
 			if (str[i] == '/')
 				fw_slash_absent = 0;
+		}
+
 		str_len = i;
 		if (fw_slash_absent) {
 			buf = wget_malloc(str_len + 3);
@@ -96,7 +96,7 @@ struct dl_file_st
 	void *handle;
 };
 
-//Opens an object file
+// Opens an object file
 dl_file_t *dl_file_open(const char *filename, dl_error_t *e)
 {
 	char *buf = NULL;
@@ -205,8 +205,7 @@ void dl_file_close(dl_file_t *dm)
 
 #else
 
-const static char *dl_unsupported
-	= "Dynamic loading is not supported on the current platform.";
+const static char *dl_unsupported = "Dynamic loading is not supported on the current platform.";
 
 int dl_supported(void)
 {
@@ -231,26 +230,28 @@ void dl_file_close(dl_file_t *dm)
 
 #endif
 
+typedef struct {
+	const char *prefix;
+	const char *suffix;
+} object_pattern_t;
 #if defined _WIN32
-static const char *dl_prefixes[] = {"lib", "", NULL};
-static const char *dl_suffixes[] = {".dll", NULL};
+#define PATTERNS {"lib", ".dll"}, {"", ".dll"}
 #elif defined __APPLE__
-static const char *dl_prefixes[] = {"lib", NULL};
-static const char *dl_suffixes[] = {".so", ".bundle", ".dylib", NULL};
+#define PATTERNS {"lib", ".so"}, {"lib", ".bundle"}, {"lib", ".dylib"}
 #else
-static const char *dl_prefixes[] = {"lib", NULL};
-static const char *dl_suffixes[] = {".so", NULL};
+#define PATTERNS {"lib", ".so"}
 #endif
+static const object_pattern_t dl_patterns[] = {PATTERNS, {NULL, NULL}};
+#undef PATTERNS
 
-//Matches the given path with the patterns of a loadable object file
-//and returns a range to use as a name
+// Matches the given path with the patterns of a loadable object file
+// and returns a range to use as a name
 static int dl_match(const char *path, size_t *start_out, size_t *len_out)
 {
 	size_t i, mark;
 	size_t start, len;
-	int match = 1;
 
-	//Strip everything but the filename
+	// Strip everything but the filename
 	mark = 0;
 	for (i = 0; path[i]; i++) {
 		if (path[i] == '/')
@@ -258,41 +259,29 @@ static int dl_match(const char *path, size_t *start_out, size_t *len_out)
 #ifdef _WIN32
 		if (path[i] == '\\')
 			mark = i + 1;
-#endif //_WIN32
+#endif // _WIN32
 	}
 	start = mark;
 	len = i - start;
 
-	//Match for and remove the suffix
-	for (i = 0; dl_suffixes[i]; i++) {
-		size_t l = strlen(dl_suffixes[i]);
-		if (l >= len)
+	// Match for the pattern and extract the name
+	for (i = 0; dl_patterns[i].prefix; i++) {
+		const char *p = dl_patterns[i].prefix;
+		const char *s = dl_patterns[i].suffix;
+		size_t pl = strlen(p);
+		size_t sl = strlen(s);
+		if (pl + sl >= len)
 			continue;
-		if (memcmp(path + start + len - l, dl_suffixes[i], l) == 0) {
-			len -= l;
+		if (memcmp(path + start + len - sl, s, sl) == 0 && memcmp(path + start, p, pl) == 0) {
+			start += pl;
+			len -= (pl + sl);
 			break;
 		}
 	}
-	if (! dl_suffixes[i])
-		match = 0;
-
-	//Match for and remove the prefix
-	for (i = 0; dl_prefixes[i]; i++) {
-		size_t l = strlen(dl_prefixes[i]);
-		if (l >= len)
-			continue;
-		if (memcmp(path + start, dl_prefixes[i], l) == 0) {
-			start += l;
-			len -= l;
-			break;
-		}
-	}
-	if (! dl_prefixes[i])
-		match = 0;
 
 	*start_out = start;
 	*len_out = len;
-	return match;
+	return dl_patterns[i].prefix ? 1 : 0;
 }
 
 static int is_regular_file(const char *filename)
@@ -317,118 +306,79 @@ char *dl_get_name_from_path(const char *path, int strict)
 		return wget_strmemdup(path + start, len);
 }
 
-char *dl_search1(const char *name, char *dir)
+char *dl_search(const char *name, const wget_vector_t *dirs)
 {
-	int i, j;
-	for (i = 0; dl_prefixes[i]; i++) {
-		for (j = 0; dl_suffixes[j]; j++) {
-			char *filename;
-			if (dir && *dir) {
-				filename = wget_aprintf("%s/%s%s%s", dir,
-					 dl_prefixes[i], name, dl_suffixes[j]);
-			} else {
-				filename = wget_aprintf("%s%s%s",
-					 dl_prefixes[i], name, dl_suffixes[j]);
-			}
-			if (is_regular_file(filename))
-				return filename;
-			wget_free(filename);
-		}
-	}
-	return NULL;
-}
-
-char *dl_search(const char *name, char **dirs, size_t n_dirs)
-{
-	size_t i;
+	size_t i, j;
+	const size_t n_dirs = wget_vector_size(dirs);
 
 	for (i = 0; i < n_dirs; i++) {
-		char *filename = dl_search1(name, dirs[i]);
-		if (filename)
-			return filename;
+		const char *dir = wget_vector_get(dirs, i);
+		if (dir && *dir) {
+			for (j = 0; dl_patterns[j].prefix; j++) {
+				char *filename = wget_aprintf("%s/%s%s%s", dir,
+						dl_patterns[j].prefix, name, dl_patterns[j].suffix);
+
+				if (is_regular_file(filename))
+					return filename;
+
+				wget_free(filename);
+			}
+		} else {
+			for (j = 0; dl_patterns[j].prefix; j++) {
+				char *filename = wget_aprintf("%s%s%s",
+						dl_patterns[j].prefix, name, dl_patterns[j].suffix);
+
+				if (is_regular_file(filename))
+					return filename;
+
+				wget_free(filename);
+			}
+		}
 	}
 
 	return NULL;
 }
 
-static int list_internal(const char *dir, wget_buffer_t *buf)
+void dl_list(const wget_vector_t *dirs, wget_vector_t *names_out)
 {
-	DIR *dirp;
-	struct dirent *ent;
+	size_t i;
+	const size_t n_dirs = wget_vector_size(dirs);
 
-	dirp = opendir(dir);
-	if (!dir)
-		return -1;
+	for (i = 0; i < n_dirs; i++) {
+		DIR *dirp;
+		struct dirent *ent;
+		const char *dir = wget_vector_get(dirs, i);
 
-	while((ent = readdir(dirp)) != NULL) {
-		char *fname;
-		char *name;
-
-		fname = ent->d_name;
-
-		//Ignore entries that don't match the pattern
-		name = dl_get_name_from_path(fname, 1);
-		if (! name)
+		dirp = opendir(dir);
+		if (!dirp)
 			continue;
 
-		//Ignore entries that are not regular files
-		{
-			char *sfname = wget_aprintf("%s/%s", dir, fname);
-			int x = is_regular_file(sfname);
-			wget_free(sfname);
-			if (!x) {
-				wget_free(name);
+		while((ent = readdir(dirp)) != NULL) {
+			char *fname;
+			char *name;
+
+			fname = ent->d_name;
+
+			// Ignore entries that don't match the pattern
+			name = dl_get_name_from_path(fname, 1);
+			if (! name)
 				continue;
+
+			// Ignore entries that are not regular files
+			{
+				char *sfname = wget_aprintf("%s/%s", dir, fname);
+				int x = is_regular_file(sfname);
+				wget_free(sfname);
+				if (!x) {
+					wget_free(name);
+					continue;
+				}
 			}
+
+			// Add to the list
+			wget_vector_add_noalloc(names_out, name);
 		}
 
-		//Add to the list
-		wget_buffer_memcat(buf, &name, sizeof(void *));
+		closedir(dirp);
 	}
-
-	closedir(dirp);
-
-	return 0;
-}
-
-int dl_list1(const char *dir, char ***names_out, size_t *n_names_out)
-{
-	wget_buffer_t buf[1];
-	int status;
-
-	wget_buffer_init(buf, NULL, 0);
-
-	status = list_internal(dir, buf);
-	if (status == 0) {
-		*n_names_out = buf->length / sizeof(void *);
-		if (buf->length)
-			*names_out = (char **) wget_memdup
-				(buf->data, buf->length);
-		else
-			*names_out = NULL;
-	}
-
-	wget_buffer_deinit(buf);
-
-	return status;
-}
-
-void dl_list(char **dirs, size_t n_dirs,
-		char ***names_out, size_t *n_names_out)
-{
-	wget_buffer_t buf[1];
-	size_t i;
-
-	wget_buffer_init(buf, NULL, 0);
-
-	for (i = 0; i < n_dirs; i++)
-		list_internal(dirs[i], buf);
-
-	*n_names_out = buf->length / sizeof(void *);
-	if (buf->length)
-		*names_out = (char **) wget_memdup(buf->data, buf->length);
-	else
-		*names_out = NULL;
-
-	wget_buffer_deinit(buf);
 }

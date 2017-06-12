@@ -55,7 +55,7 @@ int main(void)
 		}
 	};
 
-	//Skip when plugin support is not available
+	// Skip when plugin support is not available
 #ifndef PLUGIN_SUPPORT
 	return 77;
 #endif
@@ -63,7 +63,7 @@ int main(void)
 	wget_test_start_server
 		(WGET_TEST_RESPONSE_URLS, &urls, countof(urls), 0);
 
-	//Check whether --plugin= works
+	// Check whether --plugin= works
 	wget_test(
 		WGET_TEST_OPTIONS, "--plugin-dirs=" OBJECT_DIR " --plugin=pluginname",
 		WGET_TEST_REQUEST_URL, "index.html",
@@ -74,7 +74,7 @@ int main(void)
 			{	NULL } },
 		0);
 
-	//Check whether --local-plugin= works
+	// Check whether --local-plugin= works
 	wget_test(
 		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginname"),
 		WGET_TEST_REQUEST_URL, "index.html",
@@ -85,7 +85,7 @@ int main(void)
 			{	NULL } },
 		0);
 
-	//Check whether WGET2_PLUGINS works
+	// Check whether WGET2_PLUGINS works
 	setenv_rpl("WGET2_PLUGIN_DIRS", OBJECT_DIR, 1);
 	setenv_rpl("WGET2_PLUGINS", "pluginname", 1);
 	wget_test(
@@ -109,7 +109,79 @@ int main(void)
 		0);
 	unsetenv_rpl("WGET2_PLUGINS");
 
-	//Check whether wget_plugin_register_finalizer works properly
+	// Check that --list-plugins doesn't continue
+	wget_test(
+		WGET_TEST_OPTIONS, "--plugin-dirs=" OBJECT_DIR " --list-plugins",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+
+	// Check behavior for nonexistent plugins
+	wget_test(
+		WGET_TEST_OPTIONS, "--plugin-dirs=" OBJECT_DIR " --plugin=nonexistent",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", WGET_TEST_SOME_HTML_BODY },
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("nonexistent"),
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", WGET_TEST_SOME_HTML_BODY },
+			{	NULL } },
+		0);
+	setenv_rpl("WGET2_PLUGINS", LOCAL_NAME("nonexistent") , 1);
+	wget_test(
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", WGET_TEST_SOME_HTML_BODY },
+			{	NULL } },
+		0);
+	unsetenv_rpl("WGET2_PLUGINS");
+
+	// Check behavior for nonexistent search directories
+	wget_test(
+		WGET_TEST_OPTIONS, "--plugin-dirs=" OBJECT_DIR "/nonexistent," OBJECT_DIR " --plugin=pluginname",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", WGET_TEST_SOME_HTML_BODY },
+			{ "plugin-loaded.txt", "Plugin loaded\n" },
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--plugin-dirs=" OBJECT_DIR "/nonexistent," OBJECT_DIR " --list-plugins",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+
+	// Check behavior for plugins that fail
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginfaulty1"),
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", WGET_TEST_SOME_HTML_BODY },
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginfaulty2"),
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", WGET_TEST_SOME_HTML_BODY },
+			{	NULL } },
+		0);
+
+	// Check whether wget_plugin_register_finalizer works properly
 	wget_test(
 		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginexit"),
 		WGET_TEST_REQUEST_URL, "index.html",
@@ -125,6 +197,147 @@ int main(void)
 		WGET_TEST_EXPECTED_ERROR_CODE, 8,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "exit-status.txt", "exit(8)\n" },
+			{	NULL } },
+		0);
+
+	// Check if option forwarding works for options with no value
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.y",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", WGET_TEST_SOME_HTML_BODY },
+			{ "options.txt", "y\n" },
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.y "
+			"--plugin-opt=pluginoption.beta",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", WGET_TEST_SOME_HTML_BODY },
+			{ "options.txt", "y\nbeta\n" },
+			{	NULL } },
+		0);
+
+	// Check if option forwarding works with options with values
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.z= "
+			"--plugin-opt=pluginoption.z=value1 --plugin-opt=pluginoption.gamma=value2",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", WGET_TEST_SOME_HTML_BODY },
+			{ "options.txt", "z=\nz=value1\ngamma=value2\n" },
+			{	NULL } },
+		0);
+
+	// Check behavior for incorrect format
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=.alpha=value",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.=value",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=.",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+
+	// Check behavior for incorrect plugin name
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " "
+			"--plugin-opt=nonexistent.option=value",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginname") " --plugin-opt=pluginname.option=value",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "plugin-loaded.txt", "Plugin loaded\n" },
+			{	NULL } },
+		0);
+
+	// Check behavior for incorrect option name/value combination
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.y=",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.y=value",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.z",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+
+	// Check for correct functioning of --help option
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-help",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.help",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.help=arg",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{	NULL } },
 		0);
 

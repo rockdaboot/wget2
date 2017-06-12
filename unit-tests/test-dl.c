@@ -46,10 +46,8 @@ do { \
 
 #define libassert(expr) \
 do { \
-	if (! (expr)) { \
-		abortmsg("Failed assertion [" #expr "]: %s", \
-				strerror(errno)); \
-	} \
+	if (! (expr)) \
+		abortmsg("Failed assertion [" #expr "]: %s", strerror(errno)); \
 } while(0)
 
 #define OBJECT_DIR ".test_dl_dir"
@@ -62,22 +60,37 @@ do { \
 #define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".so"
 #endif
 
-static void dump_list(char **list, size_t list_len)
+static int string_vector_check(wget_vector_t *v, size_t correct_len, ...)
 {
 	size_t i;
+	size_t v_len = wget_vector_size(v);
+	va_list arglist;
+	const char *str;
 
-	for (i = 0; i < list_len; i++)
-		printf("  %s\n", list[i]);
+	if (v_len != correct_len)
+		return 0;
+
+	wget_vector_setcmpfunc(v, (wget_vector_compare_t) strcmp);
+	wget_vector_sort(v);
+
+	va_start(arglist, correct_len);
+	for (i = 0; i < v_len; i++) {
+		str = va_arg(arglist, const char *);
+		if (strcmp((const char *) wget_vector_get(v, i), str) != 0)
+			return 0;
+	}
+	va_end(arglist);
+
+	return 1;
 }
 
-static void free_list(char **list, size_t list_len)
+static void string_vector_dump(wget_vector_t *v)
 {
-	size_t i;
+	size_t i, v_len;
 
-	for (i = 0; i < list_len; i++)
-		wget_free(list[i]);
-
-	wget_free(list);
+	v_len = wget_vector_size(v);
+	for (i = 0; i < v_len; i++)
+		printf("  %s\n", (const char *) wget_vector_get(v, i));
 }
 
 static int remove_rpl(const char *filename)
@@ -102,8 +115,7 @@ static void remove_object_dir(void)
 		return;
 
 	while((ent = readdir(dirp)) != NULL) {
-		if (strcmp(ent->d_name, ".") == 0
-				|| strcmp(ent->d_name, "..") == 0)
+		if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
 			continue;
 		char *filename = wget_aprintf(OBJECT_DIR "/%s", ent->d_name);
 		libassert(remove_rpl(filename) == 0);
@@ -126,8 +138,7 @@ static void copy_file(const char *src, const char *dst)
 
 	libassert(stat(src, &statbuf) == 0);
 	libassert((sfd = open(src, O_RDONLY | O_BINARY)) >= 0);
-	libassert((dfd = open(dst, O_WRONLY | O_CREAT | O_BINARY,
-					statbuf.st_mode)) >= 0);
+	libassert((dfd = open(dst, O_WRONLY | O_CREAT | O_BINARY, statbuf.st_mode)) >= 0);
 	size_remain = statbuf.st_size;
 	while(size_remain > 0) {
 		ssize_t io_size = size_remain;
@@ -156,10 +167,8 @@ do { \
 	dl_error_t e[1]; \
 	dl_error_init(e); \
 	stmt; \
-	if (dl_error_is_set(e)) {\
-		abortmsg("Failed dynamic loading operation " \
-				"[" #stmt "]: %s", dl_error_get_msg(e)); \
-	} \
+	if (dl_error_is_set(e)) \
+		abortmsg("Failed dynamic loading operation [" #stmt "]: %s", dl_error_get_msg(e)); \
 } while(0)
 
 typedef void (*test_fn)(char buf[16]);
@@ -170,18 +179,15 @@ static void test_fn_check(void *fn, const char *expected)
 	*((void **) &fn_p) = fn;
 	(*fn_p)(buf);
 	if (strncmp(buf, expected, 15) != 0)
-	{
-		abortmsg("Test function returned %s, expected %s",
-				buf, expected);
-	}
+		abortmsg("Test function returned %s, expected %s", buf, expected);
 }
 
-//Test whether dl_list1() works
+
+// Test whether dl_list() works
 static void test_dl_list(void)
 {
-	char **names;
-	size_t names_len;
-	int fail = 0;
+	wget_vector_t *dirs;
+	wget_vector_t *names;
 
 	remove_object_dir();
 	libassert(mkdir(OBJECT_DIR, 0755) == 0);
@@ -199,55 +205,46 @@ static void test_dl_list(void)
 	libassert(mkdir(OBJECT_DIR "/libactuallyadir.dylib", 0755) == 0);
 	libassert(mkdir(OBJECT_DIR "/libactuallyadir.bundle", 0755) == 0);
 
-	libassert(dl_list1(OBJECT_DIR, &names, &names_len) == 0);
+	dirs = wget_vector_create(2, -2, NULL);
+	names = wget_vector_create(2, -2, NULL);
+	wget_vector_add_str(dirs, OBJECT_DIR);
 
-	if (names_len != 2) {
-		fail = 1;
-	} else {
-		if (strcmp(names[0], "alpha") == 0) {
-			if (strcmp(names[1], "beta") != 0)
-				fail = 1;
-		} else if (strcmp(names[0], "beta") == 0) {
-			if (strcmp(names[1], "alpha") != 0)
-				fail = 1;
-		} else {
-			fail = 1;
-		}
-	}
-	if (fail == 1) {
-		printf("dl_list1() returned incorrect list\n");
+	dl_list(dirs, names);
+	if (! string_vector_check(names, 2, "alpha", "beta")) {
+		printf("dl_list() returned incorrect list\n");
 		printf("List contains\n");
-		dump_list(names, names_len);
+		string_vector_dump(names);
 		abort();
 	}
 
-	free_list(names, names_len);
+	wget_vector_free(&dirs);
+	wget_vector_free(&names);
 }
 
 
-//Test whether symbols from dynamically loaded libraries link as expected
+// Test whether symbols from dynamically loaded libraries link as expected
 static void test_linkage(void)
 {
 	dl_file_t *dm_alpha, *dm_beta;
 	void *fn;
 
-	//Create test directory
+	// Create test directory
 	remove_object_dir();
 	libassert(mkdir(OBJECT_DIR, 0755) == 0);
 	copy_file(BUILD_NAME("alpha"), LOCAL_NAME("alpha"));
 	copy_file(BUILD_NAME("beta"), LOCAL_NAME("beta"));
 
-	//Load both libraries
+	// Load both libraries
 	dl_assert(dm_alpha = dl_file_open(LOCAL_NAME("alpha"), e));
 	dl_assert(dm_beta = dl_file_open(LOCAL_NAME("beta"), e));
 
-	//Check whether symbols load
+	// Check whether symbols load
 	dl_assert(fn = dl_file_lookup(dm_alpha, "dl_test_fn_alpha", e));
 	test_fn_check(fn, "alpha");
 	dl_assert(fn = dl_file_lookup(dm_beta, "dl_test_fn_beta", e));
 	test_fn_check(fn, "beta");
 
-	//Check behavior in case of nonexistent symbol
+	// Check behavior in case of nonexistent symbol
 	{
 		dl_error_t e[1];
 
@@ -260,8 +257,8 @@ static void test_linkage(void)
 		dl_error_set(e, NULL);
 	}
 
-	//Check behavior in case of multiple libraries exporting
-	//symbols with same name
+	// Check behavior in case of multiple libraries exporting
+	// symbols with same name
 	dl_assert(fn = dl_file_lookup(dm_alpha, "dl_test_write_param", e));
 	test_fn_check(fn, "alpha");
 	dl_assert(fn = dl_file_lookup(dm_beta, "dl_test_write_param", e));

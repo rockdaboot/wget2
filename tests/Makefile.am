@@ -23,7 +23,7 @@ WGET_TESTS = test-wget-1$(EXEEXT) test-restrict-ascii$(EXEEXT) test-i-http$(EXEE
 
 if PLUGIN_SUPPORT
  WGET_TESTS += test-plugin$(EXEEXT)
- check_LTLIBRARIES = libpluginname.la libpluginexit.la
+ check_LTLIBRARIES = libpluginname.la libpluginexit.la libpluginoption.la libpluginfaulty1.la libpluginfaulty2.la
 endif
 
 check_PROGRAMS = $(WGET_TESTS)
@@ -69,6 +69,33 @@ libpluginexit_la_SOURCES = test-plugin-dummy.c
 libpluginexit_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_EXITSTATUS
 libpluginexit_la_LDFLAGS = $(dummy_ldflags)
 libpluginexit_la_LIBADD = ../libwget/libwget.la\
+ $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
+ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
+ $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
+ $(LIBS) ../lib/libgnu.la
+
+libpluginfaulty1_la_SOURCES = test-plugin-dummy.c
+libpluginfaulty1_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_FAULTY1
+libpluginfaulty1_la_LDFLAGS = $(dummy_ldflags)
+libpluginfaulty1_la_LIBADD = ../libwget/libwget.la\
+ $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
+ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
+ $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
+ $(LIBS) ../lib/libgnu.la
+
+libpluginfaulty2_la_SOURCES = test-plugin-dummy.c
+libpluginfaulty2_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_FAULTY2
+libpluginfaulty2_la_LDFLAGS = $(dummy_ldflags)
+libpluginfaulty2_la_LIBADD = ../libwget/libwget.la\
+ $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
+ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
+ $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
+ $(LIBS) ../lib/libgnu.la
+
+libpluginoption_la_SOURCES = test-plugin-dummy.c
+libpluginoption_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_OPTIONS
+libpluginoption_la_LDFLAGS = $(dummy_ldflags)
+libpluginoption_la_LIBADD = ../libwget/libwget.la\
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
  $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\

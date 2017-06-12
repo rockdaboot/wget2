@@ -660,21 +660,54 @@ static int parse_plugin_dirs(G_GNUC_WGET_UNUSED option_t opt, const char *val, G
 	return 0;
 }
 
-static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
-		G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
+static int parse_plugin_option
+		(G_GNUC_WGET_UNUSED option_t opt, const char *val)
 {
-	char **names = NULL;
-	size_t n_names = 0, i;
+	dl_error_t e[1];
 
 	if (! plugin_loading_enabled)
 		return 0;
 
-	plugin_db_list(&names, &n_names);
-	for (i = 0; i < n_names; i++) {
-		printf("%s\n", names[i]);
-		wget_free(names[i]);
+	dl_error_init(e);
+
+	if (plugin_db_forward_option(val, e) < 0) {
+		error_printf_exit("%s\n",
+				dl_error_get_msg(e));
 	}
-	wget_xfree(names);
+
+	return 0;
+}
+
+static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
+		G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
+{
+	wget_vector_t *v;
+	size_t n_names, i;
+	const char *name;
+
+	if (! plugin_loading_enabled)
+		return 0;
+
+	v = wget_vector_create(16, -2, NULL);
+	plugin_db_list(v);
+	n_names = wget_vector_size(v);
+	for (i = 0; i < n_names; i++) {
+		name = (const char *) wget_vector_get(v, i);
+		printf("%s\n", name);
+	}
+	wget_vector_free(&v);
+
+	exit(EXIT_SUCCESS);
+	return 0;
+}
+
+static int print_plugin_help(G_GNUC_WGET_UNUSED option_t opt,
+		G_GNUC_WGET_UNUSED const char *val)
+{
+	if (! plugin_loading_enabled)
+		return 0;
+
+	plugin_db_show_help();
 
 	exit(EXIT_SUCCESS);
 	return 0;
@@ -1267,13 +1300,24 @@ static const struct optionw options[] = {
 	},
 	{ "plugin", NULL, parse_plugin, 1, 0,
 		SECTION_STARTUP,
-		{ "Loads a plugin with a given name.\n"
+		{ "Load a plugin with a given name.\n"
 		}
 	},
 	{ "plugin-dirs", NULL, parse_plugin_dirs, 1, 0,
 		SECTION_STARTUP,
 		{ "Specify alternative directories to look\n",
 		  "for plugins, separated by ','\n"
+		}
+	},
+	{ "plugin-help", NULL, print_plugin_help, 0, 0,
+		SECTION_STARTUP,
+		{ "Print help message for all loaded plugins\n"
+		}
+	},
+	{ "plugin-opt", NULL, parse_plugin_option, 1, 0,
+		SECTION_STARTUP,
+		{ "Forward an option to a loaded plugin.\n",
+		  "The option should be in format <plugin_name>.<option>[=value]\n"
 		}
 	},
 	{ "post-data", &config.post_data, parse_string, 1, 0,
@@ -2107,6 +2151,9 @@ int init(int argc, const char **argv)
 
 	// now read command line options which override the settings of the config files
 	n = parse_command_line(argc, argv);
+
+	if (plugin_db_help_forwarded())
+		exit(EXIT_SUCCESS);
 
 	if (config.logfile_append) {
 		config.logfile = config.logfile_append;
