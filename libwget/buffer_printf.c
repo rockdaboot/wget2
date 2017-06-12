@@ -35,6 +35,13 @@
 #include <wget.h>
 #include "private.h"
 
+/**
+ * \file
+ * \brief Buffer management functions
+ * \defgroup libwget-buffer Buffer management functions
+ * @{
+ */
+
 #define FLAG_ZERO_PADDED   1
 #define FLAG_LEFT_ADJUST   2
 #define FLAG_ALTERNATE     4
@@ -250,6 +257,80 @@ static void _convert_pointer(wget_buffer_t *buf, void *pointer)
 	wget_buffer_memcat(buf, dst, length);
 }
 
+static const char *_read_precision(const char *p, int *out, va_list args)
+{
+	int precision = -1;
+
+	if (*p == '.') {
+		if (*++p == '*') {
+			precision = va_arg(args, int);
+			if (precision < 0 )
+				precision = 0;
+			p++;
+		} else if (c_isdigit(*p)) {
+			precision = 0;
+			do {
+				precision = precision * 10 + (*p - '0');
+			} while (c_isdigit(*++p));
+		} else {
+			precision = -1;
+		}
+	}
+
+	*out = precision;
+	return p;
+}
+
+static const char *_read_flag_chars(const char *p, unsigned int *out)
+{
+	unsigned int flags;
+
+	for (flags = 0; *p; p++) {
+		if (*p == '0')
+			flags |= FLAG_ZERO_PADDED;
+		else if (*p == '-')
+			flags |= FLAG_LEFT_ADJUST;
+		else if (*p == '#')
+			flags |= FLAG_ALTERNATE;
+		else
+			break;
+	}
+
+	*out = flags;
+	return p;
+}
+
+static const char *_read_field_width(const char *p, int *out, unsigned int *flags, va_list args)
+{
+	int field_width;
+
+	if (*p == '*') {
+		field_width = va_arg(args, int);
+		if (field_width < 0) {
+			*flags |= FLAG_LEFT_ADJUST;
+			field_width = -field_width;
+		}
+		p++;
+	} else {
+		for (field_width = 0; c_isdigit(*p); p++)
+			field_width = field_width * 10 + (*p - '0');
+	}
+
+	*out = field_width;
+	return p;
+}
+
+/**
+ * \param[in] buf A buffer, created with wget_buffer_init() or wget_buffer_alloc()
+ * \param[in] fmt A `printf(3)`-like format string
+ * \param[in] args A `va_list` with the format string placeholders' values
+ * \return Length of the buffer after appending the formatted string
+ *
+ * Formats the string \p fmt (with `printf(3)`-like args) and appends the result to the end
+ * of the buffer \p buf (using wget_buffer_memcat()).
+ *
+ * For more information, see `vprintf(3)`.
+ */
 size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list args)
 {
 	const char *p = fmt, *begin;
@@ -260,92 +341,52 @@ size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list a
 
 	for (;*p;) {
 
-		// collect plain char sequence
-
+		/*
+		 * Collect plain char sequence.
+		 * Walk the string until we find a '%' character.
+		 */
 		for (begin = p; *p && *p != '%'; p++);
 		if (p != begin)
 			wget_buffer_memcat(buf, begin, p - begin);
 
-		if (!*p) break;
+		if (!*p)
+			break;
 
-		// shortcut to %s and %p, handle %%
-
+		/* Shortcut to %s and %p, handle %% */
 		if (*++p == 's') {
 			const char *s = va_arg(args, const char *);
 			wget_buffer_strcat(buf, s ? s : "(null)");
 			p++;
 			continue;
-		}
-		else if (*p == 'd') {
+		} else if (*p == 'd') {
 			_convert_dec_fast(buf, va_arg(args, int));
 			p++;
 			continue;
-		}
-		else if (*p == 'c') {
+		} else if (*p == 'c') {
 			char c = (char ) va_arg(args, int);
 			wget_buffer_memcat(buf, &c, 1);
 			p++;
 			continue;
-		}
-		else if (*p == 'p') {
+		} else if (*p == 'p') {
 			_convert_pointer(buf, va_arg(args, void *));
 			p++;
 			continue;
-		}
-		else if (*p == '%') {
+		} else if (*p == '%') {
 			wget_buffer_memset_append(buf, '%', 1);
 			p++;
 			continue;
 		}
 
-		// read the flag chars (optional, simplified)
+		/* Read the flag chars (optional, simplified) */
+		p = _read_flag_chars(p, &flags);
 
-		for (flags = 0; *p; p++) {
-			if (*p == '0')
-				flags |= FLAG_ZERO_PADDED;
-			else if (*p == '-')
-				flags |= FLAG_LEFT_ADJUST;
-			else if (*p == '#')
-				flags |= FLAG_ALTERNATE;
-			else
-				break;
-		}
+		/* Read field width (optional) */
+		p = _read_field_width(p, &field_width, &flags, args);
 
-		// read field width (optional)
+		/* Read precision (optional) */
+		p = _read_precision(p, &precision, args);
 
-		if (*p == '*') {
-			field_width = va_arg(args, int);
-			if (field_width < 0) {
-				flags |= FLAG_LEFT_ADJUST;
-				field_width = -field_width;
-			}
-			p++;
-		} else {
-			for (field_width = 0; c_isdigit(*p); p++)
-				field_width = field_width * 10 + (*p - '0');
-		}
-
-		// read precision (optional)
-
-		if (*p == '.') {
-			if (*++p == '*') {
-				precision = va_arg(args, int);
-				if (precision < 0 )
-					precision = 0;
-				p++;
-			} else if (c_isdigit(*p)) {
-				precision = 0;
-				do {
-					precision = precision * 10 + (*p - '0');
-				} while (c_isdigit(*++p));
-			} else {
-				precision = -1;
-			}
-		} else
-			precision = -1;
-
-		// read length modifier (optional)
-
+		/* Read length modifier (optional) */
 		switch (*p) {
 		case 'z':
 			arg = va_arg(args, ssize_t);
@@ -406,20 +447,21 @@ size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list a
 			argu = (unsigned int)arg;
 		}
 
-		// info_printf("*p = %c arg = %lld\n", *p, arg);
-
-		if (*p == 'd' || *p == 'i')
+		if (*p == 'd' || *p == 'i') {
 			_convert_dec(buf, flags | FLAG_SIGNED | FLAG_DECIMAL, field_width, precision, arg);
-		else if (*p == 'u')
+		} else if (*p == 'u') {
 			_convert_dec(buf, flags | FLAG_DECIMAL, field_width, precision, argu);
-		else if (*p == 'x')
+		} else if (*p == 'x') {
 			_convert_dec(buf, flags | FLAG_HEXLO, field_width, precision, argu);
-		else if (*p == 'X')
+		} else if (*p == 'X') {
 			_convert_dec(buf, flags | FLAG_HEXUP, field_width, precision, argu);
-		else if (*p == 'o')
+		} else if (*p == 'o') {
 			_convert_dec(buf, flags | FLAG_OCTAL, field_width, precision, argu);
-		else {
-			// err_printf("Internal error: Unknown conversion specifier '%c'\n", *p);
+		} else {
+			/*
+			 * This is an unknown conversion specifier,
+			 * so just put '%' and move on.
+			 */
 			wget_buffer_memset_append(buf, '%', 1);
 			p = begin + 1;
 			continue;
@@ -431,6 +473,22 @@ size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list a
 	return buf->length;
 }
 
+/**
+ * \param[in] buf A buffer, created with wget_buffer_init() or wget_buffer_alloc()
+ * \param[in] fmt A `printf(3)`-like format string
+ * \param[in] args A `va_list` with the format string placeholders' values
+ * \return Length of the buffer after appending the formatted string
+ *
+ * Formats the string \p fmt (with `printf(3)`-like args) and overwrites the contents
+ * of the buffer \p buf with that formatted string.
+ *
+ * This is equivalent to the following code:
+ *
+ *     buf->length = 0;
+ *     wget_buffer_vprintf_append(buf, fmt, args);
+ *
+ * For more information, see `vprintf(3)`.
+ */
 size_t wget_buffer_vprintf(wget_buffer_t *buf, const char *fmt, va_list args)
 {
 	buf->length = 0;
@@ -438,6 +496,20 @@ size_t wget_buffer_vprintf(wget_buffer_t *buf, const char *fmt, va_list args)
 	return wget_buffer_vprintf_append(buf, fmt, args);
 }
 
+/**
+ * \param[in] buf A buffer, created with wget_buffer_init() or wget_buffer_alloc()
+ * \param[in] fmt A `printf(3)`-like format string
+ * \param[in] ... Variable arguments
+ * \return Length of the buffer after appending the formatted string
+ *
+ * Formats the string \p fmt (with `printf(3)`-like args) and appends the result to the end
+ * of the buffer \p buf (using wget_buffer_memcat()).
+ *
+ * This function is equivalent to wget_buffer_vprintf_append(), except in that it uses
+ * a variable number of arguments rather than a `va_list`.
+ *
+ * For more information, see `printf(3)`.
+ */
 size_t wget_buffer_printf_append(wget_buffer_t *buf, const char *fmt, ...)
 {
 	va_list args;
@@ -449,6 +521,20 @@ size_t wget_buffer_printf_append(wget_buffer_t *buf, const char *fmt, ...)
 	return buf->length;
 }
 
+/**
+ * \param[in] buf A buffer, created with wget_buffer_init() or wget_buffer_alloc()
+ * \param[in] fmt A `printf(3)`-like format string
+ * \param[in] ... Variable arguments
+ * \return Length of the buffer after appending the formatted string
+ *
+ * Formats the string \p fmt (with `printf(3)`-like args) and overwrites the contents
+ * of the buffer \p buf with that formatted string.
+ *
+ * This function is equivalent to wget_buffer_vprintf(), except in that it uses
+ * a variable number of arguments rather than a `va_list`.
+ *
+ * For more information, see `printf(3)`.
+ */
 size_t wget_buffer_printf(wget_buffer_t *buf, const char *fmt, ...)
 {
 	va_list args;
@@ -459,3 +545,4 @@ size_t wget_buffer_printf(wget_buffer_t *buf, const char *fmt, ...)
 
 	return len;
 }
+/** @} */
