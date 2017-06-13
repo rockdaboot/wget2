@@ -45,8 +45,11 @@
 #include <wget.h>
 #include "libtest.h"
 
+#ifdef WITH_MICROHTTPD
+	#include <microhttpd.h>
+#endif
+
 static wget_thread_t
-	http_server_tid,
 	https_server_tid,
 	ftp_server_tid,
 	ftps_server_tid;
@@ -82,6 +85,12 @@ static const char
 	*server_hello;
 static char
 	server_send_content_length = 1;
+
+#ifdef WITH_MICROHTTPD
+// MHD_Daemon instance
+struct MHD_Daemon
+	*httpdaemon;
+#endif
 
 static void sigterm_handler(int sig G_GNUC_WGET_UNUSED)
 {
@@ -256,6 +265,55 @@ static void *_http_server_thread(void *ctx)
 	wget_info_printf("[SERVER] stopped\n");
 	return NULL;
 }
+
+#ifdef WITH_MICROHTTPD
+static int _answer_to_connection(void *cls,
+					struct MHD_Connection *connection,
+					const char *url,
+					const char *method,
+					const char *version,
+					const char *upload_data, size_t *upload_data_size, void **con_cls)
+{
+	struct MHD_Response *response;
+	int ret;
+
+	// it1 = iteration for urls data
+	unsigned int it1, found = 0;
+	for (it1 = 0; it1 < nurls; it1++) {
+		if (!strcmp(url, urls[it1].name))
+		{
+			response = MHD_create_response_from_buffer(strlen(urls[it1].body),
+					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
+			ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+
+			it1 = nurls;
+			found = 1;
+		}
+	}
+
+	MHD_destroy_response(response);
+	return ret;
+}
+
+static void _http_server_stop(void)
+{
+	MHD_stop_daemon(httpdaemon);
+}
+
+static int _http_server_start(void)
+{
+	int port_num = 0;
+
+	httpdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
+				port_num, NULL, NULL, &_answer_to_connection, NULL, NULL,
+				MHD_OPTION_END);
+
+	if (!httpdaemon)
+		return 1;
+
+	return 0;
+}
+#endif
 
 static void *_ftp_server_thread(void *ctx)
 {
@@ -472,7 +530,6 @@ void wget_test_stop_server(void)
 //	if (ftps_implicit)
 //		pthread_kill(ftps_server_tid, SIGTERM);
 
-	wget_thread_cancel(http_server_tid);
 	wget_thread_cancel(https_server_tid);
 	wget_thread_cancel(ftp_server_tid);
 	if (ftps_implicit)
@@ -490,6 +547,9 @@ void wget_test_stop_server(void)
 		_remove_directory(tmpdir);
 
 	wget_global_deinit();
+#ifdef WITH_MICROHTTPD
+	_http_server_stop();
+#endif
 }
 
 static char *_insert_ports(const char *src)
@@ -548,7 +608,7 @@ static void _write_msg(const char *msg, size_t len)
 
 void wget_test_start_server(int first_key, ...)
 {
-	static wget_tcp_t *http_parent_tcp, *https_parent_tcp, *ftp_parent_tcp, *ftps_parent_tcp;
+	static wget_tcp_t *https_parent_tcp, *ftp_parent_tcp, *ftps_parent_tcp;
 	int rc, key;
 	size_t it;
 	va_list args;
@@ -628,14 +688,6 @@ void wget_test_start_server(int first_key, ...)
 	wget_ssl_set_config_string(WGET_SSL_CERT_FILE, SRCDIR "/certs/x509-server-cert.pem");
 	wget_ssl_set_config_string(WGET_SSL_KEY_FILE, SRCDIR "/certs/x509-server-key.pem");
 
-	// init HTTP server socket
-	http_parent_tcp = wget_tcp_init();
-	wget_tcp_set_timeout(http_parent_tcp, -1); // INFINITE timeout
-	wget_tcp_set_preferred_family(http_parent_tcp, WGET_NET_FAMILY_IPV4); // to have a defined order of IPs
-	if (wget_tcp_listen(http_parent_tcp, "localhost", 0, 5) != 0)
-		exit(1);
-	http_server_port = wget_tcp_get_local_port(http_parent_tcp);
-
 	// init HTTPS server socket
 	https_parent_tcp = wget_tcp_init();
 	wget_tcp_set_ssl(https_parent_tcp, 1); // switch SSL on
@@ -664,6 +716,12 @@ void wget_test_start_server(int first_key, ...)
 		ftps_server_port = wget_tcp_get_local_port(ftps_parent_tcp);
 	}
 
+#ifdef WITH_MICROHTTPD
+	// start HTTP server
+	if ((rc = _http_server_start()) != 0)
+		wget_error_printf_exit(_("Failed to start HTTP server, error %d\n"), rc);
+#endif
+
 	// now replace {{port}} in the body by the actual server port
 	for (wget_test_url_t *url = urls; url < urls + nurls; url++) {
 		char *p = _insert_ports(url->body);
@@ -682,10 +740,6 @@ void wget_test_start_server(int first_key, ...)
 			}
 		}
 	}
-
-	// start thread for HTTP
-	if ((rc = wget_thread_start(&http_server_tid, _http_server_thread, http_parent_tcp, 0)) != 0)
-		wget_error_printf_exit(_("Failed to start HTTP server, error %d\n"), rc);
 
 	// start thread for HTTPS
 	if ((rc = wget_thread_start(&https_server_tid, _http_server_thread, https_parent_tcp, 0)) != 0)
