@@ -1173,6 +1173,16 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 					wget_http_parse_public_key_pins(s, resp->hpkp);
 				}
 			}
+			else if (!wget_strncasecmp_ascii(name, "Proxy-Authenticate", namelen)) {
+				wget_http_challenge_t challenge;
+				wget_http_parse_challenge(s, &challenge);
+
+				if (!resp->challenges) {
+					resp->challenges = wget_vector_create(2, 2, NULL);
+					wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
+				}
+				wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
+			}
 			break;
 		case 's':
 			if (!wget_strncasecmp_ascii(name, "Set-Cookie", namelen)) {
@@ -1450,7 +1460,7 @@ void wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param
 	wget_vector_add(req->headers, &_param, sizeof(_param));
 }
 
-void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *challenge, const char *username, const char *password)
+void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *challenge, const char *username, const char *password, int proxied)
 {
 	if (!challenge)
 		return;
@@ -1462,8 +1472,12 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		password = "";
 
 	if (!wget_strcasecmp_ascii(challenge->auth_scheme, "basic")) {
+		debug_printf("user=%s pw=%s\n",username,password);
 		const char *encoded = wget_base64_encode_printf_alloc("%s:%s", username, password);
-		wget_http_add_header_printf(req, "Authorization", "Basic %s", encoded);
+		if (proxied)
+			wget_http_add_header_printf(req, "Proxy-Authorization", "Basic %s", encoded);
+		else
+			wget_http_add_header_printf(req, "Authorization", "Basic %s", encoded);
 		xfree(encoded);
 	}
 	else if (!wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
@@ -1532,7 +1546,10 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		if (algorithm)
 			wget_buffer_printf_append(&buf, ", algorithm=%s", algorithm);
 
-		wget_http_add_header(req, "Authorization", buf.data);
+		if (proxied)
+			wget_http_add_header(req, "Proxy-Authorization", buf.data);
+		else
+			wget_http_add_header(req, "Authorization", buf.data);
 
 		wget_buffer_deinit(&buf);
 	}
@@ -1814,6 +1831,18 @@ static int _on_header_callback(nghttp2_session *session,
 			case 17:
 				if (!memcmp(name, "transfer-encoding", namelen)) {
 					wget_http_parse_transfer_encoding(s, &resp->transfer_encoding);
+				}
+				break;
+			case 18:
+				if (!memcmp(name, "proxy-authenticate", namelen)) {
+					wget_http_challenge_t challenge;
+					wget_http_parse_challenge(s, &challenge);
+
+					if (!resp->challenges) {
+						resp->challenges = wget_vector_create(2, 2, NULL);
+						wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
+					}
+					wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
 				}
 				break;
 			case 19:
@@ -2133,7 +2162,7 @@ ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf
 	}
 
 /* The use of Proxy-Connection has been discouraged in RFC 7230 A.1.2.
-	if (use_proxy)
+	if (proxied)
 		wget_buffer_strcat(buf, "Proxy-Connection: keep-alive\r\n");
 */
 

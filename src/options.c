@@ -1070,13 +1070,25 @@ static const struct optionw options[] = {
 		}
 	},
 	{ "http-proxy", &config.http_proxy, parse_string, 1, 0,
-		SECTION_DOWNLOAD,
+		SECTION_HTTP,
 		{ "Set HTTP proxy/proxies, overriding environment\n",
 		  "variables. Use comma to separate proxies.\n"
 		}
 	},
+	{ "http-proxy-password", &config.http_proxy_password, parse_string, 1, 0,
+		SECTION_HTTP,
+		{ "Password for HTTP Proxy Authentication.\n",
+		  "(default: empty password)\n"
+		}
+	},
+	{ "http-proxy-user", &config.http_proxy_username, parse_string, 1, 0,
+		SECTION_HTTP,
+		{ "Username for HTTP Proxy Authentication.\n",
+		  "(default: empty username)\n"
+		}
+	},
 	{ "http-user", &config.http_username, parse_string, 1, 0,
-		SECTION_DOWNLOAD,
+		SECTION_HTTP,
 		{ "Username for HTTP Authentication.\n",
 		  "(default: empty username)\n"
 		}
@@ -2161,6 +2173,12 @@ int init(int argc, const char **argv)
 	if (!config.http_password)
 		config.http_password = wget_strdup(config.password);
 
+	if (!config.http_proxy_username)
+		config.http_proxy_username = wget_strdup(config.username);
+
+	if (!config.http_proxy_password)
+		config.http_proxy_password = wget_strdup(config.password);
+
 	if (config.page_requisites && !config.recursive) {
 		config.recursive = 1;
 		config.level = 1;
@@ -2293,6 +2311,8 @@ void deinit(void)
 	xfree(config.password);
 	xfree(config.http_username);
 	xfree(config.http_password);
+	xfree(config.http_proxy_username);
+	xfree(config.http_proxy_password);
 	xfree(config.post_data);
 	xfree(config.post_file);
 

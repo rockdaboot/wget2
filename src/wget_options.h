@@ -43,6 +43,8 @@ struct config {
 		*password,
 		*http_username,
 		*http_password,
+		*http_proxy_username,
+		*http_proxy_password,
 		*input_encoding, // encoding of files given with --input-file (or -i) (if not specified in the document itself)
 		*local_encoding,  // encoding of the environment and file system
 		*remote_encoding, // encoding of remote files (if not specified in Content-Type HTTP header or in document itself)

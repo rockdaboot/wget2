@@ -1234,9 +1234,26 @@ static int process_response_header(wget_http_response_t *resp)
 		return 0; // 302 with Metalink information
 
 	if (resp->code == 401) { // Unauthorized
-		wget_http_free_challenges(&job->challenges);
+		if (job->challenges)
+			return 0; // we already tried with credentials, they seem to be wrong. Don't try again.
+
+		// wget_http_free_challenges(&job->challenges);
 
 		if (!(job->challenges = resp->challenges))
+			return 1; // no challenges offered, stop further processing
+
+		resp->challenges = NULL;
+		job->inuse = 0; // try again, but with challenge responses
+		return 1; // stop further processing
+	}
+
+	if (resp->code == 407) { // Proxy Authentication Required
+		if (job->proxy_challenges)
+			return 0; // we already tried with credentials, they seem to be wrong. Don't try again.
+
+		// wget_http_free_challenges(&job->proxy_challenges);
+
+		if (!(job->proxy_challenges = resp->challenges))
 			return 1; // no challenges offered, stop further processing
 
 		resp->challenges = NULL;
@@ -2661,6 +2678,58 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 	return 0;
 }
 
+static void _add_authorize_header(
+	wget_http_request_t *req,
+	wget_vector_t *challenges,
+	const char *username, const char *password, int proxied)
+{
+	// There might be more than one challenge, we could select the most secure one.
+	// Prefer 'Digest' over 'Basic'
+	// the following adds an Authorization: or Proxy-Authorization HTTP header
+	wget_http_challenge_t *selected_challenge = NULL;
+
+	for (int it = 0; it < wget_vector_size(challenges); it++) {
+		wget_http_challenge_t *challenge = wget_vector_get(challenges, it);
+
+		if (wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
+			selected_challenge = challenge;
+			break;
+		}
+		else if (wget_strcasecmp_ascii(challenge->auth_scheme, "basic")) {
+			if (!selected_challenge)
+				selected_challenge = challenge;
+		}
+	}
+
+	if (selected_challenge) {
+		if (username) {
+			wget_http_add_credentials(req, selected_challenge, username, password, proxied);
+		} else if (config.netrc_file) {
+			static wget_thread_mutex_t
+				mutex = WGET_THREAD_MUTEX_INITIALIZER;
+
+			wget_thread_mutex_lock(&mutex);
+			if (!config.netrc_db) {
+				config.netrc_db = wget_netrc_db_init(NULL);
+				wget_netrc_db_load(config.netrc_db, config.netrc_file);
+			}
+			wget_thread_mutex_unlock(&mutex);
+
+			wget_netrc_t *netrc = wget_netrc_get(config.netrc_db, req->esc_host.data);
+			if (!netrc)
+				netrc = wget_netrc_get(config.netrc_db, "default");
+
+			if (netrc) {
+				wget_http_add_credentials(req, selected_challenge, netrc->login, netrc->password, proxied);
+			} else {
+				wget_http_add_credentials(req, selected_challenge, username, password, proxied);
+			}
+		} else {
+			wget_http_add_credentials(req, selected_challenge, username, password, proxied);
+		}
+	}
+}
+
 static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 {
 	wget_http_request_t *req;
@@ -2769,51 +2838,9 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 	}
 
 	if (job->challenges) {
-		// There might be more than one challenge, we could select the most secure one.
-		// Prefer 'Digest' over 'Basic'
-		// the following adds an Authorization: HTTP header
-		wget_http_challenge_t *selected_challenge = NULL;
-
-		for (int it = 0; it < wget_vector_size(job->challenges); it++) {
-			wget_http_challenge_t *challenge = wget_vector_get(job->challenges, it);
-
-			if (wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
-				selected_challenge = challenge;
-				break;
-			}
-			else if (wget_strcasecmp_ascii(challenge->auth_scheme, "basic")) {
-				if (!selected_challenge)
-					selected_challenge = challenge;
-			}
-		}
-
-		if (selected_challenge) {
-			if (config.http_username) {
-				wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
-			} else if (config.netrc_file) {
-				static wget_thread_mutex_t
-					mutex = WGET_THREAD_MUTEX_INITIALIZER;
-
-				wget_thread_mutex_lock(&mutex);
-				if (!config.netrc_db) {
-					config.netrc_db = wget_netrc_db_init(NULL);
-					wget_netrc_db_load(config.netrc_db, config.netrc_file);
-				}
-				wget_thread_mutex_unlock(&mutex);
-
-				wget_netrc_t *netrc = wget_netrc_get(config.netrc_db, iri->host);
-				if (!netrc)
-					netrc = wget_netrc_get(config.netrc_db, "default");
-
-				if (netrc) {
-					wget_http_add_credentials(req, selected_challenge, netrc->login, netrc->password);
-				} else {
-					wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
-				}
-			} else {
-				wget_http_add_credentials(req, selected_challenge, config.http_username, config.http_password);
-			}
-		}
+		_add_authorize_header(req, job->challenges, config.http_username, config.http_password, 0);
+	} else if (job->proxy_challenges) {
+		_add_authorize_header(req, job->proxy_challenges, config.http_proxy_username, config.http_proxy_password, 1);
 	}
 
 	if (job->part)

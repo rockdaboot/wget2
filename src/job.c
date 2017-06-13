@@ -43,6 +43,7 @@
 void job_free(JOB *job)
 {
 	wget_http_free_challenges(&job->challenges);
+	wget_http_free_challenges(&job->proxy_challenges);
 	wget_metalink_free(&job->metalink);
 	wget_vector_free(&job->parts);
 	xfree(job->local_filename);

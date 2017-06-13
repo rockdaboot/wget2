@@ -629,9 +629,11 @@ Go to background immediately after startup. If no output file is specified via t
 
 * --user=user, --password=password
 
-  Specify the username user and password password for both FTP and HTTP file retrieval.  These parameters can be
-  overridden using the --ftp-user and --ftp-password options for FTP connections and the --http-user and
-  --http-password options for HTTP connections.
+  Specify the username user and password password for both FTP and HTTP file retrieval. This overrides the lookup of
+  credentials in the .netrc file (--netrc is enabled by default). These parameters can be overridden using the
+  --http-user and --http-password options for HTTP(S) connections.
+
+  If neither --http-proxy-user nor --http-proxy-password is given these settings are also taken for proxy authentication.
 
 * --ask-password
 
@@ -770,13 +772,19 @@ Go to background immediately after startup. If no output file is specified via t
 
 * --http-user=user, --http-password=password
 
-  Specify the username user and password password on an HTTP server.  According to the type of the challenge, Wget
+  Specify the user and password for HTTP authentication. According to the type of the challenge, Wget
   will encode them using either the "basic" (insecure), the "digest", or the Windows "NTLM" authentication scheme.
 
-  Another way to specify username and password is in the URL itself.  Either method reveals your password to anyone
-  who bothers to run "ps".  To prevent the passwords from being seen, store them in .wgetrc or .netrc, and make
-  sure to protect those files from other users with "chmod".  If the passwords are really important, do not leave
-  them lying in those files either---edit the files and delete them after Wget2 has started the download.
+  If possible, put your credentials into ~/.netrc (see also --netrc and --netrc-file options) or into ~/.wgetrc.
+  This is far more secure than using the command line which can be seen by any other user.
+  If the passwords are really important, do not leave them lying in those files either. Edit the files and delete
+  them after Wget2 has started the download.
+
+  Also see --use-askpass and --ask-password for an interactive method to provide your password.
+
+* --http-proxy-user=user, --http-proxy-password=password
+
+  Specify the user and password for HTTP proxy authentication. See --http-user for details.
 
 * --no-http-keep-alive
 

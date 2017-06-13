@@ -187,7 +187,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 			// There might be more than one challenge, we could select the most secure one.
 			// For simplicity and testing we just take the first for now.
 			// the following adds an Authorization: HTTP header
-			wget_http_add_credentials(req, wget_vector_get(challenges, 0), http_username, http_password);
+			wget_http_add_credentials(req, wget_vector_get(challenges, 0), http_username, http_password, 0);
 			wget_http_free_challenges(&challenges);
 		}
 
