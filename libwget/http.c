@@ -1472,7 +1472,6 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		password = "";
 
 	if (!wget_strcasecmp_ascii(challenge->auth_scheme, "basic")) {
-		debug_printf("user=%s pw=%s\n",username,password);
 		const char *encoded = wget_base64_encode_printf_alloc("%s:%s", username, password);
 		if (proxied)
 			wget_http_add_header_printf(req, "Proxy-Authorization", "Basic %s", encoded);
