@@ -114,13 +114,16 @@ void wget_css_parse_buffer(
 					for (length--; c_isspace(text[length - 1]); length--);
 
 					// remove leading url( and any spaces after
-					for (length -= 4, text += 4; c_isspace(*text); text++, length--);
+					for (length -= 4, text += 4; length && c_isspace(*text); text++, length--);
 
 					// remove quotes
-					if (*text == '\'' || *text == '\"') {
+					if (length && (*text == '\'' || *text == '\"')) {
 						text++;
-						length -= 2;
+						length--;
 					}
+
+					if (length && (text[length - 1] == '\'' || text[length - 1] == '\"'))
+						length--;
 
 					callback_uri(user_ctx, text, length, pos + (text - otext));
 				}
