@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>d</title>
+<link href=" http://example.org/feed/ " rel="self" />
+<id> u </id>
+<entry>
+	<title>Atom</title>
+	<link rel="alternate" type="text/html" href="http://x.org/2003/12/13/atom03.html"/>
+	<id>u</id>
+	<content type="xhtml">
+		<div xmlns="http://www.w3.org/1999/xhtml">
+			<p>content</p>
+		</div>
+	</content>
+	<author>
+		<icon>i</icon>
+		<logo>l</logo>
+	</author>
+</entry>
+</feed>
