@@ -10,6 +10,7 @@ LDADD = ../lib/libgnu.la ../libwget/libwget.la \
 
 WGET_TESTS = \
  libwget_atom_url_fuzzer$(EXEEXT) \
+ libwget_css_url_fuzzer$(EXEEXT) \
  libwget_bar_fuzzer$(EXEEXT) \
  libwget_memtohex_fuzzer$(EXEEXT) \
  libwget_metalink_parse_fuzzer$(EXEEXT) \
@@ -19,6 +20,7 @@ WGET_TESTS = \
 check_PROGRAMS = $(WGET_TESTS)
 
 libwget_atom_url_fuzzer_SOURCES = libwget_atom_url_fuzzer.c main.c fuzzer.h
+libwget_css_url_fuzzer_SOURCES = libwget_css_url_fuzzer.c main.c fuzzer.h
 libwget_bar_fuzzer_SOURCES = libwget_bar_fuzzer.c main.c fuzzer.h
 libwget_memtohex_fuzzer_SOURCES = libwget_memtohex_fuzzer.c main.c fuzzer.h
 libwget_metalink_parse_fuzzer_SOURCES = libwget_metalink_parse_fuzzer.c main.c fuzzer.h
