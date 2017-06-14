@@ -291,6 +291,12 @@ static int _answer_to_connection(void *cls,
 		}
 	}
 
+	// 404 with empty "body"
+	if (found == 0) {
+		response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
+		ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
+	}
+
 	MHD_destroy_response(response);
 	return ret;
 }
