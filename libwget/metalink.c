@@ -156,7 +156,8 @@ static void _metalink_parse(void *context, int flags, const char *dir, const cha
 
 	dir += 14;
 
-	memcpy(value, val, len);
+	if (val)
+			memcpy(value, val, len);
 	value[len] = 0;
 
 	if (!wget_strncasecmp_ascii(dir, "s/file", 6)) {
@@ -166,7 +167,7 @@ static void _metalink_parse(void *context, int flags, const char *dir, const cha
 		if (attr) {
 			if (*dir == 0) { // /metalink/file
 				if (!ctx->metalink->name && !wget_strcasecmp_ascii(attr, "name")) {
-					ctx->metalink->name = wget_strmemdup(val, len);
+					ctx->metalink->name = wget_strdup(value);
 				}
 			} else if (!wget_strcasecmp_ascii(dir, "/verification/pieces")) {
 				if (!wget_strcasecmp_ascii(attr, "type")) {
@@ -211,7 +212,7 @@ static void _metalink_parse(void *context, int flags, const char *dir, const cha
 		if (attr) {
 			if (*dir == 0) { // /metalink/file
 				if (!ctx->metalink->name && !wget_strcasecmp_ascii(attr, "name")) {
-					ctx->metalink->name = wget_strmemdup(val, len);
+					ctx->metalink->name = wget_strdup(value);
 				}
 			} else if (!wget_strcasecmp_ascii(dir, "/pieces")) {
 				if (!wget_strcasecmp_ascii(attr, "type")) {
