@@ -22,7 +22,8 @@ if test -z "$1"; then
 fi
 
 fuzzer=$1
-workers=4
+workers=$(($(nproc) - 1))
+jobs=$workers
 
 clang-5.0 \
  $CFLAGS -I../include/wget -I.. \
@@ -34,9 +35,9 @@ clang-5.0 \
 mkdir -p ${fuzzer}.new
 
 if test -f ${fuzzer}.dict; then
-  ./${fuzzer} -workers=$workers -dict=${fuzzer}.dict ${fuzzer}.new ${fuzzer}.in
+  ./${fuzzer} -dict=${fuzzer}.dict ${fuzzer}.new ${fuzzer}.in -jobs=$jobs -workers=$workers
 else
-  ./${fuzzer} -workers=$workers ${fuzzer}.new ${fuzzer}.in
+  ./${fuzzer} ${fuzzer}.new ${fuzzer}.in -jobs=$jobs -workers=$workers
 fi
 
 exit 0

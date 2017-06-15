@@ -15,6 +15,7 @@ WGET_TESTS = \
  libwget_memtohex_fuzzer$(EXEEXT) \
  libwget_metalink_parse_fuzzer$(EXEEXT) \
  libwget_robots_parse_fuzzer$(EXEEXT) \
+ libwget_sitemap_url_fuzzer$(EXEEXT) \
  libwget_xml_parse_buffer_fuzzer$(EXEEXT)
 
 check_PROGRAMS = $(WGET_TESTS)
@@ -25,6 +26,7 @@ libwget_bar_fuzzer_SOURCES = libwget_bar_fuzzer.c main.c fuzzer.h
 libwget_memtohex_fuzzer_SOURCES = libwget_memtohex_fuzzer.c main.c fuzzer.h
 libwget_metalink_parse_fuzzer_SOURCES = libwget_metalink_parse_fuzzer.c main.c fuzzer.h
 libwget_robots_parse_fuzzer_SOURCES = libwget_robots_parse_fuzzer.c main.c fuzzer.h
+libwget_sitemap_url_fuzzer_SOURCES = libwget_sitemap_url_fuzzer.c main.c fuzzer.h
 libwget_xml_parse_buffer_fuzzer_SOURCES = libwget_xml_parse_buffer_fuzzer.c main.c fuzzer.h
 
 #EXTRA_DIST = $(wildcard *.options) $(wildcard *.dict) \
