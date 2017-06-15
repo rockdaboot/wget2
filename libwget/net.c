@@ -610,17 +610,18 @@ int wget_tcp_get_family(wget_tcp_t *tcp)
  */
 int wget_tcp_get_local_port(wget_tcp_t *tcp)
 {
-	if (tcp) {
-		struct sockaddr_storage addr_store;
-		struct sockaddr *addr = (struct sockaddr *)&addr_store;
-		socklen_t addr_len = sizeof(addr_store);
-		char s_port[NI_MAXSERV];
+	if (unlikely(!tcp))
+		return 0;
 
-		/* Get automatically retrieved port number */
-		if (getsockname(tcp->sockfd, addr, &addr_len) == 0) {
-			if (getnameinfo(addr, addr_len, NULL, 0, s_port, sizeof(s_port), NI_NUMERICSERV) == 0)
-				return atoi(s_port);
-		}
+	struct sockaddr_storage addr_store;
+	struct sockaddr *addr = (struct sockaddr *)&addr_store;
+	socklen_t addr_len = sizeof(addr_store);
+	char s_port[NI_MAXSERV];
+
+	/* Get automatically retrieved port number */
+	if (getsockname(tcp->sockfd, addr, &addr_len) == 0) {
+		if (getnameinfo(addr, addr_len, NULL, 0, s_port, sizeof(s_port), NI_NUMERICSERV) == 0)
+			return atoi(s_port);
 	}
 
 	return 0;
@@ -896,7 +897,10 @@ static void _set_socket_options(int fd)
  */
 int wget_tcp_ready_2_transfer(wget_tcp_t *tcp, int flags)
 {
-	return wget_ready_2_transfer(tcp->sockfd, tcp->timeout, flags);
+	if (likely(tcp))
+		return wget_ready_2_transfer(tcp->sockfd, tcp->timeout, flags);
+	else
+		return -1;
 }
 
 /**
@@ -928,7 +932,7 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, const char *port)
 	char adr[NI_MAXHOST], s_port[NI_MAXSERV];
 	int debug = wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG));
 
-	if (!tcp)
+	if (unlikely(!tcp))
 		return -1;
 
 	if (tcp->addrinfo_allocated)
@@ -1067,7 +1071,7 @@ int wget_tcp_listen(wget_tcp_t *tcp, const char *host, const char *port, int bac
 	char adr[NI_MAXHOST], s_port[NI_MAXSERV];
 	int debug = wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG));
 
-	if (!tcp || backlog < 0)
+	if (unlikely(!tcp || backlog < 0))
 		return -1;
 
 	if (tcp->bind_addrinfo_allocated)
@@ -1182,7 +1186,7 @@ wget_tcp_t *wget_tcp_accept(wget_tcp_t *parent_tcp)
 {
 	int sockfd;
 
-	if (!parent_tcp)
+	if (unlikely(!parent_tcp))
 		return NULL;
 
 	if (parent_tcp->timeout) {
@@ -1231,7 +1235,7 @@ wget_tcp_t *wget_tcp_accept(wget_tcp_t *parent_tcp)
  */
 int wget_tcp_tls_start(wget_tcp_t *tcp)
 {
-	if (tcp->passive)
+	if (likely(tcp) && tcp->passive)
 		return wget_ssl_server_open(tcp);
 	else
 		return wget_ssl_open(tcp);
@@ -1244,7 +1248,7 @@ int wget_tcp_tls_start(wget_tcp_t *tcp)
  */
 void wget_tcp_tls_stop(wget_tcp_t *tcp)
 {
-	if (tcp->passive)
+	if (likely(tcp) && tcp->passive)
 		wget_ssl_server_close(&tcp->ssl_session);
 	else
 		wget_ssl_close(&tcp->ssl_session);
@@ -1280,7 +1284,7 @@ ssize_t wget_tcp_read(wget_tcp_t *tcp, char *buf, size_t count)
 {
 	ssize_t rc;
 
-	if (!tcp || !buf)
+	if (unlikely(!tcp || !buf))
 		return 0;
 
 	if (tcp->ssl_session) {
@@ -1331,7 +1335,7 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 	ssize_t nwritten = 0, n;
 	int rc;
 
-	if (!tcp || !buf)
+	if (unlikely(!tcp || !buf))
 		return -1;
 
 	if (tcp->ssl_session)
@@ -1451,7 +1455,7 @@ ssize_t wget_tcp_printf(wget_tcp_t *tcp, const char *fmt, ...)
  */
 void wget_tcp_close(wget_tcp_t *tcp)
 {
-	if (tcp) {
+	if (likely(tcp)) {
 		wget_tcp_tls_stop(tcp);
 		if (tcp->sockfd != -1) {
 			close(tcp->sockfd);

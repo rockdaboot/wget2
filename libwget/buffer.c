@@ -165,8 +165,10 @@ static void _buffer_realloc(wget_buffer_t *buf, size_t size)
  */
 void wget_buffer_ensure_capacity(wget_buffer_t *buf, size_t size)
 {
-	if (buf->size < size)
-		_buffer_realloc(buf, size);
+	if (likely(buf)) {
+		if (buf->size < size)
+			_buffer_realloc(buf, size);
+	}
 }
 
 /**
@@ -184,15 +186,16 @@ void wget_buffer_ensure_capacity(wget_buffer_t *buf, size_t size)
  */
 void wget_buffer_deinit(wget_buffer_t *buf)
 {
-	if (likely(buf)) {
-		if (buf->release_data) {
-			xfree(buf->data);
-			buf->release_data = 0;
-		}
+	if (likely(!buf))
+		return;
 
-		if (buf->release_buf)
-			xfree(buf);
+	if (buf->release_data) {
+		xfree(buf->data);
+		buf->release_data = 0;
 	}
+
+	if (buf->release_buf)
+		xfree(buf);
 }
 
 /**
@@ -251,8 +254,10 @@ void wget_buffer_free_data(wget_buffer_t *buf)
  */
 void wget_buffer_reset(wget_buffer_t *buf)
 {
-	buf->length = 0;
-	*buf->data = 0;
+	if (likely(buf)) {
+		buf->length = 0;
+		*buf->data = 0;
+	}
 }
 
 /**
@@ -301,7 +306,10 @@ size_t wget_buffer_memcat(wget_buffer_t *buf, const void *data, size_t length)
 		if (buf->size < buf->length + length)
 			_buffer_realloc(buf, buf->size * 2 + length);
 
-		memcpy(buf->data + buf->length, data, length);
+		if (likely(data))
+			memcpy(buf->data + buf->length, data, length);
+		else
+			memset(buf->data + buf->length, 0, length);
 		buf->length += length;
 	}
 	buf->data[buf->length] = 0; // always 0 terminate data to allow string functions
@@ -326,9 +334,10 @@ size_t wget_buffer_memcat(wget_buffer_t *buf, const void *data, size_t length)
  */
 size_t wget_buffer_strcpy(wget_buffer_t *buf, const char *s)
 {
-	buf->length = 0;
+	if (likely(buf))
+		buf->length = 0;
 
-	return wget_buffer_memcat(buf, s, strlen(s));
+	return wget_buffer_memcat(buf, s, likely(s) ? strlen(s) : 0);
 }
 
 /**
@@ -347,7 +356,7 @@ size_t wget_buffer_strcpy(wget_buffer_t *buf, const char *s)
  */
 size_t wget_buffer_strcat(wget_buffer_t *buf, const char *s)
 {
-	return wget_buffer_memcat(buf, s, strlen(s));
+	return wget_buffer_memcat(buf, s, likely(s) ? strlen(s) : 0);
 }
 
 /**
@@ -366,7 +375,10 @@ size_t wget_buffer_strcat(wget_buffer_t *buf, const char *s)
  */
 size_t wget_buffer_bufcpy(wget_buffer_t *buf, wget_buffer_t *src)
 {
-	return wget_buffer_memcpy(buf, src->data, src->length);
+	if (likely(src))
+		return wget_buffer_memcpy(buf, src->data, src->length);
+	else
+		return wget_buffer_memcpy(buf, NULL, 0);
 }
 
 /**
@@ -384,7 +396,10 @@ size_t wget_buffer_bufcpy(wget_buffer_t *buf, wget_buffer_t *src)
  */
 size_t wget_buffer_bufcat(wget_buffer_t *buf, wget_buffer_t *src)
 {
-	return wget_buffer_memcat(buf, src->data, src->length);
+	if (likely(src))
+		return wget_buffer_memcat(buf, src->data, src->length);
+	else
+		return wget_buffer_memcat(buf, NULL, 0);
 }
 
 /**
@@ -401,7 +416,8 @@ size_t wget_buffer_bufcat(wget_buffer_t *buf, wget_buffer_t *src)
  */
 size_t wget_buffer_memset(wget_buffer_t *buf, char c, size_t length)
 {
-	buf->length = 0;
+	if (likely(buf))
+		buf->length = 0;
 
 	return wget_buffer_memset_append(buf, c, length);
 }

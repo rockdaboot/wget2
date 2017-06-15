@@ -339,6 +339,9 @@ size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list a
 	long long arg;
 	unsigned long long argu;
 
+	if (!p)
+		return 0;
+
 	for (;*p;) {
 
 		/*
