@@ -1,26 +1,23 @@
-#!/bin/sh
-# Copyright (C) 2017 Red Hat, Inc.
+#!/bin/sh -eu
+
+# Copyright(c) 2017 Free Software Foundation, Inc.
 #
-# This file is part of Wget2.
+# This file is part of libwget.
 #
-# This file is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
+# Libwget is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# This file is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
+# Libwget is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>
+# along with libwget.  If not, see <https://www.gnu.org/licenses/>.
 
-srcdir="${srcdir:-.}"
-export LD_LIBRARY_PATH=${srcdir}/../lib/.libs/
-
-cat ${srcdir}/../config.log|grep afl-clang-fast >/dev/null 2>&1
-if test $? != 0; then
+if ! grep -q '^CC=.afl-clang-fast' ../config.log; then
 	echo "compile first library as:"
 	echo "CC=afl-clang-fast ./configure"
 	exit 1
@@ -32,30 +29,30 @@ if test -z "$1"; then
 	exit 1
 fi
 
-rm -f $1
-CFLAGS="-g -O2" CC=afl-clang-fast make "$1" || exit 1
-
-TEST=$(echo $1|sed s/_fuzzer//)
+fuzzer=$1
+rm -f $fuzzer
+afl-clang-fast -O2 -g -I../include/wget -I.. main.c "${fuzzer}.c" -o "${fuzzer}" \
+ -L../libwget/.libs -Wl,-rpath=../libwget/.libs -lwget
 
 ### minimize test corpora
-if test -d $TEST.in; then
-  mkdir -p $TEST.min
-  for i in `ls $TEST.in`; do
-    fin="$TEST.in/$i"
-    fmin="$TEST.min/$i"
+if test -d ${fuzzer}.in; then
+  mkdir -p ${fuzzer}.min
+  for i in `ls ${fuzzer}.in`; do
+    fin="${fuzzer}.in/$i"
+    fmin="${fuzzer}.min/$i"
     if ! test -e $fmin || test $fin -nt $fmin; then
-      afl-tmin -i $fin -o $fmin -- ./${TEST}_fuzzer
+      afl-tmin -i $fin -o $fmin -- ./${fuzzer}
     fi
   done
 fi
 
-TMPOUT=${TEST}.$$.out
+TMPOUT=${fuzzer}.out
 mkdir -p ${TMPOUT}
 
-if test -f ${TEST}.dict; then
-  afl-fuzz -i ${TEST}.min -o ${TMPOUT} -x ${TEST}.dict -- ./${TEST}_fuzzer
+if test -f ${fuzzer}.dict; then
+  afl-fuzz -i ${fuzzer}.min -o ${TMPOUT} -x ${fuzzer}.dict -- ./${fuzzer}
 else
-  afl-fuzz -i ${TEST}.min -o ${TMPOUT} -- ./${TEST}_fuzzer
+  afl-fuzz -i ${fuzzer}.min -o ${TMPOUT} -- ./${fuzzer}
 fi
 
 echo "output was stored in $TMPOUT"
