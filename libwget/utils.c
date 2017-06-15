@@ -360,11 +360,11 @@ int wget_match_tail_nocase(const char *s, const char *tail)
 }
 
 /**
- * \param[in] str String
+ * \param[in] globstr String
  * \param[in] flags Flags to pass to glob()
  * \return Expanded string after running glob
  *
- * Finds a pathname by running glob(3) on \p str. Returns a newly allocated
+ * Finds a pathname by running glob(3) on \p globstr. Returns a newly allocated
  * string containing the expanded pathnames if glob(3) succeeded. Otherwise,
  * returns NULL
  */
