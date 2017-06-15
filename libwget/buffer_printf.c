@@ -257,24 +257,22 @@ static void _convert_pointer(wget_buffer_t *buf, void *pointer)
 	wget_buffer_memcat(buf, dst, length);
 }
 
-static const char *_read_precision(const char *p, int *out, va_list args)
+static const char *_read_precision(const char *p, int *out, int precision_is_external)
 {
 	int precision = -1;
 
-	if (*p == '.') {
-		if (*++p == '*') {
-			precision = va_arg(args, int);
-			if (precision < 0 )
-				precision = 0;
-			p++;
-		} else if (c_isdigit(*p)) {
+	if (precision_is_external) {
+		precision = *out;
+		if (precision < 0 )
 			precision = 0;
-			do {
-				precision = precision * 10 + (*p - '0');
-			} while (c_isdigit(*++p));
-		} else {
-			precision = -1;
-		}
+		p++;
+	} else if (c_isdigit(*p)) {
+		precision = 0;
+		do {
+			precision = precision * 10 + (*p - '0');
+		} while (c_isdigit(*++p));
+	} else {
+		precision = -1;
 	}
 
 	*out = precision;
@@ -300,16 +298,18 @@ static const char *_read_flag_chars(const char *p, unsigned int *out)
 	return p;
 }
 
-static const char *_read_field_width(const char *p, int *out, unsigned int *flags, va_list args)
+static const char *_read_field_width(const char *p, int *out, unsigned int *flags, int width_is_external)
 {
 	int field_width;
 
-	if (*p == '*') {
-		field_width = va_arg(args, int);
+	if (width_is_external) {
+		field_width = *out;
+
 		if (field_width < 0) {
 			*flags |= FLAG_LEFT_ADJUST;
 			field_width = -field_width;
 		}
+
 		p++;
 	} else {
 		for (field_width = 0; c_isdigit(*p); p++)
@@ -334,7 +334,7 @@ static const char *_read_field_width(const char *p, int *out, unsigned int *flag
 size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list args)
 {
 	const char *p = fmt, *begin;
-	int field_width, precision;
+	int field_width, precision = -1;
 	unsigned int flags;
 	long long arg;
 	unsigned long long argu;
@@ -383,11 +383,31 @@ size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list a
 		/* Read the flag chars (optional, simplified) */
 		p = _read_flag_chars(p, &flags);
 
-		/* Read field width (optional) */
-		p = _read_field_width(p, &field_width, &flags, args);
+		/*
+		 * Read field width (optional).
+		 * If '*', then the field width is given as an additional argument,
+		 * which precedes the argument to be formatted.
+		 */
+		if (*p == '*') {
+			field_width = va_arg(args, int);
+			p = _read_field_width(p, &field_width, &flags, 1);
+		} else {
+			p = _read_field_width(p, &field_width, &flags, 0);
+		}
 
-		/* Read precision (optional) */
-		p = _read_precision(p, &precision, args);
+		/*
+		 * Read precision (optional).
+		 * If '*', the precision is given as an additional argument,
+		 * just as the case for the field width.
+		 */
+		if (*p == '.') {
+			if (*++p == '*') {
+				precision = va_arg(args, int);
+				p = _read_precision(p, &precision, 1);
+			} else {
+				p = _read_precision(p, &precision, 0);
+			}
+		}
 
 		/* Read length modifier (optional) */
 		switch (*p) {
