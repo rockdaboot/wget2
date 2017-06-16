@@ -92,6 +92,14 @@ struct MHD_Daemon
 	*httpdaemon;
 #endif
 
+// for passing URL query string
+struct query_string {
+	wget_buffer_t
+		*params;
+	int
+		it;
+};
+
 static void sigterm_handler(int sig G_GNUC_WGET_UNUSED)
 {
 	terminate = 1;
@@ -267,6 +275,33 @@ static void *_http_server_thread(void *ctx)
 }
 
 #ifdef WITH_MICROHTTPD
+static int _print_query_string(void *cls, enum MHD_ValueKind kind,
+							const char *key,
+							const char *value)
+{
+	struct query_string *query = cls;
+
+	if (key && query->it == 0) {
+		wget_buffer_strcpy(query->params, "?");
+		wget_buffer_strcat(query->params, key);
+		if (value) {
+			wget_buffer_strcat(query->params, "=");
+			wget_buffer_strcat(query->params, value);
+		}
+	}
+	if (key && query->it != 0) {
+		wget_buffer_strcat(query->params, "&");
+		wget_buffer_strcat(query->params, key);
+		if (value) {
+			wget_buffer_strcat(query->params, "=");
+			wget_buffer_strcat(query->params, value);
+		}
+	}
+
+	query->it++;
+    return MHD_YES;
+}
+
 static int _answer_to_connection(void *cls,
 					struct MHD_Connection *connection,
 					const char *url,
@@ -275,12 +310,25 @@ static int _answer_to_connection(void *cls,
 					const char *upload_data, size_t *upload_data_size, void **con_cls)
 {
 	struct MHD_Response *response;
+	struct query_string query;
 	int ret;
+
+	// get query string
+	query.params = wget_buffer_alloc(1024);
+	query.it = 0;
+	MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND, &_print_query_string, &query);
+
+	// append query string into URL
+	wget_buffer_t *url_full = wget_buffer_alloc(1024);
+	wget_buffer_strcpy(url_full, url);
+	if (query.params->data)
+		wget_buffer_strcat(url_full, query.params->data);
+	wget_buffer_free(&query.params);
 
 	// it1 = iteration for urls data
 	unsigned int it1, found = 0;
 	for (it1 = 0; it1 < nurls; it1++) {
-		if (!strcmp(url, urls[it1].name))
+		if (!strcmp(url_full->data, urls[it1].name))
 		{
 			response = MHD_create_response_from_buffer(strlen(urls[it1].body),
 					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
@@ -297,6 +345,7 @@ static int _answer_to_connection(void *cls,
 		ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
 	}
 
+	wget_buffer_free(&url_full);
 	MHD_destroy_response(response);
 	return ret;
 }
