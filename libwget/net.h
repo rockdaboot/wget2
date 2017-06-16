@@ -61,6 +61,19 @@ struct wget_tcp_st {
 		tls_false_start : 1,
 		tcp_fastopen : 1, // do we use TCP_FASTOPEN or not
 		first_send : 1; // TCP_FASTOPEN's first packet is sent different
+/*****stats********
+	const char
+		*version,
+		*false_start,
+		*tfo,
+		*alpn_protocol;
+	long long tls_secs;	//milliseconds
+	unsigned int cert_chain_size;
+	char
+		tls_con,
+		resumed,
+		tcp_protocol;
+**********************/
 };
 
 #endif /* _LIBWGET_NET_H */

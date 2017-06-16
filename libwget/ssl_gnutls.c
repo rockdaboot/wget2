@@ -60,6 +60,24 @@
 #include "private.h"
 #include "net.h"
 
+typedef struct
+{
+	const char
+		*hostname,
+		*version,
+		*false_start,
+		*tfo,
+		*alpn_protocol;
+	long long tls_secs;	//milliseconds
+	unsigned int cert_chain_size;
+	char
+		tls_con,
+		resumed,
+		tcp_protocol;
+} _stats_data_t;
+
+static wget_stats_callback_t stats_callback;
+
 static struct _config {
 	const char
 		*secure_protocol,
@@ -1184,7 +1202,7 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 	while (rc > 0) {
 		rc = gnutls_handshake(session);
 
-		if (rc == 0) {
+		if (rc == GNUTLS_E_SUCCESS) {
 			ret = WGET_E_SUCCESS;
 			break;
 		}
@@ -1282,9 +1300,20 @@ static ssize_t _ssl_writev(gnutls_transport_ptr_t *p, const giovec_t *iov, int i
 int wget_ssl_open(wget_tcp_t *tcp)
 {
 	gnutls_session_t session;
+	_stats_data_t stats = {
+			.version = NULL,
+			.resumed = 0,
+			.false_start = NULL,
+			.tfo = NULL,
+			.alpn_protocol = NULL,
+			.tcp_protocol = WGET_PROTOCOL_HTTP_1_1,
+			.cert_chain_size = 0,
+	};
+
 	int ret = WGET_E_UNKNOWN;
 	int rc, sockfd, connect_timeout;
 	const char *hostname;
+	long long before_millisecs;
 
 	if (!tcp)
 		return WGET_E_INVALID;
@@ -1376,7 +1405,10 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	gnutls_session_set_ptr(session, ctx);
 
 #ifdef MSG_FASTOPEN
-	if (wget_tcp_get_tcp_fastopen(tcp)) {
+	if ((rc = wget_tcp_get_tcp_fastopen(tcp))) {
+		if (stats_callback)
+			stats.tfo = rc ? "on": "off";
+
 		// prepare for TCP FASTOPEN... sendmsg() instead of connect/write on first write
 		gnutls_transport_set_vec_push_function(session, (ssize_t (*)(gnutls_transport_ptr_t, const giovec_t *iov, int iovcnt)) _ssl_writev);
 		gnutls_transport_set_ptr(session, tcp);
@@ -1406,7 +1438,19 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		}
 	}
 
+	if (stats_callback)
+		before_millisecs = wget_get_timemillis();
+
 	ret = _do_handshake(session, sockfd, connect_timeout);
+
+	if (stats_callback) {
+		long long after_millisecs = wget_get_timemillis();
+		stats.tls_secs = after_millisecs - before_millisecs;
+		stats.tls_con = 1;
+#if GNUTLS_VERSION_NUMBER >= 0x030500
+		stats.false_start = (gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START) ? "on" : "off";
+#endif
+	}
 
 #if GNUTLS_VERSION_NUMBER >= 0x030200
 	if (_config.alpn) {
@@ -1415,8 +1459,14 @@ int wget_ssl_open(wget_tcp_t *tcp)
 			debug_printf("GnuTLS: Get ALPN: %s\n", gnutls_strerror(rc));
 		else {
 			debug_printf("ALPN: Server accepted protocol '%.*s'\n", (int) protocol.size, protocol.data);
-			if (!memcmp(protocol.data, "h2", 2))
+			if (stats_callback)
+				stats.alpn_protocol = wget_strmemdup(protocol.data, protocol.size);
+
+			if (!memcmp(protocol.data, "h2", 2)) {
 				tcp->protocol = WGET_PROTOCOL_HTTP_2_0;
+				if (stats_callback)
+					stats.tcp_protocol = WGET_PROTOCOL_HTTP_2_0;
+			}
 		}
 	}
 #endif
@@ -1426,6 +1476,12 @@ int wget_ssl_open(wget_tcp_t *tcp)
 
 	if (ret == WGET_E_SUCCESS) {
 		int resumed = gnutls_session_is_resumed(session);
+
+		if (stats_callback) {
+			stats.resumed = resumed;
+			stats.version = gnutls_protocol_get_name(gnutls_protocol_get_version(session));
+			gnutls_certificate_get_peers(session, &(stats.cert_chain_size));
+		}
 
 		debug_printf("Handshake completed%s\n", resumed ? " (resumed session)" : "");
 
@@ -1443,7 +1499,15 @@ int wget_ssl_open(wget_tcp_t *tcp)
 					debug_printf("Failed to get session data: %s", gnutls_strerror(rc));
 			}
 		}
-	} else {
+	}
+
+	if (stats_callback) {
+		stats.hostname = hostname;
+		stats_callback(WGET_STATS_TYPE_TLS, &stats);
+		xfree(stats.alpn_protocol);
+	}
+
+	if (ret != WGET_E_SUCCESS) {
 		if (ret == WGET_E_TIMEOUT)
 			debug_printf("Handshake timed out\n");
 		xfree(ctx->hostname);
@@ -1701,6 +1765,41 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 	}
 }
 
+void wget_tcp_set_stats_tls(wget_stats_callback_t fn)
+{
+	stats_callback = fn;
+}
+
+const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
+{
+	const _stats_data_t *stats = (_stats_data_t *) _stats;
+
+	switch(type) {
+	case WGET_STATS_TLS_HOSTNAME:
+		return stats->hostname;
+	case WGET_STATS_TLS_VERSION:
+		return stats->version;
+	case WGET_STATS_TLS_FALSE_START:
+		return stats->false_start;
+	case WGET_STATS_TLS_TFO:
+		return stats->tfo;
+	case WGET_STATS_TLS_ALPN_PROTO:
+		return stats->alpn_protocol;
+	case WGET_STATS_TLS_SECS:
+		return &(stats->tls_secs);
+	case WGET_STATS_TLS_CON:
+		return &(stats->tls_con);
+	case WGET_STATS_TLS_RESUMED:
+		return &(stats->resumed);
+	case WGET_STATS_TLS_TCP_PROTO:
+		return &(stats->tcp_protocol);
+	case WGET_STATS_TLS_CERT_CHAIN_SIZE:
+		return &(stats->cert_chain_size);
+	default:
+		return NULL;
+	}
+}
+
 #else // WITH_GNUTLS
 
 #include <stddef.h>
@@ -1722,5 +1821,7 @@ void wget_ssl_server_init(void) { }
 void wget_ssl_server_deinit(void) { }
 int wget_ssl_server_open(wget_tcp_t *tcp) { return WGET_E_TLS_DISABLED; }
 void wget_ssl_server_close(void **session) { }
+void wget_tcp_set_stats_tls(const wget_stats_callback_t fn) { }
+const void *wget_tcp_get_stats_tls(const wget_tls_stats_t type, const void *stats) { }
 
 #endif // WITH_GNUTLS

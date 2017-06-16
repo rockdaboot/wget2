@@ -26,11 +26,11 @@
  */
 
 #ifndef _WGET_OPTIONS_H
-# define _WGET_OPTIONS_H
+#define _WGET_OPTIONS_H
 
-# include <stdarg.h>
+#include <stdarg.h>
 
-# include <wget.h>
+#include <wget.h>
 
 struct config {
 	wget_iri_t
@@ -188,7 +188,9 @@ struct config {
 		cut_file_get_vars,
 		proxy,
 		xattr,
-		force_progress;
+		force_progress,
+		stats_dns,
+		stats_tls;
 };
 
 extern struct config

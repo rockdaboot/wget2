@@ -1472,6 +1472,16 @@ static const struct optionw options[] = {
 		{ "Enable web spider mode. (default: off)\n"
 		}
 	},
+	{ "stats-dns", &config.stats_dns, parse_bool, 0, 0,
+		SECTION_STARTUP,
+		{ "Print DNS lookup durations. (default: off)\n"
+		}
+	},
+	{ "stats-tls", &config.stats_tls, parse_bool, 0, 0,
+		SECTION_STARTUP,
+		{ "Print TLS stats. (default: off)\n"
+		}
+	},
 	{ "strict-comments", &config.strict_comments, parse_bool, -1, 0,
 		SECTION_DOWNLOAD,
 		{ "A dummy option. Parsing always works non-strict.\n"

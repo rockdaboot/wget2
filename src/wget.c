@@ -60,6 +60,7 @@
 #include "wget_xattr.h"
 #include "wget_dl.h"
 #include "wget_plugin.h"
+#include "wget_stats.h"
 
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)
@@ -918,6 +919,8 @@ int main(int argc, const char **argv)
 		goto out;
 	}
 
+	stats_init();
+
 	for (; n < argc; n++) {
 		add_url_to_queue(argv[n], config.base, config.local_encoding);
 	}
@@ -1104,6 +1107,8 @@ int main(int argc, const char **argv)
 		_convert_links();
 		wget_vector_free(&conversions);
 	}
+
+	stats_print();
 
  out:
 	if (wget_match_tail(argv[0], "wget2_noinstall")) {

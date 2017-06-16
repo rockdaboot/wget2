@@ -2504,7 +2504,7 @@ wget_plugin_register_post_processor(wget_plugin_t *plugin, wget_plugin_post_proc
  * \ingroup libwget-plugin
  *
  * vtable for implementing plugin API in wget
- */
+*/
 struct wget_plugin_vtable
 {
 	const char * (* get_name)(wget_plugin_t *);
@@ -2530,6 +2530,49 @@ struct wget_plugin_vtable
 	void (* add_hpkp_db)(wget_plugin_t *, wget_hpkp_db_t *, int);
 	void (* add_ocsp_db)(wget_plugin_t *, wget_ocsp_db_t *, int);
 };
+
+/*
+ * Statistics
+*/
+
+typedef enum {
+	WGET_STATS_TYPE_DNS,
+	WGET_STATS_TYPE_TLS
+} wget_stats_type_t;
+
+typedef enum {
+	WGET_STATS_DNS_HOST,
+	WGET_STATS_DNS_IP,
+	WGET_STATS_DNS_SECS
+} wget_dns_stats_t;
+
+typedef enum {
+	WGET_STATS_TLS_HOSTNAME,
+	WGET_STATS_TLS_VERSION,
+	WGET_STATS_TLS_FALSE_START,
+	WGET_STATS_TLS_TFO,
+	WGET_STATS_TLS_ALPN_PROTO,
+	WGET_STATS_TLS_SECS,
+	WGET_STATS_TLS_CON,
+	WGET_STATS_TLS_RESUMED,
+	WGET_STATS_TLS_TCP_PROTO,
+	WGET_STATS_TLS_CERT_CHAIN_SIZE
+} wget_tls_stats_t;
+
+typedef void
+	(*wget_stats_callback_t)(wget_stats_type_t type, const void *stats);
+
+WGETAPI void
+	wget_tcp_set_stats_dns(wget_stats_callback_t fn);
+
+WGETAPI const void *
+	wget_tcp_get_stats_dns(wget_dns_stats_t type, const void *stats);
+
+WGETAPI void
+	wget_tcp_set_stats_tls(wget_stats_callback_t fn);
+
+WGETAPI const void *
+	wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *stats);
 
 WGET_END_DECLS
 

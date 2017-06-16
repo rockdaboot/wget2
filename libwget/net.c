@@ -135,9 +135,19 @@ static struct wget_tcp_st _global_tcp = {
 	.tcp_fastopen = 1,
 #elif defined TCP_FASTOPEN_LINUX
 	.tcp_fastopen = 1,
-	.first_send = 1
+	.first_send = 1,
 #endif
 };
+
+typedef struct
+{
+	const char
+		*hostname,
+		*ip;
+	long long dns_secs;	// milliseconds
+} _stats_data_t;
+
+static wget_stats_callback_t stats_callback;
 
 /* Resolver / DNS cache container */
 static wget_vector_t
@@ -334,10 +344,14 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 		mutex = WGET_THREAD_MUTEX_INITIALIZER;
 	struct addrinfo *addrinfo = NULL;
 	int rc = 0;
+	long long before_millisecs;
+	_stats_data_t stats;
 
 	if (!tcp)
 		tcp = &_global_tcp;
 
+	if (stats_callback)
+		before_millisecs = wget_get_timemillis();
 	// get the IP address for the server
 	for (int tries = 0, max = 3; tries < max; tries++) {
 		if (tcp->caching) {
@@ -366,6 +380,12 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 		}
 	}
 
+	if (stats_callback) {
+		long long after_millisecs = wget_get_timemillis();
+		stats.dns_secs = after_millisecs - before_millisecs;
+		stats.hostname = host;
+	}
+
 	if (rc) {
 		error_printf(_("Failed to resolve %s (%s)\n"),
 				(host ? host : ""), gai_strerror(rc));
@@ -373,11 +393,27 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 		if (tcp->caching)
 			wget_thread_mutex_unlock(&mutex);
 
+		if (stats_callback) {
+			stats.ip = NULL;
+			stats_callback(WGET_STATS_TYPE_DNS, &stats);
+		}
+
 		return NULL;
 	}
 
 	if (tcp->family == AF_UNSPEC && tcp->preferred_family != AF_UNSPEC)
 		addrinfo = _wget_sort_preferred(addrinfo, tcp->preferred_family);
+
+	if (stats_callback) {
+		char adr[NI_MAXHOST], sport[NI_MAXSERV];
+
+		if ((rc = getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+			stats.ip = adr;
+		else
+			stats.ip = "???";
+
+		stats_callback(WGET_STATS_TYPE_DNS, &stats);
+	}
 
 	/* Finally, print the address list to the debug pipe if enabled */
 	if (wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG))) {
@@ -615,6 +651,27 @@ int wget_tcp_get_local_port(wget_tcp_t *tcp)
 	}
 
 	return 0;
+}
+
+void wget_tcp_set_stats_dns(wget_stats_callback_t fn)
+{
+	stats_callback = fn;
+}
+
+const void *wget_tcp_get_stats_dns(const wget_dns_stats_t type, const void *_stats)
+{
+	const _stats_data_t *stats = (_stats_data_t *) _stats;
+
+	switch(type) {
+	case WGET_STATS_DNS_HOST:
+		return stats->hostname;
+	case WGET_STATS_DNS_IP:
+		return stats->ip;
+	case WGET_STATS_DNS_SECS:
+		return &(stats->dns_secs);
+	default:
+		return NULL;
+	}
 }
 
 /**
@@ -928,7 +985,8 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
 	if (tcp->addrinfo_allocated)
 		freeaddrinfo(tcp->addrinfo);
 
-	tcp->addrinfo = wget_tcp_resolve(tcp, host, port);
+	ai = tcp->addrinfo = wget_tcp_resolve(tcp, host, port);
+
 	tcp->addrinfo_allocated = !tcp->caching;
 
 	for (ai = tcp->addrinfo; ai; ai = ai->ai_next) {
@@ -1014,9 +1072,8 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
 
 				return WGET_E_SUCCESS;
 			}
-		} else {
+		} else
 			error_printf(_("Failed to create socket (%d)\n"), errno);
-		}
 	}
 
 	return ret;
