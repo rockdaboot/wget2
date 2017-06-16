@@ -945,7 +945,7 @@ WGETAPI int
 WGETAPI int
 	wget_iri_isunreserved_path(char c) G_GNUC_WGET_CONST;
 WGETAPI int
-	wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2) G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2) G_GNUC_WGET_PURE;
 WGETAPI char *
 	wget_iri_unescape_inline(char *src) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI wget_iri_t *

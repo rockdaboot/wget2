@@ -564,9 +564,21 @@ wget_iri_t *wget_iri_clone(wget_iri_t *iri)
 	clone->password = iri->password ? (char *)clone + (size_t) (iri->password - (const char *)iri): NULL;
 	clone->port = iri->port ? (char *)clone + (size_t) (iri->port - (const char *)iri): NULL;
 	clone->resolv_port = iri->resolv_port ? (char *)clone + (size_t) (iri->resolv_port - (const char *)iri): NULL;
-	clone->path = iri->path ? (char *)clone + (size_t) (iri->path - (const char *)iri): NULL;
-	clone->query = iri->query ? (char *)clone + (size_t) (iri->query - (const char *)iri): NULL;
-	clone->fragment = iri->fragment ? (char *)clone + (size_t) (iri->fragment - (const char *)iri): NULL;
+
+	if (iri->path_allocated)
+		clone->path = wget_strdup(iri->path);
+	else
+		clone->path = iri->path ? (char *)clone + (size_t) (iri->path - (const char *)iri): NULL;
+
+	if (iri->query_allocated)
+		clone->query = wget_strdup(iri->query);
+	else
+		clone->query = iri->query ? (char *)clone + (size_t) (iri->query - (const char *)iri): NULL;
+
+	if (iri->fragment_allocated)
+		clone->fragment = wget_strdup(iri->fragment);
+	else
+		clone->fragment = iri->fragment ? (char *)clone + (size_t) (iri->fragment - (const char *)iri): NULL;
 
 	return clone;
 }
@@ -825,6 +837,14 @@ wget_iri_t *wget_iri_parse_base(wget_iri_t *base, const char *url, const char *e
 int wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2)
 {
 	int n;
+
+	if (!iri1) {
+		if (!iri2)
+			return 0;
+		else
+			return -1;
+	} else if (!iri2)
+		return 1;
 
 //	info_printf("iri %p %p %s:%s %s:%s\n",iri1,iri2,iri1->scheme,iri1->port,iri2->scheme,iri2->port);
 
@@ -1200,7 +1220,7 @@ const char *wget_iri_set_scheme(wget_iri_t *iri, const char *scheme)
 	const char *cur_scheme, *old_scheme = iri->scheme;
 
 	for (index = 0; (cur_scheme = wget_iri_schemes[index]); index++) {
-		if (cur_scheme == scheme)
+		if (!wget_strcasecmp_ascii(cur_scheme, scheme))
 			break;
 	}
 
