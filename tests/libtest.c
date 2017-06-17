@@ -49,6 +49,11 @@
 	#include <microhttpd.h>
 #endif
 
+#include <sys/types.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <netdb.h>
+
 static wget_thread_t
 	https_server_tid,
 	ftp_server_tid,
@@ -365,6 +370,47 @@ static int _http_server_start(void)
 
 	if (!httpdaemon)
 		return 1;
+
+	// get open random port number
+	if (0) {}
+#if MHD_VERSION >= 0x00095501
+	else if (MHD_is_feature_supported(MHD_FEATURE_AUTODETECT_BIND_PORT != MHD_NO))
+	{
+		const union MHD_DaemonInfo *dinfo;
+		dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_BIND_PORT);
+		if (dinfo == NULL || dinfo->port == 0)
+		{
+			return 1;
+		}
+		port_num = (int)dinfo->port;
+		http_server_port = port_num;
+	}
+#endif /* MHD_VERSION >= 0x00095501 */
+	else
+	{
+		const union MHD_DaemonInfo *dinfo;
+		MHD_socket sock_fd;
+		dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_LISTEN_FD);
+
+		if (dinfo == NULL)
+		{
+			return 1;
+		}
+		sock_fd = dinfo->listen_fd;
+
+		struct sockaddr_storage addr_store;
+		struct sockaddr *addr = (struct sockaddr *)&addr_store;
+		socklen_t addr_len = sizeof(addr_store);
+		char s_port[NI_MAXSERV];
+
+		// get automatic retrieved port number
+		if (getsockname(sock_fd, addr, &addr_len) == 0) {
+			if (getnameinfo(addr, addr_len, NULL, 0, s_port, sizeof(s_port), NI_NUMERICSERV) == 0)
+				port_num = atoi(s_port);
+				http_server_port = port_num;
+		}
+
+	}
 
 	return 0;
 }
