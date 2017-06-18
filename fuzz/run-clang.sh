@@ -29,7 +29,7 @@ clang-5.0 \
  $CFLAGS -I../include/wget -I.. \
  ${fuzzer}.c -o ${fuzzer} \
  -Wl,-Bstatic ../libwget/.libs/libwget.a -lFuzzer \
- -Wl,-Bdynamic -lidn2 -lunistring -lclang-5.0 -lstdc++
+ -Wl,-Bdynamic -lgnutls -lidn2 -lunistring -lpsl -lclang-5.0 -lstdc++
 
 # create directory for NEW test corpora (covering new areas of code)
 mkdir -p ${fuzzer}.new
