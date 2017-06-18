@@ -54,7 +54,6 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
-
 static wget_thread_t
 	https_server_tid,
 	ftp_server_tid,
@@ -281,6 +280,16 @@ static void *_http_server_thread(void *ctx)
 }
 
 #ifdef WITH_MICROHTTPD
+static char *_scan_directory(const char* data)
+{
+	char *path = strchr(data, '/');
+	if (path != 0) {
+		return path;
+	}
+	else
+		return NULL;
+}
+
 static int _print_query_string(void *cls, enum MHD_ValueKind kind,
 							const char *key,
 							const char *value)
@@ -334,6 +343,11 @@ static int _answer_to_connection(void *cls,
 	// it1 = iteration for urls data
 	unsigned int it1, found = 0;
 	for (it1 = 0; it1 < nurls; it1++) {
+		// create default page for directory without index page
+		char *dir = _scan_directory(url_full->data + 1);
+		if (dir != 0 && !strcmp(dir, "/"))
+			wget_buffer_strcat(url_full, "index.html");
+
 		if (!strcmp(url_full->data, urls[it1].name))
 		{
 			response = MHD_create_response_from_buffer(strlen(urls[it1].body),
