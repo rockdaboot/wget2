@@ -54,6 +54,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
+
 static wget_thread_t
 	https_server_tid,
 	ftp_server_tid,
@@ -338,6 +339,20 @@ static int _answer_to_connection(void *cls,
 			response = MHD_create_response_from_buffer(strlen(urls[it1].body),
 					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
 			ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+
+			// add available headers
+			if (*urls[it1].headers) {
+				// it2 = iteration for headers
+				for (unsigned int it2 = 0; urls[it1].headers[it2] != NULL; it2++) {
+					const char *header = urls[it1].headers[it2];
+					if (header) {
+						const char *header_value = strchr(header, ':');
+						const char *header_key = wget_strmemdup(header, header_value - header);
+						MHD_add_response_header(response, header_key, header_value + 2);
+						wget_xfree(header_key);
+					}
+				}
+			}
 
 			it1 = nurls;
 			found = 1;
