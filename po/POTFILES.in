@@ -14,6 +14,7 @@ libwget/hpkp.c
 libwget/hsts.c
 libwget/http.c
 libwget/http_highlevel.c
+libwget/http_parse.c
 libwget/init.c
 libwget/io.c
 libwget/iri.c
