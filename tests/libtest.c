@@ -348,7 +348,12 @@ static int _answer_to_connection(void *cls,
 		if (dir != 0 && !strcmp(dir, "/"))
 			wget_buffer_strcat(url_full, "index.html");
 
-		if (!strcmp(url_full->data, urls[it1].name))
+		// convert remote url into escaped char for iri encoding
+		wget_buffer_t *url_iri = wget_buffer_alloc(1024);
+		wget_buffer_strcpy(url_iri, urls[it1].name);
+		MHD_http_unescape(url_iri->data);
+
+		if (!strcmp(url_full->data, url_iri->data))
 		{
 			response = MHD_create_response_from_buffer(strlen(urls[it1].body),
 					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
@@ -371,6 +376,8 @@ static int _answer_to_connection(void *cls,
 			it1 = nurls;
 			found = 1;
 		}
+
+		wget_buffer_free(&url_iri);
 	}
 
 	// 404 with empty "body"
@@ -817,6 +824,7 @@ void wget_test_start_server(int first_key, ...)
 	wget_ssl_set_config_string(WGET_SSL_CA_FILE, SRCDIR "/certs/x509-ca-cert.pem");
 	wget_ssl_set_config_string(WGET_SSL_CERT_FILE, SRCDIR "/certs/x509-server-cert.pem");
 	wget_ssl_set_config_string(WGET_SSL_KEY_FILE, SRCDIR "/certs/x509-server-key.pem");
+
 
 	// init HTTPS server socket
 	https_parent_tcp = wget_tcp_init();
