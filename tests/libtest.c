@@ -340,6 +340,10 @@ static int _answer_to_connection(void *cls,
 		wget_buffer_strcat(url_full, query.params->data);
 	wget_buffer_free(&query.params);
 
+	// default page to index.html
+	if (!strcmp(url_full->data, "/"))
+		wget_buffer_strcat(url_full, "index.html");
+
 	// it1 = iteration for urls data
 	unsigned int it1, found = 0;
 	for (it1 = 0; it1 < nurls; it1++) {
@@ -824,7 +828,6 @@ void wget_test_start_server(int first_key, ...)
 	wget_ssl_set_config_string(WGET_SSL_CA_FILE, SRCDIR "/certs/x509-ca-cert.pem");
 	wget_ssl_set_config_string(WGET_SSL_CERT_FILE, SRCDIR "/certs/x509-server-cert.pem");
 	wget_ssl_set_config_string(WGET_SSL_KEY_FILE, SRCDIR "/certs/x509-server-key.pem");
-
 
 	// init HTTPS server socket
 	https_parent_tcp = wget_tcp_init();
