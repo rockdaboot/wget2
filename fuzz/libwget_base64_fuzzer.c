@@ -43,11 +43,13 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		in[size] = 0;
 
 	free(wget_base64_decode_alloc((char *) data, size));
-//	free(wget_base64_encode_alloc((char *) data, size));
-
 	free(wget_base64_encode_printf_alloc("%s", in));
 
 	free(in);
+
+	// just to cover inline function in wget.h
+	wget_base64_get_decoded_length(5);
+	wget_base64_get_encoded_length(5);
 
 	return 0;
 }
