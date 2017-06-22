@@ -100,20 +100,22 @@ struct wget_cookie_db_st {
 int wget_cookie_db_load_psl(wget_cookie_db_t *cookie_db _U, const char *fname _U)
 {
 #ifdef WITH_LIBPSL
-		if (fname) {
-			psl_ctx_t *psl = psl_load_file(fname);
-
-			if (psl)
-				psl_free(cookie_db->psl);
-			cookie_db->psl = psl;
-		} else {
-			psl_free(cookie_db->psl);
-			cookie_db->psl = NULL;
-		}
-
-		return 0;
-#else
+	if (!cookie_db)
 		return -1;
+
+	if (fname) {
+		psl_ctx_t *psl = psl_load_file(fname);
+
+		psl_free(cookie_db->psl);
+		cookie_db->psl = psl;
+	} else {
+		psl_free(cookie_db->psl);
+		cookie_db->psl = NULL;
+	}
+
+	return 0;
+#else
+	return -1;
 #endif
 }
 
@@ -122,9 +124,9 @@ static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_cookie(const wget_c
 {
 	int n;
 
-	if (!(n = strcmp(c1->domain, c2->domain))) {
-		if (!(n = strcmp(c1->name, c2->name))) {
-			n = strcmp(c1->path, c2->path);
+	if (!(n = wget_strcmp(c1->domain, c2->domain))) {
+		if (!(n = wget_strcmp(c1->name, c2->name))) {
+			n = wget_strcmp(c1->path, c2->path);
 		}
 	}
 
@@ -527,6 +529,8 @@ static int _wget_cookie_normalize_cookie(const wget_iri_t *iri, wget_cookie_t *c
 
 		if (!cookie->path || *cookie->path != '/') {
 			const char *p = iri->path ? strrchr(iri->path, '/') : NULL;
+
+			xfree(cookie->path);
 
 			if (p && p != iri->path) {
 				cookie->path = wget_strmemdup(iri->path, p - iri->path);
