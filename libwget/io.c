@@ -470,6 +470,7 @@ int wget_update_file(const char *fname,
 		if (fp) {
 			// read fname data
 			if (load_func(context, fp)) {
+				fclose(fp);
 				close(lockfd);
 				return -1;
 			}
