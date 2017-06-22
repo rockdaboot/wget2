@@ -30,15 +30,17 @@
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-	wget_cookie_db_t *db;
-	wget_cookie_t *cookie;
+	wget_cookie_db_t *db, *db2;
+	wget_cookie_t *cookie, *cookie2;
 	wget_iri_t *iri;
+	wget_vector_t *cookies;
+	char *in;
+	char fname[64];
 
 	if (size > 1000) // same as max_len = 10000 in .options file
 		return 0;
 
-	char *in = (char *) malloc(size + 1);
-
+	in = (char *) malloc(size + 1);
 	assert(in != NULL);
 
 	// 0 terminate
@@ -47,6 +49,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 	free(wget_cookie_to_setcookie(NULL));
 	wget_cookie_store_cookie(NULL, NULL);
+	wget_cookie_db_save(NULL, NULL);
+	wget_cookie_db_load(NULL, NULL);
+	wget_cookie_create_request_header(NULL, NULL);
 
 	db = wget_cookie_db_init(NULL);
 	wget_cookie_set_keep_session_cookies(db, 1);
@@ -58,13 +63,37 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		iri = wget_iri_parse("x.y", "iso-8859-1");
 		wget_cookie_normalize(iri, cookie);
 		wget_cookie_store_cookie(db, cookie);
+
+		wget_cookie_parse_setcookie(in, &cookie2);
+		cookies = wget_vector_create(4, 4, NULL);
+		wget_vector_set_destructor(cookies, (wget_vector_destructor_t)wget_cookie_deinit);
+		wget_vector_add_noalloc(cookies, cookie2);
+		wget_cookie_normalize_cookies(iri, cookies);
+		wget_cookie_store_cookies(db, cookies);
+		wget_http_free_cookies(&cookies);
+
 		free(wget_cookie_create_request_header(db, iri));
 		wget_iri_free(&iri);
+
+		// test load & save functions
+		snprintf(fname, sizeof(fname), "%d.tmp", getpid());
+		wget_cookie_db_save(db, fname);
+
+		db2 = wget_cookie_db_init(NULL);
+		wget_cookie_db_load(db2, fname);
+		wget_cookie_db_free(&db2);
+
+		unlink(fname);
 	}
 	free(wget_cookie_to_setcookie(cookie));
 
 	free(cookie);
-//	wget_cookie_free(&cookie);
+
+	wget_cookie_db_load_psl(NULL, NULL);
+	wget_cookie_db_load_psl(db, "/dev/null");
+	wget_cookie_db_load_psl(db, NULL);
+
+	//	wget_cookie_free(&cookie);
 	wget_cookie_db_free(&db);
 
 	free(in);
