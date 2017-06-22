@@ -53,5 +53,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 	free(in);
 
+	wget_html_parse_file("/dev/null", NULL, NULL, 0);
+	wget_html_parse_file("-", NULL, NULL, 0);
+
 	return 0;
 }
