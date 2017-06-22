@@ -50,9 +50,6 @@ TESTS = $(WGET_TESTS)
 clean-local:
 	rm -rf *.gc?? *.log lcov
 
-fuzz-coverage: $(WGET_TESTS)
-	find . -name '*_fuzzer' -exec ./coverage.sh '{}' ';'
-
 oss-fuzz:
 	if test "$$OUT" != ""; then \
 	for ccfile in *_fuzzer.c; do \

@@ -95,6 +95,8 @@ sitemap index files.
 
 [Code Coverage](https://gnuwget.gitlab.io/wget2/coverage/)
 
+[Fuzz Code Coverage](https://gnuwget.gitlab.io/wget2/fuzz-coverage/)
+
 
 # Build Requirements
 

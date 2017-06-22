@@ -93,10 +93,16 @@ pages:
     - CFLAGS="-g -O0" ./configure
     - make -j$(nproc) check-coverage
     - mkdir -p public
+    # Test suite coverage report
     - rm -rf public/coverage
     - mv lcov public/coverage
+    # Online Documentation
     - rm -rf public/reference
     - mv docs/html public/reference
+    # Coverage report for all our fuzz corpora
+    - make -j$(nproc) fuzz-coverage
+    - rm -rf public/fuzz-coverage
+    - mv lcov public/fuzz-coverage
   tags:
     - shared
   artifacts:
@@ -105,6 +111,7 @@ pages:
       - public
   only:
     - master
+    - tmp-online-fuzz-coverage
 
 MinGW64:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD

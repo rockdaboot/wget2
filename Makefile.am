@@ -51,7 +51,7 @@ check-coverage: clean clean-lcov
 fuzz-coverage: clean clean-lcov
 	$(MAKE) -C lib
 	$(MAKE) -C libwget CFLAGS="$(CFLAGS) --coverage" LDFLAGS="$(LDFLAGS) --coverage"
-	$(MAKE) -C fuzz fuzz-coverage CFLAGS="$(CFLAGS) --coverage" LDFLAGS="$(LDFLAGS) --coverage"
+	$(MAKE) -C fuzz check CFLAGS="$(CFLAGS) --coverage" LDFLAGS="$(LDFLAGS) --coverage"
 	lcov --capture --initial --directory libwget/.libs --directory fuzz --output-file $(LCOV_INFO)
 	lcov --capture --directory libwget/.libs --directory fuzz --output-file $(LCOV_INFO)
 	lcov --remove $(LCOV_INFO) '*/test_linking.c' '*/css_tokenizer.lex' '*/<stdout>' -o $(LCOV_INFO)
