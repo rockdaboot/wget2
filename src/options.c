@@ -1440,8 +1440,8 @@ static const struct optionw options[] = {
 	{ "tls-false-start", &config.tls_false_start, parse_bool, 0, 0,
 		SECTION_SSL,
 		{ "Enable TLS False Start (needs GnuTLS 3.5+).\n",
-		          "(default: on)\n"
-		        }
+		  "(default: on)\n"
+		}
 	},
 	{ "tls-resume", &config.tls_resume, parse_bool, 0, 0,
 		SECTION_SSL,
@@ -1551,9 +1551,8 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 				print_first(options[it].short_name,
 				            options[it].long_name,
 				            options[it].help_str[0]);
-				for (unsigned int i = 1; options[it].help_str[i] != NULL && i < countof(options[it].help_str); i++){
+				for (unsigned int i = 1; i < countof(options[it].help_str) && options[it].help_str[i] != NULL; i++)
 					print_next(options[it].help_str[i]);
-				}
 			}
 		}
 		printf("\n");
