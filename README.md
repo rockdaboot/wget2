@@ -105,7 +105,7 @@ The following packages are needed to build the software
 * autotools (autoconf, autogen, automake, autopoint, libtool)
 * pkg-config >= 0.28 (recommended)
 * doxygen (for creating the documentation)
-* gettext >= 0.18.1
+* gettext >= 0.18.2
 * libz >= 1.2.3 (the distribution may call the package zlib*, eg. zlib1g on Debian)
 * liblzma >= 5.1.1alpha (optional, if you want HTTP lzma decompression)
 * libbz2 >= 1.0.6 (optional, if you want HTTP bzip2 decompression)
