@@ -403,10 +403,12 @@ const char *wget_cookie_parse_setcookie(const char *s, wget_cookie_t **_cookie)
 					} else if (!wget_strcasecmp_ascii(name, "max-age")) {
 						long offset = atol(p);
 
-						if (offset > 0)
-							// cookie->maxage = adjust_time(get_current_time(), offset);
+						if (offset > 0) {
+							// limit offset to avoid integer overflow
+							if (offset > INT_MAX)
+								offset = INT_MAX;
 							cookie->maxage = time(NULL) + offset;
-						else
+						} else
 							cookie->maxage = 0;
 					} else if (!wget_strcasecmp_ascii(name, "domain")) {
 						if (p != s) {
