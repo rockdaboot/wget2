@@ -290,6 +290,15 @@ static char *_scan_directory(const char* data)
 		return NULL;
 }
 
+static char *_parse_hostname(const char* data)
+{
+	if (!wget_strncasecmp_ascii(data, "http://", 7)) {
+		char *path = strchr(data += 7, '/');
+		return path;
+	} else
+		return NULL;
+}
+
 static int _print_query_string(void *cls, enum MHD_ValueKind kind,
 							const char *key,
 							const char *value)
@@ -350,6 +359,11 @@ static int _answer_to_connection(void *cls,
 		// create default page for directory without index page
 		char *dir = _scan_directory(url_full->data + 1);
 		if (dir != 0 && !strcmp(dir, "/"))
+			wget_buffer_strcat(url_full, "index.html");
+
+		// create default page for hostname without index page
+		char *host = _parse_hostname(url_full->data);
+		if (host != 0 && !strcmp(host, "/"))
 			wget_buffer_strcat(url_full, "index.html");
 
 		// convert remote url into escaped char for iri encoding
