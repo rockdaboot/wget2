@@ -726,7 +726,7 @@ static int _cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname)
 
 	data = xmalloc(size);
 
-	if ((rc = gnutls_pubkey_export(key, GNUTLS_X509_FMT_DER, NULL, &size)) != GNUTLS_E_SHORT_MEMORY_BUFFER) {
+	if ((rc = gnutls_pubkey_export(key, GNUTLS_X509_FMT_DER, data, &size)) == GNUTLS_E_SHORT_MEMORY_BUFFER) {
 		error_printf(_("Failed to export pubkey: %s\n"), gnutls_strerror(rc));
 		ret = 0;
 		goto out;
