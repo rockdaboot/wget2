@@ -36,7 +36,7 @@ test_linking_LDADD = libwget.la ../lib/libgnu.la
 # gnulib needs config.h included before any gnulib header files
 css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
 	$(AM_V_GEN)
-	$(AM_V_at)$(LEX) -w -o$@ $< && sed -i '1s;^;#include "config.h"\n;' $@
+	$(AM_V_at)$(LEX) -w -o$@ $<
 
 clean-local:
 	-rm -f css_tokenizer.c

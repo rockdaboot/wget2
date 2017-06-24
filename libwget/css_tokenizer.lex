@@ -5,11 +5,15 @@
 %option nounput
 %option reentrant
 
+%top{
+/* config.h must precede flex's inclusion of <stdio.h>
+   in order for its _GNU_SOURCE definition to take effect.  */
+#include <config.h>
+}
+
 %{
 
 #define YY_NO_INPUT
-
-#include <config.h>
 
 #include <wget.h>
 
