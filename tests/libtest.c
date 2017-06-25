@@ -299,7 +299,14 @@ static char *_parse_hostname(const char* data)
 		return NULL;
 }
 
-static int _print_query_string(void *cls, enum MHD_ValueKind kind,
+static void _replace_space_with_plus(wget_buffer_t *buf, const char *data)
+{
+	for (; *data; data++)
+		wget_buffer_memcat(buf, *data == ' ' ? "+" : data, 1);
+}
+
+static int _print_query_string(void *cls,
+							enum MHD_ValueKind kind,
 							const char *key,
 							const char *value)
 {
@@ -307,18 +314,18 @@ static int _print_query_string(void *cls, enum MHD_ValueKind kind,
 
 	if (key && query->it == 0) {
 		wget_buffer_strcpy(query->params, "?");
-		wget_buffer_strcat(query->params, key);
+		_replace_space_with_plus(query->params, key);
 		if (value) {
 			wget_buffer_strcat(query->params, "=");
-			wget_buffer_strcat(query->params, value);
+			_replace_space_with_plus(query->params, value);
 		}
 	}
 	if (key && query->it != 0) {
 		wget_buffer_strcat(query->params, "&");
-		wget_buffer_strcat(query->params, key);
+		_replace_space_with_plus(query->params, key);
 		if (value) {
 			wget_buffer_strcat(query->params, "=");
-			wget_buffer_strcat(query->params, value);
+			_replace_space_with_plus(query->params, value);
 		}
 	}
 
