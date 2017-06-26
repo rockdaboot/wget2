@@ -1,0 +1,36 @@
+#!/bin/sh -eu
+
+# First step. In the top directory execute:
+# export CC=clang-5.0
+# export CFLAGS="-O1 -fno-omit-frame-pointer -gline-tables-only -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-coverage=trace-pc-guard,trace-cmp"
+# ./configure --enable-static --disable-doc
+# make clean
+# make -j$(nproc) LIB_FUZZING_ENGINE="-lFuzzer"
+# cd fuzz
+# make -j$(nproc) check
+
+# Read the docs at https://github.com/google/oss-fuzz/blob/master/docs/corpora.md
+# then install 'google-cloud-sdk' and execute 'gcloud init'.
+# Now 'gsutil' should be ready to use.
+
+if test -z "$1"; then
+  echo "Usage: $0 <fuzzer target>"
+  echo "Example: $0 libwget_robots_parse_fuzzer"
+  exit 1
+fi
+
+fuzzer=$1
+project=wget2
+
+# sync/copy the OSS-Fuzz corpora into the .new directory
+mkdir -p ${fuzzer}.new
+gsutil -m rsync gs://${project}-corpus.clusterfuzz-external.appspot.com/libFuzzer/wget2_${fuzzer} ${fuzzer}.new
+
+# create fuzzer target
+BUILD_ONLY=1 ./run-clang.sh ${fuzzer}
+
+# merge the corpora into the .in directory
+./${fuzzer} -merge=1 ${fuzzer}.in ${fuzzer}.new
+
+echo
+echo "If new files have been added, 'git add' and 'git commit' them."

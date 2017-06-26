@@ -1,0 +1,26 @@
+User-Agent: *
+Dn|
+Disallow:	/x
+Disallow:*
+Dn
+Disallow: /x
+Disallow:	/x
+Disallow:*
+Dn
+Disallow: /x
+Disallow:	x
+Disallow:	/x
+Disallow:*
+Dn
+Disallow: /x
+Disallow:	w:	*
+Dn
+
+Disallow:	/x
+Disallow:	Sge*
+Dn
+Disallow: /x
+Disallow:	/x
+Disallow:	Si gz
+
+Disallow:gz

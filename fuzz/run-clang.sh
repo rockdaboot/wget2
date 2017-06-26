@@ -31,6 +31,10 @@ clang-5.0 \
  -Wl,-Bstatic ../libwget/.libs/libwget.a -lFuzzer \
  -Wl,-Bdynamic -lgnutls -lidn2 -lunistring -lpsl -lclang-5.0 -lstdc++
 
+if test -n "$BUILD_ONLY"; then
+  exit 0
+fi
+
 # create directory for NEW test corpora (covering new areas of code)
 mkdir -p ${fuzzer}.new
 
