@@ -21,6 +21,7 @@
 
 #include <assert.h> // assert
 #include <stdlib.h> // malloc, free
+#include <string.h> // memcpy
 
 #include "wget.h"
 #include "fuzzer.h"
@@ -33,8 +34,84 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	char dst4[4];
 	char dst5[8];
 	char *dst = (char *) malloc(size * 2 + 1);
+	char *data0 = (char *) malloc(size + 1);
+	int x = 0; // avoid pure functions to be optimized away
 
 	assert(dst != NULL);
+	assert(data0 != NULL);
+
+	// 0-terminate data
+	memcpy(data0, data, size);
+	data0[size] = 0;
+
+	// some test for code coverage
+	x += wget_strcmp(NULL, "");
+	x += wget_strcmp("", NULL);
+	x += wget_strcmp(NULL, NULL);
+	x += wget_strcmp(data0, data0);
+
+	x +=  wget_strncmp(NULL, "", 0);
+	x += wget_strncmp("", NULL, 0);
+	x += wget_strncmp(NULL, NULL, 0);
+	x += wget_strncmp((char *) data, (char *) data, size);
+
+	x += wget_strcasecmp(NULL, "");
+	x += wget_strcasecmp("", NULL);
+	x += wget_strcasecmp(NULL, NULL);
+	x += wget_strcasecmp(data0, data0);
+
+	x += wget_strncasecmp(NULL, "", 0);
+	x += wget_strncasecmp("", NULL, 0);
+	x += wget_strncasecmp(NULL, NULL, 0);
+	x += wget_strncasecmp((char *) data, (char *) data, size);
+
+	x += wget_strcasecmp_ascii(NULL, "");
+	x += wget_strcasecmp_ascii("", NULL);
+	x += wget_strcasecmp_ascii(NULL, NULL);
+	x += wget_strcasecmp_ascii(data0, data0);
+
+	x += wget_strncasecmp_ascii(NULL, "", 0);
+	x += wget_strncasecmp_ascii("", NULL, 0);
+	x += wget_strncasecmp_ascii(NULL, NULL, 0);
+	x += wget_strncasecmp_ascii((char *) data, (char *) data, size);
+
+	wget_strtolower(NULL);
+	wget_strtolower(data0);
+	memcpy(data0, (char *) data, size); // restore
+
+	wget_millisleep(-1);
+
+	wget_percent_unescape(data0);
+	memcpy(data0, data, size); // restore
+
+	x += wget_match_tail(data0, data0);
+	x += wget_match_tail("", data0);
+	x += wget_match_tail(data0, "");
+
+	x += wget_match_tail_nocase(data0, data0);
+	x += wget_match_tail_nocase("", data0);
+	x += wget_match_tail_nocase(data0, "");
+
+	char *p;
+	if ((p = wget_strglob(data0, 0)))
+		free(p);
+
+	if (size < 31) {
+		char buf[16];
+		x += !!wget_human_readable(dst1, sizeof(dst1), (1 << size) - 1);
+		x += !!wget_human_readable(buf, sizeof(buf), (1 << size) - 1);
+	}
+
+	int w, h;
+	wget_get_screen_size(&w, &h);
+
+	char esc[size * 3 + 1];
+	wget_restrict_file_name(data0, esc, WGET_RESTRICT_NAMES_WINDOWS);
+	wget_restrict_file_name(data0, esc, WGET_RESTRICT_NAMES_NOCONTROL);
+	wget_restrict_file_name(data0, esc, WGET_RESTRICT_NAMES_ASCII);
+	wget_restrict_file_name(data0, esc, WGET_RESTRICT_NAMES_UPPERCASE);
+	wget_restrict_file_name(data0, esc, WGET_RESTRICT_NAMES_LOWERCASE);
+	wget_restrict_file_name(data0, esc, WGET_RESTRICT_NAMES_UNIX);
 
 	wget_memtohex(NULL, 0, NULL, 0);
 	wget_memtohex(data, size, dst1, sizeof(dst1));
@@ -44,6 +121,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	wget_memtohex(data, size, dst5, sizeof(dst5));
 	wget_memtohex(data, size, dst, size * 2 + 1);
 
+	free(data0);
 	free(dst);
 
 	return 0;
