@@ -24,12 +24,20 @@ project=wget2
 
 # sync/copy the OSS-Fuzz corpora into the .new directory
 mkdir -p ${fuzzer}.new
+cp -fp ${fuzzer}.in/* ${fuzzer}.new
 gsutil -m rsync gs://${project}-corpus.clusterfuzz-external.appspot.com/libFuzzer/wget2_${fuzzer} ${fuzzer}.new
 
 # create fuzzer target
 BUILD_ONLY=1 ./run-clang.sh ${fuzzer}
 
 # merge the corpora into the .in directory
+./${fuzzer} -merge=1 ${fuzzer}.in ${fuzzer}.new
+
+# now clear .new dir and put all corpora there
+rm -f ${fuzzer}.new/*
+mv ${fuzzer}.in/* ${fuzzer}.new
+
+# now merge again (optimizes number of corpora)
 ./${fuzzer} -merge=1 ${fuzzer}.in ${fuzzer}.new
 
 echo
