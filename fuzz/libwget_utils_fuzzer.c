@@ -22,6 +22,7 @@
 #include <assert.h> // assert
 #include <stdlib.h> // malloc, free
 #include <string.h> // memcpy
+// #include <unistd.h> // chroot
 
 #include "wget.h"
 #include "fuzzer.h"
@@ -80,6 +81,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	memcpy(data0, (char *) data, size); // restore
 
 	wget_millisleep(-1);
+	wget_get_timemillis();
 
 	wget_percent_unescape(data0);
 	memcpy(data0, data, size); // restore
@@ -92,9 +94,12 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	x += wget_match_tail_nocase("", data0);
 	x += wget_match_tail_nocase(data0, "");
 
-	char *p;
-	if ((p = wget_strglob(data0, 0)))
-		free(p);
+//	if (chroot(".") == 0) {
+		char *p;
+		if ((p = wget_strglob("*", 0)))
+			free(p);
+//	} else
+//		printf("Failed to chroot\n");
 
 	if (size < 31) {
 		char buf[16];
