@@ -66,7 +66,7 @@ int main(void)
 	wget_ssl_set_config_int(WGET_SSL_PRINT_INFO, 1);
 
 	// SSL: switch HTTP/2.0 on/off via ALPN
-	// wget_ssl_set_config_string(WGET_SSL_ALPN, config.http2 ? "h2,h2-16,h2-14,http/1.1" : NULL);
+	// wget_ssl_set_config_string(WGET_SSL_ALPN, config.http2 ? "h2,http/1.1" : NULL);
 
 	for (unsigned it = 0; it < countof(urls); it++) {
 		// 1. parse the URL into a URI

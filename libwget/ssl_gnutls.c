@@ -99,7 +99,7 @@ static struct _config {
 	.key_type = WGET_SSL_X509_FMT_PEM,
 	.secure_protocol = "AUTO",
 	.ca_directory = "system",
-	.alpn = "h2,h2-16,h2-14,http/1.1",
+	.alpn = "h2,http/1.1",
 };
 
 struct _session_context {
