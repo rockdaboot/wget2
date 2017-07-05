@@ -343,11 +343,20 @@ static int _answer_to_connection(void *cls,
 	struct MHD_Response *response;
 	struct query_string query;
 	int ret;
+	time_t modified;
+	const char *modified_val;
 
 	// get query string
 	query.params = wget_buffer_alloc(1024);
 	query.it = 0;
 	MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND, &_print_query_string, &query);
+
+	// get if-modified-since header
+	modified_val = MHD_lookup_connection_value(connection, MHD_HEADER_KIND,
+												MHD_HTTP_HEADER_IF_MODIFIED_SINCE);
+	modified = 0;
+	if (modified_val)
+		modified = wget_http_parse_full_date(modified_val);
 
 	// append query string into URL
 	wget_buffer_t *url_full = wget_buffer_alloc(1024);
@@ -380,9 +389,14 @@ static int _answer_to_connection(void *cls,
 
 		if (!strcmp(url_full->data, url_iri->data))
 		{
+			if (modified && urls[it1].modified <= modified) {
+				response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
+				ret = MHD_queue_response(connection, MHD_HTTP_NOT_MODIFIED, response);
+			} else {
 			response = MHD_create_response_from_buffer(strlen(urls[it1].body),
 					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
 			ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+			}
 
 			// add available headers
 			if (*urls[it1].headers) {
