@@ -561,6 +561,7 @@ if test "x$plugin_support" = "xyes"; then
 		AC_DEFINE([PLUGIN_SUPPORT_LIBDL], [1], [Use libdl for plugins])
 	fi
 fi
+AM_CONDITIONAL([PLUGIN_SUPPORT], [test "x$plugin_support" = xyes])
 
 # Checks for header files.
 AC_CHECK_HEADERS([\

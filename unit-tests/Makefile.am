@@ -12,11 +12,14 @@ LDADD = ../lib/libgnu.la ../libwget/libwget.la \
 
 WGET_TESTS = \
  test$(EXEEXT) \
- test-parse-html$(EXEEXT) \
- test-dl$(EXEEXT)
+ test-parse-html$(EXEEXT)
+
+if PLUGIN_SUPPORT
+ WGET_TESTS += test-dl$(EXEEXT)
+ check_LTLIBRARIES = libalpha.la libbeta.la
+endif
 
 check_PROGRAMS = buffer_printf_perf stringmap_perf $(WGET_TESTS)
-check_LTLIBRARIES = libalpha.la libbeta.la
 
 test_SOURCES = test.c
 test_LDADD = ../src/log.o ../src/options.o ../src/dl.o ../src/plugin.o \
