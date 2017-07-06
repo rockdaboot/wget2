@@ -26,10 +26,14 @@
 #include "wget_stats.h"
 #include "wget_options.h"
 
-static wget_vector_t *dns_stats_v;
-static wget_vector_t *tls_stats_v;
+static wget_vector_t
+	*dns_stats_v,
+	*tls_stats_v,
+	*server_stats_v;
+
 static wget_thread_mutex_t dns_mutex = WGET_THREAD_MUTEX_INITIALIZER;
 static wget_thread_mutex_t tls_mutex = WGET_THREAD_MUTEX_INITIALIZER;
+static wget_thread_mutex_t server_mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
 static void stats_callback(wget_stats_type_t type, const void *stats)
 {
@@ -69,6 +73,21 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		break;
 	}
 
+	case WGET_STATS_TYPE_SERVER: {
+		server_stats_t server_stats;
+
+//		server_stats.hostname = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HOSTNAME, stats));
+		server_stats.hpkp = *((wget_hpkp_stats_t *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats));
+		server_stats.hsts = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats));
+		server_stats.csp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats));
+
+		wget_thread_mutex_lock(&server_mutex);
+		wget_vector_add(server_stats_v, &server_stats, sizeof(server_stats_t));
+		wget_thread_mutex_unlock(&server_mutex);
+
+		break;
+	}
+
 	default:
 		error_printf("Unknown stats type\n");
 		break;
@@ -94,6 +113,12 @@ static void free_tls_stats(tls_stats_t *stats)
 	}
 }
 
+static void free_server_stats(server_stats_t *stats)
+{
+//	if (stats)
+//		xfree(stats->hostname);
+}
+
 void stats_init(void)
 {
 
@@ -108,6 +133,12 @@ void stats_init(void)
 		wget_vector_set_destructor(tls_stats_v, (wget_vector_destructor_t) free_tls_stats);
 		wget_tcp_set_stats_tls(stats_callback);
 	}
+
+	if (config.stats_server) {
+		server_stats_v = wget_vector_create(8, -2, NULL);
+		wget_vector_set_destructor(server_stats_v, (wget_vector_destructor_t) free_server_stats);
+		wget_tcp_set_stats_server(stats_callback);
+	}
 }
 
 void stats_print(void)
@@ -117,14 +148,18 @@ void stats_print(void)
 		info_printf("  %4s %s\n", "ms", "Host");
 		for (int it = 0; it < wget_vector_size(dns_stats_v); it++) {
 			const dns_stats_t *dns_stats = wget_vector_get(dns_stats_v, it);
+
 			info_printf("  %4lld %s (%s)\n", dns_stats->millisecs, dns_stats->host, dns_stats->ip);
 		}
+
+		wget_vector_free(&dns_stats_v);
 	}
 
 	if (config.stats_tls) {
 		info_printf("\nTLS Statistics:\n");
 		for (int it = 0; it < wget_vector_size(tls_stats_v); it++) {
 			const tls_stats_t *tls_stats = wget_vector_get(tls_stats_v, it);
+
 			info_printf("  %s:\n", tls_stats->hostname);
 			info_printf("    Version         : %s\n", tls_stats->version);
 			info_printf("    False Start     : %s\n", tls_stats->false_start);
@@ -136,8 +171,37 @@ void stats_print(void)
 			info_printf("    TLS negotiation\n");
 			info_printf("    duration (ms)   : %lld\n\n", tls_stats->millisecs);
 		}
+
+		wget_vector_free(&tls_stats_v);
 	}
 
-	wget_vector_free(&dns_stats_v);
-	wget_vector_free(&tls_stats_v);
+	if (config.stats_server) {
+		info_printf("\nServer Statistics:\n");
+		for (int it = 0; it < wget_vector_size(server_stats_v); it++) {
+			const server_stats_t *server_stats = wget_vector_get(server_stats_v, it);
+
+//			info_printf("  %s:\n", server_stats->hostname);
+			switch (server_stats->hpkp) {
+					case WGET_STATS_HPKP_NO:
+						info_printf("    HPKP           : %s\n", "No existing entry in hpkp db");
+						break;
+					case WGET_STATS_HPKP_MATCH:
+						info_printf("    HPKP           : %s\n", "Pubkey pinning matched");
+						break;
+					case WGET_STATS_HPKP_NOMATCH:
+						info_printf("    HPKP           : %s\n", "Pubkey pinning mismatch");
+						break;
+//					case WGET_STATS_HPKP_NEW:
+//						info_printf("    HPKP           : %s\n", "");
+//						break;
+					default:
+						error_printf("Unknown HPKP stats type\n");
+						break;
+					}
+			info_printf("    HSTS           : %s\n", server_stats->hsts ? "Yes" : "No");
+			info_printf("    CSP            : %s\n\n", server_stats->csp ? "Yes" : "No");
+		}
+
+			wget_vector_free(&server_stats_v);
+	}
 }

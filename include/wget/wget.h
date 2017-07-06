@@ -1959,7 +1959,8 @@ struct wget_http_response_t {
 	char
 		hsts_include_subdomains;
 	unsigned char
-		hsts : 1; // if hsts_maxage and hsts_include_subdomains are valid
+		hsts : 1, // if hsts_maxage and hsts_include_subdomains are valid
+		csp : 1;
 	size_t
 		cur_downloaded;
 };
@@ -2537,7 +2538,8 @@ struct wget_plugin_vtable
 
 typedef enum {
 	WGET_STATS_TYPE_DNS,
-	WGET_STATS_TYPE_TLS
+	WGET_STATS_TYPE_TLS,
+	WGET_STATS_TYPE_SERVER
 } wget_stats_type_t;
 
 typedef enum {
@@ -2559,6 +2561,20 @@ typedef enum {
 	WGET_STATS_TLS_CERT_CHAIN_SIZE
 } wget_tls_stats_t;
 
+typedef enum {
+	WGET_STATS_SERVER_HOSTNAME,
+	WGET_STATS_SERVER_HPKP,
+	WGET_STATS_SERVER_HSTS,
+	WGET_STATS_SERVER_CSP
+} wget_server_stats_t;
+
+typedef enum {
+	WGET_STATS_HPKP_NO,
+	WGET_STATS_HPKP_MATCH,
+	WGET_STATS_HPKP_NOMATCH,
+	WGET_STATS_HPKP_NEW
+} wget_hpkp_stats_t;
+
 typedef void
 	(*wget_stats_callback_t)(wget_stats_type_t type, const void *stats);
 
@@ -2573,6 +2589,12 @@ WGETAPI void
 
 WGETAPI const void *
 	wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *stats);
+
+WGETAPI void
+	wget_tcp_set_stats_server(wget_stats_callback_t fn);
+
+WGETAPI const void *
+	wget_tcp_get_stats_server(wget_server_stats_t type, const void *stats);
 
 WGET_END_DECLS
 

@@ -190,7 +190,8 @@ struct config {
 		xattr,
 		force_progress,
 		stats_dns,
-		stats_tls;
+		stats_tls,
+		stats_server;
 };
 
 extern struct config

@@ -1065,6 +1065,8 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 				wget_http_parse_content_disposition(value0, &resp->content_filename);
 		} else if (!wget_strncasecmp_ascii(name, "connection", namelen)) {
 			wget_http_parse_connection(value0, &resp->keep_alive);
+		} else if (!wget_strncasecmp_ascii(name, "Content-Security-Policy", namelen)) {
+			resp->csp = 1;
 		} else
 			ret = -1;
 		break;
@@ -1120,6 +1122,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 			if (!resp->hpkp) {
 				resp->hpkp = wget_hpkp_new();
 				wget_http_parse_public_key_pins(value0, resp->hpkp);
+				debug_printf("new host pubkey pinnings added to hpkp db\n");
 			}
 		}
 		else if (!wget_strncasecmp_ascii(name, "proxy-authenticate", namelen)) {
@@ -1203,8 +1206,7 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 	resp = xcalloc(1, sizeof(wget_http_response_t));
 
 	if (sscanf(buf, " HTTP/%3hd.%3hd %3hd %31[^\r\n] ",
-		&resp->major, &resp->minor, &resp->code, resp->reason) >= 3)
-	{
+		&resp->major, &resp->minor, &resp->code, resp->reason) >= 3) {
 		if ((eol = strchr(buf + 10, '\n'))) {
 			// eol[-1]=0;
 			// debug_printf("# %s\n",buf);

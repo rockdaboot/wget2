@@ -47,6 +47,16 @@ typedef struct {
 	long long millisecs;
 } tls_stats_t;
 
+typedef struct {
+	const char
+		*hostname;
+	wget_hpkp_stats_t
+		hpkp;
+	char
+		hsts,
+		csp;
+} server_stats_t;
+
 void stats_init(void);
 void stats_print(void);
 

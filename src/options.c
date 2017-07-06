@@ -1477,6 +1477,11 @@ static const struct optionw options[] = {
 		{ "Print DNS lookup durations. (default: off)\n"
 		}
 	},
+	{ "stats-server", &config.stats_server, parse_bool, 0, 0,
+		SECTION_STARTUP,
+		{ "Print server stats. (default: off)\n"
+		}
+	},
 	{ "stats-tls", &config.stats_tls, parse_bool, 0, 0,
 		SECTION_STARTUP,
 		{ "Print TLS stats. (default: off)\n"

@@ -54,6 +54,7 @@
 #include <wget.h>
 #include "private.h"
 #include "http.h"
+#include "net.h"
 
 static char
 	_abort_indicator;
@@ -62,6 +63,17 @@ static wget_vector_t
 	*http_proxies,
 	*https_proxies,
 	*no_proxies;
+
+typedef struct
+{
+	char *hostname;
+	wget_hpkp_stats_t hpkp;
+	char
+		hsts,
+		csp;
+} _stats_data_t;
+
+static wget_stats_callback_t stats_callback;
 
 // This is the default function for collecting body data
 static int _body_callback(wget_http_response_t *resp, void *user_data G_GNUC_WGET_UNUSED, const char *data, size_t length)
@@ -892,6 +904,19 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 			resp->req = req;
 
+			if (stats_callback) {
+				_stats_data_t stats;
+
+//				stats.hostname = ;
+				if (1)
+					stats.hpkp = conn->tcp->hpkp;
+
+				stats.hsts = resp->hsts;
+				stats.csp = resp->csp;
+
+				stats_callback(WGET_STATS_TYPE_SERVER, &stats);
+			}
+
 			if (req->header_callback) {
 				if (req->header_callback(resp, req->header_user_data))
 					goto cleanup; // stop requested by callback function
@@ -1272,4 +1297,27 @@ void wget_http_abort_connection(wget_http_connection_t *conn)
 		conn->abort_indicator = 1; // stop single connection
 	else
 		_abort_indicator = 1; // stop all connections
+}
+
+void wget_tcp_set_stats_server(wget_stats_callback_t fn)
+{
+	stats_callback = fn;
+}
+
+const void *wget_tcp_get_stats_server(wget_server_stats_t type, const void *_stats)
+{
+	const _stats_data_t *stats = (_stats_data_t *) _stats;
+
+	switch(type) {
+	case WGET_STATS_SERVER_HOSTNAME:
+		return stats->hostname;
+	case WGET_STATS_SERVER_HPKP:
+		return &(stats->hpkp);
+	case WGET_STATS_SERVER_HSTS:
+		return &(stats->hsts);
+	case WGET_STATS_SERVER_CSP:
+		return &(stats->csp);
+	default:
+		return NULL;
+	}
 }
