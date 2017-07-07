@@ -886,15 +886,25 @@ char *wget_http_print_date(time_t t, char *buf, size_t bufsize)
 	static const char *mnames[12] = {
 		"Jan", "Feb", "Mar","Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 	};
-	struct tm tm;
+	struct tm *tp;
 
 	if (!bufsize)
 		return buf;
 
-	if (gmtime_r(&t, &tm)) {
+#ifdef _WIN32
+	/* Wine 2.10 crashes in gnulib gmtime_r(), so we use gmtime() directly here.
+	 * That function is thread-safe on Windows. */
+	#undef gmtime
+	tp = gmtime(&t);
+#else
+	struct tm tm;
+	tp = gmtime_r(&t, &tm);
+#endif
+
+	if (tp) {
 		snprintf(buf, bufsize, "%s, %02d %s %d %02d:%02d:%02d GMT",
-			dnames[tm.tm_wday],tm.tm_mday,mnames[tm.tm_mon],tm.tm_year+1900,
-			tm.tm_hour, tm.tm_min, tm.tm_sec);
+			dnames[tp->tm_wday],tp->tm_mday,mnames[tp->tm_mon],tp->tm_year+1900,
+			tp->tm_hour, tp->tm_min, tp->tm_sec);
 	} else
 		*buf = 0;
 
