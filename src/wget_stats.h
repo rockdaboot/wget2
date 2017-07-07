@@ -43,7 +43,7 @@ typedef struct {
 		tls_con,
 		resumed,
 		tcp_protocol;
-	unsigned int cert_chain_size;
+	size_t cert_chain_size;
 	long long millisecs;
 } tls_stats_t;
 
@@ -58,6 +58,8 @@ typedef struct {
 } server_stats_t;
 
 void stats_init(void);
+void stats_printcsv(wget_stats_type_t, const char **, const int);
+void stats_printjson(wget_stats_type_t);
 void stats_print(void);
 
 #endif

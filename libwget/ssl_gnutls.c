@@ -69,7 +69,7 @@ typedef struct
 		*tfo,
 		*alpn_protocol;
 	long long tls_secs;	//milliseconds
-	unsigned int cert_chain_size;
+	size_t cert_chain_size;
 	char
 		tls_con,
 		resumed,
@@ -1492,7 +1492,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		if (stats_callback) {
 			stats.resumed = resumed;
 			stats.version = gnutls_protocol_get_name(gnutls_protocol_get_version(session));
-			gnutls_certificate_get_peers(session, &(stats.cert_chain_size));
+			gnutls_certificate_get_peers(session, (unsigned int *)&(stats.cert_chain_size));
 		}
 
 		debug_printf("Handshake completed%s\n", resumed ? " (resumed session)" : "");
