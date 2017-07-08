@@ -2539,7 +2539,8 @@ struct wget_plugin_vtable
 typedef enum {
 	WGET_STATS_TYPE_DNS,
 	WGET_STATS_TYPE_TLS,
-	WGET_STATS_TYPE_SERVER
+	WGET_STATS_TYPE_SERVER,
+	WGET_STATS_TYPE_OCSP
 } wget_stats_type_t;
 
 typedef enum {
@@ -2575,6 +2576,13 @@ typedef enum {
 	WGET_STATS_HPKP_NEW
 } wget_hpkp_stats_t;
 
+typedef enum {
+	WGET_STATS_OCSP_HOSTNAME,
+	WGET_STATS_OCSP_VALID,
+	WGET_STATS_OCSP_REVOKED,
+	WGET_STATS_OCSP_IGNORED
+} wget_ocsp_stats_t;
+
 typedef void
 	(*wget_stats_callback_t)(wget_stats_type_t type, const void *stats);
 
@@ -2595,6 +2603,12 @@ WGETAPI void
 
 WGETAPI const void *
 	wget_tcp_get_stats_server(wget_server_stats_t type, const void *stats);
+
+WGETAPI void
+	wget_tcp_set_stats_ocsp(wget_stats_callback_t fn);
+
+WGETAPI const void *
+	wget_tcp_get_stats_ocsp(wget_ocsp_stats_t type, const void *stats);
 
 WGET_END_DECLS
 

@@ -76,7 +76,18 @@ typedef struct
 		tcp_protocol;
 } _stats_data_t;
 
+typedef struct
+{
+	const char *hostname;
+
+	size_t
+		nvalid,
+		nrevoked,
+		nignored;
+} _ocsp_stats_data_t;
+
 static wget_stats_callback_t stats_callback;
+static char ocsp_stats;
 
 static struct _config {
 	const char
@@ -1015,6 +1026,17 @@ static int _verify_certificate_callback(gnutls_session_t session)
 			ret = -1;
 		}
 	}
+
+	if (ocsp_stats) {
+		_ocsp_stats_data_t stats;
+		stats.hostname = hostname;
+		stats.nvalid = nvalid;
+		stats.nrevoked = nrevoked;
+//		stats.nignored = nignored;
+
+		stats_callback(WGET_STATS_TYPE_OCSP, &stats);
+	}
+
 #endif
 
 	// 0: continue handshake
@@ -1807,6 +1829,30 @@ const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
 		return &(stats->tcp_protocol);
 	case WGET_STATS_TLS_CERT_CHAIN_SIZE:
 		return &(stats->cert_chain_size);
+	default:
+		return NULL;
+	}
+}
+
+void wget_tcp_set_stats_ocsp(wget_stats_callback_t fn)
+{
+	stats_callback = fn;
+	ocsp_stats = 1;
+}
+
+const void *wget_tcp_get_stats_ocsp(wget_ocsp_stats_t type, const void *_stats)
+{
+	const _ocsp_stats_data_t *stats = (_ocsp_stats_data_t *) _stats;
+
+	switch(type) {
+	case WGET_STATS_OCSP_HOSTNAME:
+		return stats->hostname;
+	case WGET_STATS_OCSP_VALID:
+		return &(stats->nvalid);
+	case WGET_STATS_OCSP_REVOKED:
+		return &(stats->nrevoked);
+	case WGET_STATS_OCSP_IGNORED:
+		return &(stats->nignored);
 	default:
 		return NULL;
 	}

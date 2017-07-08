@@ -57,6 +57,15 @@ typedef struct {
 		csp;
 } server_stats_t;
 
+typedef struct {
+	const char
+		*hostname;
+	size_t
+		nvalid,
+		nrevoked,
+		nignored;
+} ocsp_stats_t;
+
 void stats_init(void);
 void stats_printcsv(wget_stats_type_t, const char **, const int);
 void stats_printjson(wget_stats_type_t);

@@ -33,11 +33,13 @@
 static wget_vector_t
 	*dns_stats_v,
 	*tls_stats_v,
-	*server_stats_v;
+	*server_stats_v,
+	*ocsp_stats_v;
 
 static wget_thread_mutex_t dns_mutex = WGET_THREAD_MUTEX_INITIALIZER;
 static wget_thread_mutex_t tls_mutex = WGET_THREAD_MUTEX_INITIALIZER;
 static wget_thread_mutex_t server_mutex = WGET_THREAD_MUTEX_INITIALIZER;
+static wget_thread_mutex_t ocsp_mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
 static void stats_callback(wget_stats_type_t type, const void *stats)
 {
@@ -88,6 +90,21 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		wget_thread_mutex_lock(&server_mutex);
 		wget_vector_add(server_stats_v, &server_stats, sizeof(server_stats_t));
 		wget_thread_mutex_unlock(&server_mutex);
+
+		break;
+	}
+
+	case WGET_STATS_TYPE_OCSP: {
+		ocsp_stats_t ocsp_stats;
+
+		ocsp_stats.hostname = wget_strdup(wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_HOSTNAME, stats));
+		ocsp_stats.nvalid = *((size_t *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_VALID, stats));
+		ocsp_stats.nrevoked = *((size_t *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_REVOKED, stats));
+//		ocsp_stats.nignored = *((size_t *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats));
+
+		wget_thread_mutex_lock(&ocsp_mutex);
+		wget_vector_add(ocsp_stats_v, &ocsp_stats, sizeof(ocsp_stats_t));
+		wget_thread_mutex_unlock(&ocsp_mutex);
 
 		break;
 	}
@@ -143,6 +160,13 @@ void stats_init(void)
 		wget_vector_set_destructor(server_stats_v, (wget_vector_destructor_t) free_server_stats);
 		wget_tcp_set_stats_server(stats_callback);
 	}
+
+	if (config.stats_ocsp) {
+		ocsp_stats_v = wget_vector_create(8, -2, NULL);
+		wget_vector_set_destructor(ocsp_stats_v, (wget_vector_destructor_t) free_server_stats);
+		wget_tcp_set_stats_ocsp(stats_callback);
+	}
+
 }
 
 void stats_printjson(wget_stats_type_t type)
@@ -312,5 +336,19 @@ void stats_print(void)
 		}
 
 			wget_vector_free(&server_stats_v);
+	}
+
+	if (config.stats_ocsp) {
+		info_printf("\nOCSP Statistics:\n");
+		for (int it = 0; it < wget_vector_size(ocsp_stats_v); it++) {
+			const ocsp_stats_t *ocsp_stats = wget_vector_get(ocsp_stats_v, it);
+
+			info_printf("  %s:\n", ocsp_stats->hostname);
+			info_printf("    VALID          : %zu\n", ocsp_stats->nvalid);
+			info_printf("    REVOKED        : %zu\n", ocsp_stats->nrevoked);
+//			info_printf("    IGNORED        : %zu\n\n", ocsp_stats->nignored);
+		}
+
+			wget_vector_free(&ocsp_stats_v);
 	}
 }

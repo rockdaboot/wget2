@@ -191,7 +191,8 @@ struct config {
 		force_progress,
 		stats_dns,
 		stats_tls,
-		stats_server;
+		stats_server,
+		stats_ocsp;
 };
 
 extern struct config

@@ -66,7 +66,7 @@ static wget_vector_t
 
 typedef struct
 {
-	char *hostname;
+	const char *hostname;
 	wget_hpkp_stats_t hpkp;
 	char
 		hsts,
