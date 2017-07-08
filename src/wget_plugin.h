@@ -70,6 +70,20 @@ int plugin_db_help_forwarded(void);
 // Shows help from all loaded plugins
 void plugin_db_show_help(void);
 
+// Plugin's verdict on forwarded URLs
+struct plugin_db_forward_url_verdict {
+	unsigned int reject : 1;
+	unsigned int accept : 1;
+	wget_iri_t *alt_iri;
+	char *alt_local_filename;
+};
+
+// Forwards a URL about to be enqueued to intrested plugins
+void plugin_db_forward_url(const wget_iri_t *iri, struct plugin_db_forward_url_verdict *verdict);
+
+// Free's all contents of plugin_db_forward_url_verdict
+void plugin_db_forward_url_verdict_free(struct plugin_db_forward_url_verdict *verdict);
+
 // Sends 'finalize' signal to all plugins and unloads all plugins
 void plugin_db_finalize(int exitcode);
 

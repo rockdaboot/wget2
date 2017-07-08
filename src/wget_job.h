@@ -89,7 +89,8 @@ struct JOB {
 		sitemap : 1, // URL is a sitemap to be scanned in recursive mode
 		robotstxt : 1, // URL is a robots.txt to be scanned
 		head_first : 1, // first check mime type by using a HEAD request
-		requested_by_user : 1; // download even if disallowed by robots.txt
+		requested_by_user : 1, // download even if disallowed by robots.txt
+		ignore_patterns : 1; // Ignore accept/reject patterns
 };
 
 struct DOWNLOADER {

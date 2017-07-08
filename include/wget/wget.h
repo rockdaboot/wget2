@@ -2078,6 +2078,47 @@ wget_plugin_register_argp(wget_plugin_t *plugin, wget_plugin_argp_t fn);
 /**
  * \ingroup libwget-plugin
  *
+ * Stores any action taken by the plugin
+ */
+typedef struct {
+	struct wget_plugin_vtable *vtable;
+} wget_intercept_action_t;
+
+// Marks the URL to be rejected.
+WGETAPI void
+wget_intercept_action_reject(wget_intercept_action_t *action);
+
+// Marks the URL to be accepted.
+WGETAPI void
+wget_intercept_action_accept(wget_intercept_action_t *action);
+
+// Specifies an alternative URL to be fetched instead.
+WGETAPI void
+wget_intercept_action_set_alt_url(wget_intercept_action_t *action, const wget_iri_t *iri);
+
+// Specifies that the fetched data should be written to an alternative file.
+WGETAPI void
+wget_intercept_action_set_local_filename(wget_intercept_action_t *action, const char *local_filename);
+
+/**
+ * \ingroup libwget-plugin
+ *
+ * Prototype for the function for intercepting URLs
+ * The function must be thread-safe.
+ *
+ * \param[in] plugin The plugin handle
+ * \param[in] iri The URL about to be fetched
+ * \param[in] action Output the action to be taken
+ */
+typedef void (*wget_plugin_url_filter_t)(wget_plugin_t *plugin, const wget_iri_t *iri, wget_intercept_action_t *action);
+
+// Registers a plugin function for intercepting URLs
+WGETAPI void
+wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filter_t filter_fn);
+
+/**
+ * \ingroup libwget-plugin
+ *
  * vtable for implementing plugin API in wget
  */
 struct wget_plugin_vtable
@@ -2085,6 +2126,12 @@ struct wget_plugin_vtable
 	const char * (* get_name)(wget_plugin_t *);
 	void (* register_finalizer)(wget_plugin_t *, wget_plugin_finalizer_t);
 	void (* register_argp)(wget_plugin_t *, wget_plugin_argp_t);
+
+	void (* action_reject)(wget_intercept_action_t *);
+	void (* action_accept)(wget_intercept_action_t *);
+	void (* action_set_alt_url)(wget_intercept_action_t *, const wget_iri_t *);
+	void (* action_set_local_filename)(wget_intercept_action_t *, const char *);
+	void (* register_url_filter)(wget_plugin_t *, wget_plugin_url_filter_t);
 };
 
 WGET_END_DECLS
