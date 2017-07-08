@@ -850,6 +850,17 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 			}
 		}
 
+		if (stats_callback) {
+			_stats_data_t stats;
+
+			stats.hostname = wget_http_get_host(conn);
+			stats.hpkp = conn->tcp->hpkp;
+			stats.hsts = resp->hsts;
+			stats.csp = resp->csp;
+
+			stats_callback(WGET_STATS_TYPE_SERVER, &stats);
+		}
+
 		return resp;
 	}
 #endif
@@ -907,10 +918,8 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 			if (stats_callback) {
 				_stats_data_t stats;
 
-//				stats.hostname = ;
-				if (1)
-					stats.hpkp = conn->tcp->hpkp;
-
+				stats.hostname = wget_http_get_host(conn);
+				stats.hpkp = conn->tcp->hpkp;
 				stats.hsts = resp->hsts;
 				stats.csp = resp->csp;
 
