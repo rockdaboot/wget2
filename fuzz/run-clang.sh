@@ -1,3 +1,5 @@
+#!/bin/bash -e
+#
 # Copyright(c) 2017 Free Software Foundation, Inc.
 #
 # This file is part of libwget.
@@ -17,13 +19,9 @@
 
 trap ctrl_c INT
 
-function ctrl_c() {
-#  echo "CTRL-C"
-  if test -n "$sudo"; then
-    $sudo chown $O_USER:$O_GROUP ${fuzzer}.new/* ${fuzzer}.in/*
-    ./${fuzzer} -merge=1 ${fuzzer}.in ${fuzzer}.new
-    rm -rf ${fuzzer}.new
-  fi
+ctrl_c() {
+  ./${fuzzer} -merge=1 ${fuzzer}.in ${fuzzer}.new
+  rm -rf ${fuzzer}.new
 }
 
 if test -z "$1"; then
@@ -45,13 +43,6 @@ clang-5.0 \
 if test -n "$BUILD_ONLY"; then
   exit 0
 fi
-
-# needed if chroot() is used in libwget_memtohex_fuzzer.c
-#if [ "$fuzzer" = "libwget_memtohex_fuzzer" ]; then
-#  O_USER=$USER
-#  O_GROUP=$(id -g -n $O_USER)
-#  sudo=sudo
-#fi
 
 # create directory for NEW test corpora (covering new areas of code)
 mkdir -p ${fuzzer}.new
