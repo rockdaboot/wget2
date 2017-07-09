@@ -333,6 +333,22 @@ static int _print_query_string(void *cls,
     return MHD_YES;
 }
 
+static int _print_header_range(void *cls, enum MHD_ValueKind kind,
+							const char *key,
+							const char *value)
+{
+	wget_buffer_t *header_range = cls;
+
+	if (!strcmp(key, MHD_HTTP_HEADER_RANGE)) {
+		wget_buffer_strcpy(header_range, key);
+		if (value) {
+			wget_buffer_strcat(header_range, value);
+		}
+	}
+
+	return MHD_YES;
+}
+
 static int _answer_to_connection(void *cls,
 					struct MHD_Connection *connection,
 					const char *url,
@@ -344,7 +360,10 @@ static int _answer_to_connection(void *cls,
 	struct query_string query;
 	int ret;
 	time_t modified;
-	const char *modified_val;
+	const char *modified_val, *to_bytes_string;
+	ssize_t from_bytes, to_bytes;
+	size_t body_len;
+	char content_len[100], content_range[100];
 
 	// get query string
 	query.params = wget_buffer_alloc(1024);
@@ -357,6 +376,23 @@ static int _answer_to_connection(void *cls,
 	modified = 0;
 	if (modified_val)
 		modified = wget_http_parse_full_date(modified_val);
+
+	// get header range
+	wget_buffer_t *header_range = wget_buffer_alloc(1024);
+	if (!strcmp(method, "GET"))
+		MHD_get_connection_values(connection, MHD_HEADER_KIND, &_print_header_range, header_range);
+
+	from_bytes = to_bytes = body_len = 0;
+	if (*header_range->data) {
+		const char *from_bytes_string;
+		const char *range_string = strchr(header_range->data, '=');
+		to_bytes_string = strchr(range_string, '-');
+		if (strcmp(to_bytes_string, "-"))
+			to_bytes = (ssize_t) atoi(to_bytes_string + 1);
+		from_bytes_string = wget_strmemdup(range_string, to_bytes_string - range_string);
+		from_bytes = (ssize_t) atoi(from_bytes_string + 1);
+		wget_xfree(from_bytes_string);
+	}
 
 	// append query string into URL
 	wget_buffer_t *url_full = wget_buffer_alloc(1024);
@@ -392,6 +428,30 @@ static int _answer_to_connection(void *cls,
 			if (modified && urls[it1].modified <= modified) {
 				response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
 				ret = MHD_queue_response(connection, MHD_HTTP_NOT_MODIFIED, response);
+			}
+			else if (*header_range->data)
+			{
+				if (!strcmp(to_bytes_string, "-"))
+					to_bytes = strlen(urls[it1].body) - 1;
+				body_len = to_bytes - from_bytes + 1;
+
+				if (from_bytes > to_bytes || from_bytes >= (int) strlen(urls[it1].body)) {
+					response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
+#ifdef MHD_HTTP_RANGE_NOT_SATISFIABLE
+					ret = MHD_queue_response(connection, MHD_HTTP_RANGE_NOT_SATISFIABLE, response);
+#else
+					ret = MHD_queue_response(connection, MHD_HTTP_REQUESTED_RANGE_NOT_SATISFIABLE, response);
+#endif
+				} else {
+					response = MHD_create_response_from_buffer(body_len,
+							(void *) (urls[it1].body + from_bytes), MHD_RESPMEM_MUST_COPY);
+					MHD_add_response_header(response, MHD_HTTP_HEADER_ACCEPT_RANGES, "bytes");
+					sprintf(content_range, "%zd-%zd/%zu", from_bytes, to_bytes, body_len);
+					MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_RANGE, content_range);
+					sprintf(content_len, "%zu", body_len);
+					MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_LENGTH, content_len);
+					ret = MHD_queue_response(connection, MHD_HTTP_PARTIAL_CONTENT, response);
+				}
 			} else {
 			response = MHD_create_response_from_buffer(strlen(urls[it1].body),
 					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
@@ -426,6 +486,7 @@ static int _answer_to_connection(void *cls,
 	}
 
 	wget_buffer_free(&url_full);
+	wget_buffer_free(&header_range);
 	MHD_destroy_response(response);
 	return ret;
 }
