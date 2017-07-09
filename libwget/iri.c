@@ -541,7 +541,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
  *
  * Clone the provided IRI.
  */
-wget_iri_t *wget_iri_clone(wget_iri_t *iri)
+wget_iri_t *wget_iri_clone(const wget_iri_t *iri)
 {
 	if (!iri)
 		return NULL;

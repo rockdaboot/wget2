@@ -953,7 +953,7 @@ WGETAPI wget_iri_t *
 WGETAPI wget_iri_t *
 	wget_iri_parse_base(wget_iri_t *base, const char *url, const char *encoding);
 WGETAPI wget_iri_t *
-	wget_iri_clone(wget_iri_t *iri);
+	wget_iri_clone(const wget_iri_t *iri);
 WGETAPI const char *
 	wget_iri_get_connection_part(wget_iri_t *iri);
 WGETAPI const char *
