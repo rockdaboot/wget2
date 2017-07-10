@@ -54,7 +54,8 @@ typedef struct {
 		hpkp;
 	char
 		hsts,
-		csp;
+		csp,
+		hpkp_new;
 } server_stats_t;
 
 typedef struct {

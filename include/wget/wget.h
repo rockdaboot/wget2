@@ -2565,6 +2565,7 @@ typedef enum {
 typedef enum {
 	WGET_STATS_SERVER_HOSTNAME,
 	WGET_STATS_SERVER_HPKP,
+	WGET_STATS_SERVER_HPKP_NEW,
 	WGET_STATS_SERVER_HSTS,
 	WGET_STATS_SERVER_CSP
 } wget_server_stats_t;
@@ -2572,8 +2573,7 @@ typedef enum {
 typedef enum {
 	WGET_STATS_HPKP_NO,
 	WGET_STATS_HPKP_MATCH,
-	WGET_STATS_HPKP_NOMATCH,
-	WGET_STATS_HPKP_NEW
+	WGET_STATS_HPKP_NOMATCH
 } wget_hpkp_stats_t;
 
 typedef enum {

@@ -70,7 +70,8 @@ typedef struct
 	wget_hpkp_stats_t hpkp;
 	char
 		hsts,
-		csp;
+		csp,
+		hpkp_new;
 } _stats_data_t;
 
 static wget_stats_callback_t stats_callback;
@@ -855,6 +856,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 			stats.hostname = wget_http_get_host(conn);
 			stats.hpkp = conn->tcp->hpkp;
+			stats.hpkp_new = resp->hpkp ? 1 : 0;
 			stats.hsts = resp->hsts;
 			stats.csp = resp->csp;
 
@@ -920,6 +922,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 				stats.hostname = wget_http_get_host(conn);
 				stats.hpkp = conn->tcp->hpkp;
+				stats.hpkp_new = conn->tcp->hpkp;
 				stats.hsts = resp->hsts;
 				stats.csp = resp->csp;
 
@@ -1322,6 +1325,8 @@ const void *wget_tcp_get_stats_server(wget_server_stats_t type, const void *_sta
 		return stats->hostname;
 	case WGET_STATS_SERVER_HPKP:
 		return &(stats->hpkp);
+	case WGET_STATS_SERVER_HPKP_NEW:
+		return &(stats->hpkp_new);
 	case WGET_STATS_SERVER_HSTS:
 		return &(stats->hsts);
 	case WGET_STATS_SERVER_CSP:

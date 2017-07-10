@@ -84,6 +84,7 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 
 		server_stats.hostname = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HOSTNAME, stats));
 		server_stats.hpkp = *((wget_hpkp_stats_t *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats));
+		server_stats.hpkp_new = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats));
 		server_stats.hsts = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats));
 		server_stats.csp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats));
 
@@ -324,13 +325,11 @@ void stats_print(void)
 					case WGET_STATS_HPKP_NOMATCH:
 						info_printf("    HPKP           : %s\n", "Pubkey pinning mismatch");
 						break;
-//					case WGET_STATS_HPKP_NEW:
-//						info_printf("    HPKP           : %s\n", "");
-//						break;
 					default:
 						error_printf("Unknown HPKP stats type\n");
 						break;
 					}
+			info_printf("    HPKP New Entry : %s\n", server_stats->hpkp_new ? "Yes" : "No");
 			info_printf("    HSTS           : %s\n", server_stats->hsts ? "Yes" : "No");
 			info_printf("    CSP            : %s\n\n", server_stats->csp ? "Yes" : "No");
 		}
