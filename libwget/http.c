@@ -435,160 +435,22 @@ static int _on_header_callback(nghttp2_session *session,
 	struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
 	wget_http_response_t *resp = ctx ? ctx->resp : NULL;
 
-	if (resp) {
-		if (resp->req->response_keepheader || resp->req->header_callback) {
-			if (!resp->header)
-				resp->header = wget_buffer_alloc(1024);
-		}
+	if (!resp)
+		return 0;
+
+	if (resp->req->response_keepheader || resp->req->header_callback) {
+		if (!resp->header)
+			resp->header = wget_buffer_alloc(1024);
 	}
 
 	if (frame->hd.type == NGHTTP2_HEADERS) {
 		if (frame->headers.cat == NGHTTP2_HCAT_RESPONSE) {
-			const char *s = wget_strmemdup((char *) value, valuelen);
-
-			debug_printf("%.*s: %s\n", (int) namelen, name, s);
-			if (!resp) {
-				xfree(s);
-				return 0;
-			}
+			debug_printf("%.*s: %.*s\n", (int) namelen, name, (int) valuelen, value);
 
 			if (resp->header)
-				wget_buffer_printf_append(resp->header, "%.*s: %s\n", (int) namelen, name, s);
+				wget_buffer_printf_append(resp->header, "%.*s: %.*s\n", (int) namelen, name, (int) valuelen, value);
 
-			switch (namelen) {
-			case 4:
-				if (!memcmp(name, "etag", namelen)) {
-					wget_http_parse_etag(s, &resp->etag);
-				} else if (!memcmp(name, "link", namelen) && resp->code / 100 == 3) {
-					// debug_printf("s=%.31s\n",s);
-					wget_http_link_t link;
-					wget_http_parse_link(s, &link);
-					// debug_printf("link->uri=%s\n",link.uri);
-					if (!resp->links) {
-						resp->links = wget_vector_create(8, 8, NULL);
-						wget_vector_set_destructor(resp->links, (wget_vector_destructor_t)wget_http_free_link);
-					}
-					wget_vector_add(resp->links, &link, sizeof(link));
-				}
-				break;
-			case 6:
-				if (!memcmp(name, "digest", namelen)) {
-					// https://tools.ietf.org/html/rfc3230
-					wget_http_digest_t digest;
-					wget_http_parse_digest(s, &digest);
-					// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
-					if (!resp->digests) {
-						resp->digests = wget_vector_create(4, 4, NULL);
-						wget_vector_set_destructor(resp->digests, (wget_vector_destructor_t)wget_http_free_digest);
-					}
-					wget_vector_add(resp->digests, &digest, sizeof(digest));
-				}
-				break;
-			case 7:
-				if (!memcmp(name, ":status", namelen) && valuelen == 3) {
-					resp->code = ((value[0] - '0') * 10 + (value[1] - '0')) * 10 + (value[2] - '0');
-				}
-				break;
-			case 8:
-				if (resp->code / 100 == 3 && !memcmp(name, "location", namelen)) {
-					xfree(resp->location);
-					wget_http_parse_location(s, &resp->location);
-				}
-				break;
-			case 10:
-				if (!memcmp(name, "set-cookie", namelen)) {
-					// this is a parser. content validation must be done by higher level functions.
-					wget_cookie_t *cookie;
-					wget_http_parse_setcookie(s, &cookie);
-
-					if (cookie) {
-						if (!resp->cookies) {
-							resp->cookies = wget_vector_create(4, 4, NULL);
-							wget_vector_set_destructor(resp->cookies, (wget_vector_destructor_t)wget_cookie_deinit);
-						}
-						wget_vector_add_noalloc(resp->cookies, cookie);
-					}
-				} else if (!memcmp(name, "connection", namelen)) {
-					wget_http_parse_connection(s, &resp->keep_alive);
-				}
-				break;
-			case 11:
-				if (!memcmp(name, "icy-metaint", namelen)) {
-					resp->icy_metaint = atoi(s);
-				}
-				break;
-			case 12:
-				if (!memcmp(name, "content-type", namelen)) {
-					wget_http_parse_content_type(s, &resp->content_type, &resp->content_type_encoding);
-				}
-				break;
-			case 13:
-				if (!memcmp(name, "last-modified", namelen)) {
-					// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
-					resp->last_modified = wget_http_parse_full_date(s);
-				}
-				break;
-			case 14:
-				if (!memcmp(name, "content-length", namelen)) {
-					resp->content_length = (size_t) atoll(s);
-					resp->content_length_valid = 1;
-				}
-				break;
-			case 15:
-				if (!memcmp(name, "public-key-pins", namelen)) {
-					if (!resp->hpkp) {
-						resp->hpkp = wget_hpkp_new();
-						wget_http_parse_public_key_pins(s, resp->hpkp);
-					}
-				}
-				break;
-			case 16:
-				if (!memcmp(name, "content-encoding", namelen)) {
-					wget_http_parse_content_encoding(s, &resp->content_encoding);
-				} else if (!memcmp(name, "www-authenticate", namelen)) {
-					wget_http_challenge_t challenge;
-					wget_http_parse_challenge(s, &challenge);
-
-					if (!resp->challenges) {
-						resp->challenges = wget_vector_create(2, 2, NULL);
-						wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
-					}
-					wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
-				}
-				break;
-			case 17:
-				if (!memcmp(name, "transfer-encoding", namelen)) {
-					wget_http_parse_transfer_encoding(s, &resp->transfer_encoding);
-				}
-				break;
-			case 18:
-				if (!memcmp(name, "proxy-authenticate", namelen)) {
-					wget_http_challenge_t challenge;
-					wget_http_parse_challenge(s, &challenge);
-
-					if (!resp->challenges) {
-						resp->challenges = wget_vector_create(2, 2, NULL);
-						wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
-					}
-					wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
-				}
-				break;
-			case 19:
-				if (!memcmp(name, "content-disposition", namelen)) {
-					wget_http_parse_content_disposition(s, &resp->content_filename);
-				}
-				break;
-			case 25:
-				if (!memcmp(name, "strict-transport-security", namelen)) {
-					resp->hsts = 1;
-					wget_http_parse_strict_transport_security(s, &resp->hsts_maxage, &resp->hsts_include_subdomains);
-				}
-				break;
-			default:
-				break;
-			}
-
-			xfree(s);
+			wget_http_parse_header_line(resp, (char *) name, namelen, (char *) value, valuelen);
 		}
 	}
 

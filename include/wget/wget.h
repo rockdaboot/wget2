@@ -1757,6 +1757,8 @@ WGETAPI wget_http_response_t *
 	wget_http_read_header(const wget_iri_t *iri) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI wget_http_response_t *
 	wget_http_get_header(wget_iri_t *iri) G_GNUC_WGET_NONNULL_ALL;
+WGETAPI int
+	wget_http_parse_header_line(wget_http_response_t *resp, const char *name, size_t namelen, const char *value, size_t valuelen);
 WGETAPI wget_http_response_t *
 	wget_http_parse_response_header(char *buf) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI wget_http_response_t *

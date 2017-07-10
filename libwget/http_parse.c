@@ -1038,15 +1038,171 @@ const char *wget_http_parse_setcookie(const char *s, wget_cookie_t **cookie)
 	return wget_cookie_parse_setcookie(s, cookie);
 }
 
-/* content of <buf> will be destroyed */
+int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, size_t namelen, const char *value, size_t valuelen)
+{
+	if (!name || !value)
+		return -1;
 
+	char valuebuf[256];
+	char *value0;
+	int ret = 0;
+
+	if (valuelen < sizeof(valuebuf))
+		wget_strmemcpy(value0 = valuebuf, sizeof(valuebuf), value, valuelen);
+	else
+		value0 = wget_strmemdup(value, valuelen);
+
+	switch (*name | 0x20) {
+	case ':':
+		if (!memcmp(name, ":status", namelen) && valuelen == 3) {
+			resp->code = ((value[0] - '0') * 10 + (value[1] - '0')) * 10 + (value[2] - '0');
+		} else
+			ret = -1;
+		break;
+	case 'c':
+		if (!wget_strncasecmp_ascii(name, "content-encoding", namelen)) {
+			wget_http_parse_content_encoding(value0, &resp->content_encoding);
+		} else if (!wget_strncasecmp_ascii(name, "content-type", namelen)) {
+			wget_http_parse_content_type(value0, &resp->content_type, &resp->content_type_encoding);
+		} else if (!wget_strncasecmp_ascii(name, "content-length", namelen)) {
+			resp->content_length = (size_t)atoll(value0);
+			resp->content_length_valid = 1;
+		} else if (!wget_strncasecmp_ascii(name, "content-disposition", namelen)) {
+			wget_http_parse_content_disposition(value0, &resp->content_filename);
+		} else if (!wget_strncasecmp_ascii(name, "connection", namelen)) {
+			wget_http_parse_connection(value0, &resp->keep_alive);
+		} else
+			ret = -1;
+		break;
+	case 'd':
+		if (!wget_strncasecmp_ascii(name, "digest", namelen)) {
+			// https://tools.ietf.org/html/rfc3230
+			wget_http_digest_t digest;
+			wget_http_parse_digest(value0, &digest);
+			// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
+			if (!resp->digests) {
+				resp->digests = wget_vector_create(4, 4, NULL);
+				wget_vector_set_destructor(resp->digests, (wget_vector_destructor_t)wget_http_free_digest);
+			}
+			wget_vector_add(resp->digests, &digest, sizeof(digest));
+		} else
+			ret = -1;
+		break;
+	case 'e':
+		if (!wget_strncasecmp_ascii(name, "etag", namelen)) {
+			wget_http_parse_etag(value0, &resp->etag);
+		} else
+			ret = -1;
+		break;
+	case 'i':
+		if (!wget_strncasecmp_ascii(name, "icy-metaint", namelen)) {
+			resp->icy_metaint = atoi(value0);
+		} else
+			ret = -1;
+		break;
+	case 'l':
+		if (!wget_strncasecmp_ascii(name, "last-modified", namelen)) {
+			// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
+			resp->last_modified = wget_http_parse_full_date(value0);
+		} else if (resp->code / 100 == 3 && !wget_strncasecmp_ascii(name, "location", namelen)) {
+			xfree(resp->location);
+			wget_http_parse_location(value0, &resp->location);
+		} else if (resp->code / 100 == 3 && !wget_strncasecmp_ascii(name, "link", namelen)) {
+			// debug_printf("s=%.31s\n",s);
+			wget_http_link_t link;
+			wget_http_parse_link(value0, &link);
+			// debug_printf("link->uri=%s\n",link.uri);
+			if (!resp->links) {
+				resp->links = wget_vector_create(8, 8, NULL);
+				wget_vector_set_destructor(resp->links, (wget_vector_destructor_t)wget_http_free_link);
+			}
+			wget_vector_add(resp->links, &link, sizeof(link));
+		} else
+			ret = -1;
+		break;
+	case 'p':
+		if (!wget_strncasecmp_ascii(name, "public-key-pins", namelen)) {
+			if (!resp->hpkp) {
+				resp->hpkp = wget_hpkp_new();
+				wget_http_parse_public_key_pins(value0, resp->hpkp);
+			}
+		}
+		else if (!wget_strncasecmp_ascii(name, "proxy-authenticate", namelen)) {
+			wget_http_challenge_t challenge;
+			wget_http_parse_challenge(value0, &challenge);
+
+			if (!resp->challenges) {
+				resp->challenges = wget_vector_create(2, 2, NULL);
+				wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
+			}
+			wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
+		} else
+			ret = -1;
+		break;
+	case 's':
+		if (!wget_strncasecmp_ascii(name, "set-cookie", namelen)) {
+			// this is a parser. content validation must be done by higher level functions.
+			wget_cookie_t *cookie;
+			wget_http_parse_setcookie(value0, &cookie);
+
+			if (cookie) {
+				if (!resp->cookies) {
+					resp->cookies = wget_vector_create(4, 4, NULL);
+					wget_vector_set_destructor(resp->cookies, (wget_vector_destructor_t) wget_cookie_deinit);
+				}
+				wget_vector_add_noalloc(resp->cookies, cookie);
+			}
+		}
+		else if (!wget_strncasecmp_ascii(name, "strict-transport-security", namelen)) {
+			resp->hsts = 1;
+			wget_http_parse_strict_transport_security(value0, &resp->hsts_maxage, &resp->hsts_include_subdomains);
+		} else
+			ret = -1;
+		break;
+	case 't':
+		if (!wget_strncasecmp_ascii(name, "transfer-encoding", namelen)) {
+			wget_http_parse_transfer_encoding(value0, &resp->transfer_encoding);
+		} else
+			ret = -1;
+		break;
+	case 'w':
+		if (!wget_strncasecmp_ascii(name, "www-authenticate", namelen)) {
+			wget_http_challenge_t challenge;
+			wget_http_parse_challenge(value0, &challenge);
+
+			if (!resp->challenges) {
+				resp->challenges = wget_vector_create(2, 2, NULL);
+				wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
+			}
+			wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
+		} else
+			ret = -1;
+		break;
+	case 'x':
+		if (!wget_strncasecmp_ascii(name, "x-archive-orig-last-modified", namelen)) {
+			resp->last_modified = wget_http_parse_full_date(value0);
+		} else
+			ret = -1;
+		break;
+	default:
+		ret = -1;
+		break;
+	}
+
+	if (value0 != valuebuf)
+		xfree(value0);
+
+	return ret;
+}
+
+/* content of <buf> will be destroyed */
 /* buf must be 0-terminated */
 wget_http_response_t *wget_http_parse_response_header(char *buf)
 {
-	const char *s;
+	const char *value;
 	char *line, *eol;
 	const char *name;
-	size_t namelen;
+	size_t namelen, valuelen;
 	wget_http_response_t *resp = NULL;
 
 	resp = xcalloc(1, sizeof(wget_http_response_t));
@@ -1089,129 +1245,15 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 				*eol = 0;
 		}
 
-		// debug_printf("# %p %s\n",eol,line);
+		value = wget_parse_name_fixed(line, &name, &namelen);
+		// value now points directly after :
 
-		s = wget_parse_name_fixed(line, &name, &namelen);
-		// s now points directly after :
+		if (eol)
+			valuelen = eol - value - (eol[-1] == 0);
+		else
+			valuelen = strlen(value);
 
-		switch (*name | 0x20) {
-		case 'c':
-			if (!wget_strncasecmp_ascii(name, "Content-Encoding", namelen)) {
-				wget_http_parse_content_encoding(s, &resp->content_encoding);
-			} else if (!wget_strncasecmp_ascii(name, "Content-Type", namelen)) {
-				wget_http_parse_content_type(s, &resp->content_type, &resp->content_type_encoding);
-			} else if (!wget_strncasecmp_ascii(name, "Content-Length", namelen)) {
-				resp->content_length = (size_t)atoll(s);
-				resp->content_length_valid = 1;
-			} else if (!wget_strncasecmp_ascii(name, "Content-Disposition", namelen)) {
-				wget_http_parse_content_disposition(s, &resp->content_filename);
-			} else if (!wget_strncasecmp_ascii(name, "Connection", namelen)) {
-				wget_http_parse_connection(s, &resp->keep_alive);
-			}
-			break;
-		case 'd':
-			if (!wget_strncasecmp_ascii(name, "Digest", namelen)) {
-				// https://tools.ietf.org/html/rfc3230
-				wget_http_digest_t digest;
-				wget_http_parse_digest(s, &digest);
-				// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
-				if (!resp->digests) {
-					resp->digests = wget_vector_create(4, 4, NULL);
-					wget_vector_set_destructor(resp->digests, (wget_vector_destructor_t)wget_http_free_digest);
-				}
-				wget_vector_add(resp->digests, &digest, sizeof(digest));
-			}
-			break;
-		case 'e':
-			if (!wget_strncasecmp_ascii(name, "ETag", namelen)) {
-				wget_http_parse_etag(s, &resp->etag);
-			}
-			break;
-		case 'i':
-			if (!wget_strncasecmp_ascii(name, "ICY-Metaint", namelen)) {
-				resp->icy_metaint = atoi(s);
-			}
-			break;
-		case 'l':
-			if (!wget_strncasecmp_ascii(name, "Last-Modified", namelen)) {
-				// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
-				resp->last_modified = wget_http_parse_full_date(s);
-			} else if (resp->code / 100 == 3 && !wget_strncasecmp_ascii(name, "Location", namelen)) {
-				xfree(resp->location);
-				wget_http_parse_location(s, &resp->location);
-			} else if (resp->code / 100 == 3 && !wget_strncasecmp_ascii(name, "Link", namelen)) {
-				// debug_printf("s=%.31s\n",s);
-				wget_http_link_t link;
-				wget_http_parse_link(s, &link);
-				// debug_printf("link->uri=%s\n",link.uri);
-				if (!resp->links) {
-					resp->links = wget_vector_create(8, 8, NULL);
-					wget_vector_set_destructor(resp->links, (wget_vector_destructor_t)wget_http_free_link);
-				}
-				wget_vector_add(resp->links, &link, sizeof(link));
-			}
-			break;
-		case 'p':
-			if (!wget_strncasecmp_ascii(name, "Public-Key-Pins", namelen)) {
-				if (!resp->hpkp) {
-					resp->hpkp = wget_hpkp_new();
-					wget_http_parse_public_key_pins(s, resp->hpkp);
-				}
-			}
-			else if (!wget_strncasecmp_ascii(name, "Proxy-Authenticate", namelen)) {
-				wget_http_challenge_t challenge;
-				wget_http_parse_challenge(s, &challenge);
-
-				if (!resp->challenges) {
-					resp->challenges = wget_vector_create(2, 2, NULL);
-					wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
-				}
-				wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
-			}
-			break;
-		case 's':
-			if (!wget_strncasecmp_ascii(name, "Set-Cookie", namelen)) {
-				// this is a parser. content validation must be done by higher level functions.
-				wget_cookie_t *cookie;
-				wget_http_parse_setcookie(s, &cookie);
-
-				if (cookie) {
-					if (!resp->cookies) {
-						resp->cookies = wget_vector_create(4, 4, NULL);
-						wget_vector_set_destructor(resp->cookies, (wget_vector_destructor_t) wget_cookie_deinit);
-					}
-					wget_vector_add_noalloc(resp->cookies, cookie);
-				}
-			}
-			else if (!wget_strncasecmp_ascii(name, "Strict-Transport-Security", namelen)) {
-				resp->hsts = 1;
-				wget_http_parse_strict_transport_security(s, &resp->hsts_maxage, &resp->hsts_include_subdomains);
-			}
-			break;
-		case 't':
-			if (!wget_strncasecmp_ascii(name, "Transfer-Encoding", namelen)) {
-				wget_http_parse_transfer_encoding(s, &resp->transfer_encoding);
-			}
-			break;
-		case 'w':
-			if (!wget_strncasecmp_ascii(name, "WWW-Authenticate", namelen)) {
-				wget_http_challenge_t challenge;
-				wget_http_parse_challenge(s, &challenge);
-
-				if (!resp->challenges) {
-					resp->challenges = wget_vector_create(2, 2, NULL);
-					wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
-				}
-				wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
-			}
-			break;
-		case 'x':
-			if (!wget_strncasecmp_ascii(name, "X-Archive-Orig-last-modified", namelen))
-				resp->last_modified = wget_http_parse_full_date(s);
-			break;
-		default:
-			break;
-		}
+		wget_http_parse_header_line(resp, name, namelen, value, valuelen);
 	}
 
 /*
