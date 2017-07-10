@@ -425,6 +425,17 @@ static int _answer_to_connection(void *cls,
 
 		if (!strcmp(url_full->data, url_iri->data))
 		{
+			// 404 with non-empty "body"
+			if (!wget_strcmp(urls[it1].code, "404 Not exist"))
+			{
+				response = MHD_create_response_from_buffer(strlen(urls[it1].body),
+							(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
+				ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
+				wget_buffer_free(&url_iri);
+				found = 1;
+				break;
+			}
+
 			if (modified && urls[it1].modified <= modified) {
 				response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
 				ret = MHD_queue_response(connection, MHD_HTTP_NOT_MODIFIED, response);
