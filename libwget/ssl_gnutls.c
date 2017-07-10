@@ -805,7 +805,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	const char *hostname;
 	const char *tag = _config.check_certificate ? _("ERROR") : _("WARNING");
 #ifdef HAVE_GNUTLS_OCSP_H
-	unsigned nvalid = 0, nrevoked = 0;
+	unsigned nvalid = 0, nrevoked = 0, nignored = 0;
 #endif
 
 	// read hostname
@@ -1011,7 +1011,18 @@ static int _verify_certificate_callback(gnutls_session_t session)
 				nrevoked++;
 			} else {
 				debug_printf("WARNING: OCSP response not available or ignored\n");
+				nignored++;
 			}
+		}
+
+		if (ocsp_stats) {
+			_ocsp_stats_data_t stats;
+			stats.hostname = hostname;
+			stats.nvalid = nvalid;
+			stats.nrevoked = nrevoked;
+			stats.nignored = nignored;
+
+			stats_callback(WGET_STATS_TYPE_OCSP, &stats);
 		}
 	}
 
@@ -1023,17 +1034,6 @@ static int _verify_certificate_callback(gnutls_session_t session)
 			ret = -1;
 		}
 	}
-
-	if (ocsp_stats) {
-		_ocsp_stats_data_t stats;
-		stats.hostname = hostname;
-		stats.nvalid = nvalid;
-		stats.nrevoked = nrevoked;
-//		stats.nignored = nignored;
-
-		stats_callback(WGET_STATS_TYPE_OCSP, &stats);
-	}
-
 #endif
 
 	// 0: continue handshake

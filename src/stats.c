@@ -100,7 +100,7 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		ocsp_stats.hostname = wget_strdup(wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_HOSTNAME, stats));
 		ocsp_stats.nvalid = *((size_t *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_VALID, stats));
 		ocsp_stats.nrevoked = *((size_t *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_REVOKED, stats));
-//		ocsp_stats.nignored = *((size_t *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats));
+		ocsp_stats.nignored = *((size_t *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats));
 
 		wget_thread_mutex_lock(&ocsp_mutex);
 		wget_vector_add(ocsp_stats_v, &ocsp_stats, sizeof(ocsp_stats_t));
@@ -346,7 +346,7 @@ void stats_print(void)
 			info_printf("  %s:\n", ocsp_stats->hostname);
 			info_printf("    VALID          : %zu\n", ocsp_stats->nvalid);
 			info_printf("    REVOKED        : %zu\n", ocsp_stats->nrevoked);
-//			info_printf("    IGNORED        : %zu\n\n", ocsp_stats->nignored);
+			info_printf("    IGNORED        : %zu\n\n", ocsp_stats->nignored);
 		}
 
 			wget_vector_free(&ocsp_stats_v);
