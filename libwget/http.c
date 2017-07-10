@@ -66,12 +66,12 @@ static wget_vector_t
 
 typedef struct
 {
-	const char *hostname;
+	const char
+		*hostname,
+		*hsts,
+		*csp,
+		*hpkp_new;
 	wget_hpkp_stats_t hpkp;
-	char
-		hsts,
-		csp,
-		hpkp_new;
 } _stats_data_t;
 
 static wget_stats_callback_t stats_callback;
@@ -614,6 +614,17 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 		conn->pending_requests = wget_vector_create(16, -2, NULL);
 #endif
 	} else {
+		if (rc == WGET_E_CERTIFICATE) {
+			_stats_data_t stats;
+
+			stats.hostname = wget_http_get_host(conn);
+			stats.hpkp = conn->tcp->hpkp;
+			stats.hpkp_new = NULL;
+			stats.hsts = NULL;
+			stats.csp = NULL;
+			stats_callback(WGET_STATS_TYPE_SERVER, &stats);
+		}
+
 		wget_http_close(_conn);
 	}
 
@@ -856,9 +867,9 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 			stats.hostname = wget_http_get_host(conn);
 			stats.hpkp = conn->tcp->hpkp;
-			stats.hpkp_new = resp->hpkp ? 1 : 0;
-			stats.hsts = resp->hsts;
-			stats.csp = resp->csp;
+			stats.hpkp_new = resp->hpkp ? "Yes" : "No";
+			stats.hsts = resp->hsts ? "Yes" : "No";
+			stats.csp = resp->csp ? "Yes" : "No";
 
 			stats_callback(WGET_STATS_TYPE_SERVER, &stats);
 		}
@@ -922,9 +933,9 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 				stats.hostname = wget_http_get_host(conn);
 				stats.hpkp = conn->tcp->hpkp;
-				stats.hpkp_new = conn->tcp->hpkp;
-				stats.hsts = resp->hsts;
-				stats.csp = resp->csp;
+				stats.hpkp_new = resp->hpkp ? "Yes" : "No";
+				stats.hsts = resp->hsts ? "Yes" : "No";
+				stats.csp = resp->csp ? "Yes" : "No";
 
 				stats_callback(WGET_STATS_TYPE_SERVER, &stats);
 			}
@@ -1326,11 +1337,11 @@ const void *wget_tcp_get_stats_server(wget_server_stats_t type, const void *_sta
 	case WGET_STATS_SERVER_HPKP:
 		return &(stats->hpkp);
 	case WGET_STATS_SERVER_HPKP_NEW:
-		return &(stats->hpkp_new);
+		return stats->hpkp_new;
 	case WGET_STATS_SERVER_HSTS:
-		return &(stats->hsts);
+		return stats->hsts;
 	case WGET_STATS_SERVER_CSP:
-		return &(stats->csp);
+		return stats->csp;
 	default:
 		return NULL;
 	}

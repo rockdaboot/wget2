@@ -49,13 +49,13 @@ typedef struct {
 
 typedef struct {
 	const char
-		*hostname;
+	*hostname,
+	*hsts,
+	*csp,
+	*hpkp_new;
+
 	wget_hpkp_stats_t
 		hpkp;
-	char
-		hsts,
-		csp,
-		hpkp_new;
 } server_stats_t;
 
 typedef struct {

@@ -84,9 +84,9 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 
 		server_stats.hostname = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HOSTNAME, stats));
 		server_stats.hpkp = *((wget_hpkp_stats_t *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats));
-		server_stats.hpkp_new = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats));
-		server_stats.hsts = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats));
-		server_stats.csp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats));
+		server_stats.hpkp_new = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats));
+		server_stats.hsts = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats));
+		server_stats.csp = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats));
 
 		wget_thread_mutex_lock(&server_mutex);
 		wget_vector_add(server_stats_v, &server_stats, sizeof(server_stats_t));
@@ -329,9 +329,9 @@ void stats_print(void)
 						error_printf("Unknown HPKP stats type\n");
 						break;
 					}
-			info_printf("    HPKP New Entry : %s\n", server_stats->hpkp_new ? "Yes" : "No");
-			info_printf("    HSTS           : %s\n", server_stats->hsts ? "Yes" : "No");
-			info_printf("    CSP            : %s\n\n", server_stats->csp ? "Yes" : "No");
+			info_printf("    HPKP New Entry : %s\n", server_stats->hpkp_new);
+			info_printf("    HSTS           : %s\n", server_stats->hsts);
+			info_printf("    CSP            : %s\n\n", server_stats->csp);
 		}
 
 			wget_vector_free(&server_stats_v);
