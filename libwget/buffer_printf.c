@@ -438,7 +438,7 @@ size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list a
 		case 'h':
 			if (p[1] == 'h') {
 				p += 2;
-				arg = (char) va_arg(args, int);
+				arg = (signed char) va_arg(args, int);
 				argu = (unsigned char) arg;
 			} else {
 				p++;
