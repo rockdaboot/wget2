@@ -141,6 +141,12 @@ static void free_server_stats(server_stats_t *stats)
 		xfree(stats->hostname);
 }
 
+static void free_ocsp_stats(server_stats_t *stats)
+{
+	if (stats)
+		xfree(stats->hostname);
+}
+
 void stats_init(void)
 {
 
@@ -164,46 +170,154 @@ void stats_init(void)
 
 	if (config.stats_ocsp) {
 		ocsp_stats_v = wget_vector_create(8, -2, NULL);
-		wget_vector_set_destructor(ocsp_stats_v, (wget_vector_destructor_t) free_server_stats);
+		wget_vector_set_destructor(ocsp_stats_v, (wget_vector_destructor_t) free_ocsp_stats);
 		wget_tcp_set_stats_ocsp(stats_callback);
 	}
 
 }
 
-void stats_printjson(wget_stats_type_t type)
+static const char *stats_server_hpkp(wget_hpkp_stats_t hpkp)
 {
-	switch (type) {
-	case WGET_STATS_TYPE_TLS: {
-		wget_buffer_t *buf = wget_buffer_alloc(0);
-		int fd = open("stats.json", O_WRONLY | O_APPEND | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	const char *msg;
 
-		info_printf("\nTLS Statistics (JSON):\n");
+	switch (hpkp) {
+	case WGET_STATS_HPKP_NO:
+		msg = "No existing entry in hpkp db";
+		break;
+	case WGET_STATS_HPKP_MATCH:
+		msg = "Pubkey pinning matched";
+		break;
+	case WGET_STATS_HPKP_NOMATCH:
+		msg = "Pubkey pinning mismatch";
+		break;
+	default:
+		error_printf("Unknown HPKP stats type\n");
+		msg = NULL;
+		break;
+	}
+
+	return msg;
+}
+
+static void stats_print_json(wget_stats_type_t type)
+{
+	wget_buffer_t *buf = wget_buffer_alloc(0);
+	FILE *fp = fopen("stats.json", "w");
+
+	switch (type) {
+	case WGET_STATS_TYPE_DNS: {
+		info_printf("\nDNS Statistics (JSON):\n");
 
 		wget_buffer_printf(buf, "[\n");
+		for (int it = 0; it < wget_vector_size(dns_stats_v); it++) {
+			const dns_stats_t *dns_stats = wget_vector_get(dns_stats_v, it);
+			wget_buffer_printf_append(buf, "\t{\n");
+			wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", dns_stats->host);
+			wget_buffer_printf_append(buf, "\t\t\"IP\" : \"%s\",\n", dns_stats->ip);
+			wget_buffer_printf_append(buf, "\t\t\"DNS resolution duration\" : %lld\n", dns_stats->millisecs);
+			wget_buffer_printf_append(buf, it < wget_vector_size(dns_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
 
-		for (int it = 0; it < wget_vector_size(tls_stats_v); it++) {
-			const tls_stats_t *tls_stats = wget_vector_get(tls_stats_v, it);
-		wget_buffer_printf_append(buf, "\t{\n");
-		wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", tls_stats->hostname);
-		wget_buffer_printf_append(buf, "\t\t\"Version\" : \"%s\",\n", tls_stats->version);
-		wget_buffer_printf_append(buf, "\t\t\"False Start\" : \"%s\",\n", tls_stats->false_start);
-		wget_buffer_printf_append(buf, "\t\t\"TFO\" : \"%s\",\n", tls_stats->tfo);
-		wget_buffer_printf_append(buf, "\t\t\"ALPN Protocol\" : \"%s\",\n", tls_stats->alpn_proto);
-		wget_buffer_printf_append(buf, "\t\t\"Resumed\" : \"%s\",\n", tls_stats->resumed ? "Yes" : "No");
-		wget_buffer_printf_append(buf, "\t\t\"TCP Protocol\" : \"%s\",\n", tls_stats->tcp_protocol? "HTTP/2": "HTTP/1.1");
-		wget_buffer_printf_append(buf, "\t\t\"Cert-chain Size\" : %zu,\n", tls_stats->cert_chain_size);
-		wget_buffer_printf_append(buf, "\t\t\"TLS negotiation duration\" : %lld\n", tls_stats->millisecs);
-		wget_buffer_printf_append(buf, it < wget_vector_size(tls_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
-
-		info_printf("%s", buf->data);
-		if (fd != -1)
-			write(fd, buf->data, strlen(buf->data));
-		wget_buffer_reset(buf);
+			if ((buf->length > 64*1024) || (it == wget_vector_size(dns_stats_v) - 1)) {
+				info_printf("%s", buf->data);
+				if (fp != NULL)
+					fprintf(fp, "%s", buf->data);
+				wget_buffer_reset(buf);
+			}
 		}
 
 		wget_buffer_free(&buf);
-		if (fd != -1)
-			close(fd);
+		if (fp != NULL)
+			fclose(fp);
+
+		break;
+	}
+
+	case WGET_STATS_TYPE_TLS: {
+		info_printf("\nTLS Statistics (JSON):\n");
+
+		wget_buffer_printf(buf, "[\n");
+		for (int it = 0; it < wget_vector_size(tls_stats_v); it++) {
+			const tls_stats_t *tls_stats = wget_vector_get(tls_stats_v, it);
+			wget_buffer_printf_append(buf, "\t{\n");
+			wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", tls_stats->hostname);
+			wget_buffer_printf_append(buf, "\t\t\"Version\" : \"%s\",\n", tls_stats->version);
+			wget_buffer_printf_append(buf, "\t\t\"False Start\" : \"%s\",\n", tls_stats->false_start);
+			wget_buffer_printf_append(buf, "\t\t\"TFO\" : \"%s\",\n", tls_stats->tfo);
+			wget_buffer_printf_append(buf, "\t\t\"ALPN Protocol\" : \"%s\",\n", tls_stats->alpn_proto);
+			wget_buffer_printf_append(buf, "\t\t\"Resumed\" : \"%s\",\n", tls_stats->resumed ? "Yes" : "No");
+			wget_buffer_printf_append(buf, "\t\t\"TCP Protocol\" : \"%s\",\n", tls_stats->tcp_protocol? "HTTP/2": "HTTP/1.1");
+			wget_buffer_printf_append(buf, "\t\t\"Cert-chain Size\" : %zu,\n", tls_stats->cert_chain_size);
+			wget_buffer_printf_append(buf, "\t\t\"TLS negotiation duration\" : %lld\n", tls_stats->millisecs);
+			wget_buffer_printf_append(buf, it < wget_vector_size(tls_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
+
+			if ((buf->length > 64*1024) || (it == wget_vector_size(tls_stats_v) - 1)) {
+				info_printf("%s", buf->data);
+				if (fp != NULL)
+					fprintf(fp, "%s", buf->data);
+				wget_buffer_reset(buf);
+			}
+		}
+
+		wget_buffer_free(&buf);
+		if (fp != NULL)
+			fclose(fp);
+
+		break;
+	}
+
+	case WGET_STATS_TYPE_SERVER: {
+		info_printf("\nServer Statistics (JSON):\n");
+
+		wget_buffer_printf(buf, "[\n");
+		for (int it = 0; it < wget_vector_size(server_stats_v); it++) {
+			const server_stats_t *server_stats = wget_vector_get(server_stats_v, it);
+			wget_buffer_printf_append(buf, "\t{\n");
+			wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", server_stats->hostname);
+			wget_buffer_printf_append(buf, "\t\t\"HPKP\" : \"%s\",\n", stats_server_hpkp(server_stats->hpkp));
+			wget_buffer_printf_append(buf, "\t\t\"HPKP New Entry\" : \"%s\",\n", server_stats->hpkp_new);
+			wget_buffer_printf_append(buf, "\t\t\"HSTS\" : %s,\n", server_stats->hsts);
+			wget_buffer_printf_append(buf, "\t\t\"CSP\" : %s\n", server_stats->csp);
+			wget_buffer_printf_append(buf, it < wget_vector_size(server_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
+
+			if ((buf->length > 64*1024) || (it == wget_vector_size(server_stats_v) - 1)) {
+				info_printf("%s", buf->data);
+				if (fp != NULL)
+					fprintf(fp, "%s", buf->data);
+				wget_buffer_reset(buf);
+			}
+		}
+
+		wget_buffer_free(&buf);
+		if (fp != NULL)
+			fclose(fp);
+
+		break;
+	}
+
+	case WGET_STATS_TYPE_OCSP: {
+		info_printf("\nOCSP Statistics (JSON):\n");
+
+		wget_buffer_printf(buf, "[\n");
+		for (int it = 0; it < wget_vector_size(ocsp_stats_v); it++) {
+			const ocsp_stats_t *ocsp_stats = wget_vector_get(ocsp_stats_v, it);
+			wget_buffer_printf_append(buf, "\t{\n");
+			wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", ocsp_stats->hostname);
+			wget_buffer_printf_append(buf, "\t\t\"VALID\" : \"%zu\",\n", ocsp_stats->nvalid);
+			wget_buffer_printf_append(buf, "\t\t\"REVOKED\" : \"%zu\",\n", ocsp_stats->nrevoked);
+			wget_buffer_printf_append(buf, "\t\t\"IGNORED\" : %zu\n", ocsp_stats->nignored);
+			wget_buffer_printf_append(buf, it < wget_vector_size(ocsp_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
+
+			if ((buf->length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
+				info_printf("%s", buf->data);
+				if (fp != NULL)
+					fprintf(fp, "%s", buf->data);
+				wget_buffer_reset(buf);
+			}
+		}
+
+		wget_buffer_free(&buf);
+		if (fp != NULL)
+			fclose(fp);
 
 		break;
 	}
@@ -214,22 +328,45 @@ void stats_printjson(wget_stats_type_t type)
 	}
 }
 
-void stats_printcsv(wget_stats_type_t type, const char **header, const int header_len)
+static void stats_print_csv(wget_stats_type_t type)
 {
 	wget_buffer_t *buf = wget_buffer_alloc(0);
-	int fd = open("stats.csv", O_WRONLY | O_APPEND | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-
-	info_printf("\nTLS Statistics (CSV):\n");
-	for (int it = 0; it < header_len; it++) {
-		wget_buffer_printf_append(buf, "%s", header[it]);
-		wget_buffer_printf_append(buf, "%s", it < header_len - 1 ? "," : "\n");
-	}
-	info_printf("%s", buf->data);
-	if (fd != -1)
-		write(fd, buf->data, strlen(buf->data));
+	FILE *fp = fopen("stats.csv", "w");
 
 	switch (type) {
+	case WGET_STATS_TYPE_DNS: {
+		info_printf("\nDNS Statistics (CSV):\n");
+
+		const char *header = "Hostname,IP,DNS resolution duration";
+		info_printf("%s\n", header);
+		if (fp != NULL)
+			fprintf(fp, "%s\n", header);
+
+		for (int it = 0; it < wget_vector_size(dns_stats_v); it++) {
+			const dns_stats_t *dns_stats = wget_vector_get(dns_stats_v, it);
+
+			wget_buffer_printf(buf, "%s,%s,%lld\n", dns_stats->host, dns_stats->ip, dns_stats->millisecs);
+
+			info_printf("%s", buf->data);
+			if (fp != NULL)
+				fprintf(fp, "%s", buf->data);
+		}
+		info_printf("\n");
+		wget_buffer_free(&buf);
+		if (fp != NULL)
+			fclose(fp);
+
+		break;
+	}
+
 	case WGET_STATS_TYPE_TLS: {
+		info_printf("\nTLS Statistics (CSV):\n");
+
+		const char *header = "Hostname,Version,False Start,TFO,ALPN,Resumed,TCP,Cert-chain Length,TLS negotiation duration";
+		info_printf("%s\n", header);
+		if (fp != NULL)
+			fprintf(fp, "%s\n", header);
+
 		for (int it = 0; it < wget_vector_size(tls_stats_v); it++) {
 			const tls_stats_t *tls_stats = wget_vector_get(tls_stats_v, it);
 
@@ -243,14 +380,71 @@ void stats_printcsv(wget_stats_type_t type, const char **header, const int heade
 					tls_stats->tcp_protocol? "HTTP/2": "HTTP/1.1",
 					tls_stats->cert_chain_size,
 					tls_stats->millisecs);
+
 			info_printf("%s", buf->data);
-			if (fd != -1)
-				write(fd, buf->data, strlen(buf->data));
+			if (fp != NULL)
+				fprintf(fp, "%s", buf->data);
 		}
 		info_printf("\n");
 		wget_buffer_free(&buf);
-		if (fd != -1)
-			close(fd);
+		if (fp != NULL)
+			fclose(fp);
+
+		break;
+	}
+
+	case WGET_STATS_TYPE_SERVER: {
+		info_printf("\nServer Statistics (CSV):\n");
+
+		const char *header = "Hostname,HPKP,HPKP New Entry,HSTS,CSP";
+		info_printf("%s\n", header);
+		if (fp != NULL)
+			fprintf(fp, "%s\n", header);
+
+		for (int it = 0; it < wget_vector_size(server_stats_v); it++) {
+			const server_stats_t *server_stats = wget_vector_get(server_stats_v, it);
+
+			wget_buffer_printf(buf, "%s,%s,%s,%s,%s\n",
+					server_stats->hostname,
+					stats_server_hpkp(server_stats->hpkp),
+					server_stats->hpkp_new,
+					server_stats->hsts,
+					server_stats->csp);
+
+			info_printf("%s", buf->data);
+			if (fp != NULL)
+				fprintf(fp, "%s", buf->data);
+		}
+		info_printf("\n");
+		wget_buffer_free(&buf);
+		if (fp != NULL)
+			fclose(fp);
+
+		break;
+	}
+
+	case WGET_STATS_TYPE_OCSP: {
+		info_printf("\nOCSP Statistics (CSV):\n");
+
+		const char *header = "Hostname,VALID,REVOKED,IGNORED";
+		info_printf("%s\n", header);
+		if (fp != NULL)
+			fprintf(fp, "%s\n", header);
+
+		for (int it = 0; it < wget_vector_size(ocsp_stats_v); it++) {
+			const ocsp_stats_t *ocsp_stats = wget_vector_get(ocsp_stats_v, it);
+
+			wget_buffer_printf(buf, "%s,%zu,%zu,%zu\n",
+					ocsp_stats->hostname, ocsp_stats->nvalid, ocsp_stats->nrevoked, ocsp_stats->nignored);
+
+			info_printf("%s", buf->data);
+			if (fp != NULL)
+				fprintf(fp, "%s", buf->data);
+		}
+		info_printf("\n");
+		wget_buffer_free(&buf);
+		if (fp != NULL)
+			fclose(fp);
 
 		break;
 	}
@@ -272,6 +466,9 @@ void stats_print(void)
 			info_printf("  %4lld %s (%s)\n", dns_stats->millisecs, dns_stats->host, dns_stats->ip);
 		}
 
+		stats_print_csv(WGET_STATS_TYPE_DNS);
+		stats_print_json(WGET_STATS_TYPE_DNS);
+
 		wget_vector_free(&dns_stats_v);
 	}
 
@@ -292,19 +489,8 @@ void stats_print(void)
 			info_printf("    duration (ms)   : %lld\n\n", tls_stats->millisecs);
 		}
 
-		const char *header[] = {
-				"Hostname",
-				"Version",
-				"False Start",
-				"TFO",
-				"ALPN",
-				"Resumed",
-				"TCP",
-				"Cert-chain Length",
-				"TLS negotiation duration"
-		};
-		stats_printcsv(WGET_STATS_TYPE_TLS, header, sizeof(header)/sizeof(header[0]));
-		stats_printjson(WGET_STATS_TYPE_TLS);
+		stats_print_csv(WGET_STATS_TYPE_TLS);
+		stats_print_json(WGET_STATS_TYPE_TLS);
 
 		wget_vector_free(&tls_stats_v);
 	}
@@ -315,26 +501,16 @@ void stats_print(void)
 			const server_stats_t *server_stats = wget_vector_get(server_stats_v, it);
 
 			info_printf("  %s:\n", server_stats->hostname);
-			switch (server_stats->hpkp) {
-					case WGET_STATS_HPKP_NO:
-						info_printf("    HPKP           : %s\n", "No existing entry in hpkp db");
-						break;
-					case WGET_STATS_HPKP_MATCH:
-						info_printf("    HPKP           : %s\n", "Pubkey pinning matched");
-						break;
-					case WGET_STATS_HPKP_NOMATCH:
-						info_printf("    HPKP           : %s\n", "Pubkey pinning mismatch");
-						break;
-					default:
-						error_printf("Unknown HPKP stats type\n");
-						break;
-					}
+			info_printf("    HPKP           : %s\n", stats_server_hpkp(server_stats->hpkp));
 			info_printf("    HPKP New Entry : %s\n", server_stats->hpkp_new);
 			info_printf("    HSTS           : %s\n", server_stats->hsts);
 			info_printf("    CSP            : %s\n\n", server_stats->csp);
 		}
 
-			wget_vector_free(&server_stats_v);
+		stats_print_csv(WGET_STATS_TYPE_SERVER);
+		stats_print_json(WGET_STATS_TYPE_SERVER);
+
+		wget_vector_free(&server_stats_v);
 	}
 
 	if (config.stats_ocsp) {
@@ -348,6 +524,9 @@ void stats_print(void)
 			info_printf("    IGNORED        : %zu\n\n", ocsp_stats->nignored);
 		}
 
-			wget_vector_free(&ocsp_stats_v);
+		stats_print_csv(WGET_STATS_TYPE_OCSP);
+		stats_print_json(WGET_STATS_TYPE_OCSP);
+
+		wget_vector_free(&ocsp_stats_v);
 	}
 }
