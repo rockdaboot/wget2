@@ -279,8 +279,8 @@ static void stats_print_json(wget_stats_type_t type)
 			wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", server_stats->hostname);
 			wget_buffer_printf_append(buf, "\t\t\"HPKP\" : \"%s\",\n", stats_server_hpkp(server_stats->hpkp));
 			wget_buffer_printf_append(buf, "\t\t\"HPKP New Entry\" : \"%s\",\n", server_stats->hpkp_new);
-			wget_buffer_printf_append(buf, "\t\t\"HSTS\" : %s,\n", server_stats->hsts);
-			wget_buffer_printf_append(buf, "\t\t\"CSP\" : %s\n", server_stats->csp);
+			wget_buffer_printf_append(buf, "\t\t\"HSTS\" : \"%s\",\n", server_stats->hsts);
+			wget_buffer_printf_append(buf, "\t\t\"CSP\" : \"%s\"\n", server_stats->csp);
 			wget_buffer_printf_append(buf, it < wget_vector_size(server_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
 
 			if ((buf->length > 64*1024) || (it == wget_vector_size(server_stats_v) - 1)) {
@@ -306,8 +306,8 @@ static void stats_print_json(wget_stats_type_t type)
 			const ocsp_stats_t *ocsp_stats = wget_vector_get(ocsp_stats_v, it);
 			wget_buffer_printf_append(buf, "\t{\n");
 			wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", ocsp_stats->hostname);
-			wget_buffer_printf_append(buf, "\t\t\"VALID\" : \"%zu\",\n", ocsp_stats->nvalid);
-			wget_buffer_printf_append(buf, "\t\t\"REVOKED\" : \"%zu\",\n", ocsp_stats->nrevoked);
+			wget_buffer_printf_append(buf, "\t\t\"VALID\" : %zu,\n", ocsp_stats->nvalid);
+			wget_buffer_printf_append(buf, "\t\t\"REVOKED\" : %zu,\n", ocsp_stats->nrevoked);
 			wget_buffer_printf_append(buf, "\t\t\"IGNORED\" : %zu\n", ocsp_stats->nignored);
 			wget_buffer_printf_append(buf, it < wget_vector_size(ocsp_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
 
