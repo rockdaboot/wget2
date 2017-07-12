@@ -84,5 +84,107 @@ int main(void)
 			{ NULL } },
 		0);
 
+	// wrong credentials
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "-d --password=" password,
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ NULL } },
+		0);
+
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "-d --user=\"\" --password=" password,
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ NULL } },
+		0);
+
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "-d --user=\"whatever\" --password=" password,
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ NULL } },
+		0);
+
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "-d --user=" username,
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ NULL } },
+		0);
+
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "-d --user=" username " --password=\"\"",
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ NULL } },
+		0);
+
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "-d --user=" username " --password=\"whatever\"",
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ NULL } },
+		0);
+
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "-d",
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ NULL } },
+		0);
+
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "-d --user=\"\" --password=\"\"",
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ NULL } },
+		0);
+
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "-d --user=\"whatever\" --password=\"whatever\"",
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ NULL } },
+		0);
+
+	// use --auth-no-challenge options
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "-d --user=" username " --password=" password " --auth-no-challenge",
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ NULL } },
+		0);
+
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "-d --user=" username " --password=\"whatever\" --auth-no-challenge",
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ NULL } },
+		0);
+
 	exit(0);
 }

@@ -54,7 +54,6 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
-
 static wget_thread_t
 	https_server_tid,
 	ftp_server_tid,
@@ -456,6 +455,26 @@ static int _answer_to_connection(void *cls,
 				wget_buffer_free(&url_iri);
 				found = 1;
 				break;
+			}
+
+			// basic authentication
+			if (!wget_strcmp(urls[it1].auth_method, "Basic")) {
+				char *pass = NULL;
+				char *user = MHD_basic_auth_get_username_password(connection, &pass);
+				if ((user == NULL && pass == NULL) ||
+					(wget_strcmp(user, urls[it1].auth_username) ||
+					wget_strcmp(pass, urls[it1].auth_password))) {
+					response = MHD_create_response_from_buffer(strlen ("DENIED"),
+							(void *) "DENIED", MHD_RESPMEM_PERSISTENT);
+			        ret = MHD_queue_basic_auth_fail_response(connection, "basic@example.com", response);
+					free(user);
+					free(pass);
+					wget_buffer_free(&url_iri);
+					found = 1;
+					break;
+				}
+				free(user);
+				free(pass);
 			}
 
 			if (modified && urls[it1].modified <= modified) {
