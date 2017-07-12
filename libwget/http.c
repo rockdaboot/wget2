@@ -614,7 +614,7 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 		conn->pending_requests = wget_vector_create(16, -2, NULL);
 #endif
 	} else {
-		if (rc == WGET_E_CERTIFICATE) {
+		if (stats_callback && (rc == WGET_E_CERTIFICATE)) {
 			_stats_data_t stats;
 
 			stats.hostname = wget_http_get_host(conn);
