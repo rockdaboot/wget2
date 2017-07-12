@@ -137,8 +137,12 @@ static void free_tls_stats(tls_stats_t *stats)
 
 static void free_server_stats(server_stats_t *stats)
 {
-	if (stats)
+	if (stats) {
 		xfree(stats->hostname);
+		xfree(stats->hsts);
+		xfree(stats->csp);
+		xfree(stats->hpkp_new);
+	}
 }
 
 static void free_ocsp_stats(server_stats_t *stats)
