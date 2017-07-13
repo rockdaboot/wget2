@@ -94,7 +94,8 @@ static char
 #ifdef WITH_MICROHTTPD
 // MHD_Daemon instance
 struct MHD_Daemon
-	*httpdaemon;
+	*httpdaemon,
+	*httpsdaemon;
 #endif
 
 // for passing URL query string
@@ -103,6 +104,15 @@ struct query_string {
 		*params;
 	int
 		it;
+};
+
+char
+	*key_pem,
+	*cert_pem;
+
+enum SERVER_MODE {
+	HTTP_MODE,
+	HTTPS_MODE
 };
 
 static void sigterm_handler(int sig G_GNUC_WGET_UNUSED)
@@ -546,40 +556,82 @@ static int _answer_to_connection(void *cls,
 static void _http_server_stop(void)
 {
 	MHD_stop_daemon(httpdaemon);
+	MHD_stop_daemon(httpsdaemon);
+
+	free(key_pem);
+	free(cert_pem);
 }
 
-static int _http_server_start(void)
+static int _http_server_start(int SERVER_MODE)
 {
 	int port_num = 0;
 
-	httpdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
-				port_num, NULL, NULL, &_answer_to_connection, NULL, NULL,
-				MHD_OPTION_END);
+	if (SERVER_MODE == HTTP_MODE) {
+		httpdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
+					port_num, NULL, NULL, &_answer_to_connection, NULL, NULL,
+					MHD_OPTION_END);
 
-	if (!httpdaemon)
-		return 1;
+		if (!httpdaemon)
+			return 1;
+	} else if (SERVER_MODE == HTTPS_MODE) {
+		size_t size;
+
+		key_pem = wget_read_file(SRCDIR "/certs/x509-server-key.pem", &size);
+		cert_pem = wget_read_file(SRCDIR "/certs/x509-server-cert.pem", &size);
+
+		if ((key_pem == NULL) || (cert_pem == NULL))
+		{
+			printf("The key/certificate files could not be read.\n");
+
+			return 1;
+		}
+
+#ifdef MHD_USE_TLS
+		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS,
+#else
+		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_SSL,
+#endif
+					port_num, NULL, NULL, &_answer_to_connection, NULL,
+					MHD_OPTION_HTTPS_MEM_KEY, key_pem,
+					MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
+					MHD_OPTION_END);
+
+		if (!httpsdaemon) {
+			printf("Cannot start the HTTPS server.\n");
+
+			return 1;
+		}
+	}
 
 	// get open random port number
 	if (0) {}
 #if MHD_VERSION >= 0x00095501
-	else if (MHD_is_feature_supported(MHD_FEATURE_AUTODETECT_BIND_PORT != MHD_NO))
+	else if (MHD_NO != MHD_is_feature_supported(MHD_FEATURE_AUTODETECT_BIND_PORT))
 	{
 		const union MHD_DaemonInfo *dinfo;
-		dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_BIND_PORT);
+		if (SERVER_MODE == HTTP_MODE)
+			dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_BIND_PORT);
+		else if (SERVER_MODE == HTTPS_MODE)
+			dinfo = MHD_get_daemon_info(httpsdaemon, MHD_DAEMON_INFO_BIND_PORT);
 		if (dinfo == NULL || dinfo->port == 0)
 		{
 			return 1;
 		}
 		port_num = (int)dinfo->port;
-		http_server_port = port_num;
+		if (SERVER_MODE == HTTP_MODE)
+			http_server_port = port_num;
+		else if (SERVER_MODE == HTTPS_MODE)
+			https_server_port = port_num;
 	}
 #endif /* MHD_VERSION >= 0x00095501 */
 	else
 	{
 		const union MHD_DaemonInfo *dinfo;
 		MHD_socket sock_fd;
-		dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_LISTEN_FD);
-
+		if (SERVER_MODE == HTTP_MODE)
+			dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_LISTEN_FD);
+		else if (SERVER_MODE == HTTPS_MODE)
+			dinfo = MHD_get_daemon_info(httpsdaemon, MHD_DAEMON_INFO_LISTEN_FD);
 		if (dinfo == NULL)
 		{
 			return 1;
@@ -593,9 +645,13 @@ static int _http_server_start(void)
 
 		// get automatic retrieved port number
 		if (getsockname(sock_fd, addr, &addr_len) == 0) {
-			if (getnameinfo(addr, addr_len, NULL, 0, s_port, sizeof(s_port), NI_NUMERICSERV) == 0)
+			if (getnameinfo(addr, addr_len, NULL, 0, s_port, sizeof(s_port), NI_NUMERICSERV) == 0) {
 				port_num = atoi(s_port);
-				http_server_port = port_num;
+				if (SERVER_MODE == HTTP_MODE)
+					http_server_port = port_num;
+				else if (SERVER_MODE == HTTPS_MODE)
+					https_server_port = port_num;
+			}
 		}
 
 	}
@@ -1007,8 +1063,14 @@ void wget_test_start_server(int first_key, ...)
 
 #ifdef WITH_MICROHTTPD
 	// start HTTP server
-	if ((rc = _http_server_start()) != 0)
+	if ((rc = _http_server_start(HTTP_MODE)) != 0)
 		wget_error_printf_exit(_("Failed to start HTTP server, error %d\n"), rc);
+
+#ifdef WITH_GNUTLS
+	// start HTTPS server
+	if ((rc = _http_server_start(HTTPS_MODE)) != 0)
+		wget_error_printf_exit(_("Failed to start HTTPS server, error %d\n"), rc);
+#endif
 #endif
 
 	// now replace {{port}} in the body by the actual server port
