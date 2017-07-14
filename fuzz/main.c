@@ -27,7 +27,7 @@
 #include "wget.h"
 #include "fuzzer.h"
 
-#ifdef TEST_RUN
+#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 
 #include <dirent.h>
 
@@ -130,4 +130,4 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-#endif /* TEST_RUN */
+#endif /* #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
