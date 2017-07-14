@@ -495,14 +495,21 @@ AM_CONDITIONAL([WITH_BROTLIDEC], [test "x$with_brotlidec" = xyes])
 
 AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support]), with_libidn2=$withval, with_libidn2=yes)
 AS_IF([test "x$with_libidn2" != xno], [
-  AC_SEARCH_LIBS(idn2_lookup_u8, idn2,
-    [with_libidn2=yes; AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2]) IDNA_INFO="IDNA 2008 (libidn2)"],
-    [with_libidn2=no;  AC_MSG_WARN(*** LIBIDN2 was not found. You will not be able to use IDN2008 support)],
-    -lunistring)
-  AS_IF([test "x$with_libidn2" = xyes], [
-    AC_SEARCH_LIBS(u8_tolower, unistring,
-      [with_libunistring=yes; AC_DEFINE([WITH_LIBUNISTRING], [1], [Use libunistring]) IDNA_INFO="IDNA 2008 (libidn2+libunistring)"],
-      [with_libunistring=no;  AC_MSG_WARN(*** LIBUNISTRING was not found. You will not be able to use IDN2008 on uppercase domains)])
+  PKG_CHECK_MODULES([LIBIDN2], libidn2, [
+    with_libidn2=yes
+    LIBS="$LIBIDN2_LIBS $LIBS"
+    CFLAGS="$LIBIDN2_CFLAGS $CFLAGS"
+    AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2])
+  ], [
+    AC_SEARCH_LIBS(idn2_lookup_u8, idn2,
+      [with_libidn2=yes; AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2]) IDNA_INFO="IDNA 2008 (libidn2)"],
+      [with_libidn2=no;  AC_MSG_WARN(*** LIBIDN2 was not found. You will not be able to use IDN2008 support)],
+      -lunistring)
+    AS_IF([test "x$with_libidn2" = xyes], [
+      AC_SEARCH_LIBS(u8_tolower, unistring,
+        [with_libunistring=yes; AC_DEFINE([WITH_LIBUNISTRING], [1], [Use libunistring]) IDNA_INFO="IDNA 2008 (libidn2+libunistring)"],
+        [with_libunistring=no;  AC_MSG_WARN(*** LIBUNISTRING was not found. You will not be able to use IDN2008 on uppercase domains)])
+    ])
   ])
 ])
 AM_CONDITIONAL([WITH_LIBUNISTRING], [test "x$with_libunistring" = xyes])
