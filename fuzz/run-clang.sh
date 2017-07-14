@@ -30,6 +30,12 @@ if test -z "$1"; then
 	exit 1
 fi
 
+if ! grep -q FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION Makefile; then
+  echo "The fuzzers haven't been built for fuzzing (maybe for regression testing !?)"
+  echo "Please built regarding README.md and try again."
+  exit 1
+fi
+
 fuzzer=$1
 workers=$(($(nproc) - 1))
 jobs=$workers
