@@ -1,0 +1,11 @@
+#!/bin/sh -eu
+
+if ! grep -q FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION Makefile; then
+  echo "The fuzzers haven't been built for fuzzing (maybe for regression testing !?)"
+  echo "Please built regarding README.md and try again."
+  exit 1
+fi
+
+for fuzzer in *_fuzzer; do
+  ./get_ossfuzz_corpora $fuzzer
+done
