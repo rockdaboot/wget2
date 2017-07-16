@@ -61,26 +61,10 @@ void dl_error_set_printf
 // else returns NULL
 static char *convert_to_path_if_not(const char *str)
 {
-	if (str) {
-		char *buf;
-		int fw_slash_absent = 1;
-		int i, str_len;
-		for (i = 0; str[i]; i++) {
-			if (str[i] == '/')
-				fw_slash_absent = 0;
-		}
+        if (str && !strchr(str, '/'))
+                return wget_aprintf("./%s", str);
 
-		str_len = i;
-		if (fw_slash_absent) {
-			buf = wget_malloc(str_len + 3);
-			buf[0] = '.';
-			buf[1] = '/';
-			strcpy(buf + 2, str);
-			return buf;
-		}
-	}
-
-	return NULL;
+        return NULL;
 }
 
 #if defined PLUGIN_SUPPORT_LIBDL
