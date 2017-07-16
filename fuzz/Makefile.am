@@ -14,6 +14,7 @@ WGET_TESTS = \
  libwget_base64_fuzzer$(EXEEXT) \
  libwget_cookie_fuzzer$(EXEEXT) \
  libwget_css_url_fuzzer$(EXEEXT) \
+ libwget_html_url_fuzzer$(EXEEXT) \
  libwget_iri_fuzzer$(EXEEXT) \
  libwget_metalink_parse_fuzzer$(EXEEXT) \
  libwget_robots_parse_fuzzer$(EXEEXT) \
@@ -28,6 +29,7 @@ libwget_bar_fuzzer_SOURCES = libwget_bar_fuzzer.c main.c fuzzer.h
 libwget_base64_fuzzer_SOURCES = libwget_base64_fuzzer.c main.c fuzzer.h
 libwget_cookie_fuzzer_SOURCES = libwget_cookie_fuzzer.c main.c fuzzer.h
 libwget_css_url_fuzzer_SOURCES = libwget_css_url_fuzzer.c main.c fuzzer.h
+libwget_html_url_fuzzer_SOURCES = libwget_html_url_fuzzer.c main.c fuzzer.h
 libwget_iri_fuzzer_SOURCES = libwget_iri_fuzzer.c main.c fuzzer.h
 libwget_metalink_parse_fuzzer_SOURCES = libwget_metalink_parse_fuzzer.c main.c fuzzer.h
 libwget_robots_parse_fuzzer_SOURCES = libwget_robots_parse_fuzzer.c main.c fuzzer.h
