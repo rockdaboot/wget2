@@ -87,14 +87,7 @@ static void _write_out(FILE *default_fp, const char *data, size_t len, int with_
 		struct tm *tp, tbuf;
 
 		gettime(&ts);
-#ifdef _WIN32
-	/* Wine 2.10 crashes in gnulib gmtime_r(), so we use gmtime() directly here.
-	 * That function is thread-safe on Windows. */
-	#undef localtime
-	tp = localtime(&ts.tv_sec);
-#else
 		tp = localtime_r((const time_t *)&ts.tv_sec, &tbuf); // cast avoids warning on OpenBSD
-#endif
 
 		wget_buffer_printf_append(&buf, "%02d.%02d%02d%02d.%03d ",
 			tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec, (int) (ts.tv_nsec / 1000000));
