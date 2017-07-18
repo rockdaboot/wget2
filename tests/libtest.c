@@ -316,7 +316,7 @@ static void _replace_space_with_plus(wget_buffer_t *buf, const char *data)
 }
 
 static int _print_query_string(void *cls,
-							enum MHD_ValueKind kind,
+							enum MHD_ValueKind kind G_GNUC_WGET_UNUSED,
 							const char *key,
 							const char *value)
 {
@@ -343,7 +343,8 @@ static int _print_query_string(void *cls,
     return MHD_YES;
 }
 
-static int _print_header_range(void *cls, enum MHD_ValueKind kind,
+static int _print_header_range(void *cls,
+							enum MHD_ValueKind kind G_GNUC_WGET_UNUSED,
 							const char *key,
 							const char *value)
 {
@@ -359,12 +360,14 @@ static int _print_header_range(void *cls, enum MHD_ValueKind kind,
 	return MHD_YES;
 }
 
-static int _answer_to_connection(void *cls,
+static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 					struct MHD_Connection *connection,
 					const char *url,
 					const char *method,
-					const char *version,
-					const char *upload_data, size_t *upload_data_size, void **con_cls)
+					const char *version G_GNUC_WGET_UNUSED,
+					const char *upload_data G_GNUC_WGET_UNUSED,
+					size_t *upload_data_size G_GNUC_WGET_UNUSED,
+					void **con_cls G_GNUC_WGET_UNUSED)
 {
 	struct MHD_Response *response;
 	struct query_string query;
