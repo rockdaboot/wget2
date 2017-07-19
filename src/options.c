@@ -450,7 +450,7 @@ static int parse_bool(option_t opt, const char *val)
 			*((char *) opt->var) = 1;
 		else if (!strcmp(val, "1") || !wget_strcasecmp_ascii(val, "y") || !wget_strcasecmp_ascii(val, "yes") || !wget_strcasecmp_ascii(val, "on"))
 			*((char *) opt->var) = 1;
-		else if (!strcmp(val, "0") || !wget_strcasecmp_ascii(val, "n") || !wget_strcasecmp_ascii(val, "no") || !wget_strcasecmp_ascii(val, "off"))
+		else if (!*val || !strcmp(val, "0") || !wget_strcasecmp_ascii(val, "n") || !wget_strcasecmp_ascii(val, "no") || !wget_strcasecmp_ascii(val, "off"))
 			*((char *) opt->var) = 0;
 		else
 			error_printf(_("Boolean value '%s' not recognized\n"), val);
@@ -1606,7 +1606,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 	option_t opt;
 	int invert = 0, ret = 0, case_insensitive = 1;
 	char namebuf[strlen(name) + 1], *p;
-	int equals_sign_present = 0;
+	int value_present = 0;
 
 	if ((p = strchr(name, '='))) {
 		// option with appended value
@@ -1614,7 +1614,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 		namebuf[p - name] = 0;
 		name = namebuf;
 		value = p + 1;
-		equals_sign_present = 1;
+		value_present = 1;
 	}
 
 	// If the option is  passed from .wget2rc (--*), delete the "--" prefix
@@ -1647,26 +1647,17 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 
 	debug_printf("name=%s value=%s invert=%d\n", opt->long_name, value, invert);
 
-	if (equals_sign_present) {
-		if(*value) {
-			// "option=arg"
-			if (invert) {
-				if (!opt->args || opt->parser == parse_string ||
-						opt->parser == parse_stringset ||
-						opt->parser == parse_stringlist ||
-						opt->parser == parse_filename ||
-						opt->parser == parse_filenames)
-					error_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
-			} else if (!opt->args)
-				error_printf_exit(_("Option '%s' doesn't allow an argument\n"), name);
-		} else {
-			// "option="
-			if (opt->args == 1)
-				error_printf_exit(_("Missing argument for option '%s'\n"), name);
-				// inverted options don't have mandatory argument
-			else
-				value = NULL;
-		}
+	if (value_present) {
+		// "option=*"
+		if (invert) {
+			if (!opt->args || opt->parser == parse_string ||
+					opt->parser == parse_stringset ||
+					opt->parser == parse_stringlist ||
+					opt->parser == parse_filename ||
+					opt->parser == parse_filenames)
+				error_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
+		} else if (!opt->args)
+			error_printf_exit(_("Option '%s' doesn't allow an argument\n"), name);
 	} else {
 		// "option"
 		switch (opt->args) {
