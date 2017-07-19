@@ -134,7 +134,9 @@ if test -n "$WARN_CFLAGS"; then
     wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
 
     # add more flags as you like
-    WARN_CFLAGS="$WARN_CFLAGS -fdiagnostics-color=always"
+    if test $GCC_VERSION -ge 5; then
+      WARN_CFLAGS="$WARN_CFLAGS -fdiagnostics-color=always"
+    fi
     if test "$cross_compiling" = yes; then
       WARN_CFLAGS="$WARN_CFLAGS -Wno-format"
     fi
