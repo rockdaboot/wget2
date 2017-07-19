@@ -1690,7 +1690,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 	}
 
 	opt->parser(opt, value);
-	if (invert && (opt->parser ==  parse_bool))
+	if (invert && (opt->parser == parse_bool) && opt->var)
 		*((char *)opt->var) = !*((char *)opt->var);
 
 	return ret;
