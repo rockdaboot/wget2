@@ -120,7 +120,7 @@ static const unsigned char
 	};
 
 /**
- * \param[in] An IRI
+ * \param[in] iri An IRI
  * \return 1 if the scheme is supported, 0 if not
  *
  * Tells whether the IRI's scheme is supported or not.

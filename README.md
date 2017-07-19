@@ -44,11 +44,11 @@ A non-exhaustive list of features
 - Support for bzip2 Content-Encoding / Accept-Encoding compression type
 - New Year 2014 gimmick: added support for XZ Content-Encoding / Accept-Encoding compression type
 - Character encoding of input files may be specified despite from local and remote encoding (--input-encoding)
-- Support scanning RSS 2.0 feeds from local files (--force-rss -i <filename>)
+- Support scanning RSS 2.0 feeds from local files (`--force-rss -i <filename>`)
 - Support scanning RSS 2.0 feeds.
-- Support scanning Atom 1.0 feeds from local files (--force-atom -i <filename>)
+- Support scanning Atom 1.0 feeds from local files (`--force-atom -i <filename>`)
 - Support scanning Atom 1.0 feeds.
-- Support scanning URLs from local Sitemap XML file (--force-sitemap -i <filename>)
+- Support scanning URLs from local Sitemap XML file (`--force-sitemap -i <filename>`)
 - Support scanning sitemap files given in robots.txt (Sitemap XML, gzipped Sitemap XML, plain text) including
 sitemap index files.
 - Support arbitrary number of proxies for parallel downloads
@@ -61,7 +61,7 @@ sitemap index files.
 - autotools support
 - proxy support
 - cookies (session/non-session), detection of supercookies via Mozilla Public Suffix List
-  (use the new option --cookie-suffixes <filename>, better: put it into ~/.wgetrc)
+  (use the new option `--cookie-suffixes <filename>`, better: put it into ~/.wgetrc)
 - recursive download of websites with or without spanning hosts
 - download of single web pages / resources
 - zlib/gzip compressed HTTP/HTTPS downloads (gzip, deflate)

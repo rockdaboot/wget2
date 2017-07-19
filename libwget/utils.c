@@ -481,7 +481,7 @@ int wget_get_screen_size(int *width, int *height)
 	return -1;
 }
 #else
-int wget_get_screen_size(int *width G_GNUC_WGET_UNUSED, int *height G_GNUC_WGET_UNUSED)
+int wget_get_screen_size(G_GNUC_WGET_UNUSED int *width, G_GNUC_WGET_UNUSED int *height)
 {
 	return -1;
 }
@@ -496,7 +496,7 @@ int wget_get_screen_size(int *width G_GNUC_WGET_UNUSED, int *height G_GNUC_WGET_
  * \return Either \p fname if no escaping took place, else \p esc.
  *
  * This functions exists to pass the Wget test suite.
- * All we really need (Wget is targeted for Unix/Linux), is UNIX restriction (\NUL and /)
+ * All we really need (Wget is targeted for Unix/Linux), is UNIX restriction (`NUL` and `/`)
  *  with escaping of control characters.
  * See https://en.wikipedia.org/wiki/Comparison_of_file_systems
  *

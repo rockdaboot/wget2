@@ -578,8 +578,8 @@ Go to background immediately after startup. If no output file is specified via t
   When "windows" is given, Wget2 escapes the characters \, |, /, :, ?, ", *, <, >, and the control characters in the
   ranges 0--31 and 128--159.  In addition to this, Wget2 in Windows mode uses + instead of : to separate host and
   port in local file names, and uses @ instead of ? to separate the query portion of the file name from the rest.
-  Therefore, a URL that would be saved as www.xemacs.org:4300/search.pl?input=blah in Unix mode would be saved as
-  www.xemacs.org+4300/search.pl@input=blah in Windows mode.  This mode is the default on Windows.
+  Therefore, a URL that would be saved as `www.xemacs.org:4300/search.pl?input=blah` in Unix mode would be saved as
+  `www.xemacs.org+4300/search.pl@input=blah` in Windows mode.  This mode is the default on Windows.
 
   If you specify nocontrol, then the escaping of the control characters is also switched off. This option may make
   sense when you are downloading URLs whose names contain UTF-8 characters, on a system which can save and display

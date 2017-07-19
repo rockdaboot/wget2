@@ -262,7 +262,6 @@ static void _bar_update(wget_bar_t *bar)
 /**
  * \param[in] bar Pointer to a \p wget_bar_t object
  * \param[in] nslots Number of progress bars
- * \param[in] max_width Maximum width of the progress bars
  * \return Pointer to a \p wget_bar_t object
  *
  * Initialize a new progress bar instance for Wget. If \p bar is a NULL
@@ -462,3 +461,4 @@ void wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len)
 	_bar_update(bar);
 	wget_thread_mutex_unlock(&bar->mutex);
 }
+/** @}*/

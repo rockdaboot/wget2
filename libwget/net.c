@@ -1431,7 +1431,6 @@ ssize_t wget_tcp_vprintf(wget_tcp_t *tcp, const char *fmt, va_list args)
 /**
  * \param[in] tcp An active TCP connection.
  * \param[in] fmt Format string (like in `printf(3)`).
- * \param[in] args Variable argument list (like in `printf(3)`).
  *
  * Write data in printf-style format, to the connection \p tcp.
  *

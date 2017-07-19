@@ -242,7 +242,7 @@ void wget_buffer_free_data(wget_buffer_t *buf)
 }
 
 /**
- * \param[in] A buffer, created with wget_buffer_init() or wget_buffer_alloc()
+ * \param[in] buf A buffer, created with wget_buffer_init() or wget_buffer_alloc()
  *
  * This function is lighter than wget_buffer_free_data(). It does not free the data buffer, it just
  * sets its first byte to zero, as well as the length.

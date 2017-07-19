@@ -152,10 +152,6 @@ void wget_hpkp_free(wget_hpkp_t *hpkp)
  * This is also applicable to HSTS.
  */
 /**
- * \param[in] host Host name the following information refers to
- * \param[in] port Port number the following information refers to
- * \param[in] max_age Value of the `max-age` field
- * \param[in] include_subdomains Value of the `includeSubDomains` field
  * \return A newly allocated and initialized HPKP structure
  *
  * Creates a new HPKP structure initialized with the given values.
