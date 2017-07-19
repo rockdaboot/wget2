@@ -77,7 +77,7 @@ struct optionw {
 	void
 		*var;
 	int
-		(*parser)(option_t opt, const char *val);
+		(*parser)(option_t opt, const char *val, const char invert);
 	int
 		args;
 	char
@@ -87,8 +87,8 @@ struct optionw {
 	const char
 	    *help_str[4];
 };
-static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val);
-static int G_GNUC_WGET_NORETURN print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val)
+static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val, const char invert);
+static int G_GNUC_WGET_NORETURN print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	puts("GNU Wget2 " PACKAGE_VERSION " - multithreaded metalink/file/website downloader\n");
 	puts("+digest"
@@ -207,14 +207,14 @@ static _GL_INLINE char *_shell_expand(const char *str)
 	return expanded_str;
 }
 
-static int parse_integer(option_t opt, const char *val)
+static int parse_integer(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	*((int *)opt->var) = val ? atoi(val) : 0;
 
 	return 0;
 }
 
-static int parse_numbytes(option_t opt, const char *val)
+static int parse_numbytes(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (val) {
 		char modifier = 0, error = 0;
@@ -247,7 +247,7 @@ static int parse_numbytes(option_t opt, const char *val)
 	return 0;
 }
 
-static int parse_filename(option_t opt, const char *val)
+static int parse_filename(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	xfree(*((const char **)opt->var));
 	*((const char **)opt->var) = val ? _shell_expand(val) : NULL;
@@ -256,7 +256,7 @@ static int parse_filename(option_t opt, const char *val)
 	return 0;
 }
 
-static int parse_string(option_t opt, const char *val)
+static int parse_string(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	// the strdup'ed string will be released on program exit
 	xfree(*((const char **)opt->var));
@@ -265,7 +265,7 @@ static int parse_string(option_t opt, const char *val)
 	return 0;
 }
 
-static int parse_stringset(option_t opt, const char *val)
+static int parse_stringset(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	wget_stringmap_t *map = *((wget_stringmap_t **)opt->var);
 
@@ -291,7 +291,7 @@ static int compare_wget_http_param(wget_http_header_param_t *a, wget_http_header
 	return 1;
 }
 
-static int parse_header(option_t opt, const char *val)
+static int parse_header(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	wget_vector_t *v = *((wget_vector_t **)opt->var);
 
@@ -365,12 +365,12 @@ static int parse_stringlist_expand(option_t opt, const char *val, int expand)
 	return 0;
 }
 
-static int parse_stringlist(option_t opt, const char *val)
+static int parse_stringlist(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	return parse_stringlist_expand(opt, val, 0);
 }
 
-static int parse_filenames(option_t opt, const char *val)
+static int parse_filenames(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	return parse_stringlist_expand(opt, val, 1);
 }
@@ -421,7 +421,7 @@ static int G_GNUC_WGET_NONNULL_ALL _compare_tag(const wget_html_tag_t *t1, const
 	return n;
 }
 
-static int parse_taglist(option_t opt, const char *val)
+static int parse_taglist(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (val && *val) {
 		wget_vector_t *v = *((wget_vector_t **)opt->var);
@@ -443,25 +443,25 @@ static int parse_taglist(option_t opt, const char *val)
 	return 0;
 }
 
-static int parse_bool(option_t opt, const char *val)
+static int parse_bool(option_t opt, const char *val, const char invert)
 {
 	if (opt->var) {
 		if (!val)
-			*((char *) opt->var) = 1;
+			*((char *) opt->var) = !invert;
 		else if (!strcmp(val, "1") || !wget_strcasecmp_ascii(val, "y") || !wget_strcasecmp_ascii(val, "yes") || !wget_strcasecmp_ascii(val, "on"))
-			*((char *) opt->var) = 1;
+			*((char *) opt->var) = !invert;
 		else if (!*val || !strcmp(val, "0") || !wget_strcasecmp_ascii(val, "n") || !wget_strcasecmp_ascii(val, "no") || !wget_strcasecmp_ascii(val, "off"))
-			*((char *) opt->var) = 0;
+			*((char *) opt->var) = invert;
 		else
-			error_printf(_("Boolean value '%s' not recognized\n"), val);
+			return 1;
 	}
 
 	return 0;
 }
 
-static int parse_mirror(option_t opt, const char *val)
+static int parse_mirror(option_t opt, const char *val, const char invert)
 {
-	parse_bool(opt, val);
+	parse_bool(opt, val, invert);
 
 	if (config.mirror) {
 		config.recursive = 1;
@@ -476,7 +476,7 @@ static int parse_mirror(option_t opt, const char *val)
 	return 0;
 }
 
-static int parse_timeout(option_t opt, const char *val)
+static int parse_timeout(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	double fval;
 
@@ -515,7 +515,7 @@ static int parse_timeout(option_t opt, const char *val)
 	return 0;
 }
 
-static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_cert_type(option_t opt, const char *val)
+static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_cert_type(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (!val || !wget_strcasecmp_ascii(val, "PEM"))
 		*((char *)opt->var) = WGET_SSL_X509_FMT_PEM;
@@ -527,7 +527,7 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_cert_type(option_t op
 	return 0;
 }
 
-static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_progress_type(option_t opt, const char *val)
+static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_progress_type(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (!val || !*val || !wget_strcasecmp_ascii(val, "none"))
 		*((char *)opt->var) = 0;
@@ -540,7 +540,7 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_progress_type(option_
 }
 
 // legacy option, needed to succeed test suite
-static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_restrict_names(option_t opt, const char *val)
+static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_restrict_names(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (!val || !*val || !wget_strcasecmp_ascii(val, "none"))
 		*((int *)opt->var) = WGET_RESTRICT_NAMES_NONE;
@@ -564,7 +564,7 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_restrict_names(option
 
 // Wget compatibility: support -nv, -nc, -nd, -nH and -np
 // Wget supports --no-... to all boolean and string options
-static int parse_n_option(G_GNUC_WGET_UNUSED option_t opt, const char *val)
+static int parse_n_option(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (val) {
 		const char *p;
@@ -597,7 +597,7 @@ static int parse_n_option(G_GNUC_WGET_UNUSED option_t opt, const char *val)
 	return 0;
 }
 
-static int parse_prefer_family(option_t opt, const char *val)
+static int parse_prefer_family(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (!val || !wget_strcasecmp_ascii(val, "none"))
 		*((char *)opt->var) = WGET_NET_FAMILY_ANY;
@@ -613,7 +613,7 @@ static int parse_prefer_family(option_t opt, const char *val)
 
 static int plugin_loading_enabled = 0;
 
-static int parse_plugin(G_GNUC_WGET_UNUSED option_t opt, const char *val)
+static int parse_plugin(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	dl_error_t e[1];
 
@@ -631,7 +631,7 @@ static int parse_plugin(G_GNUC_WGET_UNUSED option_t opt, const char *val)
 	return 0;
 }
 
-static int parse_plugin_local(G_GNUC_WGET_UNUSED option_t opt, const char *val)
+static int parse_plugin_local(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	dl_error_t e[1];
 
@@ -649,7 +649,7 @@ static int parse_plugin_local(G_GNUC_WGET_UNUSED option_t opt, const char *val)
 	return 0;
 }
 
-static int parse_plugin_dirs(G_GNUC_WGET_UNUSED option_t opt, const char *val)
+static int parse_plugin_dirs(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (! plugin_loading_enabled)
 		return 0;
@@ -661,7 +661,7 @@ static int parse_plugin_dirs(G_GNUC_WGET_UNUSED option_t opt, const char *val)
 }
 
 static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
-		G_GNUC_WGET_UNUSED const char *val)
+		G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	char **names = NULL;
 	size_t n_names = 0, i;
@@ -730,7 +730,8 @@ struct config config = {
 	.xattr = 1
 };
 
-static int parse_execute(option_t opt, const char *val);
+static int parse_execute(option_t opt, const char *val, const char invert);
+static int parse_proxy(option_t opt, const char *val, const char invert);
 
 static const struct optionw options[] = {
 	// long name, config variable, parse function, number of arguments, short name
@@ -1195,7 +1196,7 @@ static const struct optionw options[] = {
 		  "(default: on)\n"
 		}
 	},
-	{ "mirror", &config.mirror, parse_mirror, 0, 'm',
+	{ "mirror", &config.mirror, parse_mirror, -1, 'm',
 		SECTION_DOWNLOAD,
 		{ "Turn on mirroring options -r -N -l inf\n"
 		}
@@ -1313,7 +1314,7 @@ static const struct optionw options[] = {
 		  "(default: off)\n"
 		}
 	},
-	{ "proxy", &config.proxy, parse_bool, -1, 0,
+	{ "proxy", &config.proxy, parse_proxy, -1, 0,
 		SECTION_DOWNLOAD,
 		{ "Enable support for *_proxy environment variables.\n",
 		  "(default: on)\n"
@@ -1512,7 +1513,7 @@ static const struct optionw options[] = {
 	}
 };
 
-static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val)
+static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	printf(
 		"GNU Wget2 V" PACKAGE_VERSION " - multithreaded metalink/file/website downloader\n"
@@ -1638,8 +1639,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 				if (opt_compare_config_linear(name, options[it].long_name) == 0)
 					opt = &options[it];
 		}
-	}
-	else
+	} else
 		opt = bsearch(name, options, countof(options), sizeof(options[0]), opt_compare);
 
 	if (!opt)
@@ -1689,14 +1689,31 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 		}
 	}
 
-	opt->parser(opt, value);
-	if (invert && (opt->parser == parse_bool) && opt->var)
-		*((char *)opt->var) = !*((char *)opt->var);
+	if (opt->parser(opt, value, invert) == 1)
+		error_printf(_("Value '%s' not recognized\n"), value);
 
 	return ret;
 }
 
-static int parse_execute(G_GNUC_WGET_UNUSED option_t opt, const char *val)
+static int parse_proxy(option_t opt, const char *val, const char invert)
+{
+	if (parse_bool(opt, val, invert) == 1) {
+		if (invert) {
+			// the strdup'ed string will be released on program exit
+			xfree(config.no_proxy);
+			config.no_proxy = val ? wget_strdup(val) : NULL;
+		} else {
+			if((opt = bsearch("http-proxy", options, countof(options), sizeof(options[0]), opt_compare)))
+				parse_string(opt, val, invert);
+			if((opt = bsearch("https-proxy", options, countof(options), sizeof(options[0]), opt_compare)))
+				parse_string(opt, val, invert);
+		}
+	}
+
+	return 0;
+}
+
+static int parse_execute(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	// info_printf("### argv=%s val=%s\n",argv[0],val);
 	set_long_option(val, NULL, 1);
@@ -1939,10 +1956,10 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 						if (!argp[pos + 1] && argc <= n + opt->args)
 							error_printf_exit(_("Missing argument(s) for option '-%c'\n"), argp[pos]);
 						val = argp[pos + 1] ? argp + pos + 1 : argv[++n];
-						n += opt->parser(opt, val);
+						n += opt->parser(opt, val, 0);
 						break;
 					} else //if (opt->args == 0)
-						opt->parser(opt, NULL);
+						opt->parser(opt, NULL, 0);
 /*					else {
 						const char *val;
 						val = argp[pos + 1] ? argp + pos + 1 : NULL;
