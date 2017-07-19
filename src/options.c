@@ -1588,10 +1588,11 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL opt_compare_config_linear(co
 	const char *s1 = key, *s2 = command;
 
 	for (; *s1 && *s2; s1++, s2++) {
-		if (*s1 == '-' || *s1 == '_')
-			s1++;
-		if (*s2 == '-' || *s2 == '_')
+		if (*s2 == '-' || *s2 == '_') {
+			if (*s1 == '-' || *s1 == '_')
+				s1++;
 			s2++;
+		}
 
 		if (!*s1 || !*s2 || c_tolower(*s1) != *s2) break;
 		// *s2 is guaranteed to be lower case so convert *s1 to lower case
@@ -1605,7 +1606,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 	option_t opt;
 	int invert = 0, ret = 0, case_insensitive = 1;
 	char namebuf[strlen(name) + 1], *p;
-	int value_present = 0;
+	int equals_sign_present = 0;
 
 	if ((p = strchr(name, '='))) {
 		// option with appended value
@@ -1613,7 +1614,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 		namebuf[p - name] = 0;
 		name = namebuf;
 		value = p + 1;
-		value_present = 1;
+		equals_sign_present = 1;
 	}
 
 	// If the option is  passed from .wget2rc (--*), delete the "--" prefix
@@ -1632,7 +1633,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 		if (!opt) {
 			// Fallback to linear search for 'unsharp' searching.
 			// Maybe the user asked for e.g. https_only or httpsonly instead of https-only
-			// opt_compare_execute() will find these. Wget -e/--execute compatibility.
+			// opt_compare_config_linear() will find these. Wget -e/--execute compatibility.
 			for (unsigned it = 0; it < countof(options) && !opt; it++)
 				if (opt_compare_config_linear(name, options[it].long_name) == 0)
 					opt = &options[it];
@@ -1646,17 +1647,26 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 
 	debug_printf("name=%s value=%s invert=%d\n", opt->long_name, value, invert);
 
-	if (value_present) {
-		// "option=arg"
-		if (invert) {
-			if (!opt->args || opt->parser == parse_string ||
-					opt->parser == parse_stringset ||
-					opt->parser == parse_stringlist ||
-					opt->parser == parse_filename ||
-					opt->parser == parse_filenames)
-				error_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
-		} else if (!opt->args)
+	if (equals_sign_present) {
+		if(*value) {
+			// "option=arg"
+			if (invert) {
+				if (!opt->args || opt->parser == parse_string ||
+						opt->parser == parse_stringset ||
+						opt->parser == parse_stringlist ||
+						opt->parser == parse_filename ||
+						opt->parser == parse_filenames)
+					error_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
+			} else if (!opt->args)
 				error_printf_exit(_("Option '%s' doesn't allow an argument\n"), name);
+		} else {
+			// "option="
+			if (opt->args == 1)
+				error_printf_exit(_("Missing argument for option '%s'\n"), name);
+				// inverted options don't have mandatory argument
+			else
+				value = NULL;
+		}
 	} else {
 		// "option"
 		switch (opt->args) {
@@ -1666,6 +1676,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 		case 1:
 			if (!value)
 				error_printf_exit(_("Missing argument for option '%s'\n"), name);
+				// empty string is allowed in value i.e. *value = '\0'
 
 			if (invert && (opt->parser == parse_string ||
 					opt->parser == parse_stringset ||
@@ -1688,7 +1699,7 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 	}
 
 	opt->parser(opt, value);
-	if (invert && (opt->parser ==  parse_bool) && opt->var)
+	if (invert && (opt->parser ==  parse_bool))
 		*((char *)opt->var) = !*((char *)opt->var);
 
 	return ret;
