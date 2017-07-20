@@ -451,9 +451,7 @@ static int parse_taglist(option_t opt, const char *val, G_GNUC_WGET_UNUSED const
 static int parse_bool(option_t opt, const char *val, const char invert)
 {
 	if (opt->var) {
-		if (!val)
-			*((char *) opt->var) = !invert;
-		else if (!strcmp(val, "1") || !wget_strcasecmp_ascii(val, "y") || !wget_strcasecmp_ascii(val, "yes") || !wget_strcasecmp_ascii(val, "on"))
+		if (!val || !strcmp(val, "1") || !wget_strcasecmp_ascii(val, "y") || !wget_strcasecmp_ascii(val, "yes") || !wget_strcasecmp_ascii(val, "on"))
 			*((char *) opt->var) = !invert;
 		else if (!*val || !strcmp(val, "0") || !wget_strcasecmp_ascii(val, "n") || !wget_strcasecmp_ascii(val, "no") || !wget_strcasecmp_ascii(val, "off"))
 			*((char *) opt->var) = invert;
@@ -616,6 +614,38 @@ static int parse_prefer_family(option_t opt, const char *val, G_GNUC_WGET_UNUSED
 	return 0;
 }
 
+static int parse_stats(option_t opt, const char *val, const char invert)
+{
+	if (opt->var) {
+		if (!val || !strcmp(val, "1") || !wget_strcasecmp_ascii(val, "y") || !wget_strcasecmp_ascii(val, "yes") || !wget_strcasecmp_ascii(val, "on"))
+			((stats_opts_t *)(opt->var))->status = !invert;
+		else if (!*val || !strcmp(val, "0") || !wget_strcasecmp_ascii(val, "n") || !wget_strcasecmp_ascii(val, "no") || !wget_strcasecmp_ascii(val, "off"))
+			((stats_opts_t *)(opt->var))->status = invert;
+		else {
+			((stats_opts_t *)(opt->var))->status = !invert;
+
+			char *p;
+			if ((p = strchr(val, ':'))) {
+				if (!wget_strncasecmp_ascii("human", val, p - val) || !wget_strncasecmp_ascii("h", val, p - val))
+					((stats_opts_t *)opt->var)->format = STATS_FORMAT_HUMAN;
+				else if (!wget_strncasecmp_ascii("csv", val, p - val))
+					((stats_opts_t *)opt->var)->format = STATS_FORMAT_CSV;
+				else if (!wget_strncasecmp_ascii("json", val, p - val))
+					((stats_opts_t *)opt->var)->format = STATS_FORMAT_JSON;
+				else
+					error_printf("Unknown stats format. Defaulting to 'human'\n");
+
+				val = p + 1;
+			}
+
+			xfree(((stats_opts_t *)opt->var)->file);
+			((stats_opts_t *)opt->var)->file = val ? _shell_expand(val) : NULL;
+		}
+	}
+
+	return 0;
+}
+
 static int plugin_loading_enabled = 0;
 
 static int parse_plugin(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
@@ -712,6 +742,8 @@ static int print_plugin_help(G_GNUC_WGET_UNUSED option_t opt,
 
 	exit(EXIT_SUCCESS);
 }
+
+stats_opts_t stats_opts[4];
 
 // default values for config options (if not 0 or NULL)
 struct config config = {
@@ -1472,22 +1504,22 @@ static const struct optionw options[] = {
 		{ "Enable web spider mode. (default: off)\n"
 		}
 	},
-	{ "stats-dns", &config.stats_dns, parse_bool, 0, 0,
+	{ "stats-dns", &stats_opts[WGET_STATS_TYPE_DNS], parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print DNS lookup durations. (default: off)\n"
 		}
 	},
-	{ "stats-ocsp", &config.stats_ocsp, parse_bool, 0, 0,
+	{ "stats-ocsp", &stats_opts[WGET_STATS_TYPE_OCSP], parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print OCSP stats. (default: off)\n"
 		}
 	},
-	{ "stats-server", &config.stats_server, parse_bool, 0, 0,
+	{ "stats-server", &stats_opts[WGET_STATS_TYPE_SERVER], parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print server stats. (default: off)\n"
 		}
 	},
-	{ "stats-tls", &config.stats_tls, parse_bool, 0, 0,
+	{ "stats-tls", &stats_opts[WGET_STATS_TYPE_TLS], parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print TLS stats. (default: off)\n"
 		}
@@ -2442,6 +2474,10 @@ void deinit(void)
 	xfree(config.http_proxy_password);
 	xfree(config.post_data);
 	xfree(config.post_file);
+
+	for (unsigned int it = 0; it < countof(stats_opts); it++) {
+		xfree(stats_opts[it].file);
+	}
 
 	wget_iri_free(&config.base);
 
