@@ -661,7 +661,7 @@ static int parse_plugin_dirs(G_GNUC_WGET_UNUSED option_t opt, const char *val, G
 }
 
 static int parse_plugin_option
-		(G_GNUC_WGET_UNUSED option_t opt, const char *val)
+	(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	dl_error_t e[1];
 
@@ -679,7 +679,7 @@ static int parse_plugin_option
 }
 
 static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
-		G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
+	G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	wget_vector_t *v;
 	size_t n_names, i;
@@ -702,7 +702,7 @@ static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
 }
 
 static int print_plugin_help(G_GNUC_WGET_UNUSED option_t opt,
-		G_GNUC_WGET_UNUSED const char *val)
+	G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (! plugin_loading_enabled)
 		return 0;
