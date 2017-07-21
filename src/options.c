@@ -633,7 +633,7 @@ static int parse_stats(option_t opt, const char *val, const char invert)
 				else if (!wget_strncasecmp_ascii("json", val, p - val))
 					((stats_opts_t *)opt->var)->format = STATS_FORMAT_JSON;
 				else
-					error_printf("Unknown stats format. Defaulting to 'human'\n");
+					error_printf_exit("Unknown stats format.\n");
 
 				val = p + 1;
 			}

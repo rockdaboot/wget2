@@ -69,7 +69,7 @@ typedef struct
 		*tfo,
 		*alpn_protocol;
 	long long tls_secs;	//milliseconds
-	size_t cert_chain_size;
+	int cert_chain_size;
 	char
 		tls_con,
 		resumed,
@@ -80,7 +80,7 @@ typedef struct
 {
 	const char *hostname;
 
-	size_t
+	int
 		nvalid,
 		nrevoked,
 		nignored;
@@ -1342,7 +1342,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	int ret = WGET_E_UNKNOWN;
 	int rc, sockfd, connect_timeout;
 	const char *hostname;
-	long long before_millisecs;
+	long long before_millisecs = 0;
 
 	if (!tcp)
 		return WGET_E_INVALID;
@@ -1507,7 +1507,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		int resumed = gnutls_session_is_resumed(session);
 
 		if (tls_stats) {
-			stats.resumed = resumed;
+			stats.resumed = resumed ? 1 : 0;
 			stats.version = gnutls_protocol_get_name(gnutls_protocol_get_version(session));
 			gnutls_certificate_get_peers(session, (unsigned int *)&(stats.cert_chain_size));
 		}
@@ -1878,6 +1878,8 @@ void wget_ssl_server_deinit(void) { }
 int wget_ssl_server_open(wget_tcp_t *tcp) { return WGET_E_TLS_DISABLED; }
 void wget_ssl_server_close(void **session) { }
 void wget_tcp_set_stats_tls(const wget_stats_callback_t fn) { }
-const void *wget_tcp_get_stats_tls(const wget_tls_stats_t type, const void *stats) { }
+const void *wget_tcp_get_stats_tls(const wget_tls_stats_t type, const void *stats) { return NULL;}
+void wget_tcp_set_stats_ocsp(const wget_stats_callback_t fn) { }
+const void *wget_tcp_get_stats_ocsp(const wget_ocsp_stats_t type, const void *stats) { return NULL;}
 
 #endif // WITH_GNUTLS

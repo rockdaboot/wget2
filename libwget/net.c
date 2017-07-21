@@ -344,7 +344,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 		mutex = WGET_THREAD_MUTEX_INITIALIZER;
 	struct addrinfo *addrinfo = NULL;
 	int rc = 0;
-	long long before_millisecs;
+	long long before_millisecs = 0;
 	_stats_data_t stats;
 
 	if (!tcp)
