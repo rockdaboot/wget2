@@ -225,7 +225,9 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 			return;
 		}
 
-		if (wget_strcmp(algorithm, "MD5") && wget_strcmp(algorithm, "MD5-sess")) {
+		if (wget_strcmp(algorithm, "MD5") &&
+			wget_strcmp(algorithm, "MD5-sess") &&
+			wget_strcmp(algorithm, NULL)) {
 			error_printf(_("Unsupported algorithm '%s'.\n"), algorithm);
 			return;
 		}
