@@ -310,7 +310,7 @@ void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
 			wget_hpkp_free(hpkp);
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'hpkp'
-			debug_printf("add HPKP %s (maxage=%lld, includeSubDomains=%d)\n", hpkp->host, (long long)hpkp->maxage, hpkp->include_subdomains);
+			/* debug_printf("add HPKP %s (maxage=%lld, includeSubDomains=%d)\n", hpkp->host, (long long)hpkp->maxage, hpkp->include_subdomains); */
 			wget_hashmap_put_noalloc(hpkp_db->entries, hpkp, hpkp);
 			// no need to free anything here
 		}

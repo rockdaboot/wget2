@@ -202,7 +202,7 @@ void wget_hsts_db_add(wget_hsts_db_t *hsts_db, wget_hsts_t *hsts)
 			hsts = NULL;
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'hsts'
-			debug_printf("add HSTS %s:%d (maxage=%lld, includeSubDomains=%d)\n", hsts->host, hsts->port, (long long)hsts->maxage, hsts->include_subdomains);
+			// debug_printf("add HSTS %s:%d (maxage=%lld, includeSubDomains=%d)\n", hsts->host, hsts->port, (long long)hsts->maxage, hsts->include_subdomains);
 			wget_hashmap_put_noalloc(hsts_db->entries, hsts, hsts);
 			// no need to free anything here
 		}
