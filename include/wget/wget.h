@@ -76,9 +76,20 @@
 
 #if GCC_VERSION_AT_LEAST(2,5)
 #	define G_GNUC_WGET_CONST __attribute__ ((const))
-#	define G_GNUC_WGET_NORETURN __attribute__ ((noreturn))
 #else
 #	define G_GNUC_WGET_CONST
+#endif
+
+#define G_GNUC_NORETURN_FUNCPTR
+#if GCC_VERSION_AT_LEAST(2,8) || __SUNPRO_C >= 0x5110
+#	define G_GNUC_WGET_NORETURN __attribute__ ((__noreturn__))
+#	undef G_GNUC_NORETURN_FUNCPTR
+#	define G_GNUC_NORETURN_FUNCPTR G_GNUC_WGET_NORETURN
+#elif _MSC_VER >= 1200
+#	define G_GNUC_WGET_NORETURN __declspec (noreturn)
+#elif __STDC_VERSION__ >= 201112
+#	define G_GNUC_WGET_NORETURN _Noreturn
+#else
 #	define G_GNUC_WGET_NORETURN
 #endif
 
