@@ -875,17 +875,6 @@ typedef struct wget_iri_st {
 	const char *
 		host;
 	/**
-	 * Explicit port, if present.
-	 */
-	const char *
-		port;
-	/**
-	 * Default port for the scheme. This will be used
-	 * if `port` is omitted.
-	 */
-	const char *
-		resolv_port;
-	/**
 	 * Path, if present. Unescaped.
 	 */
 	const char *
@@ -917,6 +906,16 @@ typedef struct wget_iri_st {
 	 */
 	size_t
 		dirlen;
+	/**
+	 * Port number.
+	 *
+	 *
+	 */
+	uint16_t
+		port;
+	/* If set, port was explicitly given */
+	unsigned int
+		port_given;
 	/* If set, free host in iri_free() */
 	unsigned int
 		host_allocated : 1;
@@ -1050,9 +1049,9 @@ WGETAPI void
 WGETAPI void
 	wget_hsts_free(wget_hsts_t *hsts);
 WGETAPI wget_hsts_t *
-	wget_hsts_new(const char *host, int port, time_t maxage, int include_subdomains);
+	wget_hsts_new(const char *host, uint16_t port, time_t maxage, int include_subdomains);
 WGETAPI int
-	wget_hsts_host_match(const wget_hsts_db_t *hsts_db, const char *host, int port);
+	wget_hsts_host_match(const wget_hsts_db_t *hsts_db, const char *host, uint16_t port);
 WGETAPI wget_hsts_db_t *
 	wget_hsts_db_init(wget_hsts_db_t *hsts_db);
 WGETAPI void
@@ -1431,11 +1430,11 @@ WGETAPI void
 WGETAPI void
 	wget_tcp_set_bind_address(wget_tcp_t *tcp, const char *bind_address);
 WGETAPI struct addrinfo *
-	wget_tcp_resolve(wget_tcp_t *tcp, const char *restrict name, const char *restrict port);
+	wget_tcp_resolve(wget_tcp_t *tcp, const char *restrict name, uint16_t port);
 WGETAPI int
-	wget_tcp_connect(wget_tcp_t *tcp, const char *host, const char *port);
+	wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port);
 WGETAPI int
-	wget_tcp_listen(wget_tcp_t *tcp, const char *host, const char *port, int backlog);
+	wget_tcp_listen(wget_tcp_t *tcp, const char *host, uint16_t port, int backlog);
 WGETAPI wget_tcp_t
 	*wget_tcp_accept(wget_tcp_t *parent_tcp);
 WGETAPI int
@@ -1657,7 +1656,7 @@ typedef struct _wget_http_connection_st wget_http_connection_t;
 
 WGETAPI const char *
 	wget_http_get_host(const wget_http_connection_t *conn);
-WGETAPI const char *
+WGETAPI uint16_t
 	wget_http_get_port(const wget_http_connection_t *conn);
 WGETAPI const char *
 	wget_http_get_scheme(const wget_http_connection_t *conn);

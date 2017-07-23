@@ -45,13 +45,10 @@ static wget_thread_mutex_t
 // ~ O(1) insertion, search and removal
 static unsigned int G_GNUC_WGET_NONNULL_ALL hash_iri(const wget_iri_t *iri)
 {
-	unsigned int h = 0; // use 0 as SALT if hash table attacks doesn't matter
+	unsigned int h = iri->port; // use port as SALT if hash table attacks doesn't matter
 	const unsigned char *p;
 
 	for (p = (unsigned char *)iri->scheme; p && *p; p++)
-		h = h * 101 + *p;
-
-	for (p = (unsigned char *)iri->port; p && *p; p++)
 		h = h * 101 + *p;
 
 	for (p = (unsigned char *)iri->host; p && *p; p++)

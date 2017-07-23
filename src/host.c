@@ -58,12 +58,12 @@ static int _host_compare(const HOST *host1, const HOST *host2)
 	if ((n = wget_strcmp(host1->host, host2->host)))
 		return n;
 
-	return wget_strcmp(host1->port, host2->port);
+	return host1->port < host2->port ? -1 : (host1->port > host2->port ? 1 : 0);
 }
 
 static unsigned int _host_hash(const HOST *host)
 {
-	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
+	unsigned int hash = host->port; // use port as SALT if hash table attacks doesn't matter
 	const unsigned char *p;
 
 	// We use SCHEME here, so we would eventually download robots.txt twice,
@@ -74,9 +74,6 @@ static unsigned int _host_hash(const HOST *host)
 		hash = hash * 101 + *p;
 
 	for (p = (unsigned char *)host->host; p && *p; p++)
-		hash = hash * 101 + *p;
-
-	for (p = (unsigned char *)host->port; p && *p; p++)
 		hash = hash * 101 + *p;
 
 	return hash;
@@ -100,7 +97,7 @@ HOST *host_add(wget_iri_t *iri)
 		wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor_t)_free_host_entry);
 	}
 
-	HOST *hostp = NULL, host = { .scheme = iri->scheme, .host = iri->host, .port = iri->resolv_port };
+	HOST *hostp = NULL, host = { .scheme = iri->scheme, .host = iri->host, .port = iri->port };
 
 	if (!wget_hashmap_contains(hosts, &host)) {
 		// info_printf("Add to hosts: %s\n", hostname);
@@ -115,7 +112,7 @@ HOST *host_add(wget_iri_t *iri)
 
 HOST *host_get(wget_iri_t *iri)
 {
-	HOST *hostp, host = { .scheme = iri->scheme, .host = iri->host, .port = iri->resolv_port };
+	HOST *hostp, host = { .scheme = iri->scheme, .host = iri->host, .port = iri->port };
 
 	wget_thread_mutex_lock(&hosts_mutex);
 
@@ -452,7 +449,7 @@ static int _queue_print_func(void *context G_GNUC_WGET_UNUSED, JOB *job)
 void queue_print(HOST *host)
 {
 	if (host->port)
-		info_printf("%s://%s:%s\n", host->scheme, host->host, host->port);
+		info_printf("%s://%s:%hu\n", host->scheme, host->host, host->port);
 	else
 		info_printf("%s://%s\n", host->scheme, host->host);
 

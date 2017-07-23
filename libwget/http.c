@@ -519,8 +519,9 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 	wget_http_connection_t
 		*conn;
 	const char
-		*port,
 		*host;
+	uint16_t
+		port;
 	int
 		rc,
 		ssl = iri->scheme == WGET_IRI_SCHEME_HTTPS;
@@ -531,7 +532,7 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 	conn = *_conn = xcalloc(1, sizeof(wget_http_connection_t)); // convenience assignment
 
 	host = iri->host;
-	port = iri->resolv_port;
+	port = iri->port;
 
 	if (!wget_http_match_no_proxy(no_proxies, iri->host)) {
 		wget_iri_t *proxy;
@@ -540,12 +541,12 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 		if (iri->scheme == WGET_IRI_SCHEME_HTTP && http_proxies) {
 			proxy = wget_vector_get(http_proxies, (++next_http_proxy) % wget_vector_size(http_proxies));
 			host = proxy->host;
-			port = proxy->resolv_port;
+			port = proxy->port;
 			conn->proxied = 1;
 		} else if (iri->scheme == WGET_IRI_SCHEME_HTTPS && https_proxies) {
 			proxy = wget_vector_get(https_proxies, (++next_https_proxy) % wget_vector_size(https_proxies));
 			host = proxy->host;
-			port = proxy->resolv_port;
+			port = proxy->port;
 			conn->proxied = 1;
 		}
 		wget_thread_mutex_unlock(&mutex);
@@ -559,7 +560,7 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 
 	if ((rc = wget_tcp_connect(conn->tcp, host, port)) == WGET_E_SUCCESS) {
 		conn->esc_host = iri->host ? wget_strdup(iri->host) : NULL;
-		conn->port = wget_strdup(iri->resolv_port);
+		conn->port = iri->port;
 		conn->scheme = iri->scheme;
 		conn->buf = wget_buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
 #ifdef WITH_LIBNGHTTP2
@@ -624,7 +625,6 @@ void wget_http_close(wget_http_connection_t **conn)
 //		if (!wget_tcp_get_dns_caching())
 //			freeaddrinfo((*conn)->addrinfo);
 		xfree((*conn)->esc_host);
-		xfree((*conn)->port);
 		// xfree((*conn)->scheme);
 		wget_buffer_free(&(*conn)->buf);
 		wget_vector_clear_nofree((*conn)->pending_requests);

@@ -330,7 +330,7 @@ static void *_ftp_server_thread(void *ctx)
 							default: wget_tcp_set_family(pasv_parent_tcp, WGET_NET_FAMILY_ANY); break;
 						}
 					}
-					if (wget_tcp_listen(pasv_parent_tcp, "localhost", "0", 5) != 0) {
+					if (wget_tcp_listen(pasv_parent_tcp, "localhost", 0, 5) != 0) {
 						wget_tcp_printf(tcp, "500 failed to open port\r\n");
 						break;
 					}
@@ -632,7 +632,7 @@ void wget_test_start_server(int first_key, ...)
 	http_parent_tcp = wget_tcp_init();
 	wget_tcp_set_timeout(http_parent_tcp, -1); // INFINITE timeout
 	wget_tcp_set_preferred_family(http_parent_tcp, WGET_NET_FAMILY_IPV4); // to have a defined order of IPs
-	if (wget_tcp_listen(http_parent_tcp, "localhost", NULL, 5) != 0)
+	if (wget_tcp_listen(http_parent_tcp, "localhost", 0, 5) != 0)
 		exit(1);
 	http_server_port = wget_tcp_get_local_port(http_parent_tcp);
 
@@ -641,7 +641,7 @@ void wget_test_start_server(int first_key, ...)
 	wget_tcp_set_ssl(https_parent_tcp, 1); // switch SSL on
 	wget_tcp_set_timeout(https_parent_tcp, -1); // INFINITE timeout
 	wget_tcp_set_preferred_family(https_parent_tcp, WGET_NET_FAMILY_IPV4); // to have a defined order of IPs
-	if (wget_tcp_listen(https_parent_tcp, "localhost", NULL, 5) != 0)
+	if (wget_tcp_listen(https_parent_tcp, "localhost", 0, 5) != 0)
 		exit(1);
 	https_server_port = wget_tcp_get_local_port(https_parent_tcp);
 
@@ -649,7 +649,7 @@ void wget_test_start_server(int first_key, ...)
 	ftp_parent_tcp = wget_tcp_init();
 	wget_tcp_set_timeout(ftp_parent_tcp, -1); // INFINITE timeout
 	wget_tcp_set_preferred_family(ftp_parent_tcp, WGET_NET_FAMILY_IPV4); // to have a defined order of IPs
-	if (wget_tcp_listen(ftp_parent_tcp, "localhost", NULL, 5) != 0)
+	if (wget_tcp_listen(ftp_parent_tcp, "localhost", 0, 5) != 0)
 		exit(1);
 	ftp_server_port = wget_tcp_get_local_port(ftp_parent_tcp);
 
@@ -659,7 +659,7 @@ void wget_test_start_server(int first_key, ...)
 		wget_tcp_set_ssl(ftps_parent_tcp, 1); // switch SSL on
 		wget_tcp_set_timeout(ftps_parent_tcp, -1); // INFINITE timeout
 		wget_tcp_set_preferred_family(ftps_parent_tcp, WGET_NET_FAMILY_IPV4); // to have a defined order of IPs
-		if (wget_tcp_listen(ftps_parent_tcp, "localhost", NULL, 5) != 0)
+		if (wget_tcp_listen(ftps_parent_tcp, "localhost", 0, 5) != 0)
 			exit(1);
 		ftps_server_port = wget_tcp_get_local_port(ftps_parent_tcp);
 	}

@@ -34,8 +34,6 @@ struct _wget_http_connection_st {
 	const char *
 		esc_host;
 	const char *
-		port;
-	const char *
 		scheme;
 	wget_buffer_t *
 		buf;
@@ -49,6 +47,8 @@ struct _wget_http_connection_st {
 		*received_http2_responses; // List of received (but yet unprocessed) responses (HTTP2 only)
 	int
 		pending_http2_requests; // Number of unresponsed requests (HTTP2 only)
+	uint16_t
+		port;
 	char
 		protocol; // WGET_PROTOCOL_HTTP_1_1 or WGET_PROTOCOL_HTTP_2_0
 	unsigned char

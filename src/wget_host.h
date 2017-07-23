@@ -37,8 +37,7 @@ typedef struct JOB JOB;
 typedef struct {
 	const char
 		*scheme,
-		*host,
-		*port;
+		*host;
 	JOB
 		*robot_job; // special job for downloading robots.txt (before anything else)
 	ROBOTS
@@ -50,6 +49,8 @@ typedef struct {
 	int
 		qsize, // number of jobs in queue
 		failures; // number of consequent connection failures
+	uint16_t
+		port;
 	unsigned char
 		blocked : 1; // host may be blocked after too many errors or even one final error
 } HOST;

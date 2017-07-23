@@ -75,9 +75,9 @@ static size_t
 	default_page_length = 10;
 
 const char
-	* const wget_iri_schemes[] = { "http", "https", NULL };
-static const char
-	* const iri_ports[]   = { "80", "443" }; // default port numbers for the above schemes
+	* const wget_iri_schemes[] = { "http", "https" };
+static const uint16_t
+	const iri_ports[]   = { 80, 443 }; // default port numbers for the above schemes
 
 #define IRI_CTYPE_GENDELIM (1<<0)
 #define _iri_isgendelim(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_GENDELIM)
@@ -127,9 +127,7 @@ static const unsigned char
  */
 int wget_iri_supported(const wget_iri_t *iri)
 {
-	int it;
-
-	for (it = 0; wget_iri_schemes[it]; it++) {
+	for (unsigned it = 0; it < countof(wget_iri_schemes); it++) {
 		if (wget_iri_schemes[it] == iri->scheme)
 			return 1;
 	}
@@ -303,7 +301,6 @@ void wget_iri_free(wget_iri_t **iri)
 wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 {
 	wget_iri_t *iri;
-	const char *default_port = NULL;
 	char *p, *s, *authority, c;
 	size_t slen, it;
 	int maybe_scheme;
@@ -376,10 +373,10 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 		iri->scheme = p;
 		wget_iri_unescape_inline((char *)iri->scheme);
 
-		for (it = 0; wget_iri_schemes[it]; it++) {
+		for (it = 0; it < countof(wget_iri_schemes); it++) {
 			if (!wget_strcasecmp_ascii(wget_iri_schemes[it], p)) {
 				iri->scheme = wget_iri_schemes[it];
-				default_port = iri_ports[it];
+				iri->port = iri_ports[it];
 				break;
 			}
 		}
@@ -390,8 +387,8 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 		}
 
 	} else {
-		iri->scheme = WGET_IRI_SCHEME_DEFAULT;
-		default_port = iri_ports[0]; // port 80
+		iri->scheme = WGET_IRI_SCHEME_HTTP;
+		iri->port = 80;
 		s = p; // rewind
 	}
 
@@ -468,15 +465,16 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 				s++;
 		}
 		if (*s == ':') {
-			if (s[1]) {
-				if (!default_port || (strcmp(s + 1, default_port) && atoi(s + 1) != atoi(default_port)))
-					iri->port = s + 1;
+			if (c_isdigit(s[1])) {
+				int port = atoi(s + 1);
+				if (port > 0 && port < 65536) {
+					iri->port = port;
+					iri->port_given = 1;
+				}
 			}
 		}
 		*s = 0;
 	}
-
-	iri->resolv_port = iri->port ? iri->port : default_port;
 
 	// now unescape all components (not interested in display, userinfo, password right now)
 
@@ -566,8 +564,6 @@ wget_iri_t *wget_iri_clone(const wget_iri_t *iri)
 	// not adjust scheme, it is a pointer to a static string
 	clone->userinfo = iri->userinfo ? (char *)clone + (size_t) (iri->userinfo - (const char *)iri): NULL;
 	clone->password = iri->password ? (char *)clone + (size_t) (iri->password - (const char *)iri): NULL;
-	clone->port = iri->port ? (char *)clone + (size_t) (iri->port - (const char *)iri): NULL;
-	clone->resolv_port = iri->resolv_port ? (char *)clone + (size_t) (iri->resolv_port - (const char *)iri): NULL;
 
 	if (iri->path_allocated)
 		clone->path = wget_strdup(iri->path);
@@ -605,8 +601,8 @@ const char *wget_iri_get_connection_part(wget_iri_t *iri)
 {
 	if (iri) {
 		if (!iri->connection_part) {
-			if (iri->port) {
-				iri->connection_part =  wget_aprintf("%s://%s:%s", iri->scheme, iri->host, iri->port);
+			if (iri->port_given) {
+				iri->connection_part =  wget_aprintf("%s://%s:%hu", iri->scheme, iri->host, iri->port);
 			} else {
 				iri->connection_part = wget_aprintf("%s://%s", iri->scheme, iri->host);
 			}
@@ -873,9 +869,8 @@ int wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2)
 	if (iri1->scheme != iri2->scheme)
 		return iri1->scheme < iri2->scheme ? -1 : 1;
 
-	if (iri1->port != iri2->port)
-		if ((n = wget_strcmp(iri1->port, iri2->port)))
-			return n;
+	if ((n = iri1->port - iri2->port))
+		return n;
 
 	// host is already lowercase, no need to call strcasecmp()
 	if ((n = strcmp(iri1->host, iri2->host)))
@@ -1220,27 +1215,18 @@ void wget_iri_set_defaultpage(const char *page)
  */
 const char *wget_iri_set_scheme(wget_iri_t *iri, const char *scheme)
 {
-	int index;
-	const char *cur_scheme, *old_scheme = iri->scheme;
+	const char *old_scheme = iri->scheme;
 
-	for (index = 0; (cur_scheme = wget_iri_schemes[index]); index++) {
-		if (!wget_strcasecmp_ascii(cur_scheme, scheme))
+	for (int index = 0; wget_iri_schemes[index]; index++) {
+		if (!wget_strcasecmp_ascii(wget_iri_schemes[index], scheme)) {
+			iri->scheme = wget_iri_schemes[index];
+			// If the IRI is using a port other than the default, keep it untouched
+			if (!iri->port_given)
+				iri->port = iri_ports[index];
 			break;
+		}
 	}
 
-	if (!cur_scheme)
-		goto end;
-
-	iri->scheme = cur_scheme;
-
-	/*
-	 * If the IRI is using a port other than the default, keep it untouched
-	 * otherwise, if the IRI is using the default port, this should be modified as well.
-	 */
-	if (iri->resolv_port != iri->port)
-		iri->resolv_port = iri_ports[index];
-
-end:
 	return old_scheme;
 }
 

@@ -79,7 +79,7 @@ const char *wget_http_get_host(const wget_http_connection_t *conn)
  * \return A string containing port number. Returned memory is owned by
  *         _conn_ and should not be modified or freed.
  */
-const char *wget_http_get_port(const wget_http_connection_t *conn)
+uint16_t wget_http_get_port(const wget_http_connection_t *conn)
 {
 	return conn->port;
 }

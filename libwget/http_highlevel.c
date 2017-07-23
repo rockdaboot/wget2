@@ -210,7 +210,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 		// open/reopen/reuse HTTP/HTTPS connection
 		if (conn && !wget_strcmp(conn->esc_host, uri->host) &&
 			conn->scheme == uri->scheme &&
-			!wget_strcmp(conn->port, uri->resolv_port))
+			conn->port == uri->port)
 		{
 			debug_printf("reuse connection %s\n", conn->esc_host);
 		} else {

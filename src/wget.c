@@ -1139,15 +1139,15 @@ static int try_connection(DOWNLOADER *downloader, wget_iri_t *iri)
 	wget_http_connection_t *conn;
 	int rc;
 
-	if (config.hsts && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, atoi(iri->resolv_port))) {
-		info_printf("HSTS in effect for %s:%s\n", iri->host, iri->resolv_port);
+	if (config.hsts && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, iri->port)) {
+		info_printf("HSTS in effect for %s:%hu\n", iri->host, iri->port);
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
 	}
 
 	if ((conn = downloader->conn)) {
 		if (!wget_strcmp(wget_http_get_host(conn), iri->host) &&
 			wget_http_get_scheme(conn) == iri->scheme &&
-			!wget_strcmp(wget_http_get_port(conn), iri->resolv_port))
+			wget_http_get_port(conn) == iri->port)
 		{
 			debug_printf("reuse connection %s\n", wget_http_get_host(conn));
 			return WGET_E_SUCCESS;
@@ -1278,7 +1278,7 @@ static int process_response_header(wget_http_response_t *resp)
 		&& iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address
 		&& resp->hsts)
 	{
-		wget_hsts_db_add(config.hsts_db, wget_hsts_new(iri->host, atoi(iri->resolv_port), resp->hsts_maxage, resp->hsts_include_subdomains));
+		wget_hsts_db_add(config.hsts_db, wget_hsts_new(iri->host, iri->port, resp->hsts_maxage, resp->hsts_include_subdomains));
 		hsts_changed = 1;
 	}
 
@@ -2893,10 +2893,8 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 		wget_buffer_strcpy(&buf, referer->scheme);
 		wget_buffer_memcat(&buf, "://", 3);
 		wget_buffer_strcat(&buf, referer->host);
-		if (referer->resolv_port) {
-			wget_buffer_memcat(&buf, ":", 1);
-			wget_buffer_strcat(&buf, referer->resolv_port);
-		}
+		if (referer->port_given)
+			wget_buffer_printf_append(&buf, ":%hu", referer->port);
 		wget_buffer_memcat(&buf, "/", 1);
 		wget_iri_get_escaped_resource(referer, &buf);
 
