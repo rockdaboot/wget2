@@ -914,23 +914,23 @@ typedef struct wget_iri_st {
 	uint16_t
 		port;
 	/* If set, port was explicitly given */
-	unsigned int
+	bool
 		port_given;
 	/* If set, free host in iri_free() */
-	unsigned int
-		host_allocated : 1;
+	bool
+		host_allocated : true;
 	/* If set, free path in iri_free() */
-	unsigned int
-		path_allocated : 1;
+	bool
+		path_allocated : true;
 	/* If set, free query in iri_free() */
-	unsigned int
-		query_allocated : 1;
+	bool
+		query_allocated : true;
 	/* If set, free fragment in iri_free() */
-	unsigned int
-		fragment_allocated : 1;
+	bool
+		fragment_allocated : true;
 	/* If set, the hostname part is a literal IPv4/IPv6 address */
-	unsigned int
-		is_ip_address : 1;
+	bool
+		is_ip_address : true;
 } wget_iri_t;
 /** @} */
 

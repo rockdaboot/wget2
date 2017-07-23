@@ -469,7 +469,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 				int port = atoi(s + 1);
 				if (port > 0 && port < 65536) {
 					iri->port = port;
-					iri->port_given = 1;
+					iri->port_given = true;
 				}
 			}
 		}
@@ -483,19 +483,19 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 		if (wget_str_needs_encoding(iri->host)) {
 			if ((s = wget_str_to_utf8(iri->host, encoding))) {
 				iri->host = s;
-				iri->host_allocated = 1;
+				iri->host_allocated = true;
 			}
 		}
 		if ((p = (char *)wget_str_to_ascii(iri->host)) != iri->host) {
 			if (iri->host_allocated)
 				xfree(iri->host);
 			iri->host = p;
-			iri->host_allocated = 1;
+			iri->host_allocated = true;
 		}
 
 		// Finally, if the host is a literal IPv4 or IPv6 address, mark it as so
 		if (wget_ip_is_family(iri->host, WGET_NET_FAMILY_IPV4) || wget_ip_is_family(iri->host, WGET_NET_FAMILY_IPV6))
-			iri->is_ip_address = 1;
+			iri->is_ip_address = true;
 	}
 	else {
 		if (iri->scheme == WGET_IRI_SCHEME_HTTP || iri->scheme == WGET_IRI_SCHEME_HTTPS) {
@@ -508,21 +508,21 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 	if (iri->path && wget_str_needs_encoding(iri->path)) {
 		if ((s = wget_str_to_utf8(iri->path, encoding))) {
 			iri->path = s;
-			iri->path_allocated = 1;
+			iri->path_allocated = true;
 		}
 	}
 
 	if (iri->query && wget_str_needs_encoding(iri->query)) {
 		if ((s = wget_str_to_utf8(iri->query, encoding))) {
 			iri->query = s;
-			iri->query_allocated = 1;
+			iri->query_allocated = true;
 		}
 	}
 
 	if (iri->fragment && wget_str_needs_encoding(iri->fragment)) {
 		if ((s = wget_str_to_utf8(iri->fragment, encoding))) {
 			iri->fragment = s;
-			iri->fragment_allocated = 1;
+			iri->fragment_allocated = true;
 		}
 	}
 
