@@ -559,7 +559,7 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 
 	if ((rc = wget_tcp_connect(conn->tcp, host, port)) == WGET_E_SUCCESS) {
 		conn->esc_host = iri->host ? wget_strdup(iri->host) : NULL;
-		conn->port = iri->resolv_port;
+		conn->port = wget_strdup(iri->resolv_port);
 		conn->scheme = iri->scheme;
 		conn->buf = wget_buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
 #ifdef WITH_LIBNGHTTP2
@@ -624,7 +624,7 @@ void wget_http_close(wget_http_connection_t **conn)
 //		if (!wget_tcp_get_dns_caching())
 //			freeaddrinfo((*conn)->addrinfo);
 		xfree((*conn)->esc_host);
-		// xfree((*conn)->port);
+		xfree((*conn)->port);
 		// xfree((*conn)->scheme);
 		wget_buffer_free(&(*conn)->buf);
 		wget_vector_clear_nofree((*conn)->pending_requests);
