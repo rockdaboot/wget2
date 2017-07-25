@@ -31,6 +31,12 @@
 
 #include <dirent.h>
 
+#ifdef _WIN32
+#  define SLASH '\\'
+#else
+#  define SLASH '/'
+#endif
+
 static int test_all_from(const char *dirname)
 {
 	DIR *dirp;
@@ -84,16 +90,21 @@ int main(int argc, char **argv)
 		WGET_INFO_STREAM, stdout,
 		NULL);
 
-	const char *target = strrchr(argv[0], '/');
+	const char *target = strrchr(argv[0], SLASH);
 	target = target ? target + 1 : argv[0];
+	size_t target_len = strlen(target);
+
+#ifdef _WIN32
+	target_len -= 4; // ignore .exe
+#endif
 
 	char corporadir[sizeof(SRCDIR) + 1 + strlen(target) + 8];
-	snprintf(corporadir, sizeof(corporadir), SRCDIR "/%s.in", target);
+	snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.in", (int) target_len, target);
 
 	if (test_all_from(corporadir))
 		wget_error_printf_exit("Failed to find %s\n", corporadir);
 
-	snprintf(corporadir, sizeof(corporadir), SRCDIR "/%s.repro", target);
+	snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.repro", (int) target_len, target);
 
 	test_all_from(corporadir);
 
