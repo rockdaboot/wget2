@@ -27,11 +27,11 @@
 #include "wget.h"
 #include "fuzzer.h"
 
-#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+#ifdef TEST_RUN
 
 #include <dirent.h>
 
-static void test_all_from(const char *dirname)
+static int test_all_from(const char *dirname)
 {
 	DIR *dirp;
 	struct dirent *dp;
@@ -52,7 +52,10 @@ static void test_all_from(const char *dirname)
 			}
 		}
 		closedir(dirp);
+		return 0;
 	}
+
+	return 1;
 }
 
 int main(int argc, char **argv)
@@ -87,7 +90,8 @@ int main(int argc, char **argv)
 	char corporadir[sizeof(SRCDIR) + 1 + strlen(target) + 8];
 	snprintf(corporadir, sizeof(corporadir), SRCDIR "/%s.in", target);
 
-	test_all_from(corporadir);
+	if (test_all_from(corporadir))
+		wget_error_printf_exit("Failed to find %s\n", corporadir);
 
 	snprintf(corporadir, sizeof(corporadir), SRCDIR "/%s.repro", target);
 
@@ -130,4 +134,4 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-#endif /* #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
+#endif /* #ifdef TEST_RUN */

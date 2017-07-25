@@ -1,6 +1,6 @@
 AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS) -Wno-unused-parameter
 AM_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(srcdir) \
- -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\" -DSRCDIR=\"$(abs_srcdir)\"
+ -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\" -DSRCDIR=\"$(abs_srcdir)\" -DTEST_RUN
 AM_LDFLAGS = -static
 LDADD = ../lib/libgnu.la ../libwget/libwget.la \
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
