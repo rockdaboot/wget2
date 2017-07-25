@@ -916,6 +916,9 @@ typedef struct wget_iri_st {
 	/* If set, port was explicitly given */
 	bool
 		port_given;
+	/* If set, free uri in iri_free() */
+	bool
+		uri_allocated : true;
 	/* If set, free host in iri_free() */
 	bool
 		host_allocated : true;

@@ -259,6 +259,8 @@ char *wget_iri_unescape_inline(char *src)
 void wget_iri_free_content(wget_iri_t *iri)
 {
 	if (iri) {
+		if (iri->uri_allocated)
+			xfree(iri->uri);
 		if (iri->host_allocated)
 			xfree(iri->host);
 		if (iri->path_allocated)
@@ -559,7 +561,10 @@ wget_iri_t *wget_iri_clone(const wget_iri_t *iri)
 	else
 		clone->host = iri->host ? (char *)clone + (size_t) (iri->host - (const char *)iri) : NULL;
 
-	clone->uri = iri->uri ? (char *)clone + (size_t) (iri->uri - (const char *)iri) : NULL;
+	if (iri->uri_allocated)
+		clone->uri = wget_strdup(iri->uri);
+	else
+		clone->uri = iri->uri ? (char *)clone + (size_t) (iri->uri - (const char *)iri) : NULL;
 	clone->display = iri->display ? (char *)clone + (size_t) (iri->display - (const char *)iri): NULL;
 	// not adjust scheme, it is a pointer to a static string
 	clone->userinfo = iri->userinfo ? (char *)clone + (size_t) (iri->userinfo - (const char *)iri): NULL;
@@ -1224,6 +1229,20 @@ const char *wget_iri_set_scheme(wget_iri_t *iri, const char *scheme)
 			if (!iri->port_given)
 				iri->port = iri_ports[index];
 			break;
+		}
+	}
+
+	// Rewrite the URI if scheme has changed
+	if (old_scheme != iri->scheme) {
+		size_t old_scheme_len = strlen(old_scheme);
+		if (strncmp(iri->uri, old_scheme, old_scheme_len) == 0) {
+			if (strncmp(iri->uri + old_scheme_len, "://", 3) == 0) {
+				char *new_uri = wget_aprintf("%s://%s",  iri->scheme, iri->uri + old_scheme_len + 3);
+				if (iri->uri_allocated)
+					xfree(iri->uri);
+				iri->uri = new_uri;
+				iri->uri_allocated = true;
+			}
 		}
 	}
 
