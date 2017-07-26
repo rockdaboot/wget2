@@ -6,6 +6,6 @@ if ! grep -q FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION Makefile; then
   exit 1
 fi
 
-for fuzzer in *_fuzzer; do
-  ./get_ossfuzz_corpora $fuzzer
+for fuzzer in *_fuzzer.c; do
+  ./get_ossfuzz_corpora $(basename $fuzzer .c)
 done
