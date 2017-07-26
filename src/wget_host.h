@@ -44,6 +44,8 @@ typedef struct {
 		*robots;
 	wget_list_t
 		*queue; // host specific job queue
+	wget_hashmap_t
+		*host_docs;
 	long long
 		retry_ts; // timestamp of earliest retry in milliseconds
 	int
@@ -55,8 +57,24 @@ typedef struct {
 		blocked : 1; // host may be blocked after too many errors or even one final error
 } HOST;
 
+typedef struct {
+	int
+		http_status;
+	wget_vector_t
+		*docs;
+} HOST_DOCS;
+
+typedef struct {
+	wget_iri_t
+		*iri;
+	long long
+		size;
+} DOC;
+
 HOST *host_add(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
+HOST_DOCS *host_docs_add(wget_iri_t *iri, int status, long long size);
 HOST *host_get(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
+HOST_DOCS *host_docs_get(wget_hashmap_t *host_docs, int status);
 JOB *host_get_job(HOST *host, long long *pause);
 JOB *host_add_job(HOST *host, JOB *job) G_GNUC_WGET_NONNULL((1,2));
 JOB *host_add_robotstxt_job(HOST *host, wget_iri_t *iri, const char *encoding) G_GNUC_WGET_NONNULL((1,2));

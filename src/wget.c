@@ -1288,6 +1288,12 @@ static int process_response_header(wget_http_response_t *resp)
 	// do some statistics
 	add_statistics(resp);
 
+host_docs_add(iri, resp->code, resp->content_length);
+
+printf("iri->uri = %s\n", iri->uri);
+printf("resp->code = %hd\n", resp->code);
+printf("resp->content_length = %lu\n", resp->content_length);
+
 	wget_cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
 	wget_cookie_store_cookies(config.cookie_db, resp->cookies); // store cookies
 
