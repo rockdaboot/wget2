@@ -77,7 +77,7 @@ static size_t
 const char
 	* const wget_iri_schemes[] = { "http", "https" };
 static const uint16_t
-	const iri_ports[]   = { 80, 443 }; // default port numbers for the above schemes
+	iri_ports[]   = { 80, 443 }; // default port numbers for the above schemes
 
 #define IRI_CTYPE_GENDELIM (1<<0)
 #define _iri_isgendelim(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_GENDELIM)
