@@ -1506,22 +1506,26 @@ static const struct optionw options[] = {
 	},
 	{ "stats-dns", &stats_opts[WGET_STATS_TYPE_DNS], parse_stats, -1, 0,
 		SECTION_STARTUP,
-		{ "Print DNS lookup durations. (default: off)\n"
+		{ "Print DNS lookup durations. (default: off)\n",
+		  "Additional format supported: --stats-dns[=[format:]file]"
 		}
 	},
 	{ "stats-ocsp", &stats_opts[WGET_STATS_TYPE_OCSP], parse_stats, -1, 0,
 		SECTION_STARTUP,
-		{ "Print OCSP stats. (default: off)\n"
+		{ "Print OCSP stats. (default: off)\n",
+		  "Additional format supported: --stats-ocsp[=[format:]file]"
 		}
 	},
 	{ "stats-server", &stats_opts[WGET_STATS_TYPE_SERVER], parse_stats, -1, 0,
 		SECTION_STARTUP,
-		{ "Print server stats. (default: off)\n"
+		{ "Print server stats. (default: off)\n",
+		  "Additional format supported: --stats-server[=[format:]file]"
 		}
 	},
 	{ "stats-tls", &stats_opts[WGET_STATS_TYPE_TLS], parse_stats, -1, 0,
 		SECTION_STARTUP,
-		{ "Print TLS stats. (default: off)\n"
+		{ "Print TLS stats. (default: off)\n",
+		  "Additional format supported: --stats-tls[=[format:]file]"
 		}
 	},
 	{ "strict-comments", &config.strict_comments, parse_bool, -1, 0,
