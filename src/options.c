@@ -681,24 +681,20 @@ static int parse_plugin_option
 static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
 	G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
-	wget_vector_t *v;
-	size_t n_names, i;
-	const char *name;
-
 	if (! plugin_loading_enabled)
 		return 0;
 
-	v = wget_vector_create(16, -2, NULL);
+	wget_vector_t *v = wget_vector_create(16, -2, NULL);
 	plugin_db_list(v);
-	n_names = wget_vector_size(v);
-	for (i = 0; i < n_names; i++) {
-		name = (const char *) wget_vector_get(v, i);
+
+	int n_names = wget_vector_size(v);
+	for (int i = 0; i < n_names; i++) {
+		const char *name = (const char *) wget_vector_get(v, i);
 		printf("%s\n", name);
 	}
 	wget_vector_free(&v);
 
 	exit(EXIT_SUCCESS);
-	return 0;
 }
 
 static int print_plugin_help(G_GNUC_WGET_UNUSED option_t opt,
@@ -710,7 +706,6 @@ static int print_plugin_help(G_GNUC_WGET_UNUSED option_t opt,
 	plugin_db_show_help();
 
 	exit(EXIT_SUCCESS);
-	return 0;
 }
 
 // default values for config options (if not 0 or NULL)
@@ -1655,7 +1650,7 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL opt_compare_config_linear(co
 static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char *value, char parsing_config)
 {
 	option_t opt;
-	int invert = 0, value_present = 0, case_insensitive = 1;
+	char invert = 0, value_present = 0, case_insensitive = 1;
 	char namebuf[strlen(name) + 1], *p;
 	int ret = 0;
 
@@ -2135,16 +2130,16 @@ int init(int argc, const char **argv)
 
 	//Enable plugin loading
 	{
-		const char *env;
+		const char *path;
 
 		plugin_loading_enabled = 1;
-		env = getenv("WGET2_PLUGIN_DIRS");
-		if (env) {
+		path = getenv("WGET2_PLUGIN_DIRS");
+		if (path) {
 			plugin_db_clear_search_paths();
 #ifdef _WIN32
-			plugin_db_add_search_paths(env, ';');
+			plugin_db_add_search_paths(path, ';');
 #else
-			plugin_db_add_search_paths(env, ':');
+			plugin_db_add_search_paths(path, ':');
 #endif
 		}
 

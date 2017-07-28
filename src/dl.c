@@ -294,13 +294,12 @@ char *dl_get_name_from_path(const char *path, int strict)
 
 char *dl_search(const char *name, const wget_vector_t *dirs)
 {
-	size_t i, j;
-	const size_t n_dirs = wget_vector_size(dirs);
+	int n_dirs = wget_vector_size(dirs);
 
-	for (i = 0; i < n_dirs; i++) {
+	for (int i = 0; i < n_dirs; i++) {
 		const char *dir = wget_vector_get(dirs, i);
 		if (dir && *dir) {
-			for (j = 0; dl_patterns[j].prefix; j++) {
+			for (int j = 0; dl_patterns[j].prefix; j++) {
 				char *filename = wget_aprintf("%s/%s%s%s", dir,
 						dl_patterns[j].prefix, name, dl_patterns[j].suffix);
 
@@ -310,7 +309,7 @@ char *dl_search(const char *name, const wget_vector_t *dirs)
 				wget_free(filename);
 			}
 		} else {
-			for (j = 0; dl_patterns[j].prefix; j++) {
+			for (int j = 0; dl_patterns[j].prefix; j++) {
 				char *filename = wget_aprintf("%s%s%s",
 						dl_patterns[j].prefix, name, dl_patterns[j].suffix);
 
@@ -327,10 +326,9 @@ char *dl_search(const char *name, const wget_vector_t *dirs)
 
 void dl_list(const wget_vector_t *dirs, wget_vector_t *names_out)
 {
-	size_t i;
-	const size_t n_dirs = wget_vector_size(dirs);
+	int n_dirs = wget_vector_size(dirs);
 
-	for (i = 0; i < n_dirs; i++) {
+	for (int i = 0; i < n_dirs; i++) {
 		DIR *dirp;
 		struct dirent *ent;
 		const char *dir = wget_vector_get(dirs, i);

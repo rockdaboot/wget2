@@ -64,9 +64,9 @@ static wget_vector_t *search_paths;
 // List of loaded plugins
 static wget_vector_t *plugin_list;
 // Index of plugins by plugin name
-wget_stringmap_t *plugin_name_index;
+static wget_stringmap_t *plugin_name_index;
 // Whether any of the previous options forwarded was 'help'
-int plugin_help_forwarded;
+static int plugin_help_forwarded;
 
 // Sets a list of directories to search for plugins, separated by
 // _separator_.
@@ -278,19 +278,18 @@ void plugin_db_load_from_envvar(void)
 	str = getenv(plugin_list_envvar);
 
 	if (str) {
-		size_t n_strings, i;
-		plugin_t *plugin;
-
 		dl_error_init(e);
 
 		// Split the value
 		v = wget_vector_create(16, -2, NULL);
 		split_string(str, sep, v);
-		n_strings = wget_vector_size(v);
 
 		// Load each plugin
-		for (i = 0; i < n_strings; i++) {
+		int n_strings = wget_vector_size(v);
+		for (int i = 0; i < n_strings; i++) {
+			plugin_t *plugin;
 			int local = 0;
+
 			str = (const char *) wget_vector_get(v, i);
 			if (strchr(str, '/'))
 				local = 1;
@@ -405,9 +404,9 @@ int plugin_db_forward_option(const char *plugin_option, dl_error_t *e)
 // Shows help from all loaded plugins
 void plugin_db_show_help(void)
 {
-	size_t n_plugins = wget_vector_size(plugin_list);
-	size_t i;
-	for (i = 0; i < n_plugins; i++) {
+	int n_plugins = wget_vector_size(plugin_list);
+
+	for (int i = 0; i < n_plugins; i++) {
 		plugin_t *plugin = (plugin_t *) wget_vector_get(plugin_list, i);
 		plugin_priv_t *priv = (plugin_priv_t *) plugin;
 		if (priv->argp) {
@@ -428,16 +427,11 @@ int plugin_db_help_forwarded(void)
 // Forwards a URL about to be enqueued to intrested plugins
 void plugin_db_forward_url(const wget_iri_t *iri, struct plugin_db_forward_url_verdict *verdict)
 {
-	intercept_action_t action;
-	size_t n_plugins;
-	size_t i;
-
 	// Initialize action structure
-	n_plugins = wget_vector_size(plugin_list);
-	memset(&action, 0, sizeof(intercept_action_t));
-	action.parent.vtable = &vtable;
+	intercept_action_t action = { .parent.vtable = &vtable };
+	int n_plugins = wget_vector_size(plugin_list);
 
-	for (i = 0; i < n_plugins; i++) {
+	for (int i = 0; i < n_plugins; i++) {
 		plugin_t *plugin = (plugin_t *) wget_vector_get(plugin_list, i);
 		plugin_priv_t *priv = (plugin_priv_t *) plugin;
 
@@ -483,10 +477,9 @@ void plugin_db_init(void)
 // Sends 'finalize' signal to all plugins and unloads all plugins
 void plugin_db_finalize(int exitcode)
 {
-	size_t n_plugins = wget_vector_size(plugin_list);
-	size_t i;
+	int n_plugins = wget_vector_size(plugin_list);
 
-	for (i = 0; i < n_plugins; i++) {
+	for (int i = 0; i < n_plugins; i++) {
 		plugin_t *plugin = (plugin_t *) wget_vector_get(plugin_list, i);
 		plugin_priv_t *priv = (plugin_priv_t *) plugin;
 		if (priv->finalizer)

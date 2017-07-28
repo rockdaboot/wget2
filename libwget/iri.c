@@ -470,7 +470,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 			if (c_isdigit(s[1])) {
 				int port = atoi(s + 1);
 				if (port > 0 && port < 65536) {
-					iri->port = port;
+					iri->port = (uint16_t) port;
 					iri->port_given = true;
 				}
 			}
