@@ -60,10 +60,9 @@ do { \
 #define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".so"
 #endif
 
-static int string_vector_check(wget_vector_t *v, size_t correct_len, ...)
+static int string_vector_check(wget_vector_t *v, int correct_len, ...)
 {
-	size_t i;
-	size_t v_len = wget_vector_size(v);
+	int v_len = wget_vector_size(v);
 	va_list arglist;
 	const char *str;
 
@@ -74,7 +73,7 @@ static int string_vector_check(wget_vector_t *v, size_t correct_len, ...)
 	wget_vector_sort(v);
 
 	va_start(arglist, correct_len);
-	for (i = 0; i < v_len; i++) {
+	for (int i = 0; i < v_len; i++) {
 		str = va_arg(arglist, const char *);
 		if (strcmp((const char *) wget_vector_get(v, i), str) != 0)
 			return 0;
@@ -86,10 +85,9 @@ static int string_vector_check(wget_vector_t *v, size_t correct_len, ...)
 
 static void string_vector_dump(wget_vector_t *v)
 {
-	size_t i, v_len;
+	int v_len = wget_vector_size(v);
 
-	v_len = wget_vector_size(v);
-	for (i = 0; i < v_len; i++)
+	for (int i = 0; i < v_len; i++)
 		printf("  %s\n", (const char *) wget_vector_get(v, i));
 }
 

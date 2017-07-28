@@ -84,12 +84,11 @@ int wget_plugin_initializer(wget_plugin_t *plugin)
 	return 1;
 }
 #elif defined TEST_SELECT_OPTIONS
-struct option_filter {
+static struct option_filter {
 	const char *name;
 	int valid_without_val;
 	int valid_with_val;
-};
-struct option_filter options[] = {
+} options[] = {
 	{"x", 1, 1},
 	{"y", 1, 0},
 	{"z", 0, 1},

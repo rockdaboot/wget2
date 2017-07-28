@@ -1269,7 +1269,7 @@ static void test_hsts(void)
 	static const struct hsts_db_data {
 		const char *
 			host;
-		int
+		uint16_t
 			port;
 		const char *
 			hsts_params;
@@ -1281,7 +1281,7 @@ static void test_hsts(void)
 	static const struct hsts_data {
 		const char *
 			host;
-		int
+		uint16_t
 			port;
 		int
 			result;
