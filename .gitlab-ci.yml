@@ -1,7 +1,7 @@
 variables:
   BUILD_IMAGES_PROJECT: gnuwget/build-images
   DEBIAN_BUILD: buildenv-debian-stretch
-  FEDORA_BUILD: buildenv-f25
+  FEDORA_BUILD: buildenv-f26
   CENTOS7_BUILD: buildenv-centos7
   GET_SOURCES_ATTEMPTS: "3"
   CONFIGURE_BASE_FLAGS: --enable-assert
