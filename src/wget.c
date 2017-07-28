@@ -1117,6 +1117,7 @@ int main(int argc, const char **argv)
 		xfree(buf);
 		blacklist_free();
 		hosts_free();
+		host_ips_free();
 		xfree(downloaders);
 		if (config.progress)
 			bar_deinit();

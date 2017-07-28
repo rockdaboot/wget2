@@ -2565,10 +2565,11 @@ typedef enum {
 typedef enum {
 	WGET_STATS_SERVER_HOSTNAME = 0,
 	WGET_STATS_SERVER_IP = 1,
-	WGET_STATS_SERVER_HPKP = 2,
-	WGET_STATS_SERVER_HPKP_NEW = 3,
-	WGET_STATS_SERVER_HSTS = 4,
-	WGET_STATS_SERVER_CSP = 5
+	WGET_STATS_SERVER_SCHEME = 2,
+	WGET_STATS_SERVER_HPKP = 3,
+	WGET_STATS_SERVER_HPKP_NEW = 4,
+	WGET_STATS_SERVER_HSTS = 5,
+	WGET_STATS_SERVER_CSP = 6
 } wget_server_stats_t;
 
 typedef enum {
@@ -2610,6 +2611,9 @@ WGETAPI void
 
 WGETAPI const void *
 	wget_tcp_get_stats_ocsp(wget_ocsp_stats_t type, const void *stats);
+
+WGETAPI void
+	host_ips_free(void);
 
 WGET_END_DECLS
 

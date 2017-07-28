@@ -249,12 +249,14 @@ int wget_hashmap_get_null(const wget_hashmap_t *h, const void *key, void **value
 
 int wget_hashmap_contains(const wget_hashmap_t *h, const void *key)
 {
-	ENTRY *entry;
-	unsigned int hash = h->hash(key);
-	int pos = hash % h->max;
+	if (h) {
+		ENTRY *entry;
+		unsigned int hash = h->hash(key);
+		int pos = hash % h->max;
 
-	if ((entry = hashmap_find_entry(h, key, hash, pos)))
-		return 1;
+		if ((entry = hashmap_find_entry(h, key, hash, pos)))
+			return 1;
+	}
 
 	return 0;
 }
