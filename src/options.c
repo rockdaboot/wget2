@@ -1655,9 +1655,9 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL opt_compare_config_linear(co
 static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char *value, char parsing_config)
 {
 	option_t opt;
-	int invert = 0, ret = 0, case_insensitive = 1;
+	int invert = 0, value_present = 0, case_insensitive = 1;
 	char namebuf[strlen(name) + 1], *p;
-	int value_present = 0;
+	int ret = 0;
 
 	if ((p = strchr(name, '='))) {
 		// option with appended value

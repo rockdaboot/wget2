@@ -81,7 +81,7 @@ void wget_css_parse_buffer(
 	yyscan_t scanner;
 
 	yylex_init(&scanner);
-	yy_scan_bytes(buf, len, scanner);
+	yy_scan_bytes(buf, (int) len, scanner);
 
 	while ((token = yylex(scanner)) != CSSEOF) {
 		if (token == IMPORT_SYM) {

@@ -1071,15 +1071,13 @@ int wget_tcp_listen(wget_tcp_t *tcp, const char *host, uint16_t port, int backlo
 		}
 
 		if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) != -1) {
-			int on = 1;
-
 			_set_async(sockfd);
 			_set_socket_options(sockfd);
 
 #ifdef TCP_FASTOPEN_LINUX
 			/* Enable TCP Fast Open, if required by the user and available */
 			if (tcp->tcp_fastopen)  {
-				on = 1;
+				int on = 1;
 
 				if (setsockopt(sockfd, IPPROTO_TCP, TCP_FASTOPEN, &on, sizeof(on)) == -1)
 					error_printf(_("Failed to set socket option FASTOPEN\n"));
@@ -1341,13 +1339,10 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 				}
 				errno = EAGAIN;
 			}
-
-			goto check;
-		}
+		} else
 #endif
-		n = send(tcp->sockfd, buf, count, 0);
+			n = send(tcp->sockfd, buf, count, 0);
 
-check:
 		if (n >= 0) {
 			nwritten += n;
 

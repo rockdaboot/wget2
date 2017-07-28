@@ -538,7 +538,7 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 		return -1;
 	}
 
-	rc = gnutls_ocsp_resp_import(resp, &(gnutls_datum_t){ .data = (unsigned char *) data->data, .size = data->length });
+	rc = gnutls_ocsp_resp_import(resp, &(gnutls_datum_t){ .data = (unsigned char *) data->data, .size = (unsigned) data->length });
 	if (rc < 0) {
 		debug_printf("importing response: %s", gnutls_strerror(rc));
 		goto cleanup;
@@ -1350,7 +1350,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		for (nprot = 0, s = e = _config.alpn; *e; s = e + 1) {
 			if ((e = strchrnul(s, ',')) != s) {
 				data[nprot].data = (unsigned char *) s;
-				data[nprot].size = e - s;
+				data[nprot].size = (unsigned) (e - s);
 				debug_printf("ALPN offering %.*s\n", (int) data[nprot].size, data[nprot].data);
 				nprot++;
 			}

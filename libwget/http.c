@@ -336,7 +336,7 @@ static ssize_t _send_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	const uint8_t *data, size_t length, int flags G_GNUC_WGET_UNUSED, void *user_data)
 {
 	wget_http_connection_t *conn = (wget_http_connection_t *)user_data;
-	int rc;
+	ssize_t rc;
 
 	// debug_printf("writing... %zd\n", length);
 	if ((rc = wget_tcp_write(conn->tcp, (const char *)data, length)) <= 0) {
@@ -353,7 +353,7 @@ static ssize_t _recv_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	uint8_t *buf, size_t length, int flags G_GNUC_WGET_UNUSED, void *user_data)
 {
 	wget_http_connection_t *conn = (wget_http_connection_t *)user_data;
-	int rc;
+	ssize_t rc;
 
 	// debug_printf("reading... %zd\n", length);
 	if ((rc = wget_tcp_read(conn->tcp, (char *)buf, length)) <= 0) {
@@ -1243,14 +1243,14 @@ int wget_http_set_no_proxy(const char *no_proxy, const char *encoding)
 	return 0;
 }
 
-int wget_http_match_no_proxy(wget_vector_t *no_proxies, const char *host)
+int wget_http_match_no_proxy(wget_vector_t *no_proxies_vec, const char *host)
 {
-	if (!no_proxies || !host)
+	if (!no_proxies_vec || !host)
 		return 0;
 
 	// https://www.gnu.org/software/emacs/manual/html_node/url/Proxies.html
-	for (int it = 0; it < wget_vector_size(no_proxies); it++) {
-		const char *no_proxy = wget_vector_get(no_proxies, it);
+	for (int it = 0; it < wget_vector_size(no_proxies_vec); it++) {
+		const char *no_proxy = wget_vector_get(no_proxies_vec, it);
 
 		if (!strcmp(no_proxy, host))
 			return 1; // exact match
