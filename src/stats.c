@@ -134,6 +134,11 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		else
 			server_stats.hostname = wget_strdup("-");
 
+		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_IP, stats))
+			server_stats.ip = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_IP, stats));
+		else
+			server_stats.ip = wget_strdup("-");
+
 		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats))
 			server_stats.hpkp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats));
 		else
@@ -220,6 +225,7 @@ static void free_server_stats(server_stats_t *stats)
 {
 	if (stats) {
 		xfree(stats->hostname);
+		xfree(stats->ip);
 		xfree(stats->hsts);
 		xfree(stats->csp);
 		xfree(stats->hpkp_new);
@@ -384,6 +390,7 @@ static void stats_print_human(wget_stats_type_t type)
 				const server_stats_t *server_stats = wget_vector_get(server_stats_v, it);
 
 				wget_buffer_printf_append(buf, "  %s:\n", server_stats->hostname);
+				wget_buffer_printf_append(buf, "    IP             : %s\n", server_stats->ip);
 				wget_buffer_printf_append(buf, "    HPKP           : %s\n", stats_server_hpkp(server_stats->hpkp));
 				wget_buffer_printf_append(buf, "    HPKP New Entry : %s\n", server_stats->hpkp_new);
 				wget_buffer_printf_append(buf, "    HSTS           : %s\n", server_stats->hsts);
@@ -549,6 +556,7 @@ static void stats_print_json(wget_stats_type_t type)
 				const server_stats_t *server_stats = wget_vector_get(server_stats_v, it);
 				wget_buffer_printf_append(buf, "\t{\n");
 				wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", server_stats->hostname);
+				wget_buffer_printf_append(buf, "\t\t\"IP\" : \"%s\",\n", server_stats->ip);
 				wget_buffer_printf_append(buf, "\t\t\"HPKP\" : \"%s\",\n", stats_server_hpkp(server_stats->hpkp));
 				wget_buffer_printf_append(buf, "\t\t\"HPKP New Entry\" : \"%s\",\n", server_stats->hpkp_new);
 				wget_buffer_printf_append(buf, "\t\t\"HSTS\" : \"%s\",\n", server_stats->hsts);
@@ -709,8 +717,9 @@ static void stats_print_csv(wget_stats_type_t type)
 			for (int it = 0; it < wget_vector_size(server_stats_v); it++) {
 				const server_stats_t *server_stats = wget_vector_get(server_stats_v, it);
 
-				wget_buffer_printf(buf, "%s,%s,%s,%s,%s\n",
+				wget_buffer_printf(buf, "%s,%s,%s,%s,%s,%s\n",
 						server_stats->hostname,
+						server_stats->ip,
 						stats_server_hpkp(server_stats->hpkp),
 						server_stats->hpkp_new,
 						server_stats->hsts,

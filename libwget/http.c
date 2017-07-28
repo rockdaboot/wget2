@@ -68,6 +68,7 @@ typedef struct
 {
 	const char
 		*hostname,
+		*ip,
 		*hsts,
 		*csp,
 		*hpkp_new;
@@ -618,6 +619,7 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 			_stats_data_t stats;
 
 			stats.hostname = wget_http_get_host(conn);
+			stats.ip = conn->tcp->ip;
 			stats.hpkp = conn->tcp->hpkp;
 			stats.hpkp_new = NULL;
 			stats.hsts = NULL;
@@ -866,6 +868,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 			_stats_data_t stats;
 
 			stats.hostname = wget_http_get_host(conn);
+			stats.ip = conn->tcp->ip;
 			stats.hpkp = conn->tcp->hpkp;
 			stats.hpkp_new = resp->hpkp ? "Yes" : "No";
 			stats.hsts = resp->hsts ? "Yes" : "No";
@@ -932,6 +935,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 				_stats_data_t stats;
 
 				stats.hostname = wget_http_get_host(conn);
+				stats.ip = conn->tcp->ip;
 				stats.hpkp = conn->tcp->hpkp;
 				stats.hpkp_new = resp->hpkp ? "Yes" : "No";
 				stats.hsts = resp->hsts ? "Yes" : "No";
@@ -1334,6 +1338,8 @@ const void *wget_tcp_get_stats_server(wget_server_stats_t type, const void *_sta
 	switch(type) {
 	case WGET_STATS_SERVER_HOSTNAME:
 		return stats->hostname;
+	case WGET_STATS_SERVER_IP:
+		return stats->ip;
 	case WGET_STATS_SERVER_HPKP:
 		return &(stats->hpkp);
 	case WGET_STATS_SERVER_HPKP_NEW:

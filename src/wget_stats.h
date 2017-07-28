@@ -50,6 +50,7 @@ typedef struct {
 typedef struct {
 	const char
 	*hostname,
+	*ip,
 	*hsts,
 	*csp,
 	*hpkp_new;

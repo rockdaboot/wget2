@@ -344,6 +344,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 		mutex = WGET_THREAD_MUTEX_INITIALIZER;
 	struct addrinfo *addrinfo = NULL;
 	int rc = 0;
+	char adr[NI_MAXHOST], sport[NI_MAXSERV];
 	long long before_millisecs = 0;
 	_stats_data_t stats;
 
@@ -405,8 +406,6 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 		addrinfo = _wget_sort_preferred(addrinfo, tcp->preferred_family);
 
 	if (stats_callback) {
-		char adr[NI_MAXHOST], sport[NI_MAXSERV];
-
 		if ((rc = getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
 			stats.ip = adr;
 		else
@@ -418,8 +417,6 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 	/* Finally, print the address list to the debug pipe if enabled */
 	if (wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG))) {
 		for (struct addrinfo *ai = addrinfo; ai; ai = ai->ai_next) {
-			char adr[NI_MAXHOST], sport[NI_MAXSERV];
-
 			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
 				debug_printf("has %s:%s\n", adr, sport);
 			else
@@ -897,6 +894,7 @@ void wget_tcp_deinit(wget_tcp_t **_tcp)
 		}
 
 		xfree(tcp->ssl_hostname);
+		xfree(tcp->ip);
 		xfree(tcp);
 
 		if (_tcp)
@@ -1069,6 +1067,11 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
 						continue;
 					}
 				}
+
+				if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+					tcp->ip = wget_strdup(adr);
+				else
+					tcp->ip = wget_strdup("???");
 
 				return WGET_E_SUCCESS;
 			}
