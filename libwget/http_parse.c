@@ -1053,12 +1053,14 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 		if (!wget_strncasecmp_ascii(name, "content-encoding", namelen)) {
 			wget_http_parse_content_encoding(value0, &resp->content_encoding);
 		} else if (!wget_strncasecmp_ascii(name, "content-type", namelen)) {
-			wget_http_parse_content_type(value0, &resp->content_type, &resp->content_type_encoding);
+			if (!resp->content_type && !resp->content_type_encoding)
+				wget_http_parse_content_type(value0, &resp->content_type, &resp->content_type_encoding);
 		} else if (!wget_strncasecmp_ascii(name, "content-length", namelen)) {
 			resp->content_length = (size_t)atoll(value0);
 			resp->content_length_valid = 1;
 		} else if (!wget_strncasecmp_ascii(name, "content-disposition", namelen)) {
-			wget_http_parse_content_disposition(value0, &resp->content_filename);
+			if (!resp->content_filename)
+				wget_http_parse_content_disposition(value0, &resp->content_filename);
 		} else if (!wget_strncasecmp_ascii(name, "connection", namelen)) {
 			wget_http_parse_connection(value0, &resp->keep_alive);
 		} else
@@ -1080,7 +1082,8 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 		break;
 	case 'e':
 		if (!wget_strncasecmp_ascii(name, "etag", namelen)) {
-			wget_http_parse_etag(value0, &resp->etag);
+			if (!resp->etag)
+				wget_http_parse_etag(value0, &resp->etag);
 		} else
 			ret = -1;
 		break;
@@ -1095,8 +1098,8 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 			// Last-Modified: Thu, 07 Feb 2008 15:03:24 GMT
 			resp->last_modified = wget_http_parse_full_date(value0);
 		} else if (resp->code / 100 == 3 && !wget_strncasecmp_ascii(name, "location", namelen)) {
-			xfree(resp->location);
-			wget_http_parse_location(value0, &resp->location);
+			if (!resp->location)
+				wget_http_parse_location(value0, &resp->location);
 		} else if (resp->code / 100 == 3 && !wget_strncasecmp_ascii(name, "link", namelen)) {
 			// debug_printf("s=%.31s\n",s);
 			wget_http_link_t link;
