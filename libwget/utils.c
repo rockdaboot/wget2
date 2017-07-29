@@ -361,28 +361,30 @@ int wget_match_tail_nocase(const char *s, const char *tail)
 
 /**
  * \param[in] globstr String
+ * \param[in] n Size of string to run glob() against
  * \param[in] flags Flags to pass to glob()
  * \return Expanded string after running glob
  *
- * Finds a pathname by running glob(3) on \p globstr. Returns a newly allocated
- * string containing the expanded pathnames if glob(3) succeeded. Otherwise,
- * returns NULL
+ * Finds a pathname by running glob(3) on the pattern in the first \p n bytes
+ * of \p globstr.  Returns a newly allocated string with the the first \p n
+ * bytes replaced with the matching pattern obtained via glob(3) if one was
+ * found. Otherwise it returns NULL.
  */
-char *wget_strglob(const char *globstr, int flags)
+char *wget_strnglob(const char *str, size_t n, int flags)
 {
 	glob_t pglob;
 	char *expanded_str = NULL;
 
+	char *globstr = wget_strmemdup(str, n);
+
 	if (glob(globstr, flags, NULL, &pglob) == 0) {
 		if (pglob.gl_pathc > 0) {
-			expanded_str = wget_strdup(pglob.gl_pathv[0]);
+			expanded_str = wget_aprintf("%s%s", pglob.gl_pathv[0], str+n);
 		}
 		globfree(&pglob);
 	}
 
-	if (!expanded_str)
-		expanded_str = wget_strdup(globstr);
-
+	xfree(globstr);
 	return expanded_str;
 }
 
