@@ -147,7 +147,7 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats))
 			server_stats.hpkp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats));
 		else
-			server_stats.hpkp = -1;
+			server_stats.hpkp = WGET_STATS_HPKP_NO;
 
 		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats))
 			server_stats.hpkp_new = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats));
@@ -273,30 +273,21 @@ void stats_init(void)
 
 }
 
-static const char *stats_server_hpkp(const char hpkp)
+static const char *stats_server_hpkp(wget_hpkp_stats_t hpkp)
 {
-	const char *msg;
-
 	switch (hpkp) {
 	case WGET_STATS_HPKP_NO:
-		msg = "No existing entry in hpkp db";
-		break;
+		return "No existing entry in hpkp db";
 	case WGET_STATS_HPKP_MATCH:
-		msg = "Pubkey pinning matched";
-		break;
+		return "Pubkey pinning matched";
 	case WGET_STATS_HPKP_NOMATCH:
-		msg = "Pubkey pinning mismatch";
-		break;
-	case -1:
-		msg = "-";
-		break;
+		return "Pubkey pinning mismatch";
+	case WGET_STATS_HPKP_ERROR:
+		return "Pubkey pinning error";
 	default:
-		error_printf("Unknown HPKP stats type\n");
-		msg = "-";
-		break;
+		error_printf("Unknown HPKP stats type %d\n", (int) hpkp);
+		return "-";
 	}
-
-	return msg;
 }
 
 static void stats_print_human(wget_stats_type_t type)

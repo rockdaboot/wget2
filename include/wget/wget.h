@@ -2575,7 +2575,8 @@ typedef enum {
 typedef enum {
 	WGET_STATS_HPKP_NO = 0,
 	WGET_STATS_HPKP_MATCH = 1,
-	WGET_STATS_HPKP_NOMATCH = 2
+	WGET_STATS_HPKP_NOMATCH = 2,
+	WGET_STATS_HPKP_ERROR = 3
 } wget_hpkp_stats_t;
 
 typedef enum {

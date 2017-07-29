@@ -782,8 +782,10 @@ static int _cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname, gnutl
 		} else if (rc == 1) {
 			debug_printf("pubkey is matching a pinning\n");
 			ctx->stats_hpkp = WGET_STATS_HPKP_MATCH;
-		} else if (rc == -1)
+		} else if (rc == -1) {
 			error_printf("Error while checking pubkey pinning\n");
+			ctx->stats_hpkp = WGET_STATS_HPKP_ERROR;
+		}
 		ret = 0;
 	} else
 		ctx->stats_hpkp = WGET_STATS_HPKP_NOMATCH;
