@@ -366,7 +366,7 @@ int wget_match_tail_nocase(const char *s, const char *tail)
  * \return Expanded string after running glob
  *
  * Finds a pathname by running glob(3) on the pattern in the first \p n bytes
- * of \p globstr.  Returns a newly allocated string with the the first \p n
+ * of \p globstr.  Returns a newly allocated string with the first \p n
  * bytes replaced with the matching pattern obtained via glob(3) if one was
  * found. Otherwise it returns NULL.
  */
