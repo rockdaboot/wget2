@@ -96,7 +96,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 //	if (chroot(".") == 0) {
 		char *p;
-		if ((p = wget_strglob("*", 0)))
+		if ((p = wget_strnglob("*", 1,  0)))
 			free(p);
 //	} else
 //		printf("Failed to chroot\n");
