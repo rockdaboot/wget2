@@ -99,10 +99,16 @@ static int G_GNUC_WGET_NONNULL_ALL _compare_pin(wget_hpkp_pin_t *p1, wget_hpkp_p
 {
 	int n;
 
-	if (!(n = strcmp(p1->hash_type, p2->hash_type)))
-		return memcmp(p1->pin, p2->pin, p1->pinsize);
+	if ((n = strcmp(p1->hash_type, p2->hash_type)))
+		return n;
 
-	return n;
+	if (p1->pinsize < p2->pinsize)
+		return -1;
+
+	if (p1->pinsize > p2->pinsize)
+		return 1;
+
+	return memcmp(p1->pin, p2->pin, p1->pinsize);
 }
 
 static void _hpkp_pin_free(wget_hpkp_pin_t *pin)
@@ -121,8 +127,7 @@ void wget_hpkp_pin_add(wget_hpkp_t *hpkp, const char *pin_type, const char *pin_
 
 	pin->hash_type = wget_strdup(pin_type);
 	pin->pin_b64 = wget_strdup(pin_b64);
-	pin->pin = (unsigned char *)wget_base64_decode_alloc(pin_b64, len_b64);
-	pin->pinsize = wget_base64_get_decoded_length(len_b64);
+	pin->pin = (unsigned char *)wget_base64_decode_alloc(pin_b64, len_b64, &pin->pinsize);
 
 	if (!hpkp->pins) {
 		hpkp->pins = wget_vector_create(5, -2, (wget_vector_compare_t)_compare_pin);

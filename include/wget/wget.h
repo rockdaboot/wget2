@@ -457,7 +457,7 @@ WGETAPI size_t
 WGETAPI size_t
 	wget_base64_encode(char *restrict dst, const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI char *
-	wget_base64_decode_alloc(const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
+	wget_base64_decode_alloc(const char *restrict src, size_t n, size_t *outlen) G_GNUC_WGET_NONNULL((1));
 WGETAPI char *
 	wget_base64_encode_alloc(const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI char *

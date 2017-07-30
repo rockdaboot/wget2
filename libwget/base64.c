@@ -142,6 +142,7 @@ size_t wget_base64_decode(char *dst, const char *src, size_t n)
 /**
  * \param[in] src Base64 string to be decoded
  * \param[in] n Length of \p src
+ * \param[out] outlen Length of returned string, may be NULL.
  * \return Decoded bytes, zero terminated
  *
  * Decodes \p n bytes of the base64 string \p src.
@@ -149,11 +150,14 @@ size_t wget_base64_decode(char *dst, const char *src, size_t n)
  *
  * You should free() the returned string when not needed any more.
  */
-char *wget_base64_decode_alloc(const char *src, size_t n)
+char *wget_base64_decode_alloc(const char *src, size_t n, size_t *outlen)
 {
 	char *dst = xmalloc(((n + 3) / 4) * 3 + 1);
 
-	wget_base64_decode(dst, src, n);
+	size_t _outlen = wget_base64_decode(dst, src, n);
+
+	if (outlen)
+		*outlen = _outlen;
 
 	return dst;
 }
