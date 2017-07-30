@@ -489,8 +489,8 @@ static int _on_data_chunk_recv_callback(nghttp2_session *session,
 	struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, stream_id);
 
 	if (ctx) {
-//		debug_printf("[INFO] C <---------------------------- S%d (DATA chunk - %zu bytes)\n", stream_id, len);
-		debug_printf("nbytes %zu\n", len);
+		// debug_printf("[INFO] C <---------------------------- S%d (DATA chunk - %zu bytes)\n", stream_id, len);
+		// debug_printf("nbytes %zu\n", len);
 		ctx->resp->cur_downloaded += len;
 		wget_decompress(ctx->decompressor, (char *) data, len);
 	}
@@ -853,7 +853,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 	bufsize = conn->buf->size;
 
 	while ((nbytes = wget_tcp_read(conn->tcp, buf + nread, bufsize - nread)) > 0) {
-		debug_printf("nbytes %zd nread %zd %zu\n", nbytes, nread, bufsize);
+		// debug_printf("nbytes %zd nread %zd %zu\n", nbytes, nread, bufsize);
 		nread += nbytes;
 		buf[nread] = 0; // 0-terminate to allow string functions
 
@@ -980,7 +980,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 				body_len += nbytes;
 				buf[body_len] = 0;
-				debug_printf("a nbytes %zd body_len %zu\n", nbytes, body_len);
+				// debug_printf("a nbytes %zd body_len %zu\n", nbytes, body_len);
 			}
 			end += 2;
 
@@ -1009,7 +1009,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 					body_len += nbytes;
 					buf[body_len] = 0;
 					end = buf;
-					debug_printf("a nbytes %zd\n", nbytes);
+					// debug_printf("a nbytes %zd\n", nbytes);
 				}
 				debug_printf("end of trailer \n");
 				goto cleanup;
@@ -1023,7 +1023,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 			p = end + chunk_size + 2;
 			if (p <= buf + body_len) {
-				debug_printf("write full chunk, %zu bytes\n", chunk_size);
+				// debug_printf("write full chunk, %zu bytes\n", chunk_size);
 				resp->cur_downloaded += chunk_size;
 				wget_decompress(dc, end, chunk_size);
 				continue;
@@ -1042,7 +1042,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 				if ((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) <= 0)
 					goto cleanup;
-				debug_printf("a nbytes=%zd chunk_size=%zu\n", nread, chunk_size);
+				// debug_printf("a nbytes=%zd chunk_size=%zu\n", nread, chunk_size);
 
 				if (chunk_size <= (size_t)nbytes) {
 					if (chunk_size == 1 || !strncmp(buf + chunk_size - 2, "\r\n", 2)) {
@@ -1090,7 +1090,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 				break;
 
 			body_len += nbytes;
-			debug_printf("nbytes %zd total %zu/%zu\n", nbytes, body_len, resp->content_length);
+			// debug_printf("nbytes %zd total %zu/%zu\n", nbytes, body_len, resp->content_length);
 			resp->cur_downloaded += nbytes;
 			wget_decompress(dc, buf, nbytes);
 		}
@@ -1110,7 +1110,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 		while (!conn->abort_indicator && !_abort_indicator && (nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) > 0) {
 			body_len += nbytes;
-			debug_printf("nbytes %zd total %zu\n", nbytes, body_len);
+			// debug_printf("nbytes %zd total %zu\n", nbytes, body_len);
 			resp->cur_downloaded += nbytes;
 			wget_decompress(dc, buf, nbytes);
 		}
