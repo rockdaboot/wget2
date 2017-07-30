@@ -37,7 +37,7 @@ if ! grep -q FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION Makefile; then
 fi
 
 fuzzer=$1
-workers=$(($(nproc) - 1))
+workers=$(($(nproc) - 0))
 jobs=$workers
 
 clang-5.0 \

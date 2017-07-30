@@ -1,0 +1,6 @@
+HTTP/1.1 200 OK
+strict-transport-security: /1.1 200 OK
+strict-transport-security: max-age="0"; includeSubDomains
+content-encoding: gzip
+max-age="0"; includeSubDomains
+content-encoding: gzip
