@@ -63,6 +63,9 @@ struct JOB {
 	wget_vector_t
 		*challenges; // challenges from 401 response
 
+	bool
+		challenges_alloc;
+
 	wget_vector_t
 		*proxy_challenges; // challenges from 407 response (proxy)
 

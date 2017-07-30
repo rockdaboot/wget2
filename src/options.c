@@ -715,6 +715,7 @@ static int print_plugin_help(G_GNUC_WGET_UNUSED option_t opt,
 
 // default values for config options (if not 0 or NULL)
 struct config config = {
+	.auth_no_challenge = false,
 	.connect_timeout = -1,
 	.dns_timeout = -1,
 	.read_timeout = 900 * 1000, // 900s
@@ -786,6 +787,10 @@ static const struct optionw options[] = {
 		{ "File where messages are appended to,\n",
 		  "'-' for STDOUT.\n"
 		}
+	},
+	{ "auth-no-challenge", &config.auth_no_challenge, parse_bool, -1, 0,
+		SECTION_HTTP,
+		{ "send Basic HTTP Authentication before challenge\n" }
 	},
 	{ "backup-converted", &config.backup_converted, parse_bool, -1, 'K',
 		SECTION_HTTP,
@@ -2264,6 +2269,15 @@ int init(int argc, const char **argv)
 	if (!config.http_proxy_password)
 		config.http_proxy_password = wget_strdup(config.password);
 
+	if (config.auth_no_challenge) {
+		config.default_challenges = wget_vector_create(1, 1, NULL);
+		wget_http_challenge_t basic;
+		memset(&basic, 0, sizeof(basic));
+		basic.auth_scheme = wget_strdup("basic");
+		wget_vector_add(config.default_challenges, &basic, sizeof(basic));
+		wget_vector_set_destructor(config.default_challenges, (wget_vector_destructor_t)wget_http_free_challenge);
+	}
+
 	if (config.page_requisites && !config.recursive) {
 		config.recursive = 1;
 		config.level = 1;
@@ -2413,6 +2427,7 @@ void deinit(void)
 	wget_vector_free(&config.reject_patterns);
 	wget_vector_free(&config.headers);
 	wget_vector_free(&config.config_files);
+	wget_vector_free(&config.default_challenges);
 
 	wget_http_set_http_proxy(NULL, NULL);
 	wget_http_set_https_proxy(NULL, NULL);

@@ -80,6 +80,7 @@ struct config {
 		*reject_patterns,
 		*follow_tags,
 		*ignore_tags,
+		*default_challenges,
 		*headers;
 	wget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
@@ -103,6 +104,8 @@ struct config {
 		chunk_size;
 	long long
 		quota;
+	bool
+		auth_no_challenge;
 	int
 		http2_request_window,
 		http1_request_window,
