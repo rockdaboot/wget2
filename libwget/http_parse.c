@@ -511,7 +511,7 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 	if (filename) {
 		*filename = NULL;
 
-		while (*s) {
+		while (*s && !*filename) {
 			s = wget_http_parse_param(s, &param.name, &param.value);
 			if (param.value && !wget_strcasecmp_ascii("filename", param.name)) {
 				// just take the last path part as filename
