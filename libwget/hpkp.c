@@ -36,18 +36,18 @@ struct _wget_hpkp_db_st {
 		entries;
 	wget_thread_mutex_t
 		mutex;
-	time_t
+	int64_t
 		load_time;
 };
 
 struct _wget_hpkp_st {
 	const char *
 		host;
-	time_t
+	int64_t
 		expires;
-	time_t
+	int64_t
 		created;
-	time_t
+	int64_t
 		maxage;
 	char
 		include_subdomains;
@@ -76,13 +76,16 @@ typedef struct _wget_hpkp_pin_st wget_hpkp_pin_t;
  * This is an implementation of RFC 7469.
  */
 
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int G_GNUC_WGET_PURE _hash_hpkp(const wget_hpkp_t *hpkp)
 {
 	unsigned int hash = 0;
 	const unsigned char *p;
 
 	for (p = (unsigned char *)hpkp->host; *p; p++)
-		hash = hash * 101 + *p;
+		hash = hash * 101 + *p; // possible integer overflow, suppression above
 
 	return hash;
 }
@@ -351,8 +354,8 @@ void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
  */
 static int _hpkp_db_load(wget_hpkp_db_t *hpkp_db, FILE *fp)
 {
-	time_t created, max_age;
-	long long int _created, _max_age;
+	int64_t created, max_age;
+	long long _created, _max_age;
 	int include_subdomains;
 
 	wget_hpkp_t *hpkp = NULL;
@@ -361,7 +364,7 @@ static int _hpkp_db_load(wget_hpkp_db_t *hpkp_db, FILE *fp)
 	size_t bufsize = 0;
 	ssize_t buflen;
 	char hash_type[32], host[256], pin_b64[256];
-	time_t now = time(NULL);
+	int64_t now = time(NULL);
 
 	// if the database file hasn't changed since the last read
 	// there's no need to reload
@@ -390,14 +393,18 @@ static int _hpkp_db_load(wget_hpkp_db_t *hpkp_db, FILE *fp)
 			wget_hpkp_db_add(hpkp_db, &hpkp);
 
 			if (sscanf(linep, "%255s %d %lld %lld", host, &include_subdomains, &_created, &_max_age) == 4) {
-				created = (time_t)_created;
-				max_age = (time_t) _max_age;
-				if (max_age && (created + max_age) >= now) {
+				created = _created;
+				max_age = _max_age;
+				if (created < 0 || max_age < 0 || created >= INT64_MAX / 2 || max_age >= INT64_MAX / 2) {
+					max_age = 0; // avoid integer overflow here
+				}
+				int64_t expires = created + max_age;
+				if (max_age && expires >= now) {
 					hpkp = wget_hpkp_new();
 					hpkp->host = wget_strdup(host);
 					hpkp->maxage = max_age;
 					hpkp->created = created;
-					hpkp->expires = created + max_age;
+					hpkp->expires = expires;
 					hpkp->include_subdomains = !!include_subdomains;
 				} else
 					debug_printf("HPKP: entry '%s' is expired\n", host);
