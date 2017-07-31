@@ -58,8 +58,7 @@ oss-fuzz:
 	if test "$$OUT" != ""; then \
 	for ccfile in *_fuzzer.c; do \
 	fuzzer=$$(basename $$ccfile .c); \
-	if test "$$fuzzer" = "libwget_cookie_fuzzer"; then XLIBS="-lpsl -lgnutls -lnettle -lhogweed -lidn2 -lunistring"; \
-	else XLIBS="-lidn2 -lunistring"; fi; \
+	XLIBS="-lpsl -lgnutls -lnettle -lhogweed -lidn2 -lunistring"; \
 	$$CXX $$CXXFLAGS -I$(top_srcdir)/include/wget/ -I$(top_srcdir) \
 	"$${fuzzer}.c" -o "$${fuzzer}" \
 	../libwget/.libs/libwget.a $${LIB_FUZZING_ENGINE} \
