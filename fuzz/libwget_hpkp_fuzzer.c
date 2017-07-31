@@ -30,7 +30,7 @@
 static const uint8_t *g_data;
 static size_t g_size;
 
-#ifndef _WIN32
+#if ! defined _WIN32 && defined HAVE_FMEMOPEN
 #include <dlfcn.h>
 FILE *fopen(const char *pathname, const char *mode)
 {
@@ -53,7 +53,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	g_size = size;
 
 	wget_hpkp_db_t *hpkp_db = wget_hpkp_db_init(NULL);
-#ifndef _WIN32
+#if ! defined _WIN32 && defined HAVE_FMEMOPEN
 	wget_hpkp_db_load(hpkp_db, "hpkp");
 #endif
 	wget_hpkp_db_check_pubkey(hpkp_db, "x.y", "0", 1);
