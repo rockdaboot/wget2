@@ -63,10 +63,10 @@
 
 typedef enum {
 	SECTION_STARTUP = 0,
-	SECTION_DOWNLOAD,
-	SECTION_HTTP,
-	SECTION_SSL,
-	SECTION_DIRECTORY
+	SECTION_DOWNLOAD = 1,
+	SECTION_HTTP = 2,
+	SECTION_SSL = 3,
+	SECTION_DIRECTORY = 4
 } help_section_t;
 
 typedef const struct optionw *option_t; // forward declaration

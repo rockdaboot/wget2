@@ -33,9 +33,9 @@
 #include <wget.h>
 
 typedef enum {
-	STATS_FORMAT_HUMAN,
-	STATS_FORMAT_CSV,
-	STATS_FORMAT_JSON
+	STATS_FORMAT_HUMAN = 0,
+	STATS_FORMAT_CSV = 1,
+	STATS_FORMAT_JSON = 2
 } stats_format_t;
 
 struct config {

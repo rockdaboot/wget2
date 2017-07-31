@@ -190,12 +190,10 @@ HOST_DOCS *host_docs_add(wget_iri_t *iri, int status, long long size)
 
 HOST_DOCS *host_docs_get(wget_hashmap_t *host_docs, int status)
 {
-	HOST_DOCS *host_docsp, host_doc = {.http_status = status};
+	HOST_DOCS *host_docsp = NULL, host_doc = {.http_status = status};
 
 	if (host_docs)
 		host_docsp = wget_hashmap_get(host_docs, &host_doc);
-	else
-		host_docsp = NULL;
 
 	return host_docsp;
 }

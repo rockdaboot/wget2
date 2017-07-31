@@ -78,7 +78,9 @@ enum _SCREEN_WIDTH {
 };
 
 enum _bar_slot_status_t {
-	EMPTY, DOWNLOADING, COMPLETE
+	EMPTY = 0,
+	DOWNLOADING = 1,
+	COMPLETE = 2
 };
 
 typedef struct {

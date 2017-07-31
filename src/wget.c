@@ -1242,7 +1242,7 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 	return rc;
 }
 
-static void add_statistics(wget_http_response_t *resp)
+static void add_statistics(wget_iri_t *iri, wget_http_response_t *resp)
 {
 	// do some statistics
 	if (resp->code == 200) {
@@ -1259,6 +1259,8 @@ static void add_statistics(wget_http_response_t *resp)
 		_atomic_increment_int(&stats.nnotmodified);
 	else
 		_atomic_increment_int(&stats.nerrors);
+
+	host_docs_add(iri, resp->code, resp->content_length);
 }
 
 static int process_response_header(wget_http_response_t *resp)
@@ -1287,13 +1289,11 @@ static int process_response_header(wget_http_response_t *resp)
 		wget_http_close(&downloader->conn);
 
 	// do some statistics
-	add_statistics(resp);
+	add_statistics(iri, resp);
 
-host_docs_add(iri, resp->code, resp->content_length);
-
-printf("iri->uri = %s\n", iri->uri);
-printf("resp->code = %hd\n", resp->code);
-printf("resp->content_length = %lu\n", resp->content_length);
+//printf("iri->uri = %s\n", iri->uri);
+//printf("resp->code = %hd\n", resp->code);
+//printf("resp->content_length = %lu\n", resp->content_length);
 
 	wget_cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
 	wget_cookie_store_cookies(config.cookie_db, resp->cookies); // store cookies
