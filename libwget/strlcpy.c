@@ -28,9 +28,7 @@
 #include <config.h>
 
 #include <stddef.h>
-#ifndef HAVE_STRLCPY
-#  include <string.h>
-#endif
+#include <string.h>
 
 #include <wget.h>
 
