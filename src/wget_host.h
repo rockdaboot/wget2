@@ -29,6 +29,7 @@
 #define _WGET_HOST_H
 
 #include <wget.h>
+#include <stdbool.h>
 
 struct JOB;
 typedef struct JOB JOB;
@@ -67,12 +68,14 @@ typedef struct {
 typedef struct {
 	wget_iri_t
 		*iri;
+	bool
+		robot_iri;
 	long long
 		size;
 } DOC;
 
 HOST *host_add(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
-HOST_DOCS *host_docs_add(wget_iri_t *iri, int status, long long size);
+HOST_DOCS *host_docs_add(wget_iri_t *iri, int status, long long size, bool robot_iri);
 HOST *host_get(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
 HOST_DOCS *host_docs_get(wget_hashmap_t *host_docs, int status);
 JOB *host_get_job(HOST *host, long long *pause);
@@ -89,5 +92,6 @@ void host_reset_failure(HOST *host) G_GNUC_WGET_NONNULL((1));
 int queue_size(void) G_GNUC_WGET_PURE;
 int queue_empty(void) G_GNUC_WGET_PURE;
 void queue_print(HOST *host);
+void print_site_stats(wget_buffer_t *buf, FILE *fp);
 
 #endif /* _WGET_HOST_H */

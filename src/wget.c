@@ -1161,6 +1161,7 @@ static int try_connection(DOWNLOADER *downloader, wget_iri_t *iri)
 	if (config.hsts && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, iri->port)) {
 		info_printf("HSTS in effect for %s:%hu\n", iri->host, iri->port);
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
+		host_add(iri);	// add new host to hosts
 	}
 
 	if ((conn = downloader->conn)) {
@@ -1245,9 +1246,10 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 static void add_statistics(wget_iri_t *iri, wget_http_response_t *resp)
 {
 	// do some statistics
-	if (resp->code == 200) {
-		JOB *job = resp->req->user_data;
+	JOB *job = resp->req->user_data;
+	bool robot_iri = false;
 
+	if (resp->code == 200) {
 		if (job->part)
 			_atomic_increment_int(&stats.nchunks);
 		else
@@ -1260,7 +1262,12 @@ static void add_statistics(wget_iri_t *iri, wget_http_response_t *resp)
 	else
 		_atomic_increment_int(&stats.nerrors);
 
-	host_docs_add(iri, resp->code, resp->content_length);
+	if (job == job->host->robot_job) {
+		iri = wget_iri_clone(iri);
+		robot_iri = true;
+	}
+
+	host_docs_add(iri, resp->code, resp->content_length, robot_iri);
 }
 
 static int process_response_header(wget_http_response_t *resp)
@@ -1290,11 +1297,14 @@ static int process_response_header(wget_http_response_t *resp)
 
 	// do some statistics
 	add_statistics(iri, resp);
-
-//printf("iri->uri = %s\n", iri->uri);
-//printf("resp->code = %hd\n", resp->code);
-//printf("resp->content_length = %lu\n", resp->content_length);
-
+/*
+printf("iri->uri = %s\n", iri->uri);
+printf("iri->scheme = %s\n", iri->scheme);
+printf("iri->host = %s\n", iri->host);
+printf("iri->port = %d\n", iri->port);
+printf("resp->code = %hd\n", resp->code);
+printf("resp->content_length = %lu\n", resp->content_length);
+*/
 	wget_cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
 	wget_cookie_store_cookies(config.cookie_db, resp->cookies); // store cookies
 

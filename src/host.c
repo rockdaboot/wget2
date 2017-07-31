@@ -45,6 +45,11 @@ static wget_thread_mutex_t
 static int
 	qsize; // overall number of jobs
 
+struct site_stats{
+	wget_buffer_t *buf;
+	FILE *fp;
+};
+
 static int _host_compare(const HOST *host1, const HOST *host2)
 {
 	int n;
@@ -126,6 +131,12 @@ static void _free_host_docs_entry(HOST_DOCS *host_docsp)
 	}
 }
 
+static void _free_docs_entry(DOC *doc)
+{
+	if (doc && doc->robot_iri)
+		wget_iri_free(&(doc->iri));
+}
+
 HOST *host_add(wget_iri_t *iri)
 {
 	wget_thread_mutex_lock(&hosts_mutex);
@@ -148,11 +159,11 @@ HOST *host_add(wget_iri_t *iri)
 	return hostp;
 }
 
-HOST_DOCS *host_docs_add(wget_iri_t *iri, int status, long long size)
+HOST_DOCS *host_docs_add(wget_iri_t *iri, int status, long long size, bool robot_iri)
 {
 	HOST *hostp;
 	wget_hashmap_t *host_docs;
-	HOST_DOCS *host_docsp;
+	HOST_DOCS *host_docsp = NULL;
 	wget_vector_t *docs;
 	DOC *doc;
 
@@ -166,7 +177,7 @@ HOST_DOCS *host_docs_add(wget_iri_t *iri, int status, long long size)
 		}
 
 		if (!(host_docsp = host_docs_get(host_docs, status))) {
-			host_docsp = wget_malloc(sizeof(HOST_DOCS)); // free() this later
+			host_docsp = wget_malloc(sizeof(HOST_DOCS));
 			host_docsp->http_status = status;
 			host_docsp->docs = NULL;
 			wget_hashmap_put_noalloc(host_docs, host_docsp, host_docsp);
@@ -174,12 +185,14 @@ HOST_DOCS *host_docs_add(wget_iri_t *iri, int status, long long size)
 
 		if (!(docs = host_docsp->docs)) {
 			docs = wget_vector_create(8, -2, NULL);
+			wget_vector_set_destructor(docs, (wget_vector_destructor_t)_free_docs_entry);
 			host_docsp->docs = docs;
 		}
 
-		doc = wget_malloc(sizeof(DOC));	// free() this later
+		doc = wget_malloc(sizeof(DOC));
 		doc->iri = iri;
 		doc->size = size;
+		doc->robot_iri = robot_iri;
 		wget_vector_add_noalloc(docs, doc);
 	}
 
@@ -549,4 +562,45 @@ int queue_size(void)
 {
 	debug_printf("%s: qsize=%d\n", __func__, qsize);
 	return qsize;
+}
+
+static int host_docs_hashmap(struct site_stats *ctx, HOST_DOCS *host_docsp)
+{
+	wget_buffer_printf_append(ctx->buf, "  %8d  %13d\n", host_docsp->http_status, wget_vector_size(host_docsp->docs));
+
+	for (int it = 0; it < wget_vector_size(host_docsp->docs); it++) {
+		const DOC *doc = wget_vector_get(host_docsp->docs, it);
+		wget_buffer_printf_append(ctx->buf, "         %s  %lld\n", doc->iri->uri, doc->size);
+	}
+
+	if (ctx->buf->length > 64*1024) {
+		fprintf(ctx->fp, "%s", ctx->buf->data);
+		wget_buffer_reset(ctx->buf);
+	}
+
+	return  0;
+}
+
+static int hosts_hashmap(struct site_stats *ctx, HOST *host)
+{
+	if (host->host_docs)
+	{
+		wget_buffer_printf_append(ctx->buf, "\n  %s:\n", host->host);
+		wget_buffer_printf_append(ctx->buf, "  %8s  %13s\n", "Status", "No. of docs");
+
+		wget_hashmap_browse(host->host_docs, (wget_hashmap_browse_t)host_docs_hashmap, ctx);
+	}
+
+	return 0;
+}
+
+void print_site_stats(wget_buffer_t *buf, FILE *fp)
+{
+	struct site_stats ctx = { .buf = buf, .fp = fp };
+	wget_thread_mutex_lock(&hosts_mutex);
+
+	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap, &ctx);
+	fprintf(fp, "%s", buf->data);
+
+	wget_thread_mutex_unlock(&hosts_mutex);
 }

@@ -194,11 +194,7 @@ struct config {
 		cut_file_get_vars,
 		proxy,
 		xattr,
-		force_progress,
-		stats_dns,
-		stats_tls,
-		stats_server,
-		stats_ocsp;
+		force_progress;
 };
 
 typedef struct {
@@ -210,7 +206,7 @@ typedef struct {
 extern struct config
 	config;
 extern stats_opts_t
-	stats_opts[4];
+	stats_opts[5];
 
 int init(int argc, const char **argv) G_GNUC_WGET_NONNULL_ALL;
 int selftest_options(void);
