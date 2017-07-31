@@ -23,7 +23,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dlfcn.h>
 
 #include "wget.h"
 #include "fuzzer.h"
@@ -31,6 +30,8 @@
 static const uint8_t *g_data;
 static size_t g_size;
 
+#ifndef _WIN32
+#include <dlfcn.h>
 FILE *fopen(const char *pathname, const char *mode)
 {
 	FILE *(*libc_fopen)(const char *, const char *) =
@@ -41,6 +42,7 @@ FILE *fopen(const char *pathname, const char *mode)
 
 	return libc_fopen(pathname, mode);
 }
+#endif
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
@@ -51,7 +53,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	g_size = size;
 
 	wget_hpkp_db_t *hpkp_db = wget_hpkp_db_init(NULL);
+#ifndef _WIN32
 	wget_hpkp_db_load(hpkp_db, "hpkp");
+#endif
 	wget_hpkp_db_check_pubkey(hpkp_db, "x.y", "0", 1);
 	wget_hpkp_db_free(&hpkp_db);
 
