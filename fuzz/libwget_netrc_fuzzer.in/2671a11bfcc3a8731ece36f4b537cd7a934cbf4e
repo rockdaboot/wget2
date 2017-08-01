@@ -1,0 +1,14 @@
+#
+machine x.ogin b
+password a
+macdef m
+  c1 a
+  c2 b
+
+macdef mm
+  cword a
+macdef m
+  c1 a
+  c21 a
+  c2 z
+

@@ -1,0 +1,15 @@
+#
+machine x.y login y password x
+machine a.b
+login b
+password a
+macdeflogyn b
+password!a
+macdef m
+  c0 a
+  c2 b
+
+macdef mm
+  c1 a
+  c2 z
+

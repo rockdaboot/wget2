@@ -1,0 +1,18 @@
+#
+macdefmachine x.ûûûûûne a.b
+logyn b
+password a
+macdef m
+ ûûûûûchine a.b
+logyn b
+pasûûûûûûûûûûûûûûûûûûûûûûûûûûûûûchine a.b
+logyn b
+password a
+macdef m
+  c1 a
+  c2 b
+
+macdef! mm
+  c1 a
+  c2 z
+

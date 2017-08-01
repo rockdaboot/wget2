@@ -1,0 +1,24 @@
+#login
+machine x.y login y password x
+máchine a.b
+locdef m
+  c1 a
+  c2 b
+
+micdef mm
+  c1 a
+  c2 z
+#
+m
+achine x.y login y password x
+machine a.b
+logyn b
+password a
+macdef m
+  c1 a
+  c2 b
+
+logynmacdef mm
+  c1 a
+  c2 z
+

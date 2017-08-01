@@ -1,0 +1,41 @@
+#
+machia
+  c2 b
+
+macdef mm
+ a
+macdef m
+  c0 a
+  c2 b
+
+macdef mm
+  c1 a
+  c2 z
+W
+aef mm
+ a
+macdef m
+  c0 a
+  c2 b
+
+macdef mm
+  c1 a
+  c2 z
+W
+achia
+  c2 b
+
+macdef mm
+ achia
+  c2 b
+
+macdef mm
+ a
+macdef m
+  c0 a
+  c2 b
+
+macdef mm
+  c1 a
+  c2 z
+W

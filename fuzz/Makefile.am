@@ -20,6 +20,7 @@ WGET_TESTS = \
  libwget_http_parse_fuzzer$(EXEEXT) \
  libwget_iri_fuzzer$(EXEEXT) \
  libwget_metalink_parse_fuzzer$(EXEEXT) \
+ libwget_netrc_fuzzer$(EXEEXT) \
  libwget_robots_parse_fuzzer$(EXEEXT) \
  libwget_sitemap_url_fuzzer$(EXEEXT) \
  libwget_utils_fuzzer$(EXEEXT) \
@@ -38,6 +39,7 @@ libwget_html_url_fuzzer_SOURCES = libwget_html_url_fuzzer.c main.c fuzzer.h
 libwget_http_parse_fuzzer_SOURCES = libwget_http_parse_fuzzer.c main.c fuzzer.h
 libwget_iri_fuzzer_SOURCES = libwget_iri_fuzzer.c main.c fuzzer.h
 libwget_metalink_parse_fuzzer_SOURCES = libwget_metalink_parse_fuzzer.c main.c fuzzer.h
+libwget_netrc_fuzzer_SOURCES = libwget_netrc_fuzzer.c main.c fuzzer.h
 libwget_robots_parse_fuzzer_SOURCES = libwget_robots_parse_fuzzer.c main.c fuzzer.h
 libwget_sitemap_url_fuzzer_SOURCES = libwget_sitemap_url_fuzzer.c main.c fuzzer.h
 libwget_utils_fuzzer_SOURCES = libwget_utils_fuzzer.c main.c fuzzer.h

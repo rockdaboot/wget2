@@ -1,0 +1,35 @@
+#
+machine x.y login dåf m
+  c1 a
+ mac c2 b
+
+macassword x
+mac
+  c2 a
+  c2 b
+
+macassword x
+mac
+!    c2 z
+
+word acdåf m
+  c1 a
+  c2 b
+
+macassword x
+mac
+!    c2 z
+
+word x
+maa¸.b
+login b
+password a
+macdåf m
+  c1 ac 
+ 2 b
+
+macassword x
+mac
+!  c2 z
+
+wor
