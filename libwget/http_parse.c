@@ -577,7 +577,7 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 								*filename = wget_strdup(p);
 
 							// just take the last path part as filename
-							if ((p = strpbrk(*filename, "/\\"))) {
+							if (*filename && (p = strpbrk(*filename, "/\\"))) {
 								p = wget_strdup(p + 1);
 								xfree(*filename);
 								*filename = p;
