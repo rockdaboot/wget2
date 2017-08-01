@@ -49,14 +49,17 @@ struct _wget_ocsp_db_st {
 struct _wget_ocsp_st {
 	const char *
 		key;
-	time_t
+	int64_t
 		maxage; // expiry time
-	time_t
+	int64_t
 		mtime; // creation time
 	unsigned char
 		valid : 1; // 1=valid, 0=revoked
 };
 
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int G_GNUC_WGET_PURE _hash_ocsp(const wget_ocsp_t *ocsp)
 {
 	unsigned int hash = 0;
@@ -117,7 +120,7 @@ int wget_ocsp_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, const char *fi
 
 		// look for an exact match
 		ocsp.key = fingerprint;
-		if ((ocspp = wget_hashmap_get(ocsp_db->fingerprints, &ocsp)) && ocspp->maxage >= time(NULL)) {
+		if ((ocspp = wget_hashmap_get(ocsp_db->fingerprints, &ocsp)) && ocspp->maxage >= (int64_t) time(NULL)) {
 			if (revoked)
 				*revoked = !ocspp->valid;
 			return 1;
@@ -134,7 +137,7 @@ int wget_ocsp_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *hostn
 
 		// look for an exact match
 		ocsp.key = hostname;
-		if ((ocspp = wget_hashmap_get(ocsp_db->hosts, &ocsp)) && ocspp->maxage >= time(NULL)) {
+		if ((ocspp = wget_hashmap_get(ocsp_db->hosts, &ocsp)) && ocspp->maxage >= (int64_t) time(NULL)) {
 			return 1;
 		}
 	}
@@ -265,7 +268,7 @@ static int _ocsp_db_load(wget_ocsp_db_t *ocsp_db, FILE *fp, int load_hosts)
 	char *buf = NULL, *linep, *p;
 	size_t bufsize = 0;
 	ssize_t buflen;
-	time_t now = time(NULL);
+	int64_t now = time(NULL);
 	int ok;
 
 	while ((buflen = wget_getline(&buf, &bufsize, fp)) >= 0) {
@@ -293,7 +296,7 @@ static int _ocsp_db_load(wget_ocsp_db_t *ocsp_db, FILE *fp, int load_hosts)
 		// parse max age
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep);) linep++;
-			ocsp.maxage = (time_t)atoll(p);
+			ocsp.maxage = (int64_t) atoll(p);
 			if (ocsp.maxage < now) {
 				// drop expired entry
 				wget_ocsp_deinit(&ocsp);
@@ -305,7 +308,7 @@ static int _ocsp_db_load(wget_ocsp_db_t *ocsp_db, FILE *fp, int load_hosts)
 		// parse mtime (age of this entry)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep);) linep++;
-			ocsp.mtime = (time_t)atoll(p);
+			ocsp.mtime = (int64_t) atoll(p);
 		}
 
 		// parse mtime (age of this entry)
