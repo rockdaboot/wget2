@@ -55,7 +55,7 @@
 // symbol in the symbol table making debugging a whole lot easier.
 
 // Define the parameters for how the progress bar looks
-enum {
+enum _BAR_SIZES {
 	_BAR_FILENAME_SIZE  = 20,
 	_BAR_RATIO_SIZE     =  3,
 	_BAR_METER_COST     =  2,
@@ -64,7 +64,7 @@ enum {
 
 // Define the cost (in number of columns) of the progress bar decorations. This
 // includes all the elements that are not the progress indicator itself.
-enum {
+enum _BAR_DECOR_SIZE {
 	_BAR_DECOR_COST =
 		_BAR_FILENAME_SIZE  + 1 + \
 		_BAR_RATIO_SIZE     + 2 + \
@@ -72,7 +72,7 @@ enum {
 		_BAR_DOWNBYTES_SIZE
 };
 
-enum {
+enum _SCREEN_WIDTH {
 	DEFAULT_SCREEN_WIDTH = 70,
 	MINIMUM_SCREEN_WIDTH = 45,
 };
@@ -266,14 +266,12 @@ static void _bar_update(wget_bar_t *bar)
  *
  * Initialize a new progress bar instance for Wget. If \p bar is a NULL
  * pointer, it will be allocated on the heap and a pointer to the newly
- * allocated memory will be returned.
+ * allocated memory will be returned. To free this memory, call either the
+ *  wget_bar_deinit() or wget_bar_free() functions based on your needs.
  *
  * \p nslots is the number of screen lines to reserve for printing the progress
  * bars. This may be any number, but you generally want at least as many slots
  * as there are downloader threads.
- *
- * \p max_width is the maximum number of screen columns that the progress bar
- * may occupy.
  */
 wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 {
@@ -320,6 +318,16 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 	return bar;
 }
 
+/**
+ * \param[in] bar Pointer to a wget_bar_t object
+ * \param[in] nslots The new number of progress bars that should be drawn
+ *
+ * Update the number of progress bar lines that are drawn on the screen.
+ * This is useful when the number of downloader threads changes dynamically or
+ * to change the number of reserved lines. Calling this function will
+ * immediately reserve \p nslots lines on the screen. However if \p nslots is
+ * lower than the existing value, nothing will be done.
+ */
 void wget_bar_set_slots(wget_bar_t *bar, int nslots)
 {
 	wget_thread_mutex_lock(&bar->mutex);
@@ -380,7 +388,7 @@ void wget_bar_update(wget_bar_t *bar)
 /**
  * \param[in] bar Pointer to \p wget_bar_t
  *
- * Free the various progress bar data structures
+ * Free the various progress bar data structures.
  */
 void wget_bar_deinit(wget_bar_t *bar)
 {
