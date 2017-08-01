@@ -181,8 +181,16 @@ void wget_hpkp_set_host(wget_hpkp_t *hpkp, const char *host)
 
 void wget_hpkp_set_maxage(wget_hpkp_t *hpkp, time_t maxage)
 {
-	hpkp->maxage = maxage;
-	hpkp->expires = maxage ? time(NULL) + maxage : 0;
+	int64_t now;
+
+	// avoid integer overflow here
+	if (maxage <= 0 || maxage >= INT64_MAX / 2 || (now = time(NULL)) < 0 || now >= INT64_MAX / 2) {
+		hpkp->maxage = 0;
+		hpkp->expires = 0;
+	} else {
+		hpkp->maxage = maxage;
+		hpkp->expires = now + maxage;
+	}
 }
 
 void wget_hpkp_set_include_subdomains(wget_hpkp_t *hpkp, int include_subdomains)
