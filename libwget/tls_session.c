@@ -43,7 +43,7 @@ struct _wget_tls_session_db_st {
 		entries;
 	wget_thread_mutex_t
 		mutex;
-	time_t
+	int64_t
 		load_time;
 	unsigned char
 		changed : 1; // whether or not the db has been changed / needs saving
@@ -52,11 +52,11 @@ struct _wget_tls_session_db_st {
 struct _wget_tls_session_st {
 	const char *
 		host;
-	time_t
+	int64_t
 		expires; // expiry time
-	time_t
+	int64_t
 		created; // creation time
-	time_t
+	int64_t
 		maxage; // max-age in seconds
 	size_t
 		data_size;
@@ -64,9 +64,11 @@ struct _wget_tls_session_st {
 		data; // session resumption data
 };
 
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int G_GNUC_WGET_PURE _hash_tls_session(const wget_tls_session_t *tls_session)
 {
-//	unsigned int hash = tls_session->data_size;
 	unsigned int hash = 0;
 	const unsigned char *p;
 
@@ -125,10 +127,16 @@ wget_tls_session_t *wget_tls_session_new(const char *host, time_t maxage, const 
 	wget_tls_session_t *tls_session = wget_tls_session_init(NULL);
 
 	tls_session->host = wget_strdup(host);
-	tls_session->maxage = maxage;
-	tls_session->expires = maxage ? tls_session->created + maxage : 0;
 	tls_session->data = wget_memdup(data, data_size);
 	tls_session->data_size = data_size;
+
+	if (maxage <= 0 || maxage >= INT64_MAX / 2 || tls_session->created < 0 || tls_session->created >= INT64_MAX / 2) {
+		tls_session->maxage = 0;
+		tls_session->expires = 0;
+	} else {
+		tls_session->maxage = maxage;
+		tls_session->expires = tls_session->created + maxage;
+	}
 
 	return tls_session;
 }
@@ -137,7 +145,7 @@ int wget_tls_session_get(const wget_tls_session_db_t *tls_session_db, const char
 {
 	if (tls_session_db) {
 		wget_tls_session_t tls_session, *tls_sessionp;
-		time_t now = time(NULL);
+		int64_t now = time(NULL);
 
 		tls_session.host = host;
 		if ((tls_sessionp = wget_hashmap_get(tls_session_db->entries, &tls_session)) && tls_sessionp->expires >= now) {
@@ -218,7 +226,7 @@ static int _tls_session_db_load(wget_tls_session_db_t *tls_session_db, FILE *fp)
 	char *buf = NULL, *linep, *p;
 	size_t bufsize = 0;
 	ssize_t buflen;
-	time_t now = time(NULL);
+	int64_t now = time(NULL);
 	int ok;
 
 	// if the database file hasn't changed since the last read
@@ -258,14 +266,18 @@ static int _tls_session_db_load(wget_tls_session_db_t *tls_session_db, FILE *fp)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			tls_session.created = (time_t)atoll(p);
+			tls_session.created = (int64_t) atoll(p);
+			if (tls_session.created < 0 || tls_session.created >= INT64_MAX / 2)
+				tls_session.created = 0;
 		}
 
 		// parse max age
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			tls_session.maxage = (time_t)atoll(p);
+			tls_session.maxage = (int64_t) atoll(p);
+			if (tls_session.maxage < 0 || tls_session.maxage >= INT64_MAX / 2)
+				tls_session.maxage = 0; // avoid integer overflow here
 			tls_session.expires = tls_session.maxage ? tls_session.created + tls_session.maxage : 0;
 			if (tls_session.expires < now) {
 				// drop expired entry
