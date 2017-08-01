@@ -41,6 +41,9 @@ struct _wget_netrc_db_st {
 		machines;
 };
 
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int G_GNUC_WGET_PURE _hash_netrc(const wget_netrc_t *netrc)
 {
 	unsigned int hash = 0;
