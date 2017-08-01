@@ -32,9 +32,20 @@
 
 #include <wget.h>
 
-// strlcpy is a BSD function that I really like.
-// it is the same as snprintf(dst,dstsize,"%s",src), but much faster
-
+/**
+ * \ingroup libwget-utils
+ * \param[out] dst Output string buffer
+ * \param[in] src Input string
+ * \param[in] size Size of \p dst
+ * \return Length of \p src
+ *
+ * Copy string \p src into \p dst with overflow checking.
+ *
+ * This is the same as snprintf(dst,size,"%s",src) but faster and more elegant.
+ *
+ * If \p src is %NULL, the return value is 0 and nothing is written.
+ * If \ dst is %NULL, the return value is the length of \p src and nothing is written.
+ */
 size_t wget_strlcpy(char *dst, const char *src, size_t size)
 {
 	if (!src)
