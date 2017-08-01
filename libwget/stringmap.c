@@ -37,17 +37,22 @@
 #include "private.h"
 
 // Paul Larson's hash function from Microsoft Research
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int G_GNUC_WGET_PURE hash_string(const char *key)
 {
 	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
 
 	while (*key)
 		hash = hash * 101 + (unsigned char)*key++;
-		// h = (h << 6) ^ (h >> 26) ^ (unsigned char)*key++;
 
 	return hash;
 }
 
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int G_GNUC_WGET_PURE hash_string_nocase(const char *key)
 {
 	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
