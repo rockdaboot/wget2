@@ -44,18 +44,18 @@ struct _wget_hsts_db_st {
 		entries;
 	wget_thread_mutex_t
 		mutex;
-	time_t
+	int64_t
 		load_time;
 };
 
 struct _wget_hsts_st {
 	const char *
 		host;
-	time_t
+	int64_t
 		expires; // expiry time
-	time_t
+	int64_t
 		created; // creation time
-	time_t
+	int64_t
 		maxage; // max-age in seconds
 	uint16_t
 		port;
@@ -63,6 +63,9 @@ struct _wget_hsts_st {
 		include_subdomains : 1; // whether or not subdomains are included
 };
 
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int G_GNUC_WGET_PURE _hash_hsts(const wget_hsts_t *hsts)
 {
 	unsigned int hash = hsts->port;
@@ -116,9 +119,15 @@ wget_hsts_t *wget_hsts_new(const char *host, uint16_t port, time_t maxage, int i
 
 	hsts->host = wget_strdup(host);
 	hsts->port = port ? port : 443;
-	hsts->maxage = maxage;
-	hsts->expires = maxage ? hsts->created + maxage : 0;
 	hsts->include_subdomains = !!include_subdomains;
+
+	if (maxage <= 0 || maxage >= INT64_MAX / 2 || hsts->created < 0 || hsts->created >= INT64_MAX / 2) {
+		hsts->maxage = 0;
+		hsts->expires = 0;
+	} else {
+		hsts->maxage = maxage;
+		hsts->expires = hsts->created + maxage;
+	}
 
 	return hsts;
 }
@@ -127,7 +136,7 @@ int wget_hsts_host_match(const wget_hsts_db_t *hsts_db, const char *host, uint16
 {
 	wget_hsts_t hsts, *hstsp;
 	const char *p;
-	time_t now = time(NULL);
+	int64_t now = time(NULL);
 
 	// first look for an exact match
 	// if it's the default port, "normalize" it
@@ -218,7 +227,7 @@ static int _hsts_db_load(wget_hsts_db_t *hsts_db, FILE *fp)
 	char *buf = NULL, *linep, *p;
 	size_t bufsize = 0;
 	ssize_t buflen;
-	time_t now = time(NULL);
+	int64_t now = time(NULL);
 	int ok;
 
 	// if the database file hasn't changed since the last read
@@ -274,14 +283,18 @@ static int _hsts_db_load(wget_hsts_db_t *hsts_db, FILE *fp)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			hsts.created = (time_t)atoll(p);
+			hsts.created = atoll(p);
+			if (hsts.created < 0 || hsts.created >= INT64_MAX / 2)
+				hsts.created = 0;
 		}
 
 		// parse max age
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			hsts.maxage = (time_t)atoll(p);
+			hsts.maxage = atoll(p);
+			if (hsts.maxage < 0 || hsts.maxage >= INT64_MAX / 2)
+				hsts.maxage = 0; // avoid integer overflow here
 			hsts.expires = hsts.maxage ? hsts.created + hsts.maxage : 0;
 			if (hsts.expires < now) {
 				// drop expired entry
