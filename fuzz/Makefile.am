@@ -1,4 +1,4 @@
-AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS) -Wno-unused-parameter
+AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS) -Wno-unused-parameter -Wno-pedantic
 AM_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(srcdir) \
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\" -DSRCDIR=\"$(abs_srcdir)\" -DTEST_RUN
 AM_LDFLAGS = -static
