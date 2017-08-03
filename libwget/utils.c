@@ -360,8 +360,8 @@ int wget_match_tail_nocase(const char *s, const char *tail)
 }
 
 /**
- * \param[in] globstr String
- * \param[in] n Size of string to run glob() against
+ * \param[in] str String to run glob() against
+ * \param[in] n Length of string
  * \param[in] flags Flags to pass to glob()
  * \return Expanded string after running glob
  *
