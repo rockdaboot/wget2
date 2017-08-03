@@ -223,11 +223,20 @@ fi
 if test "$gl_cc_sanitize_ubsan" = yes; then
   gl_WARN_ADD([-fsanitize=undefined])
   gl_WARN_ADD([-fno-sanitize-recover=undefined])
+
+  # additional clang options
+  gl_WARN_ADD([-fsanitize=integer])
+  gl_WARN_ADD([-fsanitize=nullability])
+  gl_WARN_ADD([-fno-sanitize-recover=integer])
+  gl_WARN_ADD([-fno-sanitize-recover=nullability])
 fi
 
 if test "$gl_cc_sanitize_asan" = yes; then
   gl_WARN_ADD([-fsanitize=address])
   gl_WARN_ADD([-fno-omit-frame-pointer])
+
+  # additional clang option
+  gl_WARN_ADD([-fsanitize-address-use-after-scope])
 fi
 
 if test "$gl_cc_sanitize_msan" = yes; then
