@@ -42,6 +42,7 @@
  * @{
  */
 
+/* \cond _hide_internal_symbols */
 #define FLAG_ZERO_PADDED   1
 #define FLAG_LEFT_ADJUST   2
 #define FLAG_ALTERNATE     4
@@ -50,6 +51,7 @@
 #define FLAG_OCTAL        32
 #define FLAG_HEXLO        64
 #define FLAG_HEXUP       128
+/* \endcond */
 
 static void _copy_string(wget_buffer_t *buf, unsigned int flags, int field_width, int precision, const char *arg)
 {
