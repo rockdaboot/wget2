@@ -512,11 +512,12 @@ int wget_tcp_get_dns_caching(wget_tcp_t *tcp)
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init().
+ * \param[in] protocol The protocol, either WGET_PROTOCOL_HTTP_2_0 or WGET_PROTOCOL_HTTP_1_1.
  *
- * Set the address family for the connection provided, or globally.
+ * Set the protocol for the connection provided, or globally.
  *
- * If \p tcp is NULL, that address family will be used globally (for all connections). Otherwise,
+ * If \p tcp is NULL, theprotocol will be set globally (for all connections). Otherwise,
  * only for the provided connection (\p tcp).
  */
 void wget_tcp_set_protocol(wget_tcp_t *tcp, int protocol)
@@ -525,11 +526,10 @@ void wget_tcp_set_protocol(wget_tcp_t *tcp, int protocol)
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
- * \return The address family set with wget_tcp_set_protocol().
+ * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init().
+ * \return The protocol with this connection, currently WGET_PROTOCOL_HTTP_2_0 or WGET_PROTOCOL_HTTP_1_1.
  *
- * Get the address family that was set for the provided connection, or globally
- * (if \p tcp is NULL).
+ * Get protocol used with the provided connection, or globally (if \p tcp is NULL).
  */
 int wget_tcp_get_protocol(wget_tcp_t *tcp)
 {
@@ -734,7 +734,8 @@ void wget_tcp_set_bind_address(wget_tcp_t *tcp, const char *bind_address)
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init().
+ * \param[in] ssl Flag to enable or disable SSL/TLS on the given connection.
  *
  * Enable or disable SSL/TLS.
  *
@@ -746,7 +747,7 @@ void wget_tcp_set_ssl(wget_tcp_t *tcp, int ssl)
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init().
  * \return 1 if TLs is enabled, 0 otherwise.
  *
  * Tells whether TLS is enabled or not.
