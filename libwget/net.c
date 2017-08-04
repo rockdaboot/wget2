@@ -115,7 +115,7 @@
  */
 
 /* Resolver / DNS cache entry */
-struct ADDR_ENTRY {
+struct _dns_entry {
 	const char *
 		host;
 	struct addrinfo *
@@ -148,7 +148,7 @@ static wget_thread_mutex_t
 static struct addrinfo *_wget_dns_cache_get(const char *host, uint16_t port)
 {
 	if (dns_cache) {
-		struct ADDR_ENTRY *entryp, entry = { .host = host, .port = port };
+		struct _dns_entry *entryp, entry = { .host = host, .port = port };
 		int index;
 
 		wget_thread_mutex_lock(&dns_mutex);
@@ -165,7 +165,7 @@ static struct addrinfo *_wget_dns_cache_get(const char *host, uint16_t port)
 	return NULL;
 }
 
-static int G_GNUC_WGET_PURE _compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENTRY *a2)
+static int G_GNUC_WGET_PURE _compare_addr(struct _dns_entry *a1, struct _dns_entry *a2)
 {
 	if (a1->port < a2->port)
 		return -1;
@@ -175,7 +175,7 @@ static int G_GNUC_WGET_PURE _compare_addr(struct ADDR_ENTRY *a1, struct ADDR_ENT
 	return wget_strcasecmp(a1->host, a2->host);
 }
 
-static void _free_dns(struct ADDR_ENTRY *entry)
+static void _free_dns(struct _dns_entry *entry)
 {
 	freeaddrinfo(entry->addrinfo);
 }
@@ -184,12 +184,12 @@ static struct addrinfo * _wget_dns_cache_add(const char *host, uint16_t port, st
 {
 	// insert addrinfo into dns cache
 	size_t hostlen = host ? strlen(host) + 1 : 0;
-	struct ADDR_ENTRY *entryp = xmalloc(sizeof(struct ADDR_ENTRY) + hostlen);
+	struct _dns_entry *entryp = xmalloc(sizeof(struct _dns_entry) + hostlen);
 	int index;
 
 	if (host) {
 		entryp->port = port;
-		entryp->host = ((char *)entryp) + sizeof(struct ADDR_ENTRY);
+		entryp->host = ((char *)entryp) + sizeof(struct _dns_entry);
 		memcpy((char *)entryp->host, host, hostlen); // ugly cast, but semantically ok
 	} else {
 		entryp->host = NULL;

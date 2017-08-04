@@ -79,6 +79,7 @@ const char
 static const uint16_t
 	iri_ports[]   = { 80, 443 }; // default port numbers for the above schemes
 
+/* \cond _hide_internal_symbols */
 #define IRI_CTYPE_GENDELIM (1<<0)
 #define _iri_isgendelim(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_GENDELIM)
 
@@ -89,6 +90,7 @@ static const uint16_t
 #define _iri_isunreserved(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_UNRESERVED)
 
 #define _iri_isscheme(c) (c_isalnum(c) || c == '+' || c == '-' || c == '.')
+/* \endcond */
 
 static const unsigned char
 	iri_ctype[256] = {

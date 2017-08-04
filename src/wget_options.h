@@ -92,7 +92,7 @@ struct config {
 		*ocsp_db; // in-memory fingerprint OCSP database
 	wget_netrc_db_t
 		*netrc_db; // in-memory .netrc database
-	struct wget_cookie_db_st
+	struct _wget_cookie_db_st
 		*cookie_db;
 	char
 		*hsts_file,

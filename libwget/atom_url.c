@@ -45,14 +45,14 @@
  * Routines for URL extraction from Atom feeds.
  */
 
-struct atom_context {
+struct _atom_context {
 	wget_vector_t
 		*urls;
 };
 
 static void _atom_get_url(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
-	struct atom_context *ctx = context;
+	struct _atom_context *ctx = context;
 	wget_string_t url;
 
 	if (!val || !len)
@@ -113,7 +113,7 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
  */
 void wget_atom_get_urls_inline(const char *atom, wget_vector_t **urls)
 {
-	struct atom_context context = { .urls = NULL };
+	struct _atom_context context = { .urls = NULL };
 
 	wget_xml_parse_buffer(atom, _atom_get_url, &context, XML_HINT_REMOVE_EMPTY_CONTENT);
 

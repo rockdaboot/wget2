@@ -995,10 +995,10 @@ WGETAPI const char *
  */
 
 // typedef for cookie database
-typedef struct wget_cookie_db_st wget_cookie_db_t;
+typedef struct _wget_cookie_db_st wget_cookie_db_t;
 
 // typedef for cookie
-typedef struct wget_cookie_st wget_cookie_t;
+typedef struct _wget_cookie_st wget_cookie_t;
 
 WGETAPI wget_cookie_t *
 	wget_cookie_init(wget_cookie_t *cookie);

@@ -47,7 +47,7 @@
 #include <wget.h>
 #include "private.h"
 
-struct wget_cookie_st {
+struct _wget_cookie_st {
 	const char *
 		name;
 	const char *
@@ -80,7 +80,7 @@ struct wget_cookie_st {
 		http_only : 1; // just use the cookie via HTTP/HTTPS protocol
 };
 
-struct wget_cookie_db_st {
+struct _wget_cookie_db_st {
 	wget_vector_t *
 		cookies;
 #ifdef WITH_LIBPSL
