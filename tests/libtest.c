@@ -360,6 +360,41 @@ static int _print_header_range(void *cls,
 	return MHD_YES;
 }
 
+struct ResponseContentCallbackParam
+{
+	const char *response_data;
+	size_t response_size;
+};
+
+static ssize_t _callback (void *cls,
+						uint64_t pos,
+						char *buf,
+						size_t buf_size)
+{
+	size_t size_to_copy;
+	struct ResponseContentCallbackParam *const param =
+		(struct ResponseContentCallbackParam *)cls;
+
+	if (pos >= param->response_size)
+		return MHD_CONTENT_READER_END_OF_STREAM;
+
+	// divide data into two chunks
+	buf_size = (param->response_size / 2) + 1;
+	if (buf_size < (param->response_size - pos))
+		size_to_copy = buf_size;
+	else
+		size_to_copy = param->response_size - pos;
+
+	memcpy (buf, param->response_data + pos, size_to_copy);
+
+	return size_to_copy;
+}
+
+static void _free_callback_param(void *cls)
+{
+	free(cls);
+}
+
 static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 					struct MHD_Connection *connection,
 					const char *url,
@@ -419,7 +454,7 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 		wget_buffer_strcat(url_full, "index.html");
 
 	// it1 = iteration for urls data
-	unsigned int it1, found = 0;
+	unsigned int it1, found = 0, chunked = 0;
 	for (it1 = 0; it1 < nurls; it1++) {
 		// create default page for directory without index page
 		char *dir = _scan_directory(url_full->data + 1);
@@ -438,6 +473,50 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 
 		if (!strcmp(url_full->data, url_iri->data))
 		{
+			// chunked encoding
+			if (!wget_strcmp(urls[it1].name + 3, "bad.txt"))
+			{
+				response = MHD_create_response_from_buffer(strlen(urls[it1].body),
+						(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
+				ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+				MHD_add_response_header(response, "Transfer-Encoding", "chunked");
+				MHD_add_response_header(response, "Connection", "close");
+				wget_buffer_free(&url_iri);
+				found = 1;
+				break;
+			}
+			for (int it2 = 0; urls[it1].headers[it2] != NULL; it2++) {
+				const char *header = urls[it1].headers[it2];
+				if (header) {
+					const char *header_value = strchr(header, ':');
+					const char *header_key = wget_strmemdup(header, header_value - header);
+					if (!strcmp(header_key, "Transfer-Encoding") &&
+						!strcmp(header_value + 2, "chunked"))
+						chunked = 1;
+					wget_xfree(header_key);
+				}
+			}
+			if (chunked == 1) {
+				struct ResponseContentCallbackParam *callback_param;
+				callback_param = malloc(sizeof(struct ResponseContentCallbackParam));
+
+				static char response_text[44];
+				strcpy(response_text, urls[it1].body);
+
+				callback_param->response_data = response_text;
+				callback_param->response_size = (sizeof(response_text)/sizeof(char)) - 1;
+
+				response = MHD_create_response_from_callback(MHD_SIZE_UNKNOWN,
+															1024,
+															&_callback,
+															callback_param,
+															&_free_callback_param);
+				ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+				wget_buffer_free(&url_iri);
+				found = 1;
+				break;
+			}
+
 			// 404 with non-empty "body"
 			if (!wget_strcmp(urls[it1].code, "404 Not exist"))
 			{

@@ -29,7 +29,7 @@
 int main(void)
 {
 	wget_test_url_t urls[]={
-		{	.name = "/1.txt",
+		{	.name = "/1.bad.txt",
 			.code = "200 Dontcare",
 			.body = "FFFFFFF4\nGarbage",
 			.headers = {
@@ -37,7 +37,7 @@ int main(void)
 				"Transfer-Encoding: chunked",
 			}
 		},
-		{	.name = "/2.txt",
+		{	.name = "/2.bad.txt",
 			.code = "200 Dontcare",
 			.body = "FFFFFFFE\r\nGarbage",
 			.headers = {
@@ -45,7 +45,7 @@ int main(void)
 				"Transfer-Encoding: chunked",
 			}
 		},
-		{	.name = "/3.txt",
+		{	.name = "/3.bad.txt",
 			.code = "200 Dontcare",
 			.body = "FFFFFFFFFFFFFFF4\r\nGarbage",
 			.headers = {
@@ -63,7 +63,7 @@ int main(void)
 	// test negative chunk size (32bit system only)
 	wget_test(
 		WGET_TEST_OPTIONS, "",
-		WGET_TEST_REQUEST_URLS, "1.txt", "2.txt", "3.txt", NULL,
+		WGET_TEST_REQUEST_URLS, "1.bad.txt", "2.bad.txt", "3.bad.txt", NULL,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, NULL }, // do not check content

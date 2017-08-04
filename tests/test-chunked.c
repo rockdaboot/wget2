@@ -31,7 +31,7 @@ int main(void)
 	wget_test_url_t urls[]={
 		{	.name = "/1.txt",
 			.code = "200 Dontcare",
-			.body = "3\r\nabc\r\n2\r\nde\r\n",
+			.body = "the quick brown fox\njumps over the lazy dog",
 			.headers = {
 				"Content-Type: text/plain",
 				"Transfer-Encoding: chunked",
@@ -50,7 +50,7 @@ int main(void)
 		WGET_TEST_REQUEST_URL, "1.txt",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, "abcde" },
+			{ urls[0].name + 1, "the quick brown fox\njumps over the lazy dog" },
 			{	NULL } },
 		0);
 
