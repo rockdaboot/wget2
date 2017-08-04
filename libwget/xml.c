@@ -47,9 +47,7 @@
 #include <wget.h>
 #include "private.h"
 
-typedef struct XML_CONTEXT XML_CONTEXT;
-
-struct XML_CONTEXT {
+typedef struct {
 	const char
 		*buf, // pointer to original start of buffer (0-terminated)
 		*p, // pointer next char in buffer
@@ -63,16 +61,18 @@ struct XML_CONTEXT {
 		*user_ctx; // user context (not needed if we were using nested functions)
 	wget_xml_callback_t
 		callback;
-};
+} _xml_context;
 
+/* \cond _hide_internal_symbols */
 #define ascii_isspace(c) (c == ' ' || (c >= 9 && c <=  13))
 
 // working only for consecutive alphabets, e.g. EBCDIC would not work
 #define ascii_isalpha(c) ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+/* \endcond */
 
 // append a char to token buffer
 
-static const char *getToken(XML_CONTEXT *context)
+static const char *getToken(_xml_context *context)
 {
 	int c;
 	const char *p;
@@ -194,7 +194,7 @@ static const char *getToken(XML_CONTEXT *context)
 	return NULL;
 }
 
-static int getValue(XML_CONTEXT *context)
+static int getValue(_xml_context *context)
 {
 	int c;
 
@@ -223,7 +223,7 @@ static int getValue(XML_CONTEXT *context)
 // see https://html.spec.whatwg.org/multipage/scripting.html#the-script-element
 // 4.3.1.2 Restrictions for contents of script elements
 
-static const char *getScriptContent(XML_CONTEXT *context)
+static const char *getScriptContent(_xml_context *context)
 {
 	int comment = 0, length_valid = 0;
 	const char *p;
@@ -264,7 +264,7 @@ static const char *getScriptContent(XML_CONTEXT *context)
 	return context->token;
 }
 
-static const char *getUnparsed(XML_CONTEXT *context, int flags, const char *end, size_t len, const char *directory)
+static const char *getUnparsed(_xml_context *context, int flags, const char *end, size_t len, const char *directory)
 {
 	int c;
 
@@ -313,22 +313,22 @@ static const char *getUnparsed(XML_CONTEXT *context, int flags, const char *end,
 	return context->token;
 }
 
-static const char *getComment(XML_CONTEXT *context)
+static const char *getComment(_xml_context *context)
 {
 	return getUnparsed(context, XML_FLG_COMMENT, "-->", 3, NULL);
 }
 
-static const char *getProcessing(XML_CONTEXT *context)
+static const char *getProcessing(_xml_context *context)
 {
 	return getUnparsed(context, XML_FLG_PROCESSING, "?>", 2, NULL);
 }
 
-static const char *getSpecial(XML_CONTEXT *context)
+static const char *getSpecial(_xml_context *context)
 {
 	return getUnparsed(context, XML_FLG_SPECIAL, ">", 1, NULL);
 }
 
-static const char *getContent(XML_CONTEXT *context, const char *directory)
+static const char *getContent(_xml_context *context, const char *directory)
 {
 	int c;
 
@@ -346,7 +346,7 @@ static const char *getContent(XML_CONTEXT *context, const char *directory)
 	return context->token;
 }
 
-static void parseXML(const char *dir, XML_CONTEXT *context)
+static void parseXML(const char *dir, _xml_context *context)
 {
 	const char *tok;
 	char directory[256] = "";
@@ -473,13 +473,36 @@ static void parseXML(const char *dir, XML_CONTEXT *context)
 	} while (tok);
 }
 
+/**
+ * \file
+ * \brief XML parsing functions
+ * \defgroup libwget-xml XML parsing functions
+ * @{
+ */
+
+/**
+ * \param[in] buf Zero-terminated XML or HTML input data
+ * \param[in] callback Function called for each token scan result
+ * \param[in] user_ctx User-defined context variable, handed to \p callback
+ * \param[in] hints Flags to influence parsing
+ *
+ * This function scans the XML input from \p buf and calls \p callback for each token
+ * found. \p user_ctx is a user-defined context variable and given to each call of \p callback.
+ *
+ * \p hints may be 0 or any combination of %XML_HINT_REMOVE_EMPTY_CONTENT and %XML_HINT_HTML.
+ *
+ * %XML_HINT_REMOVE_EMPTY_CONTENT reduces the number of calls to \p callback by ignoring
+ * empty content and superfluous spaces.
+ *
+ * %XML_HINT_HTML turns on HTML scanning.
+ */
 void wget_xml_parse_buffer(
 	const char *buf,
 	wget_xml_callback_t callback,
 	void *user_ctx,
 	int hints)
 {
-	XML_CONTEXT context;
+	_xml_context context;
 
 	context.token = NULL;
 	context.token_size = 0;
@@ -493,6 +516,14 @@ void wget_xml_parse_buffer(
 	parseXML("/", &context);
 }
 
+/**
+ * \param[in] buf Zero-terminated HTML input data
+ * \param[in] callback Function called for each token scan result
+ * \param[in] user_ctx User-defined context variable, handed to \p callback
+ * \param[in] hints Flags to influence parsing
+ *
+ * Convenience function that calls wget_xml_parse_buffer() with HTML parsing turned on.
+ */
 void wget_html_parse_buffer(
 	const char *buf,
 	wget_xml_callback_t callback,
@@ -502,6 +533,16 @@ void wget_html_parse_buffer(
 	wget_xml_parse_buffer(buf, callback, user_ctx, hints | XML_HINT_HTML);
 }
 
+/**
+ * \param[in] fname Name of XML or HTML input file
+ * \param[in] callback Function called for each token scan result
+ * \param[in] user_ctx User-defined context variable, handed to \p callback
+ * \param[in] hints Flags to influence parsing
+ *
+ * Convenience function that calls wget_xml_parse_buffer() with the file content.
+ *
+ * If \p fname is `-`, the data is read from stdin.
+ */
 void wget_xml_parse_file(
 	const char *fname,
 	wget_xml_callback_t callback,
@@ -554,6 +595,16 @@ void wget_xml_parse_file(
 	}
 }
 
+/**
+ * \param[in] fname Name of XML or HTML input file
+ * \param[in] callback Function called for each token scan result
+ * \param[in] user_ctx User-defined context variable, handed to \p callback
+ * \param[in] hints Flags to influence parsing
+ *
+ * Convenience function that calls wget_xml_parse_file() with HTML parsing turned on.
+ *
+ * If \p fname is `-`, the data is read from stdin.
+ */
 void wget_html_parse_file(
 	const char *fname,
 	wget_xml_callback_t callback,
@@ -562,3 +613,5 @@ void wget_html_parse_file(
 {
 	wget_xml_parse_file(fname, callback, user_ctx, hints | XML_HINT_HTML);
 }
+
+/** @} */
