@@ -289,7 +289,7 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 		memset(bar, 0, sizeof(*bar));
 
 	if (bar->max_slots < nslots) {
-		bar->slots = xcalloc(nslots, sizeof(_bar_slot_t) * nslots);
+		bar->slots = xcalloc(nslots, sizeof(_bar_slot_t));
 		bar->max_slots = nslots;
 	} else {
 		memset(bar->slots, 0, sizeof(_bar_slot_t) * nslots);
