@@ -107,7 +107,6 @@ struct _wget_bar_st {
 		*spaces;
 	int
 		nslots,
-		max_slots,
 		screen_width,
 		max_width;
 	wget_thread_mutex_t
@@ -240,8 +239,8 @@ static void _bar_update(wget_bar_t *bar)
 			memset(bar->spaces, ' ', max_width);
 
 			xfree(bar->progress_mem_holder);
-			bar->progress_mem_holder = xcalloc(bar->max_slots, max_width+1);
-			for (int i = 0; i < bar->max_slots; i++) {
+			bar->progress_mem_holder = xcalloc(bar->nslots, max_width+1);
+			for (int i = 0; i < bar->nslots; i++) {
 				bar->slots[i].progress = bar->progress_mem_holder + (i * (max_width+1));
 			}
 		}
@@ -288,9 +287,9 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 	} else
 		memset(bar, 0, sizeof(*bar));
 
-	if (bar->max_slots < nslots) {
+	if (bar->nslots < nslots) {
 		bar->slots = xcalloc(nslots, sizeof(_bar_slot_t));
-		bar->max_slots = nslots;
+		bar->nslots = nslots;
 	} else {
 		memset(bar->slots, 0, sizeof(_bar_slot_t) * nslots);
 	}
@@ -305,8 +304,8 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 		bar->spaces = xmalloc(max_width);
 		memset(bar->spaces, ' ', max_width);
 
-		bar->progress_mem_holder = xcalloc(bar->max_slots, max_width+1);
-		for (int i = 0; i < bar->max_slots; i++) {
+		bar->progress_mem_holder = xcalloc(bar->nslots, max_width+1);
+		for (int i = 0; i < bar->nslots; i++) {
 			bar->slots[i].progress = bar->progress_mem_holder + (i*(max_width+1));
 			bar->slots[i].status = EMPTY;
 		}
@@ -369,7 +368,7 @@ void wget_bar_slot_downloaded(wget_bar_t *bar, int slot, size_t nbytes)
 void wget_bar_slot_deregister(wget_bar_t *bar, int slot)
 {
 	wget_thread_mutex_lock(&bar->mutex);
-	if (slot >= 0 && slot < bar->max_slots) {
+	if (slot >= 0 && slot < bar->nslots) {
 		_bar_slot_t *slotp = &bar->slots[slot];
 
 		slotp->status = COMPLETE;
@@ -393,7 +392,7 @@ void wget_bar_update(wget_bar_t *bar)
 void wget_bar_deinit(wget_bar_t *bar)
 {
 	if (bar) {
-		for (int i = 0; i < bar->max_slots; i++) {
+		for (int i = 0; i < bar->nslots; i++) {
 			xfree(bar->slots[i].filename);
 		}
 		xfree(bar->progress_mem_holder);
