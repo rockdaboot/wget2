@@ -220,8 +220,8 @@ static int _bar_get_width(void)
 	return width - _BAR_DECOR_COST;
 }
 
-static void _bar_update(wget_bar_t *bar)
-{
+static void _bar_update_winsize(wget_bar_t *bar) {
+
 	if (winsize_changed) {
 		int max_width = _bar_get_width();
 
@@ -247,15 +247,19 @@ static void _bar_update(wget_bar_t *bar)
 
 		bar->max_width = max_width;
 	}
+	winsize_changed = 0;
 
+}
+
+static void _bar_update(wget_bar_t *bar)
+{
+	_bar_update_winsize(bar);
 	for (int i = 0; i < bar->nslots; i++) {
 		if (bar->slots[i].redraw || winsize_changed) {
 			_bar_update_slot(bar, i);
 			bar->slots[i].redraw = 0;
 		}
 	}
-
-	winsize_changed = 0;
 }
 
 /**
@@ -287,6 +291,8 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 	} else
 		memset(bar, 0, sizeof(*bar));
 
+	wget_thread_mutex_lock(&bar->mutex);
+
 	if (bar->nslots < nslots) {
 		bar->slots = xcalloc(nslots, sizeof(_bar_slot_t));
 		bar->nslots = nslots;
@@ -294,26 +300,10 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 		memset(bar->slots, 0, sizeof(_bar_slot_t) * nslots);
 	}
 
-	if (bar->max_width < max_width) {
-		bar->known_size = xmalloc(max_width);
-		memset(bar->known_size, '=', max_width);
+	winsize_changed = 1; // Explicitly set this to ensure that the progress bars are created.
+	_bar_update_winsize(bar);
 
-		bar->unknown_size = xmalloc(max_width);
-		memset(bar->unknown_size, '*', max_width);
-
-		bar->spaces = xmalloc(max_width);
-		memset(bar->spaces, ' ', max_width);
-
-		bar->progress_mem_holder = xcalloc(bar->nslots, max_width+1);
-		for (int i = 0; i < bar->nslots; i++) {
-			bar->slots[i].progress = bar->progress_mem_holder + (i*(max_width+1));
-			bar->slots[i].status = EMPTY;
-		}
-
-		bar->max_width = max_width;
-	}
-
-
+	wget_thread_mutex_unlock(&bar->mutex);
 	return bar;
 }
 
