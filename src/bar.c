@@ -71,7 +71,7 @@ static void _error_write(const char *buf, size_t len)
 void bar_init(void)
 {
 	if (wget_thread_support()) {
-		bar = wget_bar_init(NULL, config.max_threads + 1);
+		bar = wget_bar_init(NULL, 1);
 
 		// set custom write function for wget_error_printf()
 		wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), _error_write);
