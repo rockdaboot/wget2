@@ -159,7 +159,7 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 
 		snprintf(slotp->progress, bar->max_width + 1, "%.*s<=>%.*s",
 				pre_space, bar->spaces,
-				bar->max_width - pre_space - 3, bar->spaces);
+				bar->max_width - pre_space - 4, bar->spaces);
 	}
 }
 
