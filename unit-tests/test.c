@@ -1198,7 +1198,7 @@ static void test_cookies(void)
 	int result, result_psl;
 
 	cookies = wget_cookie_db_init(NULL);
-	wget_cookie_db_load_psl(cookies, DATADIR "/effective_tld_names.dat");
+	wget_cookie_db_load_psl(cookies, WGET_DATADIR "/effective_tld_names.dat");
 
 	for (it = 0; it < countof(test_data); it++) {
 		char *header, *set_cookie;
