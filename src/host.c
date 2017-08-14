@@ -61,6 +61,9 @@ static int _host_compare(const HOST *host1, const HOST *host2)
 	return host1->port < host2->port ? -1 : (host1->port > host2->port ? 1 : 0);
 }
 
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int _host_hash(const HOST *host)
 {
 	unsigned int hash = host->port; // use port as SALT if hash table attacks doesn't matter

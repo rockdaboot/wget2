@@ -43,6 +43,9 @@ static wget_thread_mutex_t
 
 // Paul Larson's hash function from Microsoft Research
 // ~ O(1) insertion, search and removal
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int G_GNUC_WGET_NONNULL_ALL hash_iri(const wget_iri_t *iri)
 {
 	unsigned int h = iri->port; // use port as SALT if hash table attacks doesn't matter

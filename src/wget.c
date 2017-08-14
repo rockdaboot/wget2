@@ -1861,6 +1861,9 @@ static void _remember_for_conversion(const char *filename, wget_iri_t *base_url,
 	wget_thread_mutex_unlock(&mutex);
 }
 
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int G_GNUC_WGET_PURE hash_url(const char *url)
 {
 	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
