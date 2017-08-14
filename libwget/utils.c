@@ -339,9 +339,12 @@ int wget_percent_unescape(char *src)
  */
 int wget_match_tail(const char *s, const char *tail)
 {
+	if (strlen(s) < strlen(tail))
+		return 0;
+
 	const char *p = s + (strlen(s) - strlen(tail));
 
-	return p >= s && !strcmp(p, tail);
+	return !strcmp(p, tail);
 }
 
 /**
@@ -354,9 +357,12 @@ int wget_match_tail(const char *s, const char *tail)
  */
 int wget_match_tail_nocase(const char *s, const char *tail)
 {
+	if (strlen(s) < strlen(tail))
+		return 0;
+
 	const char *p = s + (strlen(s) - strlen(tail));
 
-	return p >= s && !wget_strcasecmp_ascii(p, tail);
+	return !wget_strcasecmp_ascii(p, tail);
 }
 
 /**
