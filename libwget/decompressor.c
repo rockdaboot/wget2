@@ -156,8 +156,7 @@ static int deflate_init(z_stream *strm)
 {
 	memset(strm, 0, sizeof(*strm));
 
-	// -15: decode raw deflate data
-	if (inflateInit2(strm, -15) != Z_OK) {
+	if (inflateInit(strm) != Z_OK) {
 		error_printf(_("Failed to init deflate decompression\n"));
 		return -1;
 	}
