@@ -182,9 +182,12 @@ static int G_GNUC_WGET_NONNULL((1)) _path_match(const char *cookie_path, const c
 {
 	const char *last_slash;
 	size_t cookie_path_length, iri_path_length;
+	bool cookie_path_slash = false;
 
-	if (*cookie_path == '/')
+	if (*cookie_path == '/') {
 		cookie_path++;
+		cookie_path_slash = true;
+	}
 
 	if (request_path && *request_path == '/')
 		request_path++;
@@ -218,7 +221,7 @@ static int G_GNUC_WGET_NONNULL((1)) _path_match(const char *cookie_path, const c
 			// the cookie-path and the request-path are identical
 			return 1;
 
-		if (cookie_path[cookie_path_length - 1] == '/')
+		if ((cookie_path_length > 0 && cookie_path[cookie_path_length - 1] == '/') || cookie_path_slash)
 			// the cookie-path is a prefix of the request-path, and the last
 			// character of the cookie-path is %x2F ("/").
 			return 1;
