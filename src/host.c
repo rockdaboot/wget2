@@ -79,6 +79,9 @@ static int _host_docs_compare(const HOST_DOCS *host_docsp1, const HOST_DOCS *hos
 	return 0;
 }
 
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int _host_hash(const HOST *host)
 {
 	unsigned int hash = host->port; // use port as SALT if hash table attacks doesn't matter
