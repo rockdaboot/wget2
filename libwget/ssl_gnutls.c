@@ -1179,17 +1179,20 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 	// Perform the TLS handshake
 	while (rc > 0) {
 		rc = gnutls_handshake(session);
-		if (rc == 0 || gnutls_error_is_fatal(rc)) {
-			if (rc == 0) {
-				ret = WGET_E_SUCCESS;
-			} else {
-				debug_printf("gnutls_handshake: (%d) %s\n", rc, gnutls_strerror(rc));
 
-				if (rc == GNUTLS_E_CERTIFICATE_ERROR)
-					ret = WGET_E_CERTIFICATE;
-				else
-					ret = WGET_E_HANDSHAKE;
-			}
+		if (rc == 0) {
+			ret = WGET_E_SUCCESS;
+			break;
+		}
+
+		if (gnutls_error_is_fatal(rc)) {
+			debug_printf("gnutls_handshake: (%d) %s\n", rc, gnutls_strerror(rc));
+
+			if (rc == GNUTLS_E_CERTIFICATE_ERROR)
+				ret = WGET_E_CERTIFICATE;
+			else
+				ret = WGET_E_HANDSHAKE;
+
 			break;
 		}
 
@@ -1203,8 +1206,9 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 	}
 
 #if GNUTLS_VERSION_NUMBER >= 0x030500
-	debug_printf("TLS False Start: %s\n",
-		(gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START) ? "on" : "off");
+	if (ret == WGET_E_SUCCESS)
+		debug_printf("TLS False Start: %s\n",
+			(gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START) ? "on" : "off");
 #endif
 
 	return ret;
