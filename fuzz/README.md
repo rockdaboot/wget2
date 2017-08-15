@@ -22,7 +22,8 @@ make -j$(nproc)
 cd fuzz
 
 # build and run libwget_xml_parse_buffer_fuzzer
-./run-clang.sh libwget_xml_parse_buffer_fuzzer
+UBSAN_OPTIONS=print_stacktrace=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-5.0/bin/llvm-symbolizer \
+  ./run-clang.sh libwget_xml_parse_buffer_fuzzer
 ```
 
 
