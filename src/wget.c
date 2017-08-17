@@ -1254,8 +1254,7 @@ static void add_statistics(wget_iri_t *iri, wget_http_response_t *resp)
 			_atomic_increment_int(&stats.nchunks);
 		else
 			_atomic_increment_int(&stats.ndownloads);
-	}
-	else if (resp->code == 301 || resp->code == 302)
+	} else if (resp->code == 301 || resp->code == 302)
 		_atomic_increment_int(&stats.nredirects);
 	else if (resp->code == 304)
 		_atomic_increment_int(&stats.nnotmodified);
@@ -1267,7 +1266,7 @@ static void add_statistics(wget_iri_t *iri, wget_http_response_t *resp)
 		robot_iri = true;
 	}
 
-	host_docs_add(iri, resp->code, resp->content_length, robot_iri);
+	host_docs_add(iri, resp, robot_iri);
 }
 
 static int process_response_header(wget_http_response_t *resp)
@@ -1297,14 +1296,7 @@ static int process_response_header(wget_http_response_t *resp)
 
 	// do some statistics
 	add_statistics(iri, resp);
-/*
-printf("iri->uri = %s\n", iri->uri);
-printf("iri->scheme = %s\n", iri->scheme);
-printf("iri->host = %s\n", iri->host);
-printf("iri->port = %d\n", iri->port);
-printf("resp->code = %hd\n", resp->code);
-printf("resp->content_length = %lu\n", resp->content_length);
-*/
+
 	wget_cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
 	wget_cookie_store_cookies(config.cookie_db, resp->cookies); // store cookies
 
@@ -1802,11 +1794,10 @@ void *downloader_thread(void *p)
 					break;
 				}
 
-				if (pending >= max_pending) {
+				if (pending >= max_pending)
 					action = ACTION_GET_RESPONSE;
-				} else {
+				else
 					wget_thread_mutex_lock(&main_mutex); locked = 1;
-				}
 			}
 			break;
 
@@ -1825,13 +1816,12 @@ void *downloader_thread(void *p)
 
 			// general response check to see if we need further processing
 			if (process_response_header(resp) == 0) {
-				if (job->head_first) {
+				if (job->head_first)
 					process_head_response(resp); // HEAD request/response
-				} else if (job->part) {
+				else if (job->part)
 					process_response_part(resp); // chunked/metalink GET download
-				} else {
+				else
 					process_response(resp); // GET + POST request/response
-				}
 			}
 
 			wget_http_free_request(&resp->req);
@@ -1840,9 +1830,8 @@ void *downloader_thread(void *p)
 			wget_thread_mutex_lock(&main_mutex); locked = 1;
 
 			// download of single-part file complete, remove from job queue
-			if (job && job->inuse) {
+			if (job && job->inuse)
 				host_remove_job(host, job);
-			}
 
 			wget_thread_cond_signal(&main_cond);
 
@@ -2540,6 +2529,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	char *alloced_fname = NULL;
 	int fd, multiple = 0, oflag = flag;
 	size_t fname_length;
+	long long old_quota;
 
 	if (!fname)
 		return -1;
@@ -2558,14 +2548,11 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 
 	// - optimistic approach expects data being written without error
 	// - to be Wget compatible: quota_modify_read() returns old quota value
-	if (config.quota) {
-		if (quota_modify_read(config.save_headers ? resp->header->length : 0) >= config.quota) {
-			debug_printf("not saved '%s' (quota of %lld reached)\n", fname, config.quota);
-			return -1;
-		}
-	} else {
-		// just update number bytes read (body only) for display purposes
-		quota_modify_read(config.save_headers ? resp->header->length : 0);
+	old_quota = quota_modify_read(config.save_headers ? resp->header->length : 0);
+
+	if (config.quota && old_quota >= config.quota) {
+		debug_printf("not saved '%s' (quota of %lld reached)\n", fname, config.quota);
+		return -1;
 	}
 
 	if (fname == config.output_document) {

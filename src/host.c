@@ -162,7 +162,7 @@ HOST *host_add(wget_iri_t *iri)
 	return hostp;
 }
 
-HOST_DOCS *host_docs_add(wget_iri_t *iri, int status, long long size, bool robot_iri)
+HOST_DOCS *host_docs_add(wget_iri_t *iri, wget_http_response_t *resp, bool robot_iri)
 {
 	HOST *hostp;
 	wget_hashmap_t *host_docs;
@@ -179,9 +179,9 @@ HOST_DOCS *host_docs_add(wget_iri_t *iri, int status, long long size, bool robot
 			hostp->host_docs = host_docs;
 		}
 
-		if (!(host_docsp = host_docs_get(host_docs, status))) {
+		if (!(host_docsp = host_docs_get(host_docs, resp->code))) {
 			host_docsp = wget_malloc(sizeof(HOST_DOCS));
-			host_docsp->http_status = status;
+			host_docsp->http_status = resp->code;
 			host_docsp->docs = NULL;
 			wget_hashmap_put_noalloc(host_docs, host_docsp, host_docsp);
 		}
@@ -194,7 +194,9 @@ HOST_DOCS *host_docs_add(wget_iri_t *iri, int status, long long size, bool robot
 
 		doc = wget_malloc(sizeof(DOC));
 		doc->iri = iri;
-		doc->size = size;
+		doc->size_downloaded = resp->cur_downloaded;
+		doc->size_decompressed = resp->body->length;
+		doc->encoding = resp->content_encoding;
 		doc->robot_iri = robot_iri;
 		wget_vector_add_noalloc(docs, doc);
 	}
@@ -567,13 +569,40 @@ int queue_size(void)
 	return qsize;
 }
 
+static char *print_encoding(char encoding)
+{
+	switch (encoding) {
+	case wget_content_encoding_identity:
+		return "identity";
+	case wget_content_encoding_gzip:
+		return "gzip";
+	case  wget_content_encoding_deflate:
+		return "deflate";
+	case wget_content_encoding_lzma:
+		return "lzma";
+	case wget_content_encoding_bzip2:
+		return "bzip2";
+	case wget_content_encoding_brotli:
+		return "brotli";
+	default:
+		return "unknown encoding";
+	}
+}
+
 static int host_docs_hashmap(struct site_stats *ctx, HOST_DOCS *host_docsp)
 {
+	char buf[16];
+
 	wget_buffer_printf_append(ctx->buf, "  %8d  %13d\n", host_docsp->http_status, wget_vector_size(host_docsp->docs));
 
 	for (int it = 0; it < wget_vector_size(host_docsp->docs); it++) {
 		const DOC *doc = wget_vector_get(host_docsp->docs, it);
-		wget_buffer_printf_append(ctx->buf, "         %s  %lld\n", doc->iri->uri, doc->size);
+		wget_buffer_printf_append(ctx->buf, "         %s  %s (%s) : ",
+				doc->iri->uri,
+				wget_human_readable(buf, sizeof(buf),doc->size_downloaded),
+				print_encoding(doc->encoding));
+		wget_buffer_printf_append(ctx->buf, "%s (decompressed)\n",
+				wget_human_readable(buf, sizeof(buf),doc->size_decompressed));
 	}
 
 	if (ctx->buf->length > 64*1024) {

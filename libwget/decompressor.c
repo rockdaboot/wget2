@@ -130,7 +130,7 @@ static int gzip_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 		strm->avail_out = sizeof(dst);
 
 		status = inflate(strm, Z_SYNC_FLUSH);
-		if ((status == Z_OK || status == Z_STREAM_END) && strm->avail_out<sizeof(dst)) {
+		if ((status == Z_OK || status == Z_STREAM_END) && strm->avail_out < sizeof(dst)) {
 			if (dc->sink)
 				dc->sink(dc->context, dst, sizeof(dst) - strm->avail_out);
 		}
