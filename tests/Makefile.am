@@ -17,7 +17,8 @@ WGET_TESTS = test-wget-1$(EXEEXT) test-c-r$(EXEEXT) test-restrict-ascii$(EXEEXT)
  test-auth-basic$(EXEEXT) test-parse-rss$(EXEEXT) test--page-requisites$(EXEEXT)\
  test--accept$(EXEEXT) test-k$(EXEEXT) test--follow-tags$(EXEEXT) test-directory-clash$(EXEEXT) test-redirection$(EXEEXT)\
  test-base$(EXEEXT) test-metalink$(EXEEXT) test-robots$(EXEEXT) test-parse-css$(EXEEXT) test-bad-chunk$(EXEEXT)\
- test-iri-subdir$(EXEEXT) test-chunked$(EXEEXT) test-cut-dirs$(EXEEXT) test-parse-html-css$(EXEEXT)
+ test-iri-subdir$(EXEEXT) test-chunked$(EXEEXT) test-cut-dirs$(EXEEXT) test-parse-html-css$(EXEEXT)\
+ test-auth-digest$(EXEEXT)
 
 #test--post-file test-E-k test-cookies-http_state
 

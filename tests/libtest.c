@@ -237,7 +237,7 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 	struct query_string query;
 	int ret = 0;
 	time_t modified;
-	const char *modified_val, *to_bytes_string;
+	const char *modified_val, *to_bytes_string = "";
 	ssize_t from_bytes, to_bytes;
 	size_t body_len;
 	char content_len[100], content_range[100];
@@ -398,6 +398,34 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 				free(pass);
 			}
 
+			// digest authentication
+			if (!wget_strcmp(urls[it1].auth_method, "Digest")) {
+				const char *realm = "digest@example.com";
+				char *user = MHD_digest_auth_get_username(connection);
+				if (wget_strcmp(user, urls[it1].auth_username)) {
+					response = MHD_create_response_from_buffer(strlen ("DENIED"),
+						(void *) "DENIED", MHD_RESPMEM_PERSISTENT);
+					ret = MHD_queue_auth_fail_response(connection, realm, TEST_OPAQUE_STR, response, MHD_NO);
+					free(user);
+					wget_buffer_free(&url_iri);
+					found = 1;
+					break;
+				}
+				ret = MHD_digest_auth_check(connection, realm, user, urls[it1].auth_password, 300);
+				free(user);
+				if ((ret == MHD_INVALID_NONCE) || (ret == MHD_NO)) {
+					response = MHD_create_response_from_buffer(strlen ("DENIED"),
+						(void *) "DENIED", MHD_RESPMEM_PERSISTENT);
+					if (response == NULL)
+						return MHD_NO;
+					ret = MHD_queue_auth_fail_response(connection, realm, TEST_OPAQUE_STR, response,
+						(ret == MHD_INVALID_NONCE) ? MHD_YES : MHD_NO);
+					wget_buffer_free(&url_iri);
+					found = 1;
+					break;
+				}
+			}
+
 			if (modified && urls[it1].modified <= modified) {
 				response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
 				ret = MHD_queue_response(connection, MHD_HTTP_NOT_MODIFIED, response);
@@ -479,10 +507,33 @@ static void _http_server_stop(void)
 static int _http_server_start(int SERVER_MODE)
 {
 	uint16_t port_num = 0;
+	int fd;
+	char rnd[8];
+	ssize_t len;
+	size_t off;
+
+	fd = open("/dev/urandom", O_RDONLY);
+	if (fd == -1) {
+		fprintf(stderr, "Failed to open `%s': %s\n", "/dev/urandom", strerror(errno));
+		return 1;
+	}
+	off = 0;
+	while (off < 8) {
+		len = read(fd, rnd, 8);
+		if (len == -1) {
+			fprintf(stderr, "Failed to read `%s': %s\n", "/dev/urandom", strerror(errno));
+			(void)close(fd);
+		return 1;
+		}
+		off += len;
+	}
+	(void)close(fd);
 
 	if (SERVER_MODE == HTTP_MODE) {
 		httpdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
-					port_num, NULL, NULL, &_answer_to_connection, NULL, NULL,
+					port_num, NULL, NULL, &_answer_to_connection, NULL,
+					MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
+					MHD_OPTION_NONCE_NC_SIZE, 300,
 					MHD_OPTION_END);
 
 		if (!httpdaemon)
@@ -496,7 +547,6 @@ static int _http_server_start(int SERVER_MODE)
 		if ((key_pem == NULL) || (cert_pem == NULL))
 		{
 			printf("The key/certificate files could not be read.\n");
-
 			return 1;
 		}
 
@@ -512,7 +562,6 @@ static int _http_server_start(int SERVER_MODE)
 
 		if (!httpsdaemon) {
 			printf("Cannot start the HTTPS server.\n");
-
 			return 1;
 		}
 	}

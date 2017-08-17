@@ -75,6 +75,10 @@ extern "C" {
 
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
+#ifdef WITH_MICROHTTPD
+#define TEST_OPAQUE_STR "11733b200778ce33060f31c9af70a870ba96ddd4"
+#endif
+
 G_GNUC_WGET_UNUSED static const char *WGET_TEST_SOME_HTML_BODY = "\
 <html>\n\
 <head>\n\
