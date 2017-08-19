@@ -939,7 +939,8 @@ const char *wget_tcp_get_ssl_hostname(wget_tcp_t *tcp)
  * It can be destroyed with wget_tcp_deinit().
  *
  * This function does not establish or modify a TCP connection in any way.
- * That can be done with the other functions in this file.
+ * That can be done with the other functions in this file, such as
+ * wget_tcp_connect() or wget_tcp_listen() and wget_tcp_accept().
  */
 wget_tcp_t *wget_tcp_init(void)
 {

@@ -60,6 +60,14 @@
 #include "private.h"
 #include "net.h"
 
+/**
+ * \file
+ * \brief Functions for establishing and managing SSL/TLS connections
+ * \defgroup libwget-ssl SSL/TLS engine
+ *
+ * @{
+ */
+
 typedef struct
 {
 	const char
@@ -155,6 +163,64 @@ static gnutls_certificate_credentials_t
 static gnutls_priority_t
 	_priority_cache;
 
+/**
+ * \param[in] key An identifier for the config parameter (starting with `WGET_SSL_`) to set
+ * \param[in] value The value for the config parameter (a NULL-terminated string)
+ *
+ * Set a configuration parameter, as a string.
+ *
+ * The following parameters accept a string as their value (\p key can have any of those values):
+ *
+ *  - WGET_SSL_SECURE_PROTOCOL:
+ *  - WGET_SSL DIRECT_OPTIONS:
+ *  - WGET_SSL_CA_DIRECTORY: A path to the directory where the root certificates will be taken from
+ *  for server cert validation. Every file of that directory is expected to contain an X.509 certificate,
+ *  encoded in PEM format. If the string "system" is specified, the system's default directory will be used.
+ *  The default value is "system". Certificates get loaded in wget_ssl_init().
+ *  - WGET_SSL_CA_FILE: A path to a file containing a single root certificate. This will be used to validate
+ *  the server's certificate chain. This option can be used together with `WGET_SSL_CA_DIRECTORY`. The certificate
+ *  can be in either PEM or DER format. The format is specified in the `WGET_SSL_CA_TYPE` option (see
+ *  wget_ssl_set_config_int()).
+ *  - WGET_SSL_CERT_FILE: Set the client certificate. It will be used for client authentication if the server requests it.
+ *  It can be in either PEM or DER format. The format is specified in the `WGET_SSL_CERT_TYPE` option (see
+ *  wget_ssl_set_config_int()). The `WGET_SSL_KEY_FILE` option specifies the private key corresponding to the cert's
+ *  public key. If `WGET_SSL_KEY_FILE` is not set, then the private key is expected to be in the same file as the certificate.
+ *  - WGET_SSL_KEY_FILE: Set the private key corresponding to the client certificate specified in `WGET_SSL_CERT_FILE`.
+ *  It can be in either PEM or DER format. The format is specified in the `WGET_SSL_KEY_TYPE` option (see
+ *  wget_ssl_set_config_int()). IF `WGET_SSL_CERT_FILE` is not set, then the certificate is expected to be in the same file
+ *  as the private key.
+ *  - WGET_SSL_CRL_FILE: Sets a CRL (Certificate Revocation List) file which will be used to verify client and server certificates.
+ *  A CRL file is a black list that contains the serial numbers of the certificates that should not be treated as valid. Whenever
+ *  a client or a server presents a certificate in the TLS handshake whose serial number is contained in the CRL, the handshake
+ *  will be immediately aborted. The CRL file must be in PEM format.
+ *  - WGET_SSL_OCSP_SERVER: Set the URL of the OCSP server that will be used to validate certificates.
+ *  OCSP is a protocol by which a server is queried to tell whether a given certificate is valid or not. It's an approach contrary
+ *  to that used by CRLs. While CRLs are black lists, OCSP takes a white list approach where a certificate can be checked for validity.
+ *  Whenever a client or server presents a certificate in a TLS handshake, the provided URL will be queried (using OCSP) to check whether
+ *  that certifiacte is valid or not. If the server responds the certificate is not valid, the handshake will be immediately aborted.
+ *  - WGET_SSL_OCSP_CACHE: This option does not take a string as an argument, but a pointer to a \ref "wget_ocsp_db_t" wget_ocsp_db_t
+ *  structure. Such a pointer is returned when initializing the OCSP cache with wget_ocsp_db_init(). The cache is used to store
+ *  OCSP responses locally and avoid querying the OCSP server repeteadly for the same certificate.
+ *  - WGET_SSL_SESSION_CACHE: This option takes a pointer to a \ref "wget_tls_session_db_t" wget_tls_session_db_t structure.
+ *  Such a pointer is returned when initializing the TLS session cache with wget_tls_session_db_init().
+ *  This option thus set the handle to the TLS session cache that will be used to store TLS sessions.
+ *  The TLS session cache
+ *  is used to support TLS session resumption. It stores the TLS session parameters derived from a previous TLS handshake
+ *  (most importantly the session identifier and the master secret) so that there's no need to run the handshake again
+ *  the next time we connect to the same host. This is useful as the handshake is an expensive process.
+ *  - WGET_SSL_HPKP_CACHE: Set the HPKP cache to be used to verify known HPKP pinned hosts. This option takes a pointer
+ *  to a \ref "wget_hpkp_db_t" wget_hpkp_db_t structure. Such a pointer is returned when initializing the HPKP cache
+ *  with wget_hpkp_db_init(). HPKP is a HTTP-level protocol that allows the server to "pin" its present and future X.509
+ *  certificate fingerprint, to support rapid certificate change in the event that the higher level root CA
+ *  gets compromised ([RFC 7469](https://tools.ietf.org/html/rfc7469)).
+ *  - WGET_SSL_ALPN: Sets the ALPN string to be sent to the remote host. ALPN is a TLS extension
+ *  ([RFC 7301](https://tools.ietf.org/html/rfc7301))
+ *  that allows both the server and the client to signal which application-layer protocols they support (HTTP/2, QUIC, etc.).
+ *  That information can then be used for the server to ultimately decide which protocol will be used on top of TLS.
+ *
+ *  An invalid value for \p key will not harm the operation of TLS, but will cause
+ *  a complain message to be printed to the error log stream.
+ */
 void wget_ssl_set_config_string(int key, const char *value)
 {
 	switch (key) {
@@ -181,6 +247,37 @@ void wget_ssl_set_config_object(int key, void *value)
 	}
 }
 
+/**
+ * \param[in] key An identifier for the config parameter (starting with `WGET_SSL_`)
+ * \param[in] value The value for the config parameter
+ *
+ * Set a configuration parameter, as an integer.
+ *
+ * These are the parameters that can be set (\p key can have any of these values):
+ *
+ *  - WGET_SSL_CHECK_CERTIFICATE: whether certificates should be verified (1) or not (0)
+ *  - WGET_SSL_CHECK_HOSTNAME: whether or not to check if the certificate's subject field
+ *  matches the peer's hostname. This check is done according to the rules in [RFC 6125](https://tools.ietf.org/html/rfc6125)
+ *  and typically involves checking whether the hostname and the common name (CN) field of the subject match.
+ *  - WGET_SSL_PRINT_INFO: whether or not information should be printed about the established SSL/TLS handshake (negotiated
+ *  ciphersuites, certificates, etc.). The default is no (0).
+ *
+ * The following three options all can take either `WGET_SSL_X509_FMT_PEM` (to specify the PEM format) or `WGET_SSL_X509_FMT_DER`
+ * (for the DER format). The default in for all of them is `WGET_SSL_X509_FMT_PEM`.
+ *
+ *  - WGET_SSL_CA_TYPE: Specifies what's the format of the root CA certificate(s) supplied with either `WGET_SSL_CA_DIRECTORY`
+ *  or `WGET_SSL_CA_FILE`.
+ *  - WGET_SSL_CERT_TYPE: Specifies what's the format of the certificate file supplied with `WGET_SSL_CERT_FILE`. **The certificate
+ *  and the private key supplied must both be of the same format.**
+ *  - WGET_SSL_KEY_TYPE: Specifies what's the format of the private key file supplied with `WGET_SSL_KEY_FILE`. **The private key
+ *  and the certificate supplied must both be of the same format.**
+ *
+ * The following two options control OCSP queries. These don't affect the CRL set with `WGET_SSL_CRL_FILE`, if any.
+ * If both CRLs and OCSP are enabled, both will be used.
+ *
+ *  - WGET_SSL_OCSP: whether or not OCSP should be used. The default is yes (1).
+ *  - WGET_SSL_OCSP_STAPLING: whether or not OCSP stapling should be used. The default is yes (1).
+ */
 void wget_ssl_set_config_int(int key, int value)
 {
 	switch (key) {
@@ -1111,6 +1208,20 @@ static void _set_credentials(gnutls_certificate_credentials_t *credentials)
 	}
 }
 
+/**
+ * Initialize the SSL/TLS engine as a client.
+ *
+ * This function assumes the caller is an SSL client connecting to a server.
+ * The functions wget_ssl_open(), wget_ssl_close() and wget_ssl_deinit() can be called
+ * after this.
+ *
+ * This is where the root certificates get loaded from the folder specified in the
+ * `WGET_SSL_CA_DIRECTORY` parameter. If any of the files in that folder cannot be loaded
+ * for whatever reason, that file will be silently skipped without harm (a message will be
+ * printed to the debug log stream).
+ *
+ * CLRs and private keys and their certificates are also loaded here.
+ */
 void wget_ssl_init(void)
 {
 	wget_thread_mutex_lock(&_mutex);
@@ -1217,9 +1328,15 @@ void wget_ssl_init(void)
 	wget_thread_mutex_unlock(&_mutex);
 }
 
-// ssl_deinit() is thread safe and may be called several times
-// only the last deinit really takes action
-
+/**
+ * Deinitialize the SSL/TLS engine, after it has been initialized
+ * with wget_ssl_init().
+ *
+ * This function unloads everything that was loaded in wget_ssl_init().
+ *
+ * This function is thread-safe and may be called several times. Only the
+ * last deinit really takes action.
+ */
 void wget_ssl_deinit(void)
 {
 	wget_thread_mutex_lock(&_mutex);
@@ -1362,6 +1479,20 @@ static ssize_t _win32_recv(gnutls_transport_ptr_t p, void *buf, size_t size)
 }
 #endif
 
+/**
+ * \param[in] tcp A TCP connection (see wget_tcp_init())
+ * \return `WGET_E_SUCCESS` on success or an error code (`WGET_E_*`) on failure
+ *
+ * Run an SSL/TLS handshake.
+ *
+ * This functions establishes an SSL/TLS tunnel (performs an SSL/TLS handshake)
+ * over an active TCP connection. A pointer to the (internal) SSL/TLS session context
+ * can be found in `tcp->ssl_session` after successful execution of this function. This pointer
+ * has to be passed to wget_ssl_close() to close the SSL/TLS tunnel.
+ *
+ * If the handshake cannot be completed in the specified timeout for the provided TCP connection
+ * this function fails and returns `WGET_E_TIMEOUT`. You can set the timeout with wget_tcp_set_timeout().
+ */
 int wget_ssl_open(wget_tcp_t *tcp)
 {
 	gnutls_session_t session;
@@ -1591,6 +1722,14 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	return ret;
 }
 
+/**
+ * \param[in] session The SSL/TLS session (a pointer to it), which is located at the `ssl_session` field
+ * of the TCP connection (see wget_ssl_open()).
+ *
+ * Close an active SSL/TLS tunnel, which was opened with wget_ssl_open().
+ *
+ * The underlying TCP connection is kept open.
+ */
 void wget_ssl_close(void **session)
 {
 	if (session && *session) {
@@ -1613,6 +1752,27 @@ void wget_ssl_close(void **session)
 	}
 }
 
+/**
+ * \param[in] session An opaque pointer to the SSL/TLS session (obtained with wget_ssl_open() or wget_ssl_server_open())
+ * \param[in] buf Destination buffer where the read data will be placed
+ * \param[in] count Length of the buffer \p buf
+ * \param[in] timeout The amount of time to wait until data becomes available (in milliseconds)
+ * \return The number of bytes read, or a negative value on error.
+ *
+ * Read data from the SSL/TLS tunnel.
+ *
+ * This function will read at most \p count bytes, which will be stored
+ * in the buffer \p buf.
+ *
+ * The \p timeout parameter tells how long to wait until some data becomes
+ * available to read. A \p timeout value of zero causes this function to return
+ * immediately, whereas a negative value will cause it to wait indefinitely.
+ * This function returns the number of bytes read, which may be zero if the timeout elapses
+ * without any data having become available.
+ *
+ * If a rehandshake is needed, this function does it automatically and tries
+ * to read again.
+ */
 ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 {
 #ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
@@ -1686,6 +1846,26 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 #endif
 }
 
+/**
+ * \param[in] session An opaque pointer to the SSL/TLS session (obtained with wget_ssl_open() or wget_ssl_server_open())
+ * \param[in] buf Buffer with the data to be sent
+ * \param[in] count Length of the buffer \p buf
+ * \param[in] timeout The amount of time to wait until data can be sent to the wire (in milliseconds)
+ * \return The number of bytes written, or a negative value on error.
+ *
+ * Send data through the SSL/TLS tunnel.
+ *
+ * This function will write \p count bytes from \p buf.
+ *
+ * The \p timeout parameter tells how long to wait until data can be finally sent
+ * over the SSL/TLS tunnel. A \p timeout value of zero causes this function to return
+ * immediately, whereas a negative value will cause it to wait indefinitely.
+ * This function returns the number of bytes sent, which may be zero if the timeout elapses
+ * before any data could be sent.
+ *
+ * If a rehandshake is needed, this function does it automatically and tries
+ * to write again.
+ */
 ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout)
 {
 	ssize_t nbytes;
@@ -1825,5 +2005,7 @@ void wget_tcp_set_stats_tls(const wget_stats_callback_t fn) { }
 const void *wget_tcp_get_stats_tls(const wget_tls_stats_t type, const void *stats) { return NULL;}
 void wget_tcp_set_stats_ocsp(const wget_stats_callback_t fn) { }
 const void *wget_tcp_get_stats_ocsp(const wget_ocsp_stats_t type, const void *stats) { return NULL;}
+
+/** @} */
 
 #endif // WITH_GNUTLS
