@@ -631,6 +631,9 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 
 	wget_buffer_free(&url_full);
 	wget_buffer_free(&header_range);
+	char server_version[50];
+	sprintf(server_version, "Libmicrohttpd/%08x", (unsigned int) MHD_VERSION);
+	MHD_add_response_header(response, "Server", server_version);
 	MHD_destroy_response(response);
 	return ret;
 }
