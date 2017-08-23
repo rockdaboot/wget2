@@ -42,8 +42,7 @@
 
 void job_free(JOB *job)
 {
-	if (job->challenges_alloc)
-		wget_http_free_challenges(&job->challenges);
+	wget_http_free_challenges(&job->challenges);
 	wget_http_free_challenges(&job->proxy_challenges);
 	wget_metalink_free(&job->metalink);
 	wget_vector_free(&job->parts);
@@ -282,6 +281,5 @@ JOB *job_init(JOB *job, wget_iri_t *iri)
 		memset(job, 0, sizeof(JOB));
 
 	job->iri = iri;
-	job->challenges_alloc = false;
 	return job;
 }

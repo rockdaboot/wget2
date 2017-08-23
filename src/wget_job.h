@@ -63,9 +63,6 @@ struct JOB {
 	wget_vector_t
 		*challenges; // challenges from 401 response
 
-	bool
-		challenges_alloc;
-
 	wget_vector_t
 		*proxy_challenges; // challenges from 407 response (proxy)
 
@@ -85,6 +82,7 @@ struct JOB {
 	int
 		level, // current recursion level
 		redirection_level, // number of redirections occurred to create this job
+		auth_failure_count, // number of times server has returned a 401 response
 		mirror_pos, // where to look up the next (metalink) mirror to use
 		piece_pos; // where to look up the next (metalink) piece to download
 	unsigned char
