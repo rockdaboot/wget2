@@ -1,14 +1,8 @@
 #!/bin/sh -eu
 
-# First step. In the top directory execute:
-# export CC=clang-5.0
-# export CFLAGS="-O1 -fno-omit-frame-pointer -gline-tables-only -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-coverage=trace-pc-guard,trace-cmp"
-# ./configure --enable-static --disable-doc
-# make clean
-# make -j$(nproc) LIB_FUZZING_ENGINE="-lFuzzer"
-# cd fuzz
-# make -j$(nproc) check
+# As a first step see README.md and follow the steps under "Running a fuzzer using clang".
 
+# You might need 'gsutil' to download new corpora from the Google cloud:
 # Read the docs at https://github.com/google/oss-fuzz/blob/master/docs/corpora.md
 # then install 'google-cloud-sdk' and execute 'gcloud init'.
 # Now 'gsutil' should be ready to use.
