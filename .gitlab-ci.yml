@@ -37,12 +37,13 @@ Debian GNU/Linux build:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - ./bootstrap && touch .manywarnings
-    - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan -C
+    - CC=clang ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan -C
     - make -j$(nproc) check
     - make -j$(nproc) clean
-    - ./configure -C --enable-fsanitize-msan
-    - make -j$(nproc) check
-    - make -j$(nproc) distcheck
+# memory sanitizer only makes sense when all dependencies are also compiled with it
+#    - CC=clang ./configure -C --enable-fsanitize-msan
+#    - make -j$(nproc) check
+#    - make -j$(nproc) distcheck
   tags:
     - shared
   artifacts:

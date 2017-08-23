@@ -245,7 +245,9 @@ if test "$gl_cc_sanitize_msan" = yes; then
   gl_WARN_ADD([-fsanitize-memory-track-origins])
 
   # gcc options
-  gl_WARN_ADD([-fsanitize=leak])
+  if test "$CCNAME" = "gcc"; then
+    gl_WARN_ADD([-fsanitize=leak])
+  fi
 
   gl_WARN_ADD([-fno-omit-frame-pointer])
   gl_WARN_ADD([-fPIE])
