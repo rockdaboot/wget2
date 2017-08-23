@@ -18,7 +18,7 @@ rm -f wget.data wget2.data curl.data
 for ((nreq=MINX;nreq<=MAXX;nreq++)); do
   urls=""
   for ((i=1;i<=nreq;i++)); do
-    urls="$urls https://www.google.com/a${i}.html"
+    urls="$urls https://example.com/a${i}.html"
   done
 
   # warmup run (e.g. caching OCSP responses)
@@ -63,7 +63,7 @@ cat <<EOF | gnuplot
 
   set title "${title}\n\
  Debian Sid amd64, Intel i3-2100 at 3.10GHz\n\
- 50MBit/s DSL, RTT 35ms to www.google.com\n\
+ 2MBit/s DSL, RTT 56ms to example.com\n\
  wget ${wget_version} options: ${wget_options}\n\
  wget2 ${wget2_version} options: ${wget2_options}\n\
  curl ${curl_version} options: ${curl_options}"
