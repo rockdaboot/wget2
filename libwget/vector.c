@@ -69,6 +69,12 @@ wget_vector_t *wget_vector_create(int max, int off, wget_vector_compare_t cmp)
 	return v;
 }
 
+void wget_vector_deinit(wget_vector_t *v)
+{
+	if(v)
+		wget_xfree(v->entry);
+}
+
 static int G_GNUC_WGET_NONNULL((2)) _vec_insert_private(wget_vector_t *v, const void *elem, size_t size, int pos, int replace, int alloc)
 {
 	void *elemp;

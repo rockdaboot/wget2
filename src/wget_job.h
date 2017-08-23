@@ -54,7 +54,8 @@ struct JOB {
 	wget_iri_t
 		*iri,
 		*original_url,
-		*referer;
+		*referer,
+		*cloned_robot_iri;
 
 	// Metalink information
 	wget_metalink_t
@@ -93,7 +94,8 @@ struct JOB {
 		robotstxt : 1, // URL is a robots.txt to be scanned
 		head_first : 1, // first check mime type by using a HEAD request
 		requested_by_user : 1, // download even if disallowed by robots.txt
-		ignore_patterns : 1; // Ignore accept/reject patterns
+		ignore_patterns : 1, // Ignore accept/reject patterns
+		previous_robot_job : 1;
 };
 
 struct DOWNLOADER {

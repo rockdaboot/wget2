@@ -123,6 +123,9 @@ static unsigned int _host_docs_hash(const HOST_DOCS *host_docsp)
 	return hash;
 }
 
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int _tree_docs_hash(const TREE_DOCS *tree_docsp)
 {
 	unsigned int h = tree_docsp->iri->port; // use port as SALT if hash table attacks doesn't matter
@@ -149,6 +152,7 @@ static void _free_host_entry(HOST *host)
 		host_queue_free(host);
 		wget_robots_free(&host->robots);
 		wget_hashmap_free(&host->host_docs);
+		wget_hashmap_free(&host->tree_docs);
 		wget_xfree(host);
 	}
 }
@@ -170,9 +174,8 @@ static void _free_docs_entry(DOC *doc)
 static void _free_tree_docs_entry(TREE_DOCS *tree_docsp)
 {
 	if (tree_docsp) {
-		if (tree_docsp->robot_iri)
-			wget_iri_free(&(tree_docsp->iri));
-		wget_vector_free(&tree_docsp->children);
+		wget_vector_deinit(tree_docsp->children);
+		wget_xfree(tree_docsp->children);
 		wget_xfree(tree_docsp);
 	}
 }
@@ -180,7 +183,7 @@ static void _free_tree_docs_entry(TREE_DOCS *tree_docsp)
 HOST *host_add(wget_iri_t *iri)
 {
 	wget_thread_mutex_lock(&hosts_mutex);
-
+//printf("****host_add: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
 	if (!hosts) {
 		hosts = wget_hashmap_create(16, (wget_hashmap_hash_t)_host_hash, (wget_hashmap_compare_t)_host_compare);
 		wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor_t)_free_host_entry);
@@ -192,6 +195,7 @@ HOST *host_add(wget_iri_t *iri)
 		// info_printf("Add to hosts: %s\n", hostname);
 		hostp = wget_memdup(&host, sizeof(host));
 		wget_hashmap_put_noalloc(hosts, hostp, hostp);
+//printf("****host_add: %s://%s:%hu\n", hostp->scheme, hostp->host, hostp->port);
 	}
 
 	wget_thread_mutex_unlock(&hosts_mutex);
@@ -243,49 +247,73 @@ HOST_DOCS *host_docs_add(wget_iri_t *iri, wget_http_response_t *resp, bool robot
 	return host_docsp;
 }
 
-TREE_DOCS *tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool robot_iri_parent, bool robot_iri_child)
+TREE_DOCS *tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool robot_iri, bool redirect)
 {
-	HOST *hostp;
+	HOST *hostp = NULL;
 	wget_hashmap_t *tree_docs;
-	TREE_DOCS *tree_docsp = NULL;
-	wget_vector_t *children;
+	TREE_DOCS *parent_node, *child_node = NULL;
+	wget_vector_t *children = NULL;
 
 	wget_thread_mutex_lock(&tree_docs_mutex);
 
-	if ((hostp = host_get(parent_iri))) {
-		if (!(tree_docs = hostp->tree_docs)) {
-			tree_docs = wget_hashmap_create(16, (wget_hashmap_hash_t)_tree_docs_hash, (wget_hashmap_compare_t)_tree_docs_compare);
-			wget_hashmap_set_key_destructor(tree_docs, (wget_hashmap_key_destructor_t)_free_tree_docs_entry);
-			hostp->tree_docs = tree_docs;
+	if (!parent_iri || (hostp = host_get(parent_iri))) {
+
+		if (parent_iri) {
+			if (!(tree_docs = hostp->tree_docs))
+				error_printf("No existing tree_docs hashmap in %s://%s\n", hostp->scheme, hostp->host);
+
+			if (!(parent_node = tree_docs_get(tree_docs, parent_iri)))
+				error_printf("No existing entry for %s in tree_docs hashmap\n", parent_iri->uri);
+
+			if (!(children = parent_node->children)) {
+				children = wget_vector_create(8, -2, NULL);
+				parent_node->children = children;
+			}
 		}
 
-		if (!(tree_docsp = tree_docs_get(tree_docs, parent_iri))) {
-			tree_docsp = wget_malloc(sizeof(TREE_DOCS));
-			tree_docsp->iri = parent_iri;
-			tree_docsp->robot_iri = robot_iri_parent;
-			tree_docsp->children = NULL;
-			wget_hashmap_put_noalloc(tree_docs, tree_docsp, tree_docsp);
-		}
+		if ((hostp = host_get(iri))) {
 
-		if (!(children = tree_docsp->children)) {
-			children = wget_vector_create(8, -2, NULL);
-			tree_docsp->children = children;
-		}
+			if (!(tree_docs = hostp->tree_docs)) {
+				tree_docs = wget_hashmap_create(16, (wget_hashmap_hash_t)_tree_docs_hash, (wget_hashmap_compare_t)_tree_docs_compare);
+				wget_hashmap_set_key_destructor(tree_docs, (wget_hashmap_key_destructor_t)_free_tree_docs_entry);
+				hostp->tree_docs = tree_docs;
+			}
 
-		if (!(tree_docsp = tree_docs_get(tree_docs, iri))) {
-			tree_docsp = wget_malloc(sizeof(TREE_DOCS));
-			tree_docsp->iri = iri;
-			tree_docsp->robot_iri = robot_iri_child;
-			tree_docsp->children = NULL;
-			wget_hashmap_put_noalloc(tree_docs, tree_docsp, tree_docsp);
-		}
+			if (!(child_node = tree_docs_get(tree_docs, iri))) {
+				child_node = wget_malloc(sizeof(TREE_DOCS));
+				child_node->iri = iri;
+				child_node->children = NULL;
+				child_node->redirect = redirect;
+				wget_hashmap_put_noalloc(tree_docs, child_node, child_node);
+			} else
+				error_printf("Existing entry for iri->uri = %s in tree_docs hashmap of host %s://%s\n", iri->uri, hostp->scheme, hostp->host);
 
-		wget_vector_add_noalloc(children, tree_docsp);
-	}
+			if (parent_iri)
+				wget_vector_add_noalloc(children, child_node);
+			else {
+				if (robot_iri)
+					hostp->robot = child_node;
+				else {
+					hostp->root = child_node;
+					if (hostp->robot) {
+						if (!(children = hostp->root->children)) {
+							children = wget_vector_create(8, -2, NULL);
+							hostp->root->children = children;
+						}
+						wget_vector_add_noalloc(children, hostp->robot);
+					}
+				}
+			}
+
+		} else
+			error_printf("No existing host entry for iri->uri = %s\n", iri->uri);
+
+	} else
+		error_printf("No existing host entry for parent_iri->uri = %s\n", parent_iri->uri);
 
 	wget_thread_mutex_unlock(&tree_docs_mutex);
 
-	return tree_docsp;
+	return child_node;
 }
 
 HOST_DOCS *host_docs_get(wget_hashmap_t *host_docs, int status)
@@ -707,9 +735,8 @@ static int host_docs_hashmap(struct site_stats *ctx, HOST_DOCS *host_docsp)
 
 static int hosts_hashmap(struct site_stats *ctx, HOST *host)
 {
-	if (host->host_docs)
-	{
-		wget_buffer_printf_append(ctx->buf, "\n  %s:\n", host->host);
+	if (host->host_docs) {
+		wget_buffer_printf_append(ctx->buf, "\n  %s://%s:\n", host->scheme, host->host);
 		wget_buffer_printf_append(ctx->buf, "  %8s  %13s\n", "Status", "No. of docs");
 
 		wget_hashmap_browse(host->host_docs, (wget_hashmap_browse_t)host_docs_hashmap, ctx);
@@ -718,13 +745,59 @@ static int hosts_hashmap(struct site_stats *ctx, HOST *host)
 	return 0;
 }
 
+static int print_treeish(struct site_stats *ctx, TREE_DOCS *node)
+{
+	static int level = 0;
+
+	if (node) {
+		if (level) {
+			for (int i = 0; i < level - 1; i++)
+				wget_buffer_printf_append(ctx->buf, "|   ");
+			if (node->redirect)
+				wget_buffer_printf_append(ctx->buf, ":..");
+			else
+				wget_buffer_printf_append(ctx->buf, "|--");
+		}
+
+		wget_buffer_printf_append(ctx->buf, "%s\n", node->iri->uri);
+
+		if (ctx->buf->length > 64*1024) {
+			fprintf(ctx->fp, "%s", ctx->buf->data);
+			wget_buffer_reset(ctx->buf);
+		}
+
+		if (node->children) {
+			level++;
+			wget_vector_browse(node->children, (wget_vector_browse_t) print_treeish, ctx);
+		}
+	}
+
+	return 0;
+}
+
+static int hosts_hashmap_tree(struct site_stats *ctx, HOST *host)
+{
+	if (host->tree_docs && host->root) {
+		wget_buffer_printf_append(ctx->buf, "\n  %s://%s:\n", host->scheme, host->host);
+		print_treeish(ctx, host->root);
+	}
+
+	return 0;
+}
+
 void print_site_stats(wget_buffer_t *buf, FILE *fp)
 {
 	struct site_stats ctx = { .buf = buf, .fp = fp };
-	wget_thread_mutex_lock(&hosts_mutex);
 
+	wget_thread_mutex_lock(&hosts_mutex);
 	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap, &ctx);
 	fprintf(fp, "%s", buf->data);
+//	wget_thread_mutex_unlock(&hosts_mutex);
 
+	wget_buffer_reset(ctx.buf);
+
+//	wget_thread_mutex_lock(&hosts_mutex);
+	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap_tree, &ctx);
+	fprintf(fp, "%s", buf->data);
 	wget_thread_mutex_unlock(&hosts_mutex);
 }

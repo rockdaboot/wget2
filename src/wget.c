@@ -574,11 +574,13 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	// Allow plugins to intercept URL
 	plugin_db_forward_url(iri, &plugin_verdict);
+
 	if (plugin_verdict.reject) {
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		wget_iri_free(&iri);
 		return;
 	}
+
 	if (plugin_verdict.alt_iri) {
 		wget_iri_free(&iri);
 		iri = plugin_verdict.alt_iri;
@@ -612,13 +614,12 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		// only download content from given hosts
 		const char *reason = NULL;
 
-		if (!iri->host) {
+		if (!iri->host)
 			reason = _("missing ip/host/domain");
-		} else if (!config.span_hosts && config.domains && !in_host_pattern_list(config.domains, iri->host)) {
+		else if (!config.span_hosts && config.domains && !in_host_pattern_list(config.domains, iri->host))
 			reason = _("no host-spanning requested");
-		} else if (config.span_hosts && config.exclude_domains && in_host_pattern_list(config.exclude_domains, iri->host)) {
+		else if (config.span_hosts && config.exclude_domains && in_host_pattern_list(config.exclude_domains, iri->host))
 			reason = _("domain explicitly excluded");
-		}
 
 		if (reason) {
 			wget_thread_mutex_unlock(&downloader_mutex);
@@ -652,7 +653,24 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			return;
 		}
 	}
+/*
+printf("*********************************************************************\n");
+if (iri)
+	printf("add_url:iri->uri = %s\n", iri->uri);
+else
+	printf("add_url:iri is NULL!\n");
 
+if (job->referer)
+	printf("add_url:job->referer->uri = %s\n", job->referer->uri);
+else
+	printf("add_url:job->referer is NULL!\n");
+
+if (job->original_url)
+	printf("add_url:job->original_url->uri = %s\n", job->original_url->uri);
+else
+	printf("add_url:job->original_url is NULL!\n");
+printf("*********************************************************************\n");
+*/
 	if ((host = host_add(iri))) {
 		// a new host entry has been created
 		if (config.recursive && config.robots) {
@@ -699,10 +717,13 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			new_job->redirection_level = job->redirection_level + 1;
 			new_job->referer = job->referer;
 			new_job->original_url = job->iri;
+			if (job == job->host->robot_job) {
+				new_job->previous_robot_job = 1;
+				new_job->cloned_robot_iri = job->cloned_robot_iri;
+			}
 		} else {
 			new_job->level = job->level + 1;
 			new_job->referer = job->iri;
-			job->iri = NULL;
 		}
 	}
 
@@ -1243,10 +1264,11 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 	return rc;
 }
 
-static void add_statistics(wget_iri_t *iri, wget_http_response_t *resp)
+static void add_statistics(wget_http_response_t *resp)
 {
 	// do some statistics
 	JOB *job = resp->req->user_data;
+	wget_iri_t *iri = job->iri, *parent_iri;
 	bool robot_iri = false;
 
 	if (resp->code == 200) {
@@ -1264,9 +1286,43 @@ static void add_statistics(wget_iri_t *iri, wget_http_response_t *resp)
 	if (job == job->host->robot_job) {
 		iri = wget_iri_clone(iri);
 		robot_iri = true;
+		job->cloned_robot_iri = iri;
 	}
 
 	host_docs_add(iri, resp, robot_iri);
+	parent_iri = job->redirection_level ?
+			(job->previous_robot_job ? job->cloned_robot_iri : job->original_url) : job->referer;
+	tree_docs_add(parent_iri, iri, robot_iri, (bool)job->redirection_level);
+
+/*	printf("*****************************add_stats****************************************\n");
+	if (iri)
+		printf("add_url:iri->uri = %s\n", iri->uri);
+	else
+		printf("add_url:iri is NULL!\n");
+
+	if (job->referer)
+		printf("add_url:job->referer->uri = %s\n", job->referer->uri);
+	else
+		printf("add_url:job->referer is NULL!\n");
+
+//	if (job->original_url)
+//		printf("add_url:job->original_url->uri = %s\n", job->original_url->uri);
+//	else
+//		printf("add_url:job->original_url is NULL!\n");
+
+	printf("add_url:job->redirection_level = %d: %s\n", job->redirection_level, job->redirection_level ? "job->original_url": "job->referer");
+
+	if (parent_iri)
+		printf("add_url:parent_iri->uri = %s\n", parent_iri->uri);
+	else
+		printf("add_url:parent_iri is NULL!\n");
+
+	if (robot_iri)
+		printf("robot iri\n");
+	else
+		printf("NOT robot iri!\n");
+	printf("*********************************************************************\n");
+*/
 }
 
 static int process_response_header(wget_http_response_t *resp)
@@ -1295,7 +1351,7 @@ static int process_response_header(wget_http_response_t *resp)
 		wget_http_close(&downloader->conn);
 
 	// do some statistics
-	add_statistics(iri, resp);
+	add_statistics(resp);
 
 	wget_cookie_normalize_cookies(job->iri, resp->cookies); // sanitize cookies
 	wget_cookie_store_cookies(config.cookie_db, resp->cookies); // store cookies
@@ -1958,7 +2014,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 	wget_buffer_t buf;
 	char sbuf[1024];
 	int convert_links = config.convert_links && !config.delete_after;
-	int page_requisites = config.recursive && config.page_requisites && config.level && level < config.level;
+	bool page_requisites = config.recursive && config.page_requisites && config.level && level < config.level;
 
 	//	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
 
@@ -1990,9 +2046,8 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 			// adjust behind BOM
 			html += 3;
 			html_len -= 3;
-		} else {
+		} else
 			reason = _("set by server response");
-		}
 	}
 
 	if (!wget_strncasecmp_ascii(encoding, "UTF-16", 6)) {
@@ -2066,8 +2121,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 			if ((c_tolower(*html_url->dir) == 'a'
 				&& (html_url->dir[1] == 0 || !wget_strcasecmp_ascii(html_url->dir,"area")))
 				|| !html_url->link_inline
-				|| !wget_strcasecmp_ascii(html_url->dir,"embed"))
-			{
+				|| !wget_strcasecmp_ascii(html_url->dir,"embed")) {
 				info_printf(_("URL '%.*s' not followed (page requisites + level)\n"), (int)url->len, url->p);
 				continue;
 			}
