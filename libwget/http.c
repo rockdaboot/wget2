@@ -549,6 +549,9 @@ static int _host_compare(const HOST *host1, const HOST *host2)
 	return wget_strcmp(host1->scheme, host2->scheme);
 }
 
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int _host_hash(const HOST *host)
 {
 	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
