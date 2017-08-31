@@ -1305,28 +1305,28 @@ static int process_response_header(wget_http_response_t *resp)
 	if (resp->code == 401) { // Unauthorized
 		job->auth_failure_count++;
 
-		if (job->auth_failure_count > 1)
-			return 0; // we already tried with credentials, they seem to be wrong. Don't try again.
-
-		if (!resp->challenges)
-			return 1; // no challenges offered, stop further processing
+		if (job->auth_failure_count > 1 || !resp->challenges) {
+			// We already tried with credentials and they are wrong OR
+			// The server sent no challenge. Don't try again.
+			set_exit_status(6);
+			return 1;
+		}
 
 		job->challenges = resp->challenges;
-
 		resp->challenges = NULL;
 		job->inuse = 0; // try again, but with challenge responses
 		return 1; // stop further processing
 	}
 
 	if (resp->code == 407) { // Proxy Authentication Required
-		if (job->proxy_challenges)
-			return 0; // we already tried with credentials, they seem to be wrong. Don't try again.
+		if (job->proxy_challenges || !resp->challenges) {
+			// We already tried with credentials and they are wrong OR
+			// The proxy server sent no challenge. Don't try again.
+			set_exit_status(6);
+			return 1;
+		}
 
-		// wget_http_free_challenges(&job->proxy_challenges);
-
-		if (!(job->proxy_challenges = resp->challenges))
-			return 1; // no challenges offered, stop further processing
-
+		job->proxy_challenges = resp->challenges;
 		resp->challenges = NULL;
 		job->inuse = 0; // try again, but with challenge responses
 		return 1; // stop further processing
