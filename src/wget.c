@@ -131,15 +131,16 @@ static void
 static long long
 	quota;
 static int
-	exit_status,
 	hsts_changed,
 	hpkp_changed;
+static unsigned int
+	exit_status;
 static volatile int
 	terminate;
 int
 	nthreads;
 
-void set_exit_status(int status)
+void set_exit_status(exit_status_t status)
 {
 	// use Wget exit status scheme:
 	// - error code 0 is default
@@ -908,7 +909,7 @@ int main(int argc, const char **argv)
 
 	n = init(argc, argv);
 	if (n < 0) {
-		set_exit_status(1);
+		set_exit_status(WG_EXIT_STATUS_PARSE_INIT);
 		goto out;
 	}
 
@@ -1191,7 +1192,7 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 			mirror_index = downloader->id % mirror_count;
 		else {
 			host_final_failure(downloader->job->host);
-			set_exit_status(1);
+			set_exit_status(WG_EXIT_STATUS_NETWORK);
 			return rc;
 		}
 
@@ -1224,7 +1225,7 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 		// TLS  failure
 		wget_http_close(&downloader->conn);
 		host_final_failure(downloader->job->host);
-		set_exit_status(5);
+		set_exit_status(WG_EXIT_STATUS_TLS);
 	}
 
 	return rc;
@@ -1263,9 +1264,9 @@ static int process_response_header(wget_http_response_t *resp)
 	// Wget1.x compatibility
 	if (resp->code/100 == 4 && resp->code!=416) {
 		if (job->head_first)
-			set_exit_status(8);
+			set_exit_status(WG_EXIT_STATUS_REMOTE);
 		else if (resp->code == 404 && !job->robotstxt)
-			set_exit_status(8);
+			set_exit_status(WG_EXIT_STATUS_REMOTE);
 	}
 
 	// Server doesn't support keep-alive or want us to close the connection.
@@ -1308,7 +1309,7 @@ static int process_response_header(wget_http_response_t *resp)
 		if (job->auth_failure_count > 1 || !resp->challenges) {
 			// We already tried with credentials and they are wrong OR
 			// The server sent no challenge. Don't try again.
-			set_exit_status(6);
+			set_exit_status(WG_EXIT_STATUS_AUTH);
 			return 1;
 		}
 
@@ -1322,7 +1323,7 @@ static int process_response_header(wget_http_response_t *resp)
 		if (job->proxy_challenges || !resp->challenges) {
 			// We already tried with credentials and they are wrong OR
 			// The proxy server sent no challenge. Don't try again.
-			set_exit_status(6);
+			set_exit_status(WG_EXIT_STATUS_AUTH);
 			return 1;
 		}
 
@@ -2501,7 +2502,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 				size_t rc = safe_write(1, resp->header->data, resp->header->length);
 				if (rc == SAFE_WRITE_ERROR) {
 					error_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
-					set_exit_status(3);
+					set_exit_status(WG_EXIT_STATUS_IO);
 				}
 			}
 
@@ -2620,13 +2621,13 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 				if (rc == SAFE_READ_ERROR || (long long) rc != size) {
 					error_printf(_("Failed to load partial content from '%s' (errno=%d): %s\n"),
 							fname, errno, strerror(errno));
-					set_exit_status(3);
+					set_exit_status(WG_EXIT_STATUS_IO);
 				}
 				close(fd);
 			} else {
 				error_printf(_("Failed to load partial content from '%s' (errno=%d): %s\n"),
 						fname, errno, strerror(errno));
-				set_exit_status(3);
+				set_exit_status(WG_EXIT_STATUS_IO);
 			}
 		}
 	}
@@ -2643,7 +2644,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		if (config.save_headers) {
 			if ((rc = write(fd, resp->header->data, resp->header->length)) != (ssize_t)resp->header->length) {
 				error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), unique[0] ? unique : fname, rc, errno);
-				set_exit_status(3);
+				set_exit_status(WG_EXIT_STATUS_IO);
 			}
 		}
 	} else {
@@ -2654,7 +2655,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 				info_printf(_("Directory / file name clash - not saving '%s'\n"), fname);
 			else {
 				error_printf(_("Failed to open '%s' (errno=%d): %s\n"), fname, errno, strerror(errno));
-				set_exit_status(3);
+				set_exit_status(WG_EXIT_STATUS_IO);
 			}
 		}
 	}
@@ -2667,7 +2668,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 			fclose(fp);
 		} else {
 			error_printf(_("Failed to save extended attribute %s\n"), fname);
-			set_exit_status(3);
+			set_exit_status(WG_EXIT_STATUS_IO);
 		}
 	}
 
@@ -2707,13 +2708,13 @@ static int _get_header(wget_http_response_t *resp, void *context)
 		name = ctx->job->metalink->name;
 		ctx->outfd = open(ctx->job->metalink->name, O_WRONLY | O_CREAT | O_NONBLOCK | O_BINARY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 		if (ctx->outfd == -1) {
-			set_exit_status(3);
+			set_exit_status(WG_EXIT_STATUS_IO);
 			ret = -1;
 			goto out;
 		}
 		if (lseek(ctx->outfd, part->position, SEEK_SET) == (off_t) -1) {
 			close(ctx->outfd);
-			set_exit_status(3);
+			set_exit_status(WG_EXIT_STATUS_IO);
 			ret = -1;
 			goto out;
 		}
@@ -2784,7 +2785,7 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 		if (written == SAFE_WRITE_ERROR) {
 			if (!terminate)
 				error_printf(_("Failed to write errno=%d\n"), errno);
-			set_exit_status(3);
+			set_exit_status(WG_EXIT_STATUS_IO);
 			return -1;
 		}
 	}
@@ -3094,7 +3095,7 @@ wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
 		if (config.fsync_policy) {
 			if (fsync(context->outfd) < 0 && errno == EIO) {
 				error_printf(_("Failed to fsync errno=%d\n"), errno);
-				set_exit_status(3);
+				set_exit_status(WG_EXIT_STATUS_IO);
 			}
 		}
 
