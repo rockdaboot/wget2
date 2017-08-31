@@ -1347,25 +1347,8 @@ static int process_response_header(wget_http_response_t *resp)
 
 		wget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
 
-//			if (!part) {
 		add_url(job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION);
 		wget_buffer_deinit(&uri_buf);
-//			break;
-//			} else {
-				// directly follow when using metalink
-/*				if (iri != dont_free)
-					wget_iri_free(&iri);
-				iri = wget_iri_parse(uri_buf.data, NULL);
-				wget_buffer_deinit(&uri_buf);
-
-				// apply the HSTS check to the location URL
-				if (config.hsts && iri && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, atoi(iri->resolv_port))) {
-					info_printf("HSTS in effect for %s:%s\n", iri->host, iri->resolv_port);
-					iri_scheme = wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
-				} else
-					iri_scheme = NULL;
-			}
-*/
 	}
 
 	return 0;
