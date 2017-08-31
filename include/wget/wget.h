@@ -1596,6 +1596,8 @@ typedef struct {
 		method[8]; // we just need HEAD, GET and POST
 	unsigned char
 		response_keepheader : 1;
+	bool
+		debug_skip_body;
 } wget_http_request_t;
 
 // just parse the header lines that we need
