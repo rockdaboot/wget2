@@ -462,20 +462,6 @@ static void stats_print_human(wget_stats_type_t type)
 
 			print_site_stats(buf, fp);
 
-/*			for (int it = 0; it < wget_vector_size(ocsp_stats_v); it++) {
-				const ocsp_stats_t *ocsp_stats = wget_vector_get(ocsp_stats_v, it);
-
-				wget_buffer_printf_append(buf, "  %s:\n", ocsp_stats->hostname);
-				wget_buffer_printf_append(buf, "    VALID          : %d\n", ocsp_stats->nvalid);
-				wget_buffer_printf_append(buf, "    REVOKED        : %d\n", ocsp_stats->nrevoked);
-				wget_buffer_printf_append(buf, "    IGNORED        : %d\n\n", ocsp_stats->nignored);
-
-				if ((buf->length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
-				}
-			}
-*/
 			if (fp != stdout) {
 				fclose(fp);
 				info_printf("Site stats saved in %s\n", filename);

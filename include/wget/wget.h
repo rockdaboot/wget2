@@ -809,12 +809,12 @@ typedef int (*wget_decompressor_sink_t)(void *context, const char *data, size_t 
 typedef int (*wget_decompressor_error_handler_t)(wget_decompressor_t *dc, int err);
 
 enum {
-	wget_content_encoding_identity,
-	wget_content_encoding_gzip,
-	wget_content_encoding_deflate,
-	wget_content_encoding_lzma,
-	wget_content_encoding_bzip2,
-	wget_content_encoding_brotli,
+	wget_content_encoding_identity = 0,
+	wget_content_encoding_gzip = 1,
+	wget_content_encoding_deflate = 2,
+	wget_content_encoding_lzma = 3,
+	wget_content_encoding_bzip2 = 4,
+	wget_content_encoding_brotli = 5
 };
 
 WGETAPI wget_decompressor_t *
