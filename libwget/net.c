@@ -144,6 +144,7 @@ typedef struct
 	const char
 		*hostname,
 		*ip;
+	uint16_t port;
 	long long dns_secs;	// milliseconds
 } _stats_data_t;
 
@@ -385,6 +386,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 		long long after_millisecs = wget_get_timemillis();
 		stats.dns_secs = after_millisecs - before_millisecs;
 		stats.hostname = host;
+		stats.port = port;
 	}
 
 	if (rc) {
@@ -664,6 +666,8 @@ const void *wget_tcp_get_stats_dns(const wget_dns_stats_t type, const void *_sta
 		return stats->hostname;
 	case WGET_STATS_DNS_IP:
 		return stats->ip;
+	case WGET_STATS_DNS_PORT:
+		return &(stats->port);
 	case WGET_STATS_DNS_SECS:
 		return &(stats->dns_secs);
 	default:

@@ -47,7 +47,7 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 {
 	switch(type) {
 	case WGET_STATS_TYPE_DNS: {
-		dns_stats_t dns_stats = { .millisecs = -1 };
+		dns_stats_t dns_stats = { .millisecs = -1, .port = -1 };
 
 		if (wget_tcp_get_stats_dns(WGET_STATS_DNS_HOST, stats))
 			dns_stats.host = wget_strdup(wget_tcp_get_stats_dns(WGET_STATS_DNS_HOST, stats));
@@ -58,6 +58,9 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 			dns_stats.ip = wget_strdup(wget_tcp_get_stats_dns(WGET_STATS_DNS_IP, stats));
 		else
 			dns_stats.ip = wget_strdup("-");
+
+		if (wget_tcp_get_stats_dns(WGET_STATS_DNS_PORT, stats))
+			dns_stats.port = *((uint16_t *)wget_tcp_get_stats_dns(WGET_STATS_DNS_PORT, stats));
 
 		if (wget_tcp_get_stats_dns(WGET_STATS_DNS_SECS, stats))
 			dns_stats.millisecs = *((long long *)wget_tcp_get_stats_dns(WGET_STATS_DNS_SECS, stats));
@@ -305,7 +308,7 @@ static void stats_print_human(wget_stats_type_t type)
 			for (int it = 0; it < wget_vector_size(dns_stats_v); it++) {
 				const dns_stats_t *dns_stats = wget_vector_get(dns_stats_v, it);
 
-				wget_buffer_printf_append(buf, "  %4lld %s (%s)\n", dns_stats->millisecs, dns_stats->host, dns_stats->ip);
+				wget_buffer_printf_append(buf, "  %4lld %s:%hu (%s)\n", dns_stats->millisecs, dns_stats->host, dns_stats->port, dns_stats->ip);
 
 				if ((buf->length > 64*1024) || (it == wget_vector_size(dns_stats_v) - 1)) {
 					fprintf(fp, "%s", buf->data);
@@ -510,6 +513,7 @@ static void stats_print_json(wget_stats_type_t type)
 				wget_buffer_printf_append(buf, "\t{\n");
 				wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", dns_stats->host);
 				wget_buffer_printf_append(buf, "\t\t\"IP\" : \"%s\",\n", dns_stats->ip);
+				wget_buffer_printf_append(buf, "\t\t\"Port\" : %hu\n", dns_stats->port);
 				wget_buffer_printf_append(buf, "\t\t\"DNS resolution duration (ms)\" : %lld\n", dns_stats->millisecs);
 				wget_buffer_printf_append(buf, it < wget_vector_size(dns_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
 
@@ -677,13 +681,13 @@ static void stats_print_csv(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			const char *header = "Hostname,IP,DNS resolution duration (ms)";
+			const char *header = "Hostname,IP,Port,DNS resolution duration (ms)";
 			fprintf(fp, "%s\n", header);
 
 			for (int it = 0; it < wget_vector_size(dns_stats_v); it++) {
 				const dns_stats_t *dns_stats = wget_vector_get(dns_stats_v, it);
 
-				wget_buffer_printf(buf, "%s,%s,%lld\n", dns_stats->host, dns_stats->ip, dns_stats->millisecs);
+				wget_buffer_printf(buf, "%s,%s,%hu,%lld\n", dns_stats->host, dns_stats->ip, dns_stats->port, dns_stats->millisecs);
 				fprintf(fp, "%s", buf->data);
 			}
 

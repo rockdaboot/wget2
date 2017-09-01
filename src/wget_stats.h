@@ -28,6 +28,7 @@ typedef struct {
 	const char
 		*host,
 		*ip;
+	uint16_t port;
 	long long
 		millisecs;
 } dns_stats_t;
