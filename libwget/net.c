@@ -1366,7 +1366,7 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 				&& errno != ENOTCONN
 				&& errno != EINPROGRESS
 			) {
-				error_printf(_("Failed to write %zu bytes (%d)\n"), count, errno);
+				error_printf(_("Failed to write %zu bytes (%d: %s)\n"), count, errno, strerror(errno));
 				return -1;
 			}
 

@@ -42,7 +42,7 @@ static int _stream_callback(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void 
 	size_t nbytes = fwrite(data, 1, length, stream);
 
 	if (nbytes != length) {
-		error_printf(_("Failed to write %zu bytes of data (%d)\n"), length, errno);
+		error_printf(_("Failed to write %zu bytes of data (%d: %s)\n"), length, errno, strerror(errno));
 
 		if (feof(stream))
 			return -1;
@@ -57,7 +57,7 @@ static int _fd_callback(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *use
 	ssize_t nbytes = write(fd, data, length);
 
 	if (nbytes == -1 || (size_t) nbytes != length)
-		error_printf(_("Failed to write %zu bytes of data (%d)\n"), length, errno);
+		error_printf(_("Failed to write %zu bytes of data (%d: %s)\n"), length, errno, strerror(errno));
 
 	return 0;
 }
