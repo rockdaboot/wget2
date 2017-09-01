@@ -686,13 +686,17 @@ static void stats_print_csv(wget_stats_type_t type)
 
 		if (fp) {
 			const char *header = "Hostname,IP,Port,DNS resolution duration (ms)";
-			fprintf(fp, "%s\n", header);
+			wget_buffer_printf(buf, "%s\n", header);
 
 			for (int it = 0; it < wget_vector_size(dns_stats_v); it++) {
 				const dns_stats_t *dns_stats = wget_vector_get(dns_stats_v, it);
 
-				wget_buffer_printf(buf, "%s,%s,%hu,%lld\n", dns_stats->host, dns_stats->ip, dns_stats->port, dns_stats->millisecs);
-				fprintf(fp, "%s", buf->data);
+				wget_buffer_printf_append(buf, "%s,%s,%hu,%lld\n", dns_stats->host, dns_stats->ip, dns_stats->port, dns_stats->millisecs);
+
+				if ((buf->length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
+					fprintf(fp, "%s", buf->data);
+					wget_buffer_reset(buf);
+				}
 			}
 
 			if (fp != stdout) {
@@ -717,12 +721,12 @@ static void stats_print_csv(wget_stats_type_t type)
 
 		if (fp) {
 			const char *header = "Hostname,Version,False Start,TFO,ALPN,Resumed,TCP,Cert-chain Length,TLS negotiation duration (ms)";
-			fprintf(fp, "%s\n", header);
+			wget_buffer_printf(buf, "%s\n", header);
 
 			for (int it = 0; it < wget_vector_size(tls_stats_v); it++) {
 				const tls_stats_t *tls_stats = wget_vector_get(tls_stats_v, it);
 
-				wget_buffer_printf(buf, "%s,%s,%s,%s,%s,%s,%s,%d,%lld\n",
+				wget_buffer_printf_append(buf, "%s,%s,%s,%s,%s,%s,%s,%d,%lld\n",
 						tls_stats->hostname,
 						tls_stats->version,
 						tls_stats->false_start,
@@ -735,7 +739,10 @@ static void stats_print_csv(wget_stats_type_t type)
 						tls_stats->cert_chain_size,
 						tls_stats->millisecs);
 
-				fprintf(fp, "%s", buf->data);
+				if ((buf->length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
+					fprintf(fp, "%s", buf->data);
+					wget_buffer_reset(buf);
+				}
 			}
 
 			if (fp != stdout) {
@@ -760,12 +767,12 @@ static void stats_print_csv(wget_stats_type_t type)
 
 		if (fp) {
 			const char *header = "Hostname,HPKP,HPKP New Entry,HSTS,CSP";
-			fprintf(fp, "%s\n", header);
+			wget_buffer_printf(buf, "%s\n", header);
 
 			for (int it = 0; it < wget_vector_size(server_stats_v); it++) {
 				const server_stats_t *server_stats = wget_vector_get(server_stats_v, it);
 
-				wget_buffer_printf(buf, "%s,%s,%s,%s,%s,%s,%s\n",
+				wget_buffer_printf_append(buf, "%s,%s,%s,%s,%s,%s,%s\n",
 						server_stats->hostname,
 						server_stats->ip,
 						server_stats->scheme,
@@ -774,7 +781,10 @@ static void stats_print_csv(wget_stats_type_t type)
 						server_stats->hsts,
 						server_stats->csp);
 
-				fprintf(fp, "%s", buf->data);
+				if ((buf->length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
+					fprintf(fp, "%s", buf->data);
+					wget_buffer_reset(buf);
+				}
 			}
 
 			if (fp != stdout) {
@@ -799,15 +809,18 @@ static void stats_print_csv(wget_stats_type_t type)
 
 		if (fp) {
 			const char *header = "Hostname,VALID,REVOKED,IGNORED";
-			fprintf(fp, "%s\n", header);
+			wget_buffer_printf(buf, "%s\n", header);
 
 			for (int it = 0; it < wget_vector_size(ocsp_stats_v); it++) {
 				const ocsp_stats_t *ocsp_stats = wget_vector_get(ocsp_stats_v, it);
 
-				wget_buffer_printf(buf, "%s,%d,%d,%d\n",
+				wget_buffer_printf_append(buf, "%s,%d,%d,%d\n",
 						ocsp_stats->hostname, ocsp_stats->nvalid, ocsp_stats->nrevoked, ocsp_stats->nignored);
 
-				fprintf(fp, "%s", buf->data);
+				if ((buf->length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
+					fprintf(fp, "%s", buf->data);
+					wget_buffer_reset(buf);
+				}
 			}
 
 			if (fp != stdout) {
