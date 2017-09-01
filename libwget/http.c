@@ -716,9 +716,9 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 	wget_vector_add_noalloc(conn->pending_requests, req);
 
 	if (req->debug_skip_body)
-		debug_printf("# sent %zd bytes:\n%.*s<body skipped>", nbytes, conn->buf->length - req->body_length, conn->buf->data);
+		debug_printf("# sent %zd bytes:\n%.*s<body skipped>", nbytes, (int)(conn->buf->length - req->body_length), conn->buf->data);
 	else
-		debug_printf("# sent %zd bytes:\n%.*s", nbytes, conn->buf->length, conn->buf->data);
+		debug_printf("# sent %zd bytes:\n%.*s", nbytes, (int)conn->buf->length, conn->buf->data);
 
 	return 0;
 }
