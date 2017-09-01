@@ -108,11 +108,11 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_TCP_PROTO, stats))
 			tls_stats.tcp_protocol = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_TCP_PROTO, stats));
 
-		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_SECS, stats))
-			tls_stats.millisecs = *((long long *)wget_tcp_get_stats_tls(WGET_STATS_TLS_SECS, stats));
-
 		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_CERT_CHAIN_SIZE, stats))
 			tls_stats.cert_chain_size = *((int *)wget_tcp_get_stats_tls(WGET_STATS_TLS_CERT_CHAIN_SIZE, stats));
+
+		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_SECS, stats))
+			tls_stats.millisecs = *((long long *)wget_tcp_get_stats_tls(WGET_STATS_TLS_SECS, stats));
 
 		wget_thread_mutex_lock(&tls_mutex);
 		wget_vector_add(tls_stats_v, &tls_stats, sizeof(tls_stats_t));
@@ -349,7 +349,9 @@ static void stats_print_human(wget_stats_type_t type)
 				wget_buffer_printf_append(buf, "    Resumed         : %s\n",
 						tls_stats->resumed ? (tls_stats->resumed == 1 ? "Yes" : "-") : "No");
 				wget_buffer_printf_append(buf, "    TCP Protocol    : %s\n",
-						tls_stats->tcp_protocol ? (tls_stats->tcp_protocol == 1 ? "HTTP/2" : "-") : "HTTP/1.1");
+						tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_1_1 ?
+								"HTTP/1.1" :
+								(tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"));
 				wget_buffer_printf_append(buf, "    Cert Chain Size : %d\n", tls_stats->cert_chain_size);
 				wget_buffer_printf_append(buf, "    TLS negotiation\n");
 				wget_buffer_printf_append(buf, "    duration (ms)   : %lld\n\n", tls_stats->millisecs);
@@ -556,7 +558,9 @@ static void stats_print_json(wget_stats_type_t type)
 				wget_buffer_printf_append(buf, "\t\t\"Resumed\" : \"%s\",\n",
 						tls_stats->resumed ? (tls_stats->resumed == 1 ? "Yes" : "-") : "No");
 				wget_buffer_printf_append(buf, "\t\t\"TCP Protocol\" : \"%s\",\n",
-						tls_stats->tcp_protocol ? (tls_stats->tcp_protocol == 1 ? "HTTP/2" : "-") : "HTTP/1.1");
+						tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_1_1 ?
+								"HTTP/1.1" :
+								(tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"));
 				wget_buffer_printf_append(buf, "\t\t\"Cert-chain Size\" : %d,\n", tls_stats->cert_chain_size);
 				wget_buffer_printf_append(buf, "\t\t\"TLS negotiation duration (ms)\" : %lld\n", tls_stats->millisecs);
 				wget_buffer_printf_append(buf, it < wget_vector_size(tls_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
@@ -725,7 +729,9 @@ static void stats_print_csv(wget_stats_type_t type)
 						tls_stats->tfo,
 						tls_stats->alpn_proto,
 						tls_stats->resumed ? (tls_stats->resumed == 1 ? "Yes" : "-") : "No",
-						tls_stats->tcp_protocol ? (tls_stats->tcp_protocol == 1 ? "HTTP/2" : "-") : "HTTP/1.1",
+						tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_1_1 ?
+								"HTTP/1.1" :
+								(tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"),
 						tls_stats->cert_chain_size,
 						tls_stats->millisecs);
 

@@ -40,10 +40,10 @@ typedef struct {
 		*false_start,
 		*tfo,
 		*alpn_proto;
-	char
+	bool
 		tls_con,
-		resumed,
-		tcp_protocol;
+		resumed;
+	char tcp_protocol;
 	int cert_chain_size;
 	long long millisecs;
 } tls_stats_t;

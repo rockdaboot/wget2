@@ -68,12 +68,12 @@ typedef struct
 		*false_start,
 		*tfo,
 		*alpn_protocol;
-	long long tls_secs;	//milliseconds
-	int cert_chain_size;
-	char
+	bool
 		tls_con,
-		resumed,
-		tcp_protocol;
+		resumed;
+	char tcp_protocol;
+	int cert_chain_size;
+	long long tls_secs;	//milliseconds
 } _stats_data_t;
 
 typedef struct
@@ -1819,8 +1819,6 @@ const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
 		return stats->tfo;
 	case WGET_STATS_TLS_ALPN_PROTO:
 		return stats->alpn_protocol;
-	case WGET_STATS_TLS_SECS:
-		return &(stats->tls_secs);
 	case WGET_STATS_TLS_CON:
 		return &(stats->tls_con);
 	case WGET_STATS_TLS_RESUMED:
@@ -1829,6 +1827,8 @@ const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
 		return &(stats->tcp_protocol);
 	case WGET_STATS_TLS_CERT_CHAIN_SIZE:
 		return &(stats->cert_chain_size);
+	case WGET_STATS_TLS_SECS:
+		return &(stats->tls_secs);
 	default:
 		return NULL;
 	}
