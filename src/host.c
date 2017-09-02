@@ -50,6 +50,7 @@ static int
 struct site_stats{
 	wget_buffer_t *buf;
 	FILE *fp;
+	int level;
 };
 
 static int _host_compare(const HOST *host1, const HOST *host2)
@@ -747,11 +748,9 @@ static int hosts_hashmap(struct site_stats *ctx, HOST *host)
 
 static int print_treeish(struct site_stats *ctx, TREE_DOCS *node)
 {
-	static int level = 0;
-
 	if (node) {
-		if (level) {
-			for (int i = 0; i < level - 1; i++)
+		if (ctx->level) {
+			for (int i = 0; i < ctx->level - 1; i++)
 				wget_buffer_printf_append(ctx->buf, "|   ");
 			if (node->redirect)
 				wget_buffer_printf_append(ctx->buf, ":..");
@@ -767,7 +766,7 @@ static int print_treeish(struct site_stats *ctx, TREE_DOCS *node)
 		}
 
 		if (node->children) {
-			level++;
+			ctx->level++;
 			wget_vector_browse(node->children, (wget_vector_browse_t) print_treeish, ctx);
 		}
 	}
@@ -779,6 +778,7 @@ static int hosts_hashmap_tree(struct site_stats *ctx, HOST *host)
 {
 	if (host->tree_docs && host->root) {
 		wget_buffer_printf_append(ctx->buf, "\n  %s://%s:\n", host->scheme, host->host);
+		ctx->level = 0;
 		print_treeish(ctx, host->root);
 	}
 
