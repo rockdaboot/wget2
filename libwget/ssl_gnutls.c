@@ -1221,6 +1221,9 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 #elif HAVE_WS2TCPIP_H
 #	include <ws2tcpip.h>
 #endif
+#if HAVE_SYS_UIO_H
+#include <sys/uio.h> // writev
+#endif
 #include <netdb.h>
 #include <errno.h>
 static ssize_t _ssl_writev(gnutls_transport_ptr_t *p, const giovec_t *iov, int iovcnt)
