@@ -1079,16 +1079,16 @@ int main(int argc, const char **argv)
 		wget_cookie_db_save(config.cookie_db, config.save_cookies);
 
 	if (config.hsts && config.hsts_file && hsts_changed)
-		wget_hsts_db_save(config.hsts_db, config.hsts_file);
+		wget_hsts_db_save(config.hsts_db);
 
 	if (config.hpkp && config.hpkp_file && hpkp_changed)
-		wget_hpkp_db_save(config.hpkp_db, config.hpkp_file);
+		wget_hpkp_db_save(config.hpkp_db);
 
 	if (config.tls_resume && config.tls_session_file && wget_tls_session_db_changed(config.tls_session_db))
 		wget_tls_session_db_save(config.tls_session_db, config.tls_session_file);
 
 	if (config.ocsp && config.ocsp_file)
-		wget_ocsp_db_save(config.ocsp_db, config.ocsp_file);
+		wget_ocsp_db_save(config.ocsp_db);
 
 	if (config.delete_after && config.output_document)
 		unlink(config.output_document);
@@ -1287,7 +1287,7 @@ static int process_response_header(wget_http_response_t *resp)
 		&& iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address
 		&& resp->hsts)
 	{
-		wget_hsts_db_add(config.hsts_db, wget_hsts_new(iri->host, iri->port, resp->hsts_maxage, resp->hsts_include_subdomains));
+		wget_hsts_db_add(config.hsts_db, iri->host, iri->port, resp->hsts_maxage, resp->hsts_include_subdomains);
 		hsts_changed = 1;
 	}
 

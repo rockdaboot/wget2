@@ -2235,13 +2235,17 @@ int init(int argc, const char **argv)
 	}
 
 	if (config.hsts) {
-		config.hsts_db = wget_hsts_db_init(NULL);
-		wget_hsts_db_load(config.hsts_db, config.hsts_file);
+		config.hsts_db = plugin_db_fetch_provided_hsts_db();
+		if (! config.hsts_db)
+			config.hsts_db = wget_hsts_db_init(NULL, config.hsts_file);
+		wget_hsts_db_load(config.hsts_db);
 	}
 
 	if (config.hpkp) {
-		config.hpkp_db = wget_hpkp_db_init(NULL);
-		wget_hpkp_db_load(config.hpkp_db, config.hpkp_file);
+		config.hpkp_db = plugin_db_fetch_provided_hpkp_db();
+		if (! config.hpkp_db)
+			config.hpkp_db = wget_hpkp_db_init(NULL, config.hpkp_file);
+		wget_hpkp_db_load(config.hpkp_db);
 	}
 
 	if (config.tls_resume) {
@@ -2250,8 +2254,10 @@ int init(int argc, const char **argv)
 	}
 
 	if (config.ocsp) {
-		config.ocsp_db = wget_ocsp_db_init(NULL);
-		wget_ocsp_db_load(config.ocsp_db, config.ocsp_file);
+		config.ocsp_db = plugin_db_fetch_provided_ocsp_db();
+		if (! config.ocsp_db)
+			config.ocsp_db = wget_ocsp_db_init(NULL, config.ocsp_file);
+		wget_ocsp_db_load(config.ocsp_db);
 	}
 
 	if (config.base_url)

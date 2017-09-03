@@ -1041,43 +1041,141 @@ WGETAPI char *
  * HTTP Strict Transport Security (HSTS) routines
  */
 
-// structure for HTTP Strict Transport Security (HSTS) entries
-typedef struct _wget_hsts_st wget_hsts_t;
-typedef struct _wget_hsts_db_st wget_hsts_db_t;
+/**
+ * \ingroup libwget-hsts
+ *
+ * Structure representing HSTS database for storing HTTP Strict Transport Security (HSTS) entries
+ */
+typedef struct wget_hsts_db_st wget_hsts_db_t;
 
-WGETAPI wget_hsts_t *
-	wget_hsts_init(wget_hsts_t *hsts);
-WGETAPI void
-	wget_hsts_deinit(wget_hsts_t *hsts);
-WGETAPI void
-	wget_hsts_free(wget_hsts_t *hsts);
-WGETAPI wget_hsts_t *
-	wget_hsts_new(const char *host, uint16_t port, time_t maxage, int include_subdomains);
+/**
+ * \ingroup libwget-hsts
+ *
+ * vtable for implementing custom HSTS databases.
+ *
+ * Custom HSTS databases can be implemented as the following:
+ *
+ *     typedef struct {
+ *         wget_hsts_db_t parent;
+ *         derived class members...
+ *     } my_hsts_db_t;
+ *
+ *     static int impl_load(wget_hsts_db_t *parent_hsts_db)
+ *     {
+ *         my_hsts_db_t *hsts_db = (my_hsts_db_t *) parent_hsts_db;
+ *
+ *         implemetation...
+ *     }
+ *
+ *     static int impl_save(wget_hsts_db_t *parent_hsts_db)
+ *     {
+ *         my_hsts_db_t *hsts_db = (my_hsts_db_t *) parent_hsts_db;
+ *
+ *         implementation...
+ *     }
+ *
+ *     static int impl_host_match(wget_hsts_db_t *parent_hsts_db, const char *host, uint16_t port)
+ *     {
+ *         my_hsts_db_t *hsts_db = (my_hsts_db_t *) parent_hsts_db;
+ *
+ *         implementation...
+ *     }
+ *
+ *     static void impl_add(wget_hsts_db_t *parent_hsts_db,
+ *         const char *hostname, uint16_t port, time_t maxage, int include_subdomains)
+ *     {
+ *         my_hsts_db_t *hsts_db = (my_hsts_db_t *) parent_hsts_db;
+ *
+ *         implementation...
+ *     }
+ *
+ *     static int impl_free(wget_hsts_db_t *parent_hsts_db)
+ *     {
+ *         my_hsts_db_t *hsts_db = (my_hsts_db_t *) parent_hsts_db;
+ *
+ *         free all members...
+ *
+ *         wget_free(hsts_db);
+ *     }
+ *
+ *
+ *     struct my_hsts_db_vtable = {
+ *         .save = impl_save,
+ *         .load = impl_load,
+ *         .host_match = impl_host_match,
+ *         .add = impl_add,
+ *         .free = impl_free
+ *     };
+ *
+ *     wget_hsts_db_t *my_hsts_db_create(...)
+ *     {
+ *         my_hsts_db_t *hsts_db = wget_malloc(sizeof(my_hsts_db_t));
+ *
+ *         hsts_db->parent.vtable = my_hsts_db_vtable;
+ *
+ *         derived class initialization...
+ *
+ *         return (wget_hsts_db_t *) hsts_db;
+ *     }
+ */
+struct wget_hsts_db_vtable {
+	/// Implementation of wget_hsts_db_load()
+	int (*load)(wget_hsts_db_t *);
+	/// Implementation of wget_hsts_db_save()
+	int (*save)(wget_hsts_db_t *);
+	/// Implementation of wget_hsts_host_match()
+	int (*host_match)(const wget_hsts_db_t *, const char *, uint16_t);
+	/// Implementation of wget_hsts_db_add()
+	void (*add)(wget_hsts_db_t *, const char *, uint16_t, time_t, int);
+	/// Implementation of wget_hsts_db_free()
+	void (*free)(wget_hsts_db_t *);
+};
+
+struct wget_hsts_db_st {
+	/// Pointer to the implementation vtable
+	struct wget_hsts_db_vtable *vtable;
+};
+
 WGETAPI int
 	wget_hsts_host_match(const wget_hsts_db_t *hsts_db, const char *host, uint16_t port);
 WGETAPI wget_hsts_db_t *
-	wget_hsts_db_init(wget_hsts_db_t *hsts_db);
+	wget_hsts_db_init(wget_hsts_db_t *hsts_db, const char *fname);
+WGETAPI void
+	wget_hsts_db_set_fname(wget_hsts_db_t *hsts_db, const char *fname);
 WGETAPI void
 	wget_hsts_db_deinit(wget_hsts_db_t *hsts_db);
 WGETAPI void
 	wget_hsts_db_free(wget_hsts_db_t **hsts_db);
 WGETAPI void
-	wget_hsts_db_add(wget_hsts_db_t *hsts_db, wget_hsts_t *hsts);
+	wget_hsts_db_add(wget_hsts_db_t *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains);
 WGETAPI int
-	wget_hsts_db_save(wget_hsts_db_t *hsts_db, const char *fname);
+	wget_hsts_db_save(wget_hsts_db_t *hsts_db);
 WGETAPI int
-	wget_hsts_db_load(wget_hsts_db_t *hsts_db, const char *fname);
+	wget_hsts_db_load(wget_hsts_db_t *hsts_db);
 
 /*
  * HTTP Public Key Pinning (HPKP)
  */
-typedef struct _wget_hpkp_db_st wget_hpkp_db_t;
+
+/**
+ * \ingroup libwget-hpkp
+ *
+ * HPKP database for storing HTTP Public Key Pinning (HPKP) entries
+ */
+typedef struct wget_hpkp_db_st wget_hpkp_db_t;
+
+/**
+ * \ingroup libwget-hpkp
+ *
+ * HPKP database entry. Corresponds to one 'Public-Key-Pins' HTTP response header.
+ */
 typedef struct _wget_hpkp_st wget_hpkp_t;
+
 //typedef struct _wget_hpkp_pin_st wget_hpkp_pin_t;
 
 /* FIXME this doesn't work */
 /**
- * \addtogroup libwget-hpkp
+ * \ingroup libwget-hpkp
  * Return values
  * @{
  */
@@ -1089,6 +1187,94 @@ typedef struct _wget_hpkp_st wget_hpkp_t;
 #define WGET_HPKP_ENTRY_EXISTS		-5
 #define WGET_HPKP_ERROR_FILE_OPEN	-6
 /* @} */
+
+/**
+ * \ingroup libwget-hpkp
+ *
+ * vtable for implementing custom HPKP databases.
+ *
+ * Custom HPKP databases can be implemented as the following:
+ *
+ *     typedef struct {
+ *         wget_hpkp_db_t parent;
+ *         derived class members...
+ *     } my_hpkp_db_t;
+ *
+ *     static int impl_load(wget_hpkp_db_t *parent_hpkp_db)
+ *     {
+ *         my_hpkp_db_t *hpkp_db = (my_hpkp_db_t *) parent_hpkp_db;
+ *
+ *         implemetation...
+ *     }
+ *
+ *     static int impl_save(wget_hpkp_db_t *parent_hpkp_db)
+ *     {
+ *         my_hpkp_db_t *hpkp_db = (my_hpkp_db_t *) parent_hpkp_db;
+ *
+ *         implementation...
+ *     }
+ *
+ *     static bool impl_check_pubkey(wget_hpkp_db_t *parent_hpkp_db,
+ *         const char *host, const void *pubkey, size_t pubkey_size)
+ *     {
+ *         my_hpkp_db_t *hpkp_db = (my_hpkp_db_t *) parent_hpkp_db;
+ *
+ *         implementation...
+ *     }
+ *
+ *     static void impl_add(wget_hpkp_db_t *parent_hpkp_db, wget_hpkp_t *hpkp)
+ *     {
+ *         my_hpkp_db_t *hpkp_db = (my_hpkp_db_t *) parent_hpkp_db;
+ *
+ *         implementation...
+ *     }
+ *
+ *     static int impl_free(wget_hpkp_db_t *parent_hpkp_db)
+ *     {
+ *         my_hpkp_db_t *hpkp_db = (my_hpkp_db_t *) parent_hpkp_db;
+ *
+ *         free all members...
+ *
+ *         wget_free(hpkp_db);
+ *     }
+ *
+ *
+ *     struct my_hpkp_db_vtable = {
+ *         .save = impl_save,
+ *         .load = impl_load,
+ *         .check_pubkey = impl_check_pubkey,
+ *         .add = impl_add,
+ *         .free = impl_free
+ *     };
+ *
+ *     wget_hpkp_db_t *my_hpkp_db_create(...)
+ *     {
+ *         my_hpkp_db_t *hpkp_db = wget_malloc(sizeof(my_hpkp_db_t));
+ *
+ *         hpkp_db->parent.vtable = my_hpkp_db_vtable;
+ *
+ *         derived class initialization...
+ *
+ *         return (wget_hpkp_db_t *) hpkp_db;
+ *     }
+ */
+struct wget_hpkp_db_vtable {
+	/// Implementation of \ref wget_hpkp_db_load "wget_hpkp_db_load()"
+	int (*load)(wget_hpkp_db_t *);
+	/// Implementation of \ref wget_hpkp_db_save "wget_hpkp_db_save()"
+	int (*save)(wget_hpkp_db_t *);
+	/// Implementation of \ref wget_hpkp_db_free "wget_hpkp_db_free()"
+	void (*free)(wget_hpkp_db_t *);
+	/// Implementation of \ref wget_hpkp_db_add "wget_hpkp_db_add()"
+	void (*add)(wget_hpkp_db_t *, wget_hpkp_t *);
+	/// Implementation of \ref wget_hpkp_db_check_pubkey "wget_hpkp_db_check_pubkey()"
+	int (*check_pubkey)(wget_hpkp_db_t *, const char *, const void *, size_t);
+};
+
+struct wget_hpkp_db_st {
+	/// Pointer to the implementation vtable
+	struct wget_hpkp_db_vtable *vtable;
+};
 
 WGETAPI wget_hpkp_t *
 	wget_hpkp_new(void);
@@ -1102,8 +1288,22 @@ WGETAPI void
 	wget_hpkp_set_maxage(wget_hpkp_t *hpkp, time_t maxage);
 WGETAPI void
 	wget_hpkp_set_include_subdomains(wget_hpkp_t *hpkp, int include_subdomains);
+WGETAPI size_t
+	wget_hpkp_get_n_pins(wget_hpkp_t *hpkp);
+WGETAPI void
+	wget_hpkp_get_pins_b64(wget_hpkp_t *hpkp, const char **pin_types, const char **pins_b64);
+WGETAPI void
+	wget_hpkp_get_pins(wget_hpkp_t *hpkp, const char **pin_types, size_t *sizes, const void **pins);
+WGETAPI const char *
+	wget_hpkp_get_host(wget_hpkp_t *hpkp);
+WGETAPI time_t
+	wget_hpkp_get_maxage(wget_hpkp_t *hpkp);
+WGETAPI int
+	wget_hpkp_get_include_subdomains(wget_hpkp_t *hpkp);
 WGETAPI wget_hpkp_db_t *
-	wget_hpkp_db_init(wget_hpkp_db_t *hpkp_db);
+	wget_hpkp_db_init(wget_hpkp_db_t *hpkp_db, const char *fname);
+WGETAPI void
+	wget_hpkp_db_set_fname(wget_hpkp_db_t *hpkp_db, const char *fname);
 WGETAPI void
 	wget_hpkp_db_deinit(wget_hpkp_db_t *hpkp_db);
 WGETAPI void
@@ -1113,9 +1313,9 @@ WGETAPI int
 WGETAPI void
 	wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **hpkp);
 WGETAPI int
-	wget_hpkp_db_load(wget_hpkp_db_t *hpkp_db, const char *fname);
+	wget_hpkp_db_load(wget_hpkp_db_t *hpkp_db);
 WGETAPI int
-	wget_hpkp_db_save(wget_hpkp_db_t *hpkp_db, const char *fname);
+	wget_hpkp_db_save(wget_hpkp_db_t *hpkp_db);
 
 /*
  * TLS session resumption
@@ -1154,36 +1354,141 @@ WGETAPI int
  * Online Certificate Status Protocol (OCSP) routines
  */
 
-// structure for Online Certificate Status Protocol (OCSP) entries
-typedef struct _wget_ocsp_st wget_ocsp_t;
-typedef struct _wget_ocsp_db_st wget_ocsp_db_t;
+/**
+ * \ingroup libwget-ocsp
+ *
+ * structure for Online Certificate Status Protocol (OCSP) entries
+ */
+typedef struct wget_ocsp_db_st wget_ocsp_db_t;
 
-WGETAPI wget_ocsp_t *
-	wget_ocsp_init(wget_ocsp_t *ocsp);
-WGETAPI void
-	wget_ocsp_deinit(wget_ocsp_t *ocsp);
-WGETAPI void
-	wget_ocsp_free(wget_ocsp_t *ocsp);
-WGETAPI wget_ocsp_t *
-	wget_ocsp_new(const char *fingerprint, time_t maxage, int valid);
+/**
+ * \ingroup libwget-ocsp
+ *
+ * vtable for implementing custom OCSP databases.
+ *
+ * Custom OCSP databases can be implemented as the following:
+ *
+ *     typedef struct {
+ *         wget_ocsp_db_t parent;
+ *         derived class members...
+ *     } my_ocsp_db_t;
+ *
+ *     static int impl_load(wget_ocsp_db_t *parent_ocsp_db)
+ *     {
+ *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
+ *
+ *         implemetation...
+ *     }
+ *
+ *     static int impl_save(wget_ocsp_db_t *parent_ocsp_db)
+ *     {
+ *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
+ *
+ *         implementation...
+ *     }
+ *
+ *     static int impl_fingerprint_in_cache(const wget_ocsp_db_t *parent_ocsp_db, const char *fingerprint, int *valid)
+ *     {
+ *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
+ *
+ *         implementation...
+ *     }
+ *
+ *     static int impl_hostname_is_valid(const wget_ocsp_db_t *parent_ocsp_db, const char *hostname)
+ *     {
+ *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
+ *
+ *         implementation...
+ *     }
+ *
+ *     static void impl_add_fingerprint(wget_ocsp_db_t *parent_ocsp_db, const char *fingerprint, time_t maxage, int valid)
+ *     {
+ *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
+ *
+ *         implementation...
+ *     }
+ *
+ *     static void impl_add_host(wget_ocsp_db_t *parent_ocsp_db, const char *fingerprint, time_t maxage)
+ *     {
+ *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
+ *
+ *         implementation...
+ *     }
+ *
+ *     static int impl_free(wget_ocsp_db_t *parent_ocsp_db)
+ *     {
+ *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
+ *
+ *         free all members...
+ *
+ *         wget_free(ocsp_db);
+ *     }
+ *
+ *
+ *     struct my_ocsp_db_vtable = {
+ *         .save = impl_save,
+ *         .load = impl_load,
+ *         .fingerprint_in_cache = impl_fingerprint_in_cache,
+ *         .hostname_is_valid = impl_hostname_is_valid,
+ *         .add_fingerprint = impl_add_fingerprint,
+ *         .add_host = impl_add_host,
+ *         .add = impl_add,
+ *         .free = impl_free
+ *     };
+ *
+ *     wget_ocsp_db_t *my_ocsp_db_create(...)
+ *     {
+ *         my_ocsp_db_t *ocsp_db = wget_malloc(sizeof(my_ocsp_db_t));
+ *
+ *         ocsp_db->parent.vtable = my_ocsp_db_vtable;
+ *
+ *         derived class initialization...
+ *
+ *         return (wget_ocsp_db_t *) ocsp_db;
+ *     }
+ */
+struct wget_ocsp_db_vtable {
+	/// Implementation of wget_ocsp_db_load()
+	int (*load)(wget_ocsp_db_t *);
+	/// Implementation of wget_ocsp_db_save()
+	int (*save)(wget_ocsp_db_t *);
+	/// Implementation of wget_ocsp_db_fingerprint_in_cache()
+	int (*fingerprint_in_cache)(const wget_ocsp_db_t *, const char *, int *);
+	/// Implementation of wget_ocsp_db_hostname_is_valid()
+	int (*hostname_is_valid)(const wget_ocsp_db_t *, const char *);
+	/// Implementation of wget_ocsp_db_add_fingerprint()
+	void (*add_fingerprint)(wget_ocsp_db_t *, const char *, time_t, int);
+	/// Implementation of wget_ocsp_db_add_host()
+	void (*add_host)(wget_ocsp_db_t *, const char *, time_t);
+	/// Implementation of wget_ocsp_db_free()
+	void (*free)(wget_ocsp_db_t *);
+};
+
+struct wget_ocsp_db_st {
+	/// Pointer to the implemetation vtable
+	struct wget_ocsp_db_vtable *vtable;
+};
+
 WGETAPI int
 	wget_ocsp_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, const char *fingerprint, int *valid);
 WGETAPI int
-	wget_ocsp_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *fingerprint);
+	wget_ocsp_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *hostname);
 WGETAPI wget_ocsp_db_t *
-	wget_ocsp_db_init(wget_ocsp_db_t *ocsp_db);
+	wget_ocsp_db_init(wget_ocsp_db_t *ocsp_db, const char *fname);
+WGETAPI void
+	wget_ocsp_db_set_fname(wget_ocsp_db_t *ocsp_db, const char *fname);
 WGETAPI void
 	wget_ocsp_db_deinit(wget_ocsp_db_t *ocsp_db);
 WGETAPI void
 	wget_ocsp_db_free(wget_ocsp_db_t **ocsp_db);
 WGETAPI void
-	wget_ocsp_db_add_fingerprint(wget_ocsp_db_t *ocsp_db, wget_ocsp_t *ocsp);
+	wget_ocsp_db_add_fingerprint(wget_ocsp_db_t *ocsp_db, const char *fingerprint, time_t maxage, int valid);
 WGETAPI void
-	wget_ocsp_db_add_host(wget_ocsp_db_t *ocsp_db, wget_ocsp_t *ocsp);
+	wget_ocsp_db_add_host(wget_ocsp_db_t *ocsp_db, const char *host, time_t maxage);
 WGETAPI int
-	wget_ocsp_db_save(wget_ocsp_db_t *ocsp_db, const char *fname);
+	wget_ocsp_db_save(wget_ocsp_db_t *ocsp_db);
 WGETAPI int
-	wget_ocsp_db_load(wget_ocsp_db_t *ocsp_db, const char *fname);
+	wget_ocsp_db_load(wget_ocsp_db_t *ocsp_db);
 
 /*
  * .netrc routines
@@ -2131,6 +2436,15 @@ typedef void (*wget_plugin_url_filter_t)(wget_plugin_t *plugin, const wget_iri_t
 WGETAPI void
 wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filter_t filter_fn);
 
+// Provides wget2 with another HSTS database to use.
+WGETAPI void wget_plugin_add_hsts_db(wget_plugin_t *plugin, wget_hsts_db_t *hsts_db, int priority);
+
+// Provides wget2 with another HPKP database to use.
+WGETAPI void wget_plugin_add_hpkp_db(wget_plugin_t *plugin, wget_hpkp_db_t *hpkp_db, int priority);
+
+// Provides wget2 with another OCSP database to use.
+WGETAPI void wget_plugin_add_ocsp_db(wget_plugin_t *plugin, wget_ocsp_db_t *ocsp_db, int priority);
+
 /**
  * \ingroup libwget-plugin
  *
@@ -2209,6 +2523,10 @@ struct wget_plugin_vtable
 	bool (*file_get_recurse)(wget_downloaded_file_t *);
 	void (*file_add_recurse_url)(wget_downloaded_file_t *, const wget_iri_t *);
 	void (*register_post_processor)(wget_plugin_t *, wget_plugin_post_processor_t);
+
+	void (* add_hsts_db)(wget_plugin_t *, wget_hsts_db_t *, int);
+	void (* add_hpkp_db)(wget_plugin_t *, wget_hpkp_db_t *, int);
+	void (* add_ocsp_db)(wget_plugin_t *, wget_ocsp_db_t *, int);
 };
 
 WGET_END_DECLS

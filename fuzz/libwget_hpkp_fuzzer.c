@@ -52,9 +52,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	g_data = data;
 	g_size = size;
 
-	wget_hpkp_db_t *hpkp_db = wget_hpkp_db_init(NULL);
 #if ! defined _WIN32 && defined HAVE_FMEMOPEN
-	wget_hpkp_db_load(hpkp_db, "hpkp");
+	wget_hpkp_db_t *hpkp_db = wget_hpkp_db_init(NULL, "hpkp");
+	wget_hpkp_db_load(hpkp_db);
+#else
+	wget_hpkp_db_t *hpkp_db = wget_hpkp_db_init(NULL, NULL);
 #endif
 	wget_hpkp_db_check_pubkey(hpkp_db, "x.y", "0", 1);
 	wget_hpkp_db_free(&hpkp_db);

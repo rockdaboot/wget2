@@ -653,7 +653,7 @@ static void _add_cert_to_ocsp_cache(gnutls_x509_crt_t cert, int valid)
 		char fingerprint_hex[64 * 2 +1];
 
 		_get_cert_fingerprint(cert, fingerprint_hex, sizeof(fingerprint_hex));
-		wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, wget_ocsp_new(fingerprint_hex, time(NULL) + 3600, valid)); // 1h valid
+		wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint_hex, time(NULL) + 3600, valid); // 1h valid
 	}
 }
 
@@ -794,7 +794,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 #ifdef HAVE_GNUTLS_OCSP_H
 	if (status & GNUTLS_CERT_REVOKED) {
 		if (_config.ocsp_cert_cache)
-			wget_ocsp_db_add_host(_config.ocsp_cert_cache, wget_ocsp_new(hostname, 0, 0)); // remove entry from cache
+			wget_ocsp_db_add_host(_config.ocsp_cert_cache, hostname, 0); // remove entry from cache
 		if (ctx->ocsp_stapling) {
 			if (gnutls_x509_crt_init(&cert) == GNUTLS_E_SUCCESS) {
 				if ((cert_list = gnutls_certificate_get_peers(session, &cert_list_size))) {
@@ -965,11 +965,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 
 			if (ocsp_ok == 1) {
 				debug_printf("Certificate[%u] of '%s' is valid (via OCSP)\n", it, hostname);
-				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, wget_ocsp_new(fingerprint, time(NULL) + 3600, 1)); // 1h valid
+				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, 1); // 1h valid
 				nvalid++;
 			} else if (ocsp_ok == 0) {
 				debug_printf(_("%s: Certificate[%u] of '%s' has been revoked (via OCSP)\n"), tag, it, hostname);
-				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, wget_ocsp_new(fingerprint, time(NULL) + 3600, 0));  // cert has been revoked
+				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, 0);  // cert has been revoked
 				nrevoked++;
 			} else {
 				debug_printf("WARNING: OCSP response not available or ignored\n");
@@ -979,9 +979,9 @@ static int _verify_certificate_callback(gnutls_session_t session)
 
 	if (_config.ocsp_stapling || _config.ocsp) {
 		if (nvalid == cert_list_size) {
-			wget_ocsp_db_add_host(_config.ocsp_cert_cache, wget_ocsp_new(hostname, time(NULL) + 3600, 1)); // 1h valid
+			wget_ocsp_db_add_host(_config.ocsp_cert_cache, hostname, time(NULL) + 3600); // 1h valid
 		} else if (nrevoked) {
-			wget_ocsp_db_add_host(_config.ocsp_cert_cache, wget_ocsp_new(hostname, 0, 0)); // remove entry from cache
+			wget_ocsp_db_add_host(_config.ocsp_cert_cache, hostname, 0); // remove entry from cache
 			ret = -1;
 		}
 	}

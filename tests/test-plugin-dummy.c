@@ -468,6 +468,270 @@ int wget_plugin_initializer(wget_plugin_t *plugin)
 
 	return 0;
 }
+
+#elif defined TEST_SELECT_DATABASE
+
+// HPKP database for testing
+static int hpkp_db_load_counter = 0;
+typedef struct {
+	wget_hpkp_db_t parent;
+	wget_hpkp_db_t *backend_db;
+} test_hpkp_db_t;
+static int test_hpkp_db_load(wget_hpkp_db_t *p_hpkp_db)
+{
+	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
+
+	if (! hpkp_db->backend_db)
+		wget_error_printf_exit("wget using wrong HPKP database\n");
+
+	hpkp_db_load_counter++;
+	return wget_hpkp_db_load(hpkp_db->backend_db);
+}
+static int test_hpkp_db_save(wget_hpkp_db_t *p_hpkp_db)
+{
+	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
+
+	if (! hpkp_db->backend_db)
+		wget_error_printf_exit("wget using wrong HPKP database\n");
+
+	return wget_hpkp_db_save(hpkp_db->backend_db);
+}
+static void test_hpkp_db_free(wget_hpkp_db_t *p_hpkp_db)
+{
+	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
+
+	if (hpkp_db->backend_db)
+		wget_hpkp_db_free(&hpkp_db->backend_db);
+	wget_free(hpkp_db);
+}
+static void test_hpkp_db_add(wget_hpkp_db_t *p_hpkp_db, wget_hpkp_t *hpkp)
+{
+	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
+
+	if (! hpkp_db->backend_db)
+		wget_error_printf_exit("wget using wrong HPKP database\n");
+
+	wget_hpkp_db_add(hpkp_db->backend_db, &hpkp);
+}
+static int test_hpkp_db_check_pubkey(wget_hpkp_db_t *p_hpkp_db, const char *host, const void *pubkey, size_t pubkeysize)
+{
+	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
+
+	if (! hpkp_db->backend_db)
+		wget_error_printf_exit("wget using wrong HPKP database\n");
+
+	return wget_hpkp_db_check_pubkey(hpkp_db->backend_db, host, pubkey, pubkeysize);
+}
+static struct wget_hpkp_db_vtable test_hpkp_db_vtable = {
+	.load = test_hpkp_db_load,
+	.save = test_hpkp_db_save,
+	.free = test_hpkp_db_free,
+	.add = test_hpkp_db_add,
+	.check_pubkey = test_hpkp_db_check_pubkey
+};
+static wget_hpkp_db_t *test_hpkp_db_new(int usable) {
+	test_hpkp_db_t *hpkp_db = wget_malloc(sizeof(test_hpkp_db_t));
+
+	hpkp_db->parent.vtable = &test_hpkp_db_vtable;
+	if (usable)
+		hpkp_db->backend_db = wget_hpkp_db_init(NULL, NULL);
+	else
+		hpkp_db->backend_db = NULL;
+
+	return (wget_hpkp_db_t *) hpkp_db;
+}
+
+// HSTS database for testing
+static int hsts_db_load_counter = 0;
+typedef struct {
+	wget_hsts_db_t parent;
+	wget_hsts_db_t *backend_db;
+} test_hsts_db_t;
+static int test_hsts_db_load(wget_hsts_db_t *p_hsts_db)
+{
+	test_hsts_db_t *hsts_db = (test_hsts_db_t *) p_hsts_db;
+
+	if (! hsts_db->backend_db)
+		wget_error_printf_exit("wget using wrong HSTS database\n");
+
+	hsts_db_load_counter++;
+	return wget_hsts_db_load(hsts_db->backend_db);
+}
+static int test_hsts_db_save(wget_hsts_db_t *p_hsts_db)
+{
+	test_hsts_db_t *hsts_db = (test_hsts_db_t *) p_hsts_db;
+
+	if (! hsts_db->backend_db)
+		wget_error_printf_exit("wget using wrong HSTS database\n");
+
+	return wget_hsts_db_save(hsts_db->backend_db);
+}
+static void test_hsts_db_free(wget_hsts_db_t *p_hsts_db)
+{
+	test_hsts_db_t *hsts_db = (test_hsts_db_t *) p_hsts_db;
+
+	if (hsts_db->backend_db)
+		wget_hsts_db_free(&hsts_db->backend_db);
+	wget_free(hsts_db);
+}
+static void test_hsts_db_add(wget_hsts_db_t *p_hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
+{
+	test_hsts_db_t *hsts_db = (test_hsts_db_t *) p_hsts_db;
+
+	if (! hsts_db->backend_db)
+		wget_error_printf_exit("wget using wrong HSTS database\n");
+
+	wget_hsts_db_add(hsts_db->backend_db, host, port, maxage, include_subdomains);
+}
+static int test_hsts_db_host_match(const wget_hsts_db_t *p_hsts_db, const char *host, uint16_t port)
+{
+	const test_hsts_db_t *hsts_db = (test_hsts_db_t *) p_hsts_db;
+
+	if (! hsts_db->backend_db)
+		wget_error_printf_exit("wget using wrong HSTS database\n");
+
+	return wget_hsts_host_match(hsts_db->backend_db, host, port);
+}
+static struct wget_hsts_db_vtable test_hsts_db_vtable = {
+	.load = test_hsts_db_load,
+	.save = test_hsts_db_save,
+	.free = test_hsts_db_free,
+	.add = test_hsts_db_add,
+	.host_match = test_hsts_db_host_match
+};
+static wget_hsts_db_t *test_hsts_db_new(int usable)
+{
+	test_hsts_db_t *hsts_db = wget_malloc(sizeof(test_hsts_db_t));
+
+	hsts_db->parent.vtable = &test_hsts_db_vtable;
+	if (usable)
+		hsts_db->backend_db = wget_hsts_db_init(NULL, NULL);
+	else
+		hsts_db->backend_db = NULL;
+
+	return (wget_hsts_db_t *) hsts_db;
+}
+
+// OCSP database for testing
+static int ocsp_db_load_counter = 0;
+typedef struct {
+	wget_ocsp_db_t parent;
+	wget_ocsp_db_t *backend_db;
+} test_ocsp_db_t;
+static int test_ocsp_db_load(wget_ocsp_db_t *p_ocsp_db)
+{
+	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
+
+	if (! ocsp_db->backend_db)
+		wget_error_printf_exit("wget using wrong OCSP database\n");
+
+	ocsp_db_load_counter++;
+	return wget_ocsp_db_load(ocsp_db->backend_db);
+}
+static int test_ocsp_db_save(wget_ocsp_db_t *p_ocsp_db)
+{
+	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
+
+	if (! ocsp_db->backend_db)
+		wget_error_printf_exit("wget using wrong OCSP database\n");
+
+	return wget_ocsp_db_save(ocsp_db->backend_db);
+}
+static void test_ocsp_db_free(wget_ocsp_db_t *p_ocsp_db)
+{
+	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
+
+	if (ocsp_db->backend_db)
+		wget_ocsp_db_free(&ocsp_db->backend_db);
+	wget_free(ocsp_db);
+}
+static void test_ocsp_db_add_fingerprint(wget_ocsp_db_t *p_ocsp_db, const char *fingerprint, time_t maxage, int valid)
+{
+	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
+
+	if (! ocsp_db->backend_db)
+		wget_error_printf_exit("wget using wrong OCSP database\n");
+
+	wget_ocsp_db_add_fingerprint(ocsp_db->backend_db, fingerprint, maxage, valid);
+}
+static void test_ocsp_db_add_host(wget_ocsp_db_t *p_ocsp_db, const char *host, time_t maxage)
+{
+	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
+
+	if (! ocsp_db->backend_db)
+		wget_error_printf_exit("wget using wrong OCSP database\n");
+
+	wget_ocsp_db_add_host(ocsp_db->backend_db, host, maxage);
+}
+static int test_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *p_ocsp_db, const char *fingerprint, int *valid)
+{
+	const test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
+
+	if (! ocsp_db->backend_db)
+		wget_error_printf_exit("wget using wrong OCSP database\n");
+
+	return wget_ocsp_fingerprint_in_cache(ocsp_db->backend_db, fingerprint, valid);
+}
+static int test_ocsp_db_hostname_is_valid(const wget_ocsp_db_t *p_ocsp_db, const char *hostname)
+{
+	const test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
+
+	if (! ocsp_db->backend_db)
+		wget_error_printf_exit("wget using wrong OCSP database\n");
+
+	return wget_ocsp_hostname_is_valid(ocsp_db->backend_db, hostname);
+}
+static struct wget_ocsp_db_vtable test_ocsp_db_vtable = {
+	.load = test_ocsp_db_load,
+	.save = test_ocsp_db_save,
+	.free = test_ocsp_db_free,
+	.add_fingerprint = test_ocsp_db_add_fingerprint,
+	.add_host = test_ocsp_db_add_host,
+	.fingerprint_in_cache = test_ocsp_db_fingerprint_in_cache,
+	.hostname_is_valid = test_ocsp_db_hostname_is_valid
+};
+static wget_ocsp_db_t *test_ocsp_db_new(int usable) {
+	test_ocsp_db_t *ocsp_db = wget_malloc(sizeof(test_ocsp_db_t));
+
+	ocsp_db->parent.vtable = &test_ocsp_db_vtable;
+	if (usable)
+		ocsp_db->backend_db = wget_ocsp_db_init(NULL, NULL);
+	else
+		ocsp_db->backend_db = NULL;
+
+	return (wget_ocsp_db_t *) ocsp_db;
+}
+
+static void finalizer(G_GNUC_WGET_UNUSED wget_plugin_t *plugin, G_GNUC_WGET_UNUSED int exit_status)
+{
+	if (hpkp_db_load_counter != 1)
+		wget_error_printf_exit("wget using wrong HPKP database (%d)\n", hpkp_db_load_counter);
+	if (hsts_db_load_counter != 1)
+		wget_error_printf_exit("wget using wrong HSTS database (%d)\n", hsts_db_load_counter);
+	if (ocsp_db_load_counter != 1)
+		wget_error_printf_exit("wget using wrong OCSP database (%d)\n", ocsp_db_load_counter);
+}
+
+WGET_EXPORT int wget_plugin_initializer(wget_plugin_t *plugin);
+int wget_plugin_initializer(wget_plugin_t *plugin)
+{
+	wget_plugin_add_hpkp_db(plugin, test_hpkp_db_new(0), 1);
+	wget_plugin_add_hpkp_db(plugin, test_hpkp_db_new(1), 3);
+	wget_plugin_add_hpkp_db(plugin, test_hpkp_db_new(0), 2);
+
+	wget_plugin_add_hsts_db(plugin, test_hsts_db_new(0), 1);
+	wget_plugin_add_hsts_db(plugin, test_hsts_db_new(1), 3);
+	wget_plugin_add_hsts_db(plugin, test_hsts_db_new(0), 2);
+
+	wget_plugin_add_ocsp_db(plugin, test_ocsp_db_new(0), 1);
+	wget_plugin_add_ocsp_db(plugin, test_ocsp_db_new(1), 3);
+	wget_plugin_add_ocsp_db(plugin, test_ocsp_db_new(0), 2);
+
+	wget_plugin_register_finalizer(plugin, finalizer);
+
+	return 0;
+}
+
 #else
 #error One of the TEST_SELECT_* must be defined to build this file
 #endif

@@ -57,9 +57,9 @@ int main(void)
 		WGET_DNS_CACHING, 1,
 		NULL);
 
-	// SSL: share Wget's OSCP cache for speed improvements
-	wget_ocsp_db_t *ocsp_db = wget_ocsp_db_init(NULL);
-	wget_ocsp_db_load(ocsp_db, OCSP_DB);
+	// SSL: share Wget's OCSP cache for speed improvements
+	wget_ocsp_db_t *ocsp_db = wget_ocsp_db_init(NULL, OCSP_DB);
+	wget_ocsp_db_load(ocsp_db);
 	wget_ssl_set_config_string(WGET_SSL_OCSP_CACHE, (const char *) ocsp_db);
 
 	// SSL: print information about server certs
@@ -127,7 +127,7 @@ out:
 		wget_iri_free(&iris[it]);
 	}
 
-	wget_ocsp_db_save(ocsp_db, OCSP_DB);
+	wget_ocsp_db_save(ocsp_db);
 	wget_ocsp_db_free(&ocsp_db);
 
 	return 0;

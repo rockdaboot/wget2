@@ -1295,7 +1295,7 @@ static void test_hsts(void)
 		{ "www.example.com", 80, 1 }, // default port
 		{ "www.example.com", 8080, 0 }, // wrong port
 	};
-	wget_hsts_db_t *hsts_db = wget_hsts_db_init(NULL);
+	wget_hsts_db_t *hsts_db = wget_hsts_db_init(NULL, NULL);
 	time_t maxage;
 	char include_subdomains;
 	int n;
@@ -1304,7 +1304,7 @@ static void test_hsts(void)
 	for (unsigned it = 0; it < countof(hsts_db_data); it++) {
 		const struct hsts_db_data *t = &hsts_db_data[it];
 		wget_http_parse_strict_transport_security(t->hsts_params, &maxage, &include_subdomains);
-		wget_hsts_db_add(hsts_db, wget_hsts_new(t->host, t->port, maxage, include_subdomains));
+		wget_hsts_db_add(hsts_db, t->host, t->port, maxage, include_subdomains);
 	}
 
 	// check HSTS database with values
@@ -1349,9 +1349,11 @@ static const char *_sha256_base64(const void *src)
 #define HPKP_PIN_1 "RxmgXsIrtjMhR8zanWqTw+QUWqeJj4fCvmOyoKbw5lg="
 #define HPKP_PIN_2 "Ic8LNwKypu+EXTi/ld8yp6P7lEH1jDVNIly8P/ykeWo="
 #define HPKP_PIN_3 "/szJ2BMcM2l9Ypapui03ZcpqNJUvwsfi2uMKHZBTuaw="
+#define HPKP_PIN_SIZE 32
 
 static void test_hpkp(void)
 {
+	unsigned int it;
 	struct hpkp_db_data {
 		const char *
 			host;
@@ -1369,6 +1371,26 @@ static void test_hpkp(void)
 		  "pin-sha256=\"" HPKP_PIN_1 "\"; pin-sha256=\"" HPKP_PIN_2 "\"" },
 		{ "www.example3.com", 443, "max-age=14400" }, // this removes the previous entry, due to no PINs
 	};
+	struct hpkp_db_params {
+		time_t
+			maxage;
+		int
+			include_subdomains;
+		size_t
+			n_pins;
+		unsigned int
+			pins_mask;
+	} hpkp_db_params[] = {
+		{ 14400, 1, 3, 7 },
+		{ 14400, 0, 2, 3 },
+		{ 0,     0, 0, 0 },
+		{ 14400, 0, 2, 3 },
+		{ 14400, 0, 0, 0 }
+	};
+	const char *hpkp_pins[] = { HPKP_PIN_1, HPKP_PIN_2, HPKP_PIN_3 };
+	char hpkp_pins_binary[countof(hpkp_pins)][HPKP_PIN_SIZE + 1];
+	for (it = 0; it < countof(hpkp_pins); it++)
+		wget_base64_decode(hpkp_pins_binary[it], hpkp_pins[it], strlen(hpkp_pins[it]));
 	static const struct hpkp_data {
 		const char *
 			host;
@@ -1388,7 +1410,7 @@ static void test_hpkp(void)
 		{ "www.example2.com", HPKP_PUBKEY_1, 0 }, // entry should have been removed due to max-age=0
 		{ "www.example3.com", HPKP_PUBKEY_1, 0 }, // entry should have been removed due to no PINs
 	};
-	wget_hpkp_db_t *hpkp_db = wget_hpkp_db_init(NULL);
+	wget_hpkp_db_t *hpkp_db = wget_hpkp_db_init(NULL, NULL);
 	int n;
 
 	/* generate values for pin-sha256 */
@@ -1397,12 +1419,77 @@ static void test_hpkp(void)
 	// printf("#define HPKP_PIN_3 \"%s\"\n", _sha256_base64(HPKP_PUBKEY_3));
 
 	// fill HPKP database with values
-	for (unsigned it = 0; it < countof(hpkp_db_data); it++) {
+	for (it = 0; it < countof(hpkp_db_data); it++) {
 		const struct hpkp_db_data *t = &hpkp_db_data[it];
 		wget_hpkp_t *hpkp = wget_hpkp_new();
 
 		wget_hpkp_set_host(hpkp, t->host);
 		wget_http_parse_public_key_pins(t->hpkp_params, hpkp);
+
+		// Check the database entry before adding
+		{
+			size_t n_pins;
+			const char *pin_types[countof(hpkp_pins)], *pins[countof(hpkp_pins)];
+			size_t pin_sizes[countof(hpkp_pins)];
+			const void *pins_binary[countof(hpkp_pins)];
+			size_t j, k;
+
+			// Check host, maxage, include_subdomains and n_pins
+			if (strcmp(wget_hpkp_get_host(hpkp), hpkp_db_data[it].host) != 0) {
+				failed++;
+				info_printf("Failed [%u]: wget_hpkp_get_host(hpkp) -> %s (expected %s)\n", it,
+					wget_hpkp_get_host(hpkp), hpkp_db_data[it].host);
+			} else {
+				ok++;
+			}
+			if (wget_hpkp_get_maxage(hpkp) != hpkp_db_params[it].maxage) {
+				failed++;
+				info_printf("Failed [%u]: wget_hpkp_get_maxage(hpkp) -> %llu (expected %llu)\n", it,
+					(unsigned long long) wget_hpkp_get_maxage(hpkp),
+					(unsigned long long) hpkp_db_params[it].maxage);
+			} else {
+				ok++;
+			}
+			if (wget_hpkp_get_include_subdomains(hpkp) != hpkp_db_params[it].include_subdomains) {
+				failed++;
+				info_printf("Failed [%u]: wget_hpkp_get_include_subdomains(hpkp) -> %d (expected %d)\n", it,
+						wget_hpkp_get_include_subdomains(hpkp), hpkp_db_params[it].include_subdomains);
+			} else {
+				ok++;
+			}
+			n_pins = wget_hpkp_get_n_pins(hpkp);
+			if (n_pins != hpkp_db_params[it].n_pins) {
+				failed++;
+				info_printf("Failed [%u]: wget_hpkp_get_n_pins(hpkp) -> %zu (expected %zu)\n", it,
+						n_pins, hpkp_db_params[it].n_pins);
+			} else {
+				ok++;
+			}
+
+			// Check the pins
+			wget_hpkp_get_pins_b64(hpkp, pin_types, pins);
+			wget_hpkp_get_pins(hpkp, pin_types, pin_sizes, pins_binary);
+			for (j = 0; j < countof(hpkp_pins); j++) {
+				if (! ((1 << j) & hpkp_db_params[it].pins_mask))
+					continue;
+				for (k = 0; k < n_pins; k++) {
+					if (strcmp(pin_types[k], "sha256") != 0)
+						continue;
+					if (pin_sizes[k] != HPKP_PIN_SIZE)
+						continue;
+					if (memcmp(pins_binary[k], hpkp_pins_binary[j], HPKP_PIN_SIZE) != 0)
+						continue;
+					if (strcmp(pins[k], hpkp_pins[j]) == 0)
+						break;
+				}
+				if (k == n_pins) {
+					failed++;
+					info_printf("Failed [%u]: Pin %s not found in hpkp entry\n", it, pins[n_pins]);
+				} else {
+					ok++;
+				}
+			}
+		}
 		wget_hpkp_db_add(hpkp_db, &hpkp);
 	}
 

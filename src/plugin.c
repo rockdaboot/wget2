@@ -69,6 +69,15 @@ static wget_vector_t *plugin_list;
 static wget_stringmap_t *plugin_name_index;
 // Whether any of the previous options forwarded was 'help'
 static int plugin_help_forwarded;
+// Plugin supplied HSTS database
+static wget_hsts_db_t *hsts_db;
+static int hsts_db_priority;
+// Plugin supplied HPKP database
+static wget_hpkp_db_t *hpkp_db;
+static int hpkp_db_priority;
+// Pluign supplied OCSP database
+static wget_ocsp_db_t *ocsp_db;
+static int ocsp_db_priority;
 
 // Sets a list of directories to search for plugins, separated by
 // _separator_.
@@ -239,6 +248,44 @@ static void impl_register_post_processor(wget_plugin_t *p_plugin, wget_plugin_po
 	priv->post_processor = fn;
 }
 
+// API for custom HSTS, HPKP and OCSP databases
+static void impl_add_hsts_db(G_GNUC_WGET_UNUSED wget_plugin_t *p_plugin, wget_hsts_db_t *new_hsts_db, int priority)
+{
+	if (hsts_db_priority < priority) {
+		hsts_db_priority = priority;
+		if (hsts_db)
+			wget_hsts_db_free(&hsts_db);
+		hsts_db = new_hsts_db;
+	} else {
+		wget_hsts_db_free(&new_hsts_db);
+	}
+}
+
+static void impl_add_hpkp_db(G_GNUC_WGET_UNUSED wget_plugin_t *p_plugin, wget_hpkp_db_t *new_hpkp_db, int priority)
+{
+	if (hpkp_db_priority < priority) {
+		hpkp_db_priority = priority;
+		if (hpkp_db)
+			wget_hpkp_db_free(&hpkp_db);
+		hpkp_db = new_hpkp_db;
+	} else {
+		wget_hpkp_db_free(&new_hpkp_db);
+	}
+}
+
+static void impl_add_ocsp_db(G_GNUC_WGET_UNUSED wget_plugin_t *p_plugin, wget_ocsp_db_t *new_ocsp_db, int priority)
+{
+	if (ocsp_db_priority < priority) {
+		ocsp_db_priority = priority;
+		if (ocsp_db)
+			wget_ocsp_db_free(&ocsp_db);
+		ocsp_db = new_ocsp_db;
+	} else {
+		wget_ocsp_db_free(&new_ocsp_db);
+	}
+}
+
+
 // vtable
 static struct wget_plugin_vtable vtable = {
 	.get_name = impl_get_name,
@@ -258,7 +305,11 @@ static struct wget_plugin_vtable vtable = {
 	.file_open_stream = impl_file_open_stream,
 	.file_get_recurse = impl_file_get_recurse,
 	.file_add_recurse_url = impl_file_add_recurse_url,
-	.register_post_processor = impl_register_post_processor
+	.register_post_processor = impl_register_post_processor,
+
+	.add_hsts_db = impl_add_hsts_db,
+	.add_hpkp_db = impl_add_hpkp_db,
+	.add_ocsp_db = impl_add_ocsp_db
 };
 
 
@@ -556,7 +607,34 @@ void plugin_db_forward_url_verdict_free(struct plugin_db_forward_url_verdict *ve
 		wget_free(verdict->alt_local_filename);
 }
 
-// Forwards downloaded file to intrested plugins
+// Fetches the plugin-provided HSTS database, or NULL.
+// Ownership of the returned HSTS database is transferred to the caller, so it must be free'd with wget_hsts_db_free().
+wget_hsts_db_t *plugin_db_fetch_provided_hsts_db(void)
+{
+	wget_hsts_db_t *res = hsts_db;
+	hsts_db = NULL;
+	return res;
+}
+
+// Fetches the plugin-provided HPKP database, or NULL.
+// Ownership of the returned HPKP database is transferred to the caller, so it must be free'd with wget_hpkp_db_free().
+wget_hpkp_db_t *plugin_db_fetch_provided_hpkp_db(void)
+{
+	wget_hpkp_db_t *res = hpkp_db;
+	hpkp_db = NULL;
+	return res;
+}
+
+// Fetches the plugin-provided OCSP database, or NULL.
+// Ownership of the returned OCSP database is transferred to the caller, so it must be free'd with wget_ocsp_db_free().
+wget_ocsp_db_t *plugin_db_fetch_provided_ocsp_db(void)
+{
+	wget_ocsp_db_t *res = ocsp_db;
+	ocsp_db = NULL;
+	return res;
+}
+
+// Forwards downloaded file to interested plugins
 int plugin_db_forward_downloaded_file(const wget_iri_t *iri, uint64_t size, const char *filename, const void *data,
 		wget_vector_t *recurse_iris)
 {
@@ -603,6 +681,12 @@ void plugin_db_init(void)
 		wget_stringmap_set_key_destructor(plugin_name_index, NULL);
 		wget_stringmap_set_value_destructor(plugin_name_index, NULL);
 		plugin_help_forwarded = 0;
+		hsts_db = NULL;
+		hsts_db_priority = 0;
+		hpkp_db = NULL;
+		hpkp_db_priority = 0;
+		ocsp_db = NULL;
+		ocsp_db_priority = 0;
 
 		initialized = 1;
 	}
@@ -622,5 +706,12 @@ void plugin_db_finalize(int exitcode)
 	wget_vector_free(&plugin_list);
 	wget_stringmap_free(&plugin_name_index);
 	wget_vector_free(&search_paths);
+	if (hsts_db)
+		wget_hsts_db_free(&hsts_db);
+	if (hpkp_db)
+		wget_hpkp_db_free(&hpkp_db);
+	if (ocsp_db)
+		wget_ocsp_db_free(&ocsp_db);
+
 	initialized = 0;
 }
