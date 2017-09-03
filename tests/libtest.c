@@ -693,12 +693,12 @@ static int _http_server_start(int SERVER_MODE)
 #if MHD_VERSION >= 0x00095501
 	else if (MHD_NO != MHD_is_feature_supported(MHD_FEATURE_AUTODETECT_BIND_PORT))
 	{
-		const union MHD_DaemonInfo *dinfo;
+		const union MHD_DaemonInfo *dinfo = NULL;
 		if (SERVER_MODE == HTTP_MODE)
 			dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_BIND_PORT);
 		else if (SERVER_MODE == HTTPS_MODE)
 			dinfo = MHD_get_daemon_info(httpsdaemon, MHD_DAEMON_INFO_BIND_PORT);
-		if (dinfo == NULL || dinfo->port == 0)
+		if (!dinfo || dinfo->port == 0)
 		{
 			return 1;
 		}
@@ -711,16 +711,14 @@ static int _http_server_start(int SERVER_MODE)
 #endif /* MHD_VERSION >= 0x00095501 */
 	else
 	{
-		const union MHD_DaemonInfo *dinfo;
+		const union MHD_DaemonInfo *dinfo = NULL;
 		MHD_socket sock_fd;
 		if (SERVER_MODE == HTTP_MODE)
 			dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_LISTEN_FD);
 		else if (SERVER_MODE == HTTPS_MODE)
 			dinfo = MHD_get_daemon_info(httpsdaemon, MHD_DAEMON_INFO_LISTEN_FD);
-		if (dinfo == NULL)
-		{
+		if (!dinfo)
 			return 1;
-		}
 		sock_fd = dinfo->listen_fd;
 
 		struct sockaddr_storage addr_store;
