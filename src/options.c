@@ -743,6 +743,7 @@ static int print_plugin_help(G_GNUC_WGET_UNUSED option_t opt,
 	exit(EXIT_SUCCESS);
 }
 
+// Get rid of this magic number
 stats_opts_t stats_opts[5];
 
 // default values for config options (if not 0 or NULL)
@@ -1525,7 +1526,7 @@ static const struct optionw options[] = {
 	{ "stats-site", &stats_opts[WGET_STATS_TYPE_SITE], parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print site stats. (default: off)\n",
-		  "Additional format supported: --stats-site[=[format:]file]\n"
+		  "Additional format supported: --stats-site\n"
 		}
 	},
 	{ "stats-tls", &stats_opts[WGET_STATS_TYPE_TLS], parse_stats, -1, 0,

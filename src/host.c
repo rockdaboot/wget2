@@ -712,18 +712,16 @@ static char *print_encoding(char encoding)
 
 static int host_docs_hashmap(struct site_stats *ctx, HOST_DOCS *host_docsp)
 {
-	char buf[16];
-
 	wget_buffer_printf_append(ctx->buf, "  %8d  %13d\n", host_docsp->http_status, wget_vector_size(host_docsp->docs));
 
 	for (int it = 0; it < wget_vector_size(host_docsp->docs); it++) {
 		const DOC *doc = wget_vector_get(host_docsp->docs, it);
-		wget_buffer_printf_append(ctx->buf, "         %s  %s (%s) : ",
+		wget_buffer_printf_append(ctx->buf, "         %s  %lld bytes (%s) : ",
 				doc->iri->uri,
-				wget_human_readable(buf, sizeof(buf),doc->size_downloaded),
+				doc->size_downloaded,
 				print_encoding(doc->encoding));
-		wget_buffer_printf_append(ctx->buf, "%s (decompressed)\n",
-				wget_human_readable(buf, sizeof(buf),doc->size_decompressed));
+		wget_buffer_printf_append(ctx->buf, "%lld bytes (decompressed)\n",
+				doc->size_decompressed);
 	}
 
 	if (ctx->buf->length > 64*1024) {

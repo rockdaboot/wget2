@@ -571,11 +571,12 @@ static unsigned int _host_hash(const HOST *host)
 
 static void _free_host_entry(HOST *host)
 {
-	if (host)
+	if (host) {
 		wget_xfree(host->hostname);
 		wget_xfree(host->ip);
 		wget_xfree(host->scheme);
 		wget_xfree(host);
+	}
 }
 
 static const HOST *host_add(const HOST *hostp)
