@@ -690,7 +690,7 @@ int queue_size(void)
 	return qsize;
 }
 
-static char *print_encoding(char encoding)
+static const char *print_encoding(char encoding)
 {
 	switch (encoding) {
 	case wget_content_encoding_identity:
