@@ -38,7 +38,6 @@
 #include <signal.h>
 #include <utime.h>
 #include <dirent.h>
-#include <c-ctype.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 
@@ -55,7 +54,6 @@
 #include <netdb.h>
 
 static wget_thread_t
-	https_server_tid,
 	ftp_server_tid,
 	ftps_server_tid;
 static int
@@ -118,175 +116,6 @@ enum SERVER_MODE {
 static void sigterm_handler(int sig G_GNUC_WGET_UNUSED)
 {
 	terminate = 1;
-}
-
-static void *_http_server_thread(void *ctx)
-{
-	wget_tcp_t *tcp=NULL, *parent_tcp = ctx;
-	wget_test_url_t *url = NULL;
-	char buf[4096], method[32], request_url[256], tag[64], value[256], *p;
-	ssize_t from_bytes, to_bytes, n;
-	size_t nbytes, body_len, request_url_length;
-	unsigned it;
-	int byterange, authorized;
-	time_t modified;
-
-#ifdef _WIN32
-	signal(SIGTERM, sigterm_handler);
-#else
-	sigaction(SIGTERM, &(struct sigaction) { .sa_handler = sigterm_handler }, NULL);
-#endif
-
-	while (!terminate) {
-		wget_tcp_deinit(&tcp);
-
-		wget_info_printf("[SERVER] accept...\n");
-		if ((tcp = wget_tcp_accept(parent_tcp))) {
-			wget_info_printf("[SERVER] accepted\n");
-			authorized = 0;
-
-			nbytes = 0;
-			while ((n = wget_tcp_read(tcp, buf + nbytes, sizeof(buf) - 1 - nbytes)) > 0) {
-				nbytes += n;
-				buf[nbytes]=0;
-				wget_info_printf(_("[SERVER] got %zd bytes (total %zu)\n"), n, nbytes);
-				if (strstr(buf,"\r\n\r\n"))
-					break;
-			}
-			wget_info_printf(_("[SERVER] total %zd bytes (total %zu) (errno=%d)\n"), n, nbytes, errno);
-
-			if (nbytes > 0) {
-				if (sscanf(buf, "%31s %255s", method, request_url) !=2) {
-					wget_tcp_printf(tcp, "HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");
-					continue;
-				}
-
-				byterange = from_bytes = to_bytes = 0;
-				modified = 0;
-
-				for (p = strstr(buf, "\r\n"); p && sscanf(p, "\r\n%63[^:]: %255[^\r]", tag, value) == 2; p = strstr(p + 2, "\r\n")) {
-					if (!wget_strcasecmp_ascii(tag, "Range")) {
-						if ((byterange = sscanf(value, "bytes=%zd-%zd", &from_bytes, &to_bytes)) < 1)
-							byterange = 0;
-					}
-					else if (url && !wget_strcasecmp_ascii(tag, "Authorization")) {
-						const char *auth_scheme, *s;
-
-						s=wget_http_parse_token(value, &auth_scheme);
-						while (c_isblank(*s)) s++;
-
-						if (!wget_strcasecmp_ascii(auth_scheme, "basic")) {
-							const char *encoded = wget_base64_encode_printf_alloc("%s:%s", url->auth_username, url->auth_password);
-
-							wget_error_printf("Auth check '%s' <-> '%s'\n", encoded, s);
-							if (!strcmp(encoded, s))
-								authorized = 1;
-
-							wget_xfree(encoded);
-						}
-
-						wget_xfree(auth_scheme);
-					}
-					else if (!wget_strcasecmp_ascii(tag, "If-Modified-Since")) {
-						modified = wget_http_parse_full_date(value);
-						wget_info_printf("modified = %ld\n", modified);
-					}
-				}
-
-				url = NULL;
-				request_url_length = strlen(request_url);
-
-				if (request_url[request_url_length - 1] == '/') {
-					// access a directory
-					for (it = 0; it < nurls; it++) {
-						if (!strcmp(request_url, urls[it].name) ||
-							(!strncmp(request_url, urls[it].name, request_url_length) &&
-							!strcmp(urls[it].name + request_url_length, "index.html")))
-						{
-							url = &urls[it];
-							break;
-						}
-					}
-				} else {
-					// access a file
-					for (it = 0; it < nurls; it++) {
-						// printf("%s %s\n", request_url, urls[it].name);
-						if (!strcmp(request_url, urls[it].name)) {
-							url = &urls[it];
-							break;
-						}
-					}
-				}
-
-				if (!url) {
-					wget_tcp_printf(tcp, "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
-					continue;
-				}
-
-				if (url->auth_method && !authorized) {
-					if (!wget_strcasecmp_ascii(url->auth_method, "basic"))
-						wget_tcp_printf(tcp,
-							"HTTP/1.1 401 Unauthorized\r\n" \
-							"WWW-Authenticate: %s realm=\"Protected Page\"\r\n" \
-							"Connection: close\r\n\r\n",
-							url->auth_method);
-					else
-						wget_error_printf(_("Unknown authentication scheme '%s'\n"), url->auth_method);
-
-					continue;
-				}
-
-				if (modified && url->modified<=modified) {
-					wget_tcp_printf(tcp,"HTTP/1.1 304 Not Modified\r\n\r\n");
-					continue;
-				}
-
-				if (byterange == 1) {
-					to_bytes = strlen(url->body) - 1;
-				}
-				if (byterange) {
-					if (from_bytes > to_bytes || from_bytes >= (int)strlen(url->body)) {
-						wget_tcp_printf(tcp, "HTTP/1.1 416 Range Not Satisfiable\r\nConnection: close\r\n\r\n");
-						continue;
-					}
-
-					// create response
-					body_len = to_bytes - from_bytes + 1;
-					nbytes = snprintf(buf, sizeof(buf), "HTTP/1.1 206 Partial Content\r\n");
-					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "Content-Length: %zu\r\n", body_len);
-					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "Accept-Ranges: bytes\r\n");
-					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "Content-Range: %zd-%zd/%zu\r\n", from_bytes, to_bytes, body_len);
-					for (it = 0; it < countof(url->headers) && url->headers[it]; it++) {
-						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s\r\n", url->headers[it]);
-					}
-					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "\r\n");
-					if (!strcmp(method, "GET") || !strcmp(method, "POST"))
-						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%.*s", (int)body_len, url->body + from_bytes);
-				} else {
-					// create response
-					body_len = strlen(url->body ? url->body : "");
-					nbytes = snprintf(buf, sizeof(buf), "HTTP/1.1 %s\r\n", url->code ? url->code : "200 OK");
-					if (server_send_content_length)
-						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "Content-Length: %zu\r\n", body_len);
-					for (it = 0; it < countof(url->headers) && url->headers[it]; it++) {
-						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s\r\n", url->headers[it]);
-					}
-					nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "\r\n");
-					if (!strcmp(method, "GET") || !strcmp(method, "POST"))
-						nbytes += snprintf(buf + nbytes, sizeof(buf) - nbytes, "%s", url->body ? url->body : "");
-				}
-
-				// send response
-				wget_tcp_write(tcp, buf, nbytes);
-			}
-		} else if (!terminate)
-			wget_error_printf(_("Failed to get connection (%d)\n"), errno);
-	}
-
-	wget_tcp_deinit(&parent_tcp);
-
-	wget_info_printf("[SERVER] stopped\n");
-	return NULL;
 }
 
 #ifdef WITH_MICROHTTPD
@@ -952,21 +781,10 @@ void wget_test_stop_server(void)
 
 	// free resources - needed for valgrind testing
 	terminate = 1;
-//	pthread_kill(http_server_tid, SIGTERM);
-//	pthread_kill(https_server_tid, SIGTERM);
-//	pthread_kill(ftp_server_tid, SIGTERM);
-//	if (ftps_implicit)
-//		pthread_kill(ftps_server_tid, SIGTERM);
 
-	wget_thread_cancel(https_server_tid);
 	wget_thread_cancel(ftp_server_tid);
 	if (ftps_implicit)
 		wget_thread_cancel(ftps_server_tid);
-//	wget_thread_join(http_server_tid);
-//	wget_thread_join(https_server_tid);
-//	wget_thread_join(ftp_server_tid);
-//	if (ftps_implicit)
-//		wget_thread_join(ftps_server_tid);
 
 	if (chdir("..") != 0)
 		wget_error_printf(_("Failed to chdir ..\n"));
@@ -1174,10 +992,6 @@ void wget_test_start_server(int first_key, ...)
 			}
 		}
 	}
-
-	// start thread for HTTPS
-	if ((rc = wget_thread_start(&https_server_tid, _http_server_thread, https_parent_tcp, 0)) != 0)
-		wget_error_printf_exit(_("Failed to start HTTPS server, error %d\n"), rc);
 
 	// start thread for FTP
 	if ((rc = wget_thread_start(&ftp_server_tid, _ftp_server_thread, ftp_parent_tcp, 0)) != 0)
