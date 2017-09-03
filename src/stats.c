@@ -291,8 +291,11 @@ static const char *stats_server_hpkp(wget_hpkp_stats_t hpkp)
 
 static void stats_print_human(wget_stats_type_t type)
 {
-	wget_buffer_t *buf = wget_buffer_alloc(0);
 	FILE *fp;
+	wget_buffer_t buf;
+	char sbuf[4096];
+
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	switch (type) {
 	case WGET_STATS_TYPE_DNS: {
@@ -303,16 +306,16 @@ static void stats_print_human(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			wget_buffer_printf(buf, "\nDNS timings:\n");
-			wget_buffer_printf_append(buf, "  %4s %s\n", "ms", "Host");
+			wget_buffer_printf(&buf, "\nDNS timings:\n");
+			wget_buffer_printf_append(&buf, "  %4s %s\n", "ms", "Host");
 			for (int it = 0; it < wget_vector_size(dns_stats_v); it++) {
 				const dns_stats_t *dns_stats = wget_vector_get(dns_stats_v, it);
 
-				wget_buffer_printf_append(buf, "  %4lld %s:%hu (%s)\n", dns_stats->millisecs, dns_stats->host, dns_stats->port, dns_stats->ip);
+				wget_buffer_printf_append(&buf, "  %4lld %s:%hu (%s)\n", dns_stats->millisecs, dns_stats->host, dns_stats->port, dns_stats->ip);
 
-				if ((buf->length > 64*1024) || (it == wget_vector_size(dns_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
+				if ((buf.length > 64*1024) || (it == wget_vector_size(dns_stats_v) - 1)) {
+					fprintf(fp, "%s", buf.data);
+					wget_buffer_reset(&buf);
 				}
 			}
 
@@ -324,7 +327,7 @@ static void stats_print_human(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
@@ -337,28 +340,28 @@ static void stats_print_human(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			wget_buffer_printf(buf, "\nTLS Statistics:\n");
+			wget_buffer_printf(&buf, "\nTLS Statistics:\n");
 			for (int it = 0; it < wget_vector_size(tls_stats_v); it++) {
 				const tls_stats_t *tls_stats = wget_vector_get(tls_stats_v, it);
 
-				wget_buffer_printf_append(buf, "  %s:\n", tls_stats->hostname);
-				wget_buffer_printf_append(buf, "    Version         : %s\n", tls_stats->version);
-				wget_buffer_printf_append(buf, "    False Start     : %s\n", tls_stats->false_start);
-				wget_buffer_printf_append(buf, "    TFO             : %s\n", tls_stats->tfo);
-				wget_buffer_printf_append(buf, "    ALPN Protocol   : %s\n", tls_stats->alpn_proto);
-				wget_buffer_printf_append(buf, "    Resumed         : %s\n",
+				wget_buffer_printf_append(&buf, "  %s:\n", tls_stats->hostname);
+				wget_buffer_printf_append(&buf, "    Version         : %s\n", tls_stats->version);
+				wget_buffer_printf_append(&buf, "    False Start     : %s\n", tls_stats->false_start);
+				wget_buffer_printf_append(&buf, "    TFO             : %s\n", tls_stats->tfo);
+				wget_buffer_printf_append(&buf, "    ALPN Protocol   : %s\n", tls_stats->alpn_proto);
+				wget_buffer_printf_append(&buf, "    Resumed         : %s\n",
 						tls_stats->resumed ? (tls_stats->resumed == 1 ? "Yes" : "-") : "No");
-				wget_buffer_printf_append(buf, "    TCP Protocol    : %s\n",
+				wget_buffer_printf_append(&buf, "    TCP Protocol    : %s\n",
 						tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_1_1 ?
 								"HTTP/1.1" :
 								(tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"));
-				wget_buffer_printf_append(buf, "    Cert Chain Size : %d\n", tls_stats->cert_chain_size);
-				wget_buffer_printf_append(buf, "    TLS negotiation\n");
-				wget_buffer_printf_append(buf, "    duration (ms)   : %lld\n\n", tls_stats->millisecs);
+				wget_buffer_printf_append(&buf, "    Cert Chain Size : %d\n", tls_stats->cert_chain_size);
+				wget_buffer_printf_append(&buf, "    TLS negotiation\n");
+				wget_buffer_printf_append(&buf, "    duration (ms)   : %lld\n\n", tls_stats->millisecs);
 
-				if ((buf->length > 64*1024) || (it == wget_vector_size(tls_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
+				if ((buf.length > 64*1024) || (it == wget_vector_size(tls_stats_v) - 1)) {
+					fprintf(fp, "%s", buf.data);
+					wget_buffer_reset(&buf);
 				}
 			}
 
@@ -370,7 +373,7 @@ static void stats_print_human(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
@@ -383,21 +386,21 @@ static void stats_print_human(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			wget_buffer_printf(buf, "\nServer Statistics:\n");
+			wget_buffer_printf(&buf, "\nServer Statistics:\n");
 			for (int it = 0; it < wget_vector_size(server_stats_v); it++) {
 				const server_stats_t *server_stats = wget_vector_get(server_stats_v, it);
 
-				wget_buffer_printf_append(buf, "  %s:\n", server_stats->hostname);
-				wget_buffer_printf_append(buf, "    IP             : %s\n", server_stats->ip);
-				wget_buffer_printf_append(buf, "    SCHEME         : %s\n", server_stats->scheme);
-				wget_buffer_printf_append(buf, "    HPKP           : %s\n", stats_server_hpkp(server_stats->hpkp));
-				wget_buffer_printf_append(buf, "    HPKP New Entry : %s\n", server_stats->hpkp_new);
-				wget_buffer_printf_append(buf, "    HSTS           : %s\n", server_stats->hsts);
-				wget_buffer_printf_append(buf, "    CSP            : %s\n\n", server_stats->csp);
+				wget_buffer_printf_append(&buf, "  %s:\n", server_stats->hostname);
+				wget_buffer_printf_append(&buf, "    IP             : %s\n", server_stats->ip);
+				wget_buffer_printf_append(&buf, "    SCHEME         : %s\n", server_stats->scheme);
+				wget_buffer_printf_append(&buf, "    HPKP           : %s\n", stats_server_hpkp(server_stats->hpkp));
+				wget_buffer_printf_append(&buf, "    HPKP New Entry : %s\n", server_stats->hpkp_new);
+				wget_buffer_printf_append(&buf, "    HSTS           : %s\n", server_stats->hsts);
+				wget_buffer_printf_append(&buf, "    CSP            : %s\n\n", server_stats->csp);
 
-				if ((buf->length > 64*1024) || (it == wget_vector_size(server_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
+				if ((buf.length > 64*1024) || (it == wget_vector_size(server_stats_v) - 1)) {
+					fprintf(fp, "%s", buf.data);
+					wget_buffer_reset(&buf);
 				}
 			}
 
@@ -409,7 +412,7 @@ static void stats_print_human(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
@@ -422,18 +425,18 @@ static void stats_print_human(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			wget_buffer_printf(buf, "\nOCSP Statistics:\n");
+			wget_buffer_printf(&buf, "\nOCSP Statistics:\n");
 			for (int it = 0; it < wget_vector_size(ocsp_stats_v); it++) {
 				const ocsp_stats_t *ocsp_stats = wget_vector_get(ocsp_stats_v, it);
 
-				wget_buffer_printf_append(buf, "  %s:\n", ocsp_stats->hostname);
-				wget_buffer_printf_append(buf, "    VALID          : %d\n", ocsp_stats->nvalid);
-				wget_buffer_printf_append(buf, "    REVOKED        : %d\n", ocsp_stats->nrevoked);
-				wget_buffer_printf_append(buf, "    IGNORED        : %d\n\n", ocsp_stats->nignored);
+				wget_buffer_printf_append(&buf, "  %s:\n", ocsp_stats->hostname);
+				wget_buffer_printf_append(&buf, "    VALID          : %d\n", ocsp_stats->nvalid);
+				wget_buffer_printf_append(&buf, "    REVOKED        : %d\n", ocsp_stats->nrevoked);
+				wget_buffer_printf_append(&buf, "    IGNORED        : %d\n\n", ocsp_stats->nignored);
 
-				if ((buf->length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
+				if ((buf.length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
+					fprintf(fp, "%s", buf.data);
+					wget_buffer_reset(&buf);
 				}
 			}
 
@@ -445,7 +448,7 @@ static void stats_print_human(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
@@ -458,9 +461,9 @@ static void stats_print_human(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			wget_buffer_printf(buf, "\nSite Statistics:\n");
+			wget_buffer_printf(&buf, "\nSite Statistics:\n");
 
-			print_site_stats(buf, fp);
+			print_site_stats(&buf, fp);
 
 			if (fp != stdout) {
 				fclose(fp);
@@ -470,7 +473,7 @@ static void stats_print_human(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
@@ -483,8 +486,11 @@ static void stats_print_human(wget_stats_type_t type)
 
 static void stats_print_json(wget_stats_type_t type)
 {
-	wget_buffer_t *buf = wget_buffer_alloc(0);
 	FILE *fp;
+	wget_buffer_t buf;
+	char sbuf[4096];
+
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	switch (type) {
 	case WGET_STATS_TYPE_DNS: {
@@ -495,19 +501,19 @@ static void stats_print_json(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			wget_buffer_printf(buf, "[\n");
+			wget_buffer_printf(&buf, "[\n");
 			for (int it = 0; it < wget_vector_size(dns_stats_v); it++) {
 				const dns_stats_t *dns_stats = wget_vector_get(dns_stats_v, it);
-				wget_buffer_printf_append(buf, "\t{\n");
-				wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", dns_stats->host);
-				wget_buffer_printf_append(buf, "\t\t\"IP\" : \"%s\",\n", dns_stats->ip);
-				wget_buffer_printf_append(buf, "\t\t\"Port\" : %hu\n", dns_stats->port);
-				wget_buffer_printf_append(buf, "\t\t\"DNS resolution duration (ms)\" : %lld\n", dns_stats->millisecs);
-				wget_buffer_printf_append(buf, it < wget_vector_size(dns_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
+				wget_buffer_printf_append(&buf, "\t{\n");
+				wget_buffer_printf_append(&buf, "\t\t\"Hostname\" : \"%s\",\n", dns_stats->host);
+				wget_buffer_printf_append(&buf, "\t\t\"IP\" : \"%s\",\n", dns_stats->ip);
+				wget_buffer_printf_append(&buf, "\t\t\"Port\" : %hu\n", dns_stats->port);
+				wget_buffer_printf_append(&buf, "\t\t\"DNS resolution duration (ms)\" : %lld\n", dns_stats->millisecs);
+				wget_buffer_printf_append(&buf, it < wget_vector_size(dns_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
 
-				if ((buf->length > 64*1024) || (it == wget_vector_size(dns_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
+				if ((buf.length > 64*1024) || (it == wget_vector_size(dns_stats_v) - 1)) {
+					fprintf(fp, "%s", buf.data);
+					wget_buffer_reset(&buf);
 				}
 			}
 
@@ -519,7 +525,7 @@ static void stats_print_json(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
@@ -532,28 +538,28 @@ static void stats_print_json(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			wget_buffer_printf(buf, "[\n");
+			wget_buffer_printf(&buf, "[\n");
 			for (int it = 0; it < wget_vector_size(tls_stats_v); it++) {
 				const tls_stats_t *tls_stats = wget_vector_get(tls_stats_v, it);
-				wget_buffer_printf_append(buf, "\t{\n");
-				wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", tls_stats->hostname);
-				wget_buffer_printf_append(buf, "\t\t\"Version\" : \"%s\",\n", tls_stats->version);
-				wget_buffer_printf_append(buf, "\t\t\"False Start\" : \"%s\",\n", tls_stats->false_start);
-				wget_buffer_printf_append(buf, "\t\t\"TFO\" : \"%s\",\n", tls_stats->tfo);
-				wget_buffer_printf_append(buf, "\t\t\"ALPN Protocol\" : \"%s\",\n", tls_stats->alpn_proto);
-				wget_buffer_printf_append(buf, "\t\t\"Resumed\" : \"%s\",\n",
+				wget_buffer_printf_append(&buf, "\t{\n");
+				wget_buffer_printf_append(&buf, "\t\t\"Hostname\" : \"%s\",\n", tls_stats->hostname);
+				wget_buffer_printf_append(&buf, "\t\t\"Version\" : \"%s\",\n", tls_stats->version);
+				wget_buffer_printf_append(&buf, "\t\t\"False Start\" : \"%s\",\n", tls_stats->false_start);
+				wget_buffer_printf_append(&buf, "\t\t\"TFO\" : \"%s\",\n", tls_stats->tfo);
+				wget_buffer_printf_append(&buf, "\t\t\"ALPN Protocol\" : \"%s\",\n", tls_stats->alpn_proto);
+				wget_buffer_printf_append(&buf, "\t\t\"Resumed\" : \"%s\",\n",
 						tls_stats->resumed ? (tls_stats->resumed == 1 ? "Yes" : "-") : "No");
-				wget_buffer_printf_append(buf, "\t\t\"TCP Protocol\" : \"%s\",\n",
+				wget_buffer_printf_append(&buf, "\t\t\"TCP Protocol\" : \"%s\",\n",
 						tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_1_1 ?
 								"HTTP/1.1" :
 								(tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"));
-				wget_buffer_printf_append(buf, "\t\t\"Cert-chain Size\" : %d,\n", tls_stats->cert_chain_size);
-				wget_buffer_printf_append(buf, "\t\t\"TLS negotiation duration (ms)\" : %lld\n", tls_stats->millisecs);
-				wget_buffer_printf_append(buf, it < wget_vector_size(tls_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
+				wget_buffer_printf_append(&buf, "\t\t\"Cert-chain Size\" : %d,\n", tls_stats->cert_chain_size);
+				wget_buffer_printf_append(&buf, "\t\t\"TLS negotiation duration (ms)\" : %lld\n", tls_stats->millisecs);
+				wget_buffer_printf_append(&buf, it < wget_vector_size(tls_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
 
-				if ((buf->length > 64*1024) || (it == wget_vector_size(tls_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
+				if ((buf.length > 64*1024) || (it == wget_vector_size(tls_stats_v) - 1)) {
+					fprintf(fp, "%s", buf.data);
+					wget_buffer_reset(&buf);
 				}
 			}
 
@@ -565,7 +571,7 @@ static void stats_print_json(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
@@ -578,22 +584,22 @@ static void stats_print_json(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			wget_buffer_printf(buf, "[\n");
+			wget_buffer_printf(&buf, "[\n");
 			for (int it = 0; it < wget_vector_size(server_stats_v); it++) {
 				const server_stats_t *server_stats = wget_vector_get(server_stats_v, it);
-				wget_buffer_printf_append(buf, "\t{\n");
-				wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", server_stats->hostname);
-				wget_buffer_printf_append(buf, "\t\t\"IP\" : \"%s\",\n", server_stats->ip);
-				wget_buffer_printf_append(buf, "\t\t\"SCHEME\" : \"%s\",\n", server_stats->scheme);
-				wget_buffer_printf_append(buf, "\t\t\"HPKP\" : \"%s\",\n", stats_server_hpkp(server_stats->hpkp));
-				wget_buffer_printf_append(buf, "\t\t\"HPKP New Entry\" : \"%s\",\n", server_stats->hpkp_new);
-				wget_buffer_printf_append(buf, "\t\t\"HSTS\" : \"%s\",\n", server_stats->hsts);
-				wget_buffer_printf_append(buf, "\t\t\"CSP\" : \"%s\"\n", server_stats->csp);
-				wget_buffer_printf_append(buf, it < wget_vector_size(server_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
+				wget_buffer_printf_append(&buf, "\t{\n");
+				wget_buffer_printf_append(&buf, "\t\t\"Hostname\" : \"%s\",\n", server_stats->hostname);
+				wget_buffer_printf_append(&buf, "\t\t\"IP\" : \"%s\",\n", server_stats->ip);
+				wget_buffer_printf_append(&buf, "\t\t\"SCHEME\" : \"%s\",\n", server_stats->scheme);
+				wget_buffer_printf_append(&buf, "\t\t\"HPKP\" : \"%s\",\n", stats_server_hpkp(server_stats->hpkp));
+				wget_buffer_printf_append(&buf, "\t\t\"HPKP New Entry\" : \"%s\",\n", server_stats->hpkp_new);
+				wget_buffer_printf_append(&buf, "\t\t\"HSTS\" : \"%s\",\n", server_stats->hsts);
+				wget_buffer_printf_append(&buf, "\t\t\"CSP\" : \"%s\"\n", server_stats->csp);
+				wget_buffer_printf_append(&buf, it < wget_vector_size(server_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
 
-				if ((buf->length > 64*1024) || (it == wget_vector_size(server_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
+				if ((buf.length > 64*1024) || (it == wget_vector_size(server_stats_v) - 1)) {
+					fprintf(fp, "%s", buf.data);
+					wget_buffer_reset(&buf);
 				}
 			}
 
@@ -605,7 +611,7 @@ static void stats_print_json(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
@@ -618,19 +624,19 @@ static void stats_print_json(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			wget_buffer_printf(buf, "[\n");
+			wget_buffer_printf(&buf, "[\n");
 			for (int it = 0; it < wget_vector_size(ocsp_stats_v); it++) {
 				const ocsp_stats_t *ocsp_stats = wget_vector_get(ocsp_stats_v, it);
-				wget_buffer_printf_append(buf, "\t{\n");
-				wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", ocsp_stats->hostname);
-				wget_buffer_printf_append(buf, "\t\t\"VALID\" : %d,\n", ocsp_stats->nvalid);
-				wget_buffer_printf_append(buf, "\t\t\"REVOKED\" : %d,\n", ocsp_stats->nrevoked);
-				wget_buffer_printf_append(buf, "\t\t\"IGNORED\" : %d\n", ocsp_stats->nignored);
-				wget_buffer_printf_append(buf, it < wget_vector_size(ocsp_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
+				wget_buffer_printf_append(&buf, "\t{\n");
+				wget_buffer_printf_append(&buf, "\t\t\"Hostname\" : \"%s\",\n", ocsp_stats->hostname);
+				wget_buffer_printf_append(&buf, "\t\t\"VALID\" : %d,\n", ocsp_stats->nvalid);
+				wget_buffer_printf_append(&buf, "\t\t\"REVOKED\" : %d,\n", ocsp_stats->nrevoked);
+				wget_buffer_printf_append(&buf, "\t\t\"IGNORED\" : %d\n", ocsp_stats->nignored);
+				wget_buffer_printf_append(&buf, it < wget_vector_size(ocsp_stats_v) - 1 ? "\t},\n" : "\t}\n]\n");
 
-				if ((buf->length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
+				if ((buf.length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
+					fprintf(fp, "%s", buf.data);
+					wget_buffer_reset(&buf);
 				}
 			}
 
@@ -642,7 +648,7 @@ static void stats_print_json(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
@@ -659,8 +665,11 @@ static void stats_print_json(wget_stats_type_t type)
 
 static void stats_print_csv(wget_stats_type_t type)
 {
-	wget_buffer_t *buf = wget_buffer_alloc(0);
 	FILE *fp;
+	wget_buffer_t buf;
+	char sbuf[4096];
+
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	switch (type) {
 	case WGET_STATS_TYPE_DNS: {
@@ -672,16 +681,16 @@ static void stats_print_csv(wget_stats_type_t type)
 
 		if (fp) {
 			const char *header = "Hostname,IP,Port,DNS resolution duration (ms)";
-			wget_buffer_printf(buf, "%s\n", header);
+			wget_buffer_printf(&buf, "%s\n", header);
 
 			for (int it = 0; it < wget_vector_size(dns_stats_v); it++) {
 				const dns_stats_t *dns_stats = wget_vector_get(dns_stats_v, it);
 
-				wget_buffer_printf_append(buf, "%s,%s,%hu,%lld\n", dns_stats->host, dns_stats->ip, dns_stats->port, dns_stats->millisecs);
+				wget_buffer_printf_append(&buf, "%s,%s,%hu,%lld\n", dns_stats->host, dns_stats->ip, dns_stats->port, dns_stats->millisecs);
 
-				if ((buf->length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
+				if ((buf.length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
+					fprintf(fp, "%s", buf.data);
+					wget_buffer_reset(&buf);
 				}
 			}
 
@@ -693,7 +702,7 @@ static void stats_print_csv(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
@@ -707,12 +716,12 @@ static void stats_print_csv(wget_stats_type_t type)
 
 		if (fp) {
 			const char *header = "Hostname,Version,False Start,TFO,ALPN,Resumed,TCP,Cert-chain Length,TLS negotiation duration (ms)";
-			wget_buffer_printf(buf, "%s\n", header);
+			wget_buffer_printf(&buf, "%s\n", header);
 
 			for (int it = 0; it < wget_vector_size(tls_stats_v); it++) {
 				const tls_stats_t *tls_stats = wget_vector_get(tls_stats_v, it);
 
-				wget_buffer_printf_append(buf, "%s,%s,%s,%s,%s,%s,%s,%d,%lld\n",
+				wget_buffer_printf_append(&buf, "%s,%s,%s,%s,%s,%s,%s,%d,%lld\n",
 						tls_stats->hostname,
 						tls_stats->version,
 						tls_stats->false_start,
@@ -725,9 +734,9 @@ static void stats_print_csv(wget_stats_type_t type)
 						tls_stats->cert_chain_size,
 						tls_stats->millisecs);
 
-				if ((buf->length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
+				if ((buf.length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
+					fprintf(fp, "%s", buf.data);
+					wget_buffer_reset(&buf);
 				}
 			}
 
@@ -739,7 +748,7 @@ static void stats_print_csv(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
@@ -753,12 +762,12 @@ static void stats_print_csv(wget_stats_type_t type)
 
 		if (fp) {
 			const char *header = "Hostname,HPKP,HPKP New Entry,HSTS,CSP";
-			wget_buffer_printf(buf, "%s\n", header);
+			wget_buffer_printf(&buf, "%s\n", header);
 
 			for (int it = 0; it < wget_vector_size(server_stats_v); it++) {
 				const server_stats_t *server_stats = wget_vector_get(server_stats_v, it);
 
-				wget_buffer_printf_append(buf, "%s,%s,%s,%s,%s,%s,%s\n",
+				wget_buffer_printf_append(&buf, "%s,%s,%s,%s,%s,%s,%s\n",
 						server_stats->hostname,
 						server_stats->ip,
 						server_stats->scheme,
@@ -767,9 +776,9 @@ static void stats_print_csv(wget_stats_type_t type)
 						server_stats->hsts,
 						server_stats->csp);
 
-				if ((buf->length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
+				if ((buf.length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
+					fprintf(fp, "%s", buf.data);
+					wget_buffer_reset(&buf);
 				}
 			}
 
@@ -781,7 +790,7 @@ static void stats_print_csv(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
@@ -795,17 +804,17 @@ static void stats_print_csv(wget_stats_type_t type)
 
 		if (fp) {
 			const char *header = "Hostname,VALID,REVOKED,IGNORED";
-			wget_buffer_printf(buf, "%s\n", header);
+			wget_buffer_printf(&buf, "%s\n", header);
 
 			for (int it = 0; it < wget_vector_size(ocsp_stats_v); it++) {
 				const ocsp_stats_t *ocsp_stats = wget_vector_get(ocsp_stats_v, it);
 
-				wget_buffer_printf_append(buf, "%s,%d,%d,%d\n",
+				wget_buffer_printf_append(&buf, "%s,%d,%d,%d\n",
 						ocsp_stats->hostname, ocsp_stats->nvalid, ocsp_stats->nrevoked, ocsp_stats->nignored);
 
-				if ((buf->length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
-					fprintf(fp, "%s", buf->data);
-					wget_buffer_reset(buf);
+				if ((buf.length > 64*1024) || (it == wget_vector_size(ocsp_stats_v) - 1)) {
+					fprintf(fp, "%s", buf.data);
+					wget_buffer_reset(&buf);
 				}
 			}
 
@@ -817,7 +826,7 @@ static void stats_print_csv(wget_stats_type_t type)
 		} else
 			error_printf("File could not be opened %s\n", filename);
 
-		wget_buffer_free(&buf);
+		wget_buffer_deinit(&buf);
 
 		break;
 	}
