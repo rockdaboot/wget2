@@ -212,7 +212,6 @@ int main(void)
 
 	// metalink V3, no pieces
 	wget_test(
-		// WGET_TEST_OPTIONS, "-d",
 		WGET_TEST_REQUEST_URL, "archive.meta",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -235,7 +234,6 @@ int main(void)
 
 	// metalink V4, no pieces
 	wget_test(
-		// WGET_TEST_OPTIONS, "-d",
 		WGET_TEST_REQUEST_URL, "archive.meta4",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -245,7 +243,6 @@ int main(void)
 
 	// metalink V4, two pieces
 	wget_test(
-		// WGET_TEST_OPTIONS, "-d",
 		WGET_TEST_REQUEST_URL, "archiveP.meta4",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -273,7 +270,7 @@ int main(void)
 	urls[6].headers[4] = wget_aprintf("Digest: MD5=%s", digest_str);
 
 	wget_test(
-//		WGET_TEST_OPTIONS, "-d --tries=1",
+//		WGET_TEST_OPTIONS, "--tries=1",
 		WGET_TEST_REQUEST_URL, urls[6].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -289,7 +286,7 @@ int main(void)
 	urls[9].headers[3] = wget_aprintf("Digest: MD5=%s", digest_str);
 
 	wget_test(
-		WGET_TEST_OPTIONS, "-d --tries=1",
+		WGET_TEST_OPTIONS, "--tries=1",
 		WGET_TEST_REQUEST_URL, urls[9].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {

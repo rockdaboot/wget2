@@ -37,7 +37,7 @@ int main(void)
 
 	// test-i
 	wget_test(
-		WGET_TEST_OPTIONS, "-d --post-file=nofile",
+		WGET_TEST_OPTIONS, "--post-file=nofile",
 		WGET_TEST_REQUEST_URL, "",
 		WGET_TEST_EXPECTED_ERROR_CODE, 3, // fails with older Wget (<= 1.14)
 		0);

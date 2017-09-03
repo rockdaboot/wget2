@@ -61,7 +61,7 @@ int main(void)
 	// test-auth-basic
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --user=" username " --password=" password,
+		WGET_TEST_OPTIONS, "--user=" username " --password=" password,
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -72,7 +72,7 @@ int main(void)
 	// test-auth-basic with .netrc
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --netrc-file=.netrc",
+		WGET_TEST_OPTIONS, "--netrc-file=.netrc",
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
@@ -87,7 +87,7 @@ int main(void)
 	// wrong credentials
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --password=" password,
+		WGET_TEST_OPTIONS, "--password=" password,
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 6,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -96,7 +96,7 @@ int main(void)
 
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --user=\"\" --password=" password,
+		WGET_TEST_OPTIONS, "--user=\"\" --password=" password,
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 6,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -105,7 +105,7 @@ int main(void)
 
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --user=\"whatever\" --password=" password,
+		WGET_TEST_OPTIONS, "--user=\"whatever\" --password=" password,
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 6,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -114,7 +114,7 @@ int main(void)
 
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --user=" username,
+		WGET_TEST_OPTIONS, "--user=" username,
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 6,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -123,7 +123,7 @@ int main(void)
 
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --user=" username " --password=\"\"",
+		WGET_TEST_OPTIONS, "--user=" username " --password=\"\"",
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 6,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -132,7 +132,7 @@ int main(void)
 
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --user=" username " --password=\"whatever\"",
+		WGET_TEST_OPTIONS, "--user=" username " --password=\"whatever\"",
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 6,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -141,7 +141,6 @@ int main(void)
 
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d",
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 6,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -150,7 +149,7 @@ int main(void)
 
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --user=\"\" --password=\"\"",
+		WGET_TEST_OPTIONS, "--user=\"\" --password=\"\"",
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 6,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -159,7 +158,7 @@ int main(void)
 
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --user=\"whatever\" --password=\"whatever\"",
+		WGET_TEST_OPTIONS, "--user=\"whatever\" --password=\"whatever\"",
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 6,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -169,7 +168,7 @@ int main(void)
 	// use --auth-no-challenge options
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --user=" username " --password=" password " --auth-no-challenge",
+		WGET_TEST_OPTIONS, "--user=" username " --password=" password " --auth-no-challenge",
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -179,7 +178,7 @@ int main(void)
 
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d --user=" username " --password=\"whatever\" --auth-no-challenge",
+		WGET_TEST_OPTIONS, "--user=" username " --password=\"whatever\" --auth-no-challenge",
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 6,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {

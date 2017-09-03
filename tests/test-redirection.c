@@ -55,7 +55,6 @@ int main(void)
 	// test-i
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-d",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {

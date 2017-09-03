@@ -555,7 +555,7 @@ int main(void)
 
 		// test-c-shorter
 		wget_test(
-			WGET_TEST_OPTIONS, "-d -c",
+			WGET_TEST_OPTIONS, "-c",
 			WGET_TEST_REQUEST_URL, "dummy.txt",
 //			WGET_TEST_KEEP_TMPFILES, 1,
 			WGET_TEST_EXPECTED_ERROR_CODE, 0,
