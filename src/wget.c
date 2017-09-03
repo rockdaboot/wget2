@@ -1853,7 +1853,7 @@ void *downloader_thread(void *p)
 				if (pending >= max_pending)
 					action = ACTION_GET_RESPONSE;
 				else
-					wget_thread_mutex_lock(&main_mutex); locked = 1;
+					{ wget_thread_mutex_lock(&main_mutex); locked = 1; }
 			}
 			break;
 
