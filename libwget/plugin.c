@@ -141,4 +141,113 @@ void wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filt
 	(* plugin->vtable->register_url_filter)(plugin, filter_fn);
 }
 
+
+/**
+ * Gets the source address the file was downloaded from.
+ *
+ * \param[in] file Downloaded file handle
+ * \return The address the file was downloaded from. The returned object is owned by wget and should not be free'd.
+ */
+const wget_iri_t *wget_downloaded_file_get_source_url(wget_downloaded_file_t *file)
+{
+	return (* file->vtable->file_get_source_url)(file);
+}
+
+/**
+ * Gets the file name the downloaded file was written to.
+ *
+ * \param[in] file Downloaded file handle
+ * \return The file name the file was written to. The returned string is owned by wget and should not be free'd.
+ */
+const char *wget_downloaded_file_get_local_filename(wget_downloaded_file_t *file)
+{
+	return (* file->vtable->file_get_local_filename)(file);
+}
+
+/**
+ * Gets the size of the downloaded file.
+ *
+ * \param[in] file Downloaded file handle
+ * \return The size of the downloaded file
+ */
+uint64_t wget_downloaded_file_get_size(wget_downloaded_file_t *file)
+{
+	return (* file->vtable->file_get_size)(file);
+}
+
+/**
+ * Reads the downloaded file into memory.
+ *
+ * Be careful, reading large files into memory can cause all sorts of problems like running out of memory.
+ * Use \ref wget_downloaded_file_open_stream "wget_downloaded_file_open_stream()" whenever possible.
+ *
+ * \param[in] file Downloaded file handle
+ * \param[out] data The contents of the downloaded file.
+ *                  The memory is owned by wget and must not be free'd or modified.
+ * \param[out] size Size of the downloaded file.
+ */
+int wget_downloaded_file_get_contents(wget_downloaded_file_t *file, const void **data, size_t *size)
+{
+	return (* file->vtable->file_get_contents)(file, data, size);
+}
+
+/**
+ * Opens the downloaded file as a new stream.
+ *
+ * \param[in] file Downloaded file handle
+ * \return A newly opened stream for reading. The returned stream must be closed with fclose() after use.
+ */
+FILE *wget_downloaded_file_open_stream(wget_downloaded_file_t *file)
+{
+	return (* file->vtable->file_open_stream)(file);
+}
+
+/**
+ * Gets whether the downloaded file should be scanned for more URLs.
+ *
+ * \param[in] file Downloaded file handle
+ * \return whether the file should be scanned for more URLs.
+ */
+bool wget_downloaded_file_get_recurse(wget_downloaded_file_t *file)
+{
+	return (* file->vtable->file_get_recurse)(file);
+}
+
+/**
+ * Adds a URL for recursive downloading. This function has no effect if
+ * \ref wget_downloaded_file_get_recurse "wget_downloaded_file_get_recurse()" returns false.
+ *
+ * \param[in] file Downloaded file handle
+ * \param[in] iri The URL to be fetched.
+ */
+void wget_downloaded_file_add_recurse_url(wget_downloaded_file_t *file, const wget_iri_t *iri)
+{
+	(* file->vtable->file_add_recurse_url)(file, iri);
+}
+
+/**
+ * Registers a plugin function for intercepting downloaded files.
+ *
+ * The registered function will be passed an abstract object of type
+ * \ref wget_downloaded_file_t "wget_downloaded_file_t" which can be used to fetch the contents of the downloaded
+ * files and adding parsed URLs for recursive downloading.
+ *
+ * \see wget_downloaded_file_get_source_url
+ * \see wget_downloaded_file_get_local_filename
+ * \see wget_downloaded_file_get_size
+ * \see wget_downloaded_file_get_contents
+ * \see wget_downloaded_file_open_stream
+ * \see wget_downloaded_file_get_recurse
+ * \see wget_downloaded_file_add_recurse_url
+ *
+ * \param[in] plugin The plugin handle
+ * \param[in] fn The plugin function that will be passed a handle to downloaded files.
+ *
+ */
+void
+wget_plugin_register_post_processor(wget_plugin_t *plugin, wget_plugin_post_processor_t fn)
+{
+	(* plugin->vtable->register_post_processor)(plugin, fn);
+}
+
 /** @} */

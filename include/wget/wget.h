@@ -2134,6 +2134,59 @@ wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filter_t 
 /**
  * \ingroup libwget-plugin
  *
+ * Handle that represents a downloaded file.
+ */
+typedef struct {
+	struct wget_plugin_vtable *vtable;
+} wget_downloaded_file_t;
+
+// Gets the source address the file was downloaded from.
+WGETAPI const wget_iri_t *
+wget_downloaded_file_get_source_url(wget_downloaded_file_t *file);
+
+// Gets the file name the downloaded file was written to.
+WGETAPI const char *
+wget_downloaded_file_get_local_filename(wget_downloaded_file_t *file);
+
+// Gets the size of the downloaded file.
+WGETAPI uint64_t
+wget_downloaded_file_get_size(wget_downloaded_file_t *file);
+
+// Reads the downloaded file into memory.
+WGETAPI int
+wget_downloaded_file_get_contents(wget_downloaded_file_t *file, const void **data, size_t *size);
+
+// Opens the downloaded file as a new stream.
+WGETAPI FILE *
+wget_downloaded_file_open_stream(wget_downloaded_file_t *file);
+
+// Gets whether the file should be scanned for more URLs.
+WGETAPI bool
+wget_downloaded_file_get_recurse(wget_downloaded_file_t *file);
+
+// Adds a URL for recursive downloading.
+WGETAPI void
+wget_downloaded_file_add_recurse_url(wget_downloaded_file_t *file, const wget_iri_t *iri);
+
+/**
+ * \ingroup libwget-plugin
+ *
+ * Prototype of the function for intercepting downloaded files. The function must be thread-safe.
+ *
+ * \param[in] plugin The plugin handle
+ * \param[in] file Downloaded file handle
+ * \return 0 if further postprocessing of downloaded files should be stopped.
+ */
+typedef int (*wget_plugin_post_processor_t)
+	(wget_plugin_t *plugin, wget_downloaded_file_t *file);
+
+// Registers a plugin function for intercepting downloaded files.
+WGETAPI void
+wget_plugin_register_post_processor(wget_plugin_t *plugin, wget_plugin_post_processor_t fn);
+
+/**
+ * \ingroup libwget-plugin
+ *
  * vtable for implementing plugin API in wget
  */
 struct wget_plugin_vtable
@@ -2147,6 +2200,15 @@ struct wget_plugin_vtable
 	void (* action_set_alt_url)(wget_intercept_action_t *, const wget_iri_t *);
 	void (* action_set_local_filename)(wget_intercept_action_t *, const char *);
 	void (* register_url_filter)(wget_plugin_t *, wget_plugin_url_filter_t);
+
+	const wget_iri_t *(*file_get_source_url)(wget_downloaded_file_t *);
+	const char *(*file_get_local_filename)(wget_downloaded_file_t *);
+	uint64_t (*file_get_size)(wget_downloaded_file_t *);
+	int (*file_get_contents)(wget_downloaded_file_t *, const void **data, size_t *size);
+	FILE *(*file_open_stream)(wget_downloaded_file_t *);
+	bool (*file_get_recurse)(wget_downloaded_file_t *);
+	void (*file_add_recurse_url)(wget_downloaded_file_t *, const wget_iri_t *);
+	void (*register_post_processor)(wget_plugin_t *, wget_plugin_post_processor_t);
 };
 
 WGET_END_DECLS

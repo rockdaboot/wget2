@@ -155,6 +155,14 @@ int wget_plugin_initializer(wget_plugin_t *plugin)
 	return 0;
 }
 #elif defined TEST_SELECT_API
+
+// Separate assert definition because here assertions are part of the tests
+#define test_assert(expr) \
+do { \
+	if (! (expr)) \
+		wget_error_printf_exit(__FILE__ ":%d: Failed assertion [%s]\n", __LINE__, #expr); \
+} while (0)
+
 // A very simple option parser for plugin
 struct option;
 typedef int (*option_parser)(const struct option *opt, const char *value);
@@ -193,6 +201,18 @@ static int parse_option(const struct option *options, wget_plugin_t *plugin, con
 	return (* options[i].fn)(options + i, value);
 }
 
+static int parse_boolean(const struct option *option, const char *value)
+{
+	int *intptr = (int *) option->lptr;
+	int bool_val = 1;
+
+	if (value && strcmp(value, "false") == 0)
+		bool_val = 0;
+
+	*intptr = bool_val;
+
+	return 0;
+}
 static int parse_string(const struct option *option, const char *value)
 {
 	char **strptr = (char **) option->lptr;
@@ -238,10 +258,15 @@ static int parse_pair(const struct option *option, const char *value)
 }
 
 typedef struct {
+	wget_vector_t *files_processed;
+
 	char *reject;
 	char *accept;
 	struct pair replace;
 	struct pair saveas;
+	int parse_rot13;
+	int only_rot13;
+	int test_pp;
 } plugin_data_t;
 
 static int argp_fn(wget_plugin_t *plugin, const char *option, const char *value)
@@ -256,6 +281,12 @@ static int argp_fn(wget_plugin_t *plugin, const char *option, const char *value)
 			parse_pair, (void *) &d->replace},
 		{"saveas", "=substring:filename", "Save URLs containing substring as filename",
 			parse_pair, (void *) &d->saveas},
+		{"parse-rot13", "[=false]", "Parse rot13 obfuscated links (default: false)",
+			parse_boolean, (void *) &d->parse_rot13},
+		{"only-rot13", "[=false]", "Parse only rot13 links (default: false)",
+			parse_boolean, (void *) &d->only_rot13},
+		{"test-pp", "[=false]", "Test post-processing API for consistency",
+			parse_boolean, (void *) &d->test_pp},
 		{NULL, NULL, NULL, NULL, NULL}
 	};
 
@@ -265,6 +296,18 @@ static int argp_fn(wget_plugin_t *plugin, const char *option, const char *value)
 static void finalizer(wget_plugin_t *plugin, G_GNUC_WGET_UNUSED int exit_status)
 {
 	plugin_data_t *d = (plugin_data_t *) plugin->plugin_data;
+
+	if (d->test_pp) {
+		int i;
+		FILE *stream;
+
+		wget_vector_sort(d->files_processed);
+		test_assert((stream = fopen("files_processed.txt", "wb")));
+		for (i = 0; i < wget_vector_size(d->files_processed); i++)
+			fprintf(stream, "%s\n", (const char *) wget_vector_get(d->files_processed, i));
+		fclose(stream);
+	}
+	wget_vector_free(&d->files_processed);
 
 	wget_xfree(d->reject);
 	wget_xfree(d->accept);
@@ -310,16 +353,119 @@ static void url_filter(wget_plugin_t *plugin, const wget_iri_t *iri, wget_interc
 	}
 }
 
+static int post_processor(wget_plugin_t *plugin, wget_downloaded_file_t *file)
+{
+	plugin_data_t *d = (plugin_data_t *) plugin->plugin_data;
+
+	if (d->parse_rot13 && wget_downloaded_file_get_recurse(file)) {
+		const char *data;
+		size_t len, i, j;
+		static const char *needle = "rot13(";
+
+		wget_downloaded_file_get_contents(file, (const void **) &data, &len);
+
+		// Since data is not null-terminated and may have null bytes, strstr() cannot be used here.
+		j = 0;
+		for (i = 0; i < len; i++) {
+			if (needle[j]) {
+				// No prefix table needed for "rot13("
+				if (needle[j] == data[i])
+					j++;
+				else
+					j = 0;
+			} else {
+				// Match found
+				size_t end;
+				for (end = i; end < len && data[end] && data[end] != ')'; end++)
+					;
+				if (end < len && end > i && data[end] == ')') {
+					// Obfuscated URL found, now deobfuscate and add it
+					char *url = wget_malloc(end - i + 1);
+					size_t k;
+					wget_iri_t *iri;
+
+					for (k = 0; k < end - i; k++) {
+						char c = data[i + k];
+						if (c >= 'A' && c <= 'Z')
+							c = (((c - 'A') + 13) % 26) + 'A';
+						if (c >= 'a' && c <= 'z')
+							c = (((c - 'a') + 13) % 26) + 'a';
+						url[k] = c;
+					}
+					url[end - i] = 0;
+
+					if ((iri = wget_iri_parse(url, "utf-8"))) {
+						wget_downloaded_file_add_recurse_url(file, iri);
+						wget_iri_free(&iri);
+					}
+					wget_free(url);
+
+					i = end;
+				}
+
+				j = 0;
+			}
+		}
+	}
+
+	if (d->test_pp) {
+		const wget_iri_t *iri = wget_downloaded_file_get_source_url(file);
+		const char *data;
+		size_t size;
+		FILE *stream;
+
+		// Compare downloaded file contents with wget_downloaded_file_get_contents()
+		test_assert(wget_downloaded_file_get_contents(file, (const void **) &data, &size) == 0);
+
+		// Compare wget_downloaded_file_get_size() against wget_downloaded_file_get_contents()
+		test_assert(size == wget_downloaded_file_get_size(file));
+
+		// Compare with file on disk
+		const char *fname = wget_downloaded_file_get_local_filename(file);
+		if (fname) {
+			char *refdata;
+			size_t refsize;
+			test_assert((refdata = wget_read_file(fname, &refsize)));
+			test_assert(refsize == size && "wget_read_file(fname, &refsize)");
+			test_assert(memcmp(data, refdata, size) == 0);
+			wget_free(refdata);
+		}
+
+		// Compare downloaded file contents with wget_downloaded_file_open_stream()
+		stream = wget_downloaded_file_open_stream(file);
+		if (stream) {
+			size_t i;
+			for (i = 0; i < size; i++)
+				test_assert((int) data[i] == getc(stream));
+			test_assert("At end of stream, wget_downloaded_file_open_stream(file)" && getc(stream) == EOF);
+			fclose(stream);
+		}
+
+		// Update list of files processed
+		{
+			const char *basename = strrchr(iri->uri, '/');
+			if (basename)
+				wget_vector_add_str(d->files_processed, basename + 1);
+		}
+	}
+
+	return d->only_rot13 ? 0 : 1;
+}
+
 WGET_EXPORT int wget_plugin_initializer(wget_plugin_t *plugin);
 int wget_plugin_initializer(wget_plugin_t *plugin)
 {
 	plugin_data_t *d = (plugin_data_t *) wget_calloc(1, sizeof(plugin_data_t));
+
+	d->files_processed = wget_vector_create(4, -2, (wget_vector_compare_t) strcmp);
 
 	plugin->plugin_data = d;
 	wget_plugin_register_argp(plugin, argp_fn);
 	wget_plugin_register_finalizer(plugin, finalizer);
 
 	wget_plugin_register_url_filter(plugin, url_filter);
+	wget_plugin_register_post_processor(plugin, post_processor);
+
 	return 0;
 }
 #else

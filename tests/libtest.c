@@ -935,7 +935,7 @@ void wget_test(int first_key, ...)
 				wget_error_printf_exit(_("Missing expected file '%s/%s' [%s]\n"), tmpdir, fname, options);
 
 			if (expected_files[it].content) {
-				char content[st.st_size ? st.st_size : 1];
+				char *content = wget_malloc(st.st_size ? st.st_size : 1);
 
 				if ((fd = open(fname, O_RDONLY | O_BINARY)) != -1) {
 					ssize_t nbytes = read(fd, content, st.st_size);
@@ -948,6 +948,8 @@ void wget_test(int first_key, ...)
 					if (strlen(expected_files[it].content) != (size_t)nbytes || memcmp(expected_files[it].content, content, nbytes) != 0)
 						wget_error_printf_exit(_("Unexpected content in %s [%s]\n"), fname, options);
 				}
+
+				wget_free(content);
 			}
 
 			if (expected_files[it].timestamp && st.st_mtime != expected_files[it].timestamp)

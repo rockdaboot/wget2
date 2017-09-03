@@ -27,6 +27,8 @@
 #include <string.h> // strlen()
 #include "libtest.h"
 
+// #define LARGEFILE (11 << 20)
+
 #define OBJECT_DIR "../.libs"
 
 #if defined _WIN32
@@ -80,8 +82,47 @@ static const char *errorpage = "\
 </body>\n\
 </html>\n";
 
+static const char *rot13_mainpage = "\
+<html>\n\
+<head>\n\
+  <title>Main Page</title>\n\
+</head>\n\
+<body>\n\
+  <p>\n\
+    second page: rot13(uggc://ybpnyubfg:{{port}}/frpbaqcntr.ugzy)\n\
+    third page: rot13(uggc://ybpnyubfg:{{port}}/guveqcntr.ugzy)\n\
+  </p>\n\
+</body>\n\
+</html>\n";
+
+static const char *rot13_mainpage_mixed = "\
+<html>\n\
+<head>\n\
+  <title>Main Page</title>\n\
+</head>\n\
+<body>\n\
+  <p>\n\
+    second page: rot13(uggc://ybpnyubfg:{{port}}/frpbaqcntr.ugzy)\n\
+    third page: rot13(uggc://ybpnyubfg:{{port}}/guveqcntr.ugzy)\n\
+    <a href=\"http://localhost:{{port}}/forthpage.html\">forth page</a>.\n\
+  </p>\n\
+</body>\n\
+</html>\n";
+
+static const char data[129] = "\
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n";
+
+static const char data_part[65] = "\
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n";
+
 int main(void)
 {
+#ifdef LARGEFILE
+	char *largedata = wget_malloc(LARGEFILE + 1);
+	memset(largedata, 'x', LARGEFILE);
+	largedata[LARGEFILE] = 0;
+#endif
 	wget_test_url_t urls[]={
 		{	.name = "/index.html",
 			.code = "200 Dontcare",
@@ -111,6 +152,36 @@ int main(void)
 				"Content-Type: text/html",
 			}
 		},
+		{	.name = "/rot13_index.html",
+			.code = "200 Dontcare",
+			.body = rot13_mainpage,
+			.headers = {
+				"Content-Type: text/html",
+			}
+		},
+		{	.name = "/rot13_index_mixed.html",
+			.code = "200 Dontcare",
+			.body = rot13_mainpage_mixed,
+			.headers = {
+				"Content-Type: text/html",
+			}
+		},
+		{	.name = "/data.txt",
+			.code = "200 Dontcare",
+			.body = data,
+			.headers = {
+				"Content-Type: text/plain",
+			},
+		},
+#ifdef LARGEFILE
+		{	.name = "/large.txt",
+			.code = "200 Dontcare",
+			.body = largedata,
+			.headers = {
+				"Content-Type: text/plain",
+			},
+		},
+#endif
 		{	.name = "/error.html",
 			.code = "404 Not exist",
 			.body = errorpage,
@@ -494,6 +565,122 @@ int main(void)
 			{ "alt.html", urls[2].body },
 			{	NULL } },
 		0);
+
+	// Check whether intercepting downloaded files works
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " --recursive --no-host-directories"
+			" --plugin-opt=pluginapi.parse-rot13 --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "rot13_index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "rot13_index.html", urls[4].body },
+			{ "secondpage.html", urls[1].body },
+			{ "thirdpage.html", urls[2].body },
+			{ "files_processed.txt", "rot13_index.html\nsecondpage.html\nthirdpage.html\n" },
+			{	NULL } },
+		0);
+
+	// Check whether overriding default wget2's post processing works
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " --recursive --no-host-directories"
+			" --plugin-opt=pluginapi.parse-rot13 --plugin-opt=pluginapi.test-pp"
+			" --plugin-opt=pluginapi.only-rot13",
+		WGET_TEST_REQUEST_URL, "rot13_index_mixed.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "rot13_index_mixed.html", urls[5].body },
+			{ "secondpage.html", urls[1].body },
+			{ "thirdpage.html", urls[2].body },
+			{ "files_processed.txt", "rot13_index_mixed.html\nsecondpage.html\nthirdpage.html\n" },
+			{	NULL } },
+		0);
+
+	// Check whether intercepting downloaded files works with existing partial files
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " -c"
+			" --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "data.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"data.txt", data_part },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"data.txt", data },
+			{ "files_processed.txt", "data.txt\n" },
+			{	NULL } },
+		0);
+
+	// Check whether intercepting downloaded files works with existing files
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " -c"
+			" --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "data.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"data.txt", data },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"data.txt", data },
+			{ "files_processed.txt", "data.txt\n" },
+			{	NULL } },
+		0);
+
+	// Check whether intercepting downloaded files works with --spider
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " --recursive --spider"
+			" --plugin-opt=pluginapi.parse-rot13 --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "rot13_index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "files_processed.txt", "rot13_index.html\nsecondpage.html\nthirdpage.html\n" },
+			{	NULL } },
+		0);
+
+	// Check whether intercepting downloaded files works with --output-document=
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " --output-document=data2.txt"
+			" --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "data.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"data2.txt", data_part },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"data2.txt", data },
+			{ "files_processed.txt", "data.txt\n" },
+			{	NULL } },
+		0);
+
+	// Check whether intercepting downloaded files works with large files
+#ifdef LARGEFILE
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " -c"
+			" --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "large.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"large.txt", largedata + 16 },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"large.txt", largedata },
+			{ "files_processed.txt", "large.txt\n" },
+			{	NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " -c"
+			" --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "large.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"large.txt", largedata },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"large.txt", largedata },
+			{ "files_processed.txt", "large.txt\n" },
+			{	NULL } },
+		0);
+#endif
 
 	exit(0);
 }
