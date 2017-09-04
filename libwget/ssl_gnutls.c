@@ -129,11 +129,18 @@ void wget_ssl_set_config_string(int key, const char *value)
 	case WGET_SSL_KEY_FILE: _config.key_file = value; break;
 	case WGET_SSL_CRL_FILE: _config.crl_file = value; break;
 	case WGET_SSL_OCSP_SERVER: _config.ocsp_server = value; break;
+	case WGET_SSL_ALPN: _config.alpn = value; break;
+	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
+	}
+}
+
+void wget_ssl_set_config_object(int key, void *value)
+{
+	switch (key) {
 	case WGET_SSL_OCSP_CACHE: _config.ocsp_cert_cache = (wget_ocsp_db_t *)value; break;
 	case WGET_SSL_SESSION_CACHE: _config.tls_session_cache = (wget_tls_session_db_t *)value; break;
 	case WGET_SSL_HPKP_CACHE: _config.hpkp_cache = (wget_hpkp_db_t *)value; break;
-	case WGET_SSL_ALPN: _config.alpn = value; break;
-	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
+	default: error_printf(_("Unknown config key %d (or value must not be an object)\n"), key);
 	}
 }
 
@@ -1696,8 +1703,6 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 
 		return -1;
 	}
-
-	return -1; // never comes here
 }
 
 #else // WITH_GNUTLS
@@ -1709,6 +1714,7 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 void wget_ssl_set_config_string(int key, const char *value) { }
+void wget_ssl_set_config_object(int key, void *value) { }
 void wget_ssl_set_config_int(int key, int value) { }
 void wget_ssl_init(void) { }
 void wget_ssl_deinit(void) { }

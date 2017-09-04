@@ -1494,7 +1494,7 @@ static void test_hpkp(void)
 	}
 
 	// check HPKP database with values
-	for (unsigned it = 0; it < countof(hpkp_data); it++) {
+	for (it = 0; it < countof(hpkp_data); it++) {
 		const struct hpkp_data *t = &hpkp_data[it];
 
 		n = wget_hpkp_db_check_pubkey(hpkp_db, t->host, t->pubkey, strlen(t->pubkey));

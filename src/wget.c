@@ -1836,7 +1836,6 @@ void *downloader_thread(void *p)
 
 		default:
 			error_printf_exit("Unhandled action %d\n", (int) action);
-			goto out;
 		}
 	}
 

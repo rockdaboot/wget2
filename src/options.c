@@ -2327,12 +2327,12 @@ int init(int argc, const char **argv)
 	wget_ssl_set_config_string(WGET_SSL_CERT_FILE, config.cert_file);
 	wget_ssl_set_config_string(WGET_SSL_KEY_FILE, config.private_key);
 	wget_ssl_set_config_string(WGET_SSL_CRL_FILE, config.crl_file);
-	wget_ssl_set_config_string(WGET_SSL_OCSP_CACHE, (const char *)config.ocsp_db);
+	wget_ssl_set_config_object(WGET_SSL_OCSP_CACHE, config.ocsp_db);
 #ifdef WITH_LIBNGHTTP2
 	wget_ssl_set_config_string(WGET_SSL_ALPN, config.http2 ? "h2,http/1.1" : NULL);
 #endif
-	wget_ssl_set_config_string(WGET_SSL_SESSION_CACHE, (const char *)config.tls_session_db);
-	wget_ssl_set_config_string(WGET_SSL_HPKP_CACHE, (const char *)config.hpkp_db);
+	wget_ssl_set_config_object(WGET_SSL_SESSION_CACHE, config.tls_session_db);
+	wget_ssl_set_config_object(WGET_SSL_HPKP_CACHE, config.hpkp_db);
 
 	// convert host lists to lowercase
 	for (int it = 0; it < wget_vector_size(config.domains); it++) {

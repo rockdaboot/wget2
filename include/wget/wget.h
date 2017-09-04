@@ -1798,6 +1798,8 @@ WGETAPI void
 WGETAPI void
 	wget_ssl_set_config_string(int key, const char *value);
 WGETAPI void
+	wget_ssl_set_config_object(int key, void *value);
+WGETAPI void
 	wget_ssl_set_config_int(int key, int value);
 //WGETAPI void *
 //	wget_ssl_open(int sockfd, const char *hostname, int connect_timeout) G_GNUC_WGET_NONNULL((2));
