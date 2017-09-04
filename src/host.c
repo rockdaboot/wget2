@@ -166,12 +166,6 @@ static void _free_host_docs_entry(HOST_DOCS *host_docsp)
 	}
 }
 
-static void _free_docs_entry(DOC *doc)
-{
-	if (doc && doc->robot_iri)
-		wget_iri_free(&(doc->iri));
-}
-
 static void _free_tree_docs_entry(TREE_DOCS *tree_docsp)
 {
 	if (tree_docsp) {
@@ -184,7 +178,7 @@ static void _free_tree_docs_entry(TREE_DOCS *tree_docsp)
 HOST *host_add(wget_iri_t *iri)
 {
 	wget_thread_mutex_lock(&hosts_mutex);
-//printf("****host_add: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
+
 	if (!hosts) {
 		hosts = wget_hashmap_create(16, (wget_hashmap_hash_t)_host_hash, (wget_hashmap_compare_t)_host_compare);
 		wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor_t)_free_host_entry);
@@ -196,7 +190,6 @@ HOST *host_add(wget_iri_t *iri)
 		// info_printf("Add to hosts: %s\n", hostname);
 		hostp = wget_memdup(&host, sizeof(host));
 		wget_hashmap_put_noalloc(hosts, hostp, hostp);
-//printf("****host_add: %s://%s:%hu\n", hostp->scheme, hostp->host, hostp->port);
 	}
 
 	wget_thread_mutex_unlock(&hosts_mutex);
@@ -204,7 +197,7 @@ HOST *host_add(wget_iri_t *iri)
 	return hostp;
 }
 
-HOST_DOCS *host_docs_add(wget_iri_t *iri, wget_http_response_t *resp, bool robot_iri)
+HOST_DOCS *host_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
 {
 	HOST *hostp;
 	wget_hashmap_t *host_docs;
@@ -230,7 +223,6 @@ HOST_DOCS *host_docs_add(wget_iri_t *iri, wget_http_response_t *resp, bool robot
 
 		if (!(docs = host_docsp->docs)) {
 			docs = wget_vector_create(8, -2, NULL);
-			wget_vector_set_destructor(docs, (wget_vector_destructor_t)_free_docs_entry);
 			host_docsp->docs = docs;
 		}
 
@@ -239,7 +231,6 @@ HOST_DOCS *host_docs_add(wget_iri_t *iri, wget_http_response_t *resp, bool robot
 		doc->size_downloaded = resp->cur_downloaded;
 		doc->size_decompressed = resp->body->length;
 		doc->encoding = resp->content_encoding;
-		doc->robot_iri = robot_iri;
 		wget_vector_add_noalloc(docs, doc);
 	}
 
@@ -294,16 +285,16 @@ TREE_DOCS *tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool robot_iri
 			else {
 				if (robot_iri)
 					hostp->robot = child_node;
-				else {
+				else
 					hostp->root = child_node;
-					if (hostp->robot) {
-						if (!(children = hostp->root->children)) {
-							children = wget_vector_create(8, -2, NULL);
-							hostp->root->children = children;
-						}
-						wget_vector_add_noalloc(children, hostp->robot);
-					}
+			}
+
+			if (hostp->robot && (wget_hashmap_size(hostp->tree_docs) == 2)) {
+				if (!(children = child_node->children)) {
+					children = wget_vector_create(8, -2, NULL);
+					child_node->children = children;
 				}
+				wget_vector_add_noalloc(children, hostp->robot);
 			}
 
 		} else
@@ -766,6 +757,7 @@ static int print_treeish(struct site_stats *ctx, TREE_DOCS *node)
 		if (node->children) {
 			ctx->level++;
 			wget_vector_browse(node->children, (wget_vector_browse_t) print_treeish, ctx);
+			ctx->level--;
 		}
 	}
 

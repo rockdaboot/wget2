@@ -439,14 +439,14 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 	}
 
 	wget_thread_mutex_lock(&downloader_mutex);
-//printf("----------------------------START-------------------------------------\n");
+
 	if (!blacklist_add(iri)) {
 		// we know this URL already
 		wget_thread_mutex_unlock(&downloader_mutex);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
 	}
-//printf("****add_url_to_queue: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
+
 	// only download content from hosts given on the command line or from input file
 	if (wget_vector_contains(config.exclude_domains, iri->host)) {
 		// download from this scheme://domain are explicitly not wanted
@@ -458,13 +458,10 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 		// a new host entry has been created
 		if (config.recursive && config.robots) {
 			// create a special job for downloading robots.txt (before anything else)
-//printf("****add_url_to_queue: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
 			wget_iri_t *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
-//printf("****add_url_to_queue: robot_iri->uri = %s robot_iri->port = %hu\n", robot_iri->uri, robot_iri->port);
 
 			if (blacklist_add(robot_iri))
 				host_add_robotstxt_job(host, robot_iri);
-//printf("----------------------------END-------------------------------------\n");
 		}
 	} else
 		host = host_get(iri);
@@ -607,14 +604,14 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	}
 
 	wget_thread_mutex_lock(&downloader_mutex);
-//printf("----------------------------START-------------------------------------\n");
+
 	if (!blacklist_add(iri)) {
 		// we know this URL already
 		wget_thread_mutex_unlock(&downloader_mutex);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
 	}
-//printf("****add_url: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
+
 	if (config.recursive) {
 		// only download content from given hosts
 		const char *reason = NULL;
@@ -658,35 +655,15 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			return;
 		}
 	}
-/*
-printf("*********************************************************************\n");
-if (iri)
-	printf("add_url:iri->uri = %s\n", iri->uri);
-else
-	printf("add_url:iri is NULL!\n");
 
-if (job->referer)
-	printf("add_url:job->referer->uri = %s\n", job->referer->uri);
-else
-	printf("add_url:job->referer is NULL!\n");
-
-if (job->original_url)
-	printf("add_url:job->original_url->uri = %s\n", job->original_url->uri);
-else
-	printf("add_url:job->original_url is NULL!\n");
-printf("*********************************************************************\n");
-*/
 	if ((host = host_add(iri))) {
 		// a new host entry has been created
 		if (config.recursive && config.robots) {
 			// create a special job for downloading robots.txt (before anything else)
-//printf("****add_url_to_queue: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
 			wget_iri_t *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
-//printf("****add_url_to_queue: robot_iri->uri = %s robot_iri->port = %hu\n", robot_iri->uri, robot_iri->port);
 
 			if (blacklist_add(robot_iri))
 				host_add_robotstxt_job(host, robot_iri);
-//printf("----------------------------END-------------------------------------\n");
 		}
 	} else if ((host = host_get(iri))) {
 		if (host->robots && iri->path) {
@@ -728,10 +705,6 @@ printf("*********************************************************************\n"
 			new_job->redirection_level = job->redirection_level + 1;
 			new_job->referer = job->referer;
 			new_job->original_url = job->iri;
-			if (job == job->host->robot_job) {
-				new_job->previous_robot_job = 1;
-				new_job->cloned_robot_iri = job->cloned_robot_iri;
-			}
 		} else {
 			new_job->level = job->level + 1;
 			new_job->referer = job->iri;
@@ -1193,7 +1166,6 @@ static int try_connection(DOWNLOADER *downloader, wget_iri_t *iri)
 	if (config.hsts && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, iri->port)) {
 		info_printf("HSTS in effect for %s:%hu\n", iri->host, iri->port);
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
-//printf("****try_connection: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
 		host_add(iri);	// add new host to hosts
 	}
 
@@ -1281,7 +1253,6 @@ static void add_statistics(wget_http_response_t *resp)
 	// do some statistics
 	JOB *job = resp->req->user_data;
 	wget_iri_t *iri = job->iri, *parent_iri;
-	bool robot_iri = false;
 
 	if (resp->code == 200) {
 		if (job->part)
@@ -1295,46 +1266,9 @@ static void add_statistics(wget_http_response_t *resp)
 	else
 		_atomic_increment_int(&stats.nerrors);
 
-	if (job == job->host->robot_job) {
-		iri = wget_iri_clone(iri);
-		robot_iri = true;
-		job->cloned_robot_iri = iri;
-	}
-
-	host_docs_add(iri, resp, robot_iri);
-	parent_iri = job->redirection_level ?
-			(job->previous_robot_job ? job->cloned_robot_iri : job->original_url) : job->referer;
-	tree_docs_add(parent_iri, iri, robot_iri, (bool)job->redirection_level);
-/*
-	printf("*****************************add_stats****************************************\n");
-	if (iri)
-		printf("add_url:iri->uri = %s\n", iri->uri);
-	else
-		printf("add_url:iri is NULL!\n");
-
-	if (job->referer)
-		printf("add_url:job->referer->uri = %s\n", job->referer->uri);
-	else
-		printf("add_url:job->referer is NULL!\n");
-
-	if (job->original_url)
-		printf("add_url:job->original_url->uri = %s\n", job->original_url->uri);
-	else
-		printf("add_url:job->original_url is NULL!\n");
-
-	printf("add_url:job->redirection_level = %d: %s\n", job->redirection_level, job->redirection_level ? "job->original_url": "job->referer");
-
-	if (parent_iri)
-		printf("add_url:parent_iri->uri = %s\n", parent_iri->uri);
-	else
-		printf("add_url:parent_iri is NULL!\n");
-
-	if (robot_iri)
-		printf("robot iri\n");
-	else
-		printf("NOT robot iri!\n");
-	printf("*********************************************************************\n");
-*/
+	host_docs_add(iri, resp);
+	parent_iri = job->redirection_level ? job->original_url : job->referer;
+	tree_docs_add(parent_iri, iri, (job == job->host->robot_job), (bool)job->redirection_level);
 }
 
 static int process_response_header(wget_http_response_t *resp)
