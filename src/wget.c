@@ -439,14 +439,14 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 	}
 
 	wget_thread_mutex_lock(&downloader_mutex);
-
+//printf("----------------------------START-------------------------------------\n");
 	if (!blacklist_add(iri)) {
 		// we know this URL already
 		wget_thread_mutex_unlock(&downloader_mutex);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
 	}
-
+//printf("****add_url_to_queue: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
 	// only download content from hosts given on the command line or from input file
 	if (wget_vector_contains(config.exclude_domains, iri->host)) {
 		// download from this scheme://domain are explicitly not wanted
@@ -454,12 +454,17 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
 	}
-
 	if ((host = host_add(iri))) {
 		// a new host entry has been created
 		if (config.recursive && config.robots) {
 			// create a special job for downloading robots.txt (before anything else)
-			host_add_robotstxt_job(host, iri, encoding);
+//printf("****add_url_to_queue: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
+			wget_iri_t *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
+//printf("****add_url_to_queue: robot_iri->uri = %s robot_iri->port = %hu\n", robot_iri->uri, robot_iri->port);
+
+			if (blacklist_add(robot_iri))
+				host_add_robotstxt_job(host, robot_iri);
+//printf("----------------------------END-------------------------------------\n");
 		}
 	} else
 		host = host_get(iri);
@@ -602,14 +607,14 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	}
 
 	wget_thread_mutex_lock(&downloader_mutex);
-
+//printf("----------------------------START-------------------------------------\n");
 	if (!blacklist_add(iri)) {
 		// we know this URL already
 		wget_thread_mutex_unlock(&downloader_mutex);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
 	}
-
+//printf("****add_url: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
 	if (config.recursive) {
 		// only download content from given hosts
 		const char *reason = NULL;
@@ -675,7 +680,13 @@ printf("*********************************************************************\n"
 		// a new host entry has been created
 		if (config.recursive && config.robots) {
 			// create a special job for downloading robots.txt (before anything else)
-			host_add_robotstxt_job(host, iri, encoding);
+//printf("****add_url_to_queue: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
+			wget_iri_t *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
+//printf("****add_url_to_queue: robot_iri->uri = %s robot_iri->port = %hu\n", robot_iri->uri, robot_iri->port);
+
+			if (blacklist_add(robot_iri))
+				host_add_robotstxt_job(host, robot_iri);
+//printf("----------------------------END-------------------------------------\n");
 		}
 	} else if ((host = host_get(iri))) {
 		if (host->robots && iri->path) {
@@ -1182,6 +1193,7 @@ static int try_connection(DOWNLOADER *downloader, wget_iri_t *iri)
 	if (config.hsts && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, iri->port)) {
 		info_printf("HSTS in effect for %s:%hu\n", iri->host, iri->port);
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
+//printf("****try_connection: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
 		host_add(iri);	// add new host to hosts
 	}
 
@@ -1293,8 +1305,8 @@ static void add_statistics(wget_http_response_t *resp)
 	parent_iri = job->redirection_level ?
 			(job->previous_robot_job ? job->cloned_robot_iri : job->original_url) : job->referer;
 	tree_docs_add(parent_iri, iri, robot_iri, (bool)job->redirection_level);
-
-/*	printf("*****************************add_stats****************************************\n");
+/*
+	printf("*****************************add_stats****************************************\n");
 	if (iri)
 		printf("add_url:iri->uri = %s\n", iri->uri);
 	else
@@ -1305,10 +1317,10 @@ static void add_statistics(wget_http_response_t *resp)
 	else
 		printf("add_url:job->referer is NULL!\n");
 
-//	if (job->original_url)
-//		printf("add_url:job->original_url->uri = %s\n", job->original_url->uri);
-//	else
-//		printf("add_url:job->original_url is NULL!\n");
+	if (job->original_url)
+		printf("add_url:job->original_url->uri = %s\n", job->original_url->uri);
+	else
+		printf("add_url:job->original_url is NULL!\n");
 
 	printf("add_url:job->redirection_level = %d: %s\n", job->redirection_level, job->redirection_level ? "job->original_url": "job->referer");
 

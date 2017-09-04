@@ -102,7 +102,7 @@ HOST_DOCS *host_docs_get(wget_hashmap_t *host_docs, int status);
 TREE_DOCS *tree_docs_get(wget_hashmap_t *tree_docs, wget_iri_t *iri);
 JOB *host_get_job(HOST *host, long long *pause);
 JOB *host_add_job(HOST *host, JOB *job) G_GNUC_WGET_NONNULL((1,2));
-JOB *host_add_robotstxt_job(HOST *host, wget_iri_t *iri, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
+JOB *host_add_robotstxt_job(HOST *host, wget_iri_t *iri) G_GNUC_WGET_NONNULL((1,2));
 void host_release_jobs(HOST *host);
 void host_remove_job(HOST *host, JOB *job) G_GNUC_WGET_NONNULL((1,2));
 void host_queue_free(HOST *host) G_GNUC_WGET_NONNULL((1));

@@ -504,11 +504,11 @@ JOB *host_add_job(HOST *host, JOB *job)
 	return jobp;
 }
 
-JOB *host_add_robotstxt_job(HOST *host, wget_iri_t *iri, const char *encoding)
+JOB *host_add_robotstxt_job(HOST *host, wget_iri_t *iri)
 {
 	JOB *job;
 
-	job = job_init(NULL, wget_iri_parse_base(iri, "/robots.txt", encoding));
+	job = job_init(NULL, iri);
 	job->host = host;
 	job->robotstxt = 1;
 	job->local_filename = get_local_filename(job->iri);
@@ -567,7 +567,7 @@ void host_remove_job(HOST *host, JOB *job)
 			}
 		}
 
-		wget_iri_free(&job->iri);
+//		wget_iri_free(&job->iri);
 		job_free(job);
 		xfree(host->robot_job);
 	} else {
