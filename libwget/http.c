@@ -1400,11 +1400,23 @@ void wget_http_abort_connection(wget_http_connection_t *conn)
 		_abort_indicator = 1; // stop all connections
 }
 
+/**
+ * \param[in] fn A `wget_stats_callback_t` callback function used to collect Server statistics
+ *
+ * Set callback function to be called once Server statistics for a host are collected
+ */
 void wget_tcp_set_stats_server(wget_stats_callback_t fn)
 {
 	stats_callback = fn;
 }
 
+/**
+ * \param[in] type A `wget_server_stats_t` constant representing Server statistical info to return
+ * \param[in] _stats An internal  pointer sent to callback function
+ * \return Server statistical info in question
+ *
+ * Get the specific Server statistics information
+ */
 const void *wget_tcp_get_stats_server(wget_server_stats_t type, const void *_stats)
 {
 	const _stats_data_t *stats = (_stats_data_t *) _stats;

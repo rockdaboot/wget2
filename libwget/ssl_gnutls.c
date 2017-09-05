@@ -1798,12 +1798,24 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 	}
 }
 
+/**
+ * \param[in] fn A `wget_stats_callback_t` callback function used to collect TLS statistics
+ *
+ * Set callback function to be called once TLS statistics for a host are collected
+ */
 void wget_tcp_set_stats_tls(wget_stats_callback_t fn)
 {
 	stats_callback = fn;
 	tls_stats = 1;
 }
 
+/**
+ * \param[in] type A `wget_tls_stats_t` constant representing TLS statistical info to return
+ * \param[in] _stats An internal  pointer sent to callback function
+ * \return TLS statistical info in question
+ *
+ * Get the specific TLS statistics information
+ */
 const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
 {
 	const _stats_data_t *stats = (_stats_data_t *) _stats;
@@ -1834,12 +1846,24 @@ const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
 	}
 }
 
+/**
+ * \param[in] fn A `wget_stats_callback_t` callback function used to collect OCSP statistics
+ *
+ * Set callback function to be called once OCSP statistics for a host are collected
+ */
 void wget_tcp_set_stats_ocsp(wget_stats_callback_t fn)
 {
 	stats_callback = fn;
 	ocsp_stats = 1;
 }
 
+/**
+ * \param[in] type A `wget_ocsp_stats_t` constant representing OCSP statistical info to return
+ * \param[in] _stats An internal  pointer sent to callback function
+ * \return OCSP statistical info in question
+ *
+ * Get the specific OCSP statistics information
+ */
 const void *wget_tcp_get_stats_ocsp(wget_ocsp_stats_t type, const void *_stats)
 {
 	const _ocsp_stats_data_t *stats = (_ocsp_stats_data_t *) _stats;

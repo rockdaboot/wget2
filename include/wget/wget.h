@@ -2551,7 +2551,6 @@ typedef enum {
 	WGET_STATS_DNS_IP = 1,
 	WGET_STATS_DNS_PORT = 2,
 	WGET_STATS_DNS_SECS = 3
-
 } wget_dns_stats_t;
 
 typedef enum {

@@ -652,11 +652,23 @@ int wget_tcp_get_local_port(wget_tcp_t *tcp)
 	return 0;
 }
 
+/**
+ * \param[in] fn A `wget_stats_callback_t` callback function used to collect DNS statistics
+ *
+ * Set callback function to be called once DNS statistics for a host are collected
+ */
 void wget_tcp_set_stats_dns(wget_stats_callback_t fn)
 {
 	stats_callback = fn;
 }
 
+/**
+ * \param[in] type A `wget_dns_stats_t` constant representing DNS statistical info to return
+ * \param[in] _stats An internal  pointer sent to callback function
+ * \return DNS statistical info in question
+ *
+ * Get the specific DNS statistics information
+ */
 const void *wget_tcp_get_stats_dns(const wget_dns_stats_t type, const void *_stats)
 {
 	const _stats_data_t *stats = (_stats_data_t *) _stats;
