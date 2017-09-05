@@ -85,6 +85,8 @@ struct JOB {
 		auth_failure_count, // number of times server has returned a 401 response
 		mirror_pos, // where to look up the next (metalink) mirror to use
 		piece_pos; // where to look up the next (metalink) piece to download
+	bool
+		challenges_alloc; // Indicate whether the challenges vector is owned by the JOB
 	unsigned char
 		inuse : 1, // if job is already in use, 'used_by' holds the thread id of the downloader
 		sitemap : 1, // URL is a sitemap to be scanned in recursive mode

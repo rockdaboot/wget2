@@ -507,8 +507,10 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 	if (config.spider || config.chunk_size)
 		new_job->head_first = 1;
 
-	if (config.auth_no_challenge)
+	if (config.auth_no_challenge) {
 		new_job->challenges = config.default_challenges;
+		new_job->challenges_alloc = false;
+	}
 
 	host_add_job(host, new_job);
 
@@ -1315,6 +1317,7 @@ static int process_response_header(wget_http_response_t *resp)
 		}
 
 		job->challenges = resp->challenges;
+		job->challenges_alloc = true;
 		resp->challenges = NULL;
 		job->inuse = 0; // try again, but with challenge responses
 		return 1; // stop further processing
