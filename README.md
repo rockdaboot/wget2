@@ -164,7 +164,7 @@ Well, you want to valgrind 'wget2' and not the test program itself, right ?
 
 # Coverage Report
 
-To generate and view the test code coverage
+To generate and view the test code coverage (works with gcc, not with clang)
 
 		make check-coverage
 		<browser> lcov/index.html
