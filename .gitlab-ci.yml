@@ -5,6 +5,7 @@ variables:
   CENTOS7_BUILD: buildenv-centos7
   GET_SOURCES_ATTEMPTS: "3"
   CONFIGURE_BASE_FLAGS: --enable-assert
+  CFLAGS_DEFAULT: -O0 -g -ggdb3
 
 
 # We organize the CI runners as thus:
@@ -38,6 +39,7 @@ Debian GNU/Linux build:
     - apt-get update -qq && apt-get install -y -qq libmicrohttpd-dev
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
+    - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap && touch .manywarnings
     - CC=clang ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan -C
     - make -j$(nproc) check
@@ -64,6 +66,7 @@ clang/Fedora:
   script:
     - export CC=clang
     - export CXX=clang++
+    - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
     - make -j$(nproc) check
@@ -95,7 +98,8 @@ pages:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - ./bootstrap
-    - CFLAGS="-g -O0" ./configure
+    - export CFLAGS=$CFLAGS_DEFAULT
+    - ./configure
     - make -j$(nproc) check-coverage
     - mkdir -p public
     # Test suite coverage report
