@@ -62,7 +62,7 @@ Wget2 - a recursive metalink/file/website downloader.
   Long options are more convenient to remember, but take time to type.
   You may freely mix different option styles. Thus you may write:
 
-      wget2 -r --tries=10 http://fly.srk.fer.hr/ -o log
+      wget2 -r --tries=10 https://example.com/ -o log
 
   The space between the option accepting an argument and the argument may be omitted.  Instead of -o log you can write
   -olog.
@@ -217,8 +217,8 @@ Go to background immediately after startup. If no output file is specified via t
   HTML, CSS, Atom or RSS). This is equivalent to the presence of a "BASE" tag in the HTML input file, with URL as the value for the "href"
   attribute.
 
-  For instance, if you specify http://foo/bar/a.html for URL, and Wget2 reads ../baz/b.html from the input file, it would be
-  resolved to http://foo/baz/b.html.
+  For instance, if you specify `https://example.com/bar/a.html` for URL, and Wget2 reads `../baz/b.html` from the input file, it would be
+  resolved to `https://example.com/baz/b.html`.
 
 * --config-file=FILE
 
@@ -312,9 +312,9 @@ Go to background immediately after startup. If no output file is specified via t
   Continue getting a partially-downloaded file.  This is useful when you want to finish up a download started by a
   previous instance of Wget2, or by another program.  For instance:
 
-      wget2 -c ftp://sunsite.doc.ic.ac.uk/ls-lR.Z
+      wget2 -c https://example.com/tarball.gz
 
-  If there is a file named ls-lR.Z in the current directory, Wget2 will assume that it is the first portion of the
+  If there is a file named `tarball.gz` in the current directory, Wget2 will assume that it is the first portion of the
   remote file, and will ask the server to continue the retrieval from an offset equal to the length of the local
   file.
 
@@ -322,8 +322,8 @@ Go to background immediately after startup. If no output file is specified via t
   downloading a file should the connection be lost midway through.  This is the default behavior.  -c only affects
   resumption of downloads started prior to this invocation of Wget2, and whose local files are still sitting around.
 
-  Without -c, the previous example would just download the remote file to ls-lR.Z.1, leaving the truncated ls-lR.Z
-  file alone.
+  Without -c, the previous example would just download the remote file to `tarball.gz.1`, leaving the truncated
+  `tarball.gz` file alone.
 
   If you use -c on a non-empty file, and it turns out that the server does not support
   continued downloading, Wget2 will refuse to start the download from scratch, which would effectively ruin existing
@@ -529,9 +529,9 @@ Go to background immediately after startup. If no output file is specified via t
 
   Note that quota will never affect downloading a single file.  So if you specify
 
-      wget2 -Q10k ftp://wuarchive.wustl.edu/ls-lR.gz
+      wget2 -Q10k https://example.com/bigfile.gz
 
-  all of the ls-lR.gz will be downloaded.  The same goes even when several URLs
+  all of the `bigfile.gz` will be downloaded.  The same goes even when several URLs
   are specified on the command-line.  However, quota is respected when retrieving either recursively, or from an
   input file.  Thus you may safely type
 
@@ -539,7 +539,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   download will be aborted when the quota is exceeded.
 
-  Setting quota to 0 or to inf unlimits the download quota.
+  Setting quota to `0` or to `inf` unlimits the download quota.
 
 * --no-dns-cache
 
@@ -706,39 +706,38 @@ Go to background immediately after startup. If no output file is specified via t
 * -x, --force-directories
 
   The opposite of -nd---create a hierarchy of directories, even if one would not have been created otherwise.  E.g.
-  wget2 -x http://fly.srk.fer.hr/robots.txt will save the downloaded file to fly.srk.fer.hr/robots.txt.
+  `wget2 -x https://example.com/robots.txt` will save the downloaded file to `example.com/robots.txt`.
 
 * -nH, --no-host-directories
 
-  Disable generation of host-prefixed directories.  By default, invoking Wget2 with -r http://fly.srk.fer.hr/ will
-  create a structure of directories beginning with fly.srk.fer.hr/.  This option disables such behavior.
+  Disable generation of host-prefixed directories.  By default, invoking Wget2 with `-r https://example.com/` will
+  create a structure of directories beginning with `example.com/`.  This option disables such behavior.
 
 * --protocol-directories
 
-  Use the protocol name as a directory component of local file names.  For example, with this option, wget2 -r
-  http://host will save to http/host/... rather than just to host/....
+  Use the protocol name as a directory component of local file names.  For example, with this option, `wget2 -r
+  https://example.com` will save to `https/example.com/...` rather than just to `example.com/...`.
 
 * --cut-dirs=number
 
-  Ignore number directory components.  This is useful for getting a fine-grained control over the directory where
+  Ignore a number of directory components.  This is useful for getting a fine-grained control over the directory where
   recursive retrieval will be saved.
 
-  Take, for example, the directory at ftp://ftp.xemacs.org/pub/xemacs/.  If you retrieve it with -r, it will be
-  saved locally under ftp.xemacs.org/pub/xemacs/.  While the -nH option can remove the ftp.xemacs.org/ part, you
-  are still stuck with pub/xemacs.  This is where --cut-dirs comes in handy; it makes Wget2 not "see" number remote
-  directory components.  Here are several examples of how --cut-dirs option works.
+  Take, for example, the directory at https://example.com/pub/sub/.  If you retrieve it with `-r`, it will be
+  saved locally under `example.com/pub/sub/`.  While the `-nH` option can remove the `example.com/` part, you
+  are still stuck with `pub/sub/`.  This is where `--cut-dirs` comes in handy; it makes Wget2 not "see" a number
+  of remote directory components.  Here are several examples of how `--cut-dirs` option works.
   ```
-     No options        -> ftp.xemacs.org/pub/xemacs/
-     -nH               -> pub/xemacs/
-     -nH --cut-dirs=1  -> xemacs/
+     No options        -> example.com/pub/sub/
+     --cut-dirs=1      -> example.com/sub/
+     --cut-dirs=2      -> example.com/
+     -nH               -> pub/sub/
+     -nH --cut-dirs=1  -> sub/
      -nH --cut-dirs=2  -> .
-
-     --cut-dirs=1      -> ftp.xemacs.org/xemacs/
-     ...
   ```
-  If you just want to get rid of the directory structure, this option is similar to a combination of -nd and -P.
-  However, unlike -nd, --cut-dirs does not lose with subdirectories---for instance, with -nH --cut-dirs=1, a beta/
-  subdirectory will be placed to xemacs/beta, as one would expect.
+  If you just want to get rid of the directory structure, this option is similar to a combination of `-nd` and `-P`.
+  However, unlike `-nd`, `--cut-dirs` does not lose with subdirectories. For instance, with `-nH --cut-dirs=1`, a `beta/`
+  subdirectory will be placed to `sub/beta/`, as one would expect.
 
 * -P prefix, --directory-prefix=prefix
 
@@ -751,21 +750,21 @@ Go to background immediately after startup. If no output file is specified via t
 * --default-page=name
 
   Use name as the default file name when it isn't known (i.e., for URLs that end in a slash), instead of
-  index.html.
+  `index.html`.
 
 * -E, --adjust-extension
 
-  If a file of type application/xhtml+xml or text/html is downloaded and the URL does not end with the regexp
-  \.[Hh][Tt][Mm][Ll]?, this option will cause the suffix .html to be appended to the local filename.  This is
+  If a file of type `application/xhtml+xml` or `text/html` is downloaded and the URL does not end with the regexp
+  `\.[Hh][Tt][Mm][Ll]?`, this option will cause the suffix `.html` to be appended to the local filename.  This is
   useful, for instance, when you're mirroring a remote site that uses .asp pages, but you want the mirrored pages
   to be viewable on your stock Apache server.  Another good use for this is when you're downloading CGI-generated
-  materials.  A URL like http://site.com/article.cgi?25 will be saved as article.cgi?25.html.
+  materials.  A URL like `https://example.com/article.cgi?25` will be saved as `article.cgi?25.html`.
 
   Note that filenames changed in this way will be re-downloaded every time you re-mirror a site, because Wget2 can't
-  tell that the local X.html file corresponds to remote URL X (since it doesn't yet know that the URL produces
-  output of type text/html or application/xhtml+xml.
+  tell that the local `X.html` file corresponds to remote URL X (since it doesn't yet know that the URL produces
+  output of type `text/html` or `application/xhtml+xml`.
 
-  Wget2 will also ensure that any downloaded files of type text/css end in the suffix .css.
+  Wget2 will also ensure that any downloaded files of type `text/css` end in the suffix `.css`.
 
   At some point in the future, this option may well be expanded to include suffixes for other types of content,
   including content types that are not parsed by Wget.
@@ -775,20 +774,20 @@ Go to background immediately after startup. If no output file is specified via t
   Specify the user and password for HTTP authentication. According to the type of the challenge, Wget
   will encode them using either the "basic" (insecure), the "digest", or the Windows "NTLM" authentication scheme.
 
-  If possible, put your credentials into ~/.netrc (see also --netrc and --netrc-file options) or into ~/.wgetrc.
+  If possible, put your credentials into `~/.netrc` (see also `--netrc` and `--netrc-file` options) or into `~/.wgetrc`.
   This is far more secure than using the command line which can be seen by any other user.
   If the passwords are really important, do not leave them lying in those files either. Edit the files and delete
   them after Wget2 has started the download.
 
-  Also see --use-askpass and --ask-password for an interactive method to provide your password.
+  Also see `--use-askpass` and `--ask-password` for an interactive method to provide your password.
 
 * --http-proxy-user=user, --http-proxy-password=password
 
-  Specify the user and password for HTTP proxy authentication. See --http-user for details.
+  Specify the user and password for HTTP proxy authentication. See `--http-user` for details.
 
 * --no-http-keep-alive
 
-  Turn off the "keep-alive" feature for HTTP downloads.  Normally, Wget2 asks the server to keep the connection open
+  Turn off the "keep-alive" feature for HTTP(S) downloads.  Normally, Wget2 asks the server to keep the connection open
   so that, when you download more than one document from the same server, they get transferred over the same TCP
   connection.  This saves time and at the same time reduces the load on the server.
 
@@ -813,7 +812,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 * --load-cookies file
 
-  Load cookies from file before the first HTTP retrieval.  file is a textual file in the format originally used by
+  Load cookies from file before the first HTTP(S) retrieval.  file is a textual file in the format originally used by
   Netscape's cookies.txt file.
 
   You will typically use this option when mirroring sites that require that you be logged in to access some or all
@@ -884,14 +883,14 @@ Go to background immediately after startup. If no output file is specified via t
 
       wget2 --header='Accept-Charset: iso-8859-2' \
            --header='Accept-Language: hr'        \
-             http://fly.srk.fer.hr/
+             https://example.com/
 
   Specification of an empty string as the header value will clear all previous user-defined headers.
 
   This option can be used to override headers otherwise generated automatically.  This example
-  instructs Wget2 to connect to localhost, but to specify foo.bar in the "Host" header:
+  instructs Wget2 to connect to localhost, but to specify `example.com` in the "Host" header:
 
-      wget2 --header="Host: foo.bar" http://localhost/
+      wget2 --header="Host: example.com" http://localhost/
 
 * --max-redirect=number
 
@@ -971,11 +970,11 @@ Go to background immediately after startup. If no output file is specified via t
       # Log in to the server.  This can be done only once.
       wget2 --save-cookies cookies.txt \
            --post-data 'user=foo&password=bar' \
-           http://server.com/auth.php
+           http://example.com/auth.php
 
       # Now grab the page or pages we care about.
       wget2 --load-cookies cookies.txt \
-           -p http://server.com/interesting/article.php
+           -p http://example.com/interesting/article.php
 
   If the server is using session cookies to track user authentication, the above will not work because
   --save-cookies will not save them (and neither will browsers) and the cookies.txt file will be empty.  In that
@@ -1272,7 +1271,7 @@ Go to background immediately after startup. If no output file is specified via t
   Turn off FTP globbing.  Globbing refers to the use of shell-like special characters (wildcards), like *, ?, [ and
   ] to retrieve more than one file from the same directory at once, like:
 
-      wget2 ftp://gnjilux.srk.fer.hr/*.msg
+      wget2 ftp://example.com/*.msg
 
   By default, globbing will be turned on if the URL contains a globbing character.  This option may be used to turn
   globbing on or off permanently.
@@ -1354,7 +1353,7 @@ Go to background immediately after startup. If no output file is specified via t
   This option tells Wget2 to delete every single file it downloads, after having done so.  It is useful for pre-
   fetching popular pages through a proxy, e.g.:
 
-      wget2 -r -nd --delete-after http://whatever.com/~popular/page/
+      wget2 -r -nd --delete-after https://example.com/~popular/page/
 
   The -r option is to retrieve recursively, and -nd to not create directories.
 
@@ -1381,7 +1380,7 @@ Go to background immediately after startup. If no output file is specified via t
      path of the location they point to.
 
       Example: if the downloaded file /foo/doc.html links to /bar/img.gif (or to ../bar/img.gif), then the link in
-      doc.html will be modified to point to http://hostname/bar/img.gif.
+      doc.html will be modified to point to `https://example.com/bar/img.gif`.
 
   Because of this, local browsing works reliably: if a linked file was downloaded, the link will refer to its local
   name; if it was not downloaded, the link will refer to its full Internet address rather than presenting a broken
@@ -1403,7 +1402,7 @@ Go to background immediately after startup. If no output file is specified via t
   Example: if some link points to //foo.com/bar.cgi?xyz with --adjust-extension asserted and its local destination
   is intended to be ./foo.com/bar.cgi?xyz.css, then the link would be converted to //foo.com/bar.cgi?xyz.css. Note
   that only the filename part has been modified. The rest of the URL has been left untouched, including the net
-  path ("//") which would otherwise be processed by Wget2 and converted to the effective scheme (ie. "http://").
+  path ("//") which would otherwise be processed by Wget2 and converted to the effective scheme (ie. "https://").
 
 * -K, --backup-converted
 
@@ -1431,34 +1430,34 @@ Go to background immediately after startup. If no output file is specified via t
 
   If one executes the command:
 
-      wget2 -r -l 2 http://<site>/1.html
+      wget2 -r -l 2 https://<site>/1.html
 
   then 1.html, 1.gif, 2.html, 2.gif, and 3.html will be downloaded.  As you can see, 3.html is without its
   requisite 3.gif because Wget2 is simply counting the number of hops (up to 2) away from 1.html in order to
   determine where to stop the recursion.  However, with this command:
 
-      wget2 -r -l 2 -p http://<site>/1.html
+      wget2 -r -l 2 -p https://<site>/1.html
 
   all the above files and 3.html's requisite 3.gif will be downloaded.  Similarly,
 
-      wget2 -r -l 1 -p http://<site>/1.html
+      wget2 -r -l 1 -p https://<site>/1.html
 
   will cause 1.html, 1.gif, 2.html, and 2.gif to be downloaded.  One might think that:
 
-      wget2 -r -l 0 -p http://<site>/1.html
+      wget2 -r -l 0 -p https://<site>/1.html
 
   would download just 1.html and 1.gif, but unfortunately this is not the case, because -l 0 is equivalent to -l
   inf---that is, infinite recursion.  To download a single HTML page (or a handful of them, all specified on the
   command-line or in a -i URL input file) and its (or their) requisites, simply leave off -r and -l:
 
-      wget2 -p http://<site>/1.html
+      wget2 -p https://<site>/1.html
 
   Note that Wget2 will behave as if -r had been specified, but only that single page and its requisites will be
   downloaded.  Links from that page to external documents will not be followed.  Actually, to download a single
   page and all its requisites (even if they exist on separate websites), and make sure the lot displays properly
   locally, this author likes to use a few options in addition to -p:
 
-      wget2 -E -H -k -K -p http://<site>/<document>
+      wget2 -E -H -k -K -p https://<site>/<document>
 
   To finish off this topic, it's worth knowing that Wget2's idea of an external document link is any URL specified
   in an `<A>` tag, an `<AREA>` tag, or a `<LINK>` tag other than `<LINK REL="stylesheet">`.
@@ -1512,7 +1511,7 @@ Go to background immediately after startup. If no output file is specified via t
   In the past, this option was the best bet for downloading a single page and its requisites, using a command-line
   like:
 
-      wget2 --ignore-tags=a,area -H -k -K -r http://<site>/<document>
+      wget2 --ignore-tags=a,area -H -k -K -r https://<site>/<document>
 
   However, the author of this option came across a page with tags like "<LINK REL="home" HREF="/">" and came to the
   realization that specifying tags to ignore was not enough.  One can't just tell Wget2 to ignore "<LINK>", because
@@ -1609,7 +1608,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 ## <a name="Bugs"/>Bugs
 
-  You are welcome to submit bug reports via the GNU Wget2 bug tracker (see <http://wget.addictivecode.org/BugTracker>).
+  You are welcome to submit bug reports via the [GNU Wget2 bug tracker](https://gitlab.com/gnuwget/wget2/issues).
 
   Before actually submitting a bug report, please try to follow a few simple guidelines.
 
@@ -1619,13 +1618,13 @@ Go to background immediately after startup. If no output file is specified via t
   lists.
 
   2.  Try to repeat the bug in as simple circumstances as possible.  E.g. if Wget2 crashes while downloading `wget2 -rl0
-  -kKE -t5 --no-proxy http://yoyodyne.com -o /tmp/log`, you should try to see if the crash is repeatable, and if
+  -kKE -t5 --no-proxy https://example.com -o /tmp/log`, you should try to see if the crash is repeatable, and if
   will occur with a simpler set of options.  You might even try to start the download at the page where the crash
   occurred to see if that page somehow triggered the crash.
 
-  Also, while I will probably be interested to know the contents of your .wgetrc file, just dumping it into the
-  debug message is probably a bad idea.  Instead, you should first try to see if the bug repeats with .wgetrc moved
-  out of the way.  Only if it turns out that .wgetrc settings affect the bug, mail me the relevant parts of the
+  Also, while I will probably be interested to know the contents of your `.wgetrc` file, just dumping it into the
+  debug message is probably a bad idea.  Instead, you should first try to see if the bug repeats with `.wgetrc` moved
+  out of the way.  Only if it turns out that `.wgetrc` settings affect the bug, mail me the relevant parts of the
   file.
 
   3.  Please start Wget2 with -d option and send us the resulting output (or relevant parts thereof).  If Wget2 was
@@ -1637,7 +1636,7 @@ Go to background immediately after startup. If no output file is specified via t
   downloaded data.  Since the bug address is publically archived, you may assume that all bug reports are visible
   to the public.
 
-  4.  If Wget2 has crashed, try to run it in a debugger, e.g. "gdb `which wget` core" and type "where" to get the
+  4.  If Wget2 has crashed, try to run it in a debugger, e.g. ```gdb `which wget` core``` and type "where" to get the
   backtrace.  This may not work if the system administrator has disabled core files, but it is safe to try.
 
 
@@ -1657,8 +1656,7 @@ Go to background immediately after startup. If no output file is specified via t
 ## <a name="Copyright"/>Copyright
 
   Copyright (C) 2012-2015 Tim Ruehsen
-
-  Copyright (C) 2015-2016 Free Software Foundation, Inc.
+  Copyright (C) 2015-2017 Free Software Foundation, Inc.
 
   Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation
   License, Version 1.3 or any later version published by the Free Software Foundation; with no Invariant Sections, with
