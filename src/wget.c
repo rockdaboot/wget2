@@ -96,6 +96,8 @@ typedef struct {
 } _statistics_t;
 static _statistics_t stats;
 
+static bool stats_site;
+
 static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag,
 		const char *uri, const char *original_url, int ignore_patterns, wget_buffer_t *partial_content,
 		size_t max_partial_content);
@@ -1252,7 +1254,7 @@ static void add_statistics(wget_http_response_t *resp)
 {
 	// do some statistics
 	JOB *job = resp->req->user_data;
-	wget_iri_t *iri = job->iri, *parent_iri;
+	wget_iri_t *iri = job->iri;
 
 	if (resp->code == 200) {
 		if (job->part)
@@ -1266,9 +1268,11 @@ static void add_statistics(wget_http_response_t *resp)
 	else
 		_atomic_increment_int(&stats.nerrors);
 
-	host_docs_add(iri, resp);
-	parent_iri = job->redirection_level ? job->original_url : job->referer;
-	tree_docs_add(parent_iri, iri, (job == job->host->robot_job), (bool)job->redirection_level);
+	if (stats_site) {
+		wget_iri_t *parent_iri = job->redirection_level ? job->original_url : job->referer;
+		host_docs_add(iri, resp);
+		tree_docs_add(parent_iri, iri, (job == job->host->robot_job), (bool)job->redirection_level);
+	}
 }
 
 static int process_response_header(wget_http_response_t *resp)
@@ -3224,4 +3228,14 @@ int set_file_metadata(const char *origin_url, const char *referrer_url,
 	retval = write_xattr_metadata("user.charset", charset, fname);
 
 	return retval;
+}
+
+/**
+ * \param[in] stats_site_switch A flag to turn on the Site statistics collection
+ *
+ * Set flag to enable collecting Site statistics
+ */
+void wget_tcp_set_stats_site(bool stats_site_switch)
+{
+	stats_site = stats_site_switch;
 }

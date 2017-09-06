@@ -2618,6 +2618,9 @@ WGETAPI const void *
 	wget_tcp_get_stats_ocsp(wget_ocsp_stats_t type, const void *stats);
 
 WGETAPI void
+	wget_tcp_set_stats_site(bool stats_site_switch);
+
+WGETAPI void
 	host_ips_free(void);
 
 WGET_END_DECLS

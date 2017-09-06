@@ -239,7 +239,6 @@ static void free_ocsp_stats(server_stats_t *stats)
 
 void stats_init(void)
 {
-
 	if (stats_opts[WGET_STATS_TYPE_DNS].status) {
 		dns_stats_v = wget_vector_create(8, -2, NULL);
 		wget_vector_set_destructor(dns_stats_v, (wget_vector_destructor_t) free_dns_stats);
@@ -264,12 +263,8 @@ void stats_init(void)
 		wget_tcp_set_stats_ocsp(stats_callback);
 	}
 
-	if (stats_opts[WGET_STATS_TYPE_SITE].status) {
-//		ocsp_stats_v = wget_vector_create(8, -2, NULL);
-//		wget_vector_set_destructor(ocsp_stats_v, (wget_vector_destructor_t) free_ocsp_stats);
-//		wget_tcp_set_stats_ocsp(stats_callback);
-	}
-
+	if (stats_opts[WGET_STATS_TYPE_SITE].status)
+		wget_tcp_set_stats_site(true);
 }
 
 static const char *stats_server_hpkp(wget_hpkp_stats_t hpkp)
@@ -857,7 +852,7 @@ void stats_print(void)
 			stats_print_json(WGET_STATS_TYPE_DNS);
 			break;
 
-		default: error_printf("Unknown stats format %d\n", (int) stats_opts[WGET_STATS_TYPE_DNS].format);
+		default: error_printf("Unknown --stats-dns format %d\n", (int) stats_opts[WGET_STATS_TYPE_DNS].format);
 			break;
 		}
 
@@ -878,7 +873,7 @@ void stats_print(void)
 			stats_print_json(WGET_STATS_TYPE_TLS);
 			break;
 
-		default: error_printf("Unknown stats format %d\n", (int) stats_opts[WGET_STATS_TYPE_TLS].format);
+		default: error_printf("Unknown --stats-tls format %d\n", (int) stats_opts[WGET_STATS_TYPE_TLS].format);
 			break;
 		}
 
@@ -899,7 +894,7 @@ void stats_print(void)
 			stats_print_json(WGET_STATS_TYPE_SERVER);
 			break;
 
-		default: error_printf("Unknown stats format %d\n", (int) stats_opts[WGET_STATS_TYPE_SERVER].format);
+		default: error_printf("Unknown --stats-server format %d\n", (int) stats_opts[WGET_STATS_TYPE_SERVER].format);
 			break;
 		}
 
@@ -920,7 +915,7 @@ void stats_print(void)
 			stats_print_json(WGET_STATS_TYPE_OCSP);
 			break;
 
-		default: error_printf("Unknown stats format %d\n", (int) stats_opts[WGET_STATS_TYPE_OCSP].format);
+		default: error_printf("Unknown --stats-ocsp format %d\n", (int) stats_opts[WGET_STATS_TYPE_OCSP].format);
 			break;
 		}
 
@@ -941,10 +936,8 @@ void stats_print(void)
 			stats_print_json(WGET_STATS_TYPE_SITE);
 			break;
 
-		default: error_printf("Unknown stats format %d\n", (int) stats_opts[WGET_STATS_TYPE_SITE].format);
+		default: error_printf("Unknown --stats-site format %d\n", (int) stats_opts[WGET_STATS_TYPE_SITE].format);
 			break;
 		}
-
-//		wget_vector_free(&ocsp_stats_v);
 	}
 }

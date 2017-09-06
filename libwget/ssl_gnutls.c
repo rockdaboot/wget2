@@ -90,8 +90,9 @@ typedef struct
 } _ocsp_stats_data_t;
 
 static wget_stats_callback_t stats_callback;
-static char ocsp_stats;
-static char tls_stats;
+static bool
+	ocsp_stats,
+	tls_stats;
 
 static struct _config {
 	const char
@@ -1810,7 +1811,7 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 void wget_tcp_set_stats_tls(wget_stats_callback_t fn)
 {
 	stats_callback = fn;
-	tls_stats = 1;
+	tls_stats = (stats_callback ? true : false);
 }
 
 /**
@@ -1858,7 +1859,7 @@ const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
 void wget_tcp_set_stats_ocsp(wget_stats_callback_t fn)
 {
 	stats_callback = fn;
-	ocsp_stats = 1;
+	ocsp_stats = (stats_callback ? true : false);
 }
 
 /**
