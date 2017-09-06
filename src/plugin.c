@@ -695,6 +695,9 @@ void plugin_db_init(void)
 // Sends 'finalize' signal to all plugins and unloads all plugins
 void plugin_db_finalize(int exitcode)
 {
+	if (! initialized)
+		return;
+
 	int n_plugins = wget_vector_size(plugin_list);
 
 	for (int i = 0; i < n_plugins; i++) {
