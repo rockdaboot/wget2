@@ -1269,9 +1269,10 @@ static void add_statistics(wget_http_response_t *resp)
 		_atomic_increment_int(&stats.nerrors);
 
 	if (stats_site) {
+		DOC *doc;
 		wget_iri_t *parent_iri = job->redirection_level ? job->original_url : job->referer;
-		host_docs_add(iri, resp);
-		tree_docs_add(parent_iri, iri, (job == job->host->robot_job), (bool)job->redirection_level);
+		if ((doc = host_docs_add(iri, resp)))
+			tree_docs_add(parent_iri, iri, (job == job->host->robot_job), (bool)job->redirection_level, doc);
 	}
 }
 

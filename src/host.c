@@ -53,6 +53,14 @@ struct site_stats{
 	int level;
 };
 
+struct site_stats_cvs{
+	wget_buffer_t *buf;
+	FILE *fp;
+	int
+		id,
+		parent_id;
+};
+
 static int _host_compare(const HOST *host1, const HOST *host2)
 {
 	int n;
@@ -197,13 +205,13 @@ HOST *host_add(wget_iri_t *iri)
 	return hostp;
 }
 
-HOST_DOCS *host_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
+DOC *host_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
 {
 	HOST *hostp;
 	wget_hashmap_t *host_docs;
-	HOST_DOCS *host_docsp = NULL;
+	HOST_DOCS *host_docsp;
 	wget_vector_t *docs;
-	DOC *doc;
+	DOC *doc = NULL;
 
 	wget_thread_mutex_lock(&host_docs_mutex);
 
@@ -232,14 +240,15 @@ HOST_DOCS *host_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
 		doc->size_decompressed = resp->body->length;
 		doc->encoding = resp->content_encoding;
 		wget_vector_add_noalloc(docs, doc);
-	}
+	} else
+		error_printf("No existing host entry for iri->uri = %s\n", iri->uri);
 
 	wget_thread_mutex_unlock(&host_docs_mutex);
 
-	return host_docsp;
+	return doc;
 }
 
-TREE_DOCS *tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool robot_iri, bool redirect)
+TREE_DOCS *tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool robot_iri, bool redirect, DOC *doc)
 {
 	HOST *hostp = NULL;
 	wget_hashmap_t *tree_docs;
@@ -274,6 +283,7 @@ TREE_DOCS *tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool robot_iri
 			if (!(child_node = tree_docs_get(tree_docs, iri))) {
 				child_node = wget_malloc(sizeof(TREE_DOCS));
 				child_node->iri = iri;
+				child_node->doc = doc;
 				child_node->children = NULL;
 				child_node->redirect = redirect;
 				wget_hashmap_put_noalloc(tree_docs, child_node, child_node);
@@ -768,7 +778,6 @@ static int hosts_hashmap_tree(struct site_stats *ctx, HOST *host)
 {
 	if (host->tree_docs && host->root) {
 		wget_buffer_printf_append(ctx->buf, "\n  %s://%s:\n", host->scheme, host->host);
-		ctx->level = 0;
 		print_treeish(ctx, host->root);
 	}
 
@@ -777,17 +786,64 @@ static int hosts_hashmap_tree(struct site_stats *ctx, HOST *host)
 
 void print_site_stats(wget_buffer_t *buf, FILE *fp)
 {
-	struct site_stats ctx = { .buf = buf, .fp = fp };
+	struct site_stats ctx = { .buf = buf, .fp = fp, .level = 0 };
 
 	wget_thread_mutex_lock(&hosts_mutex);
 	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap, &ctx);
 	fprintf(fp, "%s", buf->data);
-//	wget_thread_mutex_unlock(&hosts_mutex);
 
 	wget_buffer_reset(ctx.buf);
 
-//	wget_thread_mutex_lock(&hosts_mutex);
 	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap_tree, &ctx);
+	fprintf(fp, "%s", buf->data);
+	wget_thread_mutex_unlock(&hosts_mutex);
+}
+
+static int print_cvs(struct site_stats_cvs *ctx, TREE_DOCS *node)
+{
+	if (node) {
+		ctx->id++;
+		wget_buffer_printf_append(ctx->buf, "%s,%d,%d,%d,%lld,%lld,%s\n",
+				node->iri->uri, ctx->id, ctx->parent_id, !node->redirect,
+				node->doc->size_downloaded, node->doc->size_decompressed, print_encoding(node->doc->encoding));
+
+		if (ctx->buf->length > 64*1024) {
+			fprintf(ctx->fp, "%s", ctx->buf->data);
+			wget_buffer_reset(ctx->buf);
+		}
+
+		if (node->children) {
+			int parent_id = ctx->parent_id;
+			ctx->parent_id = ctx->id;
+			wget_vector_browse(node->children, (wget_vector_browse_t) print_cvs, ctx);
+			ctx->parent_id = parent_id;
+		}
+	}
+
+	return 0;
+}
+
+static int hosts_hashmap_cvs(struct site_stats_cvs *ctx, HOST *host)
+{
+	if (host->tree_docs && host->root) {
+		wget_buffer_printf_append(ctx->buf, "IRI,ID,ParentID,Link,Size (downloaded),Size (decompressed),Encoding\n");
+		print_cvs(ctx, host->root);
+	}
+
+	return 0;
+}
+
+void print_site_stats_cvs(wget_buffer_t *buf, FILE *fp)
+{
+	struct site_stats_cvs ctx = { .buf = buf, .fp = fp, .id = 0, .parent_id = 0};
+
+	wget_thread_mutex_lock(&hosts_mutex);
+//	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap, &ctx);
+//	fprintf(fp, "%s", buf->data);
+
+//	wget_buffer_reset(ctx.buf);
+
+	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap_cvs, &ctx);
 	fprintf(fp, "%s", buf->data);
 	wget_thread_mutex_unlock(&hosts_mutex);
 }

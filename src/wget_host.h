@@ -34,9 +34,13 @@
 struct JOB;
 typedef struct JOB JOB;
 
+struct DOC;
+typedef struct DOC DOC;
+
 typedef struct {
 	wget_iri_t
 		*iri;
+	DOC *doc;
 	bool
 		robot_iri,
 		redirect;
@@ -80,7 +84,7 @@ typedef struct {
 		*docs;
 } HOST_DOCS;
 
-typedef struct {
+struct DOC{
 	wget_iri_t
 		*iri;
 	long long
@@ -90,11 +94,11 @@ typedef struct {
 		encoding;
 	time_t
 		resp_t;
-} DOC;
+};
 
 HOST *host_add(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
-HOST_DOCS *host_docs_add(wget_iri_t *iri, wget_http_response_t *resp);
-TREE_DOCS *tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool robot_iri, bool redirect);
+DOC *host_docs_add(wget_iri_t *iri, wget_http_response_t *resp);
+TREE_DOCS *tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool robot_iri, bool redirect, DOC *doc);
 HOST *host_get(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
 HOST_DOCS *host_docs_get(wget_hashmap_t *host_docs, int status);
 TREE_DOCS *tree_docs_get(wget_hashmap_t *tree_docs, wget_iri_t *iri);
@@ -113,5 +117,6 @@ int queue_size(void) G_GNUC_WGET_PURE;
 int queue_empty(void) G_GNUC_WGET_PURE;
 void queue_print(HOST *host);
 void print_site_stats(wget_buffer_t *buf, FILE *fp);
+void print_site_stats_cvs(wget_buffer_t *buf, FILE *fp);
 
 #endif /* _WGET_HOST_H */

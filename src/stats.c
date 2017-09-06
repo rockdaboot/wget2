@@ -675,8 +675,7 @@ static void stats_print_csv(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			const char *header = "Hostname,IP,Port,DNS resolution duration (ms)";
-			wget_buffer_printf(&buf, "%s\n", header);
+			wget_buffer_printf(&buf, "%s\n", "Hostname,IP,Port,DNS resolution duration (ms)");
 
 			for (int it = 0; it < wget_vector_size(dns_stats_v); it++) {
 				const dns_stats_t *dns_stats = wget_vector_get(dns_stats_v, it);
@@ -710,8 +709,7 @@ static void stats_print_csv(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			const char *header = "Hostname,Version,False Start,TFO,ALPN,Resumed,TCP,Cert-chain Length,TLS negotiation duration (ms)";
-			wget_buffer_printf(&buf, "%s\n", header);
+			wget_buffer_printf(&buf, "%s\n", "Hostname,Version,False Start,TFO,ALPN,Resumed,TCP,Cert-chain Length,TLS negotiation duration (ms)");
 
 			for (int it = 0; it < wget_vector_size(tls_stats_v); it++) {
 				const tls_stats_t *tls_stats = wget_vector_get(tls_stats_v, it);
@@ -756,8 +754,7 @@ static void stats_print_csv(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			const char *header = "Hostname,HPKP,HPKP New Entry,HSTS,CSP";
-			wget_buffer_printf(&buf, "%s\n", header);
+			wget_buffer_printf(&buf, "%s\n", "Hostname,HPKP,HPKP New Entry,HSTS,CSP");
 
 			for (int it = 0; it < wget_vector_size(server_stats_v); it++) {
 				const server_stats_t *server_stats = wget_vector_get(server_stats_v, it);
@@ -798,8 +795,7 @@ static void stats_print_csv(wget_stats_type_t type)
 			fp = stdout;
 
 		if (fp) {
-			const char *header = "Hostname,VALID,REVOKED,IGNORED";
-			wget_buffer_printf(&buf, "%s\n", header);
+			wget_buffer_printf(&buf, "%s\n", "Hostname,VALID,REVOKED,IGNORED");
 
 			for (int it = 0; it < wget_vector_size(ocsp_stats_v); it++) {
 				const ocsp_stats_t *ocsp_stats = wget_vector_get(ocsp_stats_v, it);
@@ -827,6 +823,27 @@ static void stats_print_csv(wget_stats_type_t type)
 	}
 
 	case WGET_STATS_TYPE_SITE: {
+		const char *filename = stats_opts[WGET_STATS_TYPE_SITE].file;
+		if (filename && *filename && wget_strcmp(filename, "-"))
+			fp = fopen(filename, "w");
+		else
+			fp = stdout;
+
+		if (fp) {
+			wget_buffer_printf(&buf, "\nSite Statistics:\n");
+
+			print_site_stats_cvs(&buf, fp);
+
+			if (fp != stdout) {
+				fclose(fp);
+				info_printf("Site stats saved in %s\n", filename);
+			}
+
+		} else
+			error_printf("File could not be opened %s\n", filename);
+
+		wget_buffer_deinit(&buf);
+
 		break;
 	}
 
