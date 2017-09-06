@@ -46,7 +46,7 @@
  */
 const char *wget_plugin_get_name(wget_plugin_t *plugin)
 {
-	return (* plugin->vtable->get_name)(plugin);
+	return plugin->vtable->get_name(plugin);
 }
 
 /**
@@ -56,7 +56,7 @@ const char *wget_plugin_get_name(wget_plugin_t *plugin)
  */
 void wget_plugin_register_finalizer(wget_plugin_t *plugin, wget_plugin_finalizer_t fn)
 {
-	(* plugin->vtable->register_finalizer)(plugin, fn);
+	plugin->vtable->register_finalizer(plugin, fn);
 }
 
 /**
@@ -71,7 +71,7 @@ void wget_plugin_register_finalizer(wget_plugin_t *plugin, wget_plugin_finalizer
  */
 void wget_plugin_register_argp(wget_plugin_t *plugin, wget_plugin_argp_t fn)
 {
-	(* plugin->vtable->register_argp)(plugin, fn);
+	plugin->vtable->register_argp(plugin, fn);
 }
 
 /**
@@ -83,7 +83,7 @@ void wget_plugin_register_argp(wget_plugin_t *plugin, wget_plugin_argp_t fn)
  */
 void wget_intercept_action_reject(wget_intercept_action_t *action)
 {
-	(* action->vtable->action_reject)(action);
+	action->vtable->action_reject(action);
 }
 
 /**
@@ -96,7 +96,7 @@ void wget_intercept_action_reject(wget_intercept_action_t *action)
  */
 void wget_intercept_action_accept(wget_intercept_action_t *action)
 {
-	(* action->vtable->action_accept)(action);
+	action->vtable->action_accept(action);
 }
 
 /**
@@ -107,7 +107,7 @@ void wget_intercept_action_accept(wget_intercept_action_t *action)
  */
 void wget_intercept_action_set_alt_url(wget_intercept_action_t *action, const wget_iri_t *iri)
 {
-	(* action->vtable->action_set_alt_url)(action, iri);
+	action->vtable->action_set_alt_url(action, iri);
 }
 
 /**
@@ -118,7 +118,7 @@ void wget_intercept_action_set_alt_url(wget_intercept_action_t *action, const wg
  */
 void wget_intercept_action_set_local_filename(wget_intercept_action_t *action, const char *local_filename)
 {
-	(* action->vtable->action_set_local_filename)(action, local_filename);
+	action->vtable->action_set_local_filename(action, local_filename);
 }
 
 /**
@@ -138,7 +138,7 @@ void wget_intercept_action_set_local_filename(wget_intercept_action_t *action, c
  */
 void wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filter_t filter_fn)
 {
-	(* plugin->vtable->register_url_filter)(plugin, filter_fn);
+	plugin->vtable->register_url_filter(plugin, filter_fn);
 }
 
 /**
@@ -149,7 +149,7 @@ void wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filt
  */
 const wget_iri_t *wget_downloaded_file_get_source_url(wget_downloaded_file_t *file)
 {
-	return (* file->vtable->file_get_source_url)(file);
+	return file->vtable->file_get_source_url(file);
 }
 
 /**
@@ -160,7 +160,7 @@ const wget_iri_t *wget_downloaded_file_get_source_url(wget_downloaded_file_t *fi
  */
 const char *wget_downloaded_file_get_local_filename(wget_downloaded_file_t *file)
 {
-	return (* file->vtable->file_get_local_filename)(file);
+	return file->vtable->file_get_local_filename(file);
 }
 
 /**
@@ -171,7 +171,7 @@ const char *wget_downloaded_file_get_local_filename(wget_downloaded_file_t *file
  */
 uint64_t wget_downloaded_file_get_size(wget_downloaded_file_t *file)
 {
-	return (* file->vtable->file_get_size)(file);
+	return file->vtable->file_get_size(file);
 }
 
 /**
@@ -187,7 +187,7 @@ uint64_t wget_downloaded_file_get_size(wget_downloaded_file_t *file)
  */
 int wget_downloaded_file_get_contents(wget_downloaded_file_t *file, const void **data, size_t *size)
 {
-	return (* file->vtable->file_get_contents)(file, data, size);
+	return file->vtable->file_get_contents(file, data, size);
 }
 
 /**
@@ -198,7 +198,7 @@ int wget_downloaded_file_get_contents(wget_downloaded_file_t *file, const void *
  */
 FILE *wget_downloaded_file_open_stream(wget_downloaded_file_t *file)
 {
-	return (* file->vtable->file_open_stream)(file);
+	return file->vtable->file_open_stream(file);
 }
 
 /**
@@ -209,7 +209,7 @@ FILE *wget_downloaded_file_open_stream(wget_downloaded_file_t *file)
  */
 bool wget_downloaded_file_get_recurse(wget_downloaded_file_t *file)
 {
-	return (* file->vtable->file_get_recurse)(file);
+	return file->vtable->file_get_recurse(file);
 }
 
 /**
@@ -221,7 +221,7 @@ bool wget_downloaded_file_get_recurse(wget_downloaded_file_t *file)
  */
 void wget_downloaded_file_add_recurse_url(wget_downloaded_file_t *file, const wget_iri_t *iri)
 {
-	(* file->vtable->file_add_recurse_url)(file, iri);
+	file->vtable->file_add_recurse_url(file, iri);
 }
 
 /**
@@ -246,7 +246,7 @@ void wget_downloaded_file_add_recurse_url(wget_downloaded_file_t *file, const wg
 void
 wget_plugin_register_post_processor(wget_plugin_t *plugin, wget_plugin_post_processor_t fn)
 {
-	(* plugin->vtable->register_post_processor)(plugin, fn);
+	plugin->vtable->register_post_processor(plugin, fn);
 }
 
 /**
@@ -266,7 +266,7 @@ wget_plugin_register_post_processor(wget_plugin_t *plugin, wget_plugin_post_proc
  */
 void wget_plugin_add_hsts_db(wget_plugin_t *plugin, wget_hsts_db_t *hsts_db, int priority)
 {
-	(* plugin->vtable->add_hsts_db)(plugin, hsts_db, priority);
+	plugin->vtable->add_hsts_db(plugin, hsts_db, priority);
 }
 
 /**
@@ -286,7 +286,7 @@ void wget_plugin_add_hsts_db(wget_plugin_t *plugin, wget_hsts_db_t *hsts_db, int
  */
 void wget_plugin_add_hpkp_db(wget_plugin_t *plugin, wget_hpkp_db_t *hpkp_db, int priority)
 {
-	(* plugin->vtable->add_hpkp_db)(plugin, hpkp_db, priority);
+	plugin->vtable->add_hpkp_db(plugin, hpkp_db, priority);
 }
 
 /**
@@ -306,7 +306,7 @@ void wget_plugin_add_hpkp_db(wget_plugin_t *plugin, wget_hpkp_db_t *hpkp_db, int
  */
 void wget_plugin_add_ocsp_db(wget_plugin_t *plugin, wget_ocsp_db_t *ocsp_db, int priority)
 {
-	(* plugin->vtable->add_ocsp_db)(plugin, ocsp_db, priority);
+	plugin->vtable->add_ocsp_db(plugin, ocsp_db, priority);
 }
 
 /** @} */

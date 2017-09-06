@@ -143,9 +143,10 @@ static _ocsp_t *_new_ocsp(const char *fingerprint, time_t maxage, int valid)
  */
 int wget_ocsp_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, const char *fingerprint, int *revoked)
 {
-	if (! ocsp_db)
-		return 0;
-	return (* ocsp_db->vtable->fingerprint_in_cache)(ocsp_db, fingerprint, revoked);
+	if (ocsp_db)
+		return ocsp_db->vtable->fingerprint_in_cache(ocsp_db, fingerprint, revoked);
+
+	return 0;
 }
 static int impl_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, const char *fingerprint, int *revoked)
 {
@@ -180,9 +181,10 @@ static int impl_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, cons
  */
 int wget_ocsp_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *hostname)
 {
-	if (! ocsp_db)
-		return 0;
-	return (* ocsp_db->vtable->hostname_is_valid)(ocsp_db, hostname);
+	if (ocsp_db)
+		return ocsp_db->vtable->hostname_is_valid(ocsp_db, hostname);
+
+	return 0;
 }
 static int impl_ocsp_db_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *hostname)
 {
@@ -238,7 +240,8 @@ void wget_ocsp_db_free(wget_ocsp_db_t **ocsp_db)
 {
 	if (! ocsp_db || ! *ocsp_db)
 		return;
-	(* (*ocsp_db)->vtable->free)(*ocsp_db);
+
+	(*ocsp_db)->vtable->free(*ocsp_db);
 	*ocsp_db = NULL;
 }
 static void impl_ocsp_db_free(wget_ocsp_db_t *ocsp_db)
@@ -304,9 +307,8 @@ static void _ocsp_db_add_fingerprint_entry(_ocsp_db_impl_t *ocsp_db_priv, _ocsp_
  */
 void wget_ocsp_db_add_fingerprint(wget_ocsp_db_t *ocsp_db, const char *fingerprint, time_t maxage, int valid)
 {
-	if (! ocsp_db)
-		return;
-	(* ocsp_db->vtable->add_fingerprint)(ocsp_db, fingerprint, maxage, valid);
+	if (ocsp_db)
+		ocsp_db->vtable->add_fingerprint(ocsp_db, fingerprint, maxage, valid);
 }
 static void impl_ocsp_db_add_fingerprint(wget_ocsp_db_t *ocsp_db, const char *fingerprint, time_t maxage, int valid)
 {
@@ -376,9 +378,8 @@ static void _ocsp_db_add_host_entry(_ocsp_db_impl_t *ocsp_db_priv, _ocsp_t *ocsp
  */
 void wget_ocsp_db_add_host(wget_ocsp_db_t *ocsp_db, const char *host, time_t maxage)
 {
-	if (! ocsp_db)
-		return;
-	(* ocsp_db->vtable->add_host)(ocsp_db, host, maxage);
+	if (ocsp_db)
+		ocsp_db->vtable->add_host(ocsp_db, host, maxage);
 }
 static void impl_ocsp_db_add_host(wget_ocsp_db_t *ocsp_db, const char *host, time_t maxage)
 {
@@ -489,9 +490,10 @@ static int _ocsp_db_load_fingerprints(void *ocsp_db_priv, FILE *fp)
  */
 int wget_ocsp_db_load(wget_ocsp_db_t *ocsp_db)
 {
-	if (! ocsp_db)
-		return -1;
-	return (* ocsp_db->vtable->load)(ocsp_db);
+	if (ocsp_db)
+		return ocsp_db->vtable->load(ocsp_db);
+
+	return -1;
 }
 static int impl_ocsp_db_load(wget_ocsp_db_t *ocsp_db)
 {
@@ -579,9 +581,10 @@ static int _ocsp_db_save_fingerprints(void *ocsp_db_priv, FILE *fp)
  */
 int wget_ocsp_db_save(wget_ocsp_db_t *ocsp_db)
 {
-	if (! ocsp_db)
-		return -1;
-	return (* ocsp_db->vtable->save)(ocsp_db);
+	if (ocsp_db)
+		return ocsp_db->vtable->save(ocsp_db);
+
+	return -1;
 }
 // Save the OCSP hosts and fingerprints to flat files.
 // Protected by flock()

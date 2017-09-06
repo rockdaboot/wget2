@@ -161,7 +161,7 @@ static _hsts_t *_new_hsts(const char *host, uint16_t port, time_t maxage, int in
  */
 int wget_hsts_host_match(const wget_hsts_db_t *hsts_db, const char *host, uint16_t port)
 {
-	return (* hsts_db->vtable->host_match)(hsts_db, host, port);
+	return hsts_db->vtable->host_match(hsts_db, host, port);
 }
 static int impl_hsts_db_host_match(const wget_hsts_db_t *hsts_db, const char *host, uint16_t port)
 {
@@ -227,7 +227,7 @@ void wget_hsts_db_deinit(wget_hsts_db_t *hsts_db)
 void wget_hsts_db_free(wget_hsts_db_t **hsts_db)
 {
 	if (hsts_db && *hsts_db) {
-		(* (*hsts_db)->vtable->free)(*hsts_db);
+		(*hsts_db)->vtable->free(*hsts_db);
 		*hsts_db = NULL;
 	}
 }
@@ -287,7 +287,7 @@ static void _hsts_db_add_entry(_hsts_db_impl_t *hsts_db_priv, _hsts_t *hsts)
  */
 void wget_hsts_db_add(wget_hsts_db_t *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
 {
-	(* hsts_db->vtable->add)(hsts_db, host, port, maxage, include_subdomains);
+	hsts_db->vtable->add(hsts_db, host, port, maxage, include_subdomains);
 }
 static void impl_hsts_db_add(wget_hsts_db_t *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
 {
@@ -417,7 +417,7 @@ int wget_hsts_db_load(wget_hsts_db_t *hsts_db)
 	if (! hsts_db)
 		return 0;
 
-	return (* hsts_db->vtable->load)(hsts_db);
+	return hsts_db->vtable->load(hsts_db);
 }
 // Load the HSTS cache from a flat file
 // Protected by flock()
@@ -474,9 +474,10 @@ static int _hsts_db_save(void *hsts_db_priv, FILE *fp)
  */
 int wget_hsts_db_save(wget_hsts_db_t *hsts_db)
 {
-	if (! hsts_db)
-		return -1;
-	return (* hsts_db->vtable->save)(hsts_db);
+	if (hsts_db)
+		return hsts_db->vtable->save(hsts_db);
+
+	return -1;
 }
 // Save the HSTS cache to a flat file
 // Protected by flock()

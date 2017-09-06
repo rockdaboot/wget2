@@ -365,7 +365,7 @@ static plugin_t *_load_plugin(const char *name, const char *path, dl_error_t *e)
 		plugin_free(plugin);
 		return NULL;
 	}
-	if ((* init_fn)((wget_plugin_t *) plugin) != 0) {
+	if (init_fn((wget_plugin_t *) plugin) != 0) {
 		dl_error_set(e, "Plugin failed to initialize");
 		plugin_free(plugin);
 		return NULL;
@@ -536,7 +536,7 @@ int plugin_db_forward_option(const char *plugin_option, dl_error_t *e)
 		return -1;
 	}
 
-	op_res = (* priv->argp)((wget_plugin_t *) plugin, option, value);
+	op_res = priv->argp((wget_plugin_t *) plugin, option, value);
 
 	if (op_res < 0)
 	{
@@ -560,7 +560,7 @@ void plugin_db_show_help(void)
 		plugin_priv_t *priv = (plugin_priv_t *) plugin;
 		if (priv->argp) {
 			printf("Options for %s:\n", plugin->name);
-			(* priv->argp)((wget_plugin_t *) plugin, "help", NULL);
+			priv->argp((wget_plugin_t *) plugin, "help", NULL);
 			printf("\n");
 		}
 	}
@@ -589,7 +589,7 @@ void plugin_db_forward_url(const wget_iri_t *iri, struct plugin_db_forward_url_v
 			if (! cur_iri)
 				cur_iri = iri;
 
-			(* priv->url_filter)((wget_plugin_t *) plugin, cur_iri, (wget_intercept_action_t *) &action);
+			priv->url_filter((wget_plugin_t *) plugin, cur_iri, (wget_intercept_action_t *) &action);
 			if (action.verdict.reject || action.verdict.accept)
 				break;
 		}
@@ -658,7 +658,7 @@ int plugin_db_forward_downloaded_file(const wget_iri_t *iri, uint64_t size, cons
 		plugin_priv_t *priv = (plugin_priv_t *) plugin;
 
 		if (priv->post_processor) {
-			if ((* priv->post_processor)((wget_plugin_t *) plugin, (wget_downloaded_file_t *) &file) == 0)
+			if (priv->post_processor((wget_plugin_t *) plugin, (wget_downloaded_file_t *) &file) == 0)
 				break;
 		}
 	}
@@ -704,7 +704,7 @@ void plugin_db_finalize(int exitcode)
 		plugin_t *plugin = (plugin_t *) wget_vector_get(plugin_list, i);
 		plugin_priv_t *priv = (plugin_priv_t *) plugin;
 		if (priv->finalizer)
-			(* priv->finalizer)((wget_plugin_t *) plugin, exitcode);
+			priv->finalizer((wget_plugin_t *) plugin, exitcode);
 	}
 	wget_vector_free(&plugin_list);
 	wget_stringmap_free(&plugin_name_index);
