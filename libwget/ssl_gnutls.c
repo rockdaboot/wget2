@@ -68,18 +68,21 @@ typedef struct
 		*false_start,
 		*tfo,
 		*alpn_protocol;
+	long long
+		tls_secs; //milliseconds
+	int
+		cert_chain_size;
+	char
+		tcp_protocol;
 	bool
 		tls_con,
 		resumed;
-	char tcp_protocol;
-	int cert_chain_size;
-	long long tls_secs;	//milliseconds
 } _stats_data_t;
 
 typedef struct
 {
-	const char *hostname;
-
+	const char
+		*hostname;
 	int
 		nvalid,
 		nrevoked,
@@ -109,20 +112,21 @@ static struct _config {
 	wget_hpkp_db_t
 		*hpkp_cache;
 	char
-		check_certificate,
-		check_hostname,
 		ca_type,
 		cert_type,
-		key_type,
-		print_info,
-		ocsp,
-		ocsp_stapling;
+		key_type;
+	bool
+		check_certificate : 1,
+		check_hostname : 1,
+		print_info : 1,
+		ocsp : 1,
+		ocsp_stapling : 1;
 } _config = {
-	.check_certificate=1,
+	.check_certificate = 1,
 	.check_hostname = 1,
 #ifdef HAVE_GNUTLS_OCSP_H
 	.ocsp = 1,
-	.ocsp_stapling=1,
+	.ocsp_stapling = 1,
 #endif
 	.ca_type = WGET_SSL_X509_FMT_PEM,
 	.cert_type = WGET_SSL_X509_FMT_PEM,
@@ -130,7 +134,7 @@ static struct _config {
 	.secure_protocol = "AUTO",
 	.ca_directory = "system",
 #ifdef WITH_LIBNGHTTP2
-		.alpn = "h2,http/1.1",
+	.alpn = "h2,http/1.1",
 #endif
 };
 

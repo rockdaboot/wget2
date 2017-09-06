@@ -28,9 +28,10 @@ typedef struct {
 	const char
 		*host,
 		*ip;
-	uint16_t port;
 	long long
 		millisecs;
+	uint16_t
+		port;
 } dns_stats_t;
 
 typedef struct {
@@ -40,12 +41,15 @@ typedef struct {
 		*false_start,
 		*tfo,
 		*alpn_proto;
+	long long
+		millisecs;
+	int
+		cert_chain_size;
+	char
+		tcp_protocol;
 	bool
-		tls_con,
-		resumed;
-	char tcp_protocol;
-	int cert_chain_size;
-	long long millisecs;
+		tls_con : 1,
+		resumed : 1;
 } tls_stats_t;
 
 typedef struct {
@@ -56,7 +60,6 @@ typedef struct {
 		*hsts,
 		*csp,
 		*hpkp_new;
-
 	wget_hpkp_stats_t
 		hpkp;
 } server_stats_t;
