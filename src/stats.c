@@ -216,7 +216,7 @@ void stats_init(void)
 		wget_tcp_set_stats_site(true);
 }
 
-static const char *stats_server_hpkp(wget_hpkp_stats_t hpkp)
+G_GNUC_WGET_PURE static const char *stats_server_hpkp(wget_hpkp_stats_t hpkp)
 {
 	switch (hpkp) {
 	case WGET_STATS_HPKP_NO:
