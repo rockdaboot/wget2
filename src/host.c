@@ -59,6 +59,7 @@ struct site_stats_cvs{
 	int
 		id,
 		parent_id;
+	HOST *host;
 };
 
 static int _host_compare(const HOST *host1, const HOST *host2)
@@ -786,7 +787,7 @@ static int hosts_hashmap_tree(struct site_stats *ctx, HOST *host)
 
 void print_site_stats(wget_buffer_t *buf, FILE *fp)
 {
-	struct site_stats ctx = { .buf = buf, .fp = fp, .level = 0 };
+	struct site_stats ctx = { .buf = buf, .fp = fp};
 
 	wget_thread_mutex_lock(&hosts_mutex);
 	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap, &ctx);
@@ -799,12 +800,12 @@ void print_site_stats(wget_buffer_t *buf, FILE *fp)
 	wget_thread_mutex_unlock(&hosts_mutex);
 }
 
-static int print_cvs(struct site_stats_cvs *ctx, TREE_DOCS *node)
+static int print_csv(struct site_stats_cvs *ctx, TREE_DOCS *node)
 {
 	if (node) {
 		ctx->id++;
-		wget_buffer_printf_append(ctx->buf, "%s,%d,%d,%d,%lld,%lld,%s\n",
-				node->iri->uri, ctx->id, ctx->parent_id, !node->redirect,
+		wget_buffer_printf_append(ctx->buf, "%s://%s,%s,%d,%d,%d,%lld,%lld,%s\n",
+				ctx->host->scheme, ctx->host->host, node->iri->uri, ctx->id, ctx->parent_id, !node->redirect,
 				node->doc->size_downloaded, node->doc->size_decompressed, print_encoding(node->doc->encoding));
 
 		if (ctx->buf->length > 64*1024) {
@@ -815,7 +816,7 @@ static int print_cvs(struct site_stats_cvs *ctx, TREE_DOCS *node)
 		if (node->children) {
 			int parent_id = ctx->parent_id;
 			ctx->parent_id = ctx->id;
-			wget_vector_browse(node->children, (wget_vector_browse_t) print_cvs, ctx);
+			wget_vector_browse(node->children, (wget_vector_browse_t) print_csv, ctx);
 			ctx->parent_id = parent_id;
 		}
 	}
@@ -823,27 +824,85 @@ static int print_cvs(struct site_stats_cvs *ctx, TREE_DOCS *node)
 	return 0;
 }
 
-static int hosts_hashmap_cvs(struct site_stats_cvs *ctx, HOST *host)
+static int hosts_hashmap_csv(struct site_stats_cvs *ctx, HOST *host)
 {
 	if (host->tree_docs && host->root) {
-		wget_buffer_printf_append(ctx->buf, "IRI,ID,ParentID,Link,Size (downloaded),Size (decompressed),Encoding\n");
-		print_cvs(ctx, host->root);
+		ctx->host = host;
+		print_csv(ctx, host->root);
 	}
-
 	return 0;
 }
 
-void print_site_stats_cvs(wget_buffer_t *buf, FILE *fp)
+void print_site_stats_csv(wget_buffer_t *buf, FILE *fp)
 {
-	struct site_stats_cvs ctx = { .buf = buf, .fp = fp, .id = 0, .parent_id = 0};
+	struct site_stats_cvs ctx = { .buf = buf, .fp = fp};
 
 	wget_thread_mutex_lock(&hosts_mutex);
 //	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap, &ctx);
 //	fprintf(fp, "%s", buf->data);
 
 //	wget_buffer_reset(ctx.buf);
+	wget_buffer_printf_append(ctx.buf, "Host,IRI,ID,ParentID,Link,Size (downloaded),Size (decompressed),Encoding\n");
+	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap_csv, &ctx);
+	fprintf(fp, "%s", buf->data);
+	wget_thread_mutex_unlock(&hosts_mutex);
+}
 
-	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap_cvs, &ctx);
+static int print_json(struct site_stats_cvs *ctx, TREE_DOCS *node)
+{
+	if (node) {
+		ctx->id++;
+
+		if (ctx->id > 1)
+			wget_buffer_printf_append(ctx->buf, ",\n");
+		wget_buffer_printf_append(ctx->buf, "\t{\n");
+		wget_buffer_printf_append(ctx->buf, "\t\t\"Host\" : \"%s://%s\",\n", ctx->host->scheme, ctx->host->host);
+		wget_buffer_printf_append(ctx->buf, "\t\t\"IRI\" : \"%s\",\n", node->iri->uri);
+		wget_buffer_printf_append(ctx->buf, "\t\t\"ID\" : %d,\n", ctx->id);
+		wget_buffer_printf_append(ctx->buf, "\t\t\"ParentID\" : %d,\n", ctx->parent_id);
+		wget_buffer_printf_append(ctx->buf, "\t\t\"Link\" : %d,\n", !node->redirect);
+		wget_buffer_printf_append(ctx->buf, "\t\t\"Size (downloaded)\" : %lld,\n", node->doc->size_downloaded);
+		wget_buffer_printf_append(ctx->buf, "\t\t\"Size (decompressed)\" : %lld,\n", node->doc->size_decompressed);
+		wget_buffer_printf_append(ctx->buf, "\t\t\"Encoding\" : \"%s\"\n", print_encoding(node->doc->encoding));
+		wget_buffer_printf_append(ctx->buf, "\t}");
+
+		if (ctx->buf->length > 64*1024) {
+			fprintf(ctx->fp, "%s", ctx->buf->data);
+			wget_buffer_reset(ctx->buf);
+		}
+
+		if (node->children) {
+			int parent_id = ctx->parent_id;
+			ctx->parent_id = ctx->id;
+			wget_vector_browse(node->children, (wget_vector_browse_t) print_json, ctx);
+			ctx->parent_id = parent_id;
+		}
+	}
+
+	return 0;
+}
+
+static int hosts_hashmap_json(struct site_stats_cvs *ctx, HOST *host)
+{
+	if (host->tree_docs && host->root) {
+		ctx->host = host;
+		print_json(ctx, host->root);
+	}
+	return 0;
+}
+
+void print_site_stats_json(wget_buffer_t *buf, FILE *fp)
+{
+	struct site_stats_cvs ctx = { .buf = buf, .fp = fp};
+
+	wget_thread_mutex_lock(&hosts_mutex);
+//	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap, &ctx);
+//	fprintf(fp, "%s", buf->data);
+
+//	wget_buffer_reset(ctx.buf);
+	wget_buffer_printf_append(ctx.buf, "[\n");
+	wget_hashmap_browse(hosts, (wget_hashmap_browse_t)hosts_hashmap_json, &ctx);
+	wget_buffer_printf_append(ctx.buf, "\n]\n");
 	fprintf(fp, "%s", buf->data);
 	wget_thread_mutex_unlock(&hosts_mutex);
 }

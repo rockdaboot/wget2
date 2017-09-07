@@ -545,6 +545,8 @@ static void stats_print_json(wget_stats_type_t type)
 
 		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_json_dns_entry, fp, &buf);
 
+		fprintf(fp, "]\n");
+
 		if (fp != stdout)
 			info_printf("DNS stats saved in %s\n", filename);
 
@@ -554,6 +556,8 @@ static void stats_print_json(wget_stats_type_t type)
 		wget_buffer_printf(&buf, "[\n");
 
 		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_json_tls_entry, fp, &buf);
+
+		fprintf(fp, "]\n");
 
 		if (fp != stdout)
 			info_printf("TLS stats saved in %s\n", filename);
@@ -565,6 +569,8 @@ static void stats_print_json(wget_stats_type_t type)
 
 		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_json_server_entry, fp, &buf);
 
+		fprintf(fp, "]\n");
+
 		if (fp != stdout)
 			info_printf("Server stats saved in %s\n", filename);
 
@@ -575,20 +581,25 @@ static void stats_print_json(wget_stats_type_t type)
 
 		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_json_ocsp_entry, fp, &buf);
 
+		fprintf(fp, "]\n");
+
 		if (fp != stdout)
 			info_printf("OCSP stats saved in %s\n", filename);
 
 		break;
 
 	case WGET_STATS_TYPE_SITE:
+		print_site_stats_json(&buf, fp);
+
+		if (fp != stdout)
+				info_printf("Site stats saved in %s\n", filename);
+
 		break;
 
 	default:
 		error_printf("Unknown stats type %d\n", (int) type);
 		break;
 	}
-
-	fprintf(fp, "]\n");
 
 	if (fp != stdout)
 		fclose(fp);
@@ -664,9 +675,7 @@ static void stats_print_csv(wget_stats_type_t type)
 		break;
 
 	case WGET_STATS_TYPE_SITE:
-		wget_buffer_printf(&buf, "\nSite Statistics:\n");
-
-		print_site_stats_cvs(&buf, fp);
+		print_site_stats_csv(&buf, fp);
 
 		if (fp != stdout)
 			info_printf("Site stats saved in %s\n", filename);

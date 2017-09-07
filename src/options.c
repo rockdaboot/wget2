@@ -615,7 +615,7 @@ static int parse_prefer_family(option_t opt, const char *val, G_GNUC_WGET_UNUSED
 	return 0;
 }
 
-static int parse_stats(G_GNUC_WGET_UNUSED option_t opt, const char *val, const char invert)
+static int parse_stats(option_t opt, const char *val, const char invert)
 {
 	int status, format = STATS_FORMAT_HUMAN;
 	char *filename = NULL;

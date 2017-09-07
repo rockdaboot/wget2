@@ -117,6 +117,7 @@ int queue_size(void) G_GNUC_WGET_PURE;
 int queue_empty(void) G_GNUC_WGET_PURE;
 void queue_print(HOST *host);
 void print_site_stats(wget_buffer_t *buf, FILE *fp);
-void print_site_stats_cvs(wget_buffer_t *buf, FILE *fp);
+void print_site_stats_csv(wget_buffer_t *buf, FILE *fp);
+void print_site_stats_json(wget_buffer_t *buf, FILE *fp);
 
 #endif /* _WGET_HOST_H */
