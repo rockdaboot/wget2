@@ -45,6 +45,16 @@ static wget_thread_mutex_t
 	server_mutex = WGET_THREAD_MUTEX_INITIALIZER,
 	ocsp_mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
+typedef struct {
+	const char *file;
+	stats_format_t format;
+	bool status : 1;
+} stats_opts_t;
+
+// Get rid of this magic number
+static stats_opts_t stats_opts[5];
+
+
 static void stats_callback(wget_stats_type_t type, const void *stats)
 {
 	switch(type) {
@@ -186,6 +196,19 @@ static void free_ocsp_stats(server_stats_t *stats)
 		xfree(stats->hostname);
 }
 
+void stats_set_option(int type, bool status, int format, const char *filename)
+{
+	if (type < 0 || type >= (int) countof(stats_opts))
+		return;
+
+	stats_opts_t *opts = &stats_opts[type];
+	opts->status = status;
+	opts->format = (stats_format_t) format;
+
+	xfree(opts->file);
+	opts->file = wget_strdup(filename);
+}
+
 void stats_init(void)
 {
 	if (stats_opts[WGET_STATS_TYPE_DNS].status) {
@@ -214,6 +237,18 @@ void stats_init(void)
 
 	if (stats_opts[WGET_STATS_TYPE_SITE].status)
 		wget_tcp_set_stats_site(true);
+}
+
+void stats_exit(void)
+{
+	wget_vector_free(&dns_stats_v);
+	wget_vector_free(&tls_stats_v);
+	wget_vector_free(&server_stats_v);
+	wget_vector_free(&ocsp_stats_v);
+
+	for (unsigned it = 0; it < countof(stats_opts); it++) {
+		xfree(stats_opts[it].file);
+	}
 }
 
 G_GNUC_WGET_PURE static const char *stats_server_hpkp(wget_hpkp_stats_t hpkp)

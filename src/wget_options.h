@@ -32,12 +32,6 @@
 
 #include <wget.h>
 
-typedef enum {
-	STATS_FORMAT_HUMAN = 0,
-	STATS_FORMAT_CSV = 1,
-	STATS_FORMAT_JSON = 2
-} stats_format_t;
-
 struct config {
 	wget_iri_t
 		*base;
@@ -197,16 +191,8 @@ struct config {
 		force_progress;
 };
 
-typedef struct {
-	char status;
-	stats_format_t format;
-	const char *file;
-} stats_opts_t;
-
 extern struct config
 	config;
-extern stats_opts_t
-	stats_opts[5];
 
 int init(int argc, const char **argv) G_GNUC_WGET_NONNULL_ALL;
 int selftest_options(void);

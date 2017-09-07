@@ -24,6 +24,12 @@
 #ifndef _WGET_STATS_H
 #define _WGET_STATS_H
 
+typedef enum {
+	STATS_FORMAT_HUMAN = 0,
+	STATS_FORMAT_CSV = 1,
+	STATS_FORMAT_JSON = 2
+} stats_format_t;
+
 typedef struct {
 	const char
 		*host,
@@ -74,6 +80,8 @@ typedef struct {
 } ocsp_stats_t;
 
 void stats_init(void);
+void stats_exit(void);
 void stats_print(void);
+void stats_set_option(int type, bool status, int format, const char *filename);
 
 #endif
