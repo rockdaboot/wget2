@@ -49,14 +49,23 @@ static wget_thread_mutex_t
 	*hosts_mutex;
 
 typedef struct {
-	const char *file;
-	stats_format_t format;
-	bool status : 1;
+	const char
+		*tag,
+		*file;
+	stats_format_t
+		format;
+	bool
+		status : 1;
 } stats_opts_t;
 
-// Get rid of this magic number
 static stats_opts_t
-	stats_opts[5];
+	stats_opts[] = {
+		[WGET_STATS_TYPE_DNS] = { .tag = "DNS" },
+		[WGET_STATS_TYPE_TLS] = { .tag = "TLS" },
+		[WGET_STATS_TYPE_SERVER] = { .tag = "Server" },
+		[WGET_STATS_TYPE_OCSP] = { .tag = "OCSP" },
+		[WGET_STATS_TYPE_SITE] = { .tag = "Site" },
+	};
 
 static wget_hashmap_t
 	*hosts;
@@ -637,8 +646,6 @@ static void print_site_stats_csv(wget_buffer_t *buf, FILE *fp)
 {
 	struct site_stats_cvs ctx = { .buf = buf, .fp = fp};
 
-	wget_buffer_printf_append(ctx.buf, "Host,IRI,ID,ParentID,Link,Size (downloaded),Size (decompressed),Encoding\n");
-
 	wget_thread_mutex_lock(hosts_mutex);
 	wget_hashmap_browse(hosts, (wget_hashmap_browse_t) hosts_hashmap_csv, &ctx);
 	wget_thread_mutex_unlock(hosts_mutex);
@@ -693,13 +700,11 @@ static void print_site_stats_json(wget_buffer_t *buf, FILE *fp)
 {
 	struct site_stats_cvs ctx = { .buf = buf, .fp = fp};
 
-	wget_buffer_printf_append(ctx.buf, "[\n");
-
 	wget_thread_mutex_lock(hosts_mutex);
 	wget_hashmap_browse(hosts, (wget_hashmap_browse_t) hosts_hashmap_json, &ctx);
 	wget_thread_mutex_unlock(hosts_mutex);
 
-	wget_buffer_printf_append(ctx.buf, "\n]\n");
+	wget_buffer_printf_append(ctx.buf, "\n");
 	fprintf(fp, "%s", buf->data);
 }
 
@@ -734,7 +739,7 @@ static void stats_print_json_dns_entry(wget_buffer_t *buf, const dns_stats_t *dn
 	wget_buffer_printf_append(buf, "\t{\n");
 	wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", NULL_TO_DASH(dns_stats->host));
 	wget_buffer_printf_append(buf, "\t\t\"IP\" : \"%s\",\n", NULL_TO_DASH(dns_stats->ip));
-	wget_buffer_printf_append(buf, "\t\t\"Port\" : %hu\n", dns_stats->port);
+	wget_buffer_printf_append(buf, "\t\t\"Port\" : %hu,\n", dns_stats->port);
 	wget_buffer_printf_append(buf, "\t\t\"DNS resolution duration (ms)\" : %lld\n", dns_stats->millisecs);
 	wget_buffer_printf_append(buf, "\t},\n");
 }
@@ -906,52 +911,27 @@ static void stats_print_human(wget_stats_type_t type)
 	case WGET_STATS_TYPE_DNS:
 		wget_buffer_printf(&buf, "\nDNS timings:\n");
 		wget_buffer_printf_append(&buf, "  %4s %s\n", "ms", "Host");
-
 		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_human_dns_entry, fp, &buf);
-
-		if (fp != stdout)
-			info_printf("DNS stats saved in %s\n", filename);
-
 		break;
 
 	case WGET_STATS_TYPE_TLS:
 		wget_buffer_printf(&buf, "\nTLS Statistics:\n");
-
 		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_human_tls_entry, fp, &buf);
-
-		if (fp != stdout)
-			info_printf("TLS stats saved in %s\n", filename);
-
 		break;
 
 	case WGET_STATS_TYPE_SERVER:
 		wget_buffer_printf(&buf, "\nServer Statistics:\n");
-
 		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_human_server_entry, fp, &buf);
-
-		if (fp != stdout)
-			info_printf("Server stats saved in %s\n", filename);
-
 		break;
 
 	case WGET_STATS_TYPE_OCSP:
 		wget_buffer_printf(&buf, "\nOCSP Statistics:\n");
-
 		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_human_ocsp_entry, fp, &buf);
-
-		if (fp != stdout)
-			info_printf("OCSP stats saved in %s\n", filename);
-
 		break;
 
 	case WGET_STATS_TYPE_SITE:
 		wget_buffer_printf(&buf, "\nSite Statistics:\n");
-
 		print_site_stats(&buf, fp);
-
-		if (fp != stdout)
-			info_printf("Site stats saved in %s\n", filename);
-
 		break;
 
 	default:
@@ -959,8 +939,10 @@ static void stats_print_human(wget_stats_type_t type)
 		break;
 	}
 
-	if (fp != stdout)
+	if (fp != stdout) {
+		info_printf("%s stats saved in %s\n", stats_opts[type].tag, filename);
 		fclose(fp);
+	}
 
 	wget_buffer_deinit(&buf);
 }
@@ -991,61 +973,27 @@ static void stats_print_json(wget_stats_type_t type)
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
+	wget_buffer_printf(&buf, "[\n");
+
 	switch (type) {
 	case WGET_STATS_TYPE_DNS:
-		wget_buffer_printf(&buf, "[\n");
-
 		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_json_dns_entry, fp, &buf);
-
-		fprintf(fp, "]\n");
-
-		if (fp != stdout)
-			info_printf("DNS stats saved in %s\n", filename);
-
 		break;
 
 	case WGET_STATS_TYPE_TLS:
-		wget_buffer_printf(&buf, "[\n");
-
 		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_json_tls_entry, fp, &buf);
-
-		fprintf(fp, "]\n");
-
-		if (fp != stdout)
-			info_printf("TLS stats saved in %s\n", filename);
-
 		break;
 
 	case WGET_STATS_TYPE_SERVER:
-		wget_buffer_printf(&buf, "[\n");
-
 		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_json_server_entry, fp, &buf);
-
-		fprintf(fp, "]\n");
-
-		if (fp != stdout)
-			info_printf("Server stats saved in %s\n", filename);
-
 		break;
 
 	case WGET_STATS_TYPE_OCSP:
-		wget_buffer_printf(&buf, "[\n");
-
 		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_json_ocsp_entry, fp, &buf);
-
-		fprintf(fp, "]\n");
-
-		if (fp != stdout)
-			info_printf("OCSP stats saved in %s\n", filename);
-
 		break;
 
 	case WGET_STATS_TYPE_SITE:
 		print_site_stats_json(&buf, fp);
-
-		if (fp != stdout)
-				info_printf("Site stats saved in %s\n", filename);
-
 		break;
 
 	default:
@@ -1053,8 +1001,12 @@ static void stats_print_json(wget_stats_type_t type)
 		break;
 	}
 
-	if (fp != stdout)
+	fprintf(fp, "]\n");
+
+	if (fp != stdout) {
+		info_printf("%s stats saved in %s\n", stats_opts[type].tag, filename);
 		fclose(fp);
+	}
 
 	wget_buffer_deinit(&buf);
 }
@@ -1088,50 +1040,28 @@ static void stats_print_csv(wget_stats_type_t type)
 	switch (type) {
 	case WGET_STATS_TYPE_DNS:
 		wget_buffer_printf(&buf, "%s\n", "Hostname,IP,Port,DNS resolution duration (ms)");
-
 		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_csv_dns_entry, fp, &buf);
-
-		if (fp != stdout)
-			info_printf("DNS stats saved in %s\n", filename);
-
 		break;
 
 	case WGET_STATS_TYPE_TLS:
 		wget_buffer_printf(&buf, "%s\n", "Hostname,Version,False Start,TFO,ALPN,Resumed,TCP,Cert-chain Length,TLS negotiation duration (ms)");
-
 		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_csv_tls_entry, fp, &buf);
-
-		if (fp != stdout)
-			info_printf("TLS stats saved in %s\n", filename);
-
 		break;
 
 	case WGET_STATS_TYPE_SERVER:
 		wget_buffer_printf(&buf, "%s\n", "Hostname,HPKP,HPKP New Entry,HSTS,CSP");
 
 		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_csv_server_entry, fp, &buf);
-
-		if (fp != stdout)
-			info_printf("Server stats saved in %s\n", filename);
-
 		break;
 
 	case WGET_STATS_TYPE_OCSP:
 		wget_buffer_printf(&buf, "%s\n", "Hostname,VALID,REVOKED,IGNORED");
-
 		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_csv_ocsp_entry, fp, &buf);
-
-		if (fp != stdout)
-			info_printf("OCSP stats saved in %s\n", filename);
-
 		break;
 
 	case WGET_STATS_TYPE_SITE:
+		wget_buffer_printf_append(&buf, "Host,IRI,ID,ParentID,Link,Size (downloaded),Size (decompressed),Encoding\n");
 		print_site_stats_csv(&buf, fp);
-
-		if (fp != stdout)
-			info_printf("Site stats saved in %s\n", filename);
-
 		break;
 
 	default:
@@ -1139,8 +1069,10 @@ static void stats_print_csv(wget_stats_type_t type)
 		break;
 	}
 
-	if (fp != stdout)
+	if (fp != stdout) {
+		info_printf("%s stats saved in %s\n", stats_opts[type].tag, filename);
 		fclose(fp);
+	}
 
 	wget_buffer_deinit(&buf);
 }
