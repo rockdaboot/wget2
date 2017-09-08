@@ -570,14 +570,18 @@ static int _http_server_start(int SERVER_MODE)
 	else
 	{
 		const union MHD_DaemonInfo *dinfo = NULL;
-		MHD_socket sock_fd;
+		int sock_fd;
 		if (SERVER_MODE == HTTP_MODE)
 			dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_LISTEN_FD);
 		else if (SERVER_MODE == HTTPS_MODE)
 			dinfo = MHD_get_daemon_info(httpsdaemon, MHD_DAEMON_INFO_LISTEN_FD);
 		if (!dinfo)
 			return 1;
+#ifdef _WIN32
+		sock_fd = _open_osfhandle(dinfo->listen_fd, O_RDWR | O_BINARY);
+#else
 		sock_fd = dinfo->listen_fd;
+#endif
 
 		struct sockaddr_storage addr_store;
 		struct sockaddr *addr = (struct sockaddr *)&addr_store;
