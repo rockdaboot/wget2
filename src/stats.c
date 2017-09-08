@@ -90,9 +90,6 @@ static HOST *stats_host_get(wget_iri_t *iri)
 	return hostp;
 }
 
-#ifdef __clang__
-__attribute__((no_sanitize("integer")))
-#endif
 static int _host_docs_compare(const HOST_DOCS *host_docsp1, const HOST_DOCS *host_docsp2)
 {
 	if (host_docsp1->http_status != host_docsp2->http_status)
@@ -106,18 +103,15 @@ static int _tree_docs_compare(const TREE_DOCS *tree_docsp1, const TREE_DOCS *tre
 	return wget_iri_compare(tree_docsp1->iri, tree_docsp2->iri);
 }
 
+#ifdef __clang__
+__attribute__((no_sanitize("integer")))
+#endif
 static unsigned int _host_docs_hash(const HOST_DOCS *host_docsp)
 {
 	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
-	const unsigned char *p;
-	char *buf;
 
-	wget_asprintf(&buf, "%d", host_docsp->http_status);
-
-	for (p = (const unsigned char *)buf; p && *p; p++)
-		hash = hash * 101 + *p;
-
-	xfree(buf);
+	for (unsigned x = host_docsp->http_status; x; x /= 16)
+		hash = hash * 101 + (x & 0xF);
 
 	return hash;
 }
@@ -194,7 +188,7 @@ DOC *stats_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
 	}
 
 	if (!(host_docsp = host_docs_get(host_docs, resp->code))) {
-		host_docsp = wget_malloc(sizeof(HOST_DOCS));
+		host_docsp = wget_calloc(1, sizeof(HOST_DOCS));
 		host_docsp->http_status = resp->code;
 		host_docsp->docs = NULL;
 		wget_hashmap_put_noalloc(host_docs, host_docsp, host_docsp);
