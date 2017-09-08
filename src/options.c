@@ -2356,6 +2356,8 @@ int init(int argc, const char **argv)
 	if (config.mirror)
 		config.metalink = 0;
 
+	config.stats_site = stats_is_enabled(WGET_STATS_TYPE_SITE);
+
 	if ((rc = wget_net_init()))
 		wget_error_printf_exit(_("Failed to init networking (%d)"), rc);
 

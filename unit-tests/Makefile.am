@@ -22,13 +22,13 @@ endif
 check_PROGRAMS = buffer_printf_perf stringmap_perf $(WGET_TESTS)
 
 test_SOURCES = test.c
-test_LDADD = ../src/log.o ../src/options.o ../src/dl.o ../src/plugin.o \
+test_LDADD = ../src/log.o ../src/options.o ../src/stats.o ../src/dl.o ../src/plugin.o \
  ../lib/libgnu.la ../libwget/libwget.la \
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
  $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
  $(LIBS)
-test_parse_html_LDADD = ../src/log.o ../src/options.o ../src/dl.o ../src/plugin.o \
+test_parse_html_LDADD = ../src/log.o ../src/options.o ../src/stats.o ../src/dl.o ../src/plugin.o \
  ../lib/libgnu.la ../libwget/libwget.la \
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\

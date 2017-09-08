@@ -24,6 +24,8 @@
 #ifndef _WGET_STATS_H
 #define _WGET_STATS_H
 
+#include "wget_host.h"
+
 typedef enum {
 	STATS_FORMAT_HUMAN = 0,
 	STATS_FORMAT_CSV = 1,
@@ -83,5 +85,13 @@ void stats_init(void);
 void stats_exit(void);
 void stats_print(void);
 void stats_set_option(int type, bool status, int format, const char *filename);
+void stats_set_hosts(wget_hashmap_t *_hosts, wget_thread_mutex_t *_hosts_mutex);
+bool stats_is_enabled(int type);
+DOC *stats_docs_add(wget_iri_t *iri, wget_http_response_t *resp);
+TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool robot_iri, bool redirect, DOC *doc);
+
+//void print_site_stats(wget_buffer_t *buf, FILE *fp);
+//void print_site_stats_csv(wget_buffer_t *buf, FILE *fp);
+//void print_site_stats_json(wget_buffer_t *buf, FILE *fp);
 
 #endif

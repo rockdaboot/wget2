@@ -188,7 +188,8 @@ struct config {
 		cut_file_get_vars,
 		proxy,
 		xattr,
-		force_progress;
+		force_progress,
+		stats_site;
 };
 
 extern struct config
