@@ -441,7 +441,7 @@ void stats_set_option(int type, bool status, int format, const char *filename)
 	opts->format = (stats_format_t) format;
 
 	xfree(opts->file);
-	opts->file = wget_strdup(filename);
+	opts->file = filename;
 }
 
 bool stats_is_enabled(int type)
