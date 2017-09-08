@@ -91,7 +91,6 @@ static void _free_entry(wget_iri_t *iri)
 
 wget_iri_t *blacklist_add(wget_iri_t *iri)
 {
-//printf("****blacklist_add: iri->uri = %s iri->port = %hu\n", iri->uri, iri->port);
 	if (!iri)
 		return NULL;
 

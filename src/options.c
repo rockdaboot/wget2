@@ -1522,37 +1522,37 @@ static const struct optionw options[] = {
 	{ "stats-all", &config.stats_all, parse_stats_all, -1, 0,
 		SECTION_STARTUP,
 		{ "Print all stats (default: off)\n",
-		  "Additional format supported: --stats-all[=[format:]file]\n"
+		  "Additional format supported: --stats-all[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "stats-dns", (void *) WGET_STATS_TYPE_DNS, parse_stats, -1, 0,
 		SECTION_STARTUP,
-		{ "Print DNS lookup durations. (default: off)\n",
-		  "Additional format supported: --stats-dns[=[format:]file]\n"
+		{ "Print DNS stats. (default: off)\n",
+		  "Additional format supported: --stats-dns[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "stats-ocsp", (void *) WGET_STATS_TYPE_OCSP, parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print OCSP stats. (default: off)\n",
-		  "Additional format supported: --stats-ocsp[=[format:]file]\n"
+		  "Additional format supported: --stats-ocsp[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "stats-server", (void *) WGET_STATS_TYPE_SERVER, parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print server stats. (default: off)\n",
-		  "Additional format supported: --stats-server[=[format:]file]\n"
+		  "Additional format supported: --stats-server[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "stats-site", (void *) WGET_STATS_TYPE_SITE, parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print site stats. (default: off)\n",
-		  "Additional format supported: --stats-site[=[format:]file]\n"
+		  "Additional format supported: --stats-site[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "stats-tls", (void *) WGET_STATS_TYPE_TLS, parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print TLS stats. (default: off)\n",
-		  "Additional format supported: --stats-tls[=[format:]file]\n"
+		  "Additional format supported: --stats-tls[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "strict-comments", &config.strict_comments, parse_bool, -1, 0,
