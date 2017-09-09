@@ -111,6 +111,11 @@ struct site_stats_cvs {
 	HOST *host;
 };
 
+struct json_stats {
+	wget_buffer_t *buf;
+	bool last;
+};
+
 HOST *host_add(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
 HOST *host_get(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
 
