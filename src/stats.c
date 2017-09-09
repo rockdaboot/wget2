@@ -734,7 +734,7 @@ static void stats_print_json_dns_entry(wget_buffer_t *buf, const dns_stats_t *dn
 	wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", NULL_TO_DASH(dns_stats->host));
 	wget_buffer_printf_append(buf, "\t\t\"IP\" : \"%s\",\n", NULL_TO_DASH(dns_stats->ip));
 	wget_buffer_printf_append(buf, "\t\t\"Port\" : %hu,\n", dns_stats->port);
-	wget_buffer_printf_append(buf, "\t\t\"DNS resolution duration (ms)\" : %lld\n", dns_stats->millisecs);
+	wget_buffer_printf_append(buf, "\t\t\"Duration\" : %lld\n", dns_stats->millisecs);
 	wget_buffer_printf_append(buf, "\t},\n");
 }
 
@@ -804,7 +804,7 @@ static void stats_print_human_server_entry(wget_buffer_t *buf, const server_stat
 {
 	wget_buffer_printf_append(buf, "  %s:\n", NULL_TO_DASH(server_stats->hostname));
 	wget_buffer_printf_append(buf, "    IP             : %s\n", NULL_TO_DASH(server_stats->ip));
-	wget_buffer_printf_append(buf, "    SCHEME         : %s\n", NULL_TO_DASH(server_stats->scheme));
+	wget_buffer_printf_append(buf, "    Scheme         : %s\n", NULL_TO_DASH(server_stats->scheme));
 	wget_buffer_printf_append(buf, "    HPKP           : %s\n", stats_server_hpkp(server_stats->hpkp));
 	wget_buffer_printf_append(buf, "    HPKP New Entry : %s\n", NULL_TO_DASH(server_stats->hpkp_new));
 	wget_buffer_printf_append(buf, "    HSTS           : %s\n", NULL_TO_DASH(server_stats->hsts));
@@ -816,7 +816,7 @@ static void stats_print_json_server_entry(wget_buffer_t *buf, const server_stats
 	wget_buffer_printf_append(buf, "\t{\n");
 	wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", NULL_TO_DASH(server_stats->hostname));
 	wget_buffer_printf_append(buf, "\t\t\"IP\" : \"%s\",\n", NULL_TO_DASH(server_stats->ip));
-	wget_buffer_printf_append(buf, "\t\t\"SCHEME\" : \"%s\",\n", NULL_TO_DASH(server_stats->scheme));
+	wget_buffer_printf_append(buf, "\t\t\"Scheme\" : \"%s\",\n", NULL_TO_DASH(server_stats->scheme));
 	wget_buffer_printf_append(buf, "\t\t\"HPKP\" : \"%s\",\n", stats_server_hpkp(server_stats->hpkp));
 	wget_buffer_printf_append(buf, "\t\t\"HPKP New Entry\" : \"%s\",\n", NULL_TO_DASH(server_stats->hpkp_new));
 	wget_buffer_printf_append(buf, "\t\t\"HSTS\" : \"%s\",\n", NULL_TO_DASH(server_stats->hsts));
@@ -839,18 +839,18 @@ static void stats_print_csv_server_entry(wget_buffer_t *buf, const server_stats_
 static void stats_print_human_ocsp_entry(wget_buffer_t *buf, const ocsp_stats_t *ocsp_stats)
 {
 	wget_buffer_printf_append(buf, "  %s:\n", ocsp_stats->hostname);
-	wget_buffer_printf_append(buf, "    VALID          : %d\n", ocsp_stats->nvalid);
-	wget_buffer_printf_append(buf, "    REVOKED        : %d\n", ocsp_stats->nrevoked);
-	wget_buffer_printf_append(buf, "    IGNORED        : %d\n\n", ocsp_stats->nignored);
+	wget_buffer_printf_append(buf, "    Valid          : %d\n", ocsp_stats->nvalid);
+	wget_buffer_printf_append(buf, "    Revoked        : %d\n", ocsp_stats->nrevoked);
+	wget_buffer_printf_append(buf, "    Ignored        : %d\n\n", ocsp_stats->nignored);
 }
 
 static void stats_print_json_ocsp_entry(wget_buffer_t *buf, const ocsp_stats_t *ocsp_stats)
 {
 	wget_buffer_printf_append(buf, "\t{\n");
 	wget_buffer_printf_append(buf, "\t\t\"Hostname\" : \"%s\",\n", NULL_TO_DASH(ocsp_stats->hostname));
-	wget_buffer_printf_append(buf, "\t\t\"VALID\" : %d,\n", ocsp_stats->nvalid);
-	wget_buffer_printf_append(buf, "\t\t\"REVOKED\" : %d,\n", ocsp_stats->nrevoked);
-	wget_buffer_printf_append(buf, "\t\t\"IGNORED\" : %d\n", ocsp_stats->nignored);
+	wget_buffer_printf_append(buf, "\t\t\"Valid\" : %d,\n", ocsp_stats->nvalid);
+	wget_buffer_printf_append(buf, "\t\t\"Revoked\" : %d,\n", ocsp_stats->nrevoked);
+	wget_buffer_printf_append(buf, "\t\t\"Ignored\" : %d\n", ocsp_stats->nignored);
 	wget_buffer_printf_append(buf, "\t},\n");
 }
 
@@ -860,7 +860,7 @@ static void stats_print_csv_ocsp_entry(wget_buffer_t *buf, const ocsp_stats_t *o
 		NULL_TO_DASH(ocsp_stats->hostname), ocsp_stats->nvalid, ocsp_stats->nrevoked, ocsp_stats->nignored);
 }
 
-static void _stats_print(const wget_vector_t *v, wget_vector_browse_t browse, FILE *fp, wget_buffer_t *buf)
+static void _stats_print(const wget_vector_t *v, wget_vector_browse_t browse, wget_buffer_t *buf, FILE *fp)
 {
 	for (int it = 0; it < wget_vector_size(v); it++) {
 		browse(buf, wget_vector_get(v, it));
@@ -875,119 +875,64 @@ static void _stats_print(const wget_vector_t *v, wget_vector_browse_t browse, FI
 		fprintf(fp, "%s", buf->data);
 }
 
-static void stats_print_human(wget_stats_type_t type)
+static void stats_print_human(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp)
 {
-	FILE *fp;
-	const char *filename;
-	wget_buffer_t buf;
-	char sbuf[4096];
-
-	if ((int) type < 0 || type >= countof(stats_opts)) {
-		error_printf("Unknown stats type %d\n", (int) type);
-		return;
-	}
-
-	filename = stats_opts[type].file;
-
-	if (filename && *filename && wget_strcmp(filename, "-"))
-		fp = fopen(filename, "w");
-	else
-		fp = stdout;
-
-	if (!fp) {
-		error_printf("File could not be opened %s\n", filename);
-		return;
-	}
-
-	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-
 	switch (type) {
 	case WGET_STATS_TYPE_DNS:
-		wget_buffer_printf(&buf, "\nDNS timings:\n");
-		wget_buffer_printf_append(&buf, "  %4s %s\n", "ms", "Host");
-		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_human_dns_entry, fp, &buf);
+		wget_buffer_printf(buf, "\nDNS timings:\n");
+		wget_buffer_printf_append(buf, "  %4s %s\n", "ms", "Host");
+		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_human_dns_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_TLS:
-		wget_buffer_printf(&buf, "\nTLS Statistics:\n");
-		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_human_tls_entry, fp, &buf);
+		wget_buffer_printf(buf, "\nTLS Statistics:\n");
+		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_human_tls_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_SERVER:
-		wget_buffer_printf(&buf, "\nServer Statistics:\n");
-		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_human_server_entry, fp, &buf);
+		wget_buffer_printf(buf, "\nServer Statistics:\n");
+		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_human_server_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_OCSP:
-		wget_buffer_printf(&buf, "\nOCSP Statistics:\n");
-		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_human_ocsp_entry, fp, &buf);
+		wget_buffer_printf(buf, "\nOCSP Statistics:\n");
+		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_human_ocsp_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_SITE:
-		wget_buffer_printf(&buf, "\nSite Statistics:\n");
-		print_site_stats(&buf, fp);
+		wget_buffer_printf(buf, "\nSite Statistics:\n");
+		print_site_stats(buf, fp);
 		break;
 
 	default:
 		error_printf("Unknown stats type %d\n", (int) type);
 		break;
 	}
-
-	if (fp != stdout) {
-		info_printf("%s stats saved in %s\n", stats_opts[type].tag, filename);
-		fclose(fp);
-	}
-
-	wget_buffer_deinit(&buf);
 }
 
-static void stats_print_json(wget_stats_type_t type)
+static void stats_print_json(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp)
 {
-	FILE *fp;
-	const char *filename;
-	wget_buffer_t buf;
-	char sbuf[4096];
-
-	if ((int) type < 0 || type >= countof(stats_opts)) {
-		error_printf("Unknown stats type %d\n", (int) type);
-		return;
-	}
-
-	filename = stats_opts[type].file;
-
-	if (filename && *filename && wget_strcmp(filename, "-"))
-		fp = fopen(filename, "w");
-	else
-		fp = stdout;
-
-	if (!fp) {
-		error_printf("File could not be opened %s\n", filename);
-		return;
-	}
-
-	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-
-	wget_buffer_printf(&buf, "[\n");
+	wget_buffer_printf(buf, "[\n");
 
 	switch (type) {
 	case WGET_STATS_TYPE_DNS:
-		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_json_dns_entry, fp, &buf);
+		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_json_dns_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_TLS:
-		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_json_tls_entry, fp, &buf);
+		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_json_tls_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_SERVER:
-		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_json_server_entry, fp, &buf);
+		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_json_server_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_OCSP:
-		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_json_ocsp_entry, fp, &buf);
+		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_json_ocsp_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_SITE:
-		print_site_stats_json(&buf, fp);
+		print_site_stats_json(buf, fp);
 		break;
 
 	default:
@@ -996,102 +941,99 @@ static void stats_print_json(wget_stats_type_t type)
 	}
 
 	fprintf(fp, "]\n");
-
-	if (fp != stdout) {
-		info_printf("%s stats saved in %s\n", stats_opts[type].tag, filename);
-		fclose(fp);
-	}
-
-	wget_buffer_deinit(&buf);
 }
 
-static void stats_print_csv(wget_stats_type_t type)
+static void stats_print_csv(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp)
 {
-	FILE *fp;
-	const char *filename;
-	wget_buffer_t buf;
-	char sbuf[4096];
-
-	if ((int) type < 0 || type >= countof(stats_opts)) {
-		error_printf("Unknown stats type %d\n", (int) type);
-		return;
-	}
-
-	filename = stats_opts[type].file;
-
-	if (filename && *filename && wget_strcmp(filename, "-"))
-		fp = fopen(filename, "w");
-	else
-		fp = stdout;
-
-	if (!fp) {
-		error_printf("File could not be opened %s\n", filename);
-		return;
-	}
-
-	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-
 	switch (type) {
 	case WGET_STATS_TYPE_DNS:
-		wget_buffer_printf(&buf, "%s\n", "Hostname,IP,Port,DNS resolution duration (ms)");
-		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_csv_dns_entry, fp, &buf);
+		wget_buffer_printf(buf, "%s\n", "Hostname,IP,Port,DNS resolution duration (ms)");
+		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_csv_dns_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_TLS:
-		wget_buffer_printf(&buf, "%s\n", "Hostname,Version,False Start,TFO,ALPN,Resumed,TCP,Cert-chain Length,TLS negotiation duration (ms)");
-		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_csv_tls_entry, fp, &buf);
+		wget_buffer_printf(buf, "%s\n", "Hostname,Version,False Start,TFO,ALPN,Resumed,TCP,Cert-chain Length,TLS negotiation duration (ms)");
+		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_csv_tls_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_SERVER:
-		wget_buffer_printf(&buf, "%s\n", "Hostname,HPKP,HPKP New Entry,HSTS,CSP");
+		wget_buffer_printf(buf, "%s\n", "Hostname,HPKP,HPKP New Entry,HSTS,CSP");
 
-		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_csv_server_entry, fp, &buf);
+		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_csv_server_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_OCSP:
-		wget_buffer_printf(&buf, "%s\n", "Hostname,VALID,REVOKED,IGNORED");
-		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_csv_ocsp_entry, fp, &buf);
+		wget_buffer_printf(buf, "%s\n", "Hostname,VALID,REVOKED,IGNORED");
+		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_csv_ocsp_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_SITE:
-		wget_buffer_printf_append(&buf, "Host,IRI,ID,ParentID,Link,Size (downloaded),Size (decompressed),Encoding\n");
-		print_site_stats_csv(&buf, fp);
+		wget_buffer_printf_append(buf, "Host,IRI,ID,ParentID,Link,Size (downloaded),Size (decompressed),Encoding\n");
+		print_site_stats_csv(buf, fp);
 		break;
 
 	default:
 		error_printf("Unknown stats type %d\n", (int) type);
 		break;
 	}
-
-	if (fp != stdout) {
-		info_printf("%s stats saved in %s\n", stats_opts[type].tag, filename);
-		fclose(fp);
-	}
-
-	wget_buffer_deinit(&buf);
 }
 
 void stats_print(void)
 {
+	FILE *fp;
+	const char *filename;
+	wget_buffer_t buf;
+	char sbuf[4096];
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
 	for (wget_stats_type_t type = 0; (int) type < (int) countof(stats_opts); type++) {
 		if (!stats_opts[type].status)
 			continue;
 
+		if ((int) stats_opts[type].format < 0 || stats_opts[type].format >= STATS_FORMAT_END - STATS_FORMAT_HUMAN) {
+			error_printf("Unknown stats format %d for %s stats\n", (int) stats_opts[type].format, stats_opts[type].tag);
+			continue;
+		}
+
+		filename = stats_opts[type].file;
+
+		if (filename && *filename && wget_strcmp(filename, "-"))
+			fp = fopen(filename, "w");
+		else
+			fp = stdout;
+
+		if (!fp) {
+			error_printf("File could not be opened %s for %s stats\n", filename, stats_opts[type].tag);
+			continue;
+		}
+
 		switch (stats_opts[type].format) {
 		case STATS_FORMAT_HUMAN:
-			stats_print_human(type);
+			stats_print_human(type, &buf, fp);
 			break;
 
 		case STATS_FORMAT_CSV:
-			stats_print_csv(type);
+			stats_print_csv(type, &buf, fp);
 			break;
 
 		case STATS_FORMAT_JSON:
-			stats_print_json(type);
+			stats_print_json(type, &buf, fp);
 			break;
+
+		case STATS_FORMAT_END:
+			/* no break */
 
 		default: error_printf("Unknown stats format %d\n", (int) stats_opts[type].format);
 			break;
 		}
+
+		if (fp != stdout) {
+			info_printf("%s stats saved in %s\n", stats_opts[type].tag, filename);
+			fclose(fp);
+		}
+
+		wget_buffer_reset(&buf);
 	}
+
+	wget_buffer_deinit(&buf);
 }

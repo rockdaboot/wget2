@@ -29,7 +29,8 @@
 typedef enum {
 	STATS_FORMAT_HUMAN = 0,
 	STATS_FORMAT_CSV = 1,
-	STATS_FORMAT_JSON = 2
+	STATS_FORMAT_JSON = 2,
+	STATS_FORMAT_END		//should be last entry of enum
 } stats_format_t;
 
 typedef struct {

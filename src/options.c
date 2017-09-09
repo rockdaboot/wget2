@@ -630,7 +630,7 @@ static int parse_stats(option_t opt, const char *val, const char invert)
 		char *p;
 		if ((p = strchr(val, ':'))) {
 			if (!wget_strncasecmp_ascii("human", val, p - val) || !wget_strncasecmp_ascii("h", val, p - val))
-				format = STATS_FORMAT_HUMAN;
+				;//empty statement
 			else if (!wget_strncasecmp_ascii("csv", val, p - val))
 				format = STATS_FORMAT_CSV;
 			else if (!wget_strncasecmp_ascii("json", val, p - val))
