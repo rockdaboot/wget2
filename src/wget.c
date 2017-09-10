@@ -1396,6 +1396,9 @@ static void process_head_response(wget_http_response_t *resp)
 			}
 		}
 
+		if (config.spider && !config.recursive)
+			return; // if not -r then we are done
+
 		job->inuse = 0; // do this job again with GET request
 	} else if (config.chunk_size && resp->content_length > config.chunk_size) {
 		// create metalink structure without hashing
