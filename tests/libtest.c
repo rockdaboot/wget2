@@ -91,7 +91,7 @@ static char
 
 #ifdef WITH_MICROHTTPD
 // MHD_Daemon instance
-struct MHD_Daemon
+static struct MHD_Daemon
 	*httpdaemon,
 	*httpsdaemon;
 #endif
@@ -104,7 +104,7 @@ struct query_string {
 		it;
 };
 
-char
+static char
 	*key_pem,
 	*cert_pem;
 
@@ -233,9 +233,9 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 					size_t *upload_data_size G_GNUC_WGET_UNUSED,
 					void **con_cls G_GNUC_WGET_UNUSED)
 {
-	struct MHD_Response *response;
+	struct MHD_Response *response = NULL;
 	struct query_string query;
-	int ret;
+	int ret = 0;
 	time_t modified;
 	const char *modified_val, *to_bytes_string;
 	ssize_t from_bytes, to_bytes;
@@ -445,7 +445,7 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 				}
 			}
 
-			it1 = nurls;
+			it1 = (unsigned int)nurls;
 			found = 1;
 		}
 
@@ -478,7 +478,7 @@ static void _http_server_stop(void)
 
 static int _http_server_start(int SERVER_MODE)
 {
-	int port_num = 0;
+	uint16_t port_num = 0;
 
 	if (SERVER_MODE == HTTP_MODE) {
 		httpdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
@@ -558,7 +558,7 @@ static int _http_server_start(int SERVER_MODE)
 		// get automatic retrieved port number
 		if (getsockname(sock_fd, addr, &addr_len) == 0) {
 			if (getnameinfo(addr, addr_len, NULL, 0, s_port, sizeof(s_port), NI_NUMERICSERV) == 0) {
-				port_num = atoi(s_port);
+				port_num = (uint16_t)atoi(s_port);
 				if (SERVER_MODE == HTTP_MODE)
 					http_server_port = port_num;
 				else if (SERVER_MODE == HTTPS_MODE)
