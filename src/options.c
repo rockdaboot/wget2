@@ -617,7 +617,7 @@ static int parse_prefer_family(option_t opt, const char *val, G_GNUC_WGET_UNUSED
 
 static int parse_stats(option_t opt, const char *val, const char invert)
 {
-	int status, format = STATS_FORMAT_HUMAN;
+	int status, format = WGET_STATS_FORMAT_HUMAN;
 	char *filename = NULL;
 
 	if (!val || !strcmp(val, "1") || !wget_strcasecmp_ascii(val, "y") || !wget_strcasecmp_ascii(val, "yes") || !wget_strcasecmp_ascii(val, "on"))
@@ -632,9 +632,9 @@ static int parse_stats(option_t opt, const char *val, const char invert)
 			if (!wget_strncasecmp_ascii("human", val, p - val) || !wget_strncasecmp_ascii("h", val, p - val))
 				;//empty statement
 			else if (!wget_strncasecmp_ascii("csv", val, p - val))
-				format = STATS_FORMAT_CSV;
+				format = WGET_STATS_FORMAT_CSV;
 			else if (!wget_strncasecmp_ascii("json", val, p - val))
-				format = STATS_FORMAT_JSON;
+				format = WGET_STATS_FORMAT_JSON;
 			else
 				error_printf_exit("Unknown stats format.\n");
 

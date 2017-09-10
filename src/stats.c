@@ -52,7 +52,7 @@ typedef struct {
 	const char
 		*tag,
 		*file;
-	stats_format_t
+	wget_stats_format_t
 		format;
 	bool
 		status : 1;
@@ -438,7 +438,7 @@ void stats_set_option(int type, bool status, int format, const char *filename)
 
 	stats_opts_t *opts = &stats_opts[type];
 	opts->status = status;
-	opts->format = (stats_format_t) format;
+	opts->format = (wget_stats_format_t) format;
 
 	xfree(opts->file);
 	opts->file = filename;
@@ -584,7 +584,7 @@ static int hosts_hashmap_tree(struct site_stats *ctx, HOST *host)
 	return 0;
 }
 
-static void print_site_stats(wget_buffer_t *buf, FILE *fp)
+static void _print_site_stats(wget_buffer_t *buf, FILE *fp)
 {
 	struct site_stats ctx = { .buf = buf, .fp = fp};
 
@@ -603,13 +603,40 @@ static void print_site_stats(wget_buffer_t *buf, FILE *fp)
 	fprintf(fp, "%s", buf->data);
 }
 
-static int print_csv(struct site_stats_cvs *ctx, TREE_DOCS *node)
+static void stats_print_csv_site_entry(struct site_stats_cvs_json *ctx, TREE_DOCS *node)
+{
+	wget_buffer_printf_append(ctx->buf, "%s://%s,%s,%d,%d,%d,%lld,%lld,%d\n",
+			ctx->host->scheme, ctx->host->host, node->iri->uri, ctx->id, ctx->parent_id, !node->redirect,
+			node->doc->size_downloaded, node->doc->size_decompressed, node->doc->encoding);
+
+}
+
+static void stats_print_json_site_entry(struct site_stats_cvs_json *ctx, TREE_DOCS *node)
+{
+	if (ctx->id > 1)
+		wget_buffer_printf_append(ctx->buf, ",\n");
+	wget_buffer_printf_append(ctx->buf, "\t{\n");
+	wget_buffer_printf_append(ctx->buf, "\t\t\"Host\" : \"%s://%s\",\n", ctx->host->scheme, ctx->host->host);
+	wget_buffer_printf_append(ctx->buf, "\t\t\"IRI\" : \"%s\",\n", node->iri->uri);
+	wget_buffer_printf_append(ctx->buf, "\t\t\"ID\" : %d,\n", ctx->id);
+	wget_buffer_printf_append(ctx->buf, "\t\t\"ParentID\" : %d,\n", ctx->parent_id);
+	wget_buffer_printf_append(ctx->buf, "\t\t\"Link\" : %d,\n", !node->redirect);
+	wget_buffer_printf_append(ctx->buf, "\t\t\"Size\" : %lld,\n", node->doc->size_downloaded);
+	wget_buffer_printf_append(ctx->buf, "\t\t\"SizeDecompressed\" : %lld,\n", node->doc->size_decompressed);
+	wget_buffer_printf_append(ctx->buf, "\t\t\"Encoding\" : \"%d\"\n", node->doc->encoding);
+	wget_buffer_printf_append(ctx->buf, "\t}");
+
+}
+
+static int print_csv_json(struct site_stats_cvs_json *ctx, TREE_DOCS *node)
 {
 	if (node) {
 		ctx->id++;
-		wget_buffer_printf_append(ctx->buf, "%s://%s,%s,%d,%d,%d,%lld,%lld,%s\n",
-				ctx->host->scheme, ctx->host->host, node->iri->uri, ctx->id, ctx->parent_id, !node->redirect,
-				node->doc->size_downloaded, node->doc->size_decompressed, print_encoding(node->doc->encoding));
+
+		if (ctx->format == WGET_STATS_FORMAT_CSV)
+			stats_print_csv_site_entry(ctx, node);
+		else  if (ctx->format == WGET_STATS_FORMAT_JSON)
+			stats_print_json_site_entry(ctx, node);
 
 		if (ctx->buf->length > 64*1024) {
 			fprintf(ctx->fp, "%s", ctx->buf->data);
@@ -619,7 +646,7 @@ static int print_csv(struct site_stats_cvs *ctx, TREE_DOCS *node)
 		if (node->children) {
 			int parent_id = ctx->parent_id;
 			ctx->parent_id = ctx->id;
-			wget_vector_browse(node->children, (wget_vector_browse_t) print_csv, ctx);
+			wget_vector_browse(node->children, (wget_vector_browse_t) print_csv_json, ctx);
 			ctx->parent_id = parent_id;
 		}
 	}
@@ -627,78 +654,26 @@ static int print_csv(struct site_stats_cvs *ctx, TREE_DOCS *node)
 	return 0;
 }
 
-static int hosts_hashmap_csv(struct site_stats_cvs *ctx, HOST *host)
+static int hosts_hashmap_csv_json(struct site_stats_cvs_json *ctx, HOST *host)
 {
 	if (host->tree_docs && host->root) {
 		ctx->host = host;
-		print_csv(ctx, host->root);
+		print_csv_json(ctx, host->root);
 	}
 	return 0;
 }
 
-static void print_site_stats_csv(wget_buffer_t *buf, FILE *fp)
+static void print_site_stats_csv_json(wget_buffer_t *buf, FILE *fp, wget_stats_format_t format)
 {
-	struct site_stats_cvs ctx = { .buf = buf, .fp = fp};
+	struct site_stats_cvs_json ctx = { .buf = buf, .fp = fp, .format = format};
 
 	wget_thread_mutex_lock(hosts_mutex);
-	wget_hashmap_browse(hosts, (wget_hashmap_browse_t) hosts_hashmap_csv, &ctx);
+	wget_hashmap_browse(hosts, (wget_hashmap_browse_t) hosts_hashmap_csv_json, &ctx);
 	wget_thread_mutex_unlock(hosts_mutex);
 
-	fprintf(fp, "%s", buf->data);
-}
+	if (format == WGET_STATS_FORMAT_JSON)
+		wget_buffer_printf_append(ctx.buf, "\n");
 
-static int print_json(struct site_stats_cvs *ctx, TREE_DOCS *node)
-{
-	if (node) {
-		ctx->id++;
-
-		if (ctx->id > 1)
-			wget_buffer_printf_append(ctx->buf, ",\n");
-		wget_buffer_printf_append(ctx->buf, "\t{\n");
-		wget_buffer_printf_append(ctx->buf, "\t\t\"Host\" : \"%s://%s\",\n", ctx->host->scheme, ctx->host->host);
-		wget_buffer_printf_append(ctx->buf, "\t\t\"IRI\" : \"%s\",\n", node->iri->uri);
-		wget_buffer_printf_append(ctx->buf, "\t\t\"ID\" : %d,\n", ctx->id);
-		wget_buffer_printf_append(ctx->buf, "\t\t\"ParentID\" : %d,\n", ctx->parent_id);
-		wget_buffer_printf_append(ctx->buf, "\t\t\"Link\" : %d,\n", !node->redirect);
-		wget_buffer_printf_append(ctx->buf, "\t\t\"Size (downloaded)\" : %lld,\n", node->doc->size_downloaded);
-		wget_buffer_printf_append(ctx->buf, "\t\t\"Size (decompressed)\" : %lld,\n", node->doc->size_decompressed);
-		wget_buffer_printf_append(ctx->buf, "\t\t\"Encoding\" : \"%s\"\n", print_encoding(node->doc->encoding));
-		wget_buffer_printf_append(ctx->buf, "\t}");
-
-		if (ctx->buf->length > 64*1024) {
-			fprintf(ctx->fp, "%s", ctx->buf->data);
-			wget_buffer_reset(ctx->buf);
-		}
-
-		if (node->children) {
-			int parent_id = ctx->parent_id;
-			ctx->parent_id = ctx->id;
-			wget_vector_browse(node->children, (wget_vector_browse_t) print_json, ctx);
-			ctx->parent_id = parent_id;
-		}
-	}
-
-	return 0;
-}
-
-static int hosts_hashmap_json(struct site_stats_cvs *ctx, HOST *host)
-{
-	if (host->tree_docs && host->root) {
-		ctx->host = host;
-		print_json(ctx, host->root);
-	}
-	return 0;
-}
-
-static void print_site_stats_json(wget_buffer_t *buf, FILE *fp)
-{
-	struct site_stats_cvs ctx = { .buf = buf, .fp = fp};
-
-	wget_thread_mutex_lock(hosts_mutex);
-	wget_hashmap_browse(hosts, (wget_hashmap_browse_t) hosts_hashmap_json, &ctx);
-	wget_thread_mutex_unlock(hosts_mutex);
-
-	wget_buffer_printf_append(ctx.buf, "\n");
 	fprintf(fp, "%s", buf->data);
 }
 
@@ -772,18 +747,18 @@ static void stats_print_json_tls_entry(struct json_stats *ctx, const tls_stats_t
 {
 	wget_buffer_printf_append(ctx->buf, "\t{\n");
 	wget_buffer_printf_append(ctx->buf, "\t\t\"Hostname\" : \"%s\",\n", NULL_TO_DASH(tls_stats->hostname));
-	wget_buffer_printf_append(ctx->buf, "\t\t\"Version\" : \"%s\",\n", NULL_TO_DASH(tls_stats->version));
-	wget_buffer_printf_append(ctx->buf, "\t\t\"False Start\" : \"%s\",\n", NULL_TO_DASH(tls_stats->false_start));
+	wget_buffer_printf_append(ctx->buf, "\t\t\"TLSVersion\" : \"%s\",\n", NULL_TO_DASH(tls_stats->version));
+	wget_buffer_printf_append(ctx->buf, "\t\t\"FalseStart\" : \"%s\",\n", NULL_TO_DASH(tls_stats->false_start));
 	wget_buffer_printf_append(ctx->buf, "\t\t\"TFO\" : \"%s\",\n", NULL_TO_DASH(tls_stats->tfo));
-	wget_buffer_printf_append(ctx->buf, "\t\t\"ALPN Protocol\" : \"%s\",\n", NULL_TO_DASH(tls_stats->alpn_proto));
+	wget_buffer_printf_append(ctx->buf, "\t\t\"ALPN\" : \"%s\",\n", NULL_TO_DASH(tls_stats->alpn_proto));
 	wget_buffer_printf_append(ctx->buf, "\t\t\"Resumed\" : \"%s\",\n",
 		tls_stats->resumed ? (tls_stats->resumed == 1 ? "Yes" : "-") : "No");
-	wget_buffer_printf_append(ctx->buf, "\t\t\"TCP Protocol\" : \"%s\",\n",
+	wget_buffer_printf_append(ctx->buf, "\t\t\"HTTPVersion\" : \"%s\",\n",
 		tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_1_1 ?
 			"HTTP/1.1" :
 			(tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"));
-	wget_buffer_printf_append(ctx->buf, "\t\t\"Cert-chain Size\" : %d,\n", tls_stats->cert_chain_size);
-	wget_buffer_printf_append(ctx->buf, "\t\t\"TLS negotiation duration (ms)\" : %lld\n", tls_stats->millisecs);
+	wget_buffer_printf_append(ctx->buf, "\t\t\"Certificates\" : %d,\n", tls_stats->cert_chain_size);
+	wget_buffer_printf_append(ctx->buf, "\t\t\"Duration\" : %lld\n", tls_stats->millisecs);
 	if (ctx->last)
 		wget_buffer_printf_append(ctx->buf, "\t}\n");
 	else
@@ -824,7 +799,7 @@ static void stats_print_json_server_entry(struct json_stats *ctx, const server_s
 	wget_buffer_printf_append(ctx->buf, "\t\t\"IP\" : \"%s\",\n", NULL_TO_DASH(server_stats->ip));
 	wget_buffer_printf_append(ctx->buf, "\t\t\"Scheme\" : \"%s\",\n", NULL_TO_DASH(server_stats->scheme));
 	wget_buffer_printf_append(ctx->buf, "\t\t\"HPKP\" : \"%s\",\n", stats_server_hpkp(server_stats->hpkp));
-	wget_buffer_printf_append(ctx->buf, "\t\t\"HPKP New Entry\" : \"%s\",\n", NULL_TO_DASH(server_stats->hpkp_new));
+	wget_buffer_printf_append(ctx->buf, "\t\t\"NewHPKP\" : \"%s\",\n", NULL_TO_DASH(server_stats->hpkp_new));
 	wget_buffer_printf_append(ctx->buf, "\t\t\"HSTS\" : \"%s\",\n", NULL_TO_DASH(server_stats->hsts));
 	wget_buffer_printf_append(ctx->buf, "\t\t\"CSP\" : \"%s\"\n", NULL_TO_DASH(server_stats->csp));
 	if (ctx->last)
@@ -917,7 +892,7 @@ static void stats_print_human(wget_stats_type_t type, wget_buffer_t *buf, FILE *
 
 	case WGET_STATS_TYPE_SITE:
 		wget_buffer_printf(buf, "\nSite Statistics:\n");
-		print_site_stats(buf, fp);
+		_print_site_stats(buf, fp);
 		break;
 
 	default:
@@ -948,7 +923,7 @@ static void stats_print_json(wget_stats_type_t type, wget_buffer_t *buf, FILE *f
 		break;
 
 	case WGET_STATS_TYPE_SITE:
-		print_site_stats_json(buf, fp);
+		print_site_stats_csv_json(buf, fp, WGET_STATS_FORMAT_JSON);
 		break;
 
 	default:
@@ -963,29 +938,28 @@ static void stats_print_csv(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp
 {
 	switch (type) {
 	case WGET_STATS_TYPE_DNS:
-		wget_buffer_printf(buf, "%s\n", "Hostname,IP,Port,DNS resolution duration (ms)");
+		wget_buffer_printf(buf, "%s\n", "Hostname,IP,Port,Duration");
 		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_csv_dns_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_TLS:
-		wget_buffer_printf(buf, "%s\n", "Hostname,Version,False Start,TFO,ALPN,Resumed,TCP,Cert-chain Length,TLS negotiation duration (ms)");
+		wget_buffer_printf(buf, "%s\n", "Hostname,TLSVersion,FalseStart,TFO,ALPN,Resumed,HTTPVersion,Certificates,Duration");
 		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_csv_tls_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_SERVER:
-		wget_buffer_printf(buf, "%s\n", "Hostname,HPKP,HPKP New Entry,HSTS,CSP");
-
+		wget_buffer_printf(buf, "%s\n", "Hostname,HPKP,NewHPKP,HSTS,CSP");
 		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_csv_server_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_OCSP:
-		wget_buffer_printf(buf, "%s\n", "Hostname,VALID,REVOKED,IGNORED");
+		wget_buffer_printf(buf, "%s\n", "Hostname,Valid,Revoked,Ignored");
 		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_csv_ocsp_entry, buf, fp);
 		break;
 
 	case WGET_STATS_TYPE_SITE:
-		wget_buffer_printf_append(buf, "Host,IRI,ID,ParentID,Link,Size (downloaded),Size (decompressed),Encoding\n");
-		print_site_stats_csv(buf, fp);
+		wget_buffer_printf_append(buf, "Host,IRI,ID,ParentID,Link,Size,SizeDecompressed,Encoding\n");
+		print_site_stats_csv_json(buf, fp, WGET_STATS_FORMAT_CSV);
 		break;
 
 	default:
@@ -1006,11 +980,6 @@ void stats_print(void)
 		if (!stats_opts[type].status)
 			continue;
 
-		if ((int) stats_opts[type].format < 0 || stats_opts[type].format >= STATS_FORMAT_END - STATS_FORMAT_HUMAN) {
-			error_printf("Unknown stats format %d for %s stats\n", (int) stats_opts[type].format, stats_opts[type].tag);
-			continue;
-		}
-
 		filename = stats_opts[type].file;
 
 		if (filename && *filename && wget_strcmp(filename, "-"))
@@ -1024,20 +993,17 @@ void stats_print(void)
 		}
 
 		switch (stats_opts[type].format) {
-		case STATS_FORMAT_HUMAN:
+		case WGET_STATS_FORMAT_HUMAN:
 			stats_print_human(type, &buf, fp);
 			break;
 
-		case STATS_FORMAT_CSV:
+		case WGET_STATS_FORMAT_CSV:
 			stats_print_csv(type, &buf, fp);
 			break;
 
-		case STATS_FORMAT_JSON:
+		case WGET_STATS_FORMAT_JSON:
 			stats_print_json(type, &buf, fp);
 			break;
-
-		case STATS_FORMAT_END:
-			/* no break */
 
 		default: error_printf("Unknown stats format %d\n", (int) stats_opts[type].format);
 			break;

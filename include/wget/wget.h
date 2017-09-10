@@ -2547,6 +2547,12 @@ typedef enum {
 } wget_stats_type_t;
 
 typedef enum {
+	WGET_STATS_FORMAT_HUMAN = 0,
+	WGET_STATS_FORMAT_CSV = 1,
+	WGET_STATS_FORMAT_JSON = 2
+} wget_stats_format_t;
+
+typedef enum {
 	WGET_STATS_DNS_HOST = 0,
 	WGET_STATS_DNS_IP = 1,
 	WGET_STATS_DNS_PORT = 2,

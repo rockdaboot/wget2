@@ -97,18 +97,26 @@ struct DOC {
 };
 
 struct site_stats {
-	wget_buffer_t *buf;
-	FILE *fp;
-	int level;
+	wget_buffer_t
+		*buf;
+	FILE
+		*fp;
+	int
+		level;
 };
 
-struct site_stats_cvs {
-	wget_buffer_t *buf;
-	FILE *fp;
+struct site_stats_cvs_json {
+	wget_buffer_t
+		*buf;
+	FILE
+		*fp;
 	int
 		id,
 		parent_id;
-	HOST *host;
+	HOST
+		*host;
+	wget_stats_format_t
+		format;
 };
 
 struct json_stats {
