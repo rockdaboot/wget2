@@ -103,6 +103,7 @@ sitemap index files.
 The following packages are needed to build the software
 
 * autotools (autoconf, autogen, automake, autopoint, libtool)
+* python (recommended for faster bootstrap)
 * pkg-config >= 0.28 (recommended)
 * doxygen (for creating the documentation)
 * gettext >= 0.18.2

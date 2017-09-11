@@ -688,8 +688,11 @@ if $bootstrap_sync; then
   }
 fi
 
-gnulib_tool=$GNULIB_SRCDIR/gnulib-tool
-<$gnulib_tool || exit $?
+gnulib_tool=$GNULIB_SRCDIR/gnulib-tool.py
+if ! <$gnulib_tool; then
+  gnulib_tool=$GNULIB_SRCDIR/gnulib-tool
+  <$gnulib_tool || exit $?
+fi
 
 # Get translations.
 
