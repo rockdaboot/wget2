@@ -550,8 +550,8 @@ AC_ARG_WITH(libmicrohttpd, AS_HELP_STRING([--without-libmicrohttpd], [disable su
 AS_IF([test "x$with_libmicrohttpd" != xno], [
   PKG_CHECK_MODULES(MICROHTTPD, [libmicrohttpd], [
      with_libmicrohttpd=yes
-     LIBS="$MICROHTTPD_LIBS $LIBS"
-     CFLAGS="$MICROHTTPD_CFLAGS $CFLAGS"
+     TEST_LIBS="$MICROHTTPD_LIBS $TEST_LIBS"
+     TEST_CFLAGS="$MICROHTTPD_CFLAGS $TEST_CFLAGS"
      AC_DEFINE([WITH_MICROHTTPD], [1], [Use Libmicrohttpd])
   ], [
 	 with_libmicrohttpd=no
@@ -596,6 +596,9 @@ if test "x$plugin_support" = "xyes"; then
 	fi
 fi
 AM_CONDITIONAL([PLUGIN_SUPPORT], [test "x$plugin_support" = xyes])
+
+AC_SUBST([TEST_CFLAGS])
+AC_SUBST([TEST_LIBS])
 
 # Checks for header files.
 AC_CHECK_HEADERS([\
@@ -642,5 +645,5 @@ AC_MSG_NOTICE([Summary of build options:
   Tests:              ${TESTS_INFO}
   Assertions:         $ENABLE_ASSERT
   POSIX xattr:        $ENABLE_XATTR
-  Microhttpd support: $with_libmicrohttpd
+  Microhttpd support: $with_libmicrohttpd (CFLAGS: ${TEST_CFLAGS}. LIBS: ${TEST_LIBS})
 ])
