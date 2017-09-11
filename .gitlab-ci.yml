@@ -35,8 +35,6 @@ variables:
 #  * ASan, UBSan, Msan
 #  * distcheck
 Debian GNU/Linux build:
-  before_script:
-    - apt-get update -qq && apt-get install -y -qq libmicrohttpd-dev
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - export CFLAGS=$CFLAGS_DEFAULT
@@ -60,8 +58,6 @@ Debian GNU/Linux build:
       - tests/*.log
 
 clang/Fedora:
-  before_script:
-    - dnf -y install libmicrohttpd-devel
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
     - export CC=clang
