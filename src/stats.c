@@ -98,11 +98,6 @@ static int _host_docs_compare(const HOST_DOCS *host_docsp1, const HOST_DOCS *hos
 	return 0;
 }
 
-static int _tree_docs_compare(const TREE_DOCS *tree_docsp1, const TREE_DOCS *tree_docsp2)
-{
-	return wget_iri_compare(tree_docsp1->iri, tree_docsp2->iri);
-}
-
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
@@ -119,30 +114,43 @@ static unsigned int _host_docs_hash(const HOST_DOCS *host_docsp)
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int _tree_docs_hash(const TREE_DOCS *tree_docsp)
+static unsigned int _stats_iri_hash(wget_iri_t *iri)
 {
-	unsigned int h = tree_docsp->iri->port; // use port as SALT if hash table attacks doesn't matter
+	unsigned int h = iri->port; // use port as SALT if hash table attacks doesn't matter
 	const unsigned char *p;
 
-	for (p = (unsigned char *)tree_docsp->iri->scheme; p && *p; p++)
+	for (p = (unsigned char *)iri->scheme; p && *p; p++)
 		h = h * 101 + *p;
 
-	for (p = (unsigned char *)tree_docsp->iri->host; p && *p; p++)
+	for (p = (unsigned char *)iri->host; p && *p; p++)
 		h = h * 101 + *p;
 
-	for (p = (unsigned char *)tree_docsp->iri->path; p && *p; p++)
+	for (p = (unsigned char *)iri->path; p && *p; p++)
 		h = h * 101 + *p;
 
-	for (p = (unsigned char *)tree_docsp->iri->query; p && *p; p++)
+	for (p = (unsigned char *)iri->query; p && *p; p++)
 		h = h * 101 + *p;
 
 	return h;
 }
 
+static int _stats_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2)
+{
+	return wget_iri_compare(iri1, iri2);
+}
+
+static void *stats_docs_get(wget_hashmap_t *h, wget_iri_t *iri)
+{
+	if (h)
+		return wget_hashmap_get(h, iri);
+
+	return NULL;
+}
+
 static void _free_host_docs_entry(HOST_DOCS *host_docsp)
 {
 	if (host_docsp) {
-		wget_vector_free(&host_docsp->docs);
+		wget_hashmap_free(&host_docsp->docs);
 		wget_xfree(host_docsp);
 	}
 }
@@ -168,9 +176,8 @@ static HOST_DOCS *host_docs_get(wget_hashmap_t *host_docs, int status)
 
 DOC *stats_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
 {
-	wget_hashmap_t *host_docs;
+	wget_hashmap_t *host_docs, *docs;
 	HOST_DOCS *host_docsp;
-	wget_vector_t *docs;
 	DOC *doc;
 	HOST *hostp;
 
@@ -195,30 +202,24 @@ DOC *stats_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
 	}
 
 	if (!(docs = host_docsp->docs)) {
-		docs = wget_vector_create(8, -2, NULL);
+		docs = wget_hashmap_create(16, (wget_hashmap_hash_t)_stats_iri_hash, (wget_hashmap_compare_t)_stats_iri_compare);
+		wget_hashmap_set_key_destructor(docs, (wget_hashmap_key_destructor_t)NULL);
 		host_docsp->docs = docs;
 	}
 
-	doc = wget_calloc(1, sizeof(DOC));
-	doc->iri = iri;
+	if (!(doc = stats_docs_get(docs, iri))) {
+		doc = wget_calloc(1, sizeof(DOC));
+		doc->iri = iri;
+		wget_hashmap_put_noalloc(docs, doc->iri, doc);
+	}
+
 	doc->size_downloaded = resp->cur_downloaded;
 	doc->size_decompressed = resp->body->length;
 	doc->encoding = resp->content_encoding;
-	wget_vector_add_noalloc(docs, doc);
 
 	wget_thread_mutex_unlock(&host_docs_mutex);
 
 	return doc;
-}
-
-static TREE_DOCS *stats_tree_docs_get(wget_hashmap_t *tree_docs, wget_iri_t *iri)
-{
-	TREE_DOCS *tree_docsp = NULL, tree_doc = {.iri = iri};
-
-	if (tree_docs)
-		tree_docsp = wget_hashmap_get(tree_docs, &tree_doc);
-
-	return tree_docsp;
 }
 
 TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool robot_iri, bool redirect, DOC *doc)
@@ -239,7 +240,7 @@ TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool rob
 	wget_thread_mutex_lock(&tree_docs_mutex);
 
 	if (parent_iri) {
-		if (!(parent_node = stats_tree_docs_get(hostp->tree_docs, parent_iri))) {
+		if (!(parent_node = stats_docs_get(hostp->tree_docs, parent_iri))) {
 			error_printf("No existing entry for %s in tree_docs hashmap\n", parent_iri->uri);
 			goto out;
 		}
@@ -254,19 +255,22 @@ TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool rob
 	}
 
 	if (!(tree_docs = hostp->tree_docs)) {
-		hostp->tree_docs = tree_docs = wget_hashmap_create(16, (wget_hashmap_hash_t)_tree_docs_hash, (wget_hashmap_compare_t)_tree_docs_compare);
-		wget_hashmap_set_key_destructor(tree_docs, (wget_hashmap_key_destructor_t)_free_tree_docs_entry);
+		hostp->tree_docs = tree_docs = wget_hashmap_create(16, (wget_hashmap_hash_t)_stats_iri_hash, (wget_hashmap_compare_t)_stats_iri_compare);
+		wget_hashmap_set_key_destructor(tree_docs, (wget_hashmap_key_destructor_t)NULL);
+		wget_hashmap_set_value_destructor(tree_docs, (wget_hashmap_value_destructor_t)_free_tree_docs_entry);
 	}
 
-	if (!(child_node = stats_tree_docs_get(tree_docs, iri))) {
+	if (!(child_node = stats_docs_get(tree_docs, iri))) {
 		child_node = wget_calloc(1, sizeof(TREE_DOCS));
 		child_node->iri = iri;
 		child_node->doc = doc;
 		child_node->children = NULL;
 		child_node->redirect = redirect;
-		wget_hashmap_put_noalloc(tree_docs, child_node, child_node);
-	} else
-		error_printf("Existing entry for iri->uri = %s in tree_docs hashmap of host %s://%s\n", iri->uri, hostp->scheme, hostp->host);
+		wget_hashmap_put_noalloc(tree_docs, child_node->iri, child_node);
+	} else {
+//		error_printf("Existing entry for iri->uri = %s in tree_docs hashmap of host %s://%s\n", iri->uri, hostp->scheme, hostp->host);
+		goto out;
+	}
 
 	if (parent_iri)
 		wget_vector_add_noalloc(children, child_node);
@@ -511,23 +515,29 @@ static const char *print_encoding(char encoding)
 	}
 }
 
-static int host_docs_hashmap(struct site_stats *ctx, HOST_DOCS *host_docsp)
+static int _docs_hashmap(struct site_stats *ctx, G_GNUC_WGET_UNUSED wget_iri_t *iri, DOC *doc)
 {
-	wget_buffer_printf_append(ctx->buf, "  %8d  %13d\n", host_docsp->http_status, wget_vector_size(host_docsp->docs));
-
-	for (int it = 0; it < wget_vector_size(host_docsp->docs); it++) {
-		const DOC *doc = wget_vector_get(host_docsp->docs, it);
 		wget_buffer_printf_append(ctx->buf, "         %s  %lld bytes (%s) : ",
 				doc->iri->uri,
 				doc->size_downloaded,
 				print_encoding(doc->encoding));
 		wget_buffer_printf_append(ctx->buf, "%lld bytes (decompressed)\n",
 				doc->size_decompressed);
-	}
 
 	if (ctx->buf->length > 64*1024) {
 		fprintf(ctx->fp, "%s", ctx->buf->data);
 		wget_buffer_reset(ctx->buf);
+	}
+
+	return 0;
+}
+
+
+static int host_docs_hashmap(struct site_stats *ctx, HOST_DOCS *host_docsp)
+{
+	if (host_docsp) {
+		wget_buffer_printf_append(ctx->buf, "  %8d  %13d\n", host_docsp->http_status, wget_hashmap_size(host_docsp->docs));
+		wget_hashmap_browse(host_docsp->docs, (wget_hashmap_browse_t)_docs_hashmap, ctx);
 	}
 
 	return  0;

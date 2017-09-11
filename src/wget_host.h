@@ -80,7 +80,7 @@ typedef struct {
 typedef struct {
 	int
 		http_status;
-	wget_vector_t
+	wget_hashmap_t
 		*docs;
 } HOST_DOCS;
 
