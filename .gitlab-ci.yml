@@ -128,11 +128,10 @@ MinGW64:
   - export PATH="/usr/$PREFIX/bin:$PATH"
   - export CFLAGS="-O2 -Wall -Wno-format"
   # Install Libmicrohttpd from source
-  - cd /builds/common/libmicrohttpd
-  - ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=/usr/$PREFIX --disable-doc --disable-examples --enable-shared --enable-static
-  - make -j$(nproc)
-  - make install
-  - cd /builds/gnuwget/wget2
+  - ( cd /builds/common/libmicrohttpd
+     && ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=/usr/$PREFIX --disable-doc --disable-examples --enable-shared --enable-static
+     && make -j$(nproc)
+     && make install )
   - ./bootstrap
   - export CXX=$PREFIX-g++
   - export WINEPATH="/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs"
