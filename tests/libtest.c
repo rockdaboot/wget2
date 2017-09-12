@@ -506,28 +506,8 @@ static void _http_server_stop(void)
 
 static int _http_server_start(int SERVER_MODE)
 {
+	static char rnd[8] = "realrnd"; // fixed 'random' value
 	uint16_t port_num = 0;
-	int fd;
-	char rnd[8];
-	ssize_t len;
-	size_t off;
-
-	fd = open("/dev/urandom", O_RDONLY);
-	if (fd == -1) {
-		fprintf(stderr, "Failed to open `%s': %s\n", "/dev/urandom", strerror(errno));
-		return 1;
-	}
-	off = 0;
-	while (off < 8) {
-		len = read(fd, rnd, 8);
-		if (len == -1) {
-			fprintf(stderr, "Failed to read `%s': %s\n", "/dev/urandom", strerror(errno));
-			(void)close(fd);
-		return 1;
-		}
-		off += len;
-	}
-	(void)close(fd);
 
 	if (SERVER_MODE == HTTP_MODE) {
 		httpdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
