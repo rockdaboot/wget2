@@ -11,7 +11,7 @@ export RANLIB=$PREFIX-ranlib
 export PATH="/usr/$PREFIX/bin:$PATH"
 
 export INSTALLDIR="/usr/local/$PREFIX"
-export PKG_CONFIG_PATH=$INSTALLDIR/lib/pkgconfig
+export PKG_CONFIG_PATH=$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig
 export CPPFLAGS="-I$INSTALLDIR/include"
 export LDFLAGS="-L$INSTALLDIR/lib"
 
