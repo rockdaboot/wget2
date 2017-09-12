@@ -88,6 +88,7 @@ int main(void)
 		"--stats-server",
 		"--stats-site",
 		"--stats-tls",
+		"--stats-all"
 	};
 
 	static const char *stats_format[] = {

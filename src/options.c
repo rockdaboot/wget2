@@ -650,6 +650,17 @@ static int parse_stats(option_t opt, const char *val, const char invert)
 	return 0;
 }
 
+static int parse_stats_all(option_t opt, const char *val, const char invert)
+{
+	parse_bool(opt, "1", invert);
+
+	if (config.stats_all)
+		for (int it = 1; it <= 5; it++)	// Get rid of magic number
+			parse_stats(opt + it, val, invert);
+
+	return 0;
+}
+
 static int plugin_loading_enabled = 0;
 
 static int parse_plugin(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
@@ -1506,6 +1517,12 @@ static const struct optionw options[] = {
 		{ "Enable web spider mode. (default: off)\n"
 		}
 	},
+	{ "stats-all", &config.stats_all, parse_stats_all, -1, 0,
+		SECTION_STARTUP,
+		{ "Print all stats (default: off)\n",
+		  "Additional format supported: --stats-all[=[format:]file]\n"
+		}
+	},
 	{ "stats-dns", (void *) WGET_STATS_TYPE_DNS, parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print DNS lookup durations. (default: off)\n",
@@ -1527,7 +1544,7 @@ static const struct optionw options[] = {
 	{ "stats-site", (void *) WGET_STATS_TYPE_SITE, parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print site stats. (default: off)\n",
-		  "Additional format supported: --stats-site\n"
+		  "Additional format supported: --stats-site[=[format:]file]\n"
 		}
 	},
 	{ "stats-tls", (void *) WGET_STATS_TYPE_TLS, parse_stats, -1, 0,

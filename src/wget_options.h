@@ -189,7 +189,8 @@ struct config {
 		proxy,
 		xattr,
 		force_progress,
-		stats_site;
+		stats_site,
+		stats_all;
 };
 
 extern struct config

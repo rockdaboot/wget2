@@ -112,7 +112,8 @@ struct site_stats_cvs_json {
 		*fp;
 	int
 		id,
-		parent_id;
+		parent_id,
+		ntabs;
 	HOST
 		*host;
 	wget_stats_format_t
@@ -120,8 +121,12 @@ struct site_stats_cvs_json {
 };
 
 struct json_stats {
-	wget_buffer_t *buf;
-	bool last;
+	wget_buffer_t
+		*buf;
+	bool
+		last;
+	int
+		ntabs;
 };
 
 HOST *host_add(wget_iri_t *iri) G_GNUC_WGET_NONNULL((1));
