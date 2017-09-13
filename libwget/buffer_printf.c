@@ -336,7 +336,7 @@ static const char *_read_field_width(const char *p, int *out, unsigned int *flag
 size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list args)
 {
 	const char *p = fmt, *begin;
-	int field_width, precision = -1;
+	int field_width, precision;
 	unsigned int flags;
 	long long arg;
 	unsigned long long argu;
@@ -409,7 +409,8 @@ size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list a
 			} else {
 				p = _read_precision(p, &precision, 0);
 			}
-		}
+		} else
+			precision = -1;
 
 		/* Read length modifier (optional) */
 		switch (*p) {
