@@ -605,14 +605,6 @@ static void _print_site_stats(wget_buffer_t *buf, FILE *fp)
 	wget_thread_mutex_unlock(hosts_mutex);
 
 	fprintf(fp, "%s", buf->data);
-
-	wget_buffer_reset(ctx.buf);
-
-	wget_thread_mutex_lock(hosts_mutex);
-	wget_hashmap_browse(hosts, (wget_hashmap_browse_t) hosts_hashmap_tree, &ctx);
-	wget_thread_mutex_unlock(hosts_mutex);
-
-	fprintf(fp, "%s", buf->data);
 }
 
 static void stats_print_csv_site_entry(struct site_stats_cvs_json *ctx, TREE_DOCS *node)
@@ -913,6 +905,17 @@ static void stats_print_human(wget_stats_type_t type, wget_buffer_t *buf, FILE *
 	}
 }
 
+static void stats_print_tree(wget_buffer_t *buf, FILE *fp)
+{
+	struct site_stats ctx = { .buf = buf, .fp = fp};
+
+	wget_thread_mutex_lock(hosts_mutex);
+	wget_hashmap_browse(hosts, (wget_hashmap_browse_t) hosts_hashmap_tree, &ctx);
+	wget_thread_mutex_unlock(hosts_mutex);
+
+	fprintf(fp, "%s", buf->data);
+}
+
 static void stats_print_json(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp)
 {
 	int ntabs = 0;
@@ -1048,6 +1051,10 @@ void stats_print(void)
 			stats_print_json(type, &buf, fp);
 			if (config.stats_all && (type == countof(stats_opts) - 1))
 				fprintf(fp, "}\n");
+			break;
+
+		case WGET_STATS_FORMAT_TREE:
+			stats_print_tree(&buf, fp);
 			break;
 
 		default: error_printf("Unknown stats format %d\n", (int) stats_opts[type].format);

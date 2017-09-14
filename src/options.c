@@ -635,8 +635,10 @@ static int parse_stats(option_t opt, const char *val, const char invert)
 				format = WGET_STATS_FORMAT_CSV;
 			else if (!wget_strncasecmp_ascii("json", val, p - val))
 				format = WGET_STATS_FORMAT_JSON;
+			else if ((int) (ptrdiff_t)opt->var == WGET_STATS_TYPE_SITE && !wget_strncasecmp_ascii("tree", val, p - val))
+				format = WGET_STATS_FORMAT_TREE;
 			else
-				error_printf_exit("Unknown stats format.\n");
+				error_printf_exit("Unknown stats format\n");
 
 			val = p + 1;
 		}
