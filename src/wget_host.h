@@ -87,6 +87,8 @@ typedef struct {
 struct DOC {
 	wget_iri_t
 		*iri;
+	int
+		status;
 	long long
 		size_downloaded,
 		size_decompressed;

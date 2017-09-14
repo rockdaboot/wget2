@@ -212,6 +212,7 @@ DOC *stats_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
 	if (!(doc = stats_docs_get(docs, iri))) {
 		doc = wget_calloc(1, sizeof(DOC));
 		doc->iri = iri;
+		doc->status = resp->code;
 		wget_hashmap_put_noalloc(docs, doc->iri, doc);
 	}
 
@@ -609,8 +610,8 @@ static void _print_site_stats(wget_buffer_t *buf, FILE *fp)
 
 static void stats_print_csv_site_entry(struct site_stats_cvs_json *ctx, TREE_DOCS *node)
 {
-	wget_buffer_printf_append(ctx->buf, "%s://%s,%s,%d,%d,%d,%lld,%lld,%d\n",
-			ctx->host->scheme, ctx->host->host, node->iri->uri, ctx->id, ctx->parent_id, !node->redirect,
+	wget_buffer_printf_append(ctx->buf, "%s://%s,%s,%d,%d,%d,%d,%lld,%lld,%d\n",
+			ctx->host->scheme, ctx->host->host, node->iri->uri, node->doc->status, ctx->id, ctx->parent_id, !node->redirect,
 			node->doc->size_downloaded, node->doc->size_decompressed, node->doc->encoding);
 
 }
@@ -622,6 +623,7 @@ static void stats_print_json_site_entry(struct site_stats_cvs_json *ctx, TREE_DO
 	wget_buffer_printf_append(ctx->buf, "%.*s{\n", ctx->ntabs + 1, tabs);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Host\" : \"%s://%s\",\n", ctx->ntabs + 2, tabs, ctx->host->scheme, ctx->host->host);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"IRI\" : \"%s\",\n", ctx->ntabs + 2, tabs, node->iri->uri);
+	wget_buffer_printf_append(ctx->buf, "%.*s\"Status\" : %d,\n", ctx->ntabs + 2, tabs, node->doc->status);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"ID\" : %d,\n", ctx->ntabs + 2, tabs, ctx->id);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"ParentID\" : %d,\n", ctx->ntabs + 2, tabs, ctx->parent_id);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Link\" : %d,\n", ctx->ntabs + 2, tabs, !node->redirect);
@@ -996,7 +998,7 @@ static void stats_print_csv(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp
 		break;
 
 	case WGET_STATS_TYPE_SITE:
-		wget_buffer_printf_append(buf, "Host,IRI,ID,ParentID,Link,Size,SizeDecompressed,Encoding\n");
+		wget_buffer_printf_append(buf, "Host,IRI,Status,ID,ParentID,Link,Size,SizeDecompressed,Encoding\n");
 		print_site_stats_csv_json(buf, fp, WGET_STATS_FORMAT_CSV, 0);
 		break;
 
