@@ -1006,23 +1006,26 @@ static void stats_print_csv(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp
 void stats_print(void)
 {
 	FILE *fp;
-	const char *filename;
 	wget_buffer_t buf;
-	char sbuf[4096];
+	char sbuf[4096], *filename;
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	for (wget_stats_type_t type = 0; (int) type < (int) countof(stats_opts); type++) {
 		if (!stats_opts[type].status)
 			continue;
 
-		filename = stats_opts[type].file;
+		if (config.stats_all && stats_opts[type].format == WGET_STATS_FORMAT_CSV && wget_strcmp(stats_opts[type].file, "-")) {
+			filename = wget_malloc(strlen(stats_opts[type].file) + 3);
+			snprintf(filename, strlen(stats_opts[type].file) + 3, "%d-%s", type, stats_opts[type].file);
+		} else
+			filename = wget_strdup(stats_opts[type].file);
 
-		if (filename && *filename && wget_strcmp(filename, "-"))
-			if (config.stats_all && type)
+		if (filename && *filename && wget_strcmp(filename, "-")) {
+			if (config.stats_all && stats_opts[type].format != WGET_STATS_FORMAT_CSV && type)
 				fp = fopen(filename, "a");
 			else
 				fp = fopen(filename, "w");
-		else
+		} else
 			fp = stdout;
 
 		if (!fp) {
@@ -1056,6 +1059,7 @@ void stats_print(void)
 			fclose(fp);
 		}
 
+		xfree(filename);
 		wget_buffer_reset(&buf);
 	}
 
