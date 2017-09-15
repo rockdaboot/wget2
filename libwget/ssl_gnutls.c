@@ -65,15 +65,15 @@ typedef struct
 	const char
 		*hostname,
 		*version,
-		*false_start,
-		*tfo,
 		*alpn_protocol;
 	long long
 		tls_secs; //milliseconds
 	int
 		cert_chain_size;
 	char
-		tcp_protocol;
+		tcp_protocol,
+		false_start,
+		tfo;
 	bool
 		tls_con,
 		resumed;
@@ -1338,12 +1338,12 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	gnutls_session_t session;
 	_stats_data_t stats = {
 			.version = NULL,
-			.resumed = 0,
-			.false_start = NULL,
-			.tfo = NULL,
 			.alpn_protocol = NULL,
+			.false_start = -1,
+			.tfo = -1,
+			.resumed = 0,
 			.tcp_protocol = WGET_PROTOCOL_HTTP_1_1,
-			.cert_chain_size = 0,
+			.cert_chain_size = 0
 	};
 
 	int ret = WGET_E_UNKNOWN;
@@ -1443,7 +1443,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 #ifdef MSG_FASTOPEN
 	if ((rc = wget_tcp_get_tcp_fastopen(tcp))) {
 		if (tls_stats)
-			stats.tfo = rc ? "on": "off";
+			stats.tfo = (char)rc;
 
 		// prepare for TCP FASTOPEN... sendmsg() instead of connect/write on first write
 		gnutls_transport_set_vec_push_function(session, (ssize_t (*)(gnutls_transport_ptr_t, const giovec_t *iov, int iovcnt)) _ssl_writev);
@@ -1484,7 +1484,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		stats.tls_secs = after_millisecs - before_millisecs;
 		stats.tls_con = 1;
 #if GNUTLS_VERSION_NUMBER >= 0x030500
-		stats.false_start = (gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START) ? "on" : "off";
+		stats.false_start = gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START;
 #endif
 	}
 
@@ -1514,7 +1514,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		int resumed = gnutls_session_is_resumed(session);
 
 		if (tls_stats) {
-			stats.resumed = resumed ? 1 : 0;
+			stats.resumed = resumed;
 			stats.version = gnutls_protocol_get_name(gnutls_protocol_get_version(session));
 			gnutls_certificate_get_peers(session, (unsigned int *)&(stats.cert_chain_size));
 		}
@@ -1831,9 +1831,9 @@ const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
 	case WGET_STATS_TLS_VERSION:
 		return stats->version;
 	case WGET_STATS_TLS_FALSE_START:
-		return stats->false_start;
+		return &(stats->false_start);
 	case WGET_STATS_TLS_TFO:
-		return stats->tfo;
+		return &(stats->tfo);
 	case WGET_STATS_TLS_ALPN_PROTO:
 		return stats->alpn_protocol;
 	case WGET_STATS_TLS_CON:

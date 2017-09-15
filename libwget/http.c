@@ -81,10 +81,11 @@ typedef struct
 	const char
 		*hostname,
 		*ip,
-		*scheme,
-		*hsts,
-		*csp,
-		*hpkp_new;
+		*scheme;
+	char
+		hsts,
+		csp,
+		hpkp_new;
 	wget_hpkp_stats_t hpkp;
 } _stats_data_t;
 
@@ -614,9 +615,9 @@ static void _server_stats_add(wget_http_connection_t *conn, wget_http_response_t
 		stats.ip = hostp->ip;
 		stats.scheme = hostp->scheme;
 		stats.hpkp = conn->tcp->hpkp;
-		stats.hpkp_new = resp ? (resp->hpkp ? "Yes" : "No"): NULL;
-		stats.hsts = resp ? (resp->hsts ? "Yes" : "No"): NULL;
-		stats.csp = resp ? (resp->csp ? "Yes" : "No"): NULL;
+		stats.hpkp_new = resp ? (resp->hpkp ? 1 : 0): -1;
+		stats.hsts = resp ? (resp->hsts ? 1 : 0) : -1;
+		stats.csp = resp ? (resp->csp ? 1 : 0) : -1;
 
 		stats_callback(WGET_STATS_TYPE_SERVER, &stats);
 		host_add(hostp);
@@ -1431,11 +1432,11 @@ const void *wget_tcp_get_stats_server(wget_server_stats_t type, const void *_sta
 	case WGET_STATS_SERVER_HPKP:
 		return &(stats->hpkp);
 	case WGET_STATS_SERVER_HPKP_NEW:
-		return stats->hpkp_new;
+		return &(stats->hpkp_new);
 	case WGET_STATS_SERVER_HSTS:
-		return stats->hsts;
+		return &(stats->hsts);
 	case WGET_STATS_SERVER_CSP:
-		return stats->csp;
+		return &(stats->csp);
 	default:
 		return NULL;
 	}

@@ -491,7 +491,7 @@ void wget_tcp_set_tcp_fastopen(wget_tcp_t G_GNUC_WGET_UNUSED *tcp, int G_GNUC_WG
  *
  * You can enable and disable it with wget_tcp_set_tcp_fastopen().
  */
-int wget_tcp_get_tcp_fastopen(wget_tcp_t *tcp)
+char wget_tcp_get_tcp_fastopen(wget_tcp_t *tcp)
 {
 	return (tcp ? tcp : &_global_tcp)->tcp_fastopen;
 }
@@ -517,7 +517,7 @@ void wget_tcp_set_tls_false_start(wget_tcp_t *tcp, int false_start)
  *
  * You can enable and disable it with wget_tcp_set_tls_false_start().
  */
-int wget_tcp_get_tls_false_start(wget_tcp_t *tcp)
+char wget_tcp_get_tls_false_start(wget_tcp_t *tcp)
 {
 	return (tcp ? tcp : &_global_tcp)->tls_false_start;
 }

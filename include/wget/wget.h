@@ -1717,9 +1717,9 @@ WGETAPI void
 	wget_tcp_set_ssl_key_file(wget_tcp_t *tcp, const char *certfile, const char *keyfile);
 WGETAPI int
 	wget_tcp_get_dns_caching(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
-WGETAPI int
+WGETAPI char
 	wget_tcp_get_tcp_fastopen(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
-WGETAPI int
+WGETAPI char
 	wget_tcp_get_tls_false_start(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
 WGETAPI int
 	wget_tcp_get_family(wget_tcp_t *tcp) G_GNUC_WGET_PURE;

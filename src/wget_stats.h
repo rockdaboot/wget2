@@ -40,15 +40,15 @@ typedef struct {
 	const char
 		*hostname,
 		*version,
-		*false_start,
-		*tfo,
 		*alpn_proto;
 	long long
 		millisecs;
 	int
 		cert_chain_size;
 	char
-		tcp_protocol;
+		tcp_protocol,
+		false_start,
+		tfo;
 	bool
 		tls_con : 1,
 		resumed : 1;
@@ -58,10 +58,11 @@ typedef struct {
 	const char
 		*hostname,
 		*ip,
-		*scheme,
-		*hsts,
-		*csp,
-		*hpkp_new;
+		*scheme;
+	char
+		hsts,
+		csp,
+		hpkp_new;
 	wget_hpkp_stats_t
 		hpkp;
 } server_stats_t;

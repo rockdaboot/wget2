@@ -32,6 +32,11 @@
 #include "wget_host.h"
 
 #define NULL_TO_DASH(s) ((s) ? (s) : "-")
+#define ONE_ZERO_DASH(s) ((s) ? ((s) == 1 ? "1" : "-") : "0")
+#define ON_OFF_DASH(s) ((s) ? ((s) == 1 ? "On" : "-") : "Off")
+#define YES_NO(s) ((s) ? "Yes" : "No")
+#define HTTP_1_2(s) ((s) == WGET_PROTOCOL_HTTP_1_1 ? "HTTP/1.1" : ((s) == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"))
+#define HTTP_S_DASH(s) (strcmp(s, "http") ? (strcmp(s, "https") ? s : "1") : "0")
 
 static wget_vector_t
 	*dns_stats_v,
@@ -306,6 +311,9 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		dns_stats.host = wget_strdup(wget_tcp_get_stats_dns(WGET_STATS_DNS_HOST, stats));
 		dns_stats.ip = wget_strdup(wget_tcp_get_stats_dns(WGET_STATS_DNS_IP, stats));
 
+		dns_stats.host = NULL_TO_DASH(dns_stats.host);
+		dns_stats.ip = NULL_TO_DASH(dns_stats.ip);
+
 		if (wget_tcp_get_stats_dns(WGET_STATS_DNS_PORT, stats))
 			dns_stats.port = *((uint16_t *)wget_tcp_get_stats_dns(WGET_STATS_DNS_PORT, stats));
 
@@ -320,13 +328,21 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 	}
 
 	case WGET_STATS_TYPE_TLS: {
-		tls_stats_t tls_stats = { .resumed = -1, .tcp_protocol = -1, .millisecs = -1, .cert_chain_size = -1, .tls_con = -1 };
+		tls_stats_t tls_stats = { .false_start = -1, .tfo = -1, .tls_con = -1, .resumed = -1, .tcp_protocol = -1, .cert_chain_size = -1, .millisecs = -1 };
 
 		tls_stats.hostname = wget_strdup(wget_tcp_get_stats_tls(WGET_STATS_TLS_HOSTNAME, stats));
 		tls_stats.version = wget_strdup(wget_tcp_get_stats_tls(WGET_STATS_TLS_VERSION, stats));
-		tls_stats.false_start = wget_strdup(wget_tcp_get_stats_tls(WGET_STATS_TLS_FALSE_START, stats));
-		tls_stats.tfo = wget_strdup(wget_tcp_get_stats_tls(WGET_STATS_TLS_TFO, stats));
 		tls_stats.alpn_proto = wget_strdup(wget_tcp_get_stats_tls(WGET_STATS_TLS_ALPN_PROTO, stats));
+
+		tls_stats.hostname = NULL_TO_DASH(tls_stats.hostname);
+		tls_stats.version = NULL_TO_DASH(tls_stats.version);
+		tls_stats.alpn_proto = NULL_TO_DASH(tls_stats.alpn_proto);
+
+		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_FALSE_START, stats))
+			tls_stats.false_start = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_FALSE_START, stats));
+
+		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_TFO, stats))
+			tls_stats.tfo = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_TFO, stats));
 
 		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_CON, stats))
 			tls_stats.tls_con = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_CON, stats));
@@ -351,14 +367,24 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 	}
 
 	case WGET_STATS_TYPE_SERVER: {
-		server_stats_t server_stats = { .hpkp = WGET_STATS_HPKP_NO };
+		server_stats_t server_stats = { .hpkp_new = -1, .hsts = -1, .csp = -1, .hpkp = WGET_STATS_HPKP_NO };
 
 		server_stats.hostname = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HOSTNAME, stats));
 		server_stats.ip = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_IP, stats));
 		server_stats.scheme = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_SCHEME, stats));
-		server_stats.hpkp_new = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats));
-		server_stats.hsts = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats));
-		server_stats.csp = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats));
+
+		server_stats.hostname = NULL_TO_DASH(server_stats.hostname);
+		server_stats.ip = NULL_TO_DASH(server_stats.ip);
+		server_stats.scheme = NULL_TO_DASH(server_stats.scheme);
+
+		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats))
+			server_stats.hpkp_new = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats));
+
+		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats))
+			server_stats.hsts = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats));
+
+		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats))
+			server_stats.csp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats));
 
 		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats))
 			server_stats.hpkp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats));
@@ -374,6 +400,7 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		ocsp_stats_t ocsp_stats = { .nvalid = -1, .nrevoked = -1, .nignored = -1 };
 
 		ocsp_stats.hostname = wget_strdup(wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_HOSTNAME, stats));
+		ocsp_stats.hostname = NULL_TO_DASH(ocsp_stats.hostname);
 
 		if (wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_VALID, stats))
 			ocsp_stats.nvalid = *((int *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_VALID, stats));
@@ -414,8 +441,6 @@ static void free_tls_stats(tls_stats_t *stats)
 	if (stats) {
 		xfree(stats->hostname);
 		xfree(stats->version);
-		xfree(stats->false_start);
-		xfree(stats->tfo);
 		xfree(stats->alpn_proto);
 	}
 }
@@ -426,9 +451,6 @@ static void free_server_stats(server_stats_t *stats)
 		xfree(stats->hostname);
 		xfree(stats->ip);
 		xfree(stats->scheme);
-		xfree(stats->hsts);
-		xfree(stats->csp);
-		xfree(stats->hpkp_new);
 	}
 }
 
@@ -558,6 +580,17 @@ static int hosts_hashmap(struct site_stats *ctx, HOST *host)
 	return 0;
 }
 
+static void _print_site_stats(wget_buffer_t *buf, FILE *fp)
+{
+	struct site_stats ctx = { .buf = buf, .fp = fp};
+
+	wget_thread_mutex_lock(hosts_mutex);
+	wget_hashmap_browse(hosts, (wget_hashmap_browse_t) hosts_hashmap, &ctx);
+	wget_thread_mutex_unlock(hosts_mutex);
+
+	fprintf(fp, "%s", buf->data);
+}
+
 static int print_treeish(struct site_stats *ctx, TREE_DOCS *node)
 {
 	if (node) {
@@ -597,32 +630,20 @@ static int hosts_hashmap_tree(struct site_stats *ctx, HOST *host)
 	return 0;
 }
 
-static void _print_site_stats(wget_buffer_t *buf, FILE *fp)
-{
-	struct site_stats ctx = { .buf = buf, .fp = fp};
-
-	wget_thread_mutex_lock(hosts_mutex);
-	wget_hashmap_browse(hosts, (wget_hashmap_browse_t) hosts_hashmap, &ctx);
-	wget_thread_mutex_unlock(hosts_mutex);
-
-	fprintf(fp, "%s", buf->data);
-}
-
 static void stats_print_csv_site_entry(struct site_stats_cvs_json *ctx, TREE_DOCS *node)
 {
-	wget_buffer_printf_append(ctx->buf, "%s://%s,%s,%d,%d,%d,%d,%lld,%lld,%d\n",
-			ctx->host->scheme, ctx->host->host, node->iri->uri, node->doc->status, ctx->id, ctx->parent_id, !node->redirect,
+	wget_buffer_printf_append(ctx->buf, "%s,%d,%d,%d,%d,%lld,%lld,%d\n",
+			node->iri->uri, node->doc->status, ctx->id, ctx->parent_id, !node->redirect,
 			node->doc->size_downloaded, node->doc->size_decompressed, node->doc->encoding);
-
 }
 
 static void stats_print_json_site_entry(struct site_stats_cvs_json *ctx, TREE_DOCS *node)
 {
 	if (ctx->id > 1)
 		wget_buffer_printf_append(ctx->buf, ",\n");
+
 	wget_buffer_printf_append(ctx->buf, "%.*s{\n", ctx->ntabs + 1, tabs);
-	wget_buffer_printf_append(ctx->buf, "%.*s\"Host\" : \"%s://%s\",\n", ctx->ntabs + 2, tabs, ctx->host->scheme, ctx->host->host);
-	wget_buffer_printf_append(ctx->buf, "%.*s\"IRI\" : \"%s\",\n", ctx->ntabs + 2, tabs, node->iri->uri);
+	wget_buffer_printf_append(ctx->buf, "%.*s\"URL\" : \"%s\",\n", ctx->ntabs + 2, tabs, node->iri->uri);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Status\" : %d,\n", ctx->ntabs + 2, tabs, node->doc->status);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"ID\" : %d,\n", ctx->ntabs + 2, tabs, ctx->id);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"ParentID\" : %d,\n", ctx->ntabs + 2, tabs, ctx->parent_id);
@@ -631,7 +652,6 @@ static void stats_print_json_site_entry(struct site_stats_cvs_json *ctx, TREE_DO
 	wget_buffer_printf_append(ctx->buf, "%.*s\"SizeDecompressed\" : %lld,\n", ctx->ntabs + 2, tabs, node->doc->size_decompressed);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Encoding\" : \"%d\"\n", ctx->ntabs + 2, tabs, node->doc->encoding);
 	wget_buffer_printf_append(ctx->buf, "%.*s}", ctx->ntabs + 1, tabs);
-
 }
 
 static int print_csv_json(struct site_stats_cvs_json *ctx, TREE_DOCS *node)
@@ -687,13 +707,13 @@ G_GNUC_WGET_PURE static const char *stats_server_hpkp(wget_hpkp_stats_t hpkp)
 {
 	switch (hpkp) {
 	case WGET_STATS_HPKP_NO:
-		return "No existing entry in hpkp db";
+		return "HPKP_NO";
 	case WGET_STATS_HPKP_MATCH:
-		return "Pubkey pinning matched";
+		return "HPKP_MATCH";
 	case WGET_STATS_HPKP_NOMATCH:
-		return "Pubkey pinning mismatch";
+		return "HPKP_NOMATCH";
 	case WGET_STATS_HPKP_ERROR:
-		return "Pubkey pinning error";
+		return "HPKP_ERROR";
 	default:
 		error_printf("Unknown HPKP stats type %d\n", (int) hpkp);
 		return "-";
@@ -704,16 +724,16 @@ static void stats_print_human_dns_entry(struct json_stats *ctx, const dns_stats_
 {
 	wget_buffer_printf_append(ctx->buf, "  %4lld %s:%hu (%s)\n",
 		dns_stats->millisecs,
-		NULL_TO_DASH(dns_stats->host),
+		dns_stats->host,
 		dns_stats->port,
-		NULL_TO_DASH(dns_stats->ip));
+		dns_stats->ip);
 }
 
 static void stats_print_json_dns_entry(struct json_stats *ctx, const dns_stats_t *dns_stats)
 {
 	wget_buffer_printf_append(ctx->buf, "%.*s{\n", ctx->ntabs + 1, tabs);
-	wget_buffer_printf_append(ctx->buf, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(dns_stats->host));
-	wget_buffer_printf_append(ctx->buf, "%.*s\"IP\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(dns_stats->ip));
+	wget_buffer_printf_append(ctx->buf, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, dns_stats->host);
+	wget_buffer_printf_append(ctx->buf, "%.*s\"IP\" : \"%s\",\n", ctx->ntabs + 2, tabs, dns_stats->ip);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Port\" : %hu,\n", ctx->ntabs + 2, tabs, dns_stats->port);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Duration\" : %lld\n", ctx->ntabs + 2, tabs, dns_stats->millisecs);
 	if (ctx->last)
@@ -725,25 +745,21 @@ static void stats_print_json_dns_entry(struct json_stats *ctx, const dns_stats_t
 static void stats_print_csv_dns_entry(struct json_stats *ctx, const dns_stats_t *dns_stats)
 {
 	wget_buffer_printf_append(ctx->buf, "%s,%s,%hu,%lld\n",
-		NULL_TO_DASH(dns_stats->host),
-		NULL_TO_DASH(dns_stats->ip),
+		dns_stats->host,
+		dns_stats->ip,
 		dns_stats->port,
 		dns_stats->millisecs);
 }
 
 static void stats_print_human_tls_entry(struct json_stats *ctx, const tls_stats_t *tls_stats)
 {
-	wget_buffer_printf_append(ctx->buf, "  %s:\n", NULL_TO_DASH(tls_stats->hostname));
-	wget_buffer_printf_append(ctx->buf, "    Version         : %s\n", NULL_TO_DASH(tls_stats->version));
-	wget_buffer_printf_append(ctx->buf, "    False Start     : %s\n", NULL_TO_DASH(tls_stats->false_start));
-	wget_buffer_printf_append(ctx->buf, "    TFO             : %s\n", NULL_TO_DASH(tls_stats->tfo));
-	wget_buffer_printf_append(ctx->buf, "    ALPN Protocol   : %s\n", NULL_TO_DASH(tls_stats->alpn_proto));
-	wget_buffer_printf_append(ctx->buf, "    Resumed         : %s\n",
-		tls_stats->resumed ? (tls_stats->resumed == 1 ? "Yes" : "-") : "No");
-	wget_buffer_printf_append(ctx->buf, "    TCP Protocol    : %s\n",
-		tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_1_1 ?
-			"HTTP/1.1" :
-			(tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"));
+	wget_buffer_printf_append(ctx->buf, "  %s:\n", tls_stats->hostname);
+	wget_buffer_printf_append(ctx->buf, "    Version         : %s\n", tls_stats->version);
+	wget_buffer_printf_append(ctx->buf, "    False Start     : %s\n", ON_OFF_DASH(tls_stats->false_start));
+	wget_buffer_printf_append(ctx->buf, "    TFO             : %s\n", ON_OFF_DASH(tls_stats->tfo));
+	wget_buffer_printf_append(ctx->buf, "    ALPN Protocol   : %s\n", tls_stats->alpn_proto);
+	wget_buffer_printf_append(ctx->buf, "    Resumed         : %s\n", YES_NO(tls_stats->resumed));
+	wget_buffer_printf_append(ctx->buf, "    TCP Protocol    : %s\n", HTTP_1_2(tls_stats->tcp_protocol));
 	wget_buffer_printf_append(ctx->buf, "    Cert Chain Size : %d\n", tls_stats->cert_chain_size);
 	wget_buffer_printf_append(ctx->buf, "    TLS negotiation\n");
 	wget_buffer_printf_append(ctx->buf, "    duration (ms)   : %lld\n\n", tls_stats->millisecs);
@@ -752,17 +768,13 @@ static void stats_print_human_tls_entry(struct json_stats *ctx, const tls_stats_
 static void stats_print_json_tls_entry(struct json_stats *ctx, const tls_stats_t *tls_stats)
 {
 	wget_buffer_printf_append(ctx->buf, "%.*s{\n", ctx->ntabs + 1, tabs);
-	wget_buffer_printf_append(ctx->buf, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(tls_stats->hostname));
-	wget_buffer_printf_append(ctx->buf, "%.*s\"TLSVersion\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(tls_stats->version));
-	wget_buffer_printf_append(ctx->buf, "%.*s\"FalseStart\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(tls_stats->false_start));
-	wget_buffer_printf_append(ctx->buf, "%.*s\"TFO\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(tls_stats->tfo));
-	wget_buffer_printf_append(ctx->buf, "%.*s\"ALPN\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(tls_stats->alpn_proto));
-	wget_buffer_printf_append(ctx->buf, "%.*s\"Resumed\" : \"%s\",\n", ctx->ntabs + 2, tabs,
-		tls_stats->resumed ? (tls_stats->resumed == 1 ? "Yes" : "-") : "No");
-	wget_buffer_printf_append(ctx->buf, "%.*s\"HTTPVersion\" : \"%s\",\n", ctx->ntabs + 2, tabs,
-		tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_1_1 ?
-			"HTTP/1.1" :
-			(tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"));
+	wget_buffer_printf_append(ctx->buf, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, tls_stats->hostname);
+	wget_buffer_printf_append(ctx->buf, "%.*s\"TLSVersion\" : \"%s\",\n", ctx->ntabs + 2, tabs, tls_stats->version);
+	wget_buffer_printf_append(ctx->buf, "%.*s\"FalseStart\" : \"%s\",\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(tls_stats->false_start));
+	wget_buffer_printf_append(ctx->buf, "%.*s\"TFO\" : \"%s\",\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(tls_stats->tfo));
+	wget_buffer_printf_append(ctx->buf, "%.*s\"ALPN\" : \"%s\",\n", ctx->ntabs + 2, tabs, tls_stats->alpn_proto);
+	wget_buffer_printf_append(ctx->buf, "%.*s\"Resumed\" : \"%s\",\n", ctx->ntabs + 2, tabs, YES_NO(tls_stats->resumed));
+	wget_buffer_printf_append(ctx->buf, "%.*s\"HTTPVersion\" : \"%s\",\n", ctx->ntabs + 2, tabs, HTTP_1_2(tls_stats->tcp_protocol));
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Certificates\" : %d,\n", ctx->ntabs + 2, tabs, tls_stats->cert_chain_size);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Duration\" : %lld\n", ctx->ntabs + 2, tabs, tls_stats->millisecs);
 	if (ctx->last)
@@ -774,40 +786,39 @@ static void stats_print_json_tls_entry(struct json_stats *ctx, const tls_stats_t
 static void stats_print_csv_tls_entry(struct json_stats *ctx, const tls_stats_t *tls_stats)
 {
 	wget_buffer_printf_append(ctx->buf, "%s,%s,%s,%s,%s,%s,%s,%d,%lld\n",
-		NULL_TO_DASH(tls_stats->hostname),
-		NULL_TO_DASH(tls_stats->version),
-		NULL_TO_DASH(tls_stats->false_start),
-		NULL_TO_DASH(tls_stats->tfo),
-		NULL_TO_DASH(tls_stats->alpn_proto),
-		tls_stats->resumed ? (tls_stats->resumed == 1 ? "Yes" : "-") : "No",
+		tls_stats->hostname,
+		tls_stats->version,
+		ONE_ZERO_DASH(tls_stats->false_start),
+		ONE_ZERO_DASH(tls_stats->tfo),
+		tls_stats->alpn_proto,
+		tls_stats->resumed ? "1" : "0",
 		tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_1_1 ?
-			"HTTP/1.1" :
-			(tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"),
+			"1" : (tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_2_0 ? "2" : "-"),
 		tls_stats->cert_chain_size,
 		tls_stats->millisecs);
 }
 
 static void stats_print_human_server_entry(struct json_stats *ctx, const server_stats_t *server_stats)
 {
-	wget_buffer_printf_append(ctx->buf, "  %s:\n", NULL_TO_DASH(server_stats->hostname));
-	wget_buffer_printf_append(ctx->buf, "    IP             : %s\n", NULL_TO_DASH(server_stats->ip));
-	wget_buffer_printf_append(ctx->buf, "    Scheme         : %s\n", NULL_TO_DASH(server_stats->scheme));
+	wget_buffer_printf_append(ctx->buf, "  %s:\n", server_stats->hostname);
+	wget_buffer_printf_append(ctx->buf, "    IP             : %s\n", server_stats->ip);
+	wget_buffer_printf_append(ctx->buf, "    Scheme         : %s\n", server_stats->scheme);
 	wget_buffer_printf_append(ctx->buf, "    HPKP           : %s\n", stats_server_hpkp(server_stats->hpkp));
-	wget_buffer_printf_append(ctx->buf, "    HPKP New Entry : %s\n", NULL_TO_DASH(server_stats->hpkp_new));
-	wget_buffer_printf_append(ctx->buf, "    HSTS           : %s\n", NULL_TO_DASH(server_stats->hsts));
-	wget_buffer_printf_append(ctx->buf, "    CSP            : %s\n\n", NULL_TO_DASH(server_stats->csp));
+	wget_buffer_printf_append(ctx->buf, "    HPKP New Entry : %s\n", ON_OFF_DASH(server_stats->hpkp_new));
+	wget_buffer_printf_append(ctx->buf, "    HSTS           : %s\n", ON_OFF_DASH(server_stats->hsts));
+	wget_buffer_printf_append(ctx->buf, "    CSP            : %s\n\n", ON_OFF_DASH(server_stats->csp));
 }
 
 static void stats_print_json_server_entry(struct json_stats *ctx, const server_stats_t *server_stats)
 {
 	wget_buffer_printf_append(ctx->buf, "%.*s{\n", ctx->ntabs + 1, tabs);
-	wget_buffer_printf_append(ctx->buf, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(server_stats->hostname));
-	wget_buffer_printf_append(ctx->buf, "%.*s\"IP\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(server_stats->ip));
-	wget_buffer_printf_append(ctx->buf, "%.*s\"Scheme\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(server_stats->scheme));
+	wget_buffer_printf_append(ctx->buf, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, server_stats->hostname);
+	wget_buffer_printf_append(ctx->buf, "%.*s\"IP\" : \"%s\",\n", ctx->ntabs + 2, tabs, server_stats->ip);
+	wget_buffer_printf_append(ctx->buf, "%.*s\"Scheme\" : \"%s\",\n", ctx->ntabs + 2, tabs, HTTP_S_DASH(server_stats->scheme));
 	wget_buffer_printf_append(ctx->buf, "%.*s\"HPKP\" : \"%s\",\n", ctx->ntabs + 2, tabs, stats_server_hpkp(server_stats->hpkp));
-	wget_buffer_printf_append(ctx->buf, "%.*s\"NewHPKP\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(server_stats->hpkp_new));
-	wget_buffer_printf_append(ctx->buf, "%.*s\"HSTS\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(server_stats->hsts));
-	wget_buffer_printf_append(ctx->buf, "%.*s\"CSP\" : \"%s\"\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(server_stats->csp));
+	wget_buffer_printf_append(ctx->buf, "%.*s\"NewHPKP\" : \"%s\",\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(server_stats->hpkp_new));
+	wget_buffer_printf_append(ctx->buf, "%.*s\"HSTS\" : \"%s\",\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(server_stats->hsts));
+	wget_buffer_printf_append(ctx->buf, "%.*s\"CSP\" : \"%s\"\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(server_stats->csp));
 	if (ctx->last)
 		wget_buffer_printf_append(ctx->buf, "%.*s}\n", ctx->ntabs + 1, tabs);
 	else
@@ -817,13 +828,13 @@ static void stats_print_json_server_entry(struct json_stats *ctx, const server_s
 static void stats_print_csv_server_entry(struct json_stats *ctx, const server_stats_t *server_stats)
 {
 	wget_buffer_printf_append(ctx->buf, "%s,%s,%s,%s,%s,%s,%s\n",
-		NULL_TO_DASH(server_stats->hostname),
-		NULL_TO_DASH(server_stats->ip),
-		NULL_TO_DASH(server_stats->scheme),
+		server_stats->hostname,
+		server_stats->ip,
+		HTTP_S_DASH(server_stats->scheme),
 		stats_server_hpkp(server_stats->hpkp),
-		NULL_TO_DASH(server_stats->hpkp_new),
-		NULL_TO_DASH(server_stats->hsts),
-		NULL_TO_DASH(server_stats->csp));
+		ONE_ZERO_DASH(server_stats->hpkp_new),
+		ONE_ZERO_DASH(server_stats->hsts),
+		ONE_ZERO_DASH(server_stats->csp));
 }
 
 static void stats_print_human_ocsp_entry(struct json_stats *ctx, const ocsp_stats_t *ocsp_stats)
@@ -837,7 +848,7 @@ static void stats_print_human_ocsp_entry(struct json_stats *ctx, const ocsp_stat
 static void stats_print_json_ocsp_entry(struct json_stats *ctx, const ocsp_stats_t *ocsp_stats)
 {
 	wget_buffer_printf_append(ctx->buf, "%.*s{\n", ctx->ntabs + 1, tabs);
-	wget_buffer_printf_append(ctx->buf, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, NULL_TO_DASH(ocsp_stats->hostname));
+	wget_buffer_printf_append(ctx->buf, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, ocsp_stats->hostname);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Valid\" : %d,\n", ctx->ntabs + 2, tabs, ocsp_stats->nvalid);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Revoked\" : %d,\n", ctx->ntabs + 2, tabs, ocsp_stats->nrevoked);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Ignored\" : %d\n", ctx->ntabs + 2, tabs, ocsp_stats->nignored);
@@ -850,7 +861,7 @@ static void stats_print_json_ocsp_entry(struct json_stats *ctx, const ocsp_stats
 static void stats_print_csv_ocsp_entry(struct json_stats *ctx, const ocsp_stats_t *ocsp_stats)
 {
 	wget_buffer_printf_append(ctx->buf, "%s,%d,%d,%d\n",
-		NULL_TO_DASH(ocsp_stats->hostname), ocsp_stats->nvalid, ocsp_stats->nrevoked, ocsp_stats->nignored);
+		ocsp_stats->hostname, ocsp_stats->nvalid, ocsp_stats->nrevoked, ocsp_stats->nignored);
 }
 
 static void _stats_print(const wget_vector_t *v, wget_vector_browse_t browse, wget_buffer_t *buf, FILE *fp, int ntabs)
@@ -988,7 +999,7 @@ static void stats_print_csv(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp
 		break;
 
 	case WGET_STATS_TYPE_SERVER:
-		wget_buffer_printf(buf, "%s\n", "Hostname,HPKP,NewHPKP,HSTS,CSP");
+		wget_buffer_printf(buf, "%s\n", "Hostname,IP,Scheme,HPKP,NewHPKP,HSTS,CSP");
 		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_csv_server_entry, buf, fp, 0);
 		break;
 
@@ -998,7 +1009,7 @@ static void stats_print_csv(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp
 		break;
 
 	case WGET_STATS_TYPE_SITE:
-		wget_buffer_printf_append(buf, "Host,IRI,Status,ID,ParentID,Link,Size,SizeDecompressed,Encoding\n");
+		wget_buffer_printf_append(buf, "URL,Status,ID,ParentID,Link,Size,SizeDecompressed,Encoding\n");
 		print_site_stats_csv_json(buf, fp, WGET_STATS_FORMAT_CSV, 0);
 		break;
 
