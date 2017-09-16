@@ -75,6 +75,16 @@ int main(void)
 		0);
 
 	wget_test(
+		WGET_TEST_OPTIONS, "-r --cut-dirs=1",
+		WGET_TEST_REQUEST_URL, "subdir/page2.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "localhost/page2.html", urls[1].body },
+			{ NULL } },
+		0);
+
+	wget_test(
 		WGET_TEST_OPTIONS, "-r -nH --cut-dirs=1",
 		WGET_TEST_REQUEST_URL, "subdir/page2.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
@@ -89,6 +99,16 @@ int main(void)
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "page2.html", urls[1].body },
+			{ NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "-r --cut-dirs=2",
+		WGET_TEST_REQUEST_URL, "subdir/page2.html",
+		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "localhost/page2.html", urls[1].body },
 			{ NULL } },
 		0);
 
