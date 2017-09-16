@@ -120,8 +120,6 @@ struct _dns_entry {
 		host;
 	struct addrinfo *
 		addrinfo;
-	uint16_t
-		port;
 };
 
 static struct wget_tcp_st _global_tcp = {
@@ -145,10 +143,10 @@ static wget_vector_t
 static wget_thread_mutex_t
 	dns_mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
-static struct addrinfo *_wget_dns_cache_get(const char *host, uint16_t port)
+static struct addrinfo *_wget_dns_cache_get(const char *host)
 {
 	if (dns_cache) {
-		struct _dns_entry *entryp, entry = { .host = host, .port = port };
+		struct _dns_entry *entryp, entry = { .host = host };
 		int index;
 
 		wget_thread_mutex_lock(&dns_mutex);
@@ -167,11 +165,6 @@ static struct addrinfo *_wget_dns_cache_get(const char *host, uint16_t port)
 
 static int G_GNUC_WGET_PURE _compare_addr(struct _dns_entry *a1, struct _dns_entry *a2)
 {
-	if (a1->port < a2->port)
-		return -1;
-	if (a1->port > a2->port)
-		return 1;
-
 	return wget_strcasecmp(a1->host, a2->host);
 }
 
@@ -180,7 +173,7 @@ static void _free_dns(struct _dns_entry *entry)
 	freeaddrinfo(entry->addrinfo);
 }
 
-static struct addrinfo * _wget_dns_cache_add(const char *host, uint16_t port, struct addrinfo *addrinfo)
+static struct addrinfo * _wget_dns_cache_add(const char *host, struct addrinfo *addrinfo)
 {
 	// insert addrinfo into dns cache
 	size_t hostlen = host ? strlen(host) + 1 : 0;
@@ -188,7 +181,6 @@ static struct addrinfo * _wget_dns_cache_add(const char *host, uint16_t port, st
 	int index;
 
 	if (host) {
-		entryp->port = port;
 		entryp->host = ((char *)entryp) + sizeof(struct _dns_entry);
 		memcpy((char *)entryp->host, host, hostlen); // ugly cast, but semantically ok
 	} else {
@@ -341,13 +333,13 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 	// get the IP address for the server
 	for (int tries = 0, max = 3; tries < max; tries++) {
 		if (tcp->caching) {
-			if ((addrinfo = _wget_dns_cache_get(host, port)))
+			if ((addrinfo = _wget_dns_cache_get(host)))
 				return addrinfo;
 
 			// prevent multiple address resolutions of the same host
 			wget_thread_mutex_lock(&mutex);
 			// now try again
-			if ((addrinfo = _wget_dns_cache_get(host, port))) {
+			if ((addrinfo = _wget_dns_cache_get(host))) {
 				wget_thread_mutex_unlock(&mutex);
 				return addrinfo;
 			}
@@ -396,7 +388,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 		 * In case of a race condition the already existing addrinfo is returned.
 		 * The addrinfo argument given to _wget_dns_cache_add() will be freed in this case.
 		 */
-		addrinfo = _wget_dns_cache_add(host, port, addrinfo);
+		addrinfo = _wget_dns_cache_add(host, addrinfo);
 		wget_thread_mutex_unlock(&mutex);
 	}
 
