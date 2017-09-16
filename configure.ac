@@ -549,15 +549,14 @@ AM_CONDITIONAL([WITH_LIBIDN], [test "x$with_libidn" = xyes])
 AC_ARG_WITH(libmicrohttpd, AS_HELP_STRING([--without-libmicrohttpd], [disable support for libmicrohttpd]), with_libmicrohttpd=$withval, with_libmicrohttpd=yes)
 AS_IF([test "x$with_libmicrohttpd" != xno], [
   PKG_CHECK_MODULES(MICROHTTPD, [libmicrohttpd], [
-     with_libmicrohttpd=yes
      TEST_LIBS="$MICROHTTPD_LIBS $TEST_LIBS"
      TEST_CFLAGS="$MICROHTTPD_CFLAGS $TEST_CFLAGS"
-     AC_DEFINE([WITH_MICROHTTPD], [1], [Use Libmicrohttpd])
-  ], [
-	 with_libmicrohttpd=no
-	 AC_MSG_WARN(*** GNU Libmicrohttpd was not found. You will not be able to run the test suite.)]
+     AC_DEFINE([WITH_MICROHTTPD], [1], [Use Libmicrohttpd])],
+	 [AC_MSG_WARN(*** GNU Libmicrohttpd was not found. You will not be able to run the test suite.)]
   )
-])
+], [
+	AC_MSG_WARN(*** Building without MHD. Most tests will not run)
+	])
 AM_CONDITIONAL([WITH_MICROHTTPD], [test "x$with_libmicrohttpd" = xyes])
 
 # Check for plugin support
