@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <c-ctype.h>
 
 #include <wget.h>
 #include "private.h"
@@ -120,6 +121,9 @@ static void _add_file_hash(_metalink_context_t *ctx, const char *value)
 
 static void _add_mirror(_metalink_context_t *ctx, const char *value)
 {
+	while (c_isspace(*value))
+		value++;
+
 	if (wget_strncasecmp_ascii(value, "http:", 5) && wget_strncasecmp_ascii(value, "https:", 6))
 		return;
 
