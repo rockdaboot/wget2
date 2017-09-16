@@ -1030,8 +1030,9 @@ const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer_t *
  *
  * Get the path part of the provided IRI.
  *
- * The path is copied into \p buf if it's empty. If the buffer \p buf is not empty,
- * it is appended to it after a path separator (`/`).
+ * The path is appended to \p buf. If \p buf is non-empty and does not end with
+ * a path separator (`/`), then one is added before the path is appended to \p
+ * buf.
  *
  * If \p encoding is provided, this function will try to convert the path (which is originally
  * in UTF-8) to that encoding.
@@ -1039,7 +1040,7 @@ const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer_t *
 
 char *wget_iri_get_path(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding)
 {
-	if (buf->length)
+	if (buf->length != 0 && buf->data[buf->length - 1] != '/')
 		wget_buffer_memcat(buf, "/", 1);
 
 	if (iri->path) {

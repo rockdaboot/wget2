@@ -247,8 +247,10 @@ const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
 			wget_buffer_memcat(&buf, "/", 1);
 		}
 
-		if (config.host_directories && iri->host && *iri->host)
+		if (config.host_directories && iri->host && *iri->host) {
 			wget_buffer_strcat(&buf, iri->host);
+			wget_buffer_memcat(&buf, "/", 1);
+		}
 
 		if (config.cut_directories) {
 			// cut directories
