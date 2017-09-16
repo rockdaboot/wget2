@@ -137,8 +137,8 @@ MinGW64:
      && make -j$(nproc)
      && make install )
   - ./bootstrap
-  - export CXX=$PREFIX-g++
-  - export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;$PWD/libwget/.libs"
+#  - export CXX=$PREFIX-g++
+  - export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs"
   - ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --enable-static
   - make clean
   - make -j$(nproc)
