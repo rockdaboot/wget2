@@ -1268,7 +1268,7 @@ static void add_statistics(wget_http_response_t *resp)
 
 	if (config.stats_site) {
 		wget_iri_t *parent_iri = job->redirection_level ? job->original_url : job->referer;
-		stats_tree_docs_add(parent_iri, iri, (job == job->host->robot_job), (bool)job->redirection_level, stats_docs_add(iri, resp));
+		stats_tree_docs_add(parent_iri, iri, resp, (job == job->host->robot_job), (bool)job->redirection_level, stats_docs_add(iri, resp));
 	}
 }
 

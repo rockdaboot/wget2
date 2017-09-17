@@ -218,19 +218,26 @@ DOC *stats_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
 		doc = wget_calloc(1, sizeof(DOC));
 		doc->iri = iri;
 		doc->status = resp->code;
+		doc->encoding = resp->content_encoding;
+		if (!wget_strcasecmp_ascii(resp->req->method, "HEAD"))
+			doc->head_req = true;
 		wget_hashmap_put_noalloc(docs, doc->iri, doc);
 	}
 
-	doc->size_downloaded = resp->cur_downloaded;
-	doc->size_decompressed = resp->body->length;
-	doc->encoding = resp->content_encoding;
+	if (resp->code == 206) { // --chunk-size
+		doc->size_downloaded += resp->cur_downloaded;
+		doc->size_decompressed += resp->body->length;
+	} else { // second GET after first HEAD for --spider
+		doc->size_downloaded = resp->cur_downloaded;
+		doc->size_decompressed = resp->body->length;
+	}
 
 	wget_thread_mutex_unlock(&host_docs_mutex);
 
 	return doc;
 }
 
-TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool robot_iri, bool redirect, DOC *doc)
+TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, wget_http_response_t *resp, bool robot_iri, bool redirect, DOC *doc)
 {
 	HOST *hostp = NULL;
 	wget_hashmap_t *tree_docs;
@@ -276,8 +283,13 @@ TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, bool rob
 		child_node->redirect = redirect;
 		wget_hashmap_put_noalloc(tree_docs, child_node->iri, child_node);
 	} else {
-//		error_printf("Existing entry for iri->uri = %s in tree_docs hashmap of host %s://%s\n", iri->uri, hostp->scheme, hostp->host);
-		goto out;
+		if (child_node->doc->head_req && wget_strcasecmp_ascii(resp->req->method, "HEAD")) {
+			child_node->doc = doc;
+			child_node->redirect = redirect;
+		} else {
+			// error_printf("Existing entry for iri->uri = %s in tree_docs hashmap of host %s://%s\n", iri->uri, hostp->scheme, hostp->host);
+			goto out;
+		}
 	}
 
 	if (parent_iri)

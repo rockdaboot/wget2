@@ -42,7 +42,6 @@ typedef struct {
 		*iri;
 	DOC *doc;
 	bool
-		robot_iri,
 		redirect;
 	wget_vector_t
 		*children;
@@ -92,6 +91,8 @@ struct DOC {
 	long long
 		size_downloaded,
 		size_decompressed;
+	bool
+		head_req;
 	char
 		encoding;
 	time_t
