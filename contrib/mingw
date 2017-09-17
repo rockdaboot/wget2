@@ -8,15 +8,89 @@ export CC=$PREFIX-gcc
 export CXX=$PREFIX-g++
 export CPP=$PREFIX-cpp
 export RANLIB=$PREFIX-ranlib
-export PATH="/usr/$PREFIX/bin:$PATH"
+#export PATH="/usr/$PREFIX/bin:$PATH"
 
-export INSTALLDIR="/usr/local/$PREFIX"
+export INSTALLDIR="$PWD/$PREFIX"
 export PKG_CONFIG_PATH=$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig
 export CPPFLAGS="-I$INSTALLDIR/include"
 export LDFLAGS="-L$INSTALLDIR/lib"
 
 # let mingw compiler be less verbose
 export CFLAGS="-O2 -Wall -Wno-format"
+
+if [ ! -d libunistring ]; then
+  git clone https://git.savannah.gnu.org/git/libunistring.git
+  cd libunistring
+else
+  cd libunistring
+  git pull
+fi
+./autogen.sh
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-static --enable-shared --prefix=$INSTALLDIR
+make clean
+make -j$(nproc)
+make install
+cd ..
+
+if [ ! -d libidn2 ]; then
+  git clone https://gitlab.com/libidn/libidn2.git
+  cd libidn2
+else
+  cd libidn2
+  git pull
+fi
+./bootstrap
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --disable-doc --disable-gcc-warnings --prefix=$INSTALLDIR
+make clean
+make -j$(nproc)
+make install
+cd ..
+
+### libpsl currently doesn't build on MinGW
+#if [ ! -d libpsl ]; then
+#  git clone --recursive https://github.com/rockdaboot/libpsl.git
+#  cd libpsl
+#else
+#  cd libpsl
+#  git pull
+#fi
+#./autogen.sh
+#./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --disable-gtk-doc --enable-runtime=libidn2 --enable-builtin=libidn2 --prefix=$INSTALLDIR
+#make clean
+#make -j$(nproc)
+#make install
+#cd ..
+
+if [ ! -d nettle ]; then
+  git clone https://git.lysator.liu.se/nettle/nettle.git
+  cd nettle
+else
+  cd nettle
+  git pull
+fi
+bash .bootstrap
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-mini-gmp --enable-shared --disable-documentation --prefix=$INSTALLDIR
+make clean
+make -j$(nproc)
+make install
+cd ..
+
+if [ ! -d gnutls ]; then
+  git clone --depth=1 https://gitlab.com/gnutls/gnutls.git
+  cd gnutls
+else
+  cd gnutls
+  git pull
+fi
+#make bootstrap
+make autoreconf && touch .submodule.stamp
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX \
+  --with-nettle-mini --enable-gcc-warnings --enable-shared --disable-static --with-included-libtasn1 \
+  --with-included-unistring --without-p11-kit --disable-doc --disable-tests --disable-tools --disable-cxx \
+  --disable-maintainer-mode --disable-libdane --prefix=$INSTALLDIR --disable-hardware-acceleration
+make -j$(nproc)
+make install
+cd ..
 
 # Install Libmicrohttpd from source
 if [ ! -d libmicrohttpd ]; then
@@ -27,33 +101,17 @@ else
   git pull
 fi
 ./bootstrap
-./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-doc --disable-examples --enable-shared --enable-static
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-doc --disable-examples --enable-shared
 make clean
 make -j$(nproc)
-sudo make install
+make install
 cd ..
 
-# compile & install dependencies first (example: libidn)
-# apt-get source libidn
-# cd libidn-*
-# ./configure --host=$PREFIX
-# make
-# sudo make install
-# rm -rf libidn-*
-
-export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$HOME/src/wget2/libwget/.libs"
+# somehow, the GnuTLS build needs a static gcc library. It comes with MinGW, but we have to find it's directory.
+GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|head -1))
+export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$HOME/src/wget2/libwget/.libs;$GCCLIB"
 ./bootstrap
-./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --enable-static
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
 make clean
 make -j$(nproc)
 make check -j$(nproc) LOG_COMPILER=wine
-
-# Alternatively, add the library path for wine in ~/.wine/system.reg:
-# search for
-#   [System\\CurrentControlSet\\Control\\Session Manager\\Environment]
-# within this section you'll find a PATH variable
-#   "PATH"=str(2):"C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\wbem"
-# add your path like e.g.
-#   "PATH"=str(2):"C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\wbem;Z:\\usr\\x86_64-w64-mingw32\\lib"
-#
-# Now wine is able to find the mingw DLLs.
