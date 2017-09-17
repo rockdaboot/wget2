@@ -126,7 +126,7 @@ int main(void)
 	//
 	// MinGW+Wine succeeds: TESTS_ENVIRONMENT="LC_ALL=de_DE.UTF-8" make check TESTS=test-iri
 	// MinGW+Wine fails: TESTS_ENVIRONMENT="LC_ALL=C" make check TESTS=test-iri
-	return 77;
+	return WGET_TEST_EXIT_SKIP;
 #endif
 
 	char request_header[256];
@@ -134,6 +134,7 @@ int main(void)
 	// functions won't come back if an error occurs
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
+		WGET_TEST_FEATURE_MHD,
 		0);
 
 	// test-iri

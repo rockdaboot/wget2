@@ -94,8 +94,10 @@ int main(void)
 		}
 	};
 
-	wget_test_start_server
-		(WGET_TEST_RESPONSE_URLS, &urls, countof(urls), 0);
+	wget_test_start_server(
+			WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
+			WGET_TEST_FEATURE_MHD,
+			0);
 
 	// test-c-r with no existing files
 	wget_test(

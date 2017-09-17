@@ -191,13 +191,11 @@ int main(void)
 		}
 	};
 
-	// Skip when plugin support is not available
-#ifndef PLUGIN_SUPPORT
-	return 77;
-#endif
-
-	wget_test_start_server
-		(WGET_TEST_RESPONSE_URLS, &urls, countof(urls), 0);
+	wget_test_start_server(
+			WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
+			WGET_TEST_FEATURE_MHD,
+			WGET_TEST_FEATURE_PLUGIN,
+			0);
 
 	// Check whether --plugin= works
 	wget_test(

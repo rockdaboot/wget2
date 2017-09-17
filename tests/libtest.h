@@ -51,6 +51,8 @@
 extern "C" {
 #endif
 
+#define WGET_TEST_EXIT_SKIP 77
+
 // defines for wget_test_start_http_server()
 #define WGET_TEST_EXPECTED_REQUEST_HEADER 1001
 #define WGET_TEST_RESPONSE_URLS 1002
@@ -58,6 +60,10 @@ extern "C" {
 #define WGET_TEST_FTP_IO_ORDERED 1004
 #define WGET_TEST_FTP_SERVER_HELLO 1005
 #define WGET_TEST_FTPS_IMPLICIT 1006
+#define WGET_TEST_FEATURE_MHD 1101
+#define WGET_TEST_FEATURE_TLS 1102
+#define WGET_TEST_FEATURE_IDN 1103
+#define WGET_TEST_FEATURE_PLUGIN 1104
 
 // defines for wget_test()
 #define WGET_TEST_REQUEST_URL 2001

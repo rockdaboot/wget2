@@ -81,6 +81,7 @@ int main(void)
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		WGET_TEST_FTP_IO_UNORDERED, &io, countof(io),
+		WGET_TEST_FEATURE_FTP,
 		0);
 
 	char options[128];

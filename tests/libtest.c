@@ -895,7 +895,7 @@ void wget_test_start_server(int first_key, ...)
 	/* Skip any test that use this function if threads are not present.  */
 	if (!wget_thread_support()) {
 		wget_error_printf("THREADS NOT SUPPORTED: Skip\n");
-		exit(77);
+		exit(WGET_TEST_EXIT_SKIP);
 	}
 
 	wget_global_init(
@@ -942,6 +942,30 @@ void wget_test_start_server(int first_key, ...)
 			break;
 		case WGET_TEST_SERVER_SEND_CONTENT_LENGTH:
 			server_send_content_length = !!va_arg(args, int);
+			break;
+		case WGET_TEST_FEATURE_MHD:
+#ifndef WITH_MICROHTTPD
+			wget_error_printf(_("Test needs Libmicrohttpd. Skipping\n"));
+			exit(WGET_TEST_EXIT_SKIP);
+#endif
+			break;
+		case WGET_TEST_FEATURE_TLS:
+#ifndef WITH_GNUTLS
+			wget_error_printf(_("Test requires TLS. Skipping\n"));
+			exit(WGET_TEST_EXIT_SKIP);
+#endif
+			break;
+		case WGET_TEST_FEATURE_IDN:
+#if !defined WITH_LIBIDN && !defined WITH_LIBIDN2
+			wget_error_printf(_("Support for LibIDN not found. Skipping\n"));
+			exit(WGET_TEST_EXIT_SKIP);
+#endif
+			break;
+		case WGET_TEST_FEATURE_PLUGIN:
+#ifndef PLUGIN_SUPPORT
+			wget_error_printf(_("Plugin Support Disabled. Skipping\n"));
+			exit(WGET_TEST_EXIT_SKIP);
+#endif
 			break;
 		default:
 			wget_error_printf(_("Unknown option %d\n"), key);

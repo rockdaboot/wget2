@@ -33,7 +33,7 @@
 int main(void)
 {
 	// functions won't come back if an error occurs
-	wget_test_start_server(0);
+	wget_test_start_server(WGET_TEST_FEATURE_MHD, 0);
 
 	// test-i
 	wget_test(

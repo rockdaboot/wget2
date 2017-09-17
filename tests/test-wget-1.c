@@ -153,6 +153,7 @@ int main(void)
 	// functions won't come back if an error occurs
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
+		WGET_TEST_FEATURE_MHD,
 		0);
 
 	// some tests are not working on file systems that mangle filenames to lower- or uppercase

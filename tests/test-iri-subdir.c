@@ -59,12 +59,13 @@ int main(void)
 	/* Tilde '~' in SHIFT_JIS should be translated to '‾' in UTF-8 and vice versa.
 	 * The MinGW libiconv seems to have a bug, it simply doesn't translate it.
 	 */
-	return 77;
+	return WGET_TEST_EXIT_SKIP;
 #endif
 
 	// functions won't come back if an error occurs
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
+		WGET_TEST_FEATURE_MHD,
 		0);
 
 	// test-iri-disabled
