@@ -61,8 +61,6 @@ Debian GNU/Linux build:
 clang/Fedora:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
-    - export CC=clang
-    - export CXX=clang++
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
@@ -75,7 +73,10 @@ clang/Fedora:
     expire_in: 2 weeks
     when: on_failure
     paths:
-      - tests/*
+      - ./*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
 
 #Centos7 build:
 #  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$CENTOS7_BUILD
