@@ -44,9 +44,7 @@
 #include <wget.h>
 #include "libtest.h"
 
-#ifdef WITH_MICROHTTPD
-	#include <microhttpd.h>
-#endif
+#include <microhttpd.h>
 
 #include <sys/types.h>
 #include <sys/select.h>
@@ -89,12 +87,10 @@ static const char
 static char
 	server_send_content_length = 1;
 
-#ifdef WITH_MICROHTTPD
 // MHD_Daemon instance
 static struct MHD_Daemon
 	*httpdaemon,
 	*httpsdaemon;
-#endif
 
 // for passing URL query string
 struct query_string {
@@ -118,7 +114,6 @@ static void sigterm_handler(int sig G_GNUC_WGET_UNUSED)
 	terminate = 1;
 }
 
-#ifdef WITH_MICROHTTPD
 static char *_scan_directory(const char* data)
 {
 	char *path = strchr(data, '/');
@@ -144,10 +139,11 @@ static void _replace_space_with_plus(wget_buffer_t *buf, const char *data)
 		wget_buffer_memcat(buf, *data == ' ' ? "+" : data, 1);
 }
 
-static int _print_query_string(void *cls,
-							enum MHD_ValueKind kind G_GNUC_WGET_UNUSED,
-							const char *key,
-							const char *value)
+static int _print_query_string(
+	void *cls,
+	enum MHD_ValueKind kind G_GNUC_WGET_UNUSED,
+	const char *key,
+	const char *value)
 {
 	struct query_string *query = cls;
 
@@ -172,10 +168,11 @@ static int _print_query_string(void *cls,
     return MHD_YES;
 }
 
-static int _print_header_range(void *cls,
-							enum MHD_ValueKind kind G_GNUC_WGET_UNUSED,
-							const char *key,
-							const char *value)
+static int _print_header_range(
+	void *cls,
+	enum MHD_ValueKind kind G_GNUC_WGET_UNUSED,
+	const char *key,
+	const char *value)
 {
 	wget_buffer_t *header_range = cls;
 
@@ -195,10 +192,7 @@ struct ResponseContentCallbackParam
 	size_t response_size;
 };
 
-static ssize_t _callback (void *cls,
-						uint64_t pos,
-						char *buf,
-						size_t buf_size)
+static ssize_t _callback (void *cls, uint64_t pos, char *buf, size_t buf_size)
 {
 	size_t size_to_copy;
 	struct ResponseContentCallbackParam *const param =
@@ -224,14 +218,15 @@ static void _free_callback_param(void *cls)
 	free(cls);
 }
 
-static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
-					struct MHD_Connection *connection,
-					const char *url,
-					const char *method,
-					const char *version G_GNUC_WGET_UNUSED,
-					const char *upload_data G_GNUC_WGET_UNUSED,
-					size_t *upload_data_size G_GNUC_WGET_UNUSED,
-					void **con_cls G_GNUC_WGET_UNUSED)
+static int _answer_to_connection(
+	void *cls G_GNUC_WGET_UNUSED,
+	struct MHD_Connection *connection,
+	const char *url,
+	const char *method,
+	const char *version G_GNUC_WGET_UNUSED,
+	const char *upload_data G_GNUC_WGET_UNUSED,
+	size_t *upload_data_size G_GNUC_WGET_UNUSED,
+	void **con_cls G_GNUC_WGET_UNUSED)
 {
 	struct MHD_Response *response = NULL;
 	struct query_string query;
@@ -263,6 +258,7 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 	if (*header_range->data) {
 		const char *from_bytes_string;
 		const char *range_string = strchr(header_range->data, '=');
+
 		to_bytes_string = strchr(range_string, '-');
 		if (strcmp(to_bytes_string, "-"))
 			to_bytes = (ssize_t) atoi(to_bytes_string + 1);
@@ -300,13 +296,11 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 		wget_buffer_strcpy(url_iri, urls[it1].name);
 		MHD_http_unescape(url_iri->data);
 
-		if (!strcmp(url_full->data, url_iri->data))
-		{
+		if (!strcmp(url_full->data, url_iri->data)) {
 			// chunked encoding
-			if (!wget_strcmp(urls[it1].name + 3, "bad.txt"))
-			{
+			if (!wget_strcmp(urls[it1].name + 3, "bad.txt")) {
 				response = MHD_create_response_from_buffer(strlen(urls[it1].body),
-						(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
+					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
 				ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 				MHD_add_response_header(response, "Transfer-Encoding", "chunked");
 				MHD_add_response_header(response, "Connection", "close");
@@ -319,8 +313,7 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 				if (header) {
 					const char *header_value = strchr(header, ':');
 					const char *header_key = wget_strmemdup(header, header_value - header);
-					if (!strcmp(header_key, "Transfer-Encoding") &&
-						!strcmp(header_value + 2, "chunked"))
+					if (!strcmp(header_key, "Transfer-Encoding") && !strcmp(header_value + 2, "chunked"))
 						chunked = 1;
 					wget_xfree(header_key);
 				}
@@ -336,10 +329,7 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 				callback_param->response_size = (sizeof(response_text)/sizeof(char)) - 1;
 
 				response = MHD_create_response_from_callback(MHD_SIZE_UNKNOWN,
-															1024,
-															&_callback,
-															callback_param,
-															&_free_callback_param);
+					1024, &_callback, callback_param, &_free_callback_param);
 				ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 				wget_buffer_free(&url_iri);
 				found = 1;
@@ -347,10 +337,9 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 			}
 
 			// 404 with non-empty "body"
-			if (!wget_strcmp(urls[it1].code, "404 Not exist"))
-			{
+			if (!wget_strcmp(urls[it1].code, "404 Not exist")) {
 				response = MHD_create_response_from_buffer(strlen(urls[it1].body),
-							(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
+					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
 				ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
 				wget_buffer_free(&url_iri);
 				found = 1;
@@ -384,10 +373,11 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 				char *user = MHD_basic_auth_get_username_password(connection, &pass);
 				if ((user == NULL && pass == NULL) ||
 					(wget_strcmp(user, urls[it1].auth_username) ||
-					wget_strcmp(pass, urls[it1].auth_password))) {
+					wget_strcmp(pass, urls[it1].auth_password)))
+				{
 					response = MHD_create_response_from_buffer(strlen ("DENIED"),
-							(void *) "DENIED", MHD_RESPMEM_PERSISTENT);
-			        ret = MHD_queue_basic_auth_fail_response(connection, "basic@example.com", response);
+						(void *) "DENIED", MHD_RESPMEM_PERSISTENT);
+					ret = MHD_queue_basic_auth_fail_response(connection, "basic@example.com", response);
 					free(user);
 					free(pass);
 					wget_buffer_free(&url_iri);
@@ -430,8 +420,7 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 				response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
 				ret = MHD_queue_response(connection, MHD_HTTP_NOT_MODIFIED, response);
 			}
-			else if (*header_range->data)
-			{
+			else if (*header_range->data) {
 				if (!strcmp(to_bytes_string, "-"))
 					to_bytes = strlen(urls[it1].body) - 1;
 				body_len = to_bytes - from_bytes + 1;
@@ -445,7 +434,7 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 #endif
 				} else {
 					response = MHD_create_response_from_buffer(body_len,
-							(void *) (urls[it1].body + from_bytes), MHD_RESPMEM_MUST_COPY);
+						(void *) (urls[it1].body + from_bytes), MHD_RESPMEM_MUST_COPY);
 					MHD_add_response_header(response, MHD_HTTP_HEADER_ACCEPT_RANGES, "bytes");
 					sprintf(content_range, "%zd-%zd/%zu", from_bytes, to_bytes, body_len);
 					MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_RANGE, content_range);
@@ -454,9 +443,9 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 					ret = MHD_queue_response(connection, MHD_HTTP_PARTIAL_CONTENT, response);
 				}
 			} else {
-			response = MHD_create_response_from_buffer(strlen(urls[it1].body),
+				response = MHD_create_response_from_buffer(strlen(urls[it1].body),
 					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
-			ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+				ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 			}
 
 			// add available headers
@@ -481,7 +470,7 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 	}
 
 	// 404 with empty "body"
-	if (found == 0) {
+	if (!found) {
 		response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
 		ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
 	}
@@ -489,7 +478,7 @@ static int _answer_to_connection(void *cls G_GNUC_WGET_UNUSED,
 	wget_buffer_free(&url_full);
 	wget_buffer_free(&header_range);
 	char server_version[50];
-	sprintf(server_version, "Libmicrohttpd/%08x", (unsigned int) MHD_VERSION);
+	snprintf(server_version, sizeof(server_version), "Libmicrohttpd/%08x", (unsigned int) MHD_VERSION);
 	MHD_add_response_header(response, "Server", server_version);
 	MHD_destroy_response(response);
 	return ret;
@@ -511,10 +500,10 @@ static int _http_server_start(int SERVER_MODE)
 
 	if (SERVER_MODE == HTTP_MODE) {
 		httpdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
-					port_num, NULL, NULL, &_answer_to_connection, NULL,
-					MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
-					MHD_OPTION_NONCE_NC_SIZE, 300,
-					MHD_OPTION_END);
+			port_num, NULL, NULL, &_answer_to_connection, NULL,
+			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
+			MHD_OPTION_NONCE_NC_SIZE, 300,
+			MHD_OPTION_END);
 
 		if (!httpdaemon)
 			return 1;
@@ -535,10 +524,10 @@ static int _http_server_start(int SERVER_MODE)
 #else
 		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_SSL,
 #endif
-					port_num, NULL, NULL, &_answer_to_connection, NULL,
-					MHD_OPTION_HTTPS_MEM_KEY, key_pem,
-					MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
-					MHD_OPTION_END);
+			port_num, NULL, NULL, &_answer_to_connection, NULL,
+			MHD_OPTION_HTTPS_MEM_KEY, key_pem,
+			MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
+			MHD_OPTION_END);
 
 		if (!httpsdaemon) {
 			printf("Cannot start the HTTPS server.\n");
@@ -603,7 +592,6 @@ static int _http_server_start(int SERVER_MODE)
 
 	return 0;
 }
-#endif
 
 static void *_ftp_server_thread(void *ctx)
 {
@@ -826,9 +814,7 @@ void wget_test_stop_server(void)
 		_remove_directory(tmpdir);
 
 	wget_global_deinit();
-#ifdef WITH_MICROHTTPD
 	_http_server_stop();
-#endif
 }
 
 static char *_insert_ports(const char *src)
@@ -1019,7 +1005,6 @@ void wget_test_start_server(int first_key, ...)
 		ftps_server_port = wget_tcp_get_local_port(ftps_parent_tcp);
 	}
 
-#ifdef WITH_MICROHTTPD
 	// start HTTP server
 	if ((rc = _http_server_start(HTTP_MODE)) != 0)
 		wget_error_printf_exit(_("Failed to start HTTP server, error %d\n"), rc);
@@ -1028,7 +1013,6 @@ void wget_test_start_server(int first_key, ...)
 	// start HTTPS server
 	if ((rc = _http_server_start(HTTPS_MODE)) != 0)
 		wget_error_printf_exit(_("Failed to start HTTPS server, error %d\n"), rc);
-#endif
 #endif
 
 	// now replace {{port}} in the body by the actual server port
