@@ -355,10 +355,6 @@ static int _print_info(gnutls_session_t session)
 	tmp = gnutls_certificate_type_get_name(gnutls_certificate_type_get(session));
 	info_printf(_("Certificate Type: %s\n"), tmp);
 
-	/* print the compression algorithm (if any) */
-	tmp = gnutls_compression_get_name(gnutls_compression_get(session));
-	info_printf(_("Compression: %s\n"), tmp);
-
 	/* print the name of the cipher used, ie 3DES. */
 	tmp = gnutls_cipher_get_name(gnutls_cipher_get(session));
 	info_printf(_("Cipher: %s\n"), tmp);
