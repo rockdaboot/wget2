@@ -32,7 +32,7 @@
 
 // Kon'nichiwa <dot> Japan
 #define euc_jp_hostname "\272\243\306\374\244\317.\306\374\313\334"
-#ifndef __WIN32
+#ifndef _WIN32
 #  define utf8_hostname "\344\273\212\346\227\245\343\201\257.\346\227\245\346\234\254"
 #endif
 #define punycoded_hostname "xn--v9ju72g90p.xn--wgv71a"
@@ -90,7 +90,7 @@ int main(void)
 		0);
 
 // UTF-8 command line characters are mangled on MinGW on C locale
-#ifndef __WIN32
+#ifndef _WIN32
 	// test-idn-robots-utf8
 	snprintf(options, sizeof(options),
 		"--iri -e robots=on -rH -e http_proxy=localhost:%d --local-encoding=UTF-8 http://" utf8_hostname "/",
