@@ -406,12 +406,15 @@ static int _answer_to_connection(
 				if ((ret == MHD_INVALID_NONCE) || (ret == MHD_NO)) {
 					response = MHD_create_response_from_buffer(strlen ("DENIED"),
 						(void *) "DENIED", MHD_RESPMEM_PERSISTENT);
-					if (response == NULL)
-						return MHD_NO;
-					ret = MHD_queue_auth_fail_response(connection, realm, TEST_OPAQUE_STR, response,
-						(ret == MHD_INVALID_NONCE) ? MHD_YES : MHD_NO);
+
+					if (response) {
+						ret = MHD_queue_auth_fail_response(connection, realm, TEST_OPAQUE_STR, response,
+							(ret == MHD_INVALID_NONCE) ? MHD_YES : MHD_NO);
+						found = 1;
+					} else
+						ret = MHD_NO;
+
 					wget_buffer_free(&url_iri);
-					found = 1;
 					break;
 				}
 			}
