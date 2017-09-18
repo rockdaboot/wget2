@@ -437,12 +437,16 @@ static int G_GNUC_WGET_CONST _family_to_value(int family)
  *
  * If \p tcp is NULL, TCP Fast Open is enabled or disabled globally.
  */
+#if defined TCP_FASTOPEN_OSX || defined TCP_FASTOPEN_LINUX
 void wget_tcp_set_tcp_fastopen(wget_tcp_t *tcp, int tcp_fastopen)
 {
-#if defined TCP_FASTOPEN_OSX || defined TCP_FASTOPEN_LINUX
 	(tcp ? tcp : &_global_tcp)->tcp_fastopen = !!tcp_fastopen;
-#endif
 }
+#else
+void wget_tcp_set_tcp_fastopen(wget_tcp_t G_GNUC_WGET_UNUSED *tcp, int G_GNUC_WGET_UNUSED tcp_fastopen)
+{
+}
+#endif
 
 /**
  * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
@@ -1182,7 +1186,7 @@ wget_tcp_t *wget_tcp_accept(wget_tcp_t *parent_tcp)
 
 	sockfd = accept(parent_tcp->sockfd,
 			parent_tcp->bind_addrinfo->ai_addr,
-			&parent_tcp->bind_addrinfo->ai_addrlen);
+			(socklen_t *) &parent_tcp->bind_addrinfo->ai_addrlen);
 
 	if (sockfd != -1) {
 		wget_tcp_t *tcp = xmalloc(sizeof(wget_tcp_t));
