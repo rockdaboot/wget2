@@ -6,7 +6,11 @@ else
 SUBDIRS =
 endif
 
-SUBDIRS += lib include libwget examples src data $(LIBWGET_DOCS) fuzz unit-tests tests
+SUBDIRS += lib include libwget examples src data $(LIBWGET_DOCS) fuzz unit-tests
+
+if WITH_MICROHTTPD
+SUBDIRS += tests
+endif
 
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 
