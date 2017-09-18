@@ -3,6 +3,7 @@ variables:
   DEBIAN_BUILD: buildenv-debian-stretch
   FEDORA_BUILD: buildenv-f26
   CENTOS7_BUILD: buildenv-centos7
+  MINGW_BUILD: buildenv-mingw
   GET_SOURCES_ATTEMPTS: "3"
   CONFIGURE_BASE_FLAGS: --enable-assert
   CFLAGS_DEFAULT: -O0 -g -ggdb3
@@ -119,28 +120,10 @@ pages:
     - tmp-online-fuzz-coverage
 
 MinGW64:
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
   script:
-  - export PREFIX=x86_64-w64-mingw32
-  - export CC=$PREFIX-gcc
-  - export CPP=$PREFIX-cpp
-  - export RANLIB=$PREFIX-ranlib
-  - export PATH="/usr/$PREFIX/bin:$PATH"
-  - export INSTALLDIR="/usr/$PREFIX"
-  - export PKG_CONFIG_PATH=$INSTALLDIR/lib/pkgconfig
-  - export CPPFLAGS="-I$INSTALLDIR/include"
-  - export LDFLAGS="-L$INSTALLDIR/lib"
-  - export CFLAGS="-O2 -Wall -Wno-format"
-  # Install Libmicrohttpd from source
-  - ( cd /builds/common/libmicrohttpd
-     && ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-doc --disable-examples --enable-shared --enable-static
-     && make -j$(nproc)
-     && make install )
   - ./bootstrap
-#  - export CXX=$PREFIX-g++
-  - export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs"
   - ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --enable-static
-  - make clean
   - make -j$(nproc)
   - make check -j$(nproc) LOG_COMPILER=wine
   tags:
