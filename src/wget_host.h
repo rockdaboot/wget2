@@ -72,7 +72,7 @@ typedef struct {
 		failures; // number of consequent connection failures
 	uint16_t
 		port;
-	unsigned char
+	bool
 		blocked : 1; // host may be blocked after too many errors or even one final error
 } HOST;
 

@@ -66,17 +66,12 @@ struct _wget_cookie_st {
 		creation;
 	unsigned int
 		sort_age; // need for sorting on Cookie: header construction
-	unsigned int
-		domain_dot : 1; // for compatibility with Netscape cookie format
-	unsigned int
-		normalized : 1;
-	unsigned int
-		persistent : 1;
-	unsigned int
-		host_only : 1;
-	unsigned int
-		secure_only : 1; // cookie should be used over secure connections only (TLS/HTTPS)
-	unsigned int
+	bool
+		domain_dot : 1, // for compatibility with Netscape cookie format
+		normalized : 1,
+		persistent : 1,
+		host_only : 1,
+		secure_only : 1, // cookie should be used over secure connections only (TLS/HTTPS)
 		http_only : 1; // just use the cookie via HTTP/HTTPS protocol
 };
 
@@ -91,7 +86,7 @@ struct _wget_cookie_db_st {
 		mutex;
 	unsigned int
 		age;
-	unsigned char
+	bool
 		keep_session_cookies : 1; // whether or not session cookies are saved
 };
 

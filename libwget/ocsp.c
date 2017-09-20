@@ -66,7 +66,7 @@ typedef struct {
 		maxage; // expiry time
 	int64_t
 		mtime; // creation time
-	unsigned char
+	bool
 		valid : 1; // 1=valid, 0=revoked
 } _ocsp_t;
 
@@ -148,7 +148,7 @@ int wget_ocsp_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, const char *fi
 
 	return 0;
 }
-static int impl_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, const char *fingerprint, int *revoked)
+static bool impl_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, const char *fingerprint, int *revoked)
 {
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 
@@ -179,14 +179,14 @@ static int impl_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, cons
  *
  * \see wget_ocsp_db_add_host
  */
-int wget_ocsp_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *hostname)
+bool wget_ocsp_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *hostname)
 {
 	if (ocsp_db)
 		return ocsp_db->vtable->hostname_is_valid(ocsp_db, hostname);
 
 	return 0;
 }
-static int impl_ocsp_db_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *hostname)
+static bool impl_ocsp_db_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *hostname)
 {
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 

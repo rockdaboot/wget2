@@ -72,10 +72,11 @@ void plugin_db_show_help(void);
 
 // Plugin's verdict on forwarded URLs
 struct plugin_db_forward_url_verdict {
-	unsigned int reject : 1;
-	unsigned int accept : 1;
 	wget_iri_t *alt_iri;
 	char *alt_local_filename;
+	bool
+		reject : 1,
+		accept : 1;
 };
 
 // Forwards a URL about to be enqueued to intrested plugins

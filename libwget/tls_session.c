@@ -45,7 +45,7 @@ struct _wget_tls_session_db_st {
 		mutex;
 	int64_t
 		load_time;
-	unsigned char
+	bool
 		changed : 1; // whether or not the db has been changed / needs saving
 };
 

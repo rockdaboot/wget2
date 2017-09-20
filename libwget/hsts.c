@@ -72,7 +72,7 @@ typedef struct {
 		maxage; // max-age in seconds
 	uint16_t
 		port;
-	unsigned char
+	bool
 		include_subdomains : 1; // whether or not subdomains are included
 } _hsts_t;
 

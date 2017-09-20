@@ -85,9 +85,11 @@ int wget_plugin_initializer(wget_plugin_t *plugin)
 }
 #elif defined TEST_SELECT_OPTIONS
 static struct option_filter {
-	const char *name;
-	int valid_without_val;
-	int valid_with_val;
+	const char
+		*name;
+	bool
+		valid_without_val : 1,
+		valid_with_val : 1;
 } options[] = {
 	{"x", 1, 1},
 	{"y", 1, 0},
@@ -663,7 +665,7 @@ static void test_ocsp_db_add_host(wget_ocsp_db_t *p_ocsp_db, const char *host, t
 
 	wget_ocsp_db_add_host(ocsp_db->backend_db, host, maxage);
 }
-static int test_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *p_ocsp_db, const char *fingerprint, int *valid)
+static bool test_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *p_ocsp_db, const char *fingerprint, int *valid)
 {
 	const test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
@@ -672,7 +674,7 @@ static int test_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *p_ocsp_db, co
 
 	return wget_ocsp_fingerprint_in_cache(ocsp_db->backend_db, fingerprint, valid);
 }
-static int test_ocsp_db_hostname_is_valid(const wget_ocsp_db_t *p_ocsp_db, const char *hostname)
+static bool test_ocsp_db_hostname_is_valid(const wget_ocsp_db_t *p_ocsp_db, const char *hostname)
 {
 	const test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 

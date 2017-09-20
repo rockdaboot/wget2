@@ -51,7 +51,7 @@ struct _wget_http_connection_st {
 		port;
 	char
 		protocol; // WGET_PROTOCOL_HTTP_1_1 or WGET_PROTOCOL_HTTP_2_0
-	unsigned char
+	bool
 		print_response_headers : 1,
 		abort_indicator : 1,
 		proxied : 1;

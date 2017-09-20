@@ -95,7 +95,7 @@ typedef struct {
 		tick;
 	enum _bar_slot_status_t
 		status;
-	unsigned
+	bool
 		redraw : 1;
 } _bar_slot_t;
 

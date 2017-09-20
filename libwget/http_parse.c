@@ -103,7 +103,7 @@ int wget_http_get_protocol(const wget_http_connection_t *conn)
 	return conn->protocol;
 }
 
-int wget_http_isseparator(char c)
+bool wget_http_isseparator(char c)
 {
 	// return strchr("()<>@,;:\\\"/[]?={} \t", c) != NULL;
 	return _http_isseparator(c);
@@ -117,7 +117,7 @@ int wget_http_isseparator(char c)
 
 // token          = 1*<any CHAR except CTLs or separators>
 
-int wget_http_istoken(char c)
+bool wget_http_istoken(char c)
 {
 	return c > 32 && c <= 126 && !_http_isseparator(c);
 }

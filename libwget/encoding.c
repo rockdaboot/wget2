@@ -152,7 +152,7 @@ int wget_str_needs_encoding(const char *s)
 	return !!*s;
 }
 
-int wget_str_is_valid_utf8(const char *utf8)
+bool wget_str_is_valid_utf8(const char *utf8)
 {
 	const unsigned char *s = (const unsigned char *) utf8;
 

@@ -360,7 +360,7 @@ WGETAPI char *
 	wget_striconv(const char *src, const char *src_encoding, const char *dst_encoding) G_GNUC_WGET_MALLOC;
 WGETAPI int
 	wget_str_needs_encoding(const char *s) G_GNUC_WGET_PURE;
-WGETAPI int
+WGETAPI bool
 	wget_str_is_valid_utf8(const char *utf8) G_GNUC_WGET_PURE;
 WGETAPI char *
 	wget_str_to_utf8(const char *src, const char *encoding) G_GNUC_WGET_MALLOC;
@@ -450,7 +450,7 @@ static inline size_t wget_base64_get_encoded_length(size_t len)
 	return ((len + 2) / 3) * 4 + 1;
 }
 
-WGETAPI int
+WGETAPI bool
 	wget_base64_is_string(const char *src) G_GNUC_WGET_PURE;
 WGETAPI size_t
 	wget_base64_decode(char *restrict dst, const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
@@ -476,7 +476,7 @@ typedef struct {
 		length; // number of bytes in 'data'
 	size_t
 		size; // capacity of 'data' (terminating 0 byte doesn't count here)
-	unsigned int
+	bool
 		release_data : 1, // 'data' has been malloc'ed and must be freed
 		release_buf : 1; // buffer_t structure has been malloc'ed and must be freed
 } wget_buffer_t;
@@ -554,7 +554,7 @@ WGETAPI FILE *
 	wget_logger_get_stream(wget_logger_t *logger) G_GNUC_WGET_PURE;
 WGETAPI const char *
 	wget_logger_get_file(wget_logger_t *logger) G_GNUC_WGET_PURE;
-WGETAPI int
+WGETAPI bool
 	wget_logger_is_active(wget_logger_t *logger) G_GNUC_WGET_PURE;
 
 /*
@@ -920,22 +920,22 @@ typedef struct wget_iri_st {
 		port_given;
 	/* If set, free uri in iri_free() */
 	bool
-		uri_allocated : true;
+		uri_allocated : 1;
 	/* If set, free host in iri_free() */
 	bool
-		host_allocated : true;
+		host_allocated : 1;
 	/* If set, free path in iri_free() */
 	bool
-		path_allocated : true;
+		path_allocated : 1;
 	/* If set, free query in iri_free() */
 	bool
-		query_allocated : true;
+		query_allocated : 1;
 	/* If set, free fragment in iri_free() */
 	bool
-		fragment_allocated : true;
+		fragment_allocated : 1;
 	/* If set, the hostname part is a literal IPv4/IPv6 address */
 	bool
-		is_ip_address : true;
+		is_ip_address : 1;
 } wget_iri_t;
 /** @} */
 
@@ -947,17 +947,17 @@ WGETAPI void
 	wget_iri_free_content(wget_iri_t *iri);
 WGETAPI void
 	wget_iri_set_defaultpage(const char *page);
-WGETAPI int
+WGETAPI bool
 	wget_iri_supported(const wget_iri_t *iri) G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL;
-WGETAPI int
+WGETAPI bool
 	wget_iri_isgendelim(char c) G_GNUC_WGET_CONST;
-WGETAPI int
+WGETAPI bool
 	wget_iri_issubdelim(char c) G_GNUC_WGET_CONST;
-WGETAPI int
+WGETAPI bool
 	wget_iri_isreserved(char c) G_GNUC_WGET_CONST;
-WGETAPI int
+WGETAPI bool
 	wget_iri_isunreserved(char c) G_GNUC_WGET_CONST;
-WGETAPI int
+WGETAPI bool
 	wget_iri_isunreserved_path(char c) G_GNUC_WGET_CONST;
 WGETAPI int
 	wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2) G_GNUC_WGET_PURE;
@@ -1455,9 +1455,9 @@ struct wget_ocsp_db_vtable {
 	/// Implementation of wget_ocsp_db_save()
 	int (*save)(wget_ocsp_db_t *);
 	/// Implementation of wget_ocsp_db_fingerprint_in_cache()
-	int (*fingerprint_in_cache)(const wget_ocsp_db_t *, const char *, int *);
+	bool (*fingerprint_in_cache)(const wget_ocsp_db_t *, const char *, int *);
 	/// Implementation of wget_ocsp_db_hostname_is_valid()
-	int (*hostname_is_valid)(const wget_ocsp_db_t *, const char *);
+	bool (*hostname_is_valid)(const wget_ocsp_db_t *, const char *);
 	/// Implementation of wget_ocsp_db_add_fingerprint()
 	void (*add_fingerprint)(wget_ocsp_db_t *, const char *, time_t, int);
 	/// Implementation of wget_ocsp_db_add_host()
@@ -1473,7 +1473,7 @@ struct wget_ocsp_db_st {
 
 WGETAPI int
 	wget_ocsp_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, const char *fingerprint, int *valid);
-WGETAPI int
+WGETAPI bool
 	wget_ocsp_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *hostname);
 WGETAPI wget_ocsp_db_t *
 	wget_ocsp_db_init(wget_ocsp_db_t *ocsp_db, const char *fname);
@@ -1585,7 +1585,7 @@ typedef struct {
 		attr[16];
 	char
 		dir[16];
-	unsigned char
+	bool
 		link_inline : 1; // 1 = rel was 'stylesheet' or 'shortcut icon'
 } WGET_HTML_PARSED_URL;
 
@@ -1596,7 +1596,7 @@ typedef struct {
 		encoding;
 	wget_string_t
 		base;
-	unsigned char
+	bool
 		follow : 1;
 } WGET_HTML_PARSED_RESULT;
 
@@ -1758,7 +1758,7 @@ WGETAPI ssize_t
 WGETAPI int
 	wget_tcp_ready_2_transfer(wget_tcp_t *tcp, int flags);
 
-WGETAPI int
+WGETAPI bool
 	wget_ip_is_family(const char *host, int family) G_GNUC_WGET_PURE;
 
 /*
@@ -1891,10 +1891,10 @@ typedef struct {
 		esc_host_buf[64];
 	char
 		method[8]; // we just need HEAD, GET and POST
-	unsigned char
+	bool
 		response_keepheader : 1;
 	bool
-		debug_skip_body;
+		debug_skip_body : 1;
 } wget_http_request_t;
 
 // just parse the header lines that we need
@@ -1927,6 +1927,8 @@ struct wget_http_response_t {
 		body;
 	size_t
 		content_length;
+	size_t
+		cur_downloaded;
 	time_t
 		last_modified;
 	time_t
@@ -1944,15 +1946,12 @@ struct wget_http_response_t {
 	char
 		transfer_encoding,
 		content_encoding,
-		content_length_valid,
+		hsts_include_subdomains,
 		keep_alive;
-	char
-		hsts_include_subdomains;
-	unsigned char
+	bool
+		content_length_valid : 1,
 		hsts : 1, // if hsts_maxage and hsts_include_subdomains are valid
 		csp : 1;
-	size_t
-		cur_downloaded;
 };
 
 typedef struct _wget_http_connection_st wget_http_connection_t;
@@ -1966,9 +1965,9 @@ WGETAPI const char *
 WGETAPI int
 	wget_http_get_protocol(const wget_http_connection_t *conn);
 
-WGETAPI int
+WGETAPI bool
 	wget_http_isseparator(char c) G_GNUC_WGET_CONST;
-WGETAPI int
+WGETAPI bool
 	wget_http_istoken(char c) G_GNUC_WGET_CONST;
 
 WGETAPI const char *

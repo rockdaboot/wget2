@@ -43,7 +43,7 @@ typedef struct {
 		id;
 	wget_thread_t
 		used_by;
-	unsigned char
+	bool
 		inuse : 1,
 		done : 1;
 } PART;
@@ -86,8 +86,7 @@ struct JOB {
 		mirror_pos, // where to look up the next (metalink) mirror to use
 		piece_pos; // where to look up the next (metalink) piece to download
 	bool
-		challenges_alloc; // Indicate whether the challenges vector is owned by the JOB
-	unsigned char
+		challenges_alloc : 1, // Indicate whether the challenges vector is owned by the JOB
 		inuse : 1, // if job is already in use, 'used_by' holds the thread id of the downloader
 		sitemap : 1, // URL is a sitemap to be scanned in recursive mode
 		robotstxt : 1, // URL is a robots.txt to be scanned
@@ -111,8 +110,8 @@ struct DOWNLOADER {
 		id;
 	wget_thread_cond_t
 		cond;
-	char
-		final_error;
+	bool
+		final_error : 1;
 };
 
 JOB *job_init(JOB *job, wget_iri_t *iri) G_GNUC_WGET_NONNULL((2));

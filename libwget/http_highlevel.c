@@ -85,7 +85,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 	void *header_user_data = NULL, *body_user_data = NULL;
 
 	struct {
-		unsigned int
+		bool
 			cookies_enabled : 1,
 			keep_header : 1,
 			free_uri : 1;

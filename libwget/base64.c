@@ -74,7 +74,7 @@ static int G_GNUC_WGET_CONST _isbase64(char c)
  * Checks whether \p src is a base64 string.
  * Returns 0 if \p src is NULL.
  */
-int wget_base64_is_string(const char *src)
+bool wget_base64_is_string(const char *src)
 {
 	if (src) {
 		while (_isbase64(*src)) src++;

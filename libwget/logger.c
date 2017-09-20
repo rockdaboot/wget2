@@ -144,7 +144,7 @@ const char *wget_logger_get_file(wget_logger_t *logger)
 	return logger ? logger->fname : NULL;
 }
 
-int wget_logger_is_active(wget_logger_t *logger)
+bool wget_logger_is_active(wget_logger_t *logger)
 {
 	return !!logger->vprintf;
 }

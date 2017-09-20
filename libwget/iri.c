@@ -127,7 +127,7 @@ static const unsigned char
  *
  * Tells whether the IRI's scheme is supported or not.
  */
-int wget_iri_supported(const wget_iri_t *iri)
+bool wget_iri_supported(const wget_iri_t *iri)
 {
 	for (unsigned it = 0; it < countof(wget_iri_schemes); it++) {
 		if (wget_iri_schemes[it] == iri->scheme)
@@ -144,7 +144,7 @@ int wget_iri_supported(const wget_iri_t *iri)
  * Tests whether \p c is a generic delimiter (gen-delim),
  * according to [RFC 3986, sect. 2.2](https://tools.ietf.org/html/rfc3986#section-2.2).
  */
-int wget_iri_isgendelim(char c)
+bool wget_iri_isgendelim(char c)
 {
 	// return strchr(":/?#[]@",c)!=NULL;
 	return _iri_isgendelim(c);
@@ -157,7 +157,7 @@ int wget_iri_isgendelim(char c)
  * Tests whether \p c is a subcomponent delimiter (sub-delim)
  * according to [RFC 3986, sect. 2.2](https://tools.ietf.org/html/rfc3986#section-2.2).
  */
-int wget_iri_issubdelim(char c)
+bool wget_iri_issubdelim(char c)
 {
 	// return strchr("!$&\'()*+,;=",c)!=NULL;
 	return _iri_issubdelim(c);
@@ -179,7 +179,7 @@ int wget_iri_issubdelim(char c)
  *     return wget_iri_isgendelim(c) || wget_iri_issubdelim(c);
  *
  */
-int wget_iri_isreserved(char c)
+bool wget_iri_isreserved(char c)
 {
 	return wget_iri_isgendelim(c) || wget_iri_issubdelim(c);
 }
@@ -190,7 +190,7 @@ int wget_iri_isreserved(char c)
  *
  * Tests whether \p c is an unreserved character.
  */
-int wget_iri_isunreserved(char c)
+bool wget_iri_isunreserved(char c)
 {
 	return c > 32 && c < 127 && (c_isalnum(c) || _iri_isunreserved(c));
 }
@@ -201,7 +201,7 @@ int wget_iri_isunreserved(char c)
  *
  * Tests whether \p c is an unreserved character **or a path separator (`/`)**.
  */
-int wget_iri_isunreserved_path(char c)
+bool wget_iri_isunreserved_path(char c)
 {
 	return c > 32 && c < 127 && (c_isalnum(c) || _iri_isunreserved(c) || c == '/');
 }

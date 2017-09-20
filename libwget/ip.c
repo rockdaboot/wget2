@@ -47,7 +47,7 @@
  *
  * This functions checks if \p host matches the given \p family or not.
  */
-int wget_ip_is_family(const char *host, int family)
+bool wget_ip_is_family(const char *host, int family)
 {
 	struct sockaddr_storage dst;
 

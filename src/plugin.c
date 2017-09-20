@@ -638,28 +638,29 @@ wget_ocsp_db_t *plugin_db_fetch_provided_ocsp_db(void)
 int plugin_db_forward_downloaded_file(const wget_iri_t *iri, uint64_t size, const char *filename, const void *data,
 		wget_vector_t *recurse_iris)
 {
-	downloaded_file_t file;
-	int n_plugins;
-	int i;
+	int ret = 1;
 
 	// Initialize the structure
-	file.parent.vtable = &vtable;
-	file.iri = iri;
-	file.filename = filename;
-	file.size = size;
-	file.data = data;
-	file.data_buf = NULL;
-	file.recurse_iris = recurse_iris;
+	downloaded_file_t file = {
+		.parent.vtable = &vtable,
+		.iri = iri,
+		.filename = filename,
+		.size = size,
+		.data = data,
+		.data_buf = NULL,
+		.recurse_iris = recurse_iris
+	};
 
 	// Forward to each plugin
-	n_plugins = wget_vector_size(plugin_list);
-	for (i = 0; i < n_plugins; i++) {
+	for (int i = 0; i < wget_vector_size(plugin_list); i++) {
 		plugin_t *plugin = (plugin_t *) wget_vector_get(plugin_list, i);
 		plugin_priv_t *priv = (plugin_priv_t *) plugin;
 
 		if (priv->post_processor) {
-			if (priv->post_processor((wget_plugin_t *) plugin, (wget_downloaded_file_t *) &file) == 0)
+			if (priv->post_processor((wget_plugin_t *) plugin, (wget_downloaded_file_t *) &file) == 0) {
+				ret = 0;
 				break;
+			}
 		}
 	}
 
@@ -667,7 +668,7 @@ int plugin_db_forward_downloaded_file(const wget_iri_t *iri, uint64_t size, cons
 	if (file.data_buf)
 		wget_free(file.data_buf);
 
-	return i < n_plugins ? 0 : 1;
+	return ret;
 }
 
 // Initializes the plugin framework

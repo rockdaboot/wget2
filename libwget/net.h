@@ -56,7 +56,7 @@ struct wget_tcp_st {
 	wget_hpkp_stats_t
 		hpkp; // hpkp stats
 
-	unsigned char
+	bool
 		ssl : 1,
 		caching : 1,
 		addrinfo_allocated : 1,
