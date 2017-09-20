@@ -58,7 +58,6 @@ struct wget_tcp_st {
 
 	unsigned char
 		ssl : 1,
-		passive : 1,
 		caching : 1,
 		addrinfo_allocated : 1,
 		bind_addrinfo_allocated : 1,

@@ -56,15 +56,10 @@ extern "C" {
 // defines for wget_test_start_http_server()
 #define WGET_TEST_EXPECTED_REQUEST_HEADER 1001
 #define WGET_TEST_RESPONSE_URLS 1002
-#define WGET_TEST_FTP_IO_UNORDERED 1003
-#define WGET_TEST_FTP_IO_ORDERED 1004
-#define WGET_TEST_FTP_SERVER_HELLO 1005
-#define WGET_TEST_FTPS_IMPLICIT 1006
 #define WGET_TEST_FEATURE_MHD 1101
 #define WGET_TEST_FEATURE_TLS 1102
 #define WGET_TEST_FEATURE_IDN 1103
 #define WGET_TEST_FEATURE_PLUGIN 1104
-#define WGET_TEST_FEATURE_FTP 1105
 
 // defines for wget_test()
 #define WGET_TEST_REQUEST_URL 2001
@@ -136,23 +131,12 @@ typedef struct {
 		auth_password;
 } wget_test_url_t;
 
-typedef struct {
-	const char *
-		in;
-	const char *
-		out;
-	wget_test_url_t *
-		send_url;
-} wget_test_ftp_io_t;
-
 WGETAPI void wget_test_stop_server(void);
 WGETAPI void wget_test_start_server(int first_key, ...);
 WGETAPI void wget_test(int first_key, ...);
 WGETAPI int wget_test_check_file_system(void);
 WGETAPI int wget_test_get_http_server_port(void) G_GNUC_WGET_PURE;
 WGETAPI int wget_test_get_https_server_port(void) G_GNUC_WGET_PURE;
-WGETAPI int wget_test_get_ftp_server_port(void) G_GNUC_WGET_PURE;
-WGETAPI int wget_test_get_ftps_server_port(void) G_GNUC_WGET_PURE;
 
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 #	pragma GCC diagnostic ignored "-Wmissing-field-initializers"

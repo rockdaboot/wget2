@@ -1744,10 +1744,6 @@ WGETAPI struct addrinfo *
 WGETAPI int
 	wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port);
 WGETAPI int
-	wget_tcp_listen(wget_tcp_t *tcp, const char *host, uint16_t port, int backlog);
-WGETAPI wget_tcp_t
-	*wget_tcp_accept(wget_tcp_t *parent_tcp);
-WGETAPI int
 	wget_tcp_tls_start(wget_tcp_t *tcp);
 WGETAPI void
 	wget_tcp_tls_stop(wget_tcp_t *tcp);
@@ -1811,14 +1807,6 @@ WGETAPI void
 	wget_ssl_close(void **session);
 WGETAPI void
 	wget_ssl_set_check_certificate(char value);
-WGETAPI void
-	wget_ssl_server_init(void);
-WGETAPI void
-	wget_ssl_server_deinit(void);
-WGETAPI int
-	wget_ssl_server_open(wget_tcp_t *tcp);
-WGETAPI void
-	wget_ssl_server_close(void **session);
 WGETAPI ssize_t
 	wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI ssize_t

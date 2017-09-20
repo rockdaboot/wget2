@@ -1055,7 +1055,7 @@ out:
 	return _config.check_certificate ? ret : 0;
 }
 
-static int _init, _server_init;
+static int _init;
 static wget_thread_mutex_t _mutex = WGET_THREAD_MUTEX_INITIALIZER;
 
 static _GL_INLINE int _key_type(int type)
@@ -1576,127 +1576,6 @@ void wget_ssl_close(void **session)
 
 		xfree(ctx->hostname);
 		xfree(ctx);
-	}
-}
-
-static gnutls_certificate_credentials_t
-	_server_credentials;
-static gnutls_priority_t
-	_server_priority_cache;
-
-void wget_ssl_server_init(void)
-{
-	wget_thread_mutex_lock(&_mutex);
-
-	if (!_server_init) {
-		int ret;
-
-		debug_printf("GnuTLS server init\n");
-		gnutls_global_init();
-
-		gnutls_certificate_allocate_credentials(&_server_credentials);
-		_set_credentials(&_server_credentials);
-
-		/* Generate Diffie-Hellman parameters - for use with DHE
-		 * kx algorithms. When short bit length is used, it might
-		 * be wise to regenerate parameters often.
-		 */
-/*		static gnutls_dh_params_t dh_params;
-		unsigned int bits = gnutls_sec_param_to_pk_bits(GNUTLS_PK_DH, GNUTLS_SEC_PARAM_LEGACY); // since 3.0.13
-
-		gnutls_dh_params_init(&dh_params);
-		gnutls_dh_params_generate2(dh_params, bits);
-*/
-		if ((ret = gnutls_priority_init(&_server_priority_cache, "PERFORMANCE", NULL)) < 0)
-			error_printf("GnuTLS: Unsupported server priority string '%s': %s\n", "PERFORMANCE", gnutls_strerror(ret));
-
-		_server_init++;
-
-		debug_printf("GnuTLS server init done\n");
-	}
-
-	wget_thread_mutex_unlock(&_mutex);
-}
-
-void wget_ssl_server_deinit(void)
-{
-	wget_thread_mutex_lock(&_mutex);
-
-	if (_server_init == 1) {
-		gnutls_certificate_free_credentials(_server_credentials);
-		gnutls_priority_deinit(_server_priority_cache);
-		gnutls_global_deinit();
-	}
-
-	if (_server_init > 0) _server_init--;
-
-	wget_thread_mutex_unlock(&_mutex);
-}
-
-// void *wget_ssl_server_open(int sockfd, int connect_timeout)
-int wget_ssl_server_open(wget_tcp_t *tcp)
-{
-	gnutls_session_t session;
-	int ret = WGET_E_UNKNOWN;
-	int sockfd, connect_timeout;
-
-	if (!tcp)
-		return WGET_E_INVALID;
-
-	if (!_init)
-		wget_ssl_server_init();
-
-//	hostname = tcp->ssl_hostname;
-	sockfd= tcp->sockfd;
-	connect_timeout = tcp->connect_timeout;
-
-#ifdef GNUTLS_NONBLOCK
-	gnutls_init(&session, GNUTLS_SERVER | GNUTLS_NONBLOCK);
-#else
-	// very old gnutls version, likely to not work.
-	gnutls_init(&session, GNUTLS_SERVER);
-#endif
-
-	gnutls_priority_set(session, _server_priority_cache);
-	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, _server_credentials);
-
-	/* We don't request any certificate from the client.
-	 * If we did we would need to verify it.
-	 */
-	gnutls_certificate_server_set_request(session, GNUTLS_CERT_IGNORE);
-
-#ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
-	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
-	gnutls_transport_set_int(session, sockfd);
-#else
-	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
-#endif
-
-	ret = _do_handshake(session, sockfd, connect_timeout);
-
-	if (_config.print_info)
-		_print_info(session);
-
-	if (ret == WGET_E_SUCCESS) {
-		debug_printf("Server handshake completed\n");
-		tcp->ssl_session = session;
-	} else {
-		if (ret == WGET_E_TIMEOUT)
-			debug_printf("Server handshake timed out\n");
-		gnutls_deinit(session);
-	}
-
-	return ret;
-}
-
-void wget_ssl_server_close(void **session)
-{
-	if (session && *session) {
-		gnutls_session_t s = *session;
-
-		gnutls_bye(s, GNUTLS_SHUT_RDWR);
-		gnutls_deinit(s);
-		*session = NULL;
 	}
 }
 

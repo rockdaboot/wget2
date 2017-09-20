@@ -35,7 +35,6 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <signal.h>
 #include <utime.h>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -51,39 +50,18 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
-static wget_thread_t
-	ftp_server_tid,
-	ftps_server_tid;
 static int
 	http_server_port,
 	https_server_port,
-	ftp_server_port,
-	ftps_server_port,
-	ftps_implicit,
 	keep_tmpfiles;
-static volatile sig_atomic_t
-	terminate;
-/*static const char
-	*response_code = "200 Dontcare",
-	*response_body = "";
-static WGET_VECTOR
-	*response_headers; */
 static wget_vector_t
 	*request_urls;
 static wget_test_url_t
 	*urls;
 static size_t
 	nurls;
-static wget_test_ftp_io_t
-	*ios;
-static size_t
-	nios;
-static int
-	ios_ordered;
 static char
 	tmpdir[128];
-static const char
-	*server_hello;
 static char
 	server_send_content_length = 1;
 
@@ -108,11 +86,6 @@ enum SERVER_MODE {
 	HTTP_MODE,
 	HTTPS_MODE
 };
-
-static void sigterm_handler(int sig G_GNUC_WGET_UNUSED)
-{
-	terminate = 1;
-}
 
 static char *_scan_directory(const char* data)
 {
@@ -596,133 +569,6 @@ static int _http_server_start(int SERVER_MODE)
 	return 0;
 }
 
-static void *_ftp_server_thread(void *ctx)
-{
-	wget_tcp_t *tcp = NULL, *parent_tcp = ctx, *pasv_parent_tcp = NULL, *pasv_tcp = NULL;
-	char buf[4096];
-	ssize_t nbytes;
-	int pasv_port, found;
-	unsigned io_pos;
-
-#ifdef _WIN32
-	signal(SIGTERM, sigterm_handler);
-#else
-	sigaction(SIGTERM, &(struct sigaction) { .sa_handler = sigterm_handler }, NULL);
-#endif
-
-	while (!terminate) {
-		wget_tcp_deinit(&tcp);
-		wget_tcp_deinit(&pasv_tcp);
-		wget_tcp_deinit(&pasv_parent_tcp);
-
-		if ((tcp = wget_tcp_accept(parent_tcp))) {
-			io_pos = 0;
-
-			if (server_hello)
-				wget_tcp_printf(tcp, "%s\r\n", server_hello);
-
-			// as a quick hack, just assume that each line comes in one packet
-			while ((nbytes = wget_tcp_read(tcp, buf, sizeof(buf)-1)) > 0) {
-				buf[nbytes] = 0;
-
-				while (--nbytes >= 0 && (buf[nbytes] == '\r' || buf[nbytes] == '\n'))
-					buf[nbytes] = 0;
-
-				wget_debug_printf("### Got: '%s'\n", buf);
-
-				found = 0;
-				if (ios_ordered) {
-					if (!strcmp(buf, ios[io_pos].in))
-						found = 1;
-				} else {
-					for (io_pos = 0; io_pos < nios; io_pos++) {
-						if (!strcmp(buf, ios[io_pos].in)) {
-							found = 1;
-							break;
-						}
-					}
-				}
-				if (!found) {
-					wget_error_printf(_("Unexpected input: '%s'\n"), buf);
-					wget_tcp_printf(tcp, "500 Unknown command\r\n");
-					continue;
-				}
-
-				if (!strncmp(buf, "AUTH", 4)) {
-					// assume TLS auth type
-					wget_tcp_printf(tcp, "%s\r\n", ios[io_pos].out);
-					if (atoi(ios[io_pos].out)/100 == 2)
-						wget_tcp_tls_start(tcp);
-					io_pos++;
-					continue;
-				}
-
-				if (!strncmp(buf, "PASV", 4) || !strncmp(buf, "EPSV", 4)) {
-					// init FTP PASV/EPSV socket
-					// we ignore EPSV address type here, we listen on IPv4 and IPv6 anyways
-					pasv_parent_tcp=wget_tcp_init();
-					wget_tcp_set_timeout(pasv_parent_tcp, -1); // INFINITE timeout
-					if (!strncmp(buf, "EPSV", 4)) {
-						switch (atoi(buf+4)) {
-							case 1: wget_tcp_set_family(pasv_parent_tcp, WGET_NET_FAMILY_IPV4); break;
-							case 2: wget_tcp_set_family(pasv_parent_tcp, WGET_NET_FAMILY_IPV6); break;
-							default: wget_tcp_set_family(pasv_parent_tcp, WGET_NET_FAMILY_ANY); break;
-						}
-					}
-					if (wget_tcp_listen(pasv_parent_tcp, "localhost", 0, 5) != 0) {
-						wget_tcp_printf(tcp, "500 failed to open port\r\n");
-						break;
-					}
-					pasv_port = wget_tcp_get_local_port(pasv_parent_tcp);
-
-					const char *src = ios[io_pos].out;
-					char *response = wget_malloc(strlen(src) + 32 + 1);
-					char *dst = response;
-
-					while (*src) {
-						if (*src == '{') {
-							if (!strncmp(src, "{{pasvdata}}", 12)) {
-								if (!strncmp(buf, "EPSV", 4))
-									dst += sprintf(dst, "(|||%d|)", pasv_port);
-								else
-									dst += sprintf(dst, "(127,0,0,1,%d,%d)", pasv_port / 256, pasv_port % 256);
-								src += 12;
-								continue;
-							}
-						}
-						*dst++ = *src++;
-					}
-					*dst = 0;
-
-					wget_tcp_printf(tcp, "%s\r\n", response);
-					wget_xfree(response);
-
-					if (!(pasv_tcp = wget_tcp_accept(pasv_parent_tcp))) {
-						wget_error_printf(_("Failed to get PASV connection\n"));
-						break;
-					}
-				} else {
-					wget_tcp_printf(tcp, "%s\r\n", ios[io_pos].out);
-				}
-
-				if (ios[io_pos].send_url && pasv_tcp) {
-					// send data
-					wget_tcp_printf(pasv_tcp, "%s", ios[io_pos].send_url->body);
-					wget_tcp_deinit(&pasv_tcp);
-					wget_tcp_printf(tcp, "226 Transfer complete\r\n");
-				}
-
-				io_pos++;
-			}
-		} else if (!terminate)
-			wget_error_printf(_("Failed to get connection (%d)\n"), errno);
-	}
-
-	wget_tcp_deinit(&parent_tcp);
-
-	return NULL;
-}
-
 #if defined __CYGWIN__
 // Using opendir/readdir loop plus unlink() has a race condition
 // with CygWin. Not sure if this also happens on other systems as well.
@@ -803,13 +649,6 @@ void wget_test_stop_server(void)
 		}
 	}
 
-	// free resources - needed for valgrind testing
-	terminate = 1;
-
-	wget_thread_cancel(ftp_server_tid);
-	if (ftps_implicit)
-		wget_thread_cancel(ftps_server_tid);
-
 	if (chdir("..") != 0)
 		wget_error_printf(_("Failed to chdir ..\n"));
 
@@ -822,8 +661,7 @@ void wget_test_stop_server(void)
 
 static char *_insert_ports(const char *src)
 {
-	if (!src || (!strstr(src, "{{port}}") && !strstr(src, "{{sslport}}")
-	    && !strstr(src, "{{ftpport}}") && !strstr(src, "{{ftpsport}}")))
+	if (!src || (!strstr(src, "{{port}}") && !strstr(src, "{{sslport}}")))
 		return NULL;
 
 	char *ret = wget_malloc(strlen(src) + 1);
@@ -839,16 +677,6 @@ static char *_insert_ports(const char *src)
 			else if (!strncmp(src, "{{sslport}}", 11)) {
 				dst += sprintf(dst, "%d", https_server_port);
 				src += 11;
-				continue;
-			}
-			else if (!strncmp(src, "{{ftpport}}", 11)) {
-				dst += sprintf(dst, "%d", ftp_server_port);
-				src += 11;
-				continue;
-			}
-			else if (!strncmp(src, "{{ftpsport}}", 12)) {
-				dst += sprintf(dst, "%d", ftps_server_port);
-				src += 12;
 				continue;
 			}
 		}
@@ -876,7 +704,6 @@ static void _write_msg(const char *msg, size_t len)
 
 void wget_test_start_server(int first_key, ...)
 {
-	static wget_tcp_t *https_parent_tcp, *ftp_parent_tcp, *ftps_parent_tcp;
 	int rc, key;
 	size_t it;
 	va_list args;
@@ -912,22 +739,6 @@ void wget_test_start_server(int first_key, ...)
 		case WGET_TEST_RESPONSE_URLS:
 			urls = va_arg(args, wget_test_url_t *);
 			nurls = va_arg(args, size_t);
-			break;
-		case WGET_TEST_FTP_SERVER_HELLO:
-			server_hello = va_arg(args, const char *);
-			break;
-		case WGET_TEST_FTP_IO_ORDERED:
-			ios_ordered = 1;
-			ios = va_arg(args, wget_test_ftp_io_t *);
-			nios = va_arg(args, size_t);
-			break;
-		case WGET_TEST_FTP_IO_UNORDERED:
-			ios_ordered = 0;
-			ios = va_arg(args, wget_test_ftp_io_t *);
-			nios = va_arg(args, size_t);
-			break;
-		case WGET_TEST_FTPS_IMPLICIT:
-			ftps_implicit = va_arg(args, int);
 			break;
 		case WGET_TEST_SERVER_SEND_CONTENT_LENGTH:
 			server_send_content_length = !!va_arg(args, int);
@@ -980,34 +791,6 @@ void wget_test_start_server(int first_key, ...)
 	wget_ssl_set_config_string(WGET_SSL_CERT_FILE, SRCDIR "/certs/x509-server-cert.pem");
 	wget_ssl_set_config_string(WGET_SSL_KEY_FILE, SRCDIR "/certs/x509-server-key.pem");
 
-	// init HTTPS server socket
-	https_parent_tcp = wget_tcp_init();
-	wget_tcp_set_ssl(https_parent_tcp, 1); // switch SSL on
-	wget_tcp_set_timeout(https_parent_tcp, -1); // INFINITE timeout
-	wget_tcp_set_preferred_family(https_parent_tcp, WGET_NET_FAMILY_IPV4); // to have a defined order of IPs
-	if (wget_tcp_listen(https_parent_tcp, "localhost", 0, 5) != 0)
-		exit(1);
-	https_server_port = wget_tcp_get_local_port(https_parent_tcp);
-
-	// init FTP server socket
-	ftp_parent_tcp = wget_tcp_init();
-	wget_tcp_set_timeout(ftp_parent_tcp, -1); // INFINITE timeout
-	wget_tcp_set_preferred_family(ftp_parent_tcp, WGET_NET_FAMILY_IPV4); // to have a defined order of IPs
-	if (wget_tcp_listen(ftp_parent_tcp, "localhost", 0, 5) != 0)
-		exit(1);
-	ftp_server_port = wget_tcp_get_local_port(ftp_parent_tcp);
-
-	if (ftps_implicit) {
-		// init FTPS server socket
-		ftps_parent_tcp = wget_tcp_init();
-		wget_tcp_set_ssl(ftps_parent_tcp, 1); // switch SSL on
-		wget_tcp_set_timeout(ftps_parent_tcp, -1); // INFINITE timeout
-		wget_tcp_set_preferred_family(ftps_parent_tcp, WGET_NET_FAMILY_IPV4); // to have a defined order of IPs
-		if (wget_tcp_listen(ftps_parent_tcp, "localhost", 0, 5) != 0)
-			exit(1);
-		ftps_server_port = wget_tcp_get_local_port(ftps_parent_tcp);
-	}
-
 	// start HTTP server
 	if ((rc = _http_server_start(HTTP_MODE)) != 0)
 		wget_error_printf_exit(_("Failed to start HTTP server, error %d\n"), rc);
@@ -1035,16 +818,6 @@ void wget_test_start_server(int first_key, ...)
 				url->header_alloc[it] = 1;
 			}
 		}
-	}
-
-	// start thread for FTP
-	if ((rc = wget_thread_start(&ftp_server_tid, _ftp_server_thread, ftp_parent_tcp, 0)) != 0)
-		wget_error_printf_exit(_("Failed to start FTP server, error %d\n"), rc);
-
-	// start thread for FTPS
-	if (ftps_implicit) {
-		if ((rc = wget_thread_start(&ftps_server_tid, _ftp_server_thread, ftps_parent_tcp, 0)) != 0)
-			wget_error_printf_exit(_("Failed to start FTP server, error %d\n"), rc);
 	}
 }
 
@@ -1141,7 +914,6 @@ void wget_test(int first_key, ...)
 		server_send_content_length_old = server_send_content_length;
 
 	keep_tmpfiles = 0;
-	server_hello = "220 FTP server ready";
 
 	if (!request_urls)
 		request_urls = wget_vector_create(8,8,NULL);
@@ -1174,9 +946,6 @@ void wget_test(int first_key, ...)
 			break;
 		case WGET_TEST_EXECUTABLE:
 			executable = va_arg(args, const char *);
-			break;
-		case WGET_TEST_FTP_SERVER_HELLO:
-			server_hello = va_arg(args, const char *);
 			break;
 		case WGET_TEST_SERVER_SEND_CONTENT_LENGTH:
 			server_send_content_length = !!va_arg(args, int);
@@ -1235,10 +1004,6 @@ void wget_test(int first_key, ...)
 		wget_buffer_printf_append(cmd, " \"http://localhost:%d/%s\"",
 			http_server_port, (char *)wget_vector_get(request_urls, it));
 	}
-//	for (it = 0; it < (size_t)wget_vector_size(ftp_files); it++) {
-//		wget_buffer_printf_append2(cmd, " 'ftp://localhost:%d/%s'",
-//			ftp_server_port, (char *)wget_vector_get(ftp_files, it));
-//	}
 	wget_buffer_strcat(cmd, " 2>&1");
 
 	wget_info_printf("cmd=%s\n", cmd->data);
@@ -1322,16 +1087,6 @@ int wget_test_get_http_server_port(void)
 int wget_test_get_https_server_port(void)
 {
 	return https_server_port;
-}
-
-int wget_test_get_ftp_server_port(void)
-{
-	return ftp_server_port;
-}
-
-int wget_test_get_ftps_server_port(void)
-{
-	return ftps_server_port;
 }
 
 // assume that we are in 'tmpdir'
