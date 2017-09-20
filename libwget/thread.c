@@ -28,6 +28,7 @@
 #include <config.h>
 
 #include <signal.h>
+#include <errno.h>
 #include "timespec.h" // gnulib gettime()
 
 #include <wget.h>
@@ -69,17 +70,29 @@ void wget_thread_mutex_unlock(wget_thread_mutex_t *mutex)
 
 int wget_thread_cancel(wget_thread_t thread)
 {
-	return pthread_cancel(thread);
+	if (thread)
+		return pthread_cancel(thread);
+
+	errno = ESRCH;
+	return -1;
 }
 
 int wget_thread_kill(wget_thread_t thread, int sig)
 {
-	return pthread_kill(thread, sig);
+	if (thread)
+		return pthread_kill(thread, sig);
+
+	errno = ESRCH;
+	return -1;
 }
 
 int wget_thread_join(wget_thread_t thread)
 {
-	return pthread_join(thread, NULL);
+	if (thread)
+		return pthread_join(thread, NULL);
+
+	errno = ESRCH;
+	return -1;
 }
 
 wget_thread_t wget_thread_self(void)
