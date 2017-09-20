@@ -1333,6 +1333,21 @@ static ssize_t _ssl_writev(gnutls_transport_ptr_t *p, const giovec_t *iov, int i
 }
 #endif
 
+#ifdef _WIN32
+static ssize_t _win32_send(gnutls_transport_ptr_t p, const void *buf, size_t size)
+{
+	int sockfd = (int) (ptrdiff_t) p;
+
+	return send(sockfd, buf, size, 0);
+}
+static ssize_t _win32_recv(gnutls_transport_ptr_t p, void *buf, size_t size)
+{
+	int sockfd = (int) (ptrdiff_t) p;
+
+	return recv(sockfd, buf, size, 0);
+}
+#endif
+
 int wget_ssl_open(wget_tcp_t *tcp)
 {
 	gnutls_session_t session;
@@ -1449,6 +1464,11 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		gnutls_transport_set_vec_push_function(session, (ssize_t (*)(gnutls_transport_ptr_t, const giovec_t *iov, int iovcnt)) _ssl_writev);
 		gnutls_transport_set_ptr(session, tcp);
 	} else {
+#endif
+
+#ifdef _WIN32
+	gnutls_transport_set_push_function(session, (gnutls_push_func) _win32_send);
+	gnutls_transport_set_pull_function(session, (gnutls_pull_func) _win32_recv);
 #endif
 
 #ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
