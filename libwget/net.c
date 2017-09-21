@@ -268,23 +268,86 @@ static struct addrinfo *_wget_sort_preferred(struct addrinfo *addrinfo, int pref
 	}
 }
 
+#ifdef HAVE_GETADDRINFO_A
 static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, struct addrinfo **out_addr)
 {
-	struct addrinfo hints;
+	int err;
 	char s_port[6];
 
-	memset(&hints, 0 ,sizeof(hints));
-	hints.ai_family = tcp->family;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_ADDRCONFIG | (port ? AI_NUMERICSERV : 0);
+	if (port) {
+		snprintf(s_port, sizeof(s_port), "%hu", port);
+		debug_printf("resolving %s:%s...\n", host ? host : "", s_port);
+	} else {
+		debug_printf("resolving %s...\n", host);
+	}
+
+	struct addrinfo hints = {
+		.ai_family = tcp->family,
+		.ai_socktype = SOCK_STREAM,
+		.ai_flags = AI_ADDRCONFIG | (port ? AI_NUMERICSERV : 0)
+	};
+
+	// shortcut if no timeout has been specified
+	if (tcp->dns_timeout == -1)
+		return getaddrinfo(host, port ? s_port : NULL, &hints, out_addr);
+
+	struct gaicb addr = {
+		.ar_name = host,
+		.ar_service = s_port,
+		.ar_request = &hints,
+	};
+	struct gaicb *addrs = &addr;
+
+	if ((err = getaddrinfo_a(GAI_NOWAIT, &addrs, 1, NULL))) {
+		debug_printf("getaddrinfo_a() failed (%d): %s\n", err, gai_strerror(err));
+		return err;
+	}
+
+	struct timespec tmo = {
+		.tv_sec = tcp->dns_timeout / 1000,
+		.tv_nsec = (tcp->dns_timeout % 1000) * 1000000
+	};
+
+	if ((err = gai_suspend((const struct gaicb * const *) &addrs, 1, &tmo)) == EAI_AGAIN) {
+		// timeout occurred, do we need to cancel ?
+		int cancel_err = gai_cancel(&addr);
+		debug_printf("gai_cancel = %s\n", gai_strerror(cancel_err));
+	} else if (err)
+		debug_printf("gai_suspend() failed (%d): %s\n", err, gai_strerror(err));
+
+	gai_cancel(NULL); // seems to free some internal memory, but this is not even documented
+
+	if (err == 0) {
+		if (addr.ar_result) {
+			*out_addr = addr.ar_result;
+			addr.ar_result = NULL;
+		} else
+			err = EAI_NODATA; // as returned by getaddrinfo(): "No address associated with hostname"
+	}
+
+	return err;
+}
+#else
+// we can't provide a portable way of respecting a DNS timeout
+static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, struct addrinfo **out_addr)
+{
+	char s_port[6];
+	struct addrinfo hints = {
+		.ai_family = tcp->family,
+		.ai_socktype = SOCK_STREAM,
+		.ai_flags = AI_ADDRCONFIG | (port ? AI_NUMERICSERV : 0)
+	};
 
 	if (port) {
 		snprintf(s_port, sizeof(s_port), "%hu", port);
 		debug_printf("resolving %s:%s...\n", host ? host : "", s_port);
 		return getaddrinfo(host, s_port, &hints, out_addr);
-	} else
+	} else {
+		debug_printf("resolving %s...\n", host);
 		return getaddrinfo(host, NULL, &hints, out_addr);
+	}
 }
+#endif
 
 /**
  * Free the DNS cache.
