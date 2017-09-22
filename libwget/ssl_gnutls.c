@@ -808,7 +808,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	unsigned int status, deinit_cert = 0, deinit_issuer = 0;
 	const gnutls_datum_t *cert_list = 0;
 	unsigned int cert_list_size;
-	int ret = -1, err, ocsp_ok = 0;
+	int ret = -1, err, ocsp_ok = 0, pinning_ok = 0;
 	gnutls_x509_crt_t cert = NULL, issuer = NULL;
 	const char *hostname;
 	const char *tag = _config.check_certificate ? _("ERROR") : _("WARNING");
@@ -914,24 +914,19 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		goto out;
 	}
 
-	if (gnutls_x509_crt_init(&cert) < 0) {
+	if (gnutls_x509_crt_init(&cert) != GNUTLS_E_SUCCESS) {
 		error_printf(_("%s: Error initializing X.509 certificate\n"), tag);
 		goto out;
 	}
 	deinit_cert = 1;
 
-	if ((cert_list = gnutls_certificate_get_peers(session, &cert_list_size))) {
-		if ((err = gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER)) != GNUTLS_E_SUCCESS) {
-			error_printf(_("%s: Failed to parse certificate: %s\n"), tag, gnutls_strerror (err));
-			goto out;
-		}
-	} else {
+	if (!(cert_list = gnutls_certificate_get_peers(session, &cert_list_size))) {
 		error_printf(_("%s: No certificate was found!\n"), tag);
 		goto out;
 	}
 
-	if (_cert_verify_hpkp(cert, hostname, session)) {
-		error_printf(_("%s: Pubkey pinning mismatch!\n"), tag);
+	if ((err = gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER)) != GNUTLS_E_SUCCESS) {
+		error_printf(_("%s: Failed to parse certificate: %s\n"), tag, gnutls_strerror (err));
 		goto out;
 	}
 
@@ -962,19 +957,28 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		} else if (ctx->valid)
 			debug_printf("OCSP: Host '%s' is valid (from cache)\n", hostname);
 	}
+#endif
 
-	if (_config.ocsp) {
-		for (unsigned it = nvalid; it < cert_list_size; it++) {
+	for (unsigned it = 0; it < cert_list_size; it++) {
+		if (deinit_cert)
+			gnutls_x509_crt_deinit(cert);
+
+		gnutls_x509_crt_init(&cert);
+
+		if ((err = gnutls_x509_crt_import(cert, &cert_list[it], GNUTLS_X509_FMT_DER)) != GNUTLS_E_SUCCESS) {
+			error_printf(_("%s: Failed to parse certificate[%u]: %s\n"), tag, it, gnutls_strerror (err));
+			continue;
+		}
+
+		if (_cert_verify_hpkp(cert, hostname, session) == 0)
+			pinning_ok = 1;
+
+		_cert_verify_hpkp(cert, hostname, session);
+
+#ifdef HAVE_GNUTLS_OCSP_H
+		if (_config.ocsp && it > nvalid) {
 			char fingerprint[64 * 2 +1];
 			int revoked;
-
-			if (deinit_cert)
-				gnutls_x509_crt_deinit(cert);
-			gnutls_x509_crt_init(&cert);
-			if ((err = gnutls_x509_crt_import(cert, &cert_list[it], GNUTLS_X509_FMT_DER)) != GNUTLS_E_SUCCESS) {
-				error_printf(_("%s: Failed to parse certificate[%u]: %s\n"), tag, it, gnutls_strerror (err));
-				continue;
-			}
 
 			_get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
 
@@ -1022,16 +1026,18 @@ static int _verify_certificate_callback(gnutls_session_t session)
 				nignored++;
 			}
 		}
+#endif
+	}
 
-		if (ocsp_stats) {
-			_ocsp_stats_data_t stats;
-			stats.hostname = hostname;
-			stats.nvalid = nvalid;
-			stats.nrevoked = nrevoked;
-			stats.nignored = nignored;
+#ifdef HAVE_GNUTLS_OCSP_H
+	if (_config.ocsp && ocsp_stats) {
+		_ocsp_stats_data_t stats;
+		stats.hostname = hostname;
+		stats.nvalid = nvalid;
+		stats.nrevoked = nrevoked;
+		stats.nignored = nignored;
 
-			stats_callback(WGET_STATS_TYPE_OCSP, &stats);
-		}
+		stats_callback(WGET_STATS_TYPE_OCSP, &stats);
 	}
 
 	if (_config.ocsp_stapling || _config.ocsp) {
@@ -1043,6 +1049,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		}
 	}
 #endif
+
+	if (!pinning_ok) {
+		error_printf(_("%s: Pubkey pinning mismatch!\n"), tag);
+		ret = -1;
+	}
 
 	// 0: continue handshake
 	// else: stop handshake
