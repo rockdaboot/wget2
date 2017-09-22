@@ -525,7 +525,7 @@ static int _http_server_start(int SERVER_MODE)
 		{
 			return 1;
 		}
-		port_num = (int)dinfo->port;
+		port_num = dinfo->port;
 		if (SERVER_MODE == HTTP_MODE)
 			http_server_port = port_num;
 		else if (SERVER_MODE == HTTPS_MODE)
