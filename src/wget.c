@@ -2845,7 +2845,7 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 
 		if (written == SAFE_WRITE_ERROR) {
 			if (!terminate)
-				error_printf(_("Failed to write errno=%d\n"), errno);
+				debug_printf(_("Failed to write errno=%d\n"), errno);
 			set_exit_status(WG_EXIT_STATUS_IO);
 			return -1;
 		}
