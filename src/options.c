@@ -730,6 +730,21 @@ static int parse_plugin_option
 	return 0;
 }
 
+static int parse_local_db(option_t opt, const char *val, const char invert)
+{
+	parse_bool(opt, val, invert);
+
+	if (!config.local_db) {
+		config.cookies = 0;
+		config.hsts = 0;
+		config.hpkp = 0;
+		config.ocsp = 0;
+		config.tls_resume = 0;
+	}
+
+	return 0;
+}
+
 static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
 	G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
@@ -808,7 +823,8 @@ struct config config = {
 #ifdef _WIN32
 	.restrict_file_names = WGET_RESTRICT_NAMES_WINDOWS,
 #endif
-	.xattr = 1
+	.xattr = 1,
+	.local_db = 1
 };
 
 static int parse_execute(option_t opt, const char *val, const char invert);
@@ -1257,6 +1273,11 @@ static const struct optionw options[] = {
 	{ "load-cookies", &config.load_cookies, parse_string, 1, 0,
 		SECTION_HTTP,
 		{ "Load cookies from file.\n"
+		}
+	},
+	{ "local-db", &config.local_db, parse_local_db, -1, 0,
+		SECTION_STARTUP,
+		{ "Read or load databases\n"
 		}
 	},
 	{ "local-encoding", &config.local_encoding, parse_string, 1, 0,
@@ -2201,19 +2222,16 @@ int init(int argc, const char **argv)
 	}
 	log_init();
 
-	if (!config.hsts_file)
+	if (config.hsts && !config.hsts_file)
 		config.hsts_file = wget_aprintf("%s/.wget-hsts", home_dir);
 
-	if (!config.hpkp_file)
-		config.hpkp_file = wget_aprintf("%s/.wget-hpkp", home_dir);
-
-	if (!config.hpkp_file)
+	if (config.hpkp && !config.hpkp_file)
 		config.hpkp_file = wget_aprintf("%s/.wget-hpkp", home_dir);
 
 	if (config.tls_resume && !config.tls_session_file)
 		config.tls_session_file = wget_aprintf("%s/.wget-session", home_dir);
 
-	if (!config.ocsp_file)
+	if (config.ocsp && !config.ocsp_file)
 		config.ocsp_file = wget_aprintf("%s/.wget-ocsp", home_dir);
 
 	if (config.netrc && !config.netrc_file)
@@ -2260,6 +2278,7 @@ int init(int argc, const char **argv)
 		if (fd != -1)
 			close(fd);
 	}
+
 	log_init();
 
 	// check for correct settings
