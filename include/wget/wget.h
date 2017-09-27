@@ -1505,6 +1505,10 @@ typedef struct {
 		login;
 	const char *
 		password;
+	uint16_t
+		port; // GNU extension
+	bool
+		force : 1; // GNU extension
 } wget_netrc_t;
 
 WGETAPI wget_netrc_t *
