@@ -1039,8 +1039,24 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 	}
 	if (!nread) goto cleanup;
 
-	if (!resp || resp->code / 100 == 1 || resp->code == 204 || resp->code == 304 ||
-		(resp->transfer_encoding == transfer_encoding_identity && resp->content_length == 0 && resp->content_length_valid)) {
+	if (resp && resp->code == HTTP_STATUS_RANGE_NOT_SATISFIABLE) {
+		/*
+		    RFC7233:
+		    4.4.  416 Range Not Satisfiable
+
+		       The 416 (Range Not Satisfiable) status code indicates that none of
+		       the ranges in the request's Range header field (Section 3.1) overlap
+		       the current extent of the selected resource or that the set of ranges
+		       requested has been rejected due to invalid ranges or an excessive
+		       request of small or overlapping ranges.
+		*/
+		goto cleanup;
+	}
+	if (!resp
+	 || H_10X(resp->code)
+	 || resp->code == HTTP_STATUS_NO_CONTENT
+	 || resp->code == HTTP_STATUS_NOT_MODIFIED
+	 || (resp->transfer_encoding == transfer_encoding_identity && resp->content_length == 0 && resp->content_length_valid)) {
 		// - body not included, see RFC 2616 4.3
 		// - body empty, see RFC 2616 4.4
 		goto cleanup;
