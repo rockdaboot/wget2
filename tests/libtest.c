@@ -1014,8 +1014,10 @@ void wget_test(int first_key, ...)
 	if ((pp = popen(cmd->data, "r"))) {
 		char buf[4096];
 
-		while (fgets(buf, sizeof(buf), pp))
+		while (fgets(buf, sizeof(buf), pp)) {
 			fputs(buf, stderr);
+			fflush(stderr);
+		}
 
 		rc = pclose(pp);
 	} else
