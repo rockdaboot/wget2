@@ -107,6 +107,7 @@ The following packages are needed to build the software
 * pkg-config >= 0.28 (recommended)
 * doxygen (for creating the documentation)
 * gettext >= 0.18.2
+* libiconv (needed for IRI and IDN support)
 * libz >= 1.2.3 (the distribution may call the package zlib*, eg. zlib1g on Debian)
 * liblzma >= 5.1.1alpha (optional, if you want HTTP lzma decompression)
 * libbz2 >= 1.0.6 (optional, if you want HTTP bzip2 decompression)
