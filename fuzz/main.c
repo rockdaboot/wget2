@@ -92,13 +92,18 @@ int main(int argc, char **argv)
 
 	const char *target = strrchr(argv[0], SLASH);
 	target = target ? target + 1 : argv[0];
-	size_t target_len = strlen(target);
+	size_t target_len;
+
+	if (strncmp(target, "lt-", 3) == 0)
+		target += 3;
+
+	target_len = strlen(target);
 
 #ifdef _WIN32
 	target_len -= 4; // ignore .exe
 #endif
 
-	char corporadir[sizeof(SRCDIR) + 1 + strlen(target) + 8];
+	char corporadir[sizeof(SRCDIR) + 1 + target_len + 8];
 	snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.in", (int) target_len, target);
 
 	if (test_all_from(corporadir))
