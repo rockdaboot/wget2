@@ -33,6 +33,8 @@
 
 #if defined _WIN32
 #define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".dll"
+#elif defined __CYGWIN__
+#define LOCAL_NAME(x) OBJECT_DIR "/cyg" x ".dll"
 #else
 #define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".so"
 #endif

@@ -224,6 +224,8 @@ typedef struct {
 #define PATTERNS {"lib", ".dll"}, {"", ".dll"}
 #elif defined __APPLE__
 #define PATTERNS {"lib", ".so"}, {"lib", ".bundle"}, {"lib", ".dylib"}
+#elif defined __CYGWIN__
+#define PATTERNS {"cyg", ".dll"}
 #else
 #define PATTERNS {"lib", ".so"}
 #endif

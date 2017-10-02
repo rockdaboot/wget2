@@ -55,6 +55,9 @@ do { \
 #if defined _WIN32
 #define BUILD_NAME(x) ".libs" "/lib" x ".dll"
 #define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".dll"
+#elif defined __CYGWIN__
+#define BUILD_NAME(x) ".libs" "/cyg" x ".dll"
+#define LOCAL_NAME(x) OBJECT_DIR "/cyg" x ".dll"
 #else
 #define BUILD_NAME(x) ".libs" "/lib" x ".so"
 #define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".so"
@@ -202,6 +205,7 @@ static void test_dl_list(void)
 	libassert(mkdir(OBJECT_DIR "/libactuallyadir.dll", 0755) == 0);
 	libassert(mkdir(OBJECT_DIR "/libactuallyadir.dylib", 0755) == 0);
 	libassert(mkdir(OBJECT_DIR "/libactuallyadir.bundle", 0755) == 0);
+	libassert(mkdir(OBJECT_DIR "/cygactuallyadir.dll", 0755) == 0);
 
 	dirs = wget_vector_create(2, -2, NULL);
 	names = wget_vector_create(2, -2, NULL);
