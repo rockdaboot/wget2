@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -26,7 +26,7 @@ else
   git pull
 fi
 ./autogen.sh
-./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-static --enable-shared --prefix=$INSTALLDIR
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --prefix=$INSTALLDIR
 make clean
 make -j$(nproc)
 make install
@@ -85,9 +85,9 @@ fi
 #make bootstrap
 make autoreconf && touch .submodule.stamp
 ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX \
-  --with-nettle-mini --enable-gcc-warnings --enable-shared --disable-static --with-included-libtasn1 \
+  --with-nettle-mini --enable-shared --with-included-libtasn1 \
   --with-included-unistring --without-p11-kit --disable-doc --disable-tests --disable-tools --disable-cxx \
-  --disable-maintainer-mode --disable-libdane --prefix=$INSTALLDIR --disable-hardware-acceleration
+  --disable-maintainer-mode --disable-libdane --disable-hardware-acceleration --prefix=$INSTALLDIR
 make -j$(nproc)
 make install
 cd ..
@@ -109,7 +109,7 @@ cd ..
 
 # somehow, the GnuTLS build needs a static gcc library. It comes with MinGW, but we have to find it's directory.
 GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|head -1))
-export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$HOME/src/wget2/libwget/.libs;$GCCLIB"
+export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs;$GCCLIB"
 ./bootstrap
 ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
 make clean
