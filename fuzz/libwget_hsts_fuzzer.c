@@ -30,8 +30,9 @@
 static const uint8_t *g_data;
 static size_t g_size;
 
-#if ! defined _WIN32 && defined HAVE_FMEMOPEN
+#if defined HAVE_DLFCN_H && defined HAVE_FMEMOPEN
 #include <dlfcn.h>
+#ifdef RTLD_NEXT /* Not defined e.g. on CygWin */
 FILE *fopen(const char *pathname, const char *mode)
 {
 	FILE *(*libc_fopen)(const char *, const char *) =
@@ -42,6 +43,7 @@ FILE *fopen(const char *pathname, const char *mode)
 
 	return libc_fopen(pathname, mode);
 }
+#endif
 #endif
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
