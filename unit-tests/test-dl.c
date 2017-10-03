@@ -137,7 +137,9 @@ static void copy_file(const char *src, const char *dst)
 
 	printf("  Copying %s --> %s\n", src, dst);
 
-	libassert(stat(src, &statbuf) == 0);
+	if (stat(src, &statbuf) != 0)
+		exit(77); // likely a static build
+
 	libassert((sfd = open(src, O_RDONLY | O_BINARY)) >= 0);
 	libassert((dfd = open(dst, O_WRONLY | O_CREAT | O_BINARY, statbuf.st_mode)) >= 0);
 	size_remain = statbuf.st_size;
