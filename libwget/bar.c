@@ -167,14 +167,15 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 
 static void _bar_update_slot(const wget_bar_t *bar, int slot)
 {
-	uint64_t max, cur;
-	int ratio;
-	char *human_readable_bytes;
 	_bar_slot_t *slotp = &bar->slots[slot];
 
 	// We only print a progress bar for the slot if a context has been
 	// registered for it
 	if (slotp->status == DOWNLOADING || slotp->status == COMPLETE) {
+		uint64_t max, cur;
+		int ratio;
+		char *human_readable_bytes;
+
 		max = slotp->file_size;
 		cur = slotp->bytes_downloaded;
 

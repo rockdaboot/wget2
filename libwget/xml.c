@@ -549,9 +549,9 @@ void wget_xml_parse_file(
 	void *user_ctx,
 	int hints)
 {
-	int fd;
-
 	if (strcmp(fname,"-")) {
+		int fd;
+
 		if ((fd = open(fname, O_RDONLY|O_BINARY)) != -1) {
 			struct stat st;
 			if (fstat(fd, &st) == 0) {

@@ -417,16 +417,16 @@ void plugin_db_load_from_envvar(void)
 	dl_error_t e[1];
 	wget_vector_t *v;
 	const char *str;
-#ifdef _WIN32
-	char sep = ';';
-#else
-	char sep = ':';
-#endif
 
 	// Fetch from environment variable
 	str = getenv(plugin_list_envvar);
 
 	if (str) {
+#ifdef _WIN32
+	char sep = ';';
+#else
+	char sep = ':';
+#endif
 		dl_error_init(e);
 
 		// Split the value

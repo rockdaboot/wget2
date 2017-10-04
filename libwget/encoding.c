@@ -79,9 +79,8 @@ int wget_memiconv(const char *src_encoding, const void *src, size_t srclen, cons
 	if (!dst_encoding)
 		dst_encoding = "iso-8859-1"; // default character-set for most browsers
 
-	int ret = -1;
-
 	if (wget_strcasecmp_ascii(src_encoding, dst_encoding)) {
+		int ret = -1;
 		iconv_t cd = iconv_open(dst_encoding, src_encoding);
 
 		if (cd != (iconv_t)-1) {

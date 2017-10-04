@@ -135,7 +135,7 @@ int job_validate_file(JOB *job)
 	PART part;
 	wget_metalink_t *metalink;
 	off_t fsize, real_fsize = 0;
-	int fd, rc = -1;
+	int fd;
 	struct stat st;
 
 	if (!(metalink = job->metalink))
@@ -189,7 +189,7 @@ int job_validate_file(JOB *job)
 
 	if (wget_vector_size(metalink->hashes) > 0 && (fd = open(metalink->name, O_RDONLY|O_BINARY)) != -1) {
 		// file exists, check which piece is invalid and re-queue it
-
+		int rc = -1;
 		for (int it = 0; errno != EINTR && it < wget_vector_size(metalink->hashes); it++) {
 			wget_metalink_hash_t *hash = wget_vector_get(metalink->hashes, it);
 

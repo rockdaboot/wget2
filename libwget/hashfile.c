@@ -36,7 +36,7 @@
 #endif
 
 #include <wget.h>
-#include <private.h>
+#include "private.h"
 
 /**
  * \file

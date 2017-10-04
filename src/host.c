@@ -411,11 +411,6 @@ void host_reset_failure(HOST *host)
 	wget_thread_mutex_unlock(&hosts_mutex);
 }
 
-struct find_free_job_context {
-	JOB **job;
-	wget_http_connection_t *conn;
-};
-
 int queue_empty(void)
 {
 	return !qsize;

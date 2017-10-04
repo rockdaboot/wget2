@@ -117,12 +117,13 @@ static _GL_INLINE ENTRY * G_GNUC_WGET_NONNULL_ALL hashmap_find_entry(const wget_
 static void G_GNUC_WGET_NONNULL_ALL hashmap_rehash(wget_hashmap_t *h, int newmax, int recalc_hash)
 {
 	ENTRY **new_entry, *entry, *next;
-	int it, pos, cur = h->cur;
+	int cur = h->cur;
 
 	if (cur) {
+		int pos;
 		new_entry = xcalloc(newmax, sizeof(ENTRY *));
 
-		for (it = 0; it < h->max && cur; it++) {
+		for (int it = 0; it < h->max && cur; it++) {
 			for (entry = h->entry[it]; entry; entry = next) {
 				next = entry->next;
 

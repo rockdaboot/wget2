@@ -161,17 +161,19 @@ void wget_netrc_db_add(wget_netrc_db_t *netrc_db, wget_netrc_t *netrc)
 
 int wget_netrc_db_load(wget_netrc_db_t *netrc_db, const char *fname)
 {
-	wget_netrc_t netrc;
 	FILE *fp;
-	char *buf = NULL, *linep, *p, *key = NULL;
-	size_t bufsize = 0;
-	ssize_t buflen;
-	int nentries = 0, in_macdef = 0, in_machine = 0;
+	int nentries = 0;
 
 	if (!netrc_db || !fname || !*fname)
 		return -1;
 
 	if ((fp = fopen(fname, "r"))) {
+		wget_netrc_t netrc;
+		char *buf = NULL, *linep, *p, *key = NULL;
+		size_t bufsize = 0;
+		ssize_t buflen;
+		int in_macdef = 0, in_machine = 0;
+
 		while ((buflen = wget_getline(&buf, &bufsize, fp)) >= 0) {
 			linep = buf;
 

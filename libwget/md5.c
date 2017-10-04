@@ -57,7 +57,6 @@ void wget_md5_printf_hex(char *digest_hex, const char *fmt, ...)
 	char *plaintext;
 	va_list args;
 	size_t len;
-	int rc;
 
 	va_start(args, fmt);
 	len = wget_vasprintf(&plaintext, fmt, args);
@@ -65,6 +64,7 @@ void wget_md5_printf_hex(char *digest_hex, const char *fmt, ...)
 
 	if (plaintext) {
 		unsigned char digest[wget_hash_get_len(WGET_DIGTYPE_MD5)];
+		int rc;
 
 		if ((rc = wget_hash_fast(WGET_DIGTYPE_MD5, plaintext, len, digest)) == 0) {
 			wget_memtohex(digest, sizeof(digest), digest_hex, sizeof(digest) * 2 + 1);

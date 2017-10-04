@@ -411,9 +411,8 @@ _generate_ocsp_data(gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer,
 		  gnutls_datum_t * rdata, gnutls_datum_t *nonce)
 {
 	gnutls_ocsp_req_t req;
-	int ret = -1;
+	int ret = gnutls_ocsp_req_init(&req);
 
-	ret = gnutls_ocsp_req_init(&req);
 	if (ret < 0) {
 		error_printf("ocsp_req_init: %s", gnutls_strerror(ret));
 		return -1;
@@ -1110,11 +1109,11 @@ static void _set_credentials(gnutls_certificate_credentials_t *credentials)
 
 void wget_ssl_init(void)
 {
-	int ncerts = -1, rc;
-
 	wget_thread_mutex_lock(&_mutex);
 
 	if (!_init) {
+		int rc, ncerts = -1;
+
 		debug_printf("GnuTLS init\n");
 		gnutls_global_init();
 		gnutls_certificate_allocate_credentials(&_credentials);

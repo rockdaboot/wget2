@@ -331,7 +331,6 @@ int wget_ready_2_write(int fd, int timeout)
  */
 char *wget_read_file(const char *fname, size_t *size)
 {
-	int fd;
 	ssize_t nread;
 	char *buf = NULL;
 
@@ -339,6 +338,8 @@ char *wget_read_file(const char *fname, size_t *size)
 		return NULL;
 
 	if (strcmp(fname,"-")) {
+		int fd;
+
 		if ((fd = open(fname, O_RDONLY|O_BINARY)) != -1) {
 			struct stat st;
 
@@ -409,7 +410,7 @@ int wget_update_file(const char *fname,
 {
 	FILE *fp;
 	const char *tmpdir, *basename;
-	int lockfd, fd;
+	int lockfd;
 
 	char tmpfile[strlen(fname) + 6 + 1];
 	snprintf(tmpfile, sizeof(tmpfile), "%sXXXXXX", fname);
@@ -480,6 +481,7 @@ int wget_update_file(const char *fname,
 	}
 
 	if (save_func) {
+		int fd;
 		// creat & open temp file to write data into with 0600 - rely on Gnulib to set correct
 		// ownership instead of using umask() here.
 		if ((fd = mkstemp(tmpfile)) == -1) {
