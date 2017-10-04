@@ -744,10 +744,6 @@ void wget_test_start_server(int first_key, ...)
 			server_send_content_length = !!va_arg(args, int);
 			break;
 		case WGET_TEST_FEATURE_MHD:
-#ifndef WITH_MICROHTTPD
-			wget_error_printf(_("Test needs Libmicrohttpd. Skipping\n"));
-			exit(WGET_TEST_EXIT_SKIP);
-#endif
 			break;
 		case WGET_TEST_FEATURE_TLS:
 #ifndef WITH_GNUTLS
