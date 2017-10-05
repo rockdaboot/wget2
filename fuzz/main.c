@@ -40,9 +40,10 @@
 static int test_all_from(const char *dirname)
 {
 	DIR *dirp;
-	struct dirent *dp;
 
 	if ((dirp = opendir(dirname))) {
+		struct dirent *dp;
+
 		while ((dp = readdir(dirp))) {
 			if (*dp->d_name == '.') continue;
 

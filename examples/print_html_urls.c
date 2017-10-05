@@ -34,10 +34,11 @@
 static void html_parse_localfile(const char *fname)
 {
 	char *data, *data_allocated;
-	const char *encoding = NULL;
 	size_t len;
 
 	if ((data_allocated = data = wget_read_file(fname, &len))) {
+		const char *encoding = NULL;
+
 		if ((unsigned char)data[0] == 0xFE && (unsigned char)data[1] == 0xFF) {
 			// Big-endian UTF-16
 			encoding = "UTF-16BE";

@@ -1009,13 +1009,14 @@ static void _css_dump_uri(G_GNUC_WGET_UNUSED void *user_ctx, const char *url, si
 static void test_parser(void)
 {
 	DIR *dirp;
-	struct dirent *dp;
-	const char *ext;
 	int xml = 0, html = 0, css = 0;
 
 	// test the XML / HTML parser, you should start the test with valgrind
 	// to detect memory faults
 	if ((dirp = opendir(SRCDIR "/files")) != NULL) {
+		const char *ext;
+		struct dirent *dp;
+
 		while ((dp = readdir(dirp)) != NULL) {
 			if (*dp->d_name == '.') continue;
 			if ((ext = strrchr(dp->d_name, '.'))) {

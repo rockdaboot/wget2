@@ -471,10 +471,11 @@ static void _http_server_stop(void)
 
 static int _http_server_start(int SERVER_MODE)
 {
-	static char rnd[8] = "realrnd"; // fixed 'random' value
 	uint16_t port_num = 0;
 
 	if (SERVER_MODE == HTTP_MODE) {
+		static char rnd[8] = "realrnd"; // fixed 'random' value
+
 		httpdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
 			port_num, NULL, NULL, &_answer_to_connection, NULL,
 			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
@@ -551,10 +552,11 @@ static int _http_server_start(int SERVER_MODE)
 		struct sockaddr_storage addr_store;
 		struct sockaddr *addr = (struct sockaddr *)&addr_store;
 		socklen_t addr_len = sizeof(addr_store);
-		char s_port[NI_MAXSERV];
 
 		// get automatic retrieved port number
 		if (getsockname(sock_fd, addr, &addr_len) == 0) {
+			char s_port[NI_MAXSERV];
+
 			if (getnameinfo(addr, addr_len, NULL, 0, s_port, sizeof(s_port), NI_NUMERICSERV) == 0) {
 				port_num = (uint16_t)atoi(s_port);
 				if (SERVER_MODE == HTTP_MODE)
@@ -594,10 +596,11 @@ static void _remove_directory(const char *dirname);
 static void _empty_directory(const char *dirname)
 {
 	DIR *dir;
-	struct dirent *dp;
 	size_t dirlen = strlen(dirname);
 
 	if ((dir = opendir(dirname))) {
+		struct dirent *dp;
+
 		while ((dp = readdir(dir))) {
 			if (*dp->d_name == '.' && (dp->d_name[1] == 0 || (dp->d_name[1] == '.' && dp->d_name[2] == 0)))
 				continue;
@@ -820,13 +823,14 @@ void wget_test_start_server(int first_key, ...)
 static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *expected_files)
 {
 	DIR *dir;
-	struct dirent *dp;
 	struct stat st;
-	size_t it, dirlen = strlen(dirname);
+	size_t dirlen = strlen(dirname);
 
 	wget_info_printf("Entering %s\n", dirname);
 
 	if ((dir = opendir(dirname))) {
+		struct dirent *dp;
+
 		while ((dp = readdir(dir))) {
 			char fname[dirlen + 1 + strlen(dp->d_name) + 1];
 
@@ -849,6 +853,8 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 // Example: cedilla (%C3%A7) will be converted to c+composed_cedilla (%63%CC%A7)
 // Since there are a few pitfalls with Apple's NFD, just skip the check here.
 #if !(defined __APPLE__ && defined __MACH__)
+				size_t it;
+
 				wget_info_printf("search %s\n", fname);
 
 				for (it = 0; expected_files[it].name; it++) {

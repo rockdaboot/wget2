@@ -35,7 +35,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	wget_iri_t *iri;
 	wget_vector_t *cookies;
 	char *in;
-	char fname[64];
 
 	if (size > 1000) // same as max_len = 10000 in .options file
 		return 0;
@@ -58,6 +57,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 	wget_cookie_parse_setcookie(in, &cookie);
 	if (cookie) {
+		char fname[64];
+
 		wget_cookie_store_cookie(db, cookie);
 		wget_cookie_check_psl(db, cookie);
 		iri = wget_iri_parse("x.y", "iso-8859-1");
