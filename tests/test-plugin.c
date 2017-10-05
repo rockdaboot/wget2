@@ -194,9 +194,9 @@ int main(void)
 		}
 	};
 
-	if (access("./libs/libpluginname.so", R_OK) != 0
-		&& access("./libs/libpluginname.dll", R_OK) != 0
-		&& access("./libs/cygpluginname.dll", R_OK) != 0)
+	if (access(".libs/libpluginname.so", R_OK) != 0
+		&& access(".libs/libpluginname.dll", R_OK) != 0
+		&& access(".libs/cygpluginname.dll", R_OK) != 0)
 		exit(77); // likely a static build
 
 	wget_test_start_server(
