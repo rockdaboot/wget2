@@ -32,15 +32,15 @@
 #define concat2(x, y) x ## y
 #define concat(x, y) concat2(x, y)
 
-WGET_EXPORT void dl_test_write_param(char buf[16]);
-WGET_EXPORT void concat(dl_test_fn_, PARAM)(char buf[16]);
+WGET_EXPORT void dl_test_write_param(char *buf, size_t len);
+WGET_EXPORT void concat(dl_test_fn_, PARAM)(char *buf, size_t len);
 
-void dl_test_write_param(char buf[16])
+void dl_test_write_param(char *buf, size_t len)
 {
-	strcpy(buf, stringify(PARAM));
+	wget_strlcpy(buf, stringify(PARAM), len);
 }
 
-void concat(dl_test_fn_, PARAM)(char buf[16])
+void concat(dl_test_fn_, PARAM)(char *buf, size_t len)
 {
-	strcpy(buf, stringify(PARAM));
+	wget_strlcpy(buf, stringify(PARAM), len);
 }

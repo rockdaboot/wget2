@@ -1485,7 +1485,7 @@ static void test_hpkp(void)
 				}
 				if (k == n_pins) {
 					failed++;
-					info_printf("Failed [%u]: Pin %s not found in hpkp entry\n", it, pins[n_pins]);
+					info_printf("Failed [%u]: Pin %s not found in hpkp entry\n", it, hpkp_pins[j]);
 				} else {
 					ok++;
 				}

@@ -1044,7 +1044,7 @@ void stats_print(void)
 
 		if (config.stats_all && stats_opts[type].format == WGET_STATS_FORMAT_CSV && wget_strcmp(stats_opts[type].file, "-")) {
 			filename = wget_malloc(strlen(stats_opts[type].file) + 3);
-			snprintf(filename, strlen(stats_opts[type].file) + 3, "%d-%s", type, stats_opts[type].file);
+			snprintf(filename, strlen(stats_opts[type].file) + 3, "%d-%s", (int)type, stats_opts[type].file);
 		} else
 			filename = wget_strdup(stats_opts[type].file);
 

@@ -292,14 +292,10 @@ static int _answer_to_connection(
 				}
 			}
 			if (chunked == 1) {
-				struct ResponseContentCallbackParam *callback_param;
-				callback_param = malloc(sizeof(struct ResponseContentCallbackParam));
+				struct ResponseContentCallbackParam *callback_param = malloc(sizeof(struct ResponseContentCallbackParam));
 
-				static char response_text[44];
-				strcpy(response_text, urls[it1].body);
-
-				callback_param->response_data = response_text;
-				callback_param->response_size = (sizeof(response_text)/sizeof(char)) - 1;
+				callback_param->response_data = urls[it1].body;
+				callback_param->response_size = strlen(urls[it1].body);
 
 				response = MHD_create_response_from_callback(MHD_SIZE_UNKNOWN,
 					1024, &_callback, callback_param, &_free_callback_param);
