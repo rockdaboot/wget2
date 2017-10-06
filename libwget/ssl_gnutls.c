@@ -439,10 +439,9 @@ _generate_ocsp_data(gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer,
 	}
 
 	ret = 0;
-
 error:
 	gnutls_ocsp_req_deinit(req);
-	return -1;
+	return ret;
 }
 
 /* Returns 0 on ok, and -1 on error */

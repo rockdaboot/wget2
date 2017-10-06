@@ -1338,7 +1338,7 @@ static wget_vector_t *_parse_no_proxies(const char *no_proxy, const char *encodi
 			// May be a hostname, domainname (optional with leading dot or wildcard), IP address.
 			// We do not support network address (CIDR) for now.
 
-			hostp = wget_strtolower(host);
+			wget_strtolower(host);
 			if (wget_str_needs_encoding(host)) {
 				if ((hostp = wget_str_to_utf8(host, encoding))) {
 					xfree(host);

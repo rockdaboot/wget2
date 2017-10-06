@@ -997,7 +997,7 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
 	if (tcp->addrinfo_allocated)
 		freeaddrinfo(tcp->addrinfo);
 
-	ai = tcp->addrinfo = wget_tcp_resolve(tcp, host, port);
+	tcp->addrinfo = wget_tcp_resolve(tcp, host, port);
 
 	tcp->addrinfo_allocated = !tcp->caching;
 
