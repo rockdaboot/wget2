@@ -35,7 +35,7 @@ variables:
 #  * syntax-check
 #  * ASan, UBSan, Msan
 #  * distcheck
-Debian GNU/Linux build:
+Sanitizers/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - export CFLAGS=$CFLAGS_DEFAULT
@@ -58,7 +58,24 @@ Debian GNU/Linux build:
       - unit-tests/*.log
       - tests/*.log
 
-clang/Fedora:
+Scan-Build/Debian:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+  script:
+    - export CFLAGS=$CFLAGS_DEFAULT
+    - ./bootstrap && touch .manywarnings
+    - scan-build ./configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
+    - scan-build --status-bugs -o scan-build make -j$(nproc)
+  tags:
+    - shared
+  except:
+    - tags
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - scan-build/*
+
+valgrind/Fedora:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
     - export CFLAGS=$CFLAGS_DEFAULT
@@ -118,7 +135,6 @@ pages:
       - public
   only:
     - master
-    - tmp-online-fuzz-coverage
 
 #MinGW64:
 #  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
