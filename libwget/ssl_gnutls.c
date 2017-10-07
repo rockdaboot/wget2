@@ -453,7 +453,7 @@ static int send_ocsp_request(const char *server,
 	int server_allocated = 0;
 	gnutls_datum_t body;
 	wget_iri_t *iri;
-	wget_http_request_t *req;
+	wget_http_request_t *req = NULL;
 
 	if (!server) {
 		/* try to read URL from issuer certificate */
@@ -490,9 +490,12 @@ static int send_ocsp_request(const char *server,
 	if (!iri)
 		return -1;
 
-	_generate_ocsp_data(cert, issuer, &body, nonce);
+	if (_generate_ocsp_data(cert, issuer, &body, nonce))
+		goto out;
 
-	req = wget_http_create_request(iri, "POST");
+	if (!(req = wget_http_create_request(iri, "POST")))
+		goto out;
+
 	wget_http_add_header(req, "Accept-Encoding", "identity");
 	wget_http_add_header(req, "Accept", "*/*");
 	wget_http_add_header(req, "Connection", "close");
@@ -514,9 +517,11 @@ static int send_ocsp_request(const char *server,
 		wget_http_close(&conn);
 	}
 
+	gnutls_free(body.data);
+
+out:
 	wget_http_free_request(&req);
 	wget_iri_free(&iri);
-	gnutls_free(body.data);
 	return ret;
 }
 
