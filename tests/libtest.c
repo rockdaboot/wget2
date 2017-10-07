@@ -408,9 +408,9 @@ static int _answer_to_connection(
 					response = MHD_create_response_from_buffer(body_len,
 						(void *) (urls[it1].body + from_bytes), MHD_RESPMEM_MUST_COPY);
 					MHD_add_response_header(response, MHD_HTTP_HEADER_ACCEPT_RANGES, "bytes");
-					sprintf(content_range, "%zd-%zd/%zu", from_bytes, to_bytes, body_len);
+					snprintf(content_range, sizeof(content_range), "%zd-%zd/%zu", from_bytes, to_bytes, body_len);
 					MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_RANGE, content_range);
-					sprintf(content_len, "%zu", body_len);
+					snprintf(content_len, sizeof(content_len), "%zu", body_len);
 					MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_LENGTH, content_len);
 					ret = MHD_queue_response(connection, MHD_HTTP_PARTIAL_CONTENT, response);
 				}
@@ -663,18 +663,19 @@ static char *_insert_ports(const char *src)
 	if (!src || (!strstr(src, "{{port}}") && !strstr(src, "{{sslport}}")))
 		return NULL;
 
-	char *ret = wget_malloc(strlen(src) + 1);
+	size_t ret_len = strlen(src) + 1;
+	char *ret = wget_malloc(ret_len);
 	char *dst = ret;
 
 	while (*src) {
 		if (*src == '{') {
 			if (!strncmp(src, "{{port}}", 8)) {
-				dst += sprintf(dst, "%d", http_server_port);
+				dst += snprintf(dst, ret_len - (dst - ret), "%d", http_server_port);
 				src += 8;
 				continue;
 			}
 			else if (!strncmp(src, "{{sslport}}", 11)) {
-				dst += sprintf(dst, "%d", https_server_port);
+				dst += snprintf(dst, ret_len - (dst - ret), "%d", https_server_port);
 				src += 11;
 				continue;
 			}
@@ -834,9 +835,9 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 				continue;
 
 			if (*dirname == '.' && dirname[1] == 0)
-				sprintf(fname, "%s", dp->d_name);
+				snprintf(fname, sizeof(fname), "%s", dp->d_name);
 			else
-				sprintf(fname, "%s/%s", dirname, dp->d_name);
+				snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
 
 			wget_info_printf(" - %s/%s\n", dirname, dp->d_name);
 			if (stat(fname, &st) == 0 && S_ISDIR(st.st_mode)) {

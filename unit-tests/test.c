@@ -301,7 +301,7 @@ static void test_buffer_printf(void)
 	char buf_static[32];
 	wget_buffer_t buf;
 
-	// testing buffer_printf() by comparing it with C standard function sprintf()
+	// testing buffer_printf() by comparing it with C standard function snprintf()
 
 	static const char *zero_padded[] = { "", "0" };
 	static const char *left_adjust[] = { "", "-" };
@@ -328,7 +328,7 @@ static void test_buffer_printf(void)
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wformat"
 #endif
-	sprintf(result, "%02s", "1");
+	snprintf(result, sizeof(result), "%02s", "1");
 	skip_left_string_padding = (*result != ' ');
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 	#pragma GCC diagnostic pop
@@ -346,15 +346,15 @@ static void test_buffer_printf(void)
 
 					if (width == -1) {
 						if (precision == -1) {
-							sprintf(fmt,"abc%%%s%ssxyz", left_adjust[a], zero_padded[z]);
+							snprintf(fmt, sizeof(fmt), "abc%%%s%ssxyz", left_adjust[a], zero_padded[z]);
 						} else {
-							sprintf(fmt,"abc%%%s%s.%dsxyz", left_adjust[a], zero_padded[z], precision);
+							snprintf(fmt, sizeof(fmt), "abc%%%s%s.%dsxyz", left_adjust[a], zero_padded[z], precision);
 						}
 					} else {
 						if (precision == -1) {
-							sprintf(fmt,"abc%%%s%s%dsxyz", left_adjust[a], zero_padded[z], width);
+							snprintf(fmt, sizeof(fmt), "abc%%%s%s%dsxyz", left_adjust[a], zero_padded[z], width);
 						} else {
-							sprintf(fmt,"abc%%%s%s%d.%dsxyz", left_adjust[a], zero_padded[z], width, precision);
+							snprintf(fmt, sizeof(fmt), "abc%%%s%s%d.%dsxyz", left_adjust[a], zero_padded[z], width, precision);
 						}
 					}
 
@@ -366,7 +366,7 @@ static void test_buffer_printf(void)
 						#pragma GCC diagnostic push
 						#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
-						sprintf(result, fmt, string);
+						snprintf(result, sizeof(result), fmt, string);
 						wget_buffer_printf(&buf, fmt, string);
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 						#pragma GCC diagnostic pop
@@ -383,15 +383,15 @@ static void test_buffer_printf(void)
 
 					if (width == -1) {
 						if (precision == -1) {
-							sprintf(fmt,"%%%s%ss", left_adjust[a], zero_padded[z]);
+							snprintf(fmt, sizeof(fmt), "%%%s%ss", left_adjust[a], zero_padded[z]);
 						} else {
-							sprintf(fmt,"%%%s%s.*s", left_adjust[a], zero_padded[z]);
+							snprintf(fmt, sizeof(fmt), "%%%s%s.*s", left_adjust[a], zero_padded[z]);
 						}
 					} else {
 						if (precision == -1) {
-							sprintf(fmt,"%%%s%s*s", left_adjust[a], zero_padded[z]);
+							snprintf(fmt, sizeof(fmt), "%%%s%s*s", left_adjust[a], zero_padded[z]);
 						} else {
-							sprintf(fmt,"%%%s%s*.*s", left_adjust[a], zero_padded[z]);
+							snprintf(fmt, sizeof(fmt), "%%%s%s*.*s", left_adjust[a], zero_padded[z]);
 						}
 					}
 
@@ -405,18 +405,18 @@ static void test_buffer_printf(void)
 #endif
 						if (width == -1) {
 							if (precision == -1) {
-								sprintf(result, fmt, string);
+								snprintf(result, sizeof(result), fmt, string);
 								wget_buffer_printf(&buf, fmt, string);
 							} else {
-								sprintf(result, fmt, precision, string);
+								snprintf(result, sizeof(result), fmt, precision, string);
 								wget_buffer_printf(&buf, fmt, precision, string);
 							}
 						} else {
 							if (precision == -1) {
-								sprintf(result, fmt, width, string);
+								snprintf(result, sizeof(result), fmt, width, string);
 								wget_buffer_printf(&buf, fmt, width, string);
 							} else {
-								sprintf(result, fmt, width, precision, string);
+								snprintf(result, sizeof(result), fmt, width, precision, string);
 								wget_buffer_printf(&buf, fmt, width, precision, string);
 							}
 						}
@@ -440,15 +440,15 @@ integer_tests:
 					for (c = 0; c < countof(conversion); c++) {
 						if (width == -1) {
 							if (precision == -1) {
-								sprintf(fmt,"%%%s%s%s%s", left_adjust[a], zero_padded[z], modifier[m], conversion[c]);
+								snprintf(fmt, sizeof(fmt), "%%%s%s%s%s", left_adjust[a], zero_padded[z], modifier[m], conversion[c]);
 							} else {
-								sprintf(fmt,"%%%s%s.%d%s%s", left_adjust[a], zero_padded[z], precision, modifier[m], conversion[c]);
+								snprintf(fmt, sizeof(fmt), "%%%s%s.%d%s%s", left_adjust[a], zero_padded[z], precision, modifier[m], conversion[c]);
 							}
 						} else {
 							if (precision == -1) {
-								sprintf(fmt,"%%%s%s%d%s%s", left_adjust[a], zero_padded[z], width, modifier[m], conversion[c]);
+								snprintf(fmt, sizeof(fmt), "%%%s%s%d%s%s", left_adjust[a], zero_padded[z], width, modifier[m], conversion[c]);
 							} else {
-								sprintf(fmt,"%%%s%s%d.%d%s%s", left_adjust[a], zero_padded[z], width, precision, modifier[m], conversion[c]);
+								snprintf(fmt, sizeof(fmt), "%%%s%s%d.%d%s%s", left_adjust[a], zero_padded[z], width, precision, modifier[m], conversion[c]);
 							}
 						}
 
@@ -457,7 +457,7 @@ integer_tests:
 							#pragma GCC diagnostic push
 							#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
-							sprintf(result, fmt, number[n]);
+							snprintf(result, sizeof(result), fmt, number[n]);
 							wget_buffer_printf(&buf, fmt, number[n]);
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 							#pragma GCC diagnostic pop
@@ -1819,8 +1819,8 @@ static void test_stringmap(void)
 		}
 
 		for (it = 0; it < 26; it++) {
-			sprintf(key, "http://www.example.com/subdir/%d.html", it);
-			valuesize = sprintf(value, "%d.html", it);
+			snprintf(key, sizeof(key), "http://www.example.com/subdir/%d.html", it);
+			valuesize = snprintf(value, sizeof(value), "%d.html", it);
 			if (wget_stringmap_put(m, key, value, valuesize + 1)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
@@ -1834,8 +1834,8 @@ static void test_stringmap(void)
 
 		// now, look up every single entry
 		for (it = 0; it < 26; it++) {
-			sprintf(key, "http://www.example.com/subdir/%d.html", it);
-			sprintf(value, "%d.html", it);
+			snprintf(key, sizeof(key), "http://www.example.com/subdir/%d.html", it);
+			snprintf(value, sizeof(value), "%d.html", it);
 			if (!(val = wget_stringmap_get(m, key))) {
 				failed++;
 				info_printf("stringmap_get(%s) didn't find entry\n", key);
@@ -1853,8 +1853,8 @@ static void test_stringmap(void)
 		} else ok++;
 
 		for (it = 0; it < 26; it++) {
-			sprintf(key, "http://www.example.com/subdir/%d.html", it);
-			valuesize = sprintf(value, "%d.html", it);
+			snprintf(key, sizeof(key), "http://www.example.com/subdir/%d.html", it);
+			valuesize = snprintf(value, sizeof(value), "%d.html", it);
 			if (wget_stringmap_put(m, key, value, valuesize + 1)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
@@ -1868,8 +1868,8 @@ static void test_stringmap(void)
 
 		// now, remove every single entry
 		for (it = 0; it < 26; it++) {
-			sprintf(key, "http://www.example.com/subdir/%d.html", it);
-			sprintf(value, "%d.html", it);
+			snprintf(key, sizeof(key), "http://www.example.com/subdir/%d.html", it);
+			snprintf(value, sizeof(value), "%d.html", it);
 			wget_stringmap_remove(m, key);
 		}
 
@@ -1879,8 +1879,8 @@ static void test_stringmap(void)
 		} else ok++;
 
 		for (it = 0; it < 26; it++) {
-			sprintf(key, "http://www.example.com/subdir/%d.html", it);
-			valuesize = sprintf(value, "%d.html", it);
+			snprintf(key, sizeof(key), "http://www.example.com/subdir/%d.html", it);
+			valuesize = snprintf(value, sizeof(value), "%d.html", it);
 			if (wget_stringmap_put(m, key, value, valuesize + 1)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
