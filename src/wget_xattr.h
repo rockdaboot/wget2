@@ -20,10 +20,10 @@
  * Header file for xattr routines
  */
 
-#include <stdio.h>
-
 #ifndef _WGET_XATTR_H
 #define _WGET_XATTR_H
+
+#include <stdio.h>
 
 /* Store metadata name/value attributes against fp. */
 int set_file_metadata(const char *origin_url, const char *referrer_url,
