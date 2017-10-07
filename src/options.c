@@ -734,13 +734,11 @@ static int parse_local_db(option_t opt, const char *val, const char invert)
 {
 	parse_bool(opt, val, invert);
 
-	if (!config.local_db) {
-		config.cookies = 0;
-		config.hsts = 0;
-		config.hpkp = 0;
-		config.ocsp = 0;
-		config.tls_resume = 0;
-	}
+	config.cookies =
+	config.hsts =
+	config.hpkp =
+	config.ocsp =
+	config.tls_resume = config.local_db;
 
 	return 0;
 }
