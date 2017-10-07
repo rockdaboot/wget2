@@ -789,7 +789,7 @@ const char *wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t l
 		}
 	}
 
-	return buf->data;
+	return likely(buf) ? buf->data : NULL;
 }
 
 /**
