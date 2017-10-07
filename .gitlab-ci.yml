@@ -64,6 +64,7 @@ Scan-Build/Debian:
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap && touch .manywarnings
     - scan-build ./configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
+    - make -C lib -j$(nproc)
     - scan-build --status-bugs -o scan-build make -j$(nproc)
   tags:
     - shared
