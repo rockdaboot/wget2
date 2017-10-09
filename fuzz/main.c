@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 		// WGET_DEBUG_STREAM, stdout,
 		WGET_ERROR_STREAM, stdout,
 		WGET_INFO_STREAM, stdout,
-		NULL);
+		0);
 
 	const char *target = strrchr(argv[0], SLASH);
 	target = target ? target + 1 : argv[0];

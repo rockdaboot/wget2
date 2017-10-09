@@ -39,7 +39,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		// WGET_DEBUG_STREAM, stderr,
 		WGET_ERROR_STREAM, stderr,
 		WGET_INFO_STREAM, stdout,
-		NULL);
+		0);
 
 	// This is the text that we want to convert into a GFX
 	const char *text = "alice->bob: authentication request\nbob-->alice: response";

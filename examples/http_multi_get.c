@@ -55,7 +55,7 @@ int main(void)
 		WGET_ERROR_STREAM, stderr,
 		WGET_INFO_STREAM, stderr,
 		WGET_DNS_CACHING, 1,
-		NULL);
+		0);
 
 	// SSL: share Wget's OCSP cache for speed improvements
 	wget_ocsp_db_t *ocsp_db = wget_ocsp_db_init(NULL, OCSP_DB);

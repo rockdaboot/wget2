@@ -37,7 +37,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		// WGET_DEBUG_STREAM, stderr,
 		WGET_ERROR_STREAM, stderr,
 		WGET_INFO_STREAM, stdout,
-		NULL);
+		0);
 
 	// This is the text that we want to convert into a GFX
 	const char *text = "alice->bob: authentication request\nbob-->alice: response";
@@ -56,7 +56,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		WGET_HTTP_HEADER_ADD, "Content-Type", "application/x-www-form-urlencoded",
 		WGET_HTTP_BODY, body->data, body->length,
 		WGET_HTTP_CONNECTION_PTR, &conn,
-		NULL);
+		0);
 
 	if (resp) {
 		// wget_info_printf("answer=%s\n", resp->body->data);
@@ -77,7 +77,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		resp = wget_http_get(
 			WGET_HTTP_URL, url->data,
 			WGET_HTTP_BODY_SAVEAS, "out.png",
-			NULL);
+			0);
 
 		if (resp)
 			wget_info_printf("Saved out.png\n");

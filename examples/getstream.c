@@ -144,7 +144,7 @@ int main(int argc, const char *const *argv)
 //		WGET_DEBUG_STREAM, stderr,
 		WGET_ERROR_STREAM, stderr,
 		WGET_INFO_STREAM, stderr,
-		NULL);
+		0);
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s <Playlist URL>\n", argv[0]);
@@ -155,7 +155,7 @@ int main(int argc, const char *const *argv)
 	resp = wget_http_get(
 //		WGET_HTTP_URL, "http://listen.radionomy.com/gothica.m3u",
 		WGET_HTTP_URL, argv[1],
-		NULL);
+		0);
 
 	if (!resp) {
 		fprintf(stderr, "Failed to get response from %s\n", argv[1]);
@@ -236,7 +236,7 @@ int main(int argc, const char *const *argv)
 		WGET_HTTP_HEADER_FUNC, header_callback, // callback used to parse special headers like 'Icy-Name'
 		// WGET_HTTP_HEADER_SAVEAS_STREAM, stdout,
 		WGET_HTTP_BODY_SAVEAS_FUNC, stream_callback, // callback to cut title info out of audio stream
-		NULL);
+		0);
 
 	wget_http_free_response(&resp);
 

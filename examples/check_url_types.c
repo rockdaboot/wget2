@@ -236,7 +236,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		WGET_ERROR_STREAM, stdout,
 		WGET_INFO_STREAM, stdout,
 		WGET_DNS_CACHING, 1,
-		NULL);
+		0);
 
 #ifndef _WIN32
 	struct sigaction sig_action;
@@ -288,7 +288,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 //				WGET_HTTP_HEADER_ADD, "Upgrade-Insecure-Requests", "1",
 				WGET_HTTP_MAX_REDIRECTIONS, 0,
 //				WGET_HTTP_CONNECTION_PTR, &conn,
-				NULL);
+				0);
 
 			if (!resp) {
 				wget_info_printf("  No connection / response\n");

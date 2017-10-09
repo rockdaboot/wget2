@@ -48,7 +48,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		// WGET_BIND_ADDRESS, "127.0.0.1:6666",
 		// WGET_NET_FAMILY_EXCLUSIVE, WGET_NET_FAMILY_IPV4, // or WGET_NET_FAMILY_IPV6 or WGET_NET_FAMILY_ANY
 		// WGET_NET_FAMILY_PREFERRED, WGET_NET_FAMILY_IPV4, // or WGET_NET_FAMILY_IPV6 or WGET_NET_FAMILY_ANY
-		NULL);
+		0);
 
 	// execute an HTTP GET request and return the response
 	resp = wget_http_get(
@@ -64,7 +64,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 		WGET_HTTP_MAX_REDIRECTIONS, 5,
 		WGET_HTTP_CONNECTION_PTR, &conn,
 		// WGET_HTTP_RESPONSE_PTR, &resp,
-		NULL);
+		0);
 
 	if (resp) {
 		// let's assume the body is printable
