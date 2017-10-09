@@ -76,6 +76,26 @@ Scan-Build/Debian:
     paths:
       - scan-build/*
 
+flawfinder/Debian:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+  script:
+    - export CFLAGS=$CFLAGS_DEFAULT
+    - ./bootstrap && touch .manywarnings
+    - ./configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
+    - make -j$(nproc)
+    - mkdir flawfinder
+    - flawfinder -CcQH src/ libwget/ tests/ fuzz/ unit-tests/ > flawfinder/flawfinder.html
+    - flawfinder -ICcQH src/ libwget/ tests/ fuzz/ unit-tests/ > flawfinder/flawfinder-inputs.html
+  tags:
+    - shared
+  except:
+    - tags
+  artifacts:
+    expire_in: 2 weeks
+    when: always
+    paths:
+      - flawfinder/*
+
 valgrind/Fedora:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
