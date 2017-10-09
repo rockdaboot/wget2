@@ -188,7 +188,7 @@ static ssize_t _callback (void *cls, uint64_t pos, char *buf, size_t buf_size)
 
 static void _free_callback_param(void *cls)
 {
-	free(cls);
+	wget_free(cls);
 }
 
 static int _answer_to_connection(
@@ -292,7 +292,7 @@ static int _answer_to_connection(
 				}
 			}
 			if (chunked == 1) {
-				struct ResponseContentCallbackParam *callback_param = malloc(sizeof(struct ResponseContentCallbackParam));
+				struct ResponseContentCallbackParam *callback_param = wget_malloc(sizeof(struct ResponseContentCallbackParam));
 
 				callback_param->response_data = urls[it1].body;
 				callback_param->response_size = strlen(urls[it1].body);
@@ -341,20 +341,20 @@ static int _answer_to_connection(
 				char *pass = NULL;
 				char *user = MHD_basic_auth_get_username_password(connection, &pass);
 				if ((user == NULL && pass == NULL) ||
-					(wget_strcmp(user, urls[it1].auth_username) ||
-					wget_strcmp(pass, urls[it1].auth_password)))
+					wget_strcmp(user, urls[it1].auth_username) ||
+					wget_strcmp(pass, urls[it1].auth_password))
 				{
 					response = MHD_create_response_from_buffer(strlen ("DENIED"),
 						(void *) "DENIED", MHD_RESPMEM_PERSISTENT);
 					ret = MHD_queue_basic_auth_fail_response(connection, "basic@example.com", response);
-					free(user);
-					free(pass);
+					wget_xfree(user); // TODO: replace with MHD_free() when available
+					wget_xfree(pass); // TODO: replace with MHD_free() when available
 					wget_buffer_free(&url_iri);
 					found = 1;
 					break;
 				}
-				free(user);
-				free(pass);
+				wget_xfree(user); // TODO: replace with MHD_free() when available
+				wget_xfree(pass); // TODO: replace with MHD_free() when available
 			}
 
 			// digest authentication
@@ -365,13 +365,13 @@ static int _answer_to_connection(
 					response = MHD_create_response_from_buffer(strlen ("DENIED"),
 						(void *) "DENIED", MHD_RESPMEM_PERSISTENT);
 					ret = MHD_queue_auth_fail_response(connection, realm, TEST_OPAQUE_STR, response, MHD_NO);
-					free(user);
+					wget_xfree(user); // TODO: replace with MHD_free() when available
 					wget_buffer_free(&url_iri);
 					found = 1;
 					break;
 				}
 				ret = MHD_digest_auth_check(connection, realm, user, urls[it1].auth_password, 300);
-				free(user);
+				wget_xfree(user); // TODO: replace with MHD_free() when available
 				if ((ret == MHD_INVALID_NONCE) || (ret == MHD_NO)) {
 					response = MHD_create_response_from_buffer(strlen ("DENIED"),
 						(void *) "DENIED", MHD_RESPMEM_PERSISTENT);
@@ -461,8 +461,8 @@ static void _http_server_stop(void)
 	MHD_stop_daemon(httpdaemon);
 	MHD_stop_daemon(httpsdaemon);
 
-	free(key_pem);
-	free(cert_pem);
+	wget_xfree(key_pem);
+	wget_xfree(cert_pem);
 }
 
 static int _http_server_start(int SERVER_MODE)
@@ -718,7 +718,7 @@ void wget_test_start_server(int first_key, ...)
 		WGET_DEBUG_FUNC, _write_msg,
 		WGET_ERROR_FUNC, _write_msg,
 		WGET_INFO_FUNC, _write_msg,
-		NULL);
+		0);
 
 	va_start(args, first_key);
 	for (key = first_key; key; key = va_arg(args, int)) {
@@ -1061,7 +1061,7 @@ void wget_test(int first_key, ...)
 						wget_error_printf_exit(_("Unexpected content in %s [%s]\n"), fname, options);
 				}
 
-				wget_free(content);
+				wget_xfree(content);
 			}
 
 			if (expected_files[it].timestamp && st.st_mtime != expected_files[it].timestamp)
