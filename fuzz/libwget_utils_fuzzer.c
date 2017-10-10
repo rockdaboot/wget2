@@ -107,6 +107,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		x += !!wget_human_readable(buf, sizeof(buf), (1 << size) - 1);
 	}
 
+	(void) x; // needed to get rid of bug reported by scan-build
+
 	int w, h;
 	wget_get_screen_size(&w, &h);
 

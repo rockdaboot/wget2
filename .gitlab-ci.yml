@@ -65,7 +65,8 @@ Scan-Build/Debian:
     - ./bootstrap && touch .manywarnings
     - scan-build ./configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
     - make -C lib -j$(nproc)
-    - scan-build --status-bugs -o scan-build make -j$(nproc)
+    - scan-build -v -enable-checker security,nullability --status-bugs -o scan-build make -j$(nproc)
+    - scan-build -v -enable-checker security,nullability --status-bugs -o scan-build make -j$(nproc) check
   tags:
     - shared
   except:
