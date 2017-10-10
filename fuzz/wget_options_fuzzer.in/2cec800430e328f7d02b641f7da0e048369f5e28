@@ -1,0 +1,4 @@
+certificate-type=PEM
+certificate-type=DER
+certificate-type=ASN1
+certificate-type=x

@@ -1048,7 +1048,7 @@ void stats_print(void)
 		} else
 			filename = wget_strdup(stats_opts[type].file);
 
-		if (filename && *filename && wget_strcmp(filename, "-")) {
+		if (filename && *filename && wget_strcmp(filename, "-") && !config.dont_write) {
 			if (config.stats_all && stats_opts[type].format != WGET_STATS_FORMAT_CSV && type)
 				fp = fopen(filename, "a");
 			else

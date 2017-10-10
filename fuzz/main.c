@@ -53,7 +53,7 @@ static int test_all_from(const char *dirname)
 			uint8_t *data;
 			size_t size;
 			if ((data = (uint8_t *) wget_read_file(fname, &size))) {
-				wget_info_printf("testing %zu bytes from '%s'\n", size, fname);
+				printf("testing %zu bytes from '%s'\n", size, fname);
 				LLVMFuzzerTestOneInput(data, size);
 				wget_free(data);
 			}

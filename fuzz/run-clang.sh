@@ -36,15 +36,10 @@ if ! grep -q FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION Makefile; then
   exit 1
 fi
 
+# you'll need ~2GB free memory per worker !
 fuzzer=$1
 workers=$(($(nproc) - 0))
 jobs=$workers
-
-clang-6.0 \
- $CFLAGS -I../include/wget -I.. \
- ${fuzzer}.c -o ${fuzzer} \
- -Wl,-Bstatic ../libwget/.libs/libwget.a -lFuzzer \
- -Wl,-Bdynamic -lgnutls -lidn2 -lunistring -lpsl -lclang-6.0 -lstdc++
 
 if test -n "$BUILD_ONLY"; then
   exit 0

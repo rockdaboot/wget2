@@ -62,6 +62,27 @@
 #include "wget_plugin.h"
 #include "wget_stats.h"
 
+static int
+	exit_status;
+
+void set_exit_status(exit_status_t status)
+{
+	// use Wget exit status scheme:
+	// - error code 0 is default
+	// - error code 1 is used directly by exit() (fatal errors)
+	// - error codes 2... : lower numbers preceed higher numbers
+	if (exit_status) {
+		if ((int) status < exit_status)
+			exit_status = status;
+	} else
+		exit_status = status;
+}
+
+int get_exit_status(void)
+{
+	return exit_status;
+}
+
 typedef enum {
 	SECTION_STARTUP = 0,
 	SECTION_DOWNLOAD = 1,
@@ -88,9 +109,10 @@ struct optionw {
 	const char
 	    *help_str[4];
 };
-static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val, const char invert);
-static int G_GNUC_WGET_NORETURN print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
+
+static int print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
+#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 	puts("GNU Wget2 " PACKAGE_VERSION " - multithreaded metalink/file/website downloader\n");
 	puts("+digest"
 
@@ -179,27 +201,10 @@ static int G_GNUC_WGET_NORETURN print_version(G_GNUC_WGET_UNUSED option_t opt, G
 	" -http2"
 #endif
 	);
-	exit(EXIT_SUCCESS);
-}
+#endif // #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 
-static inline void print_first(const char s, const char *l, const char *msg)
-{
-	if (strlen(l) > 16) {
-		printf("  %c%-4c  --%s\n",
-			(s ? '-' : ' '),
-			(s ? s : ' '),
-			l);
-		printf("%29s%s", "", msg);
-	} else
-		printf("  %c%-4c  --%-16.16s  %s",
-			(s ? '-' : ' '),
-			(s ? s : ' '),
-			l, msg);
-}
-
-static inline void print_next(const char *msg)
-{
-	printf("%31s%s", "", msg);
+	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+	return -1; // stop processing & exit
 }
 
 static char *_shell_expand(const char *str)
@@ -251,10 +256,12 @@ static int parse_numbytes(option_t opt, const char *val, G_GNUC_WGET_UNUSED cons
 		} else
 			error = 1;
 
-		if (!error)
-			*((long long *)opt->var) = num > LLONG_MAX ? LLONG_MAX : (long long) num;
-		else
-			error_printf_exit(_("Invalid byte specifier: %s\n"), val);
+		if (error) {
+			error_printf(_("Invalid byte specifier: %s\n"), val);
+			return -1;
+		}
+
+		*((long long *)opt->var) = num > LLONG_MAX ? LLONG_MAX : (long long) num;
 	}
 
 	return 0;
@@ -284,6 +291,8 @@ static int parse_stringset(option_t opt, const char *val, G_GNUC_WGET_UNUSED con
 
 	if (val) {
 		const char *s, *p;
+
+		wget_stringmap_clear(map);
 
 		for (s = p = val; *p; s = p + 1) {
 			if ((p = strchrnul(s, ',')) != s)
@@ -463,8 +472,10 @@ static int parse_bool(option_t opt, const char *val, const char invert)
 			*((char *) opt->var) = !invert;
 		else if (!*val || !strcmp(val, "0") || !wget_strcasecmp_ascii(val, "n") || !wget_strcasecmp_ascii(val, "no") || !wget_strcasecmp_ascii(val, "off"))
 			*((char *) opt->var) = invert;
-		else
-			return 1;
+		else {
+			error_printf(_("Invalid boolean value '%s'\n"), val);
+			return -1;
+		}
 	}
 
 	return 0;
@@ -472,7 +483,10 @@ static int parse_bool(option_t opt, const char *val, const char invert)
 
 static int parse_mirror(option_t opt, const char *val, const char invert)
 {
-	parse_bool(opt, val, invert);
+	int rc;
+
+	if ((rc = parse_bool(opt, val, invert)) < 0)
+		return rc;
 
 	if (config.mirror) {
 		config.recursive = 1;
@@ -489,11 +503,9 @@ static int parse_mirror(option_t opt, const char *val, const char invert)
 
 static int parse_timeout(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
-	double fval;
+	double fval = -1;
 
-	if (!wget_strcasecmp_ascii(val, "INF") || !wget_strcasecmp_ascii(val, "INFINITY"))
-		fval = -1;
-	else {
+	if (wget_strcasecmp_ascii(val, "INF") && wget_strcasecmp_ascii(val, "INFINITY")) {
 		char modifier = 0;
 
 		if (sscanf(val, " %lf%c", &fval, &modifier) >= 1 && fval > 0) {
@@ -503,7 +515,7 @@ static int parse_timeout(option_t opt, const char *val, G_GNUC_WGET_UNUSED const
 				case 'm': fval *= 60 * 1000; break;
 				case 'h': fval *= 60 * 60 * 1000; break;
 				case 'd': fval *= 60 * 60 * 24 * 1000; break;
-				default: error_printf_exit(_("Invalid time specifier in '%s'\n"), val);
+				default: error_printf(_("Invalid time specifier in '%s'\n"), val); return -1;
 				}
 			} else
 				fval *= 1000;
@@ -532,8 +544,10 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_cert_type(option_t op
 		*((char *)opt->var) = WGET_SSL_X509_FMT_PEM;
 	else if (!wget_strcasecmp_ascii(val, "DER") || !wget_strcasecmp_ascii(val, "ASN1"))
 		*((char *)opt->var) = WGET_SSL_X509_FMT_DER;
-	else
-		error_printf_exit("Unknown cert type '%s'\n", val);
+	else {
+		error_printf("Unknown cert type '%s'\n", val);
+		return -1;
+	}
 
 	return 0;
 }
@@ -544,8 +558,10 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_progress_type(option_
 		*((char *)opt->var) = 0;
 	else if (!wget_strcasecmp_ascii(val, "bar"))
 		*((char *)opt->var) = 1;
-	else
-		error_printf_exit("Unknown progress type '%s'\n", val);
+	else {
+		error_printf("Unknown progress type '%s'\n", val);
+		return -1;
+	}
 
 	return 0;
 }
@@ -567,8 +583,10 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_restrict_names(option
 		*((int *)opt->var) = WGET_RESTRICT_NAMES_UPPERCASE;
 	else if (!wget_strcasecmp_ascii(val, "lowercase"))
 		*((int *)opt->var) = WGET_RESTRICT_NAMES_LOWERCASE;
-	else
-		error_printf_exit("Unknown restrict-file-name type '%s'\n", val);
+	else {
+		error_printf("Unknown restrict-file-name type '%s'\n", val);
+		return -1;
+	}
 
 	return 0;
 }
@@ -598,7 +616,8 @@ static int parse_n_option(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GN
 				config.parent = 0;
 				break;
 			default:
-				error_printf_exit(_("Unknown option '-n%c'\n"), *p);
+				error_printf(_("Unknown option '-n%c'\n"), *p);
+				return -1;
 			}
 
 			debug_printf("name=-n%c value=0\n", *p);
@@ -616,8 +635,10 @@ static int parse_prefer_family(option_t opt, const char *val, G_GNUC_WGET_UNUSED
 		*((char *)opt->var) = WGET_NET_FAMILY_IPV4;
 	else if (!wget_strcasecmp_ascii(val, "ipv6"))
 		*((char *)opt->var) = WGET_NET_FAMILY_IPV6;
-	else
-		error_printf_exit("Unknown address family '%s'\n", val);
+	else {
+		error_printf("Unknown address family '%s'\n", val);
+		return -1;
+	}
 
 	return 0;
 }
@@ -644,8 +665,10 @@ static int parse_stats(option_t opt, const char *val, const char invert)
 				format = WGET_STATS_FORMAT_JSON;
 			else if ((int) (ptrdiff_t)opt->var == WGET_STATS_TYPE_SITE && !wget_strncasecmp_ascii("tree", val, p - val))
 				format = WGET_STATS_FORMAT_TREE;
-			else
-				error_printf_exit("Unknown stats format\n");
+			else {
+				error_printf("Unknown stats format\n");
+				return -1;
+			}
 
 			val = p + 1;
 		}
@@ -661,7 +684,10 @@ static int parse_stats(option_t opt, const char *val, const char invert)
 
 static int parse_stats_all(option_t opt, const char *val, const char invert)
 {
-	parse_bool(opt, "1", invert);
+	int rc;
+
+	if ((rc = parse_bool(opt, "1", invert)) < 0)
+		return rc;
 
 	if (config.stats_all)
 		for (int it = 1; it <= 5; it++)	// Get rid of magic number
@@ -682,9 +708,9 @@ static int parse_plugin(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GNUC
 	dl_error_init(e);
 
 	if (! plugin_db_load_from_name(val, e)) {
-		error_printf("Plugin '%s' failed to load: %s\n",
-				val, dl_error_get_msg(e));
+		error_printf("Plugin '%s' failed to load: %s\n", val, dl_error_get_msg(e));
 		dl_error_set(e, NULL);
+		return -1;
 	}
 
 	return 0;
@@ -700,9 +726,9 @@ static int parse_plugin_local(G_GNUC_WGET_UNUSED option_t opt, const char *val, 
 	dl_error_init(e);
 
 	if (! plugin_db_load_from_path(val, e)) {
-		error_printf("Plugin '%s' failed to load: %s\n",
-				val, dl_error_get_msg(e));
+		error_printf("Plugin '%s' failed to load: %s\n", val, dl_error_get_msg(e));
 		dl_error_set(e, NULL);
+		return -1;
 	}
 
 	return 0;
@@ -730,8 +756,9 @@ static int parse_plugin_option
 	dl_error_init(e);
 
 	if (plugin_db_forward_option(val, e) < 0) {
-		error_printf_exit("%s\n",
-				dl_error_get_msg(e));
+		error_printf("%s\n", dl_error_get_msg(e));
+		dl_error_set(e, NULL);
+		return -1;
 	}
 
 	return 0;
@@ -739,7 +766,10 @@ static int parse_plugin_option
 
 static int parse_local_db(option_t opt, const char *val, const char invert)
 {
-	parse_bool(opt, val, invert);
+	int rc;
+
+	if ((rc = parse_bool(opt, val, invert)) < 0)
+		return rc;
 
 	config.cookies =
 	config.hsts =
@@ -766,7 +796,8 @@ static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
 	}
 	wget_vector_free(&v);
 
-	exit(EXIT_SUCCESS);
+	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+	return -1; // stop processing & exit
 }
 
 static int print_plugin_help(G_GNUC_WGET_UNUSED option_t opt,
@@ -777,7 +808,8 @@ static int print_plugin_help(G_GNUC_WGET_UNUSED option_t opt,
 
 	plugin_db_show_help();
 
-	exit(EXIT_SUCCESS);
+	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+	return -1; // stop processing & exit
 }
 
 // default values for config options (if not 0 or NULL)
@@ -834,6 +866,7 @@ struct config config = {
 
 static int parse_execute(option_t opt, const char *val, const char invert);
 static int parse_proxy(option_t opt, const char *val, const char invert);
+static int print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val, const char invert);
 
 static const struct optionw options[] = {
 	// long name, config variable, parse function, number of arguments, short name
@@ -1677,7 +1710,34 @@ static const struct optionw options[] = {
 	}
 };
 
-static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+static int print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
+{
+	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+	return -1; // stop processing & exit
+}
+#else
+static inline void print_first(const char s, const char *l, const char *msg)
+{
+	if (strlen(l) > 16) {
+		printf("  %c%-4c  --%s\n",
+			(s ? '-' : ' '),
+			(s ? s : ' '),
+			l);
+		printf("%29s%s", "", msg);
+	} else
+		printf("  %c%-4c  --%-16.16s  %s",
+			(s ? '-' : ' '),
+			(s ? s : ' '),
+			l, msg);
+}
+
+static inline void print_next(const char *msg)
+{
+	printf("%31s%s", "", msg);
+}
+
+static int print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	printf(
 		"GNU Wget2 V" PACKAGE_VERSION " - multithreaded metalink/file/website downloader\n"
@@ -1735,8 +1795,10 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
  * Using rm logfile + wget achieves the old behaviour...
  *
  */
-	exit(EXIT_SUCCESS);
+	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+	return -1; // stop processing & exit
 }
+#endif
 
 static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL opt_compare(const void *key, const void *option)
 {
@@ -1766,12 +1828,15 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL opt_compare_config_linear(co
 	return *s1 != *s2; // no need for tolower() here
 }
 
+// return values:
+//  < 0 : parse error
+// >= 0 : number of arguments processed
 static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char *value, char parsing_config)
 {
 	option_t opt;
 	char invert = 0, value_present = 0, case_insensitive = 1;
 	char namebuf[strlen(name) + 1], *p;
-	int ret = 0;
+	int ret = 0, rc;
 
 	if ((p = strchr(name, '='))) {
 		// option with appended value
@@ -1806,8 +1871,10 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 	} else
 		opt = bsearch(name, options, countof(options), sizeof(options[0]), opt_compare);
 
-	if (!opt)
-		error_printf_exit(_("Unknown option '%s'\n"), name);
+	if (!opt) {
+		error_printf(_("Unknown option '%s'\n"), name);
+		return -1;
+	}
 
 	debug_printf("name=%s value=%s invert=%d\n", opt->long_name, value, invert);
 
@@ -1819,9 +1886,14 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 					opt->parser == parse_stringlist ||
 					opt->parser == parse_filename ||
 					opt->parser == parse_filenames)
-				error_printf_exit(_("Option 'no-%s' doesn't allow an argument\n"), name);
-		} else if (!opt->args)
-			error_printf_exit(_("Option '%s' doesn't allow an argument\n"), name);
+			{
+				error_printf(_("Option 'no-%s' doesn't allow an argument\n"), name);
+				return -1;
+			}
+		} else if (!opt->args) {
+			error_printf(_("Option '%s' doesn't allow an argument\n"), name);
+			return -1;
+		}
 	} else {
 		// "option"
 		switch (opt->args) {
@@ -1829,9 +1901,11 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 			value = NULL;
 			break;
 		case 1:
-			if (!value)
-				error_printf_exit(_("Missing argument for option '%s'\n"), name);
+			if (!value) {
+				error_printf(_("Missing argument for option '%s'\n"), name);
 				// empty string is allowed in value i.e. *value = '\0'
+				return -1;
+			}
 
 			if (invert && (opt->parser == parse_string ||
 					opt->parser == parse_stringset ||
@@ -1853,15 +1927,17 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 		}
 	}
 
-	if (opt->parser(opt, value, invert) == 1)
-		error_printf(_("Value '%s' not recognized\n"), value);
+	if ((rc = opt->parser(opt, value, invert)) < 0)
+		return rc;
 
 	return ret;
 }
 
 static int parse_proxy(option_t opt, const char *val, const char invert)
 {
-	if (parse_bool(opt, val, invert) == 1) {
+	int rc;
+
+	if ((rc = parse_bool(opt, val, invert)) < 0) {
 		if (invert) {
 			// the strdup'ed string will be released on program exit
 			xfree(config.no_proxy);
@@ -1880,9 +1956,7 @@ static int parse_proxy(option_t opt, const char *val, const char invert)
 static int parse_execute(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	// info_printf("### argv=%s val=%s\n",argv[0],val);
-	set_long_option(val, NULL, 1);
-
-	return 0;
+	return set_long_option(val, NULL, 1);
 }
 
 static int _parse_option(char *linep, char **name, char **val)
@@ -1949,10 +2023,16 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 	static int level; // level of recursions to prevent endless include loops
 	FILE *fp;
 	char *buf = NULL, *linep, *name, *val;
-	int append = 0, found;
+	int append = 0, found, ret = 0, rc;
 	size_t bufsize = 0;
 	ssize_t len;
 	wget_buffer_t linebuf;
+
+	if (++level > 20) {
+		error_printf(_("Config file recursion detected in %s\n"), cfgfile);
+		level--;
+		return -2;
+	}
 
 	if (expand) {
 		glob_t globbuf = { .gl_pathc = 0 };
@@ -1960,29 +2040,24 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 		if (glob(cfgfile, GLOB_MARK | GLOB_TILDE, NULL, &globbuf) == 0) {
 			size_t it;
 
-			for (it = 0; it < globbuf.gl_pathc; it++) {
+			for (it = 0; it < globbuf.gl_pathc && ret == 0; it++) {
 				if (globbuf.gl_pathv[it][strlen(globbuf.gl_pathv[it])-1] != '/') {
-					_read_config(globbuf.gl_pathv[it], 0);
-
-					level--;
+					ret = _read_config(globbuf.gl_pathv[it], 0);
 				}
 			}
+
 			globfree(&globbuf);
-
 		} else {
-			if (++level > 20)
-				error_printf_exit(_("Config file recursion detected in %s\n"), cfgfile);
-
-			_read_config(cfgfile, 0);
-
-			level--;
+			ret = _read_config(cfgfile, 0);
 		}
 
-		return 0;
+		level--;
+		return ret;
 	}
 
 	if ((fp = fopen(cfgfile, "r")) == NULL) {
 		error_printf(_("Failed to open %s (%d): %s\n"), cfgfile, errno, strerror(errno));
+		level--;
 		return -1;
 	}
 
@@ -1991,7 +2066,7 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 	char tmp[1024];
 	wget_buffer_init(&linebuf, tmp, sizeof(tmp));
 
-	while ((len = wget_getline(&buf, &bufsize, fp)) >= 0) {
+	while (ret == 0 && (len = wget_getline(&buf, &bufsize, fp)) >= 0) {
 		if (len == 0 || *buf == '\r' || *buf == '\n') continue;
 
 		linep = buf;
@@ -2027,18 +2102,15 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 		if (found == 1) {
 			// debug_printf("%s = %s\n",name,val);
-			set_long_option(name, val, 1);
+			if ((rc = set_long_option(name, val, 1)) < 0)
+				ret = rc;
 		} else if (found == 2) {
 			// debug_printf("%s %s\n",name,val);
 			if (!strcmp(name, "include")) {
-				if (++level > 20)
-					error_printf_exit(_("Config file recursion loop detected in %s\n"), cfgfile);
-
-				_read_config(val, 1);
-
-				level--;
+				ret = _read_config(val, 1);
 			} else {
-				set_long_option(name, NULL, 0);
+				if ((rc = set_long_option(name, NULL, 0)) < 0)
+					ret = rc;
 			}
 		}
 	}
@@ -2049,24 +2121,30 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 
 	if (append) {
 		error_printf(_("Failed to parse last line in '%s'\n"), cfgfile);
+		ret = -4;
 	}
 
-	return 0;
+	level--;
+	return ret;
 }
 
-static void read_config(void)
+static int read_config(void)
 {
-	for (int it = 0; it < wget_vector_size(config.config_files); it++) {
+	int ret = 0;
+
+	for (int it = 0; it < wget_vector_size(config.config_files) && ret == 0; it++) {
 		const char *cfgfile = wget_vector_get(config.config_files, it);
-		_read_config(cfgfile, 1);
+		ret = _read_config(cfgfile, 1);
 	}
+
+	return ret;
 }
 
 static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **argv)
 {
 	static short shortcut_to_option[128];
 	const char *first_arg = NULL;
-	int n;
+	int n, rc;
 
 	// init the short option lookup table
 	if (!shortcut_to_option[0]) {
@@ -2102,7 +2180,10 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 			if (argp[2] == 0)
 				return n + 1;
 
-			n += set_long_option(argp + 2, n < argc - 1 ? argv[n+1] : NULL, 0);
+			if ((rc = set_long_option(argp + 2, n < argc - 1 ? argv[n+1] : NULL, 0)) < 0)
+				return rc;
+
+			n += rc;
 
 		} else if (argp[1]) {
 			// short option(s)
@@ -2117,21 +2198,30 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 					if (opt->args > 0) {
 						const char *val;
 
-						if (!argp[pos + 1] && argc <= n + opt->args)
-							error_printf_exit(_("Missing argument(s) for option '-%c'\n"), argp[pos]);
+						if (!argp[pos + 1] && argc <= n + opt->args) {
+							error_printf(_("Missing argument(s) for option '-%c'\n"), argp[pos]);
+							return -1;
+						}
 						val = argp[pos + 1] ? argp + pos + 1 : argv[++n];
-						n += opt->parser(opt, val, 0);
+						if ((rc = opt->parser(opt, val, 0)) < 0)
+							return rc;
+						n += rc;
 						break;
-					} else //if (opt->args == 0)
-						opt->parser(opt, NULL, 0);
+					} else {//if (opt->args == 0)
+						if ((rc = opt->parser(opt, NULL, 0)) < 0)
+							return rc;
+					}
 /*					else {
 						const char *val;
 						val = argp[pos + 1] ? argp + pos + 1 : NULL;
 						n += opt->parser(opt, val);
 						break;
 					}
-*/				} else
-					error_printf_exit(_("Unknown option '-%c'\n"), argp[pos]);
+*/
+				} else {
+					error_printf(_("Unknown option '-%c'\n"), argp[pos]);
+					return -1;
+				}
 			}
 		}
 	}
@@ -2173,7 +2263,8 @@ int init(int argc, const char **argv)
 		if (!strcmp(argv[1],"-d"))
 			config.debug = 1;
 		else if (!strcmp(argv[1],"--debug")) {
-			set_long_option(argv[1] + 2, argv[2], 0);
+			if ((rc = set_long_option(argv[1] + 2, argv[2], 0)) < 0)
+				return rc;
 		}
 	}
 
@@ -2190,7 +2281,7 @@ int init(int argc, const char **argv)
 //	config.exclude_domains = wget_vector_create(16, -2, NULL);
 
 	// create list of default config file names
-	char *env;
+	const char *env;
 	config.config_files = wget_vector_create(8, -2, NULL);
 	if ((env = getenv ("SYSTEM_WGET2RC")) && *env)
 		wget_vector_add_str(config.config_files, env);
@@ -2209,14 +2300,15 @@ int init(int argc, const char **argv)
 
 	// first processing, to respect options that might influence output
 	// while read_config() (e.g. -d, -q, -a, -o)
-	parse_command_line(argc, argv);
+	if (parse_command_line(argc, argv) < 0)
+		return -1;
 
 	// truncate logfile, if not in append mode
 	if (config.logfile_append) {
 		config.logfile = config.logfile_append;
 		config.logfile_append = NULL;
 	}
-	else if (config.logfile && strcmp(config.logfile,"-")) {
+	else if (config.logfile && strcmp(config.logfile,"-") && !config.dont_write) {
 		int fd = open(config.logfile, O_WRONLY | O_TRUNC);
 
 		if (fd != -1)
@@ -2264,16 +2356,19 @@ int init(int argc, const char **argv)
 	read_config();
 
 	// now read command line options which override the settings of the config files
-	n = parse_command_line(argc, argv);
+	if ((n = parse_command_line(argc, argv)) < 0)
+		return -1;
 
-	if (plugin_db_help_forwarded())
-		exit(EXIT_SUCCESS);
+	if (plugin_db_help_forwarded()) {
+		set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+		return -1; // stop processing & exit
+	}
 
 	if (config.logfile_append) {
 		config.logfile = config.logfile_append;
 		config.logfile_append = NULL;
 	}
-	else if (config.logfile && strcmp(config.logfile,"-")) {
+	else if (config.logfile && strcmp(config.logfile,"-") && !config.dont_write) {
 		// truncate logfile
 		int fd = open(config.logfile, O_WRONLY | O_TRUNC);
 
@@ -2288,7 +2383,7 @@ int init(int argc, const char **argv)
 		config.max_threads = 1;
 
 	// truncate output document
-	if (config.output_document && strcmp(config.output_document,"-")) {
+	if (config.output_document && strcmp(config.output_document,"-") && !config.dont_write) {
 		int fd = open(config.output_document, O_WRONLY | O_TRUNC | O_BINARY);
 
 		if (fd != -1)
@@ -2329,6 +2424,7 @@ int init(int argc, const char **argv)
 	xfree(config.https_proxy);
 	xfree(config.no_proxy);
 
+#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 	if (config.cookies) {
 		config.cookie_db = wget_cookie_db_init(NULL);
 		wget_cookie_set_keep_session_cookies(config.cookie_db, config.keep_session_cookies);
@@ -2363,6 +2459,7 @@ int init(int argc, const char **argv)
 			config.ocsp_db = wget_ocsp_db_init(NULL, config.ocsp_file);
 		wget_ocsp_db_load(config.ocsp_db);
 	}
+#endif
 
 	if (config.base_url)
 		config.base = wget_iri_parse(config.base_url, config.local_encoding);
@@ -2398,8 +2495,10 @@ int init(int argc, const char **argv)
 
 	config.stats_site = stats_is_enabled(WGET_STATS_TYPE_SITE);
 
-	if ((rc = wget_net_init()))
-		wget_error_printf_exit(_("Failed to init networking (%d)"), rc);
+	if ((rc = wget_net_init())) {
+		wget_error_printf(_("Failed to init networking (%d)"), rc);
+		return -1;
+	}
 
 	// set module specific options
 	wget_tcp_set_timeout(NULL, config.read_timeout);
@@ -2494,40 +2593,46 @@ void deinit(void)
 	wget_netrc_db_free(&config.netrc_db);
 	wget_ssl_deinit();
 
-	xfree(config.cookie_suffixes);
-	xfree(config.load_cookies);
-	xfree(config.save_cookies);
-	xfree(config.hsts_file);
-	xfree(config.hpkp_file);
-	xfree(config.tls_session_file);
-	xfree(config.ocsp_file);
-	xfree(config.netrc_file);
-	xfree(config.logfile);
-	xfree(config.logfile_append);
-	xfree(config.user_agent);
-	xfree(config.output_document);
+	xfree(config.base_url);
+	xfree(config.bind_address);
 	xfree(config.ca_cert);
 	xfree(config.ca_directory);
 	xfree(config.cert_file);
+	xfree(config.cookie_suffixes);
 	xfree(config.crl_file);
-	xfree(config.egd_file);
-	xfree(config.private_key);
-	xfree(config.random_file);
-	xfree(config.secure_protocol);
 	xfree(config.default_page);
-	xfree(config.base_url);
-	xfree(config.input_file);
-	xfree(config.input_encoding);
-	xfree(config.local_encoding);
-	xfree(config.remote_encoding);
-	xfree(config.username);
-	xfree(config.password);
-	xfree(config.http_username);
+	xfree(config.directory_prefix);
+	xfree(config.egd_file);
+	xfree(config.gnutls_options);
+	xfree(config.hsts_file);
+	xfree(config.hpkp_file);
 	xfree(config.http_password);
-	xfree(config.http_proxy_username);
+	xfree(config.http_proxy);
 	xfree(config.http_proxy_password);
+	xfree(config.http_proxy_username);
+	xfree(config.http_username);
+	xfree(config.https_proxy);
+	xfree(config.input_encoding);
+	xfree(config.input_file);
+	xfree(config.load_cookies);
+	xfree(config.local_encoding);
+	xfree(config.logfile);
+	xfree(config.logfile_append);
+	xfree(config.netrc_file);
+	xfree(config.ocsp_file);
+	xfree(config.output_document);
+	xfree(config.password);
 	xfree(config.post_data);
 	xfree(config.post_file);
+	xfree(config.private_key);
+	xfree(config.random_file);
+	xfree(config.referer);
+	xfree(config.remote_encoding);
+	xfree(config.save_cookies);
+	xfree(config.secure_protocol);
+	xfree(config.tls_session_file);
+	xfree(config.user_agent);
+	xfree(config.username);
 
 	stats_exit();
 

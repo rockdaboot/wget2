@@ -268,7 +268,17 @@ static struct addrinfo *_wget_sort_preferred(struct addrinfo *addrinfo, int pref
 	}
 }
 
-#ifdef HAVE_GETADDRINFO_A
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+// for fuzzing and 'make check' with fuzz corpora we don't want real DNS access
+static int _wget_tcp_resolve(
+	G_GNUC_WGET_UNUSED wget_tcp_t *tcp,
+	G_GNUC_WGET_UNUSED const char *host,
+	G_GNUC_WGET_UNUSED uint16_t port,
+	G_GNUC_WGET_UNUSED struct addrinfo **out_addr)
+{
+	return EAI_NODATA;
+}
+#elif HAVE_GETADDRINFO_A
 static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, struct addrinfo **out_addr)
 {
 	int err;

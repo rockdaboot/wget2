@@ -135,25 +135,10 @@ static long long
 static int
 	hsts_changed,
 	hpkp_changed;
-static unsigned int
-	exit_status;
 static volatile int
 	terminate;
 int
 	nthreads;
-
-void set_exit_status(exit_status_t status)
-{
-	// use Wget exit status scheme:
-	// - error code 0 is default
-	// - error code 1 is used directly by exit() (fatal errors)
-	// - error codes 2... : lower numbers preced higher numbers
-	if (exit_status) {
-		if (status < exit_status)
-			exit_status = status;
-	} else
-		exit_status = status;
-}
 
 // this function should be called protected by a mutex - else race conditions will happen
 static void mkdir_path(char *fname)
@@ -918,11 +903,12 @@ int main(int argc, const char **argv)
 	plugin_db_add_search_paths(WGET_PLUGIN_DIR, 0);
 #endif
 
+	set_exit_status(WG_EXIT_STATUS_PARSE_INIT); // --version, --help etc might set the status to OK
 	n = init(argc, argv);
 	if (n < 0) {
-		set_exit_status(WG_EXIT_STATUS_PARSE_INIT);
 		goto out;
 	}
+	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
 
 	stats_init();
 
@@ -1136,9 +1122,9 @@ int main(int argc, const char **argv)
 	}
 
 	// Shutdown plugin system
-	plugin_db_finalize(exit_status);
+	plugin_db_finalize(get_exit_status());
 
-	return exit_status;
+	return get_exit_status();
 }
 
 void *input_thread(void *p G_GNUC_WGET_UNUSED)

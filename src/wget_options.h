@@ -29,6 +29,7 @@
 #define _WGET_OPTIONS_H
 
 #include <stdarg.h>
+#include <unistd.h> // needed for EXIT_SUCCESS
 
 #include <wget.h>
 
@@ -191,14 +192,29 @@ struct config {
 		force_progress,
 		stats_site,
 		stats_all,
-		local_db;
+		local_db,
+		dont_write; // fuzzers and unit/fuzz tests set this to 1, so they won't write any files
 };
 
 extern struct config
 	config;
 
+typedef enum exit_status_t {
+	WG_EXIT_STATUS_NO_ERROR   = EXIT_SUCCESS,
+	WG_EXIT_STATUS_GENERIC    = 1,
+	WG_EXIT_STATUS_PARSE_INIT = 2,
+	WG_EXIT_STATUS_IO         = 3,
+	WG_EXIT_STATUS_NETWORK    = 4,
+	WG_EXIT_STATUS_TLS        = 5,
+	WG_EXIT_STATUS_AUTH       = 6,
+	WG_EXIT_STATUS_PROTOCOL   = 7,
+	WG_EXIT_STATUS_REMOTE     = 8,
+} exit_status_t;
+
 int init(int argc, const char **argv) G_GNUC_WGET_NONNULL_ALL;
 int selftest_options(void);
 void deinit(void);
+void set_exit_status(exit_status_t status);
+int get_exit_status(void);
 
 #endif /* _WGET_OPTIONS_H */

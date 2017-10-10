@@ -1,0 +1,5 @@
+restrict-file-names=none
+restrict-file-names=unix
+restrict-file-names=
+restrict-owercase
+restrict-file-names=x

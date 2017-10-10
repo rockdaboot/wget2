@@ -1,6 +1,6 @@
 AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS) -Wno-unused-parameter -Wno-pedantic
-AM_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(srcdir) \
- -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\" -DSRCDIR=\"$(abs_srcdir)\" -DTEST_RUN
+AM_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib \
+ -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\" -DSRCDIR=\"$(abs_srcdir)\"
 LDADD = ../lib/libgnu.la ../libwget/libwget.la \
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
@@ -25,28 +25,42 @@ WGET_TESTS = \
  libwget_sitemap_url_fuzzer$(EXEEXT) \
  libwget_tlssess_fuzzer$(EXEEXT) \
  libwget_utils_fuzzer$(EXEEXT) \
- libwget_xml_parse_buffer_fuzzer$(EXEEXT)
+ libwget_xml_parse_buffer_fuzzer$(EXEEXT) \
+ wget_options_fuzzer$(EXEEXT)
 
-check_PROGRAMS = $(WGET_TESTS)
+if FUZZING
+  bin_PROGRAMS = $(WGET_TESTS)
+  LDADD += $(LIB_FUZZING_ENGINE)
+  AM_LDFLAGS = -no-install -all-static
+else
+  AM_CPPFLAGS += -DTEST_RUN
+  AM_TESTS_ENVIRONMENT = export VALGRIND_TESTS"=@VALGRIND_TESTS@";
+  TESTS = $(WGET_TESTS)
+  check_PROGRAMS = $(WGET_TESTS)
+  MAIN = main.c fuzzer.h
+endif
 
-libwget_atom_url_fuzzer_SOURCES = libwget_atom_url_fuzzer.c main.c fuzzer.h
-libwget_bar_fuzzer_SOURCES = libwget_bar_fuzzer.c main.c fuzzer.h
-libwget_base64_fuzzer_SOURCES = libwget_base64_fuzzer.c main.c fuzzer.h
-libwget_cookie_fuzzer_SOURCES = libwget_cookie_fuzzer.c main.c fuzzer.h
-libwget_css_url_fuzzer_SOURCES = libwget_css_url_fuzzer.c main.c fuzzer.h
-libwget_hpkp_fuzzer_SOURCES = libwget_hpkp_fuzzer.c main.c fuzzer.h
-libwget_hsts_fuzzer_SOURCES = libwget_hsts_fuzzer.c main.c fuzzer.h
-libwget_html_url_fuzzer_SOURCES = libwget_html_url_fuzzer.c main.c fuzzer.h
-libwget_http_parse_fuzzer_SOURCES = libwget_http_parse_fuzzer.c main.c fuzzer.h
-libwget_iri_fuzzer_SOURCES = libwget_iri_fuzzer.c main.c fuzzer.h
-libwget_metalink_parse_fuzzer_SOURCES = libwget_metalink_parse_fuzzer.c main.c fuzzer.h
-libwget_netrc_fuzzer_SOURCES = libwget_netrc_fuzzer.c main.c fuzzer.h
-libwget_ocsp_fuzzer_SOURCES = libwget_ocsp_fuzzer.c main.c fuzzer.h
-libwget_robots_parse_fuzzer_SOURCES = libwget_robots_parse_fuzzer.c main.c fuzzer.h
-libwget_sitemap_url_fuzzer_SOURCES = libwget_sitemap_url_fuzzer.c main.c fuzzer.h
-libwget_tlssess_fuzzer_SOURCES = libwget_tlssess_fuzzer.c main.c fuzzer.h
-libwget_utils_fuzzer_SOURCES = libwget_utils_fuzzer.c main.c fuzzer.h
-libwget_xml_parse_buffer_fuzzer_SOURCES = libwget_xml_parse_buffer_fuzzer.c main.c fuzzer.h
+libwget_atom_url_fuzzer_SOURCES = libwget_atom_url_fuzzer.c $(MAIN)
+libwget_bar_fuzzer_SOURCES = libwget_bar_fuzzer.c $(MAIN)
+libwget_base64_fuzzer_SOURCES = libwget_base64_fuzzer.c $(MAIN)
+libwget_cookie_fuzzer_SOURCES = libwget_cookie_fuzzer.c $(MAIN)
+libwget_css_url_fuzzer_SOURCES = libwget_css_url_fuzzer.c $(MAIN)
+libwget_hpkp_fuzzer_SOURCES = libwget_hpkp_fuzzer.c $(MAIN)
+libwget_hsts_fuzzer_SOURCES = libwget_hsts_fuzzer.c $(MAIN)
+libwget_html_url_fuzzer_SOURCES = libwget_html_url_fuzzer.c $(MAIN)
+libwget_http_parse_fuzzer_SOURCES = libwget_http_parse_fuzzer.c $(MAIN)
+libwget_iri_fuzzer_SOURCES = libwget_iri_fuzzer.c $(MAIN)
+libwget_metalink_parse_fuzzer_SOURCES = libwget_metalink_parse_fuzzer.c $(MAIN)
+libwget_netrc_fuzzer_SOURCES = libwget_netrc_fuzzer.c $(MAIN)
+libwget_ocsp_fuzzer_SOURCES = libwget_ocsp_fuzzer.c $(MAIN)
+libwget_robots_parse_fuzzer_SOURCES = libwget_robots_parse_fuzzer.c $(MAIN)
+libwget_sitemap_url_fuzzer_SOURCES = libwget_sitemap_url_fuzzer.c $(MAIN)
+libwget_tlssess_fuzzer_SOURCES = libwget_tlssess_fuzzer.c $(MAIN)
+libwget_utils_fuzzer_SOURCES = libwget_utils_fuzzer.c $(MAIN)
+libwget_xml_parse_buffer_fuzzer_SOURCES = libwget_xml_parse_buffer_fuzzer.c $(MAIN)
+wget_options_fuzzer_SOURCES = wget_options_fuzzer.c $(MAIN)
+wget_options_fuzzer_LDADD = ../src/options.o ../src/log.o ../src/stats.o ../src/dl.o ../src/plugin.o $(LDADD)
+
 
 #EXTRA_DIST = $(wildcard *.options) $(wildcard *.dict) \
 # $(wildcard *.in) $(wildcard *.repro)
@@ -56,9 +70,6 @@ dist-hook:
 	find . -name '*.dict' -exec cp -v '{}' $(distdir) ';'
 	find . -name '*.in' -exec cp -vr '{}' $(distdir) ';'
 	find . -name '*.repro' -exec cp -vr '{}' $(distdir) ';'
-
-AM_TESTS_ENVIRONMENT = export VALGRIND_TESTS"=@VALGRIND_TESTS@";
-TESTS = $(WGET_TESTS)
 
 clean-local:
 	rm -rf *.gc?? *.log lcov

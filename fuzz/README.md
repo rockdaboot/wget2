@@ -16,15 +16,33 @@ Use the following commands on top dir:
 ```
 export CC=clang-6.0
 export CFLAGS="-O1 -g -fno-omit-frame-pointer -gline-tables-only -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -fsanitize=undefined,integer,nullability -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-coverage=trace-pc-guard,trace-cmp"
-./configure --enable-static --disable-doc --disable-manywarnings
+export LIB_FUZZING_ENGINE="-lFuzzer -lstdc++"
+./configure --enable-fuzzing --disable-doc --disable-manywarnings
 make clean
 make -j$(nproc)
 cd fuzz
 
-# build and run libwget_xml_parse_buffer_fuzzer
+# run libwget_xml_parse_buffer_fuzzer
 UBSAN_OPTIONS=print_stacktrace=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-6.0/bin/llvm-symbolizer \
   ./run-clang.sh libwget_xml_parse_buffer_fuzzer
 ```
+
+If you see a crash, then a crash corpora is written that can be used for further
+investigation. E.g.
+```
+==2410==ERROR: AddressSanitizer: heap-use-after-free on address 0x602000004e90 at pc 0x00000049cf9c bp 0x7fffb5543f70 sp 0x7fffb5543720
+...
+Test unit written to ./crash-adc83b19e793491b1c6ea0fd8b46cd9f32e592fc
+```
+
+To reproduce the crash:
+```
+./libwget_xml_parse_buffer_fuzzer < ./crash-adc83b19e793491b1c6ea0fd8b46cd9f32e592fc
+```
+
+You can also copy/move that file into libwget_xml_parse_buffer_fuzzer.repro/
+and re-build the project without fuzzing for a valgrind run, if you like that better.
+Just a `./configure` (maybe with sanitizers enabled) and a `make check-valgrind` should reproduce it.
 
 
 # Running a fuzzer using AFL
@@ -57,11 +75,8 @@ To work on corpora for better coverage, `cd fuzz` and use e.g.
 `./view-coverage.sh libwget_xml_parse_buffer_fuzzer`.
 
 
-# Enhancing the testsuite for issues found
+# Creating wget_options_fuzzer.dict
 
-For the following tests dropping a file to a subdirectory in tests is
-sufficient:
-
-|--------------------------------|--------------------------------|
-|libwget_xml_parse_buffer        | tests/libwget_xml_parse_buffer |
-|--------------------------------|--------------------------------|
+```
+for i in `../src/wget2 --help|tr ' ' '\n'|grep ^--|cut -c 3-|sort`;do echo \"$i\"; done >wget_options_fuzzer.dict
+```

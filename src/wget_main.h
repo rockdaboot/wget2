@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef _WGET_WGET_H
-#define _WGET_WGET_H
+#ifndef _WGET_MAIN_H
+#define _WGET_MAIN_H
 
 #include <stddef.h>
 #include <stdlib.h> // needed for free()
@@ -58,22 +58,6 @@
 // number of elements within an array
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
-// Number of threads in the program
-extern int nthreads;
-
-typedef enum exit_status_t {
-	WG_EXIT_STATUS_NO_ERROR   = 0,
-	WG_EXIT_STATUS_GENERIC    = 1,
-	WG_EXIT_STATUS_PARSE_INIT = 2,
-	WG_EXIT_STATUS_IO         = 3,
-	WG_EXIT_STATUS_NETWORK    = 4,
-	WG_EXIT_STATUS_TLS        = 5,
-	WG_EXIT_STATUS_AUTH       = 6,
-	WG_EXIT_STATUS_PROTOCOL   = 7,
-	WG_EXIT_STATUS_REMOTE     = 8,
-} exit_status_t;
-
-void set_exit_status(exit_status_t status);
 const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri);
 
-#endif /* _WGET_WGET_H */
+#endif /* _WGET_MAIN_H */

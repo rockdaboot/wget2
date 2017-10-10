@@ -56,7 +56,7 @@ gl_EARLY
 gl_INIT
 
 LT_PREREQ([2.2])
-LT_INIT([dlopen disable-static])
+LT_INIT([dlopen])
 
 # Define these substitions here to keep all version information in one place.
 # For information on how to properly maintain the library version information,
@@ -169,8 +169,8 @@ if test -n "$WARN_CFLAGS"; then
     # setup flags for this project
     WARN_CFLAGS="$WARN_CFLAGS -Wno-system-headers -Wno-vla -Wno-cast-qual -Wno-padded"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-reserved-id-macro -Wno-sign-conversion  -Wno-disabled-macro-expansion"
-	WARN_CFLAGS="$WARN_CFLAGS -Wno-documentation -Wno-documentation-unknown-command"
-	WARN_CFLAGS="$WARN_CFLAGS -Wno-covered-switch-default"
+    WARN_CFLAGS="$WARN_CFLAGS -Wno-documentation -Wno-documentation-unknown-command"
+    WARN_CFLAGS="$WARN_CFLAGS -Wno-covered-switch-default"
 
     # remove all flags from WARN_FLAGS that are already in CFLAGS
     # wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])
@@ -186,6 +186,11 @@ if test -n "$WARN_CFLAGS"; then
   AC_SUBST([WARN_CFLAGS])
   AC_SUBST([GNULIB_WARN_CFLAGS])
 fi
+
+AC_ARG_ENABLE([fuzzing],
+  [AS_HELP_STRING([--enable-fuzzing], [Turn on Undefined Behavior Sanitizer (for developers)])],
+  [enable_fuzzing=yes; AC_SUBST([LIB_FUZZING_ENGINE])], [enable_fuzzing=no; LIB_FUZZING_ENGINE=""])
+AM_CONDITIONAL([FUZZING], [test ! -z "$LIB_FUZZING_ENGINE"])
 
 AC_ARG_ENABLE([fsanitize-ubsan],
   [AS_HELP_STRING([--enable-fsanitize-ubsan], [Turn on Undefined Behavior Sanitizer (for developers)])],
@@ -648,6 +653,7 @@ AC_MSG_NOTICE([Summary of build options:
   CFlags:             ${CFLAGS} ${CPPFLAGS} ${WARN_CFLAGS}
   LDFlags:            ${LDFLAGS}
   Libs:               ${LIBS}
+  Library types:      shared=${enable_shared}, static=${enable_static}
   SSL/TLS support:    $with_gnutls
   GZIP compression:   $with_zlib
   BZIP2 compression:  $with_bzip2
@@ -661,4 +667,5 @@ AC_MSG_NOTICE([Summary of build options:
   Assertions:         $ENABLE_ASSERT
   POSIX xattr:        $ENABLE_XATTR
   Microhttpd support: $with_libmicrohttpd (CFLAGS: ${TEST_CFLAGS}. LIBS: ${TEST_LIBS})
+  Fuzzing build:      $enable_fuzzing, $LIB_FUZZING_ENGINE
 ])

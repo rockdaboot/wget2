@@ -71,7 +71,8 @@ static void _write_out(
 		fp = stdout;
 	} else {
 		fp = NULL;
-		fd = open(config.logfile, O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+		if (!config.dont_write)
+			fd = open(config.logfile, O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 		if (fd == -1)
 			fp = default_fp;
 	}
@@ -208,6 +209,8 @@ void log_init(void)
 		wget_logger_set_file(logger, NULL); // stop logging (if already started)
 */
 
+// no printing during fuzzing
+#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 	// set debug logging
 	wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), config.debug ? _write_debug_stderr : NULL);
 
@@ -221,4 +224,5 @@ void log_init(void)
 	wget_logger_set_func(wget_get_logger(WGET_LOGGER_INFO),
 		config.verbose && !config.quiet ? (fileno(stdout) == fileno(stderr) ? _write_info_stderr : _write_info_stdout) : NULL);
 //	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
+#endif
 }
