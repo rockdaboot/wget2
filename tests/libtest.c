@@ -488,22 +488,22 @@ static int _http_server_start(int SERVER_MODE)
 
 		if ((key_pem == NULL) || (cert_pem == NULL))
 		{
-			printf("The key/certificate files could not be read.\n");
+			wget_error_printf(_("The key/certificate files could not be read.\n"));
 			return 1;
 		}
 
-#ifdef MHD_USE_TLS
-		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS,
-#else
-		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_SSL,
+#ifndef MHD_USE_TLS
+#  define MHD_USE_TLS MHD_USE_SSL
 #endif
+
+		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS,
 			port_num, NULL, NULL, &_answer_to_connection, NULL,
 			MHD_OPTION_HTTPS_MEM_KEY, key_pem,
 			MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
 			MHD_OPTION_END);
 
 		if (!httpsdaemon) {
-			printf("Cannot start the HTTPS server.\n");
+			wget_error_printf(_("Cannot start the HTTPS server.\n"));
 			return 1;
 		}
 	}
@@ -518,10 +518,10 @@ static int _http_server_start(int SERVER_MODE)
 			dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_BIND_PORT);
 		else if (SERVER_MODE == HTTPS_MODE)
 			dinfo = MHD_get_daemon_info(httpsdaemon, MHD_DAEMON_INFO_BIND_PORT);
+
 		if (!dinfo || dinfo->port == 0)
-		{
 			return 1;
-		}
+
 		port_num = dinfo->port;
 		if (SERVER_MODE == HTTP_MODE)
 			http_server_port = port_num;
@@ -533,10 +533,12 @@ static int _http_server_start(int SERVER_MODE)
 	{
 		const union MHD_DaemonInfo *dinfo = NULL;
 		int sock_fd;
+
 		if (SERVER_MODE == HTTP_MODE)
 			dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_LISTEN_FD);
 		else if (SERVER_MODE == HTTPS_MODE)
 			dinfo = MHD_get_daemon_info(httpsdaemon, MHD_DAEMON_INFO_LISTEN_FD);
+
 		if (!dinfo)
 			return 1;
 #ifdef _WIN32
@@ -561,7 +563,6 @@ static int _http_server_start(int SERVER_MODE)
 					https_server_port = port_num;
 			}
 		}
-
 	}
 
 	return 0;
@@ -710,7 +711,7 @@ void wget_test_start_server(int first_key, ...)
 
 	/* Skip any test that use this function if threads are not present.  */
 	if (!wget_thread_support()) {
-		wget_error_printf("THREADS NOT SUPPORTED: Skip\n");
+		wget_error_printf(_("THREADS NOT SUPPORTED: Skip\n"));
 		exit(WGET_TEST_EXIT_SKIP);
 	}
 
@@ -852,7 +853,7 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 #if !(defined __APPLE__ && defined __MACH__)
 				size_t it;
 
-				wget_info_printf("search %s\n", fname);
+				wget_info_printf(_("search %s\n"), fname);
 
 				for (it = 0; expected_files[it].name; it++) {
 #ifdef _WIN32
@@ -867,10 +868,10 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 						char b[256];
 						if (it==0) {
 							wget_memtohex(fname, strlen(fname), b, sizeof(b));
-							wget_error_printf("f %s\n", b);
+							wget_debug_printf("f %s\n", b);
 						}
 						wget_memtohex(restricted_fname, strlen(restricted_fname), b, sizeof(b));
-						wget_error_printf("r %s\n", b);
+						wget_debug_printf("r %s\n", b);
 					}
 */
 					if (!strcmp(restricted_fname, fname))
@@ -894,7 +895,11 @@ void wget_test(int first_key, ...)
 	const char
 		*request_url,
 		*options="",
+#ifdef _WIN32
+		*executable="..\\..\\src\\wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy";
+#else
 		*executable="../../src/wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy";
+#endif
 	const wget_test_file_t
 		*expected_files = NULL,
 		*existing_files = NULL;
@@ -1006,7 +1011,7 @@ void wget_test(int first_key, ...)
 	wget_buffer_strcat(cmd, " 2>&1");
 
 	wget_info_printf("cmd=%s\n", cmd->data);
-	wget_error_printf("\n  Testing '%s'\n", cmd->data);
+	wget_error_printf(_("\n  Testing '%s'\n"), cmd->data);
 
 	// catch stdout and write to stderr so all output is in sync
 	FILE *pp;
