@@ -44,6 +44,15 @@
 #include "libtest.h"
 
 #include <microhttpd.h>
+#ifndef HAVE_MHD_FREE
+#  define MHD_free wget_free
+#endif
+#ifndef MHD_HTTP_RANGE_NOT_SATISFIABLE
+#  define MHD_HTTP_RANGE_NOT_SATISFIABLE MHD_HTTP_REQUESTED_RANGE_NOT_SATISFIABLE
+#endif
+#ifndef MHD_USE_TLS
+#  define MHD_USE_TLS MHD_USE_SSL
+#endif
 
 #include <sys/types.h>
 #include <sys/select.h>
@@ -347,14 +356,14 @@ static int _answer_to_connection(
 					response = MHD_create_response_from_buffer(strlen ("DENIED"),
 						(void *) "DENIED", MHD_RESPMEM_PERSISTENT);
 					ret = MHD_queue_basic_auth_fail_response(connection, "basic@example.com", response);
-					wget_xfree(user); // TODO: replace with MHD_free() when available
-					wget_xfree(pass); // TODO: replace with MHD_free() when available
+					MHD_free(user);
+					MHD_free(pass);
 					wget_buffer_free(&url_iri);
 					found = 1;
 					break;
 				}
-				wget_xfree(user); // TODO: replace with MHD_free() when available
-				wget_xfree(pass); // TODO: replace with MHD_free() when available
+				MHD_free(user);
+				MHD_free(pass);
 			}
 
 			// digest authentication
@@ -365,13 +374,13 @@ static int _answer_to_connection(
 					response = MHD_create_response_from_buffer(strlen ("DENIED"),
 						(void *) "DENIED", MHD_RESPMEM_PERSISTENT);
 					ret = MHD_queue_auth_fail_response(connection, realm, TEST_OPAQUE_STR, response, MHD_NO);
-					wget_xfree(user); // TODO: replace with MHD_free() when available
+					MHD_free(user);
 					wget_buffer_free(&url_iri);
 					found = 1;
 					break;
 				}
 				ret = MHD_digest_auth_check(connection, realm, user, urls[it1].auth_password, 300);
-				wget_xfree(user); // TODO: replace with MHD_free() when available
+				MHD_free(user);
 				if ((ret == MHD_INVALID_NONCE) || (ret == MHD_NO)) {
 					response = MHD_create_response_from_buffer(strlen ("DENIED"),
 						(void *) "DENIED", MHD_RESPMEM_PERSISTENT);
@@ -399,11 +408,7 @@ static int _answer_to_connection(
 
 				if (from_bytes > to_bytes || from_bytes >= (int) strlen(urls[it1].body)) {
 					response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
-#ifdef MHD_HTTP_RANGE_NOT_SATISFIABLE
 					ret = MHD_queue_response(connection, MHD_HTTP_RANGE_NOT_SATISFIABLE, response);
-#else
-					ret = MHD_queue_response(connection, MHD_HTTP_REQUESTED_RANGE_NOT_SATISFIABLE, response);
-#endif
 				} else {
 					response = MHD_create_response_from_buffer(body_len,
 						(void *) (urls[it1].body + from_bytes), MHD_RESPMEM_MUST_COPY);
@@ -491,10 +496,6 @@ static int _http_server_start(int SERVER_MODE)
 			wget_error_printf(_("The key/certificate files could not be read.\n"));
 			return 1;
 		}
-
-#ifndef MHD_USE_TLS
-#  define MHD_USE_TLS MHD_USE_SSL
-#endif
 
 		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS,
 			port_num, NULL, NULL, &_answer_to_connection, NULL,

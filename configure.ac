@@ -548,15 +548,28 @@ AM_CONDITIONAL([WITH_LIBIDN], [test "x$with_libidn" = xyes])
 
 AC_ARG_WITH(libmicrohttpd, AS_HELP_STRING([--without-libmicrohttpd], [disable support for libmicrohttpd]), with_libmicrohttpd=$withval, with_libmicrohttpd=yes)
 AS_IF([test "x$with_libmicrohttpd" != xno], [
+  old_LIBS=$LIBS
+  old_CFLAGS=$CFLAGS
   PKG_CHECK_MODULES(MICROHTTPD, [libmicrohttpd], [
     with_libmicrohttpd=yes
     TEST_LIBS="$MICROHTTPD_LIBS $TEST_LIBS"
     TEST_CFLAGS="$MICROHTTPD_CFLAGS $TEST_CFLAGS"
     AC_DEFINE([WITH_MICROHTTPD], [1], [Use Libmicrohttpd])
+    LIBS="$MICROHTTPD_LIBS $LIBS"
+    CFLAGS="$MICROHTTPD_CFLAGS $CFLAGS"
+    AC_CHECK_FUNCS(MHD_free)
+    LIBS=$old_LIBS
+    CFLAGS=$old_CFLAGS
   ], [
-    with_libmicrohttpd=no
-    AC_MSG_WARN(*** Building without MHD. Most tests will not run)
+    AC_SEARCH_LIBS(MHD_start_daemon, microhttpd,
+      [with_libmicrohttpd=yes; AC_DEFINE([WITH_MICROHTTPD], [1], [Use libmicrohttpd])],
+      [with_libmicrohttpd=no; AC_MSG_WARN(*** LIBMICROHTTPD was not found. Several tests will not run.)])
+    AC_CHECK_FUNCS(MHD_free)
+    TEST_LIBS=$LIBS
+    TEST_CFLAGS=$CFLAGS
   ])
+  LIBS=$old_LIBS
+  CFLAGS=$old_CFLAGS
 ])
 AM_CONDITIONAL([WITH_MICROHTTPD], [test "x$with_libmicrohttpd" = xyes])
 
