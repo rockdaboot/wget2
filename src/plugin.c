@@ -351,7 +351,7 @@ static plugin_t *_load_plugin(const char *name, const char *path, dl_error_t *e)
 	priv->argp = NULL;
 	priv->url_filter = NULL;
 	priv->post_processor = NULL;
-	wget_strlcpy(priv->name_buf, name, name_len + 1);
+	wget_strscpy(priv->name_buf, name, name_len + 1);
 
 	// Initialize public members
 	plugin->parent.plugin_data = NULL;

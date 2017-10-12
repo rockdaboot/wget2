@@ -728,8 +728,7 @@ const char *wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t l
 			char path[len + 1];
 
 			// strlcpy or snprintf are ineffective here since they do strlen(val), which might be large
-			memcpy(path, val, len);
-			path[len] = 0;
+			wget_strscpy(path, val, len + 1);
 
 			if (len >= 2 && val[1] == '/') {
 				char *p;

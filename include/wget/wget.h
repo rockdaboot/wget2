@@ -377,6 +377,8 @@ WGETAPI const char *
 
 WGETAPI size_t
 	wget_strlcpy(char *restrict dst, const char *restrict src, size_t size);
+WGETAPI ssize_t
+	wget_strscpy(char *restrict dst, const char *restrict src, size_t size);
 
 /**
  * \ingroup libwget-list

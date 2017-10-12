@@ -110,7 +110,7 @@ wget_http_request_t *wget_http_create_request(const wget_iri_t *iri, const char 
 	wget_buffer_init(&req->esc_host, req->esc_host_buf, sizeof(req->esc_host_buf));
 
 	req->scheme = iri->scheme;
-	wget_strlcpy(req->method, method, sizeof(req->method));
+	wget_strscpy(req->method, method, sizeof(req->method));
 	wget_iri_get_escaped_resource(iri, &req->esc_resource);
 	wget_iri_get_escaped_host(iri, &req->esc_host);
 	req->headers = wget_vector_create(8, 8, NULL);

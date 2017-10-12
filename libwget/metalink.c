@@ -80,8 +80,8 @@ static void _add_piece(_metalink_context_t *ctx, const char *value)
 			metalink->pieces = wget_vector_create(32, 32, NULL);
 
 		piece.length = ctx->length;
-		wget_strlcpy(piece.hash.type, ctx->hash_type, sizeof(piece.hash.type));
-		wget_strlcpy(piece.hash.hash_hex, ctx->hash, sizeof(piece.hash.hash_hex));
+		wget_strscpy(piece.hash.type, ctx->hash_type, sizeof(piece.hash.type));
+		wget_strscpy(piece.hash.hash_hex, ctx->hash, sizeof(piece.hash.hash_hex));
 
 		piecep = wget_vector_get(metalink->pieces, wget_vector_size(metalink->pieces) - 1);
 		if (piecep && piecep->length > 0) {
@@ -108,8 +108,8 @@ static void _add_file_hash(_metalink_context_t *ctx, const char *value)
 		wget_metalink_hash_t hash;
 
 		memset(&hash, 0, sizeof(wget_metalink_hash_t));
-		wget_strlcpy(hash.type, ctx->hash_type, sizeof(hash.type));
-		wget_strlcpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
+		wget_strscpy(hash.type, ctx->hash_type, sizeof(hash.type));
+		wget_strscpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
 
 		if (!metalink->hashes)
 			metalink->hashes = wget_vector_create(4, 4, NULL);
@@ -131,7 +131,7 @@ static void _add_mirror(_metalink_context_t *ctx, const char *value)
 	wget_metalink_mirror_t mirror;
 
 	memset(&mirror, 0, sizeof(wget_metalink_mirror_t));
-	wget_strlcpy(mirror.location, ctx->location, sizeof(mirror.location));
+	wget_strscpy(mirror.location, ctx->location, sizeof(mirror.location));
 	mirror.priority = ctx->priority;
 	mirror.iri = wget_iri_parse(value, NULL);
 

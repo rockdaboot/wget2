@@ -97,8 +97,8 @@ static void _css_parse_uri(void *context, const char *url G_GNUC_WGET_UNUSED, si
 
 	WGET_HTML_PARSED_URL parsed_url;
 	parsed_url.link_inline = 1;
-	wget_strlcpy(parsed_url.attr, ctx->css_attr, sizeof(parsed_url.attr));
-	wget_strlcpy(parsed_url.dir, ctx->css_dir, sizeof(parsed_url.dir));
+	wget_strscpy(parsed_url.attr, ctx->css_attr, sizeof(parsed_url.attr));
+	wget_strscpy(parsed_url.dir, ctx->css_dir, sizeof(parsed_url.dir));
 	parsed_url.url.p = (const char *) (ctx->html + ctx->css_start_offset + pos);
 	parsed_url.url.len = len;
 
@@ -250,8 +250,8 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 					for (;len && c_isspace(*val); val++, len--); // skip leading spaces
 					for (p = val;len && !c_isspace(*val) && *val != ','; val++, len--); // find end of URL
 					if (p != val) {
-						wget_strlcpy(url.attr, attr, sizeof(url.attr));
-						wget_strlcpy(url.dir, tag, sizeof(url.dir));
+						wget_strscpy(url.attr, attr, sizeof(url.attr));
+						wget_strscpy(url.dir, tag, sizeof(url.dir));
 						url.url.p = p;
 						url.url.len = val - p;
 						wget_vector_add(res->uris, &url, sizeof(url));
@@ -263,8 +263,8 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 			} else {
 				// value is a single URL
 				url.link_inline = ctx->link_inline;
-				wget_strlcpy(url.attr, attr, sizeof(url.attr));
-				wget_strlcpy(url.dir, tag, sizeof(url.dir));
+				wget_strscpy(url.attr, attr, sizeof(url.attr));
+				wget_strscpy(url.dir, tag, sizeof(url.dir));
 				url.url.p = val;
 				url.url.len = len;
 				ctx->uri_index = wget_vector_add(res->uris, &url, sizeof(url));
