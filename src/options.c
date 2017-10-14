@@ -184,15 +184,22 @@ static int G_GNUC_WGET_NORETURN print_version(G_GNUC_WGET_UNUSED option_t opt, G
 
 static inline void print_first(const char s, const char *l, const char *msg)
 {
-	printf("  %c%-4c  --%-16.16s  %s",
-		(s ? '-' : ' '),
-		(s ? s : ' '),
-		l, msg);
+	if (strlen(l) > 16) {
+		printf("  %c%-4c  --%s\n",
+			(s ? '-' : ' '),
+			(s ? s : ' '),
+			l);
+		printf("%29s%s", "", msg);
+	} else
+		printf("  %c%-4c  --%-16.16s  %s",
+			(s ? '-' : ' '),
+			(s ? s : ' '),
+			l, msg);
 }
 
 static inline void print_next(const char *msg)
 {
-	printf("%33s%s", "", msg);
+	printf("%31s%s", "", msg);
 }
 
 static char *_shell_expand(const char *str)
@@ -1701,7 +1708,7 @@ static int G_GNUC_WGET_NORETURN print_help(G_GNUC_WGET_UNUSED option_t opt, G_GN
 			break;
 
 		default:
-			printf("Unknown FIXME Vijo\n");
+			printf("Unknown help section %d\n", (int) sect);
 			break;
 		}
 		for (unsigned it = 0; it < countof(options); it++) {
