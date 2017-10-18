@@ -2150,15 +2150,12 @@ static void G_GNUC_WGET_NORETURN _no_memory(void)
 // TODO: Read the XDG Base Directory variables first
 static char *get_home_dir(void)
 {
-	static char *home;
+	char *home;
 
-	if (!home) {
-		if ((home = wget_strnglob("~", 1, GLOB_TILDE_CHECK)) == NULL) {
-			home = wget_strdup("."); // Use the current directory as 'home' directory
-		}
-	}
+	if ((home = wget_strnglob("~", 1, GLOB_TILDE_CHECK)))
+		return home;
 
-	return home;
+	return wget_strdup("."); // Use the current directory as 'home' directory
 }
 
 // read config, parse CLI options, check values, set module options
