@@ -1325,7 +1325,6 @@ static wget_vector_t *_parse_no_proxies(const char *no_proxy, const char *encodi
 	const char *s, *p;
 
 	proxies = wget_vector_create(8, -2, NULL);
-	wget_vector_set_destructor(proxies, (wget_vector_destructor_t)wget_iri_free_content);
 
 	for (s = p = no_proxy; *p; s = p + 1) {
 		while (c_isspace(*s) && s < p) s++;
