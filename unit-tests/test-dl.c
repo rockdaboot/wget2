@@ -170,8 +170,10 @@ do { \
 	dl_error_t e[1]; \
 	dl_error_init(e); \
 	stmt; \
-	if (dl_error_is_set(e)) \
+	if (dl_error_is_set(e)) { \
 		abortmsg("Failed dynamic loading operation [" #stmt "]: %s", dl_error_get_msg(e)); \
+		dl_error_set(e, NULL); \
+	} \
 } while(0)
 
 typedef void (*test_fn)(char buf[16]);
