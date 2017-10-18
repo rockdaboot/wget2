@@ -864,7 +864,7 @@ void wget_tcp_set_bind_address(wget_tcp_t *tcp, const char *bind_address)
 			tcp->bind_addrinfo = wget_tcp_resolve(tcp, host, 0);
 		}
 
-		tcp->bind_addrinfo_allocated = !tcp->caching;
+		tcp->bind_addrinfo_allocated = !tcp->caching && tcp->bind_addrinfo;
 	}
 }
 
