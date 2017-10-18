@@ -514,13 +514,13 @@ static int parse_timeout(option_t opt, const char *val, G_GNUC_WGET_UNUSED const
 		fval = -1;
 
 	if (opt->var) {
-		*((int *)opt->var) = (int) fval;
+		*((int *)opt->var) = fval > INT_MAX ? INT_MAX : (int) fval;
 		// debug_printf("timeout set to %gs\n",*((int *)opt->var)/1000.);
 	} else {
 		// --timeout option sets all timeouts
 		config.connect_timeout =
 		config.dns_timeout =
-		config.read_timeout = (int) fval;
+		config.read_timeout = fval > INT_MAX ? INT_MAX : (int) fval;
 	}
 
 	return 0;
