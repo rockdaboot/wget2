@@ -1982,7 +1982,7 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 	}
 
 	if ((fp = fopen(cfgfile, "r")) == NULL) {
-		error_printf(_("Failed to open %s\n"), cfgfile);
+		error_printf(_("Failed to open %s (%d): %s\n"), cfgfile, errno, strerror(errno));
 		return -1;
 	}
 
