@@ -24,6 +24,9 @@
 #ifndef _WGET_PLUGIN_H
 #define _WGET_PLUGIN_H
 
+#include <wget.h>
+#include "wget_dl.h"
+
 // Initializes the plugin framework
 void plugin_db_init(void);
 
