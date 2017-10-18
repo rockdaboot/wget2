@@ -293,7 +293,7 @@ static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, s
 
 	struct gaicb addr = {
 		.ar_name = host,
-		.ar_service = s_port,
+		.ar_service = port ? s_port : NULL,
 		.ar_request = &hints,
 	};
 	struct gaicb *addrs = &addr;
