@@ -252,7 +252,7 @@ static int parse_numbytes(option_t opt, const char *val, G_GNUC_WGET_UNUSED cons
 			error = 1;
 
 		if (!error)
-			*((long long *)opt->var) = (long long)num;
+			*((long long *)opt->var) = num > LLONG_MAX ? LLONG_MAX : (long long) num;
 		else
 			error_printf_exit(_("Invalid byte specifier: %s\n"), val);
 	}
