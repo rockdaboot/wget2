@@ -24,28 +24,34 @@
 #ifndef _WGET_DL_H
 #define _WGET_DL_H
 
+#include <wget.h>
+
 // Error handling for dynamic loader
 typedef struct
 {
-	char *msg;
+	const char *msg;
 } dl_error_t;
+
 // Initializes the error object for catching errors
 static inline void dl_error_init(dl_error_t *e)
 {
 	e->msg = NULL;
 }
+
 // Checks if the error is set
 static inline int dl_error_is_set(dl_error_t *e)
 {
 	return e->msg ? 1 : 0;
 }
+
 // Gets the error message if error is set, else NULL
 // Error string is owned by the error object and will be freed when error is
 // unset.
-static inline char *dl_error_get_msg(dl_error_t *e)
+static inline const char *dl_error_get_msg(dl_error_t *e)
 {
 	return e->msg;
 }
+
 // Set an error message. Call with msg=NULL to clear error.
 void dl_error_set(dl_error_t *e, const char *msg);
 
@@ -53,12 +59,11 @@ void dl_error_set(dl_error_t *e, const char *msg);
 void dl_error_set_printf
 	(dl_error_t *e, const char *format, ...) G_GNUC_WGET_PRINTF_FORMAT(2, 3);
 
+// Returns 1 if dynamic loader will work on the current platform, 0 otherwise
+int dl_supported(void);
 
 // The dynamically loaded object file handle
 typedef struct dl_file_st dl_file_t;
-
-// Returns 1 if dynamic loader will work on the current platform, 0 otherwise
-int dl_supported(void);
 
 /* Opens an object file. If the operation fails NULL is returned
  * and error is set.

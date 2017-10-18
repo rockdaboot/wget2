@@ -34,26 +34,28 @@
 
 // Error reporting functions
 
+static void dl_error_set_noalloc(dl_error_t *e, const char *msg)
+{
+	if (msg && e->msg)
+		wget_error_printf("Piling up error '%s' over error '%s'", msg, e->msg);
+
+	wget_free((void *) e->msg);
+	e->msg = msg;
+}
+
 // Set an error message. Call with msg=NULL to clear error.
 void dl_error_set(dl_error_t *e, const char *msg)
 {
-	if (msg && e->msg)
-		wget_error_printf_exit("Piling up error '%s' over error '%s'", msg, e->msg);
-
-	wget_xfree(e->msg);
-	if (msg)
-		e->msg = wget_strdup(msg);
+	dl_error_set_noalloc(e, wget_strdup(msg));
 }
+
 // Set an error message with printf format.
-void dl_error_set_printf
-	(dl_error_t *e, const char *format, ...)
+void dl_error_set_printf (dl_error_t *e, const char *format, ...)
 {
 	va_list arglist;
-	va_start(arglist, format);
-	if (e->msg)
-		wget_error_printf_exit("Piling up error '%s' over error '%s'", format, e->msg);
 
-	e->msg = wget_vaprintf(format, arglist);
+	va_start(arglist, format);
+	dl_error_set_noalloc(e, wget_vaprintf(format, arglist));
 	va_end(arglist);
 }
 
@@ -62,10 +64,10 @@ void dl_error_set_printf
 // else returns NULL
 static char *convert_to_path_if_not(const char *str)
 {
-        if (str && !strchr(str, '/'))
-                return wget_aprintf("./%s", str);
+	if (str && !strchr(str, '/'))
+		return wget_aprintf("./%s", str);
 
-        return NULL;
+	return NULL;
 }
 #endif
 
