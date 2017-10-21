@@ -2009,7 +2009,7 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 			len--;
 		linep[len] = 0;
 
-		if (linep[len - 1] == '\\') {
+		if (len > 0 && linep[len - 1] == '\\') {
 			if (append) {
 				wget_buffer_memcat(&linebuf, linep, len - 1);
 			} else {
