@@ -1547,7 +1547,7 @@ typedef struct {
 		url;
 	const char *
 		abs_url;
-} WGET_PARSED_URL;
+} wget_css_parsed_url_t;
 
 typedef void (*wget_css_parse_uri_cb_t)(void *user_ctx, const char *url, size_t len, size_t pos);
 typedef void (*wget_css_parse_encoding_cb_t)(void *user_ctx, const char *url, size_t len);

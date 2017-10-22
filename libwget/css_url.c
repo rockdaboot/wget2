@@ -41,7 +41,7 @@ typedef struct {
 		*uris;
 } _CSS_CONTEXT;
 
-static void _free_url(WGET_PARSED_URL *url)
+static void _free_url(wget_css_parsed_url_t *url)
 {
 	xfree(url->url);
 	xfree(url->abs_url);
@@ -63,7 +63,7 @@ static void _css_get_encoding(void *context, const char *encoding, size_t len)
 static void _css_get_url(void *context, const char *url, size_t len, size_t pos)
 {
 	_CSS_CONTEXT *ctx = context;
-	WGET_PARSED_URL parsed_url = { .len = len, .pos = pos, .url = wget_strmemdup(url, len), .abs_url = NULL };
+	wget_css_parsed_url_t parsed_url = { .len = len, .pos = pos, .url = wget_strmemdup(url, len), .abs_url = NULL };
 
 	if (!ctx->uris) {
 		ctx->uris = wget_vector_create(16, -2, NULL);
@@ -80,7 +80,7 @@ static void _urls_to_absolute(wget_vector_t *urls, wget_iri_t *base)
 		wget_buffer_init(&buf, NULL, 1024);
 
 		for (int it = 0; it < wget_vector_size(urls); it++) {
-			WGET_PARSED_URL *url = wget_vector_get(urls, it);
+			wget_css_parsed_url_t *url = wget_vector_get(urls, it);
 
 			if (wget_iri_relative_to_abs(base, url->url, url->len, &buf))
 				url->abs_url = wget_strmemdup(buf.data, buf.length);
