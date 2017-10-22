@@ -1604,7 +1604,7 @@ typedef struct {
 		base;
 	bool
 		follow : 1;
-} WGET_HTML_PARSED_RESULT;
+} wget_html_parsed_result_t;
 
 typedef struct {
 	const char *
@@ -1613,10 +1613,10 @@ typedef struct {
 		attribute;
 } wget_html_tag_t;
 
-WGETAPI WGET_HTML_PARSED_RESULT *
+WGETAPI wget_html_parsed_result_t *
 	wget_html_get_urls_inline(const char *html, wget_vector_t *additional_tags, wget_vector_t *ignore_tags);
 WGETAPI void
-	wget_html_free_urls_inline(WGET_HTML_PARSED_RESULT **res);
+	wget_html_free_urls_inline(wget_html_parsed_result_t **res);
 WGETAPI void
 	wget_sitemap_get_urls_inline(const char *sitemap, wget_vector_t **urls, wget_vector_t **sitemap_urls);
 WGETAPI void

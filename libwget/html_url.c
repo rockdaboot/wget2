@@ -36,7 +36,7 @@
 #include "private.h"
 
 typedef struct {
-	WGET_HTML_PARSED_RESULT
+	wget_html_parsed_result_t
 		result;
 	wget_vector_t *
 		additional_tags;
@@ -90,7 +90,7 @@ static void _css_parse_uri(void *context, const char *url G_GNUC_WGET_UNUSED, si
 {
 	_html_context_t *ctx = context;
 
-	WGET_HTML_PARSED_RESULT *res = &ctx->result;
+	wget_html_parsed_result_t *res = &ctx->result;
 
 	if (!res->uris)
 		res->uris = wget_vector_create(32, -2, NULL);
@@ -126,7 +126,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 	}
 
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
-		WGET_HTML_PARSED_RESULT *res = &ctx->result;
+		wget_html_parsed_result_t *res = &ctx->result;
 
 //		info_printf("%02X %s %s '%.*s' %zu %zu\n", (unsigned) flags, tag, attr, (int) len, val, len, pos);
 
@@ -301,7 +301,7 @@ static void _urls_to_absolute(WGET_VECTOR *urls, WGET_IRI *base)
 }
 */
 
-void wget_html_free_urls_inline (WGET_HTML_PARSED_RESULT **res)
+void wget_html_free_urls_inline (wget_html_parsed_result_t **res)
 {
 	if (res && *res) {
 		xfree((*res)->encoding);
@@ -310,7 +310,7 @@ void wget_html_free_urls_inline (WGET_HTML_PARSED_RESULT **res)
 	}
 }
 
-WGET_HTML_PARSED_RESULT *wget_html_get_urls_inline(const char *html, wget_vector_t *additional_tags, wget_vector_t *ignore_tags)
+wget_html_parsed_result_t *wget_html_get_urls_inline(const char *html, wget_vector_t *additional_tags, wget_vector_t *ignore_tags)
 {
 	_html_context_t context = {
 		.result.follow = 1,

@@ -81,7 +81,7 @@ static void html_parse_localfile(const char *fname)
 			}
 		}
 
-		WGET_HTML_PARSED_RESULT *res  = wget_html_get_urls_inline(data, NULL, NULL);
+		wget_html_parsed_result_t *res  = wget_html_get_urls_inline(data, NULL, NULL);
 
 		if (encoding) {
 			if (res->encoding && wget_strcasecmp_ascii(encoding, res->encoding))
