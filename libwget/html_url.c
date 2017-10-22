@@ -95,7 +95,7 @@ static void _css_parse_uri(void *context, const char *url G_GNUC_WGET_UNUSED, si
 	if (!res->uris)
 		res->uris = wget_vector_create(32, -2, NULL);
 
-	WGET_HTML_PARSED_URL parsed_url;
+	wget_html_parsed_url_t parsed_url;
 	parsed_url.link_inline = 1;
 	wget_strscpy(parsed_url.attr, ctx->css_attr, sizeof(parsed_url.attr));
 	wget_strscpy(parsed_url.dir, ctx->css_dir, sizeof(parsed_url.dir));
@@ -206,7 +206,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 
 				if (ctx->uri_index >= 0) {
 					// href= came before rel=
-					WGET_HTML_PARSED_URL *url = wget_vector_get(res->uris, ctx->uri_index);
+					wget_html_parsed_url_t *url = wget_vector_get(res->uris, ctx->uri_index);
 					url->link_inline = ctx->link_inline;
 				}
 			}
@@ -240,7 +240,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 			if (!res->uris)
 				res->uris = wget_vector_create(32, -2, NULL);
 
-			WGET_HTML_PARSED_URL url;
+			wget_html_parsed_url_t url;
 
 			if (!wget_strcasecmp_ascii(attr, "srcset")) {
 				// value is a list of URLs, see https://html.spec.whatwg.org/multipage/embedded-content.html#attr-img-srcset

@@ -1593,7 +1593,7 @@ typedef struct {
 		dir[16];
 	bool
 		link_inline : 1; // 1 = rel was 'stylesheet' or 'shortcut icon'
-} WGET_HTML_PARSED_URL;
+} wget_html_parsed_url_t;
 
 typedef struct {
 	wget_vector_t

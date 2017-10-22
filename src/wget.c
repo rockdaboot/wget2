@@ -764,7 +764,7 @@ static void _convert_links(void)
 
 		// cycle through all links found in the document
 		for (int it2 = 0; it2 < wget_vector_size(conversion->parsed->uris); it2++) {
-			WGET_HTML_PARSED_URL *html_url = wget_vector_get(conversion->parsed->uris, it2);
+			wget_html_parsed_url_t *html_url = wget_vector_get(conversion->parsed->uris, it2);
 			wget_string_t *url = &html_url->url;
 
 			url->p = (size_t) url->p + data; // convert offset to pointer
@@ -2051,7 +2051,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 
 	wget_thread_mutex_lock(&known_urls_mutex);
 	for (int it = 0; it < wget_vector_size(parsed->uris); it++) {
-		WGET_HTML_PARSED_URL *html_url = wget_vector_get(parsed->uris, it);
+		wget_html_parsed_url_t *html_url = wget_vector_get(parsed->uris, it);
 		wget_string_t *url = &html_url->url;
 
 		/* do not follow action and formation at all */
@@ -2091,7 +2091,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 
 	if (convert_links && !config.delete_after) {
 		for (int it = 0; it < wget_vector_size(parsed->uris); it++) {
-			WGET_HTML_PARSED_URL *html_url = wget_vector_get(parsed->uris, it);
+			wget_html_parsed_url_t *html_url = wget_vector_get(parsed->uris, it);
 			html_url->url.p = (const char *) (html_url->url.p - html); // convert pointer to offset
 		}
 		_remember_for_conversion(job->local_filename, base, _CONTENT_TYPE_HTML, encoding, parsed);
