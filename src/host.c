@@ -334,11 +334,11 @@ void host_remove_job(HOST *host, JOB *job)
 						continue;
 
 				for (int it = 0; it < wget_vector_size(host->robots->paths); it++) {
-					ROBOTS_PATH *path = wget_vector_get(host->robots->paths, it);
+					wget_string_t *path = wget_vector_get(host->robots->paths, it);
 
 					// info_printf("%s: checked robot path '%.*s' / '%s' / '%s'\n", __func__, (int)path->len, path->path, thejob->iri->path, thejob->iri->uri);
 
-					if (path->len && !strncmp(path->path + 1, thejob->iri->path ? thejob->iri->path : "", path->len - 1)) {
+					if (path->len && !strncmp(path->p + 1, thejob->iri->path ? thejob->iri->path : "", path->len - 1)) {
 						info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), thejob->iri->uri);
 						host_remove_job(host, thejob);
 						break;

@@ -2232,13 +2232,6 @@ WGETAPI void
  * Robots types and routines
  */
 
-typedef struct {
-	const char *
-		path;
-	size_t
-		len;
-} ROBOTS_PATH;
-
 typedef struct ROBOTS {
 	wget_vector_t
 		*paths;

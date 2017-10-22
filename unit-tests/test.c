@@ -2223,12 +2223,12 @@ static void test_robots(void)
 		for (unsigned it2 = 0; it2 < countof(test_data[it].path) && t->path[it2]; it2++) {
 			int n = wget_vector_size(robots->paths);
 			for (int it3 = 0; it3 < n; it3++) {
-				ROBOTS_PATH *paths = wget_vector_get(robots->paths, it3);
-				if (!strcmp(paths->path, t->path[it2])) {
+				wget_string_t *paths = wget_vector_get(robots->paths, it3);
+				if (!strcmp(paths->p, t->path[it2])) {
 				//	info_printf("Found path: \"%s\" on robots\n", t->path[it2]);
 					it3 = n;
 					ok++;
-				} else if ((strcmp(paths->path, t->path[it2]) && it3 == n - 1)) {
+				} else if ((strcmp(paths->p, t->path[it2]) && it3 == n - 1)) {
 					info_printf("Cannot find path: \"%s\" on robots\n", t->path[it2]);
 					failed++;
 				}

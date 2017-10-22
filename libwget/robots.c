@@ -44,9 +44,9 @@
  * for easy access.
  */
 
-static void _free_path(ROBOTS_PATH *path)
+static void _free_path(wget_string_t *path)
 {
-	xfree(path->path);
+	xfree(path->p);
 }
 
 /**
@@ -63,7 +63,7 @@ static void _free_path(ROBOTS_PATH *path)
 ROBOTS *wget_robots_parse(const char *data, const char *client)
 {
 	ROBOTS *robots;
-	ROBOTS_PATH path;
+	wget_string_t path;
 	size_t client_length = client ? strlen(client) : 0;
 	int collect = 0;
 	const char *p;
@@ -99,7 +99,7 @@ ROBOTS *wget_robots_parse(const char *data, const char *client)
 				}
 				for (p = data; *p && !isspace(*p); p++);
 				path.len = p - data;
-				path.path = wget_strmemdup(data, path.len);
+				path.p = wget_strmemdup(data, path.len);
 				wget_vector_add(robots->paths, &path, sizeof(path));
 			}
 		}
