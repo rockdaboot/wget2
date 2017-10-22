@@ -33,7 +33,7 @@
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-	ROBOTS *robots;
+	wget_robots_t *robots;
 	char *in = (char *) malloc(size + 1);
 
 	assert(in != NULL);

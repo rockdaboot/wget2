@@ -2218,7 +2218,7 @@ static void test_robots(void)
 
 	for (unsigned it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
-		ROBOTS *robots = wget_robots_parse(t->data, PACKAGE_NAME);
+		wget_robots_t *robots = wget_robots_parse(t->data, PACKAGE_NAME);
 
 		for (unsigned it2 = 0; it2 < countof(test_data[it].path) && t->path[it2]; it2++) {
 			int n = wget_vector_size(robots->paths);

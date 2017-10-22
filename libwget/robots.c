@@ -60,9 +60,9 @@ static void _free_path(wget_string_t *path)
  *
  * The ROBOTS structure has to be freed by calling wget_robots_free().
  */
-ROBOTS *wget_robots_parse(const char *data, const char *client)
+wget_robots_t *wget_robots_parse(const char *data, const char *client)
 {
-	ROBOTS *robots;
+	wget_robots_t *robots;
 	wget_string_t path;
 	size_t client_length = client ? strlen(client) : 0;
 	int collect = 0;
@@ -71,7 +71,7 @@ ROBOTS *wget_robots_parse(const char *data, const char *client)
 	if (!data || !*data)
 		return NULL;
 
-	robots = xcalloc(1, sizeof (ROBOTS));
+	robots = xcalloc(1, sizeof (wget_robots_t));
 
 	do {
 		if (collect < 2 && !wget_strncasecmp_ascii(data, "User-agent:", 11)) {
@@ -135,7 +135,7 @@ ROBOTS *wget_robots_parse(const char *data, const char *client)
  *
  * wget_robots_free() free's the formerly allocated ROBOTS structure.
  */
-void wget_robots_free(ROBOTS **robots)
+void wget_robots_free(wget_robots_t **robots)
 {
 	if (robots && *robots) {
 		wget_vector_free(&(*robots)->paths);

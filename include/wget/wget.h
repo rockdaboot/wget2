@@ -2232,17 +2232,17 @@ WGETAPI void
  * Robots types and routines
  */
 
-typedef struct ROBOTS {
+typedef struct {
 	wget_vector_t
 		*paths;
 	wget_vector_t
 		*sitemaps;
-} ROBOTS;
+} wget_robots_t;
 
-WGETAPI ROBOTS *
+WGETAPI wget_robots_t *
 	wget_robots_parse(const char *data, const char *client);
 WGETAPI void
-	wget_robots_free(ROBOTS **robots);
+	wget_robots_free(wget_robots_t **robots);
 
 /*
  * Progress bar routines
