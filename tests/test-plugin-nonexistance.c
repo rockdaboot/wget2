@@ -17,10 +17,9 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- * Testing Wget plugin support
+ * Testing Wget plugin behavior with non-existant plugins
  *
  */
-
 #include <config.h>
 
 #include <stdlib.h> // exit()
@@ -202,172 +201,51 @@ int main(void)
 			WGET_TEST_FEATURE_PLUGIN,
 			0);
 
-	// Check whether --plugin= works
+	// Check behavior for nonexistent plugins
 	wget_test(
-		WGET_TEST_OPTIONS, "--plugin-dirs=" OBJECT_DIR " --plugin=pluginname",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "plugin-loaded.txt", "Plugin loaded\n" },
-			{	NULL } },
-		0);
-
-	// Check whether --local-plugin= works
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginname"),
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "plugin-loaded.txt", "Plugin loaded\n" },
-			{	NULL } },
-		0);
-
-	// Check whether WGET2_PLUGINS works
-	setenv_rpl("WGET2_PLUGIN_DIRS", OBJECT_DIR, 1);
-	setenv_rpl("WGET2_PLUGINS", "pluginname", 1);
-	wget_test(
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "plugin-loaded.txt", "Plugin loaded\n" },
-			{	NULL } },
-		0);
-	unsetenv_rpl("WGET2_PLUGIN_DIRS");
-	unsetenv_rpl("WGET2_PLUGINS");
-	setenv_rpl("WGET2_PLUGINS", LOCAL_NAME("pluginname") , 1);
-	wget_test(
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "plugin-loaded.txt", "Plugin loaded\n" },
-			{	NULL } },
-		0);
-	unsetenv_rpl("WGET2_PLUGINS");
-
-	// Check that --list-plugins doesn't continue
-	wget_test(
-		WGET_TEST_OPTIONS, "--plugin-dirs=" OBJECT_DIR " --list-plugins",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{	NULL } },
-		0);
-
-	// Check whether wget_plugin_register_finalizer works properly
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginexit"),
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "exit-status.txt", "exit(0)\n" },
-			{	NULL } },
-		0);
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginexit"),
-		WGET_TEST_REQUEST_URL, "nonexistent.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 8,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "exit-status.txt", "exit(8)\n" },
-			{	NULL } },
-		0);
-
-	// Check if option forwarding works for options with no value
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.y",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "options.txt", "y\n" },
-			{	NULL } },
-		0);
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.y "
-			"--plugin-opt=pluginoption.beta",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "options.txt", "y\nbeta\n" },
-			{	NULL } },
-		0);
-
-	// Check if option forwarding works with options with values
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.z= "
-			"--plugin-opt=pluginoption.z=value1 --plugin-opt=pluginoption.gamma=value2",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "options.txt", "z=\nz=value1\ngamma=value2\n" },
-			{	NULL } },
-		0);
-
-	// Check for correct functioning of --help option
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-help",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{	NULL } },
-		0);
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.help",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{	NULL } },
-		0);
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.help=arg",
+		WGET_TEST_OPTIONS, "--plugin-dirs=" OBJECT_DIR " --plugin=nonexistent",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 2,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{	NULL } },
 		0);
 
-	// Check whether overriding default wget2's post processing works
 	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " --recursive --no-host-directories"
-			" --plugin-opt=pluginapi.parse-rot13 --plugin-opt=pluginapi.test-pp"
-			" --plugin-opt=pluginapi.only-rot13",
-		WGET_TEST_REQUEST_URL, "rot13_index_mixed.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("nonexistent"),
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 2,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "rot13_index_mixed.html", urls[5].body },
-			{ "secondpage.html", urls[1].body },
-			{ "thirdpage.html", urls[2].body },
-			{ "files_processed.txt", "rot13_index_mixed.html\nsecondpage.html\nthirdpage.html\n" },
 			{	NULL } },
 		0);
 
-	// Check whether priority based database selection works correctly
+	setenv_rpl("WGET2_PLUGINS", LOCAL_NAME("nonexistent") , 1);
 	wget_test(
-		WGET_TEST_OPTIONS,
-			"--hpkp --hpkp-file=hpkp.db "
-			"--hsts --hsts-file=hsts.db "
-			"--ocsp --ocsp-file=ocsp.db "
-			"--local-plugin=" LOCAL_NAME("plugindb"),
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 2,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
+		0);
+	unsetenv_rpl("WGET2_PLUGINS");
+
+	// Check behavior for nonexistent search directories
+	wget_test(
+		WGET_TEST_OPTIONS, "--plugin-dirs=" OBJECT_DIR "/nonexistent," OBJECT_DIR " --plugin=pluginname",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
-			{ "hpkp.db", "# HPKP 1.0 file\nexample.com 1491338542 1 1488746542\n*sha256 8dNiZZueNzmyaf3pTkXxDgOzLkjKvI+Nza0ACF5IDwg=" },
-			{ "hsts.db", "#HSTS 1.0 file\nexample.com 443 1 1499023633 63072000" },
-			{ "ocsp.db", "#OCSP 1.0 file\n" },
-			{ NULL } },
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "index.html", urls[0].body },
-			{ "hpkp.db", NULL },
-			{ "hsts.db", NULL },
-			{ "ocsp.db", NULL },
-			{ NULL } },
+			{ "plugin-loaded.txt", "Plugin loaded\n" },
+			{	NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "--plugin-dirs=" OBJECT_DIR "/nonexistent," OBJECT_DIR " --list-plugins",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	NULL } },
 		0);
 
 	exit(0);
+
 }

@@ -40,14 +40,6 @@
 #define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".so"
 #endif
 
-#ifdef _WIN32
-#define setenv_rpl(name, value, ignored) _putenv(name "=" value)
-#define unsetenv_rpl(name) _putenv(name "=")
-#else
-#define setenv_rpl setenv
-#define unsetenv_rpl unsetenv
-#endif
-
 static const char *mainpage = "\
 <html>\n\
 <head>\n\
@@ -114,6 +106,9 @@ static const char *rot13_mainpage_mixed = "\
 
 static const char data[129] = "\
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n";
+
+static const char data_part[65] = "\
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n";
 
 int main(void)
@@ -192,8 +187,8 @@ int main(void)
 	};
 
 	if (access(".libs/libpluginname.so", R_OK) != 0
-		&& access(".libs/libpluginname.dll", R_OK) != 0
-		&& access(".libs/cygpluginname.dll", R_OK) != 0)
+	    && access(".libs/libpluginname.dll", R_OK) != 0
+	    && access(".libs/cygpluginname.dll", R_OK) != 0)
 		exit(77); // likely a static build
 
 	wget_test_start_server(
@@ -202,172 +197,202 @@ int main(void)
 			WGET_TEST_FEATURE_PLUGIN,
 			0);
 
-	// Check whether --plugin= works
-	wget_test(
-		WGET_TEST_OPTIONS, "--plugin-dirs=" OBJECT_DIR " --plugin=pluginname",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "plugin-loaded.txt", "Plugin loaded\n" },
-			{	NULL } },
-		0);
-
-	// Check whether --local-plugin= works
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginname"),
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "plugin-loaded.txt", "Plugin loaded\n" },
-			{	NULL } },
-		0);
-
-	// Check whether WGET2_PLUGINS works
-	setenv_rpl("WGET2_PLUGIN_DIRS", OBJECT_DIR, 1);
-	setenv_rpl("WGET2_PLUGINS", "pluginname", 1);
-	wget_test(
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "plugin-loaded.txt", "Plugin loaded\n" },
-			{	NULL } },
-		0);
-	unsetenv_rpl("WGET2_PLUGIN_DIRS");
-	unsetenv_rpl("WGET2_PLUGINS");
-	setenv_rpl("WGET2_PLUGINS", LOCAL_NAME("pluginname") , 1);
-	wget_test(
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "plugin-loaded.txt", "Plugin loaded\n" },
-			{	NULL } },
-		0);
-	unsetenv_rpl("WGET2_PLUGINS");
-
-	// Check that --list-plugins doesn't continue
-	wget_test(
-		WGET_TEST_OPTIONS, "--plugin-dirs=" OBJECT_DIR " --list-plugins",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{	NULL } },
-		0);
-
-	// Check whether wget_plugin_register_finalizer works properly
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginexit"),
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "exit-status.txt", "exit(0)\n" },
-			{	NULL } },
-		0);
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginexit"),
-		WGET_TEST_REQUEST_URL, "nonexistent.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 8,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "exit-status.txt", "exit(8)\n" },
-			{	NULL } },
-		0);
-
-	// Check if option forwarding works for options with no value
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.y",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "options.txt", "y\n" },
-			{	NULL } },
-		0);
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.y "
-			"--plugin-opt=pluginoption.beta",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "options.txt", "y\nbeta\n" },
-			{	NULL } },
-		0);
-
-	// Check if option forwarding works with options with values
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.z= "
-			"--plugin-opt=pluginoption.z=value1 --plugin-opt=pluginoption.gamma=value2",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "options.txt", "z=\nz=value1\ngamma=value2\n" },
-			{	NULL } },
-		0);
-
-	// Check for correct functioning of --help option
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-help",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{	NULL } },
-		0);
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.help",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{	NULL } },
-		0);
-	wget_test(
-		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginoption") " --plugin-opt=pluginoption.help=arg",
-		WGET_TEST_REQUEST_URL, "index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 2,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{	NULL } },
-		0);
-
-	// Check whether overriding default wget2's post processing works
+	// Check whether URL interception works
 	wget_test(
 		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " --recursive --no-host-directories"
-			" --plugin-opt=pluginapi.parse-rot13 --plugin-opt=pluginapi.test-pp"
-			" --plugin-opt=pluginapi.only-rot13",
-		WGET_TEST_REQUEST_URL, "rot13_index_mixed.html",
+			" --plugin-opt=pluginapi.reject=secondpage",
+		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "rot13_index_mixed.html", urls[5].body },
-			{ "secondpage.html", urls[1].body },
+			{ "index.html", urls[0].body },
 			{ "thirdpage.html", urls[2].body },
-			{ "files_processed.txt", "rot13_index_mixed.html\nsecondpage.html\nthirdpage.html\n" },
 			{	NULL } },
 		0);
 
-	// Check whether priority based database selection works correctly
 	wget_test(
-		WGET_TEST_OPTIONS,
-			"--hpkp --hpkp-file=hpkp.db "
-			"--hsts --hsts-file=hsts.db "
-			"--ocsp --ocsp-file=ocsp.db "
-			"--local-plugin=" LOCAL_NAME("plugindb"),
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " --recursive --no-host-directories"
+			" --reject=*thirdpage.html --plugin-opt=pluginapi.accept=thirdpage",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
-			{ "hpkp.db", "# HPKP 1.0 file\nexample.com 1491338542 1 1488746542\n*sha256 8dNiZZueNzmyaf3pTkXxDgOzLkjKvI+Nza0ACF5IDwg=" },
-			{ "hsts.db", "#HSTS 1.0 file\nexample.com 443 1 1499023633 63072000" },
-			{ "ocsp.db", "#OCSP 1.0 file\n" },
-			{ NULL } },
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "index.html", urls[0].body },
-			{ "hpkp.db", NULL },
-			{ "hsts.db", NULL },
-			{ "ocsp.db", NULL },
-			{ NULL } },
+			{ "secondpage.html", urls[1].body },
+			{ "thirdpage.html", urls[2].body },
+			{	NULL } },
 		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " --recursive --no-host-directories"
+			" --plugin-opt=pluginapi.replace=third:forth",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", urls[0].body },
+			{ "secondpage.html", urls[1].body },
+			{ "forthpage.html", urls[3].body },
+			{	NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " --recursive --no-host-directories"
+			" --plugin-opt=pluginapi.saveas=third:alt.html",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", urls[0].body },
+			{ "secondpage.html", urls[1].body },
+			{ "alt.html", urls[2].body },
+			{	NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi")
+			" --plugin-opt=pluginapi.reject=secondpage",
+		WGET_TEST_REQUEST_URLS, "index.html", "secondpage.html", "thirdpage.html", NULL,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", urls[0].body },
+			{ "thirdpage.html", urls[2].body },
+			{	NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi")
+			" --reject=*thirdpage.html --plugin-opt=pluginapi.accept=thirdpage",
+		WGET_TEST_REQUEST_URLS, "index.html", "secondpage.html", "thirdpage.html", NULL,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", urls[0].body },
+			{ "secondpage.html", urls[1].body },
+			{ "thirdpage.html", urls[2].body },
+			{	NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi")
+			" --plugin-opt=pluginapi.replace=third:forth",
+		WGET_TEST_REQUEST_URLS, "index.html", "secondpage.html", "thirdpage.html", NULL,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", urls[0].body },
+			{ "secondpage.html", urls[1].body },
+			{ "forthpage.html", urls[3].body },
+			{	NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi")
+			" --plugin-opt=pluginapi.saveas=third:alt.html",
+		WGET_TEST_REQUEST_URLS, "index.html", "secondpage.html", "thirdpage.html", NULL,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "index.html", urls[0].body },
+			{ "secondpage.html", urls[1].body },
+			{ "alt.html", urls[2].body },
+			{	NULL } },
+		0);
+
+	// Check whether intercepting downloaded files works
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " --recursive --no-host-directories"
+			" --plugin-opt=pluginapi.parse-rot13 --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "rot13_index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "rot13_index.html", urls[4].body },
+			{ "secondpage.html", urls[1].body },
+			{ "thirdpage.html", urls[2].body },
+			{ "files_processed.txt", "rot13_index.html\nsecondpage.html\nthirdpage.html\n" },
+			{	NULL } },
+		0);
+
+	// Check whether intercepting downloaded files works with existing partial files
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " -c"
+			" --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "data.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"data.txt", data_part },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"data.txt", data },
+			{ "files_processed.txt", "data.txt\n" },
+			{	NULL } },
+		0);
+
+	// Check whether intercepting downloaded files works with existing files
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " -c"
+			" --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "data.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"data.txt", data },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"data.txt", data },
+			{ "files_processed.txt", "data.txt\n" },
+			{	NULL } },
+		0);
+
+
+	// Check whether intercepting downloaded files works with --spider
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " --recursive --spider"
+			" --plugin-opt=pluginapi.parse-rot13 --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "rot13_index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "files_processed.txt", "rot13_index.html\nsecondpage.html\nthirdpage.html\n" },
+			{	NULL } },
+		0);
+
+	// Check whether intercepting downloaded files works with --output-document=
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " --output-document=data2.txt"
+			" --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "data.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"data2.txt", data_part },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"data2.txt", data },
+			{ "files_processed.txt", "data.txt\n" },
+			{	NULL } },
+		0);
+
+	// Check whether intercepting downloaded files works with large files
+#ifdef LARGEFILE
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " -c"
+			" --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "large.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"large.txt", largedata + 16 },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"large.txt", largedata },
+			{ "files_processed.txt", "large.txt\n" },
+			{	NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "--local-plugin=" LOCAL_NAME("pluginapi") " -c"
+			" --plugin-opt=pluginapi.test-pp",
+		WGET_TEST_REQUEST_URL, "large.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"large.txt", largedata },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"large.txt", largedata },
+			{ "files_processed.txt", "large.txt\n" },
+			{	NULL } },
+		0);
+#endif
 
 	exit(0);
 }
