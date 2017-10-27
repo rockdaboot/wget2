@@ -41,6 +41,11 @@ DIR *opendir(const char *name)
 	DIR *(*libc_opendir)(const char *) =
 		(DIR *(*)(const char *)) dlsym (RTLD_NEXT, "opendir");
 
+	if (config.dont_write)
+		return NULL;
+
+	return libc_opendir(name);
+/*
 #ifdef TEST_RUN
 	printf("opendir %s\n", name);
 	if (!strcmp(name, SRCDIR"/wget_options_fuzzer.in"))
@@ -58,7 +63,8 @@ DIR *opendir(const char *name)
 		return libc_opendir(name);
 #endif
 
-	return NULL;
+	return libc_opendir(name);
+*/
 }
 
 FILE *fopen(const char *pathname, const char *mode)

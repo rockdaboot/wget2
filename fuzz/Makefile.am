@@ -76,15 +76,21 @@ clean-local:
 
 oss-fuzz:
 	if test "$$OUT" != ""; then \
-	for ccfile in *_fuzzer.c; do \
-	fuzzer=$$(basename $$ccfile .c); \
 	XLIBS="-lpsl -lgnutls -lnettle -lhogweed -lidn2 -lunistring"; \
+	for ccfile in libwget*_fuzzer.c; do \
+	fuzzer=$$(basename $$ccfile .c); \
 	$$CXX $$CXXFLAGS -I$(top_srcdir)/include/wget/ -I$(top_srcdir) \
 	"$${fuzzer}.c" -o "$${fuzzer}" \
 	../libwget/.libs/libwget.a $${LIB_FUZZING_ENGINE} \
-	-Wl,-Bstatic \
-	$${XLIBS} \
-	-Wl,-Bdynamic -lgnutls; \
+	-Wl,-Bstatic $${XLIBS} -Wl,-Bdynamic -lgnutls; \
+	done; \
+	for ccfile in wget*_fuzzer.c; do \
+	fuzzer=$$(basename $$ccfile .c); \
+	$$CXX $$CXXFLAGS -I$(top_srcdir)/include/wget/ -I$(top_srcdir) \
+	"$${fuzzer}.c" -o "$${fuzzer}" \
+	../src/options.o ../src/log.o ../src/stats.o ../src/dl.o ../src/plugin.o \
+	../libwget/.libs/libwget.a $${LIB_FUZZING_ENGINE} \
+	-Wl,-Bstatic $${XLIBS} -Wl,-Bdynamic -lgnutls; \
 	done; \
 	fi
 

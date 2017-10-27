@@ -27,6 +27,11 @@
 #include <wget.h>
 #include "wget_dl.h"
 
+// Needed for fuzzers that are compiled by C++
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Initializes the plugin framework
 void plugin_db_init(void);
 
@@ -107,5 +112,9 @@ wget_ocsp_db_t *plugin_db_fetch_provided_ocsp_db(void);
 
 // Sends 'finalize' signal to all plugins and unloads all plugins
 void plugin_db_finalize(int exitcode);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _WGET_PLUGIN_H
