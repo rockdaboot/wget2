@@ -119,11 +119,12 @@ int main(void)
 		},
 	};
 
-	char md5hex[32 + 1], md5hex_p1[32 + 1], md5hex_p2[32 + 1];
-	unsigned char digest[wget_hash_get_len(WGET_DIGTYPE_MD5)];
+	int hashlen = wget_hash_get_len(WGET_DIGTYPE_MD5);
+	char md5hex[hashlen * 2 + 1], md5hex_p1[hashlen * 2 + 1], md5hex_p2[hashlen * 2 + 1];
+	unsigned char digest[hashlen];
 	char *body0, *body2, *body4, *body7; // to be freed later
 
-	wget_md5_printf_hex(md5hex, "%s", urls[1].body);
+	wget_hash_printf_hex(WGET_DIGTYPE_MD5, md5hex, sizeof(md5hex), "%s", urls[1].body);
 	urls[0].body = body0 = wget_aprintf(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<metalink version=\"3.0\">"
@@ -142,7 +143,7 @@ int main(void)
 		"</metalink>",
 		urls[1].name + 1, strlen(urls[1].body), md5hex, urls[1].name + 1);
 
-	wget_md5_printf_hex(md5hex, "%s", urls[3].body);
+	wget_hash_printf_hex(WGET_DIGTYPE_MD5, md5hex, sizeof(md5hex), "%s", urls[3].body);
 	urls[2].body = body2 = wget_aprintf(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<metalink version=\"3.0\">"
@@ -155,9 +156,9 @@ int main(void)
 		"</metalink>",
 		urls[3].name + 1, strlen(urls[3].body), md5hex, urls[3].name + 1);
 
-	wget_md5_printf_hex(md5hex, "%s", urls[5].body);
-	wget_md5_printf_hex(md5hex_p1, "%.5s", urls[5].body);
-	wget_md5_printf_hex(md5hex_p2, "%.5s", urls[5].body + 5);
+	wget_hash_printf_hex(WGET_DIGTYPE_MD5, md5hex, sizeof(md5hex), "%s", urls[5].body);
+	wget_hash_printf_hex(WGET_DIGTYPE_MD5, md5hex_p1, sizeof(md5hex_p1), "%.5s", urls[5].body);
+	wget_hash_printf_hex(WGET_DIGTYPE_MD5, md5hex_p2, sizeof(md5hex_p2), "%.5s", urls[5].body + 5);
 	urls[4].body = body4 = wget_aprintf(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<metalink version=\"3.0\">"
@@ -175,9 +176,9 @@ int main(void)
 		urls[5].name + 1, strlen(urls[5].body), md5hex, strlen(urls[5].body) / 2,
 		md5hex_p1, md5hex_p2, urls[5].name + 1);
 
-	wget_md5_printf_hex(md5hex, "%s", urls[8].body);
-	wget_md5_printf_hex(md5hex_p1, "%.5s", urls[8].body);
-	wget_md5_printf_hex(md5hex_p2, "%.5s", urls[8].body + 5);
+	wget_hash_printf_hex(WGET_DIGTYPE_MD5, md5hex, sizeof(md5hex), "%s", urls[8].body);
+	wget_hash_printf_hex(WGET_DIGTYPE_MD5, md5hex_p1, sizeof(md5hex_p1), "%.5s", urls[8].body);
+	wget_hash_printf_hex(WGET_DIGTYPE_MD5, md5hex_p2, sizeof(md5hex_p2), "%.5s", urls[8].body + 5);
 	urls[7].body = body7 = wget_aprintf(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<metalink version=\"3.0\">"

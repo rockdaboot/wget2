@@ -237,25 +237,27 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		xfree(encoded);
 	}
 	else if (!wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
-		int md5size = wget_hash_get_len(WGET_DIGTYPE_MD5);
-		char a1buf[md5size * 2 + 1], a2buf[md5size * 2 + 1];
-		char response_digest[md5size * 2 + 1], cnonce[16] = "";
-		wget_buffer_t buf;
 		const char
 			*realm = wget_stringmap_get(challenge->params, "realm"),
 			*opaque = wget_stringmap_get(challenge->params, "opaque"),
 			*nonce = wget_stringmap_get(challenge->params, "nonce"),
 			*qop = wget_stringmap_get(challenge->params, "qop"),
 			*algorithm = wget_stringmap_get(challenge->params, "algorithm");
+		wget_buffer_t buf;
+		int hashtype, hashlen;
 
 		if (wget_strcmp(qop, "auth")) {
 			error_printf(_("Unsupported quality of protection '%s'.\n"), qop);
 			return;
 		}
 
-		if (wget_strcmp(algorithm, "MD5") &&
-			wget_strcmp(algorithm, "MD5-sess") &&
-			wget_strcmp(algorithm, NULL)) {
+		if (!wget_strcmp(algorithm, "MD5") || !wget_strcmp(algorithm, "MD5-sess") || algorithm == NULL) {
+			// RFC 2617
+			hashtype = WGET_DIGTYPE_MD5;
+		} else if (!wget_strcmp(algorithm, "SHA-256") || !wget_strcmp(algorithm, "SHA-256-sess")) {
+			// RFC 7616
+			hashtype = WGET_DIGTYPE_SHA256;
+		} else {
 			error_printf(_("Unsupported algorithm '%s'.\n"), algorithm);
 			return;
 		}
@@ -263,17 +265,21 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		if (!realm || !nonce)
 			return;
 
-		// A1BUF = H(user ":" realm ":" password)
-		wget_md5_printf_hex(a1buf, "%s:%s:%s", username, realm, password);
+		hashlen = wget_hash_get_len(hashtype);
+		char a1buf[hashlen * 2 + 1], a2buf[hashlen * 2 + 1];
+		char response_digest[hashlen * 2 + 1], cnonce[16] = "";
 
-		if (!wget_strcmp(algorithm, "MD5-sess")) {
+		// A1BUF = H(user ":" realm ":" password)
+		wget_hash_printf_hex(hashtype, a1buf, sizeof(a1buf), "%s:%s:%s", username, realm, password);
+
+		if (!wget_strcmp(algorithm, "MD5-sess") || !wget_strcmp(algorithm, "SHA-256-sess")) {
 			// A1BUF = H( H(user ":" realm ":" password) ":" nonce ":" cnonce )
 			snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
-			wget_md5_printf_hex(a1buf, "%s:%s:%s", a1buf, nonce, cnonce);
+			wget_hash_printf_hex(hashtype, a1buf, sizeof(a1buf), "%s:%s:%s", a1buf, nonce, cnonce);
 		}
 
 		// A2BUF = H(method ":" path)
-		wget_md5_printf_hex(a2buf, "%s:/%s", req->method, req->esc_resource.data);
+		wget_hash_printf_hex(hashtype, a2buf, sizeof(a2buf), "%s:/%s", req->method, req->esc_resource.data);
 
 		if (!wget_strcmp(qop, "auth") || !wget_strcmp(qop, "auth-int")) {
 			// RFC 2617 Digest Access Authentication
@@ -281,12 +287,13 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 				snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
 
 			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" nc ":" cnonce ":" qop ": " A2BUF)
-			wget_md5_printf_hex(response_digest, "%s:%s:00000001:%s:%s:%s", a1buf, nonce, /* nc, */ cnonce, qop, a2buf);
+			wget_hash_printf_hex(hashtype, response_digest, sizeof(response_digest),
+				"%s:%s:00000001:%s:%s:%s", a1buf, nonce, /* nc, */ cnonce, qop, a2buf);
 		} else {
 			// RFC 2069 Digest Access Authentication
 
 			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" A2BUF)
-			wget_md5_printf_hex(response_digest, "%s:%s:%s", a1buf, nonce, a2buf);
+			wget_hash_printf_hex(hashtype, response_digest, sizeof(response_digest), "%s:%s:%s", a1buf, nonce, a2buf);
 		}
 
 		wget_buffer_init(&buf, NULL, 256);

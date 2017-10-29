@@ -2120,13 +2120,6 @@ WGETAPI wget_http_response_t *
 WGETAPI wget_vector_t
 	*wget_get_css_urls(const char *data);
 
-/*
- * MD5 routines
- */
-
-WGETAPI void
-	wget_md5_printf_hex(char *digest_hex, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3) G_GNUC_WGET_NONNULL_ALL;
-
 
 /*
  * random routines
@@ -2134,6 +2127,7 @@ WGETAPI void
 
 int wget_random(void);
 void wget_srandom(unsigned int seed);
+
 
 /**
  * \ingroup libwget-hash
@@ -2180,6 +2174,14 @@ WGETAPI int
 	wget_hash_file_offset(const char *hashname, const char *fname, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
 	wget_hash_file(const char *hashname, const char *fname, char *digest_hex, size_t digest_hex_size) G_GNUC_WGET_NONNULL_ALL;
+
+/*
+ * Hash convenience routines
+ */
+
+WGETAPI void G_GNUC_WGET_PRINTF_FORMAT(4,5) G_GNUC_WGET_NONNULL_ALL
+	wget_hash_printf_hex(wget_digest_algorithm_t algorithm, char *out, size_t outsize, const char *fmt, ...);
+
 
 /*
  * Metalink types and routines

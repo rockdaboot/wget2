@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2017 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -18,9 +18,8 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- * MD5 helper routines
+ * Digest/hash helper routines
  *
- * Changelog
  * 21.12.2012  Tim Ruehsen  created
  *
  */
@@ -34,25 +33,27 @@
 
 /**
  * \file
- * \brief MD5 convenience functions
- * \defgroup libwget-md5 MD5 convenience functions
+ * \brief Hash convenience functions
+ * \defgroup libwget-hash Hash convenience functions
  * @{
  *
- * Provides MD5 helper functions
+ * Provides Hash helper functions
  */
 
 /**
- * \param[out] digest_hex Output string buffer
+ * \param[in] type Type of hash algorithm to use
+ * \param[out] out Output string buffer
+ * \param[in] outsize Size of output string buffer
  * \param[in] fmt Printf-like format specifier
  * \param[in] ... List of arguments
  *
- * Calculate the hexadecimal MD5 digest from the string generated via the
- * printf-style \p fmt and the following arguments.
+ * Calculate the hash from the string generated via the
+ * printf-style \p fmt and the following arguments and place it as hexadecimal string
+ * into \p out.
  *
- * \p digest_hex must at least have a size of 33 bytes and will be zero terminated.
- * 33 calculates from wget_hash_get_len(WGET_DIGTYPE_MD5) * 2 + 1.
+ * The ideal length of \p out would be wget_hash_get_len(type) * 2 + 1.
  */
-void wget_md5_printf_hex(char *digest_hex, const char *fmt, ...)
+void wget_hash_printf_hex(wget_digest_algorithm_t algorithm, char *out, size_t outsize, const char *fmt, ...)
 {
 	char *plaintext;
 	va_list args;
@@ -63,14 +64,14 @@ void wget_md5_printf_hex(char *digest_hex, const char *fmt, ...)
 	va_end(args);
 
 	if (plaintext) {
-		unsigned char digest[wget_hash_get_len(WGET_DIGTYPE_MD5)];
+		unsigned char digest[wget_hash_get_len(algorithm)];
 		int rc;
 
-		if ((rc = wget_hash_fast(WGET_DIGTYPE_MD5, plaintext, len, digest)) == 0) {
-			wget_memtohex(digest, sizeof(digest), digest_hex, sizeof(digest) * 2 + 1);
+		if ((rc = wget_hash_fast(algorithm, plaintext, len, digest)) == 0) {
+			wget_memtohex(digest, sizeof(digest), out, outsize);
 		} else {
-			*digest_hex = 0;
-			error_printf(_("Failed to MD5 hash (%d)\n"), rc);
+			*out = 0;
+			error_printf(_("Failed to hash (%d)\n"), rc);
 		}
 
 		xfree(plaintext);
