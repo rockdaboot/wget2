@@ -661,8 +661,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 * `--ask-password`
 
-  Prompt for a password for each connection established. Cannot be specified when --password is being used, because
-  they are mutually exclusive.
+  Prompt for a password on the command line. Overrides the password set by --password (if any).
 
 * `--no-iri`
 

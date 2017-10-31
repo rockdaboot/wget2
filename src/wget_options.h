@@ -41,7 +41,6 @@ struct config {
 		*post_data,
 		*gnutls_options,
 		*username,
-		*password,
 		*http_username,
 		*http_password,
 		*http_proxy_username,
@@ -102,7 +101,8 @@ struct config {
 		*hpkp_file,
 		*tls_session_file,
 		*ocsp_file,
-		*netrc_file;
+		*netrc_file,
+		*password;
 	size_t
 		chunk_size;
 	long long
@@ -197,7 +197,8 @@ struct config {
 		local_db,
 		dont_write, // fuzzers and unit/fuzz tests set this to 1, so they won't write any files
 		regex_type,
-		filter_urls;
+		filter_urls,
+		askpass;
 };
 
 extern struct config

@@ -917,6 +917,11 @@ static const struct optionw options[] = {
 		  "'-' for STDOUT.\n"
 		}
 	},
+	{ "ask-password", &config.askpass, parse_bool, -1, 0,
+		SECTION_DOWNLOAD,
+		{ "Print prompt for password\n"
+		}
+	},
 	{ "auth-no-challenge", &config.auth_no_challenge, parse_bool, -1, 0,
 		SECTION_HTTP,
 		{ "send Basic HTTP Authentication before challenge\n" }
@@ -2297,6 +2302,15 @@ static char *get_home_dir(void)
 	return wget_strdup("."); // Use the current directory as 'home' directory
 }
 
+static char *prompt_for_password(void)
+{
+  if (config.username)
+    fprintf (stderr, _("Password for user \"%s\": "), config.username);
+  else
+    fprintf (stderr, _("Password: "));
+  return getpass("");
+}
+
 // read config, parse CLI options, check values, set module options
 // and return the number of arguments consumed
 
@@ -2517,6 +2531,10 @@ int init(int argc, const char **argv)
 
 	if (config.base_url)
 		config.base = wget_iri_parse(config.base_url, config.local_encoding);
+
+	if (config.askpass)
+		config.password = prompt_for_password();
+
 
 	if (!config.http_username)
 		config.http_username = wget_strdup(config.username);
