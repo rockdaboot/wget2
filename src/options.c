@@ -2030,7 +2030,7 @@ static int _parse_option(char *linep, char **name, char **val)
 			char *src = linep + 1, *dst = linep, c;
 
 			while ((c = *src) != quote && c) {
-				if (c == '\\') {
+				if (c == '\\' && src[1]) {
 					// we could extend \r, \n etc to control codes here
 					// but it is not needed so far
 					*dst++ = src[1];
