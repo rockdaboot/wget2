@@ -2391,7 +2391,10 @@ int init(int argc, const char **argv)
 #endif
 		}
 
-		plugin_db_load_from_envvar();
+		if (plugin_db_load_from_envvar()) {
+			set_exit_status(WG_EXIT_STATUS_PARSE_INIT);
+			return -1; // stop processing & exit
+		}
 	}
 
 	// read global config and user's config

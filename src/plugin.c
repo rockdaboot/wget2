@@ -412,20 +412,21 @@ plugin_t *plugin_db_load_from_name(const char *name, dl_error_t *e)
 
 // Loads all plugins from environment variables. On any errors it
 // logs them using wget_error_printf().
-void plugin_db_load_from_envvar(void)
+int plugin_db_load_from_envvar(void)
 {
 	dl_error_t e[1];
 	wget_vector_t *v;
 	const char *str;
+	int ret = 0;
 
 	// Fetch from environment variable
 	str = getenv(plugin_list_envvar);
 
 	if (str) {
 #ifdef _WIN32
-	char sep = ';';
+		char sep = ';';
 #else
-	char sep = ':';
+		char sep = ':';
 #endif
 		dl_error_init(e);
 
@@ -434,8 +435,7 @@ void plugin_db_load_from_envvar(void)
 		split_string(str, sep, v);
 
 		// Load each plugin
-		int n_strings = wget_vector_size(v);
-		for (int i = 0; i < n_strings; i++) {
+		for (int i = 0; i < wget_vector_size(v) && ret == 0; i++) {
 			plugin_t *plugin;
 			int local = 0;
 
@@ -454,12 +454,14 @@ void plugin_db_load_from_envvar(void)
 			if (! plugin) {
 				wget_error_printf("Plugin '%s' failed to load: %s", str, dl_error_get_msg(e));
 				dl_error_set(e, NULL);
+				ret = -1;
 			}
-
 		}
 
 		wget_vector_free(&v);
 	}
+
+	return ret;
 }
 
 // Creates a list of all plugins found in plugin search paths.

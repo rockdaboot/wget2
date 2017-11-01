@@ -63,7 +63,7 @@ plugin_t *plugin_db_load_from_name(const char *name, dl_error_t *e);
 
 // Loads all plugins from environment variables. On any errors it
 // logs them using wget_error_printf().
-void plugin_db_load_from_envvar(void);
+int plugin_db_load_from_envvar(void);
 
 // Creates a list of all plugins found in plugin search paths.
 void plugin_db_list(wget_vector_t *names_out);
