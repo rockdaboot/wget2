@@ -2347,6 +2347,7 @@ int init(int argc, const char **argv)
 
 	// truncate logfile, if not in append mode
 	if (config.logfile_append) {
+		xfree(config.logfile);
 		config.logfile = config.logfile_append;
 		config.logfile_append = NULL;
 	}
@@ -2407,6 +2408,7 @@ int init(int argc, const char **argv)
 	}
 
 	if (config.logfile_append) {
+		xfree(config.logfile);
 		config.logfile = config.logfile_append;
 		config.logfile_append = NULL;
 	}
