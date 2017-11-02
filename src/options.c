@@ -360,7 +360,7 @@ static int parse_header(option_t opt, const char *val, G_GNUC_WGET_UNUSED const 
 	return 0;
 }
 
-static int parse_stringlist_expand(option_t opt, const char *val, int expand)
+static int parse_stringlist_expand(option_t opt, const char *val, int expand, int max_entries)
 {
 	if (val && *val) {
 		wget_vector_t *v = *((wget_vector_t **)opt->var);
@@ -371,6 +371,11 @@ static int parse_stringlist_expand(option_t opt, const char *val, int expand)
 
 		for (s = p = val; *p; s = p + 1) {
 			if ((p = strchrnul(s, ',')) != s) {
+				if (wget_vector_size(v) >= max_entries) {
+					wget_debug_printf("%s: More than %d entries, ignoring overflow\n", __func__, max_entries);
+					return -1;
+				}
+
 				const char *fname = wget_strmemdup(s, p - s);
 
 				if (expand && *s == '~') {
@@ -389,12 +394,14 @@ static int parse_stringlist_expand(option_t opt, const char *val, int expand)
 
 static int parse_stringlist(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
-	return parse_stringlist_expand(opt, val, 0);
+	/* max number of 1024 entries to avoid out-of-memory */
+	return parse_stringlist_expand(opt, val, 0, 1024);
 }
 
 static int parse_filenames(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
-	return parse_stringlist_expand(opt, val, 1);
+	/* max number of 32 files to avoid out-of-memory by recursion */
+	return parse_stringlist_expand(opt, val, 1, 32);
 }
 
 static void _free_tag(wget_html_tag_t *tag)
