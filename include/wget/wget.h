@@ -1498,19 +1498,28 @@ WGETAPI int
  * .netrc routines
  */
 
-// structure for .netrc entries
+/**
+ *  container for .netrc entries
+ */
 typedef struct _wget_netrc_db_st wget_netrc_db_t;
+
+/**
+ *  structure for a single .netrc entry
+ *
+ * The GNU extensions are described at
+ *   https://www.gnu.org/software/emacs/manual/html_node/gnus/NNTP.html.
+ */
 typedef struct {
 	const char *
-		host;
+		host;      //!< hostname/domain/ip
 	const char *
-		login;
+		login;     //!< login/username for the host
 	const char *
-		password;
+		password;  //!< password for the host
 	uint16_t
-		port; // GNU extension
+		port;      //!< GNU extension: port number
 	bool
-		force : 1; // GNU extension
+		force : 1; //!< GNU extension: unused
 } wget_netrc_t;
 
 WGETAPI wget_netrc_t *
@@ -1579,9 +1588,9 @@ WGETAPI wget_vector_t *
 
 typedef struct {
 	const char
-		*p;
+		*p;   //!< pointer to memory region
 	size_t
-		len;
+		len; //!< length of memory region
 } wget_string_t;
 
 typedef struct {
@@ -2189,38 +2198,38 @@ WGETAPI void G_GNUC_WGET_PRINTF_FORMAT(4,5) G_GNUC_WGET_NONNULL_ALL
 
 typedef struct {
 	wget_iri_t
-		*iri;
+		*iri;        //!< parsed URL of the mirror
 	int
-		priority;
+		priority;    //!< priority of the mirror
 	char
-		location[8]; // location of the mirror, e.g. 'de', 'fr' or 'jp'
+		location[8]; //!< location of the mirror, e.g. 'de', 'fr' or 'jp'
 } wget_metalink_mirror_t;
 
 typedef struct {
 	char
-		type[16], // type of hash, e.g. 'MD5' or 'SHA-256'
-		hash_hex[128+1]; // hash value as HEX string
+		type[16],        //!< type of hash, e.g. 'MD5' or 'SHA-256'
+		hash_hex[128+1]; //!< hash value as HEX string
 } wget_metalink_hash_t;
 
 // Metalink piece, for checksumming after download
 typedef struct {
 	wget_metalink_hash_t
-		hash;
+		hash;     //!< hash of the data chunk
 	off_t
-		position;
+		position; //!< start position of the data chunk in the file
 	off_t
-		length;
+		length;   //!< length of the data chunk
 } wget_metalink_piece_t;
 
 typedef struct {
 	const char
-		*name;
+		*name;    //!< filename
 	wget_vector_t
-		*mirrors,
-		*hashes, // checksums of complete file
-		*pieces; // checksums of smaller pieces of the file
+		*mirrors, //!< mirrors that provide the file (element: wget_metalink_mirror_t)
+		*hashes,  //!< checksums of complete file (element: wget_metalink_hash_t)
+		*pieces;  //!< checksums of smaller pieces of the file (element: wget_metalink_piece_t)
 	off_t
-		size; // total size of the file
+		size;     //!< total size of the file
 } wget_metalink_t;
 
 WGETAPI wget_metalink_t
@@ -2236,9 +2245,9 @@ WGETAPI void
 
 typedef struct {
 	wget_vector_t
-		*paths;
+		*paths;    //!< paths found in robots.txt (element: wget_string_t)
 	wget_vector_t
-		*sitemaps;
+		*sitemaps; //!< sitemaps found in robots.txt (element: char *)
 } wget_robots_t;
 
 WGETAPI wget_robots_t *
