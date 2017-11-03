@@ -17,6 +17,7 @@ WGET_TESTS = \
  libwget_hpkp_fuzzer$(EXEEXT) \
  libwget_hsts_fuzzer$(EXEEXT) \
  libwget_html_url_fuzzer$(EXEEXT) \
+ libwget_http_client_fuzzer$(EXEEXT) \
  libwget_http_parse_fuzzer$(EXEEXT) \
  libwget_iri_fuzzer$(EXEEXT) \
  libwget_metalink_parse_fuzzer$(EXEEXT) \
@@ -49,6 +50,7 @@ libwget_css_url_fuzzer_SOURCES = libwget_css_url_fuzzer.c $(MAIN)
 libwget_hpkp_fuzzer_SOURCES = libwget_hpkp_fuzzer.c $(MAIN)
 libwget_hsts_fuzzer_SOURCES = libwget_hsts_fuzzer.c $(MAIN)
 libwget_html_url_fuzzer_SOURCES = libwget_html_url_fuzzer.c $(MAIN)
+libwget_http_client_fuzzer_SOURCES = libwget_http_client_fuzzer.c $(MAIN)
 libwget_http_parse_fuzzer_SOURCES = libwget_http_parse_fuzzer.c $(MAIN)
 libwget_iri_fuzzer_SOURCES = libwget_iri_fuzzer.c $(MAIN)
 libwget_metalink_parse_fuzzer_SOURCES = libwget_metalink_parse_fuzzer.c $(MAIN)
