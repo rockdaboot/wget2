@@ -958,8 +958,10 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 			// a workaround for broken server configurations
 			// see https://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
-			if (resp->content_encoding == wget_content_encoding_gzip &&
-				!wget_strcasecmp_ascii(resp->content_type, "application/x-gzip"))
+			if (resp->content_encoding == wget_content_encoding_gzip
+				&& (!wget_strcasecmp_ascii(resp->content_type, "application/x-gzip")
+				   || !wget_strcasecmp_ascii(resp->content_type, "application/gzip")
+				   || !wget_strcasecmp_ascii(resp->content_type, "application/gunzip")))
 			{
 				debug_printf("Broken server configuration gzip workaround triggered\n");
 				resp->content_encoding =  wget_content_encoding_identity;
