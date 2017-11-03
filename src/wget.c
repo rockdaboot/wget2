@@ -1371,7 +1371,7 @@ static void add_statistics(wget_http_response_t *resp)
 			_atomic_increment_int(&stats.nchunks);
 		else
 			_atomic_increment_int(&stats.ndownloads);
-	} else if (resp->code == 301 || resp->code == 302)
+	} else if (resp->code == 301 || resp->code == 302  || resp->code == 303  || resp->code == 307  || resp->code == 308)
 		_atomic_increment_int(&stats.nredirects);
 	else if (resp->code == 304)
 		_atomic_increment_int(&stats.nnotmodified);
@@ -1396,7 +1396,7 @@ static int process_response_header(wget_http_response_t *resp)
 		print_status(downloader, "HTTP ERROR response %d %s [%s]\n", resp->code, resp->reason, iri->uri);
 
 	// Wget1.x compatibility
-	if (resp->code/100 == 4 && resp->code!=416) {
+	if (resp->code/100 == 4 && resp->code != 416) {
 		if (job->head_first)
 			set_exit_status(WG_EXIT_STATUS_REMOTE);
 		else if (resp->code == 404 && !job->robotstxt)
