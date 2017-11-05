@@ -2579,7 +2579,8 @@ int init(int argc, const char **argv)
 	wget_tcp_set_dns_caching(NULL, config.dns_caching);
 	wget_tcp_set_tcp_fastopen(NULL, config.tcp_fastopen);
 	wget_tcp_set_tls_false_start(NULL, config.tls_false_start);
-	wget_tcp_set_bind_address(NULL, config.bind_address);
+	if (!config.dont_write) // fuzzing mode, try to avoid real network access
+		wget_tcp_set_bind_address(NULL, config.bind_address);
 	if (config.inet4_only)
 		wget_tcp_set_family(NULL, WGET_NET_FAMILY_IPV4);
 	else if (config.inet6_only)
