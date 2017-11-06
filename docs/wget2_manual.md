@@ -663,6 +663,10 @@ Go to background immediately after startup. If no output file is specified via t
 
   Prompt for a password on the command line. Overrides the password set by --password (if any).
 
+* `--use-askpass=command`
+
+  Prompt for a user and password using the specified command. Overrides the user and/or password set by --user/--password (if any).
+
 * `--no-iri`
 
   Turn off internationalized URI (IRI) support. Use --iri to turn it on. IRI support is activated by default.

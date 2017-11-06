@@ -40,7 +40,6 @@ struct config {
 		*post_file,
 		*post_data,
 		*gnutls_options,
-		*username,
 		*http_username,
 		*http_password,
 		*http_proxy_username,
@@ -102,7 +101,9 @@ struct config {
 		*tls_session_file,
 		*ocsp_file,
 		*netrc_file,
-		*password;
+		*password,
+		*use_askpass_bin,
+		*username;
 	size_t
 		chunk_size;
 	long long

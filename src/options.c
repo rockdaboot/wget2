@@ -52,6 +52,7 @@
 #include <time.h>
 #include <sys/stat.h>
 //#include <netdb.h>
+#include <spawn.h>
 
 #include <wget.h>
 
@@ -1717,6 +1718,11 @@ static const struct optionw options[] = {
 		  "(default: off)\n"
 		}
 	},
+	{ "use-askpass", &config.use_askpass_bin, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Prompt for a user and password using the specified command.\n"
+		}
+	},
 	{ "use-server-timestamps", &config.use_server_timestamps, parse_bool, -1, 0,
 		SECTION_DOWNLOAD,
 		{ "Set local file's timestamp to server's timestamp.\n",
@@ -2311,6 +2317,80 @@ static char *prompt_for_password(void)
   return getpass("");
 }
 
+/* Execute external application config.use_askpass_bin */
+static int run_use_askpass(char *question, char **answer)
+{
+	char tmp[1024];
+	pid_t pid;
+	int status;
+	int com[2];
+	ssize_t bytes = 0;
+	char * const argv[] = { config.use_askpass_bin, question, NULL };
+	posix_spawn_file_actions_t fa;
+
+	if (pipe(com) == -1) {
+		error_printf(_("Cannot create pipe"));
+		return -1;
+	}
+
+	status = posix_spawn_file_actions_init(&fa);
+	if (status) {
+		error_printf(_("Error initializing spawn file actions for use-askpass: %d"), status);
+		return -1;
+	}
+
+	status = posix_spawn_file_actions_adddup2(&fa, com[1], STDOUT_FILENO);
+	if (status) {
+		error_printf(_("Error setting spawn file actions for use-askpass: %d"), status);
+		return -1;
+	}
+
+	status = posix_spawnp(&pid, config.use_askpass_bin, &fa, NULL, argv, environ);
+	if (status) {
+		error_printf("Error spawning %s: %d", config.use_askpass_bin, status);
+		return -1;
+	}
+
+	/* Parent process reads from child. */
+	close(com[1]);
+	bytes = read(com[0], tmp, sizeof(tmp) - 1);
+	if (bytes <= 0) {
+		error_printf(_("Error reading response from command \"%s %s\": %s\n"),
+			config.use_askpass_bin, question, strerror (errno));
+		return -1;
+	}
+	/* Set the end byte to \0, and decrement bytes */
+	tmp[bytes--] = '\0';
+
+	/* Remove a possible new line */
+	while (bytes >= 0 && (tmp[bytes] == '\n' || tmp[bytes] == '\r'))
+		tmp[bytes--] = '\0';
+
+	*answer = wget_strdup(tmp);
+
+	return 0;
+}
+
+static int use_askpass(void)
+{
+	char question[1024] = "Type username:";
+
+	xfree(config.username);
+
+	/* Prompt for username */
+	if (run_use_askpass(question, &config.username) < 0)
+		return -1;
+
+	snprintf(question, sizeof(question), "Type password for '%s':", config.username);
+	xfree(config.password);
+
+	/* Prompt for password */
+	if (run_use_askpass(question, &config.password) < 0)
+		return -1;
+
+	return 0;
+}
+
 // read config, parse CLI options, check values, set module options
 // and return the number of arguments consumed
 
@@ -2535,6 +2615,8 @@ int init(int argc, const char **argv)
 	if (config.askpass)
 		config.password = prompt_for_password();
 
+	if (config.use_askpass_bin && use_askpass() < 0)
+		return -1;
 
 	if (!config.http_username)
 		config.http_username = wget_strdup(config.username);
