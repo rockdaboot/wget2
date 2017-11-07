@@ -1910,6 +1910,8 @@ typedef struct {
 		response_keepheader : 1;
 	bool
 		debug_skip_body : 1;
+	long long
+		request_start; // When this request was sent out
 } wget_http_request_t;
 
 // just parse the header lines that we need
@@ -1967,6 +1969,8 @@ struct wget_http_response_t {
 		content_length_valid : 1,
 		hsts : 1, // if hsts_maxage and hsts_include_subdomains are valid
 		csp : 1;
+	long long
+		response_end; // When this response was received
 };
 
 typedef struct _wget_http_connection_st wget_http_connection_t;

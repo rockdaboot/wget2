@@ -95,8 +95,10 @@ struct DOC {
 		head_req;
 	char
 		encoding;
-	time_t
-		resp_t;
+	long long
+		request_start; // Milli timestamp initial request went out
+	long long
+		response_end; // Milli timestamp that final response read in
 };
 
 struct site_stats {

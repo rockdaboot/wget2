@@ -506,6 +506,8 @@ static int _on_stream_close_callback(nghttp2_session *session, int32_t stream_id
 	if (ctx) {
 		wget_http_connection_t *conn = (wget_http_connection_t *) user_data;
 
+		ctx->resp->response_end = wget_get_timemillis(); // Final transmission time.
+
 		wget_vector_add_noalloc(conn->received_http2_responses, ctx->resp);
 		wget_decompress_close(ctx->decompressor);
 		xfree(ctx);
@@ -811,6 +813,7 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 		ctx->resp->major = 2;
 		// we do not get a Keep-Alive header in HTTP2 - let's assume the connection stays open
 		ctx->resp->keep_alive = 1;
+		req->request_start = wget_get_timemillis();
 
 		// nghttp2 does strdup of name+value and lowercase conversion of 'name'
 		req->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, NULL, ctx);
@@ -834,6 +837,8 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 		error_printf(_("Failed to create request buffer\n"));
 		return -1;
 	}
+
+	req->request_start = wget_get_timemillis();
 
 	if (wget_tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
 		// An error will be written by the wget_tcp_write function.
@@ -1273,6 +1278,10 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 	}
 
 cleanup:
+
+	if (resp)
+		resp->response_end = wget_get_timemillis();
+
 	wget_decompress_close(dc);
 
 	return resp;
