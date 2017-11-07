@@ -528,6 +528,9 @@ static int _on_data_chunk_recv_callback(nghttp2_session *session,
 	if (ctx) {
 		// debug_printf("[INFO] C <---------------------------- S%d (DATA chunk - %zu bytes)\n", stream_id, len);
 		// debug_printf("nbytes %zu\n", len);
+
+		ctx->resp->req->first_response_start = wget_get_timemillis();
+
 		ctx->resp->cur_downloaded += len;
 		wget_decompress(ctx->decompressor, (char *) data, len);
 	}
@@ -994,6 +997,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 	bufsize = conn->buf->size;
 
 	while ((nbytes = wget_tcp_read(conn->tcp, buf + nread, bufsize - nread)) > 0) {
+		req->first_response_start = wget_get_timemillis();
 		// debug_printf("nbytes %zd nread %zd %zu\n", nbytes, nread, bufsize);
 		nread += nbytes;
 		buf[nread] = 0; // 0-terminate to allow string functions

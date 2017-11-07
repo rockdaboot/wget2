@@ -224,6 +224,7 @@ DOC *stats_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
 		// request_end will be overwritten by any subsequent responses for the doc.
 		doc->request_start = resp->req->request_start;
 		doc->response_end = resp->response_end;
+		doc->initial_response_duration = resp->req->first_response_start - resp->req->request_start;
 
 		if (!wget_strcasecmp_ascii(resp->req->method, "HEAD"))
 			doc->head_req = true;
@@ -569,9 +570,10 @@ static int _docs_hashmap(struct site_stats *ctx, G_GNUC_WGET_UNUSED wget_iri_t *
 				doc->size_downloaded,
 				print_encoding(doc->encoding));
 
-		wget_buffer_printf_append(ctx->buf, "%lld bytes (decompressed), %lldms transfer time\n",
+		wget_buffer_printf_append(ctx->buf, "%lld bytes (decompressed), %lldms (transfer) : %lldms (response)\n",
 				doc->size_decompressed,
-				doc->response_end - doc->request_start);
+				doc->response_end - doc->request_start,
+				doc->initial_response_duration);
 
 	if (ctx->buf->length > 64*1024) {
 		fprintf(ctx->fp, "%s", ctx->buf->data);
@@ -657,10 +659,10 @@ static int hosts_hashmap_tree(struct site_stats *ctx, HOST *host)
 static void stats_print_csv_site_entry(struct site_stats_cvs_json *ctx, TREE_DOCS *node)
 {
 	long long transfer_time = node->doc->response_end - node->doc->request_start;
-	wget_buffer_printf_append(ctx->buf, "%s,%d,%d,%d,%d,%lld,%lld,%lld,%d\n",
+	wget_buffer_printf_append(ctx->buf, "%s,%d,%d,%d,%d,%lld,%lld,%lld,%lld,%d\n",
 			node->iri->uri, node->doc->status, ctx->id, ctx->parent_id, !node->redirect,
 			node->doc->size_downloaded, node->doc->size_decompressed, transfer_time,
-			node->doc->encoding);
+			node->doc->initial_response_duration, node->doc->encoding);
 }
 
 static void stats_print_json_site_entry(struct site_stats_cvs_json *ctx, TREE_DOCS *node)
@@ -679,6 +681,7 @@ static void stats_print_json_site_entry(struct site_stats_cvs_json *ctx, TREE_DO
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Size\" : %lld,\n", ctx->ntabs + 2, tabs, node->doc->size_downloaded);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"SizeDecompressed\" : %lld,\n", ctx->ntabs + 2, tabs, node->doc->size_decompressed);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"TransferTime\" : %lld,\n", ctx->ntabs + 2, tabs, transfer_time);
+	wget_buffer_printf_append(ctx->buf, "%.*s\"ResponseTime\" : %lld,\n", ctx->ntabs + 2, tabs, node->doc->initial_response_duration);
 	wget_buffer_printf_append(ctx->buf, "%.*s\"Encoding\" : \"%d\"\n", ctx->ntabs + 2, tabs, node->doc->encoding);
 	wget_buffer_printf_append(ctx->buf, "%.*s}", ctx->ntabs + 1, tabs);
 }
@@ -1038,7 +1041,7 @@ static void stats_print_csv(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp
 		break;
 
 	case WGET_STATS_TYPE_SITE:
-		wget_buffer_printf_append(buf, "URL,Status,ID,ParentID,Link,Size,SizeDecompressed,TransferTime,Encoding\n");
+		wget_buffer_printf_append(buf, "URL,Status,ID,ParentID,Link,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding\n");
 		print_site_stats_csv_json(buf, fp, WGET_STATS_FORMAT_CSV, 0);
 		break;
 

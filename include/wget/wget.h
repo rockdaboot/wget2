@@ -1912,6 +1912,9 @@ typedef struct {
 		debug_skip_body : 1;
 	long long
 		request_start; // When this request was sent out
+	long long
+		first_response_start; // The time we read the first bytes back
+
 } wget_http_request_t;
 
 // just parse the header lines that we need

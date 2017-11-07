@@ -99,6 +99,8 @@ struct DOC {
 		request_start; // Milli timestamp initial request went out
 	long long
 		response_end; // Milli timestamp that final response read in
+	long long
+		initial_response_duration; // Number of millis between initial request, and first bytes back
 };
 
 struct site_stats {
