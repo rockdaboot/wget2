@@ -473,14 +473,14 @@ WGETAPI char *
 
 typedef struct {
 	char *
-		data; // pointer to internal memory
+		data; //!< pointer to internal memory
 	size_t
-		length; // number of bytes in 'data'
+		length; //!< number of bytes in 'data'
 	size_t
-		size; // capacity of 'data' (terminating 0 byte doesn't count here)
+		size; //!< capacity of 'data' (terminating 0 byte doesn't count here)
 	bool
-		release_data : 1, // 'data' has been malloc'ed and must be freed
-		release_buf : 1; // buffer_t structure has been malloc'ed and must be freed
+		release_data : 1, //!< 'data' has been malloc'ed and must be freed
+		release_buf : 1; //!< buffer_t structure has been malloc'ed and must be freed
 } wget_buffer_t;
 
 WGETAPI wget_buffer_t *
@@ -856,6 +856,9 @@ typedef struct wget_iri_st {
 	 */
 	const char *
 		uri;
+	/**
+	 * Display part, if present.
+	 */
 	const char *
 		display;
 	/**
@@ -910,32 +913,28 @@ typedef struct wget_iri_st {
 	 */
 	size_t
 		dirlen;
-	/**
-	 * Port number.
-	 *
-	 *
-	 */
+	/// Port number
 	uint16_t
 		port;
-	/* If set, port was explicitly given */
+	/// If set, port was explicitly given
 	bool
-		port_given;
-	/* If set, free uri in iri_free() */
+		port_given : 1;
+	/// If set, free uri in iri_free()
 	bool
 		uri_allocated : 1;
-	/* If set, free host in iri_free() */
+	/// If set, free host in iri_free()
 	bool
 		host_allocated : 1;
-	/* If set, free path in iri_free() */
+	/// If set, free path in iri_free()
 	bool
 		path_allocated : 1;
-	/* If set, free query in iri_free() */
+	/// If set, free query in iri_free()
 	bool
 		query_allocated : 1;
-	/* If set, free fragment in iri_free() */
+	/// If set, free fragment in iri_free()
 	bool
 		fragment_allocated : 1;
-	/* If set, the hostname part is a literal IPv4/IPv6 address */
+	/// If set, the hostname part is a literal IPv4/IPv6 address
 	bool
 		is_ip_address : 1;
 } wget_iri_t;
@@ -1549,13 +1548,13 @@ WGETAPI int
 
 typedef struct {
 	size_t
-		len;
+		len; //!< length of found URL
 	size_t
-		pos;
+		pos; //!< position of found URL within the scanned CSS data
 	const char *
-		url;
+		url; //!< zero-terminated copy the found URL
 	const char *
-		abs_url;
+		abs_url; //!< the found URL converted into an absolute URL
 } wget_css_parsed_url_t;
 
 typedef void (*wget_css_parse_uri_cb_t)(void *user_ctx, const char *url, size_t len, size_t pos);
@@ -1588,38 +1587,41 @@ WGETAPI wget_vector_t *
 
 typedef struct {
 	const char
-		*p;   //!< pointer to memory region
+		*p; //!< pointer to memory region
 	size_t
 		len; //!< length of memory region
 } wget_string_t;
 
 typedef struct {
 	wget_string_t
-		url;
+		url; //!< URL within the parsed document (pointer and length)
 	char
-		attr[16];
+		attr[16]; //!< name of the attribute containing the URL, e.g. 'href'
 	char
-		dir[16];
+		dir[16]; //!< name of the HTML tag containing the URL, e.g. 'a'
 	bool
-		link_inline : 1; // 1 = rel was 'stylesheet' or 'shortcut icon'
+		link_inline : 1; //!< 1 = rel was 'stylesheet' or 'shortcut icon'
 } wget_html_parsed_url_t;
 
 typedef struct {
 	wget_vector_t
-		*uris;
+		*uris; //!< list of found URLs (entries: wget_html_parsed_url_t)
 	const char *
-		encoding;
+		encoding; //!< the charset encoding set by the parsed document or NULL if none
 	wget_string_t
-		base;
+		base; //!< the BASE set in the document or NULL if none
 	bool
-		follow : 1;
+		follow : 1; //!< if the 'follow' attribute was found in a META tag
 } wget_html_parsed_result_t;
 
+/**
+ * HTML tag consisting of name and an optional attribute
+ */
 typedef struct {
 	const char *
-		name;
+		name; //!< name of HTML tag
 	const char *
-		attribute;
+		attribute; //!< attribute of the HTML tag
 } wget_html_tag_t;
 
 WGETAPI wget_html_parsed_result_t *
@@ -1831,38 +1833,51 @@ WGETAPI ssize_t
  * HTTP routines
  */
 
+/**
+ * Parsed name/value pair as often found in HTTP headers
+ */
 typedef struct {
 	const char *
-		name;
+		name; //!< name of the param
 	const char *
-		value;
+		value; //!< value of the param (might be NULL)
 } wget_http_header_param_t;
 
+/**
+ * Parsed Link HTTP header
+ */
 typedef struct {
 	const char *
-		uri;
+		uri; //!< URI reference
 	const char *
-		type;
+		type; //!< value of type param or NULL
 	int
-		pri;
+		pri; //!< value of pri param
 	enum {
+		link_rel_none = 0,
 		link_rel_describedby,
 		link_rel_duplicate
-	} rel;
+	} rel; //!< value of 'rel' param, either none (if not found), 'describedby' or 'duplicate'
 } wget_http_link_t;
 
+/**
+ * Parsed Digest HTTP header (RFC 3230)
+ */
 typedef struct {
 	const char *
-		algorithm;
+		algorithm; //!< name of the digest, e.g. 'md5'
 	const char *
-		encoded_digest;
+		encoded_digest; //!< value of the digest
 } wget_http_digest_t;
 
+/**
+ * Parsed WWW-Authenticate or Proxy-Authenticate HTTP header
+ */
 typedef struct {
 	const char *
-		auth_scheme;
+		auth_scheme; //!< name of the challenge, e.g. 'basic' or 'digest'
 	wget_stringmap_t *
-		params;
+		params; //!< name/value pairs of the challenge
 } wget_http_challenge_t;
 
 enum {
@@ -1874,50 +1889,54 @@ typedef struct wget_http_response_t wget_http_response_t;
 typedef int (*wget_http_header_callback_t)(wget_http_response_t *, void *);
 typedef int (*wget_http_body_callback_t)(wget_http_response_t *, void *, const char *, size_t);
 
-// keep the request as simple as possible
+/**
+ * HTTP request data
+ */
 typedef struct {
 	wget_vector_t *
-		headers;
+		headers; //!< list of HTTP headers
 	const char *
-		scheme;
+		scheme; //!< scheme of the request for proxied connections
 	const char *
-		body;
+		body; //!< body data to be sent or NULL
 	wget_http_header_callback_t
-		header_callback; // called after HTTP header has been received
+		header_callback; //!< called after HTTP header has been received
 	wget_http_body_callback_t
-		body_callback; // called for each body data packet received
+		body_callback; //!< called for each body data packet received
 	void *
-		user_data;
+		user_data; //!< user data for the request (used by async application code)
 	void *
-		header_user_data; // meant to be used in header callback function
+		header_user_data; //!< meant to be used in header callback function
 	void *
-		body_user_data; // meant to be used in body callback function
+		body_user_data; //!< meant to be used in body callback function
 	wget_buffer_t
-		esc_resource; // URI escaped resource
+		esc_resource; //!< URI escaped resource
 	wget_buffer_t
-		esc_host; // URI escaped host
+		esc_host; //!< URI escaped host
 	size_t
-		body_length;
+		body_length; //!< length of the body data
 	int32_t
-		stream_id; // HTTP2 stream id
+		stream_id; //!< HTTP2 stream id
 	char
-		esc_resource_buf[256];
+		esc_resource_buf[256]; //!< static buffer used by esc_resource (avoids mallocs)
 	char
-		esc_host_buf[64];
+		esc_host_buf[64]; //!< static buffer used by esc_host (avoids mallocs)
 	char
-		method[8]; // we just need HEAD, GET and POST
+		method[8]; //!< currently we just need HEAD, GET and POST
 	bool
-		response_keepheader : 1;
+		response_keepheader : 1; //!< the application wants the response header data
 	bool
-		debug_skip_body : 1;
+		debug_skip_body : 1; //!< if set, do not print the request body (e.g. because it's binary)
 	long long
-		request_start; // When this request was sent out
+		request_start; //!< When this request was sent out
 	long long
-		first_response_start; // The time we read the first bytes back
+		first_response_start; //!< The time we read the first bytes back
 
 } wget_http_request_t;
 
-// just parse the header lines that we need
+/**
+ * HTTP response data
+ */
 struct wget_http_response_t {
 	wget_http_request_t *
 		req;
@@ -1940,13 +1959,13 @@ struct wget_http_response_t {
 	const char *
 		location;
 	const char *
-		etag;
+		etag; //!< ETag value
 	wget_buffer_t *
-		header;
+		header; //!< the raw header data if requested by the application
 	wget_buffer_t *
-		body;
+		body; //!< the body data
 	size_t
-		content_length;
+		content_length; //!< length of the body data
 	size_t
 		cur_downloaded;
 	time_t
@@ -1954,15 +1973,15 @@ struct wget_http_response_t {
 	time_t
 		hsts_maxage;
 	char
-		reason[32];
+		reason[32]; //!< reason string after the status code
 	int
-		icy_metaint;
+		icy_metaint; //!< value of the SHOUTCAST header 'icy-metaint'
 	short
-		major;
+		major; //!< HTTP major version
 	short
-		minor;
+		minor; //!< HTTP minor version
 	short
-		code; // request only status code
+		code; //!< request only status code
 	char
 		transfer_encoding,
 		content_encoding,
@@ -1970,10 +1989,10 @@ struct wget_http_response_t {
 		keep_alive;
 	bool
 		content_length_valid : 1,
-		hsts : 1, // if hsts_maxage and hsts_include_subdomains are valid
+		hsts : 1, //!< if hsts_maxage and hsts_include_subdomains are valid
 		csp : 1;
 	long long
-		response_end; // When this response was received
+		response_end; //!< when this response was received
 };
 
 typedef struct _wget_http_connection_st wget_http_connection_t;
