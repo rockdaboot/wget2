@@ -3115,8 +3115,13 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 	if (config.keep_alive)
 		wget_http_add_header(req, "Connection", "keep-alive");
 
-	if (!config.cache)
+	if (!config.cache) {
+		// no-cache means a server/proxy MUST NOT serve cached data
+		wget_http_add_header(req, "Cache-Control", "no-cache");
+
+		// Some older proxies just understand the Pragma: header
 		wget_http_add_header(req, "Pragma", "no-cache");
+	}
 
 	if (config.referer)
 		wget_http_add_header(req, "Referer", config.referer);
