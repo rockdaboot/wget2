@@ -878,7 +878,6 @@ struct config config = {
 	.waitretry = 10 * 1000,
 	.metalink = 1,
 	.tls_false_start = 1,
-	.tls_resume = 1,
 	.proxy = 1,
 #ifdef _WIN32
 	.restrict_file_names = WGET_RESTRICT_NAMES_WINDOWS,
@@ -1698,7 +1697,7 @@ static const struct optionw options[] = {
 	},
 	{ "tls-resume", &config.tls_resume, parse_bool, -1, 0,
 		SECTION_SSL,
-		{ "Enable TLS Session Resumption. (default: on)\n"
+		{ "Enable TLS Session Resumption. (default: off)\n"
 		}
 	},
 	{ "tls-session-file", &config.tls_session_file, parse_filename, 1, 0,

@@ -1224,6 +1224,12 @@ Go to background immediately after startup. If no output file is specified via t
   potential security threats arised from such practice, see section 14 "Security Considerations" of RFC 6797,
   specially section 14.9 "Creative Manipulation of HSTS Policy Store".
 
+* `--tls-resume`
+
+  Enable TLS Session Resumption which is disabled as default.
+
+  There are several security flaws related to TLS 1.2 session resumption which are explained in detail at:
+  https://web.archive.org/web/20171103231804/https://blog.filippo.io/we-need-to-talk-about-session-tickets/
 
 ### <a name="WARC Options"/>WARC Options
 
