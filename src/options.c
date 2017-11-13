@@ -2321,8 +2321,9 @@ static int run_use_askpass(char *question, char **answer)
 {
 	char tmp[1024];
 	pid_t pid;
-	int status;
+	int rc, ret = -1;
 	int com[2];
+	bool fa_valid = false;
 	ssize_t bytes = 0;
 	char * const argv[] = { config.use_askpass_bin, question, NULL };
 	posix_spawn_file_actions_t fa;
@@ -2332,32 +2333,34 @@ static int run_use_askpass(char *question, char **answer)
 		return -1;
 	}
 
-	status = posix_spawn_file_actions_init(&fa);
-	if (status) {
-		error_printf(_("Error initializing spawn file actions for use-askpass: %d"), status);
-		return -1;
+	rc = posix_spawn_file_actions_init(&fa);
+	if (rc) {
+		error_printf(_("Error initializing spawn file actions for use-askpass: %d"), rc);
+		goto cleanup;
+	}
+	fa_valid = 1;
+
+	rc = posix_spawn_file_actions_adddup2(&fa, com[1], STDOUT_FILENO);
+	if (rc) {
+		error_printf(_("Error setting spawn file actions for use-askpass: %d"), rc);
+		goto cleanup;
 	}
 
-	status = posix_spawn_file_actions_adddup2(&fa, com[1], STDOUT_FILENO);
-	if (status) {
-		error_printf(_("Error setting spawn file actions for use-askpass: %d"), status);
-		return -1;
-	}
-
-	status = posix_spawnp(&pid, config.use_askpass_bin, &fa, NULL, argv, environ);
-	if (status) {
-		error_printf("Error spawning %s: %d", config.use_askpass_bin, status);
-		return -1;
+	rc = posix_spawnp(&pid, config.use_askpass_bin, &fa, NULL, argv, environ);
+	if (rc) {
+		error_printf("Error spawning %s: %d", config.use_askpass_bin, rc);
+		goto cleanup;
 	}
 
 	/* Parent process reads from child. */
-	close(com[1]);
+	close(com[1]); com[1] = -1;
 	bytes = read(com[0], tmp, sizeof(tmp) - 1);
 	if (bytes <= 0) {
 		error_printf(_("Error reading response from command \"%s %s\": %s\n"),
 			config.use_askpass_bin, question, strerror (errno));
-		return -1;
+		goto cleanup;
 	}
+
 	/* Set the end byte to \0, and decrement bytes */
 	tmp[bytes--] = '\0';
 
@@ -2367,17 +2370,27 @@ static int run_use_askpass(char *question, char **answer)
 
 	*answer = wget_strdup(tmp);
 
-	return 0;
+	ret = 0;
+
+cleanup:
+	if (com[1] != -1)
+		close(com[1]);
+	if (com[0] != -1)
+		close(com[0]);
+	if (fa_valid)
+		posix_spawn_file_actions_destroy(&fa);
+
+	return ret;
 }
 
 static int use_askpass(void)
 {
-	char question[1024] = "Type username:";
+	char question[1024];
 
 	xfree(config.username);
 
 	/* Prompt for username */
-	if (run_use_askpass(question, &config.username) < 0)
+	if (run_use_askpass("Type username:", &config.username) < 0)
 		return -1;
 
 	snprintf(question, sizeof(question), "Type password for '%s':", config.username);
