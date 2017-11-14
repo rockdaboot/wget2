@@ -2325,7 +2325,7 @@ static int run_use_askpass(const char *question, char **answer)
 	int com[2];
 	bool fa_valid = false;
 	ssize_t bytes = 0;
-	char * const argv[] = { config.use_askpass_bin, question, NULL };
+	char const * const argv[] = { config.use_askpass_bin, question, NULL };
 	posix_spawn_file_actions_t fa;
 
 	if (pipe(com) == -1) {
@@ -2346,7 +2346,7 @@ static int run_use_askpass(const char *question, char **answer)
 		goto cleanup;
 	}
 
-	rc = posix_spawnp(&pid, config.use_askpass_bin, &fa, NULL, argv, environ);
+	rc = posix_spawnp(&pid, config.use_askpass_bin, &fa, NULL, (char * const *) argv, environ);
 	if (rc) {
 		error_printf("Error spawning %s: %d", config.use_askpass_bin, rc);
 		goto cleanup;
