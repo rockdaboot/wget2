@@ -118,6 +118,7 @@ The following packages are needed to build the software
 * libpsl >= 0.5.0
 * libnghttp2 >= 1.3.0 (optional, if you want HTTP/2 support)
 * libmicrohttpd >= 0.9.51 (optional, if you want to run the test suite)
+* lzip (optional, if you want to build distribution tarballs)
 
 The versions are recommended, but older versions may also work.
 
