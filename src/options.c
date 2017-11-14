@@ -2317,7 +2317,7 @@ static char *prompt_for_password(void)
 }
 
 /* Execute external application config.use_askpass_bin */
-static int run_use_askpass(char *question, char **answer)
+static int run_use_askpass(const char *question, char **answer)
 {
 	char tmp[1024];
 	pid_t pid;
