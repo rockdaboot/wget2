@@ -28,9 +28,9 @@
 #include "libtest.h"
 
 // Runs all the "stats tests" for the given stats option.
-void run_stats_test_with_option(const char *option_str);
+//void run_stats_test_with_option(const char *option_str);
 
-static const char *mainpage = "\
+#define MAINPAGE "\
 <html>\n\
 <head>\n\
   <title>Main Page</title>\n\
@@ -41,9 +41,9 @@ static const char *mainpage = "\
     <a href=\"http://localhost:{{port}}/thirdpage.html\">third page</a>.\n\
   </p>\n\
 </body>\n\
-</html>\n";
+</html>\n"
 
-static const char *subpage = "\
+#define SUBPAGE "\
 <html>\n\
 <head>\n\
   <title>Main Page</title>\n\
@@ -53,34 +53,36 @@ static const char *subpage = "\
     Some text\n\
   </p>\n\
 </body>\n\
-</html>\n";
+</html>\n"
 
-void run_stats_test_with_option(const char *option_str)
-{
-	wget_test_url_t urls[]= {
-		{	.name = "/index.html", // "gnosis" in UTF-8 greek
-			.code = "200 Dontcare",
-			.body = mainpage,
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-		{	.name = "/secondpage.html",
-			.code = "200 Dontcare",
-			.body = subpage,
-			.headers = {
-				"Content-Type: text/html",
-			}
-		},
-		{	.name = "/thirdpage.html",
-			.code = "200 Dontcare",
-			.body = subpage,
-			.headers = {
-				"Content-Type: text/html",
-			}
+extern wget_test_url_t urls[]; // prevent compiler warning
+
+wget_test_url_t urls[] = {
+	{	.name = "/index.html", // "gnosis" in UTF-8 greek
+		.code = "200 Dontcare",
+		.body = MAINPAGE,
+		.headers = {
+			"Content-Type: text/html",
 		}
-	};
+	},
+	{	.name = "/secondpage.html",
+		.code = "200 Dontcare",
+		.body = SUBPAGE,
+		.headers = {
+			"Content-Type: text/html",
+		}
+	},
+	{	.name = "/thirdpage.html",
+		.code = "200 Dontcare",
+		.body = SUBPAGE,
+		.headers = {
+			"Content-Type: text/html",
+		}
+	}
+};
 
+static void run_stats_test_with_option(const char *option_str)
+{
 	// functions won't come back if an error occurs
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
