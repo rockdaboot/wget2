@@ -2455,8 +2455,10 @@ int init(int argc, const char **argv)
 
 	// first processing, to respect options that might influence output
 	// while read_config() (e.g. -d, -q, -a, -o)
-	if (parse_command_line(argc, argv) < 0)
+	if (parse_command_line(argc, argv) < 0) {
+		xfree(home_dir);
 		return -1;
+	}
 
 	// truncate logfile, if not in append mode
 	if (config.logfile_append) {
