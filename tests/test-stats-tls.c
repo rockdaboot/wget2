@@ -23,7 +23,6 @@
 #include <config.h>
 
 #include "stats-test-util.h" // run_stats_test_with_option()
-#include <stdlib.h> // exit()
 
 int main(void)
 {
