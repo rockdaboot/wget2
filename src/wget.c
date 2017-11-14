@@ -55,7 +55,7 @@
 #ifdef WITH_LIBPCRE2
 # define PCRE2_CODE_UNIT_WIDTH 8
 # include <pcre2.h>
-#elif WITH_LIBPCRE
+#elif defined WITH_LIBPCRE
 # include <pcre.h>
 # ifndef PCRE_STUDY_JIT_COMPILE
 #  define PCRE_STUDY_JIT_COMPILE 0
@@ -441,7 +441,7 @@ static int regex_match_pcre(const char *string, const char *pattern)
 
 	return result;
 }
-#elif WITH_LIBPCRE
+#elif defined WITH_LIBPCRE
 static int regex_match_pcre(const char *string, const char *pattern)
 {
 	pcre *re;
