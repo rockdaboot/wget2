@@ -149,7 +149,7 @@ static int
 	hpkp_changed;
 static volatile int
 	terminate;
-int
+static int
 	nthreads;
 
 // this function should be called protected by a mutex - else race conditions will happen
@@ -426,13 +426,13 @@ static int regex_match_pcre(const char *string, const char *pattern)
 	pcre2_match_data *match_data;
 	int rc, result = 0;
 
-	re = pcre2_compile(pattern, PCRE2_ZERO_TERMINATED, 0, &errornumber, &erroroffset, NULL);
+	re = pcre2_compile((PCRE2_SPTR) pattern, PCRE2_ZERO_TERMINATED, 0, &errornumber, &erroroffset, NULL);
 	if (re == NULL)
 		return 0;
 
 	match_data = pcre2_match_data_create_from_pattern(re, NULL);
 
-	rc = pcre2_match(re, string, strlen(string), 0, 0, match_data, NULL);
+	rc = pcre2_match(re, (PCRE2_SPTR) string, strlen(string), 0, 0, match_data, NULL);
 	if (rc >= 0)
 		result = 1;
 
