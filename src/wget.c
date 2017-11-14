@@ -1340,6 +1340,10 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 				rc = try_connection(downloader, mirror->iri);
 
 				if (rc == WGET_E_SUCCESS) {
+
+					// Add mirror URI to hosts
+					host_add(mirror->iri);
+
 					if (iri)
 						*iri = mirror->iri;
 					return rc;
