@@ -2309,11 +2309,12 @@ static char *get_home_dir(void)
 
 static char *prompt_for_password(void)
 {
-  if (config.username)
-    fprintf (stderr, _("Password for user \"%s\": "), config.username);
-  else
-    fprintf (stderr, _("Password: "));
-  return getpass("");
+	if (config.username)
+		fprintf (stderr, _("Password for user \"%s\": "), config.username);
+	else
+		fprintf (stderr, _("Password: "));
+
+	return getpass("");
 }
 
 /* Execute external application config.use_askpass_bin */
@@ -2340,7 +2341,11 @@ static int run_use_askpass(const char *question, char **answer)
 	}
 	fa_valid = 1;
 
-	rc = posix_spawn_file_actions_adddup2(&fa, com[1], STDOUT_FILENO);
+	rc = posix_spawn_file_actions_addclose(&fa, com[0]);
+	if (!rc)
+		rc = posix_spawn_file_actions_adddup2(&fa, com[1], STDOUT_FILENO);
+	if (!rc)
+		rc = posix_spawn_file_actions_addclose(&fa, com[1]);
 	if (rc) {
 		error_printf(_("Error setting spawn file actions for use-askpass: %d"), rc);
 		goto cleanup;
@@ -2626,8 +2631,10 @@ int init(int argc, const char **argv)
 	if (config.base_url)
 		config.base = wget_iri_parse(config.base_url, config.local_encoding);
 
-	if (config.askpass)
+	if (config.askpass) {
+		xfree(config.password);
 		config.password = prompt_for_password();
+	}
 
 	if (config.use_askpass_bin && use_askpass() < 0)
 		return -1;
@@ -2801,6 +2808,7 @@ void deinit(void)
 	xfree(config.secure_protocol);
 	xfree(config.tls_session_file);
 	xfree(config.user_agent);
+	xfree(config.use_askpass_bin);
 	xfree(config.username);
 
 	stats_exit();
