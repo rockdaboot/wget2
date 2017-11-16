@@ -268,7 +268,7 @@ int main(void)
 
 	// --accept-regex (posix)
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --accept-regex '^(.*)(\\/)?picture_[ab]+\\.jpeg$'",
+		WGET_TEST_OPTIONS, "-r -nH --accept-regex \"^(.*)(\\/)?picture_[ab]+\\.jpeg$\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -280,7 +280,7 @@ int main(void)
 
 	// --reject-regex (posix)
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --reject-regex '^(.*)picture_[a]+\\.jpeg$'",
+		WGET_TEST_OPTIONS, "-r -nH --reject-regex \"^(.*)picture_[a]+\\.jpeg$\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -294,7 +294,7 @@ int main(void)
 
 	// --accept-regex and --reject-regex (posix)
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --accept-regex '^(.*)picture_(.*)$' --reject-regex '\\.(jpeg|JpeG)+'",
+		WGET_TEST_OPTIONS, "-r -nH --accept-regex \"^(.*)picture_(.*)$\" --reject-regex \"\\.(jpeg|JpeG)+\"",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -306,7 +306,7 @@ int main(void)
 #if defined WITH_LIBPCRE2 || defined WITH_LIBPCRE
 	// --accept-regex (pcre)
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --accept-regex '^(.*)(\\/)?picture_[ab]+\\.jpeg$' --regex-type pcre",
+		WGET_TEST_OPTIONS, "-r -nH --accept-regex \"^(.*)(\\/)?picture_[ab]+\\.jpeg$\" --regex-type pcre",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -318,7 +318,7 @@ int main(void)
 
 	// --reject-regex (pcre)
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --reject-regex '^(.*)picture_[a]+\\.jpeg$' --regex-type pcre",
+		WGET_TEST_OPTIONS, "-r -nH --reject-regex \"^(.*)picture_[a]+\\.jpeg$\" --regex-type pcre",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -332,7 +332,7 @@ int main(void)
 
 	// --accept-regex and --reject-regex (pcre)
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH --accept-regex '^(.*)picture_(.*)$' --reject-regex '(?i)\\.jpeg' --regex-type pcre",
+		WGET_TEST_OPTIONS, "-r -nH --accept-regex \"^(.*)picture_(.*)$\" --reject-regex \"(?i)\\.jpeg\" --regex-type pcre",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
