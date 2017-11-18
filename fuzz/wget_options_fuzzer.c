@@ -28,6 +28,7 @@
 #include "wget.h"
 #include "../src/wget_options.h"
 #include "../src/wget_plugin.h"
+#include "../src/wget_testing.h"
 #include "fuzzer.h"
 
 static const uint8_t *g_data;
@@ -102,6 +103,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 // try not to open/write to the file system
 #if defined HAVE_DLFCN_H && defined HAVE_FMEMOPEN
 	plugin_db_init();
+	enable_testing(); // function in wget2 to prevent unwanted action while testing
 	init(sizeof(argv)/sizeof(argv[0]), argv);
 	deinit();
 	plugin_db_finalize(0);

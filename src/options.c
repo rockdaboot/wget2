@@ -62,6 +62,7 @@
 #include "wget_dl.h"
 #include "wget_plugin.h"
 #include "wget_stats.h"
+#include "wget_testing.h"
 
 static int
 	exit_status;
@@ -2314,11 +2315,10 @@ static char *prompt_for_password(void)
 	else
 		fprintf (stderr, _("Password: "));
 
-#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-	return getpass("");
-#else
-	return wget_strdup("xxx");
-#endif
+	if (!is_testing())
+		return getpass("");
+	else
+		return wget_strdup("xxx");
 }
 
 /* Execute external application config.use_askpass_bin */
@@ -2355,23 +2355,25 @@ static int run_use_askpass(const char *question, char **answer)
 		goto cleanup;
 	}
 
-#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-	rc = posix_spawnp(&pid, config.use_askpass_bin, &fa, NULL, (char * const *) argv, environ);
-	if (rc) {
-		error_printf("Error spawning %s: %d", config.use_askpass_bin, rc);
-		goto cleanup;
+	if (!is_testing()) {
+		rc = posix_spawnp(&pid, config.use_askpass_bin, &fa, NULL, (char * const *) argv, environ);
+		if (rc) {
+			error_printf("Error spawning %s: %d", config.use_askpass_bin, rc);
+			goto cleanup;
+		}
 	}
-#endif
 
 	/* Parent process reads from child. */
 	close(com[1]); com[1] = -1;
-#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-	bytes = read(com[0], tmp, sizeof(tmp) - 1);
-#else
-	// fuzzing: random number of read bytes
-	bytes = rand() % (sizeof(tmp) - 1);
-	memset(tmp, 'x', bytes);
-#endif
+
+	if (!is_testing()) {
+		bytes = read(com[0], tmp, sizeof(tmp) - 1);
+	} else {
+		// fuzzing: random number of read bytes
+		bytes = rand() % (sizeof(tmp) - 1);
+		memset(tmp, 'x', bytes);
+	}
+
 	if (bytes <= 0) {
 		error_printf(_("Error reading response from command \"%s %s\": %s\n"),
 			config.use_askpass_bin, question, strerror (errno));

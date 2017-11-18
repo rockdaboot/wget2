@@ -59,7 +59,7 @@ libwget_tlssess_fuzzer_SOURCES = libwget_tlssess_fuzzer.c $(MAIN)
 libwget_utils_fuzzer_SOURCES = libwget_utils_fuzzer.c $(MAIN)
 libwget_xml_parse_buffer_fuzzer_SOURCES = libwget_xml_parse_buffer_fuzzer.c $(MAIN)
 wget_options_fuzzer_SOURCES = wget_options_fuzzer.c $(MAIN)
-wget_options_fuzzer_LDADD = ../src/options.o ../src/log.o ../src/stats.o ../src/dl.o ../src/plugin.o $(LDADD)
+wget_options_fuzzer_LDADD = ../src/options.o ../src/log.o ../src/stats.o ../src/dl.o ../src/plugin.o ../src/testing.o $(LDADD)
 
 
 #EXTRA_DIST = $(wildcard *.options) $(wildcard *.dict) \
