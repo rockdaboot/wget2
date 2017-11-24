@@ -66,10 +66,10 @@ wget_options_fuzzer_LDADD = ../src/options.o ../src/log.o ../src/stats.o ../src/
 # $(wildcard *.in) $(wildcard *.repro)
 
 dist-hook:
-	find . -name '*.options' -exec cp -v '{}' $(distdir) ';'
-	find . -name '*.dict' -exec cp -v '{}' $(distdir) ';'
-	find . -name '*.in' -exec cp -vr '{}' $(distdir) ';'
-	find . -name '*.repro' -exec cp -vr '{}' $(distdir) ';'
+	find $(srcdir) -name '*.options' -exec cp -v '{}' $(distdir) ';'
+	find $(srcdir) -name '*.dict' -exec cp -v '{}' $(distdir) ';'
+	find $(srcdir) -name '*.in' -exec cp -vr '{}' $(distdir) ';'
+	find $(srcdir) -name '*.repro' -exec cp -vr '{}' $(distdir) ';'
 
 clean-local:
 	rm -rf *.gc?? *.log lcov

@@ -30,6 +30,12 @@ endif
 
 check_PROGRAMS = $(WGET_TESTS)
 
+test_stats_all_SOURCES = test-stats-all.c stats-test-util.h
+test_stats_dns_SOURCES = test-stats-dns.c stats-test-util.h
+test_stats_ocsp_SOURCES = test-stats-ocsp.c stats-test-util.h
+test_stats_site_SOURCES = test-stats-site.c stats-test-util.h
+test_stats_tls_SOURCES = test-stats-tls.c stats-test-util.h
+
 noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = libtest.c
 libtest_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include/wget -I$(top_builddir)/lib -I$(top_srcdir)/lib $(CFLAG_VISIBILITY) -DBUILDING_LIBWGET \
