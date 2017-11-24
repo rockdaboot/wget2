@@ -40,6 +40,8 @@ addons:
             - valgrind
             - lcov
             - lzip
+            - texinfo
+            - gperf
 
 before_install:
   - echo $TRAVIS_OS_NAME
