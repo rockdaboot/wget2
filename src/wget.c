@@ -1472,6 +1472,10 @@ static int process_response_header(wget_http_response_t *resp)
 		return 1; // stop further processing
 	}
 
+	if (resp->code == 416 && !resp->cur_downloaded) {
+		info_printf(_("The file is already fully retrieved; nothing to do.\n"));
+	}
+
 	// 304 Not Modified
 	if (resp->code / 100 == 2 || resp->code / 100 >= 4 || resp->code == 304)
 		return 0; // final response
