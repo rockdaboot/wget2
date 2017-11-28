@@ -52,8 +52,10 @@ dummy_ldflags = -avoid-version -module -shared -no-undefined \
 
 libalpha_la_SOURCES = test-dl-dummy.c
 libalpha_la_CPPFLAGS = $(AM_CPPFLAGS) -DPARAM=alpha
+libalpha_la_LIBADD = $(LDADD)
 libalpha_la_LDFLAGS = $(dummy_ldflags)
 
 libbeta_la_SOURCES = test-dl-dummy.c
 libbeta_la_CPPFLAGS = $(AM_CPPFLAGS) -DPARAM=beta
+libbeta_la_LIBADD = $(LDADD)
 libbeta_la_LDFLAGS = $(dummy_ldflags)
