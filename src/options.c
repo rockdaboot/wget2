@@ -2645,12 +2645,12 @@ int init(int argc, const char **argv)
 	if (config.base_url)
 		config.base = wget_iri_parse(config.base_url, config.local_encoding);
 
-	if (config.askpass) {
+	if (config.askpass && n < argc) {
 		xfree(config.password);
 		config.password = prompt_for_password();
 	}
 
-	if (config.use_askpass_bin && use_askpass() < 0)
+	if (config.use_askpass_bin && n < argc && use_askpass() < 0)
 		return -1;
 
 	if (!config.http_username)
