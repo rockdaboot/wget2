@@ -2560,7 +2560,7 @@ int init(int argc, const char **argv)
 	log_init();
 
 	// check for correct settings
-	if (config.max_threads < 1)
+	if (config.max_threads < 1 || (config.max_threads > 1 && config.chunk_size))
 		config.max_threads = 1;
 
 	// truncate output document
