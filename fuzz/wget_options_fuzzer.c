@@ -26,9 +26,17 @@
 #include <string.h>  // strncmp
 
 #include "wget.h"
+
+#ifdef  __cplusplus
+  extern "C" {
+#endif
 #include "../src/wget_options.h"
 #include "../src/wget_plugin.h"
 #include "../src/wget_testing.h"
+#ifdef __cplusplus
+  }
+#endif
+
 #include "fuzzer.h"
 
 static const uint8_t *g_data;
