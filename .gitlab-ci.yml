@@ -42,8 +42,9 @@ Sanitizers/Debian:
     - ./bootstrap && touch .manywarnings
     - CC=clang ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan -C
     - make -j$(nproc) check
-    - make -j$(nproc) clean
+    - make -j$(nproc) distcheck
 # memory sanitizer only makes sense when all dependencies are also compiled with it
+#    - make -j$(nproc) clean
 #    - CC=clang ./configure -C --enable-fsanitize-msan
 #    - make -j$(nproc) check
 #    - make -j$(nproc) distcheck
