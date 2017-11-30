@@ -805,6 +805,24 @@ static int parse_local_db(option_t opt, const char *val, const char invert)
 	return 0;
 }
 
+static int parse_report_speed_type(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
+{
+	if (!wget_strcasecmp_ascii(val, "bytes"))
+		*((int *)opt->var) = WGET_REPORT_SPEED_BYTES;
+	else if (!wget_strcasecmp_ascii(val, "bits"))
+		*((int *)opt->var) = WGET_REPORT_SPEED_BITS;
+	else if (!val[0]) {
+		error_printf("Missing required type specifier\n");
+		return -1;
+	}
+	else {
+		error_printf("Invalid type specifier: %s\n", val);
+		return -1;
+	}
+
+	return 0;
+}
+
 static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
 	G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
@@ -885,7 +903,8 @@ struct config config = {
 	.restrict_file_names = WGET_RESTRICT_NAMES_WINDOWS,
 #endif
 	.xattr = 1,
-	.local_db = 1
+	.local_db = 1,
+	.report_speed = WGET_REPORT_SPEED_BYTES
 };
 
 static int parse_execute(option_t opt, const char *val, const char invert);
@@ -1586,6 +1605,12 @@ static const struct optionw options[] = {
 		{ "Character encoding of remote files\n",
 		  "(if not specified in Content-Type HTTP header\n",
 		  "or in document itself)\n"
+		}
+	},
+	{ "report-speed", &config.report_speed, parse_report_speed_type, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Output bandwidth as TYPE. TYPE can be bytes\n",
+		  "or bits. --progress MUST be used.\n"
 		}
 	},
 	{ "restrict-file-names", &config.restrict_file_names, parse_restrict_names, 1, 0,

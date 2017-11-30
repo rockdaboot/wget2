@@ -73,6 +73,8 @@ void bar_init(void)
 	if (wget_thread_support()) {
 		bar = wget_bar_init(NULL, 1);
 
+		wget_bar_set_speed_type(config.report_speed);
+
 		// set custom write function for wget_error_printf()
 		wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), _error_write);
 

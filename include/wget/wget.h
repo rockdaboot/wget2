@@ -289,6 +289,10 @@ WGETAPI wget_global_get_func_t
 #define WGET_RESTRICT_NAMES_UPPERCASE  1<<4
 #define WGET_RESTRICT_NAMES_LOWERCASE  1<<5
 
+//types for --report-speed
+#define WGET_REPORT_SPEED_BYTES 0
+#define WGET_REPORT_SPEED_BITS 1
+
 typedef int (*wget_update_load_t)(void *, FILE *fp);
 typedef int (*wget_update_save_t)(void *, FILE *fp);
 
@@ -2313,6 +2317,8 @@ WGETAPI void
 	wget_bar_screen_resized(void);
 WGETAPI void
 	wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len) G_GNUC_WGET_NONNULL_ALL;
+WGETAPI void
+	wget_bar_set_speed_type(char type);
 
 /*
  * Console routines

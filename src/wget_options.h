@@ -199,7 +199,8 @@ struct config {
 		dont_write, // fuzzers and unit/fuzz tests set this to 1, so they won't write any files
 		regex_type,
 		filter_urls,
-		askpass;
+		askpass,
+		report_speed;
 };
 
 extern struct config

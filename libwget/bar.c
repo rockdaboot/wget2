@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2014 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2017 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -60,6 +60,7 @@ enum _BAR_SIZES {
 	_BAR_RATIO_SIZE     =  3,
 	_BAR_METER_COST     =  2,
 	_BAR_DOWNBYTES_SIZE =  8,
+	_BAR_SPEED_SIZE     =  8,
 };
 
 // Define the cost (in number of columns) of the progress bar decorations. This
@@ -69,7 +70,8 @@ enum _BAR_DECOR_SIZE {
 		_BAR_FILENAME_SIZE  + 1 + \
 		_BAR_RATIO_SIZE     + 2 + \
 		_BAR_METER_COST     + 1 + \
-		_BAR_DOWNBYTES_SIZE
+		_BAR_DOWNBYTES_SIZE + 1 + \
+		_BAR_SPEED_SIZE     + 2
 };
 
 enum _SCREEN_WIDTH {
@@ -113,6 +115,11 @@ struct _wget_bar_st {
 	wget_thread_mutex_t
 		mutex;
 };
+
+static char report_speed_type = WGET_REPORT_SPEED_BYTES;
+
+static long long old_cur;
+static long long last_bar_redraw;
 
 static volatile sig_atomic_t winsize_changed;
 
@@ -174,6 +181,13 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 		uint64_t max, cur;
 		int ratio;
 		char *human_readable_bytes;
+		char *human_readable_speed;
+		char speed_buf[16];
+		char rs_type = (report_speed_type == WGET_REPORT_SPEED_BYTES) ? 'B' : 'b';
+		unsigned int mod = 1000;
+		long long return_time = wget_get_timemillis() - last_bar_redraw;
+		if (report_speed_type == WGET_REPORT_SPEED_BITS)
+			mod *= 8;
 
 		max = slotp->file_size;
 		cur = slotp->bytes_downloaded;
@@ -181,6 +195,10 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 		ratio = max ? (int) ((100 * cur) / max) : 0;
 
 		human_readable_bytes = wget_human_readable(slotp->human_size, sizeof(slotp->human_size), cur);
+		if (return_time)
+			human_readable_speed = wget_human_readable(speed_buf, sizeof(speed_buf), (((cur-old_cur)*mod)/return_time));
+		else
+			human_readable_speed = wget_human_readable(speed_buf, sizeof(speed_buf), 0);
 		_bar_set_progress(bar, slot);
 
 		_bar_print_slot(bar, slot);
@@ -194,17 +212,21 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 		// xxx%			_BAR_RATIO_SIZE + 1		Amount of file downloaded
 		// []			_BAR_METER_COST			Bar Decorations
 		// xxx.xxK		_BAR_DOWNBYTES_SIZE		Number of downloaded bytes
-		// ===>			Remaining				Progress Meter
+		// xxx.xxKB/s		_BAR_SPEED_SIZE			Download speed
+		// ===>			Remaining			Progress Meter
 
-		printf("%-*.*s %*d%% [%s] %*s",
+		printf("%-*.*s %*d%% [%s] %*s %*s%c/s",
 				_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, slotp->filename,
 				_BAR_RATIO_SIZE, ratio,
 				slotp->progress,
-				_BAR_DOWNBYTES_SIZE, human_readable_bytes);
+				_BAR_DOWNBYTES_SIZE, human_readable_bytes,
+				_BAR_SPEED_SIZE, human_readable_speed, rs_type);
 
 		_restore_cursor_position();
 		fflush(stdout);
 		slotp->tick++;
+		old_cur = cur;
+		last_bar_redraw = wget_get_timemillis();
 	}
 }
 
@@ -264,7 +286,6 @@ static void _bar_update(wget_bar_t *bar)
 		}
 	}
 }
-
 
 /**
  * \param[in] bar Pointer to a \p wget_bar_t object
@@ -523,5 +544,18 @@ void wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len)
 
 	_bar_update(bar);
 	wget_thread_mutex_unlock(&bar->mutex);
+}
+
+/**
+ * @param rs_type Report speed type
+ *
+ * Set the progress bar report speed type to WGET_REPORT_SPEED_BYTES
+ * or WGET_REPORT_SPEED_BITS.
+ *
+ * Default is WGET_REPORT_SPEED_BYTES.
+ */
+void wget_bar_set_speed_type(char type)
+{
+	report_speed_type = type;
 }
 /** @}*/

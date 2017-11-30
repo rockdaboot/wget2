@@ -972,6 +972,25 @@ static void print_status(DOWNLOADER *downloader G_GNUC_WGET_UNUSED, const char *
 	}
 }
 
+static void print_progress_report(long long start_time)
+{
+	char quota_buf[16];
+	char speed_buf[16];
+	char rs_type = (config.report_speed == WGET_REPORT_SPEED_BYTES) ? 'B' : 'b';
+	long long tdiff = wget_get_timemillis() - start_time;
+	if (!tdiff) tdiff = 1;
+	//The time is given in milliseconds
+	unsigned int mod = 1000;
+
+	if (config.report_speed == WGET_REPORT_SPEED_BITS)
+		mod *= 8;
+
+	bar_printf(nthreads, "Files: %d  Bytes: %s [%s%c/s] Redirects: %d  Todo: %d",
+		stats.ndownloads, wget_human_readable(quota_buf, sizeof(quota_buf), quota),
+		wget_human_readable(speed_buf, sizeof(speed_buf), (quota*mod)/tdiff),
+		rs_type, stats.nredirects, queue_size());
+}
+
 static void nop(int sig)
 {
 	if (sig == SIGTERM) {
@@ -995,6 +1014,7 @@ int main(int argc, const char **argv)
 	size_t bufsize = 0;
 	char *buf = NULL;
 	char quota_buf[16];
+	long long start_time = 0;
 
 	setlocale(LC_ALL, "");
 
@@ -1137,11 +1157,13 @@ int main(int argc, const char **argv)
 	if (config.progress) {
 		wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), NULL);
 		bar_init();
+		start_time = wget_get_timemillis();
 	}
 
 	downloaders = wget_calloc(config.max_threads, sizeof(DOWNLOADER));
 
 	wget_thread_mutex_lock(&main_mutex);
+
 	while (!terminate) {
 		// queue_print();
 		if (queue_empty() && !input_tid) {
@@ -1161,8 +1183,7 @@ int main(int argc, const char **argv)
 		}
 
 		if (config.progress)
-			bar_printf(nthreads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d",
-				stats.ndownloads, wget_human_readable(quota_buf, sizeof(quota_buf), quota), stats.nredirects, queue_size());
+			print_progress_report(start_time);
 
 		if (config.quota && quota >= config.quota) {
 			info_printf(_("Quota of %lld bytes reached - stopping.\n"), config.quota);
@@ -1192,8 +1213,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (config.progress)
-		bar_printf(nthreads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d",
-			stats.ndownloads, wget_human_readable(quota_buf, sizeof(quota_buf), quota), stats.nredirects, queue_size());
+		print_progress_report(start_time);
 	else if ((config.recursive || config.page_requisites || (config.input_file && quota != 0)) && quota) {
 		info_printf(_("Downloaded: %d files, %s bytes, %d redirects, %d errors\n"),
 			stats.ndownloads, wget_human_readable(quota_buf, sizeof(quota_buf), quota), stats.nredirects, stats.nerrors);

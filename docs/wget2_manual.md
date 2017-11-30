@@ -432,6 +432,11 @@ Go to background immediately after startup. If no output file is specified via t
 
   This option will also force the progress bar to be printed to stderr when used alongside the --logfile option.
 
+* `--report-speed=type`
+
+  Select the type of report speed indicator you wish to use.  Legal indicators are "bytes" and "bits".
+  The speed report will only work if --progress is set.  This option is always enabled and type set to bytes by default.
+
 * `-N`, `--timestamping`
 
   Turn on time-stamping.
