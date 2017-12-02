@@ -268,6 +268,7 @@ void wget_hpkp_get_pins_b64(wget_hpkp_t *hpkp, const char **pin_types, const cha
 /**
  * \param[in] hpkp An HPKP database entry
  * \param[out] pin_types An array of pointers where hash types will be stored.
+ * \param[out] sizes An array of sizes where pin sizes will be stored.
  * \param[out] pins An array of pointers where the public keys in binary format will be stored
  *
  * Gets all the public key hashes added to the given HPKP database entry.
@@ -438,10 +439,10 @@ static int impl_hpkp_db_check_pubkey(wget_hpkp_db_t *hpkp_db, const char *host, 
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
+void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **hpkp)
 {
-	(*hpkp_db->vtable->add)(hpkp_db, *_hpkp);
-	*_hpkp = NULL;
+	(*hpkp_db->vtable->add)(hpkp_db, *hpkp);
+	*hpkp = NULL;
 }
 static void impl_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t *hpkp)
 {

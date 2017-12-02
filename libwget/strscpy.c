@@ -30,7 +30,7 @@
  * \param[out] dst Output string buffer
  * \param[in] src Input string
  * \param[in] size Size of \p dst
- * \return Number of copied bytes (excluding trailing 0) or -1 when \p src doesn't fit into \dst
+ * \return Number of copied bytes (excluding trailing 0) or -1 when \p src doesn't fit into \p dst
  *
  * Copy string \p src into \p dst with overflow checking.
  *

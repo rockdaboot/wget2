@@ -41,7 +41,7 @@
  */
 
 /**
- * \param[in] type Type of hash algorithm to use
+ * \param[in] algorithm The hash algorithm to use
  * \param[out] out Output string buffer
  * \param[in] outsize Size of output string buffer
  * \param[in] fmt Printf-like format specifier

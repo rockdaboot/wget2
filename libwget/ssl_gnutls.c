@@ -198,10 +198,10 @@ static gnutls_priority_t
  *  to that used by CRLs. While CRLs are black lists, OCSP takes a white list approach where a certificate can be checked for validity.
  *  Whenever a client or server presents a certificate in a TLS handshake, the provided URL will be queried (using OCSP) to check whether
  *  that certifiacte is valid or not. If the server responds the certificate is not valid, the handshake will be immediately aborted.
- *  - WGET_SSL_OCSP_CACHE: This option does not take a string as an argument, but a pointer to a \ref "wget_ocsp_db_t" wget_ocsp_db_t
+ *  - WGET_SSL_OCSP_CACHE: This option does not take a string as an argument, but a pointer to a \ref wget_ocsp_db_t
  *  structure. Such a pointer is returned when initializing the OCSP cache with wget_ocsp_db_init(). The cache is used to store
  *  OCSP responses locally and avoid querying the OCSP server repeteadly for the same certificate.
- *  - WGET_SSL_SESSION_CACHE: This option takes a pointer to a \ref "wget_tls_session_db_t" wget_tls_session_db_t structure.
+ *  - WGET_SSL_SESSION_CACHE: This option takes a pointer to a \ref wget_tls_session_db_t structure.
  *  Such a pointer is returned when initializing the TLS session cache with wget_tls_session_db_init().
  *  This option thus set the handle to the TLS session cache that will be used to store TLS sessions.
  *  The TLS session cache
@@ -209,7 +209,7 @@ static gnutls_priority_t
  *  (most importantly the session identifier and the master secret) so that there's no need to run the handshake again
  *  the next time we connect to the same host. This is useful as the handshake is an expensive process.
  *  - WGET_SSL_HPKP_CACHE: Set the HPKP cache to be used to verify known HPKP pinned hosts. This option takes a pointer
- *  to a \ref "wget_hpkp_db_t" wget_hpkp_db_t structure. Such a pointer is returned when initializing the HPKP cache
+ *  to a \ref wget_hpkp_db_t structure. Such a pointer is returned when initializing the HPKP cache
  *  with wget_hpkp_db_init(). HPKP is a HTTP-level protocol that allows the server to "pin" its present and future X.509
  *  certificate fingerprint, to support rapid certificate change in the event that the higher level root CA
  *  gets compromised ([RFC 7469](https://tools.ietf.org/html/rfc7469)).
