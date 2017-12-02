@@ -2006,6 +2006,6 @@ const void *wget_tcp_get_stats_tls(const wget_tls_stats_t type, const void *stat
 void wget_tcp_set_stats_ocsp(const wget_stats_callback_t fn) { }
 const void *wget_tcp_get_stats_ocsp(const wget_ocsp_stats_t type, const void *stats) { return NULL;}
 
-/** @} */
-
 #endif // WITH_GNUTLS
+
+/** @} */
