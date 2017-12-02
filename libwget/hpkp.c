@@ -59,7 +59,7 @@ struct _wget_hpkp_st {
 		pins;
 };
 
-struct _wget_hpkp_pin_st {
+typedef struct {
 	const char *
 		pin_b64; /* base64 encoded <pin> */
 	const void *
@@ -68,8 +68,7 @@ struct _wget_hpkp_pin_st {
 		hash_type; /* type of <pin>, e.g. 'sha-256' */
 	size_t
 		pinsize; /* size of <pin> */
-};
-typedef struct _wget_hpkp_pin_st wget_hpkp_pin_t;
+} wget_hpkp_pin_t;
 
 /**
  * \file
