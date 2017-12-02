@@ -329,6 +329,15 @@ void wget_bar_set_slots(wget_bar_t *bar, int nslots)
 	wget_thread_mutex_unlock(&bar->mutex);
 }
 
+/**
+ * \param[in] bar Pointer to a wget_bar_t object
+ * \param[in] slot The slot number to use
+ * \param[in] filename The file name to display in the given \p slot
+ * \param[in] file_size The file size that would be 100%
+ *
+ * Initialize the given \p slot of the \p bar object with it's (file) name to display
+ * and the (file) size to be assumed 100%.
+ */
 void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_t file_size)
 {
 	wget_thread_mutex_lock(&bar->mutex);
@@ -344,6 +353,14 @@ void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_
 	wget_thread_mutex_unlock(&bar->mutex);
 }
 
+/**
+ * \param[in] bar Pointer to a wget_bar_t object
+ * \param[in] slot The slot number to use
+ * \param[in] nbytes The current number of bytes to display
+ *
+ * Set the current number of bytes for \p slot for the next update of
+ * the bar/slot.
+ */
 void wget_bar_slot_downloaded(wget_bar_t *bar, int slot, size_t nbytes)
 {
 	wget_thread_mutex_lock(&bar->mutex);
@@ -352,6 +369,12 @@ void wget_bar_slot_downloaded(wget_bar_t *bar, int slot, size_t nbytes)
 	wget_thread_mutex_unlock(&bar->mutex);
 }
 
+/**
+ * \param[in] bar Pointer to a wget_bar_t object
+ * \param[in] slot The slot number to use
+ *
+ * Redraw the given \p slot as being completed.
+ */
 void wget_bar_slot_deregister(wget_bar_t *bar, int slot)
 {
 	wget_thread_mutex_lock(&bar->mutex);
@@ -364,6 +387,11 @@ void wget_bar_slot_deregister(wget_bar_t *bar, int slot)
 	wget_thread_mutex_unlock(&bar->mutex);
 }
 
+/**
+ * \param[in] bar Pointer to a wget_bar_t object
+ *
+ * Redraw the parts of the \p bar that have been changed so far.
+ */
 void wget_bar_update(wget_bar_t *bar)
 {
 	wget_thread_mutex_lock(&bar->mutex);
@@ -374,7 +402,8 @@ void wget_bar_update(wget_bar_t *bar)
 /**
  * \param[in] bar Pointer to \p wget_bar_t
  *
- * Free the various progress bar data structures.
+ * Free the various progress bar data structures
+ * without freeing \p bar itself.
  */
 void wget_bar_deinit(wget_bar_t *bar)
 {
@@ -391,7 +420,10 @@ void wget_bar_deinit(wget_bar_t *bar)
 }
 
 /**
- * Free the pointer holding the \p *wget_bar_t structure as well
+ * \param[in] bar Pointer to \p wget_bar_t
+ *
+ * Free the various progress bar data structures
+ * including the \p bar pointer itself.
  */
 void wget_bar_free(wget_bar_t **bar)
 {
@@ -401,17 +433,32 @@ void wget_bar_free(wget_bar_t **bar)
 	}
 }
 
-void wget_bar_print(wget_bar_t *bar, int slot, const char *s)
+/**
+ * \param[in] bar Pointer to \p wget_bar_t
+ * \param[in] slot The slot number to use
+ * \param[in] display The string to be displayed in the given slot
+ *
+ * Displays the \p display string in the given \p slot.
+ */
+void wget_bar_print(wget_bar_t *bar, int slot, const char *display)
 {
 	wget_thread_mutex_lock(&bar->mutex);
 	_bar_print_slot(bar, slot);
 	// CSI <n> G: Cursor horizontal absolute
-	printf("\033[27G[%-*.*s]", bar->max_width, bar->max_width, s);
+	printf("\033[27G[%-*.*s]", bar->max_width, bar->max_width, display);
 	_restore_cursor_position();
 	fflush(stdout);
 	wget_thread_mutex_unlock(&bar->mutex);
 }
 
+/**
+ * \param[in] bar Pointer to \p wget_bar_t
+ * \param[in] slot The slot number to use
+ * \param[in] fmt Printf-like format to build the display string
+ * \param[in] args Arguments matching the \p fmt format string
+ *
+ * Displays the \p string build using the printf-style \p fmt and \p args.
+ */
 ssize_t wget_bar_vprintf(wget_bar_t *bar, int slot, const char *fmt, va_list args)
 {
 	char text[bar->max_width + 1];
@@ -422,6 +469,14 @@ ssize_t wget_bar_vprintf(wget_bar_t *bar, int slot, const char *fmt, va_list arg
 	return len;
 }
 
+/**
+ * \param[in] bar Pointer to \p wget_bar_t
+ * \param[in] slot The slot number to use
+ * \param[in] fmt Printf-like format to build the display string
+ * \param[in] ... List of arguments to match \p fmt
+ *
+ * Displays the \p string build using the printf-style \p fmt and the given arguments.
+ */
 ssize_t wget_bar_printf(wget_bar_t *bar, int slot, const char *fmt, ...)
 {
 	va_list args;
@@ -433,11 +488,26 @@ ssize_t wget_bar_printf(wget_bar_t *bar, int slot, const char *fmt, ...)
 	return len;
 }
 
+/**
+ * Call this function when a resize of the screen / console has been detected.
+ */
 void wget_bar_screen_resized(void)
 {
 	winsize_changed = 1;
 }
 
+/**
+ *
+ * \param[in] bar Pointer to \p wget_bar_t
+ * @param buf Pointer to buffer to be displayed
+ * @param len Number of bytes to be displayed
+ *
+ * Write 'above' the progress bar area, scrolls screen one line up
+ * if needed. Currently used by Wget2 to display error messages in
+ * color red.
+ *
+ * This function needs a redesign to be useful for general purposes.
+ */
 void wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len)
 {
 	wget_thread_mutex_lock(&bar->mutex);
