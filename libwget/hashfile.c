@@ -41,7 +41,7 @@
 /**
  * \file
  * \brief Hashing functions
- * \defgroup libwget-hash Hashing functions
+ * \ingroup libwget-hash
  * @{
  *
  */
