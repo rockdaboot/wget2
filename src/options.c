@@ -53,6 +53,7 @@
 #include <sys/stat.h>
 //#include <netdb.h>
 #include <spawn.h>
+#include "getpass.h"
 
 #include <wget.h>
 
