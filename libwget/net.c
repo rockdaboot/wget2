@@ -278,7 +278,7 @@ static int _wget_tcp_resolve(
 {
 	return EAI_NODATA;
 }
-#elif HAVE_GETADDRINFO_A
+#elif defined HAVE_GETADDRINFO_A
 static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, struct addrinfo **out_addr)
 {
 	int err;
