@@ -1,13 +1,16 @@
 DEFS = @DEFS@ -DWGET_DATADIR=\"$(abs_top_srcdir)/data\" -DSRCDIR=\"$(abs_srcdir)\" -DEXEEXT=\"$(EXEEXT)\"
 
+MYLIBS = \
+ $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB) $(INET_PTON_LIB) \
+ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_CRYPTO) $(LIB_GETLOGIN) $(LIB_NANOSLEEP) $(LIB_POLL) \
+ $(LIB_POSIX_SPAWN) $(LIB_PTHREAD_SIGMASK) $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) \
+ $(LTLIBMULTITHREAD) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@ \
+ $(LIBS)
+
 AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS)
 AM_CPPFLAGS = -Wno-missing-field-initializers -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib \
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
-LDADD = ../lib/libgnu.la ../libwget/libwget.la \
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(LIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS)
+LDADD = ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 WGET_TESTS = \
  test$(EXEEXT) \
@@ -22,22 +25,10 @@ check_PROGRAMS = buffer_printf_perf stringmap_perf $(WGET_TESTS)
 
 test_SOURCES = test.c
 test_LDADD = ../src/log.o ../src/options.o ../src/stats.o ../src/dl.o ../src/plugin.o ../src/testing.o \
- ../lib/libgnu.la ../libwget/libwget.la \
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS)
+ ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 test_parse_html_LDADD = ../src/log.o ../src/options.o ../src/stats.o ../src/dl.o ../src/plugin.o ../src/testing.o \
- ../lib/libgnu.la ../libwget/libwget.la \
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS)
-test_dl_LDADD = ../src/dl.o ../lib/libgnu.la ../libwget/libwget.la \
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) \
- @INTL_MACOSX_LIBS@ $(LIBS)
+ ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
+test_dl_LDADD = ../src/dl.o ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 EXTRA_DIST = files
 dist-hook:

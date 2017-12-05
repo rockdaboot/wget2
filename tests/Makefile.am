@@ -1,13 +1,16 @@
 DEFS = @DEFS@ -DWGET_DATADIR=\"$(abs_top_srcdir)/data\" -DSRCDIR=\"$(abs_srcdir)\" -DEXEEXT=\"$(EXEEXT)\"
 
+MYLIBS = \
+ $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB) $(INET_PTON_LIB) \
+ $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_CRYPTO) $(LIB_GETLOGIN) $(LIB_NANOSLEEP) $(LIB_POLL) \
+ $(LIB_POSIX_SPAWN) $(LIB_PTHREAD_SIGMASK) $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) \
+ $(LTLIBMULTITHREAD) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@ \
+ $(LIBS)
+
 AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS) $(TEST_CFLAGS)
 AM_CPPFLAGS = -Wno-missing-field-initializers -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib \
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
-LDADD = libtest.la\
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LIBICONV) $(LIBINTL) $(LIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS) $(TEST_LIBS)
+LDADD = libtest.la $(MYLIBS) $(TEST_LIBS)
 
 # test-iri-disabled removed since Wget2 always uses IRIs
 WGET_TESTS = test-wget-1$(EXEEXT) test-c-r$(EXEEXT) test-restrict-ascii$(EXEEXT) test-i-http$(EXEEXT) test-i-https$(EXEEXT)\
@@ -40,11 +43,7 @@ noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = libtest.c
 libtest_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include/wget -I$(top_builddir)/lib -I$(top_srcdir)/lib $(CFLAG_VISIBILITY) -DBUILDING_LIBWGET \
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
-libtest_la_LIBADD = ../libwget/libwget.la\
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS) ../lib/libgnu.la
+libtest_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
 
 EXTRA_DIST = libtest.h certs
 
@@ -61,62 +60,34 @@ dummy_ldflags = -avoid-version -module -shared -no-undefined \
 libpluginname_la_SOURCES = test-plugin-dummy.c
 libpluginname_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_NAME
 libpluginname_la_LDFLAGS = $(dummy_ldflags)
-libpluginname_la_LIBADD = ../libwget/libwget.la\
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS) ../lib/libgnu.la
+libpluginname_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
 
 libpluginexit_la_SOURCES = test-plugin-dummy.c
 libpluginexit_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_EXITSTATUS
 libpluginexit_la_LDFLAGS = $(dummy_ldflags)
-libpluginexit_la_LIBADD = ../libwget/libwget.la\
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS) ../lib/libgnu.la
+libpluginexit_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
 
 libpluginfaulty1_la_SOURCES = test-plugin-dummy.c
 libpluginfaulty1_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_FAULTY1
 libpluginfaulty1_la_LDFLAGS = $(dummy_ldflags)
-libpluginfaulty1_la_LIBADD = ../libwget/libwget.la\
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS) ../lib/libgnu.la
+libpluginfaulty1_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
 
 libpluginfaulty2_la_SOURCES = test-plugin-dummy.c
 libpluginfaulty2_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_FAULTY2
 libpluginfaulty2_la_LDFLAGS = $(dummy_ldflags)
-libpluginfaulty2_la_LIBADD = ../libwget/libwget.la\
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS) ../lib/libgnu.la
+libpluginfaulty2_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
 
 libpluginoption_la_SOURCES = test-plugin-dummy.c
 libpluginoption_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_OPTIONS
 libpluginoption_la_LDFLAGS = $(dummy_ldflags)
-libpluginoption_la_LIBADD = ../libwget/libwget.la\
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS) ../lib/libgnu.la
+libpluginoption_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
 
 libpluginapi_la_SOURCES = test-plugin-dummy.c
 libpluginapi_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_API
 libpluginapi_la_LDFLAGS = $(dummy_ldflags)
-libpluginapi_la_LIBADD = ../libwget/libwget.la\
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS) ../lib/libgnu.la
+libpluginapi_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
 
 libplugindb_la_SOURCES = test-plugin-dummy.c
 libplugindb_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_DATABASE
 libplugindb_la_LDFLAGS = $(dummy_ldflags)
-libplugindb_la_LIBADD = ../libwget/libwget.la\
- $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB)\
- $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_PTHREAD)\
- $(LIB_SELECT) $(LTLIBICONV) $(LTLIBINTL) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@\
- $(LIBS) ../lib/libgnu.la
+libplugindb_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
