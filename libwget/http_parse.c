@@ -330,8 +330,6 @@ const char *wget_http_parse_link(const char *s, wget_http_link_t *link)
 
 const char *wget_http_parse_digest(const char *s, wget_http_digest_t *digest)
 {
-	const char *p;
-
 	memset(digest, 0, sizeof(*digest));
 
 	while (c_isblank(*s)) s++;
@@ -345,6 +343,8 @@ const char *wget_http_parse_digest(const char *s, wget_http_digest_t *digest)
 		if (*s == '\"') {
 			s = wget_http_parse_quoted_string(s, &digest->encoded_digest);
 		} else {
+			const char *p;
+
 			for (p = s; *s && !c_isblank(*s) && *s != ',' && *s != ';'; s++);
 			digest->encoded_digest = wget_strmemdup(p, s - p);
 		}
@@ -362,8 +362,6 @@ const char *wget_http_parse_digest(const char *s, wget_http_digest_t *digest)
 
 const char *wget_http_parse_challenge(const char *s, wget_http_challenge_t *challenge)
 {
-	const char *old;
-
 	memset(challenge, 0, sizeof(*challenge));
 
 	while (c_isblank(*s)) s++;
@@ -379,7 +377,7 @@ const char *wget_http_parse_challenge(const char *s, wget_http_challenge_t *chal
 
 	wget_http_header_param_t param;
 	do {
-		old = s;
+		const char *old = s;
 		s = wget_http_parse_param(s, &param.name, &param.value);
 		if (param.name) {
 			if (*param.name && !param.value) {
@@ -1197,13 +1195,9 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 /* buf must be 0-terminated */
 wget_http_response_t *wget_http_parse_response_header(char *buf)
 {
-	const char *value;
-	char *line, *eol;
-	const char *name;
-	size_t namelen, valuelen;
-	wget_http_response_t *resp = NULL;
+	char *eol;
 
-	resp = xcalloc(1, sizeof(wget_http_response_t));
+	wget_http_response_t *resp = xcalloc(1, sizeof(wget_http_response_t));
 
 	if (sscanf(buf, " HTTP/%3hd.%3hd %3hd %31[^\r\n] ",
 		&resp->major, &resp->minor, &resp->code, resp->reason) >= 3) {
@@ -1228,7 +1222,7 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 		return NULL;
 	}
 
-	for (line = eol + 1; eol && *line && *line != '\r' && *line != '\n'; line = eol + 1) {
+	for (char *line = eol + 1; eol && *line && *line != '\r' && *line != '\n'; line = eol + 1) {
 		eol = strchr(line, '\n');
 		while (eol && c_isblank(eol[1])) { // handle split lines
 			*eol = eol[-1] = ' ';
@@ -1242,7 +1236,9 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 				*eol = 0;
 		}
 
-		value = wget_parse_name_fixed(line, &name, &namelen);
+		size_t namelen, valuelen;
+		const char *name;
+		const char *value = wget_parse_name_fixed(line, &name, &namelen);
 		// value now points directly after :
 
 		if (eol)

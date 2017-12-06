@@ -488,7 +488,7 @@ static int _hpkp_db_load(_hpkp_db_impl_t *hpkp_db_priv, FILE *fp)
 
 	wget_hpkp_t *hpkp = NULL;
 	struct stat st;
-	char *buf = NULL, *linep;
+	char *buf = NULL;
 	size_t bufsize = 0;
 	ssize_t buflen;
 	char hash_type[32], host[256], pin_b64[256];
@@ -505,7 +505,7 @@ static int _hpkp_db_load(_hpkp_db_impl_t *hpkp_db_priv, FILE *fp)
 	}
 
 	while ((buflen = wget_getline(&buf, &bufsize, fp)) >= 0) {
-		linep = buf;
+		char *linep = buf;
 
 		while (isspace(*linep)) linep++; // ignore leading whitespace
 		if (!*linep) continue; // skip empty lines

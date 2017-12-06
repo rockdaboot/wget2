@@ -254,8 +254,6 @@ int wget_vector_remove_nofree(wget_vector_t *v, int pos)
 
 int wget_vector_move(wget_vector_t *v, int old_pos, int new_pos)
 {
-	void *tmp;
-
 	if (!v) return -1;
 	if (old_pos < 0 || old_pos >= v->cur) return -1;
 	if (new_pos < 0 || new_pos >= v->cur) return -1;
@@ -265,11 +263,11 @@ int wget_vector_move(wget_vector_t *v, int old_pos, int new_pos)
 		v->sorted = 0;
 
 	if (old_pos < new_pos) {
-		tmp = v->entry[old_pos];
+		void *tmp = v->entry[old_pos];
 		memmove(&v->entry[old_pos], &v->entry[old_pos + 1], (new_pos - old_pos) * sizeof(void *));
 		v->entry[new_pos] = tmp;
 	} else {
-		tmp = v->entry[old_pos];
+		void *tmp = v->entry[old_pos];
 		memmove(&v->entry[new_pos + 1], &v->entry[new_pos], (old_pos - new_pos) * sizeof(void *));
 		v->entry[new_pos] = tmp;
 	}
@@ -279,14 +277,12 @@ int wget_vector_move(wget_vector_t *v, int old_pos, int new_pos)
 
 int wget_vector_swap(wget_vector_t *v, int pos1, int pos2)
 {
-	void *tmp;
-
 	if (!v) return -1;
 	if (pos1 < 0 || pos1 >= v->cur) return -1;
 	if (pos2 < 0 || pos2 >= v->cur) return -1;
 	if (pos1 == pos2) return 0;
 
-	tmp = v->entry[pos1];
+	void *tmp = v->entry[pos1];
 	v->entry[pos1] = v->entry[pos2];
 	v->entry[pos2] = tmp;
 
@@ -312,15 +308,13 @@ void wget_vector_free(wget_vector_t **v)
 void wget_vector_clear(wget_vector_t *v)
 {
 	if (v) {
-		int it;
-
 		if (v->destructor) {
-			for (it = 0; it < v->cur; it++) {
+			for (int it = 0; it < v->cur; it++) {
 				v->destructor(v->entry[it]);
 				xfree(v->entry[it]);
 			}
 		} else {
-			for (it = 0; it < v->cur; it++)
+			for (int it = 0; it < v->cur; it++)
 				xfree(v->entry[it]);
 		}
 
@@ -331,9 +325,7 @@ void wget_vector_clear(wget_vector_t *v)
 void wget_vector_clear_nofree(wget_vector_t *v)
 {
 	if (v) {
-		int it;
-
-		for (it = 0; it < v->cur; it++)
+		for (int it = 0; it < v->cur; it++)
 			v->entry[it] = NULL;
 		v->cur = 0;
 	}
@@ -354,9 +346,7 @@ void *wget_vector_get(const wget_vector_t *v, int pos)
 int wget_vector_browse(const wget_vector_t *v, wget_vector_browse_t browse, void *ctx)
 {
 	if (v) {
-		int it, ret;
-
-		for (it = 0; it < v->cur; it++)
+		for (int ret, it = 0; it < v->cur; it++)
 			if ((ret = browse(ctx, v->entry[it])) != 0)
 				return ret;
 	}
@@ -404,21 +394,16 @@ int wget_vector_find(const wget_vector_t *v, const void *elem)
 		if (v->cur == 1) {
 			if (v->cmp(elem, v->entry[0]) == 0) return 0;
 		} else if (v->sorted) {
-			int l, r, m;
-			int res;
-
 			// binary search for element (exact match)
-			for (l = 0, r = v->cur - 1; l <= r;) {
-				m = (l + r) / 2;
+			for (int l = 0, r = v->cur - 1; l <= r;) {
+				int res, m = (l + r) / 2;
 				if ((res = v->cmp(elem, v->entry[m])) > 0) l = m + 1;
 				else if (res < 0) r = m - 1;
 				else return m;
 			}
 		} else {
-			int it;
-
 			// linear search for element
-			for (it = 0; it < v->cur; it++)
+			for (int it = 0; it < v->cur; it++)
 				if (v->cmp(elem, v->entry[it]) == 0) return it;
 		}
 	}

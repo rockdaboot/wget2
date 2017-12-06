@@ -87,13 +87,11 @@ struct dl_file_st
 // Opens an object file
 dl_file_t *dl_file_open(const char *filename, dl_error_t *e)
 {
-	char *buf = NULL;
 	dl_file_t *dm = NULL;
 	dl_file_t dm_st;
+	char *buf = convert_to_path_if_not(filename);
 
-	buf = convert_to_path_if_not(filename);
-	dm_st.handle = dlopen(buf ? buf : filename,
-			RTLD_LAZY | RTLD_LOCAL);
+	dm_st.handle = dlopen(buf ? buf : filename, RTLD_LAZY | RTLD_LOCAL);
 	wget_xfree(buf);
 
 	if (dm_st.handle)
@@ -161,11 +159,10 @@ static void dl_win32_set_last_error(dl_error_t *e)
 
 dl_file_t *dl_file_open(const char *filename, dl_error_t *e)
 {
-	char *buf = NULL;
 	dl_file_t *dm = NULL;
 	dl_file_t dm_st;
+	char *buf = convert_to_path_if_not(filename);
 
-	buf = convert_to_path_if_not(filename);
 	dm_st.handle = LoadLibrary(buf ? buf : filename);
 	wget_xfree(buf);
 

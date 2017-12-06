@@ -109,7 +109,6 @@ struct _wget_bar_st {
 		*spaces;
 	int
 		nslots,
-		screen_width,
 		max_width;
 	wget_thread_mutex_t
 		mutex;

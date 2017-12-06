@@ -282,7 +282,7 @@ static int _wget_tcp_resolve(
 static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, struct addrinfo **out_addr)
 {
 	int err;
-	char s_port[6];
+	char s_port[NI_MAXSERV];
 
 	if (port) {
 		snprintf(s_port, sizeof(s_port), "%hu", port);
@@ -341,7 +341,6 @@ static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, s
 // we can't provide a portable way of respecting a DNS timeout
 static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, struct addrinfo **out_addr)
 {
-	char s_port[6];
 	struct addrinfo hints = {
 		.ai_family = tcp->family,
 		.ai_socktype = SOCK_STREAM,
@@ -349,6 +348,8 @@ static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, s
 	};
 
 	if (port) {
+		char s_port[NI_MAXSERV];
+
 		snprintf(s_port, sizeof(s_port), "%hu", port);
 		debug_printf("resolving %s:%s...\n", host ? host : "", s_port);
 		return getaddrinfo(host, s_port, &hints, out_addr);
@@ -712,10 +713,11 @@ int wget_tcp_get_local_port(wget_tcp_t *tcp)
 	struct sockaddr_storage addr_store;
 	struct sockaddr *addr = (struct sockaddr *)&addr_store;
 	socklen_t addr_len = sizeof(addr_store);
-	char s_port[NI_MAXSERV];
 
 	/* Get automatically retrieved port number */
 	if (getsockname(tcp->sockfd, addr, &addr_len) == 0) {
+		char s_port[NI_MAXSERV];
+
 		if (getnameinfo(addr, addr_len, NULL, 0, s_port, sizeof(s_port), NI_NUMERICSERV) == 0)
 			return atoi(s_port);
 	}
@@ -985,8 +987,7 @@ void wget_tcp_deinit(wget_tcp_t **_tcp)
 		xfree(tcp->ip);
 		xfree(tcp);
 
-		if (_tcp)
-			*_tcp = NULL;
+		*_tcp = NULL;
 	}
 }
 
@@ -1061,7 +1062,7 @@ int wget_tcp_ready_2_transfer(wget_tcp_t *tcp, int flags)
 int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
 {
 	struct addrinfo *ai;
-	int sockfd = -1, rc, ret = WGET_E_UNKNOWN;
+	int rc, ret = WGET_E_UNKNOWN;
 	char adr[NI_MAXHOST], s_port[NI_MAXSERV];
 	int debug = wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG));
 
@@ -1087,6 +1088,7 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
 				debug_printf("trying ???:%s (%s)...\n", s_port, gai_strerror(rc));
 		}
 
+		int sockfd;
 		if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) != -1) {
 			_set_async(sockfd);
 			_set_socket_options(sockfd);
@@ -1276,8 +1278,7 @@ ssize_t wget_tcp_read(wget_tcp_t *tcp, char *buf, size_t count)
  */
 ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 {
-	ssize_t nwritten = 0, n;
-	int rc;
+	ssize_t nwritten = 0;
 
 	if (unlikely(!tcp || !buf))
 		return -1;
@@ -1286,6 +1287,8 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 		return wget_ssl_write_timeout(tcp->ssl_session, buf, count, tcp->timeout);
 
 	while (count) {
+		int n;
+
 #ifdef TCP_FASTOPEN_LINUX
 		if (tcp->tcp_fastopen && tcp->first_send) {
 			n = sendto(tcp->sockfd, buf, count, MSG_FASTOPEN,
@@ -1296,7 +1299,7 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 				/* fallback from fastopen, e.g. when fastopen is disabled in system */
 				tcp->tcp_fastopen = 0;
 
-				rc = connect(tcp->sockfd, tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
+				int rc = connect(tcp->sockfd, tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
 				if (rc < 0
 					&& errno != EAGAIN
 					&& errno != ENOTCONN
@@ -1329,7 +1332,8 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 			}
 
 			if (tcp->timeout) {
-				if ((rc = wget_ready_2_write(tcp->sockfd, tcp->timeout)) <= 0)
+				int rc = wget_ready_2_write(tcp->sockfd, tcp->timeout);
+				if (rc <= 0)
 					return rc;
 			}
 		}

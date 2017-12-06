@@ -923,12 +923,12 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 		else
 			return NULL;
 
-		int timeout = wget_tcp_get_timeout(conn->tcp);
-		int ioflags;
-
 		for (int rc = 0; rc == 0 && !wget_vector_size(conn->received_http2_responses) && !conn->abort_indicator && !_abort_indicator;) {
+			int timeout = wget_tcp_get_timeout(conn->tcp);
+			int ioflags = 0;
+
 			debug_printf("  ##  loop responses=%d\n", wget_vector_size(conn->received_http2_responses));
-			ioflags = 0;
+
 			if (nghttp2_session_want_write(conn->http2_session))
 				ioflags |= WGET_IO_WRITABLE;
 			if (nghttp2_session_want_read(conn->http2_session))

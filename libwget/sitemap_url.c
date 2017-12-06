@@ -53,22 +53,23 @@ struct _sitemap_context {
 static void _sitemap_get_url(void *context, int flags, const char *dir, const char *attr G_GNUC_WGET_UNUSED, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
 	struct _sitemap_context *ctx = context;
-	wget_string_t url;
-	int type = 0;
 
 	if ((flags & XML_FLG_CONTENT) && len) {
+		int type;
+
 		if (!wget_strcasecmp_ascii(dir, "/sitemapindex/sitemap/loc"))
 			type = 1;
 		else if (!wget_strcasecmp_ascii(dir, "/urlset/url/loc"))
 			type = 2;
+		else
+			type = 0;
 
 		if (type) {
 			for (;len && c_isspace(*val); val++, len--); // skip leading spaces
 			for (;len && c_isspace(val[len - 1]); len--);  // skip trailing spaces
 
 			// info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
-			url.p = val;
-			url.len = len;
+			wget_string_t url = { .p = val, .len = len };
 
 			if (type == 1) {
 				if (!ctx->sitemap_urls)

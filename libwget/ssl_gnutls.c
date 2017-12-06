@@ -1060,9 +1060,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 #endif
 
 	for (unsigned it = 0; it < cert_list_size; it++) {
-		if (deinit_cert)
-			gnutls_x509_crt_deinit(cert);
-
+		gnutls_x509_crt_deinit(cert);
 		gnutls_x509_crt_init(&cert);
 
 		if ((err = gnutls_x509_crt_import(cert, &cert_list[it], GNUTLS_X509_FMT_DER)) != GNUTLS_E_SUCCESS) {
@@ -1808,12 +1806,12 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 
 	return -1;
 #else
-	int rc;
 	ssize_t nbytes;
 
 	for (;;) {
-		if (gnutls_record_check_pending(session) <= 0 &&
-			(rc = wget_ready_2_read(sockfd, timeout)) <= 0)
+		int rc;
+
+		if (gnutls_record_check_pending(session) <= 0 && (rc = wget_ready_2_read(sockfd, timeout)) <= 0)
 			return rc;
 
 		nbytes = gnutls_record_recv(session, buf, count);
@@ -1868,8 +1866,6 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
  */
 ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout)
 {
-	ssize_t nbytes;
-	int rc;
 #ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
 	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
 	int sockfd = gnutls_transport_get_int(session);
@@ -1878,6 +1874,9 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 #endif
 
 	for (;;) {
+		ssize_t nbytes;
+		int rc;
+
 		if ((rc = wget_ready_2_write(sockfd, timeout)) <= 0)
 			return rc;
 

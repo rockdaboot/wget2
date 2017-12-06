@@ -164,9 +164,9 @@ void wget_css_parse_file(
 	wget_css_parse_encoding_cb_t callback_encoding,
 	void *user_ctx)
 {
-	int fd;
-
 	if (strcmp(fname,"-")) {
+		int fd;
+
 		if ((fd = open(fname, O_RDONLY|O_BINARY)) != -1) {
 			struct stat st;
 			if (fstat(fd, &st) == 0) {

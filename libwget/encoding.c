@@ -285,11 +285,11 @@ const char *wget_str_to_ascii(const char *src)
 #elif defined WITH_LIBIDN
 	if (wget_str_needs_encoding(src)) {
 		char *asc = NULL;
-		int rc;
 
 		if (_utf8_is_valid(src)) {
-			// idna_to_ascii_8z() automatically converts UTF-8 to lowercase
+			int rc;
 
+			// idna_to_ascii_8z() automatically converts UTF-8 to lowercase
 			if ((rc = idna_to_ascii_8z(src, &asc, IDNA_USE_STD3_ASCII_RULES)) == IDNA_SUCCESS) {
 				// debug_printf("toASCII '%s' -> '%s'\n", src, asc);
 # ifdef _WIN32

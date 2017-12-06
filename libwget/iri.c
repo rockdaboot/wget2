@@ -306,7 +306,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 {
 	wget_iri_t *iri;
 	char *p, *s, *authority, c;
-	size_t slen, it;
+	size_t slen;
 	int maybe_scheme;
 
 	if (!url)
@@ -377,7 +377,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 		iri->scheme = p;
 		wget_iri_unescape_inline((char *)iri->scheme);
 
-		for (it = 0; it < countof(wget_iri_schemes); it++) {
+		for (unsigned it = 0; it < countof(wget_iri_schemes); it++) {
 			if (!wget_strcasecmp_ascii(wget_iri_schemes[it], p)) {
 				iri->scheme = wget_iri_schemes[it];
 				iri->port = iri_ports[it];
@@ -1156,9 +1156,11 @@ char *wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer_t *buf, 
 char *wget_iri_get_filename(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding)
 {
 	if (iri->path) {
-		char *fname, *p;
+		char *fname;
 
 		if (wget_strcasecmp_ascii(encoding, "utf-8")) {
+			char *p;
+
 			if ((p = strrchr(iri->path, '/'))) {
 				if (!(fname = wget_utf8_to_str(p + 1, encoding)))
 					wget_buffer_strcat(buf, p + 1); // conversion failed, keep original string
