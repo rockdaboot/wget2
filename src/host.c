@@ -306,11 +306,10 @@ JOB *host_add_robotstxt_job(HOST *host, wget_iri_t *iri)
 	return job;
 }
 
-void host_remove_job(HOST *host, JOB *job)
+static void _host_remove_job(HOST *host, JOB *job)
 {
 	debug_printf("%s: %p\n", __func__, (void *)job);
 
-	wget_thread_mutex_lock(&hosts_mutex);
 	if (job == host->robot_job) {
 		// Special handling for automatic robots.txt jobs
 		// ==============================================
@@ -340,7 +339,7 @@ void host_remove_job(HOST *host, JOB *job)
 
 					if (path->len && !strncmp(path->p + 1, thejob->iri->path ? thejob->iri->path : "", path->len - 1)) {
 						info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), thejob->iri->uri);
-						host_remove_job(host, thejob);
+						_host_remove_job(host, thejob);
 						break;
 					}
 				}
@@ -359,8 +358,13 @@ void host_remove_job(HOST *host, JOB *job)
 	host->qsize--;
 	if (!host->blocked)
 		qsize--;
-	debug_printf("%s: qsize=%d host->qsize=%d\n", __func__, qsize, host->qsize);
+}
 
+void host_remove_job(HOST *host, JOB *job)
+{
+	wget_thread_mutex_lock(&hosts_mutex);
+	_host_remove_job(host, job);
+	debug_printf("%s: qsize=%d host->qsize=%d\n", __func__, qsize, host->qsize);
 	wget_thread_mutex_unlock(&hosts_mutex);
 }
 
