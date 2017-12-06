@@ -78,11 +78,11 @@ Scan-Build/Debian:
     paths:
       - scan-build/*
 
-flawfinder/Debian:
+Flawfinder/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - export CFLAGS=$CFLAGS_DEFAULT
-    - ./bootstrap && touch .manywarnings
+    - ./bootstrap
     - ./configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
     - make -j$(nproc)
     - mkdir flawfinder
@@ -98,7 +98,7 @@ flawfinder/Debian:
     paths:
       - flawfinder/*
 
-valgrind/Fedora:
+Valgrind/Fedora:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
     - export CFLAGS=$CFLAGS_DEFAULT
@@ -117,6 +117,16 @@ valgrind/Fedora:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
+
+VPATH build:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+  script:
+    - export CFLAGS=$CFLAGS_DEFAULT
+    - ./bootstrap
+    - mkdir vpath && cd vpath
+    - ../configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
+    - make distcheck
+
 
 #Centos7 build:
 #  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$CENTOS7_BUILD
