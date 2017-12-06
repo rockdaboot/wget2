@@ -1,4 +1,5 @@
-DEFS = @DEFS@ -DWGET_DATADIR=\"$(abs_top_srcdir)/data\" -DSRCDIR=\"$(abs_srcdir)\" -DEXEEXT=\"$(EXEEXT)\"
+DEFS = @DEFS@ -DWGET_DATADIR=\"$(abs_top_srcdir)/data\"\
+ -DSRCDIR=\"$(abs_srcdir)\" -DBUILDDIR=\"$(abs_builddir)\" -DEXEEXT=\"$(EXEEXT)\"
 
 MYLIBS = \
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB) $(INET_PTON_LIB) \

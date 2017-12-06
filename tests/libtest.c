@@ -895,11 +895,11 @@ void wget_test(int first_key, ...)
 {
 	const char
 		*request_url,
-		*options="",
+		*options = "",
 #ifdef _WIN32
-		*executable="..\\..\\src\\wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy";
+		*executable = BUILDDIR "\\..\\src\\wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy";
 #else
-		*executable="../../src/wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy";
+		*executable = BUILDDIR "/../src/wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy";
 #endif
 	const wget_test_file_t
 		*expected_files = NULL,
