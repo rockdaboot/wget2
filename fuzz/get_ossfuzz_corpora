@@ -34,8 +34,9 @@ BUILD_ONLY=1 ./run-clang.sh ${fuzzer}
 ./${fuzzer} -merge=1 ${fuzzer}.in ${fuzzer}.new
 
 # now clear .new dir and put all corpora there
-rm -f ${fuzzer}.new/*
-mv ${fuzzer}.in/* ${fuzzer}.new
+rm -rf ${fuzzer}.new
+mv ${fuzzer}.in ${fuzzer}.new
+mkdir ${fuzzer}.in
 
 # now merge again (optimizes number of corpora)
 ./${fuzzer} -merge=1 ${fuzzer}.in ${fuzzer}.new
