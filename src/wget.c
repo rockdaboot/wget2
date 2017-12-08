@@ -462,7 +462,7 @@ static int regex_match_pcre(const char *string, const char *pattern)
 		return 0;
 	}
 
-	rc = pcre_exec(re, extra, string, strlen(string), 0, 0, offsets, 8);
+	rc = pcre_exec(re, extra, string, (int) strlen(string), 0, 0, offsets, 8);
 	if (rc >= 0)
 		result = 1;
 
