@@ -1287,7 +1287,7 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 		return wget_ssl_write_timeout(tcp->ssl_session, buf, count, tcp->timeout);
 
 	while (count) {
-		int n;
+		ssize_t n;
 
 #ifdef TCP_FASTOPEN_LINUX
 		if (tcp->tcp_fastopen && tcp->first_send) {
