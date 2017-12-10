@@ -116,10 +116,48 @@ struct _wget_bar_st {
 		mutex;
 };
 
-static char report_speed_type = WGET_REPORT_SPEED_BYTES;
+/* 24 positions with a 125ms return time is at least
+ * the average of the last 3 seconds */
+#define RING_POSITIONS 24
 
-static long long old_cur;
-static long long last_bar_redraw;
+struct _speed_report {
+	uint64_t
+		times[RING_POSITIONS],
+		bytes[RING_POSITIONS],
+		total_time,
+		total_bytes,
+		old_cur_bytes,
+		last_update_time,
+		last_redraw_time;
+	int
+		pos;
+	char
+		speed_buf[16];
+};
+
+static struct _speed_report *speed_r;
+
+static void _bar_update_speed(int64_t cur_bytes, int slot)
+{
+	struct _speed_report *SReport = &speed_r[slot];
+	int *ringpos = &SReport->pos;
+	SReport->total_bytes -= SReport->bytes[*ringpos];
+	SReport->total_time -= SReport->times[*ringpos];
+	SReport->bytes[*ringpos] = cur_bytes - SReport->old_cur_bytes;
+
+	if (SReport->last_update_time)
+		SReport->times[*ringpos] = wget_get_timemillis() - SReport->last_update_time;
+
+	SReport->total_bytes += SReport->bytes[*ringpos];
+	SReport->total_time += SReport->times[*ringpos];
+	SReport->last_update_time = wget_get_timemillis();
+	SReport->old_cur_bytes = cur_bytes;
+	if (++(*ringpos) == RING_POSITIONS)
+		*ringpos = 0; // reset
+}
+
+static char report_speed_type = WGET_REPORT_SPEED_BYTES;
+static char report_speed_type_char = 'B';
 
 static volatile sig_atomic_t winsize_changed;
 
@@ -174,6 +212,9 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 	}
 }
 
+/* The time in ms between every speed calculation */
+#define SPEED_REDRAW_TIME 400
+
 static void _bar_update_slot(const wget_bar_t *bar, int slot)
 {
 	_bar_slot_t *slotp = &bar->slots[slot];
@@ -185,10 +226,9 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 		int ratio;
 		char *human_readable_bytes;
 		char *human_readable_speed;
-		char speed_buf[16];
-		char rs_type = (report_speed_type == WGET_REPORT_SPEED_BYTES) ? 'B' : 'b';
 		unsigned int mod = 1000;
-		long long return_time = wget_get_timemillis() - last_bar_redraw;
+		struct _speed_report *SReport = &speed_r[slot];
+
 		if (report_speed_type == WGET_REPORT_SPEED_BITS)
 			mod *= 8;
 
@@ -198,10 +238,19 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 		ratio = max ? (int) ((100 * cur) / max) : 0;
 
 		human_readable_bytes = wget_human_readable(slotp->human_size, sizeof(slotp->human_size), cur);
-		if (return_time)
-			human_readable_speed = wget_human_readable(speed_buf, sizeof(speed_buf), (((cur-old_cur)*mod)/return_time));
+
+		_bar_update_speed(cur, slot);
+
+		uint64_t cur_time = wget_get_timemillis();
+		if (SReport->total_time && (cur_time - SReport->last_redraw_time) > SPEED_REDRAW_TIME) {
+			human_readable_speed = wget_human_readable(SReport->speed_buf, sizeof(SReport->speed_buf), ((SReport->total_bytes*mod)/(SReport->total_time)));
+			SReport->last_redraw_time = cur_time;
+		}
+		else if (!SReport->total_time)
+			human_readable_speed = wget_human_readable(SReport->speed_buf, sizeof(SReport->speed_buf), 0);
 		else
-			human_readable_speed = wget_human_readable(speed_buf, sizeof(speed_buf), 0);
+			human_readable_speed = SReport->speed_buf;
+
 		_bar_set_progress(bar, slot);
 
 		_bar_print_slot(bar, slot);
@@ -223,13 +272,11 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 				_BAR_RATIO_SIZE, ratio,
 				slotp->progress,
 				_BAR_DOWNBYTES_SIZE, human_readable_bytes,
-				_BAR_SPEED_SIZE, human_readable_speed, rs_type);
+				_BAR_SPEED_SIZE, human_readable_speed, report_speed_type_char);
 
 		_restore_cursor_position();
 		fflush(stdout);
 		slotp->tick++;
-		old_cur = cur;
-		last_bar_redraw = wget_get_timemillis();
 	}
 }
 
@@ -344,9 +391,11 @@ void wget_bar_set_slots(wget_bar_t *bar, int nslots)
 		xfree(bar->slots);
 		bar->slots = xcalloc(nslots, sizeof(_bar_slot_t));
 		bar->nslots = nslots;
-		for (int i = 0; i < more_slots; i++) {
+		speed_r = wget_realloc(speed_r, nslots * sizeof(struct _speed_report));
+		memset(&speed_r[nslots - more_slots], 0, more_slots * sizeof(struct _speed_report));
+		for (int i = 0; i < more_slots; i++)
 			printf("\n");
-		}
+
 		_bar_update_winsize(bar, true);
 		_bar_update(bar);
 	}
@@ -440,6 +489,7 @@ void wget_bar_deinit(wget_bar_t *bar)
 		xfree(bar->known_size);
 		xfree(bar->unknown_size);
 		xfree(bar->slots);
+		xfree(speed_r);
 		wget_thread_mutex_destroy(&bar->mutex);
 	}
 }
@@ -552,7 +602,7 @@ void wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len)
 }
 
 /**
- * @param rs_type Report speed type
+ * @param type Report speed type
  *
  * Set the progress bar report speed type to WGET_REPORT_SPEED_BYTES
  * or WGET_REPORT_SPEED_BITS.
@@ -562,5 +612,7 @@ void wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len)
 void wget_bar_set_speed_type(char type)
 {
 	report_speed_type = type;
+	if (type == WGET_REPORT_SPEED_BITS)
+		report_speed_type_char = 'b';
 }
 /** @}*/

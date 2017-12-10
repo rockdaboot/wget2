@@ -1221,7 +1221,9 @@ int main(int argc, const char **argv)
 		}
 
 		if (config.progress)
-			print_progress_report(start_time);
+			bar_printf(nthreads, "Files: %d  Bytes: %s  Redirects: %d  Todo: %d",
+				stats.ndownloads, wget_human_readable(quota_buf, sizeof(quota_buf), quota), stats.nredirects, queue_size());
+
 
 		if (config.quota && quota >= config.quota) {
 			info_printf(_("Quota of %lld bytes reached - stopping.\n"), config.quota);

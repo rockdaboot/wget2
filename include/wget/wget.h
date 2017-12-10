@@ -287,8 +287,10 @@ WGETAPI wget_global_get_func_t
 #define WGET_RESTRICT_NAMES_LOWERCASE  1<<5
 
 //types for --report-speed
-#define WGET_REPORT_SPEED_BYTES 0
-#define WGET_REPORT_SPEED_BITS 1
+enum {
+	WGET_REPORT_SPEED_BYTES,
+	WGET_REPORT_SPEED_BITS
+};
 
 typedef int (*wget_update_load_t)(void *, FILE *fp);
 typedef int (*wget_update_save_t)(void *, FILE *fp);
