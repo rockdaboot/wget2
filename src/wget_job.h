@@ -88,6 +88,7 @@ struct JOB {
 	bool
 		challenges_alloc : 1, // Indicate whether the challenges vector is owned by the JOB
 		inuse : 1, // if job is already in use, 'used_by' holds the thread id of the downloader
+		done : 1, // if job has to be retried, else it is done and can be removed (used by the downloader threads)
 		sitemap : 1, // URL is a sitemap to be scanned in recursive mode
 		robotstxt : 1, // URL is a robots.txt to be scanned
 		head_first : 1, // first check mime type by using a HEAD request

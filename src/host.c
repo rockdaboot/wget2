@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2017 Free Software Foundation, Inc.
  *
  * This file is part of Wget.
  *
@@ -23,6 +23,8 @@
  * Changelog
  * 28.09.2013  Tim Ruehsen  created, moved from wget.c
  *
+ * Each entry in hosts has it's own job queue. This allows to re-use
+ * a connection for subsequent requests without expensive searching.
  */
 
 #include <config.h>
@@ -155,7 +157,7 @@ static int _search_queue_for_free_job(struct _find_free_job_context *ctx, JOB *j
 			}
 		}
 	} else if (!job->inuse) {
-		job->inuse = 1;
+		job->inuse = job->done = 1;
 		job->used_by = wget_thread_self();
 		job->part = NULL;
 		ctx->job = job;
@@ -168,35 +170,52 @@ static int _search_queue_for_free_job(struct _find_free_job_context *ctx, JOB *j
 
 static int G_GNUC_WGET_NONNULL_ALL _search_host_for_free_job(struct _find_free_job_context *ctx, HOST *host)
 {
-	debug_printf("qsize=%d blocked=%d\n", host->qsize, host->blocked);
-	if (host->blocked)
+	// host may be blocked due to max. number of failures reached
+	if (host->blocked) {
+		debug_printf("host %s is blocked (qsize=%d)\n", host->host, host->qsize);
 		return 0;
+	}
 
+	// host may be pause due to a failure (retry later)
 	long long pause = host->retry_ts - ctx->now;
-	debug_printf("pause=%lld\n", pause);
 	if (pause > 0) {
+		debug_printf("host %s is paused %lldms\n", host->host, pause);
 		if (!ctx->pause || ctx->pause < pause)
 			ctx->pause = pause;
 		return 0;
 	}
 
+	// do robots.txt job first before any other document
 	if (host->robot_job) {
 		if (!host->robot_job->inuse) {
-			host->robot_job->inuse = 1;
+			host->robot_job->inuse = host->robot_job->done = 1;
 			host->robot_job->used_by = wget_thread_self();
 			ctx->job = host->robot_job;
-			debug_printf("dequeue robot job %s\n", ctx->job->iri->uri);
+			debug_printf("host %s dequeue robot job\n", host->host);
 			return 1;
 		}
-		debug_printf("robot job inuse\n");
+
+		debug_printf("robot job still in progress\n");
 		return 0; // someone is still working on robots.txt
 	}
 
+	// find next job to do
 	wget_list_browse(host->queue, (wget_list_browse_t)_search_queue_for_free_job, ctx);
 
-	return !!ctx->job;
+	return !!ctx->job; // 1=found a job, 0=no free job
 }
 
+/**
+ * \param[in] host Host to get a job from or NULL for any host
+ * \param[out] pause Time to wait before next act on host in milliseconds
+ * \return Job detached from queue or NULL if there currently is no job
+ *
+ * Return the next job for a given host resp. for any host if \p host is NULL.
+ *
+ * If \p pause is given, it will be set to the number of milliseconds to wait
+ * before the given host has a job offer. E.g. on connection errors we will wait
+ * for a certain amount of time before we try again.
+ */
 JOB *host_get_job(HOST *host, long long *pause)
 {
 	struct _find_free_job_context ctx = { .now = wget_get_timemillis() };
@@ -230,7 +249,7 @@ static int _release_job(wget_thread_t *ctx, JOB *job)
 			}
 		}
 	} else if (job->inuse && job->used_by == self) {
-		job->inuse = 0;
+		job->inuse = job->done = 0;
 		job->used_by = 0;
 		debug_printf("released job %s\n", job->iri->uri);
 	}
@@ -249,7 +268,7 @@ void host_release_jobs(HOST *host)
 
 	if (host->robot_job) {
 		if (host->robot_job->inuse && host->robot_job->used_by == self) {
-			host->robot_job->inuse = 0;
+			host->robot_job->inuse = host->robot_job->done = 0;
 			host->robot_job->used_by = 0;
 			debug_printf("released robots.txt job\n");
 		}
@@ -260,31 +279,47 @@ void host_release_jobs(HOST *host)
 	wget_thread_mutex_unlock(&hosts_mutex);
 }
 
-JOB *host_add_job(HOST *host, JOB *job)
+/**
+ * \param host Host to append the job at
+ * \param job Job to be appended at host's queue
+ *
+ * This function creates a shallow copy of \p job and appends
+ * it to the host's job queue. This means for the caller that
+ * he cares for free'ing \p job without free'ing any pointers within.
+ */
+void host_add_job(HOST *host, const JOB *job)
 {
 	JOB *jobp;
 
-	job->host = host;
 	debug_printf("%s: job fname %s\n", __func__, job->local_filename);
 
 	wget_thread_mutex_lock(&hosts_mutex);
+
 	jobp = wget_list_append(&host->queue, job, sizeof(JOB));
 	host->qsize++;
 	if (!host->blocked)
 		qsize++;
-	wget_thread_mutex_unlock(&hosts_mutex);
 
-	if (job->iri)
-		debug_printf("%s: %p %s\n", __func__, (void *)jobp, job->iri->uri);
-	else if (job->metalink)
-		debug_printf("%s: %p %s\n", __func__, (void *)jobp, job->metalink->name);
+	jobp->host = host;
+
+	if (jobp->iri)
+		debug_printf("%s: %p %s\n", __func__, (void *)jobp, jobp->iri->uri);
+	else if (jobp->metalink)
+		debug_printf("%s: %p %s\n", __func__, (void *)jobp, jobp->metalink->name);
 
 	debug_printf("%s: qsize %d host-qsize=%d\n", __func__, qsize, host->qsize);
 
-	return jobp;
+	wget_thread_mutex_unlock(&hosts_mutex);
 }
 
-JOB *host_add_robotstxt_job(HOST *host, wget_iri_t *iri)
+/**
+ * \param[in] host Host to initialize the robots.txt job with
+ * \param[in] iri IRI structure of robots.txt
+ *
+ * This function creates a priority job for robots.txt.
+ * This job has to be processed before any other job.
+ */
+void host_add_robotstxt_job(HOST *host, wget_iri_t *iri)
 {
 	JOB *job;
 
@@ -298,12 +333,11 @@ JOB *host_add_robotstxt_job(HOST *host, wget_iri_t *iri)
 	host->qsize++;
 	if (!host->blocked)
 		qsize++;
-	wget_thread_mutex_unlock(&hosts_mutex);
 
 	debug_printf("%s: %p %s\n", __func__, (void *)job, job->iri->uri);
 	debug_printf("%s: qsize %d host-qsize=%d\n", __func__, qsize, host->qsize);
 
-	return job;
+	wget_thread_mutex_unlock(&hosts_mutex);
 }
 
 static void _host_remove_job(HOST *host, JOB *job)
@@ -318,14 +352,13 @@ static void _host_remove_job(HOST *host, JOB *job)
 		// is downloaded and parsed. Right here we have downloaded and parsed robots.txt for hostB -
 		// and only now we know if we should follow these links or not.
 		// If any of these links that are disallowed have been explicitly requested by the user,
-		// we should download them.
+		// we still should download them. This holds true for sitemaps as well.
 		if (host->robots) {
 			JOB *next, *thejob = wget_list_getfirst(host->queue);
 
 			for (int max = host->qsize - 1; max > 0; max--, thejob = next) {
 				next = wget_list_getnext(thejob);
 
-				// info_printf("%s: checking '%s' / '%s'\n", __func__, thejob->iri->path, thejob->iri->uri);
 				if (thejob->requested_by_user)
 						continue;
 
@@ -334,8 +367,6 @@ static void _host_remove_job(HOST *host, JOB *job)
 
 				for (int it = 0; it < wget_vector_size(host->robots->paths); it++) {
 					wget_string_t *path = wget_vector_get(host->robots->paths, it);
-
-					// info_printf("%s: checked robot path '%.*s' / '%s' / '%s'\n", __func__, (int)path->len, path->path, thejob->iri->path, thejob->iri->uri);
 
 					if (path->len && !strncmp(path->p + 1, thejob->iri->path ? thejob->iri->path : "", path->len - 1)) {
 						info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), thejob->iri->uri);
@@ -346,7 +377,6 @@ static void _host_remove_job(HOST *host, JOB *job)
 			}
 		}
 
-//		wget_iri_free(&job->iri);
 		job_free(job);
 		xfree(host->robot_job);
 	} else {
@@ -360,6 +390,12 @@ static void _host_remove_job(HOST *host, JOB *job)
 		qsize--;
 }
 
+/**
+ * \param[in] host Host to remove the job from
+ * \param[in] job Job to be removed
+ *
+ * Remove \p job from host's job queue.
+ */
 void host_remove_job(HOST *host, JOB *job)
 {
 	wget_thread_mutex_lock(&hosts_mutex);
@@ -415,6 +451,9 @@ void host_reset_failure(HOST *host)
 	wget_thread_mutex_unlock(&hosts_mutex);
 }
 
+/**
+ * @return Whether the job queue is empty or not.
+ */
 int queue_empty(void)
 {
 	return !qsize;

@@ -1474,7 +1474,7 @@ static int process_response_header(wget_http_response_t *resp)
 		job->challenges = resp->challenges;
 		job->challenges_alloc = true;
 		resp->challenges = NULL;
-		job->inuse = 0; // try again, but with challenge responses
+		job->done = 0; // try again, but with challenge responses
 		return 1; // stop further processing
 	}
 
@@ -1488,7 +1488,7 @@ static int process_response_header(wget_http_response_t *resp)
 
 		job->proxy_challenges = resp->challenges;
 		resp->challenges = NULL;
-		job->inuse = 0; // try again, but with challenge responses
+		job->done = 0; // try again, but with challenge responses
 		return 1; // stop further processing
 	}
 
@@ -1558,7 +1558,7 @@ static void process_head_response(wget_http_response_t *resp)
 		if (config.spider && !config.recursive)
 			return; // if not -r then we are done
 
-		job->inuse = 0; // do this job again with GET request
+		job->done = 0; // do this job again with GET request
 	} else if (config.chunk_size && resp->content_length > config.chunk_size) {
 		// create metalink structure without hashing
 		wget_metalink_piece_t piece = { .length = config.chunk_size };
@@ -1584,11 +1584,11 @@ static void process_head_response(wget_http_response_t *resp)
 		if (!job_validate_file(job)) {
 			// wake up sleeping workers
 			wget_thread_cond_signal(&worker_cond);
-			job->inuse = 0; // do not remove this job from queue yet
+			job->done = 0; // do not remove this job from queue yet
 		} // else file already downloaded and checksum ok
 	} else if (config.chunk_size) {
 		// server did not send Content-Length or chunk size <= Content-Length
-		job->inuse = 0; // do not remove this job from queue yet
+		job->done = 0; // do not remove this job from queue yet
 	}
 }
 
@@ -1642,7 +1642,7 @@ static void process_response_part(wget_http_response_t *resp)
 					bar_print(downloader->id, "Checksum OK");
 				else
 					debug_printf("checksum ok\n");
-				job->inuse = 1; // we are done with this job, main state machine will remove it
+				job->done = 1; // we are done with this job, main state machine will remove it
 			} else {
 				if (config.progress)
 					bar_print(downloader->id, "Checksum FAILED");
@@ -1745,7 +1745,7 @@ static void process_response(wget_http_response_t *resp)
 					// wake up sleeping workers
 					wget_thread_cond_signal(&worker_cond);
 
-					job->inuse = 0; // do not remove this job from queue yet
+					job->done = 0; // do not remove this job from queue yet
 				} // else file already downloaded and checksum ok
 			}
 			return;
@@ -1930,7 +1930,7 @@ void *downloader_thread(void *p)
 				if (!job->original_url)
 					job->original_url = iri;
 
-				if (http_send_request(job->iri, job->original_url, downloader)) {
+				if (http_send_request(job->iri, job->original_url, downloader) != WGET_E_SUCCESS) {
 					host_increase_failure(host);
 					action = ACTION_ERROR;
 					break;
@@ -1972,8 +1972,11 @@ void *downloader_thread(void *p)
 			wget_thread_mutex_lock(&main_mutex); locked = 1;
 
 			// download of single-part file complete, remove from job queue
-			if (job && job->inuse)
+			if (job->done) {
 				host_remove_job(host, job);
+			} else {
+				job->inuse = 0;
+			}
 
 			wget_thread_cond_signal(&main_cond);
 
