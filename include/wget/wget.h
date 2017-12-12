@@ -15,7 +15,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libwget.  If not, see <http://www.gnu.org/licenses/>.
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * Header file for libwget library routines
@@ -132,7 +132,7 @@
 #endif
 
 // nonnull is dangerous to use with current gcc <= 4.7.1.
-// see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=17308
+// see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=17308
 // we have to use e.g. the clang analyzer if we want NONNULL.
 // but even clang is not perfect - don't use nonnull in production
 #if defined __clang__
@@ -905,7 +905,7 @@ typedef struct wget_iri_st {
 	 *
 	 * The connection part is formed by the scheme, the hostname and the port together. Example:
 	 *
-	 *     http://www.example.com:8080
+	 *     https://www.example.com:8080
 	 *
 	 */
 	const char *

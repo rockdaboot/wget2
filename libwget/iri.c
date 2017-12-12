@@ -599,10 +599,10 @@ wget_iri_t *wget_iri_clone(const wget_iri_t *iri)
  * The connection part is formed by the scheme, the hostname, and optionally the port. For example:
  *
  *     https://localhost:8080
- *     http://www.example.com
+ *     https://www.example.com
  *
- * It may be of the form `http://example.com:8080` if the port was provided when creating the IRI
- * or of the form `http://example.com` otherwise.
+ * It may be of the form `https://example.com:8080` if the port was provided when creating the IRI
+ * or of the form `https://example.com` otherwise.
  */
 const char *wget_iri_get_connection_part(wget_iri_t *iri)
 {
@@ -713,7 +713,7 @@ static size_t G_GNUC_WGET_NONNULL_ALL _normalize_path(char *path)
  *
  * If \p val is an absolute path (it begins with a `/`), it is normalized first. Then the provided IRI's
  * path is replaced by that new path. If it's a relative path, the file name of the \p base IRI's path
- * is replaced by that path. Finally, if \p val begins with a scheme (such as `http://`) that string is returned
+ * is replaced by that path. Finally, if \p val begins with a scheme (such as `https://`) that string is returned
  * untouched, and placed in the buffer if provided.
  *
  * If \p base is NULL, then \p val must itself be an absolute URI. Likewise, if \p buf is NULL,

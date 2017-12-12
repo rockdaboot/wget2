@@ -19,7 +19,7 @@ if [[ "$TRAVIS_OS_NAME" = "osx" ]]; then
 elif [[ "$TRAVIS_OS_NAME" = "linux" ]]; then
 	# Install Libmicrohttpd from source
 	sudo apt-get -y install wget
-	wget http://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-0.9.55.tar.gz
+	wget https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-0.9.55.tar.gz
 	tar zxf libmicrohttpd-0.9.55.tar.gz && cd libmicrohttpd-0.9.55/
 	./configure --prefix=/usr && make -j$(nproc) && sudo make install
 	pip install --user cpp-coveralls

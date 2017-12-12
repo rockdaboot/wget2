@@ -22,8 +22,6 @@
  *
  * Changelog
  * 15.12.2013  Tim Ruehsen  created
- *
- * Example: http://ceciliaschola.org/feed/atom/
  */
 
 #include <config.h>
