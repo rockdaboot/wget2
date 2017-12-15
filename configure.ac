@@ -163,7 +163,7 @@ if test -n "$WARN_CFLAGS"; then
     wget_WORD_REMOVE([GNULIB_WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
 
     # disable options implicitly set by other options
-    GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-sign-compare -Wno-unused-parameter"
+    GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-sign-compare -Wno-unused-parameter -Wno-alloca"
 
   elif test "$CCNAME" = "clang"; then
     # setup flags for this project
@@ -178,6 +178,8 @@ if test -n "$WARN_CFLAGS"; then
     # disable verbose options
     GNULIB_WARN_CFLAGS="$WARN_CFLAGS -Wno-sign-compare -Wno-unused-parameter -Wno-undef -Wno-format-nonliteral"
     GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-conversion -Wno-disabled-macro-expansion -Wno-c++98-compat -Wno-gnu-statement-expression"
+    GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-shorten-64-to-32 -Wno-switch-enum -Wno-unused-macros -Wno-missing-field-initializers"
+    GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-gnu-zero-variadic-macro-arguments -Wno-conditional-uninitialized -Wno-comma"
 
     # remove all flags from GNULIB_WARN_FLAGS that are already in CFLAGS
     # wget_WORD_REMOVE([GNULIB_WARN_CFLAGS], [$GNULIB_WARN_CFLAGS], [$CFLAGS])
