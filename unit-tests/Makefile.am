@@ -14,7 +14,8 @@ LDADD = ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 WGET_TESTS = \
  test$(EXEEXT) \
- test-parse-html$(EXEEXT)
+ test-parse-html$(EXEEXT) \
+ test-cond
 
 if PLUGIN_SUPPORT
  WGET_TESTS += test-dl$(EXEEXT)
