@@ -153,9 +153,12 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 		else if (cols <= 0)
 			cols = 1;
 
+		// Write one extra byte for \0. This has already been accounted for
+		// when initializing the progress storage.
 		snprintf(slotp->progress, bar->max_width + 1, "%.*s>%.*s",
 				cols - 1, bar->known_size,
 				bar->max_width - cols, bar->spaces);
+		/* printf("'=' %d\n'>' 1\n' ' %d\ntotal: %d\n%s\n\n", cols - 1, bar->max_width - cols, cols - 1 + 1 + bar->max_width - cols, slotp->progress); */
 	} else {
 		int ind = slotp->tick % ((bar->max_width * 2) - 6);
 		int pre_space;
@@ -167,7 +170,7 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 
 		snprintf(slotp->progress, bar->max_width + 1, "%.*s<=>%.*s",
 				pre_space, bar->spaces,
-				bar->max_width - pre_space - 4, bar->spaces);
+				bar->max_width - pre_space - 3, bar->spaces);
 	}
 }
 
@@ -264,7 +267,8 @@ static void _bar_update_winsize(wget_bar_t *bar, bool slots_changed) {
 		}
 		if (bar->max_width < max_width || slots_changed) {
 			xfree(bar->progress_mem_holder);
-			bar->progress_mem_holder = xcalloc(bar->nslots, max_width);
+			// Add one extra byte to hold the \0 character
+			bar->progress_mem_holder = xcalloc(bar->nslots, max_width + 1);
 			for (int i = 0; i < bar->nslots; i++) {
 				bar->slots[i].progress = bar->progress_mem_holder + (i * max_width);
 			}
