@@ -2589,6 +2589,9 @@ int init(int argc, const char **argv)
 	if (config.max_threads < 1 || (config.max_threads > 1 && config.chunk_size))
 		config.max_threads = 1;
 
+	if (config.spider && config.progress)
+		config.head_progress = 1;
+
 	// truncate output document
 	if (config.output_document && strcmp(config.output_document,"-") && !config.dont_write) {
 		int fd = open(config.output_document, O_WRONLY | O_TRUNC | O_BINARY);

@@ -200,7 +200,8 @@ struct config {
 		regex_type,
 		filter_urls,
 		askpass,
-		report_speed;
+		report_speed,
+		head_progress;
 };
 
 extern struct config
