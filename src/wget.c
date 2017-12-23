@@ -218,14 +218,11 @@ static void mkdir_path(char *fname)
 // --cut-dirs=number
 // -P / --directory-prefix=prefix
 
-const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
+static const char * G_GNUC_WGET_NONNULL_ALL _get_local_filename(const wget_iri_t *iri)
 {
 	wget_buffer_t buf;
 	char *fname;
 	int directories;
-
-	if ((config.spider || config.output_document) && !config.continue_download)
-		return NULL;
 
 	directories = !!config.recursive;
 
@@ -311,13 +308,20 @@ const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(wget_iri_t *iri)
 	// create the complete directory path
 //	mkdir_path(fname);
 
-	if (config.delete_after) {
-		wget_buffer_deinit(&buf);
-		fname = NULL;
-	} else
-		debug_printf("local filename = '%s'\n", fname);
+	debug_printf("local filename = '%s'\n", fname);
 
 	return fname;
+}
+
+const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(const wget_iri_t *iri)
+{
+	if (config.delete_after)
+		return NULL;
+
+	if ((config.spider || config.output_document) && !config.continue_download)
+		return NULL;
+
+	return _get_local_filename(iri);
 }
 
 static long long _fetch_and_add_longlong(long long *p, long long n)
@@ -1082,7 +1086,8 @@ static void print_progress_report(long long start_time)
 static void print_head_progress_report(void)
 {
 	char quota_buf[16];
-	bar_printf(nthreads, "Headers: %d (including %d redirects and %d errors) Bytes: %s  Todo: %d",
+
+	bar_printf(nthreads, "Headers: %d (%d redirects & %d errors) Bytes: %s  Todo: %d",
 		(stats.nerrors+stats.ndownloads+stats.nredirects+stats.nnotmodified), stats.nredirects,
 		stats.nerrors, wget_human_readable(quota_buf, sizeof(quota_buf), quota), queue_size());
 }
@@ -2928,22 +2933,6 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	return fd;
 }
 
-// returns a pointer to the filename
-static const char *get_filename(const char *path)
-{
-	if (path) {
-		const char *p;
-
-		if ((p = strrchr(path, '/'))) {
-			if (p[1])
-				return p + 1;
-		} else
-			return path;
-	}
-
-	return config.default_page;
-}
-
 // context used for header and body callback
 struct _body_callback_context {
 	JOB *job;
@@ -3015,14 +3004,26 @@ static int _get_header(wget_http_response_t *resp, void *context)
 #endif
 
 out:
-	if (config.progress && !config.head_progress)
-		bar_slot_begin(ctx->progress_slot, name, resp->content_length);
-	else if (config.head_progress) {
-		const char *filename = get_filename(ctx->job->iri->path);
+	if (config.progress) {
+		const char *filename = NULL;
 
-		bar_slot_begin(ctx->progress_slot, filename, resp->header->length);
-		bar_set_downloaded(ctx->progress_slot, resp->header->length);
-		quota_modify_read(resp->header->length);
+		if (!name) {
+			filename = _get_local_filename(ctx->job->iri);
+
+			if ((name = strrchr(filename, '/')))
+				name += 1;
+			else
+				name = filename;
+		}
+
+		if (!wget_strcasecmp_ascii(resp->req->method, "HEAD")) {
+			bar_slot_begin(ctx->progress_slot, name, resp->header->length);
+			bar_set_downloaded(ctx->progress_slot, resp->header->length);
+		} else {
+			bar_slot_begin(ctx->progress_slot, name, resp->content_length);
+		}
+
+		xfree(filename);
 	}
 
 	return ret;
@@ -3035,7 +3036,7 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 	if (ctx->length == 0) {
 		// first call to _get_body
 		if (config.server_response)
-			info_printf("# got header %zu bytes:\n%s\n", resp->header->length, resp->header->data);
+			info_printf(_("# got header %zu bytes:\n%s\n"), resp->header->length, resp->header->data);
 	}
 
 	ctx->length += length;
@@ -3057,7 +3058,7 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 
 		if (written == SAFE_WRITE_ERROR) {
 			if (!terminate)
-				debug_printf(_("Failed to write errno=%d\n"), errno);
+				debug_printf("Failed to write errno=%d\n", errno);
 			set_exit_status(WG_EXIT_STATUS_IO);
 			return -1;
 		}
