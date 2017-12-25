@@ -50,10 +50,12 @@ static wget_bar_t
 	*bar;
 static wget_thread_t
 	progress_thread;
+bool
+	_terminate_thread;
 
 static void *_bar_update_thread(void *p G_GNUC_WGET_UNUSED)
 {
-	for (;;) {
+	while (!_terminate_thread) {
 		wget_bar_update(bar);
 
 		wget_millisleep(_BAR_THREAD_SLEEP_DURATION);
@@ -78,6 +80,7 @@ void bar_init(void)
 		// set custom write function for wget_error_printf()
 		wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), _error_write);
 
+		_terminate_thread = 0;
 		if (wget_thread_start(&progress_thread, _bar_update_thread, NULL, 0)) {
 			wget_bar_free(&bar);
 			goto nobar;
@@ -93,7 +96,7 @@ nobar:
 
 void bar_deinit(void)
 {
-	wget_thread_cancel(progress_thread);
+	_terminate_thread = 1;
 	wget_thread_join(&progress_thread);
 	wget_bar_free(&bar);
 }
