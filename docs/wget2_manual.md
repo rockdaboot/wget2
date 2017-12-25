@@ -422,7 +422,7 @@ Go to background immediately after startup. If no output file is specified via t
   from the command line.  For example, to force the bar output without scrolling, use
   --progress=bar:force:noscroll.
 
-* --show-progress
+* `--show-progress`
 
   Force Wget2 to display the progress bar in any verbosity.
 
@@ -580,7 +580,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   If you don't understand exactly what this option does, you probably won't need it.
 
-* --restrict-file-names=modes
+* `--restrict-file-names=modes`
 
   Change which characters found in remote URLs must be escaped during generation of local filenames.  Characters
   that are restricted by this option are escaped, i.e. replaced with %HH, where HH is the hexadecimal number that
@@ -732,6 +732,17 @@ Go to background immediately after startup. If no output file is specified via t
 
   Specifies the maximum number of concurrent download threads for a resource. The default is 5 but if you want to
   allow more or fewer this is the option to use.
+
+* `-s`, `--verify-sig`
+
+  Enable PGP signature verification. When enabled Wget2 will attempt to download and verify PGP signatures against their corresponding files.
+  Any file downloaded that has a content type of `application/*` will have an additional request added for `<name>.sig`. If the content type
+  for the signature request is `application/pgp-signature`, Wget2 will attempt to verify the signature against the original file.
+
+* `--gnupg-homedir`
+
+  Specifies the gnupg home directory to use when verifying PGP signatures on downloaded files. The default for this is
+  your system's default home directory.
 
 ### <a name="Directory Options"/>Directory Options
 
@@ -1639,6 +1650,10 @@ Go to background immediately after startup. If no output file is specified via t
       7   Protocol errors.
 
       8   Server issued an error response.
+
+      9   Public key missing from keyring.
+
+      10  A Signature verification failed.
 
   With the exceptions of 0 and 1, the lower-numbered exit codes take precedence over higher-numbered ones, when
   multiple types of errors are encountered.

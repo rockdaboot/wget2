@@ -22,6 +22,10 @@ wget2_SOURCES =\
  testing.c wget_testing.h\
  wget_xattr.h
 
+if WITH_GPGME
+  wget2_SOURCES += gpgme.c wget_gpgme.h
+endif
+
 wget2_LDADD = ../libwget/libwget.la \
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB) $(INET_PTON_LIB) \
  $(LIBSOCKET) $(LIB_CLOCK_GETTIME) $(LIB_CRYPTO) $(LIB_GETLOGIN) $(LIB_NANOSLEEP) $(LIB_POLL) \

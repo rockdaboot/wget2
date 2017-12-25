@@ -72,7 +72,8 @@ struct config {
 		*random_file,
 		*secure_protocol, // auto, SSLv2, SSLv3, TLSv1
 		*accept_regex,
-		*reject_regex;
+		*reject_regex,
+		*gnupg_homedir;
 	wget_vector_t
 		*config_files,
 		*domains,
@@ -109,7 +110,8 @@ struct config {
 	long long
 		quota;
 	bool
-		auth_no_challenge;
+		auth_no_challenge,
+		verify_sig;
 	int
 		http2_request_window,
 		http1_request_window,
@@ -208,15 +210,17 @@ extern struct config
 	config;
 
 typedef enum exit_status_t {
-	WG_EXIT_STATUS_NO_ERROR   = EXIT_SUCCESS,
-	WG_EXIT_STATUS_GENERIC    = 1,
-	WG_EXIT_STATUS_PARSE_INIT = 2,
-	WG_EXIT_STATUS_IO         = 3,
-	WG_EXIT_STATUS_NETWORK    = 4,
-	WG_EXIT_STATUS_TLS        = 5,
-	WG_EXIT_STATUS_AUTH       = 6,
-	WG_EXIT_STATUS_PROTOCOL   = 7,
-	WG_EXIT_STATUS_REMOTE     = 8,
+	WG_EXIT_STATUS_NO_ERROR       = EXIT_SUCCESS,
+	WG_EXIT_STATUS_GENERIC        = 1,
+	WG_EXIT_STATUS_PARSE_INIT     = 2,
+	WG_EXIT_STATUS_IO             = 3,
+	WG_EXIT_STATUS_NETWORK        = 4,
+	WG_EXIT_STATUS_TLS            = 5,
+	WG_EXIT_STATUS_AUTH           = 6,
+	WG_EXIT_STATUS_PROTOCOL       = 7,
+	WG_EXIT_STATUS_REMOTE         = 8,
+	WG_EXIT_STATUS_KEY_MISSING    = 9,
+	WG_EXIT_STATUS_SIG_CHECK_FAIL = 10
 } exit_status_t;
 
 // Needed for fuzzers that are compiled by C++

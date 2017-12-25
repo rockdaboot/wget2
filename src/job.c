@@ -48,6 +48,8 @@ void job_free(JOB *job)
 	wget_metalink_free(&job->metalink);
 	wget_vector_free(&job->parts);
 	xfree(job->local_filename);
+	if (job->sig_filename)
+		xfree(job->sig_filename);
 }
 
 void job_create_parts(JOB *job)

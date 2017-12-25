@@ -1,2 +1,11 @@
+/remove-potcdate.sin
+/quot.sed
+/insert-header.sin
+/en@quot.header
+/en@boldquot.header
+/boldquot.sed
+/Rules-quot
+/Makevars.template
+/Makefile.in.in
 *
 !POTFILES.in

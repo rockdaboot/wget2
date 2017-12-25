@@ -127,6 +127,8 @@ typedef struct {
 		auth_username;
 	const char *
 		auth_password;
+	size_t
+		body_len; // The length of the body in bytes. 0 means use strlen(body)
 } wget_test_url_t;
 
 WGETAPI void wget_test_stop_server(void);

@@ -75,6 +75,10 @@
 #include "wget_stats.h"
 #include "wget_testing.h"
 
+#ifdef WITH_GPGME
+#  include "wget_gpgme.h"
+#endif
+
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)
 
@@ -111,7 +115,7 @@ static _statistics_t stats;
 
 static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag,
 		const char *uri, const char *original_url, int ignore_patterns, wget_buffer_t *partial_content,
-		size_t max_partial_content);
+		size_t max_partial_content, char **actual_file_name);
 
 static void
 	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
@@ -727,6 +731,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	HOST *host;
 	struct plugin_db_forward_url_verdict plugin_verdict;
 
+	wget_info_printf("Adding URL: %s\n", url);
+
 	if (flags & URL_FLG_REDIRECTION) { // redirect
 		if (config.max_redirect && job && job->redirection_level >= config.max_redirect) {
 			return;
@@ -909,6 +915,10 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		} else {
 			new_job->level = job->level + 1;
 			new_job->referer = job->iri;
+			if (!job->sig_req) {
+				new_job->sig_req = 1;
+				new_job->sig_filename = wget_strdup(job->sig_filename);
+			}
 		}
 	}
 
@@ -1881,6 +1891,44 @@ static void process_response(wget_http_response_t *resp)
 				}
 			}
 		}
+		else if (config.verify_sig && resp->content_type) {
+#ifdef WITH_GPGME
+			if (wget_strcasecmp_ascii(resp->content_type, "application/pgp-signature") == 0) {
+				wget_gpg_info_t info;
+				int ans = wget_verify_job(job, resp, &info);
+				switch (ans) {
+				case WGET_E_SUCCESS:
+				        info_printf(_("Found %d valid signature(s) in %s\n"), info.valid_sigs, job->sig_filename);
+					break;
+				case WGET_E_GPG_VER_FAIL:
+					if (info.missing_sigs) {
+						info_printf(_("Invalid signature(s): %s\n"), job->sig_filename);
+						set_exit_status(WG_EXIT_STATUS_KEY_MISSING);
+					} else {
+						info_printf(_("Invalid signature(s): %s\n"), job->sig_filename);
+						set_exit_status(WG_EXIT_STATUS_SIG_CHECK_FAIL);
+					}
+					break;
+				default:
+					info_printf(_("GPGME error %d\n"), ans);
+					set_exit_status(WG_EXIT_STATUS_GENERIC);
+					break;
+				}
+
+			} else if (wget_strncasecmp_ascii(resp->content_type, "application/", 12) == 0) {
+
+				char *new_url = wget_aprintf("%s.sig", job->original_url->uri);
+
+				if (!job->sig_filename) {
+					error_printf(_("File name for signature checking not assigned to job!\n"));
+				} else {
+					add_url(job, "utf-8", new_url, 0);
+				}
+
+				wget_free(new_url);
+			}
+#endif
+		}
 	}
 	else if ((resp->code == 304 && config.timestamping) || resp->code == 416) { // local document is up-to-date
 		if (process_decision && recurse_decision) {
@@ -2714,7 +2762,7 @@ static int _open_unique(const char *fname, int flags, mode_t mode, int multiple,
 
 static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag,
 		const char *uri, const char *original_url, int ignore_patterns, wget_buffer_t *partial_content,
-		size_t max_partial_content)
+		size_t max_partial_content, char **actual_file_name)
 {
 	char *alloced_fname = NULL;
 	int fd, multiple = 0, oflag = flag;
@@ -2889,6 +2937,8 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	fd = _open_unique(fname, O_WRONLY | flag | O_CREAT | O_NONBLOCK | O_BINARY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
 			multiple, unique, fname_length + 1);
 	// debug_printf("1 fd=%d flag=%02x (%02x %02x %02x) errno=%d %s\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND,errno,fname);
+	// Store the "actual" file name (with any extensions that were added present)
+	wget_asprintf(actual_file_name, "%s", unique[0] ? unique : fname);
 
 	if (fd >= 0) {
 		ssize_t rc;
@@ -2901,6 +2951,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 				set_exit_status(WG_EXIT_STATUS_IO);
 			}
 		}
+		// TODO SAVE UNIQUE-NESS
 	} else {
 		if (fd == -1) {
 			if (errno == EEXIST)
@@ -2986,13 +3037,18 @@ static int _get_header(wget_http_response_t *resp, void *context)
 		name = dest = config.output_document ? config.output_document : ctx->job->local_filename;
 
 	if (dest && (resp->code == 200 || resp->code == 206 || config.content_on_error)) {
+
+		// Job re-use?
+		xfree(ctx->job->sig_filename);
+
 		ctx->outfd = _prepare_file(resp, dest,
 			resp->code == 206 ? O_APPEND : O_TRUNC,
 			ctx->job->iri->uri,
 			ctx->job->original_url->uri,
 			ctx->job->ignore_patterns,
 			resp->code == 206 ? ctx->body : NULL,
-			ctx->max_memory);
+			ctx->max_memory,
+			&ctx->job->sig_filename);
 		if (ctx->outfd == -1)
 			ret = -1;
 	}

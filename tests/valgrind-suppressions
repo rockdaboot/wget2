@@ -32,3 +32,25 @@
    fun:wget_ssl_open
    ...
 }
+{
+   Issue from libgpgme
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+   fun:pthread_create@@GLIBC_2.2.5
+   fun:wget_thread_start
+   fun:main
+}
+{
+   Issue from libgpgme (for Fedora docker image)
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:_dl_allocate_tls
+   fun:pthread_create@@GLIBC_2.2.5
+   fun:wget_thread_start
+   fun:main
+}

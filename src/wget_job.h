@@ -72,6 +72,8 @@ struct JOB {
 		*host;
 	const char
 		*local_filename;
+	char
+		*sig_filename; // Signature infomation. Meaning depends on sig_req
 	PART
 		*part; // current chunk to download
 	DOWNLOADER
@@ -93,7 +95,8 @@ struct JOB {
 		robotstxt : 1, // URL is a robots.txt to be scanned
 		head_first : 1, // first check mime type by using a HEAD request
 		requested_by_user : 1, // download even if disallowed by robots.txt
-		ignore_patterns : 1; // Ignore accept/reject patterns
+		ignore_patterns : 1, // Ignore accept/reject patterns
+		sig_req : 1; // When true indicates this job is for a signature else specifies location of saved file (including name collision stuff, i.e. numbers)
 };
 
 struct DOWNLOADER {

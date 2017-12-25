@@ -327,7 +327,7 @@ int wget_ready_2_write(int fd, int timeout)
  * The length of the allocated block of memory, which is guaranteed to be the same as the length of the data read,
  * will be placed in the variable pointed at by \p size.
  *
- * The read data is guaranteed to be appended a NULL termination character (`\0`).
+ * The read data is guaranteed to be appended a NUL termination character (`\0`).
  */
 char *wget_read_file(const char *fname, size_t *size)
 {

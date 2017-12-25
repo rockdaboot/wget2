@@ -18,3 +18,4 @@ exclude_file_name_regexp--sc_two_space_separator_in_usage = docs/wget2_manual.md
 exclude_file_name_regexp--sc_require_config_h = examples/.*.c|fuzz/main.c$$
 exclude_file_name_regexp--sc_require_config_h_first = examples/.*.c|fuzz/main.c$$
 exclude_file_name_regexp--sc_copyright_check = .*gnulib/.*.c$$
+exclude_file_name_regexp--sc_prohibit_empty_lines_at_EOF = tests/gpg/sshcontrol|tests/gpg/(.*\.sig|.*\.kbx|.*\.gpg)|tests/gpg/private-keys-v1.d/.*\.key$$

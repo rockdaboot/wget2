@@ -86,6 +86,10 @@ int get_exit_status(void)
 	return exit_status;
 }
 
+#ifdef WITH_GPGME
+#  include "wget_gpgme.h"
+#endif
+
 typedef enum {
 	SECTION_STARTUP = 0,
 	SECTION_DOWNLOAD = 1,
@@ -887,6 +891,7 @@ struct config config = {
 	.tries = 20,
 	.hsts = 1,
 	.hpkp = 1,
+	.verify_sig = false,
 #if defined WITH_LIBNGHTTP2
 	.http2 = 1,
 	.http2_request_window = 30,
@@ -1212,6 +1217,14 @@ static const struct optionw options[] = {
 		  "the pysical layer. (default: off) (NEW!)\n"
 		}
 	},
+#ifdef WITH_GPGME
+	{ "gnupg-homedir", &config.gnupg_homedir, parse_filename, -1, 0,
+		SECTION_DOWNLOAD,
+		{ "Specify a directory to use as the GnuPG home directory.\n",
+		  "(default: gnupg default homedir)\n"
+		}
+	},
+#endif
 	{ "gnutls-options", &config.gnutls_options, parse_string, 1, 0,
 		SECTION_SSL,
 		{ "Custom GnuTLS priority string.\n",
@@ -1772,6 +1785,13 @@ static const struct optionw options[] = {
 		{ "Print more messages. (default: on)\n"\
 		}
 	},
+#ifdef WITH_GPGME
+	{ "verify-sig", &config.verify_sig, parse_bool, -1, 's',
+		SECTION_DOWNLOAD,
+		{ "Download .sig file and verify. (default: off)\n"
+		}
+	},
+#endif
 	{ "version", NULL, print_version, 0, 'V',
 		SECTION_STARTUP,
 		{ "Display the version of Wget and exit.\n"
@@ -2711,6 +2731,12 @@ int init(int argc, const char **argv)
 	if (config.mirror)
 		config.metalink = 0;
 
+	if (config.verify_sig) {
+#ifdef WITH_GPGME
+		init_gpgme();
+#endif
+	}
+
 	config.stats_site = stats_is_enabled(WGET_STATS_TYPE_SITE);
 
 	if ((rc = wget_net_init())) {
@@ -2851,6 +2877,7 @@ void deinit(void)
 	xfree(config.user_agent);
 	xfree(config.use_askpass_bin);
 	xfree(config.username);
+	xfree(config.gnupg_homedir);
 
 	wget_iri_free(&config.base);
 

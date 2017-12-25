@@ -12,6 +12,18 @@ AM_CPPFLAGS = -Wno-missing-field-initializers -I$(top_srcdir)/include/wget -I$(s
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
 LDADD = ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
+BASE_OBJS = \
+  ../src/log.o \
+  ../src/options.o \
+  ../src/stats.o \
+  ../src/dl.o \
+  ../src/plugin.o \
+  ../src/testing.o
+
+if WITH_GPGME
+  BASE_OBJS += ../src/gpgme.o
+endif
+
 WGET_TESTS = \
  test$(EXEEXT) \
  test-parse-html$(EXEEXT) \
@@ -25,10 +37,8 @@ endif
 check_PROGRAMS = buffer_printf_perf stringmap_perf $(WGET_TESTS)
 
 test_SOURCES = test.c
-test_LDADD = ../src/log.o ../src/options.o ../src/stats.o ../src/dl.o ../src/plugin.o ../src/testing.o \
- ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
-test_parse_html_LDADD = ../src/log.o ../src/options.o ../src/stats.o ../src/dl.o ../src/plugin.o ../src/testing.o \
- ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
+test_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
+test_parse_html_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 test_dl_LDADD = ../src/dl.o ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 EXTRA_DIST = files

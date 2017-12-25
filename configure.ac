@@ -468,6 +468,21 @@ AS_IF([test "x$with_bzip2" != xno], [
 ])
 AM_CONDITIONAL([WITH_BZIP2], [test "x$with_bzip2" = xyes])
 
+AC_ARG_WITH(gpgme, AS_HELP_STRING([--without-gpgme], [support signature verification with gpgme]), with_gpgme=$withval, with_gpgme=yes)
+AS_IF([test "x$with_gpgme" != xno], [
+  m4_ifdef([AM_PATH_GPGME],[
+	AM_PATH_GPGME([], [
+	  with_gpgme=yes
+	  LIBS="$GPGME_LIBS $LIBS"
+	  CFLAGS="$GPGME_CFLAGS $CFLAGS"
+	  AC_DEFINE([WITH_GPGME], [1], [Use gpgme])
+	  ],[
+	  ])
+	],
+	[with_gpgme=no; AC_MSG_WARN(*** GPGME not found. Signature verification is not possible)])
+])
+AM_CONDITIONAL([WITH_GPGME], [test "x$with_gpgme" = xyes])
+
 AC_ARG_WITH(zlib, AS_HELP_STRING([--without-zlib], [disable gzip compression support]), with_zlib=$withval, with_zlib=yes)
 AS_IF([test "x$with_zlib" != xno], [
   PKG_CHECK_MODULES([ZLIB], zlib, [
@@ -705,4 +720,5 @@ AC_MSG_NOTICE([Summary of build options:
   POSIX xattr:        $ENABLE_XATTR
   Microhttpd support: $with_libmicrohttpd (CFLAGS: ${TEST_CFLAGS}. LIBS: ${TEST_LIBS})
   Fuzzing build:      $enable_fuzzing, $LIB_FUZZING_ENGINE
+  GPGME:              $with_gpgme
 ])

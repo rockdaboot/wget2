@@ -420,8 +420,8 @@ static int _answer_to_connection(
 					ret = MHD_queue_response(connection, MHD_HTTP_PARTIAL_CONTENT, response);
 				}
 			} else {
-				response = MHD_create_response_from_buffer(strlen(urls[it1].body),
-					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
+				size_t len = urls[it1].body_len ? urls[it1].body_len : strlen(urls[it1].body);
+				response = MHD_create_response_from_buffer(len, (void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
 				ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 			}
 

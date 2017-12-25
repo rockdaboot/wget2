@@ -1,5 +1,6 @@
 lib/error.c
 lib/gai_strerror.c
+lib/openat-die.c
 lib/regcomp.c
 lib/spawn-pipe.c
 lib/w32spawn.h
@@ -31,3 +32,4 @@ src/host.c
 src/job.c
 src/wget.c
 src/options.c
+src/gpgme.c

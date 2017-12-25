@@ -249,6 +249,10 @@ WGET_BEGIN_DECLS
 #define WGET_E_HANDSHAKE -5 /* general TLS handshake failure */
 #define WGET_E_CERTIFICATE -6 /* general TLS certificate failure */
 #define WGET_E_TLS_DISABLED -7 /* TLS was not enabled at compile time */
+#define WGET_E_GPG_DISABLED -8 /* GPGME was not enabled at compile time */
+#define WGET_E_GPG_VER_FAIL -9 /* 1 or more non-valid signatures */
+#define WGET_E_GPG_VER_ERR -11 /* Verification failed, GPGME error */
+
 
 typedef void (*wget_global_get_func_t)(const char *, size_t);
 
