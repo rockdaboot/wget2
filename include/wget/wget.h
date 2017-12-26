@@ -1682,6 +1682,21 @@ WGETAPI void
 		int hints) G_GNUC_WGET_NONNULL((1));
 
 /*
+ * DNS caching routines
+ */
+
+WGETAPI void
+	wget_dns_cache_init(void);
+WGETAPI void
+	wget_dns_cache_exit(void);
+WGETAPI void
+	wget_dns_cache_free(void);
+WGETAPI struct addrinfo *
+	wget_dns_cache_get(const char *host, uint16_t port);
+WGETAPI struct addrinfo *
+	wget_dns_cache_add(const char *host, uint16_t port, struct addrinfo *addrinfo);
+
+/*
  * TCP network routines
  */
 
@@ -1694,11 +1709,6 @@ WGETAPI void
 
 typedef struct wget_tcp_st wget_tcp_t;
 
-WGETAPI void
-	wget_dns_init(void);
-WGETAPI void
-	wget_dns_exit(void);
-
 WGETAPI int
 	wget_net_init(void);
 WGETAPI int
@@ -1707,8 +1717,6 @@ WGETAPI wget_tcp_t *
 	wget_tcp_init(void);
 WGETAPI void
 	wget_tcp_deinit(wget_tcp_t **tcp);
-WGETAPI void
-	wget_dns_cache_free(void);
 WGETAPI void
 	wget_tcp_close(wget_tcp_t *tcp);
 WGETAPI void

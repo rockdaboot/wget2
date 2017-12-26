@@ -3,11 +3,13 @@ EXTRA_DIST = DoxygenLayout.xml
 man3_MANS =\
  $(builddir)/man/man3/libwget-base64.3\
  $(builddir)/man/man3/libwget-console.3\
+ $(builddir)/man/man3/libwget-dns-caching.3\
  $(builddir)/man/man3/libwget-hash.3\
  $(builddir)/man/man3/libwget-io.3\
  $(builddir)/man/man3/libwget-ip.3\
  $(builddir)/man/man3/libwget-list.3\
  $(builddir)/man/man3/libwget-mem.3\
+ $(builddir)/man/man3/libwget-net.3\
  $(builddir)/man/man3/libwget-parse_atom.3\
  $(builddir)/man/man3/libwget-parse_sitemap.3\
  $(builddir)/man/man3/libwget-printf.3\

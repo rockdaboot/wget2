@@ -89,7 +89,7 @@ void wget_global_init(int first_key, ...)
 	}
 
 	wget_console_init();
-	wget_dns_init();
+	wget_dns_cache_init();
 	wget_random_init();
 	wget_http_init();
 
@@ -201,7 +201,7 @@ void wget_global_deinit(void)
 		wget_tcp_set_dns_caching(NULL, 0);
 		wget_dns_cache_free();
 
-		wget_dns_exit();
+		wget_dns_cache_exit();
 		rc = wget_net_deinit();
 		wget_ssl_deinit();
 		wget_http_set_http_proxy(NULL, NULL);
