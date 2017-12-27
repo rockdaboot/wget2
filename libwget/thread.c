@@ -50,13 +50,9 @@ struct _wget_thread_cond_st {
 
 int wget_thread_mutex_init(wget_thread_mutex_t *mutex)
 {
-	int rc;
-	struct _wget_thread_mutex_st _mutex;
+	*mutex = wget_malloc(sizeof(struct _wget_thread_mutex_st));
 
-	if ((rc = glthread_lock_init(&_mutex.mutex)) == 0)
-		*mutex = wget_memdup(&_mutex, sizeof(_mutex));
-
-	return rc;
+	return glthread_lock_init(&((*mutex)->mutex));
 }
 
 void wget_thread_mutex_lock(wget_thread_mutex_t mutex)
@@ -81,13 +77,9 @@ int wget_thread_mutex_destroy(wget_thread_mutex_t *mutex)
 
 int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags G_GNUC_WGET_UNUSED)
 {
-	int rc;
-	struct _wget_thread_st _thr;
+	*thread = wget_malloc(sizeof(struct _wget_thread_st));
 
-	if ((rc = glthread_create(&_thr.tid, start_routine, arg)) == 0)
-		*thread = wget_memdup(&_thr, sizeof(_thr));
-
-	return rc;
+	return glthread_create(&((*thread)->tid), start_routine, arg);
 }
 
 int wget_thread_cancel(wget_thread_t thread G_GNUC_WGET_UNUSED)
@@ -132,13 +124,9 @@ wget_thread_id_t wget_thread_self(void)
 
 int wget_thread_cond_init(wget_thread_cond_t *cond)
 {
-	int rc;
-	struct _wget_thread_cond_st _cond;
+	*cond = wget_malloc(sizeof(struct _wget_thread_cond_st));
 
-	if ((rc = glthread_cond_init(&_cond.cond)) == 0)
-		*cond = wget_memdup(&_cond, sizeof(_cond));
-
-	return rc;
+	return glthread_cond_init(&((*cond)->cond));
 }
 
 int wget_thread_cond_signal(wget_thread_cond_t cond)
