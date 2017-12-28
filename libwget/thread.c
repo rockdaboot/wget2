@@ -29,9 +29,13 @@
 
 #include <errno.h>
 #include "timespec.h" // gnulib gettime()
-#include <glthread/thread.h>
-#include <glthread/lock.h>
-#include <glthread/cond.h>
+
+#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+	#pragma GCC diagnostic ignored "-Wundef"
+	#include <glthread/thread.h>
+	#include <glthread/lock.h>
+	#include <glthread/cond.h>
+#endif
 
 #include <wget.h>
 #include "private.h"
