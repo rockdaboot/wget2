@@ -1199,13 +1199,12 @@ int main(int argc, const char **argv)
 		config.max_threads = 1;
 	}
 
-	if (config.progress && !isatty(STDOUT_FILENO))
+	if (config.progress && !isatty(STDOUT_FILENO) && !config.force_progress) {
 		config.progress = 0;
+		config.head_progress = 0;
+	}
 
-	if (!config.progress && config.force_progress)
-		config.progress = 1;
-
-	if (config.progress || config.head_progress) {
+	if (config.progress) {
 		wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), NULL);
 		bar_init();
 		if (config.progress)
