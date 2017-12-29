@@ -13,6 +13,7 @@ man3_MANS =\
  $(builddir)/man/man3/libwget-printf.3\
  $(builddir)/man/man3/libwget-random.3\
  $(builddir)/man/man3/libwget-robots.3\
+ $(builddir)/man/man3/libwget-thread.3\
  $(builddir)/man/man3/libwget-utils.3\
  $(builddir)/man/man3/libwget-xalloc.3\
  $(builddir)/man/man3/libwget-xml.3
