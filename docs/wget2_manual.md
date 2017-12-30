@@ -154,7 +154,8 @@ Go to background immediately after startup. If no output file is specified via t
 
 * `--report-speed=type`
 
-  Output bandwidth as `type`. The only accepted value is bits.
+  Output bandwidth as `type`. The only accepted values are `bytes` (which is set by default) and `bits`. This option only works if
+  `--progress=bar` is also set.
 
 * `-i`, `--input-file=file`
 
@@ -431,11 +432,6 @@ Go to background immediately after startup. If no output file is specified via t
   be invoked with this parameter to get a much cleaner output on the screen.
 
   This option will also force the progress bar to be printed to stderr when used alongside the --logfile option.
-
-* `--report-speed=type`
-
-  Select the type of report speed indicator you wish to use.  Legal indicators are "bytes" and "bits".
-  The speed report will only work if --progress is set.  This option is always enabled and type set to bytes by default.
 
 * `-N`, `--timestamping`
 
