@@ -92,6 +92,10 @@ int main(int argc, char **argv)
 		0);
 
 	const char *target = strrchr(argv[0], SLASH);
+	if (target)
+		target = strrchr(target, '/');
+	else
+		target = strrchr(argv[0], '/');
 	target = target ? target + 1 : argv[0];
 	size_t target_len;
 
