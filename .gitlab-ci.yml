@@ -169,26 +169,26 @@ pages:
   only:
     - master
 
-#MinGW64:
-#  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
-#  script:
-#  - ./bootstrap
-#  - export GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|grep posix))
-#  - export WINEPATH="$WINEPATH;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs;$GCCLIB"
-#  - echo "WINEPATH=$WINEPATH"
-#  - ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
-#  - make -j$(nproc)
-#  - make check -j1 LOG_COMPILER=wine
-#  tags:
-#  - shared
-#  - docker
-#  except:
-#  - tags
-#  artifacts:
-#    expire_in: 2 weeks
-#    when: on_failure
-#    paths:
-#      - ./*.log
-#      - fuzz/*.log
-#      - unit-tests/*.log
-#      - tests/*.log
+MinGW64:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
+  script:
+  - ./bootstrap
+  - export GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|grep posix))
+  - export WINEPATH="$WINEPATH;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs;$GCCLIB"
+  - echo "WINEPATH=$WINEPATH"
+  - ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
+  - make -j$(nproc)
+  - make check -j1 LOG_COMPILER=wine
+  tags:
+  - shared
+  - docker
+  except:
+  - tags
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
