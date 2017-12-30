@@ -388,9 +388,10 @@ void wget_bar_set_slots(wget_bar_t *bar, int nslots)
 	int more_slots = nslots - bar->nslots;
 
 	if (more_slots > 0) {
-		xfree(bar->slots);
-		bar->slots = xcalloc(nslots, sizeof(_bar_slot_t));
+		bar->slots = wget_realloc(bar->slots, nslots * sizeof(_bar_slot_t));
+		memset(bar->slots + bar->nslots, 0, more_slots * sizeof(_bar_slot_t));
 		bar->nslots = nslots;
+
 		speed_r = wget_realloc(speed_r, nslots * sizeof(struct _speed_report));
 		memset(&speed_r[nslots - more_slots], 0, more_slots * sizeof(struct _speed_report));
 		for (int i = 0; i < more_slots; i++)
