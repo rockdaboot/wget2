@@ -694,6 +694,8 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 
 	if (plugin_verdict.accept) {
 		new_job->ignore_patterns = 1;
+	} else if (config.mime_types) {
+		new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
 	} else if (config.recursive) {
 		if ((config.accept_patterns && !in_pattern_list(config.accept_patterns, new_job->iri->uri))
 				|| (config.accept_regex && !regex_match(new_job->iri->uri, config.accept_regex)))
@@ -924,6 +926,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	if (plugin_verdict.accept) {
 		new_job->ignore_patterns = 1;
+	} else if (config.mime_types) {
+		new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
 	} else if (config.recursive) {
 		if ((config.accept_patterns && !in_pattern_list(config.accept_patterns, new_job->iri->uri))
 				|| (config.accept_regex && !regex_match(new_job->iri->uri, config.accept_regex)))
@@ -1575,11 +1579,14 @@ static int process_response_header(wget_http_response_t *resp)
 		wget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
 
 		add_url(job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION);
+
 		wget_buffer_deinit(&uri_buf);
 	}
 
 	return 0;
 }
+
+static bool check_mime_list(wget_vector_t *list, const char *mime);
 
 static void process_head_response(wget_http_response_t *resp)
 {
@@ -1598,8 +1605,11 @@ static void process_head_response(wget_http_response_t *resp)
 			&& wget_strcasecmp_ascii(resp->content_type, "application/rss+xml")
 			&& (!job->sitemap || !wget_strcasecmp_ascii(resp->content_type, "application/xml"))
 			&& (!job->sitemap || !wget_strcasecmp_ascii(resp->content_type, "application/x-gzip"))
-			&& (!job->sitemap || !wget_strcasecmp_ascii(resp->content_type, "text/plain")))
+			&& (!job->sitemap || !wget_strcasecmp_ascii(resp->content_type, "text/plain"))
+			&& (!config.mime_types || !check_mime_list(config.mime_types, resp->content_type)))
+		{
 			return;
+		}
 
 		if (resp->etag) {
 			wget_thread_mutex_lock(etag_mutex);
@@ -2760,6 +2770,29 @@ static int _open_unique(const char *fname, int flags, mode_t mode, int multiple,
 	}
 }
 
+// return 0 if mime won't be downloaded and 1 if it will
+static bool check_mime_list(wget_vector_t *list, const char *mime)
+{
+	char result = 0;
+
+	for (int i = 0; i < wget_vector_size(list); i++) {
+		char *entry = wget_vector_get(list, i);
+		bool exclude = (*entry == '!');
+
+		debug_printf("mime check %s - %s", entry, mime);
+
+		entry += exclude;
+
+		if (strpbrk(entry, "*?[]") && !fnmatch(entry, mime, FNM_CASEFOLD))
+			result = !exclude;
+		else if (!wget_strcasecmp(entry, mime))
+			result = !exclude;
+	}
+
+	debug_printf("mime check %d", result);
+	return result;
+}
+
 static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag,
 		const char *uri, const char *original_url, int ignore_patterns, wget_buffer_t *partial_content,
 		size_t max_partial_content, char **actual_file_name)
@@ -2776,6 +2809,9 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		debug_printf("not saved '%s' (spider mode enabled)\n", fname);
 		return -1;
 	}
+
+	if (config.mime_types && !check_mime_list(config.mime_types, resp->content_type))
+		return -2;
 
 	// do not save into directories
 	fname_length = strlen(fname);

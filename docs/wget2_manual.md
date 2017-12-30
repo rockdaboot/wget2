@@ -1608,6 +1608,19 @@ Go to background immediately after startup. If no output file is specified via t
   Do not ever ascend to the parent directory when retrieving recursively.  This is a useful option, since it
   guarantees that only the files below a certain hierarchy will be downloaded.
 
+* `--filter-mime-type=list`
+
+  Specify a comma-separated list of MIME types that will be downloaded.  Elements of list may contain wildcards.
+  If a MIME type starts with the character '!' it won't be downloaded, this is useful when trying to download
+  something with exceptions. For example, download everything except images:
+
+      wget2 https://<site>/<document> --filter-mime-type=*,\!image/*
+
+  It is also useful to download files that are compatible with an application of your system. For instance,
+  download every file that is compatible with LibreOffice Writer from a website using the recursive mode:
+
+      wget2 -r https://<site>/<document> --filter-mime-type=$(sed -r '/^MimeType=/!d;s/^MimeType=//;s/;/,/g' /usr/share/applications/libreoffice-writer.desktop)
+
 ## <a name="Environment"/>Environment
 
   Wget2 supports proxies for both HTTP and FTP retrievals.  The standard way to specify proxy location, which Wget

@@ -83,7 +83,8 @@ struct config {
 		*follow_tags,
 		*ignore_tags,
 		*default_challenges,
-		*headers;
+		*headers,
+		*mime_types;
 	wget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
 	wget_hpkp_db_t

@@ -1154,6 +1154,11 @@ static const struct optionw options[] = {
 		{ "Wget compatibility option, not needed for Wget\n"
 		}
 	},
+	{ "filter-mime-type", &config.mime_types, parse_stringlist, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Specify a list of mime types to be saved or ignored\n"
+		}
+	},
 	{ "filter-urls", &config.filter_urls, parse_bool, 0, 0,
 		SECTION_DOWNLOAD,
 		{ "Apply the accept and reject filters on the URL before starting a download.\n",
@@ -2878,6 +2883,7 @@ void deinit(void)
 	xfree(config.use_askpass_bin);
 	xfree(config.username);
 	xfree(config.gnupg_homedir);
+	wget_vector_free(&config.mime_types);
 
 	wget_iri_free(&config.base);
 
