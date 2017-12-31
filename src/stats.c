@@ -165,8 +165,8 @@ static void _free_host_docs_entry(HOST_DOCS *host_docsp)
 static void _free_tree_docs_entry(TREE_DOCS *tree_docsp)
 {
 	if (tree_docsp) {
-		wget_vector_deinit(tree_docsp->children);
-		wget_xfree(tree_docsp->children);
+		wget_vector_clear_nofree(tree_docsp->children);
+		wget_vector_free(&tree_docsp->children);
 		wget_xfree(tree_docsp);
 	}
 }
