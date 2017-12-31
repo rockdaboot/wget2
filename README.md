@@ -104,6 +104,10 @@ The following packages are needed to build the software
 
 * autotools (autoconf, autogen, automake, autopoint, libtool)
 * python (recommended for faster bootstrap)
+* gperf
+* rsync
+* tar
+* makeinfo (part of texinfo)
 * pkg-config >= 0.28 (recommended)
 * doxygen (for creating the documentation)
 * gettext >= 0.18.2
@@ -119,6 +123,7 @@ The following packages are needed to build the software
 * libnghttp2 >= 1.3.0 (optional, if you want HTTP/2 support)
 * libmicrohttpd >= 0.9.51 (optional, if you want to run the test suite)
 * lzip (optional, if you want to build distribution tarballs)
+* lcov (optional, for coverage reports)
 
 The versions are recommended, but older versions may also work.
 
