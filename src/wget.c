@@ -1901,16 +1901,16 @@ static void process_response(wget_http_response_t *resp)
 				        info_printf(_("Found %d valid signature(s) in %s\n"), info.valid_sigs, job->sig_filename);
 					break;
 				case WGET_E_GPG_VER_FAIL:
+					// TODO: Add GPG information to stats and simplify this to
+					// a single WGET_EXIT_STATUS_GPG_ERROR
 					if (info.missing_sigs) {
-						info_printf(_("Invalid signature(s): %s\n"), job->sig_filename);
 						set_exit_status(WG_EXIT_STATUS_KEY_MISSING);
 					} else {
-						info_printf(_("Invalid signature(s): %s\n"), job->sig_filename);
 						set_exit_status(WG_EXIT_STATUS_SIG_CHECK_FAIL);
 					}
 					break;
 				default:
-					info_printf(_("GPGME error %d\n"), ans);
+					error_printf(_("GPGME error %d\n"), ans);
 					set_exit_status(WG_EXIT_STATUS_GENERIC);
 					break;
 				}

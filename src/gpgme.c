@@ -87,41 +87,44 @@ static gpgme_protocol_t _proto_for_content_type(const char *type)
 	return GPGME_PROTOCOL_UNKNOWN;
 }
 
-static int _validate_sigs(gpgme_signature_t sig, wget_gpg_info_t *info)
+static int _validate_sigs(gpgme_signature_t sig, wget_gpg_info_t *info, const char *sig_filename)
 {
 	int ret = WGET_E_SUCCESS;
 
 	for (gpgme_signature_t cur = sig; cur; cur = cur->next) {
 		if (sig->summary & (GPGME_SIGSUM_VALID | GPGME_SIGSUM_GREEN)) {
 			_add_valid_sig(info); // Good!
-		} else if (sig->summary & GPGME_SIGSUM_RED) {
-			error_printf(_("Bad signature\n"));
-			_add_bad_sig(info);
-
-			if (ret == WGET_E_SUCCESS)
-				ret = WGET_E_GPG_VER_FAIL;
-		} else if (sig->summary & GPGME_SIGSUM_KEY_EXPIRED) {
-			error_printf(_("Key expired: %s\n"), cur->fpr);
-			_add_invalid_sig(info);
-
-			if (ret == WGET_E_SUCCESS)
-				ret = WGET_E_GPG_VER_FAIL;
-		} else if (sig->summary & GPGME_SIGSUM_SIG_EXPIRED) {
-			error_printf(_("Signature expired\n"));
-			_add_invalid_sig(info);
-
-			if (ret == WGET_E_SUCCESS)
-				ret = WGET_E_GPG_VER_FAIL;
-		} else if (sig->summary & GPGME_SIGSUM_KEY_MISSING) {
-			error_printf(_("Key missing: %s\n"), cur->fpr);
-			_add_missing_sig(info);
-
-			if (ret == WGET_E_SUCCESS)
-				ret = WGET_E_GPG_VER_FAIL;
 		} else if (sig->summary & GPGME_SIGSUM_SYS_ERROR) {
+			// There was an internal GPGME error
 			error_printf(_("GPGME Failure\n"));
 			// Short circuit out
 			return WGET_E_GPG_VER_ERR;
+		} else {
+			char *err_msg = NULL;
+			if (sig->summary & GPGME_SIGSUM_RED) {
+				wget_asprintf(&err_msg, _("Invalid Signature"));
+				_add_bad_sig(info);
+			} else if (sig->summary & GPGME_SIGSUM_KEY_EXPIRED) {
+				wget_asprintf(&err_msg, _("Key %s expired"), cur->fpr);
+				_add_invalid_sig(info);
+			} else if (sig->summary & GPGME_SIGSUM_SIG_EXPIRED) {
+				wget_asprintf(&err_msg, _("Signature expired"));
+				_add_invalid_sig(info);
+			} else if (sig->summary & GPGME_SIGSUM_KEY_MISSING) {
+				wget_asprintf(&err_msg, _("Key %s missing"), cur->fpr);
+				_add_missing_sig(info);
+			}
+
+			if (sig_filename) {
+				error_printf("%s: %s\n", sig_filename, err_msg);
+			} else {
+				error_printf("%s\n", err_msg);
+			}
+
+			if (ret == WGET_E_SUCCESS)
+				ret = WGET_E_GPG_VER_FAIL;
+
+			xfree(err_msg);
 		}
 	}
 
@@ -183,7 +186,8 @@ static char *_determine_base_file(const char *real_filename, const char *base_fi
 	return ans;
 }
 
-static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wget_gpg_info_t *info)
+static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wget_gpg_info_t *info,
+		const char *sig_filename)
 {
 	gpgme_ctx_t ctx;
 	gpgme_error_t e;
@@ -235,7 +239,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 		goto done;
 	}
 
-	res = _validate_sigs(verify_result->signatures, info);
+	res = _validate_sigs(verify_result->signatures, info, sig_filename);
 
  done:
 	gpgme_release(ctx);
@@ -254,7 +258,8 @@ static int check_data_init(gpgme_error_t err)
 }
 
 static int _verify_detached_str(const char *sig, const size_t sig_len,
-	const char *dat, const size_t dat_len, wget_gpg_info_t *info)
+	const char *dat, const size_t dat_len, wget_gpg_info_t *info,
+	const char *sig_filename)
 {
 	gpgme_data_t sig_d, data_d;
 
@@ -269,7 +274,7 @@ static int _verify_detached_str(const char *sig, const size_t sig_len,
 		return 0;
 	}
 
-	int ret = _verify_detached_sig(sig_d, data_d, info);
+	int ret = _verify_detached_sig(sig_d, data_d, info, sig_filename);
 
 	gpgme_data_release(sig_d);
 	gpgme_data_release(data_d);
@@ -291,7 +296,7 @@ int wget_verify_pgp_sig_buff(wget_buffer_t *sig, wget_buffer_t *data, wget_gpg_i
 int wget_verify_pgp_sig_str(const char *sig, const size_t sig_len, const char *data, const size_t data_len, wget_gpg_info_t *info)
 {
 #ifdef WITH_GPGME
-	return _verify_detached_str(sig, sig_len, data, data_len, info);
+	return _verify_detached_str(sig, sig_len, data, data_len, info, NULL);
 #else
 	return WGET_E_GPG_DISABLED;
 #endif
@@ -327,7 +332,7 @@ int wget_verify_job(JOB *job, wget_http_response_t *resp, wget_gpg_info_t *info)
 	xfree(corrected_base_file);
 
 	int res =
-		_verify_detached_str(resp->body->data, resp->body->length, file_contents, num_bytes, info);
+		_verify_detached_str(resp->body->data, resp->body->length, file_contents, num_bytes, info, job->sig_filename);
 
 	xfree(file_contents);
 
