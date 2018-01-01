@@ -86,7 +86,7 @@ int wget_thread_mutex_init(wget_thread_mutex_t *mutex)
  *
  * Free's the \p mutex and it's resources.
  *
- * After calling this function, the \p mutex can not be used any more.
+ * After calling this function, the \p mutex cannot be used any more.
  */
 int wget_thread_mutex_destroy(wget_thread_mutex_t *mutex)
 {
@@ -141,7 +141,7 @@ int wget_thread_cond_init(wget_thread_cond_t *cond)
  *
  * Free's the conditional \p cond and it's resources.
  *
- * After calling this function, \p cond can not be used any more.
+ * After calling this function, \p cond cannot be used any more.
  */
 int wget_thread_cond_destroy(wget_thread_cond_t *cond)
 {
