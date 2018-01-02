@@ -90,12 +90,17 @@ int get_exit_status(void)
 #  include "wget_gpgme.h"
 #endif
 
+// If you add a new section here, remember to increment the value of
+// SECTION_END. This must always be the last element of this enum and exactly
+// one greater than the value of the element before it.
 typedef enum {
 	SECTION_STARTUP = 0,
 	SECTION_DOWNLOAD = 1,
 	SECTION_HTTP = 2,
 	SECTION_SSL = 3,
-	SECTION_DIRECTORY = 4
+	SECTION_DIRECTORY = 4,
+	SECTION_GPG = 5,
+	SECTION_END = 6,
 } help_section_t;
 
 typedef const struct optionw *option_t; // forward declaration
@@ -1224,7 +1229,7 @@ static const struct optionw options[] = {
 	},
 #ifdef WITH_GPGME
 	{ "gnupg-homedir", &config.gnupg_homedir, parse_filename, -1, 0,
-		SECTION_DOWNLOAD,
+		SECTION_GPG,
 		{ "Specify a directory to use as the GnuPG home directory.\n",
 		  "(default: gnupg default homedir)\n"
 		}
@@ -1792,7 +1797,7 @@ static const struct optionw options[] = {
 	},
 #ifdef WITH_GPGME
 	{ "verify-sig", &config.verify_sig, parse_bool, -1, 's',
-		SECTION_DOWNLOAD,
+		SECTION_GPG,
 		{ "Download .sig file and verify. (default: off)\n"
 		}
 	},
@@ -1856,7 +1861,7 @@ static int print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const 
 		"Usage: wget [options...] <url>...\n"
 		"\n");
 
-	for (help_section_t sect = SECTION_STARTUP; sect <= SECTION_DIRECTORY; sect++) {
+	for (help_section_t sect = SECTION_STARTUP; sect < SECTION_END; sect++) {
 		switch (sect) {
 		case SECTION_STARTUP:
 			printf("Startup:\n");
@@ -1876,6 +1881,13 @@ static int print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const 
 
 		case SECTION_DIRECTORY:
 			printf("Directory options:\n");
+			break;
+
+		case SECTION_GPG:
+			printf("GPG related options:\n");
+			break;
+
+		case SECTION_END:
 			break;
 
 		default:
