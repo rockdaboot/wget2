@@ -73,6 +73,9 @@ struct config {
 		*secure_protocol, // auto, SSLv2, SSLv3, TLSv1
 		*accept_regex,
 		*reject_regex,
+#ifdef WITH_GPGME
+		*sig_ext,
+#endif
 		*gnupg_homedir;
 	wget_vector_t
 		*config_files,

@@ -1932,7 +1932,7 @@ static void process_response(wget_http_response_t *resp)
 
 			} else if (wget_strncasecmp_ascii(resp->content_type, "application/", 12) == 0) {
 
-				char *new_url = wget_aprintf("%s.sig", job->original_url->uri);
+				char *new_url = wget_aprintf("%s.%s", job->original_url->uri, config.sig_ext);
 
 				if (!job->sig_filename) {
 					error_printf(_("File name for signature checking not assigned to job!\n"));
