@@ -649,11 +649,17 @@ AC_ARG_WITH(plugin_support,
 		[Disable plugin support]),
 		[plugin_support="$withval"],
 		[plugin_support="yes"])
+FUZZ_LIBS=$LIBS
 if test "x$plugin_support" = "xno"; then
-	:
+	OLD_LIBS=$LIBS
+	AC_SEARCH_LIBS([dlsym], [dl dld])
+	FUZZ_LIBS=$LIBS
+	LIBS=$OLD_LIBS
 elif test "x$dl_impl" = "xlibdl"; then
-	AC_SEARCH_LIBS([dlopen], [dl], [:], [dl_impl="none"])
+	AC_SEARCH_LIBS([dlsym], [dl ldl], [:], [dl_impl="none"])
+	FUZZ_LIBS=$LIBS
 fi
+AC_SUBST([FUZZ_LIBS])
 if test "x$plugin_support" = "xyes" && test "x$dl_impl" = "xnone"; then
 	AC_MSG_WARN(*** No working backend for plugin support found)
 	plugin_support="no"
