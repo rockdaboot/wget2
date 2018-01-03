@@ -193,9 +193,15 @@ int wget_thread_cond_wait(wget_thread_cond_t cond, wget_thread_mutex_t mutex, lo
  */
 int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, G_GNUC_WGET_UNUSED int flags)
 {
-	*thread = wget_malloc(sizeof(struct _wget_thread_st));
+	if (wget_thread_support()) {
+		*thread = wget_malloc(sizeof(struct _wget_thread_st));
 
-	return glthread_create(&((*thread)->tid), start_routine, arg);
+		return glthread_create(&((*thread)->tid), start_routine, arg);
+	}
+
+	*thread = NULL;
+	start_routine(arg);
+	return 0;
 }
 
 /**
@@ -251,8 +257,12 @@ int wget_thread_join(wget_thread_t *thread)
 		return rc;
 	}
 
-	errno = ESRCH;
-	return -1;
+	if (wget_thread_support()) {
+		errno = ESRCH;
+		return -1;
+	}
+
+	return 0;
 }
 
 /**

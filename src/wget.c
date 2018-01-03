@@ -1206,7 +1206,7 @@ int main(int argc, const char **argv)
 	// Perform any sanity checking or extra initialization here.
 
 	// Decide on the number of threads to spawn. In case we're reading
-	// asynchronously from STDIN or have are downloading recursively, we don't
+	// asynchronously from STDIN or are downloading recursively, we don't
 	// know the queue_size at startup, and hence spawn config.max_threads
 	// threads.
 	if (!wget_thread_support()) {
