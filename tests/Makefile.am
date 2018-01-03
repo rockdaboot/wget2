@@ -22,10 +22,16 @@ WGET_TESTS = test-wget-1$(EXEEXT) test-c-r$(EXEEXT) test-restrict-ascii$(EXEEXT)
  test-base$(EXEEXT) test-metalink$(EXEEXT) test-robots$(EXEEXT) test-parse-css$(EXEEXT) test-bad-chunk$(EXEEXT)\
  test-iri-subdir$(EXEEXT) test-chunked$(EXEEXT) test-cut-dirs$(EXEEXT) test-parse-html-css$(EXEEXT)\
  test-auth-digest$(EXEEXT) test-stats-dns$(EXEEXT) test-stats-tls$(EXEEXT) test-stats-site$(EXEEXT) test-stats-ocsp$(EXEEXT) test-stats-all$(EXEEXT)\
- test-plugin-interception$(EXEEXT) test-plugin-nonexistance$(EXEEXT) test-plugin-failure$(EXEEXT) test-gpg-valid$(EXEEXT) test-gpg-invalid$(EXEEXT)\
- test-gpg-missing$(EXEEXT) test--filter-mime-type$(EXEEXT)
+ test-plugin-interception$(EXEEXT) test-plugin-nonexistance$(EXEEXT) test-plugin-failure$(EXEEXT) test--filter-mime-type$(EXEEXT)
 
 #test--post-file test-E-k test-cookies-http_state
+
+if WITH_GPGME
+ WGET_TESTS += test-gpg-valid$(EXEEXT) test-gpg-invalid$(EXEEXT) test-gpg-missing$(EXEEXT)
+ test_gpg_valid_SOURCES = test-gpg-valid.c gpg-test-util.h
+ test_gpg_invalid_SOURCES = test-gpg-invalid.c gpg-test-util.h
+ test_gpg_missing_SOURCES = test-gpg-missing.c gpg-test-util.h
+endif
 
 if PLUGIN_SUPPORT
  WGET_TESTS += test-plugin$(EXEEXT)
@@ -35,9 +41,6 @@ endif
 
 check_PROGRAMS = $(WGET_TESTS)
 
-test_gpg_valid_SOURCES = test-gpg-valid.c gpg-test-util.h
-test_gpg_invalid_SOURCES = test-gpg-invalid.c gpg-test-util.h
-test_gpg_missing_SOURCES = test-gpg-missing.c gpg-test-util.h
 test_stats_all_SOURCES = test-stats-all.c stats-test-util.h
 test_stats_dns_SOURCES = test-stats-dns.c stats-test-util.h
 test_stats_ocsp_SOURCES = test-stats-ocsp.c stats-test-util.h
