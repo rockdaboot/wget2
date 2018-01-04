@@ -1211,6 +1211,11 @@ int main(int argc, const char **argv)
 	// threads.
 	if (!wget_thread_support()) {
 		config.max_threads = 1;
+		if (config.progress) {
+			config.progress = 0;
+			config.head_progress = 0;
+			wget_info_printf(_("Wget2 built without thread support. Disabling progress report\n"));
+		}
 	}
 
 	if (config.progress && !isatty(STDOUT_FILENO) && !config.force_progress) {
