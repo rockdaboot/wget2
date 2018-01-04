@@ -1090,7 +1090,7 @@ static void print_progress_report(long long start_time)
 		// The time is in milliseconds, so upscale
 		unsigned int mod = 1000 * ((config.report_speed == WGET_REPORT_SPEED_BYTES) ? 1 : 8);
 
-		if (config.head_progress)
+		if (config.spider)
 			bar_printf(nthreads, "Headers: %d (%d redirects & %d errors) Bytes: %s [%s%c/s] Todo: %d",
 				stats.nerrors+stats.ndownloads+stats.nredirects+stats.nnotmodified,
 				stats.nredirects, stats.nerrors,
@@ -1214,14 +1214,12 @@ int main(int argc, const char **argv)
 		config.max_threads = 1;
 		if (config.progress) {
 			config.progress = 0;
-			config.head_progress = 0;
 			wget_info_printf(_("Wget2 built without thread support. Disabling progress report\n"));
 		}
 	}
 
 	if (config.progress && !isatty(STDOUT_FILENO) && !config.force_progress) {
 		config.progress = 0;
-		config.head_progress = 0;
 	}
 
 	if (config.progress) {
@@ -3438,7 +3436,7 @@ int http_send_request(wget_iri_t *iri, wget_iri_t *original_url, DOWNLOADER *dow
 	wget_http_request_set_body_cb(req, _get_body, context);
 
 	// keep the received response header in 'resp->header'
-	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, config.save_headers || config.server_response || config.head_progress);
+	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, config.save_headers || config.server_response || (config.progress && config.spider));
 
 	return WGET_E_SUCCESS;
 }
