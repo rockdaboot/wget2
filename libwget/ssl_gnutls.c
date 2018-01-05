@@ -464,7 +464,10 @@ static int _print_info(gnutls_session_t session)
 		break;
 
 	default:
-		info_printf(_("Unsupported authentication %d.\n"), (int) cred);
+		if ((int) cred == -1)
+			info_printf(_("Transport authentication failure\n"));
+		else
+			info_printf(_("Unsupported credential type %d.\n"), (int) cred);
 		break;
 	} /* switch */
 
