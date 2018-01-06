@@ -176,9 +176,13 @@ MinGW64:
   - export GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|grep posix))
   - export WINEPATH="$WINEPATH;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs;$GCCLIB"
   - echo "WINEPATH=$WINEPATH"
-  - ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
+  - ./configure -C --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
   - make -j$(nproc)
-  - make check -j1 LOG_COMPILER=wine
+  - make clean
+  - ./configure -C --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --disable-threads
+  - cp pthread_sigmask.c.mingw lib/pthread_sigmask.c
+  - make -j$(nproc)
+  - make check -j$(nproc) LOG_COMPILER=wine
   tags:
   - shared
   - docker
