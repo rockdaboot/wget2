@@ -6,7 +6,7 @@ It is built around [libwget](#libwget).
 Wget2 is partially compatible with GNU Wget but offers new features and options while
 some of the fancier options have been dropped resp. have not been ported yet.
 
-[wget2 manual](wget2_manual.md)
+[wget2 User Manual](wget2.md)
 
 ## GNU libwget
 
