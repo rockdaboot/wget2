@@ -32,8 +32,8 @@ $(man1_MANS): wget2.stamp
 
 wget2.stamp:
 	mkdir -p $(builddir)/man/man1
-	sh $(srcdir)/wget2_md2man.sh $(srcdir)/wget2.md $(builddir)/man/man1/wget2.1
-	pandoc -s -f markdown -t texinfo -o wget2.texi wget2.md
+	PANDOC=$(PANDOC) sh $(srcdir)/wget2_md2man.sh $(srcdir)/wget2.md $(builddir)/man/man1/wget2.1
+	$(PANDOC) -s -f markdown -t texinfo -o wget2.texi wget2.md
 	makeinfo --force wget2.texi
 	echo > wget2.stamp
 

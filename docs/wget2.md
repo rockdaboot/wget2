@@ -1016,7 +1016,7 @@ Go to background immediately after startup. If no output file is specified via t
 
       # Log in to the server.  This can be done only once.
       wget2 --save-cookies cookies.txt \
-           --post-data 'user=foo&password=bar' \
+           --post-data  'user=foo&password=bar' \
            http://example.com/auth.php
 
       # Now grab the page or pages we care about.

@@ -327,6 +327,7 @@ if test "$enable_doc" = yes; then
   ], [
     DOCS_INFO="no (requested but Doxygen not found)"
   ])
+  AC_CHECK_PROGS([PANDOC], [pandoc])
 else
   DOCS_INFO="no (disabled)"
 fi
@@ -373,6 +374,8 @@ if test "$VALGRIND_TESTS" = 1; then
     AC_MSG_ERROR([Valgrind and Thread Sanitizer are mutually exclusive])
   fi
 fi
+
+# check for pandoc (documentation converter)
 
 # check for gcc's atomic read-add-write functionality
 AC_MSG_CHECKING([for __sync_fetch_and_add (int)])

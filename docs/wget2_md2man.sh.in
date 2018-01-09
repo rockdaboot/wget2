@@ -5,8 +5,8 @@
 
 (
   echo "% WGET2(1) GNU Wget2 User Manual|GNU Wget2 @PACKAGE_VERSION@"
-  echo 
-  cat $1
+  echo ""
+  cat "$1"
 ) | \
 sed '/# Wget2/,/^#/{/^# </!d}' | \
-pandoc -s -f markdown -t man -o $2
+$PANDOC -s -f markdown -t man -o "$2"
