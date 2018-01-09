@@ -1,5 +1,9 @@
-EXTRA_DIST = DoxygenLayout.xml
+EXTRA_DIST = wget2.md wget-logo.png
+DISTCLEANFILES =
+LOCAL_DISTCLEAN =
+STAMPS =
 
+if WITH_DOXYGEN
 man3_MANS =\
  $(builddir)/man/man3/libwget-base64.3\
  $(builddir)/man/man3/libwget-console.3\
@@ -26,20 +30,31 @@ libwget.stamp:
 	$(DOXYGEN) $(builddir)/libwget.doxy
 	echo > libwget.stamp
 
-man1_MANS = $(builddir)/man/man3/wget2.1
+EXTRA_DIST += DoxygenLayout.xml
+STAMPS += libwget.stamp
+LOCAL_DISTCLEAN += html man
+endif
+
+if WITH_PANDOC
+man1_MANS = $(builddir)/man/man1/wget2.1
 
 $(man1_MANS): wget2.stamp
 
 wget2.stamp:
 	mkdir -p $(builddir)/man/man1
-	PANDOC=$(PANDOC) sh $(srcdir)/wget2_md2man.sh $(srcdir)/wget2.md $(builddir)/man/man1/wget2.1
-	$(PANDOC) -s -f markdown -t texinfo -o wget2.texi wget2.md
-	makeinfo --force wget2.texi
+	PANDOC=$(PANDOC) sh $(builddir)/wget2_md2man.sh $(srcdir)/wget2.md $(builddir)/man/man1/wget2.1
+	$(PANDOC) -s -f markdown -t texinfo -o $(builddir)/wget2.texi $(srcdir)/wget2.md
+	$(MAKEINFO) --force -o $(builddir)/wget2.info $(builddir)/wget2.texi
 	echo > wget2.stamp
 
-CLEANFILES = libwget.stamp wget2.stamp
+DISTCLEANFILES += wget2.texi wget2.info
+EXTRA_DIST += wget2.info wget2.texi
+STAMPS += wget2.stamp
+endif
 
-all-local: libwget.stamp wget2.stamp
+CLEANFILES = $(STAMPS)
 
-clean-local:
-	rm -rf html man
+all-local: $(STAMPS)
+
+distclean-local:
+	rm -rf $(LOCAL_DISTCLEAN)

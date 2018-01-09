@@ -304,33 +304,46 @@ test "X${ENABLE_XATTR}" = "Xyes" && AC_DEFINE([ENABLE_XATTR], 1,
 m4_ifdef([AM_GNU_GETTEXT], [
   AM_GNU_GETTEXT([external],[need-ngettext])
   AC_CONFIG_FILES([po/Makefile.in])
-  AM_CONDITIONAL([HAVE_PO], [true])
+  have_po=yes
 ], [
-  AM_CONDITIONAL([HAVE_PO], [false])
+  have_po=no
 ])
 m4_ifdef([AM_GNU_GETTEXT_VERSION], [
 #do not indent here
 AM_GNU_GETTEXT_VERSION([0.18.2])
 ])
+AM_CONDITIONAL([HAVE_PO], [ test "$have_po" = yes ])
 
 #
-# check for doxygen
+# check for doxygen and pandoc
 #
 AC_ARG_ENABLE(doc, AS_HELP_STRING([--disable-doc], [don't generate any documentation]),
   enable_doc=$enableval, enable_doc=yes)
 if test "$enable_doc" = yes; then
   AC_CHECK_PROGS([DOXYGEN], [doxygen])
-  AS_IF([test -n "$DOXYGEN"], [
-    AC_CONFIG_FILES([docs/Makefile docs/libwget.doxy])
-    AC_SUBST([LIBWGET_DOCS], [docs])
-    DOCS_INFO="yes"
-  ], [
-    DOCS_INFO="no (requested but Doxygen not found)"
-  ])
   AC_CHECK_PROGS([PANDOC], [pandoc])
+
+  if test -n "$DOXYGEN" || test -n "$PANDOC"; then
+    AC_SUBST([LIBWGET_DOCS], [docs])
+    AC_CONFIG_FILES([docs/Makefile])
+    DOCS_INFO="yes (found:"
+    if test -n "$DOXYGEN"; then
+      AC_CONFIG_FILES([docs/libwget.doxy])
+      DOCS_INFO="$DOCS_INFO Doxygen"
+    fi
+    if test -n "$PANDOC"; then
+      DOCS_INFO="$DOCS_INFO Pandoc"
+    fi
+    DOCS_INFO="$DOCS_INFO)"
+  else
+    DOCS_INFO="no (neither Doxygen nor Pandoc found)"
+  fi
 else
   DOCS_INFO="no (disabled)"
 fi
+AM_CONDITIONAL([WITH_DOCS], [ test -n "$DOXYGEN" && test -n "$PANDOC" ])
+AM_CONDITIONAL([WITH_DOXYGEN], [ test -n "$DOXYGEN" ])
+AM_CONDITIONAL([WITH_PANDOC], [ test -n "$PANDOC" ])
 
 #
 # enable creation of man pages
