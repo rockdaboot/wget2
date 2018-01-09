@@ -26,9 +26,18 @@ doxy.stamp:
 	$(DOXYGEN) $(builddir)/libwget.doxy
 	echo > doxy.stamp
 
-CLEANFILES = doxy.stamp
+man1_MANS = $(builddir)/man/man3/wget2.1
 
-all-local: doxy.stamp
+$(man1_MANS): wget2_md2man.stamp
+
+wget2_md2man.stamp:
+	mkdir -p $(builddir)/man/man1
+	sh $(srcdir)/wget2_md2man.sh $(srcdir)/wget2_manual.md $(builddir)/man/man1/wget2.1
+	echo > wget2_md2man.stamp
+
+CLEANFILES = doxy.stamp wget2_md2man.stamp
+
+all-local: doxy.stamp wget2_md2man.stamp
 
 clean-local:
 	rm -rf html man

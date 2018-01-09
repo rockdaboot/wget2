@@ -25,17 +25,17 @@
 * [Copyright](#Copyright)
 
 
-## <a name="Name"/>Name
+# <a name="Name"/>Name
 
-Wget2 - a recursive metalink/file/website downloader.
-
-
-## <a name="Synopsis"/>Synopsis
-
-      wget2 [options]... [URL]...
+  Wget2 - a recursive metalink/file/website downloader.
 
 
-## <a name="Description"/>Description
+# <a name="Synopsis"/>Synopsis
+
+  `wget2 [options]... [URL]...`
+
+
+# <a name="Description"/>Description
 
   GNU Wget2 is a free utility for non-interactive download of files from the Web.  It supports HTTP and HTTPS
   protocols, as well as retrieval through HTTP(S) proxies.
@@ -54,9 +54,9 @@ Wget2 - a recursive metalink/file/website downloader.
   may continue the download from where it left off.
 
 
-## <a name="Options"/>Options
+# <a name="Options"/>Options
 
-### <a name="Option Syntax"/>Option Syntax
+## <a name="Option Syntax"/>Option Syntax
 
   Every option has a long form and sometimes also a short one.
   Long options are more convenient to remember, but take time to type.
@@ -99,65 +99,63 @@ Wget2 - a recursive metalink/file/website downloader.
   is the only way to restore the factory default from the command line.
 
 
-### <a name="Basic Startup Options"/>Basic Startup Options
+## <a name="Basic Startup Options"/>Basic Startup Options
 
-Short|Long|Description
------|----|-----------
-* `-V`, `--version`
+### `-V`, `--version`
 
   Display the version of Wget2.
 
-* `-h`, `--help`
+### `-h`, `--help`
 
   Print a help message describing all of Wget2's command-line options.
 
-* `-b`, `--background`
+### `-b`, `--background`
 
 Go to background immediately after startup. If no output file is specified via the `-o`, output is redirected to `wget-log`.
 
-* `-e`, `--execute=command`
+### `-e`, `--execute=command`
 
   Execute command as if it were a part of `.wgetrc`.  A command thus invoked will be executed after the commands in `.wgetrc`, thus
   taking precedence over them.  If you need to specify more than one wgetrc command, use multiple instances of `-e`.
 
 
-### <a name="Logging and Input File Options"/>Logging and Input File Options
+## <a name="Logging and Input File Options"/>Logging and Input File Options
 
-* `-o`, `--output-file=logfile`
+### `-o`, `--output-file=logfile`
 
   Log all messages to `logfile`.  The messages are normally reported to standard error.
 
-* `-a`, `--append-output=logfile`
+### `-a`, `--append-output=logfile`
 
   Append to `logfile`. This is the same as `-o`, only it appends to `logfile` instead of overwriting the old log file. If `logfile`
   does not exist, a new file is created.
 
-* `-d`, `--debug`
+###`-d`, `--debug`
 
   Turn on debug output, meaning various information important to the developers of Wget2 if it does not work properly. Your
   system administrator may have chosen to compile Wget2 without debug support, in which case `-d` will not work. Please note that
   compiling with debug support is always safe, Wget2 compiled with the debug support will not print any debug info unless
   requested with `-d`.
 
-* `-q`, `--quiet`
+###`-q`, `--quiet`
 
   Turn off Wget2's output.
 
-* `-v`, `--verbose`
+###`-v`, `--verbose`
 
   Turn on verbose output, with all the available data. The default output is verbose.
 
-* `-nv`, `--no-verbose`
+###`-nv`, `--no-verbose`
 
   Turn off verbose without being completely quiet (use `-q` for that), which means that error messages and basic information still
   get printed.
 
-* `--report-speed=type`
+###`--report-speed=type`
 
   Output bandwidth as `type`. The only accepted values are `bytes` (which is set by default) and `bits`. This option only works if
   `--progress=bar` is also set.
 
-* `-i`, `--input-file=file`
+###`-i`, `--input-file=file`
 
   Read URLs from a local or external file. If - is specified as file, URLs are read from the standard input. (Use ./- to read
   from a file literally named -.)
@@ -182,37 +180,37 @@ Go to background immediately after startup. If no output file is specified via t
 
   If you have problems with relative links, you should use --base=url on the command line.
 
-* `-F`, `--force-html`
+###`-F`, `--force-html`
 
   When input is read from a file, force it to be treated as an HTML file.  This enables you to retrieve relative links from
   existing HTML files on your local disk, by adding "<base href="url">" to HTML, or using the --base command-line option.
 
-* `--force-css`
+###`--force-css`
 
   Read and parse the input file as CSS.  This enables you to retrieve links from existing CSS files on your local disk.
   You will need --base to handle relative links correctly.
 
-* `--force-sitemap`
+###`--force-sitemap`
 
   Read and parse the input file as sitemap XML.  This enables you to retrieve links from existing sitemap files on your local disk.
   You will need --base to handle relative links correctly.
 
-* `--force-atom`
+###`--force-atom`
 
   Read and parse the input file as Atom Feed XML.  This enables you to retrieve links from existing sitemap files on your local disk.
   You will need --base to handle relative links correctly.
 
-* `--force-rss`
+###`--force-rss`
 
   Read and parse the input file as RSS Feed XML.  This enables you to retrieve links from existing sitemap files on your local disk.
   You will need --base to handle relative links correctly.
 
-* `--force-metalink`
+###`--force-metalink`
 
   Read and parse the input file as Metalink.  This enables you to retrieve links from existing Metalink files on your local disk.
   You will need --base to handle relative links correctly.
 
-* `-B`, `--base=URL`
+###`-B`, `--base=URL`
 
   Resolves relative links using URL as the point of reference, when reading links from an HTML file specified via the
   -i/--input-file option (together with a --force... option, or when the input file was fetched remotely from a server describing it as
@@ -222,7 +220,7 @@ Go to background immediately after startup. If no output file is specified via t
   For instance, if you specify `https://example.com/bar/a.html` for URL, and Wget2 reads `../baz/b.html` from the input file, it would be
   resolved to `https://example.com/baz/b.html`.
 
-* `--config-file=FILE`
+###`--config-file=FILE`
 
   Specify the location of a configuration file you wish to use. If you specify more than one file, either by using a
   comma-separated list or several --config-file options, these files are read in left-to-right order.
@@ -236,48 +234,48 @@ Go to background immediately after startup. If no output file is specified via t
   Wget will attempt to tilde expand filenames written in the configuration file on supported platforms. To use a file that starts with
   the character literal '~', use "./~" or an absolute path.
 
-* `--rejected-log=logfile`
+###`--rejected-log=logfile`
 
   Logs all URL rejections to logfile as comma separated values.  The values include the reason of rejection, the URL and the
   parent URL it was found in.
 
-* `--stats-dns[=[FORMAT:]FILE]`
+###`--stats-dns[=[FORMAT:]FILE]`
 
   Save DNS stats in format `FORMAT`, in file `FILE`. `FORMAT` has 3 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
 
-* `--stats-tls[=[FORMAT:]FILE]`
+###`--stats-tls[=[FORMAT:]FILE]`
 
   Save TLS stats in format `FORMAT`, in file `FILE`. `FORMAT` has 3 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
 
-* `--stats-ocsp[=[FORMAT:]FILE]`
+###`--stats-ocsp[=[FORMAT:]FILE]`
 
   Save OCSP stats in format `FORMAT`, in file `FILE`. `FORMAT` has 3 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
 
-* `--stats-server[=[FORMAT:]FILE]`
+###`--stats-server[=[FORMAT:]FILE]`
 
   Save Server stats in format `FORMAT`, in file `FILE`. `FORMAT` has 3 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
 
-* `--stats-site[=[FORMAT:]FILE]`
+###`--stats-site[=[FORMAT:]FILE]`
 
   Save Site stats in format `FORMAT`, in file `FILE`. `FORMAT` has 4 possible values: `human`, `csv`, `json` and `tree`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
 
-* `--stats-all[=[FORMAT:]FILE]`
+###`--stats-all[=[FORMAT:]FILE]`
 
   Save DNS, TLS, OCSP, Server and Site stats in format `FORMAT`, in file `FILE`. `FORMAT` has 3 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
 
-### <a name="Download Options"/>Download Options
+## <a name="Download Options"/>Download Options
 
-* `--bind-address=ADDRESS`
+###`--bind-address=ADDRESS`
 
   When making client TCP/IP connections, bind to ADDRESS on the local machine.  ADDRESS may be specified as a hostname or IP
   address.  This option can be useful if your machine is bound to multiple IPs.
 
-* `-t`,`--tries=number`
+###`-t`,`--tries=number`
 
   Set number of tries to number. Specify 0 or inf for infinite retrying.  The default is to retry 20 times, with the exception
   of fatal errors like "connection refused" or "not found" (404), which are not retried.
 
-* `-O`,`--output-document=file`
+###`-O`,`--output-document=file`
 
   The documents will not be written to the appropriate files, but all will be concatenated together and written to file.  If -
   is used as file, documents will be printed to standard output, disabling link conversion.  (Use ./- to print to a file
@@ -300,7 +298,7 @@ Go to background immediately after startup. If no output file is specified via t
   Hence, the file will not always be newly created. The file's timestamps will not be affected unless it is actually written to.
   As a result, both -c and -N options are now supported in conjunction with this option.
 
-* `-nc`, `--no-clobber`
+###`-nc`, `--no-clobber`
 
   If a file is downloaded more than once in the same directory, Wget2's behavior depends on a few options, including
   `-nc`.  In certain cases, the local file will be clobbered, or overwritten, upon repeated download.  In other cases
@@ -327,12 +325,12 @@ Go to background immediately after startup. If no output file is specified via t
   Note that when -nc is specified, files with the suffixes .html or .htm will be loaded from the local disk and
   parsed as if they had been retrieved from the Web.
 
-* `--backups=backups`
+###`--backups=backups`
 
   Before (over)writing a file, back up an existing file by adding a .1 suffix (_1 on VMS) to the file name.  Such
   backup files are rotated to .2, .3, and so on, up to `backups` (and lost beyond that).
 
-* `-c`, `--continue`
+###`-c`, `--continue`
 
   Continue getting a partially-downloaded file.  This is useful when you want to finish up a download started by a
   previous instance of Wget2, or by another program.  For instance:
@@ -375,7 +373,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Note that `-c` only works with FTP servers and with HTTP servers that support the "Range" header.
 
-* `--start-pos=OFFSET`
+###`--start-pos=OFFSET`
 
   Start downloading at zero-based position `OFFSET`.  Offset may be expressed in bytes, kilobytes with the `k'
   suffix, or megabytes with the `m' suffix, etc.
@@ -385,7 +383,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Server support for continued download is required, otherwise --start-pos cannot help.  See -c for details.
 
-* `--progress=type`
+###`--progress=type`
 
   Select the type of the progress indicator you wish to use.  Legal indicators are "dot" and "bar".
 
@@ -422,7 +420,7 @@ Go to background immediately after startup. If no output file is specified via t
   from the command line.  For example, to force the bar output without scrolling, use
   --progress=bar:force:noscroll.
 
-* `--show-progress`
+###`--show-progress`
 
   Force Wget2 to display the progress bar in any verbosity.
 
@@ -433,16 +431,16 @@ Go to background immediately after startup. If no output file is specified via t
 
   This option will also force the progress bar to be printed to stderr when used alongside the --logfile option.
 
-* `-N`, `--timestamping`
+###`-N`, `--timestamping`
 
   Turn on time-stamping.
 
-* `--no-if-modified-since`
+###`--no-if-modified-since`
 
   Do not send If-Modified-Since header in -N mode. Send preliminary HEAD request instead. This has only effect in
   -N mode.
 
-* `--no-use-server-timestamps`
+###`--no-use-server-timestamps`
 
   Don't set the local file's timestamp by the one on the server.
 
@@ -451,11 +449,11 @@ Go to background immediately after startup. If no output file is specified via t
   file's timestamp on when it was actually downloaded; for that purpose, the --no-use-server-timestamps option has
   been provided.
 
-* `-S`, `--server-response`
+###`-S`, `--server-response`
 
   Print the headers sent by HTTP servers and responses sent by FTP servers.
 
-* `--spider`
+###`--spider`
 
   When invoked with this option, Wget2 will behave as a Web spider, which means that it will not download the pages,
   just check that they are there.  For example, you can use Wget2 to check your bookmarks:
@@ -464,7 +462,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   This feature needs much more work for Wget2 to get close to the functionality of real web spiders.
 
-* `-T seconds`, `--timeout=seconds`
+###`-T seconds`, `--timeout=seconds`
 
   Set the network timeout to seconds seconds.  This is equivalent to specifying `--dns-timeout`, `--connect-timeout`,
   and `--read-timeout`, all at the same time.
@@ -478,17 +476,17 @@ Go to background immediately after startup. If no output file is specified via t
   legal (though unwise) choice of timeout.  Subsecond timeouts are useful for checking server response times or for
   testing network latency.
 
-* `--dns-timeout=seconds`
+###`--dns-timeout=seconds`
 
   Set the DNS lookup timeout to seconds seconds.  DNS lookups that don't complete within the specified time will
   fail.  By default, there is no timeout on DNS lookups, other than that implemented by system libraries.
 
-* `--connect-timeout=seconds`
+###`--connect-timeout=seconds`
 
   Set the connect timeout to seconds seconds.  TCP connections that take longer to establish will be aborted.  By
   default, there is no connect timeout, other than that implemented by system libraries.
 
-* `--read-timeout=seconds`
+###`--read-timeout=seconds`
 
   Set the read (and write) timeout to seconds seconds.  The "time" of this timeout refers to idle time: if, at any
   point in the download, no data is received for more than the specified number of seconds, reading fails and the
@@ -497,7 +495,7 @@ Go to background immediately after startup. If no output file is specified via t
   Of course, the remote server may choose to terminate the connection sooner than this option requires.  The
   default read timeout is 900 seconds.
 
-* `--limit-rate=amount`
+###`--limit-rate=amount`
 
   Limit the download speed to amount bytes per second.  Amount may be expressed in bytes, kilobytes with the k
   suffix, or megabytes with the m suffix.  For example, --limit-rate=20k will limit the retrieval rate to 20KB/s.
@@ -511,7 +509,7 @@ Go to background immediately after startup. If no output file is specified via t
   approximately the specified rate.  However, it may take some time for this balance to be achieved, so don't be
   surprised if limiting the rate doesn't work well with very small files.
 
-* `-w seconds`, `--wait=seconds`
+###`-w seconds`, `--wait=seconds`
 
   Wait the specified number of seconds between the retrievals.  Use of this option is recommended, as it lightens
   the server load by making the requests less frequent.  Instead of in seconds, the time can be specified in
@@ -521,7 +519,7 @@ Go to background immediately after startup. If no output file is specified via t
   can wait long enough to reasonably expect the network error to be fixed before the retry.  The waiting interval
   specified by this function is influenced by "--random-wait", which see.
 
-* `--waitretry=seconds`
+###`--waitretry=seconds`
 
   If you don't want Wget2 to wait between every retrieval, but only between retries of failed downloads, you can use
   this option.  Wget2 will use linear backoff, waiting 1 second after the first failure on a given file, then
@@ -529,11 +527,11 @@ Go to background immediately after startup. If no output file is specified via t
 
   By default, Wget2 will assume a value of 10 seconds.
 
-* `--random-wait`
+###`--random-wait`
 
   Some web sites may perform log analysis to identify retrieval programs such as Wget2 by looking for statistically
   significant similarities in the time between requests. This option causes the time between requests to vary
-  between 0.5 and 1.5 * wait seconds, where wait was specified using the --wait option, in order to mask Wget2's
+  between 0.5 and 1.5 ###wait seconds, where wait was specified using the --wait option, in order to mask Wget2's
   presence from such analysis.
 
   A 2001 article in a publication devoted to development on a popular consumer platform provided code to perform
@@ -543,11 +541,11 @@ Go to background immediately after startup. If no output file is specified via t
   The `--random-wait` option was inspired by this ill-advised recommendation to block many unrelated users from a web
   site due to the actions of one.
 
-* `--no-proxy`
+###`--no-proxy`
 
   Don't use proxies, even if the appropriate *_proxy environment variable is defined.
 
-* `-Q quota`, `--quota=quota`
+###`-Q quota`, `--quota=quota`
 
   Specify download quota for automatic retrievals.  The value can be specified in bytes (default), kilobytes (with
   k suffix), or megabytes (with m suffix).
@@ -566,7 +564,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Setting quota to `0` or to `inf` unlimits the download quota.
 
-* `--no-dns-cache`
+###`--no-dns-cache`
 
   Turn off caching of DNS lookups.  Normally, Wget2 remembers the IP addresses it looked up from DNS so it doesn't
   have to repeatedly contact the DNS server for the same (typically small) set of hosts it retrieves from.  This
@@ -580,7 +578,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   If you don't understand exactly what this option does, you probably won't need it.
 
-* `--restrict-file-names=modes`
+###`--restrict-file-names=modes`
 
   Change which characters found in remote URLs must be escaped during generation of local filenames.  Characters
   that are restricted by this option are escaped, i.e. replaced with %HH, where HH is the hexadecimal number that
@@ -615,7 +613,7 @@ Go to background immediately after startup. If no output file is specified via t
   greater than 127) shall be escaped. This can be useful when saving filenames whose encoding does not match the
   one used locally.
 
-* `-4, --inet4-only, -6, --inet6-only`
+###`-4, --inet4-only, -6, --inet6-only`
 
   Force connecting to IPv4 or IPv6 addresses.  With --inet4-only or -4, Wget2 will only connect to IPv4 hosts,
   ignoring AAAA records in DNS, and refusing to connect to IPv6 addresses specified in URLs.  Conversely, with
@@ -629,7 +627,7 @@ Go to background immediately after startup. If no output file is specified via t
   usually to aid debugging or to deal with broken network configuration.  Only one of --inet6-only and --inet4-only
   may be specified at the same time.  Neither option is available in Wget2 compiled without IPv6 support.
 
-* `--prefer-family=none/IPv4/IPv6`
+###`--prefer-family=none/IPv4/IPv6`
 
   When given a choice of several addresses, connect to the addresses with specified address family first.  The
   address order returned by DNS is used without change by default.
@@ -645,14 +643,14 @@ Go to background immediately after startup. If no output file is specified via t
   order of addresses of the same family.  That is, the relative order of all IPv4 addresses and of all IPv6
   addresses remains intact in all cases.
 
-* `--retry-connrefused`
+###`--retry-connrefused`
 
   Consider "connection refused" a transient error and try again.  Normally Wget2 gives up on a URL when it is unable
   to connect to the site because failure to connect is taken as a sign that the server is not running at all and
   that retries would not help.  This option is for mirroring unreliable sites whose servers tend to disappear for
   short periods of time.
 
-* `--user=user`, `--password=password`
+###`--user=user`, `--password=password`
 
   Specify the username user and password password for both FTP and HTTP file retrieval. This overrides the lookup of
   credentials in the .netrc file (--netrc is enabled by default). These parameters can be overridden using the
@@ -660,22 +658,22 @@ Go to background immediately after startup. If no output file is specified via t
 
   If neither --http-proxy-user nor --http-proxy-password is given these settings are also taken for proxy authentication.
 
-* `--ask-password`
+###`--ask-password`
 
   Prompt for a password on the command line. Overrides the password set by --password (if any).
 
-* `--use-askpass=command`
+###`--use-askpass=command`
 
   Prompt for a user and password using the specified command. Overrides the user and/or password set by --user/--password (if any).
 
-* `--no-iri`
+###`--no-iri`
 
   Turn off internationalized URI (IRI) support. Use --iri to turn it on. IRI support is activated by default.
 
   You can set the default state of IRI support using the "iri" command in .wgetrc. That setting may be overridden
   from the command line.
 
-* `--local-encoding=encoding`
+###`--local-encoding=encoding`
 
   Force Wget2 to use encoding as the default system encoding. That affects how Wget2 converts URLs specified as
   arguments from locale to UTF-8 for IRI support.
@@ -686,7 +684,7 @@ Go to background immediately after startup. If no output file is specified via t
   You can set the default local encoding using the "local_encoding" command in .wgetrc. That setting may be
   overridden from the command line.
 
-* `--remote-encoding=encoding`
+###`--remote-encoding=encoding`
 
   Force Wget2 to use encoding as the default remote server encoding.  That affects how Wget2 converts URIs found in
   files from remote encoding to UTF-8 during a recursive fetch. This options is only useful for IRI support, for
@@ -698,19 +696,19 @@ Go to background immediately after startup. If no output file is specified via t
   You can set the default encoding using the "remoteencoding" command in .wgetrc. That setting may be overridden
   from the command line.
 
-* `--unlink`
+###`--unlink`
 
   Force Wget2 to unlink file instead of clobbering existing file. This option is useful for downloading to the
   directory with hardlinks.
 
-* `--cut-url-get-vars`
+###`--cut-url-get-vars`
 
   Remove HTTP GET Variables from URLs.
   For example "main.css?v=123" will be changed to "main.css".
   Be aware that this may have unintended side effects, for example "image.php?name=sun" will be changed
   to "image.php". The cutting happens before adding the URL to the download queue.
 
-* `--cut-file-get-vars`
+###`--cut-file-get-vars`
 
   Remove HTTP GET Variables from filenames.
   For example "main.css?v=123" will be changed to "main.css".
@@ -723,51 +721,51 @@ Go to background immediately after startup. If no output file is specified via t
 
   When "--trust-server-names" is used, the redirection URL is affected by this setting.
 
-* `--chunk-size=size`
+###`--chunk-size=size`
 
   Download large files in multithreaded chunks. This switch specifies the size of the chunks, given in bytes if no other
   byte multiple unit is specified. By default it's set on 0/off.
 
-* `--max-threads=number`
+###`--max-threads=number`
 
   Specifies the maximum number of concurrent download threads for a resource. The default is 5 but if you want to
   allow more or fewer this is the option to use.
 
-* `-s`, `--verify-sig`
+###`-s`, `--verify-sig`
 
   Enable PGP signature verification. When enabled Wget2 will attempt to download and verify PGP signatures against their corresponding files.
   Any file downloaded that has a content type of `application/*` will have an additional request added for `<name>.sig`. If the content type
   for the signature request is `application/pgp-signature`, Wget2 will attempt to verify the signature against the original file.
 
-* `--gnupg-homedir`
+###`--gnupg-homedir`
 
   Specifies the gnupg home directory to use when verifying PGP signatures on downloaded files. The default for this is
   your system's default home directory.
 
-### <a name="Directory Options"/>Directory Options
+## <a name="Directory Options"/>Directory Options
 
-* `-nd`, `--no-directories`
+###`-nd`, `--no-directories`
 
   Do not create a hierarchy of directories when retrieving recursively.  With this option turned on, all files will
   get saved to the current directory, without clobbering (if a name shows up more than once, the filenames will get
   extensions .n).
 
-* `-x`, `--force-directories`
+###`-x`, `--force-directories`
 
   The opposite of `-nd`---create a hierarchy of directories, even if one would not have been created otherwise.  E.g.
   `wget2 -x https://example.com/robots.txt` will save the downloaded file to `example.com/robots.txt`.
 
-* `-nH`, `--no-host-directories`
+###`-nH`, `--no-host-directories`
 
   Disable generation of host-prefixed directories.  By default, invoking Wget2 with `-r https://example.com/` will
   create a structure of directories beginning with `example.com/`.  This option disables such behavior.
 
-* `--protocol-directories`
+###`--protocol-directories`
 
   Use the protocol name as a directory component of local file names.  For example, with this option, `wget2 -r
   https://example.com` will save to `https/example.com/...` rather than just to `example.com/...`.
 
-* `--cut-dirs=number`
+###`--cut-dirs=number`
 
   Ignore a number of directory components.  This is useful for getting a fine-grained control over the directory where
   recursive retrieval will be saved.
@@ -788,20 +786,20 @@ Go to background immediately after startup. If no output file is specified via t
   However, unlike `-nd`, `--cut-dirs` does not lose with subdirectories. For instance, with `-nH --cut-dirs=1`, a `beta/`
   subdirectory will be placed to `sub/beta/`, as one would expect.
 
-* `-P prefix`, `--directory-prefix=prefix`
+###`-P prefix`, `--directory-prefix=prefix`
 
   Set directory prefix to prefix.  The directory prefix is the directory where all other files and subdirectories
   will be saved to, i.e. the top of the retrieval tree.  The default is . (the current directory).
 
 
-### <a name="HTTP Options"/>HTTP Options
+## <a name="HTTP Options"/>HTTP Options
 
-* --default-page=name
+###`--default-page=name`
 
   Use name as the default file name when it isn't known (i.e., for URLs that end in a slash), instead of
   `index.html`.
 
-* `-E`, `--adjust-extension`
+###`-E`, `--adjust-extension`
 
   If a file of type `application/xhtml+xml` or `text/html` is downloaded and the URL does not end with the regexp
   `\.[Hh][Tt][Mm][Ll]?`, this option will cause the suffix `.html` to be appended to the local filename.  This is
@@ -818,7 +816,7 @@ Go to background immediately after startup. If no output file is specified via t
   At some point in the future, this option may well be expanded to include suffixes for other types of content,
   including content types that are not parsed by Wget.
 
-* `--http-user=user`, `--http-password=password`
+###`--http-user=user`, `--http-password=password`
 
   Specify the user and password for HTTP authentication. According to the type of the challenge, Wget
   will encode them using either the "basic" (insecure), the "digest", or the Windows "NTLM" authentication scheme.
@@ -830,11 +828,11 @@ Go to background immediately after startup. If no output file is specified via t
 
   Also see `--use-askpass` and `--ask-password` for an interactive method to provide your password.
 
-* `--http-proxy-user=user`, `--http-proxy-password=password`
+###`--http-proxy-user=user`, `--http-proxy-password=password`
 
   Specify the user and password for HTTP proxy authentication. See `--http-user` for details.
 
-* `--no-http-keep-alive`
+###`--no-http-keep-alive`
 
   Turn off the "keep-alive" feature for HTTP(S) downloads.  Normally, Wget2 asks the server to keep the connection open
   so that, when you download more than one document from the same server, they get transferred over the same TCP
@@ -843,7 +841,7 @@ Go to background immediately after startup. If no output file is specified via t
   This option is useful when, for some reason, persistent (keep-alive) connections don't work for you, for example
   due to a server bug or due to the inability of server-side scripts to cope with the connections.
 
-* `--no-cache`
+###`--no-cache`
 
   Disable server-side cache.  In this case, Wget2 will send the remote server an appropriate directive (Pragma: no-
   cache) to get the file from the remote service, rather than returning the cached version.  This is especially
@@ -851,7 +849,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Caching is allowed by default.
 
-* `--no-cookies`
+###`--no-cookies`
 
   Disable the use of cookies.  Cookies are a mechanism for maintaining server-side state.  The server sends the
   client a cookie using the "Set-Cookie" header, and the client responds with the same cookie upon further
@@ -859,7 +857,7 @@ Go to background immediately after startup. If no output file is specified via t
   information, some consider them a breach of privacy.  The default is to use cookies; however, storing cookies is
   not on by default.
 
-* `--load-cookies file`
+###`--load-cookies file`
 
   Load cookies from `file` before the first HTTP(S) retrieval.  file is a textual file in the format originally used by
   Netscape's cookies.txt file.
@@ -897,12 +895,12 @@ Go to background immediately after startup. If no output file is specified via t
 
       wget2 --no-cookies --header "Cookie: <name>=<value>"
 
-* `--save-cookies file`
+###`--save-cookies file`
 
   Save cookies to `file` before exiting.  This will not save cookies that have expired or that have no expiry time
   (so-called "session cookies"), but also see --keep-session-cookies.
 
-* `--keep-session-cookies`
+###`--keep-session-cookies`
 
   When specified, causes --save-cookies to also save session cookies.  Session cookies are normally not saved
   because they are meant to be kept in memory and forgotten when you exit the browser.  Saving them is useful on
@@ -914,7 +912,7 @@ Go to background immediately after startup. If no output file is specified via t
   that cookies so loaded will be treated as other session cookies, which means that if you want --save-cookies to
   preserve them again, you must use --keep-session-cookies again.
 
-* `--ignore-length`
+###`--ignore-length`
 
   Unfortunately, some HTTP servers (CGI programs, to be more precise) send out bogus "Content-Length" headers,
   which makes Wget2 go wild, as it thinks not all the document was retrieved.  You can spot this syndrome if Wget
@@ -923,7 +921,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   With this option, Wget2 will ignore the "Content-Length" header---as if it never existed.
 
-* `--header=header-line`
+###`--header=header-line`
 
   Send header-line along with the rest of the headers in each HTTP request.  The supplied header is sent as-is,
   which means it must contain name and value separated by colon, and must not contain newlines.
@@ -941,31 +939,31 @@ Go to background immediately after startup. If no output file is specified via t
 
       wget2 --header="Host: example.com" http://localhost/
 
-* `--max-redirect=number`
+###`--max-redirect=number`
 
   Specifies the maximum number of redirections to follow for a resource.  The default is 20, which is usually far
   more than necessary. However, on those occasions where you want to allow more (or fewer), this is the option to
   use.
 
-* `--proxy-user=user`, `--proxy-password=password`
+###`--proxy-user=user`, `--proxy-password=password`
 
   Specify the username user and password password for authentication on a proxy server.  Wget2 will encode them
   using the "basic" authentication scheme.
 
   Security considerations similar to those with `--http-password` pertain here as well.
 
-* `--referer=url`
+###`--referer=url`
 
   Include `Referer: url' header in HTTP request.  Useful for retrieving documents with server-side processing that
   assume they are always being retrieved by interactive web browsers and only come out properly when Referer is set
   to one of the pages that point to them.
 
-* `--save-headers`
+###`--save-headers`
 
   Save the headers sent by the HTTP server to the file, preceding the actual contents, with an empty line as the
   separator.
 
-* `-U agent-string`, `--user-agent=agent-string`
+###`-U agent-string`, `--user-agent=agent-string`
 
   Identify as agent-string to the HTTP server.
 
@@ -982,7 +980,7 @@ Go to background immediately after startup. If no output file is specified via t
   Specifying empty user agent with --user-agent="" instructs Wget2 not to send the "User-Agent" header in HTTP
   requests.
 
-* --post-data=string, --post-file=file
+###`--post-data=string`, `--post-file=file`
 
   Use POST as the method for all HTTP requests and send the specified data in the request body.  --post-data sends
   string as data, whereas --post-file sends the contents of file.  Other than that, they work in exactly the same
@@ -1029,13 +1027,13 @@ Go to background immediately after startup. If no output file is specified via t
   `--save-cookies` will not save them (and neither will browsers) and the cookies.txt file will be empty.  In that
   case use --keep-session-cookies along with --save-cookies to force saving of session cookies.
 
-* `--method=HTTP-Method`
+###`--method=HTTP-Method`
 
   For the purpose of RESTful scripting, Wget2 allows sending of other HTTP Methods without the need to explicitly
   set them using --header=Header-Line.  Wget2 will use whatever string is passed to it after --method as the HTTP
   Method to the server.
 
-* `--body-data=Data-String`, `--body-file=Data-File`
+###`--body-data=Data-String`, `--body-file=Data-File`
 
   Must be set when additional data needs to be sent to the server along with the Method specified using `--method`.
   `--body-data` sends string as data, whereas --body-file sends the contents of file.  Other than that, they work in
@@ -1053,7 +1051,7 @@ Go to background immediately after startup. If no output file is specified via t
   which is used to explicitly specify that the request method should not change.  Another exception is when the
   method is set to "POST", in which case the redirection rules specified under `--post-data` are followed.
 
-* `--content-disposition`
+###`--content-disposition`
 
   If this is set to on, experimental (not fully-functional) support for "Content-Disposition" headers is enabled.
   This can currently result in extra round-trips to the server for a "HEAD" request, and is known to suffer from a
@@ -1062,17 +1060,17 @@ Go to background immediately after startup. If no output file is specified via t
   This option is useful for some file-downloading CGI programs that use "Content-Disposition" headers to describe
   what the name of a downloaded file should be.
 
-* `--content-on-error`
+###`--content-on-error`
 
   If this is set to on, wget2 will not skip the content when the server responds with a http status code that
   indicates error.
 
-* `--trust-server-names`
+###`--trust-server-names`
 
   If this is set to on, on a redirect the last component of the redirection URL will be used as the local file
   name.  By default it is used the last component in the original URL.
 
-* `--auth-no-challenge`
+###`--auth-no-challenge`
 
   If this option is given, Wget2 will send Basic HTTP authentication information (plaintext username and password)
   for all requests.
@@ -1080,13 +1078,13 @@ Go to background immediately after startup. If no output file is specified via t
   Use of this option is not recommended, and is intended only to support some few obscure servers, which never send
   HTTP authentication challenges, but accept unsolicited auth info, say, in addition to form-based authentication.
 
-### <a name="HTTPS (SSL/TLS) Options"/>HTTPS (SSL/TLS) Options
+## <a name="HTTPS (SSL/TLS) Options"/>HTTPS (SSL/TLS) Options
 
   To support encrypted HTTP (HTTPS) downloads, Wget2 must be compiled with an external SSL library. The current default
   is GnuTLS.  In addition, Wget2 also supports HSTS (HTTP Strict Transport Security).  If Wget2 is compiled without SSL
   support, none of these options are available.
 
-* `--secure-protocol=protocol`
+###`--secure-protocol=protocol`
 
   Choose the secure protocol to be used.  Legal values are auto, SSLv2, SSLv3, TLSv1, TLSv1_1, TLSv1_2 and PFS.  If
   auto is used, the SSL library is given the liberty of choosing the appropriate protocol automatically, which is
@@ -1100,11 +1098,11 @@ Go to background immediately after startup. If no output file is specified via t
   security by creating a one-time key for each SSL connection. It has a bit more CPU impact on client and server.
   We use known to be secure ciphers (e.g. no MD4) and the TLS protocol.
 
-* `--https-only`
+###`--https-only`
 
   When in recursive mode, only HTTPS links are followed.
 
-* `--no-check-certificate`
+###`--no-check-certificate`
 
   Don't check the server certificate against the available certificate authorities.  Also don't require the URL
   host name to match the common name presented by the certificate.
@@ -1125,27 +1123,27 @@ Go to background immediately after startup. If no output file is specified via t
   you can specify --check-certificate=quiet to tell Wget2 to not print any warning about invalid certificates,
   albeit in most cases this is the wrong thing to do.
 
-* `--certificate=file`
+###`--certificate=file`
 
   Use the client certificate stored in file.  This is needed for servers that are configured to require
   certificates from the clients that connect to them.  Normally a certificate is not required and this switch is
   optional.
 
-* `--certificate-type=type`
+###`--certificate-type=type`
 
   Specify the type of the client certificate.  Legal values are PEM (assumed by default) and DER, also known as
   ASN1.
 
-* --private-key=file
+###--private-key=file
 
   Read the private key from file.  This allows you to provide the private key in a file separate from the
   certificate.
 
-* `--private-key-type=type`
+###`--private-key-type=type`
 
   Specify the type of the private key.  Accepted values are PEM (the default) and DER.
 
-* `--ca-certificate=file`
+###`--ca-certificate=file`
 
   Use file as the file with the bundle of certificate authorities ("CA") to verify the peers.  The certificates
   must be in PEM format.
@@ -1153,7 +1151,7 @@ Go to background immediately after startup. If no output file is specified via t
   Without this option Wget2 looks for CA certificates at the system-specified locations, chosen at OpenSSL
   installation time.
 
-* `--ca-directory=directory`
+###`--ca-directory=directory`
 
   Specifies directory containing CA certificates in PEM format.  Each file contains one CA certificate, and the
   file name is based on a hash value derived from the certificate.  This is achieved by processing a certificate
@@ -1163,11 +1161,11 @@ Go to background immediately after startup. If no output file is specified via t
   Without this option Wget2 looks for CA certificates at the system-specified locations, chosen at OpenSSL
   installation time.
 
-* `--crl-file=file`
+###`--crl-file=file`
 
   Specifies a CRL file in file.  This is needed for certificates that have been revocated by the CAs.
 
-* `--random-file=file`
+###`--random-file=file`
 
   [OpenSSL and LibreSSL only] Use file as the source of random data for seeding the pseudo-random number generator
   on systems without /dev/urandom.
@@ -1179,7 +1177,7 @@ Go to background immediately after startup. If no output file is specified via t
   If you're getting the "Could not seed OpenSSL PRNG; disabling SSL."  error, you should provide random data using
   some of the methods described above.
 
-* `--egd-file=file`
+###`--egd-file=file`
 
   [OpenSSL only] Use file as the EGD socket.  EGD stands for Entropy Gathering Daemon, a user-space program that
   collects data from various unpredictable system sources and makes it available to other programs that might need
@@ -1193,13 +1191,13 @@ Go to background immediately after startup. If no output file is specified via t
   If this option is not specified (and the equivalent startup command is not used), EGD is never contacted.  EGD is
   not needed on modern Unix systems that support /dev/urandom.
 
-* `--no-hsts`
+###`--no-hsts`
 
   Wget2 supports HSTS (HTTP Strict Transport Security, RFC 6797) by default.  Use `--no-hsts` to make Wget2 act as a
   non-HSTS-compliant UA. As a consequence, Wget2 would ignore all the "Strict-Transport-Security" headers, and would
   not enforce any existing HSTS policy.
 
-* `--hsts-file=file`
+###`--hsts-file=file`
 
   By default, Wget2 stores its HSTS database in ~/.wget-hsts.  You can use --hsts-file to override this. Wget2 will
   use the supplied file as the HSTS database. Such file must conform to the correct HSTS database format used by
@@ -1246,55 +1244,55 @@ Go to background immediately after startup. If no output file is specified via t
   potential security threats arised from such practice, see section 14 "Security Considerations" of RFC 6797,
   specially section 14.9 "Creative Manipulation of HSTS Policy Store".
 
-* `--tls-resume`
+###`--tls-resume`
 
   Enable TLS Session Resumption which is disabled as default.
 
   There are several security flaws related to TLS 1.2 session resumption which are explained in detail at:
   https://web.archive.org/web/20171103231804/https://blog.filippo.io/we-need-to-talk-about-session-tickets/
 
-### <a name="WARC Options"/>WARC Options
+## <a name="WARC Options"/>WARC Options
 
-* `--warc-file=file`
+###`--warc-file=file`
 
   Use file as the destination WARC file.
 
-* `--warc-header=string`
+###`--warc-header=string`
 
   Use string into as the warcinfo record.
 
-* `--warc-max-size=size`
+###`--warc-max-size=size`
 
   Set the maximum size of the WARC files to size.
 
-* `--warc-cdx`
+###`--warc-cdx`
 
   Write CDX index files.
 
-* `--warc-dedup=file`
+###`--warc-dedup=file`
 
   Do not store records listed in this CDX file.
 
-* `--no-warc-compression`
+###`--no-warc-compression`
 
  Do not compress WARC files with GZIP.
 
-* `--no-warc-digests`
+###`--no-warc-digests`
 
   Do not calculate SHA1 digests.
 
-* `--no-warc-keep-log`
+###`--no-warc-keep-log`
 
   Do not store the log file in a WARC record.
 
-* `--warc-tempdir=dir`
+###`--warc-tempdir=dir`
 
   Specify the location for temporary files created by the WARC writer.
 
 
-### <a name="FTP Options"/>FTP Options
+## <a name="FTP Options"/>FTP Options
 
-* `--ftp-user=user`, `--ftp-password=password`
+###`--ftp-user=user`, `--ftp-password=password`
 
   Specify the username user and password password on an FTP server.  Without this, or the corresponding startup
   option, the password defaults to -wget@, normally used for anonymous FTP.
@@ -1304,7 +1302,7 @@ Go to background immediately after startup. If no output file is specified via t
   sure to protect those files from other users with "chmod".  If the passwords are really important, do not leave
   them lying in those files either---edit the files and delete them after Wget2 has started the download.
 
-* --no-remove-listing
+###`--no-remove-listing`
 
   Don't remove the temporary .listing files generated by FTP retrievals.  Normally, these files contain the raw
   directory listings received from FTP servers.  Not removing them can be useful for debugging purposes, or when
@@ -1321,7 +1319,7 @@ Go to background immediately after startup. If no output file is specified via t
   directory.  A user could do something as simple as linking index.html to /etc/passwd and asking "root" to run
   Wget2 with -N or -r so the file will be overwritten.
 
-* `--no-glob`
+###`--no-glob`
 
   Turn off FTP globbing.  Globbing refers to the use of shell-like special characters (wildcards), like *, ?, [ and
   ] to retrieve more than one file from the same directory at once, like:
@@ -1335,7 +1333,7 @@ Go to background immediately after startup. If no output file is specified via t
   directory listing, which is system-specific.  This is why it currently works only with Unix FTP servers (and the
   ones emulating Unix "ls" output).
 
-* `--no-passive-ftp`
+###`--no-passive-ftp`
   Disable the use of the passive FTP transfer mode.  Passive FTP mandates that the client connect to the server to
   establish the data connection rather than the other way around.
 
@@ -1344,11 +1342,11 @@ Go to background immediately after startup. If no output file is specified via t
   firewall configurations, active FTP actually works when passive FTP doesn't.  If you suspect this to be the case,
   use this option, or set "passive_ftp=off" in your init file.
 
-* `--preserve-permissions`
+###`--preserve-permissions`
 
   Preserve remote file permissions instead of permissions set by umask.
 
-* `--retr-symlinks`
+###`--retr-symlinks`
 
   By default, when retrieving FTP directories recursively and a symbolic link is encountered, the symbolic link is
   traversed and the pointed-to files are retrieved.  Currently, Wget2 does not traverse symbolic links to
@@ -1363,9 +1361,9 @@ Go to background immediately after startup. If no output file is specified via t
   Note that when retrieving a file (not a directory) because it was specified on the command-line, rather than
   because it was recursed to, this option has no effect.  Symbolic links are always traversed in this case.
 
-### <a name="FTPS Options"/>FTPS Options
+## <a name="FTPS Options"/>FTPS Options
 
-* `--ftps-implicit`
+###`--ftps-implicit`
 
   This option tells Wget2 to use FTPS implicitly. Implicit FTPS consists of initializing SSL/TLS from the very
   beginning of the control connection. This option does not send an "AUTH TLS" command: it assumes the server
@@ -1375,7 +1373,7 @@ Go to background immediately after startup. If no output file is specified via t
   number specified, the default port for implicit FTPS, 990, will be used, instead of the default port for the
   "normal" (explicit) FTPS which is the same as that of FTP, 21.
 
-* `--no-ftps-resume-ssl`
+###`--no-ftps-resume-ssl`
 
   Do not resume the SSL/TLS session in the data channel. When starting a data connection, Wget2 tries to resume the
   SSL/TLS session previously started in the control connection.  SSL/TLS session resumption avoids performing an
@@ -1393,17 +1391,17 @@ Go to background immediately after startup. If no output file is specified via t
   initial "AUTH TLS" command, or in the case of implicit FTPS, if the initial SSL/TLS connection attempt is
   rejected, it is considered that such server does not support FTPS.
 
-### <a name="Recursive Retrieval Options"/>Recursive Retrieval Options
+## <a name="Recursive Retrieval Options"/>Recursive Retrieval Options
 
-* -r, --recursive
+###`-r`, `--recursive`
 
   Turn on recursive retrieving.    The default maximum depth is 5.
 
-* -l depth, --level=depth
+###`-l depth`, `--level=depth`
 
   Specify recursion maximum depth level depth.
 
-* `--delete-after`
+###`--delete-after`
 
   This option tells Wget2 to delete every single file it downloads, after having done so.  It is useful for pre-
   fetching popular pages through a proxy, e.g.:
@@ -1416,7 +1414,7 @@ Go to background immediately after startup. If no output file is specified via t
   sites, for instance.  Also note that when --delete-after is specified, --convert-links is ignored, so .orig files
   are simply not created in the first place.
 
-* `-k`, `--convert-links`
+###`-k`, `--convert-links`
 
   After the download is complete, convert the links in the document to make them suitable for local viewing.  This
   affects not only the visible hyperlinks, but any part of the document that links to external content, such as
@@ -1445,7 +1443,7 @@ Go to background immediately after startup. If no output file is specified via t
   Note that only at the end of the download can Wget2 know which links have been downloaded.  Because of that, the
   work done by `-k` will be performed at the end of all the downloads.
 
-* `--convert-file-only`
+###`--convert-file-only`
 
   This option converts only the filename part of the URLs, leaving the rest of the URLs untouched. This filename
   part is sometimes referred to as the "basename", although we avoid that term here in order not to cause
@@ -1459,17 +1457,17 @@ Go to background immediately after startup. If no output file is specified via t
   that only the filename part has been modified. The rest of the URL has been left untouched, including the net
   path ("//") which would otherwise be processed by Wget2 and converted to the effective scheme (ie. "https://").
 
-* `-K`, `--backup-converted`
+###`-K`, `--backup-converted`
 
   When converting a file, back up the original version with a .orig suffix.  Affects the behavior of `-N`.
 
-* `-m`, `--mirror`
+###`-m`, `--mirror`
 
   Turn on options suitable for mirroring.  This option turns on recursion and time-stamping, sets infinite
   recursion depth and keeps FTP directory listings.  It is currently equivalent to `-r -N -l inf
   --no-remove-listing`.
 
-* `-p`, `--page-requisites`
+###`-p`, `--page-requisites`
 
   This option causes Wget2 to download all the files that are necessary to properly display a given HTML page.  This
   includes such things as inlined images, sounds, and referenced stylesheets.
@@ -1517,52 +1515,52 @@ Go to background immediately after startup. If no output file is specified via t
   To finish off this topic, it's worth knowing that Wget2's idea of an external document link is any URL specified
   in an `<A>` tag, an `<AREA>` tag, or a `<LINK>` tag other than `<LINK REL="stylesheet">`.
 
-* `--strict-comments`
+###`--strict-comments`
 
   Obsolete option for compatibility with Wget1.x.
   Wget2 always terminates comments at the first occurrence of `-->`, as popular browsers do.
 
-### <a name="Recursive Accept/Reject Options"/>Recursive Accept/Reject Options
+## <a name="Recursive Accept/Reject Options"/>Recursive Accept/Reject Options
 
-* -A acclist --accept acclist, -R rejlist --reject rejlist
+###`-A acclist --accept acclist`, `-R rejlist --reject rejlist`
 
   Specify comma-separated lists of file name suffixes or patterns to accept or reject. Note that if any of the
   wildcard characters, `*, ?, [, ]`, appear in an element of acclist or rejlist, it will be treated as a pattern,
   rather than a suffix.  In this case, you have to enclose the pattern into quotes to prevent your shell from
   expanding it, like in `-A "*.mp3"` or `-A '*.mp3'`.
 
-* --accept-regex urlregex, --reject-regex urlregex
+###`--accept-regex urlregex`, `--reject-regex urlregex`
 
   Specify a regular expression to accept or reject file names.
 
-* --regex-type regextype
+###`--regex-type regextype`
 
   Specify the regular expression type. Possible types are posix or pcre.  Note that to be able to use pcre type,
   wget2 has to be compiled with libpcre support.
 
-* --filter-urls
+###`--filter-urls`
 
   Apply the accept and reject filters on the URL before starting a download.
 
-* -D domain-list, --domains=domain-list
+###`-D domain-list, --domains=domain-list`
 
   Set domains to be followed.  domain-list is a comma-separated list of domains.  Note that it does not turn on -H.
 
-* --exclude-domains domain-list
+###`--exclude-domains domain-list`
 
   Specify the domains that are not to be followed.
 
-* `--follow-ftp`
+###`--follow-ftp`
 
   Follow FTP links from HTML documents.  Without this option, Wget2 will ignore all the FTP links.
 
-* `--follow-tags=list`
+###`--follow-tags=list`
 
   Wget2 has an internal table of HTML tag / attribute pairs that it considers when looking for linked documents
   during a recursive retrieval.  If a user wants only a subset of those tags to be considered, however, he or she
   should be specify such tags in a comma-separated list with this option.
 
-* --ignore-tags=list
+###`--ignore-tags=list`
 
   This is the opposite of the --follow-tags option.  To skip certain HTML tags when recursively looking for
   documents to download, specify them in a comma-separated list.
@@ -1577,38 +1575,38 @@ Go to background immediately after startup. If no output file is specified via t
   then stylesheets will not be downloaded.  Now the best bet for downloading a single page and its requisites is
   the dedicated --page-requisites option.
 
-* `--ignore-case`
+###`--ignore-case`
 
   Ignore case when matching files and directories.  This influences the behavior of -R, -A, -I, and -X options, as
   well as globbing implemented when downloading from FTP sites.  For example, with this option, -A "*.txt" will
   match file1.txt, but also file2.TXT, file3.TxT, and so on.  The quotes in the example are to prevent the shell
   from expanding the pattern.
 
-* `-H`, `--span-hosts`
+###`-H`, `--span-hosts`
 
   Enable spanning across hosts when doing recursive retrieving.
 
-* `-L`, `--relative`
+###`-L`, `--relative`
 
   Follow relative links only.  Useful for retrieving a specific home page without any distractions, not even those
   from the same hosts.
 
-* `-I list`, `--include-directories=list`
+###`-I list`, `--include-directories=list`
 
   Specify a comma-separated list of directories you wish to follow when downloading.  Elements of list may contain
   wildcards.
 
-* `-X list`, `--exclude-directories=list`
+###`-X list`, `--exclude-directories=list`
 
   Specify a comma-separated list of directories you wish to exclude from download.  Elements of list may contain
   wildcards.
 
-* `-np`, `--no-parent`
+###`-np`, `--no-parent`
 
   Do not ever ascend to the parent directory when retrieving recursively.  This is a useful option, since it
   guarantees that only the files below a certain hierarchy will be downloaded.
 
-* `--filter-mime-type=list`
+###`--filter-mime-type=list`
 
   Specify a comma-separated list of MIME types that will be downloaded.  Elements of list may contain wildcards.
   If a MIME type starts with the character '!' it won't be downloaded, this is useful when trying to download
@@ -1621,7 +1619,7 @@ Go to background immediately after startup. If no output file is specified via t
 
       wget2 -r https://<site>/<document> --filter-mime-type=$(sed -r '/^MimeType=/!d;s/^MimeType=//;s/;/,/g' /usr/share/applications/libreoffice-writer.desktop)
 
-## <a name="Environment"/>Environment
+# <a name="Environment"/>Environment
 
   Wget2 supports proxies for both HTTP and FTP retrievals.  The standard way to specify proxy location, which Wget
   recognizes, is using the following environment variables:
@@ -1643,7 +1641,7 @@ Go to background immediately after startup. If no output file is specified via t
   This variable should contain a comma-separated list of domain extensions `proxy` should not be used for.  For
   instance, if the value of `no_proxy` is `.mit.edu`, `proxy` will not be used to retrieve documents from MIT.
 
-## <a name="Exit Status"/>Exit Status
+# <a name="Exit Status"/>Exit Status
   Wget2 may return one of several error codes if it encounters problems.
 
       0   No problems occurred.
@@ -1672,7 +1670,7 @@ Go to background immediately after startup. If no output file is specified via t
   multiple types of errors are encountered.
 
 
-## <a name="Files"/>Files
+# <a name="Files"/>Files
 
   `/etc/wgetrc`
 
@@ -1682,7 +1680,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   User startup file.
 
-## <a name="Bugs"/>Bugs
+# <a name="Bugs"/>Bugs
 
   You are welcome to submit bug reports via the [GNU Wget2 bug tracker](https://gitlab.com/gnuwget/wget2/issues).
 
@@ -1716,23 +1714,24 @@ Go to background immediately after startup. If no output file is specified via t
   backtrace.  This may not work if the system administrator has disabled core files, but it is safe to try.
 
 
-## <a name="See also"/>See also
+# <a name="See also"/>See also
 
   This is not the complete manual for GNU Wget.  For more complete information, including more detailed explanations of
   some of the options, and a number of commands available for use with .wgetrc files and the -e option, see the GNU
   Info entry for wget.
 
 
-## <a name="Author"/>Author
+# <a name="Author"/>Author
 
-  Wget originally written by Hrvoje Nikšić <hniksic@xemacs.org><br>
   Wget2 written by Tim Rühsen <tim.ruehsen@gmx.de>
 
+  Wget 1.x originally written by Hrvoje Nikšić <hniksic@xemacs.org><br>
 
-## <a name="Copyright"/>Copyright
+# <a name="Copyright"/>Copyright
 
-  Copyright (C) 2012-2015 Tim Ruehsen
-  Copyright (C) 2015-2017 Free Software Foundation, Inc.
+  Copyright (C) 2012-2015 Tim Rühsen
+
+  Copyright (C) 2015-2018 Free Software Foundation, Inc.
 
   Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation
   License, Version 1.3 or any later version published by the Free Software Foundation; with no Invariant Sections, with

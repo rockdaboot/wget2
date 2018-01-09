@@ -51,6 +51,7 @@ configure
 depcomp
 docs/html
 docs/libwget.doxy
+docs/wget2_md2man.sh
 fuzz/*.min
 fuzz/*.out
 fuzz/*_fuzzer

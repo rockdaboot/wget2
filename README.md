@@ -110,6 +110,7 @@ The following packages are needed to build the software
 * makeinfo (part of texinfo)
 * pkg-config >= 0.28 (recommended)
 * doxygen (for creating the documentation)
+* pandoc (for creating the wget2 man page)
 * gettext >= 0.18.2
 * libiconv (needed for IRI and IDN support)
 * libz >= 1.2.3 (the distribution may call the package zlib*, eg. zlib1g on Debian)

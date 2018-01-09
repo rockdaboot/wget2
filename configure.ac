@@ -698,7 +698,8 @@ AC_CONFIG_FILES([Makefile
                  unit-tests/Makefile
                  tests/Makefile
                  fuzz/Makefile
-                 libwget.pc])
+                 libwget.pc
+                 docs/wget2_md2man.sh])
 AC_OUTPUT
 
 AC_MSG_NOTICE([Summary of build options:
