@@ -125,7 +125,8 @@ VPATH build:
     - ./bootstrap
     - mkdir vpath && cd vpath
     - ../configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
-    - make distcheck
+    - make -j$(nproc)
+    - make -j$(nproc) distcheck
 
 
 #Centos7 build:
