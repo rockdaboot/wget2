@@ -30,6 +30,7 @@ libwget/tls_session.c
 libwget/xml.c
 src/host.c
 src/job.c
+src/stats.c
 src/wget.c
 src/options.c
 src/gpgme.c
