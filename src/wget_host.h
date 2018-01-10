@@ -101,6 +101,14 @@ struct DOC {
 		response_end; // Milli timestamp that final response read in
 	long long
 		initial_response_duration; // Number of millis between initial request, and first bytes back
+	bool
+		is_sig; //!< Is this DOC a signature for a file?
+	int
+		valid_sigs, //!< Number of valid GPG signatures inside the doc. Meaningless if !is_sig.
+		invalid_sigs, //!< Number of invalid GPG signatures inside the dov. Meaningless if !is_sig.
+		missing_sigs, //!< Number of GPG signatures with missing public keys. Meaningless if !is_sig.
+		bad_sigs; //!< Number of bad GPG signatures. Meaningless if !is_sig.
+
 };
 
 struct site_stats {

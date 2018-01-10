@@ -1901,25 +1901,23 @@ static void process_response(wget_http_response_t *resp)
 		else if (config.verify_sig && resp->content_type) {
 #ifdef WITH_GPGME
 			if (wget_strcasecmp_ascii(resp->content_type, "application/pgp-signature") == 0) {
+
 				wget_gpg_info_t info;
-				int ans = wget_verify_job(job, resp, &info);
-				switch (ans) {
-				case WGET_E_SUCCESS:
-				        info_printf(_("Found %d valid signature(s) in %s\n"), info.valid_sigs, job->sig_filename);
-					break;
-				case WGET_E_GPG_VER_FAIL:
-					// TODO: Add GPG information to stats and simplify this to
-					// a single WGET_EXIT_STATUS_GPG_ERROR
-					if (info.missing_sigs) {
-						set_exit_status(WG_EXIT_STATUS_KEY_MISSING);
-					} else {
-						set_exit_status(WG_EXIT_STATUS_SIG_CHECK_FAIL);
-					}
-					break;
-				default:
-					error_printf(_("GPGME error %d\n"), ans);
-					set_exit_status(WG_EXIT_STATUS_GENERIC);
-					break;
+
+				if (wget_verify_job(job, resp, &info) != WGET_E_SUCCESS) {
+					set_exit_status(WG_EXIT_STATUS_GPG_ERROR);
+				}
+
+				DOC *doc = stats_docs_add(job->iri, resp);
+				if (!doc) {
+					// The document should have been created already!
+					error_printf(_("Missing DOC for %s\n"), job->iri->uri);
+				} else {
+					doc->is_sig = 1;
+					doc->valid_sigs = info.valid_sigs;
+					doc->invalid_sigs = info.invalid_sigs;
+					doc->missing_sigs = info.missing_sigs;
+					doc->bad_sigs = info.bad_sigs;
 				}
 
 			} else if (wget_strncasecmp_ascii(resp->content_type, "application/", 12) == 0) {

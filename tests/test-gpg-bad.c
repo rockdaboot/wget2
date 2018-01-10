@@ -17,7 +17,7 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- * Testing an invalid signature.
+ * Testing a bad signature.
  */
 
 #include <config.h>
@@ -29,7 +29,7 @@
 int main(void)
 {
 #ifdef WITH_GPGME
-	if (gpg_test(SRCDIR "/gpg/helloworld.txt.invalid.sig", 9)) { // WG_EXIT_STATUS_GPG_ERROR
+	if (gpg_test(SRCDIR "/gpg/helloworld.txt.bad.sig", 9)) { // WG_EXIT_STATUS_GPG_ERROR
 		return 1;
 	}
 #endif

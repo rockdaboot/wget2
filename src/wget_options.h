@@ -222,8 +222,7 @@ typedef enum exit_status_t {
 	WG_EXIT_STATUS_AUTH           = 6,
 	WG_EXIT_STATUS_PROTOCOL       = 7,
 	WG_EXIT_STATUS_REMOTE         = 8,
-	WG_EXIT_STATUS_KEY_MISSING    = 9,
-	WG_EXIT_STATUS_SIG_CHECK_FAIL = 10
+	WG_EXIT_STATUS_GPG_ERROR      = 9
 } exit_status_t;
 
 // Needed for fuzzers that are compiled by C++
