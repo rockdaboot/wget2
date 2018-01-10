@@ -733,7 +733,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	HOST *host;
 	struct plugin_db_forward_url_verdict plugin_verdict;
 
-	wget_info_printf("Adding URL: %s\n", url);
+	wget_info_printf(_("Adding URL: %s\n"), url);
 
 	if (flags & URL_FLG_REDIRECTION) { // redirect
 		if (config.max_redirect && job && job->redirection_level >= config.max_redirect) {
@@ -972,7 +972,7 @@ static void _convert_links(void)
 		const char *data, *data_ptr;
 		size_t data_length;
 
-		wget_info_printf("convert %s %s %s\n", conversion->filename, conversion->base_url->uri, conversion->encoding);
+		wget_info_printf(_("convert %s %s %s\n"), conversion->filename, conversion->base_url->uri, conversion->encoding);
 
 		if (!(data = data_ptr = wget_read_file(conversion->filename, &data_length))) {
 			wget_error_printf(_("%s not found (%d)\n"), conversion->filename, errno);
@@ -1360,7 +1360,7 @@ static int try_connection(DOWNLOADER *downloader, wget_iri_t *iri)
 	int rc;
 
 	if (config.hsts && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, iri->port)) {
-		info_printf("HSTS in effect for %s:%hu\n", iri->host, iri->port);
+		info_printf(_("HSTS in effect for %s:%hu\n"), iri->host, iri->port);
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
 		host_add(iri);	// add new host to hosts
 	}
@@ -1617,7 +1617,7 @@ static void process_head_response(wget_http_response_t *resp)
 			wget_thread_mutex_unlock(etag_mutex);
 
 			if (rc) {
-				info_printf("Not scanning '%s' (known ETag)\n", job->iri->uri);
+				info_printf(_("Not scanning '%s' (known ETag)\n"), job->iri->uri);
 				return;
 			}
 		}
@@ -1890,7 +1890,7 @@ static void process_response(wget_http_response_t *resp)
 							// add sitemaps to be downloaded (format https://www.sitemaps.org/protocol.html)
 							for (int it = 0; it < wget_vector_size(job->host->robots->sitemaps); it++) {
 								const char *sitemap = wget_vector_get(job->host->robots->sitemaps, it);
-								info_printf("adding sitemap '%s'\n", sitemap);
+								debug_printf("adding sitemap '%s'\n", sitemap);
 								add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see https://www.sitemaps.org/protocol.html#escaping
 							}
 						}

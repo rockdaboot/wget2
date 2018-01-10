@@ -1143,7 +1143,7 @@ void stats_print(void)
 		}
 
 		if (fp != stdout) {
-			info_printf("%s stats saved in %s\n", stats_opts[type].tag, filename);
+			info_printf(_("%s stats saved in %s\n"), stats_opts[type].tag, filename);
 			fclose(fp);
 		}
 
