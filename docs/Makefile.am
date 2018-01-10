@@ -30,7 +30,7 @@ libwget.stamp:
 	$(DOXYGEN) $(builddir)/libwget.doxy
 	echo > libwget.stamp
 
-EXTRA_DIST += DoxygenLayout.xml
+EXTRA_DIST += DoxygenLayout.xml $(man3_MANS)
 STAMPS += libwget.stamp
 LOCAL_DISTCLEAN += html man
 endif
@@ -48,7 +48,7 @@ wget2.stamp:
 	echo > wget2.stamp
 
 DISTCLEANFILES += wget2.texi wget2.info
-EXTRA_DIST += wget2.info wget2.texi
+EXTRA_DIST += wget2.info $(man1_MANS)
 STAMPS += wget2.stamp
 endif
 
