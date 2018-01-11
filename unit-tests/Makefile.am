@@ -1,4 +1,4 @@
-DEFS = @DEFS@ -DWGET_DATADIR=\"$(abs_top_srcdir)/data\" -DSRCDIR=\"$(abs_srcdir)\" -DEXEEXT=\"$(EXEEXT)\"
+DEFS = @DEFS@ -DSRCDIR=\"$(abs_srcdir)\" -DEXEEXT=\"$(EXEEXT)\"
 
 MYLIBS = \
  $(LIBOBJS) $(GETADDRINFO_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB) $(INET_PTON_LIB) \
@@ -42,8 +42,6 @@ test_parse_html_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MY
 test_dl_LDADD = ../src/dl.o ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 EXTRA_DIST = files
-dist-hook:
-	rm -f $(distdir)/files/elb_bibel.txt
 
 AM_TESTS_ENVIRONMENT = export VALGRIND_TESTS"=@VALGRIND_TESTS@";
 TESTS = $(WGET_TESTS)

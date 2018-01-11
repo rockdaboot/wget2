@@ -709,7 +709,6 @@ AC_CONFIG_FILES([Makefile
                  include/wget/Makefile
                  libwget/Makefile
                  src/Makefile
-                 data/Makefile
                  examples/Makefile
                  unit-tests/Makefile
                  tests/Makefile

@@ -1,4 +1,4 @@
-DEFS = @DEFS@ -DWGET_DATADIR=\"$(abs_top_srcdir)/data\"\
+DEFS = @DEFS@ \
  -DSRCDIR=\"$(abs_srcdir)\" -DBUILDDIR=\"$(abs_builddir)\" -DEXEEXT=\"$(EXEEXT)\"
 
 MYLIBS = \
