@@ -733,9 +733,17 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `-s`, `--verify-sig`
 
-  Enable PGP signature verification. When enabled Wget2 will attempt to download and verify PGP signatures against their corresponding files.
-  Any file downloaded that has a content type of `application/*` will have an additional request added for `<name>.sig`. If the content type
-  for the signature request is `application/pgp-signature`, Wget2 will attempt to verify the signature against the original file.
+  Enable PGP signature verification. When enabled Wget2 will attempt to download and verify PGP signatures against
+  their corresponding files. Any file downloaded that has a content type of `application/*` will cause Wget2 to
+  send another request for a file with the same name and an extension added as defined by the
+  `--signature-extension` option. If the content type for the signature request is `application/pgp-signature`,
+  Wget2 will attempt to verify the signature against the original file.
+
+### `--signature-extension`
+
+  Specify the file extension for signature files, without the leading ".". The
+  default is "sig". Currently, you may define only one possible signature
+  extension which will be tried.
 
 ### `--gnupg-homedir`
 
