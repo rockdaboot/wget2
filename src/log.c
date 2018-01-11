@@ -34,6 +34,12 @@
 #include <time.h>
 #include <errno.h>
 #include <fcntl.h>
+
+#if defined __clang__
+  // silence warnings in gnulib code
+  #pragma clang diagnostic ignored "-Wshorten-64-to-32"
+#endif
+
 #include "timespec.h" // gnulib gettime()
 
 #ifdef _WIN32

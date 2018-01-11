@@ -51,7 +51,7 @@ static wget_bar_t
 	*bar;
 static wget_thread_t
 	progress_thread;
-bool
+static bool
 	_terminate_thread;
 
 static void *_bar_update_thread(void *p G_GNUC_WGET_UNUSED)

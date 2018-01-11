@@ -36,6 +36,12 @@
 
 #include "c-ctype.h"
 #include "c-strcase.h"
+
+#if defined __clang__
+  // silence warnings in gnulib code
+  #pragma clang diagnostic ignored "-Wshorten-64-to-32"
+#endif
+
 #include "timespec.h" // gnulib gettime()
 
 #ifdef HAVE_IOCTL

@@ -26,7 +26,7 @@
 #include "wget.h"
 #include <stdlib.h>
 
-wget_test_url_t urls[] = {
+static wget_test_url_t urls[] = {
 	{	.name = "/gpg/helloworld.txt",
 		.code = "200 Dontcare",
 		.body = "Hello World!\n",

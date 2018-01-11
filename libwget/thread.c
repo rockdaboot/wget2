@@ -28,14 +28,21 @@
 #include <config.h>
 
 #include <errno.h>
+
+// silence warnings in gnulib code
+#if defined __clang__
+  #pragma clang diagnostic ignored "-Wundef"
+  #pragma clang diagnostic ignored "-Wshorten-64-to-32"
+  #pragma clang diagnostic ignored "-Wconditional-uninitialized"
+#elif defined __GNUC__ && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))
+  #pragma GCC diagnostic ignored "-Wundef"
+#endif
+
 #include "timespec.h" // gnulib gettime()
 
-#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
-	#pragma GCC diagnostic ignored "-Wundef"
-	#include <glthread/thread.h>
-	#include <glthread/lock.h>
-	#include <glthread/cond.h>
-#endif
+#include <glthread/thread.h>
+#include <glthread/lock.h>
+#include <glthread/cond.h>
 
 #include <wget.h>
 #include "private.h"

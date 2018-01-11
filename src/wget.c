@@ -48,6 +48,11 @@
 #include <windows.h> // GetFileAttributes()
 #endif
 
+#if defined __clang__
+  // silence warnings in gnulib code
+  #pragma clang diagnostic ignored "-Wshorten-64-to-32"
+#endif
+
 #include "timespec.h" // gnulib gettime()
 #include "safe-read.h"
 #include "safe-write.h"
