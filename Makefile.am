@@ -66,3 +66,4 @@ fuzz-coverage: clean clean-lcov
 
 check-local:
 	$(MAKE) -s syntax-check >/dev/null
+	contrib/check_options
