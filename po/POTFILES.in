@@ -15,6 +15,7 @@ libwget/hash_printf.c
 libwget/hashfile.c
 libwget/hpkp.c
 libwget/hsts.c
+libwget/html_url.c
 libwget/http.c
 libwget/http_highlevel.c
 libwget/http_parse.c
@@ -28,9 +29,12 @@ libwget/pipe.c
 libwget/ssl_gnutls.c
 libwget/tls_session.c
 libwget/xml.c
+src/bar.c
+src/dl.c
+src/gpgme.c
 src/host.c
 src/job.c
+src/options.c
+src/plugin.c
 src/stats.c
 src/wget.c
-src/options.c
-src/gpgme.c

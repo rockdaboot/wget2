@@ -37,6 +37,7 @@
 
 #include <wget.h>
 
+#include "wget_main.h"
 #include "wget_options.h"
 #include "wget_log.h"
 #include "wget_bar.h"
@@ -90,7 +91,7 @@ void bar_init(void)
 	}
 
 nobar:
-	wget_error_printf("Cannot create progress bar thread. Disabling progess bar.\n");
+	wget_error_printf(_("Cannot create progress bar thread. Disabling progess bar.\n"));
 	config.progress = 0;
 }
 

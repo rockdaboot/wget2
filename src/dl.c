@@ -30,6 +30,7 @@
 
 #include <wget.h>
 
+#include "wget_main.h"
 #include "wget_dl.h"
 
 // Error reporting functions
@@ -37,7 +38,7 @@
 static void dl_error_set_noalloc(dl_error_t *e, const char *msg)
 {
 	if (msg && e->msg)
-		wget_error_printf("Piling up error '%s' over error '%s'", msg, e->msg);
+		wget_error_printf(_("Piling up error '%s' over error '%s'"), msg, e->msg);
 
 	wget_free((void *) e->msg);
 	e->msg = msg;

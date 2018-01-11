@@ -27,6 +27,7 @@
 
 #include <wget.h>
 
+#include "wget_main.h"
 #include "wget_dl.h"
 #include "wget_plugin.h"
 
@@ -452,7 +453,7 @@ int plugin_db_load_from_envvar(void)
 				plugin = plugin_db_load_from_name(str, e);
 
 			if (! plugin) {
-				wget_error_printf("Plugin '%s' failed to load: %s", str, dl_error_get_msg(e));
+				wget_error_printf(_("Plugin '%s' failed to load: %s"), str, dl_error_get_msg(e));
 				dl_error_set(e, NULL);
 				ret = -1;
 			}
@@ -561,7 +562,7 @@ void plugin_db_show_help(void)
 		plugin_t *plugin = (plugin_t *) wget_vector_get(plugin_list, i);
 		plugin_priv_t *priv = (plugin_priv_t *) plugin;
 		if (priv->argp) {
-			printf("Options for %s:\n", plugin->name);
+			printf(_("Options for %s:\n"), plugin->name);
 			priv->argp((wget_plugin_t *) plugin, "help", NULL);
 			printf("\n");
 		}

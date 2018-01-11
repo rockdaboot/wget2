@@ -1312,7 +1312,7 @@ ssize_t wget_tcp_vprintf(wget_tcp_t *tcp, const char *fmt, va_list args)
 		debug_write(buf.data, len2);
 
 	if (len2 > 0 && (ssize_t) buf.length != len2)
-		error_printf("tcp_send: internal error: length mismatch %zu != %zd\n", buf.length, len2);
+		error_printf(_("%s: internal error: length mismatch %zu != %zd\n"), __func__, buf.length, len2);
 
 	return len2;
 }

@@ -458,7 +458,7 @@ const char *wget_cookie_parse_setcookie(const char *s, wget_cookie_t **_cookie)
 
 	} else {
 		wget_cookie_free(&cookie);
-		error_printf("Cookie without name or assignment ignored\n");
+		error_printf(_("Cookie without name or assignment ignored\n"));
 	}
 
 	if (_cookie)

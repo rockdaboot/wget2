@@ -1798,9 +1798,9 @@ static void process_response(wget_http_response_t *resp)
 		}
 		if (job->metalink) {
 			if (job->metalink->size <= 0) {
-				error_printf("File length %llu - remove job\n", (unsigned long long)job->metalink->size);
+				error_printf(_("File length %llu - remove job\n"), (unsigned long long)job->metalink->size);
 			} else if (!job->metalink->mirrors) {
-				error_printf("No download mirrors found - remove job\n");
+				error_printf(_("No download mirrors found - remove job\n"));
 			} else {
 				// just loaded a metalink description, create parts and sort mirrors
 
@@ -2103,7 +2103,7 @@ void *downloader_thread(void *p)
 			break;
 
 		default:
-			error_printf_exit("Unhandled action %d\n", (int) action);
+			error_printf_exit(_("Unhandled action %d\n"), (int) action);
 		}
 	}
 
@@ -2441,7 +2441,7 @@ void sitemap_parse_xml_gz(JOB *job, wget_buffer_t *gzipped_data, const char *enc
 
 		sitemap_parse_xml(job, plain->data, encoding, base);
 	} else
-		error_printf("Can't scan '%s' because no libz support enabled at compile time\n", job->iri->uri);
+		error_printf(_("Can't scan '%s' because no libz support enabled at compile time\n"), job->iri->uri);
 
 	wget_buffer_free(&plain);
 }
@@ -2580,10 +2580,10 @@ void metalink_parse_localfile(const char *fname)
 		wget_metalink_t *metalink = wget_metalink_parse(data);
 
 		if (metalink->size <= 0) {
-			error_printf("Invalid file length %llu\n", (unsigned long long)metalink->size);
+			error_printf(_("Invalid file length %llu\n"), (unsigned long long)metalink->size);
 			wget_metalink_free(&metalink);
 		} else if (!metalink->mirrors) {
-			error_printf("No download mirrors found\n");
+			error_printf(_("No download mirrors found\n"));
 			wget_metalink_free(&metalink);
 		} else {
 			// create parts and sort mirrors

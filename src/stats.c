@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+
 #include "wget_main.h"
 #include "wget_stats.h"
 #include "wget_options.h"
@@ -189,7 +190,7 @@ DOC *stats_docs_add(wget_iri_t *iri, wget_http_response_t *resp)
 	HOST *hostp;
 
 	if (!(hostp = stats_host_get(iri))) {
-		error_printf("No existing host entry for iri->uri = %s\n", iri->uri);
+		error_printf(_("No existing host entry for %s\n"), iri->uri);
 		return NULL;
 	}
 
@@ -260,7 +261,7 @@ TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, wget_htt
 		return NULL;
 
 	if (parent_iri && !(hostp = stats_host_get(parent_iri))) {
-		error_printf("No existing host entry for parent_iri->uri = %s\n", parent_iri->uri);
+		error_printf(_("No existing host entry for parent %s\n"), parent_iri->uri);
 		return NULL;
 	}
 
@@ -268,7 +269,7 @@ TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, wget_htt
 
 	if (parent_iri) {
 		if (!(parent_node = stats_docs_get(hostp->tree_docs, parent_iri))) {
-			error_printf("No existing entry for %s in tree_docs hashmap\n", parent_iri->uri);
+			error_printf(_("No existing entry for %s in tree_docs hashmap\n"), parent_iri->uri);
 			goto out;
 		}
 
@@ -277,7 +278,7 @@ TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, wget_htt
 	}
 
 	if (!(hostp = stats_host_get(iri))) {
-		error_printf("No existing host entry for iri->uri = %s\n", iri->uri);
+		error_printf(_("No existing host entry for %s\n"), iri->uri);
 		goto out;
 	}
 
@@ -299,7 +300,7 @@ TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, wget_htt
 			child_node->doc = doc;
 			child_node->redirect = redirect;
 		} else {
-			// error_printf("Existing entry for iri->uri = %s in tree_docs hashmap of host %s://%s\n", iri->uri, hostp->scheme, hostp->host);
+			// error_printf(_("Existing entry for %s in tree_docs hashmap of host %s://%s\n"), iri->uri, hostp->scheme, hostp->host);
 			goto out;
 		}
 	}
@@ -447,7 +448,7 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 	}
 
 	default:
-		error_printf("Unknown stats type %d\n", (int) type);
+		error_printf(_("Unknown stats type %d\n"), (int) type);
 		break;
 	}
 }
@@ -783,7 +784,7 @@ G_GNUC_WGET_PURE static const char *stats_server_hpkp(wget_hpkp_stats_t hpkp)
 	case WGET_STATS_HPKP_ERROR:
 		return "HPKP_ERROR";
 	default:
-		error_printf("Unknown HPKP stats type %d\n", (int) hpkp);
+		error_printf(_("Unknown HPKP stats type %d\n"), (int) hpkp);
 		return "-";
 	}
 }
@@ -981,7 +982,7 @@ static void stats_print_human(wget_stats_type_t type, wget_buffer_t *buf, FILE *
 		break;
 
 	default:
-		error_printf("Unknown stats type %d\n", (int) type);
+		error_printf(_("Unknown stats type %d\n"), (int) type);
 		break;
 	}
 }
@@ -1043,7 +1044,7 @@ static void stats_print_json(wget_stats_type_t type, wget_buffer_t *buf, FILE *f
 		break;
 
 	default:
-		error_printf("Unknown stats type %d\n", (int) type);
+		error_printf(_("Unknown stats type %d\n"), (int) type);
 		break;
 	}
 
@@ -1082,7 +1083,7 @@ static void stats_print_csv(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp
 		break;
 
 	default:
-		error_printf("Unknown stats type %d\n", (int) type);
+		error_printf(_("Unknown stats type %d\n"), (int) type);
 		break;
 	}
 }
@@ -1113,7 +1114,7 @@ void stats_print(void)
 			fp = stdout;
 
 		if (!fp) {
-			error_printf("File could not be opened %s for %s stats\n", filename, stats_opts[type].tag);
+			error_printf(_("File could not be opened %s for %s stats\n"), filename, stats_opts[type].tag);
 			continue;
 		}
 
@@ -1138,7 +1139,7 @@ void stats_print(void)
 			stats_print_tree(&buf, fp);
 			break;
 
-		default: error_printf("Unknown stats format %d\n", (int) stats_opts[type].format);
+		default: error_printf(_("Unknown stats format %d\n"), (int) stats_opts[type].format);
 			break;
 		}
 

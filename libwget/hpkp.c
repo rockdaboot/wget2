@@ -539,13 +539,13 @@ static int _hpkp_db_load(_hpkp_db_impl_t *hpkp_db_priv, FILE *fp)
 				} else
 					debug_printf("HPKP: entry '%s' is expired\n", host);
 			} else {
-				error_printf("HPKP: could not parse host line '%s'\n", buf);
+				error_printf(_("HPKP: could not parse host line '%s'\n"), buf);
 			}
 		} else if (hpkp) {
 			if (sscanf(linep, "*%31s %255s", hash_type, pin_b64) == 2) {
 				wget_hpkp_pin_add(hpkp, hash_type, pin_b64);
 			} else {
-				error_printf("HPKP: could not parse pin line '%s'\n", buf);
+				error_printf(_("HPKP: could not parse pin line '%s'\n"), buf);
 			}
 		} else {
 			debug_printf("HPKP: skipping PIN entry: '%s'\n", buf);

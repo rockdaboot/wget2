@@ -128,7 +128,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
 		wget_html_parsed_result_t *res = &ctx->result;
 
-//		info_printf("%02X %s %s '%.*s' %zu %zu\n", (unsigned) flags, tag, attr, (int) len, val, len, pos);
+//		debug_printf("%02X %s %s '%.*s' %zu %zu\n", (unsigned) flags, tag, attr, (int) len, val, len, pos);
 
 		if ((*tag|0x20) == 'm' && !wget_strcasecmp_ascii(tag, "meta")) {
 			if (!ctx->found_robots) {
@@ -293,7 +293,7 @@ static void _urls_to_absolute(WGET_VECTOR *urls, WGET_IRI *base)
 			if (wget_iri_relative_to_abs(base, url->url, url->len, &buf))
 				url->abs_url = wget_strmemdup(buf.data, buf.length);
 			else
-				error_printf("Cannot resolve relative URI '%s'\n", url->url);
+				error_printf(_("Cannot resolve relative URI '%s'\n"), url->url);
 		}
 
 		wget_buffer_deinit(&buf);

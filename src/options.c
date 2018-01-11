@@ -343,7 +343,7 @@ static int parse_header(option_t opt, const char *val, G_GNUC_WGET_UNUSED const 
 		delim_pos = strchr(val, ':');
 
 		if (!delim_pos || delim_pos == val) {
-			wget_error_printf("Ignoring invalid header: %s\n", val);
+			wget_error_printf(_("Ignoring invalid header: %s\n"), val);
 			return 0;
 		}
 
@@ -352,7 +352,7 @@ static int parse_header(option_t opt, const char *val, G_GNUC_WGET_UNUSED const 
 			value++;
 
 		if (*value == '\0') {
-			wget_error_printf("No value in header (ignoring): %s\n", val);
+			wget_error_printf(_("No value in header (ignoring): %s\n"), val);
 			return 0;
 		}
 
@@ -565,7 +565,7 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_cert_type(option_t op
 	else if (!wget_strcasecmp_ascii(val, "DER") || !wget_strcasecmp_ascii(val, "ASN1"))
 		*((char *)opt->var) = WGET_SSL_X509_FMT_DER;
 	else {
-		error_printf("Unknown cert type '%s'\n", val);
+		error_printf(_("Unknown cert type '%s'\n"), val);
 		return -1;
 	}
 
@@ -582,7 +582,7 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_regex_type(option_t o
 		*((char *)opt->var) = WGET_REGEX_TYPE_PCRE;
 #endif
 	else
-		error_printf_exit("Unsupported regex type '%s'\n", val);
+		error_printf_exit(_("Unsupported regex type '%s'\n"), val);
 
 	return 0;
 }
@@ -594,7 +594,7 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_progress_type(option_
 	else if (!wget_strcasecmp_ascii(val, "bar"))
 		*((char *)opt->var) = 1;
 	else {
-		error_printf("Unknown progress type '%s'\n", val);
+		error_printf(_("Unknown progress type '%s'\n"), val);
 		return -1;
 	}
 
@@ -619,7 +619,7 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_restrict_names(option
 	else if (!wget_strcasecmp_ascii(val, "lowercase"))
 		*((int *)opt->var) = WGET_RESTRICT_NAMES_LOWERCASE;
 	else {
-		error_printf("Unknown restrict-file-name type '%s'\n", val);
+		error_printf(_("Unknown restrict-file-name type '%s'\n"), val);
 		return -1;
 	}
 
@@ -671,7 +671,7 @@ static int parse_prefer_family(option_t opt, const char *val, G_GNUC_WGET_UNUSED
 	else if (!wget_strcasecmp_ascii(val, "ipv6"))
 		*((char *)opt->var) = WGET_NET_FAMILY_IPV6;
 	else {
-		error_printf("Unknown address family '%s'\n", val);
+		error_printf(_("Unknown address family '%s'\n"), val);
 		return -1;
 	}
 
@@ -701,7 +701,7 @@ static int parse_stats(option_t opt, const char *val, const char invert)
 			else if ((int) (ptrdiff_t)opt->var == WGET_STATS_TYPE_SITE && !wget_strncasecmp_ascii("tree", val, p - val))
 				format = WGET_STATS_FORMAT_TREE;
 			else {
-				error_printf("Unknown stats format\n");
+				error_printf(_("Unknown stats format\n"));
 				return -1;
 			}
 
@@ -743,7 +743,7 @@ static int parse_plugin(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GNUC
 	dl_error_init(e);
 
 	if (! plugin_db_load_from_name(val, e)) {
-		error_printf("Plugin '%s' failed to load: %s\n", val, dl_error_get_msg(e));
+		error_printf(_("Plugin '%s' failed to load: %s\n"), val, dl_error_get_msg(e));
 		dl_error_set(e, NULL);
 		return -1;
 	}
@@ -761,7 +761,7 @@ static int parse_plugin_local(G_GNUC_WGET_UNUSED option_t opt, const char *val, 
 	dl_error_init(e);
 
 	if (! plugin_db_load_from_path(val, e)) {
-		error_printf("Plugin '%s' failed to load: %s\n", val, dl_error_get_msg(e));
+		error_printf(_("Plugin '%s' failed to load: %s\n"), val, dl_error_get_msg(e));
 		dl_error_set(e, NULL);
 		return -1;
 	}
@@ -822,11 +822,11 @@ static int parse_report_speed_type(option_t opt, const char *val, G_GNUC_WGET_UN
 	else if (!wget_strcasecmp_ascii(val, "bits"))
 		*((int *)opt->var) = WGET_REPORT_SPEED_BITS;
 	else if (!val[0]) {
-		error_printf("Missing required type specifier\n");
+		error_printf(_("Missing required type specifier\n"));
 		return -1;
 	}
 	else {
-		error_printf("Invalid type specifier: %s\n", val);
+		error_printf(_("Invalid type specifier: %s\n"), val);
 		return -1;
 	}
 
@@ -2435,7 +2435,7 @@ static int run_use_askpass(const char *question, char **answer)
 	if (!is_testing()) {
 		rc = posix_spawnp(&pid, config.use_askpass_bin, &fa, NULL, (char * const *) argv, environ);
 		if (rc) {
-			error_printf("Error spawning %s: %d", config.use_askpass_bin, rc);
+			error_printf(_("Error spawning %s: %d"), config.use_askpass_bin, rc);
 			goto cleanup;
 		}
 	}
@@ -2944,7 +2944,7 @@ int selftest_options(void)
 
 	for (it = 1; it < countof(options); it++) {
 		if (opt_compare(options[it - 1].long_name, &options[it]) > 0) {
-			error_printf("%s: Option not in order '%s' after '%s' (using opt_compare())\n", __func__, options[it].long_name, options[it - 1].long_name);
+			error_printf(_("%s: Option not in order '%s' after '%s' (using opt_compare())\n"), __func__, options[it].long_name, options[it - 1].long_name);
 			ret = 1;
 		}
 	}
@@ -2953,7 +2953,7 @@ int selftest_options(void)
 
 	for (it = 1; it < countof(options); it++) {
 		if (opt_compare_config(options[it - 1].long_name, &options[it]) > 0) {
-			error_printf("%s: Option not in order '%s' after '%s' (using opt_compare_config())\n", __func__, options[it].long_name, options[it - 1].long_name);
+			error_printf(_("%s: Option not in order '%s' after '%s' (using opt_compare_config())\n"), __func__, options[it].long_name, options[it - 1].long_name);
 			ret = 1;
 		}
 	}
@@ -2963,7 +2963,7 @@ int selftest_options(void)
 	for (it = 0; it < countof(options); it++) {
 		option_t opt = bsearch(options[it].long_name, options, countof(options), sizeof(options[0]), opt_compare);
 		if (!opt) {
-			error_printf("%s: Failed to find option '%s' (using opt_compare())\n", __func__, options[it].long_name);
+			error_printf(_("%s: Failed to find option '%s' (using opt_compare())\n"), __func__, options[it].long_name);
 			ret = 1;
 		}
 	}
@@ -2973,7 +2973,7 @@ int selftest_options(void)
 	for (it = 0; it < countof(options); it++) {
 		option_t opt = bsearch(options[it].long_name, options, countof(options), sizeof(options[0]), opt_compare_config);
 		if (!opt) {
-			error_printf("%s: Failed to find option '%s' (using opt_compare_config())\n", __func__, options[it].long_name);
+			error_printf(_("%s: Failed to find option '%s' (using opt_compare_config())\n"), __func__, options[it].long_name);
 			ret = 1;
 		}
 	}
@@ -2997,7 +2997,7 @@ int selftest_options(void)
 					if (opt_compare_config_linear(test_command[it], options[it2].long_name) == 0)
 						opt = &options[it2];
 				if (!opt) {
-					error_printf("%s: Failed to find option '%s' (using opt_compare_config())\n", __func__, test_command[it]);
+					error_printf(_("%s: Failed to find option '%s' (using opt_compare_config())\n"), __func__, test_command[it]);
 					ret = 1;
 				}
 			}
@@ -3023,7 +3023,7 @@ int selftest_options(void)
 			config.recursive = 2; // invalid bool value
 			parse_command_line(3, test_bool_short[it].argv);
 			if (config.recursive != test_bool_short[it].result) {
-				error_printf("%s: Failed to parse bool short option #%zu (=%d)\n", __func__, it, config.recursive);
+				error_printf(_("%s: Failed to parse bool short option #%zu (=%d)\n"), __func__, it, config.recursive);
 				ret = 1;
 			}
 		}
@@ -3050,14 +3050,14 @@ int selftest_options(void)
 			config.recursive = 2; // invalid bool value
 			parse_command_line(2, test_bool[it].argv);
 			if (config.recursive != test_bool[it].result) {
-				error_printf("%s: Failed to parse bool long option #%zu (%d)\n", __func__, it, config.recursive);
+				error_printf(_("%s: Failed to parse bool long option #%zu (%d)\n"), __func__, it, config.recursive);
 				ret = 1;
 			}
 
 			config.recursive = 2; // invalid bool value
 			parse_command_line(3, test_bool[it].argv);
 			if (config.recursive != test_bool[it].result) {
-				error_printf("%s: Failed to parse bool long option #%zu (%d)\n", __func__, it, config.recursive);
+				error_printf(_("%s: Failed to parse bool long option #%zu (%d)\n"), __func__, it, config.recursive);
 				ret = 1;
 			}
 		}
@@ -3100,7 +3100,7 @@ int selftest_options(void)
 			config.dns_timeout = 555; // some value not used in test
 			parse_command_line(3, test_timeout_short[it].argv);
 			if (config.dns_timeout != test_timeout_short[it].result) {
-				error_printf("%s: Failed to parse timeout short option #%zu (=%d)\n", __func__, it, config.dns_timeout);
+				error_printf(_("%s: Failed to parse timeout short option #%zu (=%d)\n"), __func__, it, config.dns_timeout);
 				ret = 1;
 			}
 		}
@@ -3131,7 +3131,7 @@ int selftest_options(void)
 			config.dns_timeout = 555;  // some value not used in test
 			parse_command_line(3, test_timeout[it].argv);
 			if (config.dns_timeout != test_timeout[it].result) {
-				error_printf("%s: Failed to parse timeout long option #%zu (%d)\n", __func__, it, config.dns_timeout);
+				error_printf(_("%s: Failed to parse timeout long option #%zu (%d)\n"), __func__, it, config.dns_timeout);
 				ret = 1;
 			}
 		}
@@ -3166,12 +3166,12 @@ int selftest_options(void)
 			wget_http_header_param_t *config_value = wget_vector_get(config.headers, 0);
 			if (res_name == NULL) {
 				if (wget_vector_size(config.headers) != 0) {
-					error_printf("%s: Extra headers found in option #%zu\n", __func__, it);
+					error_printf(_("%s: Extra headers found in option #%zu\n"), __func__, it);
 					ret = 1;
 				}
 			} else if (wget_strcmp(config_value->name, res_name) &&
 					wget_strcmp(config_value->value, res_value)) {
-				error_printf("%s: Failed to parse header option #%zu\n", __func__, it);
+				error_printf(_("%s: Failed to parse header option #%zu\n"), __func__, it);
 				ret = 1;
 			}
 		}
@@ -3194,7 +3194,7 @@ int selftest_options(void)
 		for (it = 0; it < countof(test_header_illegal); it++) {
 			parse_command_line(3, test_header_illegal[it].argv);
 			if (wget_vector_size(config.headers) != 0) {
-				error_printf("%s: Accepted illegal header option #%zu\n", __func__, it);
+				error_printf(_("%s: Accepted illegal header option #%zu\n"), __func__, it);
 				ret = 1;
 			}
 		}
@@ -3222,7 +3222,7 @@ int selftest_options(void)
 		for (it = 0; it < countof(test_string_short); it++) {
 			parse_command_line(3, test_string_short[it].argv);
 			if (wget_strcmp(config.user_agent, test_string_short[it].result)) {
-				error_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
+				error_printf(_("%s: Failed to parse string short option #%zu (=%s)\n"), __func__, it, config.user_agent);
 				ret = 1;
 			}
 		}
@@ -3241,7 +3241,7 @@ int selftest_options(void)
 		for (it = 0; it < countof(test_string); it++) {
 			parse_command_line(3, test_string[it].argv);
 			if (wget_strcmp(config.user_agent, test_string[it].result)) {
-				error_printf("%s: Failed to parse string short option #%zu (=%s)\n", __func__, it, config.user_agent);
+				error_printf(_("%s: Failed to parse string short option #%zu (=%s)\n"), __func__, it, config.user_agent);
 				ret = 1;
 			}
 		}

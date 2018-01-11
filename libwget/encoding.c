@@ -241,7 +241,7 @@ const char *wget_str_to_ascii(const char *src)
 		// we need a conversion to lowercase
 		lower = u8_tolower((uint8_t *)src, u8_strlen((uint8_t *)src), 0, UNINORM_NFKC, resbuf, &len);
 		if (!lower) {
-			error_printf("u8_tolower(%s) failed (%d)\n", src, errno);
+			error_printf(_("u8_tolower(%s) failed (%d)\n"), src, errno);
 			return src;
 		}
 

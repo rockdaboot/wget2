@@ -514,27 +514,27 @@ _generate_ocsp_data(gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer,
 	int ret = gnutls_ocsp_req_init(&req);
 
 	if (ret < 0) {
-		error_printf("ocsp_req_init: %s", gnutls_strerror(ret));
+		debug_printf("ocsp_req_init: %s", gnutls_strerror(ret));
 		return -1;
 	}
 
 	ret = gnutls_ocsp_req_add_cert(req, GNUTLS_DIG_SHA1, issuer, cert);
 	if (ret < 0) {
-		error_printf("ocsp_req_add_cert: %s", gnutls_strerror(ret));
+		debug_printf("ocsp_req_add_cert: %s", gnutls_strerror(ret));
 		goto error;
 	}
 
 	if (nonce) {
 		ret = gnutls_ocsp_req_set_nonce(req, 0, nonce);
 		if (ret < 0) {
-			error_printf("ocsp_req_set_nonce: %s", gnutls_strerror(ret));
+			debug_printf("ocsp_req_set_nonce: %s", gnutls_strerror(ret));
 			goto error;
 		}
 	}
 
 	ret = gnutls_ocsp_req_export(req, rdata);
 	if (ret) {
-		error_printf("ocsp_req_export: %s", gnutls_strerror(ret));
+		debug_printf("ocsp_req_export: %s", gnutls_strerror(ret));
 		goto error;
 	}
 
@@ -891,7 +891,7 @@ static int _cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname, gnutl
 			debug_printf("pubkey is matching a pinning\n");
 			ctx->stats_hpkp = WGET_STATS_HPKP_MATCH;
 		} else if (rc == -1) {
-			error_printf("Error while checking pubkey pinning\n");
+			debug_printf("Error while checking pubkey pinning\n");
 			ctx->stats_hpkp = WGET_STATS_HPKP_ERROR;
 		}
 		ret = 0;
@@ -1300,7 +1300,7 @@ void wget_ssl_init(void)
 
 		if (_config.crl_file) {
 			if ((rc = gnutls_certificate_set_x509_crl_file(_credentials, _config.crl_file, GNUTLS_X509_FMT_PEM)) <= 0)
-				error_printf("Failed to load CRL '%s': (%d)\n", _config.crl_file, rc);
+				error_printf(_("Failed to load CRL '%s': (%d)\n"), _config.crl_file, rc);
 		}
 
 		_set_credentials(&_credentials);
@@ -1334,11 +1334,11 @@ void wget_ssl_init(void)
 			}
 
 			if (rc != GNUTLS_E_SUCCESS)
-				error_printf("GnuTLS: Unsupported priority string '%s': %s\n", priorities ? "(null)" : priorities, gnutls_strerror(rc));
+				error_printf(_("GnuTLS: Unsupported priority string '%s': %s\n"), priorities ? "(null)" : priorities, gnutls_strerror(rc));
 		} else {
 			// use GnuTLS defaults, which might hold insecure ciphers
 			if ((rc = gnutls_priority_init(&_priority_cache, NULL, NULL)))
-				error_printf("GnuTLS: Unsupported default priority 'NULL': %s\n", gnutls_strerror(rc));
+				error_printf(_("GnuTLS: Unsupported default priority 'NULL': %s\n"), gnutls_strerror(rc));
 		}
 
 		_init++;
@@ -1553,17 +1553,17 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
 #elif defined GNUTLS_NONBLOCK
 	if (tcp->tls_false_start)
-		error_printf("TLS False Start requested but Wget built with insufficient GnuTLS version\n");
+		error_printf(_("TLS False Start requested but Wget built with insufficient GnuTLS version\n"));
 	gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
 #else
 	// very old gnutls version, likely to not work.
 	if (tcp->tls_false_start)
-		error_printf("TLS False Start requested but Wget built with insufficient GnuTLS version\n");
+		error_printf(_("TLS False Start requested but Wget built with insufficient GnuTLS version\n"));
 	gnutls_init(&session, GNUTLS_CLIENT);
 #endif
 
 	if ((rc = gnutls_priority_set(session, _priority_cache)) != GNUTLS_E_SUCCESS)
-		error_printf("GnuTLS: Failed to set priorities: %s\n", gnutls_strerror(rc));
+		error_printf(_("GnuTLS: Failed to set priorities: %s\n"), gnutls_strerror(rc));
 
 	if (!wget_strcasecmp_ascii(_config.secure_protocol, "auto"))
 		gnutls_session_enable_compatibility_mode(session);
@@ -1593,7 +1593,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	}
 #else
 	if (_config.ocsp || _config.ocsp_stapling)
-		error_printf("WARNING: OCSP is not available in this version of GnuTLS.\n");
+		error_printf(_("WARNING: OCSP is not available in this version of GnuTLS.\n"));
 #endif
 
 #if GNUTLS_VERSION_NUMBER >= 0x030200
@@ -1617,7 +1617,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		}
 
 		if ((rc = gnutls_alpn_set_protocols(session, data, nprot, 0)))
-			error_printf("GnuTLS: Set ALPN: %s\n", gnutls_strerror(rc));
+			debug_printf("GnuTLS: Set ALPN: %s\n", gnutls_strerror(rc));
 	}
 #endif
 
@@ -1658,7 +1658,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		if (wget_tls_session_get(_config.tls_session_cache, ctx->hostname, &data, &size) == 0) {
 			debug_printf("found cached session data for %s\n", ctx->hostname);
 			if ((rc = gnutls_session_set_data(session, data, size)) != GNUTLS_E_SUCCESS)
-				error_printf("GnuTLS: Failed to set session data: %s\n", gnutls_strerror(rc));
+				error_printf(_("GnuTLS: Failed to set session data: %s\n"), gnutls_strerror(rc));
 			xfree(data);
 		}
 	}

@@ -566,7 +566,7 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 			wget_hash_deinit(&dig, digest);
 
 			if (nbytes < 0) {
-				error_printf("%s: Failed to read %llu bytes\n", __func__, (unsigned long long)length);
+				error_printf(_("%s: Failed to read %llu bytes\n"), __func__, (unsigned long long)length);
 				close(fd);
 				return -1;
 			}
