@@ -742,6 +742,10 @@ Go to background immediately after startup. If no output file is specified via t
   Specifies the gnupg home directory to use when verifying PGP signatures on downloaded files. The default for this is
   your system's default home directory.
 
+### `--verify-save-failed`
+
+  Instructs Wget2 to keep files that don't pass PGP signature validation. The default is to delete files that fail validation.
+
 ### `--xattr`
 
   Saves documents metadata as "user POSIX Extended Attributes" (default: on). This feature only works if the file system

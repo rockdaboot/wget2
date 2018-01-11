@@ -46,8 +46,11 @@ wget_test_url_t urls[] = {
 	}
 };
 
-int gpg_test(const char *sig_file, int expected_exit)
+int main(void)
 {
+	const char *sig_file = SRCDIR "/gpg/helloworld.txt.invalid.sig";
+
+#ifdef WITH_GPGME
 	size_t num_bytes;
 
 	char *body = wget_read_file(sig_file, &num_bytes);
@@ -65,33 +68,19 @@ int gpg_test(const char *sig_file, int expected_exit)
 
 	char *file1_name = strrchr(urls[0].name, '/') + 1;
 
-	if (expected_exit) {
-		wget_test(
-			WGET_TEST_OPTIONS, "--verify-sig --gnupg-homedir=" SRCDIR "/gpg",
-			WGET_TEST_REQUEST_URL, urls[0].name + 1,
-			WGET_TEST_EXPECTED_ERROR_CODE, expected_exit,
-			WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-				// In this case the file shouldn't persist
-				// (it failed validation)
-				{ NULL } },
-			0);
-	} else {
-		wget_test(
-			WGET_TEST_OPTIONS, "--verify-sig --gnupg-homedir=" SRCDIR "/gpg",
-			WGET_TEST_REQUEST_URL, urls[0].name + 1,
-			WGET_TEST_EXPECTED_ERROR_CODE, expected_exit,
-			WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-				// Unfortunately these are binary files
-				// so they contain NULL bytes.
-				// Probably safe to assume that the contents are correct.
-				// Signature file is unconditionally deleted
-				// The file should only persist if expected exit is 0
-				{ file1_name, NULL },
-				{ NULL } },
-			0);
-	}
+
+	wget_test(
+		WGET_TEST_OPTIONS, "--verify-sig --gnupg-homedir=" SRCDIR "/gpg --verify-save-failed",
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 9,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			// Even though verification failed
+			// file should still be there.
+			{ file1_name, NULL },
+			{ NULL } },
+		0);
 
 	wget_xfree(body);
-
-	return 0;
+#endif
+	exit(0);
 }

@@ -27,10 +27,12 @@ WGET_TESTS = test-wget-1$(EXEEXT) test-c-r$(EXEEXT) test-restrict-ascii$(EXEEXT)
 #test--post-file test-E-k test-cookies-http_state
 
 if WITH_GPGME
- WGET_TESTS += test-gpg-valid$(EXEEXT) test-gpg-invalid$(EXEEXT) test-gpg-missing$(EXEEXT) test-gpg-styles$(EXEEXT) test-gpg-bad$(EXEEXT)
+ WGET_TESTS += test-gpg-valid$(EXEEXT) test-gpg-invalid$(EXEEXT) test-gpg-missing$(EXEEXT) test-gpg-styles$(EXEEXT) test-gpg-bad$(EXEEXT) \
+ test-gpg-save-failed$(EXEEXT)
  test_gpg_valid_SOURCES = test-gpg-valid.c gpg-test-util.h
  test_gpg_invalid_SOURCES = test-gpg-invalid.c gpg-test-util.h
  test_gpg_missing_SOURCES = test-gpg-missing.c gpg-test-util.h
+ test_gpg_bad_SOURCES = test-gpg-bad.c gpg-test-util.h
 endif
 
 if PLUGIN_SUPPORT

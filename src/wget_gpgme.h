@@ -92,6 +92,16 @@ int wget_verify_pgp_sig_str(const char *sig,
 			    const size_t data_len,
 			    wget_gpg_info_t *info);
 
+/**
+ * Computes the base file for the JOB (the JOB must be a signature file).
+ *
+ * \param job The job to get the corresponding base file for
+ * \return A newly allocated string with the path to the base file that was signed,
+ *         or NULL if the JOB wasn't a signature file, or it couldn't be computed.
+ *
+ */
+char *wget_verify_get_base_file(JOB *job);
+
 /* #endif */
 
 #endif

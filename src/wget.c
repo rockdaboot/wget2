@@ -1911,7 +1911,19 @@ static void process_response(wget_http_response_t *resp)
 
 				if (wget_verify_job(job, resp, &info) != WGET_E_SUCCESS) {
 					set_exit_status(WG_EXIT_STATUS_GPG_ERROR);
+					if (!config.verify_save_failed) {
+						char *base_path = wget_verify_get_base_file(job);
+						if (base_path) {
+							unlink(base_path);
+							wget_free(base_path);
+						} else {
+							error_printf(_("Couldn't determine base file to delete for failed verification\n"));
+						}
+					}
 				}
+
+				// Remove the signature file.
+				unlink(job->local_filename);
 
 				DOC *doc = stats_docs_add(job->iri, resp);
 				if (!doc) {

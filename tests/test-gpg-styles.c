@@ -68,7 +68,8 @@ int main(void)
 			// so they contain NULL bytes.
 			// Probably safe to assume that the contents are correct.
 			{ "helloworld.txt", NULL },
-			{ "helloworld.txt.sign", NULL },
+			// Signature file should be deleted
+			// { "helloworld.txt.sign", NULL },
 			{ NULL } },
 		0);
 

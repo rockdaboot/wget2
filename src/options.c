@@ -909,6 +909,7 @@ struct config config = {
 	.waitretry = 10 * 1000,
 #ifdef WITH_GPGME
 	.sig_ext = "sig",
+	.verify_save_failed = 0,
 #endif
 	.metalink = 1,
 	.tls_false_start = 1,
@@ -1808,6 +1809,12 @@ static const struct optionw options[] = {
 		}
 	},
 #ifdef WITH_GPGME
+	{ "verify-save-failed", &config.verify_save_failed, parse_bool, -1, 0,
+		SECTION_GPG,
+		{ "Save target files even when their signatures fail GPG validation.\n",
+		  "(default: off)\n"
+		}
+	},
 	{ "verify-sig", &config.verify_sig, parse_bool, -1, 's',
 		SECTION_GPG,
 		{ "Download .sig file and verify. (default: off)\n"
