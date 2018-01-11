@@ -742,6 +742,19 @@ Go to background immediately after startup. If no output file is specified via t
   Specifies the gnupg home directory to use when verifying PGP signatures on downloaded files. The default for this is
   your system's default home directory.
 
+### `--xattr`
+
+  Saves documents metadata as "user POSIX Extended Attributes" (default: on). This feature only works if the file system
+  supports it. More info on https://freedesktop.org/wiki/CommonExtendedAttributes.
+
+  Wget2 currently sets
+  * user.xdg.origin.url
+  * user.xdg.referrer.url
+  * user.mime_type
+  * user.charset
+
+  To display the extended attributes of a file (Linux): `getfattr -d <file>`
+
 ## <a name="Directory Options"/>Directory Options
 
 ### `-nd`, `--no-directories`
