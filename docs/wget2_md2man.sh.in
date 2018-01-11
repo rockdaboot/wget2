@@ -3,6 +3,10 @@
 # $1: input file (markdown)
 # $2: output file (man)
 
+set -e
+set -o pipefail
+set -u
+
 (
   echo "% WGET2(1) GNU Wget2 User Manual|GNU Wget2 @PACKAGE_VERSION@"
   echo ""
