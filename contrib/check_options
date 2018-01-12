@@ -5,7 +5,7 @@ err=0
 # separate by |
 excludes="--no-quiet"
 
-for opt in `src/wget2 --help|egrep -o -- '--[a-zA-Z-]+'|sort -u`; do
+for opt in `src/wget2 --help|egrep -o -- '--[a-zA-Z0-9-]+'|sort -u`; do
   # skip if in $excludes
   case $opt in $excludes) continue;; esac
 
