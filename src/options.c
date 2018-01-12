@@ -1912,6 +1912,8 @@ static int print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const 
 		}
 		for (unsigned it = 0; it < countof(options); it++) {
 			if (options[it].section == sect) {
+				if (options[it].short_name == 'n')
+					continue; // do not display this special compatibility catch -n* option
 				print_first(options[it].short_name,
 				            options[it].long_name,
 				            options[it].help_str[0]);
