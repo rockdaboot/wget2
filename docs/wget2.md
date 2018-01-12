@@ -1292,6 +1292,21 @@ Go to background immediately after startup. If no output file is specified via t
   There are several security flaws related to TLS 1.2 session resumption which are explained in detail at:
   https://web.archive.org/web/20171103231804/https://blog.filippo.io/we-need-to-talk-about-session-tickets/
 
+### `--tls-session-file=file`
+
+  For TLS Session Resumption (`--tls-resume`) you need the session data of a previously established
+  TLS session. Wget2 can persistently store this data in the given file (default: ~/.wget-session).
+
+  To disable persistent storage use `--no-tls-session-file`.
+
+### `--tls-false-start`
+
+  Enable TLS False start (default: on).
+
+  This reduces TLS negotiation by one RT and thus speeds up HTTPS connections.
+
+  More details at https://tools.ietf.org/html/rfc7918.
+
 ### `--check-hostname`
 
   Enable TLS SNI verification (default: on).
