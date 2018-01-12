@@ -1599,18 +1599,18 @@ Go to background immediately after startup. If no output file is specified via t
 
 ## <a name="Recursive Accept/Reject Options"/>Recursive Accept/Reject Options
 
-### `-A acclist --accept acclist`, `-R rejlist --reject rejlist`
+### `-A acclist`, `--accept=acclist`, `-R rejlist`, `--reject=rejlist`
 
   Specify comma-separated lists of file name suffixes or patterns to accept or reject. Note that if any of the
   wildcard characters, `*, ?, [, ]`, appear in an element of acclist or rejlist, it will be treated as a pattern,
   rather than a suffix.  In this case, you have to enclose the pattern into quotes to prevent your shell from
   expanding it, like in `-A "*.mp3"` or `-A '*.mp3'`.
 
-### `--accept-regex urlregex`, `--reject-regex urlregex`
+### `--accept-regex=urlregex`, `--reject-regex=urlregex`
 
   Specify a regular expression to accept or reject file names.
 
-### `--regex-type regextype`
+### `--regex-type=regextype`
 
   Specify the regular expression type. Possible types are posix or pcre.  Note that to be able to use pcre type,
   wget2 has to be compiled with libpcre support.
@@ -1619,11 +1619,11 @@ Go to background immediately after startup. If no output file is specified via t
 
   Apply the accept and reject filters on the URL before starting a download.
 
-### `-D domain-list, --domains=domain-list`
+### `-D domain-list`, `--domains=domain-list`
 
   Set domains to be followed.  domain-list is a comma-separated list of domains.  Note that it does not turn on -H.
 
-### `--exclude-domains domain-list`
+### `--exclude-domains=domain-list`
 
   Specify the domains that are not to be followed.
 
