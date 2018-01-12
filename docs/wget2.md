@@ -270,12 +270,12 @@ Go to background immediately after startup. If no output file is specified via t
   When making client TCP/IP connections, bind to ADDRESS on the local machine.  ADDRESS may be specified as a hostname or IP
   address.  This option can be useful if your machine is bound to multiple IPs.
 
-### `-t`,`--tries=number`
+### `-t`, `--tries=number`
 
   Set number of tries to number. Specify 0 or inf for infinite retrying.  The default is to retry 20 times, with the exception
   of fatal errors like "connection refused" or "not found" (404), which are not retried.
 
-### `-O`,`--output-document=file`
+### `-O`, `--output-document=file`
 
   The documents will not be written to the appropriate files, but all will be concatenated together and written to file.  If -
   is used as file, documents will be printed to standard output, disabling link conversion.  (Use ./- to print to a file
