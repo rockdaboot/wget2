@@ -9,10 +9,10 @@ for opt in `src/wget2 --help|egrep -o -- '--[a-zA-Z-]+'|sort -u`; do
   # skip if in $excludes
   case $opt in $excludes) continue;; esac
 
-  if ! egrep -q -- " \`$opt[^a-z-]" docs/wget2.md; then
+  if ! egrep -q -- " \`$opt(=|\`|\[)" docs/wget2.md; then
     # search for the --no- variant
     noopt="--no-`echo $opt|cut -c3-`"
-    if ! egrep -q -- " \`$noopt[^a-z-]" docs/wget2.md; then
+    if ! egrep -q -- " \`$noopt\`" docs/wget2.md; then
       echo "Failed to find \`$opt in docs/wget2.md"
       err=1
     fi
