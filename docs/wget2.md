@@ -1386,6 +1386,13 @@ Go to background immediately after startup. If no output file is specified via t
   Wget2 requests HTTP/2 via ALPN. If available it is preferred over HTTP/1.1.
   Up to 30 streams are used in parallel within a single connection.
 
+### `--gnutls-options=options`
+
+  Sets the GnuTLS "priority" string (see https://gnutls.org/manual/html_node/Priority-Strings.html).
+
+  This is for experts only. Normally you would use `--secure-protocol` to set predefined
+  priority strings.
+
 ## <a name="WARC Options"/>WARC Options
 
 ### `--warc-file=file`
