@@ -240,6 +240,16 @@ Go to background immediately after startup. If no output file is specified via t
   Logs all URL rejections to logfile as comma separated values.  The values include the reason of rejection, the URL and the
   parent URL it was found in.
 
+### `--local-db`
+
+  Enables reading/writing to local database files (default: on).
+
+  These are the files for `--hsts`, `--hpkp`, `--ocsp`, etc.
+
+  With `--no-local-db` you can switch reading/writing off, e.g. useful for testing.
+
+  This option does not influence the reading of config files.
+
 ### `--stats-dns[=[FORMAT:]FILE]`
 
   Save DNS stats in format `FORMAT`, in file `FILE`. `FORMAT` has 3 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
@@ -700,9 +710,6 @@ Go to background immediately after startup. If no output file is specified via t
   Wget2 use the function "nl_langinfo()" and then the "CHARSET" environment variable to get the locale. If it fails,
   ASCII is used.
 
-  You can set the default local encoding using the "local_encoding" command in .wgetrc. That setting may be
-  overridden from the command line.
-
 ### `--remote-encoding=encoding`
 
   Force Wget2 to use encoding as the default remote server encoding.  That affects how Wget2 converts URIs found in
@@ -712,8 +719,9 @@ Go to background immediately after startup. If no output file is specified via t
   For HTTP, remote encoding can be found in HTTP "Content-Type" header and in HTML "Content-Type http-equiv" meta
   tag.
 
-  You can set the default encoding using the "remoteencoding" command in .wgetrc. That setting may be overridden
-  from the command line.
+### `--input-encoding=encoding`
+
+  Use the specified encoding for the URLs read from `--input-file`. The default is the local encoding.
 
 ### `--unlink`
 
