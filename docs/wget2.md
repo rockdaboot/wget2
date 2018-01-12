@@ -1276,6 +1276,11 @@ Go to background immediately after startup. If no output file is specified via t
   There are several security flaws related to TLS 1.2 session resumption which are explained in detail at:
   https://web.archive.org/web/20171103231804/https://blog.filippo.io/we-need-to-talk-about-session-tickets/
 
+### `--check-hostname`
+
+  Enable TLS SNI verification (default: on).
+
+
 ## <a name="WARC Options"/>WARC Options
 
 ### `--warc-file=file`
