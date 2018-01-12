@@ -618,7 +618,7 @@ Go to background immediately after startup. If no output file is specified via t
   greater than 127) shall be escaped. This can be useful when saving filenames whose encoding does not match the
   one used locally.
 
-### `-4, --inet4-only, -6, --inet6-only`
+### `-4`, `--inet4-only`, `-6`, `--inet6-only`
 
   Force connecting to IPv4 or IPv6 addresses.  With --inet4-only or -4, Wget2 will only connect to IPv4 hosts,
   ignoring AAAA records in DNS, and refusing to connect to IPv6 addresses specified in URLs.  Conversely, with
@@ -647,6 +647,14 @@ Go to background immediately after startup. If no output file is specified via t
   the addresses are accessed.  Also note that the reordering performed by this option is stable---it doesn't affect
   order of addresses of the same family.  That is, the relative order of all IPv4 addresses and of all IPv6
   addresses remains intact in all cases.
+
+### `--tcp-fastopen`
+
+  Enable support for TCP Fast Open (TFO) (default: on).
+
+  TFO reduces connection latency by 1 RT on "hot" connections (2nd+ connection to the same host in a certain amount of time).
+
+  Currently this works on recent Linux and OSX kernels, on HTTP and HTTPS.
 
 ### `--retry-connrefused`
 
