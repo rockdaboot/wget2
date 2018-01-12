@@ -541,9 +541,13 @@ Go to background immediately after startup. If no output file is specified via t
   The `--random-wait` option was inspired by this ill-advised recommendation to block many unrelated users from a web
   site due to the actions of one.
 
-### `--no-proxy`
+### `--no-proxy[=exceptions]`
 
-  Don't use proxies, even if the appropriate *_proxy environment variable is defined.
+  If no argument is given, we try to stay backward compatible with Wget1.x and
+  don't use proxies, even if the appropriate *_proxy environment variable is defined.
+
+  If a comma-separated list of exceptions (domains/IPs) is given, these exceptions are accessed without
+  usign a proxy. It overrides the 'no_proxy' environment variable.
 
 ### `-Q quota`, `--quota=quota`
 
@@ -856,6 +860,18 @@ Go to background immediately after startup. If no output file is specified via t
 ### `--http-proxy-user=user`, `--http-proxy-password=password`
 
   Specify the user and password for HTTP proxy authentication. See `--http-user` for details.
+
+### `--http-proxy=proxies`
+
+  Set comma-separated list of HTTP proxies. The environment variable 'http_proxy' will be overridden.
+
+  Exceptions can be set via the environment variable 'no_proxy' or via `--no-proxy`.
+
+### `--https-proxy=proxies`
+
+  Set comma-separated list of HTTPS proxies. The environment variable 'https_proxy' will be overridden.
+
+  Exceptions can be set via the environment variable 'no_proxy' or via `--no-proxy`.
 
 ### `--no-http-keep-alive`
 
