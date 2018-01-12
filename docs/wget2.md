@@ -656,6 +656,12 @@ Go to background immediately after startup. If no output file is specified via t
 
   Currently this works on recent Linux and OSX kernels, on HTTP and HTTPS.
 
+### `--dns-caching`
+
+  Enable DNS caching (default: on).
+
+  Keep results of DNS lookups in memory to speed up connections.
+
 ### `--retry-connrefused`
 
   Consider "connection refused" a transient error and try again.  Normally Wget2 gives up on a URL when it is unable
@@ -779,6 +785,14 @@ Go to background immediately after startup. If no output file is specified via t
   * user.charset
 
   To display the extended attributes of a file (Linux): `getfattr -d <file>`
+
+### `--metalink`
+
+  Follow/process metalink URLs without saving them (default: on).
+
+  Metalink files describe downloads incl. mirrors, files, checksums, signatures.
+  This allows chunked downloads, automatically taking the nearest mirrors, preferring the
+  fastest mirrors and checking the download for integrity.
 
 ## <a name="Directory Options"/>Directory Options
 
@@ -1346,6 +1360,13 @@ Go to background immediately after startup. If no output file is specified via t
   Set the file for persistent OCSP response caching (default: ~/.wget-ocsp).
 
   To disable persistent OCSP caching use `--no-ocsp-file`.
+
+### `--http2`
+
+  Enable HTTP/2 protocol (default: on).
+
+  Wget2 requests HTTP/2 via ALPN. If available it is preferred over HTTP/1.1.
+  Up to 30 streams are used in parallel within a single connection.
 
 ## <a name="WARC Options"/>WARC Options
 
