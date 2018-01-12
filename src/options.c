@@ -1073,7 +1073,7 @@ static const struct optionw options[] = {
 		{ "Load public suffixes from file. \n",
 		  "They prevent 'supercookie' vulnerabilities.\n",
 		  "Download the list with:\n",
-		  "wget -O suffixes.txt https://publicsuffix.org/list/effective_tld_names.dat\n"
+		  "wget -O suffixes.txt https://publicsuffix.org/list/public_suffix_list.dat\n"
 		}
 	},
 	{ "cookies", &config.cookies, parse_bool, -1, 0,
