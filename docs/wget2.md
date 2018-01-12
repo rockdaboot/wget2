@@ -220,19 +220,20 @@ Go to background immediately after startup. If no output file is specified via t
   For instance, if you specify `https://example.com/bar/a.html` for URL, and Wget2 reads `../baz/b.html` from the input file, it would be
   resolved to `https://example.com/baz/b.html`.
 
-### `--config-file=FILE`
+### `--config=FILE`
 
-  Specify the location of a configuration file you wish to use. If you specify more than one file, either by using a
-  comma-separated list or several --config-file options, these files are read in left-to-right order.
-  Before the first given file is read, the files given in $SYSTEM_WGET2RC, $WGET2RC and ~/.wget2rc are read in that
-  order.
+  Specify the location of configuration files you wish to use. If you specify more than one file, either by using a
+  comma-separated list or several `--config` options, these files are read in left-to-right order.
+  The files given in `$SYSTEM_WGET2RC` and (`$WGET2RC` or `~/.wget2rc`) are read in that order and then the user-provided
+  config file(s). If set, `$WGET2RC` replaces `~/.wget2rc`.
 
-  --no-config-file empties the internal list of config files.
-  So if you want to prevent reading any config files, give --no-config-file on the command line.
-  --no-config-file followed by --config-file=file just reads `file` and skips reading the default config files.
+  `--no-config` empties the internal list of config files.
+  So if you want to prevent reading any config files, give --no-config on the command line.
 
-  Wget will attempt to tilde expand filenames written in the configuration file on supported platforms. To use a file that starts with
-  the character literal '~', use "./~" or an absolute path.
+  `--no-config` followed by `--config=file` just reads `file` and skips reading the default config files.
+
+  Wget will attempt to tilde-expand filenames written in the configuration file on supported platforms.
+  To use a file that starts with the character literal '~', use "./~" or an absolute path.
 
 ### `--rejected-log=logfile`
 

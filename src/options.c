@@ -1037,14 +1037,9 @@ static const struct optionw options[] = {
 	},
 	{ "config", &config.config_files, parse_filenames, 1, 0,
 		SECTION_STARTUP,
-		{ "Backward compatibility\n"
+		{  "List of config files. (default: ~/.wget2rc)\n"
 		}
 	}, // for backward compatibility only
-	{ "config-file", &config.config_files, parse_filenames, 1, 0,
-		SECTION_STARTUP,
-		{ "Path to a wgetrc file.\n"
-		}
-	},
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Connect timeout in seconds.\n"
@@ -2554,7 +2549,7 @@ int init(int argc, const char **argv)
 		// we don't want to complain about missing home .wget2rc
 		const char *cfgfile = wget_aprintf("%s/.wget2rc", home_dir);
 		if (access(cfgfile, R_OK) == 0)
-			wget_vector_add_noalloc(config.config_files, cfgfile);
+			wget_vector_insert_noalloc(config.config_files, cfgfile, 0);
 		else
 			xfree(cfgfile);
 	}
