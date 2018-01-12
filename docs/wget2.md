@@ -421,7 +421,7 @@ Go to background immediately after startup. If no output file is specified via t
   from the command line.  For example, to force the bar output without scrolling, use
   --progress=bar:force:noscroll.
 
-### `--show-progress`
+### `--force-progress`
 
   Force Wget2 to display the progress bar in any verbosity.
 
@@ -793,6 +793,10 @@ Go to background immediately after startup. If no output file is specified via t
   Metalink files describe downloads incl. mirrors, files, checksums, signatures.
   This allows chunked downloads, automatically taking the nearest mirrors, preferring the
   fastest mirrors and checking the download for integrity.
+
+### `--fsync-policy`
+
+  Enables disk synching after each write (default: off).
 
 ## <a name="Directory Options"/>Directory Options
 
@@ -1265,7 +1269,7 @@ Go to background immediately after startup. If no output file is specified via t
   If this option is not specified (and the equivalent startup command is not used), EGD is never contacted.  EGD is
   not needed on modern Unix systems that support /dev/urandom.
 
-### `--no-hsts`
+### `--hsts`
 
   Wget2 supports HSTS (HTTP Strict Transport Security, RFC 6797) by default.  Use `--no-hsts` to make Wget2 act as a
   non-HSTS-compliant UA. As a consequence, Wget2 would ignore all the "Strict-Transport-Security" headers, and would
@@ -1318,6 +1322,20 @@ Go to background immediately after startup. If no output file is specified via t
   potential security threats arised from such practice, see section 14 "Security Considerations" of RFC 6797,
   specially section 14.9 "Creative Manipulation of HSTS Policy Store".
 
+### `--hpkp`
+
+  Enable HTTP Public Key Pinning (HPKP) (default: on).
+
+  This is a Trust On First Use (TOFU) mechanism to add another security layer to HTTPS (RFC 7469).
+  It persistently stores the data into `~/.wget-hpkp` which can be changed via the `--hpkp-file`option.
+
+### `--hpkp-file=file`
+
+  For HPKP (`--hpkp`) you need the certificate key data of a previously established
+  TLS session. Wget2 persistently stores this data in the given file (default: ~/.wget-hpkp).
+
+  To disable persistent storage use `--no-hpkp-file`.
+
 ### `--tls-resume`
 
   Enable TLS Session Resumption which is disabled as default.
@@ -1328,7 +1346,7 @@ Go to background immediately after startup. If no output file is specified via t
 ### `--tls-session-file=file`
 
   For TLS Session Resumption (`--tls-resume`) you need the session data of a previously established
-  TLS session. Wget2 can persistently store this data in the given file (default: ~/.wget-session).
+  TLS session. Wget2 persistently stores this data in the given file (default: ~/.wget-session).
 
   To disable persistent storage use `--no-tls-session-file`.
 
