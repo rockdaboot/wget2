@@ -125,6 +125,7 @@ The following packages are needed to build the software
 * libmicrohttpd >= 0.9.51 (optional, if you want to run the test suite)
 * lzip (optional, if you want to build distribution tarballs)
 * lcov (optional, for coverage reports)
+* libgpgme >= 0.4.2 (optional, for automatic signature verification)
 
 The versions are recommended, but older versions may also work.
 
