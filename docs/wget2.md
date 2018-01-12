@@ -962,6 +962,16 @@ Go to background immediately after startup. If no output file is specified via t
   that cookies so loaded will be treated as other session cookies, which means that if you want --save-cookies to
   preserve them again, you must use --keep-session-cookies again.
 
+### `--cookie-suffixes=file`
+
+  Load the public suffixes used for cookie checking from the given file.
+
+  Normally, the underlying libpsl loads this data from a system file or it has the data built in.
+  In some cases you might want to load an updated PSL, e.g. from https://publicsuffix.org/list/public_suffix_list.dat.
+
+  The PSL allows to prevent setting of "super-cookies" that lead to cookie privacy leakage.
+  More details can be found on https://publicsuffix.org/.
+
 ### `--ignore-length`
 
   Unfortunately, some HTTP servers (CGI programs, to be more precise) send out bogus "Content-Length" headers,
