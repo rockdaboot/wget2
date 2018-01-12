@@ -1606,6 +1606,16 @@ Go to background immediately after startup. If no output file is specified via t
   Obsolete option for compatibility with Wget1.x.
   Wget2 always terminates comments at the first occurrence of `-->`, as popular browsers do.
 
+### `--robots`
+
+  Enable the Robots Exclusion Standard (default: on).
+
+  For each visited domain, download `/robots.txt` first and follow it's rules.
+  You should respect the domain owner's rules and turn this off only for very good reasons.
+
+  When enabled, the `robots.txt` file is also scanned for sitemaps. These are lists of pages / files
+  available for download that not necessarily are available via recursive scanning.
+
 ## <a name="Recursive Accept/Reject Options"/>Recursive Accept/Reject Options
 
 ### `-A acclist`, `--accept=acclist`, `-R rejlist`, `--reject=rejlist`
