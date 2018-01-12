@@ -1311,6 +1311,22 @@ Go to background immediately after startup. If no output file is specified via t
 
   Enable TLS SNI verification (default: on).
 
+### `--ocsp`
+
+  Enable OCSP server access to check the possible revocation the HTTPS server certificate(s) (default: on).
+
+  This procedure is pretty slow (connect to server, HTTP request, response) and thus we support
+  OSCP stapling (server sends OCSP response within TLS handshake) and persistent OCSP caching.
+
+### `--ocsp-stapling`
+
+  Enable support for OCSP stapling (default: on).
+
+### `--ocsp-file=file`
+
+  Set the file for persistent OCSP response caching (default: ~/.wget-ocsp).
+
+  To disable persistent OCSP caching use `--no-ocsp-file`.
 
 ## <a name="WARC Options"/>WARC Options
 
