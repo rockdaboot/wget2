@@ -1184,7 +1184,7 @@ Go to background immediately after startup. If no output file is specified via t
   Specify the type of the client certificate.  Legal values are PEM (assumed by default) and DER, also known as
   ASN1.
 
-### --private-key=file
+### `--private-key=file`
 
   Read the private key from file.  This allows you to provide the private key in a file separate from the
   certificate.
