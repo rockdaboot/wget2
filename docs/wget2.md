@@ -11,9 +11,6 @@
   * [Directory Options](#Directory Options)
   * [HTTP Options](#HTTP Options)
   * [HTTPS (SSL/TLS) Options](#HTTPS (SSL/TLS) Options)
-  * [WARC Options](#WARC Options)
-  * [FTP Options](#FTP Options)
-  * [FTPS Options](#FTPS Options)
   * [Recursive Retrieval Options](#Recursive Retrieval Options)
   * [Recursive Accept/Reject Options](#Recursive Accept/Reject Options)
   * [Plugin Options](#Plugin Options)
@@ -89,15 +86,14 @@
       wget2 -X '' -X /~nobody,/~somebody
 
   Most options that do not accept arguments are boolean options, so named because their state can be captured with a
-  yes-or-no ("boolean") variable.  For example, `--follow-ftp` tells Wget2 to follow FTP links from HTML files and, on the
-  other hand, `--no-glob` tells it not to perform file globbing on FTP URLs.  A boolean option is either affirmative or
-  negative (beginning with `--no-`).  All such options share several properties.
+  yes-or-no ("boolean") variable.  A boolean option is either affirmative or negative (beginning with `--no-`).
+  All such options share several properties.
 
   Affirmative options can be negated by prepending the `--no-` to the option name; negative options can be negated by
-  omitting the `--no-` prefix.  This might seem superfluous---if the default for an affirmative option is to not do
+  omitting the `--no-` prefix.  This might seem superfluous - if the default for an affirmative option is to not do
   something, then why provide a way to explicitly turn it off?  But the startup file may in fact change the default.
-  For instance, using `follow_ftp = on` in `.wgetrc` makes Wget2 follow FTP links by default, and using `--no-follow-ftp`
-  is the only way to restore the factory default from the command line.
+  For instance, using `timestamping = on` in `.wgetrc` makes Wget2 download updated files only.
+  Using `--no-timestamping` is the only way to restore the factory default from the command line.
 
 
 ## <a name="Basic Startup Options"/>Basic Startup Options
@@ -383,7 +379,7 @@ Go to background immediately after startup. If no output file is specified via t
   inserts a "transfer interrupted" string into the local file.  In the future a "rollback" option may be added to
   deal with this case.
 
-  Note that `-c` only works with FTP servers and with HTTP servers that support the "Range" header.
+  Note that `-c` only works with HTTP servers that support the "Range" header.
 
 ### `--start-pos=OFFSET`
 
@@ -463,7 +459,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `-S`, `--server-response`
 
-  Print the headers sent by HTTP servers and responses sent by FTP servers.
+  Print the response headers sent by HTTP servers.
 
 ### `--spider`
 
@@ -682,7 +678,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--user=user`, `--password=password`
 
-  Specify the username user and password password for both FTP and HTTP file retrieval. This overrides the lookup of
+  Specify the username user and password password for HTTP file retrieval. This overrides the lookup of
   credentials in the .netrc file (--netrc is enabled by default). These parameters can be overridden using the
   --http-user and --http-password options for HTTP(S) connections.
 
@@ -1405,146 +1401,6 @@ Go to background immediately after startup. If no output file is specified via t
   This is for experts only. Normally you would use `--secure-protocol` to set predefined
   priority strings.
 
-## <a name="WARC Options"/>WARC Options
-
-### `--warc-file=file`
-
-  Use file as the destination WARC file.
-
-### `--warc-header=string`
-
-  Use string into as the warcinfo record.
-
-### `--warc-max-size=size`
-
-  Set the maximum size of the WARC files to size.
-
-### `--warc-cdx`
-
-  Write CDX index files.
-
-### `--warc-dedup=file`
-
-  Do not store records listed in this CDX file.
-
-### `--no-warc-compression`
-
- Do not compress WARC files with GZIP.
-
-### `--no-warc-digests`
-
-  Do not calculate SHA1 digests.
-
-### `--no-warc-keep-log`
-
-  Do not store the log file in a WARC record.
-
-### `--warc-tempdir=dir`
-
-  Specify the location for temporary files created by the WARC writer.
-
-
-## <a name="FTP Options"/>FTP Options
-
-### `--ftp-user=user`, `--ftp-password=password`
-
-  Specify the username user and password password on an FTP server.  Without this, or the corresponding startup
-  option, the password defaults to -wget@, normally used for anonymous FTP.
-
-  Another way to specify username and password is in the URL itself.  Either method reveals your password to anyone
-  who bothers to run "ps".  To prevent the passwords from being seen, store them in .wgetrc or .netrc, and make
-  sure to protect those files from other users with "chmod".  If the passwords are really important, do not leave
-  them lying in those files either---edit the files and delete them after Wget2 has started the download.
-
-### `--no-remove-listing`
-
-  Don't remove the temporary .listing files generated by FTP retrievals.  Normally, these files contain the raw
-  directory listings received from FTP servers.  Not removing them can be useful for debugging purposes, or when
-  you want to be able to easily check on the contents of remote server directories (e.g. to verify that a mirror
-  you're running is complete).
-
-  Note that even though Wget2 writes to a known filename for this file, this is not a security hole in the scenario
-  of a user making .listing a symbolic link to /etc/passwd or something and asking "root" to run Wget2 in his or her
-  directory.  Depending on the options used, either Wget2 will refuse to write to .listing, making the
-  globbing/recursion/time-stamping operation fail, or the symbolic link will be deleted and replaced with the
-  actual .listing file, or the listing will be written to a .listing.number file.
-
-  Even though this situation isn't a problem, though, "root" should never run Wget2 in a non-trusted user's
-  directory.  A user could do something as simple as linking index.html to /etc/passwd and asking "root" to run
-  Wget2 with -N or -r so the file will be overwritten.
-
-### `--no-glob`
-
-  Turn off FTP globbing.  Globbing refers to the use of shell-like special characters (wildcards), like *, ?, [ and
-  ] to retrieve more than one file from the same directory at once, like:
-
-      wget2 ftp://example.com/*.msg
-
-  By default, globbing will be turned on if the URL contains a globbing character.  This option may be used to turn
-  globbing on or off permanently.
-
-  You may have to quote the URL to protect it from being expanded by your shell.  Globbing makes Wget2 look for a
-  directory listing, which is system-specific.  This is why it currently works only with Unix FTP servers (and the
-  ones emulating Unix "ls" output).
-
-### `--no-passive-ftp`
-  Disable the use of the passive FTP transfer mode.  Passive FTP mandates that the client connect to the server to
-  establish the data connection rather than the other way around.
-
-  If the machine is connected to the Internet directly, both passive and active FTP should work equally well.
-  Behind most firewall and NAT configurations passive FTP has a better chance of working.  However, in some rare
-  firewall configurations, active FTP actually works when passive FTP doesn't.  If you suspect this to be the case,
-  use this option, or set "passive_ftp=off" in your init file.
-
-### `--preserve-permissions`
-
-  Preserve remote file permissions instead of permissions set by umask.
-
-### `--retr-symlinks`
-
-  By default, when retrieving FTP directories recursively and a symbolic link is encountered, the symbolic link is
-  traversed and the pointed-to files are retrieved.  Currently, Wget2 does not traverse symbolic links to
-  directories to download them recursively, though this feature may be added in the future.
-
-  When --retr-symlinks=no is specified, the linked-to file is not downloaded.  Instead, a matching symbolic link is
-  created on the local file system.  The pointed-to file will not be retrieved unless this recursive retrieval would
-  have encountered it separately and downloaded it anyway.  This option poses a security risk where a malicious FTP
-  Server may cause Wget2 to write to files outside of the intended directories through a specially crafted .LISTING
-  file.
-
-  Note that when retrieving a file (not a directory) because it was specified on the command-line, rather than
-  because it was recursed to, this option has no effect.  Symbolic links are always traversed in this case.
-
-## <a name="FTPS Options"/>FTPS Options
-
-### `--ftps-implicit`
-
-  This option tells Wget2 to use FTPS implicitly. Implicit FTPS consists of initializing SSL/TLS from the very
-  beginning of the control connection. This option does not send an "AUTH TLS" command: it assumes the server
-  speaks FTPS and directly starts an SSL/TLS connection. If the attempt is successful, the session continues just
-  like regular FTPS ("PBSZ" and "PROT" are sent, etc.).  Implicit FTPS is no longer a requirement for FTPS
-  implementations, and thus many servers may not support it. If --ftps-implicit is passed and no explicit port
-  number specified, the default port for implicit FTPS, 990, will be used, instead of the default port for the
-  "normal" (explicit) FTPS which is the same as that of FTP, 21.
-
-### `--no-ftps-resume-ssl`
-
-  Do not resume the SSL/TLS session in the data channel. When starting a data connection, Wget2 tries to resume the
-  SSL/TLS session previously started in the control connection.  SSL/TLS session resumption avoids performing an
-  entirely new handshake by reusing the SSL/TLS parameters of a previous session. Typically, the FTPS servers want
-  it that way, so Wget2 does this by default. Under rare circumstances however, one might want to start an entirely
-  new SSL/TLS session in every data connection.  This is what --no-ftps-resume-ssl is for.
-
-  --ftps-clear-data-connection
-  All the data connections will be in plain text. Only the control connection will be under SSL/TLS. Wget2 will send
-  a "PROT C" command to achieve this, which must be approved by the server.
-
-  --ftps-fallback-to-ftp
-  Fall back to FTP if FTPS is not supported by the target server. For security reasons, this option is not asserted
-  by default. The default behaviour is to exit with an error.  If a server does not successfully reply to the
-  initial "AUTH TLS" command, or in the case of implicit FTPS, if the initial SSL/TLS connection attempt is
-  rejected, it is considered that such server does not support FTPS.
-
 ## <a name="Recursive Retrieval Options"/>Recursive Retrieval Options
 
 ### `-r`, `--recursive`
@@ -1564,8 +1420,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   The -r option is to retrieve recursively, and -nd to not create directories.
 
-  Note that --delete-after deletes files on the local machine.  It does not issue the DELE command to remote FTP
-  sites, for instance.  Also note that when --delete-after is specified, --convert-links is ignored, so .orig files
+  Note that when --delete-after is specified, --convert-links is ignored, so .orig files
   are simply not created in the first place.
 
 ### `-k`, `--convert-links`
@@ -1618,8 +1473,7 @@ Go to background immediately after startup. If no output file is specified via t
 ### `-m`, `--mirror`
 
   Turn on options suitable for mirroring.  This option turns on recursion and time-stamping, sets infinite
-  recursion depth and keeps FTP directory listings.  It is currently equivalent to `-r -N -l inf
-  --no-remove-listing`.
+  recursion depth.  It is currently equivalent to `-r -N -l inf`.
 
 ### `-p`, `--page-requisites`
 
@@ -1714,10 +1568,6 @@ Go to background immediately after startup. If no output file is specified via t
 
   Specify the domains that are not to be followed.
 
-### `--follow-ftp`
-
-  Follow FTP links from HTML documents.  Without this option, Wget2 will ignore all the FTP links.
-
 ### `--follow-tags=list`
 
   Wget2 has an internal table of HTML tag / attribute pairs that it considers when looking for linked documents
@@ -1741,10 +1591,9 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--ignore-case`
 
-  Ignore case when matching files and directories.  This influences the behavior of -R, -A, -I, and -X options, as
-  well as globbing implemented when downloading from FTP sites.  For example, with this option, -A "*.txt" will
-  match file1.txt, but also file2.TXT, file3.TxT, and so on.  The quotes in the example are to prevent the shell
-  from expanding the pattern.
+  Ignore case when matching files and directories.  This influences the behavior of -R, -A, -I, and -X options.
+  For example, with this option, -A "*.txt" will match file1.txt, but also file2.TXT, file3.TxT, and so on.
+  The quotes in the example are to prevent the shell from expanding the pattern.
 
 ### `-H`, `--span-hosts`
 
@@ -1813,7 +1662,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 # <a name="Environment"/>Environment
 
-  Wget2 supports proxies for both HTTP and FTP retrievals.  The standard way to specify proxy location, which Wget
+  Wget2 supports proxies for both HTTP and HTTPS retrievals.  The standard way to specify proxy location, which Wget
   recognizes, is using the following environment variables:
 
   `http_proxy`
@@ -1823,15 +1672,11 @@ Go to background immediately after startup. If no output file is specified via t
   If set, the `http_proxy` and `https_proxy` variables should contain the URLs of the proxies for HTTP and HTTPS
   connections respectively.
 
-  `ftp_proxy`
-
-  This variable should contain the URL of the proxy for FTP connections.  It is quite common that `http_proxy` and
-  `ftp_proxy` are set to the same URL.
-
   `no_proxy`
 
   This variable should contain a comma-separated list of domain extensions `proxy` should not be used for.  For
-  instance, if the value of `no_proxy` is `.mit.edu`, `proxy` will not be used to retrieve documents from MIT.
+  instance, if the value of `no_proxy` is `.example.com`, `proxy` will not be used to retrieve documents
+  from `*.example.com`.
 
 # <a name="Exit Status"/>Exit Status
   Wget2 may return one of several error codes if it encounters problems.
