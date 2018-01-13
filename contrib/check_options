@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 shopt -s extglob # enable pattern matching for 'case'
 
