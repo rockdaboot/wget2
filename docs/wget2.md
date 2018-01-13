@@ -16,6 +16,7 @@
   * [FTPS Options](#FTPS Options)
   * [Recursive Retrieval Options](#Recursive Retrieval Options)
   * [Recursive Accept/Reject Options](#Recursive Accept/Reject Options)
+  * [Plugin Options](#Plugin Options)
 * [Environment](#Environment)
 * [Exit Status](#Exit Status)
 * [Files](#Files)
@@ -1781,6 +1782,34 @@ Go to background immediately after startup. If no output file is specified via t
   download every file that is compatible with LibreOffice Writer from a website using the recursive mode:
 
       wget2 -r https://<site>/<document> --filter-mime-type=$(sed -r '/^MimeType=/!d;s/^MimeType=//;s/;/,/g' /usr/share/applications/libreoffice-writer.desktop)
+
+## <a name="Plugin Options"/>Plugin Options
+
+### `--list-plugins`
+
+  Print a list all available plugins and exit.
+
+### `--local-plugin=file`
+
+  Load `file` as plugin.
+
+### `--plugin=name`
+
+  Load a plugin with a given `name` from the configured plugin directories.
+
+### `--plugin-dirs=directories`
+
+  Set plugin directories. `directories` is a comma-separated list of directories.
+
+### `--plugin-help`
+
+  Print the help messages from all loaded plugins.
+
+### `--plugin-opt=option`
+
+  Set a plugin specific command line option.
+
+  `option` is in the format `<plugin_name>.<option>[=value]`.
 
 # <a name="Environment"/>Environment
 
