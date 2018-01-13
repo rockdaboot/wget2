@@ -93,14 +93,15 @@ int get_exit_status(void)
 // SECTION_END. This must always be the last element of this enum and exactly
 // one greater than the value of the element before it.
 typedef enum {
-	SECTION_STARTUP = 0,
-	SECTION_DOWNLOAD = 1,
-	SECTION_HTTP = 2,
-	SECTION_SSL = 3,
-	SECTION_DIRECTORY = 4,
+	SECTION_STARTUP,
+	SECTION_DOWNLOAD,
+	SECTION_HTTP,
+	SECTION_SSL,
+	SECTION_DIRECTORY,
 #ifdef WITH_GPGME
 	SECTION_GPG,
 #endif
+	SECTION_PLUGIN,
 	SECTION_END,
 } help_section_t;
 
@@ -1387,7 +1388,7 @@ static const struct optionw options[] = {
 		}
 	},
 	{ "list-plugins", NULL, list_plugins, 0, 0,
-		SECTION_STARTUP,
+		SECTION_PLUGIN,
 		{ "Lists all the plugins in the plugin search paths.\n"
 		}
 	},
@@ -1407,7 +1408,7 @@ static const struct optionw options[] = {
 		}
 	},
 	{ "local-plugin", NULL, parse_plugin_local, 1, 0,
-		SECTION_STARTUP,
+		SECTION_PLUGIN,
 		{ "Loads a plugin with a given path.\n"
 		}
 	},
@@ -1499,23 +1500,23 @@ static const struct optionw options[] = {
 		}
 	},
 	{ "plugin", NULL, parse_plugin, 1, 0,
-		SECTION_STARTUP,
+		SECTION_PLUGIN,
 		{ "Load a plugin with a given name.\n"
 		}
 	},
 	{ "plugin-dirs", NULL, parse_plugin_dirs, 1, 0,
-		SECTION_STARTUP,
+		SECTION_PLUGIN,
 		{ "Specify alternative directories to look\n",
 		  "for plugins, separated by ','\n"
 		}
 	},
 	{ "plugin-help", NULL, print_plugin_help, 0, 0,
-		SECTION_STARTUP,
+		SECTION_PLUGIN,
 		{ "Print help message for all loaded plugins\n"
 		}
 	},
 	{ "plugin-opt", NULL, parse_plugin_option, 1, 0,
-		SECTION_STARTUP,
+		SECTION_PLUGIN,
 		{ "Forward an option to a loaded plugin.\n",
 		  "The option should be in format <plugin_name>.<option>[=value]\n"
 		}
@@ -1902,6 +1903,10 @@ static int print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const 
 			printf("GPG related options:\n");
 			break;
 #endif
+
+		case SECTION_PLUGIN:
+			printf("Plugin options:\n");
+			break;
 
 		case SECTION_END:
 			break;
