@@ -2,14 +2,36 @@
 #
 # Written 2016 by Tim Ruehsen
 
+app_name=$(grep "^PACKAGE_NAME='" configure|cut -d "'" -f2)
+app_ver=$(grep "^PACKAGE_VERSION='" configure|cut -d "'" -f2)
+
+# check if branch is 'master'
+if [ "`git rev-parse --abbrev-ref HEAD`" != "master" ]; then
+  echo Please be sure to checkout master first
+  exit 1
+fi
+
+# check if latest commit has been tagged
+tag=$(git describe --abbrev=0)
+if [ "$tag" != `git describe` ]; then
+  echo "You have to add a signed tag for the *latest* commit"
+  echo Expected: $tag
+  echo Found: `git describe`
+  exit 1
+fi
+
+# make sure that the package version matches the current tag
+if [ "$app_name-$app_ver" != "$tag" ]; then
+  echo "The current tag doesn't match the package version"
+  echo Expected tag: "$app_name-$app_ver"
+  echo Found: $tag
+fi
+
 # Find out the archive extensions
 for archive in $(grep "^DIST_ARCHIVES =" Makefile|cut -d '=' -f2); do
   extensions=$extensions" "$(echo $archive|cut -s -d'.' -f3)
 done
 echo "The following archive types will be created/uploaded: " $extensions
-
-app_name=$(grep "^PACKAGE_NAME='" configure|cut -d "'" -f2)
-app_ver=$(grep "^PACKAGE_VERSION='" configure|cut -d "'" -f2)
 
 echo "Current version of $app_name is $app_ver"
 echo
@@ -24,7 +46,19 @@ read x
 [ "$x" != "y" -a "$x" != "Y" ] && exit 0
 
 echo
+while true; do
+  echo -n "Alpha or Regular release ? [r/A] "
+  read x
+  if test "$x" = "r" || test "$x" = "R"; then
+    directory="/incoming/ftp"
+    break
+  elif test "$x" = "a" || test "$x" = "A"; then
+    directory="/incoming/alpha"
+    break
+  fi
+done
 
+echo
 export CFLAGS="-g -O2 -Wall"
 
 echo "* Bootstrap"
@@ -34,25 +68,17 @@ echo "* Configure"
 ./configure -q
 
 echo "* Make"
-make -s clean
-make -s
+make -s -j$(nproc) clean
+make -s -j$(nproc)
 
 echo "* Make distcheck"
-make -s distcheck >/dev/null
+make -s -j$(nproc) distcheck >/dev/null
 
 echo "* Make dist"
-make -s dist-$ext >/dev/null
-
-while true; do
-  echo "Alpha or Regular release ? [r/A] "
-  read x
-  if test "$x" = "r" || test "$x" = "R"; then
-    directory="/incoming/ftp"
-    break
-  elif test "$x" = "a" || test "$x" = "A"; then
-    directory="/incoming/alpha"
-    break
-  fi
+for ext in $extensions; do
+  [[ $ext = 'gz' ]] && ext="gzip"
+  [[ $ext = 'lz' ]] && ext="lzip"
+  make -s -j$(nproc) dist-$ext >/dev/null
 done
 
 x=$(gpg --list-secret-keys 2>/dev/null|grep ^sec|awk '{ print $2 }')
@@ -95,7 +121,7 @@ for ext in $extensions; do
   app_tarball="${app_name}-${app_ver}.tar.$ext"
   gpg --default-key $signing_key --yes -b $app_tarball
 
-  echo -e "version: 1.2\nfilename: ${app_tarball}\ndirectory: ${app_name}\n" >${app_tarball}.directive
+  echo -e "version: 1.2\nfilename: ${app_tarball}\ndirectory: wget\n" >${app_tarball}.directive
   gpg --default-key $signing_key --yes --clearsign ${app_tarball}.directive
 
 ftp -v -n -i -p ftp-upload.gnu.org <<EOF
