@@ -836,6 +836,26 @@ static int parse_report_speed_type(option_t opt, const char *val, G_GNUC_WGET_UN
 	return 0;
 }
 
+static int parse_https_enforce(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
+{
+	if (!wget_strcasecmp_ascii(val, "hard"))
+		*((int *)opt->var) = WGET_HTTPS_ENFORCE_HARD;
+	else if (!wget_strcasecmp_ascii(val, "soft"))
+		*((int *)opt->var) = WGET_HTTPS_ENFORCE_SOFT;
+	else if (!wget_strcasecmp_ascii(val, "none"))
+		*((int *)opt->var) = WGET_HTTPS_ENFORCE_NONE;
+	else if (!val[0]) {
+		error_printf("Missing required type specifier\n");
+		return -1;
+	}
+	else {
+		error_printf("Invalid type specifier: %s\n", val);
+		return -1;
+	}
+
+	return 0;
+}
+
 static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
 	G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
@@ -1332,6 +1352,13 @@ static const struct optionw options[] = {
 	{ "http2-request-window", &config.http2_request_window, parse_integer, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Max. number of parallel streams per HTTP/2 connection. (default: 30)\n"
+		}
+	},
+	{ "https-enforce", &config.https_enforce, parse_https_enforce, 1, 0,
+		SECTION_SSL,
+		{ "Use secure HTTPS instead of HTTP. Legal types are 'hard', 'soft'\n",
+		  "and 'none'. If --https-only is enabled, this option has no effect.\n",
+		  "(default: none)\n"
 		}
 	},
 	{ "https-only", &config.https_only, parse_bool, -1, 0,
@@ -2653,6 +2680,10 @@ int init(int argc, const char **argv)
 		if (fd != -1)
 			close(fd);
 	}
+
+	if (config.https_only && config.https_enforce)
+		// disable https enforce if https-only is enabled
+		config.https_enforce = WGET_HTTPS_ENFORCE_NONE;
 
 	log_init();
 

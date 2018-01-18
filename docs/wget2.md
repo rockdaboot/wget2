@@ -1405,6 +1405,22 @@ Go to background immediately after startup. If no output file is specified via t
   This is for experts only. Normally you would use `--secure-protocol` to set predefined
   priority strings.
 
+### `--https-enforce=mode`
+
+  Sets how to deal with URLs that are not explicitly HTTPS (where scheme isn't https://) (default: none)
+
+#### mode=none
+
+  Use HTTP for URLs without scheme. In recursive operation the scheme of the parent document is taken as default.
+
+#### mode=soft
+
+  Try HTTPS first when the scheme is HTTP or not given. On failure fall back to HTTP.
+
+#### mode=hard
+
+  Only use HTTPS, no matter if a HTTP scheme is given or not. Do not fall back to HTTP.
+
 ## <a name="Recursive Retrieval Options"/>Recursive Retrieval Options
 
 ### `-r`, `--recursive`

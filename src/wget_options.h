@@ -33,6 +33,13 @@
 
 #include <wget.h>
 
+//types for --https-enforce
+enum {
+	WGET_HTTPS_ENFORCE_NONE,
+	WGET_HTTPS_ENFORCE_SOFT,
+	WGET_HTTPS_ENFORCE_HARD
+};
+
 struct config {
 	wget_iri_t
 		*base;
@@ -206,7 +213,8 @@ struct config {
 		filter_urls,
 		askpass,
 		report_speed,
-		verify_save_failed;
+		verify_save_failed,
+		https_enforce;
 };
 
 extern struct config
