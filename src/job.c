@@ -276,7 +276,7 @@ int job_validate_file(JOB *job)
 	return 0;
 }
 
-JOB *job_init(JOB *job, wget_iri_t *iri)
+JOB *job_init(JOB *job, wget_iri_t *iri, bool http_fallback)
 {
 	if (!job)
 		job = wget_calloc(1, sizeof(JOB));
@@ -284,5 +284,6 @@ JOB *job_init(JOB *job, wget_iri_t *iri)
 		memset(job, 0, sizeof(JOB));
 
 	job->iri = iri;
+	job->http_fallback = http_fallback;
 	return job;
 }

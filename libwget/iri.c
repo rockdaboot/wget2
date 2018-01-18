@@ -1233,7 +1233,7 @@ const char *wget_iri_set_scheme(wget_iri_t *iri, const char *scheme)
 	for (int index = 0; wget_iri_schemes[index]; index++) {
 		if (!wget_strcasecmp_ascii(wget_iri_schemes[index], scheme)) {
 			iri->scheme = wget_iri_schemes[index];
-			// If the IRI is using a port other than the default, keep it untouched
+			// If the IRI is using the default port, also change it
 			if (!iri->port_given)
 				iri->port = iri_ports[index];
 			break;
@@ -1245,7 +1245,7 @@ const char *wget_iri_set_scheme(wget_iri_t *iri, const char *scheme)
 		size_t old_scheme_len = strlen(old_scheme);
 		if (strncmp(iri->uri, old_scheme, old_scheme_len) == 0) {
 			if (strncmp(iri->uri + old_scheme_len, "://", 3) == 0) {
-				char *new_uri = wget_aprintf("%s://%s",  iri->scheme, iri->uri + old_scheme_len + 3);
+				char *new_uri = wget_aprintf("%s%s",  iri->scheme, iri->uri + old_scheme_len);
 				if (iri->uri_allocated)
 					xfree(iri->uri);
 				iri->uri = new_uri;

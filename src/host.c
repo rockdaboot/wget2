@@ -329,11 +329,11 @@ void host_add_job(HOST *host, const JOB *job)
  * This function creates a priority job for robots.txt.
  * This job has to be processed before any other job.
  */
-void host_add_robotstxt_job(HOST *host, wget_iri_t *iri)
+void host_add_robotstxt_job(HOST *host, wget_iri_t *iri, bool http_fallback)
 {
 	JOB *job;
 
-	job = job_init(NULL, iri);
+	job = job_init(NULL, iri, http_fallback);
 	job->host = host;
 	job->robotstxt = 1;
 	job->local_filename = get_local_filename(job->iri);

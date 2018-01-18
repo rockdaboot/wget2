@@ -147,8 +147,7 @@ static long long G_GNUC_WGET_NONNULL_ALL get_file_size(const char *fname);
 static wget_stringmap_t
 	*etags;
 static wget_hashmap_t
-	*known_urls,
-	*http_fallback_urls;
+	*known_urls;
 static DOWNLOADER
 	*downloaders;
 static void
@@ -396,10 +395,7 @@ static wget_thread_mutex_t
 	etag_mutex,
 	savefile_mutex,
 	netrc_mutex,
-	conversion_mutex,
-	http_fallback_urls_mutex;
-
-
+	conversion_mutex;
 
 static wget_thread_cond_t
 	main_cond,   // is signaled whenever a job is done
@@ -419,7 +415,6 @@ static void _wget_init(void)
 	wget_thread_mutex_init(&savefile_mutex);
 	wget_thread_mutex_init(&netrc_mutex);
 	wget_thread_mutex_init(&conversion_mutex);
-	wget_thread_mutex_init(&http_fallback_urls_mutex);
 	wget_thread_mutex_init(&quota_mutex);
 	wget_thread_cond_init(&main_cond);
 	wget_thread_cond_init(&worker_cond);
@@ -471,7 +466,6 @@ static void _wget_deinit(void)
 	wget_thread_mutex_destroy(&savefile_mutex);
 	wget_thread_mutex_destroy(&netrc_mutex);
 	wget_thread_mutex_destroy(&conversion_mutex);
-	wget_thread_mutex_destroy(&http_fallback_urls_mutex);
 	wget_thread_mutex_destroy(&quota_mutex);
 	wget_thread_cond_destroy(&main_cond);
 	wget_thread_cond_destroy(&worker_cond);
@@ -616,6 +610,7 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 	JOB *new_job = NULL, job_buf;
 	HOST *host;
 	struct plugin_db_forward_url_verdict plugin_verdict;
+	bool http_fallback = 0;
 
 	iri = wget_iri_parse_base(base, url, encoding);
 
@@ -646,13 +641,10 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 
 	wget_thread_mutex_lock(downloader_mutex);
 
-	if (config.https_enforce && iri->scheme != WGET_IRI_SCHEME_HTTPS) {
+	if (iri->scheme == WGET_IRI_SCHEME_HTTP && config.https_enforce) {
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
-		if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT) {
-			wget_thread_mutex_lock(http_fallback_urls_mutex);
-			wget_hashmap_put_noalloc(http_fallback_urls, wget_strdup(iri->uri), NULL);
-			wget_thread_mutex_unlock(http_fallback_urls_mutex);
-		}
+		if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT)
+			http_fallback = 1;
 	}
 
 	if (!blacklist_add(iri)) {
@@ -675,15 +667,8 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 			// create a special job for downloading robots.txt (before anything else)
 			wget_iri_t *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
 
-			if (blacklist_add(robot_iri)) {
-				host_add_robotstxt_job(host, robot_iri);
-				if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT) {
-					wget_thread_mutex_lock(http_fallback_urls_mutex);
-					if (wget_hashmap_contains(http_fallback_urls, iri->uri))
-						wget_hashmap_put_noalloc(http_fallback_urls, wget_strdup(robot_iri->uri), NULL);
-					wget_thread_mutex_unlock(http_fallback_urls_mutex);
-				}
-			}
+			if (blacklist_add(robot_iri))
+				host_add_robotstxt_job(host, robot_iri, http_fallback);
 		}
 	} else
 		host = host_get(iri);
@@ -710,7 +695,7 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 		}
 	}
 
-	new_job = job_init(&job_buf, iri);
+	new_job = job_init(&job_buf, iri, http_fallback);
 	if (plugin_verdict.alt_local_filename) {
 		new_job->local_filename = plugin_verdict.alt_local_filename;
 		plugin_verdict.alt_local_filename = NULL;
@@ -758,6 +743,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	wget_iri_t *iri;
 	HOST *host;
 	struct plugin_db_forward_url_verdict plugin_verdict;
+	bool http_fallback = 0;
 
 	wget_info_printf(_("Adding URL: %s\n"), url);
 
@@ -822,13 +808,10 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	wget_thread_mutex_lock(downloader_mutex);
 
-	if (config.https_enforce && iri->scheme != WGET_IRI_SCHEME_HTTPS) {
+	if (iri->scheme == WGET_IRI_SCHEME_HTTP && config.https_enforce) {
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
-		if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT) {
-			wget_thread_mutex_lock(http_fallback_urls_mutex);
-			wget_hashmap_put_noalloc(http_fallback_urls, wget_strdup(iri->uri), NULL);
-			wget_thread_mutex_unlock(http_fallback_urls_mutex);
-		}
+		if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT)
+			http_fallback = 1;
 	}
 
 	if (!blacklist_add(iri)) {
@@ -889,15 +872,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			// create a special job for downloading robots.txt (before anything else)
 			wget_iri_t *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
 
-			if (blacklist_add(robot_iri)) {
-				host_add_robotstxt_job(host, robot_iri);
-				if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT) {
-					wget_thread_mutex_lock(http_fallback_urls_mutex);
-					if (wget_hashmap_contains(http_fallback_urls, iri->uri))
-						wget_hashmap_put_noalloc(http_fallback_urls, wget_strdup(robot_iri->uri), NULL);
-					wget_thread_mutex_unlock(http_fallback_urls_mutex);
-				}
-			}
+			if (blacklist_add(robot_iri))
+				host_add_robotstxt_job(host, robot_iri, http_fallback);
 		}
 	} else if ((host = host_get(iri))) {
 		if (host->robots && iri->path) {
@@ -939,7 +915,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		}
 	}
 
-	new_job = job_init(&job_buf, iri);
+	new_job = job_init(&job_buf, iri, http_fallback);
 
 	if (!config.output_document) {
 		if (plugin_verdict.alt_local_filename) {
@@ -1165,9 +1141,6 @@ int main(int argc, const char **argv)
 	}
 	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
 
-	if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT)
-		http_fallback_urls = wget_hashmap_create(128, (wget_hashmap_hash_t)hash_url, (wget_hashmap_compare_t)strcmp);
-
 	for (; n < argc; n++) {
 		add_url_to_queue(argv[n], config.base, config.local_encoding);
 	}
@@ -1372,8 +1345,6 @@ int main(int argc, const char **argv)
 		wget_vector_clear_nofree(parents);
 		wget_vector_free(&parents);
 		wget_hashmap_free(&known_urls);
-		if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT)
-			wget_hashmap_free(&http_fallback_urls);
 		wget_stringmap_free(&etags);
 
 		deinit();
@@ -2075,18 +2046,14 @@ void *downloader_thread(void *p)
 					if (establish_connection(downloader, &iri) != WGET_E_SUCCESS) {
 						action = ACTION_ERROR;
 
-						if (host->failures == 0 && config.https_enforce == WGET_HTTPS_ENFORCE_SOFT) {
-							wget_thread_mutex_lock(http_fallback_urls_mutex);
-							if (wget_hashmap_contains(http_fallback_urls, iri->uri))
-								action = ACTION_GET_JOB;
-							wget_thread_mutex_unlock(http_fallback_urls_mutex);
+						if (host->failures == 0 && job->http_fallback) {
+							action = ACTION_GET_JOB;
 
-							if (action != ACTION_ERROR) {
-								wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTP);
+							wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTP);
+							job->http_fallback = 0;
 
-								if (establish_connection(downloader, &iri) != WGET_E_SUCCESS)
-									action = ACTION_ERROR;
-							}
+							if (establish_connection(downloader, &iri) != WGET_E_SUCCESS)
+								action = ACTION_ERROR;
 						}
 
 						if (action == ACTION_ERROR) {

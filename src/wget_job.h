@@ -96,7 +96,8 @@ struct JOB {
 		head_first : 1, // first check mime type by using a HEAD request
 		requested_by_user : 1, // download even if disallowed by robots.txt
 		ignore_patterns : 1, // Ignore accept/reject patterns
-		sig_req : 1; // When true indicates this job is for a signature else specifies location of saved file (including name collision stuff, i.e. numbers)
+		sig_req : 1, // When true indicates this job is for a signature else specifies location of saved file (including name collision stuff, i.e. numbers)
+		http_fallback : 1; // When true, we try again on error, using HTTP (instead of HTTPS)
 };
 
 struct DOWNLOADER {
@@ -118,7 +119,7 @@ struct DOWNLOADER {
 		final_error : 1;
 };
 
-JOB *job_init(JOB *job, wget_iri_t *iri) G_GNUC_WGET_NONNULL((2));
+JOB *job_init(JOB *job, wget_iri_t *iri, bool http_fallback) G_GNUC_WGET_NONNULL((2));
 int job_validate_file(JOB *job) G_GNUC_WGET_NONNULL((1));
 void job_create_parts(JOB *job) G_GNUC_WGET_NONNULL((1));
 void job_free(JOB *job) G_GNUC_WGET_NONNULL((1));
