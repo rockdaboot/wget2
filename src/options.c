@@ -902,7 +902,6 @@ struct config config = {
 #if defined WITH_LIBNGHTTP2
 	.http2 = 1,
 	.http2_request_window = 30,
-	.http1_request_window = 10,
 #endif
 	.ocsp = 1,
 	.ocsp_stapling = 1,
@@ -1326,6 +1325,11 @@ static const struct optionw options[] = {
 	{ "http2", &config.http2, parse_bool, -1, 0,
 		SECTION_SSL,
 		{ "Use HTTP/2 protocol if possible. (default: on)\n"
+		}
+	},
+	{ "http2-request-window", &config.http2_request_window, parse_integer, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Max. number of parallel streams per HTTP/2 connection. (default: 30)\n"
 		}
 	},
 	{ "https-only", &config.https_only, parse_bool, -1, 0,

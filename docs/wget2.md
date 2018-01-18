@@ -803,6 +803,10 @@ Go to background immediately after startup. If no output file is specified via t
 
   Enables disk synching after each write (default: off).
 
+### `--http2-request-window=number`
+
+  Set max. number of parallel streams per HTTP/2 connection (default: 30).
+
 ## <a name="Directory Options"/>Directory Options
 
 ### `-nd`, `--no-directories`
