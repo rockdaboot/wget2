@@ -803,6 +803,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	if (!blacklist_add(iri)) {
 		// we know this URL already
+		// iri has been free'd by blacklist_add()
 		wget_thread_mutex_unlock(downloader_mutex);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
@@ -885,16 +886,16 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	if (config.recursive && config.filter_urls) {
 		if ((config.accept_patterns && !in_pattern_list(config.accept_patterns, iri->uri))
-				|| (config.accept_regex && !regex_match(iri->uri, config.accept_regex))) {
-
+			|| (config.accept_regex && !regex_match(iri->uri, config.accept_regex)))
+		{
 			debug_printf("not requesting '%s' (doesn't match accept pattern)\n", iri->uri);
 			wget_thread_mutex_unlock(downloader_mutex);
 			return;
 		}
 
 		if ((config.reject_patterns && in_pattern_list(config.reject_patterns, iri->uri))
-				|| (config.reject_regex && regex_match(iri->uri, config.reject_regex))) {
-
+			|| (config.reject_regex && regex_match(iri->uri, config.reject_regex)))
+		{
 			debug_printf("not requesting '%s' (matches reject pattern)\n", iri->uri);
 			wget_thread_mutex_unlock(downloader_mutex);
 			return;
@@ -1115,8 +1116,6 @@ static void print_progress_report(long long start_time)
 int main(int argc, const char **argv)
 {
 	int n, rc;
-	size_t bufsize = 0;
-	char *buf = NULL;
 	char quota_buf[16];
 	long long start_time = 0;
 
@@ -1163,7 +1162,8 @@ int main(int argc, const char **argv)
 		else if (!strcmp(config.input_file, "-")) {
 			if (isatty(STDIN_FILENO)) {
 				ssize_t len;
-				char *url;
+				size_t bufsize = 0;
+				char *url, *buf = NULL;
 
 				// read URLs from STDIN
 				while ((len = wget_fdgetline(&buf, &bufsize, STDIN_FILENO)) >= 0) {
@@ -1175,6 +1175,7 @@ int main(int argc, const char **argv)
 					url[len] = 0;
 					add_url_to_queue(buf, config.base, config.input_encoding);
 				}
+				xfree(buf);
 			} else {
 				// read URLs asynchronously and process each URL immediately when it arrives
 				if ((rc = wget_thread_start(&input_tid, input_thread, NULL, 0)) != 0) {
@@ -1184,7 +1185,8 @@ int main(int argc, const char **argv)
 		} else {
 			int fd;
 			ssize_t len;
-			char *url;
+			size_t bufsize = 0;
+			char *url, *buf = 0;
 
 			// read URLs from input file
 			if ((fd = open(config.input_file, O_RDONLY|O_BINARY)) >= 0) {
@@ -1197,6 +1199,7 @@ int main(int argc, const char **argv)
 					url[len] = 0;
 					add_url_to_queue(url, config.base, config.input_encoding);
 				}
+				xfree(buf);
 				close(fd);
 			} else
 				error_printf(_("Failed to open input file %s\n"), config.input_file);
@@ -1320,7 +1323,6 @@ int main(int argc, const char **argv)
  out:
 	if (is_testing() || wget_match_tail(argv[0], "wget2_noinstall")) {
 		// freeing to avoid disguising valgrind output
-		xfree(buf);
 		blacklist_free();
 		hosts_free();
 		host_ips_free();
@@ -1352,6 +1354,7 @@ void *input_thread(void *p G_GNUC_WGET_UNUSED)
 		add_url_to_queue(buf, config.base, config.local_encoding);
 		wget_thread_cond_signal(worker_cond);
 	}
+	xfree(buf);
 
 	// input closed, don't read from it any more
 	debug_printf("input closed\n");
