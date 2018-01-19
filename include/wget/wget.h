@@ -913,6 +913,9 @@ typedef struct wget_iri_st {
 	 */
 	size_t
 		dirlen;
+	/// size of memory to hold the parsed URI, it contains 0 bytes
+	size_t
+		msize;
 	/// Port number
 	uint16_t
 		port;

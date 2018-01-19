@@ -306,8 +306,8 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 {
 	wget_iri_t *iri;
 	char *p, *s, *authority, c;
-	size_t slen;
-	int maybe_scheme;
+	size_t slen, extra;
+	int have_scheme;
 
 	if (!url)
 		return NULL;
@@ -346,55 +346,61 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 		}
 	}
 */
+
+	if (c_isalpha(*url)) {
+		const char *x;
+		have_scheme = 1;
+
+		for (x = url; *x && _iri_isscheme(*x); x++)
+			;
+
+		if (*x != ':' || c_isdigit(x[1]))
+			have_scheme = 0; // not a scheme
+	} else
+		have_scheme = 0;
+
 	// just use one block of memory for all parsed URI parts
 	slen = strlen(url);
-	iri = xmalloc(sizeof(wget_iri_t) + slen * 2 + 2);
+	extra = have_scheme ? 0 : sizeof("http://") - 1; // extra space for http://
+
+	iri = xmalloc(sizeof(wget_iri_t) + (slen + extra + 1) * 2);
 	memset(iri, 0, sizeof(wget_iri_t));
-	iri->uri = memcpy(((char *)iri) + sizeof(wget_iri_t), url, slen + 1);
-	s = memcpy((char *)iri->uri + slen + 1, url, slen + 1);
 
-//	if (url_allocated)
-//		xfree(url);
-
-	p = s;
-	if (c_isalpha(*p)) {
-		maybe_scheme = 1;
-		while (*s && !_iri_isgendelim(*s)) {
-			if (maybe_scheme && !_iri_isscheme(*s))
-				maybe_scheme = 0;
-			s++;
-		}
-	} else
-		maybe_scheme = 0;
-
-//	if (maybe_scheme && (*s == ':' && (s[1] == '/' || s[1] == 0))) {
-	if (maybe_scheme && (*s == ':' && !c_isdigit(s[1]))) {
-		// found a scheme
+	if (have_scheme) {
+		iri->msize = slen + 1;
+		iri->uri = memcpy(((char *)iri) + sizeof(wget_iri_t), url, iri->msize);
+		iri->scheme = s = memcpy((char *)iri->uri + iri->msize, url, iri->msize);
+		s = strchr(s, ':'); // we know there is a :
 		*s++ = 0;
+
+		wget_iri_unescape_inline((char *)iri->scheme); // percent unescape
+		wget_strtolower((char *)iri->scheme); // convert scheme to lowercase
 
 		// find the scheme in our static list of supported schemes
 		// for later comparisons we compare pointers (avoiding strcasecmp())
-		iri->scheme = p;
-		wget_iri_unescape_inline((char *)iri->scheme);
-
 		for (unsigned it = 0; it < countof(wget_iri_schemes); it++) {
-			if (!wget_strcasecmp_ascii(wget_iri_schemes[it], p)) {
+			if (!strcmp(wget_iri_schemes[it], iri->scheme)) {
 				iri->scheme = wget_iri_schemes[it];
 				iri->port = iri_ports[it];
 				break;
 			}
 		}
-
-		if (iri->scheme == p) {
-			// convert scheme to lowercase
-			wget_strtolower((char *)iri->scheme);
-		}
-
 	} else {
+		// add http:// scheme to url
+		iri->uri = memcpy(((char *)iri) + sizeof(wget_iri_t), "http://", extra);
+		memcpy(((char *)iri) + sizeof(wget_iri_t) + extra, url, slen + 1);
+		iri->msize = slen + 1 + extra;
+		s = memcpy((char *)iri->uri + iri->msize, "http://", extra);
+		memcpy((char *)iri->uri + iri->msize + extra, url, slen + 1);
+		s[extra - 3] = 0;
+		s += extra;
+
 		iri->scheme = WGET_IRI_SCHEME_HTTP;
 		iri->port = 80;
-		s = p; // rewind
 	}
+
+//	if (url_allocated)
+//		xfree(url);
 
 	// this is true for http, https, ftp, file (accept any number of /, like most browsers)
 	while (*s == '/')
@@ -549,11 +555,15 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
  */
 wget_iri_t *wget_iri_clone(const wget_iri_t *iri)
 {
-	if (!iri)
+	if (!iri || !iri->uri)
 		return NULL;
 
-	size_t slen = iri->uri ? strlen(iri->uri) : 0;
-	wget_iri_t *clone = wget_memdup(iri, sizeof(wget_iri_t) + slen * 2 + 2);
+	size_t slen = strlen(iri->uri);
+	wget_iri_t *clone = wget_malloc(sizeof(wget_iri_t) + (slen + 1) + iri->msize);
+	memcpy(clone, iri, sizeof(wget_iri_t));
+	clone->uri = memcpy(((char *)clone) + sizeof(wget_iri_t), iri->uri, slen + 1);
+	memcpy((char *)clone->uri + slen + 1, (char *)iri->uri + slen + 1, iri->msize);
+	clone->uri_allocated = 0;
 
 	clone->connection_part = wget_strdup(iri->connection_part);
 
@@ -563,10 +573,6 @@ wget_iri_t *wget_iri_clone(const wget_iri_t *iri)
 	else
 		clone->host = iri->host ? (char *)clone + (size_t) (iri->host - (const char *)iri) : NULL;
 
-	if (iri->uri_allocated)
-		clone->uri = wget_strdup(iri->uri);
-	else
-		clone->uri = iri->uri ? (char *)clone + (size_t) (iri->uri - (const char *)iri) : NULL;
 	clone->display = iri->display ? (char *)clone + (size_t) (iri->display - (const char *)iri): NULL;
 	// not adjust scheme, it is a pointer to a static string
 	clone->userinfo = iri->userinfo ? (char *)clone + (size_t) (iri->userinfo - (const char *)iri): NULL;
@@ -1243,6 +1249,7 @@ const char *wget_iri_set_scheme(wget_iri_t *iri, const char *scheme)
 	// Rewrite the URI if scheme has changed
 	if (old_scheme != iri->scheme) {
 		size_t old_scheme_len = strlen(old_scheme);
+
 		if (strncmp(iri->uri, old_scheme, old_scheme_len) == 0) {
 			if (strncmp(iri->uri + old_scheme_len, "://", 3) == 0) {
 				char *new_uri = wget_aprintf("%s%s",  iri->scheme, iri->uri + old_scheme_len);
