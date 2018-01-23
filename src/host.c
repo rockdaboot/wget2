@@ -484,7 +484,6 @@ void host_queue_free(HOST *host)
 	wget_list_browse(host->queue, (wget_list_browse_t)_queue_free_func, NULL);
 	wget_list_free(&host->queue);
 	if (host->robot_job) {
-		wget_iri_free(&host->robot_job->iri);
 		job_free(host->robot_job);
 		xfree(host->robot_job);
 	}
