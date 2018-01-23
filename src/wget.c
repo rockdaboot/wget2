@@ -84,8 +84,10 @@
 #  include "wget_gpgme.h"
 #endif
 
+// flags for add_url()
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)
+#define URL_FLG_SKIPFALLBACK (1<<2)
 
 #define _CONTENT_TYPE_HTML 1
 typedef struct {
@@ -806,13 +808,13 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		return;
 	}
 
-	wget_thread_mutex_lock(downloader_mutex);
-
-	if (iri->scheme == WGET_IRI_SCHEME_HTTP && config.https_enforce) {
+	if (iri->scheme == WGET_IRI_SCHEME_HTTP && config.https_enforce && !(flags & URL_FLG_SKIPFALLBACK)) {
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
 		if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT)
 			http_fallback = 1;
 	}
+
+	wget_thread_mutex_lock(downloader_mutex);
 
 	if (!blacklist_add(iri)) {
 		// we know this URL already
@@ -1401,7 +1403,7 @@ static int try_connection(DOWNLOADER *downloader, wget_iri_t *iri)
 
 	if ((rc = wget_http_open(&downloader->conn, iri)) == WGET_E_SUCCESS) {
 		debug_printf("established connection %s\n",
-				wget_http_get_host(downloader->conn));
+			wget_http_get_host(downloader->conn));
 	} else {
 		debug_printf("Failed to connect (%d)\n", rc);
 	}
@@ -1462,8 +1464,10 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 	if (rc == WGET_E_HANDSHAKE || rc == WGET_E_CERTIFICATE) {
 		// TLS  failure
 		wget_http_close(&downloader->conn);
-		host_final_failure(downloader->job->host);
-		set_exit_status(WG_EXIT_STATUS_TLS);
+		if (!downloader->job->http_fallback) {
+			host_final_failure(downloader->job->host);
+			set_exit_status(WG_EXIT_STATUS_TLS);
+		}
 	}
 
 	return rc;
@@ -1988,6 +1992,14 @@ static void process_response(wget_http_response_t *resp)
 	}
 }
 
+static void _fallback_to_http(JOB *job)
+{
+	char *http_url = wget_aprintf("http://%s", job->iri->uri + 8);
+	add_url(NULL, "utf-8", http_url, URL_FLG_SKIPFALLBACK);
+	host_remove_job(job->host, job);
+	xfree(http_url);
+}
+
 enum actions {
 	ACTION_GET_JOB = 1,
 	ACTION_GET_RESPONSE = 2,
@@ -2044,23 +2056,11 @@ void *downloader_thread(void *p)
 					host = job->host;
 
 					if (establish_connection(downloader, &iri) != WGET_E_SUCCESS) {
+						if (job->http_fallback)
+							_fallback_to_http(job);
+						host_increase_failure(host);
 						action = ACTION_ERROR;
-
-						if (host->failures == 0 && job->http_fallback) {
-							action = ACTION_GET_JOB;
-
-							wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTP);
-							job->http_fallback = 0;
-
-							if (establish_connection(downloader, &iri) != WGET_E_SUCCESS)
-								action = ACTION_ERROR;
-						}
-
-						if (action == ACTION_ERROR) {
-							host_increase_failure(host);
-							action = ACTION_ERROR;
-							break;
-						}
+						break;
 					}
 
 					job->iri = iri;
@@ -2085,6 +2085,8 @@ void *downloader_thread(void *p)
 					job->original_url = iri;
 
 				if (http_send_request(job->iri, job->original_url, downloader) != WGET_E_SUCCESS) {
+					if (job->http_fallback)
+						_fallback_to_http(job);
 					host_increase_failure(host);
 					action = ACTION_ERROR;
 					break;
