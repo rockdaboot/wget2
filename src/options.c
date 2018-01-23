@@ -839,11 +839,11 @@ static int parse_report_speed_type(option_t opt, const char *val, G_GNUC_WGET_UN
 static int parse_https_enforce(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (!wget_strcasecmp_ascii(val, "hard"))
-		*((int *)opt->var) = WGET_HTTPS_ENFORCE_HARD;
+		*((char *)opt->var) = WGET_HTTPS_ENFORCE_HARD;
 	else if (!wget_strcasecmp_ascii(val, "soft"))
-		*((int *)opt->var) = WGET_HTTPS_ENFORCE_SOFT;
+		*((char *)opt->var) = WGET_HTTPS_ENFORCE_SOFT;
 	else if (!wget_strcasecmp_ascii(val, "none"))
-		*((int *)opt->var) = WGET_HTTPS_ENFORCE_NONE;
+		*((char *)opt->var) = WGET_HTTPS_ENFORCE_NONE;
 	else if (!val[0]) {
 		error_printf("Missing required type specifier\n");
 		return -1;
