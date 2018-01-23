@@ -56,6 +56,8 @@ extern "C" {
 // defines for wget_test_start_http_server()
 #define WGET_TEST_EXPECTED_REQUEST_HEADER 1001
 #define WGET_TEST_RESPONSE_URLS 1002
+#define WGET_TEST_HTTPS_ONLY 1003
+#define WGET_TEST_HTTP_ONLY 1004
 #define WGET_TEST_FEATURE_MHD 1101
 #define WGET_TEST_FEATURE_TLS 1102
 #define WGET_TEST_FEATURE_IDN 1103
@@ -115,10 +117,6 @@ typedef struct {
 		request_headers[10];
 	time_t
 		modified;
-	char
-		body_alloc; // if body has been allocated internally (and need to be freed on exit)
-	char
-		header_alloc[10]; // if header[n] has been allocated internally (and need to be freed on exit)
 
 	// auth fields
 	const char *
@@ -129,6 +127,13 @@ typedef struct {
 		auth_password;
 	size_t
 		body_len; // The length of the body in bytes. 0 means use strlen(body)
+
+	bool
+		body_alloc : 1, // if body has been allocated internally (and need to be freed on exit)
+		https_only : 1,
+		http_only : 1;
+	bool
+		header_alloc[10]; // if header[n] has been allocated internally (and need to be freed on exit)
 } wget_test_url_t;
 
 WGETAPI void wget_test_stop_server(void);

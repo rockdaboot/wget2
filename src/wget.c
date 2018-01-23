@@ -2058,7 +2058,8 @@ void *downloader_thread(void *p)
 					if (establish_connection(downloader, &iri) != WGET_E_SUCCESS) {
 						if (job->http_fallback)
 							_fallback_to_http(job);
-						host_increase_failure(host);
+						else
+							host_increase_failure(host);
 						action = ACTION_ERROR;
 						break;
 					}
@@ -2087,7 +2088,8 @@ void *downloader_thread(void *p)
 				if (http_send_request(job->iri, job->original_url, downloader) != WGET_E_SUCCESS) {
 					if (job->http_fallback)
 						_fallback_to_http(job);
-					host_increase_failure(host);
+					else
+						host_increase_failure(host);
 					action = ACTION_ERROR;
 					break;
 				}

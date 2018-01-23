@@ -98,21 +98,16 @@ enum SERVER_MODE {
 
 static char *_scan_directory(const char* data)
 {
-	char *path = strchr(data, '/');
-	if (path != 0) {
-		return path;
-	}
-	else
-		return NULL;
+	return strchr(data, '/');
 }
 
 static char *_parse_hostname(const char* data)
 {
 	if (!wget_strncasecmp_ascii(data, "http://", 7)) {
-		char *path = strchr(data += 7, '/');
-		return path;
-	} else
-		return NULL;
+		return strchr(data += 7, '/');
+	}
+
+	return NULL;
 }
 
 static void _replace_space_with_plus(wget_buffer_t *buf, const char *data)
@@ -129,7 +124,7 @@ static int _print_query_string(
 {
 	struct query_string *query = cls;
 
-	if (key && query->it == 0) {
+	if (key && !query->it) {
 		wget_buffer_strcpy(query->params, "?");
 		_replace_space_with_plus(query->params, key);
 		if (value) {
@@ -137,7 +132,7 @@ static int _print_query_string(
 			_replace_space_with_plus(query->params, value);
 		}
 	}
-	if (key && query->it != 0) {
+	if (key && query->it) {
 		wget_buffer_strcat(query->params, "&");
 		_replace_space_with_plus(query->params, key);
 		if (value) {
@@ -147,7 +142,7 @@ static int _print_query_string(
 	}
 
 	query->it++;
-    return MHD_YES;
+	return MHD_YES;
 }
 
 static int _print_header_range(
@@ -219,6 +214,9 @@ static int _answer_to_connection(
 	size_t body_len;
 	char content_len[100], content_range[100];
 
+	// whether or not this connection is HTTPS
+	bool https = !!MHD_get_connection_info(connection, MHD_CONNECTION_INFO_PROTOCOL);
+
 	// get query string
 	query.params = wget_buffer_alloc(1024);
 	query.it = 0;
@@ -261,16 +259,21 @@ static int _answer_to_connection(
 		wget_buffer_strcat(url_full, "index.html");
 
 	// it1 = iteration for urls data
-	unsigned int it1, found = 0, chunked = 0;
-	for (it1 = 0; it1 < nurls; it1++) {
+	unsigned int found = 0, chunked = 0;
+	for (unsigned it1 = 0; it1 < nurls && !found; it1++) {
+		if (urls[it1].http_only && https)
+			continue;
+		if (urls[it1].https_only && !https)
+			continue;
+
 		// create default page for directory without index page
-		char *dir = _scan_directory(url_full->data + 1);
-		if (dir != 0 && !strcmp(dir, "/"))
+		const char *dir = _scan_directory(url_full->data + 1);
+		if (dir && !strcmp(dir, "/"))
 			wget_buffer_strcat(url_full, "index.html");
 
 		// create default page for hostname without index page
-		char *host = _parse_hostname(url_full->data);
-		if (host != 0 && !strcmp(host, "/"))
+		const char *host = _parse_hostname(url_full->data);
+		if (host && !strcmp(host, "/"))
 			wget_buffer_strcat(url_full, "index.html");
 
 		// convert remote url into escaped char for iri encoding
@@ -290,7 +293,7 @@ static int _answer_to_connection(
 				found = 1;
 				break;
 			}
-			for (int it2 = 0; urls[it1].headers[it2] != NULL; it2++) {
+			for (int it2 = 0; urls[it1].headers[it2]; it2++) {
 				const char *header = urls[it1].headers[it2];
 				if (header) {
 					const char *header_value = strchr(header, ':');
@@ -330,7 +333,7 @@ static int _answer_to_connection(
 			{
 				response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
 				// it2 = iteration for headers
-				for (unsigned int it2 = 0; urls[it1].headers[it2] != NULL; it2++) {
+				for (unsigned it2 = 0; urls[it1].headers[it2]; it2++) {
 					const char *header = urls[it1].headers[it2];
 					if (header) {
 						const char *header_value = strchr(header, ':');
@@ -439,7 +442,6 @@ static int _answer_to_connection(
 				}
 			}
 
-			it1 = (unsigned int)nurls;
 			found = 1;
 		}
 
@@ -707,8 +709,8 @@ static void _write_msg(const char *msg, size_t len)
 void wget_test_start_server(int first_key, ...)
 {
 	int rc, key;
-	size_t it;
 	va_list args;
+	bool start_http = 1, start_https = 1;
 
 	wget_global_init(
 		WGET_DEBUG_FUNC, _write_msg,
@@ -738,6 +740,12 @@ void wget_test_start_server(int first_key, ...)
 			break;
 		case WGET_TEST_SERVER_SEND_CONTENT_LENGTH:
 			server_send_content_length = !!va_arg(args, int);
+			break;
+		case WGET_TEST_HTTPS_ONLY:
+			start_http = 0;
+			break;
+		case WGET_TEST_HTTP_ONLY:
+			start_https = 0;
 			break;
 		case WGET_TEST_FEATURE_MHD:
 			break;
@@ -778,19 +786,18 @@ void wget_test_start_server(int first_key, ...)
 	if (chdir(tmpdir) != 0)
 		wget_error_printf_exit(_("Failed to change to tmpdir (%d)\n"), errno);
 
-	// init server SSL layer (default cert and key file types are PEM)
-	wget_ssl_set_config_string(WGET_SSL_CA_FILE, SRCDIR "/certs/x509-ca-cert.pem");
-	wget_ssl_set_config_string(WGET_SSL_CERT_FILE, SRCDIR "/certs/x509-server-cert.pem");
-	wget_ssl_set_config_string(WGET_SSL_KEY_FILE, SRCDIR "/certs/x509-server-key.pem");
-
 	// start HTTP server
-	if ((rc = _http_server_start(HTTP_MODE)) != 0)
-		wget_error_printf_exit(_("Failed to start HTTP server, error %d\n"), rc);
+	if (start_http) {
+		if ((rc = _http_server_start(HTTP_MODE)) != 0)
+			wget_error_printf_exit(_("Failed to start HTTP server, error %d\n"), rc);
+	}
 
 #ifdef WITH_GNUTLS
 	// start HTTPS server
-	if ((rc = _http_server_start(HTTPS_MODE)) != 0)
-		wget_error_printf_exit(_("Failed to start HTTPS server, error %d\n"), rc);
+	if (start_https) {
+		if ((rc = _http_server_start(HTTPS_MODE)) != 0)
+			wget_error_printf_exit(_("Failed to start HTTPS server, error %d\n"), rc);
+	}
 #endif
 
 	// now replace {{port}} in the body by the actual server port
@@ -802,7 +809,7 @@ void wget_test_start_server(int first_key, ...)
 			url->body_alloc = 1;
 		}
 
-		for (it = 0; it < countof(url->headers) && url->headers[it]; it++) {
+		for (unsigned it = 0; it < countof(url->headers) && url->headers[it]; it++) {
 			p = _insert_ports(url->headers[it]);
 
 			if (p) {
@@ -1000,8 +1007,18 @@ void wget_test(int first_key, ...)
 		wget_buffer_printf(cmd, "%s %s %s", valgrind, executable, options);
 
 	for (it = 0; it < (size_t)wget_vector_size(request_urls); it++) {
-		wget_buffer_printf_append(cmd, " \"http://localhost:%d/%s\"",
-			http_server_port, (char *)wget_vector_get(request_urls, it));
+		request_url = wget_vector_get(request_urls, it);
+
+		if (!wget_strncasecmp_ascii(request_url, "http://", 7)
+			|| !wget_strncasecmp_ascii(request_url, "https://", 8))
+		{
+			char *tmp = _insert_ports(request_url);
+			wget_buffer_printf_append(cmd, " \"%s\"", tmp ? tmp : request_url);
+			wget_xfree(tmp);
+		} else {
+			wget_buffer_printf_append(cmd, " \"http://localhost:%d/%s\"",
+				http_server_port, request_url);
+		}
 	}
 	wget_buffer_strcat(cmd, " 2>&1");
 
