@@ -582,8 +582,10 @@ static int G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL((1)) parse_regex_type(option_t o
 	else if (!wget_strcasecmp_ascii(val, "pcre"))
 		*((char *)opt->var) = WGET_REGEX_TYPE_PCRE;
 #endif
-	else
-		error_printf_exit(_("Unsupported regex type '%s'\n"), val);
+	else {
+		error_printf(_("Unsupported regex type '%s'\n"), val);
+		return -1;
+	}
 
 	return 0;
 }
