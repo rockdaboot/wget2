@@ -37,6 +37,7 @@
 #ifdef HAVE_POLL
 	#include <poll.h>
 #elif defined _WIN32
+	#undef select
 	#include <io.h>
 	#include <winsock2.h>
 	#include <msvc-nothrow.h> // make _get_osfhandle() return error
