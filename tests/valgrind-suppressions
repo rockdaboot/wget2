@@ -54,3 +54,43 @@
    fun:wget_thread_start
    fun:main
 }
+{
+   Leak in glibc's getaddrinfo_a()
+   Memcheck:Leak
+#   match-leak-kinds: reachable
+   ...
+#   fun:malloc
+#   fun:realloc
+#   fun:get_elem
+#   fun:__gai_enqueue_request
+   fun:getaddrinfo_a
+   fun:_wget_tcp_resolve
+   ...
+#   fun:wget_tcp_resolve
+#   fun:wget_tcp_connect
+#   fun:wget_http_open
+#   fun:try_connection
+#   fun:establish_connection
+#   fun:downloader_thread
+#   fun:start_thread
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+#   fun:malloc
+#   fun:__libc_alloc_buffer_allocate
+#   fun:alloc_buffer_allocate
+#   fun:__resolv_conf_allocate
+#   fun:__resolv_conf_load
+#   fun:__resolv_conf_get_current
+#   fun:__res_vinit
+#   fun:maybe_init
+#   fun:context_get.part.1
+#   fun:gethostbyname2_r@@GLIBC_2.2.5
+#   fun:gaih_inet.constprop.7
+   ...
+   fun:getaddrinfo
+   fun:handle_requests
+   fun:start_thread
+}
