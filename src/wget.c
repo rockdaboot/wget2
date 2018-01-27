@@ -2009,7 +2009,11 @@ void *downloader_thread(void *p)
 					host = NULL;
 				} else {
 					if (!wget_thread_support()) {
-						goto out;
+						if (!pause)
+							goto out;
+
+						wget_millisleep(pause);
+						continue;
 					}
 					wget_thread_cond_wait(worker_cond, main_mutex, pause); locked = 1;
 				}
