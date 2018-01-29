@@ -66,4 +66,4 @@ fuzz-coverage: clean clean-lcov
 
 check-local:
 	$(MAKE) -s syntax-check >/dev/null
-	$(srcdir)/contrib/check_options $(srcdir)/docs/wget2.md
+	$(srcdir)/contrib/check_options $(srcdir)/docs/wget2.md $(builddir)/src/wget2$(EXEEXT)
