@@ -1468,6 +1468,13 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 			host_final_failure(downloader->job->host);
 			set_exit_status(WG_EXIT_STATUS_TLS);
 		}
+	} else if (rc == WGET_E_CONNECT) {
+		/* failed to connect */
+		wget_http_close(&downloader->conn);
+		if (!downloader->job->http_fallback) {
+			host_final_failure(downloader->job->host);
+			set_exit_status(WG_EXIT_STATUS_NETWORK);
+		}
 	}
 
 	return rc;

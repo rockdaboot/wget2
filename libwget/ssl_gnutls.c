@@ -47,6 +47,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
@@ -1399,11 +1400,19 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 		}
 
 		if (gnutls_error_is_fatal(rc)) {
-			debug_printf("gnutls_handshake: (%d) %s\n", rc, gnutls_strerror(rc));
+			debug_printf("gnutls_handshake: (%d) %s (errno=%d)\n", rc, gnutls_strerror(rc),errno);
 
 			if (rc == GNUTLS_E_CERTIFICATE_ERROR)
 				ret = WGET_E_CERTIFICATE;
-			else
+			else if (rc == GNUTLS_E_PUSH_ERROR&& (errno == ECONNREFUSED || errno == ENOTCONN)) {
+				/*
+				 * ECONNREFUSED: on Linux
+				 * ENOTCONN: MinGW (in out Gitlab CI runner)
+				 */
+				ret = WGET_E_CONNECT;
+			} else if (rc == GNUTLS_E_PREMATURE_TERMINATION && errno == EAGAIN) {
+				ret = WGET_E_CONNECT;
+			} else
 				ret = WGET_E_HANDSHAKE;
 
 			break;
