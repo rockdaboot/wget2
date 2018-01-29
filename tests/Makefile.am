@@ -23,7 +23,7 @@ WGET_TESTS = test-wget-1$(EXEEXT) test-c-r$(EXEEXT) test-restrict-ascii$(EXEEXT)
  test-iri-subdir$(EXEEXT) test-chunked$(EXEEXT) test-cut-dirs$(EXEEXT) test-parse-html-css$(EXEEXT)\
  test-auth-digest$(EXEEXT) test-stats-dns$(EXEEXT) test-stats-tls$(EXEEXT) test-stats-site$(EXEEXT) test-stats-ocsp$(EXEEXT) test-stats-all$(EXEEXT)\
  test-plugin-interception$(EXEEXT) test-plugin-nonexistance$(EXEEXT) test-plugin-failure$(EXEEXT) test--filter-mime-type$(EXEEXT)\
- test--https-enforce-hard1$(EXEEXT) test--https-enforce-hard2$(EXEEXT)\
+ test--https-enforce-hard1$(EXEEXT) test--https-enforce-hard2$(EXEEXT) test--https-enforce-hard3$(EXEEXT)\
  test--https-enforce-soft1$(EXEEXT)
 
 #test--post-file test-E-k test-cookies-http_state
