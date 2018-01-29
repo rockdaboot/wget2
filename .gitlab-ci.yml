@@ -154,6 +154,14 @@ VPATH build:
     - ../configure $CONFIGURE_BASE_FLAGS --cache-file ../cache/config.cache --disable-manywarnings
     - make -j$(nproc)
     - make -j$(nproc) distcheck
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
 
 
 #Centos7 build:
