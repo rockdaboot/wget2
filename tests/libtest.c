@@ -667,19 +667,19 @@ static char *_insert_ports(const char *src)
 	if (!src || (!strstr(src, "{{port}}") && !strstr(src, "{{sslport}}")))
 		return NULL;
 
-	size_t ret_len = strlen(src) + 1;
-	char *ret = wget_malloc(ret_len);
+	size_t srclen = strlen(src) + 1;
+	char *ret = wget_malloc(srclen);
 	char *dst = ret;
 
 	while (*src) {
 		if (*src == '{') {
 			if (!strncmp(src, "{{port}}", 8)) {
-				dst += snprintf(dst, ret_len - (dst - ret), "%d", http_server_port);
+				dst += snprintf(dst, srclen - (dst - ret), "%d", http_server_port);
 				src += 8;
 				continue;
 			}
 			else if (!strncmp(src, "{{sslport}}", 11)) {
-				dst += snprintf(dst, ret_len - (dst - ret), "%d", https_server_port);
+				dst += snprintf(dst, srclen - (dst - ret), "%d", https_server_port);
 				src += 11;
 				continue;
 			}
@@ -918,6 +918,8 @@ void wget_test(int first_key, ...)
 		args;
 	char
 		server_send_content_length_old = server_send_content_length;
+	bool
+		options_alloc = 0;
 
 	keep_tmpfiles = 0;
 
@@ -945,8 +947,15 @@ void wget_test(int first_key, ...)
 			existing_files = va_arg(args, const wget_test_file_t *);
 			break;
 		case WGET_TEST_OPTIONS:
+		{
 			options = va_arg(args, const char *);
+			const char *tmp = _insert_ports(options);
+			if (tmp) {
+				options = tmp;
+				options_alloc = 1;
+			}
 			break;
+		}
 		case WGET_TEST_KEEP_TMPFILES:
 			keep_tmpfiles = va_arg(args, int);
 			break;
@@ -1091,6 +1100,9 @@ void wget_test(int first_key, ...)
 
 	wget_vector_clear(request_urls);
 	wget_buffer_free(&cmd);
+
+	if (options_alloc)
+		wget_xfree(options);
 
 	server_send_content_length = server_send_content_length_old;
 
