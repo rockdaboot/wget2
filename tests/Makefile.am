@@ -60,7 +60,8 @@ EXTRA_DIST = libtest.h certs gpg
 clean-local:
 	rm -rf $(srcdir)/.test_*
 
-AM_TESTS_ENVIRONMENT = export VALGRIND_TESTS"=@VALGRIND_TESTS@";
+AM_TESTS_ENVIRONMENT = export VALGRIND_TESTS"=@VALGRIND_TESTS@";\
+ export LSAN_OPTIONS=suppressions="$(abs_srcdir)/clang-asan-suppressions";
 TESTS = $(WGET_TESTS)
 
 #Test plugins for plugin related testing

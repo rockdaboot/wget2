@@ -1,0 +1,2 @@
+# known leak in glibc's getaddrinfo_a()
+leak:getaddrinfo
