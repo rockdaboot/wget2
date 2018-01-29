@@ -951,6 +951,8 @@ WGETAPI void
 	wget_iri_free_content(wget_iri_t *iri);
 WGETAPI void
 	wget_iri_set_defaultpage(const char *page);
+WGETAPI int
+	wget_iri_set_defaultport(const char *scheme, unsigned short port);
 WGETAPI bool
 	wget_iri_supported(const wget_iri_t *iri) G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL;
 WGETAPI bool

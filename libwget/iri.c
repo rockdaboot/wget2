@@ -76,7 +76,7 @@ static size_t
 
 const char
 	* const wget_iri_schemes[] = { "http", "https" };
-static const uint16_t
+static uint16_t
 	iri_ports[]   = { 80, 443 }; // default port numbers for the above schemes
 
 /* \cond _hide_internal_symbols */
@@ -396,7 +396,7 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 		s += extra;
 
 		iri->scheme = WGET_IRI_SCHEME_HTTP;
-		iri->port = 80;
+		iri->port = iri_ports[0];
 	}
 
 //	if (url_allocated)
@@ -1218,6 +1218,25 @@ void wget_iri_set_defaultpage(const char *page)
 {
 	default_page = page;
 	default_page_length = default_page ? strlen(default_page) : 0;
+}
+
+/**
+ * \param scheme The scheme for the new default port
+ * \param port The new default port value for the given scheme
+ * \return 0: success  -1: Unknown scheme
+ *
+ * Set the default \p port for the given \p scheme.
+ */
+int wget_iri_set_defaultport(const char *scheme, unsigned short port)
+{
+	for (unsigned it = 0; it < countof(wget_iri_schemes); it++) {
+		if (!wget_strcasecmp_ascii(wget_iri_schemes[it], scheme)) {
+			iri_ports[it] = port;
+			return 0;
+		}
+	}
+
+	return -1;
 }
 
 /**

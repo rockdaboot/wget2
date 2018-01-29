@@ -246,6 +246,19 @@ static int parse_integer(option_t opt, const char *val, G_GNUC_WGET_UNUSED const
 	return 0;
 }
 
+static int parse_uint16(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
+{
+	int port = val ? atoi(val) : 0;
+
+	if (port >= 0 && port <= UINT16_MAX) {
+		*((uint16_t *)opt->var) = (uint16_t) port;
+		return 0;
+	}
+
+	error_printf(_("Value out of range (0-65535): %s\n"), val);
+	return -1;
+}
+
 static int parse_numbytes(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (val) {
@@ -1127,6 +1140,16 @@ static const struct optionw options[] = {
 	{ "debug", &config.debug, parse_bool, -1, 'd',
 		SECTION_STARTUP,
 		{ "Print debugging messages.(default: off)\n"
+		}
+	},
+	{ "default-http-port", &config.default_http_port, parse_uint16, 1, 0,
+		SECTION_HTTP,
+		{ "Set default port for HTTP. (default: 80)\n"
+		}
+	},
+	{ "default-https-port", &config.default_https_port, parse_uint16, 1, 0,
+		SECTION_HTTP,
+		{ "Set default port for HTTPS. (default: 443)\n"
 		}
 	},
 	{ "default-page", &config.default_page, parse_string, 1, 0,
@@ -2575,8 +2598,6 @@ int init(int argc, const char **argv)
 #ifdef WITH_GPGME
 	config.sig_ext = wget_strdup(config.sig_ext);
 #endif
-//	config.exclude_domains = wget_vector_create(16, -2, NULL);
-
 
 	// create list of default config file names
 	const char *env;
@@ -2681,11 +2702,16 @@ int init(int argc, const char **argv)
 			close(fd);
 	}
 
+	log_init();
+
 	if (config.https_only && config.https_enforce)
 		// disable https enforce if https-only is enabled
 		config.https_enforce = WGET_HTTPS_ENFORCE_NONE;
 
-	log_init();
+	if (config.default_http_port)
+		wget_iri_set_defaultport("http", config.default_http_port);
+	if (config.default_https_port)
+		wget_iri_set_defaultport("https", config.default_https_port);
 
 	// check for correct settings
 	if (config.max_threads < 1 || (config.max_threads > 1 && config.chunk_size))

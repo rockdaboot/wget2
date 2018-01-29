@@ -864,6 +864,18 @@ Go to background immediately after startup. If no output file is specified via t
   Use name as the default file name when it isn't known (i.e., for URLs that end in a slash), instead of
   `index.html`.
 
+### `--default-http-port=port`
+
+  Set the default port for HTTP URLs (default: 80).
+
+  This is mainly for testing purposes.
+
+### `--default-https-port=port`
+
+  Set the default port for HTTPS URLs (default: 443).
+
+  This is mainly for testing purposes.
+
 ### `-E`, `--adjust-extension`
 
   If a file of type `application/xhtml+xml` or `text/html` is downloaded and the URL does not end with the regexp

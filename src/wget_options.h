@@ -138,6 +138,9 @@ struct config {
 		read_timeout, // ms
 		max_redirect,
 		max_threads;
+	unsigned short
+		default_http_port,
+		default_https_port;
 	char
 		tls_resume,            // if TLS session resumption is enabled or not
 		tls_false_start,
