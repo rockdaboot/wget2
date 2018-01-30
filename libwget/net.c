@@ -284,6 +284,9 @@ static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, s
 		// timeout occurred, do we need to cancel ?
 		int cancel_err = gai_cancel(&addr);
 		debug_printf("gai_cancel = %s\n", gai_strerror(cancel_err));
+	} else if (err == EAI_ALLDONE) {
+		debug_printf("gai_suspend(): %s, accept as OK\n", gai_strerror(err));
+		err = 0;
 	} else if (err)
 		debug_printf("gai_suspend() failed (%d): %s\n", err, gai_strerror(err));
 
