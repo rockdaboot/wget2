@@ -68,7 +68,7 @@
 #  include "wget_gpgme.h"
 #endif
 
-static int
+static exit_status_t
 	exit_status;
 
 void set_exit_status(exit_status_t status)
@@ -78,13 +78,17 @@ void set_exit_status(exit_status_t status)
 	// - error code 1 is used directly by exit() (fatal errors)
 	// - error codes 2... : lower numbers preceed higher numbers
 	if (exit_status) {
-		if ((int) status < exit_status)
+		if (status < exit_status) {
+			debug_printf("%s(%d)\n", __func__, (int) status);
 			exit_status = status;
-	} else
+		}
+	} else {
+		debug_printf("%s(%d)\n", __func__, (int) status);
 		exit_status = status;
+	}
 }
 
-int get_exit_status(void)
+exit_status_t get_exit_status(void)
 {
 	return exit_status;
 }

@@ -2001,10 +2001,14 @@ static void process_response(wget_http_response_t *resp)
 
 static void _fallback_to_http(JOB *job)
 {
-	char *http_url = wget_aprintf("http://%s", job->iri->uri + 8);
-	add_url(NULL, "utf-8", http_url, URL_FLG_SKIPFALLBACK);
-	host_remove_job(job->host, job);
-	xfree(http_url);
+	if (!job->robotstxt) {
+		char *http_url = wget_aprintf("http://%s", job->iri->uri + 8);
+		add_url(NULL, "utf-8", http_url, URL_FLG_SKIPFALLBACK);
+		host_remove_job(job->host, job);
+		xfree(http_url);
+	} else {
+		host_remove_job(job->host, job);
+	}
 }
 
 enum actions {

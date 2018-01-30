@@ -62,7 +62,8 @@
 static int
 	http_server_port,
 	https_server_port,
-	keep_tmpfiles;
+	keep_tmpfiles,
+	reject_https_connection;
 static wget_vector_t
 	*request_urls;
 static wget_test_url_t
@@ -472,6 +473,14 @@ static void _http_server_stop(void)
 	wget_xfree(cert_pem);
 }
 
+static int _check_to_accept(
+	G_GNUC_WGET_UNUSED void *cls,
+	G_GNUC_WGET_UNUSED const struct sockaddr *addr,
+	G_GNUC_WGET_UNUSED socklen_t addrlen)
+{
+	return reject_https_connection ? MHD_NO : MHD_YES;
+}
+
 static int _http_server_start(int SERVER_MODE)
 {
 	uint16_t port_num = 0;
@@ -500,7 +509,7 @@ static int _http_server_start(int SERVER_MODE)
 		}
 
 		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS,
-			port_num, NULL, NULL, &_answer_to_connection, NULL,
+			port_num, _check_to_accept, NULL, _answer_to_connection, NULL,
 			MHD_OPTION_HTTPS_MEM_KEY, key_pem,
 			MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
 			MHD_OPTION_END);
@@ -746,6 +755,9 @@ void wget_test_start_server(int first_key, ...)
 			break;
 		case WGET_TEST_HTTP_ONLY:
 			start_https = 0;
+			break;
+		case WGET_TEST_HTTPS_REJECT_CONNECTIONS:
+			reject_https_connection = 1;
 			break;
 		case WGET_TEST_FEATURE_MHD:
 			break;

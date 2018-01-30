@@ -245,7 +245,7 @@ int init(int argc, const char **argv) G_GNUC_WGET_NONNULL_ALL;
 int selftest_options(void);
 void deinit(void);
 void set_exit_status(exit_status_t status);
-int get_exit_status(void);
+exit_status_t get_exit_status(void);
 
 #ifdef __cplusplus
 }
