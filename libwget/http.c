@@ -1227,7 +1227,8 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 			}
 
 			// check for pointer overflow
-			if (end > end + chunk_size || end >= end + chunk_size + 2) {
+			if (chunk_size > SIZE_MAX/2 - 2) {
+//			if (end > end + chunk_size || end >= end + chunk_size + 2) {
 				error_printf(_("Chunk size overflow: %lX\n"), chunk_size);
 				goto cleanup;
 			}
