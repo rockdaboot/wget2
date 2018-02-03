@@ -126,6 +126,7 @@ if test -n "$WARN_CFLAGS"; then
     nw="$nw -Wsign-conversion"
     nw="$nw -Wunsuffixed-float-constants"
     nw="$nw -Wdeclaration-after-statement" # C89 only, messing up gcc < 5
+    nw="$nw -Wcast-function-type" # gcc 8, very noisy
     if test "$cross_compiling" = yes; then
       nw="$nw -Wformat"
     fi
@@ -139,6 +140,9 @@ if test -n "$WARN_CFLAGS"; then
     fi
     if test "$cross_compiling" = yes; then
       WARN_CFLAGS="$WARN_CFLAGS -Wno-format"
+    fi
+    if test $GCC_VERSION -ge 8; then
+      WARN_CFLAGS="$WARN_CFLAGS -Wno-cast-function-type"
     fi
     # WARN_CFLAGS="$WARN_CFLAGS -Werror"
 
@@ -164,7 +168,7 @@ if test -n "$WARN_CFLAGS"; then
 
     # disable options implicitly set by other options
     GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-sign-compare -Wno-unused-parameter -Wno-alloca"
-    GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-float-conversion"
+    GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-float-conversion -Wno-cast-function-type"
 
   elif test "$CCNAME" = "clang"; then
     # setup flags for this project
