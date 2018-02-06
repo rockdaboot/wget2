@@ -84,9 +84,9 @@ Minimal/Debian:
   script:
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap && touch .manywarnings
-    - ./configure $CONFIGURE_BASE_FLAGS --disable-doc \
-        --disable-xattr --without-gnutls --without-libpsl --without-libnghttp2 --without-bzip2 \
-        --without-gpgme --without-zlib --without-lzma --without-brotlidec --without-libidn2 \
+    - ./configure $CONFIGURE_BASE_FLAGS --disable-doc
+        --disable-xattr --without-gnutls --without-libpsl --without-libnghttp2 --without-bzip2
+        --without-gpgme --without-zlib --without-lzma --without-brotlidec --without-libidn2
         --without-libidn --without-libpcre2 --without-libpcre --without-plugin-support
     - make -j$(nproc) check
     - make -j$(nproc) distcheck
