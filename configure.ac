@@ -331,7 +331,6 @@ if test "$enable_doc" = yes; then
   AC_CHECK_PROGS([PANDOC], [pandoc])
 
   if test -n "$DOXYGEN" || test -n "$PANDOC"; then
-    AC_SUBST([LIBWGET_DOCS], [docs])
     AC_CONFIG_FILES([docs/Makefile])
     DOCS_INFO="yes (found:"
     if test -n "$DOXYGEN"; then

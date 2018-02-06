@@ -1,12 +1,16 @@
 # got some hints from https://gitorious.org/openismus-playground/examplelib/source
 
+SUBDIRS = lib include libwget examples src
+
 if HAVE_PO
-SUBDIRS = po
-else
-SUBDIRS =
+SUBDIRS += po
 endif
 
-SUBDIRS += lib include libwget examples src $(LIBWGET_DOCS) fuzz unit-tests
+if WITH_DOCS
+SUBDIRS += docs
+endif
+
+SUBDIRS += fuzz unit-tests
 
 if WITH_MICROHTTPD
 SUBDIRS += tests
