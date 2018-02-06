@@ -339,6 +339,7 @@ if test "$enable_doc" = yes; then
       DOCS_INFO="$DOCS_INFO Doxygen"
     fi
     if test -n "$PANDOC"; then
+      AC_CONFIG_FILES([docs/wget2_md2man.sh])
       DOCS_INFO="$DOCS_INFO Pandoc"
     fi
     DOCS_INFO="$DOCS_INFO)"
@@ -720,8 +721,7 @@ AC_CONFIG_FILES([Makefile
                  unit-tests/Makefile
                  tests/Makefile
                  fuzz/Makefile
-                 libwget.pc
-                 docs/wget2_md2man.sh])
+                 libwget.pc])
 AC_OUTPUT
 
 AC_MSG_NOTICE([Summary of build options:
