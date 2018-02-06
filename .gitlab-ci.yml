@@ -55,9 +55,56 @@ variables:
 #   4. Code coverage stats
 
 # In this build we combine
-#  * syntax-check
-#  * ASan, UBSan, Msan
-#  * distcheck
+#  * gcc
+#  * check, syntax-check, distcheck
+Full/Debian:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+  script:
+    - export CFLAGS=$CFLAGS_DEFAULT
+    - ./bootstrap && touch .manywarnings
+    - ./configure $CONFIGURE_BASE_FLAGS
+    - make -j$(nproc) check
+    - make -j$(nproc) distcheck
+  tags:
+    - shared
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
+
+# In this build we combine
+#  * gcc
+#  * check, syntax-check, distcheck
+Minimal/Debian:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+  script:
+    - export CFLAGS=$CFLAGS_DEFAULT
+    - ./bootstrap && touch .manywarnings
+    - ./configure $CONFIGURE_BASE_FLAGS --disable-doc \
+        --disable-xattr --without-gnutls --without-libpsl --without-libnghttp2 --without-bzip2 \
+        --without-gpgme --without-zlib --without-lzma --without-brotlidec --without-libidn2 \
+        --without-libidn --without-libpcre2 --without-libpcre --without-plugin-support
+    - make -j$(nproc) check
+    - make -j$(nproc) distcheck
+  tags:
+    - shared
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
+
+# In this build we combine
+#  * clang
+#  * ASan, UBSan
+#  * check, syntax-check, distcheck
 Sanitizers/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
@@ -70,11 +117,6 @@ Sanitizers/Debian:
     - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan
     - make -j$(nproc) check
     - make -j$(nproc) distcheck
-# memory sanitizer only makes sense when all dependencies are also compiled with it
-#    - make -j$(nproc) clean
-#    - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-msan
-#    - make -j$(nproc) check
-#    - make -j$(nproc) distcheck
   tags:
     - shared
   artifacts:
