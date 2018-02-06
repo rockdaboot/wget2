@@ -356,9 +356,9 @@ void init_gpgme(void) {
 
 char *wget_verify_get_base_file(JOB *job)
 {
-	if (!job->sig_req) {
-		return NULL;
-	} else {
+#ifdef WITH_GPGME
+	if (job->sig_req)
 		return _determine_base_file(job->sig_filename, job->local_filename);
-	}
+#endif
+	return NULL;
 }
