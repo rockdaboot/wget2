@@ -1,4 +1,4 @@
-EXTRA_DIST = wget2.md wget-logo.png
+EXTRA_DIST = wget2.md wget-logo.png DoxygenLayout.xml
 DISTCLEANFILES =
 LOCAL_DISTCLEAN =
 STAMPS =
@@ -30,7 +30,7 @@ libwget.stamp:
 	$(DOXYGEN) $(builddir)/libwget.doxy
 	echo > libwget.stamp
 
-EXTRA_DIST += DoxygenLayout.xml $(man3_MANS)
+EXTRA_DIST += $(man3_MANS)
 STAMPS += libwget.stamp
 LOCAL_DISTCLEAN += html man
 endif

@@ -331,14 +331,11 @@ if test "$enable_doc" = yes; then
   AC_CHECK_PROGS([PANDOC], [pandoc])
 
   if test -n "$DOXYGEN" || test -n "$PANDOC"; then
-    AC_CONFIG_FILES([docs/Makefile])
     DOCS_INFO="yes (found:"
     if test -n "$DOXYGEN"; then
-      AC_CONFIG_FILES([docs/libwget.doxy])
       DOCS_INFO="$DOCS_INFO Doxygen"
     fi
     if test -n "$PANDOC"; then
-      AC_CONFIG_FILES([docs/wget2_md2man.sh])
       DOCS_INFO="$DOCS_INFO Pandoc"
     fi
     DOCS_INFO="$DOCS_INFO)"
@@ -720,7 +717,10 @@ AC_CONFIG_FILES([Makefile
                  unit-tests/Makefile
                  tests/Makefile
                  fuzz/Makefile
-                 libwget.pc])
+                 libwget.pc
+                 docs/Makefile
+                 docs/libwget.doxy
+                 docs/wget2_md2man.sh])
 AC_OUTPUT
 
 AC_MSG_NOTICE([Summary of build options:
