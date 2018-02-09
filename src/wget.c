@@ -1241,6 +1241,12 @@ int main(int argc, const char **argv)
 		}
 	}
 
+	if (config.quiet) {
+		if (!config.force_progress) {
+			config.progress = 0;
+		}
+	}
+
 	if (config.progress && !isatty(STDOUT_FILENO) && !config.force_progress) {
 		config.progress = 0;
 	}
