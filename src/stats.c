@@ -39,15 +39,16 @@
 #define HTTP_1_2(s) ((s) == WGET_PROTOCOL_HTTP_1_1 ? "HTTP/1.1" : ((s) == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"))
 #define HTTP_S_DASH(s) (strcmp(s, "http") ? (strcmp(s, "https") ? s : "1") : "0")
 
-static wget_vector_t
-	*tls_stats_v,
-	*server_stats_v,
-	*ocsp_stats_v;
+// Forward declarations for static functions
+
+static void free_dns_stats(dns_stats_t *stats);
+static void free_tls_stats(tls_stats_t *stats);
+static void free_server_stats(server_stats_t *stats);
+static void free_ocsp_stats(ocsp_stats_t *stats);
+static void free_site_stats(site_stats_t *stats);
+
 
 static wget_thread_mutex_t
-	tls_mutex,
-	server_mutex,
-	ocsp_mutex,
 	host_docs_mutex,
 	tree_docs_mutex,
 	hosts_mutex;
@@ -66,15 +67,17 @@ typedef struct {
 		mutex;
 	wget_stats_callback_t
 		*set_stat;
+	wget_vector_destructor_t
+		destructor;
 } stats_opts_t;
 
 static stats_opts_t
 	stats_opts[] = {
-		[WGET_STATS_TYPE_DNS] = { .tag = "DNS" },
-		[WGET_STATS_TYPE_TLS] = { .tag = "TLS" },
-		[WGET_STATS_TYPE_SERVER] = { .tag = "Server" },
-		[WGET_STATS_TYPE_OCSP] = { .tag = "OCSP" },
-		[WGET_STATS_TYPE_SITE] = { .tag = "Site" },
+		[WGET_STATS_TYPE_DNS] = { .tag = "DNS", .destructor = (wget_vector_destructor_t) free_dns_stats },
+		[WGET_STATS_TYPE_TLS] = { .tag = "TLS", .destructor = (wget_vector_destructor_t) free_tls_stats },
+		[WGET_STATS_TYPE_SERVER] = { .tag = "Server", .destructor = (wget_vector_destructor_t) free_server_stats },
+		[WGET_STATS_TYPE_OCSP] = { .tag = "OCSP", .destructor = (wget_vector_destructor_t) free_ocsp_stats },
+		[WGET_STATS_TYPE_SITE] = { .tag = "Site", .destructor = (wget_vector_destructor_t) free_site_stats },
 	};
 
 static wget_hashmap_t
@@ -388,9 +391,9 @@ void stats_callback(wget_stats_type_t type, const void *stats)
 		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_SECS, stats))
 			tls_stats.millisecs = *((long long *)wget_tcp_get_stats_tls(WGET_STATS_TLS_SECS, stats));
 
-		wget_thread_mutex_lock(tls_mutex);
-		wget_vector_add(tls_stats_v, &tls_stats, sizeof(tls_stats_t));
-		wget_thread_mutex_unlock(tls_mutex);
+		wget_thread_mutex_lock(stats_opts[WGET_STATS_TYPE_TLS].mutex);
+		wget_vector_add(stats_opts[WGET_STATS_TYPE_TLS].data, &tls_stats, sizeof(tls_stats_t));
+		wget_thread_mutex_unlock(stats_opts[WGET_STATS_TYPE_TLS].mutex);
 
 		break;
 	}
@@ -418,9 +421,9 @@ void stats_callback(wget_stats_type_t type, const void *stats)
 		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats))
 			server_stats.hpkp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats));
 
-		wget_thread_mutex_lock(server_mutex);
-		wget_vector_add(server_stats_v, &server_stats, sizeof(server_stats_t));
-		wget_thread_mutex_unlock(server_mutex);
+		wget_thread_mutex_lock(stats_opts[WGET_STATS_TYPE_SERVER].mutex);
+		wget_vector_add(stats_opts[WGET_STATS_TYPE_SERVER].data, &server_stats, sizeof(server_stats_t));
+		wget_thread_mutex_unlock(stats_opts[WGET_STATS_TYPE_SERVER].mutex);
 
 		break;
 	}
@@ -440,9 +443,9 @@ void stats_callback(wget_stats_type_t type, const void *stats)
 		if (wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats))
 			ocsp_stats.nignored = *((int *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats));
 
-		wget_thread_mutex_lock(ocsp_mutex);
-		wget_vector_add(ocsp_stats_v, &ocsp_stats, sizeof(ocsp_stats_t));
-		wget_thread_mutex_unlock(ocsp_mutex);
+		wget_thread_mutex_lock(stats_opts[WGET_STATS_TYPE_OCSP].mutex);
+		wget_vector_add(stats_opts[WGET_STATS_TYPE_OCSP].data, &ocsp_stats, sizeof(ocsp_stats_t));
+		wget_thread_mutex_unlock(stats_opts[WGET_STATS_TYPE_OCSP].mutex);
 
 		break;
 	}
@@ -483,7 +486,11 @@ static void free_server_stats(server_stats_t *stats)
 	}
 }
 
-static void free_ocsp_stats(server_stats_t *stats)
+static void free_site_stats(site_stats_t *stats)
+{
+}
+
+static void free_ocsp_stats(ocsp_stats_t *stats)
 {
 	if (stats)
 		xfree(stats->hostname);
@@ -514,51 +521,47 @@ bool stats_is_enabled(int type)
 
 void stats_init(void)
 {
-	wget_thread_mutex_init(&stats_opts[WGET_STATS_TYPE_DNS].mutex);
-	wget_thread_mutex_init(&tls_mutex);
-	wget_thread_mutex_init(&server_mutex);
-	wget_thread_mutex_init(&ocsp_mutex);
+
+	for (int it = 0; it < countof(stats_opts); it++) {
+		// We always initialize all the mutexes. The cost of doing so is very
+		// low. wget_thread_mutex_destroy cannot handle a non-initialized
+		// mutex, so it is easier / cleaner / faster to always init and destroy
+		// compared to checking.
+		wget_thread_mutex_init(&stats_opts[it].mutex);
+		if (stats_opts[it].status) {
+			stats_opts[it].data = wget_vector_create(8, -2, NULL);
+			wget_vector_set_destructor(stats_opts[it].data, stats_opts[it].destructor);
+		}
+	}
+
 	wget_thread_mutex_init(&host_docs_mutex);
 	wget_thread_mutex_init(&tree_docs_mutex);
 
 	if (stats_opts[WGET_STATS_TYPE_DNS].status) {
-		stats_opts[WGET_STATS_TYPE_DNS].data = wget_vector_create(8, -2, NULL);
-		wget_vector_set_destructor(stats_opts[WGET_STATS_TYPE_DNS].data, (wget_vector_destructor_t) free_dns_stats);
 		wget_tcp_set_stats_dns(stats_callback);
 	}
 
-	dns_stats_v = wget_vector_create(8, -2, NULL);
-	wget_vector_set_destructor(dns_stats_v, (wget_vector_destructor_t) free_dns_stats);
-	wget_tcp_set_stats_dns(stats_callback);
+	if (stats_opts[WGET_STATS_TYPE_TLS].status) {
+		wget_tcp_set_stats_tls(stats_callback);
+	}
 
-	tls_stats_v = wget_vector_create(8, -2, NULL);
-	wget_vector_set_destructor(tls_stats_v, (wget_vector_destructor_t) free_tls_stats);
-	wget_tcp_set_stats_tls(stats_callback);
+	if (stats_opts[WGET_STATS_TYPE_SERVER].status) {
+		wget_tcp_set_stats_server(stats_callback);
+	}
 
-	server_stats_v = wget_vector_create(8, -2, NULL);
-	wget_vector_set_destructor(server_stats_v, (wget_vector_destructor_t) free_server_stats);
-	wget_tcp_set_stats_server(stats_callback);
-
-	ocsp_stats_v = wget_vector_create(8, -2, NULL);
-	wget_vector_set_destructor(ocsp_stats_v, (wget_vector_destructor_t) free_ocsp_stats);
-	wget_tcp_set_stats_ocsp(stats_callback);
+	if (stats_opts[WGET_STATS_TYPE_OCSP].status) {
+		wget_tcp_set_stats_ocsp(stats_callback);
+	}
 }
 
 void stats_exit(void)
 {
-	wget_vector_free(&tls_stats_v);
-	wget_vector_free(&server_stats_v);
-	wget_vector_free(&ocsp_stats_v);
-
 	for (unsigned it = 0; it < countof(stats_opts); it++) {
 		wget_vector_free(&stats_opts[it].data);
 		wget_thread_mutex_destroy(&stats_opts[it].mutex);
 		xfree(stats_opts[it].file);
 	}
 
-	wget_thread_mutex_destroy(&tls_mutex);
-	wget_thread_mutex_destroy(&server_mutex);
-	wget_thread_mutex_destroy(&ocsp_mutex);
 	wget_thread_mutex_destroy(&host_docs_mutex);
 	wget_thread_mutex_destroy(&tree_docs_mutex);
 }
@@ -997,15 +1000,15 @@ static void stats_print_human(wget_stats_type_t type, wget_buffer_t *buf, FILE *
 		break;
 
 	case WGET_STATS_TYPE_TLS:
-		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_human_tls_entry, buf, fp, 0);
+		_stats_print(stats_opts[WGET_STATS_TYPE_TLS].data, (wget_vector_browse_t) stats_print_human_tls_entry, buf, fp, 0);
 		break;
 
 	case WGET_STATS_TYPE_SERVER:
-		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_human_server_entry, buf, fp, 0);
+		_stats_print(stats_opts[WGET_STATS_TYPE_SERVER].data, (wget_vector_browse_t) stats_print_human_server_entry, buf, fp, 0);
 		break;
 
 	case WGET_STATS_TYPE_OCSP:
-		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_human_ocsp_entry, buf, fp, 0);
+		_stats_print(stats_opts[WGET_STATS_TYPE_OCSP].data, (wget_vector_browse_t) stats_print_human_ocsp_entry, buf, fp, 0);
 		break;
 
 	case WGET_STATS_TYPE_SITE:
@@ -1041,15 +1044,15 @@ static void stats_print_json(wget_stats_type_t type, wget_buffer_t *buf, FILE *f
 		break;
 
 	case WGET_STATS_TYPE_TLS:
-		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_json_tls_entry, buf, fp, ntabs);
+		_stats_print(stats_opts[WGET_STATS_TYPE_TLS].data, (wget_vector_browse_t) stats_print_json_tls_entry, buf, fp, ntabs);
 		break;
 
 	case WGET_STATS_TYPE_SERVER:
-		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_json_server_entry, buf, fp, ntabs);
+		_stats_print(stats_opts[WGET_STATS_TYPE_SERVER].data, (wget_vector_browse_t) stats_print_json_server_entry, buf, fp, ntabs);
 		break;
 
 	case WGET_STATS_TYPE_OCSP:
-		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_json_ocsp_entry, buf, fp, ntabs);
+		_stats_print(stats_opts[WGET_STATS_TYPE_OCSP].data, (wget_vector_browse_t) stats_print_json_ocsp_entry, buf, fp, ntabs);
 		break;
 
 	case WGET_STATS_TYPE_SITE:
@@ -1070,15 +1073,15 @@ static void stats_print_csv(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp
 		break;
 
 	case WGET_STATS_TYPE_TLS:
-		_stats_print(tls_stats_v, (wget_vector_browse_t) stats_print_csv_tls_entry, buf, fp, 0);
+		_stats_print(stats_opts[WGET_STATS_TYPE_TLS].data, (wget_vector_browse_t) stats_print_csv_tls_entry, buf, fp, 0);
 		break;
 
 	case WGET_STATS_TYPE_SERVER:
-		_stats_print(server_stats_v, (wget_vector_browse_t) stats_print_csv_server_entry, buf, fp, 0);
+		_stats_print(stats_opts[WGET_STATS_TYPE_SERVER].data, (wget_vector_browse_t) stats_print_csv_server_entry, buf, fp, 0);
 		break;
 
 	case WGET_STATS_TYPE_OCSP:
-		_stats_print(ocsp_stats_v, (wget_vector_browse_t) stats_print_csv_ocsp_entry, buf, fp, 0);
+		_stats_print(stats_opts[WGET_STATS_TYPE_OCSP].data, (wget_vector_browse_t) stats_print_csv_ocsp_entry, buf, fp, 0);
 		break;
 
 	case WGET_STATS_TYPE_SITE:

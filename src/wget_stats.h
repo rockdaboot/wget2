@@ -76,6 +76,9 @@ typedef struct {
 		nignored;
 } ocsp_stats_t;
 
+typedef struct {
+} site_stats_t;
+
 void stats_init(void);
 void stats_exit(void);
 void stats_print(void);
