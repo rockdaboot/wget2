@@ -2688,6 +2688,8 @@ int init(int argc, const char **argv)
 	if ((n = parse_command_line(argc, argv)) < 0)
 		return -1;
 
+	stats_init();
+
 	if (plugin_db_help_forwarded()) {
 		set_exit_status(WG_EXIT_STATUS_NO_ERROR);
 		return -1; // stop processing & exit
