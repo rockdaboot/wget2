@@ -40,13 +40,11 @@
 #define HTTP_S_DASH(s) (strcmp(s, "http") ? (strcmp(s, "https") ? s : "1") : "0")
 
 static wget_vector_t
-	*dns_stats_v,
 	*tls_stats_v,
 	*server_stats_v,
 	*ocsp_stats_v;
 
 static wget_thread_mutex_t
-	dns_mutex,
 	tls_mutex,
 	server_mutex,
 	ocsp_mutex,
@@ -62,6 +60,12 @@ typedef struct {
 		format;
 	bool
 		status : 1;
+	wget_vector_t
+		*data;
+	wget_thread_mutex_t
+		mutex;
+	wget_stats_callback_t
+		*set_stat;
 } stats_opts_t;
 
 static stats_opts_t
@@ -327,7 +331,7 @@ out:
 }
 
 
-static void stats_callback(wget_stats_type_t type, const void *stats)
+void stats_callback(wget_stats_type_t type, const void *stats)
 {
 	switch(type) {
 	case WGET_STATS_TYPE_DNS: {
@@ -345,9 +349,9 @@ static void stats_callback(wget_stats_type_t type, const void *stats)
 		if (wget_tcp_get_stats_dns(WGET_STATS_DNS_SECS, stats))
 			dns_stats.millisecs = *((long long *)wget_tcp_get_stats_dns(WGET_STATS_DNS_SECS, stats));
 
-		wget_thread_mutex_lock(dns_mutex);
-		wget_vector_add(dns_stats_v, &dns_stats, sizeof(dns_stats_t));
-		wget_thread_mutex_unlock(dns_mutex);
+		wget_thread_mutex_lock(stats_opts[WGET_STATS_TYPE_DNS].mutex);
+		wget_vector_add(stats_opts[WGET_STATS_TYPE_DNS].data, &dns_stats, sizeof(dns_stats_t));
+		wget_thread_mutex_unlock(stats_opts[WGET_STATS_TYPE_DNS].mutex);
 
 		break;
 	}
@@ -510,15 +514,18 @@ bool stats_is_enabled(int type)
 
 void stats_init(void)
 {
-	wget_thread_mutex_init(&dns_mutex);
+	wget_thread_mutex_init(&stats_opts[WGET_STATS_TYPE_DNS].mutex);
 	wget_thread_mutex_init(&tls_mutex);
 	wget_thread_mutex_init(&server_mutex);
 	wget_thread_mutex_init(&ocsp_mutex);
 	wget_thread_mutex_init(&host_docs_mutex);
 	wget_thread_mutex_init(&tree_docs_mutex);
 
-	// XXX: This is terrible, please make these conditional as soon as possile.
-	// See commit message for details
+	if (stats_opts[WGET_STATS_TYPE_DNS].status) {
+		stats_opts[WGET_STATS_TYPE_DNS].data = wget_vector_create(8, -2, NULL);
+		wget_vector_set_destructor(stats_opts[WGET_STATS_TYPE_DNS].data, (wget_vector_destructor_t) free_dns_stats);
+		wget_tcp_set_stats_dns(stats_callback);
+	}
 
 	dns_stats_v = wget_vector_create(8, -2, NULL);
 	wget_vector_set_destructor(dns_stats_v, (wget_vector_destructor_t) free_dns_stats);
@@ -539,16 +546,16 @@ void stats_init(void)
 
 void stats_exit(void)
 {
-	wget_vector_free(&dns_stats_v);
 	wget_vector_free(&tls_stats_v);
 	wget_vector_free(&server_stats_v);
 	wget_vector_free(&ocsp_stats_v);
 
 	for (unsigned it = 0; it < countof(stats_opts); it++) {
+		wget_vector_free(&stats_opts[it].data);
+		wget_thread_mutex_destroy(&stats_opts[it].mutex);
 		xfree(stats_opts[it].file);
 	}
 
-	wget_thread_mutex_destroy(&dns_mutex);
 	wget_thread_mutex_destroy(&tls_mutex);
 	wget_thread_mutex_destroy(&server_mutex);
 	wget_thread_mutex_destroy(&ocsp_mutex);
@@ -986,7 +993,7 @@ static void stats_print_human(wget_stats_type_t type, wget_buffer_t *buf, FILE *
 	switch (type) {
 	case WGET_STATS_TYPE_DNS:
 		wget_buffer_printf_append(buf, "  %4s %s\n", "ms", "Host");
-		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_human_dns_entry, buf, fp, 0);
+		_stats_print(stats_opts[WGET_STATS_TYPE_DNS].data, (wget_vector_browse_t) stats_print_human_dns_entry, buf, fp, 0);
 		break;
 
 	case WGET_STATS_TYPE_TLS:
@@ -1030,7 +1037,7 @@ static void stats_print_json(wget_stats_type_t type, wget_buffer_t *buf, FILE *f
 
 	switch (type) {
 	case WGET_STATS_TYPE_DNS:
-		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_json_dns_entry, buf, fp, ntabs);
+		_stats_print(stats_opts[WGET_STATS_TYPE_DNS].data, (wget_vector_browse_t) stats_print_json_dns_entry, buf, fp, ntabs);
 		break;
 
 	case WGET_STATS_TYPE_TLS:
@@ -1059,7 +1066,7 @@ static void stats_print_csv(wget_stats_type_t type, wget_buffer_t *buf, FILE *fp
 {
 	switch (type) {
 	case WGET_STATS_TYPE_DNS:
-		_stats_print(dns_stats_v, (wget_vector_browse_t) stats_print_csv_dns_entry, buf, fp, 0);
+		_stats_print(stats_opts[WGET_STATS_TYPE_DNS].data, (wget_vector_browse_t) stats_print_csv_dns_entry, buf, fp, 0);
 		break;
 
 	case WGET_STATS_TYPE_TLS:
@@ -1119,6 +1126,7 @@ void stats_print(void)
 		}
 
 		stats_print_header(stats_opts[type].format, type, &buf);
+
 		switch (stats_opts[type].format) {
 		case WGET_STATS_FORMAT_HUMAN:
 			stats_print_human(type, &buf, fp);
