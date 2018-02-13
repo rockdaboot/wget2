@@ -1111,7 +1111,7 @@ void stats_print(void)
 			else
 				fp = fopen(filename, "w");
 		} else
-			fp = stdout;
+			fp = stderr;
 
 		if (!fp) {
 			error_printf(_("File could not be opened %s for %s stats\n"), filename, stats_opts[type].tag);
