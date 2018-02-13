@@ -197,7 +197,7 @@ if test -n "$WARN_CFLAGS"; then
 fi
 
 AC_ARG_ENABLE([fuzzing],
-  [AS_HELP_STRING([--enable-fuzzing], [Turn on Undefined Behavior Sanitizer (for developers)])],
+  [AS_HELP_STRING([--enable-fuzzing], [Turn on fuzzing build (for developers)])],
   [enable_fuzzing=yes; AC_SUBST([LIB_FUZZING_ENGINE])], [enable_fuzzing=no; LIB_FUZZING_ENGINE=""])
 AM_CONDITIONAL([FUZZING], [test ! -z "$LIB_FUZZING_ENGINE"])
 
