@@ -521,7 +521,6 @@ bool stats_is_enabled(int type)
 
 void stats_init(void)
 {
-
 	for (int it = 0; it < countof(stats_opts); it++) {
 		// We always initialize all the mutexes. The cost of doing so is very
 		// low. wget_thread_mutex_destroy cannot handle a non-initialized
@@ -982,7 +981,14 @@ static void stats_print_header(wget_stats_format_t format, wget_stats_type_t typ
 		"\t\"OCSP Statistics\": [{",
 		"\t\"Site Statistics\": [{"
 	};
-	static char **formats_list[] = {human_stats_headers, csv_stats_headers, json_stats_headers};
+	static char *tree_stats_headers[] = {
+		"",
+		"",
+		"",
+		"",
+		""
+	};
+	static char **formats_list[] = {human_stats_headers, csv_stats_headers, json_stats_headers, tree_stats_headers};
 
 	if (format == WGET_STATS_FORMAT_JSON && ((config.stats_all && !type) || !config.stats_all)) {
 		wget_buffer_printf(buf, "{\n");
