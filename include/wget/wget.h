@@ -2651,7 +2651,7 @@ typedef enum {
 } wget_ocsp_stats_t;
 
 typedef void
-	(*wget_stats_callback_t)(wget_stats_type_t type, const void *stats);
+	(*wget_stats_callback_t)(const void *stats);
 
 WGETAPI void
 	wget_tcp_set_stats_dns(wget_stats_callback_t fn);

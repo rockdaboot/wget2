@@ -680,7 +680,7 @@ static void _server_stats_add(wget_http_connection_t *conn, wget_http_response_t
 		stats.hsts = resp ? (resp->hsts ? 1 : 0) : -1;
 		stats.csp = resp ? (resp->csp ? 1 : 0) : -1;
 
-		stats_callback(WGET_STATS_TYPE_SERVER, &stats);
+		stats_callback(&stats);
 		host_add(hostp);
 	} else
 		_free_host_entry(hostp);

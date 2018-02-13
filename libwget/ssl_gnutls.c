@@ -98,10 +98,9 @@ typedef struct
 		nignored;
 } _ocsp_stats_data_t;
 
-static wget_stats_callback_t stats_callback;
-static bool
-	ocsp_stats,
-	tls_stats;
+static wget_stats_callback_t
+	stats_callback_tls,
+	stats_callback_ocsp;
 
 static struct _config {
 	const char
@@ -1132,14 +1131,14 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	}
 
 #ifdef HAVE_GNUTLS_OCSP_H
-	if (_config.ocsp && ocsp_stats) {
+	if (_config.ocsp && stats_callback_ocsp) {
 		_ocsp_stats_data_t stats;
 		stats.hostname = hostname;
 		stats.nvalid = nvalid;
 		stats.nrevoked = nrevoked;
 		stats.nignored = nignored;
 
-		stats_callback(WGET_STATS_TYPE_OCSP, &stats);
+		stats_callback_ocsp(&stats);
 	}
 
 	if (_config.ocsp_stapling || _config.ocsp) {
@@ -1635,7 +1634,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 
 #ifdef MSG_FASTOPEN
 	if ((rc = wget_tcp_get_tcp_fastopen(tcp))) {
-		if (tls_stats)
+		if (stats_callback_tls)
 			stats.tfo = (char)rc;
 
 		// prepare for TCP FASTOPEN... sendmsg() instead of connect/write on first write
@@ -1672,12 +1671,12 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		}
 	}
 
-	if (tls_stats)
+	if (stats_callback_tls)
 		before_millisecs = wget_get_timemillis();
 
 	ret = _do_handshake(session, sockfd, connect_timeout);
 
-	if (tls_stats) {
+	if (stats_callback_tls) {
 		long long after_millisecs = wget_get_timemillis();
 		stats.tls_secs = after_millisecs - before_millisecs;
 		stats.tls_con = 1;
@@ -1693,12 +1692,12 @@ int wget_ssl_open(wget_tcp_t *tcp)
 			debug_printf("GnuTLS: Get ALPN: %s\n", gnutls_strerror(rc));
 		else {
 			debug_printf("ALPN: Server accepted protocol '%.*s'\n", (int) protocol.size, protocol.data);
-			if (tls_stats)
+			if (stats_callback_tls)
 				stats.alpn_protocol = wget_strmemdup(protocol.data, protocol.size);
 
 			if (!memcmp(protocol.data, "h2", 2)) {
 				tcp->protocol = WGET_PROTOCOL_HTTP_2_0;
-				if (tls_stats)
+				if (stats_callback_tls)
 					stats.tcp_protocol = WGET_PROTOCOL_HTTP_2_0;
 			}
 		}
@@ -1711,7 +1710,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	if (ret == WGET_E_SUCCESS) {
 		int resumed = gnutls_session_is_resumed(session);
 
-		if (tls_stats) {
+		if (stats_callback_tls) {
 			stats.resumed = resumed;
 			stats.version = gnutls_protocol_get_name(gnutls_protocol_get_version(session));
 			gnutls_certificate_get_peers(session, (unsigned int *)&(stats.cert_chain_size));
@@ -1735,9 +1734,9 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		}
 	}
 
-	if (tls_stats) {
+	if (stats_callback_tls) {
 		stats.hostname = hostname;
-		stats_callback(WGET_STATS_TYPE_TLS, &stats);
+		stats_callback_tls(&stats);
 		xfree(stats.alpn_protocol);
 	}
 
@@ -1937,8 +1936,7 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
  */
 void wget_tcp_set_stats_tls(wget_stats_callback_t fn)
 {
-	stats_callback = fn;
-	tls_stats = (stats_callback != NULL);
+	stats_callback_tls = fn;
 }
 
 /**
@@ -1985,8 +1983,7 @@ const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
  */
 void wget_tcp_set_stats_ocsp(wget_stats_callback_t fn)
 {
-	stats_callback = fn;
-	ocsp_stats = (stats_callback != NULL);
+	stats_callback_ocsp = fn;
 }
 
 /**

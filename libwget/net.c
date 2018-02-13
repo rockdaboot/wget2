@@ -407,7 +407,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 
 		if (stats_callback) {
 			stats.ip = NULL;
-			stats_callback(WGET_STATS_TYPE_DNS, &stats);
+			stats_callback(&stats);
 		}
 
 		return NULL;
@@ -422,7 +422,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 		else
 			stats.ip = "???";
 
-		stats_callback(WGET_STATS_TYPE_DNS, &stats);
+		stats_callback(&stats);
 	}
 
 	/* Finally, print the address list to the debug pipe if enabled */

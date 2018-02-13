@@ -41,11 +41,18 @@
 
 // Forward declarations for static functions
 
+typedef void (*stats_callback_setter_t)(wget_stats_callback_t);
+
 static void free_dns_stats(dns_stats_t *stats);
 static void free_tls_stats(tls_stats_t *stats);
 static void free_server_stats(server_stats_t *stats);
 static void free_ocsp_stats(ocsp_stats_t *stats);
 static void free_site_stats(site_stats_t *stats);
+static void stats_callback_dns(const void *stats);
+static void stats_callback_tls(const void *stats);
+static void stats_callback_server(const void *stats);
+static void stats_callback_ocsp(const void *stats);
+static void stats_callback_site(const void *stats);
 
 
 static wget_thread_mutex_t
@@ -65,19 +72,46 @@ typedef struct {
 		*data;
 	wget_thread_mutex_t
 		mutex;
+	stats_callback_setter_t
+		set_callback;
 	wget_stats_callback_t
-		*set_stat;
+		callback;
 	wget_vector_destructor_t
 		destructor;
 } stats_opts_t;
 
 static stats_opts_t
 	stats_opts[] = {
-		[WGET_STATS_TYPE_DNS] = { .tag = "DNS", .destructor = (wget_vector_destructor_t) free_dns_stats },
-		[WGET_STATS_TYPE_TLS] = { .tag = "TLS", .destructor = (wget_vector_destructor_t) free_tls_stats },
-		[WGET_STATS_TYPE_SERVER] = { .tag = "Server", .destructor = (wget_vector_destructor_t) free_server_stats },
-		[WGET_STATS_TYPE_OCSP] = { .tag = "OCSP", .destructor = (wget_vector_destructor_t) free_ocsp_stats },
-		[WGET_STATS_TYPE_SITE] = { .tag = "Site", .destructor = (wget_vector_destructor_t) free_site_stats },
+		[WGET_STATS_TYPE_DNS] = {
+			.tag = "DNS",
+			.set_callback = (stats_callback_setter_t) wget_tcp_set_stats_dns,
+			.callback = stats_callback_dns,
+			.destructor = (wget_vector_destructor_t) free_dns_stats
+		},
+		[WGET_STATS_TYPE_TLS] = {
+			.tag = "TLS",
+			.set_callback = (stats_callback_setter_t) wget_tcp_set_stats_tls,
+			.callback = stats_callback_tls,
+			.destructor = (wget_vector_destructor_t) free_tls_stats
+		},
+		[WGET_STATS_TYPE_SERVER] = {
+			.tag = "Server",
+			.set_callback = (stats_callback_setter_t) wget_tcp_set_stats_server,
+			.callback = stats_callback_server,
+			.destructor = (wget_vector_destructor_t) free_server_stats
+		},
+		[WGET_STATS_TYPE_OCSP] = {
+			.tag = "OCSP",
+			.set_callback = (stats_callback_setter_t) wget_tcp_set_stats_ocsp,
+			.callback = stats_callback_ocsp,
+			.destructor = (wget_vector_destructor_t) free_ocsp_stats
+		},
+		[WGET_STATS_TYPE_SITE] = {
+			.tag = "Site",
+//			.set_callback = (stats_callback_setter_t) wget_tcp_set_stats_site,
+//			.callback = stats_callback_site,
+			.destructor = (wget_vector_destructor_t) free_site_stats
+		},
 	};
 
 static wget_hashmap_t
@@ -334,130 +368,117 @@ out:
 }
 
 
-void stats_callback(wget_stats_type_t type, const void *stats)
+static void stats_callback_dns(const void *stats)
 {
-	switch(type) {
-	case WGET_STATS_TYPE_DNS: {
-		dns_stats_t dns_stats = { .millisecs = -1, .port = -1 };
+	dns_stats_t dns_stats = { .millisecs = -1, .port = -1 };
 
-		dns_stats.host = wget_strdup(wget_tcp_get_stats_dns(WGET_STATS_DNS_HOST, stats));
-		dns_stats.ip = wget_strdup(wget_tcp_get_stats_dns(WGET_STATS_DNS_IP, stats));
+	dns_stats.host = wget_strdup(wget_tcp_get_stats_dns(WGET_STATS_DNS_HOST, stats));
+	dns_stats.ip = wget_strdup(wget_tcp_get_stats_dns(WGET_STATS_DNS_IP, stats));
 
-		dns_stats.host = NULL_TO_DASH(dns_stats.host);
-		dns_stats.ip = NULL_TO_DASH(dns_stats.ip);
+	dns_stats.host = NULL_TO_DASH(dns_stats.host);
+	dns_stats.ip = NULL_TO_DASH(dns_stats.ip);
 
-		if (wget_tcp_get_stats_dns(WGET_STATS_DNS_PORT, stats))
-			dns_stats.port = *((uint16_t *)wget_tcp_get_stats_dns(WGET_STATS_DNS_PORT, stats));
+	if (wget_tcp_get_stats_dns(WGET_STATS_DNS_PORT, stats))
+		dns_stats.port = *((uint16_t *)wget_tcp_get_stats_dns(WGET_STATS_DNS_PORT, stats));
 
-		if (wget_tcp_get_stats_dns(WGET_STATS_DNS_SECS, stats))
-			dns_stats.millisecs = *((long long *)wget_tcp_get_stats_dns(WGET_STATS_DNS_SECS, stats));
+	if (wget_tcp_get_stats_dns(WGET_STATS_DNS_SECS, stats))
+		dns_stats.millisecs = *((long long *)wget_tcp_get_stats_dns(WGET_STATS_DNS_SECS, stats));
 
-		wget_thread_mutex_lock(stats_opts[WGET_STATS_TYPE_DNS].mutex);
-		wget_vector_add(stats_opts[WGET_STATS_TYPE_DNS].data, &dns_stats, sizeof(dns_stats_t));
-		wget_thread_mutex_unlock(stats_opts[WGET_STATS_TYPE_DNS].mutex);
+	wget_thread_mutex_lock(stats_opts[WGET_STATS_TYPE_DNS].mutex);
+	wget_vector_add(stats_opts[WGET_STATS_TYPE_DNS].data, &dns_stats, sizeof(dns_stats_t));
+	wget_thread_mutex_unlock(stats_opts[WGET_STATS_TYPE_DNS].mutex);
+}
 
-		break;
-	}
+static void stats_callback_tls(const void *stats)
+{
+	tls_stats_t tls_stats = { .false_start = -1, .tfo = -1, .tls_con = -1, .resumed = -1, .tcp_protocol = -1, .cert_chain_size = -1, .millisecs = -1 };
 
-	case WGET_STATS_TYPE_TLS: {
-		tls_stats_t tls_stats = { .false_start = -1, .tfo = -1, .tls_con = -1, .resumed = -1, .tcp_protocol = -1, .cert_chain_size = -1, .millisecs = -1 };
+	tls_stats.hostname = wget_strdup(wget_tcp_get_stats_tls(WGET_STATS_TLS_HOSTNAME, stats));
+	tls_stats.version = wget_strdup(wget_tcp_get_stats_tls(WGET_STATS_TLS_VERSION, stats));
+	tls_stats.alpn_proto = wget_strdup(wget_tcp_get_stats_tls(WGET_STATS_TLS_ALPN_PROTO, stats));
 
-		tls_stats.hostname = wget_strdup(wget_tcp_get_stats_tls(WGET_STATS_TLS_HOSTNAME, stats));
-		tls_stats.version = wget_strdup(wget_tcp_get_stats_tls(WGET_STATS_TLS_VERSION, stats));
-		tls_stats.alpn_proto = wget_strdup(wget_tcp_get_stats_tls(WGET_STATS_TLS_ALPN_PROTO, stats));
+	tls_stats.hostname = NULL_TO_DASH(tls_stats.hostname);
+	tls_stats.version = NULL_TO_DASH(tls_stats.version);
+	tls_stats.alpn_proto = NULL_TO_DASH(tls_stats.alpn_proto);
 
-		tls_stats.hostname = NULL_TO_DASH(tls_stats.hostname);
-		tls_stats.version = NULL_TO_DASH(tls_stats.version);
-		tls_stats.alpn_proto = NULL_TO_DASH(tls_stats.alpn_proto);
+	if (wget_tcp_get_stats_tls(WGET_STATS_TLS_FALSE_START, stats))
+		tls_stats.false_start = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_FALSE_START, stats));
 
-		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_FALSE_START, stats))
-			tls_stats.false_start = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_FALSE_START, stats));
+	if (wget_tcp_get_stats_tls(WGET_STATS_TLS_TFO, stats))
+		tls_stats.tfo = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_TFO, stats));
 
-		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_TFO, stats))
-			tls_stats.tfo = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_TFO, stats));
+	if (wget_tcp_get_stats_tls(WGET_STATS_TLS_CON, stats))
+		tls_stats.tls_con = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_CON, stats));
 
-		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_CON, stats))
-			tls_stats.tls_con = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_CON, stats));
+	if (wget_tcp_get_stats_tls(WGET_STATS_TLS_RESUMED, stats))
+		tls_stats.resumed = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_RESUMED, stats));
 
-		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_RESUMED, stats))
-			tls_stats.resumed = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_RESUMED, stats));
+	if (wget_tcp_get_stats_tls(WGET_STATS_TLS_TCP_PROTO, stats))
+		tls_stats.tcp_protocol = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_TCP_PROTO, stats));
 
-		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_TCP_PROTO, stats))
-			tls_stats.tcp_protocol = *((char *)wget_tcp_get_stats_tls(WGET_STATS_TLS_TCP_PROTO, stats));
+	if (wget_tcp_get_stats_tls(WGET_STATS_TLS_CERT_CHAIN_SIZE, stats))
+		tls_stats.cert_chain_size = *((int *)wget_tcp_get_stats_tls(WGET_STATS_TLS_CERT_CHAIN_SIZE, stats));
 
-		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_CERT_CHAIN_SIZE, stats))
-			tls_stats.cert_chain_size = *((int *)wget_tcp_get_stats_tls(WGET_STATS_TLS_CERT_CHAIN_SIZE, stats));
+	if (wget_tcp_get_stats_tls(WGET_STATS_TLS_SECS, stats))
+		tls_stats.millisecs = *((long long *)wget_tcp_get_stats_tls(WGET_STATS_TLS_SECS, stats));
 
-		if (wget_tcp_get_stats_tls(WGET_STATS_TLS_SECS, stats))
-			tls_stats.millisecs = *((long long *)wget_tcp_get_stats_tls(WGET_STATS_TLS_SECS, stats));
+	wget_thread_mutex_lock(stats_opts[WGET_STATS_TYPE_TLS].mutex);
+	wget_vector_add(stats_opts[WGET_STATS_TYPE_TLS].data, &tls_stats, sizeof(tls_stats_t));
+	wget_thread_mutex_unlock(stats_opts[WGET_STATS_TYPE_TLS].mutex);
+}
 
-		wget_thread_mutex_lock(stats_opts[WGET_STATS_TYPE_TLS].mutex);
-		wget_vector_add(stats_opts[WGET_STATS_TYPE_TLS].data, &tls_stats, sizeof(tls_stats_t));
-		wget_thread_mutex_unlock(stats_opts[WGET_STATS_TYPE_TLS].mutex);
+static void stats_callback_server(const void *stats)
+{
+	server_stats_t server_stats = { .hpkp_new = -1, .hsts = -1, .csp = -1, .hpkp = WGET_STATS_HPKP_NO };
 
-		break;
-	}
+	server_stats.hostname = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HOSTNAME, stats));
+	server_stats.ip = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_IP, stats));
+	server_stats.scheme = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_SCHEME, stats));
 
-	case WGET_STATS_TYPE_SERVER: {
-		server_stats_t server_stats = { .hpkp_new = -1, .hsts = -1, .csp = -1, .hpkp = WGET_STATS_HPKP_NO };
+	server_stats.hostname = NULL_TO_DASH(server_stats.hostname);
+	server_stats.ip = NULL_TO_DASH(server_stats.ip);
+	server_stats.scheme = NULL_TO_DASH(server_stats.scheme);
 
-		server_stats.hostname = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HOSTNAME, stats));
-		server_stats.ip = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_IP, stats));
-		server_stats.scheme = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_SCHEME, stats));
+	if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats))
+		server_stats.hpkp_new = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats));
 
-		server_stats.hostname = NULL_TO_DASH(server_stats.hostname);
-		server_stats.ip = NULL_TO_DASH(server_stats.ip);
-		server_stats.scheme = NULL_TO_DASH(server_stats.scheme);
+	if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats))
+		server_stats.hsts = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats));
 
-		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats))
-			server_stats.hpkp_new = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats));
+	if (wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats))
+		server_stats.csp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats));
 
-		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats))
-			server_stats.hsts = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats));
+	if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats))
+		server_stats.hpkp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats));
 
-		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats))
-			server_stats.csp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats));
+	wget_thread_mutex_lock(stats_opts[WGET_STATS_TYPE_SERVER].mutex);
+	wget_vector_add(stats_opts[WGET_STATS_TYPE_SERVER].data, &server_stats, sizeof(server_stats_t));
+	wget_thread_mutex_unlock(stats_opts[WGET_STATS_TYPE_SERVER].mutex);
+}
 
-		if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats))
-			server_stats.hpkp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats));
+static void stats_callback_ocsp(const void *stats)
+{
+	ocsp_stats_t ocsp_stats = { .nvalid = -1, .nrevoked = -1, .nignored = -1 };
 
-		wget_thread_mutex_lock(stats_opts[WGET_STATS_TYPE_SERVER].mutex);
-		wget_vector_add(stats_opts[WGET_STATS_TYPE_SERVER].data, &server_stats, sizeof(server_stats_t));
-		wget_thread_mutex_unlock(stats_opts[WGET_STATS_TYPE_SERVER].mutex);
+	ocsp_stats.hostname = wget_strdup(wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_HOSTNAME, stats));
+	ocsp_stats.hostname = NULL_TO_DASH(ocsp_stats.hostname);
 
-		break;
-	}
+	if (wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_VALID, stats))
+		ocsp_stats.nvalid = *((int *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_VALID, stats));
 
-	case WGET_STATS_TYPE_OCSP: {
-		ocsp_stats_t ocsp_stats = { .nvalid = -1, .nrevoked = -1, .nignored = -1 };
+	if (wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_REVOKED, stats))
+		ocsp_stats.nrevoked = *((int *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_REVOKED, stats));
 
-		ocsp_stats.hostname = wget_strdup(wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_HOSTNAME, stats));
-		ocsp_stats.hostname = NULL_TO_DASH(ocsp_stats.hostname);
+	if (wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats))
+		ocsp_stats.nignored = *((int *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats));
 
-		if (wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_VALID, stats))
-			ocsp_stats.nvalid = *((int *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_VALID, stats));
+	wget_thread_mutex_lock(stats_opts[WGET_STATS_TYPE_OCSP].mutex);
+	wget_vector_add(stats_opts[WGET_STATS_TYPE_OCSP].data, &ocsp_stats, sizeof(ocsp_stats_t));
+	wget_thread_mutex_unlock(stats_opts[WGET_STATS_TYPE_OCSP].mutex);
+}
 
-		if (wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_REVOKED, stats))
-			ocsp_stats.nrevoked = *((int *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_REVOKED, stats));
-
-		if (wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats))
-			ocsp_stats.nignored = *((int *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats));
-
-		wget_thread_mutex_lock(stats_opts[WGET_STATS_TYPE_OCSP].mutex);
-		wget_vector_add(stats_opts[WGET_STATS_TYPE_OCSP].data, &ocsp_stats, sizeof(ocsp_stats_t));
-		wget_thread_mutex_unlock(stats_opts[WGET_STATS_TYPE_OCSP].mutex);
-
-		break;
-	}
-
-	case WGET_STATS_TYPE_SITE: {
-		break;
-	}
-
-	default:
-		error_printf(_("Unknown stats type %d\n"), (int) type);
-		break;
-	}
+static void stats_callback_site(const void *stats)
+{
 }
 
 static void free_dns_stats(dns_stats_t *stats)
@@ -521,7 +542,7 @@ bool stats_is_enabled(int type)
 
 void stats_init(void)
 {
-	for (int it = 0; it < countof(stats_opts); it++) {
+	for (unsigned it = 0; it < countof(stats_opts); it++) {
 		// We always initialize all the mutexes. The cost of doing so is very
 		// low. wget_thread_mutex_destroy cannot handle a non-initialized
 		// mutex, so it is easier / cleaner / faster to always init and destroy
@@ -530,27 +551,12 @@ void stats_init(void)
 		if (stats_opts[it].status) {
 			stats_opts[it].data = wget_vector_create(8, -2, NULL);
 			wget_vector_set_destructor(stats_opts[it].data, stats_opts[it].destructor);
+			stats_opts[it].set_callback(stats_opts[it].callback);
 		}
 	}
 
 	wget_thread_mutex_init(&host_docs_mutex);
 	wget_thread_mutex_init(&tree_docs_mutex);
-
-	if (stats_opts[WGET_STATS_TYPE_DNS].status) {
-		wget_tcp_set_stats_dns(stats_callback);
-	}
-
-	if (stats_opts[WGET_STATS_TYPE_TLS].status) {
-		wget_tcp_set_stats_tls(stats_callback);
-	}
-
-	if (stats_opts[WGET_STATS_TYPE_SERVER].status) {
-		wget_tcp_set_stats_server(stats_callback);
-	}
-
-	if (stats_opts[WGET_STATS_TYPE_OCSP].status) {
-		wget_tcp_set_stats_ocsp(stats_callback);
-	}
 }
 
 void stats_exit(void)
@@ -960,35 +966,35 @@ static void stats_print_footer(wget_stats_format_t format, wget_stats_type_t typ
 }
 static void stats_print_header(wget_stats_format_t format, wget_stats_type_t type, wget_buffer_t *buf)
 {
-	static char *human_stats_headers[] = {
+	static const char *human_stats_headers[] = {
 		"\nDNS Timings:",
 		"\nTLS Statistics:",
 		"\nServer Statistics:",
 		"\nOCSP Statistics:",
 		"\nSite Statistics:"
 	};
-	static char *csv_stats_headers[] = {
+	static const char *csv_stats_headers[] = {
 		"Hostname,IP,Port,Duration",
 		"Hostname,TLSVersion,FalseStart,TFO,ALPN,Resumed,HTTPVersion,Certificates,Duration",
 		"Hostname,IP,Scheme,HPKP,NewHPKP,HSTS,CSP",
 		"Hostname,Valid,Revoked,Ignored",
 		"URL,Status,ID,ParentID,Link,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,IsSig,Valid,Invalid,Missing,Bad"
 	};
-	static char *json_stats_headers[] = {
+	static const char *json_stats_headers[] = {
 		"\t\"DNS Timings\": [{",
 		"\t\"TLS Statistics\": [{",
 		"\t\"Server Statistics\": [{",
 		"\t\"OCSP Statistics\": [{",
 		"\t\"Site Statistics\": [{"
 	};
-	static char *tree_stats_headers[] = {
+	static const char *tree_stats_headers[] = {
 		"",
 		"",
 		"",
 		"",
 		""
 	};
-	static char **formats_list[] = {human_stats_headers, csv_stats_headers, json_stats_headers, tree_stats_headers};
+	static const char **formats_list[] = {human_stats_headers, csv_stats_headers, json_stats_headers, tree_stats_headers};
 
 	if (format == WGET_STATS_FORMAT_JSON && ((config.stats_all && !type) || !config.stats_all)) {
 		wget_buffer_printf(buf, "{\n");
