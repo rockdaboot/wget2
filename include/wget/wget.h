@@ -2672,13 +2672,13 @@ WGETAPI const void *
 	wget_tcp_get_stats_server(wget_server_stats_t type, const void *stats);
 
 WGETAPI void
+	wget_tcp_set_stats_site(wget_stats_callback_t fn);
+
+WGETAPI void
 	wget_tcp_set_stats_ocsp(wget_stats_callback_t fn);
 
 WGETAPI const void *
 	wget_tcp_get_stats_ocsp(wget_ocsp_stats_t type, const void *stats);
-
-WGETAPI void
-	wget_tcp_set_stats_site(bool stats_site_switch);
 
 WGETAPI void
 	host_ips_free(void);

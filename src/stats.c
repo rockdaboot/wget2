@@ -54,7 +54,6 @@ static void stats_callback_server(const void *stats);
 static void stats_callback_ocsp(const void *stats);
 static void stats_callback_site(const void *stats);
 
-
 static wget_thread_mutex_t
 	host_docs_mutex,
 	tree_docs_mutex,
@@ -108,8 +107,8 @@ static stats_opts_t
 		},
 		[WGET_STATS_TYPE_SITE] = {
 			.tag = "Site",
-//			.set_callback = (stats_callback_setter_t) wget_tcp_set_stats_site,
-//			.callback = stats_callback_site,
+			.set_callback = (stats_callback_setter_t) wget_tcp_set_stats_site,
+			.callback = stats_callback_site,
 			.destructor = (wget_vector_destructor_t) free_site_stats
 		},
 	};

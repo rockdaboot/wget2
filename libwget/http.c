@@ -1497,6 +1497,15 @@ void wget_tcp_set_stats_server(wget_stats_callback_t fn)
 }
 
 /**
+ * \param[in] fn A `wget_stats_callback_t` callback function used to collect Site Host statistics
+ *
+ * Set callback function to be called once Response statistics for a host are collected
+ */
+void wget_tcp_set_stats_site(wget_stats_callback_t fn)
+{
+}
+
+/**
  * \param[in] type A `wget_server_stats_t` constant representing Server statistical info to return
  * \param[in] _stats An internal  pointer sent to callback function
  * \return Server statistical info in question
