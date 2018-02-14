@@ -97,8 +97,11 @@ int wget_thread_mutex_init(wget_thread_mutex_t *mutex)
  */
 int wget_thread_mutex_destroy(wget_thread_mutex_t *mutex)
 {
-	int rc = glthread_lock_destroy(&(*mutex)->mutex);
-	xfree(*mutex);
+	int rc = 0;
+	if (mutex && *mutex) {
+		rc = glthread_lock_destroy(&(*mutex)->mutex);
+		xfree(*mutex);
+	}
 	return rc;
 }
 
