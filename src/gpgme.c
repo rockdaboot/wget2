@@ -32,7 +32,6 @@
 #include "wget_log.h"
 #include "wget_main.h"
 #include "wget_options.h"
-#include "canonicalize.h"
 #include <string.h>
 
 #ifdef WITH_GPGME
@@ -204,7 +203,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 
 
 	if (config.gnupg_homedir) {
-		char *canon_home = canonicalize_filename_mode(config.gnupg_homedir, CAN_EXISTING);
+		char *canon_home = realpath(config.gnupg_homedir, NULL);
 
 		if (canon_home) {
 			debug_printf("Setting home dir: %s\n", canon_home);
