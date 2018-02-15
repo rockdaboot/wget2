@@ -32,7 +32,7 @@
 #include "wget_options.h"
 #include "wget_host.h"
 
-#define NULL_TO_DASH(s) ((s) ? (s) : "-")
+#define NULL_TO_DASH(s) ((s) ? (s) : strdup("-"))
 #define ONE_ZERO_DASH(s) ((s) ? ((s) == 1 ? "1" : "-") : "0")
 #define ON_OFF_DASH(s) ((s) ? ((s) == 1 ? "On" : "-") : "Off")
 #define YES_NO(s) ((s) ? "Yes" : "No")
@@ -517,29 +517,24 @@ void stats_init(void)
 	wget_thread_mutex_init(&host_docs_mutex);
 	wget_thread_mutex_init(&tree_docs_mutex);
 
-	if (stats_opts[WGET_STATS_TYPE_DNS].status) {
-		dns_stats_v = wget_vector_create(8, -2, NULL);
-		wget_vector_set_destructor(dns_stats_v, (wget_vector_destructor_t) free_dns_stats);
-		wget_tcp_set_stats_dns(stats_callback);
-	}
+	// XXX: This is terrible, please make these conditional as soon as possile.
+	// See commit message for details
 
-	if (stats_opts[WGET_STATS_TYPE_TLS].status) {
-		tls_stats_v = wget_vector_create(8, -2, NULL);
-		wget_vector_set_destructor(tls_stats_v, (wget_vector_destructor_t) free_tls_stats);
-		wget_tcp_set_stats_tls(stats_callback);
-	}
+	dns_stats_v = wget_vector_create(8, -2, NULL);
+	wget_vector_set_destructor(dns_stats_v, (wget_vector_destructor_t) free_dns_stats);
+	wget_tcp_set_stats_dns(stats_callback);
 
-	if (stats_opts[WGET_STATS_TYPE_SERVER].status) {
-		server_stats_v = wget_vector_create(8, -2, NULL);
-		wget_vector_set_destructor(server_stats_v, (wget_vector_destructor_t) free_server_stats);
-		wget_tcp_set_stats_server(stats_callback);
-	}
+	tls_stats_v = wget_vector_create(8, -2, NULL);
+	wget_vector_set_destructor(tls_stats_v, (wget_vector_destructor_t) free_tls_stats);
+	wget_tcp_set_stats_tls(stats_callback);
 
-	if (stats_opts[WGET_STATS_TYPE_OCSP].status) {
-		ocsp_stats_v = wget_vector_create(8, -2, NULL);
-		wget_vector_set_destructor(ocsp_stats_v, (wget_vector_destructor_t) free_ocsp_stats);
-		wget_tcp_set_stats_ocsp(stats_callback);
-	}
+	server_stats_v = wget_vector_create(8, -2, NULL);
+	wget_vector_set_destructor(server_stats_v, (wget_vector_destructor_t) free_server_stats);
+	wget_tcp_set_stats_server(stats_callback);
+
+	ocsp_stats_v = wget_vector_create(8, -2, NULL);
+	wget_vector_set_destructor(ocsp_stats_v, (wget_vector_destructor_t) free_ocsp_stats);
+	wget_tcp_set_stats_ocsp(stats_callback);
 }
 
 void stats_exit(void)
