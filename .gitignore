@@ -8,7 +8,9 @@ unit-tests/*
 examples/*
 !examples/*.*
 
-*.3
+m4/*
+!m4/wget_manywarnings.m4
+
 *.Makefile.in
 *.bak
 *.dll
@@ -50,6 +52,9 @@ config.sub
 configure
 depcomp
 docs/html
+docs/man
+docs/wget2.info
+docs/wget2.texi
 docs/libwget.doxy
 docs/wget2_md2man.sh
 fuzz/*.min
@@ -65,8 +70,6 @@ libwget.pc
 libwget/css_tokenizer.c
 libwget/test_linking
 ltmain.sh
-m4/*
-!m4/wget_manywarnings.m4
 missing
 nbproject
 snippet
@@ -74,6 +77,4 @@ src/wget2
 src/wget2_noinstall
 stamp-h1
 test-driver
-tmp
 wget2-*
-wget2_*.info
