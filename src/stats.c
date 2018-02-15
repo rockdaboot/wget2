@@ -1115,6 +1115,7 @@ void stats_print(void)
 
 		if (!fp) {
 			error_printf(_("File could not be opened %s for %s stats\n"), filename, stats_opts[type].tag);
+			xfree(filename);
 			continue;
 		}
 
@@ -1143,7 +1144,7 @@ void stats_print(void)
 			break;
 		}
 
-		if (fp != stdout) {
+		if (fp != stderr) {
 			info_printf(_("%s stats saved in %s\n"), stats_opts[type].tag, filename);
 			fclose(fp);
 		}
