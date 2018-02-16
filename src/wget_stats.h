@@ -61,24 +61,6 @@ struct stats_opts {
 typedef struct {
 	const char
 		*hostname,
-		*version,
-		*alpn_proto;
-	long long
-		millisecs;
-	int
-		cert_chain_size;
-	char
-		tcp_protocol,
-		false_start,
-		tfo;
-	bool
-		tls_con : 1,
-		resumed : 1;
-} tls_stats_t;
-
-typedef struct {
-	const char
-		*hostname,
 		*ip,
 		*scheme;
 	char
@@ -107,12 +89,10 @@ typedef struct {
 // void stats_callback_dns(const void *stats);
 // void free_dns_stats(dns_stats_t *stats);
 
-void stats_callback_tls(const void *stats);
 void stats_callback_server(const void *stats);
 void stats_callback_ocsp(const void *stats);
 void stats_callback_site(const void *stats);
 
-void free_tls_stats(tls_stats_t *stats);
 void free_server_stats(server_stats_t *stats);
 void free_ocsp_stats(ocsp_stats_t *stats);
 void free_site_stats(site_stats_t *stats);
