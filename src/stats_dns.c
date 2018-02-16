@@ -21,41 +21,49 @@
  *
  */
 #include <config.h>
+
 #include <wget.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <string.h>
+#include <stdio.h>
+#include <stdint.h>
 
 #include "wget_main.h"
 #include "wget_stats.h"
 #include "wget_options.h"
 
-// Forward declarations for static functions
+typedef struct {
+	const char
+		*host,
+		*ip;
+	long long
+		millisecs;
+	uint16_t
+		port;
+} dns_stats_t;
 
-static void stats_print_dns_human(stats_opts_t *opts, FILE *fp);
-static void stats_print_dns_csv(stats_opts_t *opts, FILE *fp);
-static void stats_print_dns_json(stats_opts_t *opts, FILE *fp);
-static void stats_callback_dns(const void *stats);
-static void free_dns_stats(dns_stats_t *stats);
+// Forward declarations for static functions
+static void print_human(stats_opts_t *opts, FILE *fp);
+static void print_csv(stats_opts_t *opts, FILE *fp);
+static void print_json(stats_opts_t *opts, FILE *fp);
+static void stats_callback(const void *stats);
+static void free_stats(dns_stats_t *stats);
 
 static stats_print_func_t
 	print_dns[] = {
-		[WGET_STATS_FORMAT_HUMAN] = stats_print_dns_human,
-		[WGET_STATS_FORMAT_CSV] = stats_print_dns_csv,
-		[WGET_STATS_FORMAT_JSON] = stats_print_dns_json,
+		[WGET_STATS_FORMAT_HUMAN] = print_human,
+		[WGET_STATS_FORMAT_CSV] = print_csv,
+		[WGET_STATS_FORMAT_JSON] = print_json,
 	};
 
 stats_opts_t stats_dns_opts = {
 	.tag = "DNS",
 	.options = &config.stats_dns,
 	.set_callback = (stats_callback_setter_t) wget_tcp_set_stats_dns,
-	.callback = stats_callback_dns,
-	.destructor = (wget_vector_destructor_t) free_dns_stats,
+	.callback = stats_callback,
+	.destructor = (wget_vector_destructor_t) free_stats,
 	.print = print_dns,
 };
 
-static void stats_callback_dns(const void *stats)
+static void stats_callback(const void *stats)
 {
 	dns_stats_t dns_stats = { .millisecs = -1, .port = -1 };
 
@@ -76,7 +84,7 @@ static void stats_callback_dns(const void *stats)
 	wget_thread_mutex_unlock(stats_dns_opts.mutex);
 }
 
-static void free_dns_stats(dns_stats_t *stats)
+static void free_stats(dns_stats_t *stats)
 {
 	if (stats) {
 		xfree(stats->host);
@@ -84,7 +92,7 @@ static void free_dns_stats(dns_stats_t *stats)
 	}
 }
 
-static void stats_print_human_dns_entry(struct json_stats *ctx, const dns_stats_t *dns_stats)
+static void print_human_entry(struct json_stats *ctx, const dns_stats_t *dns_stats)
 {
 	fprintf(ctx->fp, "  %4lld %s:%hu (%s)\n",
 		dns_stats->millisecs,
@@ -93,7 +101,7 @@ static void stats_print_human_dns_entry(struct json_stats *ctx, const dns_stats_
 		dns_stats->ip);
 }
 
-static void stats_print_csv_dns_entry(struct json_stats *ctx, const dns_stats_t *dns_stats)
+static void print_csv_entry(struct json_stats *ctx, const dns_stats_t *dns_stats)
 {
 	fprintf(ctx->fp, "%s,%s,%hu,%lld\n",
 		dns_stats->host,
@@ -102,7 +110,7 @@ static void stats_print_csv_dns_entry(struct json_stats *ctx, const dns_stats_t 
 		dns_stats->millisecs);
 }
 
-static void stats_print_json_dns_entry(struct json_stats *ctx, const dns_stats_t *dns_stats)
+static void print_json_entry(struct json_stats *ctx, const dns_stats_t *dns_stats)
 {
 	static char tabs[] = "\t\t\t\t\t\t\t\t\t\t";
 
@@ -117,22 +125,22 @@ static void stats_print_json_dns_entry(struct json_stats *ctx, const dns_stats_t
 		fprintf(ctx->fp, "%.*s},\n", ctx->ntabs + 1, tabs);
 }
 
-static void stats_print_dns_human(stats_opts_t *opts, FILE *fp)
+static void print_human(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "\nDNS Timings:\n");
 	fprintf(fp, "  %4s %s\n", "ms", "Host");
-	stats_print_data(opts->data, (wget_vector_browse_t) stats_print_human_dns_entry, fp, 0);
+	stats_print_data(opts->data, (wget_vector_browse_t) print_human_entry, fp, 0);
 }
 
-static void stats_print_dns_csv(stats_opts_t *opts, FILE *fp)
+static void print_csv(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "Hostname,IP,Port,Duration\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) stats_print_csv_dns_entry, fp, 0);
+	stats_print_data(opts->data, (wget_vector_browse_t) print_csv_entry, fp, 0);
 }
 
-static void stats_print_dns_json(stats_opts_t *opts, FILE *fp)
+static void print_json(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "\t\"DNS Timings\": [{\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) stats_print_json_dns_entry, fp, 0);
+	stats_print_data(opts->data, (wget_vector_browse_t) print_json_entry, fp, 0);
 	fprintf(fp, "\t}]\n");
 }

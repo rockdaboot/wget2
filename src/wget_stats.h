@@ -60,16 +60,6 @@ struct stats_opts {
 
 typedef struct {
 	const char
-		*host,
-		*ip;
-	long long
-		millisecs;
-	uint16_t
-		port;
-} dns_stats_t;
-
-typedef struct {
-	const char
 		*hostname,
 		*version,
 		*alpn_proto;
