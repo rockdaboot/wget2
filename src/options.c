@@ -724,7 +724,7 @@ static int parse_stats_all(option_t opt, const char *val, G_GNUC_WGET_UNUSED con
 	xfree(config.stats_site);
 	config.stats_site = wget_strdup(val);
 
-	xfree(config.stats_site);
+	xfree(config.stats_tls);
 	config.stats_site = wget_strdup(val);
 
 	return 0;

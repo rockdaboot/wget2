@@ -135,10 +135,6 @@ static void run_stats_test_with_option(const char *option_str)
 	}
 
 	for (unsigned it2 = 0; it2 < countof(stats_format); it2++) {
-		// test stats option with format, With file
-		if (!strcmp(option_str, "--stats-all") && !strcmp(stats_format[it2], "csv"))
-			continue; // skip --stats-all=csv:stats
-
 		snprintf(options, sizeof(options), "%s=%s:stats", option_str, stats_format[it2]);
 		wget_test(
 			// WGET_TEST_KEEP_TMPFILES, 1,
@@ -197,10 +193,6 @@ static void run_stats_test_with_option(const char *option_str)
 	}
 
 	for (unsigned it2 = 0; it2 < countof(stats_format); it2++) {
-		// test stats option with format, With file, with -r
-		if (!strcmp(option_str, "--stats-all") && !strcmp(stats_format[it2], "csv"))
-			continue; // skip --stats-all=csv:stats
-
 		snprintf(options, sizeof(options), "%s=%s:stats -r -nH", option_str, stats_format[it2]);
 		wget_test(
 			// WGET_TEST_KEEP_TMPFILES, 1,
@@ -215,42 +207,6 @@ static void run_stats_test_with_option(const char *option_str)
 				{	NULL } },
 			0);
 	}
-
-	// test stats-all option with csv format
-	snprintf(options, sizeof(options), "%s=%s:stats", "--stats-all", "csv");
-	wget_test(
-		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, options,
-		WGET_TEST_REQUEST_URL, urls[0].name + 1,
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body },
-			{ "0-stats" },
-			{ "1-stats" },
-			{ "2-stats" },
-			{ "3-stats" },
-			{ "4-stats" },
-			{	NULL } },
-		0);
-
-	// test stats-all option with csv format with -r
-	snprintf(options, sizeof(options), "%s=%s:stats -r -nH", "--stats-all", "csv");
-	wget_test(
-		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, options,
-		WGET_TEST_REQUEST_URL, urls[0].name + 1,
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "secondpage.html", urls[1].body },
-			{ "thirdpage.html", urls[2].body },
-			{ "0-stats" },
-			{ "1-stats" },
-			{ "2-stats" },
-			{ "3-stats" },
-			{ "4-stats" },
-			{	NULL } },
-		0);
 
 	// test stats-site option with tree format with -r
 	snprintf(options, sizeof(options), "%s=%s:stats -r -nH", "--stats-site", "tree");

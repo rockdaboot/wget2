@@ -1135,17 +1135,12 @@ static void stats_print_tls_json(stats_opts_t *opts, FILE *fp)
 void stats_print(void)
 {
 	FILE *fp;
-	char *filename;
 
 	for (stats_opts_t *opts = stats_opts; opts < stats_opts + countof(stats_opts); opts++) {
 		if (!*opts->options)
 			continue;
 
-		if (config.stats_all && opts->format == WGET_STATS_FORMAT_CSV && wget_strcmp(opts->file, "-")) {
-			filename = wget_malloc(strlen(opts->file) + 3);
-			snprintf(filename, strlen(opts->file) + 3, "%d-%s", (int) (opts - stats_opts), opts->file);
-		} else
-			filename = wget_strdup(opts->file);
+		const char *filename = opts->file;
 
 		if (filename && *filename && wget_strcmp(filename, "-") && !config.dont_write) {
 			if (config.stats_all && opts->format != WGET_STATS_FORMAT_CSV && opts == stats_opts)
@@ -1160,7 +1155,6 @@ void stats_print(void)
 
 		if (!fp) {
 			error_printf(_("File could not be opened %s for %s stats\n"), filename, opts->tag);
-			xfree(filename);
 			continue;
 		}
 
@@ -1170,7 +1164,5 @@ void stats_print(void)
 			info_printf(_("%s stats saved in %s\n"), stats_opts[type].tag, filename);
 			fclose(fp);
 		}
-
-		xfree(filename);
 	}
 }

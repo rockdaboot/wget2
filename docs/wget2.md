@@ -269,7 +269,13 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--stats-all[=[FORMAT:]FILE]`
 
-  Save DNS, TLS, OCSP, Server and Site stats in format `FORMAT`, in file `FILE`. `FORMAT` has 3 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+  Save DNS, TLS, OCSP, Server and Site stats in format `FORMAT`, in file `FILE`.
+
+ `FORMAT` has 3 possible values: `human`, `csv` and `json`.
+
+  `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+
+  Saving different `csv` output records into one file might break later parsing.
 
 ## <a name="Download Options"/>Download Options
 
