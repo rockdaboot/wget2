@@ -725,7 +725,7 @@ static int parse_stats_all(option_t opt, const char *val, G_GNUC_WGET_UNUSED con
 	config.stats_site = wget_strdup(val);
 
 	xfree(config.stats_tls);
-	config.stats_site = wget_strdup(val);
+	config.stats_tls = wget_strdup(val);
 
 	return 0;
 }
@@ -2919,6 +2919,8 @@ void deinit(void)
 {
 	wget_global_deinit();
 
+	stats_exit();
+
 	wget_cookie_db_free(&config.cookie_db);
 	wget_hsts_db_free(&config.hsts_db);
 	wget_hpkp_db_free(&config.hpkp_db);
@@ -2971,10 +2973,16 @@ void deinit(void)
 	xfree(config.use_askpass_bin);
 	xfree(config.username);
 	xfree(config.gnupg_homedir);
-	wget_vector_free(&config.mime_types);
+	xfree(config.stats_all);
+	xfree(config.stats_dns);
+	xfree(config.stats_ocsp);
+	xfree(config.stats_server);
+	xfree(config.stats_site);
+	xfree(config.stats_tls);
 
 	wget_iri_free(&config.base);
 
+	wget_vector_free(&config.mime_types);
 	wget_vector_free(&config.domains);
 	wget_vector_free(&config.exclude_domains);
 	wget_vector_free(&config.follow_tags);

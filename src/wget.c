@@ -456,7 +456,6 @@ static void _wget_init(void)
 
 static void _wget_deinit(void)
 {
-	stats_exit();
 	host_exit();
 	blacklist_exit();
 

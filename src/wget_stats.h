@@ -26,6 +26,38 @@
 
 #include "wget_host.h"
 
+#define NULL_TO_DASH(s) ((s) ? (s) : wget_strdup("-"))
+#define ONE_ZERO_DASH(s) ((s) ? ((s) == 1 ? "1" : "-") : "0")
+#define ON_OFF_DASH(s) ((s) ? ((s) == 1 ? "On" : "-") : "Off")
+#define YES_NO(s) ((s) ? "Yes" : "No")
+#define HTTP_1_2(s) ((s) == WGET_PROTOCOL_HTTP_1_1 ? "HTTP/1.1" : ((s) == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"))
+#define HTTP_S_DASH(s) (strcmp(s, "http") ? (strcmp(s, "https") ? s : "1") : "0")
+
+typedef struct stats_opts stats_opts_t;
+typedef void (*stats_print_func_t)(stats_opts_t *, FILE *);
+typedef void (*stats_callback_setter_t)(wget_stats_callback_t);
+
+struct stats_opts {
+	const char
+		**options,
+		*tag,
+		*file;
+	wget_stats_format_t
+		format;
+	wget_vector_t
+		*data;
+	wget_thread_mutex_t
+		mutex;
+	stats_callback_setter_t
+		set_callback;
+	wget_stats_callback_t
+		callback;
+	wget_vector_destructor_t
+		destructor;
+	stats_print_func_t
+		*print;
+};
+
 typedef struct {
 	const char
 		*host,
@@ -78,6 +110,24 @@ typedef struct {
 
 typedef struct {
 } site_stats_t;
+
+//void stats_print_dns_human(stats_opts_t *opts, FILE *fp);
+//void stats_print_dns_csv(stats_opts_t *opts, FILE *fp);
+//void stats_print_dns_json(stats_opts_t *opts, FILE *fp);
+// void stats_callback_dns(const void *stats);
+// void free_dns_stats(dns_stats_t *stats);
+
+void stats_callback_tls(const void *stats);
+void stats_callback_server(const void *stats);
+void stats_callback_ocsp(const void *stats);
+void stats_callback_site(const void *stats);
+
+void free_tls_stats(tls_stats_t *stats);
+void free_server_stats(server_stats_t *stats);
+void free_ocsp_stats(ocsp_stats_t *stats);
+void free_site_stats(site_stats_t *stats);
+
+void stats_print_data(const wget_vector_t *v, wget_vector_browse_t browse, FILE *fp, int ntabs);
 
 int stats_init(void);
 void stats_exit(void);
