@@ -22,6 +22,7 @@
  */
 #include <config.h>
 #include <wget.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -32,6 +33,7 @@
 #include "wget_stats.h"
 #include "wget_options.h"
 #include "wget_host.h"
+#include "wget_utils.h"
 
 // Forward declarations for static functions
 
@@ -506,25 +508,6 @@ void free_ocsp_stats(ocsp_stats_t *stats)
 		xfree(stats->hostname);
 }
 
-// TODO: remove code duplication from options.c
-static char *_shell_expand(const char *str)
-{
-	char *expanded_str = NULL;
-
-	if (*str == '~') {
-		char *pathptr = strchrnul(str, '/');
-		expanded_str = wget_strnglob(str, pathptr - str, GLOB_TILDE|GLOB_ONLYDIR|GLOB_NOCHECK);
-	}
-
-	// Either the string does not start with a "~", or the glob expansion
-	// failed. In both cases, return the original string back
-	if (!expanded_str) {
-		expanded_str = wget_strdup(str);
-	}
-
-	return expanded_str;
-}
-
 static int stats_parse_options(const char *val, wget_stats_format_t *format, const char **filename)
 {
 	const char *p = val;
@@ -547,7 +530,7 @@ static int stats_parse_options(const char *val, wget_stats_format_t *format, con
 	} else // no format given
 		*format = WGET_STATS_FORMAT_HUMAN;
 
-	*filename = _shell_expand(val);
+	*filename = shell_expand(val);
 
 	return 0;
 }

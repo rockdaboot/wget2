@@ -64,6 +64,7 @@
 #include "wget_plugin.h"
 #include "wget_stats.h"
 #include "wget_testing.h"
+#include "wget_utils.h"
 #ifdef WITH_GPGME
 #  include "wget_gpgme.h"
 #endif
@@ -231,24 +232,6 @@ static int print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED con
 	return -1; // stop processing & exit
 }
 
-static char *_shell_expand(const char *str)
-{
-	char *expanded_str = NULL;
-
-	if (*str == '~') {
-		char *pathptr = strchrnul(str, '/');
-		expanded_str = wget_strnglob(str, pathptr - str, GLOB_TILDE|GLOB_ONLYDIR|GLOB_NOCHECK);
-	}
-
-	// Either the string does not start with a "~", or the glob expansion
-	// failed. In both cases, return the original string back
-	if (!expanded_str) {
-		expanded_str = wget_strdup(str);
-	}
-
-	return expanded_str;
-}
-
 static int parse_integer(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	*((int *)opt->var) = val ? atoi(val) : 0;
@@ -307,7 +290,7 @@ static int parse_numbytes(option_t opt, const char *val, G_GNUC_WGET_UNUSED cons
 static int parse_filename(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	xfree(*((const char **)opt->var));
-	*((const char **)opt->var) = val ? _shell_expand(val) : NULL;
+	*((const char **)opt->var) = val ? shell_expand(val) : NULL;
 
 	debug_printf("Expanded value = %s\n", *(const char **)opt->var);
 	return 0;
@@ -419,7 +402,7 @@ static int parse_stringlist_expand(option_t opt, const char *val, int expand, in
 				const char *fname = wget_strmemdup(s, p - s);
 
 				if (expand && *s == '~') {
-					wget_vector_add_noalloc(v, _shell_expand(fname));
+					wget_vector_add_noalloc(v, shell_expand(fname));
 					xfree(fname);
 				} else
 					wget_vector_add_noalloc(v, fname);

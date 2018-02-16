@@ -20,7 +20,8 @@ wget2_SOURCES =\
  wget.c wget_main.h\
  options.c wget_options.h\
  testing.c wget_testing.h\
- wget_xattr.h
+ wget_xattr.h \
+ utils.c wget_utils.h
 
 if WITH_GPGME
   wget2_SOURCES += gpgme.c wget_gpgme.h
