@@ -313,11 +313,14 @@ static int parse_filename(option_t opt, const char *val, G_GNUC_WGET_UNUSED cons
 	return 0;
 }
 
-static int parse_string(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
+static int parse_string(option_t opt, const char *val, const char invert)
 {
+	if (opt->args == -1 && !invert && !val)
+		val = ""; // needed for stats options
+
 	// the strdup'ed string will be released on program exit
 	xfree(*((const char **)opt->var));
-	*((const char **)opt->var) = val ? wget_strdup(val) : NULL;
+	*((const char **)opt->var) = wget_strdup(val);
 
 	return 0;
 }
@@ -704,55 +707,25 @@ static int parse_prefer_family(option_t opt, const char *val, G_GNUC_WGET_UNUSED
 	return 0;
 }
 
-static int parse_stats(option_t opt, const char *val, const char invert)
+static int parse_stats_all(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
-	int status, format = WGET_STATS_FORMAT_HUMAN;
-	char *filename = NULL;
+	xfree(*((const char **)opt->var));
+	*((const char **)opt->var) = wget_strdup(val);
 
-	if (!val || !strcmp(val, "1") || !wget_strcasecmp_ascii(val, "y") || !wget_strcasecmp_ascii(val, "yes") || !wget_strcasecmp_ascii(val, "on"))
-		status = !invert;
-	else if (!*val || !strcmp(val, "0") || !wget_strcasecmp_ascii(val, "n") || !wget_strcasecmp_ascii(val, "no") || !wget_strcasecmp_ascii(val, "off"))
-		status = invert;
-	else {
-		status = !invert;
+	xfree(config.stats_dns);
+	config.stats_dns = wget_strdup(val);
 
-		char *p;
-		if ((p = strchr(val, ':'))) {
-			if (!wget_strncasecmp_ascii("human", val, p - val) || !wget_strncasecmp_ascii("h", val, p - val))
-				;//empty statement
-			else if (!wget_strncasecmp_ascii("csv", val, p - val))
-				format = WGET_STATS_FORMAT_CSV;
-			else if (!wget_strncasecmp_ascii("json", val, p - val))
-				format = WGET_STATS_FORMAT_JSON;
-			else if ((int) (ptrdiff_t)opt->var == WGET_STATS_TYPE_SITE && !wget_strncasecmp_ascii("tree", val, p - val))
-				format = WGET_STATS_FORMAT_TREE;
-			else {
-				error_printf(_("Unknown stats format\n"));
-				return -1;
-			}
+	xfree(config.stats_ocsp);
+	config.stats_ocsp = wget_strdup(val);
 
-			val = p + 1;
-		}
+	xfree(config.stats_server);
+	config.stats_server = wget_strdup(val);
 
-		if (val)
-			filename = _shell_expand(val);
-	}
+	xfree(config.stats_site);
+	config.stats_site = wget_strdup(val);
 
-	stats_set_option((int) (ptrdiff_t) opt->var, status, format, filename);
-
-	return 0;
-}
-
-static int parse_stats_all(option_t opt, const char *val, const char invert)
-{
-	int rc;
-
-	if ((rc = parse_bool(opt, "1", invert)) < 0)
-		return rc;
-
-	if (config.stats_all)
-		for (int it = 1; it <= 5; it++)	// Get rid of magic number
-			parse_stats(opt + it, val, invert);
+	xfree(config.stats_site);
+	config.stats_site = wget_strdup(val);
 
 	return 0;
 }
@@ -1763,31 +1736,31 @@ static const struct optionw options[] = {
 		  "Additional format supported: --stats-all[=[FORMAT:]FILE]\n"
 		}
 	},
-	{ "stats-dns", (void *) WGET_STATS_TYPE_DNS, parse_stats, -1, 0,
+	{ "stats-dns", &config.stats_dns, parse_string, -1, 0,
 		SECTION_STARTUP,
 		{ "Print DNS stats. (default: off)\n",
 		  "Additional format supported: --stats-dns[=[FORMAT:]FILE]\n"
 		}
 	},
-	{ "stats-ocsp", (void *) WGET_STATS_TYPE_OCSP, parse_stats, -1, 0,
+	{ "stats-ocsp", &config.stats_ocsp, parse_string, -1, 0,
 		SECTION_STARTUP,
 		{ "Print OCSP stats. (default: off)\n",
 		  "Additional format supported: --stats-ocsp[=[FORMAT:]FILE]\n"
 		}
 	},
-	{ "stats-server", (void *) WGET_STATS_TYPE_SERVER, parse_stats, -1, 0,
+	{ "stats-server", &config.stats_server, parse_string, -1, 0,
 		SECTION_STARTUP,
 		{ "Print server stats. (default: off)\n",
 		  "Additional format supported: --stats-server[=[FORMAT:]FILE]\n"
 		}
 	},
-	{ "stats-site", (void *) WGET_STATS_TYPE_SITE, parse_stats, -1, 0,
+	{ "stats-site", &config.stats_site, parse_string, -1, 0,
 		SECTION_STARTUP,
 		{ "Print site stats. (default: off)\n",
 		  "Additional format supported: --stats-site[=[FORMAT:]FILE]\n"
 		}
 	},
-	{ "stats-tls", (void *) WGET_STATS_TYPE_TLS, parse_stats, -1, 0,
+	{ "stats-tls", &config.stats_tls, parse_string, -1, 0,
 		SECTION_STARTUP,
 		{ "Print TLS stats. (default: off)\n",
 		  "Additional format supported: --stats-tls[=[FORMAT:]FILE]\n"
@@ -2694,6 +2667,10 @@ int init(int argc, const char **argv)
 	if ((n = parse_command_line(argc, argv)) < 0)
 		return -1;
 
+	// parse and initialize stats options
+	if (stats_init())
+		return -1;
+
 	if (plugin_db_help_forwarded()) {
 		set_exit_status(WG_EXIT_STATUS_NO_ERROR);
 		return -1; // stop processing & exit
@@ -2851,8 +2828,6 @@ int init(int argc, const char **argv)
 		init_gpgme();
 #endif
 	}
-
-	config.stats_site = stats_is_enabled(WGET_STATS_TYPE_SITE);
 
 	if ((rc = wget_net_init())) {
 		wget_error_printf(_("Failed to init networking (%d)"), rc);

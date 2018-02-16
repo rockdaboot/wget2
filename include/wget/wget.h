@@ -2593,10 +2593,10 @@ struct wget_plugin_vtable
 
 typedef enum {
 	WGET_STATS_TYPE_DNS = 0,
-	WGET_STATS_TYPE_TLS = 1,
+	WGET_STATS_TYPE_OCSP = 1,
 	WGET_STATS_TYPE_SERVER = 2,
-	WGET_STATS_TYPE_OCSP = 3,
-	WGET_STATS_TYPE_SITE = 4
+	WGET_STATS_TYPE_SITE = 3,
+	WGET_STATS_TYPE_TLS = 4,
 } wget_stats_type_t;
 
 typedef enum {

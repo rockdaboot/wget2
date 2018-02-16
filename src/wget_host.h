@@ -112,8 +112,6 @@ struct DOC {
 };
 
 struct site_stats {
-	wget_buffer_t
-		*buf;
 	FILE
 		*fp;
 	int
@@ -121,8 +119,6 @@ struct site_stats {
 };
 
 struct site_stats_cvs_json {
-	wget_buffer_t
-		*buf;
 	FILE
 		*fp;
 	int
@@ -136,8 +132,8 @@ struct site_stats_cvs_json {
 };
 
 struct json_stats {
-	wget_buffer_t
-		*buf;
+	FILE
+		*fp;
 	bool
 		last;
 	int

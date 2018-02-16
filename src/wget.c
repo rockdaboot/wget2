@@ -408,7 +408,6 @@ static void _wget_init(void)
 	wget_global_init(0);
 	blacklist_init();
 	host_init();
-	stats_init();
 
 	wget_thread_mutex_init(&downloader_mutex);
 	wget_thread_mutex_init(&main_mutex);

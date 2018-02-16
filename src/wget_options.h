@@ -83,7 +83,13 @@ struct config {
 #ifdef WITH_GPGME
 		*sig_ext,
 #endif
-		*gnupg_homedir;
+		*gnupg_homedir,
+		*stats_all,
+		*stats_dns,
+		*stats_ocsp,
+		*stats_server,
+		*stats_site,
+		*stats_tls;
 	wget_vector_t
 		*config_files,
 		*domains,
@@ -208,8 +214,6 @@ struct config {
 		proxy,
 		xattr,
 		force_progress,
-		stats_site,
-		stats_all,
 		local_db,
 		dont_write, // fuzzers and unit/fuzz tests set this to 1, so they won't write any files
 		regex_type,
