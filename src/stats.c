@@ -42,9 +42,6 @@ static wget_thread_mutex_t
 	tree_docs_mutex,
 	hosts_mutex;
 
-static void stats_print_ocsp_human(stats_opts_t *opts, FILE *fp);
-static void stats_print_ocsp_csv(stats_opts_t *opts, FILE *fp);
-static void stats_print_ocsp_json(stats_opts_t *opts, FILE *fp);
 static void stats_print_server_human(stats_opts_t *opts, FILE *fp);
 static void stats_print_server_csv(stats_opts_t *opts, FILE *fp);
 static void stats_print_server_json(stats_opts_t *opts, FILE *fp);
@@ -55,14 +52,9 @@ static void stats_print_site_tree(stats_opts_t *opts, FILE *fp);
 
 extern stats_print_func_t
 	print_dns[],
-	print_tls[];
+	print_tls[],
+	print_ocsp[];
 
-static stats_print_func_t
-	print_ocsp[] = {
-		[WGET_STATS_FORMAT_HUMAN] = stats_print_ocsp_human,
-		[WGET_STATS_FORMAT_CSV] = stats_print_ocsp_csv,
-		[WGET_STATS_FORMAT_JSON] = stats_print_ocsp_json,
-	};
 static stats_print_func_t
 	print_server[] = {
 		[WGET_STATS_FORMAT_HUMAN] = stats_print_server_human,
@@ -79,15 +71,8 @@ static stats_print_func_t
 
 extern stats_opts_t stats_dns_opts;
 extern stats_opts_t stats_tls_opts;
+extern stats_opts_t stats_ocsp_opts;
 
-static stats_opts_t stats_ocsp_opts = {
-	.tag = "OCSP",
-	.options = &config.stats_ocsp,
-	.set_callback = (stats_callback_setter_t) wget_tcp_set_stats_ocsp,
-	.callback = stats_callback_ocsp,
-	.destructor = (wget_vector_destructor_t) free_ocsp_stats,
-	.print = print_ocsp,
-};
 static stats_opts_t stats_server_opts = {
 	.tag = "Server",
 	.options = &config.stats_server,
@@ -395,27 +380,6 @@ void stats_callback_server(const void *stats)
 	wget_thread_mutex_unlock(stats_server_opts.mutex);
 }
 
-void stats_callback_ocsp(const void *stats)
-{
-	ocsp_stats_t ocsp_stats = { .nvalid = -1, .nrevoked = -1, .nignored = -1 };
-
-	ocsp_stats.hostname = wget_strdup(wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_HOSTNAME, stats));
-	ocsp_stats.hostname = NULL_TO_DASH(ocsp_stats.hostname);
-
-	if (wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_VALID, stats))
-		ocsp_stats.nvalid = *((int *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_VALID, stats));
-
-	if (wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_REVOKED, stats))
-		ocsp_stats.nrevoked = *((int *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_REVOKED, stats));
-
-	if (wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats))
-		ocsp_stats.nignored = *((int *)wget_tcp_get_stats_ocsp(WGET_STATS_OCSP_IGNORED, stats));
-
-	wget_thread_mutex_lock(stats_ocsp_opts.mutex);
-	wget_vector_add(stats_ocsp_opts.data, &ocsp_stats, sizeof(ocsp_stats_t));
-	wget_thread_mutex_unlock(stats_ocsp_opts.mutex);
-}
-
 void stats_callback_site(const void *stats)
 {
 }
@@ -431,12 +395,6 @@ void free_server_stats(server_stats_t *stats)
 
 void free_site_stats(site_stats_t *stats)
 {
-}
-
-void free_ocsp_stats(ocsp_stats_t *stats)
-{
-	if (stats)
-		xfree(stats->hostname);
 }
 
 static int stats_parse_options(const char *val, wget_stats_format_t *format, const char **filename)
@@ -753,33 +711,6 @@ static void stats_print_csv_server_entry(struct json_stats *ctx, const server_st
 		ONE_ZERO_DASH(server_stats->csp));
 }
 
-static void stats_print_human_ocsp_entry(struct json_stats *ctx, const ocsp_stats_t *ocsp_stats)
-{
-	fprintf(ctx->fp, "  %s:\n", ocsp_stats->hostname);
-	fprintf(ctx->fp, "    Valid          : %d\n", ocsp_stats->nvalid);
-	fprintf(ctx->fp, "    Revoked        : %d\n", ocsp_stats->nrevoked);
-	fprintf(ctx->fp, "    Ignored        : %d\n\n", ocsp_stats->nignored);
-}
-
-static void stats_print_json_ocsp_entry(struct json_stats *ctx, const ocsp_stats_t *ocsp_stats)
-{
-	fprintf(ctx->fp, "%.*s{\n", ctx->ntabs + 1, tabs);
-	fprintf(ctx->fp, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, ocsp_stats->hostname);
-	fprintf(ctx->fp, "%.*s\"Valid\" : %d,\n", ctx->ntabs + 2, tabs, ocsp_stats->nvalid);
-	fprintf(ctx->fp, "%.*s\"Revoked\" : %d,\n", ctx->ntabs + 2, tabs, ocsp_stats->nrevoked);
-	fprintf(ctx->fp, "%.*s\"Ignored\" : %d\n", ctx->ntabs + 2, tabs, ocsp_stats->nignored);
-	if (ctx->last)
-		fprintf(ctx->fp, "%.*s}\n", ctx->ntabs + 1, tabs);
-	else
-		fprintf(ctx->fp, "%.*s},\n", ctx->ntabs + 1, tabs);
-}
-
-static void stats_print_csv_ocsp_entry(struct json_stats *ctx, const ocsp_stats_t *ocsp_stats)
-{
-	fprintf(ctx->fp, "%s,%d,%d,%d\n",
-		ocsp_stats->hostname, ocsp_stats->nvalid, ocsp_stats->nrevoked, ocsp_stats->nignored);
-}
-
 static void stats_print_tree(FILE *fp)
 {
 	struct site_stats ctx = { .fp = fp};
@@ -798,25 +729,6 @@ void stats_print_data(const wget_vector_t *v, wget_vector_browse_t browse, FILE 
 				ctx.last = true;
 		browse(&ctx, wget_vector_get(v, it));
 	}
-}
-
-static void stats_print_ocsp_human(stats_opts_t *opts, FILE *fp)
-{
-	fprintf(fp, "\nOCSP Statistics:\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) stats_print_human_ocsp_entry, fp, 0);
-}
-
-static void stats_print_ocsp_csv(stats_opts_t *opts, FILE *fp)
-{
-	fprintf(fp, "Hostname,Valid,Revoked,Ignored\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) stats_print_csv_ocsp_entry, fp, 0);
-}
-
-static void stats_print_ocsp_json(stats_opts_t *opts, FILE *fp)
-{
-	fprintf(fp, "\t\"OCSP Statistics\": [{\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) stats_print_json_ocsp_entry, fp, 0);
-	fprintf(fp, "\t}]\n");
 }
 
 static void stats_print_server_human(stats_opts_t *opts, FILE *fp)

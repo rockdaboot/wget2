@@ -72,15 +72,6 @@ typedef struct {
 } server_stats_t;
 
 typedef struct {
-	const char
-		*hostname;
-	int
-		nvalid,
-		nrevoked,
-		nignored;
-} ocsp_stats_t;
-
-typedef struct {
 } site_stats_t;
 
 //void stats_print_dns_human(stats_opts_t *opts, FILE *fp);
@@ -90,11 +81,9 @@ typedef struct {
 // void free_dns_stats(dns_stats_t *stats);
 
 void stats_callback_server(const void *stats);
-void stats_callback_ocsp(const void *stats);
 void stats_callback_site(const void *stats);
 
 void free_server_stats(server_stats_t *stats);
-void free_ocsp_stats(ocsp_stats_t *stats);
 void free_site_stats(site_stats_t *stats);
 
 void stats_print_data(const wget_vector_t *v, wget_vector_browse_t browse, FILE *fp, int ntabs);
