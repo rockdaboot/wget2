@@ -1023,7 +1023,7 @@ void wget_test(int first_key, ...)
 		else
 			wget_buffer_printf(cmd, "%s %s", executable, options);
 	} else if (!strcmp(valgrind, "1")) {
-		wget_buffer_printf(cmd, "valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=" SRCDIR "/valgrind-suppressions %s %s", executable, options);
+		wget_buffer_printf(cmd, "valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes --child-silent-after-fork=yes --suppressions=" SRCDIR "/valgrind-suppressions %s %s", executable, options);
 	} else
 		wget_buffer_printf(cmd, "%s %s %s", valgrind, executable, options);
 
