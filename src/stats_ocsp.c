@@ -63,7 +63,7 @@ stats_opts_t stats_ocsp_opts = {
 
 static char tabs[] = "\t\t\t\t\t\t\t\t\t\t";
 
-void stats_callback(const void *stats)
+static void stats_callback(const void *stats)
 {
 	ocsp_stats_t ocsp_stats = { .nvalid = -1, .nrevoked = -1, .nignored = -1 };
 
@@ -84,7 +84,7 @@ void stats_callback(const void *stats)
 	wget_thread_mutex_unlock(stats_ocsp_opts.mutex);
 }
 
-void free_stats(ocsp_stats_t *stats)
+static void free_stats(ocsp_stats_t *stats)
 {
 	if (stats)
 		xfree(stats->hostname);

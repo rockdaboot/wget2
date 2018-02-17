@@ -35,16 +35,12 @@
 #include "wget_host.h"
 #include "wget_utils.h"
 
-// Forward declarations for static functions
-
 static wget_thread_mutex_t
 	host_docs_mutex,
 	tree_docs_mutex,
 	hosts_mutex;
 
-static void stats_print_server_human(stats_opts_t *opts, FILE *fp);
-static void stats_print_server_csv(stats_opts_t *opts, FILE *fp);
-static void stats_print_server_json(stats_opts_t *opts, FILE *fp);
+// Forward declarations for static functions
 static void stats_print_site_human(stats_opts_t *opts, FILE *fp);
 static void stats_print_site_csv(stats_opts_t *opts, FILE *fp);
 static void stats_print_site_json(stats_opts_t *opts, FILE *fp);
@@ -52,15 +48,10 @@ static void stats_print_site_tree(stats_opts_t *opts, FILE *fp);
 
 extern stats_print_func_t
 	print_dns[],
-	print_tls[],
-	print_ocsp[];
+	print_ocsp[],
+	print_server[],
+	print_tls[];
 
-static stats_print_func_t
-	print_server[] = {
-		[WGET_STATS_FORMAT_HUMAN] = stats_print_server_human,
-		[WGET_STATS_FORMAT_CSV] = stats_print_server_csv,
-		[WGET_STATS_FORMAT_JSON] = stats_print_server_json,
-	};
 static stats_print_func_t
 	print_site[] = {
 		[WGET_STATS_FORMAT_HUMAN] = stats_print_site_human,
@@ -70,17 +61,10 @@ static stats_print_func_t
 	};
 
 extern stats_opts_t stats_dns_opts;
-extern stats_opts_t stats_tls_opts;
 extern stats_opts_t stats_ocsp_opts;
+extern stats_opts_t stats_server_opts;
+extern stats_opts_t stats_tls_opts;
 
-static stats_opts_t stats_server_opts = {
-	.tag = "Server",
-	.options = &config.stats_server,
-	.set_callback = (stats_callback_setter_t) wget_tcp_set_stats_server,
-	.callback = stats_callback_server,
-	.destructor = (wget_vector_destructor_t) free_server_stats,
-	.print = print_server,
-};
 static stats_opts_t stats_site_opts = {
 	.tag = "Site",
 	.options = &config.stats_site,
@@ -351,46 +335,8 @@ out:
 	return child_node;
 }
 
-void stats_callback_server(const void *stats)
-{
-	server_stats_t server_stats = { .hpkp_new = -1, .hsts = -1, .csp = -1, .hpkp = WGET_STATS_HPKP_NO };
-
-	server_stats.hostname = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HOSTNAME, stats));
-	server_stats.ip = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_IP, stats));
-	server_stats.scheme = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_SCHEME, stats));
-
-	server_stats.hostname = NULL_TO_DASH(server_stats.hostname);
-	server_stats.ip = NULL_TO_DASH(server_stats.ip);
-	server_stats.scheme = NULL_TO_DASH(server_stats.scheme);
-
-	if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats))
-		server_stats.hpkp_new = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats));
-
-	if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats))
-		server_stats.hsts = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HSTS, stats));
-
-	if (wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats))
-		server_stats.csp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_CSP, stats));
-
-	if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats))
-		server_stats.hpkp = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP, stats));
-
-	wget_thread_mutex_lock(stats_server_opts.mutex);
-	wget_vector_add(stats_server_opts.data, &server_stats, sizeof(server_stats_t));
-	wget_thread_mutex_unlock(stats_server_opts.mutex);
-}
-
 void stats_callback_site(const void *stats)
 {
-}
-
-void free_server_stats(server_stats_t *stats)
-{
-	if (stats) {
-		xfree(stats->hostname);
-		xfree(stats->ip);
-		xfree(stats->scheme);
-	}
 }
 
 void free_site_stats(site_stats_t *stats)
@@ -655,62 +601,6 @@ static void print_site_stats_csv_json(FILE *fp, wget_stats_format_t format, int 
 		fprintf(ctx.fp, "\n");
 }
 
-G_GNUC_WGET_PURE static const char *stats_server_hpkp(wget_hpkp_stats_t hpkp)
-{
-	switch (hpkp) {
-	case WGET_STATS_HPKP_NO:
-		return "HPKP_NO";
-	case WGET_STATS_HPKP_MATCH:
-		return "HPKP_MATCH";
-	case WGET_STATS_HPKP_NOMATCH:
-		return "HPKP_NOMATCH";
-	case WGET_STATS_HPKP_ERROR:
-		return "HPKP_ERROR";
-	default:
-		error_printf(_("Unknown HPKP stats type %d\n"), (int) hpkp);
-		return "-";
-	}
-}
-
-static void stats_print_human_server_entry(struct json_stats *ctx, const server_stats_t *server_stats)
-{
-	fprintf(ctx->fp, "  %s:\n", server_stats->hostname);
-	fprintf(ctx->fp, "    IP             : %s\n", server_stats->ip);
-	fprintf(ctx->fp, "    Scheme         : %s\n", server_stats->scheme);
-	fprintf(ctx->fp, "    HPKP           : %s\n", stats_server_hpkp(server_stats->hpkp));
-	fprintf(ctx->fp, "    HPKP New Entry : %s\n", ON_OFF_DASH(server_stats->hpkp_new));
-	fprintf(ctx->fp, "    HSTS           : %s\n", ON_OFF_DASH(server_stats->hsts));
-	fprintf(ctx->fp, "    CSP            : %s\n\n", ON_OFF_DASH(server_stats->csp));
-}
-
-static void stats_print_json_server_entry(struct json_stats *ctx, const server_stats_t *server_stats)
-{
-	fprintf(ctx->fp, "%.*s{\n", ctx->ntabs + 1, tabs);
-	fprintf(ctx->fp, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, server_stats->hostname);
-	fprintf(ctx->fp, "%.*s\"IP\" : \"%s\",\n", ctx->ntabs + 2, tabs, server_stats->ip);
-	fprintf(ctx->fp, "%.*s\"Scheme\" : \"%s\",\n", ctx->ntabs + 2, tabs, HTTP_S_DASH(server_stats->scheme));
-	fprintf(ctx->fp, "%.*s\"HPKP\" : \"%s\",\n", ctx->ntabs + 2, tabs, stats_server_hpkp(server_stats->hpkp));
-	fprintf(ctx->fp, "%.*s\"NewHPKP\" : \"%s\",\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(server_stats->hpkp_new));
-	fprintf(ctx->fp, "%.*s\"HSTS\" : \"%s\",\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(server_stats->hsts));
-	fprintf(ctx->fp, "%.*s\"CSP\" : \"%s\"\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(server_stats->csp));
-	if (ctx->last)
-		fprintf(ctx->fp, "%.*s}\n", ctx->ntabs + 1, tabs);
-	else
-		fprintf(ctx->fp, "%.*s},\n", ctx->ntabs + 1, tabs);
-}
-
-static void stats_print_csv_server_entry(struct json_stats *ctx, const server_stats_t *server_stats)
-{
-	fprintf(ctx->fp, "%s,%s,%s,%s,%s,%s,%s\n",
-		server_stats->hostname,
-		server_stats->ip,
-		HTTP_S_DASH(server_stats->scheme),
-		stats_server_hpkp(server_stats->hpkp),
-		ONE_ZERO_DASH(server_stats->hpkp_new),
-		ONE_ZERO_DASH(server_stats->hsts),
-		ONE_ZERO_DASH(server_stats->csp));
-}
-
 static void stats_print_tree(FILE *fp)
 {
 	struct site_stats ctx = { .fp = fp};
@@ -729,25 +619,6 @@ void stats_print_data(const wget_vector_t *v, wget_vector_browse_t browse, FILE 
 				ctx.last = true;
 		browse(&ctx, wget_vector_get(v, it));
 	}
-}
-
-static void stats_print_server_human(stats_opts_t *opts, FILE *fp)
-{
-	fprintf(fp, "\nServer Statistics:\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) stats_print_human_server_entry, fp, 0);
-}
-
-static void stats_print_server_csv(stats_opts_t *opts, FILE *fp)
-{
-	fprintf(fp, "Hostname,IP,Scheme,HPKP,NewHPKP,HSTS,CSP\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) stats_print_csv_server_entry, fp, 0);
-}
-
-static void stats_print_server_json(stats_opts_t *opts, FILE *fp)
-{
-	fprintf(fp, "\t\"Server Statistics\": [{\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) stats_print_json_server_entry, fp, 0);
-	fprintf(fp, "\t}]\n");
 }
 
 static void stats_print_site_human(stats_opts_t *opts, FILE *fp)
