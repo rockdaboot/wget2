@@ -60,8 +60,13 @@ struct stats_opts {
 	void (*exit)(void);
 };
 
-void stats_print_data(const wget_vector_t *v, wget_vector_browse_t browse, FILE *fp, int ntabs);
+extern stats_opts_t stats_dns_opts;
+extern stats_opts_t stats_ocsp_opts;
+extern stats_opts_t stats_server_opts;
+extern stats_opts_t stats_tls_opts;
+extern stats_opts_t stats_site_opts;
 
+void stats_print_data(const wget_vector_t *v, wget_vector_browse_t browse, FILE *fp, int ntabs);
 int stats_init(void);
 void stats_exit(void);
 void stats_print(void);

@@ -42,12 +42,6 @@ extern stats_print_func_t
 	print_site,
 	print_tls[];
 
-extern stats_opts_t stats_dns_opts;
-extern stats_opts_t stats_ocsp_opts;
-extern stats_opts_t stats_server_opts;
-extern stats_opts_t stats_tls_opts;
-extern stats_opts_t stats_site_opts;
-
 static stats_opts_t *stats_opts[] = {
 	[WGET_STATS_TYPE_DNS] = &stats_dns_opts,
 	[WGET_STATS_TYPE_OCSP] = &stats_ocsp_opts,
