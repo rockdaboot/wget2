@@ -1105,8 +1105,11 @@ void stats_print(void)
 				fp = fopen(filename, "a");
 			else
 				fp = fopen(filename, "w");
-		} else
+		} else if (filename && *filename && !wget_strcmp(filename, "-") && !config.dont_write) {
+			fp = stdout;
+		} else {
 			fp = stderr;
+		}
 
 		if (!fp) {
 			error_printf(_("File could not be opened %s for %s stats\n"), filename, stats_opts[type].tag);
@@ -1139,7 +1142,7 @@ void stats_print(void)
 			break;
 		}
 
-		if (fp != stderr) {
+		if (fp != stderr && fp != stdout) {
 			info_printf(_("%s stats saved in %s\n"), stats_opts[type].tag, filename);
 			fclose(fp);
 		}
