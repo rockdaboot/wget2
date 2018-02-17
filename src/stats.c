@@ -118,6 +118,9 @@ void stats_exit(void)
 	for (unsigned it = 0; it < countof(stats_opts); it++) {
 		stats_opts_t *opts = stats_opts[it];
 
+		if (!opts->mutex)
+			continue;
+
 		if (opts->exit)
 			opts->exit();
 
@@ -170,7 +173,7 @@ void stats_print(void)
 		opts->print[opts->format](opts, fp);
 
 		if (fp != stderr && fp != stdout) {
-			info_printf(_("%s stats saved in %s\n"), stats_opts[type].tag, filename);
+			info_printf(_("%s stats saved in %s\n"), opts->tag, filename);
 			fclose(fp);
 		}
 	}
