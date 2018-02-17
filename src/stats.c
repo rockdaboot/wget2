@@ -97,6 +97,7 @@ int stats_init(void)
 
 		if (!opts->print[opts->format]) {
 			error_printf(_("Stats format not supported by %s stats \n"), opts->tag);
+			xfree(opts->file);
 			return -1;
 		}
 
