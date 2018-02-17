@@ -1958,16 +1958,18 @@ static void process_response(wget_http_response_t *resp)
 				// Remove the signature file.
 				unlink(job->local_filename);
 
-				DOC *doc = stats_docs_add(job->iri, resp);
-				if (!doc) {
-					// The document should have been created already!
-					error_printf(_("Missing DOC for %s\n"), job->iri->uri);
-				} else {
-					doc->is_sig = 1;
-					doc->valid_sigs = info.valid_sigs;
-					doc->invalid_sigs = info.invalid_sigs;
-					doc->missing_sigs = info.missing_sigs;
-					doc->bad_sigs = info.bad_sigs;
+				if (config.stats_site) {
+					DOC *doc = stats_docs_add(job->iri, resp);
+					if (!doc) {
+						// The document should have been created already!
+						error_printf(_("Missing DOC for %s\n"), job->iri->uri);
+					} else {
+						doc->is_sig = 1;
+						doc->valid_sigs = info.valid_sigs;
+						doc->invalid_sigs = info.invalid_sigs;
+						doc->missing_sigs = info.missing_sigs;
+						doc->bad_sigs = info.bad_sigs;
+					}
 				}
 
 			} else if (wget_strncasecmp_ascii(resp->content_type, "application/", 12) == 0) {
