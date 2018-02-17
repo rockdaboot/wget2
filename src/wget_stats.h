@@ -56,14 +56,9 @@ struct stats_opts {
 		destructor;
 	stats_print_func_t
 		*print;
+	void (*init)(void);
+	void (*exit)(void);
 };
-
-typedef struct {
-} site_stats_t;
-
-void stats_callback_site(const void *stats);
-
-void free_site_stats(site_stats_t *stats);
 
 void stats_print_data(const wget_vector_t *v, wget_vector_browse_t browse, FILE *fp, int ntabs);
 

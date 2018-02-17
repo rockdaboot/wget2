@@ -16,7 +16,7 @@ wget2_SOURCES =\
  job.c wget_job.h\
  log.c wget_log.h\
  plugin.c wget_plugin.h\
- stats.c stats_dns.c stats_tls.c stats_ocsp.c stats_server.c wget_stats.h\
+ stats.c stats_dns.c stats_tls.c stats_ocsp.c stats_server.c stats_site.c wget_stats.h\
  wget.c wget_main.h\
  options.c wget_options.h\
  testing.c wget_testing.h\

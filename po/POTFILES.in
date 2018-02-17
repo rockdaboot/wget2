@@ -36,4 +36,6 @@ src/job.c
 src/options.c
 src/plugin.c
 src/stats.c
+src/stats_server.c
+src/stats_site.c
 src/wget.c
