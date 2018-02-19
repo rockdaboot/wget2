@@ -930,10 +930,13 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	if (job) {
 		if (flags & URL_FLG_REDIRECTION) {
+			new_job->parent_id = job->parent_id;
+			new_job->level = job->level;
 			new_job->redirection_level = job->redirection_level + 1;
 			new_job->referer = job->referer;
 			new_job->original_url = job->iri;
 		} else {
+			new_job->parent_id = job->id;
 			new_job->level = job->level + 1;
 			new_job->referer = job->iri;
 			if (!job->sig_req) {
@@ -1488,7 +1491,6 @@ static void add_statistics(wget_http_response_t *resp)
 {
 	// do some statistics
 	JOB *job = resp->req->user_data;
-	wget_iri_t *iri = job->iri;
 
 	if (resp->code == 200) {
 		if (job->part)
@@ -1502,10 +1504,8 @@ static void add_statistics(wget_http_response_t *resp)
 	else
 		_atomic_increment_int(&stats.nerrors);
 
-	if (config.stats_site) {
-		wget_iri_t *parent_iri = job->redirection_level ? job->original_url : job->referer;
-		stats_tree_docs_add(parent_iri, iri, resp, (job == job->host->robot_job), (bool)job->redirection_level, stats_docs_add(iri, resp));
-	}
+	if (config.stats_site)
+		stats_site_add(resp, NULL);
 }
 
 static int process_response_header(wget_http_response_t *resp)
@@ -1956,19 +1956,8 @@ static void process_response(wget_http_response_t *resp)
 				// Remove the signature file.
 				unlink(job->local_filename);
 
-				if (config.stats_site) {
-					DOC *doc = stats_docs_add(job->iri, resp);
-					if (!doc) {
-						// The document should have been created already!
-						error_printf(_("Missing DOC for %s\n"), job->iri->uri);
-					} else {
-						doc->is_sig = 1;
-						doc->valid_sigs = info.valid_sigs;
-						doc->invalid_sigs = info.invalid_sigs;
-						doc->missing_sigs = info.missing_sigs;
-						doc->bad_sigs = info.bad_sigs;
-					}
-				}
+				if (config.stats_site)
+					stats_site_add(resp, &info);
 
 			} else if (wget_strncasecmp_ascii(resp->content_type, "application/", 12) == 0) {
 
@@ -3197,6 +3186,7 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 			info_printf(_("# got header %zu bytes:\n%s\n"), resp->header->length, resp->header->data);
 	}
 
+	printf("cb length %zu\n", length);
 	ctx->length += length;
 
 	if (ctx->outfd >= 0) {

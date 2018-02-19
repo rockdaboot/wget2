@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2018 Free Software Foundation, Inc.
  *
  * This file is part of Wget.
  *
@@ -34,19 +34,6 @@
 struct JOB;
 typedef struct JOB JOB;
 
-struct DOC;
-typedef struct DOC DOC;
-
-typedef struct {
-	wget_iri_t
-		*iri;
-	DOC *doc;
-	bool
-		redirect;
-	wget_vector_t
-		*children;
-} TREE_DOCS;
-
 // everything host/domain specific should go here
 typedef struct {
 	const char
@@ -58,13 +45,6 @@ typedef struct {
 		*robots;
 	wget_list_t
 		*queue; // host specific job queue
-	wget_hashmap_t
-		*host_docs;
-	wget_hashmap_t
-		*tree_docs;
-	TREE_DOCS
-		*root,
-		*robot;
 	long long
 		retry_ts; // timestamp of earliest retry in milliseconds
 	int
@@ -75,70 +55,6 @@ typedef struct {
 	bool
 		blocked : 1; // host may be blocked after too many errors or even one final error
 } HOST;
-
-typedef struct {
-	int
-		http_status;
-	wget_hashmap_t
-		*docs;
-} HOST_DOCS;
-
-struct DOC {
-	wget_iri_t
-		*iri;
-	int
-		status;
-	long long
-		size_downloaded,
-		size_decompressed;
-	bool
-		head_req;
-	char
-		encoding;
-	long long
-		request_start; // Milli timestamp initial request went out
-	long long
-		response_end; // Milli timestamp that final response read in
-	long long
-		initial_response_duration; // Number of millis between initial request, and first bytes back
-	bool
-		is_sig; //!< Is this DOC a signature for a file?
-	int
-		valid_sigs, //!< Number of valid GPG signatures inside the doc. Meaningless if !is_sig.
-		invalid_sigs, //!< Number of invalid GPG signatures inside the dov. Meaningless if !is_sig.
-		missing_sigs, //!< Number of GPG signatures with missing public keys. Meaningless if !is_sig.
-		bad_sigs; //!< Number of bad GPG signatures. Meaningless if !is_sig.
-
-};
-
-struct site_stats {
-	FILE
-		*fp;
-	int
-		level;
-};
-
-struct site_stats_cvs_json {
-	FILE
-		*fp;
-	int
-		id,
-		parent_id,
-		ntabs;
-	HOST
-		*host;
-	wget_stats_format_t
-		format;
-};
-
-struct json_stats {
-	FILE
-		*fp;
-	bool
-		last;
-	int
-		ntabs;
-};
 
 void host_init(void);
 void host_exit(void);

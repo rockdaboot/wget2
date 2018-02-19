@@ -24,7 +24,11 @@
 #ifndef _WGET_STATS_H
 #define _WGET_STATS_H
 
+#include <stdio.h>
+#include <stdbool.h>
+
 #include "wget_host.h"
+#include "wget_gpgme.h"
 
 #define NULL_TO_DASH(s) ((s) ? (s) : wget_strdup("-"))
 #define ONE_ZERO_DASH(s) ((s) ? ((s) == 1 ? "1" : "-") : "0")
@@ -60,6 +64,15 @@ struct stats_opts {
 	void (*exit)(void);
 };
 
+struct json_stats {
+	FILE
+		*fp;
+	bool
+		last;
+	int
+		ntabs;
+};
+
 extern stats_opts_t stats_dns_opts;
 extern stats_opts_t stats_ocsp_opts;
 extern stats_opts_t stats_server_opts;
@@ -70,8 +83,6 @@ void stats_print_data(const wget_vector_t *v, wget_vector_browse_t browse, FILE 
 int stats_init(void);
 void stats_exit(void);
 void stats_print(void);
-void stats_set_hosts(wget_hashmap_t *_hosts, wget_thread_mutex_t _hosts_mutex);
-DOC *stats_docs_add(wget_iri_t *iri, wget_http_response_t *resp);
-TREE_DOCS *stats_tree_docs_add(wget_iri_t *parent_iri, wget_iri_t *iri, wget_http_response_t *resp, bool robot_iri, bool redirect, DOC *doc);
+void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info);
 
 #endif

@@ -207,21 +207,4 @@ static void run_stats_test_with_option(const char *option_str)
 				{	NULL } },
 			0);
 	}
-
-	// test stats-site option with tree format with -r
-	snprintf(options, sizeof(options), "%s=%s:stats -r -nH", "--stats-site", "tree");
-	wget_test(
-		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, options,
-		WGET_TEST_REQUEST_URL, urls[0].name + 1,
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "index.html", urls[0].body },
-			{ "secondpage.html", urls[1].body },
-			{ "thirdpage.html", urls[2].body },
-			{ "stats" },
-			{	NULL } },
-		0);
-
-
 }

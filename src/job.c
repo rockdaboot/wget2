@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2018 Free Software Foundation, Inc.
  *
  * This file is part of Wget.
  *
@@ -278,6 +278,8 @@ int job_validate_file(JOB *job)
 
 JOB *job_init(JOB *job, wget_iri_t *iri, bool http_fallback)
 {
+	static unsigned long long jobid;
+
 	if (!job)
 		job = wget_calloc(1, sizeof(JOB));
 	else
@@ -285,5 +287,7 @@ JOB *job_init(JOB *job, wget_iri_t *iri, bool http_fallback)
 
 	job->iri = iri;
 	job->http_fallback = http_fallback;
+	job->id = ++jobid;
+
 	return job;
 }

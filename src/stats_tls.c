@@ -59,7 +59,6 @@ static stats_print_func_t
 		[WGET_STATS_FORMAT_HUMAN] = print_human,
 		[WGET_STATS_FORMAT_CSV] = print_csv,
 		[WGET_STATS_FORMAT_JSON] = print_json,
-		[WGET_STATS_FORMAT_TREE] = NULL,
 	};
 
 stats_opts_t stats_tls_opts = {

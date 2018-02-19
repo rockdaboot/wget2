@@ -61,8 +61,6 @@ static int stats_parse_options(const char *val, wget_stats_format_t *format, con
 			*format = WGET_STATS_FORMAT_CSV;
 		else if (!wget_strncasecmp_ascii("json", val, p - val))
 			*format = WGET_STATS_FORMAT_JSON;
-		else if (!wget_strncasecmp_ascii("tree", val, p - val))
-			*format = WGET_STATS_FORMAT_TREE;
 		else {
 			error_printf(_("Unknown stats format '%s'\n"), val);
 			return -1;
@@ -100,9 +98,6 @@ int stats_init(void)
 		opts->data = wget_vector_create(8, -2, NULL);
 		wget_vector_set_destructor(opts->data, opts->destructor);
 		opts->set_callback(opts->callback);
-
-		if (opts->init)
-			opts->init();
 	}
 
 	return 0;
@@ -115,9 +110,6 @@ void stats_exit(void)
 
 		if (!opts->mutex)
 			continue;
-
-		if (opts->exit)
-			opts->exit();
 
 		wget_vector_free(&opts->data);
 		wget_thread_mutex_destroy(&opts->mutex);

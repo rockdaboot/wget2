@@ -100,8 +100,6 @@ static void _free_host_entry(HOST *host)
 	if (host) {
 		host_queue_free(host);
 		wget_robots_free(&host->robots);
-		wget_hashmap_free(&host->host_docs);
-		wget_hashmap_free(&host->tree_docs);
 		wget_xfree(host);
 	}
 }
@@ -113,7 +111,6 @@ HOST *host_add(wget_iri_t *iri)
 	if (!hosts) {
 		hosts = wget_hashmap_create(16, (wget_hashmap_hash_t)_host_hash, (wget_hashmap_compare_t)_host_compare);
 		wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor_t)_free_host_entry);
-		stats_set_hosts(hosts, hosts_mutex);
 	}
 
 	HOST *hostp = NULL, host = { .scheme = iri->scheme, .host = iri->host, .port = iri->port };

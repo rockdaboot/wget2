@@ -265,7 +265,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--stats-site[=[FORMAT:]FILE]`
 
-  Save Site stats in format `FORMAT`, in file `FILE`. `FORMAT` has 4 possible values: `human`, `csv`, `json` and `tree`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+  Save Site stats in format `FORMAT`, in file `FILE`. `FORMAT` has 4 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
 
 ### `--stats-all[=[FORMAT:]FILE]`
 

@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2018 Free Software Foundation, Inc.
  *
  * This file is part of Wget.
  *
@@ -81,6 +81,9 @@ struct JOB {
 
 	wget_thread_id_t
 		used_by; // keep track of who uses this job, for host_release_jobs()
+	unsigned long long
+		id, // each job an unique ID value
+		parent_id; // parent job id for recursive mode
 	int
 		level, // current recursion level
 		redirection_level, // number of redirections occurred to create this job
