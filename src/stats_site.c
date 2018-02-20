@@ -67,7 +67,6 @@ typedef struct {
 // Forward declarations for static functions
 static void print_human(stats_opts_t *opts, FILE *fp);
 static void print_csv(stats_opts_t *opts, FILE *fp);
-static void print_json(stats_opts_t *opts, FILE *fp);
 static void stats_callback(const void *stats);
 static void free_stats(site_stats_t *stats);
 
@@ -75,7 +74,6 @@ static stats_print_func_t
 	print_site[] = {
 		[WGET_STATS_FORMAT_HUMAN] = print_human,
 		[WGET_STATS_FORMAT_CSV] = print_csv,
-		[WGET_STATS_FORMAT_JSON] = print_json,
 	};
 
 stats_opts_t stats_site_opts = {
@@ -140,41 +138,39 @@ static void free_stats(G_GNUC_WGET_UNUSED site_stats_t *stats)
 {
 }
 
-static void print_human_entry(struct json_stats *ctx, site_stats_t *doc)
+static int print_human_entry(FILE *fp, site_stats_t *doc)
 {
 	long long transfer_time = doc->response_end - doc->request_start;
 
-	fprintf(ctx->fp, "  %6d %5lld %6lld %s\n",
+	fprintf(fp, "  %6d %5lld %6lld %s\n",
 		doc->status, transfer_time, doc->size_downloaded, doc->iri->uri);
+
+	return 0;
 }
 
-static void print_csv_entry(struct json_stats *ctx, site_stats_t *doc)
+static int print_csv_entry(FILE *fp, site_stats_t *doc)
 {
 	long long transfer_time = doc->response_end - doc->request_start;
 
-	fprintf(ctx->fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d,%d,%d,%d,%d\n",
+	fprintf(fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d,%d,%d,%d,%d\n",
 		doc->id, doc->parent_id, doc->iri->uri, doc->status, !doc->redirect, doc->scheme,
 		doc->size_downloaded, doc->size_decompressed, transfer_time,
 		doc->initial_response_duration, doc->encoding,
 		doc->is_sig, doc->valid_sigs,
 		doc->invalid_sigs, doc->missing_sigs, doc->bad_sigs);
+
+	return 0;
 }
 
 static void print_human(G_GNUC_WGET_UNUSED stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "\nSite Statistics:\n");
 	fprintf(fp, "  %6s %5s %6s %s\n", "Status", "ms", "Size", "Host");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_human_entry, fp, 0);
+	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
 }
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "ID,ParentID,URL,Status,Link,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,IsSig,Valid,Invalid,Missing,Bad\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_csv_entry, fp, 0);
-}
-
-static void print_json(stats_opts_t *opts, FILE *fp)
-{
-	fprintf(fp, "\t\"Site Statistics\": [{\n");
-	fprintf(fp, "\t}]\n");
+	fprintf(fp, "ID,ParentID,URL,Status,Link,Protocol,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,IsSig,Valid,Invalid,Missing,Bad\n");
+	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 }

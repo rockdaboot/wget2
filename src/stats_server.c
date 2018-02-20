@@ -45,7 +45,6 @@ typedef struct {
 // Forward declarations for static functions
 static void print_human(stats_opts_t *opts, FILE *fp);
 static void print_csv(stats_opts_t *opts, FILE *fp);
-static void print_json(stats_opts_t *opts, FILE *fp);
 static void stats_callback(const void *stats);
 static void free_stats(server_stats_t *stats);
 
@@ -53,7 +52,6 @@ static stats_print_func_t
 	print_server[] = {
 		[WGET_STATS_FORMAT_HUMAN] = print_human,
 		[WGET_STATS_FORMAT_CSV] = print_csv,
-		[WGET_STATS_FORMAT_JSON] = print_json,
 	};
 
 stats_opts_t stats_server_opts = {
@@ -64,8 +62,6 @@ stats_opts_t stats_server_opts = {
 	.destructor = (wget_vector_destructor_t) free_stats,
 	.print = print_server,
 };
-
-static char tabs[] = "\t\t\t\t\t\t\t\t\t\t";
 
 static void stats_callback(const void *stats)
 {
@@ -122,36 +118,22 @@ G_GNUC_WGET_PURE static const char *stats_hpkp(wget_hpkp_stats_t hpkp)
 	}
 }
 
-static void print_human_entry(struct json_stats *ctx, const server_stats_t *server_stats)
+static int print_human_entry(FILE *fp, const server_stats_t *server_stats)
 {
-	fprintf(ctx->fp, "  %s:\n", server_stats->hostname);
-	fprintf(ctx->fp, "    IP             : %s\n", server_stats->ip);
-	fprintf(ctx->fp, "    Scheme         : %s\n", server_stats->scheme);
-	fprintf(ctx->fp, "    HPKP           : %s\n", stats_hpkp(server_stats->hpkp));
-	fprintf(ctx->fp, "    HPKP New Entry : %s\n", ON_OFF_DASH(server_stats->hpkp_new));
-	fprintf(ctx->fp, "    HSTS           : %s\n", ON_OFF_DASH(server_stats->hsts));
-	fprintf(ctx->fp, "    CSP            : %s\n\n", ON_OFF_DASH(server_stats->csp));
+	fprintf(fp, "  %s:\n", server_stats->hostname);
+	fprintf(fp, "    IP             : %s\n", server_stats->ip);
+	fprintf(fp, "    Scheme         : %s\n", server_stats->scheme);
+	fprintf(fp, "    HPKP           : %s\n", stats_hpkp(server_stats->hpkp));
+	fprintf(fp, "    HPKP New Entry : %s\n", ON_OFF_DASH(server_stats->hpkp_new));
+	fprintf(fp, "    HSTS           : %s\n", ON_OFF_DASH(server_stats->hsts));
+	fprintf(fp, "    CSP            : %s\n\n", ON_OFF_DASH(server_stats->csp));
+
+	return 0;
 }
 
-static void print_json_entry(struct json_stats *ctx, const server_stats_t *server_stats)
+static int print_csv_entry(FILE *fp, const server_stats_t *server_stats)
 {
-	fprintf(ctx->fp, "%.*s{\n", ctx->ntabs + 1, tabs);
-	fprintf(ctx->fp, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, server_stats->hostname);
-	fprintf(ctx->fp, "%.*s\"IP\" : \"%s\",\n", ctx->ntabs + 2, tabs, server_stats->ip);
-	fprintf(ctx->fp, "%.*s\"Scheme\" : \"%s\",\n", ctx->ntabs + 2, tabs, HTTP_S_DASH(server_stats->scheme));
-	fprintf(ctx->fp, "%.*s\"HPKP\" : \"%s\",\n", ctx->ntabs + 2, tabs, stats_hpkp(server_stats->hpkp));
-	fprintf(ctx->fp, "%.*s\"NewHPKP\" : \"%s\",\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(server_stats->hpkp_new));
-	fprintf(ctx->fp, "%.*s\"HSTS\" : \"%s\",\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(server_stats->hsts));
-	fprintf(ctx->fp, "%.*s\"CSP\" : \"%s\"\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(server_stats->csp));
-	if (ctx->last)
-		fprintf(ctx->fp, "%.*s}\n", ctx->ntabs + 1, tabs);
-	else
-		fprintf(ctx->fp, "%.*s},\n", ctx->ntabs + 1, tabs);
-}
-
-static void print_csv_entry(struct json_stats *ctx, const server_stats_t *server_stats)
-{
-	fprintf(ctx->fp, "%s,%s,%s,%s,%s,%s,%s\n",
+	fprintf(fp, "%s,%s,%s,%s,%s,%s,%s\n",
 		server_stats->hostname,
 		server_stats->ip,
 		HTTP_S_DASH(server_stats->scheme),
@@ -159,23 +141,18 @@ static void print_csv_entry(struct json_stats *ctx, const server_stats_t *server
 		ONE_ZERO_DASH(server_stats->hpkp_new),
 		ONE_ZERO_DASH(server_stats->hsts),
 		ONE_ZERO_DASH(server_stats->csp));
+
+	return 0;
 }
 
 static void print_human(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "\nServer Statistics:\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_human_entry, fp, 0);
+	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
 }
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "Hostname,IP,Scheme,HPKP,NewHPKP,HSTS,CSP\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_csv_entry, fp, 0);
-}
-
-static void print_json(stats_opts_t *opts, FILE *fp)
-{
-	fprintf(fp, "\t\"Server Statistics\": [{\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_json_entry, fp, 0);
-	fprintf(fp, "\t}]\n");
+	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 }

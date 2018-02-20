@@ -60,17 +60,6 @@ struct stats_opts {
 		destructor;
 	stats_print_func_t
 		*print;
-	void (*init)(void);
-	void (*exit)(void);
-};
-
-struct json_stats {
-	FILE
-		*fp;
-	bool
-		last;
-	int
-		ntabs;
 };
 
 extern stats_opts_t stats_dns_opts;
@@ -79,7 +68,6 @@ extern stats_opts_t stats_server_opts;
 extern stats_opts_t stats_tls_opts;
 extern stats_opts_t stats_site_opts;
 
-void stats_print_data(const wget_vector_t *v, wget_vector_browse_t browse, FILE *fp, int ntabs);
 int stats_init(void);
 void stats_exit(void);
 void stats_print(void);

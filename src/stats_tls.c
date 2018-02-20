@@ -50,7 +50,6 @@ typedef struct {
 // Forward declarations for static functions
 static void print_human(stats_opts_t *opts, FILE *fp);
 static void print_csv(stats_opts_t *opts, FILE *fp);
-static void print_json(stats_opts_t *opts, FILE *fp);
 static void stats_callback(const void *stats);
 static void free_stats(tls_stats_t *stats);
 
@@ -58,7 +57,6 @@ static stats_print_func_t
 	print_tls[] = {
 		[WGET_STATS_FORMAT_HUMAN] = print_human,
 		[WGET_STATS_FORMAT_CSV] = print_csv,
-		[WGET_STATS_FORMAT_JSON] = print_json,
 	};
 
 stats_opts_t stats_tls_opts = {
@@ -69,8 +67,6 @@ stats_opts_t stats_tls_opts = {
 	.destructor = (wget_vector_destructor_t) free_stats,
 	.print = print_tls,
 };
-
-static char tabs[] = "\t\t\t\t\t\t\t\t\t\t";
 
 static void stats_callback(const void *stats)
 {
@@ -119,41 +115,25 @@ static void free_stats(tls_stats_t *stats)
 	}
 }
 
-static void print_human_entry(struct json_stats *ctx, const tls_stats_t *tls_stats)
+static int print_human_entry(FILE *fp, const tls_stats_t *tls_stats)
 {
-	fprintf(ctx->fp, "  %s:\n", tls_stats->hostname);
-	fprintf(ctx->fp, "    Version         : %s\n", tls_stats->version);
-	fprintf(ctx->fp, "    False Start     : %s\n", ON_OFF_DASH(tls_stats->false_start));
-	fprintf(ctx->fp, "    TFO             : %s\n", ON_OFF_DASH(tls_stats->tfo));
-	fprintf(ctx->fp, "    ALPN Protocol   : %s\n", tls_stats->alpn_proto);
-	fprintf(ctx->fp, "    Resumed         : %s\n", YES_NO(tls_stats->resumed));
-	fprintf(ctx->fp, "    TCP Protocol    : %s\n", HTTP_1_2(tls_stats->tcp_protocol));
-	fprintf(ctx->fp, "    Cert Chain Size : %d\n", tls_stats->cert_chain_size);
-	fprintf(ctx->fp, "    TLS negotiation\n");
-	fprintf(ctx->fp, "    duration (ms)   : %lld\n\n", tls_stats->millisecs);
+	fprintf(fp, "  %s:\n", tls_stats->hostname);
+	fprintf(fp, "    Version         : %s\n", tls_stats->version);
+	fprintf(fp, "    False Start     : %s\n", ON_OFF_DASH(tls_stats->false_start));
+	fprintf(fp, "    TFO             : %s\n", ON_OFF_DASH(tls_stats->tfo));
+	fprintf(fp, "    ALPN Protocol   : %s\n", tls_stats->alpn_proto);
+	fprintf(fp, "    Resumed         : %s\n", YES_NO(tls_stats->resumed));
+	fprintf(fp, "    TCP Protocol    : %s\n", HTTP_1_2(tls_stats->tcp_protocol));
+	fprintf(fp, "    Cert Chain Size : %d\n", tls_stats->cert_chain_size);
+	fprintf(fp, "    TLS negotiation\n");
+	fprintf(fp, "    duration (ms)   : %lld\n\n", tls_stats->millisecs);
+
+	return 0;
 }
 
-static void print_json_entry(struct json_stats *ctx, const tls_stats_t *tls_stats)
+static int print_csv_entry(FILE *fp, const tls_stats_t *tls_stats)
 {
-	fprintf(ctx->fp, "%.*s{\n", ctx->ntabs + 1, tabs);
-	fprintf(ctx->fp, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, tls_stats->hostname);
-	fprintf(ctx->fp, "%.*s\"TLSVersion\" : \"%s\",\n", ctx->ntabs + 2, tabs, tls_stats->version);
-	fprintf(ctx->fp, "%.*s\"FalseStart\" : \"%s\",\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(tls_stats->false_start));
-	fprintf(ctx->fp, "%.*s\"TFO\" : \"%s\",\n", ctx->ntabs + 2, tabs, ON_OFF_DASH(tls_stats->tfo));
-	fprintf(ctx->fp, "%.*s\"ALPN\" : \"%s\",\n", ctx->ntabs + 2, tabs, tls_stats->alpn_proto);
-	fprintf(ctx->fp, "%.*s\"Resumed\" : \"%s\",\n", ctx->ntabs + 2, tabs, YES_NO(tls_stats->resumed));
-	fprintf(ctx->fp, "%.*s\"HTTPVersion\" : \"%s\",\n", ctx->ntabs + 2, tabs, HTTP_1_2(tls_stats->tcp_protocol));
-	fprintf(ctx->fp, "%.*s\"Certificates\" : %d,\n", ctx->ntabs + 2, tabs, tls_stats->cert_chain_size);
-	fprintf(ctx->fp, "%.*s\"Duration\" : %lld\n", ctx->ntabs + 2, tabs, tls_stats->millisecs);
-	if (ctx->last)
-		fprintf(ctx->fp, "%.*s}\n", ctx->ntabs + 1, tabs);
-	else
-		fprintf(ctx->fp, "%.*s},\n", ctx->ntabs + 1, tabs);
-}
-
-static void print_csv_entry(struct json_stats *ctx, const tls_stats_t *tls_stats)
-{
-	fprintf(ctx->fp, "%s,%s,%s,%s,%s,%s,%s,%d,%lld\n",
+	fprintf(fp, "%s,%s,%s,%s,%s,%s,%s,%d,%lld\n",
 		tls_stats->hostname,
 		tls_stats->version,
 		ONE_ZERO_DASH(tls_stats->false_start),
@@ -164,23 +144,18 @@ static void print_csv_entry(struct json_stats *ctx, const tls_stats_t *tls_stats
 			"1" : (tls_stats->tcp_protocol == WGET_PROTOCOL_HTTP_2_0 ? "2" : "-"),
 		tls_stats->cert_chain_size,
 		tls_stats->millisecs);
+
+	return 0;
 }
 
 static void print_human(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "\nTLS Statistics:\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_human_entry, fp, 0);
+	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
 }
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "Hostname,TLSVersion,FalseStart,TFO,ALPN,Resumed,HTTPVersion,Certificates,Duration\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_csv_entry, fp, 0);
-}
-
-static void print_json(stats_opts_t *opts, FILE *fp)
-{
-	fprintf(fp, "\t\"TLS Statistics\": [{\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_json_entry, fp, 0);
-	fprintf(fp, "\t}]\n");
+	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 }

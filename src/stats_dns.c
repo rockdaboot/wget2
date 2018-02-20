@@ -43,7 +43,6 @@ typedef struct {
 // Forward declarations for static functions
 static void print_human(stats_opts_t *opts, FILE *fp);
 static void print_csv(stats_opts_t *opts, FILE *fp);
-static void print_json(stats_opts_t *opts, FILE *fp);
 static void stats_callback(const void *stats);
 static void free_stats(dns_stats_t *stats);
 
@@ -51,7 +50,6 @@ static stats_print_func_t
 	print_dns[] = {
 		[WGET_STATS_FORMAT_HUMAN] = print_human,
 		[WGET_STATS_FORMAT_CSV] = print_csv,
-		[WGET_STATS_FORMAT_JSON] = print_json,
 	};
 
 stats_opts_t stats_dns_opts = {
@@ -92,55 +90,37 @@ static void free_stats(dns_stats_t *stats)
 	}
 }
 
-static void print_human_entry(struct json_stats *ctx, const dns_stats_t *dns_stats)
+static int print_human_entry(FILE *fp, const dns_stats_t *dns_stats)
 {
-	fprintf(ctx->fp, "  %4lld %s:%hu (%s)\n",
+	fprintf(fp, "  %4lld %s:%hu (%s)\n",
 		dns_stats->millisecs,
 		dns_stats->host,
 		dns_stats->port,
 		dns_stats->ip);
+
+	return 0;
 }
 
-static void print_csv_entry(struct json_stats *ctx, const dns_stats_t *dns_stats)
+static int print_csv_entry(FILE *fp, const dns_stats_t *dns_stats)
 {
-	fprintf(ctx->fp, "%s,%s,%hu,%lld\n",
+	fprintf(fp, "%s,%s,%hu,%lld\n",
 		dns_stats->host,
 		dns_stats->ip,
 		dns_stats->port,
 		dns_stats->millisecs);
-}
 
-static void print_json_entry(struct json_stats *ctx, const dns_stats_t *dns_stats)
-{
-	static char tabs[] = "\t\t\t\t\t\t\t\t\t\t";
-
-	fprintf(ctx->fp, "%.*s{\n", ctx->ntabs + 1, tabs);
-	fprintf(ctx->fp, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, dns_stats->host);
-	fprintf(ctx->fp, "%.*s\"IP\" : \"%s\",\n", ctx->ntabs + 2, tabs, dns_stats->ip);
-	fprintf(ctx->fp, "%.*s\"Port\" : %hu,\n", ctx->ntabs + 2, tabs, dns_stats->port);
-	fprintf(ctx->fp, "%.*s\"Duration\" : %lld\n", ctx->ntabs + 2, tabs, dns_stats->millisecs);
-	if (ctx->last)
-		fprintf(ctx->fp, "%.*s}\n", ctx->ntabs + 1, tabs);
-	else
-		fprintf(ctx->fp, "%.*s},\n", ctx->ntabs + 1, tabs);
+	return 0;
 }
 
 static void print_human(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "\nDNS Timings:\n");
 	fprintf(fp, "  %4s %s\n", "ms", "Host");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_human_entry, fp, 0);
+	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
 }
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "Hostname,IP,Port,Duration\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_csv_entry, fp, 0);
-}
-
-static void print_json(stats_opts_t *opts, FILE *fp)
-{
-	fprintf(fp, "\t\"DNS Timings\": [{\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_json_entry, fp, 0);
-	fprintf(fp, "\t}]\n");
+	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 }

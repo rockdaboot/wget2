@@ -2602,8 +2602,6 @@ typedef enum {
 typedef enum {
 	WGET_STATS_FORMAT_HUMAN = 0,
 	WGET_STATS_FORMAT_CSV = 1,
-	WGET_STATS_FORMAT_JSON = 2,
-	WGET_STATS_FORMAT_TREE = 3
 } wget_stats_format_t;
 
 typedef enum {

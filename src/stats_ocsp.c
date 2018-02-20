@@ -41,7 +41,6 @@ typedef struct {
 // Forward declarations for static functions
 static void print_human(stats_opts_t *opts, FILE *fp);
 static void print_csv(stats_opts_t *opts, FILE *fp);
-static void print_json(stats_opts_t *opts, FILE *fp);
 static void stats_callback(const void *stats);
 static void free_stats(ocsp_stats_t *stats);
 
@@ -49,7 +48,6 @@ static stats_print_func_t
 	print_ocsp[] = {
 		[WGET_STATS_FORMAT_HUMAN] = print_human,
 		[WGET_STATS_FORMAT_CSV] = print_csv,
-		[WGET_STATS_FORMAT_JSON] = print_json,
 	};
 
 stats_opts_t stats_ocsp_opts = {
@@ -60,8 +58,6 @@ stats_opts_t stats_ocsp_opts = {
 	.destructor = (wget_vector_destructor_t) free_stats,
 	.print = print_ocsp,
 };
-
-static char tabs[] = "\t\t\t\t\t\t\t\t\t\t";
 
 static void stats_callback(const void *stats)
 {
@@ -90,48 +86,32 @@ static void free_stats(ocsp_stats_t *stats)
 		xfree(stats->hostname);
 }
 
-static void print_human_entry(struct json_stats *ctx, const ocsp_stats_t *ocsp_stats)
+static int print_human_entry(FILE *fp, const ocsp_stats_t *ocsp_stats)
 {
-	fprintf(ctx->fp, "  %s:\n", ocsp_stats->hostname);
-	fprintf(ctx->fp, "    Valid          : %d\n", ocsp_stats->nvalid);
-	fprintf(ctx->fp, "    Revoked        : %d\n", ocsp_stats->nrevoked);
-	fprintf(ctx->fp, "    Ignored        : %d\n\n", ocsp_stats->nignored);
+	fprintf(fp, "  %s:\n", ocsp_stats->hostname);
+	fprintf(fp, "    Valid          : %d\n", ocsp_stats->nvalid);
+	fprintf(fp, "    Revoked        : %d\n", ocsp_stats->nrevoked);
+	fprintf(fp, "    Ignored        : %d\n\n", ocsp_stats->nignored);
+
+	return 0;
 }
 
-static void print_json_entry(struct json_stats *ctx, const ocsp_stats_t *ocsp_stats)
+static int print_csv_entry(FILE *fp, const ocsp_stats_t *ocsp_stats)
 {
-	fprintf(ctx->fp, "%.*s{\n", ctx->ntabs + 1, tabs);
-	fprintf(ctx->fp, "%.*s\"Hostname\" : \"%s\",\n", ctx->ntabs + 2, tabs, ocsp_stats->hostname);
-	fprintf(ctx->fp, "%.*s\"Valid\" : %d,\n", ctx->ntabs + 2, tabs, ocsp_stats->nvalid);
-	fprintf(ctx->fp, "%.*s\"Revoked\" : %d,\n", ctx->ntabs + 2, tabs, ocsp_stats->nrevoked);
-	fprintf(ctx->fp, "%.*s\"Ignored\" : %d\n", ctx->ntabs + 2, tabs, ocsp_stats->nignored);
-	if (ctx->last)
-		fprintf(ctx->fp, "%.*s}\n", ctx->ntabs + 1, tabs);
-	else
-		fprintf(ctx->fp, "%.*s},\n", ctx->ntabs + 1, tabs);
-}
-
-static void print_csv_entry(struct json_stats *ctx, const ocsp_stats_t *ocsp_stats)
-{
-	fprintf(ctx->fp, "%s,%d,%d,%d\n",
+	fprintf(fp, "%s,%d,%d,%d\n",
 		ocsp_stats->hostname, ocsp_stats->nvalid, ocsp_stats->nrevoked, ocsp_stats->nignored);
+
+	return 0;
 }
 
 static void print_human(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "\nOCSP Statistics:\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_human_entry, fp, 0);
+	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
 }
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "Hostname,Valid,Revoked,Ignored\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_csv_entry, fp, 0);
-}
-
-static void print_json(stats_opts_t *opts, FILE *fp)
-{
-	fprintf(fp, "\t\"OCSP Statistics\": [{\n");
-	stats_print_data(opts->data, (wget_vector_browse_t) print_json_entry, fp, 0);
-	fprintf(fp, "\t}]\n");
+	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 }

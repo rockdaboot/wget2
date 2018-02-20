@@ -59,8 +59,6 @@ static int stats_parse_options(const char *val, wget_stats_format_t *format, con
 			*format = WGET_STATS_FORMAT_HUMAN;
 		else if (!wget_strncasecmp_ascii("csv", val, p - val))
 			*format = WGET_STATS_FORMAT_CSV;
-		else if (!wget_strncasecmp_ascii("json", val, p - val))
-			*format = WGET_STATS_FORMAT_JSON;
 		else {
 			error_printf(_("Unknown stats format '%s'\n"), val);
 			return -1;
@@ -114,17 +112,6 @@ void stats_exit(void)
 		wget_vector_free(&opts->data);
 		wget_thread_mutex_destroy(&opts->mutex);
 		xfree(opts->file);
-	}
-}
-
-void stats_print_data(const wget_vector_t *v, wget_vector_browse_t browse, FILE *fp, int ntabs)
-{
-	struct json_stats ctx = { .fp = fp, .ntabs = ntabs };
-
-	for (int it = 0; it < wget_vector_size(v); it++) {
-		if (it == wget_vector_size(v) - 1)
-				ctx.last = true;
-		browse(&ctx, wget_vector_get(v, it));
 	}
 }
 

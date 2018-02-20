@@ -91,7 +91,6 @@ static void run_stats_test_with_option(const char *option_str)
 
 	static const char *stats_format[] = {
 		"human",
-		"json",
 		"csv",
 	};
 
