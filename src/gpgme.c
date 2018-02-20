@@ -63,17 +63,6 @@ static void _add_missing_sig(wget_gpg_info_t *info)
 		info->missing_sigs++;
 }
 
-static void _clear_info(wget_gpg_info_t *info)
-{
-	if (!info)
-		return;
-
-	info->invalid_sigs = 0;
-	info->valid_sigs = 0;
-	info->bad_sigs = 0;
-	info->missing_sigs = 0;
-}
-
 static gpgme_protocol_t _proto_for_content_type(const char *type)
 {
 	if (!wget_strcasecmp_ascii(type, "application/pgp-signature")) {
@@ -193,8 +182,6 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 	gpgme_verify_result_t verify_result;
 	int res;
 
-	_clear_info(info);
-
 	e = gpgme_new(&ctx);
 	if (e != GPG_ERR_NO_ERROR) {
 		error_printf(_("Failed to init gpgme context\n"));
@@ -303,6 +290,9 @@ int wget_verify_pgp_sig_str(const char *sig, const size_t sig_len, const char *d
 
 int wget_verify_job(JOB *job, wget_http_response_t *resp, wget_gpg_info_t *info)
 {
+	if (info)
+		memset(info, 0, sizeof(*info));
+
 #ifdef WITH_GPGME
 	if (_proto_for_content_type(resp->content_type) != GPGME_PROTOCOL_OpenPGP) {
 		// This is not a super future-proof way to do it.
