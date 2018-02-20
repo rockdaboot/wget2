@@ -71,10 +71,11 @@ static void _error_write(const char *buf, size_t len)
 	wget_bar_write_line(bar, buf, len);
 }
 
-void bar_init(void)
+bool bar_init(void)
 {
 	if (wget_thread_support()) {
-		bar = wget_bar_init(NULL, 1);
+		if (!(bar = wget_bar_init(NULL, 1)))
+			goto nobar;
 
 		wget_bar_set_speed_type(config.report_speed);
 
@@ -87,12 +88,13 @@ void bar_init(void)
 			goto nobar;
 		}
 
-		return;
+		return true;
 	}
 
 nobar:
 	wget_error_printf(_("Cannot create progress bar thread. Disabling progess bar.\n"));
 	config.progress = 0;
+	return false;
 }
 
 void bar_deinit(void)

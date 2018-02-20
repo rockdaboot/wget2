@@ -1252,10 +1252,10 @@ int main(int argc, const char **argv)
 	}
 
 	if (config.progress) {
-		wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), NULL);
-		bar_init();
-		if (config.progress)
+		if (bar_init()) {
+			wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), NULL);
 			start_time = wget_get_timemillis();
+		}
 	}
 
 	downloaders = wget_calloc(config.max_threads, sizeof(DOWNLOADER));

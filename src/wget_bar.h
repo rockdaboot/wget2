@@ -28,7 +28,7 @@
 #ifndef _WGET_BAR_H
 # define _WGET_BAR_H
 
-void bar_init(void);
+bool bar_init(void);
 void bar_deinit(void);
 void bar_print(int slot, const char *s) G_GNUC_WGET_NONNULL_ALL;
 void bar_printf(int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3) G_GNUC_WGET_NONNULL_ALL;
