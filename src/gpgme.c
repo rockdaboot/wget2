@@ -38,31 +38,6 @@
 
 #include <gpgme.h>
 
-static void _add_valid_sig(wget_gpg_info_t *info)
-{
-	if (info)
-		info->valid_sigs++;
-
-}
-
-static void _add_invalid_sig(wget_gpg_info_t *info)
-{
-	if (info)
-		info->invalid_sigs++;
-}
-
-static void _add_bad_sig(wget_gpg_info_t *info)
-{
-	if (info)
-		info->bad_sigs++;
-}
-
-static void _add_missing_sig(wget_gpg_info_t *info)
-{
-	if (info)
-		info->missing_sigs++;
-}
-
 static gpgme_protocol_t _proto_for_content_type(const char *type)
 {
 	if (!wget_strcasecmp_ascii(type, "application/pgp-signature")) {
@@ -75,48 +50,34 @@ static gpgme_protocol_t _proto_for_content_type(const char *type)
 	return GPGME_PROTOCOL_UNKNOWN;
 }
 
-static int _validate_sigs(gpgme_signature_t sig, wget_gpg_info_t *info, const char *sig_filename)
+static void _validate_sigs(gpgme_signature_t sig, wget_gpg_info_t *info, const char *sig_filename)
 {
-	int ret = WGET_E_SUCCESS;
-
 	for (gpgme_signature_t cur = sig; cur; cur = cur->next) {
-		if (sig->summary & (GPGME_SIGSUM_VALID | GPGME_SIGSUM_GREEN)) {
-			_add_valid_sig(info); // Good!
-		} else if (sig->summary & GPGME_SIGSUM_SYS_ERROR) {
+		if (cur->summary & (GPGME_SIGSUM_VALID | GPGME_SIGSUM_GREEN)) {
+			info->valid_sigs++; // Good!
+		} else if (cur->summary & GPGME_SIGSUM_SYS_ERROR) {
 			// There was an internal GPGME error
 			error_printf(_("GPGME Failure\n"));
-			// Short circuit out
-			return WGET_E_GPG_VER_ERR;
+			info->bad_sigs++;
 		} else {
-			char *err_msg = NULL;
-			if (sig->summary & GPGME_SIGSUM_RED) {
-				wget_asprintf(&err_msg, _("Invalid Signature"));
-				_add_bad_sig(info);
-			} else if (sig->summary & GPGME_SIGSUM_KEY_EXPIRED) {
-				wget_asprintf(&err_msg, _("Key %s expired"), cur->fpr);
-				_add_invalid_sig(info);
-			} else if (sig->summary & GPGME_SIGSUM_SIG_EXPIRED) {
-				wget_asprintf(&err_msg, _("Signature expired"));
-				_add_invalid_sig(info);
-			} else if (sig->summary & GPGME_SIGSUM_KEY_MISSING) {
-				wget_asprintf(&err_msg, _("Key %s missing"), cur->fpr);
-				_add_missing_sig(info);
-			}
-
-			if (sig_filename) {
-				error_printf("%s: %s\n", sig_filename, err_msg);
+			if (cur->summary & GPGME_SIGSUM_RED) {
+				error_printf("%s: Invalid signature\n", sig_filename);
+				info->bad_sigs++;
+			} else if (cur->summary & GPGME_SIGSUM_KEY_EXPIRED) {
+				error_printf(_("%s: Key %s expired\n"), sig_filename, cur->fpr);
+				info->invalid_sigs++;
+			} else if (cur->summary & GPGME_SIGSUM_SIG_EXPIRED) {
+				error_printf("%s: Expired signature\n", sig_filename);
+				info->invalid_sigs++;
+			} else if (cur->summary & GPGME_SIGSUM_KEY_MISSING) {
+				error_printf(_("%s: Key %s missing\n"), sig_filename, cur->fpr);
+				info->missing_sigs++;
 			} else {
-				error_printf("%s\n", err_msg);
+				error_printf(_("%s: Unhandled failure\n"), sig_filename);
+				info->bad_sigs++;
 			}
-
-			if (ret == WGET_E_SUCCESS)
-				ret = WGET_E_GPG_VER_FAIL;
-
-			xfree(err_msg);
 		}
 	}
-
-	return ret;
 }
 
 /**
@@ -210,7 +171,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 		}
 	}
 
-	// For detatched signatures the last argument is supposed to be NULL
+	// For detached signatures the last argument is supposed to be NULL
 	e = gpgme_op_verify(ctx, sig_buff, data_buf, NULL);
 	if (e != GPG_ERR_NO_ERROR) {
 		error_printf(_("Error during verification\n"));
@@ -225,22 +186,23 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 		goto done;
 	}
 
-	res = _validate_sigs(verify_result->signatures, info, sig_filename);
+	wget_gpg_info_t local_info;
+	if (!info) {
+		info = &local_info;
+		memset(info, 0, sizeof(*info));
+	}
+
+	_validate_sigs(verify_result->signatures, info, sig_filename);
+
+	if (info->valid_sigs)
+		res = WGET_E_SUCCESS; // we saw at least one successful verification
+	else
+		res = WGET_E_GPG_VER_ERR;
 
  done:
 	gpgme_release(ctx);
 
 	return res;
-
-}
-
-static int check_data_init(gpgme_error_t err)
-{
-	if (err == GPG_ERR_NO_ERROR)
-		return 0;
-
-	// Here we will print useful error messages
-	return 1;
 }
 
 static int _verify_detached_str(const char *sig, const size_t sig_len,
@@ -249,15 +211,13 @@ static int _verify_detached_str(const char *sig, const size_t sig_len,
 {
 	gpgme_data_t sig_d, data_d;
 
-	if (check_data_init(gpgme_data_new_from_mem(&sig_d, sig, sig_len, 0))) {
-		gpgme_data_release(sig_d);
-		return 0;
+	if (gpgme_data_new_from_mem(&sig_d, sig, sig_len, 0) != GPG_ERR_NO_ERROR) {
+		return WGET_E_GPG_VER_ERR;
 	}
 
-	if (check_data_init(gpgme_data_new_from_mem(&data_d, dat, dat_len, 0))) {
+	if (gpgme_data_new_from_mem(&data_d, dat, dat_len, 0) != GPG_ERR_NO_ERROR) {
 		gpgme_data_release(sig_d);
-		gpgme_data_release(data_d);
-		return 0;
+		return WGET_E_GPG_VER_ERR;
 	}
 
 	int ret = _verify_detached_sig(sig_d, data_d, info, sig_filename);
