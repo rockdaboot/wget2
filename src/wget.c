@@ -3186,7 +3186,6 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 			info_printf(_("# got header %zu bytes:\n%s\n"), resp->header->length, resp->header->data);
 	}
 
-	printf("cb length %zu\n", length);
 	ctx->length += length;
 
 	if (ctx->outfd >= 0) {
