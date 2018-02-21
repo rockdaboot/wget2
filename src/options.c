@@ -218,6 +218,12 @@ static int print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED con
 #else
 	" -http2"
 #endif
+
+#if defined WITH_GPGME
+	" +gpgme"
+#else
+	" -gpgme"
+#endif
 	);
 #endif // #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 
