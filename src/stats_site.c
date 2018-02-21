@@ -52,15 +52,11 @@ typedef struct {
 		parent_id; //!< id of parent document (used for recursive mode)
 	int
 		status, //!< response status code
-		valid_sigs, //!< Number of valid GPG signatures inside the doc. Meaningless if !is_sig.
-		invalid_sigs, //!< Number of invalid GPG signatures inside the dov. Meaningless if !is_sig.
-		missing_sigs, //!< Number of GPG signatures with missing public keys. Meaningless if !is_sig.
-		bad_sigs; //!< Number of bad GPG signatures. Meaningless if !is_sig.
+		signature_status; //!< 0=None 1=valid 2=invalid 3=bad 4=missing
 	char
 		encoding,
 		scheme; //!< STATS_SCHEME_*
 	bool
-		is_sig : 1, //!< Is this DOC a signature for a file ?
 		redirect : 1; //!< Was this a redirection ?
 } site_stats_t;
 
@@ -110,15 +106,24 @@ void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 			}
 		}
 
-		// There already is an entry in the docs list. Find it and add verification info.
-		site_stats_t *doc = wget_stringmap_get(docs, iri->uri);
+		// Find the original document and add result of verification.
+		char *p, *uri = wget_strdup(iri->uri);
+
+		if ((p = strrchr(uri, '.')))
+			*p = 0;
+
+		site_stats_t *doc = wget_stringmap_get(docs, uri);
+		xfree(uri);
 
 		if (doc) {
-			doc->is_sig = 1;
-			doc->valid_sigs = gpg_info->valid_sigs;
-			doc->invalid_sigs = gpg_info->invalid_sigs;
-			doc->missing_sigs = gpg_info->missing_sigs;
-			doc->bad_sigs = gpg_info->bad_sigs;
+			if (gpg_info->valid_sigs)
+				doc->signature_status = 1;
+			else if (gpg_info->invalid_sigs)
+				doc->signature_status = 2;
+			else if (gpg_info->bad_sigs)
+				doc->signature_status = 3;
+			else if (gpg_info->missing_sigs)
+				doc->signature_status = 4;
 
 			wget_thread_mutex_unlock(stats_site_opts.mutex);
 			return;
@@ -183,12 +188,10 @@ static int print_csv_entry(FILE *fp, site_stats_t *doc)
 {
 	long long transfer_time = doc->response_end - doc->request_start;
 
-	fprintf(fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d,%d,%d,%d,%d\n",
+	fprintf(fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d\n",
 		doc->id, doc->parent_id, doc->iri->uri, doc->status, !doc->redirect, doc->scheme,
 		doc->size_downloaded, doc->size_decompressed, transfer_time,
-		doc->initial_response_duration, doc->encoding,
-		doc->is_sig, doc->valid_sigs,
-		doc->invalid_sigs, doc->missing_sigs, doc->bad_sigs);
+		doc->initial_response_duration, doc->encoding, doc->signature_status);
 
 	return 0;
 }
@@ -196,7 +199,7 @@ static int print_csv_entry(FILE *fp, site_stats_t *doc)
 static void print_human(G_GNUC_WGET_UNUSED stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "\nSite Statistics:\n");
-	fprintf(fp, "  %6s %5s %6s %s\n", "Status", "ms", "Size", "Host");
+	fprintf(fp, "  %6s %5s %6s %s\n", "Status", "ms", "Size", "URL");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
 
 	if (config.debug)
@@ -205,7 +208,7 @@ static void print_human(G_GNUC_WGET_UNUSED stats_opts_t *opts, FILE *fp)
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "ID,ParentID,URL,Status,Link,Protocol,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,IsSig,Valid,Invalid,Missing,Bad\n");
+	fprintf(fp, "ID,ParentID,URL,Status,Link,Protocol,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,Verification\n");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 
 	if (config.debug)
