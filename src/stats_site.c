@@ -85,10 +85,47 @@ stats_opts_t stats_site_opts = {
 	.print = print_site,
 };
 
+static wget_hashmap_t
+	*docs;
+
 void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 {
 	JOB *job = resp->req->user_data;
 	wget_iri_t *iri = job->iri;
+
+	if (gpg_info) {
+		wget_thread_mutex_lock(stats_site_opts.mutex);
+
+		if (!docs) {
+			// lazy initialization, don't free keys or values when destructed.
+			docs = wget_stringmap_create(128);
+			wget_stringmap_set_key_destructor(docs, NULL);
+			wget_stringmap_set_value_destructor(docs, NULL);
+
+			// fill stringmap with existing stats data
+			for (int it = 0; it < wget_vector_size(stats_site_opts.data); it++) {
+				site_stats_t *e = wget_vector_get(stats_site_opts.data, it);
+
+				wget_stringmap_put_noalloc(docs, e->iri->uri, e);
+			}
+		}
+
+		// There already is an entry in the docs list. Find it and add verification info.
+		site_stats_t *doc = wget_stringmap_get(docs, iri->uri);
+
+		if (doc) {
+			doc->is_sig = 1;
+			doc->valid_sigs = gpg_info->valid_sigs;
+			doc->invalid_sigs = gpg_info->invalid_sigs;
+			doc->missing_sigs = gpg_info->missing_sigs;
+			doc->bad_sigs = gpg_info->bad_sigs;
+
+			wget_thread_mutex_unlock(stats_site_opts.mutex);
+			return;
+		}
+
+		wget_thread_mutex_unlock(stats_site_opts.mutex);
+	}
 
 	site_stats_t *doc = wget_calloc(1, sizeof(site_stats_t));
 
@@ -117,16 +154,10 @@ void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 		doc->scheme = STATS_SCHEME_POST;
 	}
 
-	if (gpg_info) {
-		doc->is_sig = 1;
-		doc->valid_sigs = gpg_info->valid_sigs;
-		doc->invalid_sigs = gpg_info->invalid_sigs;
-		doc->missing_sigs = gpg_info->missing_sigs;
-		doc->bad_sigs = gpg_info->bad_sigs;
-	}
-
 	wget_thread_mutex_lock(stats_site_opts.mutex);
 	wget_vector_add_noalloc(stats_site_opts.data, doc);
+	if (docs)
+		wget_stringmap_put_noalloc(docs, doc->iri->uri, doc);
 	wget_thread_mutex_unlock(stats_site_opts.mutex);
 }
 
@@ -167,10 +198,16 @@ static void print_human(G_GNUC_WGET_UNUSED stats_opts_t *opts, FILE *fp)
 	fprintf(fp, "\nSite Statistics:\n");
 	fprintf(fp, "  %6s %5s %6s %s\n", "Status", "ms", "Size", "Host");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
+
+	if (config.debug)
+		wget_stringmap_free(&docs);
 }
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "ID,ParentID,URL,Status,Link,Protocol,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,IsSig,Valid,Invalid,Missing,Bad\n");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
+
+	if (config.debug)
+		wget_stringmap_free(&docs);
 }
