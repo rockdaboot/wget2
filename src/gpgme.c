@@ -135,6 +135,14 @@ static char *_determine_base_file(const char *real_filename, const char *base_fi
 	return ans;
 }
 
+static void _print_gpg_error(gpgme_error_t err)
+{
+	char buf[128];
+
+	gpgme_strerror_r(err, buf, sizeof(buf));
+	error_printf("  %s\n", buf);
+}
+
 static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wget_gpg_info_t *info,
 		const char *sig_filename)
 {
@@ -146,9 +154,9 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 	e = gpgme_new(&ctx);
 	if (e != GPG_ERR_NO_ERROR) {
 		error_printf(_("Failed to init gpgme context\n"));
+		_print_gpg_error(e);
 		return WGET_E_GPG_VER_ERR;
 	}
-
 
 	if (config.gnupg_homedir) {
 		char *canon_home = realpath(config.gnupg_homedir, NULL);
@@ -161,6 +169,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 
 			if (e != GPG_ERR_NO_ERROR) {
 				error_printf(_("Couldn't specify gnupg homedir\n"));
+				_print_gpg_error(e);
 				res = WGET_E_GPG_VER_ERR;
 				goto done;
 			}
@@ -175,6 +184,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 	e = gpgme_op_verify(ctx, sig_buff, data_buf, NULL);
 	if (e != GPG_ERR_NO_ERROR) {
 		error_printf(_("Error during verification\n"));
+		_print_gpg_error(e);
 		res = WGET_E_GPG_VER_ERR;
 		goto done;
 	}
@@ -182,6 +192,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 	verify_result = gpgme_op_verify_result(ctx);
 	if (!verify_result) {
 		error_printf(_("GPGME verify failed!\n"));
+		_print_gpg_error(e);
 		res = WGET_E_GPG_VER_ERR;
 		goto done;
 	}
@@ -210,12 +221,15 @@ static int _verify_detached_str(const char *sig, const size_t sig_len,
 	const char *sig_filename)
 {
 	gpgme_data_t sig_d, data_d;
+	gpgme_error_t e;
 
-	if (gpgme_data_new_from_mem(&sig_d, sig, sig_len, 0) != GPG_ERR_NO_ERROR) {
+	if ((e = gpgme_data_new_from_mem(&sig_d, sig, sig_len, 0)) != GPG_ERR_NO_ERROR) {
+		_print_gpg_error(e);
 		return WGET_E_GPG_VER_ERR;
 	}
 
-	if (gpgme_data_new_from_mem(&data_d, dat, dat_len, 0) != GPG_ERR_NO_ERROR) {
+	if ((e = gpgme_data_new_from_mem(&data_d, dat, dat_len, 0)) != GPG_ERR_NO_ERROR) {
+		_print_gpg_error(e);
 		gpgme_data_release(sig_d);
 		return WGET_E_GPG_VER_ERR;
 	}
