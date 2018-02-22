@@ -950,8 +950,7 @@ static const struct optionw options[] = {
 	},
 	{ "append-output", &config.logfile_append, parse_string, 1, 'a',
 		SECTION_STARTUP,
-		{ "File where messages are appended to,\n",
-		  "'-' for STDOUT.\n"
+		{ "File where messages are appended to, '-' for STDOUT\n"
 		}
 	},
 	{ "ask-password", &config.askpass, parse_bool, -1, 0,
@@ -1073,8 +1072,7 @@ static const struct optionw options[] = {
 		SECTION_HTTP,
 		{ "Load public suffixes from file. \n",
 		  "They prevent 'supercookie' vulnerabilities.\n",
-		  "Download the list with:\n",
-		  "wget -O suffixes.txt https://publicsuffix.org/list/public_suffix_list.dat\n"
+		  "See https://publicsuffix.org/ for details.\n",
 		}
 	},
 	{ "cookies", &config.cookies, parse_bool, -1, 0,
@@ -1177,8 +1175,8 @@ static const struct optionw options[] = {
 	},
 	{ "filter-urls", &config.filter_urls, parse_bool, 0, 0,
 		SECTION_DOWNLOAD,
-		{ "Apply the accept and reject filters on the URL before starting a download.\n",
-		  "(default: off)\n"
+		{ "Apply the accept and reject filters on the URL\n",
+                  "before starting a download. (default: off)\n"
 		}
 	},
 	{ "follow-tags", &config.follow_tags, parse_taglist, 1, 0,
@@ -1189,8 +1187,7 @@ static const struct optionw options[] = {
 	},
 	{ "force-atom", &config.force_atom, parse_bool, -1, 0,
 		SECTION_STARTUP,
-		{ "Treat input file as Atom Feed.\n",
-		  "(default: off) (NEW!)\n"
+		{ "Treat input file as Atom Feed. (default: off) (NEW!)\n"
 		}
 	},
 	{ "force-css", &config.force_css, parse_bool, -1, 0,
@@ -1211,8 +1208,7 @@ static const struct optionw options[] = {
 	},
 	{ "force-metalink", &config.force_metalink, parse_bool, -1, 0,
 		SECTION_STARTUP,
-		{ "Treat input file as Metalink.\n",
-		  "(default: off) (NEW!)\n"
+		{ "Treat input file as Metalink. (default: off) (NEW!)\n"
 		}
 	},
 	{ "force-progress", &config.force_progress, parse_bool, -1, 0,
@@ -1223,8 +1219,7 @@ static const struct optionw options[] = {
 	},
 	{ "force-rss", &config.force_rss, parse_bool, -1, 0,
 		SECTION_STARTUP,
-		{ "Treat input file as RSS Feed.\n",
-		  "(default: off) (NEW!)\n"
+		{ "Treat input file as RSS Feed. (default: off) (NEW!)\n"
 		}
 	},
 	{ "force-sitemap", &config.force_sitemap, parse_bool, -1, 0,
@@ -1241,8 +1236,8 @@ static const struct optionw options[] = {
 #ifdef WITH_GPGME
 	{ "gnupg-homedir", &config.gnupg_homedir, parse_filename, -1, 0,
 		SECTION_GPG,
-		{ "Specify a directory to use as the GnuPG home directory.\n",
-		  "(default: gnupg default homedir)\n"
+		{ "Specify a directory to use as the GnuPG home\n",
+		  " directory. (default: gnupg default homedir)\n"
 		}
 	},
 #endif
@@ -1340,14 +1335,16 @@ static const struct optionw options[] = {
 	},
 	{ "http2-request-window", &config.http2_request_window, parse_integer, 1, 0,
 		SECTION_DOWNLOAD,
-		{ "Max. number of parallel streams per HTTP/2 connection. (default: 30)\n"
+		{ "Max. number of parallel streams per HTTP/2\n",
+                  "connection. (default: 30)\n"
 		}
 	},
 	{ "https-enforce", &config.https_enforce, parse_https_enforce, 1, 0,
 		SECTION_SSL,
-		{ "Use secure HTTPS instead of HTTP. Legal types are 'hard', 'soft'\n",
-		  "and 'none'. If --https-only is enabled, this option has no effect.\n",
-		  "(default: none)\n"
+		{ "Use secure HTTPS instead of HTTP. Legal types are\n",
+                  "'hard', 'soft' and 'none'.\n",
+                  "If --https-only is enabled,\n",
+                  "this option has no effect. (default: none)\n"
 		}
 	},
 	{ "https-only", &config.https_only, parse_bool, -1, 0,
@@ -1540,7 +1537,8 @@ static const struct optionw options[] = {
 	{ "plugin-opt", NULL, parse_plugin_option, 1, 0,
 		SECTION_PLUGIN,
 		{ "Forward an option to a loaded plugin.\n",
-		  "The option should be in format <plugin_name>.<option>[=value]\n"
+		  "The option should be in format:\n",
+		  "<plugin_name>.<option>[=value]\n"
 		}
 	},
 	{ "post-data", &config.post_data, parse_string, 1, 0,
@@ -1628,9 +1626,11 @@ static const struct optionw options[] = {
 	{ "regex-type", &config.regex_type, parse_regex_type, 1, 0,
 		SECTION_DOWNLOAD,
 #if defined WITH_LIBPCRE2 || defined WITH_LIBPCRE
-		{ "Regular expression type. Possible types are posix or pcre. (default: posix)\n" }
+		{ "Regular expression type. Possible types are\n",
+                  "posix or pcre. (default: posix)\n" }
 #else
-		{ "Regular expression type. This build only supports posix. (default: posix)\n" }
+		{ "Regular expression type. This build only supports\n",
+                  "posix. (default: posix)\n" }
 #endif
 	},
 	{ "reject", &config.reject_patterns, parse_stringlist, 1, 'R',
@@ -1697,8 +1697,8 @@ static const struct optionw options[] = {
 #ifdef WITH_GPGME
 	{ "signature-extension", &config.sig_ext, parse_string, 1, 0,
 		SECTION_GPG,
-		{ "The extension of the signature file which should be downloaded\n",
-		  "(default: sig)\n"
+		{ "The extension of the signature file which should be\n",
+		  "downloaded. (default: sig)\n"
 		}
 	},
 #endif
@@ -1716,37 +1716,43 @@ static const struct optionw options[] = {
 	{ "stats-all", &config.stats_all, parse_stats_all, -1, 0,
 		SECTION_STARTUP,
 		{ "Print all stats (default: off)\n",
-		  "Additional format supported: --stats-all[=[FORMAT:]FILE]\n"
+		  "Additional format supported:\n",
+                  "--stats-all[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "stats-dns", &config.stats_dns, parse_string, -1, 0,
 		SECTION_STARTUP,
 		{ "Print DNS stats. (default: off)\n",
-		  "Additional format supported: --stats-dns[=[FORMAT:]FILE]\n"
+		  "Additional format supported:\n",
+                  "--stats-dns[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "stats-ocsp", &config.stats_ocsp, parse_string, -1, 0,
 		SECTION_STARTUP,
 		{ "Print OCSP stats. (default: off)\n",
-		  "Additional format supported: --stats-ocsp[=[FORMAT:]FILE]\n"
+		  "Additional format supported:\n",
+                  "--stats-ocsp[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "stats-server", &config.stats_server, parse_string, -1, 0,
 		SECTION_STARTUP,
 		{ "Print server stats. (default: off)\n",
-		  "Additional format supported: --stats-server[=[FORMAT:]FILE]\n"
+		  "Additional format supported:\n",
+                  "--stats-server[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "stats-site", &config.stats_site, parse_string, -1, 0,
 		SECTION_STARTUP,
 		{ "Print site stats. (default: off)\n",
-		  "Additional format supported: --stats-site[=[FORMAT:]FILE]\n"
+		  "Additional format supported:\n",
+                  "--stats-site[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "stats-tls", &config.stats_tls, parse_string, -1, 0,
 		SECTION_STARTUP,
 		{ "Print TLS stats. (default: off)\n",
-		  "Additional format supported: --stats-tls[=[FORMAT:]FILE]\n"
+		  "Additional format supported:\n",
+                  "--stats-tls[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "strict-comments", &config.strict_comments, parse_bool, -1, 0,
@@ -1800,7 +1806,8 @@ static const struct optionw options[] = {
 	},
 	{ "use-askpass", &config.use_askpass_bin, parse_string, 1, 0,
 		SECTION_DOWNLOAD,
-		{ "Prompt for a user and password using the specified command.\n"
+		{ "Prompt for a user and password using\n",
+                  "the specified command.\n"
 		}
 	},
 	{ "use-server-timestamps", &config.use_server_timestamps, parse_bool, -1, 0,
@@ -1817,8 +1824,8 @@ static const struct optionw options[] = {
 	},
 	{ "user-agent", &config.user_agent, parse_string, 1, 'U',
 		SECTION_HTTP,
-		{ "Username for Authentication.\n",
-		  "(default: empty username)\n"
+		{ "HTTP User Agent string.\n",
+		  "(default: wget)\n"
 		}
 	},
 	{ "verbose", &config.verbose, parse_bool, -1, 'v',
@@ -1829,8 +1836,8 @@ static const struct optionw options[] = {
 #ifdef WITH_GPGME
 	{ "verify-save-failed", &config.verify_save_failed, parse_bool, -1, 0,
 		SECTION_GPG,
-		{ "Save target files even when their signatures fail GPG validation.\n",
-		  "(default: off)\n"
+		{ "Save target files even when their signatures fail\n",
+		  "GPG validation. (default: off)\n"
 		}
 	},
 	{ "verify-sig", &config.verify_sig, parse_bool, -1, 's',
@@ -1872,14 +1879,14 @@ static int print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const 
 #else
 static inline void print_first(const char s, const char *l, const char *msg)
 {
-	if (strlen(l) > 16) {
-		printf("  %c%-4c  --%s\n",
+	if (strlen(l) > 18) {
+		printf("  %c%-2c --%s\n",
 			(s ? '-' : ' '),
 			(s ? s : ' '),
 			l);
-		printf("%29s%s", "", msg);
+		printf("%28s%s", "", msg);
 	} else
-		printf("  %c%-4c  --%-16.16s  %s",
+		printf("  %c%-2c --%-18.18s  %s",
 			(s ? '-' : ' '),
 			(s ? s : ' '),
 			l, msg);
@@ -1887,7 +1894,7 @@ static inline void print_first(const char s, const char *l, const char *msg)
 
 static inline void print_next(const char *msg)
 {
-	printf("%31s%s", "", msg);
+	printf("%30s%s", "", msg);
 }
 
 static int print_help(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
