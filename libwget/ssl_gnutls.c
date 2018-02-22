@@ -1411,8 +1411,10 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 				 * ENOTCONN: MinGW (in out Gitlab CI runner)
 				 */
 				ret = WGET_E_CONNECT;
+#ifdef GNUTLS_E_PREMATURE_TERMINATION
 			} else if (rc == GNUTLS_E_PREMATURE_TERMINATION && errno == EAGAIN) {
 				ret = WGET_E_CONNECT;
+#endif
 			} else
 				ret = WGET_E_HANDSHAKE;
 
