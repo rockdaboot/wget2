@@ -68,9 +68,6 @@ static void stats_callback(const void *stats)
 	dns_stats.host = wget_strdup(wget_tcp_get_stats_dns(WGET_STATS_DNS_HOST, stats));
 	dns_stats.ip = wget_strdup(wget_tcp_get_stats_dns(WGET_STATS_DNS_IP, stats));
 
-	dns_stats.host = NULL_TO_DASH(dns_stats.host);
-	dns_stats.ip = NULL_TO_DASH(dns_stats.ip);
-
 	if (wget_tcp_get_stats_dns(WGET_STATS_DNS_PORT, stats))
 		dns_stats.port = *((uint16_t *)wget_tcp_get_stats_dns(WGET_STATS_DNS_PORT, stats));
 
@@ -94,9 +91,9 @@ static int print_human_entry(FILE *fp, const dns_stats_t *dns_stats)
 {
 	fprintf(fp, "  %4lld %s:%hu (%s)\n",
 		dns_stats->millisecs,
-		dns_stats->host,
+		NULL_TO_DASH(dns_stats->host),
 		dns_stats->port,
-		dns_stats->ip);
+		NULL_TO_DASH(dns_stats->ip));
 
 	return 0;
 }
@@ -104,8 +101,8 @@ static int print_human_entry(FILE *fp, const dns_stats_t *dns_stats)
 static int print_csv_entry(FILE *fp, const dns_stats_t *dns_stats)
 {
 	fprintf(fp, "%s,%s,%hu,%lld\n",
-		dns_stats->host,
-		dns_stats->ip,
+		dns_stats->host ? dns_stats->host : "",
+		dns_stats->ip ? dns_stats->ip : "",
 		dns_stats->port,
 		dns_stats->millisecs);
 

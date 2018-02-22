@@ -249,31 +249,120 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--stats-dns[=[FORMAT:]FILE]`
 
-  Save DNS stats in format `FORMAT`, in file `FILE`. `FORMAT` has 3 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+  Save DNS stats in format `FORMAT`, in file `FILE`.
+
+  `FORMAT` can be `human` or `csv`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+
+  The CSV output format is
+
+  Hostname,IP,Port,Duration
+
+    `Duration` is given in milliseconds.
 
 ### `--stats-tls[=[FORMAT:]FILE]`
 
-  Save TLS stats in format `FORMAT`, in file `FILE`. `FORMAT` has 3 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+  Save TLS stats in format `FORMAT`, in file `FILE`.
+
+  `FORMAT` can be `human` or `csv`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+
+  The CSV output format is
+
+  Hostname,TLSVersion,FalseStart,TFO,Resumed,ALPN,HTTPVersion,Certificates,Duration
+
+    `TLSVersion` can be 1,2,3,4,5 for SSL3, TLS1.0, TLS1.1, TLS1.2 and TLS1.3. -1 means 'None'.
+
+    `FalseStart` whether the connection used TLS False Start. -1 if not applicable.
+
+    `TFO` whether the connection used TCP Fast Open. -1 is TFO was disabled.
+
+    `Resumed` whether the TLS session was resumed or not.
+
+    `ALPN` is the ALPN negotiation string.
+
+    `HTTPVersion` is 0 for HTTP 1.1 and 1 is for HTTP 2.0.
+
+    `Certificates` is the size of the server's certificate chain.
+
+    `Duration` is given in milliseconds.
 
 ### `--stats-ocsp[=[FORMAT:]FILE]`
 
-  Save OCSP stats in format `FORMAT`, in file `FILE`. `FORMAT` has 3 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+  Save OCSP stats in format `FORMAT`, in file `FILE`.
+
+  `FORMAT` can be `human` or `csv`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+
+  The CSV output format is
+
+  Hostname,Stapling,Valid,Revoked,Ignored
+
+    `Stapling` whether an OCSP response was stapled or not.
+
+    `Valid` how many server certificates were valid regarding OCSP.
+
+    `Revoked` how many server certificates were revoked regarding OCSP.
+
+    `Ignored` how many server certificates had been ignored or OCSP responses missing.
+
 
 ### `--stats-server[=[FORMAT:]FILE]`
 
-  Save Server stats in format `FORMAT`, in file `FILE`. `FORMAT` has 3 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+  Save Server stats in format `FORMAT`, in file `FILE`.
+
+  `FORMAT` can be `human` or `csv`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+
+  The CSV output format is
+
+  Hostname,IP,Scheme,HPKP,NewHPKP,HSTS,CSP
+
+    `Scheme` 0,1,2 mean `None`, `http`, `https`.
+
+     `HPKP` values 0,1,2,3 mean 'No HPKP', 'HPKP matched', 'HPKP doesn't match', 'HPKP error'.
+
+    `NewHPKP` whether server sent HPKP (Public-Key-Pins) header.
+
+    `HSTS` whether server sent HSTS (Strict-Transport-Security) header.
+
+    `CSP` whether server sent CSP (Content-Security-Policy) header.
 
 ### `--stats-site[=[FORMAT:]FILE]`
 
-  Save Site stats in format `FORMAT`, in file `FILE`. `FORMAT` has 4 possible values: `human`, `csv` and `json`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+  Save Site stats in format `FORMAT`, in file `FILE`.
+
+  `FORMAT` can be `human` or `csv`. `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+
+  The CSV output format is
+
+  ID,ParentID,URL,Status,Link,Method,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,Verification
+
+    `ID` unique ID for a stats record.
+
+    `ParentID` ID of the parent document, relevant for `--recursive` mode.
+
+    `URL` URL of the document.
+
+    `Status` HTTP response code or 0 if not applicable.
+
+    `Link` 1 means 'direkt link', 0 means 'redirection link'.
+
+    `Method` 1,2,3 mean GET, HEAD, POST request type.
+
+    `Size` size of downloaded body (theoretical value for HEAD requests).
+
+    `SizeDecompressed` size of decompressed body (0 for HEAD requests).
+
+    `TransferTime` ms between start of request and completed download.
+
+    `ResponseTime` ms between start of request and first response packet.
+
+    `Encoding` 0,1,2,3,4,5 mean server side compression was 'identity', 'gzip', 'deflate', 'lzma/xz', 'bzip2', 'brotli'
+
+    `Verification` PGP verification status. 0,1,2,3 mean 'none',  'valid', 'invalid', 'bad', 'missing'.
 
 ### `--stats-all[=[FORMAT:]FILE]`
 
   Save DNS, TLS, OCSP, Server and Site stats in format `FORMAT`, in file `FILE`.
 
- `FORMAT` has 3 possible values: `human`, `csv` and `json`.
-
-  `-` is shorthand for `stdout` and `h` is shorthand for `human`.
+ `FORMAT` can be `human` or `csv`.  `-` is shorthand for `stdout` and `h` is shorthand for `human`.
 
   Saving different `csv` output records into one file might break later parsing.
 

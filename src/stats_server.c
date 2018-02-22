@@ -32,9 +32,9 @@
 typedef struct {
 	const char
 		*hostname,
-		*ip,
-		*scheme;
+		*ip;
 	char
+		scheme,
 		hsts,
 		csp,
 		hpkp_new;
@@ -69,11 +69,14 @@ static void stats_callback(const void *stats)
 
 	server_stats.hostname = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_HOSTNAME, stats));
 	server_stats.ip = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_IP, stats));
-	server_stats.scheme = wget_strdup(wget_tcp_get_stats_server(WGET_STATS_SERVER_SCHEME, stats));
 
-	server_stats.hostname = NULL_TO_DASH(server_stats.hostname);
-	server_stats.ip = NULL_TO_DASH(server_stats.ip);
-	server_stats.scheme = NULL_TO_DASH(server_stats.scheme);
+	const char *scheme = wget_tcp_get_stats_server(WGET_STATS_SERVER_SCHEME, stats);
+	if (scheme) {
+		if (!strcmp(scheme, "http"))
+			server_stats.scheme = 1;
+		else if (!strcmp(scheme, "https"))
+			server_stats.scheme = 2;
+	}
 
 	if (wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats))
 		server_stats.hpkp_new = *((char *)wget_tcp_get_stats_server(WGET_STATS_SERVER_HPKP_NEW, stats));
@@ -97,33 +100,35 @@ static void free_stats(server_stats_t *stats)
 	if (stats) {
 		xfree(stats->hostname);
 		xfree(stats->ip);
-		xfree(stats->scheme);
 	}
 }
 
-G_GNUC_WGET_PURE static const char *stats_hpkp(wget_hpkp_stats_t hpkp)
+G_GNUC_WGET_PURE static const char *_hpkp_string(wget_hpkp_stats_t hpkp)
 {
 	switch (hpkp) {
-	case WGET_STATS_HPKP_NO:
-		return "HPKP_NO";
-	case WGET_STATS_HPKP_MATCH:
-		return "HPKP_MATCH";
-	case WGET_STATS_HPKP_NOMATCH:
-		return "HPKP_NOMATCH";
-	case WGET_STATS_HPKP_ERROR:
-		return "HPKP_ERROR";
-	default:
-		error_printf(_("Unknown HPKP stats type %d\n"), (int) hpkp);
-		return "-";
+	case WGET_STATS_HPKP_NO: return "HPKP_NO";
+	case WGET_STATS_HPKP_MATCH: return "HPKP_MATCH";
+	case WGET_STATS_HPKP_NOMATCH: return "HPKP_NOMATCH";
+	case WGET_STATS_HPKP_ERROR: return "HPKP_ERROR";
+	default: return "?";
+	}
+}
+
+G_GNUC_WGET_PURE static const char *_scheme_string(int scheme)
+{
+	switch (scheme) {
+	case 1: return "http";
+	case 2: return "https";
+	default: return "?";
 	}
 }
 
 static int print_human_entry(FILE *fp, const server_stats_t *server_stats)
 {
-	fprintf(fp, "  %s:\n", server_stats->hostname);
-	fprintf(fp, "    IP             : %s\n", server_stats->ip);
-	fprintf(fp, "    Scheme         : %s\n", server_stats->scheme);
-	fprintf(fp, "    HPKP           : %s\n", stats_hpkp(server_stats->hpkp));
+	fprintf(fp, "  %s:\n", NULL_TO_DASH(server_stats->hostname));
+	fprintf(fp, "    IP             : %s\n", NULL_TO_DASH(server_stats->ip));
+	fprintf(fp, "    Scheme         : %s\n", _scheme_string(server_stats->scheme));
+	fprintf(fp, "    HPKP           : %s\n", _hpkp_string(server_stats->hpkp));
 	fprintf(fp, "    HPKP New Entry : %s\n", ON_OFF_DASH(server_stats->hpkp_new));
 	fprintf(fp, "    HSTS           : %s\n", ON_OFF_DASH(server_stats->hsts));
 	fprintf(fp, "    CSP            : %s\n\n", ON_OFF_DASH(server_stats->csp));
@@ -133,14 +138,14 @@ static int print_human_entry(FILE *fp, const server_stats_t *server_stats)
 
 static int print_csv_entry(FILE *fp, const server_stats_t *server_stats)
 {
-	fprintf(fp, "%s,%s,%s,%s,%s,%s,%s\n",
-		server_stats->hostname,
-		server_stats->ip,
-		HTTP_S_DASH(server_stats->scheme),
-		stats_hpkp(server_stats->hpkp),
-		ONE_ZERO_DASH(server_stats->hpkp_new),
-		ONE_ZERO_DASH(server_stats->hsts),
-		ONE_ZERO_DASH(server_stats->csp));
+	fprintf(fp, "%s,%s,%d,%d,%d,%d,%d\n",
+		server_stats->hostname ? server_stats->hostname : "",
+		server_stats->ip ? server_stats->ip : "",
+		server_stats->scheme,
+		(int) server_stats->hpkp,
+		server_stats->hpkp_new,
+		server_stats->hsts,
+		server_stats->csp);
 
 	return 0;
 }

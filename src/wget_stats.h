@@ -30,7 +30,7 @@
 #include "wget_host.h"
 #include "wget_gpgme.h"
 
-#define NULL_TO_DASH(s) ((s) ? (s) : wget_strdup("-"))
+#define NULL_TO_DASH(s) ((s) ? (s) : "-")
 #define ONE_ZERO_DASH(s) ((s) ? ((s) == 1 ? "1" : "-") : "0")
 #define ON_OFF_DASH(s) ((s) ? ((s) == 1 ? "On" : "-") : "Off")
 #define YES_NO(s) ((s) ? "Yes" : "No")

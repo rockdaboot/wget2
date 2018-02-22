@@ -73,14 +73,14 @@ typedef struct
 {
 	const char
 		*hostname,
-		*version,
 		*alpn_protocol;
 	long long
 		tls_secs; //milliseconds
 	int
+		version,
 		cert_chain_size;
 	char
-		tcp_protocol,
+		http_protocol,
 		false_start,
 		tfo;
 	bool
@@ -95,7 +95,8 @@ typedef struct
 	int
 		nvalid,
 		nrevoked,
-		nignored;
+		nignored,
+		stapling;
 } _ocsp_stats_data_t;
 
 static wget_stats_callback_t
@@ -1137,6 +1138,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		stats.nvalid = nvalid;
 		stats.nrevoked = nrevoked;
 		stats.nignored = nignored;
+		stats.stapling = ctx->ocsp_stapling;
 
 		stats_callback_ocsp(&stats);
 	}
@@ -1529,12 +1531,12 @@ int wget_ssl_open(wget_tcp_t *tcp)
 {
 	gnutls_session_t session;
 	_stats_data_t stats = {
-			.version = NULL,
 			.alpn_protocol = NULL,
+			.version = -1,
 			.false_start = -1,
 			.tfo = -1,
 			.resumed = 0,
-			.tcp_protocol = WGET_PROTOCOL_HTTP_1_1,
+			.http_protocol = WGET_PROTOCOL_HTTP_1_1,
 			.cert_chain_size = 0
 	};
 
@@ -1681,7 +1683,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		stats.tls_secs = after_millisecs - before_millisecs;
 		stats.tls_con = 1;
 #if GNUTLS_VERSION_NUMBER >= 0x030500
-		stats.false_start = gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START;
+		stats.false_start = !! (gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START);
 #endif
 	}
 
@@ -1698,7 +1700,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 			if (!memcmp(protocol.data, "h2", 2)) {
 				tcp->protocol = WGET_PROTOCOL_HTTP_2_0;
 				if (stats_callback_tls)
-					stats.tcp_protocol = WGET_PROTOCOL_HTTP_2_0;
+					stats.http_protocol = WGET_PROTOCOL_HTTP_2_0;
 			}
 		}
 	}
@@ -1712,7 +1714,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 
 		if (stats_callback_tls) {
 			stats.resumed = resumed;
-			stats.version = gnutls_protocol_get_name(gnutls_protocol_get_version(session));
+			stats.version = gnutls_protocol_get_version(session);
 			gnutls_certificate_get_peers(session, (unsigned int *)&(stats.cert_chain_size));
 		}
 
@@ -1954,7 +1956,7 @@ const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
 	case WGET_STATS_TLS_HOSTNAME:
 		return stats->hostname;
 	case WGET_STATS_TLS_VERSION:
-		return stats->version;
+		return &stats->version;
 	case WGET_STATS_TLS_FALSE_START:
 		return &(stats->false_start);
 	case WGET_STATS_TLS_TFO:
@@ -1965,8 +1967,8 @@ const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
 		return &(stats->tls_con);
 	case WGET_STATS_TLS_RESUMED:
 		return &(stats->resumed);
-	case WGET_STATS_TLS_TCP_PROTO:
-		return &(stats->tcp_protocol);
+	case WGET_STATS_TLS_HTTP_PROTO:
+		return &(stats->http_protocol);
 	case WGET_STATS_TLS_CERT_CHAIN_SIZE:
 		return &(stats->cert_chain_size);
 	case WGET_STATS_TLS_SECS:
@@ -2006,6 +2008,8 @@ const void *wget_tcp_get_stats_ocsp(wget_ocsp_stats_t type, const void *_stats)
 		return &(stats->nrevoked);
 	case WGET_STATS_OCSP_IGNORED:
 		return &(stats->nignored);
+	case WGET_STATS_OCSP_STAPLING:
+		return &(stats->stapling);
 	default:
 		return NULL;
 	}

@@ -30,9 +30,9 @@
 #include "wget_options.h"
 
 enum {
-	STATS_SCHEME_GET = 1,
-	STATS_SCHEME_HEAD = 2,
-	STATS_SCHEME_POST = 3,
+	STATS_METHOD_GET = 1,
+	STATS_METHOD_HEAD = 2,
+	STATS_METHOD_POST = 3,
 };
 
 typedef struct {
@@ -55,7 +55,7 @@ typedef struct {
 		signature_status; //!< 0=None 1=valid 2=invalid 3=bad 4=missing
 	char
 		encoding,
-		scheme; //!< STATS_SCHEME_*
+		method; //!< STATS_METHOD_*
 	bool
 		redirect : 1; //!< Was this a redirection ?
 } site_stats_t;
@@ -151,12 +151,12 @@ void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 	doc->size_decompressed = resp->body->length;
 
 	if (!wget_strcasecmp_ascii(resp->req->method, "GET")) {
-		doc->scheme = STATS_SCHEME_GET;
+		doc->method = STATS_METHOD_GET;
 	} else if (!wget_strcasecmp_ascii(resp->req->method, "HEAD")) {
 		doc->size_downloaded = resp->content_length; // the would-be-length for GET requests
-		doc->scheme = STATS_SCHEME_HEAD;
+		doc->method = STATS_METHOD_HEAD;
 	} else if (!wget_strcasecmp_ascii(resp->req->method, "POST")) {
-		doc->scheme = STATS_SCHEME_POST;
+		doc->method = STATS_METHOD_POST;
 	}
 
 	wget_thread_mutex_lock(stats_site_opts.mutex);
@@ -189,7 +189,7 @@ static int print_csv_entry(FILE *fp, site_stats_t *doc)
 	long long transfer_time = doc->response_end - doc->request_start;
 
 	fprintf(fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d\n",
-		doc->id, doc->parent_id, doc->iri->uri, doc->status, !doc->redirect, doc->scheme,
+		doc->id, doc->parent_id, doc->iri->uri, doc->status, !doc->redirect, doc->method,
 		doc->size_downloaded, doc->size_decompressed, transfer_time,
 		doc->initial_response_duration, doc->encoding, doc->signature_status);
 
@@ -208,7 +208,7 @@ static void print_human(G_GNUC_WGET_UNUSED stats_opts_t *opts, FILE *fp)
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "ID,ParentID,URL,Status,Link,Protocol,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,Verification\n");
+	fprintf(fp, "ID,ParentID,URL,Status,Link,Method,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,Verification\n");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 
 	if (config.debug)
