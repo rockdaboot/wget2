@@ -1789,7 +1789,7 @@ static void process_response(wget_http_response_t *resp)
 	// Location: http://ftp.suse.com/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe
 	// Content-Type: text/html; charset=iso-8859-1
 
-	if (resp->links) {
+	if (config.metalink && resp->links) {
 		// Found a Metalink answer (RFC 6249 Metalink/HTTP: Mirrors and Hashes).
 		// We try to find and download the .meta4 file (RFC 5854).
 		// If we can't find the .meta4, download from the link with the highest priority.
@@ -3095,7 +3095,7 @@ static int _get_header(wget_http_response_t *resp, void *context)
 	char *fname_allocated = NULL;
 #endif
 
-	bool metalink = resp->content_type
+	bool metalink = config.metalink && resp->content_type
 	    && (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml") ||
 		!wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml"));
 
