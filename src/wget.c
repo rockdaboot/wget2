@@ -1113,12 +1113,12 @@ static void print_progress_report(long long start_time)
 		unsigned int mod = 1000 * ((config.report_speed == WGET_REPORT_SPEED_BYTES) ? 1 : 8);
 
 		if (config.spider)
-			bar_printf(nthreads, "Headers: %d (%d redirects & %d errors) Bytes: %s [%s%c/s] Todo: %d  Errors: %d",
+			bar_printf(nthreads, "Headers: %d (%d redirects & %d errors) Bytes: %s [%s%c/s] Todo: %d",
 				stats.nerrors+stats.ndownloads+stats.nredirects+stats.nnotmodified,
 				stats.nredirects, stats.nerrors,
 				wget_human_readable(quota_buf, sizeof(quota_buf), quota),
 				wget_human_readable(speed_buf, sizeof(speed_buf), (quota*mod)/tdiff), rs_type,
-				queue_size(), stats.nerrors
+				queue_size()
 			);
 		else
 			bar_printf(nthreads, "Files: %d  Bytes: %s [%s%c/s] Redirects: %d  Todo: %d  Errors: %d",
