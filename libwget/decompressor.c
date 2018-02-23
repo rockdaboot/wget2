@@ -384,8 +384,11 @@ wget_decompressor_t *wget_decompress_open(int encoding,
 			dc->exit = brotli_exit;
 		}
 #endif
-	} else {
+	}
+
+	if (!dc->decompress) {
 		// identity
+		debug_printf("Falling back to Content-Encoding 'identity'\n");
 		dc->decompress = identity;
 	}
 
