@@ -103,6 +103,8 @@ typedef struct {
 		timestamp;
 	char
 		restricted_mode;
+	size_t
+		content_length;
 } wget_test_file_t;
 
 typedef struct {

@@ -283,9 +283,13 @@ static int _answer_to_connection(
 		MHD_http_unescape(url_iri->data);
 
 		if (!strcmp(url_full->data, url_iri->data)) {
+			size_t body_length =
+				urls[it1].body_len ? urls[it1].body_len
+				: (urls[it1].body ? strlen(urls[it1].body) : 0);
+
 			// chunked encoding
 			if (!wget_strcmp(urls[it1].name + 3, "bad.txt")) {
-				response = MHD_create_response_from_buffer(strlen(urls[it1].body),
+				response = MHD_create_response_from_buffer(body_length,
 					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
 				ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 				MHD_add_response_header(response, "Transfer-Encoding", "chunked");
@@ -308,7 +312,7 @@ static int _answer_to_connection(
 				struct ResponseContentCallbackParam *callback_param = wget_malloc(sizeof(struct ResponseContentCallbackParam));
 
 				callback_param->response_data = urls[it1].body;
-				callback_param->response_size = strlen(urls[it1].body);
+				callback_param->response_size = body_length;
 
 				response = MHD_create_response_from_callback(MHD_SIZE_UNKNOWN,
 					1024, &_callback, callback_param, &_free_callback_param);
@@ -320,7 +324,7 @@ static int _answer_to_connection(
 
 			// 404 with non-empty "body"
 			if (!wget_strcmp(urls[it1].code, "404 Not exist")) {
-				response = MHD_create_response_from_buffer(strlen(urls[it1].body),
+				response = MHD_create_response_from_buffer(body_length,
 					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
 				ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
 				wget_buffer_free(&url_iri);
@@ -407,10 +411,10 @@ static int _answer_to_connection(
 			}
 			else if (*header_range->data) {
 				if (!strcmp(to_bytes_string, "-"))
-					to_bytes = strlen(urls[it1].body) - 1;
+					to_bytes = body_length - 1;
 				body_len = to_bytes - from_bytes + 1;
 
-				if (from_bytes > to_bytes || from_bytes >= (int) strlen(urls[it1].body)) {
+				if (from_bytes > to_bytes || from_bytes >= (int) body_length) {
 					response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
 					ret = MHD_queue_response(connection, MHD_HTTP_RANGE_NOT_SATISFIABLE, response);
 				} else {
@@ -424,8 +428,7 @@ static int _answer_to_connection(
 					ret = MHD_queue_response(connection, MHD_HTTP_PARTIAL_CONTENT, response);
 				}
 			} else {
-				size_t len = urls[it1].body_len ? urls[it1].body_len : strlen(urls[it1].body);
-				response = MHD_create_response_from_buffer(len, (void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
+				response = MHD_create_response_from_buffer(body_length, (void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
 				ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 			}
 
@@ -1095,7 +1098,9 @@ void wget_test(int first_key, ...)
 						wget_error_printf_exit(_("Failed to read %lld bytes from file '%s/%s', just got %zd [%s]\n"),
 							(long long)st.st_size, tmpdir, fname, nbytes, options);
 
-					if (strlen(expected_files[it].content) != (size_t)nbytes || memcmp(expected_files[it].content, content, nbytes) != 0)
+					size_t content_length = expected_files[it].content_length ? expected_files[it].content_length : strlen(expected_files[it].content);
+
+					if (content_length != (size_t) nbytes || memcmp(expected_files[it].content, content, nbytes) != 0)
 						wget_error_printf_exit(_("Unexpected content in %s [%s]\n"), fname, options);
 				}
 
