@@ -965,6 +965,24 @@ ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf
 	return buf->length;
 }
 
+static void _fix_broken_server_encoding(wget_http_response_t *resp)
+{
+	// a workaround for broken server configurations
+	// see https://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
+	if (resp->content_encoding == wget_content_encoding_gzip) {
+		const char *ext;
+		if (!wget_strcasecmp_ascii(resp->content_type, "application/x-gzip")
+			|| !wget_strcasecmp_ascii(resp->content_type, "application/gzip")
+			|| !wget_strcasecmp_ascii(resp->content_type, "application/gunzip")
+			|| ((ext = strrchr(resp->req->esc_resource.data, '.'))
+			&& (!wget_strcasecmp_ascii(ext, ".gz") || !wget_strcasecmp_ascii(ext, ".tgz"))))
+		{
+			debug_printf("Broken server configuration gzip workaround triggered\n");
+			resp->content_encoding =  wget_content_encoding_identity;
+		}
+	}
+}
+
 wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 {
 	size_t bufsize, body_len = 0, body_size = 0;
@@ -1017,24 +1035,16 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 		}
 
 		resp = wget_vector_get(conn->received_http2_responses, 0); // should use double linked lists here
+
+		if (stats_callback)
+			_server_stats_add(conn, resp);
+
 		if (resp) {
 			debug_printf("  ##  response status %d\n", resp->code);
 			wget_vector_remove_nofree(conn->received_http2_responses, 0);
 
-			// a workaround for broken server configurations
-			// see https://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
-			if (resp->content_encoding == wget_content_encoding_gzip
-				&& (!wget_strcasecmp_ascii(resp->content_type, "application/x-gzip")
-				   || !wget_strcasecmp_ascii(resp->content_type, "application/gzip")
-				   || !wget_strcasecmp_ascii(resp->content_type, "application/gunzip")))
-			{
-				debug_printf("Broken server configuration gzip workaround triggered\n");
-				resp->content_encoding =  wget_content_encoding_identity;
-			}
+			_fix_broken_server_encoding(resp);
 		}
-
-		if (stats_callback)
-			_server_stats_add(conn, resp);
 
 		return resp;
 	}
@@ -1101,6 +1111,8 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 			if (req && !wget_strcasecmp_ascii(req->method, "HEAD"))
 				goto cleanup; // a HEAD response won't have a body
+
+			_fix_broken_server_encoding(resp);
 
 			p += 4; // skip \r\n\r\n to point to body
 			break;
