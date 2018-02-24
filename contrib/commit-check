@@ -1,0 +1,27 @@
+#!/usr/bin/env sh
+
+set -e
+set -u
+
+AUTHOR=$(git log -n1 --format='%aN')
+EMAIL=$(git log -n1 --format='%aE')
+EMAIL_PARSE=$(echo "$EMAIL" | sed 's/@/ \\[at\\] /g')
+
+retval=0
+
+echo "The last commit is made by $AUTHOR: $EMAIL_PARSE"
+
+if git log -n 1 | grep "^Copyright-paperwork-exempt: Yes"; then
+	echo "This work is copyright paperwork exempt."
+elif ! grep -q "^\\[ASSGN\\] $AUTHOR \\*$EMAIL_PARSE\\*$" AUTHORS; then
+	echo "The author was not found in the AUTHORS file."
+	echo "Has the author completed the FSF Copyright Assignment?"
+	echo "If the commit is minor, please add this to the commit message:"
+	echo "Copyright-paperwork-exempt: Yes"
+	retval=1
+else
+	echo "The Author was found in the AUTHORS file."
+	echo "This work may be merged into master"
+fi
+
+exit $retval

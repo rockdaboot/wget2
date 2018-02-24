@@ -275,3 +275,12 @@ MinGW64:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
+
+CommitCheck:
+    before_script:
+        - /bin/true
+    script:
+        - ./contrib/commit-check
+    after_script:
+        - /bin/true
+    allow_failure: true
