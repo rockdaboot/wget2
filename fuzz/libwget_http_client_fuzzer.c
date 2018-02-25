@@ -60,7 +60,7 @@ int getaddrinfo(const char *node, const char *service, const struct addrinfo *hi
 		};
 
 		aic.ai.ai_addr = (struct sockaddr *) &aic.in_addr;
-		*res = wget_memdup(&aic, sizeof(aic));
+		*res = (struct addrinfo *) wget_memdup(&aic, sizeof(aic));
 		return 0;
 	}
 
@@ -170,7 +170,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 			size_t hlen = strlen(header[type]);
 
 			g_size = hlen + size;
-			g_data = malloc(g_size);
+			g_data = (uint8_t *) malloc(g_size);
 			memcpy(g_data, header[type], hlen);
 			memcpy(g_data + hlen, data, size);
 
