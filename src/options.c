@@ -909,7 +909,6 @@ struct config config = {
 	.netrc = 1,
 	.waitretry = 10 * 1000,
 #ifdef WITH_GPGME
-	.sig_ext = "sig",
 	.verify_save_failed = 0,
 #endif
 	.metalink = 1,
@@ -1644,8 +1643,6 @@ static const struct optionw options[] = {
 		{ "Regex matching rejected URLs.\n"
 		}
 	},
-
-
 	{ "remote-encoding", &config.remote_encoding, parse_string, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Character encoding of remote files\n",
@@ -1695,7 +1692,7 @@ static const struct optionw options[] = {
 		}
 	},
 #ifdef WITH_GPGME
-	{ "signature-extension", &config.sig_ext, parse_string, 1, 0,
+	{ "signature-extensions", &config.sig_ext, parse_stringlist, 1, 0,
 		SECTION_GPG,
 		{ "The extension of the signature file which should be\n",
 		  "downloaded. (default: sig)\n"
@@ -2568,9 +2565,6 @@ int init(int argc, const char **argv)
 	config.ca_directory = wget_strdup(config.ca_directory);
 	config.default_page = wget_strdup(config.default_page);
 	config.domains = wget_vector_create(16, -2, (wget_vector_compare_t)strcmp);
-#ifdef WITH_GPGME
-	config.sig_ext = wget_strdup(config.sig_ext);
-#endif
 
 	// create list of default config file names
 	const char *env;
@@ -2816,6 +2810,10 @@ int init(int argc, const char **argv)
 	if (config.verify_sig) {
 #ifdef WITH_GPGME
 		init_gpgme();
+		if (!config.sig_ext) {
+			config.sig_ext = wget_vector_create(1, -2, (wget_vector_compare_t)strcmp);
+			wget_vector_add_str(config.sig_ext, "sig");
+		}
 #endif
 	}
 
@@ -2956,9 +2954,6 @@ void deinit(void)
 	xfree(config.save_cookies);
 	xfree(config.secure_protocol);
 	xfree(config.tls_session_file);
-#ifdef WITH_GPGME
-	xfree(config.sig_ext);
-#endif
 	xfree(config.user_agent);
 	xfree(config.use_askpass_bin);
 	xfree(config.username);
@@ -2982,6 +2977,9 @@ void deinit(void)
 	wget_vector_free(&config.headers);
 	wget_vector_free(&config.config_files);
 	wget_vector_free(&config.default_challenges);
+#ifdef WITH_GPGME
+	wget_vector_free(&config.sig_ext);
+#endif
 
 	wget_http_set_http_proxy(NULL, NULL);
 	wget_http_set_https_proxy(NULL, NULL);

@@ -1523,7 +1523,7 @@ static int process_response_header(wget_http_response_t *resp)
 	if (resp->code/100 == 4 && resp->code != 416) {
 		if (job->head_first)
 			set_exit_status(WG_EXIT_STATUS_REMOTE);
-		else if (resp->code == 404 && !job->robotstxt)
+		else if (resp->code == 404 && !job->robotstxt && !job->sig_req)
 			set_exit_status(WG_EXIT_STATUS_REMOTE);
 	}
 
@@ -1951,6 +1951,8 @@ static void process_response(wget_http_response_t *resp)
 							error_printf(_("Couldn't determine base file to delete for failed verification\n"));
 						}
 					}
+				} else {
+					wget_info_printf(_("Signature for file %s successfully verified\n"), job->local_filename);
 				}
 
 				// Remove the signature file.
@@ -1961,15 +1963,19 @@ static void process_response(wget_http_response_t *resp)
 
 			} else if (wget_strncasecmp_ascii(resp->content_type, "application/", 12) == 0) {
 
-				char *new_url = wget_aprintf("%s.%s", job->original_url->uri, config.sig_ext);
+				if (config.sig_ext) {
+					for (int i = 0; i < wget_vector_size(config.sig_ext); i++) {
+						char *new_url = wget_aprintf("%s.%s", job->original_url->uri, (char *) wget_vector_get(config.sig_ext, i));
 
-				if (!job->sig_filename) {
-					error_printf(_("File name for signature checking not assigned to job!\n"));
-				} else {
-					add_url(job, "utf-8", new_url, 0);
+						if (!job->sig_filename) {
+							error_printf(_("File name for signature checking not assigned to job!\n"));
+						} else {
+							add_url(job, "utf-8", new_url, 0);
+						}
+
+						wget_free(new_url);
+					}
 				}
-
-				wget_free(new_url);
 			}
 #endif
 		}

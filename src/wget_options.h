@@ -80,9 +80,6 @@ struct config {
 		*secure_protocol, // auto, SSLv2, SSLv3, TLSv1
 		*accept_regex,
 		*reject_regex,
-#ifdef WITH_GPGME
-		*sig_ext,
-#endif
 		*gnupg_homedir,
 		*stats_all,
 		*stats_dns,
@@ -96,6 +93,9 @@ struct config {
 		*exclude_domains,
 		*accept_patterns,
 		*reject_patterns,
+#ifdef WITH_GPGME
+		*sig_ext,
+#endif
 		*follow_tags,
 		*ignore_tags,
 		*default_challenges,

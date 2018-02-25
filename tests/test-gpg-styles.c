@@ -60,7 +60,21 @@ int main(void)
 		0);
 
 	wget_test(
-		WGET_TEST_OPTIONS, "--verify-sig --signature-extension=sign --gnupg-homedir=" SRCDIR "/gpg",
+		WGET_TEST_OPTIONS, "--verify-sig --signature-extensions=sign --gnupg-homedir=" SRCDIR "/gpg",
+		WGET_TEST_REQUEST_URL, urls[0].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			// Unfortunately these are binary files
+			// so they contain NULL bytes.
+			// Probably safe to assume that the contents are correct.
+			{ "helloworld.txt", NULL },
+			// Signature file should be deleted
+			// { "helloworld.txt.sign", NULL },
+			{ NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "--verify-sig --signature-extensions=asc,sig,sign --gnupg-homedir=" SRCDIR "/gpg",
 		WGET_TEST_REQUEST_URL, urls[0].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
