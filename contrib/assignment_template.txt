@@ -1,0 +1,26 @@
+Bcc:
+Subject: [Wget2] Assignment of Copyrights to FSF
+Reply-To:
+
+Hi %TO_NAME%,
+
+I'd like to thank you for the contributions you have made to GNU Wget2.
+
+We at GNU try to enforce software freedom through a Copyleft
+license (GPL)[0]. However, to enforce the said license, someone needs to
+take proactive action when violations are found. Hence, we assign the
+copyrights of the code to the FSF allowing them to act against anyone
+that violates the license of the code you have written.
+
+We, the maintainers of GNU Wget hence hereby request that you assign
+the copyrights of the previous contributions that you have made, and
+any future contributions to the FSF.
+
+Should you have any questions, please feel free to reply back to this
+mail. We will be glad to answer them and help you out.
+
+Once you are willing to sign the Copyright assignment documents, kindly
+copy the text after the marker in this email, fill it out and send it to
+assign@gnu.org
+
+[0]: https://www.gnu.org/licenses/why-assign.en.html
