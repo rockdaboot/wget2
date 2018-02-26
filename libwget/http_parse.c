@@ -1249,23 +1249,6 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 		wget_http_parse_header_line(resp, name, namelen, value, valuelen);
 	}
 
-/*
- * A workaround for broken server configurations
- * see https://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
- * 24.10.15: It turns out that some servers (stupidly) double-gzip the data and correctly have
- *              Content-Encoding: gzip
- *              Content-Type: application/x-gzip
- *            in the response.
- *  We leave the following code commented, just to remember that we might have a CLI option
- *  to turn it on - in case someone stumbles over these kind of broken servers.
- *
-	if (resp->content_encoding == wget_content_encoding_gzip &&
-		!wget_strcasecmp_ascii(resp->content_type, "application/x-gzip"))
-	{
-		debug_printf("Broken server configuration gzip workaround triggered\n");
-		resp->content_encoding =  wget_content_encoding_identity;
-	}
-*/
 	return resp;
 }
 
