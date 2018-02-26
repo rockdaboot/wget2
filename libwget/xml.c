@@ -80,7 +80,7 @@ static const char *getToken(_xml_context *context)
 	// skip leading whitespace
 	while ((c = *context->p) && ascii_isspace(c))
 		context->p++;
-	if (!c) return NULL;
+	if (!c) return NULL; // eof
 	context->token = context->p++;
 
 //	info_printf("a c=%c\n", c);
@@ -88,13 +88,14 @@ static const char *getToken(_xml_context *context)
 	if (ascii_isalpha(c) || c == '_') {
 		while ((c = *context->p) && !ascii_isspace(c) && c != '>' && c != '=')
 			context->p++;
-		if (!c) return NULL;
+		if (!c) return NULL; // syntax error
+
 		context->token_len = context->p - context->token;
 		return context->token;
 	}
 
 	if (c == '/') {
-		if (!(c = *context->p)) return NULL;
+		if (!(c = *context->p)) return NULL; // syntax error
 		context->p++;
 		if (c == '>') {
 			context->token_len = 2;
@@ -116,7 +117,7 @@ static const char *getToken(_xml_context *context)
 	}
 
 	if (c == '<') { // fetch specials, e.g. start of comments '<!--'
-		if (!(c = *context->p)) return NULL;
+		if (!(c = *context->p)) return NULL; // syntax error
 		context->p++;
 		if (c == '?' || c == '/') {
 			context->token_len = 2;
@@ -125,10 +126,10 @@ static const char *getToken(_xml_context *context)
 
 		if (c == '!') {
 			// left: <!--, <![CDATA[ and <!WHATEVER
-			if (!(c = *context->p)) return NULL;
+			if (!(c = *context->p)) return NULL; // syntax error
 			if (c == '-') {
 				context->p++;
-				if (!(c = *context->p)) return NULL;
+				if (!(c = *context->p)) return NULL; // syntax error
 				context->p++;
 				if (c == '-') {
 					context->token_len = 4;
@@ -155,12 +156,12 @@ static const char *getToken(_xml_context *context)
 	}
 
 	if (c == '-') { // fetch specials, e.g. end of comments '-->'
-		if (!(c = *context->p)) return NULL;
+		if (!(c = *context->p)) return NULL; // syntax error
 		if (c != '-') {
-			c = '-';
+			c = '-';  //???
 		} else {
 			context->p++;
-			if (!(c = *context->p)) return NULL;
+			if (!(c = *context->p)) return NULL; // syntax error
 			context->p++;
 			if (c != '>') {
 				context->p -= 2;
@@ -173,7 +174,7 @@ static const char *getToken(_xml_context *context)
 	}
 
 	if (c == '?') { // fetch specials, e.g. '?>'
-		if (!(c = *context->p)) return NULL;
+		if (!(c = *context->p)) return NULL; // syntax error
 		if (c != '>') {
 			// c = '?';
 		} else {
@@ -209,7 +210,7 @@ static int getValue(_xml_context *context)
 	if (c == '=') {
 		context->p++;
 		if (!getToken(context))
-			return EOF;
+			return EOF; // syntax error
 		else
 			return 1; // token valid
 	}
@@ -346,7 +347,7 @@ static const char *getContent(_xml_context *context, const char *directory)
 	return context->token;
 }
 
-static void parseXML(const char *dir, _xml_context *context)
+static int parseXML(const char *dir, _xml_context *context)
 {
 	const char *tok;
 	char directory[256] = "";
@@ -362,14 +363,15 @@ static void parseXML(const char *dir, _xml_context *context)
 		if (context->token_len)
 			debug_printf("%s='%.*s'\n", directory, (int)context->token_len, context->token);
 
-		if (!(tok = getToken(context))) return;
+		if (!(tok = getToken(context))) return WGET_E_SUCCESS;  //eof
 		// debug_printf("A Token '%.*s' len=%zu tok='%s'\n", (int)context->token_len, context->token, context->token_len, tok);
 
 		if (context->token_len == 1 && *tok == '<') {
 			// get element name and add it to directory
 			int flags = XML_FLG_BEGIN;
 
-			if (!(tok = getToken(context))) return;
+			if (!(tok = getToken(context))) return WGET_E_XML_PARSE_ERR; // syntax error
+
 			// debug_printf("A2 Token '%.*s'\n", (int)context->token_len, context->token);
 
 			if (!(context->hints & XML_HINT_HTML)) {
@@ -421,7 +423,8 @@ static void parseXML(const char *dir, _xml_context *context)
 					memcpy(attribute, tok, context->token_len);
 					attribute[context->token_len] = 0;
 
-					if (getValue(context) == 0) return;
+					if (getValue(context) == EOF) return WGET_E_XML_PARSE_ERR; // syntax error
+
 					if (context->token_len) {
 						debug_printf("%s/@%s=%.*s\n", directory, attribute, (int)context->token_len, context->token);
 						if (context->callback)
@@ -439,7 +442,7 @@ static void parseXML(const char *dir, _xml_context *context)
 			if (!strncmp(tok, "</", 2)) {
 				// ascend one level
 				// cleanup - get name and '>'
-				if (!(tok = getToken(context))) return;
+				if (!(tok = getToken(context))) return WGET_E_XML_PARSE_ERR;
 				// debug_printf("X Token %s\n",tok);
 				if (context->callback) {
 					if (!(context->hints & XML_HINT_HTML))
@@ -451,10 +454,10 @@ static void parseXML(const char *dir, _xml_context *context)
 						context->callback(context->user_ctx, XML_FLG_END, tag, NULL, NULL, 0, 0);
 					}
 				}
-				if (!(tok = getToken(context))) return;
+				if (!(tok = getToken(context))) return WGET_E_XML_PARSE_ERR;
 				// debug_printf("Y Token %s\n",tok);
 				if (!(context->hints & XML_HINT_HTML))
-					return;
+					return WGET_E_SUCCESS;
 				else
 					continue;
 			} else if (!strncmp(tok, "<?", 2)) { // special info - ignore
@@ -471,6 +474,7 @@ static void parseXML(const char *dir, _xml_context *context)
 			continue;
 		}
 	} while (tok);
+	return WGET_E_SUCCESS;
 }
 
 /**
@@ -496,7 +500,7 @@ static void parseXML(const char *dir, _xml_context *context)
  *
  * %XML_HINT_HTML turns on HTML scanning.
  */
-void wget_xml_parse_buffer(
+int wget_xml_parse_buffer(
 	const char *buf,
 	wget_xml_callback_t callback,
 	void *user_ctx,
@@ -513,7 +517,7 @@ void wget_xml_parse_buffer(
 	context.callback = callback;
 	context.hints = hints;
 
-	parseXML("/", &context);
+	return parseXML ("/", &context);
 }
 
 /**

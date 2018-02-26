@@ -254,10 +254,17 @@ static void _metalink_parse(void *context, int flags, const char *dir, const cha
 
 wget_metalink_t *wget_metalink_parse(const char *xml)
 {
+	if (!xml)
+		return NULL;
+
 	wget_metalink_t *metalink = xcalloc(1, sizeof(wget_metalink_t));
 	_metalink_context_t ctx = { .metalink = metalink, .priority = 999999, .location = "-" };
 
-	wget_xml_parse_buffer(xml, _metalink_parse, &ctx, 0);
+	if (wget_xml_parse_buffer(xml, _metalink_parse, &ctx, 0) != WGET_E_SUCCESS) {
+		error_printf(_("Error in parsing XML"));
+		wget_metalink_free(&metalink);
+	}
+
 	return metalink;
 }
 

@@ -252,7 +252,7 @@ WGET_BEGIN_DECLS
 #define WGET_E_GPG_DISABLED -8 /* GPGME was not enabled at compile time */
 #define WGET_E_GPG_VER_FAIL -9 /* 1 or more non-valid signatures */
 #define WGET_E_GPG_VER_ERR -11 /* Verification failed, GPGME error */
-
+#define WGET_E_XML_PARSE_ERR -12 /* XML parsing failed */
 
 typedef void (*wget_global_get_func_t)(const char *, size_t);
 
@@ -1661,7 +1661,7 @@ WGETAPI void
 
 typedef void (*wget_xml_callback_t)(void *, int, const char *, const char *, const char *, size_t, size_t);
 
-WGETAPI void
+WGETAPI int
 	wget_xml_parse_buffer(
 		const char *buf,
 		wget_xml_callback_t callback,
@@ -2287,7 +2287,7 @@ typedef struct {
 } wget_metalink_t;
 
 WGETAPI wget_metalink_t
-	*wget_metalink_parse(const char *xml) G_GNUC_WGET_NONNULL((1));
+	*wget_metalink_parse(const char *xml);
 WGETAPI void
 	wget_metalink_free(wget_metalink_t **metalink);
 WGETAPI void

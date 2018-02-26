@@ -23,6 +23,7 @@ libwget/io.c
 libwget/iri.c
 libwget/net.c
 libwget/netrc.c
+libwget/metalink.c
 libwget/ocsp.c
 libwget/pipe.c
 libwget/ssl_gnutls.c
