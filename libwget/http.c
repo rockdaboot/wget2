@@ -151,6 +151,16 @@ static int _body_callback(wget_http_response_t *resp, void *user_data G_GNUC_WGE
 	return 0;
 }
 
+/*
+ * https://tools.ietf.org/html/rfc7230#section-3: Message Format
+ * https://tools.ietf.org/html/rfc7230#section-3.1: Start Line
+ * https://tools.ietf.org/html/rfc7230#section-3.1.1: Request Line
+ * https://tools.ietf.org/html/rfc7230#section-5.3: Request Target
+ * https://tools.ietf.org/html/rfc7230#section-5.3.1: Origin Form
+ * https://tools.ietf.org/html/rfc7230#section-2.7.3: http and https URI Normalization and Comparison
+ *   Characters other than those in the "reserved" set are equivalent to their
+ *   percent-encoded octets: the normal form is to not encode them (see Sections 2.1 and 2.2 of [RFC3986]).
+ */
 wget_http_request_t *wget_http_create_request(const wget_iri_t *iri, const char *method)
 {
 	wget_http_request_t *req = xcalloc(1, sizeof(wget_http_request_t));
