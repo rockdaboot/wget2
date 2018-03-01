@@ -1022,10 +1022,14 @@ const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer_t *
 	// Do not actually escape the query field. This part of the URL *MAY*
 	// contain reserved characters which should be passed on as-is and without
 	// escaping them. This is according to the rules laid out in RFC 2616 and
-	// RFC 7230
+	// RFC 7230. But we have to replace spaces in any case.
 	if (iri->query) {
 		wget_buffer_memcat(buf, "?", 1);
-		wget_buffer_strcat(buf, iri->query);
+		for (const char *p = iri->query; *p; p++)
+			if (*p == ' ')
+				wget_buffer_memcat(buf, "%20", 3);
+			else
+				wget_buffer_memcat(buf, p, 1);
 	}
 
 	return buf->data;
