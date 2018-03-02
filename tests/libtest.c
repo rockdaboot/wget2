@@ -495,7 +495,9 @@ static int _http_server_start(int SERVER_MODE)
 			port_num, NULL, NULL, &_answer_to_connection, NULL,
 			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
 			MHD_OPTION_NONCE_NC_SIZE, 300,
+#ifdef MHD_OPTION_STRICT_FOR_CLIENT
 			MHD_OPTION_STRICT_FOR_CLIENT, 1,
+#endif
 			MHD_OPTION_END);
 
 		if (!httpdaemon)
@@ -516,6 +518,9 @@ static int _http_server_start(int SERVER_MODE)
 			port_num, _check_to_accept, NULL, _answer_to_connection, NULL,
 			MHD_OPTION_HTTPS_MEM_KEY, key_pem,
 			MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
+#ifdef MHD_OPTION_STRICT_FOR_CLIENT
+			MHD_OPTION_STRICT_FOR_CLIENT, 1,
+#endif
 			MHD_OPTION_END);
 
 		if (!httpsdaemon) {
