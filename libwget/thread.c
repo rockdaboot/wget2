@@ -104,7 +104,6 @@ int wget_thread_mutex_destroy(wget_thread_mutex_t *mutex)
 
 /**
  * \param[in] mutex The mutex to be locked
- * \return 0 on success, non-zero on failure
  *
  * Creates a lock on the \p mutex.
  *
@@ -117,7 +116,6 @@ void wget_thread_mutex_lock(wget_thread_mutex_t mutex)
 
 /**
  * \param[in] mutex The mutex to be unlocked
- * \return 0 on success, non-zero on failure
  *
  * Unlocks the \p mutex.
  */

@@ -76,7 +76,7 @@ int wget_verify_pgp_sig_buff(wget_buffer_t *sig, wget_buffer_t *data, wget_gpg_i
  * \param sig_len The number of bytes in sig.
  * \param data The bytes for the signed data.
  * \param data_len The number of bytes in data.
- * \param The struct that will be populated with
+ * \param info The struct that will be populated with
  *        information about the verification. Pass in NULL if you don't care.
  * \return A wget error code.
  *         Return Codes:

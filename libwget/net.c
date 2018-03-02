@@ -1128,7 +1128,7 @@ int wget_tcp_tls_start(wget_tcp_t *tcp)
 
 /**
  * \param[in] tcp An active connection.
- * \return WGET_E_SUCCESS (0) on success, or a negative integer on error (one of WGET_E_XXX, defined in `<wget.h>`).
+ *
  * Stops TLS, but does not close the connection. Data will be transmitted in the clear from now on.
  */
 void wget_tcp_tls_stop(wget_tcp_t *tcp)
