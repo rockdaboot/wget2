@@ -495,6 +495,7 @@ static int _http_server_start(int SERVER_MODE)
 			port_num, NULL, NULL, &_answer_to_connection, NULL,
 			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
 			MHD_OPTION_NONCE_NC_SIZE, 300,
+			MHD_OPTION_STRICT_FOR_CLIENT, 1,
 			MHD_OPTION_END);
 
 		if (!httpdaemon)
