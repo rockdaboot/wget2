@@ -20,8 +20,8 @@
  * Header file for xattr routines
  */
 
-#ifndef _WGET_XATTR_H
-#define _WGET_XATTR_H
+#ifndef SRC_WGET_XATTR_H
+#define SRC_WGET_XATTR_H
 
 #include <stdio.h>
 
@@ -48,4 +48,4 @@ int set_file_metadata(const char *origin_url, const char *referrer_url,
 #  define USE_XATTR
 #endif
 
-#endif /* _WGET_XATTR_H */
+#endif /* SRC_WGET_XATTR_H */

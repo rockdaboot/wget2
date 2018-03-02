@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef _WGET_MAIN_H
-#define _WGET_MAIN_H
+#ifndef SRC_WGET_MAIN_H
+#define SRC_WGET_MAIN_H
 
 #include <stddef.h>
 #include <stdlib.h> // needed for free()
@@ -60,4 +60,4 @@
 
 const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(const wget_iri_t *iri);
 
-#endif /* _WGET_MAIN_H */
+#endif /* SRC_WGET_MAIN_H */

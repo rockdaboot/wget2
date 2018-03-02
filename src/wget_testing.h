@@ -17,12 +17,12 @@
  * along with Wget.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _WGET_TESTING_H
-#define _WGET_TESTING_H
+#ifndef SRC_WGET_TESTING_H
+#define SRC_WGET_TESTING_H
 
 #include <stdbool.h>
 
 void enable_testing(void);
 bool is_testing(void);
 
-#endif /* _WGET_TESTING_H */
+#endif /* SRC_WGET_TESTING_H */

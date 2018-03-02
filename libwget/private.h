@@ -25,12 +25,12 @@
  *
  */
 
-#ifndef _LIBWGET_PRIVATE_H
-# define _LIBWGET_PRIVATE_H
+#ifndef LIBWGET_PRIVATE_H
+#define LIBWGET_PRIVATE_H
 
-# include <stdio.h> // needed for FILE
-# include <stdlib.h> // needed for free()
-# include <stdarg.h> // needed for va_list
+#include <stdio.h> // needed for FILE
+#include <stdlib.h> // needed for free()
+#include <stdarg.h> // needed for va_list
 
 // gnulib convenience header for libintl.h, turn of annoying warnings
 #pragma GCC diagnostic push
@@ -45,10 +45,10 @@
 #endif
 
 // I try to never leave freed pointers hanging around
-# define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
+#define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
 
 // number of elements within an array
-# define countof(a) (sizeof(a)/sizeof(*(a)))
+#define countof(a) (sizeof(a)/sizeof(*(a)))
 
 // allow us to use wget_* functions without it's wget_ prefix within the library code
 // #define _WGET_PREFIX wget_
@@ -57,15 +57,15 @@
 // #define _GET_ADDPREFIX(a) _WGET_CONCAT2(_WGET_PREFIX,a)
 // #define xmalloc _WGET_ADDPREFIX(xmalloc)
 
-# define xmalloc wget_malloc
-# define xcalloc wget_calloc
-# define xrealloc wget_realloc
+#define xmalloc wget_malloc
+#define xcalloc wget_calloc
+#define xrealloc wget_realloc
 
-# define info_printf wget_info_printf
-# define error_printf wget_error_printf
-# define error_printf_exit wget_error_printf_exit
-# define debug_printf wget_debug_printf
-# define debug_write wget_debug_write
+#define info_printf wget_info_printf
+#define error_printf wget_error_printf
+#define error_printf_exit wget_error_printf_exit
+#define debug_printf wget_debug_printf
+#define debug_write wget_debug_write
 
 
-#endif /* _LIBWGET_PRIVATE_H */
+#endif /* LIBWGET_PRIVATE_H */

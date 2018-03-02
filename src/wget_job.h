@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef _WGET_JOB_H
-#define _WGET_JOB_H
+#ifndef SRC_WGET_JOB_H
+#define SRC_WGET_JOB_H
 
 #include <sys/types.h> // for off_t
 
@@ -127,4 +127,4 @@ int job_validate_file(JOB *job) G_GNUC_WGET_NONNULL((1));
 void job_create_parts(JOB *job) G_GNUC_WGET_NONNULL((1));
 void job_free(JOB *job) G_GNUC_WGET_NONNULL((1));
 
-#endif /* _WGET_JOB_H */
+#endif /* SRC_WGET_JOB_H */

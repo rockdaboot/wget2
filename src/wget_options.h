@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef _WGET_OPTIONS_H
-#define _WGET_OPTIONS_H
+#ifndef SRC_WGET_OPTIONS_H
+#define SRC_WGET_OPTIONS_H
 
 #include <stdarg.h>
 #include <unistd.h> // needed for EXIT_SUCCESS
@@ -255,4 +255,4 @@ exit_status_t get_exit_status(void);
 }
 #endif
 
-#endif /* _WGET_OPTIONS_H */
+#endif /* SRC_WGET_OPTIONS_H */

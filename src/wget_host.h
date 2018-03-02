@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef _WGET_HOST_H
-#define _WGET_HOST_H
+#ifndef SRC_WGET_HOST_H
+#define SRC_WGET_HOST_H
 
 #include <wget.h>
 #include <stdbool.h>
@@ -77,4 +77,4 @@ int queue_size(void) G_GNUC_WGET_PURE;
 int queue_empty(void) G_GNUC_WGET_PURE;
 void queue_print(HOST *host);
 
-#endif /* _WGET_HOST_H */
+#endif /* SRC_WGET_HOST_H */

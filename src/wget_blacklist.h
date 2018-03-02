@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef _WGET_BLACKLIST_H
-#define _WGET_BLACKLIST_H
+#ifndef SRC_WGET_BLACKLIST_H
+#define SRC_WGET_BLACKLIST_H
 
 #include <wget.h>
 
@@ -38,4 +38,4 @@ wget_iri_t *blacklist_add(wget_iri_t *iri);
 void blacklist_print(void);
 void blacklist_free(void);
 
-#endif /* _WGET_BLACKLIST_H */
+#endif /* SRC_WGET_BLACKLIST_H */

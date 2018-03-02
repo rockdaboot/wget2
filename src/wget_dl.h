@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _WGET_DL_H
-#define _WGET_DL_H
+#ifndef SRC_WGET_DL_H
+#define SRC_WGET_DL_H
 
 #include <wget.h>
 
@@ -96,4 +96,4 @@ char *dl_search(const char *name, const wget_vector_t *dirs);
  */
 void dl_list(const wget_vector_t *dirs, wget_vector_t *names_out);
 
-#endif // _WGET_DL_H
+#endif /* SRC_WGET_DL_H */

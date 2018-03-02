@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef _WGET_BAR_H
-# define _WGET_BAR_H
+#ifndef SRC_WGET_BAR_H
+#define SRC_WGET_BAR_H
 
 bool bar_init(void);
 void bar_deinit(void);
@@ -46,4 +46,4 @@ ssize_t
 void
 	wget_bar_print(wget_bar_t *bar, int slot, const char *s)G_GNUC_WGET_NONNULL_ALL;
 */
-#endif /* _WGET_BAR_H */
+#endif /* SRC_WGET_BAR_H */

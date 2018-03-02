@@ -20,11 +20,11 @@
  * Header file for utility functions
  */
 
-#ifndef _WGET_UTILS_H
-#define _WGET_UTILS_H
+#ifndef SRC_WGET_UTILS_H
+#define SRC_WGET_UTILS_H
 
 #include <wget.h>
 
 char *shell_expand(const char *fname);
 
-#endif /* _WGET_UTILS_H */
+#endif /* SRC_WGET_UTILS_H */

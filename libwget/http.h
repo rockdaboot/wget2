@@ -20,8 +20,8 @@
  * Header file for private HTTP structures
  */
 
-#ifndef _LIBWGET_HTTP_H
-# define _LIBWGET_HTTP_H
+#ifndef LIBWGET_HTTP_H
+# define LIBWGET_HTTP_H
 
 #ifdef WITH_LIBNGHTTP2
 #	include <nghttp2/nghttp2.h>
@@ -82,4 +82,4 @@ struct _wget_http_connection_st {
 #define HTTP_STATUS_NOT_FOUND             404
 #define HTTP_STATUS_RANGE_NOT_SATISFIABLE 416
 
-#endif /* _LIBWGET_HTTP_H */
+#endif /* LIBWGET_HTTP_H */

@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef _WGET_LOG_H
-#define _WGET_LOG_H
+#ifndef SRC_WGET_LOG_H
+#define SRC_WGET_LOG_H
 
 #include <stdarg.h>
 
@@ -34,4 +34,4 @@ void log_init(void);
 
 void log_write_error_stdout(const char *data, size_t len);
 
-#endif /* _WGET_LOG_H */
+#endif /* SRC_WGET_LOG_H */

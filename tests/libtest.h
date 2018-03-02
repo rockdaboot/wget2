@@ -30,8 +30,8 @@
  *
  */
 
-#ifndef _LIBWGET_LIBTEST_H
-#define _LIBWGET_LIBTEST_H
+#ifndef TESTS_LIBTEST_H
+#define TESTS_LIBTEST_H
 
 #include <wget.h>
 

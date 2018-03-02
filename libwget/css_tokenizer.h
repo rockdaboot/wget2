@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef CSS_TOKENIZER_H
-# define CSS_TOKENIZER_H
+#ifndef LIBWGET_CSS_TOKENIZER_H
+# define LIBWGET_CSS_TOKENIZER_H
 
 enum {
   CSSEOF = 0,
@@ -55,4 +55,4 @@ enum {
 
 # define YY_FATAL_ERROR(msg) wget_error_printf_exit(msg)
 
-#endif /* CSS_TOKENIZER_H */
+#endif /* LIBWGET_CSS_TOKENIZER_H */

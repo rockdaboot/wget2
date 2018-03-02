@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef _LIBWGET_LIBWGET_H
-#define _LIBWGET_LIBWGET_H
+#ifndef WGET_WGET_H
+#define WGET_WGET_H
 
 #include <stddef.h>
 #include <sys/types.h>
@@ -2684,7 +2684,7 @@ WGETAPI void
 
 WGET_END_DECLS
 
-#endif /* _LIBWGET_LIBWGET_H */
+#endif /* WGET_WGET_H */
 
 /*
  * Regex Types

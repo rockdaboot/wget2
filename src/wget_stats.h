@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _WGET_STATS_H
-#define _WGET_STATS_H
+#ifndef SRC_WGET_STATS_H
+#define SRC_WGET_STATS_H
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -73,4 +73,4 @@ void stats_exit(void);
 void stats_print(void);
 void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info);
 
-#endif
+#endif /* SRC_WGET_STATS_H */

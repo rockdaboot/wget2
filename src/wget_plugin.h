@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _WGET_PLUGIN_H
-#define _WGET_PLUGIN_H
+#ifndef SRC_WGET_PLUGIN_H
+#define SRC_WGET_PLUGIN_H
 
 #include <wget.h>
 #include "wget_dl.h"
@@ -117,4 +117,4 @@ void plugin_db_finalize(int exitcode);
 }
 #endif
 
-#endif // _WGET_PLUGIN_H
+#endif /* SRC_WGET_PLUGIN_H */

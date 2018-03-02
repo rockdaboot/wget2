@@ -20,8 +20,8 @@
  * Header file shared between logger.c and log.c
  */
 
-#ifndef _LIBWGET_LOGGER_H
-# define _LIBWGET_LOGGER_H
+#ifndef LIBWGET_LOGGER_H
+# define LIBWGET_LOGGER_H
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -38,4 +38,4 @@ struct _wget_logger_st {
 	void (*write)(const wget_logger_t *logger, const char *buf, size_t bufsize);
 };
 
-#endif /* _LIBWGET_LOGGER_H */
+#endif /* LIBWGET_LOGGER_H */

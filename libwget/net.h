@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef _LIBWGET_NET_H
-# define _LIBWGET_NET_H
+#ifndef LIBWGET_NET_H
+# define LIBWGET_NET_H
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -66,4 +66,4 @@ struct wget_tcp_st {
 		first_send : 1; // TCP_FASTOPEN's first packet is sent different
 };
 
-#endif /* _LIBWGET_NET_H */
+#endif /* LIBWGET_NET_H */

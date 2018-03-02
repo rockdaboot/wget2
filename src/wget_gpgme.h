@@ -24,8 +24,8 @@
  *
  */
 
-#ifndef _WG_GPGME_H
-#define _WG_GPGME_H
+#ifndef SRC_WGET_GPGME_H
+#define SRC_WGET_GPGME_H
 
 #include <config.h>
 
@@ -102,6 +102,4 @@ int wget_verify_pgp_sig_str(const char *sig,
  */
 char *wget_verify_get_base_file(JOB *job);
 
-/* #endif */
-
-#endif
+#endif /* SRC_WGET_GPGME_H */
