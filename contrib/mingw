@@ -92,6 +92,20 @@ make -j$(nproc)
 make install
 cd ..
 
+# Install dlfcn-win32
+if [ ! -d dlfcn-win32 ]; then
+  git clone --recursive https://github.com/dlfcn-win32/dlfcn-win32.git
+  cd dlfcn-win32
+else
+  cd dlfcn-win32
+  git pull
+fi
+./configure --prefix=$PREFIX --cc=$CC
+make
+cp -p libdl.a ../x86_64-w64-mingw32/lib/
+cp -p dlfcn.h ../x86_64-w64-mingw32/include/
+cd ..
+
 # Install Libmicrohttpd from source
 if [ ! -d libmicrohttpd ]; then
   git clone --recursive https://gnunet.org/git/libmicrohttpd.git
