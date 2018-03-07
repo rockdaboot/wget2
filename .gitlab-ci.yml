@@ -4,7 +4,7 @@
 # name to allow expiration of old caches.
 
 cache:
-  key: "$CI_JOB_NAME-ver1"
+  key: "$CI_JOB_NAME-ver2"
   paths:
     - cache/
 
@@ -60,7 +60,7 @@ variables:
 Full/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
-    - export CFLAGS=$CFLAGS_DEFAULT
+    - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - ./bootstrap && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check
@@ -82,7 +82,7 @@ Full/Debian:
 Minimal/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
-    - export CFLAGS=$CFLAGS_DEFAULT
+    - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - ./bootstrap && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --disable-doc
         --disable-xattr --without-gnutls --without-libpsl --without-libnghttp2 --without-bzip2
@@ -108,7 +108,7 @@ Minimal/Debian:
 Sanitizers/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
-    - export CFLAGS=$CFLAGS_DEFAULT
+    - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - ./bootstrap && touch .manywarnings
     - export CC="ccache clang"
     - export UBSAN_OPTIONS=print_stacktrace=1
@@ -170,7 +170,7 @@ Flawfinder/Debian:
 Valgrind/Fedora:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
-    - export CFLAGS=$CFLAGS_DEFAULT
+    - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - ./bootstrap && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
     - make -j$(nproc) check
