@@ -1523,7 +1523,7 @@ void wget_tcp_set_stats_server(wget_stats_callback_t fn)
  *
  * Set callback function to be called once Response statistics for a host are collected
  */
-void wget_tcp_set_stats_site(wget_stats_callback_t fn)
+void wget_tcp_set_stats_site(G_GNUC_WGET_UNUSED wget_stats_callback_t fn)
 {
 }
 
