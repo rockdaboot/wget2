@@ -196,7 +196,7 @@ static int print_csv_entry(FILE *fp, site_stats_t *doc)
 	return 0;
 }
 
-static void print_human(G_GNUC_WGET_UNUSED stats_opts_t *opts, FILE *fp)
+static void print_human(stats_opts_t *opts, FILE *fp)
 {
 	fprintf(fp, "\nSite Statistics:\n");
 	fprintf(fp, "  %6s %5s %6s %s\n", "Status", "ms", "Size", "URL");
