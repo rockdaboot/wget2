@@ -24,7 +24,9 @@
 
 // gzipp'ed content 'x'
 #define compressed_body "\x1f\x8b\x08\x08\x48\x5d\x91\x5a\x00\x03\x78\x00\xab\x00\x00\x83\x16\xdc\x8c\x01\x00\x00\x00"
-#define uncompressed_body "x"
+#ifdef WITH_ZLIB
+#  define uncompressed_body "x"
+#endif
 
 int main(void)
 {
