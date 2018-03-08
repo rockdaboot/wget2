@@ -728,7 +728,10 @@ void wget_test_start_server(int first_key, ...)
 {
 	int rc, key;
 	va_list args;
-	bool start_http = 1, start_https = 1;
+	bool start_http = 1;
+#ifdef WITH_GNUTLS
+	bool start_https = 1;
+#endif
 
 	wget_global_init(
 		WGET_DEBUG_FUNC, _write_msg,
@@ -763,7 +766,9 @@ void wget_test_start_server(int first_key, ...)
 			start_http = 0;
 			break;
 		case WGET_TEST_HTTP_ONLY:
+#ifdef WITH_GNUTLS
 			start_https = 0;
+#endif
 			break;
 		case WGET_TEST_HTTPS_REJECT_CONNECTIONS:
 			reject_https_connection = 1;
