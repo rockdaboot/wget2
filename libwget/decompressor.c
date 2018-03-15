@@ -171,7 +171,7 @@ static int lzma_init(lzma_stream *strm)
 	memset(strm, 0, sizeof(*strm));
 
 //	if (lzma_stream_decoder(strm, UINT64_MAX, LZMA_TELL_UNSUPPORTED_CHECK | LZMA_CONCATENATED) != LZMA_OK) {
-	if (lzma_stream_decoder(strm, UINT64_MAX, 0) != LZMA_OK) {
+	if (lzma_auto_decoder(strm, UINT64_MAX, 0) != LZMA_OK) {
 		error_printf(_("Failed to init LZMA decompression\n"));
 		return -1;
 	}
