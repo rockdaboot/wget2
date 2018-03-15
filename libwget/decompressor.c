@@ -440,6 +440,7 @@ static char _encoding_names[wget_content_encoding_max][9] = {
 	[wget_content_encoding_identity] = "identity",
 	[wget_content_encoding_gzip] = "gzip",
 	[wget_content_encoding_deflate] = "deflate",
+	[wget_content_encoding_xz] = "xz",
 	[wget_content_encoding_lzma] = "lzma",
 	[wget_content_encoding_bzip2] = "bzip2",
 	[wget_content_encoding_brotli] = "br",
@@ -452,6 +453,9 @@ wget_content_encoding_type_t wget_content_encoding_by_name(const char *name)
 			if (!strcmp(_encoding_names[it], name))
 				return it;
 		}
+
+		if (!strcmp("none", name))
+			return wget_content_encoding_identity;
 	}
 
 	return wget_content_encoding_unknown;

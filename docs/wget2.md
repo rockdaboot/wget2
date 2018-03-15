@@ -1274,6 +1274,15 @@ Go to background immediately after startup. If no output file is specified via t
   Use of this option is not recommended, and is intended only to support some few obscure servers, which never send
   HTTP authentication challenges, but accept unsolicited auth info, say, in addition to form-based authentication.
 
+### `--compression=TYPE`
+
+  If this TYPE(`identity`, `gzip`, `deflate`, `xz`, `lzma`, `br`, `bzip2` or any combination of it) is given,
+  Wget2 will set "Accept-Encoding" header accordingly. `--no-compression` means no "Accept-Encoding" header at all.
+  To set "Accept-Encoding" to a custom value, use `--no-compression` in combination with
+  `--header="Accept-Encoding: xxx"`.
+
+  Compatibility-Note: `none` type in Wget 1.X has the same meaning as `identity` type in Wget2.
+
 ## <a name="HTTPS (SSL/TLS) Options"/>HTTPS (SSL/TLS) Options
 
   To support encrypted HTTP (HTTPS) downloads, Wget2 must be compiled with an external SSL library. The current default

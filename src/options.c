@@ -835,6 +835,84 @@ static int parse_https_enforce(option_t opt, const char *val, G_GNUC_WGET_UNUSED
 	return 0;
 }
 
+static int parse_compression(option_t opt, const char *val, const char invert)
+{
+	wget_vector_t *v = *((wget_vector_t **)opt->var);
+
+	if (!val && invert) {   // --no-compression
+		// should free the previous TYPE list and clear config.compression_methods for override
+		if (v) {
+			wget_vector_free((wget_vector_t **)opt->var);
+			config.compression_methods[wget_content_encoding_max] = 0;
+		}
+
+		config.no_compression = true;
+		return 0;
+	} else if (val && !invert) {    // --compression=TYPE
+		int rc;
+
+		// should free the previous TYPE list and clear config.compression_methods for override
+		if (v) {
+			wget_vector_free((wget_vector_t **)opt->var);
+			config.compression_methods[wget_content_encoding_max] = 0;
+		}
+
+		if ((rc = parse_stringlist_expand(opt, val, 0, 16)))
+			return rc;
+
+		v = *((wget_vector_t **)opt->var);
+
+		config.no_compression = false;
+		long long methods_bits = 0;		// check duplication
+
+		for (int it = 0; it < wget_vector_size(v); it++) {
+			int not_built = 0;
+			wget_content_encoding_type_t type = wget_content_encoding_by_name(wget_vector_get(v, it));
+
+			if (type == wget_content_encoding_unknown) {
+				wget_error_printf(_("Compression type %s not supported\n"), wget_content_encoding_to_name(type));
+				return -1;
+			} else if (methods_bits & (1 << type)) {
+				wget_error_printf(_("Duplicate type %s"), wget_content_encoding_to_name(type));
+				return -1;
+			}
+
+#ifndef WITH_ZLIB
+			if (type == wget_content_encoding_gzip || type == wget_content_encoding_deflate)
+				not_built = 1;
+#endif
+#ifndef WITH_BZIP2
+			if (type == wget_content_encoding_bzip2)
+				not_built = 1;
+#endif
+#ifndef WITH_LZMA
+			if (type == wget_content_encoding_xz || type == wget_content_encoding_lzma)
+				not_built = 1;
+#endif
+#ifndef WITH_BROTLIDEC
+			if (type == wget_content_encoding_brotli)
+				not_built = 1;
+#endif
+
+			if (not_built) {
+				wget_error_printf(_("Lib for type %s not built"), wget_content_encoding_to_name(type));
+				return -1;
+			}
+
+			methods_bits |= (1 << type);
+			config.compression_methods[config.compression_methods[wget_content_encoding_max]++] = type;
+		}
+
+		return 0;
+	} else if (!val && !invert) {   // --compression (for override)
+		config.no_compression = false;
+		return 0;
+	}
+
+	return -1;
+}
+
+
 static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
 	G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
@@ -1032,6 +1110,15 @@ static const struct optionw options[] = {
 	{ "clobber", &config.clobber, parse_bool, -1, 0,
 		SECTION_DOWNLOAD,
 		{ "Enable file clobbering. (default: on)\n"
+		}
+	},
+	{
+		"compression", &config.compression, parse_compression, -1, 0,
+		SECTION_HTTP,
+		{ "Customize Accept-Encoding with\n",
+		   "identity, gzip, deflate, xz, lzma, br, bzip2\n",
+		   "and any combination of it\n",
+		   "no-compression means no Accept-Encoding\n"
 		}
 	},
 	{ "config", &config.config_files, parse_filenames, 1, 0,
@@ -2977,10 +3064,10 @@ void deinit(void)
 	wget_vector_free(&config.headers);
 	wget_vector_free(&config.config_files);
 	wget_vector_free(&config.default_challenges);
+	wget_vector_free(&config.compression);
 #ifdef WITH_GPGME
 	wget_vector_free(&config.sig_ext);
 #endif
-
 	wget_http_set_http_proxy(NULL, NULL);
 	wget_http_set_https_proxy(NULL, NULL);
 	wget_http_set_no_proxy(NULL, NULL);

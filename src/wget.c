@@ -3334,22 +3334,39 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 	 */
 
 	wget_buffer_reset(&buf);
+
+	// if compression is specified
+	if (config.compression) {
+		for (int it = 0; it < config.compression_methods[wget_content_encoding_max]; it++) {
+			const char *encoding_method = wget_content_encoding_to_name(config.compression_methods[it]);
+			if (buf.length)
+				wget_buffer_strcat(&buf, ", ");
+			wget_buffer_strcat(&buf, encoding_method);
+		}
+
+		if (buf.length)
+			wget_http_add_header(req, "Accept-Encoding", buf.data);
+	}
+
+	// no valid types provided or just default Accept-Encoding
+	if ((!config.no_compression && !config.compression) || (config.compression && !buf.length)) {
 #ifdef WITH_ZLIB
-	wget_buffer_strcat(&buf, buf.length ? ", gzip, deflate" : "gzip, deflate");
+		wget_buffer_strcat(&buf, buf.length ? ", gzip, deflate" : "gzip, deflate");
 #endif
 #ifdef WITH_BZIP2
-	wget_buffer_strcat(&buf, buf.length ? ", bzip2" : "bzip2");
+		wget_buffer_strcat(&buf, buf.length ? ", bzip2" : "bzip2");
 #endif
 #ifdef WITH_LZMA
-	wget_buffer_strcat(&buf, buf.length ? ", xz, lzma" : "xz, lzma");
+		wget_buffer_strcat(&buf, buf.length ? ", xz, lzma" : "xz, lzma");
 #endif
 #ifdef WITH_BROTLIDEC
-	wget_buffer_strcat(&buf, buf.length ? ", br" : "br");
+		wget_buffer_strcat(&buf, buf.length ? ", br" : "br");
 #endif
-	if (!buf.length)
-		wget_buffer_strcat(&buf, "identity");
+		if (!buf.length)
+			wget_buffer_strcat(&buf, "identity");
 
-	wget_http_add_header(req, "Accept-Encoding", buf.data);
+		wget_http_add_header(req, "Accept-Encoding", buf.data);
+	}
 
 	wget_http_add_header(req, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 

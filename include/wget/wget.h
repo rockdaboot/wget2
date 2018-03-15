@@ -827,10 +827,11 @@ typedef enum {
 	wget_content_encoding_identity = 0,
 	wget_content_encoding_gzip = 1,
 	wget_content_encoding_deflate = 2,
-	wget_content_encoding_lzma = 3,
-	wget_content_encoding_bzip2 = 4,
-	wget_content_encoding_brotli = 5,
-	wget_content_encoding_max = 6
+	wget_content_encoding_xz = 3,
+	wget_content_encoding_lzma = 4,
+	wget_content_encoding_bzip2 = 5,
+	wget_content_encoding_brotli = 6,
+	wget_content_encoding_max = 7
 } wget_content_encoding_type_t;
 
 WGETAPI G_GNUC_WGET_PURE wget_content_encoding_type_t

@@ -88,6 +88,7 @@ struct config {
 		*stats_site,
 		*stats_tls;
 	wget_vector_t
+		*compression,
 		*config_files,
 		*domains,
 		*exclude_domains,
@@ -101,6 +102,8 @@ struct config {
 		*default_challenges,
 		*headers,
 		*mime_types;
+	wget_content_encoding_type_t
+		compression_methods[wget_content_encoding_max + 1];	// the last one for counting
 	wget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
 	wget_hpkp_db_t
@@ -127,6 +130,7 @@ struct config {
 	long long
 		quota;
 	bool
+		no_compression,
 		auth_no_challenge,
 		verify_sig;
 	int

@@ -54,7 +54,6 @@ extern "C" {
 #define WGET_TEST_EXIT_SKIP 77
 
 // defines for wget_test_start_http_server()
-#define WGET_TEST_EXPECTED_REQUEST_HEADER 1001
 #define WGET_TEST_RESPONSE_URLS 1002
 #define WGET_TEST_HTTPS_ONLY 1003
 #define WGET_TEST_HTTP_ONLY 1004
@@ -118,6 +117,10 @@ typedef struct {
 		headers[10];
 	const char *
 		request_headers[10];
+	const char *
+		expected_req_headers[10];
+	const char *
+		unexpected_req_headers[10];
 	time_t
 		modified;
 

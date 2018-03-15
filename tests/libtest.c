@@ -287,6 +287,45 @@ static int _answer_to_connection(
 				urls[it1].body_len ? urls[it1].body_len
 				: (urls[it1].body ? strlen(urls[it1].body) : 0);
 
+			// check request headers
+			int bad_request = 0;
+
+			for (unsigned it2 = 0; urls[it1].expected_req_headers[it2]; it2++) {
+				const char *header = urls[it1].expected_req_headers[it2];
+				if (header) {
+					const char *header_value = strchr(header, ':');
+					const char *header_key = wget_strmemdup(header, header_value - header);
+					const char *got_val = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, header_key);
+					// 400 Bad Request
+					if (!got_val || strcmp(got_val, header_value + 2)) {
+						bad_request = 1;
+						wget_xfree(header_key);
+						break;
+					}
+					wget_xfree(header_key);
+				}
+			}
+
+			// check unexpected headers
+			for (unsigned it2 = 0; urls[it1].unexpected_req_headers[it2] && !bad_request; it2++) {
+				const char *header_key = urls[it1].unexpected_req_headers[it2];
+				const char *got_val = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, header_key);
+				// 400 Bad Request
+				if (got_val) {
+					bad_request = 1;
+					break;
+				}
+			}
+
+			// return with "400 Bad Request"
+			if (bad_request) {
+				response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
+				ret = MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
+				wget_buffer_free(&url_iri);
+				found = 1;
+				break;
+			}
+
 			// chunked encoding
 			if (!wget_strcmp(urls[it1].name + 3, "bad.txt")) {
 				response = MHD_create_response_from_buffer(body_length,
@@ -753,9 +792,7 @@ void wget_test_start_server(int first_key, ...)
 		case WGET_TEST_RESPONSE_CODE:
 			response_code = va_arg(args, const char *);
 			break;
-*/		case WGET_TEST_EXPECTED_REQUEST_HEADER:
-			break;
-		case WGET_TEST_RESPONSE_URLS:
+*/		case WGET_TEST_RESPONSE_URLS:
 			urls = va_arg(args, wget_test_url_t *);
 			nurls = va_arg(args, size_t);
 			break;
