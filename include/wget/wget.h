@@ -810,15 +810,21 @@ typedef struct _wget_decompressor_st wget_decompressor_t;
 typedef int (*wget_decompressor_sink_t)(void *context, const char *data, size_t length);
 typedef int (*wget_decompressor_error_handler_t)(wget_decompressor_t *dc, int err);
 
-enum {
+typedef enum {
+	wget_content_encoding_unknown = -1,
 	wget_content_encoding_identity = 0,
 	wget_content_encoding_gzip = 1,
 	wget_content_encoding_deflate = 2,
 	wget_content_encoding_lzma = 3,
 	wget_content_encoding_bzip2 = 4,
-	wget_content_encoding_brotli = 5
-};
+	wget_content_encoding_brotli = 5,
+	wget_content_encoding_max = 6
+} wget_content_encoding_type_t;
 
+WGETAPI wget_content_encoding_type_t
+	wget_content_encoding_by_name(const char *name);
+WGETAPI const char *
+	wget_content_encoding_to_name(wget_content_encoding_type_t type);
 WGETAPI wget_decompressor_t *
 	wget_decompress_open(int encoding, wget_decompressor_sink_t data_sink, void *context);
 WGETAPI void

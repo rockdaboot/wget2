@@ -434,3 +434,32 @@ void *wget_decompress_get_context(wget_decompressor_t *dc)
 {
 	return dc ? dc->context : NULL;
 }
+
+static char _encoding_names[wget_content_encoding_max][9] = {
+	[wget_content_encoding_identity] = "identity",
+	[wget_content_encoding_gzip] = "gzip",
+	[wget_content_encoding_deflate] = "deflate",
+	[wget_content_encoding_lzma] = "lzma",
+	[wget_content_encoding_bzip2] = "bzip2",
+	[wget_content_encoding_brotli] = "br",
+};
+
+wget_content_encoding_type_t wget_content_encoding_by_name(const char *name)
+{
+	if (name) {
+		for (wget_content_encoding_type_t it = 0; it < wget_content_encoding_max; it++) {
+			if (!strcmp(_encoding_names[it], name))
+				return it;
+		}
+	}
+
+	return wget_content_encoding_unknown;
+}
+
+const char *wget_content_encoding_to_name(wget_content_encoding_type_t type)
+{
+	if (type > 0 && type < wget_content_encoding_max)
+		return _encoding_names[type];
+
+	return NULL;
+}
