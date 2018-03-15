@@ -88,7 +88,7 @@ struct _wget_decompressor_st {
 		exit;
 	void
 		*context; // given to sink()
-	char
+	wget_content_encoding_type_t
 		encoding;
 };
 
@@ -342,7 +342,8 @@ static int identity(wget_decompressor_t *dc, char *src, size_t srclen)
 	return 0;
 }
 
-wget_decompressor_t *wget_decompress_open(int encoding,
+wget_decompressor_t *wget_decompress_open(
+	wget_content_encoding_type_t encoding,
 	wget_decompressor_sink_t sink,
 	void *context)
 {
@@ -397,7 +398,7 @@ wget_decompressor_t *wget_decompress_open(int encoding,
 		return NULL;
 	}
 
-	dc->encoding = (char)encoding;
+	dc->encoding = encoding;
 	dc->sink = sink;
 	dc->context = context;
 	return dc;
@@ -458,7 +459,7 @@ wget_content_encoding_type_t wget_content_encoding_by_name(const char *name)
 
 const char *wget_content_encoding_to_name(wget_content_encoding_type_t type)
 {
-	if (type > 0 && type < wget_content_encoding_max)
+	if (type >= 0 && type < wget_content_encoding_max)
 		return _encoding_names[type];
 
 	return NULL;

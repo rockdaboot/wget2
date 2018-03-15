@@ -821,12 +821,12 @@ typedef enum {
 	wget_content_encoding_max = 6
 } wget_content_encoding_type_t;
 
-WGETAPI wget_content_encoding_type_t
+WGETAPI G_GNUC_WGET_PURE wget_content_encoding_type_t
 	wget_content_encoding_by_name(const char *name);
-WGETAPI const char *
+WGETAPI G_GNUC_WGET_PURE const char *
 	wget_content_encoding_to_name(wget_content_encoding_type_t type);
 WGETAPI wget_decompressor_t *
-	wget_decompress_open(int encoding, wget_decompressor_sink_t data_sink, void *context);
+	wget_decompress_open(wget_content_encoding_type_t encoding, wget_decompressor_sink_t data_sink, void *context);
 WGETAPI void
 	wget_decompress_close(wget_decompressor_t *dc);
 WGETAPI int
