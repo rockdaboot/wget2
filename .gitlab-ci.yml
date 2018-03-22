@@ -60,19 +60,18 @@ variables:
 #   3. Documentation Generation and Gitlab pages
 #   4. Code coverage stats
 
-# In this build we combine
-#  * gcc
-#  * check, syntax-check, distcheck
-Full/Debian:
+Full + VPATH/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
-    - export CFLAGS="$CFLAGS_DEFAULT -Werror"
+    - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap && touch .manywarnings
-    - ./configure $CONFIGURE_BASE_FLAGS
-    - make -j$(nproc) check
+    - mkdir vpath && cd vpath
+    - ../configure $CONFIGURE_BASE_FLAGS --cache-file ../cache/config.cache
+    - make -j$(nproc)
     - make -j$(nproc) distcheck
   tags:
     - shared
+    - docker
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -81,7 +80,8 @@ Full/Debian:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
-   stage: build
+  stage: build
+
 
 # In this build we combine
 #  * gcc
@@ -198,26 +198,6 @@ Valgrind/Fedora:
       - unit-tests/*.log
       - tests/*.log
   stage: test
-
-VPATH build:
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
-  script:
-    - export CFLAGS=$CFLAGS_DEFAULT
-    - ./bootstrap
-    - mkdir vpath && cd vpath
-    - ../configure $CONFIGURE_BASE_FLAGS --cache-file ../cache/config.cache --disable-manywarnings
-    - make -j$(nproc)
-    - make -j$(nproc) distcheck
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
-  stage: test
-
 
 #Centos7 build:
 #  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$CENTOS7_BUILD
