@@ -8,6 +8,11 @@ cache:
   paths:
     - cache/
 
+stages:
+    - build
+    - test
+    - deploy
+
 before_script:
   # CCache Config
   - mkdir -p cache
@@ -28,6 +33,7 @@ variables:
   CENTOS7_BUILD: buildenv-centos7
   MINGW_BUILD: buildenv-mingw
   GET_SOURCES_ATTEMPTS: "3"
+  GIT_DEPTH: "5"
   CONFIGURE_BASE_FLAGS: --enable-assert --cache-file cache/config.cache
   CFLAGS_DEFAULT: -O0 -g -ggdb3
 
@@ -75,6 +81,7 @@ Full/Debian:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
+   stage: build
 
 # In this build we combine
 #  * gcc
@@ -100,6 +107,7 @@ Minimal/Debian:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
+  stage: build
 
 # In this build we combine
 #  * clang
@@ -127,6 +135,7 @@ Sanitizers/Debian:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
+  stage: test
 
 Scan-Build/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
@@ -146,6 +155,7 @@ Scan-Build/Debian:
     when: on_failure
     paths:
       - scan-build/*
+  stage: test
 
 Flawfinder/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
@@ -166,6 +176,7 @@ Flawfinder/Debian:
     when: always
     paths:
       - flawfinder/*
+  stage: test
 
 Valgrind/Fedora:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
@@ -186,6 +197,7 @@ Valgrind/Fedora:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
+  stage: test
 
 VPATH build:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
@@ -204,6 +216,7 @@ VPATH build:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
+  stage: test
 
 
 #Centos7 build:
@@ -246,6 +259,7 @@ pages:
       - public
   only:
     - master
+  stage: deploy
 
 MinGW64:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
