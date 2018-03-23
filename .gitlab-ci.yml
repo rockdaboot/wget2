@@ -8,16 +8,12 @@ cache:
   paths:
     - cache/
 
-stages:
-    - build
-    - test
-    - deploy
-
 before_script:
   # CCache Config
   - mkdir -p cache
   - export CCACHE_BASEDIR=${PWD}
   - export CCACHE_DIR=${PWD}/cache
+  - echo "CCACHE_DIR=$CCACHE_DIR"
   - export CC="ccache gcc"
 
 after_script:
@@ -35,7 +31,7 @@ variables:
   ALPINE_BUILD: buildenv-alpine
   GET_SOURCES_ATTEMPTS: "3"
   GIT_DEPTH: "5"
-  CONFIGURE_BASE_FLAGS: --enable-assert --cache-file cache/config.cache
+  CONFIGURE_BASE_FLAGS: --enable-assert --cache-file $CCACHE_DIR/config.cache
   CFLAGS_DEFAULT: -O0 -g -ggdb3
 
 
@@ -67,7 +63,8 @@ Full + VPATH/Debian:
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap && touch .manywarnings
     - mkdir vpath && cd vpath
-    - ../configure $CONFIGURE_BASE_FLAGS --cache-file ../cache/config.cache
+    - echo "CONFIGURE_BASE_FLAGS=$CONFIGURE_BASE_FLAGS"
+    - ../configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc)
     - make -j$(nproc) distcheck
   tags:
@@ -81,7 +78,6 @@ Full + VPATH/Debian:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
-  stage: build
 
 
 # In this build we combine
@@ -108,7 +104,6 @@ Minimal/Debian:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
-  stage: build
 
 # In this build we combine
 #  * clang
@@ -136,7 +131,6 @@ Sanitizers/Debian:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
-  stage: test
 
 Scan-Build/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
@@ -156,7 +150,6 @@ Scan-Build/Debian:
     when: on_failure
     paths:
       - scan-build/*
-  stage: test
 
 Flawfinder/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
@@ -177,7 +170,6 @@ Flawfinder/Debian:
     when: always
     paths:
       - flawfinder/*
-  stage: test
 
 Valgrind/Fedora:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
@@ -198,13 +190,12 @@ Valgrind/Fedora:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
-  stage: test
 
 Alpine:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ALPINE_BUILD
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - cp -a ../gnulib .
+    - cp -a /builds/common/gnulib .
     - ./bootstrap
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check
@@ -220,7 +211,6 @@ Alpine:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
-  stage: test
 
 #Centos7 build:
 #  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$CENTOS7_BUILD
@@ -262,7 +252,6 @@ pages:
       - public
   only:
     - master
-  stage: deploy
 
 MinGW64:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
