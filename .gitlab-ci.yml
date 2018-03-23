@@ -32,6 +32,7 @@ variables:
   FEDORA_BUILD: buildenv-f27
   CENTOS7_BUILD: buildenv-centos7
   MINGW_BUILD: buildenv-mingw
+  ALPINE_BUILD: buildenv-alpine
   GET_SOURCES_ATTEMPTS: "3"
   GIT_DEPTH: "5"
   CONFIGURE_BASE_FLAGS: --enable-assert --cache-file cache/config.cache
@@ -184,6 +185,28 @@ Valgrind/Fedora:
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - ./bootstrap && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
+    - make -j$(nproc) check
+  tags:
+    - shared
+  except:
+    - tags
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
+  stage: test
+
+Alpine:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ALPINE_BUILD
+  script:
+    - export CFLAGS="$CFLAGS_DEFAULT"
+    - cp -a ../gnulib .
+    - ./bootstrap
+    - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check
   tags:
     - shared
