@@ -503,6 +503,7 @@ AS_IF([test "x$with_gpgme" != xno], [
 	  CFLAGS="$GPGME_CFLAGS $CFLAGS"
 	  AC_DEFINE([WITH_GPGME], [1], [Use gpgme])
 	  ],[
+		 with_gpgme=no; AC_MSG_WARN(*** GPGME not found.)
 	  ])
 	],
 	[with_gpgme=no; AC_MSG_WARN(*** GPGME not found. Signature verification is not possible)])
