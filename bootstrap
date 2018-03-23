@@ -1,10 +1,10 @@
 #! /bin/sh
 # Print a version string.
-scriptversion=2017-01-09.19; # UTC
+scriptversion=2018-03-07.03; # UTC
 
 # Bootstrap this package from checked-out sources.
 
-# Copyright (C) 2003-2017 Free Software Foundation, Inc.
+# Copyright (C) 2003-2018 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -702,7 +702,7 @@ download_po_files() {
   echo "$me: getting translations into $subdir for $domain..."
   cmd=$(printf "$po_download_command_format" "$domain" "$subdir")
   eval "$cmd" && return
-  # Fallback to HTTP.
+  # Fallback to HTTPS.
   cmd=$(printf "$po_download_command_format2" "$subdir" "$domain")
   eval "$cmd"
 }
@@ -795,7 +795,7 @@ symlink_to_dir()
       # aren't confused into doing unnecessary builds.  Conversely, if the
       # existing symlink's timestamp is older than the source, make it afresh,
       # so that broken tools aren't confused into skipping needed builds.  See
-      # <https://lists.gnu.org/archive/html/bug-gnulib/2011-05/msg00326.html>.
+      # <https://lists.gnu.org/r/bug-gnulib/2011-05/msg00326.html>.
       test -h "$dst" &&
       src_ls=$(ls -diL "$src" 2>/dev/null) && set $src_ls && src_i=$1 &&
       dst_ls=$(ls -diL "$dst" 2>/dev/null) && set $dst_ls && dst_i=$1 &&
@@ -1023,7 +1023,7 @@ bootstrap_epilogue
 echo "$0: done.  Now you can run './configure'."
 
 # Local variables:
-# eval: (add-hook 'write-file-hooks 'time-stamp)
+# eval: (add-hook 'before-save-hook 'time-stamp)
 # time-stamp-start: "scriptversion="
 # time-stamp-format: "%:y-%02m-%02d.%02H"
 # time-stamp-time-zone: "UTC0"
