@@ -55,12 +55,24 @@ int main(void)
 		},
 	};
 
-#ifdef _WIN32
 	/* Tilde '~' in SHIFT_JIS should be translated to '‾' in UTF-8 and vice versa.
+	 *
 	 * The MinGW libiconv seems to have a bug, it simply doesn't translate it.
+	 * Same problem with Alpine musl / busybox.
+	 *
+	 * So we add a runtime test here.
 	 */
-	return WGET_TEST_EXIT_SKIP;
-#endif
+	{
+		char *dst = NULL;
+
+		if (wget_memiconv("SHIFT_JIS", "~", 1, "utf-8", &dst, NULL) || strcmp(dst, "‾")) {
+			wget_error_printf("SHIFT_JIS -> UTF-8: Tilde (~) failed to translate into '‾', test skipped.\n");
+			wget_free(dst);
+			return WGET_TEST_EXIT_SKIP;
+		}
+
+		wget_free(dst);
+	}
 
 	// functions won't come back if an error occurs
 	wget_test_start_server(
