@@ -624,11 +624,11 @@ WGETAPI int
 WGETAPI int
 	wget_vector_add_noalloc(wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_add_str(wget_vector_t *v, const char *s) G_GNUC_WGET_NONNULL((2));
+	wget_vector_add_str(wget_vector_t *v, const char *s);
 WGETAPI int
-	wget_vector_add_vprintf(wget_vector_t *v, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((2));
+	wget_vector_add_vprintf(wget_vector_t *v, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
 WGETAPI int
-	wget_vector_add_printf(wget_vector_t *v, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3) G_GNUC_WGET_NONNULL((2));
+	wget_vector_add_printf(wget_vector_t *v, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
 WGETAPI int
 	wget_vector_replace(wget_vector_t *v, const void *elem, size_t size, int pos) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
