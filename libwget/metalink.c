@@ -78,7 +78,7 @@ static void _add_piece(_metalink_context_t *ctx, const char *value)
 		wget_metalink_piece_t piece, *piecep;
 
 		if (!metalink->pieces)
-			metalink->pieces = wget_vector_create(32, 32, NULL);
+			metalink->pieces = wget_vector_create(32, NULL);
 
 		piece.length = ctx->length;
 		wget_strscpy(piece.hash.type, ctx->hash_type, sizeof(piece.hash.type));
@@ -113,7 +113,7 @@ static void _add_file_hash(_metalink_context_t *ctx, const char *value)
 		wget_strscpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
 
 		if (!metalink->hashes)
-			metalink->hashes = wget_vector_create(4, 4, NULL);
+			metalink->hashes = wget_vector_create(4, NULL);
 		wget_vector_add(metalink->hashes, &hash, sizeof(wget_metalink_hash_t));
 	}
 
@@ -140,7 +140,7 @@ static void _add_mirror(_metalink_context_t *ctx, const char *value)
 		return;
 
 	if (!metalink->mirrors) {
-		metalink->mirrors = wget_vector_create(4, 4, NULL);
+		metalink->mirrors = wget_vector_create(4, NULL);
 		wget_vector_set_destructor(metalink->mirrors, (wget_vector_destructor_t)_free_mirror);
 	}
 	wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));

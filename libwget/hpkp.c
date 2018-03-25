@@ -143,7 +143,7 @@ void wget_hpkp_pin_add(wget_hpkp_t *hpkp, const char *pin_type, const char *pin_
 	pin->pin = (unsigned char *)wget_base64_decode_alloc(pin_b64, len_b64, &pin->pinsize);
 
 	if (!hpkp->pins) {
-		hpkp->pins = wget_vector_create(5, -2, (wget_vector_compare_t)_compare_pin);
+		hpkp->pins = wget_vector_create(5, (wget_vector_compare_t)_compare_pin);
 		wget_vector_set_destructor(hpkp->pins, (wget_vector_destructor_t)_hpkp_pin_free);
 	}
 

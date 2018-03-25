@@ -432,7 +432,7 @@ int plugin_db_load_from_envvar(void)
 		dl_error_init(e);
 
 		// Split the value
-		v = wget_vector_create(16, -2, NULL);
+		v = wget_vector_create(16, NULL);
 		split_string(str, sep, v);
 
 		// Load each plugin
@@ -678,8 +678,8 @@ int plugin_db_forward_downloaded_file(const wget_iri_t *iri, uint64_t size, cons
 void plugin_db_init(void)
 {
 	if (! initialized) {
-		search_paths = wget_vector_create(16, -2, NULL);
-		plugin_list = wget_vector_create(16, -2, NULL);
+		search_paths = wget_vector_create(16, NULL);
+		plugin_list = wget_vector_create(16, NULL);
 		wget_vector_set_destructor(plugin_list, (wget_vector_destructor_t) plugin_deinit);
 		plugin_name_index = wget_stringmap_create(16);
 		wget_stringmap_set_key_destructor(plugin_name_index, NULL);

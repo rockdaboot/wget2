@@ -68,24 +68,35 @@ struct _wget_vector_st {
 
 /**
  * \param[in] max Initial number of pre-allocated entries.
- * \param[in] off Vector growth mode:
- *   positive values: increase vector by \p off entries on each resize
- *   negative values: increase vector by multiplying \p -off, e.g. -2 doubles the size on each resize
  * \param[in] cmp Comparison function for sorting/finding/sorted insertion or %NULL.
  * \return New vector instance
  *
- * Create a new vector instance.
+ * Create a new vector instance, to be free'd after use with wget_vector_free().
  */
-wget_vector_t *wget_vector_create(int max, int off, wget_vector_compare_t cmp)
+wget_vector_t *wget_vector_create(int max, wget_vector_compare_t cmp)
 {
 	wget_vector_t *v = xcalloc(1, sizeof(wget_vector_t));
 
 	v->entry = xmalloc(max * sizeof(void *));
 	v->max = max;
-	v->off = off;
+	v->off = -2;
 	v->cmp = cmp;
 
 	return v;
+}
+
+/**
+ * \param[in] v Vector
+ * \param[in] off Vector growth mode:
+ *   positive values: increase vector by \p off entries on each resize
+ *   negative values: increase vector by multiplying \p -off, e.g. -2 doubles the size on each resize
+ *
+ * Set the growth policy for internal memory.
+ */
+void wget_vector_set_growth_policy(wget_vector_t *v, int off)
+{
+	if (v)
+		v->off = off;
 }
 
 static int G_GNUC_WGET_NONNULL((2)) _vec_insert_private(wget_vector_t *v, const void *elem, size_t size, int pos, int replace, int alloc)

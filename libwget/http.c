@@ -172,7 +172,7 @@ wget_http_request_t *wget_http_create_request(const wget_iri_t *iri, const char 
 	wget_strscpy(req->method, method, sizeof(req->method));
 	wget_iri_get_escaped_resource(iri, &req->esc_resource);
 	wget_iri_get_escaped_host(iri, &req->esc_host);
-	req->headers = wget_vector_create(8, 8, NULL);
+	req->headers = wget_vector_create(8, NULL);
 	wget_vector_set_destructor(req->headers, (wget_vector_destructor_t)wget_http_free_param);
 
 	wget_http_add_header(req, "Host", req->esc_host.data);
@@ -781,11 +781,11 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 				return WGET_E_INVALID;
 			}
 
-			conn->received_http2_responses = wget_vector_create(16, -2, NULL);
+			conn->received_http2_responses = wget_vector_create(16, NULL);
 		} else
-			conn->pending_requests = wget_vector_create(16, -2, NULL);
+			conn->pending_requests = wget_vector_create(16, NULL);
 #else
-		conn->pending_requests = wget_vector_create(16, -2, NULL);
+		conn->pending_requests = wget_vector_create(16, NULL);
 #endif
 	} else {
 		if (stats_callback && (rc == WGET_E_CERTIFICATE))
@@ -1397,7 +1397,7 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 			iri = wget_iri_parse (host, encoding);
 			if (iri) {
 				if (!proxies) {
-					proxies = wget_vector_create(8, -2, NULL);
+					proxies = wget_vector_create(8, NULL);
 					wget_vector_set_destructor(proxies, (wget_vector_destructor_t)wget_iri_free_content);
 				}
 				wget_vector_add_noalloc(proxies, iri);
@@ -1416,7 +1416,7 @@ static wget_vector_t *_parse_no_proxies(const char *no_proxy, const char *encodi
 	wget_vector_t *proxies;
 	const char *s, *p;
 
-	proxies = wget_vector_create(8, -2, NULL);
+	proxies = wget_vector_create(8, NULL);
 
 	for (s = p = no_proxy; *p; s = p + 1) {
 		while (c_isspace(*s) && s < p) s++;

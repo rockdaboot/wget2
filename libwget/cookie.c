@@ -709,7 +709,7 @@ char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_
 		debug_printf("found %s=%s\n", cookie->name, cookie->value);
 
 		if (!cookies)
-			cookies = wget_vector_create(16, -2, (wget_vector_compare_t)_compare_cookie2);
+			cookies = wget_vector_create(16, (wget_vector_compare_t)_compare_cookie2);
 
 		// collect matching cookies (just pointers, no allocation)
 		wget_vector_add_noalloc(cookies, cookie);
@@ -748,7 +748,7 @@ wget_cookie_db_t *wget_cookie_db_init(wget_cookie_db_t *cookie_db)
 		cookie_db = xmalloc(sizeof(wget_cookie_db_t));
 
 	memset(cookie_db, 0, sizeof(*cookie_db));
-	cookie_db->cookies = wget_vector_create(32, -2, (wget_vector_compare_t)_compare_cookie);
+	cookie_db->cookies = wget_vector_create(32, (wget_vector_compare_t)_compare_cookie);
 	wget_vector_set_destructor(cookie_db->cookies, (wget_vector_destructor_t)wget_cookie_deinit);
 	wget_thread_mutex_init(&cookie_db->mutex);
 #ifdef WITH_LIBPSL

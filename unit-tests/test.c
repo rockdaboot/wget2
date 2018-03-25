@@ -1549,7 +1549,7 @@ static void test_parse_challenge(void)
 	wget_http_challenge_t *challenge;
 
 	// Testcases found here http://greenbytes.de/tech/tc/httpauth/
-	challenges = wget_vector_create(2, 2, NULL);
+	challenges = wget_vector_create(2, NULL);
 	wget_vector_set_destructor(challenges, (wget_vector_destructor_t)wget_http_free_challenge);
 
 	for (unsigned it = 0; it < countof(test_data); it++) {
@@ -1761,7 +1761,7 @@ static void test_vector(void)
 		txt_sorted[5] = { {""}, {"four"}, {"one"}, {"three"}, {"two"} },
 		*txt[countof(txt_sorted)];
 	wget_vector_t
-		*v = wget_vector_create(2, -2, (wget_vector_compare_t)compare_txt);
+		*v = wget_vector_create(2, (wget_vector_compare_t)compare_txt);
 	unsigned
 		it;
 	int
@@ -1915,7 +1915,7 @@ static void test_stringmap(void)
 	wget_http_free_challenge(&challenge);
 
 	wget_vector_t *challenges;
-	challenges = wget_vector_create(2, 2, NULL);
+	challenges = wget_vector_create(2, NULL);
 	wget_vector_set_destructor(challenges, (wget_vector_destructor_t)wget_http_free_challenge);
 	wget_http_parse_challenge("Basic realm=\"test realm\"", &challenge);
 	wget_vector_add(challenges, &challenge, sizeof(challenge));

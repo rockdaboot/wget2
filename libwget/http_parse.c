@@ -237,7 +237,7 @@ static int G_GNUC_WGET_NONNULL_ALL compare_param(wget_http_header_param_t *p1, w
 
 void wget_http_add_param(wget_vector_t **params, wget_http_header_param_t *param)
 {
-	if (!*params) *params = wget_vector_create(4, 4, (wget_vector_compare_t)compare_param);
+	if (!*params) *params = wget_vector_create(4, (wget_vector_compare_t)compare_param);
 	wget_vector_add(*params, param, sizeof(*param));
 }
 
@@ -1075,7 +1075,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 			wget_http_parse_digest(value0, &digest);
 			// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
 			if (!resp->digests) {
-				resp->digests = wget_vector_create(4, 4, NULL);
+				resp->digests = wget_vector_create(4, NULL);
 				wget_vector_set_destructor(resp->digests, (wget_vector_destructor_t)wget_http_free_digest);
 			}
 			wget_vector_add(resp->digests, &digest, sizeof(digest));
@@ -1108,7 +1108,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 			wget_http_parse_link(value0, &link);
 			// debug_printf("link->uri=%s\n",link.uri);
 			if (!resp->links) {
-				resp->links = wget_vector_create(8, 8, NULL);
+				resp->links = wget_vector_create(8, NULL);
 				wget_vector_set_destructor(resp->links, (wget_vector_destructor_t)wget_http_free_link);
 			}
 			wget_vector_add(resp->links, &link, sizeof(link));
@@ -1128,7 +1128,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 			wget_http_parse_challenge(value0, &challenge);
 
 			if (!resp->challenges) {
-				resp->challenges = wget_vector_create(2, 2, NULL);
+				resp->challenges = wget_vector_create(2, NULL);
 				wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
 			}
 			wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
@@ -1143,7 +1143,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 
 			if (cookie) {
 				if (!resp->cookies) {
-					resp->cookies = wget_vector_create(4, 4, NULL);
+					resp->cookies = wget_vector_create(4, NULL);
 					wget_vector_set_destructor(resp->cookies, (wget_vector_destructor_t) wget_cookie_deinit);
 				}
 				wget_vector_add_noalloc(resp->cookies, cookie);
@@ -1167,7 +1167,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 			wget_http_parse_challenge(value0, &challenge);
 
 			if (!resp->challenges) {
-				resp->challenges = wget_vector_create(2, 2, NULL);
+				resp->challenges = wget_vector_create(2, NULL);
 				wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
 			}
 			wget_vector_add(resp->challenges, &challenge, sizeof(challenge));

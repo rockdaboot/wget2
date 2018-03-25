@@ -950,7 +950,7 @@ void wget_test(int first_key, ...)
 	keep_tmpfiles = 0;
 
 	if (!request_urls)
-		request_urls = wget_vector_create(8,8,NULL);
+		request_urls = wget_vector_create(8, NULL);
 
 	va_start (args, first_key);
 	for (key = first_key; key; key = va_arg(args, int)) {

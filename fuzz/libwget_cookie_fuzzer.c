@@ -66,7 +66,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		wget_cookie_store_cookie(db, cookie);
 
 		wget_cookie_parse_setcookie(in, &cookie2);
-		cookies = wget_vector_create(4, 4, NULL);
+		cookies = wget_vector_create(4, NULL);
 		wget_vector_set_destructor(cookies, (wget_vector_destructor_t)wget_cookie_deinit);
 		wget_vector_add_noalloc(cookies, cookie2);
 		wget_cookie_normalize_cookies(iri, cookies);

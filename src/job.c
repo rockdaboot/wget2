@@ -65,7 +65,7 @@ void job_create_parts(JOB *job)
 
 	// create space to hold enough parts
 	if (!job->parts)
-		job->parts = wget_vector_create(wget_vector_size(metalink->pieces), 4, NULL);
+		job->parts = wget_vector_create(wget_vector_size(metalink->pieces), NULL);
 	else
 		wget_vector_clear(job->parts);
 
@@ -158,13 +158,13 @@ int job_validate_file(JOB *job)
 		wget_strscpy(piece.hash.type, hash->type, sizeof(piece.hash.type));
 		wget_strscpy(piece.hash.hash_hex, hash->hash_hex, sizeof(piece.hash.hash_hex));
 
-		metalink->pieces = wget_vector_create(1, 1, NULL);
+		metalink->pieces = wget_vector_create(1, NULL);
 		wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
 	}
 
 	// create space to hold enough parts
 	if (!job->parts)
-		job->parts = wget_vector_create(wget_vector_size(metalink->pieces), 4, NULL);
+		job->parts = wget_vector_create(wget_vector_size(metalink->pieces), NULL);
 	else
 		wget_vector_clear(job->parts);
 

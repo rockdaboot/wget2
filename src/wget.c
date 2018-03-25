@@ -683,7 +683,7 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 			char *p;
 
 			if (!parents)
-				parents = wget_vector_create(4, -2, NULL);
+				parents = wget_vector_create(4, NULL);
 
 			// calc length of directory part in iri->path (including last /)
 			if (!iri->path || !(p = strrchr(iri->path, '/')))
@@ -1671,13 +1671,13 @@ static void process_head_response(wget_http_response_t *resp)
 		metalink->name = wget_strdup(config.output_document ? config.output_document : job->local_filename);
 
 		ssize_t npieces = (resp->content_length + config.chunk_size - 1) / config.chunk_size;
-		metalink->pieces = wget_vector_create((int) npieces, 1, NULL);
+		metalink->pieces = wget_vector_create((int) npieces, NULL);
 		for (int it = 0; it < npieces; it++) {
 			piece.position = it * config.chunk_size;
 			wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
 		}
 
-		metalink->mirrors = wget_vector_create(1, 1, NULL);
+		metalink->mirrors = wget_vector_create(1, NULL);
 
 		wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
 
@@ -1881,7 +1881,7 @@ static void process_response(wget_http_response_t *resp)
 				data = resp->body->data;
 
 			if (recurse_decision)
-				recurse_iris = wget_vector_create(16, -2, NULL);
+				recurse_iris = wget_vector_create(16, NULL);
 
 			process_decision = plugin_db_forward_downloaded_file(job->iri, size, filename, data, recurse_iris);
 
@@ -2206,7 +2206,7 @@ static void _remember_for_conversion(const char *filename, wget_iri_t *base_url,
 	wget_thread_mutex_lock(conversion_mutex);
 
 	if (!conversions) {
-		conversions = wget_vector_create(128, -2, NULL);
+		conversions = wget_vector_create(128, NULL);
 		wget_vector_set_destructor(conversions, (wget_vector_destructor_t)_free_conversion_entry);
 	}
 

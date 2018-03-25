@@ -93,7 +93,7 @@ int stats_init(void)
 
 		wget_thread_mutex_init(&opts->mutex);
 
-		opts->data = wget_vector_create(8, -2, NULL);
+		opts->data = wget_vector_create(8, NULL);
 		wget_vector_set_destructor(opts->data, opts->destructor);
 		opts->set_callback(opts->callback);
 	}

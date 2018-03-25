@@ -93,7 +93,7 @@ static void _css_parse_uri(void *context, const char *url G_GNUC_WGET_UNUSED, si
 	wget_html_parsed_result_t *res = &ctx->result;
 
 	if (!res->uris)
-		res->uris = wget_vector_create(32, -2, NULL);
+		res->uris = wget_vector_create(32, NULL);
 
 	wget_html_parsed_url_t parsed_url;
 	parsed_url.link_inline = 1;
@@ -238,7 +238,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 			}
 
 			if (!res->uris)
-				res->uris = wget_vector_create(32, -2, NULL);
+				res->uris = wget_vector_create(32, NULL);
 
 			wget_html_parsed_url_t url;
 

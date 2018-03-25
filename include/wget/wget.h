@@ -604,7 +604,9 @@ typedef int (*wget_vector_browse_t)(void *ctx, void *elem);
 typedef int (*wget_vector_destructor_t)(void *elem);
 
 WGETAPI wget_vector_t *
-	wget_vector_create(int max, int off, wget_vector_compare_t cmp) G_GNUC_WGET_MALLOC;
+	wget_vector_create(int max, wget_vector_compare_t cmp) G_GNUC_WGET_MALLOC;
+WGETAPI void
+	wget_vector_set_growth_policy(wget_vector_t *v, int off);
 WGETAPI int
 	wget_vector_find(const wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int

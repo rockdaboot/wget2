@@ -346,7 +346,7 @@ static int parse_header(option_t opt, const char *val, G_GNUC_WGET_UNUSED const 
 
 		if (!v) {
 			v = *((wget_vector_t **)opt->var) =
-				wget_vector_create(8, 4, (wget_vector_compare_t)compare_wget_http_param);
+				wget_vector_create(8, (wget_vector_compare_t)compare_wget_http_param);
 			wget_vector_set_destructor(v, (wget_vector_destructor_t)wget_http_free_param);
 		}
 
@@ -390,7 +390,7 @@ static int parse_stringlist_expand(option_t opt, const char *val, int expand, in
 		const char *s, *p;
 
 		if (!v)
-			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, -2, (wget_vector_compare_t)strcmp);
+			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, (wget_vector_compare_t)strcmp);
 
 		for (s = p = val; *p; s = p + 1) {
 			if ((p = strchrnul(s, ',')) != s) {
@@ -480,7 +480,7 @@ static int parse_taglist(option_t opt, const char *val, G_GNUC_WGET_UNUSED const
 		const char *s, *p;
 
 		if (!v) {
-			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, -2, (wget_vector_compare_t)_compare_tag);
+			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, (wget_vector_compare_t)_compare_tag);
 			wget_vector_set_destructor(v, (wget_vector_destructor_t)_free_tag);
 		}
 
@@ -841,7 +841,7 @@ static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
 	if (! plugin_loading_enabled)
 		return 0;
 
-	wget_vector_t *v = wget_vector_create(16, -2, NULL);
+	wget_vector_t *v = wget_vector_create(16, NULL);
 	plugin_db_list(v);
 
 	int n_names = wget_vector_size(v);
@@ -2564,11 +2564,11 @@ int init(int argc, const char **argv)
 	config.secure_protocol = wget_strdup(config.secure_protocol);
 	config.ca_directory = wget_strdup(config.ca_directory);
 	config.default_page = wget_strdup(config.default_page);
-	config.domains = wget_vector_create(16, -2, (wget_vector_compare_t)strcmp);
+	config.domains = wget_vector_create(16, (wget_vector_compare_t)strcmp);
 
 	// create list of default config file names
 	const char *env;
-	config.config_files = wget_vector_create(8, -2, NULL);
+	config.config_files = wget_vector_create(8, NULL);
 	if ((env = getenv ("SYSTEM_WGET2RC")) && *env)
 		wget_vector_add_str(config.config_files, env);
 	if ((env = getenv ("WGET2RC")) && *env)
@@ -2791,7 +2791,7 @@ int init(int argc, const char **argv)
 		config.http_proxy_password = wget_strdup(config.password);
 
 	if (config.auth_no_challenge) {
-		config.default_challenges = wget_vector_create(1, 1, NULL);
+		config.default_challenges = wget_vector_create(1, NULL);
 		wget_http_challenge_t basic;
 		memset(&basic, 0, sizeof(basic));
 		basic.auth_scheme = wget_strdup("basic");
@@ -2811,7 +2811,7 @@ int init(int argc, const char **argv)
 #ifdef WITH_GPGME
 		init_gpgme();
 		if (!config.sig_ext) {
-			config.sig_ext = wget_vector_create(1, -2, (wget_vector_compare_t)strcmp);
+			config.sig_ext = wget_vector_create(1, (wget_vector_compare_t)strcmp);
 			wget_vector_add_str(config.sig_ext, "sig");
 		}
 #endif

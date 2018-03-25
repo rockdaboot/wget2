@@ -73,12 +73,12 @@ static void _sitemap_get_url(void *context, int flags, const char *dir, const ch
 
 			if (type == 1) {
 				if (!ctx->sitemap_urls)
-					ctx->sitemap_urls = wget_vector_create(32, -2, NULL);
+					ctx->sitemap_urls = wget_vector_create(32, NULL);
 
 				wget_vector_add(ctx->sitemap_urls, &url, sizeof(url));
 			} else {
 				if (!ctx->urls)
-					ctx->urls = wget_vector_create(32, -2, NULL);
+					ctx->urls = wget_vector_create(32, NULL);
 
 				wget_vector_add(ctx->urls, &url, sizeof(url));
 

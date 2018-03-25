@@ -459,7 +459,7 @@ int wget_plugin_initializer(wget_plugin_t *plugin)
 {
 	plugin_data_t *d = (plugin_data_t *) wget_calloc(1, sizeof(plugin_data_t));
 
-	d->files_processed = wget_vector_create(4, -2, (wget_vector_compare_t) strcmp);
+	d->files_processed = wget_vector_create(4, (wget_vector_compare_t) strcmp);
 
 	plugin->plugin_data = d;
 	wget_plugin_register_argp(plugin, argp_fn);

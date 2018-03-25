@@ -211,8 +211,8 @@ static void test_dl_list(void)
 	libassert(mkdir(OBJECT_DIR "/libactuallyadir.bundle", 0755) == 0);
 	libassert(mkdir(OBJECT_DIR "/cygactuallyadir.dll", 0755) == 0);
 
-	dirs = wget_vector_create(2, -2, NULL);
-	names = wget_vector_create(2, -2, NULL);
+	dirs = wget_vector_create(2, NULL);
+	names = wget_vector_create(2, NULL);
 	wget_vector_add_str(dirs, OBJECT_DIR);
 
 	dl_list(dirs, names);
