@@ -58,14 +58,6 @@ struct _wget_vector_st {
  * Functions to realize vectors (growable arrays).
  */
 
-// create vector with initial size <max>
-// vector growth is specified by off:
-//   positive values: increase vector by <off> entries on each resize
-//   negative values: increase vector by *<-off>, e.g. -2 doubles the size on each resize
-// cmp: comparison function for sorting/finding, also needed for vec_insert_sorted*()
-//      or NULL if not needed.
-// the vector plus content is freed by vec_free()
-
 /**
  * \param[in] max Initial number of pre-allocated entries.
  * \param[in] cmp Comparison function for sorting/finding/sorted insertion or %NULL.
@@ -510,10 +502,8 @@ int wget_vector_swap(wget_vector_t *v, int pos1, int pos2)
 void wget_vector_free(wget_vector_t **v)
 {
 	if (v && *v) {
-		if ((*v)->entry) {
-			wget_vector_clear(*v);
-			xfree((*v)->entry);
-		}
+		wget_vector_clear(*v);
+		xfree((*v)->entry);
 		xfree(*v);
 	}
 }
