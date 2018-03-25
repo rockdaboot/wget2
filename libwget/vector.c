@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2018 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -585,7 +585,7 @@ void *wget_vector_get(const wget_vector_t *v, int pos)
  * \param[in] ctx Context variable use as param to \p browse
  * \return Return value of the last call to \p browse
  *
- * Call function \p browse for each element of vector \v or until \p browse
+ * Call function \p browse for each element of vector \p v or until \p browse
  * returns a value not equal to zero.
  *
  * \p browse is called with \p ctx and the pointer to the current element.

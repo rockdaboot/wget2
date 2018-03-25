@@ -688,7 +688,7 @@ WGETAPI int
 WGETAPI int
 	wget_hashmap_size(const wget_hashmap_t *h) G_GNUC_WGET_PURE;
 WGETAPI int
-	wget_hashmap_browse(const wget_hashmap_t *h, wget_hashmap_browse_t browse, void *ctx) G_GNUC_WGET_NONNULL((2));
+	wget_hashmap_browse(const wget_hashmap_t *h, wget_hashmap_browse_t browse, void *ctx);
 WGETAPI void
 	wget_hashmap_free(wget_hashmap_t **h);
 WGETAPI void
@@ -760,11 +760,13 @@ WGETAPI void
 WGETAPI void
 	wget_stringmap_sethashfunc(wget_stringmap_t *h, wget_stringmap_hash_t hash);
 WGETAPI void
-	wget_stringmap_setloadfactor(wget_stringmap_t *h, float factor);
-WGETAPI void
 	wget_stringmap_set_key_destructor(wget_hashmap_t *h, wget_stringmap_key_destructor_t destructor);
 WGETAPI void
 	wget_stringmap_set_value_destructor(wget_hashmap_t *h, wget_stringmap_value_destructor_t destructor);
+WGETAPI void
+	wget_stringmap_setloadfactor(wget_stringmap_t *h, float factor);
+WGETAPI void
+	wget_stringmap_set_growth_policy(wget_stringmap_t *h, int off);
 
 /*
  * Thread wrapper routines

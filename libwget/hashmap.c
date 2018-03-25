@@ -1,6 +1,6 @@
 /*
  * Copyright(c) 2012 Tim Ruehsen
- * Copyright(c) 2015-2016 Free Software Foundation, Inc.
+ * Copyright(c) 2015-2018 Free Software Foundation, Inc.
  *
  * This file is part of libwget.
  *
@@ -35,13 +35,13 @@
 #include <wget.h>
 #include "private.h"
 
-typedef struct _ENTRY ENTRY;
+typedef struct _entry_st _entry_t;
 
-struct _ENTRY {
+struct _entry_st {
 	void
 		*key,
 		*value;
-	ENTRY
+	_entry_t
 		*next;
 	unsigned int
 		hash;
@@ -56,7 +56,7 @@ struct _wget_hashmap_st {
 		key_destructor; // key destructor function
 	wget_hashmap_value_destructor_t
 		value_destructor; // value destructor function
-	ENTRY
+	_entry_t
 		**entry; // pointer to array of pointers to entries
 	int
 		max,     // allocated entries
@@ -67,15 +67,34 @@ struct _wget_hashmap_st {
 		factor;
 };
 
-// create hashmap with initial size <max>
-// cmp: comparison function for finding
-// the hashmap plus shallow content is freed by hashmap_free()
+/**
+ * \file
+ * \brief Hashmap functions
+ * \defgroup libwget-hashmap Hashmap functions
+ * @{
+ *
+ * Hashmaps are key/value stores that perform at O(1) for insertion, searching and removing.
+ */
 
+/**
+ * \param[in] max Initial number of pre-allocated entries
+ * \param[in] hash Hash function to build hashes from elements
+ * \param[in] cmp Comparison function used to find elements
+ * \return New hashmap instance
+ *
+ * Create a new hashmap instance with initial size \p max.
+ * It should be free'd after use with wget_hashmap_free().
+ *
+ * Before the first insertion of an element, \p hash and \p cmp must be set.
+ * So if you use %NULL values here, you have to call wget_hashmap_setcmpfunc() and/or
+ * wget_hashmap_hashcmpfunc() with appropriate function pointers. No doing so will result
+ * in undefined behavior (likely you'll see a segmentation fault).
+ */
 wget_hashmap_t *wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hashmap_compare_t cmp)
 {
 	wget_hashmap_t *h = xmalloc(sizeof(wget_hashmap_t));
 
-	h->entry = xcalloc(max, sizeof(ENTRY *));
+	h->entry = xcalloc(max, sizeof(_entry_t *));
 	h->max = max;
 	h->cur = 0;
 	h->off = -2;
@@ -89,39 +108,27 @@ wget_hashmap_t *wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hash
 	return h;
 }
 
-// hashmap growth is specified by off:
-//   positive values: increase hashmap by <off> entries on each resize
-//   negative values: increase hashmap by *<-off>, e.g. -2 doubles the size on each resize
-void wget_hashmap_set_growth_policy(wget_hashmap_t *h, int off)
+G_GNUC_WGET_NONNULL_ALL
+static _GL_INLINE _entry_t * hashmap_find_entry(const wget_hashmap_t *h, const char *key, unsigned int hash, int pos)
 {
-	h->off = off;
-}
-
-static _GL_INLINE ENTRY * G_GNUC_WGET_NONNULL_ALL hashmap_find_entry(const wget_hashmap_t *h, const char *key, unsigned int hash, int pos)
-{
-	ENTRY *e;
-
-	// info_printf("find %s:  pos=%d cur=%d, max=%d hash=%08x\n",key,pos,h->cur,h->max,hash);
-	for (e = h->entry[pos]; e; e = e->next) {
+	for (_entry_t * e = h->entry[pos]; e; e = e->next) {
 		if (hash == e->hash && (key == e->key || !h->cmp(key, e->key))) {
 			return e;
 		}
 	}
 
-//	if (h->entry[pos])
-//		info_printf("collision on %s\n", key);
-
 	return NULL;
 }
 
-static void G_GNUC_WGET_NONNULL_ALL hashmap_rehash(wget_hashmap_t *h, int newmax, int recalc_hash)
+G_GNUC_WGET_NONNULL_ALL
+static void hashmap_rehash(wget_hashmap_t *h, int newmax, int recalc_hash)
 {
-	ENTRY **new_entry, *entry, *next;
+	_entry_t **new_entry, *entry, *next;
 	int cur = h->cur;
 
 	if (cur) {
 		int pos;
-		new_entry = xcalloc(newmax, sizeof(ENTRY *));
+		new_entry = xcalloc(newmax, sizeof(_entry_t *));
 
 		for (int it = 0; it < h->max && cur; it++) {
 			for (entry = h->entry[it]; entry; entry = next) {
@@ -145,12 +152,13 @@ static void G_GNUC_WGET_NONNULL_ALL hashmap_rehash(wget_hashmap_t *h, int newmax
 	}
 }
 
-static _GL_INLINE void G_GNUC_WGET_NONNULL((1,3)) hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *key, const char *value)
+G_GNUC_WGET_NONNULL((1,3))
+static _GL_INLINE void hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *key, const char *value)
 {
-	ENTRY *entry;
+	_entry_t *entry;
 	int pos = hash % h->max;
 
-	entry = xmalloc(sizeof(ENTRY));
+	entry = xmalloc(sizeof(_entry_t));
 	entry->key = (void *)key;
 	entry->value = (void *)value;
 	entry->hash = hash;
@@ -168,103 +176,164 @@ static _GL_INLINE void G_GNUC_WGET_NONNULL((1,3)) hashmap_new_entry(wget_hashmap
 	}
 }
 
-// return:
-//  0: new entry
-//  1: existing entry has been replaced
+/**
+ * \param[in] h Hashmap to put data into
+ * \param[in] key Key to insert into \p h
+ * \param[in] value Value to insert into \p h
+ * \return 0 if inserted a new entry, 1 if entry existed
+ *
+ * Insert a key/value pair into hashmap \p h.
+ *
+ * \p key and \p value are *not* cloned, the hashmap takes 'ownership' of both.
+ *
+ * If \p key already exists and the pointer values the old and the new key differ,
+ * the old key will be destroyed by calling the key destructor function (default is free()).
+ *
+ * To realize a hashset (just keys without values), \p value may be %NULL.
+ *
+ * Neither \p h nor \p key must be %NULL.
+ */
 int wget_hashmap_put_noalloc(wget_hashmap_t *h, const void *key, const void *value)
 {
-	ENTRY *entry;
-	unsigned int hash = h->hash(key);
-	int pos = hash % h->max;
+	if (h && key) {
+		_entry_t *entry;
+		unsigned int hash = h->hash(key);
+		int pos = hash % h->max;
 
-	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		if (entry->key != key && entry->key != value) {
-			if (h->key_destructor)
-				h->key_destructor(entry->key);
-			if (entry->key == entry->value)
-				entry->value = NULL;
+		if ((entry = hashmap_find_entry(h, key, hash, pos))) {
+			if (entry->key != key && entry->key != value) {
+				if (h->key_destructor)
+					h->key_destructor(entry->key);
+				if (entry->key == entry->value)
+					entry->value = NULL;
+			}
+			if (entry->value != value && entry->value != key) {
+				if (h->value_destructor)
+					h->value_destructor(entry->value);
+			}
+
+			entry->key = (void *) key;
+			entry->value = (void *) value;
+
+			return 1;
 		}
-		if (entry->value != value && entry->value != key) {
-			if (h->value_destructor)
-				h->value_destructor(entry->value);
-		}
 
-		entry->key = (void *) key;
-		entry->value = (void *) value;
-
-		return 1;
+		// a new entry
+		hashmap_new_entry(h, hash, key, value);
 	}
-
-	// a new entry
-	hashmap_new_entry(h, hash, key, value);
 
 	return 0;
 }
 
+/**
+ * \param[in] h Hashmap to put data into
+ * \param[in] key Key to insert into \p h
+ * \param[in] keysize Size of \p key
+ * \param[in] value Value to insert into \p h
+ * \param[in] valuesize Size of \p value
+ * \return 0 if inserted a new entry, 1 if entry existed
+ *
+ * Insert a key/value pair into hashmap \p h.
+ *
+ * If \p key already exists it will not be cloned. In this case the value destructor function
+ * will be called with the old value and the new value will be shallow cloned.
+ *
+ * If \p doesn't exist, both \p key and \p value will be shallow cloned.
+ *
+ * To realize a hashset (just keys without values), \p value may be %NULL.
+ *
+ * Neither \p h nor \p key must be %NULL.
+ */
 int wget_hashmap_put(wget_hashmap_t *h, const void *key, size_t keysize, const void *value, size_t valuesize)
 {
-	ENTRY *entry;
-	unsigned int hash = h->hash(key);
-	int pos = hash % h->max;
+	if (h && key) {
+		_entry_t *entry;
+		unsigned int hash = h->hash(key);
+		int pos = hash % h->max;
 
-	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		if (h->value_destructor)
-			h->value_destructor(entry->value);
+		if ((entry = hashmap_find_entry(h, key, hash, pos))) {
+			if (h->value_destructor)
+				h->value_destructor(entry->value);
 
-		entry->value = wget_memdup(value, valuesize);
+			entry->value = wget_memdup(value, valuesize);
 
-		return 1;
+			return 1;
+		}
+
+		// a new entry
+		hashmap_new_entry(h, hash, wget_memdup(key, keysize), wget_memdup(value, valuesize));
 	}
-
-	// a new entry
-	hashmap_new_entry(h, hash, wget_memdup(key, keysize), wget_memdup(value, valuesize));
 
 	return 0;
 }
 
+/**
+ * \param[in] h Hashmap
+ * \param[in] key Key to search for
+ * \param[out] value Value to be returned
+ * \return 1 if \p key has been found, 0 if not found
+ *
+ * Get the value for a given key.
+ *
+ * If there are %NULL values in the hashmap, you should use this function
+ * to distinguish between 'not found' and 'found %NULL value'.
+ *
+ * Neither \p h nor \p key must be %NULL.
+ */
+int wget_hashmap_get_null(const wget_hashmap_t *h, const void *key, void **value)
+{
+	if (h && key) {
+		_entry_t *entry;
+		unsigned int hash = h->hash(key);
+		int pos = hash % h->max;
+
+		if ((entry = hashmap_find_entry(h, key, hash, pos))) {
+			if (value) *value = entry->value;
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * \param[in] h Hashmap
+ * \param[in] key Key to search for
+ * \return Found value or %NULL if not found
+ *
+ * Get the value for a given key.
+ *
+ * If there are %NULL values in the hashmap, you should use wget_hashmap_get_null()
+ * to distinguish between 'not found' and 'found %NULL value'.
+ *
+ * Neither \p h nor \p key must be %NULL.
+ */
 void *wget_hashmap_get(const wget_hashmap_t *h, const void *key)
 {
-	ENTRY *entry;
-	unsigned int hash = h->hash(key);
-	int pos = hash % h->max;
+	void *value;
 
-	if ((entry = hashmap_find_entry(h, key, hash, pos)))
-		return entry->value; // watch out, value may be NULL
+	if (wget_hashmap_get_null(h, key, &value))
+		return value;
 
 	return NULL;
 }
 
-int wget_hashmap_get_null(const wget_hashmap_t *h, const void *key, void **value)
-{
-	ENTRY *entry;
-	unsigned int hash = h->hash(key);
-	int pos = hash % h->max;
-
-	if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-		if (value) *value = entry->value;
-		return 1;
-	}
-
-	return 0;
-}
-
+/**
+ * \param[in] h Hashmap
+ * \param[in] key Key to search for
+ * \return 1 if \p key has been found, 0 if not found
+ *
+ * Check if \p key exists in \p h.
+ */
 int wget_hashmap_contains(const wget_hashmap_t *h, const void *key)
 {
-	if (h) {
-		ENTRY *entry;
-		unsigned int hash = h->hash(key);
-		int pos = hash % h->max;
-
-		if ((entry = hashmap_find_entry(h, key, hash, pos)))
-			return 1;
-	}
-
-	return 0;
+	return wget_hashmap_get_null(h, key, NULL);
 }
 
-static int G_GNUC_WGET_NONNULL_ALL hashmap_remove_entry(wget_hashmap_t *h, const char *key, int free_kv)
+G_GNUC_WGET_NONNULL_ALL
+static int hashmap_remove_entry(wget_hashmap_t *h, const char *key, int free_kv)
 {
-	ENTRY *entry, *next, *prev = NULL;
+	_entry_t *entry, *next, *prev = NULL;
 	unsigned int hash = h->hash(key);
 	int pos = hash % h->max;
 
@@ -297,22 +366,48 @@ static int G_GNUC_WGET_NONNULL_ALL hashmap_remove_entry(wget_hashmap_t *h, const
 	return 0;
 }
 
+/**
+ * \param[in] h Hashmap
+ * \param[in] key Key to be removed
+ * \return 1 if \p key has been removed, 0 if not found
+ *
+ * Remove \p key from hashmap \p h.
+ *
+ * If \p key is found, the key and value destructor functions are called
+ * when removing the entry from the hashmap.
+ */
 int wget_hashmap_remove(wget_hashmap_t *h, const void *key)
 {
-	if (h)
+	if (h && key)
 		return hashmap_remove_entry(h, key, 1);
 	else
 		return 0;
 }
 
+/**
+ * \param[in] h Hashmap
+ * \param[in] key Key to be removed
+ * \return 1 if \p key has been removed, 0 if not found
+ *
+ * Remove \p key from hashmap \p h.
+ *
+ * Key and value destructor functions are *not* called when removing the entry from the hashmap.
+ */
 int wget_hashmap_remove_nofree(wget_hashmap_t *h, const void *key)
 {
-	if (h)
+	if (h && key)
 		return hashmap_remove_entry(h, key, 0);
 	else
 		return 0;
 }
 
+/**
+ * \param[in] h Hashmap to be free'd
+ *
+ * Remove all entries from hashmap \p h and free the hashmap instance.
+ *
+ * Key and value destructor functions are called for each entry in the hashmap.
+ */
 void wget_hashmap_free(wget_hashmap_t **h)
 {
 	if (h && *h) {
@@ -322,10 +417,17 @@ void wget_hashmap_free(wget_hashmap_t **h)
 	}
 }
 
+/**
+ * \param[in] h Hashmap to be cleared
+ *
+ * Remove all entries from hashmap \p h.
+ *
+ * Key and value destructor functions are called for each entry in the hashmap.
+ */
 void wget_hashmap_clear(wget_hashmap_t *h)
 {
 	if (h) {
-		ENTRY *entry, *next;
+		_entry_t *entry, *next;
 		int it, cur = h->cur;
 
 		for (it = 0; it < h->max && cur; it++) {
@@ -351,15 +453,34 @@ void wget_hashmap_clear(wget_hashmap_t *h)
 	}
 }
 
+/**
+ * \param[in] h Hashmap
+ * \return Number of entries in hashmap \p h
+ *
+ * Return the number of entries in the hashmap \p h.
+ */
 int wget_hashmap_size(const wget_hashmap_t *h)
 {
 	return h ? h->cur : 0;
 }
 
+/**
+ * \param[in] h Hashmap
+ * \param[in] browse Function to be called for each element of \p h
+ * \param[in] ctx Context variable use as param to \p browse
+ * \return Return value of the last call to \p browse
+ *
+ * Call function \p browse for each element of hashmap \p h or until \p browse
+ * returns a value not equal to zero.
+ *
+ * \p browse is called with \p ctx and the pointer to the current element.
+ *
+ * The return value of the last call to \p browse is returned or 0 if either \p h or \p browse is %NULL.
+ */
 int wget_hashmap_browse(const wget_hashmap_t *h, wget_hashmap_browse_t browse, void *ctx)
 {
-	if (h) {
-		ENTRY *entry;
+	if (h && browse) {
+		_entry_t *entry;
 		int it, ret, cur = h->cur;
 
 		for (it = 0; it < h->max && cur; it++) {
@@ -374,12 +495,26 @@ int wget_hashmap_browse(const wget_hashmap_t *h, wget_hashmap_browse_t browse, v
 	return 0;
 }
 
+/**
+ * \param[in] h Hashmap
+ * \param[in] cmp Comparison function used to find keys
+ *
+ * Set the comparison function.
+ */
 void wget_hashmap_setcmpfunc(wget_hashmap_t *h, wget_hashmap_compare_t cmp)
 {
 	if (h)
 		h->cmp = cmp;
 }
 
+/**
+ * \param[in] h Hashmap
+ * \param[in] hash Hash function used to hash keys
+ *
+ * Set the key hash function.
+ *
+ * The keys of all entries in the hashmap will be hashed again.
+ */
 void wget_hashmap_sethashfunc(wget_hashmap_t *h, wget_hashmap_hash_t hash)
 {
 	if (h) {
@@ -389,18 +524,49 @@ void wget_hashmap_sethashfunc(wget_hashmap_t *h, wget_hashmap_hash_t hash)
 	}
 }
 
+/**
+ * \param[in] h Hashmap
+ * \param[in] destructor Destructor function for keys
+ *
+ * Set the key destructor function.
+ *
+ * Default is free().
+ */
 void wget_hashmap_set_key_destructor(wget_hashmap_t *h, wget_hashmap_key_destructor_t destructor)
 {
 	if (h)
 		h->key_destructor = destructor;
 }
 
+/**
+ * \param[in] h Hashmap
+ * \param[in] destructor Destructor function for values
+ *
+ * Set the value destructor function.
+ *
+ * Default is free().
+ */
 void wget_hashmap_set_value_destructor(wget_hashmap_t *h, wget_hashmap_value_destructor_t destructor)
 {
 	if (h)
 		h->value_destructor = destructor;
 }
 
+/**
+ * \param[in] h Hashmap
+ * \param[in] factor The load factor
+ *
+ * Set the load factor function.
+ *
+ * The load factor is determines when to resize the internal memory.
+ * 0.75 means "resize if 75% or more of all slots are used".
+ *
+ * The resize strategy is set by wget_hashmap_set_growth_policy().
+ *
+ * The resize (and rehashing) occurs earliest on the next insertion of a new key.
+ *
+ * Default is 0.75.
+ */
 void wget_hashmap_setloadfactor(wget_hashmap_t *h, float factor)
 {
 	if (h) {
@@ -409,3 +575,21 @@ void wget_hashmap_setloadfactor(wget_hashmap_t *h, float factor)
 		// rehashing occurs earliest on next put()
 	}
 }
+
+/**
+ * \param[in] h Hashmap
+ * \param[in] off Hashmap growth mode:
+ *   positive values: increase size by \p off entries on each resize
+ *   negative values: increase size by multiplying \p -off, e.g. -2 doubles the size on each resize
+ *
+ * Set the growth policy for internal memory.
+ *
+ * Default is -2.
+ */
+void wget_hashmap_set_growth_policy(wget_hashmap_t *h, int off)
+{
+	if (h)
+		h->off = off;
+}
+
+/**@}*/
