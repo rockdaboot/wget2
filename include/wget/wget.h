@@ -543,6 +543,14 @@ WGETAPI char *
 	wget_vaprintf(const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(1,0);
 WGETAPI char *
 	wget_aprintf(const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(1,2);
+WGETAPI size_t
+	wget_vfprintf(FILE *fp, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+WGETAPI size_t
+	wget_fprintf(FILE *fp, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+WGETAPI size_t
+	wget_vsnprintf(char *str, size_t size, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0);
+WGETAPI size_t
+	wget_snprintf(char *str, size_t size, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4);
 
 /*
  * Logger routines

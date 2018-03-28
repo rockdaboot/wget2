@@ -124,4 +124,108 @@ char *wget_aprintf(const char *fmt, ...)
 	return s;
 }
 
+/**
+ * \param[in] fp FILE pointer
+ * \param[in] fmt Printf-like format specifier
+ * \param[in] args List of arguments
+ * \return Pointer to 0-terminated string in memory
+ *
+ * Prints arguments to stream \p fp and returns number of bytes written.
+ */
+size_t wget_vfprintf(FILE *fp, const char *fmt, va_list args)
+{
+	wget_buffer_t buf;
+	char sbuf[1024];
+	int rc;
+
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
+	size_t len = wget_buffer_vprintf(&buf, fmt, args);
+
+	if (len > 0)
+		rc = fwrite(buf.data, 1, len, fp);
+	else
+		rc = 0;
+
+	wget_buffer_deinit(&buf);
+
+	return rc;
+}
+
+/**
+ * \param[in] fp FILE pointer
+ * \param[in] fmt Printf-like format specifier
+ * \param[in] ... List of arguments
+ * \return Pointer to 0-terminated string in memory
+ *
+ * Prints arguments to stream \p fp and returns number of bytes written.
+ */
+size_t wget_fprintf(FILE *fp, const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	size_t rc = wget_vfprintf(fp, fmt, args);
+	va_end(args);
+
+	return rc;
+}
+
+/**
+ * \param[in] str Destination buffer
+ * \param[in] size Size of \p str
+ * \param[in] fmt Printf-like format specifier
+ * \param[in] args List of arguments
+ * \return Number of bytes written, or, on truncation, that would have been written
+ *
+ * Prints arguments to buffer \p str and returns number of bytes written,
+ * or on truncation: that would have been written.
+ *
+ * If \p str is %NULL the return value are the number of bytes that would have been written.
+ */
+size_t wget_vsnprintf(char *str, size_t size, const char *fmt, va_list args)
+{
+	wget_buffer_t buf;
+	char sbuf[1024];
+
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
+	size_t len = wget_buffer_vprintf(&buf, fmt, args);
+	if (str) {
+		if (len < size) {
+			memcpy(str, buf.data, len + 1);
+		} else {
+			memcpy(str, buf.data, size - 1);
+			str[size - 1] = 0;
+		}
+	}
+
+	wget_buffer_deinit(&buf);
+
+	return len;
+}
+
+/**
+ * \param[in] str Destination buffer
+ * \param[in] size Size of \p str
+ * \param[in] fmt Printf-like format specifier
+ * \param[in] ... List of arguments
+ * \return Number of bytes written, or, on truncation, that would have been written
+ *
+ * Prints arguments to buffer \p str and returns number of bytes written,
+ * or on truncation: that would have been written.
+ *
+ * If \p str is %NULL the return value are the number of bytes that would have been written.
+ */
+size_t wget_snprintf(char *str, size_t size, const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	size_t len = wget_vsnprintf(str, size, fmt, args);
+	va_end(args);
+
+	return len;
+}
+
 /**@}*/
