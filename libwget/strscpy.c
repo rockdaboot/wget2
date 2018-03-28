@@ -63,6 +63,7 @@ ssize_t wget_strscpy(char *dst, const char *src, size_t size)
 		}
 
 		*dst = 0;
+		return src - old;
 	}
 
 	return -1;
