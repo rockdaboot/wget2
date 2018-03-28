@@ -9,6 +9,7 @@ man3_MANS =\
  $(builddir)/man/man3/libwget-console.3\
  $(builddir)/man/man3/libwget-dns-caching.3\
  $(builddir)/man/man3/libwget-hash.3\
+ $(builddir)/man/man3/libwget-hashmap.3\
  $(builddir)/man/man3/libwget-io.3\
  $(builddir)/man/man3/libwget-ip.3\
  $(builddir)/man/man3/libwget-list.3\
@@ -19,6 +20,7 @@ man3_MANS =\
  $(builddir)/man/man3/libwget-printf.3\
  $(builddir)/man/man3/libwget-random.3\
  $(builddir)/man/man3/libwget-robots.3\
+ $(builddir)/man/man3/libwget-stringmap.3\
  $(builddir)/man/man3/libwget-thread.3\
  $(builddir)/man/man3/libwget-utils.3\
  $(builddir)/man/man3/libwget-vector.3\
