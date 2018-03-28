@@ -1282,7 +1282,7 @@ void wget_ssl_init(void)
 							struct stat st;
 							char fname[dirlen + 1 + len + 1];
 
-							snprintf(fname, sizeof(fname), "%s/%s", _config.ca_directory, dp->d_name);
+							wget_snprintf(fname, sizeof(fname), "%s/%s", _config.ca_directory, dp->d_name);
 							if (stat(fname, &st) == 0 && S_ISREG(st.st_mode)) {
 								debug_printf("GnuTLS loading %s\n", fname);
 								if ((rc = gnutls_certificate_set_x509_trust_file(_credentials, fname, GNUTLS_X509_FMT_PEM)) <= 0)

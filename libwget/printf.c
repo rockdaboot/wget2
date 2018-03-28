@@ -136,7 +136,7 @@ size_t wget_vfprintf(FILE *fp, const char *fmt, va_list args)
 {
 	wget_buffer_t buf;
 	char sbuf[1024];
-	int rc;
+	size_t rc;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 

@@ -507,7 +507,7 @@ static int impl_ocsp_db_load(wget_ocsp_db_t *ocsp_db)
 		return -1;
 
 	char fname_hosts[strlen(ocsp_db_priv->fname) + 6 + 1];
-	snprintf(fname_hosts, sizeof(fname_hosts), "%s_hosts", ocsp_db_priv->fname);
+	wget_snprintf(fname_hosts, sizeof(fname_hosts), "%s_hosts", ocsp_db_priv->fname);
 
 	if ((ret = wget_update_file(fname_hosts, _ocsp_db_load_hosts, NULL, ocsp_db_priv)))
 		error_printf(_("Failed to read OCSP hosts\n"));
@@ -525,13 +525,13 @@ static int impl_ocsp_db_load(wget_ocsp_db_t *ocsp_db)
 
 static int G_GNUC_WGET_NONNULL_ALL _ocsp_save_fingerprint(FILE *fp, const _ocsp_t *ocsp)
 {
-	fprintf(fp, "%s %lld %lld %d\n", ocsp->key, (long long)ocsp->maxage, (long long)ocsp->mtime, ocsp->valid);
+	wget_fprintf(fp, "%s %lld %lld %d\n", ocsp->key, (long long)ocsp->maxage, (long long)ocsp->mtime, ocsp->valid);
 	return 0;
 }
 
 static int G_GNUC_WGET_NONNULL_ALL _ocsp_save_host(FILE *fp, const _ocsp_t *ocsp)
 {
-	fprintf(fp, "%s %lld %lld\n", ocsp->key, (long long)ocsp->maxage, (long long)ocsp->mtime);
+	wget_fprintf(fp, "%s %lld %lld\n", ocsp->key, (long long)ocsp->maxage, (long long)ocsp->mtime);
 	return 0;
 }
 
@@ -600,7 +600,7 @@ static int impl_ocsp_db_save(wget_ocsp_db_t *ocsp_db)
 		return -1;
 
 	char fname_hosts[strlen(ocsp_db_priv->fname) + 6 + 1];
-	snprintf(fname_hosts, sizeof(fname_hosts), "%s_hosts", ocsp_db_priv->fname);
+	wget_snprintf(fname_hosts, sizeof(fname_hosts), "%s_hosts", ocsp_db_priv->fname);
 
 	if ((ret = wget_update_file(fname_hosts, _ocsp_db_load_hosts, _ocsp_db_save_hosts, ocsp_db_priv)))
 		error_printf(_("Failed to write to OCSP hosts to '%s'\n"), fname_hosts);

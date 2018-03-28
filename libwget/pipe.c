@@ -144,7 +144,7 @@ pid_t wget_fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv)
 		}
 
 		execvp(argv[0], (char *const *)argv); // does only return on error
-		//		err_printf(_("Failed to execute %s (%d)\n"),argv[0],errno);
+		//		error_printf(_("Failed to execute %s (%d)\n"),argv[0],errno);
 		exit(EXIT_FAILURE);
 	} else if (pid < 0) {
 		// fork error

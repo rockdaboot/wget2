@@ -741,7 +741,7 @@ static long long NONNULL_ALL parse_rfc1123_date(const char *s)
 	else if (sscanf(s, " %*[a-zA-Z], %3s %2d %2d:%2d:%2d %4d", mname, &day, &hour, &min, &sec, &year) >= 6) {
 		// ANSI C's asctime(): Wed Jun 09 10:18:14 2021
 	} else {
-		err_printf(_("Failed to parse date '%s'\n"), s);
+		error_printf(_("Failed to parse date '%s'\n"), s);
 		return 0; // return as session cookie
 	}
 
@@ -767,7 +767,7 @@ static long long NONNULL_ALL parse_rfc1123_date(const char *s)
 	if (year < 1601 || mon < 1 || mon > 12 || day < 1 || (day > days_per_month[mon - 1] + leap) ||
 		hour < 0 || hour > 23 || min < 0 || min > 60 || sec < 0 || sec > 60)
 	{
-		err_printf(_("Failed to parse date '%s'\n"), s);
+		error_printf(_("Failed to parse date '%s'\n"), s);
 		return 0; // return as session cookie
 	}
 
@@ -892,7 +892,7 @@ char *wget_http_print_date(time_t t, char *buf, size_t bufsize)
 		return buf;
 
 	if (gmtime_r(&t, &tm)) {
-		snprintf(buf, bufsize, "%s, %02d %s %d %02d:%02d:%02d GMT",
+		wget_snprintf(buf, bufsize, "%s, %02d %s %d %02d:%02d:%02d GMT",
 			dnames[tm.tm_wday],tm.tm_mday,mnames[tm.tm_mon],tm.tm_year+1900,
 			tm.tm_hour, tm.tm_min, tm.tm_sec);
 	} else

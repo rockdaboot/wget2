@@ -333,7 +333,7 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 
 		if (!wget_strcmp(algorithm, "MD5-sess") || !wget_strcmp(algorithm, "SHA-256-sess")) {
 			// A1BUF = H( H(user ":" realm ":" password) ":" nonce ":" cnonce )
-			snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
+			wget_snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
 			wget_hash_printf_hex(hashtype, a1buf, sizeof(a1buf), "%s:%s:%s", a1buf, nonce, cnonce);
 		}
 
@@ -343,7 +343,7 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		if (!wget_strcmp(qop, "auth") || !wget_strcmp(qop, "auth-int")) {
 			// RFC 2617 Digest Access Authentication
 			if (!*cnonce)
-				snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
+				wget_snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
 
 			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" nc ":" cnonce ":" qop ": " A2BUF)
 			wget_hash_printf_hex(hashtype, response_digest, sizeof(response_digest),
@@ -921,7 +921,7 @@ ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf
 	char have_content_length = 0;
 	char check_content_length = req->body && req->body_length;
 
-//	buffer_sprintf(buf, "%s /%s HTTP/1.1\r\nHost: %s", req->method, req->esc_resource.data ? req->esc_resource.data : "",);
+//	wget_buffer_sprintf(buf, "%s /%s HTTP/1.1\r\nHost: %s", req->method, req->esc_resource.data ? req->esc_resource.data : "",);
 
 	wget_buffer_strcpy(buf, req->method);
 	wget_buffer_memcat(buf, " ", 1);

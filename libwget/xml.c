@@ -376,11 +376,11 @@ static int parseXML(const char *dir, _xml_context *context)
 
 			if (!(context->hints & XML_HINT_HTML)) {
 				if (!pos || directory[pos - 1] != '/')
-					snprintf(&directory[pos], sizeof(directory) - pos, "/%.*s", (int)context->token_len, tok);
+					wget_snprintf(&directory[pos], sizeof(directory) - pos, "/%.*s", (int)context->token_len, tok);
 				else
-					snprintf(&directory[pos], sizeof(directory) - pos, "%.*s", (int)context->token_len, tok);
+					wget_snprintf(&directory[pos], sizeof(directory) - pos, "%.*s", (int)context->token_len, tok);
 			} else {
-				// snprintf(directory, sizeof(directory), "%.*s", (int)context->token_len, tok);
+				// wget_snprintf(directory, sizeof(directory), "%.*s", (int)context->token_len, tok);
 				if (context->token_len < sizeof(directory)) {
 					memcpy(directory, tok, context->token_len);
 					directory[context->token_len] = 0;
@@ -418,7 +418,7 @@ static int parseXML(const char *dir, _xml_context *context)
 						parseXML(directory, context); // descend one level
 					break;
 				} else {
-//					snprintf(attribute, sizeof(attribute), "%.*s", (int)context->token_len, tok);
+//					wget_snprintf(attribute, sizeof(attribute), "%.*s", (int)context->token_len, tok);
 					char attribute[context->token_len + 1];
 					memcpy(attribute, tok, context->token_len);
 					attribute[context->token_len] = 0;

@@ -600,7 +600,7 @@ static int impl_hpkp_db_load(wget_hpkp_db_t *hpkp_db)
 
 static int _hpkp_save_pin(FILE *fp, wget_hpkp_pin_t *pin)
 {
-	fprintf(fp, "*%s %s\n", pin->hash_type, pin->pin_b64);
+	wget_fprintf(fp, "*%s %s\n", pin->hash_type, pin->pin_b64);
 
 	if (ferror(fp))
 		return -1;
@@ -615,7 +615,7 @@ static int G_GNUC_WGET_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp_t *hpkp)
 	else if (hpkp->expires < time(NULL))
 		debug_printf("HPKP: drop '%s', expired\n", hpkp->host);
 	else {
-		fprintf(fp, "%s %d %lld %lld\n", hpkp->host, hpkp->include_subdomains, (long long)hpkp->created, (long long)hpkp->maxage);
+		wget_fprintf(fp, "%s %d %lld %lld\n", hpkp->host, hpkp->include_subdomains, (long long)hpkp->created, (long long)hpkp->maxage);
 
 		if (ferror(fp))
 			return -1;

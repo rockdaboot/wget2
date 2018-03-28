@@ -237,7 +237,7 @@ static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, s
 	char s_port[NI_MAXSERV];
 
 	if (port) {
-		snprintf(s_port, sizeof(s_port), "%hu", port);
+		wget_snprintf(s_port, sizeof(s_port), "%hu", port);
 		debug_printf("resolving %s:%s...\n", host ? host : "", s_port);
 	} else {
 		debug_printf("resolving %s...\n", host);
@@ -305,7 +305,7 @@ static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, s
 	if (port) {
 		char s_port[NI_MAXSERV];
 
-		snprintf(s_port, sizeof(s_port), "%hu", port);
+		wget_snprintf(s_port, sizeof(s_port), "%hu", port);
 		debug_printf("resolving %s:%s...\n", host ? host : "", s_port);
 		return getaddrinfo(host, s_port, &hints, out_addr);
 	} else {

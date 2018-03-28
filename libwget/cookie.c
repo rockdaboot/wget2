@@ -921,13 +921,13 @@ static int _cookie_db_save(wget_cookie_db_t *cookie_db, FILE *fp)
 			} else if (!cookie_db->keep_session_cookies)
 				continue;
 
-			fprintf(fp, "%s%s%s\t%s\t%s\t%s\t%"PRId64"\t%s\t%s\n",
+			wget_fprintf(fp, "%s%s%s\t%s\t%s\t%s\t%lld\t%s\t%s\n",
 				cookie->http_only ? "#HttpOnly_" : "",
 				cookie->domain_dot ? "." : "", // compatibility, irrelevant since RFC 6562
 				cookie->domain,
 				cookie->host_only ? "FALSE" : "TRUE",
 				cookie->path, cookie->secure_only ? "TRUE" : "FALSE",
-				(int64_t)cookie->expires,
+				(long long)cookie->expires,
 				cookie->name, cookie->value);
 
 			if (ferror(fp))

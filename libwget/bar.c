@@ -165,7 +165,7 @@ static inline G_GNUC_WGET_ALWAYS_INLINE void
 _restore_cursor_position(void)
 {
 	// CSI u: Restore cursor position
-	printf("\033[u");
+	fputs("\033[u", stdout);
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
@@ -174,7 +174,7 @@ _bar_print_slot(const wget_bar_t *bar, int slot)
 	// CSI s: Save cursor
 	// CSI <n> A: Cursor up
 	// CSI <n> G: Cursor horizontal absolute
-	printf("\033[s\033[%dA\033[1G", bar->nslots - slot);
+	wget_fprintf(stdout, "\033[s\033[%dA\033[1G", bar->nslots - slot);
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
@@ -193,12 +193,15 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 
 		// Write one extra byte for \0. This has already been accounted for
 		// when initializing the progress storage.
-		snprintf(slotp->progress, bar->max_width + 1, "%.*s>%.*s",
-				cols - 1, bar->known_size,
-				bar->max_width - cols, bar->spaces);
-		/* printf("'=' %d\n'>' 1\n' ' %d\ntotal: %d\n%s\n\n", cols - 1, bar->max_width - cols, cols - 1 + 1 + bar->max_width - cols, slotp->progress); */
+		memcpy(slotp->progress, bar->known_size, cols - 1);
+		slotp->progress[cols - 1] = '>';
+		if (cols < bar->max_width)
+			memset(slotp->progress + cols, ' ', bar->max_width - cols);
+
+//		wget_snprintf(slotp->progress, bar->max_width + 1, "%.*s>%.*s",
+//			cols - 1, bar->known_size, bar->max_width - cols, bar->spaces);
 	} else {
-		int ind = slotp->tick % ((bar->max_width * 2) - 6);
+		int ind = slotp->tick % (bar->max_width * 2 - 6);
 		int pre_space;
 
 		if (ind <= bar->max_width - 3)
@@ -206,10 +209,14 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 		else
 			pre_space = bar->max_width - (ind - bar->max_width + 5);
 
-		snprintf(slotp->progress, bar->max_width + 1, "%.*s<=>%.*s",
-				pre_space, bar->spaces,
-				bar->max_width - pre_space - 3, bar->spaces);
+		memset(slotp->progress, ' ', bar->max_width);
+		memcpy(slotp->progress + pre_space, "<=>", 3);
+
+//		wget_snprintf(slotp->progress, bar->max_width + 1, "%.*s<=>%.*s",
+//			pre_space, bar->spaces, bar->max_width - pre_space - 3, bar->spaces);
 	}
+
+	slotp->progress[bar->max_width + 1] = 0;
 }
 
 /* The time in ms between every speed calculation */
@@ -267,7 +274,7 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 		// xxx.xxKB/s		_BAR_SPEED_SIZE			Download speed
 		// ===>			Remaining			Progress Meter
 
-		printf("%-*.*s %*d%% [%s] %*s %*s%c/s",
+		wget_fprintf(stdout, "%-*.*s %*d%% [%s] %*s %*s%c/s",
 				_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, slotp->filename,
 				_BAR_RATIO_SIZE, ratio,
 				slotp->progress,
@@ -395,7 +402,7 @@ void wget_bar_set_slots(wget_bar_t *bar, int nslots)
 		speed_r = wget_realloc(speed_r, nslots * sizeof(struct _speed_report));
 		memset(&speed_r[nslots - more_slots], 0, more_slots * sizeof(struct _speed_report));
 		for (int i = 0; i < more_slots; i++)
-			printf("\n");
+			fputs("\n", stdout);
 
 		_bar_update_winsize(bar, true);
 		_bar_update(bar);
@@ -521,7 +528,7 @@ void wget_bar_print(wget_bar_t *bar, int slot, const char *display)
 	wget_thread_mutex_lock(bar->mutex);
 	_bar_print_slot(bar, slot);
 	// CSI <n> G: Cursor horizontal absolute
-	printf("\033[27G[%-*.*s]", bar->max_width, bar->max_width, display);
+	wget_fprintf(stdout, "\033[27G[%-*.*s]", bar->max_width, bar->max_width, display);
 	_restore_cursor_position();
 	fflush(stdout);
 	wget_thread_mutex_unlock(bar->mutex);
@@ -535,14 +542,12 @@ void wget_bar_print(wget_bar_t *bar, int slot, const char *display)
  *
  * Displays the \p string build using the printf-style \p fmt and \p args.
  */
-ssize_t wget_bar_vprintf(wget_bar_t *bar, int slot, const char *fmt, va_list args)
+void wget_bar_vprintf(wget_bar_t *bar, int slot, const char *fmt, va_list args)
 {
 	char text[bar->max_width + 1];
 
-	ssize_t len = vsnprintf(text, sizeof(text), fmt, args);
+	wget_vsnprintf(text, sizeof(text), fmt, args);
 	wget_bar_print(bar, slot, text);
-
-	return len;
 }
 
 /**
@@ -553,15 +558,13 @@ ssize_t wget_bar_vprintf(wget_bar_t *bar, int slot, const char *fmt, va_list arg
  *
  * Displays the \p string build using the printf-style \p fmt and the given arguments.
  */
-ssize_t wget_bar_printf(wget_bar_t *bar, int slot, const char *fmt, ...)
+void wget_bar_printf(wget_bar_t *bar, int slot, const char *fmt, ...)
 {
 	va_list args;
 
 	va_start(args, fmt);
-	ssize_t len = wget_bar_vprintf(bar, slot, fmt, args);
+	wget_bar_vprintf(bar, slot, fmt, args);
 	va_end(args);
-
-	return len;
 }
 
 /**
@@ -593,9 +596,9 @@ void wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len)
 	// CSI <n>G: Cursor horizontal absolute
 	// CSI 0J:   Clear from cursor to end of screen
 	// CSI 31m:  Red text color
-	printf("\033[s\033[1S\033[%dA\033[1G\033[0J\033[31m", bar->nslots + 1);
+	wget_fprintf(stdout, "\033[s\033[1S\033[%dA\033[1G\033[0J\033[31m", bar->nslots + 1);
 	fwrite(buf, 1, len, stdout);
-	printf("\033[m"); // reset text color
+	fputs("\033[m", stdout); // reset text color
 	_restore_cursor_position();
 
 	_bar_update(bar);

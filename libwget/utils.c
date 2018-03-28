@@ -426,7 +426,7 @@ char *wget_strnglob(const char *str, size_t n, int flags)
 char *wget_human_readable(char *buf, size_t bufsize, uint64_t n)
 {
 	/* These suffixes are compatible with those of GNU `ls -lh'. */
-	static char powers[] = {
+	static const char powers[] = {
 		'K', /* kilobyte,  2^10 bytes */
 		'M', /* megabyte,  2^20 bytes */
 		'G', /* gigabyte,  2^30 bytes */
@@ -436,11 +436,10 @@ char *wget_human_readable(char *buf, size_t bufsize, uint64_t n)
 		'Z', /* zettabyte, 2^70 bytes */
 		'Y', /* yottabyte, 2^80 bytes */
 	};
-	int acc = 1000, decimals = 2;
 
 	/* If the quantity is smaller than 1K, just print it. */
 	if (n < 1024) {
-		snprintf(buf, bufsize, "%u ", (unsigned int) n);
+		wget_snprintf(buf, bufsize, "%u ", (unsigned int) n);
 		return buf;
 	}
 
@@ -449,13 +448,15 @@ char *wget_human_readable(char *buf, size_t bufsize, uint64_t n)
 		non-portable `long double' arithmetic.  */
 	for (unsigned i = 0; i < countof(powers); i++) {
 		/* At each iteration N is greater than the *subsequent* power.
-			That way N/1024.0 produces a decimal number in the units of
-		 *this* power.  */
+			That way N/1024.0 produces a decimal number in the units of *this* power.  */
 		if ((n / 1024) < 1024 || i == countof(powers) - 1) {
 			double val = n / 1024.0;
 			/* Print values smaller than the accuracy level (acc) with (decimal)
 			 * decimal digits, and others without any decimals.  */
-			snprintf(buf, bufsize, "%.*f%c", val < acc ? decimals : 0, val, powers[i]);
+			if (val < 1000)
+				wget_snprintf(buf, bufsize, "%d.%02d%c", (int) val , ((int) (val * 100)) % 100, powers[i]);
+			else
+				wget_snprintf(buf, bufsize, "%d%c", (int) (val + .5), powers[i]);
 			return buf;
 		}
 		n /= 1024;

@@ -414,7 +414,7 @@ int wget_update_file(const char *fname,
 	int lockfd;
 
 	char tmpfile[strlen(fname) + 6 + 1];
-	snprintf(tmpfile, sizeof(tmpfile), "%sXXXXXX", fname);
+	wget_snprintf(tmpfile, sizeof(tmpfile), "%sXXXXXX", fname);
 
 	// find out system temp directory
 	if (!(tmpdir = getenv("TMPDIR")) && !(tmpdir = getenv("TMP"))
@@ -425,19 +425,18 @@ int wget_update_file(const char *fname,
 
 	// create a per-usr tmp file name
 	size_t tmplen = strlen(tmpdir);
-	size_t lockfilesize = tmplen + strlen(basename) + 32;
-	char *lockfile = xmalloc(lockfilesize);
+	char *lockfile;
 
 #ifdef HAVE_GETUID
 	if (!tmplen)
-		snprintf(lockfile, lockfilesize, "%s_lck_%u", basename, (unsigned) getuid());
+		lockfile = wget_aprintf("%s_lck_%u", basename, (unsigned) getuid());
 	else
-		snprintf(lockfile, lockfilesize, "%s/%s_lck_%u", tmpdir, basename, (unsigned) getuid());
+		lockfile = wget_aprintf("%s/%s_lck_%u", tmpdir, basename, (unsigned) getuid());
 #else
 	if (!tmplen)
-		snprintf(lockfile, lockfilesize, "%s_lck", basename);
+		lockfile = wget_aprintf("%s_lck", basename);
 	else
-		snprintf(lockfile, lockfilesize, "%s/%s_lck", tmpdir, basename);
+		lockfile = wget_aprintf("%s/%s_lck", tmpdir, basename);
 #endif
 
 	xfree(basename);
