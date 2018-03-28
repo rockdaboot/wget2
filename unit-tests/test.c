@@ -46,17 +46,17 @@ static int
 	ok,
 	failed;
 
-static void check(int result, const char *msg)
+static void check(int result, int line, const char *msg)
 {
 	if (result) {
 		ok++;
 	} else {
 		failed++;
-		wget_info_printf("%s\n", msg);
+		wget_info_printf("L%d: %s\n", line, msg);
 	}
 }
 
-#define CHECK(e) check(!!(e), #e)
+#define CHECK(e) check(!!(e), __LINE__, #e)
 
 static void test_mem(void)
 {
@@ -117,6 +117,28 @@ static void test_strlcpy(void)
 	CHECK(wget_strlcpy(buf, "xx", sizeof(buf)) == 2);
 	CHECK(!strcmp(buf, "xx"));
 	CHECK(wget_strlcpy(buf, "xxxxx", sizeof(buf)) == 5);
+	CHECK(!strcmp(buf, "xxx"));
+}
+
+static void test_strscpy(void)
+{
+	char buf[4] = "x";
+
+	CHECK(wget_strscpy(NULL, "y", sizeof(buf)) == -1);
+	CHECK(!strcmp(buf, "x"));
+	CHECK(wget_strscpy(buf, "y", 0) == -1);
+	CHECK(!strcmp(buf, "x"));
+	CHECK(wget_strscpy(buf, NULL, 0) == -1);
+	CHECK(!strcmp(buf, "x"));
+	CHECK(wget_strscpy(buf, NULL, 5) == 0);
+	CHECK(!strcmp(buf, ""));
+	CHECK(wget_strscpy(buf, "x", sizeof(buf)) == 1);
+	CHECK(!strcmp(buf, "x"));
+	CHECK(wget_strscpy(buf, "", sizeof(buf)) == 0);
+	CHECK(!strcmp(buf, ""));
+	CHECK(wget_strscpy(buf, "xx", sizeof(buf)) == 2);
+	CHECK(!strcmp(buf, "xx"));
+	CHECK(wget_strscpy(buf, "xxxxx", sizeof(buf)) == 3);
 	CHECK(!strcmp(buf, "xxx"));
 }
 
@@ -2379,6 +2401,7 @@ int main(int argc, const char **argv)
 	// testing basic library functionality
 	test_mem();
 	test_strlcpy();
+	test_strscpy();
 	test_buffer();
 	test_buffer_printf();
 	test_utils();
