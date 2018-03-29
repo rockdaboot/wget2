@@ -13,6 +13,7 @@ before_script:
   - mkdir -p cache
   - export CCACHE_BASEDIR=${PWD}
   - export CCACHE_DIR=${PWD}/cache
+  - echo $CCACHE_DIR
   - export CC="ccache gcc"
 
 after_script:
@@ -61,6 +62,7 @@ Full + VPATH/Debian:
   script:
     - cp -a /builds/common/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
+    - sed -i 's/dist-lzip//g' configure.ac
     - ./bootstrap && touch .manywarnings
     - mkdir vpath && cd vpath
     - ../configure $CONFIGURE_BASE_FLAGS --cache-file ../cache/config.cache
@@ -81,19 +83,19 @@ Full + VPATH/Debian:
 
 # In this build we combine
 #  * gcc
-#  * check, syntax-check, distcheck
+#  * check, syntax-check
 Minimal/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - cp -a /builds/common/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
+    - sed -i 's/dist-lzip//g' configure.ac
     - ./bootstrap && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --disable-doc
         --disable-xattr --without-gnutls --without-libpsl --without-libnghttp2 --without-bzip2
         --without-gpgme --without-zlib --without-lzma --without-brotlidec --without-libidn2
         --without-libidn --without-libpcre2 --without-libpcre --without-plugin-support
     - make -j$(nproc) check
-    - make -j$(nproc) distcheck
   tags:
     - shared
   artifacts:
@@ -108,7 +110,7 @@ Minimal/Debian:
 # In this build we combine
 #  * clang
 #  * ASan, UBSan
-#  * check, syntax-check, distcheck
+#  * check, syntax-check
 Sanitizers/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
@@ -121,7 +123,6 @@ Sanitizers/Debian:
     - export LSAN_OPTIONS=suppressions="$PWD/tests/clang-asan-suppressions"
     - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan
     - make -j$(nproc) check
-    - make -j$(nproc) distcheck
   tags:
     - shared
   artifacts:
