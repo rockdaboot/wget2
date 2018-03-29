@@ -13,7 +13,6 @@ before_script:
   - mkdir -p cache
   - export CCACHE_BASEDIR=${PWD}
   - export CCACHE_DIR=${PWD}/cache
-  - echo "CCACHE_DIR=$CCACHE_DIR"
   - export CC="ccache gcc"
 
 after_script:
@@ -31,7 +30,7 @@ variables:
   ALPINE_BUILD: buildenv-alpine
   GET_SOURCES_ATTEMPTS: "3"
   GIT_DEPTH: "5"
-  CONFIGURE_BASE_FLAGS: --enable-assert --cache-file $CCACHE_DIR/config.cache
+  CONFIGURE_BASE_FLAGS: --enable-assert --cache-file cache/config.cache
   CFLAGS_DEFAULT: -O0 -g -ggdb3
 
 
@@ -60,11 +59,11 @@ variables:
 Full + VPATH/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
+    - cp -a /builds/common/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap && touch .manywarnings
     - mkdir vpath && cd vpath
-    - echo "CONFIGURE_BASE_FLAGS=$CONFIGURE_BASE_FLAGS"
-    - ../configure $CONFIGURE_BASE_FLAGS
+    - ../configure $CONFIGURE_BASE_FLAGS --cache-file ../cache/config.cache
     - make -j$(nproc)
     - make -j$(nproc) distcheck
   tags:
@@ -86,6 +85,7 @@ Full + VPATH/Debian:
 Minimal/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
+    - cp -a /builds/common/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - ./bootstrap && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --disable-doc
@@ -112,6 +112,7 @@ Minimal/Debian:
 Sanitizers/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
+    - cp -a /builds/common/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - ./bootstrap && touch .manywarnings
     - export CC="ccache clang"
@@ -135,6 +136,7 @@ Sanitizers/Debian:
 Scan-Build/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
+    - cp -a /builds/common/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap && touch .manywarnings
     - scan-build ./configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
@@ -154,6 +156,7 @@ Scan-Build/Debian:
 Flawfinder/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
+    - cp -a /builds/common/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap
     - ./configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
@@ -174,6 +177,7 @@ Flawfinder/Debian:
 Valgrind/Fedora:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
+    - cp -a /builds/common/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - ./bootstrap && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
@@ -194,8 +198,8 @@ Valgrind/Fedora:
 Alpine:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ALPINE_BUILD
   script:
-    - export CFLAGS="$CFLAGS_DEFAULT"
     - cp -a /builds/common/gnulib .
+    - export CFLAGS="$CFLAGS_DEFAULT"
     - ./bootstrap
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check
@@ -229,6 +233,7 @@ Alpine:
 pages:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
+    - cp -a /builds/common/gnulib .
     - ./bootstrap
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./configure $CONFIGURE_BASE_FLAGS
@@ -256,23 +261,24 @@ pages:
 MinGW64:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
   script:
-  - ./bootstrap
-  - cp pthread_sigmask.c.mingw lib/pthread_sigmask.c
-  - export CC="ccache $PREFIX-gcc"
-  - export GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|grep posix))
-  - export WINEPATH="$WINEPATH;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs;$GCCLIB"
-  - echo "WINEPATH=$WINEPATH"
-  - ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
-  - make -j$(nproc)
-  - make clean
-  - ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --disable-threads
-  - make -j$(nproc)
-  - make check -j$(nproc) LOG_COMPILER=wine
+    - cp -a /builds/common/gnulib .
+    - ./bootstrap
+    - cp pthread_sigmask.c.mingw lib/pthread_sigmask.c
+    - export CC="ccache $PREFIX-gcc"
+    - export GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|grep posix))
+    - export WINEPATH="$WINEPATH;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs;$GCCLIB"
+    - echo "WINEPATH=$WINEPATH"
+    - ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
+    - make -j$(nproc)
+    - make clean
+    - ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --disable-threads
+    - make -j$(nproc)
+    - make check -j$(nproc) LOG_COMPILER=wine
   tags:
-  - shared
-  - docker
+    - shared
+    - docker
   except:
-  - tags
+    - tags
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -283,10 +289,10 @@ MinGW64:
       - tests/*.log
 
 CommitCheck:
-    before_script:
-        - /bin/true
-    script:
-        - ./contrib/commit-check
-    after_script:
-        - /bin/true
-    allow_failure: true
+  before_script:
+    - /bin/true
+  script:
+    - ./contrib/commit-check
+  after_script:
+    - /bin/true
+  allow_failure: true
