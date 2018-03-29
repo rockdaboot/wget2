@@ -193,7 +193,7 @@ static void mkdir_path(char *fname)
 				for (int fnum = 1; fnum <= 999 && !renamed; fnum++) {
 					char dst[strlen(fname) + 1 + 32];
 
-					snprintf(dst, sizeof(dst), "%s.%d", fname, fnum);
+					wget_snprintf(dst, sizeof(dst), "%s.%d", fname, fnum);
 					if (access(dst, F_OK) != 0 && rename(fname, dst) == 0)
 						renamed = 1;
 				}
@@ -1056,7 +1056,7 @@ static void _convert_links(void)
 						if (config.backup_converted) {
 							char dstfile[strlen(conversion->filename) + 5 + 1];
 
-							snprintf(dstfile, sizeof(dstfile), "%s.orig", conversion->filename);
+							wget_snprintf(dstfile, sizeof(dstfile), "%s.orig", conversion->filename);
 
 							if (rename(conversion->filename, dstfile) == -1) {
 								wget_error_printf(_("Failed to rename %s to %s (%d)"), conversion->filename, dstfile, errno);
@@ -2824,7 +2824,7 @@ static int _open_unique(const char *fname, int flags, mode_t mode, int multiple,
 			;
 
 		for (i = 1; i < lim && fd < 0 && ((multiple && errno == EEXIST) || errno == EISDIR); i++) {
-			snprintf(unique, unique_len, "%s.%zu", fname, i);
+			wget_snprintf(unique, unique_len, "%s.%zu", fname, i);
 			fd = _wa_open(unique, flags, mode);
 		}
 
@@ -2990,10 +2990,10 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 
 			for (int it = config.backups; it > 0; it--) {
 				if (it > 1)
-					snprintf(src, sizeof(src), "%s.%d", fname, it - 1);
+					wget_snprintf(src, sizeof(src), "%s.%d", fname, it - 1);
 				else
 					wget_strscpy(src, fname, sizeof(src));
-				snprintf(dst, sizeof(dst), "%s.%d", fname, it);
+				wget_snprintf(dst, sizeof(dst), "%s.%d", fname, it);
 
 				if (rename(src, dst) == -1 && errno != ENOENT)
 					error_printf(_("Failed to rename %s to %s (errno=%d)\n"), src, dst, errno);

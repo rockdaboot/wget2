@@ -2524,7 +2524,7 @@ static int use_askpass(void)
 	if (run_use_askpass("Type username:", &config.username) < 0)
 		return -1;
 
-	snprintf(question, sizeof(question), "Type password for '%s':", config.username);
+	wget_snprintf(question, sizeof(question), "Type password for '%s':", config.username);
 	xfree(config.password);
 
 	/* Prompt for password */
