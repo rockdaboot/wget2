@@ -29,6 +29,7 @@ variables:
   CENTOS7_BUILD: buildenv-centos7
   MINGW_BUILD: buildenv-mingw
   ALPINE_BUILD: buildenv-alpine
+  BASIC_BUILD: buildenv-basic
   GET_SOURCES_ATTEMPTS: "3"
   GIT_DEPTH: "5"
   CONFIGURE_BASE_FLAGS: --enable-assert --cache-file cache/config.cache
@@ -291,6 +292,7 @@ MinGW64:
       - tests/*.log
 
 CommitCheck:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$BASIC_BUILD
   before_script:
     - /bin/true
   script:
@@ -298,3 +300,6 @@ CommitCheck:
   after_script:
     - /bin/true
   allow_failure: true
+  cache:
+      paths:
+      policy: push
