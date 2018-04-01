@@ -154,34 +154,35 @@ Scan-Build/Debian:
     paths:
       - scan-build/*
 
-Flawfinder/Debian:
+Valgrind/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - cp -a /builds/common/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap
-    - ./configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
+    - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
     - make -j$(nproc)
-    - mkdir flawfinder
-    - flawfinder -CcQH src/ libwget/ tests/ fuzz/ unit-tests/ > flawfinder/flawfinder.html
-    - flawfinder -ICcQH src/ libwget/ tests/ fuzz/ unit-tests/ > flawfinder/flawfinder-inputs.html
+    - make check -j$(nproc)
   tags:
     - shared
   except:
     - tags
   artifacts:
     expire_in: 2 weeks
-    when: always
+    when: on_failure
     paths:
-      - flawfinder/*
+      - ./*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
 
-Valgrind/Fedora:
+Simple/Fedora:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
     - cp -a /builds/common/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - ./bootstrap && touch .manywarnings
-    - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
+    - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check
   tags:
     - shared
