@@ -29,6 +29,7 @@ variables:
   CENTOS7_BUILD: buildenv-centos7
   MINGW_BUILD: buildenv-mingw
   ALPINE_BUILD: buildenv-alpine
+  ARCH_BUILD: buildenv-arch
   BASIC_BUILD: buildenv-basic
   GET_SOURCES_ATTEMPTS: "3"
   GIT_DEPTH: "5"
@@ -290,6 +291,32 @@ MinGW64:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
+
+DepBuild/Arch:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ARCH_BUILD
+  only:
+      - schedules
+  script:
+    - export CFLAGS=$CFLAGS_DEFAULT
+    - pacman -Q libpsl-git libnghttp2-git libidn2-git libmicrohttpd-git gpgme zlib pcre2 xz
+    - sed -i 's/dist-lzip//g' configure.ac
+    - ./bootstrap && touch .manywarnings
+    - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
+    - make -j$(nproc)
+    - make check -j$(nproc)
+    - make -j$(nproc) distcheck
+  tags:
+    - shared
+    - docker
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
+
 
 CommitCheck:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$BASIC_BUILD
