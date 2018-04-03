@@ -432,6 +432,7 @@ AS_IF([test "x$with_gnutls" != "xno"], [
       [with_gnutls=yes; AC_DEFINE([WITH_GNUTLS], [1], [Use GnuTLS])],
       [with_gnutls=no;  AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS. Fallback to libnettle for hashing and checksumming.)])
   ])
+  AC_CHECK_HEADERS([gnutls/crypto.h])
   AC_SEARCH_LIBS(gnutls_hash, gnutls, [with_gnutls_hash=yes])
   AS_IF([test "x$with_gnutls" = xyes], [
     AC_CHECK_HEADERS([gnutls/ocsp.h])

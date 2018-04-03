@@ -93,7 +93,7 @@ wget_digest_algorithm_t wget_hash_get_algorithm(const char *hashname)
 	return WGET_DIGTYPE_UNKNOWN;
 }
 
-#if defined WITH_GNUTLS && !defined WITH_LIBNETTLE
+#if defined WITH_GNUTLS && defined HAVE_GNUTLS_CRYPTO_H && !defined WITH_LIBNETTLE
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
