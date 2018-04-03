@@ -104,7 +104,6 @@ The following packages are needed to build the software
 
 * autotools (autoconf, autogen, automake, autopoint, libtool)
 * python (recommended for faster bootstrap)
-* gperf
 * rsync
 * tar
 * makeinfo (part of texinfo)
