@@ -800,9 +800,9 @@ static int parse_local_db(option_t opt, const char *val, const char invert)
 static int parse_report_speed_type(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (!wget_strcasecmp_ascii(val, "bytes"))
-		*((int *)opt->var) = WGET_REPORT_SPEED_BYTES;
+		*((char *)opt->var) = WGET_REPORT_SPEED_BYTES;
 	else if (!wget_strcasecmp_ascii(val, "bits"))
-		*((int *)opt->var) = WGET_REPORT_SPEED_BITS;
+		*((char *)opt->var) = WGET_REPORT_SPEED_BITS;
 	else if (!val[0]) {
 		error_printf(_("Missing required type specifier\n"));
 		return -1;
