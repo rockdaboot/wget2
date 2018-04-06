@@ -2221,7 +2221,7 @@ typedef struct _wget_hash_hd_st wget_hash_hd_t;
  * \brief Enumeration of different hash digest algorithms
  */
 typedef enum {
-	WGET_DIGTYPE_UNKNOWN, /**< Indicates 'Unknown hash algorithm', returned by wget_hash_get_algorithm() */
+	WGET_DIGTYPE_UNKNOWN = 0, /**< Indicates 'Unknown hash algorithm', returned by wget_hash_get_algorithm() */
 	WGET_DIGTYPE_MD5,     /**< Type 'MD5' digest */
 	WGET_DIGTYPE_SHA1,    /**< Type SHA1 digest */
 	WGET_DIGTYPE_RMD160,  /**< Type RMD160 digest */
@@ -2229,7 +2229,8 @@ typedef enum {
 	WGET_DIGTYPE_SHA256,  /**< Type 'SHA256' digest */
 	WGET_DIGTYPE_SHA384,  /**< Type 'SHA384' digest */
 	WGET_DIGTYPE_SHA512,  /**< Type 'SHA512' digest */
-	WGET_DIGTYPE_SHA224   /**< Type 'SHA224' digest */
+	WGET_DIGTYPE_SHA224,  /**< Type 'SHA224' digest */
+	WGET_DIGTYPE_MAX      /**< Number of digest types */
 } wget_digest_algorithm_t;
 
 WGETAPI wget_digest_algorithm_t

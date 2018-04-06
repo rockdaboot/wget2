@@ -105,7 +105,7 @@ struct _wget_hash_hd_st {
 };
 
 static const gnutls_digest_algorithm_t
-	_gnutls_algorithm[] = {
+	_gnutls_algorithm[WGET_DIGTYPE_MAX] = {
 		[WGET_DIGTYPE_UNKNOWN] = GNUTLS_DIG_UNKNOWN,
 		[WGET_DIGTYPE_MD2] = GNUTLS_DIG_MD2,
 		[WGET_DIGTYPE_MD5] = GNUTLS_DIG_MD5,
@@ -224,7 +224,7 @@ struct _wget_hash_hd_st {
 };
 
 static const struct nettle_hash *
-	_nettle_algorithm[] = {
+	_nettle_algorithm[WGET_DIGTYPE_MAX] = {
 		[WGET_DIGTYPE_UNKNOWN] = NULL,
 		[WGET_DIGTYPE_MD2] = &nettle_md2,
 		[WGET_DIGTYPE_MD5] = &nettle_md5,
@@ -270,16 +270,14 @@ int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 
 int wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm)
 {
-	if ((unsigned)algorithm < countof(_nettle_algorithm)) {
+	if ((unsigned)algorithm < countof(_nettle_algorithm) && _nettle_algorithm[algorithm]) {
 		dig->hash = _nettle_algorithm[algorithm];
 		dig->context = xmalloc(dig->hash->context_size);
 		dig->hash->init(dig->context);
 		return 0;
-	} else {
-		dig->hash = NULL;
-		dig->context = NULL;
-		return -1;
 	}
+
+	return -1;
 }
 
 int wget_hash(wget_hash_hd_t *dig, const void *text, size_t textlen)
@@ -306,7 +304,7 @@ struct _wget_hash_hd_st {
 		context;
 };
 
-static const int _gcrypt_algorithm[] = {
+static const int _gcrypt_algorithm[WGET_DIGTYPE_MAX] = {
 	[WGET_DIGTYPE_UNKNOWN] = GCRY_MD_NONE,
 	[WGET_DIGTYPE_MD2] = GCRY_MD_MD2,
 	[WGET_DIGTYPE_MD5] = GCRY_MD_MD5,
@@ -346,9 +344,9 @@ int wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm)
 		dig->algorithm = _gcrypt_algorithm[algorithm];
 		gcry_md_open(&dig->context, dig->algorithm, 0);
 		return 0;
-	} else {
-		return -1;
 	}
+
+	return -1;
 }
 
 int wget_hash(wget_hash_hd_t *dig, const void *text, size_t textlen)
@@ -388,7 +386,7 @@ static struct _algorithm {
 	_hash_read_t read;
 	size_t ctx_len;
 	size_t digest_len;
-} _algorithm[] = {
+} _algorithm[WGET_DIGTYPE_MAX] = {
 	[WGET_DIGTYPE_MD2] = {
 		(_hash_init_t)md2_init_ctx,
 		(_hash_process_t)md2_process_bytes,
@@ -556,7 +554,12 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 			wget_hash_hd_t dig;
 			char tmp[65536];
 
-			wget_hash_init(&dig, algorithm);
+			if (wget_hash_init(&dig, algorithm)) {
+				error_printf(_("%s: Hash type '%s' not supported by linked crypto engine\n"), __func__, hashname);
+				close(fd);
+				return -1;
+			}
+
 			while (length > 0 && (nbytes = read(fd, tmp, sizeof(tmp))) > 0) {
 				wget_hash(&dig, tmp, nbytes);
 
