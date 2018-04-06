@@ -93,9 +93,11 @@ wget_digest_algorithm_t wget_hash_get_algorithm(const char *hashname)
 	return WGET_DIGTYPE_UNKNOWN;
 }
 
-#if defined WITH_GNUTLS && defined HAVE_GNUTLS_CRYPTO_H && !defined WITH_LIBNETTLE
+#if defined WITH_GNUTLS && !defined WITH_LIBNETTLE
 #include <gnutls/gnutls.h>
-#include <gnutls/crypto.h>
+#ifdef HAVE_GNUTLS_CRYPTO_H
+#  include <gnutls/crypto.h>
+#endif
 
 struct _wget_hash_hd_st {
 	gnutls_hash_hd_t
@@ -260,7 +262,7 @@ int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t t
 
 int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 {
-	if (algorithm >= 0 && algorithm < countof(_nettle_algorithm))
+	if ((unsigned)algorithm < countof(_nettle_algorithm))
 		return _nettle_algorithm[algorithm]->digest_size;
 	else
 		return 0;
@@ -268,7 +270,7 @@ int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 
 int wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm)
 {
-	if (algorithm >= 0 && algorithm < countof(_nettle_algorithm)) {
+	if ((unsigned)algorithm < countof(_nettle_algorithm)) {
 		dig->hash = _nettle_algorithm[algorithm];
 		dig->context = xmalloc(dig->hash->context_size);
 		dig->hash->init(dig->context);
@@ -332,7 +334,7 @@ int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t t
 
 int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 {
-	if (algorithm >= 0 && algorithm < countof(_gcrypt_algorithm))
+	if ((unsigned)algorithm < countof(_gcrypt_algorithm))
 		return gcry_md_get_algo_dlen(_gcrypt_algorithm[algorithm]);
 	else
 		return 0;
@@ -340,7 +342,7 @@ int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 
 int wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm)
 {
-	if (algorithm >= 0 && algorithm < countof(_gcrypt_algorithm)) {
+	if ((unsigned)algorithm < countof(_gcrypt_algorithm)) {
 		dig->algorithm = _gcrypt_algorithm[algorithm];
 		gcry_md_open(&dig->context, dig->algorithm, 0);
 		return 0;
@@ -468,7 +470,7 @@ int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t t
 
 int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 {
-	if (algorithm >= 0 && algorithm < countof(_algorithm))
+	if ((unsigned)algorithm < countof(_algorithm))
 		return _algorithm[algorithm].digest_len;
 	else
 		return 0;
@@ -476,7 +478,7 @@ int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 
 int wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm)
 {
-	if (algorithm >= 0 && algorithm < countof(_algorithm)) {
+	if ((unsigned)algorithm < countof(_algorithm)) {
 		if (_algorithm[algorithm].ctx_len) {
 			dig->algorithm = &_algorithm[algorithm];
 			dig->context = xmalloc(dig->algorithm->ctx_len);
