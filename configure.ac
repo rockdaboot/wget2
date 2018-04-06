@@ -172,6 +172,9 @@ if test -n "$WARN_CFLAGS"; then
     GNULIB_WARN_CFLAGS="-Wno-error $GNULIB_WARN_CFLAGS"
     GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-sign-compare -Wno-unused-parameter -Wno-alloca"
     GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-float-conversion -Wno-cast-function-type"
+    if test "$cross_compiling" = yes; then
+      GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-incompatible-pointer-types"
+    fi
 
   elif test "$CCNAME" = "clang"; then
     # setup flags for this project
