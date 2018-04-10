@@ -677,11 +677,11 @@ static int parse_n_option(G_GNUC_WGET_UNUSED option_t opt, const char *val, G_GN
 static int parse_prefer_family(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (!val || !wget_strcasecmp_ascii(val, "none"))
-		*((char *)opt->var) = WGET_NET_FAMILY_ANY;
+		*((int *)opt->var) = WGET_NET_FAMILY_ANY;
 	else if (!wget_strcasecmp_ascii(val, "ipv4"))
-		*((char *)opt->var) = WGET_NET_FAMILY_IPV4;
+		*((int *)opt->var) = WGET_NET_FAMILY_IPV4;
 	else if (!wget_strcasecmp_ascii(val, "ipv6"))
-		*((char *)opt->var) = WGET_NET_FAMILY_IPV6;
+		*((int *)opt->var) = WGET_NET_FAMILY_IPV6;
 	else {
 		error_printf(_("Unknown address family '%s'\n"), val);
 		return -1;
