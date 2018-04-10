@@ -73,7 +73,7 @@ struct JOB {
 	const char
 		*local_filename;
 	char
-		*sig_filename; // Signature infomation. Meaning depends on sig_req
+		*sig_filename; // Signature information. Meaning depends on sig_req
 	PART
 		*part; // current chunk to download
 	DOWNLOADER
