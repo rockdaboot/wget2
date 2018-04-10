@@ -33,6 +33,9 @@
 
 #include <wget.h>
 
+#define INCLUDED_DIRECTORY_PREFIX '+'
+#define EXCLUDED_DIRECTORY_PREFIX '-'
+
 //types for --https-enforce
 enum {
 	WGET_HTTPS_ENFORCE_NONE,
@@ -103,6 +106,7 @@ struct config {
 		*compression,
 		*config_files,
 		*domains,
+		*exclude_directories,
 		*exclude_domains,
 		*accept_patterns,
 		*reject_patterns,

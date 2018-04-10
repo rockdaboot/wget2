@@ -1783,13 +1783,33 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `-I list`, `--include-directories=list`
 
-  Specify a comma-separated list of directories you wish to follow when downloading.  Elements of list may contain
+  Specify a comma-separated list of directories you wish to follow when downloading.  Elements of the list may contain
   wildcards.
+
+      wget2 -r https://webpage.domain --include-directories=*/pub/*/
+
+  Please keep in mind that `*/pub/*/` is the same as `/*/pub/*/` and that it matches directories, not strings. This means
+  that `*/pub` doesn't affect files contained at e.g. `/directory/something/pub` but `/pub/*` matches every subdir of `/pub`.
 
 ### `-X list`, `--exclude-directories=list`
 
-  Specify a comma-separated list of directories you wish to exclude from download.  Elements of list may contain
+  Specify a comma-separated list of directories you wish to exclude from download.  Elements of the list may contain
   wildcards.
+
+      wget2 -r https://gnu.org --exclude-directories=/software
+
+#### `-I` / `-X` combinations
+
+  Please be aware that the behavior of this combination of flags works slightly different than in wget1.x.
+
+  If -I is given first, the default is 'exclude all'. If -X is given first, the default is 'include all'.
+
+  Multiple -I/-X options are processed 'first to last'. The last match is relevant.
+
+      Example: -I /pub -X /pub/trash would download all from /pub/ except from /pub/trash.
+      Example: -X /pub -I /pub/important would download all except from /pub where only /pub/important would be downloaded.
+
+  To reset the list (e.g. to ignore -I/-X from .wgetrc files) use `--no-include-directories` or `--no-exclude-directories`.
 
 ### `-np`, `--no-parent`
 

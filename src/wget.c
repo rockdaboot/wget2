@@ -124,7 +124,7 @@ static _statistics_t stats;
 
 static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag,
 		const char *uri, const char *original_url, int ignore_patterns, wget_buffer_t *partial_content,
-		size_t max_partial_content, char **actual_file_name);
+		size_t max_partial_content, char **actual_file_name, const char *path);
 
 static void
 	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
@@ -471,6 +471,76 @@ static void _wget_deinit(void)
 	wget_thread_mutex_destroy(&quota_mutex);
 	wget_thread_cond_destroy(&main_cond);
 	wget_thread_cond_destroy(&worker_cond);
+}
+
+/* Check if 'subdir' is a subdirectory of 'dir'.
+ * E.g. if 'dir' is `/something', match_subdir() will return true if and
+ * only if 'subdir' begins with `/something/' or is exactly '/something'.
+ */
+static bool match_subdir(const char *dir, const char *subdir, char ignore_case)
+{
+	if (*dir == '\0')
+		return (strcmp(subdir, "/")) ? false : true;
+
+	if (ignore_case)
+		for (; *dir && *subdir && (c_tolower(*dir) == c_tolower(*subdir)); ++dir, ++subdir)
+			;
+	else
+		while (*dir && *subdir && (*dir++ == *subdir++))
+			;
+
+	return *dir == 0 && (*subdir == 0 || *subdir == '/');
+}
+
+static int in_directory_pattern_list(const wget_vector_t *v, const char *fname)
+{
+	// if -I was given: exclude all be default
+	// if -X was given alone: include all be default
+	const char *pattern;
+	char *path;
+	bool default_exclude = 0;
+
+	if (*fname == '/')
+		fname++;
+
+	const char *e = strrchr(fname, '/');
+	if (!e)
+		//return default_exclude; // no path component found
+		path = wget_strdup("/");
+	else
+		path = wget_strmemdup(fname, e - fname);
+
+	pattern = wget_vector_get(v, 0);
+	default_exclude = (*pattern == INCLUDED_DIRECTORY_PREFIX);
+
+	for (int it = wget_vector_size(v) - 1; it >= 0; it--) {
+		pattern = wget_vector_get(v, it);
+
+		bool exclude = (*pattern != INCLUDED_DIRECTORY_PREFIX);
+
+		pattern++;
+
+		if (*pattern == '/')
+			pattern++;
+
+		debug_printf("directory[%d] '%s' - '%s' %c\n", it, pattern, path, "+-"[exclude]);
+
+		if (strpbrk(pattern, "*?[]")) {
+			// path="/we/all/love/wget" wouldn't match "/*/all/*" but "/*/all/*/*"
+			if (!fnmatch(pattern, path, FNM_PATHNAME | (config.ignore_case ? FNM_CASEFOLD : 0))) {
+				wget_free(path);
+				return exclude;
+			}
+		} else if (match_subdir(pattern, path, config.ignore_case)) {
+			// path="/we/all/love/wget" would match "/we/all/"
+			wget_free(path);
+			return exclude;
+		}
+	}
+
+	wget_free(path);
+
+	return default_exclude;
 }
 
 static int in_pattern_list(const wget_vector_t *v, const char *url)
@@ -915,6 +985,12 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			wget_thread_mutex_unlock(downloader_mutex);
 			return;
 		}
+
+		if (config.exclude_directories && in_directory_pattern_list(config.exclude_directories, iri->path)) {
+			debug_printf("not requesting '%s' (path excluded)\n", iri->uri);
+			wget_thread_mutex_unlock(downloader_mutex);
+			return;
+		}
 	}
 
 	new_job = job_init(&job_buf, iri, http_fallback);
@@ -969,6 +1045,9 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 		if ((config.reject_patterns && in_pattern_list(config.reject_patterns, new_job->iri->uri))
 				|| (config.reject_regex && regex_match(new_job->iri->uri, config.reject_regex)))
+			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+
+		if (config.exclude_directories && in_directory_pattern_list(config.exclude_directories, new_job->iri->path))
 			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
 	}
 
@@ -2926,7 +3005,7 @@ static bool check_mime_list(wget_vector_t *list, const char *mime)
 
 static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag,
 		const char *uri, const char *original_url, int ignore_patterns, wget_buffer_t *partial_content,
-		size_t max_partial_content, char **actual_file_name)
+		size_t max_partial_content, char **actual_file_name, const char *path)
 {
 	char *alloced_fname = NULL;
 	int fd, multiple = 0, oflag = flag;
@@ -3034,6 +3113,12 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 				|| (config.reject_regex && regex_match(fname, config.reject_regex)))
 		{
 			debug_printf("not saved '%s' (matches reject pattern)\n", fname);
+			xfree(alloced_fname);
+			return -2;
+		}
+
+		if (config.exclude_directories && in_directory_pattern_list(config.exclude_directories, path)) {
+			debug_printf("not saved '%s' (directory excluded)\n", path);
 			xfree(alloced_fname);
 			return -2;
 		}
@@ -3215,7 +3300,8 @@ static int _get_header(wget_http_response_t *resp, void *context)
 			ctx->job->ignore_patterns,
 			resp->code == 206 ? ctx->body : NULL,
 			ctx->max_memory,
-			&ctx->job->sig_filename);
+			&ctx->job->sig_filename,
+			ctx->job->iri->path);
 		if (ctx->outfd == -1)
 			ret = -1;
 	}

@@ -383,6 +383,50 @@ static int parse_header(option_t opt, const char *val, G_GNUC_WGET_UNUSED const 
 	return 0;
 }
 
+static const char *_strchrnul_esc(const char *s, char c)
+{
+	const char *p;
+
+	for (p = s; *p; p++) {
+		if (*p == '\\' && (p[1] == '\\' || p[1] == c))
+			p++;
+		else if (*p == c)
+			return p;
+	}
+
+	return p; // pointer to trailing \0
+}
+
+static char *_strmemdup_esc(const char *s, size_t size)
+{
+   const char *p, *e;
+	size_t newsize = 0;
+
+	for (p = s, e = s + size; p < e; p++) {
+		if (*p == '\\') {
+			if (p < e - 1) {
+				newsize++;
+				p++;
+			}
+		} else
+			newsize++;
+	}
+
+	char *ret = wget_malloc(newsize + 1);
+	char *dst = ret;
+
+	for (p = s, e = s + size; p < e; p++) {
+		if (*p == '\\') {
+			if (p < e - 1)
+				*dst++ = *++p;
+		} else
+			*dst++ = *p;
+	}
+	*dst = 0;
+
+	return ret;
+}
+
 static int parse_stringlist_expand(option_t opt, const char *val, int expand, int max_entries)
 {
 	if (val && *val) {
@@ -393,13 +437,13 @@ static int parse_stringlist_expand(option_t opt, const char *val, int expand, in
 			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, (wget_vector_compare_t)strcmp);
 
 		for (s = p = val; *p; s = p + 1) {
-			if ((p = strchrnul(s, ',')) != s) {
+			if ((p = _strchrnul_esc(s, ',')) != s) {
 				if (wget_vector_size(v) >= max_entries) {
 					wget_debug_printf("%s: More than %d entries, ignoring overflow\n", __func__, max_entries);
 					return -1;
 				}
 
-				const char *fname = wget_strmemdup(s, p - s);
+				const char *fname = _strmemdup_esc(s, p - s);
 
 				if (expand && *s == '~') {
 					wget_vector_add_noalloc(v, shell_expand(fname));
@@ -419,6 +463,60 @@ static int parse_stringlist(option_t opt, const char *val, G_GNUC_WGET_UNUSED co
 {
 	/* max number of 1024 entries to avoid out-of-memory */
 	return parse_stringlist_expand(opt, val, 0, 1024);
+}
+
+static char *set_char_prefix(const char *val, char prefix)
+{
+	if (val && *val) {
+		// we just need a scratch buffer, no need for optimal size calculation
+		char *prefixed_val = wget_malloc(strlen(val) * 2 + 1), *dst = prefixed_val;
+
+		*dst++ = prefix;
+		for (const char *src = val; *src; src++) {
+			if (*src == '\\') {
+				*dst++ = *src++;
+				if (*src)
+					*dst++ = *src;
+			} else if (*src == ',') {
+				while (dst[-1] == '/')
+					dst--;
+				*dst++ = *src;
+				*dst++ = prefix;
+			} else
+				*dst++ = *src;
+		}
+
+		while (dst[-1] == '/')
+			dst--;
+
+		*dst = 0;
+
+		return prefixed_val;
+	}
+
+	return NULL;
+}
+
+static int parse_included_directories(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
+{
+	char *prefixed_val = set_char_prefix(val, INCLUDED_DIRECTORY_PREFIX);
+	int ret = parse_stringlist_expand(opt, prefixed_val, 0, 1024);
+
+	if (prefixed_val)
+		xfree(prefixed_val);
+
+	return ret;
+}
+
+static int parse_excluded_directories(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
+{
+	char *prefixed_val = set_char_prefix(val, EXCLUDED_DIRECTORY_PREFIX);
+	int ret = parse_stringlist_expand(opt, prefixed_val, 0, 1024);
+
+	if (prefixed_val)
+		xfree(prefixed_val);
+
+	return ret;
 }
 
 static int parse_filenames(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
@@ -1276,6 +1374,12 @@ static const struct optionw options[] = {
 		  "Entropy Gathering Daemon.\n"
 		}
 	},
+	{ "exclude-directories", &config.exclude_directories, parse_excluded_directories, 1, 'X',
+		SECTION_DOWNLOAD,
+		{ "Comma-separated list of directories NOT to download.\n",
+		  "Wildcards are allowed.\n"
+		}
+	},
 	{ "exclude-domains", &config.exclude_domains, parse_stringlist, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Comma-separated list of domains NOT to follow.\n"
@@ -1294,7 +1398,7 @@ static const struct optionw options[] = {
 	{ "filter-urls", &config.filter_urls, parse_bool, 0, 0,
 		SECTION_DOWNLOAD,
 		{ "Apply the accept and reject filters on the URL\n",
-                  "before starting a download. (default: off)\n"
+		  "before starting a download. (default: off)\n"
 		}
 	},
 	{ "follow-tags", &config.follow_tags, parse_taglist, 1, 0,
@@ -1478,6 +1582,12 @@ static const struct optionw options[] = {
 		SECTION_DOWNLOAD,
 		{ "Ignore tag/attributes for URL scanning,\n",
 		  "e.g. --ignore-tags=\"img,a/href\n"
+		}
+	},
+	{ "include-directories", &config.exclude_directories, parse_included_directories, 1, 'I',
+		SECTION_DOWNLOAD,
+		{ "Comma-separated list of directories TO download.\n",
+		  "Wildcards are allowed.\n"
 		}
 	},
 	{ "inet4-only", &config.inet4_only, parse_bool, -1, '4',
@@ -2727,7 +2837,6 @@ int init(int argc, const char **argv)
 	config.secure_protocol = wget_strdup(config.secure_protocol);
 	config.ca_directory = wget_strdup(config.ca_directory);
 	config.default_page = wget_strdup(config.default_page);
-	config.domains = wget_vector_create(16, (wget_vector_compare_t)strcmp);
 
 	// create list of default config file names
 	const char *env;
@@ -2784,6 +2893,7 @@ int init(int argc, const char **argv)
 		config.netrc_file = wget_aprintf("%s/.netrc", home_dir);
 
 	xfree(home_dir);
+	wget_vector_free(&config.exclude_directories); // -I and -X stack up, so free before final command line parsing
 
 	//Enable plugin loading
 	{
@@ -3151,6 +3261,7 @@ void deinit(void)
 
 	wget_iri_free(&config.base);
 
+	wget_vector_free(&config.exclude_directories);
 	wget_vector_free(&config.mime_types);
 	wget_vector_free(&config.http_retry_on_status);
 	wget_vector_free(&config.domains);
