@@ -1004,7 +1004,7 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
 	int debug = wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG));
 
 	if (unlikely(!tcp))
-		return -1;
+		return WGET_E_INVALID;
 
 	if (tcp->addrinfo_allocated)
 		freeaddrinfo(tcp->addrinfo);
@@ -1047,7 +1047,7 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
 					error_printf(_("Failed to bind (%d)\n"), errno);
 					close(sockfd);
 
-					return -1;
+					return WGET_E_UNKNOWN;
 				}
 			}
 
