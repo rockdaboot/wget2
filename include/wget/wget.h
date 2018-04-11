@@ -2704,11 +2704,11 @@ WGETAPI void
 
 WGET_END_DECLS
 
-#endif /* WGET_WGET_H */
-
 /*
  * Regex Types
  */
 
 #define WGET_REGEX_TYPE_POSIX 0
 #define WGET_REGEX_TYPE_PCRE 1
+
+#endif /* WGET_WGET_H */
