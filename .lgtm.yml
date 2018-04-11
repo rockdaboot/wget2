@@ -1,0 +1,9 @@
+extraction:
+  cpp:
+    prepare:
+      packages:
+        - gnutls-dev
+    after_prepare:
+      - ./bootstrap
+    configure:
+      command: ./configure --disable-doc
