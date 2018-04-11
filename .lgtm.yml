@@ -2,8 +2,7 @@ extraction:
   cpp:
     prepare:
       packages:
-        - gnutls-dev
-    after_prepare:
-      - ./bootstrap
+        - lzip
+        - libgpgme11-dev
     configure:
       command: ./configure --disable-doc
