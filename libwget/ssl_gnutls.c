@@ -1403,13 +1403,17 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 		if (gnutls_error_is_fatal(rc)) {
 			debug_printf("gnutls_handshake: (%d) %s (errno=%d)\n", rc, gnutls_strerror(rc),errno);
 
-			if (rc == GNUTLS_E_CERTIFICATE_ERROR)
+			if (rc == GNUTLS_E_CERTIFICATE_ERROR) {
 				ret = WGET_E_CERTIFICATE;
-			else if (rc == GNUTLS_E_PUSH_ERROR && (errno == ECONNREFUSED || errno == ENOTCONN)) {
+			} else if (rc == GNUTLS_E_PUSH_ERROR && (errno == ECONNREFUSED || errno == ENOTCONN)) {
 				/*
 				 * ECONNREFUSED: on Linux
 				 * ENOTCONN: MinGW (in out Gitlab CI runner)
 				 */
+				ret = WGET_E_CONNECT;
+			} else if (rc == GNUTLS_E_PULL_ERROR && errno == 61 /* ENODATA, but not on OSX/Travis ? */) {
+				// We see this with older versions of GnuTLS, e.g. on TravisCI. (Tim, 11.4.2018)
+				// It happens when trying to connect to a port without a listener
 				ret = WGET_E_CONNECT;
 #ifdef GNUTLS_E_PREMATURE_TERMINATION
 			} else if (rc == GNUTLS_E_PREMATURE_TERMINATION && errno == EAGAIN) {
@@ -1418,7 +1422,7 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 #endif
 			} else if (rc == GNUTLS_E_UNEXPECTED_PACKET_LENGTH && errno == EAGAIN) {
 				// We see this with older versions of GnuTLS, e.g. on TravisCI. (Tim, 11.4.2018)
-				// It happens when trying to connect to a closed port
+				// It happens when trying to connect to a port without a listener
 				ret = WGET_E_CONNECT;
 			} else
 				ret = WGET_E_HANDSHAKE;
