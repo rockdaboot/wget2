@@ -5,4 +5,4 @@ extraction:
         - lzip
         - libgpgme11-dev
     configure:
-      command: ./configure --disable-doc
+      command: ./bootstrap && ./configure --disable-doc
