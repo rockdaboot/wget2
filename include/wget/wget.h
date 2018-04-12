@@ -988,6 +988,8 @@ WGETAPI int
 	wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2) G_GNUC_WGET_PURE;
 WGETAPI char *
 	wget_iri_unescape_inline(char *src) G_GNUC_WGET_NONNULL_ALL;
+WGETAPI char *
+	wget_iri_unescape_url_inline(char *src) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI wget_iri_t *
 	wget_iri_parse(const char *uri, const char *encoding);
 WGETAPI wget_iri_t *

@@ -71,7 +71,7 @@ static int _normalize_uri(wget_iri_t *base, wget_string_t *url, const char *enco
 
 	char *urlpart = wget_strmemdup(url->p, url->len);
 
-	wget_iri_unescape_inline(urlpart);
+	wget_iri_unescape_url_inline(urlpart);
 	rc = wget_memiconv(encoding, urlpart, strlen(urlpart), "utf-8", &urlpart_encoded, &urlpart_encoded_length);
 	wget_xfree(urlpart);
 

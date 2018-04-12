@@ -211,6 +211,32 @@ static _GL_INLINE unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
 	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
 }
 
+static char *_iri_unescape_inline(char *src, int ctype)
+{
+	char *ret = NULL;
+	unsigned char *s = (unsigned char *)src; // just a helper to avoid casting a lot
+	unsigned char *d = s;
+
+	while (*s) {
+		if (*s == '%') {
+			if (c_isxdigit(s[1]) && c_isxdigit(s[2])) {
+				unsigned char c = (unsigned char) (_unhex(s[1]) << 4) | _unhex(s[2]);
+				if (!ctype || (!(iri_ctype[(unsigned char)(c)] & ctype) && c != '%')) {
+					*d++ = c;
+					s += 3;
+					ret = src;
+					continue;
+				}
+			}
+		}
+
+		*d++ = *s++;
+	}
+	*d = 0;
+
+	return ret;
+}
+
 /**
  * \param[in] src A string
  * \return A pointer to \p src, after the transformation is done
@@ -223,25 +249,25 @@ static _GL_INLINE unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
  */
 char *wget_iri_unescape_inline(char *src)
 {
-	char *ret = NULL;
-	unsigned char *s = (unsigned char *)src; // just a helper to avoid casting a lot
-	unsigned char *d = s;
+	return _iri_unescape_inline(src, 0);
+}
 
-	while (*s) {
-		if (*s == '%') {
-			if (c_isxdigit(s[1]) && c_isxdigit(s[2])) {
-				*d++ = (unsigned char) (_unhex(s[1]) << 4) | _unhex(s[2]);
-				s += 3;
-				ret = src;
-				continue;
-			}
-		}
-
-		*d++ = *s++;
-	}
-	*d = 0;
-
-	return ret;
+/**
+ * \param[in] src A string
+ * \return A pointer to \p src, after the transformation is done
+ *
+ * Unescape a string except escaped generic delimiters (and escaped '%'.
+ * The percent-encoded characters (`%XX`) are converted back to their original form.
+ *
+ * This variant of unescaping is helpful before an URL is being parsed, so that
+ * the parser recognizes e.g. 'http%3A//' as relative URL (path) and not as a scheme.
+ *
+ * **The transformation is done inline**, so `src` will be modified after this function returns.
+ * If no characters were unescaped, the string is left untouched.
+ */
+char *wget_iri_unescape_url_inline(char *src)
+{
+	return _iri_unescape_inline(src, IRI_CTYPE_GENDELIM);
 }
 
 /**

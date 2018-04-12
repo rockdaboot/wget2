@@ -718,6 +718,7 @@ static void test_iri_relative_to_absolute(void)
 		{ H1, "..", H1"/" },
 		{ H1, "../", H1"/" },
 		{ H1, "foo", H1"/foo" },
+		{ H1, "foo%3A", H1"/foo%3A" }, // escaped colon
 		{ H1, "foo/bar", H1"/foo/bar" },
 		{ H1, "foo///bar", H1"/foo/bar" },
 		{ H1, "foo/.", H1"/foo/" },
