@@ -299,7 +299,8 @@ long long wget_get_timemillis(void)
 	return ts.tv_sec * 1000LL + ts.tv_nsec / 1000000;
 }
 
-static _GL_INLINE unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
+G_GNUC_WGET_CONST
+static unsigned char _unhex(unsigned char c)
 {
 	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
 }

@@ -1184,7 +1184,7 @@ static void __attribute__ ((destructor)) _wget_tls_exit(void)
 		wget_thread_mutex_destroy(&_mutex);
 }
 
-static _GL_INLINE int _key_type(int type)
+static int _key_type(int type)
 {
 	if (type == WGET_SSL_X509_FMT_DER)
 		return GNUTLS_X509_FMT_DER;
