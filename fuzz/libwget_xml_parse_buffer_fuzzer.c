@@ -28,7 +28,14 @@
 #include "wget.h"
 #include "fuzzer.h"
 
-static void _cb(void *context, int flags, const char *tag, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+static void _cb(
+	G_GNUC_WGET_UNUSED void *context,
+	G_GNUC_WGET_UNUSED int flags,
+	G_GNUC_WGET_UNUSED const char *tag,
+	G_GNUC_WGET_UNUSED const char *attr,
+	G_GNUC_WGET_UNUSED const char *val,
+	G_GNUC_WGET_UNUSED size_t len,
+	G_GNUC_WGET_UNUSED size_t pos)
 {
 
 }

@@ -65,7 +65,7 @@ static int test_all_from(const char *dirname)
 	return 1;
 }
 
-int main(int argc, char **argv)
+int main(G_GNUC_WGET_UNUSED int argc, char **argv)
 {
 	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
 	const char *valgrind = getenv("VALGRIND_TESTS");
