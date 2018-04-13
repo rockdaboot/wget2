@@ -33,7 +33,7 @@
    ...
 }
 {
-   Issue from libgpgme
+   Issue from libgpgme, or from gai_misc.c
    Memcheck:Leak
    match-leak-kinds: possible
    fun:calloc
@@ -41,8 +41,7 @@
    fun:_dl_allocate_tls
    fun:allocate_stack
    fun:pthread_create@@GLIBC_2.2.5
-   fun:wget_thread_start
-   fun:main
+   ...
 }
 {
    Issue from libgpgme (for Fedora docker image)
@@ -51,8 +50,7 @@
    fun:calloc
    fun:_dl_allocate_tls
    fun:pthread_create@@GLIBC_2.2.5
-   fun:wget_thread_start
-   fun:main
+   ...
 }
 {
    Leak in glibc's getaddrinfo_a()
