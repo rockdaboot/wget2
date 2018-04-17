@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/bash
 
 set -e
 set -o pipefail
@@ -18,6 +18,7 @@ get_from() {
 	read -r ok
 	case $ok in
 		[yY]* ) return ;;
+		"" ) return;;
 		* ) exit 1 ;;
 	esac
 }
@@ -38,14 +39,14 @@ elif [ ! -f "contrib/assignment_template.txt" ]; then
 	exit 1
 fi
 
-if ! which msmtp 1>/dev/null 2>&1; then
-	echo "Could not find msmtp"
-	exit 1
-fi
-
 get_from
 get_to
 final_mail=$(mktemp)
+
+if ! which msmtp >/dev/null 2>&1; then
+	echo hallo
+	echo "Could not find msmtp, you'll find the email in $final_mail"
+fi
 
 {
 	echo "From: $FROM_NAME <$FROM_EMAIL>"
@@ -60,4 +61,5 @@ On Behalf of the maintainers of GNU Wget,
 $FROM_NAME"
 } > "$final_mail"
 
+which msmtp 1>/dev/null 2>&1 && \
 msmtp --add-missing-date-header -t < "$final_mail"
