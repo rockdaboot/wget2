@@ -225,7 +225,8 @@ struct config {
 		askpass,
 		report_speed,
 		verify_save_failed,
-		https_enforce;
+		https_enforce,
+		retry_connrefused;
 };
 
 extern struct config

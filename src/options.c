@@ -1749,6 +1749,12 @@ static const struct optionw options[] = {
 		  "uppercase, none\n"
 		}
 	},
+	{ "retry-connrefused", &config.retry_connrefused, parse_bool, -1, 0,
+		SECTION_HTTP,
+		{ "Consider \"connection refused\" a transient error.\n",
+		  " (default: off)\n"
+		}
+	},
 	{ "robots", &config.robots, parse_bool, -1, 0,
 		SECTION_DOWNLOAD,
 		{ "Respect robots.txt standard for recursive\n",
