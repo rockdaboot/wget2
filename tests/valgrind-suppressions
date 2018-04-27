@@ -91,6 +91,6 @@
 #   fun:gaih_inet.constprop.7
    ...
    fun:getaddrinfo
-   fun:handle_requests
+   ...
    fun:start_thread
 }
