@@ -77,7 +77,7 @@ wget_options_fuzzer_LDADD += ../src/options.o ../src/log.o ../src/stats.o ../src
 dist-hook:
 	find $(srcdir) -name '*.options' -exec cp -v '{}' $(distdir) ';'
 	find $(srcdir) -name '*.dict' -exec cp -v '{}' $(distdir) ';'
-	find $(srcdir) -name '*.in' -exec cp -vr '{}' $(distdir) ';'
+#	find $(srcdir) -name '*.in' -exec cp -vr '{}' $(distdir) ';'
 	find $(srcdir) -name '*.repro' -exec cp -vr '{}' $(distdir) ';'
 
 clean-local:

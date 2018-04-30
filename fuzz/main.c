@@ -69,6 +69,8 @@ int main(int argc, char **argv)
 {
 	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
 	const char *valgrind = getenv("VALGRIND_TESTS");
+	const char *target;
+	size_t target_len;
 
 	if (!valgrind || !*valgrind || !strcmp(valgrind, "0")) {
 			  // fallthrough
@@ -91,13 +93,11 @@ int main(int argc, char **argv)
 		WGET_INFO_STREAM, stdout,
 		0);
 
-	const char *target = strrchr(argv[0], SLASH);
-	if (target)
+	if ((target = strrchr(argv[0], SLASH)))
 		target = strrchr(target, '/');
 	else
 		target = strrchr(argv[0], '/');
 	target = target ? target + 1 : argv[0];
-	size_t target_len;
 
 	if (strncmp(target, "lt-", 3) == 0)
 		target += 3;
@@ -108,15 +108,20 @@ int main(int argc, char **argv)
 	target_len -= 4; // ignore .exe
 #endif
 
-	char corporadir[sizeof(SRCDIR) + 1 + target_len + 8];
-	snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.in", (int) target_len, target);
+	{
+		int rc;
+		char corporadir[sizeof(SRCDIR) + 1 + target_len + 8];
+		snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.in", (int) target_len, target);
 
-	if (test_all_from(corporadir))
-		wget_error_printf_exit("Failed to find %s\n", corporadir);
+		rc = test_all_from(corporadir);
+		if (rc)
+			wget_error_printf("Failed to find %s\n", corporadir);
 
-	snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.repro", (int) target_len, target);
+		snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.repro", (int) target_len, target);
 
-	test_all_from(corporadir);
+		if (test_all_from(corporadir) && rc)
+			return 77;
+	}
 
 	wget_global_deinit();
 
