@@ -6,6 +6,19 @@ See the end for copying conditions.
 
 Please send GNU Wget2 bug reports to <bug-wget@gnu.org>.
 
+30.05.2018 Release 1.99.1 (alpha)
+  * Enhance docs
+  * Enhance building on many platforms
+  * Enhance statistics
+  * Add --http2-request-window=SIZE
+  * Add --https-enforce=TYPE
+  * Add --compression=TYPE
+  * Add --retry-connrefused
+  * Add more fuzzing
+  * Add more tests
+  * Add more CI testing
+  * Fix bugs
+
 11.01.2018 Release 1.99.0 (alpha)
   * Add HTTP/2.0
   * Add IDNA 2008 / TR46
