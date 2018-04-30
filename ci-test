@@ -1,0 +1,51 @@
+#!/bin/bash -e
+#
+# Written 2018 by Tim Ruehsen
+
+echo -n "Build the tarball from scratch ? [y/N] "
+read x
+if test "$x" = "y" || test "$x" = "Y"; then
+  echo "* Bootstrap"
+  ./bootstrap >/dev/null
+
+  echo "* Configure"
+  ./configure -q
+
+  echo "* Make"
+  make -s -j$(nproc) clean
+  make -s -j$(nproc)
+
+  echo "* Make distcheck"
+  make -s -j$(nproc) distcheck >/dev/null
+
+  echo "* Make dist"
+  make -s -j$(nproc) dist-gzip >/dev/null
+fi
+
+app_name=$(grep "^PACKAGE_NAME='" configure|cut -d "'" -f2)
+app_ver=$(grep "^PACKAGE_VERSION='" configure|cut -d "'" -f2)
+if test -z $app_name || test -z $app_ver; then
+  echo "Didn't find ./configure, please bootstrap first"
+  exit 1
+fi
+
+projectdir=${app_name}-${app_ver}
+tarball=${projectdir}.tar.gz
+
+machines=""
+
+# OpenCSW Solaris build farm"
+#machines="$machines login.opencsw.org"
+
+# PPC64 CentOS 7.4
+#machines="$machines gcc110.fsffrance.org"
+
+# AMD64 NetBSD 5.1
+machines="$machines gcc70.fsffrance.org"
+
+for machine in $machines; do
+  ssh rockdaboot@${machine} "rm -rf ${app_name}-*"
+  scp $tarball rockdaboot@${machine}:
+  scp -p ci-test.d/${machine}.sh rockdaboot@${machine}:build.sh
+  ssh rockdaboot@${machine} "bash --login -c \"tar xfz $tarball && bash ./build.sh && rm -rf $projectdir\""
+done
