@@ -77,10 +77,7 @@ sitemap index files.
 - Metalink checksumming via libgnutls
 - DNS lookup cache
 - IPv4 and IPv6 support
-- tested on Debian SID amd64 and OpenBSD 5.0
-- compiled and tested with gcc (4.7.1 upto 4.8.2) and clang (3.1.1 upto 3.4)
-- tested regularly with static analysis tools
-- compiled and linked with hardening options proposed by the Debian project
+- built and tested on Linux, OSX, OpenBSD, FreeBSD, Solaris, Windows
 
 
 # Links
