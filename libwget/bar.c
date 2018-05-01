@@ -216,7 +216,7 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 //			pre_space, bar->spaces, bar->max_width - pre_space - 3, bar->spaces);
 	}
 
-	slotp->progress[bar->max_width + 1] = 0;
+	slotp->progress[bar->max_width] = 0;
 }
 
 /* The time in ms between every speed calculation */
