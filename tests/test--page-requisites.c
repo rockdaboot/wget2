@@ -73,6 +73,23 @@ int main(void)
 				"Content-Type: text/html",
 			}
 		},
+		{	.name = "/firstlevel/index.html",
+			.code = "200 Dontcare",
+			.body =
+				"<html><head><title>Main Page</title></head><body><p>A link to a" \
+				" <a href=\"/secondpage.html\">second page</a>." \
+				" Hey, a picture <img src=\"../picture.png\"/>." \
+				" Hey, a srcset <img srcset=\"../picture1.png, /picture2.png 150w,http://localhost:{{port}}/picture3.png 100x\"/>." \
+				"<link rel=\"stylesheet\" href=\"/test1.css\" />"
+				"<link href=\"../test2.css\" rel=\"stylesheet\" />"
+				"<link rel=\"shortcut icon\" href=\"http://localhost:{{port}}/myfavicon.ico\" />"
+				"<link href=\"/not.txt\" rel=\"whatever\" />"
+				"<link href=\"../preload.css\" rel=\"preload\" as=\"style\"/>"
+			"</p></body></html>",
+			.headers = {
+				"Content-Type: text/html",
+			}
+		},
 		{	.name = "/picture.png",
 			.code = "200 Dontcare",
 			.body = "PNG data",
@@ -160,14 +177,32 @@ int main(void)
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body },
+			{ urls[4].name + 1, urls[4].body },
+			{ urls[5].name + 1, urls[5].body },
+			{ urls[6].name + 1, urls[6].body },
+			{ urls[7].name + 1, urls[7].body },
+			{ urls[9].name + 1, urls[9].body },   // test1.css
+			{ urls[10].name + 1, urls[10].body },   // test2.css
+			{ urls[11].name + 1, urls[11].body }, // myfavicon.ico
+			{ urls[13].name + 1, urls[13].body }, // preload.css
+			{	NULL } },
+		0);
+
+	// test--page-requisites (with no-parent)
+	wget_test(
+		WGET_TEST_OPTIONS, "--page-requisites -np -nH",
+		WGET_TEST_REQUEST_URL, "firstlevel/index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
 			{ urls[5].name + 1, urls[5].body },
 			{ urls[6].name + 1, urls[6].body },
-			{ urls[8].name + 1, urls[8].body },   // test1.css
-			{ urls[9].name + 1, urls[9].body },   // test2.css
-			{ urls[10].name + 1, urls[10].body }, // myfavicon.ico
-			{ urls[12].name + 1, urls[12].body }, // preload.css
+			{ urls[7].name + 1, urls[7].body },
+			{ urls[9].name + 1, urls[9].body },   // test1.css
+			{ urls[10].name + 1, urls[10].body },   // test2.css
+			{ urls[11].name + 1, urls[11].body }, // myfavicon.ico
+			{ urls[13].name + 1, urls[13].body }, // preload.css
 			{	NULL } },
 		0);
 
