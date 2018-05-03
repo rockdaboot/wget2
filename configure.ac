@@ -127,6 +127,7 @@ if test -n "$WARN_CFLAGS"; then
     nw="$nw -Wunsuffixed-float-constants"
     nw="$nw -Wdeclaration-after-statement" # C89 only, messing up gcc < 5
     nw="$nw -Wcast-function-type" # gcc 8, very noisy
+    nw="$nw -Wunused-macros" # triggers in auto-generated lex css parser, #pragma doesn't work, conflicts with -Werror
     if test "$cross_compiling" = yes; then
       nw="$nw -Wformat"
     fi
@@ -153,7 +154,6 @@ if test -n "$WARN_CFLAGS"; then
     #  with -Wno-....
     nw=
     nw="$nw -Wpedantic"
-    nw="$nw -Wunused-macros"
     nw="$nw -Wsign-compare"
     nw="$nw -Wunused-parameter"
     nw="$nw -Wswitch-default"
@@ -181,7 +181,8 @@ if test -n "$WARN_CFLAGS"; then
     WARN_CFLAGS="$WARN_CFLAGS -Wno-system-headers -Wno-vla -Wno-cast-qual -Wno-padded"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-reserved-id-macro -Wno-sign-conversion  -Wno-disabled-macro-expansion"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-documentation -Wno-documentation-unknown-command"
-    WARN_CFLAGS="$WARN_CFLAGS -Wno-covered-switch-default"
+    WARN_CFLAGS="$WARN_CFLAGS -Wno-covered-switch-default -Wno-unused-macros"
+    WARN_CFLAGS="$WARN_CFLAGS -Wno-missing-field-initializers"
 
     # remove all flags from WARN_FLAGS that are already in CFLAGS
     # wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])
@@ -196,6 +197,7 @@ if test -n "$WARN_CFLAGS"; then
     GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-unused-macros -Wno-missing-field-initializers"
     GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-gnu-zero-variadic-macro-arguments -Wno-conditional-uninitialized"
     GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-comma -Wno-assign-enum -Wno-unreachable-code -Wno-error"
+    GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-missing-field-initializers"
 
     # remove all flags from GNULIB_WARN_FLAGS that are already in CFLAGS
     # wget_WORD_REMOVE([GNULIB_WARN_CFLAGS], [$GNULIB_WARN_CFLAGS], [$CFLAGS])

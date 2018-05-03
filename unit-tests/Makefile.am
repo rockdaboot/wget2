@@ -8,7 +8,7 @@ MYLIBS = \
  $(LIBS)
 
 AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS)
-AM_CPPFLAGS = -Wno-missing-field-initializers -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib \
+AM_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib \
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
 LDADD = ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
