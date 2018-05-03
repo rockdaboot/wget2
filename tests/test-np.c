@@ -58,7 +58,8 @@ int main(void)
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Third Page</title></head><body><p>A link to a" \
-				" <A href=\"http://localhost:{{port}}/higherlevelpage.html\">higher level page</a>." \
+				" <A href=\"http://localhost:{{port}}/index.html\">higher level page</a>." \
+				" <A href=\"http://localhost:{{port}}\">higher level page</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -74,7 +75,7 @@ int main(void)
 				"Content-Type: text/html",
 			}
 		},
-		{	.name = "/higherlevelpage.html",
+		{	.name = "/index.html",
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Higher Level Page</title></head><body><p>" \

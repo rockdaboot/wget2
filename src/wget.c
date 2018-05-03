@@ -850,7 +850,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			wget_iri_t *parent = wget_vector_get(parents, it);
 
 			if (!wget_strcmp(parent->host, iri->host)) {
-				if (!parent->dirlen || !strncmp(parent->path, iri->path, parent->dirlen)) {
+				if (!parent->dirlen || !wget_strncmp(parent->path, iri->path, parent->dirlen)) {
 					// info_printf("found\n");
 					ok = 1;
 					break;
