@@ -88,6 +88,7 @@
 #define URL_FLG_REDIRECTION  (1<<0)
 #define URL_FLG_SITEMAP      (1<<1)
 #define URL_FLG_SKIPFALLBACK (1<<2)
+#define URL_FLG_REQUISITE    (1<<3)
 
 #define _CONTENT_TYPE_HTML 1
 typedef struct {
@@ -841,7 +842,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		}
 	}
 
-	if (config.recursive && !config.parent) {
+	if (config.recursive && !config.parent && !(flags & URL_FLG_REQUISITE)) {
 		// do not ascend above the parent directory
 		int ok = 0;
 
@@ -2394,7 +2395,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 		else {
 			// Blacklist for URLs before they are processed
 			if (wget_hashmap_put_noalloc(known_urls, wget_strmemdup(buf.data, buf.length), NULL) == 0)
-				add_url(job, "utf-8", buf.data, 0);
+				add_url(job, "utf-8", buf.data, page_requisites ? URL_FLG_REQUISITE : 0);
 		}
 	}
 	wget_thread_mutex_unlock(known_urls_mutex);
