@@ -280,27 +280,6 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 	}
 }
 
-/*
-static void _urls_to_absolute(WGET_VECTOR *urls, WGET_IRI *base)
-{
-	if (base && urls) {
-		wget_buffer_t buf;
-		wget_buffer_init(&buf, NULL, 1024);
-
-		for (int it = 0; it < wget_vector_size(urls); it++) {
-			WGET_PARSED_URL *url = wget_vector_get(urls, it);
-
-			if (wget_iri_relative_to_abs(base, url->url, url->len, &buf))
-				url->abs_url = wget_strmemdup(buf.data, buf.length);
-			else
-				error_printf(_("Cannot resolve relative URI '%s'\n"), url->url);
-		}
-
-		wget_buffer_deinit(&buf);
-	}
-}
-*/
-
 void wget_html_free_urls_inline (wget_html_parsed_result_t **res)
 {
 	if (res && *res) {
