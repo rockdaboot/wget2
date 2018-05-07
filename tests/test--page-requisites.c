@@ -155,9 +155,33 @@ int main(void)
 		},
 		{	.name = "/preload.css",
 			.code = "200 Dontcare",
-			.body = "PRELOAD",
+			.body =
+				"@import url(\"/import1.css\");\n" \
+				"@import \"import2.css\" screen;\n" \
+				"body {background:url(background.jpg);}",
 			.headers = {
 				"Content-Type: text/css",
+			}
+		},
+		{	.name = "/import1.css",
+			.code = "200 Dontcare",
+			.body = "IMPORT1",
+			.headers = {
+				"Content-Type: text/css",
+			}
+		},
+		{	.name = "/import2.css",
+			.code = "200 Dontcare",
+			.body = "IMPORT2",
+			.headers = {
+				"Content-Type: text/css",
+			}
+		},
+		{	.name = "/background.jpg",
+			.code = "200 Dontcare",
+			.body = "BACKGROUND",
+			.headers = {
+				"Content-Type: image/jpg",
 			}
 		},
 	};
@@ -185,6 +209,9 @@ int main(void)
 			{ urls[10].name + 1, urls[10].body },   // test2.css
 			{ urls[11].name + 1, urls[11].body }, // myfavicon.ico
 			{ urls[13].name + 1, urls[13].body }, // preload.css
+			{ urls[14].name + 1, urls[14].body }, // import1.css
+			{ urls[15].name + 1, urls[15].body }, // import2.css
+			{ urls[16].name + 1, urls[16].body }, // background.css
 			{	NULL } },
 		0);
 
@@ -203,6 +230,9 @@ int main(void)
 			{ urls[10].name + 1, urls[10].body },   // test2.css
 			{ urls[11].name + 1, urls[11].body }, // myfavicon.ico
 			{ urls[13].name + 1, urls[13].body }, // preload.css
+			{ urls[14].name + 1, urls[14].body }, // import1.css
+			{ urls[15].name + 1, urls[15].body }, // import2.css
+			{ urls[16].name + 1, urls[16].body }, // background.css
 			{	NULL } },
 		0);
 

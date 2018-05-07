@@ -2712,10 +2712,11 @@ static void _css_parse_uri(void *context, const char *url, size_t len, size_t po
 	if (_normalize_uri(ctx->base, &u, ctx->encoding, &ctx->uri_buf))
 		return;
 
+	// we assume every URL() in a CSS file being a page requisite, URL_FLG_REQUISITE skips --no-parent
 	if (!ctx->base && !ctx->uri_buf.length)
 		info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)len, url);
 	else
-		add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, 0);
+		add_url(ctx->job, ctx->encoding, ctx->uri_buf.data, URL_FLG_REQUISITE);
 }
 
 void css_parse(JOB *job, const char *data, size_t len, const char *encoding, wget_iri_t *base)
