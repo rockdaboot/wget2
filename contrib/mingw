@@ -2,14 +2,14 @@
 
 set -e
 
+# just in case...
+unset CC
+unset CXX
+
 #PREFIX=i686-w64-mingw32
 PREFIX=x86_64-w64-mingw32
-export CC=$PREFIX-gcc
-export CXX=$PREFIX-g++
-export CPP=$PREFIX-cpp
-export RANLIB=$PREFIX-ranlib
-#export PATH="/usr/$PREFIX/bin:$PATH"
 
+#export PATH="/usr/$PREFIX/bin:$PATH"
 export INSTALLDIR="$PWD/$PREFIX"
 export PKG_CONFIG_PATH=$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig
 export CPPFLAGS="-I$INSTALLDIR/include"
@@ -46,20 +46,19 @@ make -j$(nproc)
 make install
 cd ..
 
-### libpsl currently doesn't build on MinGW
-#if [ ! -d libpsl ]; then
-#  git clone --recursive https://github.com/rockdaboot/libpsl.git
-#  cd libpsl
-#else
-#  cd libpsl
-#  git pull
-#fi
-#./autogen.sh
-#./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --disable-gtk-doc --enable-runtime=libidn2 --enable-builtin=libidn2 --prefix=$INSTALLDIR
-#make clean
-#make -j$(nproc)
-#make install
-#cd ..
+if [ ! -d libpsl ]; then
+  git clone --recursive https://github.com/rockdaboot/libpsl.git
+  cd libpsl
+else
+  cd libpsl
+  git pull
+fi
+./autogen.sh
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --disable-gtk-doc --enable-runtime=libidn2 --enable-builtin=libidn2 --prefix=$INSTALLDIR
+make clean
+make -j$(nproc)
+make install
+cd ..
 
 if [ ! -d nettle ]; then
   git clone https://git.lysator.liu.se/nettle/nettle.git
@@ -100,10 +99,10 @@ else
   cd dlfcn-win32
   git pull
 fi
-./configure --prefix=$PREFIX --cc=$CC
+./configure --prefix=$PREFIX --cc=$PREFIX-gcc
 make
-cp -p libdl.a ../x86_64-w64-mingw32/lib/
-cp -p dlfcn.h ../x86_64-w64-mingw32/include/
+cp -p libdl.a ../$PREFIX/lib/
+cp -p dlfcn.h ../$PREFIX/include/
 cd ..
 
 # Install Libmicrohttpd from source
