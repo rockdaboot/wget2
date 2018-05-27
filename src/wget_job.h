@@ -68,12 +68,17 @@ struct JOB {
 
 	wget_vector_t
 		*parts; // parts to download
+
+	wget_list_t
+		*remaining_sig_ext; // Signature extensions yet to be tried.
+
 	HOST
 		*host;
 	const char
 		*local_filename;
 	char
-		*sig_filename; // Signature information. Meaning depends on sig_req
+		*sig_filename, // Signature information. Meaning depends on sig_req.
+		*sig_req; // The base URI for the file that we need to verify.
 	PART
 		*part; // current chunk to download
 	DOWNLOADER
@@ -99,7 +104,6 @@ struct JOB {
 		head_first : 1, // first check mime type by using a HEAD request
 		requested_by_user : 1, // download even if disallowed by robots.txt
 		ignore_patterns : 1, // Ignore accept/reject patterns
-		sig_req : 1, // When true indicates this job is for a signature else specifies location of saved file (including name collision stuff, i.e. numbers)
 		http_fallback : 1; // When true, we try again on error, using HTTP (instead of HTTPS)
 };
 

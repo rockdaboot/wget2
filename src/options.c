@@ -835,6 +835,31 @@ static int parse_https_enforce(option_t opt, const char *val, G_GNUC_WGET_UNUSED
 	return 0;
 }
 
+#ifdef WITH_GPGME
+static int parse_verify_sig(option_t opt, const char *val, const char invert)
+{
+	if (opt->var) {
+		if (invert) {
+			if (val) {
+				error_printf(_("no-verify-sig cannot take additional arugments\n"));
+				return -1;
+			} else {
+				*((char *)opt->var) = WGET_GPG_VERIFY_DISABLED;
+			}
+		} else if (!val || !wget_strcasecmp_ascii(val, "fail"))
+			*((char *)opt->var) = WGET_GPG_VERIFY_SIG_FAIL;
+		else if (!wget_strcasecmp_ascii(val, "no-fail"))
+			*((char *)opt->var) = WGET_GPG_VERIFY_SIG_NO_FAIL;
+		else {
+			error_printf(_("Invalid option specifier: %s\n"), val);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+#endif
+
 static int parse_compression(option_t opt, const char *val, const char invert)
 {
 	wget_vector_t *v = *((wget_vector_t **)opt->var);
@@ -977,7 +1002,7 @@ struct config config = {
 	.tries = 20,
 	.hsts = 1,
 	.hpkp = 1,
-	.verify_sig = false,
+
 #if defined WITH_LIBNGHTTP2
 	.http2 = 1,
 	.http2_request_window = 30,
@@ -987,6 +1012,7 @@ struct config config = {
 	.netrc = 1,
 	.waitretry = 10 * 1000,
 #ifdef WITH_GPGME
+	.verify_sig = WGET_GPG_VERIFY_DISABLED,
 	.verify_save_failed = 0,
 #endif
 	.metalink = 1,
@@ -1920,7 +1946,7 @@ static const struct optionw options[] = {
 	},
 	{ "verbose", &config.verbose, parse_bool, -1, 'v',
 		SECTION_STARTUP,
-		{ "Print more messages. (default: on)\n"\
+		{ "Print more messages. (default: on)\n"
 		}
 	},
 #ifdef WITH_GPGME
@@ -1930,7 +1956,7 @@ static const struct optionw options[] = {
 		  "GPG validation. (default: off)\n"
 		}
 	},
-	{ "verify-sig", &config.verify_sig, parse_bool, -1, 's',
+	{ "verify-sig", &config.verify_sig, parse_verify_sig, -1, 's',
 		SECTION_GPG,
 		{ "Download .sig file and verify. (default: off)\n"
 		}
@@ -2906,6 +2932,26 @@ int init(int argc, const char **argv)
 		if (!config.sig_ext) {
 			config.sig_ext = wget_vector_create(1, (wget_vector_compare_t)strcmp);
 			wget_vector_add_str(config.sig_ext, "sig");
+		} else {
+
+			// Dedup ...
+			// Duplicate extensions break the chain when "add_url" blocks the requests
+			// so they don't come back as a failure.
+			int start_len = wget_vector_size(config.sig_ext);
+			wget_vector_t *new_sig_ext = wget_vector_create(start_len, (wget_vector_compare_t)strcmp);
+			wget_stringmap_t *set = wget_stringmap_create(start_len);
+			for (int i = 0; i < start_len; i++) {
+				const char *nxt = wget_vector_get(config.sig_ext, i);
+				if (!wget_stringmap_get_null(set, nxt, NULL)) {
+					wget_vector_add_str(new_sig_ext, nxt);
+					wget_stringmap_put_noalloc(set, wget_strdup(nxt), NULL);
+				}
+			}
+
+			wget_vector_free(&config.sig_ext);
+			wget_stringmap_free(&set);
+			config.sig_ext = new_sig_ext;
+			new_sig_ext = NULL;
 		}
 #endif
 	}

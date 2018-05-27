@@ -85,10 +85,11 @@
 #endif
 
 // flags for add_url()
-#define URL_FLG_REDIRECTION  (1<<0)
-#define URL_FLG_SITEMAP      (1<<1)
-#define URL_FLG_SKIPFALLBACK (1<<2)
-#define URL_FLG_REQUISITE    (1<<3)
+#define URL_FLG_REDIRECTION   (1<<0)
+#define URL_FLG_SITEMAP       (1<<1)
+#define URL_FLG_SKIPFALLBACK  (1<<2)
+#define URL_FLG_REQUISITE     (1<<3)
+#define URL_FLG_SIGNATURE_REQ (1<<4)
 
 #define _CONTENT_TYPE_HTML 1
 typedef struct {
@@ -940,9 +941,19 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			new_job->parent_id = job->id;
 			new_job->level = job->level + 1;
 			new_job->referer = job->iri;
-			if (!job->sig_req) {
-				new_job->sig_req = 1;
+			if (flags & URL_FLG_SIGNATURE_REQ) {
+				if (job->sig_req) {
+					// A chained signature request needs to have the same verifying file uri
+					new_job->sig_req = wget_strdup(job->sig_req);
+					new_job->level = job->level; // Chained signature requests shouldn't count towards level
+				} else {
+					new_job->sig_req = wget_strdup(job->iri->uri);
+				}
 				new_job->sig_filename = wget_strdup(job->sig_filename);
+				if (job->remaining_sig_ext) {
+					new_job->remaining_sig_ext = job->remaining_sig_ext;
+					job->remaining_sig_ext = NULL;
+				}
 			}
 		}
 	}
@@ -1524,8 +1535,24 @@ static int process_response_header(wget_http_response_t *resp)
 	if (resp->code/100 == 4 && resp->code != 416) {
 		if (job->head_first)
 			set_exit_status(WG_EXIT_STATUS_REMOTE);
-		else if (resp->code == 404 && !job->robotstxt && !job->sig_req)
+		else if (resp->code == 404 && !job->robotstxt) {
+#ifdef WITH_GPGME
+			char *ext = wget_list_getfirst(job->remaining_sig_ext);
+			if (!job->sig_req) {
+				set_exit_status(WG_EXIT_STATUS_REMOTE);
+			} else if (!ext) {
+				if (config.verify_sig == WGET_GPG_VERIFY_SIG_FAIL)
+					set_exit_status(WG_EXIT_STATUS_REMOTE);
+			} else {
+				char *next_check = wget_aprintf("%s.%s", job->sig_req, ext);
+				wget_list_remove(&job->remaining_sig_ext, ext);
+				add_url(job, "utf-8", next_check, URL_FLG_SIGNATURE_REQ);
+				wget_xfree(next_check);
+			}
+#else
 			set_exit_status(WG_EXIT_STATUS_REMOTE);
+#endif
+		}
 	}
 
 	// Server doesn't support keep-alive or want us to close the connection.
@@ -1935,7 +1962,8 @@ static void process_response(wget_http_response_t *resp)
 				}
 			}
 		}
-		else if (config.verify_sig && resp->content_type) {
+		else if (config.verify_sig != WGET_GPG_VERIFY_DISABLED
+			 && resp->content_type) {
 #ifdef WITH_GPGME
 			if (wget_strcasecmp_ascii(resp->content_type, "application/pgp-signature") == 0) {
 
@@ -1965,16 +1993,32 @@ static void process_response(wget_http_response_t *resp)
 			} else if (wget_strncasecmp_ascii(resp->content_type, "application/", 12) == 0) {
 
 				if (config.sig_ext) {
-					for (int i = 0; i < wget_vector_size(config.sig_ext); i++) {
-						char *new_url = wget_aprintf("%s.%s", job->original_url->uri, (char *) wget_vector_get(config.sig_ext, i));
+					int ext_count = wget_vector_size(config.sig_ext);
+					if (ext_count > 0) {
 
-						if (!job->sig_filename) {
-							error_printf(_("File name for signature checking not assigned to job!\n"));
-						} else {
-							add_url(job, "utf-8", new_url, 0);
+						if (job->remaining_sig_ext) {
+							error_printf(_("Should not have remaining extensions!\n"));
+							wget_list_free(&job->remaining_sig_ext);
 						}
 
-						wget_free(new_url);
+						// Note: starting at 1 (not 0), first URL is the ext at idx 0
+						for (int ext_idx = 1; ext_idx < ext_count; ext_idx++) {
+							const char *e = (const char *) wget_vector_get(config.sig_ext, ext_idx);
+							wget_list_append(&job->remaining_sig_ext, e, strlen(e) + 1);
+						}
+
+						char *first_check = wget_aprintf(
+							"%s.%s", job->original_url->uri, (const char *) wget_vector_get(config.sig_ext, 0));
+
+						if (!job->sig_filename)
+							error_printf(_("File name for signature checking not assigned to job!\n"));
+						else if (job->sig_req)
+							error_printf(_("Cannot check the signature on a signature!\n"));
+						else
+							add_url(job, "utf-8", first_check, URL_FLG_SIGNATURE_REQ);
+
+						wget_free(first_check);
+
 					}
 				}
 			}

@@ -40,6 +40,12 @@ enum {
 	WGET_HTTPS_ENFORCE_HARD
 };
 
+enum {
+	WGET_GPG_VERIFY_DISABLED,
+	WGET_GPG_VERIFY_SIG_FAIL,
+	WGET_GPG_VERIFY_SIG_NO_FAIL
+};
+
 struct config {
 	wget_iri_t
 		*base;
@@ -131,8 +137,7 @@ struct config {
 		quota;
 	bool
 		no_compression,
-		auth_no_challenge,
-		verify_sig;
+		auth_no_challenge;
 	int
 		http2_request_window,
 		backups,
@@ -225,6 +230,7 @@ struct config {
 		askpass,
 		report_speed,
 		verify_save_failed,
+		verify_sig,
 		https_enforce,
 		retry_connrefused;
 };
