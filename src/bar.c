@@ -92,7 +92,7 @@ bool bar_init(void)
 	}
 
 nobar:
-	wget_error_printf(_("Cannot create progress bar thread. Disabling progess bar.\n"));
+	wget_error_printf(_("Cannot create progress bar thread. Disabling progress bar.\n"));
 	config.progress = 0;
 	return false;
 }

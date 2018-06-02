@@ -497,7 +497,7 @@ Go to background immediately after startup. If no output file is specified via t
   dot representing a fixed amount of downloaded data.
 
   The progress type can also take one or more parameters.  The parameters vary based on the type selected.
-  Parameters to type are passed by appending them to the type sperated by a colon (`:`) like this:
+  Parameters to type are passed by appending them to the type separated by a colon (`:`) like this:
   `--progress=type:parameter1:parameter2`.
 
   When using the dotted retrieval, you may set the style by specifying the type as dot:style.  Different styles
