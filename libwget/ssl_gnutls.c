@@ -1120,7 +1120,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, 1); // 1h valid
 				nvalid++;
 			} else if (ocsp_ok == 0) {
-				debug_printf(_("%s: Certificate[%u] of '%s' has been revoked (via OCSP)\n"), tag, it, hostname);
+				debug_printf("%s: Certificate[%u] of '%s' has been revoked (via OCSP)\n", tag, it, hostname);
 				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, 0);  // cert has been revoked
 				nrevoked++;
 			} else {

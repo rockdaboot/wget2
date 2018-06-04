@@ -332,7 +332,7 @@ int wget_tls_session_db_load(wget_tls_session_db_t *tls_session_db, const char *
 		error_printf(_("Failed to read TLS session data\n"));
 		return -1;
 	} else {
-		debug_printf(_("Fetched TLS session data from '%s'\n"), fname);
+		debug_printf("Fetched TLS session data from '%s'\n", fname);
 		return 0;
 	}
 }
@@ -381,9 +381,9 @@ int wget_tls_session_db_save(wget_tls_session_db_t *tls_session_db, const char *
 	}
 
 	if ((size = wget_hashmap_size(tls_session_db->entries)))
-		debug_printf(_("Saved %d TLS session entr%s into '%s'\n"), size, size != 1 ? "ies" : "y", fname);
+		debug_printf("Saved %d TLS session entr%s into '%s'\n", size, size != 1 ? "ies" : "y", fname);
 	else
-		debug_printf(_("No TLS session entries to save. Table is empty.\n"));
+		debug_printf("No TLS session entries to save. Table is empty.\n");
 
 	tls_session_db->changed = 0;
 

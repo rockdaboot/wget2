@@ -439,7 +439,7 @@ static int impl_hsts_db_load(wget_hsts_db_t *hsts_db)
 		error_printf(_("Failed to read HSTS data\n"));
 		return -1;
 	} else {
-		debug_printf(_("Fetched HSTS data from '%s'\n"), hsts_db_priv->fname);
+		debug_printf("Fetched HSTS data from '%s'\n", hsts_db_priv->fname);
 		return 0;
 	}
 }
@@ -503,9 +503,9 @@ static int impl_hsts_db_save(wget_hsts_db_t *hsts_db)
 	}
 
 	if ((size = wget_hashmap_size(hsts_db_priv->entries)))
-		debug_printf(_("Saved %d HSTS entr%s into '%s'\n"), size, size != 1 ? "ies" : "y", hsts_db_priv->fname);
+		debug_printf("Saved %d HSTS entr%s into '%s'\n", size, size != 1 ? "ies" : "y", hsts_db_priv->fname);
 	else
-		debug_printf(_("No HSTS entries to save. Table is empty.\n"));
+		debug_printf("No HSTS entries to save. Table is empty.\n");
 
 	return 0;
 }

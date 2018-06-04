@@ -55,7 +55,7 @@ static void _css_get_encoding(void *context, const char *encoding, size_t len)
 	// take only the first @charset rule
 	if (!*ctx->encoding) {
 		*ctx->encoding = wget_strmemdup(encoding, len);
-		debug_printf(_("URI content encoding = '%s'\n"), *ctx->encoding);
+		debug_printf("URI content encoding = '%s'\n", *ctx->encoding);
 	}
 }
 

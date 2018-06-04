@@ -1020,7 +1020,7 @@ static void test_iri_compare(void)
 /*
 static void _css_dump_charset(G_GNUC_WGET_UNUSED void *user_ctx, const char *encoding, size_t len)
 {
-	debug_printf(_("URI content encoding = '%.*s'\n"), (int)len, encoding);
+	debug_printf("URI content encoding = '%.*s'\n", (int)len, encoding);
 }
 
 static void _css_dump_uri(G_GNUC_WGET_UNUSED void *user_ctx, const char *url, size_t len, G_GNUC_WGET_UNUSED size_t pos)

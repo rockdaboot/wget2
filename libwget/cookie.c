@@ -898,7 +898,7 @@ int wget_cookie_db_load(wget_cookie_db_t *cookie_db, const char *fname)
 		error_printf(_("Failed to read cookies\n"));
 		return -1;
 	} else {
-		debug_printf(_("Fetched cookies from '%s'\n"), fname);
+		debug_printf("Fetched cookies from '%s'\n", fname);
 		return 0;
 	}
 }
@@ -959,9 +959,9 @@ int wget_cookie_db_save(wget_cookie_db_t *cookie_db, const char *fname)
 	}
 
 	if ((size = wget_vector_size(cookie_db->cookies)))
-		debug_printf(_("Saved %d cookie%s into '%s'\n"), size, size != 1 ? "s" : "", fname);
+		debug_printf("Saved %d cookie%s into '%s'\n", size, size != 1 ? "s" : "", fname);
 	else
-		debug_printf(_("No cookies to save. Table is empty.\n"));
+		debug_printf("No cookies to save. Table is empty.\n");
 
 	return 0;
 }

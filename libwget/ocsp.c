@@ -512,13 +512,13 @@ static int impl_ocsp_db_load(wget_ocsp_db_t *ocsp_db)
 	if ((ret = wget_update_file(fname_hosts, _ocsp_db_load_hosts, NULL, ocsp_db_priv)))
 		error_printf(_("Failed to read OCSP hosts\n"));
 	else
-		debug_printf(_("Fetched OCSP hosts from '%s'\n"), fname_hosts);
+		debug_printf("Fetched OCSP hosts from '%s'\n", fname_hosts);
 
 	if (wget_update_file(ocsp_db_priv->fname, _ocsp_db_load_fingerprints, NULL, ocsp_db_priv)) {
 		error_printf(_("Failed to read OCSP fingerprints\n"));
 		ret = -1;
 	} else
-		debug_printf(_("Fetched OCSP fingerprints from '%s'\n"), ocsp_db_priv->fname);
+		debug_printf("Fetched OCSP fingerprints from '%s'\n", ocsp_db_priv->fname);
 
 	return ret;
 }
@@ -605,13 +605,13 @@ static int impl_ocsp_db_save(wget_ocsp_db_t *ocsp_db)
 	if ((ret = wget_update_file(fname_hosts, _ocsp_db_load_hosts, _ocsp_db_save_hosts, ocsp_db_priv)))
 		error_printf(_("Failed to write to OCSP hosts to '%s'\n"), fname_hosts);
 	else
-		debug_printf(_("Saved OCSP hosts to '%s'\n"), fname_hosts);
+		debug_printf("Saved OCSP hosts to '%s'\n", fname_hosts);
 
 	if (wget_update_file(ocsp_db_priv->fname, _ocsp_db_load_fingerprints, _ocsp_db_save_fingerprints, ocsp_db_priv)) {
 		error_printf(_("Failed to write to OCSP fingerprints to '%s'\n"), ocsp_db_priv->fname);
 		ret = -1;
 	} else
-		debug_printf(_("Saved OCSP fingerprints to '%s'\n"), ocsp_db_priv->fname);
+		debug_printf("Saved OCSP fingerprints to '%s'\n", ocsp_db_priv->fname);
 
 	return ret;
 }
