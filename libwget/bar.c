@@ -423,6 +423,7 @@ void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_
 {
 	wget_thread_mutex_lock(bar->mutex);
 	_bar_slot_t *slotp = &bar->slots[slot];
+	struct _speed_report *slot_speed = &speed_r[slot];
 
 	xfree(slotp->filename);
 	slotp->filename = wget_strdup(filename);
@@ -431,6 +432,9 @@ void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_
 	slotp->bytes_downloaded = 0;
 	slotp->status = DOWNLOADING;
 	slotp->redraw = 1;
+
+	memset(slot_speed, 0, sizeof(*slot_speed));
+
 	wget_thread_mutex_unlock(bar->mutex);
 }
 
