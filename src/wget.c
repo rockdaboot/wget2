@@ -2072,6 +2072,7 @@ void *downloader_thread(void *p)
 	int pending = 0, max_pending = 1, locked;
 	long long pause = 0;
 	enum actions action = ACTION_GET_JOB;
+	char http_code[4];
 
 	// downloader->thread = wget_thread_self(); // to avoid race condition
 
@@ -2161,6 +2162,15 @@ void *downloader_thread(void *p)
 
 		case ACTION_GET_RESPONSE:
 			resp = http_receive_response(downloader->conn);
+
+			if (config.http_retry_on_status && resp->code != 200) {
+				snprintf(http_code, sizeof(http_code), "%d", resp->code);
+				if (check_mime_list(config.http_retry_on_status, http_code)) {
+					print_status(downloader, "Got a HTTP Code %d. Retrying...", resp->code);
+					resp = NULL;
+				}
+			}
+
 			if (!resp) {
 				// likely that the other side closed the connection, try again
 				host_increase_failure(host);

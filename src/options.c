@@ -1787,6 +1787,11 @@ static const struct optionw options[] = {
 		  " (default: off)\n"
 		}
 	},
+	{ "retry-on-http-status", &config.http_retry_on_status, parse_stringlist, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Specify a list of http statuses in which the download will be retried\n"
+		}
+	},
 	{ "robots", &config.robots, parse_bool, -1, 0,
 		SECTION_DOWNLOAD,
 		{ "Respect robots.txt standard for recursive\n",
@@ -3113,6 +3118,7 @@ void deinit(void)
 	wget_iri_free(&config.base);
 
 	wget_vector_free(&config.mime_types);
+	wget_vector_free(&config.http_retry_on_status);
 	wget_vector_free(&config.domains);
 	wget_vector_free(&config.exclude_domains);
 	wget_vector_free(&config.follow_tags);

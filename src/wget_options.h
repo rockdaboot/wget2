@@ -107,7 +107,8 @@ struct config {
 		*ignore_tags,
 		*default_challenges,
 		*headers,
-		*mime_types;
+		*mime_types,
+		*http_retry_on_status;
 	wget_content_encoding_type_t
 		compression_methods[wget_content_encoding_max + 1];	// the last one for counting
 	wget_hsts_db_t
