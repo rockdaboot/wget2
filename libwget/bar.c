@@ -254,7 +254,7 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 			SReport->last_redraw_time = cur_time;
 		}
 		else if (!SReport->total_time)
-			human_readable_speed = wget_human_readable(SReport->speed_buf, sizeof(SReport->speed_buf), 0);
+			human_readable_speed = memcpy(SReport->speed_buf, "-.-", 3);
 		else
 			human_readable_speed = SReport->speed_buf;
 
