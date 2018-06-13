@@ -978,7 +978,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		if (status & GNUTLS_CERT_REVOKED)
 			error_printf(_("%s: The certificate has been revoked.\n"), tag);
 		if (status & GNUTLS_CERT_SIGNER_NOT_FOUND)
-			error_printf(_("%s: The certificate hasn't got a known issuer.\n"), tag);
+			error_printf(_("%s: The certificate doesn't have a known issuer.\n"), tag);
 		if (status & GNUTLS_CERT_SIGNER_NOT_CA)
 			error_printf(_("%s: The certificate signer was not a CA.\n"), tag);
 		if (status & GNUTLS_CERT_INSECURE_ALGORITHM)
