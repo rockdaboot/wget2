@@ -443,24 +443,6 @@ static ssize_t _send_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	return rc;
 }
 
-static ssize_t _recv_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
-	uint8_t *buf, size_t length, int flags G_GNUC_WGET_UNUSED, void *user_data)
-{
-	wget_http_connection_t *conn = (wget_http_connection_t *)user_data;
-	ssize_t rc;
-
-	// debug_printf("reading... %zd\n", length);
-	if ((rc = wget_tcp_read(conn->tcp, (char *)buf, length)) <= 0) {
-		//  0 = timeout resp. blocking
-		// -1 = failure
-		// debug_printf("read rc %d, errno=%d\n", rc, errno);
-		return rc ? NGHTTP2_ERR_CALLBACK_FAILURE : NGHTTP2_ERR_WOULDBLOCK;
-	}
-	// debug_printf("read rc %d\n",rc);
-
-	return rc;
-}
-
 static void _print_frame_type(int type, const char tag, int streamid)
 {
 	static const char *name[] = {
@@ -599,7 +581,6 @@ static int _on_data_chunk_recv_callback(nghttp2_session *session,
 static void setup_nghttp2_callbacks(nghttp2_session_callbacks *callbacks)
 {
 	nghttp2_session_callbacks_set_send_callback(callbacks, _send_callback);
-	nghttp2_session_callbacks_set_recv_callback(callbacks, _recv_callback);
 	nghttp2_session_callbacks_set_on_frame_send_callback(callbacks, _on_frame_send_callback);
 	nghttp2_session_callbacks_set_on_frame_recv_callback(callbacks, _on_frame_recv_callback);
 	nghttp2_session_callbacks_set_on_stream_close_callback(callbacks, _on_stream_close_callback);
@@ -772,7 +753,8 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 
 			nghttp2_settings_entry iv[] = {
 				// {NGHTTP2_SETTINGS_MAX_CONCURRENT_STREAMS, 100},
-				{NGHTTP2_SETTINGS_ENABLE_PUSH, 0},
+				{NGHTTP2_SETTINGS_INITIAL_WINDOW_SIZE, 1 << 30}, // prevent window size changes
+				{NGHTTP2_SETTINGS_ENABLE_PUSH, 0}, // avoid push messages from server
 			};
 
 			if ((rc = nghttp2_submit_settings(conn->http2_session, NGHTTP2_FLAG_NONE, iv, countof(iv)))) {
@@ -780,6 +762,12 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 				wget_http_close(_conn);
 				return WGET_E_INVALID;
 			}
+
+#if NGHTTP2_VERSION_NUM >= 0x010c00
+			// without this we experience slow downloads on fast networks
+			if ((rc = nghttp2_session_set_local_window_size(conn->http2_session, NGHTTP2_FLAG_NONE, 0, 1 << 30)))
+				debug_printf("Failed to set HTTP2 connection level window size (%d)\n", rc);
+#endif
 
 			conn->received_http2_responses = wget_vector_create(16, NULL);
 		} else
@@ -998,40 +986,27 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 		else
 			return NULL;
 
-		for (int rc = 0; rc == 0 && !wget_vector_size(conn->received_http2_responses) && !conn->abort_indicator && !_abort_indicator;) {
-			int timeout = wget_tcp_get_timeout(conn->tcp);
-			int ioflags = 0;
+		// reuse generic connection buffer
+		buf = conn->buf->data;
+		bufsize = conn->buf->size;
 
-			debug_printf("  ##  loop responses=%d\n", wget_vector_size(conn->received_http2_responses));
+		while (!wget_vector_size(conn->received_http2_responses) && !conn->abort_indicator && !_abort_indicator) {
+			int rc;
 
-			if (nghttp2_session_want_write(conn->http2_session))
-				ioflags |= WGET_IO_WRITABLE;
-			if (nghttp2_session_want_read(conn->http2_session))
-				ioflags |= WGET_IO_READABLE;
+			while (nghttp2_session_want_write(conn->http2_session) && (rc = nghttp2_session_send(conn->http2_session)) == 0)
+				;
 
-			if (ioflags)
-				ioflags = wget_tcp_ready_2_transfer(conn->tcp, ioflags);
-			// debug_printf("ioflags=%d timeout=%d\n",ioflags,wget_tcp_get_timeout(conn->tcp));
-			if (ioflags <= 0) break; // error or timeout
-
-			wget_tcp_set_timeout(conn->tcp, 0); // 0 = immediate
-			rc = 0;
-			if (ioflags & WGET_IO_WRITABLE) {
-				rc = nghttp2_session_send(conn->http2_session);
+			if ((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) <= 0) {
+				debug_printf("failed to receive: %d\n", errno);
+				break;
 			}
-			if (!rc && (ioflags & WGET_IO_READABLE))
-				rc = nghttp2_session_recv(conn->http2_session);
-			wget_tcp_set_timeout(conn->tcp, timeout); // restore old timeout
 
-/*
-			while (nghttp2_session_want_write(conn->http2_session)) {
-				rc = nghttp2_session_send(conn->http2_session);
+			if ((rc = nghttp2_session_mem_recv(conn->http2_session, (uint8_t *) buf, nbytes)) < 0) {
+				debug_printf("mem_recv failed: %d %s\n", rc, nghttp2_strerror(rc));
+				break;
 			}
-			debug_printf("1 response status %d done %d\n", resp->code, ctx.done);
-			if (nghttp2_session_want_read(conn->http2_session)) {
-				rc = nghttp2_session_recv(conn->http2_session);
-			}
-*/
+
+			// debug_printf("  ##  loop responses=%d rc=%d nbytes=%zd\n", wget_vector_size(conn->received_http2_responses), rc, nbytes);
 		}
 
 		resp = wget_vector_get(conn->received_http2_responses, 0); // should use double linked lists here
