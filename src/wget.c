@@ -3285,11 +3285,11 @@ static void _add_authorize_header(
 	for (int it = 0; it < wget_vector_size(challenges); it++) {
 		wget_http_challenge_t *challenge = wget_vector_get(challenges, it);
 
-		if (wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
+		if (!wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
 			selected_challenge = challenge;
 			break;
 		}
-		else if (wget_strcasecmp_ascii(challenge->auth_scheme, "basic")) {
+		else if (!wget_strcasecmp_ascii(challenge->auth_scheme, "basic")) {
 			if (!selected_challenge)
 				selected_challenge = challenge;
 		}
