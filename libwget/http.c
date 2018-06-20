@@ -1001,7 +1001,8 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 				break;
 			}
 
-			if ((rc = nghttp2_session_mem_recv(conn->http2_session, (uint8_t *) buf, nbytes)) < 0) {
+			if ((nbytes = nghttp2_session_mem_recv(conn->http2_session, (uint8_t *) buf, nbytes)) < 0) {
+				rc = (int) nbytes;
 				debug_printf("mem_recv failed: %d %s\n", rc, nghttp2_strerror(rc));
 				break;
 			}
