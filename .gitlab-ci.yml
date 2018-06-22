@@ -283,6 +283,7 @@ MinGW64:
     - docker
   except:
     - tags
+  allow_failure: true
   artifacts:
     expire_in: 2 weeks
     when: on_failure
