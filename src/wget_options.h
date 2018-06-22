@@ -202,6 +202,7 @@ struct config {
 		continue_download,
 		server_response,
 		keep_alive,
+		keep_extension,
 		keep_session_cookies,
 		cookies,
 		spider,

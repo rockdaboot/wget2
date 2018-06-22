@@ -1502,12 +1502,18 @@ static const struct optionw options[] = {
 		{ "File where URLs are read from, - for STDIN.\n"
 		}
 	},
-	{ "iri", NULL, parse_bool, -1, 0,
+	{ "iri", NULL, parse_bool, -1, 0, // Wget compatibility, in fact a do-nothing option
 		SECTION_DOWNLOAD,
 		{ "Wget dummy option, you can't switch off\n",
 		  "international support\n"
 		}
-	}, // Wget compatibility, in fact a do-nothing option
+	},
+	{ "keep-extension", &config.keep_extension, parse_bool, -1, 0,
+		SECTION_DOWNLOAD,
+		{ "If file exists: Use pattern 'basename_N.ext'\n",
+			"instead of 'filename.N'. (default: off)\n"
+		}
+	},
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, -1, 0,
 		SECTION_HTTP,
 		{ "Also save session cookies. (default: off)\n"

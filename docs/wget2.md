@@ -409,9 +409,11 @@ Go to background immediately after startup. If no output file is specified via t
 
   When running Wget2 without `-N`, `-nc`, `-r`, or `-p`, downloading the same file in the same directory will result in the
   original copy of file being preserved and the second copy being named file.1.  If that file is downloaded yet
-  again, the third copy will be named file.2, and so on.  (This is also the behavior with -nd, even if -r or -p are
-  in effect.)  When `-nc` is specified, this behavior is suppressed, and Wget2 will refuse to download newer copies of
-  file.  Therefore, ""no-clobber"" is actually a misnomer in this mode---it's not clobbering that's prevented (as
+  again, the third copy will be named file.2, and so on. (This is also the behavior with `-nd`, even if `-r` or `-p` are
+  in effect.) Use `--keep-extension` to use an alternative file naming pattern.
+
+  When `-nc` is specified, this behavior is suppressed, and Wget2 will refuse to download newer copies of
+  file.  Therefore, ""no-clobber"" is actually a misnomer in this mode - it's not clobbering that's prevented (as
   the numeric suffixes were already preventing clobbering), but rather the multiple version saving that's
   prevented.
 
@@ -430,7 +432,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--backups=backups`
 
-  Before (over)writing a file, back up an existing file by adding a .1 suffix (_1 on VMS) to the file name.  Such
+  Before (over)writing a file, back up an existing file by adding a .1 suffix to the file name.  Such
   backup files are rotated to .2, .3, and so on, up to `backups` (and lost beyond that).
 
 ### `-c`, `--continue`
@@ -916,6 +918,19 @@ Go to background immediately after startup. If no output file is specified via t
 ### `--http2-request-window=number`
 
   Set max. number of parallel streams per HTTP/2 connection (default: 30).
+
+### `--keep-extension`
+
+  This option changes the behavior for creating a unique filename if a file already exists.
+
+  The standard (default) pattern for file names is `<filename>.<N>`, the new pattern is
+  `<basename>_<N>.<ext>`.
+
+  The idea is to use such files without renaming when the use depends on the
+  extension, like on Windows.
+
+  This option doesn not change the behavior of `--backups`.
+
 
 ## <a name="Directory Options"/>Directory Options
 

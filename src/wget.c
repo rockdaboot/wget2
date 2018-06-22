@@ -2852,30 +2852,35 @@ static int _wa_open(const char *fname, int flags, mode_t mode) {
 // Opens files uniquely
 static int _open_unique(const char *fname, int flags, mode_t mode, int multiple, char *unique, size_t unique_len)
 {
-	if (unique_len && unique[0]) {
+	int fd;
+
+	if (unique_len && unique[0])
 		return _wa_open(unique, flags, mode);
-	} else {
-		size_t fname_len, i, lim, n_digits;
-		int fd;
 
-		fd = _wa_open(fname, flags, mode);
-		if (fd >= 0)
-			return fd;
+	fd = _wa_open(fname, flags, mode);
+	if (fd >= 0)
+		return fd;
 
-		fname_len = strlen(fname);
-		if (unique_len < fname_len + 3)
-			return fd;
+	if (config.keep_extension) {
+		const char *ext = strrchr(fname, '.');
 
-		for (n_digits = unique_len - fname_len - 2, lim = 1; n_digits; n_digits--, lim *= 10)
-			;
+		if (!ext)
+			ext = fname + strlen(fname);
 
-		for (i = 1; i < lim && fd < 0 && ((multiple && errno == EEXIST) || errno == EISDIR); i++) {
-			wget_snprintf(unique, unique_len, "%s.%zu", fname, i);
+		for (int i = 1; i < 99999 && fd < 0 && ((multiple && errno == EEXIST) || errno == EISDIR); i++) {
+			if (wget_snprintf(unique, unique_len, "%.*s_%d%s", (int) (ext - fname), fname, i, ext) >= unique_len)
+				return -1;
 			fd = _wa_open(unique, flags, mode);
 		}
-
-		return fd;
+	} else {
+		for (int i = 1; i < 99999 && fd < 0 && ((multiple && errno == EEXIST) || errno == EISDIR); i++) {
+			if (wget_snprintf(unique, unique_len, "%s.%d", fname, i) >= unique_len)
+				return -1;
+			fd = _wa_open(unique, flags, mode);
+		}
 	}
+
+	return fd;
 }
 
 // return 0 if mime won't be downloaded and 1 if it will
@@ -3057,7 +3062,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	if (partial_content) {
 		long long size = get_file_size(unique[0] ? unique : fname);
 		if (size > 0) {
-			fd = _open_unique(fname, O_RDONLY | O_BINARY, 0, multiple, unique, fname_length + 1);
+			fd = _open_unique(fname, O_RDONLY | O_BINARY, 0, multiple, unique, sizeof(unique));
 			if (fd >= 0) {
 				size_t rc;
 				if ((unsigned long long) size > max_partial_content)
@@ -3079,7 +3084,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	}
 
 	fd = _open_unique(fname, O_WRONLY | flag | O_CREAT | O_NONBLOCK | O_BINARY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
-			multiple, unique, fname_length + 1);
+			multiple, unique, sizeof(unique));
 	// debug_printf("1 fd=%d flag=%02x (%02x %02x %02x) errno=%d %s\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND,errno,fname);
 	// Store the "actual" file name (with any extensions that were added present)
 	wget_asprintf(actual_file_name, "%s", unique[0] ? unique : fname);
