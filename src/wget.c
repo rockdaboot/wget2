@@ -1749,6 +1749,7 @@ static int process_response_header(wget_http_response_t *resp)
 	return 0;
 }
 
+static bool check_status_code_list(wget_vector_t *list, uint16_t status);
 static bool check_mime_list(wget_vector_t *list, const char *mime);
 
 static void process_head_response(wget_http_response_t *resp)
@@ -2265,11 +2266,12 @@ void *downloader_thread(void *p)
 		case ACTION_GET_RESPONSE:
 			resp = http_receive_response(downloader->conn);
 
-			if (config.http_retry_on_status && resp->code != 200) {
+			if (config.http_retry_on_status && resp && resp->code != 200) {
 				snprintf(http_code, sizeof(http_code), "%d", resp->code);
 				if (check_mime_list(config.http_retry_on_status, http_code)) {
 					print_status(downloader, "Got a HTTP Code %d. Retrying...", resp->code);
-					resp = NULL;
+					wget_http_free_request(&resp->req);
+					wget_http_free_response(&resp);
 				}
 			}
 
@@ -3303,7 +3305,10 @@ static int _get_header(wget_http_response_t *resp, void *context)
 	} else
 		name = dest = config.output_document ? config.output_document : ctx->job->local_filename;
 
-	if (dest && (resp->code == 200 || resp->code == 206 || config.content_on_error)) {
+	if (dest
+		&& ((config.save_content_on && check_status_code_list(config.save_content_on, resp->code))
+		|| (!config.save_content_on
+			&& (resp->code == 200 || resp->code == 206 || config.content_on_error)))) {
 
 		// Job re-use?
 		xfree(ctx->job->sig_filename);
@@ -3317,9 +3322,11 @@ static int _get_header(wget_http_response_t *resp, void *context)
 			ctx->max_memory,
 			&ctx->job->sig_filename,
 			ctx->job->iri->path);
+
 		if (ctx->outfd == -1)
 			ret = -1;
 	}
+
 //	info_printf("Opened %d\n", ctx->outfd);
 
 #ifdef _WIN32
@@ -3350,6 +3357,29 @@ out:
 	}
 
 	return ret;
+}
+
+// Search function for --save-content-on=. Return 0 if content won't be downloaded and 1 if it will.
+static bool check_status_code_list(wget_vector_t *list, uint16_t status)
+{
+	char result = 0;
+	char key[6];
+
+	wget_snprintf(key, sizeof(key), "%hu", status);
+
+	for (int i = 0; i < wget_vector_size(list); i++) {
+		char *entry = wget_vector_get(list, i);
+		bool exclude = (*entry == '!');
+
+		entry += exclude;
+
+		if (strpbrk(entry, "*") && !fnmatch(entry, key, FNM_CASEFOLD))
+			result = !exclude;
+		else if (!wget_strcasecmp(entry, key))
+			result = !exclude;
+	}
+
+	return result;
 }
 
 static int _get_body(wget_http_response_t *resp, void *context, const char *data, size_t length)

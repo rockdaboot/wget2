@@ -1303,6 +1303,18 @@ Go to background immediately after startup. If no output file is specified via t
   If this is set to on, wget2 will not skip the content when the server responds with a http status code that
   indicates error.
 
+### `--save-content-on`
+
+  This takes a comma-separated list of HTTP status codes to save the content for.
+
+  You can use '*' for ANY. An exclamation mark (!) in front of a code means 'exception'.
+
+  Example 1: `--save-content-on="*,!404"` would save the content on any HTTP status, except for 404.
+
+  Example 2: `--save-content-on=404` would save the content only on HTTP status 404.
+
+  The older `--content-on-error` behaves like `--save-content-on=*`.
+
 ### `--trust-server-names`
 
   If this is set to on, on a redirect the last component of the redirection URL will be used as the local file
