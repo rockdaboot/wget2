@@ -85,6 +85,18 @@ enum _bar_slot_status_t {
 	COMPLETE = 2
 };
 
+/** The settings for drawing the progress bar.
+ *
+ *  This includes things like how often it is updated, how many values are
+ *  stored in the speed ring, etc.
+ */
+enum _BAR_SETTINGS {
+	/// The time (in ms) between two consecutive speed calculations
+	SPEED_REDRAW_TIME = 400,
+	/// The number of values to store in the speed ring
+	SPEED_RING_SIZE   =  24,
+};
+
 typedef struct {
 	char
 		*progress,
@@ -116,14 +128,10 @@ struct _wget_bar_st {
 		mutex;
 };
 
-/* 24 positions with a 125ms return time is at least
- * the average of the last 3 seconds */
-#define RING_POSITIONS 24
-
 struct _speed_report {
 	uint64_t
-		times[RING_POSITIONS],
-		bytes[RING_POSITIONS],
+		times[SPEED_RING_SIZE],
+		bytes[SPEED_RING_SIZE],
 		total_time,
 		total_bytes,
 		old_cur_bytes,
@@ -152,7 +160,7 @@ static void _bar_update_speed(int64_t cur_bytes, int slot)
 	SReport->total_time += SReport->times[*ringpos];
 	SReport->last_update_time = wget_get_timemillis();
 	SReport->old_cur_bytes = cur_bytes;
-	if (++(*ringpos) == RING_POSITIONS)
+	if (++(*ringpos) == SPEED_RING_SIZE)
 		*ringpos = 0; // reset
 }
 
@@ -218,9 +226,6 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 
 	slotp->progress[bar->max_width] = 0;
 }
-
-/* The time in ms between every speed calculation */
-#define SPEED_REDRAW_TIME 400
 
 static void _bar_update_slot(const wget_bar_t *bar, int slot)
 {
