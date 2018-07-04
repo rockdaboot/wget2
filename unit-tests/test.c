@@ -27,6 +27,9 @@
 
 #include <config.h>
 
+#undef NDEBUG // always enable assertions in this test code
+#include <assert.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1994,6 +1997,32 @@ static void test_striconv(void)
 	xfree(utf16be);
 }
 
+static void test_bitmap(void)
+{
+	wget_bitmap_t *b = wget_bitmap_allocate(1000);
+
+	assert(wget_bitmap_get(b, 0) == 0);
+	assert(wget_bitmap_get(b, 999) == 0);
+	assert(wget_bitmap_get(b, 1000) == 0);
+
+	wget_bitmap_set(b, 1);
+	wget_bitmap_set(b, 999);
+	wget_bitmap_set(b, 1000); // should be a no-op
+	assert(wget_bitmap_get(b, 0) == 0);
+	assert(wget_bitmap_get(b, 1) == 1);
+	assert(wget_bitmap_get(b, 999) == 1);
+	assert(wget_bitmap_get(b, 1000) == 0);
+
+	wget_bitmap_clear(b, 1);
+	wget_bitmap_clear(b, 999);
+	wget_bitmap_clear(b, 1000); // should be a no-op
+	assert(wget_bitmap_get(b, 0) == 0);
+	assert(wget_bitmap_get(b, 1) == 0);
+	assert(wget_bitmap_get(b, 999) == 0);
+
+	wget_bitmap_free(&b);
+}
+
 static void test_bar(void)
 {
 	wget_bar_t *bar;
@@ -2411,6 +2440,7 @@ int main(int argc, const char **argv)
 	test_vector();
 	test_stringmap();
 	test_striconv();
+	test_bitmap();
 
 	if (failed) {
 		info_printf("ERROR: %d out of %d basic tests failed\n", failed, ok + failed);

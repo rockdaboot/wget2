@@ -6,6 +6,7 @@ STAMPS =
 if WITH_DOXYGEN
 man3_MANS =\
  $(builddir)/man/man3/libwget-base64.3\
+ $(builddir)/man/man3/libwget-bitmap.3\
  $(builddir)/man/man3/libwget-console.3\
  $(builddir)/man/man3/libwget-dns-caching.3\
  $(builddir)/man/man3/libwget-hash.3\
