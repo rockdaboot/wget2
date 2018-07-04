@@ -252,9 +252,8 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 		if (SReport->total_time && (cur_time - SReport->last_redraw_time) > SPEED_REDRAW_TIME) {
 			human_readable_speed = wget_human_readable(SReport->speed_buf, sizeof(SReport->speed_buf), ((SReport->total_bytes*mod)/(SReport->total_time)));
 			SReport->last_redraw_time = cur_time;
-		}
-		else if (!SReport->total_time)
-			human_readable_speed = memcpy(SReport->speed_buf, "-.-", 3);
+		} else if (!SReport->total_time)
+			human_readable_speed = memcpy(SReport->speed_buf, "-.- ", 4);
 		else
 			human_readable_speed = SReport->speed_buf;
 
@@ -267,12 +266,12 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 		// filename   xxx% [======>      ] xxx.xxK
 		//
 		// It is made of the following elements:
-		// filename		_BAR_FILENAME_SIZE		Name of local file
-		// xxx%			_BAR_RATIO_SIZE + 1		Amount of file downloaded
-		// []			_BAR_METER_COST			Bar Decorations
-		// xxx.xxK		_BAR_DOWNBYTES_SIZE		Number of downloaded bytes
-		// xxx.xxKB/s		_BAR_SPEED_SIZE			Download speed
-		// ===>			Remaining			Progress Meter
+		// filename     _BAR_FILENAME_SIZE      Name of local file
+		// xxx%         _BAR_RATIO_SIZE + 1     Amount of file downloaded
+		// []           _BAR_METER_COST         Bar Decorations
+		// xxx.xxK      _BAR_DOWNBYTES_SIZE     Number of downloaded bytes
+		// xxx.xxKB/s   _BAR_SPEED_SIZE         Download speed
+		// ===>         Remaining               Progress Meter
 
 		wget_fprintf(stdout, "%-*.*s %*d%% [%s] %*s %*s%c/s",
 				_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, slotp->filename,
