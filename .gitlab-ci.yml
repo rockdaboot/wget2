@@ -4,7 +4,7 @@
 # name to allow expiration of old caches.
 
 cache:
-  key: "$CI_JOB_NAME-ver3"
+  key: "$CI_JOB_NAME-ver4"
   paths:
     - cache/
 
