@@ -166,6 +166,7 @@ static void _bar_update_speed(int64_t cur_bytes, int slot)
 
 static char report_speed_type = WGET_REPORT_SPEED_BYTES;
 static char report_speed_type_char = 'B';
+static unsigned short speed_modifier = 1000;
 
 static volatile sig_atomic_t winsize_changed;
 
@@ -238,11 +239,7 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 		int ratio;
 		char *human_readable_bytes;
 		char *human_readable_speed;
-		unsigned int mod = 1000;
 		struct _speed_report *SReport = &speed_r[slot];
-
-		if (report_speed_type == WGET_REPORT_SPEED_BITS)
-			mod *= 8;
 
 		max = slotp->file_size;
 		cur = slotp->bytes_downloaded;
@@ -255,7 +252,10 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 
 		uint64_t cur_time = wget_get_timemillis();
 		if (SReport->total_time && (cur_time - SReport->last_redraw_time) > SPEED_REDRAW_TIME) {
-			human_readable_speed = wget_human_readable(SReport->speed_buf, sizeof(SReport->speed_buf), ((SReport->total_bytes*mod)/(SReport->total_time)));
+			human_readable_speed = wget_human_readable(SReport->speed_buf,
+					sizeof(SReport->speed_buf),
+					((SReport->total_bytes * speed_modifier) / (SReport->total_time))
+				);
 			SReport->last_redraw_time = cur_time;
 		} else if (!SReport->total_time)
 			human_readable_speed = memcpy(SReport->speed_buf, "-.- ", 4);
@@ -624,7 +624,10 @@ void wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len)
 void wget_bar_set_speed_type(char type)
 {
 	report_speed_type = type;
-	if (type == WGET_REPORT_SPEED_BITS)
+	if (type == WGET_REPORT_SPEED_BITS) {
 		report_speed_type_char = 'b';
+		speed_modifier = 8;
+	}
+
 }
 /** @}*/
