@@ -2531,10 +2531,10 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 	return n;
 }
 
-static void G_GNUC_WGET_NORETURN _no_memory(void)
+static int _no_memory(void)
 {
 	fprintf(stderr, "No memory\n");
-	exit(EXIT_FAILURE);
+	return EXIT_FAILURE;
 }
 
 

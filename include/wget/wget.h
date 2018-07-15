@@ -419,7 +419,7 @@ WGETAPI int
 // I try to never leave freed pointers hanging around
 #define wget_xfree(a) do { if (a) { wget_free((void *)(a)); a=NULL; } } while (0)
 
-typedef void (*wget_oom_callback_t)(void);
+typedef int (*wget_oom_callback_t)(void);
 
 WGETAPI void *
 	wget_malloc(size_t size) G_GNUC_WGET_MALLOC G_GNUC_WGET_ALLOC_SIZE(1);

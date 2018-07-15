@@ -51,23 +51,34 @@
  * namely malloc(), calloc(), realloc().
  */
 
-static void
-	(*_oom_callback)(void);
+static wget_oom_callback_t
+	_oom_callback;
 
-static void G_GNUC_WGET_NORETURN _no_memory(void)
+static int _no_memory(void)
 {
-	if (_oom_callback)
-		_oom_callback();
+	if (_oom_callback) {
+		int rc = _oom_callback();
+		if (rc)
+			exit(rc);
+	}
 
-	exit(EXIT_FAILURE);
+	return 0;
 }
 
 /**
  * \param[in] oom_callback Pointer to your custom out-of-memory function
  *
  * Set a custom out-of-memory function.
+ *
+ * If an out-of-memory condition occurs, the OOM callback function is called.
+ * If the OOM function returns 0, the allocation function is tried.
+ * Else the returned value is used to call exit().
+ *
+ * So you can set a OOM function to free temporarily allocated memory in ordre to
+ * continue operation.
+ *
  */
-void wget_set_oomfunc(void (*oom_callback)(void))
+void wget_set_oomfunc(wget_oom_callback_t oom_callback)
 {
 	_oom_callback = oom_callback;
 }
@@ -76,15 +87,19 @@ void wget_set_oomfunc(void (*oom_callback)(void))
  * \param[in] size Number of bytes to allocate
  * \return A pointer to the allocated (uninitialized) memory
  *
- * Like the standard malloc(), except that it doesn't return %NULL values.
- * If an out-of-memory condition occurs the oom callback function is called (if set).
- * Thereafter the application is terminated by exit(%EXIT_FAILURE);
+ * Like the standard malloc(), except when the OOM callback function is set.
+ *
+ * If an out-of-memory condition occurs, the OOM callback function is called (if set).
+ * If the OOM function returns 0, wget_malloc() returns NULL. Else it exits with the returned
+ * exit status.
  */
 void *wget_malloc(size_t size)
 {
 	void *p = malloc(size);
-	if (!p)
-		_no_memory();
+	if (!p) {
+		_no_memory(); // if this returns, try again
+		p = malloc(size);
+	}
 	return p;
 }
 
@@ -93,15 +108,19 @@ void *wget_malloc(size_t size)
  * \param[in] size Size of element
  * \return A pointer to the allocated (initialized) memory
  *
- * Like the standard calloc(), except that it doesn't return %NULL values.
+ * Like the standard calloc(), except when the OOM callback function is set.
+ *
  * If an out-of-memory condition occurs the oom callback function is called (if set).
- * Thereafter the application is terminated by exit(%EXIT_FAILURE);
+ * If the OOM function returns 0, wget_calloc() returns NULL. Else it exits with the returned
+ * exit status.
  */
 void *wget_calloc(size_t nmemb, size_t size)
 {
 	void *p = calloc(nmemb, size);
-	if (!p)
-		_no_memory();
+	if (!p) {
+		_no_memory(); // if this returns, try again
+		p = calloc(nmemb, size);
+	}
 	return p;
 }
 
@@ -110,19 +129,25 @@ void *wget_calloc(size_t nmemb, size_t size)
  * \param[in] size Number of bytes to allocate for the new memory area
  * \return A pointer to the new memory area
  *
- * Like the standard realloc(), except that it doesn't return %NULL values.
- * If an out-of-memory condition occurs *or* size is 0, the oom callback function is called (if set).
- * Thereafter the application is terminated by exit(%EXIT_FAILURE);
+ * Like the standard realloc(), except when the OOM callback function is set.
+ *
+ * If an out-of-memory condition occurs the OOM callback function is called (if set).
+ * If the OOM function returns 0, wget_realloc() returns NULL. Else it exits with the returned
+ * exit status.
  */
 void *wget_realloc(void *ptr, size_t size)
 {
 	void *p;
 
-	if (!size)
+	if (!size) {
 		_no_memory();
+		return NULL;
+	}
 
-	if (!(p = realloc(ptr, size)))
-		_no_memory();
+	if (!(p = realloc(ptr, size))) {
+		_no_memory(); // if this returns, try again
+		p = realloc(ptr, size);
+	}
 
 	return p;
 }

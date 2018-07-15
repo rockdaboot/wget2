@@ -2426,7 +2426,7 @@ int main(int argc, const char **argv)
 		return -1;
 
 	srand((unsigned int) time(NULL));
-	wget_set_oomfunc(abort);
+	wget_set_oomfunc((wget_oom_callback_t) abort);
 
 	// testing basic library functionality
 	test_mem();
