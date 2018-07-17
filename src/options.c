@@ -1353,13 +1353,6 @@ static const struct optionw options[] = {
 		}
 	},
 #endif
-	{ "gnutls-options", &config.gnutls_options, parse_string, 1, 0,
-		SECTION_SSL,
-		{ "Custom GnuTLS priority string.\n",
-		  "Interferes with --secure-protocol.\n",
-		  "(default: none)\n"
-		}
-	},
 	{ "header", &config.headers, parse_header, 1, 0,
 		SECTION_HTTP,
 		{ "Insert input string as a HTTP header in\n",
@@ -2999,7 +2992,6 @@ int init(int argc, const char **argv)
 	wget_ssl_set_config_int(WGET_SSL_OCSP, config.ocsp);
 	wget_ssl_set_config_int(WGET_SSL_OCSP_STAPLING, config.ocsp_stapling);
 	wget_ssl_set_config_string(WGET_SSL_SECURE_PROTOCOL, config.secure_protocol);
-	wget_ssl_set_config_string(WGET_SSL_DIRECT_OPTIONS, config.gnutls_options);
 	wget_ssl_set_config_string(WGET_SSL_CA_DIRECTORY, config.ca_directory);
 	wget_ssl_set_config_string(WGET_SSL_CA_FILE, config.ca_cert);
 	wget_ssl_set_config_string(WGET_SSL_CERT_FILE, config.cert_file);
@@ -3076,7 +3068,6 @@ void deinit(void)
 	xfree(config.default_page);
 	xfree(config.directory_prefix);
 	xfree(config.egd_file);
-	xfree(config.gnutls_options);
 	xfree(config.hsts_file);
 	xfree(config.hpkp_file);
 	xfree(config.http_password);

@@ -106,7 +106,6 @@ static wget_stats_callback_t
 static struct _config {
 	const char
 		*secure_protocol,
-		*direct_options,
 		*ca_directory,
 		*ca_file,
 		*cert_file,
@@ -173,7 +172,6 @@ static gnutls_priority_t
  * The following parameters accept a string as their value (\p key can have any of those values):
  *
  *  - WGET_SSL_SECURE_PROTOCOL:
- *  - WGET_SSL DIRECT_OPTIONS:
  *  - WGET_SSL_CA_DIRECTORY: A path to the directory where the root certificates will be taken from
  *  for server cert validation. Every file of that directory is expected to contain an X.509 certificate,
  *  encoded in PEM format. If the string "system" is specified, the system's default directory will be used.
@@ -226,7 +224,6 @@ void wget_ssl_set_config_string(int key, const char *value)
 {
 	switch (key) {
 	case WGET_SSL_SECURE_PROTOCOL: _config.secure_protocol = value; break;
-	case WGET_SSL_DIRECT_OPTIONS: _config.direct_options = value; break;
 	case WGET_SSL_CA_DIRECTORY: _config.ca_directory = value; break;
 	case WGET_SSL_CA_FILE: _config.ca_file = value; break;
 	case WGET_SSL_CERT_FILE: _config.cert_file = value; break;
@@ -1309,13 +1306,10 @@ void wget_ssl_init(void)
 
 		debug_printf("Certificates loaded: %d\n", ncerts);
 
-		if (_config.secure_protocol || _config.direct_options) {
+		if (_config.secure_protocol) {
 			const char *priorities = NULL;
 
-			if (_config.direct_options) {
-				priorities = _config.direct_options;
-				rc = gnutls_priority_init(&_priority_cache, priorities, NULL);
-			} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "PFS")) {
+			if (!wget_strcasecmp_ascii(_config.secure_protocol, "PFS")) {
 				priorities = "PFS:-VERS-SSL3.0";
 				// -RSA to force DHE/ECDHE key exchanges to have Perfect Forward Secrecy (PFS))
 				if ((rc = gnutls_priority_init(&_priority_cache, priorities, NULL)) != GNUTLS_E_SUCCESS) {

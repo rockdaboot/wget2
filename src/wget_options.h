@@ -52,7 +52,6 @@ struct config {
 	const char
 		*post_file,
 		*post_data,
-		*gnutls_options,
 		*http_username,
 		*http_password,
 		*http_proxy_username,
