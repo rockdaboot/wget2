@@ -1323,10 +1323,21 @@ void wget_ssl_init(void)
 					rc = gnutls_priority_init(&_priority_cache, priorities, NULL);
 				}
 			} else {
+#if GNUTLS_VERSION_NUMBER >= 0x030603
+#define TLS13_PRIO ":+VERS-TLS1.3"
+#else
+#define TLS13_PRIO ""
+#endif
 				if (!wget_strncasecmp_ascii(_config.secure_protocol, "SSL", 3))
 					priorities = "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0";
 				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1"))
-					priorities = "NORMAL:-VERS-SSL3.0";
+					priorities = "NORMAL:-VERS-SSL3.0" TLS13_PRIO;
+				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1_1"))
+					priorities = "NORMAL:-VERS-SSL3.0:-VERS-TLS1.0" TLS13_PRIO;
+				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1_2"))
+					priorities = "NORMAL:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1" TLS13_PRIO;
+				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1_3"))
+					priorities = "NORMAL:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-VERS-TLS1.2" TLS13_PRIO;
 				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "auto")) {
 					/* use system default, priorities = NULL */
 				} else if (*_config.secure_protocol)

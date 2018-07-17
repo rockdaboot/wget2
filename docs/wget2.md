@@ -1330,17 +1330,21 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--secure-protocol=protocol`
 
-  Choose the secure protocol to be used (default: auto).
+  Choose the secure protocol to be used (default: `auto`).
 
-  Legal values are `auto`, `SSLv3`, `TLSv1` and `PFS`.  If auto is used, the TLS library's default is used.
+  Legal values are `auto`, `SSLv3`, `TLSv1`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3` and `PFS`.
 
-  Specifying SSLv3, TLSv1 forces the use of the corresponding protocol. This is useful
-  when talking to old and buggy SSL server implementations that make it hard for the underlying TLS library to
-  choose the correct protocol version.
+  If `auto` is used, the TLS library's default is used.
+
+  Specifying `SSLv3` forces the use of the SSL3. This is useful when talking to old and buggy SSL server
+  implementations that make it hard for the underlying TLS library to choose the correct protocol version.
 
   Specifying `PFS` enforces the use of the so-called Perfect Forward Security cipher suites. In short, PFS adds
   security by creating a one-time key for each TLS connection. It has a bit more CPU impact on client and server.
   We use known to be secure ciphers (e.g. no MD4) and the TLS protocol.
+
+  `TLSv1` enables TLS1.0 or higher. `TLSv1_1` enables TLS1.1 or higher.
+  `TLSv1_2` enables TLS1.2 or higher. `TLSv1_3` enables TLS1.3 or higher.
 
   Any other protocol string is directly given to the TLS library, currently GnuTLS, as a "priority" or
   "cipher" string. This is for users who know what they are doing.
