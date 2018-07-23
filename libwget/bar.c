@@ -71,7 +71,7 @@ enum _BAR_DECOR_SIZE {
 		_BAR_RATIO_SIZE     + 2 + \
 		_BAR_METER_COST     + 1 + \
 		_BAR_DOWNBYTES_SIZE + 1 + \
-		_BAR_SPEED_SIZE     + 2
+		_BAR_SPEED_SIZE     + 3
 };
 
 enum _SCREEN_WIDTH {
