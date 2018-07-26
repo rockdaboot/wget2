@@ -149,16 +149,17 @@ static void _bar_update_speed(int64_t cur_bytes, int slot)
 {
 	struct _speed_report *SReport = &speed_r[slot];
 	int *ringpos = &SReport->pos;
+	long long curtime = wget_get_timemillis();
 	SReport->total_bytes -= SReport->bytes[*ringpos];
 	SReport->total_time -= SReport->times[*ringpos];
 	SReport->bytes[*ringpos] = cur_bytes - SReport->old_cur_bytes;
 
 	if (SReport->last_update_time)
-		SReport->times[*ringpos] = wget_get_timemillis() - SReport->last_update_time;
+		SReport->times[*ringpos] = curtime - SReport->last_update_time;
 
 	SReport->total_bytes += SReport->bytes[*ringpos];
 	SReport->total_time += SReport->times[*ringpos];
-	SReport->last_update_time = wget_get_timemillis();
+	SReport->last_update_time = curtime;
 	SReport->old_cur_bytes = cur_bytes;
 	if (++(*ringpos) == SPEED_RING_SIZE)
 		*ringpos = 0; // reset
@@ -248,6 +249,8 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 
 		human_readable_bytes = wget_human_readable(slotp->human_size, sizeof(slotp->human_size), cur);
 
+		// TODO: Restructure the speed computation to call
+		// wget_get_timemillis() only once
 		_bar_update_speed(cur, slot);
 
 		uint64_t cur_time = wget_get_timemillis();
