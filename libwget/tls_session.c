@@ -303,7 +303,10 @@ static int _tls_session_db_load(wget_tls_session_db_t *tls_session_db, FILE *fp)
 		}
 
 		if (ok) {
+			bool no_change = wget_hashmap_size(tls_session_db->entries) == 0;
 			wget_tls_session_db_add(tls_session_db, wget_memdup(&tls_session, sizeof(tls_session)));
+			if (no_change)
+				tls_session_db->changed = 0;
 		} else {
 			wget_tls_session_deinit(&tls_session);
 			error_printf(_("Failed to parse HSTS line: '%s'\n"), buf);
