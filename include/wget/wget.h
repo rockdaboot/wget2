@@ -334,7 +334,7 @@ WGETAPI int
 WGETAPI char *
 	wget_strnglob(const char *str, size_t n, int flags) G_GNUC_WGET_PURE;
 WGETAPI char *
-	wget_human_readable(char *buf, size_t bufsize, uint64_t n) G_GNUC_WGET_CONST;
+	wget_human_readable(char *buf, size_t bufsize, uint64_t n);
 WGETAPI int
 	wget_get_screen_size(int *width, int *height);
 WGETAPI char *
