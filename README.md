@@ -137,6 +137,7 @@ Download project and prepare sources with
 
 Build Wget2 with
 
+		# on Haiku, don't forget to `setarch x86`
 		./configure
 		make
 
