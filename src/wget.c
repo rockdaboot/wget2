@@ -2072,7 +2072,7 @@ void *downloader_thread(void *p)
 	int pending = 0, max_pending = 1, locked;
 	long long pause = 0;
 	enum actions action = ACTION_GET_JOB;
-	char http_code[4];
+	char http_code[7];
 
 	// downloader->thread = wget_thread_self(); // to avoid race condition
 
