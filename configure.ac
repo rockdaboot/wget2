@@ -127,6 +127,7 @@ if test -n "$WARN_CFLAGS"; then
     nw="$nw -Wunsuffixed-float-constants"
     nw="$nw -Wdeclaration-after-statement" # C89 only, messing up gcc < 5
     nw="$nw -Wcast-function-type" # gcc 8, very noisy
+    nw="$nw -Wabi" # gcc 8, very noisy
     nw="$nw -Wunused-macros" # triggers in auto-generated lex css parser, #pragma doesn't work, conflicts with -Werror
     if test "$cross_compiling" = yes; then
       nw="$nw -Wformat"
