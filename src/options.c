@@ -1680,7 +1680,7 @@ static const struct optionw options[] = {
 	},
 	{ "progress", &config.progress, parse_progress_type, 1, 0,
 		SECTION_DOWNLOAD,
-		{ "Type of progress bar (bar, dot, none).\n",
+		{ "Type of progress bar (bar, none).\n",
 		  "(default: none)\n"
 		}
 	},
