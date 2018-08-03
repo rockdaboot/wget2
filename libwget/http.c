@@ -551,6 +551,7 @@ static int _on_stream_close_callback(nghttp2_session *session, int32_t stream_id
 
 		wget_vector_add_noalloc(conn->received_http2_responses, ctx->resp);
 		wget_decompress_close(ctx->decompressor);
+		nghttp2_session_set_stream_user_data(session, stream_id, NULL);
 		xfree(ctx);
 	}
 
@@ -1195,7 +1196,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 			// now p points to chunk-size (hex)
 			chunk_size = strtoll(p, NULL, 16);
-			debug_printf("chunk size is %zu\n", chunk_size);
+			// debug_printf("chunk size is %zu\n", chunk_size);
 			if (chunk_size == 0) {
 				// now read 'trailer CRLF' which is '*(entity-header CRLF) CRLF'
 				if (*end == '\r' && end[1] == '\n') // shortcut for the most likely case (empty trailer)

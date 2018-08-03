@@ -419,7 +419,7 @@ int wget_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 		int rc = dc->decompress(dc, src, srclen);
 
 		if (rc && dc->error_handler)
-			dc->error_handler(dc->context, rc);
+			dc->error_handler(dc, rc);
 	}
 
 	return 0;
