@@ -1,4 +1,5 @@
 noinst_PROGRAMS = \
+ batch_loader\
  getstream\
  http_get2\
  http_multi_get\
