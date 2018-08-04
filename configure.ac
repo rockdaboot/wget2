@@ -677,8 +677,6 @@ AS_IF([test "x$with_libmicrohttpd" != xno], [
 ])
 AM_CONDITIONAL([WITH_MICROHTTPD], [test "x$with_libmicrohttpd" = xyes])
 
-AC_SEARCH_LIBS(getaddrinfo_a, anl)
-
 # Check for plugin support
 AC_CANONICAL_HOST
 case "$host_os" in
@@ -733,7 +731,7 @@ AC_CHECK_HEADERS([\
 AC_FUNC_FORK
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([\
- strlcpy getuid fmemopen getaddrinfo_a])
+ strlcpy getuid fmemopen])
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
