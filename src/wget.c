@@ -1284,8 +1284,12 @@ int main(int argc, const char **argv)
 		for (;nthreads < config.max_threads && nthreads < queue_size(); nthreads++) {
 			downloaders[nthreads].id = nthreads;
 
+			// The actual number of nthreads is updated in the loop iteration
+			// counter ater the iteration. So we add one already here to
+			// account for it. The second extra slot is for the stats data that
+			// is printed on the last line.
 			if (config.progress)
-				bar_update_slots(nthreads + 2);
+				bar_update_slots(nthreads + 1 + 1);
 
 			// start worker threads (I call them 'downloaders')
 			if ((rc = wget_thread_start(&downloaders[nthreads].thread, downloader_thread, &downloaders[nthreads], 0)) != 0) {
