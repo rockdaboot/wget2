@@ -1643,7 +1643,8 @@ static int process_response_header(wget_http_response_t *resp)
 
 		wget_iri_relative_to_abs(iri, resp->location, strlen(resp->location), &uri_buf);
 
-		add_url(job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION);
+		if (uri_buf.length)
+			add_url(job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION);
 
 		wget_buffer_deinit(&uri_buf);
 	}
