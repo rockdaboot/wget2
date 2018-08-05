@@ -137,9 +137,14 @@ Download project and prepare sources with
 
 Build Wget2 with
 
-		# on Haiku, don't forget to `setarch x86`
 		./configure
 		make
+
+In Haiku build Wget2 with
+
+        setarch x86
+        ./configure --prefix=/boot/home/config/non-packaged
+        rm /boot/home/config/non-packaged/wget2 && mv /boot/home/config/non-packaged/wget2_noinstall /boot/home/config/non-packaged/wget2
 
 Test the functionality
 
