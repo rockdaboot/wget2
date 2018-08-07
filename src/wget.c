@@ -747,10 +747,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	struct plugin_db_forward_url_verdict plugin_verdict;
 	bool http_fallback = 0;
 
-	wget_info_printf(_("Adding URL: %s\n"), url);
-
 	if (flags & URL_FLG_REDIRECTION) { // redirect
-		if (config.max_redirect && job && job->redirection_level >= config.max_redirect) {
+		if (job && job->redirection_level >= config.max_redirect) {
 			return;
 		}
 	} else {
@@ -760,6 +758,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 //			}
 //		}
 	}
+
+	wget_info_printf(_("Adding URL: %s\n"), url);
 
 	const char *p = NULL;
 
