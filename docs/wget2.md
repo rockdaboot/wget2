@@ -684,20 +684,6 @@ Go to background immediately after startup. If no output file is specified via t
 
   Setting quota to `0` or to `inf` unlimits the download quota.
 
-### `--no-dns-cache`
-
-  Turn off caching of DNS lookups.  Normally, Wget2 remembers the IP addresses it looked up from DNS so it doesn't
-  have to repeatedly contact the DNS server for the same (typically small) set of hosts it retrieves from.  This
-  cache exists in memory only; a new Wget2 run will contact DNS again.
-
-  However, it has been reported that in some situations it is not desirable to cache host names, even for the
-  duration of a short-running application like Wget2.  With this option Wget2 issues a new DNS lookup (more
-  precisely, a new call to "gethostbyname" or "getaddrinfo") each time it makes a new connection.  Please note that
-  this option will not affect caching that might be performed by the resolving library or by an external caching
-  layer, such as NSCD.
-
-  If you don't understand exactly what this option does, you probably won't need it.
-
 ### `--restrict-file-names=modes`
 
   Change which characters found in remote URLs must be escaped during generation of local filenames.  Characters
@@ -771,11 +757,28 @@ Go to background immediately after startup. If no output file is specified via t
 
   Currently this works on recent Linux and OSX kernels, on HTTP and HTTPS.
 
-### `--dns-caching`
+### `--dns-cache-preload=file`
+
+  Load a list of IP / Name tuples into the DNS cache.
+
+  The format of `file` is like `/etc/hosts`: IP-address whitespace Name
+
+  This allows to to save domain name lookup time, which is a bottleneck in some use cases.
+  Also, the use of HOSTALIASES (which is not portable) can be mimiced by this option.
+
+# `--dns-caching`
 
   Enable DNS caching (default: on).
 
-  Keep results of DNS lookups in memory to speed up connections.
+  Normally, Wget2 remembers the IP addresses it looked up from DNS so it doesn't have to
+  repeatedly contact the DNS server for the same (typically small) set of hosts it retrieves from.
+  This cache exists in memory only; a new Wget2 run will contact DNS again.
+
+  However, it has been reported that in some situations it is not desirable to cache host names, even for the
+  duration of a short-running application like Wget2.  With `--no-dns-caching` Wget2 issues a new DNS lookup (more
+  precisely, a new call to "gethostbyname" or "getaddrinfo") each time it makes a new connection.  Please note that
+  this option will not affect caching that might be performed by the resolving library or by an external caching
+  layer, such as NSCD.
 
 ### `--retry-connrefused`
 
