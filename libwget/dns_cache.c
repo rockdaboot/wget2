@@ -151,9 +151,9 @@ struct addrinfo *wget_dns_cache_get(const char *host, uint16_t port)
  * \param[in] host Hostname part of the key
  * \param[in] port Port part of the key
  * \param[in] addrinfo Addrinfo structure to cache
- * \return The cached addrinfo structure or NULL if not found
+ * \return The cached addrinfo structure or NULL on error
  */
-struct addrinfo * wget_dns_cache_add(const char *host, uint16_t port, struct addrinfo *addrinfo)
+struct addrinfo *wget_dns_cache_add(const char *host, uint16_t port, struct addrinfo *addrinfo)
 {
 	// insert addrinfo into dns cache
 	size_t hostlen = host ? strlen(host) + 1 : 0;

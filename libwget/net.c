@@ -231,16 +231,18 @@ static struct addrinfo *_wget_sort_preferred(struct addrinfo *addrinfo, int pref
 }
 
 // we can't provide a portable way of respecting a DNS timeout
-static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, struct addrinfo **out_addr)
+static int _wget_tcp_resolve(int family, int flags, const char *host, uint16_t port, struct addrinfo **out_addr)
 {
 	struct addrinfo hints = {
-		.ai_family = tcp->family,
+		.ai_family = family,
 		.ai_socktype = SOCK_STREAM,
-		.ai_flags = AI_ADDRCONFIG | (port ? AI_NUMERICSERV : 0)
+		.ai_flags = AI_ADDRCONFIG | flags
 	};
 
 	if (port) {
 		char s_port[NI_MAXSERV];
+
+		hints.ai_flags |= AI_NUMERICSERV;
 
 		wget_snprintf(s_port, sizeof(s_port), "%hu", port);
 		debug_printf("resolving %s:%s...\n", host ? host : "", s_port);
@@ -249,6 +251,38 @@ static int _wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t port, s
 		debug_printf("resolving %s...\n", host);
 		return getaddrinfo(host, NULL, &hints, out_addr);
 	}
+}
+
+/**
+ *
+ * \param[in] ip IP address of name
+ * \param[in] name Domain name, part of the cache's lookup key
+ * \param[in] port Port number, part of the cache's lookup key
+ * \return 0 on success, < 0 on error
+ *
+ * Assign an IP address to the name+port key in the DNS cache.
+ * The \p name should be lowercase.
+ */
+int wget_tcp_dns_cache_add(const char *ip, const char *name, uint16_t port)
+{
+	int rc, family;
+	struct addrinfo *ai;
+
+	if (wget_ip_is_family(ip, WGET_NET_FAMILY_IPV4)) {
+		family = AF_INET;
+	} else if (wget_ip_is_family(ip, WGET_NET_FAMILY_IPV6)) {
+		family = AF_INET6;
+	} else
+		return -1;
+
+	if ((rc = _wget_tcp_resolve(family, AI_NUMERICHOST, ip, port, &ai)) != 0) {
+		error_printf(_("Failed to resolve %s:%d: %s\n"), ip, port, gai_strerror(rc));
+		return -1;
+	}
+
+	wget_dns_cache_add(name, port, ai);
+
+	return 0;
 }
 
 /**
@@ -316,7 +350,7 @@ struct addrinfo *wget_tcp_resolve(wget_tcp_t *tcp, const char *host, uint16_t po
 
 		addrinfo = NULL;
 
-		rc = _wget_tcp_resolve(tcp, host, port, &addrinfo);
+		rc = _wget_tcp_resolve(tcp->family, 0, host, port, &addrinfo);
 		if (rc == 0 || rc != EAI_AGAIN)
 			break;
 

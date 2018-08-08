@@ -1816,6 +1816,8 @@ WGETAPI void
 WGETAPI struct addrinfo *
 	wget_tcp_resolve(wget_tcp_t *tcp, const char *restrict name, uint16_t port);
 WGETAPI int
+	wget_tcp_dns_cache_add(const char *ip, const char *name, uint16_t port);
+WGETAPI int
 	wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port);
 WGETAPI int
 	wget_tcp_tls_start(wget_tcp_t *tcp);

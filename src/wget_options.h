@@ -91,7 +91,8 @@ struct config {
 		*stats_ocsp,
 		*stats_server,
 		*stats_site,
-		*stats_tls;
+		*stats_tls,
+		*dns_cache_preload;
 	wget_vector_t
 		*compression,
 		*config_files,

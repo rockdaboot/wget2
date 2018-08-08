@@ -1249,6 +1249,12 @@ static const struct optionw options[] = {
 		{ "Set directory prefix.\n"
 		}
 	},
+	{ "dns-cache-preload", &config.dns_cache_preload, parse_filename, -1, 0,
+		SECTION_DOWNLOAD,
+		{ "File to be used to preload the DNS cache.\n",
+		  "Format is like /etc/hosts (IP<whitespace>hostname).\n"
+		}
+	},
 	{ "dns-caching", &config.dns_caching, parse_bool, -1, 0,
 		SECTION_DOWNLOAD,
 		{ "Caching of domain name lookups. (default: on)\n"
@@ -2657,6 +2663,40 @@ static int use_askpass(void)
 	return 0;
 }
 
+/*
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+*/
+
+static int _preload_dns_cache(const char *fname)
+{
+	FILE *fp;
+	char buf[256], ip[64], name[256];
+
+	if (!strcmp(fname, "-"))
+		fp = stdin;
+	else if (!(fp = fopen(fname, "r"))) {
+		error_printf(_("Failed to open %s"), fname);
+		return -1;
+	}
+
+	while (fgets(buf, sizeof(buf), fp)) {
+		if (sscanf(buf, "%63[0-9.:] %255[a-zA-Z0-9.-]", ip, name) != 2)
+			continue;
+
+		wget_strtolower(name);
+
+		wget_tcp_dns_cache_add(ip, name, 80);
+		wget_tcp_dns_cache_add(ip, name, 443);
+	}
+
+	if (fp != stdin)
+		fclose(fp);
+
+	return 0;
+}
+
 // read config, parse CLI options, check values, set module options
 // and return the number of arguments consumed
 
@@ -3038,6 +3078,9 @@ int init(int argc, const char **argv)
 		} else
 			wget_strtolower(hostname);
 	}
+
+	if (config.dns_cache_preload)
+		_preload_dns_cache(config.dns_cache_preload);
 
 	return n;
 }
