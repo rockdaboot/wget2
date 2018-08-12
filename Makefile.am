@@ -69,5 +69,5 @@ fuzz-coverage: clean clean-lcov
 	@echo "You can now view the coverage report with 'xdg-open lcov/index.html'"
 
 check-local:
-	$(AM_V_at)test -e .git && $(MAKE) -s syntax-check >/dev/null || :
-	$(AM_V_at)test -e .git && $(srcdir)/contrib/check_options $(srcdir)/docs/wget2.md $(builddir)/src/wget2$(EXEEXT) || :
+	$(AM_V_at)test -e .git && $(MAKE) -s syntax-check >/dev/null
+	$(AM_V_at)test -e .git && $(srcdir)/contrib/check_options $(srcdir)/docs/wget2.md $(builddir)/src/wget2$(EXEEXT)
