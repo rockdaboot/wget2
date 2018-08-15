@@ -361,20 +361,8 @@ static int _answer_to_connection(
 				break;
 			}
 
-			// 404 with non-empty "body"
-			if (!wget_strcmp(urls[it1].code, "404 Not exist")) {
-				response = MHD_create_response_from_buffer(body_length,
-					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
-				ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
-				wget_buffer_free(&url_iri);
-				found = 1;
-				break;
-			}
-
 			// redirection
-			if (!wget_strcmp(urls[it1].code, "302 Redirect") ||
-				!wget_strcmp(urls[it1].code, "302 Not found"))
-			{
+			if (atoi(urls[it1].code) == 302) {
 				response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
 				// it2 = iteration for headers
 				for (unsigned it2 = 0; urls[it1].headers[it2]; it2++) {
@@ -387,6 +375,16 @@ static int _answer_to_connection(
 					}
 				}
 				ret = MHD_queue_response(connection, MHD_HTTP_FOUND, response);
+				wget_buffer_free(&url_iri);
+				found = 1;
+				break;
+			}
+
+			// 404 with non-empty "body"
+			if (atoi(urls[it1].code) != 200) {
+				response = MHD_create_response_from_buffer(body_length,
+					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
+				ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
 				wget_buffer_free(&url_iri);
 				found = 1;
 				break;
