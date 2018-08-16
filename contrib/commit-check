@@ -13,7 +13,7 @@ echo "The last commit is made by $AUTHOR: $EMAIL_PARSE"
 
 if git cat-file -p HEAD | grep "^Copyright-paperwork-exempt: Yes"; then
 	echo "This work is copyright paperwork exempt."
-elif ! grep -q "^\\[ASSGN\\] $AUTHOR \\*$EMAIL_PARSE\\*$" AUTHORS; then
+elif ! grep -q "^\\[ASSGN\\] .* \\*$EMAIL_PARSE\\*$" AUTHORS; then
 	echo "The author was not found in the AUTHORS file."
 	echo "Has the author completed the FSF Copyright Assignment?"
 	echo "If the commit is minor, please add this to the commit message:"
