@@ -3421,7 +3421,7 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
 	if (config.progress)
-		bar_set_downloaded(ctx->progress_slot, resp->cur_downloaded);
+		bar_set_downloaded(ctx->progress_slot, length);
 
 	return 0;
 }

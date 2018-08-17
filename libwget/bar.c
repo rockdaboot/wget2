@@ -108,7 +108,8 @@ typedef struct {
 		bytes_downloaded;
 	int
 		ring_pos,
-		tick;
+		tick,
+		numfiles;
 	enum _bar_slot_status_t
 		status;
 	bool
@@ -412,10 +413,16 @@ void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_
 	_bar_slot_t *slotp = &bar->slots[slot];
 
 	xfree(slotp->filename);
-	slotp->filename = wget_strdup(filename);
+	if (++slotp->numfiles == 1) {
+	    slotp->filename = wget_strdup(filename);
+	    slotp->bytes_downloaded = 0;
+	} else {
+	    char tag[128];
+	    snprintf(tag, sizeof(tag), "%d files", slotp->numfiles);
+	    slotp->filename = wget_strdup(tag);
+	}
 	slotp->tick = 0;
-	slotp->file_size = file_size;
-	slotp->bytes_downloaded = 0;
+	slotp->file_size += file_size;
 	slotp->status = DOWNLOADING;
 	slotp->redraw = 1;
 	slotp->ring_pos = 0;
@@ -437,7 +444,7 @@ void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_
 void wget_bar_slot_downloaded(wget_bar_t *bar, int slot, size_t nbytes)
 {
 	wget_thread_mutex_lock(bar->mutex);
-	bar->slots[slot].bytes_downloaded = nbytes;
+	bar->slots[slot].bytes_downloaded += nbytes;
 	bar->slots[slot].redraw = 1;
 	wget_thread_mutex_unlock(bar->mutex);
 }
