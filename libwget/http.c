@@ -458,9 +458,11 @@ static void _print_frame_type(int type, const char tag, int streamid)
 		[NGHTTP2_CONTINUATION] = "CONTINUATION"
 	};
 
-	if ((unsigned) type < countof(name))
-		debug_printf("[FRAME %d] %c %s\n", streamid, tag, name[type]);
-	else
+	if ((unsigned) type < countof(name)) {
+		// Avoid printing frame info for DATA frames
+		if (type != NGHTTP2_DATA)
+			debug_printf("[FRAME %d] %c %s\n", streamid, tag, name[type]);
+	} else
 		debug_printf("[FRAME %d] %c Unknown type %d\n", streamid, tag, type);
 }
 
