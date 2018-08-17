@@ -45,10 +45,10 @@
 static const unsigned char base64_2_bin[256] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 0, 0, 63,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 62, 0, 63,
 	52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 0, 0, 0, 0, 0, 0,
 	0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-	15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 0, 0, 0, 0, 0,
+	15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 0, 0, 0, 0, 63,
 	0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
 	41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -61,10 +61,11 @@ static const unsigned char base64_2_bin[256] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static int G_GNUC_WGET_CONST _isbase64(char c)
+static bool G_GNUC_WGET_CONST _isbase64(char c)
 {
 	// isalnum(c) does not work for all locales
-	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '+' || c == '/';
+	return !!base64_2_bin[(unsigned char) c];
+//	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '+' || c == '/' || c == '-' || c == '_';
 }
 
 /**
@@ -162,22 +163,16 @@ char *wget_base64_decode_alloc(const char *src, size_t n, size_t *outlen)
 	return dst;
 }
 
-/**
- * \param[out] dst Base64 output string
- * \param[in] src Input buffer
- * \param[in] n Number of bytes to be encoded
- * \return Length of output string \p dst
- *
- * Encodes \p n bytes from \p src into a base64 string.
- * The encoded string is written into \p dst (0-terminated).
- *
- * The length of \p dst has to be at minimum ((\p n + 2) / 3) * 4 + 1 bytes.
- */
-size_t wget_base64_encode(char *dst, const char *src, size_t n)
-{
-	static const char base64[64] =
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+#define WGET_BASE64_URLENCODE 1
 
+static size_t _wget_base64_encode(char *dst, const char *src, size_t n, int flags)
+{
+	static const char base64unsafe[64] =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	static const char base64urlsafe[64] =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+	const char *base64 = (flags & WGET_BASE64_URLENCODE) ? base64urlsafe : base64unsafe;
 	const unsigned char *usrc = (const unsigned char *)src;
 	char *start = dst;
 	int extra = n % 3;
@@ -206,6 +201,38 @@ size_t wget_base64_encode(char *dst, const char *src, size_t n)
 	*dst = 0;
 
 	return (size_t) (dst - start);
+}
+
+/**
+ * \param[out] dst Base64 output string
+ * \param[in] src Input buffer
+ * \param[in] n Number of bytes to be encoded
+ * \return Length of output string \p dst
+ *
+ * Encodes \p n bytes from \p src into a base64 string.
+ * The encoded string is written into \p dst (0-terminated).
+ *
+ * The length of \p dst has to be at minimum ((\p n + 2) / 3) * 4 + 1 bytes.
+ */
+size_t wget_base64_encode(char *dst, const char *src, size_t n)
+{
+	return _wget_base64_encode(dst, src, n, 0);
+}
+
+/**
+ * \param[out] dst Base64 output string (URL and filename safe)
+ * \param[in] src Input buffer
+ * \param[in] n Number of bytes to be encoded
+ * \return Length of output string \p dst
+ *
+ * Encodes \p n bytes from \p src into a base64 URL and filename safe string (see RFC 4648, 5.).
+ * The encoded string is written into \p dst (0-terminated).
+ *
+ * The length of \p dst has to be at minimum ((\p n + 2) / 3) * 4 + 1 bytes.
+ */
+size_t wget_base64_urlencode(char *dst, const char *src, size_t n)
+{
+	return _wget_base64_encode(dst, src, n, WGET_BASE64_URLENCODE);
 }
 
 /**
