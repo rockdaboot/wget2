@@ -241,18 +241,23 @@ WGET_BEGIN_DECLS
 #define WGET_HTTP_USER_DATA           2019
 
 // definition of error conditions
-#define WGET_E_SUCCESS 0 /* OK */
-#define WGET_E_UNKNOWN -1 /* general error if nothing else appropriate */
-#define WGET_E_INVALID -2 /* invalid value to function */
-#define WGET_E_TIMEOUT -3 /* timeout condition */
-#define WGET_E_CONNECT -4 /* connect failure */
-#define WGET_E_HANDSHAKE -5 /* general TLS handshake failure */
-#define WGET_E_CERTIFICATE -6 /* general TLS certificate failure */
-#define WGET_E_TLS_DISABLED -7 /* TLS was not enabled at compile time */
-#define WGET_E_GPG_DISABLED -8 /* GPGME was not enabled at compile time */
-#define WGET_E_GPG_VER_FAIL -9 /* 1 or more non-valid signatures */
-#define WGET_E_GPG_VER_ERR -11 /* Verification failed, GPGME error */
-#define WGET_E_XML_PARSE_ERR -12 /* XML parsing failed */
+typedef enum {
+	WGET_E_SUCCESS = 0, /* OK */
+	WGET_E_UNKNOWN = -1, /* general error if nothing else appropriate */
+	WGET_E_INVALID = -2, /* invalid value to function */
+	WGET_E_TIMEOUT = -3, /* timeout condition */
+	WGET_E_CONNECT = -4, /* connect failure */
+	WGET_E_HANDSHAKE = -5, /* general TLS handshake failure */
+	WGET_E_CERTIFICATE = -6, /* general TLS certificate failure */
+	WGET_E_TLS_DISABLED = -7, /* TLS was not enabled at compile time */
+	WGET_E_GPG_DISABLED = -8, /* GPGME was not enabled at compile time */
+	WGET_E_GPG_VER_FAIL = -9, /* 1 or more non-valid signatures */
+	WGET_E_GPG_VER_ERR = -11, /* Verification failed, GPGME error */
+	WGET_E_XML_PARSE_ERR = -12, /* XML parsing failed */
+} wget_error_t;
+
+WGETAPI const char *
+	wget_strerror(int err);
 
 typedef void (*wget_global_get_func_t)(const char *, size_t);
 

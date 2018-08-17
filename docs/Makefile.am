@@ -9,6 +9,7 @@ man3_MANS =\
  $(builddir)/man/man3/libwget-bitmap.3\
  $(builddir)/man/man3/libwget-console.3\
  $(builddir)/man/man3/libwget-dns-caching.3\
+ $(builddir)/man/man3/libwget-error.3\
  $(builddir)/man/man3/libwget-hash.3\
  $(builddir)/man/man3/libwget-hashmap.3\
  $(builddir)/man/man3/libwget-io.3\

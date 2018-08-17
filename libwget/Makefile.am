@@ -7,7 +7,7 @@ libwget_la_SOURCES = \
  decompressor.c dns_cache.c encoding.c hash_printf.c hashfile.c hashmap.c io.c hsts.c hpkp.c html_url.c http.c http.h \
  http_parse.c  init.c ip.c iri.c list.c log.c logger.c logger.h mem.c metalink.c net.c net.h netrc.c ocsp.c pipe.c \
  plugin.c printf.c random.c robots.c rss_url.c sitemap_url.c ssl_gnutls.c stringmap.c strlcpy.c strscpy.c thread.c \
- tls_session.c utils.c vector.c xalloc.c xml.c private.h http_highlevel.c
+ tls_session.c utils.c vector.c xalloc.c xml.c private.h http_highlevel.c error.c
 libwget_la_CPPFLAGS =\
  -fPIC -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib $(CFLAG_VISIBILITY) -DBUILDING_LIBWGET \
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
