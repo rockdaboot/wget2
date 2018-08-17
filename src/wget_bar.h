@@ -33,7 +33,7 @@ void bar_deinit(void);
 void bar_print(int slot, const char *s) G_GNUC_WGET_NONNULL_ALL;
 void bar_printf(int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3) G_GNUC_WGET_NONNULL_ALL;
 void bar_vprintf(int slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL_ALL;
-void bar_slot_begin(int slot, const char *filename, ssize_t filesize);
+void bar_slot_begin(int slot, const char *filename, int new_file, ssize_t filesize);
 void bar_set_downloaded(int slot, size_t nbytes);
 void bar_slot_deregister(int slot);
 void bar_update_slots(int nslots);

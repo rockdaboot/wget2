@@ -2027,7 +2027,8 @@ struct wget_http_response_t {
 	size_t
 		content_length; //!< length of the body data
 	size_t
-		cur_downloaded;
+		cur_downloaded,
+		accounted_for;	// reported to bar
 	time_t
 		last_modified;
 	time_t
@@ -2371,7 +2372,7 @@ WGETAPI void
 WGETAPI void
 	wget_bar_printf(wget_bar_t *bar, int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
-	wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_t filesize) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, int new_file, ssize_t filesize) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
 	wget_bar_slot_downloaded(wget_bar_t *bar, int slot, size_t nbytes);
 WGETAPI void

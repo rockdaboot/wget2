@@ -46,7 +46,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	bar = wget_bar_init(NULL, 3);
 	wget_bar_set_slots(bar, 2);
 
-	wget_bar_slot_begin(bar, 1, "test", 64000);
+	wget_bar_slot_begin(bar, 1, "test", 1, 64000);
 	wget_bar_slot_downloaded(bar, 1, (unsigned) atoi(in));
 	wget_bar_printf(bar, 1, "%s", in);
 	wget_bar_write_line(bar, (char *) data, size);

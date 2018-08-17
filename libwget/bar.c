@@ -402,22 +402,24 @@ void wget_bar_set_slots(wget_bar_t *bar, int nslots)
  * \param[in] bar Pointer to a wget_bar_t object
  * \param[in] slot The slot number to use
  * \param[in] filename The file name to display in the given \p slot
+ * \param[in] new_file if this is the start of a download of the body of a new file
  * \param[in] file_size The file size that would be 100%
  *
  * Initialize the given \p slot of the \p bar object with it's (file) name to display
  * and the (file) size to be assumed 100%.
  */
-void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_t file_size)
+void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, int new_file, ssize_t file_size)
 {
 	wget_thread_mutex_lock(bar->mutex);
 	_bar_slot_t *slotp = &bar->slots[slot];
 
 	xfree(slotp->filename);
-	if (++slotp->numfiles == 1) {
+	if (new_file)
+	    slotp->numfiles++;
+	if (slotp->numfiles == 1) {
 	    slotp->filename = wget_strdup(filename);
-	    slotp->bytes_downloaded = 0;
 	} else {
-	    char tag[128];
+	    char tag[20];	/* big enough to hold "xxx files\0" */
 	    snprintf(tag, sizeof(tag), "%d files", slotp->numfiles);
 	    slotp->filename = wget_strdup(tag);
 	}
@@ -436,7 +438,7 @@ void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, ssize_
 /**
  * \param[in] bar Pointer to a wget_bar_t object
  * \param[in] slot The slot number to use
- * \param[in] nbytes The current number of bytes to display
+ * \param[in] nbytes The number of bytes downloaded since the last invokation of this function
  *
  * Set the current number of bytes for \p slot for the next update of
  * the bar/slot.

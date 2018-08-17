@@ -123,9 +123,9 @@ void bar_printf(int slot, const char *fmt, ...)
 	va_end(args);
 }
 
-void bar_slot_begin(int slot, const char *filename, ssize_t filesize)
+void bar_slot_begin(int slot, const char *filename, int new_file, ssize_t filesize)
 {
-	wget_bar_slot_begin(bar, slot, filename, filesize);
+	wget_bar_slot_begin(bar, slot, filename, new_file, filesize);
 }
 
 void bar_set_downloaded(int slot, size_t nbytes)
