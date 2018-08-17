@@ -193,7 +193,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 	if (!verify_result) {
 		error_printf(_("GPGME verify failed!\n"));
 		_print_gpg_error(e);
-		res = WGET_E_GPG_VER_ERR;
+		res = WGET_E_GPG_VER_FAIL;
 		goto done;
 	}
 
