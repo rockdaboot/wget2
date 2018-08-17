@@ -92,6 +92,12 @@ struct config {
 		*stats_server,
 		*stats_site,
 		*stats_tls,
+		*hsts_file,
+		*hpkp_file,
+		*tls_session_file,
+		*ocsp_file,
+		*netrc_file,
+		*use_askpass_bin,
 		*dns_cache_preload;
 	wget_vector_t
 		*compression,
@@ -124,13 +130,7 @@ struct config {
 	struct _wget_cookie_db_st
 		*cookie_db;
 	char
-		*hsts_file,
-		*hpkp_file,
-		*tls_session_file,
-		*ocsp_file,
-		*netrc_file,
 		*password,
-		*use_askpass_bin,
 		*username;
 	size_t
 		chunk_size;
