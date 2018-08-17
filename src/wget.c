@@ -1428,7 +1428,7 @@ static int try_connection(DOWNLOADER *downloader, wget_iri_t *iri)
 		debug_printf("established connection %s\n",
 			wget_http_get_host(downloader->conn));
 	} else {
-		debug_printf("Failed to connect (%d)\n", rc);
+		info_printf(_("Failed to connect: %s\n"), wget_strerror(rc));
 	}
 
 	return rc;
@@ -1477,6 +1477,9 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 					if (iri)
 						*iri = mirror->iri;
 					return rc;
+				} else if (rc == WGET_E_TLS_DISABLED) {
+					tries = config.tries;
+					break;
 				}
 			}
 		}
@@ -1484,7 +1487,7 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 		rc = try_connection(downloader, *iri);
 	}
 
-	if (rc == WGET_E_HANDSHAKE || rc == WGET_E_CERTIFICATE) {
+	if (rc == WGET_E_HANDSHAKE || rc == WGET_E_CERTIFICATE || rc == WGET_E_TLS_DISABLED) {
 		// TLS  failure
 		wget_http_close(&downloader->conn);
 		if (!downloader->job->http_fallback) {
