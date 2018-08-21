@@ -52,5 +52,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	x += wget_base64_get_decoded_length(5);
 	x += wget_base64_get_encoded_length(5);
 
+	(void) x; // needed to get rid of bug reported by scan-build
+
 	return 0;
 }
