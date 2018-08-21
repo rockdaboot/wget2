@@ -342,7 +342,7 @@ int wget_tls_session_db_load(wget_tls_session_db_t *tls_session_db, const char *
 
 static int G_GNUC_WGET_NONNULL_ALL _tls_session_save(FILE *fp, const wget_tls_session_t *tls_session)
 {
-	char session_b64[((tls_session->data_size + 2) / 3) * 4 + 1];
+	char session_b64[wget_base64_get_encoded_length(tls_session->data_size)];
 
 	wget_base64_encode(session_b64, (const char *) tls_session->data, tls_session->data_size);
 

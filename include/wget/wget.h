@@ -454,18 +454,12 @@ WGETAPI void
  * Base64 routines
  */
 
-static inline size_t wget_base64_get_decoded_length(size_t len)
-{
-	return ((len + 3) / 4) * 3 + 1;
-}
-
-static inline size_t wget_base64_get_encoded_length(size_t len)
-{
-	return ((len + 2) / 3) * 4 + 1;
-}
-
 WGETAPI bool
 	wget_base64_is_string(const char *src) G_GNUC_WGET_PURE;
+WGETAPI size_t
+	wget_base64_get_decoded_length(size_t len) G_GNUC_WGET_PURE;
+WGETAPI size_t
+	wget_base64_get_encoded_length(size_t len) G_GNUC_WGET_PURE;
 WGETAPI size_t
 	wget_base64_decode(char *restrict dst, const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI size_t

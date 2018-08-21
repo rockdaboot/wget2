@@ -153,7 +153,7 @@ size_t wget_base64_decode(char *dst, const char *src, size_t n)
  */
 char *wget_base64_decode_alloc(const char *src, size_t n, size_t *outlen)
 {
-	char *dst = xmalloc(((n + 3) / 4) * 3 + 1);
+	char *dst = xmalloc(wget_base64_get_decoded_length(n));
 
 	size_t _outlen = wget_base64_decode(dst, src, n);
 
@@ -247,7 +247,7 @@ size_t wget_base64_urlencode(char *dst, const char *src, size_t n)
  */
 char *wget_base64_encode_alloc(const char *src, size_t n)
 {
-	char *dst = xmalloc(((n + 2) / 3) * 4 + 1);
+	char *dst = xmalloc(wget_base64_get_encoded_length(n));
 
 	wget_base64_encode(dst, src, n);
 
@@ -300,6 +300,31 @@ char *wget_base64_encode_printf_alloc(const char *fmt, ...)
 	va_end(args);
 
 	return dst;
+}
+
+/**
+ * \fn static inline size_t wget_base64_get_decoded_length(size_t len)
+ * \param[in] len Length of base64 sequence
+ * \return Number of decoded bytes plus one (for 0-byte termination)
+ *
+ * Calculate the number of bytes needed for decoding a base64 sequence with length \p len.
+ */
+size_t wget_base64_get_decoded_length(size_t len)
+{
+	return ((len + 3) / 4) * 3 + 1;
+}
+
+/**
+ * \fn static inline size_t wget_base64_get_encoded_length(size_t len)
+ * \param[in] len Number of (un-encoded) bytes
+ * \return Length of base64 encoding plus one (for 0-byte termination)
+ *
+ * Calculate the number of bytes needed for base64 encoding a byte sequence with length \p len,
+ * including the padding and 0-termination bytes.
+ */
+size_t wget_base64_get_encoded_length(size_t len)
+{
+	return ((len + 2) / 3) * 4 + 1;
 }
 
 /**@}*/

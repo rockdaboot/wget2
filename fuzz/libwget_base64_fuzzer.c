@@ -28,6 +28,8 @@
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
+	int x = 0; // avoid pure functions to be optimized away
+
 	if (size > 100) // same as max_len = 100 in .options file
 		return 0;
 
@@ -47,9 +49,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 	free(in);
 
-	// just to cover inline function in wget.h
-	wget_base64_get_decoded_length(5);
-	wget_base64_get_encoded_length(5);
+	x += wget_base64_get_decoded_length(5);
+	x += wget_base64_get_encoded_length(5);
 
 	return 0;
 }
