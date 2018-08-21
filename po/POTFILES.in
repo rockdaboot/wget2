@@ -10,6 +10,7 @@ libwget/css.c
 libwget/css_url.c
 libwget/decompressor.c
 libwget/encoding.c
+libwget/error.c
 libwget/hash_printf.c
 libwget/hashfile.c
 libwget/hpkp.c
