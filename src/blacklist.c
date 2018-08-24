@@ -117,6 +117,8 @@ wget_iri_t *blacklist_add(wget_iri_t *iri)
 			wget_hashmap_put_noalloc(blacklist, iri, NULL); // use hashmap as a hashset (without value)
 			wget_thread_mutex_unlock(mutex);
 			return iri;
+		} else {
+			debug_printf("not requesting '%s'. (Already Seen)\n", iri->uri);
 		}
 
 		wget_thread_mutex_unlock(mutex);

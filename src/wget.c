@@ -729,6 +729,7 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 	// only download content from hosts given on the command line or from input file
 	if (wget_vector_contains(config.exclude_domains, iri->host)) {
 		// download from this scheme://domain are explicitly not wanted
+		debug_printf("not requesting '%s'. (Exclude Domains)\n", iri->uri);
 		wget_thread_mutex_unlock(downloader_mutex);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
@@ -808,7 +809,7 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 }
 
 // Add URLs parsed from downloaded files
-// Needs to be thread-save
+// Needs to be thread-safe
 static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 {
 	JOB *new_job = NULL, job_buf;
@@ -819,14 +820,9 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	if (flags & URL_FLG_REDIRECTION) { // redirect
 		if (job && job->redirection_level >= config.max_redirect) {
+			debug_printf("not requesting '%s'. (Max Redirections exceeded)\n", url);
 			return;
 		}
-	} else {
-//		if (config.recursive) {
-//			if (config.level && job->level >= config.level + config.page_requisites) {
-//				continue;
-//			}
-//		}
 	}
 
 	wget_info_printf(_("Adding URL: %s\n"), url);
@@ -853,12 +849,14 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	plugin_db_forward_url(iri, &plugin_verdict);
 
 	if (plugin_verdict.reject) {
+		debug_printf("not requesting '%s'. (Plugin Verdict)\n", url);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		wget_iri_free(&iri);
 		return;
 	}
 
 	if (plugin_verdict.alt_iri) {
+		debug_printf("Plugin changed IRI. %s -> %s\n", iri->uri, plugin_verdict.alt_iri->uri);
 		wget_iri_free(&iri);
 		iri = plugin_verdict.alt_iri;
 		plugin_verdict.alt_iri = NULL;
@@ -915,7 +913,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	if (config.recursive && !config.parent && !(flags & URL_FLG_REQUISITE)) {
 		// do not ascend above the parent directory
-		int ok = 0;
+		bool ok = false;
 
 		// see if at least one parent matches
 		for (int it = 0; it < wget_vector_size(parents); it++) {
@@ -924,7 +922,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			if (!wget_strcmp(parent->host, iri->host)) {
 				if (!parent->dirlen || !wget_strncmp(parent->path, iri->path, parent->dirlen)) {
 					// info_printf("found\n");
-					ok = 1;
+					ok = true;
 					break;
 				}
 			}
@@ -973,7 +971,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		if ((config.accept_patterns && !in_pattern_list(config.accept_patterns, iri->uri))
 			|| (config.accept_regex && !regex_match(iri->uri, config.accept_regex)))
 		{
-			debug_printf("not requesting '%s' (doesn't match accept pattern)\n", iri->uri);
+			debug_printf("not requesting '%s'. (doesn't match accept pattern)\n", iri->uri);
 			wget_thread_mutex_unlock(downloader_mutex);
 			return;
 		}
@@ -981,7 +979,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		if ((config.reject_patterns && in_pattern_list(config.reject_patterns, iri->uri))
 			|| (config.reject_regex && regex_match(iri->uri, config.reject_regex)))
 		{
-			debug_printf("not requesting '%s' (matches reject pattern)\n", iri->uri);
+			debug_printf("not requesting '%s'. (matches reject pattern)\n", iri->uri);
 			wget_thread_mutex_unlock(downloader_mutex);
 			return;
 		}
