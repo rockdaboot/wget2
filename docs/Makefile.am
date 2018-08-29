@@ -52,7 +52,7 @@ wget2.stamp:
 	$(MAKEINFO) --force -o $(builddir)/wget2.info $(builddir)/wget2.texi
 	echo > wget2.stamp
 
-DISTCLEANFILES += wget2.texi wget2.info
+DISTCLEANFILES += wget2.texi wget2.info README.md
 EXTRA_DIST += wget2.info $(man1_MANS)
 STAMPS += wget2.stamp
 endif
