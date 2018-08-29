@@ -1249,15 +1249,15 @@ static const struct optionw options[] = {
 		{ "Set directory prefix.\n"
 		}
 	},
+	{ "dns-cache", &config.dns_caching, parse_bool, -1, 0,
+		SECTION_DOWNLOAD,
+		{ "Caching of domain name lookups. (default: on)\n"
+		}
+	},
 	{ "dns-cache-preload", &config.dns_cache_preload, parse_filename, -1, 0,
 		SECTION_DOWNLOAD,
 		{ "File to be used to preload the DNS cache.\n",
 		  "Format is like /etc/hosts (IP<whitespace>hostname).\n"
-		}
-	},
-	{ "dns-caching", &config.dns_caching, parse_bool, -1, 0,
-		SECTION_DOWNLOAD,
-		{ "Caching of domain name lookups. (default: on)\n"
 		}
 	},
 	{ "dns-timeout", &config.dns_timeout, parse_timeout, 1, 0,

@@ -766,7 +766,7 @@ Go to background immediately after startup. If no output file is specified via t
   This allows to save domain name lookup time, which is a bottleneck in some use cases.
   Also, the use of HOSTALIASES (which is not portable) can be mimiced by this option.
 
-# `--dns-caching`
+# `--dns-cache`
 
   Enable DNS caching (default: on).
 
@@ -775,7 +775,7 @@ Go to background immediately after startup. If no output file is specified via t
   This cache exists in memory only; a new Wget2 run will contact DNS again.
 
   However, it has been reported that in some situations it is not desirable to cache host names, even for the
-  duration of a short-running application like Wget2.  With `--no-dns-caching` Wget2 issues a new DNS lookup (more
+  duration of a short-running application like Wget2.  With `--no-dns-cache` Wget2 issues a new DNS lookup (more
   precisely, a new call to "gethostbyname" or "getaddrinfo") each time it makes a new connection.  Please note that
   this option will not affect caching that might be performed by the resolving library or by an external caching
   layer, such as NSCD.
