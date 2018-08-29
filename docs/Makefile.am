@@ -59,7 +59,10 @@ endif
 
 CLEANFILES = $(STAMPS)
 
-all-local: $(STAMPS)
+README.md: $(top_srcdir)/README.md
+	$(AM_V_at)sed -n '/# GNU Wget2/,$$p' $< >$@
+
+all-local: README.md $(STAMPS)
 
 distclean-local:
 	rm -rf $(LOCAL_DISTCLEAN)

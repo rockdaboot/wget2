@@ -1,4 +1,4 @@
-# Wget2
+# Wget2 User Manual
 
 * [Name](#Name)
 * [Synopsis](#Synopsis)
@@ -78,12 +78,12 @@
 
       wget2 -o log -- -x
 
-  The options that accept comma-separated lists all respect the convention that specifying an empty list clears its
+  The options that accept comma-separated lists all respect the convention that prepending `--no-` clears its
   value.  This can be useful to clear the `.wgetrc` settings.  For instance, if your `.wgetrc` sets `exclude-directories`
-  to `/cgi-bin`, the following example will first reset it, and then set it to exclude `/~nobody` and `/~somebody`.  You can
+  to `/cgi-bin`, the following example will first reset it, and then set it to exclude `/priv` and `/trash`.  You can
   also clear the lists in `.wgetrc`.
 
-      wget2 -X '' -X /~nobody,/~somebody
+      wget2 --no-exclude-directories -X /priv,/trash
 
   Most options that do not accept arguments are boolean options, so named because their state can be captured with a
   yes-or-no ("boolean") variable.  A boolean option is either affirmative or negative (beginning with `--no-`).

@@ -17,8 +17,8 @@ functions needed by a web client.
 
 Wget2 works multi-threaded and uses many features to allow fast operation.
 
-In many cases Wget2 downloads much faster than Wget1.x due to HTTP zlib
-compression, parallel connections and use of If-Modified-Since HTTP header.
+In many cases Wget2 downloads much faster than Wget1.x due to HTTP2, HTTP compression,
+parallel connections and use of If-Modified-Since HTTP header.
 
 GNU Wget2 is licensed under GPLv3+.
 
@@ -153,43 +153,3 @@ Test the functionality
 Install Wget2 and libwget
 
 		sudo make install (or su -c "make install")
-
-
-# Valgrind Testing
-
-To run the test suite with valgrind memcheck
-
-		make check-valgrind
-
-or if you want valgrind memcheck by default
-
-		./configure --enable-valgrind-tests
-		make check
-
-To run single tests with valgrind (e.g. test-k)
-
-		cd tests
-		VALGRIND_TESTS=1 ./test-k
-
-Why not directly using valgrind like 'valgrind --leak-check=full ./test-k' ?
-Well, you want to valgrind 'wget2' and not the test program itself, right ?
-
-
-# Coverage Report
-
-To generate and view the test code coverage (works with gcc, not with clang)
-
-		make check-coverage
-		<browser> lcov/index.html
-
-
-# Control Flow Integrity with clang
-
-To instrument clang's [CFI](https://clang.llvm.org/docs/ControlFlowIntegrity.html):
-
-		CC="clang-5.0" CFLAGS="-g -fsanitize=cfi -fno-sanitize-trap=all -fno-sanitize=cfi-icall -flto -fvisibility=hidden" NM=/usr/bin/llvm-nm-5.0 RANLIB=/usr/bin/llvm-ranlib-5.0 AR=/usr/bin/llvm-ar-5.0 LD=/usr/bin/gold ./configure
-		make clean
-		make check
-
-With clang-5.0 `-fsanitize=cfi-icall` does not work as expected.
-Our logger callback functions are typed correctly, but falsely cause a hiccup.
