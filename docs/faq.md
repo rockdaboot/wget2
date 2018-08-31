@@ -6,6 +6,7 @@
   * [How to do valgrind testing ?](#valgrind)
   * [How to get a test coverage report ?](#coverage)
   * [How to enable Control Flow Integrity (CFI) with clang ?](#cfi)
+  * [How to add a new command line option ?](#addOption)
 
 # <a name="User Questions"/>User Questions
 
@@ -73,3 +74,17 @@ To instrument clang's [CFI](https://clang.llvm.org/docs/ControlFlowIntegrity.htm
 
 With clang-5.0 `-fsanitize=cfi-icall` does not work as expected.
 Our logger callback functions are typed correctly, but falsely cause a hiccup.
+
+## <a name="addOption"/>How to add a new command line option ?
+
+Wget2 support many command line options, which are listed [here](wget2.md#Options). To add
+a new one:
+
+ - Extend wget_options.h/struct config with the needed variable
+ - Add a default value for your variable in the 'config' initializer if needed (in options.c)
+ - Add the long option into 'options[]' (in options.c). keep alphabetical order !
+ - If appropriate, add a new parse function (see examples in options.c)
+ - Extend the documentation (at docs/wget2.md)
+ - Set args to -1 if value for an option is optional
+
+You can find more information about the option handling in Wget2 at [our wiki](https://gitlab.com/gnuwget/wget2/wikis/Documentation/OptionHandling)

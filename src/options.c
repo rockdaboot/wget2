@@ -30,13 +30,8 @@
  * - add a default value for your variable in the 'config' initializer if needed (in this file)
  * - add the long option into 'options[]' (in this file). keep alphabetical order !
  * - if appropriate, add a new parse function (examples see below)
- * - extend the print_help() function and the documentation
+ * - extend the documentation (at docs/wget2.md)
  *
- * First, I prepared the parsing to allow multiple arguments for an option,
- * e.g. "--whatever arg1 arg2 ...".
- * But now I think, it is ok to say 'each option may just have 0 or 1 option'.
- * An option with a list of values might then look like: --whatever="arg1 arg2 arg3" or use
- * any other argument separator. I remove the legacy code as soon as I am 100% sure...
  * Set args to -1 if value for an option is optional.
  */
 
