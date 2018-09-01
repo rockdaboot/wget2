@@ -469,7 +469,7 @@ static char *set_char_prefix(const char *val, char prefix)
 {
 	if (val && *val) {
 		// we just need a scratch buffer, no need for optimal size calculation
-		char *prefixed_val = wget_malloc(strlen(val) * 2 + 1), *dst = prefixed_val;
+		char *prefixed_val = wget_malloc(strlen(val) * 3 + 1), *dst = prefixed_val;
 
 		*dst++ = prefix;
 		for (const char *src = val; *src; src++) {
