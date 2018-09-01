@@ -474,9 +474,9 @@ static char *set_char_prefix(const char *val, char prefix)
 		*dst++ = prefix;
 		for (const char *src = val; *src; src++) {
 			if (*src == '\\') {
-				*dst++ = *src++;
-				if (*src)
-					*dst++ = *src;
+				*dst++ = *src;
+				if (src[1])
+					*dst++ = *++src;
 			} else if (*src == ',') {
 				while (dst[-1] == '/')
 					dst--;
