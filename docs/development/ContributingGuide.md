@@ -4,15 +4,15 @@ This is a quick-start guide for new developers and **not** meant to be an exhaus
 You only need to do this once.
 1. Tell `git` your name:
 
-    `$ git config --global user.name "<Firstname> <Lastname>"`  
-2. Tell `git` your email address:  
+    `$ git config --global user.name "<Firstname> <Lastname>"`
+2. Tell `git` your email address:
 
     `$ git config --global user.email <youremail@domain.com>`
 
 ## `wget2` Setup
 You only need to do this once.
 1. Fork the [upstream](https://gitlab.com/gnuwget/wget2) via GitLab interface
-2. Clone your fork: 
+2. Clone your fork:
 
     `$ git clone https://gitlab.com/<your username>/wget2.git; cd wget2`
 
@@ -29,42 +29,42 @@ You'll do this periodically.  :)
 
     `$ git checkout -b <branch_name>`
 4. Make your changes using IDE/text editor of your choice. Follow [kernel coding style](https://github.com/torvalds/linux/blob/master/Documentation/process/coding-style.rst) while doing so
-5. Confirm your changes by building `wget2` as explained in [README](https://gitlab.com/gnuwget/wget2/blob/master/README.md)  
-   Sample build:  
+5. Confirm your changes by building `wget2` as explained in [README](https://gitlab.com/gnuwget/wget2/blob/master/README.md)
+   Sample build:
 
-        $ ./bootstrap  
-        $ ./configure --enable-manywarnings --disable-silent-rules --enable-assert   
+        $ ./bootstrap
+        $ ./configure --enable-manywarnings --disable-silent-rules --enable-assert
         $ make check
 6. `git add` and `git commit` your changes:
 
-    `$ git add <modified_files>`  
+    `$ git add <modified_files>`
     `$ git commit`
 7. Push your changes to your fork:
 
     `$ git push origin <branch_name>`
 8. Create a Merge Request (https://gitlab.com/\<gitlab_username\>/wget2/merge_requests/new) to merge your changes with the [upstream](https://gitlab.com/gnuwget/wget2)
-9. Repeat steps 4, 5, 6 & 7 if more changes are requested.  
+9. Repeat steps 4, 5, 6 & 7 if more changes are requested.
 Since you are working on your own repository called 'origin', feel free to make any changes to your branch.
 You may delete and change commits like you want and then pushing them to GitLab with `git push -f`. This overwrites the history there as well - and that is what you want. If you already made a Merge Request (MR), GitLab will automatically update it for you. There is no need to close a MR and open a new one. Even the Continuous Integration (CI) will start again with your changes.
 
 10. Delete the local branch and remote branch once your changes get merged:
 
-    `$ git branch -d <branch_name>`  
+    `$ git branch -d <branch_name>`
     `$ git push origin --delete <branch_name>`
 11. Go to step 1
 
 ## Syncing Your Fork
 You need to do this periodically.
-1. Fetch code from upstream:  
+1. Fetch code from upstream:
 
     `$ git fetch upstream`
-2. Switch to `master` branch:  
+2. Switch to `master` branch:
 
     `$ git checkout master`
-3. Merge the code fetched from upstream:  
+3. Merge the code fetched from upstream:
 
     `$ git merge upstream/master`
-4. Push the merged code to your fork:  
+4. Push the merged code to your fork:
 
     `$ git push`
 

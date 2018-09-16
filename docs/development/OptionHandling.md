@@ -13,7 +13,7 @@ and
 [`src/wget_options.h`](https://gitlab.com/gnuwget/wget2/blob/master/src/wget_options.h).
 
 To add a new option, first open `src/wget_options.h` and add a new variable in
-`struct config` which will be used to hold the value passed the user. 
+`struct config` which will be used to hold the value passed the user.
 
 The command line options are defined in `src/options.c` in `struct options`. To
 add a new option, navigate to the struct definition and add a new entry to the
@@ -118,4 +118,3 @@ of sections. Each command should fall into one of the following sections:
   * SECTION\_DIRECTORY
   * SECTION\_GPG
   * SECTION\_PLUGIN
-

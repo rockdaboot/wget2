@@ -21,3 +21,4 @@ Put related tests into one C file. 'Related' could be one option with different 
 
 For a new C test file copy a fitting existing one. It should be pretty self-explanatory and straight forward.
 
+If you want to run just the tests contained at this directory please type: `make check -C tests`
