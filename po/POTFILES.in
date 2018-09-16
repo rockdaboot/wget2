@@ -29,6 +29,7 @@ libwget/ocsp.c
 libwget/pipe.c
 libwget/ssl_gnutls.c
 libwget/ssl_wolfssl.c
+libwget/ssl_openssl.c
 libwget/tls_session.c
 libwget/xml.c
 src/bar.c
