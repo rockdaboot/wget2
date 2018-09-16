@@ -171,7 +171,19 @@ static gnutls_priority_t
  *
  * The following parameters accept a string as their value (\p key can have any of those values):
  *
- *  - WGET_SSL_SECURE_PROTOCOL:
+ *  - WGET_SSL_SECURE_PROTOCOL: A string describing which SSL/TLS version should be used. It can have either
+ *  an arbitrary value, or one of the following fixed values (case does not matter):
+ *      - "SSL": SSLv3 will be used. Warning: this protocol is insecure and should be avoided.
+ *      - "TLSv1": TLS 1.0 will be used.
+ *      - "TLSv1_1": TLS 1.1 will be used.
+ *      - "TLSv1_2": TLS 1.2 will be used.
+ *      - "TLSv1_3": TLS 1.3 will be used.
+ *      - "AUTO": Let the TLS library decide.
+ *      - "PFS": Let the TLS library decide, but make sure only forward-secret ciphers are used.
+ *
+ *  An arbitrary string can also be supplied (an string that's different from any of the previous ones). If that's the case
+ *  the string will be directly taken as the priority string and sent to the library. Priority strings provide the greatest flexibility,
+ *  but have a library-specific syntax. A GnuTLS priority string will not work if your libwget has been compiled with OpenSSL, for instance.
  *  - WGET_SSL_CA_DIRECTORY: A path to the directory where the root certificates will be taken from
  *  for server cert validation. Every file of that directory is expected to contain an X.509 certificate,
  *  encoded in PEM format. If the string "system" is specified, the system's default directory will be used.
@@ -196,22 +208,7 @@ static gnutls_priority_t
  *  OCSP is a protocol by which a server is queried to tell whether a given certificate is valid or not. It's an approach contrary
  *  to that used by CRLs. While CRLs are black lists, OCSP takes a white list approach where a certificate can be checked for validity.
  *  Whenever a client or server presents a certificate in a TLS handshake, the provided URL will be queried (using OCSP) to check whether
- *  that certifiacte is valid or not. If the server responds the certificate is not valid, the handshake will be immediately aborted.
- *  - WGET_SSL_OCSP_CACHE: This option does not take a string as an argument, but a pointer to a \ref wget_ocsp_db_t
- *  structure. Such a pointer is returned when initializing the OCSP cache with wget_ocsp_db_init(). The cache is used to store
- *  OCSP responses locally and avoid querying the OCSP server repeteadly for the same certificate.
- *  - WGET_SSL_SESSION_CACHE: This option takes a pointer to a \ref wget_tls_session_db_t structure.
- *  Such a pointer is returned when initializing the TLS session cache with wget_tls_session_db_init().
- *  This option thus set the handle to the TLS session cache that will be used to store TLS sessions.
- *  The TLS session cache
- *  is used to support TLS session resumption. It stores the TLS session parameters derived from a previous TLS handshake
- *  (most importantly the session identifier and the master secret) so that there's no need to run the handshake again
- *  the next time we connect to the same host. This is useful as the handshake is an expensive process.
- *  - WGET_SSL_HPKP_CACHE: Set the HPKP cache to be used to verify known HPKP pinned hosts. This option takes a pointer
- *  to a \ref wget_hpkp_db_t structure. Such a pointer is returned when initializing the HPKP cache
- *  with wget_hpkp_db_init(). HPKP is a HTTP-level protocol that allows the server to "pin" its present and future X.509
- *  certificate fingerprint, to support rapid certificate change in the event that the higher level root CA
- *  gets compromised ([RFC 7469](https://tools.ietf.org/html/rfc7469)).
+ *  that certificate is valid or not. If the server responds the certificate is not valid, the handshake will be immediately aborted.
  *  - WGET_SSL_ALPN: Sets the ALPN string to be sent to the remote host. ALPN is a TLS extension
  *  ([RFC 7301](https://tools.ietf.org/html/rfc7301))
  *  that allows both the server and the client to signal which application-layer protocols they support (HTTP/2, QUIC, etc.).
@@ -234,6 +231,30 @@ void wget_ssl_set_config_string(int key, const char *value)
 	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
 	}
 }
+
+/**
+ * \param[in] key An identifier for the config parameter (starting with `WGET_SSL_`) to set
+ * \param[in] value The value for the config parameter (a pointer)
+ *
+ * Set a configuration parameter, as a libwget object.
+ *
+ * The following parameters expect an already initialized libwget object as their value.
+ *
+ * - WGET_SSL_OCSP_CACHE: This option takes a pointer to a \ref wget_ocsp_db_t
+ *  structure as an argument. Such a pointer is returned when initializing the OCSP cache with wget_ocsp_db_init().
+ *  The cache is used to store OCSP responses locally and avoid querying the OCSP server repeteadly for the same certificate.
+ *  - WGET_SSL_SESSION_CACHE: This option takes a pointer to a \ref wget_tls_session_db_t structure.
+ *  Such a pointer is returned when initializing the TLS session cache with wget_tls_session_db_init().
+ *  This option thus sets the handle to the TLS session cache that will be used to store TLS sessions.
+ *  The TLS session cache is used to support TLS session resumption. It stores the TLS session parameters derived from a previous TLS handshake
+ *  (most importantly the session identifier and the master secret) so that there's no need to run the handshake again
+ *  the next time we connect to the same host. This is useful as the handshake is an expensive process.
+ *  - WGET_SSL_HPKP_CACHE: Set the HPKP cache to be used to verify known HPKP pinned hosts. This option takes a pointer
+ *  to a \ref wget_hpkp_db_t structure. Such a pointer is returned when initializing the HPKP cache
+ *  with wget_hpkp_db_init(). HPKP is a HTTP-level protocol that allows the server to "pin" its present and future X.509
+ *  certificate fingerprints, to support rapid certificate change in the event that the higher level root CA
+ *  gets compromised ([RFC 7469](https://tools.ietf.org/html/rfc7469)).
+ */
 
 void wget_ssl_set_config_object(int key, void *value)
 {
