@@ -1915,7 +1915,7 @@ static const struct optionw options[] = {
 	},
 	{ "secure-protocol", &config.secure_protocol, parse_string, 1, 0,
 		SECTION_SSL,
-		{ "Set protocol to be used (auto, SSLv3, TLSv1, PFS).\n",
+		{ "Set protocol to be used (auto, SSLv3, TLSv1, TLSv1_1, TLSv1_2, TLS1_3, PFS).\n",
 		  "(default: auto). Or use GnuTLS priority\n",
 		  "strings, e.g. NORMAL:-VERS-SSL3.0:-RSA\n"
 		}
