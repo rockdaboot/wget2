@@ -618,7 +618,7 @@ AM_CONDITIONAL([WITH_LIBIDN], [test "x$with_libidn" = xyes])
 
 AC_ARG_WITH(libpcre2, AS_HELP_STRING([--without-libpcre2], [disable support for libpcre2]), with_libpcre2=$withval, with_libpcre2=yes)
 AS_IF([test "x$with_libpcre2" != xno], [
-  PKG_CHECK_MODULES([LIBPCRE2], libpcre2, [
+  PKG_CHECK_MODULES([LIBPCRE2], libpcre2-8, [
     with_libpcre2=yes
     LIBS="$LIBPCRE2_LIBS $LIBS"
     CFLAGS="$LIBPCRE2_CFLAGS $CFLAGS"
@@ -648,7 +648,7 @@ AS_IF([test "x$with_libpcre2" != xyes], [
 ])
 AM_CONDITIONAL([WITH_LIBPCRE], [test "x$with_libpcre" = xyes])
 
-AS_IF([test "x$with_libpcre" = xyes], [HAVE_PCRE="yes"], [test "x$with_libpcre2" = xyes], [HAVE_PCRE=yes], [HAVE_PCRE=no])
+AS_IF([test "x$with_libpcre" = xyes], [HAVE_PCRE="yes, via libpcre"], [test "x$with_libpcre2" = xyes], [HAVE_PCRE="yes, via libpcre2"], [HAVE_PCRE=no])
 
 AC_ARG_WITH(libmicrohttpd, AS_HELP_STRING([--without-libmicrohttpd], [disable support for libmicrohttpd]), with_libmicrohttpd=$withval, with_libmicrohttpd=yes)
 AS_IF([test "x$with_libmicrohttpd" != xno], [
