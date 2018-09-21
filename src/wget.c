@@ -2010,7 +2010,24 @@ static void process_response(wget_http_response_t *resp)
 		}
 	}
 
-	if (resp->code == 200 || resp->code == 206) {
+	if (job->robotstxt) {
+		if (resp->body) {
+			debug_printf("Scanning robots.txt ...\n");
+			if ((job->host->robots = wget_robots_parse(resp->body->data, PACKAGE_NAME))) {
+				// the sitemaps are not relevant as page requisites
+				if (!config.page_requisites) {
+					// add sitemaps to be downloaded (format https://www.sitemaps.org/protocol.html)
+					for (int it = 0; it < wget_vector_size(job->host->robots->sitemaps); it++) {
+						const char *sitemap = wget_vector_get(job->host->robots->sitemaps, it);
+						debug_printf("adding sitemap '%s'\n", sitemap);
+						add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see https://www.sitemaps.org/protocol.html#escaping
+					}
+				}
+			}
+		} else {
+			error_printf("No data downloaded. Skipping robots.txt!\n");
+		}
+	} else if (resp->code == 200 || resp->code == 206) {
 		if (process_decision && recurse_decision) {
 			if (resp->content_type && resp->body) {
 				if (!wget_strcasecmp_ascii(resp->content_type, "text/html")) {
@@ -2031,19 +2048,6 @@ static void process_response(wget_http_response_t *resp)
 						sitemap_parse_xml_gz(job, resp->body, "utf-8", job->iri);
 					else if (!wget_strcasecmp_ascii(resp->content_type, "text/plain"))
 						sitemap_parse_text(job, resp->body->data, "utf-8", job->iri);
-				} else if (job->robotstxt) {
-					debug_printf("Scanning robots.txt ...\n");
-					if ((job->host->robots = wget_robots_parse(resp->body->data, PACKAGE_NAME))) {
-						// the sitemaps are not relevant as page requisites
-						if (!config.page_requisites) {
-							// add sitemaps to be downloaded (format https://www.sitemaps.org/protocol.html)
-							for (int it = 0; it < wget_vector_size(job->host->robots->sitemaps); it++) {
-								const char *sitemap = wget_vector_get(job->host->robots->sitemaps, it);
-								debug_printf("adding sitemap '%s'\n", sitemap);
-								add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see https://www.sitemaps.org/protocol.html#escaping
-							}
-						}
-					}
 				}
 			}
 		}
@@ -3451,6 +3455,12 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 
 	if (config.continue_download || config.timestamping) {
 		const char *local_filename = config.output_document ? config.output_document : job->local_filename;
+
+		/* We never want to continue the robots job. Always grab a fresh copy
+		 * from the server. */
+		if (job->robotstxt == true) {
+			unlink(local_filename);
+		}
 
 		if (config.continue_download) {
 			long long file_size = get_file_size(local_filename);

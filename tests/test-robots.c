@@ -83,12 +83,59 @@ int main(void)
 			.code = "200 Dontcare",
 			.body = "sub2_2"
 		},
+		{	.name = "/robots_open.txt",
+			.code = "200 Dontcare",
+			.body =
+				"User-agent: *\n"\
+				"Allow: /\n"\
+			,
+			.headers = {
+				"Content-Type: text/plain",
+			}
+		},
 	};
 
 	// functions won't come back if an error occurs
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		WGET_TEST_FEATURE_MHD,
+		0);
+
+	// Check if robots is actually honoured when it already exists on the
+	// file system
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{ "robots.txt", urls[7].body },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[2].name + 1, urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
+			{ urls[4].name + 1, urls[4].body },
+			{	NULL } },
+		0);
+
+
+	// Check if robots is actually honoured when it already exists on the
+	// file system
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH -c",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{ "robots.txt", urls[0].body },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[2].name + 1, urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
+			{ urls[4].name + 1, urls[4].body },
+			{	NULL } },
 		0);
 
 	// robots.txt forbids /subdir2/ for '*'
@@ -119,5 +166,6 @@ int main(void)
 			{ urls[6].name + 1, urls[6].body },
 			{	NULL } },
 		0);
+
 	exit(0);
 }
