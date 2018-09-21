@@ -2,7 +2,9 @@ Authors of and contributors to Wget2.
 Thank you very much for spending your time !
 
 This list of contributors is maintained in the
-order of date of first commit
+order of date of first commit. Those with the
+"ASSGN" tag have assigned the copyrights of their
+patches to the FSF.
 
 Design and implementation of Wget2 and libwget:
 Tim Rühsen (rockdaboot)
