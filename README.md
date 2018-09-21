@@ -114,7 +114,7 @@ The following packages are needed to build the software
 * libbz2 >= 1.0.6 (optional, if you want HTTP bzip2 decompression)
 * libbrotlidec >= 1.0.0 (optional, if you want HTTP brotli decompression)
 * libgnutls (3.3, 3.5 or 3.6)
-* libidn2 >= 0.9 + libunistring >= 0.9.3 (libidn >= 1.25 if you don't have libidn2)
+* libidn2 >= 0.14 (libidn >= 1.25 if you don't have libidn2)
 * flex >= 2.5.35
 * libpsl >= 0.5.0
 * libnghttp2 >= 1.3.0 (optional, if you want HTTP/2 support)

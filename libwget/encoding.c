@@ -38,12 +38,6 @@
 
 #if defined HAVE_IDN2_H && defined WITH_LIBIDN2
 # include <idn2.h>
-# if IDN2_VERSION_NUMBER < 0x00140000
-#  if defined HAVE_UNICASE_H && defined WITH_LIBUNISTRING
-#   include <unicase.h>
-#   include <unistr.h>
-#  endif
-# endif
 #elif defined HAVE_IDNA_H && defined WITH_LIBIDN
 # include <idna.h>
 # ifdef _WIN32
@@ -234,42 +228,9 @@ const char *wget_str_to_ascii(const char *src)
 	if (wget_str_needs_encoding(src)) {
 		char *asc = NULL;
 		int rc;
-# if defined WITH_LIBUNISTRING && IDN2_VERSION_NUMBER < 0x00140000
-		uint8_t *lower, resbuf[256];
-		size_t len = sizeof(resbuf) - 1; // leave space for additional \0 byte
-
-		// we need a conversion to lowercase
-		lower = u8_tolower((uint8_t *)src, u8_strlen((uint8_t *)src), 0, UNINORM_NFKC, resbuf, &len);
-		if (!lower) {
-			error_printf(_("u8_tolower(%s) failed (%d)\n"), src, errno);
-			return src;
-		}
-
-		// u8_tolower() does not terminate the result string
-		if (lower == resbuf) {
-			lower[len]=0;
-		} else {
-			uint8_t *tmp = lower;
-			lower = (uint8_t *)wget_strmemdup((char *)lower, len);
-			xfree(tmp);
-		}
-
-		if ((rc = idn2_lookup_u8(lower, (uint8_t **)&asc, 0)) == IDN2_OK) {
-			debug_printf("idn2 '%s' -> '%s'\n", src, asc);
-			src = asc;
-		} else
-			error_printf(_("toASCII(%s) failed (%d): %s\n"), lower, rc, idn2_strerror(rc));
-
-		if (lower != resbuf)
-			xfree(lower);
-# else
-#  if IDN2_VERSION_NUMBER < 0x00140000
-		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, 0)) == IDN2_OK)
-#  else
 		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_NONTRANSITIONAL)) != IDN2_OK)
 			rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_TRANSITIONAL);
 		if (rc == IDN2_OK)
-#  endif
 		{
 			debug_printf("idn2 '%s' -> '%s'\n", src, asc);
 #  ifdef _WIN32
@@ -280,7 +241,6 @@ const char *wget_str_to_ascii(const char *src)
 #  endif
 		} else
 			error_printf(_("toASCII(%s) failed (%d): %s\n"), src, rc, idn2_strerror(rc));
-# endif
 	}
 #elif defined WITH_LIBIDN
 	if (wget_str_needs_encoding(src)) {

@@ -581,36 +581,23 @@ AM_CONDITIONAL([WITH_BROTLIDEC], [test "x$with_brotlidec" = xyes])
 # Support for internationalized domain names.
 # IDN support in Wget2 is provided in multiple ways:
 #   1. libidn2 >= 0.14.0 (IDNA 2008)
-#   2. libidn2 < 0.14.0 + libunistring (IDNA 2008)
 #   3. libidn (IDNA 2003)
-#
-# Versions of libidn2 prior to 0.14.0 did not provide a pkg-config file. Hence,
-# if detection of libidn2 with pkg-config fails, we assume that either
-# libidn2 is not available or it is an older version. Older versions of libidn2
-# also require libunistring to support IDN2008 on uppercase domain names.
 #
 # If libidn2 is not found at all, we try to fallback to libidn.
 AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support]), with_libidn2=$withval, with_libidn2=yes)
 AS_IF([test "x$with_libidn2" != xno], [
-  PKG_CHECK_MODULES([LIBIDN2], libidn2, [
+  PKG_CHECK_MODULES([LIBIDN2], [libidn2 >= 0.14.0], [
     with_libidn2=yes
-	IDNA_INFO="IDNA 2008 (libidn2)"
+    IDNA_INFO="IDNA 2008 (libidn2)"
     LIBS="$LIBIDN2_LIBS $LIBS"
     CFLAGS="$LIBIDN2_CFLAGS $CFLAGS"
     AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2])
   ], [
-    AC_SEARCH_LIBS(idn2_lookup_u8, idn2,
-      [with_libidn2=yes; AC_DEFINE([WITH_LIBIDN2], [1], [Use libidn2]) IDNA_INFO="IDNA 2008 (libidn2)"],
-      [with_libidn2=no;  AC_MSG_WARN(*** LIBIDN2 was not found. You will not be able to use IDN2008 support)],
-      -lunistring)
-    AS_IF([test "x$with_libidn2" = xyes], [
-      AC_SEARCH_LIBS(u8_tolower, unistring,
-        [with_libunistring=yes; AC_DEFINE([WITH_LIBUNISTRING], [1], [Use libunistring]) IDNA_INFO="IDNA 2008 (libidn2+libunistring)"],
-        [with_libunistring=no;  AC_MSG_WARN(*** LIBUNISTRING was not found. You will not be able to use IDN2008 on uppercase domains)])
+    with_libidn2=no
+    AC_MSG_WARN(*** LIBIDN2 was not found. You will not be able to use IDN2008 support)
     ])
-  ])
 ])
-AM_CONDITIONAL([WITH_LIBUNISTRING], [test "x$with_libunistring" = xyes])
+
 AM_CONDITIONAL([WITH_LIBIDN2], [test "x$with_libidn2" = xyes])
 
 AS_IF([test "x$with_libidn2" != xyes], [

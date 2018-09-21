@@ -6,6 +6,9 @@ See the end for copying conditions.
 
 Please send GNU Wget2 bug reports to <bug-wget@gnu.org>.
 
+XX.XX.XXXX Release 1.99.2
+  * Remove support for libidn2 < 0.14 and libunistring
+
 30.05.2018 Release 1.99.1 (alpha)
   * Enhance docs
   * Enhance building on many platforms
