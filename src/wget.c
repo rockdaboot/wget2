@@ -2010,22 +2010,18 @@ static void process_response(wget_http_response_t *resp)
 		}
 	}
 
-	if (job->robotstxt) {
-		if (resp->body) {
-			debug_printf("Scanning robots.txt ...\n");
-			if ((job->host->robots = wget_robots_parse(resp->body->data, PACKAGE_NAME))) {
-				// the sitemaps are not relevant as page requisites
-				if (!config.page_requisites) {
-					// add sitemaps to be downloaded (format https://www.sitemaps.org/protocol.html)
-					for (int it = 0; it < wget_vector_size(job->host->robots->sitemaps); it++) {
-						const char *sitemap = wget_vector_get(job->host->robots->sitemaps, it);
-						debug_printf("adding sitemap '%s'\n", sitemap);
-						add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see https://www.sitemaps.org/protocol.html#escaping
-					}
-				}
-			}
-		} else {
-			error_printf("No data downloaded. Skipping robots.txt!\n");
+	if (job->robotstxt &&
+			// Only if a file was downloaded
+			resp->body &&
+			// Parse the robots file and only if it was successful
+			(job->host->robots = wget_robots_parse(resp->body->data, PACKAGE_NAME)) &&
+			// Sitemaps are not relevant as page requisites
+			!config.page_requisites) {
+		// add sitemaps to be downloaded (format https://www.sitemaps.org/protocol.html)
+		for (int it = 0; it < wget_vector_size(job->host->robots->sitemaps); it++) {
+			const char *sitemap = wget_vector_get(job->host->robots->sitemaps, it);
+			debug_printf("adding sitemap '%s'\n", sitemap);
+			add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see https://www.sitemaps.org/protocol.html#escaping
 		}
 	} else if (resp->code == 200 || resp->code == 206) {
 		if (process_decision && recurse_decision) {
