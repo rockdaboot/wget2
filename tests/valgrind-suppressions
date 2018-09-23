@@ -92,3 +92,38 @@
    ...
    fun:start_thread
 }
+
+{
+	Fix reachable pointers in GPGME - 1
+	Memcheck:Leak
+	match-leak-kinds: reachable
+	fun:malloc
+	fun:strdup
+	fun:gpgme_set_locale
+	fun:init_gpgme
+	fun:init
+	fun:main
+}
+
+{
+	Fix reachable pointers in GPGME - 2
+	Memcheck:Leak
+	match-leak-kinds: reachable
+	fun:malloc
+	...
+	fun:gpgme_get_engine_info
+	...
+	fun:gpgme_new
+	...
+}
+
+{
+	Fix reachable pointers in GPGME - 3
+	Memcheck:Leak
+	match-leak-kinds: reachable
+	fun:calloc
+	fun:gpgme_get_engine_info
+	...
+	fun:gpgme_new
+	...
+}
