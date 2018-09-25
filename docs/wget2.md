@@ -10,7 +10,7 @@
   * [Download Options](#Download Options)
   * [Directory Options](#Directory Options)
   * [HTTP Options](#HTTP Options)
-  * [HTTPS (SSL/TLS) Options](#HTTPS (SSL/TLS) Options)
+  * [HTTPS (SSL/TLS) Options](#HTTPS Options)
   * [Recursive Retrieval Options](#Recursive Retrieval Options)
   * [Recursive Accept/Reject Options](#Recursive Accept/Reject Options)
   * [Plugin Options](#Plugin Options)
@@ -1325,7 +1325,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Compatibility-Note: `none` type in Wget 1.X has the same meaning as `identity` type in Wget2.
 
-## <a name="HTTPS (SSL/TLS) Options"/>HTTPS (SSL/TLS) Options
+## <a name="HTTPS Options"/>HTTPS (SSL/TLS) Options
 
   To support encrypted HTTP (HTTPS) downloads, Wget2 must be compiled with an external SSL library. The current default
   is GnuTLS.  In addition, Wget2 also supports HSTS (HTTP Strict Transport Security).  If Wget2 is compiled without SSL
