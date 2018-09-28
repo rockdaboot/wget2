@@ -898,10 +898,12 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 		if (!iri->host)
 			reason = _("missing ip/host/domain");
-		else if (!config.span_hosts && config.domains && !in_host_pattern_list(config.domains, iri->host))
-			reason = _("no host-spanning requested");
-		else if (config.span_hosts && config.exclude_domains && in_host_pattern_list(config.exclude_domains, iri->host))
-			reason = _("domain explicitly excluded");
+		else if (job && strcmp(job->iri->host, iri->host)) {
+			if (!config.span_hosts && !in_host_pattern_list(config.domains, iri->host))
+				reason = _("no host-spanning requested");
+			else if (config.span_hosts && in_host_pattern_list(config.exclude_domains, iri->host))
+				reason = _("domain explicitly excluded");
+		}
 
 		if (reason) {
 			wget_thread_mutex_unlock(downloader_mutex);
