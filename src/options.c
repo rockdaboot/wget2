@@ -171,6 +171,12 @@ static int print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED con
 	" -psl"
 #endif
 
+#if defined WITH_LIBHSTS
+	" +hsts"
+#else
+	" -hsts"
+#endif
+
 #if defined HAVE_ICONV
 	" +iconv"
 #else
@@ -1094,6 +1100,7 @@ struct config config = {
 	.robots = 1,
 	.tries = 20,
 	.hsts = 1,
+	.hsts_preload = 1,
 	.hpkp = 1,
 
 #if defined WITH_LIBNGHTTP2
@@ -1495,6 +1502,26 @@ static const struct optionw options[] = {
 	{ "hsts-file", &config.hsts_file, parse_filename, 1, 0,
 		SECTION_SSL,
 		{ "Set file for HSTS caching. (default: ~/.wget-hsts)\n"
+		}
+	},
+	{ "hsts-preload", &config.hsts_preload, parse_bool, -1, 0,
+		SECTION_SSL,
+		{ "Use HTTP Strict Transport Security (HSTS).\n",
+#ifdef WITH_LIBHSTS
+		  "(default: on)\n"
+#else
+		  "[Not built with libhsts, so not functional]\n"
+#endif
+		}
+	},
+	{ "hsts-preload-file", &config.hsts_preload_file, parse_filename, 1, 0,
+		SECTION_SSL,
+		{ "Set name for the HSTS Preload file (DAFSA format).\n",
+#ifdef WITH_LIBHSTS
+		  "(default: the distribution's HSTS data file)\n"
+#else
+		  "[Not built with libhsts, so not functional]\n"
+#endif
 		}
 	},
 	{ "html-extension", &config.adjust_extension, parse_bool, -1, 0,
@@ -2887,6 +2914,11 @@ int init(int argc, const char **argv)
 	if (config.netrc && !config.netrc_file)
 		config.netrc_file = wget_aprintf("%s/.netrc", home_dir);
 
+#ifdef WITH_LIBHSTS
+	if (config.hsts_preload && !config.hsts_preload_file)
+		config.hsts_preload_file = wget_strdup(hsts_dist_filename());
+#endif
+
 	xfree(home_dir);
 	wget_vector_free(&config.exclude_directories); // -I and -X stack up, so free before final command line parsing
 
@@ -3014,6 +3046,14 @@ int init(int argc, const char **argv)
 			config.hsts_db = wget_hsts_db_init(NULL, config.hsts_file);
 		wget_hsts_db_load(config.hsts_db);
 	}
+
+#ifdef WITH_LIBHSTS
+	if (config.hsts_preload) {
+		if ((rc = hsts_load_file(config.hsts_preload_file, &config.hsts_preload_data))) {
+			wget_error_printf(_("Failed to load %s (%d)"), config.hsts_preload_file, rc);
+		}
+	}
+#endif
 
 	if (config.hpkp) {
 		config.hpkp_db = plugin_db_fetch_provided_hpkp_db();
@@ -3275,6 +3315,11 @@ void deinit(void)
 	wget_http_set_http_proxy(NULL, NULL);
 	wget_http_set_https_proxy(NULL, NULL);
 	wget_http_set_no_proxy(NULL, NULL);
+
+#ifdef WITH_LIBHSTS
+	hsts_free(config.hsts_preload_data);
+	config.hsts_preload_data = NULL;
+#endif
 }
 
 // self test some functions, called by using --self-test

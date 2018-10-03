@@ -1484,10 +1484,25 @@ static int try_connection(DOWNLOADER *downloader, wget_iri_t *iri)
 	wget_http_connection_t *conn;
 	int rc;
 
-	if (config.hsts && iri->scheme == WGET_IRI_SCHEME_HTTP && wget_hsts_host_match(config.hsts_db, iri->host, iri->port)) {
-		info_printf(_("HSTS in effect for %s:%hu\n"), iri->host, iri->port);
-		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
-		host_add(iri);	// add new host to hosts
+	if (iri->scheme == WGET_IRI_SCHEME_HTTP) {
+		bool match = 0;
+
+		if (config.hsts && wget_hsts_host_match(config.hsts_db, iri->host, iri->port)) {
+			match = 1;
+		}
+#ifdef WITH_LIBHSTS
+		else if (config.hsts_preload && config.hsts_preload_data) {
+			if (hsts_search(config.hsts_preload_data, iri->host, 0, NULL) == HSTS_SUCCESS) {
+				match = 1;
+			}
+		}
+#endif
+
+		if (match) {
+			info_printf(_("HSTS in effect for %s:%hu\n"), iri->host, iri->port);
+			wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
+			host_add(iri);	// add new host to hosts
+		}
 	}
 
 	if ((conn = downloader->conn)) {

@@ -479,6 +479,21 @@ AS_IF([test "x$with_libpsl" != xno], [
 ])
 AM_CONDITIONAL([WITH_LIBPSL], [test "x$with_libpsl" = xyes])
 
+AC_ARG_WITH(libhsts, AS_HELP_STRING([--without-libhsts], [disable support for libhsts checking]), with_libhsts=$withval, with_libhsts=yes)
+AS_IF([test "x$with_libhsts" != xno], [
+  PKG_CHECK_MODULES([LIBHSTS], libhsts, [
+    with_libhsts=yes
+    LIBS="$LIBHSTS_LIBS $LIBS"
+    CFLAGS="$LIBHSTS_CFLAGS $CFLAGS"
+    AC_DEFINE([WITH_LIBHSTS], [1], [HSTS Preload List support enabled])
+  ], [
+    AC_SEARCH_LIBS(hsts_get_version, hsts,
+      [with_libhsts=yes; AC_DEFINE([WITH_LIBHSTS], [1], [HSTS Preload List support enabled])],
+      [with_libhsts=no;  AC_MSG_WARN(*** libhsts was not found.)])
+  ])
+])
+AM_CONDITIONAL([WITH_LIBHSTS], [test "x$with_libHSTS" = xyes])
+
 AC_ARG_WITH(libnghttp2, AS_HELP_STRING([--without-libnghttp2], [disable support for libnghttp2]), with_libnghttp2=$withval, with_libnghttp2=yes)
 AS_IF([test "x$with_libnghttp2" != xno], [
   PKG_CHECK_MODULES([LIBNGHTTP2], libnghttp2, [
@@ -766,6 +781,7 @@ AC_MSG_NOTICE([Summary of build options:
   Brotli compression: $with_brotlidec
   IDNA support:       $IDNA_INFO
   PSL support:        $with_libpsl
+  HSTS support:       $with_libhsts
   HTTP/2.0 support:   $with_libnghttp2
   Documentation:      $DOCS_INFO
   PCRE support:       ${HAVE_PCRE}

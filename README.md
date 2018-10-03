@@ -123,6 +123,7 @@ The following packages are needed to build the software
 * lcov (optional, for coverage reports)
 * libgpgme >= 0.4.2 (optional, for automatic signature verification)
 * libpcre | libpcre2 (optional, for filtering by PCRE|PCRE2 regex)
+* libhsts (optional, to support HSTS preload lists)
 
 The versions are recommended, but older versions may also work.
 

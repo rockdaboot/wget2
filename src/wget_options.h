@@ -31,6 +31,10 @@
 #include <stdarg.h>
 #include <unistd.h> // needed for EXIT_SUCCESS
 
+#ifdef WITH_LIBHSTS
+#include <libhsts.h>
+#endif
+
 #include <wget.h>
 
 #define INCLUDED_DIRECTORY_PREFIX '+'
@@ -96,6 +100,7 @@ struct config {
 		*stats_site,
 		*stats_tls,
 		*hsts_file,
+		*hsts_preload_file,
 		*hpkp_file,
 		*tls_session_file,
 		*ocsp_file,
@@ -123,6 +128,10 @@ struct config {
 		compression_methods[wget_content_encoding_max + 1];	// the last one for counting
 	wget_hsts_db_t
 		*hsts_db; // in-memory HSTS database
+#ifdef WITH_LIBHSTS
+	hsts_t
+		*hsts_preload_data; // in-memory HSTS preloaded data
+#endif
 	wget_hpkp_db_t
 		*hpkp_db; // in-memory HPKP database
 	wget_tls_session_db_t
@@ -176,6 +185,7 @@ struct config {
 		convert_links,
 		ignore_case,
 		hsts,                  // if HSTS (HTTP Strict Transport Security) is enabled or not
+		hsts_preload,          // if loading of a HSTS Preload file is enabled of not
 		hpkp,                  // HTTP Public Key Pinning (HPKP)
 		random_wait,
 		trust_server_names,
