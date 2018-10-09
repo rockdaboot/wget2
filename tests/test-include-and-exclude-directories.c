@@ -170,7 +170,7 @@ int main(void)
 	// Download only /,\,/file.txt
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--include-directories='/\\,\\,'",
+		WGET_TEST_OPTIONS, "--include-directories=\"/\\,\\,\"",
 		WGET_TEST_REQUEST_URL, ",,/file.txt",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
