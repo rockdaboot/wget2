@@ -209,6 +209,12 @@ static int print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED con
 	" -brotlidec"
 #endif
 
+#if defined WITH_ZSTD
+	" +zstd"
+#else
+	" -zstd"
+#endif
+
 #if defined WITH_BZIP2
 	" +bzip2"
 #else
@@ -1017,6 +1023,10 @@ static int parse_compression(option_t opt, const char *val, const char invert)
 			if (type == wget_content_encoding_brotli)
 				not_built = 1;
 #endif
+#ifndef WITH_ZSTD
+			if (type == wget_content_encoding_zstd)
+				not_built = 1;
+#endif
 
 			if (not_built) {
 				wget_error_printf(_("Lib for type %s not built"), wget_content_encoding_to_name(type));
@@ -1242,7 +1252,7 @@ static const struct optionw options[] = {
 		"compression", &config.compression, parse_compression, -1, 0,
 		SECTION_HTTP,
 		{ "Customize Accept-Encoding with\n",
-		   "identity, gzip, deflate, xz, lzma, br, bzip2\n",
+		   "identity, gzip, deflate, xz, lzma, br, bzip2, zstd\n",
 		   "and any combination of it\n",
 		   "no-compression means no Accept-Encoding\n"
 		}

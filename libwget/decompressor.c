@@ -54,6 +54,10 @@
 #include <brotli/decode.h>
 #endif
 
+#ifdef WITH_ZSTD
+#include <zstd.h>
+#endif
+
 #include <wget.h>
 #include "private.h"
 
@@ -76,6 +80,10 @@ struct _wget_decompressor_st {
 #ifdef WITH_BROTLIDEC
 	BrotliDecoderState
 		*brotli_strm;
+#endif
+#ifdef WITH_ZSTD
+	ZSTD_DStream
+		*zstd_strm;
 #endif
 
 	wget_decompressor_sink_t
@@ -279,6 +287,64 @@ static void brotli_exit(wget_decompressor_t *dc)
 }
 #endif // WITH_BROTLIDEC
 
+#ifdef WITH_ZSTD
+static int zstd_init(ZSTD_DStream **strm)
+{
+	if ((*strm = ZSTD_createDStream()) == NULL) {
+		error_printf(_("Failed to create Zstandard decompression\n"));
+		return -1;
+	}
+
+	size_t rc = ZSTD_initDStream(*strm);
+	if (ZSTD_isError(rc)) {
+		error_printf(_("Failed to init Zstandard decompression: %s\n"), ZSTD_getErrorName(rc));
+		ZSTD_freeDStream(*strm);
+		*strm = NULL;
+		return -1;
+	}
+
+	return 0;
+}
+
+static int zstd_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
+{
+	ZSTD_DStream *strm;
+	uint8_t dst[10240];
+
+	if (!srclen) {
+		// special case to avoid decompress errors
+		if (dc->sink)
+			dc->sink(dc->context, "", 0);
+
+		return 0;
+	}
+
+	strm = dc->zstd_strm;
+
+	ZSTD_inBuffer input = { .src = src, .size = srclen, .pos = 0 };
+
+	while (input.pos < input.size) {
+		ZSTD_outBuffer output = { .dst = dst, .size = sizeof(dst), .pos = 0 };
+
+		size_t rc = ZSTD_decompressStream(strm, &output , &input);
+		if (ZSTD_isError(rc)) {
+			error_printf(_("Failed to init Zstandard decompression: %s\n"), ZSTD_getErrorName(rc));
+			return -1;
+		}
+
+		if (dc->sink)
+			dc->sink(dc->context, (char *)dst, output.pos);
+	}
+
+	return 0;
+}
+
+static void zstd_exit(wget_decompressor_t *dc)
+{
+	ZSTD_freeDStream(dc->zstd_strm);
+}
+#endif // WITH_ZSTD
+
 #ifdef WITH_BZIP2
 static int bzip2_init(bz_stream *strm)
 {
@@ -385,6 +451,13 @@ wget_decompressor_t *wget_decompress_open(
 			dc->exit = brotli_exit;
 		}
 #endif
+	} else if (encoding == wget_content_encoding_zstd) {
+#ifdef WITH_ZSTD
+		if ((rc = zstd_init(&dc->zstd_strm)) == 0) {
+			dc->decompress = zstd_decompress;
+			dc->exit = zstd_exit;
+		}
+#endif
 	}
 
 	if (!dc->decompress) {
@@ -444,6 +517,7 @@ static char _encoding_names[wget_content_encoding_max][9] = {
 	[wget_content_encoding_lzma] = "lzma",
 	[wget_content_encoding_bzip2] = "bzip2",
 	[wget_content_encoding_brotli] = "br",
+	[wget_content_encoding_zstd] = "zstd",
 };
 
 wget_content_encoding_type_t wget_content_encoding_by_name(const char *name)

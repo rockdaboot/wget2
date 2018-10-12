@@ -30,6 +30,7 @@
 #define XZ "\xfd\x37\x7a\x58\x5a\x00\x00\x04\xe6\xd6\xb4\x46\x02\x00\x21\x01\x16\x00\x00\x00\x74\x2f\xe5\xa3\x01\x00\x00\x78\x00\x00\x00\x00\x45\xae\xef\x83\xf8\xee\x16\x0a\x00\x01\x19\x01\xa5\x2c\x81\xcc\x1f\xb6\xf3\x7d\x01\x00\x00\x00\x00\x04\x59\x5a"	// xz
 #define LZMA "\x5d\x00\x00\x80\x00\xff\xff\xff\xff\xff\xff\xff\xff\x00\x3c\x41\xfb\xff\xff\xff\xe0\x00\x00\x00"	// lzma
 #define BR "\x21\x00\x00\x04\x78\x03"	// br
+#define ZSTD "\x28\xb5\x2f\xfd\x24\x01\x09\x00\x00\x78\x23\x11\x04\x83"
 
 typedef struct  {
 	const char* body;
@@ -38,7 +39,7 @@ typedef struct  {
 	bool with_lib;
 } compression_test_t;
 
-#define KNOWN_TYPES 6
+#define KNOWN_TYPES countof(compressions)
 #define BUF_SIZE 40
 
 int main(void)
@@ -99,6 +100,16 @@ int main(void)
 			.type = "br",
 			.with_lib =
 #ifdef WITH_BROTLIDEC
+		true,
+#else
+		false,
+#endif
+		},
+		{	.body = ZSTD,
+			.body_len = sizeof(ZSTD) - 1,
+			.type = "zstd",
+			.with_lib =
+#ifdef WITH_ZSTD
 		true,
 #else
 		false,
@@ -179,6 +190,18 @@ int main(void)
 				"Accept-Encoding: br"
 			}
 		},
+		{	.name = "/zstd.html",
+			.code = "200 Dontcare",
+			.body = compressions[6].body,
+			.body_len =  compressions[6].body_len,
+			.headers = {
+				"Content-Type: text/html",
+				"Content-Encoding: zstd",
+			},
+			.expected_req_headers = {
+				"Accept-Encoding: zstd"
+			}
+		},
 		{	.name = "/identity.html",
 			.code = "200 Dontcare",
 			.body = uncompressed_body,
@@ -254,10 +277,10 @@ int main(void)
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, "--compression=none",
-		WGET_TEST_REQUEST_URL, urls[6].name + 1,
+		WGET_TEST_REQUEST_URL, urls[7].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[6].name + 1, uncompressed_body },
+			{ urls[7].name + 1, uncompressed_body },
 			{	NULL } },
 		0);
 
@@ -265,10 +288,10 @@ int main(void)
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, "--compression=identity",
-		WGET_TEST_REQUEST_URL, urls[6].name + 1,
+		WGET_TEST_REQUEST_URL, urls[7].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[6].name + 1, uncompressed_body },
+			{ urls[7].name + 1, uncompressed_body },
 			{	NULL } },
 		0);
 
@@ -276,10 +299,10 @@ int main(void)
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, "--no-compression",
-		WGET_TEST_REQUEST_URL, urls[7].name + 1,
+		WGET_TEST_REQUEST_URL, urls[8].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[7].name + 1, uncompressed_body },
+			{ urls[8].name + 1, uncompressed_body },
 			{	NULL } },
 		0);
 
@@ -295,28 +318,6 @@ int main(void)
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, "--no-compression --header=\"Accept-Encoding: identity\"",
-		WGET_TEST_REQUEST_URL, urls[6].name + 1,
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[6].name + 1, uncompressed_body },
-			{	NULL } },
-		0);
-
-	// test --compression overide
-	wget_test(
-		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--no-compression --compression=identity",
-		WGET_TEST_REQUEST_URL, urls[6].name + 1,
-		WGET_TEST_EXPECTED_ERROR_CODE, 0,
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[6].name + 1, uncompressed_body },
-			{	NULL } },
-		0);
-
-	// test --no-compression overide
-	wget_test(
-		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--compression=identity --no-compression",
 		WGET_TEST_REQUEST_URL, urls[7].name + 1,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -324,15 +325,37 @@ int main(void)
 			{	NULL } },
 		0);
 
+	// test --compression overide
+	wget_test(
+		// WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "--no-compression --compression=identity",
+		WGET_TEST_REQUEST_URL, urls[7].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[7].name + 1, uncompressed_body },
+			{	NULL } },
+		0);
+
+	// test --no-compression overide
+	wget_test(
+		// WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "--compression=identity --no-compression",
+		WGET_TEST_REQUEST_URL, urls[8].name + 1,
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[8].name + 1, uncompressed_body },
+			{	NULL } },
+		0);
+
 	// test combination
 	wget_test(
         // WGET_TEST_KEEP_TMPFILES, 1,
         WGET_TEST_OPTIONS, "--compression=identity,br,lzma,gzip",
-        WGET_TEST_REQUEST_URL, urls[8].name + 1,
+        WGET_TEST_REQUEST_URL, urls[9].name + 1,
 #if defined WITH_BROTLIDEC && defined WITH_LZMA && defined WITH_ZLIB
         WGET_TEST_EXPECTED_ERROR_CODE, 0,
         WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-            { urls[8].name + 1, uncompressed_body },
+            { urls[9].name + 1, uncompressed_body },
             {   NULL } },
 #else
         WGET_TEST_EXPECTED_ERROR_CODE, 2,
@@ -358,7 +381,7 @@ int main(void)
 	wget_test(
         // WGET_TEST_KEEP_TMPFILES, 1,
         WGET_TEST_OPTIONS, "--compression=identity,identity",
-        WGET_TEST_REQUEST_URL, urls[8].name + 1,
+        WGET_TEST_REQUEST_URL, urls[9].name + 1,
         WGET_TEST_EXPECTED_ERROR_CODE, 2,
 		0);
 

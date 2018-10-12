@@ -3568,6 +3568,10 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 #ifdef WITH_BROTLIDEC
 		wget_buffer_strcat(&buf, buf.length ? ", br" : "br");
 #endif
+#ifdef WITH_ZSTD
+		wget_buffer_strcat(&buf, buf.length ? ", zstd" : "zstd");
+#endif
+
 		if (!buf.length)
 			wget_buffer_strcat(&buf, "identity");
 
