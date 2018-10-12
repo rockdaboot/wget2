@@ -124,6 +124,8 @@ struct optionw {
 	    *help_str[4];
 };
 
+#include "version-text.h"
+
 static int print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
@@ -172,15 +174,15 @@ static int print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED con
 #endif
 
 #if defined WITH_LIBHSTS
-	" +hsts"
+	" +hsts\n"
 #else
-	" -hsts"
+	" -hsts\n"
 #endif
 
 #if defined HAVE_ICONV
-	" +iconv"
+	"+iconv"
 #else
-	" -iconv"
+	"-iconv"
 #endif
 
 #if defined WITH_LIBIDN2
@@ -234,6 +236,8 @@ static int print_version(G_GNUC_WGET_UNUSED option_t opt, G_GNUC_WGET_UNUSED con
 #endif
 	);
 #endif // #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+
+	puts(_version_text);
 
 	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
 	return -1; // stop processing & exit

@@ -750,12 +750,17 @@ AC_FUNC_MMAP
 AC_CHECK_FUNCS([\
  strlcpy getuid fmemopen])
 
+# needed for src/version-text.h
+YEAR=`date +%Y`
+AC_SUBST([YEAR], $YEAR)
+
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  include/Makefile
                  include/wget/Makefile
                  libwget/Makefile
                  src/Makefile
+                 src/version-text.h
                  examples/Makefile
                  unit-tests/Makefile
                  tests/Makefile
