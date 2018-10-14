@@ -65,7 +65,7 @@ Full + VPATH/Debian:
     - cp -a /builds/common/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
     - sed -i 's/dist-lzip//g' configure.ac
-    - ./bootstrap && touch .manywarnings
+    - ./bootstrap --skip-po && touch .manywarnings
     - mkdir vpath && cd vpath
     - ../configure $CONFIGURE_BASE_FLAGS --cache-file ../cache/config.cache
     - make -j$(nproc)
@@ -92,7 +92,7 @@ Minimal/Debian:
     - cp -a /builds/common/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - sed -i 's/dist-lzip//g' configure.ac
-    - ./bootstrap && touch .manywarnings
+    - ./bootstrap --skip-po && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --disable-doc
         --disable-xattr --without-gnutls --without-libpsl --without-libnghttp2 --without-bzip2
         --without-gpgme --without-zlib --without-lzma --without-brotlidec --without-libidn2
@@ -118,7 +118,7 @@ Sanitizers/Debian:
   script:
     - cp -a /builds/common/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
-    - ./bootstrap && touch .manywarnings
+    - ./bootstrap --skip-po && touch .manywarnings
     - export CC="ccache clang"
     - export UBSAN_OPTIONS=print_stacktrace=1
     - export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-3.8/bin/llvm-symbolizer
@@ -141,7 +141,7 @@ Scan-Build/Debian:
   script:
     - cp -a /builds/common/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
-    - ./bootstrap && touch .manywarnings
+    - ./bootstrap --skip-po && touch .manywarnings
     - scan-build ./configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
     - make -C lib -j$(nproc)
     - scan-build -v -enable-checker security,nullability --status-bugs -o scan-build make -j$(nproc)
@@ -161,7 +161,7 @@ Valgrind/Debian:
   script:
     - cp -a /builds/common/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
-    - ./bootstrap
+    - ./bootstrap --skip-po
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
     - make -j$(nproc)
     - make check -j$(nproc)
@@ -183,7 +183,7 @@ Simple/Fedora:
   script:
     - cp -a /builds/common/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
-    - ./bootstrap && touch .manywarnings
+    - ./bootstrap --skip-po && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check
   tags:
@@ -204,7 +204,7 @@ Alpine:
   script:
     - cp -a /builds/common/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - ./bootstrap
+    - ./bootstrap --skip-po
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check
   tags:
@@ -238,7 +238,7 @@ pages:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - cp -a /builds/common/gnulib .
-    - ./bootstrap
+    - ./bootstrap --skip-po
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check-coverage
@@ -266,7 +266,7 @@ MinGW64:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
   script:
     - cp -a /builds/common/gnulib .
-    - ./bootstrap
+    - ./bootstrap --skip-po
     - cp pthread_sigmask.c.mingw lib/pthread_sigmask.c
     - export CC="ccache $PREFIX-gcc"
     - export GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|grep posix))
@@ -302,7 +302,7 @@ DepBuild/Arch:
     - export CFLAGS=$CFLAGS_DEFAULT
     - pacman -Q libpsl-git libnghttp2-git libidn2-git libmicrohttpd-git gpgme zlib pcre2 xz
     - sed -i 's/dist-lzip//g' configure.ac
-    - ./bootstrap && touch .manywarnings
+    - ./bootstrap --skip-po && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
     - make -j$(nproc)
     - make check -j$(nproc)
