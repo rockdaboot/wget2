@@ -1,0 +1,4 @@
+*.data
+*.svg
+sources/*
+!sources/*.bench.sh
