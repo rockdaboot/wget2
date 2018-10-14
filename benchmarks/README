@@ -3,4 +3,4 @@ A collection of benchmarks with SVG output (shell scripts).
 You need wget and curl installed, also gnuplot.
 
 Example:
-$ ./bench_https_http2
+$ ./benchmark.sh <options> [benchmark-name]

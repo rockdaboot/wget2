@@ -1,110 +1,213 @@
 #!/usr/bin/env bash
 
+# Copyright(c) 2018 Free Software Foundation, Inc.
+#
+# This file is part of GNU Wget.
+#
+# Wget is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Wget is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Wget.  If not, see <https://www.gnu.org/licenses/>.
+
+# This is the Benchmarking harness. This script is the single entry point for
+# performing any of the benchmarks provided here. In order to run the
+# benchmarks, execute this script with the name of the benchmark to run.
+#
+# USAGE:
+#
+# $ ./benchmark [OPTIONS] -n <TEST-NAME>
+#
+#   Options:
+#     -s		Skip downloading / updating the sources for each program
+#     -b		Skip trying to rebuild each program
+#     -n		The name of the test to execute
+#
+# The specification for each program used in the comparitive Benchmarks is
+# defined in the `sources/' directory, with the filename: <program>.bench.sh.
+# Each of these files should define the following:
+#
+#	- <PROGRAMNAME>_SOURCE=https://path/to/git/repo
+#	- <PROGRAMNAME>_OPTIONS="--default-options --for-all-benchmarks"
+#	- <PROGRAMNAME>_BIN="./relative/path/to/binary/from/source/dir"
+#	- <PROGRAMNAME>_BUILD(): Function that defines how to build a fresh copy of
+#	the source
+#	- <PROGRAMNAME>_VERSION(): Function to retreive the version of the built
+#	source
+#
+#	Do take a look at the files for Wget2 or Wget for an idea of how this is
+#	done.
+#
+#
+# Similar to the program specification, is the specification for the Benchmarks
+# themselves. Each of the benchmarks is located in the 'benches/' directory.
+# The benchmark specification should define the following:
+#
+#  - BENCHMARK_PROGRAMS as an array of programs to be used
+#  - run_bench() function to execute the benchmark. It accepts 1 argument, the
+#  program name.
+#  - finish_bench() to finish the benchmark and cleanup. No arguments.
+#
+# The benchmark specification file may assume that all the variables defined in
+# the program specification are available in its namespace during execution:
+#
+# - An empty associative array called "test_OPTIONS". Which can be filled up
+# with comand line options specific to this benchmark
+# - KERNEL: A variable which contains the information about the currently
+# running kernel. (uname -srmo)
+# - PROC: A variable with information about the processor
+# - PING: A variable containing the ping latency to example.com
+#
+# Author: Darshit Shah <darnir@gnu.org>
+
+
 set -e
 set -o pipefail
 set -u
 
+# Early exit if we are running in a Bash shell older than v4.
+# This script relies on Bashisms which were introduced only in v4.
+if ((BASH_VERSINFO[0] < 4)); then
+	echo "Sorry, you need atleast Bash v4 to run this script"
+	exit 1
+fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the location of where the script exists on disk
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-WGET="$SCRIPT_DIR/../../wget/src/wget"
-WGET2="$SCRIPT_DIR/../src/wget2_noinstall"
-CURL="$SCRIPT_DIR/../../curl/src/curl"
+readonly SOURCES_DIR="sources"
+readonly BENCHES_DIR="benches"
 
-WGET_OPTIONS="-q --no-config -O/dev/null"
-WGET2_OPTIONS="-q --no-config -O/dev/null"
-CURL_OPTIONS="-s -o/dev/null --cert-status"
+# Declare arrays which are used within the sourced benchmark scripts
+declare -A VERSIONS
+declare -A test_OPTIONS
 
-WGET_http1_OPTIONS=""
-WGET2_http1_OPTIONS="--no-http2"
-CURL_http1_OPTIONS="--http1.1"
-WGET_http2_OPTIONS=""
-WGET2_http2_OPTIONS="--http2"
-CURL_http2_OPTIONS="--http2"
-
-NCHECKS=20
-MINX=1
-MAXX=5
-SLEEP=0.5
-
-#Prepare Values
-KERNEL="$(uname -srmo | sed 's/_/\\_/g')"
-PROC="$(grep "model name" /proc/cpuinfo | uniq | cut -d':' -f2-)"
-PING="$(ping -c 5 example.com | tail -1 | awk '{print $4}' | cut -d'/' -f2)"
-WGET_VERSION="$($WGET --version | head -1 | cut -d' ' -f3)"
-WGET2_VERSION="$($WGET2 --version | head -1 | cut -d' ' -f3)"
-CURL_VERSION="$($CURL --version | head -1 | cut -d' ' -f2)"
-
-time_cmd() {
-	local cmd="$1"
-	local nurls="$2"
-	local data_file="$3"
-	echo "$cmd"
-	for ((i=0;i<NCHECKS;i++)); do
-		t1=$(date +%s%3N)
-		$cmd &>/dev/null
-		t2=$(date +%s%3N)
-		echo "$nurls" $((t2-t1))
-		sleep $SLEEP
-	done >> "$data_file"
+system_status() {
+	# Global parameters defining state of test rig
+	echo -e "Please wait, testing network connection ...\\n"
+	readonly KERNEL="$(uname -srmo | sed 's/_/\\\\_/g')"
+	readonly PROC="$(grep "model name" /proc/cpuinfo | uniq | cut -d':' -f2- | sed 's/\@/\\\\\@/g')"
+	readonly PING="RTT $(ping -c 5 example.com | tail -1 | awk '{print $4}' | cut -d'/' -f2)ms to example.com"
 }
 
-plot() {
-	ttype="$1"
-	title="$2"
-	local wget_opt="WGET_${ttype}_OPTIONS"
-	local wget2_opt="WGET2_${ttype}_OPTIONS"
-	local curl_opt="CURL_${ttype}_OPTIONS"
-	gtitle="$title\n\
-	$KERNEL, $PROC\n\
-	ping RTT $PING to example.com\n\
-	wget $WGET_VERSION options: $WGET_OPTIONS ${!wget_opt}\n\
-	wget2 $WGET2_VERSION options: $WGET2_OPTIONS ${!wget2_opt}\n\
-	curl $CURL_VERSION options: $CURL_OPTIONS ${!curl_opt}"
-
-	cat <<EOF | gnuplot
-	set terminal svg
-	set output "$1.svg"
-
-	set title "$gtitle"
-
-	# aspect ratio, for image size
-	# set size 1,0.7
-
-	set grid y
-	set xlabel "number of URLs"
-	set ylabel "wall time (ms)"
-
-	plot \
-		"wget_$ttype.data" using 1:2 smooth sbezier with lines title "Wget", \
-		"wget2_$ttype.data" using 1:2 smooth sbezier with lines title "Wget2", \
-		"curl_$ttype.data" using 1:2 smooth sbezier with lines title "Curl"
-EOF
+# Declare pushd and popd functions to not be so verbose
+pushd() {
+	command pushd "$@" &> /dev/null
 }
 
-rm -f wget.data wget2.data curl.data
+popd() {
+	command popd &> /dev/null
+}
 
-for ((nreq=MINX;nreq<=MAXX;nreq++)); do
-	urls=""
-	for ((i=1;i<=nreq;i++)); do
-		urls="$urls https://www.example.com/?test=$i"
-	done
-
-	#Warmup Run
-	if [ $nreq -eq 1 ]; then
-		$WGET $WGET_OPTIONS $urls
-		$WGET2 $WGET2_OPTIONS $urls
-		$CURL $CURL_OPTIONS $urls
+# get_source <program-name>
+#
+# Clone the prgram repository or update an existing repository
+get_source() {
+	local program="$1"
+	local PROG="${1^^}"
+	if [[ ! -d "$prog" ]]; then
+		local SRC_URL="${PROG}_SOURCE"
+		git clone "${!SRC_URL}" "$program"
+	else
+		pushd "$program"
+		git reset --hard HEAD
+		git checkout master
+		git pull origin master
+		popd
 	fi
+}
 
-	time_cmd "$WGET $WGET_OPTIONS $WGET_http1_OPTIONS $urls" $nreq wget_http1.data
-	time_cmd "$WGET2 $WGET2_OPTIONS $WGET2_http1_OPTIONS $urls" $nreq wget2_http1.data
-	time_cmd "$CURL $CURL_OPTIONS $CURL_http1_OPTIONS $urls" $nreq curl_http1.data
+# build_source <program-name>
+#
+# Call the <PROGRAM-NAME>_BUILD() function which is defined in the program
+# specification to compile the program. Any configure options or CFLAGS should
+# be added to the program specification file. CFLAGS may optionally be exported
+# before the invokation of this script.
+build_source() {
+	local program="$1"
+	local PROG="${1^^}"
 
-	time_cmd "$WGET $WGET_OPTIONS $WGET_http2_OPTIONS $urls" $nreq wget_http2.data
-	time_cmd "$WGET2 $WGET2_OPTIONS $WGET2_http2_OPTIONS $urls" $nreq wget2_http2.data
-	time_cmd "$CURL $CURL_OPTIONS $CURL_http2_OPTIONS $urls" $nreq curl_http2.data
+	local BUILD_CMD="${PROG}_BUILD"
+	${BUILD_CMD}
+}
+
+# Make sure we are in the directory where the script is located.
+# From this point onwards, the script may make use of relative paths
+cd "$SCRIPT_DIR"
+
+# Global params that are set by the argparse code
+NOSOURCE=false
+NOBUILD=false
+
+while getopts ":sb" opt; do
+	case $opt in
+		s) NOSOURCE=true;;
+		b) NOBUILD=true;;
+		:) echo "Missing argument for -$OPTARG" && exit 1;;
+		\?) echo "Unknown option: $OPTARG" && exit 1;;
+	esac
 done
 
-plot "http1" "HTTPS with HTTP/1.1"
-plot "http2" "HTTPS with HTTP/2"
+# Shift all the parsed options out. The next argument should be the name of the
+# benchmark to execute
+shift $((OPTIND-1))
+readonly BENCH_NAME="${1:-}"
+
+# Ensure that a valid benchmark is always available
+if [[ -z $BENCH_NAME ]]; then
+	echo "No benchmark specified. Exiting..."
+	exit 1
+elif [[ ! -f "${BENCHES_DIR}/${BENCH_NAME}.sh" ]]; then
+	echo "Benchmark specification file ${BENCHES_DIR}/${BENCH_NAME}.sh not found"
+	exit 1
+else
+	# shellcheck source=./benches/http2.sh
+	source "./${BENCHES_DIR}/${BENCH_NAME}.sh"
+
+fi
+
+for prog in "${BENCHMARK_PROGRAMS[@]}"; do
+	if [[ ! -f "${SOURCES_DIR}/${prog}.bench.sh" ]]; then
+		echo "The benchmark config file for $prog not found. Exiting"
+		exit 1
+	fi
+done
+
+mkdir -p "$SOURCES_DIR"
+
+system_status
+
+echo -e "Kernel: $KERNEL\\nProcessor: $PROC\\nPing: $PING\\n"
+
+for prog in "${BENCHMARK_PROGRAMS[@]}"; do
+	echo "Running for: $prog"
+	# shellcheck source=./sources/wget2.bench.sh
+	source "./${SOURCES_DIR}/$prog.bench.sh"
+	pushd "$SOURCES_DIR"
+
+	if [[ $NOSOURCE == false ]]; then
+		get_source "$prog"
+	fi
+
+	pushd "$prog"
+
+	if [[ $NOBUILD == false ]]; then
+		build_source "$prog" popd
+	fi
+
+	VERSION_CMD="${prog^^}_VERSION"
+	VERSIONS[$prog]=$(${VERSION_CMD})
+	echo "Version: ${VERSIONS[$prog]}"
+
+	run_bench "$prog"
+	popd
+	popd
+done
+finish_bench
