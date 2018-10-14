@@ -3284,6 +3284,7 @@ void deinit(void)
 	xfree(config.http_proxy_username);
 	xfree(config.http_username);
 	xfree(config.https_proxy);
+	xfree(config.hsts_preload_file);
 	xfree(config.input_encoding);
 	xfree(config.input_file);
 	xfree(config.load_cookies);
@@ -3336,6 +3337,7 @@ void deinit(void)
 	wget_http_set_http_proxy(NULL, NULL);
 	wget_http_set_https_proxy(NULL, NULL);
 	wget_http_set_no_proxy(NULL, NULL);
+
 
 #ifdef WITH_LIBHSTS
 	hsts_free(config.hsts_preload_data);
