@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <wchar.h>
 
 #include <wget.h>
 #include "private.h"
@@ -229,6 +230,74 @@ _bar_set_progress(const wget_bar_t *bar, int slot)
 	slotp->progress[bar->max_width] = 0;
 }
 
+/**
+ * \param[in] s String possibly containing multibyte characters (eg UTF-8)
+ * \param[in] available_space Number of columns available for display of s
+ * \param[out] inspectedp where to store number of characters inspected from s
+ * \param[out] padp where to store amount of white space padding
+ *
+ * Inspect that part of the multibyte string s which will consume up to
+ * available_space columns on the screen
+ * Each multibyte character can consume 0 or more columns on the screen
+ * If the string as displayed is shorter than available_space, padding
+ * will be required
+ *
+ * Starting with the first, each (possibly) multibyte sequence in s is
+ * converted to the corresponding wide character.
+ * Two values are derived in this process:
+ * mblen: length of multi-byte sequence (eg 1 for ordinary ASCII)
+ * wcwidth(wide): number of columns occupied by the wide character (>= 0)
+ * The mblen values are summed up to determine how much of s has been
+ * used in the inspection so far and the wcwidth(wide) values are summed up
+ * to determine the position of a (virtual) cursor in the available space.
+ */
+static void
+inspect_multibyte(char *s, size_t available_space, size_t *inspectedp, size_t *padp)
+{
+	unsigned int displayed = 0; /* number of columns displayed so far */
+	int inspected = 0;          /* total number of bytes inspected from s */
+	wchar_t wide;               /* wide character made from initial multibyte section */
+	int mblen;                  /* length of initial multibyte section which was converted to "wide" */
+	size_t remaining;
+
+	if (!s) {
+		*inspectedp = inspected;
+		*padp = available_space;
+		return;
+	}
+
+	remaining = strlen(s);	/* a slight optimization */
+
+	/* while we have another character ... */
+	while ((mblen = mbtowc(&wide, &s[inspected], remaining)) > 0) {
+	    int wid = wcwidth(wide);
+
+	    /*
+	     * If we have filled exactly "available_size" columns
+	     * and the next character is a zero-width character ...
+	     * ... or ...
+	     * if appending the wide character would exceed the given available_space ...
+	     */
+	    if ((wid == 0 && displayed == available_space) || displayed + wid > available_space)
+		break; /* ... we're done */
+
+	    /* we're not done, so advance in s ... */
+	    inspected += mblen;
+	    remaining -= mblen;
+
+	    /* ... and advance cursor */
+	    displayed += wid;
+	}
+
+	/*
+	 * When we come here, we either have processed the entire multibyte
+	 * string, then we will need to pad, or we have filled the available
+	 * space, then there will be no padding.
+	 */
+	*inspectedp = inspected;
+	*padp = available_space - displayed;
+}
+
 static void _bar_update_slot(const wget_bar_t *bar, int slot)
 {
 	_bar_slot_t *slotp = &bar->slots[slot];
@@ -238,6 +307,7 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 	if (slotp->status == DOWNLOADING || slotp->status == COMPLETE) {
 		uint64_t max, cur;
 		int ratio;
+		size_t consumed, pad;
 
 		max = slotp->file_size;
 		cur = slotp->bytes_downloaded;
@@ -264,8 +334,9 @@ static void _bar_update_slot(const wget_bar_t *bar, int slot)
 		// xxx.xxKB/s   _BAR_SPEED_SIZE         Download speed
 		// ===>         Remaining               Progress Meter
 
+		inspect_multibyte(slotp->filename, _BAR_FILENAME_SIZE, &consumed, &pad);
 		wget_fprintf(stdout, "%-*.*s %*d%% [%s] %*s %*s%c/s",
-				_BAR_FILENAME_SIZE, _BAR_FILENAME_SIZE, slotp->filename,
+				(int) (consumed+pad), (int) (consumed+pad), slotp->filename,
 				_BAR_RATIO_SIZE, ratio,
 				slotp->progress,
 				_BAR_DOWNBYTES_SIZE, slotp->human_size,
