@@ -6,3 +6,5 @@ extraction:
         - libgpgme11-dev
     configure:
       command: ./bootstrap && ./configure --disable-doc
+    exclude:
+        - unit-tests/files
