@@ -33,13 +33,14 @@ array student_t[101] = [3.078, 4.303, 3.182, 2.776, 2.571, 2.447, 2.365, \
 
 set print output_filename
 
+print "# THIS IS A GENERATED FILE (DO NOT EDIT)"
 do for [i=1:nurls] {
 	stats filename using ($1==i?$2:1/0) name "urlnum" nooutput
 	# Get the critical value of the Student's T-Distribution for a 95% CI
 	# The Degree of Freedom is 1 less than number of elements
 	student_val = student_t[urlnum_records-1]
 
-	print i, urlnum_mean, (urlnum_mean - student_val*urlnum_ssd / sqrt(urlnum_records)), (urlnum_mean + student_val*urlnum_ssd/sqrt(urlnum_records)), student_val
+	print i, urlnum_mean, (urlnum_mean - student_val*urlnum_ssd / sqrt(urlnum_records)), (urlnum_mean + student_val*urlnum_ssd/sqrt(urlnum_records))
 }
 
 # vim: set ts=4 sts=4 sw=4 tw=79 ft=gnuplot noet :
