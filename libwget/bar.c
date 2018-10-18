@@ -181,17 +181,17 @@ static volatile sig_atomic_t winsize_changed;
 static inline G_GNUC_WGET_ALWAYS_INLINE void
 _restore_cursor_position(void)
 {
-	// CSI u: Restore cursor position
-	fputs("\033[u", stdout);
+	// ESC 8: Restore cursor position
+	fputs("\0338", stdout);
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
 _bar_print_slot(const wget_bar_t *bar, int slot)
 {
-	// CSI s: Save cursor
+	// ESC 7: Save cursor
 	// CSI <n> A: Cursor up
 	// CSI <n> G: Cursor horizontal absolute
-	wget_fprintf(stdout, "\033[s\033[%dA\033[1G", bar->nslots - slot);
+	wget_fprintf(stdout, "\0337\033[%dA\033[1G", bar->nslots - slot);
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
@@ -590,13 +590,13 @@ void wget_bar_screen_resized(void)
 void wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len)
 {
 	wget_thread_mutex_lock(bar->mutex);
-	// CSI s:    Save cursor
+	// ESC 7:    Save cursor
 	// CSI <n>S: Scroll up whole screen
 	// CSI <n>A: Cursor up
 	// CSI <n>G: Cursor horizontal absolute
 	// CSI 0J:   Clear from cursor to end of screen
 	// CSI 31m:  Red text color
-	wget_fprintf(stdout, "\033[s\033[1S\033[%dA\033[1G\033[0J\033[31m", bar->nslots + 1);
+	wget_fprintf(stdout, "\0337\033[1S\033[%dA\033[1G\033[0J\033[31m", bar->nslots + 1);
 	fwrite(buf, 1, len, stdout);
 	fputs("\033[m", stdout); // reset text color
 	_restore_cursor_position();
