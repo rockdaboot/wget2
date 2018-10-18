@@ -1222,20 +1222,27 @@ typedef struct _wget_hpkp_st wget_hpkp_t;
 
 //typedef struct _wget_hpkp_pin_st wget_hpkp_pin_t;
 
-/* FIXME this doesn't work */
+/* FIXME: the following entries are not used. review the hpkp function return values ! */
 /**
- * \ingroup libwget-hpkp
- * Return values
+ * \addtogroup libwget-hpkp
+ *
  * @{
  */
+/// Success
 #define WGET_HPKP_OK			 0
+/// General error
 #define WGET_HPKP_ERROR			-1
+/// The HPKP entry is expired
 #define WGET_HPKP_ENTRY_EXPIRED		-2
+/// The HPKP entry was deleted
 #define WGET_HPKP_WAS_DELETED		-3
+/// The entry doesn't have enough PINs
 #define WGET_HPKP_NOT_ENOUGH_PINS	-4
+/// The entry already exists
 #define WGET_HPKP_ENTRY_EXISTS		-5
+/// Failed to open a file
 #define WGET_HPKP_ERROR_FILE_OPEN	-6
-/* @} */
+/** @} */
 
 /**
  * \ingroup libwget-hpkp
