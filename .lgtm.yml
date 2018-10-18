@@ -1,3 +1,7 @@
+path_classifiers:
+  test:
+    - unit-tests/files
+
 extraction:
   cpp:
     prepare:
@@ -6,5 +10,3 @@ extraction:
         - libgpgme11-dev
     configure:
       command: ./bootstrap && ./configure --disable-doc
-    exclude:
-        - unit-tests/files
