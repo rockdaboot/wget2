@@ -5,7 +5,6 @@
 
 import sys
 import csv
-import json
 
 def out(reader, parentid = '0', level = 0):
   list = [row for row in reader if row['ParentID'] == parentid]
