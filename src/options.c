@@ -3266,6 +3266,7 @@ void deinit(void)
 	wget_ocsp_db_free(&config.ocsp_db);
 	wget_netrc_db_free(&config.netrc_db);
 
+	xfree(config.accept_regex);
 	xfree(config.base_url);
 	xfree(config.bind_address);
 	xfree(config.ca_cert);
@@ -3300,6 +3301,7 @@ void deinit(void)
 	xfree(config.private_key);
 	xfree(config.random_file);
 	xfree(config.referer);
+	xfree(config.reject_regex);
 	xfree(config.remote_encoding);
 	xfree(config.save_cookies);
 	xfree(config.secure_protocol);
