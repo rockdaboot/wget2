@@ -78,7 +78,7 @@ int main(G_GNUC_WGET_UNUSED int argc, char **argv)
 	else if (!strcmp(valgrind, "1")) {
 			  char cmd[strlen(argv[0]) + 256];
 
-			  snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s", argv[0]);
+			  snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=" SRCDIR "/valgrind-suppressions --gen-suppressions=all %s", argv[0]);
 			  return system(cmd) != 0;
 	} else {
 			  char cmd[strlen(valgrind) + strlen(argv[0]) + 32];

@@ -1,0 +1,21 @@
+{
+   libdl leak suppression - Travis
+   Memcheck:Leak
+   ...
+   fun:dlsym
+   ...
+}
+{
+   libgpgme leak suppression
+   Memcheck:Leak
+   ...
+   fun:gpgme_set_locale
+   ...
+}
+{
+   libc leak suppression
+   Memcheck:Leak
+   ...
+   fun:getpwnam_r@@GLIBC_2.2.5
+   ...
+}
