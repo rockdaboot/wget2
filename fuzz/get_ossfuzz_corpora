@@ -25,7 +25,8 @@ project=wget2
 # sync/copy the OSS-Fuzz corpora into the .new directory
 mkdir -p ${fuzzer}.new
 cp -fp ${fuzzer}.in/* ${fuzzer}.new
-gsutil -m rsync gs://${project}-corpus.clusterfuzz-external.appspot.com/libFuzzer/wget2_${fuzzer} ${fuzzer}.new
+gsutil cp $(gsutil ls gs://${project}-backup.clusterfuzz-external.appspot.com/corpus/libFuzzer/wget2_${fuzzer}|tail -n 1) ${fuzzer}.new
+(cd ${fuzzer}.new && unzip -q -f -o *.zip && rm *.zip)
 
 # create fuzzer target
 BUILD_ONLY=1 ./run-clang.sh ${fuzzer}
