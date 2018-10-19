@@ -60,6 +60,7 @@ docs/wget2_md2man.sh
 fuzz/*.min
 fuzz/*.out
 fuzz/*_fuzzer
+fuzz/*_fuzzer.new
 git_push
 include/wget/wgetver.h
 install-sh
