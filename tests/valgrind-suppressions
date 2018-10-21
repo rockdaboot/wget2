@@ -10,6 +10,15 @@
 }
 
 {
+   Happens on TravisCI, maybe an old version of libidn
+   Memcheck:Addr4
+   fun:idna_to_ascii_4z
+   fun:idna_to_ascii_8z
+   fun:wget_str_to_ascii
+   ...
+}
+
+{
    Reachable pointer from within GnuTLS - 1
    Memcheck:Leak
    match-leak-kinds: reachable
