@@ -143,6 +143,10 @@ static void
 static unsigned int G_GNUC_WGET_PURE
 	hash_url(const char *url);
 static int
+	read_xattr_metadata(const char *name, char *value, size_t size, int fd),
+	write_xattr_metadata(const char *name, const char *value, int fd),
+	write_xattr_last_modified(time_t last_modified, int fd),
+	set_file_metadata(const char *origin_url, const char *referrer_url, const char *mime_type, const char *charset, time_t last_modified, FILE *fp),
 	http_send_request(wget_iri_t *iri, wget_iri_t *original_url, DOWNLOADER *downloader);
 wget_http_response_t
 	*http_receive_response(wget_http_connection_t *conn);
@@ -163,7 +167,7 @@ static long long
 static int
 	hsts_changed,
 	hpkp_changed;
-static volatile int
+static volatile bool
 	terminate;
 static int
 	nthreads;
@@ -3256,7 +3260,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		FILE *fp;
 		fname = unique[0] ? unique : fname;
 		if ((fp = fopen(fname, "ab"))) {
-			set_file_metadata(uri, original_url, resp->content_type, resp->content_type_encoding, fp);
+			set_file_metadata(uri, original_url, resp->content_type, resp->content_type_encoding, resp->last_modified ? resp->last_modified - 1 : 0, fp);
 			fclose(fp);
 		} else {
 			error_printf(_("Failed to save extended attribute %s\n"), fname);
@@ -3532,7 +3536,23 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 		}
 
 		if (config.timestamping) {
-			time_t mtime = get_file_mtime(local_filename);
+			bool found_mtime = 0;
+			time_t mtime = 0;
+			FILE *fp;
+
+			// see if we stored the server timestamp before
+			if ((fp = fopen(local_filename, "r"))) {
+				char tbuf[32];
+				if (read_xattr_metadata("user.last_modified", tbuf, sizeof(tbuf), fileno(fp)) == 0) {
+					tbuf[sizeof(tbuf) - 1] = 0;
+					mtime = (time_t) atoll(tbuf);
+					found_mtime = 1;
+				}
+				fclose(fp);
+			}
+
+			if (!found_mtime)
+				mtime = get_file_mtime(local_filename);
 
 			if (mtime) {
 				char http_date[32];
@@ -3765,8 +3785,15 @@ wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
 	resp->body = context->body;
 
 	if (context->outfd >= 0) {
-		if (resp->last_modified)
-			set_file_mtime(context->outfd, resp->last_modified);
+		if (resp->last_modified) {
+			/* If program was aborted, we store file times one second less than the server time.
+			 * So a later download with -N would start over instead of leaving incomplete data.
+			 * Or a later download with -c -N would continue with a IF-MODIFIED-SINCE: HTTP header. */
+			if (config.xattr && !terminate)
+				write_xattr_last_modified(resp->last_modified, context->outfd);
+
+			set_file_mtime(context->outfd, resp->last_modified - terminate);
+		}
 
 		if (config.fsync_policy) {
 			if (fsync(context->outfd) < 0 && errno == EIO) {
@@ -3789,39 +3816,75 @@ wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
 
 #ifdef USE_XATTR
 
-static int write_xattr_metadata(const char *name, const char *value,
-								FILE *fname)
+static int write_xattr_metadata(const char *name, const char *value, int fd)
 {
-	int retval = -1;
+	if (!(name && value && fd >= 0))
+		return -1;
 
-	if (name && value && fname) {
-		retval = fsetxattr(fileno (fname), name, value, strlen (value), 0);
-		/* FreeBSD's extattr_set_fd returns the length of the extended attribute. */
-		retval = (retval < 0) ? retval : 0;
-		if (retval)
-			debug_printf("Failed to set xattr %s.\n", name);
-	}
+	int rc = fsetxattr(fd, name, value, strlen(value), 0) < 0 ? -1 : 0;
 
-	return retval;
+	if (rc)
+		debug_printf("Failed to set xattr %s.\n", name);
+
+	return rc;
+}
+
+static int read_xattr_metadata(const char *name, char *value, size_t size, int fd)
+{
+	if (!(name && value && fd >= 0))
+		return -1;
+
+	return fgetxattr(fd, name, value, size) < 0 ? -1 : 0;
+}
+
+static int write_xattr_last_modified(time_t last_modified, int fd)
+{
+	char tbuf[32];
+
+	if (fd < 0)
+		return -1;
+
+	wget_snprintf(tbuf, sizeof(tbuf), "%lld", (long long) last_modified);
+	return write_xattr_metadata("user.last_modified", tbuf, fd);
 }
 
 #else /* USE_XATTR */
 
-static int write_xattr_metadata(const char *name, const char *value,
-								FILE *fname)
+static int write_xattr_metadata(const char *name, const char *value, int fd)
 {
 	(void)name;
 	(void)value;
-	(void)fname;
+	(void)fd;
 
-	return 0;
+	return -1;
 }
 
+static int read_xattr_metadata(const char *name, char *value, size_t size, int fd)
+{
+	(void)name;
+	(void)value;
+	(void)size;
+	(void)fd;
+
+	return -1;
+}
+
+static int write_xattr_last_modified(time_t last_modified, int fd)
+{
+	(void)last_modified;
+	(void)fd;
+
+	return -1;
+}
 #endif /* USE_XATTR */
 
-int set_file_metadata(const char *origin_url, const char *referrer_url,
-					  const char *mime_type, const char *charset, FILE *fname)
+/* Store metadata name/value attributes against fp. */
+static int set_file_metadata(const char *origin_url, const char *referrer_url,
+					  const char *mime_type, const char *charset,
+					  time_t last_modified, FILE *fp)
 {
+	int fd;
+
 	/* Save metadata about where the file came from (requested, final URLs) to
 	 * user POSIX Extended Attributes of retrieved file.
 	 *
@@ -3829,15 +3892,18 @@ int set_file_metadata(const char *origin_url, const char *referrer_url,
 	 * [http://freedesktop.org/wiki/CommonExtendedAttributes] and
 	 * [http://0pointer.de/lennart/projects/mod_mime_xattr/].
 	 */
-	int retval = -1;
+	if (!origin_url || !fp)
+		return -1;
 
-	if (!origin_url || !fname)
-		return retval;
+	if ((fd = fileno(fp)) < 0)
+		return -1;
 
-	write_xattr_metadata("user.xdg.origin.url", origin_url, fname);
-	write_xattr_metadata("user.xdg.referrer.url", referrer_url, fname);
-	write_xattr_metadata("user.mime_type", mime_type, fname);
-	retval = write_xattr_metadata("user.charset", charset, fname);
+	if (write_xattr_metadata("user.xdg.origin.url", origin_url, fd) < 0 && errno == ENOTSUP)
+		return -1; // give up early if file system doesn't support extended attributes
 
-	return retval;
+	write_xattr_metadata("user.xdg.referrer.url", referrer_url, fd);
+	write_xattr_metadata("user.mime_type", mime_type, fd);
+	write_xattr_metadata("user.charset", charset, fd);
+
+	return write_xattr_last_modified(last_modified, fd);
 }

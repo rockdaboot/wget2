@@ -24,26 +24,29 @@
 #define SRC_WGET_XATTR_H
 
 #include <stdio.h>
-
-/* Store metadata name/value attributes against fp. */
-int set_file_metadata(const char *origin_url, const char *referrer_url,
-	const char *mime_type, const char *charset, FILE *fname);
+#include <time.h>
 
 #if defined __linux
 /* libc on Linux has fsetxattr (5 arguments). */
+/* libc on Linux has fgetxattr (4 arguments). */
 #  include <sys/xattr.h>
 #  define USE_XATTR
 #elif defined __APPLE__
 /* libc on OS/X has fsetxattr (6 arguments). */
+/* libc on OS/X has fgetxattr (6 arguments). */
 #  include <sys/xattr.h>
 #  define fsetxattr(file, name, buffer, size, flags) \
           fsetxattr((file), (name), (buffer), (size), 0, (flags))
+#  define fgetxattr(file, name, buffer, size, flags) \
+          fgetxattr((file), (name), (buffer), (size), 0, (flags))
 #  define USE_XATTR
 #elif defined __FreeBSD_version && (__FreeBSD_version > 500000)
 /* FreeBSD */
 #  include <sys/types.h>
 #  include <sys/extattr.h>
 #  define fsetxattr(file, name, buffer, size, flags) \
+          extattr_set_fd((file), EXTATTR_NAMESPACE_USER, (name), (buffer), (size))
+#  define fgetxattr(file, name, buffer, size, flags) \
           extattr_set_fd((file), EXTATTR_NAMESPACE_USER, (name), (buffer), (size))
 #  define USE_XATTR
 #endif
