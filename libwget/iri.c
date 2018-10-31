@@ -898,6 +898,7 @@ int wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2)
 			return 1;
 	}
 */
+
 	if ((n = wget_strcasecmp(iri1->path, iri2->path)))
 		return n;
 

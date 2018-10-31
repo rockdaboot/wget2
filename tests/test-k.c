@@ -40,6 +40,7 @@ int main(void)
 				"<style> html { background: url(htTp://localhost:{{port}}/second.html); }</style>" \
 				"<style> div { background: url(htTp://localhost:{{port}}/second.html); }</style>" \
 				"</head><body><p>A link to a" \
+				" <a href=\"/\">xxx</a>." \
 				" <a href=\"second.html\">second page</a>." \
 				" <a href=\"htTp://localhost:{{port}}/second.html\">second page</a>." \
 				" <a href=\"subdir/third.html\">third page</a>." \
@@ -71,6 +72,7 @@ int main(void)
 		"<style> html { background: url(second.html); }</style>" \
 		"<style> div { background: url(second.html); }</style>" \
 		"</head><body><p>A link to a" \
+		" <a href=\"index.html\">xxx</a>." \
 		" <a href=\"second.html\">second page</a>." \
 		" <a href=\"second.html\">second page</a>." \
 		" <a href=\"subdir/third.html\">third page</a>." \

@@ -691,6 +691,16 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 		return;
 	}
 
+	if (!iri->path || !*iri->path) {
+		if (iri->path_allocated) {
+			xfree(iri->path);
+			iri->path_allocated=0;
+		}
+		iri->path = config.default_page;
+	}
+
+	wget_debug_printf(_("Adding URL: %s path=%s\n"), url, iri->path);
+
 	// Allow plugins to intercept URLs
 	plugin_db_forward_url(iri, &plugin_verdict);
 	if (plugin_verdict.reject) {
@@ -843,6 +853,14 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	if (!iri) {
 		error_printf(_("Cannot resolve URI '%s'\n"), url);
 		return;
+	}
+
+	if (!iri->path || !*iri->path) {
+		if (iri->path_allocated) {
+			xfree(iri->path);
+			iri->path_allocated=0;
+		}
+		iri->path = config.default_page;
 	}
 
 	// Allow plugins to intercept URL
