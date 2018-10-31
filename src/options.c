@@ -2935,7 +2935,7 @@ int init(int argc, const char **argv)
 		config.netrc_file = wget_aprintf("%s/.netrc", home_dir);
 
 #ifdef WITH_LIBHSTS
-	if (config.hsts_preload && !config.hsts_preload_file)
+	if (config.hsts_preload && !config.hsts_preload_file && *hsts_dist_filename())
 		config.hsts_preload_file = wget_strdup(hsts_dist_filename());
 #endif
 
@@ -3068,7 +3068,7 @@ int init(int argc, const char **argv)
 	}
 
 #ifdef WITH_LIBHSTS
-	if (config.hsts_preload) {
+	if (config.hsts_preload && config.hsts_preload_file) {
 		if ((rc = hsts_load_file(config.hsts_preload_file, &config.hsts_preload_data))) {
 			wget_error_printf(_("Failed to load %s (%d)"), config.hsts_preload_file, rc);
 		}
