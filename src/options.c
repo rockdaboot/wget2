@@ -1368,7 +1368,7 @@ static const struct optionw options[] = {
 		{ "Caching of domain name lookups. (default: on)\n"
 		}
 	},
-	{ "dns-cache-preload", &config.dns_cache_preload, parse_filename, -1, 0,
+	{ "dns-cache-preload", &config.dns_cache_preload, parse_filename, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "File to be used to preload the DNS cache.\n",
 		  "Format is like /etc/hosts (IP<whitespace>hostname).\n"
@@ -2839,6 +2839,7 @@ static int _preload_dns_cache(const char *fname)
 
 		wget_strtolower(name);
 
+		debug_printf("Adding DNS Mapping: %s -> %s\n", name, ip);
 		wget_tcp_dns_cache_add(ip, name, 80);
 		wget_tcp_dns_cache_add(ip, name, 443);
 	}
