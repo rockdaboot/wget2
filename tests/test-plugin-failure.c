@@ -27,18 +27,9 @@
 #include <string.h> // strlen()
 #include <unistd.h> // access()
 #include "libtest.h"
+#include "plugin_tests.h"
 
 // #define LARGEFILE (11 << 20)
-
-#define OBJECT_DIR "../.libs"
-
-#if defined _WIN32
-#define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".dll"
-#elif defined __CYGWIN__
-#define LOCAL_NAME(x) OBJECT_DIR "/cyg" x ".dll"
-#else
-#define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".so"
-#endif
 
 static const char *mainpage = "\
 <html>\n\
