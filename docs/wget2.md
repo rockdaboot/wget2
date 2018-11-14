@@ -1845,7 +1845,7 @@ Go to background immediately after startup. If no output file is specified via t
   If a MIME type starts with the character '!' it won't be downloaded, this is useful when trying to download
   something with exceptions. For example, download everything except images:
 
-      wget2 https://<site>/<document> --filter-mime-type=*,\!image/*
+      wget2 -r https://<site>/<document> --filter-mime-type=*,\!image/*
 
   It is also useful to download files that are compatible with an application of your system. For instance,
   download every file that is compatible with LibreOffice Writer from a website using the recursive mode:
