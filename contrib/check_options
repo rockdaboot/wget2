@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/bin/sh
+
+# exit gracefully if not bash
+if test -z "$BASH_VERSION"; then exit 0; fi
 
 shopt -s extglob # enable pattern matching for 'case'
 
