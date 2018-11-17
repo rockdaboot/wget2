@@ -3,6 +3,10 @@
 # to speed up compilation. We include a version number in cache
 # name to allow expiration of old caches.
 
+stages:
+  - stage1-testing
+  - stage2-tarball
+
 cache:
   key: "$CI_JOB_NAME-ver4"
   paths:
@@ -20,7 +24,7 @@ after_script:
   # somehow after_script looses environment
   - export CCACHE_BASEDIR=${PWD}
   - export CCACHE_DIR=${PWD}/cache
-  - ccache -s
+  - if which ccache >/dev/null; then ccache -s; fi
 
 variables:
   BUILD_IMAGES_PROJECT: gnuwget/build-images
@@ -60,6 +64,7 @@ variables:
 #   4. Code coverage stats
 
 Full + VPATH/Debian:
+  stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - cp -a /builds/common/gnulib .
@@ -70,6 +75,7 @@ Full + VPATH/Debian:
     - ../configure $CONFIGURE_BASE_FLAGS --cache-file ../cache/config.cache
     - make -j$(nproc)
     - make -j$(nproc) distcheck
+    - mv wget2-*.gz ..
   tags:
     - shared
     - docker
@@ -81,12 +87,18 @@ Full + VPATH/Debian:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
+  artifacts:
+    expire_in: 2 weeks
+    when: on_success
+    paths:
+      - wget2-*.gz
 
 
 # In this build we combine
 #  * gcc
 #  * check, syntax-check
 Minimal/Debian:
+  stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - cp -a /builds/common/gnulib .
@@ -114,6 +126,7 @@ Minimal/Debian:
 #  * ASan, UBSan
 #  * check, syntax-check
 Sanitizers/Debian:
+  stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - cp -a /builds/common/gnulib .
@@ -137,6 +150,7 @@ Sanitizers/Debian:
       - tests/*.log
 
 Scan-Build/Debian:
+  stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - cp -a /builds/common/gnulib .
@@ -157,6 +171,7 @@ Scan-Build/Debian:
       - scan-build/*
 
 Valgrind/Debian:
+  stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - cp -a /builds/common/gnulib .
@@ -179,6 +194,7 @@ Valgrind/Debian:
       - tests/*.log
 
 Simple/Fedora:
+  stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
     - cp -a /builds/common/gnulib .
@@ -200,6 +216,7 @@ Simple/Fedora:
       - tests/*.log
 
 Alpine:
+  stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ALPINE_BUILD
   script:
     - cp -a /builds/common/gnulib .
@@ -221,6 +238,7 @@ Alpine:
       - tests/*.log
 
 #Centos7 build:
+#  stage: stage1-testing
 #  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$CENTOS7_BUILD
 #  script:
 #  - sed -i 's/AM_GNU_GETTEXT_VERSION(0.19.3)/AM_GNU_GETTEXT_VERSION(0.18.2)/g' configure.ac
@@ -235,6 +253,7 @@ Alpine:
 #      - compat_reports/
 
 pages:
+  stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - cp -a /builds/common/gnulib .
@@ -263,6 +282,7 @@ pages:
     - master
 
 MinGW64:
+  stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
   script:
     - cp -a /builds/common/gnulib .
@@ -295,6 +315,7 @@ MinGW64:
       - tests/*.log
 
 DepBuild/Arch:
+  stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ARCH_BUILD
   only:
       - schedules
@@ -320,7 +341,43 @@ DepBuild/Arch:
       - tests/*.log
 
 
+# Test building from tarball in a non-dev environment
+Tarball:
+  stage: stage2-tarball
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$BASIC_BUILD
+  variables:
+    GIT_STRATEGY: none
+  script:
+    # remove all files from git repo
+    - mv wget2-*.gz /tmp
+    - rm -rf * .git* .travis*
+    - mv /tmp/wget2-*.gz .
+    # unpack and build from tarball
+    - tar xvf wget2-*.gz
+    - cd wget2-*
+    - unset CC
+    - ./configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
+    - make -j$(nproc)
+    - make -j$(nproc) check
+    # check if essential files are accidentally cleaned
+    - make clean
+    - make -j$(nproc)
+  tags:
+    - shared
+  dependencies:
+    - Full + VPATH/Debian
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - wget2-*/*.log
+      - wget2-*/tests/*.log
+      - wget2-*/unit-tests/*.log
+      - wget2-*/fuzz/*.log
+
+
 CommitCheck:
+  stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$BASIC_BUILD
   before_script:
     - /bin/true
