@@ -1,7 +1,7 @@
 #ifndef WGETTEST_PLUGIN_H
 #define WGETTEST_PLUGIN_H
 
-#define OBJECT_DIR SRCDIR"/.libs"
+#define OBJECT_DIR BUILDDIR"/.libs"
 
 #if defined _WIN32
 #define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".dll"

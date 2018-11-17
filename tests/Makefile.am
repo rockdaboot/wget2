@@ -57,7 +57,7 @@ libtest_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include/wget -I$(top_builddir)
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
 libtest_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
 
-EXTRA_DIST = libtest.h certs gpg
+EXTRA_DIST = libtest.h plugin_tests.h certs gpg
 
 clean-local:
 	rm -rf $(srcdir)/.test_*
