@@ -39,5 +39,4 @@ css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
 	$(AM_V_GEN)
 	$(AM_V_at)$(LEX) -w -t $< | $(SED) 's/fprintf/wget_fprintf/g' > $@
 
-clean-local:
-	-rm -f css_tokenizer.c
+DISTCLEANFILES = css_tokenizer.c
