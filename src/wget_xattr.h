@@ -37,8 +37,8 @@
 #  include <sys/xattr.h>
 #  define fsetxattr(file, name, buffer, size, flags) \
           fsetxattr((file), (name), (buffer), (size), 0, (flags))
-#  define fgetxattr(file, name, buffer, size, flags) \
-          fgetxattr((file), (name), (buffer), (size), 0, (flags))
+#  define fgetxattr(file, name, buffer, size) \
+          fgetxattr((file), (name), (buffer), (size), 0, 0)
 #  define USE_XATTR
 #elif defined __FreeBSD_version && (__FreeBSD_version > 500000)
 /* FreeBSD */
@@ -46,7 +46,7 @@
 #  include <sys/extattr.h>
 #  define fsetxattr(file, name, buffer, size, flags) \
           extattr_set_fd((file), EXTATTR_NAMESPACE_USER, (name), (buffer), (size))
-#  define fgetxattr(file, name, buffer, size, flags) \
+#  define fgetxattr(file, name, buffer, size) \
           extattr_set_fd((file), EXTATTR_NAMESPACE_USER, (name), (buffer), (size))
 #  define USE_XATTR
 #endif
