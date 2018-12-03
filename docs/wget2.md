@@ -1495,7 +1495,7 @@ Go to background immediately after startup. If no output file is specified via t
   database.
 
   If you supply your own HSTS database via --hsts-file, be aware that Wget2 may modify the provided file if any
-  change occurs between the HSTS policies requested by the remote servers and those in the file. When Wget2 exists,
+  change occurs between the HSTS policies requested by the remote servers and those in the file. When Wget2 exits,
   it effectively updates the HSTS database by rewriting the database file with the new entries.
 
   If the supplied file does not exist, Wget2 will create one. This file will contain the new HSTS entries. If no
