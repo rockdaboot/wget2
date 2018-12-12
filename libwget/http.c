@@ -305,15 +305,15 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		wget_buffer_t buf;
 		int hashtype, hashlen;
 
-		if (wget_strcmp(qop, "auth")) {
+		if (wget_strcasecmp_ascii(qop, "auth")) {
 			error_printf(_("Unsupported quality of protection '%s'.\n"), qop);
 			return;
 		}
 
-		if (!wget_strcmp(algorithm, "MD5") || !wget_strcmp(algorithm, "MD5-sess") || algorithm == NULL) {
+		if (!wget_strcasecmp_ascii(algorithm, "MD5") || !wget_strcasecmp_ascii(algorithm, "MD5-sess") || algorithm == NULL) {
 			// RFC 2617
 			hashtype = WGET_DIGTYPE_MD5;
-		} else if (!wget_strcmp(algorithm, "SHA-256") || !wget_strcmp(algorithm, "SHA-256-sess")) {
+		} else if (!wget_strcasecmp_ascii(algorithm, "SHA-256") || !wget_strcasecmp_ascii(algorithm, "SHA-256-sess")) {
 			// RFC 7616
 			hashtype = WGET_DIGTYPE_SHA256;
 		} else {
@@ -331,7 +331,7 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		// A1BUF = H(user ":" realm ":" password)
 		wget_hash_printf_hex(hashtype, a1buf, sizeof(a1buf), "%s:%s:%s", username, realm, password);
 
-		if (!wget_strcmp(algorithm, "MD5-sess") || !wget_strcmp(algorithm, "SHA-256-sess")) {
+		if (!wget_strcasecmp_ascii(algorithm, "MD5-sess") || !wget_strcasecmp_ascii(algorithm, "SHA-256-sess")) {
 			// A1BUF = H( H(user ":" realm ":" password) ":" nonce ":" cnonce )
 			wget_snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
 			wget_hash_printf_hex(hashtype, a1buf, sizeof(a1buf), "%s:%s:%s", a1buf, nonce, cnonce);
@@ -340,7 +340,7 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		// A2BUF = H(method ":" path)
 		wget_hash_printf_hex(hashtype, a2buf, sizeof(a2buf), "%s:/%s", req->method, req->esc_resource.data);
 
-		if (!wget_strcmp(qop, "auth") || !wget_strcmp(qop, "auth-int")) {
+		if (!wget_strcasecmp_ascii(qop, "auth") || !wget_strcasecmp_ascii(qop, "auth-int")) {
 			// RFC 2617 Digest Access Authentication
 			if (!*cnonce)
 				wget_snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
@@ -361,7 +361,7 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 			"Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/%s\", response=\"%s\"",
 			username, realm, nonce, req->esc_resource.data, response_digest);
 
-		if (!wget_strcmp(qop,"auth"))
+		if (!wget_strcasecmp_ascii(qop,"auth"))
 			wget_buffer_printf_append(&buf, ", qop=auth, nc=00000001, cnonce=\"%s\"", cnonce);
 
 		if (opaque)
