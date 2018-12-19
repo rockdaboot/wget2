@@ -376,6 +376,9 @@ AM_CONDITIONAL([WITH_PANDOC], [ test -n "$PANDOC" ])
 #])
 
 
+# Check for ldconfig
+AC_CHECK_PROG(LDCONFIG, ldconfig, ldconfig, :)
+
 # Check for valgrind
 AC_ARG_ENABLE(valgrind-tests,
   AS_HELP_STRING([--enable-valgrind-tests], [enable using Valgrind for tests (mutually exclusive with Address/Memory/Thread sanitizer)]),

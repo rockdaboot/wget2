@@ -71,3 +71,7 @@ fuzz-coverage: clean clean-lcov
 check-local:
 	$(AM_V_at)$(MAKE) -s syntax-check >/dev/null
 	$(AM_V_at)$(srcdir)/contrib/check_options $(srcdir)/docs/wget2.md $(builddir)/src/wget2$(EXEEXT)
+
+# ppl often forget to run ldconfig after an install, so let's do it here
+install-exec-hook:
+	$(AM_V_at)$(LDCONFIG)
