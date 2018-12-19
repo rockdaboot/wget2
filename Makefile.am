@@ -74,4 +74,4 @@ check-local:
 
 # ppl often forget to run ldconfig after an install, so let's do it here
 install-exec-hook:
-	$(AM_V_at)$(LDCONFIG)
+	$(AM_V_at)$(LDCONFIG) || :
