@@ -3195,20 +3195,20 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 				rc = safe_read(fd, partial_content->data, size);
 				if (rc == SAFE_READ_ERROR || (long long) rc != size) {
 					error_printf(_("Failed to load partial content from '%s' (errno=%d): %s\n"),
-							fname, errno, strerror(errno));
+						fname, errno, strerror(errno));
 					set_exit_status(WG_EXIT_STATUS_IO);
 				}
 				close(fd);
 			} else {
 				error_printf(_("Failed to load partial content from '%s' (errno=%d): %s\n"),
-						fname, errno, strerror(errno));
+					fname, errno, strerror(errno));
 				set_exit_status(WG_EXIT_STATUS_IO);
 			}
 		}
 	}
 
 	fd = _open_unique(fname, O_WRONLY | flag | O_CREAT | O_NONBLOCK | O_BINARY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
-			multiple, unique, sizeof(unique));
+		multiple, unique, sizeof(unique));
 	// debug_printf("1 fd=%d flag=%02x (%02x %02x %02x) errno=%d %s\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND,errno,fname);
 	// Store the "actual" file name (with any extensions that were added present)
 	wget_asprintf(actual_file_name, "%s", unique[0] ? unique : fname);
@@ -3216,11 +3216,11 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	if (fd >= 0) {
 		ssize_t rc;
 
-		info_printf(_("Saving '%s'\n"), unique[0] ? unique : fname);
+		info_printf(_("Saving '%s'\n"), *actual_file_name);
 
 		if (config.save_headers) {
 			if ((rc = write(fd, resp->header->data, resp->header->length)) != (ssize_t)resp->header->length) {
-				error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), unique[0] ? unique : fname, rc, errno);
+				error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), *actual_file_name, rc, errno);
 				set_exit_status(WG_EXIT_STATUS_IO);
 			}
 		}
@@ -3240,12 +3240,11 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 
 	if (config.xattr) {
 		FILE *fp;
-		fname = unique[0] ? unique : fname;
-		if ((fp = fopen(fname, "ab"))) {
+		if ((fp = fopen(*actual_file_name, "ab"))) {
 			set_file_metadata(uri, original_url, resp->content_type, resp->content_type_encoding, resp->last_modified ? resp->last_modified - 1 : 0, fp);
 			fclose(fp);
 		} else {
-			error_printf(_("Failed to save extended attribute %s\n"), fname);
+			error_printf(_("Failed to save extended attribute %s\n"), *actual_file_name);
 			set_exit_status(WG_EXIT_STATUS_IO);
 		}
 	}
