@@ -45,6 +45,19 @@ int main(void)
 				"Content-Type: text/html",
 			}
 		},
+		{	.name = "/301.html",
+			.code = "301 Redirect",
+			.headers = {
+				"Location: /with spaces .html",
+			}
+		},
+		{	.name = "/with spaces .html",
+			.code = "200 Dontcare",
+			.body = "<html>hello2</html>",
+			.headers = {
+				"Content-Type: text/html",
+			}
+		},
 	};
 
 	// functions won't come back if an error occurs
@@ -60,6 +73,16 @@ int main(void)
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[1].body },
+			{	NULL } },
+		0);
+
+	wget_test(
+//		WGET_TEST_KEEP_TMPFILES, 1,
+		WGET_TEST_OPTIONS, "--trust-server-names",
+		WGET_TEST_REQUEST_URL, "301.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[3].name + 1, urls[3].body },
 			{	NULL } },
 		0);
 
