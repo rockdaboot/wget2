@@ -282,6 +282,7 @@ static int _answer_to_connection(
 		wget_buffer_strcpy(url_iri, urls[it1].name);
 		MHD_http_unescape(url_iri->data);
 
+
 		if (!strcmp(url_full->data, url_iri->data)) {
 			size_t body_length =
 				urls[it1].body_len ? urls[it1].body_len
@@ -362,7 +363,7 @@ static int _answer_to_connection(
 			}
 
 			// redirection
-			if (atoi(urls[it1].code) == 302) {
+			if (atoi(urls[it1].code)/100 == 3) {
 				response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
 				// it2 = iteration for headers
 				for (unsigned it2 = 0; urls[it1].headers[it2]; it2++) {
