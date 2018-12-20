@@ -424,7 +424,17 @@ const char *wget_http_parse_location(const char *s, const char **location)
 
 	while (c_isblank(*s)) s++;
 
-	for (p = s; *s && !c_isblank(*s); s++);
+	/*
+	 * The correct (and still lenient) variant was:
+	 * for (p = s; *s && !c_isblank(*s); s++);
+	 *
+	 * And then there were spaces in the URI, see
+	 *   https://gitlab.com/gnuwget/wget2/issues/420
+	 */
+
+	for (p = s; *s && *s != '\r' && *s != '\n'; s++);
+	while (s > p && c_isdigit(*(s - 1))) s--; // remove trailing spaces (OWS - optional white space)
+
 	*location = wget_strmemdup(p, s - p);
 
 	return s;
