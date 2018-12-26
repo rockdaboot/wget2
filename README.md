@@ -113,7 +113,8 @@ The following packages are needed to build the software
 * libz >= 1.2.3 (the distribution may call the package zlib*, eg. zlib1g on Debian)
 * liblzma >= 5.1.1alpha (optional, if you want HTTP lzma decompression)
 * libbz2 >= 1.0.6 (optional, if you want HTTP bzip2 decompression)
-* libbrotlidec >= 1.0.0 (optional, if you want HTTP brotli decompression)
+* libbrotlidec/libbrotli >= 1.0.0 (optional, if you want HTTP brotli decompression)
+* libzstd >= 1.3.0 (optional, if you want HTTP zstd decompression)
 * libgnutls (3.3, 3.5 or 3.6)
 * libidn2 >= 0.14 (libidn >= 1.25 if you don't have libidn2)
 * flex >= 2.5.35
