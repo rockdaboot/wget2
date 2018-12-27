@@ -1113,7 +1113,7 @@ typedef struct wget_hsts_db_st wget_hsts_db_t;
  *     {
  *         my_hsts_db_t *hsts_db = (my_hsts_db_t *) parent_hsts_db;
  *
- *         implemetation...
+ *         implementation...
  *     }
  *
  *     static int impl_save(wget_hsts_db_t *parent_hsts_db)
@@ -1260,7 +1260,7 @@ typedef struct _wget_hpkp_st wget_hpkp_t;
  *     {
  *         my_hpkp_db_t *hpkp_db = (my_hpkp_db_t *) parent_hpkp_db;
  *
- *         implemetation...
+ *         implementation...
  *     }
  *
  *     static int impl_save(wget_hpkp_db_t *parent_hpkp_db)
@@ -1433,7 +1433,7 @@ typedef struct wget_ocsp_db_st wget_ocsp_db_t;
  *     {
  *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
  *
- *         implemetation...
+ *         implementation...
  *     }
  *
  *     static int impl_save(wget_ocsp_db_t *parent_ocsp_db)
@@ -1521,7 +1521,7 @@ struct wget_ocsp_db_vtable {
 };
 
 struct wget_ocsp_db_st {
-	/// Pointer to the implemetation vtable
+	/// Pointer to the implementation vtable
 	struct wget_ocsp_db_vtable *vtable;
 };
 
@@ -2462,7 +2462,7 @@ typedef struct
  * Prototype for the initializer function.
  *
  * \param[in] plugin The plugin handle
- * \return Should return 0 if initialization succeded, or any other value to indicate failure.
+ * \return Should return 0 if initialization succeeded, or any other value to indicate failure.
  *         On failure, wget2 will continue without the plugin
  *         and will not call the finalizer function even if registered.
  */

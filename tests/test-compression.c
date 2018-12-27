@@ -325,7 +325,7 @@ int main(void)
 			{	NULL } },
 		0);
 
-	// test --compression overide
+	// test --compression override
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, "--no-compression --compression=identity",
@@ -336,7 +336,7 @@ int main(void)
 			{	NULL } },
 		0);
 
-	// test --no-compression overide
+	// test --no-compression override
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, "--compression=identity --no-compression",
@@ -362,7 +362,7 @@ int main(void)
 #endif
 		0);
 
-	// test overide
+	// test override
 	wget_test(
         // WGET_TEST_KEEP_TMPFILES, 1,
         WGET_TEST_OPTIONS, "--compression=br --compression=gzip",

@@ -642,7 +642,7 @@ static int G_GNUC_WGET_NONNULL_ALL _compare(const void *p1, const void *p2, void
 /**
  * \param[in] v Vector
  *
- * Sort the elements in vector \p v usign the compare function.
+ * Sort the elements in vector \p v using the compare function.
  * Do nothing if \p v is %NULL or the compare function is not set.
  */
 void wget_vector_sort(wget_vector_t *v)

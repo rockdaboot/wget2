@@ -249,7 +249,7 @@ size_t wget_hpkp_get_n_pins(wget_hpkp_t *hpkp)
  *
  * Gets all the public key hashes added to the given HPKP database entry.
  *
- * The size of the arrays used must be atleast one returned by \ref wget_hpkp_get_n_pins "wget_hpkp_get_n_pins()".
+ * The size of the arrays used must be at least one returned by \ref wget_hpkp_get_n_pins "wget_hpkp_get_n_pins()".
  */
 void wget_hpkp_get_pins_b64(wget_hpkp_t *hpkp, const char **pin_types, const char **pins_b64)
 {
@@ -272,7 +272,7 @@ void wget_hpkp_get_pins_b64(wget_hpkp_t *hpkp, const char **pin_types, const cha
  *
  * Gets all the public key hashes added to the given HPKP database entry.
  *
- * The size of the arrays used must be atleast one returned by \ref wget_hpkp_get_n_pins "wget_hpkp_get_n_pins()".
+ * The size of the arrays used must be at least one returned by \ref wget_hpkp_get_n_pins "wget_hpkp_get_n_pins()".
  */
 void wget_hpkp_get_pins(wget_hpkp_t *hpkp, const char **pin_types, size_t *sizes, const void **pins)
 {
@@ -351,7 +351,7 @@ void wget_hpkp_db_deinit(wget_hpkp_db_t *hpkp_db)
  * Closes and frees the HPKP database. A double pointer is required because this function will
  * set the handle (pointer) to the HPKP database to NULL to prevent potential use-after-free conditions.
  *
- * Newly added entries will be lost unless commited to persistent storage using wget_hsts_db_save().
+ * Newly added entries will be lost unless committed to persistent storage using wget_hsts_db_save().
  *
  * If \p hpkp_db or the pointer it points to is NULL then this function does nothing.
  */

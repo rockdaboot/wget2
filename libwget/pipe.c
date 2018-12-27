@@ -181,12 +181,12 @@ pid_t wget_fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv)
 	return pid;
 }
 
-// extended popen to have control over the childs STDIN, STDOUT and STDERR
-// NULL to ignore childs STDxxx
+// extended popen to have control over the child's STDIN, STDOUT and STDERR
+// NULL to ignore child's STDxxx
 // if fpout==fperr STDERR will be redirected to STDOUT
-// fpin: childs stdin (that's where the calling process can write data into)
-// fpout: childs stdout (that's where the calling process reads data from)
-// fperr: childs stderr (that's where the calling process reads error messages from)
+// fpin: child's stdin (that's where the calling process can write data into)
+// fpout: child's stdout (that's where the calling process reads data from)
+// fperr: child's stderr (that's where the calling process reads error messages from)
 // argv: argument to execvp(), e.g. const char *argv[]={"ls","-la",NULL};
 
 pid_t wget_popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *argv)

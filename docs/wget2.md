@@ -524,7 +524,7 @@ Go to background immediately after startup. If no output file is specified via t
   With `--progress=bar`, there are currently two possible parameters, `force` and `noscroll`.
 
   When the output is not a TTY, the progress bar always falls back to "dot", even if `--progress=bar` was passed to
-  Wget2 during invokation. This behaviour can be overridden and the "bar" output forced by using the "force"
+  Wget2 during invocation. This behaviour can be overridden and the "bar" output forced by using the "force"
   parameter as `--progress=bar:force`.
 
   By default, the bar style progress bar scroll the name of the file from left to right for the file being
@@ -663,7 +663,7 @@ Go to background immediately after startup. If no output file is specified via t
   don't use proxies, even if the appropriate *_proxy environment variable is defined.
 
   If a comma-separated list of exceptions (domains/IPs) is given, these exceptions are accessed without
-  usign a proxy. It overrides the 'no_proxy' environment variable.
+  using a proxy. It overrides the 'no_proxy' environment variable.
 
 ### `-Q quota`, `--quota=quota`
 
@@ -927,7 +927,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--fsync-policy`
 
-  Enables disk synching after each write (default: off).
+  Enables disk syncing after each write (default: off).
 
 ### `--http2-request-window=number`
 
@@ -1507,7 +1507,7 @@ Go to background immediately after startup. If no output file is specified via t
   database. Before dumping the updated HSTS entries on the file, Wget2 will re-read it and merge the changes.
 
   Using a custom HSTS database and/or modifying an existing one is discouraged.  For more information about the
-  potential security threats arised from such practice, see section 14 "Security Considerations" of RFC 6797,
+  potential security threats arose from such practice, see section 14 "Security Considerations" of RFC 6797,
   specially section 14.9 "Creative Manipulation of HSTS Policy Store".
 
 ### `--hsts-preload`
@@ -1964,7 +1964,7 @@ Go to background immediately after startup. If no output file is specified via t
   Note: please make sure to remove any potentially sensitive information from the debug log before sending it to
   the bug address.  The `-d` won't go out of its way to collect sensitive information, but the log will contain a
   fairly complete transcript of Wget2's communication with the server, which may include passwords and pieces of
-  downloaded data.  Since the bug address is publically archived, you may assume that all bug reports are visible
+  downloaded data.  Since the bug address is publicly archived, you may assume that all bug reports are visible
   to the public.
 
   4.  If Wget2 has crashed, try to run it in a debugger, e.g. ```gdb `which wget` core``` and type "where" to get the

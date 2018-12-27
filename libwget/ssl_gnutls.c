@@ -242,7 +242,7 @@ void wget_ssl_set_config_string(int key, const char *value)
  *
  * - WGET_SSL_OCSP_CACHE: This option takes a pointer to a \ref wget_ocsp_db_t
  *  structure as an argument. Such a pointer is returned when initializing the OCSP cache with wget_ocsp_db_init().
- *  The cache is used to store OCSP responses locally and avoid querying the OCSP server repeteadly for the same certificate.
+ *  The cache is used to store OCSP responses locally and avoid querying the OCSP server repeatedly for the same certificate.
  *  - WGET_SSL_SESSION_CACHE: This option takes a pointer to a \ref wget_tls_session_db_t structure.
  *  Such a pointer is returned when initializing the TLS session cache with wget_tls_session_db_init().
  *  This option thus sets the handle to the TLS session cache that will be used to store TLS sessions.

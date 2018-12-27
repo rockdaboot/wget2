@@ -482,7 +482,7 @@ int wget_update_file(const char *fname,
 
 	if (save_func) {
 		int fd;
-		// creat & open temp file to write data into with 0600 - rely on Gnulib to set correct
+		// create & open temp file to write data into with 0600 - rely on Gnulib to set correct
 		// ownership instead of using umask() here.
 		if ((fd = mkstemp(tmpfile)) == -1) {
 			close(lockfd);

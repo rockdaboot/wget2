@@ -58,7 +58,7 @@ gl_INIT
 LT_PREREQ([2.2])
 LT_INIT([dlopen])
 
-# Define these substitions here to keep all version information in one place.
+# Define these substitutions here to keep all version information in one place.
 # For information on how to properly maintain the library version information,
 # refer to the libtool manual, section "Updating library version information":
 # https://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
@@ -151,7 +151,7 @@ if test -n "$WARN_CFLAGS"; then
     # We use a slightly smaller set of warning options for lib/.
     # Remove the following and save the result in GNULIB_WARN_CFLAGS.
     # Removing is not enough if these switches are implicitly set by other
-    #  flags like -Wall or -Wextra. We have to explicitely unset them
+    #  flags like -Wall or -Wextra. We have to explicitly unset them
     #  with -Wno-....
     nw=
     nw="$nw -Wpedantic"

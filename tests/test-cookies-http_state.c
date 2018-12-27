@@ -121,7 +121,7 @@ static void test_cookies(void)
 
 		wget_cookie_store_cookies(cookie_db, resp->cookies);
 
-		// free reponse structure
+		// free response structure
 		wget_http_free_response(&resp);
 
 		// create cookie

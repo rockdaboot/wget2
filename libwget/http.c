@@ -96,7 +96,7 @@ static void __attribute__ ((destructor)) _wget_http_exit(void)
  * HTTP API initialization, allocating/preparing the internal resources.
  *
  * On systems with automatic library constructors, this function
- * doesn't have to be called explictly.
+ * doesn't have to be called explicitly.
  *
  * This function is not thread-safe.
  */
@@ -109,7 +109,7 @@ void wget_http_init(void)
  * HTTP API deinitialization, free'ing all internal resources.
  *
  * On systems with automatic library destructors, this function
- * doesn't have to be called explictly.
+ * doesn't have to be called explicitly.
  *
  * This function is not thread-safe.
  */

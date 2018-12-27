@@ -124,7 +124,7 @@ wget_list_append(wget_list_t **list, const void *data, size_t size)
  * \p size bytes at \p data will be copied and prepended to the list.
  *
  * A pointer to the new element will be returned.
- * It must be freed by wget_list_remove() or implicitely by wget_list_free().
+ * It must be freed by wget_list_remove() or implicitly by wget_list_free().
  */
 void *wget_list_prepend(wget_list_t **list, const void *data, size_t size)
 {

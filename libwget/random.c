@@ -73,7 +73,7 @@ static void __attribute__ ((destructor)) _wget_random_exit(void)
  * Random API initialization, allocating/preparing the internal resources.
  *
  * On systems with automatic library constructors, this function
- * doesn't have to be called explictly.
+ * doesn't have to be called explicitly.
  *
  * This function is not thread-safe.
  */
@@ -86,7 +86,7 @@ void wget_random_init(void)
  * Random API deinitialization, free'ing all internal resources.
  *
  * On systems with automatic library destructors, this function
- * doesn't have to be called explictly.
+ * doesn't have to be called explicitly.
  *
  * This function is not thread-safe.
  */

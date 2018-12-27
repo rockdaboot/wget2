@@ -30,7 +30,7 @@
 #     -b		Skip trying to rebuild each program
 #     -n		The name of the test to execute
 #
-# The specification for each program used in the comparitive Benchmarks is
+# The specification for each program used in the comparative Benchmarks is
 # defined in the `sources/' directory, with the filename: <program>.bench.sh.
 # Each of these files should define the following:
 #
@@ -39,7 +39,7 @@
 #	- <PROGRAMNAME>_BIN="./relative/path/to/binary/from/source/dir"
 #	- <PROGRAMNAME>_BUILD(): Function that defines how to build a fresh copy of
 #	the source
-#	- <PROGRAMNAME>_VERSION(): Function to retreive the version of the built
+#	- <PROGRAMNAME>_VERSION(): Function to retrieve the version of the built
 #	source
 #
 #	Do take a look at the files for Wget2 or Wget for an idea of how this is
@@ -59,7 +59,7 @@
 # the program specification are available in its namespace during execution:
 #
 # - An empty associative array called "test_OPTIONS". Which can be filled up
-# with comand line options specific to this benchmark
+# with command line options specific to this benchmark
 # - KERNEL: A variable which contains the information about the currently
 # running kernel. (uname -srmo)
 # - PROC: A variable with information about the processor
@@ -75,7 +75,7 @@ set -u
 # Early exit if we are running in a Bash shell older than v4.
 # This script relies on Bashisms which were introduced only in v4.
 if ((BASH_VERSINFO[0] < 4)); then
-	echo "Sorry, you need atleast Bash v4 to run this script"
+	echo "Sorry, you need at least Bash v4 to run this script"
 	exit 1
 fi
 
@@ -108,7 +108,7 @@ popd() {
 
 # get_source <program-name>
 #
-# Clone the prgram repository or update an existing repository
+# Clone the program repository or update an existing repository
 get_source() {
 	local program="$1"
 	local PROG="${1^^}"
@@ -129,7 +129,7 @@ get_source() {
 # Call the <PROGRAM-NAME>_BUILD() function which is defined in the program
 # specification to compile the program. Any configure options or CFLAGS should
 # be added to the program specification file. CFLAGS may optionally be exported
-# before the invokation of this script.
+# before the invocation of this script.
 build_source() {
 	local program="$1"
 	local PROG="${1^^}"

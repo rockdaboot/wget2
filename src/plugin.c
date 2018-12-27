@@ -76,7 +76,7 @@ static int hsts_db_priority;
 // Plugin supplied HPKP database
 static wget_hpkp_db_t *hpkp_db;
 static int hpkp_db_priority;
-// Pluign supplied OCSP database
+// Plugin supplied OCSP database
 static wget_ocsp_db_t *ocsp_db;
 static int ocsp_db_priority;
 

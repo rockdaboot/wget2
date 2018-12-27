@@ -2,7 +2,7 @@ This is a revocation certificate for the OpenPGP key:
 
 pub  rsa2048/2E1E63EA 2017-11-23
       Key fingerprint = A355 EA5D 3CEF DAF6 F101  CECE 3663 F338 2E1E 63EA
-uid                  Am Missing (Where did this key go?) <unkown@unkown.com>
+uid                  Am Missing (Where did this key go?) <unknown@unknown.com>
 
 A revocation certificate is a kind of "kill switch" to publicly
 declare that a key shall not anymore be used.  It is not possible

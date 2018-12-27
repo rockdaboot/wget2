@@ -72,7 +72,7 @@ void set_exit_status(exit_status_t status)
 	// use Wget exit status scheme:
 	// - error code 0 is default
 	// - error code 1 is used directly by exit() (fatal errors)
-	// - error codes 2... : lower numbers preceed higher numbers
+	// - error codes 2... : lower numbers precede higher numbers
 	if (exit_status) {
 		if (status < exit_status) {
 			debug_printf("%s(%d)\n", __func__, (int) status);
@@ -950,7 +950,7 @@ static int parse_verify_sig(option_t opt, const char *val, const char invert)
 	if (opt->var) {
 		if (invert) {
 			if (val) {
-				error_printf(_("no-verify-sig cannot take additional arugments\n"));
+				error_printf(_("no-verify-sig cannot take additional arguments\n"));
 				return -1;
 			} else {
 				*((char *)opt->var) = WGET_GPG_VERIFY_DISABLED;

@@ -80,7 +80,7 @@ int wget_verify_pgp_sig_buff(wget_buffer_t *sig, wget_buffer_t *data, wget_gpg_i
  *        information about the verification. Pass in NULL if you don't care.
  * \return A wget error code.
  *         Return Codes:
- *             - WGET_E_SUCCESS: Verification was succesful.
+ *             - WGET_E_SUCCESS: Verification was successful.
  *             - WGET_E_INVALID: Invalid input.
  *             - WGET_E_GPG_DISABLED: Wasn't compiled with GPGME support.
  *             - WGET_E_GPG_VER_FAIL: Verification failed.

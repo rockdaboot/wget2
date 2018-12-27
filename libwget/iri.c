@@ -324,7 +324,7 @@ void wget_iri_free(wget_iri_t **iri)
  * \return A libwget IRI (`wget_iri_t`)
  *
  * The host, path, query and fragment parts will be converted to UTF-8 from
- * the encoding given in the paramter \p encoding. GNU libiconv is used
+ * the encoding given in the parameter \p encoding. GNU libiconv is used
  * to perform the conversion, so this value should be the name of a valid character set
  * supported by that library, such as "utf-8" or "iso-8859-1".
  */

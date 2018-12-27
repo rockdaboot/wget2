@@ -24,9 +24,9 @@ get_from() {
 }
 
 get_to() {
-	printf "Name of receipient: "
+	printf "Name of recipient: "
 	read -r TO_NAME
-	printf "Email of receipient: "
+	printf "Email of recipient: "
 	read -r TO_EMAIL
 }
 

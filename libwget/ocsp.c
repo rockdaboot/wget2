@@ -233,7 +233,7 @@ void wget_ocsp_db_deinit(wget_ocsp_db_t *ocsp_db)
  * A double pointer is required because this function will set the handle (pointer) to the HPKP database to NULL
  * to prevent potential use-after-free conditions.
  *
- * New entries added to the database will be lost unless commited to the persistent storage using
+ * New entries added to the database will be lost unless committed to the persistent storage using
  * wget_ocsp_db_save().
  *
  * If `ocsp_db` or the pointer it points to is NULL, then this function does nothing.

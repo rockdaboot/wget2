@@ -227,7 +227,7 @@ void wget_hsts_db_deinit(wget_hsts_db_t *hsts_db)
  *
  * If `hsts_db` or pointer it points to is NULL, then the function does nothing.
  *
- * Newly added entries will be lost unless commited to persistent storage using wget_hsts_db_save().
+ * Newly added entries will be lost unless committed to persistent storage using wget_hsts_db_save().
  */
 void wget_hsts_db_free(wget_hsts_db_t **hsts_db)
 {
@@ -409,7 +409,7 @@ static int _hsts_db_load(_hsts_db_impl_t *hsts_db_priv, FILE *fp)
 
 /**
  * \param[in] hsts_db An HSTS database
- * \return 0 if the operation succeded, -1 in case of error
+ * \return 0 if the operation succeeded, -1 in case of error
  *
  * Performs all operations necessary to access the HSTS database entries from persistent storage
  * using wget_hsts_host_match() for example.
@@ -470,7 +470,7 @@ static int _hsts_db_save(void *hsts_db_priv, FILE *fp)
 
 /**
  * \param[in] hsts_db HSTS database
- * \return 0 if the operation succeded, -1 otherwise
+ * \return 0 if the operation succeeded, -1 otherwise
  *
  * Saves all changes to the HSTS database (via wget_hsts_db_add() for example) to persistent storage.
  *
