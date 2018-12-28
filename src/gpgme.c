@@ -111,7 +111,7 @@ static char *_determine_base_file(const char *real_filename, const char *base_fi
 	char *base_name_cpy = wget_strdup(base_filename);
 
 	char *real_ext = _remove_ext(real_name_cpy);
-	char *ans = NULL;
+	char *answer = NULL;
 
 	if (!real_ext) {
 		error_printf(_("Invalid signature, signature file must have a sig extension\n"));
@@ -125,14 +125,14 @@ static char *_determine_base_file(const char *real_filename, const char *base_fi
 		_remove_ext(base_name_cpy);
 
 		// Create and store the corrected file name
-		wget_asprintf(&ans, "%s.%s", base_name_cpy, real_ext);
+		wget_asprintf(&answer, "%s.%s", base_name_cpy, real_ext);
 	}
 
  done:
 	xfree(real_name_cpy);
 	xfree(base_name_cpy);
 
-	return ans;
+	return answer;
 }
 
 static void _print_gpg_error(gpgme_error_t err)
