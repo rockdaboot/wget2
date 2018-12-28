@@ -67,6 +67,7 @@ Full + VPATH/Debian:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
+    - contrib/spell-checker
     - cp -a /builds/common/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
     - sed -i 's/dist-lzip//g' configure.ac
