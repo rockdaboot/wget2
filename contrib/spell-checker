@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+#
+# see https://github.com/codespell-project/codespell
+#
+# in short:
+#  - pip install codespell
+#  - add ~/.local/bin to PATH
+
+codespell $* -L "tim,gonna,cas" `git ls-files|egrep -v '_fuzzer.in|_fuzzer.repro|\.der$|gnulib|ChangeLog|tests/gpg|\.png$|\.dat$'`
