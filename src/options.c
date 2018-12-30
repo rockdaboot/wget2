@@ -1135,7 +1135,6 @@ struct config config = {
 #ifdef _WIN32
 	.restrict_file_names = WGET_RESTRICT_NAMES_WINDOWS,
 #endif
-	.xattr = 1,
 	.local_db = 1,
 	.report_speed = WGET_REPORT_SPEED_BYTES
 };
@@ -2143,7 +2142,7 @@ static const struct optionw options[] = {
 	},
 	{ "xattr", &config.xattr, parse_bool, -1, 0,
 		SECTION_DOWNLOAD,
-		{ "Save extended file attributes. (default: on)\n"\
+		{ "Save extended file attributes. (default: off)\n"\
 		}
 	}
 };

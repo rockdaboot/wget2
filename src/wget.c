@@ -123,7 +123,7 @@ typedef struct {
 static _statistics_t stats;
 
 static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag,
-		const char *uri, const char *original_url, int ignore_patterns, wget_buffer_t *partial_content,
+		wget_iri_t *uri, wget_iri_t *original_url, int ignore_patterns, wget_buffer_t *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path);
 
 static void
@@ -146,7 +146,7 @@ static int
 	read_xattr_metadata(const char *name, char *value, size_t size, int fd),
 	write_xattr_metadata(const char *name, const char *value, int fd),
 	write_xattr_last_modified(time_t last_modified, int fd),
-	set_file_metadata(const char *origin_url, const char *referrer_url, const char *mime_type, const char *charset, time_t last_modified, FILE *fp),
+	set_file_metadata(wget_iri_t *origin_url, wget_iri_t *referrer_url, const char *mime_type, const char *charset, time_t last_modified, FILE *fp),
 	http_send_request(wget_iri_t *iri, wget_iri_t *original_url, DOWNLOADER *downloader);
 wget_http_response_t
 	*http_receive_response(wget_http_connection_t *conn);
@@ -3025,7 +3025,7 @@ static bool check_mime_list(wget_vector_t *list, const char *mime)
 }
 
 static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag,
-		const char *uri, const char *original_url, int ignore_patterns, wget_buffer_t *partial_content,
+		wget_iri_t *uri, wget_iri_t *original_url, int ignore_patterns, wget_buffer_t *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path)
 {
 	char *alloced_fname = NULL;
@@ -3318,8 +3318,8 @@ static int _get_header(wget_http_response_t *resp, void *context)
 
 		ctx->outfd = _prepare_file(resp, dest,
 			resp->code == 206 ? O_APPEND : O_TRUNC,
-			ctx->job->iri->uri,
-			ctx->job->original_url->uri,
+			ctx->job->iri,
+			ctx->job->original_url,
 			ctx->job->ignore_patterns,
 			resp->code == 206 ? ctx->body : NULL,
 			ctx->max_memory,
@@ -3860,7 +3860,7 @@ static int write_xattr_last_modified(time_t last_modified, int fd)
 #endif /* USE_XATTR */
 
 /* Store metadata name/value attributes against fp. */
-static int set_file_metadata(const char *origin_url, const char *referrer_url,
+static int set_file_metadata(wget_iri_t *origin_iri, wget_iri_t *referrer_iri,
 					  const char *mime_type, const char *charset,
 					  time_t last_modified, FILE *fp)
 {
@@ -3873,18 +3873,29 @@ static int set_file_metadata(const char *origin_url, const char *referrer_url,
 	 * [http://freedesktop.org/wiki/CommonExtendedAttributes] and
 	 * [http://0pointer.de/lennart/projects/mod_mime_xattr/].
 	 */
-	if (!origin_url || !fp)
+	if (!origin_iri || !fp)
 		return -1;
 
 	if ((fd = fileno(fp)) < 0)
 		return -1;
 
-	if (write_xattr_metadata("user.xdg.origin.url", origin_url, fd) < 0 && errno == ENOTSUP)
+	if (write_xattr_metadata("user.mime_type", mime_type, fd) < 0 && errno == ENOTSUP)
 		return -1; // give up early if file system doesn't support extended attributes
 
-	write_xattr_metadata("user.xdg.referrer.url", referrer_url, fd);
-	write_xattr_metadata("user.mime_type", mime_type, fd);
 	write_xattr_metadata("user.charset", charset, fd);
+
+	char sbuf[256];
+	wget_buffer_t buf;
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
+	wget_buffer_printf(&buf, "%s/", wget_iri_get_connection_part(origin_iri));
+	wget_iri_get_escaped_resource(origin_iri, &buf);
+
+	write_xattr_metadata("user.xdg.origin.url", buf.data, fd);
+
+	wget_buffer_deinit(&buf);
+
+	write_xattr_metadata("user.xdg.referrer.url", wget_iri_get_connection_part(referrer_iri), fd);
 
 	return write_xattr_last_modified(last_modified, fd);
 }
