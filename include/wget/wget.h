@@ -633,7 +633,7 @@ typedef int (*wget_vector_destructor_t)(void *elem);
 WGETAPI wget_vector_t *
 	wget_vector_create(int max, wget_vector_compare_t cmp) G_GNUC_WGET_MALLOC;
 WGETAPI void
-	wget_vector_set_growth_policy(wget_vector_t *v, int off);
+	wget_vector_set_growth_policy(wget_vector_t *v, float off);
 WGETAPI int
 	wget_vector_find(const wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
@@ -703,7 +703,7 @@ typedef void (*wget_hashmap_value_destructor_t)(void *value);
 WGETAPI wget_hashmap_t
 	*wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hashmap_compare_t cmp) G_GNUC_WGET_MALLOC;
 WGETAPI void
-	wget_hashmap_set_growth_policy(wget_hashmap_t *h, int off);
+	wget_hashmap_set_growth_policy(wget_hashmap_t *h, float off);
 WGETAPI int
 	wget_hashmap_put(wget_hashmap_t *h, const void *key, size_t keysize, const void *value, size_t valuesize);
 WGETAPI int
@@ -793,7 +793,7 @@ WGETAPI void
 WGETAPI void
 	wget_stringmap_setloadfactor(wget_stringmap_t *h, float factor);
 WGETAPI void
-	wget_stringmap_set_growth_policy(wget_stringmap_t *h, int off);
+	wget_stringmap_set_growth_policy(wget_stringmap_t *h, float off);
 
 /*
  * Thread wrapper routines

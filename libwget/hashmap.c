@@ -57,13 +57,13 @@ struct _wget_hashmap_st {
 	wget_hashmap_value_destructor_t
 		value_destructor; // value destructor function
 	_entry_t
-		**entry; // pointer to array of pointers to entries
+		**entry;   // pointer to array of pointers to entries
 	int
-		max,     // allocated entries
-		cur,     // number of entries in use
-		off,     // resize strategy: >0: resize = max + off, <0: resize = -off * max
+		max,       // allocated entries
+		cur,       // number of entries in use
 		threshold; // resize when max reaches threshold
 	float
+		off,       // resize strategy: >0: resize = off * max, <0: resize = max + (-off)
 		factor;
 };
 
@@ -97,7 +97,7 @@ wget_hashmap_t *wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hash
 	h->entry = xcalloc(max, sizeof(_entry_t *));
 	h->max = max;
 	h->cur = 0;
-	h->off = -2;
+	h->off = 2;
 	h->hash = hash;
 	h->cmp = cmp;
 	h->key_destructor = free;
@@ -166,13 +166,18 @@ static void hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *
 	h->entry[pos] = entry;
 
 	if (++h->cur >= h->threshold) {
+		int newsize;
+
 		if (h->off > 0) {
-			hashmap_rehash(h, h->max + h->off, 0);
-		} else if (h->off<-1) {
-			hashmap_rehash(h, h->max * -h->off, 0);
+			newsize = (int) (h->max * h->off);
+		} else if (h->off < 0) {
+			newsize = (int) (h->max - h->off);
 		} else {
-			// no resizing occurs
+			newsize = 0; // resizing switched off
 		}
+
+		if (newsize > 0)
+			hashmap_rehash(h, newsize, 0);
 	}
 }
 
@@ -579,17 +584,20 @@ void wget_hashmap_setloadfactor(wget_hashmap_t *h, float factor)
 /**
  * \param[in] h Hashmap
  * \param[in] off Hashmap growth mode:
- *   positive values: increase size by \p off entries on each resize
- *   negative values: increase size by multiplying \p -off, e.g. -2 doubles the size on each resize
+ *   positive values: increase size by multiplying \p off, e.g. 2 doubles the size on each resize
+ *   negative values: increase size by \p -off entries on each resize (the integer value is taken).
+ *   0: switch off resizing
  *
  * Set the growth policy for internal memory.
  *
- * Default is -2.
+ * Default is 2.
  */
-void wget_hashmap_set_growth_policy(wget_hashmap_t *h, int off)
+void wget_hashmap_set_growth_policy(wget_hashmap_t *h, float off)
 {
-	if (h)
-		h->off = off;
+	if (!h)
+		return;
+
+	h->off = off;
 }
 
 /**@}*/

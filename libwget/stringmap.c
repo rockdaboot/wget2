@@ -357,14 +357,15 @@ void wget_stringmap_setloadfactor(wget_stringmap_t *h, float factor)
 /**
  * \param[in] h Stringmap
  * \param[in] off Stringmap growth mode:
- *   positive values: increase size by \p off entries on each resize
- *   negative values: increase size by multiplying \p -off, e.g. -2 doubles the size on each resize
+ *   positive values: increase size by multiplying \p off, e.g. 2 doubles the size on each resize
+ *   negative values: increase size by \p -off entries on each resize (the integer value is taken).
+ *   0: switch off resizing
  *
  * Set the growth policy for internal memory.
  *
- * Default is -2.
+ * Default is 2.
  */
-void wget_stringmap_set_growth_policy(wget_stringmap_t *h, int off)
+void wget_stringmap_set_growth_policy(wget_stringmap_t *h, float off)
 {
 	wget_hashmap_set_growth_policy(h, off);
 }
