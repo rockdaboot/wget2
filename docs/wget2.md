@@ -1988,7 +1988,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Copyright (C) 2012-2015 Tim Rühsen
 
-  Copyright (C) 2015-2018 Free Software Foundation, Inc.
+  Copyright (C) 2015-2019 Free Software Foundation, Inc.
 
   Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation
   License, Version 1.3 or any later version published by the Free Software Foundation; with no Invariant Sections, with
