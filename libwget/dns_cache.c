@@ -134,7 +134,8 @@ struct addrinfo *wget_dns_cache_get(const char *host, uint16_t port)
 		struct _dns_entry *entryp, entry = { .host = host, .port = port };
 
 		wget_thread_mutex_lock(dns_mutex);
-		entryp = wget_hashmap_get(dns_cache, &entry);
+		if (!wget_hashmap_get(dns_cache, &entry, &entryp))
+			entryp = NULL;
 		wget_thread_mutex_unlock(dns_mutex);
 
 		if (entryp) {
@@ -176,7 +177,7 @@ struct addrinfo *wget_dns_cache_add(const char *host, uint16_t port, struct addr
 		wget_hashmap_set_value_destructor(dns_cache, (wget_hashmap_value_destructor_t)_free_dns);
 	}
 
-	if (wget_hashmap_get(dns_cache, entryp)) {
+	if (wget_hashmap_contains(dns_cache, entryp)) {
 		_free_dns(entryp);
 	} else {
 		// key and value are the same to make wget_hashmap_get() return old entry

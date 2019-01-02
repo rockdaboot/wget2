@@ -526,8 +526,7 @@ int plugin_db_forward_option(const char *plugin_option, dl_error_t *e)
 	}
 
 	// Search for plugin
-	plugin = (plugin_t *) wget_stringmap_get(plugin_name_index, plugin_name);
-	if (! plugin) {
+	if (!wget_stringmap_get(plugin_name_index, plugin_name, &plugin)) {
 		dl_error_set_printf(e, "Plugin '%s' is not loaded.", plugin_name);
 		wget_free(plugin_option_copy);
 		return -1;

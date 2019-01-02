@@ -1862,7 +1862,7 @@ static void test_stringmap(void)
 		for (it = 0; it < 26; it++) {
 			snprintf(key, sizeof(key), "http://www.example.com/subdir/%d.html", it);
 			snprintf(value, sizeof(value), "%d.html", it);
-			if (!(val = wget_stringmap_get(m, key))) {
+			if (!wget_stringmap_get(m, key, &val)) {
 				failed++;
 				info_printf("stringmap_get(%s) didn't find entry\n", key);
 			} else if (strcmp(val, value)) {

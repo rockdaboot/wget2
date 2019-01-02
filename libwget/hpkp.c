@@ -403,9 +403,8 @@ static int impl_hpkp_db_check_pubkey(wget_hpkp_db_t *hpkp_db, const char *host, 
 			domain++;
 
 		key.host = domain;
-		hpkp = wget_hashmap_get(hpkp_db_priv->entries, &key);
 
-		if (!hpkp)
+		if (!wget_hashmap_get(hpkp_db_priv->entries, &key, &hpkp))
 			subdomain = 1;
 	}
 
@@ -459,9 +458,9 @@ static void impl_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t *hpkp)
 			debug_printf("removed HPKP %s\n", hpkp->host);
 		wget_hpkp_free(hpkp);
 	} else {
-		wget_hpkp_t *old = wget_hashmap_get(hpkp_db_priv->entries, hpkp);
+		wget_hpkp_t *old;
 
-		if (old) {
+		if (wget_hashmap_get(hpkp_db_priv->entries, hpkp, &old)) {
 			old->created = hpkp->created;
 			old->maxage = hpkp->maxage;
 			old->expires = hpkp->expires;

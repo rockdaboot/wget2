@@ -720,10 +720,8 @@ WGETAPI void
 	wget_hashmap_free(wget_hashmap_t **h);
 WGETAPI void
 	wget_hashmap_clear(wget_hashmap_t *h);
-WGETAPI void *
-	wget_hashmap_get(const wget_hashmap_t *h, const void *key);
 WGETAPI int
-	wget_hashmap_get_null(const wget_hashmap_t *h, const void *key, void **value);
+	wget_hashmap_get(const wget_hashmap_t *h, const void *key, void **value);
 WGETAPI int
 	wget_hashmap_contains(const wget_hashmap_t *h, const void *key);
 WGETAPI int
@@ -772,10 +770,8 @@ WGETAPI void
 	wget_stringmap_free(wget_stringmap_t **h);
 WGETAPI void
 	wget_stringmap_clear(wget_stringmap_t *h);
-WGETAPI void *
-	wget_stringmap_get(const wget_stringmap_t *h, const char *key);
 WGETAPI int
-	wget_stringmap_get_null(const wget_stringmap_t *h, const char *key, void **value);
+	wget_stringmap_get(const wget_stringmap_t *h, const char *key, void **value);
 WGETAPI int
 	wget_stringmap_contains(const wget_stringmap_t *h, const char *key);
 WGETAPI int

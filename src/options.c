@@ -3151,7 +3151,7 @@ int init(int argc, const char **argv)
 			wget_stringmap_t *set = wget_stringmap_create(start_len);
 			for (int i = 0; i < start_len; i++) {
 				const char *nxt = wget_vector_get(config.sig_ext, i);
-				if (!wget_stringmap_get_null(set, nxt, NULL)) {
+				if (!wget_stringmap_contains(set, nxt)) {
 					wget_vector_add_str(new_sig_ext, nxt);
 					wget_stringmap_put_noalloc(set, wget_strdup(nxt), NULL);
 				}

@@ -148,7 +148,7 @@ int wget_tls_session_get(const wget_tls_session_db_t *tls_session_db, const char
 		int64_t now = time(NULL);
 
 		tls_session.host = host;
-		if ((tls_sessionp = wget_hashmap_get(tls_session_db->entries, &tls_session)) && tls_sessionp->expires >= now) {
+		if (wget_hashmap_get(tls_session_db->entries, &tls_session, &tls_sessionp) && tls_sessionp->expires >= now) {
 			if (data)
 				*data = wget_memdup(tls_sessionp->data, tls_sessionp->data_size);
 			if (size)
@@ -206,9 +206,9 @@ void wget_tls_session_db_add(wget_tls_session_db_t *tls_session_db, wget_tls_ses
 		wget_tls_session_free(tls_session);
 		tls_session = NULL;
 	} else {
-		wget_tls_session_t *old = wget_hashmap_get(tls_session_db->entries, tls_session);
+		wget_tls_session_t *old;
 
-		if (old) {
+		if (wget_hashmap_get(tls_session_db->entries, tls_session, &old)) {
 			debug_printf("found TLS session data for %s\n", old->host);
 			if (wget_hashmap_remove(tls_session_db->entries, old))
 				debug_printf("removed TLS session data for %s\n", tls_session->host);

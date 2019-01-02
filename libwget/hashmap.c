@@ -109,9 +109,9 @@ wget_hashmap_t *wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hash
 }
 
 G_GNUC_WGET_NONNULL_ALL
-static _entry_t * hashmap_find_entry(const wget_hashmap_t *h, const char *key, unsigned int hash, int pos)
+static _entry_t * hashmap_find_entry(const wget_hashmap_t *h, const char *key, unsigned int hash)
 {
-	for (_entry_t * e = h->entry[pos]; e; e = e->next) {
+	for (_entry_t * e = h->entry[hash % h->max]; e; e = e->next) {
 		if (hash == e->hash && (key == e->key || !h->cmp(key, e->key))) {
 			return e;
 		}
@@ -203,9 +203,8 @@ int wget_hashmap_put_noalloc(wget_hashmap_t *h, const void *key, const void *val
 	if (h && key) {
 		_entry_t *entry;
 		unsigned int hash = h->hash(key);
-		int pos = hash % h->max;
 
-		if ((entry = hashmap_find_entry(h, key, hash, pos))) {
+		if ((entry = hashmap_find_entry(h, key, hash))) {
 			if (entry->key != key && entry->key != value) {
 				if (h->key_destructor)
 					h->key_destructor(entry->key);
@@ -254,9 +253,8 @@ int wget_hashmap_put(wget_hashmap_t *h, const void *key, size_t keysize, const v
 	if (h && key) {
 		_entry_t *entry;
 		unsigned int hash = h->hash(key);
-		int pos = hash % h->max;
 
-		if ((entry = hashmap_find_entry(h, key, hash, pos))) {
+		if ((entry = hashmap_find_entry(h, key, hash))) {
 			if (h->value_destructor)
 				h->value_destructor(entry->value);
 
@@ -280,47 +278,21 @@ int wget_hashmap_put(wget_hashmap_t *h, const void *key, size_t keysize, const v
  *
  * Get the value for a given key.
  *
- * If there are %NULL values in the hashmap, you should use this function
- * to distinguish between 'not found' and 'found %NULL value'.
- *
  * Neither \p h nor \p key must be %NULL.
  */
-int wget_hashmap_get_null(const wget_hashmap_t *h, const void *key, void **value)
+int wget_hashmap_get(const wget_hashmap_t *h, const void *key, void **value)
 {
 	if (h && key) {
 		_entry_t *entry;
-		unsigned int hash = h->hash(key);
-		int pos = hash % h->max;
 
-		if ((entry = hashmap_find_entry(h, key, hash, pos))) {
-			if (value) *value = entry->value;
+		if ((entry = hashmap_find_entry(h, key, h->hash(key)))) {
+			if (value)
+				*value = entry->value;
 			return 1;
 		}
 	}
 
 	return 0;
-}
-
-/**
- * \param[in] h Hashmap
- * \param[in] key Key to search for
- * \return Found value or %NULL if not found
- *
- * Get the value for a given key.
- *
- * If there are %NULL values in the hashmap, you should use wget_hashmap_get_null()
- * to distinguish between 'not found' and 'found %NULL value'.
- *
- * Neither \p h nor \p key must be %NULL.
- */
-void *wget_hashmap_get(const wget_hashmap_t *h, const void *key)
-{
-	void *value;
-
-	if (wget_hashmap_get_null(h, key, &value))
-		return value;
-
-	return NULL;
 }
 
 /**
@@ -332,7 +304,7 @@ void *wget_hashmap_get(const wget_hashmap_t *h, const void *key)
  */
 int wget_hashmap_contains(const wget_hashmap_t *h, const void *key)
 {
-	return wget_hashmap_get_null(h, key, NULL);
+	return wget_hashmap_get(h, key, NULL);
 }
 
 G_GNUC_WGET_NONNULL_ALL

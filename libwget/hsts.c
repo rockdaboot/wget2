@@ -179,13 +179,13 @@ static int impl_hsts_db_host_match(const wget_hsts_db_t *hsts_db, const char *ho
 	// we assume the scheme is HTTP
 	hsts.port = (port == 80 ? 443 : port);
 	hsts.host = host;
-	if ((hstsp = wget_hashmap_get(hsts_db_priv->entries, &hsts)) && hstsp->expires >= now)
+	if (wget_hashmap_get(hsts_db_priv->entries, &hsts, &hstsp) && hstsp->expires >= now)
 		return 1;
 
 	// now look for a valid subdomain match
 	for (p = host; (p = strchr(p, '.')); ) {
 		hsts.host = ++p;
-		if ((hstsp = wget_hashmap_get(hsts_db_priv->entries, &hsts))
+		if (wget_hashmap_get(hsts_db_priv->entries, &hsts, &hstsp)
 				&& hstsp->include_subdomains && hstsp->expires >= now)
 			return 1;
 	}
@@ -253,9 +253,9 @@ static void _hsts_db_add_entry(_hsts_db_impl_t *hsts_db_priv, _hsts_t *hsts)
 		_free_hsts(hsts);
 		hsts = NULL;
 	} else {
-		_hsts_t *old = wget_hashmap_get(hsts_db_priv->entries, hsts);
+		_hsts_t *old;
 
-		if (old) {
+		if (wget_hashmap_get(hsts_db_priv->entries, hsts, &old)) {
 			if (old->created < hsts->created || old->maxage != hsts->maxage || old->include_subdomains != hsts->include_subdomains) {
 				old->created = hsts->created;
 				old->expires = hsts->expires;

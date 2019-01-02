@@ -101,11 +101,13 @@ wget_netrc_t *wget_netrc_new(const char *machine, const char *login, const char 
 wget_netrc_t *wget_netrc_get(const wget_netrc_db_t *netrc_db, const char *host)
 {
 	if (netrc_db) {
-		wget_netrc_t netrc;
+		wget_netrc_t netrc, *netrcp;
 
 		// look for an exact match
 		netrc.host = host;
-		return wget_hashmap_get(netrc_db->machines, &netrc);
+
+		if (wget_hashmap_get(netrc_db->machines, &netrc, &netrcp))
+			return netrcp;
 	}
 
 	return NULL;

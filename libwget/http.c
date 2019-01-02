@@ -296,14 +296,20 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		xfree(encoded);
 	}
 	else if (!wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
-		const char
-			*realm = wget_stringmap_get(challenge->params, "realm"),
-			*opaque = wget_stringmap_get(challenge->params, "opaque"),
-			*nonce = wget_stringmap_get(challenge->params, "nonce"),
-			*qop = wget_stringmap_get(challenge->params, "qop"),
-			*algorithm = wget_stringmap_get(challenge->params, "algorithm");
+		const char *realm, *opaque, *nonce, *qop, *algorithm;
 		wget_buffer_t buf;
 		int hashtype, hashlen;
+
+		if (!wget_stringmap_get(challenge->params, "realm", &realm))
+			realm = NULL;
+		if (!wget_stringmap_get(challenge->params, "opaque", &opaque))
+			opaque = NULL;
+		if (!wget_stringmap_get(challenge->params, "nonce", &nonce))
+			nonce = NULL;
+		if (!wget_stringmap_get(challenge->params, "qop", &qop))
+			qop = NULL;
+		if (!wget_stringmap_get(challenge->params, "algorithm", &algorithm))
+			algorithm = NULL;
 
 		if (wget_strcasecmp_ascii(qop, "auth")) {
 			error_printf(_("Unsupported quality of protection '%s'.\n"), qop);

@@ -156,7 +156,7 @@ static bool impl_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, con
 
 	// look for an exact match
 	ocsp.key = fingerprint;
-	if ((ocspp = wget_hashmap_get(ocsp_db_priv->fingerprints, &ocsp)) && ocspp->maxage >= (int64_t) time(NULL)) {
+	if (wget_hashmap_get(ocsp_db_priv->fingerprints, &ocsp, &ocspp) && ocspp->maxage >= (int64_t) time(NULL)) {
 		if (revoked)
 			*revoked = !ocspp->valid;
 		return 1;
@@ -194,7 +194,7 @@ static bool impl_ocsp_db_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const 
 
 	// look for an exact match
 	ocsp.key = hostname;
-	if ((ocspp = wget_hashmap_get(ocsp_db_priv->hosts, &ocsp)) && ocspp->maxage >= (int64_t) time(NULL)) {
+	if (wget_hashmap_get(ocsp_db_priv->hosts, &ocsp, &ocspp) && ocspp->maxage >= (int64_t) time(NULL)) {
 		return 1;
 	}
 
@@ -271,9 +271,9 @@ static void _ocsp_db_add_fingerprint_entry(_ocsp_db_impl_t *ocsp_db_priv, _ocsp_
 			debug_printf("removed OCSP cert %s\n", ocsp->key);
 		_free_ocsp(ocsp);
 	} else {
-		_ocsp_t *old = wget_hashmap_get(ocsp_db_priv->fingerprints, ocsp);
+		_ocsp_t *old;
 
-		if (old) {
+		if (wget_hashmap_get(ocsp_db_priv->fingerprints, ocsp, &old)) {
 			if (old->mtime < ocsp->mtime) {
 				old->mtime = ocsp->mtime;
 				old->maxage = ocsp->maxage;
@@ -338,9 +338,9 @@ static void _ocsp_db_add_host_entry(_ocsp_db_impl_t *ocsp_db_priv, _ocsp_t *ocsp
 			debug_printf("removed OCSP host %s\n", ocsp->key);
 		_free_ocsp(ocsp);
 	} else {
-		_ocsp_t *old = wget_hashmap_get(ocsp_db_priv->hosts, ocsp);
+		_ocsp_t *old;
 
-		if (old) {
+		if (wget_hashmap_get(ocsp_db_priv->hosts, ocsp, &old)) {
 			if (old->mtime < ocsp->mtime) {
 				old->mtime = ocsp->mtime;
 				old->maxage = ocsp->maxage;

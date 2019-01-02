@@ -163,31 +163,11 @@ int wget_stringmap_put(wget_stringmap_t *h, const char *key, const void *value, 
  *
  * Get the value for a given key.
  *
- * If there are %NULL values in the stringmap, you should use this function
- * to distinguish between 'not found' and 'found %NULL value'.
- *
  * Neither \p h nor \p key must be %NULL.
  */
-int wget_stringmap_get_null(const wget_stringmap_t *h, const char *key, void **value)
+int wget_stringmap_get(const wget_stringmap_t *h, const char *key, void **value)
 {
-	return wget_hashmap_get_null(h, key, value);
-}
-
-/**
- * \param[in] h Stringmap
- * \param[in] key Key to search for
- * \return Found value or %NULL if not found
- *
- * Get the value for a given key.
- *
- * If there are %NULL values in the stringmap, you should use wget_stringmap_get_null()
- * to distinguish between 'not found' and 'found %NULL value'.
- *
- * Neither \p h nor \p key must be %NULL.
- */
-void *wget_stringmap_get(const wget_stringmap_t *h, const char *key)
-{
-	return wget_hashmap_get(h, key);
+	return wget_hashmap_get(h, key, value);
 }
 
 /**
