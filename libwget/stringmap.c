@@ -165,6 +165,7 @@ int wget_stringmap_put(wget_stringmap_t *h, const char *key, const void *value, 
  *
  * Neither \p h nor \p key must be %NULL.
  */
+#undef wget_stringmap_get
 int wget_stringmap_get(const wget_stringmap_t *h, const char *key, void **value)
 {
 	return wget_hashmap_get(h, key, value);
@@ -329,25 +330,26 @@ void wget_stringmap_set_value_destructor(wget_hashmap_t *h, wget_stringmap_value
  *
  * Default is 0.75.
  */
-void wget_stringmap_setloadfactor(wget_stringmap_t *h, float factor)
+void wget_stringmap_set_load_factor(wget_stringmap_t *h, float factor)
 {
-	wget_hashmap_setloadfactor(h, factor);
+	wget_hashmap_set_load_factor(h, factor);
 }
 
 /**
  * \param[in] h Stringmap
- * \param[in] off Stringmap growth mode:
- *   positive values: increase size by multiplying \p off, e.g. 2 doubles the size on each resize
- *   negative values: increase size by \p -off entries on each resize (the integer value is taken).
- *   0: switch off resizing
+ * \param[in] off Stringmap growth factor
  *
- * Set the growth policy for internal memory.
+ * Set the factor for resizing the stringmap when it's load factor is reached.
+ *
+ * The new size is 'factor * oldsize'. If the new size is less or equal 0,
+ * the involved put function will do nothing and the internal state of
+ * the stringmap will not change.
  *
  * Default is 2.
  */
-void wget_stringmap_set_growth_policy(wget_stringmap_t *h, float off)
+void wget_stringmap_set_resize_factor(wget_stringmap_t *h, float factor)
 {
-	wget_hashmap_set_growth_policy(h, off);
+	wget_hashmap_set_resize_factor(h, factor);
 }
 
 /**@}*/

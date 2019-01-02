@@ -47,7 +47,7 @@ struct _wget_vector_st {
 	bool
 		sorted : 1; // 1=list is sorted, 0=list is not sorted
 	float
-		off;     // number of elements to add if resize occurs
+		resize_factor; // factor to calculate new vector size
 };
 
 /**
@@ -72,7 +72,7 @@ wget_vector_t *wget_vector_create(int max, wget_vector_compare_t cmp)
 
 	v->entry = xmalloc(max * sizeof(void *));
 	v->max = max;
-	v->off = 2;
+	v->resize_factor = 2;
 	v->cmp = cmp;
 
 	return v;
@@ -80,18 +80,20 @@ wget_vector_t *wget_vector_create(int max, wget_vector_compare_t cmp)
 
 /**
  * \param[in] v Vector
- * \param[in] off Vector growth mode:
- *   positive values: increase size by multiplying \p off, e.g. 2 doubles the size on each resize
- *   negative values: increase size by \p -off entries on each resize (the integer value is taken).
+ * \param[in] factor Vector growth factor
  *
- * Set the growth policy for internal memory.
+ * Set the factor for resizing the vector when it is full.
+ *
+ * The new size is 'factor * oldsize'. If the new size is less or equal the old size,
+ * the involved insertion function will return an error and the internal state of
+ * the vector will not change.
  *
  * Default is 2.
  */
-void wget_vector_set_growth_policy(wget_vector_t *v, float off)
+void wget_vector_set_resize_factor(wget_vector_t *v, float factor)
 {
 	if (v)
-		v->off = off;
+		v->resize_factor = factor;
 }
 
 static int G_GNUC_WGET_NONNULL((2)) _vec_insert_private(wget_vector_t *v, const void *elem, size_t size, int pos, int replace, int alloc)
@@ -109,16 +111,15 @@ static int G_GNUC_WGET_NONNULL((2)) _vec_insert_private(wget_vector_t *v, const 
 
 	if (!replace) {
 		if (v->max == v->cur) {
-			if (v->off > 0) {
-				v->max = (int) (v->max * v->off);
-			} else if (v->off < 0) {
-				v->max = (int) (v->max - v->off);
-			} else {
+			int newsize = (int) (v->max * v->resize_factor);
+
+			if (newsize <= v->max) {
 				if (alloc)
 					free(elemp);
 				return -1;
 			}
 
+			v->max = newsize;
 			v->entry = xrealloc(v->entry, v->max * sizeof(void *));
 		}
 

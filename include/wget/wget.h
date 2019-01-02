@@ -633,7 +633,7 @@ typedef int (*wget_vector_destructor_t)(void *elem);
 WGETAPI wget_vector_t *
 	wget_vector_create(int max, wget_vector_compare_t cmp) G_GNUC_WGET_MALLOC;
 WGETAPI void
-	wget_vector_set_growth_policy(wget_vector_t *v, float off);
+	wget_vector_set_resize_factor(wget_vector_t *v, float off);
 WGETAPI int
 	wget_vector_find(const wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
@@ -703,15 +703,11 @@ typedef void (*wget_hashmap_value_destructor_t)(void *value);
 WGETAPI wget_hashmap_t
 	*wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hashmap_compare_t cmp) G_GNUC_WGET_MALLOC;
 WGETAPI void
-	wget_hashmap_set_growth_policy(wget_hashmap_t *h, float off);
+	wget_hashmap_set_resize_factor(wget_hashmap_t *h, float factor);
 WGETAPI int
 	wget_hashmap_put(wget_hashmap_t *h, const void *key, size_t keysize, const void *value, size_t valuesize);
 WGETAPI int
 	wget_hashmap_put_noalloc(wget_hashmap_t *h, const void *key, const void *value);
-//WGETAPI int
-//	wget_hashmap_put_ident(WGET_HASHMAP *h, const void *key, size_t keysize);
-//WGETAPI int
-//	wget_hashmap_put_ident_noalloc(WGET_HASHMAP *h, const void *key);
 WGETAPI int
 	wget_hashmap_size(const wget_hashmap_t *h) G_GNUC_WGET_PURE;
 WGETAPI int
@@ -722,6 +718,7 @@ WGETAPI void
 	wget_hashmap_clear(wget_hashmap_t *h);
 WGETAPI int
 	wget_hashmap_get(const wget_hashmap_t *h, const void *key, void **value);
+#define wget_hashmap_get(a, b, c) wget_hashmap_get((a), (b), (void **)(c))
 WGETAPI int
 	wget_hashmap_contains(const wget_hashmap_t *h, const void *key);
 WGETAPI int
@@ -737,7 +734,7 @@ WGETAPI void
 WGETAPI void
 	wget_hashmap_set_value_destructor(wget_hashmap_t *h, wget_hashmap_value_destructor_t destructor);
 WGETAPI void
-	wget_hashmap_setloadfactor(wget_hashmap_t *h, float factor);
+	wget_hashmap_set_load_factor(wget_hashmap_t *h, float factor);
 
 /*
  * Stringmap datatype routines
@@ -758,10 +755,6 @@ WGETAPI int
 	wget_stringmap_put(wget_stringmap_t *h, const char *key, const void *value, size_t valuesize);
 WGETAPI int
 	wget_stringmap_put_noalloc(wget_stringmap_t *h, const char *key, const void *value);
-//WGETAPI int
-//	wget_stringmap_put_ident(WGET_STRINGMAP *h, const char *key);
-//WGETAPI int
-//	wget_stringmap_put_ident_noalloc(WGET_STRINGMAP *h, const char *key);
 WGETAPI int
 	wget_stringmap_size(const wget_stringmap_t *h) G_GNUC_WGET_PURE;
 WGETAPI int
@@ -772,6 +765,7 @@ WGETAPI void
 	wget_stringmap_clear(wget_stringmap_t *h);
 WGETAPI int
 	wget_stringmap_get(const wget_stringmap_t *h, const char *key, void **value);
+#define wget_stringmap_get(a, b, c) wget_stringmap_get((a), (b), (void **)(c))
 WGETAPI int
 	wget_stringmap_contains(const wget_stringmap_t *h, const char *key);
 WGETAPI int
@@ -787,9 +781,9 @@ WGETAPI void
 WGETAPI void
 	wget_stringmap_set_value_destructor(wget_hashmap_t *h, wget_stringmap_value_destructor_t destructor);
 WGETAPI void
-	wget_stringmap_setloadfactor(wget_stringmap_t *h, float factor);
+	wget_stringmap_set_load_factor(wget_stringmap_t *h, float factor);
 WGETAPI void
-	wget_stringmap_set_growth_policy(wget_stringmap_t *h, float off);
+	wget_stringmap_set_resize_factor(wget_stringmap_t *h, float factor);
 
 /*
  * Thread wrapper routines

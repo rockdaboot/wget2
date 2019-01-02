@@ -63,8 +63,8 @@ struct _wget_hashmap_st {
 		cur,       // number of entries in use
 		threshold; // resize when max reaches threshold
 	float
-		off,       // resize strategy: >0: resize = off * max, <0: resize = max + (-off)
-		factor;
+		resize_factor, // resize strategy: >0: resize = off * max, <0: resize = max + (-off)
+		load_factor;
 };
 
 /**
@@ -97,13 +97,13 @@ wget_hashmap_t *wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hash
 	h->entry = xcalloc(max, sizeof(_entry_t *));
 	h->max = max;
 	h->cur = 0;
-	h->off = 2;
+	h->resize_factor = 2;
 	h->hash = hash;
 	h->cmp = cmp;
 	h->key_destructor = free;
 	h->value_destructor = free;
-	h->factor = 0.75;
-	h->threshold = (int)(max * h->factor);
+	h->load_factor = 0.75;
+	h->threshold = (int)(max * h->load_factor);
 
 	return h;
 }
@@ -148,7 +148,7 @@ static void hashmap_rehash(wget_hashmap_t *h, int newmax, int recalc_hash)
 		xfree(h->entry);
 		h->entry = new_entry;
 		h->max = newmax;
-		h->threshold = (int)(newmax * h->factor);
+		h->threshold = (int)(newmax * h->load_factor);
 	}
 }
 
@@ -166,15 +166,7 @@ static void hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *
 	h->entry[pos] = entry;
 
 	if (++h->cur >= h->threshold) {
-		int newsize;
-
-		if (h->off > 0) {
-			newsize = (int) (h->max * h->off);
-		} else if (h->off < 0) {
-			newsize = (int) (h->max - h->off);
-		} else {
-			newsize = 0; // resizing switched off
-		}
+		int newsize = (int) (h->max * h->resize_factor);
 
 		if (newsize > 0)
 			hashmap_rehash(h, newsize, 0);
@@ -273,6 +265,18 @@ int wget_hashmap_put(wget_hashmap_t *h, const void *key, size_t keysize, const v
 /**
  * \param[in] h Hashmap
  * \param[in] key Key to search for
+ * \return 1 if \p key has been found, 0 if not found
+ *
+ * Check if \p key exists in \p h.
+ */
+int wget_hashmap_contains(const wget_hashmap_t *h, const void *key)
+{
+	return wget_hashmap_get(h, key, NULL);
+}
+
+/**
+ * \param[in] h Hashmap
+ * \param[in] key Key to search for
  * \param[out] value Value to be returned
  * \return 1 if \p key has been found, 0 if not found
  *
@@ -280,6 +284,7 @@ int wget_hashmap_put(wget_hashmap_t *h, const void *key, size_t keysize, const v
  *
  * Neither \p h nor \p key must be %NULL.
  */
+#undef wget_hashmap_get
 int wget_hashmap_get(const wget_hashmap_t *h, const void *key, void **value)
 {
 	if (h && key) {
@@ -293,18 +298,6 @@ int wget_hashmap_get(const wget_hashmap_t *h, const void *key, void **value)
 	}
 
 	return 0;
-}
-
-/**
- * \param[in] h Hashmap
- * \param[in] key Key to search for
- * \return 1 if \p key has been found, 0 if not found
- *
- * Check if \p key exists in \p h.
- */
-int wget_hashmap_contains(const wget_hashmap_t *h, const void *key)
-{
-	return wget_hashmap_get(h, key, NULL);
 }
 
 G_GNUC_WGET_NONNULL_ALL
@@ -544,32 +537,31 @@ void wget_hashmap_set_value_destructor(wget_hashmap_t *h, wget_hashmap_value_des
  *
  * Default is 0.75.
  */
-void wget_hashmap_setloadfactor(wget_hashmap_t *h, float factor)
+void wget_hashmap_set_load_factor(wget_hashmap_t *h, float factor)
 {
 	if (h) {
-		h->factor = factor;
-		h->threshold = (int)(h->max * h->factor);
+		h->load_factor = factor;
+		h->threshold = (int)(h->max * h->load_factor);
 		// rehashing occurs earliest on next put()
 	}
 }
 
 /**
  * \param[in] h Hashmap
- * \param[in] off Hashmap growth mode:
- *   positive values: increase size by multiplying \p off, e.g. 2 doubles the size on each resize
- *   negative values: increase size by \p -off entries on each resize (the integer value is taken).
- *   0: switch off resizing
+ * \param[in] factor Hashmap growth factor
  *
- * Set the growth policy for internal memory.
+ * Set the factor for resizing the hashmap when it's load factor is reached.
+ *
+ * The new size is 'factor * oldsize'. If the new size is less or equal 0,
+ * the involved put function will do nothing and the internal state of
+ * the hashmap will not change.
  *
  * Default is 2.
  */
-void wget_hashmap_set_growth_policy(wget_hashmap_t *h, float off)
+void wget_hashmap_set_resize_factor(wget_hashmap_t *h, float factor)
 {
-	if (!h)
-		return;
-
-	h->off = off;
+	if (h)
+		h->resize_factor = factor;
 }
 
 /**@}*/
