@@ -352,4 +352,9 @@ void wget_stringmap_set_resize_factor(wget_stringmap_t *h, float factor)
 	wget_hashmap_set_resize_factor(h, factor);
 }
 
+void *wget_stringmap_iterator_next(wget_stringmap_iterator_t *h, char **value)
+{
+	return wget_hashmap_iterator_next(h, (void **) value);
+}
+
 /**@}*/

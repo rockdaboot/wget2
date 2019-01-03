@@ -694,6 +694,7 @@ WGETAPI void
  */
 
 typedef struct _wget_hashmap_st wget_hashmap_t;
+typedef struct _wget_hashmap_iterator_st wget_hashmap_iterator_t;
 typedef int (*wget_hashmap_compare_t)(const void *key1, const void *key2);
 typedef unsigned int (*wget_hashmap_hash_t)(const void *value);
 typedef int (*wget_hashmap_browse_t)(void *ctx, const void *key, void *value);
@@ -736,16 +737,28 @@ WGETAPI void
 WGETAPI void
 	wget_hashmap_set_load_factor(wget_hashmap_t *h, float factor);
 
+WGETAPI wget_hashmap_iterator_t
+	*wget_hashmap_iterator_alloc(wget_hashmap_t *h) G_GNUC_WGET_MALLOC;
+WGETAPI void
+	wget_hashmap_iterator_free(wget_hashmap_iterator_t *it);
+WGETAPI void
+	*wget_hashmap_iterator_next(wget_hashmap_iterator_t *it, void **value);
+
 /*
  * Stringmap datatype routines
  */
 
 typedef wget_hashmap_t wget_stringmap_t;
+typedef wget_hashmap_iterator_t wget_stringmap_iterator_t;
 typedef int (*wget_stringmap_compare_t)(const char *key1, const char *key2);
 typedef unsigned int (*wget_stringmap_hash_t)(const char *value);
 typedef int (*wget_stringmap_browse_t)(void *ctx, const char *key, void *value);
 typedef void (*wget_stringmap_key_destructor_t)(char *key);
 typedef void (*wget_stringmap_value_destructor_t)(void *value);
+
+#define wget_stringmap_iterator_alloc wget_hashmap_iterator_alloc
+#define wget_stringmap_iterator_free wget_hashmap_iterator_free
+// #define wget_stringmap_iterator_next(a,b) ((char *) wget_hashmap_iterator_next((a),(b)))
 
 WGETAPI wget_stringmap_t *
 	wget_stringmap_create(int max) G_GNUC_WGET_MALLOC;
@@ -784,6 +797,8 @@ WGETAPI void
 	wget_stringmap_set_load_factor(wget_stringmap_t *h, float factor);
 WGETAPI void
 	wget_stringmap_set_resize_factor(wget_stringmap_t *h, float factor);
+WGETAPI void
+	*wget_stringmap_iterator_next(wget_stringmap_iterator_t *it, char **value);
 
 /*
  * Thread wrapper routines

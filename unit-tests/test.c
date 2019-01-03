@@ -38,6 +38,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <c-ctype.h>
 
 #include <wget.h>
 #include "../libwget/private.h"
@@ -1830,7 +1831,8 @@ static unsigned int hash_txt(G_GNUC_WGET_UNUSED const char *key)
 static void test_stringmap(void)
 {
 	wget_stringmap_t *m;
-	char key[128], value[128], *val;
+	wget_stringmap_iterator_t *iter;
+	char key[128], value[128], *val, *skey;
 	int run, it;
 	size_t valuesize;
 
@@ -1856,6 +1858,22 @@ static void test_stringmap(void)
 		if ((it = wget_stringmap_size(m)) != 26) {
 			failed++;
 			info_printf("stringmap_size() returned %d (expected %d)\n", it, 26);
+		} else ok++;
+
+		iter = wget_stringmap_iterator_alloc(m);
+		for (it = 0; (skey = wget_stringmap_iterator_next(iter, &val)); it++) {
+			int n = atoi(skey + 30), m = atoi(val);
+
+			if (!(c_isdigit(*val) && n >= 0 && n == m)) {
+				failed++;
+				info_printf("key/value don't match (%s | %s)\n", key, val);
+			} else ok++;
+		}
+		wget_stringmap_iterator_free(iter); iter = NULL;
+
+		if (it != wget_stringmap_size(m)) {
+			failed++;
+			info_printf("stringmap iterator just found %d items (expected %d)\n", it, wget_stringmap_size(m));
 		} else ok++;
 
 		// now, look up every single entry

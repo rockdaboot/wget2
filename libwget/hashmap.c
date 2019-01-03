@@ -67,6 +67,57 @@ struct _wget_hashmap_st {
 		load_factor;
 };
 
+struct _wget_hashmap_iterator_st {
+	struct _wget_hashmap_st
+		*h;
+	_entry_t
+		*entry;
+	int
+		pos;
+};
+
+wget_hashmap_iterator_t *wget_hashmap_iterator_alloc(wget_hashmap_t *h)
+{
+	struct _wget_hashmap_iterator_st *it = wget_calloc(1, sizeof(struct _wget_hashmap_iterator_st));
+
+	it->h = h;
+
+	return (wget_hashmap_iterator_t *) it;
+}
+
+void wget_hashmap_iterator_free(wget_hashmap_iterator_t *it)
+{
+	xfree(it);
+}
+
+void *wget_hashmap_iterator_next(wget_hashmap_iterator_t *it, void **value)
+{
+	struct _wget_hashmap_iterator_st *iter = (struct _wget_hashmap_iterator_st *) it;
+	struct _wget_hashmap_st	*h = iter->h;
+
+	if (iter->entry) {
+		if ((iter->entry = iter->entry->next)) {
+found:
+			if (value)
+				*value = iter->entry->value;
+			return iter->entry->key;
+		}
+
+		iter->pos++;
+	}
+
+	if (!iter->entry) {
+		for (; iter->pos < h->max; iter->pos++) {
+			if (h->entry[iter->pos]) {
+				iter->entry = h->entry[iter->pos];
+				goto found;
+			}
+		}
+	}
+
+	return NULL;
+}
+
 /**
  * \file
  * \brief Hashmap functions
