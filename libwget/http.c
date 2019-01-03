@@ -311,7 +311,7 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		if (!wget_stringmap_get(challenge->params, "algorithm", &algorithm))
 			algorithm = NULL;
 
-		if (wget_strcasecmp_ascii(qop, "auth")) {
+		if (qop && (wget_strcasecmp_ascii(qop, "auth") && wget_strcasecmp_ascii(qop, "auth-int"))) {
 			error_printf(_("Unsupported quality of protection '%s'.\n"), qop);
 			return;
 		}
@@ -346,7 +346,12 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 		// A2BUF = H(method ":" path)
 		wget_hash_printf_hex(hashtype, a2buf, sizeof(a2buf), "%s:/%s", req->method, req->esc_resource.data);
 
-		if (!wget_strcasecmp_ascii(qop, "auth") || !wget_strcasecmp_ascii(qop, "auth-int")) {
+		if (!qop) {
+			// RFC 2069 Digest Access Authentication
+
+			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" A2BUF)
+			wget_hash_printf_hex(hashtype, response_digest, sizeof(response_digest), "%s:%s:%s", a1buf, nonce, a2buf);
+		} else { // if (!wget_strcasecmp_ascii(qop, "auth") || !wget_strcasecmp_ascii(qop, "auth-int")) {
 			// RFC 2617 Digest Access Authentication
 			if (!*cnonce)
 				wget_snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
@@ -354,11 +359,6 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" nc ":" cnonce ":" qop ": " A2BUF)
 			wget_hash_printf_hex(hashtype, response_digest, sizeof(response_digest),
 				"%s:%s:00000001:%s:%s:%s", a1buf, nonce, /* nc, */ cnonce, qop, a2buf);
-		} else {
-			// RFC 2069 Digest Access Authentication
-
-			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" A2BUF)
-			wget_hash_printf_hex(hashtype, response_digest, sizeof(response_digest), "%s:%s:%s", a1buf, nonce, a2buf);
 		}
 
 		wget_buffer_init(&buf, NULL, 256);
