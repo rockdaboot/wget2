@@ -1862,9 +1862,9 @@ static void test_stringmap(void)
 
 		iter = wget_stringmap_iterator_alloc(m);
 		for (it = 0; (skey = wget_stringmap_iterator_next(iter, &val)); it++) {
-			int n = atoi(skey + 30), m = atoi(val);
+			int x = atoi(skey + 30), y = atoi(val);
 
-			if (!(c_isdigit(*val) && n >= 0 && n == m)) {
+			if (!(c_isdigit(*val) && x >= 0 && x == y)) {
 				failed++;
 				info_printf("key/value don't match (%s | %s)\n", key, val);
 			} else ok++;
