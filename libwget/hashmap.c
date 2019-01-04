@@ -76,48 +76,6 @@ struct _wget_hashmap_iterator_st {
 		pos;
 };
 
-wget_hashmap_iterator_t *wget_hashmap_iterator_alloc(wget_hashmap_t *h)
-{
-	struct _wget_hashmap_iterator_st *it = wget_calloc(1, sizeof(struct _wget_hashmap_iterator_st));
-
-	it->h = h;
-
-	return (wget_hashmap_iterator_t *) it;
-}
-
-void wget_hashmap_iterator_free(wget_hashmap_iterator_t *it)
-{
-	xfree(it);
-}
-
-void *wget_hashmap_iterator_next(wget_hashmap_iterator_t *it, void **value)
-{
-	struct _wget_hashmap_iterator_st *iter = (struct _wget_hashmap_iterator_st *) it;
-	struct _wget_hashmap_st	*h = iter->h;
-
-	if (iter->entry) {
-		if ((iter->entry = iter->entry->next)) {
-found:
-			if (value)
-				*value = iter->entry->value;
-			return iter->entry->key;
-		}
-
-		iter->pos++;
-	}
-
-	if (!iter->entry) {
-		for (; iter->pos < h->max; iter->pos++) {
-			if (h->entry[iter->pos]) {
-				iter->entry = h->entry[iter->pos];
-				goto found;
-			}
-		}
-	}
-
-	return NULL;
-}
-
 /**
  * \file
  * \brief Hashmap functions
@@ -126,6 +84,70 @@ found:
  *
  * Hashmaps are key/value stores that perform at O(1) for insertion, searching and removing.
  */
+
+/**
+ * \param[in] h Hashmap
+ * \return New iterator instance for \p h
+ *
+ * Creates a hashmap iterator for \p.
+ */
+wget_hashmap_iterator_t *wget_hashmap_iterator_alloc(wget_hashmap_t *h)
+{
+	struct _wget_hashmap_iterator_st *iter = wget_calloc(1, sizeof(struct _wget_hashmap_iterator_st));
+
+	iter->h = h;
+
+	return (wget_hashmap_iterator_t *) iter;
+}
+
+/**
+ * \param[in] iter Hashmap iterator
+ *
+ * Free the given iterator \p iter.
+ */
+void wget_hashmap_iterator_free(wget_hashmap_iterator_t **iter)
+{
+	if (iter)
+		xfree(*iter);
+}
+
+/**
+ * \param[in] iter Hashmap iterator
+ * \param[out] value Pointer to the value belonging to the returned key
+ * \return Pointer to the key or NULL if no more elements left
+ *
+ * Returns the next key / value in the hashmap. If all key/value pairs have been
+ * iterated over the function returns NULL and \p value is untouched.
+ *
+ * When iterating over a hashmap, the order of returned key/value pairs is not defined.
+ */
+void *wget_hashmap_iterator_next(wget_hashmap_iterator_t *iter, void **value)
+{
+	struct _wget_hashmap_iterator_st *_iter = (struct _wget_hashmap_iterator_st *) iter;
+	struct _wget_hashmap_st	*h = _iter->h;
+
+	if (_iter->entry) {
+		if ((_iter->entry = _iter->entry->next)) {
+found:
+			if (value)
+				*value = _iter->entry->value;
+			return _iter->entry->key;
+		}
+
+		_iter->pos++;
+	}
+
+	if (!_iter->entry) {
+		for (; _iter->pos < h->max; _iter->pos++) {
+			if (h->entry[_iter->pos]) {
+				_iter->entry = h->entry[_iter->pos];
+				goto found;
+			}
+		}
+	}
+
+	return NULL;
+}
 
 /**
  * \param[in] max Initial number of pre-allocated entries

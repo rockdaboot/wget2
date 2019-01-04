@@ -352,6 +352,16 @@ void wget_stringmap_set_resize_factor(wget_stringmap_t *h, float factor)
 	wget_hashmap_set_resize_factor(h, factor);
 }
 
+/**
+ * \param[in] iter Stringmap iterator
+ * \param[out] value Pointer to the value belonging to the returned key
+ * \return Pointer to the key or NULL if no more elements left
+ *
+ * Returns the next key / value in the stringmap. If all key/value pairs have been
+ * iterated over the function returns NULL and \p value is untouched.
+ *
+ * When iterating over a stringmap, the order of returned key/value pairs is not defined.
+ */
 void *wget_stringmap_iterator_next(wget_stringmap_iterator_t *h, char **value)
 {
 	return wget_hashmap_iterator_next(h, (void **) value);

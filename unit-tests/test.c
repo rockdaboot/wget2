@@ -1869,7 +1869,7 @@ static void test_stringmap(void)
 				info_printf("key/value don't match (%s | %s)\n", key, val);
 			} else ok++;
 		}
-		wget_stringmap_iterator_free(iter); iter = NULL;
+		wget_stringmap_iterator_free(&iter);
 
 		if (it != wget_stringmap_size(m)) {
 			failed++;

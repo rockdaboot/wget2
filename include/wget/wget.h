@@ -689,17 +689,26 @@ WGETAPI void
 WGETAPI void
 	wget_vector_sort(wget_vector_t *v);
 
-/*
- * Hashmap datatype routines
+/**
+ * \ingroup libwget-hashmap
+ *
+ * @{
  */
-
+/// Type of the hashmap
 typedef struct _wget_hashmap_st wget_hashmap_t;
+/// Type of the hashmap iterator
 typedef struct _wget_hashmap_iterator_st wget_hashmap_iterator_t;
+/// Type of the hashmap compare function
 typedef int (*wget_hashmap_compare_t)(const void *key1, const void *key2);
+/// Type of the hashmap hash function
 typedef unsigned int (*wget_hashmap_hash_t)(const void *value);
+/// Type of the hashmap browse callback function
 typedef int (*wget_hashmap_browse_t)(void *ctx, const void *key, void *value);
+/// Type of the hashmap key destructor function
 typedef void (*wget_hashmap_key_destructor_t)(void *key);
+/// Type of the hashmap value destructor function
 typedef void (*wget_hashmap_value_destructor_t)(void *value);
+/** @} */
 
 WGETAPI wget_hashmap_t
 	*wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hashmap_compare_t cmp) G_GNUC_WGET_MALLOC;
@@ -740,25 +749,35 @@ WGETAPI void
 WGETAPI wget_hashmap_iterator_t
 	*wget_hashmap_iterator_alloc(wget_hashmap_t *h) G_GNUC_WGET_MALLOC;
 WGETAPI void
-	wget_hashmap_iterator_free(wget_hashmap_iterator_t *it);
+	wget_hashmap_iterator_free(wget_hashmap_iterator_t **iter);
 WGETAPI void
-	*wget_hashmap_iterator_next(wget_hashmap_iterator_t *it, void **value);
+	*wget_hashmap_iterator_next(wget_hashmap_iterator_t *iter, void **value);
 
-/*
- * Stringmap datatype routines
+/**
+ * \ingroup libwget-stringmap
+ *
+ * @{
  */
-
+/// Type of the stringmap
 typedef wget_hashmap_t wget_stringmap_t;
+/// Type of the stringmap iterator
 typedef wget_hashmap_iterator_t wget_stringmap_iterator_t;
+/// Type of the stringmap compare function
 typedef int (*wget_stringmap_compare_t)(const char *key1, const char *key2);
+/// Type of the stringmap hash function
 typedef unsigned int (*wget_stringmap_hash_t)(const char *value);
+/// Type of the stringmap browse callback function
 typedef int (*wget_stringmap_browse_t)(void *ctx, const char *key, void *value);
+/// Type of the stringmap key destructor function
 typedef void (*wget_stringmap_key_destructor_t)(char *key);
+/// Type of the stringmap value destructor function
 typedef void (*wget_stringmap_value_destructor_t)(void *value);
+/** @} */
 
+/// Wrapper around wget_hashmap_iterator_alloc().
 #define wget_stringmap_iterator_alloc wget_hashmap_iterator_alloc
+/// Wrapper around wget_hashmap_iterator_free().
 #define wget_stringmap_iterator_free wget_hashmap_iterator_free
-// #define wget_stringmap_iterator_next(a,b) ((char *) wget_hashmap_iterator_next((a),(b)))
 
 WGETAPI wget_stringmap_t *
 	wget_stringmap_create(int max) G_GNUC_WGET_MALLOC;
