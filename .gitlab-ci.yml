@@ -346,7 +346,7 @@ Build/Arch:
     - export CFLAGS="$CFLAGS_DEFAULT"
     - sed -i 's/dist-lzip//g' configure.ac
     - ./bootstrap --skip-po && touch .manywarnings
-    - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
+    - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc)
     - make check -j$(nproc)
   tags:
