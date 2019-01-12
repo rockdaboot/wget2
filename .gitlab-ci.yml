@@ -387,7 +387,7 @@ Tarball:
   tags:
     - shared
   dependencies:
-    - Full + VPATH/Debian
+    - Full+VPATH/Debian
   artifacts:
     expire_in: 2 weeks
     when: on_failure
