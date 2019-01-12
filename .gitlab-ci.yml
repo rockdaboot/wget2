@@ -315,20 +315,17 @@ MinGW64:
       - unit-tests/*.log
       - tests/*.log
 
-DepBuild/Arch:
+Build/Arch:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ARCH_BUILD
-  only:
-      - schedules
   script:
-    - export CFLAGS=$CFLAGS_DEFAULT
+    - export CFLAGS="$CFLAGS_DEFAULT"
     - pacman -Q libpsl-git libnghttp2-git libidn2-git libmicrohttpd-git gpgme zlib pcre2 xz
     - sed -i 's/dist-lzip//g' configure.ac
     - ./bootstrap --skip-po && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
     - make -j$(nproc)
     - make check -j$(nproc)
-    - make -j$(nproc) distcheck
   tags:
     - shared
     - docker
