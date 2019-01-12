@@ -344,7 +344,6 @@ Build/Arch:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ARCH_BUILD
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - pacman -Q libpsl-git libnghttp2-git libidn2-git libmicrohttpd-git gpgme zlib pcre2 xz
     - sed -i 's/dist-lzip//g' configure.ac
     - ./bootstrap --skip-po && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
