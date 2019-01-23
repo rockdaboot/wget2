@@ -1071,9 +1071,9 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--no-cache`
 
-  Disable server-side cache.  In this case, Wget2 will send the remote server an appropriate directive (Pragma: no-
-  cache) to get the file from the remote service, rather than returning the cached version.  This is especially
-  useful for retrieving and flushing out-of-date documents on proxy servers.
+  Disable server-side cache.  In this case, Wget2 will send the remote server appropriate directives (Cache-Control: no-
+  cache and Pragma: no-cache) to get the file from the remote service, rather than returning the cached version.  This is
+  especially useful for retrieving and flushing out-of-date documents on proxy servers.
 
   Caching is allowed by default.
 
