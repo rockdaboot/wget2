@@ -545,7 +545,7 @@ Go to background immediately after startup. If no output file is specified via t
   a desired a property when invoking Wget2 to download several small/large files.  In such a case, Wget2 could simply
   be invoked with this parameter to get a much cleaner output on the screen.
 
-  This option will also force the progress bar to be printed to stderr when used alongside the --logfile option.
+  This option will also force the progress bar to be printed to stderr when used alongside the `--output-file` option.
 
 ### `-N`, `--timestamping`
 
