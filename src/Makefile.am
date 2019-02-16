@@ -1,4 +1,4 @@
-DEFS = @DEFS@ -DSYSCONFDIR=\"$(sysconfdir)/@PACKAGE@\" -DLOCALEDIR=\"$(localedir)\"
+DEFS = @DEFS@ -DSYSCONFDIR=\"$(sysconfdir)/\" -DLOCALEDIR=\"$(localedir)\"
 
 LDADD = $(LIBOBJS) ../lib/libgnu.a
 AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS)

@@ -2883,8 +2883,16 @@ int init(int argc, const char **argv)
 	// create list of default config file names
 	const char *env;
 	config.config_files = wget_vector_create(8, NULL);
-	if ((env = getenv ("SYSTEM_WGET2RC")) && *env)
+
+	// First add the Global Wget2rc file.
+	if ((env = getenv ("SYSTEM_WGET2RC")) && *env) {
 		wget_vector_add_str(config.config_files, env);
+	} else {
+		const char *cfgfile = SYSCONFDIR"wget2rc";
+		if (access(cfgfile, R_OK) == 0)
+			wget_vector_add_str(config.config_files, cfgfile);
+	}
+
 	if ((env = getenv ("WGET2RC")) && *env)
 		wget_vector_add_str(config.config_files, env);
 	else {
