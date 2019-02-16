@@ -99,6 +99,8 @@ struct config {
 		*stats_server,
 		*stats_site,
 		*stats_tls,
+		*system_config,
+		*user_config,
 		*hsts_file,
 		*hsts_preload_file,
 		*hpkp_file,
@@ -109,7 +111,6 @@ struct config {
 		*dns_cache_preload;
 	wget_vector_t
 		*compression,
-		*config_files,
 		*domains,
 		*exclude_directories,
 		*exclude_domains,

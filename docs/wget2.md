@@ -1927,15 +1927,52 @@ Go to background immediately after startup. If no output file is specified via t
   multiple types of errors are encountered.
 
 
-# <a name="Files"/>Files
+# <a name="Startup File"/>Startup File
 
-  `/etc/wgetrc`
+Sometimes you may wish to permanently change the default behaviour of GNU Wget2.
+There is a better way to do this than setting an alias in your shell. GNU Wget2
+allows you to set all options permanently through its startup up, `.wget2rc`.
 
-  Default location of the global startup file.
+While `.wget2rc` is the _main_ initialization file used by GNU Wget2, it is
+not a good idea to store passwords in this file. This is because the startup
+file maybe publicly readable or backed up in version control. This is why,
+Wget2 also reads the contents of `$HOME/.netrc` when required.
 
-  `~/.wgetrc`
+The `.wget2rc` file follows a very similar syntax to the `.wgetrc` that is read
+by GNU Wget. It varies in only those places where the command line options vary
+between Wget1.x and Wget2.
 
-  User startup file.
+## <a name="Wget2rc Location"/>Wget2rc Location
+
+When initializing, Wget2 will attempt to read the "global" startup file, which
+is located at '/usr/local/etc/wget2rc' by default (or some prefix other than
+'/usr/local', if Wget2 was not installed there). The global startup file is
+useful for system administrators to enforce a default policy, such as setting
+the path to the certificate store, preloading a HSTS list, etc.
+
+Then, Wget2 will look for the user's initialization file. If the user has
+passed the `--config` command line option, Wget2 will try to load the file that
+it points to. If file does not exist, or if it cannot be read, Wget2 will
+make no further attempts to read any initialization files.
+
+If the environment variable `WGET2RC` is set, Wget2 will try to load the file
+at this location. If the file does not exist, or if it cannot be read, Wget2
+will make no further attempts to read an initialization file.
+
+If, `--config` is not passed and `WGET2RC` is not set, Wget2 will attempt to
+load the user's initialization file from a location as defined by the XDG Base
+Directory Specification. It will read the first, and only the first file it
+finds from the following locations:
+
+1. `$XDG_CONFIG_HOME/wget/wget2rc`
+2. `$HOME/.config/wget/wget2rc`
+3. `$HOME/.wget2rc`
+
+In the future, support for reading from `$HOME/.wget2rc` may be removed.
+
+The fact that the user's settings are loaded after the system-wide ones means
+that in case of a collision, the user's wget2rc _overrides_ the global wget2rc.
+Fascist admins away!
 
 # <a name="Bugs"/>Bugs
 
