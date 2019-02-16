@@ -766,7 +766,7 @@ Go to background immediately after startup. If no output file is specified via t
   This allows to save domain name lookup time, which is a bottleneck in some use cases.
   Also, the use of HOSTALIASES (which is not portable) can be mimiced by this option.
 
-# `--dns-cache`
+### `--dns-cache`
 
   Enable DNS caching (default: on).
 
