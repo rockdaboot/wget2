@@ -222,14 +222,18 @@ static int G_GNUC_WGET_PURE _utf8_is_valid(const char *utf8)
 }
 #endif
 
+/* We convert hostnames and thus have to apply IDN2_USE_STD3_ASCII_RULES.
+ * If we don't do, the result could contain any ascii characters,
+ * e.g. 'evil.c\u2100.example.com' will be converted into
+ * 'evil.ca/c.example.com', which seems no good idea. */
 const char *wget_str_to_ascii(const char *src)
 {
 #ifdef WITH_LIBIDN2
 	if (wget_str_needs_encoding(src)) {
 		char *asc = NULL;
 		int rc;
-		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_NONTRANSITIONAL)) != IDN2_OK)
-			rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_TRANSITIONAL);
+		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_NONTRANSITIONAL|IDN2_USE_STD3_ASCII_RULES)) != IDN2_OK)
+			rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_TRANSITIONAL|IDN2_USE_STD3_ASCII_RULES);
 		if (rc == IDN2_OK)
 		{
 			debug_printf("idn2 '%s' -> '%s'\n", src, asc);
