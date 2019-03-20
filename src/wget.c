@@ -1358,7 +1358,6 @@ int main(int argc, const char **argv)
 	}
 
 	print_progress_report(start_time);
-
 	if (!config.progress && (config.recursive || config.page_requisites || (config.input_file && quota != 0)) && quota) {
 		info_printf(_("Downloaded: %d files, %s bytes, %d redirects, %d errors\n"),
 			stats.ndownloads, wget_human_readable(quota_buf, sizeof(quota_buf), quota), stats.nredirects, stats.nerrors);
@@ -2499,6 +2498,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 	}
 
 	wget_thread_mutex_lock(known_urls_mutex);
+
 	for (int it = 0; it < wget_vector_size(parsed->uris); it++) {
 		wget_html_parsed_url_t *html_url = wget_vector_get(parsed->uris, it);
 		wget_string_t *url = &html_url->url;
@@ -3002,6 +3002,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		wget_iri_t *uri, wget_iri_t *original_url, int ignore_patterns, wget_buffer_t *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path)
 {
+	JOB *job = resp->req->user_data;
 	char *alloced_fname = NULL;
 	int fd, multiple = 0, oflag = flag;
 	size_t fname_length;
@@ -3127,8 +3128,9 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		if (oflag == O_TRUNC)
 			flag = O_TRUNC;
 	} else if (!config.clobber || (config.recursive && config.directories)) {
-		if (oflag == O_TRUNC && !(config.recursive && config.directories))
+		if (oflag == O_TRUNC && (!(config.recursive && config.directories) || (config.page_requisites && !config.clobber))) {
 			flag = O_EXCL;
+		}
 	} else if (flag != O_APPEND) {
 		// wget compatibility: "clobber" means generating of .x files
 		multiple = 1;
@@ -3201,9 +3203,23 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		// TODO SAVE UNIQUE-NESS
 	} else {
 		if (fd == -1) {
-			if (errno == EEXIST)
+			if (errno == EEXIST) {
 				error_printf(_("File '%s' already there; not retrieving.\n"), fname);
-			else if (errno == EISDIR)
+
+				if (config.page_requisites && !config.clobber) {
+					if (!wget_strcasecmp_ascii(resp->content_type, "text/html") || !wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")) {
+						html_parse_localfile(job, job->level, job->local_filename, config.remote_encoding, job->iri);
+					} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
+						css_parse_localfile(job, job->local_filename, config.remote_encoding, job->iri);
+					} else if (!wget_strcasecmp_ascii(resp->content_type, "text/xml") || !wget_strcasecmp_ascii(resp->content_type, "application/xml")) {
+						sitemap_parse_xml_localfile(job, job->local_filename, "utf-8", job->iri);
+					} else if (!wget_strcasecmp_ascii(resp->content_type, "application/atom+xml")) {
+						atom_parse_localfile(job, job->local_filename, "utf-8", job->iri);
+					} else if (!wget_strcasecmp_ascii(resp->content_type, "application/rss+xml")) {
+						rss_parse_localfile(job, job->local_filename, "utf-8", job->iri);
+					}
+				}
+			} else if (errno == EISDIR)
 				info_printf(_("Directory / file name clash - not saving '%s'\n"), fname);
 			else {
 				error_printf(_("Failed to open '%s' (errno=%d): %s\n"), fname, errno, strerror(errno));
