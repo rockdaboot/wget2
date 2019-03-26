@@ -79,6 +79,7 @@
 #include "wget_plugin.h"
 #include "wget_stats.h"
 #include "wget_testing.h"
+#include "wget_utils.h"
 
 #ifdef WITH_GPGME
 #  include "wget_gpgme.h"
@@ -171,59 +172,6 @@ static volatile bool
 	terminate;
 static int
 	nthreads;
-
-// this function should be called protected by a mutex - else race conditions will happen
-static void mkdir_path(char *fname)
-{
-	char *p1, *p2;
-	int rc;
-
-	for (p1 = fname + 1; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
-		*p2 = 0; // replace path separator
-
-		// relative paths should have been normalized earlier,
-		// but for security reasons, don't trust myself...
-		if (*p1 == '.' && p1[1] == '.')
-			error_printf_exit(_("Internal error: Unexpected relative path: '%s'\n"), fname);
-
-		rc = mkdir(fname, 0755);
-
-		debug_printf("mkdir(%s)=%d errno=%d\n",fname,rc,errno);
-		if (rc) {
-			struct stat st;
-
-			if (errno == EEXIST && stat(fname, &st) == 0 && (st.st_mode & S_IFMT) == S_IFREG) {
-				// we have a file in the way... move it away and retry
-				int renamed = 0;
-
-				for (int fnum = 1; fnum <= 999 && !renamed; fnum++) {
-					char dst[strlen(fname) + 1 + 32];
-
-					wget_snprintf(dst, sizeof(dst), "%s.%d", fname, fnum);
-					if (access(dst, F_OK) != 0 && rename(fname, dst) == 0)
-						renamed = 1;
-				}
-
-				if (renamed) {
-					rc = mkdir(fname, 0755);
-
-					if (rc) {
-						error_printf(_("Failed to make directory '%s' (errno=%d)\n"), fname, errno);
-						*p2 = '/'; // restore path separator
-						break;
-					}
-				} else
-					error_printf(_("Failed to rename '%s' (errno=%d)\n"), fname, errno);
-			} else if (errno != EEXIST) {
-				error_printf(_("Failed to make directory '%s' (errno=%d)\n"), fname, errno);
-				*p2 = '/'; // restore path separator
-				break;
-			}
-		} else debug_printf("created dir %s\n", fname);
-
-		*p2 = '/'; // restore path separator
-	}
-}
 
 // generate the local filename corresponding to an URI
 // respect the following options:
@@ -3177,7 +3125,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 	}
 
 	// create the complete directory path
-	mkdir_path((char *) fname);
+	mkdir_path((char *) fname, true);
 
 	char unique[fname_length + 1];
 	*unique = 0;

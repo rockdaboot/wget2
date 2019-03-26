@@ -16,7 +16,7 @@
   * [Plugin Options](#Plugin Options)
 * [Environment](#Environment)
 * [Exit Status](#Exit Status)
-* [Files](#Files)
+* [Startup File](#Startup File)
 * [Bugs](#Bugs)
 * [See Also](#See Also)
 * [Author](#Author)
@@ -1935,7 +1935,7 @@ allows you to set all options permanently through its startup up, `.wget2rc`.
 
 While `.wget2rc` is the _main_ initialization file used by GNU Wget2, it is
 not a good idea to store passwords in this file. This is because the startup
-file maybe publicly readable or backed up in version control. This is why,
+file maybe publicly readable or backed up in version control. This is why
 Wget2 also reads the contents of `$HOME/.netrc` when required.
 
 The `.wget2rc` file follows a very similar syntax to the `.wgetrc` that is read
@@ -1968,11 +1968,12 @@ finds from the following locations:
 2. `$HOME/.config/wget/wget2rc`
 3. `$HOME/.wget2rc`
 
-In the future, support for reading from `$HOME/.wget2rc` may be removed.
+Having an initialization file at `$HOME/.wget2rc` is deprecated. If a file is
+found there, Wget2 will print a warning about it. Support for reading from this
+file will be removed in the future.
 
 The fact that the user's settings are loaded after the system-wide ones means
 that in case of a collision, the user's wget2rc _overrides_ the global wget2rc.
-Fascist admins away!
 
 # <a name="Bugs"/>Bugs
 

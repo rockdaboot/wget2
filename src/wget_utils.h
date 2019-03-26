@@ -25,6 +25,7 @@
 
 #include <wget.h>
 
+void mkdir_path(const char *fname, bool is_file);
 char *shell_expand(const char *fname);
 
 #endif /* SRC_WGET_UTILS_H */
