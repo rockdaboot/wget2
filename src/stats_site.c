@@ -56,8 +56,12 @@ typedef struct {
 	char
 		encoding,
 		method; //!< STATS_METHOD_*
+	const char*
+		mime_type;
 	bool
 		redirect : 1; //!< Was this a redirection ?
+	time_t
+		last_modified;
 } site_stats_t;
 
 // Forward declarations for static functions
@@ -141,6 +145,8 @@ void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 	doc->status = resp->code;
 	doc->encoding = resp->content_encoding;
 	doc->redirect = !!job->redirection_level;
+	doc->mime_type = wget_strdup(resp->content_type);
+	doc->last_modified = resp->last_modified;
 
 	// Set the request start time (since this is the first request for the doc)
 	// request_end will be overwritten by any subsequent responses for the doc.
@@ -171,8 +177,11 @@ static void stats_callback(G_GNUC_WGET_UNUSED const void *stats)
 {
 }
 
-static void free_stats(G_GNUC_WGET_UNUSED site_stats_t *stats)
+static void free_stats(site_stats_t *stats)
 {
+	if (stats) {
+		xfree(stats->mime_type);
+	}
 }
 
 static int print_human_entry(FILE *fp, site_stats_t *doc)
@@ -189,10 +198,10 @@ static int print_csv_entry(FILE *fp, site_stats_t *doc)
 {
 	long long transfer_time = doc->response_end - doc->request_start;
 
-	fprintf(fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d\n",
+	fprintf(fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d,%ld,%s\n",
 		doc->id, doc->parent_id, doc->iri->uri, doc->status, !doc->redirect, doc->method,
 		doc->size_downloaded, doc->size_decompressed, transfer_time,
-		doc->initial_response_duration, doc->encoding, doc->signature_status);
+		doc->initial_response_duration, doc->encoding, doc->signature_status, doc->last_modified, doc->mime_type);
 
 	return 0;
 }
@@ -209,7 +218,7 @@ static void print_human(stats_opts_t *opts, FILE *fp)
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "ID,ParentID,URL,Status,Link,Method,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,Verification\n");
+	fprintf(fp, "ID,ParentID,URL,Status,Link,Method,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,Verification,Last-Modified,Content-Type\n");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 
 	if (config.debug)
