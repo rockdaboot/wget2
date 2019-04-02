@@ -86,11 +86,12 @@
 #endif
 
 // flags for add_url()
-#define URL_FLG_REDIRECTION   (1<<0)
-#define URL_FLG_SITEMAP       (1<<1)
-#define URL_FLG_SKIPFALLBACK  (1<<2)
-#define URL_FLG_REQUISITE     (1<<3)
-#define URL_FLG_SIGNATURE_REQ (1<<4)
+#define URL_FLG_REDIRECTION     (1<<0)
+#define URL_FLG_SITEMAP         (1<<1)
+#define URL_FLG_SKIPFALLBACK    (1<<2)
+#define URL_FLG_REQUISITE       (1<<3)
+#define URL_FLG_SIGNATURE_REQ   (1<<4)
+#define URL_FLG_NO_BLACKLISTING (1<<5)
 
 #define _CONTENT_TYPE_HTML 1
 typedef struct {
@@ -628,7 +629,7 @@ static int regex_match(const char *string, const char *pattern)
 
 // Add URLs given by user (command line, file or -i option).
 // Needs to be thread-save.
-static void add_url_to_queue(const char *url, wget_iri_t *base, const char *encoding)
+static void add_url_to_queue(const char *url, wget_iri_t *base, const char *encoding, int flags)
 {
 	wget_iri_t *iri;
 	JOB *new_job = NULL, job_buf;
@@ -672,10 +673,12 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 	}
 
 	if (!blacklist_add(iri)) {
-		// we know this URL already
-		wget_thread_mutex_unlock(downloader_mutex);
-		plugin_db_forward_url_verdict_free(&plugin_verdict);
-		return;
+		if (!(flags & URL_FLG_NO_BLACKLISTING)) {
+			// we know this URL already
+			wget_thread_mutex_unlock(downloader_mutex);
+			plugin_db_forward_url_verdict_free(&plugin_verdict);
+			return;
+		}
 	}
 
 	// only download content from hosts given on the command line or from input file
@@ -1188,7 +1191,7 @@ int main(int argc, const char **argv)
 	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
 
 	for (; n < argc; n++) {
-		add_url_to_queue(argv[n], config.base, config.local_encoding);
+		add_url_to_queue(argv[n], config.base, config.local_encoding, 0);
 	}
 
 	if (config.input_file) {
@@ -1232,7 +1235,7 @@ int main(int argc, const char **argv)
 					// debug_printf("len=%zd url=%s\n", len, buf);
 
 					url[len] = 0;
-					add_url_to_queue(buf, config.base, config.input_encoding);
+					add_url_to_queue(buf, config.base, config.input_encoding, 0);
 				}
 				xfree(buf);
 			} else {
@@ -1256,7 +1259,7 @@ int main(int argc, const char **argv)
 					// debug_printf("len=%zd url=%s\n", len, buf);
 
 					url[len] = 0;
-					add_url_to_queue(url, config.base, config.input_encoding);
+					add_url_to_queue(url, config.base, config.input_encoding, 0);
 				}
 				xfree(buf);
 				close(fd);
@@ -1413,6 +1416,19 @@ int main(int argc, const char **argv)
 	return get_exit_status();
 }
 
+/*
+ * This thread reads IRIs/URIs asynchronously from STDIN.
+ *
+ *  Wget2 starts working immediately after the first input since we have to be ready
+ * for slow input (e.g. user typing or input from scripts with sleeps in between).
+ *
+ * We allow downloading of the same resource as often as a user likes to, so no
+ * blacklisting is done in add_url_to_queue(). This makes it possible to use interactive
+ * web services like a Tetris game by Igor Chubin:
+ *
+ * (b="http://te.ttr.is:8003"; echo $b; while read -sN1 a; do echo "$b/$a"; done) | wget2 --input-file=- -qO-
+ *   h,j,k,l = left, down, turn, right; ctrl-c = stop
+ */
 void *input_thread(void *p G_GNUC_WGET_UNUSED)
 {
 	ssize_t len;
@@ -1420,7 +1436,7 @@ void *input_thread(void *p G_GNUC_WGET_UNUSED)
 	char *buf = NULL;
 
 	while ((len = wget_fdgetline(&buf, &bufsize, STDIN_FILENO)) >= 0) {
-		add_url_to_queue(buf, config.base, config.local_encoding);
+		add_url_to_queue(buf, config.base, config.local_encoding, URL_FLG_NO_BLACKLISTING);
 
 		if (nthreads < config.max_threads && nthreads < queue_size())
 			// wake up main thread to recalculate # of workers
