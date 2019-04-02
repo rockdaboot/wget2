@@ -1421,12 +1421,22 @@ void *input_thread(void *p G_GNUC_WGET_UNUSED)
 
 	while ((len = wget_fdgetline(&buf, &bufsize, STDIN_FILENO)) >= 0) {
 		add_url_to_queue(buf, config.base, config.local_encoding);
-		wget_thread_cond_signal(worker_cond);
+
+		if (nthreads < config.max_threads && nthreads < queue_size())
+			// wake up main thread to recalculate # of workers
+			wget_thread_cond_signal(main_cond);
+		else
+			// wake up all workers to check for
+			wget_thread_cond_signal(worker_cond);
 	}
 	xfree(buf);
 
 	// input closed, don't read from it any more
 	debug_printf("input closed\n");
+
+	// wake up main thread to take control (e.g. checking if we are done)
+	wget_thread_cond_signal(main_cond);
+
 	input_tid = 0;
 	return NULL;
 }
