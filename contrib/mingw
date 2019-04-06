@@ -9,9 +9,11 @@ unset CXX
 #PREFIX=i686-w64-mingw32
 PREFIX=x86_64-w64-mingw32
 
-#export PATH="/usr/$PREFIX/bin:$PATH"
+export PATH="/usr/$PREFIX/bin:$PATH"
 export INSTALLDIR="$PWD/$PREFIX"
 export PKG_CONFIG_PATH=$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig
+export PKG_CONFIG_LIBDIR="$INSTALLDIR/lib/pkgconfig"
+export PKG_CONFIG="/usr/bin/${PREFIX}-pkg-config"
 export CPPFLAGS="-I$INSTALLDIR/include"
 export LDFLAGS="-L$INSTALLDIR/lib"
 
@@ -75,18 +77,17 @@ make install
 cd ..
 
 if [ ! -d gnutls ]; then
-  git clone --depth=1 https://gitlab.com/gnutls/gnutls.git
+  git clone https://gitlab.com/gnutls/gnutls.git
   cd gnutls
 else
   cd gnutls
   git pull
 fi
-#make bootstrap
-make autoreconf && touch .submodule.stamp
+./bootstrap
 ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX \
   --with-nettle-mini --enable-shared --with-included-libtasn1 \
   --with-included-unistring --without-p11-kit --disable-doc --disable-tests --disable-tools --disable-cxx \
-  --disable-maintainer-mode --disable-libdane --disable-hardware-acceleration --prefix=$INSTALLDIR
+  --disable-maintainer-mode --disable-libdane --disable-hardware-acceleration --disable-guile --prefix=$INSTALLDIR
 make -j$(nproc)
 make install
 cd ..
