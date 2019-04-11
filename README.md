@@ -71,7 +71,7 @@ sitemap index files.
 - support for keep-alive connections
 - included CSS, HTML, XML parser needed for recursive downloads
 - gettext support
-- HTTPS via libgnutls
+- HTTPS via libgnutls (and basic WolfSSL support)
 - support for Metalink RFC 6249 (Metalink/HTTP: Mirrors and Hashes)
 - support for Metalink RFC 5854 (Metalink Download Description Format / .meta4 files)
 - support for Metalink 3
@@ -126,6 +126,7 @@ The following packages are needed to build the software
 * libgpgme >= 0.4.2 (optional, for automatic signature verification)
 * libpcre | libpcre2 (optional, for filtering by PCRE|PCRE2 regex)
 * libhsts (optional, to support HSTS preload lists)
+* libwolfssl (optional, to support WolfSSL instead of GnuTLS)
 
 The versions are recommended, but older versions may also work.
 

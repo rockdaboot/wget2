@@ -470,6 +470,22 @@ AS_IF([test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes], [
 AM_CONDITIONAL([WITH_LIBNETTLE], [test "x$with_libnettle" = xyes])
 AM_CONDITIONAL([WITH_CRYPT], [test "x$with_gcrypt" = xyes])
 
+AC_ARG_WITH(wolfssl, AS_HELP_STRING([--without-wolfssl], [disable WolfSSL support]), with_wolfssl=$withval)
+AS_IF([test "x$with_wolfssl" = xyes], [
+  echo "*** $with_wolfssl"
+  PKG_CHECK_MODULES([WOLFSSL], [wolfssl], [
+    with_wolfssl=yes
+    LIBS="$WOLFSSL_LIBS $LIBS"
+    CFLAGS="$WOLFSSL_CFLAGS $CFLAGS"
+    AC_DEFINE([WITH_WOLFSSL], [1], [Use WolfSSL])
+  ], [
+    AC_SEARCH_LIBS(wolfSSL_Init, wolfssl,
+      [with_wolfssl=yes; AC_DEFINE([WITH_WOLFSSL], [1], [Use WolfSSL])],
+      [with_wolfssl=no;  AC_MSG_WARN(*** WolfSSL was not found. You will not be able to use HTTPS.)])
+  ])
+])
+AM_CONDITIONAL([WITH_WOLFSSL], [test "x$with_wolfssl" = xyes])
+
 AC_ARG_WITH(libpsl, AS_HELP_STRING([--without-libpsl], [disable support for libpsl cookie checking]), with_libpsl=$withval, with_libpsl=yes)
 AS_IF([test "x$with_libpsl" != xno], [
   PKG_CHECK_MODULES([LIBPSL], libpsl, [
@@ -789,7 +805,7 @@ AC_MSG_NOTICE([Summary of build options:
   LDFlags:            ${LDFLAGS}
   Libs:               ${LIBS}
   Library types:      shared=${enable_shared}, static=${enable_static}
-  SSL/TLS support:    $with_gnutls
+  SSL/TLS support:    $with_gnutls $with_wolfssl
   GZIP compression:   $with_zlib
   BZIP2 compression:  $with_bzip2
   LZMA compression:   $with_lzma

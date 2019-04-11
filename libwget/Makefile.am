@@ -6,8 +6,16 @@ libwget_la_SOURCES = \
  atom_url.c bar.c bitmap.c buffer.c buffer_printf.c base64.c console.c cookie.c css.c css_tokenizer.h css_url.c \
  decompressor.c dns_cache.c encoding.c hash_printf.c hashfile.c hashmap.c io.c hsts.c hpkp.c html_url.c http.c http.h \
  http_parse.c  init.c ip.c iri.c list.c log.c logger.c logger.h mem.c metalink.c net.c net.h netrc.c ocsp.c pipe.c \
- plugin.c printf.c random.c robots.c rss_url.c sitemap_url.c ssl_gnutls.c stringmap.c strlcpy.c strscpy.c thread.c \
- tls_session.c utils.c vector.c xalloc.c xml.c private.h http_highlevel.c error.c
+ plugin.c printf.c random.c robots.c rss_url.c sitemap_url.c stringmap.c strlcpy.c \
+ strscpy.c thread.c tls_session.c utils.c vector.c xalloc.c xml.c private.h http_highlevel.c error.c
+
+if WITH_GNUTLS
+  libwget_la_SOURCES += ssl_gnutls.c
+endif
+if WITH_WOLFSSL
+  libwget_la_SOURCES += ssl_wolfssl.c
+endif
+
 libwget_la_CPPFLAGS =\
  -fPIC -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib $(CFLAG_VISIBILITY) -DBUILDING_LIBWGET \
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
