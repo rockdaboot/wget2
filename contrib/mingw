@@ -17,6 +17,12 @@ export PKG_CONFIG="/usr/bin/${PREFIX}-pkg-config"
 export CPPFLAGS="-I$INSTALLDIR/include"
 export LDFLAGS="-L$INSTALLDIR/lib"
 
+# somehow, the GnuTLS build needs a static gcc library. It comes with MinGW, but we have to find it's directory.
+GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|head -1))
+
+# without WINEPATH our local DLLs won't be find when running tests
+export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs;$GCCLIB"
+
 # let mingw compiler be less verbose
 export CFLAGS="-O2 -Wall -Wno-format"
 
@@ -122,8 +128,6 @@ make install
 cd ..
 
 # somehow, the GnuTLS build needs a static gcc library. It comes with MinGW, but we have to find it's directory.
-GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|head -1))
-export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs;$GCCLIB"
 ./bootstrap
 ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
 cp -p pthread_sigmask.c.mingw lib/pthread_sigmask.c
