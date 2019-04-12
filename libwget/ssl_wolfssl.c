@@ -579,6 +579,8 @@ void wget_ssl_init(void)
 
 	if (!_init) {
 		WOLFSSL_METHOD *method;
+		int min_version = -1;
+		const char *ciphers = NULL;
 //		int rc, ncerts = -1;
 
 		debug_printf("WolfSSL init\n");
@@ -588,31 +590,29 @@ void wget_ssl_init(void)
 			method = SSLv2_client_method();
 		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "SSLv3")) {
 			method = wolfSSLv23_client_method();
-			wolfSSL_CTX_SetMinVersion(ssl_ctx, WOLFSSL_SSLV3);
+			min_version = WOLFSSL_SSLV3;
 		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1")) {
 			method = wolfSSLv23_client_method();
-			wolfSSL_CTX_SetMinVersion(ssl_ctx, WOLFSSL_TLSV1);
+			min_version = WOLFSSL_TLSV1;
 		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1_1")) {
 			method = wolfSSLv23_client_method();
-			wolfSSL_CTX_SetMinVersion(ssl_ctx, WOLFSSL_TLSV1_1);
+			min_version = WOLFSSL_TLSV1_1;
 		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1_2")) {
 			method = wolfSSLv23_client_method();
-			wolfSSL_CTX_SetMinVersion(ssl_ctx, WOLFSSL_TLSV1_2);
+			min_version = WOLFSSL_TLSV1_2;
 		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1_3")) {
 			method = wolfSSLv23_client_method();
-			wolfSSL_CTX_SetMinVersion(ssl_ctx, WOLFSSL_TLSV1_3);
+			min_version = WOLFSSL_TLSV1_3;
 		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "PFS")) {
-			if (!wolfSSL_CTX_set_cipher_list(ssl_ctx, "HIGH:!aNULL:!RC4:!MD5:!SRP:!PSK:!kRSA"))
-				error_printf(_("WolfSSL: Failed to set ciphers\n"));
+			method = wolfSSLv23_client_method();
+			ciphers = "HIGH:!aNULL:!RC4:!MD5:!SRP:!PSK:!kRSA";
 		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "auto")) {
 			method = wolfSSLv23_client_method();
-			wolfSSL_CTX_SetMinVersion(ssl_ctx, WOLFSSL_TLSV1_2);
-//			if (!wolfSSL_CTX_set_cipher_list(ssl_ctx, "HIGH:!aNULL:!RC4:!MD5:!SRP:!PSK"))
-//				error_printf(_("WolfSSL: Failed to set ciphers\n"));
+			min_version = WOLFSSL_TLSV1_2;
+			ciphers = "HIGH:!aNULL:!RC4:!MD5:!SRP:!PSK";
 		} else if (*_config.secure_protocol) {
 			method = wolfSSLv23_client_method();
-			if (!wolfSSL_CTX_set_cipher_list(ssl_ctx, _config.secure_protocol))
-				error_printf(_("WolfSSL: Failed to set ciphers '%s'\n"), _config.secure_protocol);
+			ciphers = _config.secure_protocol;
 		} else {
 			error_printf(_("Missing TLS method\n"));
 			return;
@@ -623,6 +623,18 @@ void wget_ssl_init(void)
 			error_printf(_("Failed to create WOLFSSL_CTX\n"));
 			return;
 		}
+
+		if (min_version != -1)
+			wolfSSL_CTX_SetMinVersion(ssl_ctx, min_version);
+
+		int rc;
+		char cipher_list[8096];
+		rc = wolfSSL_get_ciphers(cipher_list, (int) sizeof(cipher_list));
+		info_printf("%d ciphers found %s (len=%zu)\n", rc, cipher_list, strlen(cipher_list));
+
+		if (ciphers)
+			if (!wolfSSL_CTX_set_cipher_list(ssl_ctx, ciphers))
+				error_printf(_("WolfSSL: Failed to set ciphers '%s'\n"), ciphers);
 
 		if (_config.check_certificate) {
 			if (!wget_strcmp(_config.ca_directory, "system"))
@@ -652,7 +664,7 @@ void wget_ssl_init(void)
 
 		_init++;
 
-		debug_printf("GnuTLS init done\n");
+		debug_printf("WolfSSL init done\n");
 	}
 
 	wget_thread_mutex_unlock(_mutex);
@@ -745,6 +757,87 @@ static int _do_handshake(WOLFSSL *session, int sockfd, int timeout)
 	return ret;
 }
 
+static void ShowX509(WOLFSSL_X509 *x509, const char *hdr)
+{
+	char *altName;
+	char *issuer;
+	char *subject;
+	byte serial[32];
+	int ret;
+	int sz = sizeof(serial);
+
+	if (!x509) {
+		debug_printf("%s No Cert\n", hdr);
+		return;
+	}
+
+	issuer = wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_issuer_name(x509), 0, 0);
+	subject = wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_subject_name(x509), 0, 0);
+
+	debug_printf("%s\n issuer : %s\n subject: %s\n", hdr, issuer, subject);
+
+	while ((altName = wolfSSL_X509_get_next_altname(x509)))
+		debug_printf(" altname = %s\n", altName);
+
+	ret = wolfSSL_X509_get_serial_number(x509, serial, &sz);
+	if (ret == WOLFSSL_SUCCESS) {
+		int i;
+		int strLen;
+		char serialMsg[80];
+
+		/* testsuite has multiple threads writing to stdout, get output
+			message ready to write once */
+		strLen = sprintf(serialMsg, " serial number");
+		for (i = 0; i < sz; i++)
+			sprintf(serialMsg + strLen + (i * 3), ":%02x ", serial[i]);
+		debug_printf("%s\n", serialMsg);
+	}
+
+	XFREE(subject, 0, DYNAMIC_TYPE_OPENSSL);
+	XFREE(issuer, 0, DYNAMIC_TYPE_OPENSSL);
+
+	{
+		WOLFSSL_BIO* bio;
+		char buf[256]; /* should be size of ASN_NAME_MAX */
+		int textSz;
+
+
+		/* print out domain component if certificate has it */
+		textSz = wolfSSL_X509_NAME_get_text_by_NID(
+			wolfSSL_X509_get_subject_name(x509), NID_domainComponent,
+			buf, sizeof(buf));
+		if (textSz > 0) {
+			debug_printf("Domain Component = %s\n", buf);
+		}
+
+		bio = wolfSSL_BIO_new(wolfSSL_BIO_s_file());
+		if (bio) {
+			wolfSSL_BIO_set_fp(bio, stdout, BIO_NOCLOSE);
+			wolfSSL_X509_print(bio, x509);
+			wolfSSL_BIO_free(bio);
+		}
+	}
+}
+
+static void ShowX509Chain(WOLFSSL_X509_CHAIN *chain, int count, const char *hdr)
+{
+//	int i;
+//	int length;
+//	unsigned char buffer[3072];
+
+	for (int i = 0; i < count; i++) {
+//		wolfSSL_get_chain_cert_pem(chain, i, buffer, sizeof(buffer), &length);
+//		buffer[length] = 0;
+//		debug_printf("\n%s: %d has length %d data = \n%s\n", hdr, i, length, buffer);
+
+		WOLFSSL_X509 *chainX509 = wolfSSL_get_chain_X509(chain, i);
+		if (chainX509)
+			ShowX509(chainX509, hdr);
+
+		wolfSSL_FreeX509(chainX509);
+	}
+}
+
 /**
  * \param[in] tcp A TCP connection (see wget_tcp_init())
  * \return `WGET_E_SUCCESS` on success or an error code (`WGET_E_*`) on failure
@@ -799,8 +892,17 @@ int wget_ssl_open(wget_tcp_t *tcp)
 //	if (tcp->tls_false_start)
 //		info_printf(_("WolfSSL doesn't support TLS False Start\n"));
 
-	/* make wolfSSL object nonblocking */
-	wolfSSL_set_using_nonblock(session, 1);
+	if (_config.alpn) {
+		size_t len = strlen(_config.alpn);
+		char alpn[len + 1];
+
+		// wolfSSL_UseALPN() destroys the ALPN string (bad design pattern !)
+		memcpy(alpn, _config.alpn, len + 1);
+		if (wolfSSL_UseALPN(session, alpn, len, WOLFSSL_ALPN_CONTINUE_ON_MISMATCH) == WOLFSSL_SUCCESS) {
+			debug_printf("ALPN offering %s\n", _config.alpn);
+		} else
+			debug_printf("WolfSSL: Failed to set ALPN: %s\n", _config.alpn);
+	}
 
 	struct _session_context *ctx = wget_calloc(1, sizeof(struct _session_context));
 	ctx->hostname = wget_strdup(hostname);
@@ -808,6 +910,9 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	tcp->ssl_session = session;
 //	gnutls_session_set_ptr(session, ctx);
 	wolfSSL_set_fd(session, sockfd);
+
+	/* make wolfSSL object nonblocking */
+	wolfSSL_set_using_nonblock(session, 1);
 
 	if (stats_callback_tls)
 		before_millisecs = wget_get_timemillis();
@@ -821,33 +926,93 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		stats.false_start = 0; // WolfSSL doesn't support False Start (https://www.wolfssl.com/is-tls-false-start-going-to-take-off-2/)
 	}
 
-/*	if (ret == WGET_E_SUCCESS) {
-			int resumed = gnutls_session_is_resumed(session);
+	const char *name;
+	int bits;
+	WOLFSSL_CIPHER *cipher;
+	WOLFSSL_X509 *peer = wolfSSL_get_peer_certificate(session);
+	if (peer) {
+		ShowX509(peer, "Peer's cert info");
+		wolfSSL_FreeX509(peer);
+	} else
+		debug_printf("Peer has no cert!\n");
 
-			if (stats_callback_tls) {
-				stats.resumed = resumed;
-				stats.version = gnutls_protocol_get_version(session);
-				gnutls_certificate_get_peers(session, (unsigned int *)&(stats.cert_chain_size));
-			}
+	ShowX509(wolfSSL_get_certificate(session), "our cert info:");
+	debug_printf("Peer verify result = %ld\n", wolfSSL_get_verify_result(session));
+	debug_printf("SSL version %s\n", wolfSSL_get_version(session));
+	cipher = wolfSSL_get_current_cipher(session);
+//	printf("%s %s%s\n", words[1], (wolfSSL_isQSH(session)) ? "QSH:" : "", wolfSSL_CIPHER_get_name(cipher));
+	debug_printf("SSL cipher suite %s\n", wolfSSL_CIPHER_get_name(cipher));
+	if ((name = wolfSSL_get_curve_name(session)))
+		debug_printf("SSL curve name %s\n", name);
+	else if ((bits = wolfSSL_GetDhKey_Sz(session)) > 0)
+		debug_printf("SSL DH size %d bits\n", bits);
 
-			debug_printf("Handshake completed%s\n", resumed ? " (resumed session)" : "");
+	if (_config.alpn) {
+		char *protocol;
+		uint16_t protocol_length;
 
-			if (!resumed && _config.tls_session_cache) {
-				if (tcp->tls_false_start) {
-					ctx->delayed_session_data = 1;
-				} else {
-					gnutls_datum_t session_data;
+		if (wolfSSL_ALPN_GetProtocol(session, &protocol, &protocol_length) != WOLFSSL_SUCCESS)
+			debug_printf("WolfSSL: Failed to connect ALPN\n");
+		else {
+			debug_printf("WolfSSL: Server accepted ALPN protocol '%.*s'\n", (int) protocol_length, protocol);
+			stats.alpn_protocol = wget_strmemdup(protocol, protocol_length);
 
-					if ((rc = gnutls_session_get_data2(session, &session_data)) == GNUTLS_E_SUCCESS) {
-						wget_tls_session_db_add(_config.tls_session_cache,
-							wget_tls_session_new(ctx->hostname, 18 * 3600, session_data.data, session_data.size)); // 18h valid
-						gnutls_free(session_data.data);
-					} else
-						debug_printf("Failed to get session data: %s", gnutls_strerror(rc));
-				}
+			if (protocol_length == 2 && !memcmp(protocol, "h2", 2)) {
+				tcp->protocol = WGET_PROTOCOL_HTTP_2_0;
+				stats.http_protocol = WGET_PROTOCOL_HTTP_2_0;
 			}
 		}
-	 */
+	}
+
+	if (ret == WGET_E_SUCCESS) {
+		int resumed = wolfSSL_session_reused(session);
+
+		WOLFSSL_X509_CHAIN *chain = (WOLFSSL_X509_CHAIN *) wolfSSL_get_peer_cert_chain(session);
+		stats.cert_chain_size = wolfSSL_get_chain_count(chain);
+//		debug_printf("Cert chain size %d\n", stats.cert_chain_size);
+		ShowX509Chain(chain, wolfSSL_get_chain_count(chain), "Certificate chain");
+
+		if (stats_callback_tls) {
+			stats.resumed = resumed;
+
+			const char *tlsver = wolfSSL_get_version(session);
+			if (!strcmp(tlsver, "TLSv1.2"))
+				stats.version = 4;
+			else if (!strcmp(tlsver, "TLSv1.3"))
+				stats.version = 5;
+			else
+				stats.version = 1; // SSLv3
+			// stats.version = gnutls_protocol_get_version(session);
+
+			WOLFSSL_X509_CHAIN *chain = (WOLFSSL_X509_CHAIN *) wolfSSL_get_peer_cert_chain(session);
+			stats.cert_chain_size = wolfSSL_get_chain_count(chain);
+			// gnutls_certificate_get_peers(session, (unsigned int *)&(stats.cert_chain_size));
+		}
+
+		debug_printf("Handshake completed%s\n", resumed ? " (resumed session)" : "");
+
+		if (!resumed && _config.tls_session_cache) {
+/*			WOLFSSL_SESSION *session_data = wolfSSL_get_session(session);
+
+			if (session_data) {
+				int session_data_size = wolfSSL_get_session_cache_memsize();
+				char session_data_data[session_data_size];
+				if (wolfSSL_memsave_session_cache(session_data_data, session_data_size) == SSL_SUCCESS) {
+					wget_tls_session_db_add(_config.tls_session_cache,
+						wget_tls_session_new(ctx->hostname, 18 * 3600, session_data.data, session_data.size)); // 18h valid
+				}
+			}
+*/
+/*			gnutls_datum_t session_data;
+
+			if ((rc = gnutls_session_get_data2(session, &session_data)) == GNUTLS_E_SUCCESS) {
+				wget_tls_session_db_add(_config.tls_session_cache,
+					wget_tls_session_new(ctx->hostname, 18 * 3600, session_data.data, session_data.size)); // 18h valid
+				gnutls_free(session_data.data);
+			} else
+				debug_printf("Failed to get session data: %s", gnutls_strerror(rc));
+*/		}
+	}
 
 	if (wolfSSL_connect(session) != SSL_SUCCESS) {
 		error_printf(_("Failed to connect TLS\n"));
