@@ -58,6 +58,8 @@
 
 #if defined __APPLE__ && defined __MACH__ && defined CONNECT_DATA_IDEMPOTENT && defined CONNECT_RESUME_ON_READ_WRITE
 # define TCP_FASTOPEN_OSX
+#elif defined TCP_FASTOPEN_CONNECT // since Linux 4.11
+# define TCP_FASTOPEN_LINUX_411
 #elif defined TCP_FASTOPEN && defined MSG_FASTOPEN
 # define TCP_FASTOPEN_LINUX
 #endif
@@ -122,6 +124,8 @@ static struct wget_tcp_st _global_tcp = {
 	.family = AF_UNSPEC,
 	.caching = 1,
 #if defined TCP_FASTOPEN_OSX
+	.tcp_fastopen = 1,
+#elif defined TCP_FASTOPEN_LINUX_411
 	.tcp_fastopen = 1,
 #elif defined TCP_FASTOPEN_LINUX
 	.tcp_fastopen = 1,
@@ -451,16 +455,14 @@ static int G_GNUC_WGET_CONST _family_to_value(int family)
  *
  * If \p tcp is NULL, TCP Fast Open is enabled or disabled globally.
  */
-#if defined TCP_FASTOPEN_OSX || defined TCP_FASTOPEN_LINUX
 void wget_tcp_set_tcp_fastopen(wget_tcp_t *tcp, int tcp_fastopen)
 {
+#if defined TCP_FASTOPEN_OSX || defined TCP_FASTOPEN_LINUX || defined TCP_FASTOPEN_LINUX_411
 	(tcp ? tcp : &_global_tcp)->tcp_fastopen = !!tcp_fastopen;
-}
 #else
-void wget_tcp_set_tcp_fastopen(wget_tcp_t G_GNUC_WGET_UNUSED *tcp, int G_GNUC_WGET_UNUSED tcp_fastopen)
-{
-}
+	tcp; tcp_fastopen;
 #endif
+}
 
 /**
  * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
@@ -926,6 +928,12 @@ static void _set_socket_options(int fd)
 	on = 1;
 	if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == -1)
 		error_printf(_("Failed to set socket option NODELAY\n"));
+
+#ifdef TCP_FASTOPEN_LINUX_411
+	on = 1;
+	if (setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, (void *)&on, sizeof(on)) == -1)
+		debug_printf("Failed to set socket option TCP_FASTOPEN_CONNECT\n");
+#endif
 }
 
 /**
@@ -1027,11 +1035,15 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
 				sa_endpoints_t endpoints = { .sae_dstaddr = ai->ai_addr, .sae_dstaddrlen = ai->ai_addrlen };
 				rc = connectx(sockfd, &endpoints, SAE_ASSOCID_ANY, CONNECT_RESUME_ON_READ_WRITE | CONNECT_DATA_IDEMPOTENT, NULL, 0, NULL, NULL);
 				tcp->first_send = 0;
-#else
-				rc = 0;
+#elif defined TCP_FASTOPEN_LINUX
 				errno = 0;
 				tcp->connect_addrinfo = ai;
+				rc = 0;
 				tcp->first_send = 1;
+#elif defined TCP_FASTOPEN_LINUX_411
+				tcp->connect_addrinfo = ai;
+				rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
+				tcp->first_send = 0;
 #endif
 			} else {
 				rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
