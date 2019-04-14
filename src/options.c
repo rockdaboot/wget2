@@ -799,8 +799,11 @@ static int parse_prefer_family(option_t opt, const char *val, G_GNUC_WGET_UNUSED
 	return 0;
 }
 
-static int parse_stats_all(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
+static int parse_stats_all(option_t opt, const char *val, const char invert)
 {
+    if (opt->args == -1 && !val && !invert)
+		val = ""; // needed for stats options
+
 	xfree(*((const char **)opt->var));
 	*((const char **)opt->var) = wget_strdup(val);
 
