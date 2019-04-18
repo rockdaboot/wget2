@@ -1592,21 +1592,34 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	sockfd= tcp->sockfd;
 	connect_timeout = tcp->connect_timeout;
 
+	unsigned int flags = GNUTLS_CLIENT;
+
 #if GNUTLS_VERSION_NUMBER >= 0x030500
+#if GNUTLS_VERSION_NUMBER >= 0x030605
+	flags |= GNUTLS_AUTO_REAUTH | GNUTLS_POST_HANDSHAKE_AUTH;
+#endif
+
 	if (tcp->tls_false_start) {
 		debug_printf("TLS False Start requested\n");
-		gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK | GNUTLS_ENABLE_FALSE_START);
-	} else
-		gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
+
+		flags |= GNUTLS_NONBLOCK | GNUTLS_ENABLE_FALSE_START;
+
+		gnutls_init(&session, flags);
+	} else {
+		flags |= GNUTLS_NONBLOCK;
+
+		gnutls_init(&session, flags);
+	}
 #elif defined GNUTLS_NONBLOCK
 	if (tcp->tls_false_start)
 		error_printf(_("TLS False Start requested but Wget built with insufficient GnuTLS version\n"));
-	gnutls_init(&session, GNUTLS_CLIENT | GNUTLS_NONBLOCK);
+	flags |= GNUTLS_NONBLOCK;
+	gnutls_init(&session, flags);
 #else
 	// very old gnutls version, likely to not work.
 	if (tcp->tls_false_start)
 		error_printf(_("TLS False Start requested but Wget built with insufficient GnuTLS version\n"));
-	gnutls_init(&session, GNUTLS_CLIENT);
+	gnutls_init(&session, flags);
 #endif
 
 	if ((rc = gnutls_priority_set(session, _priority_cache)) != GNUTLS_E_SUCCESS)

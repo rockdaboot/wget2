@@ -77,6 +77,9 @@ extern "C" {
 // defines for wget_test_check_file_system()
 #define WGET_TEST_FS_CASEMATTERS 3001 // file system is case-sensitive
 
+// for post-handshake authentication
+#define WGET_TEST_POST_HANDSHAKE_AUTH 3002
+
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
 #define TEST_OPAQUE_STR "11733b200778ce33060f31c9af70a870ba96ddd4"

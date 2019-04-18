@@ -59,6 +59,8 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
+#include <gnutls/gnutls.h>
+
 static int
 	http_server_port,
 	https_server_port,
@@ -74,6 +76,14 @@ static char
 	tmpdir[128];
 static char
 	server_send_content_length = 1;
+
+#if MHD_VERSION >= 0x00096302 && GNUTLS_VERSION_NUMBER >= 0x030603
+enum CHECK_POST_HANDSHAKE_AUTH {
+	CHECK_ENABLED,
+	CHECK_PASSED,
+	CHECK_FAILED
+} *post_handshake_auth;
+#endif
 
 // MHD_Daemon instance
 static struct MHD_Daemon
@@ -206,6 +216,24 @@ static int _answer_to_connection(
 	size_t *upload_data_size G_GNUC_WGET_UNUSED,
 	void **con_cls G_GNUC_WGET_UNUSED)
 {
+#if MHD_VERSION >= 0x00096302 && GNUTLS_VERSION_NUMBER >= 0x030603
+	if (post_handshake_auth != NULL) {
+		gnutls_session_t tls_sess;
+		union MHD_ConnectionInfo *conn_info = MHD_get_connection_info (connection, MHD_CONNECTION_INFO_GNUTLS_SESSION);
+
+		if (conn_info) {
+			int check_auth;
+			tls_sess = conn_info->tls_session;
+			gnutls_certificate_server_set_request(tls_sess, GNUTLS_CERT_REQUEST);
+			do
+				check_auth = gnutls_reauth(tls_sess, 0);
+			while (check_auth == GNUTLS_E_AGAIN);
+
+			*post_handshake_auth = (check_auth == GNUTLS_E_SUCCESS) ? CHECK_PASSED : CHECK_FAILED;
+		}
+	}
+#endif
+
 	struct MHD_Response *response = NULL;
 	struct query_string query;
 	int ret = 0;
@@ -552,8 +580,12 @@ static int _http_server_start(int SERVER_MODE)
 			return 1;
 		}
 
-		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS,
-			port_num, _check_to_accept, NULL, _answer_to_connection, NULL,
+		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS
+#if MHD_VERSION >= 0x00096302
+				| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
+#endif
+			,
+			port_num, _check_to_accept, NULL, &_answer_to_connection, NULL,
 			MHD_OPTION_HTTPS_MEM_KEY, key_pem,
 			MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
 #ifdef MHD_OPTION_STRICT_FOR_CLIENT
@@ -1027,6 +1059,13 @@ void wget_test(int first_key, ...)
 		case WGET_TEST_SERVER_SEND_CONTENT_LENGTH:
 			server_send_content_length = !!va_arg(args, int);
 			break;
+		case WGET_TEST_POST_HANDSHAKE_AUTH:
+			if (va_arg(args, int)) {
+#if MHD_VERSION >= 0x00096302 && GNUTLS_VERSION_NUMBER >= 0x030603
+				post_handshake_auth = wget_malloc(sizeof(enum CHECK_POST_HANDSHAKE_AUTH));
+#endif
+			}
+			break;
 		default:
 			wget_error_printf_exit(_("Unknown option %d [%s]\n"), key, options);
 		}
@@ -1161,6 +1200,14 @@ void wget_test(int first_key, ...)
 
 	// look if there are unexpected files in our working dir
 	_scan_for_unexpected(".", expected_files);
+
+#if MHD_VERSION >= 0x00096302 && GNUTLS_VERSION_NUMBER >= 0x030603
+	if (post_handshake_auth && *post_handshake_auth == CHECK_FAILED) {
+		wget_free(post_handshake_auth);
+		wget_error_printf_exit(_("Post-handshake authentication failed\n"));
+	} else if (post_handshake_auth)
+		wget_free(post_handshake_auth);
+#endif
 
 	wget_vector_clear(request_urls);
 	wget_buffer_free(&cmd);
