@@ -30,7 +30,7 @@ variables:
   BUILD_IMAGES_PROJECT: gnuwget/build-images
   DEBIAN_BUILD: buildenv-debian-stretch
   DEBIAN_TESTING_BUILD: buildenv-debian-testing
-  FEDORA_BUILD: buildenv-f27
+  FEDORA_BUILD: buildenv-fedora
   CENTOS7_BUILD: buildenv-centos7
   MINGW_BUILD: buildenv-mingw
   ALPINE_BUILD: buildenv-alpine
@@ -48,7 +48,7 @@ variables:
 #       * make syntax-check
 #       * make distcheck
 #
-#   2. Fedora 27 Build
+#   2. Fedora Build
 #       * LLVM/Clang Build
 #       * Valgrind Tests
 #
