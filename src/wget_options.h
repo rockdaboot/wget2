@@ -150,7 +150,8 @@ struct config {
 	size_t
 		chunk_size;
 	long long
-		quota;
+		quota,
+		limit_rate; // bytes
 	bool
 		no_compression,
 		auth_no_challenge;

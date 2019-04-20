@@ -1707,6 +1707,11 @@ static const struct optionw options[] = {
 		{ "Maximum recursion depth. (default: 5)\n"
 		}
 	},
+	{ "limit-rate", &config.limit_rate, parse_numbytes, 1, 0,
+		SECTION_HTTP,
+		{ "Limit rate of download per second, 0 = no limit. (default: 0)\n"
+		}
+	},
 	{ "list-plugins", NULL, list_plugins, 0, 0,
 		SECTION_PLUGIN,
 		{ "Lists all the plugins in the plugin search paths.\n"

@@ -3253,6 +3253,8 @@ struct _body_callback_context {
 	uint64_t length;
 	int outfd;
 	int progress_slot;
+	int limit_debt_bytes;
+	unsigned long long limit_prev_time_ms;
 };
 
 static int _get_header(wget_http_response_t *resp, void *context)
@@ -3375,6 +3377,45 @@ static bool check_status_code_list(wget_vector_t *list, uint16_t status)
 	return result;
 }
 
+// Sleep after reading to slow down the transfer rate
+// Based on rsync's bandwidth limit implementation (see io.c:sleep_for_bwlimit)
+static void limit_transfer_rate(struct _body_callback_context *ctx, size_t read_bytes)
+{
+	long sleep_ms;
+	long elapsed_ms;
+	unsigned long long curr_time_ms;
+	unsigned long long thread_rate_limit;
+
+	if (nthreads > 1) {
+		// Split the limit rate evenly across the threads
+		thread_rate_limit = config.limit_rate / nthreads;
+	} else {
+		thread_rate_limit = config.limit_rate;
+	}
+
+	ctx->limit_debt_bytes += read_bytes;
+
+	curr_time_ms = wget_get_timemillis();
+	if (ctx->limit_prev_time_ms != 0) {
+		elapsed_ms = (curr_time_ms - ctx->limit_prev_time_ms);
+		ctx->limit_debt_bytes -= elapsed_ms * thread_rate_limit / 1000;
+	}
+
+	if (ctx->limit_debt_bytes <= 0) {
+		ctx->limit_debt_bytes = 0;
+		ctx->limit_prev_time_ms = curr_time_ms;
+		return;
+	}
+
+	sleep_ms = ctx->limit_debt_bytes * 1000 / thread_rate_limit;
+	wget_millisleep(sleep_ms);
+
+	ctx->limit_prev_time_ms = wget_get_timemillis();
+	elapsed_ms = ctx->limit_prev_time_ms - curr_time_ms;
+	ctx->limit_debt_bytes = (sleep_ms - elapsed_ms) * thread_rate_limit / 1000;
+}
+
+
 static int _get_body(wget_http_response_t *resp, void *context, const char *data, size_t length)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
@@ -3417,6 +3458,9 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 		bar_set_downloaded(ctx->progress_slot, resp->cur_downloaded - resp->accounted_for);
 		resp->accounted_for = resp->cur_downloaded;
 	}
+
+	if (config.limit_rate)
+		limit_transfer_rate(ctx, length);
 
 	return 0;
 }
@@ -3733,6 +3777,8 @@ int http_send_request(wget_iri_t *iri, wget_iri_t *original_url, DOWNLOADER *dow
 	context->length = 0;
 	context->progress_slot = downloader->id;
 	context->job->original_url = original_url;
+	context->limit_debt_bytes = 0;
+	context->limit_prev_time_ms = wget_get_timemillis();
 
 	// set callback functions
 	wget_http_request_set_header_cb(req, _get_header, context);
