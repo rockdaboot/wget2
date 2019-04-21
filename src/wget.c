@@ -3253,8 +3253,8 @@ struct _body_callback_context {
 	uint64_t length;
 	int outfd;
 	int progress_slot;
-	int limit_debt_bytes;
-	unsigned long long limit_prev_time_ms;
+	long long limit_debt_bytes;
+	long long limit_prev_time_ms;
 };
 
 static int _get_header(wget_http_response_t *resp, void *context)
@@ -3383,8 +3383,8 @@ static void limit_transfer_rate(struct _body_callback_context *ctx, size_t read_
 {
 	long sleep_ms;
 	long elapsed_ms;
-	unsigned long long curr_time_ms;
-	unsigned long long thread_rate_limit;
+	long long curr_time_ms;
+	long long thread_rate_limit;
 
 	if (nthreads > 1) {
 		// Split the limit rate evenly across the threads
@@ -3393,7 +3393,7 @@ static void limit_transfer_rate(struct _body_callback_context *ctx, size_t read_
 		thread_rate_limit = config.limit_rate;
 	}
 
-	ctx->limit_debt_bytes += read_bytes;
+	ctx->limit_debt_bytes += (long long) read_bytes;
 
 	curr_time_ms = wget_get_timemillis();
 	if (ctx->limit_prev_time_ms != 0) {

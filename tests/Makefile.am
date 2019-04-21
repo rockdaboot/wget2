@@ -25,7 +25,8 @@ WGET_TESTS = test-wget-1$(EXEEXT) test-c-r$(EXEEXT) test-restrict-ascii$(EXEEXT)
  test-plugin-interception$(EXEEXT) test-plugin-nonexistance$(EXEEXT) test-plugin-failure$(EXEEXT) test--filter-mime-type$(EXEEXT)\
  test--https-enforce-hard1$(EXEEXT) test--https-enforce-hard2$(EXEEXT) test--https-enforce-hard3$(EXEEXT)\
  test--https-enforce-soft1$(EXEEXT) test--https-enforce-soft2$(EXEEXT) test--https-enforce-soft3$(EXEEXT)\
- test-gzip$(EXEEXT) test-compression$(EXEEXT) test-include-and-exclude-directories$(EXEEXT) test--save-content-on$(EXEEXT)
+ test-gzip$(EXEEXT) test-compression$(EXEEXT) test-include-and-exclude-directories$(EXEEXT) test--save-content-on$(EXEEXT)\
+ test-limit-rate$(EXEEXT)
 #test--post-file$(EXEEXT) test-E-k$(EXEEXT) test-cookies-http_state$(EXEEXT)
 
 if WITH_GPGME
