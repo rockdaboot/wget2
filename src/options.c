@@ -263,6 +263,41 @@ static int parse_uint16(option_t opt, const char *val, G_GNUC_WGET_UNUSED const 
 	return -1;
 }
 
+// parse '2.5k' locale independent
+static int _parse_double_modifier(const char *in, double *d, char *c)
+{
+	bool minus = false;
+
+	while (c_isspace(*in))
+		in++;
+
+	if (*in == '+') {
+		in++;
+	} else if (*in == '-') {
+		in++;
+		minus = true;
+	}
+
+	if (!c_isdigit(*in))
+		return 0;
+
+	for (*d = 0; c_isdigit(*in); in++)
+		*d = *d * 10 + (*in - '0');
+
+	if (*in == '.') {
+		in++;
+		for (double q = 10; c_isdigit(*in); q *= 10, in++)
+			*d += (*in - '0') / q;
+	}
+
+	if (minus)
+		*d = -*d;
+
+	*c = *in;
+
+	return *c ? 2 : 1;
+}
+
 static int parse_numbytes(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (val) {
@@ -274,7 +309,7 @@ static int parse_numbytes(option_t opt, const char *val, G_GNUC_WGET_UNUSED cons
 			return 0;
 		}
 
-		if (sscanf(val, " %lf%c", &num, &modifier) >= 1) {
+		if (_parse_double_modifier(val, &num, &modifier) >= 1) {
 			if (modifier) {
 				switch (c_tolower(modifier)) {
 				case 'k': num *= 1024; break;
@@ -647,7 +682,7 @@ static int parse_timeout(option_t opt, const char *val, G_GNUC_WGET_UNUSED const
 	if (wget_strcasecmp_ascii(val, "INF") && wget_strcasecmp_ascii(val, "INFINITY")) {
 		char modifier = 0;
 
-		if (sscanf(val, " %lf%c", &fval, &modifier) >= 1 && fval > 0) {
+		if (_parse_double_modifier(val, &fval, &modifier) >= 1 && fval >= 0) {
 			if (modifier) {
 				switch (c_tolower(modifier)) {
 				case 's': fval *= 1000; break;
