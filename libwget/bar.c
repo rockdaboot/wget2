@@ -109,6 +109,7 @@ typedef struct {
 		bytes_downloaded;
 	int
 		ring_pos,
+		ring_used,
 		tick,
 		numfiles;
 	enum _bar_slot_status_t
@@ -150,6 +151,8 @@ static unsigned short speed_modifier = 1000;
 static void _bar_update_speed_stats(_bar_slot_t *slotp)
 {
 	int ring_pos = slotp->ring_pos;
+	int ring_used = slotp->ring_used;
+	int next_pos;
 	// In case this function is called with no downloaded bytes,
 	// exit early
 	if (slotp->bytes_downloaded == slotp->bytes_ring[ring_pos]) {
@@ -164,8 +167,15 @@ static void _bar_update_speed_stats(_bar_slot_t *slotp)
 	slotp->bytes_ring[ring_pos] = slotp->bytes_downloaded;
 	slotp->time_ring[ring_pos] = curtime;
 
-	int next_pos = (ring_pos + 1 == SPEED_RING_SIZE) ? 0 : ring_pos + 1;
-	if (slotp->bytes_ring[next_pos] == 0) {
+	if (ring_used < SPEED_RING_SIZE) {
+		ring_used++;
+		next_pos = 1;
+	} else {
+		next_pos = (ring_pos + 1 == SPEED_RING_SIZE) ? 0 : ring_pos + 1;
+	}
+
+	if (ring_used < 2) {
+		// Not enough measurements to calculate the speed
 		sprintf(slotp->speed_buf, " --.-K");
 	} else {
 		size_t bytes = slotp->bytes_ring[ring_pos] - slotp->bytes_ring[next_pos];
@@ -175,6 +185,7 @@ static void _bar_update_speed_stats(_bar_slot_t *slotp)
 		wget_human_readable(slotp->speed_buf, sizeof(slotp->speed_buf), speed);
 	}
 	slotp->ring_pos = ring_pos;
+	slotp->ring_used = ring_used;
 }
 
 static volatile sig_atomic_t winsize_changed;
@@ -499,6 +510,7 @@ void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, int ne
 	slotp->status = DOWNLOADING;
 	slotp->redraw = 1;
 	slotp->ring_pos = 0;
+	slotp->ring_used = 0;
 
 	memset(&slotp->time_ring, 0, sizeof(slotp->time_ring));
 	memset(&slotp->bytes_ring, 0, sizeof(slotp->bytes_ring));
