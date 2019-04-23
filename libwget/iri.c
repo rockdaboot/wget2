@@ -228,6 +228,67 @@ static char *_iri_unescape_inline(char *src, int ctype)
 					continue;
 				}
 			}
+		} else if (*s == '&') {
+			// entities are case sensitive (RFC1866, 3.2.3)
+			if (!strncmp((char *) s + 1, "amp;", 4)) {
+				*d++ = '&';
+				s += 5;
+				ret = src;
+				continue;
+			} else if (!strncmp((char *) s + 1, "gt;", 3)) {
+				*d++ = '>';
+				s += 4;
+				ret = src;
+				continue;
+			} else if (!strncmp((char *) s + 1, "lt;", 3)) {
+				*d++ = '<';
+				s += 4;
+				ret = src;
+				continue;
+			} else if (!strncmp((char *) s + 1, "quot;", 5)) {
+				*d++ = '\"';
+				s += 6;
+				ret = src;
+				continue;
+			} else if (!strncmp((char *) s + 1, "apos;", 5)) {
+				*d++ = '\'';
+				s += 6;
+				ret = src;
+			}
+		} else if (*s == '#') {
+			uint32_t value = 0;
+
+			if (s[1] == 'x') {
+				unsigned char *p = s + 2;
+				while (c_isxdigit(*p)) {
+					value = (value << 4) | _unhex(*p);
+					p++;
+				}
+				if (*p == ';') {
+					if (value > 0 && value < 128) {
+						*d++ = (unsigned char) value;
+						s = p + 1;
+						continue;
+					}
+					// else: we have to convert the unicode value to whatever encoding the URL is in (likely UTF-8)
+					// this cannot be done inline since the URL's length may increase
+				}
+			} else {
+				unsigned char *p = s + 1;
+				while (c_isdigit(*p)) {
+					value = value * 10 + (*p - '0');
+					p++;
+				}
+				if (*p == ';') {
+					if (value > 0 && value < 128) {
+						*d++ = (unsigned char) value;
+						s = p + 1;
+						continue;
+					}
+					// else: we have to convert the unicode value to whatever encoding the URL is in (likely UTF-8)
+					// this cannot be done inline since the URL's length may increase
+				}
+			}
 		}
 
 		*d++ = *s++;
