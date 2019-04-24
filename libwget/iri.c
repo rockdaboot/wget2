@@ -254,6 +254,7 @@ static char *_iri_unescape_inline(char *src, int ctype)
 				*d++ = '\'';
 				s += 6;
 				ret = src;
+				continue;
 			}
 		} else if (*s == '#') {
 			uint32_t value = 0;
