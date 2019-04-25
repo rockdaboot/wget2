@@ -1,0 +1,8 @@
+User-Agent:*
+disallow:m
+disallow:s
+disallow:d
+disallow:*
+disallow:)
+disallow:0
+disallow:

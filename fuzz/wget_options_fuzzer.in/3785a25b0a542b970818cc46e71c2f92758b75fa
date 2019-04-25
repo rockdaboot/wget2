@@ -1,8 +1,0 @@
-restrict-file-names=none
-restrict-file-names=unix
-restrict-file-names=windows
-restrict-file-names=nocontrol
-restrict-file-names=ascii
-restrict-file-names=uppercase
-restrict-file-names=lowercase
-restrict-file-names=x

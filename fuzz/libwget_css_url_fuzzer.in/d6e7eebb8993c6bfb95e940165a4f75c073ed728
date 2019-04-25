@@ -1,5 +1,0 @@
-@impïrt "page1.html";
-@charset "iso-8859-1";#
-test1{background:url(/p(http://x.org:80/x.html)}
-#test3{background:url(http://x.org:80/x.html)}
-#test3{backgroundrl('p1.html') no-repeat whatever}
