@@ -82,7 +82,7 @@ FILE *fopen(const char *pathname, const char *mode)
 		(FILE *(*)(const char *, const char *)) dlsym (RTLD_NEXT, "fopen");
 
 	if (config.dont_write) {
-		if (!strcmp(pathname, "d41d8cd98f00b204e9800998ecf8427e") && !strcmp(mode, "r"))
+		if (!strcmp(pathname, "d41d8cd98f00b204e9800998ecf8428e") && !strcmp(mode, "r"))
 			return fmemopen((void *) g_data, g_size, mode);
 
 //		printf("open %s, %s\n", pathname, mode);
@@ -95,7 +95,7 @@ FILE *fopen(const char *pathname, const char *mode)
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-	static const char *argv[] = { "x", "-q", "--no-config", "--no-local-db", "--config", "d41d8cd98f00b204e9800998ecf8427e" };
+	static const char *argv[] = { "x", "-q", "--no-config", "--no-local-db", "--config", "d41d8cd98f00b204e9800998ecf8428e" };
 
 	if (size > 2048) // same as max_len = 4096 in .options file
 		return 0;
