@@ -23,7 +23,7 @@ fuzzer=$1
 project=wget2
 
 # sync/copy the OSS-Fuzz corpora into the .new directory
-mkdir -p ${fuzzer}.new
+mkdir -p ${fuzzer}.in ${fuzzer}.new
 cp -fp ${fuzzer}.in/* ${fuzzer}.new 2>/dev/null || true
 gsutil cp $(gsutil ls gs://${project}-backup.clusterfuzz-external.appspot.com/corpus/libFuzzer/wget2_${fuzzer}|tail -n 1) ${fuzzer}.new/
 (cd ${fuzzer}.new && unzip -q -o *.zip && rm *.zip)
