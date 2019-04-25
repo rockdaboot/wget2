@@ -276,7 +276,7 @@ static char *_iri_unescape_inline(char *src, int ctype)
 				}
 			} else {
 				unsigned char *p = s + 1;
-				while (c_isdigit(*p)) {
+				while (c_isdigit(*p) && value <= 0x10FFFF) { // max. Unicode value
 					value = value * 10 + (*p - '0');
 					p++;
 				}
