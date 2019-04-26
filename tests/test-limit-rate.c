@@ -87,6 +87,8 @@ int main(void)
 		},
 	};
 
+	const char *valgrind = getenv("VALGRIND_TESTS");
+
 	// functions won't come back if an error occurs
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
@@ -115,17 +117,22 @@ int main(void)
 	0);
 	elapsed_ms = wget_get_timemillis() - start_ms;
 	desired_ms = 2000 + normal_elapsed_ms;
-	tolerance_ms = 200;
+	if (!valgrind || !*valgrind || !strcmp(valgrind, "0"))
+		tolerance_ms = 200;
+	else
+		tolerance_ms = 500; // relatively high value due to valgrind tests and CI runners
 
 	if (!WITHIN_RANGE(elapsed_ms, desired_ms, tolerance_ms)) {
 		wget_error_printf_exit("Time taken for single file with limit-rate enabled "
 		                       "outside of expected range "
 		                       "(elapsed=%lld ms, desired=%lld±%lld ms)\n",
 		                       elapsed_ms, desired_ms, tolerance_ms);
-	}
+	} else
+		wget_info_printf("Time1 %lld %lld\n", normal_elapsed_ms, elapsed_ms);
+
 
 	if (elapsed_ms < normal_elapsed_ms) {
-		wget_error_printf_exit("Single file with limit-rate disabled took longer "
+		wget_error_printf_exit("Single file without limit-rate took longer "
 		                       "than with limit-rate enabled "
 		                       "(normal=%lld ms, elapsed=%lld ms)\n",
 		                       normal_elapsed_ms, elapsed_ms);
@@ -160,7 +167,10 @@ int main(void)
 	0);
 	elapsed_ms = wget_get_timemillis() - start_ms;
 	desired_ms = 2000 + normal_elapsed_ms;
-	tolerance_ms = 200;
+	if (!valgrind || !*valgrind || !strcmp(valgrind, "0"))
+		tolerance_ms = 200;
+	else
+		tolerance_ms = 800; // relatively high value due to valgrind tests and CI runners
 
 	if (!WITHIN_RANGE(elapsed_ms, desired_ms, tolerance_ms)) {
 		wget_error_printf_exit("Time taken for mirror with limit-rate enabled "
@@ -170,7 +180,7 @@ int main(void)
 	}
 
 	if (elapsed_ms < normal_elapsed_ms) {
-		wget_error_printf_exit("Mirror with limit-rate disabled took longer "
+		wget_error_printf_exit("Mirror without limit-rate took longer "
 		                       "than with limit-rate enabled "
 		                       "(normal=%lld ms, elapsed=%lld ms)\n",
 		                       normal_elapsed_ms, elapsed_ms);
@@ -200,7 +210,10 @@ int main(void)
 	0);
 	elapsed_ms = wget_get_timemillis() - start_ms;
 	desired_ms = 2000 + normal_elapsed_ms;
-	tolerance_ms = 200;
+	if (!valgrind || !*valgrind || !strcmp(valgrind, "0"))
+		tolerance_ms = 200;
+	else
+		tolerance_ms = 500; // relatively high value due to valgrind tests and CI runners
 
 	if (!WITHIN_RANGE(elapsed_ms, desired_ms, tolerance_ms)) {
 		wget_error_printf_exit("Time taken for small file with limit-rate enabled "
