@@ -336,28 +336,32 @@ AM_CONDITIONAL([HAVE_PO], [ test "$have_po" = yes ])
 #
 # check for doxygen and pandoc
 #
-AC_ARG_ENABLE(doc, AS_HELP_STRING([--disable-doc], [don't generate any documentation]),
+AC_ARG_ENABLE(doc, AS_HELP_STRING([--disable-doc], [don t generate any documentation]),
   enable_doc=$enableval, enable_doc=yes)
 if test "$enable_doc" = yes; then
   AC_CHECK_PROGS([DOXYGEN], [doxygen])
   AC_CHECK_PROGS([PANDOC], [pandoc])
 
   if test -n "$DOXYGEN" || test -n "$PANDOC"; then
-    DOCS_INFO="yes (found:"
+    LIBWGET_DOCS_INFO="yes (found:"
     if test -n "$DOXYGEN"; then
-      DOCS_INFO="$DOCS_INFO Doxygen"
+      LIBWGET_DOCS_INFO+=" Doxygen)"
+	else
+	  LIBWGET_DOCS_INFO="no"
     fi
+    WGET2_DOCS_INFO="yes (found:"
     if test -n "$PANDOC"; then
-      DOCS_INFO="$DOCS_INFO Pandoc"
+      WGET2_DOCS_INFO+=" Pandoc)"
+	else
+	  WGET2_DOCS_INFO="no"
     fi
-    DOCS_INFO="$DOCS_INFO)"
   else
     DOCS_INFO="no (neither Doxygen nor Pandoc found)"
   fi
 else
   DOCS_INFO="no (disabled)"
 fi
-AM_CONDITIONAL([WITH_DOCS], [ test -n "$DOXYGEN" && test -n "$PANDOC" ])
+AM_CONDITIONAL([WITH_DOCS], [ test -n "$DOXYGEN" || test -n "$PANDOC" ])
 AM_CONDITIONAL([WITH_DOXYGEN], [ test -n "$DOXYGEN" ])
 AM_CONDITIONAL([WITH_PANDOC], [ test -n "$PANDOC" ])
 
@@ -795,6 +799,8 @@ AC_MSG_NOTICE([Summary of build options:
   HSTS support:       $with_libhsts
   HTTP/2.0 support:   $with_libnghttp2
   Documentation:      $DOCS_INFO
+  Wget2 docs:         $WGET2_DOCS_INFO
+  Libwget docs:       $LIBWGET_DOCS_INFO
   PCRE support:       ${HAVE_PCRE}
   Tests:              ${TESTS_INFO}
   Assertions:         $ENABLE_ASSERT
