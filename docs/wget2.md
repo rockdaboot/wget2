@@ -106,7 +106,7 @@
 
   Print a help message describing all of Wget2's command-line options.
 
-### `-b`, `--background`
+### `-b`, `--background` [Not implemented yet]
 
 Go to background immediately after startup. If no output file is specified via the `-o`, output is redirected to `wget-log`.
 
@@ -232,7 +232,7 @@ Go to background immediately after startup. If no output file is specified via t
   Wget will attempt to tilde-expand filenames written in the configuration file on supported platforms.
   To use a file that starts with the character literal '~', use "./~" or an absolute path.
 
-### `--rejected-log=logfile`
+### `--rejected-log=logfile` [Not implemented yet]
 
   Logs all URL rejections to logfile as comma separated values.  The values include the reason of rejection, the URL and the
   parent URL it was found in.
@@ -470,12 +470,12 @@ Go to background immediately after startup. If no output file is specified via t
 
   If you use -c on a file which is of equal size as the one on the server, Wget2 will
   refuse to download the file and print an explanatory message.  The same happens when the file is smaller on the
-  server than locally (presumably because it was changed on the server since your last download attempt)---because
+  server than locally (presumably because it was changed on the server since your last download attempt). Because
   "continuing" is not meaningful, no download occurs.
 
   On the other side of the coin, while using -c, any file that's bigger on the server than locally will be
   considered an incomplete download and only "(length(remote) - length(local))" bytes will be downloaded and tacked
-  onto the end of the local file.  This behavior can be desirable in certain cases---for instance, you can use
+  onto the end of the local file.  This behavior can be desirable in certain cases. For instance, you can use
   `wget2 -c` to download just the new portion that's been appended to a data collection or log file.
 
   However, if the file is bigger on the server because it's been changed, as opposed to just appended to, you'll
@@ -489,7 +489,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Note that `-c` only works with HTTP servers that support the "Range" header.
 
-### `--start-pos=OFFSET`
+### `--start-pos=OFFSET` [Not implemented yet]
 
   Start downloading at zero-based position `OFFSET`.  Offset may be expressed in bytes, kilobytes with the `k'
   suffix, or megabytes with the `m' suffix, etc.
@@ -515,10 +515,10 @@ Go to background immediately after startup. If no output file is specified via t
 
   When using the dotted retrieval, you may set the style by specifying the type as dot:style.  Different styles
   assign different meaning to one dot.  With the "default" style each dot represents 1K, there are ten dots in a
-  cluster and 50 dots in a line.  The "binary" style has a more "computer"-like orientation---8K dots, 16-dots
+  cluster and 50 dots in a line.  The "binary" style has a more "computer"-like orientation: 8K dots, 16-dots
   clusters and 48 dots per line (which makes for 384K lines).  The "mega" style is suitable for downloading large
-  files---each dot represents 64K retrieved, there are eight dots in a cluster, and 48 dots on each line (so each
-  line contains 3M).  If "mega" is not enough then you can use the "giga" style---each dot represents 1M retrieved,
+  files, each dot represents 64K retrieved, there are eight dots in a cluster, and 48 dots on each line (so each
+  line contains 3M).  If "mega" is not enough then you can use the "giga" style. Each dot represents 1M retrieved,
   there are eight dots in a cluster, and 32 dots on each line (so each line contains 32M).
 
   With `--progress=bar`, there are currently two possible parameters, `force` and `noscroll`.
@@ -551,7 +551,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Turn on time-stamping.
 
-### `--no-if-modified-since`
+### `--no-if-modified-since` [Not implemented yet]
 
   Do not send If-Modified-Since header in -N mode. Send preliminary HEAD request instead. This has only effect in
   -N mode.
@@ -745,7 +745,7 @@ Go to background immediately after startup. If no output file is specified via t
   used without change.
 
   Unlike -4 and -6, this option doesn't inhibit access to any address family, it only changes the order in which
-  the addresses are accessed.  Also note that the reordering performed by this option is stable---it doesn't affect
+  the addresses are accessed.  Also note that the reordering performed by this option is stable. It doesn't affect
   order of addresses of the same family.  That is, the relative order of all IPv4 addresses and of all IPv6
   addresses remains intact in all cases.
 
@@ -831,7 +831,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Use the specified encoding for the URLs read from `--input-file`. The default is the local encoding.
 
-### `--unlink`
+### `--unlink` [Not implemented yet]
 
   Force Wget2 to unlink file instead of clobbering existing file. This option is useful for downloading to the
   directory with hardlinks.
@@ -956,7 +956,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `-x`, `--force-directories`
 
-  The opposite of `-nd`---create a hierarchy of directories, even if one would not have been created otherwise.  E.g.
+  The opposite of `-nd`: create a hierarchy of directories, even if one would not have been created otherwise.  E.g.
   `wget2 -x https://example.com/robots.txt` will save the downloaded file to `example.com/robots.txt`.
 
 ### `-nH`, `--no-host-directories`
@@ -1096,7 +1096,7 @@ Go to background immediately after startup. If no output file is specified via t
   so proves your identity.
 
   Mirroring such a site requires Wget2 to send the same cookies your browser sends when communicating with the site.
-  This is achieved by --load-cookies---simply point Wget2 to the location of the cookies.txt file, and it will send
+  This is achieved by --load-cookies: simply point Wget2 to the location of the cookies.txt file, and it will send
   the same cookies your browser would send in the same situation.  Different browsers keep textual cookie files in
   different locations:
 
@@ -1150,14 +1150,14 @@ Go to background immediately after startup. If no output file is specified via t
   The PSL allows to prevent setting of "super-cookies" that lead to cookie privacy leakage.
   More details can be found on https://publicsuffix.org/.
 
-### `--ignore-length`
+### `--ignore-length` [Not implemented yet]
 
   Unfortunately, some HTTP servers (CGI programs, to be more precise) send out bogus "Content-Length" headers,
   which makes Wget2 go wild, as it thinks not all the document was retrieved.  You can spot this syndrome if Wget
   retries getting the same document again and again, each time claiming that the (otherwise normal) connection has
   closed on the very same byte.
 
-  With this option, Wget2 will ignore the "Content-Length" header---as if it never existed.
+  With this option, Wget2 will ignore the "Content-Length" header as if it never existed.
 
 ### `--header=header-line`
 
@@ -1183,7 +1183,7 @@ Go to background immediately after startup. If no output file is specified via t
   more than necessary. However, on those occasions where you want to allow more (or fewer), this is the option to
   use.
 
-### `--proxy-user=user`, `--proxy-password=password`
+### `--proxy-user=user`, `--proxy-password=password` [Not implemented, use `--http-proxy-password`]
 
   Specify the username user and password password for authentication on a proxy server.  Wget2 will encode them
   using the "basic" authentication scheme.
@@ -1265,13 +1265,13 @@ Go to background immediately after startup. If no output file is specified via t
   `--save-cookies` will not save them (and neither will browsers) and the cookies.txt file will be empty.  In that
   case use --keep-session-cookies along with --save-cookies to force saving of session cookies.
 
-### `--method=HTTP-Method`
+### `--method=HTTP-Method` [Not implemented yet]
 
   For the purpose of RESTful scripting, Wget2 allows sending of other HTTP Methods without the need to explicitly
   set them using --header=Header-Line.  Wget2 will use whatever string is passed to it after --method as the HTTP
   Method to the server.
 
-### `--body-data=Data-String`, `--body-file=Data-File`
+### `--body-data=Data-String`, `--body-file=Data-File` [Not implemented yet]
 
   Must be set when additional data needs to be sent to the server along with the Method specified using `--method`.
   `--body-data` sends string as data, whereas --body-file sends the contents of file.  Other than that, they work in
@@ -1652,7 +1652,7 @@ Go to background immediately after startup. If no output file is specified via t
   Note that only at the end of the download can Wget2 know which links have been downloaded.  Because of that, the
   work done by `-k` will be performed at the end of all the downloads.
 
-### `--convert-file-only`
+### `--convert-file-only` [Not implemented yet]
 
   This option converts only the filename part of the URLs, leaving the rest of the URLs untouched. This filename
   part is sometimes referred to as the "basename", although we avoid that term here in order not to cause
@@ -1708,7 +1708,7 @@ Go to background immediately after startup. If no output file is specified via t
       wget2 -r -l 0 -p https://<site>/1.html
 
   would download just 1.html and 1.gif, but unfortunately this is not the case, because -l 0 is equivalent to -l
-  inf---that is, infinite recursion.  To download a single HTML page (or a handful of them, all specified on the
+  inf, that is, infinite recursion.  To download a single HTML page (or a handful of them, all specified on the
   command-line or in a -i URL input file) and its (or their) requisites, simply leave off -r and -l:
 
       wget2 -p https://<site>/1.html
@@ -1799,7 +1799,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Enable spanning across hosts when doing recursive retrieving.
 
-### `-L`, `--relative`
+### `-L`, `--relative` [Not implemented yet]
 
   Follow relative links only.  Useful for retrieving a specific home page without any distractions, not even those
   from the same hosts.
@@ -1905,7 +1905,7 @@ Go to background immediately after startup. If no output file is specified via t
 
       1   Generic error code.
 
-      2   Parse error---for instance, when parsing command-line options, the .wgetrc or .netrc...
+      2   Parse error. For instance, when parsing command-line options, the .wgetrc or .netrc...
 
       3   File I/O error.
 
@@ -1997,7 +1997,7 @@ that in case of a collision, the user's wget2rc _overrides_ the global wget2rc.
   file.
 
   3.  Please start Wget2 with -d option and send us the resulting output (or relevant parts thereof).  If Wget2 was
-  compiled without debug support, recompile it---it is much easier to trace bugs with debug support on.
+  compiled without debug support, recompile it. It is much easier to trace bugs with debug support on.
 
   Note: please make sure to remove any potentially sensitive information from the debug log before sending it to
   the bug address.  The `-d` won't go out of its way to collect sensitive information, but the log will contain a
