@@ -2734,14 +2734,21 @@ static int _no_memory(void)
 
 
 // Return the user's home directory (strdup-ed), or NULL if none is found.
-static char *get_home_dir(void)
+static const char *get_home_dir(bool free_home)
 {
-	char *home;
+	static const char *home;
 
-	if ((home = wget_strnglob("~", 1, GLOB_TILDE_CHECK)))
-		return home;
+	if (free_home) {
+		xfree(home);
+		return NULL;
+	}
 
-	return wget_strdup("."); // Use the current directory as 'home' directory
+	if (!home) {
+		if ((home = wget_strnglob("~", 1, GLOB_TILDE_CHECK)) == NULL)
+			home = wget_strdup("."); // Use the current directory as 'home' directory
+	}
+
+	return home;
 }
 
 static char *prompt_for_password(void)
@@ -2934,6 +2941,11 @@ static const char *get_xdg_data_home(const char *user_home)
 	static const char *data_home = NULL;
 	const char *env;
 
+	if (!user_home) {
+		xfree(data_home);
+		return NULL;
+	}
+
 	if (data_home)
 		return data_home;
 
@@ -2962,6 +2974,11 @@ static const char *get_xdg_config_home(const char *user_home)
 	static const char *home_dir = NULL;
 	const char *env;
 
+	if (!user_home) {
+		xfree(home_dir);
+		return NULL;
+	}
+
 	if (home_dir)
 		return home_dir;
 
@@ -2970,13 +2987,12 @@ static const char *get_xdg_config_home(const char *user_home)
 		home_dir = wget_aprintf("%s/wget", env);
 	else
 		home_dir = wget_strdup(user_home);
-	return home_dir;
-#endif
-
+#else
 	if ((env = getenv("XDG_CONFIG_HOME")) && *env)
 		home_dir = wget_aprintf("%s/wget", env);
 	else
 		home_dir = wget_aprintf("%s/.config/wget", user_home);
+#endif
 
 	return home_dir;
 }
@@ -3002,7 +3018,7 @@ int init(int argc, const char **argv)
 	}
 
 	// Initialize some configuration values which depend on the Runtime environment
-	char *home_dir = get_home_dir();
+	const char *home_dir = get_home_dir(false);
 	const char *xdg_config_home = get_xdg_config_home(home_dir);
 	const char *xdg_data_home = get_xdg_data_home(home_dir);
 
@@ -3020,10 +3036,8 @@ int init(int argc, const char **argv)
 
 	// first processing, to respect options that might influence output
 	// while read_config() (e.g. -d, -q, -a, -o)
-	if (parse_command_line(argc, argv) < 0) {
-		xfree(home_dir);
+	if (parse_command_line(argc, argv) < 0)
 		return -1;
-	}
 
 	// truncate logfile, if not in append mode
 	if (config.logfile_append) {
@@ -3059,7 +3073,6 @@ int init(int argc, const char **argv)
 		config.hsts_preload_file = wget_strdup(hsts_dist_filename());
 #endif
 
-	xfree(home_dir);
 	wget_vector_free(&config.exclude_directories); // -I and -X stack up, so free before final command line parsing
 
 	//Enable plugin loading
@@ -3376,6 +3389,11 @@ int init(int argc, const char **argv)
 void deinit(void)
 {
 	wget_global_deinit();
+
+	// Free the home directories
+	get_home_dir(true);
+	get_xdg_config_home(NULL);
+	get_xdg_data_home(NULL);
 
 	stats_exit();
 
