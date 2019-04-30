@@ -1079,7 +1079,14 @@ void wget_test(int first_key, ...)
 	// create files
 	if (existing_files) {
 		for (it = 0; existing_files[it].name; it++) {
-			if ((fd = open(existing_files[it].name, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY, 0644)) != -1) {
+			if (existing_files[it].hardlink) {
+				if (link(existing_files[it].hardlink, existing_files[it].name) != 0) {
+					wget_error_printf_exit(_("Failed to link %s/%s -> %s/%s [%s]\n"),
+						tmpdir, existing_files[it].hardlink,
+						tmpdir, existing_files[it].name, options);
+				}
+			}
+			else if ((fd = open(existing_files[it].name, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY, 0644)) != -1) {
 				ssize_t nbytes = write(fd, existing_files[it].content, strlen(existing_files[it].content));
 				close(fd);
 

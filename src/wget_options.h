@@ -251,7 +251,8 @@ struct config {
 		verify_save_failed,
 		verify_sig,
 		https_enforce,
-		retry_connrefused;
+		retry_connrefused,
+		unlink;
 };
 
 extern struct config

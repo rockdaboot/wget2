@@ -831,7 +831,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Use the specified encoding for the URLs read from `--input-file`. The default is the local encoding.
 
-### `--unlink` [Not implemented yet]
+### `--unlink`
 
   Force Wget2 to unlink file instead of clobbering existing file. This option is useful for downloading to the
   directory with hardlinks.

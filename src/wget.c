@@ -3183,6 +3183,15 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 		}
 	}
 
+	if (config.unlink && flag == O_TRUNC) {
+		if (unlink(fname) < 0 && errno != ENOENT) {
+			error_printf(_("Failed to unlink '%s' (errno=%d): %s\n"),
+				fname, errno, strerror(errno));
+			set_exit_status(WG_EXIT_STATUS_IO);
+			return -1;
+		}
+	}
+
 	fd = _open_unique(fname, O_WRONLY | flag | O_CREAT | O_NONBLOCK | O_BINARY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
 		multiple, unique, sizeof(unique));
 	// debug_printf("1 fd=%d flag=%02x (%02x %02x %02x) errno=%d %s\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND,errno,fname);

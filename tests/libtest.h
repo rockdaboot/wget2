@@ -107,6 +107,8 @@ typedef struct {
 		restricted_mode;
 	size_t
 		content_length;
+	const char *
+		hardlink;
 } wget_test_file_t;
 
 typedef struct {

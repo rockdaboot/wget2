@@ -2125,6 +2125,11 @@ static const struct optionw options[] = {
 		  "(default: off)\n"
 		}
 	},
+	{ "unlink", &config.unlink, parse_bool, -1, 0,
+		SECTION_STARTUP,
+		{ "Remove files before clobbering. (default: off)\n"
+		}
+	},
 	{ "use-askpass", &config.use_askpass_bin, parse_string, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Prompt for a user and password using\n",
