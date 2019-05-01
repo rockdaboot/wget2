@@ -625,11 +625,12 @@ void wget_ssl_init(void)
 		if (min_version != -1)
 			wolfSSL_CTX_SetMinVersion(ssl_ctx, min_version);
 
+/*
 		int rc;
 		char cipher_list[8096];
 		rc = wolfSSL_get_ciphers(cipher_list, (int) sizeof(cipher_list));
 		info_printf("%d ciphers found %s (len=%zu)\n", rc, cipher_list, strlen(cipher_list));
-
+*/
 		if (ciphers)
 			if (!wolfSSL_CTX_set_cipher_list(ssl_ctx, ciphers))
 				error_printf(_("WolfSSL: Failed to set ciphers '%s'\n"), ciphers);
@@ -772,7 +773,7 @@ static void ShowX509(WOLFSSL_X509 *x509, const char *hdr)
 	issuer = wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_issuer_name(x509), 0, 0);
 	subject = wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_subject_name(x509), 0, 0);
 
-	debug_printf("%s\n issuer : %s\n subject: %s\n", hdr, issuer, subject);
+	debug_printf("%s issuer : %s subject: %s", hdr, issuer, subject);
 
 	while ((altName = wolfSSL_X509_get_next_altname(x509)))
 		debug_printf(" altname = %s\n", altName);
@@ -863,7 +864,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 			.cert_chain_size = 0
 	};
 
-	int ret = WGET_E_UNKNOWN;
+	int rc, ret = WGET_E_UNKNOWN;
 	int sockfd, connect_timeout;
 	const char *hostname;
 	long long before_millisecs = 0;
@@ -1012,9 +1013,15 @@ int wget_ssl_open(wget_tcp_t *tcp)
 */		}
 	}
 
-	if (wolfSSL_connect(session) != SSL_SUCCESS) {
-		error_printf(_("Failed to connect TLS\n"));
-		return -1;
+	if ((rc = wolfSSL_connect(session)) != WOLFSSL_SUCCESS) {
+		rc = wolfSSL_get_error(session, rc);
+		error_printf(_("failed to connect TLS (%d): %s\n"), rc, wolfSSL_ERR_reason_error_string(rc));
+
+		rc = wolfSSL_get_verify_result(session);
+		if (rc >= 13 && rc <= 29)
+			return WGET_E_CERTIFICATE;
+		else
+			return WGET_E_CONNECT;
 	}
 
 	if (stats_callback_tls) {
