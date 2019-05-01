@@ -79,6 +79,7 @@ int main(void)
 			{	NULL } },
 		0);
 
+#ifndef WITH_WOLFSSL
 	// test-i-https with loading CA Certificate and CRL
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
@@ -92,6 +93,7 @@ int main(void)
 			{ urls[0].name + 1, urls[0].body },
 			{	NULL } },
 		0);
+#endif
 
 	// test-i-https ignoring unknown certificate
 	wget_test(
@@ -109,6 +111,7 @@ int main(void)
 			{	NULL } },
 		0);
 
+#ifndef WITH_WOLFSSL
 	// test-i-https ignoring unknown certificate (with CRL)
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
@@ -124,6 +127,7 @@ int main(void)
 			{ urls[2].name + 1, urls[2].body },
 			{	NULL } },
 		0);
+#endif
 
 	// test-i-https failing due to unknown certificate
 	wget_test(
