@@ -59,7 +59,9 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
-#include <gnutls/gnutls.h>
+#ifdef WITH_GNUTLS
+#  include <gnutls/gnutls.h>
+#endif
 
 static int
 	http_server_port,
@@ -799,7 +801,7 @@ void wget_test_start_server(int first_key, ...)
 	int rc, key;
 	va_list args;
 	bool start_http = 1;
-#ifdef WITH_GNUTLS
+#if defined WITH_GNUTLS || defined WITH_WOLFSSL
 	bool start_https = 1;
 #endif
 
@@ -834,7 +836,7 @@ void wget_test_start_server(int first_key, ...)
 			start_http = 0;
 			break;
 		case WGET_TEST_HTTP_ONLY:
-#ifdef WITH_GNUTLS
+#if defined WITH_GNUTLS || defined WITH_WOLFSSL
 			start_https = 0;
 #endif
 			break;
@@ -844,7 +846,7 @@ void wget_test_start_server(int first_key, ...)
 		case WGET_TEST_FEATURE_MHD:
 			break;
 		case WGET_TEST_FEATURE_TLS:
-#ifndef WITH_GNUTLS
+#if !defined WITH_GNUTLS && !defined WITH_WOLFSSL
 			wget_error_printf(_("Test requires TLS. Skipping\n"));
 			exit(WGET_TEST_EXIT_SKIP);
 #endif
@@ -886,7 +888,7 @@ void wget_test_start_server(int first_key, ...)
 			wget_error_printf_exit(_("Failed to start HTTP server, error %d\n"), rc);
 	}
 
-#ifdef WITH_GNUTLS
+#if defined WITH_GNUTLS || defined WITH_WOLFSSL
 	// start HTTPS server
 	if (start_https) {
 		if ((rc = _http_server_start(HTTPS_MODE)) != 0)
