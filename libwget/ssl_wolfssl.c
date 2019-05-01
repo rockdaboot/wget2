@@ -33,8 +33,6 @@
 
 #include <config.h>
 
-#ifdef WITH_WOLFSSL
-
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -1283,29 +1281,5 @@ const void *wget_tcp_get_stats_ocsp(wget_ocsp_stats_t type, const void *_stats)
 		return NULL;
 	}
 }
-
-#else // WITH_WOLFSSL
-
-#include <stddef.h>
-
-#include <wget.h>
-#include "private.h"
-
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-void wget_ssl_set_config_string(int key, const char *value) { }
-void wget_ssl_set_config_object(int key, void *value) { }
-void wget_ssl_set_config_int(int key, int value) { }
-void wget_ssl_init(void) { }
-void wget_ssl_deinit(void) { }
-int wget_ssl_open(wget_tcp_t *tcp) { return WGET_E_TLS_DISABLED; }
-void wget_ssl_close(void **session) { }
-ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout) { return 0; }
-ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout) { return 0; }
-void wget_tcp_set_stats_tls(const wget_stats_callback_t fn) { }
-const void *wget_tcp_get_stats_tls(const wget_tls_stats_t type, const void *stats) { return NULL;}
-void wget_tcp_set_stats_ocsp(const wget_stats_callback_t fn) { }
-const void *wget_tcp_get_stats_ocsp(const wget_ocsp_stats_t type, const void *stats) { return NULL;}
-
-#endif // WITH_WOLFSSL
 
 /** @} */
