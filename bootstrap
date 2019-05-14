@@ -724,8 +724,12 @@ if $use_gnulib; then
     }
   fi
 
-  gnulib_tool=$GNULIB_SRCDIR/gnulib-tool.py
-  <$gnulib_tool || exit $?
+  # use python gnulib-tool if possible (much faster)
+  gnulib_tool=$GNULIB_SRCDIR/gnulib-tool
+  if ! which python -o ! <$gnulib_tool; then
+    gnulib_tool=$GNULIB_SRCDIR/gnulib-tool
+    <$gnulib_tool || exit $?
+  fi
 fi
 
 # Get translations.
