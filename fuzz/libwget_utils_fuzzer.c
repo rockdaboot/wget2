@@ -112,14 +112,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	int w, h;
 	wget_get_screen_size(&w, &h);
 
-	char esc[size * 3 + 1];
-	wget_restrict_file_name(data0, esc, WGET_RESTRICT_NAMES_WINDOWS);
-	wget_restrict_file_name(data0, esc, WGET_RESTRICT_NAMES_NOCONTROL);
-	wget_restrict_file_name(data0, esc, WGET_RESTRICT_NAMES_ASCII);
-	wget_restrict_file_name(data0, esc, WGET_RESTRICT_NAMES_UPPERCASE);
-	wget_restrict_file_name(data0, esc, WGET_RESTRICT_NAMES_LOWERCASE);
-	wget_restrict_file_name(data0, esc, WGET_RESTRICT_NAMES_UNIX);
-
 	wget_memtohex(NULL, 0, NULL, 0);
 	wget_memtohex(data, size, dst1, sizeof(dst1));
 	wget_memtohex(data, size, dst2, sizeof(dst2));

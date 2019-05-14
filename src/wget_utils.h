@@ -27,5 +27,6 @@
 
 void mkdir_path(const char *fname, bool is_file);
 char *shell_expand(const char *fname);
+char *wget_restrict_file_name(const char *fname, char *esc, int mode);
 
 #endif /* SRC_WGET_UTILS_H */

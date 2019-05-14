@@ -106,3 +106,91 @@ char *shell_expand(const char *fname)
 	// failed. In both cases, return the original string back
 	return expanded_str ? expanded_str : wget_strdup(fname);
 }
+
+/**
+ * \param[in]  fname File name to sanitize
+ * \param[out] esc   Pointer to the buffer where sanitized file name
+ *                   will be stored. Should be at least
+ *                   strlen(\p fname) * 3 + 1 bytes large.
+ * \param[in]  mode  Mode of operation
+ * \return Either \p fname if no escaping took place, else \p esc.
+ *
+ * This functions exists to pass the Wget test suite.
+ * All we really need (Wget is targeted for Unix/Linux), is UNIX restriction (`NUL` and `/`)
+ *  with escaping of control characters.
+ * See https://en.wikipedia.org/wiki/Comparison_of_file_systems
+ *
+ * Sanitizes file names by percent-escaping platform-specific illegal characters.
+ */
+char *wget_restrict_file_name(const char *fname, char *esc, int mode)
+{
+	signed char *s;
+	char *dst, c;
+	int escaped;
+
+	if (!fname || !esc)
+		return (char *) fname;
+
+	switch (mode) {
+	case WGET_RESTRICT_NAMES_WINDOWS:
+		for (escaped = 0, dst = esc, s = (signed char *) fname; *s; s++) {
+			if (*s < 32 || strchr("\\<>:\"|?*", *s)) {
+				*dst++ = '%';
+				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
+				*dst++ = (c = (*s & 0xf)) >= 10 ? c + 'A' - 10 : c + '0';
+				escaped = 1;
+			} else
+				*dst++ = *s;
+		}
+		*dst = 0;
+
+		if (escaped)
+			return esc;
+		break;
+	case WGET_RESTRICT_NAMES_NOCONTROL:
+		break;
+	case WGET_RESTRICT_NAMES_ASCII:
+		for (escaped = 0, dst = esc, s = (signed char *) fname; *s; s++) {
+			if (*s < 32) {
+				*dst++ = '%';
+				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
+				*dst++ = (c = (*s & 0xf)) >= 10 ? c + 'A' - 10 : c + '0';
+				escaped = 1;
+			} else
+				*dst++ = *s;
+		}
+		*dst = 0;
+
+		if (escaped)
+			return esc;
+		break;
+	case WGET_RESTRICT_NAMES_UPPERCASE:
+		for (s = (signed char *) fname; *s; s++)
+			if (*s >= 'a' && *s <= 'z') // islower() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
+				*s &= ~0x20;
+		break;
+	case WGET_RESTRICT_NAMES_LOWERCASE:
+		for (s = (signed char *) fname; *s; s++)
+			if (*s >= 'A' && *s <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
+				*s |= 0x20;
+		break;
+	case WGET_RESTRICT_NAMES_UNIX:
+	default:
+		for (escaped = 0, dst = esc, s = (signed char *) fname; *s; s++) {
+			if (*s >= 1 && *s <= 31) {
+				*dst++ = '%';
+				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
+				*dst++ = (c = (*s & 0xf)) >= 10 ? c + 'A' - 10 : c + '0';
+				escaped = 1;
+			} else
+				*dst++ = *s;
+		}
+		*dst = 0;
+
+		if (escaped)
+			return esc;
+		break;
+	}
+
+	return (char *)fname;
+}

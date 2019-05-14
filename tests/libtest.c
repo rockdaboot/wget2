@@ -41,6 +41,7 @@
 #include <sys/wait.h>
 
 #include <wget.h>
+#include "../src/wget_utils.h"
 #include "libtest.h"
 
 #include <microhttpd.h>
