@@ -176,7 +176,7 @@ static void _bar_update_speed_stats(_bar_slot_t *slotp)
 
 	if (ring_used < 2) {
 		// Not enough measurements to calculate the speed
-		sprintf(slotp->speed_buf, " --.-K");
+		wget_strlcpy(slotp->speed_buf, " --.-K", sizeof(slotp->speed_buf));
 	} else {
 		size_t bytes = slotp->bytes_ring[ring_pos] - slotp->bytes_ring[next_pos];
 		size_t time = slotp->time_ring[ring_pos] - slotp->time_ring[next_pos];
@@ -502,7 +502,7 @@ void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, int ne
 	    slotp->filename = wget_strdup(filename);
 	} else {
 	    char tag[20];	/* big enough to hold "xxx files\0" */
-	    snprintf(tag, sizeof(tag), "%d files", slotp->numfiles);
+	    wget_snprintf(tag, sizeof(tag), "%d files", slotp->numfiles);
 	    slotp->filename = wget_strdup(tag);
 	}
 	slotp->tick = 0;
