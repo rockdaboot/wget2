@@ -38,8 +38,6 @@
   #pragma GCC diagnostic ignored "-Wundef"
 #endif
 
-#include "timespec.h" // gnulib gettime()
-
 #include <glthread/thread.h>
 #include <glthread/lock.h>
 #include <glthread/cond.h>
