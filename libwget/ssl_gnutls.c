@@ -320,7 +320,7 @@ void wget_ssl_set_config_int(int key, int value)
 #  define _Thread_local __declspec(thread)
 #endif
 
-_Thread_local static char ctime_buffer[64];
+static _Thread_local char ctime_buffer[64];
 
 static const char *safe_ctime(time_t *t)
 {
