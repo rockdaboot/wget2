@@ -876,6 +876,7 @@ AM_CONDITIONAL([PLUGIN_SUPPORT], [test "x$plugin_support" = xyes])
 
 AC_SUBST([TEST_CFLAGS])
 AC_SUBST([TEST_LIBS])
+AC_SUBST([ALL_LIBS], $LIBS)
 
 # Checks for header files.
 AC_CHECK_HEADERS([\
@@ -908,6 +909,9 @@ AS_IF([test "x$with_ssl" == xwolfssl && test "x$with_wolfssl" == xno], [ssl_enab
   [test "x$with_ssl" == xopenssl && test "x$with_openssl" == xno], [ssl_enabled="(not found)"],
   [test "x$with_ssl" == xgnutls && test "x$with_gnutls" == xno], [ssl_enabled="(not found)"],
   [])
+
+# patching libtool, generated when coming here
+patch libtool contrib/libtool.patch
 
 AC_MSG_NOTICE([Summary of build options:
 
