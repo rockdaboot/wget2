@@ -42,6 +42,8 @@
 #include <glthread/lock.h>
 #include <glthread/cond.h>
 
+#include "timespec.h" // gnulib gettime()
+
 #include <wget.h>
 #include "private.h"
 
@@ -186,9 +188,13 @@ int wget_thread_cond_wait(wget_thread_cond_t cond, wget_thread_mutex_t mutex, lo
 		return glthread_cond_wait(&cond->cond, &mutex->mutex);
 
 	// pthread_cond_timedwait() wants an absolute time
-	ms += wget_get_timemillis();
+	struct timespec ts;
+	gettime(&ts);
+	ms += ts.tv_sec * 1000LL + ts.tv_nsec / 1000000;
+	ts.tv_sec = ms / 1000;
+	ts.tv_nsec = (ms % 1000) * 1000000;
 
-	return glthread_cond_timedwait(&cond->cond, &mutex->mutex, (&(struct timespec){ .tv_sec = ms / 1000, .tv_nsec = (ms % 1000) * 1000000 }));
+	return glthread_cond_timedwait(&cond->cond, &mutex->mutex, &ts);
 }
 
 /**
