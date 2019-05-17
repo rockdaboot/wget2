@@ -312,7 +312,7 @@ void wget_ssl_set_config_int(int key, int value)
 	}
 }
 
-#if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__
+#if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__ && defined HAVE_THREADS_H
 #  include <threads.h>
 #elif defined(__GNUC__) /* clang is also covered by __GNUC__ */
 #  define _Thread_local __thread
