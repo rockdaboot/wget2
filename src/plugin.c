@@ -575,7 +575,7 @@ int plugin_db_help_forwarded(void)
 	return plugin_help_forwarded;
 }
 
-// Forwards a URL about to be enqueued to intrested plugins
+// Forwards a URL about to be enqueued to interested plugins
 void plugin_db_forward_url(const wget_iri_t *iri, struct plugin_db_forward_url_verdict *verdict)
 {
 	// Initialize action structure

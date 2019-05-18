@@ -17,7 +17,7 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- * Testing Wget plugin behavior with non-existant plugins
+ * Testing Wget plugin behavior with non-existent plugins
  *
  */
 #include <config.h>

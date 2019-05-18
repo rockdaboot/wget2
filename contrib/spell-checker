@@ -6,7 +6,7 @@
 #  - pip install codespell
 #  - add ~/.local/bin to PATH
 
-codespell $* -L "tim,gonna,cas" `git ls-files|\
-  egrep -v '_fuzzer.in|_fuzzer.repro|\.der$|gnulib|ChangeLog|tests/gpg|\.png$|\.dat$|src/wget.c|contrib/spell-checker'`
+codespell $* -L "tim,gonna,cas,referer,fpr" `git ls-files|\
+  egrep -v '_fuzzer.in|_fuzzer.repro|\.der$|\.pem$|gnulib|ChangeLog|tests/gpg|\.png$|\.dat$|src/wget.c|contrib/spell-checker'`
 
-codespell $* -L "tim,gonna,cas,te" src/wget.c contrib/spell-checker
+codespell $* -L "tim,gonna,cas,te,referer,ist,fpr" src/wget.c contrib/spell-checker

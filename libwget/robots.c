@@ -40,7 +40,7 @@
  * @{
  *
  * The purpose of this set of functions is to parse a
- * Robots Exlusion Standard file into a data structure
+ * Robots Exclusion Standard file into a data structure
  * for easy access.
  */
 
