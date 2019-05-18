@@ -93,9 +93,10 @@ int main(G_GNUC_WGET_UNUSED int argc, char **argv)
 		WGET_INFO_STREAM, stdout,
 		0);
 
-	if ((target = strrchr(argv[0], SLASH)))
-		target = strrchr(target, '/');
-	else
+	if ((target = strrchr(argv[0], SLASH))) {
+		if (strrchr(target, '/'))
+			target = strrchr(target, '/');
+	} else
 		target = strrchr(argv[0], '/');
 	target = target ? target + 1 : argv[0];
 
