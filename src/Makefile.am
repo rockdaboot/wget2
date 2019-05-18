@@ -41,5 +41,12 @@ wget2_noinstall_SOURCES = $(wget2_SOURCES)
 wget2_noinstall_LDFLAGS = -no-install
 wget2_noinstall_LDADD = $(wget2_LDADD)
 
+# convenience library used for testing
+noinst_LTLIBRARIES = libtest-utils.la
+libtest_utils_la_SOURCES = utils.c wget_utils.h
+libtest_utils_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include/wget -I$(top_builddir)/lib -I$(top_srcdir)/lib $(CFLAG_VISIBILITY) -DBUILDING_LIBWGET \
+ -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
+#libtest_utils_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
+
 #css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
 #	$(LEX) -o $@ $<
