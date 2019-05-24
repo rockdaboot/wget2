@@ -286,6 +286,7 @@ pages:
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check-coverage
+    - make dist
     - mkdir -p public
     # Test suite coverage report
     - rm -rf public/coverage
@@ -297,6 +298,7 @@ pages:
     - make -j$(nproc) fuzz-coverage
     - rm -rf public/fuzz-coverage
     - mv lcov public/fuzz-coverage
+    - mv wget2-*.gz public/wget2-latest.tar.gz
   tags:
     - shared
   artifacts:
@@ -305,6 +307,7 @@ pages:
       - public
   only:
     - master
+    - tmp-public-tarball
 
 MinGW64:
   stage: stage1-testing

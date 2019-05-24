@@ -130,6 +130,17 @@ The following packages are needed to build the software
 The versions are recommended, but older versions may also work.
 
 
+# Downloading and building from tarball
+
+		wget https://gnuwget.gitlab.io/wget2/wget2-latest.tar.gz
+		tar xf wget2-latest.tar.gz
+		cd wget2-*
+		./configure
+		make
+		make check
+		sudo make install
+
+
 # Building from git
 
 Download project and prepare sources with
