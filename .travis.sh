@@ -23,6 +23,9 @@ else
 	CONFIGURE_OPTIONS+=("--enable-valgrind-tests")
 fi
 
+# TravisCI has old gettext
+sed -i 's/\[0.19.3\]/[0.18.2\]/g' configure.ac
+
 ./bootstrap ${BOOTSTRAP_OPTIONS}
 
 for OPTS in "${CONFIGURE_OPTIONS[@]}"; do
