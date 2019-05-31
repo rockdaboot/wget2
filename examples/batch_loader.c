@@ -131,7 +131,6 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 	// set global timeouts to 5s
 	wget_tcp_set_timeout(NULL, 3000);
 	wget_tcp_set_connect_timeout(NULL, 3000);
-	wget_tcp_set_dns_timeout(NULL, 3000);
 
 	// OCSP off
 	wget_ssl_set_config_int(WGET_SSL_OCSP, 0);

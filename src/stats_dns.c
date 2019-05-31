@@ -55,7 +55,7 @@ static stats_print_func_t
 stats_opts_t stats_dns_opts = {
 	.tag = "DNS",
 	.options = &config.stats_dns,
-	.set_callback = (stats_callback_setter_t) wget_tcp_set_stats_dns,
+	.set_callback = (stats_callback_setter_t) wget_dns_set_stats,
 	.callback = stats_callback,
 	.destructor = (wget_vector_destructor_t) free_stats,
 	.print = print_dns,
@@ -65,14 +65,14 @@ static void stats_callback(const void *stats)
 {
 	dns_stats_t dns_stats = { .millisecs = -1, .port = -1 };
 
-	dns_stats.host = wget_strdup(wget_tcp_get_stats_dns(WGET_STATS_DNS_HOST, stats));
-	dns_stats.ip = wget_strdup(wget_tcp_get_stats_dns(WGET_STATS_DNS_IP, stats));
+	dns_stats.host = wget_strdup(wget_dns_get_stats(WGET_STATS_DNS_HOST, stats));
+	dns_stats.ip = wget_strdup(wget_dns_get_stats(WGET_STATS_DNS_IP, stats));
 
-	if (wget_tcp_get_stats_dns(WGET_STATS_DNS_PORT, stats))
-		dns_stats.port = *((uint16_t *)wget_tcp_get_stats_dns(WGET_STATS_DNS_PORT, stats));
+	if (wget_dns_get_stats(WGET_STATS_DNS_PORT, stats))
+		dns_stats.port = *((uint16_t *)wget_dns_get_stats(WGET_STATS_DNS_PORT, stats));
 
-	if (wget_tcp_get_stats_dns(WGET_STATS_DNS_SECS, stats))
-		dns_stats.millisecs = *((long long *)wget_tcp_get_stats_dns(WGET_STATS_DNS_SECS, stats));
+	if (wget_dns_get_stats(WGET_STATS_DNS_SECS, stats))
+		dns_stats.millisecs = *((long long *)wget_dns_get_stats(WGET_STATS_DNS_SECS, stats));
 
 	wget_thread_mutex_lock(stats_dns_opts.mutex);
 	wget_vector_add(stats_dns_opts.data, &dns_stats, sizeof(dns_stats_t));

@@ -43,6 +43,8 @@ struct wget_tcp_st {
 	const char
 		*ssl_hostname, // if set, do SSL hostname checking
 		*ip;
+	wget_dns_t
+		*dns;
 	int
 		sockfd,
 		// timeouts in milliseconds

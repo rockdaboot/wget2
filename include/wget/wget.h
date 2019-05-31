@@ -1807,6 +1807,27 @@ WGETAPI struct addrinfo *
 	wget_dns_cache_add(const char *host, uint16_t port, struct addrinfo *addrinfo);
 
 /*
+ * DNS resolving routines
+ */
+
+typedef struct wget_dns_st wget_dns_t;
+
+WGETAPI int
+	wget_dns_init(wget_dns_t **dns);
+WGETAPI void
+	wget_dns_free(wget_dns_t **dns);
+WGETAPI void
+	wget_dns_set_timeout(wget_dns_t *dns, int timeout);
+WGETAPI void
+	wget_dns_set_caching(wget_dns_t *dns, bool caching);
+WGETAPI bool
+	wget_dns_get_caching(wget_dns_t *dns) G_GNUC_WGET_PURE;
+WGETAPI struct addrinfo *
+	wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t port, int family, int preferred_family);
+WGETAPI int
+	wget_tcp_dns_cache_add(const char *ip, const char *name, uint16_t port);
+
+/*
  * TCP network routines
  */
 
@@ -1830,15 +1851,13 @@ WGETAPI void
 WGETAPI void
 	wget_tcp_close(wget_tcp_t *tcp);
 WGETAPI void
+	wget_tcp_set_dns(wget_tcp_t *tcp, wget_dns_t *dns);
+WGETAPI void
 	wget_tcp_set_timeout(wget_tcp_t *tcp, int timeout);
 WGETAPI int
 	wget_tcp_get_timeout(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
 WGETAPI void
 	wget_tcp_set_connect_timeout(wget_tcp_t *tcp, int timeout);
-WGETAPI void
-	wget_tcp_set_dns_timeout(wget_tcp_t *tcp, int timeout);
-WGETAPI void
-	wget_tcp_set_dns_caching(wget_tcp_t *tcp, int caching);
 WGETAPI void
 	wget_tcp_set_tcp_fastopen(wget_tcp_t *tcp, int tcp_fastopen);
 WGETAPI void
@@ -1855,8 +1874,6 @@ WGETAPI void
 	wget_tcp_set_ssl_ca_file(wget_tcp_t *tcp, const char *cafile);
 WGETAPI void
 	wget_tcp_set_ssl_key_file(wget_tcp_t *tcp, const char *certfile, const char *keyfile);
-WGETAPI int
-	wget_tcp_get_dns_caching(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
 WGETAPI char
 	wget_tcp_get_tcp_fastopen(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
 WGETAPI char
@@ -1879,10 +1896,6 @@ WGETAPI void
 	wget_tcp_set_protocol(wget_tcp_t *tcp, int protocol);
 WGETAPI void
 	wget_tcp_set_bind_address(wget_tcp_t *tcp, const char *bind_address);
-WGETAPI struct addrinfo *
-	wget_tcp_resolve(wget_tcp_t *tcp, const char *restrict name, uint16_t port);
-WGETAPI int
-	wget_tcp_dns_cache_add(const char *ip, const char *name, uint16_t port);
 WGETAPI int
 	wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port);
 WGETAPI int
@@ -2764,10 +2777,10 @@ typedef void
 	(*wget_stats_callback_t)(const void *stats);
 
 WGETAPI void
-	wget_tcp_set_stats_dns(wget_stats_callback_t fn);
+	wget_dns_set_stats(wget_stats_callback_t fn);
 
 WGETAPI const void *
-	wget_tcp_get_stats_dns(wget_dns_stats_t type, const void *stats);
+	wget_dns_get_stats(wget_dns_stats_t type, const void *stats);
 
 WGETAPI void
 	wget_tcp_set_stats_tls(wget_stats_callback_t fn);

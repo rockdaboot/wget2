@@ -127,7 +127,7 @@ void wget_global_init(int first_key, ...)
 			wget_logger_set_file(wget_get_logger(WGET_LOGGER_INFO), va_arg(args, const char *));
 			break;
 		case WGET_DNS_CACHING:
-			wget_tcp_set_dns_caching(NULL, va_arg(args, int));
+			wget_dns_set_caching(NULL, va_arg(args, int));
 			break;
 		case WGET_TCP_FASTFORWARD:
 			wget_tcp_set_tcp_fastopen(NULL, va_arg(args, int));
@@ -198,7 +198,6 @@ void wget_global_deinit(void)
 			wget_cookie_db_free(&_config.cookie_db);
 		}
 		wget_tcp_set_bind_address(NULL, NULL);
-		wget_tcp_set_dns_caching(NULL, 0);
 		wget_dns_cache_free();
 
 		wget_dns_cache_exit();
@@ -224,8 +223,6 @@ void wget_global_deinit(void)
 int wget_global_get_int(int key)
 {
 	switch (key) {
-	case WGET_DNS_CACHING:
-		return wget_tcp_get_dns_caching(NULL);
 	case WGET_COOKIES_ENABLED:
 		return _config.cookies_enabled;
 	case WGET_COOKIE_KEEPSESSIONCOOKIES:

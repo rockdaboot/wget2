@@ -79,7 +79,7 @@ int stats_init(void)
 	for (unsigned it = 0; it < countof(stats_opts); it++) {
 		stats_opts_t *opts = stats_opts[it];
 
-		if (!*opts->options)
+		if (!opts || !*opts->options)
 			continue;
 
 		if (stats_parse_options(*opts->options, &opts->format, &opts->file))
@@ -106,7 +106,7 @@ void stats_exit(void)
 	for (unsigned it = 0; it < countof(stats_opts); it++) {
 		stats_opts_t *opts = stats_opts[it];
 
-		if (!opts->mutex)
+		if (!opts || !opts->mutex)
 			continue;
 
 		wget_vector_free(&opts->data);
@@ -122,7 +122,7 @@ void stats_print(void)
 	for (unsigned it = 0; it < countof(stats_opts); it++) {
 		stats_opts_t *opts = stats_opts[it];
 
-		if (!*opts->options)
+		if (!opts || !*opts->options)
 			continue;
 
 		const char *filename = opts->file;

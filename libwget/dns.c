@@ -1,0 +1,422 @@
+/*
+ * Copyright(c) 2019 Free Software Foundation, Inc.
+ *
+ * This file is part of libwget.
+ *
+ * Libwget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Libwget is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ * resolver routines
+ */
+
+#include <config.h>
+
+#include <sys/types.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdarg.h>
+#include <time.h>
+#include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
+
+#include <wget.h>
+#include "private.h"
+
+/**
+ * \file
+ * \brief Functions for resolving names/IPs
+ * \defgroup libwget-dns DNS resolver functions
+ *
+ * @{
+ *
+ * DNS Resolver functions.
+ *
+ */
+
+typedef struct
+{
+	const char
+		*hostname,
+		*ip;
+	uint16_t
+		port;
+	long long
+		dns_secs; // milliseconds
+} _stats_data_t;
+
+struct wget_dns_st
+{
+//	wget_dns_cache_t
+//		*cache;
+	wget_thread_mutex_t
+		mutex;
+	wget_stats_callback_t
+		stats_callback;
+	int
+		timeout;
+	bool
+		caching;
+};
+static wget_dns_t default_dns = {
+	.timeout = -1,
+};
+
+/**
+ * \param[out] dns Pointer to return newly allocated and initialized wget_dns_t instance
+ * \return WGET_E_SUCCESS if OK, WGET_E_MEMORY if out-of-memory or WGET_E_INVALID
+ * if the mutex initialization failed.
+ *
+ * Allocates and initializes a wget_dns_t instance.
+ */
+int wget_dns_init(wget_dns_t **dns)
+{
+	wget_dns_t *_dns = wget_calloc(1, sizeof(wget_dns_t));
+
+	if (!_dns)
+		return WGET_E_MEMORY;
+
+	if (_dns) {
+		if (wget_thread_mutex_init(&_dns->mutex)) {
+			xfree(_dns);
+			return WGET_E_INVALID;
+		}
+		_dns->timeout = -1;
+		*dns = _dns;
+	}
+
+	return WGET_E_SUCCESS;
+}
+
+/**
+ * \param[in/out] dns Pointer to wget_dns_t instance that will be freed and NULLified.
+ *
+ * Free the resources allocated by wget_dns_init().
+ */
+void wget_dns_free(wget_dns_t **dns)
+{
+	if (dns && *dns) {
+		wget_thread_mutex_destroy(&(*dns)->mutex);
+		xfree(*dns);
+	}
+}
+
+/**
+ * \param[in] dns The wget_dns_t instance to set the timeout
+ * \param[in] timeout The timeout value.
+ *
+ * Set the timeout (in milliseconds) for the DNS queries.
+ *
+ * This is the maximum time to wait until we get a response from the server.
+ *
+ * Warning: For standard getaddrinfo() a timeout can't be set in a portable way.
+ * So this functions currently is a no-op.
+ *
+ * The following two values are special:
+ *
+ *  - `0`: No timeout, immediate.
+ *  - `-1`: Infinite timeout. Wait indefinitely.
+ */
+void wget_dns_set_timeout(wget_dns_t *dns, int timeout)
+{
+	(dns ? dns : &default_dns)->timeout = timeout;
+}
+
+/**
+ * \param[in] dns A `wget_dns_t` instance, created by wget_dns_init().
+ * \param[in] caching Whether to enable DNS caching
+ *
+ * Enable or disable DNS caching for the DNS instance provided.
+ *
+ * The DNS cache is kept internally in memory, and is used in wget_dns_resolve() to speed up DNS queries.
+ */
+void wget_dns_set_caching(wget_dns_t *dns, bool caching)
+{
+	(dns ? dns : &default_dns)->caching = caching;
+}
+
+/**
+ * \param[in] dns A `wget_dns_t` instance, created by wget_dns_init().
+ * \return 1 if DNS caching is enabled, 0 otherwise.
+ *
+ * Tells whether DNS caching is enabled or not.
+ *
+ * You can enable and disable DNS caching with wget_dns_set_caching().
+ */
+bool wget_dns_get_caching(wget_dns_t *dns)
+{
+	return (dns ? dns : &default_dns)->caching;
+}
+
+/*
+ * Reorder address list so that addresses of the preferred family will come first.
+ */
+static struct addrinfo *_wget_sort_preferred(struct addrinfo *addrinfo, int preferred_family)
+{
+	struct addrinfo *preferred = NULL, *preferred_tail = NULL;
+	struct addrinfo *unpreferred = NULL, *unpreferred_tail = NULL;
+
+	for (struct addrinfo *ai = addrinfo; ai;) {
+		if (ai->ai_family == preferred_family) {
+			if (preferred_tail)
+				preferred_tail->ai_next = ai;
+			else
+				preferred = ai; // remember the head of the list
+
+			preferred_tail = ai;
+			ai = ai->ai_next;
+			preferred_tail->ai_next = NULL;
+		} else {
+			if (unpreferred_tail)
+				unpreferred_tail->ai_next = ai;
+			else
+				unpreferred = ai; // remember the head of the list
+
+			unpreferred_tail = ai;
+			ai = ai->ai_next;
+			unpreferred_tail->ai_next = NULL;
+		}
+	}
+
+	/* Merge preferred + not preferred */
+	if (preferred) {
+		preferred_tail->ai_next = unpreferred;
+		return preferred;
+	} else {
+		return unpreferred;
+	}
+}
+
+// we can't provide a portable way of respecting a DNS timeout
+static int _resolve(int family, int flags, const char *host, uint16_t port, struct addrinfo **out_addr)
+{
+	struct addrinfo hints = {
+		.ai_family = family,
+		.ai_socktype = SOCK_STREAM,
+		.ai_flags = AI_ADDRCONFIG | flags
+	};
+
+	if (port) {
+		char s_port[NI_MAXSERV];
+
+		hints.ai_flags |= AI_NUMERICSERV;
+
+		wget_snprintf(s_port, sizeof(s_port), "%hu", port);
+		debug_printf("resolving %s:%s...\n", host ? host : "", s_port);
+		return getaddrinfo(host, s_port, &hints, out_addr);
+	} else {
+		debug_printf("resolving %s...\n", host);
+		return getaddrinfo(host, NULL, &hints, out_addr);
+	}
+}
+
+/**
+ *
+ * \param[in] ip IP address of name
+ * \param[in] name Domain name, part of the cache's lookup key
+ * \param[in] port Port number, part of the cache's lookup key
+ * \return 0 on success, < 0 on error
+ *
+ * Assign an IP address to the name+port key in the DNS cache.
+ * The \p name should be lowercase.
+ */
+int wget_tcp_dns_cache_add(const char *ip, const char *name, uint16_t port)
+{
+	int rc, family;
+	struct addrinfo *ai;
+
+	if (wget_ip_is_family(ip, WGET_NET_FAMILY_IPV4)) {
+		family = AF_INET;
+	} else if (wget_ip_is_family(ip, WGET_NET_FAMILY_IPV6)) {
+		family = AF_INET6;
+	} else
+		return -1;
+
+	if ((rc = _resolve(family, AI_NUMERICHOST, ip, port, &ai)) != 0) {
+		error_printf(_("Failed to resolve %s:%d: %s\n"), ip, port, gai_strerror(rc));
+		return -1;
+	}
+
+	wget_dns_cache_add(name, port, ai);
+
+	return 0;
+}
+
+/**
+ * \param[in] host Hostname
+ * \param[in] port TCP destination port
+ * \param[in] family Protocol family AF_INET or AF_INET6
+ * \param[in] preferred_family Preferred protocol family AF_INET or AF_INET6
+ * \param[in] caching Whether the results are cached or not
+ * \return A `struct addrinfo` structure (defined in libc's `<netdb.h>`). Must be freed by the caller with `freeaddrinfo(3)`.
+ *
+ * Resolve a host name into its IPv4/IPv6 address.
+ *
+ * The **caching** parameter tells wget_dns_resolve() to use the DNS cache as long as possible. This means that if
+ * the queried hostname is found in the cache, that will be returned without querying any actual DNS server. If no such
+ * entry is found, a DNS query is performed, and the result stored in the cache.
+ *
+ * Note that if **caching** is false, the DNS cache will not be used at all. Not only it won't be used for looking up the hostname,
+ * but the addresses returned by the DNS server will not be stored in it either.
+ *
+ *  **caching**: Use the internal DNS cache. If the hostname is found there, return it immediately.
+ *    Otherwise continue and do a normal DNS query, and store the result in the cache.
+ *
+ * **family**: Desired address family for the returned addresses. This will typically be `AF_INET` or `AF_INET6`,
+ * but it can be any of the values defined in `<socket.h>`. Additionally, `AF_UNSPEC` means you don't care: it will
+ * return any address family that can be used with the specified \p host and \p port. If **family** is different
+ * than `AF_UNSPEC` and the specified family is not found, _that's an error condition_ and thus wget_dns_resolve() will return NULL.
+ *
+ * **preferred_family**: Tries to resolve addresses of this family if possible. This is only honored if **family**
+ * (see point above) is `AF_UNSPEC`.
+ *
+ *  The returned `addrinfo` structure must be freed with `freeaddrinfo(3)`.
+ */
+struct addrinfo *wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t port, int family, int preferred_family)
+{
+	struct addrinfo *addrinfo = NULL;
+	int rc = 0;
+	char adr[NI_MAXHOST], sport[NI_MAXSERV];
+	long long before_millisecs = 0;
+	_stats_data_t stats;
+
+	if (!dns)
+		dns = &default_dns;
+
+	if (dns->stats_callback)
+		before_millisecs = wget_get_timemillis();
+
+	// get the IP address for the server
+	for (int tries = 0, max = 3; tries < max; tries++) {
+		if (dns->caching) {
+			if ((addrinfo = wget_dns_cache_get(host, port)))
+				return addrinfo;
+
+			// prevent multiple address resolutions of the same host
+			wget_thread_mutex_lock(dns->mutex);
+
+			// now try again
+			if ((addrinfo = wget_dns_cache_get(host, port))) {
+				wget_thread_mutex_unlock(dns->mutex);
+				return addrinfo;
+			}
+		}
+
+		addrinfo = NULL;
+
+		rc = _resolve(family, 0, host, port, &addrinfo);
+		if (rc == 0 || rc != EAI_AGAIN)
+			break;
+
+		if (tries < max - 1) {
+			if (dns->caching)
+				wget_thread_mutex_unlock(dns->mutex);
+			wget_millisleep(100);
+		}
+	}
+
+	if (dns->stats_callback) {
+		long long after_millisecs = wget_get_timemillis();
+		stats.dns_secs = after_millisecs - before_millisecs;
+		stats.hostname = host;
+		stats.port = port;
+	}
+
+	if (rc) {
+		error_printf(_("Failed to resolve %s (%s)\n"),
+				(host ? host : ""), gai_strerror(rc));
+
+		if (dns->caching)
+			wget_thread_mutex_unlock(dns->mutex);
+
+		if (dns->stats_callback) {
+			stats.ip = NULL;
+			dns->stats_callback(&stats);
+		}
+
+		return NULL;
+	}
+
+	if (family == AF_UNSPEC && preferred_family != AF_UNSPEC)
+		addrinfo = _wget_sort_preferred(addrinfo, preferred_family);
+
+	if (dns->stats_callback) {
+		if ((rc = getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+			stats.ip = adr;
+		else
+			stats.ip = "???";
+
+		dns->stats_callback(&stats);
+	}
+
+	/* Finally, print the address list to the debug pipe if enabled */
+	if (wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG))) {
+		for (struct addrinfo *ai = addrinfo; ai; ai = ai->ai_next) {
+			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+				debug_printf("has %s:%s\n", adr, sport);
+			else
+				debug_printf("has ??? (%s)\n", gai_strerror(rc));
+		}
+	}
+
+	if (dns->caching) {
+		/*
+		 * In case of a race condition the already existing addrinfo is returned.
+		 * The addrinfo argument given to wget_dns_cache_add() will be freed in this case.
+		 */
+		addrinfo = wget_dns_cache_add(host, port, addrinfo);
+		wget_thread_mutex_unlock(dns->mutex);
+	}
+
+	return addrinfo;
+}
+
+/**
+ * \param[in] fn A `wget_stats_callback_t` callback function used to collect DNS statistics
+ *
+ * Set callback function to be called once DNS statistics for a host are collected
+ */
+void wget_dns_set_stats(wget_stats_callback_t fn)
+{
+	default_dns.stats_callback = fn;
+}
+
+/**
+ * \param[in] type A `wget_dns_stats_t` constant representing DNS statistical info to return
+ * \param[in] _stats An internal  pointer sent to callback function
+ * \return DNS statistical info in question
+ *
+ * Get the specific DNS statistics information
+ */
+const void *wget_dns_get_stats(const wget_dns_stats_t type, const void *_stats)
+{
+	const _stats_data_t *stats = (_stats_data_t *) _stats;
+
+	switch(type) {
+	case WGET_STATS_DNS_HOST:
+		return stats->hostname;
+	case WGET_STATS_DNS_IP:
+		return stats->ip;
+	case WGET_STATS_DNS_PORT:
+		return &(stats->port);
+	case WGET_STATS_DNS_SECS:
+		return &(stats->dns_secs);
+	default:
+		return NULL;
+	}
+}
+
+/** @} */

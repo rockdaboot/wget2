@@ -9,6 +9,7 @@ libwget/cookie.c
 libwget/css.c
 libwget/css_url.c
 libwget/decompressor.c
+libwget/dns.c
 libwget/encoding.c
 libwget/error.c
 libwget/hash_printf.c
