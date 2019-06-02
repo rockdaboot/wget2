@@ -2711,12 +2711,29 @@ struct wget_plugin_vtable
 	void (* add_ocsp_db)(wget_plugin_t *, wget_ocsp_db_t *, int);
 };
 
-/*
- * Statistics
-*/
+/**
+ * \ingroup libwget-dns
+ *
+ * DNS statistics data
+ */
+typedef struct
+{
+	const char
+		*hostname, //!< hostname/domain to be resolved
+		*ip; //!< resulting IP string
+	uint16_t
+		port; //!< port to be resolved
+	long long
+		dns_secs; //!< milliseconds it took to resolve
+} wget_dns_stats_data_t;
+
+typedef void
+	(*wget_dns_stats_callback_t)(wget_dns_t *dns, wget_dns_stats_data_t *stats, void *ctx);
+
+WGETAPI void
+	wget_dns_set_stats_callback(wget_dns_t *dns, wget_dns_stats_callback_t fn, void *ctx);
 
 typedef enum {
-	WGET_STATS_TYPE_DNS = 0,
 	WGET_STATS_TYPE_OCSP = 1,
 	WGET_STATS_TYPE_SERVER = 2,
 	WGET_STATS_TYPE_SITE = 3,
@@ -2727,13 +2744,6 @@ typedef enum {
 	WGET_STATS_FORMAT_HUMAN = 0,
 	WGET_STATS_FORMAT_CSV = 1,
 } wget_stats_format_t;
-
-typedef enum {
-	WGET_STATS_DNS_HOST = 0,
-	WGET_STATS_DNS_IP = 1,
-	WGET_STATS_DNS_PORT = 2,
-	WGET_STATS_DNS_SECS = 3
-} wget_dns_stats_t;
 
 typedef enum {
 	WGET_STATS_TLS_HOSTNAME = 0,
@@ -2775,12 +2785,6 @@ typedef enum {
 
 typedef void
 	(*wget_stats_callback_t)(const void *stats);
-
-WGETAPI void
-	wget_dns_set_stats(wget_stats_callback_t fn);
-
-WGETAPI const void *
-	wget_dns_get_stats(wget_dns_stats_t type, const void *stats);
 
 WGETAPI void
 	wget_tcp_set_stats_tls(wget_stats_callback_t fn);

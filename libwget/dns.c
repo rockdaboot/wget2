@@ -47,25 +47,18 @@
  *
  */
 
-typedef struct
-{
-	const char
-		*hostname,
-		*ip;
-	uint16_t
-		port;
-	long long
-		dns_secs; // milliseconds
-} _stats_data_t;
-
 struct wget_dns_st
 {
 //	wget_dns_cache_t
 //		*cache;
 	wget_thread_mutex_t
 		mutex;
-	wget_stats_callback_t
+	wget_dns_stats_callback_t
 		stats_callback;
+	void
+		*stats_ctx;
+	wget_dns_stats_data_t
+		stats;
 	int
 		timeout;
 	bool
@@ -256,24 +249,14 @@ int wget_tcp_dns_cache_add(const char *ip, const char *name, uint16_t port)
 }
 
 /**
+ * \param[in] dns A `wget_dns_t` instance, created by wget_dns_init().
  * \param[in] host Hostname
  * \param[in] port TCP destination port
  * \param[in] family Protocol family AF_INET or AF_INET6
  * \param[in] preferred_family Preferred protocol family AF_INET or AF_INET6
- * \param[in] caching Whether the results are cached or not
  * \return A `struct addrinfo` structure (defined in libc's `<netdb.h>`). Must be freed by the caller with `freeaddrinfo(3)`.
  *
  * Resolve a host name into its IPv4/IPv6 address.
- *
- * The **caching** parameter tells wget_dns_resolve() to use the DNS cache as long as possible. This means that if
- * the queried hostname is found in the cache, that will be returned without querying any actual DNS server. If no such
- * entry is found, a DNS query is performed, and the result stored in the cache.
- *
- * Note that if **caching** is false, the DNS cache will not be used at all. Not only it won't be used for looking up the hostname,
- * but the addresses returned by the DNS server will not be stored in it either.
- *
- *  **caching**: Use the internal DNS cache. If the hostname is found there, return it immediately.
- *    Otherwise continue and do a normal DNS query, and store the result in the cache.
  *
  * **family**: Desired address family for the returned addresses. This will typically be `AF_INET` or `AF_INET6`,
  * but it can be any of the values defined in `<socket.h>`. Additionally, `AF_UNSPEC` means you don't care: it will
@@ -291,7 +274,7 @@ struct addrinfo *wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t po
 	int rc = 0;
 	char adr[NI_MAXHOST], sport[NI_MAXSERV];
 	long long before_millisecs = 0;
-	_stats_data_t stats;
+	wget_dns_stats_data_t stats;
 
 	if (!dns)
 		dns = &default_dns;
@@ -344,7 +327,7 @@ struct addrinfo *wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t po
 
 		if (dns->stats_callback) {
 			stats.ip = NULL;
-			dns->stats_callback(&stats);
+			dns->stats_callback(dns, &stats, dns->stats_ctx);
 		}
 
 		return NULL;
@@ -359,7 +342,7 @@ struct addrinfo *wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t po
 		else
 			stats.ip = "???";
 
-		dns->stats_callback(&stats);
+		dns->stats_callback(dns, &stats, dns->stats_ctx);
 	}
 
 	/* Finally, print the address list to the debug pipe if enabled */
@@ -385,38 +368,19 @@ struct addrinfo *wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t po
 }
 
 /**
- * \param[in] fn A `wget_stats_callback_t` callback function used to collect DNS statistics
+ * \param[in] dns A `wget_dns_t` instance, created by wget_dns_init().
+ * \param[in] fn A `wget_dns_stats_callback_t` callback function to receive resolve statistics data
+ * \param[in] ctx Context data given to \p fn
  *
  * Set callback function to be called once DNS statistics for a host are collected
  */
-void wget_dns_set_stats(wget_stats_callback_t fn)
+void wget_dns_set_stats_callback(wget_dns_t *dns, wget_dns_stats_callback_t fn, void *ctx)
 {
-	default_dns.stats_callback = fn;
-}
+	if (!dns)
+		dns = &default_dns;
 
-/**
- * \param[in] type A `wget_dns_stats_t` constant representing DNS statistical info to return
- * \param[in] _stats An internal  pointer sent to callback function
- * \return DNS statistical info in question
- *
- * Get the specific DNS statistics information
- */
-const void *wget_dns_get_stats(const wget_dns_stats_t type, const void *_stats)
-{
-	const _stats_data_t *stats = (_stats_data_t *) _stats;
-
-	switch(type) {
-	case WGET_STATS_DNS_HOST:
-		return stats->hostname;
-	case WGET_STATS_DNS_IP:
-		return stats->ip;
-	case WGET_STATS_DNS_PORT:
-		return &(stats->port);
-	case WGET_STATS_DNS_SECS:
-		return &(stats->dns_secs);
-	default:
-		return NULL;
-	}
+	dns->stats_callback = fn;
+	dns->stats_ctx = ctx;
 }
 
 /** @} */

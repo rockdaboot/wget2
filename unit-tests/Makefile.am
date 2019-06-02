@@ -16,7 +16,6 @@ BASE_OBJS = \
   ../src/log.o \
   ../src/options.o \
   ../src/stats.o \
-  ../src/stats_dns.o \
   ../src/stats_tls.o \
   ../src/stats_ocsp.o \
   ../src/stats_server.o \

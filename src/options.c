@@ -838,14 +838,11 @@ static int parse_prefer_family(option_t opt, const char *val, G_GNUC_WGET_UNUSED
 
 static int parse_stats_all(option_t opt, const char *val, const char invert)
 {
-    if (opt->args == -1 && !val && !invert)
+	if (opt->args == -1 && !val && !invert)
 		val = ""; // needed for stats options
 
 	xfree(*((const char **)opt->var));
 	*((const char **)opt->var) = wget_strdup(val);
-
-	xfree(config.stats_dns);
-	config.stats_dns = wget_strdup(val);
 
 	xfree(config.stats_ocsp);
 	config.stats_ocsp = wget_strdup(val);
@@ -858,6 +855,41 @@ static int parse_stats_all(option_t opt, const char *val, const char invert)
 
 	xfree(config.stats_tls);
 	config.stats_tls = wget_strdup(val);
+
+	return 0;
+}
+
+static int parse_stats(option_t opt, const char *val, const char invert)
+{
+	const char *p;
+	char format;
+
+	if (opt->args == -1 && !val && !invert)
+		val = ""; // needed for stats options
+
+	stats_args **stats = (stats_args **) opt->var;
+	if (*stats)
+		xfree((*stats)->filename);
+
+	if ((p = strchr(val, ':'))) {
+		if (!wget_strncasecmp_ascii("human", val, p - val) || !wget_strncasecmp_ascii("h", val, p - val))
+			format = WGET_STATS_FORMAT_HUMAN;
+		else if (!wget_strncasecmp_ascii("csv", val, p - val))
+			format = WGET_STATS_FORMAT_CSV;
+		else {
+			error_printf(_("Unknown stats format '%s'\n"), val);
+			return -1;
+		}
+
+		val = p + 1;
+	} else // no format given
+		format = WGET_STATS_FORMAT_HUMAN;
+
+	if (!*stats)
+		*stats = wget_malloc(sizeof(stats_args));
+
+	(*stats)->filename = shell_expand(val);
+	(*stats)->format = format;
 
 	return 0;
 }
@@ -2048,7 +2080,7 @@ static const struct optionw options[] = {
                   "--stats-all[=[FORMAT:]FILE]\n"
 		}
 	},
-	{ "stats-dns", &config.stats_dns, parse_string, -1, 0,
+	{ "stats-dns", &config.stats_dns_args, parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print DNS stats. (default: off)\n",
 		  "Additional format supported:\n",
@@ -3002,10 +3034,30 @@ static const char *get_xdg_config_home(const char *user_home)
 	return home_dir;
 }
 
-// read config, parse CLI options, check values, set module options
-// and return the number of arguments consumed
 static wget_dns_t *dns;
 
+static void stats_callback_dns(wget_dns_t *_dns, wget_dns_stats_data_t *stats, void *ctx)
+{
+	(void) _dns;
+	FILE *fp = (FILE *) ctx;
+
+	if (config.stats_dns_args->format == WGET_STATS_FORMAT_HUMAN) {
+		wget_fprintf(fp, "  %4lld %s:%hu (%s)\n",
+			stats->dns_secs,
+			stats->hostname ? stats->hostname : "-",
+			stats->port,
+			stats->ip ? stats->ip : "-");
+	} else {
+		wget_fprintf(fp, "%s,%s,%hu,%lld\n",
+			stats->hostname,
+			stats->ip,
+			stats->port,
+			stats->dns_secs);
+	}
+}
+
+// read config, parse CLI options, check values, set module options
+// and return the number of arguments consumed
 int init(int argc, const char **argv)
 {
 	int n, rc;
@@ -3314,6 +3366,17 @@ int init(int argc, const char **argv)
 		return -1;
 	}
 	wget_dns_set_timeout(dns, config.dns_timeout);
+	if (config.stats_dns_args) {
+		config.stats_dns_args->fp =
+			config.stats_dns_args->filename && *config.stats_dns_args->filename && strcmp(config.stats_dns_args->filename, "-") ?
+			fopen(config.stats_dns_args->filename, "w") : stdout;
+		if (!config.stats_dns_args->fp) {
+			wget_error_printf(_("Failed to open '%s' (%d)"), config.stats_dns_args->filename, rc);
+			return -1;
+		}
+		wget_dns_set_stats_callback(dns, stats_callback_dns, config.stats_dns_args->fp);
+	}
+
 	wget_tcp_set_dns(NULL, dns);
 
 	// set module specific options
@@ -3466,7 +3529,7 @@ void deinit(void)
 	xfree(config.username);
 	xfree(config.gnupg_homedir);
 	xfree(config.stats_all);
-	xfree(config.stats_dns);
+//	xfree(config.stats_dns);
 	xfree(config.stats_ocsp);
 	xfree(config.stats_server);
 	xfree(config.stats_site);
@@ -3474,6 +3537,12 @@ void deinit(void)
 	xfree(config.user_config);
 	xfree(config.system_config);
 
+	if (config.stats_dns_args) {
+		if (config.stats_dns_args->fp && config.stats_dns_args->fp != stdout)
+			fclose(config.stats_dns_args->fp);
+		xfree(config.stats_dns_args->filename);
+		xfree(config.stats_dns_args);
+	}
 	wget_iri_free(&config.base);
 
 	wget_vector_free(&config.exclude_directories);

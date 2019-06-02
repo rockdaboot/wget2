@@ -53,6 +53,15 @@ enum {
 	WGET_GPG_VERIFY_SIG_NO_FAIL
 };
 
+typedef struct {
+	const char
+		*filename;
+	FILE
+		*fp;
+	char
+		format;
+} stats_args;
+
 struct config {
 	wget_iri_t
 		*base;
@@ -94,7 +103,6 @@ struct config {
 		*reject_regex,
 		*gnupg_homedir,
 		*stats_all,
-		*stats_dns,
 		*stats_ocsp,
 		*stats_server,
 		*stats_site,
@@ -144,6 +152,8 @@ struct config {
 		*netrc_db; // in-memory .netrc database
 	struct _wget_cookie_db_st
 		*cookie_db;
+	stats_args
+		*stats_dns_args;
 	char
 		*password,
 		*username;

@@ -62,7 +62,7 @@ struct stats_opts {
 		*print;
 };
 
-extern stats_opts_t stats_dns_opts;
+//extern stats_opts_t stats_dns_opts;
 extern stats_opts_t stats_ocsp_opts;
 extern stats_opts_t stats_server_opts;
 extern stats_opts_t stats_tls_opts;

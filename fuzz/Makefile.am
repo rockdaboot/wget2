@@ -67,7 +67,7 @@ if WITH_GPGME
 else
   wget_options_fuzzer_LDADD =
 endif
-wget_options_fuzzer_LDADD += ../src/options.o ../src/log.o ../src/stats.o ../src/stats_dns.o ../src/stats_tls.o \
+wget_options_fuzzer_LDADD += ../src/options.o ../src/log.o ../src/stats.o ../src/stats_tls.o \
  ../src/stats_ocsp.o ../src/stats_server.o ../src/stats_site.o ../src/utils.o ../src/dl.o ../src/plugin.o ../src/testing.o $(LDADD)
 
 
