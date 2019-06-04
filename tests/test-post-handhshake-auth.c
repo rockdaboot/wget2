@@ -28,7 +28,9 @@
 
 #include "libtest.h"
 
-#include <gnutls/gnutls.h>
+#ifdef WITH_GNUTLS
+#  include <gnutls/gnutls.h>
+#endif
 
 #include <microhttpd.h>
 
