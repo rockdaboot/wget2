@@ -801,7 +801,7 @@ void wget_test_start_server(int first_key, ...)
 	int rc, key;
 	va_list args;
 	bool start_http = 1;
-#if defined WITH_GNUTLS || defined WITH_WOLFSSL
+#ifdef WITH_TLS
 	bool start_https = 1;
 #endif
 
@@ -836,7 +836,7 @@ void wget_test_start_server(int first_key, ...)
 			start_http = 0;
 			break;
 		case WGET_TEST_HTTP_ONLY:
-#if defined WITH_GNUTLS || defined WITH_WOLFSSL
+#ifdef WITH_TLS
 			start_https = 0;
 #endif
 			break;
@@ -846,7 +846,7 @@ void wget_test_start_server(int first_key, ...)
 		case WGET_TEST_FEATURE_MHD:
 			break;
 		case WGET_TEST_FEATURE_TLS:
-#if !defined WITH_GNUTLS && !defined WITH_WOLFSSL
+#if !defined WITH_TLS
 			wget_error_printf(_("Test requires TLS. Skipping\n"));
 			exit(WGET_TEST_EXIT_SKIP);
 #endif
@@ -888,7 +888,7 @@ void wget_test_start_server(int first_key, ...)
 			wget_error_printf_exit(_("Failed to start HTTP server, error %d\n"), rc);
 	}
 
-#if defined WITH_GNUTLS || defined WITH_WOLFSSL
+#ifdef WITH_TLS
 	// start HTTPS server
 	if (start_https) {
 		if ((rc = _http_server_start(HTTPS_MODE)) != 0)

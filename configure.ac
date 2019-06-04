@@ -456,20 +456,6 @@ AS_IF([test "x$with_gnutls" != "xno"], [
 ])
 AM_CONDITIONAL([WITH_GNUTLS], [test "x$with_gnutls" = xyes])
 
-AS_IF([test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes], [
-  AC_SEARCH_LIBS(nettle_md5_init, nettle,
-    [with_libnettle=yes; AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])],
-    [with_libnettle=no;  AC_MSG_WARN(*** LIBNETTLE was not found. Fallback to libgcrypt for hashing and checksumming.)])
-
-  AS_IF([test "x$with_libnettle" != xyes], [
-    AC_SEARCH_LIBS(gcry_check_version, gcrypt,
-      [with_gcrypt=yes; AC_DEFINE([WITH_GCRYPT], [1], [Use libgcrypt]) AC_CHECK_HEADERS([gcrypt.h])],
-      [with_gcrypt=no;  AC_MSG_WARN(*** LIBGCRYPT was not found. Metalink checksumming and HTTP authentication are not available.)])
-  ])
-])
-AM_CONDITIONAL([WITH_LIBNETTLE], [test "x$with_libnettle" = xyes])
-AM_CONDITIONAL([WITH_CRYPT], [test "x$with_gcrypt" = xyes])
-
 AC_ARG_WITH(wolfssl, AS_HELP_STRING([--without-wolfssl], [disable WolfSSL support]), with_wolfssl=$withval)
 AS_IF([test "x$with_wolfssl" = xyes], [
   echo "*** $with_wolfssl"
@@ -485,6 +471,25 @@ AS_IF([test "x$with_wolfssl" = xyes], [
   ])
 ])
 AM_CONDITIONAL([WITH_WOLFSSL], [test "x$with_wolfssl" = xyes])
+
+AM_CONDITIONAL([WITH_TLS], [test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes])
+AS_IF([test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes], [
+  AC_DEFINE([WITH_TLS], [1], [Built with TLS support])
+])
+
+AS_IF([test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes], [
+  AC_SEARCH_LIBS(nettle_md5_init, nettle,
+    [with_libnettle=yes; AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])],
+    [with_libnettle=no;  AC_MSG_WARN(*** LIBNETTLE was not found. Fallback to libgcrypt for hashing and checksumming.)])
+
+  AS_IF([test "x$with_libnettle" != xyes], [
+    AC_SEARCH_LIBS(gcry_check_version, gcrypt,
+      [with_gcrypt=yes; AC_DEFINE([WITH_GCRYPT], [1], [Use libgcrypt]) AC_CHECK_HEADERS([gcrypt.h])],
+      [with_gcrypt=no;  AC_MSG_WARN(*** LIBGCRYPT was not found. Metalink checksumming and HTTP authentication are not available.)])
+  ])
+])
+AM_CONDITIONAL([WITH_LIBNETTLE], [test "x$with_libnettle" = xyes])
+AM_CONDITIONAL([WITH_CRYPT], [test "x$with_gcrypt" = xyes])
 
 AC_ARG_WITH(libpsl, AS_HELP_STRING([--without-libpsl], [disable support for libpsl cookie checking]), with_libpsl=$withval, with_libpsl=yes)
 AS_IF([test "x$with_libpsl" != xno], [
