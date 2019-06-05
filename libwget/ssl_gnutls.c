@@ -86,20 +86,13 @@ typedef struct
 		resumed;
 } _stats_data_t;
 
-typedef struct
-{
-	const char
-		*hostname;
-	int
-		nvalid,
-		nrevoked,
-		nignored,
-		stapling;
-} _ocsp_stats_data_t;
-
 static wget_stats_callback_t
-	stats_callback_tls,
-	stats_callback_ocsp;
+	tls_stats_callback;
+
+static wget_ocsp_stats_callback_t
+	ocsp_stats_callback;
+static void
+	*ocsp_stats_ctx;
 
 static struct _config {
 	const char
@@ -1171,15 +1164,15 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	}
 
 #ifdef HAVE_GNUTLS_OCSP_H
-	if (_config.ocsp && stats_callback_ocsp) {
-		_ocsp_stats_data_t stats;
+	if (_config.ocsp && ocsp_stats_callback) {
+		wget_ocsp_stats_data_t stats;
 		stats.hostname = hostname;
 		stats.nvalid = nvalid;
 		stats.nrevoked = nrevoked;
 		stats.nignored = nignored;
 		stats.stapling = ctx->ocsp_stapling;
 
-		stats_callback_ocsp(&stats);
+		ocsp_stats_callback(&stats, ocsp_stats_ctx);
 	}
 
 	if (_config.ocsp_stapling || _config.ocsp) {
@@ -1701,7 +1694,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 
 #ifdef MSG_FASTOPEN
 	if ((rc = wget_tcp_get_tcp_fastopen(tcp))) {
-		if (stats_callback_tls)
+		if (tls_stats_callback)
 			stats.tfo = (char)rc;
 
 		// prepare for TCP FASTOPEN... sendmsg() instead of connect/write on first write
@@ -1738,12 +1731,12 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		}
 	}
 
-	if (stats_callback_tls)
+	if (tls_stats_callback)
 		before_millisecs = wget_get_timemillis();
 
 	ret = _do_handshake(session, sockfd, connect_timeout);
 
-	if (stats_callback_tls) {
+	if (tls_stats_callback) {
 		long long after_millisecs = wget_get_timemillis();
 		stats.tls_secs = after_millisecs - before_millisecs;
 		stats.tls_con = 1;
@@ -1761,12 +1754,12 @@ int wget_ssl_open(wget_tcp_t *tcp)
 				ret = WGET_E_CONNECT;
 		} else {
 			debug_printf("ALPN: Server accepted protocol '%.*s'\n", (int) protocol.size, protocol.data);
-			if (stats_callback_tls)
+			if (tls_stats_callback)
 				stats.alpn_protocol = wget_strmemdup(protocol.data, protocol.size);
 
 			if (!memcmp(protocol.data, "h2", 2)) {
 				tcp->protocol = WGET_PROTOCOL_HTTP_2_0;
-				if (stats_callback_tls)
+				if (tls_stats_callback)
 					stats.http_protocol = WGET_PROTOCOL_HTTP_2_0;
 			}
 		}
@@ -1779,7 +1772,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	if (ret == WGET_E_SUCCESS) {
 		int resumed = gnutls_session_is_resumed(session);
 
-		if (stats_callback_tls) {
+		if (tls_stats_callback) {
 			stats.resumed = resumed;
 			stats.version = gnutls_protocol_get_version(session);
 			gnutls_certificate_get_peers(session, (unsigned int *)&(stats.cert_chain_size));
@@ -1803,9 +1796,9 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		}
 	}
 
-	if (stats_callback_tls) {
+	if (tls_stats_callback) {
 		stats.hostname = hostname;
-		stats_callback_tls(&stats);
+		tls_stats_callback(&stats);
 		xfree(stats.alpn_protocol);
 	}
 
@@ -2005,7 +1998,7 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
  */
 void wget_tcp_set_stats_tls(wget_stats_callback_t fn)
 {
-	stats_callback_tls = fn;
+	tls_stats_callback = fn;
 }
 
 /**
@@ -2046,40 +2039,15 @@ const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
 }
 
 /**
- * \param[in] fn A `wget_stats_callback_t` callback function used to collect OCSP statistics
+ * \param[in] fn A `wget_ssl_stats_callback_ocsp_t` callback function to receive OCSP statistics data
+ * \param[in] ctx Context data given to \p fn
  *
- * Set callback function to be called once OCSP statistics for a host are collected
+ * Set callback function to be called when OCSP statistics are available
  */
-void wget_tcp_set_stats_ocsp(wget_stats_callback_t fn)
+void wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t fn, void *ctx)
 {
-	stats_callback_ocsp = fn;
-}
-
-/**
- * \param[in] type A `wget_ocsp_stats_t` constant representing OCSP statistical info to return
- * \param[in] _stats An internal  pointer sent to callback function
- * \return OCSP statistical info in question
- *
- * Get the specific OCSP statistics information
- */
-const void *wget_tcp_get_stats_ocsp(wget_ocsp_stats_t type, const void *_stats)
-{
-	const _ocsp_stats_data_t *stats = (_ocsp_stats_data_t *) _stats;
-
-	switch(type) {
-	case WGET_STATS_OCSP_HOSTNAME:
-		return stats->hostname;
-	case WGET_STATS_OCSP_VALID:
-		return &(stats->nvalid);
-	case WGET_STATS_OCSP_REVOKED:
-		return &(stats->nrevoked);
-	case WGET_STATS_OCSP_IGNORED:
-		return &(stats->nignored);
-	case WGET_STATS_OCSP_STAPLING:
-		return &(stats->stapling);
-	default:
-		return NULL;
-	}
+	ocsp_stats_callback = fn;
+	ocsp_stats_ctx = ctx;
 }
 
 /** @} */

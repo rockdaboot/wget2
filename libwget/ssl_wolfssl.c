@@ -72,20 +72,13 @@ typedef struct
 		resumed;
 } _stats_data_t;
 
-typedef struct
-{
-	const char
-		*hostname;
-	int
-		nvalid,
-		nrevoked,
-		nignored,
-		stapling;
-} _ocsp_stats_data_t;
-
 static wget_stats_callback_t
-	stats_callback_tls,
-	stats_callback_ocsp;
+	tls_stats_callback;
+
+static wget_ocsp_stats_callback_t
+	ocsp_stats_callback;
+static void
+	*ocsp_stats_ctx;
 
 static struct _config {
 	const char
@@ -913,12 +906,12 @@ int wget_ssl_open(wget_tcp_t *tcp)
 	/* make wolfSSL object nonblocking */
 	wolfSSL_set_using_nonblock(session, 1);
 
-	if (stats_callback_tls)
+	if (tls_stats_callback)
 		before_millisecs = wget_get_timemillis();
 
 	ret = _do_handshake(session, sockfd, connect_timeout);
 
-	if (stats_callback_tls) {
+	if (tls_stats_callback) {
 		long long after_millisecs = wget_get_timemillis();
 		stats.tls_secs = after_millisecs - before_millisecs;
 		stats.tls_con = 1;
@@ -971,7 +964,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 //		debug_printf("Cert chain size %d\n", stats.cert_chain_size);
 		ShowX509Chain(chain, wolfSSL_get_chain_count(chain), "Certificate chain");
 
-		if (stats_callback_tls) {
+		if (tls_stats_callback) {
 			stats.resumed = resumed;
 
 			const char *tlsver = wolfSSL_get_version(session);
@@ -1024,9 +1017,9 @@ int wget_ssl_open(wget_tcp_t *tcp)
 			return WGET_E_CONNECT;
 	}
 
-	if (stats_callback_tls) {
+	if (tls_stats_callback) {
 		stats.hostname = hostname;
-		stats_callback_tls(&stats);
+		tls_stats_callback(&stats);
 		xfree(stats.alpn_protocol);
 	}
 
@@ -1212,7 +1205,7 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
  */
 void wget_tcp_set_stats_tls(wget_stats_callback_t fn)
 {
-	stats_callback_tls = fn;
+	tls_stats_callback = fn;
 }
 
 /**
@@ -1253,40 +1246,15 @@ const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
 }
 
 /**
- * \param[in] fn A `wget_stats_callback_t` callback function used to collect OCSP statistics
+ * \param[in] fn A `wget_ssl_stats_callback_ocsp_t` callback function to receive OCSP statistics data
+ * \param[in] ctx Context data given to \p fn
  *
- * Set callback function to be called once OCSP statistics for a host are collected
+ * Set callback function to be called when OCSP statistics are available
  */
-void wget_tcp_set_stats_ocsp(wget_stats_callback_t fn)
+void wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t fn, void *ctx)
 {
-	stats_callback_ocsp = fn;
-}
-
-/**
- * \param[in] type A `wget_ocsp_stats_t` constant representing OCSP statistical info to return
- * \param[in] _stats An internal  pointer sent to callback function
- * \return OCSP statistical info in question
- *
- * Get the specific OCSP statistics information
- */
-const void *wget_tcp_get_stats_ocsp(wget_ocsp_stats_t type, const void *_stats)
-{
-	const _ocsp_stats_data_t *stats = (_ocsp_stats_data_t *) _stats;
-
-	switch(type) {
-	case WGET_STATS_OCSP_HOSTNAME:
-		return stats->hostname;
-	case WGET_STATS_OCSP_VALID:
-		return &(stats->nvalid);
-	case WGET_STATS_OCSP_REVOKED:
-		return &(stats->nrevoked);
-	case WGET_STATS_OCSP_IGNORED:
-		return &(stats->nignored);
-	case WGET_STATS_OCSP_STAPLING:
-		return &(stats->stapling);
-	default:
-		return NULL;
-	}
+	ocsp_stats_callback = fn;
+	ocsp_stats_ctx = ctx;
 }
 
 /** @} */

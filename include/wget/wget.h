@@ -2733,8 +2733,29 @@ typedef void
 WGETAPI void
 	wget_dns_set_stats_callback(wget_dns_t *dns, wget_dns_stats_callback_t fn, void *ctx);
 
+/**
+ * \ingroup libwget-ssl
+ *
+ * DNS statistics data
+ */
+typedef struct
+{
+	const char
+		*hostname;
+	int
+		nvalid,
+		nrevoked,
+		nignored,
+		stapling;
+} wget_ocsp_stats_data_t;
+
+typedef void
+	(*wget_ocsp_stats_callback_t)(wget_ocsp_stats_data_t *stats, void *ctx);
+
+WGETAPI void
+	wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t fn, void *ctx);
+
 typedef enum {
-	WGET_STATS_TYPE_OCSP = 1,
 	WGET_STATS_TYPE_SERVER = 2,
 	WGET_STATS_TYPE_SITE = 3,
 	WGET_STATS_TYPE_TLS = 4,
@@ -2775,14 +2796,6 @@ typedef enum {
 	WGET_STATS_HPKP_ERROR = 3
 } wget_hpkp_stats_t;
 
-typedef enum {
-	WGET_STATS_OCSP_HOSTNAME = 0,
-	WGET_STATS_OCSP_VALID = 1,
-	WGET_STATS_OCSP_REVOKED = 2,
-	WGET_STATS_OCSP_IGNORED = 3,
-	WGET_STATS_OCSP_STAPLING = 4
-} wget_ocsp_stats_t;
-
 typedef void
 	(*wget_stats_callback_t)(const void *stats);
 
@@ -2800,12 +2813,6 @@ WGETAPI const void *
 
 WGETAPI void
 	wget_tcp_set_stats_site(wget_stats_callback_t fn);
-
-WGETAPI void
-	wget_tcp_set_stats_ocsp(wget_stats_callback_t fn);
-
-WGETAPI const void *
-	wget_tcp_get_stats_ocsp(wget_ocsp_stats_t type, const void *stats);
 
 WGETAPI void
 	host_ips_free(void);

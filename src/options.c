@@ -844,9 +844,6 @@ static int parse_stats_all(option_t opt, const char *val, const char invert)
 	xfree(*((const char **)opt->var));
 	*((const char **)opt->var) = wget_strdup(val);
 
-	xfree(config.stats_ocsp);
-	config.stats_ocsp = wget_strdup(val);
-
 	xfree(config.stats_server);
 	config.stats_server = wget_strdup(val);
 
@@ -2087,7 +2084,7 @@ static const struct optionw options[] = {
                   "--stats-dns[=[FORMAT:]FILE]\n"
 		}
 	},
-	{ "stats-ocsp", &config.stats_ocsp, parse_string, -1, 0,
+	{ "stats-ocsp", &config.stats_ocsp_args, parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print OCSP stats. (default: off)\n",
 		  "Additional format supported:\n",
@@ -3056,6 +3053,26 @@ static void stats_callback_dns(wget_dns_t *_dns, wget_dns_stats_data_t *stats, v
 	}
 }
 
+static void stats_callback_ocsp(wget_ocsp_stats_data_t *stats, void *ctx)
+{
+	FILE *fp = (FILE *) ctx;
+
+	if (config.stats_ocsp_args->format == WGET_STATS_FORMAT_HUMAN) {
+		wget_fprintf(fp, "  %s:\n", stats->hostname);
+		wget_fprintf(fp, "    Stapling       : %d\n", stats->stapling);
+		wget_fprintf(fp, "    Valid          : %d\n", stats->nvalid);
+		wget_fprintf(fp, "    Revoked        : %d\n", stats->nrevoked);
+		wget_fprintf(fp, "    Ignored        : %d\n\n", stats->nignored);
+	} else {
+		wget_fprintf(fp, "%s,%d,%d,%d,%d\n",
+			stats->hostname,
+			stats->stapling,
+			stats->nvalid,
+			stats->nrevoked,
+			stats->nignored);
+	}
+}
+
 // read config, parse CLI options, check values, set module options
 // and return the number of arguments consumed
 int init(int argc, const char **argv)
@@ -3366,6 +3383,7 @@ int init(int argc, const char **argv)
 		return -1;
 	}
 	wget_dns_set_timeout(dns, config.dns_timeout);
+
 	if (config.stats_dns_args) {
 		config.stats_dns_args->fp =
 			config.stats_dns_args->filename && *config.stats_dns_args->filename && strcmp(config.stats_dns_args->filename, "-") ?
@@ -3378,6 +3396,17 @@ int init(int argc, const char **argv)
 	}
 
 	wget_tcp_set_dns(NULL, dns);
+
+	if (config.stats_ocsp_args) {
+		config.stats_ocsp_args->fp =
+			config.stats_ocsp_args->filename && *config.stats_ocsp_args->filename && strcmp(config.stats_ocsp_args->filename, "-") ?
+			fopen(config.stats_ocsp_args->filename, "w") : stdout;
+		if (!config.stats_ocsp_args->fp) {
+			wget_error_printf(_("Failed to open '%s' (%d)"), config.stats_ocsp_args->filename, rc);
+			return -1;
+		}
+		wget_ssl_set_stats_callback_ocsp(stats_callback_ocsp, config.stats_ocsp_args->fp);
+	}
 
 	// set module specific options
 	wget_tcp_set_timeout(NULL, config.read_timeout);
@@ -3530,7 +3559,7 @@ void deinit(void)
 	xfree(config.gnupg_homedir);
 	xfree(config.stats_all);
 //	xfree(config.stats_dns);
-	xfree(config.stats_ocsp);
+//	xfree(config.stats_ocsp);
 	xfree(config.stats_server);
 	xfree(config.stats_site);
 	xfree(config.stats_tls);

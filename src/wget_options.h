@@ -103,7 +103,6 @@ struct config {
 		*reject_regex,
 		*gnupg_homedir,
 		*stats_all,
-		*stats_ocsp,
 		*stats_server,
 		*stats_site,
 		*stats_tls,
@@ -153,7 +152,8 @@ struct config {
 	struct _wget_cookie_db_st
 		*cookie_db;
 	stats_args
-		*stats_dns_args;
+		*stats_dns_args,
+		*stats_ocsp_args;
 	char
 		*password,
 		*username;
