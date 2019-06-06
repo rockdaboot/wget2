@@ -103,7 +103,6 @@ struct config {
 		*reject_regex,
 		*gnupg_homedir,
 		*stats_all,
-		*stats_server,
 		*stats_site,
 		*system_config,
 		*user_config,
@@ -153,6 +152,7 @@ struct config {
 	stats_args
 		*stats_dns_args,
 		*stats_ocsp_args,
+		*stats_server_args,
 		*stats_tls_args;
 	char
 		*password,

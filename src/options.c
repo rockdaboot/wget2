@@ -844,9 +844,6 @@ static int parse_stats_all(option_t opt, const char *val, const char invert)
 	xfree(*((const char **)opt->var));
 	*((const char **)opt->var) = wget_strdup(val);
 
-	xfree(config.stats_server);
-	config.stats_server = wget_strdup(val);
-
 	xfree(config.stats_site);
 	config.stats_site = wget_strdup(val);
 
@@ -2088,7 +2085,7 @@ static const struct optionw options[] = {
                   "--stats-ocsp[=[FORMAT:]FILE]\n"
 		}
 	},
-	{ "stats-server", &config.stats_server, parse_string, -1, 0,
+	{ "stats-server", &config.stats_server_args, parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print server stats. (default: off)\n",
 		  "Additional format supported:\n",
@@ -3111,6 +3108,41 @@ static void stats_callback_tls(wget_tls_stats_data_t *stats, void *ctx)
 	}
 }
 
+G_GNUC_WGET_CONST static const char *_hpkp_string(wget_hpkp_stats_t hpkp)
+{
+	switch (hpkp) {
+	case WGET_STATS_HPKP_NO: return "HPKP_NO";
+	case WGET_STATS_HPKP_MATCH: return "HPKP_MATCH";
+	case WGET_STATS_HPKP_NOMATCH: return "HPKP_NOMATCH";
+	case WGET_STATS_HPKP_ERROR: return "HPKP_ERROR";
+	default: return "?";
+	}
+}
+
+static void stats_callback_server(wget_server_stats_data_t *stats, void *ctx)
+{
+	FILE *fp = (FILE *) ctx;
+
+	if (config.stats_server_args->format == WGET_STATS_FORMAT_HUMAN) {
+		wget_fprintf(fp, "  %s:\n", NULL_TO_DASH(stats->hostname));
+		wget_fprintf(fp, "    IP             : %s\n", NULL_TO_DASH(stats->ip));
+		wget_fprintf(fp, "    Scheme         : %s\n", stats->scheme);
+		wget_fprintf(fp, "    HPKP           : %s\n", _hpkp_string(stats->hpkp));
+		wget_fprintf(fp, "    HPKP New Entry : %s\n", ON_OFF_DASH(stats->hpkp_new));
+		wget_fprintf(fp, "    HSTS           : %s\n", ON_OFF_DASH(stats->hsts));
+		wget_fprintf(fp, "    CSP            : %s\n\n", ON_OFF_DASH(stats->csp));
+	} else {
+		wget_fprintf(fp, "%s,%s,%s,%d,%d,%d,%d\n",
+			stats->hostname ? stats->hostname : "",
+			stats->ip ? stats->ip : "",
+			stats->scheme,
+			(int) stats->hpkp,
+			stats->hpkp_new,
+			stats->hsts,
+			stats->csp);
+	}
+}
+
 // read config, parse CLI options, check values, set module options
 // and return the number of arguments consumed
 int init(int argc, const char **argv)
@@ -3457,6 +3489,17 @@ int init(int argc, const char **argv)
 		wget_ssl_set_stats_callback_tls(stats_callback_tls, config.stats_tls_args->fp);
 	}
 
+	if (config.stats_server_args) {
+		config.stats_server_args->fp =
+			config.stats_server_args->filename && *config.stats_server_args->filename && strcmp(config.stats_server_args->filename, "-") ?
+			fopen(config.stats_server_args->filename, "w") : stdout;
+		if (!config.stats_server_args->fp) {
+			wget_error_printf(_("Failed to open '%s' (%d)"), config.stats_server_args->filename, rc);
+			return -1;
+		}
+		wget_server_set_stats_callback(stats_callback_server, config.stats_server_args->fp);
+	}
+
 	// set module specific options
 	wget_tcp_set_timeout(NULL, config.read_timeout);
 	wget_tcp_set_connect_timeout(NULL, config.connect_timeout);
@@ -3609,7 +3652,7 @@ void deinit(void)
 	xfree(config.stats_all);
 //	xfree(config.stats_dns);
 //	xfree(config.stats_ocsp);
-	xfree(config.stats_server);
+//	xfree(config.stats_server);
 	xfree(config.stats_site);
 //	xfree(config.stats_tls);
 	xfree(config.user_config);
@@ -3634,6 +3677,13 @@ void deinit(void)
 			fclose(config.stats_tls_args->fp);
 		xfree(config.stats_tls_args->filename);
 		xfree(config.stats_tls_args);
+	}
+
+	if (config.stats_server_args) {
+		if (config.stats_server_args->fp && config.stats_server_args->fp != stdout)
+			fclose(config.stats_server_args->fp);
+		xfree(config.stats_server_args->filename);
+		xfree(config.stats_server_args);
 	}
 
 	wget_iri_free(&config.base);

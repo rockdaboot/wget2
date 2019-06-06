@@ -121,20 +121,10 @@ typedef struct {
 		*scheme;
 } HOST;
 
-typedef struct
-{
-	const char
-		*hostname,
-		*ip,
-		*scheme;
-	char
-		hsts,
-		csp,
-		hpkp_new;
-	wget_hpkp_stats_t hpkp;
-} _stats_data_t;
-
-static wget_stats_callback_t stats_callback;
+static wget_server_stats_callback_t
+	server_stats_callback;
+static void
+	*server_stats_ctx;
 
 // This is the default function for collecting body data
 static int _body_callback(wget_http_response_t *resp, void *user_data G_GNUC_WGET_UNUSED, const char *data, size_t length)
@@ -672,7 +662,7 @@ static const HOST *host_add(const HOST *hostp)
 void host_ips_free(void)
 {
 	// We don't need mutex locking here - this function is called on exit when all threads have ceased.
-	if (stats_callback)
+	if (server_stats_callback)
 		wget_hashmap_free(&hosts);
 }
 
@@ -690,7 +680,7 @@ static void _server_stats_add(wget_http_connection_t *conn, wget_http_response_t
 	wget_thread_mutex_lock(hosts_mutex);
 
 	if (!hosts || !wget_hashmap_contains(hosts, hostp)) {
-		_stats_data_t stats;
+		wget_server_stats_data_t stats;
 
 		stats.hostname = hostp->hostname;
 		stats.ip = hostp->ip;
@@ -700,7 +690,7 @@ static void _server_stats_add(wget_http_connection_t *conn, wget_http_response_t
 		stats.hsts = resp ? (resp->hsts ? 1 : 0) : -1;
 		stats.csp = resp ? (resp->csp ? 1 : 0) : -1;
 
-		stats_callback(&stats);
+		server_stats_callback(&stats, server_stats_ctx);
 		host_add(hostp);
 	} else
 		_free_host_entry(hostp);
@@ -805,7 +795,7 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 		conn->pending_requests = wget_vector_create(16, NULL);
 #endif
 	} else {
-		if (stats_callback && (rc == WGET_E_CERTIFICATE))
+		if (server_stats_callback && (rc == WGET_E_CERTIFICATE))
 			_server_stats_add(conn, NULL);
 
 		wget_http_close(_conn);
@@ -1023,7 +1013,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 		resp = wget_vector_get(conn->received_http2_responses, 0); // should use double linked lists here
 
-		if (stats_callback)
+		if (server_stats_callback)
 			_server_stats_add(conn, resp);
 
 		if (resp) {
@@ -1086,7 +1076,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 
 			resp->req = req;
 
-			if (stats_callback)
+			if (server_stats_callback)
 				_server_stats_add(conn, resp);
 
 			if (req->header_callback) {
@@ -1497,13 +1487,15 @@ void wget_http_abort_connection(wget_http_connection_t *conn)
 }
 
 /**
- * \param[in] fn A `wget_stats_callback_t` callback function used to collect Server statistics
+ * \param[in] fn A `wget_server_stats_callback_t` callback function to receive server statistics data
+ * \param[in] ctx Context data given to \p fn
  *
- * Set callback function to be called once Server statistics for a host are collected
+ * Set callback function to be called when server statistics are available
  */
-void wget_tcp_set_stats_server(wget_stats_callback_t fn)
+void wget_server_set_stats_callback(wget_server_stats_callback_t fn, void *ctx)
 {
-	stats_callback = fn;
+	server_stats_callback = fn;
+	server_stats_ctx = ctx;
 }
 
 /**
@@ -1513,35 +1505,4 @@ void wget_tcp_set_stats_server(wget_stats_callback_t fn)
  */
 void wget_tcp_set_stats_site(G_GNUC_WGET_UNUSED wget_stats_callback_t fn)
 {
-}
-
-/**
- * \param[in] type A `wget_server_stats_t` constant representing Server statistical info to return
- * \param[in] _stats An internal  pointer sent to callback function
- * \return Server statistical info in question
- *
- * Get the specific Server statistics information
- */
-const void *wget_tcp_get_stats_server(wget_server_stats_t type, const void *_stats)
-{
-	const _stats_data_t *stats = (_stats_data_t *) _stats;
-
-	switch(type) {
-	case WGET_STATS_SERVER_HOSTNAME:
-		return stats->hostname;
-	case WGET_STATS_SERVER_IP:
-		return stats->ip;
-	case WGET_STATS_SERVER_SCHEME:
-		return stats->scheme;
-	case WGET_STATS_SERVER_HPKP:
-		return &(stats->hpkp);
-	case WGET_STATS_SERVER_HPKP_NEW:
-		return &(stats->hpkp_new);
-	case WGET_STATS_SERVER_HSTS:
-		return &(stats->hsts);
-	case WGET_STATS_SERVER_CSP:
-		return &(stats->csp);
-	default:
-		return NULL;
-	}
 }

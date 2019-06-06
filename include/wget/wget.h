@@ -2715,6 +2715,8 @@ struct wget_plugin_vtable
  * \ingroup libwget-dns
  *
  * DNS statistics data
+ *
+ * @{
  */
 typedef struct
 {
@@ -2736,7 +2738,9 @@ WGETAPI void
 /**
  * \ingroup libwget-ssl
  *
- * DNS statistics data
+ * TLS statistics data
+ *
+ * @{
  */
 typedef struct
 {
@@ -2754,7 +2758,15 @@ typedef void
 
 WGETAPI void
 	wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t fn, void *ctx);
+/** @} */
 
+/**
+ * \ingroup libwget-ssl
+ *
+ * OCSP statistics data
+ *
+ * @{
+ */
 typedef struct
 {
 	const char
@@ -2779,26 +2791,7 @@ typedef void
 
 WGETAPI void
 	wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t fn, void *ctx);
-
-typedef enum {
-	WGET_STATS_TYPE_SERVER = 2,
-	WGET_STATS_TYPE_SITE = 3,
-} wget_stats_type_t;
-
-typedef enum {
-	WGET_STATS_FORMAT_HUMAN = 0,
-	WGET_STATS_FORMAT_CSV = 1,
-} wget_stats_format_t;
-
-typedef enum {
-	WGET_STATS_SERVER_HOSTNAME = 0,
-	WGET_STATS_SERVER_IP = 1,
-	WGET_STATS_SERVER_SCHEME = 2,
-	WGET_STATS_SERVER_HPKP = 3,
-	WGET_STATS_SERVER_HPKP_NEW = 4,
-	WGET_STATS_SERVER_HSTS = 5,
-	WGET_STATS_SERVER_CSP = 6
-} wget_server_stats_t;
+/** @} */
 
 typedef enum {
 	WGET_STATS_HPKP_NO = 0,
@@ -2807,14 +2800,37 @@ typedef enum {
 	WGET_STATS_HPKP_ERROR = 3
 } wget_hpkp_stats_t;
 
+typedef struct
+{
+	const char
+		*hostname,
+		*ip,
+		*scheme;
+	wget_hpkp_stats_t
+		hpkp;
+	char
+		hsts,
+		csp,
+		hpkp_new;
+} wget_server_stats_data_t;
+
 typedef void
-	(*wget_stats_callback_t)(const void *stats);
+	(*wget_server_stats_callback_t)(wget_server_stats_data_t *stats, void *ctx);
 
 WGETAPI void
-	wget_tcp_set_stats_server(wget_stats_callback_t fn);
+	wget_server_set_stats_callback(wget_server_stats_callback_t fn, void *ctx);
 
-WGETAPI const void *
-	wget_tcp_get_stats_server(wget_server_stats_t type, const void *stats);
+typedef enum {
+	WGET_STATS_TYPE_SITE = 3,
+} wget_stats_type_t;
+
+typedef enum {
+	WGET_STATS_FORMAT_HUMAN = 0,
+	WGET_STATS_FORMAT_CSV = 1,
+} wget_stats_format_t;
+
+typedef void
+	(*wget_stats_callback_t)(const void *stats);
 
 WGETAPI void
 	wget_tcp_set_stats_site(wget_stats_callback_t fn);
