@@ -1585,6 +1585,11 @@ Go to background immediately after startup. If no output file is specified via t
   Wget2 requests HTTP/2 via ALPN. If available it is preferred over HTTP/1.1.
   Up to 30 streams are used in parallel within a single connection.
 
+### `--http2-only`
+
+  Resist on using HTTP/2 and error if a server doesn't accept it.
+  This is mainly for testing.
+
 ### `--https-enforce=mode`
 
   Sets how to deal with URLs that are not explicitly HTTPS (where scheme isn't https://) (default: none)

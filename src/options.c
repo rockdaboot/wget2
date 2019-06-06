@@ -1622,6 +1622,11 @@ static const struct optionw options[] = {
 		{ "Use HTTP/2 protocol if possible. (default: on)\n"
 		}
 	},
+	{ "http2-only", &config.http2_only, parse_bool, -1, 0,
+		SECTION_SSL,
+		{ "Only use HTTP/2 protocol, error if server doesn't offer it. (default: off)\n"
+		}
+	},
 	{ "http2-request-window", &config.http2_request_window, parse_integer, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Max. number of parallel streams per HTTP/2\n",
@@ -3342,7 +3347,10 @@ int init(int argc, const char **argv)
 	wget_ssl_set_config_string(WGET_SSL_CRL_FILE, config.crl_file);
 	wget_ssl_set_config_object(WGET_SSL_OCSP_CACHE, config.ocsp_db);
 #ifdef WITH_LIBNGHTTP2
-	wget_ssl_set_config_string(WGET_SSL_ALPN, config.http2 ? "h2,http/1.1" : NULL);
+	if (config.http2_only)
+		wget_ssl_set_config_string(WGET_SSL_ALPN, config.http2 ? "h2" : NULL);
+	else
+		wget_ssl_set_config_string(WGET_SSL_ALPN, config.http2 ? "h2,http/1.1" : NULL);
 #endif
 	wget_ssl_set_config_object(WGET_SSL_SESSION_CACHE, config.tls_session_db);
 	wget_ssl_set_config_object(WGET_SSL_HPKP_CACHE, config.hpkp_db);

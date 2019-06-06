@@ -1761,9 +1761,11 @@ int wget_ssl_open(wget_tcp_t *tcp)
 #if GNUTLS_VERSION_NUMBER >= 0x030200
 	if (_config.alpn) {
 		gnutls_datum_t protocol;
-		if ((rc = gnutls_alpn_get_selected_protocol(session, &protocol)))
+		if ((rc = gnutls_alpn_get_selected_protocol(session, &protocol))) {
 			debug_printf("GnuTLS: Get ALPN: %s\n", gnutls_strerror(rc));
-		else {
+			if (!strstr(_config.alpn,"http/1.1"))
+				ret = WGET_E_CONNECT;
+		} else {
 			debug_printf("ALPN: Server accepted protocol '%.*s'\n", (int) protocol.size, protocol.data);
 			if (stats_callback_tls)
 				stats.alpn_protocol = wget_strmemdup(protocol.data, protocol.size);

@@ -181,6 +181,7 @@ struct config {
 		fsync_policy,
 		netrc,
 		http2,
+		http2_only,
 		ocsp_stapling,
 		ocsp,
 		mirror,
