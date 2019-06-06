@@ -119,12 +119,11 @@ Debian/Testing:
       - unit-tests/*.log
       - tests/*.log
 
-Debian/Unstable:
+Debian/WolfSSL:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - git checkout wolfssl
     - ./bootstrap --skip-po && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --without-gnutls --with-wolfssl
     - make -j$(nproc)
