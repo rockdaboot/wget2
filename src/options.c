@@ -850,9 +850,6 @@ static int parse_stats_all(option_t opt, const char *val, const char invert)
 	xfree(config.stats_site);
 	config.stats_site = wget_strdup(val);
 
-	xfree(config.stats_tls);
-	config.stats_tls = wget_strdup(val);
-
 	return 0;
 }
 
@@ -2105,7 +2102,7 @@ static const struct optionw options[] = {
                   "--stats-site[=[FORMAT:]FILE]\n"
 		}
 	},
-	{ "stats-tls", &config.stats_tls, parse_string, -1, 0,
+	{ "stats-tls", &config.stats_tls_args, parse_stats, -1, 0,
 		SECTION_STARTUP,
 		{ "Print TLS stats. (default: off)\n",
 		  "Additional format supported:\n",
@@ -3073,6 +3070,47 @@ static void stats_callback_ocsp(wget_ocsp_stats_data_t *stats, void *ctx)
 	}
 }
 
+static const char *_tlsversion_string(int v)
+{
+	switch (v) {
+	case 1: return "SSL3";
+	case 2: return "TLS1.0";
+	case 3: return "TLS1.1";
+	case 4: return "TLS1.2";
+	case 5: return "TLS1.3";
+	default: return "?";
+	}
+}
+
+static void stats_callback_tls(wget_tls_stats_data_t *stats, void *ctx)
+{
+	FILE *fp = (FILE *) ctx;
+
+	if (config.stats_tls_args->format == WGET_STATS_FORMAT_HUMAN) {
+		wget_fprintf(fp, "  %s:\n", stats->hostname);
+		wget_fprintf(fp, "    Version         : %s\n", _tlsversion_string(stats->version));
+		wget_fprintf(fp, "    False Start     : %s\n", ON_OFF_DASH(stats->false_start));
+		wget_fprintf(fp, "    TFO             : %s\n", ON_OFF_DASH(stats->tfo));
+		wget_fprintf(fp, "    ALPN Protocol   : %s\n", stats->alpn_protocol ? stats->alpn_protocol : "-");
+		wget_fprintf(fp, "    Resumed         : %s\n", YES_NO(stats->resumed));
+		wget_fprintf(fp, "    TCP Protocol    : %s\n", HTTP_1_2(stats->http_protocol));
+		wget_fprintf(fp, "    Cert Chain Size : %d\n", stats->cert_chain_size);
+		wget_fprintf(fp, "    TLS negotiation\n");
+		wget_fprintf(fp, "    duration (ms)   : %lld\n\n", stats->tls_secs);
+	} else {
+		wget_fprintf(fp, "%s,%d,%d,%d,%d,%s,%d,%d,%lld\n",
+			stats->hostname,
+			stats->version,
+			stats->false_start,
+			stats->tfo,
+			stats->resumed,
+			stats->alpn_protocol ? stats->alpn_protocol : "",
+			stats->http_protocol,
+			stats->cert_chain_size,
+			stats->tls_secs);
+	}
+}
+
 // read config, parse CLI options, check values, set module options
 // and return the number of arguments consumed
 int init(int argc, const char **argv)
@@ -3408,6 +3446,17 @@ int init(int argc, const char **argv)
 		wget_ssl_set_stats_callback_ocsp(stats_callback_ocsp, config.stats_ocsp_args->fp);
 	}
 
+	if (config.stats_tls_args) {
+		config.stats_tls_args->fp =
+			config.stats_tls_args->filename && *config.stats_tls_args->filename && strcmp(config.stats_tls_args->filename, "-") ?
+			fopen(config.stats_tls_args->filename, "w") : stdout;
+		if (!config.stats_tls_args->fp) {
+			wget_error_printf(_("Failed to open '%s' (%d)"), config.stats_tls_args->filename, rc);
+			return -1;
+		}
+		wget_ssl_set_stats_callback_tls(stats_callback_tls, config.stats_tls_args->fp);
+	}
+
 	// set module specific options
 	wget_tcp_set_timeout(NULL, config.read_timeout);
 	wget_tcp_set_connect_timeout(NULL, config.connect_timeout);
@@ -3562,7 +3611,7 @@ void deinit(void)
 //	xfree(config.stats_ocsp);
 	xfree(config.stats_server);
 	xfree(config.stats_site);
-	xfree(config.stats_tls);
+//	xfree(config.stats_tls);
 	xfree(config.user_config);
 	xfree(config.system_config);
 
@@ -3572,6 +3621,21 @@ void deinit(void)
 		xfree(config.stats_dns_args->filename);
 		xfree(config.stats_dns_args);
 	}
+
+	if (config.stats_ocsp_args) {
+		if (config.stats_ocsp_args->fp && config.stats_ocsp_args->fp != stdout)
+			fclose(config.stats_ocsp_args->fp);
+		xfree(config.stats_ocsp_args->filename);
+		xfree(config.stats_ocsp_args);
+	}
+
+	if (config.stats_tls_args) {
+		if (config.stats_tls_args->fp && config.stats_tls_args->fp != stdout)
+			fclose(config.stats_tls_args->fp);
+		xfree(config.stats_tls_args->filename);
+		xfree(config.stats_tls_args);
+	}
+
 	wget_iri_free(&config.base);
 
 	wget_vector_free(&config.exclude_directories);

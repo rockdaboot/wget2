@@ -105,7 +105,6 @@ struct config {
 		*stats_all,
 		*stats_server,
 		*stats_site,
-		*stats_tls,
 		*system_config,
 		*user_config,
 		*hsts_file,
@@ -153,7 +152,8 @@ struct config {
 		*cookie_db;
 	stats_args
 		*stats_dns_args,
-		*stats_ocsp_args;
+		*stats_ocsp_args,
+		*stats_tls_args;
 	char
 		*password,
 		*username;

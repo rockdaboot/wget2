@@ -2755,29 +2755,40 @@ typedef void
 WGETAPI void
 	wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t fn, void *ctx);
 
+typedef struct
+{
+	const char
+		*hostname,
+		*alpn_protocol;
+	long long
+		tls_secs; //milliseconds
+	int
+		version,
+		cert_chain_size;
+	char
+		http_protocol,
+		false_start,
+		tfo;
+	bool
+		tls_con,
+		resumed;
+} wget_tls_stats_data_t;
+
+typedef void
+	(*wget_tls_stats_callback_t)(wget_tls_stats_data_t *stats, void *ctx);
+
+WGETAPI void
+	wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t fn, void *ctx);
+
 typedef enum {
 	WGET_STATS_TYPE_SERVER = 2,
 	WGET_STATS_TYPE_SITE = 3,
-	WGET_STATS_TYPE_TLS = 4,
 } wget_stats_type_t;
 
 typedef enum {
 	WGET_STATS_FORMAT_HUMAN = 0,
 	WGET_STATS_FORMAT_CSV = 1,
 } wget_stats_format_t;
-
-typedef enum {
-	WGET_STATS_TLS_HOSTNAME = 0,
-	WGET_STATS_TLS_VERSION = 1,
-	WGET_STATS_TLS_FALSE_START = 2,
-	WGET_STATS_TLS_TFO = 3,
-	WGET_STATS_TLS_ALPN_PROTO = 4,
-	WGET_STATS_TLS_SECS = 5,
-	WGET_STATS_TLS_CON = 6,
-	WGET_STATS_TLS_RESUMED = 7,
-	WGET_STATS_TLS_HTTP_PROTO = 8,
-	WGET_STATS_TLS_CERT_CHAIN_SIZE = 9
-} wget_tls_stats_t;
 
 typedef enum {
 	WGET_STATS_SERVER_HOSTNAME = 0,
@@ -2798,12 +2809,6 @@ typedef enum {
 
 typedef void
 	(*wget_stats_callback_t)(const void *stats);
-
-WGETAPI void
-	wget_tcp_set_stats_tls(wget_stats_callback_t fn);
-
-WGETAPI const void *
-	wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *stats);
 
 WGETAPI void
 	wget_tcp_set_stats_server(wget_stats_callback_t fn);

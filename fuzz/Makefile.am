@@ -67,7 +67,7 @@ if WITH_GPGME
 else
   wget_options_fuzzer_LDADD =
 endif
-wget_options_fuzzer_LDADD += ../src/options.o ../src/log.o ../src/stats.o ../src/stats_tls.o \
+wget_options_fuzzer_LDADD += ../src/options.o ../src/log.o ../src/stats.o \
  ../src/stats_server.o ../src/stats_site.o ../src/utils.o ../src/dl.o ../src/plugin.o ../src/testing.o $(LDADD)
 
 
@@ -97,7 +97,7 @@ oss-fuzz:
 	fuzzer=$$(basename $$ccfile .c); \
 	$$CXX $$CXXFLAGS -I$(top_srcdir)/include/wget/ -I$(top_srcdir) \
 	"$${fuzzer}.c" -o "$${fuzzer}" \
-	../src/options.o ../src/log.o ../src/stats.o ../src/stats_tls.o \
+	../src/options.o ../src/log.o ../src/stats.o \
 	../src/stats_server.o ../src/stats_site.o ../src/utils.o ../src/dl.o ../src/plugin.o ../src/testing.o \
 	../libwget/.libs/libwget.a $${LIB_FUZZING_ENGINE} \
 	-Wl,-Bstatic $${XLIBS} -Wl,-Bdynamic -lgnutls; \

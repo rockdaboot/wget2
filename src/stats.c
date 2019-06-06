@@ -39,15 +39,15 @@ extern stats_print_func_t
 //	print_dns[],
 //	print_ocsp[],
 	print_server[],
-	print_site,
-	print_tls[];
+	print_site;
+//	print_tls[];
 
 static stats_opts_t *stats_opts[] = {
 //	[WGET_STATS_TYPE_DNS] = &stats_dns_opts,
 //	[WGET_STATS_TYPE_OCSP] = &stats_ocsp_opts,
 	[WGET_STATS_TYPE_SERVER] = &stats_server_opts,
 	[WGET_STATS_TYPE_SITE] = &stats_site_opts,
-	[WGET_STATS_TYPE_TLS] = &stats_tls_opts,
+//	[WGET_STATS_TYPE_TLS] = &stats_tls_opts,
 };
 
 static int stats_parse_options(const char *val, wget_stats_format_t *format, const char **filename)

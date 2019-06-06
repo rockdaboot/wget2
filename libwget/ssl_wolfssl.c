@@ -53,27 +53,10 @@
  * @{
  */
 
-typedef struct
-{
-	const char
-		*hostname,
-		*alpn_protocol;
-	long long
-		tls_secs; //milliseconds
-	int
-		version,
-		cert_chain_size;
-	char
-		http_protocol,
-		false_start,
-		tfo;
-	bool
-		tls_con,
-		resumed;
-} _stats_data_t;
-
-static wget_stats_callback_t
+static wget_tls_stats_callback_t
 	tls_stats_callback;
+static void
+	*tls_stats_ctx;
 
 static wget_ocsp_stats_callback_t
 	ocsp_stats_callback;
@@ -460,7 +443,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	}
 
 	if (_config.ocsp && stats_callback_ocsp) {
-		_ocsp_stats_data_t stats;
+		wget_ocsp_stats_data_t stats;
 		stats.hostname = hostname;
 		stats.nvalid = nvalid;
 		stats.nrevoked = nrevoked;
@@ -847,7 +830,7 @@ static void ShowX509Chain(WOLFSSL_X509_CHAIN *chain, int count, const char *hdr)
 int wget_ssl_open(wget_tcp_t *tcp)
 {
 	WOLFSSL *session;
-	_stats_data_t stats = {
+	wget_tls_stats_data_t stats = {
 			.alpn_protocol = NULL,
 			.version = -1,
 			.false_start = -1,
@@ -1019,7 +1002,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 
 	if (tls_stats_callback) {
 		stats.hostname = hostname;
-		tls_stats_callback(&stats);
+		tls_stats_callback(&stats, tls_stats_ctx);
 		xfree(stats.alpn_protocol);
 	}
 
@@ -1199,50 +1182,15 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 }
 
 /**
- * \param[in] fn A `wget_stats_callback_t` callback function used to collect TLS statistics
+ * \param[in] fn A `wget_ssl_stats_callback_tls_t` callback function to receive TLS statistics data
+ * \param[in] ctx Context data given to \p fn
  *
- * Set callback function to be called once TLS statistics for a host are collected
+ * Set callback function to be called when TLS statistics are available
  */
-void wget_tcp_set_stats_tls(wget_stats_callback_t fn)
+void wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t fn, void *ctx)
 {
 	tls_stats_callback = fn;
-}
-
-/**
- * \param[in] type A `wget_tls_stats_t` constant representing TLS statistical info to return
- * \param[in] _stats An internal  pointer sent to callback function
- * \return TLS statistical info in question
- *
- * Get the specific TLS statistics information
- */
-const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *_stats)
-{
-	const _stats_data_t *stats = (_stats_data_t *) _stats;
-
-	switch(type) {
-	case WGET_STATS_TLS_HOSTNAME:
-		return stats->hostname;
-	case WGET_STATS_TLS_VERSION:
-		return &stats->version;
-	case WGET_STATS_TLS_FALSE_START:
-		return &(stats->false_start);
-	case WGET_STATS_TLS_TFO:
-		return &(stats->tfo);
-	case WGET_STATS_TLS_ALPN_PROTO:
-		return stats->alpn_protocol;
-	case WGET_STATS_TLS_CON:
-		return &(stats->tls_con);
-	case WGET_STATS_TLS_RESUMED:
-		return &(stats->resumed);
-	case WGET_STATS_TLS_HTTP_PROTO:
-		return &(stats->http_protocol);
-	case WGET_STATS_TLS_CERT_CHAIN_SIZE:
-		return &(stats->cert_chain_size);
-	case WGET_STATS_TLS_SECS:
-		return &(stats->tls_secs);
-	default:
-		return NULL;
-	}
+	tls_stats_ctx = ctx;
 }
 
 /**
