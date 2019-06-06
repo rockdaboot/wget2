@@ -247,7 +247,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   This option does not influence the reading of config files.
 
-### `--stats-dns[=[FORMAT:]FILE]`
+### `--stats-dns=[FORMAT:]FILE`
 
   Save DNS stats in format `FORMAT`, in file `FILE`.
 
@@ -259,7 +259,7 @@ Go to background immediately after startup. If no output file is specified via t
 
     `Duration` is given in milliseconds.
 
-### `--stats-tls[=[FORMAT:]FILE]`
+### `--stats-tls=[FORMAT:]FILE`
 
   Save TLS stats in format `FORMAT`, in file `FILE`.
 
@@ -285,7 +285,7 @@ Go to background immediately after startup. If no output file is specified via t
 
     `Duration` is given in milliseconds.
 
-### `--stats-ocsp[=[FORMAT:]FILE]`
+### `--stats-ocsp=[FORMAT:]FILE`
 
   Save OCSP stats in format `FORMAT`, in file `FILE`.
 
@@ -304,7 +304,7 @@ Go to background immediately after startup. If no output file is specified via t
     `Ignored` how many server certificates had been ignored or OCSP responses missing.
 
 
-### `--stats-server[=[FORMAT:]FILE]`
+### `--stats-server=[FORMAT:]FILE`
 
   Save Server stats in format `FORMAT`, in file `FILE`.
 
@@ -324,7 +324,7 @@ Go to background immediately after startup. If no output file is specified via t
 
     `CSP` whether server sent CSP (Content-Security-Policy) header.
 
-### `--stats-site[=[FORMAT:]FILE]`
+### `--stats-site=[FORMAT:]FILE`
 
   Save Site stats in format `FORMAT`, in file `FILE`.
 

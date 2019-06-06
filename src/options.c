@@ -344,11 +344,8 @@ static int parse_filename(option_t opt, const char *val, G_GNUC_WGET_UNUSED cons
 	return 0;
 }
 
-static int parse_string(option_t opt, const char *val, const char invert)
+static int parse_string(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
-	if (opt->args == -1 && !invert && !val)
-		val = ""; // needed for stats options
-
 	// the strdup'ed string will be released on program exit
 	xfree(*((const char **)opt->var));
 	*((const char **)opt->var) = wget_strdup(val);
@@ -855,14 +852,16 @@ static int parse_stats(option_t opt, const char *val, const char invert)
 	const char *p;
 	char format;
 
-	if (opt->args == -1 && !val && !invert)
-		val = ""; // needed for stats options
-
 	stats_args **stats = (stats_args **) opt->var;
 	if (*stats)
 		xfree((*stats)->filename);
 
-	if ((p = strchr(val, ':'))) {
+	if (invert) {
+		xfree(*stats);
+		return 0;
+	}
+
+	if (val && (p = strchr(val, ':'))) {
 		if (!wget_strncasecmp_ascii("human", val, p - val) || !wget_strncasecmp_ascii("h", val, p - val))
 			format = WGET_STATS_FORMAT_HUMAN;
 		else if (!wget_strncasecmp_ascii("csv", val, p - val))
@@ -873,8 +872,10 @@ static int parse_stats(option_t opt, const char *val, const char invert)
 		}
 
 		val = p + 1;
-	} else // no format given
+	} else { // no format given
+		val = "-"; // print to stdout
 		format = WGET_STATS_FORMAT_HUMAN;
+	}
 
 	if (!*stats)
 		*stats = wget_malloc(sizeof(stats_args));
@@ -2068,42 +2069,42 @@ static const struct optionw options[] = {
 		SECTION_STARTUP,
 		{ "Print all stats (default: off)\n",
 		  "Additional format supported:\n",
-                  "--stats-all[=[FORMAT:]FILE]\n"
+		  "--stats-all[=[FORMAT:]FILE]\n"
 		}
 	},
-	{ "stats-dns", &config.stats_dns_args, parse_stats, -1, 0,
+	{ "stats-dns", &config.stats_dns_args, parse_stats, 1, 0,
 		SECTION_STARTUP,
 		{ "Print DNS stats. (default: off)\n",
 		  "Additional format supported:\n",
-                  "--stats-dns[=[FORMAT:]FILE]\n"
+		  "--stats-dns=[FORMAT:]FILE\n"
 		}
 	},
-	{ "stats-ocsp", &config.stats_ocsp_args, parse_stats, -1, 0,
+	{ "stats-ocsp", &config.stats_ocsp_args, parse_stats, 1, 0,
 		SECTION_STARTUP,
 		{ "Print OCSP stats. (default: off)\n",
 		  "Additional format supported:\n",
-                  "--stats-ocsp[=[FORMAT:]FILE]\n"
+		  "--stats-ocsp=[FORMAT:]FILE\n"
 		}
 	},
-	{ "stats-server", &config.stats_server_args, parse_stats, -1, 0,
+	{ "stats-server", &config.stats_server_args, parse_stats, 1, 0,
 		SECTION_STARTUP,
 		{ "Print server stats. (default: off)\n",
 		  "Additional format supported:\n",
-                  "--stats-server[=[FORMAT:]FILE]\n"
+		  "--stats-server=[FORMAT:]FILE\n"
 		}
 	},
-	{ "stats-site", &config.stats_site, parse_string, -1, 0,
+	{ "stats-site", &config.stats_site, parse_string, 1, 0,
 		SECTION_STARTUP,
 		{ "Print site stats. (default: off)\n",
 		  "Additional format supported:\n",
-                  "--stats-site[=[FORMAT:]FILE]\n"
+		  "--stats-site=[FORMAT:]FILE\n"
 		}
 	},
-	{ "stats-tls", &config.stats_tls_args, parse_stats, -1, 0,
+	{ "stats-tls", &config.stats_tls_args, parse_stats, 1, 0,
 		SECTION_STARTUP,
 		{ "Print TLS stats. (default: off)\n",
 		  "Additional format supported:\n",
-                  "--stats-tls[=[FORMAT:]FILE]\n"
+		  "--stats-tls=[FORMAT:]FILE\n"
 		}
 	},
 	{ "strict-comments", &config.strict_comments, parse_bool, -1, 0,
@@ -2412,11 +2413,13 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 	if (value_present) {
 		// "option=*"
 		if (invert) {
-			if (!opt->args || opt->parser == parse_string ||
-					opt->parser == parse_stringset ||
-					opt->parser == parse_stringlist ||
-					opt->parser == parse_filename ||
-					opt->parser == parse_filenames)
+			if (!opt->args ||
+				opt->parser == parse_string ||
+				opt->parser == parse_stringset ||
+				opt->parser == parse_stringlist ||
+				opt->parser == parse_filename ||
+				opt->parser == parse_filenames ||
+				opt->parser == parse_stats)
 			{
 				error_printf(_("Option 'no-%s' doesn't allow an argument\n"), name);
 				return -1;
@@ -2438,19 +2441,22 @@ static int G_GNUC_WGET_NONNULL((1)) set_long_option(const char *name, const char
 				return -1;
 			}
 
-			if (invert && (opt->parser == parse_string ||
-					opt->parser == parse_stringset ||
-					opt->parser == parse_stringlist ||
-					opt->parser == parse_filename ||
-					opt->parser == parse_filenames))
+			if (invert && (
+				opt->parser == parse_string ||
+				opt->parser == parse_stringset ||
+				opt->parser == parse_stringlist ||
+				opt->parser == parse_filename ||
+				opt->parser == parse_filenames ||
+				opt->parser == parse_stats))
+			{
 				value = NULL;
-			else
+			} else
 				ret = opt->args;
 			break;
 		case -1:
 			if (!parsing_config)
 				value = NULL;
-			else if(value)
+			else if (value)
 				ret = 1;
 			break;
 		default:
