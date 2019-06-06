@@ -358,14 +358,6 @@ Go to background immediately after startup. If no output file is specified via t
 
     `Verification` PGP verification status. 0,1,2,3 mean 'none',  'valid', 'invalid', 'bad', 'missing'.
 
-### `--stats-all[=[FORMAT:]FILE]`
-
-  Save DNS, TLS, OCSP, Server and Site stats in format `FORMAT`, in file `FILE`.
-
- `FORMAT` can be `human` or `csv`.  `-` is shorthand for `stdout` and `h` is shorthand for `human`.
-
-  Saving different `csv` output records into one file might break later parsing.
-
 ## <a name="Download Options"/>Download Options
 
 ### `--bind-address=ADDRESS`

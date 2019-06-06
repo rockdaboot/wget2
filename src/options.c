@@ -833,17 +833,6 @@ static int parse_prefer_family(option_t opt, const char *val, G_GNUC_WGET_UNUSED
 	return 0;
 }
 
-static int parse_stats_all(option_t opt, const char *val, const char invert)
-{
-	if (opt->args == -1 && !val && !invert)
-		val = ""; // needed for stats options
-
-	xfree(*((const char **)opt->var));
-	*((const char **)opt->var) = wget_strdup(val);
-
-	return 0;
-}
-
 static int parse_stats(option_t opt, const char *val, const char invert)
 {
 	const char *p;
@@ -2060,13 +2049,6 @@ static const struct optionw options[] = {
 	{ "spider", &config.spider, parse_bool, -1, 0,
 		SECTION_DOWNLOAD,
 		{ "Enable web spider mode. (default: off)\n"
-		}
-	},
-	{ "stats-all", &config.stats_all, parse_stats_all, -1, 0,
-		SECTION_STARTUP,
-		{ "Print all stats (default: off)\n",
-		  "Additional format supported:\n",
-		  "--stats-all[=[FORMAT:]FILE]\n"
 		}
 	},
 	{ "stats-dns", &config.stats_dns_args, parse_stats, 1, 0,
