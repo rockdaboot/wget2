@@ -21,10 +21,10 @@
  */
 #include <config.h>
 
-#include <wget.h>
 #include <stdio.h>
 #include <stdint.h>
 
+#include <wget.h>
 #include "wget_main.h"
 #include "wget_stats.h"
 #include "wget_options.h"
@@ -64,29 +64,44 @@ typedef struct {
 		last_modified;
 } site_stats_t;
 
-// Forward declarations for static functions
-static void print_human(stats_opts_t *opts, FILE *fp);
-static void print_csv(stats_opts_t *opts, FILE *fp);
-static void stats_callback(const void *stats);
-static void free_stats(site_stats_t *stats);
+static wget_vector_t
+	*data;
 
-static stats_print_func_t
-	print_site[] = {
-		[WGET_STATS_FORMAT_HUMAN] = print_human,
-		[WGET_STATS_FORMAT_CSV] = print_csv,
-	};
-
-stats_opts_t stats_site_opts = {
-	.tag = "Site",
-	.options = &config.stats_site,
-	.set_callback = (stats_callback_setter_t) wget_tcp_set_stats_site,
-	.callback = stats_callback,
-	.destructor = (wget_vector_destructor_t) free_stats,
-	.print = print_site,
-};
+static wget_thread_mutex_t
+	mutex;
 
 static wget_hashmap_t
 	*docs;
+
+static FILE
+	*fp;
+
+static void free_stats(site_stats_t *stats)
+{
+	if (stats) {
+		xfree(stats->mime_type);
+	}
+}
+
+void site_stats_init(FILE *fpout)
+{
+	wget_thread_mutex_init(&mutex);
+
+	data = wget_vector_create(8, NULL);
+	wget_vector_set_destructor(data, (wget_vector_destructor_t) free_stats);
+
+	fp = fpout;
+}
+
+void site_stats_exit(void)
+{
+	if (config.debug) {
+		wget_stringmap_free(&docs);
+
+		wget_vector_free(&data);
+		wget_thread_mutex_destroy(&mutex);
+	}
+}
 
 void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 {
@@ -94,7 +109,7 @@ void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 	wget_iri_t *iri = job->iri;
 
 	if (gpg_info) {
-		wget_thread_mutex_lock(stats_site_opts.mutex);
+		wget_thread_mutex_lock(mutex);
 
 		if (!docs) {
 			// lazy initialization, don't free keys or values when destructed.
@@ -103,8 +118,8 @@ void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 			wget_stringmap_set_value_destructor(docs, NULL);
 
 			// fill stringmap with existing stats data
-			for (int it = 0; it < wget_vector_size(stats_site_opts.data); it++) {
-				site_stats_t *e = wget_vector_get(stats_site_opts.data, it);
+			for (int it = 0; it < wget_vector_size(data); it++) {
+				site_stats_t *e = wget_vector_get(data, it);
 
 				wget_stringmap_put_noalloc(docs, e->iri->uri, e);
 			}
@@ -130,11 +145,11 @@ void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 			else if (gpg_info->missing_sigs)
 				doc->signature_status = 4;
 
-			wget_thread_mutex_unlock(stats_site_opts.mutex);
+			wget_thread_mutex_unlock(mutex);
 			return;
 		}
 
-		wget_thread_mutex_unlock(stats_site_opts.mutex);
+		wget_thread_mutex_unlock(mutex);
 	}
 
 	site_stats_t *doc = wget_calloc(1, sizeof(site_stats_t));
@@ -166,39 +181,28 @@ void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 		doc->method = STATS_METHOD_POST;
 	}
 
-	wget_thread_mutex_lock(stats_site_opts.mutex);
-	wget_vector_add_noalloc(stats_site_opts.data, doc);
+	wget_thread_mutex_lock(mutex);
+	wget_vector_add_noalloc(data, doc);
 	if (docs)
 		wget_stringmap_put_noalloc(docs, doc->iri->uri, doc);
-	wget_thread_mutex_unlock(stats_site_opts.mutex);
+	wget_thread_mutex_unlock(mutex);
 }
 
-static void stats_callback(G_GNUC_WGET_UNUSED const void *stats)
-{
-}
-
-static void free_stats(site_stats_t *stats)
-{
-	if (stats) {
-		xfree(stats->mime_type);
-	}
-}
-
-static int print_human_entry(FILE *fp, site_stats_t *doc)
+static int print_human_entry(FILE *_fp, site_stats_t *doc)
 {
 	long long transfer_time = doc->response_end - doc->request_start;
 
-	wget_fprintf(fp, "  %6d %5lld %6lld %s\n",
+	wget_fprintf(_fp, "  %6d %5lld %6lld %s\n",
 		doc->status, transfer_time, doc->size_downloaded, doc->iri->uri);
 
 	return 0;
 }
 
-static int print_csv_entry(FILE *fp, site_stats_t *doc)
+static int print_csv_entry(FILE *_fp, site_stats_t *doc)
 {
 	long long transfer_time = doc->response_end - doc->request_start;
 
-	wget_fprintf(fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d,%ld,%s\n",
+	wget_fprintf(_fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d,%ld,%s\n",
 		doc->id, doc->parent_id, doc->iri->uri, doc->status, !doc->redirect, doc->method,
 		doc->size_downloaded, doc->size_decompressed, transfer_time,
 		doc->initial_response_duration, doc->encoding, doc->signature_status, doc->last_modified, doc->mime_type);
@@ -206,21 +210,23 @@ static int print_csv_entry(FILE *fp, site_stats_t *doc)
 	return 0;
 }
 
-static void print_human(stats_opts_t *opts, FILE *fp)
+static void print_human(void)
 {
 	wget_fprintf(fp, "\nSite Statistics:\n");
 	wget_fprintf(fp, "  %6s %5s %6s %s\n", "Status", "ms", "Size", "URL");
-	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
-
-	if (config.debug)
-		wget_stringmap_free(&docs);
+	wget_vector_browse(data, (wget_vector_browse_t) print_human_entry, fp);
 }
 
-static void print_csv(stats_opts_t *opts, FILE *fp)
+static void print_csv(void)
 {
 	wget_fprintf(fp, "ID,ParentID,URL,Status,Link,Method,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,Verification,Last-Modified,Content-Type\n");
-	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
+	wget_vector_browse(data, (wget_vector_browse_t) print_csv_entry, fp);
+}
 
-	if (config.debug)
-		wget_stringmap_free(&docs);
+void site_stats_print(void)
+{
+	if (config.stats_site_args->format == WGET_STATS_FORMAT_HUMAN)
+		print_human();
+	else
+		print_csv();
 }

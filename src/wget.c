@@ -1468,7 +1468,8 @@ int main(int argc, const char **argv)
 		wget_vector_free(&conversions);
 	}
 
-	stats_print();
+	if (config.stats_site_args)
+		site_stats_print();
 
  out:
 	if (is_testing() || wget_match_tail(argv[0], "wget2_noinstall")) {
@@ -1679,7 +1680,7 @@ static void add_statistics(wget_http_response_t *resp)
 	else
 		_atomic_increment_int(&stats.nerrors);
 
-	if (config.stats_site)
+	if (config.stats_site_args)
 		stats_site_add(resp, NULL);
 }
 
@@ -2153,7 +2154,7 @@ static void process_response(wget_http_response_t *resp)
 				// Remove the signature file.
 				unlink(job->local_filename);
 
-				if (config.stats_site)
+				if (config.stats_site_args)
 					stats_site_add(resp, &info);
 
 			} else if (wget_strncasecmp_ascii(resp->content_type, "application/", 12) == 0) {

@@ -841,9 +841,6 @@ static int parse_stats_all(option_t opt, const char *val, const char invert)
 	xfree(*((const char **)opt->var));
 	*((const char **)opt->var) = wget_strdup(val);
 
-	xfree(config.stats_site);
-	config.stats_site = wget_strdup(val);
-
 	return 0;
 }
 
@@ -2093,7 +2090,7 @@ static const struct optionw options[] = {
 		  "--stats-server=[FORMAT:]FILE\n"
 		}
 	},
-	{ "stats-site", &config.stats_site, parse_string, 1, 0,
+	{ "stats-site", &config.stats_site_args, parse_stats, 1, 0,
 		SECTION_STARTUP,
 		{ "Print site stats. (default: off)\n",
 		  "Additional format supported:\n",
@@ -3255,10 +3252,6 @@ int init(int argc, const char **argv)
 	if ((n = parse_command_line(argc, argv)) < 0)
 		return -1;
 
-	// parse and initialize stats options
-	if (stats_init())
-		return -1;
-
 	if (plugin_db_help_forwarded()) {
 		set_exit_status(WG_EXIT_STATUS_NO_ERROR);
 		return -1; // stop processing & exit
@@ -3459,6 +3452,7 @@ int init(int argc, const char **argv)
 		return -1;
 	}
 	wget_dns_set_timeout(dns, config.dns_timeout);
+	wget_tcp_set_dns(NULL, dns);
 
 	if (config.stats_dns_args) {
 		config.stats_dns_args->fp =
@@ -3470,8 +3464,6 @@ int init(int argc, const char **argv)
 		}
 		wget_dns_set_stats_callback(dns, stats_callback_dns, config.stats_dns_args->fp);
 	}
-
-	wget_tcp_set_dns(NULL, dns);
 
 	if (config.stats_ocsp_args) {
 		config.stats_ocsp_args->fp =
@@ -3504,6 +3496,17 @@ int init(int argc, const char **argv)
 			return -1;
 		}
 		wget_server_set_stats_callback(stats_callback_server, config.stats_server_args->fp);
+	}
+
+	if (config.stats_site_args) {
+		config.stats_site_args->fp =
+			config.stats_site_args->filename && *config.stats_site_args->filename && strcmp(config.stats_site_args->filename, "-") ?
+			fopen(config.stats_site_args->filename, "w") : stdout;
+		if (!config.stats_site_args->fp) {
+			wget_error_printf(_("Failed to open '%s' (%d)"), config.stats_site_args->filename, rc);
+			return -1;
+		}
+		site_stats_init(config.stats_site_args->fp);
 	}
 
 	// set module specific options
@@ -3600,7 +3603,8 @@ void deinit(void)
 	get_xdg_config_home(NULL);
 	get_xdg_data_home(NULL);
 
-	stats_exit();
+	if (config.stats_site_args)
+		site_stats_exit();
 
 	wget_dns_free(&dns);
 
@@ -3656,11 +3660,6 @@ void deinit(void)
 	xfree(config.username);
 	xfree(config.gnupg_homedir);
 	xfree(config.stats_all);
-//	xfree(config.stats_dns);
-//	xfree(config.stats_ocsp);
-//	xfree(config.stats_server);
-	xfree(config.stats_site);
-//	xfree(config.stats_tls);
 	xfree(config.user_config);
 	xfree(config.system_config);
 
@@ -3678,18 +3677,25 @@ void deinit(void)
 		xfree(config.stats_ocsp_args);
 	}
 
-	if (config.stats_tls_args) {
-		if (config.stats_tls_args->fp && config.stats_tls_args->fp != stdout)
-			fclose(config.stats_tls_args->fp);
-		xfree(config.stats_tls_args->filename);
-		xfree(config.stats_tls_args);
-	}
-
 	if (config.stats_server_args) {
 		if (config.stats_server_args->fp && config.stats_server_args->fp != stdout)
 			fclose(config.stats_server_args->fp);
 		xfree(config.stats_server_args->filename);
 		xfree(config.stats_server_args);
+	}
+
+	if (config.stats_site_args) {
+		if (config.stats_site_args->fp && config.stats_site_args->fp != stdout)
+			fclose(config.stats_site_args->fp);
+		xfree(config.stats_site_args->filename);
+		xfree(config.stats_site_args);
+	}
+
+	if (config.stats_tls_args) {
+		if (config.stats_tls_args->fp && config.stats_tls_args->fp != stdout)
+			fclose(config.stats_tls_args->fp);
+		xfree(config.stats_tls_args->filename);
+		xfree(config.stats_tls_args);
 	}
 
 	wget_iri_free(&config.base);
