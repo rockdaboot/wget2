@@ -431,6 +431,24 @@ static int _get_body(void *userdata, const char *data, size_t length)
 	return resp->req->body_callback(resp, resp->req->body_user_data, data, length);
 }
 
+static void _fix_broken_server_encoding(wget_http_response_t *resp)
+{
+	// a workaround for broken server configurations
+	// see https://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
+	if (resp->content_encoding == wget_content_encoding_gzip) {
+		const char *ext;
+		if (!wget_strcasecmp_ascii(resp->content_type, "application/x-gzip")
+			|| !wget_strcasecmp_ascii(resp->content_type, "application/gzip")
+			|| !wget_strcasecmp_ascii(resp->content_type, "application/gunzip")
+			|| ((ext = strrchr(resp->req->esc_resource.data, '.'))
+			&& (!wget_strcasecmp_ascii(ext, ".gz") || !wget_strcasecmp_ascii(ext, ".tgz"))))
+		{
+			debug_printf("Broken server configuration gzip workaround triggered\n");
+			resp->content_encoding =  wget_content_encoding_identity;
+		}
+	}
+}
+
 #ifdef WITH_LIBNGHTTP2
 static ssize_t _send_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	const uint8_t *data, size_t length, int flags G_GNUC_WGET_UNUSED, void *user_data)
@@ -487,25 +505,6 @@ static int _on_frame_send_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 
 	return 0;
 }
-
-static void _fix_broken_server_encoding(wget_http_response_t *resp)
-{
-	// a workaround for broken server configurations
-	// see https://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
-	if (resp->content_encoding == wget_content_encoding_gzip) {
-		const char *ext;
-		if (!wget_strcasecmp_ascii(resp->content_type, "application/x-gzip")
-			|| !wget_strcasecmp_ascii(resp->content_type, "application/gzip")
-			|| !wget_strcasecmp_ascii(resp->content_type, "application/gunzip")
-			|| ((ext = strrchr(resp->req->esc_resource.data, '.'))
-			&& (!wget_strcasecmp_ascii(ext, ".gz") || !wget_strcasecmp_ascii(ext, ".tgz"))))
-		{
-			debug_printf("Broken server configuration gzip workaround triggered\n");
-			resp->content_encoding =  wget_content_encoding_identity;
-		}
-	}
-}
-
 
 static int _on_frame_recv_callback(nghttp2_session *session,
 	const nghttp2_frame *frame, void *user_data G_GNUC_WGET_UNUSED)
