@@ -627,6 +627,58 @@ static int regex_match(const char *string, const char *pattern)
 #endif
 }
 
+static void parse_localfile(JOB *job, const char *fname, const char *encoding, const char *mimetype, wget_iri_t *base)
+{
+	int fd;
+	int level = job ? job->level : 0;
+	char _mimetype[64], _encoding[32];
+
+	if ((fd = open(fname, O_RDONLY)) == -1)
+		return;
+
+	if (!mimetype) {
+		if (read_xattr_metadata("user.mimetype", _mimetype, sizeof(_mimetype), fd) < 0)
+			*_mimetype = 0;
+		else if (*_mimetype)
+			mimetype = _mimetype;
+	}
+
+	if (!encoding) {
+		if (read_xattr_metadata("user.charset", _encoding, sizeof(_encoding), fd) < 0)
+			*_encoding = 0;
+		else if (*_encoding)
+			encoding = _encoding;
+	}
+
+	close(fd);
+
+	if (mimetype) {
+		if (!wget_strcasecmp_ascii(mimetype, "text/html") || !wget_strcasecmp_ascii(mimetype, "application/xhtml+xml")) {
+			html_parse_localfile(job, level, fname, encoding, base);
+		} else if (!wget_strcasecmp_ascii(mimetype, "text/css")) {
+			css_parse_localfile(job, fname, encoding, base);
+		} else if (!wget_strcasecmp_ascii(mimetype, "text/xml") || !wget_strcasecmp_ascii(mimetype, "application/xml")) {
+			sitemap_parse_xml_localfile(job, fname, encoding ? encoding : "utf-8", base);
+		} else if (!wget_strcasecmp_ascii(mimetype, "application/atom+xml")) {
+			atom_parse_localfile(job, fname, encoding ? encoding : "utf-8", base);
+		} else if (!wget_strcasecmp_ascii(mimetype, "application/rss+xml")) {
+			rss_parse_localfile(job, fname, encoding ? encoding : "utf-8", base);
+		}
+	} else {
+		const char *ext = strrchr(fname, '.');
+
+		if (ext) {
+			if (!wget_strcasecmp_ascii(ext, ".html") || !wget_strcasecmp_ascii(ext, ".htm")) {
+				html_parse_localfile(job, level, fname, encoding, base);
+			} else if (!wget_strcasecmp_ascii(ext, ".css")) {
+				css_parse_localfile(job, fname, encoding, base);
+			} else if (!wget_strcasecmp_ascii(ext, ".rss")) {
+				rss_parse_localfile(job, fname, encoding ? encoding : "utf-8", base);
+			}
+		}
+	}
+}
+
 // Add URLs given by user (command line, file or -i option).
 // Needs to be thread-save.
 static void add_url_to_queue(const char *url, wget_iri_t *base, const char *encoding, int flags)
@@ -634,6 +686,7 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 	wget_iri_t *iri;
 	JOB *new_job = NULL, job_buf;
 	HOST *host;
+	const char *local_filename;
 	struct plugin_db_forward_url_verdict plugin_verdict;
 	bool http_fallback = 0;
 
@@ -689,14 +742,37 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
 	}
+
+	if (plugin_verdict.alt_local_filename) {
+		local_filename = plugin_verdict.alt_local_filename;
+		plugin_verdict.alt_local_filename = NULL;
+	} else {
+		local_filename = get_local_filename(iri);
+	}
+
+	if (!config.clobber && local_filename && access(local_filename, F_OK) == 0) {
+		debug_printf("not requesting '%s'. (File already exists)\n", iri->uri);
+		wget_thread_mutex_unlock(downloader_mutex);
+		if (config.recursive || config.page_requisites) {
+			parse_localfile(NULL, local_filename, NULL, NULL, iri);
+		}
+		xfree(local_filename);
+		plugin_db_forward_url_verdict_free(&plugin_verdict);
+		return;
+	}
+
 	if ((host = host_add(iri))) {
 		// a new host entry has been created
 		if (config.recursive && config.robots) {
-			// create a special job for downloading robots.txt (before anything else)
-			wget_iri_t *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
+			if (!config.clobber && local_filename && access(local_filename, F_OK) == 0) {
+				debug_printf("not requesting '%s'. (File already exists)\n", iri->uri);
+			} else {
+				// create a special job for downloading robots.txt (before anything else)
+				wget_iri_t *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
 
-			if (blacklist_add(robot_iri))
-				host_add_robotstxt_job(host, robot_iri, http_fallback);
+				if (blacklist_add(robot_iri))
+					host_add_robotstxt_job(host, robot_iri, http_fallback);
+			}
 		}
 	} else
 		host = host_get(iri);
@@ -724,12 +800,7 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 	}
 
 	new_job = job_init(&job_buf, iri, http_fallback);
-	if (plugin_verdict.alt_local_filename) {
-		new_job->local_filename = plugin_verdict.alt_local_filename;
-		plugin_verdict.alt_local_filename = NULL;
-	} else {
-		new_job->local_filename = get_local_filename(iri);
-	}
+	new_job->local_filename = local_filename;
 
 	if (plugin_verdict.accept) {
 		new_job->ignore_patterns = 1;
@@ -770,6 +841,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	JOB *new_job = NULL, job_buf;
 	wget_iri_t *iri;
 	HOST *host;
+	const char *local_filename = NULL;
 	struct plugin_db_forward_url_verdict plugin_verdict;
 	bool http_fallback = 0;
 
@@ -842,9 +914,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	if (!blacklist_add(iri)) {
 		// we know this URL already
 		// iri has been free'd by blacklist_add()
-		wget_thread_mutex_unlock(downloader_mutex);
-		plugin_db_forward_url_verdict_free(&plugin_verdict);
-		return;
+		goto out;
 	}
 
 	if (config.recursive) {
@@ -861,10 +931,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		}
 
 		if (reason) {
-			wget_thread_mutex_unlock(downloader_mutex);
 			info_printf(_("URL '%s' not followed (%s)\n"), iri->uri, reason);
-			plugin_db_forward_url_verdict_free(&plugin_verdict);
-			return;
+			goto out;
 		}
 	}
 
@@ -886,8 +954,29 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		}
 
 		if (!ok) {
-			wget_thread_mutex_unlock(downloader_mutex);
 			info_printf(_("URL '%s' not followed (parent ascending not allowed)\n"), url);
+			goto out;
+		}
+	}
+
+	if (!config.output_document) {
+		if (plugin_verdict.alt_local_filename) {
+			local_filename = plugin_verdict.alt_local_filename;
+			plugin_verdict.alt_local_filename = NULL;
+		} else if (!(flags & URL_FLG_REDIRECTION) || config.trust_server_names || !job) {
+			local_filename = get_local_filename(iri);
+		} else {
+			local_filename = wget_strdup(job->local_filename);
+		}
+
+		if (!config.clobber && local_filename && access(local_filename, F_OK) == 0) {
+			info_printf(_("URL '%s' not requested (file already exists)\n"), iri->uri);
+			wget_thread_mutex_unlock(downloader_mutex);
+			if (config.recursive && (!config.level || (job && job->level < config.level + config.page_requisites))) {
+				parse_localfile(job, local_filename, encoding, NULL, iri);
+			}
+			// do not 'goto out;' here
+			xfree(local_filename);
 			plugin_db_forward_url_verdict_free(&plugin_verdict);
 			return;
 		}
@@ -896,11 +985,15 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	if ((host = host_add(iri))) {
 		// a new host entry has been created
 		if (config.recursive && config.robots) {
-			// create a special job for downloading robots.txt (before anything else)
-			wget_iri_t *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
+			if (!config.clobber && local_filename && access(local_filename, F_OK) == 0) {
+				debug_printf("not requesting '%s' (File already exists)\n", iri->uri);
+			} else {
+				// create a special job for downloading robots.txt (before anything else)
+				wget_iri_t *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
 
-			if (blacklist_add(robot_iri))
-				host_add_robotstxt_job(host, robot_iri, http_fallback);
+				if (blacklist_add(robot_iri))
+					host_add_robotstxt_job(host, robot_iri, http_fallback);
+			}
 		}
 	} else if ((host = host_get(iri))) {
 		if (host->robots && iri->path) {
@@ -909,19 +1002,15 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 				wget_string_t *path = wget_vector_get(host->robots->paths, it);
 				// info_printf("%s: checked robot path '%.*s' / '%s' / '%s'\n", __func__, (int)path->len, path->path, iri->path, iri->uri);
 				if (path->len && !strncmp(path->p + 1, iri->path ? iri->path : "", path->len - 1)) {
-					wget_thread_mutex_unlock(downloader_mutex);
 					info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), iri->uri);
-					plugin_db_forward_url_verdict_free(&plugin_verdict);
-					return;
+					goto out;
 				}
 			}
 		}
 	} else {
 		// this should really not ever happen
-		wget_thread_mutex_unlock(downloader_mutex);
 		error_printf(_("Failed to get '%s' from hosts\n"), iri->host);
-		plugin_db_forward_url_verdict_free(&plugin_verdict);
-		return;
+		goto out;
 	}
 
 	if (config.recursive && config.filter_urls) {
@@ -929,37 +1018,25 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			|| (config.accept_regex && !regex_match(iri->uri, config.accept_regex)))
 		{
 			debug_printf("not requesting '%s'. (doesn't match accept pattern)\n", iri->uri);
-			wget_thread_mutex_unlock(downloader_mutex);
-			return;
+			goto out;
 		}
 
 		if ((config.reject_patterns && in_pattern_list(config.reject_patterns, iri->uri))
 			|| (config.reject_regex && regex_match(iri->uri, config.reject_regex)))
 		{
 			debug_printf("not requesting '%s'. (matches reject pattern)\n", iri->uri);
-			wget_thread_mutex_unlock(downloader_mutex);
-			return;
+			goto out;
 		}
 
 		if (config.exclude_directories && in_directory_pattern_list(config.exclude_directories, iri->path)) {
 			debug_printf("not requesting '%s' (path excluded)\n", iri->uri);
-			wget_thread_mutex_unlock(downloader_mutex);
-			return;
+			goto out;
 		}
 	}
 
 	new_job = job_init(&job_buf, iri, http_fallback);
-
-	if (!config.output_document) {
-		if (plugin_verdict.alt_local_filename) {
-			new_job->local_filename = plugin_verdict.alt_local_filename;
-			plugin_verdict.alt_local_filename = NULL;
-		} else if (!(flags & URL_FLG_REDIRECTION) || config.trust_server_names || !job) {
-			new_job->local_filename = get_local_filename(new_job->iri);
-		} else {
-			new_job->local_filename = wget_strdup(job->local_filename);
-		}
-	}
+	new_job->local_filename = local_filename;
+	local_filename = NULL;
 
 	if (job) {
 		if (flags & URL_FLG_REDIRECTION) {
@@ -1022,6 +1099,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	// and wake up all waiting threads
 	wget_thread_cond_signal(worker_cond);
 
+out:
+	xfree(local_filename);
 	wget_thread_mutex_unlock(downloader_mutex);
 	plugin_db_forward_url_verdict_free(&plugin_verdict);
 }
@@ -2107,20 +2186,14 @@ static void process_response(wget_http_response_t *resp)
 	}
 	else if ((resp->code == 304 && config.timestamping) || resp->code == 416) { // local document is up-to-date
 		if (process_decision && recurse_decision) {
-			const char *ext;
+			const char *local_filename;
 
 			if (config.content_disposition && resp->content_filename)
-				ext = strrchr(resp->content_filename, '.');
+				local_filename = resp->content_filename;
 			else
-				ext = strrchr(job->local_filename, '.');
+				local_filename = job->local_filename;
 
-			if (ext) {
-				if (!wget_strcasecmp_ascii(ext, ".html") || !wget_strcasecmp_ascii(ext, ".htm")) {
-					html_parse_localfile(job, job->level, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
-				} else if (!wget_strcasecmp_ascii(ext, ".css")) {
-					css_parse_localfile(job, job->local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
-				}
-			}
+			parse_localfile(job, local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, resp->content_type, job->iri);
 		}
 	}
 }
@@ -3216,17 +3289,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 				error_printf(_("File '%s' already there; not retrieving.\n"), fname);
 
 				if (config.page_requisites && !config.clobber) {
-					if (!wget_strcasecmp_ascii(resp->content_type, "text/html") || !wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")) {
-						html_parse_localfile(job, job->level, job->local_filename, config.remote_encoding, job->iri);
-					} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
-						css_parse_localfile(job, job->local_filename, config.remote_encoding, job->iri);
-					} else if (!wget_strcasecmp_ascii(resp->content_type, "text/xml") || !wget_strcasecmp_ascii(resp->content_type, "application/xml")) {
-						sitemap_parse_xml_localfile(job, job->local_filename, "utf-8", job->iri);
-					} else if (!wget_strcasecmp_ascii(resp->content_type, "application/atom+xml")) {
-						atom_parse_localfile(job, job->local_filename, "utf-8", job->iri);
-					} else if (!wget_strcasecmp_ascii(resp->content_type, "application/rss+xml")) {
-						rss_parse_localfile(job, job->local_filename, "utf-8", job->iri);
-					}
+					parse_localfile(job, job->local_filename, config.remote_encoding, resp->content_type, job->iri);
 				}
 			} else if (errno == EISDIR)
 				info_printf(_("Directory / file name clash - not saving '%s'\n"), fname);
