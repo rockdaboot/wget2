@@ -3630,8 +3630,7 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 			// see if we stored the server timestamp before
 			if ((fp = fopen(local_filename, "r"))) {
 				char tbuf[32];
-				if (read_xattr_metadata("user.last_modified", tbuf, sizeof(tbuf), fileno(fp)) == 0) {
-					tbuf[sizeof(tbuf) - 1] = 0;
+				if (read_xattr_metadata("user.last_modified", tbuf, sizeof(tbuf), fileno(fp)) > 0) {
 					mtime = (time_t) atoll(tbuf);
 					found_mtime = 1;
 				}
@@ -3918,12 +3917,22 @@ static int write_xattr_metadata(const char *name, const char *value, int fd)
 	return rc;
 }
 
+// returns the length of value (which is a 0-terminated string) or -1 on error
 static int read_xattr_metadata(const char *name, char *value, size_t size, int fd)
 {
-	if (!(name && value && fd >= 0))
+	if (!(name && value && size && fd >= 0))
 		return -1;
 
-	return fgetxattr(fd, name, value, size) < 0 ? -1 : 0;
+	int rc = fgetxattr(fd, name, value, size - 1);
+	if (rc < 0)
+		return -1;
+
+	// just to make sure...
+	if (rc >= (int) size)
+		rc = size - 1;
+
+	value[rc] = 0;
+	return rc;
 }
 
 static int write_xattr_last_modified(time_t last_modified, int fd)
