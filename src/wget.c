@@ -1617,6 +1617,12 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri_t **iri)
 
 				mirror_index = (mirror_index + 1) % wget_vector_size(metalink->mirrors);
 
+				if (mirror->iri->scheme == WGET_IRI_SCHEME_HTTP && config.https_enforce) {
+					wget_iri_set_scheme(mirror->iri, WGET_IRI_SCHEME_HTTPS);
+//					if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT)
+//						http_fallback = 1;
+				}
+
 				rc = try_connection(downloader, mirror->iri);
 
 				if (rc == WGET_E_SUCCESS) {
