@@ -126,6 +126,13 @@ libwget_dns_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_dns_la_LIBADD = libwget_dnscache.la libwget_ip.la libwget_logger.la libwget_thread.la libwget_common.la libwget_alloc.la $(GETADDRINFO_LIB) ../lib/libgnu.la
 libwget_dns_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget robots ########
+lib_LTLIBRARIES += libwget_robots.la
+libwget_robots_la_SOURCES =  robots.c
+libwget_robots_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_robots_la_LIBADD = libwget_common.la libwget_alloc.la ../lib/libgnu.la
+libwget_robots_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 ######## libwget CSS ########
 lib_LTLIBRARIES += libwget_css.la
 libwget_css_la_SOURCES =  css_url.c css.c css_tokenizer.h
@@ -228,6 +235,12 @@ test_linking_dns_SOURCES = test_linking_dns.c
 test_linking_dns_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_dns_LDADD = libwget_dns.la
 test_linking_dns_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_robots
+test_linking_robots_SOURCES = test_linking_robots.c
+test_linking_robots_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_robots_LDADD = libwget_robots.la
+test_linking_robots_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking
 test_linking_SOURCES = test_linking.c
