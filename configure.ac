@@ -437,7 +437,7 @@ AC_LINK_IFELSE(
 
 PKG_PROG_PKG_CONFIG
 
-AC_ARG_WITH(ssl, AS_HELP_STRING([--with-ssl], [Use SSL/TLS with specified library. Options: 'gnutls' (default) or 'openssl']), with_ssl=$withval, with_ssl=gnutls)
+AC_ARG_WITH(ssl, AS_HELP_STRING([--with-ssl], [Use SSL/TLS with specified library. Options: 'gnutls' (default), 'openssl' or 'wolfssl']), with_ssl=$withval, with_ssl=gnutls)
 
 AS_IF([test "x$with_ssl" == "xgnutls"], [
   PKG_CHECK_MODULES([GNUTLS], [gnutls], [
@@ -480,16 +480,7 @@ AS_IF([test "x$with_ssl" == xopenssl], [
 AS_IF([test "x$with_gnutls_hash" == xyes],
   [AC_CHECK_HEADERS([gnutls/crypto.h], [], [], [#include <gnutls/gnutls.h>])])
 
-AS_IF([test "x$with_ssl" != "xgnutls" && test "x$with_ssl" != "xopenssl"],
-  [with_ssl=no],
-  [])
-
-AM_CONDITIONAL([WITH_GNUTLS], [test "x$with_gnutls" = xyes])
-AM_CONDITIONAL([WITH_OPENSSL], [test "x$with_openssl" = xyes])
-
-AC_ARG_WITH(wolfssl, AS_HELP_STRING([--without-wolfssl], [disable WolfSSL support]), with_wolfssl=$withval)
-AS_IF([test "x$with_wolfssl" = xyes], [
-  echo "*** $with_wolfssl"
+AS_IF([test "x$with_ssl" = "xwolfssl"], [
   PKG_CHECK_MODULES([WOLFSSL], [wolfssl], [
     with_wolfssl=yes
     LIBS="$WOLFSSL_LIBS $LIBS"
@@ -501,12 +492,15 @@ AS_IF([test "x$with_wolfssl" = xyes], [
       [with_wolfssl=no;  AC_MSG_WARN(*** WolfSSL was not found. You will not be able to use HTTPS.)])
   ])
 ])
+
+AM_CONDITIONAL([WITH_GNUTLS], [test "x$with_gnutls" = xyes])
+AM_CONDITIONAL([WITH_OPENSSL], [test "x$with_openssl" = xyes])
 AM_CONDITIONAL([WITH_WOLFSSL], [test "x$with_wolfssl" = xyes])
 
-AM_CONDITIONAL([WITH_TLS], [test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes])
+AM_CONDITIONAL([WITH_TLS], [test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes || test "x$with_openssl" = xyes])
 AS_IF([test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes], [
   AC_DEFINE([WITH_TLS], [1], [Built with TLS support])
-])
+], [AC_DEFINE([WITH_TLS], [0], [No TLS support]))
 
 AS_IF([test "x$with_ssl" == xno || test "x$with_gnutls_hash" != xyes], [
   PKG_CHECK_MODULES([NETTLE], nettle, [
