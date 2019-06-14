@@ -77,7 +77,6 @@
  *
  *  - TCP Fast Open ([RFC 7413](https://tools.ietf.org/html/rfc7413))
  *  - SSL/TLS
- *  - DNS caching
  *
  * Most functions here take a `wget_tcp_t` structure as argument.
  *
@@ -94,9 +93,6 @@
  *  to wait until some data is available to read. Most functions here can be non-blocking (with timeout = 0) returning immediately
  *  or they can block indefinitely until something happens (with timeout = -1). For any value greater than zero,
  *  the timeout is taken as milliseconds.
- *  - Caching: whether to use DNS caching or not. The DNS cache is kept internally and is shared among all connections.
- *  You can disable it for a specific `wget_tcp_t`, so that specific connection will not use the DNS cache, or you can
- *  disable it globally.
  *  - Family and preferred family: these are used to determine which address family should be used when resolving a host name or
  *  IP address. You probably use `AF_INET` or `AF_INET6` most of the time. The first one forces the library to use that family,
  *  failing if it cannot find any IP address with it. The second one is just a hint, about which family you would prefer; it will try
@@ -108,7 +104,6 @@
  *   - Timeout: -1
  *   - Connection timeout (max. time to wait for a connection to be accepted by the remote host): -1
  *   - DNS timeout (max. time to wait for a DNS query to return): -1
- *   - DNS caching: yes
  *   - Family: `AF_UNSPEC` (basically means "I don't care, pick the first one available").
  */
 
@@ -118,7 +113,6 @@ static struct wget_tcp_st _global_tcp = {
 	.connect_timeout = -1,
 	.timeout = -1,
 	.family = AF_UNSPEC,
-	.caching = 1,
 #if defined TCP_FASTOPEN_OSX
 	.tcp_fastopen = 1,
 #elif defined TCP_FASTOPEN_LINUX_411
@@ -424,10 +418,8 @@ void wget_tcp_set_bind_address(wget_tcp_t *tcp, const char *bind_address)
 	if (!tcp)
 		tcp = &_global_tcp;
 
-	if (tcp->bind_addrinfo_allocated) {
-		freeaddrinfo(tcp->bind_addrinfo);
-		tcp->bind_addrinfo = NULL;
-	}
+
+	wget_dns_freeaddrinfo(tcp->dns, &tcp->bind_addrinfo);
 
 	if (bind_address) {
 		char copy[strlen(bind_address) + 1], *s = copy;
@@ -460,8 +452,6 @@ void wget_tcp_set_bind_address(wget_tcp_t *tcp, const char *bind_address)
 		} else {
 			tcp->bind_addrinfo = wget_dns_resolve(tcp->dns, host, 0, tcp->family, tcp->preferred_family);
 		}
-
-		tcp->bind_addrinfo_allocated = !tcp->caching && tcp->bind_addrinfo;
 	}
 }
 
@@ -563,10 +553,7 @@ void wget_tcp_deinit(wget_tcp_t **_tcp)
 	if ((tcp = *_tcp)) {
 		wget_tcp_close(tcp);
 
-		if (tcp->bind_addrinfo_allocated) {
-			freeaddrinfo(tcp->bind_addrinfo);
-			tcp->bind_addrinfo = NULL;
-		}
+		wget_dns_freeaddrinfo(tcp->dns, &tcp->bind_addrinfo);
 
 		xfree(tcp->ssl_hostname);
 		xfree(tcp->ip);
@@ -660,12 +647,9 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
 	if (unlikely(!tcp))
 		return WGET_E_INVALID;
 
-	if (tcp->addrinfo_allocated)
-		freeaddrinfo(tcp->addrinfo);
+	wget_dns_freeaddrinfo(tcp->dns, &tcp->addrinfo);
 
 	tcp->addrinfo = wget_dns_resolve(tcp->dns, host, port, tcp->family, tcp->preferred_family);
-
-	tcp->addrinfo_allocated = !tcp->caching;
 
 	for (ai = tcp->addrinfo; ai; ai = ai->ai_next) {
 		if (debug) {
@@ -1000,10 +984,7 @@ void wget_tcp_close(wget_tcp_t *tcp)
 			close(tcp->sockfd);
 			tcp->sockfd = -1;
 		}
-		if (tcp->addrinfo_allocated) {
-			freeaddrinfo(tcp->addrinfo);
-		}
-		tcp->addrinfo = NULL;
+		wget_dns_freeaddrinfo(tcp->dns, &tcp->addrinfo);
 	}
 }
 /** @} */

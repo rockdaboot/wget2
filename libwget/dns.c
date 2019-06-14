@@ -49,8 +49,8 @@
 
 struct wget_dns_st
 {
-//	wget_dns_cache_t
-//		*cache;
+	wget_dns_cache_t
+		*cache;
 	wget_thread_mutex_t
 		mutex;
 	wget_dns_stats_callback_t
@@ -61,8 +61,6 @@ struct wget_dns_st
 		stats;
 	int
 		timeout;
-	bool
-		caching;
 };
 static wget_dns_t default_dns = {
 	.timeout = -1,
@@ -71,7 +69,7 @@ static wget_dns_t default_dns = {
 /**
  * \param[out] dns Pointer to return newly allocated and initialized wget_dns_t instance
  * \return WGET_E_SUCCESS if OK, WGET_E_MEMORY if out-of-memory or WGET_E_INVALID
- * if the mutex initialization failed.
+ *   if the mutex initialization failed.
  *
  * Allocates and initializes a wget_dns_t instance.
  */
@@ -82,14 +80,13 @@ int wget_dns_init(wget_dns_t **dns)
 	if (!_dns)
 		return WGET_E_MEMORY;
 
-	if (_dns) {
-		if (wget_thread_mutex_init(&_dns->mutex)) {
-			xfree(_dns);
-			return WGET_E_INVALID;
-		}
-		_dns->timeout = -1;
-		*dns = _dns;
+	if (wget_thread_mutex_init(&_dns->mutex)) {
+		xfree(_dns);
+		return WGET_E_INVALID;
 	}
+
+	_dns->timeout = -1;
+	*dns = _dns;
 
 	return WGET_E_SUCCESS;
 }
@@ -136,9 +133,9 @@ void wget_dns_set_timeout(wget_dns_t *dns, int timeout)
  *
  * The DNS cache is kept internally in memory, and is used in wget_dns_resolve() to speed up DNS queries.
  */
-void wget_dns_set_caching(wget_dns_t *dns, bool caching)
+void wget_dns_set_cache(wget_dns_t *dns, wget_dns_cache_t *cache)
 {
-	(dns ? dns : &default_dns)->caching = caching;
+	(dns ? dns : &default_dns)->cache = cache;
 }
 
 /**
@@ -149,9 +146,9 @@ void wget_dns_set_caching(wget_dns_t *dns, bool caching)
  *
  * You can enable and disable DNS caching with wget_dns_set_caching().
  */
-bool wget_dns_get_caching(wget_dns_t *dns)
+wget_dns_cache_t *wget_dns_get_cache(wget_dns_t *dns)
 {
-	return (dns ? dns : &default_dns)->caching;
+	return (dns ? dns : &default_dns)->cache;
 }
 
 /*
@@ -226,26 +223,32 @@ static int _resolve(int family, int flags, const char *host, uint16_t port, stru
  * Assign an IP address to the name+port key in the DNS cache.
  * The \p name should be lowercase.
  */
-int wget_tcp_dns_cache_add(const char *ip, const char *name, uint16_t port)
+int wget_dns_cache_ip(wget_dns_t *dns, const char *ip, const char *name, uint16_t port)
 {
 	int rc, family;
 	struct addrinfo *ai;
+
+	if (!dns || !dns->cache || !name)
+		return WGET_E_INVALID;
 
 	if (wget_ip_is_family(ip, WGET_NET_FAMILY_IPV4)) {
 		family = AF_INET;
 	} else if (wget_ip_is_family(ip, WGET_NET_FAMILY_IPV6)) {
 		family = AF_INET6;
 	} else
-		return -1;
+		return WGET_E_INVALID;
 
 	if ((rc = _resolve(family, AI_NUMERICHOST, ip, port, &ai)) != 0) {
 		error_printf(_("Failed to resolve %s:%d: %s\n"), ip, port, gai_strerror(rc));
-		return -1;
+		return WGET_E_UNKNOWN;
 	}
 
-	wget_dns_cache_add(name, port, ai);
+	if ((rc = wget_dns_cache_add(dns->cache, name, port, &ai)) < 0) {
+		freeaddrinfo(ai);
+		return rc;
+	}
 
-	return 0;
+	return WGET_E_SUCCESS;
 }
 
 /**
@@ -254,7 +257,7 @@ int wget_tcp_dns_cache_add(const char *ip, const char *name, uint16_t port)
  * \param[in] port TCP destination port
  * \param[in] family Protocol family AF_INET or AF_INET6
  * \param[in] preferred_family Preferred protocol family AF_INET or AF_INET6
- * \return A `struct addrinfo` structure (defined in libc's `<netdb.h>`). Must be freed by the caller with `freeaddrinfo(3)`.
+ * \return A `struct addrinfo` structure (defined in libc's `<netdb.h>`). Must be freed by the caller with `wget_dns_freeaddrinfo()`.
  *
  * Resolve a host name into its IPv4/IPv6 address.
  *
@@ -266,7 +269,7 @@ int wget_tcp_dns_cache_add(const char *ip, const char *name, uint16_t port)
  * **preferred_family**: Tries to resolve addresses of this family if possible. This is only honored if **family**
  * (see point above) is `AF_UNSPEC`.
  *
- *  The returned `addrinfo` structure must be freed with `freeaddrinfo(3)`.
+ *  The returned `addrinfo` structure must be freed with `wget_dns_freeaddrinfo()`.
  */
 struct addrinfo *wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t port, int family, int preferred_family)
 {
@@ -284,15 +287,15 @@ struct addrinfo *wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t po
 
 	// get the IP address for the server
 	for (int tries = 0, max = 3; tries < max; tries++) {
-		if (dns->caching) {
-			if ((addrinfo = wget_dns_cache_get(host, port)))
+		if (dns->cache) {
+			if ((addrinfo = wget_dns_cache_get(dns->cache, host, port)))
 				return addrinfo;
 
 			// prevent multiple address resolutions of the same host
 			wget_thread_mutex_lock(dns->mutex);
 
 			// now try again
-			if ((addrinfo = wget_dns_cache_get(host, port))) {
+			if ((addrinfo = wget_dns_cache_get(dns->cache, host, port))) {
 				wget_thread_mutex_unlock(dns->mutex);
 				return addrinfo;
 			}
@@ -305,7 +308,7 @@ struct addrinfo *wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t po
 			break;
 
 		if (tries < max - 1) {
-			if (dns->caching)
+			if (dns->cache)
 				wget_thread_mutex_unlock(dns->mutex);
 			wget_millisleep(100);
 		}
@@ -322,7 +325,7 @@ struct addrinfo *wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t po
 		error_printf(_("Failed to resolve %s (%s)\n"),
 				(host ? host : ""), gai_strerror(rc));
 
-		if (dns->caching)
+		if (dns->cache)
 			wget_thread_mutex_unlock(dns->mutex);
 
 		if (dns->stats_callback) {
@@ -355,16 +358,43 @@ struct addrinfo *wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t po
 		}
 	}
 
-	if (dns->caching) {
+	if (dns->cache) {
 		/*
 		 * In case of a race condition the already existing addrinfo is returned.
 		 * The addrinfo argument given to wget_dns_cache_add() will be freed in this case.
 		 */
-		addrinfo = wget_dns_cache_add(host, port, addrinfo);
+		rc = wget_dns_cache_add(dns->cache, host, port, &addrinfo);
 		wget_thread_mutex_unlock(dns->mutex);
+		if ( rc < 0) {
+			freeaddrinfo(addrinfo);
+			return NULL;
+		}
 	}
 
 	return addrinfo;
+}
+
+/**
+ * \param[in] dns A `wget_dns_t` instance, created by wget_dns_init().
+ * \param[in/out] addrinfo Value returned by `c`
+ *
+ * Release addrinfo, previously returned by `wget_dns_resolve()`.
+ * If the underlying \p dns uses caching, just the reference/pointer is set to %NULL.
+ */
+void wget_dns_freeaddrinfo(wget_dns_t *dns, struct addrinfo **addrinfo)
+{
+	if (addrinfo && *addrinfo) {
+		if (!dns)
+			dns = &default_dns;
+
+		if (!dns->cache) {
+			freeaddrinfo(*addrinfo);
+			*addrinfo = NULL;
+		} else {
+			// addrinfo is cached and gets freed later when the DNS cache is freed
+			*addrinfo = NULL;
+		}
+	}
 }
 
 /**

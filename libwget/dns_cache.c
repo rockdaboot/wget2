@@ -38,7 +38,7 @@
  */
 
 /* Resolver / DNS cache entry */
-struct _dns_entry {
+struct cache_entry {
 	const char *
 		host;
 	struct addrinfo *
@@ -47,56 +47,17 @@ struct _dns_entry {
 		port;
 };
 
-/* Resolver / DNS cache container */
-static wget_hashmap_t
-	*dns_cache;
-static wget_thread_mutex_t
-	dns_mutex;
-static bool
-	initialized;
-
-static void __attribute__ ((constructor)) _wget_dns_cache_init(void)
-{
-	if (!initialized) {
-		wget_thread_mutex_init(&dns_mutex);
-		initialized = 1;
-	}
-}
-
-static void __attribute__ ((destructor)) _wget_dns_cache_exit(void)
-{
-	if (initialized) {
-		wget_thread_mutex_destroy(&dns_mutex);
-		initialized = 0;
-	}
-}
-
-/**
- * Initialize the internal mutex needed for thread-safety operations on
- * the cache entry container (hashmap).
- * If you don't use multi-threading, you don't have to call this function.
- *
- * The initialization is normally automatically during library construction.
- * But some systems doesn't support library constructors, also static linking doesn't do.
- * That's where this function is needed.
- */
-void wget_dns_cache_init(void)
-{
-	_wget_dns_cache_init();
-}
-
-/**
- * Free the internal mutex allocated by wget_dns_cache_init().
- */
-void wget_dns_cache_exit(void)
-{
-	_wget_dns_cache_exit();
-}
+struct wget_dns_cache_st {
+	wget_hashmap_t
+		*cache;
+	wget_thread_mutex_t
+		mutex;
+};
 
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int G_GNUC_WGET_PURE _hash_dns(const struct _dns_entry *entry)
+static unsigned int G_GNUC_WGET_PURE _hash_dns(const struct cache_entry *entry)
 {
 	unsigned int hash = entry->port;
 	const unsigned char *p = (unsigned char *) entry->host;
@@ -107,7 +68,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_dns(const struct _dns_entry *entry)
 	return hash;
 }
 
-static int G_GNUC_WGET_PURE _compare_dns(const struct _dns_entry *a1, const struct _dns_entry *a2)
+static int G_GNUC_WGET_PURE _compare_dns(const struct cache_entry *a1, const struct cache_entry *a2)
 {
 	if (a1->port < a2->port)
 		return -1;
@@ -117,26 +78,76 @@ static int G_GNUC_WGET_PURE _compare_dns(const struct _dns_entry *a1, const stru
 	return wget_strcasecmp(a1->host, a2->host);
 }
 
-static void _free_dns(struct _dns_entry *entry)
+static void _free_dns(struct cache_entry *entry)
 {
 	freeaddrinfo(entry->addrinfo);
 	xfree(entry);
 }
 
 /**
+ * \param[out] cache Pointer to return newly allocated and initialized wget_dns_cache_t instance
+ * \return WGET_E_SUCCESS if OK, WGET_E_MEMORY if out-of-memory or WGET_E_INVALID
+ *   if the mutex initialization failed.
+ *
+ * Allocates and initializes a wget_dns_cache_t instance.
+ */
+int wget_dns_cache_init(wget_dns_cache_t **cache)
+{
+	wget_dns_cache_t *_cache = wget_calloc(1, sizeof(wget_dns_cache_t));
+
+	if (!_cache)
+		return WGET_E_MEMORY;
+
+	if (wget_thread_mutex_init(&_cache->mutex)) {
+		xfree(_cache);
+		return WGET_E_INVALID;
+	}
+
+	if (!(_cache->cache = wget_hashmap_create(16, (wget_hashmap_hash_t)_hash_dns, (wget_hashmap_compare_t)_compare_dns))) {
+		wget_dns_cache_free(&_cache);
+		return WGET_E_MEMORY;
+	}
+
+	wget_hashmap_set_key_destructor(_cache->cache, (wget_hashmap_key_destructor_t)_free_dns);
+	wget_hashmap_set_value_destructor(_cache->cache, (wget_hashmap_value_destructor_t)_free_dns);
+
+	*cache = _cache;
+
+	return WGET_E_SUCCESS;
+}
+
+/**
+ * \param[in/out] cache Pointer to wget_dns_cache_t instance that will be freed and NULLified.
+ *
+ * Free the resources allocated by wget_dns_cache_init().
+ */
+void wget_dns_cache_free(wget_dns_cache_t **cache)
+{
+	if (cache && *cache) {
+		wget_thread_mutex_lock((*cache)->mutex);
+		wget_hashmap_free(&(*cache)->cache);
+		wget_thread_mutex_unlock((*cache)->mutex);
+
+		wget_thread_mutex_destroy(&(*cache)->mutex);
+		xfree(*cache);
+	}
+}
+
+/**
+ * \param[in] cache A `wget_dns_cache_t` instance, created by wget_dns_cache_init().
  * \param[in] host Hostname to look up
  * \param[in] port Port to look up
  * \return The cached addrinfo structure or NULL if not found
  */
-struct addrinfo *wget_dns_cache_get(const char *host, uint16_t port)
+struct addrinfo *wget_dns_cache_get(wget_dns_cache_t *cache, const char *host, uint16_t port)
 {
-	if (dns_cache) {
-		struct _dns_entry *entryp, entry = { .host = host, .port = port };
+	if (cache) {
+		struct cache_entry *entryp, entry = { .host = host, .port = port };
 
-		wget_thread_mutex_lock(dns_mutex);
-		if (!wget_hashmap_get(dns_cache, &entry, &entryp))
+		wget_thread_mutex_lock(cache->mutex);
+		if (!wget_hashmap_get(cache->cache, &entry, &entryp))
 			entryp = NULL;
-		wget_thread_mutex_unlock(dns_mutex);
+		wget_thread_mutex_unlock(cache->mutex);
 
 		if (entryp) {
 			// DNS cache entry found
@@ -149,61 +160,56 @@ struct addrinfo *wget_dns_cache_get(const char *host, uint16_t port)
 }
 
 /**
+ * \param[in] cache A `wget_dns_cache_t` instance, created by wget_dns_cache_init().
  * \param[in] host Hostname part of the key
  * \param[in] port Port part of the key
- * \param[in] addrinfo Addrinfo structure to cache
- * \return The cached addrinfo structure or NULL on error
+ * \param[in/out] addrinfo Addrinfo structure to cache, returns cached addrinfo
+ * \return WGET_E_SUCCESS on success, else a WGET_E_* error value
+ *
+ * This functions adds \p addrinfo to the given DNS cache \p cache.
+ *
+ * If an entry for [host,port] already exists, \p addrinfo is free'd and replaced by the cached entry.
+ * Do not free \p addrinfo yourself - this will be done when the whole cache is freed.
  */
-struct addrinfo *wget_dns_cache_add(const char *host, uint16_t port, struct addrinfo *addrinfo)
+int wget_dns_cache_add(wget_dns_cache_t *cache, const char *host, uint16_t port, struct addrinfo **addrinfo)
 {
+	if (!cache || !host | !addrinfo)
+		return WGET_E_INVALID;
+
+	struct cache_entry entry = { .host = host, .port = port };
+	struct addrinfo *ai;
+
+	wget_thread_mutex_lock(cache->mutex);
+
+	if (wget_hashmap_get(cache->cache, &entry, &ai)) {
+		// host+port is already in cache
+		wget_thread_mutex_unlock(cache->mutex);
+		if (*addrinfo != ai)
+			freeaddrinfo(*addrinfo);
+		*addrinfo = ai;
+		return WGET_E_SUCCESS;
+	}
+
 	// insert addrinfo into dns cache
-	size_t hostlen = host ? strlen(host) + 1 : 0;
-	struct _dns_entry *entryp = wget_malloc(sizeof(struct _dns_entry) + hostlen);
+	size_t hostlen = strlen(host) + 1;
+	struct cache_entry *entryp = wget_malloc(sizeof(struct cache_entry) + hostlen);
 
-	if (host) {
-		entryp->port = port;
-		entryp->host = ((char *)entryp) + sizeof(struct _dns_entry);
-		memcpy((char *)entryp->host, host, hostlen); // ugly cast, but semantically ok
-	} else {
-		entryp->host = NULL;
+	if (!entryp) {
+		wget_thread_mutex_unlock(cache->mutex);
+		return WGET_E_MEMORY;
 	}
 
-	entryp->addrinfo = addrinfo;
+	entryp->port = port;
+	entryp->host = ((char *)entryp) + sizeof(struct cache_entry);
+	memcpy((char *)entryp->host, host, hostlen); // ugly cast, but semantically ok
+	entryp->addrinfo = *addrinfo;
 
-	wget_thread_mutex_lock(dns_mutex);
-	if (!dns_cache) {
-		dns_cache = wget_hashmap_create(16, (wget_hashmap_hash_t)_hash_dns, (wget_hashmap_compare_t)_compare_dns);
-		wget_hashmap_set_key_destructor(dns_cache, (wget_hashmap_key_destructor_t)_free_dns);
-		wget_hashmap_set_value_destructor(dns_cache, (wget_hashmap_value_destructor_t)_free_dns);
-	}
+	// key and value are the same to make wget_hashmap_get() return old entry
+	wget_hashmap_put_noalloc(cache->cache, entryp, entryp);
 
-	if (wget_hashmap_contains(dns_cache, entryp)) {
-		_free_dns(entryp);
-	} else {
-		// key and value are the same to make wget_hashmap_get() return old entry
-		wget_hashmap_put_noalloc(dns_cache, entryp, entryp);
-	}
+	wget_thread_mutex_unlock(cache->mutex);
 
-	wget_thread_mutex_unlock(dns_mutex);
-
-	return addrinfo;
-}
-
-/**
- * Free the DNS cache.
- *
- * The DNS cache is kept internally in memory. This function releases all its entries
- * and then removes the cache itself, thus freeing memory.
- *
- * The cache will be re-generated again when calling wget_tcp_resolve(), if the `tcp->caching` flag
- * was set.
- *
- */
-void wget_dns_cache_free(void)
-{
-	wget_thread_mutex_lock(dns_mutex);
-	wget_hashmap_free(&dns_cache);
-	wget_thread_mutex_unlock(dns_mutex);
+	return WGET_E_SUCCESS;
 }
 
 /** @} */

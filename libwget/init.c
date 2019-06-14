@@ -44,6 +44,8 @@ static struct _CONFIG {
 	.cookies_enabled = 0
 };
 
+static wget_dns_cache_t *dns_cache;
+
 static int _init;
 static wget_thread_mutex_t _mutex;
 static bool initialized;
@@ -73,7 +75,7 @@ static void __attribute__ ((destructor)) _wget_global_exit(void)
 void wget_global_init(int first_key, ...)
 {
 	va_list args;
-	int key, rc;
+	int key, rc, caching;
 	const char *psl_file = NULL;
 	wget_logger_func_t func; // intermediate var to satisfy MSVC
 
@@ -89,7 +91,6 @@ void wget_global_init(int first_key, ...)
 	}
 
 	wget_console_init();
-	wget_dns_cache_init();
 	wget_random_init();
 	wget_http_init();
 
@@ -127,7 +128,13 @@ void wget_global_init(int first_key, ...)
 			wget_logger_set_file(wget_get_logger(WGET_LOGGER_INFO), va_arg(args, const char *));
 			break;
 		case WGET_DNS_CACHING:
-			wget_dns_set_caching(NULL, va_arg(args, int));
+			caching = va_arg(args, int);
+			if (caching) {
+				if ((rc = wget_dns_cache_init(&dns_cache)) == WGET_E_SUCCESS)
+					wget_dns_set_cache(NULL, dns_cache);
+				else
+					wget_error_printf(_("Failed to init DNS cache (%d)"), rc);
+			}
 			break;
 		case WGET_TCP_FASTFORWARD:
 			wget_tcp_set_tcp_fastopen(NULL, va_arg(args, int));
@@ -198,9 +205,9 @@ void wget_global_deinit(void)
 			wget_cookie_db_free(&_config.cookie_db);
 		}
 		wget_tcp_set_bind_address(NULL, NULL);
-		wget_dns_cache_free();
 
-		wget_dns_cache_exit();
+		wget_dns_cache_free(&dns_cache);
+
 		rc = wget_net_deinit();
 		wget_ssl_deinit();
 		wget_http_set_http_proxy(NULL, NULL);

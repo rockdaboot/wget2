@@ -2884,6 +2884,9 @@ static int use_askpass(void)
 #include <netdb.h>
 */
 
+static wget_dns_cache_t *dns_cache;
+static wget_dns_t *dns;
+
 static int _preload_dns_cache(const char *fname)
 {
 	FILE *fp;
@@ -2903,8 +2906,8 @@ static int _preload_dns_cache(const char *fname)
 		wget_strtolower(name);
 
 		debug_printf("Adding DNS Mapping: %s -> %s\n", name, ip);
-		wget_tcp_dns_cache_add(ip, name, 80);
-		wget_tcp_dns_cache_add(ip, name, 443);
+		wget_dns_cache_ip(dns, ip, name, 80);
+		wget_dns_cache_ip(dns, ip, name, 443);
 	}
 
 	if (fp != stdin)
@@ -3009,8 +3012,6 @@ static const char *get_xdg_config_home(const char *user_home)
 
 	return home_dir;
 }
-
-static wget_dns_t *dns;
 
 static void stats_callback_dns(wget_dns_t *_dns, wget_dns_stats_data_t *stats, void *ctx)
 {
@@ -3433,6 +3434,13 @@ int init(int argc, const char **argv)
 		wget_error_printf(_("Failed to init DNS (%d)"), rc);
 		return -1;
 	}
+	if (config.dns_caching) {
+		if ((rc = wget_dns_cache_init(&dns_cache))) {
+			wget_error_printf(_("Failed to init DNS cache (%d)"), rc);
+			return -1;
+		}
+		wget_dns_set_cache(dns, dns_cache);
+	}
 	wget_dns_set_timeout(dns, config.dns_timeout);
 	wget_tcp_set_dns(NULL, dns);
 
@@ -3494,7 +3502,6 @@ int init(int argc, const char **argv)
 	// set module specific options
 	wget_tcp_set_timeout(NULL, config.read_timeout);
 	wget_tcp_set_connect_timeout(NULL, config.connect_timeout);
-	wget_dns_set_caching(NULL, config.dns_caching);
 	wget_tcp_set_tcp_fastopen(NULL, config.tcp_fastopen);
 	wget_tcp_set_tls_false_start(NULL, config.tls_false_start);
 	if (!config.dont_write) // fuzzing mode, try to avoid real network access
@@ -3589,6 +3596,7 @@ void deinit(void)
 		site_stats_exit();
 
 	wget_dns_free(&dns);
+	wget_dns_cache_free(&dns_cache);
 
 	wget_cookie_db_free(&config.cookie_db);
 	wget_hsts_db_free(&config.hsts_db);
