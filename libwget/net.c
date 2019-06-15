@@ -38,11 +38,7 @@
 #include <c-ctype.h>
 #include <time.h>
 #include <errno.h>
-#ifdef HAVE_SYS_SOCKET_H
-# include <sys/socket.h>
-#elif defined HAVE_WS2TCPIP_H
-# include <ws2tcpip.h>
-#endif
+#include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
 

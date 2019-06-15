@@ -771,7 +771,7 @@ AC_SUBST([TEST_LIBS])
 
 # Checks for header files.
 AC_CHECK_HEADERS([\
- crypt.h idna.h idn/idna.h idn2.h unicase.h netinet/tcp.h sys/uio.h threads.h])
+ crypt.h idna.h idn/idna.h idn2.h unicase.h netinet/tcp.h threads.h])
 
 # Checks for library functions.
 AC_FUNC_FORK

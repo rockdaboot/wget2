@@ -8,7 +8,6 @@ local-checks-to-skip = \
   sc_cast_of_argument_to_free \
   sc_immutable_NEWS \
   sc_makefile_at_at_check \
-  sc_prohibit_always_true_header_tests \
   sc_prohibit_atoi_atof \
   sc_prohibit_gnu_make_extensions \
   sc_prohibit_strcmp
