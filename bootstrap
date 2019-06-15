@@ -724,7 +724,11 @@ if $use_gnulib; then
     }
   fi
 
-  gnulib_tool=$GNULIB_SRCDIR/gnulib-tool
+  # Try to use the (experimental) python implementation when possible
+  gnulib_tool=$GNULIB_SRCDIR/gnulib-tool.py
+  if ! command -v python 2>&1 >/dev/null; then
+	  gnulib_tool=$GNULIB_SRCDIR/gnulib-tool
+  fi
   <$gnulib_tool || exit $?
 fi
 
