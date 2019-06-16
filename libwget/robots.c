@@ -44,6 +44,13 @@
  * for easy access.
  */
 
+struct wget_robots_st {
+	wget_vector_t
+		*paths;    //!< paths found in robots.txt (element: wget_string_t)
+	wget_vector_t
+		*sitemaps; //!< sitemaps found in robots.txt (element: char *)
+};
+
 static void _free_path(wget_string_t *path)
 {
 	xfree(path->p);
@@ -52,7 +59,7 @@ static void _free_path(wget_string_t *path)
 /**
  * \param[in] data Memory with robots.txt content (with trailing 0-byte)
  * \param[in] client Name of the client / user-agent
- * \return Return an allocated ROBOTS structure or NULL on error
+ * \return Return an allocated wget_robots_t structure or NULL on error
  *
  * The function parses the robots.txt \p data and returns a ROBOTS structure
  * including a list of the disallowed paths and including a list of the sitemap
@@ -131,9 +138,9 @@ wget_robots_t *wget_robots_parse(const char *data, const char *client)
 }
 
 /**
- * \param[in,out] robots Pointer to Pointer to ROBOTS structure
+ * \param[in,out] robots Pointer to Pointer to wget_robots_t structure
  *
- * wget_robots_free() free's the formerly allocated ROBOTS structure.
+ * wget_robots_free() free's the formerly allocated wget_robots_t structure.
  */
 void wget_robots_free(wget_robots_t **robots)
 {
@@ -143,6 +150,56 @@ void wget_robots_free(wget_robots_t **robots)
 		xfree(*robots);
 		*robots = NULL;
 	}
+}
+
+/**
+ * @param robots Pointer to instance of wget_robots_t
+ * @return Returns the number of paths listed in \p robots
+ */
+int wget_robots_get_path_count(wget_robots_t *robots)
+{
+	if (robots)
+		return wget_vector_size(robots->paths);
+
+	return 0;
+}
+
+/**
+ * @param robots Pointer to instance of wget_robots_t
+ * @param index Index of the wanted path
+ * @return Returns the path at \p index or NULL
+ */
+wget_string_t *wget_robots_get_path(wget_robots_t *robots, int index)
+{
+	if (robots && robots->paths)
+		return wget_vector_get(robots->paths, index);
+
+	return NULL;
+}
+
+/**
+ * @param robots Pointer to instance of wget_robots_t
+ * @return Returns the number of sitemaps listed in \p robots
+ */
+int wget_robots_get_sitemap_count(wget_robots_t *robots)
+{
+	if (robots)
+		return wget_vector_size(robots->sitemaps);
+
+	return 0;
+}
+
+/**
+ * @param robots Pointer to instance of wget_robots_t
+ * @param index Index of the wanted sitemap URL
+ * @return Returns the sitemap URL at \p index or NULL
+ */
+const char *wget_robots_get_sitemap(wget_robots_t *robots, int index)
+{
+	if (robots && robots->sitemaps)
+		return wget_vector_get(robots->sitemaps, index);
+
+	return NULL;
 }
 
 /**@}*/

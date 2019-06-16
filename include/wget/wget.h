@@ -2374,17 +2374,20 @@ WGETAPI void
  * Robots types and routines
  */
 
-typedef struct {
-	wget_vector_t
-		*paths;    //!< paths found in robots.txt (element: wget_string_t)
-	wget_vector_t
-		*sitemaps; //!< sitemaps found in robots.txt (element: char *)
-} wget_robots_t;
+typedef struct wget_robots_st wget_robots_t;
 
 WGETAPI wget_robots_t *
 	wget_robots_parse(const char *data, const char *client);
 WGETAPI void
 	wget_robots_free(wget_robots_t **robots);
+WGETAPI int
+	wget_robots_get_path_count(wget_robots_t *robots);
+WGETAPI wget_string_t *
+	wget_robots_get_path(wget_robots_t *robots, int index);
+WGETAPI int
+	wget_robots_get_sitemap_count(wget_robots_t *robots);
+WGETAPI const char *
+	wget_robots_get_sitemap(wget_robots_t *robots, int index);
 
 /*
  * Progress bar routines

@@ -2294,9 +2294,9 @@ static void test_robots(void)
 		wget_robots_t *robots = wget_robots_parse(t->data, PACKAGE_NAME);
 
 		for (unsigned it2 = 0; it2 < countof(test_data[it].path) && t->path[it2]; it2++) {
-			int n = wget_vector_size(robots->paths);
+			int n = wget_robots_get_path_count(robots);
 			for (int it3 = 0; it3 < n; it3++) {
-				wget_string_t *paths = wget_vector_get(robots->paths, it3);
+				wget_string_t *paths = wget_robots_get_path(robots, it3);
 				if (!strcmp(paths->p, t->path[it2])) {
 				//	info_printf("Found path: \"%s\" on robots\n", t->path[it2]);
 					it3 = n;
@@ -2309,9 +2309,9 @@ static void test_robots(void)
 		}
 
 		for (unsigned it2 = 0; it2 < countof(test_data[it].sitemap) && t->sitemap[it2]; it2++) {
-			int n = wget_vector_size(robots->sitemaps);
+			int n = wget_robots_get_sitemap_count(robots);
 			for (int it3 = 0; it3 < n; it3++) {
-				const char *sitemaps = wget_vector_get(robots->sitemaps, it3);
+				const char *sitemaps = wget_robots_get_sitemap(robots, it3);
 				if (!strcmp(sitemaps, t->sitemap[it2])) {
 				//	info_printf("Found sitemap: \"%s\" on robots\n", t->sitemap[it2]);
 					it3 = n;

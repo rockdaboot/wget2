@@ -998,8 +998,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	} else if ((host = host_get(iri))) {
 		if (host->robots && iri->path) {
 			// info_printf("%s: checking '%s' / '%s'\n", __func__, iri->path, iri->uri);
-			for (int it = 0; it < wget_vector_size(host->robots->paths); it++) {
-				wget_string_t *path = wget_vector_get(host->robots->paths, it);
+			for (int it = 0, n = wget_robots_get_path_count(host->robots); it < n; it++) {
+				wget_string_t *path = wget_robots_get_path(host->robots, it);
 				// info_printf("%s: checked robot path '%.*s' / '%s' / '%s'\n", __func__, (int)path->len, path->path, iri->path, iri->uri);
 				if (path->len && !strncmp(path->p + 1, iri->path ? iri->path : "", path->len - 1)) {
 					info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), iri->uri);
@@ -2096,10 +2096,11 @@ static void process_response(wget_http_response_t *resp)
 			// Parse the robots file and only if it was successful
 			(job->host->robots = wget_robots_parse(resp->body->data, PACKAGE_NAME)) &&
 			// Sitemaps are not relevant as page requisites
-			!config.page_requisites) {
+			!config.page_requisites)
+	{
 		// add sitemaps to be downloaded (format https://www.sitemaps.org/protocol.html)
-		for (int it = 0; it < wget_vector_size(job->host->robots->sitemaps); it++) {
-			const char *sitemap = wget_vector_get(job->host->robots->sitemaps, it);
+		for (int it = 0, n = wget_robots_get_sitemap_count(job->host->robots); it < n; it++) {
+			const char *sitemap = wget_robots_get_sitemap(job->host->robots, it);
 			debug_printf("adding sitemap '%s'\n", sitemap);
 			add_url(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see https://www.sitemaps.org/protocol.html#escaping
 		}
