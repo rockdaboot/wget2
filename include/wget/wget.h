@@ -554,6 +554,8 @@ WGETAPI size_t
  * Printf-style routines
  */
 
+#define wget_printf(fmt, ...) wget_fprintf(stdout, (fmt), ##__VA_ARGS__)
+
 WGETAPI size_t
 	wget_vasprintf(char **strp, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
 WGETAPI size_t
