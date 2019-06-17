@@ -500,7 +500,7 @@ AM_CONDITIONAL([WITH_WOLFSSL], [test "x$with_wolfssl" = xyes])
 AM_CONDITIONAL([WITH_TLS], [test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes || test "x$with_openssl" = xyes])
 AS_IF([test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes], [
   AC_DEFINE([WITH_TLS], [1], [Built with TLS support])
-], [AC_DEFINE([WITH_TLS], [0], [No TLS support]))
+], [AC_DEFINE([WITH_TLS], [0], [No TLS support])])
 
 AS_IF([test "x$with_ssl" == xno || test "x$with_gnutls_hash" != xyes], [
   PKG_CHECK_MODULES([NETTLE], nettle, [
@@ -834,6 +834,12 @@ AC_CONFIG_FILES([Makefile
                  docs/wget2_md2man.sh])
 AC_OUTPUT
 
+# Check if expected TLS library was found and print it
+AS_IF([test "x$with_ssl" == xwolfssl && test "x$with_wolfssl" == xno], [ssl_enabled="(not found)"],
+  [test "x$with_ssl" == xopenssl && test "x$with_openssl" == xno], [ssl_enabled="(not found)"],
+  [test "x$with_ssl" == xgnutls && test "x$with_gnutls" == xno], [ssl_enabled="(not found)"],
+  [])
+
 AC_MSG_NOTICE([Summary of build options:
 
   Version:            ${PACKAGE_VERSION}
@@ -844,7 +850,7 @@ AC_MSG_NOTICE([Summary of build options:
   LDFlags:            ${LDFLAGS}
   Libs:               ${LIBS}
   Library types:      shared=${enable_shared}, static=${enable_static}
-  SSL/TLS support:    $with_gnutls $with_wolfssl $with_ssl
+  SSL/TLS support:    $with_ssl $ssl_enabled
   GZIP compression:   $with_zlib
   BZIP2 compression:  $with_bzip2
   LZMA compression:   $with_lzma

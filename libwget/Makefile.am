@@ -14,11 +14,13 @@ if WITH_GNUTLS
 else
 if WITH_OPENSSL
   libwget_la_SOURCES += ssl_openssl.c
-endif
+else
 if WITH_WOLFSSL
   libwget_la_SOURCES += ssl_wolfssl.c
 else
   libwget_la_SOURCES += ssl_none.c
+endif
+endif
 endif
 
 libwget_la_CPPFLAGS =\
