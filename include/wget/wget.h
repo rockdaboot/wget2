@@ -2376,8 +2376,8 @@ WGETAPI void
 
 typedef struct wget_robots_st wget_robots_t;
 
-WGETAPI wget_robots_t *
-	wget_robots_parse(const char *data, const char *client);
+WGETAPI int
+	wget_robots_parse(wget_robots_t **robots, const char *data, const char *client);
 WGETAPI void
 	wget_robots_free(wget_robots_t **robots);
 WGETAPI int

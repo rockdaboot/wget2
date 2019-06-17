@@ -2291,7 +2291,13 @@ static void test_robots(void)
 
 	for (unsigned it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
-		wget_robots_t *robots = wget_robots_parse(t->data, PACKAGE_NAME);
+		wget_robots_t *robots;
+
+		if (wget_robots_parse(&robots, t->data, PACKAGE_NAME) != WGET_E_SUCCESS) {
+			info_printf("Failed to parse: \"%s\" on robots\n", t->path[it]);
+			failed++;
+			continue;
+		}
 
 		for (unsigned it2 = 0; it2 < countof(test_data[it].path) && t->path[it2]; it2++) {
 			int n = wget_robots_get_path_count(robots);
@@ -2324,7 +2330,6 @@ static void test_robots(void)
 		}
 
 		wget_robots_free(&robots);
-
 	}
 }
 

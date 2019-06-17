@@ -2094,7 +2094,7 @@ static void process_response(wget_http_response_t *resp)
 			// Only if a file was downloaded
 			resp->body &&
 			// Parse the robots file and only if it was successful
-			(job->host->robots = wget_robots_parse(resp->body->data, PACKAGE_NAME)) &&
+			(wget_robots_parse(&job->host->robots, resp->body->data, PACKAGE_NAME) == WGET_E_SUCCESS) &&
 			// Sitemaps are not relevant as page requisites
 			!config.page_requisites)
 	{

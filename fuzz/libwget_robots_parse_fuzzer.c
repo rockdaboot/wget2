@@ -42,8 +42,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	memcpy(in, data, size);
 	in[size] = 0;
 
-	robots = wget_robots_parse(in, "wget2");
-	wget_robots_free(&robots);
+	if (wget_robots_parse(&robots, in, "wget2") == WGET_E_SUCCESS)
+		wget_robots_free(&robots);
 
 	free(in);
 

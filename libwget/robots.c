@@ -67,7 +67,7 @@ static void _free_path(wget_string_t *path)
  *
  * The ROBOTS structure has to be freed by calling wget_robots_free().
  */
-wget_robots_t *wget_robots_parse(const char *data, const char *client)
+int wget_robots_parse(wget_robots_t **_robots, const char *data, const char *client)
 {
 	wget_robots_t *robots;
 	wget_string_t path;
@@ -75,10 +75,11 @@ wget_robots_t *wget_robots_parse(const char *data, const char *client)
 	int collect = 0;
 	const char *p;
 
-	if (!data || !*data)
-		return NULL;
+	if (!data || !*data || !_robots)
+		return WGET_E_INVALID;
 
-	robots = xcalloc(1, sizeof (wget_robots_t));
+	if (!(robots = wget_calloc(1, sizeof(wget_robots_t))))
+		return WGET_E_MEMORY;
 
 	do {
 		if (collect < 2 && !wget_strncasecmp_ascii(data, "User-agent:", 11)) {
@@ -101,13 +102,16 @@ wget_robots_t *wget_robots_parse(const char *data, const char *client)
 				collect = 2;
 			} else {
 				if (!robots->paths) {
-					robots->paths = wget_vector_create(32, NULL);
+					if (!(robots->paths = wget_vector_create(32, NULL)))
+						goto oom;
 					wget_vector_set_destructor(robots->paths, (wget_vector_destructor_t)_free_path);
 				}
 				for (p = data; *p && !isspace(*p); p++);
 				path.len = p - data;
-				path.p = wget_strmemdup(data, path.len);
-				wget_vector_add(robots->paths, &path, sizeof(path));
+				if (!(path.p = wget_strmemdup(data, path.len)))
+					goto oom;
+				if (wget_vector_add(robots->paths, &path, sizeof(path)) < 0)
+					goto oom;
 			}
 		}
 		else if (!wget_strncasecmp_ascii(data, "Sitemap:", 8)) {
@@ -115,8 +119,14 @@ wget_robots_t *wget_robots_parse(const char *data, const char *client)
 			for (p = data; *p && !isspace(*p); p++);
 
 			if (!robots->sitemaps)
-				robots->sitemaps = wget_vector_create(4, NULL);
-			wget_vector_add_noalloc(robots->sitemaps, wget_strmemdup(data, p - data));
+				if (!(robots->sitemaps = wget_vector_create(4, NULL)))
+					goto oom;
+
+			char *sitemap = wget_strmemdup(data, p - data);
+			if (!sitemap)
+				goto oom;
+			if (wget_vector_add_noalloc(robots->sitemaps, sitemap) < 0)
+				goto oom;
 		}
 
 		if ((data = strchr(data, '\n')))
@@ -134,7 +144,12 @@ wget_robots_t *wget_robots_parse(const char *data, const char *client)
 	}
 */
 
-	return robots;
+	*(_robots) = robots;
+	return WGET_E_SUCCESS;
+
+oom:
+	wget_robots_free(&robots);
+	return WGET_E_MEMORY;
 }
 
 /**
