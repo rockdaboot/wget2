@@ -125,20 +125,20 @@ G_GNUC_WGET_PURE static const char *_scheme_string(int scheme)
 
 static int print_human_entry(FILE *fp, const server_stats_t *server_stats)
 {
-	fprintf(fp, "  %s:\n", NULL_TO_DASH(server_stats->hostname));
-	fprintf(fp, "    IP             : %s\n", NULL_TO_DASH(server_stats->ip));
-	fprintf(fp, "    Scheme         : %s\n", _scheme_string(server_stats->scheme));
-	fprintf(fp, "    HPKP           : %s\n", _hpkp_string(server_stats->hpkp));
-	fprintf(fp, "    HPKP New Entry : %s\n", ON_OFF_DASH(server_stats->hpkp_new));
-	fprintf(fp, "    HSTS           : %s\n", ON_OFF_DASH(server_stats->hsts));
-	fprintf(fp, "    CSP            : %s\n\n", ON_OFF_DASH(server_stats->csp));
+	wget_fprintf(fp, "  %s:\n", NULL_TO_DASH(server_stats->hostname));
+	wget_fprintf(fp, "    IP             : %s\n", NULL_TO_DASH(server_stats->ip));
+	wget_fprintf(fp, "    Scheme         : %s\n", _scheme_string(server_stats->scheme));
+	wget_fprintf(fp, "    HPKP           : %s\n", _hpkp_string(server_stats->hpkp));
+	wget_fprintf(fp, "    HPKP New Entry : %s\n", ON_OFF_DASH(server_stats->hpkp_new));
+	wget_fprintf(fp, "    HSTS           : %s\n", ON_OFF_DASH(server_stats->hsts));
+	wget_fprintf(fp, "    CSP            : %s\n\n", ON_OFF_DASH(server_stats->csp));
 
 	return 0;
 }
 
 static int print_csv_entry(FILE *fp, const server_stats_t *server_stats)
 {
-	fprintf(fp, "%s,%s,%d,%d,%d,%d,%d\n",
+	wget_fprintf(fp, "%s,%s,%d,%d,%d,%d,%d\n",
 		server_stats->hostname ? server_stats->hostname : "",
 		server_stats->ip ? server_stats->ip : "",
 		server_stats->scheme,
@@ -152,12 +152,12 @@ static int print_csv_entry(FILE *fp, const server_stats_t *server_stats)
 
 static void print_human(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "\nServer Statistics:\n");
+	wget_fprintf(fp, "\nServer Statistics:\n");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
 }
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "Hostname,IP,Scheme,HPKP,NewHPKP,HSTS,CSP\n");
+	wget_fprintf(fp, "Hostname,IP,Scheme,HPKP,NewHPKP,HSTS,CSP\n");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 }

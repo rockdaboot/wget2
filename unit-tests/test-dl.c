@@ -300,7 +300,7 @@ int main(G_GNUC_WGET_UNUSED int argc, char **argv)
 	else if (!strcmp(valgrind, "1")) {
 		char cmd[strlen(argv[0]) + 256];
 
-		snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind "
+		wget_snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind "
 				"--error-exitcode=301 --leak-check=yes "
 				"--show-reachable=yes --track-origins=yes %s",
 				argv[0]);
@@ -308,7 +308,7 @@ int main(G_GNUC_WGET_UNUSED int argc, char **argv)
 	} else {
 		char cmd[strlen(valgrind) + strlen(argv[0]) + 32];
 
-		snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS="" %s %s",
+		wget_snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS="" %s %s",
 				valgrind, argv[0]);
 		return system(cmd) != 0;
 	}

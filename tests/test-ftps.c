@@ -84,7 +84,7 @@ int main(void)
 	char options[128];
 
 	// without -O/dev/null Wget generates HTML output from the listing
-	snprintf(options, sizeof(options),
+	wget_snprintf(options, sizeof(options),
 		"-d --no-remove-listing -O/dev/null ftp://localhost:%d",
 		wget_test_get_ftp_server_port());
 

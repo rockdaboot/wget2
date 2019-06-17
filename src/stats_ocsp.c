@@ -91,18 +91,18 @@ static void free_stats(ocsp_stats_t *stats)
 
 static int print_human_entry(FILE *fp, const ocsp_stats_t *ocsp_stats)
 {
-	fprintf(fp, "  %s:\n", ocsp_stats->hostname);
-	fprintf(fp, "    Stapling       : %d\n", ocsp_stats->stapling);
-	fprintf(fp, "    Valid          : %d\n", ocsp_stats->nvalid);
-	fprintf(fp, "    Revoked        : %d\n", ocsp_stats->nrevoked);
-	fprintf(fp, "    Ignored        : %d\n\n", ocsp_stats->nignored);
+	wget_fprintf(fp, "  %s:\n", ocsp_stats->hostname);
+	wget_fprintf(fp, "    Stapling       : %d\n", ocsp_stats->stapling);
+	wget_fprintf(fp, "    Valid          : %d\n", ocsp_stats->nvalid);
+	wget_fprintf(fp, "    Revoked        : %d\n", ocsp_stats->nrevoked);
+	wget_fprintf(fp, "    Ignored        : %d\n\n", ocsp_stats->nignored);
 
 	return 0;
 }
 
 static int print_csv_entry(FILE *fp, const ocsp_stats_t *ocsp_stats)
 {
-	fprintf(fp, "%s,%d,%d,%d,%d\n",
+	wget_fprintf(fp, "%s,%d,%d,%d,%d\n",
 		ocsp_stats->hostname,
 		ocsp_stats->stapling,
 		ocsp_stats->nvalid,
@@ -114,12 +114,12 @@ static int print_csv_entry(FILE *fp, const ocsp_stats_t *ocsp_stats)
 
 static void print_human(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "\nOCSP Statistics:\n");
+	wget_fprintf(fp, "\nOCSP Statistics:\n");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
 }
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "Hostname,Stapling,Valid,Revoked,Ignored\n");
+	wget_fprintf(fp, "Hostname,Stapling,Valid,Revoked,Ignored\n");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 }

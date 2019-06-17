@@ -42,7 +42,7 @@ int wget_plugin_initializer(wget_plugin_t *plugin)
 	FILE *stream = fopen("plugin-loaded.txt", "wb");
 	if (! stream)
 		wget_error_printf_exit("Cannot open plugin-loaded.txt: %s", strerror(errno));
-	fprintf(stream, "Plugin loaded\n");
+	wget_fprintf(stream, "Plugin loaded\n");
 	fclose(stream);
 
 	return 0;
@@ -53,7 +53,7 @@ static void finalizer(G_GNUC_WGET_UNUSED wget_plugin_t *plugin, int exit_status)
 	FILE *stream = fopen("exit-status.txt", "wb");
 	if (! stream)
 		wget_error_printf_exit("Cannot open exit-status.txt: %s", strerror(errno));
-	fprintf(stream, "exit(%d)\n", exit_status);
+	wget_fprintf(stream, "exit(%d)\n", exit_status);
 	fclose(stream);
 }
 WGET_EXPORT int wget_plugin_initializer(wget_plugin_t *plugin);
@@ -73,7 +73,7 @@ static void finalizer(G_GNUC_WGET_UNUSED wget_plugin_t *plugin, int exit_status)
 	FILE *stream = fopen("exit-status.txt", "wb");
 	if (! stream)
 		wget_error_printf_exit("Cannot open exit-status.txt: %s", strerror(errno));
-	fprintf(stream, "exit(%d)\n", exit_status);
+	wget_fprintf(stream, "exit(%d)\n", exit_status);
 	fclose(stream);
 }
 WGET_EXPORT int wget_plugin_initializer(wget_plugin_t *plugin);
@@ -143,9 +143,9 @@ static int argp_fn(wget_plugin_t *plugin, const char *option, const char *value)
 	if (! stream)
 		wget_error_printf_exit("Cannot open options.txt: %s", strerror(errno));
 	if (value)
-		fprintf(stream, "%s=%s\n", option, value);
+		wget_fprintf(stream, "%s=%s\n", option, value);
 	else
-		fprintf(stream, "%s\n", option);
+		wget_fprintf(stream, "%s\n", option);
 	fclose(stream);
 
 	return 0;
@@ -306,7 +306,7 @@ static void finalizer(wget_plugin_t *plugin, G_GNUC_WGET_UNUSED int exit_status)
 		wget_vector_sort(d->files_processed);
 		test_assert((stream = fopen("files_processed.txt", "wb")));
 		for (i = 0; i < wget_vector_size(d->files_processed); i++)
-			fprintf(stream, "%s\n", (const char *) wget_vector_get(d->files_processed, i));
+			wget_fprintf(stream, "%s\n", (const char *) wget_vector_get(d->files_processed, i));
 		fclose(stream);
 	}
 	wget_vector_free(&d->files_processed);
@@ -346,7 +346,7 @@ static void url_filter(wget_plugin_t *plugin, const wget_iri_t *iri, wget_interc
 
 		alt_iri = wget_iri_parse(buf->data, "utf-8");
 		if (! alt_iri) {
-			fprintf(stderr, "Cannot parse URL after replacement (%s)\n", buf->data);
+			wget_fprintf(stderr, "Cannot parse URL after replacement (%s)\n", buf->data);
 		}
 		wget_intercept_action_set_alt_url(action, alt_iri);
 

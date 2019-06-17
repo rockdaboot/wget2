@@ -48,7 +48,7 @@ static int test_all_from(const char *dirname)
 			if (*dp->d_name == '.') continue;
 
 			char fname[strlen(dirname) + strlen(dp->d_name) + 2];
-			snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
+			wget_snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
 
 			uint8_t *data;
 			size_t size;
@@ -73,18 +73,18 @@ int main(G_GNUC_WGET_UNUSED int argc, char **argv)
 	size_t target_len;
 
 	if (!valgrind || !*valgrind || !strcmp(valgrind, "0")) {
-			  // fallthrough
+		// fallthrough
 	}
 	else if (!strcmp(valgrind, "1")) {
-			  char cmd[strlen(argv[0]) + 256];
+		char cmd[strlen(argv[0]) + 256];
 
-			  snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=" SRCDIR "/valgrind-suppressions --gen-suppressions=all %s", argv[0]);
-			  return system(cmd) != 0;
+		wget_snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=" SRCDIR "/valgrind-suppressions --gen-suppressions=all %s", argv[0]);
+		return system(cmd) != 0;
 	} else {
-			  char cmd[strlen(valgrind) + strlen(argv[0]) + 32];
+		char cmd[strlen(valgrind) + strlen(argv[0]) + 32];
 
-			  snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS="" %s %s", valgrind, argv[0]);
-			  return system(cmd) != 0;
+		wget_snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS="" %s %s", valgrind, argv[0]);
+		return system(cmd) != 0;
 	}
 
 	wget_global_init(
@@ -112,13 +112,13 @@ int main(G_GNUC_WGET_UNUSED int argc, char **argv)
 	{
 		int rc;
 		char corporadir[sizeof(SRCDIR) + 1 + target_len + 8];
-		snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.in", (int) target_len, target);
+		wget_snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.in", (int) target_len, target);
 
 		rc = test_all_from(corporadir);
 		if (rc)
 			wget_error_printf("Failed to find %s\n", corporadir);
 
-		snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.repro", (int) target_len, target);
+		wget_snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.repro", (int) target_len, target);
 
 		if (test_all_from(corporadir) && rc)
 			return 77;

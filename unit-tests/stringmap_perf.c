@@ -57,12 +57,12 @@ int main(int argc, const char *const *argv)
 
 	for (it = 1; it < argc; it++) {
 		if ((fd = open(argv[it], O_RDONLY | O_BINARY)) == -1) {
-			fprintf(stderr, "Failed to read open %s\n", argv[it]);
+			wget_fprintf(stderr, "Failed to read open %s\n", argv[it]);
 			continue;
 		}
 
 		if (fstat(fd, &st)) {
-			fprintf(stderr, "Failed to stat %s\n", argv[it]);
+			wget_fprintf(stderr, "Failed to stat %s\n", argv[it]);
 			close(fd);
 			continue;
 		}
@@ -71,13 +71,13 @@ int main(int argc, const char *const *argv)
 
 #ifdef HAVE_MMAP
 		if (!(buf = mmap(NULL, length + 1, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0))) {
-			fprintf(stderr, "Failed to mmap %s (%d)\n", argv[it], errno);
+			wget_fprintf(stderr, "Failed to mmap %s (%d)\n", argv[it], errno);
 			close(fd);
 			continue;
 		}
 #else
 		if (!(buf = wget_malloc(length + 1)) || read(fd, buf, length) != (signed)length) {
-			fprintf(stderr, "Failed to read %s (%d)\n", argv[it], errno);
+			wget_fprintf(stderr, "Failed to read %s (%d)\n", argv[it], errno);
 			close(fd);
 			continue;
 		}

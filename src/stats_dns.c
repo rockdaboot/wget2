@@ -89,7 +89,7 @@ static void free_stats(dns_stats_t *stats)
 
 static int print_human_entry(FILE *fp, const dns_stats_t *dns_stats)
 {
-	fprintf(fp, "  %4lld %s:%hu (%s)\n",
+	wget_fprintf(fp, "  %4lld %s:%hu (%s)\n",
 		dns_stats->millisecs,
 		NULL_TO_DASH(dns_stats->host),
 		dns_stats->port,
@@ -100,7 +100,7 @@ static int print_human_entry(FILE *fp, const dns_stats_t *dns_stats)
 
 static int print_csv_entry(FILE *fp, const dns_stats_t *dns_stats)
 {
-	fprintf(fp, "%s,%s,%hu,%lld\n",
+	wget_fprintf(fp, "%s,%s,%hu,%lld\n",
 		dns_stats->host ? dns_stats->host : "",
 		dns_stats->ip ? dns_stats->ip : "",
 		dns_stats->port,
@@ -111,13 +111,13 @@ static int print_csv_entry(FILE *fp, const dns_stats_t *dns_stats)
 
 static void print_human(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "\nDNS Timings:\n");
-	fprintf(fp, "  %4s %s\n", "ms", "Host");
+	wget_fprintf(fp, "\nDNS Timings:\n");
+	wget_fprintf(fp, "  %4s %s\n", "ms", "Host");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
 }
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "Hostname,IP,Port,Duration\n");
+	wget_fprintf(fp, "Hostname,IP,Port,Duration\n");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 }

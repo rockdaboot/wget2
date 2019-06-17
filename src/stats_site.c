@@ -188,7 +188,7 @@ static int print_human_entry(FILE *fp, site_stats_t *doc)
 {
 	long long transfer_time = doc->response_end - doc->request_start;
 
-	fprintf(fp, "  %6d %5lld %6lld %s\n",
+	wget_fprintf(fp, "  %6d %5lld %6lld %s\n",
 		doc->status, transfer_time, doc->size_downloaded, doc->iri->uri);
 
 	return 0;
@@ -198,7 +198,7 @@ static int print_csv_entry(FILE *fp, site_stats_t *doc)
 {
 	long long transfer_time = doc->response_end - doc->request_start;
 
-	fprintf(fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d,%ld,%s\n",
+	wget_fprintf(fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d,%ld,%s\n",
 		doc->id, doc->parent_id, doc->iri->uri, doc->status, !doc->redirect, doc->method,
 		doc->size_downloaded, doc->size_decompressed, transfer_time,
 		doc->initial_response_duration, doc->encoding, doc->signature_status, doc->last_modified, doc->mime_type);
@@ -208,8 +208,8 @@ static int print_csv_entry(FILE *fp, site_stats_t *doc)
 
 static void print_human(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "\nSite Statistics:\n");
-	fprintf(fp, "  %6s %5s %6s %s\n", "Status", "ms", "Size", "URL");
+	wget_fprintf(fp, "\nSite Statistics:\n");
+	wget_fprintf(fp, "  %6s %5s %6s %s\n", "Status", "ms", "Size", "URL");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
 
 	if (config.debug)
@@ -218,7 +218,7 @@ static void print_human(stats_opts_t *opts, FILE *fp)
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "ID,ParentID,URL,Status,Link,Method,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,Verification,Last-Modified,Content-Type\n");
+	wget_fprintf(fp, "ID,ParentID,URL,Status,Link,Method,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,Verification,Last-Modified,Content-Type\n");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 
 	if (config.debug)

@@ -2323,7 +2323,7 @@ void *downloader_thread(void *p)
 			resp = http_receive_response(downloader->conn);
 
 			if (config.http_retry_on_status && resp && resp->code != 200) {
-				snprintf(http_code, sizeof(http_code), "%d", resp->code);
+				wget_snprintf(http_code, sizeof(http_code), "%d", resp->code);
 				if (check_mime_list(config.http_retry_on_status, http_code)) {
 					print_status(downloader, "Got a HTTP Code %d. Retrying...", resp->code);
 					wget_http_free_request(&resp->req);

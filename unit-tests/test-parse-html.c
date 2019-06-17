@@ -166,7 +166,7 @@ static void test_parse_files(void)
 					continue;
 
 				char fname[strlen(SRCDIR) + strlen(dp->d_name) + 8];
-				snprintf(fname, sizeof(fname), "%s/files/%s", SRCDIR, dp->d_name);
+				wget_snprintf(fname, sizeof(fname), "%s/files/%s", SRCDIR, dp->d_name);
 				info_printf("parsing %s\n", fname);
 
 				char *data;

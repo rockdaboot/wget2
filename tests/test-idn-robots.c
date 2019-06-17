@@ -73,7 +73,7 @@ int main(void)
 		0);
 
 	// test-idn-robots
-	snprintf(options, sizeof(options),
+	wget_snprintf(options, sizeof(options),
 		"--iri -e robots=on -rH -e http_proxy=localhost:%d --local-encoding=EUC-JP http://" euc_jp_hostname "/",
 		wget_test_get_http_server_port());
 
@@ -92,7 +92,7 @@ int main(void)
 // UTF-8 command line characters are mangled on MinGW on C locale
 #ifndef _WIN32
 	// test-idn-robots-utf8
-	snprintf(options, sizeof(options),
+	wget_snprintf(options, sizeof(options),
 		"--iri -e robots=on -rH -e http_proxy=localhost:%d --local-encoding=UTF-8 http://" utf8_hostname "/",
 		wget_test_get_http_server_port());
 

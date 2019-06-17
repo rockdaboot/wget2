@@ -2738,7 +2738,7 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 
 static int _no_memory(void)
 {
-	fprintf(stderr, "No memory\n");
+	fputs("No memory\n", stderr);
 	return EXIT_FAILURE;
 }
 
@@ -2764,9 +2764,9 @@ static const char *get_home_dir(bool free_home)
 static char *prompt_for_password(void)
 {
 	if (config.username)
-		fprintf (stderr, _("Password for user \"%s\": "), config.username);
+		wget_fprintf (stderr, _("Password for user \"%s\": "), config.username);
 	else
-		fprintf (stderr, _("Password: "));
+		wget_fprintf (stderr, _("Password: "));
 
 	if (!is_testing())
 		return getpass("");

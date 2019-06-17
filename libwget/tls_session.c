@@ -346,7 +346,7 @@ static int G_GNUC_WGET_NONNULL_ALL _tls_session_save(FILE *fp, const wget_tls_se
 
 	wget_base64_encode(session_b64, (const char *) tls_session->data, tls_session->data_size);
 
-	fprintf(fp, "%s %lld %lld %s\n", tls_session->host, (long long)tls_session->created, (long long)tls_session->maxage, session_b64);
+	wget_fprintf(fp, "%s %lld %lld %s\n", tls_session->host, (long long)tls_session->created, (long long)tls_session->maxage, session_b64);
 	return 0;
 }
 

@@ -489,9 +489,9 @@ static int _answer_to_connection(
 					response = MHD_create_response_from_buffer(body_len,
 						(void *) (urls[it1].body + from_bytes), MHD_RESPMEM_MUST_COPY);
 					MHD_add_response_header(response, MHD_HTTP_HEADER_ACCEPT_RANGES, "bytes");
-					snprintf(content_range, sizeof(content_range), "%zd-%zd/%zu", from_bytes, to_bytes, body_len);
+					wget_snprintf(content_range, sizeof(content_range), "%zd-%zd/%zu", from_bytes, to_bytes, body_len);
 					MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_RANGE, content_range);
-					snprintf(content_len, sizeof(content_len), "%zu", body_len);
+					wget_snprintf(content_len, sizeof(content_len), "%zu", body_len);
 					MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_LENGTH, content_len);
 					ret = MHD_queue_response(connection, MHD_HTTP_PARTIAL_CONTENT, response);
 				}
@@ -529,7 +529,7 @@ static int _answer_to_connection(
 	wget_buffer_free(&url_full);
 	wget_buffer_free(&header_range);
 	char server_version[50];
-	snprintf(server_version, sizeof(server_version), "Libmicrohttpd/%08x", (unsigned int) MHD_VERSION);
+	wget_snprintf(server_version, sizeof(server_version), "Libmicrohttpd/%08x", (unsigned int) MHD_VERSION);
 	MHD_add_response_header(response, "Server", server_version);
 	MHD_destroy_response(response);
 	return ret;
@@ -669,7 +669,7 @@ static void _remove_directory(const char *dirname)
 {
 	char cmd[strlen(dirname) + 16];
 
-	snprintf(cmd, sizeof(cmd), "rm -rf %s", dirname);
+	wget_snprintf(cmd, sizeof(cmd), "rm -rf %s", dirname);
 	system(cmd);
 }
 static void _empty_directory(const char *dirname)
@@ -696,7 +696,7 @@ static void _empty_directory(const char *dirname)
 				continue;
 
 			char fname[dirlen + 1 + strlen(dp->d_name) + 1];
-			snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
+			wget_snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
 
 			if (unlink(fname) == -1) {
 				// in case fname is a directory glibc returns EISDIR but correct POSIX value would be EPERM.
@@ -764,12 +764,12 @@ static char *_insert_ports(const char *src)
 	while (*src) {
 		if (*src == '{') {
 			if (!strncmp(src, "{{port}}", 8)) {
-				dst += snprintf(dst, srclen - (dst - ret), "%d", http_server_port);
+				dst += wget_snprintf(dst, srclen - (dst - ret), "%d", http_server_port);
 				src += 8;
 				continue;
 			}
 			else if (!strncmp(src, "{{sslport}}", 11)) {
-				dst += snprintf(dst, srclen - (dst - ret), "%d", https_server_port);
+				dst += wget_snprintf(dst, srclen - (dst - ret), "%d", https_server_port);
 				src += 11;
 				continue;
 			}
@@ -790,7 +790,7 @@ static void _write_msg(const char *msg, size_t len)
 		if (len && msg[len - 1] == '\n')
 			len--;
 
-		fprintf(stderr, "\033[33m%.*s\033[m\n", (int) len, msg);
+		wget_fprintf(stderr, "\033[33m%.*s\033[m\n", (int) len, msg);
 	} else
 		fwrite(msg, 1, len, stderr);
 #endif
@@ -871,7 +871,7 @@ void wget_test_start_server(int first_key, ...)
 
 	atexit(wget_test_stop_server);
 
-	snprintf(tmpdir, sizeof(tmpdir), ".test_%d", (int) getpid());
+	wget_snprintf(tmpdir, sizeof(tmpdir), ".test_%d", (int) getpid());
 
 	// remove tmpdir if exists from previous tests
 	_remove_directory(tmpdir);
@@ -934,9 +934,9 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 				continue;
 
 			if (*dirname == '.' && dirname[1] == 0)
-				snprintf(fname, sizeof(fname), "%s", dp->d_name);
+				wget_snprintf(fname, sizeof(fname), "%s", dp->d_name);
 			else
-				snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
+				wget_snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
 
 			wget_info_printf(" - %s/%s\n", dirname, dp->d_name);
 			if (stat(fname, &st) == 0 && S_ISDIR(st.st_mode)) {

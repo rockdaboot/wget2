@@ -77,7 +77,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		wget_iri_free(&iri);
 
 		// test load & save functions
-		snprintf(fname, sizeof(fname), "%d.tmp", getpid());
+		wget_snprintf(fname, sizeof(fname), "%d.tmp", getpid());
 		wget_cookie_db_save(db, fname);
 
 		db2 = wget_cookie_db_init(NULL);

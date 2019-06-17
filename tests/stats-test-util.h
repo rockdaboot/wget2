@@ -108,7 +108,7 @@ static void run_stats_test_with_option(const char *option_str)
 		0);
 
 	// test stats option without format
-	snprintf(options, sizeof(options), "%s=-", option_str);
+	wget_snprintf(options, sizeof(options), "%s=-", option_str);
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, options,
@@ -121,7 +121,7 @@ static void run_stats_test_with_option(const char *option_str)
 
 	for (unsigned it2 = 0; it2 < countof(stats_format); it2++) {
 		// test stats option with format
-		snprintf(options, sizeof(options), "%s=%s:-", option_str, stats_format[it2]);
+		wget_snprintf(options, sizeof(options), "%s=%s:-", option_str, stats_format[it2]);
 		wget_test(
 			// WGET_TEST_KEEP_TMPFILES, 1,
 			WGET_TEST_OPTIONS, options,
@@ -134,7 +134,7 @@ static void run_stats_test_with_option(const char *option_str)
 	}
 
 	for (unsigned it2 = 0; it2 < countof(stats_format); it2++) {
-		snprintf(options, sizeof(options), "%s=%s:stats", option_str, stats_format[it2]);
+		wget_snprintf(options, sizeof(options), "%s=%s:stats", option_str, stats_format[it2]);
 		wget_test(
 			// WGET_TEST_KEEP_TMPFILES, 1,
 			WGET_TEST_OPTIONS, options,
@@ -148,7 +148,7 @@ static void run_stats_test_with_option(const char *option_str)
 	}
 
 	// test stats option without additional params With -r
-	snprintf(options, sizeof(options), "%s -r -nH", option_str);
+	wget_snprintf(options, sizeof(options), "%s -r -nH", option_str);
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, options,
@@ -162,7 +162,7 @@ static void run_stats_test_with_option(const char *option_str)
 		0);
 
 	// test stats option without format With -r
-	snprintf(options, sizeof(options), "%s=- -r -nH", option_str);
+	wget_snprintf(options, sizeof(options), "%s=- -r -nH", option_str);
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, options,
@@ -177,7 +177,7 @@ static void run_stats_test_with_option(const char *option_str)
 
 	for (unsigned it2 = 0; it2 < countof(stats_format); it2++) {
 		// test stats option with format With -r
-		snprintf(options, sizeof(options), "%s=%s:- -r -nH", option_str, stats_format[it2]);
+		wget_snprintf(options, sizeof(options), "%s=%s:- -r -nH", option_str, stats_format[it2]);
 		wget_test(
 			// WGET_TEST_KEEP_TMPFILES, 1,
 			WGET_TEST_OPTIONS, options,
@@ -192,7 +192,7 @@ static void run_stats_test_with_option(const char *option_str)
 	}
 
 	for (unsigned it2 = 0; it2 < countof(stats_format); it2++) {
-		snprintf(options, sizeof(options), "%s=%s:stats -r -nH", option_str, stats_format[it2]);
+		wget_snprintf(options, sizeof(options), "%s=%s:stats -r -nH", option_str, stats_format[it2]);
 		wget_test(
 			// WGET_TEST_KEEP_TMPFILES, 1,
 			WGET_TEST_OPTIONS, options,

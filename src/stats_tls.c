@@ -126,23 +126,23 @@ static const char *_tlsversion_string(int v)
 
 static int print_human_entry(FILE *fp, const tls_stats_t *tls_stats)
 {
-	fprintf(fp, "  %s:\n", tls_stats->hostname);
-	fprintf(fp, "    Version         : %s\n", _tlsversion_string(tls_stats->version));
-	fprintf(fp, "    False Start     : %s\n", ON_OFF_DASH(tls_stats->false_start));
-	fprintf(fp, "    TFO             : %s\n", ON_OFF_DASH(tls_stats->tfo));
-	fprintf(fp, "    ALPN Protocol   : %s\n", NULL_TO_DASH(tls_stats->alpn_proto));
-	fprintf(fp, "    Resumed         : %s\n", YES_NO(tls_stats->resumed));
-	fprintf(fp, "    TCP Protocol    : %s\n", HTTP_1_2(tls_stats->http_protocol));
-	fprintf(fp, "    Cert Chain Size : %d\n", tls_stats->cert_chain_size);
-	fprintf(fp, "    TLS negotiation\n");
-	fprintf(fp, "    duration (ms)   : %lld\n\n", tls_stats->millisecs);
+	wget_fprintf(fp, "  %s:\n", tls_stats->hostname);
+	wget_fprintf(fp, "    Version         : %s\n", _tlsversion_string(tls_stats->version));
+	wget_fprintf(fp, "    False Start     : %s\n", ON_OFF_DASH(tls_stats->false_start));
+	wget_fprintf(fp, "    TFO             : %s\n", ON_OFF_DASH(tls_stats->tfo));
+	wget_fprintf(fp, "    ALPN Protocol   : %s\n", NULL_TO_DASH(tls_stats->alpn_proto));
+	wget_fprintf(fp, "    Resumed         : %s\n", YES_NO(tls_stats->resumed));
+	wget_fprintf(fp, "    TCP Protocol    : %s\n", HTTP_1_2(tls_stats->http_protocol));
+	wget_fprintf(fp, "    Cert Chain Size : %d\n", tls_stats->cert_chain_size);
+	wget_fprintf(fp, "    TLS negotiation\n");
+	wget_fprintf(fp, "    duration (ms)   : %lld\n\n", tls_stats->millisecs);
 
 	return 0;
 }
 
 static int print_csv_entry(FILE *fp, const tls_stats_t *tls_stats)
 {
-	fprintf(fp, "%s,%d,%d,%d,%d,%s,%d,%d,%lld\n",
+	wget_fprintf(fp, "%s,%d,%d,%d,%d,%s,%d,%d,%lld\n",
 		tls_stats->hostname,
 		tls_stats->version,
 		tls_stats->false_start,
@@ -158,12 +158,12 @@ static int print_csv_entry(FILE *fp, const tls_stats_t *tls_stats)
 
 static void print_human(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "\nTLS Statistics:\n");
+	wget_fprintf(fp, "\nTLS Statistics:\n");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_human_entry, fp);
 }
 
 static void print_csv(stats_opts_t *opts, FILE *fp)
 {
-	fprintf(fp, "Hostname,TLSVersion,FalseStart,TFO,Resumed,ALPN,HTTPVersion,Certificates,Duration\n");
+	wget_fprintf(fp, "Hostname,TLSVersion,FalseStart,TFO,Resumed,ALPN,HTTPVersion,Certificates,Duration\n");
 	wget_vector_browse(opts->data, (wget_vector_browse_t) print_csv_entry, fp);
 }

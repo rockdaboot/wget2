@@ -87,7 +87,7 @@ int main(void)
 		0);
 
 	char options[128];
-	snprintf(options, sizeof(options),
+	wget_snprintf(options, sizeof(options),
 		"--force-html --base http://localhost:%d -i page1.html",
 		wget_test_get_http_server_port());
 
