@@ -2428,6 +2428,32 @@ static void test_parse_response_header(void)
 	xfree(response_text);
 }
 
+static unsigned alloc_flags;
+
+static void *test_malloc(size_t size)
+{
+	alloc_flags |= 1;
+	return malloc(size);
+}
+
+static void *test_calloc(size_t nmemb, size_t size)
+{
+	alloc_flags |= 2;
+	return calloc(nmemb, size);
+}
+
+static void *test_realloc(void *ptr, size_t size)
+{
+	alloc_flags |= 4;
+	return realloc(ptr, size);
+}
+
+static void test_free(void *ptr)
+{
+	alloc_flags |= 8;
+	free(ptr);
+}
+
 int main(int argc, const char **argv)
 {
 	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
@@ -2452,7 +2478,10 @@ int main(int argc, const char **argv)
 		return -1;
 
 	srand((unsigned int) time(NULL));
-	wget_set_oomfunc((wget_oom_callback_t) abort);
+	wget_malloc = test_malloc;
+	wget_calloc = test_calloc;
+	wget_realloc = test_realloc;
+	wget_free = test_free;
 
 	// testing basic library functionality
 	test_mem();
@@ -2493,6 +2522,13 @@ int main(int argc, const char **argv)
 	selftest_options() ? failed++ : ok++;
 
 	deinit(); // free resources allocated by init()
+
+	if (alloc_flags == 0xF)
+		ok++;
+	else {
+		failed++;
+		info_printf("alloc_flags %X\n", alloc_flags);
+	}
 
 	if (failed) {
 		info_printf("Summary: %d out of %d tests failed\n", failed, ok + failed);

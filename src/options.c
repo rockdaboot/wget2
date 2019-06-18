@@ -64,6 +64,8 @@
 #  include "wget_gpgme.h"
 #endif
 
+static void set_allocation_functions(void);
+
 static exit_status_t
 	exit_status;
 
@@ -2736,13 +2738,6 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 	return n;
 }
 
-static void _no_memory(void)
-{
-	fputs("No memory\n", stderr);
-	exit(EXIT_FAILURE);
-}
-
-
 // Return the user's home directory (strdup-ed), or NULL if none is found.
 static const char *get_home_dir(bool free_home)
 {
@@ -3014,8 +3009,8 @@ int init(int argc, const char **argv)
 {
 	int n, rc;
 
-	// set libwget out-of-memory function
-	wget_set_oomfunc((wget_oom_callback_t) _no_memory);
+	// use our own allocation functions so we can print error + exit() in a out-of-memory situation
+	set_allocation_functions();
 
 	// this is a special case for switching on debugging before any config file is read
 	if (argc >= 2) {
@@ -3818,4 +3813,54 @@ int selftest_options(void)
 	}
 
 	return ret;
+}
+
+G_GNUC_WGET_NORETURN
+static void no_memory(void)
+{
+	fputs("No memory\n", stderr);
+	exit(EXIT_FAILURE);
+}
+
+static void *my_malloc(size_t size)
+{
+	void *p = malloc(size);
+
+	if (p)
+		return p;
+
+	no_memory();
+}
+
+static void *my_calloc(size_t nmemb, size_t size)
+{
+	void *p = calloc(nmemb, size);
+
+	if (p)
+		return p;
+
+	no_memory();
+}
+
+static void *my_realloc(void *ptr, size_t size)
+{
+	void *p = realloc(ptr, size);
+
+	if (p || (ptr && size == 0))
+		return p;
+
+	no_memory();
+}
+
+static void my_free(void *ptr)
+{
+	free(ptr);
+}
+
+static void set_allocation_functions(void)
+{
+	wget_malloc = my_malloc;
+	wget_calloc = my_calloc;
+	wget_realloc = my_realloc;
+	wget_free = my_free;
 }

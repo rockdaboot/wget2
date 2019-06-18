@@ -38,137 +38,14 @@
  * \defgroup libwget-xalloc Memory allocation functions
  * @{
  *
- * The provided memory allocation functions are used by explicit libwget memory
- * allocations.
+ * Global function pointers to memory allocation functions and to free().
  *
- * They differ from the standard ones in that they call an out-of-memory
- * handler, if set by `wget_set_oomfunc()`. That OOM callback function of type
- * `wget_oom_callback_t` will allow for a custom OOM handling.
- *
- * Some applications, like wget2, will simply print out a message an call exit().
- * Others might want to do e.g. garbage collection and retry the allocation. Therefore
- * the OOM callback has the size of the requested memory as argument and returns a void
- * pointer (may be NULL) that will be returned by the libwget allocation function.
- * If that function was `wget_calloc()`, the memory will be zeroed, if it was `wget_realloc()`,
- * the old memory will be copied over and freed.
+ * These pointers can be set to custom functions.
  */
 
-static wget_oom_callback_t
-	_oom_callback;
-
-static void *_no_memory(size_t size)
-{
-	if (_oom_callback)
-		return _oom_callback(size);
-
-	return NULL;
-}
-
-/**
- * \param[in] oom_callback Pointer to your custom out-of-memory function
- *
- * Set a custom out-of-memory function.
- *
- * If an out-of-memory condition occurs, the OOM callback function is called.
- * If the OOM function returns 0, the allocation function is tried.
- * Else the returned value is used to call exit().
- *
- * So you can set a OOM function to free temporarily allocated memory in ordre to
- * continue operation.
- *
- */
-void wget_set_oomfunc(wget_oom_callback_t oom_callback)
-{
-	_oom_callback = oom_callback;
-}
-
-/**
- * \param[in] size Number of bytes to allocate
- * \return A pointer to the allocated (uninitialized) memory
- *
- * Like the standard malloc(), except when the OOM callback function is set.
- *
- * If an out-of-memory condition occurs, the OOM callback function is called (if set).
- * If the OOM function returns 0, wget_malloc() returns NULL. Else it exits with the returned
- * exit status.
- */
-void *wget_malloc(size_t size)
-{
-	void *p = malloc(size);
-
-	if (!p)
-		p = _no_memory(size);
-
-	return p;
-}
-
-/**
- * \param[in] nmemb Number of elements (each of size \p size) to allocate
- * \param[in] size Size of element
- * \return A pointer to the allocated (initialized) memory
- *
- * Like the standard calloc(), except when the OOM callback function is set.
- *
- * If an out-of-memory condition occurs the oom callback function is called (if set).
- * If the OOM function returns 0, wget_calloc() returns NULL. Else it exits with the returned
- * exit status.
- */
-void *wget_calloc(size_t nmemb, size_t size)
-{
-	void *p = calloc(nmemb, size);
-
-	if (!p) {
-		p = _no_memory(nmemb * size);
-		if (p)
-			memset(p, 0, nmemb * size);
-	}
-
-	return p;
-}
-
-/**
- * \param[in] ptr Pointer to old memory area
- * \param[in] size Number of bytes to allocate for the new memory area
- * \return A pointer to the new memory area
- *
- * Like the standard realloc(), except when the OOM callback function is set.
- *
- * If an out-of-memory condition occurs the OOM callback function is called (if set).
- * If the OOM function returns 0, wget_realloc() returns NULL. Else it exits with the returned
- * exit status.
- */
-void *wget_realloc(void *ptr, size_t size)
-{
-	void *p;
-
-	if (!(p = realloc(ptr, size))) {
-		if (!size && ptr)
-			return NULL; // realloc() acted as free().
-
-		p = _no_memory(size);
-		if (p) {
-			memmove(p, ptr, size);
-			free(ptr);
-		}
-	}
-
-	return p;
-}
-
-/**
- * \param[in] ptr Pointer to memory-pointer to be freed
- *
- * This function is like free().
- *
- * It is basically needed on systems where the library malloc heap is different
- * from the caller's malloc heap, which happens on Windows when the library
- * is a separate DLL.
- *
- * To prevent typical use-after-free issues, use the macro wget_xfree().
- */
-void wget_free(void *ptr)
-{
-	free(ptr);
-}
+wget_malloc_function wget_malloc = malloc;
+wget_calloc_function wget_calloc = calloc;
+wget_realloc_function wget_realloc = realloc;
+wget_free_function wget_free = free;
 
 /**@}*/

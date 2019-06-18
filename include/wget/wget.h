@@ -418,25 +418,31 @@ WGETAPI void
 WGETAPI int
 	wget_list_browse(const wget_list_t *list, wget_list_browse_t browse, void *context) G_GNUC_WGET_NONNULL((2));
 
-/*
- * Memory allocation routines
+/**
+ * \ingroup libwget-xalloc
+ *
+ * Memory allocation function pointers
+ * @{
  */
 
-// I try to never leave freed pointers hanging around
+// Don't leave freed pointers hanging around
 #define wget_xfree(a) do { if (a) { wget_free((void *)(a)); a=NULL; } } while (0)
 
-typedef void *(*wget_oom_callback_t)(int size);
+/// Type of malloc() function
+typedef void *(*wget_malloc_function) (size_t);
+/// Type of calloc() function
+typedef void *(*wget_calloc_function) (size_t, size_t);
+/// Type of realloc() function
+typedef void *(*wget_realloc_function) (void *, size_t);
+/// Type of free() function
+typedef void (*wget_free_function) (void *);
 
-WGETAPI void *
-	wget_malloc(size_t size) G_GNUC_WGET_MALLOC G_GNUC_WGET_ALLOC_SIZE(1);
-WGETAPI void *
-	wget_calloc(size_t nmemb, size_t size) G_GNUC_WGET_MALLOC G_GNUC_WGET_ALLOC_SIZE2(1,2);
-WGETAPI void *
-	wget_realloc(void *ptr, size_t size) G_GNUC_WGET_ALLOC_SIZE(2);
-WGETAPI void
-	wget_free(void *ptr);
-WGETAPI void
-	wget_set_oomfunc(wget_oom_callback_t);
+/* For use in callbacks */
+extern WGETAPI wget_malloc_function wget_malloc;
+extern WGETAPI wget_calloc_function wget_calloc;
+extern WGETAPI wget_realloc_function wget_realloc;
+extern WGETAPI wget_free_function wget_free;
+/** @} */
 
 /*
  * String/Memory routines, slightly different than standard functions
