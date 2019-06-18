@@ -40,29 +40,28 @@
  *
  * The provided memory allocation functions are used by explicit libwget memory
  * allocations.
- * They differ from the standard ones in that they exit the program in an
- * out-of-memory situation with %EXIT_FAILURE. That means, you don't have to
- * check the returned value against %NULL.
  *
- * You can provide a out-of-memory function that will be called before exit(),
- * e.g. to print out a "No memory" message.
+ * They differ from the standard ones in that they call an out-of-memory
+ * handler, if set by `wget_set_oomfunc()`. That OOM callback function of type
+ * `wget_oom_callback_t` will allow for a custom OOM handling.
  *
- * To work around this behavior, provide your own allocation routines,
- * namely malloc(), calloc(), realloc().
+ * Some applications, like wget2, will simply print out a message an call exit().
+ * Others might want to do e.g. garbage collection and retry the allocation. Therefore
+ * the OOM callback has the size of the requested memory as argument and returns a void
+ * pointer (may be NULL) that will be returned by the libwget allocation function.
+ * If that function was `wget_calloc()`, the memory will be zeroed, if it was `wget_realloc()`,
+ * the old memory will be copied over and freed.
  */
 
 static wget_oom_callback_t
 	_oom_callback;
 
-static int _no_memory(void)
+static void *_no_memory(size_t size)
 {
-	if (_oom_callback) {
-		int rc = _oom_callback();
-		if (rc)
-			exit(rc);
-	}
+	if (_oom_callback)
+		return _oom_callback(size);
 
-	return 0;
+	return NULL;
 }
 
 /**
@@ -96,10 +95,10 @@ void wget_set_oomfunc(wget_oom_callback_t oom_callback)
 void *wget_malloc(size_t size)
 {
 	void *p = malloc(size);
-	if (!p) {
-		_no_memory(); // if this returns, try again
-		p = malloc(size);
-	}
+
+	if (!p)
+		p = _no_memory(size);
+
 	return p;
 }
 
@@ -117,10 +116,13 @@ void *wget_malloc(size_t size)
 void *wget_calloc(size_t nmemb, size_t size)
 {
 	void *p = calloc(nmemb, size);
+
 	if (!p) {
-		_no_memory(); // if this returns, try again
-		p = calloc(nmemb, size);
+		p = _no_memory(nmemb * size);
+		if (p)
+			memset(p, 0, nmemb * size);
 	}
+
 	return p;
 }
 
@@ -139,14 +141,15 @@ void *wget_realloc(void *ptr, size_t size)
 {
 	void *p;
 
-	if (!size) {
-		_no_memory();
-		return NULL;
-	}
-
 	if (!(p = realloc(ptr, size))) {
-		_no_memory(); // if this returns, try again
-		p = realloc(ptr, size);
+		if (!size && ptr)
+			return NULL; // realloc() acted as free().
+
+		p = _no_memory(size);
+		if (p) {
+			memmove(p, ptr, size);
+			free(ptr);
+		}
 	}
 
 	return p;

@@ -2736,10 +2736,10 @@ static int G_GNUC_WGET_NONNULL((2)) parse_command_line(int argc, const char **ar
 	return n;
 }
 
-static int _no_memory(void)
+static void _no_memory(void)
 {
 	fputs("No memory\n", stderr);
-	return EXIT_FAILURE;
+	exit(EXIT_FAILURE);
 }
 
 
@@ -3015,7 +3015,7 @@ int init(int argc, const char **argv)
 	int n, rc;
 
 	// set libwget out-of-memory function
-	wget_set_oomfunc(_no_memory);
+	wget_set_oomfunc((wget_oom_callback_t) _no_memory);
 
 	// this is a special case for switching on debugging before any config file is read
 	if (argc >= 2) {
