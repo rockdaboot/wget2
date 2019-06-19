@@ -727,18 +727,25 @@ WGETAPI void
  *
  * @{
  */
+
 /// Type of the hashmap
 typedef struct _wget_hashmap_st wget_hashmap_t;
+
 /// Type of the hashmap iterator
 typedef struct _wget_hashmap_iterator_st wget_hashmap_iterator_t;
+
 /// Type of the hashmap compare function
 typedef int (*wget_hashmap_compare_t)(const void *key1, const void *key2);
+
 /// Type of the hashmap hash function
 typedef unsigned int (*wget_hashmap_hash_t)(const void *value);
+
 /// Type of the hashmap browse callback function
 typedef int (*wget_hashmap_browse_t)(void *ctx, const void *key, void *value);
+
 /// Type of the hashmap key destructor function
 typedef void (*wget_hashmap_key_destructor_t)(void *key);
+
 /// Type of the hashmap value destructor function
 typedef void (*wget_hashmap_value_destructor_t)(void *value);
 /** @} */
@@ -789,64 +796,296 @@ WGETAPI void
  *
  * @{
  */
+
 /// Type of the stringmap
 typedef wget_hashmap_t wget_stringmap_t;
+
 /// Type of the stringmap iterator
 typedef wget_hashmap_iterator_t wget_stringmap_iterator_t;
+
 /// Type of the stringmap compare function
 typedef int (*wget_stringmap_compare_t)(const char *key1, const char *key2);
+
 /// Type of the stringmap hash function
 typedef unsigned int (*wget_stringmap_hash_t)(const char *value);
+
 /// Type of the stringmap browse callback function
 typedef int (*wget_stringmap_browse_t)(void *ctx, const char *key, void *value);
+
 /// Type of the stringmap key destructor function
 typedef void (*wget_stringmap_key_destructor_t)(char *key);
+
 /// Type of the stringmap value destructor function
 typedef void (*wget_stringmap_value_destructor_t)(void *value);
-/** @} */
 
 /// Wrapper around wget_hashmap_iterator_alloc().
 #define wget_stringmap_iterator_alloc wget_hashmap_iterator_alloc
 /// Wrapper around wget_hashmap_iterator_free().
 #define wget_stringmap_iterator_free wget_hashmap_iterator_free
+/** @} */
 
 WGETAPI wget_stringmap_t *
 	wget_stringmap_create(int max) G_GNUC_WGET_MALLOC;
 WGETAPI wget_stringmap_t *
 	wget_stringmap_create_nocase(int max) G_GNUC_WGET_MALLOC;
-WGETAPI int
-	wget_stringmap_put(wget_stringmap_t *h, const char *key, const void *value);
-WGETAPI int
-	wget_stringmap_size(const wget_stringmap_t *h) G_GNUC_WGET_PURE;
-WGETAPI int
-	wget_stringmap_browse(const wget_stringmap_t *h, wget_stringmap_browse_t browse, void *ctx) G_GNUC_WGET_NONNULL((2));
-WGETAPI void
-	wget_stringmap_free(wget_stringmap_t **h);
-WGETAPI void
-	wget_stringmap_clear(wget_stringmap_t *h);
-WGETAPI int
-	wget_stringmap_get(const wget_stringmap_t *h, const char *key, void **value);
-#define wget_stringmap_get(a, b, c) wget_stringmap_get((a), (b), (void **)(c))
-WGETAPI int
-	wget_stringmap_contains(const wget_stringmap_t *h, const char *key);
-WGETAPI int
-	wget_stringmap_remove(wget_stringmap_t *h, const char *key);
-WGETAPI int
-	wget_stringmap_remove_nofree(wget_stringmap_t *h, const char *key);
-WGETAPI void
-	wget_stringmap_setcmpfunc(wget_stringmap_t *h, wget_stringmap_compare_t cmp);
-WGETAPI int
-	wget_stringmap_sethashfunc(wget_stringmap_t *h, wget_stringmap_hash_t hash);
-WGETAPI void
-	wget_stringmap_set_key_destructor(wget_hashmap_t *h, wget_stringmap_key_destructor_t destructor);
-WGETAPI void
-	wget_stringmap_set_value_destructor(wget_hashmap_t *h, wget_stringmap_value_destructor_t destructor);
-WGETAPI void
-	wget_stringmap_set_load_factor(wget_stringmap_t *h, float factor);
-WGETAPI void
-	wget_stringmap_set_resize_factor(wget_stringmap_t *h, float factor);
-WGETAPI void
-	*wget_stringmap_iterator_next(wget_stringmap_iterator_t *it, char **value);
+
+/**
+ * \ingroup libwget-stringmap
+ *
+ * @{
+ */
+
+/**
+ * \param[in] h Stringmap to put data into
+ * \param[in] key Key to insert into \p h
+ * \param[in] value Value to insert into \p h
+ * \return 0 if inserted a new entry, 1 if entry existed
+ *
+ * Insert a key/value pair into stringmap \p h.
+ *
+ * \p key and \p value are *not* cloned, the stringmap takes 'ownership' of both.
+ *
+ * If \p key already exists and the pointer values the old and the new key differ,
+ * the old key will be destroyed by calling the key destructor function (default is free()).
+ *
+ * To realize a hashset (just keys without values), \p value may be %NULL.
+ *
+ * Neither \p h nor \p key must be %NULL.
+ */
+static inline
+int wget_stringmap_put(wget_stringmap_t *h, const char *key, const void *value)
+{
+	return wget_hashmap_put(h, key, value);
+}
+
+/**
+ * \param[in] h Stringmap
+ * \param[in] key Key to search for
+ * \param[out] value Value to be returned
+ * \return 1 if \p key has been found, 0 if not found
+ *
+ * Get the value for a given key.
+ *
+ * Neither \p h nor \p key must be %NULL.
+ */
+static inline
+int wget_stringmap_get(const wget_stringmap_t *h, const char *key, void **value)
+{
+	return wget_hashmap_get(h, key, value);
+}
+#define wget_stringmap_get(h, k, v) wget_stringmap_get((h), (k), (void **)(v))
+
+/**
+ * \param[in] h Stringmap
+ * \param[in] key Key to search for
+ * \return 1 if \p key has been found, 0 if not found
+ *
+ * Check if \p key exists in \p h.
+ */
+static inline
+int wget_stringmap_contains(const wget_stringmap_t *h, const char *key)
+{
+	return wget_hashmap_contains(h, key);
+}
+
+/**
+ * \param[in] h Stringmap
+ * \param[in] key Key to be removed
+ * \return 1 if \p key has been removed, 0 if not found
+ *
+ * Remove \p key from stringmap \p h.
+ *
+ * If \p key is found, the key and value destructor functions are called
+ * when removing the entry from the stringmap.
+ */
+static inline
+int wget_stringmap_remove(wget_stringmap_t *h, const char *key)
+{
+	return wget_hashmap_remove(h, key);
+}
+
+/**
+ * \param[in] h Stringmap
+ * \param[in] key Key to be removed
+ * \return 1 if \p key has been removed, 0 if not found
+ *
+ * Remove \p key from stringmap \p h.
+ *
+ * Key and value destructor functions are *not* called when removing the entry from the stringmap.
+ */
+static inline
+int wget_stringmap_remove_nofree(wget_stringmap_t *h, const char *key)
+{
+	return wget_hashmap_remove_nofree(h, key);
+}
+
+/**
+ * \param[in] h Stringmap to be free'd
+ *
+ * Remove all entries from stringmap \p h and free the stringmap instance.
+ *
+ * Key and value destructor functions are called for each entry in the stringmap.
+ */
+static inline
+void wget_stringmap_free(wget_stringmap_t **h)
+{
+	wget_hashmap_free(h);
+}
+
+/**
+ * \param[in] h Stringmap to be cleared
+ *
+ * Remove all entries from stringmap \p h.
+ *
+ * Key and value destructor functions are called for each entry in the stringmap.
+ */
+static inline
+void wget_stringmap_clear(wget_stringmap_t *h)
+{
+	wget_hashmap_clear(h);
+}
+
+/**
+ * \param[in] h Stringmap
+ * \return Number of entries in stringmap \p h
+ *
+ * Return the number of entries in the stringmap \p h.
+ */
+static inline
+int wget_stringmap_size(const wget_stringmap_t *h)
+{
+	return wget_hashmap_size(h);
+}
+
+/**
+ * \param[in] h Stringmap
+ * \param[in] browse Function to be called for each element of \p h
+ * \param[in] ctx Context variable use as param to \p browse
+ * \return Return value of the last call to \p browse
+ *
+ * Call function \p browse for each element of stringmap \p h or until \p browse
+ * returns a value not equal to zero.
+ *
+ * \p browse is called with \p ctx and the pointer to the current element.
+ *
+ * The return value of the last call to \p browse is returned or 0 if either \p h or \p browse is %NULL.
+ */
+static inline
+int wget_stringmap_browse(const wget_stringmap_t *h, wget_stringmap_browse_t browse, void *ctx)
+{
+	return wget_hashmap_browse(h, (wget_hashmap_browse_t)browse, ctx);
+}
+
+/**
+ * \param[in] h Stringmap
+ * \param[in] cmp Comparison function used to find keys
+ *
+ * Set the comparison function.
+ */
+static inline
+void wget_stringmap_setcmpfunc(wget_stringmap_t *h, wget_stringmap_compare_t cmp)
+{
+	wget_hashmap_setcmpfunc(h, (wget_hashmap_compare_t)cmp);
+}
+
+/**
+ * \param[in] h Stringmap
+ * \param[in] hash Hash function used to hash keys
+ *
+ * Set the key hash function.
+ *
+ * The keys of all entries in the stringmap will be hashed again.
+ */
+static inline
+int wget_stringmap_sethashfunc(wget_stringmap_t *h, wget_stringmap_hash_t hash)
+{
+	return wget_hashmap_sethashfunc(h, (wget_hashmap_hash_t)hash);
+}
+
+/**
+ * \param[in] h Stringmap
+ * \param[in] destructor Destructor function for keys
+ *
+ * Set the key destructor function.
+ *
+ * Default is free().
+ */
+static inline
+void wget_stringmap_set_key_destructor(wget_hashmap_t *h, wget_stringmap_key_destructor_t destructor)
+{
+	wget_hashmap_set_key_destructor(h, (wget_hashmap_key_destructor_t)destructor);
+}
+
+/**
+ * \param[in] h Stringmap
+ * \param[in] destructor Destructor function for values
+ *
+ * Set the value destructor function.
+ *
+ * Default is free().
+ */
+static inline
+void wget_stringmap_set_value_destructor(wget_hashmap_t *h, wget_stringmap_value_destructor_t destructor)
+{
+	wget_hashmap_set_value_destructor(h, (wget_hashmap_value_destructor_t)destructor);
+}
+
+/**
+ * \param[in] h Stringmap
+ * \param[in] factor The load factor
+ *
+ * Set the load factor function.
+ *
+ * The load factor is determines when to resize the internal memory.
+ * 0.75 means "resize if 75% or more of all slots are used".
+ *
+ * The resize strategy is set by wget_stringmap_set_growth_policy().
+ *
+ * The resize (and rehashing) occurs earliest on the next insertion of a new key.
+ *
+ * Default is 0.75.
+ */
+static inline
+void wget_stringmap_set_load_factor(wget_stringmap_t *h, float factor)
+{
+	wget_hashmap_set_load_factor(h, factor);
+}
+
+/**
+ * \param[in] h Stringmap
+ * \param[in] off Stringmap growth factor
+ *
+ * Set the factor for resizing the stringmap when it's load factor is reached.
+ *
+ * The new size is 'factor * oldsize'. If the new size is less or equal 0,
+ * the involved put function will do nothing and the internal state of
+ * the stringmap will not change.
+ *
+ * Default is 2.
+ */
+static inline
+void wget_stringmap_set_resize_factor(wget_stringmap_t *h, float factor)
+{
+	wget_hashmap_set_resize_factor(h, factor);
+}
+
+/**
+ * \param[in] iter Stringmap iterator
+ * \param[out] value Pointer to the value belonging to the returned key
+ * \return Pointer to the key or NULL if no more elements left
+ *
+ * Returns the next key / value in the stringmap. If all key/value pairs have been
+ * iterated over the function returns NULL and \p value is untouched.
+ *
+ * When iterating over a stringmap, the order of returned key/value pairs is not defined.
+ */
+static inline
+void *wget_stringmap_iterator_next(wget_stringmap_iterator_t *h, char **value)
+{
+	return wget_hashmap_iterator_next(h, (void **) value);
+}
+
+/** @} */
 
 /*
  * Thread wrapper routines
