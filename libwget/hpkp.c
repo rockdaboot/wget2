@@ -473,7 +473,7 @@ static void impl_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t *hpkp)
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'hpkp'
 			/* debug_printf("add HPKP %s (maxage=%lld, includeSubDomains=%d)\n", hpkp->host, (long long)hpkp->maxage, hpkp->include_subdomains); */
-			wget_hashmap_put_noalloc(hpkp_db_priv->entries, hpkp, hpkp);
+			wget_hashmap_put(hpkp_db_priv->entries, hpkp, hpkp);
 			// no need to free anything here
 		}
 	}

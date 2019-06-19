@@ -154,7 +154,7 @@ void wget_netrc_db_add(wget_netrc_db_t *netrc_db, wget_netrc_t *netrc)
 
 	// key and value are the same to make wget_hashmap_get() return old 'netrc'
 	debug_printf("add .netrc %s (login=%s, password=*)\n", netrc->host, netrc->login);
-	wget_hashmap_put_noalloc(netrc_db->machines, netrc, netrc);
+	wget_hashmap_put(netrc_db->machines, netrc, netrc);
 	// no need to free anything here
 }
 

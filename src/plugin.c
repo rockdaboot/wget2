@@ -376,7 +376,7 @@ static plugin_t *_load_plugin(const char *name, const char *path, dl_error_t *e)
 	wget_vector_add_noalloc(plugin_list, (void *) plugin);
 
 	// Add to map
-	wget_stringmap_put_noalloc(plugin_name_index, plugin->name, plugin);
+	wget_stringmap_put(plugin_name_index, plugin->name, plugin);
 
 	return plugin;
 }

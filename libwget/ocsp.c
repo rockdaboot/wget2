@@ -284,7 +284,7 @@ static void _ocsp_db_add_fingerprint_entry(_ocsp_db_impl_t *ocsp_db_priv, _ocsp_
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'ocsp'
 			debug_printf("add OCSP cert %s (maxage=%lld,valid=%d)\n", ocsp->key, (long long)ocsp->maxage, ocsp->valid);
-			wget_hashmap_put_noalloc(ocsp_db_priv->fingerprints, ocsp, ocsp);
+			wget_hashmap_put(ocsp_db_priv->fingerprints, ocsp, ocsp);
 			// no need to free anything here
 		}
 	}
@@ -350,7 +350,7 @@ static void _ocsp_db_add_host_entry(_ocsp_db_impl_t *ocsp_db_priv, _ocsp_t *ocsp
 			_free_ocsp(ocsp);
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'ocsp'
-			wget_hashmap_put_noalloc(ocsp_db_priv->hosts, ocsp, ocsp);
+			wget_hashmap_put(ocsp_db_priv->hosts, ocsp, ocsp);
 			debug_printf("add OCSP host %s (maxage=%lld)\n", ocsp->key, (long long)ocsp->maxage);
 			// no need to free anything here
 		}

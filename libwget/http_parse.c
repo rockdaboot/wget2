@@ -392,7 +392,7 @@ const char *wget_http_parse_challenge(const char *s, wget_http_challenge_t *chal
 
 			if (!challenge->params)
 				challenge->params = wget_stringmap_create_nocase(8);
-			wget_stringmap_put_noalloc(challenge->params, param.name, param.value);
+			wget_stringmap_put(challenge->params, param.name, param.value);
 		}
 
 		while (c_isblank(*s)) s++;

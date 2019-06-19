@@ -1831,9 +1831,9 @@ static void test_stringmap(void)
 {
 	wget_stringmap_t *m;
 	wget_stringmap_iterator_t *iter;
-	char key[128], value[128], *val, *skey;
+	char *key, *value, *val, *skey;
+	char keybuf[1024];
 	int run, it;
-	size_t valuesize;
 
 	// the initial size of 16 forces the internal reshashing function to be called twice
 
@@ -1846,9 +1846,9 @@ static void test_stringmap(void)
 		}
 
 		for (it = 0; it < 26; it++) {
-			snprintf(key, sizeof(key), "http://www.example.com/subdir/%d.html", it);
-			valuesize = snprintf(value, sizeof(value), "%d.html", it);
-			if (wget_stringmap_put(m, key, value, valuesize + 1)) {
+			key = wget_aprintf("http://www.example.com/subdir/%d.html", it);
+			value = wget_aprintf("%d.html", it);
+			if (wget_stringmap_put(m, key, value)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
@@ -1865,7 +1865,7 @@ static void test_stringmap(void)
 
 			if (!(c_isdigit(*val) && x >= 0 && x == y)) {
 				failed++;
-				info_printf("key/value don't match (%s | %s)\n", key, val);
+				info_printf("key/value don't match (%s | %s)\n", skey, val);
 			} else ok++;
 		}
 		wget_stringmap_iterator_free(&iter);
@@ -1877,14 +1877,14 @@ static void test_stringmap(void)
 
 		// now, look up every single entry
 		for (it = 0; it < 26; it++) {
-			snprintf(key, sizeof(key), "http://www.example.com/subdir/%d.html", it);
-			snprintf(value, sizeof(value), "%d.html", it);
-			if (!wget_stringmap_get(m, key, &val)) {
+			wget_snprintf(keybuf, sizeof(keybuf), "http://www.example.com/subdir/%d.html", it);
+			value = strrchr(keybuf, '/') + 1;
+			if (!wget_stringmap_get(m, keybuf, &val)) {
 				failed++;
-				info_printf("stringmap_get(%s) didn't find entry\n", key);
+				info_printf("stringmap_get(%s) didn't find entry\n", keybuf);
 			} else if (strcmp(val, value)) {
 				failed++;
-				info_printf("stringmap_get(%s) found '%s' (expected '%s')\n", key, val, value);
+				info_printf("stringmap_get(%s) found '%s' (expected '%s')\n", keybuf, val, value);
 			} else ok++;
 		}
 
@@ -1896,9 +1896,9 @@ static void test_stringmap(void)
 		} else ok++;
 
 		for (it = 0; it < 26; it++) {
-			snprintf(key, sizeof(key), "http://www.example.com/subdir/%d.html", it);
-			valuesize = snprintf(value, sizeof(value), "%d.html", it);
-			if (wget_stringmap_put(m, key, value, valuesize + 1)) {
+			key = wget_aprintf("http://www.example.com/subdir/%d.html", it);
+			value = wget_aprintf("%d.html", it);
+			if (wget_stringmap_put(m, key, value)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
@@ -1911,9 +1911,8 @@ static void test_stringmap(void)
 
 		// now, remove every single entry
 		for (it = 0; it < 26; it++) {
-			snprintf(key, sizeof(key), "http://www.example.com/subdir/%d.html", it);
-			snprintf(value, sizeof(value), "%d.html", it);
-			wget_stringmap_remove(m, key);
+			snprintf(keybuf, sizeof(keybuf), "http://www.example.com/subdir/%d.html", it);
+			wget_stringmap_remove(m, keybuf);
 		}
 
 		if ((it = wget_stringmap_size(m)) != 0) {
@@ -1922,9 +1921,9 @@ static void test_stringmap(void)
 		} else ok++;
 
 		for (it = 0; it < 26; it++) {
-			snprintf(key, sizeof(key), "http://www.example.com/subdir/%d.html", it);
-			valuesize = snprintf(value, sizeof(value), "%d.html", it);
-			if (wget_stringmap_put(m, key, value, valuesize + 1)) {
+			key = wget_aprintf("http://www.example.com/subdir/%d.html", it);
+			value = wget_aprintf("%d.html", it);
+			if (wget_stringmap_put(m, key, value)) {
 				failed++;
 				info_printf("stringmap_put(%s) returns unexpected old value\n", key);
 			} else ok++;
@@ -1938,18 +1937,18 @@ static void test_stringmap(void)
 
 	// testing alloc/free in stringmap/hashmap
 	wget_stringmap_clear(m);
-	wget_stringmap_put(m, "thekey", NULL, 0) ? failed++ : ok++;
-	wget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
-	wget_stringmap_put(m, "thekey", "thevalue", 9) ? ok++ : failed++;
-	wget_stringmap_put(m, "thekey", "thevalue", 9) ? ok++ : failed++;
-	wget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
+	wget_stringmap_put(m, wget_strdup("thekey"), NULL) ? failed++ : ok++;
+	wget_stringmap_put(m, wget_strdup("thekey"), NULL) ? ok++ : failed++;
+	wget_stringmap_put(m, wget_strdup("thekey"), wget_strdup("thevalue")) ? ok++ : failed++;
+	wget_stringmap_put(m, wget_strdup("thekey"), wget_strdup("thevalue")) ? ok++ : failed++;
+	wget_stringmap_put(m, wget_strdup("thekey"), NULL) ? ok++ : failed++;
 
 	// testing key/value identity alloc/free in stringmap/hashmap
 	wget_stringmap_clear(m);
-	wget_stringmap_put(m, "thekey", NULL, 0) ? failed++ : ok++;
-	wget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
-	wget_stringmap_put(m, "thekey", "thevalue", 9) ? ok++ : failed++;
-	wget_stringmap_put(m, "thekey", NULL, 0) ? ok++ : failed++;
+	wget_stringmap_put(m, wget_strdup("thekey"), NULL) ? failed++ : ok++;
+	wget_stringmap_put(m, wget_strdup("thekey"), NULL) ? ok++ : failed++;
+	wget_stringmap_put(m, wget_strdup("thekey"), wget_strdup("thevalue")) ? ok++ : failed++;
+	wget_stringmap_put(m, wget_strdup("thekey"), NULL) ? ok++ : failed++;
 
 	wget_stringmap_free(&m);
 

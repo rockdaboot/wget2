@@ -215,7 +215,7 @@ void wget_tls_session_db_add(wget_tls_session_db_t *tls_session_db, wget_tls_ses
 		}
 
 		debug_printf("add TLS session data for %s (maxage=%lld, size=%zu)\n", tls_session->host, (long long)tls_session->maxage, tls_session->data_size);
-		wget_hashmap_put_noalloc(tls_session_db->entries, tls_session, tls_session);
+		wget_hashmap_put(tls_session_db->entries, tls_session, tls_session);
 		tls_session_db->changed = 1;
 	}
 

@@ -114,7 +114,7 @@ wget_iri_t *blacklist_add(wget_iri_t *iri)
 
 		if (!wget_hashmap_contains(blacklist, iri)) {
 			// info_printf("Add to blacklist: %s\n",iri->uri);
-			wget_hashmap_put_noalloc(blacklist, iri, NULL); // use hashmap as a hashset (without value)
+			wget_hashmap_put(blacklist, iri, NULL); // use hashmap as a hashset (without value)
 			wget_thread_mutex_unlock(mutex);
 			return iri;
 		} else {

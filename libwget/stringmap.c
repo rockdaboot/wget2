@@ -127,32 +127,9 @@ wget_stringmap_t *wget_stringmap_create_nocase(int max)
  *
  * Neither \p h nor \p key must be %NULL.
  */
-int wget_stringmap_put_noalloc(wget_stringmap_t *h, const char *key, const void *value)
+int wget_stringmap_put(wget_stringmap_t *h, const char *key, const void *value)
 {
-	return wget_hashmap_put_noalloc(h, key, value);
-}
-
-/**
- * \param[in] h Stringmap to put data into
- * \param[in] key Key to insert into \p h
- * \param[in] value Value to insert into \p h
- * \param[in] valuesize Size of \p value
- * \return 0 if inserted a new entry, 1 if entry existed
- *
- * Insert a key/value pair into stringmap \p h.
- *
- * If \p key already exists it will not be cloned. In this case the value destructor function
- * will be called with the old value and the new value will be shallow cloned.
- *
- * If \p doesn't exist, both \p key and \p value will be shallow cloned.
- *
- * To realize a hashset (just keys without values), \p value may be %NULL.
- *
- * Neither \p h nor \p key must be %NULL.
- */
-int wget_stringmap_put(wget_stringmap_t *h, const char *key, const void *value, size_t valuesize)
-{
-	return wget_hashmap_put(h, key, strlen(key) + 1, value, valuesize);
+	return wget_hashmap_put(h, key, value);
 }
 
 /**
@@ -209,7 +186,7 @@ int wget_stringmap_remove(wget_stringmap_t *h, const char *key)
  */
 int wget_stringmap_remove_nofree(wget_stringmap_t *h, const char *key)
 {
-	return wget_hashmap_remove(h, key);
+	return wget_hashmap_remove_nofree(h, key);
 }
 
 /**

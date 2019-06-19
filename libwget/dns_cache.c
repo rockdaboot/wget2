@@ -205,7 +205,7 @@ int wget_dns_cache_add(wget_dns_cache_t *cache, const char *host, uint16_t port,
 	entryp->addrinfo = *addrinfo;
 
 	// key and value are the same to make wget_hashmap_get() return old entry
-	wget_hashmap_put_noalloc(cache->cache, entryp, entryp);
+	wget_hashmap_put(cache->cache, entryp, entryp);
 
 	wget_thread_mutex_unlock(cache->mutex);
 

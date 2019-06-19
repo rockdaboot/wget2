@@ -268,7 +268,7 @@ static void _hsts_db_add_entry(_hsts_db_impl_t *hsts_db_priv, _hsts_t *hsts)
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'hsts'
 			// debug_printf("add HSTS %s:%hu (maxage=%lld, includeSubDomains=%d)\n", hsts->host, hsts->port, (long long)hsts->maxage, hsts->include_subdomains);
-			wget_hashmap_put_noalloc(hsts_db_priv->entries, hsts, hsts);
+			wget_hashmap_put(hsts_db_priv->entries, hsts, hsts);
 			// no need to free anything here
 		}
 	}

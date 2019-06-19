@@ -266,7 +266,7 @@ static void hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *
  *
  * Neither \p h nor \p key must be %NULL.
  */
-int wget_hashmap_put_noalloc(wget_hashmap_t *h, const void *key, const void *value)
+int wget_hashmap_put(wget_hashmap_t *h, const void *key, const void *value)
 {
 	if (h && key) {
 		_entry_t *entry;
@@ -292,47 +292,6 @@ int wget_hashmap_put_noalloc(wget_hashmap_t *h, const void *key, const void *val
 
 		// a new entry
 		hashmap_new_entry(h, hash, key, value);
-	}
-
-	return 0;
-}
-
-/**
- * \param[in] h Hashmap to put data into
- * \param[in] key Key to insert into \p h
- * \param[in] keysize Size of \p key
- * \param[in] value Value to insert into \p h
- * \param[in] valuesize Size of \p value
- * \return 0 if inserted a new entry, 1 if entry existed
- *
- * Insert a key/value pair into hashmap \p h.
- *
- * If \p key already exists it will not be cloned. In this case the value destructor function
- * will be called with the old value and the new value will be shallow cloned.
- *
- * If \p doesn't exist, both \p key and \p value will be shallow cloned.
- *
- * To realize a hashset (just keys without values), \p value may be %NULL.
- *
- * Neither \p h nor \p key must be %NULL.
- */
-int wget_hashmap_put(wget_hashmap_t *h, const void *key, size_t keysize, const void *value, size_t valuesize)
-{
-	if (h && key) {
-		_entry_t *entry;
-		unsigned int hash = h->hash(key);
-
-		if ((entry = hashmap_find_entry(h, key, hash))) {
-			if (h->value_destructor)
-				h->value_destructor(entry->value);
-
-			entry->value = wget_memdup(value, valuesize);
-
-			return 1;
-		}
-
-		// a new entry
-		hashmap_new_entry(h, hash, wget_memdup(key, keysize), wget_memdup(value, valuesize));
 	}
 
 	return 0;

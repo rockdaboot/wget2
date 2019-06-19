@@ -748,9 +748,7 @@ WGETAPI wget_hashmap_t
 WGETAPI void
 	wget_hashmap_set_resize_factor(wget_hashmap_t *h, float factor);
 WGETAPI int
-	wget_hashmap_put(wget_hashmap_t *h, const void *key, size_t keysize, const void *value, size_t valuesize);
-WGETAPI int
-	wget_hashmap_put_noalloc(wget_hashmap_t *h, const void *key, const void *value);
+	wget_hashmap_put(wget_hashmap_t *h, const void *key, const void *value);
 WGETAPI int
 	wget_hashmap_size(const wget_hashmap_t *h) G_GNUC_WGET_PURE;
 WGETAPI int
@@ -817,9 +815,7 @@ WGETAPI wget_stringmap_t *
 WGETAPI wget_stringmap_t *
 	wget_stringmap_create_nocase(int max) G_GNUC_WGET_MALLOC;
 WGETAPI int
-	wget_stringmap_put(wget_stringmap_t *h, const char *key, const void *value, size_t valuesize);
-WGETAPI int
-	wget_stringmap_put_noalloc(wget_stringmap_t *h, const char *key, const void *value);
+	wget_stringmap_put(wget_stringmap_t *h, const char *key, const void *value);
 WGETAPI int
 	wget_stringmap_size(const wget_stringmap_t *h) G_GNUC_WGET_PURE;
 WGETAPI int

@@ -121,7 +121,7 @@ void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 			for (int it = 0; it < wget_vector_size(data); it++) {
 				site_stats_t *e = wget_vector_get(data, it);
 
-				wget_stringmap_put_noalloc(docs, e->iri->uri, e);
+				wget_stringmap_put(docs, e->iri->uri, e);
 			}
 		}
 
@@ -184,7 +184,7 @@ void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 	wget_thread_mutex_lock(mutex);
 	wget_vector_add_noalloc(data, doc);
 	if (docs)
-		wget_stringmap_put_noalloc(docs, doc->iri->uri, doc);
+		wget_stringmap_put(docs, doc->iri->uri, doc);
 	wget_thread_mutex_unlock(mutex);
 }
 

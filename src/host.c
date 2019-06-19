@@ -118,7 +118,7 @@ HOST *host_add(wget_iri_t *iri)
 	if (!wget_hashmap_contains(hosts, &host)) {
 		// info_printf("Add to hosts: %s\n", hostname);
 		hostp = wget_memdup(&host, sizeof(host));
-		wget_hashmap_put_noalloc(hosts, hostp, hostp);
+		wget_hashmap_put(hosts, hostp, hostp);
 	}
 
 	wget_thread_mutex_unlock(hosts_mutex);

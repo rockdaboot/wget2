@@ -1842,7 +1842,7 @@ static void process_head_response(wget_http_response_t *resp)
 			wget_thread_mutex_lock(etag_mutex);
 			if (!etags)
 				etags = wget_stringmap_create(128);
-			int rc = wget_stringmap_put_noalloc(etags, resp->etag, NULL);
+			int rc = wget_stringmap_put(etags, resp->etag, NULL);
 			resp->etag = NULL;
 			wget_thread_mutex_unlock(etag_mutex);
 
@@ -2611,7 +2611,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 			info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)url->len, url->p);
 		else {
 			// Blacklist for URLs before they are processed
-			if (wget_hashmap_put_noalloc(known_urls, wget_strmemdup(buf.data, buf.length), NULL) == 0)
+			if (wget_hashmap_put(known_urls, wget_strmemdup(buf.data, buf.length), NULL) == 0)
 				add_url(job, "utf-8", buf.data, page_requisites ? URL_FLG_REQUISITE : 0);
 		}
 	}
@@ -2676,7 +2676,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 		}
 
 		// Blacklist for URLs before they are processed
-		if (wget_hashmap_put_noalloc(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL)) {
+		if (wget_hashmap_put(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL)) {
 			// the dup'ed url has already been freed when we come here
 			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
 			continue;
@@ -2693,7 +2693,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 		// TODO: url must have same scheme, port and host as base
 
 		// Blacklist for URLs before they are processed
-		if (wget_hashmap_put_noalloc(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL)) {
+		if (wget_hashmap_put(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL)) {
 			// the dup'ed url has already been freed when we come here
 			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
 			continue;
@@ -2806,7 +2806,7 @@ static void _add_urls(JOB *job, wget_vector_t *urls, const char *encoding, wget_
 		}
 
 		// Blacklist for URLs before they are processed
-		if (wget_hashmap_put_noalloc(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL)) {
+		if (wget_hashmap_put(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL)) {
 			// the dup'ed url has already been freed when we come here
 			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
 			continue;

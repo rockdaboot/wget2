@@ -654,7 +654,7 @@ static const HOST *host_add(const HOST *hostp)
 		wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor_t)_free_host_entry);
 	}
 
-	wget_hashmap_put_noalloc(hosts, hostp, hostp);
+	wget_hashmap_put(hosts, hostp, hostp);
 
 	return hostp;
 }

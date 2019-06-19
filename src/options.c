@@ -364,7 +364,7 @@ static int parse_stringset(option_t opt, const char *val, G_GNUC_WGET_UNUSED con
 
 		for (s = p = val; *p; s = p + 1) {
 			if ((p = strchrnul(s, ',')) != s)
-				wget_stringmap_put_noalloc(map, wget_strmemdup(s, p - s), NULL);
+				wget_stringmap_put(map, wget_strmemdup(s, p - s), NULL);
 		}
 	} else {
 		wget_stringmap_clear(map);
@@ -3413,7 +3413,7 @@ int init(int argc, const char **argv)
 				const char *nxt = wget_vector_get(config.sig_ext, i);
 				if (!wget_stringmap_contains(set, nxt)) {
 					wget_vector_add_str(new_sig_ext, nxt);
-					wget_stringmap_put_noalloc(set, wget_strdup(nxt), NULL);
+					wget_stringmap_put(set, wget_strdup(nxt), NULL);
 				}
 			}
 

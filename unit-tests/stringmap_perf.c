@@ -99,7 +99,7 @@ int main(int argc, const char *const *argv)
 					unique++;
 				}
 */
-				if (wget_stringmap_put(map, word, NULL, 0))
+				if (wget_stringmap_put(map, word, NULL))
 					duple++;
 				else
 					unique++;
