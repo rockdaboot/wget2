@@ -519,7 +519,7 @@ WGETAPI wget_buffer_t *
 	wget_buffer_init(wget_buffer_t *buf, char *data, size_t size);
 WGETAPI wget_buffer_t *
 	wget_buffer_alloc(size_t size) G_GNUC_WGET_MALLOC G_GNUC_WGET_ALLOC_SIZE(1);
-WGETAPI void
+WGETAPI int
 	wget_buffer_ensure_capacity(wget_buffer_t *buf, size_t size);
 WGETAPI void
 	wget_buffer_deinit(wget_buffer_t *buf);

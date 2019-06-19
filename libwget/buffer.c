@@ -87,7 +87,8 @@
 wget_buffer_t *wget_buffer_init(wget_buffer_t *buf, char *data, size_t size)
 {
 	if (!buf) {
-		buf = xmalloc(sizeof(wget_buffer_t));
+		if (!(buf = xmalloc(sizeof(wget_buffer_t))))
+			return NULL;
 		buf->release_buf = 1;
 	} else {
 		buf->release_buf = 0;
@@ -102,7 +103,8 @@ wget_buffer_t *wget_buffer_init(wget_buffer_t *buf, char *data, size_t size)
 		if (!size)
 			size = 128;
 		buf->size = size;
-		buf->data = xmalloc(size + 1);
+		if (!(buf->data = xmalloc(size + 1)))
+			return NULL;
 		*buf->data = 0; // always 0 terminate data to allow string functions
 		buf->release_data = 1;
 	}
@@ -127,16 +129,16 @@ wget_buffer_t *wget_buffer_alloc(size_t size)
 	return wget_buffer_init(NULL, NULL, size);
 }
 
-static void _buffer_realloc(wget_buffer_t *buf, size_t size)
+static int _buffer_realloc(wget_buffer_t *buf, size_t size)
 {
-	const char *old_data;
+	char *old_data = buf->data;
 
-	if (unlikely(!buf))
-		return;
+	if (!(buf->data = wget_malloc(size + 1))) {
+		buf->data = old_data;
+		return WGET_E_MEMORY;
+	}
 
-	old_data = buf->data;
 	buf->size = size;
-	buf->data = xmalloc(buf->size + 1);
 
 	if (likely(old_data)) {
 		if (buf->length)
@@ -151,24 +153,27 @@ static void _buffer_realloc(wget_buffer_t *buf, size_t size)
 	}
 
 	buf->release_data = 1;
+	return WGET_E_SUCCESS;
 }
 
 /**
  * \param[in] buf A buffer, created with wget_buffer_init() or wget_buffer_alloc()
  * \param[in] size Total size (in bytes) required in the buffer
+ * \return WGET_E_SUCCESS on success, else WGET_E_MEMORY if the memory allocation failed
  *
  * Make sure the buffer \p buf has at least a **size** of \p size bytes.
  *
  * If the buffer's size is less than that, it will automatically enlarge it
  * (with wget_buffer_realloc()) to make it at least as long.
- *
  */
-void wget_buffer_ensure_capacity(wget_buffer_t *buf, size_t size)
+int wget_buffer_ensure_capacity(wget_buffer_t *buf, size_t size)
 {
 	if (likely(buf)) {
 		if (buf->size < size)
-			_buffer_realloc(buf, size);
+			return _buffer_realloc(buf, size);
 	}
+
+	return WGET_E_SUCCESS;
 }
 
 /**
@@ -304,7 +309,8 @@ size_t wget_buffer_memcat(wget_buffer_t *buf, const void *data, size_t length)
 
 	if (likely(length)) {
 		if (buf->size < buf->length + length)
-			_buffer_realloc(buf, buf->size * 2 + length);
+			if (_buffer_realloc(buf, buf->size * 2 + length) != WGET_E_SUCCESS)
+				return buf->length;
 
 		if (likely(data))
 			memcpy(buf->data + buf->length, data, length);
@@ -440,7 +446,8 @@ size_t wget_buffer_memset_append(wget_buffer_t *buf, char c, size_t length)
 
 	if (likely(length)) {
 		if (unlikely(buf->size < buf->length + length))
-			_buffer_realloc(buf, buf->size * 2 + length);
+			if (_buffer_realloc(buf, buf->size * 2 + length) != WGET_E_SUCCESS)
+				return buf->length;
 
 		memset(buf->data + buf->length, c, length);
 		buf->length += length;

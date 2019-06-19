@@ -308,18 +308,17 @@ static void test_buffer(void)
 	wget_buffer_deinit(&buf);
 
 	// force reallocation
-	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	assert(wget_buffer_init(&buf, sbuf, sizeof(sbuf)) == &buf);
 	wget_buffer_memset(&buf, 0, 4096);
 	wget_buffer_free_data(&buf);
-	wget_buffer_ensure_capacity(&buf, 256);
+	assert(wget_buffer_ensure_capacity(&buf, 256) == WGET_E_SUCCESS);
 	wget_buffer_memset(&buf, 0, 4096);
-	bufp = wget_buffer_init(NULL, NULL, 0);
+	assert((bufp = wget_buffer_init(NULL, NULL, 0)) != NULL);
 	wget_buffer_bufcpy(&buf, bufp);
 	wget_buffer_strcpy(bufp, "moin");
 	wget_buffer_bufcpy(&buf, bufp);
 	wget_buffer_free(&bufp);
 	wget_buffer_deinit(&buf);
-
 }
 
 static void test_buffer_printf(void)

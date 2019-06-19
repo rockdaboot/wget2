@@ -1100,7 +1100,10 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 		}
 
 		if ((size_t)nread + 1024 > bufsize) {
-			wget_buffer_ensure_capacity(conn->buf, bufsize + 1024);
+			if (wget_buffer_ensure_capacity(conn->buf, bufsize + 1024) != WGET_E_SUCCESS) {
+				error_printf(_("Failed to allocate %zu bytes\n"), bufsize + 1024);
+				goto cleanup;
+			}
 			buf = conn->buf->data;
 			bufsize = conn->buf->size;
 		}
