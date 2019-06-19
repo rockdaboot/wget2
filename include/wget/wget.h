@@ -244,14 +244,15 @@ WGET_BEGIN_DECLS
 typedef enum {
 	WGET_E_SUCCESS = 0, /* OK */
 	WGET_E_UNKNOWN = -1, /* general error if nothing else appropriate */
-	WGET_E_INVALID = -2, /* invalid value to function */
-	WGET_E_TIMEOUT = -3, /* timeout condition */
-	WGET_E_CONNECT = -4, /* connect failure */
-	WGET_E_HANDSHAKE = -5, /* general TLS handshake failure */
-	WGET_E_CERTIFICATE = -6, /* general TLS certificate failure */
-	WGET_E_TLS_DISABLED = -7, /* TLS was not enabled at compile time */
-	WGET_E_GPG_DISABLED = -8, /* GPGME was not enabled at compile time */
-	WGET_E_GPG_VER_FAIL = -9, /* 1 or more non-valid signatures */
+	WGET_E_MEMORY = -2, /* memory allocation failure */
+	WGET_E_INVALID = -3, /* invalid value to function */
+	WGET_E_TIMEOUT = -4, /* timeout condition */
+	WGET_E_CONNECT = -5, /* connect failure */
+	WGET_E_HANDSHAKE = -6, /* general TLS handshake failure */
+	WGET_E_CERTIFICATE = -7, /* general TLS certificate failure */
+	WGET_E_TLS_DISABLED = -8, /* TLS was not enabled at compile time */
+	WGET_E_GPG_DISABLED = -9, /* GPGME was not enabled at compile time */
+	WGET_E_GPG_VER_FAIL = -10, /* 1 or more non-valid signatures */
 	WGET_E_GPG_VER_ERR = -11, /* Verification failed, GPGME error */
 	WGET_E_XML_PARSE_ERR = -12, /* XML parsing failed */
 } wget_error_t;
@@ -479,19 +480,18 @@ WGETAPI char *
  * Bitmap routines
  */
 
-typedef struct _wget_bitmap_st wget_bitmap_t;
+typedef struct wget_bitmap_st wget_bitmap_t;
 
+WGETAPI int
+	wget_bitmap_init(wget_bitmap_t **bitmap, unsigned bits);
 WGETAPI void
-	wget_bitmap_set(wget_bitmap_t *b, unsigned n); // n is the index
+	wget_bitmap_free(wget_bitmap_t **bitmap);
 WGETAPI void
-	wget_bitmap_clear(wget_bitmap_t *b, unsigned n);
+	wget_bitmap_set(wget_bitmap_t *bitmap, unsigned n); // n is the index
+WGETAPI void
+	wget_bitmap_clear(wget_bitmap_t *bitmap, unsigned n);
 WGETAPI bool
-	wget_bitmap_get(const wget_bitmap_t *b, unsigned n);
-
-WGETAPI wget_bitmap_t *
-	wget_bitmap_allocate(unsigned bits);
-WGETAPI void
-	wget_bitmap_free(wget_bitmap_t **b);
+	wget_bitmap_get(const wget_bitmap_t *bitmap, unsigned n);
 
 /*
  * Buffer routines
