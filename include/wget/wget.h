@@ -768,7 +768,7 @@ WGETAPI int
 	wget_hashmap_remove_nofree(wget_hashmap_t *h, const void *key);
 WGETAPI void
 	wget_hashmap_setcmpfunc(wget_hashmap_t *h, wget_hashmap_compare_t cmp);
-WGETAPI void
+WGETAPI int
 	wget_hashmap_sethashfunc(wget_hashmap_t *h, wget_hashmap_hash_t hash);
 WGETAPI void
 	wget_hashmap_set_key_destructor(wget_hashmap_t *h, wget_hashmap_key_destructor_t destructor);
@@ -835,7 +835,7 @@ WGETAPI int
 	wget_stringmap_remove_nofree(wget_stringmap_t *h, const char *key);
 WGETAPI void
 	wget_stringmap_setcmpfunc(wget_stringmap_t *h, wget_stringmap_compare_t cmp);
-WGETAPI void
+WGETAPI int
 	wget_stringmap_sethashfunc(wget_stringmap_t *h, wget_stringmap_hash_t hash);
 WGETAPI void
 	wget_stringmap_set_key_destructor(wget_hashmap_t *h, wget_stringmap_key_destructor_t destructor);

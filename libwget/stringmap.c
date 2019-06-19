@@ -261,9 +261,9 @@ void wget_stringmap_setcmpfunc(wget_stringmap_t *h, wget_stringmap_compare_t cmp
  *
  * The keys of all entries in the stringmap will be hashed again.
  */
-void wget_stringmap_sethashfunc(wget_stringmap_t *h, wget_stringmap_hash_t hash)
+int wget_stringmap_sethashfunc(wget_stringmap_t *h, wget_stringmap_hash_t hash)
 {
-	wget_hashmap_sethashfunc(h, (wget_hashmap_hash_t)hash);
+	return wget_hashmap_sethashfunc(h, (wget_hashmap_hash_t)hash);
 }
 
 /**

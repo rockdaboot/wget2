@@ -89,13 +89,14 @@ struct _wget_hashmap_iterator_st {
  * \param[in] h Hashmap
  * \return New iterator instance for \p h
  *
- * Creates a hashmap iterator for \p.
+ * Creates a hashmap iterator for \p h.
  */
 wget_hashmap_iterator_t *wget_hashmap_iterator_alloc(wget_hashmap_t *h)
 {
 	struct _wget_hashmap_iterator_st *iter = wget_calloc(1, sizeof(struct _wget_hashmap_iterator_st));
 
-	iter->h = h;
+	if (iter)
+		iter->h = h;
 
 	return (wget_hashmap_iterator_t *) iter;
 }
@@ -167,7 +168,16 @@ wget_hashmap_t *wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hash
 {
 	wget_hashmap_t *h = wget_malloc(sizeof(wget_hashmap_t));
 
+	if (!h)
+		return NULL;
+
 	h->entry = wget_calloc(max, sizeof(_entry_t *));
+
+	if (!h->entry) {
+		xfree(h);
+		return NULL;
+	}
+
 	h->max = max;
 	h->cur = 0;
 	h->resize_factor = 2;
@@ -194,44 +204,39 @@ static _entry_t * hashmap_find_entry(const wget_hashmap_t *h, const char *key, u
 }
 
 G_GNUC_WGET_NONNULL_ALL
-static void hashmap_rehash(wget_hashmap_t *h, int newmax, int recalc_hash)
+static void hashmap_rehash(wget_hashmap_t *h, _entry_t **new_entry, int newmax, int recalc_hash)
 {
-	_entry_t **new_entry, *entry, *next;
+	_entry_t *entry, *next;
 	int cur = h->cur;
 
-	if (cur) {
-		int pos;
-		new_entry = wget_calloc(newmax, sizeof(_entry_t *));
+	for (int it = 0; it < h->max && cur; it++) {
+		for (entry = h->entry[it]; entry; entry = next) {
+			next = entry->next;
 
-		for (int it = 0; it < h->max && cur; it++) {
-			for (entry = h->entry[it]; entry; entry = next) {
-				next = entry->next;
+			// now move entry from 'h' to 'new_hashmap'
+			if (recalc_hash)
+				entry->hash = h->hash(entry->key);
+			int pos = entry->hash % newmax;
+			entry->next = new_entry[pos];
+			new_entry[pos] = entry;
 
-				// now move entry from 'h' to 'new_hashmap'
-				if (recalc_hash)
-					entry->hash = h->hash(entry->key);
-				pos = entry->hash % newmax;
-				entry->next = new_entry[pos];
-				new_entry[pos] = entry;
-
-				cur--;
-			}
+			cur--;
 		}
-
-		xfree(h->entry);
-		h->entry = new_entry;
-		h->max = newmax;
-		h->threshold = (int)(newmax * h->load_factor);
 	}
+
+	xfree(h->entry);
+	h->entry = new_entry;
+	h->max = newmax;
+	h->threshold = (int)(newmax * h->load_factor);
 }
 
 G_GNUC_WGET_NONNULL((1,3))
-static void hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *key, const char *value)
+static int hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *key, const char *value)
 {
 	_entry_t *entry;
 
 	if (!(entry = wget_malloc(sizeof(_entry_t))))
-		return;
+		return WGET_E_MEMORY;
 
 	int pos = hash % h->max;
 
@@ -244,16 +249,28 @@ static void hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *
 	if (++h->cur >= h->threshold) {
 		int newsize = (int) (h->max * h->resize_factor);
 
-		if (newsize > 0)
-			hashmap_rehash(h, newsize, 0);
+		if (newsize > 0) {
+			_entry_t **new_entry;
+
+			if (!(new_entry = wget_calloc(newsize, sizeof(_entry_t *)))) {
+				h->cur--;
+				xfree(h->entry[pos]);
+				return WGET_E_MEMORY;
+			}
+
+			// h->cur is always > 0 here, so we don't need a check
+			hashmap_rehash(h, new_entry, newsize, 0);
+		}
 	}
+
+	return WGET_E_SUCCESS;
 }
 
 /**
  * \param[in] h Hashmap to put data into
  * \param[in] key Key to insert into \p h
  * \param[in] value Value to insert into \p h
- * \return 0 if inserted a new entry, 1 if entry existed
+ * \return 0 if inserted a new entry, 1 if entry existed, WGET_E_MEMORY if internal allocation failed
  *
  * Insert a key/value pair into hashmap \p h.
  *
@@ -264,13 +281,14 @@ static void hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *
  *
  * To realize a hashset (just keys without values), \p value may be %NULL.
  *
- * Neither \p h nor \p key must be %NULL.
+ * Neither \p h nor \p key must be %NULL, else the return value will always be 0.
  */
 int wget_hashmap_put(wget_hashmap_t *h, const void *key, const void *value)
 {
 	if (h && key) {
 		_entry_t *entry;
 		unsigned int hash = h->hash(key);
+		int rc;
 
 		if ((entry = hashmap_find_entry(h, key, hash))) {
 			if (entry->key != key && entry->key != value) {
@@ -291,7 +309,8 @@ int wget_hashmap_put(wget_hashmap_t *h, const void *key, const void *value)
 		}
 
 		// a new entry
-		hashmap_new_entry(h, hash, key, value);
+		if ((rc = hashmap_new_entry(h, hash, key, value)) < 0)
+			return rc;
 	}
 
 	return 0;
@@ -515,18 +534,30 @@ void wget_hashmap_setcmpfunc(wget_hashmap_t *h, wget_hashmap_compare_t cmp)
 /**
  * \param[in] h Hashmap
  * \param[in] hash Hash function used to hash keys
+ * \return WGET_E_SUCCESS if set successfully, else WGET_E_MEMORY or WGET_E_INVALID
  *
  * Set the key hash function.
  *
- * The keys of all entries in the hashmap will be hashed again.
+ * The keys of all entries in the hashmap will be hashed again. This includes a memory allocation, so
+ * there is a possibility of failure.
  */
-void wget_hashmap_sethashfunc(wget_hashmap_t *h, wget_hashmap_hash_t hash)
+int wget_hashmap_sethashfunc(wget_hashmap_t *h, wget_hashmap_hash_t hash)
 {
-	if (h) {
-		h->hash = hash;
+	if (!h)
+		return WGET_E_INVALID;
 
-		hashmap_rehash(h, h->max, 1);
-	}
+	if (!h->cur)
+		return WGET_E_SUCCESS; // no re-hashing needed
+
+	_entry_t **new_entry = wget_calloc(h->max, sizeof(_entry_t *));
+
+	if (!new_entry)
+		return WGET_E_MEMORY;
+
+	h->hash = hash;
+	hashmap_rehash(h, new_entry, h->max, 1);
+
+	return WGET_E_SUCCESS;
 }
 
 /**
