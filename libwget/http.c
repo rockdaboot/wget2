@@ -678,12 +678,16 @@ void host_ips_free(void)
 
 static void _server_stats_add(wget_http_connection_t *conn, wget_http_response_t *resp)
 {
-	wget_thread_mutex_lock(hosts_mutex);
-
 	HOST *hostp = wget_malloc(sizeof(HOST));
+
+	if (!hostp)
+		return;
+
 	hostp->hostname = wget_strdup(wget_http_get_host(conn));
 	hostp->ip = wget_strdup(conn->tcp->ip);
 	hostp->scheme = wget_strdup(conn->scheme);
+
+	wget_thread_mutex_lock(hosts_mutex);
 
 	if (!hosts || !wget_hashmap_contains(hosts, hostp)) {
 		_stats_data_t stats;
