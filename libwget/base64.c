@@ -144,7 +144,7 @@ size_t wget_base64_decode(char *dst, const char *src, size_t n)
  * \param[in] src Base64 string to be decoded
  * \param[in] n Length of \p src
  * \param[out] outlen Length of returned string, may be NULL.
- * \return Decoded bytes, zero terminated
+ * \return Decoded bytes, zero terminated. Returns NULL if memory allocation failed.
  *
  * Decodes \p n bytes of the base64 string \p src.
  * The decoded bytes are returned in an allocated buffer.
@@ -154,6 +154,9 @@ size_t wget_base64_decode(char *dst, const char *src, size_t n)
 char *wget_base64_decode_alloc(const char *src, size_t n, size_t *outlen)
 {
 	char *dst = xmalloc(wget_base64_get_decoded_length(n));
+
+	if (!dst)
+		return NULL;
 
 	size_t _outlen = wget_base64_decode(dst, src, n);
 
@@ -238,7 +241,7 @@ size_t wget_base64_urlencode(char *dst, const char *src, size_t n)
 /**
  * \param[in] src Input buffer
  * \param[in] n Number of bytes to be encoded
- * \return Base64 encoded string
+ * \return Base64 encoded string or NULL if memory allocation failed
  *
  * Encodes \p n bytes from input buffer \p src.
  * The encoded string is returned in an allocated buffer.
@@ -249,7 +252,8 @@ char *wget_base64_encode_alloc(const char *src, size_t n)
 {
 	char *dst = xmalloc(wget_base64_get_encoded_length(n));
 
-	wget_base64_encode(dst, src, n);
+	if (dst)
+		wget_base64_encode(dst, src, n);
 
 	return dst;
 }
