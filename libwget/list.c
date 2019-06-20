@@ -61,7 +61,7 @@ struct _wget_list_st {
  * \param[in] list Pointer to Pointer to a double linked list
  * \param[in] data Pointer to data to be inserted
  * \param[in] size Size of data in bytes
- * \return Pointer to the new element
+ * \return Pointer to the new element or NULL if memory allocation failed
  *
  * Append an element to the end of the list.<br>
  * \p size bytes at \p data will be copied and appended to the list.
@@ -97,6 +97,9 @@ wget_list_append(wget_list_t **list, const void *data, size_t size)
 {
 	// allocate space for node and data in one row
 	wget_list_t *node = wget_malloc(sizeof(wget_list_t) + size);
+
+	if (!node)
+		return NULL;
 
 	memcpy(node + 1, data, size);
 
