@@ -70,7 +70,14 @@ wget_vector_t *wget_vector_create(int max, wget_vector_compare_t cmp)
 {
 	wget_vector_t *v = xcalloc(1, sizeof(wget_vector_t));
 
-	v->entry = xmalloc(max * sizeof(void *));
+	if (!v)
+		return NULL;
+
+	if (!(v->entry = wget_malloc(max * sizeof(void *)))) {
+		xfree(v);
+		return NULL;
+	}
+
 	v->max = max;
 	v->resize_factor = 2;
 	v->cmp = cmp;
@@ -103,7 +110,7 @@ static int G_GNUC_WGET_NONNULL((2)) _vec_insert_private(wget_vector_t *v, const 
 	if (pos < 0 || !v || pos > v->cur) return -1;
 
 	if (alloc) {
-		elemp = xmalloc(size);
+		elemp = wget_malloc(size);
 		memcpy(elemp, elem, size);
 	} else {
 		elemp = (void *)elem;
