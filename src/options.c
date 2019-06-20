@@ -3822,6 +3822,7 @@ static void no_memory(void)
 	exit(EXIT_FAILURE);
 }
 
+G_GNUC_WGET_RETURNS_NONNULL
 static void *my_malloc(size_t size)
 {
 	void *p = malloc(size);
@@ -3832,6 +3833,7 @@ static void *my_malloc(size_t size)
 	no_memory();
 }
 
+G_GNUC_WGET_RETURNS_NONNULL
 static void *my_calloc(size_t nmemb, size_t size)
 {
 	void *p = calloc(nmemb, size);
@@ -3842,6 +3844,7 @@ static void *my_calloc(size_t nmemb, size_t size)
 	no_memory();
 }
 
+G_GNUC_WGET_RETURNS_NONNULL
 static void *my_realloc(void *ptr, size_t size)
 {
 	void *p = realloc(ptr, size);

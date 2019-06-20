@@ -160,6 +160,12 @@
 #	define G_GNUC_WGET_NULL_TERMINATED
 #endif
 
+#if GCC_VERSION_AT_LEAST(4,9)
+#	define G_GNUC_WGET_RETURNS_NONNULL __attribute__((returns_nonnull))
+#else
+#	define G_GNUC_WGET_RETURNS_NONNULL
+#endif
+
 #if defined __clang__
 #	define G_GNUC_WGET_ALLOC_SIZE(a)
 #	define G_GNUC_WGET_ALLOC_SIZE2(a, b)
@@ -428,14 +434,23 @@ WGETAPI int
 // Don't leave freed pointers hanging around
 #define wget_xfree(a) do { if (a) { wget_free((void *)(a)); a=NULL; } } while (0)
 
+/// define MALLOC_RETURNS_NONNULL when using appropriate implementations of the alloc functions
+#ifdef MALLOC_RETURNS_NONNULL
+#  define RETURNS_NONNULL G_GNUC_WGET_RETURNS_NONNULL
+#else
+#  define RETURNS_NONNULL
+#endif
+
 /// Type of malloc() function
-typedef void *(*wget_malloc_function) (size_t);
+typedef RETURNS_NONNULL void *(*wget_malloc_function) (size_t);
 /// Type of calloc() function
-typedef void *(*wget_calloc_function) (size_t, size_t);
+typedef RETURNS_NONNULL void *(*wget_calloc_function) (size_t, size_t);
 /// Type of realloc() function
-typedef void *(*wget_realloc_function) (void *, size_t);
+typedef RETURNS_NONNULL void *(*wget_realloc_function) (void *, size_t);
 /// Type of free() function
 typedef void (*wget_free_function) (void *);
+
+#undef RETURNS_NONNULL
 
 /* For use in callbacks */
 extern WGETAPI wget_malloc_function wget_malloc;
