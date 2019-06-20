@@ -451,7 +451,10 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 	slen = strlen(url);
 	extra = have_scheme ? 0 : sizeof("http://") - 1; // extra space for http://
 
-	iri = xmalloc(sizeof(wget_iri_t) + (slen + extra + 1) * 2);
+	iri = wget_malloc(sizeof(wget_iri_t) + (slen + extra + 1) * 2);
+	if (!iri)
+		return NULL;
+
 	memset(iri, 0, sizeof(wget_iri_t));
 
 	if (have_scheme) {
@@ -648,6 +651,10 @@ wget_iri_t *wget_iri_clone(const wget_iri_t *iri)
 
 	size_t slen = strlen(iri->uri);
 	wget_iri_t *clone = wget_malloc(sizeof(wget_iri_t) + (slen + 1) + iri->msize);
+
+	if (!clone)
+		return NULL;
+
 	memcpy(clone, iri, sizeof(wget_iri_t));
 	clone->uri = memcpy(((char *)clone) + sizeof(wget_iri_t), iri->uri, slen + 1);
 	memcpy((char *)clone->uri + slen + 1, (char *)iri->uri + slen + 1, iri->msize);
