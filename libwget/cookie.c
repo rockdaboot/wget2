@@ -746,8 +746,11 @@ char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_
 
 wget_cookie_db_t *wget_cookie_db_init(wget_cookie_db_t *cookie_db)
 {
-	if (!cookie_db)
-		cookie_db = xmalloc(sizeof(wget_cookie_db_t));
+	if (!cookie_db) {
+		cookie_db = wget_malloc(sizeof(wget_cookie_db_t));
+		if (!cookie_db)
+			return NULL;
+	}
 
 	memset(cookie_db, 0, sizeof(*cookie_db));
 	cookie_db->cookies = wget_vector_create(32, (wget_vector_compare_t)_compare_cookie);
