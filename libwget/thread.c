@@ -82,6 +82,9 @@ int wget_thread_mutex_init(wget_thread_mutex_t *mutex)
 {
 	*mutex = wget_malloc(sizeof(struct _wget_thread_mutex_st));
 
+	if (!*mutex)
+		return WGET_E_MEMORY;
+
 	return glthread_lock_init(&((*mutex)->mutex));
 }
 
@@ -134,6 +137,9 @@ void wget_thread_mutex_unlock(wget_thread_mutex_t mutex)
 int wget_thread_cond_init(wget_thread_cond_t *cond)
 {
 	*cond = wget_malloc(sizeof(struct _wget_thread_cond_st));
+
+	if (!*cond)
+		return WGET_E_MEMORY;
 
 	return glthread_cond_init(&((*cond)->cond));
 }
@@ -198,6 +204,9 @@ int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), voi
 {
 	if (wget_thread_support()) {
 		*thread = wget_malloc(sizeof(struct _wget_thread_st));
+
+		if (!*thread)
+			return WGET_E_MEMORY;
 
 		return glthread_create(&((*thread)->tid), start_routine, arg);
 	}
