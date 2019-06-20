@@ -159,7 +159,7 @@ static int _body_callback(wget_http_response_t *resp, void *user_data G_GNUC_WGE
  */
 wget_http_request_t *wget_http_create_request(const wget_iri_t *iri, const char *method)
 {
-	wget_http_request_t *req = xcalloc(1, sizeof(wget_http_request_t));
+	wget_http_request_t *req = wget_calloc(1, sizeof(wget_http_request_t));
 
 	wget_buffer_init(&req->esc_resource, req->esc_resource_buf, sizeof(req->esc_resource_buf));
 	wget_buffer_init(&req->esc_host, req->esc_host_buf, sizeof(req->esc_host_buf));
@@ -726,7 +726,7 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 	if (!_conn)
 		return WGET_E_INVALID;
 
-	conn = *_conn = xcalloc(1, sizeof(wget_http_connection_t)); // convenience assignment
+	conn = *_conn = wget_calloc(1, sizeof(wget_http_connection_t)); // convenience assignment
 
 	host = iri->host;
 	port = iri->port;
@@ -883,9 +883,9 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 			_init_nv(nvp++, param->name, param->value);
 		}
 
-		struct _http2_stream_context *ctx = xcalloc(1, sizeof(struct _http2_stream_context));
+		struct _http2_stream_context *ctx = wget_calloc(1, sizeof(struct _http2_stream_context));
 		// HTTP/2.0 has the streamid as link between
-		ctx->resp = xcalloc(1, sizeof(wget_http_response_t));
+		ctx->resp = wget_calloc(1, sizeof(wget_http_response_t));
 		ctx->resp->req = req;
 		ctx->resp->major = 2;
 		// we do not get a Keep-Alive header in HTTP2 - let's assume the connection stays open

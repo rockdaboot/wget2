@@ -394,7 +394,7 @@ static void _bar_update_winsize(wget_bar_t *bar, bool slots_changed) {
 		if (bar->max_width < max_width || slots_changed) {
 			xfree(bar->progress_mem_holder);
 			// Add one extra byte to hold the \0 character
-			bar->progress_mem_holder = xcalloc(bar->nslots, max_width + 1);
+			bar->progress_mem_holder = wget_calloc(bar->nslots, max_width + 1);
 			for (int i = 0; i < bar->nslots; i++) {
 				bar->slots[i].progress = bar->progress_mem_holder + (i * max_width);
 			}
@@ -440,7 +440,7 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 		return NULL;
 
 	if (!bar)
-		bar = xcalloc(1, sizeof(*bar));
+		bar = wget_calloc(1, sizeof(*bar));
 	else
 		memset(bar, 0, sizeof(*bar));
 

@@ -135,7 +135,7 @@ static void _hpkp_pin_free(wget_hpkp_pin_t *pin)
  */
 void wget_hpkp_pin_add(wget_hpkp_t *hpkp, const char *pin_type, const char *pin_b64)
 {
-	wget_hpkp_pin_t *pin = xcalloc(1, sizeof(wget_hpkp_pin_t));
+	wget_hpkp_pin_t *pin = wget_calloc(1, sizeof(wget_hpkp_pin_t));
 	size_t len_b64 = strlen(pin_b64);
 
 	pin->hash_type = wget_strdup(pin_type);
@@ -179,7 +179,7 @@ void wget_hpkp_free(wget_hpkp_t *hpkp)
  */
 wget_hpkp_t *wget_hpkp_new(void)
 {
-	wget_hpkp_t *hpkp = xcalloc(1, sizeof(wget_hpkp_t));
+	wget_hpkp_t *hpkp = wget_calloc(1, sizeof(wget_hpkp_t));
 
 	hpkp->created = time(NULL);
 
@@ -717,7 +717,7 @@ wget_hpkp_db_t *wget_hpkp_db_init(wget_hpkp_db_t *hpkp_db, const char *fname)
 	_hpkp_db_impl_t *hpkp_db_priv = (_hpkp_db_impl_t *) hpkp_db;
 
 	if (!hpkp_db_priv)
-		hpkp_db_priv = xcalloc(1, sizeof(_hpkp_db_impl_t));
+		hpkp_db_priv = wget_calloc(1, sizeof(_hpkp_db_impl_t));
 	else
 		memset(hpkp_db_priv, 0, sizeof(*hpkp_db_priv));
 

@@ -167,7 +167,7 @@ wget_hashmap_t *wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hash
 {
 	wget_hashmap_t *h = wget_malloc(sizeof(wget_hashmap_t));
 
-	h->entry = xcalloc(max, sizeof(_entry_t *));
+	h->entry = wget_calloc(max, sizeof(_entry_t *));
 	h->max = max;
 	h->cur = 0;
 	h->resize_factor = 2;

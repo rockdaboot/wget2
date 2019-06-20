@@ -413,7 +413,7 @@ wget_decompressor_t *wget_decompress_open(
 	wget_decompressor_sink_t sink,
 	void *context)
 {
-	wget_decompressor_t *dc = xcalloc(1, sizeof(wget_decompressor_t));
+	wget_decompressor_t *dc = wget_calloc(1, sizeof(wget_decompressor_t));
 	int rc = 0;
 
 	if (encoding == wget_content_encoding_gzip) {

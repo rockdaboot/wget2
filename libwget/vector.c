@@ -68,7 +68,7 @@ struct _wget_vector_st {
  */
 wget_vector_t *wget_vector_create(int max, wget_vector_compare_t cmp)
 {
-	wget_vector_t *v = xcalloc(1, sizeof(wget_vector_t));
+	wget_vector_t *v = wget_calloc(1, sizeof(wget_vector_t));
 
 	if (!v)
 		return NULL;

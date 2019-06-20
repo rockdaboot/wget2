@@ -257,7 +257,7 @@ wget_metalink_t *wget_metalink_parse(const char *xml)
 	if (!xml)
 		return NULL;
 
-	wget_metalink_t *metalink = xcalloc(1, sizeof(wget_metalink_t));
+	wget_metalink_t *metalink = wget_calloc(1, sizeof(wget_metalink_t));
 	_metalink_context_t ctx = { .metalink = metalink, .priority = 999999, .location = "-" };
 
 	if (wget_xml_parse_buffer(xml, _metalink_parse, &ctx, 0) != WGET_E_SUCCESS) {

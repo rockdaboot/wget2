@@ -57,7 +57,6 @@
 // #define _GET_ADDPREFIX(a) _WGET_CONCAT2(_WGET_PREFIX,a)
 // #define xmalloc _WGET_ADDPREFIX(xmalloc)
 
-#define xcalloc wget_calloc
 #define xrealloc wget_realloc
 
 #define info_printf wget_info_printf

@@ -237,7 +237,7 @@ static int G_GNUC_WGET_NONNULL((1)) _path_match(const char *cookie_path, const c
 wget_cookie_t *wget_cookie_init(wget_cookie_t *cookie)
 {
 	if (!cookie)
-		cookie = xcalloc(1, sizeof(wget_cookie_t));
+		cookie = wget_calloc(1, sizeof(wget_cookie_t));
 	else
 		memset(cookie, 0, sizeof(*cookie));
 
