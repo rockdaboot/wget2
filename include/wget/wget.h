@@ -177,6 +177,12 @@
 #	define G_GNUC_WGET_ALLOC_SIZE2(a, b)
 #endif
 
+#ifdef BUILDING_LIBWGET
+#	define LIBWGET_WARN_UNUSED_RESULT G_GNUC_WGET_UNUSED_RESULT
+#else
+#	define LIBWGET_WARN_UNUSED_RESULT
+#endif
+
 // Let C++ include C headers
 #ifdef  __cplusplus
 #	define WGET_BEGIN_DECLS  extern "C" {
@@ -442,11 +448,17 @@ WGETAPI int
 #endif
 
 /// Type of malloc() function
-typedef RETURNS_NONNULL void *(*wget_malloc_function) (size_t);
+typedef RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT G_GNUC_WGET_ALLOC_SIZE(1)
+	void *(*wget_malloc_function) (size_t);
+
 /// Type of calloc() function
-typedef RETURNS_NONNULL void *(*wget_calloc_function) (size_t, size_t);
+typedef RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT G_GNUC_WGET_ALLOC_SIZE2(1,2)
+	void *(*wget_calloc_function) (size_t, size_t);
+
 /// Type of realloc() function
-typedef RETURNS_NONNULL void *(*wget_realloc_function) (void *, size_t);
+typedef RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT G_GNUC_WGET_ALLOC_SIZE(2)
+	void *(*wget_realloc_function) (void *, size_t);
+
 /// Type of free() function
 typedef void (*wget_free_function) (void *);
 
@@ -463,11 +475,11 @@ extern WGETAPI wget_free_function wget_free;
  * String/Memory routines, slightly different than standard functions
  */
 
-WGETAPI void *
+WGETAPI LIBWGET_WARN_UNUSED_RESULT void *
 	wget_memdup(const void *m, size_t n) G_GNUC_WGET_ALLOC_SIZE(2);
-WGETAPI char *
+WGETAPI LIBWGET_WARN_UNUSED_RESULT char *
 	wget_strdup(const char *s) G_GNUC_WGET_MALLOC;
-WGETAPI char *
+WGETAPI LIBWGET_WARN_UNUSED_RESULT char *
 	wget_strmemdup(const void *m, size_t n) G_GNUC_WGET_ALLOC_SIZE(2);
 WGETAPI void
 	wget_strmemcpy(char *s, size_t ssize, const void *m, size_t n);
