@@ -201,7 +201,7 @@ static void hashmap_rehash(wget_hashmap_t *h, int newmax, int recalc_hash)
 
 	if (cur) {
 		int pos;
-		new_entry = xcalloc(newmax, sizeof(_entry_t *));
+		new_entry = wget_calloc(newmax, sizeof(_entry_t *));
 
 		for (int it = 0; it < h->max && cur; it++) {
 			for (entry = h->entry[it]; entry; entry = next) {
