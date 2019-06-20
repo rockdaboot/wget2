@@ -58,7 +58,7 @@ size_t wget_vasprintf(char **strp, const char *fmt, va_list args)
 
 	if (strp) {
 		// shrink memory to real usage
-		*strp = xrealloc(buf.data, len + 1);
+		*strp = wget_realloc(buf.data, len + 1);
 	} else {
 		// behave like C99/POSIX snprintf - just return the length
 		xfree(buf.data);

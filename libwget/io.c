@@ -115,7 +115,7 @@ static ssize_t _getline_internal(char **buf, size_t *bufsize,
 			ptrdiff_t off = ((char *)sizep)-*buf;
 			size_t *old;
 
-			*buf = xrealloc(*buf, *bufsize = *bufsize * 2);
+			*buf = wget_realloc(*buf, *bufsize = *bufsize * 2);
 			old = (size_t *)(void *)(*buf + off);
 			sizep = (size_t *)(void *)(*buf + *bufsize - 2 * sizeof(size_t));
 			sizep[0] = old[0];

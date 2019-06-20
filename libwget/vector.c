@@ -127,7 +127,7 @@ static int G_GNUC_WGET_NONNULL((2)) _vec_insert_private(wget_vector_t *v, const 
 			}
 
 			v->max = newsize;
-			v->entry = xrealloc(v->entry, v->max * sizeof(void *));
+			v->entry = wget_realloc(v->entry, v->max * sizeof(void *));
 		}
 
 		memmove(&v->entry[pos + 1], &v->entry[pos], (v->cur - pos) * sizeof(void *));

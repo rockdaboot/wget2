@@ -89,7 +89,7 @@ int wget_memiconv(const char *src_encoding, const void *src, size_t srclen, cons
 			{
 				debug_printf("transcoded %zu bytes from '%s' to '%s'\n", srclen, src_encoding, dst_encoding);
 				if (out) {
-					*out = xrealloc(dst, dst_len - dst_len_tmp + 1);
+					*out = wget_realloc(dst, dst_len - dst_len_tmp + 1);
 					(*out)[dst_len - dst_len_tmp] = 0;
 				} else
 					xfree(dst);
