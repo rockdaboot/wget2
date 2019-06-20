@@ -146,13 +146,15 @@ static char *_scan_directory(const char* data)
 	return strchr(data, '/');
 }
 
-static char *_parse_hostname(const char* data)
+static const char *_parse_hostname(const char* data)
 {
 	if (!wget_strncasecmp_ascii(data, "http://", 7)) {
 		return strchr(data += 7, '/');
+	} else if (!wget_strncasecmp_ascii(data, "https://", 8)) {
+		return strchr(data += 8, '/');
 	}
 
-	return NULL;
+	return data;
 }
 
 static void _replace_space_with_plus(wget_buffer *buf, const char *data)
@@ -424,8 +426,7 @@ static int _answer_to_connection(
 		wget_buffer_strcpy(url_iri, urls[it1].name);
 		MHD_http_unescape(url_iri->data);
 
-
-		if (!strcmp(url_full->data, url_iri->data)) {
+		if (!strcmp(_parse_hostname(url_full->data), _parse_hostname(url_iri->data))) {
 			size_t body_length =
 				urls[it1].body_len ? urls[it1].body_len
 				: (urls[it1].body ? strlen(urls[it1].body) : 0);
