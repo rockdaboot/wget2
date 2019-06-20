@@ -53,7 +53,13 @@
  */
 void *wget_memdup(const void *m, size_t n)
 {
-	return m ? memcpy(xmalloc(n), m, n) : NULL;
+	if (!m) return NULL;
+
+	void *d = wget_malloc(n);
+	if (!d)
+		return NULL;
+
+	return memcpy(d, m, n);
 }
 
 /**
@@ -85,7 +91,11 @@ char *wget_strmemdup(const void *m, size_t n)
 	if (!m)
 		return NULL;
 
-	char *ret = memcpy(xmalloc(n + 1), m, n);
+	void *d = wget_malloc(n + 1);
+	if (!d)
+		return NULL;
+
+	char *ret = memcpy(d, m, n);
 	ret[n] = 0;
 
 	return ret;
