@@ -63,7 +63,7 @@ static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_netrc(const wget_ne
 wget_netrc_t *wget_netrc_init(wget_netrc_t *netrc)
 {
 	if (!netrc)
-		netrc = xmalloc(sizeof(wget_netrc_t));
+		netrc = wget_malloc(sizeof(wget_netrc_t));
 
 	memset(netrc, 0, sizeof(*netrc));
 
@@ -116,7 +116,7 @@ wget_netrc_t *wget_netrc_get(const wget_netrc_db_t *netrc_db, const char *host)
 wget_netrc_db_t *wget_netrc_db_init(wget_netrc_db_t *netrc_db)
 {
 	if (!netrc_db)
-		netrc_db = xmalloc(sizeof(wget_netrc_db_t));
+		netrc_db = wget_malloc(sizeof(wget_netrc_db_t));
 
 	memset(netrc_db, 0, sizeof(*netrc_db));
 

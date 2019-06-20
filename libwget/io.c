@@ -78,7 +78,7 @@ static ssize_t _getline_internal(char **buf, size_t *bufsize,
 
 	if (!*buf || !*bufsize) {
 		// first call
-		*buf = xmalloc(*bufsize = 10240);
+		*buf = wget_malloc(*bufsize = 10240);
 		sizep = (size_t *)(void *)(*buf + *bufsize - 2 * sizeof(size_t));
 		sizep[0] = sizep[1] = 0;
 	} else {
@@ -347,7 +347,7 @@ char *wget_read_file(const char *fname, size_t *size)
 			if (fstat(fd, &st) == 0) {
 				off_t total = 0;
 
-				buf = xmalloc(st.st_size + 1);
+				buf = wget_malloc(st.st_size + 1);
 
 				while (total < st.st_size && (nread = read(fd, buf + total, st.st_size - total)) > 0) {
 					total += nread;

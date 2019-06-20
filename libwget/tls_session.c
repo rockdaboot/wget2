@@ -98,7 +98,7 @@ static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_tls_session(const w
 wget_tls_session_t *wget_tls_session_init(wget_tls_session_t *tls_session)
 {
 	if (!tls_session)
-		tls_session = xmalloc(sizeof(wget_tls_session_t));
+		tls_session = wget_malloc(sizeof(wget_tls_session_t));
 
 	memset(tls_session, 0, sizeof(*tls_session));
 	tls_session->created = time(NULL);
@@ -163,7 +163,7 @@ int wget_tls_session_get(const wget_tls_session_db_t *tls_session_db, const char
 wget_tls_session_db_t *wget_tls_session_db_init(wget_tls_session_db_t *tls_session_db)
 {
 	if (!tls_session_db)
-		tls_session_db = xmalloc(sizeof(wget_tls_session_db_t));
+		tls_session_db = wget_malloc(sizeof(wget_tls_session_db_t));
 
 	memset(tls_session_db, 0, sizeof(*tls_session_db));
 	tls_session_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_t)_hash_tls_session, (wget_hashmap_compare_t)_compare_tls_session);
@@ -295,7 +295,7 @@ static int _tls_session_db_load(wget_tls_session_db_t *tls_session_db, FILE *fp)
 				linep++;
 
 			size_t len = linep - p;
-			char *data = xmalloc(wget_base64_get_decoded_length(len));
+			char *data = wget_malloc(wget_base64_get_decoded_length(len));
 			tls_session.data_size = wget_base64_decode(data, p, len);
 			tls_session.data = data;
 

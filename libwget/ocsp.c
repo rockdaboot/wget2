@@ -92,7 +92,7 @@ static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_ocsp(const _ocsp_t 
 static _ocsp_t *_init_ocsp(_ocsp_t *ocsp)
 {
 	if (!ocsp)
-		ocsp = xmalloc(sizeof(_ocsp_t));
+		ocsp = wget_malloc(sizeof(_ocsp_t));
 
 	memset(ocsp, 0, sizeof(*ocsp));
 	ocsp->mtime = time(NULL);
@@ -640,7 +640,7 @@ wget_ocsp_db_t *wget_ocsp_db_init(wget_ocsp_db_t *ocsp_db, const char *fname)
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 
 	if (!ocsp_db_priv)
-		ocsp_db_priv = xmalloc(sizeof(_ocsp_db_impl_t));
+		ocsp_db_priv = wget_malloc(sizeof(_ocsp_db_impl_t));
 
 	memset(ocsp_db_priv, 0, sizeof(*ocsp_db_priv));
 

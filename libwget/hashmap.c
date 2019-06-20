@@ -165,7 +165,7 @@ found:
  */
 wget_hashmap_t *wget_hashmap_create(int max, wget_hashmap_hash_t hash, wget_hashmap_compare_t cmp)
 {
-	wget_hashmap_t *h = xmalloc(sizeof(wget_hashmap_t));
+	wget_hashmap_t *h = wget_malloc(sizeof(wget_hashmap_t));
 
 	h->entry = xcalloc(max, sizeof(_entry_t *));
 	h->max = max;
@@ -229,9 +229,12 @@ G_GNUC_WGET_NONNULL((1,3))
 static void hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *key, const char *value)
 {
 	_entry_t *entry;
+
+	if (!(entry = wget_malloc(sizeof(_entry_t))))
+		return;
+
 	int pos = hash % h->max;
 
-	entry = xmalloc(sizeof(_entry_t));
 	entry->key = (void *)key;
 	entry->value = (void *)value;
 	entry->hash = hash;

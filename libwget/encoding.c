@@ -81,7 +81,7 @@ int wget_memiconv(const char *src_encoding, const void *src, size_t srclen, cons
 			char *tmp = (char *) src; // iconv won't change where src points to, but changes tmp itself
 			size_t tmp_len = srclen;
 			size_t dst_len = tmp_len * 6, dst_len_tmp = dst_len;
-			char *dst = xmalloc(dst_len + 1), *dst_tmp = dst;
+			char *dst = wget_malloc(dst_len + 1), *dst_tmp = dst;
 
 			errno = 0;
 			if (iconv(cd, (ICONV_CONST char **)&tmp, &tmp_len, &dst_tmp, &dst_len_tmp) == 0

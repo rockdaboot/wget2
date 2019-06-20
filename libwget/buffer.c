@@ -87,7 +87,7 @@
 wget_buffer_t *wget_buffer_init(wget_buffer_t *buf, char *data, size_t size)
 {
 	if (!buf) {
-		if (!(buf = xmalloc(sizeof(wget_buffer_t))))
+		if (!(buf = wget_malloc(sizeof(wget_buffer_t))))
 			return NULL;
 		buf->release_buf = 1;
 	} else {
@@ -103,7 +103,7 @@ wget_buffer_t *wget_buffer_init(wget_buffer_t *buf, char *data, size_t size)
 		if (!size)
 			size = 128;
 		buf->size = size;
-		if (!(buf->data = xmalloc(size + 1)))
+		if (!(buf->data = wget_malloc(size + 1)))
 			return NULL;
 		*buf->data = 0; // always 0 terminate data to allow string functions
 		buf->release_data = 1;

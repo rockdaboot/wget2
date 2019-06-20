@@ -851,7 +851,7 @@ const char *wget_tcp_get_ssl_hostname(wget_tcp_t *tcp)
  */
 wget_tcp_t *wget_tcp_init(void)
 {
-	wget_tcp_t *tcp = xmalloc(sizeof(wget_tcp_t));
+	wget_tcp_t *tcp = wget_malloc(sizeof(wget_tcp_t));
 
 	*tcp = _global_tcp;
 	tcp->ssl_hostname = wget_strdup(_global_tcp.ssl_hostname);

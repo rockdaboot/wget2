@@ -103,7 +103,7 @@ static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_hsts(const _hsts_t 
 static _hsts_t *_init_hsts(_hsts_t *hsts)
 {
 	if (!hsts)
-		hsts = xmalloc(sizeof(_hsts_t));
+		hsts = wget_malloc(sizeof(_hsts_t));
 
 	memset(hsts, 0, sizeof(*hsts));
 	hsts->created = time(NULL);
@@ -533,7 +533,7 @@ wget_hsts_db_t *wget_hsts_db_init(wget_hsts_db_t *hsts_db, const char *fname)
 	_hsts_db_impl_t *hsts_db_priv = (_hsts_db_impl_t *) hsts_db;
 
 	if (!hsts_db_priv)
-		hsts_db_priv = xmalloc(sizeof(_hsts_db_impl_t));
+		hsts_db_priv = wget_malloc(sizeof(_hsts_db_impl_t));
 
 	memset(hsts_db_priv, 0, sizeof(*hsts_db_priv));
 	hsts_db_priv->parent.vtable = &vtable;

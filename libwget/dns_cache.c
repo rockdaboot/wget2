@@ -158,7 +158,7 @@ struct addrinfo *wget_dns_cache_add(const char *host, uint16_t port, struct addr
 {
 	// insert addrinfo into dns cache
 	size_t hostlen = host ? strlen(host) + 1 : 0;
-	struct _dns_entry *entryp = xmalloc(sizeof(struct _dns_entry) + hostlen);
+	struct _dns_entry *entryp = wget_malloc(sizeof(struct _dns_entry) + hostlen);
 
 	if (host) {
 		entryp->port = port;

@@ -380,15 +380,15 @@ static void _bar_update_winsize(wget_bar_t *bar, bool slots_changed) {
 
 		if (bar->max_width < max_width) {
 			xfree(bar->known_size);
-			bar->known_size = xmalloc(max_width);
+			bar->known_size = wget_malloc(max_width);
 			memset(bar->known_size, '=', max_width);
 
 			xfree(bar->unknown_size);
-			bar->unknown_size = xmalloc(max_width);
+			bar->unknown_size = wget_malloc(max_width);
 			memset(bar->unknown_size, '*', max_width);
 
 			xfree(bar->spaces);
-			bar->spaces = xmalloc(max_width);
+			bar->spaces = wget_malloc(max_width);
 			memset(bar->spaces, ' ', max_width);
 		}
 		if (bar->max_width < max_width || slots_changed) {
@@ -403,7 +403,6 @@ static void _bar_update_winsize(wget_bar_t *bar, bool slots_changed) {
 		bar->max_width = max_width;
 	}
 	winsize_changed = 0;
-
 }
 
 static void _bar_update(wget_bar_t *bar)

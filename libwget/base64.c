@@ -153,7 +153,7 @@ size_t wget_base64_decode(char *dst, const char *src, size_t n)
  */
 char *wget_base64_decode_alloc(const char *src, size_t n, size_t *outlen)
 {
-	char *dst = xmalloc(wget_base64_get_decoded_length(n));
+	char *dst = wget_malloc(wget_base64_get_decoded_length(n));
 
 	if (!dst)
 		return NULL;
@@ -250,7 +250,7 @@ size_t wget_base64_urlencode(char *dst, const char *src, size_t n)
  */
 char *wget_base64_encode_alloc(const char *src, size_t n)
 {
-	char *dst = xmalloc(wget_base64_get_encoded_length(n));
+	char *dst = wget_malloc(wget_base64_get_encoded_length(n));
 
 	if (dst)
 		wget_base64_encode(dst, src, n);
