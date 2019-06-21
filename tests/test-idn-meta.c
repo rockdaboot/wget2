@@ -80,8 +80,7 @@ int main(void)
 
 	// test-idn-meta
 	wget_snprintf(options, sizeof(options),
-		"--iri -rH -e http_proxy=localhost:%d http://start-here.com/start.html",
-		wget_test_get_http_server_port());
+		"--iri -rH -e http_proxy=localhost:{{port}} -e https_proxy=localhost:{{sslport}} http://start-here.com/start.html");
 
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
@@ -111,9 +110,7 @@ int main(void)
 
 	// test-idn-meta with HTML5 meta charset
 	wget_snprintf(options, sizeof(options),
-		"--iri -rH -e http_proxy=localhost:%d http://start-here.com/start2.html",
-		wget_test_get_http_server_port());
-
+		"--iri -rH -e http_proxy=localhost:{{port}} -e https_proxy=localhost:{{sslport}} http://start-here.com/start2.html");
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, options,

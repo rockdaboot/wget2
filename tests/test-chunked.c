@@ -43,6 +43,7 @@ int main(void)
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		WGET_TEST_FEATURE_MHD,
+		WGET_TEST_SKIP_H2,
 		0);
 
 	// test negative chunk size (32bit system only)

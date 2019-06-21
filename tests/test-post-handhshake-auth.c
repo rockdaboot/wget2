@@ -55,6 +55,7 @@ int main(void)
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		WGET_TEST_FEATURE_MHD,
 		WGET_TEST_FEATURE_TLS,
+		WGET_TEST_SKIP_H2,
 		0);
 
 	wget_test(

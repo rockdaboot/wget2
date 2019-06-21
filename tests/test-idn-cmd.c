@@ -60,8 +60,7 @@ int main(void)
 
 	// test-idn-cmd
 	wget_snprintf(options, sizeof(options),
-		"--iri -rH -e http_proxy=localhost:%d --local-encoding=EUC-JP " euc_jp_hostname,
-		wget_test_get_http_server_port());
+		"--iri -rH -e http_proxy=localhost:{{port}} -e https_proxy=localhost:{{sslport}} --local-encoding=EUC-JP " euc_jp_hostname);
 
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
@@ -77,8 +76,7 @@ int main(void)
 #ifndef _WIN32
 	// test-idn-cmd
 	wget_snprintf(options, sizeof(options),
-		"--iri -rH -e http_proxy=localhost:%d --local-encoding=UTF-8 " utf8_hostname,
-		wget_test_get_http_server_port());
+		"--iri -rH -e http_proxy=localhost:{{port}} -e https_proxy=localhost:{{sslport}} --local-encoding=UTF-8 " utf8_hostname);
 
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,

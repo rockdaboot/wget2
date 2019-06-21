@@ -58,6 +58,7 @@ int main(void)
 		WGET_TEST_HTTPS_REJECT_CONNECTIONS,
 		WGET_TEST_FEATURE_MHD,
 		WGET_TEST_FEATURE_TLS,
+		WGET_TEST_SKIP_H2,
 		0);
 
 	// wget2 downloads recursively from HTTPS though we give an http:// URL.

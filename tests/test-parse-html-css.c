@@ -88,9 +88,7 @@ int main(void)
 
 	char options[128];
 	wget_snprintf(options, sizeof(options),
-		"--force-html --base http://localhost:%d -i page1.html",
-		wget_test_get_http_server_port());
-
+		"--force-html --base http://localhost:{{port}} -i page1.html");
 
 	// test--parse-html-css from file
 	wget_test(
