@@ -715,6 +715,7 @@ AS_IF([test "x$with_libmicrohttpd" != xno], [
     LIBS="$MICROHTTPD_LIBS $LIBS"
     CFLAGS="$MICROHTTPD_CFLAGS $CFLAGS"
     AC_CHECK_FUNCS(MHD_free)
+    AC_CHECK_HEADERS([microhttpd_http2.h])
     LIBS=$old_LIBS
     CFLAGS=$old_CFLAGS
   ], [
@@ -722,6 +723,7 @@ AS_IF([test "x$with_libmicrohttpd" != xno], [
       [with_libmicrohttpd=yes; AC_DEFINE([WITH_MICROHTTPD], [1], [Use libmicrohttpd])],
       [with_libmicrohttpd=no; AC_MSG_WARN(*** LIBMICROHTTPD was not found. Several tests will not run.)])
     AC_CHECK_FUNCS(MHD_free)
+    AC_CHECK_HEADERS([microhttpd_http2.h])
     TEST_LIBS=$LIBS
     TEST_CFLAGS=$CFLAGS
   ])
