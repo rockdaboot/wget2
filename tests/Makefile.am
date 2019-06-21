@@ -11,7 +11,7 @@ MYLIBS = \
 AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS) $(TEST_CFLAGS)
 AM_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib \
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
-LDADD = libtest.la $(MYLIBS) $(TEST_LIBS)
+LDADD = ../src/utils.o libtest.la $(MYLIBS) $(TEST_LIBS)
 
 # test-iri-disabled removed since Wget2 always uses IRIs
 WGET_TESTS = test-wget-1$(EXEEXT) test-c-r$(EXEEXT) test-restrict-ascii$(EXEEXT) test-i-http$(EXEEXT) test-i-https$(EXEEXT)\
