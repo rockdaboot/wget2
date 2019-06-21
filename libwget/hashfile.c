@@ -272,7 +272,7 @@ int wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm)
 {
 	if ((unsigned)algorithm < countof(_nettle_algorithm) && _nettle_algorithm[algorithm]) {
 		dig->hash = _nettle_algorithm[algorithm];
-		dig->context = xmalloc(dig->hash->context_size);
+		dig->context = wget_malloc(dig->hash->context_size);
 		dig->hash->init(dig->context);
 		return 0;
 	}
@@ -479,7 +479,7 @@ int wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm)
 	if ((unsigned)algorithm < countof(_algorithm)) {
 		if (_algorithm[algorithm].ctx_len) {
 			dig->algorithm = &_algorithm[algorithm];
-			dig->context = xmalloc(dig->algorithm->ctx_len);
+			dig->context = wget_malloc(dig->algorithm->ctx_len);
 			dig->algorithm->init(dig->context);
 			return 0;
 		}

@@ -563,7 +563,7 @@ void wget_xml_parse_file(
 				size_t nread = st.st_size;
 				char *buf = mmap(NULL, nread + 1, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
 #else
-				char *buf=xmalloc(st.st_size + 1);
+				char *buf=wget_malloc(st.st_size + 1);
 				size_t nread=read(fd, buf, st.st_size);
 #endif
 
