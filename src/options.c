@@ -3592,9 +3592,6 @@ void deinit(void)
 	get_xdg_config_home(NULL);
 	get_xdg_data_home(NULL);
 
-	if (config.stats_site_args)
-		site_stats_exit();
-
 	wget_dns_free(&dns);
 	wget_dns_cache_free(&dns_cache);
 
@@ -3675,6 +3672,8 @@ void deinit(void)
 	}
 
 	if (config.stats_site_args) {
+		if (config.stats_site_args->fp)
+			site_stats_exit();
 		if (config.stats_site_args->fp && config.stats_site_args->fp != stdout)
 			fclose(config.stats_site_args->fp);
 		xfree(config.stats_site_args->filename);
