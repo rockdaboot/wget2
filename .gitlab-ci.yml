@@ -42,6 +42,8 @@ variables:
   CONFIGURE_BASE_FLAGS: --enable-assert --cache-file cache/config.cache
   CFLAGS_DEFAULT: -O0 -g -ggdb3
 
+  HTTP2_TESTING_BUILD: buildenv-mhd-http2
+
 
 # We organize the CI runners as thus:
 #   1. Debian Stretch Build:
@@ -456,3 +458,25 @@ CommitCheck:
   cache:
       paths:
       policy: push
+
+
+Debian/Testing-HTTP2:
+  stage: stage1-testing
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$HTTP2_TESTING_BUILD
+  script:
+    - export CFLAGS="$CFLAGS_DEFAULT"
+    - ./bootstrap --skip-po && touch .manywarnings
+    - ./configure $CONFIGURE_BASE_FLAGS
+    - make -j$(nproc)
+    - make check -j$(nproc)
+  tags:
+    - shared
+    - docker
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
