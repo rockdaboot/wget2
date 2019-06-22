@@ -864,7 +864,7 @@ static int parse_stats(option_t opt, const char *val, const char invert)
 	}
 
 	if (!*stats)
-		*stats = wget_malloc(sizeof(stats_args));
+		*stats = wget_calloc(1, sizeof(stats_args));
 
 	(*stats)->filename = shell_expand(val);
 	(*stats)->format = format;
