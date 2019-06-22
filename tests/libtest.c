@@ -222,7 +222,7 @@ static int _answer_to_connection(
 #if MHD_VERSION >= 0x00096302 && GNUTLS_VERSION_NUMBER >= 0x030603
 	if (post_handshake_auth != NULL) {
 		gnutls_session_t tls_sess;
-		union MHD_ConnectionInfo *conn_info = MHD_get_connection_info (connection, MHD_CONNECTION_INFO_GNUTLS_SESSION);
+		const union MHD_ConnectionInfo *conn_info = MHD_get_connection_info (connection, MHD_CONNECTION_INFO_GNUTLS_SESSION);
 
 		if (conn_info) {
 			int check_auth;
