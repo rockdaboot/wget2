@@ -69,6 +69,18 @@ int getaddrinfo(const char *node, const char *service, const struct addrinfo *hi
 
 	return libc_getaddrinfo(node, service, hints, res);
 }
+void freeaddrinfo(struct addrinfo *res)
+{
+	if (fuzzing) {
+		free(res);
+		return;
+	}
+
+	void (*libc_freeaddrinfo)(struct addrinfo *res) =
+		(void(*)(struct addrinfo *res)) dlsym (RTLD_NEXT, "getaddrinfo");
+
+	libc_freeaddrinfo(res);
+}
 
 #ifdef __OpenBSD__
 int getnameinfo(const struct sockaddr *addr, socklen_t addrlen, char *host, size_t hostlen, char *serv, size_t servlen, int flags)
