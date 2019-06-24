@@ -25,6 +25,7 @@ exclude_file_name_regexp--sc_prohibit_empty_lines_at_EOF = contrib/assignment_te
 exclude_file_name_regexp--sc_prohibit_sprintf = benchmarks/benches/convert\.gp$$
 exclude_file_name_regexp--sc_prohibit_printf = ^(unit-tests/(test\.c|buffer_printf_perf\.c)|examples/.*\.c|libwget/strlcpy\.c)$$
 exclude_file_name_regexp--sc_prohibit_free = ^(cfg\.mk|fuzz/.*\.c|unit-tests/.*\.c)$$
+exclude_file_name_regexp--sc_prohibit_alloc = ^(fuzz/.*\.c)$$
 
 sc_prohibit_sprintf:
         @prohibit='\<sprintf *\(' \
@@ -39,4 +40,9 @@ sc_prohibit_printf:
 sc_prohibit_free:
 	@prohibit='[[:space:];,][[:space:];,]*\<free *\(.*\)[;,]' \
 	halt='do not use free(), instead use the wget_free() or the xfree macro' \
+	  $(_sc_search_regexp)
+
+sc_prohibit_alloc:
+	@prohibit='[[:space:];,][[:space:];,]*\<(m|c|re)alloc *\(.*\)[;,]' \
+	halt='do not use libc malloc functions, instead use the wget_* pendants' \
 	  $(_sc_search_regexp)

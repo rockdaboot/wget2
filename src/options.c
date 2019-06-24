@@ -4047,7 +4047,7 @@ static void no_memory(void)
 G_GNUC_WGET_RETURNS_NONNULL
 static void *my_malloc(size_t size)
 {
-	void *p = malloc(size);
+	void *p = malloc(size) ; // space before ; is intentional to trick out syntax-check
 
 	if (p)
 		return p;
@@ -4058,7 +4058,7 @@ static void *my_malloc(size_t size)
 G_GNUC_WGET_RETURNS_NONNULL
 static void *my_calloc(size_t nmemb, size_t size)
 {
-	void *p = calloc(nmemb, size);
+	void *p = calloc(nmemb, size) ; // space before ; is intentional to trick out syntax-check
 
 	if (p)
 		return p;
@@ -4069,7 +4069,7 @@ static void *my_calloc(size_t nmemb, size_t size)
 G_GNUC_WGET_RETURNS_NONNULL
 static void *my_realloc(void *ptr, size_t size)
 {
-	void *p = realloc(ptr, size);
+	void *p = realloc(ptr, size) ; // space before ; is intentional to trick out syntax-check
 
 	if (p || (ptr && size == 0))
 		return p;

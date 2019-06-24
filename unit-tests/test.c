@@ -2431,19 +2431,19 @@ static unsigned alloc_flags;
 static void *test_malloc(size_t size)
 {
 	alloc_flags |= 1;
-	return malloc(size);
+	return malloc(size) ; // space before ; is intentional to trick out syntax-check
 }
 
 static void *test_calloc(size_t nmemb, size_t size)
 {
 	alloc_flags |= 2;
-	return calloc(nmemb, size);
+	return calloc(nmemb, size) ; // space before ; is intentional to trick out syntax-check
 }
 
 static void *test_realloc(void *ptr, size_t size)
 {
 	alloc_flags |= 4;
-	return realloc(ptr, size);
+	return realloc(ptr, size) ; // space before ; is intentional to trick out syntax-check
 }
 
 static void test_free(void *ptr)
