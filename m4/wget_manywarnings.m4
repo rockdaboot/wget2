@@ -70,9 +70,10 @@ AC_DEFUN([wget_MANYWARNINGS], [
       wget_WORD_SET([wget_WARN_CFLAGS], [$CFLAGS], ["-Wall -Wextra -Wformat=2"])
 
       # collect all disabled warn flags in $WARN_CFLAGS
+      # remove -Werror-implicit-function-declaration (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90690)
       wget_WARN_CFLAGS=$wget_WARN_CFLAGS" "$($CC $wget_WARN_CFLAGS -Q --help=warning,$wget_LANGUAGE|\
         awk '{ if (([$]2 == "[[disabled]]" || [$]2 == "")\
-          && [$]1!~/=/ && [$]1~/^-W/ && [$]1!~/</ && [$]1!="-Wall") print [$]1 }')
+          && [$]1!~/=/ && [$]1~/^-W/ && [$]1!~/</ && [$]1!="-Wall" && [$]1!~/^-Werror-/) print [$]1 }')
 
       GCC_VERSION=$($CC -dumpversion | cut -f1 -d.)
       if test $GCC_VERSION -ge 6; then
