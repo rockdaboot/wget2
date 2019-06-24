@@ -286,24 +286,14 @@ void wget_ssl_set_config_int(int key, int value)
 	}
 }
 
-#if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__ && defined HAVE_THREADS_H
-#  include <threads.h>
-#elif defined(__GNUC__) /* clang is also covered by __GNUC__ */
-#  define _Thread_local __thread
-#elif defined(_MSC_VER)
-#  define _Thread_local __declspec(thread)
-#endif
-
-static _Thread_local char ctime_buffer[64];
-
-static const char *safe_ctime(time_t *t)
+static const char *safe_ctime(time_t *t, char *buf, size_t size)
 {
 	struct tm tm;
 
 	if (localtime_r(t, &tm)
-		&& strftime(ctime_buffer, sizeof(ctime_buffer), "%c", &tm))
+		&& strftime(buf, sizeof(size), "%c", &tm))
 	{
-		return ctime_buffer;
+		return buf;
 	}
 
 	return "[error]";
@@ -312,7 +302,7 @@ static const char *safe_ctime(time_t *t)
 static void _print_x509_certificate_info(gnutls_session_t session)
 {
 	const char *name;
-	char dn[128];
+	char dn[128], timebuf[64];
 	unsigned char digest[20];
 	unsigned char serial[40];
 	size_t dn_size = sizeof(dn);
@@ -342,10 +332,10 @@ static void _print_x509_certificate_info(gnutls_session_t session)
 			info_printf(_("Certificate info [%u]:\n"), ncert);
 
 			activet = gnutls_x509_crt_get_activation_time(cert);
-			info_printf(_("  Valid since: %s"), safe_ctime(&activet));
+			info_printf(_("  Valid since: %s"), safe_ctime(&activet, timebuf, sizeof(timebuf)));
 
 			expiret = gnutls_x509_crt_get_expiration_time(cert);
-			info_printf(_("  Expires: %s"), safe_ctime(&expiret));
+			info_printf(_("  Expires: %s"), safe_ctime(&expiret, timebuf, sizeof(timebuf)));
 
 			if (!gnutls_fingerprint(GNUTLS_DIG_MD5, &cert_list[ncert], digest, &digest_size)) {
 				char digest_hex[digest_size * 2 + 1];
@@ -690,6 +680,7 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 	int ret = -1, rc;
 	unsigned int status, cert_status;
 	time_t rtime, vtime, ntime, now;
+	char timebuf[64];
 
 	now = time(NULL);
 
@@ -733,21 +724,21 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 	}
 
 	if (cert_status == GNUTLS_OCSP_CERT_REVOKED) {
-		debug_printf("*** Certificate was revoked at %s", safe_ctime(&rtime));
+		debug_printf("*** Certificate was revoked at %s", safe_ctime(&rtime, timebuf, sizeof(timebuf)));
 		ret = 0;
 		goto cleanup;
 	}
 
 	if (ntime == -1) {
 		if (now - vtime > OCSP_VALIDITY_SECS) {
-			debug_printf("*** The OCSP response is old (was issued at: %s) ignoring", safe_ctime(&vtime));
+			debug_printf("*** The OCSP response is old (was issued at: %s) ignoring", safe_ctime(&vtime, timebuf, sizeof(timebuf)));
 			goto cleanup;
 		}
 	} else {
 		/* there is a newer OCSP answer, don't trust this one */
 		if (ntime < now) {
-			debug_printf("*** The OCSP response was issued at: %s", safe_ctime(&vtime));
-			debug_printf("    but there is a newer issue at %s", safe_ctime(&ntime));
+			debug_printf("*** The OCSP response was issued at: %s", safe_ctime(&vtime, timebuf, sizeof(timebuf)));
+			debug_printf("    but there is a newer issue at %s", safe_ctime(&ntime, timebuf, sizeof(timebuf)));
 			goto cleanup;
 		}
 	}
@@ -776,7 +767,7 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 	}
 
  finish_ok:
-	debug_printf("OCSP server flags certificate not revoked as of %s", safe_ctime(&vtime));
+	debug_printf("OCSP server flags certificate not revoked as of %s", safe_ctime(&vtime, timebuf, sizeof(timebuf)));
 	ret = 1;
 
 cleanup:
