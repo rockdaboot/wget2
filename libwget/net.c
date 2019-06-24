@@ -211,7 +211,7 @@ void wget_tcp_set_tcp_fastopen(wget_tcp_t *tcp, int tcp_fastopen)
 #if defined TCP_FASTOPEN_OSX || defined TCP_FASTOPEN_LINUX || defined TCP_FASTOPEN_LINUX_411
 	(tcp ? tcp : &_global_tcp)->tcp_fastopen = !!tcp_fastopen;
 #else
-	tcp; tcp_fastopen;
+	(void) tcp; (void) tcp_fastopen;
 #endif
 }
 
@@ -690,20 +690,24 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
 			}
 
 			/* Enable TCP Fast Open, if required by the user and available */
-			if (tcp->tcp_fastopen) {
 #ifdef TCP_FASTOPEN_OSX
+			if (tcp->tcp_fastopen) {
 				sa_endpoints_t endpoints = { .sae_dstaddr = ai->ai_addr, .sae_dstaddrlen = ai->ai_addrlen };
 				rc = connectx(sockfd, &endpoints, SAE_ASSOCID_ANY, CONNECT_RESUME_ON_READ_WRITE | CONNECT_DATA_IDEMPOTENT, NULL, 0, NULL, NULL);
 				tcp->first_send = 0;
 #elif defined TCP_FASTOPEN_LINUX
+			if (tcp->tcp_fastopen) {
 				errno = 0;
 				tcp->connect_addrinfo = ai;
 				rc = 0;
 				tcp->first_send = 1;
 #elif defined TCP_FASTOPEN_LINUX_411
+			if (tcp->tcp_fastopen) {
 				tcp->connect_addrinfo = ai;
 				rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
 				tcp->first_send = 0;
+#else
+			if (0) {
 #endif
 			} else {
 				rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
