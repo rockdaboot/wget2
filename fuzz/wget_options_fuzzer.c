@@ -95,8 +95,6 @@ FILE *fopen(const char *pathname, const char *mode)
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-	static const char *argv[] = { "x", "-q", "--no-config", "--no-local-db", "--config", "d41d8cd98f00b204e9800998ecf8428e" };
-
 	if (size > 2048) // same as max_len = 4096 in .options file
 		return 0;
 
@@ -110,6 +108,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 // try not to open/write to the file system
 #if defined HAVE_DLFCN_H && defined HAVE_FMEMOPEN
+	static const char *argv[] = { "x", "-q", "--no-config", "--no-local-db", "--config", "d41d8cd98f00b204e9800998ecf8428e" };
 	plugin_db_init();
 	enable_testing(); // function in wget2 to prevent unwanted action while testing
 	init(sizeof(argv)/sizeof(argv[0]), argv);
