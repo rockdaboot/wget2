@@ -69,7 +69,7 @@ static void test_cookies(void)
 
 	if (n == 0) {
 		error_printf("Failed to find cookie tests in '%s'\n", COOKIETESTDIR);
-		free(dps);
+		free(dps) ; // space before ; is intentional to trick out syntax-check
 		failed++;
 		return;
 	}

@@ -280,7 +280,7 @@ int main(void)
 			{ NULL } },
 		0);
 
-	free(digest_str);
+	wget_free(digest_str);
 
 	/**** RFC 6249 Metalink/HTTP: Mirrors and Hashes  - without metalink description ****/
 	wget_hash_fast(WGET_DIGTYPE_MD5, urls[10].body, strlen(urls[10].body), digest);
@@ -296,14 +296,14 @@ int main(void)
 			{ NULL } },
 		0);
 
-	free(digest_str);
+	wget_free(digest_str);
 
-	free(body0);
-	free(body2);
-	free(body4);
-	free(body7);
-	free((void *)urls[6].headers[4]);
-	free((void *)urls[9].headers[3]);
+	wget_free(body0);
+	wget_free(body2);
+	wget_free(body4);
+	wget_free(body7);
+	wget_free((void *)urls[6].headers[4]);
+	wget_free((void *)urls[9].headers[3]);
 
 	exit(0);
 }

@@ -72,7 +72,7 @@ int getaddrinfo(const char *node, const char *service, const struct addrinfo *hi
 void freeaddrinfo(struct addrinfo *res)
 {
 	if (fuzzing) {
-		free(res);
+		wget_free(res);
 		return;
 	}
 

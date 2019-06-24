@@ -111,7 +111,7 @@ int main(int argc, const char *const *argv)
 #ifdef HAVE_MMAP
 		munmap(buf, length);
 #else
-		free(buf);
+		wget_free(buf);
 #endif
 		close(fd);
 	}

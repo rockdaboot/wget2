@@ -46,7 +46,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	memcpy(in, data, size);
 	in[size] = 0;
 
-	free(wget_cookie_to_setcookie(NULL));
+	wget_free(wget_cookie_to_setcookie(NULL));
 	wget_cookie_store_cookie(NULL, NULL);
 	wget_cookie_db_save(NULL, NULL);
 	wget_cookie_db_load(NULL, NULL);
@@ -73,7 +73,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		wget_cookie_store_cookies(db, cookies);
 		wget_http_free_cookies(&cookies);
 
-		free(wget_cookie_create_request_header(db, iri));
+		wget_free(wget_cookie_create_request_header(db, iri));
 		wget_iri_free(&iri);
 
 		// test load & save functions
@@ -86,9 +86,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 		unlink(fname);
 	}
-	free(wget_cookie_to_setcookie(cookie));
+	wget_free(wget_cookie_to_setcookie(cookie));
 
-	free(cookie);
+	wget_free(cookie);
 
 	wget_cookie_db_load_psl(NULL, NULL);
 	wget_cookie_db_load_psl(db, "/dev/null");

@@ -53,7 +53,7 @@
 #define debug_write wget_debug_write
 
 // I try to never leave freed pointers hanging around
-#define xfree(a) do { if (a) { free((void *)(a)); a=NULL; } } while (0)
+#define xfree(a) do { if (a) { wget_free((void *)(a)); a=NULL; } } while (0)
 
 // number of elements within an array
 #define countof(a) (sizeof(a)/sizeof(*(a)))

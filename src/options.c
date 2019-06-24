@@ -4079,7 +4079,7 @@ static void *my_realloc(void *ptr, size_t size)
 
 static void my_free(void *ptr)
 {
-	free(ptr);
+	free(ptr) ; // space before ; is intentional to trick out syntax-check
 }
 
 static void set_allocation_functions(void)

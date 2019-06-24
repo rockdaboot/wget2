@@ -122,7 +122,7 @@ static int G_GNUC_WGET_NONNULL((2)) _vec_insert_private(wget_vector_t *v, const 
 
 			if (newsize <= v->max) {
 				if (alloc)
-					free(elemp);
+					xfree(elemp);
 				return -1;
 			}
 
