@@ -61,7 +61,7 @@ endif
 CLEANFILES = $(STAMPS)
 
 README.md: $(top_srcdir)/README.md
-	$(AM_V_at)sed -n '/# GNU Wget2/,$$p' $< >$@
+	$(AM_V_at)sed -n '/# GNU Wget2/,$$p' $(top_srcdir)/README.md >$@
 
 all-local: README.md $(STAMPS)
 
