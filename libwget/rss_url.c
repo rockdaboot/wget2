@@ -43,12 +43,10 @@ struct _rss_context {
 static void _rss_get_url(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
 	struct _rss_context *ctx = context;
-	wget_string_t url;
+	wget_string_t * url;
 
 	if (!val || !len)
 		return;
-
-	url.p = NULL;
 
 	if ((flags & XML_FLG_ATTRIBUTE)) {
 		if (!wget_strcasecmp_ascii(attr, "url") || !wget_strcasecmp_ascii(attr, "href")
@@ -58,13 +56,16 @@ static void _rss_get_url(void *context, int flags, const char *dir, const char *
 			for (;len && c_isspace(*val); val++, len--); // skip leading spaces
 			for (;len && c_isspace(val[len - 1]); len--);  // skip trailing spaces
 
-			url.p = val;
-			url.len = len;
+			if (!(url = wget_malloc(sizeof(wget_string_t))))
+				return;
+
+			url->p = val;
+			url->len = len;
 
 			if (!ctx->urls)
 				ctx->urls = wget_vector_create(32, NULL);
 
-			wget_vector_add_memdup(ctx->urls, &url, sizeof(url));
+			wget_vector_add(ctx->urls, url);
 		}
 	}
 	else if ((flags & XML_FLG_CONTENT)) {
@@ -81,13 +82,16 @@ static void _rss_get_url(void *context, int flags, const char *dir, const char *
 
 				// debug_printf("#2 %02X %s %s '%.*s' %zd\n", flags, dir, attr, (int) len, val, len);
 
-				url.p = val;
-				url.len = len;
+				if (!(url = wget_malloc(sizeof(wget_string_t))))
+					return;
+
+				url->p = val;
+				url->len = len;
 
 				if (!ctx->urls)
 					ctx->urls = wget_vector_create(32, NULL);
 
-				wget_vector_add_memdup(ctx->urls, &url, sizeof(url));
+				wget_vector_add(ctx->urls, url);
 			}
 		}
 	}
