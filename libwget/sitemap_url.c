@@ -69,19 +69,24 @@ static void _sitemap_get_url(void *context, int flags, const char *dir, const ch
 			for (;len && c_isspace(val[len - 1]); len--);  // skip trailing spaces
 
 			// info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
-			wget_string_t url = { .p = val, .len = len };
+			wget_string_t *url;
+
+			if (!(url = wget_malloc(sizeof(wget_string_t))))
+				return;
+
+			url->p = val;
+			url->len = len;
 
 			if (type == 1) {
 				if (!ctx->sitemap_urls)
 					ctx->sitemap_urls = wget_vector_create(32, NULL);
 
-				wget_vector_add_memdup(ctx->sitemap_urls, &url, sizeof(url));
+				wget_vector_add(ctx->sitemap_urls, url);
 			} else {
 				if (!ctx->urls)
 					ctx->urls = wget_vector_create(32, NULL);
 
-				wget_vector_add_memdup(ctx->urls, &url, sizeof(url));
-
+				wget_vector_add(ctx->urls, url);
 			}
 		}
 	}
