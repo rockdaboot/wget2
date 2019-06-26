@@ -252,6 +252,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 					for (;len && c_isspace(*val); val++, len--); // skip leading spaces
 					for (p = val;len && !c_isspace(*val) && *val != ','; val++, len--); // find end of URL
 					if (p != val) {
+						url.link_inline = ctx->link_inline;
 						wget_strscpy(url.attr, attr, sizeof(url.attr));
 						wget_strscpy(url.dir, tag, sizeof(url.dir));
 						url.url.p = p;
