@@ -89,20 +89,22 @@ static const char attrs[][12] = {
 static void _css_parse_uri(void *context, const char *url G_GNUC_WGET_UNUSED, size_t len, size_t pos)
 {
 	_html_context_t *ctx = context;
-
 	wget_html_parsed_result_t *res = &ctx->result;
+	wget_html_parsed_url_t *parsed_url;
+
+	if (!(parsed_url = wget_malloc(sizeof(wget_html_parsed_url_t))))
+		return;
+
+	parsed_url->link_inline = 1;
+	wget_strscpy(parsed_url->attr, ctx->css_attr, sizeof(parsed_url->attr));
+	wget_strscpy(parsed_url->dir, ctx->css_dir, sizeof(parsed_url->dir));
+	parsed_url->url.p = (const char *) (ctx->html + ctx->css_start_offset + pos);
+	parsed_url->url.len = len;
 
 	if (!res->uris)
 		res->uris = wget_vector_create(32, NULL);
 
-	wget_html_parsed_url_t parsed_url;
-	parsed_url.link_inline = 1;
-	wget_strscpy(parsed_url.attr, ctx->css_attr, sizeof(parsed_url.attr));
-	wget_strscpy(parsed_url.dir, ctx->css_dir, sizeof(parsed_url.dir));
-	parsed_url.url.p = (const char *) (ctx->html + ctx->css_start_offset + pos);
-	parsed_url.url.len = len;
-
-	wget_vector_add_memdup(res->uris, &parsed_url, sizeof(parsed_url));
+	wget_vector_add(res->uris, parsed_url);
 }
 
 // Callback function, called from HTML parser for each URI found.
