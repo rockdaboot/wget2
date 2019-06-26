@@ -657,11 +657,11 @@ WGETAPI wget_logger_t *
  * Vector datatype routines
  */
 
-typedef struct _wget_vector_st wget_vector_t;
+typedef struct wget_vector_st wget_vector_t;
 typedef int (*wget_vector_compare_t)(const void *elem1, const void *elem2);
 typedef int (*wget_vector_find_t)(void *elem);
 typedef int (*wget_vector_browse_t)(void *ctx, void *elem);
-typedef int (*wget_vector_destructor_t)(void *elem);
+typedef void (*wget_vector_destructor_t)(void *elem);
 
 WGETAPI wget_vector_t *
 	wget_vector_create(int max, wget_vector_compare_t cmp) G_GNUC_WGET_MALLOC;
@@ -674,27 +674,19 @@ WGETAPI int
 WGETAPI int
 	wget_vector_contains(const wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_insert(wget_vector_t *v, const void *elem, size_t size, int pos) G_GNUC_WGET_NONNULL((2));
+	wget_vector_insert(wget_vector_t *v, const void *elem, int pos) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_insert_noalloc(wget_vector_t *v, const void *elem, int pos) G_GNUC_WGET_NONNULL((2));
+	wget_vector_insert_sorted(wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_insert_sorted(wget_vector_t *v, const void *elem, size_t size) G_GNUC_WGET_NONNULL((2));
+	wget_vector_add_memdup(wget_vector_t *v, const void *elem, size_t size) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_insert_sorted_noalloc(wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
-WGETAPI int
-	wget_vector_add(wget_vector_t *v, const void *elem, size_t size) G_GNUC_WGET_NONNULL((2));
-WGETAPI int
-	wget_vector_add_noalloc(wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
-WGETAPI int
-	wget_vector_add_str(wget_vector_t *v, const char *s);
+	wget_vector_add(wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
 	wget_vector_add_vprintf(wget_vector_t *v, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
 WGETAPI int
 	wget_vector_add_printf(wget_vector_t *v, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
 WGETAPI int
-	wget_vector_replace(wget_vector_t *v, const void *elem, size_t size, int pos) G_GNUC_WGET_NONNULL((2));
-WGETAPI int
-	wget_vector_replace_noalloc(wget_vector_t *v, const void *elem, int pos) G_GNUC_WGET_NONNULL((2));
+	wget_vector_replace(wget_vector_t *v, const void *elem, int pos) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
 	wget_vector_move(wget_vector_t *v, int old_pos, int new_pos);
 WGETAPI int
@@ -2453,7 +2445,7 @@ WGETAPI int
 WGETAPI void
 	wget_http_abort_connection(wget_http_connection_t *conn);
 
-WGETAPI int
+WGETAPI void
 	wget_http_free_param(wget_http_header_param_t *param);
 WGETAPI void
 	wget_http_free_cookie(wget_cookie_t *cookie);

@@ -778,9 +778,9 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 		host = host_get(iri);
 
 	if (config.recursive) {
-		if (!config.span_hosts) {
+		if (!config.span_hosts && config.domains) {
 			if (wget_vector_find(config.domains, iri->host) == -1)
-				wget_vector_add_str(config.domains, iri->host);
+				wget_vector_add(config.domains, wget_strdup(iri->host));
 		}
 
 		if (!config.parent) {
@@ -795,7 +795,7 @@ static void add_url_to_queue(const char *url, wget_iri_t *base, const char *enco
 			else
 				iri->dirlen = p - iri->path + 1;
 
-			wget_vector_add_noalloc(parents, iri);
+			wget_vector_add(parents, iri);
 		}
 	}
 
@@ -1868,12 +1868,12 @@ static void process_head_response(wget_http_response_t *resp)
 		metalink->pieces = wget_vector_create((int) npieces, NULL);
 		for (int it = 0; it < npieces; it++) {
 			piece.position = it * config.chunk_size;
-			wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
+			wget_vector_add_memdup(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
 		}
 
 		metalink->mirrors = wget_vector_create(1, NULL);
 
-		wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
+		wget_vector_add_memdup(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
 
 		job->metalink = metalink;
 
@@ -2402,32 +2402,34 @@ out:
 	return NULL;
 }
 
-static void _free_conversion_entry(_conversion_t *conversion)
+static void _free_conversion_entry(void *conversion)
 {
-	xfree(conversion->filename);
-	xfree(conversion->encoding);
-	wget_iri_free(&conversion->base_url);
-	wget_html_free_urls_inline(&conversion->parsed);
+	_conversion_t *c = conversion;
+
+	xfree(c->filename);
+	xfree(c->encoding);
+	wget_iri_free(&c->base_url);
+	wget_html_free_urls_inline(&c->parsed);
+	xfree(c);
 }
 
 static void _remember_for_conversion(const char *filename, wget_iri_t *base_url, int content_type, const char *encoding, wget_html_parsed_result_t *parsed)
 {
-	_conversion_t conversion;
-
-	conversion.filename = wget_strdup(filename);
-	conversion.encoding = wget_strdup(encoding);
-	conversion.base_url = wget_iri_clone(base_url);
-	conversion.content_type = content_type;
-	conversion.parsed = parsed;
+	_conversion_t *conversion = wget_malloc(sizeof(_conversion_t));
+	conversion->filename = wget_strdup(filename);
+	conversion->encoding = wget_strdup(encoding);
+	conversion->base_url = wget_iri_clone(base_url);
+	conversion->content_type = content_type;
+	conversion->parsed = parsed;
 
 	wget_thread_mutex_lock(conversion_mutex);
 
 	if (!conversions) {
 		conversions = wget_vector_create(128, NULL);
-		wget_vector_set_destructor(conversions, (wget_vector_destructor_t)_free_conversion_entry);
+		wget_vector_set_destructor(conversions, _free_conversion_entry);
 	}
 
-	wget_vector_add(conversions, &conversion, sizeof(conversion));
+	wget_vector_add(conversions, conversion);
 
 	wget_thread_mutex_unlock(conversion_mutex);
 }
@@ -3779,7 +3781,8 @@ static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 					wget_http_header_param_t *h = wget_vector_get(req->headers, j);
 
 					if (!wget_strcasecmp_ascii(param->name, h->name)) {
-						wget_http_free_param(h);
+						xfree(h->name);
+						xfree(h->value);
 						h->name = wget_strdup(param->name);
 						h->value = wget_strdup(param->value);
 						replaced = 1;

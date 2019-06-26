@@ -447,7 +447,7 @@ static int post_processor(wget_plugin_t *plugin, wget_downloaded_file_t *file)
 		{
 			const char *basename = strrchr(iri->uri, '/');
 			if (basename)
-				wget_vector_add_str(d->files_processed, basename + 1);
+				wget_vector_add(d->files_processed, wget_strdup(basename + 1));
 		}
 	}
 

@@ -41,10 +41,13 @@ typedef struct {
 		*uris;
 } _CSS_CONTEXT;
 
-static void _free_url(wget_css_parsed_url_t *url)
+static void url_free(void *url)
 {
-	xfree(url->url);
-	xfree(url->abs_url);
+	wget_css_parsed_url_t *u = url;
+
+	xfree(u->url);
+	xfree(u->abs_url);
+	xfree(u);
 }
 
 // Callback function, called from CSS parser for each @charset found.
@@ -67,10 +70,10 @@ static void _css_get_url(void *context, const char *url, size_t len, size_t pos)
 
 	if (!ctx->uris) {
 		ctx->uris = wget_vector_create(16, NULL);
-		wget_vector_set_destructor(ctx->uris, (wget_vector_destructor_t)_free_url);
+		wget_vector_set_destructor(ctx->uris, url_free);
 	}
 
-	wget_vector_add(ctx->uris, &parsed_url, sizeof(parsed_url));
+	wget_vector_add_memdup(ctx->uris, &parsed_url, sizeof(parsed_url));
 }
 
 static void _urls_to_absolute(wget_vector_t *urls, wget_iri_t *base)

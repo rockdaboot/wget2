@@ -102,7 +102,7 @@ static void _css_parse_uri(void *context, const char *url G_GNUC_WGET_UNUSED, si
 	parsed_url.url.p = (const char *) (ctx->html + ctx->css_start_offset + pos);
 	parsed_url.url.len = len;
 
-	wget_vector_add(res->uris, &parsed_url, sizeof(parsed_url));
+	wget_vector_add_memdup(res->uris, &parsed_url, sizeof(parsed_url));
 }
 
 // Callback function, called from HTML parser for each URI found.
@@ -254,7 +254,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 						wget_strscpy(url.dir, tag, sizeof(url.dir));
 						url.url.p = p;
 						url.url.len = val - p;
-						wget_vector_add(res->uris, &url, sizeof(url));
+						wget_vector_add_memdup(res->uris, &url, sizeof(url));
 					}
 					for (;len && *val != ','; val++, len--); // skip optional width/density descriptor
 					if (len && *val == ',') { val++; len--; }
@@ -267,7 +267,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				wget_strscpy(url.dir, tag, sizeof(url.dir));
 				url.url.p = val;
 				url.url.len = len;
-				ctx->uri_index = wget_vector_add(res->uris, &url, sizeof(url));
+				ctx->uri_index = wget_vector_add_memdup(res->uris, &url, sizeof(url));
 			}
 		}
 	}

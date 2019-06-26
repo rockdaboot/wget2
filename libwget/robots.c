@@ -51,9 +51,12 @@ struct wget_robots_st {
 		*sitemaps; //!< sitemaps found in robots.txt (element: char *)
 };
 
-static void _free_path(wget_string_t *path)
+static void path_free(void *path)
 {
-	xfree(path->p);
+	wget_string_t *p = path;
+
+	xfree(p->p);
+	xfree(p);
 }
 
 /**
@@ -104,13 +107,13 @@ int wget_robots_parse(wget_robots_t **_robots, const char *data, const char *cli
 				if (!robots->paths) {
 					if (!(robots->paths = wget_vector_create(32, NULL)))
 						goto oom;
-					wget_vector_set_destructor(robots->paths, (wget_vector_destructor_t)_free_path);
+					wget_vector_set_destructor(robots->paths, path_free);
 				}
 				for (p = data; *p && !isspace(*p); p++);
 				path.len = p - data;
 				if (!(path.p = wget_strmemdup(data, path.len)))
 					goto oom;
-				if (wget_vector_add(robots->paths, &path, sizeof(path)) < 0)
+				if (wget_vector_add_memdup(robots->paths, &path, sizeof(path)) < 0)
 					goto oom;
 			}
 		}
@@ -125,7 +128,7 @@ int wget_robots_parse(wget_robots_t **_robots, const char *data, const char *cli
 			char *sitemap = wget_strmemdup(data, p - data);
 			if (!sitemap)
 				goto oom;
-			if (wget_vector_add_noalloc(robots->sitemaps, sitemap) < 0)
+			if (wget_vector_add(robots->sitemaps, sitemap) < 0)
 				goto oom;
 		}
 

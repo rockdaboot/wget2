@@ -387,12 +387,11 @@ static int parse_header(option_t opt, const char *val, G_GNUC_WGET_UNUSED const 
 
 	if (val && *val) {
 		char *value, *delim_pos;
-		wget_http_header_param_t _param;
 
 		if (!v) {
 			v = *((wget_vector_t **)opt->var) =
 				wget_vector_create(8, (wget_vector_compare_t)compare_wget_http_param);
-			wget_vector_set_destructor(v, (wget_vector_destructor_t)wget_http_free_param);
+			wget_vector_set_destructor(v, (wget_vector_destructor_t) wget_http_free_param);
 		}
 
 		delim_pos = strchr(val, ':');
@@ -411,14 +410,14 @@ static int parse_header(option_t opt, const char *val, G_GNUC_WGET_UNUSED const 
 			return 0;
 		}
 
-		_param.name = wget_strmemdup(val, delim_pos - val);
-		_param.value = wget_strdup(value);
+		wget_http_header_param_t *param = wget_malloc(sizeof(wget_http_header_param_t));
+		param->name = wget_strmemdup(val, delim_pos - val);
+		param->value = wget_strdup(value);
 
-		if (wget_vector_find(v, &_param) == -1)
-			wget_vector_add(v, &_param, sizeof(_param));
-		else {
-			wget_http_free_param(&_param);
-		}
+		if (wget_vector_find(v, param) == -1)
+			wget_vector_add(v, param);
+		else
+			wget_http_free_param(param);
 
 	} else if (val && *val == '\0') {
 		wget_vector_clear(v);
@@ -491,10 +490,10 @@ static int parse_stringlist_expand(option_t opt, const char *val, int expand, in
 				const char *fname = _strmemdup_esc(s, p - s);
 
 				if (expand && *s == '~') {
-					wget_vector_add_noalloc(v, shell_expand(fname));
+					wget_vector_add(v, shell_expand(fname));
 					xfree(fname);
 				} else
-					wget_vector_add_noalloc(v, fname);
+					wget_vector_add(v, fname);
 			}
 		}
 	} else {
@@ -570,31 +569,34 @@ static int parse_filenames(option_t opt, const char *val, G_GNUC_WGET_UNUSED con
 	return parse_stringlist_expand(opt, val, 1, 32);
 }
 
-static void _free_tag(wget_html_tag_t *tag)
+static void tag_free(void *tag)
 {
-	if (tag) {
-		xfree(tag->attribute);
-		xfree(tag->name);
+	wget_html_tag_t *t = tag;
+
+	if (t) {
+		xfree(t->attribute);
+		xfree(t->name);
+		xfree(t);
 	}
 }
 
 static void G_GNUC_WGET_NONNULL_ALL _add_tag(wget_vector_t *v, const char *begin, const char *end)
 {
-	wget_html_tag_t tag;
+	wget_html_tag_t *tag = wget_malloc(sizeof(wget_html_tag_t));
 	const char *attribute;
 
 	if ((attribute = memchr(begin, '/', end - begin))) {
-		tag.name = wget_strmemdup(begin, attribute - begin);
-		tag.attribute = wget_strmemdup(attribute + 1, (end - begin) - (attribute - begin) - 1);
+		tag->name = wget_strmemdup(begin, attribute - begin);
+		tag->attribute = wget_strmemdup(attribute + 1, (end - begin) - (attribute - begin) - 1);
 	} else {
-		tag.name = wget_strmemdup(begin, end - begin);
-		tag.attribute = NULL;
+		tag->name = wget_strmemdup(begin, end - begin);
+		tag->attribute = NULL;
 	}
 
 	if (wget_vector_find(v, &tag) == -1)
-		wget_vector_insert_sorted(v, &tag, sizeof(tag));
+		wget_vector_insert_sorted(v, tag);
 	else
-		_free_tag(&tag); // avoid double entries
+		tag_free(tag); // avoid double entries
 }
 
 static int G_GNUC_WGET_NONNULL_ALL _compare_tag(const wget_html_tag_t *t1, const wget_html_tag_t *t2)
@@ -624,7 +626,7 @@ static int parse_taglist(option_t opt, const char *val, G_GNUC_WGET_UNUSED const
 
 		if (!v) {
 			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, (wget_vector_compare_t)_compare_tag);
-			wget_vector_set_destructor(v, (wget_vector_destructor_t)_free_tag);
+			wget_vector_set_destructor(v, tag_free);
 		}
 
 		for (s = p = val; *p; s = p + 1) {
@@ -3380,11 +3382,10 @@ int init(int argc, const char **argv)
 
 	if (config.auth_no_challenge) {
 		config.default_challenges = wget_vector_create(1, NULL);
-		wget_http_challenge_t basic;
-		memset(&basic, 0, sizeof(basic));
-		basic.auth_scheme = wget_strdup("basic");
-		wget_vector_add(config.default_challenges, &basic, sizeof(basic));
-		wget_vector_set_destructor(config.default_challenges, (wget_vector_destructor_t)wget_http_free_challenge);
+		wget_http_challenge_t *basic = wget_calloc(1, sizeof(wget_http_challenge_t));
+		basic->auth_scheme = wget_strdup("basic");
+		wget_vector_add(config.default_challenges, basic);
+		wget_vector_set_destructor(config.default_challenges, (wget_vector_destructor_t) wget_http_free_challenge);
 	}
 
 	if (config.page_requisites && !config.recursive) {
@@ -3400,7 +3401,7 @@ int init(int argc, const char **argv)
 		init_gpgme();
 		if (!config.sig_ext) {
 			config.sig_ext = wget_vector_create(1, (wget_vector_compare_t)strcmp);
-			wget_vector_add_str(config.sig_ext, "sig");
+			wget_vector_add(config.sig_ext, wget_strdup("sig"));
 		} else {
 
 			// Dedup ...
@@ -3412,7 +3413,7 @@ int init(int argc, const char **argv)
 			for (int i = 0; i < start_len; i++) {
 				const char *nxt = wget_vector_get(config.sig_ext, i);
 				if (!wget_stringmap_contains(set, nxt)) {
-					wget_vector_add_str(new_sig_ext, nxt);
+					wget_vector_add(new_sig_ext, wget_strdup(nxt));
 					wget_stringmap_put(set, wget_strdup(nxt), NULL);
 				}
 			}
@@ -3547,12 +3548,12 @@ int init(int argc, const char **argv)
 
 		if (wget_str_needs_encoding(hostname)) {
 			if ((s = wget_str_to_utf8(hostname, config.local_encoding))) {
-				wget_vector_replace_noalloc(config.domains, s, it);
+				wget_vector_replace(config.domains, s, it);
 				hostname = s;
 			}
 
 			if ((s = (char *)wget_str_to_ascii(hostname)) != hostname)
-				wget_vector_replace_noalloc(config.domains, s, it);
+				wget_vector_replace(config.domains, s, it);
 		} else
 			wget_strtolower(hostname);
 	}
@@ -3564,12 +3565,12 @@ int init(int argc, const char **argv)
 
 		if (wget_str_needs_encoding(hostname)) {
 			if ((s = wget_str_to_utf8(hostname, config.local_encoding))) {
-				wget_vector_replace_noalloc(config.exclude_domains, s, it);
+				wget_vector_replace(config.exclude_domains, s, it);
 				hostname = s;
 			}
 
 			if ((s = (char *)wget_str_to_ascii(hostname)) != hostname)
-				wget_vector_replace_noalloc(config.exclude_domains, s, it);
+				wget_vector_replace(config.exclude_domains, s, it);
 		} else
 			wget_strtolower(hostname);
 	}

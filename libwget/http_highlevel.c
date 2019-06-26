@@ -111,7 +111,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 				.name = va_arg(args, const char *),
 				.value = va_arg(args, const char *)
 			};
-			wget_vector_add(headers, &param, sizeof(param));
+			wget_vector_add_memdup(headers, &param, sizeof(param));
 			break;
 		}
 		case WGET_HTTP_CONNECTION_PTR:

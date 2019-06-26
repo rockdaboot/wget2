@@ -34,7 +34,7 @@
 #include <wget.h>
 #include "private.h"
 
-struct _wget_vector_st {
+struct wget_vector_st {
 	wget_vector_compare_t
 		cmp; // comparison function
 	wget_vector_destructor_t
@@ -81,6 +81,7 @@ wget_vector_t *wget_vector_create(int max, wget_vector_compare_t cmp)
 	v->max = max;
 	v->resize_factor = 2;
 	v->cmp = cmp;
+	v->destructor = free;
 
 	return v;
 }
@@ -103,38 +104,31 @@ void wget_vector_set_resize_factor(wget_vector_t *v, float factor)
 		v->resize_factor = factor;
 }
 
-static int G_GNUC_WGET_NONNULL((2)) _vec_insert_private(wget_vector_t *v, const void *elem, size_t size, int pos, int replace, int alloc)
+static int G_GNUC_WGET_NONNULL((2)) insert_element(wget_vector_t *v, const void *elem, int pos, int replace)
 {
-	void *elemp;
-
-	if (pos < 0 || !v || pos > v->cur) return -1;
-
-	if (alloc) {
-		elemp = wget_malloc(size);
-		memcpy(elemp, elem, size);
-	} else {
-		elemp = (void *)elem;
-	}
+	if (pos < 0 || !v || pos > v->cur)
+		return -1;
 
 	if (!replace) {
 		if (v->max == v->cur) {
 			int newsize = (int) (v->max * v->resize_factor);
 
-			if (newsize <= v->max) {
-				if (alloc)
-					xfree(elemp);
-				return -1;
-			}
+			if (newsize <= v->max)
+				return WGET_E_INVALID;
 
+			void **tmp = wget_realloc(v->entry, newsize * sizeof(void *));
+			if (!tmp)
+				return WGET_E_MEMORY;
+
+			v->entry = tmp;
 			v->max = newsize;
-			v->entry = wget_realloc(v->entry, v->max * sizeof(void *));
 		}
 
 		memmove(&v->entry[pos + 1], &v->entry[pos], (v->cur - pos) * sizeof(void *));
 		v->cur++;
 	}
 
-	v->entry[pos] = elemp;
+	v->entry[pos] = (void *) elem;
 
 	if (v->cmp) {
 		if (v->cur == 1) v->sorted = 1;
@@ -158,24 +152,6 @@ static int G_GNUC_WGET_NONNULL((2)) _vec_insert_private(wget_vector_t *v, const 
 /**
  * \param[in] v Vector where \p elem is inserted into
  * \param[in] elem Element to insert into \p v
- * \param[in] size Size of \p elem
- * \param[in] pos Position to insert \p elem at
- * \return Index of inserted element or -1 on error
- *
- * Insert \p elem of given \p size at index \p pos.
- *
- * \p elem is cloned / copied (shallow).
- *
- * An error is returned if \p v is %NULL or \p pos is out of range (< 0 or > # of entries).
- */
-int wget_vector_insert(wget_vector_t *v, const void *elem, size_t size, int pos)
-{
-	return _vec_insert_private(v, elem, size, pos, 0, 1);
-}
-
-/**
- * \param[in] v Vector where \p elem is inserted into
- * \param[in] elem Element to insert into \p v
  * \param[in] pos Position to insert \p elem at
  * \return Index of inserted element or -1 on error
  *
@@ -185,52 +161,9 @@ int wget_vector_insert(wget_vector_t *v, const void *elem, size_t size, int pos)
  *
  * An error is returned if \p v is %NULL or \p pos is out of range (< 0 or > # of entries).
  */
-int wget_vector_insert_noalloc(wget_vector_t *v, const void *elem, int pos)
+int wget_vector_insert(wget_vector_t *v, const void *elem, int pos)
 {
-	return _vec_insert_private(v, elem, 0, pos, 0, 0);
-}
-
-static int G_GNUC_WGET_NONNULL((2)) _vec_insert_sorted_private(wget_vector_t *v, const void *elem, size_t size, int alloc)
-{
-	if (!v) return -1;
-
-	if (!v->cmp)
-		return _vec_insert_private(v, elem, size, v->cur, 0, alloc);
-
-	if (!v->sorted)
-		wget_vector_sort(v);
-
-	// binary search for element
-	int l = 0, r = v->cur - 1, m = 0, res = 0;
-
-	while (l <= r) {
-		m = (l + r) / 2;
-		if ((res = v->cmp(elem, v->entry[m])) > 0) l = m + 1;
-		else if (res < 0) r = m - 1;
-		else return _vec_insert_private(v, elem, size, m, 0, alloc);
-	}
-	if (res > 0) m++;
-
-	return _vec_insert_private(v, elem, size, m, 0, alloc);
-}
-
-/**
- * \param[in] v Vector where \p elem is inserted into
- * \param[in] elem Element to insert into \p v
- * \param[in] size Size of \p elem
- * \return Index of inserted element or -1 on error
- *
- * Insert \p elem of given \p size at a position that keeps the sort order of the elements.
- * If the vector has no comparison function, \p elem will be inserted as the last element.
- * If the elements in the vector are not sorted, they will be sorted after returning from this function.
- *
- * \p elem is cloned / copied (shallow).
- *
- * An error is returned if \p v is %NULL.
- */
-int wget_vector_insert_sorted(wget_vector_t *v, const void *elem, size_t size)
-{
-	return _vec_insert_sorted_private(v, elem, size, 1);
+	return insert_element(v, elem, pos, 0);
 }
 
 /**
@@ -246,9 +179,29 @@ int wget_vector_insert_sorted(wget_vector_t *v, const void *elem, size_t size)
  *
  * An error is returned if \p v is %NULL.
  */
-int wget_vector_insert_sorted_noalloc(wget_vector_t *v, const void *elem)
+int wget_vector_insert_sorted(wget_vector_t *v, const void *elem)
 {
-	return _vec_insert_sorted_private(v, elem, 0, 0);
+	if (!v)
+		return -1;
+
+	if (!v->cmp)
+		return insert_element(v, elem, v->cur, 0);
+
+	if (!v->sorted)
+		wget_vector_sort(v);
+
+	// binary search for element
+	int l = 0, r = v->cur - 1, m = 0, res = 0;
+
+	while (l <= r) {
+		m = (l + r) / 2;
+		if ((res = v->cmp(elem, v->entry[m])) > 0) l = m + 1;
+		else if (res < 0) r = m - 1;
+		else return insert_element(v, elem, m, 0);
+	}
+	if (res > 0) m++;
+
+	return insert_element(v, elem, m, 0);
 }
 
 /**
@@ -263,9 +216,21 @@ int wget_vector_insert_sorted_noalloc(wget_vector_t *v, const void *elem)
  *
  * An error is returned if \p v is %NULL.
  */
-int wget_vector_add(wget_vector_t *v, const void *elem, size_t size)
+int wget_vector_add_memdup(wget_vector_t *v, const void *elem, size_t size)
 {
-	return v ? _vec_insert_private(v, elem, size, v->cur, 0, 1) : -1;
+	void *p;
+	int rc;
+
+	if (!v)
+		return -1;
+
+	if (!(p = wget_memdup(elem, size)))
+		return -1;
+
+	if ((rc = insert_element(v, p, v->cur, 0)) < 0)
+		xfree(p);
+
+	return rc;
 }
 
 /**
@@ -279,25 +244,9 @@ int wget_vector_add(wget_vector_t *v, const void *elem, size_t size)
  *
  * An error is returned if \p v is %NULL.
  */
-int wget_vector_add_noalloc(wget_vector_t *v, const void *elem)
+int wget_vector_add(wget_vector_t *v, const void *elem)
 {
-	return v ? _vec_insert_private(v, elem, 0, v->cur, 0, 0) : -1;
-}
-
-/**
- * \param[in] v Vector where \p s is appended to
- * \param[in] s String to append to \p v
- * \return Index of appended element or -1 on error
- *
- * Append string \p s as an element to vector \p v.
- *
- * \p s is cloned / copied.
- *
- * An error is returned if \p v or \p s is %NULL.
- */
-int wget_vector_add_str(wget_vector_t *v, const char *s)
-{
-	return v && s ? _vec_insert_private(v, s, strlen(s) + 1, v->cur, 0, 1) : -1;
+	return v ? insert_element(v, elem, v->cur, 0) : -1;
 }
 
 /**
@@ -312,7 +261,7 @@ int wget_vector_add_str(wget_vector_t *v, const char *s)
  */
 int wget_vector_add_vprintf(wget_vector_t *v, const char *fmt, va_list args)
 {
-	return v && fmt ? _vec_insert_private(v, wget_vaprintf(fmt, args), 0, v->cur, 0, 0) : -1;
+	return v && fmt ? insert_element(v, wget_vaprintf(fmt, args), v->cur, 0) : -1;
 }
 
 /**
@@ -333,43 +282,10 @@ int wget_vector_add_printf(wget_vector_t *v, const char *fmt, ...)
 	va_list args;
 
 	va_start(args, fmt);
-	int pos = _vec_insert_private(v, wget_vaprintf(fmt, args), 0, v->cur, 0, 0);
+	int pos = insert_element(v, wget_vaprintf(fmt, args), v->cur, 0);
 	va_end(args);
 
 	return pos;
-}
-
-static int _wget_vector_replace(wget_vector_t *v, const void *elem, size_t size, int pos, int alloc)
-{
-	if (!v || pos < 0 || pos >= v->cur)
-		return -1;
-
-	if (v->destructor)
-		v->destructor(v->entry[pos]);
-
-	xfree(v->entry[pos]);
-
-	return _vec_insert_private(v, elem, size, pos, 1, alloc); // replace existing entry
-}
-
-/**
- * \param[in] v Vector where \p elem is inserted
- * \param[in] elem Element to insert into \p v
- * \param[in] size Size of \p elem
- * \param[in] pos Position to insert \p elem at
- * \return Index of inserted element (same as \p pos) or -1 on error
- *
- * Replace the element at position \p pos with \p elem of given \p size.
- * If the vector has an element destructor function, this is called.
- * The old element is free'd.
- *
- * \p elem is cloned / copied (shallow).
- *
- * An error is returned if \p v is %NULL or \p pos is out of range (< 0 or > # of entries).
- */
-int wget_vector_replace(wget_vector_t *v, const void *elem, size_t size, int pos)
-{
-	return _wget_vector_replace(v, elem, size, pos, 1);
 }
 
 /**
@@ -386,12 +302,18 @@ int wget_vector_replace(wget_vector_t *v, const void *elem, size_t size, int pos
  *
  * An error is returned if \p v is %NULL or \p pos is out of range (< 0 or > # of entries).
  */
-int wget_vector_replace_noalloc(wget_vector_t *v, const void *elem, int pos)
+int wget_vector_replace(wget_vector_t *v, const void *elem, int pos)
 {
-	return _wget_vector_replace(v, elem, 0, pos, 0);
+	if (!v || pos < 0 || pos >= v->cur)
+		return -1;
+
+	if (v->destructor)
+		v->destructor(v->entry[pos]);
+
+	return insert_element(v, elem, pos, 1); // replace existing entry
 }
 
-static int _vec_remove_private(wget_vector_t *v, int pos, int free_entry)
+static int remove_element(wget_vector_t *v, int pos, int free_entry)
 {
 	if (pos < 0 || !v || pos >= v->cur)
 		return -1;
@@ -399,8 +321,6 @@ static int _vec_remove_private(wget_vector_t *v, int pos, int free_entry)
 	if (free_entry) {
 		if (v->destructor)
 			v->destructor(v->entry[pos]);
-
-		xfree(v->entry[pos]);
 	}
 
 	memmove(&v->entry[pos], &v->entry[pos + 1], (v->cur - pos - 1) * sizeof(void *));
@@ -422,7 +342,7 @@ static int _vec_remove_private(wget_vector_t *v, int pos, int free_entry)
  */
 int wget_vector_remove(wget_vector_t *v, int pos)
 {
-	return _vec_remove_private(v, pos, 1);
+	return remove_element(v, pos, 1);
 }
 
 /**
@@ -437,7 +357,7 @@ int wget_vector_remove(wget_vector_t *v, int pos)
  */
 int wget_vector_remove_nofree(wget_vector_t *v, int pos)
 {
-	return _vec_remove_private(v, pos, 0);
+	return remove_element(v, pos, 0);
 }
 
 /**
@@ -535,11 +455,8 @@ void wget_vector_clear(wget_vector_t *v)
 		if (v->destructor) {
 			for (int it = 0; it < v->cur; it++) {
 				v->destructor(v->entry[it]);
-				xfree(v->entry[it]);
+				v->entry[it] = NULL;
 			}
-		} else {
-			for (int it = 0; it < v->cur; it++)
-				xfree(v->entry[it]);
 		}
 
 		v->cur = 0;
@@ -647,7 +564,8 @@ void wget_vector_set_destructor(wget_vector_t *v, wget_vector_destructor_t destr
 		v->destructor = destructor;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _compare(const void *p1, const void *p2, void *v)
+G_GNUC_WGET_NONNULL_ALL
+static int compare_element(const void *p1, const void *p2, void *v)
 {
 	return ((wget_vector_t *)v)->cmp(*((void **)p1), *((void **)p2));
 }
@@ -661,7 +579,7 @@ static int G_GNUC_WGET_NONNULL_ALL _compare(const void *p1, const void *p2, void
 void wget_vector_sort(wget_vector_t *v)
 {
 	if (v && v->cmp) {
-		qsort_r(v->entry, v->cur, sizeof(void *), _compare, v);
+		qsort_r(v->entry, v->cur, sizeof(void *), compare_element, v);
 		v->sorted = 1;
 	}
 }

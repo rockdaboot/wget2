@@ -362,7 +362,7 @@ void dl_list(const wget_vector_t *dirs, wget_vector_t *names_out)
 			}
 
 			// Add to the list
-			wget_vector_add_noalloc(names_out, name);
+			wget_vector_add(names_out, name);
 		}
 
 		closedir(dirp);

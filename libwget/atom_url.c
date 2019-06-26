@@ -72,7 +72,7 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 			if (!ctx->urls)
 				ctx->urls = wget_vector_create(32, NULL);
 
-			wget_vector_add(ctx->urls, &url, sizeof(url));
+			wget_vector_add_memdup(ctx->urls, &url, sizeof(url));
 		}
 	}
 	else if ((flags & XML_FLG_CONTENT)) {
@@ -95,7 +95,7 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 				if (!ctx->urls)
 					ctx->urls = wget_vector_create(32, NULL);
 
-				wget_vector_add(ctx->urls, &url, sizeof(url));
+				wget_vector_add_memdup(ctx->urls, &url, sizeof(url));
 			}
 		}
 	}

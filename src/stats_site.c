@@ -76,10 +76,13 @@ static wget_hashmap_t
 static FILE
 	*fp;
 
-static void free_stats(site_stats_t *stats)
+static void free_stats(void *stats)
 {
-	if (stats) {
-		xfree(stats->mime_type);
+	site_stats_t *s = stats;
+
+	if (s) {
+		xfree(s->mime_type);
+		xfree(s);
 	}
 }
 
@@ -88,7 +91,7 @@ void site_stats_init(FILE *fpout)
 	wget_thread_mutex_init(&mutex);
 
 	data = wget_vector_create(8, NULL);
-	wget_vector_set_destructor(data, (wget_vector_destructor_t) free_stats);
+	wget_vector_set_destructor(data, free_stats);
 
 	fp = fpout;
 }
@@ -182,7 +185,7 @@ void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 	}
 
 	wget_thread_mutex_lock(mutex);
-	wget_vector_add_noalloc(data, doc);
+	wget_vector_add(data, doc);
 	if (docs)
 		wget_stringmap_put(docs, doc->iri->uri, doc);
 	wget_thread_mutex_unlock(mutex);

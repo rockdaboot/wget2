@@ -1274,8 +1274,8 @@ static void test_cookies(void)
 
 		xfree(set_cookie);
 
-		wget_cookie_store_cookie(cookies, cookie);
-		xfree(cookie);
+		wget_cookie_store_cookie(cookies, cookie); // takes ownership of cookie
+		cookie = NULL;
 
 		// just check for memory issues
 		header = wget_cookie_create_request_header(cookies, iri);
@@ -1576,7 +1576,7 @@ static void test_parse_challenge(void)
 
 	// Testcases found here http://greenbytes.de/tech/tc/httpauth/
 	challenges = wget_vector_create(2, NULL);
-	wget_vector_set_destructor(challenges, (wget_vector_destructor_t)wget_http_free_challenge);
+	wget_vector_set_destructor(challenges, (wget_vector_destructor_t) wget_http_free_challenge);
 
 	for (unsigned it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
@@ -1806,7 +1806,7 @@ static void test_vector(void)
 	}
 
 	for (it = 0; it < countof(txt); it++) {
-		wget_vector_insert_sorted(v, txt[it], sizeof(struct ENTRY));
+		wget_vector_insert_sorted(v, txt[it]);
 	}
 
 	for (it = 0; it < countof(txt); it++) {
@@ -1817,6 +1817,7 @@ static void test_vector(void)
 			failed++;
 	}
 
+	wget_vector_clear_nofree(v);
 	wget_vector_free(&v);
 }
 
@@ -1952,16 +1953,17 @@ static void test_stringmap(void)
 
 	wget_stringmap_free(&m);
 
-	wget_http_challenge_t challenge;
-	wget_http_parse_challenge("Basic realm=\"test realm\"", &challenge);
-	wget_http_free_challenge(&challenge);
+	wget_http_challenge_t *challenge = wget_calloc(1, sizeof(wget_http_challenge_t));
+	wget_http_parse_challenge("Basic realm=\"test realm\"", challenge);
+	wget_http_free_challenge(challenge);
 
 	wget_vector_t *challenges;
 	challenges = wget_vector_create(2, NULL);
-	wget_vector_set_destructor(challenges, (wget_vector_destructor_t)wget_http_free_challenge);
-	wget_http_parse_challenge("Basic realm=\"test realm\"", &challenge);
-	wget_vector_add(challenges, &challenge, sizeof(challenge));
-	wget_http_free_challenges(&challenges);
+	wget_vector_set_destructor(challenges, (wget_vector_destructor_t) wget_http_free_challenge);
+	challenge = wget_calloc(1, sizeof(wget_http_challenge_t));
+	wget_http_parse_challenge("Basic realm=\"test realm\"", challenge);
+	wget_vector_add(challenges, challenge);
+	wget_vector_free(&challenges);
 
 	char *response_text = wget_strdup(
 "HTTP/1.1 401 Authorization Required\r\n"\

@@ -117,12 +117,15 @@ static int G_GNUC_WGET_NONNULL_ALL _compare_pin(wget_hpkp_pin_t *p1, wget_hpkp_p
 	return memcmp(p1->pin, p2->pin, p1->pinsize);
 }
 
-static void _hpkp_pin_free(wget_hpkp_pin_t *pin)
+static void hpkp_pin_free(void *pin)
 {
-	if (pin) {
-		xfree(pin->hash_type);
-		xfree(pin->pin);
-		xfree(pin->pin_b64);
+	wget_hpkp_pin_t *p = pin;
+
+	if (p) {
+		xfree(p->hash_type);
+		xfree(p->pin);
+		xfree(p->pin_b64);
+		xfree(p);
 	}
 }
 
@@ -144,10 +147,10 @@ void wget_hpkp_pin_add(wget_hpkp_t *hpkp, const char *pin_type, const char *pin_
 
 	if (!hpkp->pins) {
 		hpkp->pins = wget_vector_create(5, (wget_vector_compare_t)_compare_pin);
-		wget_vector_set_destructor(hpkp->pins, (wget_vector_destructor_t)_hpkp_pin_free);
+		wget_vector_set_destructor(hpkp->pins, hpkp_pin_free);
 	}
 
-	wget_vector_add_noalloc(hpkp->pins, pin);
+	wget_vector_add(hpkp->pins, pin);
 }
 
 /**

@@ -238,7 +238,7 @@ static int G_GNUC_WGET_NONNULL_ALL compare_param(wget_http_header_param_t *p1, w
 void wget_http_add_param(wget_vector_t **params, wget_http_header_param_t *param)
 {
 	if (!*params) *params = wget_vector_create(4, (wget_vector_compare_t)compare_param);
-	wget_vector_add(*params, param, sizeof(*param));
+	wget_vector_add_memdup(*params, param, sizeof(*param));
 }
 
 /*
@@ -411,7 +411,7 @@ const char *wget_http_parse_challenges(const char *s, wget_vector_t *challenges)
 	while (*s) {
 		s = wget_http_parse_challenge(s, &challenge);
 		if (challenge.auth_scheme) {
-			wget_vector_add(challenges, &challenge, sizeof(challenge));
+			wget_vector_add_memdup(challenges, &challenge, sizeof(challenge));
 		}
 	}
 
@@ -1040,6 +1040,12 @@ const char *wget_http_parse_setcookie(const char *s, wget_cookie_t **cookie)
 	return wget_cookie_parse_setcookie(s, cookie);
 }
 
+static void cookie_free(void *cookie)
+{
+	if (cookie)
+		wget_cookie_free((wget_cookie_t **) &cookie);
+}
+
 int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, size_t namelen, const char *value, size_t valuelen)
 {
 	if (!name || !value)
@@ -1088,9 +1094,9 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 			// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
 			if (!resp->digests) {
 				resp->digests = wget_vector_create(4, NULL);
-				wget_vector_set_destructor(resp->digests, (wget_vector_destructor_t)wget_http_free_digest);
+				wget_vector_set_destructor(resp->digests, (wget_vector_destructor_t) wget_http_free_digest);
 			}
-			wget_vector_add(resp->digests, &digest, sizeof(digest));
+			wget_vector_add_memdup(resp->digests, &digest, sizeof(digest));
 		} else
 			ret = -1;
 		break;
@@ -1123,7 +1129,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 				resp->links = wget_vector_create(8, NULL);
 				wget_vector_set_destructor(resp->links, (wget_vector_destructor_t)wget_http_free_link);
 			}
-			wget_vector_add(resp->links, &link, sizeof(link));
+			wget_vector_add_memdup(resp->links, &link, sizeof(link));
 		} else
 			ret = -1;
 		break;
@@ -1136,14 +1142,14 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 			}
 		}
 		else if (!wget_strncasecmp_ascii(name, "proxy-authenticate", namelen)) {
-			wget_http_challenge_t challenge;
-			wget_http_parse_challenge(value0, &challenge);
+			wget_http_challenge_t *challenge = wget_malloc(sizeof(wget_http_challenge_t));
+			wget_http_parse_challenge(value0, challenge);
 
 			if (!resp->challenges) {
 				resp->challenges = wget_vector_create(2, NULL);
-				wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
+				wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t) wget_http_free_challenge);
 			}
-			wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
+			wget_vector_add(resp->challenges, challenge);
 		} else
 			ret = -1;
 		break;
@@ -1156,9 +1162,9 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 			if (cookie) {
 				if (!resp->cookies) {
 					resp->cookies = wget_vector_create(4, NULL);
-					wget_vector_set_destructor(resp->cookies, (wget_vector_destructor_t) wget_cookie_deinit);
+					wget_vector_set_destructor(resp->cookies, cookie_free);
 				}
-				wget_vector_add_noalloc(resp->cookies, cookie);
+				wget_vector_add(resp->cookies, cookie);
 			}
 		}
 		else if (!wget_strncasecmp_ascii(name, "strict-transport-security", namelen)) {
@@ -1175,14 +1181,14 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 		break;
 	case 'w':
 		if (!wget_strncasecmp_ascii(name, "www-authenticate", namelen)) {
-			wget_http_challenge_t challenge;
-			wget_http_parse_challenge(value0, &challenge);
+			wget_http_challenge_t *challenge = wget_malloc(sizeof(wget_http_challenge_t));
+			wget_http_parse_challenge(value0, challenge);
 
 			if (!resp->challenges) {
 				resp->challenges = wget_vector_create(2, NULL);
-				wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t)wget_http_free_challenge);
+				wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t) wget_http_free_challenge);
 			}
-			wget_vector_add(resp->challenges, &challenge, sizeof(challenge));
+			wget_vector_add(resp->challenges, challenge);
 		} else
 			ret = -1;
 		break;
@@ -1264,17 +1270,18 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 	return resp;
 }
 
-int wget_http_free_param(wget_http_header_param_t *param)
+void wget_http_free_param(wget_http_header_param_t *param)
 {
 	xfree(param->name);
 	xfree(param->value);
-	return 0;
+	xfree(param);
 }
 
 void wget_http_free_link(wget_http_link_t *link)
 {
 	xfree(link->uri);
 	xfree(link->type);
+	xfree(link);
 }
 
 void wget_http_free_links(wget_vector_t **links)
@@ -1286,6 +1293,7 @@ void wget_http_free_digest(wget_http_digest_t *digest)
 {
 	xfree(digest->algorithm);
 	xfree(digest->encoded_digest);
+	xfree(digest);
 }
 
 void wget_http_free_digests(wget_vector_t **digests)
@@ -1297,6 +1305,7 @@ void wget_http_free_challenge(wget_http_challenge_t *challenge)
 {
 	xfree(challenge->auth_scheme);
 	wget_stringmap_free(&challenge->params);
+	xfree(challenge);
 }
 
 void wget_http_free_challenges(wget_vector_t **challenges)

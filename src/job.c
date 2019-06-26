@@ -83,7 +83,7 @@ void job_create_parts(JOB *job)
 
 		part.id = it + 1;
 
-		wget_vector_add(job->parts, &part, sizeof(PART));
+		wget_vector_add_memdup(job->parts, &part, sizeof(PART));
 
 		part.position += part.length;
 		fsize -= piece->length;
@@ -160,7 +160,7 @@ int job_validate_file(JOB *job)
 		wget_strscpy(piece.hash.hash_hex, hash->hash_hex, sizeof(piece.hash.hash_hex));
 
 		metalink->pieces = wget_vector_create(1, NULL);
-		wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
+		wget_vector_add_memdup(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
 	}
 
 	// create space to hold enough parts
@@ -234,7 +234,7 @@ int job_validate_file(JOB *job)
 
 			if ((rc = check_piece_hash(hash, fd, part.position, part.length)) != 1) {
 				info_printf(_("Piece %d/%d not OK - requeuing\n"), it + 1, wget_vector_size(metalink->pieces));
-				wget_vector_add(job->parts, &part, sizeof(PART));
+				wget_vector_add_memdup(job->parts, &part, sizeof(PART));
 				debug_printf("  need to download %llu bytes from pos=%llu\n",
 					(unsigned long long)part.length, (unsigned long long)part.position);
 			}
@@ -260,7 +260,7 @@ int job_validate_file(JOB *job)
 //			info_printf("real_fsize = %lld %lld\n", (long long) real_fsize, part.position + part.length);
 
 			if (real_fsize < part.position + part.length) {
-				int idx = wget_vector_add(job->parts, &part, sizeof(PART));
+				int idx = wget_vector_add_memdup(job->parts, &part, sizeof(PART));
 
 				if (real_fsize > part.position) {
 					PART *p = wget_vector_get(job->parts, idx);

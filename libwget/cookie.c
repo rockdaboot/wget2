@@ -264,6 +264,13 @@ void wget_cookie_free(wget_cookie_t **cookie)
 	}
 }
 
+// for vector destruction
+static void cookie_free(void *cookie)
+{
+	if (cookie)
+		wget_cookie_free((wget_cookie_t **) &cookie);
+}
+
 /*
 int wget_cookie_equals(wget_cookie_t *cookie1, wget_cookie_t *cookie2)
 {
@@ -612,22 +619,26 @@ int wget_cookie_store_cookie(wget_cookie_db_t *cookie_db, wget_cookie_t *cookie)
 	wget_cookie_t *old;
 	int pos;
 
+	if (!cookie)
+		return WGET_E_INVALID;
+
 	if (!cookie_db) {
-		wget_cookie_deinit(cookie);
-		return -1;
+		wget_cookie_free(&cookie);
+		return WGET_E_INVALID;
 	}
 
 	debug_printf("got cookie %s=%s\n", cookie->name, cookie->value);
 
 	if (!cookie->normalized) {
-		wget_cookie_deinit(cookie);
-		return -1;
+		debug_printf("cookie '%s' dropped, it wasn't normalized\n", cookie->name);
+		wget_cookie_free(&cookie);
+		return WGET_E_INVALID;
 	}
 
 	if (wget_cookie_check_psl(cookie_db, cookie) != 0) {
 		debug_printf("cookie '%s' dropped, domain '%s' is a public suffix\n", cookie->name, cookie->domain);
-		wget_cookie_deinit(cookie);
-		return -1;
+		wget_cookie_free(&cookie);
+		return WGET_E_INVALID;
 	}
 
 	wget_thread_mutex_lock(cookie_db->mutex);
@@ -638,16 +649,16 @@ int wget_cookie_store_cookie(wget_cookie_db_t *cookie_db, wget_cookie_t *cookie)
 		debug_printf("replace old cookie %s=%s\n", cookie->name, cookie->value);
 		cookie->creation = old->creation;
 		cookie->sort_age = old->sort_age;
-		wget_vector_replace(cookie_db->cookies, cookie, sizeof(*cookie), pos);
+		wget_vector_replace(cookie_db->cookies, cookie, pos);
 	} else {
 		debug_printf("store new cookie %s=%s\n", cookie->name, cookie->value);
 		cookie->sort_age = ++cookie_db->age;
-		wget_vector_insert_sorted(cookie_db->cookies, cookie, sizeof(*cookie));
+		wget_vector_insert_sorted(cookie_db->cookies, cookie);
 	}
 
 	wget_thread_mutex_unlock(cookie_db->mutex);
 
-	return 0;
+	return WGET_E_SUCCESS;
 }
 
 void wget_cookie_store_cookies(wget_cookie_db_t *cookie_db, wget_vector_t *cookies)
@@ -657,12 +668,11 @@ void wget_cookie_store_cookies(wget_cookie_db_t *cookie_db, wget_vector_t *cooki
 
 		for (it = 0; it < wget_vector_size(cookies); it++) {
 			wget_cookie_t *cookie = wget_vector_get(cookies, it);
-			wget_cookie_store_cookie(cookie_db, cookie); // stores a shallow copy of 'cookie'
+			wget_cookie_store_cookie(cookie_db, cookie); // takes ownership of 'cookie'
 		}
 
-		// shallow free of all 'cookie' entries
-		wget_vector_set_destructor(cookies, NULL);
-		wget_vector_clear(cookies);
+		// remove all 'cookie' entries without free'ing
+		wget_vector_clear_nofree(cookies);
 	}
 }
 
@@ -714,7 +724,7 @@ char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_
 			cookies = wget_vector_create(16, (wget_vector_compare_t)_compare_cookie2);
 
 		// collect matching cookies (just pointers, no allocation)
-		wget_vector_add_noalloc(cookies, cookie);
+		wget_vector_add(cookies, cookie);
 	}
 
 	// sort cookies regarding RFC 6265
@@ -754,7 +764,7 @@ wget_cookie_db_t *wget_cookie_db_init(wget_cookie_db_t *cookie_db)
 
 	memset(cookie_db, 0, sizeof(*cookie_db));
 	cookie_db->cookies = wget_vector_create(32, (wget_vector_compare_t)_compare_cookie);
-	wget_vector_set_destructor(cookie_db->cookies, (wget_vector_destructor_t)wget_cookie_deinit);
+	wget_vector_set_destructor(cookie_db->cookies, cookie_free);
 	wget_thread_mutex_init(&cookie_db->mutex);
 #ifdef WITH_LIBPSL
 #if ((PSL_VERSION_MAJOR > 0) || (PSL_VERSION_MAJOR == 0 && PSL_VERSION_MINOR >= 16))
@@ -878,7 +888,7 @@ static int _cookie_db_load(wget_cookie_db_t *cookie_db, FILE *fp)
 
 		if (wget_cookie_normalize(NULL, &cookie) == 0 && wget_cookie_check_psl(cookie_db, &cookie) == 0) {
 			ncookies++;
-			wget_cookie_store_cookie(cookie_db, &cookie);
+			wget_cookie_store_cookie(cookie_db, wget_memdup(&cookie, sizeof(cookie))); // takes ownership of cookie
 		} else
 			wget_cookie_deinit(&cookie);
 	}

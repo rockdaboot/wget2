@@ -213,7 +213,7 @@ static void test_dl_list(void)
 
 	dirs = wget_vector_create(2, NULL);
 	names = wget_vector_create(2, NULL);
-	wget_vector_add_str(dirs, OBJECT_DIR);
+	wget_vector_add(dirs, wget_strdup(OBJECT_DIR));
 
 	dl_list(dirs, names);
 	if (! string_vector_check(names, 2, "alpha", "beta")) {

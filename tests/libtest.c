@@ -1028,11 +1028,11 @@ void wget_test(int first_key, ...)
 		switch (key) {
 		case WGET_TEST_REQUEST_URL:
 			if ((request_url = va_arg(args, const char *)))
-				wget_vector_add_str(request_urls, request_url);
+				wget_vector_add(request_urls, wget_strdup(request_url));
 			break;
 		case WGET_TEST_REQUEST_URLS:
 			while ((request_url = va_arg(args, const char *)))
-				wget_vector_add_str(request_urls, request_url);
+				wget_vector_add(request_urls, wget_strdup(request_url));
 			break;
 		case WGET_TEST_EXPECTED_ERROR_CODE:
 			expected_error_code = va_arg(args, int);

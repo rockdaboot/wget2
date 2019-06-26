@@ -62,9 +62,14 @@ typedef struct {
 		length;
 } _metalink_context_t ;
 
-static void _free_mirror(wget_metalink_mirror_t *mirror)
+static void mirror_free(void *mirror)
 {
-	wget_iri_free(&mirror->iri);
+	wget_metalink_mirror_t *m = mirror;
+
+	if (m) {
+		wget_iri_free(&m->iri);
+		xfree(m);
+	}
 }
 
 static void _add_piece(_metalink_context_t *ctx, const char *value)
@@ -92,7 +97,7 @@ static void _add_piece(_metalink_context_t *ctx, const char *value)
 				piece.position = 0; // integer overflow
 		} else
 			piece.position = 0;
-		wget_vector_add(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
+		wget_vector_add_memdup(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
 	}
 
 	*ctx->hash = 0;
@@ -114,7 +119,7 @@ static void _add_file_hash(_metalink_context_t *ctx, const char *value)
 
 		if (!metalink->hashes)
 			metalink->hashes = wget_vector_create(4, NULL);
-		wget_vector_add(metalink->hashes, &hash, sizeof(wget_metalink_hash_t));
+		wget_vector_add_memdup(metalink->hashes, &hash, sizeof(wget_metalink_hash_t));
 	}
 
 	*ctx->hash_type = *ctx->hash = 0;
@@ -129,21 +134,22 @@ static void _add_mirror(_metalink_context_t *ctx, const char *value)
 		return;
 
 	wget_metalink_t *metalink = ctx->metalink;
-	wget_metalink_mirror_t mirror;
+	wget_metalink_mirror_t *mirror = wget_calloc(1, sizeof(wget_metalink_mirror_t));
 
-	memset(&mirror, 0, sizeof(wget_metalink_mirror_t));
-	wget_strscpy(mirror.location, ctx->location, sizeof(mirror.location));
-	mirror.priority = ctx->priority;
-	mirror.iri = wget_iri_parse(value, NULL);
+	wget_strscpy(mirror->location, ctx->location, sizeof(mirror->location));
+	mirror->priority = ctx->priority;
+	mirror->iri = wget_iri_parse(value, NULL);
 
-	if (!mirror.iri)
+	if (!mirror->iri) {
+		xfree(mirror);
 		return;
+	}
 
 	if (!metalink->mirrors) {
 		metalink->mirrors = wget_vector_create(4, NULL);
-		wget_vector_set_destructor(metalink->mirrors, (wget_vector_destructor_t)_free_mirror);
+		wget_vector_set_destructor(metalink->mirrors, mirror_free);
 	}
-	wget_vector_add(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
+	wget_vector_add(metalink->mirrors, mirror);
 
 	*ctx->location = 0;
 	ctx->priority = 999999;

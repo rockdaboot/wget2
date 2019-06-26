@@ -42,7 +42,7 @@ static void split_string(const char *str, char separator, wget_vector_t *v)
 
 	for (pmark = ptr = str; *ptr; pmark = ptr + 1) {
 		if ((ptr = strchrnul(pmark, separator)) > pmark)
-			wget_vector_add_noalloc(v, wget_strmemdup(pmark, ptr - pmark));
+			wget_vector_add(v, wget_strmemdup(pmark, ptr - pmark));
 	}
 }
 
@@ -239,7 +239,7 @@ static void impl_file_add_recurse_url(wget_downloaded_file_t *p_file, const wget
 	downloaded_file_t *file = (downloaded_file_t *) p_file;
 
 	if (file->recurse_iris)
-		wget_vector_add_noalloc(file->recurse_iris, wget_iri_clone(iri));
+		wget_vector_add(file->recurse_iris, wget_iri_clone(iri));
 }
 
 static void impl_register_post_processor(wget_plugin_t *p_plugin, wget_plugin_post_processor_t fn)
@@ -313,17 +313,10 @@ static struct wget_plugin_vtable vtable = {
 	.add_ocsp_db = impl_add_ocsp_db
 };
 
-
-// Frees all resources held by a plugin, except for the memory for the structure itself (for wget_vector_t)
-static void plugin_deinit(plugin_t *plugin)
-{
-	dl_file_close(plugin->dm);
-}
-
-// Like plugin_deinit but also free's memory
+// Free resources of the plugin and plugin itself
 static void plugin_free(plugin_t *plugin)
 {
-	plugin_deinit(plugin);
+	dl_file_close(plugin->dm);
 	wget_free(plugin);
 }
 
@@ -373,7 +366,7 @@ static plugin_t *_load_plugin(const char *name, const char *path, dl_error_t *e)
 	}
 
 	// Add to plugin list
-	wget_vector_add_noalloc(plugin_list, (void *) plugin);
+	wget_vector_add(plugin_list, plugin);
 
 	// Add to map
 	wget_stringmap_put(plugin_name_index, plugin->name, plugin);
@@ -679,7 +672,7 @@ void plugin_db_init(void)
 	if (! initialized) {
 		search_paths = wget_vector_create(16, NULL);
 		plugin_list = wget_vector_create(16, NULL);
-		wget_vector_set_destructor(plugin_list, (wget_vector_destructor_t) plugin_deinit);
+		wget_vector_set_destructor(plugin_list, (wget_vector_destructor_t) plugin_free);
 		plugin_name_index = wget_stringmap_create(16);
 		wget_stringmap_set_key_destructor(plugin_name_index, NULL);
 		wget_stringmap_set_value_destructor(plugin_name_index, NULL);

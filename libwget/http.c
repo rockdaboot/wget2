@@ -159,7 +159,7 @@ wget_http_request_t *wget_http_create_request(const wget_iri_t *iri, const char 
 	wget_iri_get_escaped_resource(iri, &req->esc_resource);
 	wget_iri_get_escaped_host(iri, &req->esc_host);
 	req->headers = wget_vector_create(8, NULL);
-	wget_vector_set_destructor(req->headers, (wget_vector_destructor_t)wget_http_free_param);
+	wget_vector_set_destructor(req->headers, (wget_vector_destructor_t) wget_http_free_param);
 
 	wget_http_add_header(req, "Host", req->esc_host.data);
 	wget_http_request_set_body_cb(req, _body_callback, NULL);
@@ -230,7 +230,7 @@ void wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, co
 
 	param.value = wget_vaprintf(fmt, args);
 	param.name = wget_strdup(name);
-	wget_vector_add(req->headers, &param, sizeof(param));
+	wget_vector_add_memdup(req->headers, &param, sizeof(param));
 }
 
 void wget_http_add_header_printf(wget_http_request_t *req, const char *name, const char *fmt, ...)
@@ -249,7 +249,7 @@ void wget_http_add_header(wget_http_request_t *req, const char *name, const char
 		.value = wget_strdup(value)
 	};
 
-	wget_vector_add(req->headers, &param, sizeof(param));
+	wget_vector_add_memdup(req->headers, &param, sizeof(param));
 }
 
 void wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param_t *param)
@@ -259,7 +259,7 @@ void wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param
 		.value = wget_strdup(param->value)
 	};
 
-	wget_vector_add(req->headers, &_param, sizeof(_param));
+	wget_vector_add_memdup(req->headers, &_param, sizeof(_param));
 }
 
 void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *challenge, const char *username, const char *password, int proxied)
@@ -563,7 +563,7 @@ static int _on_stream_close_callback(nghttp2_session *session, int32_t stream_id
 
 		ctx->resp->response_end = wget_get_timemillis(); // Final transmission time.
 
-		wget_vector_add_noalloc(conn->received_http2_responses, ctx->resp);
+		wget_vector_add(conn->received_http2_responses, ctx->resp);
 		wget_decompress_close(ctx->decompressor);
 		nghttp2_session_set_stream_user_data(session, stream_id, NULL);
 		xfree(ctx);
@@ -913,7 +913,7 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 		return -1;
 	}
 
-	wget_vector_add_noalloc(conn->pending_requests, req);
+	wget_vector_add(conn->pending_requests, req);
 
 	if (req->debug_skip_body)
 		debug_printf("# sent %zd bytes:\n%.*s<body skipped>", nbytes, (int)(conn->buf->length - req->body_length), conn->buf->data);
@@ -1356,6 +1356,12 @@ wget_http_response_t *wget_http_get_response(wget_http_connection_t *conn)
 	return resp;
 }
 
+static void iri_free(void *iri)
+{
+	if (iri)
+		wget_iri_free((wget_iri_t **) &iri);
+}
+
 static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 {
 	if (!proxy)
@@ -1376,9 +1382,9 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 			if (iri) {
 				if (!proxies) {
 					proxies = wget_vector_create(8, NULL);
-					wget_vector_set_destructor(proxies, (wget_vector_destructor_t)wget_iri_free_content);
+					wget_vector_set_destructor(proxies, iri_free);
 				}
-				wget_vector_add_noalloc(proxies, iri);
+				wget_vector_add(proxies, iri);
 			}
 		}
 	}
@@ -1419,7 +1425,7 @@ static wget_vector_t *_parse_no_proxies(const char *no_proxy, const char *encodi
 				host = hostp;
 			}
 
-			wget_vector_add_noalloc(proxies, host);
+			wget_vector_add(proxies, host);
 		}
 	}
 
