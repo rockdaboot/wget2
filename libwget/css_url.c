@@ -66,14 +66,25 @@ static void _css_get_encoding(void *context, const char *encoding, size_t len)
 static void _css_get_url(void *context, const char *url, size_t len, size_t pos)
 {
 	_CSS_CONTEXT *ctx = context;
-	wget_css_parsed_url_t parsed_url = { .len = len, .pos = pos, .url = wget_strmemdup(url, len), .abs_url = NULL };
+	wget_css_parsed_url_t *parsed_url;
+
+	if (!(parsed_url = wget_calloc(1, sizeof(wget_css_parsed_url_t))))
+		return;
+
+	if (!(parsed_url->url = wget_strmemdup(url, len))) {
+		xfree(parsed_url);
+		return;
+	}
+
+	parsed_url->len = len;
+	parsed_url->pos = pos;
 
 	if (!ctx->uris) {
 		ctx->uris = wget_vector_create(16, NULL);
 		wget_vector_set_destructor(ctx->uris, url_free);
 	}
 
-	wget_vector_add_memdup(ctx->uris, &parsed_url, sizeof(parsed_url));
+	wget_vector_add(ctx->uris, parsed_url);
 }
 
 static void _urls_to_absolute(wget_vector_t *urls, wget_iri_t *base)
