@@ -2543,7 +2543,7 @@ WGETAPI void
  * \ingroup libwget-hash
  * \brief Type for hash / digest routines
  */
-typedef struct _wget_hash_hd_st wget_hash_hd_t;
+typedef struct wget_hash_hd_st wget_hash_hd_t;
 
 /**
  * \ingroup libwget-hash

@@ -99,7 +99,7 @@ wget_digest_algorithm_t wget_hash_get_algorithm(const char *hashname)
 #  include <gnutls/crypto.h>
 #endif
 
-struct _wget_hash_hd_st {
+struct wget_hash_hd_st {
 	gnutls_hash_hd_t
 		dig;
 };
@@ -216,7 +216,7 @@ void wget_hash_deinit(wget_hash_hd_t *handle, void *digest)
 #include <nettle/ripemd160.h>
 #include <nettle/sha2.h>
 
-struct _wget_hash_hd_st {
+struct wget_hash_hd_st {
 	const struct nettle_hash
 		*hash;
 	void
@@ -297,7 +297,7 @@ void wget_hash_deinit(wget_hash_hd_t *dig, void *digest)
   #include <gcrypt.h>
 #endif
 
-struct _wget_hash_hd_st {
+struct wget_hash_hd_st {
 	int
 		algorithm;
 	gcry_md_hd_t
@@ -445,7 +445,7 @@ static struct _algorithm {
 	}
 };
 
-struct _wget_hash_hd_st {
+struct wget_hash_hd_st {
 	const struct _algorithm
 		*algorithm;
 	void
