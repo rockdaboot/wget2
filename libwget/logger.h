@@ -30,7 +30,7 @@
 #include <wget.h>
 
 // _WGET_LOGGER is shared between log.c and logger.c, but must not be exposed to the public
-struct _wget_logger_st {
+struct wget_logger_st {
 	FILE *fp;
 	const char *fname;
 	void (*func)(const char *buf, size_t bufsize);

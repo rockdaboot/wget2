@@ -608,7 +608,7 @@ WGETAPI size_t
  * Logger routines
  */
 
-typedef struct _wget_logger_st wget_logger_t;
+typedef struct wget_logger_st wget_logger_t;
 typedef void (*wget_logger_func_t)(const char *buf , size_t len) G_GNUC_WGET_NONNULL_ALL;
 
 WGETAPI void
