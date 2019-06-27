@@ -56,18 +56,18 @@ libwget_ip_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_ip_la_LIBADD = $(INET_PTON_LIB) ../lib/libgnu.la
 libwget_ip_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget common ########
+lib_LTLIBRARIES += libwget_common.la
+libwget_common_la_SOURCES =  buffer.c buffer_printf.c base64.c bitmap.c hashmap.c list.c log.c mem.c printf.c stringmap.c strlcpy.c strscpy.c utils.c vector.c error.c
+libwget_common_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_common_la_LIBADD =  libwget_alloc.la ../lib/libgnu.la
+libwget_common_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 # convenience library to avoid warnings about unused macros
 noinst_LTLIBRARIES = libcsstokenizer.la
 libcsstokenizer_la_SOURCES = css_tokenizer.c css_tokenizer.lex
 libcsstokenizer_la_CFLAGS = $(AM_CFLAGS)
 libcsstokenizer_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
-
-noinst_PROGRAMS = test_linking
-test_linking_SOURCES = test_linking.c
-test_linking_LDFLAGS = -static
-test_linking_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib \
- -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
-test_linking_LDADD = libwget.la ../lib/libgnu.la
 
 # gnulib needs config.h included before any gnulib header files
 css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
@@ -78,3 +78,16 @@ css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
 	$(AM_V_at)rm -f lex.yy.c
 
 DISTCLEANFILES = css_tokenizer.c
+
+######## Test linking ########
+noinst_PROGRAMS = test_linking_common
+test_linking_common_SOURCES = test_linking_common.c
+test_linking_common_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_common_LDADD = libwget_common.la
+test_linking_common_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking
+test_linking_SOURCES = test_linking.c
+test_linking_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_LDADD = libwget.la
+test_linking_LDFLAGS = -static -no-install
