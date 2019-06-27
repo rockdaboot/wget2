@@ -224,22 +224,40 @@ void wget_http_request_set_body(wget_http_request_t *req, const char *mimetype, 
 	req->body_length = length;
 }
 
-void wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, const char *fmt, va_list args)
+int wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, const char *fmt, va_list args)
 {
-	wget_http_header_param_t param;
+	wget_http_header_param_t *param = wget_calloc(1, sizeof(wget_http_header_param_t));
 
-	param.value = wget_vaprintf(fmt, args);
-	param.name = wget_strdup(name);
-	wget_vector_add_memdup(req->headers, &param, sizeof(param));
+	if (!param)
+		return WGET_E_MEMORY;
+
+	if (!(param->value = wget_vaprintf(fmt, args)))
+		goto err;
+
+	if (!(param->name = wget_strdup(name)))
+		goto err;
+
+	if (wget_vector_add(req->headers, param) < 0)
+		goto err;
+
+	return WGET_E_SUCCESS;
+
+err:
+	xfree(param->name);
+	xfree(param->value);
+	xfree(param);
+	return WGET_E_MEMORY;
 }
 
-void wget_http_add_header_printf(wget_http_request_t *req, const char *name, const char *fmt, ...)
+int wget_http_add_header_printf(wget_http_request_t *req, const char *name, const char *fmt, ...)
 {
 	va_list args;
 
 	va_start(args, fmt);
-	wget_http_add_header_vprintf(req, name, fmt, args);
+	int rc = wget_http_add_header_vprintf(req, name, fmt, args);
 	va_end(args);
+
+	return rc;
 }
 
 void wget_http_add_header(wget_http_request_t *req, const char *name, const char *value)
