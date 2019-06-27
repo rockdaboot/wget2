@@ -394,6 +394,9 @@ char *wget_strnglob(const char *str, size_t n, int flags)
 
 	char *globstr = wget_strmemdup(str, n);
 
+	if (!globstr)
+		return NULL;
+
 	if (glob(globstr, flags, NULL, &pglob) == 0) {
 		if (pglob.gl_pathc > 0) {
 			expanded_str = wget_aprintf("%s%s", pglob.gl_pathv[0], str+n);
