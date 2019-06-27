@@ -63,7 +63,7 @@ struct wget_thread_st {
 	gl_thread_t tid;
 };
 
-struct _wget_thread_mutex_st {
+struct wget_thread_mutex_st {
 	gl_lock_t mutex;
 };
 
@@ -82,7 +82,7 @@ struct _wget_thread_cond_st {
  */
 int wget_thread_mutex_init(wget_thread_mutex_t *mutex)
 {
-	*mutex = wget_malloc(sizeof(struct _wget_thread_mutex_st));
+	*mutex = wget_malloc(sizeof(struct wget_thread_mutex_st));
 
 	if (!*mutex)
 		return WGET_E_MEMORY;

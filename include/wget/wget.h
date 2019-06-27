@@ -1085,7 +1085,7 @@ void *wget_stringmap_iterator_next(wget_stringmap_iterator_t *h, char **value)
 
 typedef unsigned long wget_thread_id_t;
 typedef struct wget_thread_st *wget_thread_t;
-typedef struct _wget_thread_mutex_st *wget_thread_mutex_t;
+typedef struct wget_thread_mutex_st *wget_thread_mutex_t;
 typedef struct _wget_thread_cond_st *wget_thread_cond_t;
 
 WGETAPI int
