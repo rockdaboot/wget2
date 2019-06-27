@@ -118,7 +118,7 @@ typedef struct {
 		redraw : 1;
 } _bar_slot_t;
 
-struct _wget_bar_st {
+struct wget_bar_st {
 	_bar_slot_t
 		*slots;
 	char

@@ -2543,7 +2543,7 @@ WGETAPI void
  * \ingroup libwget-hash
  * \brief Type for hash / digest routines
  */
-typedef struct wget_hash_hd_st wget_hash_hd_t;
+	typedef struct wget_hash_hd_st wget_hash_hd_t;
 
 /**
  * \ingroup libwget-hash
@@ -2664,7 +2664,7 @@ WGETAPI const char *
  * Progress bar routines
  */
 
-typedef struct _wget_bar_st wget_bar_t;
+typedef struct wget_bar_st wget_bar_t;
 
 WGETAPI wget_bar_t *
 	wget_bar_init(wget_bar_t *bar, int nslots);
