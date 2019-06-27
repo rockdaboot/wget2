@@ -408,7 +408,7 @@ WGETAPI ssize_t
  *
  * Type for double linked lists and list entries.
  */
-typedef struct _wget_list_st wget_list_t;
+typedef struct wget_list_st wget_list_t;
 typedef int (*wget_list_browse_t)(void *context, void *elem);
 
 WGETAPI void *

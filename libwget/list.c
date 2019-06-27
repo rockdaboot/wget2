@@ -51,7 +51,7 @@
  * See wget_list_append() for an example on how to use lists.
  */
 
-struct _wget_list_st {
+struct wget_list_st {
 	wget_list_t
 		*next,
 		*prev;
