@@ -49,7 +49,7 @@ struct _wget_tls_session_db_st {
 		changed : 1; // whether or not the db has been changed / needs saving
 };
 
-struct _wget_tls_session_st {
+struct wget_tls_session_st {
 	const char *
 		host;
 	int64_t
