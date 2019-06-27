@@ -724,7 +724,7 @@ WGETAPI void
 typedef struct wget_hashmap_st wget_hashmap_t;
 
 /// Type of the hashmap iterator
-typedef struct _wget_hashmap_iterator_st wget_hashmap_iterator_t;
+typedef struct wget_hashmap_iterator_st wget_hashmap_iterator_t;
 
 /// Type of the hashmap compare function
 typedef int (*wget_hashmap_compare_t)(const void *key1, const void *key2);

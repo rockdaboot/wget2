@@ -67,7 +67,7 @@ struct wget_hashmap_st {
 		load_factor;
 };
 
-struct _wget_hashmap_iterator_st {
+struct wget_hashmap_iterator_st {
 	struct wget_hashmap_st
 		*h;
 	_entry_t
@@ -93,7 +93,7 @@ struct _wget_hashmap_iterator_st {
  */
 wget_hashmap_iterator_t *wget_hashmap_iterator_alloc(wget_hashmap_t *h)
 {
-	struct _wget_hashmap_iterator_st *iter = wget_calloc(1, sizeof(struct _wget_hashmap_iterator_st));
+	struct wget_hashmap_iterator_st *iter = wget_calloc(1, sizeof(struct wget_hashmap_iterator_st));
 
 	if (iter)
 		iter->h = h;
@@ -124,7 +124,7 @@ void wget_hashmap_iterator_free(wget_hashmap_iterator_t **iter)
  */
 void *wget_hashmap_iterator_next(wget_hashmap_iterator_t *iter, void **value)
 {
-	struct _wget_hashmap_iterator_st *_iter = (struct _wget_hashmap_iterator_st *) iter;
+	struct wget_hashmap_iterator_st *_iter = (struct wget_hashmap_iterator_st *) iter;
 	struct wget_hashmap_st *h = _iter->h;
 
 	if (_iter->entry) {
