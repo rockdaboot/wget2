@@ -64,7 +64,7 @@
 typedef int (*wget_decompressor_decompress_t)(wget_decompressor_t *dc, char *src, size_t srclen);
 typedef void (*wget_decompressor_exit_t)(wget_decompressor_t *dc);
 
-struct _wget_decompressor_st {
+struct wget_decompressor_st {
 #ifdef WITH_ZLIB
 	z_stream
 		z_strm;

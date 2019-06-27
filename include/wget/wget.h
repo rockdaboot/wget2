@@ -1121,7 +1121,7 @@ WGETAPI bool
  * Decompressor routines
  */
 
-typedef struct _wget_decompressor_st wget_decompressor_t;
+typedef struct wget_decompressor_st wget_decompressor_t;
 typedef int (*wget_decompressor_sink_t)(void *context, const char *data, size_t length);
 typedef int (*wget_decompressor_error_handler_t)(wget_decompressor_t *dc, int err);
 
