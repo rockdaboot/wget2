@@ -224,29 +224,30 @@ void wget_http_request_set_body(wget_http_request_t *req, const char *mimetype, 
 	req->body_length = length;
 }
 
-int wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, const char *fmt, va_list args)
+static int http_add_header(wget_http_request_t *req, const char *name, const char *value)
 {
-	wget_http_header_param_t *param = wget_calloc(1, sizeof(wget_http_header_param_t));
+	wget_http_header_param_t *param = wget_malloc(sizeof(wget_http_header_param_t));
 
-	if (!param)
-		return WGET_E_MEMORY;
-
-	if (!(param->value = wget_vaprintf(fmt, args)))
+	if (!param || !name || !value)
 		goto err;
 
-	if (!(param->name = wget_strdup(name)))
-		goto err;
+	param->name = name;
+	param->value = value;
 
-	if (wget_vector_add(req->headers, param) < 0)
-		goto err;
+	if (wget_vector_add(req->headers, param) >= 0)
+		return WGET_E_SUCCESS;
 
-	return WGET_E_SUCCESS;
+	xfree(param);
 
 err:
-	xfree(param->name);
-	xfree(param->value);
-	xfree(param);
+	xfree(value);
+	xfree(name);
 	return WGET_E_MEMORY;
+}
+
+int wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, const char *fmt, va_list args)
+{
+	return http_add_header(req, wget_strdup(name), wget_vaprintf(fmt, args));
 }
 
 int wget_http_add_header_printf(wget_http_request_t *req, const char *name, const char *fmt, ...)
@@ -260,24 +261,14 @@ int wget_http_add_header_printf(wget_http_request_t *req, const char *name, cons
 	return rc;
 }
 
-void wget_http_add_header(wget_http_request_t *req, const char *name, const char *value)
+int wget_http_add_header(wget_http_request_t *req, const char *name, const char *value)
 {
-	wget_http_header_param_t param = {
-		.name = wget_strdup(name),
-		.value = wget_strdup(value)
-	};
-
-	wget_vector_add_memdup(req->headers, &param, sizeof(param));
+	return http_add_header(req, wget_strdup(name), wget_strdup(value));
 }
 
-void wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param_t *param)
+int wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param_t *param)
 {
-	wget_http_header_param_t _param = {
-		.name = wget_strdup(param->name),
-		.value = wget_strdup(param->value)
-	};
-
-	wget_vector_add_memdup(req->headers, &_param, sizeof(_param));
+	return http_add_header(req, wget_strdup(param->name), wget_strdup(param->value));
 }
 
 void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *challenge, const char *username, const char *password, int proxied)
