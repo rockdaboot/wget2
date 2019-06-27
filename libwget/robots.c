@@ -113,8 +113,10 @@ int wget_robots_parse(wget_robots_t **_robots, const char *data, const char *cli
 				path.len = p - data;
 				if (!(path.p = wget_strmemdup(data, path.len)))
 					goto oom;
-				if (wget_vector_add_memdup(robots->paths, &path, sizeof(path)) < 0)
+				if (wget_vector_add_memdup(robots->paths, &path, sizeof(path)) < 0) {
+					xfree(path.p);
 					goto oom;
+				}
 			}
 		}
 		else if (!wget_strncasecmp_ascii(data, "Sitemap:", 8)) {
