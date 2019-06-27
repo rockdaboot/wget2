@@ -67,7 +67,7 @@ struct wget_thread_mutex_st {
 	gl_lock_t mutex;
 };
 
-struct _wget_thread_cond_st {
+struct wget_thread_cond_st {
 	gl_cond_t cond;
 };
 
@@ -138,7 +138,7 @@ void wget_thread_mutex_unlock(wget_thread_mutex_t mutex)
  */
 int wget_thread_cond_init(wget_thread_cond_t *cond)
 {
-	*cond = wget_malloc(sizeof(struct _wget_thread_cond_st));
+	*cond = wget_malloc(sizeof(struct wget_thread_cond_st));
 
 	if (!*cond)
 		return WGET_E_MEMORY;
