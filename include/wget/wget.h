@@ -1502,7 +1502,7 @@ typedef struct wget_hpkp_db_st wget_hpkp_db_t;
  *
  * HPKP database entry. Corresponds to one 'Public-Key-Pins' HTTP response header.
  */
-typedef struct _wget_hpkp_st wget_hpkp_t;
+typedef struct wget_hpkp_st wget_hpkp_t;
 
 //typedef struct _wget_hpkp_pin_st wget_hpkp_pin_t;
 

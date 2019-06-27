@@ -44,7 +44,7 @@ typedef struct {
 		load_time;
 } _hpkp_db_impl_t;
 
-struct _wget_hpkp_st {
+struct wget_hpkp_st {
 	const char *
 		host;
 	int64_t
