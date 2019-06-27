@@ -1504,8 +1504,6 @@ typedef struct wget_hpkp_db_st wget_hpkp_db_t;
  */
 typedef struct wget_hpkp_st wget_hpkp_t;
 
-//typedef struct _wget_hpkp_pin_st wget_hpkp_pin_t;
-
 /* FIXME: the following entries are not used. review the hpkp function return values ! */
 /**
  * \addtogroup libwget-hpkp
