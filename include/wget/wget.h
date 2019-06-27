@@ -1835,7 +1835,7 @@ WGETAPI int
 /**
  *  container for .netrc entries
  */
-typedef struct _wget_netrc_db_st wget_netrc_db_t;
+typedef struct wget_netrc_db_st wget_netrc_db_t;
 
 /**
  *  structure for a single .netrc entry
