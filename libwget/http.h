@@ -28,7 +28,7 @@
 #endif
 
 //wget_http_connection_t abstract type
-struct _wget_http_connection_st {
+struct wget_http_connection_st {
 	wget_tcp_t *
 		tcp;
 	const char *

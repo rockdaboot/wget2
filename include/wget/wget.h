@@ -2360,7 +2360,7 @@ struct wget_http_response_t {
 		response_end; //!< when this response was received
 };
 
-typedef struct _wget_http_connection_st wget_http_connection_t;
+typedef struct wget_http_connection_st wget_http_connection_t;
 
 WGETAPI const char *
 	wget_http_get_host(const wget_http_connection_t *conn);
