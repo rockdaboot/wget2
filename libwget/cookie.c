@@ -50,7 +50,7 @@
 #  define G_GNUC_WGET_UNUSED
 #endif
 
-struct _wget_cookie_st {
+struct wget_cookie_st {
 	const char *
 		name;
 	const char *
