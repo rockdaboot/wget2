@@ -370,7 +370,7 @@ WGETAPI pid_t
 WGETAPI pid_t
 	wget_popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *argv);
 WGETAPI char *
-	wget_read_file(const char *fname, size_t *size);
+	wget_read_file(const char *fname, size_t *size) G_GNUC_WGET_MALLOC;
 WGETAPI int
 	wget_update_file(const char *fname, wget_update_load_t load_func, wget_update_save_t save_func, void *context);
 WGETAPI int
