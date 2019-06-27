@@ -47,7 +47,7 @@ struct _entry_st {
 		hash;
 };
 
-struct _wget_hashmap_st {
+struct wget_hashmap_st {
 	wget_hashmap_hash_t
 		hash; // hash function
 	wget_hashmap_compare_t
@@ -68,7 +68,7 @@ struct _wget_hashmap_st {
 };
 
 struct _wget_hashmap_iterator_st {
-	struct _wget_hashmap_st
+	struct wget_hashmap_st
 		*h;
 	_entry_t
 		*entry;
@@ -125,7 +125,7 @@ void wget_hashmap_iterator_free(wget_hashmap_iterator_t **iter)
 void *wget_hashmap_iterator_next(wget_hashmap_iterator_t *iter, void **value)
 {
 	struct _wget_hashmap_iterator_st *_iter = (struct _wget_hashmap_iterator_st *) iter;
-	struct _wget_hashmap_st	*h = _iter->h;
+	struct wget_hashmap_st *h = _iter->h;
 
 	if (_iter->entry) {
 		if ((_iter->entry = _iter->entry->next)) {
