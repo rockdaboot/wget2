@@ -78,7 +78,7 @@ struct _wget_cookie_st {
 		http_only : 1; // just use the cookie via HTTP/HTTPS protocol
 };
 
-struct _wget_cookie_db_st {
+struct wget_cookie_db_st {
 	wget_vector_t *
 		cookies;
 #ifdef WITH_LIBPSL

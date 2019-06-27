@@ -146,7 +146,7 @@ struct config {
 		*ocsp_db; // in-memory fingerprint OCSP database
 	wget_netrc_db_t
 		*netrc_db; // in-memory .netrc database
-	struct _wget_cookie_db_st
+	struct wget_cookie_db_st
 		*cookie_db;
 	stats_args
 		*stats_dns_args,
