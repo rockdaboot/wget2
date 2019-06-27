@@ -59,7 +59,7 @@
  * Solaris threads and Windows threads.
  */
 
-struct _wget_thread_st {
+struct wget_thread_st {
 	gl_thread_t tid;
 };
 
@@ -209,7 +209,7 @@ int wget_thread_cond_wait(wget_thread_cond_t cond, wget_thread_mutex_t mutex, lo
 int wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, G_GNUC_WGET_UNUSED int flags)
 {
 	if (wget_thread_support()) {
-		*thread = wget_malloc(sizeof(struct _wget_thread_st));
+		*thread = wget_malloc(sizeof(struct wget_thread_st));
 
 		if (!*thread)
 			return WGET_E_MEMORY;
