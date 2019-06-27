@@ -38,7 +38,7 @@
 #include <wget.h>
 #include "private.h"
 
-struct _wget_tls_session_db_st {
+struct wget_tls_session_db_st {
 	wget_hashmap_t *
 		entries;
 	wget_thread_mutex_t

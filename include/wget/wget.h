@@ -1661,7 +1661,7 @@ WGETAPI int
 
 // structure for TLS resumption cache entries
 typedef struct wget_tls_session_st wget_tls_session_t;
-typedef struct _wget_tls_session_db_st wget_tls_session_db_t;
+typedef struct wget_tls_session_db_st wget_tls_session_db_t;
 
 WGETAPI wget_tls_session_t *
 	wget_tls_session_init(wget_tls_session_t *tls_session);
