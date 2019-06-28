@@ -112,6 +112,13 @@ libwget_logger_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_logger_la_LIBADD = libwget_common.la libwget_alloc.la ../lib/libgnu.la
 libwget_logger_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget dnscache ########
+lib_LTLIBRARIES += libwget_dnscache.la
+libwget_dnscache_la_SOURCES =  dns_cache.c
+libwget_dnscache_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_dnscache_la_LIBADD = libwget_thread.la libwget_common.la libwget_alloc.la $(GETADDRINFO_LIB) ../lib/libgnu.la
+libwget_dnscache_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 ######## libwget CSS ########
 lib_LTLIBRARIES += libwget_css.la
 libwget_css_la_SOURCES =  css_url.c css.c css_tokenizer.h
@@ -202,6 +209,12 @@ test_linking_thread_SOURCES = test_linking_thread.c
 test_linking_thread_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_thread_LDADD = libwget_thread.la
 test_linking_thread_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_dnscache
+test_linking_dnscache_SOURCES = test_linking_dnscache.c
+test_linking_dnscache_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_dnscache_LDADD = libwget_dnscache.la
+test_linking_dnscache_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking
 test_linking_SOURCES = test_linking.c
