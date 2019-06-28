@@ -49,6 +49,13 @@ libwget_alloc_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_alloc_la_LIBADD =  ../lib/libgnu.la
 libwget_alloc_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget ip ########
+lib_LTLIBRARIES += libwget_ip.la
+libwget_ip_la_SOURCES =  ip.c
+libwget_ip_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_ip_la_LIBADD = $(INET_PTON_LIB) ../lib/libgnu.la
+libwget_ip_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 # convenience library to avoid warnings about unused macros
 noinst_LTLIBRARIES = libcsstokenizer.la
 libcsstokenizer_la_SOURCES = css_tokenizer.c css_tokenizer.lex
