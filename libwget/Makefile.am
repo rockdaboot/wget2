@@ -42,6 +42,13 @@ libwget_la_LIBADD = libcsstokenizer.la $(libwget_libadd)
 # include ABI version information
 libwget_la_LDFLAGS = -no-undefined -version-info $(LIBWGET_SO_VERSION)
 
+######## libwget alloc ########
+lib_LTLIBRARIES += libwget_alloc.la
+libwget_alloc_la_SOURCES =  xalloc.c
+libwget_alloc_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_alloc_la_LIBADD =  ../lib/libgnu.la
+libwget_alloc_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 # convenience library to avoid warnings about unused macros
 noinst_LTLIBRARIES = libcsstokenizer.la
 libcsstokenizer_la_SOURCES = css_tokenizer.c css_tokenizer.lex
