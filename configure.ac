@@ -478,9 +478,16 @@ AS_IF([test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes], [
 ])
 
 AS_IF([test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes], [
-  AC_SEARCH_LIBS(nettle_md5_init, nettle,
-    [with_libnettle=yes; AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])],
-    [with_libnettle=no;  AC_MSG_WARN(*** LIBNETTLE was not found. Fallback to libgcrypt for hashing and checksumming.)])
+  PKG_CHECK_MODULES([NETTLE], nettle, [
+      with_libnettle=yes
+      LIBS="$NETTLE_LIBS $LIBS"
+      CFLAGS="$NETTLE_CFLAGS $CFLAGS"
+      AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])
+    ], [
+      AC_SEARCH_LIBS(nettle_md5_init, nettle,
+        [with_libnettle=yes; AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])],
+        [with_libnettle=no;  AC_MSG_WARN(*** LIBNETTLE was not found. Fallback to libgcrypt for hashing and checksumming.)])
+    ])
 
   AS_IF([test "x$with_libnettle" != xyes], [
     AC_SEARCH_LIBS(gcry_check_version, gcrypt,
