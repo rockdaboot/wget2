@@ -84,6 +84,13 @@ libwget_iri_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_iri_la_LIBADD = libwget_encoding.la libwget_ip.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
 libwget_iri_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget io ########
+lib_LTLIBRARIES += libwget_io.la
+libwget_io_la_SOURCES =  io.c
+libwget_io_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_io_la_LIBADD = libwget_common.la libwget_alloc.la ../lib/libgnu.la
+libwget_io_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 ######## libwget CSS ########
 lib_LTLIBRARIES += libwget_css.la
 libwget_css_la_SOURCES =  css_url.c css.c css_tokenizer.h
@@ -132,6 +139,12 @@ test_linking_iri_SOURCES = test_linking_iri.c
 test_linking_iri_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_iri_LDADD = libwget_iri.la
 test_linking_iri_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_io
+test_linking_io_SOURCES = test_linking_io.c
+test_linking_io_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_io_LDADD = libwget_io.la
+test_linking_io_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking_css
 test_linking_css_SOURCES = test_linking_css.c
