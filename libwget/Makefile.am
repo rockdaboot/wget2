@@ -98,6 +98,13 @@ libwget_hashfile_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_hashfile_la_LIBADD = libwget_common.la libwget_alloc.la $(GNUTLS_LIBS) $(WOLFSSL_LIBS) $(OPENSSL_LIBS) $(NETTLE_LIBS) ../lib/libgnu.la
 libwget_hashfile_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget hpkp_db ########
+lib_LTLIBRARIES += libwget_hpkp_db.la
+libwget_hpkp_db_la_SOURCES =  hpkp_db.c hpkp.c hpkp.h
+libwget_hpkp_db_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_hpkp_db_la_LIBADD = libwget_hashfile.la libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
+libwget_hpkp_db_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 ######## libwget CSS ########
 lib_LTLIBRARIES += libwget_css.la
 libwget_css_la_SOURCES =  css_url.c css.c css_tokenizer.h
@@ -158,6 +165,12 @@ test_linking_hashfile_SOURCES = test_linking_hashfile.c
 test_linking_hashfile_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_hashfile_LDADD = libwget_hashfile.la
 test_linking_hashfile_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_hpkp_db
+test_linking_hpkp_db_SOURCES = test_linking_hpkp_db.c
+test_linking_hpkp_db_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_hpkp_db_LDADD = libwget_hpkp_db.la
+test_linking_hpkp_db_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking_css
 test_linking_css_SOURCES = test_linking_css.c
