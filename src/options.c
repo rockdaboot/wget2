@@ -593,7 +593,7 @@ static void G_GNUC_WGET_NONNULL_ALL _add_tag(wget_vector_t *v, const char *begin
 		tag->attribute = NULL;
 	}
 
-	if (wget_vector_find(v, &tag) == -1)
+	if (wget_vector_find(v, tag) == -1)
 		wget_vector_insert_sorted(v, tag);
 	else
 		tag_free(tag); // avoid double entries
