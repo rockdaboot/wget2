@@ -70,6 +70,13 @@ libwget_encoding_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_encoding_la_LIBADD = libwget_common.la libwget_alloc.la $(LIBIDN_LIBS) $(LIBIDN2_LIBS) ../lib/libgnu.la
 libwget_encoding_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget iri ########
+lib_LTLIBRARIES += libwget_iri.la
+libwget_iri_la_SOURCES =  iri.c
+libwget_iri_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_iri_la_LIBADD = libwget_encoding.la libwget_ip.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
+libwget_iri_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 # convenience library to avoid warnings about unused macros
 noinst_LTLIBRARIES = libcsstokenizer.la
 libcsstokenizer_la_SOURCES = css_tokenizer.c css_tokenizer.lex
@@ -98,6 +105,12 @@ test_linking_encoding_SOURCES = test_linking_encoding.c
 test_linking_encoding_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_encoding_LDADD = libwget_encoding.la
 test_linking_encoding_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_iri
+test_linking_iri_SOURCES = test_linking_iri.c
+test_linking_iri_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_iri_LDADD = libwget_iri.la
+test_linking_iri_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking
 test_linking_SOURCES = test_linking.c
