@@ -107,6 +107,13 @@ css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
 
 DISTCLEANFILES = css_tokenizer.c
 
+######## libwget progress ########
+lib_LTLIBRARIES += libwget_progress.la
+libwget_progress_la_SOURCES =  bar.c
+libwget_progress_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_progress_la_LIBADD = libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
+libwget_progress_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 ######## Test linking ########
 noinst_PROGRAMS = test_linking_common
 test_linking_common_SOURCES = test_linking_common.c
@@ -131,6 +138,12 @@ test_linking_css_SOURCES = test_linking_css.c
 test_linking_css_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_css_LDADD = libwget_css.la
 test_linking_css_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_progress
+test_linking_progress_SOURCES = test_linking_progress.c
+test_linking_progress_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_progress_LDADD = libwget_progress.la
+test_linking_progress_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking_thread
 test_linking_thread_SOURCES = test_linking_thread.c
