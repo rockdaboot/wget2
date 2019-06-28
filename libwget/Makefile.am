@@ -91,6 +91,13 @@ libwget_io_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_io_la_LIBADD = libwget_common.la libwget_alloc.la ../lib/libgnu.la
 libwget_io_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget hashfile ########
+lib_LTLIBRARIES += libwget_hashfile.la
+libwget_hashfile_la_SOURCES =  hashfile.c
+libwget_hashfile_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_hashfile_la_LIBADD = libwget_common.la libwget_alloc.la $(GNUTLS_LIBS) $(WOLFSSL_LIBS) $(OPENSSL_LIBS) $(NETTLE_LIBS) ../lib/libgnu.la
+libwget_hashfile_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 ######## libwget CSS ########
 lib_LTLIBRARIES += libwget_css.la
 libwget_css_la_SOURCES =  css_url.c css.c css_tokenizer.h
@@ -145,6 +152,12 @@ test_linking_io_SOURCES = test_linking_io.c
 test_linking_io_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_io_LDADD = libwget_io.la
 test_linking_io_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_hashfile
+test_linking_hashfile_SOURCES = test_linking_hashfile.c
+test_linking_hashfile_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_hashfile_LDADD = libwget_hashfile.la
+test_linking_hashfile_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking_css
 test_linking_css_SOURCES = test_linking_css.c
