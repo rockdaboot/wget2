@@ -21,8 +21,6 @@
 
 #include <config.h>
 
-#ifdef WITH_OPENSSL
-
 #include <dirent.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -35,6 +33,16 @@
 #include <wget.h>
 #include "net.h"
 #include "private.h"
+
+static wget_tls_stats_callback_t
+	tls_stats_callback;
+static void
+	*tls_stats_ctx;
+
+static wget_ocsp_stats_callback_t
+	ocsp_stats_callback;
+static void
+	*ocsp_stats_ctx;
 
 static struct _config
 {
@@ -963,29 +971,28 @@ ssize_t wget_ssl_write_timeout(void *session,
 	return retval;
 }
 
-/*
- * SSL/TLS stats API
+/**
+ * \param[in] fn A `wget_ssl_stats_callback_tls_t` callback function to receive TLS statistics data
+ * \param[in] ctx Context data given to \p fn
+ *
+ * Set callback function to be called when TLS statistics are available
  */
-void wget_tcp_set_stats_tls(wget_stats_callback_t fn)
+void wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t fn, void *ctx)
 {
-	/* TODO implement this */
+	tls_stats_callback = fn;
+	tls_stats_ctx = ctx;
 }
 
-const void *wget_tcp_get_stats_tls(wget_tls_stats_t type, const void *stats)
+/**
+ * \param[in] fn A `wget_ssl_stats_callback_ocsp_t` callback function to receive OCSP statistics data
+ * \param[in] ctx Context data given to \p fn
+ *
+ * Set callback function to be called when OCSP statistics are available
+ */
+void wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t fn, void *ctx)
 {
-	/* TODO implement this */
-	return NULL;
+	ocsp_stats_callback = fn;
+	ocsp_stats_ctx = ctx;
 }
 
-void wget_tcp_set_stats_ocsp(wget_stats_callback_t fn)
-{
-	/* TODO implement this */
-}
-
-const void *wget_tcp_get_stats_ocsp(wget_ocsp_stats_t type, const void *stats)
-{
-	/* TODO implement this */
-	return NULL;
-}
-
-#endif /* WITH_OPENSSL */
+/** @} */
