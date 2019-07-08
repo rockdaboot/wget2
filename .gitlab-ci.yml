@@ -163,6 +163,27 @@ Debian/WolfSSL:
       - unit-tests/*.log
       - tests/*.log
 
+Debian/OpenSSL:
+  stage: stage1-testing
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
+  script:
+    - export CFLAGS="$CFLAGS_DEFAULT"
+    - ./bootstrap --skip-po && touch .manywarnings
+    - ./configure $CONFIGURE_BASE_FLAGS --with-ssl=openssl
+    - make -j$(nproc)
+    - make check -j$(nproc)
+  tags:
+    - shared
+    - docker
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
+
 # In this build we combine
 #  * gcc
 #  * check, syntax-check
