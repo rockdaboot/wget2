@@ -432,7 +432,7 @@ static int openssl_load_trust_files(SSL_CTX *ctx, const char *dir)
 	if (retval == 0)
 		error_printf(_("OpenSSL: No certificates could be loaded from directory '%s'\n"), dir);
 	else if (retval > 0)
-		debug_printf(_("OpenSSL: Loaded %d certificates\n"), retval);
+		debug_printf("OpenSSL: Loaded %d certificates\n", retval);
 	else
 		error_printf(_("OpenSSL: Could not open directory '%s'. No certificates were loaded.\n"), dir);
 
@@ -459,19 +459,19 @@ static int verify_hpkp(const char *hostname, X509 *subject_cert)
 
 	switch (retval) {
 	case 1:
-		debug_printf(_("Matching HPKP pinning found for host '%s'\n"), hostname);
+		debug_printf("Matching HPKP pinning found for host '%s'\n", hostname);
 		retval = 0;
 		break;
 	case 0:
-		debug_printf(_("No HPKP pinning found for host '%s'\n"), hostname);
+		debug_printf("No HPKP pinning found for host '%s'\n", hostname);
 		retval = 1;
 		break;
 	case -2:
-		debug_printf(_("Public key for host '%s' does not match\n"), hostname);
+		debug_printf("Public key for host '%s' does not match\n", hostname);
 		retval = -1;
 		break;
 	default:
-		debug_printf(_("Could not check HPKP pinning for host '%s' (%d)\n"), hostname, retval);
+		debug_printf("Could not check HPKP pinning for host '%s' (%d)\n", hostname, retval);
 		retval = 0;
 	}
 
@@ -600,7 +600,7 @@ void wget_ssl_init(void)
 		_ctx = SSL_CTX_new(TLS_client_method());
 		if (_ctx && openssl_init(_ctx) == 0) {
 			_init++;
-			debug_printf(_("OpenSSL initialized\n"));
+			debug_printf("OpenSSL initialized\n");
 		} else {
 			error_printf(_("Could not initialize OpenSSL\n"));
 		}
@@ -767,9 +767,9 @@ int wget_ssl_open(wget_tcp_t *tcp)
 
 	/* Resume from a previous SSL/TLS session, if available */
 	if ((resumed = ssl_resume_session(ssl, tcp->ssl_hostname)) == 1)
-		debug_printf(_("Will try to resume cached TLS session"));
+		debug_printf("Will try to resume cached TLS session");
 	else if (resumed == 0)
-		debug_printf(_("No cached TLS session available. Will run a full handshake."));
+		debug_printf("No cached TLS session available. Will run a full handshake.");
 	else
 		error_printf(_("Could not get cached TLS session"));
 
@@ -808,9 +808,9 @@ int wget_ssl_open(wget_tcp_t *tcp)
 
 	/* Save the current TLS session */
 	if (ssl_save_session(ssl, tcp->ssl_hostname))
-		debug_printf(_("TLS session saved in cache"));
+		debug_printf("TLS session saved in cache");
 	else
-		debug_printf(_("TLS session discarded"));
+		debug_printf("TLS session discarded");
 
 	tcp->ssl_session = ssl;
 	return WGET_E_SUCCESS;
