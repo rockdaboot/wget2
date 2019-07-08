@@ -148,7 +148,7 @@ Debian/WolfSSL:
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
     - ./bootstrap --skip-po && touch .manywarnings
-    - ./configure $CONFIGURE_BASE_FLAGS --without-gnutls --with-wolfssl
+    - ./configure $CONFIGURE_BASE_FLAGS --with-ssl=wolfssl
     - make -j$(nproc)
     - make check -j$(nproc)
   tags:
