@@ -358,8 +358,7 @@ static int openssl_set_priorities(SSL_CTX *ctx, const char *prio)
 	} else if (!wget_strcasecmp_ascii(prio, "PFS")) {
 		/* Forward-secrecy - Disable RSA key exchange! */
 		openssl_ciphers = "HIGH:!aNULL:!RC4:!MD5:!SRP:!PSK:!kRSA";
-	} else if (prio && wget_strcasecmp_ascii(prio, "AUTO") &&
-			wget_strcasecmp_ascii(prio, "TLSv1_2")) {
+	} else if (prio && wget_strcasecmp_ascii(prio, "AUTO") && wget_strcasecmp_ascii(prio, "TLSv1_2")) {
 		openssl_ciphers = prio;
 	}
 
@@ -453,8 +452,8 @@ static int verify_hpkp(const char *hostname, X509 *subject_cert)
 
 	/* Lookup database */
 	retval = wget_hpkp_db_check_pubkey(_config.hpkp_cache,
-			hostname,
-			spki, spki_len);
+		hostname,
+		spki, spki_len);
 
 	/* TODO update stats here */
 
@@ -544,8 +543,8 @@ static int openssl_init(SSL_CTX *ctx)
 			/* Load CRL file in PEM format. */
 			if ((retval = openssl_load_crl(store, _config.crl_file)) < 0) {
 				error_printf(_("Could not load CRL from '%s' (%d)\n"),
-						_config.crl_file,
-						retval);
+					_config.crl_file,
+					retval);
 				goto end;
 			}
 		}
@@ -554,9 +553,11 @@ static int openssl_init(SSL_CTX *ctx)
 	}
 
 	/* Load individual CA file, if requested */
-	if (_config.ca_file && *_config.ca_file &&
-			!SSL_CTX_load_verify_locations(ctx, _config.ca_file, NULL))
+	if (_config.ca_file && *_config.ca_file
+		&& !SSL_CTX_load_verify_locations(ctx, _config.ca_file, NULL))
+	{
 		error_printf(_("Could not load CA certificate from file '%s'\n"), _config.ca_file);
+	}
 
 	/* Set our custom revocation check function, for HPKP and OCSP validation */
 	X509_STORE_set_check_revocation(store, _openssl_revocation_check_fn);
@@ -645,8 +646,9 @@ static int ssl_resume_session(SSL *ssl, const char *hostname)
 
 	if (wget_tls_session_get(_config.tls_session_cache,
 			hostname,
-			&sess, &sesslen) == 0 &&
-			sess) {
+			&sess, &sesslen) == 0
+		&& sess)
+	{
 		debug_printf("Found cached session data for host '%s'\n",hostname);
 		ssl_session = d2i_SSL_SESSION(NULL,
 				(const unsigned char **) &sess,
@@ -683,9 +685,9 @@ static int ssl_save_session(const SSL *ssl, const char *hostname)
 	sesslen = i2d_SSL_SESSION(ssl_session, (unsigned char **) &sess);
 	if (sesslen) {
 		wget_tls_session_db_add(_config.tls_session_cache,
-				wget_tls_session_new(hostname,
-						18 * 3600, /* session valid for 18 hours */
-						sess, sesslen));
+			wget_tls_session_new(hostname,
+				18 * 3600, /* session valid for 18 hours */
+				sess, sesslen));
 		OPENSSL_free(sess);
 		return 1;
 	}
@@ -737,18 +739,16 @@ int wget_ssl_open(wget_tcp_t *tcp)
 
 	/* Store the hostname for the verification callback */
 	_ex_data_idx = CRYPTO_get_ex_new_index(
-			CRYPTO_EX_INDEX_SSL,
-			0, NULL,	/* argl, argp */
-			NULL,		/* new_func */
-			NULL,		/* dup_func */
-			NULL);		/* free_func */
-	if (_ex_data_idx == -1 ||
-			!CRYPTO_new_ex_data(CRYPTO_EX_INDEX_SSL,
-					NULL,
-					&_crypto_ex_data) ||
-			!CRYPTO_set_ex_data(&_crypto_ex_data,
-					_ex_data_idx,
-					(void *) tcp->ssl_hostname)) {
+		CRYPTO_EX_INDEX_SSL,
+		0, NULL,	/* argl, argp */
+		NULL,		/* new_func */
+		NULL,		/* dup_func */
+		NULL);		/* free_func */
+
+	if (_ex_data_idx == -1
+		|| !CRYPTO_new_ex_data(CRYPTO_EX_INDEX_SSL, NULL, &_crypto_ex_data)
+		||	!CRYPTO_set_ex_data(&_crypto_ex_data, _ex_data_idx, (void *) tcp->ssl_hostname))
+	{
 		retval = WGET_E_UNKNOWN;
 		goto bail;
 	}
@@ -794,13 +794,13 @@ int wget_ssl_open(wget_tcp_t *tcp)
 		/* Error! Tell the user what happened, and exit. */
 		if (error == SSL_ERROR_SSL) {
 			error_printf(_("Could not complete TLS handshake: %s\n"),
-					ERR_reason_error_string(ERR_peek_last_error()));
+				ERR_reason_error_string(ERR_peek_last_error()));
 		}
 
 		/* Return proper error code - Most of the time this will be a cert validation error */
 		retval = (ERR_GET_REASON(ERR_peek_last_error()) == SSL_R_CERTIFICATE_VERIFY_FAILED ?
-				WGET_E_CERTIFICATE :
-				WGET_E_HANDSHAKE);
+			WGET_E_CERTIFICATE :
+			WGET_E_HANDSHAKE);
 		goto bail;
 	}
 
@@ -928,14 +928,14 @@ static int ssl_transfer(int want,
  * to read again.
  */
 ssize_t wget_ssl_read_timeout(void *session,
-		char *buf, size_t count,
-		int timeout)
+	char *buf, size_t count,
+	int timeout)
 {
 	int retval = ssl_transfer(WGET_IO_READABLE, session, timeout, buf, count);
 
 	if (retval == WGET_E_HANDSHAKE) {
 		error_printf(_("TLS read error: %s\n"),
-				ERR_reason_error_string(ERR_peek_last_error()));
+			ERR_reason_error_string(ERR_peek_last_error()));
 		retval = WGET_E_UNKNOWN;
 	}
 
@@ -963,14 +963,14 @@ ssize_t wget_ssl_read_timeout(void *session,
  * to write again.
  */
 ssize_t wget_ssl_write_timeout(void *session,
-		const char *buf, size_t count,
-		int timeout)
+	const char *buf, size_t count,
+	int timeout)
 {
 	int retval = ssl_transfer(WGET_IO_WRITABLE, session, timeout, (void *) buf, count);
 
 	if (retval == WGET_E_HANDSHAKE) {
 		error_printf(_("TLS write error: %s\n"),
-				ERR_reason_error_string(ERR_peek_last_error()));
+			ERR_reason_error_string(ERR_peek_last_error()));
 		retval = WGET_E_UNKNOWN;
 	}
 
