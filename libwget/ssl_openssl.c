@@ -466,14 +466,13 @@ static int verify_hpkp(const char *hostname, X509 *subject_cert)
 		debug_printf(_("No HPKP pinning found for host '%s'\n"), hostname);
 		retval = 1;
 		break;
-	case -1:
-		debug_printf(_("Could not check HPKP pinning\n"));
-		retval = 0;
-		break;
 	case -2:
 		debug_printf(_("Public key for host '%s' does not match\n"), hostname);
 		retval = -1;
 		break;
+	default:
+		debug_printf(_("Could not check HPKP pinning for host '%s' (%d)\n"), hostname, retval);
+		retval = 0;
 	}
 
 	OPENSSL_free(spki);
