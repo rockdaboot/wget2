@@ -46,3 +46,8 @@ sc_prohibit_alloc:
 	@prohibit='[[:space:];,][[:space:];,]*\<(m|c|re)alloc *\(.*\)[;,]' \
 	halt='do not use libc malloc functions, instead use the wget_* pendants' \
 	  $(_sc_search_regexp)
+
+sc_prohibit_gettext_debug:
+	@prohibit='\<(wget_|)debug_printf *\( *_ *\(' \
+	halt='do not translate debug strings' \
+	  $(_sc_search_regexp)
