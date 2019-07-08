@@ -372,14 +372,21 @@ static int openssl_set_priorities(SSL_CTX *ctx, const char *prio)
 }
 
 static int openssl_load_trust_file(SSL_CTX *ctx,
-		const char *dir, size_t dirlen,
-		const char *file, size_t filelen)
+	const char *dir, size_t dirlen,
+	const char *file, size_t filelen)
 {
-	size_t len = dirlen + filelen + 3;
-	char full_path[len];
-	snprintf(full_path, dirlen + 2, "%s/", dir);
-	strncat(full_path, file, filelen);
-	return (SSL_CTX_load_verify_locations(ctx, full_path, NULL) ? 0 : -1);
+	char sbuf[256];
+	wget_buffer_t buf;
+	int rc;
+
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
+	wget_buffer_printf(&buf, "%.*s/%.*s", (int) dirlen, dir, (int) filelen, file);
+	rc = (SSL_CTX_load_verify_locations(ctx, buf.data, NULL) ? 0 : -1);
+
+	wget_buffer_deinit(&buf);
+
+	return rc;
 }
 
 static int openssl_load_trust_files_from_directory(SSL_CTX *ctx, const char *dirname)
