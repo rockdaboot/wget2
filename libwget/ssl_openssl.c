@@ -371,9 +371,7 @@ static int openssl_set_priorities(SSL_CTX *ctx, const char *prio)
 	return 0;
 }
 
-static int openssl_load_trust_file(SSL_CTX *ctx,
-	const char *dir, size_t dirlen,
-	const char *file, size_t filelen)
+static int openssl_load_trust_file(SSL_CTX *ctx, const char *dir, const char *file)
 {
 	char sbuf[256];
 	wget_buffer_t buf;
@@ -381,7 +379,7 @@ static int openssl_load_trust_file(SSL_CTX *ctx,
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
-	wget_buffer_printf(&buf, "%.*s/%.*s", (int) dirlen, dir, (int) filelen, file);
+	wget_buffer_printf(&buf, "%s/%s", dir, file);
 	rc = (SSL_CTX_load_verify_locations(ctx, buf.data, NULL) ? 0 : -1);
 
 	wget_buffer_deinit(&buf);
@@ -393,17 +391,18 @@ static int openssl_load_trust_files_from_directory(SSL_CTX *ctx, const char *dir
 {
 	DIR *dir;
 	struct dirent *dp;
-	size_t dirlen, filelen;
 	int loaded = 0;
 
 	if ((dir = opendir(dirname))) {
-		dirlen = strlen(dirname);
-
 		while ((dp = readdir(dir))) {
-			filelen = strlen(dp->d_name);
-			if (filelen >= 4 && !wget_strncasecmp_ascii(dp->d_name + filelen - 4, ".pem", 4) &&
-					openssl_load_trust_file(ctx, dirname, dirlen, dp->d_name, filelen) == 0)
+			if (*dp->d_name == '.')
+				continue;
+
+			if (wget_match_tail_nocase(dp->d_name, ".pem")
+				&& openssl_load_trust_file(ctx, dirname, dp->d_name) == 0)
+			{
 				loaded++;
+			}
 		}
 
 		closedir(dir);
