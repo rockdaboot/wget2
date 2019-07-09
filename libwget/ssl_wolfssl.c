@@ -555,7 +555,6 @@ void wget_ssl_init(void)
 		WOLFSSL_METHOD *method;
 		int min_version = -1;
 		const char *ciphers = NULL;
-//		int rc, ncerts = -1;
 
 		debug_printf("WolfSSL init\n");
 		wolfSSL_Init();
@@ -589,13 +588,13 @@ void wget_ssl_init(void)
 			ciphers = _config.secure_protocol;
 		} else {
 			error_printf(_("Missing TLS method\n"));
-			return;
+			goto out;
 		}
 
 		/* Create and initialize WOLFSSL_CTX */
 		if ((ssl_ctx = wolfSSL_CTX_new(method)) == NULL) {
 			error_printf(_("Failed to create WOLFSSL_CTX\n"));
-			return;
+			goto out;
 		}
 
 		if (min_version != -1)
@@ -618,7 +617,7 @@ void wget_ssl_init(void)
 			/* Load client certificates into WOLFSSL_CTX */
 			if (wolfSSL_CTX_load_verify_locations(ssl_ctx, _config.ca_file, _config.ca_directory) != SSL_SUCCESS) {
 				error_printf(_("Failed to load %s, please check the file.\n"), _config.ca_directory);
-				return;
+				goto out;
 			}
 		} else {
 			wolfSSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_NONE, NULL);
@@ -637,6 +636,7 @@ void wget_ssl_init(void)
 */
 		debug_printf("Certificates loaded\n");
 
+out:
 		_init++;
 
 		debug_printf("WolfSSL init done\n");
