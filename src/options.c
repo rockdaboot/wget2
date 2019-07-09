@@ -934,7 +934,7 @@ static int parse_plugin_option
 	dl_error_init(e);
 
 	if (plugin_db_forward_option(val, e) < 0) {
-		error_printf("%s\n", dl_error_get_msg(e));
+		error_printf("%s\n", dl_error_get_msg(e)); // no translation
 		dl_error_set(e, NULL);
 		return -1;
 	}
@@ -985,11 +985,11 @@ static int parse_https_enforce(option_t opt, const char *val, G_GNUC_WGET_UNUSED
 	else if (!wget_strcasecmp_ascii(val, "none"))
 		*((char *)opt->var) = WGET_HTTPS_ENFORCE_NONE;
 	else if (!val[0]) {
-		error_printf("Missing required type specifier\n");
+		error_printf(_("Missing required type specifier\n"));
 		return -1;
 	}
 	else {
-		error_printf("Invalid type specifier: %s\n", val);
+		error_printf(_("Invalid type specifier: %s\n"), val);
 		return -1;
 	}
 

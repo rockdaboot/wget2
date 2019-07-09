@@ -321,7 +321,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		if (gnutls_certificate_verification_status_print(
 			status, gnutls_certificate_type_get(session), &out, 0) == GNUTLS_E_SUCCESS)
 		{
-			error_printf("%s: %s\n", tag, out.data);
+			error_printf("%s: %s\n", tag, out.data); // no translation
 			gnutls_free(out.data);
 		}
 
@@ -605,7 +605,7 @@ void wget_ssl_init(void)
 		int rc;
 		char cipher_list[8096];
 		rc = wolfSSL_get_ciphers(cipher_list, (int) sizeof(cipher_list));
-		info_printf("%d ciphers found %s (len=%zu)\n", rc, cipher_list, strlen(cipher_list));
+		debug_printf("%d ciphers found %s (len=%zu)\n", rc, cipher_list, strlen(cipher_list));
 */
 		if (ciphers)
 			if (!wolfSSL_CTX_set_cipher_list(ssl_ctx, ciphers))
@@ -617,7 +617,7 @@ void wget_ssl_init(void)
 
 			/* Load client certificates into WOLFSSL_CTX */
 			if (wolfSSL_CTX_load_verify_locations(ssl_ctx, _config.ca_file, _config.ca_directory) != SSL_SUCCESS) {
-				error_printf("Failed to load %s, please check the file.\n", _config.ca_directory);
+				error_printf(_("Failed to load %s, please check the file.\n"), _config.ca_directory);
 				return;
 			}
 		} else {

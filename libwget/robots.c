@@ -141,11 +141,11 @@ int wget_robots_parse(wget_robots_t **_robots, const char *data, const char *cli
 /*
 	for (int it = 0; it < wget_vector_size(robots->paths); it++) {
 		ROBOTS_PATH *path = wget_vector_get(robots->paths, it);
-		info_printf("path '%s'\n", path->path);
+		debug_printf("path '%s'\n", path->path);
 	}
 	for (int it = 0; it < wget_vector_size(robots->sitemaps); it++) {
 		const char *sitemap = wget_vector_get(robots->sitemaps, it);
-		info_printf("sitemap '%s'\n", sitemap);
+		debug_printf("sitemap '%s'\n", sitemap);
 	}
 */
 

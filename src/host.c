@@ -488,23 +488,25 @@ void host_queue_free(HOST *host)
 	wget_thread_mutex_unlock(hosts_mutex);
 }
 
+/*
 static int _queue_print_func(void *context G_GNUC_WGET_UNUSED, JOB *job)
 {
-	info_printf("  %s %d\n", job->local_filename, job->inuse);
+	debug_printf("  %s %d\n", job->local_filename, job->inuse);
 	return 0;
 }
 
 void queue_print(HOST *host)
 {
 	if (host->port)
-		info_printf("%s://%s:%hu\n", host->scheme, host->host, host->port);
+		debug_printf("%s://%s:%hu\n", host->scheme, host->host, host->port);
 	else
-		info_printf("%s://%s\n", host->scheme, host->host);
+		debug_printf("%s://%s\n", host->scheme, host->host);
 
 	wget_thread_mutex_lock(hosts_mutex);
 	wget_list_browse(host->queue, (wget_list_browse_t)_queue_print_func, NULL);
 	wget_thread_mutex_unlock(hosts_mutex);
 }
+*/
 
 int queue_size(void)
 {

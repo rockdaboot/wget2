@@ -1168,11 +1168,11 @@ static void _convert_links(void)
 					}
 					wget_buffer_strcat(&buf, dir);
 
-					wget_info_printf("  %.*s -> %s\n", (int) url->len,  url->p, linkpath);
-					wget_info_printf("       -> %s\n", buf.data);
+					wget_info_printf("  %.*s -> %s\n", (int) url->len,  url->p, linkpath); // no translation
+					wget_info_printf("       -> %s\n", buf.data); // no translation
 				} else {
 					// insert absolute URL
-					wget_info_printf("  %.*s -> %s\n", (int) url->len,  url->p, buf.data);
+					wget_info_printf("  %.*s -> %s\n", (int) url->len,  url->p, buf.data); // no translation
 				}
 
 				if (buf.length != url->len || strncmp(buf.data, url->p, url->len)) {

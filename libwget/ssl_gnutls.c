@@ -364,7 +364,7 @@ static void _print_x509_certificate_info(gnutls_session_t session)
 
 			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_dn(cert, dn, &dn_size);
-			info_printf("  DN: %s\n", dn);
+			info_printf(_("  DN: %s\n"), dn);
 
 			dn_size = sizeof(dn);
 			gnutls_x509_crt_get_issuer_dn(cert, dn, &dn_size);
@@ -971,7 +971,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		if (gnutls_certificate_verification_status_print(
 			status, gnutls_certificate_type_get(session), &out, 0) == GNUTLS_E_SUCCESS)
 		{
-			error_printf("%s: %s\n", tag, out.data);
+			error_printf("%s: %s\n", tag, out.data); // no translation
 			gnutls_free(out.data);
 		}
 
@@ -1629,7 +1629,7 @@ int wget_ssl_open(wget_tcp_t *tcp)
 			if ((rc = gnutls_ocsp_status_request_enable_client(session, NULL, 0, NULL)) == GNUTLS_E_SUCCESS)
 				ctx->ocsp_stapling = 1;
 			else
-				error_printf("GnuTLS: %s\n", gnutls_strerror(rc));
+				error_printf("GnuTLS: %s\n", gnutls_strerror(rc)); // no translation
 #endif
 		}
 	}
