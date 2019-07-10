@@ -85,7 +85,7 @@ static void test_mem(void)
 	CHECK(p = wget_strmemdup("xxx", 1));
 	CHECK(!strcmp(p, "x")); xfree(p);
 	CHECK(p = wget_strmemdup("xxx", 0));
-	CHECK(!strcmp(p, "")); xfree(p);
+	xfree(p);
 
 	wget_strmemcpy(NULL, 0, NULL, 0);
 	wget_strmemcpy(NULL, 5, NULL, 3);
