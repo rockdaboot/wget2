@@ -24,7 +24,8 @@ else
 fi
 
 # TravisCI has old gettext
-sed -i 's/\[0.19.3\]/[0.18.2\]/g' configure.ac
+sed 's/\[0.19.3\]/[0.18.2\]/g' configure.ac >configure.ac.tmp
+mv configure.ac.tmp configure.ac
 
 ./bootstrap ${BOOTSTRAP_OPTIONS}
 
