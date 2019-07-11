@@ -15,6 +15,8 @@ if [[ "$TRAVIS_OS_NAME" = "osx" ]]; then
 	brew install lbzip2
 	brew install lzip
 	brew install libgcrypt
+	brew install grep
+	brew install gawk
 	brew link --force gettext
 elif [[ "$TRAVIS_OS_NAME" = "linux" ]]; then
 	# Install Libmicrohttpd from source
