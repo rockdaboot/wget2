@@ -1,0 +1,10 @@
+proxy
+Statsdns=5
+no-statsdns=
+Statsdns=6
+no-statsdns=
+Statsdns=
+no-statsdns=%
+Statsdns=6
+no-statsdns=/
+include%d41d8cd98f00b204e9800998ecf8428e
