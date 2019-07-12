@@ -98,12 +98,10 @@ void site_stats_init(FILE *fpout)
 
 void site_stats_exit(void)
 {
-	if (config.debug) {
-		wget_stringmap_free(&docs);
+	wget_stringmap_free(&docs);
 
-		wget_vector_free(&data);
-		wget_thread_mutex_destroy(&mutex);
-	}
+	wget_vector_free(&data);
+	wget_thread_mutex_destroy(&mutex);
 }
 
 void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
