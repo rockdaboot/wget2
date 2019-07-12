@@ -3447,8 +3447,8 @@ int init(int argc, const char **argv)
 
 	if (config.stats_dns_args) {
 		config.stats_dns_args->fp =
-			config.stats_dns_args->filename && *config.stats_dns_args->filename && strcmp(config.stats_dns_args->filename, "-") ?
-			fopen(config.stats_dns_args->filename, "w") : stdout;
+			config.stats_dns_args->filename && *config.stats_dns_args->filename && strcmp(config.stats_dns_args->filename, "-")
+			&& !config.dont_write ? fopen(config.stats_dns_args->filename, "w") : stdout;
 		if (!config.stats_dns_args->fp) {
 			wget_error_printf(_("Failed to open '%s' (%d)"), config.stats_dns_args->filename, rc);
 			return -1;
@@ -3458,8 +3458,8 @@ int init(int argc, const char **argv)
 
 	if (config.stats_ocsp_args) {
 		config.stats_ocsp_args->fp =
-			config.stats_ocsp_args->filename && *config.stats_ocsp_args->filename && strcmp(config.stats_ocsp_args->filename, "-") ?
-			fopen(config.stats_ocsp_args->filename, "w") : stdout;
+			config.stats_ocsp_args->filename && *config.stats_ocsp_args->filename && strcmp(config.stats_ocsp_args->filename, "-")
+			&& !config.dont_write ? fopen(config.stats_ocsp_args->filename, "w") : stdout;
 		if (!config.stats_ocsp_args->fp) {
 			wget_error_printf(_("Failed to open '%s' (%d)"), config.stats_ocsp_args->filename, rc);
 			return -1;
@@ -3469,8 +3469,8 @@ int init(int argc, const char **argv)
 
 	if (config.stats_tls_args) {
 		config.stats_tls_args->fp =
-			config.stats_tls_args->filename && *config.stats_tls_args->filename && strcmp(config.stats_tls_args->filename, "-") ?
-			fopen(config.stats_tls_args->filename, "w") : stdout;
+			config.stats_tls_args->filename && *config.stats_tls_args->filename && strcmp(config.stats_tls_args->filename, "-")
+			&& !config.dont_write ? fopen(config.stats_tls_args->filename, "w") : stdout;
 		if (!config.stats_tls_args->fp) {
 			wget_error_printf(_("Failed to open '%s' (%d)"), config.stats_tls_args->filename, rc);
 			return -1;
@@ -3480,8 +3480,8 @@ int init(int argc, const char **argv)
 
 	if (config.stats_server_args) {
 		config.stats_server_args->fp =
-			config.stats_server_args->filename && *config.stats_server_args->filename && strcmp(config.stats_server_args->filename, "-") ?
-			fopen(config.stats_server_args->filename, "w") : stdout;
+			config.stats_server_args->filename && *config.stats_server_args->filename && strcmp(config.stats_server_args->filename, "-")
+			&& !config.dont_write ? fopen(config.stats_server_args->filename, "w") : stdout;
 		if (!config.stats_server_args->fp) {
 			wget_error_printf(_("Failed to open '%s' (%d)"), config.stats_server_args->filename, rc);
 			return -1;
@@ -3491,8 +3491,8 @@ int init(int argc, const char **argv)
 
 	if (config.stats_site_args) {
 		config.stats_site_args->fp =
-			config.stats_site_args->filename && *config.stats_site_args->filename && strcmp(config.stats_site_args->filename, "-") ?
-			fopen(config.stats_site_args->filename, "w") : stdout;
+			config.stats_site_args->filename && *config.stats_site_args->filename && strcmp(config.stats_site_args->filename, "-")
+			&& !config.dont_write ? fopen(config.stats_site_args->filename, "w") : stdout;
 		if (!config.stats_site_args->fp) {
 			wget_error_printf(_("Failed to open '%s' (%d)"), config.stats_site_args->filename, rc);
 			return -1;
