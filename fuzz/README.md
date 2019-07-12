@@ -14,7 +14,7 @@ regression testing with top dir 'make check' or 'make check-valgrind'.
 
 Use the following commands on top dir:
 ```
-export CC=clang-6.0
+export CC=clang
 export CFLAGS="-O1 -g -fno-omit-frame-pointer -gline-tables-only -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -fsanitize=undefined,integer,nullability -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-coverage=trace-pc-guard,trace-cmp"
 export LIB_FUZZING_ENGINE="-lFuzzer -lstdc++"
 ./configure --enable-fuzzing --disable-doc --disable-manywarnings
@@ -23,7 +23,7 @@ make -j$(nproc)
 cd fuzz
 
 # run libwget_xml_parse_buffer_fuzzer
-UBSAN_OPTIONS=print_stacktrace=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-6.0/bin/llvm-symbolizer \
+UBSAN_OPTIONS=print_stacktrace=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-7/bin/llvm-symbolizer \
   ./run-clang.sh libwget_xml_parse_buffer_fuzzer
 ```
 
