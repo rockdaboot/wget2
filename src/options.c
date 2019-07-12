@@ -861,7 +861,6 @@ static int parse_stats(option_t opt, const char *val, const char invert)
 
 		val = p + 1;
 	} else { // no format given
-		val = "-"; // print to stdout
 		format = WGET_STATS_FORMAT_HUMAN;
 	}
 
