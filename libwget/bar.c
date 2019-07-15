@@ -180,7 +180,7 @@ static void _bar_update_speed_stats(_bar_slot_t *slotp)
 	} else {
 		size_t bytes = slotp->bytes_ring[ring_pos] - slotp->bytes_ring[next_pos];
 		size_t time = slotp->time_ring[ring_pos] - slotp->time_ring[next_pos];
-		size_t speed = (bytes * speed_modifier) / time;
+		size_t speed = (bytes * speed_modifier) / (time ? time : 1);
 
 		wget_human_readable(slotp->speed_buf, sizeof(slotp->speed_buf), speed);
 	}
