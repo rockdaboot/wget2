@@ -3053,12 +3053,6 @@ typedef enum {
 	WGET_STATS_FORMAT_CSV = 1,
 } wget_stats_format_t;
 
-typedef void
-	(*wget_stats_callback_t)(const void *stats);
-
-WGETAPI void
-	wget_tcp_set_stats_site(wget_stats_callback_t fn);
-
 WGETAPI void
 	host_ips_free(void);
 

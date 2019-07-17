@@ -1513,12 +1513,3 @@ void wget_server_set_stats_callback(wget_server_stats_callback_t *fn, void *ctx)
 	server_stats_callback = fn;
 	server_stats_ctx = ctx;
 }
-
-/**
- * \param[in] fn A `wget_stats_callback_t` callback function used to collect Site Host statistics
- *
- * Set callback function to be called once Response statistics for a host are collected
- */
-void wget_tcp_set_stats_site(G_GNUC_WGET_UNUSED wget_stats_callback_t fn)
-{
-}
