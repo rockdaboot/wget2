@@ -2958,10 +2958,10 @@ typedef struct
 } wget_dns_stats_data_t;
 
 typedef void
-	(*wget_dns_stats_callback_t)(wget_dns_t *dns, wget_dns_stats_data_t *stats, void *ctx);
+	wget_dns_stats_callback_t(wget_dns_t *dns, wget_dns_stats_data_t *stats, void *ctx);
 
 WGETAPI void
-	wget_dns_set_stats_callback(wget_dns_t *dns, wget_dns_stats_callback_t fn, void *ctx);
+	wget_dns_set_stats_callback(wget_dns_t *dns, wget_dns_stats_callback_t *fn, void *ctx);
 
 /**
  * \ingroup libwget-ssl

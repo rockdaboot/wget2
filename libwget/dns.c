@@ -54,7 +54,7 @@ struct wget_dns_st
 	wget_thread_mutex_t
 		mutex;
 	wget_dns_stats_callback_t
-		stats_callback;
+		*stats_callback;
 	void
 		*stats_ctx;
 	wget_dns_stats_data_t
@@ -404,7 +404,7 @@ void wget_dns_freeaddrinfo(wget_dns_t *dns, struct addrinfo **addrinfo)
  *
  * Set callback function to be called once DNS statistics for a host are collected
  */
-void wget_dns_set_stats_callback(wget_dns_t *dns, wget_dns_stats_callback_t fn, void *ctx)
+void wget_dns_set_stats_callback(wget_dns_t *dns, wget_dns_stats_callback_t *fn, void *ctx)
 {
 	if (!dns)
 		dns = &default_dns;
