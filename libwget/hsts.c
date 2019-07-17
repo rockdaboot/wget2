@@ -435,7 +435,7 @@ static int impl_hsts_db_load(wget_hsts_db_t *hsts_db)
 	if (!hsts_db_priv->fname || !*hsts_db_priv->fname)
 		return 0;
 
-	if (wget_update_file(hsts_db_priv->fname, (wget_update_load_t) _hsts_db_load, NULL, hsts_db_priv)) {
+	if (wget_update_file(hsts_db_priv->fname, (wget_update_load_t *) _hsts_db_load, NULL, hsts_db_priv)) {
 		error_printf(_("Failed to read HSTS data\n"));
 		return -1;
 	} else {
@@ -497,7 +497,7 @@ static int impl_hsts_db_save(wget_hsts_db_t *hsts_db)
 	if (!hsts_db_priv->fname || !*hsts_db_priv->fname)
 		return -1;
 
-	if (wget_update_file(hsts_db_priv->fname, (wget_update_load_t) _hsts_db_load, _hsts_db_save, hsts_db_priv)) {
+	if (wget_update_file(hsts_db_priv->fname, (wget_update_load_t *) _hsts_db_load, _hsts_db_save, hsts_db_priv)) {
 		error_printf(_("Failed to write HSTS file '%s'\n"), hsts_db_priv->fname);
 		return -1;
 	}

@@ -591,7 +591,7 @@ static int impl_hpkp_db_load(wget_hpkp_db_t *hpkp_db)
 	if (!hpkp_db_priv->fname || !*hpkp_db_priv->fname)
 		return 0;
 
-	if (wget_update_file(hpkp_db_priv->fname, (wget_update_load_t) _hpkp_db_load, NULL, hpkp_db_priv)) {
+	if (wget_update_file(hpkp_db_priv->fname, (wget_update_load_t *) _hpkp_db_load, NULL, hpkp_db_priv)) {
 		error_printf(_("Failed to read HPKP data\n"));
 		return -1;
 	} else {
@@ -674,8 +674,8 @@ static int impl_hpkp_db_save(wget_hpkp_db_t *hpkp_db)
 		return -1;
 
 	if (wget_update_file(hpkp_db_priv->fname,
-			     (wget_update_load_t) _hpkp_db_load,
-			     (wget_update_load_t) _hpkp_db_save,
+			     (wget_update_load_t *) _hpkp_db_load,
+			     (wget_update_load_t *) _hpkp_db_save,
 			     hpkp_db_priv)) {
 		error_printf(_("Failed to write HPKP file '%s'\n"), hpkp_db_priv->fname);
 		return -1;
