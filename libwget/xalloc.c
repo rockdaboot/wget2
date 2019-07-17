@@ -43,9 +43,9 @@
  * These pointers can be set to custom functions.
  */
 
-wget_malloc_function wget_malloc = malloc;
-wget_calloc_function wget_calloc = calloc;
-wget_realloc_function wget_realloc = realloc;
-wget_free_function wget_free = free;
+wget_malloc_function *wget_malloc = malloc;
+wget_calloc_function *wget_calloc = calloc;
+wget_realloc_function *wget_realloc = realloc;
+wget_free_function *wget_free = free;
 
 /**@}*/
