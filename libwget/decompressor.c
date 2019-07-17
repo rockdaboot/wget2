@@ -61,8 +61,8 @@
 #include <wget.h>
 #include "private.h"
 
-typedef int (*wget_decompressor_decompress_t)(wget_decompressor_t *dc, char *src, size_t srclen);
-typedef void (*wget_decompressor_exit_t)(wget_decompressor_t *dc);
+typedef int wget_decompressor_decompress_t(wget_decompressor_t *dc, char *src, size_t srclen);
+typedef void wget_decompressor_exit_t(wget_decompressor_t *dc);
 
 struct wget_decompressor_st {
 #ifdef WITH_ZLIB
@@ -87,13 +87,13 @@ struct wget_decompressor_st {
 #endif
 
 	wget_decompressor_sink_t
-		sink; // decompressed data goes here
+		*sink; // decompressed data goes here
 	wget_decompressor_error_handler_t
-		error_handler; // called on error
+		*error_handler; // called on error
 	wget_decompressor_decompress_t
-		decompress;
+		*decompress;
 	wget_decompressor_exit_t
-		exit;
+		*exit;
 	void
 		*context; // given to sink()
 	wget_content_encoding_type_t
@@ -410,7 +410,7 @@ static int identity(wget_decompressor_t *dc, char *src, size_t srclen)
 
 wget_decompressor_t *wget_decompress_open(
 	wget_content_encoding_type_t encoding,
-	wget_decompressor_sink_t sink,
+	wget_decompressor_sink_t *sink,
 	void *context)
 {
 	wget_decompressor_t *dc = wget_calloc(1, sizeof(wget_decompressor_t));
@@ -498,7 +498,7 @@ int wget_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 	return 0;
 }
 
-void wget_decompress_set_error_handler(wget_decompressor_t *dc, wget_decompressor_error_handler_t error_handler)
+void wget_decompress_set_error_handler(wget_decompressor_t *dc, wget_decompressor_error_handler_t *error_handler)
 {
 	if (dc)
 		dc->error_handler = error_handler;
