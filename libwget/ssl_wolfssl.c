@@ -54,7 +54,7 @@
  */
 
 static wget_tls_stats_callback_t
-	tls_stats_callback;
+	*tls_stats_callback;
 static void
 	*tls_stats_ctx;
 
@@ -1187,7 +1187,7 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
  *
  * Set callback function to be called when TLS statistics are available
  */
-void wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t fn, void *ctx)
+void wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t *fn, void *ctx)
 {
 	tls_stats_callback = fn;
 	tls_stats_ctx = ctx;

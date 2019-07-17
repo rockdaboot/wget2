@@ -3015,10 +3015,10 @@ typedef struct
 } wget_tls_stats_data_t;
 
 typedef void
-	(*wget_tls_stats_callback_t)(wget_tls_stats_data_t *stats, void *ctx);
+	wget_tls_stats_callback_t(wget_tls_stats_data_t *stats, void *ctx);
 
 WGETAPI void
-	wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t fn, void *ctx);
+	wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t *fn, void *ctx);
 /** @} */
 
 typedef enum {
