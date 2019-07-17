@@ -119,6 +119,28 @@ Debian/Testing:
       - unit-tests/*.log
       - tests/*.log
 
+# Debian Unstable
+Debian/Unstable:
+  stage: stage1-testing
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
+  script:
+    - export CFLAGS="$CFLAGS_DEFAULT"
+    - ./bootstrap --skip-po && touch .manywarnings
+    - ./configure $CONFIGURE_BASE_FLAGS
+    - make -j$(nproc)
+    - make check -j$(nproc)
+  tags:
+    - shared
+    - docker
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
+
 Debian/WolfSSL:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
