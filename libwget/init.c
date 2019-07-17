@@ -269,7 +269,7 @@ const void *wget_global_get_ptr(int key)
 	}
 }
 
-wget_global_get_func_t wget_global_get_func(int key)
+wget_global_get_func_t *wget_global_get_func(int key)
 {
 	switch (key) {
 	case WGET_DEBUG_FUNC:
