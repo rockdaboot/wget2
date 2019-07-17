@@ -50,13 +50,13 @@ static void split_string(const char *str, char separator, wget_vector_t *v)
 typedef struct {
 	plugin_t parent;
 	// Finalizer function, to be called when wget2 exits
-	wget_plugin_finalizer_t finalizer;
+	wget_plugin_finalizer_t *finalizer;
 	// The plugin's option processor
-	wget_plugin_argp_t argp;
+	wget_plugin_argp_t *argp;
 	// The plugin's URL filter
-	wget_plugin_url_filter_t url_filter;
+	wget_plugin_url_filter_t *url_filter;
 	// The plugin's post processor
-	wget_plugin_post_processor_t post_processor;
+	wget_plugin_post_processor_t *post_processor;
 	// Buffer to store plugin name
 	char name_buf[];
 } plugin_priv_t;
@@ -95,7 +95,7 @@ void plugin_db_clear_search_paths(void)
 
 // Basic plugin API
 static void impl_register_finalizer
-	(wget_plugin_t *p_plugin, wget_plugin_finalizer_t fn)
+	(wget_plugin_t *p_plugin, wget_plugin_finalizer_t *fn)
 {
 	plugin_priv_t *priv = (plugin_priv_t *) p_plugin;
 
@@ -110,7 +110,7 @@ static const char *impl_get_name(wget_plugin_t *p_plugin)
 }
 
 static void impl_register_argp
-	(wget_plugin_t *p_plugin, wget_plugin_argp_t fn)
+	(wget_plugin_t *p_plugin, wget_plugin_argp_t *fn)
 {
 	plugin_priv_t *priv = (plugin_priv_t *) p_plugin;
 
@@ -156,7 +156,7 @@ static void impl_action_set_local_filename(wget_intercept_action_t *p_action, co
 	action->verdict.alt_local_filename = wget_strdup(local_filename);
 }
 
-static void impl_register_url_filter(wget_plugin_t *p_plugin, wget_plugin_url_filter_t fn)
+static void impl_register_url_filter(wget_plugin_t *p_plugin, wget_plugin_url_filter_t *fn)
 {
 	plugin_priv_t *priv = (plugin_priv_t *) p_plugin;
 
@@ -242,7 +242,7 @@ static void impl_file_add_recurse_url(wget_downloaded_file_t *p_file, const wget
 		wget_vector_add(file->recurse_iris, wget_iri_clone(iri));
 }
 
-static void impl_register_post_processor(wget_plugin_t *p_plugin, wget_plugin_post_processor_t fn)
+static void impl_register_post_processor(wget_plugin_t *p_plugin, wget_plugin_post_processor_t *fn)
 {
 	plugin_priv_t *priv = (plugin_priv_t *) p_plugin;
 
@@ -327,7 +327,7 @@ static plugin_t *_load_plugin(const char *name, const char *path, dl_error_t *e)
 	dl_file_t *dm;
 	plugin_t *plugin;
 	plugin_priv_t *priv;
-	wget_plugin_initializer_t init_fn;
+	wget_plugin_initializer_t *init_fn;
 
 	name_len = strlen(name);
 

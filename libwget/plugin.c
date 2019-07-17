@@ -54,7 +54,7 @@ const char *wget_plugin_get_name(wget_plugin_t *plugin)
  * \param[in] plugin The plugin handle
  * \param[in] fn A function pointer to be called
  */
-void wget_plugin_register_finalizer(wget_plugin_t *plugin, wget_plugin_finalizer_t fn)
+void wget_plugin_register_finalizer(wget_plugin_t *plugin, wget_plugin_finalizer_t *fn)
 {
 	plugin->vtable->register_finalizer(plugin, fn);
 }
@@ -69,7 +69,7 @@ void wget_plugin_register_finalizer(wget_plugin_t *plugin, wget_plugin_finalizer
  * \param[in] plugin The plugin handle
  * \param[in] fn The function pointer to register
  */
-void wget_plugin_register_argp(wget_plugin_t *plugin, wget_plugin_argp_t fn)
+void wget_plugin_register_argp(wget_plugin_t *plugin, wget_plugin_argp_t *fn)
 {
 	plugin->vtable->register_argp(plugin, fn);
 }
@@ -136,7 +136,7 @@ void wget_intercept_action_set_local_filename(wget_intercept_action_t *action, c
  * \param[in] plugin The plugin handle
  * \param[in] filter_fn The plugin function that will be passed the URL to be fetched
  */
-void wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filter_t filter_fn)
+void wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filter_t *filter_fn)
 {
 	plugin->vtable->register_url_filter(plugin, filter_fn);
 }
@@ -244,7 +244,7 @@ void wget_downloaded_file_add_recurse_url(wget_downloaded_file_t *file, const wg
  *
  */
 void
-wget_plugin_register_post_processor(wget_plugin_t *plugin, wget_plugin_post_processor_t fn)
+wget_plugin_register_post_processor(wget_plugin_t *plugin, wget_plugin_post_processor_t *fn)
 {
 	plugin->vtable->register_post_processor(plugin, fn);
 }

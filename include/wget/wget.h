@@ -2767,7 +2767,7 @@ typedef struct
  *         On failure, wget2 will continue without the plugin
  *         and will not call the finalizer function even if registered.
  */
-typedef int (*wget_plugin_initializer_t)(wget_plugin_t *plugin);
+typedef int wget_plugin_initializer_t(wget_plugin_t *plugin);
 
 /**
  * \ingroup libwget-plugin
@@ -2777,7 +2777,7 @@ typedef int (*wget_plugin_initializer_t)(wget_plugin_t *plugin);
  * \param[in] plugin The plugin handle
  * \param[in] exit_status The exit status wget will exit with
  */
-typedef void (*wget_plugin_finalizer_t)(wget_plugin_t *plugin, int exit_status);
+typedef void wget_plugin_finalizer_t(wget_plugin_t *plugin, int exit_status);
 
 // Gets the name the plugin is known as.
 WGETAPI const char *
@@ -2785,7 +2785,7 @@ WGETAPI const char *
 
 // Registers a function to be called when wget exits.
 WGETAPI void
-	wget_plugin_register_finalizer(wget_plugin_t *plugin, wget_plugin_finalizer_t fn);
+	wget_plugin_register_finalizer(wget_plugin_t *plugin, wget_plugin_finalizer_t *fn);
 
 /**
  * \ingroup libwget-plugin
@@ -2797,11 +2797,11 @@ WGETAPI void
  * \param[in] value  The value of the option if provided, or NULL
  * \return Must return 0 if option and its value is valid, or any other value if invalid. In that case wget will exit.
  */
-typedef int (*wget_plugin_argp_t)(wget_plugin_t *plugin, const char *option, const char *value);
+typedef int wget_plugin_argp_t(wget_plugin_t *plugin, const char *option, const char *value);
 
 // Registers a function for command line option forwarding.
 WGETAPI void
-	wget_plugin_register_argp(wget_plugin_t *plugin, wget_plugin_argp_t fn);
+	wget_plugin_register_argp(wget_plugin_t *plugin, wget_plugin_argp_t *fn);
 
 /**
  * \ingroup libwget-plugin
@@ -2838,11 +2838,11 @@ WGETAPI void
  * \param[in] iri The URL about to be fetched
  * \param[in] action Output the action to be taken
  */
-typedef void (*wget_plugin_url_filter_t)(wget_plugin_t *plugin, const wget_iri_t *iri, wget_intercept_action_t *action);
+typedef void wget_plugin_url_filter_t(wget_plugin_t *plugin, const wget_iri_t *iri, wget_intercept_action_t *action);
 
 // Registers a plugin function for intercepting URLs
 WGETAPI void
-	wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filter_t filter_fn);
+	wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filter_t *filter_fn);
 
 // Provides wget2 with another HSTS database to use.
 WGETAPI void
@@ -2902,11 +2902,11 @@ WGETAPI void
  * \param[in] file Downloaded file handle
  * \return 0 if further postprocessing of downloaded files should be stopped.
  */
-typedef int (*wget_plugin_post_processor_t)(wget_plugin_t *plugin, wget_downloaded_file_t *file);
+typedef int wget_plugin_post_processor_t(wget_plugin_t *plugin, wget_downloaded_file_t *file);
 
 // Registers a plugin function for intercepting downloaded files.
 WGETAPI void
-	wget_plugin_register_post_processor(wget_plugin_t *plugin, wget_plugin_post_processor_t fn);
+	wget_plugin_register_post_processor(wget_plugin_t *plugin, wget_plugin_post_processor_t *fn);
 
 /**
  * \ingroup libwget-plugin
@@ -2916,14 +2916,14 @@ WGETAPI void
 struct wget_plugin_vtable
 {
 	const char * (* get_name)(wget_plugin_t *);
-	void (* register_finalizer)(wget_plugin_t *, wget_plugin_finalizer_t);
-	void (* register_argp)(wget_plugin_t *, wget_plugin_argp_t);
+	void (* register_finalizer)(wget_plugin_t *, wget_plugin_finalizer_t *);
+	void (* register_argp)(wget_plugin_t *, wget_plugin_argp_t *);
 
 	void (* action_reject)(wget_intercept_action_t *);
 	void (* action_accept)(wget_intercept_action_t *);
 	void (* action_set_alt_url)(wget_intercept_action_t *, const wget_iri_t *);
 	void (* action_set_local_filename)(wget_intercept_action_t *, const char *);
-	void (* register_url_filter)(wget_plugin_t *, wget_plugin_url_filter_t);
+	void (* register_url_filter)(wget_plugin_t *, wget_plugin_url_filter_t *);
 
 	const wget_iri_t *(*file_get_source_url)(wget_downloaded_file_t *);
 	const char *(*file_get_local_filename)(wget_downloaded_file_t *);
@@ -2932,7 +2932,7 @@ struct wget_plugin_vtable
 	FILE *(*file_open_stream)(wget_downloaded_file_t *);
 	bool (*file_get_recurse)(wget_downloaded_file_t *);
 	void (*file_add_recurse_url)(wget_downloaded_file_t *, const wget_iri_t *);
-	void (*register_post_processor)(wget_plugin_t *, wget_plugin_post_processor_t);
+	void (*register_post_processor)(wget_plugin_t *, wget_plugin_post_processor_t *);
 
 	void (* add_hsts_db)(wget_plugin_t *, wget_hsts_db_t *, int);
 	void (* add_hpkp_db)(wget_plugin_t *, wget_hpkp_db_t *, int);
