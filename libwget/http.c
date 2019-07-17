@@ -420,6 +420,7 @@ static int _decompress_error_handler(wget_decompressor_t *dc, int err G_GNUC_WGE
 	return 0;
 }
 
+static wget_decompressor_sink_t _get_body;
 static int _get_body(void *userdata, const char *data, size_t length)
 {
 	wget_http_response_t *resp = (wget_http_response_t *) userdata;
