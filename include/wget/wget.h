@@ -610,15 +610,15 @@ WGETAPI size_t
  */
 
 typedef struct wget_logger_st wget_logger_t;
-typedef void (*wget_logger_func_t)(const char *buf , size_t len) G_GNUC_WGET_NONNULL_ALL;
+typedef void wget_logger_func_t(const char *buf , size_t len) G_GNUC_WGET_NONNULL_ALL;
 
 WGETAPI void
-	wget_logger_set_func(wget_logger_t *logger, wget_logger_func_t);
+	wget_logger_set_func(wget_logger_t *logger, wget_logger_func_t *func);
 WGETAPI void
 	wget_logger_set_stream(wget_logger_t *logger, FILE *fp);
 WGETAPI void
 	wget_logger_set_file(wget_logger_t *logger, const char *fname);
-WGETAPI wget_logger_func_t
+WGETAPI wget_logger_func_t *
 	wget_logger_get_func(wget_logger_t *logger) G_GNUC_WGET_PURE;
 WGETAPI FILE *
 	wget_logger_get_stream(wget_logger_t *logger) G_GNUC_WGET_PURE;
