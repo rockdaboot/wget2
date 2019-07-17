@@ -622,7 +622,7 @@ static int G_GNUC_WGET_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp_t *hpkp)
 		if (ferror(fp))
 			return -1;
 
-		return wget_vector_browse(hpkp->pins, (wget_vector_browse_t)_hpkp_save_pin, fp);
+		return wget_vector_browse(hpkp->pins, (wget_vector_browse_t) _hpkp_save_pin, fp);
 	}
 
 	return 0;
@@ -640,7 +640,7 @@ static int _hpkp_db_save(_hpkp_db_impl_t *hpkp_db_priv, FILE *fp)
 		if (ferror(fp))
 			return -1;
 
-		return wget_hashmap_browse(entries, (wget_hashmap_browse_t)_hpkp_save, fp);
+		return wget_hashmap_browse(entries, (wget_hashmap_browse_t *) _hpkp_save, fp);
 	}
 
 	return 0;
@@ -727,8 +727,8 @@ wget_hpkp_db_t *wget_hpkp_db_init(wget_hpkp_db_t *hpkp_db, const char *fname)
 	hpkp_db_priv->parent.vtable = &vtable;
 	if (fname)
 		hpkp_db_priv->fname = wget_strdup(fname);
-	hpkp_db_priv->entries = wget_hashmap_create(16, (wget_hashmap_hash_t)_hash_hpkp, (wget_hashmap_compare_t)_compare_hpkp);
-	wget_hashmap_set_key_destructor(hpkp_db_priv->entries, (wget_hashmap_key_destructor_t)wget_hpkp_free);
+	hpkp_db_priv->entries = wget_hashmap_create(16, (wget_hashmap_hash_t *) _hash_hpkp, (wget_hashmap_compare_t *) _compare_hpkp);
+	wget_hashmap_set_key_destructor(hpkp_db_priv->entries, (wget_hashmap_key_destructor_t *) wget_hpkp_free);
 
 	/*
 	 * Keys and values for the hashmap are 'hpkp' entries, so value == key.

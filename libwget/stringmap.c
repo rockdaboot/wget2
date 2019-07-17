@@ -36,17 +36,20 @@
 #include <wget.h>
 #include "private.h"
 
+static wget_hashmap_hash_t hash_string, hash_string_nocase;
+
 // Paul Larson's hash function from Microsoft Research
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
 G_GNUC_WGET_PURE
-static unsigned int hash_string(const char *key)
+static unsigned int hash_string(const void *key)
 {
+	const char *k = key;
 	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
 
-	while (*key)
-		hash = hash * 101 + (unsigned char)*key++;
+	while (*k)
+		hash = hash * 101 + (unsigned char)*k++;
 
 	return hash;
 }
@@ -55,12 +58,13 @@ static unsigned int hash_string(const char *key)
 __attribute__((no_sanitize("integer")))
 #endif
 G_GNUC_WGET_PURE
-static unsigned int hash_string_nocase(const char *key)
+static unsigned int hash_string_nocase(const void *key)
 {
+	const char *k = key;
 	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
 
-	while (*key)
-		hash = hash * 101 + (unsigned char)tolower(*key++);
+	while (*k)
+		hash = hash * 101 + (unsigned char)tolower(*k++);
 
 	return hash;
 }
@@ -90,7 +94,7 @@ static unsigned int hash_string_nocase(const char *key)
  */
 wget_stringmap_t *wget_stringmap_create(int max)
 {
-	return wget_hashmap_create(max, (wget_hashmap_hash_t)hash_string, (wget_hashmap_compare_t)wget_strcmp);
+	return wget_hashmap_create(max, hash_string, (wget_hashmap_compare_t *) wget_strcmp);
 }
 
 /**
@@ -107,7 +111,7 @@ wget_stringmap_t *wget_stringmap_create(int max)
  */
 wget_stringmap_t *wget_stringmap_create_nocase(int max)
 {
-	return wget_hashmap_create(max, (wget_hashmap_hash_t)hash_string_nocase, (wget_hashmap_compare_t)wget_strcasecmp);
+	return wget_hashmap_create(max, hash_string_nocase, (wget_hashmap_compare_t *) wget_strcasecmp);
 }
 
 /**@}*/
