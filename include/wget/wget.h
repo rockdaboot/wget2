@@ -2982,10 +2982,10 @@ typedef struct
 } wget_ocsp_stats_data_t;
 
 typedef void
-	(*wget_ocsp_stats_callback_t)(wget_ocsp_stats_data_t *stats, void *ctx);
+	wget_ocsp_stats_callback_t(wget_ocsp_stats_data_t *stats, void *ctx);
 
 WGETAPI void
-	wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t fn, void *ctx);
+	wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t *fn, void *ctx);
 /** @} */
 
 /**

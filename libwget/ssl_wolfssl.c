@@ -59,7 +59,7 @@ static void
 	*tls_stats_ctx;
 
 static wget_ocsp_stats_callback_t
-	ocsp_stats_callback;
+	*ocsp_stats_callback;
 static void
 	*ocsp_stats_ctx;
 
@@ -1199,7 +1199,7 @@ void wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t fn, void *ctx)
  *
  * Set callback function to be called when OCSP statistics are available
  */
-void wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t fn, void *ctx)
+void wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t *fn, void *ctx)
 {
 	ocsp_stats_callback = fn;
 	ocsp_stats_ctx = ctx;
