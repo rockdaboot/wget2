@@ -127,6 +127,7 @@ static void
 	*server_stats_ctx;
 
 // This is the default function for collecting body data
+static wget_http_body_callback_t _body_callback;
 static int _body_callback(wget_http_response_t *resp, void *user_data G_GNUC_WGET_UNUSED, const char *data, size_t length)
 {
 	if (!resp->body)
@@ -167,13 +168,13 @@ wget_http_request_t *wget_http_create_request(const wget_iri_t *iri, const char 
 	return req;
 }
 
-void wget_http_request_set_header_cb(wget_http_request_t *req, wget_http_header_callback_t callback, void *user_data)
+void wget_http_request_set_header_cb(wget_http_request_t *req, wget_http_header_callback_t *callback, void *user_data)
 {
 	req->header_callback = callback;
 	req->header_user_data = user_data;
 }
 
-void wget_http_request_set_body_cb(wget_http_request_t *req, wget_http_body_callback_t callback, void *user_data)
+void wget_http_request_set_body_cb(wget_http_request_t *req, wget_http_body_callback_t *callback, void *user_data)
 {
 	req->body_callback = callback;
 	req->body_user_data = user_data;
