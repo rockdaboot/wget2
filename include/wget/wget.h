@@ -409,7 +409,7 @@ WGETAPI ssize_t
  * Type for double linked lists and list entries.
  */
 typedef struct wget_list_st wget_list_t;
-typedef int (*wget_list_browse_t)(void *context, void *elem);
+typedef int wget_list_browse_t(void *context, void *elem);
 
 WGETAPI void *
 	wget_list_append(wget_list_t **list, const void *data, size_t size) G_GNUC_WGET_NONNULL_ALL;
@@ -426,7 +426,7 @@ WGETAPI void
 WGETAPI void
 	wget_list_free(wget_list_t **list) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
-	wget_list_browse(const wget_list_t *list, wget_list_browse_t browse, void *context) G_GNUC_WGET_NONNULL((2));
+	wget_list_browse(const wget_list_t *list, wget_list_browse_t *browse, void *context) G_GNUC_WGET_NONNULL((2));
 
 /**
  * \ingroup libwget-xalloc
