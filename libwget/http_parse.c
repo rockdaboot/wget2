@@ -237,7 +237,7 @@ static int G_GNUC_WGET_NONNULL_ALL compare_param(wget_http_header_param_t *p1, w
 
 void wget_http_add_param(wget_vector_t **params, wget_http_header_param_t *param)
 {
-	if (!*params) *params = wget_vector_create(4, (wget_vector_compare_t)compare_param);
+	if (!*params) *params = wget_vector_create(4, (wget_vector_compare_t *) compare_param);
 	wget_vector_add_memdup(*params, param, sizeof(*param));
 }
 
@@ -1094,7 +1094,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 			// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
 			if (!resp->digests) {
 				resp->digests = wget_vector_create(4, NULL);
-				wget_vector_set_destructor(resp->digests, (wget_vector_destructor_t) wget_http_free_digest);
+				wget_vector_set_destructor(resp->digests, (wget_vector_destructor_t *) wget_http_free_digest);
 			}
 			wget_vector_add_memdup(resp->digests, &digest, sizeof(digest));
 		} else
@@ -1127,7 +1127,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 			// debug_printf("link->uri=%s\n",link.uri);
 			if (!resp->links) {
 				resp->links = wget_vector_create(8, NULL);
-				wget_vector_set_destructor(resp->links, (wget_vector_destructor_t)wget_http_free_link);
+				wget_vector_set_destructor(resp->links, (wget_vector_destructor_t *) wget_http_free_link);
 			}
 			wget_vector_add_memdup(resp->links, &link, sizeof(link));
 		} else
@@ -1147,7 +1147,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 
 			if (!resp->challenges) {
 				resp->challenges = wget_vector_create(2, NULL);
-				wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t) wget_http_free_challenge);
+				wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t *) wget_http_free_challenge);
 			}
 			wget_vector_add(resp->challenges, challenge);
 		} else
@@ -1186,7 +1186,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 
 			if (!resp->challenges) {
 				resp->challenges = wget_vector_create(2, NULL);
-				wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t) wget_http_free_challenge);
+				wget_vector_set_destructor(resp->challenges, (wget_vector_destructor_t *) wget_http_free_challenge);
 			}
 			wget_vector_add(resp->challenges, challenge);
 		} else

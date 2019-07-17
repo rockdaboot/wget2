@@ -159,7 +159,7 @@ wget_http_request_t *wget_http_create_request(const wget_iri_t *iri, const char 
 	wget_iri_get_escaped_resource(iri, &req->esc_resource);
 	wget_iri_get_escaped_host(iri, &req->esc_host);
 	req->headers = wget_vector_create(8, NULL);
-	wget_vector_set_destructor(req->headers, (wget_vector_destructor_t) wget_http_free_param);
+	wget_vector_set_destructor(req->headers, (wget_vector_destructor_t *) wget_http_free_param);
 
 	wget_http_add_header(req, "Host", req->esc_host.data);
 	wget_http_request_set_body_cb(req, _body_callback, NULL);

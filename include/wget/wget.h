@@ -659,19 +659,19 @@ WGETAPI wget_logger_t *
  */
 
 typedef struct wget_vector_st wget_vector_t;
-typedef int (*wget_vector_compare_t)(const void *elem1, const void *elem2);
-typedef int (*wget_vector_find_t)(void *elem);
-typedef int (*wget_vector_browse_t)(void *ctx, void *elem);
-typedef void (*wget_vector_destructor_t)(void *elem);
+typedef int wget_vector_compare_t(const void *elem1, const void *elem2);
+typedef int wget_vector_find_t(void *elem);
+typedef int wget_vector_browse_t(void *ctx, void *elem);
+typedef void wget_vector_destructor_t(void *elem);
 
 WGETAPI wget_vector_t *
-	wget_vector_create(int max, wget_vector_compare_t cmp) G_GNUC_WGET_MALLOC;
+	wget_vector_create(int max, wget_vector_compare_t *cmp) G_GNUC_WGET_MALLOC;
 WGETAPI void
 	wget_vector_set_resize_factor(wget_vector_t *v, float off);
 WGETAPI int
 	wget_vector_find(const wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_findext(const wget_vector_t *v, int start, int direction, wget_vector_find_t find) G_GNUC_WGET_NONNULL((4));
+	wget_vector_findext(const wget_vector_t *v, int start, int direction, wget_vector_find_t *find) G_GNUC_WGET_NONNULL((4));
 WGETAPI int
 	wget_vector_contains(const wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
@@ -699,7 +699,7 @@ WGETAPI int
 WGETAPI int
 	wget_vector_size(const wget_vector_t *v) G_GNUC_WGET_PURE;
 WGETAPI int
-	wget_vector_browse(const wget_vector_t *v, wget_vector_browse_t browse, void *ctx) G_GNUC_WGET_NONNULL((2));
+	wget_vector_browse(const wget_vector_t *v, wget_vector_browse_t *browse, void *ctx) G_GNUC_WGET_NONNULL((2));
 WGETAPI void
 	wget_vector_free(wget_vector_t **v);
 WGETAPI void
@@ -709,9 +709,9 @@ WGETAPI void
 WGETAPI void *
 	wget_vector_get(const wget_vector_t *v, int pos) G_GNUC_WGET_PURE;
 WGETAPI void
-	wget_vector_setcmpfunc(wget_vector_t *v, wget_vector_compare_t cmp) G_GNUC_WGET_NONNULL((2));
+	wget_vector_setcmpfunc(wget_vector_t *v, wget_vector_compare_t *cmp) G_GNUC_WGET_NONNULL((2));
 WGETAPI void
-	wget_vector_set_destructor(wget_vector_t *v, wget_vector_destructor_t destructor);
+	wget_vector_set_destructor(wget_vector_t *v, wget_vector_destructor_t *destructor);
 WGETAPI void
 	wget_vector_sort(wget_vector_t *v);
 

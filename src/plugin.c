@@ -672,7 +672,7 @@ void plugin_db_init(void)
 	if (! initialized) {
 		search_paths = wget_vector_create(16, NULL);
 		plugin_list = wget_vector_create(16, NULL);
-		wget_vector_set_destructor(plugin_list, (wget_vector_destructor_t) plugin_free);
+		wget_vector_set_destructor(plugin_list, (wget_vector_destructor_t *) plugin_free);
 		plugin_name_index = wget_stringmap_create(16);
 		wget_stringmap_set_key_destructor(plugin_name_index, NULL);
 		wget_stringmap_set_value_destructor(plugin_name_index, NULL);

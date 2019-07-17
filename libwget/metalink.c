@@ -293,7 +293,7 @@ static int G_GNUC_WGET_PURE _compare_mirror(wget_metalink_mirror_t **m1, wget_me
 void wget_metalink_sort_mirrors(wget_metalink_t *metalink)
 {
 	if (metalink) {
-		wget_vector_setcmpfunc(metalink->mirrors, (wget_vector_compare_t)_compare_mirror);
+		wget_vector_setcmpfunc(metalink->mirrors, (wget_vector_compare_t *) _compare_mirror);
 		wget_vector_sort(metalink->mirrors);
 	}
 }

@@ -146,7 +146,7 @@ void wget_hpkp_pin_add(wget_hpkp_t *hpkp, const char *pin_type, const char *pin_
 	pin->pin = (unsigned char *)wget_base64_decode_alloc(pin_b64, len_b64, &pin->pinsize);
 
 	if (!hpkp->pins) {
-		hpkp->pins = wget_vector_create(5, (wget_vector_compare_t)_compare_pin);
+		hpkp->pins = wget_vector_create(5, (wget_vector_compare_t *) _compare_pin);
 		wget_vector_set_destructor(hpkp->pins, hpkp_pin_free);
 	}
 
@@ -622,7 +622,7 @@ static int G_GNUC_WGET_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp_t *hpkp)
 		if (ferror(fp))
 			return -1;
 
-		return wget_vector_browse(hpkp->pins, (wget_vector_browse_t) _hpkp_save_pin, fp);
+		return wget_vector_browse(hpkp->pins, (wget_vector_browse_t *) _hpkp_save_pin, fp);
 	}
 
 	return 0;

@@ -36,9 +36,9 @@
 
 struct wget_vector_st {
 	wget_vector_compare_t
-		cmp; // comparison function
+		*cmp; // comparison function
 	wget_vector_destructor_t
-		destructor; // element destructor function
+		*destructor; // element destructor function
 	void
 		**entry; // pointer to array of pointers to elements
 	int
@@ -66,7 +66,7 @@ struct wget_vector_st {
  *
  * Create a new vector instance, to be free'd after use with wget_vector_free().
  */
-wget_vector_t *wget_vector_create(int max, wget_vector_compare_t cmp)
+wget_vector_t *wget_vector_create(int max, wget_vector_compare_t *cmp)
 {
 	wget_vector_t *v = wget_calloc(1, sizeof(wget_vector_t));
 
@@ -522,7 +522,7 @@ void *wget_vector_get(const wget_vector_t *v, int pos)
  *
  * The return value of the last call to \p browse is returned or 0 if \p v is %NULL.
  */
-int wget_vector_browse(const wget_vector_t *v, wget_vector_browse_t browse, void *ctx)
+int wget_vector_browse(const wget_vector_t *v, wget_vector_browse_t *browse, void *ctx)
 {
 	if (v) {
 		for (int ret, it = 0; it < v->cur; it++)
@@ -539,7 +539,7 @@ int wget_vector_browse(const wget_vector_t *v, wget_vector_browse_t browse, void
  *
  * Set the compare function used by wget_vector_sort().
  */
-void wget_vector_setcmpfunc(wget_vector_t *v, wget_vector_compare_t cmp)
+void wget_vector_setcmpfunc(wget_vector_t *v, wget_vector_compare_t *cmp)
 {
 	if (v) {
 		v->cmp = cmp;
@@ -558,7 +558,7 @@ void wget_vector_setcmpfunc(wget_vector_t *v, wget_vector_compare_t cmp)
  * Set the destructor function that is called for each element to be removed.
  * It should not free the element (pointer) itself.
  */
-void wget_vector_set_destructor(wget_vector_t *v, wget_vector_destructor_t destructor)
+void wget_vector_set_destructor(wget_vector_t *v, wget_vector_destructor_t *destructor)
 {
 	if (v)
 		v->destructor = destructor;
@@ -640,7 +640,7 @@ int wget_vector_contains(const wget_vector_t *v, const void *elem)
  *
  * Returns -1 if \p v is %NULL or if the \p find didn't return 0.
  */
-int wget_vector_findext(const wget_vector_t *v, int start, int direction, wget_vector_find_t find)
+int wget_vector_findext(const wget_vector_t *v, int start, int direction, wget_vector_find_t *find)
 {
 
 	if (v) {
