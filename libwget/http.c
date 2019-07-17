@@ -122,7 +122,7 @@ typedef struct {
 } HOST;
 
 static wget_server_stats_callback_t
-	server_stats_callback;
+	*server_stats_callback;
 static void
 	*server_stats_ctx;
 
@@ -1508,7 +1508,7 @@ void wget_http_abort_connection(wget_http_connection_t *conn)
  *
  * Set callback function to be called when server statistics are available
  */
-void wget_server_set_stats_callback(wget_server_stats_callback_t fn, void *ctx)
+void wget_server_set_stats_callback(wget_server_stats_callback_t *fn, void *ctx)
 {
 	server_stats_callback = fn;
 	server_stats_ctx = ctx;

@@ -3043,10 +3043,10 @@ typedef struct
 } wget_server_stats_data_t;
 
 typedef void
-	(*wget_server_stats_callback_t)(wget_server_stats_data_t *stats, void *ctx);
+	wget_server_stats_callback_t(wget_server_stats_data_t *stats, void *ctx);
 
 WGETAPI void
-	wget_server_set_stats_callback(wget_server_stats_callback_t fn, void *ctx);
+	wget_server_set_stats_callback(wget_server_stats_callback_t *fn, void *ctx);
 
 typedef enum {
 	WGET_STATS_FORMAT_HUMAN = 0,
