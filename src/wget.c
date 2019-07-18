@@ -156,7 +156,7 @@ static long long G_GNUC_WGET_NONNULL_ALL get_file_size(const char *fname);
 
 static wget_stringmap_t
 	*etags;
-static wget_hashmap_t
+static wget_hashmap
 	*known_urls;
 static DOWNLOADER
 	*downloaders;

@@ -53,7 +53,7 @@ typedef struct {
 		parent;
 	char *
 		fname;
-	wget_hashmap_t *
+	wget_hashmap *
 		entries;
 	wget_thread_mutex_t
 		mutex;
@@ -452,7 +452,7 @@ static int G_GNUC_WGET_NONNULL_ALL _hsts_save(FILE *fp, const _hsts_t *hsts)
 
 static int _hsts_db_save(void *hsts_db_priv, FILE *fp)
 {
-	wget_hashmap_t *entries = ((_hsts_db_impl_t *) hsts_db_priv)->entries;
+	wget_hashmap *entries = ((_hsts_db_impl_t *) hsts_db_priv)->entries;
 
 	if (wget_hashmap_size(entries) > 0) {
 		fputs("#HSTS 1.0 file\n", fp);

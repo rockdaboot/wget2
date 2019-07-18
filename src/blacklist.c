@@ -35,7 +35,7 @@
 #include "wget_main.h"
 #include "wget_blacklist.h"
 
-static wget_hashmap_t
+static wget_hashmap
 	*blacklist;
 
 static wget_thread_mutex_t

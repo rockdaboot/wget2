@@ -70,7 +70,7 @@ static wget_vector
 static wget_thread_mutex_t
 	mutex;
 
-static wget_hashmap_t
+static wget_hashmap
 	*docs;
 
 static FILE

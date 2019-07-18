@@ -39,7 +39,7 @@
 #include "wget_job.h"
 #include "wget_stats.h"
 
-static wget_hashmap_t
+static wget_hashmap
 	*hosts;
 static wget_thread_mutex_t
 	hosts_mutex;

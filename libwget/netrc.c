@@ -37,7 +37,7 @@
 #include "private.h"
 
 struct wget_netrc_db_st {
-	wget_hashmap_t *
+	wget_hashmap *
 		machines;
 };
 

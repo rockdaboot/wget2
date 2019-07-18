@@ -36,7 +36,7 @@ typedef struct {
 		parent;
 	char *
 		fname;
-	wget_hashmap_t *
+	wget_hashmap *
 		entries;
 	wget_thread_mutex_t
 		mutex;
@@ -630,7 +630,7 @@ static int G_GNUC_WGET_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp_t *hpkp)
 
 static int _hpkp_db_save(_hpkp_db_impl_t *hpkp_db_priv, FILE *fp)
 {
-	wget_hashmap_t *entries = hpkp_db_priv->entries;
+	wget_hashmap *entries = hpkp_db_priv->entries;
 
 	if (wget_hashmap_size(entries) > 0) {
 		fputs("# HPKP 1.0 file\n", fp);

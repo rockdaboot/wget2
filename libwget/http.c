@@ -60,7 +60,7 @@ static wget_vector
 	*https_proxies,
 	*no_proxies;
 
-static wget_hashmap_t
+static wget_hashmap
 	*hosts;
 
 // protect access to the above vectors

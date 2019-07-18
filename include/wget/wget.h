@@ -722,7 +722,7 @@ WGETAPI void
  */
 
 /// Type of the hashmap
-typedef struct wget_hashmap_st wget_hashmap_t;
+typedef struct wget_hashmap_st wget_hashmap;
 
 /// Type of the hashmap iterator
 typedef struct wget_hashmap_iterator_st wget_hashmap_iterator_t;
@@ -743,42 +743,42 @@ typedef void wget_hashmap_key_destructor_t(void *key);
 typedef void wget_hashmap_value_destructor_t(void *value);
 /** @} */
 
-WGETAPI wget_hashmap_t
+WGETAPI wget_hashmap
 	*wget_hashmap_create(int max, wget_hashmap_hash_t *hash, wget_hashmap_compare_t *cmp) G_GNUC_WGET_MALLOC;
 WGETAPI void
-	wget_hashmap_set_resize_factor(wget_hashmap_t *h, float factor);
+	wget_hashmap_set_resize_factor(wget_hashmap *h, float factor);
 WGETAPI int
-	wget_hashmap_put(wget_hashmap_t *h, const void *key, const void *value);
+	wget_hashmap_put(wget_hashmap *h, const void *key, const void *value);
 WGETAPI int
-	wget_hashmap_size(const wget_hashmap_t *h) G_GNUC_WGET_PURE;
+	wget_hashmap_size(const wget_hashmap *h) G_GNUC_WGET_PURE;
 WGETAPI int
-	wget_hashmap_browse(const wget_hashmap_t *h, wget_hashmap_browse_t *browse, void *ctx);
+	wget_hashmap_browse(const wget_hashmap *h, wget_hashmap_browse_t *browse, void *ctx);
 WGETAPI void
-	wget_hashmap_free(wget_hashmap_t **h);
+	wget_hashmap_free(wget_hashmap **h);
 WGETAPI void
-	wget_hashmap_clear(wget_hashmap_t *h);
+	wget_hashmap_clear(wget_hashmap *h);
 WGETAPI int
-	wget_hashmap_get(const wget_hashmap_t *h, const void *key, void **value);
+	wget_hashmap_get(const wget_hashmap *h, const void *key, void **value);
 #define wget_hashmap_get(a, b, c) wget_hashmap_get((a), (b), (void **)(c))
 WGETAPI int
-	wget_hashmap_contains(const wget_hashmap_t *h, const void *key);
+	wget_hashmap_contains(const wget_hashmap *h, const void *key);
 WGETAPI int
-	wget_hashmap_remove(wget_hashmap_t *h, const void *key);
+	wget_hashmap_remove(wget_hashmap *h, const void *key);
 WGETAPI int
-	wget_hashmap_remove_nofree(wget_hashmap_t *h, const void *key);
+	wget_hashmap_remove_nofree(wget_hashmap *h, const void *key);
 WGETAPI void
-	wget_hashmap_setcmpfunc(wget_hashmap_t *h, wget_hashmap_compare_t *cmp);
+	wget_hashmap_setcmpfunc(wget_hashmap *h, wget_hashmap_compare_t *cmp);
 WGETAPI int
-	wget_hashmap_sethashfunc(wget_hashmap_t *h, wget_hashmap_hash_t *hash);
+	wget_hashmap_sethashfunc(wget_hashmap *h, wget_hashmap_hash_t *hash);
 WGETAPI void
-	wget_hashmap_set_key_destructor(wget_hashmap_t *h, wget_hashmap_key_destructor_t *destructor);
+	wget_hashmap_set_key_destructor(wget_hashmap *h, wget_hashmap_key_destructor_t *destructor);
 WGETAPI void
-	wget_hashmap_set_value_destructor(wget_hashmap_t *h, wget_hashmap_value_destructor_t *destructor);
+	wget_hashmap_set_value_destructor(wget_hashmap *h, wget_hashmap_value_destructor_t *destructor);
 WGETAPI void
-	wget_hashmap_set_load_factor(wget_hashmap_t *h, float factor);
+	wget_hashmap_set_load_factor(wget_hashmap *h, float factor);
 
 WGETAPI wget_hashmap_iterator_t
-	*wget_hashmap_iterator_alloc(wget_hashmap_t *h) G_GNUC_WGET_MALLOC;
+	*wget_hashmap_iterator_alloc(wget_hashmap *h) G_GNUC_WGET_MALLOC;
 WGETAPI void
 	wget_hashmap_iterator_free(wget_hashmap_iterator_t **iter);
 WGETAPI void
@@ -791,7 +791,7 @@ WGETAPI void
  */
 
 /// Type of the stringmap
-typedef wget_hashmap_t wget_stringmap_t;
+typedef wget_hashmap wget_stringmap_t;
 
 /// Type of the stringmap iterator
 typedef wget_hashmap_iterator_t wget_stringmap_iterator_t;
@@ -1004,7 +1004,7 @@ int wget_stringmap_sethashfunc(wget_stringmap_t *h, wget_stringmap_hash_t *hash)
  * Default is free().
  */
 static inline
-void wget_stringmap_set_key_destructor(wget_hashmap_t *h, wget_stringmap_key_destructor_t *destructor)
+void wget_stringmap_set_key_destructor(wget_hashmap *h, wget_stringmap_key_destructor_t *destructor)
 {
 	wget_hashmap_set_key_destructor(h, (wget_hashmap_key_destructor_t *) destructor);
 }
@@ -1018,7 +1018,7 @@ void wget_stringmap_set_key_destructor(wget_hashmap_t *h, wget_stringmap_key_des
  * Default is free().
  */
 static inline
-void wget_stringmap_set_value_destructor(wget_hashmap_t *h, wget_stringmap_value_destructor_t *destructor)
+void wget_stringmap_set_value_destructor(wget_hashmap *h, wget_stringmap_value_destructor_t *destructor)
 {
 	wget_hashmap_set_value_destructor(h, (wget_hashmap_value_destructor_t *) destructor);
 }

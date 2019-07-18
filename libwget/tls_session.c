@@ -39,7 +39,7 @@
 #include "private.h"
 
 struct wget_tls_session_db_st {
-	wget_hashmap_t *
+	wget_hashmap *
 		entries;
 	wget_thread_mutex_t
 		mutex;
@@ -352,7 +352,7 @@ static int G_GNUC_WGET_NONNULL_ALL _tls_session_save(FILE *fp, const wget_tls_se
 
 static int _tls_session_db_save(void *tls_session_db, FILE *fp)
 {
-	wget_hashmap_t *entries = ((wget_tls_session_db_t *)tls_session_db)->entries;
+	wget_hashmap *entries = ((wget_tls_session_db_t *)tls_session_db)->entries;
 
 	if (wget_hashmap_size(entries) > 0) {
 		fputs("#TLSSession 1.0 file\n", fp);

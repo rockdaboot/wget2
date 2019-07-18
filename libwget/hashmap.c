@@ -91,7 +91,7 @@ struct wget_hashmap_iterator_st {
  *
  * Creates a hashmap iterator for \p h.
  */
-wget_hashmap_iterator_t *wget_hashmap_iterator_alloc(wget_hashmap_t *h)
+wget_hashmap_iterator_t *wget_hashmap_iterator_alloc(wget_hashmap *h)
 {
 	struct wget_hashmap_iterator_st *iter = wget_calloc(1, sizeof(struct wget_hashmap_iterator_st));
 
@@ -164,9 +164,9 @@ found:
  * wget_hashmap_hashcmpfunc() with appropriate function pointers. No doing so will result
  * in undefined behavior (likely you'll see a segmentation fault).
  */
-wget_hashmap_t *wget_hashmap_create(int max, wget_hashmap_hash_t *hash, wget_hashmap_compare_t *cmp)
+wget_hashmap *wget_hashmap_create(int max, wget_hashmap_hash_t *hash, wget_hashmap_compare_t *cmp)
 {
-	wget_hashmap_t *h = wget_malloc(sizeof(wget_hashmap_t));
+	wget_hashmap *h = wget_malloc(sizeof(wget_hashmap));
 
 	if (!h)
 		return NULL;
@@ -192,7 +192,7 @@ wget_hashmap_t *wget_hashmap_create(int max, wget_hashmap_hash_t *hash, wget_has
 }
 
 G_GNUC_WGET_NONNULL_ALL
-static _entry_t * hashmap_find_entry(const wget_hashmap_t *h, const char *key, unsigned int hash)
+static _entry_t * hashmap_find_entry(const wget_hashmap *h, const char *key, unsigned int hash)
 {
 	for (_entry_t * e = h->entry[hash % h->max]; e; e = e->next) {
 		if (hash == e->hash && (key == e->key || !h->cmp(key, e->key))) {
@@ -204,7 +204,7 @@ static _entry_t * hashmap_find_entry(const wget_hashmap_t *h, const char *key, u
 }
 
 G_GNUC_WGET_NONNULL_ALL
-static void hashmap_rehash(wget_hashmap_t *h, _entry_t **new_entry, int newmax, int recalc_hash)
+static void hashmap_rehash(wget_hashmap *h, _entry_t **new_entry, int newmax, int recalc_hash)
 {
 	_entry_t *entry, *next;
 	int cur = h->cur;
@@ -231,7 +231,7 @@ static void hashmap_rehash(wget_hashmap_t *h, _entry_t **new_entry, int newmax, 
 }
 
 G_GNUC_WGET_NONNULL((1,3))
-static int hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *key, const char *value)
+static int hashmap_new_entry(wget_hashmap *h, unsigned int hash, const char *key, const char *value)
 {
 	_entry_t *entry;
 
@@ -283,7 +283,7 @@ static int hashmap_new_entry(wget_hashmap_t *h, unsigned int hash, const char *k
  *
  * Neither \p h nor \p key must be %NULL, else the return value will always be 0.
  */
-int wget_hashmap_put(wget_hashmap_t *h, const void *key, const void *value)
+int wget_hashmap_put(wget_hashmap *h, const void *key, const void *value)
 {
 	if (h && key) {
 		_entry_t *entry;
@@ -323,7 +323,7 @@ int wget_hashmap_put(wget_hashmap_t *h, const void *key, const void *value)
  *
  * Check if \p key exists in \p h.
  */
-int wget_hashmap_contains(const wget_hashmap_t *h, const void *key)
+int wget_hashmap_contains(const wget_hashmap *h, const void *key)
 {
 	return wget_hashmap_get(h, key, NULL);
 }
@@ -339,7 +339,7 @@ int wget_hashmap_contains(const wget_hashmap_t *h, const void *key)
  * Neither \p h nor \p key must be %NULL.
  */
 #undef wget_hashmap_get
-int wget_hashmap_get(const wget_hashmap_t *h, const void *key, void **value)
+int wget_hashmap_get(const wget_hashmap *h, const void *key, void **value)
 {
 	if (h && key) {
 		_entry_t *entry;
@@ -355,7 +355,7 @@ int wget_hashmap_get(const wget_hashmap_t *h, const void *key, void **value)
 }
 
 G_GNUC_WGET_NONNULL_ALL
-static int hashmap_remove_entry(wget_hashmap_t *h, const char *key, int free_kv)
+static int hashmap_remove_entry(wget_hashmap *h, const char *key, int free_kv)
 {
 	_entry_t *entry, *next, *prev = NULL;
 	unsigned int hash = h->hash(key);
@@ -400,7 +400,7 @@ static int hashmap_remove_entry(wget_hashmap_t *h, const char *key, int free_kv)
  * If \p key is found, the key and value destructor functions are called
  * when removing the entry from the hashmap.
  */
-int wget_hashmap_remove(wget_hashmap_t *h, const void *key)
+int wget_hashmap_remove(wget_hashmap *h, const void *key)
 {
 	if (h && key)
 		return hashmap_remove_entry(h, key, 1);
@@ -417,7 +417,7 @@ int wget_hashmap_remove(wget_hashmap_t *h, const void *key)
  *
  * Key and value destructor functions are *not* called when removing the entry from the hashmap.
  */
-int wget_hashmap_remove_nofree(wget_hashmap_t *h, const void *key)
+int wget_hashmap_remove_nofree(wget_hashmap *h, const void *key)
 {
 	if (h && key)
 		return hashmap_remove_entry(h, key, 0);
@@ -432,7 +432,7 @@ int wget_hashmap_remove_nofree(wget_hashmap_t *h, const void *key)
  *
  * Key and value destructor functions are called for each entry in the hashmap.
  */
-void wget_hashmap_free(wget_hashmap_t **h)
+void wget_hashmap_free(wget_hashmap **h)
 {
 	if (h && *h) {
 		wget_hashmap_clear(*h);
@@ -448,7 +448,7 @@ void wget_hashmap_free(wget_hashmap_t **h)
  *
  * Key and value destructor functions are called for each entry in the hashmap.
  */
-void wget_hashmap_clear(wget_hashmap_t *h)
+void wget_hashmap_clear(wget_hashmap *h)
 {
 	if (h) {
 		_entry_t *entry, *next;
@@ -483,7 +483,7 @@ void wget_hashmap_clear(wget_hashmap_t *h)
  *
  * Return the number of entries in the hashmap \p h.
  */
-int wget_hashmap_size(const wget_hashmap_t *h)
+int wget_hashmap_size(const wget_hashmap *h)
 {
 	return h ? h->cur : 0;
 }
@@ -501,7 +501,7 @@ int wget_hashmap_size(const wget_hashmap_t *h)
  *
  * The return value of the last call to \p browse is returned or 0 if either \p h or \p browse is %NULL.
  */
-int wget_hashmap_browse(const wget_hashmap_t *h, wget_hashmap_browse_t *browse, void *ctx)
+int wget_hashmap_browse(const wget_hashmap *h, wget_hashmap_browse_t *browse, void *ctx)
 {
 	if (h && browse) {
 		_entry_t *entry;
@@ -525,7 +525,7 @@ int wget_hashmap_browse(const wget_hashmap_t *h, wget_hashmap_browse_t *browse, 
  *
  * Set the comparison function.
  */
-void wget_hashmap_setcmpfunc(wget_hashmap_t *h, wget_hashmap_compare_t *cmp)
+void wget_hashmap_setcmpfunc(wget_hashmap *h, wget_hashmap_compare_t *cmp)
 {
 	if (h)
 		h->cmp = cmp;
@@ -541,7 +541,7 @@ void wget_hashmap_setcmpfunc(wget_hashmap_t *h, wget_hashmap_compare_t *cmp)
  * The keys of all entries in the hashmap will be hashed again. This includes a memory allocation, so
  * there is a possibility of failure.
  */
-int wget_hashmap_sethashfunc(wget_hashmap_t *h, wget_hashmap_hash_t *hash)
+int wget_hashmap_sethashfunc(wget_hashmap *h, wget_hashmap_hash_t *hash)
 {
 	if (!h)
 		return WGET_E_INVALID;
@@ -568,7 +568,7 @@ int wget_hashmap_sethashfunc(wget_hashmap_t *h, wget_hashmap_hash_t *hash)
  *
  * Default is free().
  */
-void wget_hashmap_set_key_destructor(wget_hashmap_t *h, wget_hashmap_key_destructor_t *destructor)
+void wget_hashmap_set_key_destructor(wget_hashmap *h, wget_hashmap_key_destructor_t *destructor)
 {
 	if (h)
 		h->key_destructor = destructor;
@@ -582,7 +582,7 @@ void wget_hashmap_set_key_destructor(wget_hashmap_t *h, wget_hashmap_key_destruc
  *
  * Default is free().
  */
-void wget_hashmap_set_value_destructor(wget_hashmap_t *h, wget_hashmap_value_destructor_t *destructor)
+void wget_hashmap_set_value_destructor(wget_hashmap *h, wget_hashmap_value_destructor_t *destructor)
 {
 	if (h)
 		h->value_destructor = destructor;
@@ -603,7 +603,7 @@ void wget_hashmap_set_value_destructor(wget_hashmap_t *h, wget_hashmap_value_des
  *
  * Default is 0.75.
  */
-void wget_hashmap_set_load_factor(wget_hashmap_t *h, float factor)
+void wget_hashmap_set_load_factor(wget_hashmap *h, float factor)
 {
 	if (h) {
 		h->load_factor = factor;
@@ -624,7 +624,7 @@ void wget_hashmap_set_load_factor(wget_hashmap_t *h, float factor)
  *
  * Default is 2.
  */
-void wget_hashmap_set_resize_factor(wget_hashmap_t *h, float factor)
+void wget_hashmap_set_resize_factor(wget_hashmap *h, float factor)
 {
 	if (h)
 		h->resize_factor = factor;

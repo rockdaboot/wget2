@@ -51,9 +51,9 @@ typedef struct {
 		parent;
 	char *
 		fname;
-	wget_hashmap_t *
+	wget_hashmap *
 		fingerprints;
-	wget_hashmap_t *
+	wget_hashmap *
 		hosts;
 	wget_thread_mutex_t
 		mutex;
@@ -537,7 +537,7 @@ static int G_GNUC_WGET_NONNULL_ALL _ocsp_save_host(FILE *fp, const _ocsp_t *ocsp
 
 static int _ocsp_db_save_hosts(void *ocsp_db_priv, FILE *fp)
 {
-	wget_hashmap_t *map = ((_ocsp_db_impl_t *)ocsp_db_priv)->hosts;
+	wget_hashmap *map = ((_ocsp_db_impl_t *)ocsp_db_priv)->hosts;
 
 	if ((wget_hashmap_size(map)) > 0) {
 		fputs("#OCSP 1.0 host file\n", fp);
@@ -554,7 +554,7 @@ static int _ocsp_db_save_hosts(void *ocsp_db_priv, FILE *fp)
 
 static int _ocsp_db_save_fingerprints(void *ocsp_db_priv, FILE *fp)
 {
-	wget_hashmap_t *map = ((_ocsp_db_impl_t *)ocsp_db_priv)->fingerprints;
+	wget_hashmap *map = ((_ocsp_db_impl_t *)ocsp_db_priv)->fingerprints;
 
 	if ((wget_hashmap_size(map)) > 0) {
 
