@@ -50,7 +50,7 @@ struct cache_entry {
 struct wget_dns_cache_st {
 	wget_hashmap
 		*cache;
-	wget_thread_mutex_t
+	wget_thread_mutex
 		mutex;
 };
 

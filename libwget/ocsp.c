@@ -55,7 +55,7 @@ typedef struct {
 		fingerprints;
 	wget_hashmap *
 		hosts;
-	wget_thread_mutex_t
+	wget_thread_mutex
 		mutex;
 } _ocsp_db_impl_t;
 

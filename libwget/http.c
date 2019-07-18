@@ -64,7 +64,7 @@ static wget_hashmap
 	*hosts;
 
 // protect access to the above vectors
-static wget_thread_mutex_t
+static wget_thread_mutex
 	proxy_mutex,
 	hosts_mutex;
 static bool

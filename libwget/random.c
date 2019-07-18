@@ -50,7 +50,7 @@
 static int seeded;
 static char statebuf[64];
 static struct random_data state;
-static wget_thread_mutex_t mutex;
+static wget_thread_mutex mutex;
 static bool initialized;
 
 static void __attribute__ ((constructor)) _wget_random_init(void)

@@ -55,7 +55,7 @@ typedef struct {
 		fname;
 	wget_hashmap *
 		entries;
-	wget_thread_mutex_t
+	wget_thread_mutex
 		mutex;
 	int64_t
 		load_time;

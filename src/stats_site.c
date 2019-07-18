@@ -67,7 +67,7 @@ typedef struct {
 static wget_vector
 	*data;
 
-static wget_thread_mutex_t
+static wget_thread_mutex
 	mutex;
 
 static wget_hashmap

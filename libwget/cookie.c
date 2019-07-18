@@ -85,7 +85,7 @@ struct wget_cookie_db_st {
 	psl_ctx_t
 		*psl; // libpsl Publix Suffix List context
 #endif
-	wget_thread_mutex_t
+	wget_thread_mutex
 		mutex;
 	unsigned int
 		age;

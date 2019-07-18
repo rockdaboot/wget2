@@ -24,7 +24,7 @@
 
 static int
 	cond_value = 0;
-static wget_thread_mutex_t
+static wget_thread_mutex
 	lockcond;
 static wget_thread_cond_t
 	condtest;

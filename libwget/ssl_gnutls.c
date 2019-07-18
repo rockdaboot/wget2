@@ -1176,7 +1176,7 @@ out:
 }
 
 static int _init;
-static wget_thread_mutex_t _mutex;
+static wget_thread_mutex _mutex;
 
 static void __attribute__ ((constructor)) _wget_tls_init(void)
 {

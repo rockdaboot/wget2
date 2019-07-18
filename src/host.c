@@ -41,7 +41,7 @@
 
 static wget_hashmap
 	*hosts;
-static wget_thread_mutex_t
+static wget_thread_mutex
 	hosts_mutex;
 static int
 	qsize; // overall number of jobs

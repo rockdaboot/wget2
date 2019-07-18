@@ -162,7 +162,7 @@ static DOWNLOADER
 	*downloaders;
 static void
 	*downloader_thread(void *p);
-static wget_thread_mutex_t
+static wget_thread_mutex
 	quota_mutex;
 static long long
 	quota;
@@ -345,7 +345,7 @@ static wget_thread
 	input_tid;
 static wget_vector
 	*parents;
-static wget_thread_mutex_t
+static wget_thread_mutex
 	downloader_mutex,
 	main_mutex,
 	known_urls_mutex,

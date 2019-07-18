@@ -129,7 +129,7 @@ struct wget_bar_st {
 	int
 		nslots,
 		max_width;
-	wget_thread_mutex_t
+	wget_thread_mutex
 		mutex;
 };
 

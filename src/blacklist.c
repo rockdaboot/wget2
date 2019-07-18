@@ -38,7 +38,7 @@
 static wget_hashmap
 	*blacklist;
 
-static wget_thread_mutex_t
+static wget_thread_mutex
 	mutex;
 
 void blacklist_init(void)

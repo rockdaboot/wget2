@@ -47,7 +47,7 @@ static struct _CONFIG {
 static wget_dns_cache_t *dns_cache;
 
 static int _init;
-static wget_thread_mutex_t _mutex;
+static wget_thread_mutex _mutex;
 static bool initialized;
 
 static void __attribute__ ((constructor)) _wget_global_init(void)

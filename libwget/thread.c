@@ -80,7 +80,7 @@ struct wget_thread_cond_st {
  * After usage, a call to wget_thread_mutex_destroy() frees
  * the allocated resources.
  */
-int wget_thread_mutex_init(wget_thread_mutex_t *mutex)
+int wget_thread_mutex_init(wget_thread_mutex *mutex)
 {
 	*mutex = wget_malloc(sizeof(struct wget_thread_mutex_st));
 
@@ -98,7 +98,7 @@ int wget_thread_mutex_init(wget_thread_mutex_t *mutex)
  *
  * After calling this function, the \p mutex cannot be used any more.
  */
-int wget_thread_mutex_destroy(wget_thread_mutex_t *mutex)
+int wget_thread_mutex_destroy(wget_thread_mutex *mutex)
 {
 	int rc = glthread_lock_destroy(&(*mutex)->mutex);
 	xfree(*mutex);
@@ -112,7 +112,7 @@ int wget_thread_mutex_destroy(wget_thread_mutex_t *mutex)
  *
  * To unlock the \p mutex, call wget_thread_mutex_unlock().
  */
-void wget_thread_mutex_lock(wget_thread_mutex_t mutex)
+void wget_thread_mutex_lock(wget_thread_mutex mutex)
 {
 	glthread_lock_lock(&mutex->mutex);
 }
@@ -122,7 +122,7 @@ void wget_thread_mutex_lock(wget_thread_mutex_t mutex)
  *
  * Unlocks the \p mutex.
  */
-void wget_thread_mutex_unlock(wget_thread_mutex_t mutex)
+void wget_thread_mutex_unlock(wget_thread_mutex mutex)
 {
 	glthread_lock_unlock(&mutex->mutex);
 }
@@ -182,7 +182,7 @@ int wget_thread_cond_signal(wget_thread_cond_t cond)
  *
  * To wait forever use a timeout lower or equal then 0.
  */
-int wget_thread_cond_wait(wget_thread_cond_t cond, wget_thread_mutex_t mutex, long long ms)
+int wget_thread_cond_wait(wget_thread_cond_t cond, wget_thread_mutex mutex, long long ms)
 {
 	if (ms <= 0)
 		return glthread_cond_wait(&cond->cond, &mutex->mutex);

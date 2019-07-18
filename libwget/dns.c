@@ -51,7 +51,7 @@ struct wget_dns_st
 {
 	wget_dns_cache_t
 		*cache;
-	wget_thread_mutex_t
+	wget_thread_mutex
 		mutex;
 	wget_dns_stats_callback_t
 		*stats_callback;
