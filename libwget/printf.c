@@ -50,7 +50,7 @@
  */
 size_t wget_vasprintf(char **strp, const char *fmt, va_list args)
 {
-	wget_buffer_t buf;
+	wget_buffer buf;
 
 	wget_buffer_init(&buf, NULL, 128);
 
@@ -134,7 +134,7 @@ char *wget_aprintf(const char *fmt, ...)
  */
 size_t wget_vfprintf(FILE *fp, const char *fmt, va_list args)
 {
-	wget_buffer_t buf;
+	wget_buffer buf;
 	char sbuf[1024];
 	size_t rc;
 
@@ -185,7 +185,7 @@ size_t wget_fprintf(FILE *fp, const char *fmt, ...)
  */
 size_t wget_vsnprintf(char *str, size_t size, const char *fmt, va_list args)
 {
-	wget_buffer_t buf;
+	wget_buffer buf;
 	char sbuf[1024];
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));

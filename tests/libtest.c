@@ -95,7 +95,7 @@ static struct MHD_Daemon
 
 // for passing URL query string
 struct query_string {
-	wget_buffer_t
+	wget_buffer
 		*params;
 	int
 		it;
@@ -124,7 +124,7 @@ static char *_parse_hostname(const char* data)
 	return NULL;
 }
 
-static void _replace_space_with_plus(wget_buffer_t *buf, const char *data)
+static void _replace_space_with_plus(wget_buffer *buf, const char *data)
 {
 	for (; *data; data++)
 		wget_buffer_memcat(buf, *data == ' ' ? "+" : data, 1);
@@ -165,7 +165,7 @@ static int _print_header_range(
 	const char *key,
 	const char *value)
 {
-	wget_buffer_t *header_range = cls;
+	wget_buffer *header_range = cls;
 
 	if (!strcmp(key, MHD_HTTP_HEADER_RANGE)) {
 		wget_buffer_strcpy(header_range, key);
@@ -262,7 +262,7 @@ static int _answer_to_connection(
 		modified = wget_http_parse_full_date(modified_val);
 
 	// get header range
-	wget_buffer_t *header_range = wget_buffer_alloc(1024);
+	wget_buffer *header_range = wget_buffer_alloc(1024);
 	if (!strcmp(method, "GET"))
 		MHD_get_connection_values(connection, MHD_HEADER_KIND, &_print_header_range, header_range);
 
@@ -280,7 +280,7 @@ static int _answer_to_connection(
 	}
 
 	// append query string into URL
-	wget_buffer_t *url_full = wget_buffer_alloc(1024);
+	wget_buffer *url_full = wget_buffer_alloc(1024);
 	wget_buffer_strcpy(url_full, url);
 	if (query.params->data)
 		wget_buffer_strcat(url_full, query.params->data);
@@ -309,7 +309,7 @@ static int _answer_to_connection(
 			wget_buffer_strcat(url_full, "index.html");
 
 		// convert remote url into escaped char for iri encoding
-		wget_buffer_t *url_iri = wget_buffer_alloc(1024);
+		wget_buffer *url_iri = wget_buffer_alloc(1024);
 		wget_buffer_strcpy(url_iri, urls[it1].name);
 		MHD_http_unescape(url_iri->data);
 
@@ -1002,7 +1002,7 @@ void wget_test(int first_key, ...)
 	const wget_test_file_t
 		*expected_files = NULL,
 		*existing_files = NULL;
-	wget_buffer_t
+	wget_buffer
 		*cmd = wget_buffer_alloc(1024);
 	unsigned
 		it;

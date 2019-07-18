@@ -681,7 +681,7 @@ char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_
 	int it, init = 0;
 	time_t now = time(NULL);
 	wget_vector_t *cookies = NULL;
-	wget_buffer_t buf;
+	wget_buffer buf;
 
 	if (!cookie_db || !iri)
 		return NULL;

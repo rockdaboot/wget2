@@ -33,7 +33,7 @@
 
 int main(void)
 {
-	wget_buffer_t buf;
+	wget_buffer buf;
 	char sbuf[128];
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));

@@ -41,7 +41,7 @@
  * \defgroup libwget-buffer Buffer management functions
  * @{
  *
- * A buffer (represented with an opaque `wget_buffer_t`) is a managed memory area.
+ * A buffer (represented with an opaque `wget_buffer`) is a managed memory area.
  *
  * Apart from a pointer to a raw chunk of memory (`char *`), it also has some metadata attached
  * such as the length of the buffer and the actual occupied positions.
@@ -84,10 +84,10 @@
  * If an existing buffer is provided in \p buf, it will be re-allocated with the provided \p data and \p size
  * according to the rules stated above.
  */
-wget_buffer_t *wget_buffer_init(wget_buffer_t *buf, char *data, size_t size)
+wget_buffer *wget_buffer_init(wget_buffer *buf, char *data, size_t size)
 {
 	if (!buf) {
-		if (!(buf = wget_malloc(sizeof(wget_buffer_t))))
+		if (!(buf = wget_malloc(sizeof(wget_buffer))))
 			return NULL;
 		buf->release_buf = 1;
 	} else {
@@ -124,12 +124,12 @@ wget_buffer_t *wget_buffer_init(wget_buffer_t *buf, char *data, size_t size)
  *
  * This is equivalent to wget_buffer_init(NULL, NULL, size).
  */
-wget_buffer_t *wget_buffer_alloc(size_t size)
+wget_buffer *wget_buffer_alloc(size_t size)
 {
 	return wget_buffer_init(NULL, NULL, size);
 }
 
-static int _buffer_realloc(wget_buffer_t *buf, size_t size)
+static int _buffer_realloc(wget_buffer *buf, size_t size)
 {
 	char *old_data = buf->data;
 
@@ -166,7 +166,7 @@ static int _buffer_realloc(wget_buffer_t *buf, size_t size)
  * If the buffer's size is less than that, it will automatically enlarge it
  * (with wget_buffer_realloc()) to make it at least as long.
  */
-int wget_buffer_ensure_capacity(wget_buffer_t *buf, size_t size)
+int wget_buffer_ensure_capacity(wget_buffer *buf, size_t size)
 {
 	if (likely(buf)) {
 		if (buf->size < size)
@@ -183,13 +183,13 @@ int wget_buffer_ensure_capacity(wget_buffer_t *buf, size_t size)
  *
  * If you provided your own data when calling wget_buffer_init() (you passed a non-NULL \p data pointer)
  * then **that buffer will not be freed**. As stated in the description of wget_buffer_init() you
- * must free that buffer yourself: this function will only free the `wget_buffer_t` structure.
+ * must free that buffer yourself: this function will only free the `wget_buffer` structure.
  *
  * Similarly, if you provided your own buffer when calling wget_buffer_init() (\p buf was non-NULL)
- * the buffer (the `wget_buffer_t` structure) **will not** be freed, and the data might or might not be freed
+ * the buffer (the `wget_buffer` structure) **will not** be freed, and the data might or might not be freed
  * depending on the above condition.
  */
-void wget_buffer_deinit(wget_buffer_t *buf)
+void wget_buffer_deinit(wget_buffer *buf)
 {
 	if (likely(!buf))
 		return;
@@ -215,7 +215,7 @@ void wget_buffer_deinit(wget_buffer_t *buf)
  *     wget_buffer_deinit(*buf);
  *     *buf = NULL;
  */
-void wget_buffer_free(wget_buffer_t **buf)
+void wget_buffer_free(wget_buffer **buf)
 {
 	if (likely(buf)) {
 		wget_buffer_deinit(*buf);
@@ -226,7 +226,7 @@ void wget_buffer_free(wget_buffer_t **buf)
 /**
  * \param[in] buf A buffer, created with wget_buffer_init() or wget_buffer_alloc()
  *
- * Release the buffer's data, but keep the buffer itself (the `wget_buffer_t` structure).
+ * Release the buffer's data, but keep the buffer itself (the `wget_buffer` structure).
  *
  * The **length** of the buffer will be maintained, but after this function succeeds, the **size**
  * will obviously be zero.
@@ -235,7 +235,7 @@ void wget_buffer_free(wget_buffer_t **buf)
  * when calling wget_buffer_init() (ie. \p data was non-NULL) then **that data will not be freed**, and this
  * function will essentially be a no-op.
  */
-void wget_buffer_free_data(wget_buffer_t *buf)
+void wget_buffer_free_data(wget_buffer *buf)
 {
 	if (likely(buf)) {
 		if (buf->release_data) {
@@ -257,7 +257,7 @@ void wget_buffer_free_data(wget_buffer_t *buf)
  *     buf->length = 0;
  *     *buf->data = 0;
  */
-void wget_buffer_reset(wget_buffer_t *buf)
+void wget_buffer_reset(wget_buffer *buf)
 {
 	if (likely(buf)) {
 		buf->length = 0;
@@ -280,7 +280,7 @@ void wget_buffer_reset(wget_buffer_t *buf)
  * If the buffer is not large enough to store that amount of data,
  * it is enlarged automatically at least \p length bytes (with wget_buffer_realloc()).
  */
-size_t wget_buffer_memcpy(wget_buffer_t *buf, const void *data, size_t length)
+size_t wget_buffer_memcpy(wget_buffer *buf, const void *data, size_t length)
 {
 	if (unlikely(!buf))
 		return 0;
@@ -302,7 +302,7 @@ size_t wget_buffer_memcpy(wget_buffer_t *buf, const void *data, size_t length)
  * (with wget_buffer_realloc()) at least \p length bytes, so that the whole
  * data can be written.
  */
-size_t wget_buffer_memcat(wget_buffer_t *buf, const void *data, size_t length)
+size_t wget_buffer_memcat(wget_buffer *buf, const void *data, size_t length)
 {
 	if (unlikely(!buf))
 		return 0;
@@ -338,7 +338,7 @@ size_t wget_buffer_memcat(wget_buffer_t *buf, const void *data, size_t length)
  *     buf->length = 0;
  *     wget_buffer_memcat(buf, s, strlen(s));
  */
-size_t wget_buffer_strcpy(wget_buffer_t *buf, const char *s)
+size_t wget_buffer_strcpy(wget_buffer *buf, const char *s)
 {
 	if (likely(buf))
 		buf->length = 0;
@@ -360,7 +360,7 @@ size_t wget_buffer_strcpy(wget_buffer_t *buf, const char *s)
  *
  *     wget_buffer_memcat(buf, s, strlen(s));
  */
-size_t wget_buffer_strcat(wget_buffer_t *buf, const char *s)
+size_t wget_buffer_strcat(wget_buffer *buf, const char *s)
 {
 	return wget_buffer_memcat(buf, s, likely(s) ? strlen(s) : 0);
 }
@@ -379,7 +379,7 @@ size_t wget_buffer_strcat(wget_buffer_t *buf, const char *s)
  *
  *     wget_buffer_memcpy(buf, src->data, src->length);
  */
-size_t wget_buffer_bufcpy(wget_buffer_t *buf, wget_buffer_t *src)
+size_t wget_buffer_bufcpy(wget_buffer *buf, wget_buffer *src)
 {
 	if (likely(src))
 		return wget_buffer_memcpy(buf, src->data, src->length);
@@ -400,7 +400,7 @@ size_t wget_buffer_bufcpy(wget_buffer_t *buf, wget_buffer_t *src)
  *
  *     wget_buffer_memcat(buf, src->data, src->length);
  */
-size_t wget_buffer_bufcat(wget_buffer_t *buf, wget_buffer_t *src)
+size_t wget_buffer_bufcat(wget_buffer *buf, wget_buffer *src)
 {
 	if (likely(src))
 		return wget_buffer_memcat(buf, src->data, src->length);
@@ -420,7 +420,7 @@ size_t wget_buffer_bufcat(wget_buffer_t *buf, wget_buffer_t *src)
  * If there's not enough space in \p buf, it is enlarged automatically
  * (with wget_buffer_realloc()) at least \p length bytes.
  */
-size_t wget_buffer_memset(wget_buffer_t *buf, char c, size_t length)
+size_t wget_buffer_memset(wget_buffer *buf, char c, size_t length)
 {
 	if (likely(buf))
 		buf->length = 0;
@@ -439,7 +439,7 @@ size_t wget_buffer_memset(wget_buffer_t *buf, char c, size_t length)
  * If there's not enough space in \p buf, it is enlarged automatically
  * (with wget_buffer_realloc()) at least \p length bytes.
  */
-size_t wget_buffer_memset_append(wget_buffer_t *buf, char c, size_t length)
+size_t wget_buffer_memset_append(wget_buffer *buf, char c, size_t length)
 {
 	if (unlikely(!buf))
 		return 0;
@@ -466,7 +466,7 @@ size_t wget_buffer_memset_append(wget_buffer_t *buf, char c, size_t length)
  * The transformation is done in-place, that is, the buffer's original content is overwritten
  * with the new trimmed content.
  */
-char *wget_buffer_trim(wget_buffer_t *buf)
+char *wget_buffer_trim(wget_buffer *buf)
 {
 	if (unlikely(!buf))
 		return NULL;

@@ -937,7 +937,7 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
 ssize_t wget_tcp_vprintf(wget_tcp_t *tcp, const char *fmt, va_list args)
 {
 	char sbuf[4096];
-	wget_buffer_t buf;
+	wget_buffer buf;
 	ssize_t len2;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));

@@ -146,7 +146,7 @@ static void test_strscpy(void)
 	CHECK(!strcmp(buf, "xxx"));
 }
 
-static void _test_buffer(wget_buffer_t *buf, const char *name)
+static void _test_buffer(wget_buffer *buf, const char *name)
 {
 	char test[256];
 	int it;
@@ -199,7 +199,7 @@ static void _test_buffer(wget_buffer_t *buf, const char *name)
 static void test_buffer(void)
 {
 	char sbuf[16];
-	wget_buffer_t buf, *bufp;
+	wget_buffer buf, *bufp;
 
 	// testing buffer on stack, using initial stack memory
 	// without resizing
@@ -324,7 +324,7 @@ static void test_buffer(void)
 static void test_buffer_printf(void)
 {
 	char buf_static[32];
-	wget_buffer_t buf;
+	wget_buffer buf;
 
 	// testing buffer_printf() by comparing it with C standard function snprintf()
 
@@ -943,7 +943,7 @@ static void test_iri_relative_to_absolute(void)
 	};
 	unsigned it;
 	char uri_buf_static[32]; // use a size that forces allocation in some cases
-	wget_buffer_t *uri_buf = wget_buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
+	wget_buffer *uri_buf = wget_buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
 	wget_iri_t *base;
 
 	for (it = 0; it < countof(test_data); it++) {

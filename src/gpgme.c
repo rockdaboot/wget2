@@ -244,7 +244,7 @@ static int _verify_detached_str(const char *sig, const size_t sig_len,
 
 #endif // WITH_GPGME
 
-int wget_verify_pgp_sig_buff(wget_buffer_t *sig, wget_buffer_t *data, wget_gpg_info_t *info)
+int wget_verify_pgp_sig_buff(wget_buffer *sig, wget_buffer *data, wget_gpg_info_t *info)
 {
 #ifdef WITH_GPGME
 	return wget_verify_pgp_sig_str(sig->data, sig->length, data->data, data->length, info);

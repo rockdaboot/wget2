@@ -47,7 +47,7 @@ struct css_context {
 		*base;
 	const char
 		*encoding;
-	wget_buffer_t
+	wget_buffer
 		uri_buf;
 	char
 		encoding_allocated;

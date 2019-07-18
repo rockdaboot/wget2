@@ -39,7 +39,7 @@ static void G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))
 _logger_vprintf_func(const wget_logger_t *logger, const char *fmt, va_list args)
 {
 	char sbuf[4096];
-	wget_buffer_t buf;
+	wget_buffer buf;
 	int err = errno;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
@@ -59,7 +59,7 @@ static void  G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))
 _logger_vfprintf(FILE *fp, const char *fmt, va_list args)
 {
 	char sbuf[4096];
-	wget_buffer_t buf;
+	wget_buffer buf;
 	int err = errno;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));

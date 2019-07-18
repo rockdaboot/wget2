@@ -53,7 +53,7 @@
 #define FLAG_HEXUP       128
 /* \endcond */
 
-static void _copy_string(wget_buffer_t *buf, unsigned int flags, int field_width, int precision, const char *arg)
+static void _copy_string(wget_buffer *buf, unsigned int flags, int field_width, int precision, const char *arg)
 {
 	size_t length;
 
@@ -87,7 +87,7 @@ static void _copy_string(wget_buffer_t *buf, unsigned int flags, int field_width
 	}
 }
 
-static void _convert_dec_fast(wget_buffer_t *buf, int arg)
+static void _convert_dec_fast(wget_buffer *buf, int arg)
 {
 	char str[32]; // long enough to hold decimal long long
 	char *dst = str + sizeof(str) - 1;
@@ -111,7 +111,7 @@ static void _convert_dec_fast(wget_buffer_t *buf, int arg)
 	wget_buffer_memcat(buf, dst + 1, sizeof(str) - (dst - str) - 1);
 }
 
-static void _convert_dec(wget_buffer_t *buf, unsigned int flags, int field_width, int precision, long long arg)
+static void _convert_dec(wget_buffer *buf, unsigned int flags, int field_width, int precision, long long arg)
 {
 	unsigned long long argu = arg;
 	char str[32], minus = 0; // long enough to hold decimal long long
@@ -229,7 +229,7 @@ static void _convert_dec(wget_buffer_t *buf, unsigned int flags, int field_width
 	}
 }
 
-static void _convert_pointer(wget_buffer_t *buf, void *pointer)
+static void _convert_pointer(wget_buffer *buf, void *pointer)
 {
 	static const char HEX[16] = "0123456789abcdef";
 	char str[32]; // long enough to hold hexadecimal pointer
@@ -333,7 +333,7 @@ static const char *_read_field_width(const char *p, int *out, unsigned int *flag
  *
  * For more information, see `vprintf(3)`.
  */
-size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list args)
+size_t wget_buffer_vprintf_append(wget_buffer *buf, const char *fmt, va_list args)
 {
 	const char *p = fmt, *begin;
 	int field_width, precision;
@@ -515,7 +515,7 @@ size_t wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list a
  *
  * For more information, see `vprintf(3)`.
  */
-size_t wget_buffer_vprintf(wget_buffer_t *buf, const char *fmt, va_list args)
+size_t wget_buffer_vprintf(wget_buffer *buf, const char *fmt, va_list args)
 {
 	buf->length = 0;
 
@@ -536,7 +536,7 @@ size_t wget_buffer_vprintf(wget_buffer_t *buf, const char *fmt, va_list args)
  *
  * For more information, see `printf(3)`.
  */
-size_t wget_buffer_printf_append(wget_buffer_t *buf, const char *fmt, ...)
+size_t wget_buffer_printf_append(wget_buffer *buf, const char *fmt, ...)
 {
 	va_list args;
 
@@ -561,7 +561,7 @@ size_t wget_buffer_printf_append(wget_buffer_t *buf, const char *fmt, ...)
  *
  * For more information, see `printf(3)`.
  */
-size_t wget_buffer_printf(wget_buffer_t *buf, const char *fmt, ...)
+size_t wget_buffer_printf(wget_buffer *buf, const char *fmt, ...)
 {
 	va_list args;
 

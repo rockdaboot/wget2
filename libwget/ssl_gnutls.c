@@ -553,7 +553,7 @@ error:
 /* Returns 0 on ok, and -1 on error */
 static int send_ocsp_request(const char *server,
 		      gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer,
-		      wget_buffer_t **ocsp_data, gnutls_datum_t *nonce)
+		      wget_buffer **ocsp_data, gnutls_datum_t *nonce)
 {
 	int ret = -1, rc;
 	int server_allocated = 0;
@@ -673,7 +673,7 @@ static void print_ocsp_verify_res(unsigned int status)
  *  -1: dunno
  */
 static int check_ocsp_response(gnutls_x509_crt_t cert,
-	gnutls_x509_crt_t issuer, wget_buffer_t *data,
+	gnutls_x509_crt_t issuer, wget_buffer *data,
 	gnutls_datum_t *nonce)
 {
 	gnutls_ocsp_resp_t resp;
@@ -817,7 +817,7 @@ static void _add_cert_to_ocsp_cache(gnutls_x509_crt_t cert, int valid)
 //static int cert_verify_ocsp(gnutls_session_t session)
 static int cert_verify_ocsp(gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer)
 {
-	wget_buffer_t *resp = NULL;
+	wget_buffer *resp = NULL;
 	unsigned char noncebuf[23];
 	gnutls_datum_t nonce = { noncebuf, sizeof(noncebuf) };
 	int ret;

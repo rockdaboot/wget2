@@ -332,7 +332,7 @@ static void url_filter(wget_plugin_t *plugin, const wget_iri_t *iri, wget_interc
 	if (d->replace.l) {
 		const char *ptr, *find;
 		size_t find_len;
-		wget_buffer_t buf[1];
+		wget_buffer buf[1];
 		wget_iri_t *alt_iri;
 
 		wget_buffer_init(buf, NULL, 0);

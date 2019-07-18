@@ -2543,7 +2543,7 @@ static int G_GNUC_WGET_NONNULL((1)) _read_config(const char *cfgfile, int expand
 	int append = 0, found, ret = 0, rc;
 	size_t bufsize = 0;
 	ssize_t len;
-	wget_buffer_t linebuf;
+	wget_buffer linebuf;
 
 	if (++level > 20) {
 		error_printf(_("Config file recursion detected in %s\n"), cfgfile);

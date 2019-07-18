@@ -125,12 +125,12 @@ typedef struct {
 static _statistics_t stats;
 
 static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag,
-		wget_iri_t *uri, wget_iri_t *original_url, int ignore_patterns, wget_buffer_t *partial_content,
+		wget_iri_t *uri, wget_iri_t *original_url, int ignore_patterns, wget_buffer *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path);
 
 static void
 	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
-	sitemap_parse_xml_gz(JOB *job, wget_buffer_t *data, const char *encoding, wget_iri_t *base),
+	sitemap_parse_xml_gz(JOB *job, wget_buffer *data, const char *encoding, wget_iri_t *base),
 	sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, wget_iri_t *base),
 	sitemap_parse_text(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
 	atom_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base),
@@ -186,7 +186,7 @@ static int
 
 static const char * G_GNUC_WGET_NONNULL_ALL _get_local_filename(const wget_iri_t *iri)
 {
-	wget_buffer_t buf;
+	wget_buffer buf;
 	char *fname;
 	int directories;
 
@@ -218,7 +218,7 @@ static const char * G_GNUC_WGET_NONNULL_ALL _get_local_filename(const wget_iri_t
 
 		if (config.cut_directories) {
 			// cut directories
-			wget_buffer_t path_buf;
+			wget_buffer path_buf;
 			const char *p;
 			int n;
 			char sbuf[256];
@@ -1108,7 +1108,7 @@ out:
 static void _convert_links(void)
 {
 	FILE *fpout = NULL;
-	wget_buffer_t buf;
+	wget_buffer buf;
 	char sbuf[1024];
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
@@ -1793,7 +1793,7 @@ static int process_response_header(wget_http_response_t *resp)
 		return 0; // final response
 
 	if (resp->location) {
-		wget_buffer_t uri_buf;
+		wget_buffer uri_buf;
 		char uri_sbuf[1024];
 
 		wget_cookie_normalize_cookies(job->iri, resp->cookies);
@@ -2450,7 +2450,7 @@ static unsigned int G_GNUC_WGET_PURE hash_url(const char *url)
 /*
  * helper function: percent-unescape, convert to utf-8, create URL string using base
  */
-static int _normalize_uri(wget_iri_t *base, wget_string_t *url, const char *encoding, wget_buffer_t *buf)
+static int _normalize_uri(wget_iri_t *base, wget_string_t *url, const char *encoding, wget_buffer *buf)
 {
 	char *urlpart = wget_strmemdup(url->p, url->len);
 	char *urlpart_encoded;
@@ -2488,7 +2488,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 	wget_iri_t *allocated_base = NULL;
 	const char *reason;
 	char *utf8 = NULL;
-	wget_buffer_t buf;
+	wget_buffer buf;
 	char sbuf[1024];
 	int convert_links = config.convert_links && !config.delete_after;
 	bool page_requisites = config.recursive && config.page_requisites && config.level && level < config.level;
@@ -2712,14 +2712,14 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 
 static int _get_unzipped(void *userdata, const char *data, size_t length)
 {
-	wget_buffer_memcat((wget_buffer_t *)userdata, data, length);
+	wget_buffer_memcat((wget_buffer *)userdata, data, length);
 
 	return 0;
 }
 
-void sitemap_parse_xml_gz(JOB *job, wget_buffer_t *gzipped_data, const char *encoding, wget_iri_t *base)
+void sitemap_parse_xml_gz(JOB *job, wget_buffer *gzipped_data, const char *encoding, wget_iri_t *base)
 {
-	wget_buffer_t *plain = wget_buffer_alloc(gzipped_data->length * 10);
+	wget_buffer *plain = wget_buffer_alloc(gzipped_data->length * 10);
 	wget_decompressor_t *dc = NULL;
 
 	if ((dc = wget_decompress_open(wget_content_encoding_gzip, _get_unzipped, plain))) {
@@ -2905,7 +2905,7 @@ struct css_context {
 		*base;
 	const char
 		*encoding;
-	wget_buffer_t
+	wget_buffer
 		uri_buf;
 	char
 		encoding_allocated;
@@ -3082,7 +3082,7 @@ static bool check_mime_list(wget_vector_t *list, const char *mime)
 }
 
 static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag,
-		wget_iri_t *uri, wget_iri_t *original_url, int ignore_patterns, wget_buffer_t *partial_content,
+		wget_iri_t *uri, wget_iri_t *original_url, int ignore_patterns, wget_buffer *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path)
 {
 	JOB *job = resp->req->user_data;
@@ -3330,7 +3330,7 @@ static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, co
 // context used for header and body callback
 struct _body_callback_context {
 	JOB *job;
-	wget_buffer_t *body;
+	wget_buffer *body;
 	uint64_t max_memory;
 	uint64_t length;
 	int outfd;
@@ -3599,7 +3599,7 @@ static void _add_authorize_header(
 static wget_http_request_t *http_create_request(wget_iri_t *iri, JOB *job)
 {
 	wget_http_request_t *req;
-	wget_buffer_t buf;
+	wget_buffer buf;
 	char sbuf[256];
 	const char *method;
 
@@ -4013,7 +4013,7 @@ static int set_file_metadata(wget_iri_t *origin_iri, wget_iri_t *referrer_iri,
 	write_xattr_metadata("user.charset", charset, fd);
 
 	char sbuf[256];
-	wget_buffer_t buf;
+	wget_buffer buf;
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	wget_buffer_printf(&buf, "%s/", wget_iri_get_connection_part(origin_iri));

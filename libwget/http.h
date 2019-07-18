@@ -35,7 +35,7 @@ struct wget_http_connection_st {
 		esc_host;
 	const char *
 		scheme;
-	wget_buffer_t *
+	wget_buffer *
 		buf;
 #ifdef WITH_LIBNGHTTP2
 	nghttp2_session *

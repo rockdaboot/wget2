@@ -539,48 +539,48 @@ typedef struct {
 	bool
 		release_data : 1, //!< 'data' has been malloc'ed and must be freed
 		release_buf : 1; //!< buffer_t structure has been malloc'ed and must be freed
-} wget_buffer_t;
+} wget_buffer;
 
-WGETAPI wget_buffer_t *
-	wget_buffer_init(wget_buffer_t *buf, char *data, size_t size);
-WGETAPI wget_buffer_t *
+WGETAPI wget_buffer *
+	wget_buffer_init(wget_buffer *buf, char *data, size_t size);
+WGETAPI wget_buffer *
 	wget_buffer_alloc(size_t size) G_GNUC_WGET_MALLOC G_GNUC_WGET_ALLOC_SIZE(1);
 WGETAPI int
-	wget_buffer_ensure_capacity(wget_buffer_t *buf, size_t size);
+	wget_buffer_ensure_capacity(wget_buffer *buf, size_t size);
 WGETAPI void
-	wget_buffer_deinit(wget_buffer_t *buf);
+	wget_buffer_deinit(wget_buffer *buf);
 WGETAPI void
-	wget_buffer_free(wget_buffer_t **buf);
+	wget_buffer_free(wget_buffer **buf);
 WGETAPI void
-	wget_buffer_free_data(wget_buffer_t *buf);
+	wget_buffer_free_data(wget_buffer *buf);
 WGETAPI void
-	wget_buffer_reset(wget_buffer_t *buf);
+	wget_buffer_reset(wget_buffer *buf);
 WGETAPI size_t
-	wget_buffer_memcpy(wget_buffer_t *buf, const void *data, size_t length);
+	wget_buffer_memcpy(wget_buffer *buf, const void *data, size_t length);
 WGETAPI size_t
-	wget_buffer_memcat(wget_buffer_t *buf, const void *data, size_t length);
+	wget_buffer_memcat(wget_buffer *buf, const void *data, size_t length);
 WGETAPI size_t
-	wget_buffer_strcpy(wget_buffer_t *buf, const char *s);
+	wget_buffer_strcpy(wget_buffer *buf, const char *s);
 WGETAPI size_t
-	wget_buffer_strcat(wget_buffer_t *buf, const char *s);
+	wget_buffer_strcat(wget_buffer *buf, const char *s);
 WGETAPI size_t
-	wget_buffer_bufcpy(wget_buffer_t *buf, wget_buffer_t *src);
+	wget_buffer_bufcpy(wget_buffer *buf, wget_buffer *src);
 WGETAPI size_t
-	wget_buffer_bufcat(wget_buffer_t *buf, wget_buffer_t *src);
+	wget_buffer_bufcat(wget_buffer *buf, wget_buffer *src);
 WGETAPI size_t
-	wget_buffer_memset(wget_buffer_t *buf, char c, size_t length);
+	wget_buffer_memset(wget_buffer *buf, char c, size_t length);
 WGETAPI size_t
-	wget_buffer_memset_append(wget_buffer_t *buf, char c, size_t length);
+	wget_buffer_memset_append(wget_buffer *buf, char c, size_t length);
 WGETAPI char *
-	wget_buffer_trim(wget_buffer_t *buf);
+	wget_buffer_trim(wget_buffer *buf);
 WGETAPI size_t
-	wget_buffer_vprintf_append(wget_buffer_t *buf, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+	wget_buffer_vprintf_append(wget_buffer *buf, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
 WGETAPI size_t
-	wget_buffer_printf_append(wget_buffer_t *buf, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+	wget_buffer_printf_append(wget_buffer *buf, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
 WGETAPI size_t
-	wget_buffer_vprintf(wget_buffer_t *buf, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+	wget_buffer_vprintf(wget_buffer *buf, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
 WGETAPI size_t
-	wget_buffer_printf(wget_buffer_t *buf, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+	wget_buffer_printf(wget_buffer *buf, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
 
 /*
  * Printf-style routines
@@ -1304,23 +1304,23 @@ WGETAPI wget_iri_t *
 WGETAPI const char *
 	wget_iri_get_connection_part(wget_iri_t *iri);
 WGETAPI const char *
-	wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t len, wget_buffer_t *buf);
+	wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t len, wget_buffer *buf);
 WGETAPI const char *
-	wget_iri_escape(const char *src, wget_buffer_t *buf);
+	wget_iri_escape(const char *src, wget_buffer *buf);
 WGETAPI const char *
-	wget_iri_escape_path(const char *src, wget_buffer_t *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_escape_path(const char *src, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
-	wget_iri_escape_query(const char *src, wget_buffer_t *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_escape_query(const char *src, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
-	wget_iri_get_escaped_host(const wget_iri_t *iri, wget_buffer_t *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_get_escaped_host(const wget_iri_t *iri, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
-	wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer_t *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI char *
-	wget_iri_get_path(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
+	wget_iri_get_path(const wget_iri_t *iri, wget_buffer *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
 WGETAPI char *
-	wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
+	wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
 WGETAPI char *
-	wget_iri_get_filename(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
+	wget_iri_get_filename(const wget_iri_t *iri, wget_buffer *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
 WGETAPI const char *
 	wget_iri_set_scheme(wget_iri_t *iri, const char *scheme);
 
@@ -2274,9 +2274,9 @@ typedef struct {
 		header_user_data; //!< meant to be used in header callback function
 	void *
 		body_user_data; //!< meant to be used in body callback function
-	wget_buffer_t
+	wget_buffer
 		esc_resource; //!< URI escaped resource
-	wget_buffer_t
+	wget_buffer
 		esc_host; //!< URI escaped host
 	size_t
 		body_length; //!< length of the body data
@@ -2325,9 +2325,9 @@ struct wget_http_response_t {
 		location;
 	const char *
 		etag; //!< ETag value
-	wget_buffer_t *
+	wget_buffer *
 		header; //!< the raw header data if requested by the application
-	wget_buffer_t *
+	wget_buffer *
 		body; //!< the body data
 	size_t
 		content_length; //!< length of the body data
@@ -2514,7 +2514,7 @@ WGETAPI void
 WGETAPI int
 	wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *req) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI ssize_t
-	wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf, int proxied) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer *buf, int proxied) G_GNUC_WGET_NONNULL_ALL;
 
 /*
  * Highlevel HTTP routines

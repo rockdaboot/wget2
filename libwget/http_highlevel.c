@@ -292,7 +292,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 
 		if (resp->location) {
 			char uri_sbuf[1024];
-			wget_buffer_t uri_buf;
+			wget_buffer uri_buf;
 
 			// if relative location, convert to absolute
 			wget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));

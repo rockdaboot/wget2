@@ -90,7 +90,7 @@ static void _css_get_url(void *context, const char *url, size_t len, size_t pos)
 static void _urls_to_absolute(wget_vector_t *urls, wget_iri_t *base)
 {
 	if (base && urls) {
-		wget_buffer_t buf;
+		wget_buffer buf;
 		wget_buffer_init(&buf, NULL, 1024);
 
 		for (int it = 0; it < wget_vector_size(urls); it++) {

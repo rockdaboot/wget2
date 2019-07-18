@@ -84,7 +84,7 @@ static void _write_out(
 	}
 
 	char sbuf[4096];
-	wget_buffer_t buf;
+	wget_buffer buf;
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 #ifndef _WIN32

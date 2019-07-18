@@ -14,7 +14,7 @@ int main(void)
 
 	wget_info_printf("%d\n", wget_base64_is_string("")); // base64.c
 	wget_buffer_alloc(1); // buffer.c
-	wget_buffer_printf((wget_buffer_t *)1, "%s", ""); // buffer_printf.c
+	wget_buffer_printf((wget_buffer *)1, "%s", ""); // buffer_printf.c
 	wget_strlcpy(buf, "", 0); // strlcpy.c
 	wget_strscpy(buf, "", 0); // strscpy.c
 	wget_css_parse_buffer((const char *)1, 0, NULL, NULL, NULL); // css.c

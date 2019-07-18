@@ -369,7 +369,7 @@ char *wget_read_file(const char *fname, size_t *size)
 	} else {
 		// read data from STDIN.
 		char tmp[4096];
-		wget_buffer_t buffer;
+		wget_buffer buffer;
 
 		wget_buffer_init(&buffer, NULL, 4096);
 

@@ -293,7 +293,7 @@ void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *
 	}
 	else if (!wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
 		const char *realm, *opaque, *nonce, *qop, *algorithm;
-		wget_buffer_t buf;
+		wget_buffer buf;
 		int hashtype, hashlen;
 
 		if (!wget_stringmap_get(challenge->params, "realm", &realm))
@@ -934,7 +934,7 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 	return 0;
 }
 
-ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer_t *buf, int proxied)
+ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer *buf, int proxied)
 {
 	char have_content_length = 0;
 	char check_content_length = req->body && req->body_length;
@@ -1069,7 +1069,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 			debug_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 
 			if (req->response_keepheader) {
-				wget_buffer_t *header = wget_buffer_alloc(p - buf + 4);
+				wget_buffer *header = wget_buffer_alloc(p - buf + 4);
 				wget_buffer_memcpy(header, buf, p - buf);
 				wget_buffer_memcat(header, "\r\n\r\n", 4);
 

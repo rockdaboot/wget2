@@ -42,7 +42,7 @@ FILE *wget_vpopenf(const char *type, const char *fmt, va_list args)
 {
 	FILE *fp = NULL;
 	char sbuf[1024];
-	wget_buffer_t buf;
+	wget_buffer buf;
 
 	if (!type || !fmt)
 		return NULL;

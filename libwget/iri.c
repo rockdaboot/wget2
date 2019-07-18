@@ -820,7 +820,7 @@ static size_t G_GNUC_WGET_NONNULL_ALL _normalize_path(char *path)
  * If \p base is NULL, then \p val must itself be an absolute URI. Likewise, if \p buf is NULL,
  * then \p val must also be an absolute URI.
  */
-const char *wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t len, wget_buffer_t *buf)
+const char *wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t len, wget_buffer *buf)
 {
 	debug_printf("*url = %.*s\n", (int)len, val);
 
@@ -914,7 +914,7 @@ wget_iri_t *wget_iri_parse_base(wget_iri_t *base, const char *url, const char *e
 	wget_iri_t *iri;
 
 	if (base) {
-		wget_buffer_t buf;
+		wget_buffer buf;
 		char sbuf[256];
 
 		wget_buffer_init(&buf, sbuf, sizeof(sbuf));
@@ -998,7 +998,7 @@ int wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2)
  *
  * If \p src is NULL, the contents of the buffer \p buf are returned. \p buf cannot be NULL.
  */
-const char *wget_iri_escape(const char *src, wget_buffer_t *buf)
+const char *wget_iri_escape(const char *src, wget_buffer *buf)
 {
 	const char *begin;
 
@@ -1029,7 +1029,7 @@ const char *wget_iri_escape(const char *src, wget_buffer_t *buf)
  * (just like wget_iri_escape()), **plus the path separator character `/`**. This function
  * is thus ideally suited for paths.
  */
-const char *wget_iri_escape_path(const char *src, wget_buffer_t *buf)
+const char *wget_iri_escape_path(const char *src, wget_buffer *buf)
 {
 	const char *begin;
 
@@ -1057,7 +1057,7 @@ const char *wget_iri_escape_path(const char *src, wget_buffer_t *buf)
  * (just like wget_iri_escape()), but **excluding the equal sign `=` and the ampersand `&`**.
  * This function is thus ideally suited for query parts of URIs.
  */
-const char *wget_iri_escape_query(const char *src, wget_buffer_t *buf)
+const char *wget_iri_escape_query(const char *src, wget_buffer *buf)
 {
 	const char *begin;
 
@@ -1089,7 +1089,7 @@ const char *wget_iri_escape_query(const char *src, wget_buffer_t *buf)
  *
  * The host is escaped using wget_iri_escape().
  */
-const char *wget_iri_get_escaped_host(const wget_iri_t *iri, wget_buffer_t *buf)
+const char *wget_iri_get_escaped_host(const wget_iri_t *iri, wget_buffer *buf)
 {
 	return wget_iri_escape(iri->host, buf);
 }
@@ -1109,7 +1109,7 @@ const char *wget_iri_get_escaped_host(const wget_iri_t *iri, wget_buffer_t *buf)
  *
  * The resulting string is placed in the buffer \p buf and also returned as a `const char *`.
  */
-const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer_t *buf)
+const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer *buf)
 {
 	if (iri->path)
 		wget_iri_escape_path(iri->path, buf);
@@ -1146,7 +1146,7 @@ const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer_t *
  * in UTF-8) to that encoding.
  */
 
-char *wget_iri_get_path(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding)
+char *wget_iri_get_path(const wget_iri_t *iri, wget_buffer *buf, const char *encoding)
 {
 	if (buf->length != 0 && buf->data[buf->length - 1] != '/')
 		wget_buffer_memcat(buf, "/", 1);
@@ -1189,7 +1189,7 @@ char *wget_iri_get_path(const wget_iri_t *iri, wget_buffer_t *buf, const char *e
  * If \p encoding is provided, this function will try to convert the query (which is originally
  * in UTF-8) to that encoding.
  */
-char *wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding)
+char *wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer *buf, const char *encoding)
 {
 	if (iri->query) {
 		const char *query;
@@ -1262,7 +1262,7 @@ char *wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer_t *buf, 
  * If \p encoding is provided, this function will try to convert the path (which is originally
  * in UTF-8) to that encoding.
  */
-char *wget_iri_get_filename(const wget_iri_t *iri, wget_buffer_t *buf, const char *encoding)
+char *wget_iri_get_filename(const wget_iri_t *iri, wget_buffer *buf, const char *encoding)
 {
 	if (iri->path) {
 		char *fname;

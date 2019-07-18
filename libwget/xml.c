@@ -586,7 +586,7 @@ void wget_xml_parse_file(
 		// maybe should use yy_scan_bytes instead of buffering into memory.
 		char tmp[4096];
 		ssize_t nbytes;
-		wget_buffer_t *buf = wget_buffer_alloc(4096);
+		wget_buffer *buf = wget_buffer_alloc(4096);
 
 		while ((nbytes = read(STDIN_FILENO, tmp, sizeof(tmp))) > 0) {
 			wget_buffer_memcat(buf, tmp, nbytes);

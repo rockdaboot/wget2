@@ -44,8 +44,8 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 	// This is the text that we want to convert into a GFX
 	const char *text = "alice->bob: authentication request\nbob-->alice: response";
 	const char *style = "qsd";
-	wget_buffer_t *url = wget_buffer_alloc(128);
-	wget_buffer_t *body = wget_buffer_alloc(128);
+	wget_buffer *url = wget_buffer_alloc(128);
+	wget_buffer *body = wget_buffer_alloc(128);
 
 
 	wget_buffer_strcpy(body, "message=");

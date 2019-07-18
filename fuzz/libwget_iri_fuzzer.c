@@ -45,7 +45,7 @@ static void test(char *in, size_t len, const char *encoding)
 	wget_iri_free(&iri2);
 	wget_iri_get_connection_part(iri);
 
-	wget_buffer_t buf;
+	wget_buffer buf;
 	wget_buffer_init(&buf, NULL, 32);
 	wget_buffer_printf(&buf, "%d", x); // use x to avoid optimization (removal of call to wget_iri_compare)
 
