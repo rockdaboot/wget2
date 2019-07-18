@@ -65,7 +65,7 @@ static int _fd_callback(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *use
 wget_http_response_t *wget_http_get(int first_key, ...)
 {
 	wget_vector *headers = wget_vector_create(8, NULL);
-	wget_iri_t *uri = NULL;
+	wget_iri *uri = NULL;
 	wget_http_connection_t *conn = NULL, **connp = NULL;
 	wget_http_request_t *req;
 	wget_http_response_t *resp = NULL;
@@ -100,7 +100,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 			url = va_arg(args, const char *);
 			break;
 		case WGET_HTTP_URI:
-			uri = va_arg(args, wget_iri_t *);
+			uri = va_arg(args, wget_iri *);
 			break;
 		case WGET_HTTP_URL_ENCODING:
 			url_encoding = va_arg(args, const char *);

@@ -51,14 +51,14 @@
  * Functions that escape certain characters (such as wget_iri_escape()) work according to
  * [RFC 3986](https://datatracker.ietf.org/doc/rfc3986/).
  *
- * The \ref wget_iri_st "wget_iri_t" structure represents an IRI. You generate one from a string with wget_iri_parse() or
- * wget_iri_parse_base(). You can use wget_iri_clone() to generate another identical \ref wget_iri_st "wget_iri_t".
+ * The \ref wget_iri_st "wget_iri" structure represents an IRI. You generate one from a string with wget_iri_parse() or
+ * wget_iri_parse_base(). You can use wget_iri_clone() to generate another identical \ref wget_iri_st "wget_iri".
  *
- * You can access each of the fields of a \ref wget_iri_st "wget_iri_t" (such as `path`) independently, and you can use
+ * You can access each of the fields of a \ref wget_iri_st "wget_iri" (such as `path`) independently, and you can use
  * the getters here to escape each of those parts, or for convenience (e.g wget_iri_get_escaped_host(),
  * wget_iri_get_escaped_resource(), etc.).
  *
- * URIs/IRIs are all internally treated in UTF-8. The parsing functions that generate a \ref wget_iri_st "wget_iri_t" structure
+ * URIs/IRIs are all internally treated in UTF-8. The parsing functions that generate a \ref wget_iri_st "wget_iri" structure
  * (wget_iri_parse() and wget_iri_parse_base()) thus convert the input string to UTF-8 before anything else.
  * These functions take an `encoding` parameter that tells which is the original encoding of that string.
  *
@@ -127,7 +127,7 @@ static const unsigned char
  *
  * Tells whether the IRI's scheme is supported or not.
  */
-bool wget_iri_supported(const wget_iri_t *iri)
+bool wget_iri_supported(const wget_iri *iri)
 {
 	for (unsigned it = 0; it < countof(wget_iri_schemes); it++) {
 		if (wget_iri_schemes[it] == iri->scheme)
@@ -338,7 +338,7 @@ char *wget_iri_unescape_url_inline(char *src)
  * Free the heap-allocated content of the provided IRI, but leave the rest
  * of the fields.
  *
- * This function frees the following fields of \ref wget_iri_st "wget_iri_t":
+ * This function frees the following fields of \ref wget_iri_st "wget_iri":
  *
  *  - `host`
  *  - `path`
@@ -346,7 +346,7 @@ char *wget_iri_unescape_url_inline(char *src)
  *  - `fragment`
  *  - `connection_part`
  */
-void wget_iri_free_content(wget_iri_t *iri)
+void wget_iri_free_content(wget_iri *iri)
 {
 	if (iri) {
 		if (iri->uri_allocated)
@@ -364,13 +364,13 @@ void wget_iri_free_content(wget_iri_t *iri)
 }
 
 /**
- * \param[in] iri A pointer to a pointer to an IRI (a \ref wget_iri_st "wget_iri_t")
+ * \param[in] iri A pointer to a pointer to an IRI (a \ref wget_iri_st "wget_iri")
  *
- * Destroy a \ref wget_iri_st "wget_iri_t" structure.
+ * Destroy a \ref wget_iri_st "wget_iri" structure.
  *
  * The provided pointer is set to NULL.
  */
-void wget_iri_free(wget_iri_t **iri)
+void wget_iri_free(wget_iri **iri)
 {
 	if (iri && *iri) {
 		wget_iri_free_content(*iri);
@@ -383,16 +383,16 @@ void wget_iri_free(wget_iri_t **iri)
 /**
  * \param[in] url A URL/IRI
  * \param[in] encoding Original encoding of \p url
- * \return A libwget IRI (`wget_iri_t`)
+ * \return A libwget IRI (`wget_iri`)
  *
  * The host, path, query and fragment parts will be converted to UTF-8 from
  * the encoding given in the parameter \p encoding. GNU libiconv is used
  * to perform the conversion, so this value should be the name of a valid character set
  * supported by that library, such as "utf-8" or "iso-8859-1".
  */
-wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
+wget_iri *wget_iri_parse(const char *url, const char *encoding)
 {
-	wget_iri_t *iri;
+	wget_iri *iri;
 	char *p, *s, *authority, c;
 	size_t slen, extra;
 	int have_scheme;
@@ -451,15 +451,15 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 	slen = strlen(url);
 	extra = have_scheme ? 0 : sizeof("http://") - 1; // extra space for http://
 
-	iri = wget_malloc(sizeof(wget_iri_t) + (slen + extra + 1) * 2);
+	iri = wget_malloc(sizeof(wget_iri) + (slen + extra + 1) * 2);
 	if (!iri)
 		return NULL;
 
-	memset(iri, 0, sizeof(wget_iri_t));
+	memset(iri, 0, sizeof(wget_iri));
 
 	if (have_scheme) {
 		iri->msize = slen + 1;
-		iri->uri = memcpy(((char *)iri) + sizeof(wget_iri_t), url, iri->msize);
+		iri->uri = memcpy(((char *)iri) + sizeof(wget_iri), url, iri->msize);
 		iri->scheme = s = memcpy((char *)iri->uri + iri->msize, url, iri->msize);
 		s = strchr(s, ':'); // we know there is a :
 		*s++ = 0;
@@ -478,8 +478,8 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
 		}
 	} else {
 		// add http:// scheme to url
-		iri->uri = memcpy(((char *)iri) + sizeof(wget_iri_t), "http://", extra);
-		memcpy(((char *)iri) + sizeof(wget_iri_t) + extra, url, slen + 1);
+		iri->uri = memcpy(((char *)iri) + sizeof(wget_iri), "http://", extra);
+		memcpy(((char *)iri) + sizeof(wget_iri) + extra, url, slen + 1);
 		iri->msize = slen + 1 + extra;
 		s = memcpy((char *)iri->uri + iri->msize, "http://", extra);
 		memcpy((char *)iri->uri + iri->msize + extra, url, slen + 1);
@@ -644,19 +644,19 @@ wget_iri_t *wget_iri_parse(const char *url, const char *encoding)
  *
  * Clone the provided IRI.
  */
-wget_iri_t *wget_iri_clone(const wget_iri_t *iri)
+wget_iri *wget_iri_clone(const wget_iri *iri)
 {
 	if (!iri || !iri->uri)
 		return NULL;
 
 	size_t slen = strlen(iri->uri);
-	wget_iri_t *clone = wget_malloc(sizeof(wget_iri_t) + (slen + 1) + iri->msize);
+	wget_iri *clone = wget_malloc(sizeof(wget_iri) + (slen + 1) + iri->msize);
 
 	if (!clone)
 		return NULL;
 
-	memcpy(clone, iri, sizeof(wget_iri_t));
-	clone->uri = memcpy(((char *)clone) + sizeof(wget_iri_t), iri->uri, slen + 1);
+	memcpy(clone, iri, sizeof(wget_iri));
+	clone->uri = memcpy(((char *)clone) + sizeof(wget_iri), iri->uri, slen + 1);
 	memcpy((char *)clone->uri + slen + 1, (char *)iri->uri + slen + 1, iri->msize);
 	clone->uri_allocated = 0;
 
@@ -705,7 +705,7 @@ wget_iri_t *wget_iri_clone(const wget_iri_t *iri)
  * It may be of the form `https://example.com:8080` if the port was provided when creating the IRI
  * or of the form `https://example.com` otherwise.
  */
-const char *wget_iri_get_connection_part(wget_iri_t *iri)
+const char *wget_iri_get_connection_part(wget_iri *iri)
 {
 	if (iri) {
 		if (!iri->connection_part) {
@@ -820,7 +820,7 @@ static size_t G_GNUC_WGET_NONNULL_ALL _normalize_path(char *path)
  * If \p base is NULL, then \p val must itself be an absolute URI. Likewise, if \p buf is NULL,
  * then \p val must also be an absolute URI.
  */
-const char *wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t len, wget_buffer *buf)
+const char *wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len, wget_buffer *buf)
 {
 	debug_printf("*url = %.*s\n", (int)len, val);
 
@@ -902,16 +902,16 @@ const char *wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t l
  *
  * This is equivalent to:
  *
- *     wget_iri_t *iri = wget_iri_parse(wget_iri_relative_to_abs(base, url, strlen(url), NULL), encoding);
+ *     wget_iri *iri = wget_iri_parse(wget_iri_relative_to_abs(base, url, strlen(url), NULL), encoding);
  *     return iri;
  *
  * As such, \p url can be a relative or absolute path, or another URI.
  *
  * If \p base is NULL, then the parameter \p url must itself be an absolute URI.
  */
-wget_iri_t *wget_iri_parse_base(wget_iri_t *base, const char *url, const char *encoding)
+wget_iri *wget_iri_parse_base(wget_iri *base, const char *url, const char *encoding)
 {
-	wget_iri_t *iri;
+	wget_iri *iri;
 
 	if (base) {
 		wget_buffer buf;
@@ -941,7 +941,7 @@ wget_iri_t *wget_iri_parse_base(wget_iri_t *base, const char *url, const char *e
  * This function uses wget_strcasecmp() to compare the various parts of the IRIs so a non-zero negative return value
  * indicates that \p iri1 is less than \p iri2, whereas a positive value indicates \p iri1 is greater than \p iri2.
  */
-int wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2)
+int wget_iri_compare(wget_iri *iri1, wget_iri *iri2)
 {
 	int n;
 
@@ -1089,7 +1089,7 @@ const char *wget_iri_escape_query(const char *src, wget_buffer *buf)
  *
  * The host is escaped using wget_iri_escape().
  */
-const char *wget_iri_get_escaped_host(const wget_iri_t *iri, wget_buffer *buf)
+const char *wget_iri_get_escaped_host(const wget_iri *iri, wget_buffer *buf)
 {
 	return wget_iri_escape(iri->host, buf);
 }
@@ -1109,7 +1109,7 @@ const char *wget_iri_get_escaped_host(const wget_iri_t *iri, wget_buffer *buf)
  *
  * The resulting string is placed in the buffer \p buf and also returned as a `const char *`.
  */
-const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer *buf)
+const char *wget_iri_get_escaped_resource(const wget_iri *iri, wget_buffer *buf)
 {
 	if (iri->path)
 		wget_iri_escape_path(iri->path, buf);
@@ -1146,7 +1146,7 @@ const char *wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer *bu
  * in UTF-8) to that encoding.
  */
 
-char *wget_iri_get_path(const wget_iri_t *iri, wget_buffer *buf, const char *encoding)
+char *wget_iri_get_path(const wget_iri *iri, wget_buffer *buf, const char *encoding)
 {
 	if (buf->length != 0 && buf->data[buf->length - 1] != '/')
 		wget_buffer_memcat(buf, "/", 1);
@@ -1189,7 +1189,7 @@ char *wget_iri_get_path(const wget_iri_t *iri, wget_buffer *buf, const char *enc
  * If \p encoding is provided, this function will try to convert the query (which is originally
  * in UTF-8) to that encoding.
  */
-char *wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer *buf, const char *encoding)
+char *wget_iri_get_query_as_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding)
 {
 	if (iri->query) {
 		const char *query;
@@ -1262,7 +1262,7 @@ char *wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer *buf, co
  * If \p encoding is provided, this function will try to convert the path (which is originally
  * in UTF-8) to that encoding.
  */
-char *wget_iri_get_filename(const wget_iri_t *iri, wget_buffer *buf, const char *encoding)
+char *wget_iri_get_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding)
 {
 	if (iri->path) {
 		char *fname;
@@ -1350,7 +1350,7 @@ int wget_iri_set_defaultport(const char *scheme, unsigned short port)
  * that port is modified as well to match the default port of the new scheme.
  * Otherwise the port is left untouched.
  */
-const char *wget_iri_set_scheme(wget_iri_t *iri, const char *scheme)
+const char *wget_iri_set_scheme(wget_iri *iri, const char *scheme)
 {
 	const char *old_scheme = iri->scheme;
 

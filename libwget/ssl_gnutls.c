@@ -558,7 +558,7 @@ static int send_ocsp_request(const char *server,
 	int ret = -1, rc;
 	int server_allocated = 0;
 	gnutls_datum_t body;
-	wget_iri_t *iri;
+	wget_iri *iri;
 	wget_http_request_t *req = NULL;
 
 	if (!server) {

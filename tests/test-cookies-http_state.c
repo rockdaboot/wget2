@@ -74,7 +74,7 @@ static void test_cookies(void)
 		return;
 	}
 
-	wget_iri_t *iri = wget_iri_parse("http://home.example.org/cookie-parser-result", NULL);
+	wget_iri *iri = wget_iri_parse("http://home.example.org/cookie-parser-result", NULL);
 
 	cookie_db = wget_cookie_db_init(NULL);
 

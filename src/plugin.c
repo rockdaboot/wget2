@@ -138,7 +138,7 @@ static void impl_action_accept(wget_intercept_action_t *p_action)
 	action->verdict.accept = 1;
 }
 
-static void impl_action_set_alt_url(wget_intercept_action_t *p_action, const wget_iri_t *iri)
+static void impl_action_set_alt_url(wget_intercept_action_t *p_action, const wget_iri *iri)
 {
 	intercept_action_t *action = (intercept_action_t *) p_action;
 
@@ -167,7 +167,7 @@ static void impl_register_url_filter(wget_plugin_t *p_plugin, wget_plugin_url_fi
 typedef struct {
 	wget_downloaded_file_t parent;
 
-	const wget_iri_t *iri;
+	const wget_iri *iri;
 	const char *filename;
 	uint64_t size;
 	const void *data;
@@ -175,7 +175,7 @@ typedef struct {
 	wget_vector *recurse_iris;
 } downloaded_file_t;
 
-static const wget_iri_t *impl_file_get_source_url(wget_downloaded_file_t *p_file)
+static const wget_iri *impl_file_get_source_url(wget_downloaded_file_t *p_file)
 {
 	downloaded_file_t *file = (downloaded_file_t *) p_file;
 
@@ -234,7 +234,7 @@ static bool impl_file_get_recurse(wget_downloaded_file_t *p_file)
 	return file->recurse_iris ? true : false;
 }
 
-static void impl_file_add_recurse_url(wget_downloaded_file_t *p_file, const wget_iri_t *iri)
+static void impl_file_add_recurse_url(wget_downloaded_file_t *p_file, const wget_iri *iri)
 {
 	downloaded_file_t *file = (downloaded_file_t *) p_file;
 
@@ -569,7 +569,7 @@ int plugin_db_help_forwarded(void)
 }
 
 // Forwards a URL about to be enqueued to interested plugins
-void plugin_db_forward_url(const wget_iri_t *iri, struct plugin_db_forward_url_verdict *verdict)
+void plugin_db_forward_url(const wget_iri *iri, struct plugin_db_forward_url_verdict *verdict)
 {
 	// Initialize action structure
 	intercept_action_t action = { .parent.vtable = &vtable };
@@ -580,7 +580,7 @@ void plugin_db_forward_url(const wget_iri_t *iri, struct plugin_db_forward_url_v
 		plugin_priv_t *priv = (plugin_priv_t *) plugin;
 
 		if (priv->url_filter) {
-			const wget_iri_t *cur_iri = action.verdict.alt_iri;
+			const wget_iri *cur_iri = action.verdict.alt_iri;
 			if (! cur_iri)
 				cur_iri = iri;
 
@@ -630,7 +630,7 @@ wget_ocsp_db_t *plugin_db_fetch_provided_ocsp_db(void)
 }
 
 // Forwards downloaded file to interested plugins
-int plugin_db_forward_downloaded_file(const wget_iri_t *iri, uint64_t size, const char *filename, const void *data,
+int plugin_db_forward_downloaded_file(const wget_iri *iri, uint64_t size, const char *filename, const void *data,
 		wget_vector *recurse_iris)
 {
 	int ret = 1;

@@ -30,11 +30,11 @@
 
 static void test(char *in, size_t len, const char *encoding)
 {
-	wget_iri_t *base;
+	wget_iri *base;
 	base = wget_iri_parse("http://x.org", encoding);
 	assert(base != NULL);
 
-	wget_iri_t *iri, *iri2;
+	wget_iri *iri, *iri2;
 	iri = wget_iri_parse(in, encoding);
 	iri2 = wget_iri_clone(iri);
 	wget_iri_free(&iri2);

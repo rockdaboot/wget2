@@ -177,7 +177,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		return 0;
 
 	fuzzing = 1;
-	wget_iri_t *uri = wget_iri_parse("http://example.com", NULL);
+	wget_iri *uri = wget_iri_parse("http://example.com", NULL);
 	wget_tcp_set_timeout(NULL, 0); // avoid to call select or poll
 	wget_tcp_set_connect_timeout(NULL, 0); // avoid to call select or poll
 

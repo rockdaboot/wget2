@@ -33,7 +33,7 @@
 
 int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED)
 {
-	wget_iri_t *uri;
+	wget_iri *uri;
 	wget_http_connection_t *conn = NULL;
 	wget_http_request_t *req;
 	wget_cookie_db_t *cookies;

@@ -480,7 +480,7 @@ const char *wget_cookie_parse_setcookie(const char *s, wget_cookie_t **_cookie)
 }
 
 // normalize/sanitize and store cookies
-static int _wget_cookie_normalize_cookie(const wget_iri_t *iri, wget_cookie_t *cookie)
+static int _wget_cookie_normalize_cookie(const wget_iri *iri, wget_cookie_t *cookie)
 {
 /*
 	debug_printf("normalize cookie %s=%s\n", cookie->name, cookie->value);
@@ -573,7 +573,7 @@ static int _wget_cookie_normalize_cookie(const wget_iri_t *iri, wget_cookie_t *c
 	return 0;
 }
 
-int wget_cookie_normalize(const wget_iri_t *iri, wget_cookie_t *cookie)
+int wget_cookie_normalize(const wget_iri *iri, wget_cookie_t *cookie)
 {
 //	wget_thread_mutex_lock(&_cookies_mutex);
 
@@ -584,7 +584,7 @@ int wget_cookie_normalize(const wget_iri_t *iri, wget_cookie_t *cookie)
 	return ret;
 }
 
-void wget_cookie_normalize_cookies(const wget_iri_t *iri, const wget_vector *cookies)
+void wget_cookie_normalize_cookies(const wget_iri *iri, const wget_vector *cookies)
 {
 //	wget_thread_mutex_lock(&_cookies_mutex);
 
@@ -676,7 +676,7 @@ void wget_cookie_store_cookies(wget_cookie_db_t *cookie_db, wget_vector *cookies
 	}
 }
 
-char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_iri_t *iri)
+char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_iri *iri)
 {
 	int it, init = 0;
 	time_t now = time(NULL);

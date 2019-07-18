@@ -319,7 +319,7 @@ static void finalizer(wget_plugin_t *plugin, G_GNUC_WGET_UNUSED int exit_status)
 	wget_xfree(plugin->plugin_data);
 }
 
-static void url_filter(wget_plugin_t *plugin, const wget_iri_t *iri, wget_intercept_action_t *action)
+static void url_filter(wget_plugin_t *plugin, const wget_iri *iri, wget_intercept_action_t *action)
 {
 	plugin_data_t *d = (plugin_data_t *) plugin->plugin_data;
 
@@ -333,7 +333,7 @@ static void url_filter(wget_plugin_t *plugin, const wget_iri_t *iri, wget_interc
 		const char *ptr, *find;
 		size_t find_len;
 		wget_buffer buf[1];
-		wget_iri_t *alt_iri;
+		wget_iri *alt_iri;
 
 		wget_buffer_init(buf, NULL, 0);
 		find_len = strlen(d->replace.l);
@@ -384,7 +384,7 @@ static int post_processor(wget_plugin_t *plugin, wget_downloaded_file_t *file)
 					// Obfuscated URL found, now deobfuscate and add it
 					char *url = wget_malloc(end - i + 1);
 					size_t k;
-					wget_iri_t *iri;
+					wget_iri *iri;
 
 					for (k = 0; k < end - i; k++) {
 						char c = data[i + k];
@@ -411,7 +411,7 @@ static int post_processor(wget_plugin_t *plugin, wget_downloaded_file_t *file)
 	}
 
 	if (d->test_pp) {
-		const wget_iri_t *iri = wget_downloaded_file_get_source_url(file);
+		const wget_iri *iri = wget_downloaded_file_get_source_url(file);
 		const char *data;
 		size_t size;
 		FILE *stream;

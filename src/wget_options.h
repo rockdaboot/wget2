@@ -63,7 +63,7 @@ typedef struct {
 } stats_args;
 
 struct config {
-	wget_iri_t
+	wget_iri
 		*base;
 	const char
 		*post_file,

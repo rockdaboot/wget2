@@ -38,7 +38,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
 	wget_cookie_db_t *db, *db2;
 	wget_cookie_t *cookie, *cookie2;
-	wget_iri_t *iri;
+	wget_iri *iri;
 	wget_vector *cookies;
 	char *in;
 

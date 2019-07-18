@@ -43,7 +43,7 @@
 #define error_printf_exit  wget_error_printf_exit
 
 struct css_context {
-	wget_iri_t
+	wget_iri
 		*base;
 	const char
 		*encoding;
@@ -101,7 +101,7 @@ static void css_parse_uri(void *context, const char *url, size_t len, size_t pos
 	}
 }
 
-static void css_parse_localfile(const char *fname, wget_iri_t *base, const char *encoding)
+static void css_parse_localfile(const char *fname, wget_iri *base, const char *encoding)
 {
 	struct css_context context = { .base = base, .encoding = encoding };
 
@@ -126,7 +126,7 @@ int main(int argc, const char *const *argv)
 		local_encoding = wget_local_charset_encoding();
 
 	// parsed 'base'
-	wget_iri_t
+	wget_iri
 		*base_uri;
 
 	// Character encoding of CSS file content

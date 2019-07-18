@@ -51,7 +51,7 @@ typedef struct {
 typedef struct DOWNLOADER DOWNLOADER;
 
 struct JOB {
-	wget_iri_t
+	wget_iri
 		*iri,
 		*original_url,
 		*referer;
@@ -126,7 +126,7 @@ struct DOWNLOADER {
 		final_error : 1;
 };
 
-JOB *job_init(JOB *job, wget_iri_t *iri, bool http_fallback) G_GNUC_WGET_NONNULL((2));
+JOB *job_init(JOB *job, wget_iri *iri, bool http_fallback) G_GNUC_WGET_NONNULL((2));
 int job_validate_file(JOB *job) G_GNUC_WGET_NONNULL((1));
 void job_create_parts(JOB *job) G_GNUC_WGET_NONNULL((1));
 void job_free(JOB *job) G_GNUC_WGET_NONNULL((1));

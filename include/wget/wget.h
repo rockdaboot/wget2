@@ -1174,7 +1174,7 @@ WGETAPI extern const char * const
  *
  * Internal representation of a URI/IRI.
  */
-typedef struct wget_iri_st {
+struct wget_iri_st {
 	/**
 	 * Pointer to the original URI string, unescaped and converted to UTF-8.
 	 */
@@ -1264,21 +1264,23 @@ typedef struct wget_iri_st {
 	/// If set, the hostname part is a literal IPv4/IPv6 address
 	bool
 		is_ip_address : 1;
-} wget_iri_t;
+};
+
+typedef struct wget_iri_st wget_iri;
 /** @} */
 
 WGETAPI void
 	wget_iri_test(void);
 WGETAPI void
-	wget_iri_free(wget_iri_t **iri);
+	wget_iri_free(wget_iri **iri);
 WGETAPI void
-	wget_iri_free_content(wget_iri_t *iri);
+	wget_iri_free_content(wget_iri *iri);
 WGETAPI void
 	wget_iri_set_defaultpage(const char *page);
 WGETAPI int
 	wget_iri_set_defaultport(const char *scheme, unsigned short port);
 WGETAPI bool
-	wget_iri_supported(const wget_iri_t *iri) G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_supported(const wget_iri *iri) G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL;
 WGETAPI bool
 	wget_iri_isgendelim(char c) G_GNUC_WGET_CONST;
 WGETAPI bool
@@ -1290,21 +1292,21 @@ WGETAPI bool
 WGETAPI bool
 	wget_iri_isunreserved_path(char c) G_GNUC_WGET_CONST;
 WGETAPI int
-	wget_iri_compare(wget_iri_t *iri1, wget_iri_t *iri2) G_GNUC_WGET_PURE;
+	wget_iri_compare(wget_iri *iri1, wget_iri *iri2) G_GNUC_WGET_PURE;
 WGETAPI char *
 	wget_iri_unescape_inline(char *src) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI char *
 	wget_iri_unescape_url_inline(char *src) G_GNUC_WGET_NONNULL_ALL;
-WGETAPI wget_iri_t *
+WGETAPI wget_iri *
 	wget_iri_parse(const char *uri, const char *encoding);
-WGETAPI wget_iri_t *
-	wget_iri_parse_base(wget_iri_t *base, const char *url, const char *encoding);
-WGETAPI wget_iri_t *
-	wget_iri_clone(const wget_iri_t *iri);
+WGETAPI wget_iri *
+	wget_iri_parse_base(wget_iri *base, const char *url, const char *encoding);
+WGETAPI wget_iri *
+	wget_iri_clone(const wget_iri *iri);
 WGETAPI const char *
-	wget_iri_get_connection_part(wget_iri_t *iri);
+	wget_iri_get_connection_part(wget_iri *iri);
 WGETAPI const char *
-	wget_iri_relative_to_abs(wget_iri_t *base, const char *val, size_t len, wget_buffer *buf);
+	wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len, wget_buffer *buf);
 WGETAPI const char *
 	wget_iri_escape(const char *src, wget_buffer *buf);
 WGETAPI const char *
@@ -1312,17 +1314,17 @@ WGETAPI const char *
 WGETAPI const char *
 	wget_iri_escape_query(const char *src, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
-	wget_iri_get_escaped_host(const wget_iri_t *iri, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_get_escaped_host(const wget_iri *iri, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
-	wget_iri_get_escaped_resource(const wget_iri_t *iri, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_get_escaped_resource(const wget_iri *iri, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI char *
-	wget_iri_get_path(const wget_iri_t *iri, wget_buffer *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
+	wget_iri_get_path(const wget_iri *iri, wget_buffer *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
 WGETAPI char *
-	wget_iri_get_query_as_filename(const wget_iri_t *iri, wget_buffer *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
+	wget_iri_get_query_as_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
 WGETAPI char *
-	wget_iri_get_filename(const wget_iri_t *iri, wget_buffer *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
+	wget_iri_get_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
 WGETAPI const char *
-	wget_iri_set_scheme(wget_iri_t *iri, const char *scheme);
+	wget_iri_set_scheme(wget_iri *iri, const char *scheme);
 
 /*
  * Cookie routines
@@ -1345,13 +1347,13 @@ WGETAPI char *
 WGETAPI const char *
 	wget_cookie_parse_setcookie(const char *s, wget_cookie_t **cookie) G_GNUC_WGET_NONNULL((1));
 WGETAPI void
-	wget_cookie_normalize_cookies(const wget_iri_t *iri, const wget_vector *cookies);
+	wget_cookie_normalize_cookies(const wget_iri *iri, const wget_vector *cookies);
 WGETAPI int
 	wget_cookie_store_cookie(wget_cookie_db_t *cookie_db, wget_cookie_t *cookie);
 WGETAPI void
 	wget_cookie_store_cookies(wget_cookie_db_t *cookie_db, wget_vector *cookies);
 WGETAPI int
-	wget_cookie_normalize(const wget_iri_t *iri, wget_cookie_t *cookie);
+	wget_cookie_normalize(const wget_iri *iri, wget_cookie_t *cookie);
 WGETAPI int
 	wget_cookie_check_psl(const wget_cookie_db_t *cookie_db, const wget_cookie_t *cookie);
 WGETAPI wget_cookie_db_t *
@@ -1369,7 +1371,7 @@ WGETAPI int
 WGETAPI int
 	wget_cookie_db_load_psl(wget_cookie_db_t *cookie_db, const char *fname);
 WGETAPI char *
-	wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_iri_t *iri);
+	wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_iri *iri);
 
 /*
  * HTTP Strict Transport Security (HSTS) routines
@@ -1913,12 +1915,12 @@ WGETAPI wget_vector *
 	wget_css_get_urls(
 		const char *css,
 		size_t len,
-		wget_iri_t *base,
+		wget_iri *base,
 		const char **encoding) G_GNUC_WGET_NONNULL((1));
 WGETAPI wget_vector *
 	wget_css_get_urls_from_localfile(
 		const char *fname,
-		wget_iri_t *base,
+		wget_iri *base,
 		const char **encoding) G_GNUC_WGET_NONNULL((1));
 
 typedef struct {
@@ -2473,9 +2475,9 @@ WGETAPI void
 	wget_http_free_response(wget_http_response_t **resp);
 
 WGETAPI wget_http_response_t *
-	wget_http_read_header(const wget_iri_t *iri) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_read_header(const wget_iri *iri) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI wget_http_response_t *
-	wget_http_get_header(wget_iri_t *iri) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_get_header(wget_iri *iri) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
 	wget_http_parse_header_line(wget_http_response_t *resp, const char *name, size_t namelen, const char *value, size_t valuelen);
 WGETAPI wget_http_response_t *
@@ -2492,9 +2494,9 @@ WGETAPI void
 WGETAPI void
 	wget_http_exit(void);
 WGETAPI int
-	wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri);
+	wget_http_open(wget_http_connection_t **_conn, const wget_iri *iri);
 WGETAPI wget_http_request_t *
-	wget_http_create_request(const wget_iri_t *iri, const char *method) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_create_request(const wget_iri *iri, const char *method) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
 	wget_http_close(wget_http_connection_t **conn) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
@@ -2600,7 +2602,7 @@ WGETAPI void G_GNUC_WGET_PRINTF_FORMAT(4,5) G_GNUC_WGET_NONNULL_ALL
  */
 
 typedef struct {
-	wget_iri_t
+	wget_iri
 		*iri;        //!< parsed URL of the mirror
 	int
 		priority;    //!< priority of the mirror
@@ -2822,7 +2824,7 @@ WGETAPI void
 
 // Specifies an alternative URL to be fetched instead.
 WGETAPI void
-	wget_intercept_action_set_alt_url(wget_intercept_action_t *action, const wget_iri_t *iri);
+	wget_intercept_action_set_alt_url(wget_intercept_action_t *action, const wget_iri *iri);
 
 // Specifies that the fetched data should be written to an alternative file.
 WGETAPI void
@@ -2838,7 +2840,7 @@ WGETAPI void
  * \param[in] iri The URL about to be fetched
  * \param[in] action Output the action to be taken
  */
-typedef void wget_plugin_url_filter_t(wget_plugin_t *plugin, const wget_iri_t *iri, wget_intercept_action_t *action);
+typedef void wget_plugin_url_filter_t(wget_plugin_t *plugin, const wget_iri *iri, wget_intercept_action_t *action);
 
 // Registers a plugin function for intercepting URLs
 WGETAPI void
@@ -2866,7 +2868,7 @@ typedef struct {
 } wget_downloaded_file_t;
 
 // Gets the source address the file was downloaded from.
-WGETAPI const wget_iri_t *
+WGETAPI const wget_iri *
 	wget_downloaded_file_get_source_url(wget_downloaded_file_t *file);
 
 // Gets the file name the downloaded file was written to.
@@ -2891,7 +2893,7 @@ WGETAPI bool
 
 // Adds a URL for recursive downloading.
 WGETAPI void
-	wget_downloaded_file_add_recurse_url(wget_downloaded_file_t *file, const wget_iri_t *iri);
+	wget_downloaded_file_add_recurse_url(wget_downloaded_file_t *file, const wget_iri *iri);
 
 /**
  * \ingroup libwget-plugin
@@ -2921,17 +2923,17 @@ struct wget_plugin_vtable
 
 	void (* action_reject)(wget_intercept_action_t *);
 	void (* action_accept)(wget_intercept_action_t *);
-	void (* action_set_alt_url)(wget_intercept_action_t *, const wget_iri_t *);
+	void (* action_set_alt_url)(wget_intercept_action_t *, const wget_iri *);
 	void (* action_set_local_filename)(wget_intercept_action_t *, const char *);
 	void (* register_url_filter)(wget_plugin_t *, wget_plugin_url_filter_t *);
 
-	const wget_iri_t *(*file_get_source_url)(wget_downloaded_file_t *);
+	const wget_iri *(*file_get_source_url)(wget_downloaded_file_t *);
 	const char *(*file_get_local_filename)(wget_downloaded_file_t *);
 	uint64_t (*file_get_size)(wget_downloaded_file_t *);
 	int (*file_get_contents)(wget_downloaded_file_t *, const void **data, size_t *size);
 	FILE *(*file_open_stream)(wget_downloaded_file_t *);
 	bool (*file_get_recurse)(wget_downloaded_file_t *);
-	void (*file_add_recurse_url)(wget_downloaded_file_t *, const wget_iri_t *);
+	void (*file_add_recurse_url)(wget_downloaded_file_t *, const wget_iri *);
 	void (*register_post_processor)(wget_plugin_t *, wget_plugin_post_processor_t *);
 
 	void (* add_hsts_db)(wget_plugin_t *, wget_hsts_db_t *, int);

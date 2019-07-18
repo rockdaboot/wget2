@@ -45,7 +45,7 @@ int main(void)
 		"https://www.google.de/2.html",
 		"https://www.google.de/4.html",
 	};
-	wget_iri_t *iris[countof(urls)] = { NULL };
+	wget_iri *iris[countof(urls)] = { NULL };
 	wget_http_request_t *reqs[countof(urls)] = { NULL };
 	wget_http_connection_t *conn = NULL;
 

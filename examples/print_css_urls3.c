@@ -65,7 +65,7 @@ int main(int argc, const char **argv)
 		local_encoding = wget_local_charset_encoding();
 
 	// parsed 'base'
-	wget_iri_t
+	wget_iri
 		*base_uri;
 
 	// Character encoding of CSS file content

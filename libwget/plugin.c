@@ -105,7 +105,7 @@ void wget_intercept_action_accept(wget_intercept_action_t *action)
  * \param action Handle for any action taken by the plugin
  * \param iri Alternative URL to be fetched
  */
-void wget_intercept_action_set_alt_url(wget_intercept_action_t *action, const wget_iri_t *iri)
+void wget_intercept_action_set_alt_url(wget_intercept_action_t *action, const wget_iri *iri)
 {
 	action->vtable->action_set_alt_url(action, iri);
 }
@@ -147,7 +147,7 @@ void wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filt
  * \param[in] file Downloaded file handle
  * \return The address the file was downloaded from. The returned object is owned by wget and should not be free'd.
  */
-const wget_iri_t *wget_downloaded_file_get_source_url(wget_downloaded_file_t *file)
+const wget_iri *wget_downloaded_file_get_source_url(wget_downloaded_file_t *file)
 {
 	return file->vtable->file_get_source_url(file);
 }
@@ -219,7 +219,7 @@ bool wget_downloaded_file_get_recurse(wget_downloaded_file_t *file)
  * \param[in] file Downloaded file handle
  * \param[in] iri The URL to be fetched.
  */
-void wget_downloaded_file_add_recurse_url(wget_downloaded_file_t *file, const wget_iri_t *iri)
+void wget_downloaded_file_add_recurse_url(wget_downloaded_file_t *file, const wget_iri *iri)
 {
 	file->vtable->file_add_recurse_url(file, iri);
 }

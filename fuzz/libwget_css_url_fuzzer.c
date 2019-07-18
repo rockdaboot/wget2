@@ -40,7 +40,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	memcpy(in, data, size);
 	in[size] = in[size + 1] = 0;
 
-	wget_iri_t *base;
+	wget_iri *base;
 	base = wget_iri_parse("http://x.org", "iso-8859-1");
 	assert(base != NULL);
 

@@ -104,7 +104,7 @@ static void _free_host_entry(HOST *host)
 	}
 }
 
-HOST *host_add(wget_iri_t *iri)
+HOST *host_add(wget_iri *iri)
 {
 	wget_thread_mutex_lock(hosts_mutex);
 
@@ -126,7 +126,7 @@ HOST *host_add(wget_iri_t *iri)
 	return hostp;
 }
 
-HOST *host_get(wget_iri_t *iri)
+HOST *host_get(wget_iri *iri)
 {
 	HOST *hostp, host = { .scheme = iri->scheme, .host = iri->host, .port = iri->port };
 
@@ -324,7 +324,7 @@ void host_add_job(HOST *host, const JOB *job)
  * This function creates a priority job for robots.txt.
  * This job has to be processed before any other job.
  */
-void host_add_robotstxt_job(HOST *host, wget_iri_t *iri, bool http_fallback)
+void host_add_robotstxt_job(HOST *host, wget_iri *iri, bool http_fallback)
 {
 	JOB *job;
 

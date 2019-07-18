@@ -36,7 +36,7 @@ enum {
 };
 
 typedef struct {
-	wget_iri_t
+	wget_iri
 		*iri;
 	long long
 		size_downloaded,
@@ -107,7 +107,7 @@ void site_stats_exit(void)
 void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
 {
 	JOB *job = resp->req->user_data;
-	wget_iri_t *iri = job->iri;
+	wget_iri *iri = job->iri;
 
 	if (gpg_info) {
 		wget_thread_mutex_lock(mutex);

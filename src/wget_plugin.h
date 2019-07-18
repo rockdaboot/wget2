@@ -80,7 +80,7 @@ void plugin_db_show_help(void);
 
 // Plugin's verdict on forwarded URLs
 struct plugin_db_forward_url_verdict {
-	wget_iri_t *alt_iri;
+	wget_iri *alt_iri;
 	char *alt_local_filename;
 	bool
 		reject : 1,
@@ -88,14 +88,14 @@ struct plugin_db_forward_url_verdict {
 };
 
 // Forwards a URL about to be enqueued to interested plugins
-void plugin_db_forward_url(const wget_iri_t *iri, struct plugin_db_forward_url_verdict *verdict);
+void plugin_db_forward_url(const wget_iri *iri, struct plugin_db_forward_url_verdict *verdict);
 
 // Free's all contents of plugin_db_forward_url_verdict
 void plugin_db_forward_url_verdict_free(struct plugin_db_forward_url_verdict *verdict);
 
 // Forwards downloaded file to interested plugins
 // Returns 0 if wget must not post-process the file, 1 otherwise
-int plugin_db_forward_downloaded_file(const wget_iri_t *iri, uint64_t size, const char *filename, const void *data,
+int plugin_db_forward_downloaded_file(const wget_iri *iri, uint64_t size, const char *filename, const void *data,
 		wget_vector *recurse_iris);
 
 // Fetches the plugin-provided HSTS database, or NULL.

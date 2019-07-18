@@ -562,7 +562,7 @@ static void test_iri_parse(void)
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
-		wget_iri_t *iri = wget_iri_parse(t->uri, "utf-8");
+		wget_iri *iri = wget_iri_parse(t->uri, "utf-8");
 
 		if (wget_strcmp(iri->display, t->display)
 			|| wget_strcmp(iri->scheme, t->scheme)
@@ -601,7 +601,7 @@ static void test_iri_parse_urltests(void)
 	FILE *fp;
 	char *buf = NULL;
 	size_t bufsize;
-	wget_iri_t *iri = NULL;
+	wget_iri *iri = NULL;
 	int theline = 0;
 	char f[8][128];
 
@@ -944,7 +944,7 @@ static void test_iri_relative_to_absolute(void)
 	unsigned it;
 	char uri_buf_static[32]; // use a size that forces allocation in some cases
 	wget_buffer *uri_buf = wget_buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
-	wget_iri_t *base;
+	wget_iri *base;
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
@@ -992,8 +992,8 @@ static void test_iri_compare(void)
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
-		wget_iri_t *iri1 = wget_iri_parse(t->url1, "utf-8");
-		wget_iri_t *iri2 = wget_iri_parse(t->url2, "utf-8");
+		wget_iri *iri1 = wget_iri_parse(t->url1, "utf-8");
+		wget_iri *iri2 = wget_iri_parse(t->url2, "utf-8");
 
 		n = wget_iri_compare(iri1, iri2);
 		if (n < -1) n = -1;
@@ -1230,7 +1230,7 @@ static void test_cookies(void)
 	for (it = 0; it < countof(test_data); it++) {
 		char *header, *set_cookie;
 		const struct test_data *t = &test_data[it];
-		wget_iri_t *iri = wget_iri_parse(t->uri, "utf-8");
+		wget_iri *iri = wget_iri_parse(t->uri, "utf-8");
 
 		wget_http_parse_setcookie(t->set_cookie, &cookie);
 
@@ -1976,7 +1976,7 @@ static void test_stringmap(void)
 "Connection: Keep-Alive\r\n"\
 "Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-	wget_iri_t *iri = wget_iri_parse("http://localhost/prot_digest_md5/", NULL);
+	wget_iri *iri = wget_iri_parse("http://localhost/prot_digest_md5/", NULL);
 	wget_http_request_t *req = wget_http_create_request(iri, "GET");
 	wget_http_response_t *resp = wget_http_parse_response_header(response_text);
 	wget_http_add_credentials(req, wget_vector_get(resp->challenges, 0), "tim", "123", 0);

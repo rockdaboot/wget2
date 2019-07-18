@@ -60,7 +60,7 @@ static void write_stats(const stats_t *stats)
 /*
  * helper function: percent-unescape, convert to utf-8, create URL string using base
  */
-static int _normalize_uri(wget_iri_t *base, wget_string_t *url, const char *encoding, wget_buffer *buf)
+static int _normalize_uri(wget_iri *base, wget_string_t *url, const char *encoding, wget_buffer *buf)
 {
 	char *urlpart_encoded;
 	size_t urlpart_encoded_length;
@@ -91,7 +91,7 @@ static char *_normalize_location(const char *base, const char *url)
 {
 	wget_buffer buf;
 	wget_string_t url_s = { .p = url, .len = strlen(url) };
-	wget_iri_t *base_iri = wget_iri_parse(base, "utf-8");
+	wget_iri *base_iri = wget_iri_parse(base, "utf-8");
 	char sbuf[1024], *norm_url = NULL;
 	int rc;
 

@@ -277,7 +277,7 @@ int job_validate_file(JOB *job)
 	return 0;
 }
 
-JOB *job_init(JOB *job, wget_iri_t *iri, bool http_fallback)
+JOB *job_init(JOB *job, wget_iri *iri, bool http_fallback)
 {
 	static unsigned long long jobid;
 

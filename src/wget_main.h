@@ -58,6 +58,6 @@
 // number of elements within an array
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
-const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(const wget_iri_t *iri);
+const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(const wget_iri *iri);
 
 #endif /* SRC_WGET_MAIN_H */

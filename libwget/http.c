@@ -148,7 +148,7 @@ static int _body_callback(wget_http_response_t *resp, void *user_data G_GNUC_WGE
  *   Characters other than those in the "reserved" set are equivalent to their
  *   percent-encoded octets: the normal form is to not encode them (see Sections 2.1 and 2.2 of [RFC3986]).
  */
-wget_http_request_t *wget_http_create_request(const wget_iri_t *iri, const char *method)
+wget_http_request_t *wget_http_create_request(const wget_iri *iri, const char *method)
 {
 	wget_http_request_t *req = wget_calloc(1, sizeof(wget_http_request_t));
 
@@ -709,7 +709,7 @@ static void _server_stats_add(wget_http_connection_t *conn, wget_http_response_t
 	wget_thread_mutex_unlock(hosts_mutex);
 }
 
-int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
+int wget_http_open(wget_http_connection_t **_conn, const wget_iri *iri)
 {
 	static int next_http_proxy = -1;
 	static int next_https_proxy = -1;
@@ -734,7 +734,7 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri_t *iri)
 
 	wget_thread_mutex_lock(proxy_mutex);
 	if (!wget_http_match_no_proxy(no_proxies, iri->host)) {
-		wget_iri_t *proxy;
+		wget_iri *proxy;
 
 		if (iri->scheme == WGET_IRI_SCHEME_HTTP && http_proxies) {
 			proxy = wget_vector_get(http_proxies, (++next_http_proxy) % wget_vector_size(http_proxies));
@@ -1370,7 +1370,7 @@ wget_http_response_t *wget_http_get_response(wget_http_connection_t *conn)
 static void iri_free(void *iri)
 {
 	if (iri)
-		wget_iri_free((wget_iri_t **) &iri);
+		wget_iri_free((wget_iri **) &iri);
 }
 
 static wget_vector *_parse_proxies(const char *proxy, const char *encoding)
@@ -1383,7 +1383,7 @@ static wget_vector *_parse_proxies(const char *proxy, const char *encoding)
 
 	for (s = p = proxy; *p; s = p + 1) {
 		if ((p = strchrnul(s, ',')) != s && p - s < 256) {
-			wget_iri_t *iri;
+			wget_iri *iri;
 			char host[p - s + 1];
 
 			memcpy(host, s, p - s);
