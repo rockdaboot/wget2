@@ -141,7 +141,7 @@ wget_tls_session *wget_tls_session_new(const char *host, time_t maxage, const vo
 	return tls_session;
 }
 
-int wget_tls_session_get(const wget_tls_session_db_t *tls_session_db, const char *host, void **data, size_t *size)
+int wget_tls_session_get(const wget_tls_session_db *tls_session_db, const char *host, void **data, size_t *size)
 {
 	if (tls_session_db) {
 		wget_tls_session tls_session, *tls_sessionp;
@@ -160,10 +160,10 @@ int wget_tls_session_get(const wget_tls_session_db_t *tls_session_db, const char
 	return 1;
 }
 
-wget_tls_session_db_t *wget_tls_session_db_init(wget_tls_session_db_t *tls_session_db)
+wget_tls_session_db *wget_tls_session_db_init(wget_tls_session_db *tls_session_db)
 {
 	if (!tls_session_db)
-		tls_session_db = wget_malloc(sizeof(wget_tls_session_db_t));
+		tls_session_db = wget_malloc(sizeof(wget_tls_session_db));
 
 	memset(tls_session_db, 0, sizeof(*tls_session_db));
 	tls_session_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_t *) _hash_tls_session, (wget_hashmap_compare_t *) _compare_tls_session);
@@ -175,7 +175,7 @@ wget_tls_session_db_t *wget_tls_session_db_init(wget_tls_session_db_t *tls_sessi
 	return tls_session_db;
 }
 
-void wget_tls_session_db_deinit(wget_tls_session_db_t *tls_session_db)
+void wget_tls_session_db_deinit(wget_tls_session_db *tls_session_db)
 {
 	if (tls_session_db) {
 		wget_thread_mutex_lock(tls_session_db->mutex);
@@ -186,7 +186,7 @@ void wget_tls_session_db_deinit(wget_tls_session_db_t *tls_session_db)
 	}
 }
 
-void wget_tls_session_db_free(wget_tls_session_db_t **tls_session_db)
+void wget_tls_session_db_free(wget_tls_session_db **tls_session_db)
 {
 	if (tls_session_db) {
 		wget_tls_session_db_deinit(*tls_session_db);
@@ -194,7 +194,7 @@ void wget_tls_session_db_free(wget_tls_session_db_t **tls_session_db)
 	}
 }
 
-void wget_tls_session_db_add(wget_tls_session_db_t *tls_session_db, wget_tls_session *tls_session)
+void wget_tls_session_db_add(wget_tls_session_db *tls_session_db, wget_tls_session *tls_session)
 {
 	wget_thread_mutex_lock(tls_session_db->mutex);
 
@@ -222,7 +222,7 @@ void wget_tls_session_db_add(wget_tls_session_db_t *tls_session_db, wget_tls_ses
 	wget_thread_mutex_unlock(tls_session_db->mutex);
 }
 
-static int _tls_session_db_load(wget_tls_session_db_t *tls_session_db, FILE *fp)
+static int _tls_session_db_load(wget_tls_session_db *tls_session_db, FILE *fp)
 {
 	wget_tls_session tls_session;
 	struct stat st;
@@ -326,7 +326,7 @@ static int _tls_session_db_load(wget_tls_session_db_t *tls_session_db, FILE *fp)
 // Load the TLS session cache from a flat file
 // Protected by flock()
 
-int wget_tls_session_db_load(wget_tls_session_db_t *tls_session_db, const char *fname)
+int wget_tls_session_db_load(wget_tls_session_db *tls_session_db, const char *fname)
 {
 	if (!tls_session_db || !fname || !*fname)
 		return 0;
@@ -352,7 +352,7 @@ static int G_GNUC_WGET_NONNULL_ALL _tls_session_save(FILE *fp, const wget_tls_se
 
 static int _tls_session_db_save(void *tls_session_db, FILE *fp)
 {
-	wget_hashmap *entries = ((wget_tls_session_db_t *)tls_session_db)->entries;
+	wget_hashmap *entries = ((wget_tls_session_db *)tls_session_db)->entries;
 
 	if (wget_hashmap_size(entries) > 0) {
 		fputs("#TLSSession 1.0 file\n", fp);
@@ -371,7 +371,7 @@ static int _tls_session_db_save(void *tls_session_db, FILE *fp)
 // Save the TLS session cache to a flat file
 // Protected by flock()
 
-int wget_tls_session_db_save(wget_tls_session_db_t *tls_session_db, const char *fname)
+int wget_tls_session_db_save(wget_tls_session_db *tls_session_db, const char *fname)
 {
 	int size;
 
@@ -393,7 +393,7 @@ int wget_tls_session_db_save(wget_tls_session_db_t *tls_session_db, const char *
 	return 0;
 }
 
-int wget_tls_session_db_changed(wget_tls_session_db_t *tls_session_db)
+int wget_tls_session_db_changed(wget_tls_session_db *tls_session_db)
 {
 	return tls_session_db ? tls_session_db->changed : 0;
 }

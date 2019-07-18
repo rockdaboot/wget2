@@ -140,7 +140,7 @@ struct config {
 #endif
 	wget_hpkp_db_t
 		*hpkp_db; // in-memory HPKP database
-	wget_tls_session_db_t
+	wget_tls_session_db
 		*tls_session_db; // in-memory TLS session database
 	wget_ocsp_db_t
 		*ocsp_db; // in-memory fingerprint OCSP database

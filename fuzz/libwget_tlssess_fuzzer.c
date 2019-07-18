@@ -57,7 +57,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	g_data = data;
 	g_size = size;
 
-	wget_tls_session_db_t *tlssess_db = wget_tls_session_db_init(NULL);
+	wget_tls_session_db *tlssess_db = wget_tls_session_db_init(NULL);
 #if ! defined _WIN32 && defined HAVE_FMEMOPEN
 	wget_tls_session_db_load(tlssess_db, "tls");
 #endif

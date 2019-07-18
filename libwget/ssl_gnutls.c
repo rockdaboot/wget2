@@ -90,7 +90,7 @@ static struct _config {
 	wget_ocsp_db_t
 		*ocsp_cert_cache,
 		*ocsp_host_cache;
-	wget_tls_session_db_t
+	wget_tls_session_db
 		*tls_session_cache;
 	wget_hpkp_db_t
 		*hpkp_cache;
@@ -217,7 +217,7 @@ void wget_ssl_set_config_string(int key, const char *value)
  *  - WGET_SSL_OCSP_CACHE: This option takes a pointer to a \ref wget_ocsp_db_t
  *  structure as an argument. Such a pointer is returned when initializing the OCSP cache with wget_ocsp_db_init().
  *  The cache is used to store OCSP responses locally and avoid querying the OCSP server repeatedly for the same certificate.
- *  - WGET_SSL_SESSION_CACHE: This option takes a pointer to a \ref wget_tls_session_db_t structure.
+ *  - WGET_SSL_SESSION_CACHE: This option takes a pointer to a \ref wget_tls_session_db structure.
  *  Such a pointer is returned when initializing the TLS session cache with wget_tls_session_db_init().
  *  This option thus sets the handle to the TLS session cache that will be used to store TLS sessions.
  *  The TLS session cache is used to support TLS session resumption. It stores the TLS session parameters derived from a previous TLS handshake
@@ -234,7 +234,7 @@ void wget_ssl_set_config_object(int key, void *value)
 {
 	switch (key) {
 	case WGET_SSL_OCSP_CACHE: _config.ocsp_cert_cache = (wget_ocsp_db_t *)value; break;
-	case WGET_SSL_SESSION_CACHE: _config.tls_session_cache = (wget_tls_session_db_t *)value; break;
+	case WGET_SSL_SESSION_CACHE: _config.tls_session_cache = (wget_tls_session_db *)value; break;
 	case WGET_SSL_HPKP_CACHE: _config.hpkp_cache = (wget_hpkp_db_t *)value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an object)\n"), key);
 	}
