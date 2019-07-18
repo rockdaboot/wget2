@@ -120,7 +120,7 @@ struct DOWNLOADER {
 		bufsize;
 	int
 		id;
-	wget_thread_cond_t
+	wget_thread_cond
 		cond;
 	bool
 		final_error : 1;

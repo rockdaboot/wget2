@@ -1087,7 +1087,7 @@ void *wget_stringmap_iterator_next(wget_stringmap_iterator *h, char **value)
 typedef unsigned long wget_thread_id;
 typedef struct wget_thread_st *wget_thread;
 typedef struct wget_thread_mutex_st *wget_thread_mutex;
-typedef struct wget_thread_cond_st *wget_thread_cond_t;
+typedef struct wget_thread_cond_st *wget_thread_cond;
 
 WGETAPI int
 	wget_thread_start(wget_thread *thread, void *(*start_routine)(void *), void *arg, int flags);
@@ -1106,13 +1106,13 @@ WGETAPI int
 WGETAPI int
 	wget_thread_join(wget_thread *thread);
 WGETAPI int
-	wget_thread_cond_init(wget_thread_cond_t *cond);
+	wget_thread_cond_init(wget_thread_cond *cond);
 WGETAPI int
-	wget_thread_cond_destroy(wget_thread_cond_t *cond);
+	wget_thread_cond_destroy(wget_thread_cond *cond);
 WGETAPI int
-	wget_thread_cond_signal(wget_thread_cond_t cond);
+	wget_thread_cond_signal(wget_thread_cond cond);
 WGETAPI int
-	wget_thread_cond_wait(wget_thread_cond_t cond, wget_thread_mutex mutex, long long ms);
+	wget_thread_cond_wait(wget_thread_cond cond, wget_thread_mutex mutex, long long ms);
 WGETAPI wget_thread_id
 	wget_thread_self(void) G_GNUC_WGET_CONST;
 WGETAPI bool

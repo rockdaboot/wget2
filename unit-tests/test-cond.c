@@ -26,7 +26,7 @@ static int
 	cond_value = 0;
 static wget_thread_mutex
 	lockcond;
-static wget_thread_cond_t
+static wget_thread_cond
 	condtest;
 
 static void *cond_routine(G_GNUC_WGET_UNUSED void *arg)

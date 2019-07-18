@@ -354,7 +354,7 @@ static wget_thread_mutex
 	netrc_mutex,
 	conversion_mutex;
 
-static wget_thread_cond_t
+static wget_thread_cond
 	main_cond,   // is signaled whenever a job is done
 	worker_cond; // is signaled whenever a job is added
 

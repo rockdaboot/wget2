@@ -136,7 +136,7 @@ void wget_thread_mutex_unlock(wget_thread_mutex mutex)
  * After usage, a call to wget_thread_cond_destroy() frees
  * the allocated resources.
  */
-int wget_thread_cond_init(wget_thread_cond_t *cond)
+int wget_thread_cond_init(wget_thread_cond *cond)
 {
 	*cond = wget_malloc(sizeof(struct wget_thread_cond_st));
 
@@ -154,7 +154,7 @@ int wget_thread_cond_init(wget_thread_cond_t *cond)
  *
  * After calling this function, \p cond cannot be used any more.
  */
-int wget_thread_cond_destroy(wget_thread_cond_t *cond)
+int wget_thread_cond_destroy(wget_thread_cond *cond)
 {
 	int rc = glthread_cond_destroy(&(*cond)->cond);
 	xfree(*cond);
@@ -167,7 +167,7 @@ int wget_thread_cond_destroy(wget_thread_cond_t *cond)
  *
  * Wakes up one (random) thread that waits on the conditional.
  */
-int wget_thread_cond_signal(wget_thread_cond_t cond)
+int wget_thread_cond_signal(wget_thread_cond cond)
 {
 	return glthread_cond_broadcast(&cond->cond);
 }
@@ -182,7 +182,7 @@ int wget_thread_cond_signal(wget_thread_cond_t cond)
  *
  * To wait forever use a timeout lower or equal then 0.
  */
-int wget_thread_cond_wait(wget_thread_cond_t cond, wget_thread_mutex mutex, long long ms)
+int wget_thread_cond_wait(wget_thread_cond cond, wget_thread_mutex mutex, long long ms)
 {
 	if (ms <= 0)
 		return glthread_cond_wait(&cond->cond, &mutex->mutex);
