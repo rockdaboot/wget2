@@ -91,14 +91,14 @@ struct wget_hashmap_iterator_st {
  *
  * Creates a hashmap iterator for \p h.
  */
-wget_hashmap_iterator_t *wget_hashmap_iterator_alloc(wget_hashmap *h)
+wget_hashmap_iterator *wget_hashmap_iterator_alloc(wget_hashmap *h)
 {
 	struct wget_hashmap_iterator_st *iter = wget_calloc(1, sizeof(struct wget_hashmap_iterator_st));
 
 	if (iter)
 		iter->h = h;
 
-	return (wget_hashmap_iterator_t *) iter;
+	return (wget_hashmap_iterator *) iter;
 }
 
 /**
@@ -106,7 +106,7 @@ wget_hashmap_iterator_t *wget_hashmap_iterator_alloc(wget_hashmap *h)
  *
  * Free the given iterator \p iter.
  */
-void wget_hashmap_iterator_free(wget_hashmap_iterator_t **iter)
+void wget_hashmap_iterator_free(wget_hashmap_iterator **iter)
 {
 	if (iter)
 		xfree(*iter);
@@ -122,7 +122,7 @@ void wget_hashmap_iterator_free(wget_hashmap_iterator_t **iter)
  *
  * When iterating over a hashmap, the order of returned key/value pairs is not defined.
  */
-void *wget_hashmap_iterator_next(wget_hashmap_iterator_t *iter, void **value)
+void *wget_hashmap_iterator_next(wget_hashmap_iterator *iter, void **value)
 {
 	struct wget_hashmap_iterator_st *_iter = (struct wget_hashmap_iterator_st *) iter;
 	struct wget_hashmap_st *h = _iter->h;

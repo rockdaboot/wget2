@@ -724,9 +724,6 @@ WGETAPI void
 /// Type of the hashmap
 typedef struct wget_hashmap_st wget_hashmap;
 
-/// Type of the hashmap iterator
-typedef struct wget_hashmap_iterator_st wget_hashmap_iterator_t;
-
 /// Type of the hashmap compare function
 typedef int wget_hashmap_compare_t(const void *key1, const void *key2);
 
@@ -777,12 +774,15 @@ WGETAPI void
 WGETAPI void
 	wget_hashmap_set_load_factor(wget_hashmap *h, float factor);
 
-WGETAPI wget_hashmap_iterator_t
+/// Type of the hashmap iterator
+typedef struct wget_hashmap_iterator_st wget_hashmap_iterator;
+
+WGETAPI wget_hashmap_iterator
 	*wget_hashmap_iterator_alloc(wget_hashmap *h) G_GNUC_WGET_MALLOC;
 WGETAPI void
-	wget_hashmap_iterator_free(wget_hashmap_iterator_t **iter);
+	wget_hashmap_iterator_free(wget_hashmap_iterator **iter);
 WGETAPI void
-	*wget_hashmap_iterator_next(wget_hashmap_iterator_t *iter, void **value);
+	*wget_hashmap_iterator_next(wget_hashmap_iterator *iter, void **value);
 
 /**
  * \ingroup libwget-stringmap
@@ -794,7 +794,7 @@ WGETAPI void
 typedef wget_hashmap wget_stringmap_t;
 
 /// Type of the stringmap iterator
-typedef wget_hashmap_iterator_t wget_stringmap_iterator_t;
+typedef wget_hashmap_iterator wget_stringmap_iterator_t;
 
 /// Type of the stringmap compare function
 typedef int wget_stringmap_compare_t(const char *key1, const char *key2);
