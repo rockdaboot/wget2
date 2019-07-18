@@ -95,7 +95,7 @@ struct wget_cookie_db_st {
 
 // by this kind of sorting, we can easily see if a domain matches or not (match = supercookie !)
 
-int wget_cookie_db_load_psl(G_GNUC_WGET_UNUSED wget_cookie_db_t *cookie_db, G_GNUC_WGET_UNUSED const char *fname)
+int wget_cookie_db_load_psl(G_GNUC_WGET_UNUSED wget_cookie_db *cookie_db, G_GNUC_WGET_UNUSED const char *fname)
 {
 #ifdef WITH_LIBPSL
 	if (!cookie_db)
@@ -594,7 +594,7 @@ void wget_cookie_normalize_cookies(const wget_iri *iri, const wget_vector *cooki
 //	wget_thread_mutex_unlock(&_cookies_mutex);
 }
 
-int wget_cookie_check_psl(G_GNUC_WGET_UNUSED const wget_cookie_db_t *cookie_db, G_GNUC_WGET_UNUSED const wget_cookie_t *cookie)
+int wget_cookie_check_psl(G_GNUC_WGET_UNUSED const wget_cookie_db *cookie_db, G_GNUC_WGET_UNUSED const wget_cookie_t *cookie)
 {
 //	wget_thread_mutex_lock(&_cookies_mutex);
 
@@ -614,7 +614,7 @@ int wget_cookie_check_psl(G_GNUC_WGET_UNUSED const wget_cookie_db_t *cookie_db, 
 	return ret;
 }
 
-int wget_cookie_store_cookie(wget_cookie_db_t *cookie_db, wget_cookie_t *cookie)
+int wget_cookie_store_cookie(wget_cookie_db *cookie_db, wget_cookie_t *cookie)
 {
 	wget_cookie_t *old;
 	int pos;
@@ -661,7 +661,7 @@ int wget_cookie_store_cookie(wget_cookie_db_t *cookie_db, wget_cookie_t *cookie)
 	return WGET_E_SUCCESS;
 }
 
-void wget_cookie_store_cookies(wget_cookie_db_t *cookie_db, wget_vector *cookies)
+void wget_cookie_store_cookies(wget_cookie_db *cookie_db, wget_vector *cookies)
 {
 	if (cookie_db) {
 		int it;
@@ -676,7 +676,7 @@ void wget_cookie_store_cookies(wget_cookie_db_t *cookie_db, wget_vector *cookies
 	}
 }
 
-char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_iri *iri)
+char *wget_cookie_create_request_header(wget_cookie_db *cookie_db, const wget_iri *iri)
 {
 	int it, init = 0;
 	time_t now = time(NULL);
@@ -754,10 +754,10 @@ char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_
 	return init ? buf.data : NULL;
 }
 
-wget_cookie_db_t *wget_cookie_db_init(wget_cookie_db_t *cookie_db)
+wget_cookie_db *wget_cookie_db_init(wget_cookie_db *cookie_db)
 {
 	if (!cookie_db) {
-		cookie_db = wget_malloc(sizeof(wget_cookie_db_t));
+		cookie_db = wget_malloc(sizeof(wget_cookie_db));
 		if (!cookie_db)
 			return NULL;
 	}
@@ -777,7 +777,7 @@ wget_cookie_db_t *wget_cookie_db_init(wget_cookie_db_t *cookie_db)
 	return cookie_db;
 }
 
-void wget_cookie_db_deinit(wget_cookie_db_t *cookie_db)
+void wget_cookie_db_deinit(wget_cookie_db *cookie_db)
 {
 	if (cookie_db) {
 #ifdef WITH_LIBPSL
@@ -791,7 +791,7 @@ void wget_cookie_db_deinit(wget_cookie_db_t *cookie_db)
 	}
 }
 
-void wget_cookie_db_free(wget_cookie_db_t **cookie_db)
+void wget_cookie_db_free(wget_cookie_db **cookie_db)
 {
 	if (cookie_db) {
 		wget_cookie_db_deinit(*cookie_db);
@@ -799,13 +799,13 @@ void wget_cookie_db_free(wget_cookie_db_t **cookie_db)
 	}
 }
 
-void wget_cookie_set_keep_session_cookies(wget_cookie_db_t *cookie_db, int keep)
+void wget_cookie_set_keep_session_cookies(wget_cookie_db *cookie_db, int keep)
 {
 	if (cookie_db)
 		cookie_db->keep_session_cookies = !!keep;
 }
 
-static int _cookie_db_load(wget_cookie_db_t *cookie_db, FILE *fp)
+static int _cookie_db_load(wget_cookie_db *cookie_db, FILE *fp)
 {
 	wget_cookie_t cookie;
 	int ncookies = 0;
@@ -902,7 +902,7 @@ static int _cookie_db_load(wget_cookie_db_t *cookie_db, FILE *fp)
 	return ncookies;
 }
 
-int wget_cookie_db_load(wget_cookie_db_t *cookie_db, const char *fname)
+int wget_cookie_db_load(wget_cookie_db *cookie_db, const char *fname)
 {
 	if (!cookie_db || !fname || !*fname)
 		return 0;
@@ -918,7 +918,7 @@ int wget_cookie_db_load(wget_cookie_db_t *cookie_db, const char *fname)
 
 // save the cookie store to a flat file
 
-static int _cookie_db_save(wget_cookie_db_t *cookie_db, FILE *fp)
+static int _cookie_db_save(wget_cookie_db *cookie_db, FILE *fp)
 {
 	if (wget_vector_size(cookie_db->cookies) > 0) {
 		int it;
@@ -956,7 +956,7 @@ static int _cookie_db_save(wget_cookie_db_t *cookie_db, FILE *fp)
 // Save the HSTS cache to a flat file
 // Protected by flock()
 
-int wget_cookie_db_save(wget_cookie_db_t *cookie_db, const char *fname)
+int wget_cookie_db_save(wget_cookie_db *cookie_db, const char *fname)
 {
 	int size;
 

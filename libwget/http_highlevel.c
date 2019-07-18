@@ -70,7 +70,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 	wget_http_request_t *req;
 	wget_http_response_t *resp = NULL;
 	wget_vector *challenges = NULL;
-	wget_cookie_db_t *cookie_db = NULL;
+	wget_cookie_db *cookie_db = NULL;
 	FILE *saveas_stream = NULL;
 	wget_http_body_callback_t *saveas_callback = NULL;
 	int saveas_fd = -1;
@@ -172,7 +172,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 	}
 
 	if (bits.cookies_enabled)
-		cookie_db = (wget_cookie_db_t *)wget_global_get_ptr(WGET_COOKIE_DB);
+		cookie_db = (wget_cookie_db *)wget_global_get_ptr(WGET_COOKIE_DB);
 
 	while (uri && redirection_level <= max_redirections) {
 		// create a HTTP/1.1 GET request.

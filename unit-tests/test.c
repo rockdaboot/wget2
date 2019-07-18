@@ -1220,7 +1220,7 @@ static void test_cookies(void)
 
 	};
 	wget_cookie_t *cookie = NULL;
-	wget_cookie_db_t *cookies;
+	wget_cookie_db *cookies;
 	unsigned it;
 	int result, result_psl;
 

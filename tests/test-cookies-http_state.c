@@ -54,7 +54,7 @@ static int filter(const struct dirent *dp)
 
 static void test_cookies(void)
 {
-	wget_cookie_db_t *cookie_db;
+	wget_cookie_db *cookie_db;
 	wget_http_response_t *resp;
 	struct dirent **dps;
 	int n, oh_my_gosh;

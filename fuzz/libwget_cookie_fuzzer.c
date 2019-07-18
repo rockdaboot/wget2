@@ -36,7 +36,7 @@ static void cookie_free(void *cookie)
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-	wget_cookie_db_t *db, *db2;
+	wget_cookie_db *db, *db2;
 	wget_cookie_t *cookie, *cookie2;
 	wget_iri *iri;
 	wget_vector *cookies;

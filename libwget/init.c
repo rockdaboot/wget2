@@ -35,7 +35,7 @@
 static struct _CONFIG {
 	char *
 		cookie_file;
-	wget_cookie_db_t *
+	wget_cookie_db *
 		cookie_db;
 	char
 		cookies_enabled,

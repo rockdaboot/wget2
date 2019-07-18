@@ -1331,7 +1331,7 @@ WGETAPI const char *
  */
 
 // typedef for cookie database
-typedef struct wget_cookie_db_st wget_cookie_db_t;
+typedef struct wget_cookie_db_st wget_cookie_db;
 
 // typedef for cookie
 typedef struct wget_cookie_st wget_cookie_t;
@@ -1349,29 +1349,29 @@ WGETAPI const char *
 WGETAPI void
 	wget_cookie_normalize_cookies(const wget_iri *iri, const wget_vector *cookies);
 WGETAPI int
-	wget_cookie_store_cookie(wget_cookie_db_t *cookie_db, wget_cookie_t *cookie);
+	wget_cookie_store_cookie(wget_cookie_db *cookie_db, wget_cookie_t *cookie);
 WGETAPI void
-	wget_cookie_store_cookies(wget_cookie_db_t *cookie_db, wget_vector *cookies);
+	wget_cookie_store_cookies(wget_cookie_db *cookie_db, wget_vector *cookies);
 WGETAPI int
 	wget_cookie_normalize(const wget_iri *iri, wget_cookie_t *cookie);
 WGETAPI int
-	wget_cookie_check_psl(const wget_cookie_db_t *cookie_db, const wget_cookie_t *cookie);
-WGETAPI wget_cookie_db_t *
-	wget_cookie_db_init(wget_cookie_db_t *cookie_db);
+	wget_cookie_check_psl(const wget_cookie_db *cookie_db, const wget_cookie_t *cookie);
+WGETAPI wget_cookie_db *
+	wget_cookie_db_init(wget_cookie_db *cookie_db);
 WGETAPI void
-	wget_cookie_db_deinit(wget_cookie_db_t *cookie_db);
+	wget_cookie_db_deinit(wget_cookie_db *cookie_db);
 WGETAPI void
-	wget_cookie_db_free(wget_cookie_db_t **cookie_db);
+	wget_cookie_db_free(wget_cookie_db **cookie_db);
 WGETAPI void
-	wget_cookie_set_keep_session_cookies(wget_cookie_db_t *cookie_db, int keep);
+	wget_cookie_set_keep_session_cookies(wget_cookie_db *cookie_db, int keep);
 WGETAPI int
-	wget_cookie_db_save(wget_cookie_db_t *cookie_db, const char *fname);
+	wget_cookie_db_save(wget_cookie_db *cookie_db, const char *fname);
 WGETAPI int
-	wget_cookie_db_load(wget_cookie_db_t *cookie_db, const char *fname);
+	wget_cookie_db_load(wget_cookie_db *cookie_db, const char *fname);
 WGETAPI int
-	wget_cookie_db_load_psl(wget_cookie_db_t *cookie_db, const char *fname);
+	wget_cookie_db_load_psl(wget_cookie_db *cookie_db, const char *fname);
 WGETAPI char *
-	wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_iri *iri);
+	wget_cookie_create_request_header(wget_cookie_db *cookie_db, const wget_iri *iri);
 
 /*
  * HTTP Strict Transport Security (HSTS) routines
