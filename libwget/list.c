@@ -52,7 +52,7 @@
  */
 
 struct wget_list_st {
-	wget_list_t
+	wget_list
 		*next,
 		*prev;
 };
@@ -73,7 +73,7 @@ struct wget_list_st {
  * Example:
  *
  * \code{.c}
- *	wget_list_t *list = NULL;
+ *	wget_list *list = NULL;
  *	struct mystruct mydata1 = { .x = 1, .y = 25 };
  *	struct mystruct mydata2 = { .x = 5, .y = 99 };
  *	struct mystruct *data;
@@ -93,10 +93,10 @@ struct wget_list_st {
  * \endcode
  */
 void *
-wget_list_append(wget_list_t **list, const void *data, size_t size)
+wget_list_append(wget_list **list, const void *data, size_t size)
 {
 	// allocate space for node and data in one row
-	wget_list_t *node = wget_malloc(sizeof(wget_list_t) + size);
+	wget_list *node = wget_malloc(sizeof(wget_list) + size);
 
 	if (!node)
 		return NULL;
@@ -129,7 +129,7 @@ wget_list_append(wget_list_t **list, const void *data, size_t size)
  * A pointer to the new element will be returned.
  * It must be freed by wget_list_remove() or implicitly by wget_list_free().
  */
-void *wget_list_prepend(wget_list_t **list, const void *data, size_t size)
+void *wget_list_prepend(wget_list **list, const void *data, size_t size)
 {
 	if (!*list) {
 		return wget_list_append(list, data, size);
@@ -144,9 +144,9 @@ void *wget_list_prepend(wget_list_t **list, const void *data, size_t size)
  *
  * Remove an element from the list.
  */
-void wget_list_remove(wget_list_t **list, void *elem)
+void wget_list_remove(wget_list **list, void *elem)
 {
-	wget_list_t *node = ((wget_list_t *)elem) - 1;
+	wget_list *node = ((wget_list *)elem) - 1;
 
 	if (node->prev == node->next && node == node->prev) {
 		// removing the last node in the list
@@ -167,7 +167,7 @@ void wget_list_remove(wget_list_t **list, void *elem)
  *
  * Get the first element of a list.
  */
-void *wget_list_getfirst(const wget_list_t *list)
+void *wget_list_getfirst(const wget_list *list)
 {
 	return (void *)(list ? list + 1 : list);
 }
@@ -178,7 +178,7 @@ void *wget_list_getfirst(const wget_list_t *list)
  *
  * Get the last element of a list.
  */
-void *wget_list_getlast(const wget_list_t *list)
+void *wget_list_getlast(const wget_list *list)
 {
 	return (void *)(list ? list->prev + 1 : list);
 }
@@ -192,7 +192,7 @@ void *wget_list_getlast(const wget_list_t *list)
 void *wget_list_getnext(const void *elem)
 {
 	if (elem) {
-		wget_list_t *node = ((wget_list_t *)elem) - 1;
+		wget_list *node = ((wget_list *)elem) - 1;
 		return node->next + 1;
 	}
 	return NULL;
@@ -211,7 +211,7 @@ void *wget_list_getnext(const void *elem)
  *
  * \code{.c}
  * // assume that list contains C strings.
- * wget_list_t *list = NULL;
+ * wget_list *list = NULL;
  *
  * static int print_elem(void *context, const char *elem)
  * {
@@ -225,13 +225,13 @@ void *wget_list_getnext(const void *elem)
  * }
  * \endcode
  */
-int wget_list_browse(const wget_list_t *list, wget_list_browse_t *browse, void *context)
+int wget_list_browse(const wget_list *list, wget_list_browse_t *browse, void *context)
 {
 	if (!list)
 		return -1;
 
 	int ret;
-	const wget_list_t *end = list->prev, *cur = list;
+	const wget_list *end = list->prev, *cur = list;
 
 	while ((ret = browse(context, (void *)(cur + 1))) == 0 && cur != end)
 		cur = cur->next;
@@ -244,7 +244,7 @@ int wget_list_browse(const wget_list_t *list, wget_list_browse_t *browse, void *
  *
  * Freeing the list and it's entry.
  */
-void wget_list_free(wget_list_t **list)
+void wget_list_free(wget_list **list)
 {
 	while (*list)
 		wget_list_remove(list, *list + 1);
@@ -254,7 +254,7 @@ void wget_list_free(wget_list_t **list)
 void wget_list_dump(const WGET_LIST *list)
 {
 	if (list) {
-		const wget_list_t *cur = list;
+		const wget_list *cur = list;
 
 		do {
 			debug_printf("%p: next %p prev %p\n", cur, cur->next, cur->prev);

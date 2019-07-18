@@ -43,7 +43,7 @@ typedef struct {
 		*robot_job; // special job for downloading robots.txt (before anything else)
 	wget_robots_t
 		*robots;
-	wget_list_t
+	wget_list
 		*queue; // host specific job queue
 	long long
 		retry_ts; // timestamp of earliest retry in milliseconds

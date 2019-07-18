@@ -22,7 +22,7 @@ int main(void)
 	wget_hashmap_create(0, NULL, NULL); // hashmap.c
 	wget_fdgetline(&empty, (size_t *)1, 0); // io.c
 	wget_iri_parse("", NULL); // iri.c
-	wget_list_free((wget_list_t **)1); // list.c
+	wget_list_free((wget_list **)1); // list.c
 	wget_debug_write("", 0); // log.c
 	wget_logger_set_file(NULL, ""); // logger.c
 	wget_tcp_set_connect_timeout(NULL, 0); // net.c

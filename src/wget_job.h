@@ -69,7 +69,7 @@ struct JOB {
 	wget_vector_t
 		*parts; // parts to download
 
-	wget_list_t
+	wget_list
 		*remaining_sig_ext; // Signature extensions yet to be tried.
 
 	HOST
