@@ -1084,7 +1084,7 @@ void *wget_stringmap_iterator_next(wget_stringmap_iterator *h, char **value)
  * Thread wrapper routines
  */
 
-typedef unsigned long wget_thread_id_t;
+typedef unsigned long wget_thread_id;
 typedef struct wget_thread_st *wget_thread;
 typedef struct wget_thread_mutex_st *wget_thread_mutex_t;
 typedef struct wget_thread_cond_st *wget_thread_cond_t;
@@ -1113,7 +1113,7 @@ WGETAPI int
 	wget_thread_cond_signal(wget_thread_cond_t cond);
 WGETAPI int
 	wget_thread_cond_wait(wget_thread_cond_t cond, wget_thread_mutex_t mutex, long long ms);
-WGETAPI wget_thread_id_t
+WGETAPI wget_thread_id
 	wget_thread_self(void) G_GNUC_WGET_CONST;
 WGETAPI bool
 	wget_thread_support(void) G_GNUC_WGET_CONST;

@@ -41,7 +41,7 @@ typedef struct {
 		length;
 	int
 		id;
-	wget_thread_id_t
+	wget_thread_id
 		used_by;
 	bool
 		inuse : 1,
@@ -84,7 +84,7 @@ struct JOB {
 	DOWNLOADER
 		*downloader;
 
-	wget_thread_id_t
+	wget_thread_id
 		used_by; // keep track of who uses this job, for host_release_jobs()
 	unsigned long long
 		id, // each job an unique ID value

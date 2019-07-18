@@ -239,9 +239,9 @@ JOB *host_get_job(HOST *host, long long *pause)
 	return ctx.job;
 }
 
-static int _release_job(wget_thread_id_t *ctx, JOB *job)
+static int _release_job(wget_thread_id *ctx, JOB *job)
 {
-	wget_thread_id_t self = *ctx;
+	wget_thread_id self = *ctx;
 
 	if (job->parts) {
 		for (int it = 0; it < wget_vector_size(job->parts); it++) {
@@ -267,7 +267,7 @@ void host_release_jobs(HOST *host)
 	if (!host)
 		return;
 
-	wget_thread_id_t self = wget_thread_self();
+	wget_thread_id self = wget_thread_self();
 
 	wget_thread_mutex_lock(hosts_mutex);
 

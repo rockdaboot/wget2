@@ -287,7 +287,7 @@ int wget_thread_join(wget_thread *thread)
  * \return The thread id of the caller.
  *
  */
-wget_thread_id_t wget_thread_self(void)
+wget_thread_id wget_thread_self(void)
 {
 	return gl_thread_self();
 }
