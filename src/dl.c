@@ -294,7 +294,7 @@ char *dl_get_name_from_path(const char *path, int strict)
 		return wget_strmemdup(path + start, len);
 }
 
-char *dl_search(const char *name, const wget_vector_t *dirs)
+char *dl_search(const char *name, const wget_vector *dirs)
 {
 	int n_dirs = wget_vector_size(dirs);
 
@@ -326,7 +326,7 @@ char *dl_search(const char *name, const wget_vector_t *dirs)
 	return NULL;
 }
 
-void dl_list(const wget_vector_t *dirs, wget_vector_t *names_out)
+void dl_list(const wget_vector *dirs, wget_vector *names_out)
 {
 	int n_dirs = wget_vector_size(dirs);
 

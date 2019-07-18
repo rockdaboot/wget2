@@ -41,9 +41,9 @@ struct wget_http_connection_st {
 	nghttp2_session *
 		http2_session;
 #endif
-	wget_vector_t
+	wget_vector
 		*pending_requests; // List of unresponsed requests (HTTP1 only)
-	wget_vector_t
+	wget_vector
 		*received_http2_responses; // List of received (but yet unprocessed) responses (HTTP2 only)
 	int
 		pending_http2_requests; // Number of unresponsed requests (HTTP2 only)

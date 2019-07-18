@@ -66,9 +66,9 @@ struct wget_vector_st {
  *
  * Create a new vector instance, to be free'd after use with wget_vector_free().
  */
-wget_vector_t *wget_vector_create(int max, wget_vector_compare_t *cmp)
+wget_vector *wget_vector_create(int max, wget_vector_compare_t *cmp)
 {
-	wget_vector_t *v = wget_calloc(1, sizeof(wget_vector_t));
+	wget_vector *v = wget_calloc(1, sizeof(wget_vector));
 
 	if (!v)
 		return NULL;
@@ -98,13 +98,13 @@ wget_vector_t *wget_vector_create(int max, wget_vector_compare_t *cmp)
  *
  * Default is 2.
  */
-void wget_vector_set_resize_factor(wget_vector_t *v, float factor)
+void wget_vector_set_resize_factor(wget_vector *v, float factor)
 {
 	if (v)
 		v->resize_factor = factor;
 }
 
-static int G_GNUC_WGET_NONNULL((2)) insert_element(wget_vector_t *v, const void *elem, int pos, int replace)
+static int G_GNUC_WGET_NONNULL((2)) insert_element(wget_vector *v, const void *elem, int pos, int replace)
 {
 	if (pos < 0 || !v || pos > v->cur)
 		return -1;
@@ -161,7 +161,7 @@ static int G_GNUC_WGET_NONNULL((2)) insert_element(wget_vector_t *v, const void 
  *
  * An error is returned if \p v is %NULL or \p pos is out of range (< 0 or > # of entries).
  */
-int wget_vector_insert(wget_vector_t *v, const void *elem, int pos)
+int wget_vector_insert(wget_vector *v, const void *elem, int pos)
 {
 	return insert_element(v, elem, pos, 0);
 }
@@ -179,7 +179,7 @@ int wget_vector_insert(wget_vector_t *v, const void *elem, int pos)
  *
  * An error is returned if \p v is %NULL.
  */
-int wget_vector_insert_sorted(wget_vector_t *v, const void *elem)
+int wget_vector_insert_sorted(wget_vector *v, const void *elem)
 {
 	if (!v)
 		return -1;
@@ -216,7 +216,7 @@ int wget_vector_insert_sorted(wget_vector_t *v, const void *elem)
  *
  * An error is returned if \p v is %NULL.
  */
-int wget_vector_add_memdup(wget_vector_t *v, const void *elem, size_t size)
+int wget_vector_add_memdup(wget_vector *v, const void *elem, size_t size)
 {
 	void *p;
 	int rc;
@@ -244,7 +244,7 @@ int wget_vector_add_memdup(wget_vector_t *v, const void *elem, size_t size)
  *
  * An error is returned if \p v is %NULL.
  */
-int wget_vector_add(wget_vector_t *v, const void *elem)
+int wget_vector_add(wget_vector *v, const void *elem)
 {
 	return v ? insert_element(v, elem, v->cur, 0) : -1;
 }
@@ -259,7 +259,7 @@ int wget_vector_add(wget_vector_t *v, const void *elem)
  *
  * An error is returned if \p v or \p fmt is %NULL.
  */
-int wget_vector_add_vprintf(wget_vector_t *v, const char *fmt, va_list args)
+int wget_vector_add_vprintf(wget_vector *v, const char *fmt, va_list args)
 {
 	return v && fmt ? insert_element(v, wget_vaprintf(fmt, args), v->cur, 0) : -1;
 }
@@ -274,7 +274,7 @@ int wget_vector_add_vprintf(wget_vector_t *v, const char *fmt, va_list args)
  *
  * An error is returned if \p v or \p fmt is %NULL.
  */
-int wget_vector_add_printf(wget_vector_t *v, const char *fmt, ...)
+int wget_vector_add_printf(wget_vector *v, const char *fmt, ...)
 {
 	if (!v || !fmt)
 		return -1;
@@ -302,7 +302,7 @@ int wget_vector_add_printf(wget_vector_t *v, const char *fmt, ...)
  *
  * An error is returned if \p v is %NULL or \p pos is out of range (< 0 or > # of entries).
  */
-int wget_vector_replace(wget_vector_t *v, const void *elem, int pos)
+int wget_vector_replace(wget_vector *v, const void *elem, int pos)
 {
 	if (!v || pos < 0 || pos >= v->cur)
 		return -1;
@@ -313,7 +313,7 @@ int wget_vector_replace(wget_vector_t *v, const void *elem, int pos)
 	return insert_element(v, elem, pos, 1); // replace existing entry
 }
 
-static int remove_element(wget_vector_t *v, int pos, int free_entry)
+static int remove_element(wget_vector *v, int pos, int free_entry)
 {
 	if (pos < 0 || !v || pos >= v->cur)
 		return -1;
@@ -340,7 +340,7 @@ static int remove_element(wget_vector_t *v, int pos, int free_entry)
  *
  * An error is returned if \p v is %NULL or \p pos is out of range (< 0 or > # of entries).
  */
-int wget_vector_remove(wget_vector_t *v, int pos)
+int wget_vector_remove(wget_vector *v, int pos)
 {
 	return remove_element(v, pos, 1);
 }
@@ -355,7 +355,7 @@ int wget_vector_remove(wget_vector_t *v, int pos)
  *
  * An error is returned if \p v is %NULL or \p pos is out of range (< 0 or > # of entries).
  */
-int wget_vector_remove_nofree(wget_vector_t *v, int pos)
+int wget_vector_remove_nofree(wget_vector *v, int pos)
 {
 	return remove_element(v, pos, 0);
 }
@@ -373,7 +373,7 @@ int wget_vector_remove_nofree(wget_vector_t *v, int pos)
  * An error is returned if \p v is %NULL or either \p old_pos or
  * \p new_pos is out of range (< 0 or > # of entries).
  */
-int wget_vector_move(wget_vector_t *v, int old_pos, int new_pos)
+int wget_vector_move(wget_vector *v, int old_pos, int new_pos)
 {
 	if (!v) return -1;
 	if (old_pos < 0 || old_pos >= v->cur) return -1;
@@ -407,7 +407,7 @@ int wget_vector_move(wget_vector_t *v, int old_pos, int new_pos)
  * An error is returned if \p v is %NULL or either \p pos1 or
  * \p pos2 is out of range (< 0 or > # of entries).
  */
-int wget_vector_swap(wget_vector_t *v, int pos1, int pos2)
+int wget_vector_swap(wget_vector *v, int pos1, int pos2)
 {
 	if (!v) return -1;
 	if (pos1 < 0 || pos1 >= v->cur) return -1;
@@ -432,7 +432,7 @@ int wget_vector_swap(wget_vector_t *v, int pos1, int pos2)
  * For each element the destructor function is called and the element free'd thereafter.
  * Then the vector itself is free'd and set to %NULL.
  */
-void wget_vector_free(wget_vector_t **v)
+void wget_vector_free(wget_vector **v)
 {
 	if (v && *v) {
 		wget_vector_clear(*v);
@@ -449,7 +449,7 @@ void wget_vector_free(wget_vector_t **v)
  * For each element the destructor function is called and the element free'd thereafter.
  * The vector is then empty and can be reused.
  */
-void wget_vector_clear(wget_vector_t *v)
+void wget_vector_clear(wget_vector *v)
 {
 	if (v) {
 		if (v->destructor) {
@@ -471,7 +471,7 @@ void wget_vector_clear(wget_vector_t *v)
  *
  * The vector is then empty and can be reused.
  */
-void wget_vector_clear_nofree(wget_vector_t *v)
+void wget_vector_clear_nofree(wget_vector *v)
 {
 	if (v) {
 		for (int it = 0; it < v->cur; it++)
@@ -487,7 +487,7 @@ void wget_vector_clear_nofree(wget_vector_t *v)
  * Retrieve the number of elements of the vector \p v.
  * If \p v is %NULL, 0 is returned.
  */
-int wget_vector_size(const wget_vector_t *v)
+int wget_vector_size(const wget_vector *v)
 {
 	return v ? v->cur : 0;
 }
@@ -501,7 +501,7 @@ int wget_vector_size(const wget_vector_t *v)
  *
  * %NULL is returned if \p v is %NULL or \p pos is out of range (< 0 or > # of entries).
  */
-void *wget_vector_get(const wget_vector_t *v, int pos)
+void *wget_vector_get(const wget_vector *v, int pos)
 {
 	if (pos < 0 || !v || pos >= v->cur)
 		return NULL;
@@ -522,7 +522,7 @@ void *wget_vector_get(const wget_vector_t *v, int pos)
  *
  * The return value of the last call to \p browse is returned or 0 if \p v is %NULL.
  */
-int wget_vector_browse(const wget_vector_t *v, wget_vector_browse_t *browse, void *ctx)
+int wget_vector_browse(const wget_vector *v, wget_vector_browse_t *browse, void *ctx)
 {
 	if (v) {
 		for (int ret, it = 0; it < v->cur; it++)
@@ -539,7 +539,7 @@ int wget_vector_browse(const wget_vector_t *v, wget_vector_browse_t *browse, voi
  *
  * Set the compare function used by wget_vector_sort().
  */
-void wget_vector_setcmpfunc(wget_vector_t *v, wget_vector_compare_t *cmp)
+void wget_vector_setcmpfunc(wget_vector *v, wget_vector_compare_t *cmp)
 {
 	if (v) {
 		v->cmp = cmp;
@@ -558,7 +558,7 @@ void wget_vector_setcmpfunc(wget_vector_t *v, wget_vector_compare_t *cmp)
  * Set the destructor function that is called for each element to be removed.
  * It should not free the element (pointer) itself.
  */
-void wget_vector_set_destructor(wget_vector_t *v, wget_vector_destructor_t *destructor)
+void wget_vector_set_destructor(wget_vector *v, wget_vector_destructor_t *destructor)
 {
 	if (v)
 		v->destructor = destructor;
@@ -567,7 +567,7 @@ void wget_vector_set_destructor(wget_vector_t *v, wget_vector_destructor_t *dest
 G_GNUC_WGET_NONNULL_ALL
 static int compare_element(const void *p1, const void *p2, void *v)
 {
-	return ((wget_vector_t *)v)->cmp(*((void **)p1), *((void **)p2));
+	return ((wget_vector *)v)->cmp(*((void **)p1), *((void **)p2));
 }
 
 /**
@@ -576,7 +576,7 @@ static int compare_element(const void *p1, const void *p2, void *v)
  * Sort the elements in vector \p v using the compare function.
  * Do nothing if \p v is %NULL or the compare function is not set.
  */
-void wget_vector_sort(wget_vector_t *v)
+void wget_vector_sort(wget_vector *v)
 {
 	if (v && v->cmp) {
 		qsort_r(v->entry, v->cur, sizeof(void *), compare_element, v);
@@ -593,7 +593,7 @@ void wget_vector_sort(wget_vector_t *v)
  *
  * Returns -1 if \p v is %NULL or if the compare function is not set.
  */
-int wget_vector_find(const wget_vector_t *v, const void *elem)
+int wget_vector_find(const wget_vector *v, const void *elem)
 {
 	if (v && v->cmp) {
 		if (v->cur == 1) {
@@ -623,7 +623,7 @@ int wget_vector_find(const wget_vector_t *v, const void *elem)
  *
  * Checks whether the element \p elem exists or not.
  */
-int wget_vector_contains(const wget_vector_t *v, const void *elem)
+int wget_vector_contains(const wget_vector *v, const void *elem)
 {
 	return wget_vector_find(v, elem) >= 0;
 }
@@ -640,7 +640,7 @@ int wget_vector_contains(const wget_vector_t *v, const void *elem)
  *
  * Returns -1 if \p v is %NULL or if the \p find didn't return 0.
  */
-int wget_vector_findext(const wget_vector_t *v, int start, int direction, wget_vector_find_t *find)
+int wget_vector_findext(const wget_vector *v, int start, int direction, wget_vector_find_t *find)
 {
 
 	if (v) {

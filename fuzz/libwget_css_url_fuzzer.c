@@ -45,7 +45,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	assert(base != NULL);
 
 	const char *encoding = NULL;
-	wget_vector_t *urls;
+	wget_vector *urls;
 	urls = wget_css_get_urls(in, size, base, &encoding);
 	wget_vector_free(&urls);
 	wget_free((void *) encoding);

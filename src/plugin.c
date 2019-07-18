@@ -36,7 +36,7 @@ static const char *init_fn_name = "wget_plugin_initializer";
 static const char *plugin_list_envvar = "WGET2_PLUGINS";
 
 // Splits string using the given separator and appends the array to vector.
-static void split_string(const char *str, char separator, wget_vector_t *v)
+static void split_string(const char *str, char separator, wget_vector *v)
 {
 	const char *ptr, *pmark;
 
@@ -63,9 +63,9 @@ typedef struct {
 
 static int initialized = 0;
 // Plugin search paths
-static wget_vector_t *search_paths;
+static wget_vector *search_paths;
 // List of loaded plugins
-static wget_vector_t *plugin_list;
+static wget_vector *plugin_list;
 // Index of plugins by plugin name
 static wget_stringmap_t *plugin_name_index;
 // Whether any of the previous options forwarded was 'help'
@@ -172,7 +172,7 @@ typedef struct {
 	uint64_t size;
 	const void *data;
 	void *data_buf;
-	wget_vector_t *recurse_iris;
+	wget_vector *recurse_iris;
 } downloaded_file_t;
 
 static const wget_iri_t *impl_file_get_source_url(wget_downloaded_file_t *p_file)
@@ -409,7 +409,7 @@ plugin_t *plugin_db_load_from_name(const char *name, dl_error_t *e)
 int plugin_db_load_from_envvar(void)
 {
 	dl_error_t e[1];
-	wget_vector_t *v;
+	wget_vector *v;
 	const char *str;
 	int ret = 0;
 
@@ -459,7 +459,7 @@ int plugin_db_load_from_envvar(void)
 }
 
 // Creates a list of all plugins found in plugin search paths.
-void plugin_db_list(wget_vector_t *names_out)
+void plugin_db_list(wget_vector *names_out)
 {
 	dl_list(search_paths, names_out);
 }
@@ -631,7 +631,7 @@ wget_ocsp_db_t *plugin_db_fetch_provided_ocsp_db(void)
 
 // Forwards downloaded file to interested plugins
 int plugin_db_forward_downloaded_file(const wget_iri_t *iri, uint64_t size, const char *filename, const void *data,
-		wget_vector_t *recurse_iris)
+		wget_vector *recurse_iris)
 {
 	int ret = 1;
 

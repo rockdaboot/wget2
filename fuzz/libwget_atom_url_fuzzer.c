@@ -41,7 +41,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	memcpy(in, data, size);
 	in[size] = 0;
 
-	wget_vector_t *urls;
+	wget_vector *urls;
 	wget_atom_get_urls_inline(in, &urls);
 	wget_vector_free(&urls);
 	wget_rss_get_urls_inline(in, &urls);

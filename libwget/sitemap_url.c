@@ -45,7 +45,7 @@
  */
 
 struct _sitemap_context {
-	wget_vector_t
+	wget_vector
 		*sitemap_urls,
 		*urls;
 };
@@ -101,7 +101,7 @@ static void _sitemap_get_url(void *context, int flags, const char *dir, const ch
  * as vector in \p urls and/or \p sitemap_urls.
  *
  */
-void wget_sitemap_get_urls_inline(const char *sitemap, wget_vector_t **urls, wget_vector_t **sitemap_urls)
+void wget_sitemap_get_urls_inline(const char *sitemap, wget_vector **urls, wget_vector **sitemap_urls)
 {
 	struct _sitemap_context context = { .urls = NULL, .sitemap_urls = NULL };
 

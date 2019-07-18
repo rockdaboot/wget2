@@ -66,7 +66,7 @@ plugin_t *plugin_db_load_from_name(const char *name, dl_error_t *e);
 int plugin_db_load_from_envvar(void);
 
 // Creates a list of all plugins found in plugin search paths.
-void plugin_db_list(wget_vector_t *names_out);
+void plugin_db_list(wget_vector *names_out);
 
 // Forwards a command line option to appropriate plugin.
 // On errors, it returns -1 and sets error. Otherwise it returns 0.
@@ -96,7 +96,7 @@ void plugin_db_forward_url_verdict_free(struct plugin_db_forward_url_verdict *ve
 // Forwards downloaded file to interested plugins
 // Returns 0 if wget must not post-process the file, 1 otherwise
 int plugin_db_forward_downloaded_file(const wget_iri_t *iri, uint64_t size, const char *filename, const void *data,
-		wget_vector_t *recurse_iris);
+		wget_vector *recurse_iris);
 
 // Fetches the plugin-provided HSTS database, or NULL.
 // Ownership of the returned HSTS database is transferred to the caller, so it must be free'd with wget_hsts_db_free().

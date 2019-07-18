@@ -64,7 +64,7 @@ typedef struct {
 		last_modified;
 } site_stats_t;
 
-static wget_vector_t
+static wget_vector
 	*data;
 
 static wget_thread_mutex_t

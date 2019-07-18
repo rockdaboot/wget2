@@ -44,7 +44,7 @@
  */
 
 struct _atom_context {
-	wget_vector_t
+	wget_vector
 		*urls;
 };
 
@@ -113,7 +113,7 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
  * as vector in \p urls.
  *
  */
-void wget_atom_get_urls_inline(const char *atom, wget_vector_t **urls)
+void wget_atom_get_urls_inline(const char *atom, wget_vector **urls)
 {
 	struct _atom_context context = { .urls = NULL };
 

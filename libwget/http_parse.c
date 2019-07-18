@@ -235,7 +235,7 @@ static int G_GNUC_WGET_NONNULL_ALL compare_param(wget_http_header_param_t *p1, w
 	return wget_strcasecmp_ascii(p1->name, p2->name);
 }
 
-void wget_http_add_param(wget_vector_t **params, wget_http_header_param_t *param)
+void wget_http_add_param(wget_vector **params, wget_http_header_param_t *param)
 {
 	if (!*params) *params = wget_vector_create(4, (wget_vector_compare_t *) compare_param);
 	wget_vector_add_memdup(*params, param, sizeof(*param));
@@ -404,7 +404,7 @@ const char *wget_http_parse_challenge(const char *s, wget_http_challenge_t *chal
 	return s;
 }
 
-const char *wget_http_parse_challenges(const char *s, wget_vector_t *challenges)
+const char *wget_http_parse_challenges(const char *s, wget_vector *challenges)
 {
 	wget_http_challenge_t challenge;
 
@@ -1284,7 +1284,7 @@ void wget_http_free_link(wget_http_link_t *link)
 	xfree(link);
 }
 
-void wget_http_free_links(wget_vector_t **links)
+void wget_http_free_links(wget_vector **links)
 {
 	wget_vector_free(links);
 }
@@ -1296,7 +1296,7 @@ void wget_http_free_digest(wget_http_digest_t *digest)
 	xfree(digest);
 }
 
-void wget_http_free_digests(wget_vector_t **digests)
+void wget_http_free_digests(wget_vector **digests)
 {
 	wget_vector_free(digests);
 }
@@ -1308,12 +1308,12 @@ void wget_http_free_challenge(wget_http_challenge_t *challenge)
 	xfree(challenge);
 }
 
-void wget_http_free_challenges(wget_vector_t **challenges)
+void wget_http_free_challenges(wget_vector **challenges)
 {
 	wget_vector_free(challenges);
 }
 
-void wget_http_free_cookies(wget_vector_t **cookies)
+void wget_http_free_cookies(wget_vector **cookies)
 {
 	wget_vector_free(cookies);
 }

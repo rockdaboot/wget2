@@ -79,7 +79,7 @@ struct wget_cookie_st {
 };
 
 struct wget_cookie_db_st {
-	wget_vector_t *
+	wget_vector *
 		cookies;
 #ifdef WITH_LIBPSL
 	psl_ctx_t
@@ -584,7 +584,7 @@ int wget_cookie_normalize(const wget_iri_t *iri, wget_cookie_t *cookie)
 	return ret;
 }
 
-void wget_cookie_normalize_cookies(const wget_iri_t *iri, const wget_vector_t *cookies)
+void wget_cookie_normalize_cookies(const wget_iri_t *iri, const wget_vector *cookies)
 {
 //	wget_thread_mutex_lock(&_cookies_mutex);
 
@@ -661,7 +661,7 @@ int wget_cookie_store_cookie(wget_cookie_db_t *cookie_db, wget_cookie_t *cookie)
 	return WGET_E_SUCCESS;
 }
 
-void wget_cookie_store_cookies(wget_cookie_db_t *cookie_db, wget_vector_t *cookies)
+void wget_cookie_store_cookies(wget_cookie_db_t *cookie_db, wget_vector *cookies)
 {
 	if (cookie_db) {
 		int it;
@@ -680,7 +680,7 @@ char *wget_cookie_create_request_header(wget_cookie_db_t *cookie_db, const wget_
 {
 	int it, init = 0;
 	time_t now = time(NULL);
-	wget_vector_t *cookies = NULL;
+	wget_vector *cookies = NULL;
 	wget_buffer buf;
 
 	if (!cookie_db || !iri)

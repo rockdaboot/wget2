@@ -55,7 +55,7 @@ struct wget_hpkp_st {
 		maxage;
 	char
 		include_subdomains;
-	wget_vector_t *
+	wget_vector *
 		pins;
 };
 

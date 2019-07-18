@@ -63,7 +63,7 @@ do { \
 #define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".so"
 #endif
 
-static int string_vector_check(wget_vector_t *v, int correct_len, ...)
+static int string_vector_check(wget_vector *v, int correct_len, ...)
 {
 	int v_len = wget_vector_size(v);
 	va_list arglist;
@@ -86,7 +86,7 @@ static int string_vector_check(wget_vector_t *v, int correct_len, ...)
 	return 1;
 }
 
-static void string_vector_dump(wget_vector_t *v)
+static void string_vector_dump(wget_vector *v)
 {
 	int v_len = wget_vector_size(v);
 
@@ -191,8 +191,8 @@ static void test_fn_check(void *fn, const char *expected)
 // Test whether dl_list() works
 static void test_dl_list(void)
 {
-	wget_vector_t *dirs;
-	wget_vector_t *names;
+	wget_vector *dirs;
+	wget_vector *names;
 
 	remove_object_dir();
 	libassert(mkdir(OBJECT_DIR, 0755) == 0);

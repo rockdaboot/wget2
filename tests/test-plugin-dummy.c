@@ -260,7 +260,7 @@ static int parse_pair(const struct option *option, const char *value)
 }
 
 typedef struct {
-	wget_vector_t *files_processed;
+	wget_vector *files_processed;
 
 	char *reject;
 	char *accept;

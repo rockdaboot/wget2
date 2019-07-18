@@ -60,13 +60,13 @@ struct JOB {
 	wget_metalink_t
 		*metalink;
 
-	wget_vector_t
+	wget_vector
 		*challenges; // challenges from 401 response
 
-	wget_vector_t
+	wget_vector
 		*proxy_challenges; // challenges from 407 response (proxy)
 
-	wget_vector_t
+	wget_vector
 		*parts; // parts to download
 
 	wget_list

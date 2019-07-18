@@ -38,9 +38,9 @@
 typedef struct {
 	wget_html_parsed_result_t
 		result;
-	wget_vector_t *
+	wget_vector *
 		additional_tags;
-	wget_vector_t *
+	wget_vector *
 		ignore_tags;
 	int
 		uri_index;
@@ -292,7 +292,7 @@ void wget_html_free_urls_inline (wget_html_parsed_result_t **res)
 	}
 }
 
-wget_html_parsed_result_t *wget_html_get_urls_inline(const char *html, wget_vector_t *additional_tags, wget_vector_t *ignore_tags)
+wget_html_parsed_result_t *wget_html_get_urls_inline(const char *html, wget_vector *additional_tags, wget_vector *ignore_tags)
 {
 	_html_context_t context = {
 		.result.follow = 1,

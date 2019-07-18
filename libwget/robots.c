@@ -45,9 +45,9 @@
  */
 
 struct wget_robots_st {
-	wget_vector_t
+	wget_vector
 		*paths;    //!< paths found in robots.txt (element: wget_string_t)
-	wget_vector_t
+	wget_vector
 		*sitemaps; //!< sitemaps found in robots.txt (element: char *)
 };
 

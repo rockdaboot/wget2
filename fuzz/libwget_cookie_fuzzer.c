@@ -39,7 +39,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	wget_cookie_db_t *db, *db2;
 	wget_cookie_t *cookie, *cookie2;
 	wget_iri_t *iri;
-	wget_vector_t *cookies;
+	wget_vector *cookies;
 	char *in;
 
 	if (size > 1000) // same as max_len = 10000 in .options file

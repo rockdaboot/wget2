@@ -113,7 +113,7 @@ struct config {
 		*netrc_file,
 		*use_askpass_bin,
 		*dns_cache_preload;
-	wget_vector_t
+	wget_vector
 		*compression,
 		*domains,
 		*exclude_directories,

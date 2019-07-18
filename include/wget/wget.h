@@ -658,62 +658,62 @@ WGETAPI wget_logger *
  * Vector datatype routines
  */
 
-typedef struct wget_vector_st wget_vector_t;
+typedef struct wget_vector_st wget_vector;
 typedef int wget_vector_compare_t(const void *elem1, const void *elem2);
 typedef int wget_vector_find_t(void *elem);
 typedef int wget_vector_browse_t(void *ctx, void *elem);
 typedef void wget_vector_destructor_t(void *elem);
 
-WGETAPI wget_vector_t *
+WGETAPI wget_vector *
 	wget_vector_create(int max, wget_vector_compare_t *cmp) G_GNUC_WGET_MALLOC;
 WGETAPI void
-	wget_vector_set_resize_factor(wget_vector_t *v, float off);
+	wget_vector_set_resize_factor(wget_vector *v, float off);
 WGETAPI int
-	wget_vector_find(const wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
+	wget_vector_find(const wget_vector *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_findext(const wget_vector_t *v, int start, int direction, wget_vector_find_t *find) G_GNUC_WGET_NONNULL((4));
+	wget_vector_findext(const wget_vector *v, int start, int direction, wget_vector_find_t *find) G_GNUC_WGET_NONNULL((4));
 WGETAPI int
-	wget_vector_contains(const wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
+	wget_vector_contains(const wget_vector *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_insert(wget_vector_t *v, const void *elem, int pos) G_GNUC_WGET_NONNULL((2));
+	wget_vector_insert(wget_vector *v, const void *elem, int pos) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_insert_sorted(wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
+	wget_vector_insert_sorted(wget_vector *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_add_memdup(wget_vector_t *v, const void *elem, size_t size) G_GNUC_WGET_NONNULL((2));
+	wget_vector_add_memdup(wget_vector *v, const void *elem, size_t size) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_add(wget_vector_t *v, const void *elem) G_GNUC_WGET_NONNULL((2));
+	wget_vector_add(wget_vector *v, const void *elem) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_add_vprintf(wget_vector_t *v, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+	wget_vector_add_vprintf(wget_vector *v, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
 WGETAPI int
-	wget_vector_add_printf(wget_vector_t *v, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+	wget_vector_add_printf(wget_vector *v, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
 WGETAPI int
-	wget_vector_replace(wget_vector_t *v, const void *elem, int pos) G_GNUC_WGET_NONNULL((2));
+	wget_vector_replace(wget_vector *v, const void *elem, int pos) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_vector_move(wget_vector_t *v, int old_pos, int new_pos);
+	wget_vector_move(wget_vector *v, int old_pos, int new_pos);
 WGETAPI int
-	wget_vector_swap(wget_vector_t *v, int pos1, int pos2);
+	wget_vector_swap(wget_vector *v, int pos1, int pos2);
 WGETAPI int
-	wget_vector_remove(wget_vector_t *v, int pos);
+	wget_vector_remove(wget_vector *v, int pos);
 WGETAPI int
-	wget_vector_remove_nofree(wget_vector_t *v, int pos);
+	wget_vector_remove_nofree(wget_vector *v, int pos);
 WGETAPI int
-	wget_vector_size(const wget_vector_t *v) G_GNUC_WGET_PURE;
+	wget_vector_size(const wget_vector *v) G_GNUC_WGET_PURE;
 WGETAPI int
-	wget_vector_browse(const wget_vector_t *v, wget_vector_browse_t *browse, void *ctx) G_GNUC_WGET_NONNULL((2));
+	wget_vector_browse(const wget_vector *v, wget_vector_browse_t *browse, void *ctx) G_GNUC_WGET_NONNULL((2));
 WGETAPI void
-	wget_vector_free(wget_vector_t **v);
+	wget_vector_free(wget_vector **v);
 WGETAPI void
-	wget_vector_clear(wget_vector_t *v);
+	wget_vector_clear(wget_vector *v);
 WGETAPI void
-	wget_vector_clear_nofree(wget_vector_t *v);
+	wget_vector_clear_nofree(wget_vector *v);
 WGETAPI void *
-	wget_vector_get(const wget_vector_t *v, int pos) G_GNUC_WGET_PURE;
+	wget_vector_get(const wget_vector *v, int pos) G_GNUC_WGET_PURE;
 WGETAPI void
-	wget_vector_setcmpfunc(wget_vector_t *v, wget_vector_compare_t *cmp) G_GNUC_WGET_NONNULL((2));
+	wget_vector_setcmpfunc(wget_vector *v, wget_vector_compare_t *cmp) G_GNUC_WGET_NONNULL((2));
 WGETAPI void
-	wget_vector_set_destructor(wget_vector_t *v, wget_vector_destructor_t *destructor);
+	wget_vector_set_destructor(wget_vector *v, wget_vector_destructor_t *destructor);
 WGETAPI void
-	wget_vector_sort(wget_vector_t *v);
+	wget_vector_sort(wget_vector *v);
 
 /**
  * \ingroup libwget-hashmap
@@ -1345,11 +1345,11 @@ WGETAPI char *
 WGETAPI const char *
 	wget_cookie_parse_setcookie(const char *s, wget_cookie_t **cookie) G_GNUC_WGET_NONNULL((1));
 WGETAPI void
-	wget_cookie_normalize_cookies(const wget_iri_t *iri, const wget_vector_t *cookies);
+	wget_cookie_normalize_cookies(const wget_iri_t *iri, const wget_vector *cookies);
 WGETAPI int
 	wget_cookie_store_cookie(wget_cookie_db_t *cookie_db, wget_cookie_t *cookie);
 WGETAPI void
-	wget_cookie_store_cookies(wget_cookie_db_t *cookie_db, wget_vector_t *cookies);
+	wget_cookie_store_cookies(wget_cookie_db_t *cookie_db, wget_vector *cookies);
 WGETAPI int
 	wget_cookie_normalize(const wget_iri_t *iri, wget_cookie_t *cookie);
 WGETAPI int
@@ -1909,13 +1909,13 @@ WGETAPI void
 		wget_css_parse_uri_cb_t *callback_uri,
 		wget_css_parse_encoding_cb_t *callback_encoding,
 		void *user_ctx) G_GNUC_WGET_NONNULL((1));
-WGETAPI wget_vector_t *
+WGETAPI wget_vector *
 	wget_css_get_urls(
 		const char *css,
 		size_t len,
 		wget_iri_t *base,
 		const char **encoding) G_GNUC_WGET_NONNULL((1));
-WGETAPI wget_vector_t *
+WGETAPI wget_vector *
 	wget_css_get_urls_from_localfile(
 		const char *fname,
 		wget_iri_t *base,
@@ -1940,7 +1940,7 @@ typedef struct {
 } wget_html_parsed_url_t;
 
 typedef struct {
-	wget_vector_t
+	wget_vector
 		*uris; //!< list of found URLs (entries: wget_html_parsed_url_t)
 	const char *
 		encoding; //!< the charset encoding set by the parsed document or NULL if none
@@ -1961,15 +1961,15 @@ typedef struct {
 } wget_html_tag_t;
 
 WGETAPI wget_html_parsed_result_t *
-	wget_html_get_urls_inline(const char *html, wget_vector_t *additional_tags, wget_vector_t *ignore_tags);
+	wget_html_get_urls_inline(const char *html, wget_vector *additional_tags, wget_vector *ignore_tags);
 WGETAPI void
 	wget_html_free_urls_inline(wget_html_parsed_result_t **res);
 WGETAPI void
-	wget_sitemap_get_urls_inline(const char *sitemap, wget_vector_t **urls, wget_vector_t **sitemap_urls);
+	wget_sitemap_get_urls_inline(const char *sitemap, wget_vector **urls, wget_vector **sitemap_urls);
 WGETAPI void
-	wget_atom_get_urls_inline(const char *atom, wget_vector_t **urls);
+	wget_atom_get_urls_inline(const char *atom, wget_vector **urls);
 WGETAPI void
-	wget_rss_get_urls_inline(const char *rss, wget_vector_t **urls);
+	wget_rss_get_urls_inline(const char *rss, wget_vector **urls);
 
 /*
  * XML and HTML parsing routines
@@ -2258,7 +2258,7 @@ typedef int wget_http_body_callback_t(wget_http_response_t *, void *, const char
  * HTTP request data
  */
 typedef struct {
-	wget_vector_t *
+	wget_vector *
 		headers; //!< list of HTTP headers
 	const char *
 		scheme; //!< scheme of the request for proxied connections
@@ -2305,13 +2305,13 @@ typedef struct {
 struct wget_http_response_t {
 	wget_http_request_t *
 		req;
-	wget_vector_t *
+	wget_vector *
 		links;
-	wget_vector_t *
+	wget_vector *
 		digests;
-	wget_vector_t *
+	wget_vector *
 		cookies;
-	wget_vector_t *
+	wget_vector *
 		challenges;
 	wget_hpkp_t *
 		hpkp;
@@ -2396,7 +2396,7 @@ WGETAPI const char *
 WGETAPI const char *
 	wget_http_parse_challenge(const char *s, wget_http_challenge_t *challenge) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_challenges(const char *s, wget_vector_t *challenges) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_challenges(const char *s, wget_vector *challenges) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
 	wget_http_parse_location(const char *s, const char **location) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
@@ -2422,7 +2422,7 @@ WGETAPI char *
 	wget_http_print_date(time_t t, char *buf, size_t bufsize) G_GNUC_WGET_NONNULL_ALL;
 
 WGETAPI void
-	wget_http_add_param(wget_vector_t **params, wget_http_header_param_t *param) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_add_param(wget_vector **params, wget_http_header_param_t *param) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
 	wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
@@ -2440,7 +2440,7 @@ WGETAPI int
 WGETAPI int
 	wget_http_set_no_proxy(const char *no_proxy, const char *encoding);
 WGETAPI int
-	wget_http_match_no_proxy(wget_vector_t *no_proxies, const char *host);
+	wget_http_match_no_proxy(wget_vector *no_proxies, const char *host);
 WGETAPI void
 	wget_http_abort_connection(wget_http_connection_t *conn);
 
@@ -2456,15 +2456,15 @@ WGETAPI void
 	wget_http_free_link(wget_http_link_t *link);
 
 WGETAPI void
-	wget_http_free_cookies(wget_vector_t **cookies);
+	wget_http_free_cookies(wget_vector **cookies);
 WGETAPI void
 	wget_http_free_hpkp_entries(wget_hpkp_t **hpkp);
 WGETAPI void
-	wget_http_free_digests(wget_vector_t **digests);
+	wget_http_free_digests(wget_vector **digests);
 WGETAPI void
-	wget_http_free_challenges(wget_vector_t **challenges);
+	wget_http_free_challenges(wget_vector **challenges);
 WGETAPI void
-	wget_http_free_links(wget_vector_t **links);
+	wget_http_free_links(wget_vector **links);
 //WGETAPI void
 //	wget_http_free_header(HTTP_HEADER **header);
 WGETAPI void
@@ -2522,7 +2522,7 @@ WGETAPI ssize_t
 
 WGETAPI wget_http_response_t *
 	wget_http_get(int first_key, ...);
-WGETAPI wget_vector_t
+WGETAPI wget_vector
 	*wget_get_css_urls(const char *data);
 
 
@@ -2627,7 +2627,7 @@ typedef struct {
 typedef struct {
 	const char
 		*name;    //!< filename
-	wget_vector_t
+	wget_vector
 		*mirrors, //!< mirrors that provide the file (element: wget_metalink_mirror_t)
 		*hashes,  //!< checksums of complete file (element: wget_metalink_hash_t)
 		*pieces;  //!< checksums of smaller pieces of the file (element: wget_metalink_piece_t)

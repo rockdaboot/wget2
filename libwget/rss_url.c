@@ -36,7 +36,7 @@
 #include "private.h"
 
 struct _rss_context {
-	wget_vector_t
+	wget_vector
 		*urls;
 };
 
@@ -97,7 +97,7 @@ static void _rss_get_url(void *context, int flags, const char *dir, const char *
 	}
 }
 
-void wget_rss_get_urls_inline(const char *rss, wget_vector_t **urls)
+void wget_rss_get_urls_inline(const char *rss, wget_vector **urls)
 {
 	struct _rss_context context = { .urls = NULL };
 

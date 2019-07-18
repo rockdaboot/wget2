@@ -383,13 +383,13 @@ static int compare_wget_http_param(wget_http_header_param_t *a, wget_http_header
 
 static int parse_header(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
-	wget_vector_t *v = *((wget_vector_t **)opt->var);
+	wget_vector *v = *((wget_vector **)opt->var);
 
 	if (val && *val) {
 		char *value, *delim_pos;
 
 		if (!v) {
-			v = *((wget_vector_t **)opt->var) =
+			v = *((wget_vector **)opt->var) =
 				wget_vector_create(8, (wget_vector_compare_t *) compare_wget_http_param);
 			wget_vector_set_destructor(v, (wget_vector_destructor_t *) wget_http_free_param);
 		}
@@ -474,11 +474,11 @@ static char *_strmemdup_esc(const char *s, size_t size)
 static int parse_stringlist_expand(option_t opt, const char *val, int expand, int max_entries)
 {
 	if (val && *val) {
-		wget_vector_t *v = *((wget_vector_t **)opt->var);
+		wget_vector *v = *((wget_vector **)opt->var);
 		const char *s, *p;
 
 		if (!v)
-			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, (wget_vector_compare_t *) strcmp);
+			v = *((wget_vector **)opt->var) = wget_vector_create(8, (wget_vector_compare_t *) strcmp);
 
 		for (s = p = val; *p; s = p + 1) {
 			if ((p = _strchrnul_esc(s, ',')) != s) {
@@ -580,7 +580,7 @@ static void tag_free(void *tag)
 	}
 }
 
-static void G_GNUC_WGET_NONNULL_ALL _add_tag(wget_vector_t *v, const char *begin, const char *end)
+static void G_GNUC_WGET_NONNULL_ALL _add_tag(wget_vector *v, const char *begin, const char *end)
 {
 	wget_html_tag_t *tag = wget_malloc(sizeof(wget_html_tag_t));
 	const char *attribute;
@@ -621,11 +621,11 @@ static int G_GNUC_WGET_NONNULL_ALL _compare_tag(const wget_html_tag_t *t1, const
 static int parse_taglist(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
 	if (val && *val) {
-		wget_vector_t *v = *((wget_vector_t **)opt->var);
+		wget_vector *v = *((wget_vector **)opt->var);
 		const char *s, *p;
 
 		if (!v) {
-			v = *((wget_vector_t **)opt->var) = wget_vector_create(8, (wget_vector_compare_t *) _compare_tag);
+			v = *((wget_vector **)opt->var) = wget_vector_create(8, (wget_vector_compare_t *) _compare_tag);
 			wget_vector_set_destructor(v, tag_free);
 		}
 
@@ -1022,12 +1022,12 @@ static int parse_verify_sig(option_t opt, const char *val, const char invert)
 
 static int parse_compression(option_t opt, const char *val, const char invert)
 {
-	wget_vector_t *v = *((wget_vector_t **)opt->var);
+	wget_vector *v = *((wget_vector **)opt->var);
 
 	if (!val && invert) {   // --no-compression
 		// should free the previous TYPE list and clear config.compression_methods for override
 		if (v) {
-			wget_vector_free((wget_vector_t **)opt->var);
+			wget_vector_free((wget_vector **)opt->var);
 			config.compression_methods[wget_content_encoding_max] = 0;
 		}
 
@@ -1038,14 +1038,14 @@ static int parse_compression(option_t opt, const char *val, const char invert)
 
 		// should free the previous TYPE list and clear config.compression_methods for override
 		if (v) {
-			wget_vector_free((wget_vector_t **)opt->var);
+			wget_vector_free((wget_vector **)opt->var);
 			config.compression_methods[wget_content_encoding_max] = 0;
 		}
 
 		if ((rc = parse_stringlist_expand(opt, val, 0, 16)))
 			return rc;
 
-		v = *((wget_vector_t **)opt->var);
+		v = *((wget_vector **)opt->var);
 
 		config.no_compression = false;
 		long long methods_bits = 0;		// check duplication
@@ -1108,7 +1108,7 @@ static int list_plugins(G_GNUC_WGET_UNUSED option_t opt,
 	if (! plugin_loading_enabled)
 		return 0;
 
-	wget_vector_t *v = wget_vector_create(16, NULL);
+	wget_vector *v = wget_vector_create(16, NULL);
 	plugin_db_list(v);
 
 	int n_names = wget_vector_size(v);
@@ -3407,7 +3407,7 @@ int init(int argc, const char **argv)
 			// Duplicate extensions break the chain when "add_url" blocks the requests
 			// so they don't come back as a failure.
 			int start_len = wget_vector_size(config.sig_ext);
-			wget_vector_t *new_sig_ext = wget_vector_create(start_len, (wget_vector_compare_t *) strcmp);
+			wget_vector *new_sig_ext = wget_vector_create(start_len, (wget_vector_compare_t *) strcmp);
 			wget_stringmap_t *set = wget_stringmap_create(start_len);
 			for (int i = 0; i < start_len; i++) {
 				const char *nxt = wget_vector_get(config.sig_ext, i);

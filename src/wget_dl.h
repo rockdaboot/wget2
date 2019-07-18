@@ -90,10 +90,10 @@ char *dl_get_name_from_path(const char *path, int strict);
  * directories. If found it returns the filename, else returns NULL.
  * Free the returned string with wget_free().
  */
-char *dl_search(const char *name, const wget_vector_t *dirs);
+char *dl_search(const char *name, const wget_vector *dirs);
 
 /* Creates a list of loadable object files in a given list of directories.
  */
-void dl_list(const wget_vector_t *dirs, wget_vector_t *names_out);
+void dl_list(const wget_vector *dirs, wget_vector *names_out);
 
 #endif /* SRC_WGET_DL_H */

@@ -106,7 +106,7 @@ typedef struct {
 	int
 		content_type;
 } _conversion_t;
-static wget_vector_t *conversions;
+static wget_vector *conversions;
 
 typedef struct {
 	int
@@ -343,7 +343,7 @@ static void
 	*input_thread(void *p);
 static wget_thread_t
 	input_tid;
-static wget_vector_t
+static wget_vector
 	*parents;
 static wget_thread_mutex_t
 	downloader_mutex,
@@ -445,7 +445,7 @@ static bool match_subdir(const char *dir, const char *subdir, char ignore_case)
 	return *dir == 0 && (*subdir == 0 || *subdir == '/');
 }
 
-static int in_directory_pattern_list(const wget_vector_t *v, const char *fname)
+static int in_directory_pattern_list(const wget_vector *v, const char *fname)
 {
 	// if -I was given: exclude all be default
 	// if -X was given alone: include all be default
@@ -496,7 +496,7 @@ static int in_directory_pattern_list(const wget_vector_t *v, const char *fname)
 	return default_exclude;
 }
 
-static int in_pattern_list(const wget_vector_t *v, const char *url)
+static int in_pattern_list(const wget_vector *v, const char *url)
 {
 	for (int it = 0; it < wget_vector_size(v); it++) {
 		const char *pattern = wget_vector_get(v, it);
@@ -517,7 +517,7 @@ static int in_pattern_list(const wget_vector_t *v, const char *url)
 	return 0;
 }
 
-static int in_host_pattern_list(const wget_vector_t *v, const char *hostname)
+static int in_host_pattern_list(const wget_vector *v, const char *hostname)
 {
 	for (int it = 0; it < wget_vector_size(v); it++) {
 		const char *pattern = wget_vector_get(v, it);
@@ -1812,8 +1812,8 @@ static int process_response_header(wget_http_response_t *resp)
 	return 0;
 }
 
-static bool check_status_code_list(wget_vector_t *list, uint16_t status);
-static bool check_mime_list(wget_vector_t *list, const char *mime);
+static bool check_status_code_list(wget_vector *list, uint16_t status);
+static bool check_mime_list(wget_vector *list, const char *mime);
 
 static void process_head_response(wget_http_response_t *resp)
 {
@@ -2055,7 +2055,7 @@ static void process_response(wget_http_response_t *resp)
 		recurse_decision = process_decision && config.recursive
 			&& (!config.level || job->level < config.level + config.page_requisites) ? 1 : 0;
 		if (process_decision) {
-			wget_vector_t *recurse_iris = NULL;
+			wget_vector *recurse_iris = NULL;
 			int n_recurse_iris = 0;
 			const void *data = NULL;
 			uint64_t size;
@@ -2651,7 +2651,7 @@ void html_parse_localfile(JOB *job, int level, const char *fname, const char *en
 
 void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_iri_t *base)
 {
-	wget_vector_t *urls, *sitemap_urls;
+	wget_vector *urls, *sitemap_urls;
 	const char *p;
 	size_t baselen = 0;
 
@@ -2784,7 +2784,7 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, wget_i
 	}
 }
 
-static void _add_urls(JOB *job, wget_vector_t *urls, const char *encoding, wget_iri_t *base)
+static void _add_urls(JOB *job, wget_vector *urls, const char *encoding, wget_iri_t *base)
 {
 	const char *p;
 	size_t baselen = 0;
@@ -2821,7 +2821,7 @@ static void _add_urls(JOB *job, wget_vector_t *urls, const char *encoding, wget_
 
 void atom_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base)
 {
-	wget_vector_t *urls;
+	wget_vector *urls;
 
 	wget_atom_get_urls_inline(data, &urls);
 	_add_urls(job, urls, encoding, base);
@@ -2841,7 +2841,7 @@ void atom_parse_localfile(JOB *job, const char *fname, const char *encoding, wge
 
 void rss_parse(JOB *job, const char *data, const char *encoding, wget_iri_t *base)
 {
-	wget_vector_t *urls;
+	wget_vector *urls;
 
 	wget_rss_get_urls_inline(data, &urls);
 	_add_urls(job, urls, encoding, base);
@@ -3059,7 +3059,7 @@ static int _open_unique(const char *fname, int flags, mode_t mode, int multiple,
 }
 
 // return 0 if mime won't be downloaded and 1 if it will
-static bool check_mime_list(wget_vector_t *list, const char *mime)
+static bool check_mime_list(wget_vector *list, const char *mime)
 {
 	char result = 0;
 
@@ -3437,7 +3437,7 @@ out:
 }
 
 // Search function for --save-content-on=. Return 0 if content won't be downloaded and 1 if it will.
-static bool check_status_code_list(wget_vector_t *list, uint16_t status)
+static bool check_status_code_list(wget_vector *list, uint16_t status)
 {
 	char result = 0;
 	char key[6];
@@ -3549,7 +3549,7 @@ static int _get_body(wget_http_response_t *resp, void *context, const char *data
 
 static void _add_authorize_header(
 	wget_http_request_t *req,
-	wget_vector_t *challenges,
+	wget_vector *challenges,
 	const char *username, const char *password, int proxied)
 {
 	// There might be more than one challenge, we could select the most secure one.

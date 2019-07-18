@@ -107,7 +107,7 @@ int main(int argc, const char **argv)
 
 	for (;argpos < argc; argpos++) {
 		// use '-' as filename for STDIN
-		wget_vector_t *css_urls = wget_css_get_urls_from_localfile(argv[argpos], base_uri, &css_encoding);
+		wget_vector *css_urls = wget_css_get_urls_from_localfile(argv[argpos], base_uri, &css_encoding);
 
 		if (wget_vector_size(css_urls) > 0) {
 			info_printf("URL encoding for %s is '%s':\n", argv[argpos], css_encoding ? css_encoding : "UTF-8");

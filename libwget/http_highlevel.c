@@ -64,12 +64,12 @@ static int _fd_callback(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *use
 
 wget_http_response_t *wget_http_get(int first_key, ...)
 {
-	wget_vector_t *headers = wget_vector_create(8, NULL);
+	wget_vector *headers = wget_vector_create(8, NULL);
 	wget_iri_t *uri = NULL;
 	wget_http_connection_t *conn = NULL, **connp = NULL;
 	wget_http_request_t *req;
 	wget_http_response_t *resp = NULL;
-	wget_vector_t *challenges = NULL;
+	wget_vector *challenges = NULL;
 	wget_cookie_db_t *cookie_db = NULL;
 	FILE *saveas_stream = NULL;
 	wget_http_body_callback_t *saveas_callback = NULL;

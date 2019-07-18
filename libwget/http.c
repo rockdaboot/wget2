@@ -55,7 +55,7 @@
 static char
 	_abort_indicator;
 
-static wget_vector_t
+static wget_vector
 	*http_proxies,
 	*https_proxies,
 	*no_proxies;
@@ -1373,12 +1373,12 @@ static void iri_free(void *iri)
 		wget_iri_free((wget_iri_t **) &iri);
 }
 
-static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
+static wget_vector *_parse_proxies(const char *proxy, const char *encoding)
 {
 	if (!proxy)
 		return NULL;
 
-	wget_vector_t *proxies = NULL;
+	wget_vector *proxies = NULL;
 	const char *s, *p;
 
 	for (s = p = proxy; *p; s = p + 1) {
@@ -1403,12 +1403,12 @@ static wget_vector_t *_parse_proxies(const char *proxy, const char *encoding)
 	return proxies;
 }
 
-static wget_vector_t *_parse_no_proxies(const char *no_proxy, const char *encoding)
+static wget_vector *_parse_no_proxies(const char *no_proxy, const char *encoding)
 {
 	if (!no_proxy)
 		return NULL;
 
-	wget_vector_t *proxies;
+	wget_vector *proxies;
 	const char *s, *p;
 
 	proxies = wget_vector_create(8, NULL);
@@ -1475,7 +1475,7 @@ int wget_http_set_no_proxy(const char *no_proxy, const char *encoding)
 	return 0;
 }
 
-int wget_http_match_no_proxy(wget_vector_t *no_proxies_vec, const char *host)
+int wget_http_match_no_proxy(wget_vector *no_proxies_vec, const char *host)
 {
 	if (!no_proxies_vec || !host)
 		return 0;

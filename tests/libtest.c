@@ -69,7 +69,7 @@ static int
 	https_server_port,
 	keep_tmpfiles,
 	reject_https_connection;
-static wget_vector_t
+static wget_vector
 	*request_urls;
 static wget_test_url_t
 	*urls;
