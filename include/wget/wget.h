@@ -1334,28 +1334,28 @@ WGETAPI const char *
 typedef struct wget_cookie_db_st wget_cookie_db;
 
 // typedef for cookie
-typedef struct wget_cookie_st wget_cookie_t;
+typedef struct wget_cookie_st wget_cookie;
 
-WGETAPI wget_cookie_t *
-	wget_cookie_init(wget_cookie_t *cookie);
+WGETAPI wget_cookie *
+	wget_cookie_init(wget_cookie *cookie);
 WGETAPI void
-	wget_cookie_deinit(wget_cookie_t *cookie);
+	wget_cookie_deinit(wget_cookie *cookie);
 WGETAPI void
-	wget_cookie_free(wget_cookie_t **cookie);
+	wget_cookie_free(wget_cookie **cookie);
 WGETAPI char *
-	wget_cookie_to_setcookie(wget_cookie_t *cookie);
+	wget_cookie_to_setcookie(wget_cookie *cookie);
 WGETAPI const char *
-	wget_cookie_parse_setcookie(const char *s, wget_cookie_t **cookie) G_GNUC_WGET_NONNULL((1));
+	wget_cookie_parse_setcookie(const char *s, wget_cookie **cookie) G_GNUC_WGET_NONNULL((1));
 WGETAPI void
 	wget_cookie_normalize_cookies(const wget_iri *iri, const wget_vector *cookies);
 WGETAPI int
-	wget_cookie_store_cookie(wget_cookie_db *cookie_db, wget_cookie_t *cookie);
+	wget_cookie_store_cookie(wget_cookie_db *cookie_db, wget_cookie *cookie);
 WGETAPI void
 	wget_cookie_store_cookies(wget_cookie_db *cookie_db, wget_vector *cookies);
 WGETAPI int
-	wget_cookie_normalize(const wget_iri *iri, wget_cookie_t *cookie);
+	wget_cookie_normalize(const wget_iri *iri, wget_cookie *cookie);
 WGETAPI int
-	wget_cookie_check_psl(const wget_cookie_db *cookie_db, const wget_cookie_t *cookie);
+	wget_cookie_check_psl(const wget_cookie_db *cookie_db, const wget_cookie *cookie);
 WGETAPI wget_cookie_db *
 	wget_cookie_db_init(wget_cookie_db *cookie_db);
 WGETAPI void
@@ -2416,7 +2416,7 @@ WGETAPI const char *
 WGETAPI const char *
 	wget_http_parse_connection(const char *s, char *keep_alive) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_setcookie(const char *s, wget_cookie_t **cookie) G_GNUC_WGET_NONNULL((1));
+	wget_http_parse_setcookie(const char *s, wget_cookie **cookie) G_GNUC_WGET_NONNULL((1));
 WGETAPI const char *
 	wget_http_parse_etag(const char *s, const char **etag) G_GNUC_WGET_NONNULL((1));
 
@@ -2449,7 +2449,7 @@ WGETAPI void
 WGETAPI void
 	wget_http_free_param(wget_http_header_param_t *param);
 WGETAPI void
-	wget_http_free_cookie(wget_cookie_t *cookie);
+	wget_http_free_cookie(wget_cookie *cookie);
 WGETAPI void
 	wget_http_free_digest(wget_http_digest_t *digest);
 WGETAPI void

@@ -1035,7 +1035,7 @@ static long long get_current_time(void)
  httponly-av       = "HttpOnly"
  extension-av      = <any CHAR except CTLs or ";">
 */
-const char *wget_http_parse_setcookie(const char *s, wget_cookie_t **cookie)
+const char *wget_http_parse_setcookie(const char *s, wget_cookie **cookie)
 {
 	return wget_cookie_parse_setcookie(s, cookie);
 }
@@ -1043,7 +1043,7 @@ const char *wget_http_parse_setcookie(const char *s, wget_cookie_t **cookie)
 static void cookie_free(void *cookie)
 {
 	if (cookie)
-		wget_cookie_free((wget_cookie_t **) &cookie);
+		wget_cookie_free((wget_cookie **) &cookie);
 }
 
 int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, size_t namelen, const char *value, size_t valuelen)
@@ -1156,7 +1156,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 	case 's':
 		if (!wget_strncasecmp_ascii(name, "set-cookie", namelen)) {
 			// this is a parser. content validation must be done by higher level functions.
-			wget_cookie_t *cookie;
+			wget_cookie *cookie;
 			wget_http_parse_setcookie(value0, &cookie);
 
 			if (cookie) {

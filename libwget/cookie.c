@@ -118,7 +118,7 @@ int wget_cookie_db_load_psl(G_GNUC_WGET_UNUSED wget_cookie_db *cookie_db, G_GNUC
 }
 
 // this is how we sort the entries in a cookie db
-static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_cookie(const wget_cookie_t *c1, const wget_cookie_t *c2)
+static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_cookie(const wget_cookie *c1, const wget_cookie *c2)
 {
 	int n;
 
@@ -132,7 +132,7 @@ static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_cookie(const wget_c
 }
 
 // this is how we sort the entries when constructing a Cookie: header field
-static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_cookie2(const wget_cookie_t *c1, const wget_cookie_t *c2)
+static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_cookie2(const wget_cookie *c1, const wget_cookie *c2)
 {
 	// RFC 6265 5.4 demands sorting by 1. longer paths first, 2. earlier creation time first.
 	size_t len1 = strlen(c1->path);
@@ -234,10 +234,10 @@ static int G_GNUC_WGET_NONNULL((1)) _path_match(const char *cookie_path, const c
 	return 0;
 }
 
-wget_cookie_t *wget_cookie_init(wget_cookie_t *cookie)
+wget_cookie *wget_cookie_init(wget_cookie *cookie)
 {
 	if (!cookie)
-		cookie = wget_calloc(1, sizeof(wget_cookie_t));
+		cookie = wget_calloc(1, sizeof(wget_cookie));
 	else
 		memset(cookie, 0, sizeof(*cookie));
 
@@ -246,7 +246,7 @@ wget_cookie_t *wget_cookie_init(wget_cookie_t *cookie)
 	return cookie;
 }
 
-void wget_cookie_deinit(wget_cookie_t *cookie)
+void wget_cookie_deinit(wget_cookie *cookie)
 {
 	if (cookie) {
 		xfree(cookie->name);
@@ -256,7 +256,7 @@ void wget_cookie_deinit(wget_cookie_t *cookie)
 	}
 }
 
-void wget_cookie_free(wget_cookie_t **cookie)
+void wget_cookie_free(wget_cookie **cookie)
 {
 	if (cookie) {
 		wget_cookie_deinit(*cookie);
@@ -268,11 +268,11 @@ void wget_cookie_free(wget_cookie_t **cookie)
 static void cookie_free(void *cookie)
 {
 	if (cookie)
-		wget_cookie_free((wget_cookie_t **) &cookie);
+		wget_cookie_free((wget_cookie **) &cookie);
 }
 
 /*
-int wget_cookie_equals(wget_cookie_t *cookie1, wget_cookie_t *cookie2)
+int wget_cookie_equals(wget_cookie *cookie1, wget_cookie *cookie2)
 {
 	if (!cookie1)
 		return !cookie2;
@@ -298,7 +298,7 @@ int wget_cookie_equals(wget_cookie_t *cookie1, wget_cookie_t *cookie2)
 }
 */
 
-char *wget_cookie_to_setcookie(wget_cookie_t *cookie)
+char *wget_cookie_to_setcookie(wget_cookie *cookie)
 {
 	char expires[32] = "";
 
@@ -352,10 +352,10 @@ char *wget_cookie_to_setcookie(wget_cookie_t *cookie)
  httponly-av       = "HttpOnly"
  extension-av      = <any CHAR except CTLs or ";">
 */
-const char *wget_cookie_parse_setcookie(const char *s, wget_cookie_t **_cookie)
+const char *wget_cookie_parse_setcookie(const char *s, wget_cookie **_cookie)
 {
 	const char *name, *p;
-	wget_cookie_t *cookie = wget_cookie_init(NULL);
+	wget_cookie *cookie = wget_cookie_init(NULL);
 
 	// remove leading whitespace from cookie name
 	while (c_isspace(*s)) s++;
@@ -480,7 +480,7 @@ const char *wget_cookie_parse_setcookie(const char *s, wget_cookie_t **_cookie)
 }
 
 // normalize/sanitize and store cookies
-static int _wget_cookie_normalize_cookie(const wget_iri *iri, wget_cookie_t *cookie)
+static int _wget_cookie_normalize_cookie(const wget_iri *iri, wget_cookie *cookie)
 {
 /*
 	debug_printf("normalize cookie %s=%s\n", cookie->name, cookie->value);
@@ -573,7 +573,7 @@ static int _wget_cookie_normalize_cookie(const wget_iri *iri, wget_cookie_t *coo
 	return 0;
 }
 
-int wget_cookie_normalize(const wget_iri *iri, wget_cookie_t *cookie)
+int wget_cookie_normalize(const wget_iri *iri, wget_cookie *cookie)
 {
 //	wget_thread_mutex_lock(&_cookies_mutex);
 
@@ -594,7 +594,7 @@ void wget_cookie_normalize_cookies(const wget_iri *iri, const wget_vector *cooki
 //	wget_thread_mutex_unlock(&_cookies_mutex);
 }
 
-int wget_cookie_check_psl(G_GNUC_WGET_UNUSED const wget_cookie_db *cookie_db, G_GNUC_WGET_UNUSED const wget_cookie_t *cookie)
+int wget_cookie_check_psl(G_GNUC_WGET_UNUSED const wget_cookie_db *cookie_db, G_GNUC_WGET_UNUSED const wget_cookie *cookie)
 {
 //	wget_thread_mutex_lock(&_cookies_mutex);
 
@@ -614,9 +614,9 @@ int wget_cookie_check_psl(G_GNUC_WGET_UNUSED const wget_cookie_db *cookie_db, G_
 	return ret;
 }
 
-int wget_cookie_store_cookie(wget_cookie_db *cookie_db, wget_cookie_t *cookie)
+int wget_cookie_store_cookie(wget_cookie_db *cookie_db, wget_cookie *cookie)
 {
-	wget_cookie_t *old;
+	wget_cookie *old;
 	int pos;
 
 	if (!cookie)
@@ -667,7 +667,7 @@ void wget_cookie_store_cookies(wget_cookie_db *cookie_db, wget_vector *cookies)
 		int it;
 
 		for (it = 0; it < wget_vector_size(cookies); it++) {
-			wget_cookie_t *cookie = wget_vector_get(cookies, it);
+			wget_cookie *cookie = wget_vector_get(cookies, it);
 			wget_cookie_store_cookie(cookie_db, cookie); // takes ownership of 'cookie'
 		}
 
@@ -691,7 +691,7 @@ char *wget_cookie_create_request_header(wget_cookie_db *cookie_db, const wget_ir
 	wget_thread_mutex_lock(cookie_db->mutex);
 
 	for (it = 0; it < wget_vector_size(cookie_db->cookies); it++) {
-		wget_cookie_t *cookie = wget_vector_get(cookie_db->cookies, it);
+		wget_cookie *cookie = wget_vector_get(cookie_db->cookies, it);
 
 		if (cookie->host_only && strcmp(cookie->domain, iri->host)) {
 			debug_printf("cookie host match failed (%s,%s)\n", cookie->domain, iri->host);
@@ -732,7 +732,7 @@ char *wget_cookie_create_request_header(wget_cookie_db *cookie_db, const wget_ir
 
 	// now create cookie header value
 	for (it = 0; it < wget_vector_size(cookies); it++) {
-		wget_cookie_t *cookie = wget_vector_get(cookies, it);
+		wget_cookie *cookie = wget_vector_get(cookies, it);
 
 		if (!init) {
 			wget_buffer_init(&buf, NULL, 128);
@@ -807,7 +807,7 @@ void wget_cookie_set_keep_session_cookies(wget_cookie_db *cookie_db, int keep)
 
 static int _cookie_db_load(wget_cookie_db *cookie_db, FILE *fp)
 {
-	wget_cookie_t cookie;
+	wget_cookie cookie;
 	int ncookies = 0;
 	char *buf = NULL, *linep, *p;
 	size_t bufsize = 0;
@@ -928,7 +928,7 @@ static int _cookie_db_save(wget_cookie_db *cookie_db, FILE *fp)
 		fputs("#Generated by Wget " PACKAGE_VERSION ". Edit at your own risk.\n\n", fp);
 
 		for (it = 0; it < wget_vector_size(cookie_db->cookies); it++) {
-			wget_cookie_t *cookie = wget_vector_get(cookie_db->cookies, it);
+			wget_cookie *cookie = wget_vector_get(cookie_db->cookies, it);
 
 			if (cookie->persistent) {
 				if (cookie->expires <= now)
