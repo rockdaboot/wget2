@@ -38,7 +38,7 @@
 #include "private.h"
 #include "logger.h"
 
-static wget_logger_t
+static wget_logger
 	_info,
 	_error,
 	_debug;
@@ -113,7 +113,7 @@ void wget_debug_write(const char *buf, size_t len)
 		_debug.write(&_debug, buf, len);
 }
 
-wget_logger_t *wget_get_logger(int id)
+wget_logger *wget_get_logger(int id)
 {
 	if (id == WGET_LOGGER_DEBUG)
 		return &_debug;

@@ -609,23 +609,23 @@ WGETAPI size_t
  * Logger routines
  */
 
-typedef struct wget_logger_st wget_logger_t;
+typedef struct wget_logger_st wget_logger;
 typedef void wget_logger_func_t(const char *buf , size_t len) G_GNUC_WGET_NONNULL_ALL;
 
 WGETAPI void
-	wget_logger_set_func(wget_logger_t *logger, wget_logger_func_t *func);
+	wget_logger_set_func(wget_logger *logger, wget_logger_func_t *func);
 WGETAPI void
-	wget_logger_set_stream(wget_logger_t *logger, FILE *fp);
+	wget_logger_set_stream(wget_logger *logger, FILE *fp);
 WGETAPI void
-	wget_logger_set_file(wget_logger_t *logger, const char *fname);
+	wget_logger_set_file(wget_logger *logger, const char *fname);
 WGETAPI wget_logger_func_t *
-	wget_logger_get_func(wget_logger_t *logger) G_GNUC_WGET_PURE;
+	wget_logger_get_func(wget_logger *logger) G_GNUC_WGET_PURE;
 WGETAPI FILE *
-	wget_logger_get_stream(wget_logger_t *logger) G_GNUC_WGET_PURE;
+	wget_logger_get_stream(wget_logger *logger) G_GNUC_WGET_PURE;
 WGETAPI const char *
-	wget_logger_get_file(wget_logger_t *logger) G_GNUC_WGET_PURE;
+	wget_logger_get_file(wget_logger *logger) G_GNUC_WGET_PURE;
 WGETAPI bool
-	wget_logger_is_active(wget_logger_t *logger) G_GNUC_WGET_PURE;
+	wget_logger_is_active(wget_logger *logger) G_GNUC_WGET_PURE;
 
 /*
  * Logging routines
@@ -651,7 +651,7 @@ WGETAPI void
 	wget_debug_printf(const char *fmt, ...) G_GNUC_WGET_NONNULL((1)) G_GNUC_WGET_PRINTF_FORMAT(1,2);
 WGETAPI void
 	wget_debug_write(const char *buf, size_t len) G_GNUC_WGET_NONNULL_ALL;
-WGETAPI wget_logger_t *
+WGETAPI wget_logger *
 	wget_get_logger(int id) G_GNUC_WGET_CONST;
 
 /*

@@ -34,8 +34,8 @@ struct wget_logger_st {
 	FILE *fp;
 	const char *fname;
 	void (*func)(const char *buf, size_t bufsize);
-	void (*vprintf)(const wget_logger_t *logger, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
-	void (*write)(const wget_logger_t *logger, const char *buf, size_t bufsize);
+	void (*vprintf)(const wget_logger *logger, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+	void (*write)(const wget_logger *logger, const char *buf, size_t bufsize);
 };
 
 #endif /* LIBWGET_LOGGER_H */

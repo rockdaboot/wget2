@@ -36,7 +36,7 @@
 #include "logger.h"
 
 static void G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))
-_logger_vprintf_func(const wget_logger_t *logger, const char *fmt, va_list args)
+_logger_vprintf_func(const wget_logger *logger, const char *fmt, va_list args)
 {
 	char sbuf[4096];
 	wget_buffer buf;
@@ -50,7 +50,7 @@ _logger_vprintf_func(const wget_logger_t *logger, const char *fmt, va_list args)
 	errno = err;
 }
 
-static void _logger_write_func(const wget_logger_t *logger, const char *buf, size_t len)
+static void _logger_write_func(const wget_logger *logger, const char *buf, size_t len)
 {
 	logger->func(buf, len);
 }
@@ -71,18 +71,18 @@ _logger_vfprintf(FILE *fp, const char *fmt, va_list args)
 }
 
 static void  G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))
-_logger_vprintf_file(const wget_logger_t *logger, const char *fmt, va_list args)
+_logger_vprintf_file(const wget_logger *logger, const char *fmt, va_list args)
 {
 	_logger_vfprintf(logger->fp, fmt, args);
 }
 
-static void _logger_write_file(const wget_logger_t *logger, const char *buf, size_t len)
+static void _logger_write_file(const wget_logger *logger, const char *buf, size_t len)
 {
 	fwrite(buf, 1, len, logger->fp);
 }
 
 static void G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))
-_logger_vprintf_fname(const wget_logger_t *logger, const char *fmt, va_list args)
+_logger_vprintf_fname(const wget_logger *logger, const char *fmt, va_list args)
 {
 	FILE *fp = fopen(logger->fname, "a");
 
@@ -92,7 +92,7 @@ _logger_vprintf_fname(const wget_logger_t *logger, const char *fmt, va_list args
 	}
 }
 
-static void _logger_write_fname(const wget_logger_t *logger, const char *buf, size_t len)
+static void _logger_write_fname(const wget_logger *logger, const char *buf, size_t len)
 {
 	FILE *fp = fopen(logger->fname, "a");
 
@@ -102,7 +102,7 @@ static void _logger_write_fname(const wget_logger_t *logger, const char *buf, si
 	}
 }
 
-void wget_logger_set_func(wget_logger_t *logger, wget_logger_func_t *func)
+void wget_logger_set_func(wget_logger *logger, wget_logger_func_t *func)
 {
 	if (logger) {
 		logger->func = func;
@@ -111,12 +111,12 @@ void wget_logger_set_func(wget_logger_t *logger, wget_logger_func_t *func)
 	}
 }
 
-wget_logger_func_t *wget_logger_get_func(wget_logger_t *logger)
+wget_logger_func_t *wget_logger_get_func(wget_logger *logger)
 {
 	return logger ? logger->func : NULL;
 }
 
-void wget_logger_set_stream(wget_logger_t *logger, FILE *fp)
+void wget_logger_set_stream(wget_logger *logger, FILE *fp)
 {
 	if (logger) {
 		logger->fp = fp;
@@ -125,12 +125,12 @@ void wget_logger_set_stream(wget_logger_t *logger, FILE *fp)
 	}
 }
 
-FILE *wget_logger_get_stream(wget_logger_t *logger)
+FILE *wget_logger_get_stream(wget_logger *logger)
 {
 	return logger ? logger->fp : NULL;
 }
 
-void wget_logger_set_file(wget_logger_t *logger, const char *fname)
+void wget_logger_set_file(wget_logger *logger, const char *fname)
 {
 	if (logger) {
 		logger->fname = fname;
@@ -139,12 +139,12 @@ void wget_logger_set_file(wget_logger_t *logger, const char *fname)
 	}
 }
 
-const char *wget_logger_get_file(wget_logger_t *logger)
+const char *wget_logger_get_file(wget_logger *logger)
 {
 	return logger ? logger->fname : NULL;
 }
 
-bool wget_logger_is_active(wget_logger_t *logger)
+bool wget_logger_is_active(wget_logger *logger)
 {
 	return !!logger->vprintf;
 }
