@@ -341,7 +341,7 @@ static void nop(int sig)
 
 static void
 	*input_thread(void *p);
-static wget_thread_t
+static wget_thread
 	input_tid;
 static wget_vector
 	*parents;

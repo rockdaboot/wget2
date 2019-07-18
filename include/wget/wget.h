@@ -1085,12 +1085,12 @@ void *wget_stringmap_iterator_next(wget_stringmap_iterator *h, char **value)
  */
 
 typedef unsigned long wget_thread_id_t;
-typedef struct wget_thread_st *wget_thread_t;
+typedef struct wget_thread_st *wget_thread;
 typedef struct wget_thread_mutex_st *wget_thread_mutex_t;
 typedef struct wget_thread_cond_st *wget_thread_cond_t;
 
 WGETAPI int
-	wget_thread_start(wget_thread_t *thread, void *(*start_routine)(void *), void *arg, int flags);
+	wget_thread_start(wget_thread *thread, void *(*start_routine)(void *), void *arg, int flags);
 WGETAPI int
 	wget_thread_mutex_init(wget_thread_mutex_t *mutex);
 WGETAPI int
@@ -1100,11 +1100,11 @@ WGETAPI void
 WGETAPI void
 	wget_thread_mutex_unlock(wget_thread_mutex_t mutex);
 WGETAPI int
-	wget_thread_kill(wget_thread_t thread, int sig);
+	wget_thread_kill(wget_thread thread, int sig);
 WGETAPI int
-	wget_thread_cancel(wget_thread_t thread);
+	wget_thread_cancel(wget_thread thread);
 WGETAPI int
-	wget_thread_join(wget_thread_t *thread);
+	wget_thread_join(wget_thread *thread);
 WGETAPI int
 	wget_thread_cond_init(wget_thread_cond_t *cond);
 WGETAPI int

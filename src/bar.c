@@ -49,7 +49,7 @@ enum { _BAR_THREAD_SLEEP_DURATION = 125 };
 
 static wget_bar_t
 	*bar;
-static wget_thread_t
+static wget_thread
 	progress_thread;
 static bool
 	_terminate_thread;

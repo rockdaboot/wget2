@@ -111,7 +111,7 @@ static char *_normalize_location(const char *base, const char *url)
 
 int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED)
 {
-	static wget_thread_t downloaders[MAXTHREADS];
+	static wget_thread downloaders[MAXTHREADS];
 
 	// set up libwget global configuration
 	wget_global_init(

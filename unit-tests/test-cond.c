@@ -44,7 +44,7 @@ static void *cond_routine(G_GNUC_WGET_UNUSED void *arg)
 static void test_cond(void)
 {
 	int remain = 1;
-	wget_thread_t thread;
+	wget_thread thread;
 
 	cond_value = 0;
 

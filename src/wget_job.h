@@ -108,7 +108,7 @@ struct JOB {
 };
 
 struct DOWNLOADER {
-	wget_thread_t
+	wget_thread
 		thread;
 	JOB
 		*job;
