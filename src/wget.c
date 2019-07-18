@@ -2720,7 +2720,7 @@ static int _get_unzipped(void *userdata, const char *data, size_t length)
 void sitemap_parse_xml_gz(JOB *job, wget_buffer *gzipped_data, const char *encoding, wget_iri_t *base)
 {
 	wget_buffer *plain = wget_buffer_alloc(gzipped_data->length * 10);
-	wget_decompressor_t *dc = NULL;
+	wget_decompressor *dc = NULL;
 
 	if ((dc = wget_decompress_open(wget_content_encoding_gzip, _get_unzipped, plain))) {
 		wget_decompress(dc, gzipped_data->data, gzipped_data->length);

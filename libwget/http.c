@@ -405,11 +405,11 @@ void http_set_config_int(int key, int value)
 struct _http2_stream_context {
 	wget_http_response_t
 		*resp;
-	wget_decompressor_t
+	wget_decompressor
 		*decompressor;
 };
 
-static int _decompress_error_handler(wget_decompressor_t *dc, int err G_GNUC_WGET_UNUSED)
+static int _decompress_error_handler(wget_decompressor *dc, int err G_GNUC_WGET_UNUSED)
 {
 	wget_http_response_t *resp = (wget_http_response_t *) wget_decompress_get_context(dc);
 
@@ -1036,7 +1036,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 	}
 #endif
 
-	wget_decompressor_t *dc = NULL;
+	wget_decompressor *dc = NULL;
 	wget_http_request_t *req = wget_vector_get(conn->pending_requests, 0); // TODO: should use double linked lists here
 
 	debug_printf("### req %p pending requests = %d\n", (void *) req, wget_vector_size(conn->pending_requests));

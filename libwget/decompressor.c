@@ -61,8 +61,8 @@
 #include <wget.h>
 #include "private.h"
 
-typedef int wget_decompressor_decompress_t(wget_decompressor_t *dc, char *src, size_t srclen);
-typedef void wget_decompressor_exit_t(wget_decompressor_t *dc);
+typedef int wget_decompressor_decompress_t(wget_decompressor *dc, char *src, size_t srclen);
+typedef void wget_decompressor_exit_t(wget_decompressor *dc);
 
 struct wget_decompressor_st {
 #ifdef WITH_ZLIB
@@ -115,7 +115,7 @@ static int gzip_init(z_stream *strm)
 	return 0;
 }
 
-static int gzip_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
+static int gzip_decompress(wget_decompressor *dc, char *src, size_t srclen)
 {
 	z_stream *strm;
 	char dst[10240];
@@ -151,7 +151,7 @@ static int gzip_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 	return -1;
 }
 
-static void gzip_exit(wget_decompressor_t *dc)
+static void gzip_exit(wget_decompressor *dc)
 {
 	int status;
 
@@ -187,7 +187,7 @@ static int lzma_init(lzma_stream *strm)
 	return 0;
 }
 
-static int lzma_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
+static int lzma_decompress(wget_decompressor *dc, char *src, size_t srclen)
 {
 	lzma_stream *strm;
 	char dst[10240];
@@ -223,7 +223,7 @@ static int lzma_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 	return -1;
 }
 
-static void lzma_exit(wget_decompressor_t *dc)
+static void lzma_exit(wget_decompressor *dc)
 {
 	lzma_end(&dc->lzma_strm);
 }
@@ -240,7 +240,7 @@ static int brotli_init(BrotliDecoderState **strm)
 	return 0;
 }
 
-static int brotli_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
+static int brotli_decompress(wget_decompressor *dc, char *src, size_t srclen)
 {
 	BrotliDecoderState *strm;
 	BrotliDecoderResult status;
@@ -281,7 +281,7 @@ static int brotli_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 	return -1;
 }
 
-static void brotli_exit(wget_decompressor_t *dc)
+static void brotli_exit(wget_decompressor *dc)
 {
 	BrotliDecoderDestroyInstance(dc->brotli_strm);
 }
@@ -306,7 +306,7 @@ static int zstd_init(ZSTD_DStream **strm)
 	return 0;
 }
 
-static int zstd_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
+static int zstd_decompress(wget_decompressor *dc, char *src, size_t srclen)
 {
 	ZSTD_DStream *strm;
 	uint8_t dst[10240];
@@ -339,7 +339,7 @@ static int zstd_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 	return 0;
 }
 
-static void zstd_exit(wget_decompressor_t *dc)
+static void zstd_exit(wget_decompressor *dc)
 {
 	ZSTD_freeDStream(dc->zstd_strm);
 }
@@ -358,7 +358,7 @@ static int bzip2_init(bz_stream *strm)
 	return 0;
 }
 
-static int bzip2_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
+static int bzip2_decompress(wget_decompressor *dc, char *src, size_t srclen)
 {
 	bz_stream *strm;
 	char dst[10240];
@@ -394,13 +394,13 @@ static int bzip2_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 	return -1;
 }
 
-static void bzip2_exit(wget_decompressor_t *dc)
+static void bzip2_exit(wget_decompressor *dc)
 {
 	BZ2_bzDecompressEnd(&dc->bz_strm);
 }
 #endif // WITH_BZIP2
 
-static int identity(wget_decompressor_t *dc, char *src, size_t srclen)
+static int identity(wget_decompressor *dc, char *src, size_t srclen)
 {
 	if (dc->sink)
 		dc->sink(dc->context, src, srclen);
@@ -408,12 +408,12 @@ static int identity(wget_decompressor_t *dc, char *src, size_t srclen)
 	return 0;
 }
 
-wget_decompressor_t *wget_decompress_open(
+wget_decompressor *wget_decompress_open(
 	wget_content_encoding_type_t encoding,
 	wget_decompressor_sink_t *sink,
 	void *context)
 {
-	wget_decompressor_t *dc = wget_calloc(1, sizeof(wget_decompressor_t));
+	wget_decompressor *dc = wget_calloc(1, sizeof(wget_decompressor));
 	int rc = 0;
 
 	if (encoding == wget_content_encoding_gzip) {
@@ -477,7 +477,7 @@ wget_decompressor_t *wget_decompress_open(
 	return dc;
 }
 
-void wget_decompress_close(wget_decompressor_t *dc)
+void wget_decompress_close(wget_decompressor *dc)
 {
 	if (dc) {
 		if (dc->exit)
@@ -486,7 +486,7 @@ void wget_decompress_close(wget_decompressor_t *dc)
 	}
 }
 
-int wget_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
+int wget_decompress(wget_decompressor *dc, char *src, size_t srclen)
 {
 	if (dc) {
 		int rc = dc->decompress(dc, src, srclen);
@@ -498,13 +498,13 @@ int wget_decompress(wget_decompressor_t *dc, char *src, size_t srclen)
 	return 0;
 }
 
-void wget_decompress_set_error_handler(wget_decompressor_t *dc, wget_decompressor_error_handler_t *error_handler)
+void wget_decompress_set_error_handler(wget_decompressor *dc, wget_decompressor_error_handler_t *error_handler)
 {
 	if (dc)
 		dc->error_handler = error_handler;
 }
 
-void *wget_decompress_get_context(wget_decompressor_t *dc)
+void *wget_decompress_get_context(wget_decompressor *dc)
 {
 	return dc ? dc->context : NULL;
 }

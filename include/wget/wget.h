@@ -1122,9 +1122,9 @@ WGETAPI bool
  * Decompressor routines
  */
 
-typedef struct wget_decompressor_st wget_decompressor_t;
+typedef struct wget_decompressor_st wget_decompressor;
 typedef int wget_decompressor_sink_t(void *context, const char *data, size_t length);
-typedef int wget_decompressor_error_handler_t(wget_decompressor_t *dc, int err);
+typedef int wget_decompressor_error_handler_t(wget_decompressor *dc, int err);
 
 typedef enum {
 	wget_content_encoding_unknown = -1,
@@ -1143,16 +1143,16 @@ WGETAPI G_GNUC_WGET_PURE wget_content_encoding_type_t
 	wget_content_encoding_by_name(const char *name);
 WGETAPI G_GNUC_WGET_PURE const char *
 	wget_content_encoding_to_name(wget_content_encoding_type_t type);
-WGETAPI wget_decompressor_t *
+WGETAPI wget_decompressor *
 	wget_decompress_open(wget_content_encoding_type_t encoding, wget_decompressor_sink_t *data_sink, void *context);
 WGETAPI void
-	wget_decompress_close(wget_decompressor_t *dc);
+	wget_decompress_close(wget_decompressor *dc);
 WGETAPI int
-	wget_decompress(wget_decompressor_t *dc, char *src, size_t srclen);
+	wget_decompress(wget_decompressor *dc, char *src, size_t srclen);
 WGETAPI void
-	wget_decompress_set_error_handler(wget_decompressor_t *dc, wget_decompressor_error_handler_t *error_handler);
+	wget_decompress_set_error_handler(wget_decompressor *dc, wget_decompressor_error_handler_t *error_handler);
 WGETAPI void *
-	wget_decompress_get_context(wget_decompressor_t *dc);
+	wget_decompress_get_context(wget_decompressor *dc);
 
 /*
  * URI/IRI routines
