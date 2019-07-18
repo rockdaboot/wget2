@@ -92,7 +92,7 @@ static unsigned int hash_string_nocase(const void *key)
  *
  * The compare function is strcmp(). The key strings are compared case-sensitive.
  */
-wget_stringmap_t *wget_stringmap_create(int max)
+wget_stringmap *wget_stringmap_create(int max)
 {
 	return wget_hashmap_create(max, hash_string, (wget_hashmap_compare_t *) wget_strcmp);
 }
@@ -109,7 +109,7 @@ wget_stringmap_t *wget_stringmap_create(int max)
  *
  * The compare function is strcasecmp() (case-insensitive).
  */
-wget_stringmap_t *wget_stringmap_create_nocase(int max)
+wget_stringmap *wget_stringmap_create_nocase(int max)
 {
 	return wget_hashmap_create(max, hash_string_nocase, (wget_hashmap_compare_t *) wget_strcasecmp);
 }

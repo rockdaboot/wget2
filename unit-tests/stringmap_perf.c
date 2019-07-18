@@ -53,7 +53,7 @@ int main(int argc, const char *const *argv)
 	char *buf, *word, *end;
 	size_t length;
 	struct stat st;
-	wget_stringmap_t *map = wget_stringmap_create(1024);
+	wget_stringmap *map = wget_stringmap_create(1024);
 
 	for (it = 1; it < argc; it++) {
 		if ((fd = open(argv[it], O_RDONLY | O_BINARY)) == -1) {

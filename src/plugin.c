@@ -67,7 +67,7 @@ static wget_vector *search_paths;
 // List of loaded plugins
 static wget_vector *plugin_list;
 // Index of plugins by plugin name
-static wget_stringmap_t *plugin_name_index;
+static wget_stringmap *plugin_name_index;
 // Whether any of the previous options forwarded was 'help'
 static int plugin_help_forwarded;
 // Plugin supplied HSTS database

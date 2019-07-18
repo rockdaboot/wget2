@@ -154,7 +154,7 @@ wget_http_response_t
 	*http_receive_response(wget_http_connection_t *conn);
 static long long G_GNUC_WGET_NONNULL_ALL get_file_size(const char *fname);
 
-static wget_stringmap_t
+static wget_stringmap
 	*etags;
 static wget_hashmap
 	*known_urls;

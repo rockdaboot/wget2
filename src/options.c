@@ -355,7 +355,7 @@ static int parse_string(option_t opt, const char *val, G_GNUC_WGET_UNUSED const 
 
 static int parse_stringset(option_t opt, const char *val, G_GNUC_WGET_UNUSED const char invert)
 {
-	wget_stringmap_t *map = *((wget_stringmap_t **)opt->var);
+	wget_stringmap *map = *((wget_stringmap **)opt->var);
 
 	if (val) {
 		const char *s, *p;
@@ -3408,7 +3408,7 @@ int init(int argc, const char **argv)
 			// so they don't come back as a failure.
 			int start_len = wget_vector_size(config.sig_ext);
 			wget_vector *new_sig_ext = wget_vector_create(start_len, (wget_vector_compare_t *) strcmp);
-			wget_stringmap_t *set = wget_stringmap_create(start_len);
+			wget_stringmap *set = wget_stringmap_create(start_len);
 			for (int i = 0; i < start_len; i++) {
 				const char *nxt = wget_vector_get(config.sig_ext, i);
 				if (!wget_stringmap_contains(set, nxt)) {
