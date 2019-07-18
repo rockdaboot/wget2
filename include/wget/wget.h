@@ -1663,16 +1663,16 @@ WGETAPI int
  */
 
 // structure for TLS resumption cache entries
-typedef struct wget_tls_session_st wget_tls_session_t;
+typedef struct wget_tls_session_st wget_tls_session;
 typedef struct wget_tls_session_db_st wget_tls_session_db_t;
 
-WGETAPI wget_tls_session_t *
-	wget_tls_session_init(wget_tls_session_t *tls_session);
+WGETAPI wget_tls_session *
+	wget_tls_session_init(wget_tls_session *tls_session);
 WGETAPI void
-	wget_tls_session_deinit(wget_tls_session_t *tls_session);
+	wget_tls_session_deinit(wget_tls_session *tls_session);
 WGETAPI void
-	wget_tls_session_free(wget_tls_session_t *tls_session);
-WGETAPI wget_tls_session_t *
+	wget_tls_session_free(wget_tls_session *tls_session);
+WGETAPI wget_tls_session *
 	wget_tls_session_new(const char *host, time_t maxage, const void *data, size_t data_size);
 WGETAPI int
 	wget_tls_session_get(const wget_tls_session_db_t *tls_session_db, const char *host, void **data, size_t *size);
@@ -1683,7 +1683,7 @@ WGETAPI void
 WGETAPI void
 	wget_tls_session_db_free(wget_tls_session_db_t **tls_session_db);
 WGETAPI void
-	wget_tls_session_db_add(wget_tls_session_db_t *tls_session_db, wget_tls_session_t *tls_session);
+	wget_tls_session_db_add(wget_tls_session_db_t *tls_session_db, wget_tls_session *tls_session);
 WGETAPI int
 	wget_tls_session_db_save(wget_tls_session_db_t *tls_session_db, const char *fname);
 WGETAPI int
