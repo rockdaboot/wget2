@@ -793,9 +793,6 @@ WGETAPI void
 /// Type of the stringmap
 typedef wget_hashmap wget_stringmap;
 
-/// Type of the stringmap iterator
-typedef wget_hashmap_iterator wget_stringmap_iterator_t;
-
 /// Type of the stringmap compare function
 typedef int wget_stringmap_compare_t(const char *key1, const char *key2);
 
@@ -811,16 +808,19 @@ typedef void wget_stringmap_key_destructor_t(char *key);
 /// Type of the stringmap value destructor function
 typedef void wget_stringmap_value_destructor_t(void *value);
 
+/// Type of the stringmap iterator
+typedef wget_hashmap_iterator wget_stringmap_iterator;
+
 /// Wrapper around wget_hashmap_iterator_alloc().
 #define wget_stringmap_iterator_alloc wget_hashmap_iterator_alloc
 /// Wrapper around wget_hashmap_iterator_free().
 #define wget_stringmap_iterator_free wget_hashmap_iterator_free
-/** @} */
 
 WGETAPI wget_stringmap *
 	wget_stringmap_create(int max) G_GNUC_WGET_MALLOC;
 WGETAPI wget_stringmap *
 	wget_stringmap_create_nocase(int max) G_GNUC_WGET_MALLOC;
+/** @} */
 
 /**
  * \ingroup libwget-stringmap
@@ -1073,7 +1073,7 @@ void wget_stringmap_set_resize_factor(wget_stringmap *h, float factor)
  * When iterating over a stringmap, the order of returned key/value pairs is not defined.
  */
 static inline
-void *wget_stringmap_iterator_next(wget_stringmap_iterator_t *h, char **value)
+void *wget_stringmap_iterator_next(wget_stringmap_iterator *h, char **value)
 {
 	return wget_hashmap_iterator_next(h, (void **) value);
 }

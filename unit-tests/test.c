@@ -1831,7 +1831,7 @@ static unsigned int hash_txt(G_GNUC_WGET_UNUSED const char *key)
 static void test_stringmap(void)
 {
 	wget_stringmap *m;
-	wget_stringmap_iterator_t *iter;
+	wget_stringmap_iterator *iter;
 	char *key, *value, *val, *skey;
 	char keybuf[1024];
 	int run, it;
