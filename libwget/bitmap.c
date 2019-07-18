@@ -47,7 +47,7 @@
 #define bitmap_bits   (sizeof(bitmap_type) * 8)
 #define bitmap_shift  6 // ln(bitmap_bits)/ln(2)
 
-#define map(n) (((wget_bitmap_t *)b)->map[(n) >> bitmap_shift])
+#define map(n) (((wget_bitmap *)b)->map[(n) >> bitmap_shift])
 #define bit(n) (((bitmap_type) 1) << ((n) & (bitmap_bits - 1)))
 
 struct wget_bitmap_st {
@@ -64,9 +64,9 @@ struct wget_bitmap_st {
  * Set the bit \p n in the bitmap \p b.
  */
 
-void wget_bitmap_set(wget_bitmap_t *b, unsigned n)
+void wget_bitmap_set(wget_bitmap *b, unsigned n)
 {
-	if (b && n < ((wget_bitmap_t *)b)->bits)
+	if (b && n < ((wget_bitmap *)b)->bits)
 		map(n) |= bit(n);
 }
 
@@ -76,9 +76,9 @@ void wget_bitmap_set(wget_bitmap_t *b, unsigned n)
  *
  * Clear the bit \p n in the bitmap \p b.
  */
-void wget_bitmap_clear(wget_bitmap_t *b, unsigned n)
+void wget_bitmap_clear(wget_bitmap *b, unsigned n)
 {
-	if (b && n < ((wget_bitmap_t *)b)->bits)
+	if (b && n < ((wget_bitmap *)b)->bits)
 		map(n) &= ~bit(n);
 }
 
@@ -91,9 +91,9 @@ void wget_bitmap_clear(wget_bitmap_t *b, unsigned n)
  *
  * Returns whether the bit \p n is set or not.
  */
-bool wget_bitmap_get(const wget_bitmap_t *b, unsigned n)
+bool wget_bitmap_get(const wget_bitmap *b, unsigned n)
 {
-	if (b && n < ((wget_bitmap_t *)b)->bits)
+	if (b && n < ((wget_bitmap *)b)->bits)
 		return !!(map(n) & bit(n));
 
 	return 0;
@@ -107,12 +107,12 @@ bool wget_bitmap_get(const wget_bitmap_t *b, unsigned n)
  * Allocates a bitmap with a capacity of \p bits.
  * It must be freed by wget_bitmap_free() after usage.
  */
-int wget_bitmap_init(wget_bitmap_t **b, unsigned bits)
+int wget_bitmap_init(wget_bitmap **b, unsigned bits)
 {
 	if (!b)
 		return WGET_E_INVALID;
 
-	wget_bitmap_t *_b =
+	wget_bitmap *_b =
 		wget_calloc((bits + sizeof(bitmap_type) - 1) / sizeof(bitmap_type) + 1, sizeof(bitmap_type));
 
 	if (!_b)
@@ -129,7 +129,7 @@ int wget_bitmap_init(wget_bitmap_t **b, unsigned bits)
  *
  * Frees and clears the bitmap pointed to by \p b.
  */
-void wget_bitmap_free(wget_bitmap_t **b)
+void wget_bitmap_free(wget_bitmap **b)
 {
 	if (b)
 		xfree(*b);

@@ -512,18 +512,18 @@ WGETAPI char *
  * Bitmap routines
  */
 
-typedef struct wget_bitmap_st wget_bitmap_t;
+typedef struct wget_bitmap_st wget_bitmap;
 
 WGETAPI int
-	wget_bitmap_init(wget_bitmap_t **bitmap, unsigned bits);
+	wget_bitmap_init(wget_bitmap **bitmap, unsigned bits);
 WGETAPI void
-	wget_bitmap_free(wget_bitmap_t **bitmap);
+	wget_bitmap_free(wget_bitmap **bitmap);
 WGETAPI void
-	wget_bitmap_set(wget_bitmap_t *bitmap, unsigned n); // n is the index
+	wget_bitmap_set(wget_bitmap *bitmap, unsigned n); // n is the index
 WGETAPI void
-	wget_bitmap_clear(wget_bitmap_t *bitmap, unsigned n);
+	wget_bitmap_clear(wget_bitmap *bitmap, unsigned n);
 WGETAPI bool
-	wget_bitmap_get(const wget_bitmap_t *bitmap, unsigned n);
+	wget_bitmap_get(const wget_bitmap *bitmap, unsigned n);
 
 /*
  * Buffer routines

@@ -2017,7 +2017,7 @@ static void test_striconv(void)
 
 static void test_bitmap(void)
 {
-	wget_bitmap_t *b;
+	wget_bitmap *b;
 
 	assert(wget_bitmap_init(&b, 1000) == WGET_E_SUCCESS);
 	assert(b != NULL);
