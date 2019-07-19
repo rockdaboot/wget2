@@ -371,7 +371,7 @@ static void _host_remove_job(HOST *host, JOB *job)
 						continue;
 
 				for (int it = 0, n = wget_robots_get_path_count(host->robots); it < n; it++) {
-					wget_string_t *path = wget_robots_get_path(host->robots, it);
+					wget_string *path = wget_robots_get_path(host->robots, it);
 
 					if (path->len && !strncmp(path->p + 1, thejob->iri->path ? thejob->iri->path : "", path->len - 1)) {
 						info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), thejob->iri->uri);

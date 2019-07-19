@@ -1930,10 +1930,10 @@ typedef struct {
 		*p; //!< pointer to memory region
 	size_t
 		len; //!< length of memory region
-} wget_string_t;
+} wget_string;
 
 typedef struct {
-	wget_string_t
+	wget_string
 		url; //!< URL within the parsed document (pointer and length)
 	char
 		attr[16]; //!< name of the attribute containing the URL, e.g. 'href'
@@ -1948,7 +1948,7 @@ typedef struct {
 		*uris; //!< list of found URLs (entries: wget_html_parsed_url_t)
 	const char *
 		encoding; //!< the charset encoding set by the parsed document or NULL if none
-	wget_string_t
+	wget_string
 		base; //!< the BASE set in the document or NULL if none
 	bool
 		follow : 1; //!< if the 'follow' attribute was found in a META tag
@@ -2658,7 +2658,7 @@ WGETAPI void
 	wget_robots_free(wget_robots_t **robots);
 WGETAPI int
 	wget_robots_get_path_count(wget_robots_t *robots);
-WGETAPI wget_string_t *
+WGETAPI wget_string *
 	wget_robots_get_path(wget_robots_t *robots, int index);
 WGETAPI int
 	wget_robots_get_sitemap_count(wget_robots_t *robots);

@@ -51,7 +51,7 @@ struct _atom_context {
 static void _atom_get_url(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
 	struct _atom_context *ctx = context;
-	wget_string_t *url;
+	wget_string *url;
 
 	if (!val || !len)
 		return;
@@ -64,7 +64,7 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 			for (;len && c_isspace(*val); val++, len--); // skip leading spaces
 			for (;len && c_isspace(val[len - 1]); len--);  // skip trailing spaces
 
-			if (!(url = wget_malloc(sizeof(wget_string_t))))
+			if (!(url = wget_malloc(sizeof(wget_string))))
 				return;
 
 			url->p = val;
@@ -90,7 +90,7 @@ static void _atom_get_url(void *context, int flags, const char *dir, const char 
 
 				// debug_printf("#2 %02X %s %s '%.*s' %zd\n", flags, dir, attr, (int) len, val, len);
 
-				if (!(url = wget_malloc(sizeof(wget_string_t))))
+				if (!(url = wget_malloc(sizeof(wget_string))))
 					return;
 
 				url->p = val;

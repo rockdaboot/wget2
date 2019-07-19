@@ -999,7 +999,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		if (host->robots && iri->path) {
 			// info_printf("%s: checking '%s' / '%s'\n", __func__, iri->path, iri->uri);
 			for (int it = 0, n = wget_robots_get_path_count(host->robots); it < n; it++) {
-				wget_string_t *path = wget_robots_get_path(host->robots, it);
+				wget_string *path = wget_robots_get_path(host->robots, it);
 				// info_printf("%s: checked robot path '%.*s' / '%s' / '%s'\n", __func__, (int)path->len, path->path, iri->path, iri->uri);
 				if (path->len && !strncmp(path->p + 1, iri->path ? iri->path : "", path->len - 1)) {
 					info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), iri->uri);
@@ -1129,7 +1129,7 @@ static void _convert_links(void)
 		// cycle through all links found in the document
 		for (int it2 = 0; it2 < wget_vector_size(conversion->parsed->uris); it2++) {
 			wget_html_parsed_url_t *html_url = wget_vector_get(conversion->parsed->uris, it2);
-			wget_string_t *url = &html_url->url;
+			wget_string *url = &html_url->url;
 
 			url->p = (size_t) url->p + data; // convert offset to pointer
 
@@ -2450,7 +2450,7 @@ static unsigned int G_GNUC_WGET_PURE hash_url(const char *url)
 /*
  * helper function: percent-unescape, convert to utf-8, create URL string using base
  */
-static int _normalize_uri(wget_iri *base, wget_string_t *url, const char *encoding, wget_buffer *buf)
+static int _normalize_uri(wget_iri *base, wget_string *url, const char *encoding, wget_buffer *buf)
 {
 	char *urlpart = wget_strmemdup(url->p, url->len);
 	char *urlpart_encoded;
@@ -2584,7 +2584,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 
 	for (int it = 0; it < wget_vector_size(parsed->uris); it++) {
 		wget_html_parsed_url_t *html_url = wget_vector_get(parsed->uris, it);
-		wget_string_t *url = &html_url->url;
+		wget_string *url = &html_url->url;
 
 		/* do not follow action and formation at all */
 		if (!wget_strcasecmp_ascii(html_url->attr, "action") || !wget_strcasecmp_ascii(html_url->attr, "formaction")) {
@@ -2668,7 +2668,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 	info_printf(_("found %d url(s) (base=%s)\n"), wget_vector_size(urls), base ? base->uri : NULL);
 	wget_thread_mutex_lock(known_urls_mutex);
 	for (int it = 0; it < wget_vector_size(urls); it++) {
-		wget_string_t *url = wget_vector_get(urls, it);
+		wget_string *url = wget_vector_get(urls, it);
 
 		// A Sitemap file located at https://example.com/catalog/sitemap.xml can include any URLs starting with https://example.com/catalog/
 		// but not any other.
@@ -2690,7 +2690,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 	// process the sitemap index urls here
 	info_printf(_("found %d sitemap url(s) (base=%s)\n"), wget_vector_size(sitemap_urls), base ? base->uri : NULL);
 	for (int it = 0; it < wget_vector_size(sitemap_urls); it++) {
-		wget_string_t *url = wget_vector_get(sitemap_urls, it);
+		wget_string *url = wget_vector_get(sitemap_urls, it);
 
 		// TODO: url must have same scheme, port and host as base
 
@@ -2800,7 +2800,7 @@ static void _add_urls(JOB *job, wget_vector *urls, const char *encoding, wget_ir
 
 	wget_thread_mutex_lock(known_urls_mutex);
 	for (int it = 0; it < wget_vector_size(urls); it++) {
-		wget_string_t *url = wget_vector_get(urls, it);
+		wget_string *url = wget_vector_get(urls, it);
 
 		if (baselen && (url->len <= baselen || wget_strncasecmp(url->p, base->uri, baselen))) {
 			info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)url->len, url->p);
@@ -2926,7 +2926,7 @@ static void _css_parse_encoding(void *context, const char *encoding, size_t len)
 static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
 {
 	struct css_context *ctx = context;
-	wget_string_t u = { url, len };
+	wget_string u = { url, len };
 
 	if (_normalize_uri(ctx->base, &u, ctx->encoding, &ctx->uri_buf))
 		return;

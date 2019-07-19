@@ -60,7 +60,7 @@ static void write_stats(void)
 /*
  * helper function: percent-unescape, convert to utf-8, create URL string using base
  */
-static int _normalize_uri(wget_iri *base, wget_string_t *url, const char *encoding, wget_buffer *buf)
+static int _normalize_uri(wget_iri *base, wget_string *url, const char *encoding, wget_buffer *buf)
 {
 	char *urlpart_encoded;
 	size_t urlpart_encoded_length;
@@ -90,7 +90,7 @@ static int _normalize_uri(wget_iri *base, wget_string_t *url, const char *encodi
 static char *_normalize_location(const char *base, const char *url)
 {
 	wget_buffer buf;
-	wget_string_t url_s = { .p = url, .len = strlen(url) };
+	wget_string url_s = { .p = url, .len = strlen(url) };
 	wget_iri *base_iri = wget_iri_parse(base, "utf-8");
 	char sbuf[1024], *norm_url = NULL;
 	int rc;
@@ -189,7 +189,7 @@ static void html_parse(const char *html, size_t html_len, const char *encoding, 
 
 	for (int it = 0; it < wget_vector_size(parsed->uris); it++) {
 		wget_html_parsed_url_t *html_url = wget_vector_get(parsed->uris, it);
-		wget_string_t *url = &html_url->url;
+		wget_string *url = &html_url->url;
 
 		if (_normalize_uri(base, url, encoding, &buf) || buf.length == 0)
 			continue;

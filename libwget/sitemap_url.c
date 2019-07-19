@@ -69,9 +69,9 @@ static void _sitemap_get_url(void *context, int flags, const char *dir, const ch
 			for (;len && c_isspace(val[len - 1]); len--);  // skip trailing spaces
 
 			// info_printf("%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
-			wget_string_t *url;
+			wget_string *url;
 
-			if (!(url = wget_malloc(sizeof(wget_string_t))))
+			if (!(url = wget_malloc(sizeof(wget_string))))
 				return;
 
 			url->p = val;

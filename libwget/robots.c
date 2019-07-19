@@ -46,14 +46,14 @@
 
 struct wget_robots_st {
 	wget_vector
-		*paths;    //!< paths found in robots.txt (element: wget_string_t)
+		*paths;    //!< paths found in robots.txt (element: wget_string)
 	wget_vector
 		*sitemaps; //!< sitemaps found in robots.txt (element: char *)
 };
 
 static void path_free(void *path)
 {
-	wget_string_t *p = path;
+	wget_string *p = path;
 
 	xfree(p->p);
 	xfree(p);
@@ -73,7 +73,7 @@ static void path_free(void *path)
 int wget_robots_parse(wget_robots_t **_robots, const char *data, const char *client)
 {
 	wget_robots_t *robots;
-	wget_string_t path;
+	wget_string path;
 	size_t client_length = client ? strlen(client) : 0;
 	int collect = 0;
 	const char *p;
@@ -189,7 +189,7 @@ int wget_robots_get_path_count(wget_robots_t *robots)
  * @param index Index of the wanted path
  * @return Returns the path at \p index or NULL
  */
-wget_string_t *wget_robots_get_path(wget_robots_t *robots, int index)
+wget_string *wget_robots_get_path(wget_robots_t *robots, int index)
 {
 	if (robots && robots->paths)
 		return wget_vector_get(robots->paths, index);

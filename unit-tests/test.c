@@ -2302,7 +2302,7 @@ static void test_robots(void)
 		for (unsigned it2 = 0; it2 < countof(test_data[it].path) && t->path[it2]; it2++) {
 			int n = wget_robots_get_path_count(robots);
 			for (int it3 = 0; it3 < n; it3++) {
-				wget_string_t *paths = wget_robots_get_path(robots, it3);
+				wget_string *paths = wget_robots_get_path(robots, it3);
 				if (!strcmp(paths->p, t->path[it2])) {
 				//	info_printf("Found path: \"%s\" on robots\n", t->path[it2]);
 					it3 = n;
