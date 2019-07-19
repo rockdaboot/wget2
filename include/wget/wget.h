@@ -2548,7 +2548,7 @@ WGETAPI void
  * \ingroup libwget-hash
  * \brief Type for hash / digest routines
  */
-	typedef struct wget_hash_hd_st wget_hash_hd_t;
+	typedef struct wget_hash_hd_st wget_hash_hd;
 
 /**
  * \ingroup libwget-hash
@@ -2574,11 +2574,11 @@ WGETAPI int
 WGETAPI int
 	wget_hash_get_len(wget_digest_algorithm_t algorithm) G_GNUC_WGET_CONST;
 WGETAPI int
-	wget_hash_init(wget_hash_hd_t *dig, wget_digest_algorithm_t algorithm);
+	wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm_t algorithm);
 WGETAPI int
-	wget_hash(wget_hash_hd_t *handle, const void *text, size_t textlen);
+	wget_hash(wget_hash_hd *handle, const void *text, size_t textlen);
 WGETAPI void
-	wget_hash_deinit(wget_hash_hd_t *handle, void *digest);
+	wget_hash_deinit(wget_hash_hd *handle, void *digest);
 
 /*
  * Hash file routines
