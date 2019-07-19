@@ -47,7 +47,7 @@
 // for which the thread will sleep before waking up and redrawing the progress
 enum { _BAR_THREAD_SLEEP_DURATION = 125 };
 
-static wget_bar_t
+static wget_bar
 	*bar;
 static wget_thread
 	progress_thread;

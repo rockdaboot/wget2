@@ -198,7 +198,7 @@ _restore_cursor_position(void)
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
-_bar_print_slot(const wget_bar_t *bar, int slot)
+_bar_print_slot(const wget_bar *bar, int slot)
 {
 	// ESC 7: Save cursor
 	// CSI <n> A: Cursor up
@@ -207,7 +207,7 @@ _bar_print_slot(const wget_bar_t *bar, int slot)
 }
 
 static inline G_GNUC_WGET_ALWAYS_INLINE void
-_bar_set_progress(const wget_bar_t *bar, int slot)
+_bar_set_progress(const wget_bar *bar, int slot)
 {
 	_bar_slot_t *slotp = &bar->slots[slot];
 
@@ -309,7 +309,7 @@ inspect_multibyte(char *s, size_t available_space, size_t *inspectedp, size_t *p
 	*padp = available_space - displayed;
 }
 
-static void _bar_update_slot(const wget_bar_t *bar, int slot)
+static void _bar_update_slot(const wget_bar *bar, int slot)
 {
 	_bar_slot_t *slotp = &bar->slots[slot];
 
@@ -373,7 +373,7 @@ static int _bar_get_width(void)
 	return width - _BAR_DECOR_COST;
 }
 
-static void _bar_update_winsize(wget_bar_t *bar, bool slots_changed) {
+static void _bar_update_winsize(wget_bar *bar, bool slots_changed) {
 
 	if (winsize_changed || slots_changed) {
 		int max_width = _bar_get_width();
@@ -405,7 +405,7 @@ static void _bar_update_winsize(wget_bar_t *bar, bool slots_changed) {
 	winsize_changed = 0;
 }
 
-static void _bar_update(wget_bar_t *bar)
+static void _bar_update(wget_bar *bar)
 {
 	_bar_update_winsize(bar, false);
 	for (int i = 0; i < bar->nslots; i++) {
@@ -417,9 +417,9 @@ static void _bar_update(wget_bar_t *bar)
 }
 
 /**
- * \param[in] bar Pointer to a \p wget_bar_t object
+ * \param[in] bar Pointer to a \p wget_bar object
  * \param[in] nslots Number of progress bars
- * \return Pointer to a \p wget_bar_t object
+ * \return Pointer to a \p wget_bar object
  *
  * Initialize a new progress bar instance for Wget. If \p bar is a NULL
  * pointer, it will be allocated on the heap and a pointer to the newly
@@ -430,7 +430,7 @@ static void _bar_update(wget_bar_t *bar)
  * bars. This may be any number, but you generally want at least as many slots
  * as there are downloader threads.
  */
-wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
+wget_bar *wget_bar_init(wget_bar *bar, int nslots)
 {
 	/* Initialize screen_width if this hasn't been done or if it might
 	   have changed, as indicated by receiving SIGWINCH.  */
@@ -451,7 +451,7 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
 }
 
 /**
- * \param[in] bar Pointer to a wget_bar_t object
+ * \param[in] bar Pointer to a wget_bar object
  * \param[in] nslots The new number of progress bars that should be drawn
  *
  * Update the number of progress bar lines that are drawn on the screen.
@@ -460,7 +460,7 @@ wget_bar_t *wget_bar_init(wget_bar_t *bar, int nslots)
  * immediately reserve \p nslots lines on the screen. However if \p nslots is
  * lower than the existing value, nothing will be done.
  */
-void wget_bar_set_slots(wget_bar_t *bar, int nslots)
+void wget_bar_set_slots(wget_bar *bar, int nslots)
 {
 	wget_thread_mutex_lock(bar->mutex);
 	int more_slots = nslots - bar->nslots;
@@ -480,7 +480,7 @@ void wget_bar_set_slots(wget_bar_t *bar, int nslots)
 }
 
 /**
- * \param[in] bar Pointer to a wget_bar_t object
+ * \param[in] bar Pointer to a wget_bar object
  * \param[in] slot The slot number to use
  * \param[in] filename The file name to display in the given \p slot
  * \param[in] new_file if this is the start of a download of the body of a new file
@@ -489,7 +489,7 @@ void wget_bar_set_slots(wget_bar_t *bar, int nslots)
  * Initialize the given \p slot of the \p bar object with it's (file) name to display
  * and the (file) size to be assumed 100%.
  */
-void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, int new_file, ssize_t file_size)
+void wget_bar_slot_begin(wget_bar *bar, int slot, const char *filename, int new_file, ssize_t file_size)
 {
 	wget_thread_mutex_lock(bar->mutex);
 	_bar_slot_t *slotp = &bar->slots[slot];
@@ -518,14 +518,14 @@ void wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, int ne
 }
 
 /**
- * \param[in] bar Pointer to a wget_bar_t object
+ * \param[in] bar Pointer to a wget_bar object
  * \param[in] slot The slot number to use
  * \param[in] nbytes The number of bytes downloaded since the last invocation of this function
  *
  * Set the current number of bytes for \p slot for the next update of
  * the bar/slot.
  */
-void wget_bar_slot_downloaded(wget_bar_t *bar, int slot, size_t nbytes)
+void wget_bar_slot_downloaded(wget_bar *bar, int slot, size_t nbytes)
 {
 	wget_thread_mutex_lock(bar->mutex);
 	bar->slots[slot].bytes_downloaded += nbytes;
@@ -534,12 +534,12 @@ void wget_bar_slot_downloaded(wget_bar_t *bar, int slot, size_t nbytes)
 }
 
 /**
- * \param[in] bar Pointer to a wget_bar_t object
+ * \param[in] bar Pointer to a wget_bar object
  * \param[in] slot The slot number to use
  *
  * Redraw the given \p slot as being completed.
  */
-void wget_bar_slot_deregister(wget_bar_t *bar, int slot)
+void wget_bar_slot_deregister(wget_bar *bar, int slot)
 {
 	wget_thread_mutex_lock(bar->mutex);
 	if (slot >= 0 && slot < bar->nslots) {
@@ -552,11 +552,11 @@ void wget_bar_slot_deregister(wget_bar_t *bar, int slot)
 }
 
 /**
- * \param[in] bar Pointer to a wget_bar_t object
+ * \param[in] bar Pointer to a wget_bar object
  *
  * Redraw the parts of the \p bar that have been changed so far.
  */
-void wget_bar_update(wget_bar_t *bar)
+void wget_bar_update(wget_bar *bar)
 {
 	wget_thread_mutex_lock(bar->mutex);
 	_bar_update(bar);
@@ -564,12 +564,12 @@ void wget_bar_update(wget_bar_t *bar)
 }
 
 /**
- * \param[in] bar Pointer to \p wget_bar_t
+ * \param[in] bar Pointer to \p wget_bar
  *
  * Free the various progress bar data structures
  * without freeing \p bar itself.
  */
-void wget_bar_deinit(wget_bar_t *bar)
+void wget_bar_deinit(wget_bar *bar)
 {
 	if (bar) {
 		for (int i = 0; i < bar->nslots; i++) {
@@ -585,12 +585,12 @@ void wget_bar_deinit(wget_bar_t *bar)
 }
 
 /**
- * \param[in] bar Pointer to \p wget_bar_t
+ * \param[in] bar Pointer to \p wget_bar
  *
  * Free the various progress bar data structures
  * including the \p bar pointer itself.
  */
-void wget_bar_free(wget_bar_t **bar)
+void wget_bar_free(wget_bar **bar)
 {
 	if (bar) {
 		wget_bar_deinit(*bar);
@@ -599,13 +599,13 @@ void wget_bar_free(wget_bar_t **bar)
 }
 
 /**
- * \param[in] bar Pointer to \p wget_bar_t
+ * \param[in] bar Pointer to \p wget_bar
  * \param[in] slot The slot number to use
  * \param[in] display The string to be displayed in the given slot
  *
  * Displays the \p display string in the given \p slot.
  */
-void wget_bar_print(wget_bar_t *bar, int slot, const char *display)
+void wget_bar_print(wget_bar *bar, int slot, const char *display)
 {
 	wget_thread_mutex_lock(bar->mutex);
 	_bar_print_slot(bar, slot);
@@ -617,14 +617,14 @@ void wget_bar_print(wget_bar_t *bar, int slot, const char *display)
 }
 
 /**
- * \param[in] bar Pointer to \p wget_bar_t
+ * \param[in] bar Pointer to \p wget_bar
  * \param[in] slot The slot number to use
  * \param[in] fmt Printf-like format to build the display string
  * \param[in] args Arguments matching the \p fmt format string
  *
  * Displays the \p string build using the printf-style \p fmt and \p args.
  */
-void wget_bar_vprintf(wget_bar_t *bar, int slot, const char *fmt, va_list args)
+void wget_bar_vprintf(wget_bar *bar, int slot, const char *fmt, va_list args)
 {
 	char text[bar->max_width + 1];
 
@@ -633,14 +633,14 @@ void wget_bar_vprintf(wget_bar_t *bar, int slot, const char *fmt, va_list args)
 }
 
 /**
- * \param[in] bar Pointer to \p wget_bar_t
+ * \param[in] bar Pointer to \p wget_bar
  * \param[in] slot The slot number to use
  * \param[in] fmt Printf-like format to build the display string
  * \param[in] ... List of arguments to match \p fmt
  *
  * Displays the \p string build using the printf-style \p fmt and the given arguments.
  */
-void wget_bar_printf(wget_bar_t *bar, int slot, const char *fmt, ...)
+void wget_bar_printf(wget_bar *bar, int slot, const char *fmt, ...)
 {
 	va_list args;
 
@@ -659,7 +659,7 @@ void wget_bar_screen_resized(void)
 
 /**
  *
- * \param[in] bar Pointer to \p wget_bar_t
+ * \param[in] bar Pointer to \p wget_bar
  * @param buf Pointer to buffer to be displayed
  * @param len Number of bytes to be displayed
  *
@@ -669,7 +669,7 @@ void wget_bar_screen_resized(void)
  *
  * This function needs a redesign to be useful for general purposes.
  */
-void wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len)
+void wget_bar_write_line(wget_bar *bar, const char *buf, size_t len)
 {
 	wget_thread_mutex_lock(bar->mutex);
 	// ESC 7:    Save cursor

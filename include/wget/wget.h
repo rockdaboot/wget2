@@ -2669,34 +2669,34 @@ WGETAPI const char *
  * Progress bar routines
  */
 
-typedef struct wget_bar_st wget_bar_t;
+typedef struct wget_bar_st wget_bar;
 
-WGETAPI wget_bar_t *
-	wget_bar_init(wget_bar_t *bar, int nslots);
+WGETAPI wget_bar *
+	wget_bar_init(wget_bar *bar, int nslots);
 WGETAPI void
-	wget_bar_deinit(wget_bar_t *bar);
+	wget_bar_deinit(wget_bar *bar);
 WGETAPI void
-	wget_bar_free(wget_bar_t **bar);
+	wget_bar_free(wget_bar **bar);
 WGETAPI void
-	wget_bar_print(wget_bar_t *bar, int slot, const char *s);
+	wget_bar_print(wget_bar *bar, int slot, const char *s);
 WGETAPI void
-	wget_bar_vprintf(wget_bar_t *bar, int slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_vprintf(wget_bar *bar, int slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
-	wget_bar_printf(wget_bar_t *bar, int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_printf(wget_bar *bar, int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
-	wget_bar_slot_begin(wget_bar_t *bar, int slot, const char *filename, int new_file, ssize_t filesize) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_slot_begin(wget_bar *bar, int slot, const char *filename, int new_file, ssize_t filesize) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
-	wget_bar_slot_downloaded(wget_bar_t *bar, int slot, size_t nbytes);
+	wget_bar_slot_downloaded(wget_bar *bar, int slot, size_t nbytes);
 WGETAPI void
-	wget_bar_slot_deregister(wget_bar_t *bar, int slot) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_slot_deregister(wget_bar *bar, int slot) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
-	wget_bar_update(wget_bar_t *bar) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_update(wget_bar *bar) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
-	wget_bar_set_slots(wget_bar_t *bar, int nslots) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_set_slots(wget_bar *bar, int nslots) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
 	wget_bar_screen_resized(void);
 WGETAPI void
-	wget_bar_write_line(wget_bar_t *bar, const char *buf, size_t len) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_write_line(wget_bar *bar, const char *buf, size_t len) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
 	wget_bar_set_speed_type(char type);
 

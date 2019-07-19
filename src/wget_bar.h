@@ -40,10 +40,10 @@ void bar_update_slots(int nslots);
 
 /*
 ssize_t
-	wget_bar_vprintf(wget_bar_t *bar, int slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_vprintf(wget_bar *bar, int slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
 ssize_t
-	wget_bar_printf(wget_bar_t *bar, int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_printf(wget_bar *bar, int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL;
 void
-	wget_bar_print(wget_bar_t *bar, int slot, const char *s)G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_print(wget_bar *bar, int slot, const char *s)G_GNUC_WGET_NONNULL_ALL;
 */
 #endif /* SRC_WGET_BAR_H */

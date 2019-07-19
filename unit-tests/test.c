@@ -2046,7 +2046,7 @@ static void test_bitmap(void)
 
 static void test_bar(void)
 {
-	wget_bar_t *bar;
+	wget_bar *bar;
 
 	/* testing unexpected values */
 	for (int i = -2; i <= 2; i++) {
