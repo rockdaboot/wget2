@@ -67,7 +67,7 @@ wget_http_response *wget_http_get(int first_key, ...)
 	wget_vector *headers = wget_vector_create(8, NULL);
 	wget_iri *uri = NULL;
 	wget_http_connection_t *conn = NULL, **connp = NULL;
-	wget_http_request_t *req;
+	wget_http_request *req;
 	wget_http_response *resp = NULL;
 	wget_vector *challenges = NULL;
 	wget_cookie_db *cookie_db = NULL;

@@ -3548,7 +3548,7 @@ static int _get_body(wget_http_response *resp, void *context, const char *data, 
 }
 
 static void _add_authorize_header(
-	wget_http_request_t *req,
+	wget_http_request *req,
 	wget_vector *challenges,
 	const char *username, const char *password, int proxied)
 {
@@ -3596,9 +3596,9 @@ static void _add_authorize_header(
 	}
 }
 
-static wget_http_request_t *http_create_request(wget_iri *iri, JOB *job)
+static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 {
-	wget_http_request_t *req;
+	wget_http_request *req;
 	wget_buffer buf;
 	char sbuf[256];
 	const char *method;
@@ -3838,7 +3838,7 @@ int http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloa
 			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, iri->uri);
 	}
 
-	wget_http_request_t *req = http_create_request(iri, downloader->job);
+	wget_http_request *req = http_create_request(iri, downloader->job);
 
 	if (!req)
 		return WGET_E_UNKNOWN;

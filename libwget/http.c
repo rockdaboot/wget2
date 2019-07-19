@@ -148,9 +148,9 @@ static int _body_callback(wget_http_response *resp, void *user_data G_GNUC_WGET_
  *   Characters other than those in the "reserved" set are equivalent to their
  *   percent-encoded octets: the normal form is to not encode them (see Sections 2.1 and 2.2 of [RFC3986]).
  */
-wget_http_request_t *wget_http_create_request(const wget_iri *iri, const char *method)
+wget_http_request *wget_http_create_request(const wget_iri *iri, const char *method)
 {
-	wget_http_request_t *req = wget_calloc(1, sizeof(wget_http_request_t));
+	wget_http_request *req = wget_calloc(1, sizeof(wget_http_request));
 
 	wget_buffer_init(&req->esc_resource, req->esc_resource_buf, sizeof(req->esc_resource_buf));
 	wget_buffer_init(&req->esc_host, req->esc_host_buf, sizeof(req->esc_host_buf));
@@ -168,19 +168,19 @@ wget_http_request_t *wget_http_create_request(const wget_iri *iri, const char *m
 	return req;
 }
 
-void wget_http_request_set_header_cb(wget_http_request_t *req, wget_http_header_callback_t *callback, void *user_data)
+void wget_http_request_set_header_cb(wget_http_request *req, wget_http_header_callback_t *callback, void *user_data)
 {
 	req->header_callback = callback;
 	req->header_user_data = user_data;
 }
 
-void wget_http_request_set_body_cb(wget_http_request_t *req, wget_http_body_callback_t *callback, void *user_data)
+void wget_http_request_set_body_cb(wget_http_request *req, wget_http_body_callback_t *callback, void *user_data)
 {
 	req->body_callback = callback;
 	req->body_user_data = user_data;
 }
 
-void wget_http_request_set_int(wget_http_request_t *req, int key, int value)
+void wget_http_request_set_int(wget_http_request *req, int key, int value)
 {
 	switch (key) {
 	case WGET_HTTP_RESPONSE_KEEPHEADER: req->response_keepheader = !!value; break;
@@ -188,7 +188,7 @@ void wget_http_request_set_int(wget_http_request_t *req, int key, int value)
 	}
 }
 
-int wget_http_request_get_int(wget_http_request_t *req, int key)
+int wget_http_request_get_int(wget_http_request *req, int key)
 {
 	switch (key) {
 	case WGET_HTTP_RESPONSE_KEEPHEADER: return req->response_keepheader;
@@ -198,7 +198,7 @@ int wget_http_request_get_int(wget_http_request_t *req, int key)
 	}
 }
 
-void wget_http_request_set_ptr(wget_http_request_t *req, int key, void *value)
+void wget_http_request_set_ptr(wget_http_request *req, int key, void *value)
 {
 	switch (key) {
 	case WGET_HTTP_USER_DATA: req->user_data = value; break;
@@ -206,7 +206,7 @@ void wget_http_request_set_ptr(wget_http_request_t *req, int key, void *value)
 	}
 }
 
-void *wget_http_request_get_ptr(wget_http_request_t *req, int key)
+void *wget_http_request_get_ptr(wget_http_request *req, int key)
 {
 	switch (key) {
 	case WGET_HTTP_USER_DATA: return req->user_data;
@@ -216,7 +216,7 @@ void *wget_http_request_get_ptr(wget_http_request_t *req, int key)
 	}
 }
 
-void wget_http_request_set_body(wget_http_request_t *req, const char *mimetype, char *body, size_t length)
+void wget_http_request_set_body(wget_http_request *req, const char *mimetype, char *body, size_t length)
 {
 	if (mimetype)
 		wget_http_add_header(req, "Content-Type", mimetype);
@@ -225,7 +225,7 @@ void wget_http_request_set_body(wget_http_request_t *req, const char *mimetype, 
 	req->body_length = length;
 }
 
-static int http_add_header(wget_http_request_t *req, const char *name, const char *value)
+static int http_add_header(wget_http_request *req, const char *name, const char *value)
 {
 	wget_http_header_param *param = wget_malloc(sizeof(wget_http_header_param));
 
@@ -246,12 +246,12 @@ err:
 	return WGET_E_MEMORY;
 }
 
-int wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, const char *fmt, va_list args)
+int wget_http_add_header_vprintf(wget_http_request *req, const char *name, const char *fmt, va_list args)
 {
 	return http_add_header(req, wget_strdup(name), wget_vaprintf(fmt, args));
 }
 
-int wget_http_add_header_printf(wget_http_request_t *req, const char *name, const char *fmt, ...)
+int wget_http_add_header_printf(wget_http_request *req, const char *name, const char *fmt, ...)
 {
 	va_list args;
 
@@ -262,17 +262,17 @@ int wget_http_add_header_printf(wget_http_request_t *req, const char *name, cons
 	return rc;
 }
 
-int wget_http_add_header(wget_http_request_t *req, const char *name, const char *value)
+int wget_http_add_header(wget_http_request *req, const char *name, const char *value)
 {
 	return http_add_header(req, wget_strdup(name), wget_strdup(value));
 }
 
-int wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param *param)
+int wget_http_add_header_param(wget_http_request *req, wget_http_header_param *param)
 {
 	return http_add_header(req, wget_strdup(param->name), wget_strdup(param->value));
 }
 
-void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge *challenge, const char *username, const char *password, int proxied)
+void wget_http_add_credentials(wget_http_request *req, wget_http_challenge *challenge, const char *username, const char *password, int proxied)
 {
 	if (!challenge)
 		return;
@@ -852,7 +852,7 @@ static void _init_nv(nghttp2_nv *nv, const char *name, const char *value)
 }
 #endif
 
-int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *req)
+int wget_http_send_request(wget_http_connection_t *conn, wget_http_request *req)
 {
 	ssize_t nbytes;
 
@@ -934,7 +934,7 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 	return 0;
 }
 
-ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer *buf, int proxied)
+ssize_t wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, int proxied)
 {
 	char have_content_length = 0;
 	char check_content_length = req->body && req->body_length;
@@ -1037,7 +1037,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection_t *conn)
 #endif
 
 	wget_decompressor *dc = NULL;
-	wget_http_request_t *req = wget_vector_get(conn->pending_requests, 0); // TODO: should use double linked lists here
+	wget_http_request *req = wget_vector_get(conn->pending_requests, 0); // TODO: should use double linked lists here
 
 	debug_printf("### req %p pending requests = %d\n", (void *) req, wget_vector_size(conn->pending_requests));
 	if (!req)

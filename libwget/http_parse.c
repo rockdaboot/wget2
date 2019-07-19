@@ -1347,7 +1347,7 @@ void wget_http_free_response(wget_http_response **resp)
 }
 
 /* for security reasons: set all freed pointers to NULL */
-void wget_http_free_request(wget_http_request_t **req)
+void wget_http_free_request(wget_http_request **req)
 {
 	if (req && *req) {
 		wget_buffer_deinit(&(*req)->esc_resource);

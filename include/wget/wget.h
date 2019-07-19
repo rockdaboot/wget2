@@ -2301,13 +2301,13 @@ typedef struct {
 	long long
 		first_response_start; //!< The time we read the first bytes back
 
-} wget_http_request_t;
+} wget_http_request;
 
 /**
  * HTTP response data
  */
 struct wget_http_response_st {
-	wget_http_request_t *
+	wget_http_request *
 		req;
 	wget_vector *
 		links;
@@ -2428,15 +2428,15 @@ WGETAPI char *
 WGETAPI void
 	wget_http_add_param(wget_vector **params, wget_http_header_param *param) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
-	wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_add_header_vprintf(wget_http_request *req, const char *name, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
-	wget_http_add_header_printf(wget_http_request_t *req, const char *name, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_add_header_printf(wget_http_request *req, const char *name, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
-	wget_http_add_header(wget_http_request_t *req, const char *name, const char *value) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_add_header(wget_http_request *req, const char *name, const char *value) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
-	wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param *param) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_add_header_param(wget_http_request *req, wget_http_header_param *param) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
-	wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge *challenge, const char *username, const char *password, int proxied) G_GNUC_WGET_NONNULL((1));
+	wget_http_add_credentials(wget_http_request *req, wget_http_challenge *challenge, const char *username, const char *password, int proxied) G_GNUC_WGET_NONNULL((1));
 WGETAPI int
 	wget_http_set_http_proxy(const char *proxy, const char *encoding);
 WGETAPI int
@@ -2472,7 +2472,7 @@ WGETAPI void
 //WGETAPI void
 //	wget_http_free_header(HTTP_HEADER **header);
 WGETAPI void
-	wget_http_free_request(wget_http_request_t **req);
+	wget_http_free_request(wget_http_request **req);
 WGETAPI void
 	wget_http_free_response(wget_http_response **resp);
 
@@ -2497,28 +2497,28 @@ WGETAPI void
 	wget_http_exit(void);
 WGETAPI int
 	wget_http_open(wget_http_connection_t **_conn, const wget_iri *iri);
-WGETAPI wget_http_request_t *
+WGETAPI wget_http_request *
 	wget_http_create_request(const wget_iri *iri, const char *method) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
 	wget_http_close(wget_http_connection_t **conn) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
-	wget_http_request_set_header_cb(wget_http_request_t *req, wget_http_header_callback_t *cb, void *user_data) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_set_header_cb(wget_http_request *req, wget_http_header_callback_t *cb, void *user_data) G_GNUC_WGET_NONNULL((1));
 WGETAPI void
-	wget_http_request_set_body_cb(wget_http_request_t *req, wget_http_body_callback_t *cb, void *user_data) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_set_body_cb(wget_http_request *req, wget_http_body_callback_t *cb, void *user_data) G_GNUC_WGET_NONNULL((1));
 WGETAPI void
-	wget_http_request_set_int(wget_http_request_t *req, int key, int value) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_set_int(wget_http_request *req, int key, int value) G_GNUC_WGET_NONNULL((1));
 WGETAPI int
-	wget_http_request_get_int(wget_http_request_t *req, int key) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_get_int(wget_http_request *req, int key) G_GNUC_WGET_NONNULL((1));
 WGETAPI void
-	wget_http_request_set_ptr(wget_http_request_t *req, int key, void *value) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_set_ptr(wget_http_request *req, int key, void *value) G_GNUC_WGET_NONNULL((1));
 WGETAPI void *
-	wget_http_request_get_ptr(wget_http_request_t *req, int key) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_get_ptr(wget_http_request *req, int key) G_GNUC_WGET_NONNULL((1));
 WGETAPI void
-	wget_http_request_set_body(wget_http_request_t *req, const char *mimetype, char *body, size_t length) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_set_body(wget_http_request *req, const char *mimetype, char *body, size_t length) G_GNUC_WGET_NONNULL((1));
 WGETAPI int
-	wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *req) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_send_request(wget_http_connection_t *conn, wget_http_request *req) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI ssize_t
-	wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer *buf, int proxied) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, int proxied) G_GNUC_WGET_NONNULL_ALL;
 
 /*
  * Highlevel HTTP routines

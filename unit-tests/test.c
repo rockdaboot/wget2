@@ -1977,7 +1977,7 @@ static void test_stringmap(void)
 "Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
 	wget_iri *iri = wget_iri_parse("http://localhost/prot_digest_md5/", NULL);
-	wget_http_request_t *req = wget_http_create_request(iri, "GET");
+	wget_http_request *req = wget_http_create_request(iri, "GET");
 	wget_http_response *resp = wget_http_parse_response_header(response_text);
 	wget_http_add_credentials(req, wget_vector_get(resp->challenges, 0), "tim", "123", 0);
 //	for (it=0;it<vec_size(req->lines);it++) {
