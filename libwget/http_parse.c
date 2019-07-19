@@ -328,7 +328,7 @@ const char *wget_http_parse_link(const char *s, wget_http_link *link)
 // instance-digest = digest-algorithm "=" <encoded digest output>
 // digest-algorithm = token
 
-const char *wget_http_parse_digest(const char *s, wget_http_digest_t *digest)
+const char *wget_http_parse_digest(const char *s, wget_http_digest *digest)
 {
 	memset(digest, 0, sizeof(*digest));
 
@@ -1089,7 +1089,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 	case 'd':
 		if (!wget_strncasecmp_ascii(name, "digest", namelen)) {
 			// https://tools.ietf.org/html/rfc3230
-			wget_http_digest_t digest;
+			wget_http_digest digest;
 			wget_http_parse_digest(value0, &digest);
 			// debug_printf("%s: %s\n",digest.algorithm,digest.encoded_digest);
 			if (!resp->digests) {
@@ -1289,7 +1289,7 @@ void wget_http_free_links(wget_vector **links)
 	wget_vector_free(links);
 }
 
-void wget_http_free_digest(wget_http_digest_t *digest)
+void wget_http_free_digest(wget_http_digest *digest)
 {
 	xfree(digest->algorithm);
 	xfree(digest->encoded_digest);

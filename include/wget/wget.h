@@ -2237,7 +2237,7 @@ typedef struct {
 		algorithm; //!< name of the digest, e.g. 'md5'
 	const char *
 		encoded_digest; //!< value of the digest
-} wget_http_digest_t;
+} wget_http_digest;
 
 /**
  * Parsed WWW-Authenticate or Proxy-Authenticate HTTP header
@@ -2396,7 +2396,7 @@ WGETAPI time_t
 WGETAPI const char *
 	wget_http_parse_link(const char *s, wget_http_link *link) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_digest(const char *s, wget_http_digest_t *digest) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_digest(const char *s, wget_http_digest *digest) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
 	wget_http_parse_challenge(const char *s, wget_http_challenge_t *challenge) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
@@ -2453,7 +2453,7 @@ WGETAPI void
 WGETAPI void
 	wget_http_free_cookie(wget_cookie *cookie);
 WGETAPI void
-	wget_http_free_digest(wget_http_digest_t *digest);
+	wget_http_free_digest(wget_http_digest *digest);
 WGETAPI void
 	wget_http_free_challenge(wget_http_challenge_t *challenge);
 WGETAPI void
