@@ -184,8 +184,8 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 		}
 
 		if (ctx->ignore_tags) {
-			if (wget_vector_find(ctx->ignore_tags, &(wget_html_tag_t){ .name = tag, .attribute = NULL } ) != -1
-				|| wget_vector_find(ctx->ignore_tags, &(wget_html_tag_t){ .name = tag, .attribute = attr } ) != -1)
+			if (wget_vector_find(ctx->ignore_tags, &(wget_html_tag){ .name = tag, .attribute = NULL } ) != -1
+				|| wget_vector_find(ctx->ignore_tags, &(wget_html_tag){ .name = tag, .attribute = attr } ) != -1)
 				return;
 		}
 
@@ -223,8 +223,8 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 
 		// search the dynamic list for a tag/attr match
 		if (!found && ctx->additional_tags) {
-			if (wget_vector_find(ctx->additional_tags, &(wget_html_tag_t){ .name = tag, .attribute = NULL } ) != -1
-				|| wget_vector_find(ctx->additional_tags, &(wget_html_tag_t){ .name = tag, .attribute = attr } ) != -1)
+			if (wget_vector_find(ctx->additional_tags, &(wget_html_tag){ .name = tag, .attribute = NULL } ) != -1
+				|| wget_vector_find(ctx->additional_tags, &(wget_html_tag){ .name = tag, .attribute = attr } ) != -1)
 				found = 1;
 		}
 

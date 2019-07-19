@@ -1962,7 +1962,7 @@ typedef struct {
 		name; //!< name of HTML tag
 	const char *
 		attribute; //!< attribute of the HTML tag
-} wget_html_tag_t;
+} wget_html_tag;
 
 WGETAPI wget_html_parsed_result *
 	wget_html_get_urls_inline(const char *html, wget_vector *additional_tags, wget_vector *ignore_tags);

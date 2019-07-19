@@ -571,7 +571,7 @@ static int parse_filenames(option_t opt, const char *val, G_GNUC_WGET_UNUSED con
 
 static void tag_free(void *tag)
 {
-	wget_html_tag_t *t = tag;
+	wget_html_tag *t = tag;
 
 	if (t) {
 		xfree(t->attribute);
@@ -582,7 +582,7 @@ static void tag_free(void *tag)
 
 static void G_GNUC_WGET_NONNULL_ALL _add_tag(wget_vector *v, const char *begin, const char *end)
 {
-	wget_html_tag_t *tag = wget_malloc(sizeof(wget_html_tag_t));
+	wget_html_tag *tag = wget_malloc(sizeof(wget_html_tag));
 	const char *attribute;
 
 	if ((attribute = memchr(begin, '/', end - begin))) {
@@ -599,7 +599,7 @@ static void G_GNUC_WGET_NONNULL_ALL _add_tag(wget_vector *v, const char *begin, 
 		tag_free(tag); // avoid double entries
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _compare_tag(const wget_html_tag_t *t1, const wget_html_tag_t *t2)
+static int G_GNUC_WGET_NONNULL_ALL _compare_tag(const wget_html_tag *t1, const wget_html_tag *t2)
 {
 	int n;
 
