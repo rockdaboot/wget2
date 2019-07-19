@@ -2040,24 +2040,24 @@ WGETAPI int
  * DNS resolving routines
  */
 
-typedef struct wget_dns_st wget_dns_t;
+typedef struct wget_dns_st wget_dns;
 
 WGETAPI int
-	wget_dns_init(wget_dns_t **dns);
+	wget_dns_init(wget_dns **dns);
 WGETAPI void
-	wget_dns_free(wget_dns_t **dns);
+	wget_dns_free(wget_dns **dns);
 WGETAPI void
-	wget_dns_set_timeout(wget_dns_t *dns, int timeout);
+	wget_dns_set_timeout(wget_dns *dns, int timeout);
 WGETAPI void
-	wget_dns_set_cache(wget_dns_t *dns, wget_dns_cache *cache);
+	wget_dns_set_cache(wget_dns *dns, wget_dns_cache *cache);
 WGETAPI wget_dns_cache *
-	wget_dns_get_cache(wget_dns_t *dns) G_GNUC_WGET_PURE;
+	wget_dns_get_cache(wget_dns *dns) G_GNUC_WGET_PURE;
 WGETAPI struct addrinfo *
-	wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t port, int family, int preferred_family);
+	wget_dns_resolve(wget_dns *dns, const char *host, uint16_t port, int family, int preferred_family);
 WGETAPI void
-	wget_dns_freeaddrinfo(wget_dns_t *dns, struct addrinfo **addrinfo);
+	wget_dns_freeaddrinfo(wget_dns *dns, struct addrinfo **addrinfo);
 WGETAPI int
-	wget_dns_cache_ip(wget_dns_t *dns, const char *ip, const char *name, uint16_t port);
+	wget_dns_cache_ip(wget_dns *dns, const char *ip, const char *name, uint16_t port);
 
 /*
  * TCP network routines
@@ -2083,7 +2083,7 @@ WGETAPI void
 WGETAPI void
 	wget_tcp_close(wget_tcp_t *tcp);
 WGETAPI void
-	wget_tcp_set_dns(wget_tcp_t *tcp, wget_dns_t *dns);
+	wget_tcp_set_dns(wget_tcp_t *tcp, wget_dns *dns);
 WGETAPI void
 	wget_tcp_set_timeout(wget_tcp_t *tcp, int timeout);
 WGETAPI int
@@ -2962,10 +2962,10 @@ typedef struct
 } wget_dns_stats_data_t;
 
 typedef void
-	wget_dns_stats_callback_t(wget_dns_t *dns, wget_dns_stats_data_t *stats, void *ctx);
+	wget_dns_stats_callback_t(wget_dns *dns, wget_dns_stats_data_t *stats, void *ctx);
 
 WGETAPI void
-	wget_dns_set_stats_callback(wget_dns_t *dns, wget_dns_stats_callback_t *fn, void *ctx);
+	wget_dns_set_stats_callback(wget_dns *dns, wget_dns_stats_callback_t *fn, void *ctx);
 
 /**
  * \ingroup libwget-ssl

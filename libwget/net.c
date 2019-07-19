@@ -191,7 +191,7 @@ static int G_GNUC_WGET_CONST _family_to_value(int family)
  * If \p tcp is NULL, theprotocol will be set globally (for all connections). Otherwise,
  * only for the provided connection (\p tcp).
  */
-void wget_tcp_set_dns(wget_tcp_t *tcp, wget_dns_t *dns)
+void wget_tcp_set_dns(wget_tcp_t *tcp, wget_dns *dns)
 {
 	(tcp ? tcp : &_global_tcp)->dns = dns;
 }

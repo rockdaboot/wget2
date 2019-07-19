@@ -62,20 +62,20 @@ struct wget_dns_st
 	int
 		timeout;
 };
-static wget_dns_t default_dns = {
+static wget_dns default_dns = {
 	.timeout = -1,
 };
 
 /**
- * \param[out] dns Pointer to return newly allocated and initialized wget_dns_t instance
+ * \param[out] dns Pointer to return newly allocated and initialized wget_dns instance
  * \return WGET_E_SUCCESS if OK, WGET_E_MEMORY if out-of-memory or WGET_E_INVALID
  *   if the mutex initialization failed.
  *
- * Allocates and initializes a wget_dns_t instance.
+ * Allocates and initializes a wget_dns instance.
  */
-int wget_dns_init(wget_dns_t **dns)
+int wget_dns_init(wget_dns **dns)
 {
-	wget_dns_t *_dns = wget_calloc(1, sizeof(wget_dns_t));
+	wget_dns *_dns = wget_calloc(1, sizeof(wget_dns));
 
 	if (!_dns)
 		return WGET_E_MEMORY;
@@ -92,11 +92,11 @@ int wget_dns_init(wget_dns_t **dns)
 }
 
 /**
- * \param[in/out] dns Pointer to wget_dns_t instance that will be freed and NULLified.
+ * \param[in/out] dns Pointer to wget_dns instance that will be freed and NULLified.
  *
  * Free the resources allocated by wget_dns_init().
  */
-void wget_dns_free(wget_dns_t **dns)
+void wget_dns_free(wget_dns **dns)
 {
 	if (dns && *dns) {
 		wget_thread_mutex_destroy(&(*dns)->mutex);
@@ -105,7 +105,7 @@ void wget_dns_free(wget_dns_t **dns)
 }
 
 /**
- * \param[in] dns The wget_dns_t instance to set the timeout
+ * \param[in] dns The wget_dns instance to set the timeout
  * \param[in] timeout The timeout value.
  *
  * Set the timeout (in milliseconds) for the DNS queries.
@@ -120,33 +120,33 @@ void wget_dns_free(wget_dns_t **dns)
  *  - `0`: No timeout, immediate.
  *  - `-1`: Infinite timeout. Wait indefinitely.
  */
-void wget_dns_set_timeout(wget_dns_t *dns, int timeout)
+void wget_dns_set_timeout(wget_dns *dns, int timeout)
 {
 	(dns ? dns : &default_dns)->timeout = timeout;
 }
 
 /**
- * \param[in] dns A `wget_dns_t` instance, created by wget_dns_init().
+ * \param[in] dns A `wget_dns` instance, created by wget_dns_init().
  * \param[in] caching Whether to enable DNS caching
  *
  * Enable or disable DNS caching for the DNS instance provided.
  *
  * The DNS cache is kept internally in memory, and is used in wget_dns_resolve() to speed up DNS queries.
  */
-void wget_dns_set_cache(wget_dns_t *dns, wget_dns_cache *cache)
+void wget_dns_set_cache(wget_dns *dns, wget_dns_cache *cache)
 {
 	(dns ? dns : &default_dns)->cache = cache;
 }
 
 /**
- * \param[in] dns A `wget_dns_t` instance, created by wget_dns_init().
+ * \param[in] dns A `wget_dns` instance, created by wget_dns_init().
  * \return 1 if DNS caching is enabled, 0 otherwise.
  *
  * Tells whether DNS caching is enabled or not.
  *
  * You can enable and disable DNS caching with wget_dns_set_caching().
  */
-wget_dns_cache *wget_dns_get_cache(wget_dns_t *dns)
+wget_dns_cache *wget_dns_get_cache(wget_dns *dns)
 {
 	return (dns ? dns : &default_dns)->cache;
 }
@@ -223,7 +223,7 @@ static int _resolve(int family, int flags, const char *host, uint16_t port, stru
  * Assign an IP address to the name+port key in the DNS cache.
  * The \p name should be lowercase.
  */
-int wget_dns_cache_ip(wget_dns_t *dns, const char *ip, const char *name, uint16_t port)
+int wget_dns_cache_ip(wget_dns *dns, const char *ip, const char *name, uint16_t port)
 {
 	int rc, family;
 	struct addrinfo *ai;
@@ -252,7 +252,7 @@ int wget_dns_cache_ip(wget_dns_t *dns, const char *ip, const char *name, uint16_
 }
 
 /**
- * \param[in] dns A `wget_dns_t` instance, created by wget_dns_init().
+ * \param[in] dns A `wget_dns` instance, created by wget_dns_init().
  * \param[in] host Hostname
  * \param[in] port TCP destination port
  * \param[in] family Protocol family AF_INET or AF_INET6
@@ -271,7 +271,7 @@ int wget_dns_cache_ip(wget_dns_t *dns, const char *ip, const char *name, uint16_
  *
  *  The returned `addrinfo` structure must be freed with `wget_dns_freeaddrinfo()`.
  */
-struct addrinfo *wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t port, int family, int preferred_family)
+struct addrinfo *wget_dns_resolve(wget_dns *dns, const char *host, uint16_t port, int family, int preferred_family)
 {
 	struct addrinfo *addrinfo = NULL;
 	int rc = 0;
@@ -375,13 +375,13 @@ struct addrinfo *wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t po
 }
 
 /**
- * \param[in] dns A `wget_dns_t` instance, created by wget_dns_init().
+ * \param[in] dns A `wget_dns` instance, created by wget_dns_init().
  * \param[in/out] addrinfo Value returned by `c`
  *
  * Release addrinfo, previously returned by `wget_dns_resolve()`.
  * If the underlying \p dns uses caching, just the reference/pointer is set to %NULL.
  */
-void wget_dns_freeaddrinfo(wget_dns_t *dns, struct addrinfo **addrinfo)
+void wget_dns_freeaddrinfo(wget_dns *dns, struct addrinfo **addrinfo)
 {
 	if (addrinfo && *addrinfo) {
 		if (!dns)
@@ -398,13 +398,13 @@ void wget_dns_freeaddrinfo(wget_dns_t *dns, struct addrinfo **addrinfo)
 }
 
 /**
- * \param[in] dns A `wget_dns_t` instance, created by wget_dns_init().
+ * \param[in] dns A `wget_dns` instance, created by wget_dns_init().
  * \param[in] fn A `wget_dns_stats_callback_t` callback function to receive resolve statistics data
  * \param[in] ctx Context data given to \p fn
  *
  * Set callback function to be called once DNS statistics for a host are collected
  */
-void wget_dns_set_stats_callback(wget_dns_t *dns, wget_dns_stats_callback_t *fn, void *ctx)
+void wget_dns_set_stats_callback(wget_dns *dns, wget_dns_stats_callback_t *fn, void *ctx)
 {
 	if (!dns)
 		dns = &default_dns;

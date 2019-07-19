@@ -2886,7 +2886,7 @@ static int use_askpass(void)
 */
 
 static wget_dns_cache *dns_cache;
-static wget_dns_t *dns;
+static wget_dns *dns;
 
 static int _preload_dns_cache(const char *fname)
 {
@@ -3014,7 +3014,7 @@ static const char *get_xdg_config_home(const char *user_home)
 	return home_dir;
 }
 
-static void stats_callback_dns(wget_dns_t *_dns, wget_dns_stats_data_t *stats, void *ctx)
+static void stats_callback_dns(wget_dns *_dns, wget_dns_stats_data_t *stats, void *ctx)
 {
 	(void) _dns;
 	FILE *fp = (FILE *) ctx;
