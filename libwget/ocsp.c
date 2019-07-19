@@ -47,7 +47,7 @@
  */
 
 typedef struct {
-	wget_ocsp_db_t
+	wget_ocsp_db
 		parent;
 	char *
 		fname;
@@ -141,14 +141,14 @@ static _ocsp_t *_new_ocsp(const char *fingerprint, time_t maxage, int valid)
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-int wget_ocsp_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, const char *fingerprint, int *revoked)
+int wget_ocsp_fingerprint_in_cache(const wget_ocsp_db *ocsp_db, const char *fingerprint, int *revoked)
 {
 	if (ocsp_db)
 		return ocsp_db->vtable->fingerprint_in_cache(ocsp_db, fingerprint, revoked);
 
 	return 0;
 }
-static bool impl_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, const char *fingerprint, int *revoked)
+static bool impl_ocsp_db_fingerprint_in_cache(const wget_ocsp_db *ocsp_db, const char *fingerprint, int *revoked)
 {
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 
@@ -179,14 +179,14 @@ static bool impl_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, con
  *
  * \see wget_ocsp_db_add_host
  */
-bool wget_ocsp_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *hostname)
+bool wget_ocsp_hostname_is_valid(const wget_ocsp_db *ocsp_db, const char *hostname)
 {
 	if (ocsp_db)
 		return ocsp_db->vtable->hostname_is_valid(ocsp_db, hostname);
 
 	return 0;
 }
-static bool impl_ocsp_db_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *hostname)
+static bool impl_ocsp_db_hostname_is_valid(const wget_ocsp_db *ocsp_db, const char *hostname)
 {
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 
@@ -210,7 +210,7 @@ static bool impl_ocsp_db_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const 
  *
  * If `ocsp_db` is NULL then this function does nothing.
  */
-void wget_ocsp_db_deinit(wget_ocsp_db_t *ocsp_db)
+void wget_ocsp_db_deinit(wget_ocsp_db *ocsp_db)
 {
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 
@@ -238,7 +238,7 @@ void wget_ocsp_db_deinit(wget_ocsp_db_t *ocsp_db)
  *
  * If `ocsp_db` or the pointer it points to is NULL, then this function does nothing.
  */
-void wget_ocsp_db_free(wget_ocsp_db_t **ocsp_db)
+void wget_ocsp_db_free(wget_ocsp_db **ocsp_db)
 {
 	if (! ocsp_db || ! *ocsp_db)
 		return;
@@ -246,11 +246,11 @@ void wget_ocsp_db_free(wget_ocsp_db_t **ocsp_db)
 	(*ocsp_db)->vtable->free(*ocsp_db);
 	*ocsp_db = NULL;
 }
-static void impl_ocsp_db_free(wget_ocsp_db_t *ocsp_db)
+static void impl_ocsp_db_free(wget_ocsp_db *ocsp_db)
 {
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 
-	wget_ocsp_db_deinit((wget_ocsp_db_t *) ocsp_db_priv);
+	wget_ocsp_db_deinit((wget_ocsp_db *) ocsp_db_priv);
 	xfree(ocsp_db_priv);
 }
 
@@ -307,12 +307,12 @@ static void _ocsp_db_add_fingerprint_entry(_ocsp_db_impl_t *ocsp_db_priv, _ocsp_
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-void wget_ocsp_db_add_fingerprint(wget_ocsp_db_t *ocsp_db, const char *fingerprint, time_t maxage, int valid)
+void wget_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, int valid)
 {
 	if (ocsp_db)
 		ocsp_db->vtable->add_fingerprint(ocsp_db, fingerprint, maxage, valid);
 }
-static void impl_ocsp_db_add_fingerprint(wget_ocsp_db_t *ocsp_db, const char *fingerprint, time_t maxage, int valid)
+static void impl_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, int valid)
 {
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 
@@ -378,12 +378,12 @@ static void _ocsp_db_add_host_entry(_ocsp_db_impl_t *ocsp_db_priv, _ocsp_t *ocsp
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-void wget_ocsp_db_add_host(wget_ocsp_db_t *ocsp_db, const char *host, time_t maxage)
+void wget_ocsp_db_add_host(wget_ocsp_db *ocsp_db, const char *host, time_t maxage)
 {
 	if (ocsp_db)
 		ocsp_db->vtable->add_host(ocsp_db, host, maxage);
 }
-static void impl_ocsp_db_add_host(wget_ocsp_db_t *ocsp_db, const char *host, time_t maxage)
+static void impl_ocsp_db_add_host(wget_ocsp_db *ocsp_db, const char *host, time_t maxage)
 {
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 
@@ -490,14 +490,14 @@ static int _ocsp_db_load_fingerprints(void *ocsp_db_priv, FILE *fp)
  *
  * If `ocsp_db` is NULL then this function returns -1 and does nothing else.
  */
-int wget_ocsp_db_load(wget_ocsp_db_t *ocsp_db)
+int wget_ocsp_db_load(wget_ocsp_db *ocsp_db)
 {
 	if (ocsp_db)
 		return ocsp_db->vtable->load(ocsp_db);
 
 	return -1;
 }
-static int impl_ocsp_db_load(wget_ocsp_db_t *ocsp_db)
+static int impl_ocsp_db_load(wget_ocsp_db *ocsp_db)
 {
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 
@@ -581,7 +581,7 @@ static int _ocsp_db_save_fingerprints(void *ocsp_db_priv, FILE *fp)
  *
  * If `ocsp_db` is NULL then this function returns -1 and does nothing else.
  */
-int wget_ocsp_db_save(wget_ocsp_db_t *ocsp_db)
+int wget_ocsp_db_save(wget_ocsp_db *ocsp_db)
 {
 	if (ocsp_db)
 		return ocsp_db->vtable->save(ocsp_db);
@@ -590,7 +590,7 @@ int wget_ocsp_db_save(wget_ocsp_db_t *ocsp_db)
 }
 // Save the OCSP hosts and fingerprints to flat files.
 // Protected by flock()
-static int impl_ocsp_db_save(wget_ocsp_db_t *ocsp_db)
+static int impl_ocsp_db_save(wget_ocsp_db *ocsp_db)
 {
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 
@@ -635,7 +635,7 @@ static struct wget_ocsp_db_vtable vtable = {
  *
  * This function does no file IO, OCSP entries are read from `fname` into memory when wget_ocsp_db_load() is called.
  */
-wget_ocsp_db_t *wget_ocsp_db_init(wget_ocsp_db_t *ocsp_db, const char *fname)
+wget_ocsp_db *wget_ocsp_db_init(wget_ocsp_db *ocsp_db, const char *fname)
 {
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 
@@ -657,7 +657,7 @@ wget_ocsp_db_t *wget_ocsp_db_init(wget_ocsp_db_t *ocsp_db, const char *fname)
 
 	wget_thread_mutex_init(&ocsp_db_priv->mutex);
 
-	return (wget_ocsp_db_t *) ocsp_db_priv;
+	return (wget_ocsp_db *) ocsp_db_priv;
 }
 
 /**
@@ -667,7 +667,7 @@ wget_ocsp_db_t *wget_ocsp_db_init(wget_ocsp_db_t *ocsp_db, const char *fname)
  * Changes the file from where OCSP database entries would be loaded or saved.
  * Works only with OCSP databases created with wget_ocsp_db_init().
  */
-void wget_ocsp_db_set_fname(wget_ocsp_db_t *ocsp_db, const char *fname)
+void wget_ocsp_db_set_fname(wget_ocsp_db *ocsp_db, const char *fname)
 {
 	_ocsp_db_impl_t *ocsp_db_priv = (_ocsp_db_impl_t *) ocsp_db;
 

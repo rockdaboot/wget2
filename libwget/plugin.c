@@ -304,7 +304,7 @@ void wget_plugin_add_hpkp_db(wget_plugin_t *plugin, wget_hpkp_db_t *hpkp_db, int
  * \param[in] ocsp_db OCSP database to add
  * \param[in] priority The priority value to use
  */
-void wget_plugin_add_ocsp_db(wget_plugin_t *plugin, wget_ocsp_db_t *ocsp_db, int priority)
+void wget_plugin_add_ocsp_db(wget_plugin_t *plugin, wget_ocsp_db *ocsp_db, int priority)
 {
 	plugin->vtable->add_ocsp_db(plugin, ocsp_db, priority);
 }

@@ -87,7 +87,7 @@ static struct _config {
 		*crl_file,
 		*ocsp_server,
 		*alpn;
-	wget_ocsp_db_t
+	wget_ocsp_db
 		*ocsp_cert_cache,
 		*ocsp_host_cache;
 	wget_tls_session_db
@@ -214,7 +214,7 @@ void wget_ssl_set_config_string(int key, const char *value)
  *
  * The following parameters expect an already initialized libwget object as their value.
  *
- *  - WGET_SSL_OCSP_CACHE: This option takes a pointer to a \ref wget_ocsp_db_t
+ *  - WGET_SSL_OCSP_CACHE: This option takes a pointer to a \ref wget_ocsp_db
  *  structure as an argument. Such a pointer is returned when initializing the OCSP cache with wget_ocsp_db_init().
  *  The cache is used to store OCSP responses locally and avoid querying the OCSP server repeatedly for the same certificate.
  *  - WGET_SSL_SESSION_CACHE: This option takes a pointer to a \ref wget_tls_session_db structure.
@@ -233,7 +233,7 @@ void wget_ssl_set_config_string(int key, const char *value)
 void wget_ssl_set_config_object(int key, void *value)
 {
 	switch (key) {
-	case WGET_SSL_OCSP_CACHE: _config.ocsp_cert_cache = (wget_ocsp_db_t *)value; break;
+	case WGET_SSL_OCSP_CACHE: _config.ocsp_cert_cache = (wget_ocsp_db *)value; break;
 	case WGET_SSL_SESSION_CACHE: _config.tls_session_cache = (wget_tls_session_db *)value; break;
 	case WGET_SSL_HPKP_CACHE: _config.hpkp_cache = (wget_hpkp_db_t *)value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an object)\n"), key);

@@ -57,10 +57,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	g_size = size;
 
 #if ! defined _WIN32 && defined HAVE_FMEMOPEN
-	wget_ocsp_db_t *ocsp_db = wget_ocsp_db_init(NULL, "ocsp");
+	wget_ocsp_db *ocsp_db = wget_ocsp_db_init(NULL, "ocsp");
 	wget_ocsp_db_load(ocsp_db);
 #else
-	wget_ocsp_db_t *ocsp_db = wget_ocsp_db_init(NULL, NULL);
+	wget_ocsp_db *ocsp_db = wget_ocsp_db_init(NULL, NULL);
 #endif
 	wget_ocsp_hostname_is_valid(ocsp_db, "x.y");
 	wget_ocsp_fingerprint_in_cache(ocsp_db, "", &revoked);

@@ -108,7 +108,7 @@ wget_hpkp_db_t *plugin_db_fetch_provided_hpkp_db(void);
 
 // Fetches the plugin-provided OCSP database, or NULL.
 // Ownership of the returned OCSP database is transferred to the caller, so it must be free'd with wget_ocsp_db_free().
-wget_ocsp_db_t *plugin_db_fetch_provided_ocsp_db(void);
+wget_ocsp_db *plugin_db_fetch_provided_ocsp_db(void);
 
 // Sends 'finalize' signal to all plugins and unloads all plugins
 void plugin_db_finalize(int exitcode);

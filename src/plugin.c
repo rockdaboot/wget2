@@ -77,7 +77,7 @@ static int hsts_db_priority;
 static wget_hpkp_db_t *hpkp_db;
 static int hpkp_db_priority;
 // Plugin supplied OCSP database
-static wget_ocsp_db_t *ocsp_db;
+static wget_ocsp_db *ocsp_db;
 static int ocsp_db_priority;
 
 // Sets a list of directories to search for plugins, separated by
@@ -274,7 +274,7 @@ static void impl_add_hpkp_db(G_GNUC_WGET_UNUSED wget_plugin_t *p_plugin, wget_hp
 	}
 }
 
-static void impl_add_ocsp_db(G_GNUC_WGET_UNUSED wget_plugin_t *p_plugin, wget_ocsp_db_t *new_ocsp_db, int priority)
+static void impl_add_ocsp_db(G_GNUC_WGET_UNUSED wget_plugin_t *p_plugin, wget_ocsp_db *new_ocsp_db, int priority)
 {
 	if (ocsp_db_priority < priority) {
 		ocsp_db_priority = priority;
@@ -622,9 +622,9 @@ wget_hpkp_db_t *plugin_db_fetch_provided_hpkp_db(void)
 
 // Fetches the plugin-provided OCSP database, or NULL.
 // Ownership of the returned OCSP database is transferred to the caller, so it must be free'd with wget_ocsp_db_free().
-wget_ocsp_db_t *plugin_db_fetch_provided_ocsp_db(void)
+wget_ocsp_db *plugin_db_fetch_provided_ocsp_db(void)
 {
-	wget_ocsp_db_t *res = ocsp_db;
+	wget_ocsp_db *res = ocsp_db;
 	ocsp_db = NULL;
 	return res;
 }

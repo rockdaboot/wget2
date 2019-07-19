@@ -617,10 +617,10 @@ static wget_hsts_db_t *test_hsts_db_new(int usable)
 // OCSP database for testing
 static int ocsp_db_load_counter = 0;
 typedef struct {
-	wget_ocsp_db_t parent;
-	wget_ocsp_db_t *backend_db;
+	wget_ocsp_db parent;
+	wget_ocsp_db *backend_db;
 } test_ocsp_db_t;
-static int test_ocsp_db_load(wget_ocsp_db_t *p_ocsp_db)
+static int test_ocsp_db_load(wget_ocsp_db *p_ocsp_db)
 {
 	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
@@ -630,7 +630,7 @@ static int test_ocsp_db_load(wget_ocsp_db_t *p_ocsp_db)
 	ocsp_db_load_counter++;
 	return wget_ocsp_db_load(ocsp_db->backend_db);
 }
-static int test_ocsp_db_save(wget_ocsp_db_t *p_ocsp_db)
+static int test_ocsp_db_save(wget_ocsp_db *p_ocsp_db)
 {
 	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
@@ -639,7 +639,7 @@ static int test_ocsp_db_save(wget_ocsp_db_t *p_ocsp_db)
 
 	return wget_ocsp_db_save(ocsp_db->backend_db);
 }
-static void test_ocsp_db_free(wget_ocsp_db_t *p_ocsp_db)
+static void test_ocsp_db_free(wget_ocsp_db *p_ocsp_db)
 {
 	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
@@ -647,7 +647,7 @@ static void test_ocsp_db_free(wget_ocsp_db_t *p_ocsp_db)
 		wget_ocsp_db_free(&ocsp_db->backend_db);
 	wget_free(ocsp_db);
 }
-static void test_ocsp_db_add_fingerprint(wget_ocsp_db_t *p_ocsp_db, const char *fingerprint, time_t maxage, int valid)
+static void test_ocsp_db_add_fingerprint(wget_ocsp_db *p_ocsp_db, const char *fingerprint, time_t maxage, int valid)
 {
 	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
@@ -656,7 +656,7 @@ static void test_ocsp_db_add_fingerprint(wget_ocsp_db_t *p_ocsp_db, const char *
 
 	wget_ocsp_db_add_fingerprint(ocsp_db->backend_db, fingerprint, maxage, valid);
 }
-static void test_ocsp_db_add_host(wget_ocsp_db_t *p_ocsp_db, const char *host, time_t maxage)
+static void test_ocsp_db_add_host(wget_ocsp_db *p_ocsp_db, const char *host, time_t maxage)
 {
 	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
@@ -665,7 +665,7 @@ static void test_ocsp_db_add_host(wget_ocsp_db_t *p_ocsp_db, const char *host, t
 
 	wget_ocsp_db_add_host(ocsp_db->backend_db, host, maxage);
 }
-static bool test_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *p_ocsp_db, const char *fingerprint, int *valid)
+static bool test_ocsp_db_fingerprint_in_cache(const wget_ocsp_db *p_ocsp_db, const char *fingerprint, int *valid)
 {
 	const test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
@@ -674,7 +674,7 @@ static bool test_ocsp_db_fingerprint_in_cache(const wget_ocsp_db_t *p_ocsp_db, c
 
 	return wget_ocsp_fingerprint_in_cache(ocsp_db->backend_db, fingerprint, valid);
 }
-static bool test_ocsp_db_hostname_is_valid(const wget_ocsp_db_t *p_ocsp_db, const char *hostname)
+static bool test_ocsp_db_hostname_is_valid(const wget_ocsp_db *p_ocsp_db, const char *hostname)
 {
 	const test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
@@ -692,7 +692,7 @@ static struct wget_ocsp_db_vtable test_ocsp_db_vtable = {
 	.fingerprint_in_cache = test_ocsp_db_fingerprint_in_cache,
 	.hostname_is_valid = test_ocsp_db_hostname_is_valid
 };
-static wget_ocsp_db_t *test_ocsp_db_new(int usable) {
+static wget_ocsp_db *test_ocsp_db_new(int usable) {
 	test_ocsp_db_t *ocsp_db = wget_malloc(sizeof(test_ocsp_db_t));
 
 	ocsp_db->parent.vtable = &test_ocsp_db_vtable;
@@ -701,7 +701,7 @@ static wget_ocsp_db_t *test_ocsp_db_new(int usable) {
 	else
 		ocsp_db->backend_db = NULL;
 
-	return (wget_ocsp_db_t *) ocsp_db;
+	return (wget_ocsp_db *) ocsp_db;
 }
 
 static void finalizer(G_GNUC_WGET_UNUSED wget_plugin_t *plugin, G_GNUC_WGET_UNUSED int exit_status)

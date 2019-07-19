@@ -1700,7 +1700,7 @@ WGETAPI int
  *
  * structure for Online Certificate Status Protocol (OCSP) entries
  */
-typedef struct wget_ocsp_db_st wget_ocsp_db_t;
+typedef struct wget_ocsp_db_st wget_ocsp_db;
 
 /**
  * \ingroup libwget-ocsp
@@ -1790,19 +1790,19 @@ typedef struct wget_ocsp_db_st wget_ocsp_db_t;
  */
 struct wget_ocsp_db_vtable {
 	/// Implementation of wget_ocsp_db_load()
-	int (*load)(wget_ocsp_db_t *);
+	int (*load)(wget_ocsp_db *);
 	/// Implementation of wget_ocsp_db_save()
-	int (*save)(wget_ocsp_db_t *);
+	int (*save)(wget_ocsp_db *);
 	/// Implementation of wget_ocsp_db_fingerprint_in_cache()
-	bool (*fingerprint_in_cache)(const wget_ocsp_db_t *, const char *, int *);
+	bool (*fingerprint_in_cache)(const wget_ocsp_db *, const char *, int *);
 	/// Implementation of wget_ocsp_db_hostname_is_valid()
-	bool (*hostname_is_valid)(const wget_ocsp_db_t *, const char *);
+	bool (*hostname_is_valid)(const wget_ocsp_db *, const char *);
 	/// Implementation of wget_ocsp_db_add_fingerprint()
-	void (*add_fingerprint)(wget_ocsp_db_t *, const char *, time_t, int);
+	void (*add_fingerprint)(wget_ocsp_db *, const char *, time_t, int);
 	/// Implementation of wget_ocsp_db_add_host()
-	void (*add_host)(wget_ocsp_db_t *, const char *, time_t);
+	void (*add_host)(wget_ocsp_db *, const char *, time_t);
 	/// Implementation of wget_ocsp_db_free()
-	void (*free)(wget_ocsp_db_t *);
+	void (*free)(wget_ocsp_db *);
 };
 
 struct wget_ocsp_db_st {
@@ -1811,25 +1811,25 @@ struct wget_ocsp_db_st {
 };
 
 WGETAPI int
-	wget_ocsp_fingerprint_in_cache(const wget_ocsp_db_t *ocsp_db, const char *fingerprint, int *valid);
+	wget_ocsp_fingerprint_in_cache(const wget_ocsp_db *ocsp_db, const char *fingerprint, int *valid);
 WGETAPI bool
-	wget_ocsp_hostname_is_valid(const wget_ocsp_db_t *ocsp_db, const char *hostname);
-WGETAPI wget_ocsp_db_t *
-	wget_ocsp_db_init(wget_ocsp_db_t *ocsp_db, const char *fname);
+	wget_ocsp_hostname_is_valid(const wget_ocsp_db *ocsp_db, const char *hostname);
+WGETAPI wget_ocsp_db *
+	wget_ocsp_db_init(wget_ocsp_db *ocsp_db, const char *fname);
 WGETAPI void
-	wget_ocsp_db_set_fname(wget_ocsp_db_t *ocsp_db, const char *fname);
+	wget_ocsp_db_set_fname(wget_ocsp_db *ocsp_db, const char *fname);
 WGETAPI void
-	wget_ocsp_db_deinit(wget_ocsp_db_t *ocsp_db);
+	wget_ocsp_db_deinit(wget_ocsp_db *ocsp_db);
 WGETAPI void
-	wget_ocsp_db_free(wget_ocsp_db_t **ocsp_db);
+	wget_ocsp_db_free(wget_ocsp_db **ocsp_db);
 WGETAPI void
-	wget_ocsp_db_add_fingerprint(wget_ocsp_db_t *ocsp_db, const char *fingerprint, time_t maxage, int valid);
+	wget_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, int valid);
 WGETAPI void
-	wget_ocsp_db_add_host(wget_ocsp_db_t *ocsp_db, const char *host, time_t maxage);
+	wget_ocsp_db_add_host(wget_ocsp_db *ocsp_db, const char *host, time_t maxage);
 WGETAPI int
-	wget_ocsp_db_save(wget_ocsp_db_t *ocsp_db);
+	wget_ocsp_db_save(wget_ocsp_db *ocsp_db);
 WGETAPI int
-	wget_ocsp_db_load(wget_ocsp_db_t *ocsp_db);
+	wget_ocsp_db_load(wget_ocsp_db *ocsp_db);
 
 /*
  * .netrc routines
@@ -2856,7 +2856,7 @@ WGETAPI void
 
 // Provides wget2 with another OCSP database to use.
 WGETAPI void
-	wget_plugin_add_ocsp_db(wget_plugin_t *plugin, wget_ocsp_db_t *ocsp_db, int priority);
+	wget_plugin_add_ocsp_db(wget_plugin_t *plugin, wget_ocsp_db *ocsp_db, int priority);
 
 /**
  * \ingroup libwget-plugin
@@ -2938,7 +2938,7 @@ struct wget_plugin_vtable
 
 	void (* add_hsts_db)(wget_plugin_t *, wget_hsts_db_t *, int);
 	void (* add_hpkp_db)(wget_plugin_t *, wget_hpkp_db_t *, int);
-	void (* add_ocsp_db)(wget_plugin_t *, wget_ocsp_db_t *, int);
+	void (* add_ocsp_db)(wget_plugin_t *, wget_ocsp_db *, int);
 };
 
 /**

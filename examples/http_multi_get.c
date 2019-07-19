@@ -58,7 +58,7 @@ int main(void)
 		0);
 
 	// SSL: share Wget's OCSP cache for speed improvements
-	wget_ocsp_db_t *ocsp_db = wget_ocsp_db_init(NULL, OCSP_DB);
+	wget_ocsp_db *ocsp_db = wget_ocsp_db_init(NULL, OCSP_DB);
 	wget_ocsp_db_load(ocsp_db);
 	wget_ssl_set_config_string(WGET_SSL_OCSP_CACHE, (const char *) ocsp_db);
 
