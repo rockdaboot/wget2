@@ -2210,7 +2210,7 @@ typedef struct {
 		name; //!< name of the param
 	const char *
 		value; //!< value of the param (might be NULL)
-} wget_http_header_param_t;
+} wget_http_header_param;
 
 /**
  * Parsed Link HTTP header
@@ -2426,7 +2426,7 @@ WGETAPI char *
 	wget_http_print_date(time_t t, char *buf, size_t bufsize) G_GNUC_WGET_NONNULL_ALL;
 
 WGETAPI void
-	wget_http_add_param(wget_vector **params, wget_http_header_param_t *param) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_add_param(wget_vector **params, wget_http_header_param *param) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
 	wget_http_add_header_vprintf(wget_http_request_t *req, const char *name, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
@@ -2434,7 +2434,7 @@ WGETAPI int
 WGETAPI int
 	wget_http_add_header(wget_http_request_t *req, const char *name, const char *value) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
-	wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param_t *param) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param *param) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
 	wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *challenge, const char *username, const char *password, int proxied) G_GNUC_WGET_NONNULL((1));
 WGETAPI int
@@ -2449,7 +2449,7 @@ WGETAPI void
 	wget_http_abort_connection(wget_http_connection_t *conn);
 
 WGETAPI void
-	wget_http_free_param(wget_http_header_param_t *param);
+	wget_http_free_param(wget_http_header_param *param);
 WGETAPI void
 	wget_http_free_cookie(wget_cookie *cookie);
 WGETAPI void

@@ -373,7 +373,7 @@ static int parse_stringset(option_t opt, const char *val, G_GNUC_WGET_UNUSED con
 	return 0;
 }
 
-static int compare_wget_http_param(wget_http_header_param_t *a, wget_http_header_param_t *b)
+static int compare_wget_http_param(wget_http_header_param *a, wget_http_header_param *b)
 {
 	if (wget_strcasecmp_ascii(a->name, b->name) == 0)
 		if (wget_strcasecmp_ascii(a->value, b->value) == 0)
@@ -410,7 +410,7 @@ static int parse_header(option_t opt, const char *val, G_GNUC_WGET_UNUSED const 
 			return 0;
 		}
 
-		wget_http_header_param_t *param = wget_malloc(sizeof(wget_http_header_param_t));
+		wget_http_header_param *param = wget_malloc(sizeof(wget_http_header_param));
 		param->name = wget_strmemdup(val, delim_pos - val);
 		param->value = wget_strdup(value);
 
@@ -3946,7 +3946,7 @@ int selftest_options(void)
 			const char *res_value = test_header[it].result[1];
 
 			parse_command_line(5, test_header[it].argv);
-			wget_http_header_param_t *config_value = wget_vector_get(config.headers, 0);
+			wget_http_header_param *config_value = wget_vector_get(config.headers, 0);
 			if (res_name == NULL) {
 				if (wget_vector_size(config.headers) != 0) {
 					error_printf(_("%s: Extra headers found in option #%zu\n"), __func__, it);

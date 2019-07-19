@@ -107,7 +107,7 @@ wget_http_response_t *wget_http_get(int first_key, ...)
 			break;
 		case WGET_HTTP_HEADER_ADD:
 		{
-			wget_http_header_param_t param = {
+			wget_http_header_param param = {
 				.name = va_arg(args, const char *),
 				.value = va_arg(args, const char *)
 			};

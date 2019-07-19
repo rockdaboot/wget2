@@ -3772,13 +3772,13 @@ static wget_http_request_t *http_create_request(wget_iri *iri, JOB *job)
 
 	if (config.headers) {
 		for (int i = 0; i < wget_vector_size(config.headers); i++) {
-			wget_http_header_param_t *param = wget_vector_get(config.headers, i);
+			wget_http_header_param *param = wget_vector_get(config.headers, i);
 			char replaced = 0;
 
 			// replace wget's HTTP headers by user-provided headers, except Cookie (which will just be added))
 			if (wget_strcasecmp_ascii(param->name, "Cookie")) {
 				for (int j = 0; j < wget_vector_size(req->headers); j++) {
-					wget_http_header_param_t *h = wget_vector_get(req->headers, j);
+					wget_http_header_param *h = wget_vector_get(req->headers, j);
 
 					if (!wget_strcasecmp_ascii(param->name, h->name)) {
 						xfree(h->name);

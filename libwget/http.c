@@ -227,7 +227,7 @@ void wget_http_request_set_body(wget_http_request_t *req, const char *mimetype, 
 
 static int http_add_header(wget_http_request_t *req, const char *name, const char *value)
 {
-	wget_http_header_param_t *param = wget_malloc(sizeof(wget_http_header_param_t));
+	wget_http_header_param *param = wget_malloc(sizeof(wget_http_header_param));
 
 	if (!param || !name || !value)
 		goto err;
@@ -267,7 +267,7 @@ int wget_http_add_header(wget_http_request_t *req, const char *name, const char 
 	return http_add_header(req, wget_strdup(name), wget_strdup(value));
 }
 
-int wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param_t *param)
+int wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param *param)
 {
 	return http_add_header(req, wget_strdup(param->name), wget_strdup(param->value));
 }
@@ -871,7 +871,7 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 		nvp = &nvs[4];
 
 		for (int it = 0; it < wget_vector_size(req->headers); it++) {
-			wget_http_header_param_t *param = wget_vector_get(req->headers, it);
+			wget_http_header_param *param = wget_vector_get(req->headers, it);
 			if (!wget_strcasecmp_ascii(param->name, "Connection"))
 				continue;
 			if (!wget_strcasecmp_ascii(param->name, "Transfer-Encoding"))
@@ -953,7 +953,7 @@ ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer *buf, 
 	wget_buffer_memcat(buf, " HTTP/1.1\r\n", 11);
 
 	for (int it = 0; it < wget_vector_size(req->headers); it++) {
-		wget_http_header_param_t *param = wget_vector_get(req->headers, it);
+		wget_http_header_param *param = wget_vector_get(req->headers, it);
 
 		wget_buffer_strcat(buf, param->name);
 		wget_buffer_memcat(buf, ": ", 2);

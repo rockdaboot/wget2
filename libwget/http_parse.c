@@ -230,12 +230,12 @@ const char *wget_parse_name_fixed(const char *s, const char **name, size_t *name
 	return *s == ':' ? s + 1 : s;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL compare_param(wget_http_header_param_t *p1, wget_http_header_param_t *p2)
+static int G_GNUC_WGET_NONNULL_ALL compare_param(wget_http_header_param *p1, wget_http_header_param *p2)
 {
 	return wget_strcasecmp_ascii(p1->name, p2->name);
 }
 
-void wget_http_add_param(wget_vector **params, wget_http_header_param_t *param)
+void wget_http_add_param(wget_vector **params, wget_http_header_param *param)
 {
 	if (!*params) *params = wget_vector_create(4, (wget_vector_compare_t *) compare_param);
 	wget_vector_add_memdup(*params, param, sizeof(*param));
@@ -375,7 +375,7 @@ const char *wget_http_parse_challenge(const char *s, wget_http_challenge_t *chal
 		return s;
 	}
 
-	wget_http_header_param_t param;
+	wget_http_header_param param;
 	do {
 		const char *old = s;
 		s = wget_http_parse_param(s, &param.name, &param.value);
@@ -469,7 +469,7 @@ const char *wget_http_parse_transfer_encoding(const char *s, char *transfer_enco
 
 const char *wget_http_parse_content_type(const char *s, const char **content_type, const char **charset)
 {
-	wget_http_header_param_t param;
+	wget_http_header_param param;
 	const char *p;
 
 	while (c_isblank(*s)) s++;
@@ -513,7 +513,7 @@ const char *wget_http_parse_content_type(const char *s, const char **content_typ
 
 const char *wget_http_parse_content_disposition(const char *s, const char **filename)
 {
-	wget_http_header_param_t param;
+	wget_http_header_param param;
 	char *p;
 
 	if (filename) {
@@ -615,7 +615,7 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 //	       max-age=10000; includeSubDomains
 const char *wget_http_parse_public_key_pins(const char *s, wget_hpkp_t *hpkp)
 {
-	wget_http_header_param_t param;
+	wget_http_header_param param;
 
 	wget_hpkp_set_include_subdomains(hpkp, 0);
 
@@ -649,7 +649,7 @@ const char *wget_http_parse_public_key_pins(const char *s, wget_hpkp_t *hpkp)
 
 const char *wget_http_parse_strict_transport_security(const char *s, time_t *maxage, char *include_subdomains)
 {
-	wget_http_header_param_t param;
+	wget_http_header_param param;
 
 	*maxage = 0;
 	*include_subdomains = 0;
@@ -1270,7 +1270,7 @@ wget_http_response_t *wget_http_parse_response_header(char *buf)
 	return resp;
 }
 
-void wget_http_free_param(wget_http_header_param_t *param)
+void wget_http_free_param(wget_http_header_param *param)
 {
 	xfree(param->name);
 	xfree(param->value);
