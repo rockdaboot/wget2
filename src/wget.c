@@ -1988,10 +1988,10 @@ static void process_response(wget_http_response_t *resp)
 		// We try to find and download the .meta4 file (RFC 5854).
 		// If we can't find the .meta4, download from the link with the highest priority.
 
-		wget_http_link_t *top_link = NULL, *metalink = NULL;
+		wget_http_link *top_link = NULL, *metalink = NULL;
 
 		for (int it = 0; it < wget_vector_size(resp->links); it++) {
-			wget_http_link_t *link = wget_vector_get(resp->links, it);
+			wget_http_link *link = wget_vector_get(resp->links, it);
 			if (link->rel == link_rel_describedby) {
 				if (link->type && (!wget_strcasecmp_ascii(link->type, "application/metalink4+xml") ||
 					 !wget_strcasecmp_ascii(link->type, "application/metalink+xml")))

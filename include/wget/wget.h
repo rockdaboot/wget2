@@ -2227,7 +2227,7 @@ typedef struct {
 		link_rel_describedby,
 		link_rel_duplicate
 	} rel; //!< value of 'rel' param, either none (if not found), 'describedby' or 'duplicate'
-} wget_http_link_t;
+} wget_http_link;
 
 /**
  * Parsed Digest HTTP header (RFC 3230)
@@ -2394,7 +2394,7 @@ WGETAPI const char *
 WGETAPI time_t
 	wget_http_parse_full_date(const char *s) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_link(const char *s, wget_http_link_t *link) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_link(const char *s, wget_http_link *link) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
 	wget_http_parse_digest(const char *s, wget_http_digest_t *digest) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
@@ -2457,7 +2457,7 @@ WGETAPI void
 WGETAPI void
 	wget_http_free_challenge(wget_http_challenge_t *challenge);
 WGETAPI void
-	wget_http_free_link(wget_http_link_t *link);
+	wget_http_free_link(wget_http_link *link);
 
 WGETAPI void
 	wget_http_free_cookies(wget_vector **cookies);

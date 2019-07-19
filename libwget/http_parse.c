@@ -272,7 +272,7 @@ void wget_http_add_param(wget_vector **params, wget_http_header_param *param)
   reg-rel-type   = LOALPHA *( LOALPHA | DIGIT | "." | "-" )
   ext-rel-type   = URI
 */
-const char *wget_http_parse_link(const char *s, wget_http_link_t *link)
+const char *wget_http_parse_link(const char *s, wget_http_link *link)
 {
 	memset(link, 0, sizeof(*link));
 
@@ -1122,7 +1122,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 				wget_http_parse_location(value0, &resp->location);
 		} else if (resp->code / 100 == 3 && !wget_strncasecmp_ascii(name, "link", namelen)) {
 			// debug_printf("s=%.31s\n",s);
-			wget_http_link_t link;
+			wget_http_link link;
 			wget_http_parse_link(value0, &link);
 			// debug_printf("link->uri=%s\n",link.uri);
 			if (!resp->links) {
@@ -1277,7 +1277,7 @@ void wget_http_free_param(wget_http_header_param *param)
 	xfree(param);
 }
 
-void wget_http_free_link(wget_http_link_t *link)
+void wget_http_free_link(wget_http_link *link)
 {
 	xfree(link->uri);
 	xfree(link->type);
