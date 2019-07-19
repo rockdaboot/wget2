@@ -112,7 +112,7 @@ struct DOWNLOADER {
 		thread;
 	JOB
 		*job;
-	wget_http_connection_t
+	wget_http_connection
 		*conn;
 	char
 		*buf;

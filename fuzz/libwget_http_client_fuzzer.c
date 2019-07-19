@@ -193,7 +193,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 			connect_fd = -1;
 
 			wget_http_request *req = wget_http_create_request(uri, "GET");
-			wget_http_connection_t *conn = NULL;
+			wget_http_connection *conn = NULL;
 
 			// wget_http_add_header(req, "User-Agent", "TheUserAgent/0.5");
 

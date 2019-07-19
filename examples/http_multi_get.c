@@ -47,7 +47,7 @@ int main(void)
 	};
 	wget_iri *iris[countof(urls)] = { NULL };
 	wget_http_request *reqs[countof(urls)] = { NULL };
-	wget_http_connection_t *conn = NULL;
+	wget_http_connection *conn = NULL;
 
 
 	wget_global_init(

@@ -151,7 +151,7 @@ static int
 	set_file_metadata(wget_iri *origin_url, wget_iri *referrer_url, const char *mime_type, const char *charset, time_t last_modified, FILE *fp),
 	http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloader);
 wget_http_response
-	*http_receive_response(wget_http_connection_t *conn);
+	*http_receive_response(wget_http_connection *conn);
 static long long G_GNUC_WGET_NONNULL_ALL get_file_size(const char *fname);
 
 static wget_stringmap
@@ -1538,7 +1538,7 @@ void *input_thread(void *p G_GNUC_WGET_UNUSED)
 
 static int try_connection(DOWNLOADER *downloader, wget_iri *iri)
 {
-	wget_http_connection_t *conn;
+	wget_http_connection *conn;
 	int rc;
 
 	if (iri->scheme == WGET_IRI_SCHEME_HTTP) {
@@ -3817,7 +3817,7 @@ static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 
 int http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloader)
 {
-	wget_http_connection_t *conn = downloader->conn;
+	wget_http_connection *conn = downloader->conn;
 
 	JOB *job = downloader->job;
 	int rc;
@@ -3872,7 +3872,7 @@ int http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloa
 	return WGET_E_SUCCESS;
 }
 
-wget_http_response *http_receive_response(wget_http_connection_t *conn)
+wget_http_response *http_receive_response(wget_http_connection *conn)
 {
 	wget_http_response *resp = wget_http_get_response_cb(conn);
 

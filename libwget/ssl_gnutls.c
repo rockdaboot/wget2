@@ -606,7 +606,7 @@ static int send_ocsp_request(const char *server,
 	wget_http_add_header(req, "Accept", "*/*");
 	wget_http_add_header(req, "Connection", "close");
 
-	wget_http_connection_t *conn;
+	wget_http_connection *conn;
 	if ((rc = wget_http_open(&conn, iri)) == WGET_E_SUCCESS) {
 		wget_http_request_set_body(req, "application/ocsp-request", wget_memdup(body.data, body.size), body.size);
 		req->debug_skip_body = 1;

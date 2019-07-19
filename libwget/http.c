@@ -450,7 +450,7 @@ static void _fix_broken_server_encoding(wget_http_response *resp)
 static ssize_t _send_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 	const uint8_t *data, size_t length, int flags G_GNUC_WGET_UNUSED, void *user_data)
 {
-	wget_http_connection_t *conn = (wget_http_connection_t *)user_data;
+	wget_http_connection *conn = (wget_http_connection *)user_data;
 	ssize_t rc;
 
 	// debug_printf("writing... %zd\n", length);
@@ -570,7 +570,7 @@ static int _on_stream_close_callback(nghttp2_session *session, int32_t stream_id
 
 	debug_printf("closing stream %d\n", stream_id);
 	if (ctx) {
-		wget_http_connection_t *conn = (wget_http_connection_t *) user_data;
+		wget_http_connection *conn = (wget_http_connection *) user_data;
 
 		ctx->resp->response_end = wget_get_timemillis(); // Final transmission time.
 
@@ -677,7 +677,7 @@ void host_ips_free(void)
 		wget_hashmap_free(&hosts);
 }
 
-static void _server_stats_add(wget_http_connection_t *conn, wget_http_response *resp)
+static void _server_stats_add(wget_http_connection *conn, wget_http_response *resp)
 {
 	HOST *hostp = wget_malloc(sizeof(HOST));
 
@@ -709,12 +709,12 @@ static void _server_stats_add(wget_http_connection_t *conn, wget_http_response *
 	wget_thread_mutex_unlock(hosts_mutex);
 }
 
-int wget_http_open(wget_http_connection_t **_conn, const wget_iri *iri)
+int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 {
 	static int next_http_proxy = -1;
 	static int next_https_proxy = -1;
 
-	wget_http_connection_t
+	wget_http_connection
 		*conn;
 	const char
 		*host;
@@ -727,7 +727,7 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri *iri)
 	if (!_conn)
 		return WGET_E_INVALID;
 
-	conn = *_conn = wget_calloc(1, sizeof(wget_http_connection_t)); // convenience assignment
+	conn = *_conn = wget_calloc(1, sizeof(wget_http_connection)); // convenience assignment
 
 	host = iri->host;
 	port = iri->port;
@@ -815,7 +815,7 @@ int wget_http_open(wget_http_connection_t **_conn, const wget_iri *iri)
 	return rc;
 }
 
-void wget_http_close(wget_http_connection_t **conn)
+void wget_http_close(wget_http_connection **conn)
 {
 	if (*conn) {
 		debug_printf("closing connection\n");
@@ -852,7 +852,7 @@ static void _init_nv(nghttp2_nv *nv, const char *name, const char *value)
 }
 #endif
 
-int wget_http_send_request(wget_http_connection_t *conn, wget_http_request *req)
+int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 {
 	ssize_t nbytes;
 
@@ -983,7 +983,7 @@ ssize_t wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, in
 	return buf->length;
 }
 
-wget_http_response *wget_http_get_response_cb(wget_http_connection_t *conn)
+wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 {
 	size_t bufsize, body_len = 0, body_size = 0;
 	ssize_t nbytes, nread = 0;
@@ -1352,7 +1352,7 @@ cleanup:
 
 // get response, resp->body points to body in memory
 
-wget_http_response *wget_http_get_response(wget_http_connection_t *conn)
+wget_http_response *wget_http_get_response(wget_http_connection *conn)
 {
 	wget_http_response *resp;
 
@@ -1495,7 +1495,7 @@ int wget_http_match_no_proxy(wget_vector *no_proxies_vec, const char *host)
 	return 0;
 }
 
-void wget_http_abort_connection(wget_http_connection_t *conn)
+void wget_http_abort_connection(wget_http_connection *conn)
 {
 	if (conn)
 		conn->abort_indicator = 1; // stop single connection

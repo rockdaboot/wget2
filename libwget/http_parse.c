@@ -65,40 +65,40 @@ static const unsigned char
 	};
 
 /**Gets the hostname of the remote endpoint.
- * \param conn a wget_http_connection_t
+ * \param conn a wget_http_connection
  * \return A string containing hostname. Returned memory is owned by
  *         _conn_ and should not be modified or freed.
  */
-const char *wget_http_get_host(const wget_http_connection_t *conn)
+const char *wget_http_get_host(const wget_http_connection *conn)
 {
 	return conn->esc_host;
 }
 
 /**Gets the port number of the remote endpoint.
- * \param conn a wget_http_connection_t
+ * \param conn a wget_http_connection
  * \return A string containing port number. Returned memory is owned by
  *         _conn_ and should not be modified or freed.
  */
-uint16_t wget_http_get_port(const wget_http_connection_t *conn)
+uint16_t wget_http_get_port(const wget_http_connection *conn)
 {
 	return conn->port;
 }
 
 /**Get the scheme used by the connection.
- * \param conn a wget_http_connection_t
+ * \param conn a wget_http_connection
  * \return A string containing scheme. Returned memory is owned by
  *         _conn_ and should not be modified or freed.
  */
-const char *wget_http_get_scheme(const wget_http_connection_t *conn)
+const char *wget_http_get_scheme(const wget_http_connection *conn)
 {
 	return conn->scheme;
 }
 
 /**Gets the protocol used by the connection
- * \param conn a wget_http_connection_t
+ * \param conn a wget_http_connection
  * \return Either WGET_PROTOCOL_HTTP_1_1 or WGET_PROTOCOL_HTTP_2_0
  */
-int wget_http_get_protocol(const wget_http_connection_t *conn)
+int wget_http_get_protocol(const wget_http_connection *conn)
 {
 	return conn->protocol;
 }
