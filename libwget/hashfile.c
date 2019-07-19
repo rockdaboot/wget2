@@ -53,7 +53,7 @@
  * Get the hashing algorithms list item that corresponds to the named hashing algorithm.
  *
  * This function returns a constant that uniquely identifies a known supported hashing algorithm
- * within libwget. All the supported algorithms are listed in the ::wget_digest_algorithm_t enum.
+ * within libwget. All the supported algorithms are listed in the ::wget_digest_algorithm enum.
  *
  * Algorithm name | Constant
  * -------------- | --------
@@ -66,7 +66,7 @@
  * md2|WGET_DIGTYPE_MD2
  * rmd160|WGET_DIGTYPE_RMD160
  */
-wget_digest_algorithm_t wget_hash_get_algorithm(const char *hashname)
+wget_digest_algorithm wget_hash_get_algorithm(const char *hashname)
 {
 	if (hashname) {
 		if (*hashname == 's' || *hashname == 'S') {
@@ -134,7 +134,7 @@ static const gnutls_digest_algorithm_t
  *
  * \note This function's behavior depends on the underlying cryptographic engine libwget was compiled with.
  */
-int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
+int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
 	if ((unsigned)algorithm < countof(_gnutls_algorithm))
 		return gnutls_hash_fast(_gnutls_algorithm[algorithm], text, textlen, digest);
@@ -152,7 +152,7 @@ int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t t
  * the same amount of data (e.g. 512 bits) but different hash algorithms will output
  * different lengths of data.
  */
-int wget_hash_get_len(wget_digest_algorithm_t algorithm)
+int wget_hash_get_len(wget_digest_algorithm algorithm)
 {
 	if ((unsigned)algorithm < countof(_gnutls_algorithm))
 		return gnutls_hash_get_len(_gnutls_algorithm[algorithm]);
@@ -171,7 +171,7 @@ int wget_hash_get_len(wget_digest_algorithm_t algorithm)
  *
  * After this function returns, wget_hash() might be called as many times as desired.
  */
-int wget_hash_init(wget_hash_hd *handle, wget_digest_algorithm_t algorithm)
+int wget_hash_init(wget_hash_hd *handle, wget_digest_algorithm algorithm)
 {
 	if ((unsigned)algorithm < countof(_gnutls_algorithm))
 		return gnutls_hash_init(&handle->dig, _gnutls_algorithm[algorithm]) == 0 ? 0 : -1;
@@ -246,7 +246,7 @@ static const struct nettle_hash *
 #endif
 };
 
-int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
+int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
 	wget_hash_hd dig;
 
@@ -260,7 +260,7 @@ int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t t
 	return -1;
 }
 
-int wget_hash_get_len(wget_digest_algorithm_t algorithm)
+int wget_hash_get_len(wget_digest_algorithm algorithm)
 {
 	if ((unsigned)algorithm < countof(_nettle_algorithm))
 		return _nettle_algorithm[algorithm]->digest_size;
@@ -268,7 +268,7 @@ int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 		return 0;
 }
 
-int wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm_t algorithm)
+int wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm algorithm)
 {
 	if ((unsigned)algorithm < countof(_nettle_algorithm) && _nettle_algorithm[algorithm]) {
 		dig->hash = _nettle_algorithm[algorithm];
@@ -316,7 +316,7 @@ static const int _gcrypt_algorithm[WGET_DIGTYPE_MAX] = {
 	[WGET_DIGTYPE_SHA512] = GCRY_MD_SHA512
 };
 
-int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
+int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
 	wget_hash_hd dig;
 
@@ -330,7 +330,7 @@ int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t t
 	return -1;
 }
 
-int wget_hash_get_len(wget_digest_algorithm_t algorithm)
+int wget_hash_get_len(wget_digest_algorithm algorithm)
 {
 	if ((unsigned)algorithm < countof(_gcrypt_algorithm))
 		return gcry_md_get_algo_dlen(_gcrypt_algorithm[algorithm]);
@@ -338,7 +338,7 @@ int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 		return 0;
 }
 
-int wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm_t algorithm)
+int wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm algorithm)
 {
 	if ((unsigned)algorithm < countof(_gcrypt_algorithm)) {
 		dig->algorithm = _gcrypt_algorithm[algorithm];
@@ -452,7 +452,7 @@ struct wget_hash_hd_st {
 		*context;
 };
 
-int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
+int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
 	wget_hash_hd dig;
 
@@ -466,7 +466,7 @@ int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t t
 	return -1;
 }
 
-int wget_hash_get_len(wget_digest_algorithm_t algorithm)
+int wget_hash_get_len(wget_digest_algorithm algorithm)
 {
 	if ((unsigned)algorithm < countof(_algorithm))
 		return _algorithm[algorithm].digest_len;
@@ -474,7 +474,7 @@ int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 		return 0;
 }
 
-int wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm_t algorithm)
+int wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm algorithm)
 {
 	if ((unsigned)algorithm < countof(_algorithm)) {
 		if (_algorithm[algorithm].ctx_len) {
@@ -517,7 +517,7 @@ void wget_hash_deinit(wget_hash_hd *dig, void *digest)
  */
 int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
 {
-	wget_digest_algorithm_t algorithm;
+	wget_digest_algorithm algorithm;
 	int ret=-1;
 	struct stat st;
 

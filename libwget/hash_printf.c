@@ -53,7 +53,7 @@
  *
  * The ideal length of \p out would be wget_hash_get_len(type) * 2 + 1.
  */
-void wget_hash_printf_hex(wget_digest_algorithm_t algorithm, char *out, size_t outsize, const char *fmt, ...)
+void wget_hash_printf_hex(wget_digest_algorithm algorithm, char *out, size_t outsize, const char *fmt, ...)
 {
 	char *plaintext;
 	va_list args;

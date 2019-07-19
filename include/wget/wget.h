@@ -2565,16 +2565,16 @@ typedef enum {
 	WGET_DIGTYPE_SHA512,  /**< Type 'SHA512' digest */
 	WGET_DIGTYPE_SHA224,  /**< Type 'SHA224' digest */
 	WGET_DIGTYPE_MAX      /**< Number of digest types */
-} wget_digest_algorithm_t;
+} wget_digest_algorithm;
 
-WGETAPI wget_digest_algorithm_t
+WGETAPI wget_digest_algorithm
 	wget_hash_get_algorithm(const char *hashname);
 WGETAPI int
-	wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest);
+	wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest);
 WGETAPI int
-	wget_hash_get_len(wget_digest_algorithm_t algorithm) G_GNUC_WGET_CONST;
+	wget_hash_get_len(wget_digest_algorithm algorithm) G_GNUC_WGET_CONST;
 WGETAPI int
-	wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm_t algorithm);
+	wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm algorithm);
 WGETAPI int
 	wget_hash(wget_hash_hd *handle, const void *text, size_t textlen);
 WGETAPI void
@@ -2596,7 +2596,7 @@ WGETAPI int
  */
 
 WGETAPI void G_GNUC_WGET_PRINTF_FORMAT(4,5) G_GNUC_WGET_NONNULL_ALL
-	wget_hash_printf_hex(wget_digest_algorithm_t algorithm, char *out, size_t outsize, const char *fmt, ...);
+	wget_hash_printf_hex(wget_digest_algorithm algorithm, char *out, size_t outsize, const char *fmt, ...);
 
 
 /*
