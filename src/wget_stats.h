@@ -36,7 +36,7 @@
 #define HTTP_S_DASH(s) (strcmp(s, "http") ? (strcmp(s, "https") ? s : "1") : "0")
 
 void site_stats_print(void);
-void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info);
+void stats_site_add(wget_http_response *resp, wget_gpg_info_t *gpg_info);
 void site_stats_init(FILE *fp);
 void site_stats_exit(void);
 

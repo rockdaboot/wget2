@@ -124,7 +124,7 @@ typedef struct {
 } _statistics_t;
 static _statistics_t stats;
 
-static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag,
+static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response *resp, const char *fname, int flag,
 		wget_iri *uri, wget_iri *original_url, int ignore_patterns, wget_buffer *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path);
 
@@ -150,7 +150,7 @@ static int
 	write_xattr_last_modified(time_t last_modified, int fd),
 	set_file_metadata(wget_iri *origin_url, wget_iri *referrer_url, const char *mime_type, const char *charset, time_t last_modified, FILE *fp),
 	http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloader);
-wget_http_response_t
+wget_http_response
 	*http_receive_response(wget_http_connection_t *conn);
 static long long G_GNUC_WGET_NONNULL_ALL get_file_size(const char *fname);
 
@@ -1663,7 +1663,7 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri **iri)
 	return rc;
 }
 
-static void add_statistics(wget_http_response_t *resp)
+static void add_statistics(wget_http_response *resp)
 {
 	// do some statistics
 	JOB *job = resp->req->user_data;
@@ -1684,7 +1684,7 @@ static void add_statistics(wget_http_response_t *resp)
 		stats_site_add(resp, NULL);
 }
 
-static int process_response_header(wget_http_response_t *resp)
+static int process_response_header(wget_http_response *resp)
 {
 	JOB *job = resp->req->user_data;
 	DOWNLOADER *downloader = job->downloader;
@@ -1815,7 +1815,7 @@ static int process_response_header(wget_http_response_t *resp)
 static bool check_status_code_list(wget_vector *list, uint16_t status);
 static bool check_mime_list(wget_vector *list, const char *mime);
 
-static void process_head_response(wget_http_response_t *resp)
+static void process_head_response(wget_http_response *resp)
 {
 	JOB *job = resp->req->user_data;
 
@@ -1890,7 +1890,7 @@ static void process_head_response(wget_http_response_t *resp)
 }
 
 // chunked or metalink partial download
-static void process_response_part(wget_http_response_t *resp)
+static void process_response_part(wget_http_response *resp)
 {
 	JOB *job = resp->req->user_data;
 	DOWNLOADER *downloader = job->downloader;
@@ -1953,7 +1953,7 @@ static void process_response_part(wget_http_response_t *resp)
 	}
 }
 
-static void process_response(wget_http_response_t *resp)
+static void process_response(wget_http_response *resp)
 {
 	JOB *job = resp->req->user_data;
 	int process_decision = 0, recurse_decision = 0;
@@ -2227,7 +2227,7 @@ enum actions {
 void *downloader_thread(void *p)
 {
 	DOWNLOADER *downloader = p;
-	wget_http_response_t *resp = NULL;
+	wget_http_response *resp = NULL;
 	JOB *job;
 	HOST *host = NULL;
 	int pending = 0, max_pending = 1, locked;
@@ -3081,7 +3081,7 @@ static bool check_mime_list(wget_vector *list, const char *mime)
 	return result;
 }
 
-static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response_t *resp, const char *fname, int flag,
+static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response *resp, const char *fname, int flag,
 		wget_iri *uri, wget_iri *original_url, int ignore_patterns, wget_buffer *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path)
 {
@@ -3339,7 +3339,7 @@ struct _body_callback_context {
 	long long limit_prev_time_ms;
 };
 
-static int _get_header(wget_http_response_t *resp, void *context)
+static int _get_header(wget_http_response *resp, void *context)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
 	PART *part;
@@ -3498,7 +3498,7 @@ static void limit_transfer_rate(struct _body_callback_context *ctx, size_t read_
 }
 
 
-static int _get_body(wget_http_response_t *resp, void *context, const char *data, size_t length)
+static int _get_body(wget_http_response *resp, void *context, const char *data, size_t length)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
 
@@ -3872,9 +3872,9 @@ int http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloa
 	return WGET_E_SUCCESS;
 }
 
-wget_http_response_t *http_receive_response(wget_http_connection_t *conn)
+wget_http_response *http_receive_response(wget_http_connection_t *conn)
 {
-	wget_http_response_t *resp = wget_http_get_response_cb(conn);
+	wget_http_response *resp = wget_http_get_response_cb(conn);
 
 	if (!resp)
 		return NULL;

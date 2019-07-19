@@ -40,7 +40,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	memcpy(in, data, size);
 	in[size] = 0;
 
-	wget_http_response_t *resp = wget_http_parse_response_header(in);
+	wget_http_response *resp = wget_http_parse_response_header(in);
 	wget_http_free_response(&resp);
 
 	free(in);

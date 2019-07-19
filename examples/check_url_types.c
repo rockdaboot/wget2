@@ -227,7 +227,7 @@ static void html_parse(const char *html, size_t html_len, const char *encoding, 
 int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED)
 {
 //	wget_http_connection_t *conn = NULL;
-	wget_http_response_t *resp = NULL;
+	wget_http_response *resp = NULL;
 	char *url = NULL;
 
 	// set up libwget global configuration

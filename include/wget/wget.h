@@ -2254,9 +2254,9 @@ enum {
 	wget_transfer_encoding_chunked = 1
 };
 
-typedef struct wget_http_response_t wget_http_response_t;
-typedef int wget_http_header_callback_t(wget_http_response_t *, void *);
-typedef int wget_http_body_callback_t(wget_http_response_t *, void *, const char *, size_t);
+typedef struct wget_http_response_st wget_http_response;
+typedef int wget_http_header_callback_t(wget_http_response *, void *);
+typedef int wget_http_body_callback_t(wget_http_response *, void *, const char *, size_t);
 
 /**
  * HTTP request data
@@ -2306,7 +2306,7 @@ typedef struct {
 /**
  * HTTP response data
  */
-struct wget_http_response_t {
+struct wget_http_response_st {
 	wget_http_request_t *
 		req;
 	wget_vector *
@@ -2474,21 +2474,21 @@ WGETAPI void
 WGETAPI void
 	wget_http_free_request(wget_http_request_t **req);
 WGETAPI void
-	wget_http_free_response(wget_http_response_t **resp);
+	wget_http_free_response(wget_http_response **resp);
 
-WGETAPI wget_http_response_t *
+WGETAPI wget_http_response *
 	wget_http_read_header(const wget_iri *iri) G_GNUC_WGET_NONNULL_ALL;
-WGETAPI wget_http_response_t *
+WGETAPI wget_http_response *
 	wget_http_get_header(wget_iri *iri) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI int
-	wget_http_parse_header_line(wget_http_response_t *resp, const char *name, size_t namelen, const char *value, size_t valuelen);
-WGETAPI wget_http_response_t *
+	wget_http_parse_header_line(wget_http_response *resp, const char *name, size_t namelen, const char *value, size_t valuelen);
+WGETAPI wget_http_response *
 	wget_http_parse_response_header(char *buf) G_GNUC_WGET_NONNULL_ALL;
-WGETAPI wget_http_response_t *
+WGETAPI wget_http_response *
 	wget_http_get_response_cb(wget_http_connection_t *conn) G_GNUC_WGET_NONNULL((1));
 //WGETAPI HTTP_RESPONSE *
 //	http_get_response_mem(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL_ALL;
-WGETAPI wget_http_response_t *
+WGETAPI wget_http_response *
 	wget_http_get_response(wget_http_connection_t *conn) G_GNUC_WGET_NONNULL((1));
 
 WGETAPI void
@@ -2524,7 +2524,7 @@ WGETAPI ssize_t
  * Highlevel HTTP routines
  */
 
-WGETAPI wget_http_response_t *
+WGETAPI wget_http_response *
 	wget_http_get(int first_key, ...);
 WGETAPI wget_vector
 	*wget_get_css_urls(const char *data);

@@ -199,7 +199,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 			if (wget_http_open(&conn, uri) == WGET_E_SUCCESS) {
 				if (wget_http_send_request(conn, req) == WGET_E_SUCCESS) {
-					wget_http_response_t *resp = wget_http_get_response(conn);
+					wget_http_response *resp = wget_http_get_response(conn);
 					wget_http_free_response(&resp);
 				}
 				wget_http_close(&conn);

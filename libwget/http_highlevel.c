@@ -35,7 +35,7 @@
 #include "private.h"
 #include "http.h"
 
-static int _stream_callback(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *user_data, const char *data, size_t length)
+static int _stream_callback(wget_http_response *resp G_GNUC_WGET_UNUSED, void *user_data, const char *data, size_t length)
 {
 	FILE *stream = (FILE *) user_data;
 
@@ -51,7 +51,7 @@ static int _stream_callback(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void 
 	return 0;
 }
 
-static int _fd_callback(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *user_data, const char *data, size_t length)
+static int _fd_callback(wget_http_response *resp G_GNUC_WGET_UNUSED, void *user_data, const char *data, size_t length)
 {
 	int fd = *(int *) user_data;
 	ssize_t nbytes = write(fd, data, length);
@@ -62,13 +62,13 @@ static int _fd_callback(wget_http_response_t *resp G_GNUC_WGET_UNUSED, void *use
 	return 0;
 }
 
-wget_http_response_t *wget_http_get(int first_key, ...)
+wget_http_response *wget_http_get(int first_key, ...)
 {
 	wget_vector *headers = wget_vector_create(8, NULL);
 	wget_iri *uri = NULL;
 	wget_http_connection_t *conn = NULL, **connp = NULL;
 	wget_http_request_t *req;
-	wget_http_response_t *resp = NULL;
+	wget_http_response *resp = NULL;
 	wget_vector *challenges = NULL;
 	wget_cookie_db *cookie_db = NULL;
 	FILE *saveas_stream = NULL;

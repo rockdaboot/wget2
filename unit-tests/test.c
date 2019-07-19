@@ -1978,7 +1978,7 @@ static void test_stringmap(void)
 
 	wget_iri *iri = wget_iri_parse("http://localhost/prot_digest_md5/", NULL);
 	wget_http_request_t *req = wget_http_create_request(iri, "GET");
-	wget_http_response_t *resp = wget_http_parse_response_header(response_text);
+	wget_http_response *resp = wget_http_parse_response_header(response_text);
 	wget_http_add_credentials(req, wget_vector_get(resp->challenges, 0), "tim", "123", 0);
 //	for (it=0;it<vec_size(req->lines);it++) {
 //		info_printf("%s\n", (char *)vec_get(req->lines, it));
@@ -2392,7 +2392,7 @@ static void test_parse_response_header(void)
 			"X-Archive-Orig-last-modified: Sun, 25 May 2003 16:55:12 GMT\r\n"\
 			"Content-Type: text/plain; charset=utf-8\r\n\r\n");
 
-	wget_http_response_t *resp = wget_http_parse_response_header(response_text);
+	wget_http_response *resp = wget_http_parse_response_header(response_text);
 
 	if (resp->keep_alive)
 		ok++;

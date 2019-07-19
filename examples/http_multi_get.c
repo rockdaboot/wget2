@@ -105,7 +105,7 @@ int main(void)
 	}
 
 	for (;;) {
-		wget_http_response_t *resp = wget_http_get_response(conn);
+		wget_http_response *resp = wget_http_get_response(conn);
 
 		if (!resp)
 			goto out; // done or severe error

@@ -54,7 +54,7 @@ static int metaint, streamdatalen, metadatalen;
 // callback function to examine received HTTP response header
 // <context> depends on WGET_HTTP_BODY_SAVEAS_* option given to wget_http_get().
 // The response header is has been parsed into <resp> structure.
-static int header_callback(void *context G_GNUC_WGET_UNUSED, wget_http_response_t *resp)
+static int header_callback(void *context G_GNUC_WGET_UNUSED, wget_http_response *resp)
 {
 	// If you are looking for header that are ignored by libwget, parse them yourself.
 
@@ -136,7 +136,7 @@ static char *strcasestr_ascii(const char *haystack, const char *needle)
 
 int main(int argc, const char *const *argv)
 {
-	wget_http_response_t *resp;
+	wget_http_response *resp;
 	char *stream_url = NULL;
 
 	// set up libwget global configuration

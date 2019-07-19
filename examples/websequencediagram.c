@@ -31,7 +31,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 {
 	wget_http_connection_t *conn = NULL;
 	wget_http_request_t *req;
-	wget_http_response_t *resp;
+	wget_http_response *resp;
 	wget_iri *iri;
 
 	// set up libwget global configuration

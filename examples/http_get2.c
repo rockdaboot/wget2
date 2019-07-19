@@ -113,7 +113,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 	wget_http_open(&conn, uri);
 
 	if (conn) {
-		wget_http_response_t *resp;
+		wget_http_response *resp;
 
 		if (wget_http_send_request(conn, req) == 0) {
 			resp = wget_http_get_response(conn);

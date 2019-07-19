@@ -1046,7 +1046,7 @@ static void cookie_free(void *cookie)
 		wget_cookie_free((wget_cookie **) &cookie);
 }
 
-int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, size_t namelen, const char *value, size_t valuelen)
+int wget_http_parse_header_line(wget_http_response *resp, const char *name, size_t namelen, const char *value, size_t valuelen)
 {
 	if (!name || !value)
 		return -1;
@@ -1211,11 +1211,11 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 
 /* content of <buf> will be destroyed */
 /* buf must be 0-terminated */
-wget_http_response_t *wget_http_parse_response_header(char *buf)
+wget_http_response *wget_http_parse_response_header(char *buf)
 {
 	char *eol;
 
-	wget_http_response_t *resp = wget_calloc(1, sizeof(wget_http_response_t));
+	wget_http_response *resp = wget_calloc(1, sizeof(wget_http_response));
 
 	if (sscanf(buf, " HTTP/%3hd.%3hd %3hd %31[^\r\n] ",
 		&resp->major, &resp->minor, &resp->code, resp->reason) >= 3) {
@@ -1326,7 +1326,7 @@ void wget_http_free_hpkp_entries(wget_hpkp_t **hpkp)
 	}
 }
 
-void wget_http_free_response(wget_http_response_t **resp)
+void wget_http_free_response(wget_http_response **resp)
 {
 	if (resp && *resp) {
 		wget_http_free_links(&(*resp)->links);

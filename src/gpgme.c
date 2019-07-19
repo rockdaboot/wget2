@@ -262,7 +262,7 @@ int wget_verify_pgp_sig_str(const char *sig, const size_t sig_len, const char *d
 #endif
 }
 
-int wget_verify_job(JOB *job, wget_http_response_t *resp, wget_gpg_info_t *info)
+int wget_verify_job(JOB *job, wget_http_response *resp, wget_gpg_info_t *info)
 {
 	if (info)
 		memset(info, 0, sizeof(*info));

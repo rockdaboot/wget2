@@ -128,7 +128,7 @@ static void
 
 // This is the default function for collecting body data
 static wget_http_body_callback_t _body_callback;
-static int _body_callback(wget_http_response_t *resp, void *user_data G_GNUC_WGET_UNUSED, const char *data, size_t length)
+static int _body_callback(wget_http_response *resp, void *user_data G_GNUC_WGET_UNUSED, const char *data, size_t length)
 {
 	if (!resp->body)
 		resp->body = wget_buffer_alloc(102400);
@@ -403,7 +403,7 @@ void http_set_config_int(int key, int value)
 */
 
 struct _http2_stream_context {
-	wget_http_response_t
+	wget_http_response
 		*resp;
 	wget_decompressor
 		*decompressor;
@@ -411,7 +411,7 @@ struct _http2_stream_context {
 
 static int _decompress_error_handler(wget_decompressor *dc, int err G_GNUC_WGET_UNUSED)
 {
-	wget_http_response_t *resp = (wget_http_response_t *) wget_decompress_get_context(dc);
+	wget_http_response *resp = (wget_http_response *) wget_decompress_get_context(dc);
 
 	if (resp && resp->req)
 		error_printf(_("Decompress failed [host: %s - resource: %s]\n"),
@@ -423,12 +423,12 @@ static int _decompress_error_handler(wget_decompressor *dc, int err G_GNUC_WGET_
 static wget_decompressor_sink_t _get_body;
 static int _get_body(void *userdata, const char *data, size_t length)
 {
-	wget_http_response_t *resp = (wget_http_response_t *) userdata;
+	wget_http_response *resp = (wget_http_response *) userdata;
 
 	return resp->req->body_callback(resp, resp->req->body_user_data, data, length);
 }
 
-static void _fix_broken_server_encoding(wget_http_response_t *resp)
+static void _fix_broken_server_encoding(wget_http_response *resp)
 {
 	// a workaround for broken server configurations
 	// see https://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
@@ -511,7 +511,7 @@ static int _on_frame_recv_callback(nghttp2_session *session,
 	// header callback after receiving all header tags
 	if (frame->hd.type == NGHTTP2_HEADERS) {
 		struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
-		wget_http_response_t *resp = ctx ? ctx->resp : NULL;
+		wget_http_response *resp = ctx ? ctx->resp : NULL;
 
 		if (resp) {
 			if (resp->header && resp->req->header_callback) {
@@ -536,7 +536,7 @@ static int _on_header_callback(nghttp2_session *session,
 	uint8_t flags G_GNUC_WGET_UNUSED, void *user_data G_GNUC_WGET_UNUSED)
 {
 	struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
-	wget_http_response_t *resp = ctx ? ctx->resp : NULL;
+	wget_http_response *resp = ctx ? ctx->resp : NULL;
 
 	if (!resp)
 		return 0;
@@ -677,7 +677,7 @@ void host_ips_free(void)
 		wget_hashmap_free(&hosts);
 }
 
-static void _server_stats_add(wget_http_connection_t *conn, wget_http_response_t *resp)
+static void _server_stats_add(wget_http_connection_t *conn, wget_http_response *resp)
 {
 	HOST *hostp = wget_malloc(sizeof(HOST));
 
@@ -886,7 +886,7 @@ int wget_http_send_request(wget_http_connection_t *conn, wget_http_request_t *re
 
 		struct _http2_stream_context *ctx = wget_calloc(1, sizeof(struct _http2_stream_context));
 		// HTTP/2.0 has the streamid as link between
-		ctx->resp = wget_calloc(1, sizeof(wget_http_response_t));
+		ctx->resp = wget_calloc(1, sizeof(wget_http_response));
 		ctx->resp->req = req;
 		ctx->resp->major = 2;
 		// we do not get a Keep-Alive header in HTTP2 - let's assume the connection stays open
@@ -983,12 +983,12 @@ ssize_t wget_http_request_to_buffer(wget_http_request_t *req, wget_buffer *buf, 
 	return buf->length;
 }
 
-wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
+wget_http_response *wget_http_get_response_cb(wget_http_connection_t *conn)
 {
 	size_t bufsize, body_len = 0, body_size = 0;
 	ssize_t nbytes, nread = 0;
 	char *buf, *p = NULL;
-	wget_http_response_t *resp = NULL;
+	wget_http_response *resp = NULL;
 
 #ifdef WITH_LIBNGHTTP2
 	if (conn->protocol == WGET_PROTOCOL_HTTP_2_0) {
@@ -1352,9 +1352,9 @@ cleanup:
 
 // get response, resp->body points to body in memory
 
-wget_http_response_t *wget_http_get_response(wget_http_connection_t *conn)
+wget_http_response *wget_http_get_response(wget_http_connection_t *conn)
 {
-	wget_http_response_t *resp;
+	wget_http_response *resp;
 
 	resp = wget_http_get_response_cb(conn);
 

@@ -162,7 +162,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 static void *downloader_thread(G_GNUC_WGET_UNUSED void *p)
 {
 	stats_t stats;
-	wget_http_response_t *resp = NULL;
+	wget_http_response *resp = NULL;
 	char *url = NULL;
 
 	while (fscanf(stdin, "%255s", stats.host) == 1) {

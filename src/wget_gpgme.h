@@ -56,7 +56,7 @@ void init_gpgme(void);
  *             information about the verification. Pass in NULL if you don't care.
  * \return A wget error code. See wget_verify_pgp_sig_str return value for more info.
  */
-int wget_verify_job(JOB *job, wget_http_response_t *resp, wget_gpg_info_t *info);
+int wget_verify_job(JOB *job, wget_http_response *resp, wget_gpg_info_t *info);
 
 /**
  * Verify signature data contained in buffers

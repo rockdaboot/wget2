@@ -104,7 +104,7 @@ void site_stats_exit(void)
 	wget_thread_mutex_destroy(&mutex);
 }
 
-void stats_site_add(wget_http_response_t *resp, wget_gpg_info_t *gpg_info)
+void stats_site_add(wget_http_response *resp, wget_gpg_info_t *gpg_info)
 {
 	JOB *job = resp->req->user_data;
 	wget_iri *iri = job->iri;
