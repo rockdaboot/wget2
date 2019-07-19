@@ -1885,7 +1885,7 @@ WGETAPI int
  * CSS parsing routines
  */
 
-typedef struct {
+struct wget_css_parsed_url_st {
 	size_t
 		len; //!< length of found URL
 	size_t
@@ -1894,7 +1894,8 @@ typedef struct {
 		url; //!< zero-terminated copy the found URL
 	const char *
 		abs_url; //!< the found URL converted into an absolute URL
-} wget_css_parsed_url_t;
+};
+typedef struct wget_css_parsed_url_st wget_css_parsed_url;
 
 typedef void wget_css_parse_uri_cb_t(void *user_ctx, const char *url, size_t len, size_t pos);
 typedef void wget_css_parse_encoding_cb_t(void *user_ctx, const char *url, size_t len);

@@ -113,7 +113,7 @@ int main(int argc, const char **argv)
 			info_printf("URL encoding for %s is '%s':\n", argv[argpos], css_encoding ? css_encoding : "UTF-8");
 
 			for (int it = 0; it < wget_vector_size(css_urls); it++) {
-				wget_css_parsed_url_t *css_url = wget_vector_get(css_urls, it);
+				wget_css_parsed_url *css_url = wget_vector_get(css_urls, it);
 				if (css_url->abs_url)
 					info_printf("  %s -> %s\n", css_url->url, css_url->abs_url);
 				else
