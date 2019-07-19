@@ -2174,6 +2174,7 @@ WGETAPI bool
 #define WGET_SSL_ALPN              18
 #define WGET_SSL_SESSION_CACHE     19
 #define WGET_SSL_HPKP_CACHE     20
+#define WGET_SSL_OCSP_NONCE     21
 
 WGETAPI void
 	wget_ssl_init(void);

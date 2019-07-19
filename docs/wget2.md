@@ -1560,6 +1560,9 @@ Go to background immediately after startup. If no output file is specified via t
   This procedure is pretty slow (connect to server, HTTP request, response) and thus we support
   OSCP stapling (server sends OCSP response within TLS handshake) and persistent OCSP caching.
 
+### `--ocsp-nonce`
+  Allow nonce checking when verifying OCSP response. (default: on)
+
 ### `--ocsp-server`
 
   Set OCSP server address (default: OCSP server given in certificate).

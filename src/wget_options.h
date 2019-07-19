@@ -180,7 +180,8 @@ struct config {
 		dns_timeout, // ms
 		read_timeout, // ms
 		max_redirect,
-		max_threads;
+		max_threads,
+		ocsp_nonce;
 	unsigned short
 		default_http_port,
 		default_https_port;

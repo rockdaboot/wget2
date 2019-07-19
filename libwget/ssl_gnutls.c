@@ -103,7 +103,8 @@ static struct _config {
 		check_hostname : 1,
 		print_info : 1,
 		ocsp : 1,
-		ocsp_stapling : 1;
+		ocsp_stapling : 1,
+		ocsp_nonce : 1;
 } _config = {
 	.check_certificate = 1,
 	.check_hostname = 1,
@@ -282,6 +283,7 @@ void wget_ssl_set_config_int(int key, int value)
 	case WGET_SSL_PRINT_INFO: _config.print_info = (char)value; break;
 	case WGET_SSL_OCSP: _config.ocsp = (char)value; break;
 	case WGET_SSL_OCSP_STAPLING: _config.ocsp_stapling = (char)value; break;
+	case WGET_SSL_OCSP_NONCE: _config.ocsp_nonce = value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an integer)\n"), key);
 	}
 }
@@ -757,7 +759,7 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 			goto cleanup;
 		}
 
-		if (rnonce.size != nonce->size || memcmp(nonce->data, rnonce.data, nonce->size) != 0) {
+		if (_config.ocsp_nonce && (rnonce.size != nonce->size || memcmp(nonce->data, rnonce.data, nonce->size) != 0)) {
 			debug_printf("nonce in the response doesn't match\n");
 			gnutls_free(rnonce.data);
 			goto cleanup;
