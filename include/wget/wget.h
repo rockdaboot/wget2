@@ -2250,8 +2250,8 @@ typedef struct {
 } wget_http_challenge;
 
 enum {
-	transfer_encoding_identity,
-	transfer_encoding_chunked
+	wget_transfer_encoding_identity = 0,
+	wget_transfer_encoding_chunked = 1
 };
 
 typedef struct wget_http_response_t wget_http_response_t;

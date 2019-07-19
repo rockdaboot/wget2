@@ -452,9 +452,9 @@ const char *wget_http_parse_transfer_encoding(const char *s, char *transfer_enco
 	while (c_isblank(*s)) s++;
 
 	if (!wget_strcasecmp_ascii(s, "identity"))
-		*transfer_encoding = transfer_encoding_identity;
+		*transfer_encoding = wget_transfer_encoding_identity;
 	else
-		*transfer_encoding = transfer_encoding_chunked;
+		*transfer_encoding = wget_transfer_encoding_chunked;
 
 	while (wget_http_istoken(*s)) s++;
 

@@ -1132,7 +1132,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 	 || H_10X(resp->code)
 	 || resp->code == HTTP_STATUS_NO_CONTENT
 	 || resp->code == HTTP_STATUS_NOT_MODIFIED
-	 || (resp->transfer_encoding == transfer_encoding_identity && resp->content_length == 0 && resp->content_length_valid)) {
+	 || (resp->transfer_encoding == wget_transfer_encoding_identity && resp->content_length == 0 && resp->content_length_valid)) {
 		// - body not included, see RFC 2616 4.3
 		// - body empty, see RFC 2616 4.4
 		goto cleanup;
@@ -1148,7 +1148,7 @@ wget_http_response_t *wget_http_get_response_cb(wget_http_connection_t *conn)
 	buf[body_len] = 0;
 	resp->cur_downloaded = body_len;
 
-	if (resp->transfer_encoding == transfer_encoding_chunked) {
+	if (resp->transfer_encoding == wget_transfer_encoding_chunked) {
 		size_t chunk_size = 0;
 		char *end;
 
