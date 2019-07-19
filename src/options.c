@@ -3381,7 +3381,7 @@ int init(int argc, const char **argv)
 
 	if (config.auth_no_challenge) {
 		config.default_challenges = wget_vector_create(1, NULL);
-		wget_http_challenge_t *basic = wget_calloc(1, sizeof(wget_http_challenge_t));
+		wget_http_challenge *basic = wget_calloc(1, sizeof(wget_http_challenge));
 		basic->auth_scheme = wget_strdup("basic");
 		wget_vector_add(config.default_challenges, basic);
 		wget_vector_set_destructor(config.default_challenges, (wget_vector_destructor_t *) wget_http_free_challenge);

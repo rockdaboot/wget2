@@ -272,7 +272,7 @@ int wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param 
 	return http_add_header(req, wget_strdup(param->name), wget_strdup(param->value));
 }
 
-void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *challenge, const char *username, const char *password, int proxied)
+void wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge *challenge, const char *username, const char *password, int proxied)
 {
 	if (!challenge)
 		return;

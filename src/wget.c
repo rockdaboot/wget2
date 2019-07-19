@@ -3555,10 +3555,10 @@ static void _add_authorize_header(
 	// There might be more than one challenge, we could select the most secure one.
 	// Prefer 'Digest' over 'Basic'
 	// the following adds an Authorization: or Proxy-Authorization HTTP header
-	wget_http_challenge_t *selected_challenge = NULL;
+	wget_http_challenge *selected_challenge = NULL;
 
 	for (int it = 0; it < wget_vector_size(challenges); it++) {
-		wget_http_challenge_t *challenge = wget_vector_get(challenges, it);
+		wget_http_challenge *challenge = wget_vector_get(challenges, it);
 
 		if (!wget_strcasecmp_ascii(challenge->auth_scheme, "digest")) {
 			selected_challenge = challenge;

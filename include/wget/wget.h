@@ -2247,7 +2247,7 @@ typedef struct {
 		auth_scheme; //!< name of the challenge, e.g. 'basic' or 'digest'
 	wget_stringmap *
 		params; //!< name/value pairs of the challenge
-} wget_http_challenge_t;
+} wget_http_challenge;
 
 enum {
 	transfer_encoding_identity,
@@ -2398,7 +2398,7 @@ WGETAPI const char *
 WGETAPI const char *
 	wget_http_parse_digest(const char *s, wget_http_digest *digest) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_challenge(const char *s, wget_http_challenge_t *challenge) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_challenge(const char *s, wget_http_challenge *challenge) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
 	wget_http_parse_challenges(const char *s, wget_vector *challenges) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
@@ -2436,7 +2436,7 @@ WGETAPI int
 WGETAPI int
 	wget_http_add_header_param(wget_http_request_t *req, wget_http_header_param *param) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI void
-	wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge_t *challenge, const char *username, const char *password, int proxied) G_GNUC_WGET_NONNULL((1));
+	wget_http_add_credentials(wget_http_request_t *req, wget_http_challenge *challenge, const char *username, const char *password, int proxied) G_GNUC_WGET_NONNULL((1));
 WGETAPI int
 	wget_http_set_http_proxy(const char *proxy, const char *encoding);
 WGETAPI int
@@ -2455,7 +2455,7 @@ WGETAPI void
 WGETAPI void
 	wget_http_free_digest(wget_http_digest *digest);
 WGETAPI void
-	wget_http_free_challenge(wget_http_challenge_t *challenge);
+	wget_http_free_challenge(wget_http_challenge *challenge);
 WGETAPI void
 	wget_http_free_link(wget_http_link *link);
 

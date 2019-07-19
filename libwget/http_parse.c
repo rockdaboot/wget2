@@ -360,7 +360,7 @@ const char *wget_http_parse_digest(const char *s, wget_http_digest *digest)
 // auth-scheme = token
 // auth-param  = token "=" ( token | quoted-string )
 
-const char *wget_http_parse_challenge(const char *s, wget_http_challenge_t *challenge)
+const char *wget_http_parse_challenge(const char *s, wget_http_challenge *challenge)
 {
 	memset(challenge, 0, sizeof(*challenge));
 
@@ -406,7 +406,7 @@ const char *wget_http_parse_challenge(const char *s, wget_http_challenge_t *chal
 
 const char *wget_http_parse_challenges(const char *s, wget_vector *challenges)
 {
-	wget_http_challenge_t challenge;
+	wget_http_challenge challenge;
 
 	while (*s) {
 		s = wget_http_parse_challenge(s, &challenge);
@@ -1142,7 +1142,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 			}
 		}
 		else if (!wget_strncasecmp_ascii(name, "proxy-authenticate", namelen)) {
-			wget_http_challenge_t *challenge = wget_malloc(sizeof(wget_http_challenge_t));
+			wget_http_challenge *challenge = wget_malloc(sizeof(wget_http_challenge));
 			wget_http_parse_challenge(value0, challenge);
 
 			if (!resp->challenges) {
@@ -1181,7 +1181,7 @@ int wget_http_parse_header_line(wget_http_response_t *resp, const char *name, si
 		break;
 	case 'w':
 		if (!wget_strncasecmp_ascii(name, "www-authenticate", namelen)) {
-			wget_http_challenge_t *challenge = wget_malloc(sizeof(wget_http_challenge_t));
+			wget_http_challenge *challenge = wget_malloc(sizeof(wget_http_challenge));
 			wget_http_parse_challenge(value0, challenge);
 
 			if (!resp->challenges) {
@@ -1301,7 +1301,7 @@ void wget_http_free_digests(wget_vector **digests)
 	wget_vector_free(digests);
 }
 
-void wget_http_free_challenge(wget_http_challenge_t *challenge)
+void wget_http_free_challenge(wget_http_challenge *challenge)
 {
 	xfree(challenge->auth_scheme);
 	wget_stringmap_free(&challenge->params);
