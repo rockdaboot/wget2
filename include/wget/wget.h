@@ -1952,7 +1952,7 @@ typedef struct {
 		base; //!< the BASE set in the document or NULL if none
 	bool
 		follow : 1; //!< if the 'follow' attribute was found in a META tag
-} wget_html_parsed_result_t;
+} wget_html_parsed_result;
 
 /**
  * HTML tag consisting of name and an optional attribute
@@ -1964,10 +1964,10 @@ typedef struct {
 		attribute; //!< attribute of the HTML tag
 } wget_html_tag_t;
 
-WGETAPI wget_html_parsed_result_t *
+WGETAPI wget_html_parsed_result *
 	wget_html_get_urls_inline(const char *html, wget_vector *additional_tags, wget_vector *ignore_tags);
 WGETAPI void
-	wget_html_free_urls_inline(wget_html_parsed_result_t **res);
+	wget_html_free_urls_inline(wget_html_parsed_result **res);
 WGETAPI void
 	wget_sitemap_get_urls_inline(const char *sitemap, wget_vector **urls, wget_vector **sitemap_urls);
 WGETAPI void

@@ -40,7 +40,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	memcpy(in, data, size);
 	in[size] = in[size + 1] = 0;
 
-	wget_html_parsed_result_t *res = wget_html_get_urls_inline(in, NULL, NULL);
+	wget_html_parsed_result *res = wget_html_get_urls_inline(in, NULL, NULL);
 	wget_html_free_urls_inline(&res);
 
 	free(in);

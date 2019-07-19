@@ -158,7 +158,7 @@ static void html_parse(const char *html, size_t html_len, const char *encoding, 
 		return;
 	}
 
-	wget_html_parsed_result_t *parsed  = wget_html_get_urls_inline(html, NULL, NULL);
+	wget_html_parsed_result *parsed  = wget_html_get_urls_inline(html, NULL, NULL);
 
 	if (!encoding) {
 		if (parsed->encoding) {

@@ -101,7 +101,7 @@ typedef struct {
 		encoding;
 	wget_iri *
 		base_url;
-	wget_html_parsed_result_t *
+	wget_html_parsed_result *
 		parsed;
 	int
 		content_type;
@@ -2413,7 +2413,7 @@ static void _free_conversion_entry(void *conversion)
 	xfree(c);
 }
 
-static void _remember_for_conversion(const char *filename, wget_iri *base_url, int content_type, const char *encoding, wget_html_parsed_result_t *parsed)
+static void _remember_for_conversion(const char *filename, wget_iri *base_url, int content_type, const char *encoding, wget_html_parsed_result *parsed)
 {
 	_conversion_t *conversion = wget_malloc(sizeof(_conversion_t));
 	conversion->filename = wget_strdup(filename);
@@ -2546,7 +2546,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 		}
 	}
 
-	wget_html_parsed_result_t *parsed  = wget_html_get_urls_inline(html, config.follow_tags, config.ignore_tags);
+	wget_html_parsed_result *parsed  = wget_html_get_urls_inline(html, config.follow_tags, config.ignore_tags);
 
 	if (config.robots && !parsed->follow)
 		goto cleanup;
