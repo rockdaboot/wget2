@@ -1174,6 +1174,7 @@ struct config config = {
 	.http2_request_window = 30,
 #endif
 	.ocsp = 1,
+	.ocsp_date = 1,
 	.ocsp_stapling = 1,
 	.ocsp_nonce = 1,
 	.netrc = 1,
@@ -1800,6 +1801,12 @@ static const struct optionw options[] = {
 		SECTION_SSL,
 		{ "Use OCSP server access to verify server's\n",
 		  "certificate. (default: on)\n"
+		}
+	},
+	{ "ocsp-date", &config.ocsp_date, parse_bool, -1, 0,
+		SECTION_SSL,
+		{ "Check if OCSP response date is too old.\n",
+		  "(default: on)\n"
 		}
 	},
 	{ "ocsp-file", &config.ocsp_file, parse_filename, 1, 0,
@@ -3535,6 +3542,7 @@ int init(int argc, const char **argv)
 	wget_ssl_set_config_int(WGET_SSL_KEY_TYPE, config.private_key_type);
 	wget_ssl_set_config_int(WGET_SSL_PRINT_INFO, config.debug);
 	wget_ssl_set_config_int(WGET_SSL_OCSP, config.ocsp);
+	wget_ssl_set_config_int(WGET_SSL_OCSP_DATE, config.ocsp_date);
 	wget_ssl_set_config_int(WGET_SSL_OCSP_NONCE, config.ocsp_nonce);
 	wget_ssl_set_config_int(WGET_SSL_OCSP_STAPLING, config.ocsp_stapling);
 	wget_ssl_set_config_string(WGET_SSL_OCSP_SERVER, config.ocsp_server);

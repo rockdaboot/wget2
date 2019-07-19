@@ -181,6 +181,7 @@ struct config {
 		read_timeout, // ms
 		max_redirect,
 		max_threads,
+		ocsp_date,
 		ocsp_nonce;
 	unsigned short
 		default_http_port,

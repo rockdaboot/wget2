@@ -103,6 +103,7 @@ static struct _config {
 		check_hostname : 1,
 		print_info : 1,
 		ocsp : 1,
+		ocsp_date : 1,
 		ocsp_stapling : 1,
 		ocsp_nonce : 1;
 } _config = {
@@ -282,6 +283,7 @@ void wget_ssl_set_config_int(int key, int value)
 	case WGET_SSL_KEY_TYPE: _config.key_type = (char)value; break;
 	case WGET_SSL_PRINT_INFO: _config.print_info = (char)value; break;
 	case WGET_SSL_OCSP: _config.ocsp = (char)value; break;
+	case WGET_SSL_OCSP_DATE: _config.ocsp_date = (char)value; break;
 	case WGET_SSL_OCSP_STAPLING: _config.ocsp_stapling = (char)value; break;
 	case WGET_SSL_OCSP_NONCE: _config.ocsp_nonce = value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an integer)\n"), key);
@@ -732,7 +734,7 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 	}
 
 	if (ntime == -1) {
-		if (now - vtime > OCSP_VALIDITY_SECS) {
+		if (_config.ocsp_date && now - vtime > OCSP_VALIDITY_SECS) {
 			debug_printf("*** The OCSP response is old (was issued at: %s) ignoring", safe_ctime(&vtime, timebuf, sizeof(timebuf)));
 			goto cleanup;
 		}
