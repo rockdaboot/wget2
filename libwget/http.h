@@ -29,7 +29,7 @@
 
 //wget_http_connection_t abstract type
 struct wget_http_connection_st {
-	wget_tcp_t *
+	wget_tcp *
 		tcp;
 	const char *
 		esc_host;

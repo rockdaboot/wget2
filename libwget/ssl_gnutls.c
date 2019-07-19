@@ -1469,7 +1469,7 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 #include <errno.h>
 static ssize_t _ssl_writev(gnutls_transport_ptr_t *p, const giovec_t *iov, int iovcnt)
 {
-	wget_tcp_t *tcp = (wget_tcp_t *) p;
+	wget_tcp *tcp = (wget_tcp *) p;
 	ssize_t ret;
 
 	// info_printf("%s: %d %zu\n", __func__, iovcnt, iov[0].iov_len);
@@ -1546,7 +1546,7 @@ static ssize_t _win32_recv(gnutls_transport_ptr_t p, void *buf, size_t size)
  * If the handshake cannot be completed in the specified timeout for the provided TCP connection
  * this function fails and returns `WGET_E_TIMEOUT`. You can set the timeout with wget_tcp_set_timeout().
  */
-int wget_ssl_open(wget_tcp_t *tcp)
+int wget_ssl_open(wget_tcp *tcp)
 {
 	gnutls_session_t session;
 	wget_tls_stats_data_t stats = {

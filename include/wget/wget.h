@@ -2070,80 +2070,80 @@ WGETAPI int
 #define WGET_PROTOCOL_HTTP_1_1  0
 #define WGET_PROTOCOL_HTTP_2_0  1
 
-typedef struct wget_tcp_st wget_tcp_t;
+typedef struct wget_tcp_st wget_tcp;
 
 WGETAPI int
 	wget_net_init(void);
 WGETAPI int
 	wget_net_deinit(void);
-WGETAPI wget_tcp_t *
+WGETAPI wget_tcp *
 	wget_tcp_init(void);
 WGETAPI void
-	wget_tcp_deinit(wget_tcp_t **tcp);
+	wget_tcp_deinit(wget_tcp **tcp);
 WGETAPI void
-	wget_tcp_close(wget_tcp_t *tcp);
+	wget_tcp_close(wget_tcp *tcp);
 WGETAPI void
-	wget_tcp_set_dns(wget_tcp_t *tcp, wget_dns *dns);
+	wget_tcp_set_dns(wget_tcp *tcp, wget_dns *dns);
 WGETAPI void
-	wget_tcp_set_timeout(wget_tcp_t *tcp, int timeout);
+	wget_tcp_set_timeout(wget_tcp *tcp, int timeout);
 WGETAPI int
-	wget_tcp_get_timeout(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_timeout(wget_tcp *tcp) G_GNUC_WGET_PURE;
 WGETAPI void
-	wget_tcp_set_connect_timeout(wget_tcp_t *tcp, int timeout);
+	wget_tcp_set_connect_timeout(wget_tcp *tcp, int timeout);
 WGETAPI void
-	wget_tcp_set_tcp_fastopen(wget_tcp_t *tcp, int tcp_fastopen);
+	wget_tcp_set_tcp_fastopen(wget_tcp *tcp, int tcp_fastopen);
 WGETAPI void
-	wget_tcp_set_tls_false_start(wget_tcp_t *tcp, int false_start);
+	wget_tcp_set_tls_false_start(wget_tcp *tcp, int false_start);
 WGETAPI void
-	wget_tcp_set_ssl(wget_tcp_t *tcp, int ssl);
+	wget_tcp_set_ssl(wget_tcp *tcp, int ssl);
 WGETAPI int
-	wget_tcp_get_ssl(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_ssl(wget_tcp *tcp) G_GNUC_WGET_PURE;
 WGETAPI void
-	wget_tcp_set_ssl_hostname(wget_tcp_t *tcp, const char *hostname);
+	wget_tcp_set_ssl_hostname(wget_tcp *tcp, const char *hostname);
 WGETAPI const char *
-	wget_tcp_get_ssl_hostname(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_ssl_hostname(wget_tcp *tcp) G_GNUC_WGET_PURE;
 WGETAPI void
-	wget_tcp_set_ssl_ca_file(wget_tcp_t *tcp, const char *cafile);
+	wget_tcp_set_ssl_ca_file(wget_tcp *tcp, const char *cafile);
 WGETAPI void
-	wget_tcp_set_ssl_key_file(wget_tcp_t *tcp, const char *certfile, const char *keyfile);
+	wget_tcp_set_ssl_key_file(wget_tcp *tcp, const char *certfile, const char *keyfile);
 WGETAPI char
-	wget_tcp_get_tcp_fastopen(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_tcp_fastopen(wget_tcp *tcp) G_GNUC_WGET_PURE;
 WGETAPI char
-	wget_tcp_get_tls_false_start(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_tls_false_start(wget_tcp *tcp) G_GNUC_WGET_PURE;
 WGETAPI int
-	wget_tcp_get_family(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_family(wget_tcp *tcp) G_GNUC_WGET_PURE;
 WGETAPI int
-	wget_tcp_get_preferred_family(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_preferred_family(wget_tcp *tcp) G_GNUC_WGET_PURE;
 WGETAPI int
-	wget_tcp_get_protocol(wget_tcp_t *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_protocol(wget_tcp *tcp) G_GNUC_WGET_PURE;
 WGETAPI int
-	wget_tcp_get_local_port(wget_tcp_t *tcp);
+	wget_tcp_get_local_port(wget_tcp *tcp);
 WGETAPI void
-	wget_tcp_set_debug(wget_tcp_t *tcp, int debug);
+	wget_tcp_set_debug(wget_tcp *tcp, int debug);
 WGETAPI void
-	wget_tcp_set_family(wget_tcp_t *tcp, int family);
+	wget_tcp_set_family(wget_tcp *tcp, int family);
 WGETAPI void
-	wget_tcp_set_preferred_family(wget_tcp_t *tcp, int family);
+	wget_tcp_set_preferred_family(wget_tcp *tcp, int family);
 WGETAPI void
-	wget_tcp_set_protocol(wget_tcp_t *tcp, int protocol);
+	wget_tcp_set_protocol(wget_tcp *tcp, int protocol);
 WGETAPI void
-	wget_tcp_set_bind_address(wget_tcp_t *tcp, const char *bind_address);
+	wget_tcp_set_bind_address(wget_tcp *tcp, const char *bind_address);
 WGETAPI int
-	wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port);
+	wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port);
 WGETAPI int
-	wget_tcp_tls_start(wget_tcp_t *tcp);
+	wget_tcp_tls_start(wget_tcp *tcp);
 WGETAPI void
-	wget_tcp_tls_stop(wget_tcp_t *tcp);
+	wget_tcp_tls_stop(wget_tcp *tcp);
 WGETAPI ssize_t
-	wget_tcp_vprintf(wget_tcp_t *tcp, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+	wget_tcp_vprintf(wget_tcp *tcp, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
 WGETAPI ssize_t
-	wget_tcp_printf(wget_tcp_t *tcp, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+	wget_tcp_printf(wget_tcp *tcp, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
 WGETAPI ssize_t
-	wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count);
+	wget_tcp_write(wget_tcp *tcp, const char *buf, size_t count);
 WGETAPI ssize_t
-	wget_tcp_read(wget_tcp_t *tcp, char *buf, size_t count);
+	wget_tcp_read(wget_tcp *tcp, char *buf, size_t count);
 WGETAPI int
-	wget_tcp_ready_2_transfer(wget_tcp_t *tcp, int flags);
+	wget_tcp_ready_2_transfer(wget_tcp *tcp, int flags);
 
 WGETAPI bool
 	wget_ip_is_family(const char *host, int family) G_GNUC_WGET_PURE;
@@ -2188,7 +2188,7 @@ WGETAPI void
 //WGETAPI void *
 //	wget_ssl_open(int sockfd, const char *hostname, int connect_timeout) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
-	wget_ssl_open(wget_tcp_t *tcp);
+	wget_ssl_open(wget_tcp *tcp);
 WGETAPI void
 	wget_ssl_close(void **session);
 WGETAPI void

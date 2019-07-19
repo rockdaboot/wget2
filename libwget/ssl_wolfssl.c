@@ -827,7 +827,7 @@ static void ShowX509Chain(WOLFSSL_X509_CHAIN *chain, int count, const char *hdr)
  * If the handshake cannot be completed in the specified timeout for the provided TCP connection
  * this function fails and returns `WGET_E_TIMEOUT`. You can set the timeout with wget_tcp_set_timeout().
  */
-int wget_ssl_open(wget_tcp_t *tcp)
+int wget_ssl_open(wget_tcp *tcp)
 {
 	WOLFSSL *session;
 	wget_tls_stats_data_t stats = {

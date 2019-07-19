@@ -78,9 +78,9 @@
  *  - TCP Fast Open ([RFC 7413](https://tools.ietf.org/html/rfc7413))
  *  - SSL/TLS
  *
- * Most functions here take a `wget_tcp_t` structure as argument.
+ * Most functions here take a `wget_tcp` structure as argument.
  *
- * The `wget_tcp_t` structure represents a TCP connection. You create it with wget_tcp_init()
+ * The `wget_tcp` structure represents a TCP connection. You create it with wget_tcp_init()
  * and destroy it with wget_tcp_deinit(). You can connect to a remote host with wget_tcp_connect(),
  * or listen for incoming connections (and accept them) with wget_tcp_listen() and wget_tcp_accept().
  * You end a connection with wget_tcp_close().
@@ -99,7 +99,7 @@
  *  to get an address of that family if possible, and will get another one if not.
  *  - SSL/TLS: do you want to use TLS?
  *
- *  When you create a new `wget_tcp_t` with wget_tcp_init(), it is initialized with the following parameters:
+ *  When you create a new `wget_tcp` with wget_tcp_init(), it is initialized with the following parameters:
  *
  *   - Timeout: -1
  *   - Connection timeout (max. time to wait for a connection to be accepted by the remote host): -1
@@ -183,7 +183,7 @@ static int G_GNUC_WGET_CONST _family_to_value(int family)
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init().
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init().
  * \param[in] protocol The protocol, either WGET_PROTOCOL_HTTP_2_0 or WGET_PROTOCOL_HTTP_1_1.
  *
  * Set the protocol for the connection provided, or globally.
@@ -191,13 +191,13 @@ static int G_GNUC_WGET_CONST _family_to_value(int family)
  * If \p tcp is NULL, theprotocol will be set globally (for all connections). Otherwise,
  * only for the provided connection (\p tcp).
  */
-void wget_tcp_set_dns(wget_tcp_t *tcp, wget_dns *dns)
+void wget_tcp_set_dns(wget_tcp *tcp, wget_dns *dns)
 {
 	(tcp ? tcp : &_global_tcp)->dns = dns;
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  * \param[in] tcp_fastopen 1 or 0, whether to enable or disable TCP Fast Open.
  *
  * Enable or disable TCP Fast Open ([RFC 7413](https://tools.ietf.org/html/rfc7413)), if available.
@@ -206,7 +206,7 @@ void wget_tcp_set_dns(wget_tcp_t *tcp, wget_dns *dns)
  *
  * If \p tcp is NULL, TCP Fast Open is enabled or disabled globally.
  */
-void wget_tcp_set_tcp_fastopen(wget_tcp_t *tcp, int tcp_fastopen)
+void wget_tcp_set_tcp_fastopen(wget_tcp *tcp, int tcp_fastopen)
 {
 #if defined TCP_FASTOPEN_OSX || defined TCP_FASTOPEN_LINUX || defined TCP_FASTOPEN_LINUX_411
 	(tcp ? tcp : &_global_tcp)->tcp_fastopen = !!tcp_fastopen;
@@ -216,46 +216,46 @@ void wget_tcp_set_tcp_fastopen(wget_tcp_t *tcp, int tcp_fastopen)
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  * \return 1 if TCP Fast Open is enabled, 0 otherwise.
  *
  * Tells whether TCP Fast Open is enabled or not.
  *
  * You can enable and disable it with wget_tcp_set_tcp_fastopen().
  */
-char wget_tcp_get_tcp_fastopen(wget_tcp_t *tcp)
+char wget_tcp_get_tcp_fastopen(wget_tcp *tcp)
 {
 	return (tcp ? tcp : &_global_tcp)->tcp_fastopen;
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  * \param[in] false_start 1 or 0, whether to enable or disable TLS False Start.
  *
  * Enable or disable TLS False Start ([RFC 7918](https://tools.ietf.org/html/rfc7413)).
  *
  * If \p tcp is NULL, TLS False Start is enabled or disabled globally.
  */
-void wget_tcp_set_tls_false_start(wget_tcp_t *tcp, int false_start)
+void wget_tcp_set_tls_false_start(wget_tcp *tcp, int false_start)
 {
 	(tcp ? tcp : &_global_tcp)->tls_false_start = !!false_start;
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  * \return 1 if TLS False Start is enabled, 0 otherwise.
  *
  * Tells whether TLS False Start is enabled or not.
  *
  * You can enable and disable it with wget_tcp_set_tls_false_start().
  */
-char wget_tcp_get_tls_false_start(wget_tcp_t *tcp)
+char wget_tcp_get_tls_false_start(wget_tcp *tcp)
 {
 	return (tcp ? tcp : &_global_tcp)->tls_false_start;
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init().
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init().
  * \param[in] protocol The protocol, either WGET_PROTOCOL_HTTP_2_0 or WGET_PROTOCOL_HTTP_1_1.
  *
  * Set the protocol for the connection provided, or globally.
@@ -263,24 +263,24 @@ char wget_tcp_get_tls_false_start(wget_tcp_t *tcp)
  * If \p tcp is NULL, theprotocol will be set globally (for all connections). Otherwise,
  * only for the provided connection (\p tcp).
  */
-void wget_tcp_set_protocol(wget_tcp_t *tcp, int protocol)
+void wget_tcp_set_protocol(wget_tcp *tcp, int protocol)
 {
 	(tcp ? tcp : &_global_tcp)->protocol = protocol;
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init().
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init().
  * \return The protocol with this connection, currently WGET_PROTOCOL_HTTP_2_0 or WGET_PROTOCOL_HTTP_1_1.
  *
  * Get protocol used with the provided connection, or globally (if \p tcp is NULL).
  */
-int wget_tcp_get_protocol(wget_tcp_t *tcp)
+int wget_tcp_get_protocol(wget_tcp *tcp)
 {
 	return (tcp ? tcp : &_global_tcp)->protocol;
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  * \param[in] family One of the socket families defined in `<socket.h>`, such as `AF_INET` or `AF_INET6`.
  *
  * Tells the preferred address family that should be used when establishing a TCP connection.
@@ -289,24 +289,24 @@ int wget_tcp_get_protocol(wget_tcp_t *tcp)
  *
  * If \p tcp is NULL, the preferred address family will be set globally.
  */
-void wget_tcp_set_preferred_family(wget_tcp_t *tcp, int family)
+void wget_tcp_set_preferred_family(wget_tcp *tcp, int family)
 {
 	(tcp ? tcp : &_global_tcp)->preferred_family = _value_to_family(family);
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  * \return One of the socket families defined in `<socket.h>`, such as `AF_INET` or `AF_INET6`.
  *
  * Get the preferred address family that was previously set with wget_tcp_set_preferred_family().
  */
-int wget_tcp_get_preferred_family(wget_tcp_t *tcp)
+int wget_tcp_get_preferred_family(wget_tcp *tcp)
 {
 	return _family_to_value((tcp ? tcp : &_global_tcp)->preferred_family);
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  * \param[in] family One of the socket families defined in `<socket.h>`, such as `AF_INET` or `AF_INET6`.
  *
  * Tell the address family that will be used when establishing a TCP connection.
@@ -315,29 +315,29 @@ int wget_tcp_get_preferred_family(wget_tcp_t *tcp)
  *
  * If \p tcp is NULL, the address family will be set globally.
  */
-void wget_tcp_set_family(wget_tcp_t *tcp, int family)
+void wget_tcp_set_family(wget_tcp *tcp, int family)
 {
 	(tcp ? tcp : &_global_tcp)->family = _value_to_family(family);
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  * \return One of the socket families defined in `<socket.h>`, such as `AF_INET` or `AF_INET6`.
  *
  * Get the address family that was previously set with wget_tcp_set_family().
  */
-int wget_tcp_get_family(wget_tcp_t *tcp)
+int wget_tcp_get_family(wget_tcp *tcp)
 {
 	return _family_to_value((tcp ? tcp : &_global_tcp)->family);
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  * \return The local port.
  *
  * Get the port number the TCP connection \p tcp is bound to on the local machine.
  */
-int wget_tcp_get_local_port(wget_tcp_t *tcp)
+int wget_tcp_get_local_port(wget_tcp *tcp)
 {
 	if (unlikely(!tcp))
 		return 0;
@@ -370,7 +370,7 @@ int wget_tcp_get_local_port(wget_tcp_t *tcp)
  *  - `0`: No timeout, immediate.
  *  - `-1`: Infinite timeout. Wait indefinitely.
  */
-void wget_tcp_set_connect_timeout(wget_tcp_t *tcp, int timeout)
+void wget_tcp_set_connect_timeout(wget_tcp *tcp, int timeout)
 {
 	(tcp ? tcp : &_global_tcp)->connect_timeout = timeout;
 }
@@ -386,7 +386,7 @@ void wget_tcp_set_connect_timeout(wget_tcp_t *tcp, int timeout)
  *  - `0`: No timeout, immediate.
  *  - `-1`: Infinite timeout. Wait indefinitely.
  */
-void wget_tcp_set_timeout(wget_tcp_t *tcp, int timeout)
+void wget_tcp_set_timeout(wget_tcp *tcp, int timeout)
 {
 	(tcp ? tcp : &_global_tcp)->timeout = timeout;
 }
@@ -397,7 +397,7 @@ void wget_tcp_set_timeout(wget_tcp_t *tcp, int timeout)
  *
  * Get the timeout value that was set with wget_tcp_set_timeout().
  */
-int wget_tcp_get_timeout(wget_tcp_t *tcp)
+int wget_tcp_get_timeout(wget_tcp *tcp)
 {
 	return (tcp ? tcp : &_global_tcp)->timeout;
 }
@@ -413,7 +413,7 @@ int wget_tcp_get_timeout(wget_tcp_t *tcp)
  *
  * This is mainly relevant to wget_tcp_connect().
  */
-void wget_tcp_set_bind_address(wget_tcp_t *tcp, const char *bind_address)
+void wget_tcp_set_bind_address(wget_tcp *tcp, const char *bind_address)
 {
 	if (!tcp)
 		tcp = &_global_tcp;
@@ -456,31 +456,31 @@ void wget_tcp_set_bind_address(wget_tcp_t *tcp, const char *bind_address)
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init().
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init().
  * \param[in] ssl Flag to enable or disable SSL/TLS on the given connection.
  *
  * Enable or disable SSL/TLS.
  *
  * If \p tcp is NULL, TLS will be enabled globally. Otherwise, TLS will be enabled only for the provided connection.
  */
-void wget_tcp_set_ssl(wget_tcp_t *tcp, int ssl)
+void wget_tcp_set_ssl(wget_tcp *tcp, int ssl)
 {
 	(tcp ? tcp : &_global_tcp)->ssl = !!ssl;
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init().
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init().
  * \return 1 if TLs is enabled, 0 otherwise.
  *
  * Tells whether TLS is enabled or not.
  */
-int wget_tcp_get_ssl(wget_tcp_t *tcp)
+int wget_tcp_get_ssl(wget_tcp *tcp)
 {
 	return (tcp ? tcp : &_global_tcp)->ssl;
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  * \param[in] hostname A hostname. The value of the SNI field.
  *
  * Sets the TLS Server Name Indication (SNI). For more info see [RFC 6066, sect. 3](https://tools.ietf.org/html/rfc6066#section-3).
@@ -489,7 +489,7 @@ int wget_tcp_get_ssl(wget_tcp_t *tcp)
  * The server might use this information to locate an appropriate X.509 certificate from a pool of certificates, or to direct
  * the request to a specific virtual host, for instance.
  */
-void wget_tcp_set_ssl_hostname(wget_tcp_t *tcp, const char *hostname)
+void wget_tcp_set_ssl_hostname(wget_tcp *tcp, const char *hostname)
 {
 	if (!tcp)
 		tcp = &_global_tcp;
@@ -499,29 +499,29 @@ void wget_tcp_set_ssl_hostname(wget_tcp_t *tcp, const char *hostname)
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  * \return A hostname. The value of the SNI field.
  *
  * Returns the value that was set to SNI with a previous call to wget_tcp_set_ssl_hostname().
  */
-const char *wget_tcp_get_ssl_hostname(wget_tcp_t *tcp)
+const char *wget_tcp_get_ssl_hostname(wget_tcp *tcp)
 {
 	return (tcp ? tcp : &_global_tcp)->ssl_hostname;
 }
 
 /**
- * \return A new `wget_tcp_t` structure, with pre-defined parameters.
+ * \return A new `wget_tcp` structure, with pre-defined parameters.
  *
- * Create a new `wget_tcp_t` structure, that represents a TCP connection.
+ * Create a new `wget_tcp` structure, that represents a TCP connection.
  * It can be destroyed with wget_tcp_deinit().
  *
  * This function does not establish or modify a TCP connection in any way.
  * That can be done with the other functions in this file, such as
  * wget_tcp_connect() or wget_tcp_listen() and wget_tcp_accept().
  */
-wget_tcp_t *wget_tcp_init(void)
+wget_tcp *wget_tcp_init(void)
 {
-	wget_tcp_t *tcp = wget_malloc(sizeof(wget_tcp_t));
+	wget_tcp *tcp = wget_malloc(sizeof(wget_tcp));
 
 	*tcp = _global_tcp;
 	tcp->ssl_hostname = wget_strdup(_global_tcp.ssl_hostname);
@@ -530,20 +530,20 @@ wget_tcp_t *wget_tcp_init(void)
 }
 
 /**
- * \param[in] _tcp A **pointer** to a `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
+ * \param[in] _tcp A **pointer** to a `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  *
  * Release a TCP connection (created with wget_tcp_init()).
  *
- * The `wget_tcp_t` structure will be freed and \p _tcp will be set to NULL.
+ * The `wget_tcp` structure will be freed and \p _tcp will be set to NULL.
  *
  * If \p _tcp is NULL, the SNI field will be cleared.
  *
  * Does not free the internal DNS cache, so that other connections can re-use it.
  * Call wget_dns_cache_free() if you want to free it.
  */
-void wget_tcp_deinit(wget_tcp_t **_tcp)
+void wget_tcp_deinit(wget_tcp **_tcp)
 {
-	wget_tcp_t *tcp;
+	wget_tcp *tcp;
 
 	if (!_tcp) {
 		xfree(_global_tcp.ssl_hostname);
@@ -607,7 +607,7 @@ static void _set_socket_options(int fd)
  *  - `WGET_IO_READABLE`: Is data available for reading?
  *  - `WGET_IO_WRITABLE`: Can we write immediately (without having to wait until the TCP buffer frees)?
  */
-int wget_tcp_ready_2_transfer(wget_tcp_t *tcp, int flags)
+int wget_tcp_ready_2_transfer(wget_tcp *tcp, int flags)
 {
 	if (likely(tcp))
 		return wget_ready_2_transfer(tcp->sockfd, tcp->timeout, flags);
@@ -616,14 +616,14 @@ int wget_tcp_ready_2_transfer(wget_tcp_t *tcp, int flags)
 }
 
 /**
- * \param[in] tcp A `wget_tcp_t` structure representing a TCP connection, returned by wget_tcp_init().
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init().
  * \param[in] host Hostname or IP address to connect to.
  * \param[in] port port number
  * \return WGET_E_SUCCESS (0) on success, or a negative integer on error (some of WGET_E_XXX defined in `<wget.h>`).
  *
  * Open a TCP connection with a remote host.
  *
- * This function will use TLS if it has been enabled for this `wget_tcp_t`. You can enable it
+ * This function will use TLS if it has been enabled for this `wget_tcp`. You can enable it
  * with wget_tcp_set_ssl(). Additionally, you can also use wget_tcp_set_ssl_hostname() to set the
  * Server Name Indication (SNI).
  *
@@ -637,7 +637,7 @@ int wget_tcp_ready_2_transfer(wget_tcp_t *tcp, int flags)
  *
  * If the connection fails, `WGET_E_CONNECT` is returned.
  */
-int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
+int wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port)
 {
 	struct addrinfo *ai;
 	int rc, ret = WGET_E_UNKNOWN;
@@ -767,7 +767,7 @@ int wget_tcp_connect(wget_tcp_t *tcp, const char *host, uint16_t port)
  *
  * If this is a client connection (e.g. wget_tcp_connect()), it will try perform a TLS handshake with the server.
  */
-int wget_tcp_tls_start(wget_tcp_t *tcp)
+int wget_tcp_tls_start(wget_tcp *tcp)
 {
 	return wget_ssl_open(tcp);
 }
@@ -777,7 +777,7 @@ int wget_tcp_tls_start(wget_tcp_t *tcp)
  *
  * Stops TLS, but does not close the connection. Data will be transmitted in the clear from now on.
  */
-void wget_tcp_tls_stop(wget_tcp_t *tcp)
+void wget_tcp_tls_stop(wget_tcp *tcp)
 {
 	if (tcp)
 		wget_ssl_close(&tcp->ssl_session);
@@ -809,7 +809,7 @@ void wget_tcp_tls_stop(wget_tcp_t *tcp)
  * In particular, the returned value will be zero if no data was available for reading
  * before the timeout elapsed.
  */
-ssize_t wget_tcp_read(wget_tcp_t *tcp, char *buf, size_t count)
+ssize_t wget_tcp_read(wget_tcp *tcp, char *buf, size_t count)
 {
 	ssize_t rc;
 
@@ -859,7 +859,7 @@ ssize_t wget_tcp_read(wget_tcp_t *tcp, char *buf, size_t count)
  *
  * You can set the timeout with wget_tcp_set_timeout().
  */
-ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
+ssize_t wget_tcp_write(wget_tcp *tcp, const char *buf, size_t count)
 {
 	ssize_t nwritten = 0;
 
@@ -934,7 +934,7 @@ ssize_t wget_tcp_write(wget_tcp_t *tcp, const char *buf, size_t count)
  *
  * It uses wget_tcp_write().
  */
-ssize_t wget_tcp_vprintf(wget_tcp_t *tcp, const char *fmt, va_list args)
+ssize_t wget_tcp_vprintf(wget_tcp *tcp, const char *fmt, va_list args)
 {
 	char sbuf[4096];
 	wget_buffer buf;
@@ -964,7 +964,7 @@ ssize_t wget_tcp_vprintf(wget_tcp_t *tcp, const char *fmt, va_list args)
  *
  * It uses wget_tcp_vprintf(), which in turn uses wget_tcp_write().
  */
-ssize_t wget_tcp_printf(wget_tcp_t *tcp, const char *fmt, ...)
+ssize_t wget_tcp_printf(wget_tcp *tcp, const char *fmt, ...)
 {
 	va_list args;
 
@@ -980,7 +980,7 @@ ssize_t wget_tcp_printf(wget_tcp_t *tcp, const char *fmt, ...)
  *
  * Close a TCP connection.
  */
-void wget_tcp_close(wget_tcp_t *tcp)
+void wget_tcp_close(wget_tcp *tcp)
 {
 	if (likely(tcp)) {
 		wget_tcp_tls_stop(tcp);
