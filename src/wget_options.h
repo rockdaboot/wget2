@@ -144,7 +144,7 @@ struct config {
 		*tls_session_db; // in-memory TLS session database
 	wget_ocsp_db
 		*ocsp_db; // in-memory fingerprint OCSP database
-	wget_netrc_db_t
+	wget_netrc_db
 		*netrc_db; // in-memory .netrc database
 	wget_cookie_db
 		*cookie_db;

@@ -1838,7 +1838,7 @@ WGETAPI int
 /**
  *  container for .netrc entries
  */
-typedef struct wget_netrc_db_st wget_netrc_db_t;
+typedef struct wget_netrc_db_st wget_netrc_db;
 
 /**
  *  structure for a single .netrc entry
@@ -1867,18 +1867,18 @@ WGETAPI void
 	wget_netrc_free(wget_netrc_t *netrc);
 WGETAPI wget_netrc_t *
 	wget_netrc_new(const char *machine, const char *login, const char *password);
-WGETAPI wget_netrc_db_t *
-	wget_netrc_db_init(wget_netrc_db_t *netrc_db);
+WGETAPI wget_netrc_db *
+	wget_netrc_db_init(wget_netrc_db *netrc_db);
 WGETAPI void
-	wget_netrc_db_deinit(wget_netrc_db_t *netrc_db);
+	wget_netrc_db_deinit(wget_netrc_db *netrc_db);
 WGETAPI void
-	wget_netrc_db_free(wget_netrc_db_t **netrc_db);
+	wget_netrc_db_free(wget_netrc_db **netrc_db);
 WGETAPI void
-	wget_netrc_db_add(wget_netrc_db_t *netrc_db, wget_netrc_t *netrc);
+	wget_netrc_db_add(wget_netrc_db *netrc_db, wget_netrc_t *netrc);
 WGETAPI wget_netrc_t *
-	wget_netrc_get(const wget_netrc_db_t *netrc_db, const char *host);
+	wget_netrc_get(const wget_netrc_db *netrc_db, const char *host);
 WGETAPI int
-	wget_netrc_db_load(wget_netrc_db_t *netrc_db, const char *fname);
+	wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname);
 
 /*
  * CSS parsing routines

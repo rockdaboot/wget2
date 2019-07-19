@@ -2127,7 +2127,7 @@ static void test_netrc(void)
 		},
 	};
 	FILE *fp;
-	wget_netrc_db_t *netrc_db;
+	wget_netrc_db *netrc_db;
 	wget_netrc_t *netrc;
 	int rc;
 

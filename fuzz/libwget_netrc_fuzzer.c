@@ -54,7 +54,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	g_data = data;
 	g_size = size;
 
-	wget_netrc_db_t *netrc_db = wget_netrc_db_init(NULL);
+	wget_netrc_db *netrc_db = wget_netrc_db_init(NULL);
 #if ! defined _WIN32 && defined HAVE_FMEMOPEN
 	wget_netrc_db_load(netrc_db, "netrc");
 #endif

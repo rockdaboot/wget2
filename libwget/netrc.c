@@ -98,7 +98,7 @@ wget_netrc_t *wget_netrc_new(const char *machine, const char *login, const char 
 	return netrc;
 }
 
-wget_netrc_t *wget_netrc_get(const wget_netrc_db_t *netrc_db, const char *host)
+wget_netrc_t *wget_netrc_get(const wget_netrc_db *netrc_db, const char *host)
 {
 	if (netrc_db) {
 		wget_netrc_t netrc, *netrcp;
@@ -113,10 +113,10 @@ wget_netrc_t *wget_netrc_get(const wget_netrc_db_t *netrc_db, const char *host)
 	return NULL;
 }
 
-wget_netrc_db_t *wget_netrc_db_init(wget_netrc_db_t *netrc_db)
+wget_netrc_db *wget_netrc_db_init(wget_netrc_db *netrc_db)
 {
 	if (!netrc_db)
-		netrc_db = wget_malloc(sizeof(wget_netrc_db_t));
+		netrc_db = wget_malloc(sizeof(wget_netrc_db));
 
 	memset(netrc_db, 0, sizeof(*netrc_db));
 
@@ -127,14 +127,14 @@ wget_netrc_db_t *wget_netrc_db_init(wget_netrc_db_t *netrc_db)
 	return netrc_db;
 }
 
-void wget_netrc_db_deinit(wget_netrc_db_t *netrc_db)
+void wget_netrc_db_deinit(wget_netrc_db *netrc_db)
 {
 	if (netrc_db) {
 		wget_hashmap_free(&netrc_db->machines);
 	}
 }
 
-void wget_netrc_db_free(wget_netrc_db_t **netrc_db)
+void wget_netrc_db_free(wget_netrc_db **netrc_db)
 {
 	if (netrc_db) {
 		wget_netrc_db_deinit(*netrc_db);
@@ -142,7 +142,7 @@ void wget_netrc_db_free(wget_netrc_db_t **netrc_db)
 	}
 }
 
-void wget_netrc_db_add(wget_netrc_db_t *netrc_db, wget_netrc_t *netrc)
+void wget_netrc_db_add(wget_netrc_db *netrc_db, wget_netrc_t *netrc)
 {
 	if (!netrc)
 		return;
@@ -161,7 +161,7 @@ void wget_netrc_db_add(wget_netrc_db_t *netrc_db, wget_netrc_t *netrc)
 // load the .netrc file
 // not thread-save
 
-int wget_netrc_db_load(wget_netrc_db_t *netrc_db, const char *fname)
+int wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname)
 {
 	FILE *fp;
 	int nentries = 0;
