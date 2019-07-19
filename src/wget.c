@@ -1593,7 +1593,7 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri **iri)
 
 	if (downloader->job->part) {
 		JOB *job = downloader->job;
-		wget_metalink_t *metalink = job->metalink;
+		wget_metalink *metalink = job->metalink;
 		PART *part = job->part;
 		int mirror_count = wget_vector_size(metalink->mirrors);
 		int mirror_index;
@@ -1614,7 +1614,7 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri **iri)
 				break;
 
 			for (int mirrors = 0; mirrors < wget_vector_size(metalink->mirrors) && !part->done; mirrors++) {
-				wget_metalink_mirror_t *mirror = wget_vector_get(metalink->mirrors, mirror_index);
+				wget_metalink_mirror *mirror = wget_vector_get(metalink->mirrors, mirror_index);
 
 				mirror_index = (mirror_index + 1) % wget_vector_size(metalink->mirrors);
 
@@ -1858,9 +1858,9 @@ static void process_head_response(wget_http_response *resp)
 		job->done = 0; // do this job again with GET request
 	} else if (config.chunk_size && resp->content_length > config.chunk_size) {
 		// create metalink structure without hashing
-		wget_metalink_piece_t piece = { .length = config.chunk_size };
-		wget_metalink_mirror_t mirror = { .location = "-", .iri = job->iri };
-		wget_metalink_t *metalink = wget_calloc(1, sizeof(wget_metalink_t));
+		wget_metalink_piece piece = { .length = config.chunk_size };
+		wget_metalink_mirror mirror = { .location = "-", .iri = job->iri };
+		wget_metalink *metalink = wget_calloc(1, sizeof(wget_metalink));
 		metalink->size = resp->content_length; // total file size
 		metalink->name = wget_strdup(config.output_document ? config.output_document : job->local_filename);
 
@@ -1868,12 +1868,12 @@ static void process_head_response(wget_http_response *resp)
 		metalink->pieces = wget_vector_create((int) npieces, NULL);
 		for (int it = 0; it < npieces; it++) {
 			piece.position = it * config.chunk_size;
-			wget_vector_add_memdup(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
+			wget_vector_add_memdup(metalink->pieces, &piece, sizeof(wget_metalink_piece));
 		}
 
 		metalink->mirrors = wget_vector_create(1, NULL);
 
-		wget_vector_add_memdup(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror_t));
+		wget_vector_add_memdup(metalink->mirrors, &mirror, sizeof(wget_metalink_mirror));
 
 		job->metalink = metalink;
 
@@ -2864,7 +2864,7 @@ void metalink_parse_localfile(const char *fname)
 	char *data;
 
 	if ((data = wget_read_file(fname, NULL))) {
-		wget_metalink_t *metalink = wget_metalink_parse(data);
+		wget_metalink *metalink = wget_metalink_parse(data);
 
 		if (metalink->size <= 0) {
 			error_printf(_("Invalid file length %llu\n"), (unsigned long long)metalink->size);
@@ -2882,7 +2882,7 @@ void metalink_parse_localfile(const char *fname)
 				wget_metalink_sort_mirrors(metalink);
 
 				// we have to attach the job to a host - take the first mirror for this purpose
-				wget_metalink_mirror_t *mirror = wget_vector_get(metalink->mirrors, 0);
+				wget_metalink_mirror *mirror = wget_vector_get(metalink->mirrors, 0);
 
 				HOST *host;
 				if (!(host = host_add(mirror->iri)))

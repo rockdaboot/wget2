@@ -57,7 +57,7 @@ struct JOB {
 		*referer;
 
 	// Metalink information
-	wget_metalink_t
+	wget_metalink
 		*metalink;
 
 	wget_vector

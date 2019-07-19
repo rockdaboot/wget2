@@ -49,7 +49,7 @@
 #include "private.h"
 
 typedef struct {
-	wget_metalink_t
+	wget_metalink
 		*metalink;
 	int
 		priority;
@@ -64,7 +64,7 @@ typedef struct {
 
 static void mirror_free(void *mirror)
 {
-	wget_metalink_mirror_t *m = mirror;
+	wget_metalink_mirror *m = mirror;
 
 	if (m) {
 		wget_iri_free(&m->iri);
@@ -74,13 +74,13 @@ static void mirror_free(void *mirror)
 
 static void _add_piece(_metalink_context_t *ctx, const char *value)
 {
-	wget_metalink_t *metalink = ctx->metalink;
+	wget_metalink *metalink = ctx->metalink;
 
 	sscanf(value, "%127s", ctx->hash);
 
 	if (ctx->length && *ctx->hash_type && *ctx->hash) {
 		// hash for a piece of the file
-		wget_metalink_piece_t piece, *piecep;
+		wget_metalink_piece piece, *piecep;
 
 		if (!metalink->pieces)
 			metalink->pieces = wget_vector_create(32, NULL);
@@ -97,7 +97,7 @@ static void _add_piece(_metalink_context_t *ctx, const char *value)
 				piece.position = 0; // integer overflow
 		} else
 			piece.position = 0;
-		wget_vector_add_memdup(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
+		wget_vector_add_memdup(metalink->pieces, &piece, sizeof(wget_metalink_piece));
 	}
 
 	*ctx->hash = 0;
@@ -105,21 +105,21 @@ static void _add_piece(_metalink_context_t *ctx, const char *value)
 
 static void _add_file_hash(_metalink_context_t *ctx, const char *value)
 {
-	wget_metalink_t *metalink = ctx->metalink;
+	wget_metalink *metalink = ctx->metalink;
 
 	sscanf(value, "%127s", ctx->hash);
 
 	if (*ctx->hash_type && *ctx->hash) {
 		// hashes for the complete file
-		wget_metalink_hash_t hash;
+		wget_metalink_hash hash;
 
-		memset(&hash, 0, sizeof(wget_metalink_hash_t));
+		memset(&hash, 0, sizeof(wget_metalink_hash));
 		wget_strscpy(hash.type, ctx->hash_type, sizeof(hash.type));
 		wget_strscpy(hash.hash_hex, ctx->hash, sizeof(hash.hash_hex));
 
 		if (!metalink->hashes)
 			metalink->hashes = wget_vector_create(4, NULL);
-		wget_vector_add_memdup(metalink->hashes, &hash, sizeof(wget_metalink_hash_t));
+		wget_vector_add_memdup(metalink->hashes, &hash, sizeof(wget_metalink_hash));
 	}
 
 	*ctx->hash_type = *ctx->hash = 0;
@@ -133,8 +133,8 @@ static void _add_mirror(_metalink_context_t *ctx, const char *value)
 	if (wget_strncasecmp_ascii(value, "http:", 5) && wget_strncasecmp_ascii(value, "https:", 6))
 		return;
 
-	wget_metalink_t *metalink = ctx->metalink;
-	wget_metalink_mirror_t *mirror = wget_calloc(1, sizeof(wget_metalink_mirror_t));
+	wget_metalink *metalink = ctx->metalink;
+	wget_metalink_mirror *mirror = wget_calloc(1, sizeof(wget_metalink_mirror));
 
 	wget_strscpy(mirror->location, ctx->location, sizeof(mirror->location));
 	mirror->priority = ctx->priority;
@@ -258,12 +258,12 @@ static void _metalink_parse(void *context, int flags, const char *dir, const cha
 	}
 }
 
-wget_metalink_t *wget_metalink_parse(const char *xml)
+wget_metalink *wget_metalink_parse(const char *xml)
 {
 	if (!xml)
 		return NULL;
 
-	wget_metalink_t *metalink = wget_calloc(1, sizeof(wget_metalink_t));
+	wget_metalink *metalink = wget_calloc(1, sizeof(wget_metalink));
 	_metalink_context_t ctx = { .metalink = metalink, .priority = 999999, .location = "-" };
 
 	if (wget_xml_parse_buffer(xml, _metalink_parse, &ctx, 0) != WGET_E_SUCCESS) {
@@ -274,7 +274,7 @@ wget_metalink_t *wget_metalink_parse(const char *xml)
 	return metalink;
 }
 
-void wget_metalink_free(wget_metalink_t **metalink)
+void wget_metalink_free(wget_metalink **metalink)
 {
 	if (metalink && *metalink) {
 		xfree((*metalink)->name);
@@ -285,12 +285,12 @@ void wget_metalink_free(wget_metalink_t **metalink)
 	}
 }
 
-static int G_GNUC_WGET_PURE _compare_mirror(wget_metalink_mirror_t **m1, wget_metalink_mirror_t **m2)
+static int G_GNUC_WGET_PURE _compare_mirror(wget_metalink_mirror **m1, wget_metalink_mirror **m2)
 {
 	return (*m1)->priority - (*m2)->priority;
 }
 
-void wget_metalink_sort_mirrors(wget_metalink_t *metalink)
+void wget_metalink_sort_mirrors(wget_metalink *metalink)
 {
 	if (metalink) {
 		wget_vector_setcmpfunc(metalink->mirrors, (wget_vector_compare_t *) _compare_mirror);

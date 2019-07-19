@@ -2610,23 +2610,23 @@ typedef struct {
 		priority;    //!< priority of the mirror
 	char
 		location[8]; //!< location of the mirror, e.g. 'de', 'fr' or 'jp'
-} wget_metalink_mirror_t;
+} wget_metalink_mirror;
 
 typedef struct {
 	char
 		type[16],        //!< type of hash, e.g. 'MD5' or 'SHA-256'
 		hash_hex[128+1]; //!< hash value as HEX string
-} wget_metalink_hash_t;
+} wget_metalink_hash;
 
 // Metalink piece, for checksumming after download
 typedef struct {
-	wget_metalink_hash_t
+	wget_metalink_hash
 		hash;     //!< hash of the data chunk
 	off_t
 		position; //!< start position of the data chunk in the file
 	off_t
 		length;   //!< length of the data chunk
-} wget_metalink_piece_t;
+} wget_metalink_piece;
 
 typedef struct {
 	const char
@@ -2637,14 +2637,14 @@ typedef struct {
 		*pieces;  //!< checksums of smaller pieces of the file (element: wget_metalink_piece_t)
 	off_t
 		size;     //!< total size of the file
-} wget_metalink_t;
+} wget_metalink;
 
-WGETAPI wget_metalink_t
+WGETAPI wget_metalink
 	*wget_metalink_parse(const char *xml);
 WGETAPI void
-	wget_metalink_free(wget_metalink_t **metalink);
+	wget_metalink_free(wget_metalink **metalink);
 WGETAPI void
-	wget_metalink_sort_mirrors(wget_metalink_t *metalink);
+	wget_metalink_sort_mirrors(wget_metalink *metalink);
 
 /*
  * Robots types and routines

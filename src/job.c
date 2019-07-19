@@ -56,7 +56,7 @@ void job_free(JOB *job)
 void job_create_parts(JOB *job)
 {
 	PART part;
-	wget_metalink_t *metalink;
+	wget_metalink *metalink;
 	ssize_t fsize;
 
 	if (!(metalink = job->metalink))
@@ -73,7 +73,7 @@ void job_create_parts(JOB *job)
 	fsize = metalink->size;
 
 	for (int it = 0; it < wget_vector_size(metalink->pieces); it++) {
-		wget_metalink_piece_t *piece = wget_vector_get(metalink->pieces, it);
+		wget_metalink_piece *piece = wget_vector_get(metalink->pieces, it);
 
 		if (fsize >= piece->length) {
 			part.length = piece->length;
@@ -95,7 +95,7 @@ void job_create_parts(JOB *job)
 //  0: not ok
 //  1: ok
 
-static int check_piece_hash(wget_metalink_hash_t *hash, int fd, off_t offset, size_t length)
+static int check_piece_hash(wget_metalink_hash *hash, int fd, off_t offset, size_t length)
 {
 	char sum[128 + 1]; // large enough for sha-512 hex
 
@@ -122,7 +122,7 @@ static int check_file_hash(HASH *hash, const char *fname)
 }
 */
 
-static int _check_file_fd(wget_metalink_hash_t *hash, int fd)
+static int _check_file_fd(wget_metalink_hash *hash, int fd)
 {
 	char sum[128 + 1]; // large enough for sha-512 hex
 
@@ -136,7 +136,7 @@ static int _check_file_fd(wget_metalink_hash_t *hash, int fd)
 int job_validate_file(JOB *job)
 {
 	PART part;
-	wget_metalink_t *metalink;
+	wget_metalink *metalink;
 	off_t fsize, real_fsize = 0;
 	int fd;
 	struct stat st;
@@ -148,8 +148,8 @@ int job_validate_file(JOB *job)
 
 	// Metalink may be used without pieces...
 	if (!metalink->pieces) {
-		wget_metalink_piece_t piece;
-		wget_metalink_hash_t *hash = wget_vector_get(metalink->hashes, 0);
+		wget_metalink_piece piece;
+		wget_metalink_hash *hash = wget_vector_get(metalink->hashes, 0);
 
 		if (!hash)
 			return 1;
@@ -160,7 +160,7 @@ int job_validate_file(JOB *job)
 		wget_strscpy(piece.hash.hash_hex, hash->hash_hex, sizeof(piece.hash.hash_hex));
 
 		metalink->pieces = wget_vector_create(1, NULL);
-		wget_vector_add_memdup(metalink->pieces, &piece, sizeof(wget_metalink_piece_t));
+		wget_vector_add_memdup(metalink->pieces, &piece, sizeof(wget_metalink_piece));
 	}
 
 	// create space to hold enough parts
@@ -194,7 +194,7 @@ int job_validate_file(JOB *job)
 		// file exists, check which piece is invalid and re-queue it
 		int rc = -1;
 		for (int it = 0; errno != EINTR && it < wget_vector_size(metalink->hashes); it++) {
-			wget_metalink_hash_t *hash = wget_vector_get(metalink->hashes, it);
+			wget_metalink_hash *hash = wget_vector_get(metalink->hashes, it);
 
 			if ((rc = _check_file_fd(hash, fd)) == -1)
 				continue; // hash type not available, try next
@@ -221,8 +221,8 @@ int job_validate_file(JOB *job)
 //			return;
 
 		for (int it = 0; errno != EINTR && it < wget_vector_size(metalink->pieces); it++) {
-			wget_metalink_piece_t *piece = wget_vector_get(metalink->pieces, it);
-			wget_metalink_hash_t *hash = &piece->hash;
+			wget_metalink_piece *piece = wget_vector_get(metalink->pieces, it);
+			wget_metalink_hash *hash = &piece->hash;
 
 			if (fsize >= piece->length) {
 				part.length = piece->length;
@@ -247,7 +247,7 @@ int job_validate_file(JOB *job)
 //		info_printf("real_fsize = %lld\n", (long long) real_fsize);
 
 		for (int it = 0; it < wget_vector_size(metalink->pieces); it++) {
-			wget_metalink_piece_t *piece = wget_vector_get(metalink->pieces, it);
+			wget_metalink_piece *piece = wget_vector_get(metalink->pieces, it);
 
 			if (fsize >= piece->length) {
 				part.length = piece->length;

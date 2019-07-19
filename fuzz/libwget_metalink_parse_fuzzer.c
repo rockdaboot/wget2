@@ -41,7 +41,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	memcpy(in, data, size);
 	in[size] = 0;
 
-	wget_metalink_t *metalink;
+	wget_metalink *metalink;
 	metalink = wget_metalink_parse(in);
 	wget_metalink_sort_mirrors(metalink);
 	wget_metalink_free(&metalink);
