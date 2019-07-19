@@ -2885,7 +2885,7 @@ static int use_askpass(void)
 #include <netdb.h>
 */
 
-static wget_dns_cache_t *dns_cache;
+static wget_dns_cache *dns_cache;
 static wget_dns_t *dns;
 
 static int _preload_dns_cache(const char *fname)

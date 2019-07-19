@@ -49,7 +49,7 @@
 
 struct wget_dns_st
 {
-	wget_dns_cache_t
+	wget_dns_cache
 		*cache;
 	wget_thread_mutex
 		mutex;
@@ -133,7 +133,7 @@ void wget_dns_set_timeout(wget_dns_t *dns, int timeout)
  *
  * The DNS cache is kept internally in memory, and is used in wget_dns_resolve() to speed up DNS queries.
  */
-void wget_dns_set_cache(wget_dns_t *dns, wget_dns_cache_t *cache)
+void wget_dns_set_cache(wget_dns_t *dns, wget_dns_cache *cache)
 {
 	(dns ? dns : &default_dns)->cache = cache;
 }
@@ -146,7 +146,7 @@ void wget_dns_set_cache(wget_dns_t *dns, wget_dns_cache_t *cache)
  *
  * You can enable and disable DNS caching with wget_dns_set_caching().
  */
-wget_dns_cache_t *wget_dns_get_cache(wget_dns_t *dns)
+wget_dns_cache *wget_dns_get_cache(wget_dns_t *dns)
 {
 	return (dns ? dns : &default_dns)->cache;
 }

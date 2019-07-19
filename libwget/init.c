@@ -44,7 +44,7 @@ static struct _CONFIG {
 	.cookies_enabled = 0
 };
 
-static wget_dns_cache_t *dns_cache;
+static wget_dns_cache *dns_cache;
 
 static int _init;
 static wget_thread_mutex _mutex;

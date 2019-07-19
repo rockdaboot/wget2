@@ -85,15 +85,15 @@ static void _free_dns(struct cache_entry *entry)
 }
 
 /**
- * \param[out] cache Pointer to return newly allocated and initialized wget_dns_cache_t instance
+ * \param[out] cache Pointer to return newly allocated and initialized wget_dns_cache instance
  * \return WGET_E_SUCCESS if OK, WGET_E_MEMORY if out-of-memory or WGET_E_INVALID
  *   if the mutex initialization failed.
  *
- * Allocates and initializes a wget_dns_cache_t instance.
+ * Allocates and initializes a wget_dns_cache instance.
  */
-int wget_dns_cache_init(wget_dns_cache_t **cache)
+int wget_dns_cache_init(wget_dns_cache **cache)
 {
-	wget_dns_cache_t *_cache = wget_calloc(1, sizeof(wget_dns_cache_t));
+	wget_dns_cache *_cache = wget_calloc(1, sizeof(wget_dns_cache));
 
 	if (!_cache)
 		return WGET_E_MEMORY;
@@ -117,11 +117,11 @@ int wget_dns_cache_init(wget_dns_cache_t **cache)
 }
 
 /**
- * \param[in/out] cache Pointer to wget_dns_cache_t instance that will be freed and NULLified.
+ * \param[in/out] cache Pointer to wget_dns_cache instance that will be freed and NULLified.
  *
  * Free the resources allocated by wget_dns_cache_init().
  */
-void wget_dns_cache_free(wget_dns_cache_t **cache)
+void wget_dns_cache_free(wget_dns_cache **cache)
 {
 	if (cache && *cache) {
 		wget_thread_mutex_lock((*cache)->mutex);
@@ -134,12 +134,12 @@ void wget_dns_cache_free(wget_dns_cache_t **cache)
 }
 
 /**
- * \param[in] cache A `wget_dns_cache_t` instance, created by wget_dns_cache_init().
+ * \param[in] cache A `wget_dns_cache` instance, created by wget_dns_cache_init().
  * \param[in] host Hostname to look up
  * \param[in] port Port to look up
  * \return The cached addrinfo structure or NULL if not found
  */
-struct addrinfo *wget_dns_cache_get(wget_dns_cache_t *cache, const char *host, uint16_t port)
+struct addrinfo *wget_dns_cache_get(wget_dns_cache *cache, const char *host, uint16_t port)
 {
 	if (cache) {
 		struct cache_entry *entryp, entry = { .host = host, .port = port };
@@ -160,7 +160,7 @@ struct addrinfo *wget_dns_cache_get(wget_dns_cache_t *cache, const char *host, u
 }
 
 /**
- * \param[in] cache A `wget_dns_cache_t` instance, created by wget_dns_cache_init().
+ * \param[in] cache A `wget_dns_cache` instance, created by wget_dns_cache_init().
  * \param[in] host Hostname part of the key
  * \param[in] port Port part of the key
  * \param[in/out] addrinfo Addrinfo structure to cache, returns cached addrinfo
@@ -171,7 +171,7 @@ struct addrinfo *wget_dns_cache_get(wget_dns_cache_t *cache, const char *host, u
  * If an entry for [host,port] already exists, \p addrinfo is free'd and replaced by the cached entry.
  * Do not free \p addrinfo yourself - this will be done when the whole cache is freed.
  */
-int wget_dns_cache_add(wget_dns_cache_t *cache, const char *host, uint16_t port, struct addrinfo **addrinfo)
+int wget_dns_cache_add(wget_dns_cache *cache, const char *host, uint16_t port, struct addrinfo **addrinfo)
 {
 	if (!cache || !host | !addrinfo)
 		return WGET_E_INVALID;

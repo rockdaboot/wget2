@@ -2025,16 +2025,16 @@ WGETAPI void
  * DNS caching routines
  */
 
-typedef struct wget_dns_cache_st wget_dns_cache_t;
+typedef struct wget_dns_cache_st wget_dns_cache;
 
 WGETAPI int
-	wget_dns_cache_init(wget_dns_cache_t **cache);
+	wget_dns_cache_init(wget_dns_cache **cache);
 WGETAPI void
-	wget_dns_cache_free(wget_dns_cache_t **cache);
+	wget_dns_cache_free(wget_dns_cache **cache);
 WGETAPI struct addrinfo *
-	wget_dns_cache_get(wget_dns_cache_t *cache, const char *host, uint16_t port);
+	wget_dns_cache_get(wget_dns_cache *cache, const char *host, uint16_t port);
 WGETAPI int
-	wget_dns_cache_add(wget_dns_cache_t *cache, const char *host, uint16_t port, struct addrinfo **addrinfo);
+	wget_dns_cache_add(wget_dns_cache *cache, const char *host, uint16_t port, struct addrinfo **addrinfo);
 
 /*
  * DNS resolving routines
@@ -2049,8 +2049,8 @@ WGETAPI void
 WGETAPI void
 	wget_dns_set_timeout(wget_dns_t *dns, int timeout);
 WGETAPI void
-	wget_dns_set_cache(wget_dns_t *dns, wget_dns_cache_t *cache);
-WGETAPI wget_dns_cache_t *
+	wget_dns_set_cache(wget_dns_t *dns, wget_dns_cache *cache);
+WGETAPI wget_dns_cache *
 	wget_dns_get_cache(wget_dns_t *dns) G_GNUC_WGET_PURE;
 WGETAPI struct addrinfo *
 	wget_dns_resolve(wget_dns_t *dns, const char *host, uint16_t port, int family, int preferred_family);
