@@ -41,7 +41,7 @@ typedef struct {
 		*host;
 	JOB
 		*robot_job; // special job for downloading robots.txt (before anything else)
-	wget_robots_t
+	wget_robots
 		*robots;
 	wget_list
 		*queue; // host specific job queue

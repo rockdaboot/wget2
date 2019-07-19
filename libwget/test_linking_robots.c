@@ -7,7 +7,7 @@
 
 int main(void)
 {
-	wget_robots_t *robots;
+	wget_robots *robots;
 
 	wget_robots_parse(&robots, "/", NULL);
 	wget_robots_free(&robots);
