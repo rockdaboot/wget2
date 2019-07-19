@@ -44,7 +44,7 @@ struct wget_netrc_db_st {
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int G_GNUC_WGET_PURE _hash_netrc(const wget_netrc_t *netrc)
+static unsigned int G_GNUC_WGET_PURE _hash_netrc(const wget_netrc *netrc)
 {
 	unsigned int hash = 0;
 	const unsigned char *p;
@@ -55,22 +55,22 @@ static unsigned int G_GNUC_WGET_PURE _hash_netrc(const wget_netrc_t *netrc)
 	return hash;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_netrc(const wget_netrc_t *h1, const wget_netrc_t *h2)
+static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_netrc(const wget_netrc *h1, const wget_netrc *h2)
 {
 	return wget_strcmp(h1->host, h2->host);
 }
 
-wget_netrc_t *wget_netrc_init(wget_netrc_t *netrc)
+wget_netrc *wget_netrc_init(wget_netrc *netrc)
 {
 	if (!netrc)
-		netrc = wget_malloc(sizeof(wget_netrc_t));
+		netrc = wget_malloc(sizeof(wget_netrc));
 
 	memset(netrc, 0, sizeof(*netrc));
 
 	return netrc;
 }
 
-void wget_netrc_deinit(wget_netrc_t *netrc)
+void wget_netrc_deinit(wget_netrc *netrc)
 {
 	if (netrc) {
 		xfree(netrc->host);
@@ -79,7 +79,7 @@ void wget_netrc_deinit(wget_netrc_t *netrc)
 	}
 }
 
-void wget_netrc_free(wget_netrc_t *netrc)
+void wget_netrc_free(wget_netrc *netrc)
 {
 	if (netrc) {
 		wget_netrc_deinit(netrc);
@@ -87,9 +87,9 @@ void wget_netrc_free(wget_netrc_t *netrc)
 	}
 }
 
-wget_netrc_t *wget_netrc_new(const char *machine, const char *login, const char *password)
+wget_netrc *wget_netrc_new(const char *machine, const char *login, const char *password)
 {
-	wget_netrc_t *netrc = wget_netrc_init(NULL);
+	wget_netrc *netrc = wget_netrc_init(NULL);
 
 	netrc->host = wget_strdup(machine);
 	netrc->login = wget_strdup(login);
@@ -98,10 +98,10 @@ wget_netrc_t *wget_netrc_new(const char *machine, const char *login, const char 
 	return netrc;
 }
 
-wget_netrc_t *wget_netrc_get(const wget_netrc_db *netrc_db, const char *host)
+wget_netrc *wget_netrc_get(const wget_netrc_db *netrc_db, const char *host)
 {
 	if (netrc_db) {
-		wget_netrc_t netrc, *netrcp;
+		wget_netrc netrc, *netrcp;
 
 		// look for an exact match
 		netrc.host = host;
@@ -142,7 +142,7 @@ void wget_netrc_db_free(wget_netrc_db **netrc_db)
 	}
 }
 
-void wget_netrc_db_add(wget_netrc_db *netrc_db, wget_netrc_t *netrc)
+void wget_netrc_db_add(wget_netrc_db *netrc_db, wget_netrc *netrc)
 {
 	if (!netrc)
 		return;
@@ -170,7 +170,7 @@ int wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname)
 		return -1;
 
 	if ((fp = fopen(fname, "r"))) {
-		wget_netrc_t netrc;
+		wget_netrc netrc;
 		char *buf = NULL, *linep, *p, *key = NULL;
 		size_t bufsize = 0;
 		ssize_t buflen;

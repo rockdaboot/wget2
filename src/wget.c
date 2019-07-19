@@ -3581,7 +3581,7 @@ static void _add_authorize_header(
 			}
 			wget_thread_mutex_unlock(netrc_mutex);
 
-			wget_netrc_t *netrc = wget_netrc_get(config.netrc_db, req->esc_host.data);
+			wget_netrc *netrc = wget_netrc_get(config.netrc_db, req->esc_host.data);
 			if (!netrc)
 				netrc = wget_netrc_get(config.netrc_db, "default");
 

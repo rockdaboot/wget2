@@ -2128,7 +2128,7 @@ static void test_netrc(void)
 	};
 	FILE *fp;
 	wget_netrc_db *netrc_db;
-	wget_netrc_t *netrc;
+	wget_netrc *netrc;
 	int rc;
 
 	mkdir(".test", 0700);
