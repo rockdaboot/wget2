@@ -64,7 +64,7 @@ static void _reset_color(void)
  * Sets the console foreground (text) color.
  */
 #ifdef _WIN32
-void wget_console_set_fg_color(wget_console_color_t colorid)
+void wget_console_set_fg_color(wget_console_color colorid)
 {
 	if (g_stdout_hnd != INVALID_HANDLE_VALUE) {
 		static short color[] = {
@@ -87,7 +87,7 @@ void wget_console_set_fg_color(wget_console_color_t colorid)
 	}
 }
 #else
-void wget_console_set_fg_color(G_GNUC_WGET_UNUSED wget_console_color_t colorid)
+void wget_console_set_fg_color(G_GNUC_WGET_UNUSED wget_console_color colorid)
 {
 }
 #endif

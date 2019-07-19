@@ -63,7 +63,7 @@ static void _write_out(
 	size_t len,
 	int with_timestamp,
 	const char _U_WIN32 *colorstring,
-	wget_console_color_t _U color_id)
+	wget_console_color _U color_id)
 {
 	FILE *fp;
 	int fd = -1;

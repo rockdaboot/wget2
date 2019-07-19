@@ -2712,14 +2712,14 @@ typedef enum {
 	WGET_CONSOLE_COLOR_GREEN = 3,
 	WGET_CONSOLE_COLOR_RED = 4,
 	WGET_CONSOLE_COLOR_MAGENTA = 5
-} wget_console_color_t;
+} wget_console_color;
 
 WGETAPI int
 	wget_console_init(void);
 WGETAPI int
 	wget_console_deinit(void);
 WGETAPI void
-	wget_console_set_fg_color(wget_console_color_t colorid);
+	wget_console_set_fg_color(wget_console_color colorid);
 WGETAPI void
 	wget_console_reset_fg_color(void);
 
