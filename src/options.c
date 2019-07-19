@@ -1807,6 +1807,12 @@ static const struct optionw options[] = {
 		  "(default: ~/.wget-ocsp)\n"
 		}
 	},
+	{ "ocsp-server", &config.ocsp_server, parse_string, 1, 0,
+		SECTION_SSL,
+		{ "Set OCSP server address.\n",
+		  "(default: OCSP server given in certificate)\n"
+		}
+	},
 	{ "ocsp-stapling", &config.ocsp_stapling, parse_bool, -1, 0,
 		SECTION_SSL,
 		{ "Use OCSP stapling to verify the server's\n",
@@ -3523,6 +3529,7 @@ int init(int argc, const char **argv)
 	wget_ssl_set_config_int(WGET_SSL_PRINT_INFO, config.debug);
 	wget_ssl_set_config_int(WGET_SSL_OCSP, config.ocsp);
 	wget_ssl_set_config_int(WGET_SSL_OCSP_STAPLING, config.ocsp_stapling);
+	wget_ssl_set_config_string(WGET_SSL_OCSP_SERVER, config.ocsp_server);
 	wget_ssl_set_config_string(WGET_SSL_SECURE_PROTOCOL, config.secure_protocol);
 	wget_ssl_set_config_string(WGET_SSL_CA_DIRECTORY, config.ca_directory);
 	wget_ssl_set_config_string(WGET_SSL_CA_FILE, config.ca_cert);
@@ -3630,6 +3637,7 @@ void deinit(void)
 	xfree(config.logfile_append);
 	xfree(config.netrc_file);
 	xfree(config.ocsp_file);
+	xfree(config.ocsp_server);
 	xfree(config.output_document);
 	xfree(config.password);
 	xfree(config.post_data);

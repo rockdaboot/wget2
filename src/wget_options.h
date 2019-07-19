@@ -109,6 +109,7 @@ struct config {
 		*hsts_preload_file,
 		*hpkp_file,
 		*tls_session_file,
+		*ocsp_server,
 		*ocsp_file,
 		*netrc_file,
 		*use_askpass_bin,
