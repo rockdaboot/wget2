@@ -1941,7 +1941,7 @@ typedef struct {
 		dir[16]; //!< name of the HTML tag containing the URL, e.g. 'a'
 	bool
 		link_inline : 1; //!< 1 = rel was 'stylesheet' or 'shortcut icon'
-} wget_html_parsed_url_t;
+} wget_html_parsed_url;
 
 typedef struct {
 	wget_vector

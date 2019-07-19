@@ -188,7 +188,7 @@ static void html_parse(const char *html, size_t html_len, const char *encoding, 
 	}
 
 	for (int it = 0; it < wget_vector_size(parsed->uris); it++) {
-		wget_html_parsed_url_t *html_url = wget_vector_get(parsed->uris, it);
+		wget_html_parsed_url *html_url = wget_vector_get(parsed->uris, it);
 		wget_string *url = &html_url->url;
 
 		if (_normalize_uri(base, url, encoding, &buf) || buf.length == 0)
