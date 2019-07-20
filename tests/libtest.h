@@ -62,6 +62,7 @@ extern "C" {
 #define WGET_TEST_FEATURE_TLS 1102
 #define WGET_TEST_FEATURE_IDN 1103
 #define WGET_TEST_FEATURE_PLUGIN 1104
+#define WGET_TEST_FEATURE_OCSP 1105
 
 // defines for wget_test()
 #define WGET_TEST_REQUEST_URL 2001
@@ -79,6 +80,9 @@ extern "C" {
 
 // for post-handshake authentication
 #define WGET_TEST_POST_HANDSHAKE_AUTH 3002
+
+// for OCSP testing
+#define WGET_TEST_OCSP_RESP_FILE 3003
 
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
@@ -153,6 +157,7 @@ WGETAPI void wget_test(int first_key, ...);
 WGETAPI int wget_test_check_file_system(void);
 WGETAPI int wget_test_get_http_server_port(void) G_GNUC_WGET_PURE;
 WGETAPI int wget_test_get_https_server_port(void) G_GNUC_WGET_PURE;
+WGETAPI int wget_test_get_ocsp_server_port(void) G_GNUC_WGET_PURE;
 
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 #	pragma GCC diagnostic ignored "-Wmissing-field-initializers"
