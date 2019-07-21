@@ -106,8 +106,12 @@ static struct MHD_Daemon
 static gnutls_pcert_st *pcrt;
 static gnutls_privkey_t *privkey;
 
-static const char
-	*ocsp_resp_file;
+static struct ocsp_resp_t {
+	char
+		*data;
+	size_t
+		size;
+} *ocsp_resp;
 #endif
 
 // for passing URL query string
@@ -245,29 +249,16 @@ static int _ocsp_ahc(
 
 		return MHD_YES;
 	} else if (!first && upload_data == NULL) {
-		size_t size = 0;
-		char *data = NULL;
-
-		if (ocsp_resp_file) {
-			data = wget_read_file(ocsp_resp_file, &size);
-
-			if (data == NULL) {
-				wget_error_printf_exit("Couldn't load '%s'\n", ocsp_resp_file);
-			}
-		} else {
-			wget_error_printf_exit(_("Need value for option WGET_TEST_OCSP_RESP_FILE.\n"));
-		}
-
 		int ret = 0;
 
-		if (data) {
-			struct MHD_Response *response = MHD_create_response_from_buffer (size, data, MHD_RESPMEM_MUST_COPY);
+		if (ocsp_resp->data) {
+			struct MHD_Response *response = MHD_create_response_from_buffer (ocsp_resp->size, ocsp_resp->data, MHD_RESPMEM_MUST_COPY);
 
 			ret = MHD_queue_response (connection, MHD_HTTP_OK, response);
 
 			MHD_destroy_response (response);
 
-			wget_xfree(data);
+			wget_xfree(ocsp_resp->data);
 		}
 
 		return ret;
@@ -635,6 +626,7 @@ static void _http_server_stop(void)
 
 #ifdef HAVE_GNUTLS_OCSP_H
 	gnutls_global_deinit();
+	wget_xfree(ocsp_resp);
 #endif
 }
 
@@ -750,6 +742,8 @@ static int _http_server_start(int SERVER_MODE)
 #endif
 			MHD_OPTION_CONNECTION_MEMORY_LIMIT, (size_t) 1*1024*1024,
 			MHD_OPTION_END);
+
+		ocsp_resp = wget_malloc(sizeof(struct ocsp_resp_t));
 #endif
 
 		if (!ocspdaemon)
@@ -1191,6 +1185,9 @@ void wget_test(int first_key, ...)
 	const char
 		*request_url,
 		*options = "",
+#ifdef HAVE_GNUTLS_OCSP_H
+		*ocsp_resp_file = NULL,
+#endif
 #ifdef _WIN32
 		*executable = BUILDDIR "\\..\\src\\wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy --timeout 10";
 #else
@@ -1280,6 +1277,19 @@ void wget_test(int first_key, ...)
 	// clean directory
 	wget_buffer_printf(cmd, "../%s", tmpdir);
 	_empty_directory(cmd->data);
+
+#ifdef HAVE_GNUTLS_OCSP_H
+	if (ocspdaemon) {
+		if (ocsp_resp_file) {
+			ocsp_resp->data = wget_read_file(ocsp_resp_file, &(ocsp_resp->size));
+			if (ocsp_resp->data == NULL) {
+				wget_error_printf_exit(_("Couldn't read the response.\n"));
+			}
+		} else {
+			wget_error_printf_exit(_("Need value for option WGET_TEST_OCSP_RESP_FILE.\n"));
+		}
+	}
+#endif
 
 	// create files
 	if (existing_files) {
