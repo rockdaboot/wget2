@@ -1,0 +1,11 @@
+cn = "root"
+unit = "Wget"
+organization = "gnuwget"
+expiration_days = -1
+ca
+
+#Key Usage
+ocsp_signing_key
+time_stamping_key
+cert_signing_key
+crl_signing_key

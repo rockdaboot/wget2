@@ -1,0 +1,8 @@
+cn = "localhost"
+unit = "Wget"
+organization = "gnuwget"
+expiration_days = 36500
+
+#Key Usage
+ocsp_signing_key
+time_stamping_key
