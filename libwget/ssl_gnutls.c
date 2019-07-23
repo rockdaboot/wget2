@@ -291,7 +291,7 @@ static const char *safe_ctime(time_t *t, char *buf, size_t size)
 	struct tm tm;
 
 	if (localtime_r(t, &tm)
-		&& strftime(buf, sizeof(size), "%c", &tm))
+		&& strftime(buf, size, "%c", &tm))
 	{
 		return buf;
 	}
