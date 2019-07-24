@@ -806,7 +806,7 @@ static int _http_server_start(int SERVER_MODE)
 				| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
 			,
 			port_num, _check_to_accept, NULL, &_answer_to_connection, NULL,
-			MHD_OPTION_HTTPS_CERT_CALLBACK2, &_ocsp_stap_cert_callback,
+			MHD_OPTION_HTTPS_CERT_CALLBACK2, _ocsp_stap_cert_callback,
 #ifdef MHD_OPTION_STRICT_FOR_CLIENT
 			MHD_OPTION_STRICT_FOR_CLIENT, 1,
 #endif
