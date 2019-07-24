@@ -297,6 +297,7 @@ static int _ocsp_cert_callback(
 }
 
 #if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
+static gnutls_certificate_retrieve_function3 _ocsp_stap_cert_callback;
 static int _ocsp_stap_cert_callback(
 	gnutls_session_t session G_GNUC_WGET_UNUSED,
 	const struct gnutls_cert_retr_st *info G_GNUC_WGET_UNUSED,
