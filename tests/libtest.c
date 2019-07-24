@@ -117,7 +117,7 @@ static struct ocsp_resp_t {
 #ifdef HAVE_GNUTLS_OCSP_H
 #if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
 static gnutls_pcert_st *pcrt_stap;
-static gnutls_privkey_t privkey_stap;
+static gnutls_privkey_t *privkey_stap;
 static gnutls_ocsp_data_st *ocsp_stap_resp;
 #endif
 #endif
@@ -312,10 +312,11 @@ static int _ocsp_stap_cert_callback(
 
 	pcrt_stap = wget_malloc(sizeof(gnutls_pcert_st));
 	ocsp_stap_resp = wget_malloc(sizeof(gnutls_ocsp_data_st));
+	privkey_stap = wget_malloc(sizeof(gnutls_privkey_t));
 
-	gnutls_privkey_init(&privkey_stap);
+	gnutls_privkey_init(privkey_stap);
 	gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-key.pem", &data);
-	gnutls_privkey_import_x509_raw(privkey_stap, &data, GNUTLS_X509_FMT_PEM, NULL, 0);
+	gnutls_privkey_import_x509_raw(*privkey_stap, &data, GNUTLS_X509_FMT_PEM, NULL, 0);
 	gnutls_free(data.data);
 
 	gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-cert.pem", &data);
@@ -328,7 +329,7 @@ static int _ocsp_stap_cert_callback(
 	ocsp_stap_resp->exptime = 0;
 
 	*pcert = pcrt_stap;
-	*pkey = privkey_stap;
+	*pkey = *privkey_stap;
 	*pcert_length = 1;
 
 	*ocsp = ocsp_stap_resp;
