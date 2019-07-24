@@ -10,3 +10,6 @@ The scripts use:
 
 ## Generate Responses
 `$ bash generate_resp.sh`
+
+## Generate Stapled Response
+`$ bash generate_stap.sh`
