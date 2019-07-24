@@ -784,6 +784,8 @@ static int _http_server_start(int SERVER_MODE)
 #ifdef HAVE_GNUTLS_OCSP_H
 #if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
 	else if (SERVER_MODE == OCSP_STAP_MODE) {
+		int rc;
+
 		gnutls_datum_t data;
 
 		pcrt_stap = wget_malloc(sizeof(gnutls_pcert_st));
@@ -792,15 +794,20 @@ static int _http_server_start(int SERVER_MODE)
 
 		gnutls_privkey_init(privkey_stap);
 
-		gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-key.pem", &data);
+		if ((rc = gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-key.pem", &data)) < 0)
+			file_load_err(SRCDIR "/certs/ocsp/x509-server-key.pem", gnutls_strerror(rc));
+
 		gnutls_privkey_import_x509_raw(*privkey_stap, &data, GNUTLS_X509_FMT_PEM, NULL, 0);
 		gnutls_free(data.data);
 
-		gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-cert.pem", &data);
+		if ((rc = gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-cert.pem", &data)) < 0)
+			file_load_err(SRCDIR "/certs/ocsp/x509-server-cert.pem", gnutls_strerror(rc));
+
 		gnutls_pcert_import_x509_raw(pcrt_stap, &data, GNUTLS_X509_FMT_PEM, 0);
 		gnutls_free(data.data);
 
-		gnutls_load_file(SRCDIR "/certs/ocsp/ocsp_stapled_resp.der", &data);
+		if ((rc = gnutls_load_file(SRCDIR "/certs/ocsp/ocsp_stapled_resp.der", &data)) < 0)
+			file_load_err(SRCDIR "/certs/ocsp/ocsp_stapled_resp.der", gnutls_strerror(rc));
 
 		ocsp_stap_resp->response.data = data.data;
 		ocsp_stap_resp->response.size = data.size;
