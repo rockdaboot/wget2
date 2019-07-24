@@ -308,26 +308,6 @@ static int _ocsp_stap_cert_callback(
 	gnutls_privkey_t *pkey,
 	unsigned int *flags G_GNUC_WGET_UNUSED)
 {
-	gnutls_datum_t data;
-
-	pcrt_stap = wget_malloc(sizeof(gnutls_pcert_st));
-	ocsp_stap_resp = wget_malloc(sizeof(gnutls_ocsp_data_st));
-	privkey_stap = wget_malloc(sizeof(gnutls_privkey_t));
-
-	gnutls_privkey_init(privkey_stap);
-	gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-key.pem", &data);
-	gnutls_privkey_import_x509_raw(*privkey_stap, &data, GNUTLS_X509_FMT_PEM, NULL, 0);
-	gnutls_free(data.data);
-
-	gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-cert.pem", &data);
-	gnutls_pcert_import_x509_raw(pcrt_stap, &data, GNUTLS_X509_FMT_PEM, 0);
-	gnutls_free(data.data);
-
-	gnutls_load_file(SRCDIR "/certs/ocsp/ocsp_stapled_resp.der", &data);
-	ocsp_stap_resp->response.data = data.data;
-	ocsp_stap_resp->response.size = data.size;
-	ocsp_stap_resp->exptime = 0;
-
 	*pcert = pcrt_stap;
 	*pkey = *privkey_stap;
 	*pcert_length = 1;
@@ -804,6 +784,28 @@ static int _http_server_start(int SERVER_MODE)
 #ifdef HAVE_GNUTLS_OCSP_H
 #if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
 	else if (SERVER_MODE == OCSP_STAP_MODE) {
+		gnutls_datum_t data;
+
+		pcrt_stap = wget_malloc(sizeof(gnutls_pcert_st));
+		ocsp_stap_resp = wget_malloc(sizeof(gnutls_ocsp_data_st));
+		privkey_stap = wget_malloc(sizeof(gnutls_privkey_t));
+
+		gnutls_privkey_init(privkey_stap);
+
+		gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-key.pem", &data);
+		gnutls_privkey_import_x509_raw(*privkey_stap, &data, GNUTLS_X509_FMT_PEM, NULL, 0);
+		gnutls_free(data.data);
+
+		gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-cert.pem", &data);
+		gnutls_pcert_import_x509_raw(pcrt_stap, &data, GNUTLS_X509_FMT_PEM, 0);
+		gnutls_free(data.data);
+
+		gnutls_load_file(SRCDIR "/certs/ocsp/ocsp_stapled_resp.der", &data);
+
+		ocsp_stap_resp->response.data = data.data;
+		ocsp_stap_resp->response.size = data.size;
+		ocsp_stap_resp->exptime = 0;
+
 		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS
 				| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
 			,
@@ -818,8 +820,6 @@ static int _http_server_start(int SERVER_MODE)
 	}
 #endif
 #endif
-
-
 
 	// get open random port number
 	if (0) {}
