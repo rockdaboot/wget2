@@ -1125,8 +1125,8 @@ void wget_test_start_server(int first_key, ...)
 			start_http = 0;
 			start_https = 0;
 			ocsp_stap = 1;
-#endif
 			break;
+#endif
 		default:
 			wget_error_printf(_("Unknown option %d\n"), key);
 		}
