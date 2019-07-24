@@ -114,6 +114,14 @@ static struct ocsp_resp_t {
 } *ocsp_resp;
 #endif
 
+#ifdef HAVE_GNUTLS_OCSP_H
+#if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
+static gnutls_pcert_st *pcrt_stap;
+static gnutls_privkey_t privkey_stap;
+static gnutls_ocsp_data_st *ocsp_stap_resp;
+#endif
+#endif
+
 // for passing URL query string
 struct query_string {
 	wget_buffer
@@ -129,7 +137,8 @@ static char
 enum SERVER_MODE {
 	HTTP_MODE,
 	HTTPS_MODE,
-	OCSP_MODE
+	OCSP_MODE,
+	OCSP_STAP_MODE
 };
 
 static char *_scan_directory(const char* data)
@@ -286,6 +295,47 @@ static int _ocsp_cert_callback(
 
 	return 0;
 }
+
+#if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
+static int _ocsp_stap_cert_callback(
+	gnutls_session_t session G_GNUC_WGET_UNUSED,
+	const struct gnutls_cert_retr_st *info G_GNUC_WGET_UNUSED,
+	gnutls_pcert_st **pcert,
+	unsigned int *pcert_length,
+	gnutls_ocsp_data_st **ocsp,
+	unsigned int *ocsp_length,
+	gnutls_privkey_t *pkey,
+	unsigned int *flags G_GNUC_WGET_UNUSED)
+{
+	gnutls_datum_t data;
+
+	pcrt_stap = wget_malloc(sizeof(gnutls_pcert_st));
+	ocsp_stap_resp = wget_malloc(sizeof(gnutls_ocsp_data_st));
+
+	gnutls_privkey_init(&privkey_stap);
+	gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-key.pem", &data);
+	gnutls_privkey_import_x509_raw(privkey_stap, &data, GNUTLS_X509_FMT_PEM, NULL, 0);
+	gnutls_free(data.data);
+
+	gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-cert.pem", &data);
+	gnutls_pcert_import_x509_raw(pcrt_stap, &data, GNUTLS_X509_FMT_PEM, 0);
+	gnutls_free(data.data);
+
+	gnutls_load_file(SRCDIR "/certs/ocsp/ocsp_stapled_resp.der", &data);
+	ocsp_stap_resp->response.data = data.data;
+	ocsp_stap_resp->response.size = data.size;
+	ocsp_stap_resp->exptime = 0;
+
+	*pcert = pcrt_stap;
+	*pkey = privkey_stap;
+	*pcert_length = 1;
+
+	*ocsp = ocsp_stap_resp;
+	*ocsp_length = 1;
+
+	return 0;
+}
+#endif
 #endif
 
 static int _answer_to_connection(
@@ -749,6 +799,24 @@ static int _http_server_start(int SERVER_MODE)
 		if (!ocspdaemon)
 			return 1;
 	}
+#ifdef HAVE_GNUTLS_OCSP_H
+#if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
+	else if (SERVER_MODE == OCSP_STAP_MODE) {
+		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS
+				| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
+			,
+			port_num, _check_to_accept, NULL, &_answer_to_connection, NULL,
+			MHD_OPTION_HTTPS_CERT_CALLBACK2, &_ocsp_stap_cert_callback,
+#ifdef MHD_OPTION_STRICT_FOR_CLIENT
+			MHD_OPTION_STRICT_FOR_CLIENT, 1,
+#endif
+			MHD_OPTION_CONNECTION_MEMORY_LIMIT, (size_t) 1*1024*1024,
+			MHD_OPTION_HTTPS_PRIORITIES, "NORMAL:+SIGN-RSA-SHA256",
+			MHD_OPTION_END);
+	}
+#endif
+#endif
+
 
 
 	// get open random port number
@@ -759,7 +827,7 @@ static int _http_server_start(int SERVER_MODE)
 		const union MHD_DaemonInfo *dinfo = NULL;
 		if (SERVER_MODE == HTTP_MODE)
 			dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_BIND_PORT);
-		else if (SERVER_MODE == HTTPS_MODE)
+		else if (SERVER_MODE == HTTPS_MODE || SERVER_MODE == OCSP_STAP_MODE)
 			dinfo = MHD_get_daemon_info(httpsdaemon, MHD_DAEMON_INFO_BIND_PORT);
 #ifdef HAVE_GNUTLS_OCSP_H
 		else if (SERVER_MODE == OCSP_MODE)
@@ -772,7 +840,7 @@ static int _http_server_start(int SERVER_MODE)
 		port_num = dinfo->port;
 		if (SERVER_MODE == HTTP_MODE)
 			http_server_port = port_num;
-		else if (SERVER_MODE == HTTPS_MODE)
+		else if (SERVER_MODE == HTTPS_MODE || SERVER_MODE == OCSP_STAP_MODE)
 			https_server_port = port_num;
 #ifdef HAVE_GNUTLS_OCSP_H
 		else if (SERVER_MODE == OCSP_MODE)
@@ -787,7 +855,7 @@ static int _http_server_start(int SERVER_MODE)
 
 		if (SERVER_MODE == HTTP_MODE)
 			dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_LISTEN_FD);
-		else if (SERVER_MODE == HTTPS_MODE)
+		else if (SERVER_MODE == HTTPS_MODE || SERVER_MODE == OCSP_STAP_MODE)
 			dinfo = MHD_get_daemon_info(httpsdaemon, MHD_DAEMON_INFO_LISTEN_FD);
 #ifdef HAVE_GNUTLS_OCSP_H
 		else if (SERVER_MODE == OCSP_MODE)
@@ -814,7 +882,7 @@ static int _http_server_start(int SERVER_MODE)
 				port_num = (uint16_t)atoi(s_port);
 				if (SERVER_MODE == HTTP_MODE)
 					http_server_port = port_num;
-				else if (SERVER_MODE == HTTPS_MODE)
+				else if (SERVER_MODE == HTTPS_MODE || SERVER_MODE == OCSP_STAP_MODE)
 					https_server_port = port_num;
 #ifdef HAVE_GNUTLS_OCSP_H
 				else if (SERVER_MODE == OCSP_MODE)
@@ -921,7 +989,7 @@ void wget_test_stop_server(void)
 
 static char *_insert_ports(const char *src)
 {
-	if (!src || (!strstr(src, "{{port}}")  && !strstr(src, "{{sslport}}") && !strstr(src, "{{ocspport}}")))
+	if (!src || (!strstr(src, "{{port}}") && !strstr(src, "{{sslport}}") && !strstr(src, "{{ocspport}}")))
 		return NULL;
 
 	size_t srclen = strlen(src) + 1;
@@ -946,6 +1014,7 @@ static char *_insert_ports(const char *src)
 				continue;
 			}
 		}
+
 		*dst++ = *src++;
 	}
 	*dst = 0;
@@ -974,6 +1043,7 @@ void wget_test_start_server(int first_key, ...)
 	va_list args;
 	bool start_http = 1;
 #ifdef WITH_TLS
+	bool ocsp_stap = 0;
 	bool start_https = 1;
 #ifdef HAVE_GNUTLS_OCSP_H
 	bool start_ocsp = 0;
@@ -1047,6 +1117,16 @@ void wget_test_start_server(int first_key, ...)
 			start_ocsp = 1;
 #endif
 			break;
+		case WGET_TEST_FEATURE_OCSP_STAPLING:
+#if !defined HAVE_GNUTLS_OCSP_H || MHD_VERSION < 0x00096502 || GNUTLS_VERSION_NUMBER < 0x030603
+			wget_error_printf(_("MHD or GnuTLS version insufficient. Skipping\n"));
+			exit(WGET_TEST_EXIT_SKIP);
+#else
+			start_http = 0;
+			start_https = 0;
+			ocsp_stap = 1;
+#endif
+			break;
 		default:
 			wget_error_printf(_("Unknown option %d\n"), key);
 		}
@@ -1074,10 +1154,16 @@ void wget_test_start_server(int first_key, ...)
 
 #ifdef WITH_TLS
 #ifdef HAVE_GNUTLS_OCSP_H
-	// start OCSP server
+	// start OCSP responder
 	if (start_ocsp) {
 		if ((rc = _http_server_start(OCSP_MODE)) != 0)
 			wget_error_printf_exit(_("Failed to start OCSP server, error %d\n"), rc);
+	}
+
+	// start OCSP server (stapling)
+	if (ocsp_stap) {
+		if ((rc = _http_server_start(OCSP_STAP_MODE)) != 0)
+			wget_error_printf_exit(_("Failed to start OCSP Stapling server, error %d\n"), rc);
 	}
 #endif
 
