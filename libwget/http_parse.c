@@ -433,7 +433,7 @@ const char *wget_http_parse_location(const char *s, const char **location)
 	 */
 
 	for (p = s; *s && *s != '\r' && *s != '\n'; s++);
-	while (s > p && c_isdigit(*(s - 1))) s--; // remove trailing spaces (OWS - optional white space)
+	while (s > p && c_isblank(*(s - 1))) s--; // remove trailing spaces (OWS - optional white space)
 
 	*location = wget_strmemdup(p, s - p);
 
