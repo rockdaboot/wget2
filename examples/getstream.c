@@ -54,7 +54,8 @@ static int metaint, streamdatalen, metadatalen;
 // callback function to examine received HTTP response header
 // <context> depends on WGET_HTTP_BODY_SAVEAS_* option given to wget_http_get().
 // The response header is has been parsed into <resp> structure.
-static int header_callback(void *context G_GNUC_WGET_UNUSED, wget_http_response *resp)
+static wget_http_header_callback_t header_callback;
+static int header_callback(wget_http_response *resp, void *context G_GNUC_WGET_UNUSED)
 {
 	// If you are looking for header that are ignored by libwget, parse them yourself.
 
@@ -81,7 +82,8 @@ static int header_callback(void *context G_GNUC_WGET_UNUSED, wget_http_response 
 }
 
 // callback function to handle incoming stream data
-static int stream_callback(void *context G_GNUC_WGET_UNUSED, const char *data, size_t len)
+static wget_http_body_callback_t stream_callback;
+static int stream_callback(wget_http_response *resp G_GNUC_WGET_UNUSED, void *context G_GNUC_WGET_UNUSED, const char *data, size_t len)
 {
 	// any stream data received is piped through this function
 
@@ -233,9 +235,9 @@ int main(int argc, const char *const *argv)
 	resp = wget_http_get(
 		WGET_HTTP_URL, stream_url,
 		WGET_HTTP_HEADER_ADD, "Icy-Metadata", "1", // we want in-stream title/actor information
-		WGET_HTTP_HEADER_FUNC, header_callback, // callback used to parse special headers like 'Icy-Name'
+		WGET_HTTP_HEADER_FUNC, header_callback, NULL, // callback used to parse special headers like 'Icy-Name'
 		// WGET_HTTP_HEADER_SAVEAS_STREAM, stdout,
-		WGET_HTTP_BODY_SAVEAS_FUNC, stream_callback, // callback to cut title info out of audio stream
+		WGET_HTTP_BODY_SAVEAS_FUNC, stream_callback, NULL, // callback to cut title info out of audio stream
 		0);
 
 	wget_http_free_response(&resp);
