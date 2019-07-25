@@ -46,7 +46,7 @@ int main(void)
 		WGET_TEST_REQUEST_URL, "https://localhost:{{sslport}}/index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_OCSP_RESP_FILE, SRCDIR "/certs/ocsp/ocsp_resp_ok.der",
-		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []){
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{urls[0].name + 1, urls[0].body},
 			{	NULL} },
 		0);
@@ -57,6 +57,17 @@ int main(void)
 		WGET_TEST_REQUEST_URL, "https://localhost:{{sslport}}/index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 5,
 		WGET_TEST_OCSP_RESP_FILE, SRCDIR "/certs/ocsp/ocsp_resp_revoked.der",
+		0);
+
+	// Test ocsp with 'revoked' response ignored by --no-check-certificate
+	wget_test(
+		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/ocsp/x509-root-cert.pem --no-ocsp-file --no-ocsp-date --no-ocsp-nonce --ocsp --ocsp-server http://localhost:{{ocspport}} --no-check-certificate",
+		WGET_TEST_REQUEST_URL, "https://localhost:{{sslport}}/index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_OCSP_RESP_FILE, SRCDIR "/certs/ocsp/ocsp_resp_revoked.der",
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{urls[0].name + 1, urls[0].body},
+			{	NULL} },
 		0);
 
 	exit(0);
