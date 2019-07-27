@@ -800,13 +800,14 @@ static int _http_server_start(int SERVER_MODE)
 
 			gnutls_pcert_import_x509_raw(pcrt+1, &data, GNUTLS_X509_FMT_PEM, 0);
 			gnutls_free(data.data);
+
+			if (!httpsdaemon) {
+				wget_error_printf(_("Cannot start the HTTPS server.\n"));
+				return 1;
+			}
+
 		}
 #endif
-
-		if (!httpsdaemon) {
-			wget_error_printf(_("Cannot start the HTTPS server.\n"));
-			return 1;
-		}
 	} else if (SERVER_MODE == OCSP_MODE) {
 #ifdef HAVE_GNUTLS_OCSP_H
 		static char rnd[8] = "realrnd"; // fixed 'random' value
@@ -1211,6 +1212,9 @@ void wget_test_start_server(int first_key, ...)
 			exit(WGET_TEST_EXIT_SKIP);
 #else
 			start_http = 0;
+#ifdef HAVE_MICROHTTPD_HTTP2_H
+			start_h2 = 0;
+#endif
 			start_ocsp = 1;
 #endif
 			break;
@@ -1221,6 +1225,9 @@ void wget_test_start_server(int first_key, ...)
 #else
 			start_http = 0;
 			start_https = 0;
+#ifdef HAVE_MICROHTTPD_HTTP2_H
+			start_h2 = 0;
+#endif
 			ocsp_stap = 1;
 			break;
 #endif
