@@ -266,7 +266,8 @@ struct config {
 		verify_sig,
 		https_enforce,
 		retry_connrefused,
-		unlink;
+		unlink,
+		background;
 };
 
 extern struct config

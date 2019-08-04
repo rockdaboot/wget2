@@ -1232,6 +1232,12 @@ static const struct optionw options[] = {
 		SECTION_HTTP,
 		{ "send Basic HTTP Authentication before challenge\n" }
 	},
+	{ "background", &config.background, parse_bool, -1, 'b',
+		SECTION_STARTUP,
+		{ "Go to background immediately after startup. If no\n",
+		  "output file is specified via the -o, output is redirected to wget-log\n"
+		}
+	},
 	{ "backup-converted", &config.backup_converted, parse_bool, -1, 'K',
 		SECTION_HTTP,
 		{ "When converting, keep the original file with\n",

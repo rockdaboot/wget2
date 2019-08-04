@@ -93,6 +93,8 @@
 #define URL_FLG_SIGNATURE_REQ   (1<<4)
 #define URL_FLG_NO_BLACKLISTING (1<<5)
 
+#define WGET_DEFAULT_LOGFILE "wget-log"
+
 #define _CONTENT_TYPE_HTML 1
 typedef struct {
 	const char *
@@ -141,7 +143,8 @@ static void
 	html_parse(JOB *job, int level, const char *data, size_t len, const char *encoding, wget_iri *base),
 	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, wget_iri *base),
 	css_parse(JOB *job, const char *data, size_t len, const char *encoding, wget_iri *base),
-	css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base);
+	css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base),
+	fork_to_background(void);
 static unsigned int G_GNUC_WGET_PURE
 	hash_url(const char *url);
 static int
@@ -1351,6 +1354,9 @@ int main(int argc, const char **argv)
 		error_printf(_("Nothing to do - goodbye\n"));
 		goto out;
 	}
+
+	if (config.background)
+		fork_to_background();
 
 	// At this point, all values have been initialized and all URLs read.
 	// Perform any sanity checking or extra initialization here.
@@ -4027,3 +4033,49 @@ static int set_file_metadata(wget_iri *origin_iri, wget_iri *referrer_iri,
 
 	return write_xattr_last_modified(last_modified, fd);
 }
+
+#ifdef _WIN32
+
+static void fork_to_background(void)
+{
+	return;
+}
+
+#else // We assume every non-Windows OS supports fork()
+static void fork_to_background(void)
+{
+	short logfile_changed = 0;
+	if (!config.logfile && (!config.quiet || config.server_response) && !config.dont_write) {
+		config.logfile = wget_strdup(WGET_DEFAULT_LOGFILE);
+		// truncate logfile
+		int fd = open(config.logfile, O_WRONLY | O_TRUNC);
+
+		if (fd != -1)
+			close(fd);
+
+		logfile_changed = 1;
+	}
+
+	pid_t pid = fork();
+	if (pid < 0) // parent, error
+		error_printf_exit(_("Failed to fork (errno=%d): %s\n"), errno, strerror(errno));
+
+	else if (pid != 0) {
+		// parent, no error
+		printf(_("Continuing in background, pid %d.\n"), (int) pid);
+		if (logfile_changed)
+			printf(_("Output will be written to %s.\n"), config.logfile);
+
+		exit(WG_EXIT_STATUS_NO_ERROR);
+	}
+
+	/* child: give up the privileges and keep running. */
+	setsid();
+	if (freopen("/dev/null", "r", stdin) == NULL)
+		error_printf(_("Failed to redirect stdin to /dev/null.\n"));
+	if (freopen("/dev/null", "w", stdout) == NULL)
+		error_printf(_("Failed to redirect stdout to /dev/null.\n"));
+	if (freopen("/dev/null", "w", stderr) == NULL)
+		error_printf(_("Failed to redirect stderr to /dev/null.\n"));
+}
+#endif
