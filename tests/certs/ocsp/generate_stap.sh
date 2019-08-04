@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Start Intermediate CA's OCSP server
-openssl ocsp -index demoCA/index.txt -port 8080 -rsigner x509-interm-cert.pem -rkey x509-interm-key.pem -CA x509-interm-cert.pem -text & ocsp_server=$!
+openssl ocsp -index demoCA/index.txt -ndays 36500 -port 8080 -rsigner x509-interm-cert.pem -rkey x509-interm-key.pem -CA x509-interm-cert.pem -text & ocsp_server=$!
 
 # Save OCSP Stapled Response
 openssl ocsp -sha256 -CAfile x509-interm-cert.pem -issuer x509-interm-cert.pem -cert x509-server-cert.pem -url http://127.0.0.1:8080 -noverify -resp_text -respout ocsp_stapled_resp.der
