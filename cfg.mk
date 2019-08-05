@@ -27,6 +27,7 @@ exclude_file_name_regexp--sc_prohibit_printf = ^(unit-tests/(test\.c|buffer_prin
 exclude_file_name_regexp--sc_prohibit_free = ^(cfg\.mk|fuzz/.*\.c|unit-tests/.*\.c)$$
 exclude_file_name_regexp--sc_prohibit_alloc = ^(fuzz/.*\.c)$$
 exclude_file_name_regexp--sc_gettext_printf = ^(fuzz|tests|unit-tests|examples)/.*\.c|.*\.h|libwget/test_linking.*\.c$$
+exclude_file_name_regexp--sc_GPL_version = ^m4/.*\.m4
 
 sc_prohibit_sprintf:
         @prohibit='\<sprintf *\(' \

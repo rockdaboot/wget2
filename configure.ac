@@ -55,6 +55,8 @@ fi
 gl_EARLY
 gl_INIT
 
+AX_CODE_COVERAGE
+
 LT_PREREQ([2.2])
 LT_INIT([dlopen])
 
