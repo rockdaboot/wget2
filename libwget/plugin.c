@@ -44,7 +44,7 @@
  * \param[in] plugin The plugin handle
  * \return the name of this plugin. The returned string is owned by wget and should not be freed or altered.
  */
-const char *wget_plugin_get_name(wget_plugin_t *plugin)
+const char *wget_plugin_get_name(wget_plugin *plugin)
 {
 	return plugin->vtable->get_name(plugin);
 }
@@ -54,7 +54,7 @@ const char *wget_plugin_get_name(wget_plugin_t *plugin)
  * \param[in] plugin The plugin handle
  * \param[in] fn A function pointer to be called
  */
-void wget_plugin_register_finalizer(wget_plugin_t *plugin, wget_plugin_finalizer_t *fn)
+void wget_plugin_register_finalizer(wget_plugin *plugin, wget_plugin_finalizer_fn *fn)
 {
 	plugin->vtable->register_finalizer(plugin, fn);
 }
@@ -69,7 +69,7 @@ void wget_plugin_register_finalizer(wget_plugin_t *plugin, wget_plugin_finalizer
  * \param[in] plugin The plugin handle
  * \param[in] fn The function pointer to register
  */
-void wget_plugin_register_argp(wget_plugin_t *plugin, wget_plugin_argp_t *fn)
+void wget_plugin_register_option_callback(wget_plugin *plugin, wget_plugin_option_callback *fn)
 {
 	plugin->vtable->register_argp(plugin, fn);
 }
@@ -81,7 +81,7 @@ void wget_plugin_register_argp(wget_plugin_t *plugin, wget_plugin_argp_t *fn)
  *
  * \param action Handle for any action taken by the plugin
  */
-void wget_intercept_action_reject(wget_intercept_action_t *action)
+void wget_intercept_action_reject(wget_intercept_action *action)
 {
 	action->vtable->action_reject(action);
 }
@@ -94,7 +94,7 @@ void wget_intercept_action_reject(wget_intercept_action_t *action)
  *
  * \param action Handle for any action taken by the plugin
  */
-void wget_intercept_action_accept(wget_intercept_action_t *action)
+void wget_intercept_action_accept(wget_intercept_action *action)
 {
 	action->vtable->action_accept(action);
 }
@@ -105,7 +105,7 @@ void wget_intercept_action_accept(wget_intercept_action_t *action)
  * \param action Handle for any action taken by the plugin
  * \param iri Alternative URL to be fetched
  */
-void wget_intercept_action_set_alt_url(wget_intercept_action_t *action, const wget_iri *iri)
+void wget_intercept_action_set_alt_url(wget_intercept_action *action, const wget_iri *iri)
 {
 	action->vtable->action_set_alt_url(action, iri);
 }
@@ -116,7 +116,7 @@ void wget_intercept_action_set_alt_url(wget_intercept_action_t *action, const wg
  * \param action Handle for any action taken by the plugin
  * \param local_filename Alternative file name to use
  */
-void wget_intercept_action_set_local_filename(wget_intercept_action_t *action, const char *local_filename)
+void wget_intercept_action_set_local_filename(wget_intercept_action *action, const char *local_filename)
 {
 	action->vtable->action_set_local_filename(action, local_filename);
 }
@@ -136,7 +136,7 @@ void wget_intercept_action_set_local_filename(wget_intercept_action_t *action, c
  * \param[in] plugin The plugin handle
  * \param[in] filter_fn The plugin function that will be passed the URL to be fetched
  */
-void wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filter_t *filter_fn)
+void wget_plugin_register_url_filter_callback(wget_plugin *plugin, wget_plugin_url_filter_callback *filter_fn)
 {
 	plugin->vtable->register_url_filter(plugin, filter_fn);
 }
@@ -147,7 +147,7 @@ void wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filt
  * \param[in] file Downloaded file handle
  * \return The address the file was downloaded from. The returned object is owned by wget and should not be free'd.
  */
-const wget_iri *wget_downloaded_file_get_source_url(wget_downloaded_file_t *file)
+const wget_iri *wget_downloaded_file_get_source_url(wget_downloaded_file *file)
 {
 	return file->vtable->file_get_source_url(file);
 }
@@ -158,7 +158,7 @@ const wget_iri *wget_downloaded_file_get_source_url(wget_downloaded_file_t *file
  * \param[in] file Downloaded file handle
  * \return The file name the file was written to. The returned string is owned by wget and should not be free'd.
  */
-const char *wget_downloaded_file_get_local_filename(wget_downloaded_file_t *file)
+const char *wget_downloaded_file_get_local_filename(wget_downloaded_file *file)
 {
 	return file->vtable->file_get_local_filename(file);
 }
@@ -169,7 +169,7 @@ const char *wget_downloaded_file_get_local_filename(wget_downloaded_file_t *file
  * \param[in] file Downloaded file handle
  * \return The size of the downloaded file
  */
-uint64_t wget_downloaded_file_get_size(wget_downloaded_file_t *file)
+uint64_t wget_downloaded_file_get_size(wget_downloaded_file *file)
 {
 	return file->vtable->file_get_size(file);
 }
@@ -185,7 +185,7 @@ uint64_t wget_downloaded_file_get_size(wget_downloaded_file_t *file)
  *                  The memory is owned by wget and must not be free'd or modified.
  * \param[out] size Size of the downloaded file.
  */
-int wget_downloaded_file_get_contents(wget_downloaded_file_t *file, const void **data, size_t *size)
+int wget_downloaded_file_get_contents(wget_downloaded_file *file, const void **data, size_t *size)
 {
 	return file->vtable->file_get_contents(file, data, size);
 }
@@ -196,7 +196,7 @@ int wget_downloaded_file_get_contents(wget_downloaded_file_t *file, const void *
  * \param[in] file Downloaded file handle
  * \return A newly opened stream for reading. The returned stream must be closed with fclose() after use.
  */
-FILE *wget_downloaded_file_open_stream(wget_downloaded_file_t *file)
+FILE *wget_downloaded_file_open_stream(wget_downloaded_file *file)
 {
 	return file->vtable->file_open_stream(file);
 }
@@ -207,7 +207,7 @@ FILE *wget_downloaded_file_open_stream(wget_downloaded_file_t *file)
  * \param[in] file Downloaded file handle
  * \return whether the file should be scanned for more URLs.
  */
-bool wget_downloaded_file_get_recurse(wget_downloaded_file_t *file)
+bool wget_downloaded_file_get_recurse(wget_downloaded_file *file)
 {
 	return file->vtable->file_get_recurse(file);
 }
@@ -219,7 +219,7 @@ bool wget_downloaded_file_get_recurse(wget_downloaded_file_t *file)
  * \param[in] file Downloaded file handle
  * \param[in] iri The URL to be fetched.
  */
-void wget_downloaded_file_add_recurse_url(wget_downloaded_file_t *file, const wget_iri *iri)
+void wget_downloaded_file_add_recurse_url(wget_downloaded_file *file, const wget_iri *iri)
 {
 	file->vtable->file_add_recurse_url(file, iri);
 }
@@ -244,7 +244,7 @@ void wget_downloaded_file_add_recurse_url(wget_downloaded_file_t *file, const wg
  *
  */
 void
-wget_plugin_register_post_processor(wget_plugin_t *plugin, wget_plugin_post_processor_t *fn)
+wget_plugin_register_post_processor(wget_plugin *plugin, wget_plugin_post_processor *fn)
 {
 	plugin->vtable->register_post_processor(plugin, fn);
 }
@@ -264,7 +264,7 @@ wget_plugin_register_post_processor(wget_plugin_t *plugin, wget_plugin_post_proc
  * \param[in] hsts_db HSTS database to add
  * \param[in] priority The priority value to use
  */
-void wget_plugin_add_hsts_db(wget_plugin_t *plugin, wget_hsts_db_t *hsts_db, int priority)
+void wget_plugin_add_hsts_db(wget_plugin *plugin, wget_hsts_db_t *hsts_db, int priority)
 {
 	plugin->vtable->add_hsts_db(plugin, hsts_db, priority);
 }
@@ -284,7 +284,7 @@ void wget_plugin_add_hsts_db(wget_plugin_t *plugin, wget_hsts_db_t *hsts_db, int
  * \param[in] hpkp_db HPKP database to add
  * \param[in] priority The priority value to use
  */
-void wget_plugin_add_hpkp_db(wget_plugin_t *plugin, wget_hpkp_db_t *hpkp_db, int priority)
+void wget_plugin_add_hpkp_db(wget_plugin *plugin, wget_hpkp_db_t *hpkp_db, int priority)
 {
 	plugin->vtable->add_hpkp_db(plugin, hpkp_db, priority);
 }
@@ -304,7 +304,7 @@ void wget_plugin_add_hpkp_db(wget_plugin_t *plugin, wget_hpkp_db_t *hpkp_db, int
  * \param[in] ocsp_db OCSP database to add
  * \param[in] priority The priority value to use
  */
-void wget_plugin_add_ocsp_db(wget_plugin_t *plugin, wget_ocsp_db *ocsp_db, int priority)
+void wget_plugin_add_ocsp_db(wget_plugin *plugin, wget_ocsp_db *ocsp_db, int priority)
 {
 	plugin->vtable->add_ocsp_db(plugin, ocsp_db, priority);
 }

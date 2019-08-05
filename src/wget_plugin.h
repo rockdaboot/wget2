@@ -45,7 +45,7 @@ void plugin_db_clear_search_paths(void);
 // Extended plugin handle
 typedef struct
 {
-	wget_plugin_t parent;
+	wget_plugin parent;
 
 	// Plugin name
 	char *name;

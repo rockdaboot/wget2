@@ -2754,14 +2754,16 @@ struct wget_plugin_vtable;
  *
  * Only two members shown here are public, and only plugin_data is writable.
  */
-typedef struct
+struct wget_plugin_st
 {
 	/// Plugin specific data. Plugins are free to assign any value to this.
 	void *plugin_data;
 
 	/// Pointer to the vtable. Used by wget to implement functions.
 	struct wget_plugin_vtable *vtable;
-} wget_plugin_t;
+};
+
+typedef struct wget_plugin_st wget_plugin;
 
 /**
  * \ingroup libwget-plugin
@@ -2773,7 +2775,7 @@ typedef struct
  *         On failure, wget2 will continue without the plugin
  *         and will not call the finalizer function even if registered.
  */
-typedef int wget_plugin_initializer_t(wget_plugin_t *plugin);
+typedef int wget_plugin_initializer_fn(wget_plugin *plugin);
 
 /**
  * \ingroup libwget-plugin
@@ -2783,15 +2785,15 @@ typedef int wget_plugin_initializer_t(wget_plugin_t *plugin);
  * \param[in] plugin The plugin handle
  * \param[in] exit_status The exit status wget will exit with
  */
-typedef void wget_plugin_finalizer_t(wget_plugin_t *plugin, int exit_status);
+typedef void wget_plugin_finalizer_fn(wget_plugin *plugin, int exit_status);
 
 // Gets the name the plugin is known as.
 WGETAPI const char *
-	wget_plugin_get_name(wget_plugin_t *plugin);
+	wget_plugin_get_name(wget_plugin *plugin);
 
 // Registers a function to be called when wget exits.
 WGETAPI void
-	wget_plugin_register_finalizer(wget_plugin_t *plugin, wget_plugin_finalizer_t *fn);
+	wget_plugin_register_finalizer(wget_plugin *plugin, wget_plugin_finalizer_fn *fn);
 
 /**
  * \ingroup libwget-plugin
@@ -2803,11 +2805,11 @@ WGETAPI void
  * \param[in] value  The value of the option if provided, or NULL
  * \return Must return 0 if option and its value is valid, or any other value if invalid. In that case wget will exit.
  */
-typedef int wget_plugin_argp_t(wget_plugin_t *plugin, const char *option, const char *value);
+typedef int wget_plugin_option_callback(wget_plugin *plugin, const char *option, const char *value);
 
 // Registers a function for command line option forwarding.
 WGETAPI void
-	wget_plugin_register_argp(wget_plugin_t *plugin, wget_plugin_argp_t *fn);
+	wget_plugin_register_option_callback(wget_plugin *plugin, wget_plugin_option_callback *fn);
 
 /**
  * \ingroup libwget-plugin
@@ -2816,23 +2818,23 @@ WGETAPI void
  */
 typedef struct {
 	struct wget_plugin_vtable *vtable;
-} wget_intercept_action_t;
+} wget_intercept_action;
 
 // Marks the URL to be rejected.
 WGETAPI void
-	wget_intercept_action_reject(wget_intercept_action_t *action);
+	wget_intercept_action_reject(wget_intercept_action *action);
 
 // Marks the URL to be accepted.
 WGETAPI void
-	wget_intercept_action_accept(wget_intercept_action_t *action);
+	wget_intercept_action_accept(wget_intercept_action *action);
 
 // Specifies an alternative URL to be fetched instead.
 WGETAPI void
-	wget_intercept_action_set_alt_url(wget_intercept_action_t *action, const wget_iri *iri);
+	wget_intercept_action_set_alt_url(wget_intercept_action *action, const wget_iri *iri);
 
 // Specifies that the fetched data should be written to an alternative file.
 WGETAPI void
-	wget_intercept_action_set_local_filename(wget_intercept_action_t *action, const char *local_filename);
+	wget_intercept_action_set_local_filename(wget_intercept_action *action, const char *local_filename);
 
 /**
  * \ingroup libwget-plugin
@@ -2844,23 +2846,23 @@ WGETAPI void
  * \param[in] iri The URL about to be fetched
  * \param[in] action Output the action to be taken
  */
-typedef void wget_plugin_url_filter_t(wget_plugin_t *plugin, const wget_iri *iri, wget_intercept_action_t *action);
+typedef void wget_plugin_url_filter_callback(wget_plugin *plugin, const wget_iri *iri, wget_intercept_action *action);
 
 // Registers a plugin function for intercepting URLs
 WGETAPI void
-	wget_plugin_register_url_filter(wget_plugin_t *plugin, wget_plugin_url_filter_t *filter_fn);
+	wget_plugin_register_url_filter_callback(wget_plugin *plugin, wget_plugin_url_filter_callback *filter_fn);
 
 // Provides wget2 with another HSTS database to use.
 WGETAPI void
-	wget_plugin_add_hsts_db(wget_plugin_t *plugin, wget_hsts_db_t *hsts_db, int priority);
+	wget_plugin_add_hsts_db(wget_plugin *plugin, wget_hsts_db_t *hsts_db, int priority);
 
 // Provides wget2 with another HPKP database to use.
 WGETAPI void
-	wget_plugin_add_hpkp_db(wget_plugin_t *plugin, wget_hpkp_db_t *hpkp_db, int priority);
+	wget_plugin_add_hpkp_db(wget_plugin *plugin, wget_hpkp_db_t *hpkp_db, int priority);
 
 // Provides wget2 with another OCSP database to use.
 WGETAPI void
-	wget_plugin_add_ocsp_db(wget_plugin_t *plugin, wget_ocsp_db *ocsp_db, int priority);
+	wget_plugin_add_ocsp_db(wget_plugin *plugin, wget_ocsp_db *ocsp_db, int priority);
 
 /**
  * \ingroup libwget-plugin
@@ -2869,35 +2871,35 @@ WGETAPI void
  */
 typedef struct {
 	struct wget_plugin_vtable *vtable;
-} wget_downloaded_file_t;
+} wget_downloaded_file;
 
 // Gets the source address the file was downloaded from.
 WGETAPI const wget_iri *
-	wget_downloaded_file_get_source_url(wget_downloaded_file_t *file);
+	wget_downloaded_file_get_source_url(wget_downloaded_file *file);
 
 // Gets the file name the downloaded file was written to.
 WGETAPI const char *
-	wget_downloaded_file_get_local_filename(wget_downloaded_file_t *file);
+	wget_downloaded_file_get_local_filename(wget_downloaded_file *file);
 
 // Gets the size of the downloaded file.
 WGETAPI uint64_t
-	wget_downloaded_file_get_size(wget_downloaded_file_t *file);
+	wget_downloaded_file_get_size(wget_downloaded_file *file);
 
 // Reads the downloaded file into memory.
 WGETAPI int
-	wget_downloaded_file_get_contents(wget_downloaded_file_t *file, const void **data, size_t *size);
+	wget_downloaded_file_get_contents(wget_downloaded_file *file, const void **data, size_t *size);
 
 // Opens the downloaded file as a new stream.
 WGETAPI FILE *
-	wget_downloaded_file_open_stream(wget_downloaded_file_t *file);
+	wget_downloaded_file_open_stream(wget_downloaded_file *file);
 
 // Gets whether the file should be scanned for more URLs.
 WGETAPI bool
-	wget_downloaded_file_get_recurse(wget_downloaded_file_t *file);
+	wget_downloaded_file_get_recurse(wget_downloaded_file *file);
 
 // Adds a URL for recursive downloading.
 WGETAPI void
-	wget_downloaded_file_add_recurse_url(wget_downloaded_file_t *file, const wget_iri *iri);
+	wget_downloaded_file_add_recurse_url(wget_downloaded_file *file, const wget_iri *iri);
 
 /**
  * \ingroup libwget-plugin
@@ -2908,11 +2910,11 @@ WGETAPI void
  * \param[in] file Downloaded file handle
  * \return 0 if further postprocessing of downloaded files should be stopped.
  */
-typedef int wget_plugin_post_processor_t(wget_plugin_t *plugin, wget_downloaded_file_t *file);
+typedef int wget_plugin_post_processor(wget_plugin *plugin, wget_downloaded_file *file);
 
 // Registers a plugin function for intercepting downloaded files.
 WGETAPI void
-	wget_plugin_register_post_processor(wget_plugin_t *plugin, wget_plugin_post_processor_t *fn);
+	wget_plugin_register_post_processor(wget_plugin *plugin, wget_plugin_post_processor *fn);
 
 /**
  * \ingroup libwget-plugin
@@ -2921,28 +2923,28 @@ WGETAPI void
 */
 struct wget_plugin_vtable
 {
-	const char * (* get_name)(wget_plugin_t *);
-	void (* register_finalizer)(wget_plugin_t *, wget_plugin_finalizer_t *);
-	void (* register_argp)(wget_plugin_t *, wget_plugin_argp_t *);
+	const char * (* get_name)(wget_plugin *);
+	void (* register_finalizer)(wget_plugin *, wget_plugin_finalizer_fn *);
+	void (* register_argp)(wget_plugin *, wget_plugin_option_callback *);
 
-	void (* action_reject)(wget_intercept_action_t *);
-	void (* action_accept)(wget_intercept_action_t *);
-	void (* action_set_alt_url)(wget_intercept_action_t *, const wget_iri *);
-	void (* action_set_local_filename)(wget_intercept_action_t *, const char *);
-	void (* register_url_filter)(wget_plugin_t *, wget_plugin_url_filter_t *);
+	void (* action_reject)(wget_intercept_action *);
+	void (* action_accept)(wget_intercept_action *);
+	void (* action_set_alt_url)(wget_intercept_action *, const wget_iri *);
+	void (* action_set_local_filename)(wget_intercept_action *, const char *);
+	void (* register_url_filter)(wget_plugin *, wget_plugin_url_filter_callback *);
 
-	const wget_iri *(*file_get_source_url)(wget_downloaded_file_t *);
-	const char *(*file_get_local_filename)(wget_downloaded_file_t *);
-	uint64_t (*file_get_size)(wget_downloaded_file_t *);
-	int (*file_get_contents)(wget_downloaded_file_t *, const void **data, size_t *size);
-	FILE *(*file_open_stream)(wget_downloaded_file_t *);
-	bool (*file_get_recurse)(wget_downloaded_file_t *);
-	void (*file_add_recurse_url)(wget_downloaded_file_t *, const wget_iri *);
-	void (*register_post_processor)(wget_plugin_t *, wget_plugin_post_processor_t *);
+	const wget_iri *(*file_get_source_url)(wget_downloaded_file *);
+	const char *(*file_get_local_filename)(wget_downloaded_file *);
+	uint64_t (*file_get_size)(wget_downloaded_file *);
+	int (*file_get_contents)(wget_downloaded_file *, const void **data, size_t *size);
+	FILE *(*file_open_stream)(wget_downloaded_file *);
+	bool (*file_get_recurse)(wget_downloaded_file *);
+	void (*file_add_recurse_url)(wget_downloaded_file *, const wget_iri *);
+	void (*register_post_processor)(wget_plugin *, wget_plugin_post_processor *);
 
-	void (* add_hsts_db)(wget_plugin_t *, wget_hsts_db_t *, int);
-	void (* add_hpkp_db)(wget_plugin_t *, wget_hpkp_db_t *, int);
-	void (* add_ocsp_db)(wget_plugin_t *, wget_ocsp_db *, int);
+	void (* add_hsts_db)(wget_plugin *, wget_hsts_db_t *, int);
+	void (* add_hpkp_db)(wget_plugin *, wget_hpkp_db_t *, int);
+	void (* add_ocsp_db)(wget_plugin *, wget_ocsp_db *, int);
 };
 
 /**

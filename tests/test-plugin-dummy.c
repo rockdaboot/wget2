@@ -30,8 +30,8 @@
 #include <wget.h>
 
 #if defined TEST_SELECT_NAME
-WGET_EXPORT int wget_plugin_initializer(wget_plugin_t *plugin);
-int wget_plugin_initializer(wget_plugin_t *plugin)
+WGET_EXPORT int wget_plugin_initializer(wget_plugin *plugin);
+int wget_plugin_initializer(wget_plugin *plugin)
 {
 	const char *name = wget_plugin_get_name(plugin);
 	if (strcmp(name, "pluginname") != 0) {
@@ -48,7 +48,7 @@ int wget_plugin_initializer(wget_plugin_t *plugin)
 	return 0;
 }
 #elif defined TEST_SELECT_EXITSTATUS
-static void finalizer(G_GNUC_WGET_UNUSED wget_plugin_t *plugin, int exit_status)
+static void finalizer(G_GNUC_WGET_UNUSED wget_plugin *plugin, int exit_status)
 {
 	FILE *stream = fopen("exit-status.txt", "wb");
 	if (! stream)
@@ -56,8 +56,8 @@ static void finalizer(G_GNUC_WGET_UNUSED wget_plugin_t *plugin, int exit_status)
 	wget_fprintf(stream, "exit(%d)\n", exit_status);
 	fclose(stream);
 }
-WGET_EXPORT int wget_plugin_initializer(wget_plugin_t *plugin);
-int wget_plugin_initializer(wget_plugin_t *plugin)
+WGET_EXPORT int wget_plugin_initializer(wget_plugin *plugin);
+int wget_plugin_initializer(wget_plugin *plugin)
 {
 	wget_plugin_register_finalizer(plugin, finalizer);
 	return 0;
@@ -68,7 +68,7 @@ void irrelevant(void)
 {
 }
 #elif defined TEST_SELECT_FAULTY2
-static void finalizer(G_GNUC_WGET_UNUSED wget_plugin_t *plugin, int exit_status)
+static void finalizer(G_GNUC_WGET_UNUSED wget_plugin *plugin, int exit_status)
 {
 	FILE *stream = fopen("exit-status.txt", "wb");
 	if (! stream)
@@ -76,8 +76,8 @@ static void finalizer(G_GNUC_WGET_UNUSED wget_plugin_t *plugin, int exit_status)
 	wget_fprintf(stream, "exit(%d)\n", exit_status);
 	fclose(stream);
 }
-WGET_EXPORT int wget_plugin_initializer(wget_plugin_t *plugin);
-int wget_plugin_initializer(wget_plugin_t *plugin)
+WGET_EXPORT int wget_plugin_initializer(wget_plugin *plugin);
+int wget_plugin_initializer(wget_plugin *plugin)
 {
 	wget_plugin_register_finalizer(plugin, finalizer);
 	wget_error_printf("Plugin failed to initialize, intentionally\n");
@@ -99,7 +99,7 @@ static struct option_filter {
 	{"gamma", 0, 1},
 	{NULL, 0, 0}
 };
-static int argp_fn(wget_plugin_t *plugin, const char *option, const char *value)
+static int argp_fn(wget_plugin *plugin, const char *option, const char *value)
 {
 	// List of options the plugin accepts
 	int i;
@@ -150,10 +150,10 @@ static int argp_fn(wget_plugin_t *plugin, const char *option, const char *value)
 
 	return 0;
 }
-WGET_EXPORT int wget_plugin_initializer(wget_plugin_t *plugin);
-int wget_plugin_initializer(wget_plugin_t *plugin)
+WGET_EXPORT int wget_plugin_initializer(wget_plugin *plugin);
+int wget_plugin_initializer(wget_plugin *plugin)
 {
-	wget_plugin_register_argp(plugin, argp_fn);
+	wget_plugin_register_option_callback(plugin, argp_fn);
 	return 0;
 }
 #elif defined TEST_SELECT_API
@@ -175,7 +175,7 @@ struct option {
 	option_parser fn;
 	void *lptr;
 };
-static int parse_option(const struct option *options, wget_plugin_t *plugin, const char *option, const char *value)
+static int parse_option(const struct option *options, wget_plugin *plugin, const char *option, const char *value)
 {
 	size_t i;
 
@@ -271,7 +271,7 @@ typedef struct {
 	int test_pp;
 } plugin_data_t;
 
-static int argp_fn(wget_plugin_t *plugin, const char *option, const char *value)
+static int argp_fn(wget_plugin *plugin, const char *option, const char *value)
 {
 	plugin_data_t *d = (plugin_data_t *) plugin->plugin_data;
 	struct option options[] = {
@@ -295,7 +295,7 @@ static int argp_fn(wget_plugin_t *plugin, const char *option, const char *value)
 	return parse_option(options, plugin, option, value);
 }
 
-static void finalizer(wget_plugin_t *plugin, G_GNUC_WGET_UNUSED int exit_status)
+static void finalizer(wget_plugin *plugin, G_GNUC_WGET_UNUSED int exit_status)
 {
 	plugin_data_t *d = (plugin_data_t *) plugin->plugin_data;
 
@@ -319,7 +319,7 @@ static void finalizer(wget_plugin_t *plugin, G_GNUC_WGET_UNUSED int exit_status)
 	wget_xfree(plugin->plugin_data);
 }
 
-static void url_filter(wget_plugin_t *plugin, const wget_iri *iri, wget_intercept_action_t *action)
+static void url_filter(wget_plugin *plugin, const wget_iri *iri, wget_intercept_action *action)
 {
 	plugin_data_t *d = (plugin_data_t *) plugin->plugin_data;
 
@@ -355,7 +355,7 @@ static void url_filter(wget_plugin_t *plugin, const wget_iri *iri, wget_intercep
 	}
 }
 
-static int post_processor(wget_plugin_t *plugin, wget_downloaded_file_t *file)
+static int post_processor(wget_plugin *plugin, wget_downloaded_file *file)
 {
 	plugin_data_t *d = (plugin_data_t *) plugin->plugin_data;
 
@@ -454,18 +454,18 @@ static int post_processor(wget_plugin_t *plugin, wget_downloaded_file_t *file)
 	return d->only_rot13 ? 0 : 1;
 }
 
-WGET_EXPORT int wget_plugin_initializer(wget_plugin_t *plugin);
-int wget_plugin_initializer(wget_plugin_t *plugin)
+WGET_EXPORT int wget_plugin_initializer(wget_plugin *plugin);
+int wget_plugin_initializer(wget_plugin *plugin)
 {
 	plugin_data_t *d = (plugin_data_t *) wget_calloc(1, sizeof(plugin_data_t));
 
 	d->files_processed = wget_vector_create(4, (wget_vector_compare_t *) strcmp);
 
 	plugin->plugin_data = d;
-	wget_plugin_register_argp(plugin, argp_fn);
+	wget_plugin_register_option_callback(plugin, argp_fn);
 	wget_plugin_register_finalizer(plugin, finalizer);
 
-	wget_plugin_register_url_filter(plugin, url_filter);
+	wget_plugin_register_url_filter_callback(plugin, url_filter);
 	wget_plugin_register_post_processor(plugin, post_processor);
 
 	return 0;
@@ -704,7 +704,7 @@ static wget_ocsp_db *test_ocsp_db_new(int usable) {
 	return (wget_ocsp_db *) ocsp_db;
 }
 
-static void finalizer(G_GNUC_WGET_UNUSED wget_plugin_t *plugin, G_GNUC_WGET_UNUSED int exit_status)
+static void finalizer(G_GNUC_WGET_UNUSED wget_plugin *plugin, G_GNUC_WGET_UNUSED int exit_status)
 {
 	if (hpkp_db_load_counter != 1)
 		wget_error_printf_exit("wget using wrong HPKP database (%d)\n", hpkp_db_load_counter);
@@ -714,8 +714,8 @@ static void finalizer(G_GNUC_WGET_UNUSED wget_plugin_t *plugin, G_GNUC_WGET_UNUS
 		wget_error_printf_exit("wget using wrong OCSP database (%d)\n", ocsp_db_load_counter);
 }
 
-WGET_EXPORT int wget_plugin_initializer(wget_plugin_t *plugin);
-int wget_plugin_initializer(wget_plugin_t *plugin)
+WGET_EXPORT int wget_plugin_initializer(wget_plugin *plugin);
+int wget_plugin_initializer(wget_plugin *plugin)
 {
 	wget_plugin_add_hpkp_db(plugin, test_hpkp_db_new(0), 1);
 	wget_plugin_add_hpkp_db(plugin, test_hpkp_db_new(1), 3);
