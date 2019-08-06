@@ -32,7 +32,6 @@
 #include "wget_plugin.h"
 
 // Strings
-static const char *init_fn_name = "wget_plugin_initializer";
 static const char *plugin_list_envvar = "WGET2_PLUGINS";
 
 // Splits string using the given separator and appends the array to vector.
@@ -70,9 +69,6 @@ static wget_vector *plugin_list;
 static wget_stringmap *plugin_name_index;
 // Whether any of the previous options forwarded was 'help'
 static int plugin_help_forwarded;
-// Plugin supplied HSTS database
-static wget_hsts_db_t *hsts_db;
-static int hsts_db_priority;
 // Plugin supplied HPKP database
 static wget_hpkp_db_t *hpkp_db;
 static int hpkp_db_priority;
@@ -249,19 +245,6 @@ static void impl_register_post_processor(wget_plugin *p_plugin, wget_plugin_post
 	priv->post_processor = fn;
 }
 
-// API for custom HSTS, HPKP and OCSP databases
-static void impl_add_hsts_db(G_GNUC_WGET_UNUSED wget_plugin *p_plugin, wget_hsts_db_t *new_hsts_db, int priority)
-{
-	if (hsts_db_priority < priority) {
-		hsts_db_priority = priority;
-		if (hsts_db)
-			wget_hsts_db_free(&hsts_db);
-		hsts_db = new_hsts_db;
-	} else {
-		wget_hsts_db_free(&new_hsts_db);
-	}
-}
-
 static void impl_add_hpkp_db(G_GNUC_WGET_UNUSED wget_plugin *p_plugin, wget_hpkp_db_t *new_hpkp_db, int priority)
 {
 	if (hpkp_db_priority < priority) {
@@ -308,7 +291,6 @@ static struct wget_plugin_vtable vtable = {
 	.file_add_recurse_url = impl_file_add_recurse_url,
 	.register_post_processor = impl_register_post_processor,
 
-	.add_hsts_db = impl_add_hsts_db,
 	.add_hpkp_db = impl_add_hpkp_db,
 	.add_ocsp_db = impl_add_ocsp_db
 };
@@ -354,7 +336,7 @@ static plugin_t *_load_plugin(const char *name, const char *path, dl_error_t *e)
 	plugin->dm = dm;
 
 	// Call initializer
-	*((void **)(&init_fn)) = dl_file_lookup(dm, init_fn_name, e);
+	*((void **)(&init_fn)) = dl_file_lookup(dm, "wget_plugin_initializer", e);
 	if (! init_fn) {
 		plugin_free(plugin);
 		return NULL;
@@ -602,15 +584,6 @@ void plugin_db_forward_url_verdict_free(struct plugin_db_forward_url_verdict *ve
 		wget_free(verdict->alt_local_filename);
 }
 
-// Fetches the plugin-provided HSTS database, or NULL.
-// Ownership of the returned HSTS database is transferred to the caller, so it must be free'd with wget_hsts_db_free().
-wget_hsts_db_t *plugin_db_fetch_provided_hsts_db(void)
-{
-	wget_hsts_db_t *res = hsts_db;
-	hsts_db = NULL;
-	return res;
-}
-
 // Fetches the plugin-provided HPKP database, or NULL.
 // Ownership of the returned HPKP database is transferred to the caller, so it must be free'd with wget_hpkp_db_free().
 wget_hpkp_db_t *plugin_db_fetch_provided_hpkp_db(void)
@@ -677,8 +650,6 @@ void plugin_db_init(void)
 		wget_stringmap_set_key_destructor(plugin_name_index, NULL);
 		wget_stringmap_set_value_destructor(plugin_name_index, NULL);
 		plugin_help_forwarded = 0;
-		hsts_db = NULL;
-		hsts_db_priority = 0;
 		hpkp_db = NULL;
 		hpkp_db_priority = 0;
 		ocsp_db = NULL;
@@ -705,8 +676,6 @@ void plugin_db_finalize(int exitcode)
 	wget_vector_free(&plugin_list);
 	wget_stringmap_free(&plugin_name_index);
 	wget_vector_free(&search_paths);
-	if (hsts_db)
-		wget_hsts_db_free(&hsts_db);
 	if (hpkp_db)
 		wget_hpkp_db_free(&hpkp_db);
 	if (ocsp_db)

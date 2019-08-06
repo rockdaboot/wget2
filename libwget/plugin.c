@@ -250,26 +250,6 @@ wget_plugin_register_post_processor(wget_plugin *plugin, wget_plugin_post_proces
 }
 
 /**
- * Provides wget2 with another HSTS database to use.
- *
- * Each database, including wget2's own implementation, has an integer value known as priority associated with it.
- * The implementation with the highest priority value is actually used by wget2.
- *
- * wget2's own implementation has priority value 0.
- *
- * wget2 will automatically call wget_hsts_db_free() on any database it decides it no longer needs,
- * so plugins do not need to do so.
- *
- * \param[in] plugin The plugin handle
- * \param[in] hsts_db HSTS database to add
- * \param[in] priority The priority value to use
- */
-void wget_plugin_add_hsts_db(wget_plugin *plugin, wget_hsts_db_t *hsts_db, int priority)
-{
-	plugin->vtable->add_hsts_db(plugin, hsts_db, priority);
-}
-
-/**
  * Provides wget2 with another HPKP database to use.
  *
  * Each database, including wget2's own implementation, has an integer value known as priority associated with it.

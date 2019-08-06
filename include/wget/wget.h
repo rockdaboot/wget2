@@ -1454,40 +1454,44 @@ typedef struct wget_hsts_db_st wget_hsts_db_t;
  *         return (wget_hsts_db_t *) hsts_db;
  *     }
  */
-struct wget_hsts_db_vtable {
-	/// Implementation of wget_hsts_db_load()
-	int (*load)(wget_hsts_db_t *);
-	/// Implementation of wget_hsts_db_save()
-	int (*save)(wget_hsts_db_t *);
-	/// Implementation of wget_hsts_host_match()
-	int (*host_match)(const wget_hsts_db_t *, const char *, uint16_t);
-	/// Implementation of wget_hsts_db_add()
-	void (*add)(wget_hsts_db_t *, const char *, uint16_t, time_t, int);
-	/// Implementation of wget_hsts_db_free()
-	void (*free)(wget_hsts_db_t *);
-};
 
-struct wget_hsts_db_st {
-	/// Pointer to the implementation vtable
-	struct wget_hsts_db_vtable *vtable;
-};
+typedef int wget_hsts_host_match_fn(const wget_hsts_db_t *, const char *hsts_db, uint16_t port);
+typedef wget_hsts_db_t *wget_hsts_db_init_fn(wget_hsts_db_t *hsts_db, const char *fname);
+typedef void wget_hsts_db_deinit_fn(wget_hsts_db_t *hsts_db);
+typedef void wget_hsts_db_free_fn(wget_hsts_db_t **hsts_db);
+typedef void wget_hsts_db_add_fn(wget_hsts_db_t *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains);
+typedef int wget_hsts_db_save_fn(wget_hsts_db_t *hsts_db);
+typedef int wget_hsts_db_load_fn(wget_hsts_db_t *hsts_db);
+typedef void wget_hsts_db_set_fname_fn(wget_hsts_db_t *hsts_db, const char *fname);
 
-WGETAPI int
-	wget_hsts_host_match(const wget_hsts_db_t *hsts_db, const char *host, uint16_t port);
-WGETAPI wget_hsts_db_t *
-	wget_hsts_db_init(wget_hsts_db_t *hsts_db, const char *fname);
+typedef struct {
+	/// Callback replacing wget_hsts_host_match()
+	wget_hsts_host_match_fn *host_match;
+	/// Callback replacing wget_hsts_db_init()
+	wget_hsts_db_init_fn *init;
+	/// Callback replacing wget_hsts_db_deinit()
+	wget_hsts_db_deinit_fn *deinit;
+	/// Callback replacing wget_hsts_db_free()
+	wget_hsts_db_free_fn *free;
+	/// Callback replacing wget_hsts_db_add()
+	wget_hsts_db_add_fn *add;
+	/// Callback replacing wget_hsts_db_load()
+	wget_hsts_db_load_fn *load;
+	/// Callback replacing wget_hsts_db_save()
+	wget_hsts_db_save_fn *save;
+} wget_hsts_db_vtable;
+
+WGETAPI wget_hsts_host_match_fn wget_hsts_host_match;
+WGETAPI wget_hsts_db_init_fn wget_hsts_db_init;
+WGETAPI wget_hsts_db_deinit_fn wget_hsts_db_deinit;
+WGETAPI wget_hsts_db_free_fn wget_hsts_db_free;
+WGETAPI wget_hsts_db_add_fn wget_hsts_db_add;
+WGETAPI wget_hsts_db_load_fn wget_hsts_db_load;
+WGETAPI wget_hsts_db_save_fn wget_hsts_db_save;
 WGETAPI void
 	wget_hsts_db_set_fname(wget_hsts_db_t *hsts_db, const char *fname);
 WGETAPI void
-	wget_hsts_db_deinit(wget_hsts_db_t *hsts_db);
-WGETAPI void
-	wget_hsts_db_free(wget_hsts_db_t **hsts_db);
-WGETAPI void
-	wget_hsts_db_add(wget_hsts_db_t *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains);
-WGETAPI int
-	wget_hsts_db_save(wget_hsts_db_t *hsts_db);
-WGETAPI int
-	wget_hsts_db_load(wget_hsts_db_t *hsts_db);
+	wget_hsts_set_plugin(const wget_hsts_db_vtable *vtable);
 
 /*
  * HTTP Public Key Pinning (HPKP)
@@ -2852,10 +2856,6 @@ typedef void wget_plugin_url_filter_callback(wget_plugin *plugin, const wget_iri
 WGETAPI void
 	wget_plugin_register_url_filter_callback(wget_plugin *plugin, wget_plugin_url_filter_callback *filter_fn);
 
-// Provides wget2 with another HSTS database to use.
-WGETAPI void
-	wget_plugin_add_hsts_db(wget_plugin *plugin, wget_hsts_db_t *hsts_db, int priority);
-
 // Provides wget2 with another HPKP database to use.
 WGETAPI void
 	wget_plugin_add_hpkp_db(wget_plugin *plugin, wget_hpkp_db_t *hpkp_db, int priority);
@@ -2942,7 +2942,7 @@ struct wget_plugin_vtable
 	void (*file_add_recurse_url)(wget_downloaded_file *, const wget_iri *);
 	void (*register_post_processor)(wget_plugin *, wget_plugin_post_processor *);
 
-	void (* add_hsts_db)(wget_plugin *, wget_hsts_db_t *, int);
+//	void (* add_hsts_db)(wget_plugin *, wget_hsts_db_t *);
 	void (* add_hpkp_db)(wget_plugin *, wget_hpkp_db_t *, int);
 	void (* add_ocsp_db)(wget_plugin *, wget_ocsp_db *, int);
 };

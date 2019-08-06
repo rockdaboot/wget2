@@ -48,9 +48,7 @@
  * This is an implementation of RFC 6797.
  */
 
-typedef struct {
-	wget_hsts_db_t
-		parent;
+struct wget_hsts_db_st {
 	char *
 		fname;
 	wget_hashmap *
@@ -59,7 +57,7 @@ typedef struct {
 		mutex;
 	int64_t
 		load_time;
-} _hsts_db_impl_t;
+};
 
 typedef struct {
 	const char *
@@ -75,6 +73,15 @@ typedef struct {
 	bool
 		include_subdomains : 1; // whether or not subdomains are included
 } _hsts_t;
+
+/// Pointer to the function table
+static const wget_hsts_db_vtable
+	*plugin_vtable;
+
+void wget_hsts_set_plugin(const wget_hsts_db_vtable *vtable)
+{
+	plugin_vtable = vtable;
+}
 
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
@@ -161,14 +168,11 @@ static _hsts_t *_new_hsts(const char *host, uint16_t port, time_t maxage, int in
  */
 int wget_hsts_host_match(const wget_hsts_db_t *hsts_db, const char *host, uint16_t port)
 {
-	if (hsts_db && hsts_db->vtable && hsts_db->vtable->host_match)
-		return hsts_db->vtable->host_match(hsts_db, host, port);
-	else
+	if (plugin_vtable)
+		return plugin_vtable->host_match(hsts_db, host, port);
+
+	if (!hsts_db)
 		return 0;
-}
-static int impl_hsts_db_host_match(const wget_hsts_db_t *hsts_db, const char *host, uint16_t port)
-{
-	_hsts_db_impl_t *hsts_db_priv = (_hsts_db_impl_t *) hsts_db;
 
 	_hsts_t hsts, *hstsp;
 	const char *p;
@@ -179,13 +183,13 @@ static int impl_hsts_db_host_match(const wget_hsts_db_t *hsts_db, const char *ho
 	// we assume the scheme is HTTP
 	hsts.port = (port == 80 ? 443 : port);
 	hsts.host = host;
-	if (wget_hashmap_get(hsts_db_priv->entries, &hsts, &hstsp) && hstsp->expires >= now)
+	if (wget_hashmap_get(hsts_db->entries, &hsts, &hstsp) && hstsp->expires >= now)
 		return 1;
 
 	// now look for a valid subdomain match
 	for (p = host; (p = strchr(p, '.')); ) {
 		hsts.host = ++p;
-		if (wget_hashmap_get(hsts_db_priv->entries, &hsts, &hstsp)
+		if (wget_hashmap_get(hsts_db->entries, &hsts, &hstsp)
 				&& hstsp->include_subdomains && hstsp->expires >= now)
 			return 1;
 	}
@@ -205,15 +209,18 @@ static int impl_hsts_db_host_match(const wget_hsts_db_t *hsts_db, const char *ho
  */
 void wget_hsts_db_deinit(wget_hsts_db_t *hsts_db)
 {
-	_hsts_db_impl_t *hsts_db_priv = (_hsts_db_impl_t *) hsts_db;
+	if (plugin_vtable) {
+		plugin_vtable->deinit(hsts_db);
+		return;
+	}
 
-	if (hsts_db_priv) {
-		xfree(hsts_db_priv->fname);
-		wget_thread_mutex_lock(hsts_db_priv->mutex);
-		wget_hashmap_free(&hsts_db_priv->entries);
-		wget_thread_mutex_unlock(hsts_db_priv->mutex);
+	if (hsts_db) {
+		xfree(hsts_db->fname);
+		wget_thread_mutex_lock(hsts_db->mutex);
+		wget_hashmap_free(&hsts_db->entries);
+		wget_thread_mutex_unlock(hsts_db->mutex);
 
-		wget_thread_mutex_destroy(&hsts_db_priv->mutex);
+		wget_thread_mutex_destroy(&hsts_db->mutex);
 	}
 }
 
@@ -231,31 +238,30 @@ void wget_hsts_db_deinit(wget_hsts_db_t *hsts_db)
  */
 void wget_hsts_db_free(wget_hsts_db_t **hsts_db)
 {
+	if (plugin_vtable) {
+		plugin_vtable->free(hsts_db);
+		return;
+	}
+
 	if (hsts_db && *hsts_db) {
-		if ((*hsts_db)->vtable)
-			(*hsts_db)->vtable->free(*hsts_db);
-		*hsts_db = NULL;
+		wget_hsts_db_deinit(*hsts_db);
+		xfree(*hsts_db);
 	}
 }
-static void impl_hsts_db_free(wget_hsts_db_t *hsts_db)
-{
-	wget_hsts_db_deinit(hsts_db);
-	xfree(hsts_db);
-}
 
-static void _hsts_db_add_entry(_hsts_db_impl_t *hsts_db_priv, _hsts_t *hsts)
+static void _hsts_db_add_entry(wget_hsts_db_t *hsts_db, _hsts_t *hsts)
 {
-	wget_thread_mutex_lock(hsts_db_priv->mutex);
+	wget_thread_mutex_lock(hsts_db->mutex);
 
 	if (hsts->maxage == 0) {
-		if (wget_hashmap_remove(hsts_db_priv->entries, hsts))
+		if (wget_hashmap_remove(hsts_db->entries, hsts))
 			debug_printf("removed HSTS %s:%hu\n", hsts->host, hsts->port);
 		_free_hsts(hsts);
 		hsts = NULL;
 	} else {
 		_hsts_t *old;
 
-		if (wget_hashmap_get(hsts_db_priv->entries, hsts, &old)) {
+		if (wget_hashmap_get(hsts_db->entries, hsts, &old)) {
 			if (old->created < hsts->created || old->maxage != hsts->maxage || old->include_subdomains != hsts->include_subdomains) {
 				old->created = hsts->created;
 				old->expires = hsts->expires;
@@ -268,12 +274,12 @@ static void _hsts_db_add_entry(_hsts_db_impl_t *hsts_db_priv, _hsts_t *hsts)
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'hsts'
 			// debug_printf("add HSTS %s:%hu (maxage=%lld, includeSubDomains=%d)\n", hsts->host, hsts->port, (long long)hsts->maxage, hsts->include_subdomains);
-			wget_hashmap_put(hsts_db_priv->entries, hsts, hsts);
+			wget_hashmap_put(hsts_db->entries, hsts, hsts);
 			// no need to free anything here
 		}
 	}
 
-	wget_thread_mutex_unlock(hsts_db_priv->mutex);
+	wget_thread_mutex_unlock(hsts_db->mutex);
 }
 
 /**
@@ -293,19 +299,19 @@ static void _hsts_db_add_entry(_hsts_db_impl_t *hsts_db_priv, _hsts_t *hsts)
  */
 void wget_hsts_db_add(wget_hsts_db_t *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
 {
-	if (hsts_db && hsts_db->vtable)
-		hsts_db->vtable->add(hsts_db, host, port, maxage, include_subdomains);
+	if (plugin_vtable) {
+		plugin_vtable->add(hsts_db, host, port, maxage, include_subdomains);
+		return;
+	}
+
+	if (hsts_db) {
+		_hsts_t *hsts = _new_hsts(host, port, maxage, include_subdomains);
+
+		_hsts_db_add_entry(hsts_db, hsts);
+	}
 }
-static void impl_hsts_db_add(wget_hsts_db_t *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
-{
-	_hsts_db_impl_t *hsts_db_priv = (_hsts_db_impl_t *) hsts_db;
 
-	_hsts_t *hsts = _new_hsts(host, port, maxage, include_subdomains);
-
-	_hsts_db_add_entry(hsts_db_priv, hsts);
-}
-
-static int _hsts_db_load(_hsts_db_impl_t *hsts_db_priv, FILE *fp)
+static int _hsts_db_load(wget_hsts_db_t *hsts_db, FILE *fp)
 {
 	_hsts_t hsts;
 	struct stat st;
@@ -319,8 +325,8 @@ static int _hsts_db_load(_hsts_db_impl_t *hsts_db_priv, FILE *fp)
 	// there's no need to reload
 
 	if (fstat(fileno(fp), &st) == 0) {
-		if (st.st_mtime != hsts_db_priv->load_time)
-			hsts_db_priv->load_time = st.st_mtime;
+		if (st.st_mtime != hsts_db->load_time)
+			hsts_db->load_time = st.st_mtime;
 		else
 			return 0;
 	}
@@ -390,7 +396,7 @@ static int _hsts_db_load(_hsts_db_impl_t *hsts_db_priv, FILE *fp)
 		}
 
 		if (ok) {
-			_hsts_db_add_entry(hsts_db_priv, wget_memdup(&hsts, sizeof(hsts)));
+			_hsts_db_add_entry(hsts_db, wget_memdup(&hsts, sizeof(hsts)));
 		} else {
 			_deinit_hsts(&hsts);
 			error_printf(_("Failed to parse HSTS line: '%s'\n"), buf);
@@ -400,7 +406,7 @@ static int _hsts_db_load(_hsts_db_impl_t *hsts_db_priv, FILE *fp)
 	xfree(buf);
 
 	if (ferror(fp)) {
-		hsts_db_priv->load_time = 0; // reload on next call to this function
+		hsts_db->load_time = 0; // reload on next call to this function
 		return -1;
 	}
 
@@ -421,25 +427,22 @@ static int _hsts_db_load(_hsts_db_impl_t *hsts_db_priv, FILE *fp)
  */
 int wget_hsts_db_load(wget_hsts_db_t *hsts_db)
 {
-	if (!hsts_db || !hsts_db->vtable)
+	if (plugin_vtable)
+		return plugin_vtable->load(hsts_db);
+
+	if (!hsts_db)
+		return -1;
+
+	if (!hsts_db->fname || !*hsts_db->fname)
 		return 0;
 
-	return hsts_db->vtable->load(hsts_db);
-}
-// Load the HSTS cache from a flat file
-// Protected by flock()
-static int impl_hsts_db_load(wget_hsts_db_t *hsts_db)
-{
-	_hsts_db_impl_t *hsts_db_priv = (_hsts_db_impl_t *) hsts_db;
-
-	if (!hsts_db_priv->fname || !*hsts_db_priv->fname)
-		return 0;
-
-	if (wget_update_file(hsts_db_priv->fname, (wget_update_load_t *) _hsts_db_load, NULL, hsts_db_priv)) {
+	// Load the HSTS cache from a flat file
+	// Protected by flock()
+	if (wget_update_file(hsts_db->fname, (wget_update_load_t *) _hsts_db_load, NULL, hsts_db)) {
 		error_printf(_("Failed to read HSTS data\n"));
 		return -1;
 	} else {
-		debug_printf("Fetched HSTS data from '%s'\n", hsts_db_priv->fname);
+		debug_printf("Fetched HSTS data from '%s'\n", hsts_db->fname);
 		return 0;
 	}
 }
@@ -450,9 +453,9 @@ static int G_GNUC_WGET_NONNULL_ALL _hsts_save(FILE *fp, const _hsts_t *hsts)
 	return 0;
 }
 
-static int _hsts_db_save(void *hsts_db_priv, FILE *fp)
+static int _hsts_db_save(void *hsts_db, FILE *fp)
 {
-	wget_hashmap *entries = ((_hsts_db_impl_t *) hsts_db_priv)->entries;
+	wget_hashmap *entries = ((wget_hsts_db_t *) hsts_db)->entries;
 
 	if (wget_hashmap_size(entries) > 0) {
 		fputs("#HSTS 1.0 file\n", fp);
@@ -481,43 +484,31 @@ static int _hsts_db_save(void *hsts_db_priv, FILE *fp)
  */
 int wget_hsts_db_save(wget_hsts_db_t *hsts_db)
 {
-	if (hsts_db && hsts_db->vtable)
-		return hsts_db->vtable->save(hsts_db);
-
-	return -1;
-}
-// Save the HSTS cache to a flat file
-// Protected by flock()
-static int impl_hsts_db_save(wget_hsts_db_t *hsts_db)
-{
-	_hsts_db_impl_t *hsts_db_priv = (_hsts_db_impl_t *) hsts_db;
-
 	int size;
 
-	if (!hsts_db_priv->fname || !*hsts_db_priv->fname)
+	if (plugin_vtable)
+		return plugin_vtable->save(hsts_db);
+
+	if (!hsts_db)
 		return -1;
 
-	if (wget_update_file(hsts_db_priv->fname, (wget_update_load_t *) _hsts_db_load, _hsts_db_save, hsts_db_priv)) {
-		error_printf(_("Failed to write HSTS file '%s'\n"), hsts_db_priv->fname);
+	if (!hsts_db->fname || !*hsts_db->fname)
+		return -1;
+
+	// Save the HSTS cache to a flat file
+	// Protected by flock()
+	if (wget_update_file(hsts_db->fname, (wget_update_load_t *) _hsts_db_load, _hsts_db_save, hsts_db)) {
+		error_printf(_("Failed to write HSTS file '%s'\n"), hsts_db->fname);
 		return -1;
 	}
 
-	if ((size = wget_hashmap_size(hsts_db_priv->entries)))
-		debug_printf("Saved %d HSTS entr%s into '%s'\n", size, size != 1 ? "ies" : "y", hsts_db_priv->fname);
+	if ((size = wget_hashmap_size(hsts_db->entries)))
+		debug_printf("Saved %d HSTS entr%s into '%s'\n", size, size != 1 ? "ies" : "y", hsts_db->fname);
 	else
 		debug_printf("No HSTS entries to save. Table is empty.\n");
 
 	return 0;
 }
-
-//vtable
-static struct wget_hsts_db_vtable vtable = {
-	.load = impl_hsts_db_load,
-	.save = impl_hsts_db_save,
-	.host_match = impl_hsts_db_host_match,
-	.add = impl_hsts_db_add,
-	.free = impl_hsts_db_free
-};
 
 /**
  * \param[in] hsts_db Previously created HSTS database on which wget_hsts_db_deinit() has been called, or NULL
@@ -530,21 +521,21 @@ static struct wget_hsts_db_vtable vtable = {
  */
 wget_hsts_db_t *wget_hsts_db_init(wget_hsts_db_t *hsts_db, const char *fname)
 {
-	_hsts_db_impl_t *hsts_db_priv = (_hsts_db_impl_t *) hsts_db;
+	if (plugin_vtable)
+		return plugin_vtable->init(hsts_db, fname);
 
-	if (!hsts_db_priv)
-		hsts_db_priv = wget_malloc(sizeof(_hsts_db_impl_t));
+	if (!hsts_db)
+		hsts_db = wget_malloc(sizeof(struct wget_hsts_db_st));
 
-	memset(hsts_db_priv, 0, sizeof(*hsts_db_priv));
-	hsts_db_priv->parent.vtable = &vtable;
+	memset(hsts_db, 0, sizeof(*hsts_db));
 	if (fname)
-		hsts_db_priv->fname = wget_strdup(fname);
-	hsts_db_priv->entries = wget_hashmap_create(16, (wget_hashmap_hash_t *) _hash_hsts, (wget_hashmap_compare_t *) _compare_hsts);
-	wget_hashmap_set_key_destructor(hsts_db_priv->entries, (wget_hashmap_key_destructor_t *) _free_hsts);
-	wget_hashmap_set_value_destructor(hsts_db_priv->entries, (wget_hashmap_value_destructor_t *) _free_hsts);
-	wget_thread_mutex_init(&hsts_db_priv->mutex);
+		hsts_db->fname = wget_strdup(fname);
+	hsts_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_t *) _hash_hsts, (wget_hashmap_compare_t *) _compare_hsts);
+	wget_hashmap_set_key_destructor(hsts_db->entries, (wget_hashmap_key_destructor_t *) _free_hsts);
+	wget_hashmap_set_value_destructor(hsts_db->entries, (wget_hashmap_value_destructor_t *) _free_hsts);
+	wget_thread_mutex_init(&hsts_db->mutex);
 
-	return (wget_hsts_db_t *) hsts_db_priv;
+	return hsts_db;
 }
 
 /**
@@ -559,11 +550,8 @@ wget_hsts_db_t *wget_hsts_db_init(wget_hsts_db_t *hsts_db, const char *fname)
  */
 void wget_hsts_db_set_fname(wget_hsts_db_t *hsts_db, const char *fname)
 {
-	_hsts_db_impl_t *hsts_db_priv = (_hsts_db_impl_t *) hsts_db;
-
-	xfree(hsts_db_priv->fname);
-	if (fname)
-		hsts_db_priv->fname = wget_strdup(fname);
+	xfree(hsts_db->fname);
+	hsts_db->fname = wget_strdup(fname);
 }
 
 /**@}*/

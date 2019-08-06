@@ -479,12 +479,13 @@ typedef struct {
 	wget_hpkp_db_t parent;
 	wget_hpkp_db_t *backend_db;
 } test_hpkp_db_t;
+
 static int test_hpkp_db_load(wget_hpkp_db_t *p_hpkp_db)
 {
 	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
 
 	if (! hpkp_db->backend_db)
-		wget_error_printf_exit("wget using wrong HPKP database\n");
+		wget_error_printf_exit("%s: wget using wrong HPKP database\n", __func__);
 
 	hpkp_db_load_counter++;
 	return wget_hpkp_db_load(hpkp_db->backend_db);
@@ -494,7 +495,7 @@ static int test_hpkp_db_save(wget_hpkp_db_t *p_hpkp_db)
 	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
 
 	if (! hpkp_db->backend_db)
-		wget_error_printf_exit("wget using wrong HPKP database\n");
+		wget_error_printf_exit("%s: wget using wrong HPKP database\n", __func__);
 
 	return wget_hpkp_db_save(hpkp_db->backend_db);
 }
@@ -511,7 +512,7 @@ static void test_hpkp_db_add(wget_hpkp_db_t *p_hpkp_db, wget_hpkp_t *hpkp)
 	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
 
 	if (! hpkp_db->backend_db)
-		wget_error_printf_exit("wget using wrong HPKP database\n");
+		wget_error_printf_exit("%s: wget using wrong HPKP database\n", __func__);
 
 	wget_hpkp_db_add(hpkp_db->backend_db, &hpkp);
 }
@@ -520,7 +521,7 @@ static int test_hpkp_db_check_pubkey(wget_hpkp_db_t *p_hpkp_db, const char *host
 	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
 
 	if (! hpkp_db->backend_db)
-		wget_error_printf_exit("wget using wrong HPKP database\n");
+		wget_error_printf_exit("%s: wget using wrong HPKP database\n", __func__);
 
 	return wget_hpkp_db_check_pubkey(hpkp_db->backend_db, host, pubkey, pubkeysize);
 }
@@ -545,74 +546,76 @@ static wget_hpkp_db_t *test_hpkp_db_new(int usable) {
 
 // HSTS database for testing
 static int hsts_db_load_counter = 0;
+
+// this is a dummy hsts db implementation for the plugin
 typedef struct {
-	wget_hsts_db_t parent;
-	wget_hsts_db_t *backend_db;
+	int dummy;
 } test_hsts_db_t;
-static int test_hsts_db_load(wget_hsts_db_t *p_hsts_db)
+
+static int test_hsts_db_host_match(const wget_hsts_db_t *hsts_db, const char *host, uint16_t port)
 {
-	test_hsts_db_t *hsts_db = (test_hsts_db_t *) p_hsts_db;
+	(void) hsts_db;
 
-	if (! hsts_db->backend_db)
-		wget_error_printf_exit("wget using wrong HSTS database\n");
+	wget_debug_printf("%s: host %s port %hu\n", __func__,
+		host, port);
 
+	return 0;
+}
+
+static wget_hsts_db_t *test_hsts_db_init(wget_hsts_db_t *hsts_db, const char *fname)
+{
+	(void) fname;
+
+	if (!hsts_db)
+		hsts_db = wget_calloc(1, sizeof(test_hsts_db_t));
+	else
+		memset(hsts_db, 0, sizeof(test_hsts_db_t));
+
+	return hsts_db;
+}
+
+static void test_hsts_db_deinit(wget_hsts_db_t *hsts_db)
+{
+	if (hsts_db) {
+		memset(hsts_db, 0, sizeof(test_hsts_db_t));
+	}
+}
+
+static void test_hsts_db_free(wget_hsts_db_t **hsts_db)
+{
+	wget_free(*hsts_db);
+	*hsts_db = NULL;
+}
+
+static void test_hsts_db_add(wget_hsts_db_t *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
+{
+	(void) hsts_db;
+	wget_debug_printf("%s: host %s port %hu maxage %lld include_subdomains %d\n", __func__,
+		host, port, (long long) maxage, include_subdomains);
+}
+
+static int test_hsts_db_load(wget_hsts_db_t *hsts_db)
+{
+	(void) hsts_db;
 	hsts_db_load_counter++;
-	return wget_hsts_db_load(hsts_db->backend_db);
+	return 0;
 }
-static int test_hsts_db_save(wget_hsts_db_t *p_hsts_db)
+
+static int test_hsts_db_save(wget_hsts_db_t *hsts_db)
 {
-	test_hsts_db_t *hsts_db = (test_hsts_db_t *) p_hsts_db;
-
-	if (! hsts_db->backend_db)
-		wget_error_printf_exit("wget using wrong HSTS database\n");
-
-	return wget_hsts_db_save(hsts_db->backend_db);
+	(void) hsts_db;
+	return 0;
 }
-static void test_hsts_db_free(wget_hsts_db_t *p_hsts_db)
-{
-	test_hsts_db_t *hsts_db = (test_hsts_db_t *) p_hsts_db;
 
-	if (hsts_db->backend_db)
-		wget_hsts_db_free(&hsts_db->backend_db);
-	wget_free(hsts_db);
-}
-static void test_hsts_db_add(wget_hsts_db_t *p_hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
-{
-	test_hsts_db_t *hsts_db = (test_hsts_db_t *) p_hsts_db;
-
-	if (! hsts_db->backend_db)
-		wget_error_printf_exit("wget using wrong HSTS database\n");
-
-	wget_hsts_db_add(hsts_db->backend_db, host, port, maxage, include_subdomains);
-}
-static int test_hsts_db_host_match(const wget_hsts_db_t *p_hsts_db, const char *host, uint16_t port)
-{
-	const test_hsts_db_t *hsts_db = (test_hsts_db_t *) p_hsts_db;
-
-	if (! hsts_db->backend_db)
-		wget_error_printf_exit("wget using wrong HSTS database\n");
-
-	return wget_hsts_host_match(hsts_db->backend_db, host, port);
-}
-static struct wget_hsts_db_vtable test_hsts_db_vtable = {
-	.load = test_hsts_db_load,
-	.save = test_hsts_db_save,
+static const wget_hsts_db_vtable test_hsts_db_vtable = {
+	.host_match = test_hsts_db_host_match,
+	.init = test_hsts_db_init,
+	.deinit = test_hsts_db_deinit,
 	.free = test_hsts_db_free,
 	.add = test_hsts_db_add,
-	.host_match = test_hsts_db_host_match
+	.load = test_hsts_db_load,
+	.save = test_hsts_db_save,
 };
-static wget_hsts_db_t *test_hsts_db_new(int usable)
-{
-	test_hsts_db_t *hsts_db = wget_malloc(sizeof(test_hsts_db_t));
-
-	hsts_db->parent.vtable = &test_hsts_db_vtable;
-	if (usable)
-		hsts_db->backend_db = wget_hsts_db_init(NULL, NULL);
-	else
-		hsts_db->backend_db = NULL;
-
-	return (wget_hsts_db_t *) hsts_db;
-}
 
 // OCSP database for testing
 static int ocsp_db_load_counter = 0;
@@ -620,12 +623,13 @@ typedef struct {
 	wget_ocsp_db parent;
 	wget_ocsp_db *backend_db;
 } test_ocsp_db_t;
+
 static int test_ocsp_db_load(wget_ocsp_db *p_ocsp_db)
 {
 	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
 	if (! ocsp_db->backend_db)
-		wget_error_printf_exit("wget using wrong OCSP database\n");
+		wget_error_printf_exit("%s: wget using wrong OCSP database\n", __func__);
 
 	ocsp_db_load_counter++;
 	return wget_ocsp_db_load(ocsp_db->backend_db);
@@ -635,7 +639,7 @@ static int test_ocsp_db_save(wget_ocsp_db *p_ocsp_db)
 	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
 	if (! ocsp_db->backend_db)
-		wget_error_printf_exit("wget using wrong OCSP database\n");
+		wget_error_printf_exit("%s: wget using wrong OCSP database\n", __func__);
 
 	return wget_ocsp_db_save(ocsp_db->backend_db);
 }
@@ -652,7 +656,7 @@ static void test_ocsp_db_add_fingerprint(wget_ocsp_db *p_ocsp_db, const char *fi
 	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
 	if (! ocsp_db->backend_db)
-		wget_error_printf_exit("wget using wrong OCSP database\n");
+		wget_error_printf_exit("%s: wget using wrong OCSP database\n", __func__);
 
 	wget_ocsp_db_add_fingerprint(ocsp_db->backend_db, fingerprint, maxage, valid);
 }
@@ -661,7 +665,7 @@ static void test_ocsp_db_add_host(wget_ocsp_db *p_ocsp_db, const char *host, tim
 	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
 	if (! ocsp_db->backend_db)
-		wget_error_printf_exit("wget using wrong OCSP database\n");
+		wget_error_printf_exit("%s: wget using wrong OCSP database\n", __func__);
 
 	wget_ocsp_db_add_host(ocsp_db->backend_db, host, maxage);
 }
@@ -670,7 +674,7 @@ static bool test_ocsp_db_fingerprint_in_cache(const wget_ocsp_db *p_ocsp_db, con
 	const test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
 	if (! ocsp_db->backend_db)
-		wget_error_printf_exit("wget using wrong OCSP database\n");
+		wget_error_printf_exit("%s: wget using wrong OCSP database\n", __func__);
 
 	return wget_ocsp_fingerprint_in_cache(ocsp_db->backend_db, fingerprint, valid);
 }
@@ -679,7 +683,7 @@ static bool test_ocsp_db_hostname_is_valid(const wget_ocsp_db *p_ocsp_db, const 
 	const test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
 	if (! ocsp_db->backend_db)
-		wget_error_printf_exit("wget using wrong OCSP database\n");
+		wget_error_printf_exit("%s: wget using wrong OCSP database\n", __func__);
 
 	return wget_ocsp_hostname_is_valid(ocsp_db->backend_db, hostname);
 }
@@ -721,9 +725,8 @@ int wget_plugin_initializer(wget_plugin *plugin)
 	wget_plugin_add_hpkp_db(plugin, test_hpkp_db_new(1), 3);
 	wget_plugin_add_hpkp_db(plugin, test_hpkp_db_new(0), 2);
 
-	wget_plugin_add_hsts_db(plugin, test_hsts_db_new(0), 1);
-	wget_plugin_add_hsts_db(plugin, test_hsts_db_new(1), 3);
-	wget_plugin_add_hsts_db(plugin, test_hsts_db_new(0), 2);
+	// set the replacement for the standard HSTS database functions
+	wget_hsts_set_plugin(&test_hsts_db_vtable);
 
 	wget_plugin_add_ocsp_db(plugin, test_ocsp_db_new(0), 1);
 	wget_plugin_add_ocsp_db(plugin, test_ocsp_db_new(1), 3);

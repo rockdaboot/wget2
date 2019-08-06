@@ -3348,8 +3348,7 @@ int init(int argc, const char **argv)
 	}
 
 	if (config.hsts) {
-		config.hsts_db = plugin_db_fetch_provided_hsts_db();
-		if (! config.hsts_db)
+		if (!config.hsts_db)
 			config.hsts_db = wget_hsts_db_init(NULL, config.hsts_file);
 		wget_hsts_db_load(config.hsts_db);
 	}
