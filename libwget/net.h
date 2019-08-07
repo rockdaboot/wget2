@@ -55,7 +55,7 @@ struct wget_tcp_st {
 		family,
 		preferred_family,
 		protocol; // WGET_PROTOCOL_HTTP1_1, WGET_PROTOCOL_HTTP2_0
-	wget_hpkp_stats_t
+	wget_hpkp_stats_result
 		hpkp; // hpkp stats
 
 	bool

@@ -53,12 +53,12 @@
  * @{
  */
 
-static wget_tls_stats_callback_t
+static wget_tls_stats_callback
 	*tls_stats_callback;
 static void
 	*tls_stats_ctx;
 
-static wget_ocsp_stats_callback_t
+static wget_ocsp_stats_callback
 	*ocsp_stats_callback;
 static void
 	*ocsp_stats_ctx;
@@ -108,7 +108,7 @@ static struct _config {
 struct _session_context {
 	const char *
 		hostname;
-	wget_hpkp_stats_t
+	wget_hpkp_stats_result
 		stats_hpkp;
 	unsigned char
 		ocsp_stapling : 1,
@@ -443,7 +443,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	}
 
 	if (_config.ocsp && stats_callback_ocsp) {
-		wget_ocsp_stats_data_t stats;
+		wget_ocsp_stats_data stats;
 		stats.hostname = hostname;
 		stats.nvalid = nvalid;
 		stats.nrevoked = nrevoked;
@@ -830,7 +830,7 @@ static void ShowX509Chain(WOLFSSL_X509_CHAIN *chain, int count, const char *hdr)
 int wget_ssl_open(wget_tcp *tcp)
 {
 	WOLFSSL *session;
-	wget_tls_stats_data_t stats = {
+	wget_tls_stats_data stats = {
 			.alpn_protocol = NULL,
 			.version = -1,
 			.false_start = -1,
@@ -1187,7 +1187,7 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
  *
  * Set callback function to be called when TLS statistics are available
  */
-void wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t *fn, void *ctx)
+void wget_ssl_set_stats_callback_tls(wget_tls_stats_callback *fn, void *ctx)
 {
 	tls_stats_callback = fn;
 	tls_stats_ctx = ctx;
@@ -1199,7 +1199,7 @@ void wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t *fn, void *ctx)
  *
  * Set callback function to be called when OCSP statistics are available
  */
-void wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t *fn, void *ctx)
+void wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback *fn, void *ctx)
 {
 	ocsp_stats_callback = fn;
 	ocsp_stats_ctx = ctx;

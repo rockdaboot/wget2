@@ -121,7 +121,7 @@ typedef struct {
 		*scheme;
 } HOST;
 
-static wget_server_stats_callback_t
+static wget_server_stats_callback
 	*server_stats_callback;
 static void
 	*server_stats_ctx;
@@ -691,7 +691,7 @@ static void _server_stats_add(wget_http_connection *conn, wget_http_response *re
 	wget_thread_mutex_lock(hosts_mutex);
 
 	if (!hosts || !wget_hashmap_contains(hosts, hostp)) {
-		wget_server_stats_data_t stats;
+		wget_server_stats_data stats;
 
 		stats.hostname = hostp->hostname;
 		stats.ip = hostp->ip;
@@ -1504,12 +1504,12 @@ void wget_http_abort_connection(wget_http_connection *conn)
 }
 
 /**
- * \param[in] fn A `wget_server_stats_callback_t` callback function to receive server statistics data
+ * \param[in] fn A `wget_server_stats_callback` callback function to receive server statistics data
  * \param[in] ctx Context data given to \p fn
  *
  * Set callback function to be called when server statistics are available
  */
-void wget_server_set_stats_callback(wget_server_stats_callback_t *fn, void *ctx)
+void wget_server_set_stats_callback(wget_server_stats_callback *fn, void *ctx)
 {
 	server_stats_callback = fn;
 	server_stats_ctx = ctx;

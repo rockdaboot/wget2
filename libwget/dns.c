@@ -53,11 +53,11 @@ struct wget_dns_st
 		*cache;
 	wget_thread_mutex
 		mutex;
-	wget_dns_stats_callback_t
+	wget_dns_stats_callback
 		*stats_callback;
 	void
 		*stats_ctx;
-	wget_dns_stats_data_t
+	wget_dns_stats_data
 		stats;
 	int
 		timeout;
@@ -277,7 +277,7 @@ struct addrinfo *wget_dns_resolve(wget_dns *dns, const char *host, uint16_t port
 	int rc = 0;
 	char adr[NI_MAXHOST], sport[NI_MAXSERV];
 	long long before_millisecs = 0;
-	wget_dns_stats_data_t stats;
+	wget_dns_stats_data stats;
 
 	if (!dns)
 		dns = &default_dns;
@@ -399,12 +399,12 @@ void wget_dns_freeaddrinfo(wget_dns *dns, struct addrinfo **addrinfo)
 
 /**
  * \param[in] dns A `wget_dns` instance, created by wget_dns_init().
- * \param[in] fn A `wget_dns_stats_callback_t` callback function to receive resolve statistics data
+ * \param[in] fn A `wget_dns_stats_callback` callback function to receive resolve statistics data
  * \param[in] ctx Context data given to \p fn
  *
  * Set callback function to be called once DNS statistics for a host are collected
  */
-void wget_dns_set_stats_callback(wget_dns *dns, wget_dns_stats_callback_t *fn, void *ctx)
+void wget_dns_set_stats_callback(wget_dns *dns, wget_dns_stats_callback *fn, void *ctx)
 {
 	if (!dns)
 		dns = &default_dns;

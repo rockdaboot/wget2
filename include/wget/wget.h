@@ -2758,13 +2758,13 @@ typedef struct
 		port; //!< port to be resolved
 	long long
 		dns_secs; //!< milliseconds it took to resolve
-} wget_dns_stats_data_t;
+} wget_dns_stats_data;
 
 typedef void
-	wget_dns_stats_callback_t(wget_dns *dns, wget_dns_stats_data_t *stats, void *ctx);
+	wget_dns_stats_callback(wget_dns *dns, wget_dns_stats_data *stats, void *ctx);
 
 WGETAPI void
-	wget_dns_set_stats_callback(wget_dns *dns, wget_dns_stats_callback_t *fn, void *ctx);
+	wget_dns_set_stats_callback(wget_dns *dns, wget_dns_stats_callback *fn, void *ctx);
 
 /**
  * \ingroup libwget-ssl
@@ -2782,13 +2782,13 @@ typedef struct
 		nrevoked,
 		nignored,
 		stapling;
-} wget_ocsp_stats_data_t;
+} wget_ocsp_stats_data;
 
 typedef void
-	wget_ocsp_stats_callback_t(wget_ocsp_stats_data_t *stats, void *ctx);
+	wget_ocsp_stats_callback(wget_ocsp_stats_data *stats, void *ctx);
 
 WGETAPI void
-	wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t *fn, void *ctx);
+	wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback *fn, void *ctx);
 /** @} */
 
 /**
@@ -2815,13 +2815,13 @@ typedef struct
 	bool
 		tls_con,
 		resumed;
-} wget_tls_stats_data_t;
+} wget_tls_stats_data;
 
 typedef void
-	wget_tls_stats_callback_t(wget_tls_stats_data_t *stats, void *ctx);
+	wget_tls_stats_callback(wget_tls_stats_data *stats, void *ctx);
 
 WGETAPI void
-	wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t *fn, void *ctx);
+	wget_ssl_set_stats_callback_tls(wget_tls_stats_callback *fn, void *ctx);
 /** @} */
 
 typedef enum {
@@ -2829,7 +2829,7 @@ typedef enum {
 	WGET_STATS_HPKP_MATCH = 1,
 	WGET_STATS_HPKP_NOMATCH = 2,
 	WGET_STATS_HPKP_ERROR = 3
-} wget_hpkp_stats_t;
+} wget_hpkp_stats_result;
 
 typedef struct
 {
@@ -2837,24 +2837,24 @@ typedef struct
 		*hostname,
 		*ip,
 		*scheme;
-	wget_hpkp_stats_t
+	wget_hpkp_stats_result
 		hpkp;
 	char
 		hsts,
 		csp,
 		hpkp_new;
-} wget_server_stats_data_t;
+} wget_server_stats_data;
 
 typedef void
-	wget_server_stats_callback_t(wget_server_stats_data_t *stats, void *ctx);
+	wget_server_stats_callback(wget_server_stats_data *stats, void *ctx);
 
 WGETAPI void
-	wget_server_set_stats_callback(wget_server_stats_callback_t *fn, void *ctx);
+	wget_server_set_stats_callback(wget_server_stats_callback *fn, void *ctx);
 
 typedef enum {
 	WGET_STATS_FORMAT_HUMAN = 0,
 	WGET_STATS_FORMAT_CSV = 1,
-} wget_stats_format_t;
+} wget_stats_format;
 
 WGETAPI void
 	host_ips_free(void);

@@ -37,7 +37,7 @@ int wget_ssl_open(wget_tcp *tcp) { return WGET_E_TLS_DISABLED; }
 void wget_ssl_close(void **session) { }
 ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout) { return 0; }
 ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout) { return 0; }
-void wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t fn, void *ctx) { }
-void wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t fn, void *ctx) { }
+void wget_ssl_set_stats_callback_tls(wget_tls_stats_callback fn, void *ctx) { }
+void wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback fn, void *ctx) { }
 
 /** @} */

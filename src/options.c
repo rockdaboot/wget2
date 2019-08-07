@@ -3040,7 +3040,7 @@ static const char *get_xdg_config_home(const char *user_home)
 	return home_dir;
 }
 
-static void stats_callback_dns(wget_dns *_dns, wget_dns_stats_data_t *stats, void *ctx)
+static void stats_callback_dns(wget_dns *_dns, wget_dns_stats_data *stats, void *ctx)
 {
 	(void) _dns;
 	FILE *fp = (FILE *) ctx;
@@ -3060,7 +3060,7 @@ static void stats_callback_dns(wget_dns *_dns, wget_dns_stats_data_t *stats, voi
 	}
 }
 
-static void stats_callback_ocsp(wget_ocsp_stats_data_t *stats, void *ctx)
+static void stats_callback_ocsp(wget_ocsp_stats_data *stats, void *ctx)
 {
 	FILE *fp = (FILE *) ctx;
 
@@ -3092,7 +3092,7 @@ static const char *_tlsversion_string(int v)
 	}
 }
 
-static void stats_callback_tls(wget_tls_stats_data_t *stats, void *ctx)
+static void stats_callback_tls(wget_tls_stats_data *stats, void *ctx)
 {
 	FILE *fp = (FILE *) ctx;
 
@@ -3121,7 +3121,7 @@ static void stats_callback_tls(wget_tls_stats_data_t *stats, void *ctx)
 	}
 }
 
-G_GNUC_WGET_CONST static const char *_hpkp_string(wget_hpkp_stats_t hpkp)
+G_GNUC_WGET_CONST static const char *_hpkp_string(wget_hpkp_stats_result hpkp)
 {
 	switch (hpkp) {
 	case WGET_STATS_HPKP_NO: return "HPKP_NO";
@@ -3132,7 +3132,7 @@ G_GNUC_WGET_CONST static const char *_hpkp_string(wget_hpkp_stats_t hpkp)
 	}
 }
 
-static void stats_callback_server(wget_server_stats_data_t *stats, void *ctx)
+static void stats_callback_server(wget_server_stats_data *stats, void *ctx)
 {
 	FILE *fp = (FILE *) ctx;
 
