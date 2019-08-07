@@ -2538,7 +2538,7 @@ WGETAPI void
  * Mark a function to be exported.
  * A common use for this is to mark the `wget_plugin_initializer()` function for plugin initialization.
  *
- *     WGET_EXPORT void wget_plugin_initializer(wget_plugin_t *plugin);
+ *     WGET_EXPORT void wget_plugin_initializer(wget_plugin *plugin);
  */
 #ifdef _WIN32
 #	define WGET_EXPORT __declspec(dllexport)
@@ -2740,9 +2740,6 @@ struct wget_plugin_vtable
 	bool (*file_get_recurse)(wget_downloaded_file *);
 	void (*file_add_recurse_url)(wget_downloaded_file *, const wget_iri *);
 	void (*register_post_processor)(wget_plugin *, wget_plugin_post_processor *);
-
-//	void (* add_hsts_db)(wget_plugin *, wget_hsts_db_t *);
-	void (* add_hpkp_db)(wget_plugin *, wget_hpkp_db *, int);
 };
 
 /**
