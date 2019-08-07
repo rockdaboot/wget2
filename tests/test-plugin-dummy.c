@@ -481,7 +481,7 @@ typedef struct {
 	int dummy;
 } test_hpkp_db;
 
-static wget_hpkp_db_t *test_hpkp_db_init(wget_hpkp_db_t *hpkp_db, const char *fname)
+static wget_hpkp_db *test_hpkp_db_init(wget_hpkp_db *hpkp_db, const char *fname)
 {
 	(void) fname;
 
@@ -493,20 +493,20 @@ static wget_hpkp_db_t *test_hpkp_db_init(wget_hpkp_db_t *hpkp_db, const char *fn
 	return hpkp_db;
 }
 
-static void test_hpkp_db_deinit(wget_hpkp_db_t *hpkp_db)
+static void test_hpkp_db_deinit(wget_hpkp_db *hpkp_db)
 {
 	if (hpkp_db) {
 		memset(hpkp_db, 0, sizeof(test_hpkp_db));
 	}
 }
 
-static void test_hpkp_db_free(wget_hpkp_db_t **hpkp_db)
+static void test_hpkp_db_free(wget_hpkp_db **hpkp_db)
 {
 	wget_free(*hpkp_db);
 	*hpkp_db = NULL;
 }
 
-static int test_hpkp_db_check_pubkey(wget_hpkp_db_t *hpkp_db, const char *host, const void *pubkey, size_t pubkeysize)
+static int test_hpkp_db_check_pubkey(wget_hpkp_db *hpkp_db, const char *host, const void *pubkey, size_t pubkeysize)
 {
 	(void) hpkp_db;
 	wget_debug_printf("%s: host %s pubkey %p pksize %zu\n", __func__,
@@ -515,20 +515,20 @@ static int test_hpkp_db_check_pubkey(wget_hpkp_db_t *hpkp_db, const char *host, 
 	return 0;
 }
 
-static void test_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **hpkp)
+static void test_hpkp_db_add(wget_hpkp_db *hpkp_db, wget_hpkp **hpkp)
 {
 	(void) hpkp_db;
 	wget_debug_printf("%s: hpkp %p\n", __func__, (void *) hpkp);
 }
 
-static int test_hpkp_db_load(wget_hpkp_db_t *hpkp_db)
+static int test_hpkp_db_load(wget_hpkp_db *hpkp_db)
 {
 	(void) hpkp_db;
 	hpkp_db_load_counter++;
 	return 0;
 }
 
-static int test_hpkp_db_save(wget_hpkp_db_t *hpkp_db)
+static int test_hpkp_db_save(wget_hpkp_db *hpkp_db)
 {
 	(void) hpkp_db;
 	return 0;

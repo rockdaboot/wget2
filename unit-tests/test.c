@@ -1437,7 +1437,7 @@ static void test_hpkp(void)
 		{ "www.example2.com", HPKP_PUBKEY_1, 0 }, // entry should have been removed due to max-age=0
 		{ "www.example3.com", HPKP_PUBKEY_1, 0 }, // entry should have been removed due to no PINs
 	};
-	wget_hpkp_db_t *hpkp_db = wget_hpkp_db_init(NULL, NULL);
+	wget_hpkp_db *hpkp_db = wget_hpkp_db_init(NULL, NULL);
 	int n;
 
 	/* generate values for pin-sha256 */
@@ -1448,7 +1448,7 @@ static void test_hpkp(void)
 	// fill HPKP database with values
 	for (it = 0; it < countof(hpkp_db_data); it++) {
 		const struct hpkp_db_data *t = &hpkp_db_data[it];
-		wget_hpkp_t *hpkp = wget_hpkp_new();
+		wget_hpkp *hpkp = wget_hpkp_new();
 
 		wget_hpkp_set_host(hpkp, t->host);
 		wget_http_parse_public_key_pins(t->hpkp_params, hpkp);

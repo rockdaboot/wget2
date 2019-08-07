@@ -139,7 +139,7 @@ struct config {
 	hsts_t
 		*hsts_preload_data; // in-memory HSTS preloaded data
 #endif
-	wget_hpkp_db_t
+	wget_hpkp_db
 		*hpkp_db; // in-memory HPKP database
 	wget_tls_session_db
 		*tls_session_db; // in-memory TLS session database

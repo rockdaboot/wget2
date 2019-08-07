@@ -1502,14 +1502,14 @@ WGETAPI void
  *
  * HPKP database for storing HTTP Public Key Pinning (HPKP) entries
  */
-typedef struct wget_hpkp_db_st wget_hpkp_db_t;
+typedef struct wget_hpkp_db_st wget_hpkp_db;
 
 /**
  * \ingroup libwget-hpkp
  *
  * HPKP database entry. Corresponds to one 'Public-Key-Pins' HTTP response header.
  */
-typedef struct wget_hpkp_st wget_hpkp_t;
+typedef struct wget_hpkp_st wget_hpkp;
 
 /* FIXME: the following entries are not used. review the hpkp function return values ! */
 /**
@@ -1604,13 +1604,13 @@ typedef struct wget_hpkp_st wget_hpkp_t;
  *     }
  */
 
-typedef wget_hpkp_db_t *wget_hpkp_db_init_fn(wget_hpkp_db_t *hpkp_db, const char *fname);
-typedef void wget_hpkp_db_deinit_fn(wget_hpkp_db_t *hpkp_db);
-typedef void wget_hpkp_db_free_fn(wget_hpkp_db_t **hpkp_db);
-typedef int wget_hpkp_db_check_pubkey_fn(wget_hpkp_db_t *hpkp_db, const char *host, const void *pubkey, size_t pubkeysize);
-typedef void wget_hpkp_db_add_fn(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **hpkp);
-typedef int wget_hpkp_db_load_fn(wget_hpkp_db_t *hpkp_db);
-typedef int wget_hpkp_db_save_fn(wget_hpkp_db_t *hpkp_db);
+typedef wget_hpkp_db *wget_hpkp_db_init_fn(wget_hpkp_db *hpkp_db, const char *fname);
+typedef void wget_hpkp_db_deinit_fn(wget_hpkp_db *hpkp_db);
+typedef void wget_hpkp_db_free_fn(wget_hpkp_db **hpkp_db);
+typedef int wget_hpkp_db_check_pubkey_fn(wget_hpkp_db *hpkp_db, const char *host, const void *pubkey, size_t pubkeysize);
+typedef void wget_hpkp_db_add_fn(wget_hpkp_db *hpkp_db, wget_hpkp **hpkp);
+typedef int wget_hpkp_db_load_fn(wget_hpkp_db *hpkp_db);
+typedef int wget_hpkp_db_save_fn(wget_hpkp_db *hpkp_db);
 
 typedef struct {
 	/// Callback replacing \ref wget_hpkp_db_free "wget_hpkp_db_free()"
@@ -1629,30 +1629,30 @@ typedef struct {
 	wget_hpkp_db_save_fn *save;
 } wget_hpkp_db_vtable;
 
-WGETAPI wget_hpkp_t *
+WGETAPI wget_hpkp *
 	wget_hpkp_new(void);
 WGETAPI void
-	wget_hpkp_free(wget_hpkp_t *hpkp);
+	wget_hpkp_free(wget_hpkp *hpkp);
 WGETAPI void
-	wget_hpkp_pin_add(wget_hpkp_t *hpkp, const char *pin_type, const char *pin_b64);
+	wget_hpkp_pin_add(wget_hpkp *hpkp, const char *pin_type, const char *pin_b64);
 WGETAPI void
-	wget_hpkp_set_host(wget_hpkp_t *hpkp, const char *host);
+	wget_hpkp_set_host(wget_hpkp *hpkp, const char *host);
 WGETAPI void
-	wget_hpkp_set_maxage(wget_hpkp_t *hpkp, time_t maxage);
+	wget_hpkp_set_maxage(wget_hpkp *hpkp, time_t maxage);
 WGETAPI void
-	wget_hpkp_set_include_subdomains(wget_hpkp_t *hpkp, int include_subdomains);
+	wget_hpkp_set_include_subdomains(wget_hpkp *hpkp, int include_subdomains);
 WGETAPI size_t
-	wget_hpkp_get_n_pins(wget_hpkp_t *hpkp);
+	wget_hpkp_get_n_pins(wget_hpkp *hpkp);
 WGETAPI void
-	wget_hpkp_get_pins_b64(wget_hpkp_t *hpkp, const char **pin_types, const char **pins_b64);
+	wget_hpkp_get_pins_b64(wget_hpkp *hpkp, const char **pin_types, const char **pins_b64);
 WGETAPI void
-	wget_hpkp_get_pins(wget_hpkp_t *hpkp, const char **pin_types, size_t *sizes, const void **pins);
+	wget_hpkp_get_pins(wget_hpkp *hpkp, const char **pin_types, size_t *sizes, const void **pins);
 WGETAPI const char *
-	wget_hpkp_get_host(wget_hpkp_t *hpkp);
+	wget_hpkp_get_host(wget_hpkp *hpkp);
 WGETAPI time_t
-	wget_hpkp_get_maxage(wget_hpkp_t *hpkp);
+	wget_hpkp_get_maxage(wget_hpkp *hpkp);
 WGETAPI int
-	wget_hpkp_get_include_subdomains(wget_hpkp_t *hpkp);
+	wget_hpkp_get_include_subdomains(wget_hpkp *hpkp);
 
 WGETAPI wget_hpkp_db_init_fn wget_hpkp_db_init;
 WGETAPI wget_hpkp_db_deinit_fn wget_hpkp_db_deinit;
@@ -1662,7 +1662,7 @@ WGETAPI wget_hpkp_db_add_fn wget_hpkp_db_add;
 WGETAPI wget_hpkp_db_load_fn wget_hpkp_db_load;
 WGETAPI wget_hpkp_db_save_fn wget_hpkp_db_save;
 WGETAPI void
-	wget_hpkp_db_set_fname(wget_hpkp_db_t *hpkp_db, const char *fname);
+	wget_hpkp_db_set_fname(wget_hpkp_db *hpkp_db, const char *fname);
 WGETAPI void
 	wget_hpkp_set_plugin(const wget_hpkp_db_vtable *vtable);
 
@@ -2330,7 +2330,7 @@ struct wget_http_response_st {
 		cookies;
 	wget_vector *
 		challenges;
-	wget_hpkp_t *
+	wget_hpkp *
 		hpkp;
 	const char *
 		content_type;
@@ -2427,7 +2427,7 @@ WGETAPI const char *
 WGETAPI const char *
 	wget_http_parse_strict_transport_security(const char *s, time_t *maxage, char *include_subdomains) G_GNUC_WGET_NONNULL((1));
 WGETAPI const char *
-	wget_http_parse_public_key_pins(const char *s, wget_hpkp_t *hpkp) G_GNUC_WGET_NONNULL((1));
+	wget_http_parse_public_key_pins(const char *s, wget_hpkp *hpkp) G_GNUC_WGET_NONNULL((1));
 WGETAPI const char *
 	wget_http_parse_connection(const char *s, char *keep_alive) G_GNUC_WGET_NONNULL_ALL;
 WGETAPI const char *
@@ -2475,7 +2475,7 @@ WGETAPI void
 WGETAPI void
 	wget_http_free_cookies(wget_vector **cookies);
 WGETAPI void
-	wget_http_free_hpkp_entries(wget_hpkp_t **hpkp);
+	wget_http_free_hpkp_entries(wget_hpkp **hpkp);
 WGETAPI void
 	wget_http_free_digests(wget_vector **digests);
 WGETAPI void
@@ -2865,7 +2865,7 @@ WGETAPI void
 
 // Provides wget2 with another HPKP database to use.
 WGETAPI void
-	wget_plugin_add_hpkp_db(wget_plugin *plugin, wget_hpkp_db_t *hpkp_db, int priority);
+	wget_plugin_add_hpkp_db(wget_plugin *plugin, wget_hpkp_db *hpkp_db, int priority);
 
 // Provides wget2 with another OCSP database to use.
 WGETAPI void
@@ -2950,7 +2950,7 @@ struct wget_plugin_vtable
 	void (*register_post_processor)(wget_plugin *, wget_plugin_post_processor *);
 
 //	void (* add_hsts_db)(wget_plugin *, wget_hsts_db_t *);
-	void (* add_hpkp_db)(wget_plugin *, wget_hpkp_db_t *, int);
+	void (* add_hpkp_db)(wget_plugin *, wget_hpkp_db *, int);
 };
 
 /**

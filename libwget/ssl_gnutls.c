@@ -92,7 +92,7 @@ static struct _config {
 		*ocsp_host_cache;
 	wget_tls_session_db
 		*tls_session_cache;
-	wget_hpkp_db_t
+	wget_hpkp_db
 		*hpkp_cache;
 	char
 		ca_type,
@@ -226,7 +226,7 @@ void wget_ssl_set_config_string(int key, const char *value)
  *  (most importantly the session identifier and the master secret) so that there's no need to run the handshake again
  *  the next time we connect to the same host. This is useful as the handshake is an expensive process.
  *  - WGET_SSL_HPKP_CACHE: Set the HPKP cache to be used to verify known HPKP pinned hosts. This option takes a pointer
- *  to a \ref wget_hpkp_db_t structure. Such a pointer is returned when initializing the HPKP cache
+ *  to a \ref wget_hpkp_db structure. Such a pointer is returned when initializing the HPKP cache
  *  with wget_hpkp_db_init(). HPKP is a HTTP-level protocol that allows the server to "pin" its present and future X.509
  *  certificate fingerprints, to support rapid certificate change in the event that the higher level root CA
  *  gets compromised ([RFC 7469](https://tools.ietf.org/html/rfc7469)).
@@ -237,7 +237,7 @@ void wget_ssl_set_config_object(int key, void *value)
 	switch (key) {
 	case WGET_SSL_OCSP_CACHE: _config.ocsp_cert_cache = (wget_ocsp_db *)value; break;
 	case WGET_SSL_SESSION_CACHE: _config.tls_session_cache = (wget_tls_session_db *)value; break;
-	case WGET_SSL_HPKP_CACHE: _config.hpkp_cache = (wget_hpkp_db_t *)value; break;
+	case WGET_SSL_HPKP_CACHE: _config.hpkp_cache = (wget_hpkp_db *)value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an object)\n"), key);
 	}
 }

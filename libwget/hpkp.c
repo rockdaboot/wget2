@@ -89,7 +89,7 @@ void wget_hpkp_set_plugin(const wget_hpkp_db_vtable *vtable)
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int G_GNUC_WGET_PURE _hash_hpkp(const wget_hpkp_t *hpkp)
+static unsigned int G_GNUC_WGET_PURE _hash_hpkp(const wget_hpkp *hpkp)
 {
 	unsigned int hash = 0;
 	const unsigned char *p;
@@ -100,7 +100,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_hpkp(const wget_hpkp_t *hpkp)
 	return hash;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_hpkp(const wget_hpkp_t *h1, const wget_hpkp_t *h2)
+static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_hpkp(const wget_hpkp *h1, const wget_hpkp *h2)
 {
 	return strcmp(h1->host, h2->host);
 }
@@ -143,7 +143,7 @@ static void hpkp_pin_free(void *pin)
  *
  * Adds a public key hash to HPKP database entry.
  */
-void wget_hpkp_pin_add(wget_hpkp_t *hpkp, const char *pin_type, const char *pin_b64)
+void wget_hpkp_pin_add(wget_hpkp *hpkp, const char *pin_type, const char *pin_b64)
 {
 	wget_hpkp_pin_t *pin = wget_calloc(1, sizeof(wget_hpkp_pin_t));
 	size_t len_b64 = strlen(pin_b64);
@@ -167,7 +167,7 @@ void wget_hpkp_pin_add(wget_hpkp_t *hpkp, const char *pin_type, const char *pin_
  * It can be used as destructor function in vectors and hashmaps.
  * If `hpkp` is NULL this function does nothing.
  */
-void wget_hpkp_free(wget_hpkp_t *hpkp)
+void wget_hpkp_free(wget_hpkp *hpkp)
 {
 	if (hpkp) {
 		xfree(hpkp->host);
@@ -187,9 +187,9 @@ void wget_hpkp_free(wget_hpkp_t *hpkp)
  *
  * Creates a new HPKP structure initialized with the given values.
  */
-wget_hpkp_t *wget_hpkp_new(void)
+wget_hpkp *wget_hpkp_new(void)
 {
-	wget_hpkp_t *hpkp = wget_calloc(1, sizeof(wget_hpkp_t));
+	wget_hpkp *hpkp = wget_calloc(1, sizeof(wget_hpkp));
 
 	hpkp->created = time(NULL);
 
@@ -202,7 +202,7 @@ wget_hpkp_t *wget_hpkp_new(void)
  *
  * Sets the hostname of the web server into given HPKP database entry.
  */
-void wget_hpkp_set_host(wget_hpkp_t *hpkp, const char *host)
+void wget_hpkp_set_host(wget_hpkp *hpkp, const char *host)
 {
 	xfree(hpkp->host);
 	hpkp->host = wget_strdup(host);
@@ -215,7 +215,7 @@ void wget_hpkp_set_host(wget_hpkp_t *hpkp, const char *host)
  * Sets the maximum time the HPKP entry is valid.
  * Corresponds to `max-age` directive in `Public-Key-Pins` HTTP response header.
  */
-void wget_hpkp_set_maxage(wget_hpkp_t *hpkp, time_t maxage)
+void wget_hpkp_set_maxage(wget_hpkp *hpkp, time_t maxage)
 {
 	int64_t now;
 
@@ -236,7 +236,7 @@ void wget_hpkp_set_maxage(wget_hpkp_t *hpkp, time_t maxage)
  * Sets whether the entry is also valid for all subdomains.
  * Corresponds to the optional `includeSubDomains` directive in `Public-Key-Pins` HTTP response header.
  */
-void wget_hpkp_set_include_subdomains(wget_hpkp_t *hpkp, int include_subdomains)
+void wget_hpkp_set_include_subdomains(wget_hpkp *hpkp, int include_subdomains)
 {
 	hpkp->include_subdomains = !!include_subdomains;
 }
@@ -247,7 +247,7 @@ void wget_hpkp_set_include_subdomains(wget_hpkp_t *hpkp, int include_subdomains)
  *
  * Gets the number of public key hashes added to the given HPKP database entry.
  */
-size_t wget_hpkp_get_n_pins(wget_hpkp_t *hpkp)
+size_t wget_hpkp_get_n_pins(wget_hpkp *hpkp)
 {
 	return (size_t) wget_vector_size(hpkp->pins);
 }
@@ -261,7 +261,7 @@ size_t wget_hpkp_get_n_pins(wget_hpkp_t *hpkp)
  *
  * The size of the arrays used must be at least one returned by \ref wget_hpkp_get_n_pins "wget_hpkp_get_n_pins()".
  */
-void wget_hpkp_get_pins_b64(wget_hpkp_t *hpkp, const char **pin_types, const char **pins_b64)
+void wget_hpkp_get_pins_b64(wget_hpkp *hpkp, const char **pin_types, const char **pins_b64)
 {
 	int i, n_pins;
 
@@ -284,7 +284,7 @@ void wget_hpkp_get_pins_b64(wget_hpkp_t *hpkp, const char **pin_types, const cha
  *
  * The size of the arrays used must be at least one returned by \ref wget_hpkp_get_n_pins "wget_hpkp_get_n_pins()".
  */
-void wget_hpkp_get_pins(wget_hpkp_t *hpkp, const char **pin_types, size_t *sizes, const void **pins)
+void wget_hpkp_get_pins(wget_hpkp *hpkp, const char **pin_types, size_t *sizes, const void **pins)
 {
 	int i, n_pins;
 
@@ -304,7 +304,7 @@ void wget_hpkp_get_pins(wget_hpkp_t *hpkp, const char **pin_types, size_t *sizes
  *
  * Gets the hostname this entry is valid for, as set by \ref wget_hpkp_set_host "wget_hpkp_set_host()"
  */
-const char * wget_hpkp_get_host(wget_hpkp_t *hpkp)
+const char * wget_hpkp_get_host(wget_hpkp *hpkp)
 {
 	return hpkp->host;
 }
@@ -315,7 +315,7 @@ const char * wget_hpkp_get_host(wget_hpkp_t *hpkp)
  *
  * Gets the maximum time this entry is valid for, as set by \ref wget_hpkp_set_maxage "wget_hpkp_set_maxage()"
  */
-time_t wget_hpkp_get_maxage(wget_hpkp_t *hpkp)
+time_t wget_hpkp_get_maxage(wget_hpkp *hpkp)
 {
 	return hpkp->maxage;
 }
@@ -326,7 +326,7 @@ time_t wget_hpkp_get_maxage(wget_hpkp_t *hpkp)
  *
  * Gets whether the HPKP database entry is also valid for the subdomains.
  */
-int wget_hpkp_get_include_subdomains(wget_hpkp_t *hpkp)
+int wget_hpkp_get_include_subdomains(wget_hpkp *hpkp)
 {
 	return hpkp->include_subdomains;
 }
@@ -341,7 +341,7 @@ int wget_hpkp_get_include_subdomains(wget_hpkp_t *hpkp)
  *
  * If \p hpkp_db is NULL then this function does nothing.
  */
-void wget_hpkp_db_deinit(wget_hpkp_db_t *hpkp_db)
+void wget_hpkp_db_deinit(wget_hpkp_db *hpkp_db)
 {
 	if (plugin_vtable) {
 		plugin_vtable->deinit(hpkp_db);
@@ -368,7 +368,7 @@ void wget_hpkp_db_deinit(wget_hpkp_db_t *hpkp_db)
  *
  * If \p hpkp_db or the pointer it points to is NULL then this function does nothing.
  */
-void wget_hpkp_db_free(wget_hpkp_db_t **hpkp_db)
+void wget_hpkp_db_free(wget_hpkp_db **hpkp_db)
 {
 	if (plugin_vtable) {
 		plugin_vtable->free(hpkp_db);
@@ -396,13 +396,13 @@ void wget_hpkp_db_free(wget_hpkp_db_t **hpkp_db)
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-int wget_hpkp_db_check_pubkey(wget_hpkp_db_t *hpkp_db, const char *host, const void *pubkey, size_t pubkeysize)
+int wget_hpkp_db_check_pubkey(wget_hpkp_db *hpkp_db, const char *host, const void *pubkey, size_t pubkeysize)
 {
 	if (plugin_vtable)
 		return plugin_vtable->check_pubkey(hpkp_db, host, pubkey, pubkeysize);
 
-	wget_hpkp_t key;
-	wget_hpkp_t *hpkp = NULL;
+	wget_hpkp key;
+	wget_hpkp *hpkp = NULL;
 	char digest[wget_hash_get_len(WGET_DIGTYPE_SHA256)];
 	int subdomain = 0;
 
@@ -447,7 +447,7 @@ int wget_hpkp_db_check_pubkey(wget_hpkp_db_t *hpkp_db, const char *host, const v
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
+void wget_hpkp_db_add(wget_hpkp_db *hpkp_db, wget_hpkp **_hpkp)
 {
 	if (plugin_vtable) {
 		plugin_vtable->add(hpkp_db, _hpkp);
@@ -458,7 +458,7 @@ void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
 	if (!_hpkp || !*_hpkp)
 		return;
 
-	wget_hpkp_t *hpkp = *_hpkp;
+	wget_hpkp *hpkp = *_hpkp;
 
 	wget_thread_mutex_lock(hpkp_db->mutex);
 
@@ -467,7 +467,7 @@ void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
 			debug_printf("removed HPKP %s\n", hpkp->host);
 		wget_hpkp_free(hpkp);
 	} else {
-		wget_hpkp_t *old;
+		wget_hpkp *old;
 
 		if (wget_hashmap_get(hpkp_db->entries, hpkp, &old)) {
 			old->created = hpkp->created;
@@ -492,13 +492,13 @@ void wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **_hpkp)
 	*_hpkp = NULL;
 }
 
-static int _hpkp_db_load(wget_hpkp_db_t *hpkp_db, FILE *fp)
+static int _hpkp_db_load(wget_hpkp_db *hpkp_db, FILE *fp)
 {
 	int64_t created, max_age;
 	long long _created, _max_age;
 	int include_subdomains;
 
-	wget_hpkp_t *hpkp = NULL;
+	wget_hpkp *hpkp = NULL;
 	struct stat st;
 	char *buf = NULL;
 	size_t bufsize = 0;
@@ -586,7 +586,7 @@ static int _hpkp_db_load(wget_hpkp_db_t *hpkp_db, FILE *fp)
  *
  * If `hpkp_db` is NULL then this function returns 0 and does nothing else.
  */
-int wget_hpkp_db_load(wget_hpkp_db_t *hpkp_db)
+int wget_hpkp_db_load(wget_hpkp_db *hpkp_db)
 {
 	if (plugin_vtable)
 		return plugin_vtable->load(hpkp_db);
@@ -616,7 +616,7 @@ static int _hpkp_save_pin(FILE *fp, wget_hpkp_pin_t *pin)
 	return 0;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp_t *hpkp)
+static int G_GNUC_WGET_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp *hpkp)
 {
 	if (wget_vector_size(hpkp->pins) == 0)
 		debug_printf("HPKP: drop '%s', no PIN entries\n", hpkp->host);
@@ -634,7 +634,7 @@ static int G_GNUC_WGET_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp_t *hpkp)
 	return 0;
 }
 
-static int _hpkp_db_save(wget_hpkp_db_t *hpkp_db, FILE *fp)
+static int _hpkp_db_save(wget_hpkp_db *hpkp_db, FILE *fp)
 {
 	wget_hashmap *entries = hpkp_db->entries;
 
@@ -663,7 +663,7 @@ static int _hpkp_db_save(wget_hpkp_db_t *hpkp_db, FILE *fp)
  *
  * If \p fname is NULL then this function returns -1 and does nothing else.
  */
-int wget_hpkp_db_save(wget_hpkp_db_t *hpkp_db)
+int wget_hpkp_db_save(wget_hpkp_db *hpkp_db)
 {
 	if (plugin_vtable)
 		return plugin_vtable->save(hpkp_db);
@@ -711,7 +711,7 @@ int wget_hpkp_db_save(wget_hpkp_db_t *hpkp_db)
  * wget_hpkp_db_save() should be used.
  *
  */
-wget_hpkp_db_t *wget_hpkp_db_init(wget_hpkp_db_t *hpkp_db, const char *fname)
+wget_hpkp_db *wget_hpkp_db_init(wget_hpkp_db *hpkp_db, const char *fname)
 {
 	if (plugin_vtable)
 		return plugin_vtable->init(hpkp_db, fname);
@@ -736,7 +736,7 @@ wget_hpkp_db_t *wget_hpkp_db_init(wget_hpkp_db_t *hpkp_db, const char *fname)
 
 	wget_thread_mutex_init(&hpkp_db->mutex);
 
-	return (wget_hpkp_db_t *) hpkp_db;
+	return (wget_hpkp_db *) hpkp_db;
 }
 
 /**
@@ -746,7 +746,7 @@ wget_hpkp_db_t *wget_hpkp_db_init(wget_hpkp_db_t *hpkp_db, const char *fname)
  * Changes the file where data should be stored. Works only for databases created by wget_hpkp_db_init().
  * This function does no file IO, data is loaded when wget_hpkp_db_load() is called.
  */
-void wget_hpkp_db_set_fname(wget_hpkp_db_t *hpkp_db, const char *fname)
+void wget_hpkp_db_set_fname(wget_hpkp_db *hpkp_db, const char *fname)
 {
 	xfree(hpkp_db->fname);
 	hpkp_db->fname = wget_strdup(fname);

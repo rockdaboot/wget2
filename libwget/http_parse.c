@@ -613,7 +613,7 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 //	       pin-sha256="E9CZ9INDbd+2eRQozYqqbQ2yXLVKB9+xcprMF+44U1g=";
 //	       pin-sha256="LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ=";
 //	       max-age=10000; includeSubDomains
-const char *wget_http_parse_public_key_pins(const char *s, wget_hpkp_t *hpkp)
+const char *wget_http_parse_public_key_pins(const char *s, wget_hpkp *hpkp)
 {
 	wget_http_header_param param;
 
@@ -1318,7 +1318,7 @@ void wget_http_free_cookies(wget_vector **cookies)
 	wget_vector_free(cookies);
 }
 
-void wget_http_free_hpkp_entries(wget_hpkp_t **hpkp)
+void wget_http_free_hpkp_entries(wget_hpkp **hpkp)
 {
 	if (hpkp) {
 		wget_hpkp_free(*hpkp);
