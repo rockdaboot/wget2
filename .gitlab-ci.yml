@@ -31,6 +31,7 @@ variables:
   DEBIAN_BUILD: buildenv-debian-stretch
   DEBIAN_TESTING_BUILD: buildenv-debian-testing
   DEBIAN_UNSTABLE_BUILD: buildenv-debian-unstable
+  DEBIAN_HTTP2_BUILD: buildenv-mhd-http2
   FEDORA_BUILD: buildenv-fedora
   CENTOS7_BUILD: buildenv-centos7
   MINGW_BUILD: buildenv-mingw
@@ -41,8 +42,6 @@ variables:
   GIT_DEPTH: "5"
   CONFIGURE_BASE_FLAGS: --enable-assert --cache-file cache/config.cache
   CFLAGS_DEFAULT: -O0 -g -ggdb3
-
-  HTTP2_TESTING_BUILD: buildenv-mhd-http2
 
 
 # We organize the CI runners as thus:
@@ -387,7 +386,7 @@ MinGW64:
       - unit-tests/*.log
       - tests/*.log
 
-Build/Arch:
+Arch:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ARCH_BUILD
   script:
@@ -460,15 +459,16 @@ CommitCheck:
       policy: push
 
 
-Debian/Testing-HTTP2:
+Debian/HTTP2:
   stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$HTTP2_TESTING_BUILD
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_HTTP2_BUILD
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
     - ./bootstrap --skip-po && touch .manywarnings
-    - ./configure $CONFIGURE_BASE_FLAGS
+    - ./configure $CONFIGURE_BASE_FLAGS --enable-code-coverage
     - make -j$(nproc)
     - make check -j$(nproc)
+    - make code-coverage-capture
   tags:
     - shared
     - docker
@@ -480,3 +480,8 @@ Debian/Testing-HTTP2:
       - fuzz/*.log
       - unit-tests/*.log
       - tests/*.log
+  artifacts:
+    expire_in: 2 weeks
+    when: on_success
+    paths:
+      - wget2-*-coverage
