@@ -133,7 +133,7 @@ struct config {
 		*save_content_on;
 	wget_content_encoding_type_t
 		compression_methods[wget_content_encoding_max + 1];	// the last one for counting
-	wget_hsts_db_t
+	wget_hsts_db
 		*hsts_db; // in-memory HSTS database
 #ifdef WITH_LIBHSTS
 	hsts_t

@@ -1382,7 +1382,7 @@ WGETAPI char *
  *
  * Structure representing HSTS database for storing HTTP Strict Transport Security (HSTS) entries
  */
-typedef struct wget_hsts_db_st wget_hsts_db_t;
+typedef struct wget_hsts_db_st wget_hsts_db;
 
 /**
  * \ingroup libwget-hsts
@@ -1391,14 +1391,14 @@ typedef struct wget_hsts_db_st wget_hsts_db_t;
  * See tests/test-plugin-dummy.c and tests/Makefile.am fro details.
  */
 
-typedef int wget_hsts_host_match_fn(const wget_hsts_db_t *, const char *hsts_db, uint16_t port);
-typedef wget_hsts_db_t *wget_hsts_db_init_fn(wget_hsts_db_t *hsts_db, const char *fname);
-typedef void wget_hsts_db_deinit_fn(wget_hsts_db_t *hsts_db);
-typedef void wget_hsts_db_free_fn(wget_hsts_db_t **hsts_db);
-typedef void wget_hsts_db_add_fn(wget_hsts_db_t *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains);
-typedef int wget_hsts_db_save_fn(wget_hsts_db_t *hsts_db);
-typedef int wget_hsts_db_load_fn(wget_hsts_db_t *hsts_db);
-typedef void wget_hsts_db_set_fname_fn(wget_hsts_db_t *hsts_db, const char *fname);
+typedef int wget_hsts_host_match_fn(const wget_hsts_db *, const char *hsts_db, uint16_t port);
+typedef wget_hsts_db *wget_hsts_db_init_fn(wget_hsts_db *hsts_db, const char *fname);
+typedef void wget_hsts_db_deinit_fn(wget_hsts_db *hsts_db);
+typedef void wget_hsts_db_free_fn(wget_hsts_db **hsts_db);
+typedef void wget_hsts_db_add_fn(wget_hsts_db *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains);
+typedef int wget_hsts_db_save_fn(wget_hsts_db *hsts_db);
+typedef int wget_hsts_db_load_fn(wget_hsts_db *hsts_db);
+typedef void wget_hsts_db_set_fname_fn(wget_hsts_db *hsts_db, const char *fname);
 
 typedef struct {
 	/// Callback replacing wget_hsts_host_match()
@@ -1425,7 +1425,7 @@ WGETAPI wget_hsts_db_add_fn wget_hsts_db_add;
 WGETAPI wget_hsts_db_load_fn wget_hsts_db_load;
 WGETAPI wget_hsts_db_save_fn wget_hsts_db_save;
 WGETAPI void
-	wget_hsts_db_set_fname(wget_hsts_db_t *hsts_db, const char *fname);
+	wget_hsts_db_set_fname(wget_hsts_db *hsts_db, const char *fname);
 WGETAPI void
 	wget_hsts_set_plugin(const wget_hsts_db_vtable *vtable);
 

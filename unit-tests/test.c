@@ -1322,7 +1322,7 @@ static void test_hsts(void)
 		{ "www.example.com", 80, 1 }, // default port
 		{ "www.example.com", 8080, 0 }, // wrong port
 	};
-	wget_hsts_db_t *hsts_db = wget_hsts_db_init(NULL, NULL);
+	wget_hsts_db *hsts_db = wget_hsts_db_init(NULL, NULL);
 	time_t maxage;
 	char include_subdomains;
 	int n;

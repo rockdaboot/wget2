@@ -553,7 +553,7 @@ typedef struct {
 	int dummy;
 } test_hsts_db_t;
 
-static int test_hsts_db_host_match(const wget_hsts_db_t *hsts_db, const char *host, uint16_t port)
+static int test_hsts_db_host_match(const wget_hsts_db *hsts_db, const char *host, uint16_t port)
 {
 	(void) hsts_db;
 
@@ -563,7 +563,7 @@ static int test_hsts_db_host_match(const wget_hsts_db_t *hsts_db, const char *ho
 	return 0;
 }
 
-static wget_hsts_db_t *test_hsts_db_init(wget_hsts_db_t *hsts_db, const char *fname)
+static wget_hsts_db *test_hsts_db_init(wget_hsts_db *hsts_db, const char *fname)
 {
 	(void) fname;
 
@@ -575,34 +575,34 @@ static wget_hsts_db_t *test_hsts_db_init(wget_hsts_db_t *hsts_db, const char *fn
 	return hsts_db;
 }
 
-static void test_hsts_db_deinit(wget_hsts_db_t *hsts_db)
+static void test_hsts_db_deinit(wget_hsts_db *hsts_db)
 {
 	if (hsts_db) {
 		memset(hsts_db, 0, sizeof(test_hsts_db_t));
 	}
 }
 
-static void test_hsts_db_free(wget_hsts_db_t **hsts_db)
+static void test_hsts_db_free(wget_hsts_db **hsts_db)
 {
 	wget_free(*hsts_db);
 	*hsts_db = NULL;
 }
 
-static void test_hsts_db_add(wget_hsts_db_t *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
+static void test_hsts_db_add(wget_hsts_db *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
 {
 	(void) hsts_db;
 	wget_debug_printf("%s: host %s port %hu maxage %lld include_subdomains %d\n", __func__,
 		host, port, (long long) maxage, include_subdomains);
 }
 
-static int test_hsts_db_load(wget_hsts_db_t *hsts_db)
+static int test_hsts_db_load(wget_hsts_db *hsts_db)
 {
 	(void) hsts_db;
 	hsts_db_load_counter++;
 	return 0;
 }
 
-static int test_hsts_db_save(wget_hsts_db_t *hsts_db)
+static int test_hsts_db_save(wget_hsts_db *hsts_db)
 {
 	(void) hsts_db;
 	return 0;

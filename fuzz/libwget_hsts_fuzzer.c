@@ -55,10 +55,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	g_size = size;
 
 #if ! defined _WIN32 && defined HAVE_FMEMOPEN
-	wget_hsts_db_t *hsts_db = wget_hsts_db_init(NULL, "hsts");
+	wget_hsts_db *hsts_db = wget_hsts_db_init(NULL, "hsts");
 	wget_hsts_db_load(hsts_db);
 #else
-	wget_hsts_db_t *hsts_db = wget_hsts_db_init(NULL, NULL);
+	wget_hsts_db *hsts_db = wget_hsts_db_init(NULL, NULL);
 #endif
 	wget_hsts_host_match(hsts_db, "x.y", 80);
 	wget_hsts_db_free(&hsts_db);

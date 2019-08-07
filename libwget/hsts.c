@@ -166,7 +166,7 @@ static _hsts_t *_new_hsts(const char *host, uint16_t port, time_t maxage, int in
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-int wget_hsts_host_match(const wget_hsts_db_t *hsts_db, const char *host, uint16_t port)
+int wget_hsts_host_match(const wget_hsts_db *hsts_db, const char *host, uint16_t port)
 {
 	if (plugin_vtable)
 		return plugin_vtable->host_match(hsts_db, host, port);
@@ -207,7 +207,7 @@ int wget_hsts_host_match(const wget_hsts_db_t *hsts_db, const char *host, uint16
  *
  * This function only works with databases created by wget_hsts_db_init().
  */
-void wget_hsts_db_deinit(wget_hsts_db_t *hsts_db)
+void wget_hsts_db_deinit(wget_hsts_db *hsts_db)
 {
 	if (plugin_vtable) {
 		plugin_vtable->deinit(hsts_db);
@@ -236,7 +236,7 @@ void wget_hsts_db_deinit(wget_hsts_db_t *hsts_db)
  *
  * Newly added entries will be lost unless committed to persistent storage using wget_hsts_db_save().
  */
-void wget_hsts_db_free(wget_hsts_db_t **hsts_db)
+void wget_hsts_db_free(wget_hsts_db **hsts_db)
 {
 	if (plugin_vtable) {
 		plugin_vtable->free(hsts_db);
@@ -249,7 +249,7 @@ void wget_hsts_db_free(wget_hsts_db_t **hsts_db)
 	}
 }
 
-static void _hsts_db_add_entry(wget_hsts_db_t *hsts_db, _hsts_t *hsts)
+static void _hsts_db_add_entry(wget_hsts_db *hsts_db, _hsts_t *hsts)
 {
 	wget_thread_mutex_lock(hsts_db->mutex);
 
@@ -297,7 +297,7 @@ static void _hsts_db_add_entry(wget_hsts_db_t *hsts_db, _hsts_t *hsts)
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-void wget_hsts_db_add(wget_hsts_db_t *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
+void wget_hsts_db_add(wget_hsts_db *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
 {
 	if (plugin_vtable) {
 		plugin_vtable->add(hsts_db, host, port, maxage, include_subdomains);
@@ -311,7 +311,7 @@ void wget_hsts_db_add(wget_hsts_db_t *hsts_db, const char *host, uint16_t port, 
 	}
 }
 
-static int _hsts_db_load(wget_hsts_db_t *hsts_db, FILE *fp)
+static int _hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 {
 	_hsts_t hsts;
 	struct stat st;
@@ -425,7 +425,7 @@ static int _hsts_db_load(wget_hsts_db_t *hsts_db, FILE *fp)
  *
  * If `hsts_db` is NULL this function does nothing and returns 0.
  */
-int wget_hsts_db_load(wget_hsts_db_t *hsts_db)
+int wget_hsts_db_load(wget_hsts_db *hsts_db)
 {
 	if (plugin_vtable)
 		return plugin_vtable->load(hsts_db);
@@ -455,7 +455,7 @@ static int G_GNUC_WGET_NONNULL_ALL _hsts_save(FILE *fp, const _hsts_t *hsts)
 
 static int _hsts_db_save(void *hsts_db, FILE *fp)
 {
-	wget_hashmap *entries = ((wget_hsts_db_t *) hsts_db)->entries;
+	wget_hashmap *entries = ((wget_hsts_db *) hsts_db)->entries;
 
 	if (wget_hashmap_size(entries) > 0) {
 		fputs("#HSTS 1.0 file\n", fp);
@@ -482,7 +482,7 @@ static int _hsts_db_save(void *hsts_db, FILE *fp)
  *
  * If `hsts_db` is NULL this function does nothing.
  */
-int wget_hsts_db_save(wget_hsts_db_t *hsts_db)
+int wget_hsts_db_save(wget_hsts_db *hsts_db)
 {
 	int size;
 
@@ -513,13 +513,13 @@ int wget_hsts_db_save(wget_hsts_db_t *hsts_db)
 /**
  * \param[in] hsts_db Previously created HSTS database on which wget_hsts_db_deinit() has been called, or NULL
  * \param[in] fname The file where the data is stored, or NULL.
- * \return A new wget_hsts_db_t
+ * \return A new wget_hsts_db
  *
  * Constructor for the default implementation of HSTS database.
  *
  * This function does no file IO, data is read only when \ref wget_hsts_db_load "wget_hsts_db_load()" is called.
  */
-wget_hsts_db_t *wget_hsts_db_init(wget_hsts_db_t *hsts_db, const char *fname)
+wget_hsts_db *wget_hsts_db_init(wget_hsts_db *hsts_db, const char *fname)
 {
 	if (plugin_vtable)
 		return plugin_vtable->init(hsts_db, fname);
@@ -548,7 +548,7 @@ wget_hsts_db_t *wget_hsts_db_init(wget_hsts_db_t *hsts_db, const char *fname)
  * This function does no file IO, data is read or written only when wget_hsts_db_load() or wget_hsts_db_save()
  * is called.
  */
-void wget_hsts_db_set_fname(wget_hsts_db_t *hsts_db, const char *fname)
+void wget_hsts_db_set_fname(wget_hsts_db *hsts_db, const char *fname)
 {
 	xfree(hsts_db->fname);
 	hsts_db->fname = wget_strdup(fname);
