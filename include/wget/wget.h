@@ -1387,72 +1387,8 @@ typedef struct wget_hsts_db_st wget_hsts_db_t;
 /**
  * \ingroup libwget-hsts
  *
- * vtable for implementing custom HSTS databases.
- *
- * Custom HSTS databases can be implemented as the following:
- *
- *     typedef struct {
- *         wget_hsts_db_t parent;
- *         derived class members...
- *     } my_hsts_db_t;
- *
- *     static int impl_load(wget_hsts_db_t *parent_hsts_db)
- *     {
- *         my_hsts_db_t *hsts_db = (my_hsts_db_t *) parent_hsts_db;
- *
- *         implementation...
- *     }
- *
- *     static int impl_save(wget_hsts_db_t *parent_hsts_db)
- *     {
- *         my_hsts_db_t *hsts_db = (my_hsts_db_t *) parent_hsts_db;
- *
- *         implementation...
- *     }
- *
- *     static int impl_host_match(wget_hsts_db_t *parent_hsts_db, const char *host, uint16_t port)
- *     {
- *         my_hsts_db_t *hsts_db = (my_hsts_db_t *) parent_hsts_db;
- *
- *         implementation...
- *     }
- *
- *     static void impl_add(wget_hsts_db_t *parent_hsts_db,
- *         const char *hostname, uint16_t port, time_t maxage, int include_subdomains)
- *     {
- *         my_hsts_db_t *hsts_db = (my_hsts_db_t *) parent_hsts_db;
- *
- *         implementation...
- *     }
- *
- *     static int impl_free(wget_hsts_db_t *parent_hsts_db)
- *     {
- *         my_hsts_db_t *hsts_db = (my_hsts_db_t *) parent_hsts_db;
- *
- *         free all members...
- *
- *         wget_free(hsts_db);
- *     }
- *
- *
- *     struct my_hsts_db_vtable = {
- *         .save = impl_save,
- *         .load = impl_load,
- *         .host_match = impl_host_match,
- *         .add = impl_add,
- *         .free = impl_free
- *     };
- *
- *     wget_hsts_db_t *my_hsts_db_create(...)
- *     {
- *         my_hsts_db_t *hsts_db = wget_malloc(sizeof(my_hsts_db_t));
- *
- *         hsts_db->parent.vtable = my_hsts_db_vtable;
- *
- *         derived class initialization...
- *
- *         return (wget_hsts_db_t *) hsts_db;
- *     }
+ * It is possible to implement a custom HSTS database as a plugin.
+ * See tests/test-plugin-dummy.c and tests/Makefile.am fro details.
  */
 
 typedef int wget_hsts_host_match_fn(const wget_hsts_db_t *, const char *hsts_db, uint16_t port);
@@ -1536,72 +1472,8 @@ typedef struct wget_hpkp_st wget_hpkp;
 /**
  * \ingroup libwget-hpkp
  *
- * vtable for implementing custom HPKP databases.
- *
- * Custom HPKP databases can be implemented as the following:
- *
- *     typedef struct {
- *         wget_hpkp_db_t parent;
- *         derived class members...
- *     } my_hpkp_db_t;
- *
- *     static int impl_load(wget_hpkp_db_t *parent_hpkp_db)
- *     {
- *         my_hpkp_db_t *hpkp_db = (my_hpkp_db_t *) parent_hpkp_db;
- *
- *         implementation...
- *     }
- *
- *     static int impl_save(wget_hpkp_db_t *parent_hpkp_db)
- *     {
- *         my_hpkp_db_t *hpkp_db = (my_hpkp_db_t *) parent_hpkp_db;
- *
- *         implementation...
- *     }
- *
- *     static bool impl_check_pubkey(wget_hpkp_db_t *parent_hpkp_db,
- *         const char *host, const void *pubkey, size_t pubkey_size)
- *     {
- *         my_hpkp_db_t *hpkp_db = (my_hpkp_db_t *) parent_hpkp_db;
- *
- *         implementation...
- *     }
- *
- *     static void impl_add(wget_hpkp_db_t *parent_hpkp_db, wget_hpkp_t *hpkp)
- *     {
- *         my_hpkp_db_t *hpkp_db = (my_hpkp_db_t *) parent_hpkp_db;
- *
- *         implementation...
- *     }
- *
- *     static int impl_free(wget_hpkp_db_t *parent_hpkp_db)
- *     {
- *         my_hpkp_db_t *hpkp_db = (my_hpkp_db_t *) parent_hpkp_db;
- *
- *         free all members...
- *
- *         wget_free(hpkp_db);
- *     }
- *
- *
- *     struct my_hpkp_db_vtable = {
- *         .save = impl_save,
- *         .load = impl_load,
- *         .check_pubkey = impl_check_pubkey,
- *         .add = impl_add,
- *         .free = impl_free
- *     };
- *
- *     wget_hpkp_db_t *my_hpkp_db_create(...)
- *     {
- *         my_hpkp_db_t *hpkp_db = wget_malloc(sizeof(my_hpkp_db_t));
- *
- *         hpkp_db->parent.vtable = my_hpkp_db_vtable;
- *
- *         derived class initialization...
- *
- *         return (wget_hpkp_db_t *) hpkp_db;
- *     }
+ * It is possible to implement a custom HPKP database as a plugin.
+ * See tests/test-plugin-dummy.c and tests/Makefile.am fro details.
  */
 
 typedef wget_hpkp_db *wget_hpkp_db_init_fn(wget_hpkp_db *hpkp_db, const char *fname);
@@ -1713,88 +1585,8 @@ typedef struct wget_ocsp_db_st wget_ocsp_db;
 /**
  * \ingroup libwget-ocsp
  *
- * vtable for implementing custom OCSP databases.
- *
- * Custom OCSP databases can be implemented as the following:
- *
- *     typedef struct {
- *         wget_ocsp_db_t parent;
- *         derived class members...
- *     } my_ocsp_db_t;
- *
- *     static int impl_load(wget_ocsp_db_t *parent_ocsp_db)
- *     {
- *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
- *
- *         implementation...
- *     }
- *
- *     static int impl_save(wget_ocsp_db_t *parent_ocsp_db)
- *     {
- *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
- *
- *         implementation...
- *     }
- *
- *     static int impl_fingerprint_in_cache(const wget_ocsp_db_t *parent_ocsp_db, const char *fingerprint, int *valid)
- *     {
- *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
- *
- *         implementation...
- *     }
- *
- *     static int impl_hostname_is_valid(const wget_ocsp_db_t *parent_ocsp_db, const char *hostname)
- *     {
- *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
- *
- *         implementation...
- *     }
- *
- *     static void impl_add_fingerprint(wget_ocsp_db_t *parent_ocsp_db, const char *fingerprint, time_t maxage, int valid)
- *     {
- *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
- *
- *         implementation...
- *     }
- *
- *     static void impl_add_host(wget_ocsp_db_t *parent_ocsp_db, const char *fingerprint, time_t maxage)
- *     {
- *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
- *
- *         implementation...
- *     }
- *
- *     static int impl_free(wget_ocsp_db_t *parent_ocsp_db)
- *     {
- *         my_ocsp_db_t *ocsp_db = (my_ocsp_db_t *) parent_ocsp_db;
- *
- *         free all members...
- *
- *         wget_free(ocsp_db);
- *     }
- *
- *
- *     struct my_ocsp_db_vtable = {
- *         .save = impl_save,
- *         .load = impl_load,
- *         .fingerprint_in_cache = impl_fingerprint_in_cache,
- *         .hostname_is_valid = impl_hostname_is_valid,
- *         .add_fingerprint = impl_add_fingerprint,
- *         .add_host = impl_add_host,
- *         .add = impl_add,
- *         .free = impl_free
- *     };
- *
- *     wget_ocsp_db_t *my_ocsp_db_create(...)
- *     {
- *         my_ocsp_db_t *ocsp_db = wget_malloc(sizeof(my_ocsp_db_t));
- *
- *         ocsp_db->parent.vtable = my_ocsp_db_vtable;
- *
- *         derived class initialization...
- *
- *         return (wget_ocsp_db_t *) ocsp_db;
- *     }
+ * It is possible to implement a custom OCSP database as a plugin.
+ * See tests/test-plugin-dummy.c and tests/Makefile.am fro details.
  */
 
 typedef wget_ocsp_db *wget_ocsp_db_init_fn(wget_ocsp_db *ocsp_db, const char *fname);
