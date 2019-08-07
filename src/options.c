@@ -3374,8 +3374,7 @@ int init(int argc, const char **argv)
 	}
 
 	if (config.ocsp) {
-		config.ocsp_db = plugin_db_fetch_provided_ocsp_db();
-		if (! config.ocsp_db)
+		if (!config.ocsp_db)
 			config.ocsp_db = wget_ocsp_db_init(NULL, config.ocsp_file);
 		wget_ocsp_db_load(config.ocsp_db);
 	}

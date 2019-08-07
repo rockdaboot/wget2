@@ -72,9 +72,6 @@ static int plugin_help_forwarded;
 // Plugin supplied HPKP database
 static wget_hpkp_db_t *hpkp_db;
 static int hpkp_db_priority;
-// Plugin supplied OCSP database
-static wget_ocsp_db *ocsp_db;
-static int ocsp_db_priority;
 
 // Sets a list of directories to search for plugins, separated by
 // _separator_.
@@ -257,19 +254,6 @@ static void impl_add_hpkp_db(G_GNUC_WGET_UNUSED wget_plugin *p_plugin, wget_hpkp
 	}
 }
 
-static void impl_add_ocsp_db(G_GNUC_WGET_UNUSED wget_plugin *p_plugin, wget_ocsp_db *new_ocsp_db, int priority)
-{
-	if (ocsp_db_priority < priority) {
-		ocsp_db_priority = priority;
-		if (ocsp_db)
-			wget_ocsp_db_free(&ocsp_db);
-		ocsp_db = new_ocsp_db;
-	} else {
-		wget_ocsp_db_free(&new_ocsp_db);
-	}
-}
-
-
 // vtable
 static struct wget_plugin_vtable vtable = {
 	.get_name = impl_get_name,
@@ -292,7 +276,6 @@ static struct wget_plugin_vtable vtable = {
 	.register_post_processor = impl_register_post_processor,
 
 	.add_hpkp_db = impl_add_hpkp_db,
-	.add_ocsp_db = impl_add_ocsp_db
 };
 
 // Free resources of the plugin and plugin itself
@@ -593,15 +576,6 @@ wget_hpkp_db_t *plugin_db_fetch_provided_hpkp_db(void)
 	return res;
 }
 
-// Fetches the plugin-provided OCSP database, or NULL.
-// Ownership of the returned OCSP database is transferred to the caller, so it must be free'd with wget_ocsp_db_free().
-wget_ocsp_db *plugin_db_fetch_provided_ocsp_db(void)
-{
-	wget_ocsp_db *res = ocsp_db;
-	ocsp_db = NULL;
-	return res;
-}
-
 // Forwards downloaded file to interested plugins
 int plugin_db_forward_downloaded_file(const wget_iri *iri, uint64_t size, const char *filename, const void *data,
 		wget_vector *recurse_iris)
@@ -652,8 +626,6 @@ void plugin_db_init(void)
 		plugin_help_forwarded = 0;
 		hpkp_db = NULL;
 		hpkp_db_priority = 0;
-		ocsp_db = NULL;
-		ocsp_db_priority = 0;
 
 		initialized = 1;
 	}
@@ -678,8 +650,6 @@ void plugin_db_finalize(int exitcode)
 	wget_vector_free(&search_paths);
 	if (hpkp_db)
 		wget_hpkp_db_free(&hpkp_db);
-	if (ocsp_db)
-		wget_ocsp_db_free(&ocsp_db);
 
 	initialized = 0;
 }

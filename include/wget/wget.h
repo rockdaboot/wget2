@@ -1792,48 +1792,51 @@ typedef struct wget_ocsp_db_st wget_ocsp_db;
  *         return (wget_ocsp_db_t *) ocsp_db;
  *     }
  */
-struct wget_ocsp_db_vtable {
-	/// Implementation of wget_ocsp_db_load()
-	int (*load)(wget_ocsp_db *);
-	/// Implementation of wget_ocsp_db_save()
-	int (*save)(wget_ocsp_db *);
-	/// Implementation of wget_ocsp_db_fingerprint_in_cache()
-	bool (*fingerprint_in_cache)(const wget_ocsp_db *, const char *, int *);
-	/// Implementation of wget_ocsp_db_hostname_is_valid()
-	bool (*hostname_is_valid)(const wget_ocsp_db *, const char *);
-	/// Implementation of wget_ocsp_db_add_fingerprint()
-	void (*add_fingerprint)(wget_ocsp_db *, const char *, time_t, int);
-	/// Implementation of wget_ocsp_db_add_host()
-	void (*add_host)(wget_ocsp_db *, const char *, time_t);
-	/// Implementation of wget_ocsp_db_free()
-	void (*free)(wget_ocsp_db *);
-};
 
-struct wget_ocsp_db_st {
-	/// Pointer to the implementation vtable
-	struct wget_ocsp_db_vtable *vtable;
-};
+typedef wget_ocsp_db *wget_ocsp_db_init_fn(wget_ocsp_db *ocsp_db, const char *fname);
+typedef void wget_ocsp_db_deinit_fn(wget_ocsp_db *ocsp_db);
+typedef void wget_ocsp_db_free_fn(wget_ocsp_db **ocsp_db);
+typedef bool wget_ocsp_fingerprint_in_cache_fn(const wget_ocsp_db *ocsp_db, const char *fingerprint, int *valid);
+typedef bool wget_ocsp_hostname_is_valid_fn(const wget_ocsp_db *ocsp_db, const char *hostname);
+typedef void wget_ocsp_db_add_fingerprint_fn(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, int valid);
+typedef void wget_ocsp_db_add_host_fn(wget_ocsp_db *ocsp_db, const char *host, time_t maxage);
+typedef int wget_ocsp_db_save_fn(wget_ocsp_db *ocsp_db);
+typedef int wget_ocsp_db_load_fn(wget_ocsp_db *ocsp_db);
 
-WGETAPI int
-	wget_ocsp_fingerprint_in_cache(const wget_ocsp_db *ocsp_db, const char *fingerprint, int *valid);
-WGETAPI bool
-	wget_ocsp_hostname_is_valid(const wget_ocsp_db *ocsp_db, const char *hostname);
-WGETAPI wget_ocsp_db *
-	wget_ocsp_db_init(wget_ocsp_db *ocsp_db, const char *fname);
+typedef struct {
+	/// Callback replacing wget_ocsp_db_free()
+	wget_ocsp_db_init_fn *init;
+	/// Callback replacing wget_ocsp_db_free()
+	wget_ocsp_db_deinit_fn *deinit;
+	/// Callback replacing wget_ocsp_db_free()
+	wget_ocsp_db_free_fn *free;
+	/// Callback replacing wget_ocsp_db_fingerprint_in_cache()
+	wget_ocsp_fingerprint_in_cache_fn *fingerprint_in_cache;
+	/// Callback replacing wget_ocsp_db_hostname_is_valid()
+	wget_ocsp_hostname_is_valid_fn *hostname_is_valid;
+	/// Callback replacing wget_ocsp_db_add_fingerprint()
+	wget_ocsp_db_add_fingerprint_fn *add_fingerprint;
+	/// Callback replacing wget_ocsp_db_add_host()
+	wget_ocsp_db_add_host_fn *add_host;
+	/// Callback replacing wget_ocsp_db_load()
+	wget_ocsp_db_save_fn *load;
+	/// Callback replacing wget_ocsp_db_save()
+	wget_ocsp_db_load_fn *save;
+} wget_ocsp_db_vtable;
+
+WGETAPI wget_ocsp_db_init_fn wget_ocsp_db_init;
+WGETAPI wget_ocsp_db_deinit_fn wget_ocsp_db_deinit;
+WGETAPI wget_ocsp_db_free_fn wget_ocsp_db_free;
+WGETAPI wget_ocsp_fingerprint_in_cache_fn wget_ocsp_fingerprint_in_cache;
+WGETAPI wget_ocsp_hostname_is_valid_fn wget_ocsp_hostname_is_valid;
+WGETAPI wget_ocsp_db_add_fingerprint_fn wget_ocsp_db_add_fingerprint;
+WGETAPI wget_ocsp_db_add_host_fn wget_ocsp_db_add_host;
+WGETAPI wget_ocsp_db_save_fn wget_ocsp_db_save;
+WGETAPI wget_ocsp_db_load_fn wget_ocsp_db_load;
 WGETAPI void
 	wget_ocsp_db_set_fname(wget_ocsp_db *ocsp_db, const char *fname);
 WGETAPI void
-	wget_ocsp_db_deinit(wget_ocsp_db *ocsp_db);
-WGETAPI void
-	wget_ocsp_db_free(wget_ocsp_db **ocsp_db);
-WGETAPI void
-	wget_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, int valid);
-WGETAPI void
-	wget_ocsp_db_add_host(wget_ocsp_db *ocsp_db, const char *host, time_t maxage);
-WGETAPI int
-	wget_ocsp_db_save(wget_ocsp_db *ocsp_db);
-WGETAPI int
-	wget_ocsp_db_load(wget_ocsp_db *ocsp_db);
+	wget_ocsp_set_plugin(const wget_ocsp_db_vtable *vtable);
 
 /*
  * .netrc routines
@@ -2944,7 +2947,6 @@ struct wget_plugin_vtable
 
 //	void (* add_hsts_db)(wget_plugin *, wget_hsts_db_t *);
 	void (* add_hpkp_db)(wget_plugin *, wget_hpkp_db_t *, int);
-	void (* add_ocsp_db)(wget_plugin *, wget_ocsp_db *, int);
 };
 
 /**

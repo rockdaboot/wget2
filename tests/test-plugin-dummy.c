@@ -619,94 +619,93 @@ static const wget_hsts_db_vtable test_hsts_db_vtable = {
 
 // OCSP database for testing
 static int ocsp_db_load_counter = 0;
+
+// this is a dummy ocsp db implementation for the plugin
 typedef struct {
-	wget_ocsp_db parent;
-	wget_ocsp_db *backend_db;
-} test_ocsp_db_t;
+	int dummy;
+} test_ocsp_db;
 
-static int test_ocsp_db_load(wget_ocsp_db *p_ocsp_db)
+static wget_ocsp_db *test_ocsp_db_init(wget_ocsp_db *ocsp_db, const char *fname)
 {
-	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
+	(void) fname;
 
-	if (! ocsp_db->backend_db)
-		wget_error_printf_exit("%s: wget using wrong OCSP database\n", __func__);
+	if (!ocsp_db)
+		ocsp_db = wget_calloc(1, sizeof(test_ocsp_db));
+	else
+		memset(ocsp_db, 0, sizeof(test_ocsp_db));
 
+	return ocsp_db;
+}
+
+static void test_ocsp_db_deinit(wget_ocsp_db *ocsp_db)
+{
+	if (ocsp_db) {
+		memset(ocsp_db, 0, sizeof(test_ocsp_db));
+	}
+}
+
+static void test_ocsp_db_free(wget_ocsp_db **ocsp_db)
+{
+	wget_free(*ocsp_db);
+	*ocsp_db = NULL;
+}
+
+static bool test_ocsp_db_fingerprint_in_cache(const wget_ocsp_db *ocsp_db, const char *fingerprint, int *valid)
+{
+	(void) ocsp_db; (void) valid;
+
+	wget_debug_printf("%s: fingerprint %s\n", __func__, fingerprint);
+
+	return false;
+}
+
+static bool test_ocsp_db_hostname_is_valid(const wget_ocsp_db *ocsp_db, const char *hostname)
+{
+	(void) ocsp_db;
+
+	wget_debug_printf("%s: hostname %s\n", __func__, hostname);
+
+	return true;
+}
+
+static void test_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, int valid)
+{
+	(void) ocsp_db;
+
+	wget_debug_printf("%s: fingerprint %s maxage %lld valid %d\n", __func__, fingerprint, (long long) maxage, valid);
+}
+
+static void test_ocsp_db_add_host(wget_ocsp_db *ocsp_db, const char *host, time_t maxage)
+{
+	(void) ocsp_db;
+
+	wget_debug_printf("%s: host %s maxage %lld\n", __func__, host, (long long) maxage);
+}
+
+static int test_ocsp_db_load(wget_ocsp_db *ocsp_db)
+{
+	(void) ocsp_db;
 	ocsp_db_load_counter++;
-	return wget_ocsp_db_load(ocsp_db->backend_db);
+	return 0;
 }
-static int test_ocsp_db_save(wget_ocsp_db *p_ocsp_db)
+
+static int test_ocsp_db_save(wget_ocsp_db *ocsp_db)
 {
-	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
-
-	if (! ocsp_db->backend_db)
-		wget_error_printf_exit("%s: wget using wrong OCSP database\n", __func__);
-
-	return wget_ocsp_db_save(ocsp_db->backend_db);
+	(void) ocsp_db;
+	return 0;
 }
-static void test_ocsp_db_free(wget_ocsp_db *p_ocsp_db)
-{
-	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
 
-	if (ocsp_db->backend_db)
-		wget_ocsp_db_free(&ocsp_db->backend_db);
-	wget_free(ocsp_db);
-}
-static void test_ocsp_db_add_fingerprint(wget_ocsp_db *p_ocsp_db, const char *fingerprint, time_t maxage, int valid)
-{
-	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
-
-	if (! ocsp_db->backend_db)
-		wget_error_printf_exit("%s: wget using wrong OCSP database\n", __func__);
-
-	wget_ocsp_db_add_fingerprint(ocsp_db->backend_db, fingerprint, maxage, valid);
-}
-static void test_ocsp_db_add_host(wget_ocsp_db *p_ocsp_db, const char *host, time_t maxage)
-{
-	test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
-
-	if (! ocsp_db->backend_db)
-		wget_error_printf_exit("%s: wget using wrong OCSP database\n", __func__);
-
-	wget_ocsp_db_add_host(ocsp_db->backend_db, host, maxage);
-}
-static bool test_ocsp_db_fingerprint_in_cache(const wget_ocsp_db *p_ocsp_db, const char *fingerprint, int *valid)
-{
-	const test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
-
-	if (! ocsp_db->backend_db)
-		wget_error_printf_exit("%s: wget using wrong OCSP database\n", __func__);
-
-	return wget_ocsp_fingerprint_in_cache(ocsp_db->backend_db, fingerprint, valid);
-}
-static bool test_ocsp_db_hostname_is_valid(const wget_ocsp_db *p_ocsp_db, const char *hostname)
-{
-	const test_ocsp_db_t *ocsp_db = (test_ocsp_db_t *) p_ocsp_db;
-
-	if (! ocsp_db->backend_db)
-		wget_error_printf_exit("%s: wget using wrong OCSP database\n", __func__);
-
-	return wget_ocsp_hostname_is_valid(ocsp_db->backend_db, hostname);
-}
-static struct wget_ocsp_db_vtable test_ocsp_db_vtable = {
-	.load = test_ocsp_db_load,
-	.save = test_ocsp_db_save,
+static const wget_ocsp_db_vtable test_ocsp_db_vtable = {
+	.init = test_ocsp_db_init,
+	.deinit = test_ocsp_db_deinit,
 	.free = test_ocsp_db_free,
+	.fingerprint_in_cache = test_ocsp_db_fingerprint_in_cache,
+	.hostname_is_valid = test_ocsp_db_hostname_is_valid,
 	.add_fingerprint = test_ocsp_db_add_fingerprint,
 	.add_host = test_ocsp_db_add_host,
-	.fingerprint_in_cache = test_ocsp_db_fingerprint_in_cache,
-	.hostname_is_valid = test_ocsp_db_hostname_is_valid
+	.load = test_ocsp_db_load,
+	.save = test_ocsp_db_save,
 };
-static wget_ocsp_db *test_ocsp_db_new(int usable) {
-	test_ocsp_db_t *ocsp_db = wget_malloc(sizeof(test_ocsp_db_t));
-
-	ocsp_db->parent.vtable = &test_ocsp_db_vtable;
-	if (usable)
-		ocsp_db->backend_db = wget_ocsp_db_init(NULL, NULL);
-	else
-		ocsp_db->backend_db = NULL;
-
-	return (wget_ocsp_db *) ocsp_db;
-}
 
 static void finalizer(G_GNUC_WGET_UNUSED wget_plugin *plugin, G_GNUC_WGET_UNUSED int exit_status)
 {
@@ -728,9 +727,8 @@ int wget_plugin_initializer(wget_plugin *plugin)
 	// set the replacement for the standard HSTS database functions
 	wget_hsts_set_plugin(&test_hsts_db_vtable);
 
-	wget_plugin_add_ocsp_db(plugin, test_ocsp_db_new(0), 1);
-	wget_plugin_add_ocsp_db(plugin, test_ocsp_db_new(1), 3);
-	wget_plugin_add_ocsp_db(plugin, test_ocsp_db_new(0), 2);
+	// set the replacement for the standard OCSP database functions
+	wget_ocsp_set_plugin(&test_ocsp_db_vtable);
 
 	wget_plugin_register_finalizer(plugin, finalizer);
 
