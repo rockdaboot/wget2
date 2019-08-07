@@ -249,24 +249,4 @@ wget_plugin_register_post_processor(wget_plugin *plugin, wget_plugin_post_proces
 	plugin->vtable->register_post_processor(plugin, fn);
 }
 
-/**
- * Provides wget2 with another HPKP database to use.
- *
- * Each database, including wget2's own implementation, has an integer value known as priority associated with it.
- * The implementation with the highest priority value is actually used by wget2.
- *
- * wget2's own implementation has priority value 0.
- *
- * wget2 will automatically call wget_hpkp_db_free() on any database it decides it no longer needs,
- * so plugins do not need to do so.
- *
- * \param[in] plugin The plugin handle
- * \param[in] hpkp_db HPKP database to add
- * \param[in] priority The priority value to use
- */
-void wget_plugin_add_hpkp_db(wget_plugin *plugin, wget_hpkp_db_t *hpkp_db, int priority)
-{
-	plugin->vtable->add_hpkp_db(plugin, hpkp_db, priority);
-}
-
 /** @} */

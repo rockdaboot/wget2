@@ -69,9 +69,6 @@ static wget_vector *plugin_list;
 static wget_stringmap *plugin_name_index;
 // Whether any of the previous options forwarded was 'help'
 static int plugin_help_forwarded;
-// Plugin supplied HPKP database
-static wget_hpkp_db_t *hpkp_db;
-static int hpkp_db_priority;
 
 // Sets a list of directories to search for plugins, separated by
 // _separator_.
@@ -242,18 +239,6 @@ static void impl_register_post_processor(wget_plugin *p_plugin, wget_plugin_post
 	priv->post_processor = fn;
 }
 
-static void impl_add_hpkp_db(G_GNUC_WGET_UNUSED wget_plugin *p_plugin, wget_hpkp_db_t *new_hpkp_db, int priority)
-{
-	if (hpkp_db_priority < priority) {
-		hpkp_db_priority = priority;
-		if (hpkp_db)
-			wget_hpkp_db_free(&hpkp_db);
-		hpkp_db = new_hpkp_db;
-	} else {
-		wget_hpkp_db_free(&new_hpkp_db);
-	}
-}
-
 // vtable
 static struct wget_plugin_vtable vtable = {
 	.get_name = impl_get_name,
@@ -274,8 +259,6 @@ static struct wget_plugin_vtable vtable = {
 	.file_get_recurse = impl_file_get_recurse,
 	.file_add_recurse_url = impl_file_add_recurse_url,
 	.register_post_processor = impl_register_post_processor,
-
-	.add_hpkp_db = impl_add_hpkp_db,
 };
 
 // Free resources of the plugin and plugin itself
@@ -567,15 +550,6 @@ void plugin_db_forward_url_verdict_free(struct plugin_db_forward_url_verdict *ve
 		wget_free(verdict->alt_local_filename);
 }
 
-// Fetches the plugin-provided HPKP database, or NULL.
-// Ownership of the returned HPKP database is transferred to the caller, so it must be free'd with wget_hpkp_db_free().
-wget_hpkp_db_t *plugin_db_fetch_provided_hpkp_db(void)
-{
-	wget_hpkp_db_t *res = hpkp_db;
-	hpkp_db = NULL;
-	return res;
-}
-
 // Forwards downloaded file to interested plugins
 int plugin_db_forward_downloaded_file(const wget_iri *iri, uint64_t size, const char *filename, const void *data,
 		wget_vector *recurse_iris)
@@ -624,8 +598,6 @@ void plugin_db_init(void)
 		wget_stringmap_set_key_destructor(plugin_name_index, NULL);
 		wget_stringmap_set_value_destructor(plugin_name_index, NULL);
 		plugin_help_forwarded = 0;
-		hpkp_db = NULL;
-		hpkp_db_priority = 0;
 
 		initialized = 1;
 	}
@@ -648,8 +620,6 @@ void plugin_db_finalize(int exitcode)
 	wget_vector_free(&plugin_list);
 	wget_stringmap_free(&plugin_name_index);
 	wget_vector_free(&search_paths);
-	if (hpkp_db)
-		wget_hpkp_db_free(&hpkp_db);
 
 	initialized = 0;
 }

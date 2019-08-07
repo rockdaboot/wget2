@@ -1603,23 +1603,31 @@ typedef struct wget_hpkp_st wget_hpkp_t;
  *         return (wget_hpkp_db_t *) hpkp_db;
  *     }
  */
-struct wget_hpkp_db_vtable {
-	/// Implementation of \ref wget_hpkp_db_load "wget_hpkp_db_load()"
-	int (*load)(wget_hpkp_db_t *);
-	/// Implementation of \ref wget_hpkp_db_save "wget_hpkp_db_save()"
-	int (*save)(wget_hpkp_db_t *);
-	/// Implementation of \ref wget_hpkp_db_free "wget_hpkp_db_free()"
-	void (*free)(wget_hpkp_db_t *);
-	/// Implementation of \ref wget_hpkp_db_add "wget_hpkp_db_add()"
-	void (*add)(wget_hpkp_db_t *, wget_hpkp_t *);
-	/// Implementation of \ref wget_hpkp_db_check_pubkey "wget_hpkp_db_check_pubkey()"
-	int (*check_pubkey)(wget_hpkp_db_t *, const char *, const void *, size_t);
-};
 
-struct wget_hpkp_db_st {
-	/// Pointer to the implementation vtable
-	struct wget_hpkp_db_vtable *vtable;
-};
+typedef wget_hpkp_db_t *wget_hpkp_db_init_fn(wget_hpkp_db_t *hpkp_db, const char *fname);
+typedef void wget_hpkp_db_deinit_fn(wget_hpkp_db_t *hpkp_db);
+typedef void wget_hpkp_db_free_fn(wget_hpkp_db_t **hpkp_db);
+typedef int wget_hpkp_db_check_pubkey_fn(wget_hpkp_db_t *hpkp_db, const char *host, const void *pubkey, size_t pubkeysize);
+typedef void wget_hpkp_db_add_fn(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **hpkp);
+typedef int wget_hpkp_db_load_fn(wget_hpkp_db_t *hpkp_db);
+typedef int wget_hpkp_db_save_fn(wget_hpkp_db_t *hpkp_db);
+
+typedef struct {
+	/// Callback replacing \ref wget_hpkp_db_free "wget_hpkp_db_free()"
+	wget_hpkp_db_init_fn *init;
+	/// Callback replacing \ref wget_hpkp_db_free "wget_hpkp_db_free()"
+	wget_hpkp_db_deinit_fn *deinit;
+	/// Callback replacing \ref wget_hpkp_db_free "wget_hpkp_db_free()"
+	wget_hpkp_db_free_fn *free;
+	/// Callback replacing \ref wget_hpkp_db_check_pubkey "wget_hpkp_db_check_pubkey()"
+	wget_hpkp_db_check_pubkey_fn *check_pubkey;
+	/// Callback replacing \ref wget_hpkp_db_add "wget_hpkp_db_add()"
+	wget_hpkp_db_add_fn *add;
+	/// Callback replacing \ref wget_hpkp_db_load "wget_hpkp_db_load()"
+	wget_hpkp_db_load_fn *load;
+	/// Callback replacing \ref wget_hpkp_db_save "wget_hpkp_db_save()"
+	wget_hpkp_db_save_fn *save;
+} wget_hpkp_db_vtable;
 
 WGETAPI wget_hpkp_t *
 	wget_hpkp_new(void);
@@ -1645,22 +1653,18 @@ WGETAPI time_t
 	wget_hpkp_get_maxage(wget_hpkp_t *hpkp);
 WGETAPI int
 	wget_hpkp_get_include_subdomains(wget_hpkp_t *hpkp);
-WGETAPI wget_hpkp_db_t *
-	wget_hpkp_db_init(wget_hpkp_db_t *hpkp_db, const char *fname);
+
+WGETAPI wget_hpkp_db_init_fn wget_hpkp_db_init;
+WGETAPI wget_hpkp_db_deinit_fn wget_hpkp_db_deinit;
+WGETAPI wget_hpkp_db_free_fn wget_hpkp_db_free;
+WGETAPI wget_hpkp_db_check_pubkey_fn wget_hpkp_db_check_pubkey;
+WGETAPI wget_hpkp_db_add_fn wget_hpkp_db_add;
+WGETAPI wget_hpkp_db_load_fn wget_hpkp_db_load;
+WGETAPI wget_hpkp_db_save_fn wget_hpkp_db_save;
 WGETAPI void
 	wget_hpkp_db_set_fname(wget_hpkp_db_t *hpkp_db, const char *fname);
 WGETAPI void
-	wget_hpkp_db_deinit(wget_hpkp_db_t *hpkp_db);
-WGETAPI void
-	wget_hpkp_db_free(wget_hpkp_db_t **hpkp_db);
-WGETAPI int
-	wget_hpkp_db_check_pubkey(wget_hpkp_db_t *hpkp_db, const char *host, const void *pubkey, size_t pubkeysize);
-WGETAPI void
-	wget_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **hpkp);
-WGETAPI int
-	wget_hpkp_db_load(wget_hpkp_db_t *hpkp_db);
-WGETAPI int
-	wget_hpkp_db_save(wget_hpkp_db_t *hpkp_db);
+	wget_hpkp_set_plugin(const wget_hpkp_db_vtable *vtable);
 
 /*
  * TLS session resumption

@@ -475,74 +475,75 @@ int wget_plugin_initializer(wget_plugin *plugin)
 
 // HPKP database for testing
 static int hpkp_db_load_counter = 0;
+
+// this is a dummy hpkp db implementation for the plugin
 typedef struct {
-	wget_hpkp_db_t parent;
-	wget_hpkp_db_t *backend_db;
-} test_hpkp_db_t;
+	int dummy;
+} test_hpkp_db;
 
-static int test_hpkp_db_load(wget_hpkp_db_t *p_hpkp_db)
+static wget_hpkp_db_t *test_hpkp_db_init(wget_hpkp_db_t *hpkp_db, const char *fname)
 {
-	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
+	(void) fname;
 
-	if (! hpkp_db->backend_db)
-		wget_error_printf_exit("%s: wget using wrong HPKP database\n", __func__);
+	if (!hpkp_db)
+		hpkp_db = wget_calloc(1, sizeof(test_hpkp_db));
+	else
+		memset(hpkp_db, 0, sizeof(test_hpkp_db));
 
+	return hpkp_db;
+}
+
+static void test_hpkp_db_deinit(wget_hpkp_db_t *hpkp_db)
+{
+	if (hpkp_db) {
+		memset(hpkp_db, 0, sizeof(test_hpkp_db));
+	}
+}
+
+static void test_hpkp_db_free(wget_hpkp_db_t **hpkp_db)
+{
+	wget_free(*hpkp_db);
+	*hpkp_db = NULL;
+}
+
+static int test_hpkp_db_check_pubkey(wget_hpkp_db_t *hpkp_db, const char *host, const void *pubkey, size_t pubkeysize)
+{
+	(void) hpkp_db;
+	wget_debug_printf("%s: host %s pubkey %p pksize %zu\n", __func__,
+		host, pubkey, pubkeysize);
+
+	return 0;
+}
+
+static void test_hpkp_db_add(wget_hpkp_db_t *hpkp_db, wget_hpkp_t **hpkp)
+{
+	(void) hpkp_db;
+	wget_debug_printf("%s: hpkp %p\n", __func__, (void *) hpkp);
+}
+
+static int test_hpkp_db_load(wget_hpkp_db_t *hpkp_db)
+{
+	(void) hpkp_db;
 	hpkp_db_load_counter++;
-	return wget_hpkp_db_load(hpkp_db->backend_db);
+	return 0;
 }
-static int test_hpkp_db_save(wget_hpkp_db_t *p_hpkp_db)
+
+static int test_hpkp_db_save(wget_hpkp_db_t *hpkp_db)
 {
-	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
-
-	if (! hpkp_db->backend_db)
-		wget_error_printf_exit("%s: wget using wrong HPKP database\n", __func__);
-
-	return wget_hpkp_db_save(hpkp_db->backend_db);
+	(void) hpkp_db;
+	return 0;
 }
-static void test_hpkp_db_free(wget_hpkp_db_t *p_hpkp_db)
-{
-	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
 
-	if (hpkp_db->backend_db)
-		wget_hpkp_db_free(&hpkp_db->backend_db);
-	wget_free(hpkp_db);
-}
-static void test_hpkp_db_add(wget_hpkp_db_t *p_hpkp_db, wget_hpkp_t *hpkp)
-{
-	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
-
-	if (! hpkp_db->backend_db)
-		wget_error_printf_exit("%s: wget using wrong HPKP database\n", __func__);
-
-	wget_hpkp_db_add(hpkp_db->backend_db, &hpkp);
-}
-static int test_hpkp_db_check_pubkey(wget_hpkp_db_t *p_hpkp_db, const char *host, const void *pubkey, size_t pubkeysize)
-{
-	test_hpkp_db_t *hpkp_db = (test_hpkp_db_t *) p_hpkp_db;
-
-	if (! hpkp_db->backend_db)
-		wget_error_printf_exit("%s: wget using wrong HPKP database\n", __func__);
-
-	return wget_hpkp_db_check_pubkey(hpkp_db->backend_db, host, pubkey, pubkeysize);
-}
-static struct wget_hpkp_db_vtable test_hpkp_db_vtable = {
+static wget_hpkp_db_vtable test_hpkp_db_vtable = {
+	.init = test_hpkp_db_init,
+	.deinit = test_hpkp_db_deinit,
+	.free = test_hpkp_db_free,
+	.check_pubkey = test_hpkp_db_check_pubkey,
+	.add = test_hpkp_db_add,
 	.load = test_hpkp_db_load,
 	.save = test_hpkp_db_save,
-	.free = test_hpkp_db_free,
-	.add = test_hpkp_db_add,
-	.check_pubkey = test_hpkp_db_check_pubkey
 };
-static wget_hpkp_db_t *test_hpkp_db_new(int usable) {
-	test_hpkp_db_t *hpkp_db = wget_malloc(sizeof(test_hpkp_db_t));
 
-	hpkp_db->parent.vtable = &test_hpkp_db_vtable;
-	if (usable)
-		hpkp_db->backend_db = wget_hpkp_db_init(NULL, NULL);
-	else
-		hpkp_db->backend_db = NULL;
-
-	return (wget_hpkp_db_t *) hpkp_db;
-}
 
 // HSTS database for testing
 static int hsts_db_load_counter = 0;
@@ -720,9 +721,8 @@ static void finalizer(G_GNUC_WGET_UNUSED wget_plugin *plugin, G_GNUC_WGET_UNUSED
 WGET_EXPORT int wget_plugin_initializer(wget_plugin *plugin);
 int wget_plugin_initializer(wget_plugin *plugin)
 {
-	wget_plugin_add_hpkp_db(plugin, test_hpkp_db_new(0), 1);
-	wget_plugin_add_hpkp_db(plugin, test_hpkp_db_new(1), 3);
-	wget_plugin_add_hpkp_db(plugin, test_hpkp_db_new(0), 2);
+	// set the replacement for the standard HPKP database functions
+	wget_hpkp_set_plugin(&test_hpkp_db_vtable);
 
 	// set the replacement for the standard HSTS database functions
 	wget_hsts_set_plugin(&test_hsts_db_vtable);

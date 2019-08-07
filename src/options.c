@@ -3362,8 +3362,7 @@ int init(int argc, const char **argv)
 #endif
 
 	if (config.hpkp) {
-		config.hpkp_db = plugin_db_fetch_provided_hpkp_db();
-		if (! config.hpkp_db)
+		if (!config.hpkp_db)
 			config.hpkp_db = wget_hpkp_db_init(NULL, config.hpkp_file);
 		wget_hpkp_db_load(config.hpkp_db);
 	}

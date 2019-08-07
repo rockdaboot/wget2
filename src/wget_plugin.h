@@ -98,10 +98,6 @@ void plugin_db_forward_url_verdict_free(struct plugin_db_forward_url_verdict *ve
 int plugin_db_forward_downloaded_file(const wget_iri *iri, uint64_t size, const char *filename, const void *data,
 		wget_vector *recurse_iris);
 
-// Fetches the plugin-provided HPKP database, or NULL.
-// Ownership of the returned HPKP database is transferred to the caller, so it must be free'd with wget_hpkp_db_free().
-wget_hpkp_db_t *plugin_db_fetch_provided_hpkp_db(void);
-
 // Sends 'finalize' signal to all plugins and unloads all plugins
 void plugin_db_finalize(int exitcode);
 
