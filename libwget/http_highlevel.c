@@ -296,7 +296,7 @@ wget_http_response *wget_http_get(int first_key, ...)
 
 			// if relative location, convert to absolute
 			wget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
-			wget_iri_relative_to_abs(uri, resp->location, strlen(resp->location), &uri_buf);
+			wget_iri_relative_to_abs(uri, resp->location, -1, &uri_buf);
 
 			if (bits.free_uri)
 				wget_iri_free(&uri);

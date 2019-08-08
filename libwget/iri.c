@@ -802,7 +802,7 @@ static size_t G_GNUC_WGET_NONNULL_ALL _normalize_path(char *path)
 /**
  * \param[in] base A base IRI
  * \param[in] val A path, or another URI
- * \param[in] len Length of the string \p val
+ * \param[in] len Length of the string \p val or -1
  * \param[in] buf Destination buffer, where the result will be copied.
  * \return A new URI (string) which is based on the base IRI \p base provided, or NULL in case of error.
  *
@@ -819,10 +819,15 @@ static size_t G_GNUC_WGET_NONNULL_ALL _normalize_path(char *path)
  *
  * If \p base is NULL, then \p val must itself be an absolute URI. Likewise, if \p buf is NULL,
  * then \p val must also be an absolute URI.
+ *
+ * if \p len is `-1`, the length of \p val will be the result from `strlen(val)`.
  */
 const char *wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len, wget_buffer *buf)
 {
 	debug_printf("*url = %.*s\n", (int)len, val);
+
+	if (len == (size_t) -1)
+		len = strlen(val);
 
 	if (*val == '/') {
 		if (base) {
@@ -918,11 +923,11 @@ wget_iri *wget_iri_parse_base(wget_iri *base, const char *url, const char *encod
 		char sbuf[256];
 
 		wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-		iri = wget_iri_parse(wget_iri_relative_to_abs(base, url, strlen(url), &buf), encoding);
+		iri = wget_iri_parse(wget_iri_relative_to_abs(base, url, -1, &buf), encoding);
 		wget_buffer_deinit(&buf);
 	} else {
 		// no base: just check URL for being an absolute URI
-		iri = wget_iri_parse(wget_iri_relative_to_abs(NULL, url, strlen(url), NULL), encoding);
+		iri = wget_iri_parse(wget_iri_relative_to_abs(NULL, url, -1, NULL), encoding);
 	}
 
 	return iri;
