@@ -224,7 +224,7 @@ static void html_parse(const char *html, size_t html_len, const char *encoding, 
 	wget_info_printf("      total: http=%d https=%d\n", stats.http_links, stats.https_links);
 }
 
-int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED)
+int main(int argc WGET_GCC_UNUSED, const char *const *argv WGET_GCC_UNUSED)
 {
 //	wget_http_connection *conn = NULL;
 	wget_http_response *resp = NULL;

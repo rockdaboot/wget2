@@ -80,7 +80,7 @@ void wget_ocsp_set_plugin(const wget_ocsp_db_vtable *vtable)
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int G_GNUC_WGET_PURE _hash_ocsp(const _ocsp_t *ocsp)
+static unsigned int WGET_GCC_PURE _hash_ocsp(const _ocsp_t *ocsp)
 {
 	unsigned int hash = 0;
 	const unsigned char *p;
@@ -91,7 +91,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_ocsp(const _ocsp_t *ocsp)
 	return hash;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_ocsp(const _ocsp_t *h1, const _ocsp_t *h2)
+static int WGET_GCC_NONNULL_ALL WGET_GCC_PURE _compare_ocsp(const _ocsp_t *h1, const _ocsp_t *h2)
 {
 	return strcmp(h1->key, h2->key);
 }
@@ -514,13 +514,13 @@ int wget_ocsp_db_load(wget_ocsp_db *ocsp_db)
 	return ret;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _ocsp_save_fingerprint(FILE *fp, const _ocsp_t *ocsp)
+static int WGET_GCC_NONNULL_ALL _ocsp_save_fingerprint(FILE *fp, const _ocsp_t *ocsp)
 {
 	wget_fprintf(fp, "%s %lld %lld %d\n", ocsp->key, (long long)ocsp->maxage, (long long)ocsp->mtime, ocsp->valid);
 	return 0;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _ocsp_save_host(FILE *fp, const _ocsp_t *ocsp)
+static int WGET_GCC_NONNULL_ALL _ocsp_save_host(FILE *fp, const _ocsp_t *ocsp)
 {
 	wget_fprintf(fp, "%s %lld %lld\n", ocsp->key, (long long)ocsp->maxage, (long long)ocsp->mtime);
 	return 0;

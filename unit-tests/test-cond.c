@@ -29,7 +29,7 @@ static wget_thread_mutex
 static wget_thread_cond
 	condtest;
 
-static void *cond_routine(G_GNUC_WGET_UNUSED void *arg)
+static void *cond_routine(WGET_GCC_UNUSED void *arg)
 {
 	wget_thread_mutex_lock(lockcond);
 	while (!cond_value)

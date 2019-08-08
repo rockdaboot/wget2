@@ -31,12 +31,12 @@
 #include <unistd.h>
 #include <wget.h>
 
-static void _css_parse_encoding(void *context G_GNUC_WGET_UNUSED, const char *encoding, size_t len)
+static void _css_parse_encoding(void *context WGET_GCC_UNUSED, const char *encoding, size_t len)
 {
 	printf("URI encoding '%.*s'\n", (int)len, encoding);
 }
 
-static void _css_parse_uri(void *context G_GNUC_WGET_UNUSED, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+static void _css_parse_uri(void *context WGET_GCC_UNUSED, const char *url, size_t len, size_t pos WGET_GCC_UNUSED)
 {
 	printf("  %.*s\n", (int)len, url);
 }

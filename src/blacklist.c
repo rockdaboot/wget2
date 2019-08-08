@@ -56,7 +56,7 @@ void blacklist_exit(void)
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int G_GNUC_WGET_NONNULL_ALL hash_iri(const wget_iri *iri)
+static unsigned int WGET_GCC_NONNULL_ALL hash_iri(const wget_iri *iri)
 {
 	unsigned int h = iri->port; // use port as SALT if hash table attacks doesn't matter
 	const unsigned char *p;
@@ -76,7 +76,7 @@ static unsigned int G_GNUC_WGET_NONNULL_ALL hash_iri(const wget_iri *iri)
 	return h;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL blacklist_print_entry(G_GNUC_WGET_UNUSED void *ctx, const wget_iri *iri)
+static int WGET_GCC_NONNULL_ALL blacklist_print_entry(WGET_GCC_UNUSED void *ctx, const wget_iri *iri)
 {
 	debug_printf("blacklist %s\n", iri->uri);
 	return 0;

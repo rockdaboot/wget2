@@ -46,8 +46,8 @@
 #include "private.h"
 
 #ifdef WITH_LIBPSL
-#  undef G_GNUC_WGET_UNUSED
-#  define G_GNUC_WGET_UNUSED
+#  undef WGET_GCC_UNUSED
+#  define WGET_GCC_UNUSED
 #endif
 
 struct wget_cookie_st {
@@ -95,7 +95,7 @@ struct wget_cookie_db_st {
 
 // by this kind of sorting, we can easily see if a domain matches or not (match = supercookie !)
 
-int wget_cookie_db_load_psl(G_GNUC_WGET_UNUSED wget_cookie_db *cookie_db, G_GNUC_WGET_UNUSED const char *fname)
+int wget_cookie_db_load_psl(WGET_GCC_UNUSED wget_cookie_db *cookie_db, WGET_GCC_UNUSED const char *fname)
 {
 #ifdef WITH_LIBPSL
 	if (!cookie_db)
@@ -118,7 +118,7 @@ int wget_cookie_db_load_psl(G_GNUC_WGET_UNUSED wget_cookie_db *cookie_db, G_GNUC
 }
 
 // this is how we sort the entries in a cookie db
-static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_cookie(const wget_cookie *c1, const wget_cookie *c2)
+static int WGET_GCC_NONNULL_ALL WGET_GCC_PURE _compare_cookie(const wget_cookie *c1, const wget_cookie *c2)
 {
 	int n;
 
@@ -132,7 +132,7 @@ static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_cookie(const wget_c
 }
 
 // this is how we sort the entries when constructing a Cookie: header field
-static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_cookie2(const wget_cookie *c1, const wget_cookie *c2)
+static int WGET_GCC_NONNULL_ALL WGET_GCC_PURE _compare_cookie2(const wget_cookie *c1, const wget_cookie *c2)
 {
 	// RFC 6265 5.4 demands sorting by 1. longer paths first, 2. earlier creation time first.
 	size_t len1 = strlen(c1->path);
@@ -153,7 +153,7 @@ static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_cookie2(const wget_
 	return 0;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _domain_match(const char *domain, const char *host)
+static int WGET_GCC_NONNULL_ALL _domain_match(const char *domain, const char *host)
 {
 	size_t domain_length, host_length;
 	const char *p;
@@ -176,7 +176,7 @@ static int G_GNUC_WGET_NONNULL_ALL _domain_match(const char *domain, const char 
 	return 0;
 }
 
-static int G_GNUC_WGET_NONNULL((1)) _path_match(const char *cookie_path, const char *request_path)
+static int WGET_GCC_NONNULL((1)) _path_match(const char *cookie_path, const char *request_path)
 {
 	const char *last_slash;
 	size_t cookie_path_length, iri_path_length;
@@ -594,7 +594,7 @@ void wget_cookie_normalize_cookies(const wget_iri *iri, const wget_vector *cooki
 //	wget_thread_mutex_unlock(&_cookies_mutex);
 }
 
-int wget_cookie_check_psl(G_GNUC_WGET_UNUSED const wget_cookie_db *cookie_db, G_GNUC_WGET_UNUSED const wget_cookie *cookie)
+int wget_cookie_check_psl(WGET_GCC_UNUSED const wget_cookie_db *cookie_db, WGET_GCC_UNUSED const wget_cookie *cookie)
 {
 //	wget_thread_mutex_lock(&_cookies_mutex);
 

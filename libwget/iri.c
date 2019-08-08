@@ -206,7 +206,7 @@ bool wget_iri_isunreserved_path(char c)
 	return c > 32 && c < 127 && (c_isalnum(c) || _iri_isunreserved(c) || c == '/');
 }
 
-static unsigned char G_GNUC_WGET_CONST _unhex(unsigned char c)
+static unsigned char WGET_GCC_CONST _unhex(unsigned char c)
 {
 	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
 }
@@ -724,7 +724,7 @@ const char *wget_iri_get_connection_part(wget_iri *iri)
 
 // normalize /../ and remove /./
 
-static size_t G_GNUC_WGET_NONNULL_ALL _normalize_path(char *path)
+static size_t WGET_GCC_NONNULL_ALL _normalize_path(char *path)
 {
 	char *p1 = path, *p2 = path;
 

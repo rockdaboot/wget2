@@ -158,7 +158,7 @@ int wget_net_deinit(void)
 	return rc ? -1 : 0;
 }
 
-static int G_GNUC_WGET_CONST _value_to_family(int value)
+static int WGET_GCC_CONST _value_to_family(int value)
 {
 	switch (value) {
 	case WGET_NET_FAMILY_IPV4:
@@ -170,7 +170,7 @@ static int G_GNUC_WGET_CONST _value_to_family(int value)
 	}
 }
 
-static int G_GNUC_WGET_CONST _family_to_value(int family)
+static int WGET_GCC_CONST _family_to_value(int family)
 {
 	switch (family) {
 	case AF_INET:

@@ -67,7 +67,7 @@ struct wget_tls_session_st {
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int G_GNUC_WGET_PURE _hash_tls_session(const wget_tls_session *tls_session)
+static unsigned int WGET_GCC_PURE _hash_tls_session(const wget_tls_session *tls_session)
 {
 	unsigned int hash = 0;
 	const unsigned char *p;
@@ -78,7 +78,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_tls_session(const wget_tls_session *t
 	return hash;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_tls_session(const wget_tls_session *s1, const wget_tls_session *s2)
+static int WGET_GCC_NONNULL_ALL WGET_GCC_PURE _compare_tls_session(const wget_tls_session *s1, const wget_tls_session *s2)
 {
 	int n;
 
@@ -340,7 +340,7 @@ int wget_tls_session_db_load(wget_tls_session_db *tls_session_db, const char *fn
 	}
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _tls_session_save(FILE *fp, const wget_tls_session *tls_session)
+static int WGET_GCC_NONNULL_ALL _tls_session_save(FILE *fp, const wget_tls_session *tls_session)
 {
 	char session_b64[wget_base64_get_encoded_length(tls_session->data_size)];
 

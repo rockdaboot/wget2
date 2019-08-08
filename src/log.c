@@ -46,9 +46,9 @@
 #	include <windows.h>
 	static CRITICAL_SECTION g_crit;
 #	define _U
-#	define _U_WIN32 G_GNUC_WGET_UNUSED
+#	define _U_WIN32 WGET_GCC_UNUSED
 #else
-#	define _U G_GNUC_WGET_UNUSED
+#	define _U WGET_GCC_UNUSED
 #	define _U_WIN32
 #endif
 
@@ -161,7 +161,7 @@ static void _write_debug_stderr(const char *data, size_t len)
 	_write_debug(stderr, data, len);
 }
 
-static void G_GNUC_WGET_UNUSED _write_debug_stdout(const char *data, size_t len)
+static void WGET_GCC_UNUSED _write_debug_stdout(const char *data, size_t len)
 {
 	_write_debug(stdout, data, len);
 }

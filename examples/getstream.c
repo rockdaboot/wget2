@@ -55,7 +55,7 @@ static int metaint, streamdatalen, metadatalen;
 // <context> depends on WGET_HTTP_BODY_SAVEAS_* option given to wget_http_get().
 // The response header is has been parsed into <resp> structure.
 static wget_http_header_callback_t header_callback;
-static int header_callback(wget_http_response *resp, void *context G_GNUC_WGET_UNUSED)
+static int header_callback(wget_http_response *resp, void *context WGET_GCC_UNUSED)
 {
 	// If you are looking for header that are ignored by libwget, parse them yourself.
 
@@ -83,7 +83,7 @@ static int header_callback(wget_http_response *resp, void *context G_GNUC_WGET_U
 
 // callback function to handle incoming stream data
 static wget_http_body_callback_t stream_callback;
-static int stream_callback(wget_http_response *resp G_GNUC_WGET_UNUSED, void *context G_GNUC_WGET_UNUSED, const char *data, size_t len)
+static int stream_callback(wget_http_response *resp WGET_GCC_UNUSED, void *context WGET_GCC_UNUSED, const char *data, size_t len)
 {
 	// any stream data received is piped through this function
 

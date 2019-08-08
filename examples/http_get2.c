@@ -31,7 +31,7 @@
 
 #define COOKIE_SUPPORT
 
-int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED)
+int main(int argc WGET_GCC_UNUSED, const char *const *argv WGET_GCC_UNUSED)
 {
 	wget_iri *uri;
 	wget_http_connection *conn = NULL;

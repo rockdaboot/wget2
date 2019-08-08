@@ -48,7 +48,7 @@ int wget_plugin_initializer(wget_plugin *plugin)
 	return 0;
 }
 #elif defined TEST_SELECT_EXITSTATUS
-static void finalizer(G_GNUC_WGET_UNUSED wget_plugin *plugin, int exit_status)
+static void finalizer(WGET_GCC_UNUSED wget_plugin *plugin, int exit_status)
 {
 	FILE *stream = fopen("exit-status.txt", "wb");
 	if (! stream)
@@ -68,7 +68,7 @@ void irrelevant(void)
 {
 }
 #elif defined TEST_SELECT_FAULTY2
-static void finalizer(G_GNUC_WGET_UNUSED wget_plugin *plugin, int exit_status)
+static void finalizer(WGET_GCC_UNUSED wget_plugin *plugin, int exit_status)
 {
 	FILE *stream = fopen("exit-status.txt", "wb");
 	if (! stream)
@@ -295,7 +295,7 @@ static int argp_fn(wget_plugin *plugin, const char *option, const char *value)
 	return parse_option(options, plugin, option, value);
 }
 
-static void finalizer(wget_plugin *plugin, G_GNUC_WGET_UNUSED int exit_status)
+static void finalizer(wget_plugin *plugin, WGET_GCC_UNUSED int exit_status)
 {
 	plugin_data_t *d = (plugin_data_t *) plugin->plugin_data;
 
@@ -708,7 +708,7 @@ static const wget_ocsp_db_vtable test_ocsp_db_vtable = {
 	.save = test_ocsp_db_save,
 };
 
-static void finalizer(G_GNUC_WGET_UNUSED wget_plugin *plugin, G_GNUC_WGET_UNUSED int exit_status)
+static void finalizer(WGET_GCC_UNUSED wget_plugin *plugin, WGET_GCC_UNUSED int exit_status)
 {
 	if (hpkp_db_load_counter != 1)
 		wget_error_printf_exit("wget using wrong HPKP database (%d)\n", hpkp_db_load_counter);

@@ -198,19 +198,19 @@ int dl_supported(void)
 	return 0;
 }
 
-dl_file_t *dl_file_open(G_GNUC_WGET_UNUSED const char *filename, dl_error_t *e)
+dl_file_t *dl_file_open(WGET_GCC_UNUSED const char *filename, dl_error_t *e)
 {
 	dl_error_set(e, dl_unsupported);
 	return NULL;
 }
 
-void *dl_file_lookup(G_GNUC_WGET_UNUSED dl_file_t *dm, G_GNUC_WGET_UNUSED const char *symbol, dl_error_t *e)
+void *dl_file_lookup(WGET_GCC_UNUSED dl_file_t *dm, WGET_GCC_UNUSED const char *symbol, dl_error_t *e)
 {
 	dl_error_set(e, dl_unsupported);
 	return NULL;
 }
 
-void dl_file_close(G_GNUC_WGET_UNUSED dl_file_t *dm)
+void dl_file_close(WGET_GCC_UNUSED dl_file_t *dm)
 {
 }
 

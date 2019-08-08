@@ -190,14 +190,14 @@ static void _bar_update_speed_stats(_bar_slot_t *slotp)
 
 static volatile sig_atomic_t winsize_changed;
 
-static inline G_GNUC_WGET_ALWAYS_INLINE void
+static inline WGET_GCC_ALWAYS_INLINE void
 _restore_cursor_position(void)
 {
 	// ESC 8: Restore cursor position
 	fputs("\0338", stdout);
 }
 
-static inline G_GNUC_WGET_ALWAYS_INLINE void
+static inline WGET_GCC_ALWAYS_INLINE void
 _bar_print_slot(const wget_bar *bar, int slot)
 {
 	// ESC 7: Save cursor
@@ -206,7 +206,7 @@ _bar_print_slot(const wget_bar *bar, int slot)
 	wget_fprintf(stdout, "\0337\033[%dA\033[1G", bar->nslots - slot);
 }
 
-static inline G_GNUC_WGET_ALWAYS_INLINE void
+static inline WGET_GCC_ALWAYS_INLINE void
 _bar_set_progress(const wget_bar *bar, int slot)
 {
 	_bar_slot_t *slotp = &bar->slots[slot];

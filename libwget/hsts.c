@@ -86,7 +86,7 @@ void wget_hsts_set_plugin(const wget_hsts_db_vtable *vtable)
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int G_GNUC_WGET_PURE _hash_hsts(const _hsts_t *hsts)
+static unsigned int WGET_GCC_PURE _hash_hsts(const _hsts_t *hsts)
 {
 	unsigned int hash = hsts->port;
 	const unsigned char *p;
@@ -97,7 +97,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_hsts(const _hsts_t *hsts)
 	return hash;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_hsts(const _hsts_t *h1, const _hsts_t *h2)
+static int WGET_GCC_NONNULL_ALL WGET_GCC_PURE _compare_hsts(const _hsts_t *h1, const _hsts_t *h2)
 {
 	int n;
 
@@ -447,7 +447,7 @@ int wget_hsts_db_load(wget_hsts_db *hsts_db)
 	}
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _hsts_save(FILE *fp, const _hsts_t *hsts)
+static int WGET_GCC_NONNULL_ALL _hsts_save(FILE *fp, const _hsts_t *hsts)
 {
 	wget_fprintf(fp, "%s %hu %d %lld %lld\n", hsts->host, hsts->port, hsts->include_subdomains, (long long)hsts->created, (long long)hsts->maxage);
 	return 0;

@@ -57,7 +57,7 @@ struct wget_dns_cache_st {
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int G_GNUC_WGET_PURE _hash_dns(const struct cache_entry *entry)
+static unsigned int WGET_GCC_PURE _hash_dns(const struct cache_entry *entry)
 {
 	unsigned int hash = entry->port;
 	const unsigned char *p = (unsigned char *) entry->host;
@@ -68,7 +68,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_dns(const struct cache_entry *entry)
 	return hash;
 }
 
-static int G_GNUC_WGET_PURE _compare_dns(const struct cache_entry *a1, const struct cache_entry *a2)
+static int WGET_GCC_PURE _compare_dns(const struct cache_entry *a1, const struct cache_entry *a2)
 {
 	if (a1->port < a2->port)
 		return -1;

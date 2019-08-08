@@ -177,7 +177,7 @@ static void _replace_space_with_plus(wget_buffer *buf, const char *data)
 
 static int _print_query_string(
 	void *cls,
-	enum MHD_ValueKind kind G_GNUC_WGET_UNUSED,
+	enum MHD_ValueKind kind WGET_GCC_UNUSED,
 	const char *key,
 	const char *value)
 {
@@ -206,7 +206,7 @@ static int _print_query_string(
 
 static int _print_header_range(
 	void *cls,
-	enum MHD_ValueKind kind G_GNUC_WGET_UNUSED,
+	enum MHD_ValueKind kind WGET_GCC_UNUSED,
 	const char *key,
 	const char *value)
 {
@@ -256,14 +256,14 @@ static void _free_callback_param(void *cls)
 
 #ifdef HAVE_GNUTLS_OCSP_H
 static int _ocsp_ahc(
-	void *cls G_GNUC_WGET_UNUSED,
+	void *cls WGET_GCC_UNUSED,
 	struct MHD_Connection *connection,
-	const char *url G_GNUC_WGET_UNUSED,
-	const char *method G_GNUC_WGET_UNUSED,
-	const char *version G_GNUC_WGET_UNUSED,
+	const char *url WGET_GCC_UNUSED,
+	const char *method WGET_GCC_UNUSED,
+	const char *version WGET_GCC_UNUSED,
 	const char *upload_data,
 	size_t *upload_data_size,
-	void **con_cls G_GNUC_WGET_UNUSED)
+	void **con_cls WGET_GCC_UNUSED)
 {
 	static bool first = true;
 
@@ -293,11 +293,11 @@ static int _ocsp_ahc(
 }
 
 static int _ocsp_cert_callback(
-	gnutls_session_t session G_GNUC_WGET_UNUSED,
-	const gnutls_datum_t* req_ca_dn G_GNUC_WGET_UNUSED,
-	int nreqs G_GNUC_WGET_UNUSED,
-	const gnutls_pk_algorithm_t* pk_algos G_GNUC_WGET_UNUSED,
-	int pk_algos_length G_GNUC_WGET_UNUSED,
+	gnutls_session_t session WGET_GCC_UNUSED,
+	const gnutls_datum_t* req_ca_dn WGET_GCC_UNUSED,
+	int nreqs WGET_GCC_UNUSED,
+	const gnutls_pk_algorithm_t* pk_algos WGET_GCC_UNUSED,
+	int pk_algos_length WGET_GCC_UNUSED,
 	gnutls_pcert_st** pcert,
 	unsigned int *pcert_length,
 	gnutls_privkey_t *pkey)
@@ -313,14 +313,14 @@ static int _ocsp_cert_callback(
 #if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
 static gnutls_certificate_retrieve_function3 _ocsp_stap_cert_callback;
 static int _ocsp_stap_cert_callback(
-	gnutls_session_t session G_GNUC_WGET_UNUSED,
-	const struct gnutls_cert_retr_st *info G_GNUC_WGET_UNUSED,
+	gnutls_session_t session WGET_GCC_UNUSED,
+	const struct gnutls_cert_retr_st *info WGET_GCC_UNUSED,
 	gnutls_pcert_st **pcert,
 	unsigned int *pcert_length,
 	gnutls_ocsp_data_st **ocsp,
 	unsigned int *ocsp_length,
 	gnutls_privkey_t *pkey,
-	unsigned int *flags G_GNUC_WGET_UNUSED)
+	unsigned int *flags WGET_GCC_UNUSED)
 {
 	*pcert = pcrt_stap;
 	*pkey = *privkey_stap;
@@ -335,14 +335,14 @@ static int _ocsp_stap_cert_callback(
 #endif
 
 static int _answer_to_connection(
-	void *cls G_GNUC_WGET_UNUSED,
+	void *cls WGET_GCC_UNUSED,
 	struct MHD_Connection *connection,
 	const char *url,
 	const char *method,
-	const char *version G_GNUC_WGET_UNUSED,
-	const char *upload_data G_GNUC_WGET_UNUSED,
-	size_t *upload_data_size G_GNUC_WGET_UNUSED,
-	void **con_cls G_GNUC_WGET_UNUSED)
+	const char *version WGET_GCC_UNUSED,
+	const char *upload_data WGET_GCC_UNUSED,
+	size_t *upload_data_size WGET_GCC_UNUSED,
+	void **con_cls WGET_GCC_UNUSED)
 {
 #if MHD_VERSION >= 0x00096302 && GNUTLS_VERSION_NUMBER >= 0x030603
 	if (post_handshake_auth != NULL) {
@@ -677,9 +677,9 @@ static void _http_server_stop(void)
 }
 
 static int _check_to_accept(
-	G_GNUC_WGET_UNUSED void *cls,
-	G_GNUC_WGET_UNUSED const struct sockaddr *addr,
-	G_GNUC_WGET_UNUSED socklen_t addrlen)
+	WGET_GCC_UNUSED void *cls,
+	WGET_GCC_UNUSED const struct sockaddr *addr,
+	WGET_GCC_UNUSED socklen_t addrlen)
 {
 	return reject_https_connection ? MHD_NO : MHD_YES;
 }

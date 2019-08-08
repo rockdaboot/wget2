@@ -155,7 +155,7 @@ static void _add_mirror(_metalink_context_t *ctx, const char *value)
 	ctx->priority = 999999;
 }
 
-static void _metalink_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+static void _metalink_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos WGET_GCC_UNUSED)
 {
 	_metalink_context_t *ctx = context;
 	char value[len + 1];
@@ -285,7 +285,7 @@ void wget_metalink_free(wget_metalink **metalink)
 	}
 }
 
-static int G_GNUC_WGET_PURE _compare_mirror(wget_metalink_mirror **m1, wget_metalink_mirror **m2)
+static int WGET_GCC_PURE _compare_mirror(wget_metalink_mirror **m1, wget_metalink_mirror **m2)
 {
 	return (*m1)->priority - (*m2)->priority;
 }

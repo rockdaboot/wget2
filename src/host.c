@@ -173,7 +173,7 @@ static int _search_queue_for_free_job(struct _find_free_job_context *ctx, JOB *j
 	return 0;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _search_host_for_free_job(struct _find_free_job_context *ctx, HOST *host)
+static int WGET_GCC_NONNULL_ALL _search_host_for_free_job(struct _find_free_job_context *ctx, HOST *host)
 {
 	// host may be blocked due to max. number of failures reached
 	if (host->blocked) {
@@ -467,7 +467,7 @@ int queue_empty(void)
 // did I say, that I like nested function instead using contexts !?
 // gcc, IBM and Intel support nested functions, just clang refuses it
 
-static int _queue_free_func(void *context G_GNUC_WGET_UNUSED, JOB *job)
+static int _queue_free_func(void *context WGET_GCC_UNUSED, JOB *job)
 {
 	job_free(job);
 	return 0;
@@ -489,7 +489,7 @@ void host_queue_free(HOST *host)
 }
 
 /*
-static int _queue_print_func(void *context G_GNUC_WGET_UNUSED, JOB *job)
+static int _queue_print_func(void *context WGET_GCC_UNUSED, JOB *job)
 {
 	debug_printf("  %s %d\n", job->local_filename, job->inuse);
 	return 0;

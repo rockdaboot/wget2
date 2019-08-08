@@ -91,7 +91,7 @@ extern "C" {
 
 #define TEST_OPAQUE_STR "11733b200778ce33060f31c9af70a870ba96ddd4"
 
-G_GNUC_WGET_UNUSED static const char *WGET_TEST_SOME_HTML_BODY = "\
+WGET_GCC_UNUSED static const char *WGET_TEST_SOME_HTML_BODY = "\
 <html>\n\
 <head>\n\
   <title>The Title</title>\n\
@@ -159,10 +159,10 @@ WGETAPI void wget_test_stop_server(void);
 WGETAPI void wget_test_start_server(int first_key, ...);
 WGETAPI void wget_test(int first_key, ...);
 WGETAPI int wget_test_check_file_system(void);
-WGETAPI int wget_test_get_http_server_port(void) G_GNUC_WGET_PURE;
-WGETAPI int wget_test_get_https_server_port(void) G_GNUC_WGET_PURE;
-WGETAPI int wget_test_get_ocsp_server_port(void) G_GNUC_WGET_PURE;
-WGETAPI int wget_test_get_h2_server_port(void) G_GNUC_WGET_PURE;
+WGETAPI int wget_test_get_http_server_port(void) WGET_GCC_PURE;
+WGETAPI int wget_test_get_https_server_port(void) WGET_GCC_PURE;
+WGETAPI int wget_test_get_ocsp_server_port(void) WGET_GCC_PURE;
+WGETAPI int wget_test_get_h2_server_port(void) WGET_GCC_PURE;
 
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 #	pragma GCC diagnostic ignored "-Wmissing-field-initializers"

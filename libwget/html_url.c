@@ -86,7 +86,7 @@ static const char attrs[][12] = {
 	"usemap"
 };
 
-static void _css_parse_uri(void *context, const char *url G_GNUC_WGET_UNUSED, size_t len, size_t pos)
+static void _css_parse_uri(void *context, const char *url WGET_GCC_UNUSED, size_t len, size_t pos)
 {
 	_html_context_t *ctx = context;
 	wget_html_parsed_result *res = &ctx->result;
@@ -108,7 +108,7 @@ static void _css_parse_uri(void *context, const char *url G_GNUC_WGET_UNUSED, si
 }
 
 // Callback function, called from HTML parser for each URI found.
-static void _html_get_url(void *context, int flags, const char *tag, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+static void _html_get_url(void *context, int flags, const char *tag, const char *attr, const char *val, size_t len, size_t pos WGET_GCC_UNUSED)
 {
 	_html_context_t *ctx = context;
 

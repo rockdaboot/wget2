@@ -109,7 +109,7 @@ static char *_normalize_location(const char *base, const char *url)
 	return norm_url;
 }
 
-int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED)
+int main(int argc WGET_GCC_UNUSED, const char *const *argv WGET_GCC_UNUSED)
 {
 	static wget_thread downloaders[MAXTHREADS];
 
@@ -159,7 +159,7 @@ int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED
 	return 0;
 }
 
-static void *downloader_thread(G_GNUC_WGET_UNUSED void *p)
+static void *downloader_thread(WGET_GCC_UNUSED void *p)
 {
 	stats_t stats;
 	wget_http_response *resp = NULL;

@@ -191,7 +191,7 @@ wget_hashmap *wget_hashmap_create(int max, wget_hashmap_hash_t *hash, wget_hashm
 	return h;
 }
 
-G_GNUC_WGET_NONNULL_ALL
+WGET_GCC_NONNULL_ALL
 static _entry_t * hashmap_find_entry(const wget_hashmap *h, const char *key, unsigned int hash)
 {
 	for (_entry_t * e = h->entry[hash % h->max]; e; e = e->next) {
@@ -203,7 +203,7 @@ static _entry_t * hashmap_find_entry(const wget_hashmap *h, const char *key, uns
 	return NULL;
 }
 
-G_GNUC_WGET_NONNULL_ALL
+WGET_GCC_NONNULL_ALL
 static void hashmap_rehash(wget_hashmap *h, _entry_t **new_entry, int newmax, int recalc_hash)
 {
 	_entry_t *entry, *next;
@@ -230,7 +230,7 @@ static void hashmap_rehash(wget_hashmap *h, _entry_t **new_entry, int newmax, in
 	h->threshold = (int)(newmax * h->load_factor);
 }
 
-G_GNUC_WGET_NONNULL((1,3))
+WGET_GCC_NONNULL((1,3))
 static int hashmap_new_entry(wget_hashmap *h, unsigned int hash, const char *key, const char *value)
 {
 	_entry_t *entry;
@@ -354,7 +354,7 @@ int wget_hashmap_get(const wget_hashmap *h, const void *key, void **value)
 	return 0;
 }
 
-G_GNUC_WGET_NONNULL_ALL
+WGET_GCC_NONNULL_ALL
 static int hashmap_remove_entry(wget_hashmap *h, const char *key, int free_kv)
 {
 	_entry_t *entry, *next, *prev = NULL;

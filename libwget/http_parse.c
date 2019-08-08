@@ -230,7 +230,7 @@ const char *wget_parse_name_fixed(const char *s, const char **name, size_t *name
 	return *s == ':' ? s + 1 : s;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL compare_param(wget_http_header_param *p1, wget_http_header_param *p2)
+static int WGET_GCC_NONNULL_ALL compare_param(wget_http_header_param *p1, wget_http_header_param *p2)
 {
 	return wget_strcasecmp_ascii(p1->name, p2->name);
 }

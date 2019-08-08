@@ -29,13 +29,13 @@
 #include "fuzzer.h"
 
 static void _cb(
-	G_GNUC_WGET_UNUSED void *context,
-	G_GNUC_WGET_UNUSED int flags,
-	G_GNUC_WGET_UNUSED const char *tag,
-	G_GNUC_WGET_UNUSED const char *attr,
-	G_GNUC_WGET_UNUSED const char *val,
-	G_GNUC_WGET_UNUSED size_t len,
-	G_GNUC_WGET_UNUSED size_t pos)
+	WGET_GCC_UNUSED void *context,
+	WGET_GCC_UNUSED int flags,
+	WGET_GCC_UNUSED const char *tag,
+	WGET_GCC_UNUSED const char *attr,
+	WGET_GCC_UNUSED const char *val,
+	WGET_GCC_UNUSED size_t len,
+	WGET_GCC_UNUSED size_t pos)
 {
 
 }

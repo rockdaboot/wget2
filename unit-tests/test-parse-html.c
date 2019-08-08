@@ -64,7 +64,7 @@ static const char *test_data[] ={
 	"</html>\n"
 };
 
-static void html_dump(void *user_ctx, int flags, const char *dir G_GNUC_WGET_UNUSED, const char *attr, const char *val, size_t len, size_t pos)
+static void html_dump(void *user_ctx, int flags, const char *dir WGET_GCC_UNUSED, const char *attr, const char *val, size_t len, size_t pos)
 {
 //	info_printf("\n%02X %s %s '%.*s' %zd %zd\n", flags, dir, attr, (int) len, val, len, pos);
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {

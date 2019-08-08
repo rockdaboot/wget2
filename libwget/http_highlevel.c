@@ -35,7 +35,7 @@
 #include "private.h"
 #include "http.h"
 
-static int _stream_callback(wget_http_response *resp G_GNUC_WGET_UNUSED, void *user_data, const char *data, size_t length)
+static int _stream_callback(wget_http_response *resp WGET_GCC_UNUSED, void *user_data, const char *data, size_t length)
 {
 	FILE *stream = (FILE *) user_data;
 
@@ -51,7 +51,7 @@ static int _stream_callback(wget_http_response *resp G_GNUC_WGET_UNUSED, void *u
 	return 0;
 }
 
-static int _fd_callback(wget_http_response *resp G_GNUC_WGET_UNUSED, void *user_data, const char *data, size_t length)
+static int _fd_callback(wget_http_response *resp WGET_GCC_UNUSED, void *user_data, const char *data, size_t length)
 {
 	int fd = *(int *) user_data;
 	ssize_t nbytes = write(fd, data, length);

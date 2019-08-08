@@ -37,7 +37,7 @@
 // #define error_printf       wget_error_printf
 #define error_printf_exit  wget_error_printf_exit
 
-static void G_GNUC_WGET_NORETURN usage(const char *myname)
+static void WGET_GCC_NORETURN usage(const char *myname)
 {
 	error_printf_exit(
 		"\nUsage: %s [options] file...\n"\

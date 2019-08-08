@@ -104,7 +104,7 @@ void wget_vector_set_resize_factor(wget_vector *v, float factor)
 		v->resize_factor = factor;
 }
 
-static int G_GNUC_WGET_NONNULL((2)) insert_element(wget_vector *v, const void *elem, int pos, int replace)
+static int WGET_GCC_NONNULL((2)) insert_element(wget_vector *v, const void *elem, int pos, int replace)
 {
 	if (pos < 0 || !v || pos > v->cur)
 		return -1;
@@ -564,7 +564,7 @@ void wget_vector_set_destructor(wget_vector *v, wget_vector_destructor_t *destru
 		v->destructor = destructor;
 }
 
-G_GNUC_WGET_NONNULL_ALL
+WGET_GCC_NONNULL_ALL
 static int compare_element(const void *p1, const void *p2, void *v)
 {
 	return ((wget_vector *)v)->cmp(*((void **)p1), *((void **)p2));

@@ -32,8 +32,8 @@
 
 void blacklist_init(void);
 void blacklist_exit(void);
-int in_blacklist(wget_iri *iri) G_GNUC_WGET_NONNULL_ALL;
-int blacklist_size(void) G_GNUC_WGET_PURE;
+int in_blacklist(wget_iri *iri) WGET_GCC_NONNULL_ALL;
+int blacklist_size(void) WGET_GCC_PURE;
 wget_iri *blacklist_add(wget_iri *iri);
 void blacklist_print(void);
 void blacklist_free(void);

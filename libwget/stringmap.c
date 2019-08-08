@@ -42,7 +42,7 @@ static wget_hashmap_hash_t hash_string, hash_string_nocase;
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-G_GNUC_WGET_PURE
+WGET_GCC_PURE
 static unsigned int hash_string(const void *key)
 {
 	const char *k = key;
@@ -57,7 +57,7 @@ static unsigned int hash_string(const void *key)
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-G_GNUC_WGET_PURE
+WGET_GCC_PURE
 static unsigned int hash_string_nocase(const void *key)
 {
 	const char *k = key;

@@ -59,22 +59,22 @@ typedef struct {
 void host_init(void);
 void host_exit(void);
 
-HOST *host_add(wget_iri *iri) G_GNUC_WGET_NONNULL((1));
-HOST *host_get(wget_iri *iri) G_GNUC_WGET_NONNULL((1));
+HOST *host_add(wget_iri *iri) WGET_GCC_NONNULL((1));
+HOST *host_get(wget_iri *iri) WGET_GCC_NONNULL((1));
 
 JOB *host_get_job(HOST *host, long long *pause);
-void host_add_job(HOST *host, const JOB *job) G_GNUC_WGET_NONNULL((1,2));
-void host_add_robotstxt_job(HOST *host, wget_iri *iri, bool http_fallback) G_GNUC_WGET_NONNULL((1,2));
+void host_add_job(HOST *host, const JOB *job) WGET_GCC_NONNULL((1,2));
+void host_add_robotstxt_job(HOST *host, wget_iri *iri, bool http_fallback) WGET_GCC_NONNULL((1,2));
 void host_release_jobs(HOST *host);
-void host_remove_job(HOST *host, JOB *job) G_GNUC_WGET_NONNULL((1,2));
-void host_queue_free(HOST *host) G_GNUC_WGET_NONNULL((1));
+void host_remove_job(HOST *host, JOB *job) WGET_GCC_NONNULL((1,2));
+void host_queue_free(HOST *host) WGET_GCC_NONNULL((1));
 void hosts_free(void);
-void host_increase_failure(HOST *host) G_GNUC_WGET_NONNULL((1));
-void host_final_failure(HOST *host) G_GNUC_WGET_NONNULL((1));
-void host_reset_failure(HOST *host) G_GNUC_WGET_NONNULL((1));
+void host_increase_failure(HOST *host) WGET_GCC_NONNULL((1));
+void host_final_failure(HOST *host) WGET_GCC_NONNULL((1));
+void host_reset_failure(HOST *host) WGET_GCC_NONNULL((1));
 
-int queue_size(void) G_GNUC_WGET_PURE;
-int queue_empty(void) G_GNUC_WGET_PURE;
+int queue_size(void) WGET_GCC_PURE;
+int queue_empty(void) WGET_GCC_PURE;
 void queue_print(HOST *host);
 
 #endif /* SRC_WGET_HOST_H */

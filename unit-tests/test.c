@@ -1021,12 +1021,12 @@ static void test_iri_compare(void)
 }
 
 /*
-static void _css_dump_charset(G_GNUC_WGET_UNUSED void *user_ctx, const char *encoding, size_t len)
+static void _css_dump_charset(WGET_GCC_UNUSED void *user_ctx, const char *encoding, size_t len)
 {
 	debug_printf("URI content encoding = '%.*s'\n", (int)len, encoding);
 }
 
-static void _css_dump_uri(G_GNUC_WGET_UNUSED void *user_ctx, const char *url, size_t len, G_GNUC_WGET_UNUSED size_t pos)
+static void _css_dump_uri(WGET_GCC_UNUSED void *user_ctx, const char *url, size_t len, WGET_GCC_UNUSED size_t pos)
 {
 	debug_printf("*** %zu '%.*s'\n", len, (int)len, url);
 }
@@ -1823,7 +1823,7 @@ static void test_vector(void)
 
 // this hash function generates collisions and reduces the map to a simple list.
 // O(1) insertion, but O(n) search and removal
-static unsigned int hash_txt(G_GNUC_WGET_UNUSED const char *key)
+static unsigned int hash_txt(WGET_GCC_UNUSED const char *key)
 {
 	return 0;
 }

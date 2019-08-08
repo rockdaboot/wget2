@@ -291,7 +291,7 @@ typedef enum exit_status_t {
 extern "C" {
 #endif
 
-int init(int argc, const char **argv) G_GNUC_WGET_NONNULL_ALL;
+int init(int argc, const char **argv) WGET_GCC_NONNULL_ALL;
 int selftest_options(void);
 void deinit(void);
 void set_exit_status(exit_status_t status);

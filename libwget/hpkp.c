@@ -89,7 +89,7 @@ void wget_hpkp_set_plugin(const wget_hpkp_db_vtable *vtable)
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int G_GNUC_WGET_PURE _hash_hpkp(const wget_hpkp *hpkp)
+static unsigned int WGET_GCC_PURE _hash_hpkp(const wget_hpkp *hpkp)
 {
 	unsigned int hash = 0;
 	const unsigned char *p;
@@ -100,7 +100,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_hpkp(const wget_hpkp *hpkp)
 	return hash;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_hpkp(const wget_hpkp *h1, const wget_hpkp *h2)
+static int WGET_GCC_NONNULL_ALL WGET_GCC_PURE _compare_hpkp(const wget_hpkp *h1, const wget_hpkp *h2)
 {
 	return strcmp(h1->host, h2->host);
 }
@@ -108,7 +108,7 @@ static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_hpkp(const wget_hpk
 /*
  * Compare function for SPKI hashes. Returns 0 if they're equal.
  */
-static int G_GNUC_WGET_NONNULL_ALL _compare_pin(wget_hpkp_pin_t *p1, wget_hpkp_pin_t *p2)
+static int WGET_GCC_NONNULL_ALL _compare_pin(wget_hpkp_pin_t *p1, wget_hpkp_pin_t *p2)
 {
 	int n;
 
@@ -616,7 +616,7 @@ static int _hpkp_save_pin(FILE *fp, wget_hpkp_pin_t *pin)
 	return 0;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp *hpkp)
+static int WGET_GCC_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp *hpkp)
 {
 	if (wget_vector_size(hpkp->pins) == 0)
 		debug_printf("HPKP: drop '%s', no PIN entries\n", hpkp->host);

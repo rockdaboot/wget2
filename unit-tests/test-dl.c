@@ -282,7 +282,7 @@ do { \
 } while (0)
 
 
-int main(G_GNUC_WGET_UNUSED int argc, char **argv)
+int main(WGET_GCC_UNUSED int argc, char **argv)
 {
 	if (! dl_supported()) {
 		printf("Skipping dynamic loading tests\n");

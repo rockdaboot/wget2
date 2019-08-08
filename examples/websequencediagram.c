@@ -27,7 +27,7 @@
 #include <string.h>
 #include <wget.h>
 
-int main(int argc G_GNUC_WGET_UNUSED, const char *const *argv G_GNUC_WGET_UNUSED)
+int main(int argc WGET_GCC_UNUSED, const char *const *argv WGET_GCC_UNUSED)
 {
 	wget_http_connection *conn = NULL;
 	wget_http_request *req;

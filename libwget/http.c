@@ -128,7 +128,7 @@ static void
 
 // This is the default function for collecting body data
 static wget_http_body_callback_t _body_callback;
-static int _body_callback(wget_http_response *resp, void *user_data G_GNUC_WGET_UNUSED, const char *data, size_t length)
+static int _body_callback(wget_http_response *resp, void *user_data WGET_GCC_UNUSED, const char *data, size_t length)
 {
 	if (!resp->body)
 		resp->body = wget_buffer_alloc(102400);
@@ -409,7 +409,7 @@ struct _http2_stream_context {
 		*decompressor;
 };
 
-static int _decompress_error_handler(wget_decompressor *dc, int err G_GNUC_WGET_UNUSED)
+static int _decompress_error_handler(wget_decompressor *dc, int err WGET_GCC_UNUSED)
 {
 	wget_http_response *resp = (wget_http_response *) wget_decompress_get_context(dc);
 
@@ -447,8 +447,8 @@ static void _fix_broken_server_encoding(wget_http_response *resp)
 }
 
 #ifdef WITH_LIBNGHTTP2
-static ssize_t _send_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
-	const uint8_t *data, size_t length, int flags G_GNUC_WGET_UNUSED, void *user_data)
+static ssize_t _send_callback(nghttp2_session *session WGET_GCC_UNUSED,
+	const uint8_t *data, size_t length, int flags WGET_GCC_UNUSED, void *user_data)
 {
 	wget_http_connection *conn = (wget_http_connection *)user_data;
 	ssize_t rc;
@@ -487,8 +487,8 @@ static void _print_frame_type(int type, const char tag, int streamid)
 		debug_printf("[FRAME %d] %c Unknown type %d\n", streamid, tag, type);
 }
 
-static int _on_frame_send_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
-	const nghttp2_frame *frame, void *user_data G_GNUC_WGET_UNUSED)
+static int _on_frame_send_callback(nghttp2_session *session WGET_GCC_UNUSED,
+	const nghttp2_frame *frame, void *user_data WGET_GCC_UNUSED)
 {
 	_print_frame_type(frame->hd.type, '>', frame->hd.stream_id);
 
@@ -504,7 +504,7 @@ static int _on_frame_send_callback(nghttp2_session *session G_GNUC_WGET_UNUSED,
 }
 
 static int _on_frame_recv_callback(nghttp2_session *session,
-	const nghttp2_frame *frame, void *user_data G_GNUC_WGET_UNUSED)
+	const nghttp2_frame *frame, void *user_data WGET_GCC_UNUSED)
 {
 	_print_frame_type(frame->hd.type, '<', frame->hd.stream_id);
 
@@ -533,7 +533,7 @@ static int _on_frame_recv_callback(nghttp2_session *session,
 static int _on_header_callback(nghttp2_session *session,
 	const nghttp2_frame *frame, const uint8_t *name, size_t namelen,
 	const uint8_t *value, size_t valuelen,
-	uint8_t flags G_GNUC_WGET_UNUSED, void *user_data G_GNUC_WGET_UNUSED)
+	uint8_t flags WGET_GCC_UNUSED, void *user_data WGET_GCC_UNUSED)
 {
 	struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
 	wget_http_response *resp = ctx ? ctx->resp : NULL;
@@ -564,7 +564,7 @@ static int _on_header_callback(nghttp2_session *session,
  * This function is called to indicate that a stream is closed.
  */
 static int _on_stream_close_callback(nghttp2_session *session, int32_t stream_id,
-	uint32_t error_code G_GNUC_WGET_UNUSED, void *user_data)
+	uint32_t error_code WGET_GCC_UNUSED, void *user_data)
 {
 	struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, stream_id);
 
@@ -587,8 +587,8 @@ static int _on_stream_close_callback(nghttp2_session *session, int32_t stream_id
  * use this function to print the received response body.
  */
 static int _on_data_chunk_recv_callback(nghttp2_session *session,
-	uint8_t flags G_GNUC_WGET_UNUSED, int32_t stream_id,
-	const uint8_t *data, size_t len,	void *user_data G_GNUC_WGET_UNUSED)
+	uint8_t flags WGET_GCC_UNUSED, int32_t stream_id,
+	const uint8_t *data, size_t len,	void *user_data WGET_GCC_UNUSED)
 {
 	struct _http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, stream_id);
 

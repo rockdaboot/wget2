@@ -72,60 +72,60 @@
 #endif
 
 #if GCC_VERSION_AT_LEAST(2,5)
-#	define G_GNUC_WGET_CONST __attribute__ ((const))
+#	define WGET_GCC_CONST __attribute__ ((const))
 #else
-#	define G_GNUC_WGET_CONST
+#	define WGET_GCC_CONST
 #endif
 
-#define G_GNUC_NORETURN_FUNCPTR
+#define WGET_GCC_NORETURN_FUNCPTR
 #if GCC_VERSION_AT_LEAST(2,8) || __SUNPRO_C >= 0x5110
-#	define G_GNUC_WGET_NORETURN __attribute__ ((__noreturn__))
-#	undef G_GNUC_NORETURN_FUNCPTR
-#	define G_GNUC_NORETURN_FUNCPTR G_GNUC_WGET_NORETURN
+#	define WGET_GCC_NORETURN __attribute__ ((__noreturn__))
+#	undef WGET_GCC_NORETURN_FUNCPTR
+#	define G_GNUC_NORETURN_FUNCPTR WGET_GCC_NORETURN
 #elif _MSC_VER >= 1200
-#	define G_GNUC_WGET_NORETURN __declspec (noreturn)
+#	define WGET_GCC_NORETURN __declspec (noreturn)
 #elif __STDC_VERSION__ >= 201112
-#	define G_GNUC_WGET_NORETURN _Noreturn
+#	define WGET_GCC_NORETURN _Noreturn
 #else
-#	define G_GNUC_WGET_NORETURN
+#	define WGET_GCC_NORETURN
 #endif
 
 #if GCC_VERSION_AT_LEAST(2,95)
-#	define G_GNUC_WGET_PRINTF_FORMAT(a, b) __attribute__ ((format (printf, a, b)))
-#	define G_GNUC_WGET_UNUSED __attribute__ ((unused))
+#	define WGET_GCC_PRINTF_FORMAT(a, b) __attribute__ ((format (printf, a, b)))
+#	define WGET_GCC_UNUSED __attribute__ ((unused))
 #else
-#	define G_GNUC_WGET_PRINTF_FORMAT(a, b)
-#	define G_GNUC_WGET_UNUSED
+#	define WGET_GCC_PRINTF_FORMAT(a, b)
+#	define WGET_GCC_UNUSED
 #endif
 
 #if GCC_VERSION_AT_LEAST(2,96)
-#	define G_GNUC_WGET_PURE __attribute__ ((pure))
+#	define WGET_GCC_PURE __attribute__ ((pure))
 #else
-#	define G_GNUC_WGET_PURE
+#	define WGET_GCC_PURE
 #endif
 
 #if GCC_VERSION_AT_LEAST(3,0)
-#	define G_GNUC_WGET_MALLOC __attribute__ ((malloc))
+#	define WGET_GCC_MALLOC __attribute__ ((malloc))
 #	define unlikely(expr) __builtin_expect(!!(expr), 0)
 #	define likely(expr) __builtin_expect(!!(expr), 1)
 #else
-#	define G_GNUC_WGET_MALLOC
+#	define WGET_GCC_MALLOC
 #	define unlikely(expr) expr
 #	define likely(expr) expr
 #endif
 
 #if GCC_VERSION_AT_LEAST(3,1)
-#	define G_GNUC_WGET_ALWAYS_INLINE __attribute__ ((always_inline))
-#   define G_GNUC_WGET_FLATTEN __attribute__ ((flatten))
-#   define G_GNUC_WGET_DEPRECATED __attribute__ ((deprecated))
+#	define WGET_GCC_ALWAYS_INLINE __attribute__ ((always_inline))
+#   define WGET_GCC_FLATTEN __attribute__ ((flatten))
+#   define WGET_GCC_DEPRECATED __attribute__ ((deprecated))
 #elif defined __clang__
-#   define G_GNUC_WGET_ALWAYS_INLINE __attribute__ ((always_inline))
-#   define G_GNUC_WGET_FLATTEN __attribute__ ((flatten))
-#	define G_GNUC_WGET_DEPRECATED __attribute__ ((deprecated))
+#   define WGET_GCC_ALWAYS_INLINE __attribute__ ((always_inline))
+#   define WGET_GCC_FLATTEN __attribute__ ((flatten))
+#	define WGET_GCC_DEPRECATED __attribute__ ((deprecated))
 #else
-#	define G_GNUC_WGET_ALWAYS_INLINE
-#	define G_GNUC_WGET_FLATTEN
-#	define G_GNUC_WGET_DEPRECATED
+#	define WGET_GCC_ALWAYS_INLINE
+#	define WGET_GCC_FLATTEN
+#	define WGET_GCC_DEPRECATED
 #endif
 
 // nonnull is dangerous to use with current gcc <= 4.7.1.
@@ -134,51 +134,51 @@
 // but even clang is not perfect - don't use nonnull in production
 #if defined __clang__
 #	if GCC_VERSION_AT_LEAST(3,3)
-#		define G_GNUC_WGET_NONNULL_ALL __attribute__ ((nonnull))
-#		define G_GNUC_WGET_NONNULL(a) __attribute__ ((nonnull a))
+#		define WGET_GCC_NONNULL_ALL __attribute__ ((nonnull))
+#		define WGET_GCC_NONNULL(a) __attribute__ ((nonnull a))
 #	else
-#		define G_GNUC_WGET_NONNULL_ALL
-#		define G_GNUC_WGET_NONNULL(a)
+#		define WGET_GCC_NONNULL_ALL
+#		define WGET_GCC_NONNULL(a)
 #	endif
 #elif GCC_VERSION_AT_LEAST(3,3)
-#	define G_GNUC_WGET_NONNULL_ALL __attribute__ ((nonnull))
-#	define G_GNUC_WGET_NONNULL(a) __attribute__ ((nonnull a))
+#	define WGET_GCC_NONNULL_ALL __attribute__ ((nonnull))
+#	define WGET_GCC_NONNULL(a) __attribute__ ((nonnull a))
 #else
-#	define G_GNUC_WGET_NONNULL_ALL
-#	define G_GNUC_WGET_NONNULL(a)
+#	define WGET_GCC_NONNULL_ALL
+#	define WGET_GCC_NONNULL(a)
 #endif
 
 #if GCC_VERSION_AT_LEAST(3,4)
-#	define G_GNUC_WGET_UNUSED_RESULT __attribute__ ((warn_unused_result))
+#	define WGET_GCC_UNUSED_RESULT __attribute__ ((warn_unused_result))
 #else
-#	define G_GNUC_WGET_UNUSED_RESULT
+#	define WGET_GCC_UNUSED_RESULT
 #endif
 
 #if GCC_VERSION_AT_LEAST(4,0)
-#	define G_GNUC_WGET_NULL_TERMINATED __attribute__((__sentinel__))
+#	define WGET_GCC_NULL_TERMINATED __attribute__((__sentinel__))
 #else
-#	define G_GNUC_WGET_NULL_TERMINATED
+#	define WGET_GCC_NULL_TERMINATED
 #endif
 
 #if GCC_VERSION_AT_LEAST(4,9)
-#	define G_GNUC_WGET_RETURNS_NONNULL __attribute__((returns_nonnull))
+#	define WGET_GCC_RETURNS_NONNULL __attribute__((returns_nonnull))
 #else
-#	define G_GNUC_WGET_RETURNS_NONNULL
+#	define WGET_GCC_RETURNS_NONNULL
 #endif
 
 #if defined __clang__
-#	define G_GNUC_WGET_ALLOC_SIZE(a)
-#	define G_GNUC_WGET_ALLOC_SIZE2(a, b)
+#	define WGET_GCC_ALLOC_SIZE(a)
+#	define WGET_GCC_ALLOC_SIZE2(a, b)
 #elif GCC_VERSION_AT_LEAST(4,3)
-#	define G_GNUC_WGET_ALLOC_SIZE(a) __attribute__ ((__alloc_size__(a)))
-#	define G_GNUC_WGET_ALLOC_SIZE2(a, b) __attribute__ ((__alloc_size__(a, b)))
+#	define WGET_GCC_ALLOC_SIZE(a) __attribute__ ((__alloc_size__(a)))
+#	define WGET_GCC_ALLOC_SIZE2(a, b) __attribute__ ((__alloc_size__(a, b)))
 #else
-#	define G_GNUC_WGET_ALLOC_SIZE(a)
-#	define G_GNUC_WGET_ALLOC_SIZE2(a, b)
+#	define WGET_GCC_ALLOC_SIZE(a)
+#	define WGET_GCC_ALLOC_SIZE2(a, b)
 #endif
 
 #ifdef BUILDING_LIBWGET
-#	define LIBWGET_WARN_UNUSED_RESULT G_GNUC_WGET_UNUSED_RESULT
+#	define LIBWGET_WARN_UNUSED_RESULT WGET_GCC_UNUSED_RESULT
 #else
 #	define LIBWGET_WARN_UNUSED_RESULT
 #endif
@@ -324,19 +324,19 @@ WGETAPI int
 WGETAPI int
 	wget_ready_2_transfer(int fd, int timeout, int mode);
 WGETAPI int
-	wget_strcmp(const char *s1, const char *s2) G_GNUC_WGET_PURE;
+	wget_strcmp(const char *s1, const char *s2) WGET_GCC_PURE;
 WGETAPI int
-	wget_strcasecmp(const char *s1, const char *s2) G_GNUC_WGET_PURE;
+	wget_strcasecmp(const char *s1, const char *s2) WGET_GCC_PURE;
 WGETAPI int
-	wget_strcasecmp_ascii(const char *s1, const char *s2) G_GNUC_WGET_PURE;
+	wget_strcasecmp_ascii(const char *s1, const char *s2) WGET_GCC_PURE;
 WGETAPI int
-	wget_strncasecmp_ascii(const char *s1, const char *s2, size_t n) G_GNUC_WGET_PURE;
+	wget_strncasecmp_ascii(const char *s1, const char *s2, size_t n) WGET_GCC_PURE;
 WGETAPI char *
 	wget_strtolower(char *s);
 WGETAPI int
-	wget_strncmp(const char *s1, const char *s2, size_t n) G_GNUC_WGET_PURE;
+	wget_strncmp(const char *s1, const char *s2, size_t n) WGET_GCC_PURE;
 WGETAPI int
-	wget_strncasecmp(const char *s1, const char *s2, size_t n) G_GNUC_WGET_PURE;
+	wget_strncasecmp(const char *s1, const char *s2, size_t n) WGET_GCC_PURE;
 WGETAPI void
 	wget_memtohex(const unsigned char *src, size_t src_len, char *dst, size_t dst_size);
 WGETAPI void
@@ -346,11 +346,11 @@ WGETAPI long long
 WGETAPI int
 	wget_percent_unescape(char *src);
 WGETAPI int
-	wget_match_tail(const char *s, const char *tail) G_GNUC_WGET_PURE;
+	wget_match_tail(const char *s, const char *tail) WGET_GCC_PURE;
 WGETAPI int
-	wget_match_tail_nocase(const char *s, const char *tail) G_GNUC_WGET_PURE;
+	wget_match_tail_nocase(const char *s, const char *tail) WGET_GCC_PURE;
 WGETAPI char *
-	wget_strnglob(const char *str, size_t n, int flags) G_GNUC_WGET_PURE;
+	wget_strnglob(const char *str, size_t n, int flags) WGET_GCC_PURE;
 WGETAPI char *
 	wget_human_readable(char *buf, size_t bufsize, uint64_t n);
 WGETAPI int
@@ -360,17 +360,17 @@ WGETAPI ssize_t
 WGETAPI ssize_t
 	wget_getline(char **buf, size_t *bufsize, FILE *fp);
 WGETAPI FILE *
-	wget_vpopenf(const char *type, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+	wget_vpopenf(const char *type, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0);
 WGETAPI FILE *
-	wget_popenf(const char *type, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+	wget_popenf(const char *type, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(2,3);
 WGETAPI FILE *
-	wget_popen2f(FILE **fpin, FILE **fpout, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4);
+	wget_popen2f(FILE **fpin, FILE **fpout, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(3,4);
 WGETAPI pid_t
 	wget_fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv);
 WGETAPI pid_t
 	wget_popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *argv);
 WGETAPI char *
-	wget_read_file(const char *fname, size_t *size) G_GNUC_WGET_MALLOC;
+	wget_read_file(const char *fname, size_t *size) WGET_GCC_MALLOC;
 WGETAPI int
 	wget_update_file(const char *fname, wget_update_load_t *load_func, wget_update_save_t *save_func, void *context);
 WGETAPI int
@@ -380,15 +380,15 @@ WGETAPI const char
 WGETAPI int
 	wget_memiconv(const char *src_encoding, const void *src, size_t srclen, const char *dst_encoding, char **out, size_t *outlen);
 WGETAPI char *
-	wget_striconv(const char *src, const char *src_encoding, const char *dst_encoding) G_GNUC_WGET_MALLOC;
+	wget_striconv(const char *src, const char *src_encoding, const char *dst_encoding) WGET_GCC_MALLOC;
 WGETAPI int
-	wget_str_needs_encoding(const char *s) G_GNUC_WGET_PURE;
+	wget_str_needs_encoding(const char *s) WGET_GCC_PURE;
 WGETAPI bool
-	wget_str_is_valid_utf8(const char *utf8) G_GNUC_WGET_PURE;
+	wget_str_is_valid_utf8(const char *utf8) WGET_GCC_PURE;
 WGETAPI char *
-	wget_str_to_utf8(const char *src, const char *encoding) G_GNUC_WGET_MALLOC;
+	wget_str_to_utf8(const char *src, const char *encoding) WGET_GCC_MALLOC;
 WGETAPI char *
-	wget_utf8_to_str(const char *src, const char *encoding) G_GNUC_WGET_MALLOC;
+	wget_utf8_to_str(const char *src, const char *encoding) WGET_GCC_MALLOC;
 WGETAPI const char *
 	wget_str_to_ascii(const char *src);
 
@@ -412,21 +412,21 @@ typedef struct wget_list_st wget_list;
 typedef int wget_list_browse_t(void *context, void *elem);
 
 WGETAPI void *
-	wget_list_append(wget_list **list, const void *data, size_t size) G_GNUC_WGET_NONNULL_ALL;
+	wget_list_append(wget_list **list, const void *data, size_t size) WGET_GCC_NONNULL_ALL;
 WGETAPI void *
-	wget_list_prepend(wget_list **list, const void *data, size_t size) G_GNUC_WGET_NONNULL_ALL;
+	wget_list_prepend(wget_list **list, const void *data, size_t size) WGET_GCC_NONNULL_ALL;
 WGETAPI void *
-	wget_list_getfirst(const wget_list *list) G_GNUC_WGET_CONST;
+	wget_list_getfirst(const wget_list *list) WGET_GCC_CONST;
 WGETAPI void *
-	wget_list_getlast(const wget_list *list) G_GNUC_WGET_PURE;
+	wget_list_getlast(const wget_list *list) WGET_GCC_PURE;
 WGETAPI void *
-	wget_list_getnext(const void *elem) G_GNUC_WGET_PURE;
+	wget_list_getnext(const void *elem) WGET_GCC_PURE;
 WGETAPI void
-	wget_list_remove(wget_list **list, void *elem) G_GNUC_WGET_NONNULL_ALL;
+	wget_list_remove(wget_list **list, void *elem) WGET_GCC_NONNULL_ALL;
 WGETAPI void
-	wget_list_free(wget_list **list) G_GNUC_WGET_NONNULL_ALL;
+	wget_list_free(wget_list **list) WGET_GCC_NONNULL_ALL;
 WGETAPI int
-	wget_list_browse(const wget_list *list, wget_list_browse_t *browse, void *context) G_GNUC_WGET_NONNULL((2));
+	wget_list_browse(const wget_list *list, wget_list_browse_t *browse, void *context) WGET_GCC_NONNULL((2));
 
 /**
  * \ingroup libwget-xalloc
@@ -440,21 +440,21 @@ WGETAPI int
 
 /// define MALLOC_RETURNS_NONNULL when using appropriate implementations of the alloc functions
 #ifdef MALLOC_RETURNS_NONNULL
-#  define RETURNS_NONNULL G_GNUC_WGET_RETURNS_NONNULL
+#  define RETURNS_NONNULL WGET_GCC_RETURNS_NONNULL
 #else
 #  define RETURNS_NONNULL
 #endif
 
 /// Type of malloc() function
-typedef RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT G_GNUC_WGET_ALLOC_SIZE(1)
+typedef RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE(1)
 	void *wget_malloc_function(size_t);
 
 /// Type of calloc() function
-typedef RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT G_GNUC_WGET_ALLOC_SIZE2(1,2)
+typedef RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE2(1,2)
 	void *wget_calloc_function(size_t, size_t);
 
 /// Type of realloc() function
-typedef RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT G_GNUC_WGET_ALLOC_SIZE(2)
+typedef RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE(2)
 	void *wget_realloc_function(void *, size_t);
 
 /// Type of free() function
@@ -475,11 +475,11 @@ extern WGETAPI wget_free_function *wget_free;
  */
 
 WGETAPI LIBWGET_WARN_UNUSED_RESULT void *
-	wget_memdup(const void *m, size_t n) G_GNUC_WGET_ALLOC_SIZE(2);
+	wget_memdup(const void *m, size_t n) WGET_GCC_ALLOC_SIZE(2);
 WGETAPI LIBWGET_WARN_UNUSED_RESULT char *
-	wget_strdup(const char *s) G_GNUC_WGET_MALLOC;
+	wget_strdup(const char *s) WGET_GCC_MALLOC;
 WGETAPI LIBWGET_WARN_UNUSED_RESULT char *
-	wget_strmemdup(const void *m, size_t n) G_GNUC_WGET_ALLOC_SIZE(2);
+	wget_strmemdup(const void *m, size_t n) WGET_GCC_ALLOC_SIZE(2);
 WGETAPI void
 	wget_strmemcpy(char *s, size_t ssize, const void *m, size_t n);
 
@@ -488,25 +488,25 @@ WGETAPI void
  */
 
 WGETAPI bool
-	wget_base64_is_string(const char *src) G_GNUC_WGET_PURE;
+	wget_base64_is_string(const char *src) WGET_GCC_PURE;
 WGETAPI size_t
-	wget_base64_get_decoded_length(size_t len) G_GNUC_WGET_PURE;
+	wget_base64_get_decoded_length(size_t len) WGET_GCC_PURE;
 WGETAPI size_t
-	wget_base64_get_encoded_length(size_t len) G_GNUC_WGET_PURE;
+	wget_base64_get_encoded_length(size_t len) WGET_GCC_PURE;
 WGETAPI size_t
-	wget_base64_decode(char *restrict dst, const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
+	wget_base64_decode(char *restrict dst, const char *restrict src, size_t n) WGET_GCC_NONNULL_ALL;
 WGETAPI size_t
-	wget_base64_encode(char *restrict dst, const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
+	wget_base64_encode(char *restrict dst, const char *restrict src, size_t n) WGET_GCC_NONNULL_ALL;
 WGETAPI size_t
-	wget_base64_urlencode(char *restrict dst, const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
+	wget_base64_urlencode(char *restrict dst, const char *restrict src, size_t n) WGET_GCC_NONNULL_ALL;
 WGETAPI char *
-	wget_base64_decode_alloc(const char *restrict src, size_t n, size_t *outlen) G_GNUC_WGET_NONNULL((1));
+	wget_base64_decode_alloc(const char *restrict src, size_t n, size_t *outlen) WGET_GCC_NONNULL((1));
 WGETAPI char *
-	wget_base64_encode_alloc(const char *restrict src, size_t n) G_GNUC_WGET_NONNULL_ALL;
+	wget_base64_encode_alloc(const char *restrict src, size_t n) WGET_GCC_NONNULL_ALL;
 WGETAPI char *
-	wget_base64_encode_vprintf_alloc(const char *restrict fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(1,0) G_GNUC_WGET_NONNULL_ALL;
+	wget_base64_encode_vprintf_alloc(const char *restrict fmt, va_list args) WGET_GCC_PRINTF_FORMAT(1,0) WGET_GCC_NONNULL_ALL;
 WGETAPI char *
-	wget_base64_encode_printf_alloc(const char *restrict fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(1,2) G_GNUC_WGET_NONNULL_ALL;
+	wget_base64_encode_printf_alloc(const char *restrict fmt, ...) WGET_GCC_PRINTF_FORMAT(1,2) WGET_GCC_NONNULL_ALL;
 
 /*
  * Bitmap routines
@@ -544,7 +544,7 @@ typedef struct {
 WGETAPI wget_buffer *
 	wget_buffer_init(wget_buffer *buf, char *data, size_t size);
 WGETAPI wget_buffer *
-	wget_buffer_alloc(size_t size) G_GNUC_WGET_MALLOC G_GNUC_WGET_ALLOC_SIZE(1);
+	wget_buffer_alloc(size_t size) WGET_GCC_MALLOC WGET_GCC_ALLOC_SIZE(1);
 WGETAPI int
 	wget_buffer_ensure_capacity(wget_buffer *buf, size_t size);
 WGETAPI void
@@ -574,13 +574,13 @@ WGETAPI size_t
 WGETAPI char *
 	wget_buffer_trim(wget_buffer *buf);
 WGETAPI size_t
-	wget_buffer_vprintf_append(wget_buffer *buf, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+	wget_buffer_vprintf_append(wget_buffer *buf, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0);
 WGETAPI size_t
-	wget_buffer_printf_append(wget_buffer *buf, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+	wget_buffer_printf_append(wget_buffer *buf, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(2,3);
 WGETAPI size_t
-	wget_buffer_vprintf(wget_buffer *buf, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+	wget_buffer_vprintf(wget_buffer *buf, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0);
 WGETAPI size_t
-	wget_buffer_printf(wget_buffer *buf, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+	wget_buffer_printf(wget_buffer *buf, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(2,3);
 
 /*
  * Printf-style routines
@@ -589,28 +589,28 @@ WGETAPI size_t
 #define wget_printf(fmt, ...) wget_fprintf(stdout, (fmt), ##__VA_ARGS__)
 
 WGETAPI size_t
-	wget_vasprintf(char **strp, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+	wget_vasprintf(char **strp, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0);
 WGETAPI size_t
-	wget_asprintf(char **strp, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+	wget_asprintf(char **strp, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(2,3);
 WGETAPI char *
-	wget_vaprintf(const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(1,0);
+	wget_vaprintf(const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(1,0);
 WGETAPI char *
-	wget_aprintf(const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(1,2);
+	wget_aprintf(const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(1,2);
 WGETAPI size_t
-	wget_vfprintf(FILE *fp, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+	wget_vfprintf(FILE *fp, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0);
 WGETAPI size_t
-	wget_fprintf(FILE *fp, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+	wget_fprintf(FILE *fp, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(2,3);
 WGETAPI size_t
-	wget_vsnprintf(char *str, size_t size, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0);
+	wget_vsnprintf(char *str, size_t size, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(3,0);
 WGETAPI size_t
-	wget_snprintf(char *str, size_t size, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4);
+	wget_snprintf(char *str, size_t size, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(3,4);
 
 /*
  * Logger routines
  */
 
 typedef struct wget_logger_st wget_logger;
-typedef void wget_logger_func_t(const char *buf , size_t len) G_GNUC_WGET_NONNULL_ALL;
+typedef void wget_logger_func_t(const char *buf , size_t len) WGET_GCC_NONNULL_ALL;
 
 WGETAPI void
 	wget_logger_set_func(wget_logger *logger, wget_logger_func_t *func);
@@ -619,13 +619,13 @@ WGETAPI void
 WGETAPI void
 	wget_logger_set_file(wget_logger *logger, const char *fname);
 WGETAPI wget_logger_func_t *
-	wget_logger_get_func(wget_logger *logger) G_GNUC_WGET_PURE;
+	wget_logger_get_func(wget_logger *logger) WGET_GCC_PURE;
 WGETAPI FILE *
-	wget_logger_get_stream(wget_logger *logger) G_GNUC_WGET_PURE;
+	wget_logger_get_stream(wget_logger *logger) WGET_GCC_PURE;
 WGETAPI const char *
-	wget_logger_get_file(wget_logger *logger) G_GNUC_WGET_PURE;
+	wget_logger_get_file(wget_logger *logger) WGET_GCC_PURE;
 WGETAPI bool
-	wget_logger_is_active(wget_logger *logger) G_GNUC_WGET_PURE;
+	wget_logger_is_active(wget_logger *logger) WGET_GCC_PURE;
 
 /*
  * Logging routines
@@ -636,23 +636,23 @@ WGETAPI bool
 #define WGET_LOGGER_DEBUG  3
 
 WGETAPI void
-	wget_info_vprintf(const char *fmt, va_list args) G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PRINTF_FORMAT(1,0);
+	wget_info_vprintf(const char *fmt, va_list args) WGET_GCC_NONNULL_ALL WGET_GCC_PRINTF_FORMAT(1,0);
 WGETAPI void
-	wget_info_printf(const char *fmt, ...) G_GNUC_WGET_NONNULL((1)) G_GNUC_WGET_PRINTF_FORMAT(1,2);
+	wget_info_printf(const char *fmt, ...) WGET_GCC_NONNULL((1)) WGET_GCC_PRINTF_FORMAT(1,2);
 WGETAPI void
-	wget_error_vprintf(const char *fmt, va_list args) G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PRINTF_FORMAT(1,0);
+	wget_error_vprintf(const char *fmt, va_list args) WGET_GCC_NONNULL_ALL WGET_GCC_PRINTF_FORMAT(1,0);
 WGETAPI void
-	wget_error_printf(const char *fmt, ...) G_GNUC_WGET_NONNULL((1)) G_GNUC_WGET_PRINTF_FORMAT(1,2);
-WGETAPI void G_GNUC_WGET_NONNULL((1)) G_GNUC_WGET_NORETURN G_GNUC_WGET_PRINTF_FORMAT(1,2)
+	wget_error_printf(const char *fmt, ...) WGET_GCC_NONNULL((1)) WGET_GCC_PRINTF_FORMAT(1,2);
+WGETAPI void WGET_GCC_NONNULL((1)) WGET_GCC_NORETURN WGET_GCC_PRINTF_FORMAT(1,2)
 	wget_error_printf_exit(const char *fmt, ...);
 WGETAPI void
-	wget_debug_vprintf(const char *fmt, va_list args) G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PRINTF_FORMAT(1,0);
+	wget_debug_vprintf(const char *fmt, va_list args) WGET_GCC_NONNULL_ALL WGET_GCC_PRINTF_FORMAT(1,0);
 WGETAPI void
-	wget_debug_printf(const char *fmt, ...) G_GNUC_WGET_NONNULL((1)) G_GNUC_WGET_PRINTF_FORMAT(1,2);
+	wget_debug_printf(const char *fmt, ...) WGET_GCC_NONNULL((1)) WGET_GCC_PRINTF_FORMAT(1,2);
 WGETAPI void
-	wget_debug_write(const char *buf, size_t len) G_GNUC_WGET_NONNULL_ALL;
+	wget_debug_write(const char *buf, size_t len) WGET_GCC_NONNULL_ALL;
 WGETAPI wget_logger *
-	wget_get_logger(int id) G_GNUC_WGET_CONST;
+	wget_get_logger(int id) WGET_GCC_CONST;
 
 /*
  * Vector datatype routines
@@ -665,29 +665,29 @@ typedef int wget_vector_browse_t(void *ctx, void *elem);
 typedef void wget_vector_destructor_t(void *elem);
 
 WGETAPI wget_vector *
-	wget_vector_create(int max, wget_vector_compare_t *cmp) G_GNUC_WGET_MALLOC;
+	wget_vector_create(int max, wget_vector_compare_t *cmp) WGET_GCC_MALLOC;
 WGETAPI void
 	wget_vector_set_resize_factor(wget_vector *v, float off);
 WGETAPI int
-	wget_vector_find(const wget_vector *v, const void *elem) G_GNUC_WGET_NONNULL((2));
+	wget_vector_find(const wget_vector *v, const void *elem) WGET_GCC_NONNULL((2));
 WGETAPI int
-	wget_vector_findext(const wget_vector *v, int start, int direction, wget_vector_find_t *find) G_GNUC_WGET_NONNULL((4));
+	wget_vector_findext(const wget_vector *v, int start, int direction, wget_vector_find_t *find) WGET_GCC_NONNULL((4));
 WGETAPI int
-	wget_vector_contains(const wget_vector *v, const void *elem) G_GNUC_WGET_NONNULL((2));
+	wget_vector_contains(const wget_vector *v, const void *elem) WGET_GCC_NONNULL((2));
 WGETAPI int
-	wget_vector_insert(wget_vector *v, const void *elem, int pos) G_GNUC_WGET_NONNULL((2));
+	wget_vector_insert(wget_vector *v, const void *elem, int pos) WGET_GCC_NONNULL((2));
 WGETAPI int
-	wget_vector_insert_sorted(wget_vector *v, const void *elem) G_GNUC_WGET_NONNULL((2));
+	wget_vector_insert_sorted(wget_vector *v, const void *elem) WGET_GCC_NONNULL((2));
 WGETAPI int
-	wget_vector_add_memdup(wget_vector *v, const void *elem, size_t size) G_GNUC_WGET_NONNULL((2));
+	wget_vector_add_memdup(wget_vector *v, const void *elem, size_t size) WGET_GCC_NONNULL((2));
 WGETAPI int
-	wget_vector_add(wget_vector *v, const void *elem) G_GNUC_WGET_NONNULL((2));
+	wget_vector_add(wget_vector *v, const void *elem) WGET_GCC_NONNULL((2));
 WGETAPI int
-	wget_vector_add_vprintf(wget_vector *v, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+	wget_vector_add_vprintf(wget_vector *v, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0);
 WGETAPI int
-	wget_vector_add_printf(wget_vector *v, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+	wget_vector_add_printf(wget_vector *v, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(2,3);
 WGETAPI int
-	wget_vector_replace(wget_vector *v, const void *elem, int pos) G_GNUC_WGET_NONNULL((2));
+	wget_vector_replace(wget_vector *v, const void *elem, int pos) WGET_GCC_NONNULL((2));
 WGETAPI int
 	wget_vector_move(wget_vector *v, int old_pos, int new_pos);
 WGETAPI int
@@ -697,9 +697,9 @@ WGETAPI int
 WGETAPI int
 	wget_vector_remove_nofree(wget_vector *v, int pos);
 WGETAPI int
-	wget_vector_size(const wget_vector *v) G_GNUC_WGET_PURE;
+	wget_vector_size(const wget_vector *v) WGET_GCC_PURE;
 WGETAPI int
-	wget_vector_browse(const wget_vector *v, wget_vector_browse_t *browse, void *ctx) G_GNUC_WGET_NONNULL((2));
+	wget_vector_browse(const wget_vector *v, wget_vector_browse_t *browse, void *ctx) WGET_GCC_NONNULL((2));
 WGETAPI void
 	wget_vector_free(wget_vector **v);
 WGETAPI void
@@ -707,9 +707,9 @@ WGETAPI void
 WGETAPI void
 	wget_vector_clear_nofree(wget_vector *v);
 WGETAPI void *
-	wget_vector_get(const wget_vector *v, int pos) G_GNUC_WGET_PURE;
+	wget_vector_get(const wget_vector *v, int pos) WGET_GCC_PURE;
 WGETAPI void
-	wget_vector_setcmpfunc(wget_vector *v, wget_vector_compare_t *cmp) G_GNUC_WGET_NONNULL((2));
+	wget_vector_setcmpfunc(wget_vector *v, wget_vector_compare_t *cmp) WGET_GCC_NONNULL((2));
 WGETAPI void
 	wget_vector_set_destructor(wget_vector *v, wget_vector_destructor_t *destructor);
 WGETAPI void
@@ -741,13 +741,13 @@ typedef void wget_hashmap_value_destructor_t(void *value);
 /** @} */
 
 WGETAPI wget_hashmap
-	*wget_hashmap_create(int max, wget_hashmap_hash_t *hash, wget_hashmap_compare_t *cmp) G_GNUC_WGET_MALLOC;
+	*wget_hashmap_create(int max, wget_hashmap_hash_t *hash, wget_hashmap_compare_t *cmp) WGET_GCC_MALLOC;
 WGETAPI void
 	wget_hashmap_set_resize_factor(wget_hashmap *h, float factor);
 WGETAPI int
 	wget_hashmap_put(wget_hashmap *h, const void *key, const void *value);
 WGETAPI int
-	wget_hashmap_size(const wget_hashmap *h) G_GNUC_WGET_PURE;
+	wget_hashmap_size(const wget_hashmap *h) WGET_GCC_PURE;
 WGETAPI int
 	wget_hashmap_browse(const wget_hashmap *h, wget_hashmap_browse_t *browse, void *ctx);
 WGETAPI void
@@ -778,7 +778,7 @@ WGETAPI void
 typedef struct wget_hashmap_iterator_st wget_hashmap_iterator;
 
 WGETAPI wget_hashmap_iterator
-	*wget_hashmap_iterator_alloc(wget_hashmap *h) G_GNUC_WGET_MALLOC;
+	*wget_hashmap_iterator_alloc(wget_hashmap *h) WGET_GCC_MALLOC;
 WGETAPI void
 	wget_hashmap_iterator_free(wget_hashmap_iterator **iter);
 WGETAPI void
@@ -817,9 +817,9 @@ typedef wget_hashmap_iterator wget_stringmap_iterator;
 #define wget_stringmap_iterator_free wget_hashmap_iterator_free
 
 WGETAPI wget_stringmap *
-	wget_stringmap_create(int max) G_GNUC_WGET_MALLOC;
+	wget_stringmap_create(int max) WGET_GCC_MALLOC;
 WGETAPI wget_stringmap *
-	wget_stringmap_create_nocase(int max) G_GNUC_WGET_MALLOC;
+	wget_stringmap_create_nocase(int max) WGET_GCC_MALLOC;
 /** @} */
 
 /**
@@ -1114,9 +1114,9 @@ WGETAPI int
 WGETAPI int
 	wget_thread_cond_wait(wget_thread_cond cond, wget_thread_mutex mutex, long long ms);
 WGETAPI wget_thread_id
-	wget_thread_self(void) G_GNUC_WGET_CONST;
+	wget_thread_self(void) WGET_GCC_CONST;
 WGETAPI bool
-	wget_thread_support(void) G_GNUC_WGET_CONST;
+	wget_thread_support(void) WGET_GCC_CONST;
 
 /*
  * Decompressor routines
@@ -1139,9 +1139,9 @@ typedef enum {
 	wget_content_encoding_max = 8
 } wget_content_encoding_type_t;
 
-WGETAPI G_GNUC_WGET_PURE wget_content_encoding_type_t
+WGETAPI WGET_GCC_PURE wget_content_encoding_type_t
 	wget_content_encoding_by_name(const char *name);
-WGETAPI G_GNUC_WGET_PURE const char *
+WGETAPI WGET_GCC_PURE const char *
 	wget_content_encoding_to_name(wget_content_encoding_type_t type);
 WGETAPI wget_decompressor *
 	wget_decompress_open(wget_content_encoding_type_t encoding, wget_decompressor_sink_t *data_sink, void *context);
@@ -1280,23 +1280,23 @@ WGETAPI void
 WGETAPI int
 	wget_iri_set_defaultport(const char *scheme, unsigned short port);
 WGETAPI bool
-	wget_iri_supported(const wget_iri *iri) G_GNUC_WGET_PURE G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_supported(const wget_iri *iri) WGET_GCC_PURE WGET_GCC_NONNULL_ALL;
 WGETAPI bool
-	wget_iri_isgendelim(char c) G_GNUC_WGET_CONST;
+	wget_iri_isgendelim(char c) WGET_GCC_CONST;
 WGETAPI bool
-	wget_iri_issubdelim(char c) G_GNUC_WGET_CONST;
+	wget_iri_issubdelim(char c) WGET_GCC_CONST;
 WGETAPI bool
-	wget_iri_isreserved(char c) G_GNUC_WGET_CONST;
+	wget_iri_isreserved(char c) WGET_GCC_CONST;
 WGETAPI bool
-	wget_iri_isunreserved(char c) G_GNUC_WGET_CONST;
+	wget_iri_isunreserved(char c) WGET_GCC_CONST;
 WGETAPI bool
-	wget_iri_isunreserved_path(char c) G_GNUC_WGET_CONST;
+	wget_iri_isunreserved_path(char c) WGET_GCC_CONST;
 WGETAPI int
-	wget_iri_compare(wget_iri *iri1, wget_iri *iri2) G_GNUC_WGET_PURE;
+	wget_iri_compare(wget_iri *iri1, wget_iri *iri2) WGET_GCC_PURE;
 WGETAPI char *
-	wget_iri_unescape_inline(char *src) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_unescape_inline(char *src) WGET_GCC_NONNULL_ALL;
 WGETAPI char *
-	wget_iri_unescape_url_inline(char *src) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_unescape_url_inline(char *src) WGET_GCC_NONNULL_ALL;
 WGETAPI wget_iri *
 	wget_iri_parse(const char *uri, const char *encoding);
 WGETAPI wget_iri *
@@ -1310,19 +1310,19 @@ WGETAPI const char *
 WGETAPI const char *
 	wget_iri_escape(const char *src, wget_buffer *buf);
 WGETAPI const char *
-	wget_iri_escape_path(const char *src, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_escape_path(const char *src, wget_buffer *buf) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_iri_escape_query(const char *src, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_escape_query(const char *src, wget_buffer *buf) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_iri_get_escaped_host(const wget_iri *iri, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_get_escaped_host(const wget_iri *iri, wget_buffer *buf) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_iri_get_escaped_resource(const wget_iri *iri, wget_buffer *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_iri_get_escaped_resource(const wget_iri *iri, wget_buffer *buf) WGET_GCC_NONNULL_ALL;
 WGETAPI char *
-	wget_iri_get_path(const wget_iri *iri, wget_buffer *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
+	wget_iri_get_path(const wget_iri *iri, wget_buffer *buf, const char *encoding) WGET_GCC_NONNULL((1,2));
 WGETAPI char *
-	wget_iri_get_query_as_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
+	wget_iri_get_query_as_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding) WGET_GCC_NONNULL((1,2));
 WGETAPI char *
-	wget_iri_get_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding) G_GNUC_WGET_NONNULL((1,2));
+	wget_iri_get_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding) WGET_GCC_NONNULL((1,2));
 WGETAPI const char *
 	wget_iri_set_scheme(wget_iri *iri, const char *scheme);
 
@@ -1345,7 +1345,7 @@ WGETAPI void
 WGETAPI char *
 	wget_cookie_to_setcookie(wget_cookie *cookie);
 WGETAPI const char *
-	wget_cookie_parse_setcookie(const char *s, wget_cookie **cookie) G_GNUC_WGET_NONNULL((1));
+	wget_cookie_parse_setcookie(const char *s, wget_cookie **cookie) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_cookie_normalize_cookies(const wget_iri *iri, const wget_vector *cookies);
 WGETAPI int
@@ -1569,7 +1569,7 @@ WGETAPI int
 WGETAPI int
 	wget_tls_session_db_load(wget_tls_session_db *tls_session_db, const char *fname);
 WGETAPI int
-	wget_tls_session_db_changed(wget_tls_session_db *tls_session_db) G_GNUC_WGET_PURE;
+	wget_tls_session_db_changed(wget_tls_session_db *tls_session_db) WGET_GCC_PURE;
 
 /*
  * Online Certificate Status Protocol (OCSP) routines
@@ -1709,24 +1709,24 @@ WGETAPI void
 		size_t len,
 		wget_css_parse_uri_cb_t *callback_uri,
 		wget_css_parse_encoding_cb_t *callback_encoding,
-		void *user_ctx) G_GNUC_WGET_NONNULL((1));
+		void *user_ctx) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_css_parse_file(
 		const char *fname,
 		wget_css_parse_uri_cb_t *callback_uri,
 		wget_css_parse_encoding_cb_t *callback_encoding,
-		void *user_ctx) G_GNUC_WGET_NONNULL((1));
+		void *user_ctx) WGET_GCC_NONNULL((1));
 WGETAPI wget_vector *
 	wget_css_get_urls(
 		const char *css,
 		size_t len,
 		wget_iri *base,
-		const char **encoding) G_GNUC_WGET_NONNULL((1));
+		const char **encoding) WGET_GCC_NONNULL((1));
 WGETAPI wget_vector *
 	wget_css_get_urls_from_localfile(
 		const char *fname,
 		wget_iri *base,
-		const char **encoding) G_GNUC_WGET_NONNULL((1));
+		const char **encoding) WGET_GCC_NONNULL((1));
 
 typedef struct {
 	const char
@@ -1804,25 +1804,25 @@ WGETAPI int
 		const char *buf,
 		wget_xml_callback_t *callback,
 		void *user_ctx,
-		int hints) G_GNUC_WGET_NONNULL((1));
+		int hints) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_xml_parse_file(
 		const char *fname,
 		wget_xml_callback_t *callback,
 		void *user_ctx,
-		int hints) G_GNUC_WGET_NONNULL((1));
+		int hints) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_html_parse_buffer(
 		const char *buf,
 		wget_xml_callback_t *callback,
 		void *user_ctx,
-		int hints) G_GNUC_WGET_NONNULL((1));
+		int hints) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_html_parse_file(
 		const char *fname,
 		wget_xml_callback_t *callback,
 		void *user_ctx,
-		int hints) G_GNUC_WGET_NONNULL((1));
+		int hints) WGET_GCC_NONNULL((1));
 
 /*
  * DNS caching routines
@@ -1854,7 +1854,7 @@ WGETAPI void
 WGETAPI void
 	wget_dns_set_cache(wget_dns *dns, wget_dns_cache *cache);
 WGETAPI wget_dns_cache *
-	wget_dns_get_cache(wget_dns *dns) G_GNUC_WGET_PURE;
+	wget_dns_get_cache(wget_dns *dns) WGET_GCC_PURE;
 WGETAPI struct addrinfo *
 	wget_dns_resolve(wget_dns *dns, const char *host, uint16_t port, int family, int preferred_family);
 WGETAPI void
@@ -1890,7 +1890,7 @@ WGETAPI void
 WGETAPI void
 	wget_tcp_set_timeout(wget_tcp *tcp, int timeout);
 WGETAPI int
-	wget_tcp_get_timeout(wget_tcp *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_timeout(wget_tcp *tcp) WGET_GCC_PURE;
 WGETAPI void
 	wget_tcp_set_connect_timeout(wget_tcp *tcp, int timeout);
 WGETAPI void
@@ -1900,25 +1900,25 @@ WGETAPI void
 WGETAPI void
 	wget_tcp_set_ssl(wget_tcp *tcp, int ssl);
 WGETAPI int
-	wget_tcp_get_ssl(wget_tcp *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_ssl(wget_tcp *tcp) WGET_GCC_PURE;
 WGETAPI void
 	wget_tcp_set_ssl_hostname(wget_tcp *tcp, const char *hostname);
 WGETAPI const char *
-	wget_tcp_get_ssl_hostname(wget_tcp *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_ssl_hostname(wget_tcp *tcp) WGET_GCC_PURE;
 WGETAPI void
 	wget_tcp_set_ssl_ca_file(wget_tcp *tcp, const char *cafile);
 WGETAPI void
 	wget_tcp_set_ssl_key_file(wget_tcp *tcp, const char *certfile, const char *keyfile);
 WGETAPI char
-	wget_tcp_get_tcp_fastopen(wget_tcp *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_tcp_fastopen(wget_tcp *tcp) WGET_GCC_PURE;
 WGETAPI char
-	wget_tcp_get_tls_false_start(wget_tcp *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_tls_false_start(wget_tcp *tcp) WGET_GCC_PURE;
 WGETAPI int
-	wget_tcp_get_family(wget_tcp *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_family(wget_tcp *tcp) WGET_GCC_PURE;
 WGETAPI int
-	wget_tcp_get_preferred_family(wget_tcp *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_preferred_family(wget_tcp *tcp) WGET_GCC_PURE;
 WGETAPI int
-	wget_tcp_get_protocol(wget_tcp *tcp) G_GNUC_WGET_PURE;
+	wget_tcp_get_protocol(wget_tcp *tcp) WGET_GCC_PURE;
 WGETAPI int
 	wget_tcp_get_local_port(wget_tcp *tcp);
 WGETAPI void
@@ -1938,9 +1938,9 @@ WGETAPI int
 WGETAPI void
 	wget_tcp_tls_stop(wget_tcp *tcp);
 WGETAPI ssize_t
-	wget_tcp_vprintf(wget_tcp *tcp, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0);
+	wget_tcp_vprintf(wget_tcp *tcp, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0);
 WGETAPI ssize_t
-	wget_tcp_printf(wget_tcp *tcp, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3);
+	wget_tcp_printf(wget_tcp *tcp, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(2,3);
 WGETAPI ssize_t
 	wget_tcp_write(wget_tcp *tcp, const char *buf, size_t count);
 WGETAPI ssize_t
@@ -1949,7 +1949,7 @@ WGETAPI int
 	wget_tcp_ready_2_transfer(wget_tcp *tcp, int flags);
 
 WGETAPI bool
-	wget_ip_is_family(const char *host, int family) G_GNUC_WGET_PURE;
+	wget_ip_is_family(const char *host, int family) WGET_GCC_PURE;
 
 /*
  * SSL routines
@@ -1999,9 +1999,9 @@ WGETAPI void
 WGETAPI void
 	wget_ssl_set_check_certificate(char value);
 WGETAPI ssize_t
-	wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout) G_GNUC_WGET_NONNULL_ALL;
+	wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout) WGET_GCC_NONNULL_ALL;
 WGETAPI ssize_t
-	wget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout) G_GNUC_WGET_NONNULL_ALL;
+	wget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout) WGET_GCC_NONNULL_ALL;
 
 /*
  * HTTP routines
@@ -2182,66 +2182,66 @@ WGETAPI int
 	wget_http_get_protocol(const wget_http_connection *conn);
 
 WGETAPI bool
-	wget_http_isseparator(char c) G_GNUC_WGET_CONST;
+	wget_http_isseparator(char c) WGET_GCC_CONST;
 WGETAPI bool
-	wget_http_istoken(char c) G_GNUC_WGET_CONST;
+	wget_http_istoken(char c) WGET_GCC_CONST;
 
 WGETAPI const char *
-	wget_http_parse_token(const char *s, const char **token) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_token(const char *s, const char **token) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_quoted_string(const char *s, const char **qstring) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_quoted_string(const char *s, const char **qstring) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_param(const char *s, const char **param, const char **value) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_param(const char *s, const char **param, const char **value) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_name(const char *s, const char **name) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_name(const char *s, const char **name) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_parse_name_fixed(const char *s, const char **name, size_t *namelen) G_GNUC_WGET_NONNULL_ALL;
+	wget_parse_name_fixed(const char *s, const char **name, size_t *namelen) WGET_GCC_NONNULL_ALL;
 WGETAPI time_t
-	wget_http_parse_full_date(const char *s) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_full_date(const char *s) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_link(const char *s, wget_http_link *link) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_link(const char *s, wget_http_link *link) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_digest(const char *s, wget_http_digest *digest) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_digest(const char *s, wget_http_digest *digest) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_challenge(const char *s, wget_http_challenge *challenge) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_challenge(const char *s, wget_http_challenge *challenge) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_challenges(const char *s, wget_vector *challenges) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_challenges(const char *s, wget_vector *challenges) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_location(const char *s, const char **location) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_location(const char *s, const char **location) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_transfer_encoding(const char *s, char *transfer_encoding) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_transfer_encoding(const char *s, char *transfer_encoding) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_content_type(const char *s, const char **content_type, const char **charset) G_GNUC_WGET_NONNULL((1));
+	wget_http_parse_content_type(const char *s, const char **content_type, const char **charset) WGET_GCC_NONNULL((1));
 WGETAPI const char *
-	wget_http_parse_content_encoding(const char *s, char *content_encoding) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_content_encoding(const char *s, char *content_encoding) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_content_disposition(const char *s, const char **filename) G_GNUC_WGET_NONNULL((1));
+	wget_http_parse_content_disposition(const char *s, const char **filename) WGET_GCC_NONNULL((1));
 WGETAPI const char *
-	wget_http_parse_strict_transport_security(const char *s, time_t *maxage, char *include_subdomains) G_GNUC_WGET_NONNULL((1));
+	wget_http_parse_strict_transport_security(const char *s, time_t *maxage, char *include_subdomains) WGET_GCC_NONNULL((1));
 WGETAPI const char *
-	wget_http_parse_public_key_pins(const char *s, wget_hpkp *hpkp) G_GNUC_WGET_NONNULL((1));
+	wget_http_parse_public_key_pins(const char *s, wget_hpkp *hpkp) WGET_GCC_NONNULL((1));
 WGETAPI const char *
-	wget_http_parse_connection(const char *s, char *keep_alive) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_connection(const char *s, char *keep_alive) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_setcookie(const char *s, wget_cookie **cookie) G_GNUC_WGET_NONNULL((1));
+	wget_http_parse_setcookie(const char *s, wget_cookie **cookie) WGET_GCC_NONNULL((1));
 WGETAPI const char *
-	wget_http_parse_etag(const char *s, const char **etag) G_GNUC_WGET_NONNULL((1));
+	wget_http_parse_etag(const char *s, const char **etag) WGET_GCC_NONNULL((1));
 
 WGETAPI char *
-	wget_http_print_date(time_t t, char *buf, size_t bufsize) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_print_date(time_t t, char *buf, size_t bufsize) WGET_GCC_NONNULL_ALL;
 
 WGETAPI void
-	wget_http_add_param(wget_vector **params, wget_http_header_param *param) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_add_param(wget_vector **params, wget_http_header_param *param) WGET_GCC_NONNULL_ALL;
 WGETAPI int
-	wget_http_add_header_vprintf(wget_http_request *req, const char *name, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_add_header_vprintf(wget_http_request *req, const char *name, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(3,0) WGET_GCC_NONNULL_ALL;
 WGETAPI int
-	wget_http_add_header_printf(wget_http_request *req, const char *name, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_add_header_printf(wget_http_request *req, const char *name, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(3,4) WGET_GCC_NONNULL_ALL;
 WGETAPI int
-	wget_http_add_header(wget_http_request *req, const char *name, const char *value) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_add_header(wget_http_request *req, const char *name, const char *value) WGET_GCC_NONNULL_ALL;
 WGETAPI int
-	wget_http_add_header_param(wget_http_request *req, wget_http_header_param *param) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_add_header_param(wget_http_request *req, wget_http_header_param *param) WGET_GCC_NONNULL_ALL;
 WGETAPI void
-	wget_http_add_credentials(wget_http_request *req, wget_http_challenge *challenge, const char *username, const char *password, int proxied) G_GNUC_WGET_NONNULL((1));
+	wget_http_add_credentials(wget_http_request *req, wget_http_challenge *challenge, const char *username, const char *password, int proxied) WGET_GCC_NONNULL((1));
 WGETAPI int
 	wget_http_set_http_proxy(const char *proxy, const char *encoding);
 WGETAPI int
@@ -2282,19 +2282,19 @@ WGETAPI void
 	wget_http_free_response(wget_http_response **resp);
 
 WGETAPI wget_http_response *
-	wget_http_read_header(const wget_iri *iri) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_read_header(const wget_iri *iri) WGET_GCC_NONNULL_ALL;
 WGETAPI wget_http_response *
-	wget_http_get_header(wget_iri *iri) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_get_header(wget_iri *iri) WGET_GCC_NONNULL_ALL;
 WGETAPI int
 	wget_http_parse_header_line(wget_http_response *resp, const char *name, size_t namelen, const char *value, size_t valuelen);
 WGETAPI wget_http_response *
-	wget_http_parse_response_header(char *buf) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_parse_response_header(char *buf) WGET_GCC_NONNULL_ALL;
 WGETAPI wget_http_response *
-	wget_http_get_response_cb(wget_http_connection *conn) G_GNUC_WGET_NONNULL((1));
+	wget_http_get_response_cb(wget_http_connection *conn) WGET_GCC_NONNULL((1));
 //WGETAPI HTTP_RESPONSE *
 //	http_get_response_mem(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL_ALL;
 WGETAPI wget_http_response *
-	wget_http_get_response(wget_http_connection *conn) G_GNUC_WGET_NONNULL((1));
+	wget_http_get_response(wget_http_connection *conn) WGET_GCC_NONNULL((1));
 
 WGETAPI void
 	wget_http_init(void);
@@ -2303,27 +2303,27 @@ WGETAPI void
 WGETAPI int
 	wget_http_open(wget_http_connection **_conn, const wget_iri *iri);
 WGETAPI wget_http_request *
-	wget_http_create_request(const wget_iri *iri, const char *method) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_create_request(const wget_iri *iri, const char *method) WGET_GCC_NONNULL_ALL;
 WGETAPI void
-	wget_http_close(wget_http_connection **conn) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_close(wget_http_connection **conn) WGET_GCC_NONNULL_ALL;
 WGETAPI void
-	wget_http_request_set_header_cb(wget_http_request *req, wget_http_header_callback_t *cb, void *user_data) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_set_header_cb(wget_http_request *req, wget_http_header_callback_t *cb, void *user_data) WGET_GCC_NONNULL((1));
 WGETAPI void
-	wget_http_request_set_body_cb(wget_http_request *req, wget_http_body_callback_t *cb, void *user_data) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_set_body_cb(wget_http_request *req, wget_http_body_callback_t *cb, void *user_data) WGET_GCC_NONNULL((1));
 WGETAPI void
-	wget_http_request_set_int(wget_http_request *req, int key, int value) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_set_int(wget_http_request *req, int key, int value) WGET_GCC_NONNULL((1));
 WGETAPI int
-	wget_http_request_get_int(wget_http_request *req, int key) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_get_int(wget_http_request *req, int key) WGET_GCC_NONNULL((1));
 WGETAPI void
-	wget_http_request_set_ptr(wget_http_request *req, int key, void *value) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_set_ptr(wget_http_request *req, int key, void *value) WGET_GCC_NONNULL((1));
 WGETAPI void *
-	wget_http_request_get_ptr(wget_http_request *req, int key) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_get_ptr(wget_http_request *req, int key) WGET_GCC_NONNULL((1));
 WGETAPI void
-	wget_http_request_set_body(wget_http_request *req, const char *mimetype, char *body, size_t length) G_GNUC_WGET_NONNULL((1));
+	wget_http_request_set_body(wget_http_request *req, const char *mimetype, char *body, size_t length) WGET_GCC_NONNULL((1));
 WGETAPI int
-	wget_http_send_request(wget_http_connection *conn, wget_http_request *req) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_send_request(wget_http_connection *conn, wget_http_request *req) WGET_GCC_NONNULL_ALL;
 WGETAPI ssize_t
-	wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, int proxied) G_GNUC_WGET_NONNULL_ALL;
+	wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, int proxied) WGET_GCC_NONNULL_ALL;
 
 /*
  * Highlevel HTTP routines
@@ -2377,7 +2377,7 @@ WGETAPI wget_digest_algorithm
 WGETAPI int
 	wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest);
 WGETAPI int
-	wget_hash_get_len(wget_digest_algorithm algorithm) G_GNUC_WGET_CONST;
+	wget_hash_get_len(wget_digest_algorithm algorithm) WGET_GCC_CONST;
 WGETAPI int
 	wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm algorithm);
 WGETAPI int
@@ -2390,17 +2390,17 @@ WGETAPI void
  */
 
 WGETAPI int
-	wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length) G_GNUC_WGET_NONNULL_ALL;
+	wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length) WGET_GCC_NONNULL_ALL;
 WGETAPI int
-	wget_hash_file_offset(const char *hashname, const char *fname, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length) G_GNUC_WGET_NONNULL_ALL;
+	wget_hash_file_offset(const char *hashname, const char *fname, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length) WGET_GCC_NONNULL_ALL;
 WGETAPI int
-	wget_hash_file(const char *hashname, const char *fname, char *digest_hex, size_t digest_hex_size) G_GNUC_WGET_NONNULL_ALL;
+	wget_hash_file(const char *hashname, const char *fname, char *digest_hex, size_t digest_hex_size) WGET_GCC_NONNULL_ALL;
 
 /*
  * Hash convenience routines
  */
 
-WGETAPI void G_GNUC_WGET_PRINTF_FORMAT(4,5) G_GNUC_WGET_NONNULL_ALL
+WGETAPI void WGET_GCC_PRINTF_FORMAT(4,5) WGET_GCC_NONNULL_ALL
 	wget_hash_printf_hex(wget_digest_algorithm algorithm, char *out, size_t outsize, const char *fmt, ...);
 
 
@@ -2485,23 +2485,23 @@ WGETAPI void
 WGETAPI void
 	wget_bar_print(wget_bar *bar, int slot, const char *s);
 WGETAPI void
-	wget_bar_vprintf(wget_bar *bar, int slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_vprintf(wget_bar *bar, int slot, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(3,0) WGET_GCC_NONNULL_ALL;
 WGETAPI void
-	wget_bar_printf(wget_bar *bar, int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_printf(wget_bar *bar, int slot, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(3,4) WGET_GCC_NONNULL_ALL;
 WGETAPI void
-	wget_bar_slot_begin(wget_bar *bar, int slot, const char *filename, int new_file, ssize_t filesize) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_slot_begin(wget_bar *bar, int slot, const char *filename, int new_file, ssize_t filesize) WGET_GCC_NONNULL_ALL;
 WGETAPI void
 	wget_bar_slot_downloaded(wget_bar *bar, int slot, size_t nbytes);
 WGETAPI void
-	wget_bar_slot_deregister(wget_bar *bar, int slot) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_slot_deregister(wget_bar *bar, int slot) WGET_GCC_NONNULL_ALL;
 WGETAPI void
-	wget_bar_update(wget_bar *bar) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_update(wget_bar *bar) WGET_GCC_NONNULL_ALL;
 WGETAPI void
-	wget_bar_set_slots(wget_bar *bar, int nslots) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_set_slots(wget_bar *bar, int nslots) WGET_GCC_NONNULL_ALL;
 WGETAPI void
 	wget_bar_screen_resized(void);
 WGETAPI void
-	wget_bar_write_line(wget_bar *bar, const char *buf, size_t len) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_write_line(wget_bar *bar, const char *buf, size_t len) WGET_GCC_NONNULL_ALL;
 WGETAPI void
 	wget_bar_set_speed_type(char type);
 

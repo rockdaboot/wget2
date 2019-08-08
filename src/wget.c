@@ -126,7 +126,7 @@ typedef struct {
 } _statistics_t;
 static _statistics_t stats;
 
-static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response *resp, const char *fname, int flag,
+static int WGET_GCC_NONNULL((1)) _prepare_file(wget_http_response *resp, const char *fname, int flag,
 		wget_iri *uri, wget_iri *original_url, int ignore_patterns, wget_buffer *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path);
 
@@ -145,7 +145,7 @@ static void
 	css_parse(JOB *job, const char *data, size_t len, const char *encoding, wget_iri *base),
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base),
 	fork_to_background(void);
-static unsigned int G_GNUC_WGET_PURE
+static unsigned int WGET_GCC_PURE
 	hash_url(const char *url);
 static int
 	read_xattr_metadata(const char *name, char *value, size_t size, int fd),
@@ -155,7 +155,7 @@ static int
 	http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloader);
 wget_http_response
 	*http_receive_response(wget_http_connection *conn);
-static long long G_GNUC_WGET_NONNULL_ALL get_file_size(const char *fname);
+static long long WGET_GCC_NONNULL_ALL get_file_size(const char *fname);
 
 static wget_stringmap
 	*etags;
@@ -187,7 +187,7 @@ static int
 // --cut-dirs=number
 // -P / --directory-prefix=prefix
 
-static const char * G_GNUC_WGET_NONNULL_ALL _get_local_filename(const wget_iri *iri)
+static const char * WGET_GCC_NONNULL_ALL _get_local_filename(const wget_iri *iri)
 {
 	wget_buffer buf;
 	char *fname;
@@ -282,7 +282,7 @@ static const char * G_GNUC_WGET_NONNULL_ALL _get_local_filename(const wget_iri *
 	return fname;
 }
 
-const char * G_GNUC_WGET_NONNULL_ALL get_local_filename(const wget_iri *iri)
+const char * WGET_GCC_NONNULL_ALL get_local_filename(const wget_iri *iri)
 {
 	if (config.delete_after)
 		return NULL;
@@ -1216,8 +1216,8 @@ static void _convert_links(void)
 	wget_buffer_deinit(&buf);
 }
 
-static void print_status(DOWNLOADER *downloader, const char *fmt, ...) G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PRINTF_FORMAT(2,3);
-static void print_status(DOWNLOADER *downloader G_GNUC_WGET_UNUSED, const char *fmt, ...)
+static void print_status(DOWNLOADER *downloader, const char *fmt, ...) WGET_GCC_NONNULL_ALL WGET_GCC_PRINTF_FORMAT(2,3);
+static void print_status(DOWNLOADER *downloader WGET_GCC_UNUSED, const char *fmt, ...)
 {
 	if (config.verbose) {
 		va_list args;
@@ -1514,7 +1514,7 @@ int main(int argc, const char **argv)
  * (b="http://te.ttr.is:8003"; echo $b; while read -sN1 a; do echo "$b/$a"; done) | wget2 --input-file=- -qO-
  *   h,j,k,l = left, down, turn, right; ctrl-c = stop
  */
-void *input_thread(void *p G_GNUC_WGET_UNUSED)
+void *input_thread(void *p WGET_GCC_UNUSED)
 {
 	ssize_t len;
 	size_t bufsize = 0;
@@ -2443,7 +2443,7 @@ static void _remember_for_conversion(const char *filename, wget_iri *base_url, i
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int G_GNUC_WGET_PURE hash_url(const char *url)
+static unsigned int WGET_GCC_PURE hash_url(const char *url)
 {
 	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
 
@@ -2929,7 +2929,7 @@ static void _css_parse_encoding(void *context, const char *encoding, size_t len)
 	}
 }
 
-static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos WGET_GCC_UNUSED)
 {
 	struct css_context *ctx = context;
 	wget_string u = { url, len };
@@ -2982,7 +2982,7 @@ void css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget
 	wget_buffer_deinit(&context.uri_buf);
 }
 
-static long long G_GNUC_WGET_NONNULL_ALL get_file_size(const char *fname)
+static long long WGET_GCC_NONNULL_ALL get_file_size(const char *fname)
 {
 	struct stat st;
 
@@ -2993,7 +2993,7 @@ static long long G_GNUC_WGET_NONNULL_ALL get_file_size(const char *fname)
 	return 0;
 }
 
-static time_t G_GNUC_WGET_NONNULL_ALL get_file_mtime(const char *fname)
+static time_t WGET_GCC_NONNULL_ALL get_file_mtime(const char *fname)
 {
 	struct stat st;
 
@@ -3087,7 +3087,7 @@ static bool check_mime_list(wget_vector *list, const char *mime)
 	return result;
 }
 
-static int G_GNUC_WGET_NONNULL((1)) _prepare_file(wget_http_response *resp, const char *fname, int flag,
+static int WGET_GCC_NONNULL((1)) _prepare_file(wget_http_response *resp, const char *fname, int flag,
 		wget_iri *uri, wget_iri *original_url, int ignore_patterns, wget_buffer *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path)
 {

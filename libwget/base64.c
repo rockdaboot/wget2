@@ -61,7 +61,7 @@ static const unsigned char base64_2_bin[256] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static bool G_GNUC_WGET_CONST _isbase64(char c)
+static bool WGET_GCC_CONST _isbase64(char c)
 {
 	// isalnum(c) does not work for all locales
 	return !!base64_2_bin[(unsigned char) c];

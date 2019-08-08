@@ -35,7 +35,7 @@
 #include "private.h"
 #include "logger.h"
 
-static void G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))
+static void WGET_GCC_PRINTF_FORMAT(2,0) WGET_GCC_NONNULL((1,2))
 _logger_vprintf_func(const wget_logger *logger, const char *fmt, va_list args)
 {
 	char sbuf[4096];
@@ -55,7 +55,7 @@ static void _logger_write_func(const wget_logger *logger, const char *buf, size_
 	logger->func(buf, len);
 }
 
-static void  G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))
+static void  WGET_GCC_PRINTF_FORMAT(2,0) WGET_GCC_NONNULL((1,2))
 _logger_vfprintf(FILE *fp, const char *fmt, va_list args)
 {
 	char sbuf[4096];
@@ -70,7 +70,7 @@ _logger_vfprintf(FILE *fp, const char *fmt, va_list args)
 	errno = err;
 }
 
-static void  G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))
+static void  WGET_GCC_PRINTF_FORMAT(2,0) WGET_GCC_NONNULL((1,2))
 _logger_vprintf_file(const wget_logger *logger, const char *fmt, va_list args)
 {
 	_logger_vfprintf(logger->fp, fmt, args);
@@ -81,7 +81,7 @@ static void _logger_write_file(const wget_logger *logger, const char *buf, size_
 	fwrite(buf, 1, len, logger->fp);
 }
 
-static void G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL((1,2))
+static void WGET_GCC_PRINTF_FORMAT(2,0) WGET_GCC_NONNULL((1,2))
 _logger_vprintf_fname(const wget_logger *logger, const char *fmt, va_list args)
 {
 	FILE *fp = fopen(logger->fname, "a");

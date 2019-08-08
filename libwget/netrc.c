@@ -44,7 +44,7 @@ struct wget_netrc_db_st {
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int G_GNUC_WGET_PURE _hash_netrc(const wget_netrc *netrc)
+static unsigned int WGET_GCC_PURE _hash_netrc(const wget_netrc *netrc)
 {
 	unsigned int hash = 0;
 	const unsigned char *p;
@@ -55,7 +55,7 @@ static unsigned int G_GNUC_WGET_PURE _hash_netrc(const wget_netrc *netrc)
 	return hash;
 }
 
-static int G_GNUC_WGET_NONNULL_ALL G_GNUC_WGET_PURE _compare_netrc(const wget_netrc *h1, const wget_netrc *h2)
+static int WGET_GCC_NONNULL_ALL WGET_GCC_PURE _compare_netrc(const wget_netrc *h1, const wget_netrc *h2)
 {
 	return wget_strcmp(h1->host, h2->host);
 }

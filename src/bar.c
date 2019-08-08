@@ -54,7 +54,7 @@ static wget_thread
 static bool
 	_terminate_thread;
 
-static void *_bar_update_thread(void *p G_GNUC_WGET_UNUSED)
+static void *_bar_update_thread(void *p WGET_GCC_UNUSED)
 {
 	while (!_terminate_thread) {
 		wget_bar_update(bar);

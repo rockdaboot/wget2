@@ -53,7 +53,7 @@ struct css_context {
 		encoding_allocated;
 };
 
-static void G_GNUC_WGET_NORETURN usage(const char *myname)
+static void WGET_GCC_NORETURN usage(const char *myname)
 {
 	error_printf_exit(
 		"\nUsage: %s [options] file...\n"\
@@ -87,7 +87,7 @@ static void css_parse_encoding(void *context, const char *encoding, size_t len)
 }
 
 // Callback function, called from CSS parser for each URI found.
-static void css_parse_uri(void *context, const char *url, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+static void css_parse_uri(void *context, const char *url, size_t len, size_t pos WGET_GCC_UNUSED)
 {
 	struct css_context *ctx = context;
 

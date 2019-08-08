@@ -206,7 +206,7 @@ int wget_thread_cond_wait(wget_thread_cond cond, wget_thread_mutex mutex, long l
  *
  * Start \p start_routine as own thread with argument \p arg.
  */
-int wget_thread_start(wget_thread *thread, void *(*start_routine)(void *), void *arg, G_GNUC_WGET_UNUSED int flags)
+int wget_thread_start(wget_thread *thread, void *(*start_routine)(void *), void *arg, WGET_GCC_UNUSED int flags)
 {
 	if (wget_thread_support()) {
 		*thread = wget_malloc(sizeof(struct wget_thread_st));
@@ -228,7 +228,7 @@ int wget_thread_start(wget_thread *thread, void *(*start_routine)(void *), void 
  *
  * Currently a no-op function, since it's not portable.
  */
-int wget_thread_cancel(G_GNUC_WGET_UNUSED wget_thread thread)
+int wget_thread_cancel(WGET_GCC_UNUSED wget_thread thread)
 {
 /*
 	if (thread && thread->tid)
@@ -247,7 +247,7 @@ int wget_thread_cancel(G_GNUC_WGET_UNUSED wget_thread thread)
  *
  * Currently a no-op function, since it's not portable.
  */
-int wget_thread_kill(G_GNUC_WGET_UNUSED wget_thread thread, G_GNUC_WGET_UNUSED int sig)
+int wget_thread_kill(WGET_GCC_UNUSED wget_thread thread, WGET_GCC_UNUSED int sig)
 {
 /*	if (thread && thread->tid)
 		return glthread_kill(thread->tid, sig);

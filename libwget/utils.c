@@ -299,7 +299,7 @@ long long wget_get_timemillis(void)
 	return ts.tv_sec * 1000LL + ts.tv_nsec / 1000000;
 }
 
-G_GNUC_WGET_CONST
+WGET_GCC_CONST
 static unsigned char _unhex(unsigned char c)
 {
 	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
@@ -504,7 +504,7 @@ int wget_get_screen_size(int *width, int *height)
 	return -1;
 }
 #else
-int wget_get_screen_size(G_GNUC_WGET_UNUSED int *width, G_GNUC_WGET_UNUSED int *height)
+int wget_get_screen_size(WGET_GCC_UNUSED int *width, WGET_GCC_UNUSED int *height)
 {
 	return -1;
 }

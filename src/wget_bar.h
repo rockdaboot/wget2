@@ -30,9 +30,9 @@
 
 bool bar_init(void);
 void bar_deinit(void);
-void bar_print(int slot, const char *s) G_GNUC_WGET_NONNULL_ALL;
-void bar_printf(int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(2,3) G_GNUC_WGET_NONNULL_ALL;
-void bar_vprintf(int slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(2,0) G_GNUC_WGET_NONNULL_ALL;
+void bar_print(int slot, const char *s) WGET_GCC_NONNULL_ALL;
+void bar_printf(int slot, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(2,3) WGET_GCC_NONNULL_ALL;
+void bar_vprintf(int slot, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0) WGET_GCC_NONNULL_ALL;
 void bar_slot_begin(int slot, const char *filename, int new_file, ssize_t filesize);
 void bar_set_downloaded(int slot, size_t nbytes);
 void bar_slot_deregister(int slot);
@@ -40,10 +40,10 @@ void bar_update_slots(int nslots);
 
 /*
 ssize_t
-	wget_bar_vprintf(wget_bar *bar, int slot, const char *fmt, va_list args) G_GNUC_WGET_PRINTF_FORMAT(3,0) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_vprintf(wget_bar *bar, int slot, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(3,0) WGET_GCC_NONNULL_ALL;
 ssize_t
-	wget_bar_printf(wget_bar *bar, int slot, const char *fmt, ...) G_GNUC_WGET_PRINTF_FORMAT(3,4) G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_printf(wget_bar *bar, int slot, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(3,4) WGET_GCC_NONNULL_ALL;
 void
-	wget_bar_print(wget_bar *bar, int slot, const char *s)G_GNUC_WGET_NONNULL_ALL;
+	wget_bar_print(wget_bar *bar, int slot, const char *s) WGET_GCC_NONNULL_ALL;
 */
 #endif /* SRC_WGET_BAR_H */

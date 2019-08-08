@@ -40,7 +40,7 @@ struct _rss_context {
 		*urls;
 };
 
-static void _rss_get_url(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos G_GNUC_WGET_UNUSED)
+static void _rss_get_url(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos WGET_GCC_UNUSED)
 {
 	struct _rss_context *ctx = context;
 	wget_string * url;

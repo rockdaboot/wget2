@@ -87,7 +87,7 @@ void wget_console_set_fg_color(wget_console_color colorid)
 	}
 }
 #else
-void wget_console_set_fg_color(G_GNUC_WGET_UNUSED wget_console_color colorid)
+void wget_console_set_fg_color(WGET_GCC_UNUSED wget_console_color colorid)
 {
 }
 #endif

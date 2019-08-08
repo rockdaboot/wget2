@@ -57,7 +57,7 @@ void dl_error_set(dl_error_t *e, const char *msg);
 
 // Set an error message with printf format.
 void dl_error_set_printf
-	(dl_error_t *e, const char *format, ...) G_GNUC_WGET_PRINTF_FORMAT(2, 3);
+	(dl_error_t *e, const char *format, ...) WGET_GCC_PRINTF_FORMAT(2, 3);
 
 // Returns 1 if dynamic loader will work on the current platform, 0 otherwise
 int dl_supported(void);

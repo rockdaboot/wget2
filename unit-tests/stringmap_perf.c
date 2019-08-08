@@ -41,7 +41,7 @@
 
 #include <wget.h>
 
-static int G_GNUC_WGET_NONNULL_ALL _print_word(G_GNUC_WGET_UNUSED void *ctx, const char *word)
+static int WGET_GCC_NONNULL_ALL _print_word(WGET_GCC_UNUSED void *ctx, const char *word)
 {
 	printf("%s\n", word);
 	return 0;
