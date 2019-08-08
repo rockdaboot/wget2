@@ -9,7 +9,8 @@ noinst_PROGRAMS = \
  print_html_urls\
  websequencediagram\
  websequencediagram_high\
- check_url_types
+ check_url_types\
+ relative_to_absolute_url
 
 
 AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS)
