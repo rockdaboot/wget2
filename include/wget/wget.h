@@ -198,11 +198,6 @@
 
 #undef GCC_VERSION_AT_LEAST
 
-// we can prefix the exposed functions as we want
-#ifndef WGET_PREFIX
-#	define WGET_PREFIX wget_
-#endif
-
 WGET_BEGIN_DECLS
 
 /*
