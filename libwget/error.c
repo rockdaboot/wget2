@@ -43,6 +43,7 @@ const char *wget_strerror(wget_error err)
 	switch (err) {
 	case WGET_E_SUCCESS: return _("Success");
 	case WGET_E_UNKNOWN: return _("General error");
+	case WGET_E_MEMORY: return _("No memory");
 	case WGET_E_INVALID: return _("Invalid value");
 	case WGET_E_TIMEOUT: return _("Timeout");
 	case WGET_E_CONNECT: return _("Connect error");
