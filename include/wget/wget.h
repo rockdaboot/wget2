@@ -192,10 +192,6 @@
 #	define WGET_END_DECLS
 #endif
 
-//#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901
-//#	define restrict
-//#endif
-
 #undef GCC_VERSION_AT_LEAST
 
 WGET_BEGIN_DECLS
