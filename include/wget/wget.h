@@ -299,12 +299,6 @@ WGETAPI wget_global_get_func_t *
 #define WGET_RESTRICT_NAMES_UPPERCASE  1<<4
 #define WGET_RESTRICT_NAMES_LOWERCASE  1<<5
 
-//types for --report-speed
-enum {
-	WGET_REPORT_SPEED_BYTES,
-	WGET_REPORT_SPEED_BITS
-};
-
 typedef int wget_update_load_t(void *, FILE *fp);
 typedef int wget_update_save_t(void *, FILE *fp);
 
@@ -2465,6 +2459,12 @@ WGETAPI const char *
  * Progress bar routines
  */
 
+// values for --report-speed and wget_bar_set_speed_type()
+typedef enum {
+	WGET_REPORT_SPEED_BYTES,
+	WGET_REPORT_SPEED_BITS
+} wget_report_speed;
+
 typedef struct wget_bar_st wget_bar;
 
 WGETAPI wget_bar *
@@ -2494,7 +2494,7 @@ WGETAPI void
 WGETAPI void
 	wget_bar_write_line(wget_bar *bar, const char *buf, size_t len) WGET_GCC_NONNULL_ALL;
 WGETAPI void
-	wget_bar_set_speed_type(char type);
+	wget_bar_set_speed_type(wget_report_speed type);
 
 /*
  * Console routines

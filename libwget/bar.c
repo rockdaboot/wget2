@@ -133,7 +133,7 @@ struct wget_bar_st {
 		mutex;
 };
 
-static char report_speed_type = WGET_REPORT_SPEED_BYTES;
+static wget_report_speed report_speed_type = WGET_REPORT_SPEED_BYTES;
 static char report_speed_type_char = 'B';
 static unsigned short speed_modifier = 1000;
 
@@ -695,13 +695,12 @@ void wget_bar_write_line(wget_bar *bar, const char *buf, size_t len)
  *
  * Default is WGET_REPORT_SPEED_BYTES.
  */
-void wget_bar_set_speed_type(char type)
+void wget_bar_set_speed_type(wget_report_speed type)
 {
 	report_speed_type = type;
 	if (type == WGET_REPORT_SPEED_BITS) {
 		report_speed_type_char = 'b';
 		speed_modifier = 8;
 	}
-
 }
 /** @}*/
