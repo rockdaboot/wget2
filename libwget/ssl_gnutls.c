@@ -1354,7 +1354,7 @@ void wget_ssl_init(void)
 			}
 
 			if (rc != GNUTLS_E_SUCCESS)
-				error_printf(_("GnuTLS: Unsupported priority string '%s': %s\n"), priorities ? "(null)" : priorities, gnutls_strerror(rc));
+				error_printf(_("GnuTLS: Unsupported priority string '%s': %s\n"), priorities ? priorities : "(null)", gnutls_strerror(rc));
 		} else {
 			// use GnuTLS defaults, which might hold insecure ciphers
 			if ((rc = gnutls_priority_init(&_priority_cache, NULL, NULL)))
