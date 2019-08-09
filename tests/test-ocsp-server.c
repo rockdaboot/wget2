@@ -70,5 +70,16 @@ int main(void)
 			{	NULL} },
 		0);
 
+	// Test ocsp without specifying responder URL
+	wget_test(
+		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/ocsp/x509-root-cert.pem --no-ocsp-file --no-ocsp-date --no-ocsp-nonce --ocsp",
+		WGET_TEST_REQUEST_URL, "https://localhost:{{sslport}}/index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_OCSP_RESP_FILE, SRCDIR "/certs/ocsp/ocsp_resp_ok.der",
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{urls[0].name + 1, urls[0].body},
+			{	NULL} },
+		0);
+
 	exit(0);
 }
