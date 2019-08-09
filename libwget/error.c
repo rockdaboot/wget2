@@ -38,7 +38,7 @@
  * Convert an internal libwget error code to a humanly readable string.
  * The returned pointer must not be de-allocated by the caller.
  */
-const char *wget_strerror(int err)
+const char *wget_strerror(wget_error err)
 {
 	switch (err) {
 	case WGET_E_SUCCESS: return _("Success");
