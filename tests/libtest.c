@@ -672,6 +672,10 @@ static void _http_server_stop(void)
 
 #ifdef HAVE_GNUTLS_OCSP_H
 	gnutls_global_deinit();
+
+	if(ocsp_resp)
+		wget_free(ocsp_resp->data);
+
 	wget_xfree(ocsp_resp);
 #endif
 }
