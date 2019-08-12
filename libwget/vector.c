@@ -522,7 +522,7 @@ void *wget_vector_get(const wget_vector *v, int pos)
  *
  * The return value of the last call to \p browse is returned or 0 if \p v is %NULL.
  */
-int wget_vector_browse(const wget_vector *v, wget_vector_browse_t *browse, void *ctx)
+int wget_vector_browse(const wget_vector *v, wget_vector_browse_fn *browse, void *ctx)
 {
 	if (v) {
 		for (int ret, it = 0; it < v->cur; it++)

@@ -215,13 +215,13 @@ static void print_human(void)
 {
 	wget_fprintf(fp, "\nSite Statistics:\n");
 	wget_fprintf(fp, "  %6s %5s %6s %s\n", "Status", "ms", "Size", "URL");
-	wget_vector_browse(data, (wget_vector_browse_t *) print_human_entry, fp);
+	wget_vector_browse(data, (wget_vector_browse_fn *) print_human_entry, fp);
 }
 
 static void print_csv(void)
 {
 	wget_fprintf(fp, "ID,ParentID,URL,Status,Link,Method,Size,SizeDecompressed,TransferTime,ResponseTime,Encoding,Verification,Last-Modified,Content-Type\n");
-	wget_vector_browse(data, (wget_vector_browse_t *) print_csv_entry, fp);
+	wget_vector_browse(data, (wget_vector_browse_fn *) print_csv_entry, fp);
 }
 
 void site_stats_print(void)

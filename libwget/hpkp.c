@@ -628,7 +628,7 @@ static int WGET_GCC_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp *hpkp)
 		if (ferror(fp))
 			return -1;
 
-		return wget_vector_browse(hpkp->pins, (wget_vector_browse_t *) _hpkp_save_pin, fp);
+		return wget_vector_browse(hpkp->pins, (wget_vector_browse_fn *) _hpkp_save_pin, fp);
 	}
 
 	return 0;

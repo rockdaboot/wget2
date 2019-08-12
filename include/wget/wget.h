@@ -646,7 +646,7 @@ WGETAPI wget_logger *
 typedef struct wget_vector_st wget_vector;
 typedef int wget_vector_compare_fn(const void *elem1, const void *elem2);
 typedef int wget_vector_find_fn(void *elem);
-typedef int wget_vector_browse_t(void *ctx, void *elem);
+typedef int wget_vector_browse_fn(void *ctx, void *elem);
 typedef void wget_vector_destructor_t(void *elem);
 
 WGETAPI wget_vector *
@@ -684,7 +684,7 @@ WGETAPI int
 WGETAPI int
 	wget_vector_size(const wget_vector *v) WGET_GCC_PURE;
 WGETAPI int
-	wget_vector_browse(const wget_vector *v, wget_vector_browse_t *browse, void *ctx) WGET_GCC_NONNULL((2));
+	wget_vector_browse(const wget_vector *v, wget_vector_browse_fn *browse, void *ctx) WGET_GCC_NONNULL((2));
 WGETAPI void
 	wget_vector_free(wget_vector **v);
 WGETAPI void
