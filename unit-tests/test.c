@@ -1823,6 +1823,7 @@ static void test_vector(void)
 
 // this hash function generates collisions and reduces the map to a simple list.
 // O(1) insertion, but O(n) search and removal
+static wget_stringmap_hash_fn hash_txt;
 static unsigned int hash_txt(WGET_GCC_UNUSED const char *key)
 {
 	return 0;

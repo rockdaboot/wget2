@@ -41,7 +41,8 @@
 
 #include <wget.h>
 
-static int WGET_GCC_NONNULL_ALL _print_word(WGET_GCC_UNUSED void *ctx, const char *word)
+static wget_stringmap_browse_fn _print_word;
+static int WGET_GCC_NONNULL_ALL _print_word(WGET_GCC_UNUSED void *ctx, const char *word, WGET_GCC_UNUSED void *value)
 {
 	printf("%s\n", word);
 	return 0;
@@ -119,7 +120,7 @@ int main(int argc, const char *const *argv)
 	printf("read %d words, %d uniques, %d doubles\n", unique + duple, unique, duple);
 
 	// const void *keys = stringmap_get_keys(map);
-	wget_stringmap_browse(map, (wget_stringmap_browse_t *) _print_word, NULL);
+	wget_stringmap_browse(map, _print_word, NULL);
 
 	wget_stringmap_free(&map);
 

@@ -779,19 +779,19 @@ WGETAPI void
 typedef wget_hashmap wget_stringmap;
 
 /// Type of the stringmap compare function
-typedef int wget_stringmap_compare_t(const char *key1, const char *key2);
+typedef int wget_stringmap_compare_fn(const char *key1, const char *key2);
 
 /// Type of the stringmap hash function
-typedef unsigned int wget_stringmap_hash_t(const char *key);
+typedef unsigned int wget_stringmap_hash_fn(const char *key);
 
 /// Type of the stringmap browse callback function
-typedef int wget_stringmap_browse_t(void *ctx, const char *key, void *value);
+typedef int wget_stringmap_browse_fn(void *ctx, const char *key, void *value);
 
 /// Type of the stringmap key destructor function
-typedef void wget_stringmap_key_destructor_t(char *key);
+typedef void wget_stringmap_key_destructor(char *key);
 
 /// Type of the stringmap value destructor function
-typedef void wget_stringmap_value_destructor_t(void *value);
+typedef void wget_stringmap_value_destructor(void *value);
 
 /// Type of the stringmap iterator
 typedef wget_hashmap_iterator wget_stringmap_iterator;
@@ -949,7 +949,7 @@ int wget_stringmap_size(const wget_stringmap *h)
  * The return value of the last call to \p browse is returned or 0 if either \p h or \p browse is %NULL.
  */
 static inline
-int wget_stringmap_browse(const wget_stringmap *h, wget_stringmap_browse_t *browse, void *ctx)
+int wget_stringmap_browse(const wget_stringmap *h, wget_stringmap_browse_fn *browse, void *ctx)
 {
 	return wget_hashmap_browse(h, (wget_hashmap_browse_fn *) browse, ctx);
 }
@@ -961,7 +961,7 @@ int wget_stringmap_browse(const wget_stringmap *h, wget_stringmap_browse_t *brow
  * Set the comparison function.
  */
 static inline
-void wget_stringmap_setcmpfunc(wget_stringmap *h, wget_stringmap_compare_t *cmp)
+void wget_stringmap_setcmpfunc(wget_stringmap *h, wget_stringmap_compare_fn *cmp)
 {
 	wget_hashmap_setcmpfunc(h, (wget_hashmap_compare_fn *) cmp);
 }
@@ -975,7 +975,7 @@ void wget_stringmap_setcmpfunc(wget_stringmap *h, wget_stringmap_compare_t *cmp)
  * The keys of all entries in the stringmap will be hashed again.
  */
 static inline
-int wget_stringmap_sethashfunc(wget_stringmap *h, wget_stringmap_hash_t *hash)
+int wget_stringmap_sethashfunc(wget_stringmap *h, wget_stringmap_hash_fn *hash)
 {
 	return wget_hashmap_sethashfunc(h, (wget_hashmap_hash_fn *) hash);
 }
@@ -989,7 +989,7 @@ int wget_stringmap_sethashfunc(wget_stringmap *h, wget_stringmap_hash_t *hash)
  * Default is free().
  */
 static inline
-void wget_stringmap_set_key_destructor(wget_hashmap *h, wget_stringmap_key_destructor_t *destructor)
+void wget_stringmap_set_key_destructor(wget_hashmap *h, wget_stringmap_key_destructor *destructor)
 {
 	wget_hashmap_set_key_destructor(h, (wget_hashmap_key_destructor *) destructor);
 }
@@ -1003,7 +1003,7 @@ void wget_stringmap_set_key_destructor(wget_hashmap *h, wget_stringmap_key_destr
  * Default is free().
  */
 static inline
-void wget_stringmap_set_value_destructor(wget_hashmap *h, wget_stringmap_value_destructor_t *destructor)
+void wget_stringmap_set_value_destructor(wget_hashmap *h, wget_stringmap_value_destructor *destructor)
 {
 	wget_hashmap_set_value_destructor(h, (wget_hashmap_value_destructor *) destructor);
 }
