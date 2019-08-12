@@ -391,7 +391,7 @@ static int parse_header(option_t opt, const char *val, WGET_GCC_UNUSED const cha
 		if (!v) {
 			v = *((wget_vector **)opt->var) =
 				wget_vector_create(8, (wget_vector_compare_fn *) compare_wget_http_param);
-			wget_vector_set_destructor(v, (wget_vector_destructor_t *) wget_http_free_param);
+			wget_vector_set_destructor(v, (wget_vector_destructor *) wget_http_free_param);
 		}
 
 		delim_pos = strchr(val, ':');
@@ -3407,7 +3407,7 @@ int init(int argc, const char **argv)
 		wget_http_challenge *basic = wget_calloc(1, sizeof(wget_http_challenge));
 		basic->auth_scheme = wget_strdup("basic");
 		wget_vector_add(config.default_challenges, basic);
-		wget_vector_set_destructor(config.default_challenges, (wget_vector_destructor_t *) wget_http_free_challenge);
+		wget_vector_set_destructor(config.default_challenges, (wget_vector_destructor *) wget_http_free_challenge);
 	}
 
 	if (config.page_requisites && !config.recursive) {

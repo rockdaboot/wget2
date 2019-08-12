@@ -37,7 +37,7 @@
 struct wget_vector_st {
 	wget_vector_compare_fn
 		*cmp; // comparison function
-	wget_vector_destructor_t
+	wget_vector_destructor
 		*destructor; // element destructor function
 	void
 		**entry; // pointer to array of pointers to elements
@@ -558,7 +558,7 @@ void wget_vector_setcmpfunc(wget_vector *v, wget_vector_compare_fn *cmp)
  * Set the destructor function that is called for each element to be removed.
  * It should not free the element (pointer) itself.
  */
-void wget_vector_set_destructor(wget_vector *v, wget_vector_destructor_t *destructor)
+void wget_vector_set_destructor(wget_vector *v, wget_vector_destructor *destructor)
 {
 	if (v)
 		v->destructor = destructor;

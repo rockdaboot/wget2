@@ -647,7 +647,7 @@ typedef struct wget_vector_st wget_vector;
 typedef int wget_vector_compare_fn(const void *elem1, const void *elem2);
 typedef int wget_vector_find_fn(void *elem);
 typedef int wget_vector_browse_fn(void *ctx, void *elem);
-typedef void wget_vector_destructor_t(void *elem);
+typedef void wget_vector_destructor(void *elem);
 
 WGETAPI wget_vector *
 	wget_vector_create(int max, wget_vector_compare_fn *cmp) WGET_GCC_MALLOC;
@@ -696,7 +696,7 @@ WGETAPI void *
 WGETAPI void
 	wget_vector_setcmpfunc(wget_vector *v, wget_vector_compare_fn *cmp) WGET_GCC_NONNULL((2));
 WGETAPI void
-	wget_vector_set_destructor(wget_vector *v, wget_vector_destructor_t *destructor);
+	wget_vector_set_destructor(wget_vector *v, wget_vector_destructor *destructor);
 WGETAPI void
 	wget_vector_sort(wget_vector *v);
 
