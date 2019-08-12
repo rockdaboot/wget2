@@ -205,7 +205,7 @@ static int WGET_GCC_NONNULL_ALL _search_host_for_free_job(struct _find_free_job_
 	}
 
 	// find next job to do
-	wget_list_browse(host->queue, (wget_list_browse_t *) _search_queue_for_free_job, ctx);
+	wget_list_browse(host->queue, (wget_list_browse_fn *) _search_queue_for_free_job, ctx);
 
 	return !!ctx->job; // 1=found a job, 0=no free job
 }
@@ -279,7 +279,7 @@ void host_release_jobs(HOST *host)
 		}
 	}
 
-	wget_list_browse(host->queue, (wget_list_browse_t *) _release_job, &self);
+	wget_list_browse(host->queue, (wget_list_browse_fn *) _release_job, &self);
 
 	wget_thread_mutex_unlock(hosts_mutex);
 }
@@ -476,7 +476,7 @@ static int _queue_free_func(void *context WGET_GCC_UNUSED, JOB *job)
 void host_queue_free(HOST *host)
 {
 	wget_thread_mutex_lock(hosts_mutex);
-	wget_list_browse(host->queue, (wget_list_browse_t *) _queue_free_func, NULL);
+	wget_list_browse(host->queue, (wget_list_browse_fn *) _queue_free_func, NULL);
 	wget_list_free(&host->queue);
 	if (host->robot_job) {
 		job_free(host->robot_job);
