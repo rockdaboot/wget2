@@ -2039,10 +2039,10 @@ typedef struct {
 		params; //!< name/value pairs of the challenge
 } wget_http_challenge;
 
-enum {
+typedef enum {
 	wget_transfer_encoding_identity = 0,
 	wget_transfer_encoding_chunked = 1
-};
+} wget_transfer_encoding;
 
 typedef struct wget_http_response_st wget_http_response;
 typedef int wget_http_header_callback(wget_http_response *, void *);
@@ -2142,8 +2142,9 @@ struct wget_http_response_st {
 		minor; //!< HTTP minor version
 	short
 		code; //!< request only status code
+	wget_transfer_encoding
+		transfer_encoding;
 	char
-		transfer_encoding,
 		content_encoding,
 		hsts_include_subdomains,
 		keep_alive;
@@ -2194,7 +2195,7 @@ WGETAPI const char *
 WGETAPI const char *
 	wget_http_parse_location(const char *s, const char **location) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
-	wget_http_parse_transfer_encoding(const char *s, char *transfer_encoding) WGET_GCC_NONNULL_ALL;
+	wget_http_parse_transfer_encoding(const char *s, wget_transfer_encoding *transfer_encoding) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
 	wget_http_parse_content_type(const char *s, const char **content_type, const char **charset) WGET_GCC_NONNULL((1));
 WGETAPI const char *

@@ -447,7 +447,7 @@ const char *wget_http_parse_location(const char *s, const char **location)
 // attribute               = token
 // value                   = token | quoted-string
 
-const char *wget_http_parse_transfer_encoding(const char *s, char *transfer_encoding)
+const char *wget_http_parse_transfer_encoding(const char *s, wget_transfer_encoding *transfer_encoding)
 {
 	while (c_isblank(*s)) s++;
 
