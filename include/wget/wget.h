@@ -263,7 +263,7 @@ typedef enum {
 WGETAPI const char *
 	wget_strerror(wget_error err);
 
-typedef void wget_global_get_func_t(const char *, size_t);
+typedef void wget_global_func(const char *, size_t);
 
 WGETAPI void
 	wget_global_init(int key, ...);
@@ -273,7 +273,7 @@ WGETAPI const void *
 	wget_global_get_ptr(int key);
 WGETAPI int
 	wget_global_get_int(int key);
-WGETAPI wget_global_get_func_t *
+WGETAPI wget_global_func *
 	wget_global_get_func(int key);
 
 /*
