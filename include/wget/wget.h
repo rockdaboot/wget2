@@ -2045,8 +2045,8 @@ enum {
 };
 
 typedef struct wget_http_response_st wget_http_response;
-typedef int wget_http_header_callback_t(wget_http_response *, void *);
-typedef int wget_http_body_callback_t(wget_http_response *, void *, const char *, size_t);
+typedef int wget_http_header_callback(wget_http_response *, void *);
+typedef int wget_http_body_callback(wget_http_response *, void *, const char *, size_t);
 
 /**
  * HTTP request data
@@ -2058,9 +2058,9 @@ typedef struct {
 		scheme; //!< scheme of the request for proxied connections
 	const char *
 		body; //!< body data to be sent or NULL
-	wget_http_header_callback_t
+	wget_http_header_callback
 		*header_callback; //!< called after HTTP header has been received
-	wget_http_body_callback_t
+	wget_http_body_callback
 		*body_callback; //!< called for each body data packet received
 	void *
 		user_data; //!< user data for the request (used by async application code)
@@ -2292,9 +2292,9 @@ WGETAPI wget_http_request *
 WGETAPI void
 	wget_http_close(wget_http_connection **conn) WGET_GCC_NONNULL_ALL;
 WGETAPI void
-	wget_http_request_set_header_cb(wget_http_request *req, wget_http_header_callback_t *cb, void *user_data) WGET_GCC_NONNULL((1));
+	wget_http_request_set_header_cb(wget_http_request *req, wget_http_header_callback *cb, void *user_data) WGET_GCC_NONNULL((1));
 WGETAPI void
-	wget_http_request_set_body_cb(wget_http_request *req, wget_http_body_callback_t *cb, void *user_data) WGET_GCC_NONNULL((1));
+	wget_http_request_set_body_cb(wget_http_request *req, wget_http_body_callback *cb, void *user_data) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_http_request_set_int(wget_http_request *req, int key, int value) WGET_GCC_NONNULL((1));
 WGETAPI int

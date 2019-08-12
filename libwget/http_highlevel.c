@@ -72,9 +72,9 @@ wget_http_response *wget_http_get(int first_key, ...)
 	wget_vector *challenges = NULL;
 	wget_cookie_db *cookie_db = NULL;
 	FILE *saveas_stream = NULL;
-	wget_http_body_callback_t *saveas_callback = NULL;
+	wget_http_body_callback *saveas_callback = NULL;
 	int saveas_fd = -1;
-	wget_http_header_callback_t *header_callback = NULL;
+	wget_http_header_callback *header_callback = NULL;
 	va_list args;
 	const char *url = NULL,	*url_encoding = NULL, *scheme = "GET";
 	const char *http_username = NULL, *http_password = NULL;
@@ -133,14 +133,14 @@ wget_http_response *wget_http_get(int first_key, ...)
 			saveas_stream = va_arg(args, FILE *);
 			break;
 		case WGET_HTTP_BODY_SAVEAS_FUNC:
-			saveas_callback = va_arg(args, wget_http_body_callback_t *);
+			saveas_callback = va_arg(args, wget_http_body_callback *);
 			body_user_data = va_arg(args, void *);
 			break;
 		case WGET_HTTP_BODY_SAVEAS_FD:
 			saveas_fd = va_arg(args, int);
 			break;
 		case WGET_HTTP_HEADER_FUNC:
-			header_callback = va_arg(args, wget_http_header_callback_t *);
+			header_callback = va_arg(args, wget_http_header_callback *);
 			header_user_data = va_arg(args, void *);
 			break;
 		case WGET_HTTP_SCHEME:
