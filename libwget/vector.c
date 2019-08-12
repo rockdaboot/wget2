@@ -640,7 +640,7 @@ int wget_vector_contains(const wget_vector *v, const void *elem)
  *
  * Returns -1 if \p v is %NULL or if the \p find didn't return 0.
  */
-int wget_vector_findext(const wget_vector *v, int start, int direction, wget_vector_find_t *find)
+int wget_vector_findext(const wget_vector *v, int start, int direction, wget_vector_find_fn *find)
 {
 
 	if (v) {
