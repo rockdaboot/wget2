@@ -186,6 +186,8 @@ struct config {
 	unsigned short
 		default_http_port,
 		default_https_port;
+	wget_report_speed
+		report_speed;
 	char
 		tls_resume,            // if TLS session resumption is enabled or not
 		tls_false_start,
@@ -261,13 +263,13 @@ struct config {
 		regex_type,
 		filter_urls,
 		askpass,
-		report_speed,
 		verify_save_failed,
 		verify_sig,
 		https_enforce,
 		retry_connrefused,
 		unlink,
 		background;
+
 };
 
 extern struct config
