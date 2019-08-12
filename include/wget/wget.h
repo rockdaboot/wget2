@@ -523,7 +523,7 @@ typedef struct {
 		size; //!< capacity of 'data' (terminating 0 byte doesn't count here)
 	bool
 		release_data : 1, //!< 'data' has been malloc'ed and must be freed
-		release_buf : 1; //!< buffer_t structure has been malloc'ed and must be freed
+		release_buf : 1; //!< wget_buffer structure has been malloc'ed and must be freed
 } wget_buffer;
 
 WGETAPI wget_buffer *
