@@ -1685,21 +1685,21 @@ struct wget_css_parsed_url_st {
 };
 typedef struct wget_css_parsed_url_st wget_css_parsed_url;
 
-typedef void wget_css_parse_uri_cb_t(void *user_ctx, const char *url, size_t len, size_t pos);
-typedef void wget_css_parse_encoding_cb_t(void *user_ctx, const char *url, size_t len);
+typedef void wget_css_parse_uri_callback(void *user_ctx, const char *url, size_t len, size_t pos);
+typedef void wget_css_parse_encoding_callback(void *user_ctx, const char *url, size_t len);
 
 WGETAPI void
 	wget_css_parse_buffer(
 		const char *buf,
 		size_t len,
-		wget_css_parse_uri_cb_t *callback_uri,
-		wget_css_parse_encoding_cb_t *callback_encoding,
+		wget_css_parse_uri_callback *callback_uri,
+		wget_css_parse_encoding_callback *callback_encoding,
 		void *user_ctx) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_css_parse_file(
 		const char *fname,
-		wget_css_parse_uri_cb_t *callback_uri,
-		wget_css_parse_encoding_cb_t *callback_encoding,
+		wget_css_parse_uri_callback *callback_uri,
+		wget_css_parse_encoding_callback *callback_encoding,
 		void *user_ctx) WGET_GCC_NONNULL((1));
 WGETAPI wget_vector *
 	wget_css_get_urls(
