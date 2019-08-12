@@ -299,8 +299,8 @@ WGETAPI wget_global_func *
 #define WGET_RESTRICT_NAMES_UPPERCASE  1<<4
 #define WGET_RESTRICT_NAMES_LOWERCASE  1<<5
 
-typedef int wget_update_load_t(void *, FILE *fp);
-typedef int wget_update_save_t(void *, FILE *fp);
+typedef int wget_update_load_fn(void *, FILE *fp);
+typedef int wget_update_save_fn(void *, FILE *fp);
 
 WGETAPI int
 	wget_ready_2_read(int fd, int timeout);
@@ -357,7 +357,7 @@ WGETAPI pid_t
 WGETAPI char *
 	wget_read_file(const char *fname, size_t *size) WGET_GCC_MALLOC;
 WGETAPI int
-	wget_update_file(const char *fname, wget_update_load_t *load_func, wget_update_save_t *save_func, void *context);
+	wget_update_file(const char *fname, wget_update_load_fn *load_func, wget_update_save_fn *save_func, void *context);
 WGETAPI int
 	wget_truncate(const char *path, off_t length);
 WGETAPI const char

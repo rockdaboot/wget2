@@ -331,7 +331,7 @@ int wget_tls_session_db_load(wget_tls_session_db *tls_session_db, const char *fn
 	if (!tls_session_db || !fname || !*fname)
 		return 0;
 
-	if (wget_update_file(fname, (wget_update_load_t *) _tls_session_db_load, NULL, tls_session_db)) {
+	if (wget_update_file(fname, (wget_update_load_fn *) _tls_session_db_load, NULL, tls_session_db)) {
 		error_printf(_("Failed to read TLS session data\n"));
 		return -1;
 	} else {
@@ -378,7 +378,7 @@ int wget_tls_session_db_save(wget_tls_session_db *tls_session_db, const char *fn
 	if (!tls_session_db || !fname || !*fname)
 		return -1;
 
-	if (wget_update_file(fname, (wget_update_load_t *) _tls_session_db_load, _tls_session_db_save, tls_session_db)) {
+	if (wget_update_file(fname, (wget_update_load_fn *) _tls_session_db_load, _tls_session_db_save, tls_session_db)) {
 		error_printf(_("Failed to write TLS session file '%s'\n"), fname);
 		return -1;
 	}
