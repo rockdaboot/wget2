@@ -59,7 +59,7 @@ typedef struct {
 		token_len; // used bytes of token buffer (not counting terminating 0 byte)
 	void
 		*user_ctx; // user context (not needed if we were using nested functions)
-	wget_xml_callback_t
+	wget_xml_callback
 		*callback;
 } _xml_context;
 
@@ -502,7 +502,7 @@ static int parseXML(const char *dir, _xml_context *context)
  */
 int wget_xml_parse_buffer(
 	const char *buf,
-	wget_xml_callback_t *callback,
+	wget_xml_callback *callback,
 	void *user_ctx,
 	int hints)
 {
@@ -530,7 +530,7 @@ int wget_xml_parse_buffer(
  */
 void wget_html_parse_buffer(
 	const char *buf,
-	wget_xml_callback_t *callback,
+	wget_xml_callback *callback,
 	void *user_ctx,
 	int hints)
 {
@@ -549,7 +549,7 @@ void wget_html_parse_buffer(
  */
 void wget_xml_parse_file(
 	const char *fname,
-	wget_xml_callback_t *callback,
+	wget_xml_callback *callback,
 	void *user_ctx,
 	int hints)
 {
@@ -611,7 +611,7 @@ void wget_xml_parse_file(
  */
 void wget_html_parse_file(
 	const char *fname,
-	wget_xml_callback_t *callback,
+	wget_xml_callback *callback,
 	void *user_ctx,
 	int hints)
 {

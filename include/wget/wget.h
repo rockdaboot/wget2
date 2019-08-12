@@ -1782,30 +1782,30 @@ WGETAPI void
 
 #define HTML_HINT_REMOVE_EMPTY_CONTENT XML_HINT_REMOVE_EMPTY_CONTENT
 
-typedef void wget_xml_callback_t(void *, int, const char *, const char *, const char *, size_t, size_t);
+typedef void wget_xml_callback(void *, int, const char *, const char *, const char *, size_t, size_t);
 
 WGETAPI int
 	wget_xml_parse_buffer(
 		const char *buf,
-		wget_xml_callback_t *callback,
+		wget_xml_callback *callback,
 		void *user_ctx,
 		int hints) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_xml_parse_file(
 		const char *fname,
-		wget_xml_callback_t *callback,
+		wget_xml_callback *callback,
 		void *user_ctx,
 		int hints) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_html_parse_buffer(
 		const char *buf,
-		wget_xml_callback_t *callback,
+		wget_xml_callback *callback,
 		void *user_ctx,
 		int hints) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_html_parse_file(
 		const char *fname,
-		wget_xml_callback_t *callback,
+		wget_xml_callback *callback,
 		void *user_ctx,
 		int hints) WGET_GCC_NONNULL((1));
 
