@@ -35,7 +35,7 @@
 #include "private.h"
 
 struct wget_vector_st {
-	wget_vector_compare_t
+	wget_vector_compare_fn
 		*cmp; // comparison function
 	wget_vector_destructor_t
 		*destructor; // element destructor function
@@ -66,7 +66,7 @@ struct wget_vector_st {
  *
  * Create a new vector instance, to be free'd after use with wget_vector_free().
  */
-wget_vector *wget_vector_create(int max, wget_vector_compare_t *cmp)
+wget_vector *wget_vector_create(int max, wget_vector_compare_fn *cmp)
 {
 	wget_vector *v = wget_calloc(1, sizeof(wget_vector));
 
@@ -539,7 +539,7 @@ int wget_vector_browse(const wget_vector *v, wget_vector_browse_t *browse, void 
  *
  * Set the compare function used by wget_vector_sort().
  */
-void wget_vector_setcmpfunc(wget_vector *v, wget_vector_compare_t *cmp)
+void wget_vector_setcmpfunc(wget_vector *v, wget_vector_compare_fn *cmp)
 {
 	if (v) {
 		v->cmp = cmp;

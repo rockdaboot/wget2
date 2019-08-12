@@ -390,7 +390,7 @@ static int parse_header(option_t opt, const char *val, WGET_GCC_UNUSED const cha
 
 		if (!v) {
 			v = *((wget_vector **)opt->var) =
-				wget_vector_create(8, (wget_vector_compare_t *) compare_wget_http_param);
+				wget_vector_create(8, (wget_vector_compare_fn *) compare_wget_http_param);
 			wget_vector_set_destructor(v, (wget_vector_destructor_t *) wget_http_free_param);
 		}
 
@@ -478,7 +478,7 @@ static int parse_stringlist_expand(option_t opt, const char *val, int expand, in
 		const char *s, *p;
 
 		if (!v)
-			v = *((wget_vector **)opt->var) = wget_vector_create(8, (wget_vector_compare_t *) strcmp);
+			v = *((wget_vector **)opt->var) = wget_vector_create(8, (wget_vector_compare_fn *) strcmp);
 
 		for (s = p = val; *p; s = p + 1) {
 			if ((p = _strchrnul_esc(s, ',')) != s) {
@@ -625,7 +625,7 @@ static int parse_taglist(option_t opt, const char *val, WGET_GCC_UNUSED const ch
 		const char *s, *p;
 
 		if (!v) {
-			v = *((wget_vector **)opt->var) = wget_vector_create(8, (wget_vector_compare_t *) _compare_tag);
+			v = *((wget_vector **)opt->var) = wget_vector_create(8, (wget_vector_compare_fn *) _compare_tag);
 			wget_vector_set_destructor(v, tag_free);
 		}
 
@@ -3422,7 +3422,7 @@ int init(int argc, const char **argv)
 #ifdef WITH_GPGME
 		init_gpgme();
 		if (!config.sig_ext) {
-			config.sig_ext = wget_vector_create(1, (wget_vector_compare_t *) strcmp);
+			config.sig_ext = wget_vector_create(1, (wget_vector_compare_fn *) strcmp);
 			wget_vector_add(config.sig_ext, wget_strdup("sig"));
 		} else {
 
@@ -3430,7 +3430,7 @@ int init(int argc, const char **argv)
 			// Duplicate extensions break the chain when "add_url" blocks the requests
 			// so they don't come back as a failure.
 			int start_len = wget_vector_size(config.sig_ext);
-			wget_vector *new_sig_ext = wget_vector_create(start_len, (wget_vector_compare_t *) strcmp);
+			wget_vector *new_sig_ext = wget_vector_create(start_len, (wget_vector_compare_fn *) strcmp);
 			wget_stringmap *set = wget_stringmap_create(start_len);
 			for (int i = 0; i < start_len; i++) {
 				const char *nxt = wget_vector_get(config.sig_ext, i);

@@ -72,7 +72,7 @@ static int string_vector_check(wget_vector *v, int correct_len, ...)
 	if (v_len != correct_len)
 		return 0;
 
-	wget_vector_setcmpfunc(v, (wget_vector_compare_t *) strcmp);
+	wget_vector_setcmpfunc(v, (wget_vector_compare_fn *) strcmp);
 	wget_vector_sort(v);
 
 	va_start(arglist, correct_len);

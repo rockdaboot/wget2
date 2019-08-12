@@ -1787,7 +1787,7 @@ static void test_vector(void)
 		txt_sorted[5] = { {""}, {"four"}, {"one"}, {"three"}, {"two"} },
 		*txt[countof(txt_sorted)];
 	wget_vector
-		*v = wget_vector_create(2, (wget_vector_compare_t *) compare_txt);
+		*v = wget_vector_create(2, (wget_vector_compare_fn *) compare_txt);
 	unsigned
 		it;
 	int

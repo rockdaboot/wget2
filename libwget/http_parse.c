@@ -237,7 +237,7 @@ static int WGET_GCC_NONNULL_ALL compare_param(wget_http_header_param *p1, wget_h
 
 void wget_http_add_param(wget_vector **params, wget_http_header_param *param)
 {
-	if (!*params) *params = wget_vector_create(4, (wget_vector_compare_t *) compare_param);
+	if (!*params) *params = wget_vector_create(4, (wget_vector_compare_fn *) compare_param);
 	wget_vector_add_memdup(*params, param, sizeof(*param));
 }
 
