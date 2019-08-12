@@ -571,8 +571,6 @@ WGETAPI size_t
  * Printf-style routines
  */
 
-#define wget_printf(fmt, ...) wget_fprintf(stdout, (fmt), ##__VA_ARGS__)
-
 WGETAPI size_t
 	wget_vasprintf(char **strp, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0);
 WGETAPI size_t
@@ -585,6 +583,8 @@ WGETAPI size_t
 	wget_vfprintf(FILE *fp, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0);
 WGETAPI size_t
 	wget_fprintf(FILE *fp, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(2,3);
+WGETAPI size_t
+	wget_printf(const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(1,2);
 WGETAPI size_t
 	wget_vsnprintf(char *str, size_t size, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(3,0);
 WGETAPI size_t

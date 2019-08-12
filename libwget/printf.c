@@ -128,7 +128,7 @@ char *wget_aprintf(const char *fmt, ...)
  * \param[in] fp FILE pointer
  * \param[in] fmt Printf-like format specifier
  * \param[in] args List of arguments
- * \return Pointer to 0-terminated string in memory
+ * \return Number of bytes written or -1 on error
  *
  * Prints arguments to stream \p fp and returns number of bytes written.
  */
@@ -156,7 +156,7 @@ size_t wget_vfprintf(FILE *fp, const char *fmt, va_list args)
  * \param[in] fp FILE pointer
  * \param[in] fmt Printf-like format specifier
  * \param[in] ... List of arguments
- * \return Pointer to 0-terminated string in memory
+ * \return Number of bytes written or -1 on error
  *
  * Prints arguments to stream \p fp and returns number of bytes written.
  */
@@ -166,6 +166,24 @@ size_t wget_fprintf(FILE *fp, const char *fmt, ...)
 
 	va_start(args, fmt);
 	size_t rc = wget_vfprintf(fp, fmt, args);
+	va_end(args);
+
+	return rc;
+}
+
+/**
+ * \param[in] fmt Printf-like format specifier
+ * \param[in] ... List of arguments
+ * \return Number of bytes written or -1 on error
+ *
+ * Prints arguments to `stdout` and returns number of bytes written.
+ */
+size_t wget_printf(const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	size_t rc = wget_vfprintf(stdout, fmt, args);
 	va_end(args);
 
 	return rc;
