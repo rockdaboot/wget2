@@ -38,6 +38,9 @@ static int connect_fd;
 #include <dlfcn.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#if defined __OpenBSD__ || defined __FreeBSD__
+#include <netinet/in.h>
+#endif
 #ifdef RTLD_NEXT /* Not defined e.g. on CygWin */
 struct combined {
 	struct addrinfo ai;
@@ -82,7 +85,7 @@ void freeaddrinfo(struct addrinfo *res)
 	libc_freeaddrinfo(res);
 }
 
-#ifdef __OpenBSD__
+#if defined __OpenBSD__ || defined __FreeBSD__
 int getnameinfo(const struct sockaddr *addr, socklen_t addrlen, char *host, size_t hostlen, char *serv, size_t servlen, int flags)
 #else
 int getnameinfo(const struct sockaddr *addr, socklen_t addrlen, char *host, socklen_t hostlen, char *serv, socklen_t servlen, int flags)
