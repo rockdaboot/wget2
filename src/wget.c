@@ -1482,7 +1482,6 @@ int main(int argc, const char **argv)
 		// freeing to avoid disguising valgrind output
 		blacklist_free();
 		hosts_free();
-		host_ips_free();
 		xfree(downloaders);
 		if (config.progress)
 			bar_deinit();

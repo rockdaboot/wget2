@@ -480,6 +480,17 @@ int wget_tcp_get_ssl(wget_tcp *tcp)
 }
 
 /**
+ * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init().
+ * \return IP address as string, NULL if not available.
+ *
+ * Returns the IP address of a `wget_tcp` instance.
+ */
+const char *wget_tcp_get_ip(wget_tcp *tcp)
+{
+	return tcp ? tcp->ip : NULL;
+}
+
+/**
  * \param[in] tcp A `wget_tcp` structure representing a TCP connection, returned by wget_tcp_init(). Might be NULL.
  * \param[in] hostname A hostname. The value of the SNI field.
  *
@@ -744,7 +755,7 @@ int wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port)
 				if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
 					tcp->ip = wget_strdup(adr);
 				else
-					tcp->ip = wget_strdup("???");
+					tcp->ip = NULL;
 
 				return WGET_E_SUCCESS;
 			}

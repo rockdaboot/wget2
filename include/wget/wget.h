@@ -1886,6 +1886,8 @@ WGETAPI void
 	wget_tcp_set_ssl(wget_tcp *tcp, int ssl);
 WGETAPI int
 	wget_tcp_get_ssl(wget_tcp *tcp) WGET_GCC_PURE;
+WGETAPI const char *
+	wget_tcp_get_ip(wget_tcp *tcp) WGET_GCC_PURE;
 WGETAPI void
 	wget_tcp_set_ssl_hostname(wget_tcp *tcp, const char *hostname);
 WGETAPI const char *
@@ -2823,33 +2825,16 @@ typedef enum {
 	WGET_STATS_HPKP_ERROR = 3
 } wget_hpkp_stats_result;
 
-typedef struct
-{
-	const char
-		*hostname,
-		*ip,
-		*scheme;
-	wget_hpkp_stats_result
-		hpkp;
-	char
-		hsts,
-		csp,
-		hpkp_new;
-} wget_server_stats_data;
-
 typedef void
-	wget_server_stats_callback(wget_server_stats_data *stats, void *ctx);
+	wget_server_stats_callback(wget_http_connection *conn, wget_http_response *resp);
 
 WGETAPI void
-	wget_server_set_stats_callback(wget_server_stats_callback *fn, void *ctx);
+	wget_server_set_stats_callback(wget_server_stats_callback *fn);
 
 typedef enum {
 	WGET_STATS_FORMAT_HUMAN = 0,
 	WGET_STATS_FORMAT_CSV = 1,
 } wget_stats_format;
-
-WGETAPI void
-	host_ips_free(void);
 
 WGET_END_DECLS
 

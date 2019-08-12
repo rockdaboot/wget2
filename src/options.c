@@ -3121,41 +3121,6 @@ static void stats_callback_tls(wget_tls_stats_data *stats, void *ctx)
 	}
 }
 
-WGET_GCC_CONST static const char *_hpkp_string(wget_hpkp_stats_result hpkp)
-{
-	switch (hpkp) {
-	case WGET_STATS_HPKP_NO: return "HPKP_NO";
-	case WGET_STATS_HPKP_MATCH: return "HPKP_MATCH";
-	case WGET_STATS_HPKP_NOMATCH: return "HPKP_NOMATCH";
-	case WGET_STATS_HPKP_ERROR: return "HPKP_ERROR";
-	default: return "?";
-	}
-}
-
-static void stats_callback_server(wget_server_stats_data *stats, void *ctx)
-{
-	FILE *fp = (FILE *) ctx;
-
-	if (config.stats_server_args->format == WGET_STATS_FORMAT_HUMAN) {
-		wget_fprintf(fp, "  %s:\n", NULL_TO_DASH(stats->hostname));
-		wget_fprintf(fp, "    IP             : %s\n", NULL_TO_DASH(stats->ip));
-		wget_fprintf(fp, "    Scheme         : %s\n", stats->scheme);
-		wget_fprintf(fp, "    HPKP           : %s\n", _hpkp_string(stats->hpkp));
-		wget_fprintf(fp, "    HPKP New Entry : %s\n", ON_OFF_DASH(stats->hpkp_new));
-		wget_fprintf(fp, "    HSTS           : %s\n", ON_OFF_DASH(stats->hsts));
-		wget_fprintf(fp, "    CSP            : %s\n\n", ON_OFF_DASH(stats->csp));
-	} else {
-		wget_fprintf(fp, "%s,%s,%s,%d,%d,%d,%d\n",
-			stats->hostname ? stats->hostname : "",
-			stats->ip ? stats->ip : "",
-			stats->scheme,
-			(int) stats->hpkp,
-			stats->hpkp_new,
-			stats->hsts,
-			stats->csp);
-	}
-}
-
 // read config, parse CLI options, check values, set module options
 // and return the number of arguments consumed
 int init(int argc, const char **argv)
@@ -3508,7 +3473,7 @@ int init(int argc, const char **argv)
 			wget_error_printf(_("Failed to open '%s' (%d)"), config.stats_server_args->filename, rc);
 			return -1;
 		}
-		wget_server_set_stats_callback(stats_callback_server, config.stats_server_args->fp);
+		server_stats_init(config.stats_server_args->fp);
 	}
 
 	if (config.stats_site_args) {
@@ -3692,6 +3657,8 @@ void deinit(void)
 	}
 
 	if (config.stats_server_args) {
+		if (config.stats_server_args->fp)
+			server_stats_exit();
 		if (config.stats_server_args->fp && config.stats_server_args->fp != stdout)
 			fclose(config.stats_server_args->fp);
 		xfree(config.stats_server_args->filename);

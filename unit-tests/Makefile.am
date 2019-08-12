@@ -15,6 +15,7 @@ LDADD = ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 BASE_OBJS = \
   ../src/log.o \
   ../src/options.o \
+  ../src/stats_server.o \
   ../src/stats_site.o \
   ../src/utils.o \
   ../src/dl.o \

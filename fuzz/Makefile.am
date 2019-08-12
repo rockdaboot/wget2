@@ -71,6 +71,7 @@ endif
 wget_options_fuzzer_LDADD += \
  ../src/options.o \
  ../src/log.o \
+ ../src/stats_server.o \
  ../src/stats_site.o \
  ../src/utils.o \
  ../src/dl.o \
@@ -106,7 +107,7 @@ oss-fuzz:
 	$$CXX $$CXXFLAGS -I$(top_srcdir)/include/wget/ -I$(top_srcdir) \
 	"$${fuzzer}.c" -o "$${fuzzer}" \
 	../src/options.o ../src/log.o \
-	../src/stats_site.o ../src/utils.o ../src/dl.o ../src/plugin.o ../src/testing.o \
+	../src/stats_server.o ../src/stats_site.o ../src/utils.o ../src/dl.o ../src/plugin.o ../src/testing.o \
 	../libwget/.libs/libwget.a $${LIB_FUZZING_ENGINE} \
 	-Wl,-Bstatic $${XLIBS} -Wl,-Bdynamic -lgnutls; \
 	done; \

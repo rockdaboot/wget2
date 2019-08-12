@@ -40,4 +40,7 @@ void stats_site_add(wget_http_response *resp, wget_gpg_info_t *gpg_info);
 void site_stats_init(FILE *fp);
 void site_stats_exit(void);
 
+void server_stats_init(FILE *fp);
+void server_stats_exit(void);
+
 #endif /* SRC_WGET_STATS_H */

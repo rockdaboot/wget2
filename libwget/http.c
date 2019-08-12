@@ -60,9 +60,6 @@ static wget_vector
 	*https_proxies,
 	*no_proxies;
 
-static wget_hashmap
-	*hosts;
-
 // protect access to the above vectors
 static wget_thread_mutex
 	proxy_mutex,
@@ -114,17 +111,8 @@ void wget_http_exit(void)
 	_wget_http_exit();
 }
 
-typedef struct {
-	const char
-		*hostname,
-		*ip,
-		*scheme;
-} HOST;
-
 static wget_server_stats_callback
 	*server_stats_callback;
-static void
-	*server_stats_ctx;
 
 // This is the default function for collecting body data
 static wget_http_body_callback _body_callback;
@@ -615,100 +603,6 @@ static void setup_nghttp2_callbacks(nghttp2_session_callbacks *callbacks)
 }
 #endif
 
-static int _host_compare(const HOST *host1, const HOST *host2)
-{
-	int n;
-
-	if ((n = wget_strcmp(host1->hostname, host2->hostname)))
-		return n;
-
-	if ((n = wget_strcmp(host1->ip, host2->ip)))
-		return n;
-
-	return wget_strcmp(host1->scheme, host2->scheme);
-}
-
-#ifdef __clang__
-__attribute__((no_sanitize("integer")))
-#endif
-static unsigned int _host_hash(const HOST *host)
-{
-	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
-	const unsigned char *p;
-
-	for (p = (unsigned char *)host->hostname; p && *p; p++)
-			hash = hash * 101 + *p;
-
-	for (p = (unsigned char *)host->ip; p && *p; p++)
-		hash = hash * 101 + *p;
-
-	for (p = (unsigned char *)host->scheme; p && *p; p++)
-			hash = hash * 101 + *p;
-
-	return hash;
-}
-
-static void _free_host_entry(HOST *host)
-{
-	if (host) {
-		wget_xfree(host->hostname);
-		wget_xfree(host->ip);
-		wget_xfree(host->scheme);
-		wget_xfree(host);
-	}
-}
-
-static const HOST *host_add(const HOST *hostp)
-{
-	if (!hosts) {
-		hosts = wget_hashmap_create(16, (wget_hashmap_hash_fn *) _host_hash, (wget_hashmap_compare_fn *) _host_compare);
-		wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor *) _free_host_entry);
-	}
-
-	wget_hashmap_put(hosts, hostp, hostp);
-
-	return hostp;
-}
-
-void host_ips_free(void)
-{
-	// We don't need mutex locking here - this function is called on exit when all threads have ceased.
-	if (server_stats_callback)
-		wget_hashmap_free(&hosts);
-}
-
-static void _server_stats_add(wget_http_connection *conn, wget_http_response *resp)
-{
-	HOST *hostp = wget_malloc(sizeof(HOST));
-
-	if (!hostp)
-		return;
-
-	hostp->hostname = wget_strdup(wget_http_get_host(conn));
-	hostp->ip = wget_strdup(conn->tcp->ip);
-	hostp->scheme = wget_strdup(conn->scheme);
-
-	wget_thread_mutex_lock(hosts_mutex);
-
-	if (!hosts || !wget_hashmap_contains(hosts, hostp)) {
-		wget_server_stats_data stats;
-
-		stats.hostname = hostp->hostname;
-		stats.ip = hostp->ip;
-		stats.scheme = hostp->scheme;
-		stats.hpkp = conn->tcp->hpkp;
-		stats.hpkp_new = resp ? (resp->hpkp ? 1 : 0): -1;
-		stats.hsts = resp ? (resp->hsts ? 1 : 0) : -1;
-		stats.csp = resp ? (resp->csp ? 1 : 0) : -1;
-
-		server_stats_callback(&stats, server_stats_ctx);
-		host_add(hostp);
-	} else
-		_free_host_entry(hostp);
-
-	wget_thread_mutex_unlock(hosts_mutex);
-}
-
 int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 {
 	static int next_http_proxy = -1;
@@ -807,7 +701,7 @@ int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 #endif
 	} else {
 		if (server_stats_callback && (rc == WGET_E_CERTIFICATE))
-			_server_stats_add(conn, NULL);
+			server_stats_callback(conn, NULL);
 
 		wget_http_close(_conn);
 	}
@@ -1025,7 +919,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 		resp = wget_vector_get(conn->received_http2_responses, 0); // should use double linked lists here
 
 		if (server_stats_callback)
-			_server_stats_add(conn, resp);
+			server_stats_callback(conn, resp);
 
 		if (resp) {
 			debug_printf("  ##  response status %d\n", resp->code);
@@ -1088,7 +982,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 			resp->req = req;
 
 			if (server_stats_callback)
-				_server_stats_add(conn, resp);
+				server_stats_callback(conn, resp);
 
 			if (req->header_callback) {
 				if (req->header_callback(resp, req->header_user_data))
@@ -1509,8 +1403,7 @@ void wget_http_abort_connection(wget_http_connection *conn)
  *
  * Set callback function to be called when server statistics are available
  */
-void wget_server_set_stats_callback(wget_server_stats_callback *fn, void *ctx)
+void wget_server_set_stats_callback(wget_server_stats_callback *fn)
 {
 	server_stats_callback = fn;
-	server_stats_ctx = ctx;
 }
