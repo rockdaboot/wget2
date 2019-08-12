@@ -58,7 +58,7 @@ typedef struct {
 		*filename;
 	FILE
 		*fp;
-	char
+	wget_stats_format
 		format;
 } stats_args;
 

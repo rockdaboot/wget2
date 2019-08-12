@@ -838,7 +838,7 @@ static int parse_prefer_family(option_t opt, const char *val, WGET_GCC_UNUSED co
 static int parse_stats(option_t opt, const char *val, const char invert)
 {
 	const char *p;
-	char format;
+	wget_stats_format format;
 
 	stats_args **stats = (stats_args **) opt->var;
 	if (*stats)
