@@ -120,9 +120,9 @@ wget_netrc_db *wget_netrc_db_init(wget_netrc_db *netrc_db)
 
 	memset(netrc_db, 0, sizeof(*netrc_db));
 
-	netrc_db->machines = wget_hashmap_create(16, (wget_hashmap_hash_t *) _hash_netrc, (wget_hashmap_compare_t *) _compare_netrc);
-	wget_hashmap_set_key_destructor(netrc_db->machines, (wget_hashmap_key_destructor_t *) wget_netrc_free);
-	wget_hashmap_set_value_destructor(netrc_db->machines, (wget_hashmap_value_destructor_t *) wget_netrc_free);
+	netrc_db->machines = wget_hashmap_create(16, (wget_hashmap_hash_fn *) _hash_netrc, (wget_hashmap_compare_fn *) _compare_netrc);
+	wget_hashmap_set_key_destructor(netrc_db->machines, (wget_hashmap_key_destructor *) wget_netrc_free);
+	wget_hashmap_set_value_destructor(netrc_db->machines, (wget_hashmap_value_destructor *) wget_netrc_free);
 
 	return netrc_db;
 }

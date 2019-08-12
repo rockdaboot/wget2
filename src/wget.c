@@ -403,7 +403,7 @@ static void _wget_init(void)
 	sigaction(SIGWINCH, &sig_action, NULL);
 #endif
 
-	known_urls = wget_hashmap_create(128, (wget_hashmap_hash_t *) hash_url, (wget_hashmap_compare_t *) strcmp);
+	known_urls = wget_hashmap_create(128, (wget_hashmap_hash_fn *) hash_url, (wget_hashmap_compare_fn *) strcmp);
 
 	// Initialize the plugin system
 	plugin_db_init();

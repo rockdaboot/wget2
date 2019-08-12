@@ -661,8 +661,8 @@ static void _free_host_entry(HOST *host)
 static const HOST *host_add(const HOST *hostp)
 {
 	if (!hosts) {
-		hosts = wget_hashmap_create(16, (wget_hashmap_hash_t *) _host_hash, (wget_hashmap_compare_t *) _host_compare);
-		wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor_t *) _free_host_entry);
+		hosts = wget_hashmap_create(16, (wget_hashmap_hash_fn *) _host_hash, (wget_hashmap_compare_fn *) _host_compare);
+		wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor *) _free_host_entry);
 	}
 
 	wget_hashmap_put(hosts, hostp, hostp);

@@ -36,7 +36,7 @@
 #include <wget.h>
 #include "private.h"
 
-static wget_hashmap_hash_t hash_string, hash_string_nocase;
+static wget_hashmap_hash_fn hash_string, hash_string_nocase;
 
 // Paul Larson's hash function from Microsoft Research
 #ifdef __clang__
@@ -94,7 +94,7 @@ static unsigned int hash_string_nocase(const void *key)
  */
 wget_stringmap *wget_stringmap_create(int max)
 {
-	return wget_hashmap_create(max, hash_string, (wget_hashmap_compare_t *) wget_strcmp);
+	return wget_hashmap_create(max, hash_string, (wget_hashmap_compare_fn *) wget_strcmp);
 }
 
 /**
@@ -111,7 +111,7 @@ wget_stringmap *wget_stringmap_create(int max)
  */
 wget_stringmap *wget_stringmap_create_nocase(int max)
 {
-	return wget_hashmap_create(max, hash_string_nocase, (wget_hashmap_compare_t *) wget_strcasecmp);
+	return wget_hashmap_create(max, hash_string_nocase, (wget_hashmap_compare_fn *) wget_strcasecmp);
 }
 
 /**@}*/

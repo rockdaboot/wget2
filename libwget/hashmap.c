@@ -48,13 +48,13 @@ struct _entry_st {
 };
 
 struct wget_hashmap_st {
-	wget_hashmap_hash_t
+	wget_hashmap_hash_fn
 		*hash; // hash function
-	wget_hashmap_compare_t
+	wget_hashmap_compare_fn
 		*cmp; // compare function
-	wget_hashmap_key_destructor_t
+	wget_hashmap_key_destructor
 		*key_destructor; // key destructor function
-	wget_hashmap_value_destructor_t
+	wget_hashmap_value_destructor
 		*value_destructor; // value destructor function
 	_entry_t
 		**entry;   // pointer to array of pointers to entries
@@ -164,7 +164,7 @@ found:
  * wget_hashmap_hashcmpfunc() with appropriate function pointers. No doing so will result
  * in undefined behavior (likely you'll see a segmentation fault).
  */
-wget_hashmap *wget_hashmap_create(int max, wget_hashmap_hash_t *hash, wget_hashmap_compare_t *cmp)
+wget_hashmap *wget_hashmap_create(int max, wget_hashmap_hash_fn *hash, wget_hashmap_compare_fn *cmp)
 {
 	wget_hashmap *h = wget_malloc(sizeof(wget_hashmap));
 
@@ -501,7 +501,7 @@ int wget_hashmap_size(const wget_hashmap *h)
  *
  * The return value of the last call to \p browse is returned or 0 if either \p h or \p browse is %NULL.
  */
-int wget_hashmap_browse(const wget_hashmap *h, wget_hashmap_browse_t *browse, void *ctx)
+int wget_hashmap_browse(const wget_hashmap *h, wget_hashmap_browse_fn *browse, void *ctx)
 {
 	if (h && browse) {
 		_entry_t *entry;
@@ -525,7 +525,7 @@ int wget_hashmap_browse(const wget_hashmap *h, wget_hashmap_browse_t *browse, vo
  *
  * Set the comparison function.
  */
-void wget_hashmap_setcmpfunc(wget_hashmap *h, wget_hashmap_compare_t *cmp)
+void wget_hashmap_setcmpfunc(wget_hashmap *h, wget_hashmap_compare_fn *cmp)
 {
 	if (h)
 		h->cmp = cmp;
@@ -541,7 +541,7 @@ void wget_hashmap_setcmpfunc(wget_hashmap *h, wget_hashmap_compare_t *cmp)
  * The keys of all entries in the hashmap will be hashed again. This includes a memory allocation, so
  * there is a possibility of failure.
  */
-int wget_hashmap_sethashfunc(wget_hashmap *h, wget_hashmap_hash_t *hash)
+int wget_hashmap_sethashfunc(wget_hashmap *h, wget_hashmap_hash_fn *hash)
 {
 	if (!h)
 		return WGET_E_INVALID;
@@ -568,7 +568,7 @@ int wget_hashmap_sethashfunc(wget_hashmap *h, wget_hashmap_hash_t *hash)
  *
  * Default is free().
  */
-void wget_hashmap_set_key_destructor(wget_hashmap *h, wget_hashmap_key_destructor_t *destructor)
+void wget_hashmap_set_key_destructor(wget_hashmap *h, wget_hashmap_key_destructor *destructor)
 {
 	if (h)
 		h->key_destructor = destructor;
@@ -582,7 +582,7 @@ void wget_hashmap_set_key_destructor(wget_hashmap *h, wget_hashmap_key_destructo
  *
  * Default is free().
  */
-void wget_hashmap_set_value_destructor(wget_hashmap *h, wget_hashmap_value_destructor_t *destructor)
+void wget_hashmap_set_value_destructor(wget_hashmap *h, wget_hashmap_value_destructor *destructor)
 {
 	if (h)
 		h->value_destructor = destructor;

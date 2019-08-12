@@ -646,7 +646,7 @@ static int _hpkp_db_save(wget_hpkp_db *hpkp_db, FILE *fp)
 		if (ferror(fp))
 			return -1;
 
-		return wget_hashmap_browse(entries, (wget_hashmap_browse_t *) _hpkp_save, fp);
+		return wget_hashmap_browse(entries, (wget_hashmap_browse_fn *) _hpkp_save, fp);
 	}
 
 	return 0;
@@ -723,8 +723,8 @@ wget_hpkp_db *wget_hpkp_db_init(wget_hpkp_db *hpkp_db, const char *fname)
 
 	if (fname)
 		hpkp_db->fname = wget_strdup(fname);
-	hpkp_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_t *) _hash_hpkp, (wget_hashmap_compare_t *) _compare_hpkp);
-	wget_hashmap_set_key_destructor(hpkp_db->entries, (wget_hashmap_key_destructor_t *) wget_hpkp_free);
+	hpkp_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_fn *) _hash_hpkp, (wget_hashmap_compare_fn *) _compare_hpkp);
+	wget_hashmap_set_key_destructor(hpkp_db->entries, (wget_hashmap_key_destructor *) wget_hpkp_free);
 
 	/*
 	 * Keys and values for the hashmap are 'hpkp' entries, so value == key.

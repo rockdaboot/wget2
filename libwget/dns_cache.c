@@ -103,13 +103,13 @@ int wget_dns_cache_init(wget_dns_cache **cache)
 		return WGET_E_INVALID;
 	}
 
-	if (!(_cache->cache = wget_hashmap_create(16, (wget_hashmap_hash_t *) _hash_dns, (wget_hashmap_compare_t *) _compare_dns))) {
+	if (!(_cache->cache = wget_hashmap_create(16, (wget_hashmap_hash_fn *) _hash_dns, (wget_hashmap_compare_fn *) _compare_dns))) {
 		wget_dns_cache_free(&_cache);
 		return WGET_E_MEMORY;
 	}
 
-	wget_hashmap_set_key_destructor(_cache->cache, (wget_hashmap_key_destructor_t *) _free_dns);
-	wget_hashmap_set_value_destructor(_cache->cache, (wget_hashmap_value_destructor_t *) _free_dns);
+	wget_hashmap_set_key_destructor(_cache->cache, (wget_hashmap_key_destructor *) _free_dns);
+	wget_hashmap_set_value_destructor(_cache->cache, (wget_hashmap_value_destructor *) _free_dns);
 
 	*cache = _cache;
 

@@ -109,8 +109,8 @@ HOST *host_add(wget_iri *iri)
 	wget_thread_mutex_lock(hosts_mutex);
 
 	if (!hosts) {
-		hosts = wget_hashmap_create(16, (wget_hashmap_hash_t *) _host_hash, (wget_hashmap_compare_t *) _host_compare);
-		wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor_t *) _free_host_entry);
+		hosts = wget_hashmap_create(16, (wget_hashmap_hash_fn *) _host_hash, (wget_hashmap_compare_fn *) _host_compare);
+		wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor *) _free_host_entry);
 	}
 
 	HOST *hostp = NULL, host = { .scheme = iri->scheme, .host = iri->host, .port = iri->port };
@@ -229,7 +229,7 @@ JOB *host_get_job(HOST *host, long long *pause)
 		_search_host_for_free_job(&ctx, host);
 	} else {
 		wget_thread_mutex_lock(hosts_mutex);
-		wget_hashmap_browse(hosts, (wget_hashmap_browse_t *) _search_host_for_free_job, &ctx);
+		wget_hashmap_browse(hosts, (wget_hashmap_browse_fn *) _search_host_for_free_job, &ctx);
 		wget_thread_mutex_unlock(hosts_mutex);
 	}
 
