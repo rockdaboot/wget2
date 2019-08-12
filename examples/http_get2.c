@@ -31,22 +31,12 @@
 
 #define COOKIE_SUPPORT
 
-int main(int argc WGET_GCC_UNUSED, const char *const *argv WGET_GCC_UNUSED)
+int main(void)
 {
 	wget_iri *uri;
 	wget_http_connection *conn = NULL;
 	wget_http_request *req;
 	wget_cookie_db *cookies;
-
-/*
- * todo: create a libwget init function like this:
-	wget_global_init(
-		WGET_DEBUG_STREAM, stderr,
-		WGET_ERROR_STREAM, stderr,
-		WGET_INFO_STREAM, stdout,
-		WGET_DNS_CACHING, 1,
-		NULL);
- */
 
 	// We want the libwget debug messages be printed to STDERR.
 	// From here on, we can call wget_debug_printf, etc.
@@ -142,18 +132,6 @@ int main(int argc WGET_GCC_UNUSED, const char *const *argv WGET_GCC_UNUSED)
 			wget_http_free_response(&resp);
 		}
 	}
-
-/*
- * todo: create this kind of high-level function:
-	resp = http_get("http://example.com",
-		HTTP_SERVER_PORT, 8000,
-		HTTP_URL_CHARACTERSET, "iso-8859-1",
-		HTTP_COOKIE_STORE, "cookies.txt",
-		HTTP_COOKIE_KEEPSESSIONCOOKIES, 1,
-		HTTP_ADD_HEADER, "Accept-Encoding: gzip, deflate",
-		HTTP_USE_PROXY, "myproxy.com:9375",
-		NULL);
-*/
 
 out:
 #ifdef COOKIE_SUPPORT
