@@ -1052,7 +1052,7 @@ static int parse_compression(option_t opt, const char *val, const char invert)
 
 		for (int it = 0; it < wget_vector_size(v); it++) {
 			int not_built = 0;
-			wget_content_encoding_type_t type = wget_content_encoding_by_name(wget_vector_get(v, it));
+			wget_content_encoding type = wget_content_encoding_by_name(wget_vector_get(v, it));
 
 			if (type == wget_content_encoding_unknown) {
 				wget_error_printf(_("Compression type %s not supported\n"), wget_content_encoding_to_name(type));

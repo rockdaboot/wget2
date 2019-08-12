@@ -86,9 +86,9 @@ struct wget_decompressor_st {
 		*zstd_strm;
 #endif
 
-	wget_decompressor_sink_t
+	wget_decompressor_sink_fn
 		*sink; // decompressed data goes here
-	wget_decompressor_error_handler_t
+	wget_decompressor_error_handler
 		*error_handler; // called on error
 	wget_decompressor_decompress_t
 		*decompress;
@@ -96,7 +96,7 @@ struct wget_decompressor_st {
 		*exit;
 	void
 		*context; // given to sink()
-	wget_content_encoding_type_t
+	wget_content_encoding
 		encoding;
 };
 
@@ -409,8 +409,8 @@ static int identity(wget_decompressor *dc, char *src, size_t srclen)
 }
 
 wget_decompressor *wget_decompress_open(
-	wget_content_encoding_type_t encoding,
-	wget_decompressor_sink_t *sink,
+	wget_content_encoding encoding,
+	wget_decompressor_sink_fn *sink,
 	void *context)
 {
 	wget_decompressor *dc = wget_calloc(1, sizeof(wget_decompressor));
@@ -498,7 +498,7 @@ int wget_decompress(wget_decompressor *dc, char *src, size_t srclen)
 	return 0;
 }
 
-void wget_decompress_set_error_handler(wget_decompressor *dc, wget_decompressor_error_handler_t *error_handler)
+void wget_decompress_set_error_handler(wget_decompressor *dc, wget_decompressor_error_handler *error_handler)
 {
 	if (dc)
 		dc->error_handler = error_handler;
@@ -520,10 +520,10 @@ static char _encoding_names[wget_content_encoding_max][9] = {
 	[wget_content_encoding_zstd] = "zstd",
 };
 
-wget_content_encoding_type_t wget_content_encoding_by_name(const char *name)
+wget_content_encoding wget_content_encoding_by_name(const char *name)
 {
 	if (name) {
-		for (wget_content_encoding_type_t it = 0; it < wget_content_encoding_max; it++) {
+		for (wget_content_encoding it = 0; it < wget_content_encoding_max; it++) {
 			if (!strcmp(_encoding_names[it], name))
 				return it;
 		}
@@ -535,7 +535,7 @@ wget_content_encoding_type_t wget_content_encoding_by_name(const char *name)
 	return wget_content_encoding_unknown;
 }
 
-const char *wget_content_encoding_to_name(wget_content_encoding_type_t type)
+const char *wget_content_encoding_to_name(wget_content_encoding type)
 {
 	if (type >= 0 && type < wget_content_encoding_max)
 		return _encoding_names[type];

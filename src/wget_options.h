@@ -131,7 +131,7 @@ struct config {
 		*mime_types,
 		*http_retry_on_status,
 		*save_content_on;
-	wget_content_encoding_type_t
+	wget_content_encoding
 		compression_methods[wget_content_encoding_max + 1];	// the last one for counting
 	wget_hsts_db
 		*hsts_db; // in-memory HSTS database

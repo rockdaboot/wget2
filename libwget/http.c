@@ -420,7 +420,7 @@ static int _decompress_error_handler(wget_decompressor *dc, int err WGET_GCC_UNU
 	return 0;
 }
 
-static wget_decompressor_sink_t _get_body;
+static wget_decompressor_sink_fn _get_body;
 static int _get_body(void *userdata, const char *data, size_t length)
 {
 	wget_http_response *resp = (wget_http_response *) userdata;

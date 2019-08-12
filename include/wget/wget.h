@@ -1108,8 +1108,8 @@ WGETAPI bool
  */
 
 typedef struct wget_decompressor_st wget_decompressor;
-typedef int wget_decompressor_sink_t(void *context, const char *data, size_t length);
-typedef int wget_decompressor_error_handler_t(wget_decompressor *dc, int err);
+typedef int wget_decompressor_sink_fn(void *context, const char *data, size_t length);
+typedef int wget_decompressor_error_handler(wget_decompressor *dc, int err);
 
 typedef enum {
 	wget_content_encoding_unknown = -1,
@@ -1122,20 +1122,20 @@ typedef enum {
 	wget_content_encoding_brotli = 6,
 	wget_content_encoding_zstd = 7,
 	wget_content_encoding_max = 8
-} wget_content_encoding_type_t;
+} wget_content_encoding;
 
-WGETAPI WGET_GCC_PURE wget_content_encoding_type_t
+WGETAPI WGET_GCC_PURE wget_content_encoding
 	wget_content_encoding_by_name(const char *name);
 WGETAPI WGET_GCC_PURE const char *
-	wget_content_encoding_to_name(wget_content_encoding_type_t type);
+	wget_content_encoding_to_name(wget_content_encoding type);
 WGETAPI wget_decompressor *
-	wget_decompress_open(wget_content_encoding_type_t encoding, wget_decompressor_sink_t *data_sink, void *context);
+	wget_decompress_open(wget_content_encoding encoding, wget_decompressor_sink_fn *data_sink, void *context);
 WGETAPI void
 	wget_decompress_close(wget_decompressor *dc);
 WGETAPI int
 	wget_decompress(wget_decompressor *dc, char *src, size_t srclen);
 WGETAPI void
-	wget_decompress_set_error_handler(wget_decompressor *dc, wget_decompressor_error_handler_t *error_handler);
+	wget_decompress_set_error_handler(wget_decompressor *dc, wget_decompressor_error_handler *error_handler);
 WGETAPI void *
 	wget_decompress_get_context(wget_decompressor *dc);
 
