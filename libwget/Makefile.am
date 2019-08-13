@@ -112,6 +112,13 @@ libwget_hsts_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_hsts_la_LIBADD = libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
 libwget_hsts_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget ocsp ########
+lib_LTLIBRARIES += libwget_ocsp.la
+libwget_ocsp_la_SOURCES =  ocsp.c
+libwget_ocsp_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_ocsp_la_LIBADD = libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
+libwget_ocsp_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 ######## libwget logger ########
 lib_LTLIBRARIES += libwget_logger.la
 libwget_logger_la_SOURCES =  logger.c
@@ -212,6 +219,12 @@ test_linking_hsts_SOURCES = test_linking_hsts.c
 test_linking_hsts_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_hsts_LDADD = libwget_hsts.la
 test_linking_hsts_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_ocsp
+test_linking_ocsp_SOURCES = test_linking_ocsp.c
+test_linking_ocsp_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_ocsp_LDADD = libwget_ocsp.la
+test_linking_ocsp_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking_logger
 test_linking_logger_SOURCES = test_linking_logger.c
