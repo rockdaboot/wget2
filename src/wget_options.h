@@ -183,7 +183,7 @@ struct config {
 		max_threads,
 		ocsp_date,
 		ocsp_nonce;
-	unsigned short
+	uint16_t
 		default_http_port,
 		default_https_port;
 	wget_report_speed

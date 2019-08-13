@@ -74,10 +74,39 @@ static const char
 static size_t
 	default_page_length = 10;
 
-const char
-	* const wget_iri_schemes[] = { "http", "https" };
-static uint16_t
-	iri_ports[]   = { 80, 443 }; // default port numbers for the above schemes
+static struct iri_scheme {
+	uint16_t port;
+	const char name[6];
+} schemes[] = {
+	[WGET_IRI_SCHEME_HTTP]  = {  80, "http"  },
+	[WGET_IRI_SCHEME_HTTPS] = { 443, "https" },
+};
+
+/**
+ * \param[in] scheme Scheme to get name for
+ * \return Name of \p scheme (e.g. "http" or "https") or NULL is not supported
+ *
+ * Maps \p scheme to it's string representation.
+ */
+const char *wget_iri_scheme_get_name(wget_iri_scheme scheme)
+{
+	if (scheme >= 0 && scheme < countof(schemes))
+		return schemes[scheme].name;
+
+	return NULL;
+}
+
+/**
+ * \param[in] iri An IRI
+ * \return 1 if the scheme is supported, 0 if not
+ *
+ * Tells whether the IRI's scheme is supported or not.
+ */
+bool wget_iri_supported(const wget_iri *iri)
+{
+	return iri->scheme >= 0 && iri->scheme < countof(schemes);
+}
+
 
 /* \cond _hide_internal_symbols */
 #define IRI_CTYPE_GENDELIM (1<<0)
@@ -120,22 +149,6 @@ static const unsigned char
 		['_'] = IRI_CTYPE_UNRESERVED,
 		['~'] = IRI_CTYPE_UNRESERVED
 	};
-
-/**
- * \param[in] iri An IRI
- * \return 1 if the scheme is supported, 0 if not
- *
- * Tells whether the IRI's scheme is supported or not.
- */
-bool wget_iri_supported(const wget_iri *iri)
-{
-	for (unsigned it = 0; it < countof(wget_iri_schemes); it++) {
-		if (wget_iri_schemes[it] == iri->scheme)
-			return 1;
-	}
-
-	return 0;
-}
 
 /**
  * \param[in] c A character
@@ -460,19 +473,20 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 	if (have_scheme) {
 		iri->msize = slen + 1;
 		iri->uri = memcpy(((char *)iri) + sizeof(wget_iri), url, iri->msize);
-		iri->scheme = s = memcpy((char *)iri->uri + iri->msize, url, iri->msize);
+		p = s = memcpy((char *)iri->uri + iri->msize, url, iri->msize);
 		s = strchr(s, ':'); // we know there is a :
 		*s++ = 0;
 
-		wget_iri_unescape_inline((char *)iri->scheme); // percent unescape
-		wget_strtolower((char *)iri->scheme); // convert scheme to lowercase
+		// p points to scheme
+		wget_iri_unescape_inline(p); // percent unescape
+		wget_strtolower(p); // convert to lowercase
 
 		// find the scheme in our static list of supported schemes
 		// for later comparisons we compare pointers (avoiding strcasecmp())
-		for (unsigned it = 0; it < countof(wget_iri_schemes); it++) {
-			if (!strcmp(wget_iri_schemes[it], iri->scheme)) {
-				iri->scheme = wget_iri_schemes[it];
-				iri->port = iri_ports[it];
+		for (unsigned it = 0; it < countof(schemes); it++) {
+			if (!strcmp(schemes[it].name, p)) {
+				iri->scheme = it;
+				iri->port = schemes[it].port;
 				break;
 			}
 		}
@@ -487,7 +501,7 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 		s += extra;
 
 		iri->scheme = WGET_IRI_SCHEME_HTTP;
-		iri->port = iri_ports[0];
+		iri->port = schemes[WGET_IRI_SCHEME_HTTP].port;
 	}
 
 //	if (url_allocated)
@@ -710,9 +724,9 @@ const char *wget_iri_get_connection_part(wget_iri *iri)
 	if (iri) {
 		if (!iri->connection_part) {
 			if (iri->port_given) {
-				iri->connection_part =  wget_aprintf("%s://%s:%hu", iri->scheme, iri->host, iri->port);
+				iri->connection_part =  wget_aprintf("%s://%s:%hu", schemes[iri->scheme].name, iri->host, iri->port);
 			} else {
-				iri->connection_part = wget_aprintf("%s://%s", iri->scheme, iri->host);
+				iri->connection_part = wget_aprintf("%s://%s", schemes[iri->scheme].name, iri->host);
 			}
 		}
 
@@ -843,7 +857,7 @@ const char *wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len
 				if ((p = strchr(path + 2, '/')))
 					_normalize_path(p + 1);
 
-				wget_buffer_strcpy(buf, base->scheme);
+				wget_buffer_strcpy(buf, schemes[base->scheme].name);
 				wget_buffer_strcat(buf, ":");
 				wget_buffer_strcat(buf, path);
 				debug_printf("*1 %s\n", buf->data);
@@ -1331,13 +1345,11 @@ void wget_iri_set_defaultpage(const char *page)
  *
  * Set the default \p port for the given \p scheme.
  */
-int wget_iri_set_defaultport(const char *scheme, unsigned short port)
+int wget_iri_set_defaultport(wget_iri_scheme scheme, uint16_t port)
 {
-	for (unsigned it = 0; it < countof(wget_iri_schemes); it++) {
-		if (!wget_strcasecmp_ascii(wget_iri_schemes[it], scheme)) {
-			iri_ports[it] = port;
-			return 0;
-		}
+	if (scheme >= 0 && scheme < countof(schemes)) {
+		schemes[scheme].port = port;
+		return 0;
 	}
 
 	return -1;
@@ -1355,32 +1367,27 @@ int wget_iri_set_defaultport(const char *scheme, unsigned short port)
  * that port is modified as well to match the default port of the new scheme.
  * Otherwise the port is left untouched.
  */
-const char *wget_iri_set_scheme(wget_iri *iri, const char *scheme)
+wget_iri_scheme wget_iri_set_scheme(wget_iri *iri, wget_iri_scheme scheme)
 {
-	const char *old_scheme = iri->scheme;
+	wget_iri_scheme old_scheme = iri->scheme;
 
-	for (int index = 0; wget_iri_schemes[index]; index++) {
-		if (!wget_strcasecmp_ascii(wget_iri_schemes[index], scheme)) {
-			iri->scheme = wget_iri_schemes[index];
-			// If the IRI is using the default port, also change it
-			if (!iri->port_given)
-				iri->port = iri_ports[index];
-			break;
-		}
-	}
+	if (scheme >= 0 && scheme < countof(schemes) && iri->scheme != scheme) {
+		iri->scheme = scheme;
 
-	// Rewrite the URI if scheme has changed
-	if (old_scheme != iri->scheme) {
-		size_t old_scheme_len = strlen(old_scheme);
+		// If the IRI is using the default port, also change it
+		if (!iri->port_given)
+			iri->port = schemes[scheme].port;
 
-		if (strncmp(iri->uri, old_scheme, old_scheme_len) == 0) {
-			if (strncmp(iri->uri + old_scheme_len, "://", 3) == 0) {
-				char *new_uri = wget_aprintf("%s%s",  iri->scheme, iri->uri + old_scheme_len);
-				if (iri->uri_allocated)
-					xfree(iri->uri);
-				iri->uri = new_uri;
-				iri->uri_allocated = true;
-			}
+		size_t old_scheme_len = strlen(schemes[old_scheme].name);
+
+		if (strncmp(iri->uri, schemes[old_scheme].name, old_scheme_len) == 0
+			&& strncmp(iri->uri + old_scheme_len, "://", 3) == 0)
+		{
+			char *new_uri = wget_aprintf("%s%s",  schemes[iri->scheme].name, iri->uri + old_scheme_len);
+			if (iri->uri_allocated)
+				xfree(iri->uri);
+			iri->uri = new_uri;
+			iri->uri_allocated = true;
 		}
 	}
 

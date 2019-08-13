@@ -512,8 +512,10 @@ static void test_iri_parse(void)
 	const struct iri_test_data {
 		const char
 			*uri,
-			*display,
-			*scheme,
+			*display;
+		wget_iri_scheme
+			scheme;
+		const char
 			*userinfo,
 			*password,
 			*host;
@@ -548,9 +550,9 @@ static void test_iri_parse(void)
 		{ "碼標準萬國碼.com", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "xn--9cs565brid46mda086o.com", 80, NULL, NULL, NULL},
 #endif
 		//		{ "ftp://cnn.example.com&story=breaking_news@10.0.0.1/top_story.htm", NULL,"ftp",NULL,NULL,"cnn.example.com",0,NULL,"story=breaking_news@10.0.0.1/top_story.htm",NULL }
-		{ "ftp://cnn.example.com?story=breaking_news@10.0.0.1/top_story.htm", NULL, "ftp", NULL, NULL, "cnn.example.com", 0, NULL, "story=breaking_news@10.0.0.1/top_story.htm", NULL},
+//		{ "ftp://cnn.example.com?story=breaking_news@10.0.0.1/top_story.htm", NULL, "ftp", NULL, NULL, "cnn.example.com", 0, NULL, "story=breaking_news@10.0.0.1/top_story.htm", NULL},
 //		{ "site;sub:.html", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "site", 0, ";sub:.html", NULL, NULL},
-		{ "mailto:info@example.com", NULL, "mailto", "info", NULL, "example.com", 0, NULL, NULL, NULL},
+//		{ "mailto:info@example.com", NULL, "mailto", "info", NULL, "example.com", 0, NULL, NULL, NULL},
 		{ "http://example.com?query#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, "query", "frag"},
 		{ "http://example.com#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, NULL, "frag"},
 		{ "http://example.com?#", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, "", ""},
@@ -565,7 +567,7 @@ static void test_iri_parse(void)
 		wget_iri *iri = wget_iri_parse(t->uri, "utf-8");
 
 		if (wget_strcmp(iri->display, t->display)
-			|| wget_strcmp(iri->scheme, t->scheme)
+			|| iri->scheme != t->scheme
 			|| wget_strcmp(iri->userinfo, t->userinfo)
 			|| wget_strcmp(iri->password, t->password)
 			|| wget_strcmp(iri->host, t->host)
@@ -578,7 +580,7 @@ static void test_iri_parse(void)
 			printf("IRI test #%u failed:\n", it + 1);
 			printf(" [%s]\n", iri->uri);
 			printf("  display %s (expected %s)\n", iri->display, t->display);
-			printf("  scheme %s (expected %s)\n", iri->scheme, t->scheme);
+			printf("  scheme %s (expected %s)\n", wget_iri_scheme_get_name(iri->scheme), wget_iri_scheme_get_name(t->scheme));
 			printf("  user %s (expected %s)\n", iri->userinfo, t->userinfo);
 			printf("  host %s (expected %s)\n", iri->host, t->host);
 			printf("  port %hu (expected %hu)\n", iri->port, t->port);
@@ -1005,7 +1007,7 @@ static void test_iri_compare(void)
 			failed++;
 			info_printf("Failed [%u]: compare(%s,%s) -> %d (expected %d)\n", it, t->url1, t->url2, n, t->result);
 			printf("  display %s / %s\n", iri1->display, iri2->display);
-			printf("  scheme %s / %s\n", iri1->scheme, iri2->scheme);
+			printf("  scheme %s / %s\n",  wget_iri_scheme_get_name(iri1->scheme),  wget_iri_scheme_get_name(iri2->scheme));
 			printf("  user %s / %s\n", iri1->userinfo, iri2->userinfo);
 			printf("  host %s / %s\n", iri1->host, iri2->host);
 			printf("  port %hu / %hu\n", iri1->port, iri2->port);

@@ -35,10 +35,11 @@ typedef struct
 {
 	const char
 		*hostname,
-		*ip,
-		*scheme;
+		*ip;
 	wget_hpkp_stats_result
 		hpkp;
+	wget_iri_scheme
+		scheme;
 	char
 		hsts,
 		csp,
@@ -48,8 +49,9 @@ typedef struct
 typedef struct {
 	const char
 		*hostname,
-		*ip,
-		*scheme;
+		*ip;
+	wget_iri_scheme
+		scheme;
 } server_stats_host;
 
 static wget_hashmap
@@ -71,7 +73,7 @@ static int host_compare(const server_stats_host *host1, const server_stats_host 
 	if ((n = wget_strcmp(host1->ip, host2->ip)))
 		return n;
 
-	return wget_strcmp(host1->scheme, host2->scheme);
+	return host1->scheme - host2->scheme;
 }
 
 #ifdef __clang__
@@ -79,7 +81,7 @@ __attribute__((no_sanitize("integer")))
 #endif
 static unsigned int host_hash(const server_stats_host *host)
 {
-	unsigned int hash = 0; // use 0 as SALT if hash table attacks doesn't matter
+	unsigned int hash = host->scheme; // use 0 as SALT if hash table attacks doesn't matter
 	const unsigned char *p;
 
 	for (p = (unsigned char *)host->hostname; p && *p; p++)
@@ -87,9 +89,6 @@ static unsigned int host_hash(const server_stats_host *host)
 
 	for (p = (unsigned char *)host->ip; p && *p; p++)
 		hash = hash * 101 + *p;
-
-	for (p = (unsigned char *)host->scheme; p && *p; p++)
-			hash = hash * 101 + *p;
 
 	return hash;
 }
@@ -99,7 +98,6 @@ static void free_host_entry(server_stats_host *host)
 	if (host) {
 		wget_xfree(host->hostname);
 		wget_xfree(host->ip);
-		wget_xfree(host->scheme);
 		wget_xfree(host);
 	}
 }
@@ -121,7 +119,7 @@ static void server_stats_print(server_stats_data *stats)
 	if (config.stats_server_args->format == WGET_STATS_FORMAT_HUMAN) {
 		wget_fprintf(fp, "  %s:\n", NULL_TO_DASH(stats->hostname));
 		wget_fprintf(fp, "    IP             : %s\n", NULL_TO_DASH(stats->ip));
-		wget_fprintf(fp, "    Scheme         : %s\n", stats->scheme);
+		wget_fprintf(fp, "    Scheme         : %s\n", wget_iri_scheme_get_name(stats->scheme));
 		wget_fprintf(fp, "    HPKP           : %s\n", hpkp_string(stats->hpkp));
 		wget_fprintf(fp, "    HPKP New Entry : %s\n", ON_OFF_DASH(stats->hpkp_new));
 		wget_fprintf(fp, "    HSTS           : %s\n", ON_OFF_DASH(stats->hsts));
@@ -130,7 +128,7 @@ static void server_stats_print(server_stats_data *stats)
 		wget_fprintf(fp, "%s,%s,%s,%d,%d,%d,%d\n",
 			stats->hostname ? stats->hostname : "",
 			stats->ip ? stats->ip : "",
-			stats->scheme,
+			wget_iri_scheme_get_name(stats->scheme),
 			(int) stats->hpkp,
 			stats->hpkp_new,
 			stats->hsts,
@@ -144,7 +142,7 @@ static void server_stats_add(wget_http_connection *conn, wget_http_response *res
 
 	hostp->hostname = wget_strdup(wget_http_get_host(conn));
 	hostp->ip = wget_strdup(wget_tcp_get_ip(conn->tcp));
-	hostp->scheme = wget_strdup(conn->scheme);
+	hostp->scheme = conn->scheme;
 
 	wget_thread_mutex_lock(mutex);
 

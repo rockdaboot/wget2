@@ -37,7 +37,6 @@ typedef struct JOB JOB;
 // everything host/domain specific should go here
 typedef struct {
 	const char
-		*scheme,
 		*host;
 	JOB
 		*robot_job; // special job for downloading robots.txt (before anything else)
@@ -50,6 +49,8 @@ typedef struct {
 	int
 		qsize, // number of jobs in queue
 		failures; // number of consequent connection failures
+	wget_iri_scheme
+		scheme;
 	uint16_t
 		port;
 	bool

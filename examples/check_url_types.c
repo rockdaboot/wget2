@@ -200,11 +200,11 @@ static void html_parse(const char *html, size_t html_len, const char *encoding, 
 
 		int same_host = !wget_strcasecmp(canon_url->host, base->host);
 
-		if (!wget_strcasecmp(canon_url->scheme, "https")) {
+		if (canon_url->scheme == WGET_IRI_SCHEME_HTTPS) {
 			stats.https_links++;
 			stats.https_links_same_host += same_host;
 		}
-		else if (!wget_strcasecmp(canon_url->scheme, "http")) {
+		else if (canon_url->scheme == WGET_IRI_SCHEME_HTTP) {
 			stats.http_links++;
 			stats.http_links_same_host += same_host;
 //			if (same_host)

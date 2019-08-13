@@ -86,10 +86,9 @@ uint16_t wget_http_get_port(const wget_http_connection *conn)
 
 /**Get the scheme used by the connection.
  * \param conn a wget_http_connection
- * \return A string containing scheme. Returned memory is owned by
- *         _conn_ and should not be modified or freed.
+ * \return A WGET_IRI_SCHEM_* value.
  */
-const char *wget_http_get_scheme(const wget_http_connection *conn)
+wget_iri_scheme wget_http_get_scheme(const wget_http_connection *conn)
 {
 	return conn->scheme;
 }

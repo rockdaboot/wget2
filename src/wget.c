@@ -209,8 +209,8 @@ static const char * WGET_GCC_NONNULL_ALL _get_local_filename(const wget_iri *iri
 	}
 
 	if (directories) {
-		if (config.protocol_directories && iri->scheme && *iri->scheme) {
-			wget_buffer_strcat(&buf, iri->scheme);
+		if (config.protocol_directories && wget_iri_supported(iri)) {
+			wget_buffer_strcat(&buf, wget_iri_scheme_get_name(iri->scheme));
 			wget_buffer_memcat(&buf, "/", 1);
 		}
 
@@ -892,8 +892,8 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 		plugin_verdict.alt_iri = NULL;
 	}
 
-	if (iri->scheme != WGET_IRI_SCHEME_HTTP && iri->scheme != WGET_IRI_SCHEME_HTTPS) {
-		info_printf(_("URL '%s' not followed (unsupported scheme '%s')\n"), url, iri->scheme);
+	if (!wget_iri_supported(iri)) {
+		info_printf(_("URL '%s' not followed (unsupported scheme)\n"), url);
 		wget_iri_free(&iri);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
@@ -3744,7 +3744,7 @@ static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 	else if (job->referer) {
 		wget_iri *referer = job->referer;
 
-		wget_buffer_strcpy(&buf, referer->scheme);
+		wget_buffer_strcpy(&buf, wget_iri_scheme_get_name(referer->scheme));
 		wget_buffer_memcat(&buf, "://", 3);
 		wget_buffer_strcat(&buf, referer->host);
 		if (referer->port_given)

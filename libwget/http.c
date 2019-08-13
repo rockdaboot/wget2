@@ -838,7 +838,7 @@ ssize_t wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, in
 	wget_buffer_strcpy(buf, req->method);
 	wget_buffer_memcat(buf, " ", 1);
 	if (proxied) {
-		wget_buffer_strcat(buf, req->scheme);
+		wget_buffer_strcat(buf, wget_iri_scheme_get_name(req->scheme));
 		wget_buffer_memcat(buf, "://", 3);
 		wget_buffer_bufcat(buf, &req->esc_host);
 	}

@@ -1190,7 +1190,9 @@ struct config config = {
 	.restrict_file_names = WGET_RESTRICT_NAMES_WINDOWS,
 #endif
 	.local_db = 1,
-	.report_speed = WGET_REPORT_SPEED_BYTES
+	.report_speed = WGET_REPORT_SPEED_BYTES,
+	.default_http_port = 80,
+	.default_https_port = 443
 };
 
 static int parse_execute(option_t opt, const char *val, const char invert);
@@ -3251,10 +3253,8 @@ int init(int argc, const char **argv)
 		// disable https enforce if https-only is enabled
 		config.https_enforce = WGET_HTTPS_ENFORCE_NONE;
 
-	if (config.default_http_port)
-		wget_iri_set_defaultport("http", config.default_http_port);
-	if (config.default_https_port)
-		wget_iri_set_defaultport("https", config.default_https_port);
+	wget_iri_set_defaultport(WGET_IRI_SCHEME_HTTP, config.default_http_port);
+	wget_iri_set_defaultport(WGET_IRI_SCHEME_HTTPS, config.default_https_port);
 
 	// check for correct settings
 	if (config.max_threads < 1 || (config.max_threads > 1 && config.chunk_size))

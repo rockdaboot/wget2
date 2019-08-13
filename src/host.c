@@ -86,8 +86,7 @@ static unsigned int _host_hash(const HOST *host)
 	//   e.g. for http://example.com and a second time for https://example.com.
 	// Not unlikely that both are the same... but maybe they are not.
 
-	for (p = (unsigned char *)host->scheme; p && *p; p++)
-		hash = hash * 101 + *p;
+	hash = hash * 101 + host->scheme;
 
 	for (p = (unsigned char *)host->host; p && *p; p++)
 		hash = hash * 101 + *p;

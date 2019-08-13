@@ -1143,14 +1143,10 @@ WGETAPI void *
  * URI/IRI routines
  */
 
-// TODO: i have to move this away from libwget.h
-WGETAPI extern const char * const
-	wget_iri_schemes[];
-
-#define WGET_IRI_SCHEME_HTTP    (wget_iri_schemes[0])
-#define WGET_IRI_SCHEME_HTTPS   (wget_iri_schemes[1])
-#define WGET_IRI_SCHEME_FTP     (wget_iri_schemes[2])
-#define WGET_IRI_SCHEME_DEFAULT WGET_IRI_SCHEME_HTTP
+typedef enum {
+	WGET_IRI_SCHEME_HTTP = 0,
+	WGET_IRI_SCHEME_HTTPS = 1
+} wget_iri_scheme;
 
 /**
  * \ingroup libwget-iri
@@ -1170,11 +1166,6 @@ struct wget_iri_st {
 	 */
 	const char *
 		display;
-	/**
-	 * URI/IRI scheme (`http` or `https`).
-	 */
-	const char *
-		scheme;
 	/**
 	 * Username, if present.
 	 */
@@ -1228,6 +1219,9 @@ struct wget_iri_st {
 	/// Port number
 	uint16_t
 		port;
+	/// URI/IRI scheme (`http` or `https`).
+	wget_iri_scheme
+		scheme;
 	/// If set, port was explicitly given
 	bool
 		port_given : 1;
@@ -1263,7 +1257,7 @@ WGETAPI void
 WGETAPI void
 	wget_iri_set_defaultpage(const char *page);
 WGETAPI int
-	wget_iri_set_defaultport(const char *scheme, unsigned short port);
+	wget_iri_set_defaultport(wget_iri_scheme scheme, unsigned short port);
 WGETAPI bool
 	wget_iri_supported(const wget_iri *iri) WGET_GCC_PURE WGET_GCC_NONNULL_ALL;
 WGETAPI bool
@@ -1308,8 +1302,10 @@ WGETAPI char *
 	wget_iri_get_query_as_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding) WGET_GCC_NONNULL((1,2));
 WGETAPI char *
 	wget_iri_get_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding) WGET_GCC_NONNULL((1,2));
+WGETAPI wget_iri_scheme
+	wget_iri_set_scheme(wget_iri *iri, wget_iri_scheme scheme);
 WGETAPI const char *
-	wget_iri_set_scheme(wget_iri *iri, const char *scheme);
+	wget_iri_scheme_get_name(wget_iri_scheme scheme);
 
 /*
  * Cookie routines
@@ -2057,8 +2053,6 @@ typedef struct {
 	wget_vector *
 		headers; //!< list of HTTP headers
 	const char *
-		scheme; //!< scheme of the request for proxied connections
-	const char *
 		body; //!< body data to be sent or NULL
 	wget_http_header_callback
 		*header_callback; //!< called after HTTP header has been received
@@ -2078,6 +2072,8 @@ typedef struct {
 		body_length; //!< length of the body data
 	int32_t
 		stream_id; //!< HTTP2 stream id
+	wget_iri_scheme
+		scheme; //!< scheme of the request for proxied connections
 	char
 		esc_resource_buf[256]; //!< static buffer used by esc_resource (avoids mallocs)
 	char
@@ -2164,7 +2160,7 @@ WGETAPI const char *
 	wget_http_get_host(const wget_http_connection *conn);
 WGETAPI uint16_t
 	wget_http_get_port(const wget_http_connection *conn);
-WGETAPI const char *
+WGETAPI wget_iri_scheme
 	wget_http_get_scheme(const wget_http_connection *conn);
 WGETAPI int
 	wget_http_get_protocol(const wget_http_connection *conn);

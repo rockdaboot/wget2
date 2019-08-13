@@ -55,7 +55,7 @@ static void test(char *in, size_t len, const char *encoding)
 	wget_iri_escape_query(in, &buf);
 	if (iri) {
 		if (wget_iri_supported(iri))
-			wget_iri_set_scheme(iri, "https");
+			wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
 		wget_iri_get_escaped_host(iri, &buf);
 		wget_iri_get_escaped_resource(iri, &buf);
 		wget_iri_get_path(iri, &buf, encoding);

@@ -33,8 +33,6 @@ struct wget_http_connection_st {
 		tcp;
 	const char *
 		esc_host;
-	const char *
-		scheme;
 	wget_buffer *
 		buf;
 #ifdef WITH_LIBNGHTTP2
@@ -47,6 +45,8 @@ struct wget_http_connection_st {
 		*received_http2_responses; // List of received (but yet unprocessed) responses (HTTP2 only)
 	int
 		pending_http2_requests; // Number of unresponsed requests (HTTP2 only)
+	wget_iri_scheme
+		scheme;
 	uint16_t
 		port;
 	char

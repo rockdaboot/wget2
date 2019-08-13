@@ -61,8 +61,7 @@ static unsigned int WGET_GCC_NONNULL_ALL hash_iri(const wget_iri *iri)
 	unsigned int h = iri->port; // use port as SALT if hash table attacks doesn't matter
 	const unsigned char *p;
 
-	for (p = (unsigned char *)iri->scheme; p && *p; p++)
-		h = h * 101 + *p;
+	h = h * 101 + iri->scheme;
 
 	for (p = (unsigned char *)iri->host; p && *p; p++)
 		h = h * 101 + *p;
