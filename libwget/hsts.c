@@ -72,7 +72,7 @@ typedef struct {
 		port;
 	bool
 		include_subdomains : 1; // whether or not subdomains are included
-} _hsts_t;
+} hsts_entry;
 
 /// Pointer to the function table
 static const wget_hsts_db_vtable
@@ -86,7 +86,8 @@ void wget_hsts_set_plugin(const wget_hsts_db_vtable *vtable)
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int WGET_GCC_PURE _hash_hsts(const _hsts_t *hsts)
+WGET_GCC_PURE
+static unsigned int hash_hsts(const hsts_entry *hsts)
 {
 	unsigned int hash = hsts->port;
 	const unsigned char *p;
@@ -97,7 +98,8 @@ static unsigned int WGET_GCC_PURE _hash_hsts(const _hsts_t *hsts)
 	return hash;
 }
 
-static int WGET_GCC_NONNULL_ALL WGET_GCC_PURE _compare_hsts(const _hsts_t *h1, const _hsts_t *h2)
+WGET_GCC_NONNULL_ALL WGET_GCC_PURE
+static int compare_hsts(const hsts_entry *h1, const hsts_entry *h2)
 {
 	int n;
 
@@ -107,10 +109,10 @@ static int WGET_GCC_NONNULL_ALL WGET_GCC_PURE _compare_hsts(const _hsts_t *h1, c
 	return h1->port < h2->port ? -1 : (h1->port > h2->port ? 1 : 0);
 }
 
-static _hsts_t *_init_hsts(_hsts_t *hsts)
+static hsts_entry *init_hsts(hsts_entry *hsts)
 {
 	if (!hsts)
-		hsts = wget_malloc(sizeof(_hsts_t));
+		hsts = wget_malloc(sizeof(hsts_entry));
 
 	memset(hsts, 0, sizeof(*hsts));
 	hsts->created = time(NULL);
@@ -118,24 +120,24 @@ static _hsts_t *_init_hsts(_hsts_t *hsts)
 	return hsts;
 }
 
-static void _deinit_hsts(_hsts_t *hsts)
+static void deinit_hsts(hsts_entry *hsts)
 {
 	if (hsts) {
 		xfree(hsts->host);
 	}
 }
 
-static void _free_hsts(_hsts_t *hsts)
+static void free_hsts(hsts_entry *hsts)
 {
 	if (hsts) {
-		_deinit_hsts(hsts);
+		deinit_hsts(hsts);
 		xfree(hsts);
 	}
 }
 
-static _hsts_t *_new_hsts(const char *host, uint16_t port, time_t maxage, int include_subdomains)
+static hsts_entry *new_hsts(const char *host, uint16_t port, time_t maxage, int include_subdomains)
 {
-	_hsts_t *hsts = _init_hsts(NULL);
+	hsts_entry *hsts = init_hsts(NULL);
 
 	hsts->host = wget_strdup(host);
 	hsts->port = port ? port : 443;
@@ -174,7 +176,7 @@ int wget_hsts_host_match(const wget_hsts_db *hsts_db, const char *host, uint16_t
 	if (!hsts_db)
 		return 0;
 
-	_hsts_t hsts, *hstsp;
+	hsts_entry hsts, *hstsp;
 	const char *p;
 	int64_t now = time(NULL);
 
@@ -249,17 +251,17 @@ void wget_hsts_db_free(wget_hsts_db **hsts_db)
 	}
 }
 
-static void _hsts_db_add_entry(wget_hsts_db *hsts_db, _hsts_t *hsts)
+static void hsts_db_add_entry(wget_hsts_db *hsts_db, hsts_entry *hsts)
 {
 	wget_thread_mutex_lock(hsts_db->mutex);
 
 	if (hsts->maxage == 0) {
 		if (wget_hashmap_remove(hsts_db->entries, hsts))
 			debug_printf("removed HSTS %s:%hu\n", hsts->host, hsts->port);
-		_free_hsts(hsts);
+		free_hsts(hsts);
 		hsts = NULL;
 	} else {
-		_hsts_t *old;
+		hsts_entry *old;
 
 		if (wget_hashmap_get(hsts_db->entries, hsts, &old)) {
 			if (old->created < hsts->created || old->maxage != hsts->maxage || old->include_subdomains != hsts->include_subdomains) {
@@ -269,7 +271,7 @@ static void _hsts_db_add_entry(wget_hsts_db *hsts_db, _hsts_t *hsts)
 				old->include_subdomains = hsts->include_subdomains;
 				debug_printf("update HSTS %s:%hu (maxage=%lld, includeSubDomains=%d)\n", old->host, old->port, (long long)old->maxage, old->include_subdomains);
 			}
-			_free_hsts(hsts);
+			free_hsts(hsts);
 			hsts = NULL;
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'hsts'
@@ -305,15 +307,15 @@ void wget_hsts_db_add(wget_hsts_db *hsts_db, const char *host, uint16_t port, ti
 	}
 
 	if (hsts_db) {
-		_hsts_t *hsts = _new_hsts(host, port, maxage, include_subdomains);
+		hsts_entry *hsts = new_hsts(host, port, maxage, include_subdomains);
 
-		_hsts_db_add_entry(hsts_db, hsts);
+		hsts_db_add_entry(hsts_db, hsts);
 	}
 }
 
-static int _hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
+static int hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 {
-	_hsts_t hsts;
+	hsts_entry hsts;
 	struct stat st;
 	char *buf = NULL, *linep, *p;
 	size_t bufsize = 0;
@@ -344,7 +346,7 @@ static int _hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 		while (buflen > 0 && (buf[buflen] == '\n' || buf[buflen] == '\r'))
 			buf[--buflen] = 0;
 
-		_init_hsts(&hsts);
+		init_hsts(&hsts);
 		ok = 0;
 
 		// parse host
@@ -389,16 +391,16 @@ static int _hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 			hsts.expires = hsts.maxage ? hsts.created + hsts.maxage : 0;
 			if (hsts.expires < now) {
 				// drop expired entry
-				_deinit_hsts(&hsts);
+				deinit_hsts(&hsts);
 				continue;
 			}
 			ok = 1;
 		}
 
 		if (ok) {
-			_hsts_db_add_entry(hsts_db, wget_memdup(&hsts, sizeof(hsts)));
+			hsts_db_add_entry(hsts_db, wget_memdup(&hsts, sizeof(hsts)));
 		} else {
-			_deinit_hsts(&hsts);
+			deinit_hsts(&hsts);
 			error_printf(_("Failed to parse HSTS line: '%s'\n"), buf);
 		}
 	}
@@ -438,7 +440,7 @@ int wget_hsts_db_load(wget_hsts_db *hsts_db)
 
 	// Load the HSTS cache from a flat file
 	// Protected by flock()
-	if (wget_update_file(hsts_db->fname, (wget_update_load_fn *) _hsts_db_load, NULL, hsts_db)) {
+	if (wget_update_file(hsts_db->fname, (wget_update_load_fn *) hsts_db_load, NULL, hsts_db)) {
 		error_printf(_("Failed to read HSTS data\n"));
 		return -1;
 	} else {
@@ -447,13 +449,14 @@ int wget_hsts_db_load(wget_hsts_db *hsts_db)
 	}
 }
 
-static int WGET_GCC_NONNULL_ALL _hsts_save(FILE *fp, const _hsts_t *hsts)
+WGET_GCC_NONNULL_ALL
+static int hsts_save(FILE *fp, const hsts_entry *hsts)
 {
 	wget_fprintf(fp, "%s %hu %d %lld %lld\n", hsts->host, hsts->port, hsts->include_subdomains, (long long)hsts->created, (long long)hsts->maxage);
 	return 0;
 }
 
-static int _hsts_db_save(void *hsts_db, FILE *fp)
+static int hsts_db_save(void *hsts_db, FILE *fp)
 {
 	wget_hashmap *entries = ((wget_hsts_db *) hsts_db)->entries;
 
@@ -462,7 +465,7 @@ static int _hsts_db_save(void *hsts_db, FILE *fp)
 		fputs("#Generated by Wget2 " PACKAGE_VERSION ". Edit at your own risk.\n", fp);
 		fputs("# <hostname> <port> <incl. subdomains> <created> <max-age>\n", fp);
 
-		wget_hashmap_browse(entries, (wget_hashmap_browse_fn *) _hsts_save, fp);
+		wget_hashmap_browse(entries, (wget_hashmap_browse_fn *) hsts_save, fp);
 
 		if (ferror(fp))
 			return -1;
@@ -497,7 +500,7 @@ int wget_hsts_db_save(wget_hsts_db *hsts_db)
 
 	// Save the HSTS cache to a flat file
 	// Protected by flock()
-	if (wget_update_file(hsts_db->fname, (wget_update_load_fn *) _hsts_db_load, _hsts_db_save, hsts_db)) {
+	if (wget_update_file(hsts_db->fname, (wget_update_load_fn *) hsts_db_load, hsts_db_save, hsts_db)) {
 		error_printf(_("Failed to write HSTS file '%s'\n"), hsts_db->fname);
 		return -1;
 	}
@@ -530,9 +533,9 @@ wget_hsts_db *wget_hsts_db_init(wget_hsts_db *hsts_db, const char *fname)
 	memset(hsts_db, 0, sizeof(*hsts_db));
 	if (fname)
 		hsts_db->fname = wget_strdup(fname);
-	hsts_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_fn *) _hash_hsts, (wget_hashmap_compare_fn *) _compare_hsts);
-	wget_hashmap_set_key_destructor(hsts_db->entries, (wget_hashmap_key_destructor *) _free_hsts);
-	wget_hashmap_set_value_destructor(hsts_db->entries, (wget_hashmap_value_destructor *) _free_hsts);
+	hsts_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_hsts, (wget_hashmap_compare_fn *) compare_hsts);
+	wget_hashmap_set_key_destructor(hsts_db->entries, (wget_hashmap_key_destructor *) free_hsts);
+	wget_hashmap_set_value_destructor(hsts_db->entries, (wget_hashmap_value_destructor *) free_hsts);
 	wget_thread_mutex_init(&hsts_db->mutex);
 
 	return hsts_db;
