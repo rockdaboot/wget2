@@ -239,9 +239,9 @@ void wget_hpkp_set_maxage(wget_hpkp *hpkp, time_t maxage)
  * Sets whether the entry is also valid for all subdomains.
  * Corresponds to the optional `includeSubDomains` directive in `Public-Key-Pins` HTTP response header.
  */
-void wget_hpkp_set_include_subdomains(wget_hpkp *hpkp, int include_subdomains)
+void wget_hpkp_set_include_subdomains(wget_hpkp *hpkp, bool include_subdomains)
 {
-	hpkp->include_subdomains = !!include_subdomains;
+	hpkp->include_subdomains = include_subdomains;
 }
 
 /**
@@ -325,11 +325,11 @@ time_t wget_hpkp_get_maxage(wget_hpkp *hpkp)
 
 /**
  * \param[in] hpkp An HPKP database entry
- * \return 1 if the HPKP entry is also valid for all subdomains, 0 otherwise
+ * \return `true` if the HPKP entry is also valid for all subdomains, `false` otherwise
  *
  * Gets whether the HPKP database entry is also valid for the subdomains.
  */
-int wget_hpkp_get_include_subdomains(wget_hpkp *hpkp)
+bool wget_hpkp_get_include_subdomains(wget_hpkp *hpkp)
 {
 	return hpkp->include_subdomains;
 }
@@ -548,7 +548,7 @@ static int hpkp_db_load(wget_hpkp_db *hpkp_db, FILE *fp)
 					hpkp->maxage = max_age;
 					hpkp->created = created;
 					hpkp->expires = expires;
-					hpkp->include_subdomains = !!include_subdomains;
+					hpkp->include_subdomains = include_subdomains != 0;
 				} else
 					debug_printf("HPKP: entry '%s' is expired\n", host);
 			} else {

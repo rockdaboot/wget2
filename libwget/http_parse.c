@@ -617,7 +617,7 @@ const char *wget_http_parse_public_key_pins(const char *s, wget_hpkp *hpkp)
 {
 	wget_http_header_param param;
 
-	wget_hpkp_set_include_subdomains(hpkp, 0);
+	wget_hpkp_set_include_subdomains(hpkp, false);
 
 	while (*s) {
 		s = wget_http_parse_param(s, &param.name, &param.value);
@@ -630,7 +630,7 @@ const char *wget_http_parse_public_key_pins(const char *s, wget_hpkp *hpkp)
 			}
 		} else {
 			if (!wget_strcasecmp_ascii(param.name, "includeSubDomains"))
-				wget_hpkp_set_include_subdomains(hpkp, 1);
+				wget_hpkp_set_include_subdomains(hpkp, true);
 		}
 
 		xfree(param.name);
