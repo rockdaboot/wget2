@@ -1579,7 +1579,7 @@ typedef void wget_ocsp_db_deinit_fn(wget_ocsp_db *ocsp_db);
 typedef void wget_ocsp_db_free_fn(wget_ocsp_db **ocsp_db);
 typedef bool wget_ocsp_fingerprint_in_cache_fn(const wget_ocsp_db *ocsp_db, const char *fingerprint, int *valid);
 typedef bool wget_ocsp_hostname_is_valid_fn(const wget_ocsp_db *ocsp_db, const char *hostname);
-typedef void wget_ocsp_db_add_fingerprint_fn(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, int valid);
+typedef void wget_ocsp_db_add_fingerprint_fn(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, bool valid);
 typedef void wget_ocsp_db_add_host_fn(wget_ocsp_db *ocsp_db, const char *host, time_t maxage);
 typedef int wget_ocsp_db_save_fn(wget_ocsp_db *ocsp_db);
 typedef int wget_ocsp_db_load_fn(wget_ocsp_db *ocsp_db);

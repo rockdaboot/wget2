@@ -124,13 +124,13 @@ static void free_ocsp(ocsp_entry *ocsp)
 	}
 }
 
-static ocsp_entry *new_ocsp(const char *fingerprint, time_t maxage, int valid)
+static ocsp_entry *new_ocsp(const char *fingerprint, time_t maxage, bool valid)
 {
 	ocsp_entry *ocsp = init_ocsp(NULL);
 
 	ocsp->key = wget_strdup(fingerprint);
 	ocsp->maxage = maxage;
-	ocsp->valid = !!valid;
+	ocsp->valid = valid;
 
 	return ocsp;
 }
@@ -310,7 +310,7 @@ static void ocsp_db_add_fingerprint_entry(wget_ocsp_db *ocsp_db, ocsp_entry *ocs
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-void wget_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, int valid)
+void wget_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, bool valid)
 {
 	if (plugin_vtable) {
 		plugin_vtable->add_fingerprint(ocsp_db, fingerprint, maxage, valid);
@@ -386,7 +386,7 @@ void wget_ocsp_db_add_host(wget_ocsp_db *ocsp_db, const char *host, time_t maxag
 		return;
 	}
 
-	ocsp_entry *ocsp = new_ocsp(host, maxage, 0);
+	ocsp_entry *ocsp = new_ocsp(host, maxage, false);
 
 	ocsp_db_add_host_entry(ocsp_db, ocsp);
 }
@@ -394,7 +394,7 @@ void wget_ocsp_db_add_host(wget_ocsp_db *ocsp_db, const char *host, time_t maxag
 // load the OCSP cache from a flat file
 // not thread-save
 
-static int ocsp_db_load(wget_ocsp_db *ocsp_db, FILE *fp, int load_hosts)
+static int ocsp_db_load(wget_ocsp_db *ocsp_db, FILE *fp, bool load_hosts)
 {
 	ocsp_entry ocsp;
 	char *buf = NULL, *linep, *p;
@@ -446,7 +446,7 @@ static int ocsp_db_load(wget_ocsp_db *ocsp_db, FILE *fp, int load_hosts)
 		// parse mtime (age of this entry)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep);) linep++;
-			ocsp.valid = !!atoi(p);
+			ocsp.valid = atoi(p) != 0;
 		}
 
 		if (ok) {
@@ -470,12 +470,12 @@ static int ocsp_db_load(wget_ocsp_db *ocsp_db, FILE *fp, int load_hosts)
 
 static int ocsp_db_load_hosts(void *ocsp_db, FILE *fp)
 {
-	return ocsp_db_load(ocsp_db, fp, 1);
+	return ocsp_db_load(ocsp_db, fp, true);
 }
 
 static int ocsp_db_load_fingerprints(void *ocsp_db, FILE *fp)
 {
-	return ocsp_db_load(ocsp_db, fp, 0);
+	return ocsp_db_load(ocsp_db, fp, false);
 }
 
 /**

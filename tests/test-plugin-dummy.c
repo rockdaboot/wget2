@@ -669,7 +669,7 @@ static bool test_ocsp_db_hostname_is_valid(const wget_ocsp_db *ocsp_db, const ch
 	return true;
 }
 
-static void test_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, int valid)
+static void test_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, bool valid)
 {
 	(void) ocsp_db;
 

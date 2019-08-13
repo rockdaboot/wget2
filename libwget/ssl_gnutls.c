@@ -801,7 +801,7 @@ static char *_get_cert_fingerprint(gnutls_x509_crt_t cert, char *fingerprint_hex
 /*
  * Add cert to OCSP cache, being either valid or revoked (valid==0)
  */
-static void _add_cert_to_ocsp_cache(gnutls_x509_crt_t cert, int valid)
+static void _add_cert_to_ocsp_cache(gnutls_x509_crt_t cert, bool valid)
 {
 	if (_config.ocsp_cert_cache) {
 		char fingerprint_hex[64 * 2 +1];
@@ -959,7 +959,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 			if (gnutls_x509_crt_init(&cert) == GNUTLS_E_SUCCESS) {
 				if ((cert_list = gnutls_certificate_get_peers(session, &cert_list_size))) {
 					if (gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER) == GNUTLS_E_SUCCESS) {
-						_add_cert_to_ocsp_cache(cert, 0);
+						_add_cert_to_ocsp_cache(cert, false);
 					}
 				}
 				gnutls_x509_crt_deinit(cert);
@@ -1058,7 +1058,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 			if (gnutls_ocsp_status_request_is_checked(session, 0)) {
 				debug_printf("Server certificate is valid regarding OCSP stapling\n");
 //				_get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
-				_add_cert_to_ocsp_cache(cert, 1);
+				_add_cert_to_ocsp_cache(cert, true);
 				nvalid = 1;
 			}
 #if GNUTLS_VERSION_NUMBER >= 0x030400
@@ -1127,11 +1127,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 
 			if (ocsp_ok == 1) {
 				debug_printf("Certificate[%u] of '%s' is valid (via OCSP)\n", it, hostname);
-				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, 1); // 1h valid
+				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, true); // 1h valid
 				nvalid++;
 			} else if (ocsp_ok == 0) {
 				debug_printf("%s: Certificate[%u] of '%s' has been revoked (via OCSP)\n", tag, it, hostname);
-				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, 0);  // cert has been revoked
+				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, false);  // cert has been revoked
 				nrevoked++;
 			} else {
 				debug_printf("WARNING: OCSP response not available or ignored\n");
