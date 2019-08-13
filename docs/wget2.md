@@ -481,7 +481,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Note that `-c` only works with HTTP servers that support the "Range" header.
 
-### `--start-pos=OFFSET` [Not implemented yet]
+### `--start-pos=OFFSET`
 
   Start downloading at zero-based position `OFFSET`.  Offset may be expressed in bytes, kilobytes with the `k'
   suffix, or megabytes with the `m' suffix, etc.

@@ -3622,7 +3622,7 @@ static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 	if (!(req = wget_http_create_request(iri, method)))
 		return req;
 
-	if (config.continue_download || config.timestamping) {
+	if (config.continue_download || config.start_pos || config.timestamping) {
 		const char *local_filename = config.output_document ? config.output_document : job->local_filename;
 
 		/* We never want to continue the robots job. Always grab a fresh copy
@@ -3636,6 +3636,9 @@ static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 			if (file_size > 0)
 				wget_http_add_header_printf(req, "Range", "bytes=%lld-", file_size);
 		}
+
+		if (config.start_pos)
+			wget_http_add_header_printf(req, "Range", "bytes=%lld-", config.start_pos);
 
 		if (config.timestamping) {
 			bool found_mtime = 0;

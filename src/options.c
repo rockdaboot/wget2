@@ -2080,6 +2080,11 @@ static const struct optionw options[] = {
 		{ "Enable web spider mode. (default: off)\n"
 		}
 	},
+	{ "start-pos", &config.start_pos, parse_numbytes, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Start downloading at zero-based position, 0 = option disabled. (default: 0)\n"
+		}
+	},
 	{ "stats-dns", &config.stats_dns_args, parse_stats, 1, 0,
 		SECTION_STARTUP,
 		{ "Print DNS stats. (default: off)\n",
@@ -3378,6 +3383,11 @@ int init(int argc, const char **argv)
 	if (config.page_requisites && !config.recursive) {
 		config.recursive = 1;
 		config.level = 1;
+	}
+
+	if (config.start_pos && config.continue_download) {
+		error_printf(_("Specifying both --start-pos and --continue is not recommended; --continue will be disabled"));
+		config.continue_download = 0;
 	}
 
 	if (config.mirror)
