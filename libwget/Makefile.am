@@ -126,6 +126,13 @@ libwget_tls_session_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_tls_session_la_LIBADD = libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
 libwget_tls_session_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget http_parse ########
+lib_LTLIBRARIES += libwget_http_parse.la
+libwget_http_parse_la_SOURCES =  http_parse.c cookie_parse.c cookie.h hpkp.c cookie.h
+libwget_http_parse_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_http_parse_la_LIBADD = libwget_encoding.la libwget_common.la libwget_alloc.la $(LIBPSL_LIBS) ../lib/libgnu.la
+libwget_http_parse_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 ######## libwget logger ########
 lib_LTLIBRARIES += libwget_logger.la
 libwget_logger_la_SOURCES =  logger.c
@@ -238,6 +245,12 @@ test_linking_tls_session_SOURCES = test_linking_tls_session.c
 test_linking_tls_session_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_tls_session_LDADD = libwget_tls_session.la
 test_linking_tls_session_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_http_parse
+test_linking_http_parse_SOURCES = test_linking_http_parse.c
+test_linking_http_parse_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_http_parse_LDADD = libwget_http_parse.la
+test_linking_http_parse_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking_logger
 test_linking_logger_SOURCES = test_linking_logger.c
