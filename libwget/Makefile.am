@@ -105,6 +105,13 @@ libwget_hpkp_db_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_hpkp_db_la_LIBADD = libwget_hashfile.la libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
 libwget_hpkp_db_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget hsts ########
+lib_LTLIBRARIES += libwget_hsts.la
+libwget_hsts_la_SOURCES =  hsts.c
+libwget_hsts_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_hsts_la_LIBADD = libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
+libwget_hsts_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 ######## libwget logger ########
 lib_LTLIBRARIES += libwget_logger.la
 libwget_logger_la_SOURCES =  logger.c
@@ -199,6 +206,12 @@ test_linking_hpkp_db_SOURCES = test_linking_hpkp_db.c
 test_linking_hpkp_db_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_hpkp_db_LDADD = libwget_hpkp_db.la
 test_linking_hpkp_db_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_hsts
+test_linking_hsts_SOURCES = test_linking_hsts.c
+test_linking_hsts_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_hsts_LDADD = libwget_hsts.la
+test_linking_hsts_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking_logger
 test_linking_logger_SOURCES = test_linking_logger.c
