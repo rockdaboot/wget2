@@ -1494,7 +1494,7 @@ WGETAPI void
 	wget_hpkp_set_maxage(wget_hpkp *hpkp, time_t maxage);
 WGETAPI void
 	wget_hpkp_set_include_subdomains(wget_hpkp *hpkp, bool include_subdomains);
-WGETAPI size_t
+WGETAPI int
 	wget_hpkp_get_n_pins(wget_hpkp *hpkp);
 WGETAPI void
 	wget_hpkp_get_pins_b64(wget_hpkp *hpkp, const char **pin_types, const char **pins_b64);

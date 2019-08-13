@@ -1382,11 +1382,10 @@ static const char *_sha256_base64(const void *src)
 
 static void test_hpkp(void)
 {
-	unsigned int it;
 	struct hpkp_db_data {
 		const char *
 			host;
-		int
+		uint16_t
 			port;
 		const char *
 			hpkp_params;
@@ -1403,9 +1402,9 @@ static void test_hpkp(void)
 	struct hpkp_db_params {
 		time_t
 			maxage;
-		int
+		bool
 			include_subdomains;
-		size_t
+		int
 			n_pins;
 		unsigned int
 			pins_mask;
@@ -1418,8 +1417,10 @@ static void test_hpkp(void)
 	};
 	const char *hpkp_pins[] = { HPKP_PIN_1, HPKP_PIN_2, HPKP_PIN_3 };
 	char hpkp_pins_binary[countof(hpkp_pins)][HPKP_PIN_SIZE + 1];
-	for (it = 0; it < countof(hpkp_pins); it++)
+
+	for (unsigned it = 0; it < countof(hpkp_pins); it++)
 		wget_base64_decode(hpkp_pins_binary[it], hpkp_pins[it], strlen(hpkp_pins[it]));
+
 	static const struct hpkp_data {
 		const char *
 			host;
@@ -1448,7 +1449,7 @@ static void test_hpkp(void)
 	// printf("#define HPKP_PIN_3 \"%s\"\n", _sha256_base64(HPKP_PUBKEY_3));
 
 	// fill HPKP database with values
-	for (it = 0; it < countof(hpkp_db_data); it++) {
+	for (unsigned it = 0; it < countof(hpkp_db_data); it++) {
 		const struct hpkp_db_data *t = &hpkp_db_data[it];
 		wget_hpkp *hpkp = wget_hpkp_new();
 
@@ -1457,11 +1458,10 @@ static void test_hpkp(void)
 
 		// Check the database entry before adding
 		{
-			size_t n_pins;
+			int n_pins, k;
 			const char *pin_types[countof(hpkp_pins)], *pins[countof(hpkp_pins)];
 			size_t pin_sizes[countof(hpkp_pins)];
 			const void *pins_binary[countof(hpkp_pins)];
-			size_t j, k;
 
 			// Check host, maxage, include_subdomains and n_pins
 			if (strcmp(wget_hpkp_get_host(hpkp), hpkp_db_data[it].host) != 0) {
@@ -1489,7 +1489,7 @@ static void test_hpkp(void)
 			n_pins = wget_hpkp_get_n_pins(hpkp);
 			if (n_pins != hpkp_db_params[it].n_pins) {
 				failed++;
-				info_printf("Failed [%u]: wget_hpkp_get_n_pins(hpkp) -> %zu (expected %zu)\n", it,
+				info_printf("Failed [%u]: wget_hpkp_get_n_pins(hpkp) -> %d (expected %d)\n", it,
 						n_pins, hpkp_db_params[it].n_pins);
 			} else {
 				ok++;
@@ -1498,7 +1498,7 @@ static void test_hpkp(void)
 			// Check the pins
 			wget_hpkp_get_pins_b64(hpkp, pin_types, pins);
 			wget_hpkp_get_pins(hpkp, pin_types, pin_sizes, pins_binary);
-			for (j = 0; j < countof(hpkp_pins); j++) {
+			for (unsigned j = 0; j < countof(hpkp_pins); j++) {
 				if (! ((1 << j) & hpkp_db_params[it].pins_mask))
 					continue;
 				for (k = 0; k < n_pins; k++) {
@@ -1523,7 +1523,7 @@ static void test_hpkp(void)
 	}
 
 	// check HPKP database with values
-	for (it = 0; it < countof(hpkp_data); it++) {
+	for (unsigned it = 0; it < countof(hpkp_data); it++) {
 		const struct hpkp_data *t = &hpkp_data[it];
 
 		n = wget_hpkp_db_check_pubkey(hpkp_db, t->host, t->pubkey, strlen(t->pubkey));

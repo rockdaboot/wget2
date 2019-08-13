@@ -250,9 +250,9 @@ void wget_hpkp_set_include_subdomains(wget_hpkp *hpkp, bool include_subdomains)
  *
  * Gets the number of public key hashes added to the given HPKP database entry.
  */
-size_t wget_hpkp_get_n_pins(wget_hpkp *hpkp)
+int wget_hpkp_get_n_pins(wget_hpkp *hpkp)
 {
-	return (size_t) wget_vector_size(hpkp->pins);
+	return wget_vector_size(hpkp->pins);
 }
 
 /**
