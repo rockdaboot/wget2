@@ -60,10 +60,10 @@ struct wget_hpkp_st {
 		created;
 	int64_t
 		maxage;
-	char
-		include_subdomains;
 	wget_vector *
 		pins;
+	bool
+		include_subdomains : 1;
 };
 
 typedef struct {
@@ -75,7 +75,7 @@ typedef struct {
 		hash_type; /* type of <pin>, e.g. 'sha-256' */
 	size_t
 		pinsize; /* size of <pin> */
-} wget_hpkp_pin_t;
+} wget_hpkp_pin;
 
 /// Pointer to the function table
 static const wget_hpkp_db_vtable
@@ -89,7 +89,8 @@ void wget_hpkp_set_plugin(const wget_hpkp_db_vtable *vtable)
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int WGET_GCC_PURE _hash_hpkp(const wget_hpkp *hpkp)
+WGET_GCC_PURE
+static unsigned int hash_hpkp(const wget_hpkp *hpkp)
 {
 	unsigned int hash = 0;
 	const unsigned char *p;
@@ -100,7 +101,8 @@ static unsigned int WGET_GCC_PURE _hash_hpkp(const wget_hpkp *hpkp)
 	return hash;
 }
 
-static int WGET_GCC_NONNULL_ALL WGET_GCC_PURE _compare_hpkp(const wget_hpkp *h1, const wget_hpkp *h2)
+WGET_GCC_NONNULL_ALL WGET_GCC_PURE
+static int compare_hpkp(const wget_hpkp *h1, const wget_hpkp *h2)
 {
 	return strcmp(h1->host, h2->host);
 }
@@ -108,7 +110,8 @@ static int WGET_GCC_NONNULL_ALL WGET_GCC_PURE _compare_hpkp(const wget_hpkp *h1,
 /*
  * Compare function for SPKI hashes. Returns 0 if they're equal.
  */
-static int WGET_GCC_NONNULL_ALL _compare_pin(wget_hpkp_pin_t *p1, wget_hpkp_pin_t *p2)
+WGET_GCC_NONNULL_ALL
+static int compare_pin(wget_hpkp_pin *p1, wget_hpkp_pin *p2)
 {
 	int n;
 
@@ -126,7 +129,7 @@ static int WGET_GCC_NONNULL_ALL _compare_pin(wget_hpkp_pin_t *p1, wget_hpkp_pin_
 
 static void hpkp_pin_free(void *pin)
 {
-	wget_hpkp_pin_t *p = pin;
+	wget_hpkp_pin *p = pin;
 
 	if (p) {
 		xfree(p->hash_type);
@@ -145,7 +148,7 @@ static void hpkp_pin_free(void *pin)
  */
 void wget_hpkp_pin_add(wget_hpkp *hpkp, const char *pin_type, const char *pin_b64)
 {
-	wget_hpkp_pin_t *pin = wget_calloc(1, sizeof(wget_hpkp_pin_t));
+	wget_hpkp_pin *pin = wget_calloc(1, sizeof(wget_hpkp_pin));
 	size_t len_b64 = strlen(pin_b64);
 
 	pin->hash_type = wget_strdup(pin_type);
@@ -153,7 +156,7 @@ void wget_hpkp_pin_add(wget_hpkp *hpkp, const char *pin_type, const char *pin_b6
 	pin->pin = (unsigned char *)wget_base64_decode_alloc(pin_b64, len_b64, &pin->pinsize);
 
 	if (!hpkp->pins) {
-		hpkp->pins = wget_vector_create(5, (wget_vector_compare_fn *) _compare_pin);
+		hpkp->pins = wget_vector_create(5, (wget_vector_compare_fn *) compare_pin);
 		wget_vector_set_destructor(hpkp->pins, hpkp_pin_free);
 	}
 
@@ -268,7 +271,7 @@ void wget_hpkp_get_pins_b64(wget_hpkp *hpkp, const char **pin_types, const char 
 	n_pins = wget_vector_size(hpkp->pins);
 
 	for (i = 0; i < n_pins; i++) {
-		wget_hpkp_pin_t *pin = (wget_hpkp_pin_t *) wget_vector_get(hpkp->pins, i);
+		wget_hpkp_pin *pin = (wget_hpkp_pin *) wget_vector_get(hpkp->pins, i);
 		pin_types[i] = pin->hash_type;
 		pins_b64[i] = pin->pin_b64;
 	}
@@ -291,7 +294,7 @@ void wget_hpkp_get_pins(wget_hpkp *hpkp, const char **pin_types, size_t *sizes, 
 	n_pins = wget_vector_size(hpkp->pins);
 
 	for (i = 0; i < n_pins; i++) {
-		wget_hpkp_pin_t *pin = (wget_hpkp_pin_t *) wget_vector_get(hpkp->pins, i);
+		wget_hpkp_pin *pin = (wget_hpkp_pin *) wget_vector_get(hpkp->pins, i);
 		pin_types[i] = pin->hash_type;
 		sizes[i] = pin->pinsize;
 		pins[i] = pin->pin;
@@ -425,7 +428,7 @@ int wget_hpkp_db_check_pubkey(wget_hpkp_db *hpkp_db, const char *host, const voi
 	if (wget_hash_fast(WGET_DIGTYPE_SHA256, pubkey, pubkeysize, digest))
 		return -1;
 
-	wget_hpkp_pin_t pinkey = { .pin = digest, .pinsize = sizeof(digest), .hash_type = "sha256" };
+	wget_hpkp_pin pinkey = { .pin = digest, .pinsize = sizeof(digest), .hash_type = "sha256" };
 
 	if (wget_vector_find(hpkp->pins, &pinkey) != -1)
 		return 1; // OK, pinned pubkey found
@@ -492,7 +495,7 @@ void wget_hpkp_db_add(wget_hpkp_db *hpkp_db, wget_hpkp **_hpkp)
 	*_hpkp = NULL;
 }
 
-static int _hpkp_db_load(wget_hpkp_db *hpkp_db, FILE *fp)
+static int hpkp_db_load(wget_hpkp_db *hpkp_db, FILE *fp)
 {
 	int64_t created, max_age;
 	long long _created, _max_age;
@@ -597,7 +600,7 @@ int wget_hpkp_db_load(wget_hpkp_db *hpkp_db)
 	if (!hpkp_db->fname || !*hpkp_db->fname)
 		return 0;
 
-	if (wget_update_file(hpkp_db->fname, (wget_update_load_fn *) _hpkp_db_load, NULL, hpkp_db)) {
+	if (wget_update_file(hpkp_db->fname, (wget_update_load_fn *) hpkp_db_load, NULL, hpkp_db)) {
 		error_printf(_("Failed to read HPKP data\n"));
 		return -1;
 	} else {
@@ -606,7 +609,7 @@ int wget_hpkp_db_load(wget_hpkp_db *hpkp_db)
 	}
 }
 
-static int _hpkp_save_pin(FILE *fp, wget_hpkp_pin_t *pin)
+static int hpkp_save_pin(FILE *fp, wget_hpkp_pin *pin)
 {
 	wget_fprintf(fp, "*%s %s\n", pin->hash_type, pin->pin_b64);
 
@@ -616,7 +619,8 @@ static int _hpkp_save_pin(FILE *fp, wget_hpkp_pin_t *pin)
 	return 0;
 }
 
-static int WGET_GCC_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp *hpkp)
+WGET_GCC_NONNULL_ALL
+static int hpkp_save(FILE *fp, const wget_hpkp *hpkp)
 {
 	if (wget_vector_size(hpkp->pins) == 0)
 		debug_printf("HPKP: drop '%s', no PIN entries\n", hpkp->host);
@@ -628,13 +632,13 @@ static int WGET_GCC_NONNULL_ALL _hpkp_save(FILE *fp, const wget_hpkp *hpkp)
 		if (ferror(fp))
 			return -1;
 
-		return wget_vector_browse(hpkp->pins, (wget_vector_browse_fn *) _hpkp_save_pin, fp);
+		return wget_vector_browse(hpkp->pins, (wget_vector_browse_fn *) hpkp_save_pin, fp);
 	}
 
 	return 0;
 }
 
-static int _hpkp_db_save(wget_hpkp_db *hpkp_db, FILE *fp)
+static int hpkp_db_save(wget_hpkp_db *hpkp_db, FILE *fp)
 {
 	wget_hashmap *entries = hpkp_db->entries;
 
@@ -646,7 +650,7 @@ static int _hpkp_db_save(wget_hpkp_db *hpkp_db, FILE *fp)
 		if (ferror(fp))
 			return -1;
 
-		return wget_hashmap_browse(entries, (wget_hashmap_browse_fn *) _hpkp_save, fp);
+		return wget_hashmap_browse(entries, (wget_hashmap_browse_fn *) hpkp_save, fp);
 	}
 
 	return 0;
@@ -677,8 +681,8 @@ int wget_hpkp_db_save(wget_hpkp_db *hpkp_db)
 		return -1;
 
 	if (wget_update_file(hpkp_db->fname,
-			     (wget_update_load_fn *) _hpkp_db_load,
-			     (wget_update_load_fn *) _hpkp_db_save,
+			     (wget_update_load_fn *) hpkp_db_load,
+			     (wget_update_load_fn *) hpkp_db_save,
 			     hpkp_db))
 	{
 		error_printf(_("Failed to write HPKP file '%s'\n"), hpkp_db->fname);
@@ -723,7 +727,7 @@ wget_hpkp_db *wget_hpkp_db_init(wget_hpkp_db *hpkp_db, const char *fname)
 
 	if (fname)
 		hpkp_db->fname = wget_strdup(fname);
-	hpkp_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_fn *) _hash_hpkp, (wget_hashmap_compare_fn *) _compare_hpkp);
+	hpkp_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_hpkp, (wget_hashmap_compare_fn *) compare_hpkp);
 	wget_hashmap_set_key_destructor(hpkp_db->entries, (wget_hashmap_key_destructor *) wget_hpkp_free);
 
 	/*
