@@ -119,6 +119,13 @@ libwget_ocsp_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_ocsp_la_LIBADD = libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
 libwget_ocsp_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget tls_session ########
+lib_LTLIBRARIES += libwget_tls_session.la
+libwget_tls_session_la_SOURCES =  tls_session.c
+libwget_tls_session_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_tls_session_la_LIBADD = libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
+libwget_tls_session_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 ######## libwget logger ########
 lib_LTLIBRARIES += libwget_logger.la
 libwget_logger_la_SOURCES =  logger.c
@@ -225,6 +232,12 @@ test_linking_ocsp_SOURCES = test_linking_ocsp.c
 test_linking_ocsp_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_ocsp_LDADD = libwget_ocsp.la
 test_linking_ocsp_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_tls_session
+test_linking_tls_session_SOURCES = test_linking_tls_session.c
+test_linking_tls_session_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_tls_session_LDADD = libwget_tls_session.la
+test_linking_tls_session_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking_logger
 test_linking_logger_SOURCES = test_linking_logger.c
