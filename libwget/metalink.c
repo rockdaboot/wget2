@@ -60,7 +60,7 @@ typedef struct {
 		location[8];
 	long long
 		length;
-} _metalink_context_t ;
+} metalink_context ;
 
 static void mirror_free(void *mirror)
 {
@@ -72,7 +72,7 @@ static void mirror_free(void *mirror)
 	}
 }
 
-static void _add_piece(_metalink_context_t *ctx, const char *value)
+static void add_piece(metalink_context *ctx, const char *value)
 {
 	wget_metalink *metalink = ctx->metalink;
 
@@ -103,7 +103,7 @@ static void _add_piece(_metalink_context_t *ctx, const char *value)
 	*ctx->hash = 0;
 }
 
-static void _add_file_hash(_metalink_context_t *ctx, const char *value)
+static void add_file_hash(metalink_context *ctx, const char *value)
 {
 	wget_metalink *metalink = ctx->metalink;
 
@@ -125,7 +125,7 @@ static void _add_file_hash(_metalink_context_t *ctx, const char *value)
 	*ctx->hash_type = *ctx->hash = 0;
 }
 
-static void _add_mirror(_metalink_context_t *ctx, const char *value)
+static void add_mirror(metalink_context *ctx, const char *value)
 {
 	while (c_isspace(*value))
 		value++;
@@ -155,9 +155,9 @@ static void _add_mirror(_metalink_context_t *ctx, const char *value)
 	ctx->priority = 999999;
 }
 
-static void _metalink_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos WGET_GCC_UNUSED)
+static void metalink_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos WGET_GCC_UNUSED)
 {
-	_metalink_context_t *ctx = context;
+	metalink_context *ctx = context;
 	char value[len + 1];
 
 	// info_printf("\n%02X %s %s '%s'\n", flags, dir, attr, value);
@@ -209,13 +209,13 @@ static void _metalink_parse(void *context, int flags, const char *dir, const cha
 			}
 		} else {
 			if (!wget_strcasecmp_ascii(dir, "/verification/pieces/hash")) {
-				_add_piece(ctx, value);
+				add_piece(ctx, value);
 			} else if (!wget_strcasecmp_ascii(dir, "/verification/hash")) {
-				_add_file_hash(ctx, value);
+				add_file_hash(ctx, value);
 			} else if (!wget_strcasecmp_ascii(dir, "/size")) {
 				ctx->metalink->size = atoll(value);
 			} else if (!wget_strcasecmp_ascii(dir, "/resources/url")) {
-				_add_mirror(ctx, value);
+				add_mirror(ctx, value);
 			}
 		}
 	} else {
@@ -246,13 +246,13 @@ static void _metalink_parse(void *context, int flags, const char *dir, const cha
 			}
 		} else {
 			if (!wget_strcasecmp_ascii(dir, "/pieces/hash")) {
-				_add_piece(ctx, value);
+				add_piece(ctx, value);
 			} else if (!wget_strcasecmp_ascii(dir, "/hash")) {
-				_add_file_hash(ctx, value);
+				add_file_hash(ctx, value);
 			} else if (!wget_strcasecmp_ascii(dir, "/size")) {
 				ctx->metalink->size = atoll(value);
 			} else if (!wget_strcasecmp_ascii(dir, "/url")) {
-				_add_mirror(ctx, value);
+				add_mirror(ctx, value);
 			}
 		}
 	}
@@ -264,9 +264,9 @@ wget_metalink *wget_metalink_parse(const char *xml)
 		return NULL;
 
 	wget_metalink *metalink = wget_calloc(1, sizeof(wget_metalink));
-	_metalink_context_t ctx = { .metalink = metalink, .priority = 999999, .location = "-" };
+	metalink_context ctx = { .metalink = metalink, .priority = 999999, .location = "-" };
 
-	if (wget_xml_parse_buffer(xml, _metalink_parse, &ctx, 0) != WGET_E_SUCCESS) {
+	if (wget_xml_parse_buffer(xml, metalink_parse, &ctx, 0) != WGET_E_SUCCESS) {
 		error_printf(_("Error in parsing XML"));
 		wget_metalink_free(&metalink);
 	}
@@ -285,7 +285,8 @@ void wget_metalink_free(wget_metalink **metalink)
 	}
 }
 
-static int WGET_GCC_PURE _compare_mirror(wget_metalink_mirror **m1, wget_metalink_mirror **m2)
+WGET_GCC_PURE
+static int compare_mirror(wget_metalink_mirror **m1, wget_metalink_mirror **m2)
 {
 	return (*m1)->priority - (*m2)->priority;
 }
@@ -293,7 +294,7 @@ static int WGET_GCC_PURE _compare_mirror(wget_metalink_mirror **m1, wget_metalin
 void wget_metalink_sort_mirrors(wget_metalink *metalink)
 {
 	if (metalink) {
-		wget_vector_setcmpfunc(metalink->mirrors, (wget_vector_compare_fn *) _compare_mirror);
+		wget_vector_setcmpfunc(metalink->mirrors, (wget_vector_compare_fn *) compare_mirror);
 		wget_vector_sort(metalink->mirrors);
 	}
 }
