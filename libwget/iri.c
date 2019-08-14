@@ -90,7 +90,7 @@ static struct iri_scheme {
  */
 const char *wget_iri_scheme_get_name(wget_iri_scheme scheme)
 {
-	if (scheme >= 0 && scheme < countof(schemes))
+	if ((unsigned) scheme < countof(schemes))
 		return schemes[scheme].name;
 
 	return NULL;
@@ -104,7 +104,7 @@ const char *wget_iri_scheme_get_name(wget_iri_scheme scheme)
  */
 bool wget_iri_supported(const wget_iri *iri)
 {
-	return iri->scheme >= 0 && iri->scheme < countof(schemes);
+	return (unsigned) iri->scheme < countof(schemes);
 }
 
 
@@ -1347,7 +1347,7 @@ void wget_iri_set_defaultpage(const char *page)
  */
 int wget_iri_set_defaultport(wget_iri_scheme scheme, uint16_t port)
 {
-	if (scheme >= 0 && scheme < countof(schemes)) {
+	if ((unsigned) scheme < countof(schemes)) {
 		schemes[scheme].port = port;
 		return 0;
 	}
@@ -1371,7 +1371,7 @@ wget_iri_scheme wget_iri_set_scheme(wget_iri *iri, wget_iri_scheme scheme)
 {
 	wget_iri_scheme old_scheme = iri->scheme;
 
-	if (scheme >= 0 && scheme < countof(schemes) && iri->scheme != scheme) {
+	if ((unsigned) scheme < countof(schemes) && iri->scheme != scheme) {
 		iri->scheme = scheme;
 
 		// If the IRI is using the default port, also change it
