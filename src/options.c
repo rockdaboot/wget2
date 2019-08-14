@@ -311,7 +311,7 @@ static int parse_numbytes(option_t opt, const char *val, WGET_GCC_UNUSED const c
 			return 0;
 		}
 
-		if (_parse_double_modifier(val, &num, &modifier) >= 1) {
+		if (_parse_double_modifier(val, &num, &modifier) >= 1 && num >= 0) {
 			if (modifier) {
 				switch (c_tolower(modifier)) {
 				case 'k': num *= 1024; break;
