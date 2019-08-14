@@ -6,6 +6,7 @@ lib/w32spawn.h
 lib/wait-process.c
 lib/xalloc-die.c
 libwget/cookie.c
+libwget/cookie_parse.c
 libwget/css.c
 libwget/css_url.c
 libwget/decompressor.c
