@@ -161,6 +161,13 @@ libwget_robots_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_robots_la_LIBADD = libwget_common.la libwget_alloc.la ../lib/libgnu.la
 libwget_robots_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget xml ########
+lib_LTLIBRARIES += libwget_xml.la
+libwget_xml_la_SOURCES =  xml.c
+libwget_xml_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_xml_la_LIBADD = libwget_common.la libwget_alloc.la ../lib/libgnu.la
+libwget_xml_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 ######## libwget CSS ########
 lib_LTLIBRARIES += libwget_css.la
 libwget_css_la_SOURCES =  css_url.c css.c css_tokenizer.h
@@ -293,6 +300,12 @@ test_linking_robots_SOURCES = test_linking_robots.c
 test_linking_robots_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_robots_LDADD = libwget_robots.la
 test_linking_robots_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_xml
+test_linking_xml_SOURCES = test_linking_xml.c
+test_linking_xml_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_xml_LDADD = libwget_xml.la
+test_linking_xml_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking
 test_linking_SOURCES = test_linking.c
