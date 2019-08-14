@@ -495,8 +495,8 @@ Go to background immediately after startup. If no output file is specified via t
 
   Select the type of the progress indicator you wish to use.  Legal indicators are "dot" and "bar".
 
-  The "bar" indicator is used by default.  It draws an ASCII progress bar graphics (a.k.a "thermometer" display)
-  indicating the status of retrieval.  If the output is not a TTY, the "dot" bar will be used by default.
+  It draws an ASCII progress bar graphics (a.k.a "thermometer" display) indicating the status of retrieval.
+  If the output is not a TTY, the "dot" bar will be used by default.
 
   Use `--progress=dot` to switch to the "dot" display.  It traces the retrieval by printing dots on the screen, each
   dot representing a fixed amount of downloaded data.

@@ -3344,6 +3344,18 @@ struct _body_callback_context {
 	long long limit_prev_time_ms;
 };
 
+static int _get_requested_range(void *ctx, void *elem)
+{
+	wget_http_header_param *param = (wget_http_header_param *) elem;
+	long long *ret = (long long *) ctx;
+	if (!strcmp(param->name, "Range")) {
+		*ret = atoll(param->value+6);
+		return 1;
+	}
+	else
+		return 0;
+}
+
 static int _get_header(wget_http_response *resp, void *context)
 {
 	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
@@ -3431,7 +3443,14 @@ out:
 		if (!wget_strcasecmp_ascii(resp->req->method, "HEAD")) {
 			bar_slot_begin(ctx->progress_slot, name, 0, resp->header->length);
 			bar_set_downloaded(ctx->progress_slot, resp->header->length);
-		} else {
+		}
+		else if (config.continue_download && resp->code == 206) {
+			long long already_downloaded;
+			wget_vector_browse(resp->req->headers, _get_requested_range, &already_downloaded);
+			bar_slot_begin(ctx->progress_slot, name, 1, resp->content_length+already_downloaded);
+			bar_set_downloaded(ctx->progress_slot, already_downloaded);
+		}
+		else {
 			bar_slot_begin(ctx->progress_slot, name, ((resp->code == 200 || resp->code == 206) ? 1 : 0), resp->content_length);
 		}
 

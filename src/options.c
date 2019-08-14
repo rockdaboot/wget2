@@ -746,7 +746,12 @@ static int WGET_GCC_PURE WGET_GCC_NONNULL((1)) parse_regex_type(option_t opt, co
 
 static int WGET_GCC_PURE WGET_GCC_NONNULL((1)) parse_progress_type(option_t opt, const char *val, WGET_GCC_UNUSED const char invert)
 {
-	if (!val || !*val || !wget_strcasecmp_ascii(val, "none"))
+	if (!val || !*val) {
+		error_printf(_("Empty progress type\n"));
+		return -1;
+	}
+
+	if (!wget_strcasecmp_ascii(val, "none"))
 		*((char *)opt->var) = 0;
 	else if (!wget_strcasecmp_ascii(val, "bar"))
 		*((char *)opt->var) = 1;
