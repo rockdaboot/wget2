@@ -15,7 +15,7 @@ libwget/encoding.c
 libwget/error.c
 libwget/hash_printf.c
 libwget/hashfile.c
-libwget/hpkp.c
+libwget/hpkp_db.c
 libwget/hsts.c
 libwget/http.c
 libwget/http_highlevel.c
