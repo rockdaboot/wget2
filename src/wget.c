@@ -3829,6 +3829,9 @@ int http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloa
 {
 	wget_http_connection *conn = downloader->conn;
 
+	if (!conn)
+		return WGET_E_UNKNOWN;
+
 	JOB *job = downloader->job;
 	int rc;
 
