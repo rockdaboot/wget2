@@ -44,7 +44,8 @@ struct wget_netrc_db_st {
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int WGET_GCC_PURE _hash_netrc(const wget_netrc *netrc)
+WGET_GCC_PURE
+static unsigned int hash_netrc(const wget_netrc *netrc)
 {
 	unsigned int hash = 0;
 	const unsigned char *p;
@@ -55,7 +56,8 @@ static unsigned int WGET_GCC_PURE _hash_netrc(const wget_netrc *netrc)
 	return hash;
 }
 
-static int WGET_GCC_NONNULL_ALL WGET_GCC_PURE _compare_netrc(const wget_netrc *h1, const wget_netrc *h2)
+WGET_GCC_NONNULL_ALL WGET_GCC_PURE
+static int compare_netrc(const wget_netrc *h1, const wget_netrc *h2)
 {
 	return wget_strcmp(h1->host, h2->host);
 }
@@ -120,7 +122,7 @@ wget_netrc_db *wget_netrc_db_init(wget_netrc_db *netrc_db)
 
 	memset(netrc_db, 0, sizeof(*netrc_db));
 
-	netrc_db->machines = wget_hashmap_create(16, (wget_hashmap_hash_fn *) _hash_netrc, (wget_hashmap_compare_fn *) _compare_netrc);
+	netrc_db->machines = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_netrc, (wget_hashmap_compare_fn *) compare_netrc);
 	wget_hashmap_set_key_destructor(netrc_db->machines, (wget_hashmap_key_destructor *) wget_netrc_free);
 	wget_hashmap_set_value_destructor(netrc_db->machines, (wget_hashmap_value_destructor *) wget_netrc_free);
 
@@ -164,93 +166,92 @@ void wget_netrc_db_add(wget_netrc_db *netrc_db, wget_netrc *netrc)
 int wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname)
 {
 	FILE *fp;
-	int nentries = 0;
 
 	if (!netrc_db || !fname || !*fname)
-		return -1;
+		return WGET_E_INVALID;
 
-	if ((fp = fopen(fname, "r"))) {
-		wget_netrc netrc;
-		char *buf = NULL, *linep, *p, *key = NULL;
-		size_t bufsize = 0;
-		ssize_t buflen;
-		int in_macdef = 0, in_machine = 0;
+	if (!(fp = fopen(fname, "r")))
+		return WGET_E_OPEN_FILE;
 
-		while ((buflen = wget_getline(&buf, &bufsize, fp)) >= 0) {
-			linep = buf;
+	wget_netrc netrc;
+	char *buf = NULL, *linep, *p, *key = NULL;
+	size_t bufsize = 0;
+	ssize_t buflen;
+	int in_macdef = 0, in_machine = 0, nentries = 0;
 
-			while (isspace(*linep)) linep++; // ignore leading whitespace
+	while ((buflen = wget_getline(&buf, &bufsize, fp)) >= 0) {
+		linep = buf;
 
-			if (*linep == '#')
-				continue; // skip comments
+		while (isspace(*linep)) linep++; // ignore leading whitespace
 
-			// strip off \r\n
-			while (buflen > 0 && (buf[buflen] == '\n' || buf[buflen] == '\r'))
-				buf[--buflen] = 0;
+		if (*linep == '#')
+			continue; // skip comments
 
-			if (!*linep) {
-				// empty lines reset macro processing
-				in_macdef = 0;
-				continue;
-			} else if (in_macdef)
-				continue; // still processing 'macdef' macro
+		// strip off \r\n
+		while (buflen > 0 && (buf[buflen] == '\n' || buf[buflen] == '\r'))
+			buf[--buflen] = 0;
 
-			// now we expect key value pairs, e.g.: machine example.com
-			do {
-				xfree(key);
-				while (isspace(*linep)) linep++;
-				for (p = linep; *linep && !isspace(*linep);) linep++;
-				key = wget_strmemdup(p, linep - p);
+		if (!*linep) {
+			// empty lines reset macro processing
+			in_macdef = 0;
+			continue;
+		} else if (in_macdef)
+			continue; // still processing 'macdef' macro
 
-				if (!strcmp(key, "machine") || !strcmp(key, "default")) {
-					if (in_machine)
-						wget_netrc_db_add(netrc_db, wget_memdup(&netrc, sizeof(netrc)));
-
-					wget_netrc_init(&netrc);
-					in_machine = 1;
-
-					if (!strcmp(key, "default")) {
-						netrc.host = wget_strdup("default");
-						continue;
-					}
-				} else if (!in_machine)
-					continue; // token outside of machine or default
-
-				while (isspace(*linep)) linep++;
-				for (p = linep; *linep && !isspace(*linep);) linep++;
-
-				if (!strcmp(key, "machine")) {
-					if (!netrc.host)
-						netrc.host = wget_strmemdup(p, linep - p);
-				} else if (!strcmp(key, "login")) {
-					if (!netrc.login)
-						netrc.login = wget_strmemdup(p, linep - p);
-				} else if (!strcmp(key, "password")) {
-					if (!netrc.password)
-						netrc.password = wget_strmemdup(p, linep - p);
-				} else if (!strcmp(key, "port")) { // GNU extension
-					netrc.port = (uint16_t) atoi(p);
-				} else if (!strcmp(key, "force")) { // GNU extension
-					netrc.force = !wget_strncasecmp_ascii("yes", p, 3);
-				} else if (!strcmp(key, "macdef")) {
-					in_macdef = 1; // the above code skips until next empty line
-				}
-			} while (*linep);
-
+		// now we expect key value pairs, e.g.: machine example.com
+		do {
 			xfree(key);
-		}
+			while (isspace(*linep)) linep++;
+			for (p = linep; *linep && !isspace(*linep);) linep++;
+			key = wget_strmemdup(p, linep - p);
 
-		if (in_machine)
-			wget_netrc_db_add(netrc_db, wget_memdup(&netrc, sizeof(netrc)));
+			if (!strcmp(key, "machine") || !strcmp(key, "default")) {
+				if (in_machine)
+					wget_netrc_db_add(netrc_db, wget_memdup(&netrc, sizeof(netrc)));
 
-		xfree(buf);
-		fclose(fp);
+				wget_netrc_init(&netrc);
+				in_machine = 1;
 
-		nentries = wget_hashmap_size(netrc_db->machines);
+				if (!strcmp(key, "default")) {
+					netrc.host = wget_strdup("default");
+					continue;
+				}
+			} else if (!in_machine)
+				continue; // token outside of machine or default
 
-		debug_printf("loaded %d .netrc %s\n", nentries, nentries != 1 ? "entries" : "entry");
-	} else if (errno != ENOENT)
-		error_printf(_("Failed to open .netrc file '%s' (%d)\n"), fname, errno);
+			while (isspace(*linep)) linep++;
+			for (p = linep; *linep && !isspace(*linep);) linep++;
+
+			if (!strcmp(key, "machine")) {
+				if (!netrc.host)
+					netrc.host = wget_strmemdup(p, linep - p);
+			} else if (!strcmp(key, "login")) {
+				if (!netrc.login)
+					netrc.login = wget_strmemdup(p, linep - p);
+			} else if (!strcmp(key, "password")) {
+				if (!netrc.password)
+					netrc.password = wget_strmemdup(p, linep - p);
+			} else if (!strcmp(key, "port")) { // GNU extension
+				netrc.port = (uint16_t) atoi(p);
+			} else if (!strcmp(key, "force")) { // GNU extension
+				netrc.force = !wget_strncasecmp_ascii("yes", p, 3);
+			} else if (!strcmp(key, "macdef")) {
+				in_macdef = 1; // the above code skips until next empty line
+			}
+		} while (*linep);
+
+		xfree(key);
+	}
+
+	if (in_machine)
+		wget_netrc_db_add(netrc_db, wget_memdup(&netrc, sizeof(netrc)));
+
+	xfree(buf);
+	fclose(fp);
+
+	nentries = wget_hashmap_size(netrc_db->machines);
+
+	debug_printf("loaded %d .netrc %s\n", nentries, nentries != 1 ? "entries" : "entry");
 
 	return nentries;
 }
