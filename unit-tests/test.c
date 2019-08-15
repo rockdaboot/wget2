@@ -2481,9 +2481,9 @@ int main(int argc, const char **argv)
 		return -1;
 
 	srand((unsigned int) time(NULL));
-	wget_malloc = test_malloc;
-	wget_calloc = test_calloc;
-	wget_realloc = test_realloc;
+	wget_malloc_fn = test_malloc;
+	wget_calloc_fn = test_calloc;
+	wget_realloc_fn = test_realloc;
 	wget_free = test_free;
 
 	// testing basic library functionality

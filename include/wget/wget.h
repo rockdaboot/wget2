@@ -63,12 +63,20 @@
 /*
  * Attribute defines for GCC and compatible compilers
  * Using G_GNU_ as prefix to let gtk-doc recognize the attributes.
+ *
+ * Clang also defines __GNUC__. It promotes a GCC version of 4.2.1.
  */
 
 #if defined __GNUC__ && defined __GNUC_MINOR__
 #	define GCC_VERSION_AT_LEAST(major, minor) ((__GNUC__ > (major)) || (__GNUC__ == (major) && __GNUC_MINOR__ >= (minor)))
 #else
 #	define GCC_VERSION_AT_LEAST(major, minor) 0
+#endif
+
+#if defined __clang_major__ && defined __clang_minor__
+#	define CLANG_VERSION_AT_LEAST(major, minor) ((__clang_major__ > (major)) || (__clang_major__ == (major) && __clang_minor__ >= (minor)))
+#else
+#	define CLANG_VERSION_AT_LEAST(major, minor) 0
 #endif
 
 #if GCC_VERSION_AT_LEAST(2,5)
@@ -118,10 +126,6 @@
 #	define WGET_GCC_ALWAYS_INLINE __attribute__ ((always_inline))
 #   define WGET_GCC_FLATTEN __attribute__ ((flatten))
 #   define WGET_GCC_DEPRECATED __attribute__ ((deprecated))
-#elif defined __clang__
-#   define WGET_GCC_ALWAYS_INLINE __attribute__ ((always_inline))
-#   define WGET_GCC_FLATTEN __attribute__ ((flatten))
-#	define WGET_GCC_DEPRECATED __attribute__ ((deprecated))
 #else
 #	define WGET_GCC_ALWAYS_INLINE
 #	define WGET_GCC_FLATTEN
@@ -132,15 +136,7 @@
 // see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=17308
 // we have to use e.g. the clang analyzer if we want NONNULL.
 // but even clang is not perfect - don't use nonnull in production
-#if defined __clang__
-#	if GCC_VERSION_AT_LEAST(3,3)
-#		define WGET_GCC_NONNULL_ALL __attribute__ ((nonnull))
-#		define WGET_GCC_NONNULL(a) __attribute__ ((nonnull a))
-#	else
-#		define WGET_GCC_NONNULL_ALL
-#		define WGET_GCC_NONNULL(a)
-#	endif
-#elif GCC_VERSION_AT_LEAST(3,3)
+#if GCC_VERSION_AT_LEAST(3,3)
 #	define WGET_GCC_NONNULL_ALL __attribute__ ((nonnull))
 #	define WGET_GCC_NONNULL(a) __attribute__ ((nonnull a))
 #else
@@ -160,16 +156,13 @@
 #	define WGET_GCC_NULL_TERMINATED
 #endif
 
-#if GCC_VERSION_AT_LEAST(4,9) || defined __clang__
+#if GCC_VERSION_AT_LEAST(4,9) || CLANG_VERSION_AT_LEAST(7,0)
 #	define WGET_GCC_RETURNS_NONNULL __attribute__((returns_nonnull))
 #else
 #	define WGET_GCC_RETURNS_NONNULL
 #endif
 
-#if defined __clang__
-#	define WGET_GCC_ALLOC_SIZE(a)
-#	define WGET_GCC_ALLOC_SIZE2(a, b)
-#elif GCC_VERSION_AT_LEAST(4,3)
+#if GCC_VERSION_AT_LEAST(4,3) || CLANG_VERSION_AT_LEAST(6,0)
 #	define WGET_GCC_ALLOC_SIZE(a) __attribute__ ((__alloc_size__(a)))
 #	define WGET_GCC_ALLOC_SIZE2(a, b) __attribute__ ((__alloc_size__(a, b)))
 #else
@@ -193,6 +186,7 @@
 #endif
 
 #undef GCC_VERSION_AT_LEAST
+#undef CLANG_VERSION_AT_LEAST
 
 WGET_BEGIN_DECLS
 
@@ -424,36 +418,58 @@ WGETAPI int
 // Don't leave freed pointers hanging around
 #define wget_xfree(a) do { if (a) { wget_free((void *)(a)); a=NULL; } } while (0)
 
+/// Type of malloc() function
+typedef void *wget_malloc_function(size_t);
+
+/// Type of calloc() function
+typedef void *wget_calloc_function(size_t, size_t);
+
+/// Type of realloc() function
+typedef void *wget_realloc_function(void *, size_t);
+
+/// Type of free() function
+typedef void wget_free_function(void *);
+
+/* For use in callbacks */
+extern WGETAPI wget_malloc_function *wget_malloc_fn;
+extern WGETAPI wget_calloc_function *wget_calloc_fn;
+extern WGETAPI wget_realloc_function *wget_realloc_fn;
+extern WGETAPI wget_free_function *wget_free;
+
 /// define MALLOC_RETURNS_NONNULL when using appropriate implementations of the alloc functions
 #ifdef MALLOC_RETURNS_NONNULL
 #  define RETURNS_NONNULL WGET_GCC_RETURNS_NONNULL
+#  define NULLABLE
 #else
 #  define RETURNS_NONNULL
+#  if defined __clang_major__
+#    define NULLABLE _Nullable
+#  else
+#    define NULLABLE
+#  endif
 #endif
 
-/// Type of malloc() function
-typedef RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE(1)
-	void *wget_malloc_function(size_t);
+// we use (inline) functions here to apply function attributes
+RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE(1) WGET_GCC_MALLOC
+static inline void * NULLABLE wget_malloc(size_t size)
+{
+	return wget_malloc_fn(size);
+}
 
-/// Type of calloc() function
-typedef RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE2(1,2)
-	void *wget_calloc_function(size_t, size_t);
+RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE2(1,2) WGET_GCC_MALLOC
+static inline void * NULLABLE wget_calloc(size_t nmemb, size_t size)
+{
+	return wget_calloc_fn(nmemb, size);
+}
 
-/// Type of realloc() function
-typedef RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE(2)
-	void *wget_realloc_function(void *, size_t);
-
-/// Type of free() function
-typedef
-	void wget_free_function(void *);
+RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE(2)
+static inline void * NULLABLE wget_realloc(void *ptr, size_t size)
+{
+	return wget_realloc_fn(ptr, size);
+}
 
 #undef RETURNS_NONNULL
 
-/* For use in callbacks */
-extern WGETAPI wget_malloc_function *wget_malloc;
-extern WGETAPI wget_calloc_function *wget_calloc;
-extern WGETAPI wget_realloc_function *wget_realloc;
-extern WGETAPI wget_free_function *wget_free;
 /** @} */
 
 /*

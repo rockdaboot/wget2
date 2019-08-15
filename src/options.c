@@ -4088,8 +4088,8 @@ static void my_free(void *ptr)
 
 static void set_allocation_functions(void)
 {
-	wget_malloc = my_malloc;
-	wget_calloc = my_calloc;
-	wget_realloc = my_realloc;
+	wget_malloc_fn = my_malloc;
+	wget_calloc_fn = my_calloc;
+	wget_realloc_fn = my_realloc;
 	wget_free = my_free;
 }

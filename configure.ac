@@ -187,6 +187,7 @@ if test -n "$WARN_CFLAGS"; then
     WARN_CFLAGS="$WARN_CFLAGS -Wno-documentation -Wno-documentation-unknown-command"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-covered-switch-default -Wno-unused-macros"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-missing-field-initializers"
+    WARN_CFLAGS="$WARN_CFLAGS -Wno-nullability-extension -Wno-nullability-completeness"
 
     # remove all flags from WARN_FLAGS that are already in CFLAGS
     # wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])

@@ -8,10 +8,12 @@ MYLIBS = \
  $(LTLIBMULTITHREAD) $(LTLIBTHREAD) $(SERVENT_LIB) @INTL_MACOSX_LIBS@ \
  $(LIBS) $(CODE_COVERAGE_LIBS)
 
-AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS) $(TEST_CFLAGS) $(CODE_COVERAGE_CFLAGS)
+AM_CFLAGS = $(WERROR_CFLAGS) $(WARN_CFLAGS) $(TEST_CFLAGS) $(CODE_COVERAGE_CFLAGS) -DMALLOC_RETURNS_NONNULL
 AM_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(srcdir) -I$(top_builddir)/lib -I$(top_srcdir)/lib \
  $(CODE_COVERAGE_CPPFLAGS) \
- -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
+ -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\" \
+ -DMALLOC_RETURNS_NONNULL
+
 LDADD = ../src/utils.o libtest.la $(MYLIBS) $(TEST_LIBS)
 
 # test-iri-disabled removed since Wget2 always uses IRIs

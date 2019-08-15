@@ -225,10 +225,9 @@ Scan-Build/Debian:
     - cp -a /usr/local/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap --skip-po && touch .manywarnings
-    - scan-build ./configure $CONFIGURE_BASE_FLAGS
+    - CC=clang ./configure $CONFIGURE_BASE_FLAGS
     - make -C lib -j$(nproc)
     - scan-build -v --use-cc=clang -enable-checker valist,security,nullability --status-bugs -o scan-build make -j$(nproc)
-    - scan-build -v --use-cc=clang -enable-checker valist,security,nullability --status-bugs -o scan-build make -j$(nproc) check
   tags:
     - shared
   except:
