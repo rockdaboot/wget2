@@ -111,8 +111,10 @@ wget_http_response *wget_http_get(int first_key, ...)
 				.name = va_arg(args, const char *),
 				.value = va_arg(args, const char *)
 			};
-			if (wget_vector_add_memdup(headers, &param, sizeof(param)) < 0)
+			if (wget_vector_add_memdup(headers, &param, sizeof(param)) < 0) {
+				va_end(args);
 				goto out;
+			}
 			break;
 		}
 		case WGET_HTTP_CONNECTION_PTR:
@@ -152,6 +154,7 @@ wget_http_response *wget_http_get(int first_key, ...)
 			break;
 		default:
 			error_printf(_("Unknown option %d\n"), key);
+			va_end(args);
 			goto out;
 		}
 	}
