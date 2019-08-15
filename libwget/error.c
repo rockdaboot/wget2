@@ -54,6 +54,7 @@ const char *wget_strerror(wget_error err)
 	case WGET_E_GPG_VER_FAIL: return _("GPG signature is bad");
 	case WGET_E_GPG_VER_ERR: return _("GPG error");
 	case WGET_E_XML_PARSE_ERR: return _("Failed to parse XML");
+	case WGET_E_OPEN_FILE: return _("Failed to open file");
 	default: return _("Unknown error");
 	}
 }
