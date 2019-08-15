@@ -27,7 +27,7 @@ int main(void)
 	wget_logger_set_file(NULL, ""); // logger.c
 	wget_tcp_set_connect_timeout(NULL, 0); // net.c
 	wget_netrc_deinit(NULL); // netrc.c
-	wget_strdup(""); // mem.c
+	wget_free(wget_strdup("")); // mem.c
 //	wget_popenf("r", "%s", ""); // pipe.c
 //	wget_bsprintf(NULL, NULL, "%s", ""); // printf.c
 	wget_ssl_set_config_int(0, 0); // ssl_[gnutls].c
