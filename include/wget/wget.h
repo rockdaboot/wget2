@@ -160,7 +160,7 @@
 #	define WGET_GCC_NULL_TERMINATED
 #endif
 
-#if GCC_VERSION_AT_LEAST(4,9)
+#if GCC_VERSION_AT_LEAST(4,9) || defined __clang__
 #	define WGET_GCC_RETURNS_NONNULL __attribute__((returns_nonnull))
 #else
 #	define WGET_GCC_RETURNS_NONNULL
