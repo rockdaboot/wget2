@@ -175,6 +175,13 @@ libwget_metalink_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_metalink_la_LIBADD = libwget_xml.la libwget_iri.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
 libwget_metalink_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
+######## libwget netrc ########
+lib_LTLIBRARIES += libwget_netrc.la
+libwget_netrc_la_SOURCES =  netrc.c
+libwget_netrc_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+libwget_netrc_la_LIBADD = libwget_io.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
+libwget_netrc_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+
 ######## libwget CSS ########
 lib_LTLIBRARIES += libwget_css.la
 libwget_css_la_SOURCES =  css_url.c css.c css_tokenizer.h
@@ -319,6 +326,12 @@ test_linking_metalink_SOURCES = test_linking_metalink.c
 test_linking_metalink_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_metalink_LDADD = libwget_metalink.la
 test_linking_metalink_LDFLAGS = -static -no-install
+
+noinst_PROGRAMS += test_linking_netrc
+test_linking_netrc_SOURCES = test_linking_netrc.c
+test_linking_netrc_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
+test_linking_netrc_LDADD = libwget_netrc.la
+test_linking_netrc_LDFLAGS = -static -no-install
 
 noinst_PROGRAMS += test_linking
 test_linking_SOURCES = test_linking.c
