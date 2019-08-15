@@ -515,4 +515,3 @@ FreeBSD.x86_64:
       - fuzz/*.log
       - tests/*.log
       - unit-tests/*.log
-  retry: 1
