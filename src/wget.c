@@ -3582,7 +3582,9 @@ static void _add_authorize_header(
 			wget_thread_mutex_lock(netrc_mutex);
 			if (!config.netrc_db) {
 				config.netrc_db = wget_netrc_db_init(NULL);
-				wget_netrc_db_load(config.netrc_db, config.netrc_file);
+				int rc = wget_netrc_db_load(config.netrc_db, config.netrc_file);
+				if (rc < 0 && errno != ENOENT)
+					error_printf(_("Failed to open .netrc file '%s' (%d): %s\n"), config.netrc_file, errno, wget_strerror(rc));
 			}
 			wget_thread_mutex_unlock(netrc_mutex);
 
