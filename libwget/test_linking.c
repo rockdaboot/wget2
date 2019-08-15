@@ -32,7 +32,7 @@ int main(void)
 //	wget_bsprintf(NULL, NULL, "%s", ""); // printf.c
 	wget_ssl_set_config_int(0, 0); // ssl_[gnutls].c
 	wget_stringmap_create(0); // stringmap.c
-	if (wget_strcmp("", "")) {}; // utils.c
+	if (wget_strcmp("", "")) {} // utils.c
 	wget_vector_set_destructor(NULL, NULL); // vector.c
 	wget_free(wget_malloc(1)); // xalloc.c
 	wget_xml_parse_buffer("", NULL, NULL, 0); // xml.c
