@@ -534,8 +534,10 @@ wget_tcp *wget_tcp_init(void)
 {
 	wget_tcp *tcp = wget_malloc(sizeof(wget_tcp));
 
-	*tcp = _global_tcp;
-	tcp->ssl_hostname = wget_strdup(_global_tcp.ssl_hostname);
+	if (tcp) {
+		*tcp = _global_tcp;
+		tcp->ssl_hostname = wget_strdup(_global_tcp.ssl_hostname);
+	}
 
 	return tcp;
 }
