@@ -1651,19 +1651,21 @@ int wget_ssl_open(wget_tcp *tcp)
 			if ((e = strchrnul(s, ',')) != s)
 				nprot++;
 
-		gnutls_datum_t data[nprot];
+		if (nprot) {
+			gnutls_datum_t data[16];
 
-		for (nprot = 0, s = e = _config.alpn; *e; s = e + 1) {
-			if ((e = strchrnul(s, ',')) != s) {
-				data[nprot].data = (unsigned char *) s;
-				data[nprot].size = (unsigned) (e - s);
-				debug_printf("ALPN offering %.*s\n", (int) data[nprot].size, data[nprot].data);
-				nprot++;
+			for (nprot = 0, s = e = _config.alpn; *e && nprot < countof(data); s = e + 1) {
+				if ((e = strchrnul(s, ',')) != s) {
+					data[nprot].data = (unsigned char *) s;
+					data[nprot].size = (unsigned) (e - s);
+					debug_printf("ALPN offering %.*s\n", (int) data[nprot].size, data[nprot].data);
+					nprot++;
+				}
 			}
-		}
 
-		if ((rc = gnutls_alpn_set_protocols(session, data, nprot, 0)))
-			debug_printf("GnuTLS: Set ALPN: %s\n", gnutls_strerror(rc));
+			if ((rc = gnutls_alpn_set_protocols(session, data, nprot, 0)))
+				debug_printf("GnuTLS: Set ALPN: %s\n", gnutls_strerror(rc));
+		}
 	}
 #endif
 
