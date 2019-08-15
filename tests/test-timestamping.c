@@ -1,0 +1,165 @@
+/*
+ * Copyright(c) 2019 Free Software Foundation, Inc.
+ *
+ * This file is part of libwget.
+ *
+ * Libwget is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Libwget is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include <config.h>
+
+#include <stdlib.h> // exit()
+#include <string.h> // strlen()
+#include "libtest.h"
+
+int main(void)
+{
+	wget_test_url_t urls[]={
+		{	.name = "/dummy.txt",
+			.code = "200 Dontcare",
+			.body = "Don't care.",
+			.headers = {
+				"Content-Type: text/plain",
+			},
+		}
+	};
+
+	// functions won't come back if an error occurs
+	wget_test_start_server(
+		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
+		WGET_TEST_FEATURE_MHD,
+		0);
+
+	urls[0].headers[1] = "Last-Modified: Sat, 09 Oct 2004 08:30:00 GMT";
+
+	// test-N--no-content-disposition-trivial
+	wget_test(
+		WGET_TEST_OPTIONS, "-N --no-content-disposition",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[0].body, 1097310600 },
+			{	NULL } },
+		0);
+
+	urls[0].headers[2] = "Content-Disposition: attachment; filename=\"filename.txt\"";
+
+	// test-N--no-content-disposition
+	wget_test(
+		WGET_TEST_OPTIONS, "-N --no-content-disposition",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[0].body, 1097310600 },
+			{	NULL } },
+		0);
+
+	// test-N-HTTP--content-disposition
+	wget_test(
+		WGET_TEST_OPTIONS, "-N --content-disposition",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"filename.txt", urls[0].body, 1097310600 },
+			{	NULL } },
+		0);
+
+	urls[0].headers[2] = NULL;
+
+	{
+		// server sends same length content with slightly different content
+		char modified[strlen(urls[0].body) + 1];
+
+		memcpy(modified, urls[0].body, sizeof(modified));
+		modified[3] = 'x';
+
+		urls[0].modified = 1097310600;
+
+		// test-N-current
+		wget_test(
+			WGET_TEST_OPTIONS, "-N",
+			WGET_TEST_REQUEST_URL, "dummy.txt",
+			WGET_TEST_EXPECTED_ERROR_CODE, 0,
+			WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+				{	"dummy.txt", modified, 1097310600 },
+				{	NULL } },
+			WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+				{	"dummy.txt", modified, 1097310600 },
+				{	NULL } },
+			0);
+
+		// test-N-old
+		wget_test(
+			WGET_TEST_OPTIONS, "-N",
+			WGET_TEST_REQUEST_URL, "dummy.txt",
+			WGET_TEST_EXPECTED_ERROR_CODE, 0,
+			WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+				{	"dummy.txt", modified, 1097310000 }, // earlier timestamp
+				{	NULL } },
+			WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+				{	"dummy.txt", urls[0].body, 1097310600 },
+				{	NULL } },
+			0);
+
+/*
+		// test-N-smaller
+		// This test just works with a HEAD request. But Wget uses If-Modified-Since.
+		const char *old_body = urls[3].body;
+		modified[strlen(modified)-2] = 0;
+		urls[3].body = modified;
+		wget_test(
+			WGET_TEST_OPTIONS, "-N",
+			WGET_TEST_REQUEST_URL, "dummy.txt",
+			WGET_TEST_EXPECTED_ERROR_CODE, 0,
+			WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+				{	"dummy.txt", old_body, 1097310600 },
+				{	NULL } },
+			WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+				{	"dummy.txt", modified, 1097310600 },
+				{	NULL } },
+			0);
+		urls[3].body = old_body; // restore body
+*/
+	}
+
+	// test-N
+	wget_test(
+		WGET_TEST_OPTIONS, "-N",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[0].body, 0},
+			{	NULL } },
+		0);
+
+	//urls[0].headers[1] = NULL;
+
+/*
+	// test-N-no-info
+	// This test just works with a HEAD request. But Wget uses If-Modified-Since.
+	wget_test(
+		WGET_TEST_OPTIONS, "-N",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", "anycontent", 1097310600 },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body, 0},
+			{	NULL } },
+		0);
+*/
+
+	exit(0);
+}
