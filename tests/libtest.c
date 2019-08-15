@@ -158,12 +158,15 @@ static char *_scan_directory(const char* data)
 	return strchr(data, '/');
 }
 
+
 static const char *_parse_hostname(const char* data)
 {
-	if (!wget_strncasecmp_ascii(data, "http://", 7)) {
-		return strchr(data += 7, '/');
-	} else if (!wget_strncasecmp_ascii(data, "https://", 8)) {
-		return strchr(data += 8, '/');
+	if (data) {
+		if (!wget_strncasecmp_ascii(data, "http://", 7)) {
+			return strchr(data += 7, '/');
+		} else if (!wget_strncasecmp_ascii(data, "https://", 8)) {
+			return strchr(data += 8, '/');
+		}
 	}
 
 	return data;
