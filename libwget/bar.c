@@ -376,28 +376,43 @@ static int _bar_get_width(void)
 static void _bar_update_winsize(wget_bar *bar, bool slots_changed) {
 
 	if (winsize_changed || slots_changed) {
+		char *progress_mem_holder;
 		int max_width = _bar_get_width();
 
+		if (!(progress_mem_holder = wget_calloc(bar->nslots, max_width + 1)))
+			return;
+
 		if (bar->max_width < max_width) {
+			char *known_size = wget_malloc(max_width);
+			char *unknown_size = wget_malloc(max_width);
+			char *spaces = wget_malloc(max_width);
+
+			if (!known_size || ! unknown_size || !spaces) {
+				xfree(spaces);
+				xfree(unknown_size);
+				xfree(known_size);
+				xfree(progress_mem_holder);
+				return;
+			}
+
 			xfree(bar->known_size);
-			bar->known_size = wget_malloc(max_width);
+			bar->known_size = known_size;
 			memset(bar->known_size, '=', max_width);
 
 			xfree(bar->unknown_size);
-			bar->unknown_size = wget_malloc(max_width);
+			bar->unknown_size = unknown_size;
 			memset(bar->unknown_size, '*', max_width);
 
 			xfree(bar->spaces);
-			bar->spaces = wget_malloc(max_width);
+			bar->spaces = spaces;
 			memset(bar->spaces, ' ', max_width);
 		}
-		if (bar->max_width < max_width || slots_changed) {
-			xfree(bar->progress_mem_holder);
-			// Add one extra byte to hold the \0 character
-			bar->progress_mem_holder = wget_calloc(bar->nslots, max_width + 1);
-			for (int i = 0; i < bar->nslots; i++) {
-				bar->slots[i].progress = bar->progress_mem_holder + (i * max_width);
-			}
+
+		xfree(bar->progress_mem_holder);
+		// Add one extra byte to hold the \0 character
+		bar->progress_mem_holder = progress_mem_holder;
+		for (int i = 0; i < bar->nslots; i++) {
+			bar->slots[i].progress = bar->progress_mem_holder + (i * max_width);
 		}
 
 		bar->max_width = max_width;
@@ -439,9 +454,10 @@ wget_bar *wget_bar_init(wget_bar *bar, int nslots)
 	if (nslots < 1 || max_width < 1)
 		return NULL;
 
-	if (!bar)
-		bar = wget_calloc(1, sizeof(*bar));
-	else
+	if (!bar) {
+		if (!(bar = wget_calloc(1, sizeof(*bar))))
+			return NULL;
+	} else
 		memset(bar, 0, sizeof(*bar));
 
 	wget_thread_mutex_init(&bar->mutex);
@@ -466,7 +482,12 @@ void wget_bar_set_slots(wget_bar *bar, int nslots)
 	int more_slots = nslots - bar->nslots;
 
 	if (more_slots > 0) {
-		bar->slots = wget_realloc(bar->slots, nslots * sizeof(_bar_slot_t));
+		_bar_slot_t *slots = wget_realloc(bar->slots, nslots * sizeof(_bar_slot_t));
+		if (!slots) {
+			wget_thread_mutex_unlock(bar->mutex);
+			return;
+		}
+		bar->slots = slots;
 		memset(bar->slots + bar->nslots, 0, more_slots * sizeof(_bar_slot_t));
 		bar->nslots = nslots;
 
@@ -496,13 +517,11 @@ void wget_bar_slot_begin(wget_bar *bar, int slot, const char *filename, int new_
 
 	xfree(slotp->filename);
 	if (new_file)
-	    slotp->numfiles++;
+		slotp->numfiles++;
 	if (slotp->numfiles == 1) {
-	    slotp->filename = wget_strdup(filename);
+		slotp->filename = wget_strdup(filename);
 	} else {
-	    char tag[20];	/* big enough to hold "xxx files\0" */
-	    wget_snprintf(tag, sizeof(tag), "%d files", slotp->numfiles);
-	    slotp->filename = wget_strdup(tag);
+		slotp->filename = wget_aprintf("%d files", slotp->numfiles);
 	}
 	slotp->tick = 0;
 	slotp->file_size += file_size;
