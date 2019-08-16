@@ -1313,7 +1313,8 @@ static wget_vector *_parse_no_proxies(const char *no_proxy, const char *encoding
 		if ((p = strchrnul(s, ',')) != s && p - s < 256) {
 			char *host, *hostp;
 
-			host = wget_strmemdup(s, p - s);
+			if (!(host = wget_strmemdup(s, p - s)))
+				continue;
 
 			// May be a hostname, domainname (optional with leading dot or wildcard), IP address.
 			// We do not support network address (CIDR) for now.
