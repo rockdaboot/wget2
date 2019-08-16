@@ -99,10 +99,12 @@ static int compare_tls_session(const wget_tls_session *s1, const wget_tls_sessio
 
 wget_tls_session *wget_tls_session_init(wget_tls_session *tls_session)
 {
-	if (!tls_session)
-		tls_session = wget_malloc(sizeof(wget_tls_session));
+	if (!tls_session) {
+		if (!(tls_session = wget_calloc(1, sizeof(wget_tls_session))))
+			return NULL;
+	} else
+		memset(tls_session, 0, sizeof(*tls_session));
 
-	memset(tls_session, 0, sizeof(*tls_session));
 	tls_session->created = time(NULL);
 
 	return tls_session;
@@ -128,16 +130,18 @@ wget_tls_session *wget_tls_session_new(const char *host, time_t maxage, const vo
 {
 	wget_tls_session *tls_session = wget_tls_session_init(NULL);
 
-	tls_session->host = wget_strdup(host);
-	tls_session->data = wget_memdup(data, data_size);
-	tls_session->data_size = data_size;
+	if (tls_session) {
+		tls_session->host = wget_strdup(host);
+		tls_session->data = wget_memdup(data, data_size);
+		tls_session->data_size = data_size;
 
-	if (maxage <= 0 || maxage >= INT64_MAX / 2 || tls_session->created < 0 || tls_session->created >= INT64_MAX / 2) {
-		tls_session->maxage = 0;
-		tls_session->expires = 0;
-	} else {
-		tls_session->maxage = maxage;
-		tls_session->expires = tls_session->created + maxage;
+		if (maxage <= 0 || maxage >= INT64_MAX / 2 || tls_session->created < 0 || tls_session->created >= INT64_MAX / 2) {
+			tls_session->maxage = 0;
+			tls_session->expires = 0;
+		} else {
+			tls_session->maxage = maxage;
+			tls_session->expires = tls_session->created + maxage;
+		}
 	}
 
 	return tls_session;
@@ -164,13 +168,22 @@ int wget_tls_session_get(const wget_tls_session_db *tls_session_db, const char *
 
 wget_tls_session_db *wget_tls_session_db_init(wget_tls_session_db *tls_session_db)
 {
-	if (!tls_session_db)
-		tls_session_db = wget_malloc(sizeof(wget_tls_session_db));
+	wget_hashmap *entries = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_tls_session, (wget_hashmap_compare_fn *) compare_tls_session);
 
-	memset(tls_session_db, 0, sizeof(*tls_session_db));
-	tls_session_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_tls_session, (wget_hashmap_compare_fn *) compare_tls_session);
-	wget_hashmap_set_key_destructor(tls_session_db->entries, (wget_hashmap_key_destructor *) wget_tls_session_free);
-	wget_hashmap_set_value_destructor(tls_session_db->entries, (wget_hashmap_value_destructor *) wget_tls_session_free);
+	if (!entries)
+		return NULL;
+
+	if (!tls_session_db) {
+		if (!(tls_session_db = wget_calloc(1, sizeof(wget_tls_session_db)))) {
+			wget_hashmap_free(&entries);
+			return NULL;
+		}
+	} else
+		memset(tls_session_db, 0, sizeof(*tls_session_db));
+
+	wget_hashmap_set_key_destructor(entries, (wget_hashmap_key_destructor *) wget_tls_session_free);
+	wget_hashmap_set_value_destructor(entries, (wget_hashmap_value_destructor *) wget_tls_session_free);
+	tls_session_db->entries = entries;
 
 	wget_thread_mutex_init(&tls_session_db->mutex);
 
@@ -198,6 +211,9 @@ void wget_tls_session_db_free(wget_tls_session_db **tls_session_db)
 
 void wget_tls_session_db_add(wget_tls_session_db *tls_session_db, wget_tls_session *tls_session)
 {
+	if (!tls_session_db || !tls_session)
+		return;
+
 	wget_thread_mutex_lock(tls_session_db->mutex);
 
 	if (tls_session->maxage == 0) {
@@ -298,10 +314,12 @@ static int tls_session_db_load(wget_tls_session_db *tls_session_db, FILE *fp)
 
 			size_t len = linep - p;
 			char *data = wget_malloc(wget_base64_get_decoded_length(len));
-			tls_session.data_size = wget_base64_decode(data, p, len);
-			tls_session.data = data;
+			if (data) {
+				tls_session.data_size = wget_base64_decode(data, p, len);
+				tls_session.data = data;
 
-			ok = true;
+				ok = true;
+			}
 		}
 
 		if (ok) {
