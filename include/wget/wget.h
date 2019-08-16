@@ -185,6 +185,19 @@
 #	define WGET_END_DECLS
 #endif
 
+/// define MALLOC_RETURNS_NONNULL when using appropriate implementations of the alloc functions
+#ifdef MALLOC_RETURNS_NONNULL
+#  define RETURNS_NONNULL WGET_GCC_RETURNS_NONNULL
+#  define NULLABLE
+#else
+#  define RETURNS_NONNULL
+#  if defined __clang_major__
+#    define NULLABLE _Nullable
+#  else
+#    define NULLABLE
+#  endif
+#endif
+
 #undef GCC_VERSION_AT_LEAST
 #undef CLANG_VERSION_AT_LEAST
 
@@ -436,19 +449,6 @@ extern WGETAPI wget_calloc_function *wget_calloc_fn;
 extern WGETAPI wget_realloc_function *wget_realloc_fn;
 extern WGETAPI wget_free_function *wget_free;
 
-/// define MALLOC_RETURNS_NONNULL when using appropriate implementations of the alloc functions
-#ifdef MALLOC_RETURNS_NONNULL
-#  define RETURNS_NONNULL WGET_GCC_RETURNS_NONNULL
-#  define NULLABLE
-#else
-#  define RETURNS_NONNULL
-#  if defined __clang_major__
-#    define NULLABLE _Nullable
-#  else
-#    define NULLABLE
-#  endif
-#endif
-
 // we use (inline) functions here to apply function attributes
 RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE(1) WGET_GCC_MALLOC
 static inline void * NULLABLE wget_malloc(size_t size)
@@ -468,20 +468,24 @@ static inline void * NULLABLE wget_realloc(void *ptr, size_t size)
 	return wget_realloc_fn(ptr, size);
 }
 
-#undef RETURNS_NONNULL
-
 /** @} */
 
 /*
  * String/Memory routines, slightly different than standard functions
  */
 
-WGETAPI LIBWGET_WARN_UNUSED_RESULT void *
-	wget_memdup(const void *m, size_t n) WGET_GCC_ALLOC_SIZE(2);
-WGETAPI LIBWGET_WARN_UNUSED_RESULT char *
-	wget_strdup(const char *s) WGET_GCC_MALLOC;
-WGETAPI LIBWGET_WARN_UNUSED_RESULT char *
-	wget_strmemdup(const void *m, size_t n) WGET_GCC_ALLOC_SIZE(2);
+LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE(2)
+WGETAPI void * NULLABLE
+	wget_memdup(const void *m, size_t n);
+
+LIBWGET_WARN_UNUSED_RESULT WGET_GCC_MALLOC
+WGETAPI char * NULLABLE
+	wget_strdup(const char *s);
+
+LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE(2)
+WGETAPI char * NULLABLE
+	wget_strmemdup(const void *m, size_t n);
+
 WGETAPI void
 	wget_strmemcpy(char *s, size_t ssize, const void *m, size_t n);
 
@@ -2857,5 +2861,7 @@ WGET_END_DECLS
 
 #define WGET_REGEX_TYPE_POSIX 0
 #define WGET_REGEX_TYPE_PCRE 1
+
+#undef RETURNS_NONNULL
 
 #endif /* WGET_WGET_H */
