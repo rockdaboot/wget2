@@ -64,10 +64,11 @@ static int compare_netrc(const wget_netrc *h1, const wget_netrc *h2)
 
 wget_netrc *wget_netrc_init(wget_netrc *netrc)
 {
-	if (!netrc)
-		netrc = wget_malloc(sizeof(wget_netrc));
-
-	memset(netrc, 0, sizeof(*netrc));
+	if (!netrc) {
+		if (!(netrc = wget_calloc(1, sizeof(wget_netrc))))
+			return NULL;
+	} else
+		memset(netrc, 0, sizeof(*netrc));
 
 	return netrc;
 }
@@ -93,9 +94,11 @@ wget_netrc *wget_netrc_new(const char *machine, const char *login, const char *p
 {
 	wget_netrc *netrc = wget_netrc_init(NULL);
 
-	netrc->host = wget_strdup(machine);
-	netrc->login = wget_strdup(login);
-	netrc->password = wget_strdup(password);
+	if (netrc) {
+		netrc->host = wget_strdup(machine);
+		netrc->login = wget_strdup(login);
+		netrc->password = wget_strdup(password);
+	}
 
 	return netrc;
 }
@@ -117,14 +120,22 @@ wget_netrc *wget_netrc_get(const wget_netrc_db *netrc_db, const char *host)
 
 wget_netrc_db *wget_netrc_db_init(wget_netrc_db *netrc_db)
 {
-	if (!netrc_db)
-		netrc_db = wget_malloc(sizeof(wget_netrc_db));
+	wget_hashmap *machines = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_netrc, (wget_hashmap_compare_fn *) compare_netrc);
 
-	memset(netrc_db, 0, sizeof(*netrc_db));
+	if (!machines)
+		return NULL;
 
-	netrc_db->machines = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_netrc, (wget_hashmap_compare_fn *) compare_netrc);
-	wget_hashmap_set_key_destructor(netrc_db->machines, (wget_hashmap_key_destructor *) wget_netrc_free);
-	wget_hashmap_set_value_destructor(netrc_db->machines, (wget_hashmap_value_destructor *) wget_netrc_free);
+	if (!netrc_db) {
+		if (!(netrc_db = wget_calloc(1, sizeof(wget_netrc_db)))) {
+			wget_hashmap_free(&machines);
+			return NULL;
+		}
+	} else
+		memset(netrc_db, 0, sizeof(*netrc_db));
+
+	wget_hashmap_set_key_destructor(machines, (wget_hashmap_key_destructor *) wget_netrc_free);
+	wget_hashmap_set_value_destructor(machines, (wget_hashmap_value_destructor *) wget_netrc_free);
+	netrc_db->machines = machines;
 
 	return netrc_db;
 }
