@@ -74,11 +74,14 @@ static ssize_t _getline_internal(char **buf, size_t *bufsize,
 	char *p;
 
 	if (!buf || !bufsize)
-		return -1;
+		return WGET_E_INVALID;
 
 	if (!*buf || !*bufsize) {
 		// first call
-		*buf = wget_malloc(*bufsize = 10240);
+		if (!(p = wget_malloc(10240)))
+			return WGET_E_MEMORY;
+		*buf = p;
+		*bufsize = 10240;
 		sizep = (size_t *)(void *)(*buf + *bufsize - 2 * sizeof(size_t));
 		sizep[0] = sizep[1] = 0;
 	} else {
@@ -115,7 +118,10 @@ static ssize_t _getline_internal(char **buf, size_t *bufsize,
 			ptrdiff_t off = ((char *)sizep)-*buf;
 			size_t *old;
 
-			*buf = wget_realloc(*buf, *bufsize = *bufsize * 2);
+			if (!(p = wget_realloc(*buf, *bufsize = *bufsize * 2)))
+				return WGET_E_MEMORY;
+
+			*buf = p;
 			old = (size_t *)(void *)(*buf + off);
 			sizep = (size_t *)(void *)(*buf + *bufsize - 2 * sizeof(size_t));
 			sizep[0] = old[0];
@@ -155,7 +161,7 @@ static ssize_t _getline_internal(char **buf, size_t *bufsize,
  * \param[out] buf Pointer to a pointer that will be set up by the function to point to the read line
  * \param[out] bufsize Pointer to a variable where the length of the read line will be put
  * \param[in] fd File descriptor for an open file
- * \return The length of the last line read
+ * \return The length of the last line read or a WGET_E_* error code (< 0)
  *
  * Behaves identically as wget_getline(), but uses a file descriptor instead of a stream.
  */
@@ -168,7 +174,7 @@ ssize_t wget_fdgetline(char **buf, size_t *bufsize, int fd)
  * \param[out] buf Pointer to a pointer that will be set up by the function to point to the read line
  * \param[out] bufsize Pointer to a variable where the length of the read line will be put
  * \param[in] fp Pointer to an open file's stream handle (`FILE *`)
- * \return The length of the last line read
+ * \return The length of the last line read or a WGET_E_* error code (< 0)
  *
  * This function will read a line from the open file handle \p fp. This function reads input characters
  * until either a newline character (`\\n`) is found or EOF is reached. A block of memory large enough to hold the read line
@@ -347,7 +353,10 @@ char *wget_read_file(const char *fname, size_t *size)
 			if (fstat(fd, &st) == 0) {
 				off_t total = 0;
 
-				buf = wget_malloc(st.st_size + 1);
+				if (!(buf = wget_malloc(st.st_size + 1))) {
+					close(fd);
+					return NULL;
+				}
 
 				while (total < st.st_size && (nread = read(fd, buf + total, st.st_size - total)) > 0) {
 					total += nread;
