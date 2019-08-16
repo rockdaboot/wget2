@@ -70,19 +70,21 @@ static int _normalize_uri(wget_iri *base, wget_string *url, const char *encoding
 		return -1;
 
 	char *urlpart = wget_strmemdup(url->p, url->len);
+	if (!urlpart)
+		return -2;
 
 	wget_iri_unescape_url_inline(urlpart);
 	rc = wget_memiconv(encoding, urlpart, strlen(urlpart), "utf-8", &urlpart_encoded, &urlpart_encoded_length);
 	wget_xfree(urlpart);
 
 	if (rc)
-		return -2;
+		return -3;
 
 	rc = !wget_iri_relative_to_abs(base, urlpart_encoded, urlpart_encoded_length, buf);
 	wget_xfree(urlpart_encoded);
 
 	if (rc)
-		return -3;
+		return -4;
 
 	return 0;
 }
