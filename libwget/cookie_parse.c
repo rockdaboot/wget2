@@ -418,10 +418,7 @@ static int cookie_normalize_cookie(const wget_iri *iri, wget_cookie *cookie)
 			}
 		}
 
-		if (!cookie->domain)
-			cookie->domain = wget_strdup("");
-
-		if (*cookie->domain) {
+		if (cookie->domain && *cookie->domain) {
 			if (!strcmp(cookie->domain, iri->host)) {
 				cookie->host_only = 1;
 			} else if (cookie_domain_match(cookie->domain, iri->host)) {
