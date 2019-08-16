@@ -65,7 +65,7 @@ const char *wget_local_charset_encoding(void)
 int wget_memiconv(const char *src_encoding, const void *src, size_t srclen, const char *dst_encoding, char **out, size_t *outlen)
 {
 	if (!src)
-		return -1;
+		return WGET_E_INVALID;
 
 #ifdef HAVE_ICONV
 	if (!src_encoding)
@@ -74,7 +74,7 @@ int wget_memiconv(const char *src_encoding, const void *src, size_t srclen, cons
 		dst_encoding = "iso-8859-1"; // default character-set for most browsers
 
 	if (wget_strcasecmp_ascii(src_encoding, dst_encoding)) {
-		int ret = -1;
+		int ret = WGET_E_UNKNOWN;
 		iconv_t cd = iconv_open(dst_encoding, src_encoding);
 
 		if (cd != (iconv_t)-1) {
@@ -83,25 +83,38 @@ int wget_memiconv(const char *src_encoding, const void *src, size_t srclen, cons
 			size_t dst_len = tmp_len * 6, dst_len_tmp = dst_len;
 			char *dst = wget_malloc(dst_len + 1), *dst_tmp = dst;
 
+			if (!dst) {
+				iconv_close(cd);
+				return WGET_E_MEMORY;
+			}
+
 			errno = 0;
 			if (iconv(cd, (ICONV_CONST char **)&tmp, &tmp_len, &dst_tmp, &dst_len_tmp) == 0
 				&& iconv(cd, NULL, NULL, &dst_tmp, &dst_len_tmp) == 0)
 			{
 				debug_printf("transcoded %zu bytes from '%s' to '%s'\n", srclen, src_encoding, dst_encoding);
 				if (out) {
-					*out = wget_realloc(dst, dst_len - dst_len_tmp + 1);
-					(*out)[dst_len - dst_len_tmp] = 0;
+					// here we reduce the allocated memory size, if it fails we use the original memory chunk
+					tmp = wget_realloc(dst, dst_len - dst_len_tmp + 1);
+					if (!tmp)
+						tmp = dst;
+					tmp[dst_len - dst_len_tmp] = 0;
+					*out = tmp;
 				} else
 					xfree(dst);
+
 				if (outlen)
 					*outlen = dst_len - dst_len_tmp;
-				ret = 0; // return OK
+
+				ret = WGET_E_SUCCESS;
 			} else {
 				// erno == 0 means some codepoints were encoded non-reversible, treat as error
 				error_printf(_("Failed to transcode '%s' string into '%s' (%d)\n"), src_encoding, dst_encoding, errno);
 				xfree(dst);
+
 				if (out)
 					*out = NULL;
+
 				if (outlen)
 					*outlen = 0;
 			}
@@ -116,10 +129,11 @@ int wget_memiconv(const char *src_encoding, const void *src, size_t srclen, cons
 
 	if (out)
 		*out = wget_strmemdup(src, srclen);
+
 	if (outlen)
 		*outlen = srclen;
 
-	return 0;
+	return WGET_E_SUCCESS;
 }
 
 // src must be a ASCII compatible C string
