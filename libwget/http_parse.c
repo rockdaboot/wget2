@@ -1048,11 +1048,11 @@ static void cookie_free(void *cookie)
 int wget_http_parse_header_line(wget_http_response *resp, const char *name, size_t namelen, const char *value, size_t valuelen)
 {
 	if (!name || !value)
-		return -1;
+		return WGET_E_INVALID;
 
 	char valuebuf[256];
 	char *value0;
-	int ret = 0;
+	int ret = WGET_E_SUCCESS;
 
 	if (valuelen < sizeof(valuebuf))
 		wget_strmemcpy(value0 = valuebuf, sizeof(valuebuf), value, valuelen);
@@ -1064,7 +1064,7 @@ int wget_http_parse_header_line(wget_http_response *resp, const char *name, size
 		if (!memcmp(name, ":status", namelen) && valuelen == 3) {
 			resp->code = ((value[0] - '0') * 10 + (value[1] - '0')) * 10 + (value[2] - '0');
 		} else
-			ret = -1;
+			ret = WGET_E_UNKNOWN;
 		break;
 	case 'c':
 		if (!wget_strncasecmp_ascii(name, "content-encoding", namelen)) {
@@ -1083,7 +1083,7 @@ int wget_http_parse_header_line(wget_http_response *resp, const char *name, size
 		} else if (!wget_strncasecmp_ascii(name, "Content-Security-Policy", namelen)) {
 			resp->csp = 1;
 		} else
-			ret = -1;
+			ret = WGET_E_UNKNOWN;
 		break;
 	case 'd':
 		if (!wget_strncasecmp_ascii(name, "digest", namelen)) {
@@ -1097,20 +1097,20 @@ int wget_http_parse_header_line(wget_http_response *resp, const char *name, size
 			}
 			wget_vector_add_memdup(resp->digests, &digest, sizeof(digest));
 		} else
-			ret = -1;
+			ret = WGET_E_UNKNOWN;
 		break;
 	case 'e':
 		if (!wget_strncasecmp_ascii(name, "etag", namelen)) {
 			if (!resp->etag)
 				wget_http_parse_etag(value0, &resp->etag);
 		} else
-			ret = -1;
+			ret = WGET_E_UNKNOWN;
 		break;
 	case 'i':
 		if (!wget_strncasecmp_ascii(name, "icy-metaint", namelen)) {
 			resp->icy_metaint = atoi(value0);
 		} else
-			ret = -1;
+			ret = WGET_E_UNKNOWN;
 		break;
 	case 'l':
 		if (!wget_strncasecmp_ascii(name, "last-modified", namelen)) {
@@ -1130,7 +1130,7 @@ int wget_http_parse_header_line(wget_http_response *resp, const char *name, size
 			}
 			wget_vector_add_memdup(resp->links, &link, sizeof(link));
 		} else
-			ret = -1;
+			ret = WGET_E_UNKNOWN;
 		break;
 	case 'p':
 		if (!wget_strncasecmp_ascii(name, "public-key-pins", namelen)) {
@@ -1142,6 +1142,12 @@ int wget_http_parse_header_line(wget_http_response *resp, const char *name, size
 		}
 		else if (!wget_strncasecmp_ascii(name, "proxy-authenticate", namelen)) {
 			wget_http_challenge *challenge = wget_malloc(sizeof(wget_http_challenge));
+
+			if (!challenge) {
+				ret = WGET_E_MEMORY;
+				goto out;
+			}
+
 			wget_http_parse_challenge(value0, challenge);
 
 			if (!resp->challenges) {
@@ -1150,7 +1156,7 @@ int wget_http_parse_header_line(wget_http_response *resp, const char *name, size
 			}
 			wget_vector_add(resp->challenges, challenge);
 		} else
-			ret = -1;
+			ret = WGET_E_UNKNOWN;
 		break;
 	case 's':
 		if (!wget_strncasecmp_ascii(name, "set-cookie", namelen)) {
@@ -1170,17 +1176,23 @@ int wget_http_parse_header_line(wget_http_response *resp, const char *name, size
 			resp->hsts = 1;
 			wget_http_parse_strict_transport_security(value0, &resp->hsts_maxage, &resp->hsts_include_subdomains);
 		} else
-			ret = -1;
+			ret = WGET_E_UNKNOWN;
 		break;
 	case 't':
 		if (!wget_strncasecmp_ascii(name, "transfer-encoding", namelen)) {
 			wget_http_parse_transfer_encoding(value0, &resp->transfer_encoding);
 		} else
-			ret = -1;
+			ret = WGET_E_UNKNOWN;
 		break;
 	case 'w':
 		if (!wget_strncasecmp_ascii(name, "www-authenticate", namelen)) {
 			wget_http_challenge *challenge = wget_malloc(sizeof(wget_http_challenge));
+
+			if (!challenge) {
+				ret = WGET_E_MEMORY;
+				goto out;
+			}
+
 			wget_http_parse_challenge(value0, challenge);
 
 			if (!resp->challenges) {
@@ -1189,19 +1201,20 @@ int wget_http_parse_header_line(wget_http_response *resp, const char *name, size
 			}
 			wget_vector_add(resp->challenges, challenge);
 		} else
-			ret = -1;
+			ret = WGET_E_UNKNOWN;
 		break;
 	case 'x':
 		if (!wget_strncasecmp_ascii(name, "x-archive-orig-last-modified", namelen)) {
 			resp->last_modified = wget_http_parse_full_date(value0);
 		} else
-			ret = -1;
+			ret = WGET_E_UNKNOWN;
 		break;
 	default:
-		ret = -1;
+		ret = WGET_E_UNKNOWN;
 		break;
 	}
 
+out:
 	if (value0 != valuebuf)
 		xfree(value0);
 
