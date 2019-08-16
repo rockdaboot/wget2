@@ -49,7 +49,7 @@
  */
 
 struct wget_hsts_db_st {
-	char *
+	const char *
 		fname;
 	wget_hashmap *
 		entries;
@@ -111,10 +111,12 @@ static int compare_hsts(const hsts_entry *h1, const hsts_entry *h2)
 
 static hsts_entry *init_hsts(hsts_entry *hsts)
 {
-	if (!hsts)
-		hsts = wget_malloc(sizeof(hsts_entry));
+	if (!hsts) {
+		if (!(hsts = wget_calloc(1, sizeof(hsts_entry))))
+			return NULL;
+	} else
+		memset(hsts, 0, sizeof(*hsts));
 
-	memset(hsts, 0, sizeof(*hsts));
 	hsts->created = time(NULL);
 
 	return hsts;
@@ -527,13 +529,28 @@ wget_hsts_db *wget_hsts_db_init(wget_hsts_db *hsts_db, const char *fname)
 	if (plugin_vtable)
 		return plugin_vtable->init(hsts_db, fname);
 
-	if (!hsts_db)
-		hsts_db = wget_malloc(sizeof(struct wget_hsts_db_st));
+	if (fname) {
+		if (!(fname = wget_strdup(fname)))
+			return NULL;
+	}
 
-	memset(hsts_db, 0, sizeof(*hsts_db));
-	if (fname)
-		hsts_db->fname = wget_strdup(fname);
-	hsts_db->entries = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_hsts, (wget_hashmap_compare_fn *) compare_hsts);
+	wget_hashmap *entries = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_hsts, (wget_hashmap_compare_fn *) compare_hsts);
+	if (!entries) {
+		xfree(fname);
+		return NULL;
+	}
+
+	if (!hsts_db) {
+		if (!(hsts_db = wget_calloc(1, sizeof(struct wget_hsts_db_st)))) {
+			wget_hashmap_free(&entries);
+			xfree(fname);
+			return NULL;
+		}
+	} else
+		memset(hsts_db, 0, sizeof(*hsts_db));
+
+	hsts_db->fname = fname;
+	hsts_db->entries = entries;
 	wget_hashmap_set_key_destructor(hsts_db->entries, (wget_hashmap_key_destructor *) free_hsts);
 	wget_hashmap_set_value_destructor(hsts_db->entries, (wget_hashmap_value_destructor *) free_hsts);
 	wget_thread_mutex_init(&hsts_db->mutex);
