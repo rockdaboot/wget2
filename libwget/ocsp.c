@@ -47,7 +47,7 @@
  */
 
 struct wget_ocsp_db_st {
-	char *
+	const char *
 		fname;
 	wget_hashmap *
 		fingerprints;
@@ -100,10 +100,12 @@ static int compare_ocsp(const ocsp_entry *h1, const ocsp_entry *h2)
 
 static ocsp_entry *init_ocsp(ocsp_entry *ocsp)
 {
-	if (!ocsp)
-		ocsp = wget_malloc(sizeof(ocsp_entry));
+	if (!ocsp) {
+		if (!(ocsp = wget_calloc(1, sizeof(ocsp_entry))))
+			return NULL;
+	} else
+		memset(ocsp, 0, sizeof(*ocsp));
 
-	memset(ocsp, 0, sizeof(*ocsp));
 	ocsp->mtime = time(NULL);
 
 	return ocsp;
@@ -126,11 +128,19 @@ static void free_ocsp(ocsp_entry *ocsp)
 
 static ocsp_entry *new_ocsp(const char *fingerprint, time_t maxage, bool valid)
 {
+	if (fingerprint) {
+		if (!(fingerprint = wget_strdup(fingerprint)))
+			return NULL;
+	}
+
 	ocsp_entry *ocsp = init_ocsp(NULL);
 
-	ocsp->key = wget_strdup(fingerprint);
-	ocsp->maxage = maxage;
-	ocsp->valid = valid;
+	if (ocsp) {
+		ocsp->key = fingerprint;
+		ocsp->maxage = maxage;
+		ocsp->valid = valid;
+	} else
+		xfree(fingerprint);
 
 	return ocsp;
 }
@@ -617,20 +627,36 @@ wget_ocsp_db *wget_ocsp_db_init(wget_ocsp_db *ocsp_db, const char *fname)
 	if (plugin_vtable)
 		return plugin_vtable->init(ocsp_db, fname);
 
-	if (!ocsp_db)
-		ocsp_db = wget_malloc(sizeof(struct wget_ocsp_db_st));
-
-	memset(ocsp_db, 0, sizeof(*ocsp_db));
-
 	if (fname)
-		ocsp_db->fname = wget_strdup(fname);
-	ocsp_db->fingerprints = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_ocsp, (wget_hashmap_compare_fn *) compare_ocsp);
-	wget_hashmap_set_key_destructor(ocsp_db->fingerprints, (wget_hashmap_key_destructor *) free_ocsp);
-	wget_hashmap_set_value_destructor(ocsp_db->fingerprints, (wget_hashmap_value_destructor *) free_ocsp);
+		if (!(fname = wget_strdup(fname)))
+			return NULL;
 
-	ocsp_db->hosts = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_ocsp, (wget_hashmap_compare_fn *) compare_ocsp);
-	wget_hashmap_set_key_destructor(ocsp_db->hosts, (wget_hashmap_key_destructor *) free_ocsp);
-	wget_hashmap_set_value_destructor(ocsp_db->hosts, (wget_hashmap_value_destructor *) free_ocsp);
+	wget_hashmap *fingerprints = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_ocsp, (wget_hashmap_compare_fn *) compare_ocsp);
+	wget_hashmap *hosts = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_ocsp, (wget_hashmap_compare_fn *) compare_ocsp);
+
+	if (!fingerprints || !hosts) {
+no_mem:
+		wget_hashmap_free(&hosts);
+		wget_hashmap_free(&fingerprints);
+		xfree(fname);
+		return NULL;
+	}
+
+	if (!ocsp_db) {
+		if (!(ocsp_db = wget_calloc(1, sizeof(struct wget_ocsp_db_st))))
+			goto no_mem;
+	} else
+		memset(ocsp_db, 0, sizeof(*ocsp_db));
+
+	ocsp_db->fname = fname;
+
+	wget_hashmap_set_key_destructor(fingerprints, (wget_hashmap_key_destructor *) free_ocsp);
+	wget_hashmap_set_value_destructor(fingerprints, (wget_hashmap_value_destructor *) free_ocsp);
+	ocsp_db->fingerprints = fingerprints;
+
+	wget_hashmap_set_key_destructor(hosts, (wget_hashmap_key_destructor *) free_ocsp);
+	wget_hashmap_set_value_destructor(hosts, (wget_hashmap_value_destructor *) free_ocsp);
+	ocsp_db->hosts = hosts;
 
 	wget_thread_mutex_init(&ocsp_db->mutex);
 
