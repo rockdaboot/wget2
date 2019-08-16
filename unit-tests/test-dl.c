@@ -78,8 +78,10 @@ static int string_vector_check(wget_vector *v, int correct_len, ...)
 	va_start(arglist, correct_len);
 	for (int i = 0; i < v_len; i++) {
 		str = va_arg(arglist, const char *);
-		if (strcmp((const char *) wget_vector_get(v, i), str) != 0)
+		if (strcmp((const char *) wget_vector_get(v, i), str) != 0) {
+			va_end(arglist);
 			return 0;
+		}
 	}
 	va_end(arglist);
 
