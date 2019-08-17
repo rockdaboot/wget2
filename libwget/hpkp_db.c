@@ -290,11 +290,16 @@ static int hpkp_db_load(wget_hpkp_db *hpkp_db, FILE *fp)
 				int64_t expires = created + max_age;
 				if (max_age && expires >= now) {
 					hpkp = wget_hpkp_new();
-					hpkp->host = wget_strdup(host);
-					hpkp->maxage = max_age;
-					hpkp->created = created;
-					hpkp->expires = expires;
-					hpkp->include_subdomains = include_subdomains != 0;
+					if (hpkp) {
+						if (!(hpkp->host = wget_strdup(host)))
+							xfree(hpkp);
+						else {
+							hpkp->maxage = max_age;
+							hpkp->created = created;
+							hpkp->expires = expires;
+							hpkp->include_subdomains = include_subdomains != 0;
+						}
+					}
 				} else
 					debug_printf("HPKP: entry '%s' is expired\n", host);
 			} else {
