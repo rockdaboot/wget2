@@ -36,5 +36,5 @@ int main(void)
 	wget_vector_set_destructor(NULL, NULL); // vector.c
 	wget_free(wget_malloc(1)); // xalloc.c
 	wget_xml_parse_buffer("", NULL, NULL, 0); // xml.c
-	wget_plugin_get_name(NULL); // plugin.c
+	wget_plugin_get_name((wget_plugin *) 1); // plugin.c
 }
