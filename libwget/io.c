@@ -403,7 +403,7 @@ char *wget_read_file(const char *fname, size_t *size)
  * \param[in] load_func Pointer to the loader function
  * \param[in] save_func Pointer to the saver function
  * \param[in] context Context data
- * \return 0 on success, or -1 on error
+ * \return 0 on success, or WGET_E_* on error
  *
  * This function updates the file named \p fname atomically. It lets two caller-provided functions do the actual updating.
  * A lock file is created first under `/tmp` to ensure exclusive access to the file. Other processes attempting to call
@@ -432,6 +432,9 @@ int wget_update_file(const char *fname,
 
 	basename = base_name(fname);
 
+	if (!basename)
+		return WGET_E_MEMORY;
+
 	// create a per-usr tmp file name
 	size_t tmplen = strlen(tmpdir);
 	char *lockfile;
@@ -450,11 +453,14 @@ int wget_update_file(const char *fname,
 
 	xfree(basename);
 
+	if (!lockfile)
+		return WGET_E_MEMORY;
+
 	// create & open the lock file
 	if ((lockfd = open(lockfile, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1) {
 		error_printf(_("Failed to create '%s' (%d)\n"), lockfile, errno);
 		xfree(lockfile);
-		return -1;
+		return WGET_E_OPEN_FILE;
 	}
 
 	// set the lock
@@ -462,7 +468,7 @@ int wget_update_file(const char *fname,
 		close(lockfd);
 		error_printf(_("Failed to lock '%s' (%d)\n"), lockfile, errno);
 		xfree(lockfile);
-		return -1;
+		return WGET_E_UNKNOWN;
 	}
 
 	xfree(lockfile);
@@ -473,7 +479,7 @@ int wget_update_file(const char *fname,
 			if (errno != ENOENT) {
 				close(lockfd);
 				error_printf(_("Failed to read open '%s' (%d)\n"), fname, errno);
-				return -1;
+				return WGET_E_UNKNOWN;
 			}
 		}
 
@@ -482,7 +488,7 @@ int wget_update_file(const char *fname,
 			if (load_func(context, fp)) {
 				fclose(fp);
 				close(lockfd);
-				return -1;
+				return WGET_E_UNKNOWN;
 			}
 
 			fclose(fp);
@@ -496,7 +502,7 @@ int wget_update_file(const char *fname,
 		if ((fd = mkstemp(tmpfile)) == -1) {
 			close(lockfd);
 			error_printf(_("Failed to open tmpfile '%s' (%d)\n"), tmpfile, errno);
-			return -1;
+			return WGET_E_OPEN_FILE;
 		}
 
 		// open the output stream from fd
@@ -505,7 +511,7 @@ int wget_update_file(const char *fname,
 			close(fd);
 			close(lockfd);
 			error_printf(_("Failed to write open '%s' (%d)\n"), tmpfile, errno);
-			return -1;
+			return WGET_E_UNKNOWN;
 		}
 
 		// write into temp file
@@ -513,7 +519,7 @@ int wget_update_file(const char *fname,
 			unlink(tmpfile);
 			fclose(fp);
 			close(lockfd);
-			return -1;
+			return WGET_E_UNKNOWN;
 		}
 
 		// write buffers and close temp file
@@ -521,7 +527,7 @@ int wget_update_file(const char *fname,
 			unlink(tmpfile);
 			close(lockfd);
 			error_printf(_("Failed to write/close '%s' (%d)\n"), tmpfile, errno);
-			return -1;
+			return WGET_E_UNKNOWN;
 		}
 
 		// rename written file (now complete without errors) to FNAME
@@ -529,7 +535,7 @@ int wget_update_file(const char *fname,
 			close(lockfd);
 			error_printf(_("Failed to rename '%s' to '%s' (%d)\n"), tmpfile, fname, errno);
 			error_printf(_("Take manually care for '%s'\n"), tmpfile);
-			return -1;
+			return WGET_E_UNKNOWN;
 		}
 
 		debug_printf("Successfully updated '%s'.\n", fname);
@@ -557,14 +563,14 @@ int wget_truncate(const char *path, off_t length)
 	int fd, rc;
 
 	if (!path)
-		return -1;
+		return WGET_E_INVALID;
 
 	if ((fd = open(path, O_RDWR|O_BINARY)) == -1)
-		return -1;
+		return WGET_E_OPEN_FILE;
 
 	rc = ftruncate(fd, length);
 	close(fd);
-	return rc;
+	return rc ? WGET_E_UNKNOWN : WGET_E_SUCCESS;
 }
 
 /**@}*/
