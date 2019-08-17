@@ -277,7 +277,7 @@ WGETAPI void
 	wget_global_init(int key, ...);
 WGETAPI void
 	wget_global_deinit(void);
-WGETAPI const void *
+WGETAPI const void * NULLABLE
 	wget_global_get_ptr(int key);
 WGETAPI int
 	wget_global_get_int(int key);
@@ -342,7 +342,7 @@ WGETAPI int
 	wget_match_tail(const char *s, const char *tail) WGET_GCC_PURE;
 WGETAPI int
 	wget_match_tail_nocase(const char *s, const char *tail) WGET_GCC_PURE;
-WGETAPI char *
+WGETAPI char * NULLABLE
 	wget_strnglob(const char *str, size_t n, int flags) WGET_GCC_PURE;
 WGETAPI char *
 	wget_human_readable(char *buf, size_t bufsize, uint64_t n);
@@ -352,35 +352,35 @@ WGETAPI ssize_t
 	wget_fdgetline(char **buf, size_t *bufsize, int fd);
 WGETAPI ssize_t
 	wget_getline(char **buf, size_t *bufsize, FILE *fp);
-WGETAPI FILE *
+WGETAPI FILE * NULLABLE
 	wget_vpopenf(const char *type, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0);
-WGETAPI FILE *
+WGETAPI FILE * NULLABLE
 	wget_popenf(const char *type, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(2,3);
-WGETAPI FILE *
+WGETAPI FILE * NULLABLE
 	wget_popen2f(FILE **fpin, FILE **fpout, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(3,4);
 WGETAPI pid_t
 	wget_fd_popen3(int *fdin, int *fdout, int *fderr, const char *const *argv);
 WGETAPI pid_t
 	wget_popen3(FILE **fpin, FILE **fpout, FILE **fperr, const char *const *argv);
-WGETAPI char *
+WGETAPI char * NULLABLE
 	wget_read_file(const char *fname, size_t *size) WGET_GCC_MALLOC;
 WGETAPI int
 	wget_update_file(const char *fname, wget_update_load_fn *load_func, wget_update_save_fn *save_func, void *context);
 WGETAPI int
 	wget_truncate(const char *path, off_t length);
-WGETAPI const char
-	*wget_local_charset_encoding(void);
+WGETAPI const char *
+	wget_local_charset_encoding(void);
 WGETAPI int
 	wget_memiconv(const char *src_encoding, const void *src, size_t srclen, const char *dst_encoding, char **out, size_t *outlen);
-WGETAPI char *
+WGETAPI char * NULLABLE
 	wget_striconv(const char *src, const char *src_encoding, const char *dst_encoding) WGET_GCC_MALLOC;
 WGETAPI int
 	wget_str_needs_encoding(const char *s) WGET_GCC_PURE;
 WGETAPI bool
 	wget_str_is_valid_utf8(const char *utf8) WGET_GCC_PURE;
-WGETAPI char *
+WGETAPI char * NULLABLE
 	wget_str_to_utf8(const char *src, const char *encoding) WGET_GCC_MALLOC;
-WGETAPI char *
+WGETAPI char * NULLABLE
 	wget_utf8_to_str(const char *src, const char *encoding) WGET_GCC_MALLOC;
 WGETAPI const char *
 	wget_str_to_ascii(const char *src);
@@ -404,15 +404,15 @@ WGETAPI ssize_t
 typedef struct wget_list_st wget_list;
 typedef int wget_list_browse_fn(void *context, void *elem);
 
-WGETAPI void *
+WGETAPI void * NULLABLE
 	wget_list_append(wget_list **list, const void *data, size_t size) WGET_GCC_NONNULL_ALL;
-WGETAPI void *
+WGETAPI void * NULLABLE
 	wget_list_prepend(wget_list **list, const void *data, size_t size) WGET_GCC_NONNULL_ALL;
-WGETAPI void *
+WGETAPI void * NULLABLE
 	wget_list_getfirst(const wget_list *list) WGET_GCC_CONST;
-WGETAPI void *
+WGETAPI void * NULLABLE
 	wget_list_getlast(const wget_list *list) WGET_GCC_PURE;
-WGETAPI void *
+WGETAPI void * NULLABLE
 	wget_list_getnext(const void *elem) WGET_GCC_PURE;
 WGETAPI void
 	wget_list_remove(wget_list **list, void *elem) WGET_GCC_NONNULL_ALL;
@@ -505,13 +505,13 @@ WGETAPI size_t
 	wget_base64_encode(char *restrict dst, const char *restrict src, size_t n) WGET_GCC_NONNULL_ALL;
 WGETAPI size_t
 	wget_base64_urlencode(char *restrict dst, const char *restrict src, size_t n) WGET_GCC_NONNULL_ALL;
-WGETAPI char *
+WGETAPI char * NULLABLE
 	wget_base64_decode_alloc(const char *restrict src, size_t n, size_t *outlen) WGET_GCC_NONNULL((1));
-WGETAPI char *
+WGETAPI char * NULLABLE
 	wget_base64_encode_alloc(const char *restrict src, size_t n) WGET_GCC_NONNULL_ALL;
-WGETAPI char *
+WGETAPI char * NULLABLE
 	wget_base64_encode_vprintf_alloc(const char *restrict fmt, va_list args) WGET_GCC_PRINTF_FORMAT(1,0) WGET_GCC_NONNULL_ALL;
-WGETAPI char *
+WGETAPI char * NULLABLE
 	wget_base64_encode_printf_alloc(const char *restrict fmt, ...) WGET_GCC_PRINTF_FORMAT(1,2) WGET_GCC_NONNULL_ALL;
 
 /*
@@ -596,9 +596,9 @@ WGETAPI size_t
 	wget_vasprintf(char **strp, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0);
 WGETAPI size_t
 	wget_asprintf(char **strp, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(2,3);
-WGETAPI char *
+WGETAPI char * NULLABLE
 	wget_vaprintf(const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(1,0);
-WGETAPI char *
+WGETAPI char * NULLABLE
 	wget_aprintf(const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(1,2);
 WGETAPI size_t
 	wget_vfprintf(FILE *fp, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(2,0);
@@ -624,11 +624,11 @@ WGETAPI void
 	wget_logger_set_stream(wget_logger *logger, FILE *fp);
 WGETAPI void
 	wget_logger_set_file(wget_logger *logger, const char *fname);
-WGETAPI wget_logger_func *
+WGETAPI wget_logger_func * NULLABLE
 	wget_logger_get_func(wget_logger *logger) WGET_GCC_PURE;
-WGETAPI FILE *
+WGETAPI FILE * NULLABLE
 	wget_logger_get_stream(wget_logger *logger) WGET_GCC_PURE;
-WGETAPI const char *
+WGETAPI const char * NULLABLE
 	wget_logger_get_file(wget_logger *logger) WGET_GCC_PURE;
 WGETAPI bool
 	wget_logger_is_active(wget_logger *logger) WGET_GCC_PURE;
@@ -670,7 +670,7 @@ typedef int wget_vector_find_fn(void *elem);
 typedef int wget_vector_browse_fn(void *ctx, void *elem);
 typedef void wget_vector_destructor(void *elem);
 
-WGETAPI wget_vector *
+WGETAPI wget_vector * NULLABLE
 	wget_vector_create(int max, wget_vector_compare_fn *cmp) WGET_GCC_MALLOC;
 WGETAPI void
 	wget_vector_set_resize_factor(wget_vector *v, float off);
@@ -746,8 +746,8 @@ typedef void wget_hashmap_key_destructor(void *key);
 typedef void wget_hashmap_value_destructor(void *value);
 /** @} */
 
-WGETAPI wget_hashmap
-	*wget_hashmap_create(int max, wget_hashmap_hash_fn *hash, wget_hashmap_compare_fn *cmp) WGET_GCC_MALLOC;
+WGETAPI wget_hashmap * NULLABLE
+	wget_hashmap_create(int max, wget_hashmap_hash_fn *hash, wget_hashmap_compare_fn *cmp) WGET_GCC_MALLOC;
 WGETAPI void
 	wget_hashmap_set_resize_factor(wget_hashmap *h, float factor);
 WGETAPI int
@@ -783,12 +783,12 @@ WGETAPI void
 /// Type of the hashmap iterator
 typedef struct wget_hashmap_iterator_st wget_hashmap_iterator;
 
-WGETAPI wget_hashmap_iterator
-	*wget_hashmap_iterator_alloc(wget_hashmap *h) WGET_GCC_MALLOC;
+WGETAPI wget_hashmap_iterator * NULLABLE
+	wget_hashmap_iterator_alloc(wget_hashmap *h) WGET_GCC_MALLOC;
 WGETAPI void
 	wget_hashmap_iterator_free(wget_hashmap_iterator **iter);
-WGETAPI void
-	*wget_hashmap_iterator_next(wget_hashmap_iterator *iter, void **value);
+WGETAPI void * NULLABLE
+	wget_hashmap_iterator_next(wget_hashmap_iterator *iter, void **value);
 
 /**
  * \ingroup libwget-stringmap
@@ -822,9 +822,9 @@ typedef wget_hashmap_iterator wget_stringmap_iterator;
 /// Wrapper around wget_hashmap_iterator_free().
 #define wget_stringmap_iterator_free wget_hashmap_iterator_free
 
-WGETAPI wget_stringmap *
+WGETAPI wget_stringmap * NULLABLE
 	wget_stringmap_create(int max) WGET_GCC_MALLOC;
-WGETAPI wget_stringmap *
+WGETAPI wget_stringmap * NULLABLE
 	wget_stringmap_create_nocase(int max) WGET_GCC_MALLOC;
 /** @} */
 
@@ -1079,7 +1079,7 @@ void wget_stringmap_set_resize_factor(wget_stringmap *h, float factor)
  * When iterating over a stringmap, the order of returned key/value pairs is not defined.
  */
 static inline
-void *wget_stringmap_iterator_next(wget_stringmap_iterator *h, char **value)
+void * NULLABLE wget_stringmap_iterator_next(wget_stringmap_iterator *h, char **value)
 {
 	return wget_hashmap_iterator_next(h, (void **) value);
 }
@@ -1147,9 +1147,9 @@ typedef enum {
 
 WGETAPI WGET_GCC_PURE wget_content_encoding
 	wget_content_encoding_by_name(const char *name);
-WGETAPI WGET_GCC_PURE const char *
+WGETAPI WGET_GCC_PURE const char * NULLABLE
 	wget_content_encoding_to_name(wget_content_encoding type);
-WGETAPI wget_decompressor *
+WGETAPI wget_decompressor * NULLABLE
 	wget_decompress_open(wget_content_encoding encoding, wget_decompressor_sink_fn *data_sink, void *context);
 WGETAPI void
 	wget_decompress_close(wget_decompressor *dc);
@@ -1157,7 +1157,7 @@ WGETAPI int
 	wget_decompress(wget_decompressor *dc, char *src, size_t srclen);
 WGETAPI void
 	wget_decompress_set_error_handler(wget_decompressor *dc, wget_decompressor_error_handler *error_handler);
-WGETAPI void *
+WGETAPI void * NULLABLE
 	wget_decompress_get_context(wget_decompressor *dc);
 
 /*
@@ -1299,11 +1299,11 @@ WGETAPI char *
 	wget_iri_unescape_url_inline(char *src) WGET_GCC_NONNULL_ALL;
 WGETAPI wget_iri *
 	wget_iri_parse(const char *uri, const char *encoding);
-WGETAPI wget_iri *
+WGETAPI wget_iri * NULLABLE
 	wget_iri_parse_base(wget_iri *base, const char *url, const char *encoding);
-WGETAPI wget_iri *
+WGETAPI wget_iri * NULLABLE
 	wget_iri_clone(const wget_iri *iri);
-WGETAPI const char *
+WGETAPI const char * NULLABLE
 	wget_iri_get_connection_part(wget_iri *iri);
 WGETAPI const char *
 	wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len, wget_buffer *buf);
@@ -1325,7 +1325,7 @@ WGETAPI char *
 	wget_iri_get_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding) WGET_GCC_NONNULL((1,2));
 WGETAPI wget_iri_scheme
 	wget_iri_set_scheme(wget_iri *iri, wget_iri_scheme scheme);
-WGETAPI const char *
+WGETAPI const char * NULLABLE
 	wget_iri_scheme_get_name(wget_iri_scheme scheme);
 
 /*
@@ -1338,7 +1338,7 @@ typedef struct wget_cookie_db_st wget_cookie_db;
 // typedef for cookie
 typedef struct wget_cookie_st wget_cookie;
 
-WGETAPI wget_cookie *
+WGETAPI wget_cookie * NULLABLE
 	wget_cookie_init(wget_cookie *cookie);
 WGETAPI void
 	wget_cookie_deinit(wget_cookie *cookie);
@@ -1358,7 +1358,7 @@ WGETAPI int
 	wget_cookie_normalize(const wget_iri *iri, wget_cookie *cookie);
 WGETAPI int
 	wget_cookie_check_psl(const wget_cookie_db *cookie_db, const wget_cookie *cookie);
-WGETAPI wget_cookie_db *
+WGETAPI wget_cookie_db * NULLABLE
 	wget_cookie_db_init(wget_cookie_db *cookie_db);
 WGETAPI void
 	wget_cookie_db_deinit(wget_cookie_db *cookie_db);
@@ -1503,7 +1503,7 @@ typedef struct {
 	wget_hpkp_db_save_fn *save;
 } wget_hpkp_db_vtable;
 
-WGETAPI wget_hpkp *
+WGETAPI wget_hpkp * NULLABLE
 	wget_hpkp_new(void);
 WGETAPI void
 	wget_hpkp_free(wget_hpkp *hpkp);
@@ -1548,17 +1548,17 @@ WGETAPI void
 typedef struct wget_tls_session_st wget_tls_session;
 typedef struct wget_tls_session_db_st wget_tls_session_db;
 
-WGETAPI wget_tls_session *
+WGETAPI wget_tls_session * NULLABLE
 	wget_tls_session_init(wget_tls_session *tls_session);
 WGETAPI void
 	wget_tls_session_deinit(wget_tls_session *tls_session);
 WGETAPI void
 	wget_tls_session_free(wget_tls_session *tls_session);
-WGETAPI wget_tls_session *
+WGETAPI wget_tls_session * NULLABLE
 	wget_tls_session_new(const char *host, time_t maxage, const void *data, size_t data_size);
 WGETAPI int
 	wget_tls_session_get(const wget_tls_session_db *tls_session_db, const char *host, void **data, size_t *size);
-WGETAPI wget_tls_session_db *
+WGETAPI wget_tls_session_db * NULLABLE
 	wget_tls_session_db_init(wget_tls_session_db *tls_session_db);
 WGETAPI void
 	wget_tls_session_db_deinit(wget_tls_session_db *tls_session_db);
@@ -1665,13 +1665,13 @@ struct wget_netrc_st {
 };
 typedef struct wget_netrc_st wget_netrc;
 
-WGETAPI wget_netrc *
+WGETAPI wget_netrc * NULLABLE
 	wget_netrc_init(wget_netrc *netrc);
 WGETAPI void
 	wget_netrc_deinit(wget_netrc *netrc);
 WGETAPI void
 	wget_netrc_free(wget_netrc *netrc);
-WGETAPI wget_netrc *
+WGETAPI wget_netrc * NULLABLE
 	wget_netrc_new(const char *machine, const char *login, const char *password);
 WGETAPI wget_netrc_db *
 	wget_netrc_db_init(wget_netrc_db *netrc_db);
@@ -1681,7 +1681,7 @@ WGETAPI void
 	wget_netrc_db_free(wget_netrc_db **netrc_db);
 WGETAPI void
 	wget_netrc_db_add(wget_netrc_db *netrc_db, wget_netrc *netrc);
-WGETAPI wget_netrc *
+WGETAPI wget_netrc * NULLABLE
 	wget_netrc_get(const wget_netrc_db *netrc_db, const char *host);
 WGETAPI int
 	wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname);
@@ -1769,7 +1769,7 @@ typedef struct {
 		attribute; //!< attribute of the HTML tag
 } wget_html_tag;
 
-WGETAPI wget_html_parsed_result *
+WGETAPI wget_html_parsed_result * NULLABLE
 	wget_html_get_urls_inline(const char *html, wget_vector *additional_tags, wget_vector *ignore_tags);
 WGETAPI void
 	wget_html_free_urls_inline(wget_html_parsed_result **res);
@@ -1836,7 +1836,7 @@ WGETAPI int
 	wget_dns_cache_init(wget_dns_cache **cache);
 WGETAPI void
 	wget_dns_cache_free(wget_dns_cache **cache);
-WGETAPI struct addrinfo *
+WGETAPI struct addrinfo * NULLABLE
 	wget_dns_cache_get(wget_dns_cache *cache, const char *host, uint16_t port);
 WGETAPI int
 	wget_dns_cache_add(wget_dns_cache *cache, const char *host, uint16_t port, struct addrinfo **addrinfo);
@@ -1855,9 +1855,9 @@ WGETAPI void
 	wget_dns_set_timeout(wget_dns *dns, int timeout);
 WGETAPI void
 	wget_dns_set_cache(wget_dns *dns, wget_dns_cache *cache);
-WGETAPI wget_dns_cache *
+WGETAPI wget_dns_cache * NULLABLE
 	wget_dns_get_cache(wget_dns *dns) WGET_GCC_PURE;
-WGETAPI struct addrinfo *
+WGETAPI struct addrinfo * NULLABLE
 	wget_dns_resolve(wget_dns *dns, const char *host, uint16_t port, int family, int preferred_family);
 WGETAPI void
 	wget_dns_freeaddrinfo(wget_dns *dns, struct addrinfo **addrinfo);
@@ -1881,7 +1881,7 @@ WGETAPI int
 	wget_net_init(void);
 WGETAPI int
 	wget_net_deinit(void);
-WGETAPI wget_tcp *
+WGETAPI wget_tcp * NULLABLE
 	wget_tcp_init(void);
 WGETAPI void
 	wget_tcp_deinit(wget_tcp **tcp);
@@ -1903,7 +1903,7 @@ WGETAPI void
 	wget_tcp_set_ssl(wget_tcp *tcp, int ssl);
 WGETAPI int
 	wget_tcp_get_ssl(wget_tcp *tcp) WGET_GCC_PURE;
-WGETAPI const char *
+WGETAPI const char * NULLABLE
 	wget_tcp_get_ip(wget_tcp *tcp) WGET_GCC_PURE;
 WGETAPI void
 	wget_tcp_set_ssl_hostname(wget_tcp *tcp, const char *hostname);
@@ -2178,13 +2178,13 @@ struct wget_http_response_st {
 typedef struct wget_http_connection_st wget_http_connection;
 
 WGETAPI const char *
-	wget_http_get_host(const wget_http_connection *conn);
+	wget_http_get_host(const wget_http_connection *conn) WGET_GCC_NONNULL_ALL;
 WGETAPI uint16_t
-	wget_http_get_port(const wget_http_connection *conn);
+	wget_http_get_port(const wget_http_connection *conn) WGET_GCC_NONNULL_ALL;
 WGETAPI wget_iri_scheme
-	wget_http_get_scheme(const wget_http_connection *conn);
+	wget_http_get_scheme(const wget_http_connection *conn) WGET_GCC_NONNULL_ALL;
 WGETAPI int
-	wget_http_get_protocol(const wget_http_connection *conn);
+	wget_http_get_protocol(const wget_http_connection *conn) WGET_GCC_NONNULL_ALL;
 
 WGETAPI bool
 	wget_http_isseparator(char c) WGET_GCC_CONST;
@@ -2240,11 +2240,11 @@ WGETAPI void
 WGETAPI int
 	wget_http_add_header_vprintf(wget_http_request *req, const char *name, const char *fmt, va_list args) WGET_GCC_PRINTF_FORMAT(3,0) WGET_GCC_NONNULL_ALL;
 WGETAPI int
-	wget_http_add_header_printf(wget_http_request *req, const char *name, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(3,4) WGET_GCC_NONNULL_ALL;
+	wget_http_add_header_printf(wget_http_request *req, const char *name, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(3,4) WGET_GCC_NONNULL((1,2,3));
 WGETAPI int
 	wget_http_add_header(wget_http_request *req, const char *name, const char *value) WGET_GCC_NONNULL_ALL;
 WGETAPI int
-	wget_http_add_header_param(wget_http_request *req, wget_http_header_param *param) WGET_GCC_NONNULL_ALL;
+	wget_http_add_header_param(wget_http_request *req, wget_http_header_param *param) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_http_add_credentials(wget_http_request *req, wget_http_challenge *challenge, const char *username, const char *password, int proxied) WGET_GCC_NONNULL((1));
 WGETAPI int
@@ -2286,19 +2286,15 @@ WGETAPI void
 WGETAPI void
 	wget_http_free_response(wget_http_response **resp);
 
-WGETAPI wget_http_response *
-	wget_http_read_header(const wget_iri *iri) WGET_GCC_NONNULL_ALL;
-WGETAPI wget_http_response *
-	wget_http_get_header(wget_iri *iri) WGET_GCC_NONNULL_ALL;
 WGETAPI int
 	wget_http_parse_header_line(wget_http_response *resp, const char *name, size_t namelen, const char *value, size_t valuelen);
-WGETAPI wget_http_response *
+WGETAPI wget_http_response * NULLABLE
 	wget_http_parse_response_header(char *buf) WGET_GCC_NONNULL_ALL;
-WGETAPI wget_http_response *
+WGETAPI wget_http_response * NULLABLE
 	wget_http_get_response_cb(wget_http_connection *conn) WGET_GCC_NONNULL((1));
 //WGETAPI HTTP_RESPONSE *
 //	http_get_response_mem(HTTP_CONNECTION *conn, HTTP_REQUEST *req) NONNULL_ALL;
-WGETAPI wget_http_response *
+WGETAPI wget_http_response * NULLABLE
 	wget_http_get_response(wget_http_connection *conn) WGET_GCC_NONNULL((1));
 
 WGETAPI void
@@ -2307,7 +2303,7 @@ WGETAPI void
 	wget_http_exit(void);
 WGETAPI int
 	wget_http_open(wget_http_connection **_conn, const wget_iri *iri);
-WGETAPI wget_http_request *
+WGETAPI wget_http_request * NULLABLE
 	wget_http_create_request(const wget_iri *iri, const char *method) WGET_GCC_NONNULL_ALL;
 WGETAPI void
 	wget_http_close(wget_http_connection **conn) WGET_GCC_NONNULL_ALL;
@@ -2336,8 +2332,6 @@ WGETAPI ssize_t
 
 WGETAPI wget_http_response *
 	wget_http_get(int first_key, ...);
-WGETAPI wget_vector
-	*wget_get_css_urls(const char *data);
 
 
 /*
@@ -2449,8 +2443,8 @@ typedef struct {
 		size;     //!< total size of the file
 } wget_metalink;
 
-WGETAPI wget_metalink
-	*wget_metalink_parse(const char *xml);
+WGETAPI wget_metalink * NULLABLE
+	wget_metalink_parse(const char *xml);
 WGETAPI void
 	wget_metalink_free(wget_metalink **metalink);
 WGETAPI void
@@ -2468,11 +2462,11 @@ WGETAPI void
 	wget_robots_free(wget_robots **robots);
 WGETAPI int
 	wget_robots_get_path_count(wget_robots *robots);
-WGETAPI wget_string *
+WGETAPI wget_string * NULLABLE
 	wget_robots_get_path(wget_robots *robots, int index);
 WGETAPI int
 	wget_robots_get_sitemap_count(wget_robots *robots);
-WGETAPI const char *
+WGETAPI const char * NULLABLE
 	wget_robots_get_sitemap(wget_robots *robots, int index);
 
 /*
@@ -2487,7 +2481,7 @@ typedef enum {
 
 typedef struct wget_bar_st wget_bar;
 
-WGETAPI wget_bar *
+WGETAPI wget_bar * NULLABLE
 	wget_bar_init(wget_bar *bar, int nslots);
 WGETAPI void
 	wget_bar_deinit(wget_bar *bar);
@@ -2603,11 +2597,11 @@ typedef void wget_plugin_finalizer_fn(wget_plugin *plugin, int exit_status);
 
 // Gets the name the plugin is known as.
 WGETAPI const char *
-	wget_plugin_get_name(wget_plugin *plugin);
+	wget_plugin_get_name(wget_plugin *plugin) WGET_GCC_NONNULL_ALL;
 
 // Registers a function to be called when wget exits.
 WGETAPI void
-	wget_plugin_register_finalizer(wget_plugin *plugin, wget_plugin_finalizer_fn *fn);
+	wget_plugin_register_finalizer(wget_plugin *plugin, wget_plugin_finalizer_fn *fn) WGET_GCC_NONNULL((1));
 
 /**
  * \ingroup libwget-plugin
@@ -2623,7 +2617,7 @@ typedef int wget_plugin_option_callback(wget_plugin *plugin, const char *option,
 
 // Registers a function for command line option forwarding.
 WGETAPI void
-	wget_plugin_register_option_callback(wget_plugin *plugin, wget_plugin_option_callback *fn);
+	wget_plugin_register_option_callback(wget_plugin *plugin, wget_plugin_option_callback *fn) WGET_GCC_NONNULL((1));
 
 /**
  * \ingroup libwget-plugin
@@ -2636,19 +2630,19 @@ typedef struct {
 
 // Marks the URL to be rejected.
 WGETAPI void
-	wget_intercept_action_reject(wget_intercept_action *action);
+	wget_intercept_action_reject(wget_intercept_action *action) WGET_GCC_NONNULL_ALL;
 
 // Marks the URL to be accepted.
 WGETAPI void
-	wget_intercept_action_accept(wget_intercept_action *action);
+	wget_intercept_action_accept(wget_intercept_action *action) WGET_GCC_NONNULL_ALL;
 
 // Specifies an alternative URL to be fetched instead.
 WGETAPI void
-	wget_intercept_action_set_alt_url(wget_intercept_action *action, const wget_iri *iri);
+	wget_intercept_action_set_alt_url(wget_intercept_action *action, const wget_iri *iri) WGET_GCC_NONNULL((1));
 
 // Specifies that the fetched data should be written to an alternative file.
 WGETAPI void
-	wget_intercept_action_set_local_filename(wget_intercept_action *action, const char *local_filename);
+	wget_intercept_action_set_local_filename(wget_intercept_action *action, const char *local_filename) WGET_GCC_NONNULL((1));
 
 /**
  * \ingroup libwget-plugin
@@ -2665,14 +2659,6 @@ typedef void wget_plugin_url_filter_callback(wget_plugin *plugin, const wget_iri
 // Registers a plugin function for intercepting URLs
 WGETAPI void
 	wget_plugin_register_url_filter_callback(wget_plugin *plugin, wget_plugin_url_filter_callback *filter_fn);
-
-// Provides wget2 with another HPKP database to use.
-WGETAPI void
-	wget_plugin_add_hpkp_db(wget_plugin *plugin, wget_hpkp_db *hpkp_db, int priority);
-
-// Provides wget2 with another OCSP database to use.
-WGETAPI void
-	wget_plugin_add_ocsp_db(wget_plugin *plugin, wget_ocsp_db *ocsp_db, int priority);
 
 /**
  * \ingroup libwget-plugin
