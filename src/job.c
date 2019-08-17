@@ -183,7 +183,7 @@ int job_validate_file(JOB *job)
 
 	// truncate file if needed
 	if (stat(metalink->name, &st) == 0 && (real_fsize = st.st_size) > fsize) {
-		if (wget_truncate(metalink->name, fsize) == -1)
+		if (wget_truncate(metalink->name, fsize) != WGET_E_SUCCESS)
 			error_printf(_("Failed to truncate %s\n from %llu to %llu bytes\n"),
 				metalink->name, (unsigned long long)st.st_size, (unsigned long long)fsize);
 		else
