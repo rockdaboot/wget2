@@ -1381,6 +1381,9 @@ int wget_http_match_no_proxy(wget_vector *no_proxies_vec, const char *host)
 	for (int it = 0; it < wget_vector_size(no_proxies_vec); it++) {
 		const char *no_proxy = wget_vector_get(no_proxies_vec, it);
 
+		if (!no_proxy)
+			continue;
+
 		if (!strcmp(no_proxy, host))
 			return 1; // exact match
 
