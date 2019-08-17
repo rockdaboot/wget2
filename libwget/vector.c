@@ -253,7 +253,7 @@ int wget_vector_add(wget_vector *v, const void *elem)
  * \param[in] v Vector where \p s is appended to
  * \param[in] fmt Printf-like format string
  * \param[in] args Arguments for the \p fmt
- * \return Index of appended element or -1 on error
+ * \return Index of appended element (>= 0) or WGET_E_* on error (< 0)
  *
  * Construct string in a printf-like manner and append it as an element to vector \p v.
  *
@@ -261,7 +261,14 @@ int wget_vector_add(wget_vector *v, const void *elem)
  */
 int wget_vector_add_vprintf(wget_vector *v, const char *fmt, va_list args)
 {
-	return v && fmt ? insert_element(v, wget_vaprintf(fmt, args), v->cur, 0) : -1;
+	if (!v || !fmt)
+		return WGET_E_INVALID;
+
+	char *p = wget_vaprintf(fmt, args);
+	if (!p)
+		return WGET_E_MEMORY;
+
+	return insert_element(v, p, v->cur, 0);
 }
 
 /**
@@ -277,15 +284,18 @@ int wget_vector_add_vprintf(wget_vector *v, const char *fmt, va_list args)
 int wget_vector_add_printf(wget_vector *v, const char *fmt, ...)
 {
 	if (!v || !fmt)
-		return -1;
+		return WGET_E_INVALID;
 
 	va_list args;
 
 	va_start(args, fmt);
-	int pos = insert_element(v, wget_vaprintf(fmt, args), v->cur, 0);
+	char *p = wget_vaprintf(fmt, args);
 	va_end(args);
 
-	return pos;
+	if (!p)
+		return WGET_E_MEMORY;
+
+	return insert_element(v, p, v->cur, 0);
 }
 
 /**
