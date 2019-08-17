@@ -102,7 +102,7 @@ bool wget_bitmap_get(const wget_bitmap *b, unsigned n)
 /**
  * \param[out] b Pointer to the allocated bitmap
  * \param[in] bits Number of bits
- * \return \ref A wget_error value
+ * \return A \ref wget_error value
  *
  * Allocates a bitmap with a capacity of \p bits.
  * It must be freed by wget_bitmap_free() after usage.

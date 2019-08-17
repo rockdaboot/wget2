@@ -60,15 +60,15 @@
  */
 
 struct wget_thread_st {
-	gl_thread_t tid;
+	gl_thread_t tid; //!< thread id
 };
 
 struct wget_thread_mutex_st {
-	gl_lock_t mutex;
+	gl_lock_t mutex; //!< mutex
 };
 
 struct wget_thread_cond_st {
-	gl_cond_t cond;
+	gl_cond_t cond; //!< conditional
 };
 
 /**

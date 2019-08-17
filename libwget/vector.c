@@ -36,18 +36,18 @@
 
 struct wget_vector_st {
 	wget_vector_compare_fn
-		*cmp; // comparison function
+		*cmp; //!< comparison function for sorting and searching
 	wget_vector_destructor
-		*destructor; // element destructor function
+		*destructor; //!< element destructor function
 	void
-		**entry; // pointer to array of pointers to elements
+		**entry; //!< pointer to array of pointers to elements
 	int
-		max,     // allocated elements
-		cur;     // number of elements in use
+		max,     //!< allocated elements
+		cur;     //!< number of elements in use
 	bool
-		sorted : 1; // 1=list is sorted, 0=list is not sorted
+		sorted : 1; //!< 1=list is sorted, 0=list is not sorted
 	float
-		resize_factor; // factor to calculate new vector size
+		resize_factor; //!< factor to calculate new vector size
 };
 
 /**

@@ -127,7 +127,7 @@ void wget_dns_set_timeout(wget_dns *dns, int timeout)
 
 /**
  * \param[in] dns A `wget_dns` instance, created by wget_dns_init().
- * \param[in] caching Whether to enable DNS caching
+ * \param[in] cache A `wget_dns_cache` instance
  *
  * Enable or disable DNS caching for the DNS instance provided.
  *
