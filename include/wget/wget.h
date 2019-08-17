@@ -265,7 +265,7 @@ typedef enum {
 	WGET_E_GPG_VER_FAIL = -10, /* 1 or more non-valid signatures */
 	WGET_E_GPG_VER_ERR = -11, /* Verification failed, GPGME error */
 	WGET_E_XML_PARSE_ERR = -12, /* XML parsing failed */
-	WGET_E_OPEN_FILE = -13, /* Failed to open file */
+	WGET_E_OPEN = -13, /* Failed to open file */
 } wget_error;
 
 WGETAPI const char *

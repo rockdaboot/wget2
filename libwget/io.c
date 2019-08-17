@@ -460,7 +460,7 @@ int wget_update_file(const char *fname,
 	if ((lockfd = open(lockfile, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1) {
 		error_printf(_("Failed to create '%s' (%d)\n"), lockfile, errno);
 		xfree(lockfile);
-		return WGET_E_OPEN_FILE;
+		return WGET_E_OPEN;
 	}
 
 	// set the lock
@@ -502,7 +502,7 @@ int wget_update_file(const char *fname,
 		if ((fd = mkstemp(tmpfile)) == -1) {
 			close(lockfd);
 			error_printf(_("Failed to open tmpfile '%s' (%d)\n"), tmpfile, errno);
-			return WGET_E_OPEN_FILE;
+			return WGET_E_OPEN;
 		}
 
 		// open the output stream from fd
@@ -566,7 +566,7 @@ int wget_truncate(const char *path, off_t length)
 		return WGET_E_INVALID;
 
 	if ((fd = open(path, O_RDWR|O_BINARY)) == -1)
-		return WGET_E_OPEN_FILE;
+		return WGET_E_OPEN;
 
 	rc = ftruncate(fd, length);
 	close(fd);

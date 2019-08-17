@@ -182,7 +182,7 @@ int wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname)
 		return WGET_E_INVALID;
 
 	if (!(fp = fopen(fname, "r")))
-		return WGET_E_OPEN_FILE;
+		return WGET_E_OPEN;
 
 	wget_netrc netrc;
 	char *buf = NULL, *linep, *p, *key = NULL;
