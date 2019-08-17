@@ -3395,6 +3395,17 @@ int init(int argc, const char **argv)
 		config.continue_download = 0;
 	}
 
+	if (config.timestamping) {
+		if (config.output_document) {
+			error_printf(_("WARNING: timestamping does nothing in combination with -O"));
+			config.timestamping = 0;
+		}
+		if (!config.clobber) {
+			error_printf(_("Can't timestamp and not clobber old files at the same time"));
+			config.timestamping = 0;
+		}
+	}
+
 	if (config.mirror)
 		config.metalink = 0;
 
