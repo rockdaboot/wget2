@@ -414,7 +414,7 @@ static int parse_header(option_t opt, const char *val, WGET_GCC_UNUSED const cha
 		param->name = wget_strmemdup(val, delim_pos - val);
 		param->value = wget_strdup(value);
 
-		if (wget_vector_find(v, param) == -1)
+		if (wget_vector_find(v, param) < 0)
 			wget_vector_add(v, param);
 		else
 			wget_http_free_param(param);
@@ -593,7 +593,7 @@ static void WGET_GCC_NONNULL_ALL _add_tag(wget_vector *v, const char *begin, con
 		tag->attribute = NULL;
 	}
 
-	if (wget_vector_find(v, tag) == -1)
+	if (wget_vector_find(v, tag) < 0)
 		wget_vector_insert_sorted(v, tag);
 	else
 		tag_free(tag); // avoid double entries

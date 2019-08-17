@@ -782,7 +782,7 @@ static void add_url_to_queue(const char *url, wget_iri *base, const char *encodi
 
 	if (config.recursive) {
 		if (!config.span_hosts && config.domains) {
-			if (wget_vector_find(config.domains, iri->host) == -1)
+			if (wget_vector_find(config.domains, iri->host) < 0)
 				wget_vector_add(config.domains, wget_strdup(iri->host));
 		}
 
