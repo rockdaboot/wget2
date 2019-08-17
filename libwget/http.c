@@ -139,6 +139,8 @@ static int _body_callback(wget_http_response *resp, void *user_data WGET_GCC_UNU
 wget_http_request *wget_http_create_request(const wget_iri *iri, const char *method)
 {
 	wget_http_request *req = wget_calloc(1, sizeof(wget_http_request));
+	if (!req)
+		return NULL;
 
 	wget_buffer_init(&req->esc_resource, req->esc_resource_buf, sizeof(req->esc_resource_buf));
 	wget_buffer_init(&req->esc_host, req->esc_host_buf, sizeof(req->esc_host_buf));
