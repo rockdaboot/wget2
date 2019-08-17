@@ -64,7 +64,7 @@ static int _fd_callback(wget_http_response *resp WGET_GCC_UNUSED, void *user_dat
 
 wget_http_response *wget_http_get(int first_key, ...)
 {
-	wget_vector *headers = wget_vector_create(8, NULL);
+	wget_vector *headers;
 	wget_iri *uri = NULL;
 	wget_http_connection *conn = NULL, **connp = NULL;
 	wget_http_request *req;
@@ -90,8 +90,13 @@ wget_http_response *wget_http_get(int first_key, ...)
 			keep_header : 1,
 			free_uri : 1;
 	} bits = {
-		.cookies_enabled = !!wget_global_get_int(WGET_COOKIES_ENABLED)
+		.cookies_enabled = wget_global_get_int(WGET_COOKIES_ENABLED) != 0
 	};
+
+	if (!(headers = wget_vector_create(8, NULL))) {
+		debug_printf("no memory\n");
+		return NULL;
+	}
 
 	va_start(args, first_key);
 	for (key = first_key; key; key = va_arg(args, int)) {
@@ -181,6 +186,8 @@ wget_http_response *wget_http_get(int first_key, ...)
 		// create a HTTP/1.1 GET request.
 		// the only default header is 'Host: domain' (taken from uri)
 		req = wget_http_create_request(uri, scheme);
+		if (!req)
+			goto out;
 
 		// add HTTP headers
 		for (it = 0; it < wget_vector_size(headers); it++) {
