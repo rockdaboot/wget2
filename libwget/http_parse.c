@@ -1230,6 +1230,8 @@ wget_http_response *wget_http_parse_response_header(char *buf)
 	char *eol;
 
 	wget_http_response *resp = wget_calloc(1, sizeof(wget_http_response));
+	if (!resp)
+		return NULL;
 
 	if (sscanf(buf, " HTTP/%3hd.%3hd %3hd %31[^\r\n] ",
 		&resp->major, &resp->minor, &resp->code, resp->reason) >= 3) {
