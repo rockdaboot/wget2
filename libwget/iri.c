@@ -481,6 +481,8 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 		wget_iri_unescape_inline(p); // percent unescape
 		wget_strtolower(p); // convert to lowercase
 
+		iri->scheme = -1; // assume the scheme is unsupported
+
 		// find the scheme in our static list of supported schemes
 		// for later comparisons we compare pointers (avoiding strcasecmp())
 		for (unsigned it = 0; it < countof(schemes); it++) {
