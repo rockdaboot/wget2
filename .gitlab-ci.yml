@@ -497,7 +497,7 @@ FreeBSD.x86_64:
     - sed -i.bak '/^python/d' bootstrap.conf
     - sed -i.bak '/^lzip/d' bootstrap.conf
     - sed -i.bak '/^makeinfo/d' bootstrap.conf
-    - ./bootstrap
+    - ./bootstrap --skip-po && touch .manywarnings
     - LIBS="-L/usr/local/lib" ./configure --cache-file cache/config.cache --disable-doc
     - gmake -j$(sysctl hw.ncpu | awk '{print $2}')
     - gmake check -j$(sysctl hw.ncpu | awk '{print $2}')
