@@ -481,7 +481,7 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 		wget_iri_unescape_inline(p); // percent unescape
 		wget_strtolower(p); // convert to lowercase
 
-		iri->scheme = -1; // assume the scheme is unsupported
+		bool found = false; // assume the scheme is unsupported
 
 		// find the scheme in our static list of supported schemes
 		// for later comparisons we compare pointers (avoiding strcasecmp())
@@ -489,11 +489,12 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 			if (!strcmp(schemes[it].name, p)) {
 				iri->scheme = it;
 				iri->port = schemes[it].port;
+				found = true;
 				break;
 			}
 		}
 
-		if (iri->scheme == (wget_iri_scheme) -1) {
+		if (!found) {
 			debug_printf("Unsupported scheme in '%s'\n", url);
 			wget_iri_free(&iri);
 			return NULL;
