@@ -66,7 +66,7 @@ struct wget_bitmap_st {
 
 void wget_bitmap_set(wget_bitmap *b, unsigned n)
 {
-	if (b && n < ((wget_bitmap *)b)->bits)
+	if (b && n < ((wget_bitmap *) b)->bits)
 		map(n) |= bit(n);
 }
 
@@ -78,7 +78,7 @@ void wget_bitmap_set(wget_bitmap *b, unsigned n)
  */
 void wget_bitmap_clear(wget_bitmap *b, unsigned n)
 {
-	if (b && n < ((wget_bitmap *)b)->bits)
+	if (b && n < ((wget_bitmap *) b)->bits)
 		map(n) &= ~bit(n);
 }
 
@@ -93,8 +93,8 @@ void wget_bitmap_clear(wget_bitmap *b, unsigned n)
  */
 bool wget_bitmap_get(const wget_bitmap *b, unsigned n)
 {
-	if (b && n < ((wget_bitmap *)b)->bits)
-		return !!(map(n) & bit(n));
+	if (b && n < ((wget_bitmap *) b)->bits)
+		return (map(n) & bit(n)) != 0;
 
 	return 0;
 }
