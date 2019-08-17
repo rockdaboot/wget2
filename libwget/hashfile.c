@@ -174,9 +174,9 @@ int wget_hash_get_len(wget_digest_algorithm algorithm)
 int wget_hash_init(wget_hash_hd *handle, wget_digest_algorithm algorithm)
 {
 	if ((unsigned)algorithm < countof(_gnutls_algorithm))
-		return gnutls_hash_init(&handle->dig, _gnutls_algorithm[algorithm]) == 0 ? 0 : -1;
+		return gnutls_hash_init(&handle->dig, _gnutls_algorithm[algorithm]) == 0 ? WGET_E_SUCCESS : WGET_E_UNKNOWN;
 	else
-		return -1;
+		return WGET_E_INVALID;
 }
 
 /**
@@ -518,20 +518,20 @@ void wget_hash_deinit(wget_hash_hd *dig, void *digest)
 int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t digest_hex_size, off_t offset, off_t length)
 {
 	wget_digest_algorithm algorithm;
-	int ret=-1;
+	int ret = WGET_E_UNKNOWN;
 	struct stat st;
 
 	if (digest_hex_size)
 		*digest_hex=0;
 
 	if (fd == -1 || fstat(fd, &st) != 0)
-		return -1;
+		return WGET_E_IO;
 
 	if (length == 0)
 		length = st.st_size;
 
 	if (offset + length > st.st_size)
-		return -1;
+		return WGET_E_INVALID;
 
 	debug_printf("%s hashing pos %llu, length %llu...\n", hashname, (unsigned long long)offset, (unsigned long long)length);
 
@@ -544,7 +544,7 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 		if (buf != MAP_FAILED) {
 			if (wget_hash_fast(algorithm, buf, length, digest) == 0) {
 				wget_memtohex(digest, sizeof(digest), digest_hex, digest_hex_size);
-				ret = 0;
+				ret = WGET_E_SUCCESS;
 			}
 			munmap(buf, length);
 		} else {
@@ -554,10 +554,10 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 			wget_hash_hd dig;
 			char tmp[65536];
 
-			if (wget_hash_init(&dig, algorithm)) {
+			if ((ret = wget_hash_init(&dig, algorithm))) {
 				error_printf(_("%s: Hash type '%s' not supported by linked crypto engine\n"), __func__, hashname);
 				close(fd);
-				return -1;
+				return ret;
 			}
 
 			while (length > 0 && (nbytes = read(fd, tmp, sizeof(tmp))) > 0) {
@@ -573,11 +573,11 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 			if (nbytes < 0) {
 				error_printf(_("%s: Failed to read %llu bytes\n"), __func__, (unsigned long long)length);
 				close(fd);
-				return -1;
+				return WGET_E_IO;
 			}
 
 			wget_memtohex(digest, sizeof(digest), digest_hex, digest_hex_size);
-			ret = 0;
+			ret = WGET_E_SUCCESS;
 #ifdef HAVE_MMAP
 		}
 #endif

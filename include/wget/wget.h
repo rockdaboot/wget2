@@ -266,6 +266,7 @@ typedef enum {
 	WGET_E_GPG_VER_ERR = -11, /* Verification failed, GPGME error */
 	WGET_E_XML_PARSE_ERR = -12, /* XML parsing failed */
 	WGET_E_OPEN = -13, /* Failed to open file */
+	WGET_E_IO = -14, /* General I/O error (read/write/stat/...) */
 } wget_error;
 
 WGETAPI const char *
@@ -339,9 +340,9 @@ WGETAPI long long
 WGETAPI int
 	wget_percent_unescape(char *src);
 WGETAPI int
-	wget_match_tail(const char *s, const char *tail) WGET_GCC_PURE;
+	wget_match_tail(const char *s, const char *tail) WGET_GCC_PURE WGET_GCC_NONNULL_ALL;
 WGETAPI int
-	wget_match_tail_nocase(const char *s, const char *tail) WGET_GCC_PURE;
+	wget_match_tail_nocase(const char *s, const char *tail) WGET_GCC_PURE WGET_GCC_NONNULL_ALL;
 WGETAPI char * NULLABLE
 	wget_strnglob(const char *str, size_t n, int flags) WGET_GCC_PURE;
 WGETAPI char *
