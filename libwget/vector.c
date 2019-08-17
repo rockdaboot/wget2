@@ -107,7 +107,7 @@ void wget_vector_set_resize_factor(wget_vector *v, float factor)
 static int WGET_GCC_NONNULL((2)) insert_element(wget_vector *v, const void *elem, int pos, int replace)
 {
 	if (pos < 0 || !v || pos > v->cur)
-		return -1;
+		return WGET_E_INVALID;
 
 	if (!replace) {
 		if (v->max == v->cur) {
@@ -153,7 +153,7 @@ static int WGET_GCC_NONNULL((2)) insert_element(wget_vector *v, const void *elem
  * \param[in] v Vector where \p elem is inserted into
  * \param[in] elem Element to insert into \p v
  * \param[in] pos Position to insert \p elem at
- * \return Index of inserted element or -1 on error
+ * \return Index of inserted element (>= 0) or WGET_E_*  on error (< 0)
  *
  * Insert \p elem of at index \p pos.
  *
@@ -169,7 +169,7 @@ int wget_vector_insert(wget_vector *v, const void *elem, int pos)
 /**
  * \param[in] v Vector where \p elem is inserted into
  * \param[in] elem Element to insert into \p v
- * \return Index of inserted element or -1 on error
+ * \return Index of inserted element (>= 0) or WGET_E_*  on error (< 0)
  *
  * Insert \p elem of at a position that keeps the sort order of the elements.
  * If the vector has no comparison function, \p elem will be inserted as the last element.
@@ -182,7 +182,7 @@ int wget_vector_insert(wget_vector *v, const void *elem, int pos)
 int wget_vector_insert_sorted(wget_vector *v, const void *elem)
 {
 	if (!v)
-		return -1;
+		return WGET_E_INVALID;
 
 	if (!v->cmp)
 		return insert_element(v, elem, v->cur, 0);
@@ -208,7 +208,7 @@ int wget_vector_insert_sorted(wget_vector *v, const void *elem)
  * \param[in] v Vector where \p elem is appended to
  * \param[in] elem Element to append to a \p v
  * \param[in] size Size of \p elem
- * \return Index of appended element or -1 on error
+ * \return Index of inserted element (>= 0) or WGET_E_*  on error (< 0)
  *
  * Append \p elem of given \p size to vector \p v.
  *
@@ -218,17 +218,17 @@ int wget_vector_insert_sorted(wget_vector *v, const void *elem)
  */
 int wget_vector_add_memdup(wget_vector *v, const void *elem, size_t size)
 {
-	void *p;
+	void *elemp;
 	int rc;
 
 	if (!v)
-		return -1;
+		return WGET_E_INVALID;
 
-	if (!(p = wget_memdup(elem, size)))
-		return -1;
+	if (!(elemp = wget_memdup(elem, size)))
+		return WGET_E_MEMORY;
 
-	if ((rc = insert_element(v, p, v->cur, 0)) < 0)
-		xfree(p);
+	if ((rc = insert_element(v, elemp, v->cur, 0)) < 0)
+		xfree(elemp);
 
 	return rc;
 }
@@ -236,7 +236,7 @@ int wget_vector_add_memdup(wget_vector *v, const void *elem, size_t size)
 /**
  * \param[in] v Vector where \p elem is appended to
  * \param[in] elem Element to append to a \p v
- * \return Index of appended element or -1 on error
+ * \return Index of inserted element (>= 0) or WGET_E_*  on error (< 0)
  *
  * Append \p elem to vector \p v.
  *
@@ -246,7 +246,7 @@ int wget_vector_add_memdup(wget_vector *v, const void *elem, size_t size)
  */
 int wget_vector_add(wget_vector *v, const void *elem)
 {
-	return v ? insert_element(v, elem, v->cur, 0) : -1;
+	return v ? insert_element(v, elem, v->cur, 0) : WGET_E_INVALID;
 }
 
 /**
@@ -275,7 +275,7 @@ int wget_vector_add_vprintf(wget_vector *v, const char *fmt, va_list args)
  * \param[in] v Vector where \p s is appended to
  * \param[in] fmt Printf-like format string
  * \param[in] ... Arguments for the \p fmt
- * \return Index of appended element or -1 on error
+ * \return Index of appended element (>= 0) or WGET_E_* on error (< 0)
  *
  * Construct string in a printf-like manner and append it as an element to vector \p v.
  *
@@ -302,7 +302,7 @@ int wget_vector_add_printf(wget_vector *v, const char *fmt, ...)
  * \param[in] v Vector where \p elem is inserted
  * \param[in] elem Element to insert into \p v
  * \param[in] pos Position to insert \p elem at
- * \return Index of inserted element (same as \p pos) or -1 on error
+ * \return Index of inserted element (same as \p pos) (>= 0) or WGET_E_* on error (< 0)
  *
  * Replace the element at position \p pos with \p elem.
  * If the vector has an element destructor function, this is called.
@@ -315,7 +315,7 @@ int wget_vector_add_printf(wget_vector *v, const char *fmt, ...)
 int wget_vector_replace(wget_vector *v, const void *elem, int pos)
 {
 	if (!v || pos < 0 || pos >= v->cur)
-		return -1;
+		return WGET_E_INVALID;
 
 	if (v->destructor)
 		v->destructor(v->entry[pos]);
@@ -326,7 +326,7 @@ int wget_vector_replace(wget_vector *v, const void *elem, int pos)
 static int remove_element(wget_vector *v, int pos, int free_entry)
 {
 	if (pos < 0 || !v || pos >= v->cur)
-		return -1;
+		return WGET_E_INVALID;
 
 	if (free_entry) {
 		if (v->destructor)
@@ -342,7 +342,7 @@ static int remove_element(wget_vector *v, int pos, int free_entry)
 /**
  * \param[in] v Vector to remove an element from
  * \param[in] pos Position of element to remove
- * \return Index of removed element (same as \p pos) or -1 on error
+ * \return Index of appended element (>= 0) or WGET_E_* on error (< 0)
  *
  * Remove the element at position \p pos.
  * If the vector has an element destructor function, this is called.
@@ -358,7 +358,7 @@ int wget_vector_remove(wget_vector *v, int pos)
 /**
  * \param[in] v Vector to remove an element from
  * \param[in] pos Position of element to remove
- * \return Index of removed element (same as \p pos) or -1 on error
+ * \return Index of removed element (same as \p pos) (>= 0) or WGET_E_* on error (< 0)
  *
  * Remove the element at position \p pos.
  * No element destructor function is called, the element is not free'd.
@@ -374,7 +374,7 @@ int wget_vector_remove_nofree(wget_vector *v, int pos)
  * \param[in] v Vector to act on
  * \param[in] old_pos Position to move element from
  * \param[in] new_pos Position to move element to
- * \return Index of new position (same as \p new_pos) or -1 on error
+ * \return Index of new position (same as \p new_pos) (>= 0) or WGET_E_* on error (< 0)
  *
  * Move the element at position \p old_pos to \p new_pos.
  *
@@ -385,9 +385,9 @@ int wget_vector_remove_nofree(wget_vector *v, int pos)
  */
 int wget_vector_move(wget_vector *v, int old_pos, int new_pos)
 {
-	if (!v) return -1;
-	if (old_pos < 0 || old_pos >= v->cur) return -1;
-	if (new_pos < 0 || new_pos >= v->cur) return -1;
+	if (!v) return WGET_E_INVALID;
+	if (old_pos < 0 || old_pos >= v->cur) return WGET_E_INVALID;
+	if (new_pos < 0 || new_pos >= v->cur) return WGET_E_INVALID;
 	if (old_pos == new_pos) return new_pos;
 
 	if (v->sorted && v->cmp && v->cmp(v->entry[old_pos], v->entry[new_pos]))
@@ -410,7 +410,7 @@ int wget_vector_move(wget_vector *v, int old_pos, int new_pos)
  * \param[in] v Vector to act on
  * \param[in] pos1 Position of element one
  * \param[in] pos2 Position of element two
- * \return Index of second position (same as \p pos2) or -1 on error
+ * \return Index of second position (same as \p pos2) (>= 0) or WGET_E_*  on error (< 0)
  *
  * Swap the two elements at position \p pos1 and \p pos2.
  *
@@ -419,9 +419,9 @@ int wget_vector_move(wget_vector *v, int old_pos, int new_pos)
  */
 int wget_vector_swap(wget_vector *v, int pos1, int pos2)
 {
-	if (!v) return -1;
-	if (pos1 < 0 || pos1 >= v->cur) return -1;
-	if (pos2 < 0 || pos2 >= v->cur) return -1;
+	if (!v) return WGET_E_INVALID;
+	if (pos1 < 0 || pos1 >= v->cur) return WGET_E_INVALID;
+	if (pos2 < 0 || pos2 >= v->cur) return WGET_E_INVALID;
 	if (pos1 == pos2) return pos2;
 
 	void *tmp = v->entry[pos1];
@@ -597,43 +597,43 @@ void wget_vector_sort(wget_vector *v)
 /**
  * \param[in] v Vector
  * \param[in] elem Element to search for
- * \return Index of the found element or -1 if not found
+ * \return Index of the found element, WGET_E_UNKNOWN if not found or WGET_E_INVALID
+ *         if v was %NULL or there was no comparison function set
  *
  * Searches for the given element using the compare function of the vector.
- *
- * Returns -1 if \p v is %NULL or if the compare function is not set.
  */
 int wget_vector_find(const wget_vector *v, const void *elem)
 {
-	if (v && v->cmp) {
-		if (v->cur == 1) {
-			if (v->cmp(elem, v->entry[0]) == 0) return 0;
-		} else if (v->sorted) {
-			// binary search for element (exact match)
-			for (int l = 0, r = v->cur - 1; l <= r;) {
-				int res, m = (l + r) / 2;
-				if ((res = v->cmp(elem, v->entry[m])) > 0) l = m + 1;
-				else if (res < 0) r = m - 1;
-				else return m;
-			}
-		} else {
-			// linear search for element
-			for (int it = 0; it < v->cur; it++)
-				if (v->cmp(elem, v->entry[it]) == 0) return it;
+	if (!v || !v->cmp)
+		return WGET_E_INVALID;
+
+	if (v->cur == 1) {
+		if (v->cmp(elem, v->entry[0]) == 0) return 0;
+	} else if (v->sorted) {
+		// binary search for element (exact match)
+		for (int l = 0, r = v->cur - 1; l <= r;) {
+			int res, m = (l + r) / 2;
+			if ((res = v->cmp(elem, v->entry[m])) > 0) l = m + 1;
+			else if (res < 0) r = m - 1;
+			else return m;
 		}
+	} else {
+		// linear search for element
+		for (int it = 0; it < v->cur; it++)
+			if (v->cmp(elem, v->entry[it]) == 0) return it;
 	}
 
-	return -1; // not found
+	return WGET_E_UNKNOWN; // not found
 }
 
 /**
  * \param[in] v Vector
  * \param[in] elem Element to check for
- * \return 1 if element exists, else 0
+ * \return True if element exists, else false
  *
  * Checks whether the element \p elem exists or not.
  */
-int wget_vector_contains(const wget_vector *v, const void *elem)
+bool wget_vector_contains(const wget_vector *v, const void *elem)
 {
 	return wget_vector_find(v, elem) >= 0;
 }
@@ -643,31 +643,32 @@ int wget_vector_contains(const wget_vector *v, const void *elem)
  * \param[in] start Index to start search from
  * \param[in] direction Direction of search
  * \param[in] find Function to be called for each element
- * \return Index of the found element or -1 if not found
+ * \return Index of the found element, WGET_E_UNKNOWN if not found or WGET_E_INVALID
+ *         if v was %NULL or there was no comparison function set
  *
  * Call \p find for each element starting at \p start.
  * If \p find returns 0 the current index is returned.
- *
- * Returns -1 if \p v is %NULL or if the \p find didn't return 0.
  */
 int wget_vector_findext(const wget_vector *v, int start, int direction, wget_vector_find_fn *find)
 {
+	if (!v)
+		return WGET_E_INVALID;
 
-	if (v) {
-		if (direction) { // down
-			if (start < v->cur) {
-				for (int it = start; it >= 0; it--)
-					if (find(v->entry[it]) == 0) return it;
-			}
-		} else { // up
-			if (start >= 0) {
-				for (int it = start; it < v->cur; it++)
-					if (find(v->entry[it]) == 0) return it;
-			}
+	if (direction) { // down
+		if (start < v->cur) {
+			for (int it = start; it >= 0; it--)
+				if (find(v->entry[it]) == 0)
+					return it;
+		}
+	} else { // up
+		if (start >= 0) {
+			for (int it = start; it < v->cur; it++)
+				if (find(v->entry[it]) == 0)
+					return it;
 		}
 	}
 
-	return -1;
+	return WGET_E_UNKNOWN;
 }
 
 /**@}*/

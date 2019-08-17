@@ -678,7 +678,7 @@ WGETAPI int
 	wget_vector_find(const wget_vector *v, const void *elem) WGET_GCC_NONNULL((2));
 WGETAPI int
 	wget_vector_findext(const wget_vector *v, int start, int direction, wget_vector_find_fn *find) WGET_GCC_NONNULL((4));
-WGETAPI int
+WGETAPI bool
 	wget_vector_contains(const wget_vector *v, const void *elem) WGET_GCC_NONNULL((2));
 WGETAPI int
 	wget_vector_insert(wget_vector *v, const void *elem, int pos) WGET_GCC_NONNULL((2));
@@ -712,7 +712,7 @@ WGETAPI void
 	wget_vector_clear(wget_vector *v);
 WGETAPI void
 	wget_vector_clear_nofree(wget_vector *v);
-WGETAPI void *
+WGETAPI void * NULLABLE
 	wget_vector_get(const wget_vector *v, int pos) WGET_GCC_PURE;
 WGETAPI void
 	wget_vector_setcmpfunc(wget_vector *v, wget_vector_compare_fn *cmp) WGET_GCC_NONNULL((2));
