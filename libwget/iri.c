@@ -492,6 +492,12 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 				break;
 			}
 		}
+
+		if (iri->scheme == (wget_iri_scheme) -1) {
+			debug_printf("Unsupported scheme in '%s'\n", url);
+			wget_iri_free(&iri);
+			return NULL;
+		}
 	} else {
 		// add http:// scheme to url
 		iri->uri = memcpy(((char *)iri) + sizeof(wget_iri), "http://", extra);
@@ -614,12 +620,11 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 		if (wget_ip_is_family(iri->host, WGET_NET_FAMILY_IPV4) || wget_ip_is_family(iri->host, WGET_NET_FAMILY_IPV6))
 			iri->is_ip_address = true;
 	}
-	else {
-		if (iri->scheme == WGET_IRI_SCHEME_HTTP || iri->scheme == WGET_IRI_SCHEME_HTTPS) {
-			error_printf(_("Missing host/domain in URI '%s'\n"), iri->uri);
-			wget_iri_free(&iri);
-			return NULL;
-		}
+
+	if (!iri->host) {
+		error_printf(_("Missing host/domain in URI '%s'\n"), iri->uri);
+		wget_iri_free(&iri);
+		return NULL;
 	}
 
 	if (iri->path && wget_str_needs_encoding(iri->path)) {
