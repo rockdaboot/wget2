@@ -101,10 +101,11 @@ struct JOB {
 		done : 1, // if job has to be retried, else it is done and can be removed (used by the downloader threads)
 		sitemap : 1, // URL is a sitemap to be scanned in recursive mode
 		robotstxt : 1, // URL is a robots.txt to be scanned
-		head_first : 1, // first check mime type by using a HEAD request
+		head_first : 1, // first send a HEAD request
 		requested_by_user : 1, // download even if disallowed by robots.txt
 		ignore_patterns : 1, // Ignore accept/reject patterns
-		http_fallback : 1; // When true, we try again on error, using HTTP (instead of HTTPS)
+		http_fallback : 1, // When true, we try again on error, using HTTP (instead of HTTPS)
+		recursive_send_head : 1; // Indicate whether the HEAD request is sent by the recursive mode
 };
 
 struct DOWNLOADER {

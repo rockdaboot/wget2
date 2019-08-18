@@ -807,22 +807,26 @@ static void add_url_to_queue(const char *url, wget_iri *base, const char *encodi
 
 	if (plugin_verdict.accept) {
 		new_job->ignore_patterns = 1;
-	} else if (config.mime_types) {
-		new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
 	} else if (config.recursive) {
 		if ((config.accept_patterns && !in_pattern_list(config.accept_patterns, new_job->iri->uri))
-				|| (config.accept_regex && !regex_match(new_job->iri->uri, config.accept_regex)))
-			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+				|| (config.accept_regex && !regex_match(new_job->iri->uri, config.accept_regex))) {
+			new_job->head_first = 1; // send HEAD request
+			// if -r sends head we want to enable mime-type check to assure e.g. text/html to be downloaded and parsed
+			new_job->recursive_send_head = 1;
+		}
 
 		if ((config.reject_patterns && in_pattern_list(config.reject_patterns, new_job->iri->uri))
-				|| (config.reject_regex && regex_match(new_job->iri->uri, config.reject_regex)))
-			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+				|| (config.reject_regex && regex_match(new_job->iri->uri, config.reject_regex))) {
+			new_job->head_first = 1; // send HEAD request
+			// if -r sends head we want to enable mime-type check to assure e.g. text/html to be downloaded and parsed
+			new_job->recursive_send_head = 1;
+		}
 	}
 
 	if (config.recursive)
 		new_job->requested_by_user = 1; // download even if disallowed by robots.txt
 
-	if (config.spider || config.chunk_size)
+	if (config.spider || config.chunk_size || config.mime_types || (!config.if_modified_since && config.timestamping))
 		new_job->head_first = 1;
 
 	if (config.auth_no_challenge) {
@@ -1071,22 +1075,29 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	if (plugin_verdict.accept) {
 		new_job->ignore_patterns = 1;
-	} else if (config.mime_types) {
-		new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
 	} else if (config.recursive) {
 		if ((config.accept_patterns && !in_pattern_list(config.accept_patterns, new_job->iri->uri))
-				|| (config.accept_regex && !regex_match(new_job->iri->uri, config.accept_regex)))
-			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+				|| (config.accept_regex && !regex_match(new_job->iri->uri, config.accept_regex))) {
+			new_job->head_first = 1; // send HEAD request
+			// if -r sends head we want to enable mime-type check to assure e.g. text/html to be downloaded and parsed
+			new_job->recursive_send_head = 1;
+		}
 
 		if ((config.reject_patterns && in_pattern_list(config.reject_patterns, new_job->iri->uri))
-				|| (config.reject_regex && regex_match(new_job->iri->uri, config.reject_regex)))
-			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+				|| (config.reject_regex && regex_match(new_job->iri->uri, config.reject_regex))) {
+			new_job->head_first = 1; // send HEAD request
+			// if -r sends head we want to enable mime-type check to assure e.g. text/html to be downloaded and parsed
+			new_job->recursive_send_head = 1;
+		}
 
-		if (config.exclude_directories && in_directory_pattern_list(config.exclude_directories, new_job->iri->path))
-			new_job->head_first = 1; // enable mime-type check to assure e.g. text/html to be downloaded and parsed
+		if (config.exclude_directories && in_directory_pattern_list(config.exclude_directories, new_job->iri->path)) {
+			new_job->head_first = 1; // send HEAD request
+			// if -r sends head we want to enable mime-type check to assure e.g. text/html to be downloaded and parsed
+			new_job->recursive_send_head = 1;
+		}
 	}
 
-	if (config.spider || config.chunk_size)
+	if (config.spider || config.chunk_size || config.mime_types || (!config.if_modified_since && config.timestamping))
 		new_job->head_first = 1;
 
 	if (config.auth_no_challenge)
@@ -1819,6 +1830,7 @@ static int process_response_header(wget_http_response *resp)
 
 static bool check_status_code_list(wget_vector *list, uint16_t status);
 static bool check_mime_list(wget_vector *list, const char *mime);
+static time_t WGET_GCC_NONNULL_ALL get_file_lmtime(const char *fname);
 
 static void process_head_response(wget_http_response *resp)
 {
@@ -1826,7 +1838,19 @@ static void process_head_response(wget_http_response *resp)
 
 	job->head_first = 0;
 
-	if (config.spider || !config.chunk_size) {
+	long long file_size = (job->local_filename) ? get_file_size(job->local_filename) : -1;
+	if (config.timestamping && !config.if_modified_since && resp->code == 200
+		&& file_size == (long long)resp->content_length
+		&& resp->last_modified <= get_file_lmtime(job->local_filename))
+	{
+		info_printf(_("File '%s' not modified on server. Omitting download"), job->local_filename);
+		return;
+	}
+
+	// If we're not going to download the file but it has a parseable type, download for parse and don't store
+	// In -r mode if -r sent HEAD request it's because we're not going to download the file, so, ensure we
+	// download for parse
+	if (config.spider || (config.recursive && (config.mime_types || job->recursive_send_head))) {
 		if (resp->code != 200 || !resp->content_type)
 			return;
 
@@ -1861,6 +1885,7 @@ static void process_head_response(wget_http_response *resp)
 			return; // if not -r then we are done
 
 		job->done = 0; // do this job again with GET request
+		return;
 	} else if (config.chunk_size && resp->content_length > config.chunk_size) {
 		// create metalink structure without hashing
 		wget_metalink_piece piece = { .length = config.chunk_size };
@@ -1888,9 +1913,17 @@ static void process_head_response(wget_http_response *resp)
 			wget_thread_cond_signal(worker_cond);
 			job->done = 0; // do not remove this job from queue yet
 		} // else file already downloaded and checksum ok
-	} else if (config.chunk_size) {
-		// server did not send Content-Length or chunk size <= Content-Length
+	} else if (config.chunk_size)
 		job->done = 0; // do not remove this job from queue yet
+
+	// by default if we don't know the content type we don't download the file
+	if (config.mime_types && resp->content_type)
+		job->done = check_mime_list(config.mime_types, resp->content_type) ? 0 : 1;
+	else if (config.timestamping && !config.if_modified_since && !config.chunk_size && !config.mime_types) {
+		job->done = 0;
+		if (config.timestamping && !config.if_modified_since && file_size >= 0
+			&& file_size != (long long)resp->content_length)
+			info_printf(_("The sizes do not match (local %lld, remote %zu) -- retrieving"), file_size, resp->content_length);
 	}
 }
 
@@ -2082,7 +2115,7 @@ static void process_response(wget_http_response *resp)
 			if (recurse_decision)
 				recurse_iris = wget_vector_create(16, NULL);
 
-			process_decision = plugin_db_forward_downloaded_file(job->iri, size, filename, data, recurse_iris);
+			process_decision = plugin_db_forward_downloaded_file(job->iri, size > 0 ? size : 0, filename, data, recurse_iris);
 
 			if (recurse_decision) {
 				n_recurse_iris = wget_vector_size(recurse_iris);
@@ -2991,7 +3024,7 @@ static long long WGET_GCC_NONNULL_ALL get_file_size(const char *fname)
 		return st.st_size;
 	}
 
-	return 0;
+	return -1;
 }
 
 static time_t WGET_GCC_NONNULL_ALL get_file_mtime(const char *fname)
@@ -3003,6 +3036,26 @@ static time_t WGET_GCC_NONNULL_ALL get_file_mtime(const char *fname)
 	}
 
 	return 0;
+}
+
+static time_t WGET_GCC_NONNULL_ALL get_file_lmtime(const char *fname)
+{
+	time_t ret = 0;
+	FILE *fp;
+
+	// see if we stored the server timestamp before
+	if ((fp = fopen(fname, "r"))) {
+		char tbuf[32];
+		if (read_xattr_metadata("user.last_modified", tbuf, sizeof(tbuf), fileno(fp)) > 0)
+			ret = (time_t) atoll(tbuf);
+
+		fclose(fp);
+	}
+
+	if (!ret)
+		ret = get_file_mtime(fname);
+
+	return ret;
 }
 
 static void set_file_mtime(int fd, time_t modified)
@@ -3106,7 +3159,7 @@ static int WGET_GCC_NONNULL((1)) _prepare_file(wget_http_response *resp, const c
 		return -1;
 	}
 
-	if (config.mime_types && !check_mime_list(config.mime_types, resp->content_type))
+	if (config.mime_types && resp->content_type && !check_mime_list(config.mime_types, resp->content_type))
 		return -2;
 
 	// do not save into directories
@@ -3645,7 +3698,7 @@ static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 	if (!(req = wget_http_create_request(iri, method)))
 		return req;
 
-	if (config.continue_download || config.start_pos || config.timestamping) {
+	if (config.continue_download || config.start_pos || (config.timestamping && config.if_modified_since)) {
 		const char *local_filename = config.output_document ? config.output_document : job->local_filename;
 
 		/* We never want to continue the robots job. Always grab a fresh copy
@@ -3663,23 +3716,8 @@ static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 		if (config.start_pos)
 			wget_http_add_header_printf(req, "Range", "bytes=%lld-", config.start_pos);
 
-		if (config.timestamping) {
-			bool found_mtime = 0;
-			time_t mtime = 0;
-			FILE *fp;
-
-			// see if we stored the server timestamp before
-			if ((fp = fopen(local_filename, "r"))) {
-				char tbuf[32];
-				if (read_xattr_metadata("user.last_modified", tbuf, sizeof(tbuf), fileno(fp)) > 0) {
-					mtime = (time_t) atoll(tbuf);
-					found_mtime = 1;
-				}
-				fclose(fp);
-			}
-
-			if (!found_mtime)
-				mtime = get_file_mtime(local_filename);
+		if (config.timestamping && config.if_modified_since) {
+			time_t mtime = get_file_lmtime(local_filename);
 
 			if (mtime) {
 				char http_date[32];

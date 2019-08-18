@@ -543,7 +543,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   Turn on time-stamping.
 
-### `--no-if-modified-since` [Not implemented yet]
+### `--no-if-modified-since`
 
   Do not send If-Modified-Since header in -N mode. Send preliminary HEAD request instead. This has only effect in
   -N mode.
