@@ -56,16 +56,15 @@
  */
 
 /**
- * \param[in] buf An existing buffer, or NULL.
+ * \param[in] buf Pointer to the buffer that should become initialized.
  * \param[in] data Initial contents of the buffer. Might be NULL.
  * \param[in] size Initial length of the buffer. Might be zero (will default to 128 bytes).
- * \return A new buffer (if \p buf is NULL), or the provided buffer, with new contents.
+ * \return WGET_E_SUCCESS or WGET_E_MEMORY in case of a memory allocation failure.
  *
  * Create a new buffer.
  *
- * If \p data is NULL, the buffer will be empty, but it will be pre-allocated with \p size bytes,
- * all filled with zeros. This will make future operations on the buffer faster since there will be
- * less re-allocations needed.
+ * If \p data is NULL, the buffer will be empty, but it will be pre-allocated with \p size bytes.
+ * This will make future operations on the buffer faster since there will be less re-allocations needed.
  *
  * <b>If \p size is zero, the buffer will be pre-allocated with 128 bytes.</b>
  *
@@ -81,19 +80,11 @@
  *  there, but will not touch the old buffer. The new buffer _will_ be freed by these functions since it's been
  *  allocated by libwget internally and thus it knows it can be freed without harm.
  *
- * If an existing buffer is provided in \p buf, it will be re-allocated with the provided \p data and \p size
+ * If an existing buffer is provided in \p buf, it will be initialized with the provided \p data and \p size
  * according to the rules stated above.
  */
-wget_buffer *wget_buffer_init(wget_buffer *buf, char *data, size_t size)
+int wget_buffer_init(wget_buffer *buf, char *data, size_t size)
 {
-	if (!buf) {
-		if (!(buf = wget_malloc(sizeof(wget_buffer))))
-			return NULL;
-		buf->release_buf = 1;
-	} else {
-		buf->release_buf = 0;
-	}
-
 	if (data && likely(size)) {
 		buf->size = size - 1;
 		buf->data = data;
@@ -101,17 +92,21 @@ wget_buffer *wget_buffer_init(wget_buffer *buf, char *data, size_t size)
 		buf->release_data = 0;
 	} else {
 		if (!size)
-			size = 128;
+			size = 127;
 		buf->size = size;
-		if (!(buf->data = wget_malloc(size + 1)))
-			return NULL;
+		if (!(buf->data = wget_malloc(size + 1))) {
+			buf->error = 1;
+			return WGET_E_MEMORY;
+		}
 		*buf->data = 0; // always 0 terminate data to allow string functions
 		buf->release_data = 1;
 	}
 
+	buf->error = 0;
+	buf->release_buf = 0;
 	buf->length = 0;
 
-	return buf;
+	return WGET_E_SUCCESS;
 }
 
 /**
@@ -126,24 +121,37 @@ wget_buffer *wget_buffer_init(wget_buffer *buf, char *data, size_t size)
  */
 wget_buffer *wget_buffer_alloc(size_t size)
 {
-	return wget_buffer_init(NULL, NULL, size);
+	wget_buffer *buf;
+
+	if (!(buf = wget_malloc(sizeof(wget_buffer))))
+		return NULL;
+
+	if (wget_buffer_init(buf, NULL, size) < 0) {
+		xfree(buf);
+		return NULL;
+	}
+
+	buf->release_buf = 1;
+
+	return buf;
 }
 
 static int _buffer_realloc(wget_buffer *buf, size_t size)
 {
 	char *old_data = buf->data;
 
-	if (buf->release_data) {
-		if (!(buf->data = wget_realloc(buf->data, size + 1))) {
-			buf->data = old_data;
-			return WGET_E_MEMORY;
-		}
-	} else {
-		if (!(buf->data = wget_malloc(size + 1))) {
-			buf->data = old_data;
-			return WGET_E_MEMORY;
-		}
+	if (buf->release_data)
+		buf->data = wget_realloc(buf->data, size + 1);
+	else
+		buf->data = wget_malloc(size + 1);
 
+	if (!buf->data) {
+		buf->data = old_data;
+		buf->error = 1;
+		return WGET_E_MEMORY;
+	}
+
+	if (!buf->release_data) {
 		if (likely(old_data) && buf->length)
 			memcpy(buf->data, old_data, buf->length + 1);
 		else
@@ -192,9 +200,6 @@ int wget_buffer_ensure_capacity(wget_buffer *buf, size_t size)
  */
 void wget_buffer_deinit(wget_buffer *buf)
 {
-	if (likely(!buf))
-		return;
-
 	if (buf->release_data) {
 		xfree(buf->data);
 		buf->release_data = 0;
@@ -218,7 +223,7 @@ void wget_buffer_deinit(wget_buffer *buf)
  */
 void wget_buffer_free(wget_buffer **buf)
 {
-	if (likely(buf)) {
+	if (likely(buf && *buf)) {
 		wget_buffer_deinit(*buf);
 		*buf = NULL;
 	}

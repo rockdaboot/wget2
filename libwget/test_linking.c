@@ -13,7 +13,8 @@ int main(void)
 	char buf[1];
 
 	wget_info_printf("%d\n", wget_base64_is_string("")); // base64.c
-	wget_buffer_alloc(1); // buffer.c
+	wget_buffer *bufp = wget_buffer_alloc(1); // buffer.c
+	wget_buffer_free(&bufp);
 	wget_buffer_printf((wget_buffer *)1, "%s", ""); // buffer_printf.c
 	wget_strlcpy(buf, "", 0); // strlcpy.c
 	wget_strscpy(buf, "", 0); // strscpy.c

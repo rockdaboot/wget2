@@ -545,17 +545,18 @@ typedef struct {
 		size; //!< capacity of 'data' (terminating 0 byte doesn't count here)
 	bool
 		release_data : 1, //!< 'data' has been malloc'ed and must be freed
-		release_buf : 1; //!< wget_buffer structure has been malloc'ed and must be freed
+		release_buf : 1, //!< wget_buffer structure has been malloc'ed and must be freed
+		error : 1; //!< a memory failure occurred, the result in 'data' is likely erroneous
 } wget_buffer;
 
-WGETAPI wget_buffer *
-	wget_buffer_init(wget_buffer *buf, char *data, size_t size);
-WGETAPI wget_buffer *
-	wget_buffer_alloc(size_t size) WGET_GCC_MALLOC WGET_GCC_ALLOC_SIZE(1);
 WGETAPI int
-	wget_buffer_ensure_capacity(wget_buffer *buf, size_t size);
+	wget_buffer_init(wget_buffer *buf, char *data, size_t size) WGET_GCC_NONNULL((1));
+WGETAPI wget_buffer *
+	wget_buffer_alloc(size_t size) WGET_GCC_MALLOC WGET_GCC_ALLOC_SIZE(1) RETURNS_NONNULL LIBWGET_WARN_UNUSED_RESULT;
+WGETAPI int
+	wget_buffer_ensure_capacity(wget_buffer *buf, size_t size) LIBWGET_WARN_UNUSED_RESULT;
 WGETAPI void
-	wget_buffer_deinit(wget_buffer *buf);
+	wget_buffer_deinit(wget_buffer *buf) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_buffer_free(wget_buffer **buf);
 WGETAPI void

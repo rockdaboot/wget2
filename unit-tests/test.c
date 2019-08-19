@@ -227,26 +227,6 @@ static void test_buffer(void)
 	_test_buffer(&buf, "Test 2");
 	wget_buffer_deinit(&buf);
 
-	// testing buffer on heap, using initial stack memory
-	// without resizing
-
-	bufp = wget_buffer_init(NULL, sbuf, sizeof(sbuf));
-	wget_buffer_deinit(bufp);
-
-	bufp = wget_buffer_init(NULL, sbuf, sizeof(sbuf));
-	wget_buffer_free(&bufp);
-
-	// testing buffer on heap, using initial stack memory
-	// with resizing
-
-	bufp = wget_buffer_init(NULL, sbuf, sizeof(sbuf));
-	_test_buffer(bufp, "Test 3");
-	wget_buffer_deinit(bufp);
-
-	bufp = wget_buffer_init(NULL, sbuf, sizeof(sbuf));
-	_test_buffer(bufp, "Test 4");
-	wget_buffer_free(&bufp);
-
 	// testing buffer on stack, forcing internal allocation
 
 	wget_buffer_init(&buf, sbuf, 0);
@@ -308,12 +288,12 @@ static void test_buffer(void)
 	wget_buffer_deinit(&buf);
 
 	// force reallocation
-	assert(wget_buffer_init(&buf, sbuf, sizeof(sbuf)) == &buf);
+	assert(wget_buffer_init(&buf, sbuf, sizeof(sbuf)) == WGET_E_SUCCESS);
 	wget_buffer_memset(&buf, 0, 4096);
 	wget_buffer_free_data(&buf);
 	assert(wget_buffer_ensure_capacity(&buf, 256) == WGET_E_SUCCESS);
 	wget_buffer_memset(&buf, 0, 4096);
-	assert((bufp = wget_buffer_init(NULL, NULL, 0)) != NULL);
+	assert((bufp = wget_buffer_alloc(0)) != NULL);
 	wget_buffer_bufcpy(&buf, bufp);
 	wget_buffer_strcpy(bufp, "moin");
 	wget_buffer_bufcpy(&buf, bufp);
@@ -945,26 +925,28 @@ static void test_iri_relative_to_absolute(void)
 	};
 	unsigned it;
 	char uri_buf_static[32]; // use a size that forces allocation in some cases
-	wget_buffer *uri_buf = wget_buffer_init(NULL, uri_buf_static, sizeof(uri_buf_static));
+	wget_buffer uri_buf;
 	wget_iri *base;
+
+	wget_buffer_init(&uri_buf, uri_buf_static, sizeof(uri_buf_static));
 
 	for (it = 0; it < countof(test_data); it++) {
 		const struct iri_test_data *t = &test_data[it];
 
 		base = wget_iri_parse(t->base, "utf-8");
-		wget_iri_relative_to_abs(base, t->relative, -1, uri_buf);
+		wget_iri_relative_to_abs(base, t->relative, -1, &uri_buf);
 
-		if (!strcmp(uri_buf->data, t->result))
+		if (!strcmp(uri_buf.data, t->result))
 			ok++;
 		else {
 			failed++;
-			info_printf("Failed [%u]: %s+%s -> %s (expected %s)\n", it, t->base, t->relative, uri_buf->data, t->result);
+			info_printf("Failed [%u]: %s+%s -> %s (expected %s)\n", it, t->base, t->relative, uri_buf.data, t->result);
 		}
 
 		wget_iri_free(&base);
 	}
 
-	wget_buffer_free(&uri_buf);
+	wget_buffer_deinit(&uri_buf);
 }
 
 static void test_iri_compare(void)

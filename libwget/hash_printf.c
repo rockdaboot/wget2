@@ -55,7 +55,7 @@
  */
 void wget_hash_printf_hex(wget_digest_algorithm algorithm, char *out, size_t outsize, const char *fmt, ...)
 {
-	char *plaintext;
+	char *plaintext = NULL;
 	va_list args;
 	size_t len;
 

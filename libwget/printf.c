@@ -43,7 +43,7 @@
  * \param[in] strp Pointer to hold the string output
  * \param[in] fmt Printf-like format specifier
  * \param[in] args va_list of arguments
- * \return Length of the string returned via \p strp
+ * \return Length of the string returned via \p strp or `(size_t) -1` on error
  *
  * Prints arguments to allocated memory and 0-terminates it. The string is returned via the first argument.
  * It has to be free()'d by the caller when it is no longer needed.
@@ -55,6 +55,11 @@ size_t wget_vasprintf(char **strp, const char *fmt, va_list args)
 	wget_buffer_init(&buf, NULL, 128);
 
 	size_t len = wget_buffer_vprintf(&buf, fmt, args);
+
+	if (unlikely(buf.error)) {
+		xfree(buf.data);
+		return (size_t) -1;
+	}
 
 	if (strp) {
 		// shrink memory to real usage
@@ -97,7 +102,7 @@ size_t wget_asprintf(char **strp, const char *fmt, ...)
  */
 char *wget_vaprintf(const char *fmt, va_list args)
 {
-	char *s;
+	char *s = NULL;
 
 	wget_vasprintf(&s, fmt, args);
 
@@ -115,7 +120,7 @@ char *wget_vaprintf(const char *fmt, va_list args)
 char *wget_aprintf(const char *fmt, ...)
 {
 	va_list args;
-	char *s;
+	char *s = NULL;
 
 	va_start(args, fmt);
 	wget_vasprintf(&s, fmt, args);
@@ -141,6 +146,11 @@ size_t wget_vfprintf(FILE *fp, const char *fmt, va_list args)
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	size_t len = wget_buffer_vprintf(&buf, fmt, args);
+
+	if (unlikely(buf.error)) {
+		wget_buffer_deinit(&buf);
+		return (size_t) -1;
+	}
 
 	if (len > 0)
 		rc = fwrite(buf.data, 1, len, fp);
@@ -209,6 +219,12 @@ size_t wget_vsnprintf(char *str, size_t size, const char *fmt, va_list args)
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	size_t len = wget_buffer_vprintf(&buf, fmt, args);
+
+	if (unlikely(buf.error)) {
+		wget_buffer_deinit(&buf);
+		return (size_t) -1;
+	}
+
 	if (str) {
 		if (len < size) {
 			memcpy(str, buf.data, len + 1);
