@@ -133,26 +133,27 @@ static int _buffer_realloc(wget_buffer *buf, size_t size)
 {
 	char *old_data = buf->data;
 
-	if (!(buf->data = wget_malloc(size + 1))) {
-		buf->data = old_data;
-		return WGET_E_MEMORY;
-	}
+	if (buf->release_data) {
+		if (!(buf->data = wget_realloc(buf->data, size + 1))) {
+			buf->data = old_data;
+			return WGET_E_MEMORY;
+		}
+	} else {
+		if (!(buf->data = wget_malloc(size + 1))) {
+			buf->data = old_data;
+			return WGET_E_MEMORY;
+		}
 
-	buf->size = size;
-
-	if (likely(old_data)) {
-		if (buf->length)
+		if (likely(old_data) && buf->length)
 			memcpy(buf->data, old_data, buf->length + 1);
 		else
 			*buf->data = 0; // always 0 terminate data to allow string functions
 
-		if (buf->release_data)
-			xfree(old_data);
-	} else {
-		*buf->data = 0; // always 0 terminate data to allow string functions
+		buf->release_data = 1;
 	}
 
-	buf->release_data = 1;
+	buf->size = size;
+
 	return WGET_E_SUCCESS;
 }
 
