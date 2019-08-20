@@ -2724,18 +2724,20 @@ static int _get_unzipped(void *userdata, const char *data, size_t length)
 
 void sitemap_parse_xml_gz(JOB *job, wget_buffer *gzipped_data, const char *encoding, wget_iri *base)
 {
-	wget_buffer *plain = wget_buffer_alloc(gzipped_data->length * 10);
+	wget_buffer plain;
 	wget_decompressor *dc = NULL;
 
-	if ((dc = wget_decompress_open(wget_content_encoding_gzip, _get_unzipped, plain))) {
+	wget_buffer_init(&plain, NULL, gzipped_data->length * 10);
+
+	if ((dc = wget_decompress_open(wget_content_encoding_gzip, _get_unzipped, &plain))) {
 		wget_decompress(dc, gzipped_data->data, gzipped_data->length);
 		wget_decompress_close(dc);
 
-		sitemap_parse_xml(job, plain->data, encoding, base);
+		sitemap_parse_xml(job, plain.data, encoding, base);
 	} else
 		error_printf(_("Can't scan '%s' because no libz support enabled at compile time\n"), job->iri->uri);
 
-	wget_buffer_free(&plain);
+	wget_buffer_deinit(&plain);
 }
 
 void sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base)
