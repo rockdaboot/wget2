@@ -50,9 +50,76 @@
  * in it by the user. On the other hand, the **size** is the total number of slots in the buffer, either occupied
  * or not.
  *
+ * The stored data is always 0-terminated, so you safely use it with standard string functions.
+ *
  * The functions here allow you to easily work with buffers, providing shortcuts to commonly used
  * memory and string management operations and avoiding usual pitfalls, such as buffer overflows.
  * They provide a higher-level abstraction to working with memory than the @link libwget-mem memory management functions@endlink.
+ *
+ * If your application uses memory allocation functions that may return %NULL values (e.g. like the standard libc functions),
+ * you have to check the `error` value before using the result. If set, it indicates that a memory allocation failure
+ * occurred during internal (re-)allocation.
+ *
+ * Example with wget_buffer on the stack (initial 16 bytes heap allocation)
+ * ```
+ * wget_buffer buf;
+ *
+ * wet_buffer_init(&buf, NULL, 16);
+ *
+ * wget_buffer_strcpy(&buf, "A");
+ * wget_buffer_strcat(&buf, "B");
+ * wget_buffer_memcat(&buf, "C", 1);
+ * wget_buffer_memset_append(&buf, 'D', 1);
+ * wget_buffer_printf_append(&buf, "%s", "E");
+ *
+ * // buf.data now contains the 0-terminated string "ABCDE"
+ * printf("buf.data = %s\n", buf.data);
+ *
+ * wget_buffer_deinit(&buf);
+ * ```
+ *
+ * Example with wget_buffer on the stack and 16 bytes initial stack buffer (no heap allocation is needed)
+ * ```
+ * wget_buffer buf;
+ * char sbuf[16];
+ *
+ * wet_buffer_init(&buf, sbuf, sizeof(sbuf));
+ *
+ * wget_buffer_strcpy(&buf, "A");
+ * wget_buffer_strcat(&buf, "B");
+ * wget_buffer_memcat(&buf, "C", 1);
+ * wget_buffer_memset_append(&buf, 'D', 1);
+ * wget_buffer_printf_append(&buf, "%s", "E");
+ *
+ * // buf.data now contains the 0-terminated string "ABCDE"
+ * printf("buf.data = %s\n", buf.data);
+ *
+ * wget_buffer_deinit(&buf);
+ * ```
+ *
+ * Example on how to check for memory failure and how to transfer buffer data
+ * ```
+ * wget_buffer buf;
+ *
+ * wet_buffer_init(&buf, NULL, 16);
+ *
+ * wget_buffer_strcpy(&buf, "A");
+ * wget_buffer_strcat(&buf, "B");
+ * wget_buffer_memcat(&buf, "C", 1);
+ * wget_buffer_memset_append(&buf, 'D', 1);
+ * wget_buffer_printf_append(&buf, "%s", "E");
+ *
+ *	if (buf.error)
+ *		panic("No memory !");
+ *
+ *	// transfer ownership away from wget_buffer
+ *	char *ret = buf.data;
+ *	buf.data = NULL; // avoid double frees
+ *
+ * wget_buffer_deinit(&buf);
+ *
+ *	return ret; // the caller must free() this value after use
+ * ```
  */
 
 /**
