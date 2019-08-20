@@ -1544,6 +1544,8 @@ void wget_test(int first_key, ...)
 		// create files
 		if (existing_files) {
 			for (it = 0; existing_files[it].name; it++) {
+				mkdir_path(existing_files[it].name, 1);
+
 				if (existing_files[it].hardlink) {
 					if (link(existing_files[it].hardlink, existing_files[it].name) != 0) {
 						wget_error_printf_exit(_("Failed to link %s/%s -> %s/%s [%s]\n"),
