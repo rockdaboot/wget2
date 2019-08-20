@@ -273,7 +273,7 @@ void wget_buffer_deinit(wget_buffer *buf)
 	}
 
 	if (buf->release_buf)
-		xfree(buf);
+		wget_free(buf); // do not use xfree() since buf is NONNULL
 }
 
 /**
