@@ -43,12 +43,13 @@ int main(void)
 		0);
 
 	// we don't start a HTTPS server, so we expect no fallback to HTTP and a exit code of 4
-	// -4: IPv4 only since IPv6 often results in a error code of 5 (network error)
+	// depending on the network stack and timing, we see different failures (handshake or network error)
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "-4 --ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp --https-enforce=hard --default-https-port={{sslport}} --default-http-port={{port}}",
+		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp --https-enforce=hard --default-https-port={{sslport}} --default-http-port={{port}}",
 		WGET_TEST_REQUEST_URL, "http://localhost/index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 5, // handshake error (network error would also be appropriate)
+		WGET_TEST_EXPECTED_ERROR_CODE2, 5, // TLS handshake error
+		WGET_TEST_EXPECTED_ERROR_CODE,  4, // network error
 		0);
 
 	exit(0);
