@@ -1436,6 +1436,7 @@ void wget_test(int first_key, ...)
 			key,
 			fd,
 			rc,
+			expected_error_code2 = -1,
 			expected_error_code = 0;
 		va_list
 			args;
@@ -1476,6 +1477,9 @@ void wget_test(int first_key, ...)
 				break;
 			case WGET_TEST_EXPECTED_ERROR_CODE:
 				expected_error_code = va_arg(args, int);
+				break;
+			case WGET_TEST_EXPECTED_ERROR_CODE2:
+				expected_error_code2 = va_arg(args, int);
 				break;
 			case WGET_TEST_EXPECTED_FILES:
 				expected_files = va_arg(args, const wget_test_file_t *);
@@ -1639,8 +1643,14 @@ void wget_test(int first_key, ...)
 			wget_error_printf_exit(_("Unexpected error code %d, expected %d [%s]\n"), rc, expected_error_code, options);
 		}
 		else if (WEXITSTATUS(rc) != expected_error_code) {
-			wget_error_printf_exit(_("Unexpected error code %d, expected %d [%s]\n"),
-				WEXITSTATUS(rc), expected_error_code, options);
+			if (expected_error_code2 >= 0) {
+				if (WEXITSTATUS(rc) != expected_error_code2)
+					wget_error_printf_exit(_("Unexpected error code %d, expected %d or %d [%s]\n"),
+						WEXITSTATUS(rc), expected_error_code, expected_error_code2, options);
+			}
+			else
+				wget_error_printf_exit(_("Unexpected error code %d, expected %d [%s]\n"),
+					WEXITSTATUS(rc), expected_error_code, options);
 		}
 
 		if (expected_files) {
