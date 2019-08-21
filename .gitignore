@@ -39,6 +39,7 @@ m4/*
 Makefile
 Makefile.in
 aclocal.m4
+aminclude_static.am
 ar-lib
 autom4te.cache
 compile
@@ -53,6 +54,7 @@ configure
 depcomp
 docs/html
 docs/man
+docs/README.md
 docs/wget2.info
 docs/wget2.texi
 docs/libwget.doxy
