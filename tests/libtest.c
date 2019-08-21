@@ -80,6 +80,7 @@ static int
 	ocsp_server_port,
 	h2_server_port,
 	keep_tmpfiles,
+	reject_http_connection,
 	reject_https_connection;
 static wget_vector
 	*request_urls;
@@ -684,10 +685,15 @@ static void _http_server_stop(void)
 }
 
 static int _check_to_accept(
-	WGET_GCC_UNUSED void *cls,
+	void *cls,
 	WGET_GCC_UNUSED const struct sockaddr *addr,
 	WGET_GCC_UNUSED socklen_t addrlen)
 {
+	int server_mode = (int) (ptrdiff_t) cls;
+
+	if (server_mode == HTTP_MODE)
+		return reject_http_connection ? MHD_NO : MHD_YES;
+
 	return reject_https_connection ? MHD_NO : MHD_YES;
 }
 
@@ -699,7 +705,7 @@ static int _http_server_start(int SERVER_MODE)
 		static char rnd[8] = "realrnd"; // fixed 'random' value
 
 		httpdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
-			port_num, NULL, NULL, &_answer_to_connection, NULL,
+			port_num, _check_to_accept, (void *) (ptrdiff_t) SERVER_MODE, &_answer_to_connection, NULL,
 			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
 			MHD_OPTION_NONCE_NC_SIZE, 300,
 #ifdef MHD_OPTION_STRICT_FOR_CLIENT
@@ -728,7 +734,7 @@ static int _http_server_start(int SERVER_MODE)
 						| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
 #endif
 					,
-					port_num, _check_to_accept, NULL, &_answer_to_connection, NULL,
+					port_num, _check_to_accept, (void *) (ptrdiff_t) SERVER_MODE, &_answer_to_connection, NULL,
 					MHD_OPTION_HTTPS_MEM_KEY, key_pem,
 					MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
 #ifdef MHD_OPTION_STRICT_FOR_CLIENT
@@ -749,7 +755,7 @@ static int _http_server_start(int SERVER_MODE)
 						| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
 #endif
 					,
-					port_num, _check_to_accept, NULL, &_answer_to_connection, NULL,
+					port_num, _check_to_accept, (void *) (ptrdiff_t) SERVER_MODE, &_answer_to_connection, NULL,
 					MHD_OPTION_HTTPS_MEM_KEY, key_pem,
 					MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
 #ifdef MHD_OPTION_STRICT_FOR_CLIENT
@@ -774,7 +780,7 @@ static int _http_server_start(int SERVER_MODE)
 					| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
 #endif
 				,
-				port_num, _check_to_accept, NULL, &_answer_to_connection, NULL,
+				port_num, _check_to_accept, (void *) (ptrdiff_t) SERVER_MODE, &_answer_to_connection, NULL,
 				MHD_OPTION_HTTPS_CERT_CALLBACK, &_ocsp_cert_callback,
 #ifdef MHD_OPTION_STRICT_FOR_CLIENT
 				MHD_OPTION_STRICT_FOR_CLIENT, 1,
@@ -870,7 +876,7 @@ static int _http_server_start(int SERVER_MODE)
 		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS
 				| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
 			,
-			port_num, _check_to_accept, NULL, &_answer_to_connection, NULL,
+			port_num, _check_to_accept, (void *) (ptrdiff_t) SERVER_MODE, &_answer_to_connection, NULL,
 			MHD_OPTION_HTTPS_CERT_CALLBACK2, _ocsp_stap_cert_callback,
 #ifdef MHD_OPTION_STRICT_FOR_CLIENT
 				MHD_OPTION_STRICT_FOR_CLIENT, 1,
@@ -1189,6 +1195,9 @@ void wget_test_start_server(int first_key, ...)
 #ifdef WITH_TLS
 			start_https = 0;
 #endif
+			break;
+		case WGET_TEST_HTTP_REJECT_CONNECTIONS:
+			reject_http_connection = 1;
 			break;
 		case WGET_TEST_HTTPS_REJECT_CONNECTIONS:
 			reject_https_connection = 1;
