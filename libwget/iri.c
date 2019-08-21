@@ -1383,14 +1383,12 @@ wget_iri_scheme wget_iri_set_scheme(wget_iri *iri, wget_iri_scheme scheme)
 		iri->scheme = scheme;
 
 		// If the IRI is using the default port, also change it
-		if (!iri->port_given)
+		if (iri->port == schemes[old_scheme].port)
 			iri->port = schemes[scheme].port;
 
 		size_t old_scheme_len = strlen(schemes[old_scheme].name);
 
-		if (strncmp(iri->uri, schemes[old_scheme].name, old_scheme_len) == 0
-			&& strncmp(iri->uri + old_scheme_len, "://", 3) == 0)
-		{
+		if (strncmp(iri->uri, schemes[old_scheme].name, old_scheme_len) == 0 && iri->uri[old_scheme_len] == ':') {
 			char *new_uri = wget_aprintf("%s%s",  schemes[iri->scheme].name, iri->uri + old_scheme_len);
 			if (iri->uri_allocated)
 				xfree(iri->uri);
