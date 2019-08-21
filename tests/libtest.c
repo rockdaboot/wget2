@@ -1089,7 +1089,7 @@ static char *_insert_ports(const char *src)
 				}
 #ifdef HAVE_MICROHTTPD_HTTP2_H
 				else {
-					dst += wget_snprintf(dst, srclen - (dst - ret), "%d", h2_server_port);
+					dst += wget_snprintf(dst, srclen - (dst - ret), "%d", reject_https_connection ? http_server_port : h2_server_port);
 				}
 #endif
 				src += 8;
