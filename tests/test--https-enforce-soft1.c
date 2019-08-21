@@ -46,7 +46,7 @@ int main(void)
 	// functions won't come back if an error occurs
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
-		WGET_TEST_HTTP_ONLY,
+		WGET_TEST_HTTPS_REJECT_CONNECTIONS,
 		WGET_TEST_FEATURE_MHD,
 		WGET_TEST_FEATURE_TLS,
 		0);
@@ -54,8 +54,10 @@ int main(void)
 	// wget2 tries HTTPS, then falls back to HTTP
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp --https-enforce=soft",
-		WGET_TEST_REQUEST_URL, "http://localhost:{{port}}/index.html",
+		WGET_TEST_OPTIONS,
+			"--ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp"
+			" --https-enforce=soft --default-https-port={{sslport}} --default-http-port={{port}}",
+		WGET_TEST_REQUEST_URL, "http://localhost/index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[1].name + 1, urls[1].body },

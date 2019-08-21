@@ -55,7 +55,9 @@ int main(void)
 	// wget2 downloads from HTTPS though we give an http:// URL
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
-		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp --https-enforce=hard --recursive --default-https-port={{sslport}} -nH",
+		WGET_TEST_OPTIONS,
+			"--ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp"
+			" --https-enforce=hard --recursive --default-https-port={{sslport}} --default-http-port={{port}} -nH",
 		WGET_TEST_REQUEST_URL, "http://localhost/index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
