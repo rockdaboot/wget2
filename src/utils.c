@@ -32,10 +32,19 @@
 #include "wget_utils.h"
 
 // this function should be called protected by a mutex - else race conditions will happen
-void mkdir_path(const char *fname, bool is_file)
+void mkdir_path(const char *_fname, bool is_file)
 {
 	const char *p1;
-	char *p2;
+	char *p2, *fname;
+	char buf[1024];
+
+	size_t len = strlen(_fname);
+
+	if (len < sizeof(buf)) {
+		memcpy(buf, _fname, len + 1);
+		fname = buf;
+	} else
+		fname = wget_strdup(_fname);
 
 	for (p1 = fname + 1; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
 		int rc;
@@ -84,11 +93,14 @@ void mkdir_path(const char *fname, bool is_file)
 		*p2 = '/'; // restore path separator
 	}
 
+	if (fname != buf)
+		xfree(fname);
+
 	// If the path does not represent a file, we want to also create the
 	// directory for the last part
 	if (!is_file) {
-		int rc = mkdir(fname, 0755);
-		debug_printf("mkdir(%s)=%d errno=%d\n",fname,rc,errno);
+		int rc = mkdir(_fname, 0755);
+		debug_printf("mkdir(%s)=%d errno=%d\n",_fname,rc,errno);
 	}
 }
 
