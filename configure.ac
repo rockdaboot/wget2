@@ -504,22 +504,35 @@ AS_IF([test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes], [
 
 AS_IF([test "x$with_ssl" == xno || test "x$with_gnutls_hash" != xyes], [
   PKG_CHECK_MODULES([NETTLE], nettle, [
-      with_libnettle=yes
-      LIBS="$NETTLE_LIBS $LIBS"
-      CFLAGS="$NETTLE_CFLAGS $CFLAGS"
-      AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])
-    ], [
-      AC_SEARCH_LIBS(nettle_md5_init, nettle,
-        [with_libnettle=yes; AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])],
-        [with_libnettle=no;  AC_MSG_WARN(*** LIBNETTLE was not found. Fallback to libgcrypt for hashing and checksumming.)])
-    ])
+    with_libnettle=yes
+    LIBS="$NETTLE_LIBS $LIBS"
+    CFLAGS="$NETTLE_CFLAGS $CFLAGS"
+    AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])
+  ], [
+    AC_SEARCH_LIBS(nettle_md5_init, nettle,
+      [with_libnettle=yes; AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])],
+      [with_libnettle=no;  AC_MSG_WARN(*** LIBNETTLE was not found. Fallback to libgcrypt for hashing and checksumming.)])
+  ])
 
   AS_IF([test "x$with_libnettle" != xyes], [
+    AC_SEARCH_LIBS(EVP_MD_CTX_new, crypto,
+      [with_libcrypto=yes; AC_DEFINE([WITH_LIBCRYPTO], [1], [Use libcrypto])],
+      [with_libcrypto=no; AC_MSG_WARN(*** LIBCRYPTO was not found. Fallback to libwolfcrypt for hashing and checksumming.)])
+  ])
+
+  AS_IF([test "x$with_libnettle" != xyes && test "x$with_libcrypto" != xyes], [
+    AC_SEARCH_LIBS(wc_InitSha, wolfssl,
+      [with_libwolfcrypt=yes; AC_DEFINE([WITH_LIBWOLFCRYPT], [1], [Use wolfcrypt])],
+      [with_libwolfcrypt=no; AC_MSG_WARN(*** LIBWOLFCRYPT was not found. Fallback to libnettle for hashing and checksumming.)])
+  ])
+
+  AS_IF([test "x$with_libnettle" != xyes && test "x$with_libcrypto" != xyes && test "x$with_wolfcrypt" != xyes], [
     AC_SEARCH_LIBS(gcry_check_version, gcrypt,
       [with_gcrypt=yes; AC_DEFINE([WITH_GCRYPT], [1], [Use libgcrypt]) AC_CHECK_HEADERS([gcrypt.h])],
       [with_gcrypt=no;  AC_MSG_WARN(*** LIBGCRYPT was not found. Metalink checksumming and HTTP authentication are not available.)])
   ])
 ])
+
 AM_CONDITIONAL([WITH_LIBNETTLE], [test "x$with_libnettle" = xyes])
 AM_CONDITIONAL([WITH_CRYPT], [test "x$with_gcrypt" = xyes])
 

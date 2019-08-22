@@ -267,6 +267,7 @@ typedef enum {
 	WGET_E_XML_PARSE_ERR = -12, /* XML parsing failed */
 	WGET_E_OPEN = -13, /* Failed to open file */
 	WGET_E_IO = -14, /* General I/O error (read/write/stat/...) */
+	WGET_E_UNSUPPORTED = -15, /* Unsupported function */
 } wget_error;
 
 WGETAPI const char *

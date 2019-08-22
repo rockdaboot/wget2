@@ -209,6 +209,275 @@ void wget_hash_deinit(wget_hash_hd *handle, void *digest)
 	gnutls_hash_deinit(handle->dig, digest);
 }
 
+#elif defined WITH_LIBWOLFCRYPT
+#include <wolfssl/wolfcrypt/hash.h>
+
+struct _wget_hash_hd_st {
+	union {
+#ifdef WOLFSSL_MD2
+		wc_Md2;
+#endif
+		wc_Md5;
+		wc_Sha;
+		wc_Sha256;
+#ifdef WOLFSSL_SHA224
+		wc_Sha224;
+#endif
+#ifdef WOLFSSL_SHA384
+		wc_Sha384;
+#endif
+#ifdef WOLFSSL_SHA512
+		wc_Sha512;
+#endif
+	} h;
+	wget_digest_algorithm_t algorithm;
+};
+
+struct wolfssl_md {
+	int outlen;
+	int (*init) (void *);
+	int (*update) (void *, const byte *, word32);
+	int (*deinit) (void *, byte *);
+	int (*hash_fast) (const byte *, word32, byte *);
+};
+
+static const struct wolfssl_md
+	_wolfssl_algorithm[WGET_DIGTYPE_MAX] = {
+		[WGET_DIGTYPE_UNKNOWN] = NULL,
+#ifdef WOLFSSL_MD2
+		[WGET_DIGTYPE_MD2] = {
+			WC_MD2_DIGEST_SIZE,
+			wc_InitMd2,
+			wc_Md2Update,
+			wc_Md2Final,
+			wc_Md2Hash
+		},
+#else
+		[WGET_DIGTYPE_MD2] = { NULL, NULL, NULL, NULL },
+#endif
+		[WGET_DIGTYPE_MD5] = {
+			WC_MD5_DIGEST_SIZE,
+			wc_InitMd5,
+			wc_Md5Update,
+			wc_Md5Final,
+			wc_Md5Hash
+		},
+#ifdef WOLFSSL_RIPEMD
+		[WGET_DIGTYPE_RMD160] = {
+			RIPEMD_DIGEST_SIZE,
+			wc_InitRipeMd,
+			wc_RipeMdUpdate,
+			wc_RipeMdFinal,
+			NULL
+		};
+#else
+		[WGET_DIGTYPE_RMD160] = { NULL, NULL, NULL, NULL },
+#endif
+		[WGET_DIGTYPE_SHA1] = {
+			WC_SHA_DIGEST_SIZE,
+			wc_InitSha,
+			wc_ShaUpdate,
+			wc_ShaFinal,
+			wc_ShaHash
+		},
+#ifdef WOLFSSL_SHA224
+		[WGET_DIGTYPE_SHA224] = {
+			WC_SHA224_DIGEST_SIZE,
+			wc_InitSha224,
+			wc_Sha224Update,
+			wc_Sha224Final,
+			wc_Sha224Hash
+		},
+#else
+		[WGET_DIGTYPE_SHA224] = { NULL, NULL, NULL, NULL },
+#endif
+		[WGET_DIGTYPE_SHA256] = {
+			WC_SHA256_DIGEST_SIZE,
+			wc_InitSha256,
+			wc_Sha256Update,
+			wc_Sha256Final,
+			wc_Sha256Hash
+		},
+#ifdef WOLFSSL_SHA384
+		[WGET_DIGTYPE_SHA384] = {
+			SHZ384_DIGEST_SIZE,
+			wc_InitSha384,
+			wc_Sha384Update,
+			wc_Sha384Final
+		},
+#else
+		[WGET_DIGTYPE_SHA384] = { NULL, NULL, NULL, NULL },
+#endif
+#ifdef WOLFSSL_SHA512
+		[WGET_DIGTYPE_SHA512] = {
+			WC_SHA512_DIGEST_SIZE,
+			wc_InitSha512,
+			wc_Sha512Update,
+			wc_Sha512Final
+		}
+#else
+		[WGET_DIGTYPE_SHA512] = { NULL, NULL, NULL, NULL }
+#endif
+	};
+
+int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
+{
+	struct wolfssl_md *md;
+
+	if (!digest)
+		return WGET_E_INVALID;
+	if ((unsigned) algorithm < countof(_wolfssl_algorithm))
+		return WGET_E_INVALID;
+
+	md = _wolfssl_algorithm[algorithm];
+	if (md->hash_fast == NULL)
+		return WGET_E_UNSUPPORTED;
+
+	if (!md->hash_fast(text, textlen, digest))
+		return WGET_E_UNKNOWN;
+
+	return 0;
+}
+
+int wget_hash_get_len(wget_digest_algorithm_t algorithm)
+{
+	if ((unsigned) algorithm < countof(_wolfssl_algorithm) && algorithm != 0)
+		return _wolfssl_algorithm[algorithm].outlen;
+
+	return 0;
+}
+
+int wget_hash_init(wget_hash_hd_t *handle, wget_digest_algorithm_t algorithm)
+{
+	struct wolfssl_md *md;
+
+	if ((unsigned) algorithm < countof(_wolfssl_algorithm))
+		return WGET_E_INVALID;
+
+	md = _wolfssl_algorithm[algorithm];
+
+	if (md->init && md->update && md->deinit) {
+		handle->algorithm = algorithm;
+		return md->init(&handle->h);
+	}
+
+	return WGET_E_UNKNOWN;
+}
+
+int wget_hash(wget_hash_hd_t *handle, const void *text, size_t textlen)
+{
+	struct wolfssl_md *md;
+
+	if (!handle)
+		return WGET_E_INVALID;
+	if (handle->algorithm == 0 || (unsigned) handle->algorithm >= countof(_wolfssl_algorithm))
+		return WGET_E_INVALID;
+
+	return _wolfssl_algorithm[handle->algorithm].update(&handle->h, text, textlen);
+}
+
+void wget_hash_deinit(wget_hash_hd_t *handle, void *digest)
+{
+	if (handle && digest) {
+		_wolfssl_algorithm[handle->algorithm].deinit(&handle->h, digest);
+		handle->algorithm = 0;
+	}
+}
+
+#elif defined WITH_LIBCRYPTO
+#include <openssl/evp.h>
+
+struct _wget_hash_hd_st {
+	EVP_MD_CTX *ctx;
+};
+
+static const EVP_MD*
+	_openssl_algorithm[WGET_DIGTYPE_MAX] = {
+		[WGET_DIGTYPE_UNKNOWN] = NULL,
+#ifndef OPENSSL_NO_MD2
+		[WGET_DIGTYPE_MD2] = EVP_md2(),
+#else
+		[WGET_DIGTYPE_MD2] = NULL,
+#endif
+		[WGET_DIGTYPE_MD5] = EVP_md5(),
+		[WGET_DIGTYPE_RMD160] = EVP_ripemd160(),
+		[WGET_DIGTYPE_SHA1] = EVP_sha1(),
+		[WGET_DIGTYPE_SHA224] = EVP_sha224(),
+		[WGET_DIGTYPE_SHA256] = EVP_sha256(),
+		[WGET_DIGTYPE_SHA384] = EVP_sha384(),
+		[WGET_DIGTYPE_SHA512] = EVP_sha512()
+	};
+
+int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
+{
+	const EVP_MD *evp;
+
+	if (!digest)
+		return WGET_E_INVALID;
+	if ((unsigned) algorithm < countof(_openssl_algorithm))
+		return WGET_E_INVALID;
+	if ((evp = _openssl_algorithm[algorithm]) == NULL)
+		return WGET_E_UNSUPPORTED;
+
+	if (!EVP_Digest(text, textlen, digest, NULL, evp, NULL))
+		return WGET_E_UNKNOWN;
+
+	return 0;
+}
+
+int wget_hash_get_len(wget_digest_algorithm_t algorithm)
+{
+	const EVP_MD *evp;
+
+	if ((unsigned) algorithm < countof(_openssl_algorithm) ||
+			(evp = _openssl_algorithm[algorithm]) == NULL)
+		return 0;
+
+	return EVP_MD_CTX_size(evp);
+}
+
+int wget_hash_init(wget_hash_hd_t *handle, wget_digest_algorithm_t algorithm)
+{
+	const EVP_MD *evp;
+
+	if (!handle || ((unsigned) algorithm >= countof(_openssl_algorithm)))
+		return WGET_E_INVALID;
+	if ((evp = _openssl_algorithm[algorithm]) == NULL)
+		return WGET_E_UNSUPPORTED;
+
+	handle->ctx = EVP_MD_CTX_new();
+
+	if (handle->ctx && EVP_DigestInit_ex(&handle->ctx, evp, NULL))
+		return 0;
+
+	if (handle->ctx)
+		EVP_MD_CTX_free(handle->ctx);
+	return WGET_E_INVALID;
+}
+
+int wget_hash(wget_hash_hd_t *handle, const void *text, size_t textlen)
+{
+	if (!handle)
+		return WGET_E_INVALID;
+
+	if (EVP_DigestUpdate(handle->ctx, text, textlen))
+		return 0;
+
+	return WGET_E_INVALID;
+}
+
+void wget_hash_deinit(wget_hash_hd_t *handle, void *digest)
+{
+	if (!handle)
+		return;
+
+	if (digest)
+		EVP_DigestFinal_ex(handle->ctx, digest, NULL);
+
+	EVP_MD_CTX_free(handle->ctx);
+	handle->ctx = NULL;
+}
+
 #elif defined WITH_LIBNETTLE
 #include <nettle/nettle-meta.h>
 #include <nettle/md2.h>
