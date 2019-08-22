@@ -551,7 +551,7 @@ AM_CONDITIONAL([WITH_LIBNGHTTP2], [test "x$with_libnghttp2" = xyes])
 AC_ARG_WITH(bzip2, AS_HELP_STRING([--without-bzip2], [disable bzip2 compression support]), with_bzip2=$withval, with_bzip2=yes)
 AS_IF([test "x$with_bzip2" != xno], [
   AC_SEARCH_LIBS(BZ2_bzDecompress, bz2,
-    [with_bzip2=yes; AC_DEFINE([WITH_BZIP2], [1], [Use libbz2])],
+    [with_bzip2=yes; AC_SUBST([BZ2_LIBS], -lbz2) AC_DEFINE([WITH_BZIP2], [1], [Use libbz2])],
     [with_bzip2=no;  AC_MSG_WARN(*** libbz2 was not found. You will not be able to use BZIP2 (de)compression)])
 ])
 AM_CONDITIONAL([WITH_BZIP2], [test "x$with_bzip2" = xyes])
