@@ -269,7 +269,8 @@ struct config {
 		https_enforce,
 		retry_connrefused,
 		unlink,
-		background;
+		background,
+		if_modified_since;
 
 };
 

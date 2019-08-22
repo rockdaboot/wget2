@@ -1197,7 +1197,8 @@ struct config config = {
 	.local_db = 1,
 	.report_speed = WGET_REPORT_SPEED_BYTES,
 	.default_http_port = 80,
-	.default_https_port = 443
+	.default_https_port = 443,
+	.if_modified_since = 1
 };
 
 static int parse_execute(option_t opt, const char *val, const char invert);
@@ -1678,6 +1679,13 @@ static const struct optionw options[] = {
 		SECTION_SSL,
 		{ "Set HTTPS proxy/proxies, overriding environment\n",
 		  "variables. Use comma to separate proxies.\n"
+		}
+	},
+	{ "if-modified-since", &config.if_modified_since, parse_bool, -1, 0,
+		SECTION_DOWNLOAD,
+		{ "Do not send If-Modified-Since header in -N mode.\n"
+		  "Send preliminary HEAD request instead. This has only\n",
+		  "effect in -N mode.\n"
 		}
 	},
 	{ "ignore-case", &config.ignore_case, parse_bool, -1, 0,
@@ -3393,6 +3401,25 @@ int init(int argc, const char **argv)
 	if (config.start_pos && config.continue_download) {
 		error_printf(_("Specifying both --start-pos and --continue is not recommended; --continue will be disabled"));
 		config.continue_download = 0;
+	}
+
+	if (config.timestamping) {
+		if (config.output_document) {
+			error_printf(_("WARNING: timestamping does nothing in combination with -O"));
+			config.timestamping = 0;
+		}
+		if (!config.clobber) {
+			error_printf(_("Can't timestamp and not clobber old files at the same time"));
+			config.timestamping = 0;
+		}
+		if (config.spider) {
+			error_printf(_("WARNING: timestamping does nothing in combination with spider"));
+			config.timestamping = 0;
+		}
+		if (config.chunk_size && config.if_modified_since) {
+			error_printf(_("WARNING: timestamping and chunk-size only work together without If-Modified-Since"));
+			config.if_modified_since = 0;
+		}
 	}
 
 	if (config.mirror)

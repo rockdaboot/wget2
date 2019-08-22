@@ -341,6 +341,67 @@ int main(void)
 		0);
 #endif
 
+	// tests with -N --no-if-modified-since
+	int n_urls = countof(urls);
+	for (int i = 0; i < n_urls; i++) {
+		urls[i].headers[1] = "Last-Modified: Sat, 09 Oct 2004 08:30:00 GMT";
+	}
+	// --accept using just suffixes
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept \".jpeg\" -N --no-if-modified-since",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[2].name + 1, urls[2].body, 1097310600 },
+			{ urls[3].name + 1, urls[3].body, 1097310600 },
+			{ urls[4].name + 1, urls[4].body, 1097310600 },
+			{	NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --accept \".jpeg\" -N --no-if-modified-since",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{ urls[2].name + 1, "anycontent.", 1097310600 },
+			{ urls[3].name + 1, "anycontent", 1097310600 },
+			{ urls[4].name + 1, urls[4].body, 1097310000 },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[2].name + 1, urls[2].body, 1097310600 },
+			{ urls[3].name + 1, "anycontent", 1097310600 },
+			{ urls[4].name + 1, urls[4].body, 1097310600 },
+			{	NULL } },
+		0);
+
+	// --reject using just suffixes
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --reject \".jpeg\" -N --no-if-modified-since",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body, 1097310600 },
+			{ urls[1].name + 1, urls[1].body, 1097310600 },
+			{ urls[5].name + 1, urls[5].body, 1097310600 },
+			{ urls[6].name + 1, urls[6].body, 1097310600 },
+			{	NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --reject \".jpeg\" -N --no-if-modified-since",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{ urls[5].name + 1, urls[5].body, 1097310000 },
+			{ urls[6].name + 1, "anycontent", 1097310600 },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body, 1097310600 },
+			{ urls[1].name + 1, urls[1].body, 1097310600 },
+			{ urls[5].name + 1, urls[5].body, 1097310600 },
+			{ urls[6].name + 1, "anycontent", 1097310600 },
+			{	NULL } },
+		0);
 
 	exit(0);
 }
