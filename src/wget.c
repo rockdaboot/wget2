@@ -1916,10 +1916,10 @@ static void process_head_response(wget_http_response *resp)
 	} else if (config.chunk_size)
 		job->done = 0; // do not remove this job from queue yet
 
-	// by default if we don't know the content type we don't download the file
-	if (config.mime_types && resp->content_type)
-		job->done = check_mime_list(config.mime_types, resp->content_type) ? 0 : 1;
-	else if (config.timestamping && !config.if_modified_since && !config.chunk_size && !config.mime_types) {
+	// If the content-type header does not exist we assume file to be 'application/octet-stream'
+	if (config.mime_types)
+		job->done = check_mime_list(config.mime_types, resp->content_type ? resp->content_type : "application/octet-stream") ? 0 : 1;
+	else if (config.timestamping && !config.if_modified_since && !config.chunk_size) {
 		job->done = 0;
 		if (config.timestamping && !config.if_modified_since && file_size >= 0
 			&& file_size != (long long)resp->content_length)
@@ -3159,7 +3159,8 @@ static int WGET_GCC_NONNULL((1)) _prepare_file(wget_http_response *resp, const c
 		return -1;
 	}
 
-	if (config.mime_types && resp->content_type && !check_mime_list(config.mime_types, resp->content_type))
+	// If the content-type header does not exist we assume file to be 'application/octet-stream'
+	if (config.mime_types && !check_mime_list(config.mime_types, resp->content_type ? resp->content_type : "application/octet-stream"))
 		return -2;
 
 	// do not save into directories

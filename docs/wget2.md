@@ -1850,7 +1850,8 @@ Go to background immediately after startup. If no output file is specified via t
 
   Specify a comma-separated list of MIME types that will be downloaded.  Elements of list may contain wildcards.
   If a MIME type starts with the character '!' it won't be downloaded, this is useful when trying to download
-  something with exceptions. For example, download everything except images:
+  something with exceptions. If server doesn't specify the MIME type of a file it will be considered as
+  'application/octet-stream'. For example, download everything except images:
 
       wget2 -r https://<site>/<document> --filter-mime-type=*,\!image/*
 
