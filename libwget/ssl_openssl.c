@@ -31,8 +31,8 @@
 #include <openssl/x509v3.h>
 
 #include <wget.h>
-#include "net.h"
 #include "private.h"
+#include "net.h"
 
 static wget_tls_stats_callback
 	*tls_stats_callback;
@@ -711,6 +711,59 @@ static int wait_2_read_and_write(int sockfd, int timeout)
 	return retval;
 }
 
+static bool ssl_set_alpn_offering(SSL *ssl, const char *alpn)
+{
+	int ret = WGET_E_UNKNOWN;
+	const char *s, *e;
+	char sbuf[32];
+	wget_buffer buf;
+
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
+	for (s = e = alpn; *e; s = e + 1) {
+		if ((e = strchrnul(s, ',')) != s) {
+			if (e - s > 64) { // let's be reasonable
+				debug_printf("ALPN protocol too long %.*s\n", (int) (e - s), s);
+				continue;
+			}
+
+			debug_printf("ALPN offering %.*s\n", (int) (e - s), s);
+			wget_buffer_memset_append(&buf, (e - s) & 0x7F, 1); // length of protocol string
+			wget_buffer_memcat(&buf, s, e - s);
+		}
+	}
+
+	if (buf.length) {
+		if (SSL_set_alpn_protos(ssl, (unsigned char *) buf.data, (unsigned) buf.length)) {
+			debug_printf("OpenSSL: ALPN: Could not set ALPN offering");
+		} else
+			ret = WGET_E_SUCCESS;
+	}
+
+	wget_buffer_deinit(&buf);
+
+	return ret;
+}
+
+static void ssl_set_alpn_selected_protocol(const SSL *ssl, wget_tcp *tcp)
+{
+	const unsigned char *data;
+	unsigned int datalen;
+
+	SSL_get0_alpn_selected(ssl, &data, &datalen);
+
+	if (data && datalen) {
+		debug_printf("ALPN: Server accepted protocol '%.*s'\n", (int) datalen, data);
+
+		/* TODO update stats here */
+
+		if (datalen == 2 && data[0] == 'h' && data[1] == '2') {
+			tcp->protocol = WGET_PROTOCOL_HTTP_2_0;
+			/* TODO update stats here */
+		}
+	}
+}
+
 /**
  * \param[in] tcp A TCP connection (see wget_tcp_init())
  * \return `WGET_E_SUCCESS` on success or an error code (`WGET_E_*`) on failure
@@ -770,6 +823,10 @@ int wget_ssl_open(wget_tcp *tcp)
 	if (tcp->ssl_hostname && !SSL_set_tlsext_host_name(ssl, tcp->ssl_hostname))
 		error_printf(_("SNI could not be sent"));
 
+	/* Send ALPN if requested */
+	if (_config.alpn && ssl_set_alpn_offering(ssl, _config.alpn))
+		error_printf(_("ALPN offering could not be sent"));
+
 	/* Resume from a previous SSL/TLS session, if available */
 	if ((resumed = ssl_resume_session(ssl, tcp->ssl_hostname)) == 1)
 		debug_printf("Will try to resume cached TLS session");
@@ -816,6 +873,10 @@ int wget_ssl_open(wget_tcp *tcp)
 		debug_printf("TLS session saved in cache");
 	else
 		debug_printf("TLS session discarded");
+
+	/* Set the protocol selected by the server via ALPN, if any */
+	if (_config.alpn)
+		ssl_set_alpn_selected_protocol(ssl, tcp);
 
 	tcp->ssl_session = ssl;
 	return WGET_E_SUCCESS;
