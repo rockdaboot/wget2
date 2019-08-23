@@ -56,6 +56,7 @@ const char *wget_strerror(wget_error err)
 	case WGET_E_XML_PARSE_ERR: return _("Failed to parse XML");
 	case WGET_E_OPEN: return _("Failed to open file");
 	case WGET_E_IO: return _("I/O error");
+	case WGET_E_UNSUPPORTED: return _("Unsupported function");
 	default: return _("Unknown error");
 	}
 }
