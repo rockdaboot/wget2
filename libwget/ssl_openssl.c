@@ -34,13 +34,13 @@
 #include "net.h"
 #include "private.h"
 
-static wget_tls_stats_callback_t
-	tls_stats_callback;
+static wget_tls_stats_callback
+	*tls_stats_callback;
 static void
 	*tls_stats_ctx;
 
-static wget_ocsp_stats_callback_t
-	ocsp_stats_callback;
+static wget_ocsp_stats_callback
+	*ocsp_stats_callback;
 static void
 	*ocsp_stats_ctx;
 
@@ -55,12 +55,12 @@ static struct _config
 		*crl_file,
 		*ocsp_server,
 		*alpn;
-	wget_ocsp_db_t
+	wget_ocsp_db
 		*ocsp_cert_cache,
 		*ocsp_host_cache;
-	wget_tls_session_db_t
+	wget_tls_session_db
 		*tls_session_cache;
-	wget_hpkp_db_t
+	wget_hpkp_db
 		*hpkp_cache;
 	char
 		ca_type,
@@ -92,7 +92,7 @@ static struct _config
 static int _init;
 static __thread int _ex_data_idx;
 static __thread CRYPTO_EX_DATA _crypto_ex_data;
-static wget_thread_mutex_t _mutex;
+static wget_thread_mutex _mutex;
 
 static SSL_CTX *_ctx;
 
@@ -213,17 +213,17 @@ void wget_ssl_set_config_string(int key, const char *value)
  *
  * The following parameters expect an already initialized libwget object as their value.
  *
- * - WGET_SSL_OCSP_CACHE: This option takes a pointer to a \ref wget_ocsp_db_t
+ * - WGET_SSL_OCSP_CACHE: This option takes a pointer to a \ref wget_ocsp_db
  *  structure as an argument. Such a pointer is returned when initializing the OCSP cache with wget_ocsp_db_init().
  *  The cache is used to store OCSP responses locally and avoid querying the OCSP server repeatedly for the same certificate.
- *  - WGET_SSL_SESSION_CACHE: This option takes a pointer to a \ref wget_tls_session_db_t structure.
+ *  - WGET_SSL_SESSION_CACHE: This option takes a pointer to a \ref wget_tls_session_db structure.
  *  Such a pointer is returned when initializing the TLS session cache with wget_tls_session_db_init().
  *  This option thus sets the handle to the TLS session cache that will be used to store TLS sessions.
  *  The TLS session cache is used to support TLS session resumption. It stores the TLS session parameters derived from a previous TLS handshake
  *  (most importantly the session identifier and the master secret) so that there's no need to run the handshake again
  *  the next time we connect to the same host. This is useful as the handshake is an expensive process.
  *  - WGET_SSL_HPKP_CACHE: Set the HPKP cache to be used to verify known HPKP pinned hosts. This option takes a pointer
- *  to a \ref wget_hpkp_db_t structure. Such a pointer is returned when initializing the HPKP cache
+ *  to a \ref wget_hpkp_db structure. Such a pointer is returned when initializing the HPKP cache
  *  with wget_hpkp_db_init(). HPKP is a HTTP-level protocol that allows the server to "pin" its present and future X.509
  *  certificate fingerprints, to support rapid certificate change in the event that the higher level root CA
  *  gets compromised ([RFC 7469](https://tools.ietf.org/html/rfc7469)).
@@ -232,13 +232,13 @@ void wget_ssl_set_config_object(int key, void *value)
 {
 	switch (key) {
 	case WGET_SSL_OCSP_CACHE:
-		_config.ocsp_cert_cache = (wget_ocsp_db_t *) value;
+		_config.ocsp_cert_cache = (wget_ocsp_db *) value;
 		break;
 	case WGET_SSL_SESSION_CACHE:
-		_config.tls_session_cache = (wget_tls_session_db_t *) value;
+		_config.tls_session_cache = (wget_tls_session_db *) value;
 		break;
 	case WGET_SSL_HPKP_CACHE:
-		_config.hpkp_cache = (wget_hpkp_db_t *) value;
+		_config.hpkp_cache = (wget_hpkp_db *) value;
 		break;
 	default:
 		error_printf(_("Unknown configuration key %d (maybe this config value should be of another type?)\n"), key);
@@ -373,7 +373,7 @@ static int openssl_set_priorities(SSL_CTX *ctx, const char *prio)
 static int openssl_load_trust_file(SSL_CTX *ctx, const char *dir, const char *file)
 {
 	char sbuf[256];
-	wget_buffer_t buf;
+	wget_buffer buf;
 	int rc;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
@@ -720,7 +720,7 @@ static int wait_2_read_and_write(int sockfd, int timeout)
  * If the handshake cannot be completed in the specified timeout for the provided TCP connection
  * this function fails and returns `WGET_E_TIMEOUT`. You can set the timeout with wget_tcp_set_timeout().
  */
-int wget_ssl_open(wget_tcp_t *tcp)
+int wget_ssl_open(wget_tcp *tcp)
 {
 	SSL *ssl = NULL;
 	int retval, error, resumed;
@@ -977,24 +977,24 @@ ssize_t wget_ssl_write_timeout(void *session,
 }
 
 /**
- * \param[in] fn A `wget_ssl_stats_callback_tls_t` callback function to receive TLS statistics data
+ * \param[in] fn A `wget_ssl_stats_callback_tls` callback function to receive TLS statistics data
  * \param[in] ctx Context data given to \p fn
  *
  * Set callback function to be called when TLS statistics are available
  */
-void wget_ssl_set_stats_callback_tls(wget_tls_stats_callback_t fn, void *ctx)
+void wget_ssl_set_stats_callback_tls(wget_tls_stats_callback fn, void *ctx)
 {
 	tls_stats_callback = fn;
 	tls_stats_ctx = ctx;
 }
 
 /**
- * \param[in] fn A `wget_ssl_stats_callback_ocsp_t` callback function to receive OCSP statistics data
+ * \param[in] fn A `wget_ssl_stats_callback_ocsp` callback function to receive OCSP statistics data
  * \param[in] ctx Context data given to \p fn
  *
  * Set callback function to be called when OCSP statistics are available
  */
-void wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback_t fn, void *ctx)
+void wget_ssl_set_stats_callback_ocsp(wget_ocsp_stats_callback fn, void *ctx)
 {
 	ocsp_stats_callback = fn;
 	ocsp_stats_ctx = ctx;
