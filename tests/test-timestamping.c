@@ -334,6 +334,35 @@ int main(void)
 		0);
 
 	// tests in combination with -r
+	urls[1].modified = 1097310600;
+	const char *modified2 = "<a href=\"dummy.txt\">link</a>";
+	wget_test(
+		WGET_TEST_OPTIONS, "-N -r -nd",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"index.html", modified2, 1097310600 },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"index.html", modified2, 1097310600 },
+			{	"dummy.txt", urls[0].body, 1097310600 },
+			{	NULL } },
+		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "-N -r -nd",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{	"index.html", modified2, 1097310000 },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"index.html", urls[1].body, 1097310600 },
+			{	urls[3].name + 1, urls[3].body, 1097310600 },
+			{	"dummy.txt", urls[0].body, 1097310600 },
+			{	NULL } },
+		0);
+
 	wget_test(
 		WGET_TEST_OPTIONS, "-r -nH -N --no-if-modified-since",
 		WGET_TEST_REQUEST_URL, "index.html",
@@ -347,22 +376,20 @@ int main(void)
 
 	// -N --no-if-modified-since should have the same behavior as only -N
 	// (except for size comparison)
-	const char *modified = "<a href=\"dunny.txt\">link</a>";
+	const char *modified = "<a href=\"b.html\">link</a>";
 	wget_test(
-		WGET_TEST_OPTIONS, "-r -nH -N --no-if-modified-since",
+		WGET_TEST_OPTIONS, "-N -r -nd --no-if-modified-since",
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
-			{	urls[1].name + 1, "anycontent", 1097310600 },
-			{	urls[3].name + 1, modified, 1097310600 },
+			{	urls[1].name + 1, modified, 1097310600 },
 			{	NULL } },
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{	urls[1].name + 1, urls[1].body, 1097310600 },
-			{	urls[3].name + 1, modified, 1097310600 },
+			{	urls[1].name + 1, modified, 1097310600 },
+			{	urls[4].name + 1, urls[4].body, 1097310600 },
+			{	urls[2].name + 1, urls[2].body, 1097310600 },
 			{	NULL } },
 		0);
-
-	// -N --no-if-modified-since -r --filter-mime-type
 
 	exit(0);
 }

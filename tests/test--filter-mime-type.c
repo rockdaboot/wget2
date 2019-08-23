@@ -229,10 +229,11 @@ int main(void)
 		WGET_TEST_REQUEST_URL, "index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body, 1097310600 },
+			{ urls[0].name + 1, urls[0].body, 1097310900 },
 			{	NULL } },
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, urls[0].body, 1097310600 },
+			{ urls[0].name + 1, urls[0].body, 1097310900 },
+			{ urls[6].name + 1, urls[6].body, 1097310600 },
 			{	NULL } },
 		0);
 

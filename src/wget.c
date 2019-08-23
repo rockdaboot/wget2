@@ -1844,6 +1844,10 @@ static void process_head_response(wget_http_response *resp)
 		&& resp->last_modified <= get_file_lmtime(job->local_filename))
 	{
 		info_printf(_("File '%s' not modified on server. Omitting download"), job->local_filename);
+
+		if (config.recursive && (!config.level || job->level < config.level + config.page_requisites))
+			parse_localfile(job, job->local_filename, resp->content_type_encoding, resp->content_type, job->iri);
+
 		return;
 	}
 
@@ -2239,7 +2243,7 @@ static void process_response(wget_http_response *resp)
 			else
 				local_filename = job->local_filename;
 
-			parse_localfile(job, local_filename, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, resp->content_type, job->iri);
+			parse_localfile(job, local_filename, resp->content_type_encoding, resp->content_type, job->iri);
 		}
 	}
 }

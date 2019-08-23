@@ -222,6 +222,7 @@ int main(void)
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ urls[0].name + 1, urls[0].body, 1097310600 },
 			{ urls[2].name + 1, modified, 1097310600 },
+			{ urls[3].name + 1, urls[3].body, 1097310600 },
 			{ NULL } },
 		0);
 
