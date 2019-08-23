@@ -289,13 +289,13 @@ void wget_ssl_set_config_int(int key, int value)
 		_config.print_info = value;
 		break;
 	case WGET_SSL_CA_TYPE:
-		_config.ca_type = value;
+		_config.ca_type = (char) value;
 		break;
 	case WGET_SSL_CERT_TYPE:
-		_config.cert_type = value;
+		_config.cert_type = (char) value;
 		break;
 	case WGET_SSL_KEY_TYPE:
-		_config.key_type = value;
+		_config.key_type = (char) value;
 		break;
 	case WGET_SSL_OCSP:
 		_config.ocsp = value;
@@ -930,7 +930,7 @@ ssize_t wget_ssl_read_timeout(void *session,
 	char *buf, size_t count,
 	int timeout)
 {
-	int retval = ssl_transfer(WGET_IO_READABLE, session, timeout, buf, count);
+	int retval = ssl_transfer(WGET_IO_READABLE, session, timeout, buf, (int) count);
 
 	if (retval == WGET_E_HANDSHAKE) {
 		error_printf(_("TLS read error: %s\n"),
@@ -965,7 +965,7 @@ ssize_t wget_ssl_write_timeout(void *session,
 	const char *buf, size_t count,
 	int timeout)
 {
-	int retval = ssl_transfer(WGET_IO_WRITABLE, session, timeout, (void *) buf, count);
+	int retval = ssl_transfer(WGET_IO_WRITABLE, session, timeout, (void *) buf, (int) count);
 
 	if (retval == WGET_E_HANDSHAKE) {
 		error_printf(_("TLS write error: %s\n"),
