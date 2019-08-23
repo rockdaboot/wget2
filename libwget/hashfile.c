@@ -414,8 +414,10 @@ int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t t
 
 	if (!digest)
 		return WGET_E_INVALID;
+
 	if ((unsigned) algorithm < countof(_openssl_algorithm))
-		return WGET_E_INVALID;
+		return WGET_E_UNSUPPORTED;
+
 	if ((evp = _openssl_algorithm[algorithm]) == NULL)
 		return WGET_E_UNSUPPORTED;
 
@@ -440,8 +442,12 @@ int wget_hash_init(wget_hash_hd_t *handle, wget_digest_algorithm_t algorithm)
 {
 	const EVP_MD *evp;
 
-	if (!handle || ((unsigned) algorithm >= countof(_openssl_algorithm)))
+	if (!handle)
 		return WGET_E_INVALID;
+
+	if ((unsigned) algorithm >= countof(_openssl_algorithm))
+		return WGET_E_UNSUPPORTED;
+
 	if ((evp = _openssl_algorithm[algorithm]) == NULL)
 		return WGET_E_UNSUPPORTED;
 
@@ -452,6 +458,7 @@ int wget_hash_init(wget_hash_hd_t *handle, wget_digest_algorithm_t algorithm)
 
 	if (handle->ctx)
 		EVP_MD_CTX_free(handle->ctx);
+
 	return WGET_E_INVALID;
 }
 
@@ -518,12 +525,11 @@ static const struct nettle_hash *
 int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
 	wget_hash_hd dig;
+	int rc;
 
-	if (wget_hash_init(&dig, algorithm) == 0) {
-		if (wget_hash(&dig, text, textlen) == 0) {
-			wget_hash_deinit(&dig, digest);
-			return 0;
-		}
+	if ((rc = wget_hash_init(&dig, algorithm)) == 0) {
+		rc = wget_hash(&dig, text, textlen);
+		wget_hash_deinit(&dig, digest);
 	}
 
 	return -1;
@@ -546,7 +552,7 @@ int wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm algorithm)
 		return 0;
 	}
 
-	return -1;
+	return WGET_E_UNSUPPORTED;
 }
 
 int wget_hash(wget_hash_hd *dig, const void *text, size_t textlen)
@@ -588,15 +594,14 @@ static const int _gcrypt_algorithm[WGET_DIGTYPE_MAX] = {
 int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
 	wget_hash_hd dig;
+	int rc;
 
-	if (wget_hash_init(&dig, algorithm) == 0) {
-		if (wget_hash(&dig, text, textlen) == 0) {
-			wget_hash_deinit(&dig, digest);
-			return 0;
-		}
+	if ((rc = wget_hash_init(&dig, algorithm)) == 0) {
+		rc = wget_hash(&dig, text, textlen);
+		wget_hash_deinit(&dig, digest);
 	}
 
-	return -1;
+	return rc;
 }
 
 int wget_hash_get_len(wget_digest_algorithm algorithm)
@@ -615,7 +620,7 @@ int wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm algorithm)
 		return 0;
 	}
 
-	return -1;
+	return WGET_E_UNSUPPORTED;
 }
 
 int wget_hash(wget_hash_hd *dig, const void *text, size_t textlen)
@@ -724,21 +729,20 @@ struct wget_hash_hd_st {
 int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
 	wget_hash_hd dig;
+	int rc;
 
-	if (wget_hash_init(&dig, algorithm) == 0) {
-		if (wget_hash(&dig, text, textlen) == 0) {
-			wget_hash_deinit(&dig, digest);
-			return 0;
-		}
+	if ((rc = wget_hash_init(&dig, algorithm)) == 0) {
+		rc = wget_hash(&dig, text, textlen);
+		wget_hash_deinit(&dig, digest);
 	}
 
-	return -1;
+	return rc;
 }
 
 int wget_hash_get_len(wget_digest_algorithm algorithm)
 {
 	if ((unsigned)algorithm < countof(_algorithm))
-		return _algorithm[algorithm].digest_len;
+		return (int) _algorithm[algorithm].digest_len;
 	else
 		return 0;
 }
@@ -754,7 +758,7 @@ int wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm algorithm)
 		}
 	}
 
-	return -1;
+	return WGET_E_UNSUPPORTED;
 }
 
 int wget_hash(wget_hash_hd *dig, const void *text, size_t textlen)
