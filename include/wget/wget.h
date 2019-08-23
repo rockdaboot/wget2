@@ -1392,7 +1392,7 @@ typedef struct wget_hsts_db_st wget_hsts_db;
  * \ingroup libwget-hsts
  *
  * It is possible to implement a custom HSTS database as a plugin.
- * See tests/test-plugin-dummy.c and tests/Makefile.am fro details.
+ * See tests/test-plugin-dummy.c and tests/Makefile.am for details.
  */
 
 typedef int wget_hsts_host_match_fn(const wget_hsts_db *, const char *hsts_db, uint16_t port);
@@ -1477,7 +1477,7 @@ typedef struct wget_hpkp_st wget_hpkp;
  * \ingroup libwget-hpkp
  *
  * It is possible to implement a custom HPKP database as a plugin.
- * See tests/test-plugin-dummy.c and tests/Makefile.am fro details.
+ * See tests/test-plugin-dummy.c and tests/Makefile.am for details.
  */
 
 typedef wget_hpkp_db *wget_hpkp_db_init_fn(wget_hpkp_db *hpkp_db, const char *fname);
@@ -1590,7 +1590,7 @@ typedef struct wget_ocsp_db_st wget_ocsp_db;
  * \ingroup libwget-ocsp
  *
  * It is possible to implement a custom OCSP database as a plugin.
- * See tests/test-plugin-dummy.c and tests/Makefile.am fro details.
+ * See tests/test-plugin-dummy.c and tests/Makefile.am for details.
  */
 
 typedef wget_ocsp_db *wget_ocsp_db_init_fn(wget_ocsp_db *ocsp_db, const char *fname);
