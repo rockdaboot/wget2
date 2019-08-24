@@ -1,0 +1,4 @@
+cn = "localhost"
+unit = "Wget"
+organization = "gnuwget"
+expiration_days = 36500
