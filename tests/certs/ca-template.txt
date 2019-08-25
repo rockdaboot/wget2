@@ -1,8 +1,20 @@
-cn = "root"
+# Template file to generate server-cert.pem for certtool (GnuTLS)
+# see 'man certtool' for more options
+
+organization = "GNU"
 unit = "Wget"
-organization = "gnuwget"
+# locality =
+state = "Sunshine"
+country = Freeland
+cn = "Wget"
+#uid = "wget"
+#dc = "name"
+#dc = "domain"
 expiration_days = -1
 ca
 
-#Key Usage
+# key options
+signing_key
+encryption_key
 cert_signing_key
+crl_signing_key

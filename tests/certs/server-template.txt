@@ -1,4 +1,23 @@
-cn = "localhost"
+# Template file to generate server-cert.pem for certtool (GnuTLS)
+# see 'man certtool' for more options
+
+organization = "GNU"
 unit = "Wget"
-organization = "gnuwget"
-expiration_days = 36500
+# locality =
+state = "Sunshine"
+country = Freeland
+cn = "Wget"
+#uid = "wget"
+#dc = "name"
+#dc = "domain"
+expiration_days = -1
+dns_name="127.0.0.1"
+dns_name="::1"
+dns_name="localhost"
+dns_name = "WgetTestingServer"
+#ca
+
+# key options
+signing_key
+encryption_key
+tls_www_server
