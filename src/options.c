@@ -2939,7 +2939,8 @@ static int _preload_dns_cache(const char *fname)
 	FILE *fp;
 	char buf[256], ip[64], name[256];
 
-	if (!strcmp(fname, "-"))
+	// wget_options_fuzzer sets config.dont_write, avoid waiting for stdin input forever
+	if (!strcmp(fname, "-") && !config.dont_write)
 		fp = stdin;
 	else if (!(fp = fopen(fname, "r"))) {
 		error_printf(_("Failed to open %s"), fname);
@@ -3188,7 +3189,7 @@ int init(int argc, const char **argv)
 		config.logfile = config.logfile_append;
 		config.logfile_append = NULL;
 	}
-	else if (config.logfile && strcmp(config.logfile,"-") && !config.dont_write) {
+	else if (config.logfile && strcmp(config.logfile, "-") && !config.dont_write) {
 		int fd = open(config.logfile, O_WRONLY | O_TRUNC);
 
 		if (fd != -1)
@@ -3257,7 +3258,7 @@ int init(int argc, const char **argv)
 		config.logfile = config.logfile_append;
 		config.logfile_append = NULL;
 	}
-	else if (config.logfile && strcmp(config.logfile,"-") && !config.dont_write) {
+	else if (config.logfile && strcmp(config.logfile, "-") && !config.dont_write) {
 		// truncate logfile
 		int fd = open(config.logfile, O_WRONLY | O_TRUNC);
 
@@ -3279,7 +3280,7 @@ int init(int argc, const char **argv)
 		config.max_threads = 1;
 
 	// truncate output document
-	if (config.output_document && strcmp(config.output_document,"-") && !config.dont_write) {
+	if (config.output_document && strcmp(config.output_document, "-") && !config.dont_write) {
 		int fd = open(config.output_document, O_WRONLY | O_TRUNC | O_BINARY);
 
 		if (fd != -1)
