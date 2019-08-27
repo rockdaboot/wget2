@@ -21,7 +21,7 @@ CURL_BIN="./src/curl"
 
 CURL_BUILD() {
 	./buildconf
-	./configure -q --disable-manual
+	./configure -q --disable-manual --with-gnutls
 	make -s "-j$(nproc)"
 }
 
