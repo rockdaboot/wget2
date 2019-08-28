@@ -437,7 +437,7 @@ AC_LINK_IFELSE(
 
 PKG_PROG_PKG_CONFIG
 
-AC_ARG_WITH(ssl, AS_HELP_STRING([--with-ssl], [Use SSL/TLS with specified library. Options: 'gnutls' (default), 'openssl' or 'wolfssl']), with_ssl=$withval, with_ssl=gnutls)
+AC_ARG_WITH(ssl, AS_HELP_STRING([--with-ssl], [Use SSL/TLS with specified library. Options: 'gnutls' (default), 'openssl', 'wolfssl' or 'none']), with_ssl=$withval, with_ssl=gnutls)
 
 AS_IF([test "x$with_ssl" == "xgnutls"], [
   PKG_CHECK_MODULES([GNUTLS], [gnutls], [
@@ -450,6 +450,14 @@ AS_IF([test "x$with_ssl" == "xgnutls"], [
       [with_gnutls=yes; AC_DEFINE([WITH_GNUTLS], [1], [Use GnuTLS])],
       [with_gnutls=no;  AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS. Fallback to libnettle for hashing and checksumming.)])
   ])
+
+  AS_IF([test "x$with_gnutls" == xyes], [
+    AC_SEARCH_LIBS(gnutls_hash, gnutls, [with_gnutls_hash=yes])
+    AS_IF([test "x$with_gnutls_hash" == xyes],
+      [AC_CHECK_HEADERS([gnutls/crypto.h], [], [], [#include <gnutls/gnutls.h>])])
+    AC_CHECK_HEADERS([gnutls/ocsp.h])
+    AC_CHECK_FUNCS(gnutls_srp_server_get_username gnutls_transport_get_int)
+  ])
 ])
 
 AS_IF([test "x$with_ssl" == "xopenssl"], [
@@ -461,24 +469,21 @@ AS_IF([test "x$with_ssl" == "xopenssl"], [
   ], [
     AC_SEARCH_LIBS(SSL_CTX_new, openssl,
       [with_openssl=yes; AC_DEFINE([WITH_OPENSSL], [1], [Use OpenSSL])],
-      [with_openssl=no;  AC_MSG_WARN(*** OpenSSL was not found.)])
+      [with_openssl=no;  AC_MSG_WARN(*** OpenSSL was not found.)
+    ])
+  ])
+
+  AS_IF([test "x$with_openssl" == xyes], [
+    AC_CHECK_HEADERS([openssl/ssl.h])
+    AC_CHECK_HEADERS([openssl/x509_vfy.h])
+    AC_CHECK_FUNCS(SSL_new X509_STORE_add_lookup)
+
+    AC_SEARCH_LIBS(EVP_MD_CTX_new, crypto,
+      [with_libcrypto=yes; AC_DEFINE([WITH_LIBCRYPTO], [1], [Use libcrypto])],
+      [with_libcrypto=no; AC_MSG_WARN(*** LIBCRYPTO was not found. Fallback to libwolfcrypt for hashing and checksumming.)
+    ])
   ])
 ])
-
-AC_SEARCH_LIBS(gnutls_hash, gnutls, [with_gnutls_hash=yes])
-AS_IF([test "x$with_gnutls" = xyes], [
-  AC_CHECK_HEADERS([gnutls/ocsp.h])
-  AC_CHECK_FUNCS(gnutls_srp_server_get_username gnutls_transport_get_int)
-])
-
-AS_IF([test "x$with_ssl" == xopenssl], [
-  AC_CHECK_HEADERS([openssl/ssl.h])
-  AC_CHECK_HEADERS([openssl/x509_vfy.h])
-  AC_CHECK_FUNCS(SSL_new X509_STORE_add_lookup)
-])
-
-AS_IF([test "x$with_gnutls_hash" == xyes],
-  [AC_CHECK_HEADERS([gnutls/crypto.h], [], [], [#include <gnutls/gnutls.h>])])
 
 AS_IF([test "x$with_ssl" = "xwolfssl"], [
   PKG_CHECK_MODULES([WOLFSSL], [wolfssl], [
@@ -491,6 +496,11 @@ AS_IF([test "x$with_ssl" = "xwolfssl"], [
       [with_wolfssl=yes; AC_DEFINE([WITH_WOLFSSL], [1], [Use WolfSSL])],
       [with_wolfssl=no;  AC_MSG_WARN(*** WolfSSL was not found. You will not be able to use HTTPS.)])
   ])
+
+  AS_IF([test "x$with_wolfssl" = xyes], [
+    with_libwolfcrypt=yes
+    AC_DEFINE([WITH_LIBWOLFCRYPT], [1], [Use wolfcrypt])
+  ])
 ])
 
 AM_CONDITIONAL([WITH_GNUTLS], [test "x$with_gnutls" = xyes])
@@ -498,11 +508,11 @@ AM_CONDITIONAL([WITH_OPENSSL], [test "x$with_openssl" = xyes])
 AM_CONDITIONAL([WITH_WOLFSSL], [test "x$with_wolfssl" = xyes])
 
 AM_CONDITIONAL([WITH_TLS], [test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes || test "x$with_openssl" = xyes])
-AS_IF([test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes], [
+AS_IF([test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes || test "x$with_openssl" = xyes], [
   AC_DEFINE([WITH_TLS], [1], [Built with TLS support])
 ], [AC_DEFINE([WITH_TLS], [0], [No TLS support])])
 
-AS_IF([test "x$with_ssl" == xno || test "x$with_gnutls_hash" != xyes], [
+AS_IF([(test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes) && test "x$with_libwolfcrypt" != xyes && test "x$with_libcrypto" != xyes], [
   PKG_CHECK_MODULES([NETTLE], nettle, [
     with_libnettle=yes
     LIBS="$NETTLE_LIBS $LIBS"
@@ -515,18 +525,6 @@ AS_IF([test "x$with_ssl" == xno || test "x$with_gnutls_hash" != xyes], [
   ])
 
   AS_IF([test "x$with_libnettle" != xyes], [
-    AC_SEARCH_LIBS(EVP_MD_CTX_new, crypto,
-      [with_libcrypto=yes; AC_DEFINE([WITH_LIBCRYPTO], [1], [Use libcrypto])],
-      [with_libcrypto=no; AC_MSG_WARN(*** LIBCRYPTO was not found. Fallback to libwolfcrypt for hashing and checksumming.)])
-  ])
-
-  AS_IF([test "x$with_libnettle" != xyes && test "x$with_libcrypto" != xyes], [
-    AC_SEARCH_LIBS(wc_InitSha, wolfssl,
-      [with_libwolfcrypt=yes; AC_DEFINE([WITH_LIBWOLFCRYPT], [1], [Use wolfcrypt])],
-      [with_libwolfcrypt=no; AC_MSG_WARN(*** LIBWOLFCRYPT was not found. Fallback to libnettle for hashing and checksumming.)])
-  ])
-
-  AS_IF([test "x$with_libnettle" != xyes && test "x$with_libcrypto" != xyes && test "x$with_wolfcrypt" != xyes], [
     AC_SEARCH_LIBS(gcry_check_version, gcrypt,
       [with_gcrypt=yes; AC_DEFINE([WITH_GCRYPT], [1], [Use libgcrypt]) AC_CHECK_HEADERS([gcrypt.h])],
       [with_gcrypt=no;  AC_MSG_WARN(*** LIBGCRYPT was not found. Metalink checksumming and HTTP authentication are not available.)])
