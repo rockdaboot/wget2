@@ -745,14 +745,12 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 
 			if ((ret = wget_hash_init(&dig, algorithm))) {
 				error_printf(_("%s: Hash init failed for type '%s': %s\n"), __func__, hashname, wget_strerror(ret));
-				close(fd);
 				return ret;
 			}
 
 			while (length > 0 && (nbytes = read(fd, tmp, sizeof(tmp))) > 0) {
 				if ((ret = wget_hash(dig, tmp, nbytes))) {
 					error_printf(_("%s: Hash update failed: %s\n"), __func__, wget_strerror(ret));
-					close(fd);
 					return ret;
 				}
 
@@ -764,13 +762,11 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 
 			if ((ret = wget_hash_deinit(&dig, digest))) {
 				error_printf(_("%s: Hash finalization failed: %s\n"), __func__, wget_strerror(ret));
-				close(fd);
 				return ret;
 			}
 
 			if (nbytes < 0) {
 				error_printf(_("%s: Failed to read %llu bytes\n"), __func__, (unsigned long long)length);
-				close(fd);
 				return WGET_E_IO;
 			}
 
