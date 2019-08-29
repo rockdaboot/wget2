@@ -528,8 +528,8 @@ struct wget_hash_hd_st {
 		context;
 };
 
-static const int _gcrypt_algorithm[WGET_DIGTYPE_MAX] = {
-	[WGET_DIGTYPE_UNKNOWN] = GCRY_MD_NONE,
+static const int _gcrypt_algorithm[] = {
+//	[WGET_DIGTYPE_UNKNOWN] = GCRY_MD_NONE,
 	[WGET_DIGTYPE_MD2] = GCRY_MD_MD2,
 	[WGET_DIGTYPE_MD5] = GCRY_MD_MD5,
 	[WGET_DIGTYPE_RMD160] = GCRY_MD_RMD160,
@@ -542,11 +542,11 @@ static const int _gcrypt_algorithm[WGET_DIGTYPE_MAX] = {
 
 int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
-	wget_hash_hd dig;
+	wget_hash_hd *dig;
 	int rc;
 
 	if ((rc = wget_hash_init(&dig, algorithm)) == 0) {
-		rc = wget_hash(&dig, text, textlen);
+		rc = wget_hash(dig, text, textlen);
 		wget_hash_deinit(&dig, digest);
 	}
 
@@ -561,29 +561,42 @@ int wget_hash_get_len(wget_digest_algorithm algorithm)
 		return 0;
 }
 
-int wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm algorithm)
+int wget_hash_init(wget_hash_hd **handle, wget_digest_algorithm algorithm)
 {
-	if ((unsigned)algorithm < countof(_gcrypt_algorithm)) {
-		dig->algorithm = _gcrypt_algorithm[algorithm];
-		gcry_md_open(&dig->context, dig->algorithm, 0);
-		return 0;
-	}
+	if ((unsigned)algorithm >= countof(_gcrypt_algorithm))
+		return WGET_E_INVALID;
 
-	return WGET_E_UNSUPPORTED;
+	if (!_gcrypt_algorithm[algorithm])
+		return WGET_E_UNSUPPORTED;
+
+	wget_hash_hd *h;
+
+	if (!(h = wget_malloc(sizeof(struct wget_hash_hd_st))))
+		return WGET_E_MEMORY;
+
+	h->algorithm = _gcrypt_algorithm[algorithm];
+	gcry_md_open(&h->context, h->algorithm, 0);
+
+	*handle = h;
+
+	return WGET_E_SUCCESS;
 }
 
-int wget_hash(wget_hash_hd *dig, const void *text, size_t textlen)
+int wget_hash(wget_hash_hd *handle, const void *text, size_t textlen)
 {
-	gcry_md_write(dig->context, text, textlen);
+	gcry_md_write(handle->context, text, textlen);
 	return 0;
 }
 
-void wget_hash_deinit(wget_hash_hd *dig, void *digest)
+int wget_hash_deinit(wget_hash_hd **handle, void *digest)
 {
-	gcry_md_final(dig->context);
-	void *ret = gcry_md_read(dig->context, dig->algorithm);
-	memcpy(digest, ret, gcry_md_get_algo_dlen(dig->algorithm));
-	gcry_md_close(dig->context);
+	gcry_md_final((*handle)->context);
+	void *ret = gcry_md_read((*handle)->context, (*handle)->algorithm);
+	memcpy(digest, ret, gcry_md_get_algo_dlen((*handle)->algorithm));
+	gcry_md_close((*handle)->context);
+	xfree(*handle);
+
+	return WGET_E_SUCCESS;
 }
 
 #else // use the gnulib functions

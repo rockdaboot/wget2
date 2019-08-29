@@ -519,15 +519,14 @@ AS_IF([(test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes) && te
     CFLAGS="$NETTLE_CFLAGS $CFLAGS"
     AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])
   ], [
-    AC_SEARCH_LIBS(nettle_md5_init, nettle,
-      [with_libnettle=yes; AC_DEFINE([WITH_LIBNETTLE], [1], [Use libnettle])],
-      [with_libnettle=no;  AC_MSG_WARN(*** LIBNETTLE was not found. Fallback to libgcrypt for hashing and checksumming.)])
+     with_libnettle=no
+     AC_MSG_WARN(*** LIBNETTLE was not found. Fallback to libgcrypt for hashing and checksumming.)
   ])
 
   AS_IF([test "x$with_libnettle" != xyes], [
     AC_SEARCH_LIBS(gcry_check_version, gcrypt,
       [with_gcrypt=yes; AC_DEFINE([WITH_GCRYPT], [1], [Use libgcrypt]) AC_CHECK_HEADERS([gcrypt.h])],
-      [with_gcrypt=no;  AC_MSG_WARN(*** LIBGCRYPT was not found. Metalink checksumming and HTTP authentication are not available.)])
+      [with_gcrypt=no;  AC_MSG_WARN(*** LIBGCRYPT was not found. Fallback to gnulib for hashing and checksumming.)])
   ])
 ])
 
