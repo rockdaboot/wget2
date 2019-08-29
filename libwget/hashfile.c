@@ -311,7 +311,7 @@ int wget_hash(wget_hash_hd *handle, const void *text, size_t textlen)
 {
 	if (wc_HashUpdate(&handle->hash, handle->type, text, textlen) == 0)
 		return WGET_E_SUCCESS;
-	
+
 	return WGET_E_UNKNOWN;
 }
 
@@ -327,63 +327,55 @@ int wget_hash_deinit(wget_hash_hd **handle, void *digest)
 #elif defined WITH_LIBCRYPTO
 #include <openssl/evp.h>
 
-struct _wget_hash_hd_st {
-	EVP_MD_CTX *ctx;
+typedef const EVP_MD *evp_md_func(void);
+
+struct wget_hash_hd_st {
+	EVP_MD_CTX
+		*ctx;
 };
 
-static const EVP_MD*
-	_openssl_algorithm[WGET_DIGTYPE_MAX] = {
-		[WGET_DIGTYPE_UNKNOWN] = NULL,
-#ifndef OPENSSL_NO_MD2
-		[WGET_DIGTYPE_MD2] = EVP_md2(),
-#else
-		[WGET_DIGTYPE_MD2] = NULL,
-#endif
-		[WGET_DIGTYPE_MD5] = EVP_md5(),
-		[WGET_DIGTYPE_RMD160] = EVP_ripemd160(),
-		[WGET_DIGTYPE_SHA1] = EVP_sha1(),
-		[WGET_DIGTYPE_SHA224] = EVP_sha224(),
-		[WGET_DIGTYPE_SHA256] = EVP_sha256(),
-		[WGET_DIGTYPE_SHA384] = EVP_sha384(),
-		[WGET_DIGTYPE_SHA512] = EVP_sha512()
+static evp_md_func *
+	_openssl_algorithm[] = {
+//		[WGET_DIGTYPE_UNKNOWN] = NULL,
+//		[WGET_DIGTYPE_MD2]     = EVP_md2,
+		[WGET_DIGTYPE_MD5]     = EVP_md5,
+		[WGET_DIGTYPE_RMD160]  = EVP_ripemd160,
+		[WGET_DIGTYPE_SHA1]    = EVP_sha1,
+		[WGET_DIGTYPE_SHA224]  = EVP_sha224,
+		[WGET_DIGTYPE_SHA256]  = EVP_sha256,
+		[WGET_DIGTYPE_SHA384]  = EVP_sha384,
+		[WGET_DIGTYPE_SHA512]  = EVP_sha512,
 	};
 
 int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
-	const EVP_MD *evp;
-
-	if (!digest)
+	if ((unsigned) algorithm >= countof(_openssl_algorithm))
 		return WGET_E_INVALID;
 
-	if ((unsigned) algorithm < countof(_openssl_algorithm))
+	evp_md_func *evp = _openssl_algorithm[algorithm];
+	if (!evp)
 		return WGET_E_UNSUPPORTED;
 
-	if ((evp = _openssl_algorithm[algorithm]) == NULL)
-		return WGET_E_UNSUPPORTED;
-
-	if (!EVP_Digest(text, textlen, digest, NULL, evp, NULL))
+	if (EVP_Digest(text, textlen, digest, NULL, evp(), NULL) == 0)
 		return WGET_E_UNKNOWN;
 
-	return 0;
+	return WGET_E_SUCCESS;
 }
 
 int wget_hash_get_len(wget_digest_algorithm algorithm)
 {
-	const EVP_MD *evp;
+	evp_md_func *evp;
 
-	if ((unsigned) algorithm < countof(_openssl_algorithm) ||
-			(evp = _openssl_algorithm[algorithm]) == NULL)
+	if ((unsigned) algorithm >= countof(_openssl_algorithm)
+		|| (evp = _openssl_algorithm[algorithm]) == NULL)
 		return 0;
 
-	return EVP_MD_CTX_size(evp);
+	return EVP_MD_size(evp());
 }
 
-int wget_hash_init(wget_hash_hd *handle, wget_digest_algorithm algorithm)
+int wget_hash_init(wget_hash_hd **handle, wget_digest_algorithm algorithm)
 {
-	const EVP_MD *evp;
-
-	if (!handle)
-		return WGET_E_INVALID;
+	evp_md_func *evp;
 
 	if ((unsigned) algorithm >= countof(_openssl_algorithm))
 		return WGET_E_UNSUPPORTED;
@@ -391,38 +383,39 @@ int wget_hash_init(wget_hash_hd *handle, wget_digest_algorithm algorithm)
 	if ((evp = _openssl_algorithm[algorithm]) == NULL)
 		return WGET_E_UNSUPPORTED;
 
-	handle->ctx = EVP_MD_CTX_new();
+	if (!(*handle = wget_malloc(sizeof(struct wget_hash_hd_st))))
+		return WGET_E_MEMORY;
 
-	if (handle->ctx && EVP_DigestInit_ex(&handle->ctx, evp, NULL))
-		return 0;
+	if (!((*handle)->ctx = EVP_MD_CTX_new())) {
+		xfree(*handle);
+		return WGET_E_UNKNOWN;
+	}
 
-	if (handle->ctx)
-		EVP_MD_CTX_free(handle->ctx);
+	if (EVP_DigestInit_ex((*handle)->ctx, evp(), NULL))
+		return WGET_E_SUCCESS;
 
-	return WGET_E_INVALID;
+	EVP_MD_CTX_free((*handle)->ctx);
+	xfree(*handle);
+
+	return WGET_E_UNKNOWN;
 }
 
 int wget_hash(wget_hash_hd *handle, const void *text, size_t textlen)
 {
-	if (!handle)
-		return WGET_E_INVALID;
-
 	if (EVP_DigestUpdate(handle->ctx, text, textlen))
-		return 0;
+		return WGET_E_SUCCESS;
 
 	return WGET_E_INVALID;
 }
 
-void wget_hash_deinit(wget_hash_hd *handle, void *digest)
+int wget_hash_deinit(wget_hash_hd **handle, void *digest)
 {
-	if (!handle)
-		return;
+	EVP_DigestFinal_ex((*handle)->ctx, digest, NULL);
 
-	if (digest)
-		EVP_DigestFinal_ex(handle->ctx, digest, NULL);
+	EVP_MD_CTX_free((*handle)->ctx);
+	xfree(*handle);
 
-	EVP_MD_CTX_free(handle->ctx);
-	handle->ctx = NULL;
+	return WGET_E_SUCCESS;
 }
 
 #elif defined WITH_LIBNETTLE
@@ -668,11 +661,11 @@ struct wget_hash_hd_st {
 
 int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
-	wget_hash_hd dig;
+	wget_hash_hd *dig;
 	int rc;
 
-	if ((rc = wget_hash_init(&dig, algorithm)) == 0) {
-		rc = wget_hash(&dig, text, textlen);
+	if ((rc = wget_hash_init(&dig, algorithm)) == WGET_E_SUCCESS) {
+		rc = wget_hash(dig, text, textlen);
 		wget_hash_deinit(&dig, digest);
 	}
 
@@ -687,30 +680,45 @@ int wget_hash_get_len(wget_digest_algorithm algorithm)
 		return 0;
 }
 
-int wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm algorithm)
+int wget_hash_init(wget_hash_hd **handle, wget_digest_algorithm algorithm)
 {
-	if ((unsigned)algorithm < countof(_algorithm)) {
-		if (_algorithm[algorithm].ctx_len) {
-			dig->algorithm = &_algorithm[algorithm];
-			dig->context = wget_malloc(dig->algorithm->ctx_len);
-			dig->algorithm->init(dig->context);
-			return 0;
-		}
+	if ((unsigned)algorithm >= countof(_algorithm))
+		return WGET_E_INVALID;
+
+	if (!_algorithm[algorithm].ctx_len)
+		return WGET_E_UNSUPPORTED;
+
+	wget_hash_hd *h;
+
+	if (!(h = wget_malloc(sizeof(struct wget_hash_hd_st))))
+		return WGET_E_MEMORY;
+
+	h->algorithm = &_algorithm[algorithm];
+
+	if (!(h->context = wget_malloc(h->algorithm->ctx_len))) {
+		xfree(h);
+		return WGET_E_MEMORY;
 	}
 
-	return WGET_E_UNSUPPORTED;
+	h->algorithm->init(h->context);
+	*handle = h;
+
+	return WGET_E_SUCCESS;
 }
 
-int wget_hash(wget_hash_hd *dig, const void *text, size_t textlen)
+int wget_hash(wget_hash_hd *handle, const void *text, size_t textlen)
 {
-	dig->algorithm->process(text, textlen, dig->context);
+	handle->algorithm->process(text, textlen, handle->context);
 	return 0;
 }
 
-void wget_hash_deinit(wget_hash_hd *dig, void *digest)
+int wget_hash_deinit(wget_hash_hd **handle, void *digest)
 {
-	dig->algorithm->finish(dig->context, digest);
-	xfree(dig->context);
+	(*handle)->algorithm->finish((*handle)->context, digest);
+	xfree((*handle)->context);
+	xfree(*handle);
+
+	return WGET_E_SUCCESS;
 }
 #endif
 
