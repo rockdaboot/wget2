@@ -104,7 +104,7 @@ struct wget_hash_hd_st {
 		dig;
 };
 
-static const gnutls_digest_algorithm_t
+static const gnutls_digest_algorithm
 	_gnutls_algorithm[WGET_DIGTYPE_MAX] = {
 		[WGET_DIGTYPE_UNKNOWN] = GNUTLS_DIG_UNKNOWN,
 		[WGET_DIGTYPE_MD2] = GNUTLS_DIG_MD2,
@@ -210,178 +210,94 @@ void wget_hash_deinit(wget_hash_hd *handle, void *digest)
 }
 
 #elif defined WITH_LIBWOLFCRYPT
+#define WOLFSSL_SHA224
+#define WOLFSSL_SHA384
+#define WOLFSSL_SHA512
+#define WC_NO_HARDEN
 #include <wolfssl/wolfcrypt/hash.h>
 
-struct _wget_hash_hd_st {
-	union {
-#ifdef WOLFSSL_MD2
-		wc_Md2;
-#endif
-		wc_Md5;
-		wc_Sha;
-		wc_Sha256;
-#ifdef WOLFSSL_SHA224
-		wc_Sha224;
-#endif
-#ifdef WOLFSSL_SHA384
-		wc_Sha384;
-#endif
-#ifdef WOLFSSL_SHA512
-		wc_Sha512;
-#endif
-	} h;
-	wget_digest_algorithm_t algorithm;
+struct wget_hash_hd_st {
+	wc_HashAlg
+		hash;
+	enum wc_HashType
+		type;
 };
 
-struct wolfssl_md {
-	int outlen;
-	int (*init) (void *);
-	int (*update) (void *, const byte *, word32);
-	int (*deinit) (void *, byte *);
-	int (*hash_fast) (const byte *, word32, byte *);
+static const enum wc_HashType
+	_wolfssl_algorithm[] = {
+		// [WGET_DIGTYPE_UNKNOWN] = WC_HASH_TYPE_NONE, // both enum values are 0
+		// [WGET_DIGTYPE_MD2] = WC_HASH_TYPE_MD2, // not in wc_hashAlg
+		[WGET_DIGTYPE_MD5] = WC_HASH_TYPE_MD5,
+		[WGET_DIGTYPE_SHA1] = WC_HASH_TYPE_SHA,
+		[WGET_DIGTYPE_SHA224] = WC_HASH_TYPE_SHA224,
+		[WGET_DIGTYPE_SHA256] = WC_HASH_TYPE_SHA256,
+		[WGET_DIGTYPE_SHA384] = WC_HASH_TYPE_SHA384,
+		[WGET_DIGTYPE_SHA512] = WC_HASH_TYPE_SHA512,
 };
 
-static const struct wolfssl_md
-	_wolfssl_algorithm[WGET_DIGTYPE_MAX] = {
-		[WGET_DIGTYPE_UNKNOWN] = NULL,
-#ifdef WOLFSSL_MD2
-		[WGET_DIGTYPE_MD2] = {
-			WC_MD2_DIGEST_SIZE,
-			wc_InitMd2,
-			wc_Md2Update,
-			wc_Md2Final,
-			wc_Md2Hash
-		},
-#else
-		[WGET_DIGTYPE_MD2] = { NULL, NULL, NULL, NULL },
-#endif
-		[WGET_DIGTYPE_MD5] = {
-			WC_MD5_DIGEST_SIZE,
-			wc_InitMd5,
-			wc_Md5Update,
-			wc_Md5Final,
-			wc_Md5Hash
-		},
-#ifdef WOLFSSL_RIPEMD
-		[WGET_DIGTYPE_RMD160] = {
-			RIPEMD_DIGEST_SIZE,
-			wc_InitRipeMd,
-			wc_RipeMdUpdate,
-			wc_RipeMdFinal,
-			NULL
-		};
-#else
-		[WGET_DIGTYPE_RMD160] = { NULL, NULL, NULL, NULL },
-#endif
-		[WGET_DIGTYPE_SHA1] = {
-			WC_SHA_DIGEST_SIZE,
-			wc_InitSha,
-			wc_ShaUpdate,
-			wc_ShaFinal,
-			wc_ShaHash
-		},
-#ifdef WOLFSSL_SHA224
-		[WGET_DIGTYPE_SHA224] = {
-			WC_SHA224_DIGEST_SIZE,
-			wc_InitSha224,
-			wc_Sha224Update,
-			wc_Sha224Final,
-			wc_Sha224Hash
-		},
-#else
-		[WGET_DIGTYPE_SHA224] = { NULL, NULL, NULL, NULL },
-#endif
-		[WGET_DIGTYPE_SHA256] = {
-			WC_SHA256_DIGEST_SIZE,
-			wc_InitSha256,
-			wc_Sha256Update,
-			wc_Sha256Final,
-			wc_Sha256Hash
-		},
-#ifdef WOLFSSL_SHA384
-		[WGET_DIGTYPE_SHA384] = {
-			SHZ384_DIGEST_SIZE,
-			wc_InitSha384,
-			wc_Sha384Update,
-			wc_Sha384Final
-		},
-#else
-		[WGET_DIGTYPE_SHA384] = { NULL, NULL, NULL, NULL },
-#endif
-#ifdef WOLFSSL_SHA512
-		[WGET_DIGTYPE_SHA512] = {
-			WC_SHA512_DIGEST_SIZE,
-			wc_InitSha512,
-			wc_Sha512Update,
-			wc_Sha512Final
-		}
-#else
-		[WGET_DIGTYPE_SHA512] = { NULL, NULL, NULL, NULL }
-#endif
-	};
-
-int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
+int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
-	struct wolfssl_md *md;
-
-	if (!digest)
-		return WGET_E_INVALID;
-	if ((unsigned) algorithm < countof(_wolfssl_algorithm))
+	if ((unsigned) algorithm >= countof(_wolfssl_algorithm))
 		return WGET_E_INVALID;
 
-	md = _wolfssl_algorithm[algorithm];
-	if (md->hash_fast == NULL)
+	enum wc_HashType hashtype = _wolfssl_algorithm[algorithm];
+	if (hashtype == WC_HASH_TYPE_NONE)
 		return WGET_E_UNSUPPORTED;
 
-	if (!md->hash_fast(text, textlen, digest))
+	if (wc_Hash(hashtype, text, textlen, digest, wc_HashGetDigestSize(hashtype)) != 0)
 		return WGET_E_UNKNOWN;
 
-	return 0;
+	return WGET_E_SUCCESS;
 }
 
-int wget_hash_get_len(wget_digest_algorithm_t algorithm)
+int wget_hash_get_len(wget_digest_algorithm algorithm)
 {
-	if ((unsigned) algorithm < countof(_wolfssl_algorithm) && algorithm != 0)
-		return _wolfssl_algorithm[algorithm].outlen;
-
-	return 0;
-}
-
-int wget_hash_init(wget_hash_hd_t *handle, wget_digest_algorithm_t algorithm)
-{
-	struct wolfssl_md *md;
-
-	if ((unsigned) algorithm < countof(_wolfssl_algorithm))
-		return WGET_E_INVALID;
-
-	md = _wolfssl_algorithm[algorithm];
-
-	if (md->init && md->update && md->deinit) {
-		handle->algorithm = algorithm;
-		return md->init(&handle->h);
+	if ((unsigned) algorithm < countof(_wolfssl_algorithm)) {
+		int ret = wc_HashGetDigestSize(_wolfssl_algorithm[algorithm]);
+		if (ret > 0)
+			return ret;
 	}
 
+	return 0;
+}
+
+int wget_hash_init(wget_hash_hd **handle, wget_digest_algorithm algorithm)
+{
+	if ((unsigned) algorithm >= countof(_wolfssl_algorithm))
+		return WGET_E_INVALID;
+
+	enum wc_HashType hashtype = _wolfssl_algorithm[algorithm];
+	if (hashtype == WC_HASH_TYPE_NONE)
+		return WGET_E_UNSUPPORTED;
+
+	if (!(*handle = wget_malloc(sizeof(struct wget_hash_hd_st))))
+		return WGET_E_MEMORY;
+
+	if (wc_HashInit(&(*handle)->hash, hashtype) != 0) {
+		xfree(*handle);
+		return WGET_E_UNKNOWN;
+	}
+
+	(*handle)->type = hashtype;
+
+	return WGET_E_SUCCESS;
+}
+
+int wget_hash(wget_hash_hd *handle, const void *text, size_t textlen)
+{
+	if (wc_HashUpdate(&handle->hash, handle->type, text, textlen) == 0)
+		return WGET_E_SUCCESS;
+	
 	return WGET_E_UNKNOWN;
 }
 
-int wget_hash(wget_hash_hd_t *handle, const void *text, size_t textlen)
+int wget_hash_deinit(wget_hash_hd **handle, void *digest)
 {
-	struct wolfssl_md *md;
+	int rc = wc_HashFinal(&(*handle)->hash, (*handle)->type, digest);
 
-	if (!handle)
-		return WGET_E_INVALID;
-	if (handle->algorithm == 0 || (unsigned) handle->algorithm >= countof(_wolfssl_algorithm))
-		return WGET_E_INVALID;
+	xfree(*handle);
 
-	return _wolfssl_algorithm[handle->algorithm].update(&handle->h, text, textlen);
-}
-
-void wget_hash_deinit(wget_hash_hd_t *handle, void *digest)
-{
-	if (handle && digest) {
-		_wolfssl_algorithm[handle->algorithm].deinit(&handle->h, digest);
-		handle->algorithm = 0;
-	}
+	return rc == 0 ? rc : WGET_E_UNKNOWN;
 }
 
 #elif defined WITH_LIBCRYPTO
@@ -408,7 +324,7 @@ static const EVP_MD*
 		[WGET_DIGTYPE_SHA512] = EVP_sha512()
 	};
 
-int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t textlen, void *digest)
+int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
 	const EVP_MD *evp;
 
@@ -427,7 +343,7 @@ int wget_hash_fast(wget_digest_algorithm_t algorithm, const void *text, size_t t
 	return 0;
 }
 
-int wget_hash_get_len(wget_digest_algorithm_t algorithm)
+int wget_hash_get_len(wget_digest_algorithm algorithm)
 {
 	const EVP_MD *evp;
 
@@ -438,7 +354,7 @@ int wget_hash_get_len(wget_digest_algorithm_t algorithm)
 	return EVP_MD_CTX_size(evp);
 }
 
-int wget_hash_init(wget_hash_hd_t *handle, wget_digest_algorithm_t algorithm)
+int wget_hash_init(wget_hash_hd *handle, wget_digest_algorithm algorithm)
 {
 	const EVP_MD *evp;
 
@@ -462,7 +378,7 @@ int wget_hash_init(wget_hash_hd_t *handle, wget_digest_algorithm_t algorithm)
 	return WGET_E_INVALID;
 }
 
-int wget_hash(wget_hash_hd_t *handle, const void *text, size_t textlen)
+int wget_hash(wget_hash_hd *handle, const void *text, size_t textlen)
 {
 	if (!handle)
 		return WGET_E_INVALID;
@@ -473,7 +389,7 @@ int wget_hash(wget_hash_hd_t *handle, const void *text, size_t textlen)
 	return WGET_E_INVALID;
 }
 
-void wget_hash_deinit(wget_hash_hd_t *handle, void *digest)
+void wget_hash_deinit(wget_hash_hd *handle, void *digest)
 {
 	if (!handle)
 		return;
@@ -824,24 +740,33 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 #endif
 			// Fallback to read
 			ssize_t nbytes = 0;
-			wget_hash_hd dig;
+			wget_hash_hd *dig;
 			char tmp[65536];
 
 			if ((ret = wget_hash_init(&dig, algorithm))) {
-				error_printf(_("%s: Hash type '%s' not supported by linked crypto engine\n"), __func__, hashname);
+				error_printf(_("%s: Hash init failed for type '%s': %s\n"), __func__, hashname, wget_strerror(ret));
 				close(fd);
 				return ret;
 			}
 
 			while (length > 0 && (nbytes = read(fd, tmp, sizeof(tmp))) > 0) {
-				wget_hash(&dig, tmp, nbytes);
+				if ((ret = wget_hash(dig, tmp, nbytes))) {
+					error_printf(_("%s: Hash update failed: %s\n"), __func__, wget_strerror(ret));
+					close(fd);
+					return ret;
+				}
 
 				if (nbytes <= length)
 					length -= nbytes;
 				else
 					length = 0;
 			}
-			wget_hash_deinit(&dig, digest);
+
+			if ((ret = wget_hash_deinit(&dig, digest))) {
+				error_printf(_("%s: Hash finalization failed: %s\n"), __func__, wget_strerror(ret));
+				close(fd);
+				return ret;
+			}
 
 			if (nbytes < 0) {
 				error_printf(_("%s: Failed to read %llu bytes\n"), __func__, (unsigned long long)length);

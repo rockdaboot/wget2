@@ -1747,9 +1747,41 @@ static void test_hashing(void)
 				failed++;
 				info_printf("Failed [%u]: wget_hash_fast(%s,%d) -> %s (expected %s)\n", it, t->text, t->algo, digest_hex, t->result);
 			}
-		} else {
+
+			// now let's test init/hash/deinit
+			wget_hash_hd *handle;
+
+			if ((rc = wget_hash_init(&handle, t->algo)) != 0) {
+				failed++;
+				info_printf("Failed [%u]: wget_hash_init(%d) -> %d (expected 0)\n", it, t->algo, rc);
+				continue;
+			}
+			if ((rc = wget_hash(handle, t->text, strlen(t->text))) != 0) {
+				failed++;
+				info_printf("Failed [%u]: wget_hash(%s) -> %d (expected 0)\n", it, t->text, rc);
+				continue;
+			}
+			if ((rc = wget_hash_deinit(&handle, digest)) != 0) {
+				failed++;
+				info_printf("Failed [%u]: wget_hash_deinit() -> %d (expected 0)\n", it, rc);
+				continue;
+			}
+
+			wget_memtohex(digest, len, digest_hex, len * 2 + 1);
+
+			if (!strcmp(digest_hex, t->result))
+				ok++;
+			else {
+				failed++;
+				info_printf("Failed [%u]: wget_hash_init/hash/deinit(%s,%d) -> %s (expected %s)\n", it, t->text, t->algo, digest_hex, t->result);
+			}
+
+		} else if (rc != WGET_E_UNSUPPORTED) {
 			failed++;
 			info_printf("Failed [%u]: wget_hash_fast(%s,%d) failed with %d\n", it, t->text, t->algo, rc);
+		} else {
+			// Skipping if not supported in libwget. Depends on the configurged crypto backend.
+			info_printf("Skip hashing [%u]\n", it);
 		}
 	}
 }
