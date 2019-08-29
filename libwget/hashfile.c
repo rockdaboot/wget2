@@ -434,7 +434,7 @@ struct wget_hash_hd_st {
 
 static const struct nettle_hash *
 	_nettle_algorithm[WGET_DIGTYPE_MAX] = {
-		[WGET_DIGTYPE_UNKNOWN] = NULL,
+//		[WGET_DIGTYPE_UNKNOWN] = NULL,
 		[WGET_DIGTYPE_MD2] = &nettle_md2,
 		[WGET_DIGTYPE_MD5] = &nettle_md5,
 #ifdef RIPEMD160_DIGEST_SIZE
@@ -457,15 +457,15 @@ static const struct nettle_hash *
 
 int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
-	wget_hash_hd dig;
+	wget_hash_hd *dig;
 	int rc;
 
 	if ((rc = wget_hash_init(&dig, algorithm)) == 0) {
-		rc = wget_hash(&dig, text, textlen);
+		rc = wget_hash(dig, text, textlen);
 		wget_hash_deinit(&dig, digest);
 	}
 
-	return -1;
+	return rc;
 }
 
 int wget_hash_get_len(wget_digest_algorithm algorithm)
@@ -476,28 +476,44 @@ int wget_hash_get_len(wget_digest_algorithm algorithm)
 		return 0;
 }
 
-int wget_hash_init(wget_hash_hd *dig, wget_digest_algorithm algorithm)
+int wget_hash_init(wget_hash_hd **handle, wget_digest_algorithm algorithm)
 {
-	if ((unsigned)algorithm < countof(_nettle_algorithm) && _nettle_algorithm[algorithm]) {
-		dig->hash = _nettle_algorithm[algorithm];
-		dig->context = wget_malloc(dig->hash->context_size);
-		dig->hash->init(dig->context);
-		return 0;
+	if ((unsigned)algorithm >= countof(_nettle_algorithm))
+		return WGET_E_INVALID;
+
+	if (!_nettle_algorithm[algorithm])
+		return WGET_E_UNSUPPORTED;
+
+	wget_hash_hd *h;
+
+	if (!(h = wget_malloc(sizeof(struct wget_hash_hd_st))))
+		return WGET_E_MEMORY;
+
+	h->hash = _nettle_algorithm[algorithm];
+
+	if (!(h->context = wget_malloc(h->hash->context_size))) {
+		xfree(h);
+		return WGET_E_MEMORY;
 	}
 
-	return WGET_E_UNSUPPORTED;
+	h->hash->init(h->context);
+	*handle = h;
+
+	return WGET_E_SUCCESS;
 }
 
-int wget_hash(wget_hash_hd *dig, const void *text, size_t textlen)
+int wget_hash(wget_hash_hd *handle, const void *text, size_t textlen)
 {
-	dig->hash->update(dig->context, textlen, text);
-	return 0;
+	handle->hash->update(handle->context, textlen, text);
+	return WGET_E_SUCCESS;
 }
 
-void wget_hash_deinit(wget_hash_hd *dig, void *digest)
+int wget_hash_deinit(wget_hash_hd **handle, void *digest)
 {
-	dig->hash->digest(dig->context, dig->hash->digest_size, digest);
-	xfree(dig->context);
+	(*handle)->hash->digest((*handle)->context, (*handle)->hash->digest_size, digest);
+	xfree((*handle)->context);
+	xfree(*handle);
+	return WGET_E_SUCCESS;
 }
 
 #elif defined WITH_GCRYPT
