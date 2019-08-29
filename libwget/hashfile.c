@@ -104,9 +104,9 @@ struct wget_hash_hd_st {
 		dig;
 };
 
-static const gnutls_digest_algorithm
+static const gnutls_digest_algorithm_t
 	_gnutls_algorithm[WGET_DIGTYPE_MAX] = {
-		[WGET_DIGTYPE_UNKNOWN] = GNUTLS_DIG_UNKNOWN,
+//		[WGET_DIGTYPE_UNKNOWN] = GNUTLS_DIG_UNKNOWN, // both values are 0
 		[WGET_DIGTYPE_MD2] = GNUTLS_DIG_MD2,
 		[WGET_DIGTYPE_MD5] = GNUTLS_DIG_MD5,
 		[WGET_DIGTYPE_RMD160] = GNUTLS_DIG_RMD160,
@@ -136,10 +136,17 @@ static const gnutls_digest_algorithm
  */
 int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t textlen, void *digest)
 {
-	if ((unsigned)algorithm < countof(_gnutls_algorithm))
-		return gnutls_hash_fast(_gnutls_algorithm[algorithm], text, textlen, digest);
-	else
-		return -1;
+	if ((unsigned) algorithm >= countof(_gnutls_algorithm))
+		return WGET_E_INVALID;
+
+	gnutls_digest_algorithm_t hashtype = _gnutls_algorithm[algorithm];
+	if (hashtype == GNUTLS_DIG_UNKNOWN)
+		return WGET_E_UNSUPPORTED;
+
+	if (gnutls_hash_fast(_gnutls_algorithm[algorithm], text, textlen, digest) != 0)
+		return WGET_E_UNKNOWN;
+
+	return WGET_E_SUCCESS;
 }
 
 /**
@@ -171,12 +178,24 @@ int wget_hash_get_len(wget_digest_algorithm algorithm)
  *
  * After this function returns, wget_hash() might be called as many times as desired.
  */
-int wget_hash_init(wget_hash_hd *handle, wget_digest_algorithm algorithm)
+int wget_hash_init(wget_hash_hd **handle, wget_digest_algorithm algorithm)
 {
-	if ((unsigned)algorithm < countof(_gnutls_algorithm))
-		return gnutls_hash_init(&handle->dig, _gnutls_algorithm[algorithm]) == 0 ? WGET_E_SUCCESS : WGET_E_UNKNOWN;
-	else
+	if ((unsigned)algorithm >= countof(_gnutls_algorithm))
 		return WGET_E_INVALID;
+
+	gnutls_digest_algorithm_t hashtype = _gnutls_algorithm[algorithm];
+	if (hashtype == GNUTLS_DIG_UNKNOWN)
+		return WGET_E_UNSUPPORTED;
+
+	if (!(*handle = wget_malloc(sizeof(struct wget_hash_hd_st))))
+		return WGET_E_MEMORY;
+
+	if (gnutls_hash_init(&(*handle)->dig, _gnutls_algorithm[algorithm]) != 0) {
+		xfree(*handle);
+		return WGET_E_UNKNOWN;
+	}
+
+	return WGET_E_SUCCESS;
 }
 
 /**
@@ -197,6 +216,7 @@ int wget_hash(wget_hash_hd *handle, const void *text, size_t textlen)
 /**
  * \param[in] handle Handle to the hashing primitive returned by a subsequent call to wget_hash_init()
  * \param[out] digest Caller-supplied buffer where the output hash will be placed.
+ * \return 0 on success, < 0 on failure
  *
  * Complete the hash computation by performing final operations, such as padding,
  * and obtain the final result. The result will be placed in the caller-supplied
@@ -204,9 +224,13 @@ int wget_hash(wget_hash_hd *handle, const void *text, size_t textlen)
  * is large enough to store the hash. To get the output length of the chosen algorithm
  * \p algorithm, call wget_hash_get_len().
  */
-void wget_hash_deinit(wget_hash_hd *handle, void *digest)
+int wget_hash_deinit(wget_hash_hd **handle, void *digest)
 {
-	gnutls_hash_deinit(handle->dig, digest);
+	gnutls_hash_deinit((*handle)->dig, digest);
+
+	xfree(*handle);
+
+	return WGET_E_SUCCESS;
 }
 
 #elif defined WITH_LIBWOLFCRYPT
@@ -225,7 +249,7 @@ struct wget_hash_hd_st {
 
 static const enum wc_HashType
 	_wolfssl_algorithm[] = {
-		// [WGET_DIGTYPE_UNKNOWN] = WC_HASH_TYPE_NONE, // both enum values are 0
+		// [WGET_DIGTYPE_UNKNOWN] = WC_HASH_TYPE_NONE, // both values are 0
 		// [WGET_DIGTYPE_MD2] = WC_HASH_TYPE_MD2, // not in wc_hashAlg
 		[WGET_DIGTYPE_MD5] = WC_HASH_TYPE_MD5,
 		[WGET_DIGTYPE_SHA1] = WC_HASH_TYPE_SHA,
