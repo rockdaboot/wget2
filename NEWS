@@ -6,7 +6,7 @@ See the end for copying conditions.
 
 Please send GNU Wget2 bug reports to <bug-wget@gnu.org>.
 
-XX.XX.XXXX Release 1.99.2
+30.08.2019 Release 1.99.2 (beta)
   * Improve docs
   * Improve build system
   * More continuous integration testing
@@ -30,6 +30,7 @@ XX.XX.XXXX Release 1.99.2
   * Add support for Chromium's HSTS Preload List
   * Add zstd decompression (RFC8478)
   * Add WolfSSL as alternative TLS backend
+  * Add OpenSSL as alternative TLS backend
   * Add arguments fail / nofail to --verify-sig
   * Add TLSv1_x to --secure-protocol
   * Add support for TCP FastOpen Linux 4.11+ style
