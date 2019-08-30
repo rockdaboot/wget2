@@ -191,7 +191,7 @@
 #  define NULLABLE
 #else
 #  define RETURNS_NONNULL
-#  if defined __clang_major__
+#  if defined __clang_major__ && defined WGET_MANYWARNINGS
 #    define NULLABLE _Nullable
 #  else
 #    define NULLABLE
