@@ -134,14 +134,4 @@ EOF
 
 done
 
-prev_tag=`git tag|tail -2|head -1`
-echo "Don't forget to mention the following contributors in the announcement:"
-(
-  if [ -n $prev_tag ]; then
-    git log --format="%aN" --reverse
-    git log --reverse|grep -i reported|cut -d':' -f2|cut -d'<' -f1|cut -d' ' -f2-|tr -d '"'
-  else
-    git log ${prev_tag}.. --format="%aN" --reverse
-    git log ${prev_tag}.. --reverse|grep -i reported|cut -d':' -f2|cut -d'<' -f1|cut -d' ' -f2-|tr -d '"'
-  fi
-) | sort -u
+echo "Don't forget to mention the authors announcement. (list with 'contrib/mk_authors'"
