@@ -317,7 +317,7 @@ static int openssl_load_crl(X509_STORE *store, const char *crl_file)
 
 	if (!X509_load_crl_file(lookup, crl_file, X509_FILETYPE_PEM))
 		return WGET_E_UNKNOWN;
-	if (!X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK_ALL | X509_V_FLAG_USE_DELTAS))
+	if (!X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL | X509_V_FLAG_USE_DELTAS))
 		return WGET_E_UNKNOWN;
 
 	return 0;
@@ -484,9 +484,12 @@ static int verify_hpkp(const char *hostname, X509 *subject_cert)
  * It will be invoked by OpenSSL at some point during the TLS handshake.
  * It takes the server's certificate chain, and its purpose is to check the revocation
  * status for each certificate in it. We validate certs against HPKP and OCSP here.
- * This function should return 1 on success (the whole cert chain is valid) and 0 on failure.
+ * OpenSSL will make other checks before calling this function: cert signature, CRLs, etc.
+ * This function should return the value of 'ossl_retval' on success
+ * (which retains the result of previous checks made by OpenSSL) and 0 on failure (will override
+ * OpenSSL's result, whatever it is).
  */
-static int _openssl_revocation_check_fn(X509_STORE_CTX *storectx)
+static int _openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storectx)
 {
 	int pin_ok = 0, retval;
 	X509 *cert = NULL;
@@ -498,7 +501,7 @@ static int _openssl_revocation_check_fn(X509_STORE_CTX *storectx)
 
 	/* Check the whole cert chain against HPKP database */
 	if (!_config.hpkp_cache)
-		return 1;
+		return ossl_retval;
 
 	for (unsigned i = 0; i < cert_list_size; i++) {
 		cert = sk_X509_value(certs, i);
@@ -509,10 +512,12 @@ static int _openssl_revocation_check_fn(X509_STORE_CTX *storectx)
 			break;
 	}
 
-	if (!pin_ok)
+	if (!pin_ok) {
 		error_printf(_("Public key pinning mismatch.\n"));
+		return 0;
+	}
 
-	return pin_ok;
+	return ossl_retval;
 }
 
 static int openssl_init(SSL_CTX *ctx)
@@ -559,7 +564,7 @@ static int openssl_init(SSL_CTX *ctx)
 	}
 
 	/* Set our custom revocation check function, for HPKP and OCSP validation */
-	X509_STORE_set_check_revocation(store, _openssl_revocation_check_fn);
+	X509_STORE_set_verify_cb(store, _openssl_revocation_check_fn);
 
 	retval = openssl_set_priorities(ctx, _config.secure_protocol);
 

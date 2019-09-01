@@ -79,7 +79,7 @@ int main(void)
 			{	NULL } },
 		0);
 
-#ifdef WITH_GNUTLS
+#ifndef WITH_WOLFSSL
 	// test-i-https with loading CA Certificate and CRL
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,
