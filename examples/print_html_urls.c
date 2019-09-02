@@ -92,7 +92,7 @@ static void html_parse_localfile(const char *fname)
 			wget_html_parsed_url *html_url = wget_vector_get(res->uris, it);
 			wget_string *url = &html_url->url;
 
-			printf("  %s.%s '%.*s'\n", html_url->dir, html_url->attr, (int) url->len, url->p);
+			printf("  %s.%s '%.*s'\n", html_url->tag, html_url->attr, (int) url->len, url->p);
 		}
 
 		wget_xfree(data_allocated);

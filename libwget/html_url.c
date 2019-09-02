@@ -97,7 +97,7 @@ static void _css_parse_uri(void *context, const char *url WGET_GCC_UNUSED, size_
 
 	parsed_url->link_inline = 1;
 	wget_strscpy(parsed_url->attr, ctx->css_attr, sizeof(parsed_url->attr));
-	wget_strscpy(parsed_url->dir, ctx->css_dir, sizeof(parsed_url->dir));
+	wget_strscpy(parsed_url->tag, ctx->css_dir, sizeof(parsed_url->tag));
 	parsed_url->url.p = (const char *) (ctx->html + ctx->css_start_offset + pos);
 	parsed_url->url.len = len;
 
@@ -254,7 +254,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 					if (p != val) {
 						url.link_inline = ctx->link_inline;
 						wget_strscpy(url.attr, attr, sizeof(url.attr));
-						wget_strscpy(url.dir, tag, sizeof(url.dir));
+						wget_strscpy(url.tag, tag, sizeof(url.tag));
 						url.url.p = p;
 						url.url.len = val - p;
 						wget_vector_add_memdup(res->uris, &url, sizeof(url));
@@ -267,7 +267,7 @@ static void _html_get_url(void *context, int flags, const char *tag, const char 
 				// value is a single URL
 				url.link_inline = ctx->link_inline;
 				wget_strscpy(url.attr, attr, sizeof(url.attr));
-				wget_strscpy(url.dir, tag, sizeof(url.dir));
+				wget_strscpy(url.tag, tag, sizeof(url.tag));
 				url.url.p = val;
 				url.url.len = len;
 				ctx->uri_index = wget_vector_add_memdup(res->uris, &url, sizeof(url));

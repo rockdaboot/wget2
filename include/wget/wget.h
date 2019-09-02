@@ -1746,7 +1746,7 @@ typedef struct {
 	char
 		attr[16]; //!< name of the attribute containing the URL, e.g. 'href'
 	char
-		dir[16]; //!< name of the HTML tag containing the URL, e.g. 'a'
+		tag[16]; //!< name of the HTML tag containing the URL, e.g. 'a'
 	bool
 		link_inline : 1; //!< 1 = rel was 'stylesheet' or 'shortcut icon'
 } wget_html_parsed_url;
