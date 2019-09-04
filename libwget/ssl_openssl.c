@@ -90,11 +90,10 @@ static struct _config
 	};
 
 static int _init;
-static __thread int _ex_data_idx;
-static __thread CRYPTO_EX_DATA _crypto_ex_data;
 static wget_thread_mutex _mutex;
 
 static SSL_CTX *_ctx;
+static int _store_userdata_idx;
 
 /*
  * Constructor & destructor
@@ -103,16 +102,18 @@ static void __attribute__ ((constructor)) _wget_tls_init(void)
 {
 	if (!_mutex)
 		wget_thread_mutex_init(&_mutex);
-	if (!_ex_data_idx)
-		_ex_data_idx = -1;
+
+	_store_userdata_idx = X509_STORE_CTX_get_ex_new_index(
+			0, NULL,	/* argl, argp */
+			NULL,		/* new_func */
+			NULL,		/* dup_func */
+			NULL);		/* free_func */
 }
 
 static void __attribute__ ((destructor)) _wget_tls_exit(void)
 {
 	if (_mutex)
 		wget_thread_mutex_destroy(&_mutex);
-	if (_ex_data_idx)
-		_ex_data_idx = -1;
 }
 
 /*
@@ -492,16 +493,29 @@ static int verify_hpkp(const char *hostname, X509 *subject_cert)
 static int _openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storectx)
 {
 	int pin_ok = 0, retval;
+	X509_STORE *store;
 	X509 *cert = NULL;
 	const char *hostname;
 	STACK_OF(X509) *certs = X509_STORE_CTX_get1_chain(storectx);
 	unsigned cert_list_size = sk_X509_num(certs);
 
-	hostname = CRYPTO_get_ex_data(&_crypto_ex_data, _ex_data_idx);
-
 	/* Check the whole cert chain against HPKP database */
-	if (!_config.hpkp_cache)
+	if (!_config.hpkp_cache) {
+		sk_X509_pop_free(certs, X509_free);
 		return ossl_retval;
+	}
+
+	store = X509_STORE_CTX_get0_store(storectx);
+	if (!store) {
+		error_printf(_("Could not retrieve certificate store. Will skip HPKP checks.\n"));
+		return ossl_retval;
+	}
+
+	hostname = X509_STORE_get_ex_data(store, _store_userdata_idx);
+	if (!hostname) {
+		error_printf(_("Could not retrieve saved hostname. Will skip HPKP checks.\n"));
+		return ossl_retval;
+	}
 
 	for (unsigned i = 0; i < cert_list_size; i++) {
 		cert = sk_X509_value(certs, i);
@@ -513,10 +527,12 @@ static int _openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storect
 	}
 
 	if (!pin_ok) {
+		sk_X509_pop_free(certs, X509_free);
 		error_printf(_("Public key pinning mismatch.\n"));
 		return 0;
 	}
 
+	sk_X509_pop_free(certs, X509_free);
 	return ossl_retval;
 }
 
@@ -781,6 +797,7 @@ static void ssl_set_alpn_selected_protocol(const SSL *ssl, wget_tcp *tcp)
 int wget_ssl_open(wget_tcp *tcp)
 {
 	SSL *ssl = NULL;
+	X509_STORE *store;
 	int retval, error, resumed;
 
 	if (!tcp || tcp->sockfd < 0)
@@ -795,17 +812,16 @@ int wget_ssl_open(wget_tcp *tcp)
 	}
 
 	/* Store the hostname for the verification callback */
-	_ex_data_idx = CRYPTO_get_ex_new_index(
-		CRYPTO_EX_INDEX_SSL,
-		0, NULL,	/* argl, argp */
-		NULL,		/* new_func */
-		NULL,		/* dup_func */
-		NULL);		/* free_func */
-
-	if (_ex_data_idx == -1
-		|| !CRYPTO_new_ex_data(CRYPTO_EX_INDEX_SSL, NULL, &_crypto_ex_data)
-		||	!CRYPTO_set_ex_data(&_crypto_ex_data, _ex_data_idx, (void *) tcp->ssl_hostname))
-	{
+	if (_store_userdata_idx == -1) {
+		retval = WGET_E_UNKNOWN;
+		goto bail;
+	}
+	store = SSL_CTX_get_cert_store(_ctx);
+	if (!store) {
+		retval = WGET_E_UNKNOWN;
+		goto bail;
+	}
+	if (!X509_STORE_set_ex_data(store, _store_userdata_idx, (void *) tcp->ssl_hostname)) {
 		retval = WGET_E_UNKNOWN;
 		goto bail;
 	}
@@ -906,9 +922,6 @@ void wget_ssl_close(void **session)
 		do
 			retval = SSL_shutdown(ssl);
 		while (retval == 0);
-
-		CRYPTO_free_ex_data(_ex_data_idx, NULL, &_crypto_ex_data);
-		CRYPTO_free_ex_index(CRYPTO_EX_INDEX_SSL, _ex_data_idx);
 
 		SSL_free(ssl);
 		*session = NULL;
