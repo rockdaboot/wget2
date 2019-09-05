@@ -66,6 +66,25 @@ static wget_dns default_dns = {
 	.timeout = -1,
 };
 
+static bool
+	initialized;
+
+static void __attribute__((constructor)) _wget_net_init(void)
+{
+	if (!initialized) {
+		wget_thread_mutex_init(&default_dns.mutex);
+		initialized = true;
+	}
+}
+
+static void __attribute__((destructor)) _wget_net_exit(void)
+{
+	if (initialized) {
+		wget_thread_mutex_destroy(&default_dns.mutex);
+		initialized = false;
+	}
+}
+
 /**
  * \param[out] dns Pointer to return newly allocated and initialized wget_dns instance
  * \return WGET_E_SUCCESS if OK, WGET_E_MEMORY if out-of-memory or WGET_E_INVALID
