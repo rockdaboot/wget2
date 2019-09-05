@@ -33,10 +33,10 @@
 #include "private.h"
 
 static struct _CONFIG {
-	char *
-		cookie_file;
-	wget_cookie_db *
-		cookie_db;
+	char
+		*cookie_file;
+	wget_cookie_db
+		*cookie_db;
 	char
 		cookies_enabled,
 		keep_session_cookies;
@@ -262,7 +262,7 @@ const void *wget_global_get_ptr(int key)
 	case WGET_COOKIE_FILE:
 		return _config.cookie_file;
 	case WGET_COOKIE_DB:
-		return &_config.cookie_db;
+		return _config.cookie_db;
 	default:
 		wget_error_printf(_("%s: Unknown option %d"), __func__, key);
 		return NULL;
