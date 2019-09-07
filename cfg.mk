@@ -20,7 +20,6 @@ exclude_file_name_regexp--sc_trailing_blank = docs/DoxygenLayout\.xml|docs/libwg
 exclude_file_name_regexp--sc_two_space_separator_in_usage = \.gitlab-ci\.yml|docs/wget2_manual\.md$$
 exclude_file_name_regexp--sc_require_config_h = examples/.*\.c|fuzz/main\.c$$
 exclude_file_name_regexp--sc_require_config_h_first = examples/.*\.c|fuzz/main\.c$$
-exclude_file_name_regexp--sc_copyright_check = .*gnulib/.*\.c$$
 exclude_file_name_regexp--sc_prohibit_empty_lines_at_EOF = contrib/assignment_template\.txt$$
 exclude_file_name_regexp--sc_prohibit_sprintf = benchmarks/benches/convert\.gp$$
 exclude_file_name_regexp--sc_prohibit_printf = ^(unit-tests/(test\.c|buffer_printf_perf\.c)|examples/.*\.c|libwget/strlcpy\.c)$$
