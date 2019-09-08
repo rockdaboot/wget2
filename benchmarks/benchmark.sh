@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright(c) 2018-2019 Free Software Foundation, Inc.
+# Copyright (c) 2018-2019 Free Software Foundation, Inc.
 #
 # This file is part of GNU Wget.
 #
