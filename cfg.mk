@@ -18,6 +18,8 @@ local-checks-to-skip =            \
   sc_prohibit_gnu_make_extensions \
   sc_prohibit_strcmp
 
+update-copyright-env = UPDATE_COPYRIGHT_FORCE=1 UPDATE_COPYRIGHT_USE_INTERVALS=1
+
 # Explicit syntax-check exceptions.
 
 ## The file is indeed licensed under LGPLv2.1+. But the script doesn't parse that correctly
@@ -31,6 +33,11 @@ exclude_file_name_regexp--sc_require_config_h = examples/.*\.c|fuzz/main\.c$$
 exclude_file_name_regexp--sc_require_config_h_first = examples/.*\.c|fuzz/main\.c$$
 # do not remove, takes care for dependency subdirs (e.g. when using contrib/mingw script)
 exclude_file_name_regexp--sc_copyright_check = .*gnulib/.*\.c$$
+
+# The assignment_template is copies as-is into an email. Don't add any headers
+# there. The m4/* files are copied from autoconf-archive and don't follow the
+# same copyright convention
+exclude_file_name_regexp--update-copyright = ^(contrib/assignment_template\.txt|m4/(ax_ac_append_to_file|ax_ac_print_to_file|ax_add_am_macro_static|ax_am_macros_static|ax_check_gnu_make|ax_code_coverage|ax_file_escapes).m4)$$
 
 # New syntax-check rules
 sc_prohibit_sprintf:

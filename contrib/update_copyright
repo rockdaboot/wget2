@@ -1,6 +1,0 @@
-#!/bin/sh
-
-files=`git ls-files|egrep -v 'COPYING|gnulib|fuzz/.*.in/|update_copyright'`
-sed -i "s/ 2017 Free Soft/ 2017-2019 Free Soft/g" $files
-sed -i "s/ 2018 Free Soft/ 2018-2019 Free Soft/g" $files
-sed -i "s/-201. Free Soft/-2019 Free Soft/g" $files
