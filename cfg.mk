@@ -1,14 +1,20 @@
 # Explicit syntax-check exceptions.
 VC_LIST_ALWAYS_EXCLUDE_REGEX = ^data/.*|tests/(files|gpg|certs)/.*|.*\.png|^fuzz/.*\.(in|repro)/.*$$
 
-# Can someone please check if we can replace the @...@ for MACOSX_LIBS to use
-# the $(...) format? Then remove the at_at_check exception
-
-local-checks-to-skip = \
-  sc_cast_of_argument_to_free \
-  sc_immutable_NEWS \
-  sc_makefile_at_at_check \
-  sc_prohibit_atoi_atof \
+# Syntax Check Rules that we want to skip
+#  * sc_immutable_NEWS: I can't make this test ever pass. If someone fixes it,
+#  happy to remove it from here.
+#  * sc_makefile_at_at_check: We seem to use it predominantly for setting
+#  INTL_MACOSX_LIBS. Without access to a mac, there's no way to verify if it
+#  supports usage of the $(VAR) notation
+#  * sc_prohibit_atoi_atof: We use a lot of sscaf() to parse strings
+#  * sc_prohibit_gnu_make_extensions: We use GNU make.
+#  * sc_prohibit_strcmp: I don't like blind adherence to such rules. We try to
+#  use strcmp correctly everywhere
+local-checks-to-skip =            \
+  sc_immutable_NEWS               \
+  sc_makefile_at_at_check         \
+  sc_prohibit_atoi_atof           \
   sc_prohibit_gnu_make_extensions \
   sc_prohibit_strcmp
 
