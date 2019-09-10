@@ -28,6 +28,9 @@ exclude_file_name_regexp--sc_prohibit_alloc = ^(fuzz/.*\.c)$$
 exclude_file_name_regexp--sc_gettext_printf = ^(fuzz|tests|unit-tests|examples)/.*\.c|.*\.h|libwget/test_linking.*\.c$$
 exclude_file_name_regexp--sc_GPL_version = ^m4/.*\.m4
 
+# do not remove, takes care for dependency subdirs (e.g. when using contrib/mingw script)
+exclude_file_name_regexp--sc_copyright_check = .*gnulib/.*\.c$$
+
 sc_prohibit_sprintf:
         @prohibit='\<sprintf *\(' \
         halt='do not use sprintf() as it does not check the output buffer size' \
