@@ -82,5 +82,5 @@ int main(void)
 
 	wget_xfree(body);
 #endif
-	exit(0);
+	exit(EXIT_SUCCESS);
 }

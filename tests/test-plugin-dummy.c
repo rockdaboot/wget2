@@ -36,7 +36,7 @@ int wget_plugin_initializer(wget_plugin *plugin)
 	const char *name = wget_plugin_get_name(plugin);
 	if (strcmp(name, "pluginname") != 0) {
 		wget_error_printf("Plugin took a wrong name '%s'\n", name);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	FILE *stream = fopen("plugin-loaded.txt", "wb");

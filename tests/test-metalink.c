@@ -305,5 +305,5 @@ int main(void)
 	wget_free((void *)urls[6].headers[4]);
 	wget_free((void *)urls[9].headers[3]);
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }

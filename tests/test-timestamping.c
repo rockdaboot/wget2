@@ -391,5 +391,5 @@ int main(void)
 			{	NULL } },
 		0);
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }

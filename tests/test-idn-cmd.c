@@ -89,5 +89,5 @@ int main(void)
 		0);
 #endif
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }

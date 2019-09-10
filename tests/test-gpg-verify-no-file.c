@@ -193,5 +193,5 @@ int main(void)
 
 	wget_xfree(urls[1].body);
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }

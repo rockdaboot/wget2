@@ -37,7 +37,7 @@
 int main(void)
 {
 #if !(MHD_VERSION >= 0x00096302 && GNUTLS_VERSION_NUMBER >= 0x030603)
-	exit(77);
+	exit(WGET_TEST_EXIT_SKIP);
 #else
 	wget_test_url_t urls[]={
 		{	.name = "/index.html",
@@ -67,6 +67,6 @@ int main(void)
 			{ NULL } },
 		0);
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 #endif
 }

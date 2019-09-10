@@ -69,7 +69,7 @@ static void test_cond(void)
 	wget_thread_mutex_destroy(&lockcond);
 
 	if (cond_value != 2)
-		exit(1);
+		exit(EXIT_FAILURE);
 }
 
 int main(void)

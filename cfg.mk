@@ -19,24 +19,20 @@ local-checks-to-skip =            \
   sc_prohibit_strcmp
 
 # Explicit syntax-check exceptions.
+
+## The file is indeed licensed under LGPLv2.1+. But the script doesn't parse that correctly
+exclude_file_name_regexp--sc_GPL_version = ^m4/ax_code_coverage.m4$
+## These are dev specific files and don't need to be localised
 exclude_file_name_regexp--sc_bindtextdomain = ^(tests|unit-tests|examples|fuzz)/.*\.c|^libwget/test_linking.*\.c$$
-exclude_file_name_regexp--sc_po_check = ^examples/|tests/.*\.c$$
-exclude_file_name_regexp--sc_prohibit_magic_number_exit = tests/.*\.c$$
-exclude_file_name_regexp--sc_trailing_blank = docs/DoxygenLayout\.xml|docs/libwget\.doxy\.in|contrib/assignment_template\.txt$$
-exclude_file_name_regexp--sc_two_space_separator_in_usage = \.gitlab-ci\.yml|docs/wget2_manual\.md$$
+## This is a bug in gnulib that I've already reported
+exclude_file_name_regexp--sc_prohibit_magic_number_exit = ^(tests/test-plugin\.c|unit-tests/test-dl\.c)$$
+## Not all c files require the config.h file
 exclude_file_name_regexp--sc_require_config_h = examples/.*\.c|fuzz/main\.c$$
 exclude_file_name_regexp--sc_require_config_h_first = examples/.*\.c|fuzz/main\.c$$
-exclude_file_name_regexp--sc_prohibit_empty_lines_at_EOF = contrib/assignment_template\.txt$$
-exclude_file_name_regexp--sc_prohibit_sprintf = benchmarks/benches/convert\.gp$$
-exclude_file_name_regexp--sc_prohibit_printf = ^(unit-tests/(test\.c|buffer_printf_perf\.c)|examples/.*\.c|libwget/strlcpy\.c)$$
-exclude_file_name_regexp--sc_prohibit_free = ^(cfg\.mk|fuzz/.*\.c|unit-tests/.*\.c)$$
-exclude_file_name_regexp--sc_prohibit_alloc = ^(fuzz/.*\.c)$$
-exclude_file_name_regexp--sc_gettext_printf = ^(fuzz|tests|unit-tests|examples)/.*\.c|.*\.h|libwget/test_linking.*\.c$$
-exclude_file_name_regexp--sc_GPL_version = ^m4/.*\.m4
-
 # do not remove, takes care for dependency subdirs (e.g. when using contrib/mingw script)
 exclude_file_name_regexp--sc_copyright_check = .*gnulib/.*\.c$$
 
+# New syntax-check rules
 sc_prohibit_sprintf:
         @prohibit='\<sprintf *\(' \
         halt='do not use sprintf() as it does not check the output buffer size' \
@@ -67,3 +63,9 @@ sc_gettext_printf:
 	exclude='(//.*\<(wget_|)(info|error)_printf|\<wget_(info|error)_printf\(const |no translation)' \
 	halt='use _() to translate info and error strings' \
 	  $(_sc_search_regexp)
+
+
+exclude_file_name_regexp--sc_gettext_printf = ^(tests|unit-tests|examples|fuzz)/.*\.c|^libwget/test_linking.*\.c$$
+exclude_file_name_regexp--sc_prohibit_alloc = ^(fuzz/.*\.c)$$
+exclude_file_name_regexp--sc_prohibit_free = ^(cfg.mk|fuzz/.*\.c|unit-tests/.*\.c)$$
+exclude_file_name_regexp--sc_prohibit_printf = ^(unit-tests/(test\.c|buffer_printf_perf\.c)|examples/.*\.c|libwget/strlcpy\.c)$$

@@ -34,5 +34,5 @@ int main(void)
 	}
 #endif
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }

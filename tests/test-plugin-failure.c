@@ -177,7 +177,7 @@ int main(void)
 	if (access(".libs/libpluginname.so", R_OK) != 0
 		&& access(".libs/libpluginname.dll", R_OK) != 0
 		&& access(".libs/cygpluginname.dll", R_OK) != 0)
-		exit(77); // likely a static build
+		exit(WGET_TEST_EXIT_SKIP); // likely a static build
 
 	wget_test_start_server(
 			WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
@@ -271,5 +271,5 @@ int main(void)
 		WGET_TEST_EXPECTED_ERROR_CODE, 2,
 		0);
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }

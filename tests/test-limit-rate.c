@@ -223,5 +223,5 @@ int main(void)
 		                       elapsed_ms, desired_ms, tolerance_ms);
 	}
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }

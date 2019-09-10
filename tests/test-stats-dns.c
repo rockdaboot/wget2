@@ -28,5 +28,5 @@
 int main(void)
 {
 	run_stats_test_with_option("--stats-dns");
-	exit(0);
+	exit(EXIT_SUCCESS);
 }

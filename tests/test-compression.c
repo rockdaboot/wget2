@@ -385,5 +385,5 @@ int main(void)
         WGET_TEST_EXPECTED_ERROR_CODE, 2,
 		0);
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
