@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include <stdlib.h> // exit()
+#include <string.h>
 #include "libtest.h"
 
 int main(void)

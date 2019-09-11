@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include <stdlib.h> // exit()
+#include <string.h> // strcmp()
 #include "libtest.h"
 
 #define WITHIN_RANGE(value, desired, tolerance) \
