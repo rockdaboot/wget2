@@ -507,12 +507,14 @@ static int _openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storect
 
 	store = X509_STORE_CTX_get0_store(storectx);
 	if (!store) {
+		sk_X509_pop_free(certs, X509_free);
 		error_printf(_("Could not retrieve certificate store. Will skip HPKP checks.\n"));
 		return ossl_retval;
 	}
 
 	hostname = X509_STORE_get_ex_data(store, _store_userdata_idx);
 	if (!hostname) {
+		sk_X509_pop_free(certs, X509_free);
 		error_printf(_("Could not retrieve saved hostname. Will skip HPKP checks.\n"));
 		return ossl_retval;
 	}
