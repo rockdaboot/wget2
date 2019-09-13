@@ -31,11 +31,11 @@
 
 /**
  * \file
- * \brief Wget printf functions
- * \defgroup libwget-printf Wget printf functions
+ * \brief Libwget printf functions
+ * \defgroup libwget-printf Libwget printf functions
  * @{
  *
- * This is a collection of printf-style functions that are used with libwget and/or Wget code.
+ * This is a collection of printf-style functions that are used with libwget and/or Wget2 code.
  * They may be useful to other developers that is why they are exported.
  */
 

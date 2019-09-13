@@ -436,7 +436,7 @@ static void _bar_update(wget_bar *bar)
  * \param[in] nslots Number of progress bars
  * \return Pointer to a \p wget_bar object
  *
- * Initialize a new progress bar instance for Wget. If \p bar is a NULL
+ * Initialize a new progress bar instance. If \p bar is a NULL
  * pointer, it will be allocated on the heap and a pointer to the newly
  * allocated memory will be returned. To free this memory, call either the
  *  wget_bar_deinit() or wget_bar_free() functions based on your needs.
