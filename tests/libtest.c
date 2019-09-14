@@ -80,6 +80,7 @@ static int
 	ocsp_server_port,
 	h2_server_port,
 	keep_tmpfiles,
+	clean_directory,
 	reject_http_connection,
 	reject_https_connection;
 static wget_vector
@@ -1458,6 +1459,7 @@ void wget_test(int first_key, ...)
 #endif
 
 		keep_tmpfiles = 0;
+		clean_directory = 1;
 
 		if (!request_urls) {
 			request_urls = wget_vector_create(8, NULL);
@@ -1500,6 +1502,9 @@ void wget_test(int first_key, ...)
 			case WGET_TEST_KEEP_TMPFILES:
 				keep_tmpfiles = va_arg(args, int);
 				break;
+			case WGET_TEST_CLEAN_DIRECTORY:
+				clean_directory = va_arg(args, int);
+				break;
 			case WGET_TEST_EXECUTABLE:
 				executable = va_arg(args, const char *);
 				break;
@@ -1524,9 +1529,11 @@ void wget_test(int first_key, ...)
 		}
 		va_end(args);
 
-		// clean directory
-		wget_buffer_printf(cmd, "../%s", tmpdir);
-		_empty_directory(cmd->data);
+		if (clean_directory) {
+			// clean directory
+			wget_buffer_printf(cmd, "../%s", tmpdir);
+			_empty_directory(cmd->data);
+		}
 
 #ifdef HAVE_GNUTLS_OCSP_H
 		if (ocspdaemon) {
