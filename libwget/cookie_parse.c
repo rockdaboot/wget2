@@ -269,7 +269,7 @@ const char *wget_cookie_parse_setcookie(const char *s, wget_cookie **_cookie)
 		// skip over delimiter and remove leading whitespace from cookie value
 		for (s++; c_isspace(*s);) s++;
 
-/* RFC compliancy is too strict
+/* RFC compliance is too strict
 		if (*s == '\"')
 			s++;
 		// cookie-octet      = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
