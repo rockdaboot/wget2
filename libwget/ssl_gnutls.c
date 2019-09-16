@@ -272,6 +272,11 @@ void wget_ssl_set_config_object(int key, void *value)
  *
  *  - WGET_SSL_OCSP: whether or not OCSP should be used. The default is yes (1).
  *  - WGET_SSL_OCSP_STAPLING: whether or not OCSP stapling should be used. The default is yes (1).
+ *  - WGET_SSL_OCSP_NONCE: whether or not an OCSP nonce should be sent in the request. The default is yes (1).
+ *  If a nonce was sent in the request, the OCSP verification will fail if the response nonce doesn't match.
+ *  However if the response does not include a nonce extension, verification will be allowed to continue.
+ *  The OCSP nonce extension is not a critical one.
+ *  - WGET_SSL_OCSP_DATE: Reject the OCSP response if it's older than 3 days.
  */
 void wget_ssl_set_config_int(int key, int value)
 {
@@ -925,7 +930,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 	int ret = -1, err, ocsp_ok = 0, pinning_ok = 0;
 	gnutls_x509_crt_t cert = NULL, issuer = NULL;
 	const char *hostname;
-	const char *tag = _config.check_certificate ? _("ERROR") : _("WARNING");
+	const char *tag = config.check_certificate ? _("ERROR") : _("WARNING");
 #ifdef WITH_OCSP
 	unsigned nvalid = 0, nrevoked = 0, nignored = 0;
 #endif
@@ -1052,7 +1057,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 	// At this point, the cert chain has been found valid regarding the locally available CA certificates and CRLs.
 	// Now, we are going to check the revocation status via OCSP
 #ifdef WITH_OCSP
-	if (_config.ocsp_stapling) {
+	if (config.ocsp_stapling) {
 		if (!ctx->valid && ctx->ocsp_stapling) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
 			if (gnutls_ocsp_status_request_is_checked(session, 0)) {
@@ -1088,7 +1093,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 		cert_verify_hpkp(cert, hostname, session);
 
 #ifdef WITH_OCSP
-		if (_config.ocsp && it > nvalid) {
+		if (config.ocsp && it > nvalid) {
 			char fingerprint[64 * 2 +1];
 			int revoked;
 
@@ -1142,7 +1147,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 	}
 
 #ifdef WITH_OCSP
-	if (_config.ocsp && ocsp_stats_callback) {
+	if (config.ocsp && ocsp_stats_callback) {
 		wget_ocsp_stats_data stats;
 		stats.hostname = hostname;
 		stats.nvalid = nvalid;

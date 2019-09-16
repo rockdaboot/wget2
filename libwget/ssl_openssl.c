@@ -17,6 +17,9 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
+ * SSL/TLS routines, with OpenSSL as the backend engine
+ *
+ * Author: Ander Juaristi
  */
 
 #include <config.h>
@@ -28,6 +31,7 @@
 #include <openssl/ocsp.h>
 #include <openssl/crypto.h>
 #include <openssl/ossl_typ.h>
+#include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
 
@@ -90,7 +94,9 @@ static struct config
 		check_hostname :1,
 		print_info :1,
 		ocsp :1,
-		ocsp_stapling :1;
+		ocsp_date :1,
+		ocsp_stapling :1,
+		ocsp_nonce :1;
 } config = {
 	.check_certificate = 1,
 	.check_hostname = 1,
@@ -295,6 +301,11 @@ void wget_ssl_set_config_object(int key, void *value)
  *
  *  - WGET_SSL_OCSP: whether or not OCSP should be used. The default is yes (1).
  *  - WGET_SSL_OCSP_STAPLING: whether or not OCSP stapling should be used. The default is yes (1).
+ *  - WGET_SSL_OCSP_NONCE: whether or not an OCSP nonce should be sent in the request. The default is yes (1).
+ *  If a nonce was sent in the request, the OCSP verification will fail if the response nonce doesn't match.
+ *  However if the response does not include a nonce extension, verification will be allowed to continue.
+ *  The OCSP nonce extension is not a critical one.
+ *  - WGET_SSL_OCSP_DATE: Reject the OCSP response if it's older than 3 days.
  */
 void wget_ssl_set_config_int(int key, int value)
 {
@@ -322,6 +333,12 @@ void wget_ssl_set_config_int(int key, int value)
 		break;
 	case WGET_SSL_OCSP_STAPLING:
 		config.ocsp_stapling = value;
+		break;
+	case WGET_SSL_OCSP_NONCE:
+		config.ocsp_nonce = value;
+		break;
+	case WGET_SSL_OCSP_DATE:
+		config.ocsp_date = value;
 		break;
 	default:
 		error_printf(_("Unknown configuration key %d (maybe this config value should be of another type?)\n"), key);
@@ -460,7 +477,7 @@ end:
 	return retval;
 }
 
-static int verify_hpkp(const char *hostname, X509 *subject_cert)
+static int verify_hpkp(const char *hostname, X509 *subject_cert, wget_hpkp_stats_result *hpkp_stats)
 {
 	int retval, spki_len;
 	unsigned char *spki = NULL;
@@ -475,28 +492,480 @@ static int verify_hpkp(const char *hostname, X509 *subject_cert)
 		hostname,
 		spki, spki_len);
 
-	/* TODO update stats here */
-
 	switch (retval) {
 	case 1:
 		debug_printf("Matching HPKP pinning found for host '%s'\n", hostname);
+		*hpkp_stats = WGET_STATS_HPKP_MATCH;
 		retval = 0;
 		break;
 	case 0:
 		debug_printf("No HPKP pinning found for host '%s'\n", hostname);
+		*hpkp_stats = WGET_STATS_HPKP_NO;
 		retval = 1;
 		break;
 	case -2:
 		debug_printf("Public key for host '%s' does not match\n", hostname);
+		*hpkp_stats = WGET_STATS_HPKP_NOMATCH;
 		retval = -1;
 		break;
 	default:
 		debug_printf("Could not check HPKP pinning for host '%s' (%d)\n", hostname, retval);
+		*hpkp_stats = WGET_STATS_HPKP_ERROR;
 		retval = 0;
 	}
 
 	OPENSSL_free(spki);
 	return retval;
+}
+
+static int check_cert_chain_for_hpkp(STACK_OF(X509) *certs, const char *hostname, wget_hpkp_stats_result *hpkp_stats)
+{
+	int retval, pin_ok = 0;
+	X509 *cert;
+	unsigned cert_list_size = sk_X509_num(certs);
+
+	for (unsigned i = 0; i < cert_list_size; i++) {
+		cert = sk_X509_value(certs, i);
+
+		if ((retval = verify_hpkp(hostname, cert, hpkp_stats)) >= 0)
+			pin_ok = 1;
+		if (retval == 1)
+			break;
+	}
+
+	return pin_ok;
+}
+
+static OCSP_REQUEST *send_ocsp_request(const char *uri,
+		OCSP_CERTID *certid,
+		wget_http_response **response)
+{
+	OCSP_REQUEST *ocspreq;
+	wget_http_response *resp;
+	unsigned char *ocspreq_bytes = NULL;
+	size_t ocspreq_bytes_len;
+
+	ocspreq = OCSP_REQUEST_new();
+	if (!ocspreq)
+		goto end;
+
+	if (!OCSP_request_add0_id(ocspreq, certid)) {
+		OCSP_REQUEST_free(ocspreq);
+		ocspreq = NULL;
+		goto end;
+	}
+
+	if (config.ocsp_nonce && !OCSP_request_add1_nonce(ocspreq, NULL, 0)) {
+		OCSP_REQUEST_free(ocspreq);
+		ocspreq = NULL;
+		goto end;
+	}
+
+	ocspreq_bytes_len = i2d_OCSP_REQUEST(ocspreq, &ocspreq_bytes);
+	if (!ocspreq_bytes || !ocspreq_bytes_len) {
+		OCSP_REQUEST_free(ocspreq);
+		ocspreq = NULL;
+		goto end;
+	}
+
+	resp = wget_http_get(
+		WGET_HTTP_URL, uri,
+		WGET_HTTP_SCHEME, "POST",
+		WGET_HTTP_HEADER_ADD, "Accept-Encoding", "identity",
+		WGET_HTTP_HEADER_ADD, "Accept", "application/ocsp-response",
+		WGET_HTTP_HEADER_ADD, "Content-Type", "application/ocsp-request",
+		WGET_HTTP_MAX_REDIRECTIONS, 5,
+		WGET_HTTP_BODY, ocspreq_bytes, ocspreq_bytes_len,
+		0);
+
+	OPENSSL_free(ocspreq_bytes);
+
+	if (resp) {
+		*response = resp;
+	} else {
+		OCSP_REQUEST_free(ocspreq);
+		ocspreq = NULL;
+	}
+
+end:
+	return ocspreq;
+}
+
+static const char *get_printable_ocsp_reason_desc(int reason)
+{
+	switch (reason) {
+	case OCSP_REVOKED_STATUS_NOSTATUS:
+		return "not given";
+	case OCSP_REVOKED_STATUS_UNSPECIFIED:
+		return "unspecified";
+	case OCSP_REVOKED_STATUS_KEYCOMPROMISE:
+		return "key compromise";
+	case OCSP_REVOKED_STATUS_CACOMPROMISE:
+		return "CA compromise";
+	case OCSP_REVOKED_STATUS_AFFILIATIONCHANGED:
+		return "affiliation changed";
+	case OCSP_REVOKED_STATUS_SUPERSEDED:
+		return "superseded";
+	case OCSP_REVOKED_STATUS_CESSATIONOFOPERATION:
+		return "cessation of operation";
+	case OCSP_REVOKED_STATUS_CERTIFICATEHOLD:
+		return "certificate hold";
+	case OCSP_REVOKED_STATUS_REMOVEFROMCRL:
+		return "remove from CRL";
+	default:
+		return NULL;
+	}
+}
+
+static int print_ocsp_response_status(int status)
+{
+	debug_printf("*** OCSP response status: ");
+
+	switch (status) {
+	case OCSP_RESPONSE_STATUS_SUCCESSFUL:
+		debug_printf("successful\n");
+		break;
+	case OCSP_RESPONSE_STATUS_MALFORMEDREQUEST:
+		debug_printf("malformed request\n");
+		break;
+	case OCSP_RESPONSE_STATUS_INTERNALERROR:
+		debug_printf("internal error\n");
+		break;
+	case OCSP_RESPONSE_STATUS_TRYLATER:
+		debug_printf("try later\n");
+		break;
+	case OCSP_RESPONSE_STATUS_SIGREQUIRED:
+		debug_printf("signature required\n");
+		break;
+	case OCSP_RESPONSE_STATUS_UNAUTHORIZED:
+		debug_printf("unauthorized\n");
+		break;
+	default:
+		debug_printf("unknown status code\n");
+		break;
+	}
+
+	return status;
+}
+
+static int print_ocsp_cert_status(int status, int reason)
+{
+	const char *reason_desc;
+
+	debug_printf("*** OCSP cert status: ");
+
+	switch (status) {
+	case V_OCSP_CERTSTATUS_GOOD:
+		debug_printf("good\n");
+		break;
+	case V_OCSP_CERTSTATUS_UNKNOWN:
+		debug_printf("unknown\n");
+		break;
+	default:
+		debug_printf("invalid status code\n");
+		break;
+	case V_OCSP_CERTSTATUS_REVOKED:
+		reason_desc = get_printable_ocsp_reason_desc(reason);
+		debug_printf("Revoked. Reason: %s\n", (reason_desc ? reason_desc : "unknown reason"));
+		break;
+	}
+
+	return status;
+}
+
+struct _verification_flags {
+	unsigned int
+		verifying_ocsp,
+		ocsp_checked;
+	const char *hostname;
+	wget_hpkp_stats_result hpkp_stats;
+};
+
+static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
+		STACK_OF(X509) *certstack,
+		X509_STORE *certstore,
+		OCSP_REQUEST *ocspreq,
+		bool check_time)
+{
+	int
+		retval = -1,
+		status, reason,
+		day, sec;
+	OCSP_BASICRESP *ocspbs = NULL;
+	OCSP_SINGLERESP *single;
+	ASN1_GENERALIZEDTIME *revtime = NULL,
+			*thisupd = NULL,
+			*nextupd = NULL;
+	ASN1_TIME *now;
+
+	status = OCSP_response_status(ocspresp);
+	if (print_ocsp_response_status(status)
+			!= OCSP_RESPONSE_STATUS_SUCCESSFUL) {
+		error_printf(_("Unsuccessful OCSP response\n"));
+		goto end;
+	}
+
+	if (!(ocspbs = OCSP_response_get1_basic(ocspresp)))
+		goto end;
+
+	if (!OCSP_basic_verify(ocspbs, certstack, certstore, 0)) {
+		error_printf(_("Could not verify OCSP certificate chain\n"));
+		goto end;
+	}
+
+	if (config.ocsp_nonce && !OCSP_check_nonce(ocspreq, ocspbs)) {
+		error_printf(_("OCSP nonce does not match\n"));
+		goto end;
+	}
+
+	single = OCSP_resp_get0(ocspbs, 0);
+	if (!single) {
+		error_printf(_("Could not parse OCSP single response\n"));
+		goto end;
+	}
+
+	status = OCSP_single_get0_status(single, &reason, &revtime, &thisupd, &nextupd);
+	if (status == -1) {
+		error_printf(_("Could not obtain OCSP response status\n"));
+		goto end;
+	}
+
+	if (print_ocsp_cert_status(status, reason) != V_OCSP_CERTSTATUS_GOOD) {
+		error_printf(_("Certificate revoked by OCSP\n"));
+		goto end;
+	}
+
+	/* Check time is within an acceptable range */
+	if (check_time) {
+		if (!thisupd) {
+			error_printf(_("Could not get 'thisUpd' from OCSP response. Cannot check time.\n"));
+			goto end;
+		}
+
+		now = ASN1_TIME_adj(NULL, time(NULL), 0, 0);
+
+		if (ASN1_TIME_diff(&day, &sec, now, thisupd) && day <= -3) {
+			error_printf(_("OCSP response is too old. Ignoring.\n"));
+			goto end;
+		}
+	}
+
+	/* Success! */
+	retval = 0;
+
+end:
+	if (ocspbs)
+		OCSP_BASICRESP_free(ocspbs);
+	return retval;
+}
+
+static int verify_ocsp(const char *ocsp_uri,
+		X509 *subject_cert, X509 *issuer_cert,
+		STACK_OF(X509) *certs, X509_STORE *certstore,
+		bool check_time)
+{
+	wget_http_response *resp;
+	const unsigned char *body;
+	OCSP_CERTID *certid;
+	OCSP_REQUEST *ocspreq;
+	OCSP_RESPONSE *ocspresp;
+
+	/* Generate CertID and OCSP request */
+	certid = OCSP_cert_to_id(EVP_sha256(), subject_cert, issuer_cert);
+	if (!(ocspreq = send_ocsp_request(ocsp_uri,
+			certid,
+			&resp)))
+		return -1;
+
+	/* Check response */
+	body = (const unsigned char *) resp->body->data;
+	ocspresp = d2i_OCSP_RESPONSE(NULL, &body, resp->body->length);
+	if (!ocspresp) {
+		wget_http_free_response(&resp);
+		OCSP_REQUEST_free(ocspreq);
+		return -1;
+	}
+
+	if (check_ocsp_response(ocspresp, certs, certstore, ocspreq, check_time) < 0) {
+		wget_http_free_response(&resp);
+		OCSP_RESPONSE_free(ocspresp);
+		OCSP_REQUEST_free(ocspreq);
+		return 1;
+	}
+
+	wget_http_free_response(&resp);
+	OCSP_RESPONSE_free(ocspresp);
+	OCSP_REQUEST_free(ocspreq);
+	return 0;
+}
+
+static char *read_ocsp_uri_from_certificate(const X509 *cert)
+{
+	int idx;
+	unsigned char *ocsp_uri = NULL;
+	X509_EXTENSION *ext;
+	ASN1_OCTET_STRING *extdata;
+	const STACK_OF(X509_EXTENSION) *exts = X509_get0_extensions(cert);
+
+	if (exts) {
+		/* Read the authorityInfoAccess extension */
+		if ((idx = X509v3_get_ext_by_NID(exts, NID_info_access, -1)) >= 0) {
+			ext = sk_X509_EXTENSION_value(exts, idx);
+			extdata = X509_EXTENSION_get_data(ext);
+			if (extdata)
+				ASN1_STRING_to_UTF8(&ocsp_uri, extdata);
+		}
+	}
+
+	return (char *) ocsp_uri;
+}
+
+static char *compute_cert_fingerprint(X509 *cert)
+{
+	/*
+	 * OpenSSL does not provide a function that calculates the cert fingerprint directly
+	 * (like GnuTLS' gnutls_x509_crt_get_fingerprint()), but we can code it away. Fingerprint
+	 * is basically a SHA-256 hash of the DER-encoded certificate.
+	 */
+	EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
+	char *hexstring = NULL;
+	unsigned char
+		*der_output = NULL,
+		*digest_output = NULL;
+	int
+		der_length,
+		digest_length,
+		hexstring_length;
+
+	if ((der_length = i2d_X509(cert, &der_output)) < 0)
+		goto bail;
+
+	/* Compute SHA-256 digest of the DER-encoded certificate */
+	digest_length = EVP_MD_size(EVP_sha256());
+	digest_output = wget_malloc(digest_length);
+	if (!digest_output)
+		goto bail;
+
+	if (!EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL))
+		goto bail;
+	if (!EVP_DigestUpdate(mdctx, der_output, der_length))
+		goto bail;
+	if (!EVP_DigestFinal_ex(mdctx, digest_output, NULL))
+		goto bail;
+
+	OPENSSL_free(der_output);
+	der_output = NULL;
+
+	EVP_MD_CTX_free(mdctx);
+	mdctx = NULL;
+
+	/* Convert SHA-256 digest to hex string */
+	hexstring_length = (digest_length * 2) + 1;
+	hexstring = wget_malloc(hexstring_length);
+	if (!hexstring)
+		goto bail;
+
+	wget_memtohex(digest_output, digest_length, hexstring, hexstring_length);
+	xfree(digest_output);
+	return hexstring;
+
+bail:
+	xfree(hexstring);
+	xfree(digest_output);
+	if (der_output)
+		OPENSSL_free(der_output);
+	if (mdctx)
+		EVP_MD_CTX_free(mdctx);
+	return NULL;
+}
+
+static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, const char *hostname)
+{
+	wget_ocsp_stats_data stats;
+	int num_ok = 0, num_revoked = 0, num_ignored = 0, revoked, ocsp_ok;
+	char
+		*ocsp_uri = NULL,
+		*fingerprint;
+	X509 *cert, *issuer_cert;
+	unsigned cert_list_size = sk_X509_num(certs);
+
+	for (unsigned i = 0; i < cert_list_size; i++) {
+		cert = sk_X509_value(certs, i);
+		issuer_cert = sk_X509_value(certs, i+1);
+
+		if (!issuer_cert)
+			break;
+
+		/* Compute cert fingerprint */
+		fingerprint = compute_cert_fingerprint(cert);
+		if (!fingerprint) {
+			error_printf(_("Could not compute certificate fingerprint for cert %u\n"), i);
+			return 0; /* Treat this as an error */
+		}
+
+		/* Check if there's already an OCSP response stored in cache */
+		if (config.ocsp_cert_cache) {
+			if (wget_ocsp_fingerprint_in_cache(config.ocsp_cert_cache, fingerprint, &revoked)) {
+				/* Found cert's fingerprint in cache */
+				if (revoked) {
+					debug_printf("Certificate %u has been revoked (cached response)\n", i);
+					num_revoked++;
+				} else {
+					debug_printf("Certificate %u is valid (cached response)\n", i);
+					num_ok++;
+				}
+
+				xfree(fingerprint);
+				continue;
+			}
+		}
+
+		if (!config.ocsp_server) {
+			ocsp_uri = read_ocsp_uri_from_certificate(cert);
+			if (!ocsp_uri) {
+				info_printf(_("OCSP URI not given and not found in certificate. Skipping OCSP check for cert %u.\n"),
+						i);
+				num_ignored++;
+				xfree(fingerprint);
+				continue;
+			}
+		}
+
+		debug_printf("Contacting OCSP server. URI: %s\n",
+				config.ocsp_server ? config.ocsp_server : ocsp_uri);
+
+		ocsp_ok = verify_ocsp(config.ocsp_server ? config.ocsp_server : ocsp_uri,
+				cert, issuer_cert, certs, store,
+				config.ocsp_date);
+		if (ocsp_ok == 0)
+			num_ok++;
+		else if (ocsp_ok == 1)
+			num_revoked++;
+
+		/* Add the certificate to the OCSP cache */
+		if (ocsp_ok == 0 || ocsp_ok == 1) {
+			wget_ocsp_db_add_fingerprint(config.ocsp_cert_cache,
+				fingerprint,
+				time(NULL) + 3600, /* Cache entry valid for 1 hour */
+				(ocsp_ok == 0));   /* valid? */
+		}
+
+		xfree(fingerprint);
+
+		if (ocsp_uri)
+			OPENSSL_free(ocsp_uri);
+	}
+
+	if (ocsp_stats_callback) {
+		stats.hostname = hostname;
+		stats.nvalid = num_ok;
+		stats.nrevoked = num_revoked;
+		stats.nignored = num_ignored;
+		stats.stapling = 0;
+		ocsp_stats_callback(&stats, ocsp_stats_ctx);
+	}
+
+	return (num_revoked == 0);
 }
 
 /*
@@ -511,48 +980,54 @@ static int verify_hpkp(const char *hostname, X509 *subject_cert)
  */
 static int openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storectx)
 {
-	int pin_ok = 0, retval;
 	X509_STORE *store;
-	X509 *cert = NULL;
-	const char *hostname;
+	struct _verification_flags *vflags;
 	STACK_OF(X509) *certs = X509_STORE_CTX_get1_chain(storectx);
-	unsigned cert_list_size = sk_X509_num(certs);
 
-	/* Check the whole cert chain against HPKP database */
-	if (!config.hpkp_cache) {
-		sk_X509_pop_free(certs, X509_free);
-		return ossl_retval;
+	if (ossl_retval == 0) {
+		/* ossl_retval == 0 means certificate was revoked by OpenSSL before entering this callback */
+		goto end;
 	}
 
 	store = X509_STORE_CTX_get0_store(storectx);
 	if (!store) {
-		sk_X509_pop_free(certs, X509_free);
 		error_printf(_("Could not retrieve certificate store. Will skip HPKP checks.\n"));
-		return ossl_retval;
+		goto end;
 	}
 
-	hostname = X509_STORE_get_ex_data(store, store_userdata_idx);
-	if (!hostname) {
-		sk_X509_pop_free(certs, X509_free);
-		error_printf(_("Could not retrieve saved hostname. Will skip HPKP checks.\n"));
-		return ossl_retval;
+	vflags = X509_STORE_get_ex_data(store, store_userdata_idx);
+	if (!vflags) {
+		error_printf(_("Could not retrieve saved verification status flags.\n"));
+		goto end;
 	}
 
-	for (unsigned i = 0; i < cert_list_size; i++) {
-		cert = sk_X509_value(certs, i);
+	if (vflags->verifying_ocsp)
+		goto end;
 
-		if ((retval = verify_hpkp(hostname, cert)) >= 0)
-			pin_ok = 1;
-		if (retval == 1)
-			break;
+	if (config.hpkp_cache) {
+		/* Check cert chain against HPKP database */
+		if (!check_cert_chain_for_hpkp(certs, vflags->hostname, &vflags->hpkp_stats)) {
+			error_printf(_("Public key pinning mismatch.\n"));
+			ossl_retval = 0;
+			goto end;
+		}
 	}
 
-	if (!pin_ok) {
-		sk_X509_pop_free(certs, X509_free);
-		error_printf(_("Public key pinning mismatch.\n"));
-		return 0;
+	if (config.ocsp && !vflags->ocsp_checked) {
+		/* Check cert chain agains OCSP */
+		vflags->verifying_ocsp = 1;
+
+		if (!check_cert_chain_for_ocsp(certs, store, vflags->hostname)) {
+			error_printf(_("Certificate revoked by OCSP.\n"));
+			ossl_retval = 0;
+			goto end;
+		}
+
+		vflags->ocsp_checked = 1;
+		vflags->verifying_ocsp = 0;
 	}
 
+end:
 	sk_X509_pop_free(certs, X509_free);
 	return ossl_retval;
 }
@@ -786,7 +1261,7 @@ static bool ssl_set_alpn_offering(SSL *ssl, const char *alpn)
 	return ret;
 }
 
-static void ssl_set_alpn_selected_protocol(const SSL *ssl, wget_tcp *tcp)
+static void ssl_set_alpn_selected_protocol(const SSL *ssl, wget_tcp *tcp, wget_tls_stats_data *stats)
 {
 	const unsigned char *data;
 	unsigned int datalen;
@@ -796,11 +1271,14 @@ static void ssl_set_alpn_selected_protocol(const SSL *ssl, wget_tcp *tcp)
 	if (data && datalen) {
 		debug_printf("ALPN: Server accepted protocol '%.*s'\n", (int) datalen, data);
 
-		/* TODO update stats here */
+		/* Success - Set selected protocol and update stats */
+		if (stats)
+			stats->alpn_protocol = wget_strmemdup(data, datalen);
 
 		if (datalen == 2 && data[0] == 'h' && data[1] == '2') {
 			tcp->protocol = WGET_PROTOCOL_HTTP_2_0;
-			/* TODO update stats here */
+			if (stats)
+				stats->http_protocol = WGET_PROTOCOL_HTTP_2_0;
 		}
 	}
 }
@@ -824,6 +1302,16 @@ int wget_ssl_open(wget_tcp *tcp)
 	SSL *ssl = NULL;
 	X509_STORE *store;
 	int retval, error, resumed;
+	struct _verification_flags *vflags = NULL;
+	wget_tls_stats_data stats = {
+		.alpn_protocol = NULL,
+		.version = -1,
+		.false_start = -1,
+		.tfo = -1,
+		.resumed = 0,
+		.http_protocol = WGET_PROTOCOL_HTTP_1_1,
+		.cert_chain_size = 0
+	}, *stats_p = NULL;
 
 	if (!tcp || tcp->sockfd < 0)
 		return WGET_E_INVALID;
@@ -836,20 +1324,35 @@ int wget_ssl_open(wget_tcp *tcp)
 		goto bail;
 	}
 
-	/* Store the hostname for the verification callback */
+	/* Store state flags for the verification callback */
+	vflags = wget_malloc(sizeof(struct _verification_flags));
+	if (!vflags) {
+		retval = WGET_E_MEMORY;
+		goto bail;
+	}
+
+	vflags->ocsp_checked = 0;
+	vflags->verifying_ocsp = 0;
+	vflags->hostname = tcp->ssl_hostname;
+
 	if (store_userdata_idx == -1) {
 		retval = WGET_E_UNKNOWN;
 		goto bail;
 	}
+
 	store = SSL_CTX_get_cert_store(_ctx);
 	if (!store) {
 		retval = WGET_E_UNKNOWN;
 		goto bail;
 	}
-	if (!X509_STORE_set_ex_data(store, store_userdata_idx, (void *) tcp->ssl_hostname)) {
+	if (!X509_STORE_set_ex_data(store, store_userdata_idx, (void *) vflags)) {
 		retval = WGET_E_UNKNOWN;
 		goto bail;
 	}
+
+	/* Enable stats logging, if requested */
+	if (tls_stats_callback)
+		stats_p = &stats;
 
 	/* Enable host name verification, if requested */
 	if (config.check_hostname) {
@@ -892,6 +1395,7 @@ int wget_ssl_open(wget_tcp *tcp)
 		/* Run TLS handshake */
 		retval = SSL_connect(ssl);
 		if (retval > 0) {
+			error = 0;
 			resumed = SSL_session_reused(ssl);
 			break;
 		}
@@ -916,6 +1420,9 @@ int wget_ssl_open(wget_tcp *tcp)
 	/* Success! */
 	debug_printf("Handshake completed%s\n", resumed ? " (resumed session)" : " (full handshake - not resumed)");
 
+	if (stats_p)
+		stats_p->resumed = resumed;
+
 	/* Save the current TLS session */
 	if (ssl_save_session(ssl, tcp->ssl_hostname))
 		debug_printf("TLS session saved in cache");
@@ -924,12 +1431,23 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	/* Set the protocol selected by the server via ALPN, if any */
 	if (config.alpn)
-		ssl_set_alpn_selected_protocol(ssl, tcp);
+		ssl_set_alpn_selected_protocol(ssl, tcp, stats_p);
 
+	if (stats_p) {
+		stats_p->hostname = vflags->hostname;
+		tls_stats_callback(stats_p, tls_stats_ctx);
+		xfree(stats_p->alpn_protocol);
+	}
+
+	tcp->hpkp = vflags->hpkp_stats;
 	tcp->ssl_session = ssl;
+	xfree(vflags);
 	return WGET_E_SUCCESS;
 
 bail:
+	if (stats_p)
+		xfree(stats_p->alpn_protocol);
+	xfree(vflags);
 	if (ssl)
 		SSL_free(ssl);
 	return retval;
@@ -973,10 +1491,6 @@ static int ssl_transfer(int want,
 		return WGET_E_INVALID;
 	if ((fd = SOCKET_TO_FD(SSL_get_fd(ssl))) < 0)
 		return WGET_E_UNKNOWN;
-
-	/* SSL_read() and SSL_write() take ints, so we'd rather play safe here */
-	if (count > INT_MAX)
-		count = INT_MAX;
 
 	if (timeout < -1)
 		timeout = -1;
