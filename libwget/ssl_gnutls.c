@@ -49,7 +49,7 @@
 
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 #	include <gnutls/ocsp.h>
 #endif
 #include <gnutls/crypto.h>
@@ -109,7 +109,7 @@ static struct config {
 } config = {
 	.check_certificate = 1,
 	.check_hostname = 1,
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 	.ocsp = 1,
 	.ocsp_stapling = 1,
 #endif
@@ -515,7 +515,7 @@ static int print_info(gnutls_session_t session)
 	return 0;
 }
 
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 static int
 _generate_ocsp_data(gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer,
 		  gnutls_datum_t * rdata, gnutls_datum_t *nonce)
@@ -843,7 +843,7 @@ static int cert_verify_ocsp(gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer)
 
 	return ret;
 }
-#endif // HAVE_GNUTLS_OCSP_H
+#endif // WITH_OCSP
 
 static int cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname, gnutls_session_t session)
 {
@@ -925,8 +925,8 @@ static int verify_certificate_callback(gnutls_session_t session)
 	int ret = -1, err, ocsp_ok = 0, pinning_ok = 0;
 	gnutls_x509_crt_t cert = NULL, issuer = NULL;
 	const char *hostname;
-	const char *tag = config.check_certificate ? _("ERROR") : _("WARNING");
-#ifdef HAVE_GNUTLS_OCSP_H
+	const char *tag = _config.check_certificate ? _("ERROR") : _("WARNING");
+#ifdef WITH_OCSP
 	unsigned nvalid = 0, nrevoked = 0, nignored = 0;
 #endif
 
@@ -951,7 +951,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 //	if (wget_get_logger(WGET_LOGGER_DEBUG))
 //		_print_info(session);
 
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 	if (status & GNUTLS_CERT_REVOKED) {
 		if (config.ocsp_cert_cache)
 			wget_ocsp_db_add_host(config.ocsp_cert_cache, hostname, 0); // remove entry from cache
@@ -1051,8 +1051,8 @@ static int verify_certificate_callback(gnutls_session_t session)
 
 	// At this point, the cert chain has been found valid regarding the locally available CA certificates and CRLs.
 	// Now, we are going to check the revocation status via OCSP
-#ifdef HAVE_GNUTLS_OCSP_H
-	if (config.ocsp_stapling) {
+#ifdef WITH_OCSP
+	if (_config.ocsp_stapling) {
 		if (!ctx->valid && ctx->ocsp_stapling) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
 			if (gnutls_ocsp_status_request_is_checked(session, 0)) {
@@ -1087,8 +1087,8 @@ static int verify_certificate_callback(gnutls_session_t session)
 
 		cert_verify_hpkp(cert, hostname, session);
 
-#ifdef HAVE_GNUTLS_OCSP_H
-		if (config.ocsp && it > nvalid) {
+#ifdef WITH_OCSP
+		if (_config.ocsp && it > nvalid) {
 			char fingerprint[64 * 2 +1];
 			int revoked;
 
@@ -1141,8 +1141,8 @@ static int verify_certificate_callback(gnutls_session_t session)
 #endif
 	}
 
-#ifdef HAVE_GNUTLS_OCSP_H
-	if (config.ocsp && ocsp_stats_callback) {
+#ifdef WITH_OCSP
+	if (_config.ocsp && ocsp_stats_callback) {
 		wget_ocsp_stats_data stats;
 		stats.hostname = hostname;
 		stats.nvalid = nvalid;
@@ -1622,7 +1622,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	struct session_context *ctx = wget_calloc(1, sizeof(struct session_context));
 	ctx->hostname = wget_strdup(hostname);
 
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 	// If we know the cert chain for the hostname being valid at the moment,
 	// we don't ask for OCSP stapling to avoid unneeded IP traffic.
 	// In the unlikely case that the server's certificate chain changed right now,

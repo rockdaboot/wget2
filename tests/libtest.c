@@ -63,13 +63,13 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 #  include <gnutls/ocsp.h>
 #  include <gnutls/x509.h>
 #  include <gnutls/abstract.h>
 #endif
 
-#ifdef WITH_GNUTLS
+#ifdef WITH_GNUTLS_IN_TESTSUITE
 #  include <gnutls/gnutls.h>
 #  define file_load_err(fname, msg) wget_error_printf_exit("Couldn't load '%s' : %s\n", fname, msg)
 #endif
@@ -109,7 +109,7 @@ static struct MHD_Daemon
 	*ocspdaemon,
 	*h2daemon;
 
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 static gnutls_pcert_st *pcrt;
 static gnutls_privkey_t *privkey;
 
@@ -121,7 +121,7 @@ static struct ocsp_resp_t {
 } *ocsp_resp;
 #endif
 
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 #if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
 static gnutls_pcert_st *pcrt_stap;
 static gnutls_privkey_t *privkey_stap;
@@ -284,7 +284,7 @@ static void _free_callback_param(void *cls)
 	wget_free(cls);
 }
 
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 static int _ocsp_ahc(
 	void *cls WGET_GCC_UNUSED,
 	struct MHD_Connection *connection,
@@ -705,7 +705,7 @@ static void _http_server_stop(void)
 	wget_xfree(key_pem);
 	wget_xfree(cert_pem);
 
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 	gnutls_global_deinit();
 
 	if(ocsp_resp)
@@ -813,7 +813,7 @@ static int _http_server_start(int SERVER_MODE)
 				}
 			}
 		}
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 		else {
 			httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS
 #if MHD_VERSION >= 0x00096302
@@ -865,7 +865,7 @@ static int _http_server_start(int SERVER_MODE)
 		}
 #endif
 	} else if (SERVER_MODE == OCSP_MODE) {
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 		static char rnd[8] = "realrnd"; // fixed 'random' value
 
 		ocspdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
@@ -887,7 +887,7 @@ static int _http_server_start(int SERVER_MODE)
 		if (!ocspdaemon)
 			return 1;
 	}
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 #if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
 	else if (SERVER_MODE == OCSP_STAP_MODE) {
 		int rc;
@@ -946,7 +946,7 @@ static int _http_server_start(int SERVER_MODE)
 			dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_BIND_PORT);
 		else if (SERVER_MODE == HTTPS_MODE || SERVER_MODE == OCSP_STAP_MODE)
 			dinfo = MHD_get_daemon_info(httpsdaemon, MHD_DAEMON_INFO_BIND_PORT);
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 		else if (SERVER_MODE == OCSP_MODE)
 			dinfo = MHD_get_daemon_info(ocspdaemon, MHD_DAEMON_INFO_BIND_PORT);
 #endif
@@ -963,7 +963,7 @@ static int _http_server_start(int SERVER_MODE)
 			http_server_port = port_num;
 		else if (SERVER_MODE == HTTPS_MODE || SERVER_MODE == OCSP_STAP_MODE)
 			https_server_port = port_num;
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 		else if (SERVER_MODE == OCSP_MODE)
 			ocsp_server_port = port_num;
 #endif
@@ -983,7 +983,7 @@ static int _http_server_start(int SERVER_MODE)
 			dinfo = MHD_get_daemon_info(httpdaemon, MHD_DAEMON_INFO_LISTEN_FD);
 		else if (SERVER_MODE == HTTPS_MODE || SERVER_MODE == OCSP_STAP_MODE)
 			dinfo = MHD_get_daemon_info(httpsdaemon, MHD_DAEMON_INFO_LISTEN_FD);
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 		else if (SERVER_MODE == OCSP_MODE)
 			dinfo = MHD_get_daemon_info(ocspdaemon, MHD_DAEMON_INFO_LISTEN_FD);
 #endif
@@ -1014,7 +1014,7 @@ static int _http_server_start(int SERVER_MODE)
 					http_server_port = port_num;
 				else if (SERVER_MODE == HTTPS_MODE || SERVER_MODE == OCSP_STAP_MODE)
 					https_server_port = port_num;
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 				else if (SERVER_MODE == OCSP_MODE)
 					ocsp_server_port = port_num;
 #endif
@@ -1193,7 +1193,7 @@ void wget_test_start_server(int first_key, ...)
 #ifdef WITH_TLS
 	bool ocsp_stap = 0;
 	bool start_https = 1;
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 	bool start_ocsp = 0;
 #endif
 #ifdef HAVE_MICROHTTPD_HTTP2_H
@@ -1295,7 +1295,7 @@ void wget_test_start_server(int first_key, ...)
 #endif
 			break;
 		case WGET_TEST_FEATURE_OCSP:
-#if !defined HAVE_GNUTLS_OCSP_H
+#if !defined WITH_OCSP
 			wget_error_printf("Test requires GnuTLS with OCSP support. Skipping\n");
 			exit(WGET_TEST_EXIT_SKIP);
 #else
@@ -1307,7 +1307,7 @@ void wget_test_start_server(int first_key, ...)
 #endif
 			break;
 		case WGET_TEST_FEATURE_OCSP_STAPLING:
-#if !defined HAVE_GNUTLS_OCSP_H || MHD_VERSION < 0x00096502 || GNUTLS_VERSION_NUMBER < 0x030603
+#if !defined WITH_OCSP || MHD_VERSION < 0x00096502 || GNUTLS_VERSION_NUMBER < 0x030603
 			wget_error_printf("MHD or GnuTLS version insufficient. Skipping\n");
 			exit(WGET_TEST_EXIT_SKIP);
 #else
@@ -1350,7 +1350,7 @@ void wget_test_start_server(int first_key, ...)
 	}
 
 #ifdef WITH_TLS
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 	// start OCSP responder
 	if (start_ocsp) {
 		if ((rc = _http_server_start(OCSP_MODE)) != 0)
@@ -1499,7 +1499,7 @@ void wget_test(int first_key, ...)
 		const char
 			*request_url,
 			*options = "",
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 			*ocsp_resp_file = NULL,
 #endif
 			*executable = global_executable;
@@ -1598,7 +1598,7 @@ void wget_test(int first_key, ...)
 				}
 				break;
 			case WGET_TEST_OCSP_RESP_FILE:
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 				ocsp_resp_file = va_arg(args, const char *);
 #endif
 				break;
@@ -1614,7 +1614,7 @@ void wget_test(int first_key, ...)
 			_empty_directory(cmd->data);
 		}
 
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 		if (ocspdaemon) {
 			if (ocsp_resp_file) {
 				ocsp_resp->data = wget_read_file(ocsp_resp_file, &(ocsp_resp->size));

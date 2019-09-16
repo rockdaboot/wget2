@@ -482,23 +482,27 @@ PKG_PROG_PKG_CONFIG
 
 AC_ARG_WITH(ssl, AS_HELP_STRING([--with-ssl], [Use SSL/TLS with specified library. Options: 'gnutls' (default), 'openssl', 'wolfssl' or 'none']), with_ssl=$withval, with_ssl=gnutls)
 
+AS_IF([test "x$with_ssl" == xyes], [with_ssl=gnutls])
+
+PKG_CHECK_MODULES([GNUTLS], [gnutls], [
+  with_gnutls=yes
+], [
+  AC_SEARCH_LIBS(gnutls_global_init, gnutls,
+    [with_gnutls=yes],
+    [with_gnutls=no;  AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS, nor run the OCSP tests. Fallback to libnettle for hashing and checksumming.)])
+])
+
 AS_IF([test "x$with_ssl" == "xgnutls"], [
-  PKG_CHECK_MODULES([GNUTLS], [gnutls], [
-    with_gnutls=yes
+  AS_IF([test "x$with_gnutls" == xyes], [
     LIBS="$GNUTLS_LIBS $LIBS"
     CFLAGS="$GNUTLS_CFLAGS $CFLAGS"
     AC_DEFINE([WITH_GNUTLS], [1], [Use GnuTLS])
-  ], [
-    AC_SEARCH_LIBS(gnutls_global_init, gnutls,
-      [with_gnutls=yes; AC_DEFINE([WITH_GNUTLS], [1], [Use GnuTLS])],
-      [with_gnutls=no;  AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS. Fallback to libnettle for hashing and checksumming.)])
-  ])
-
-  AS_IF([test "x$with_gnutls" == xyes], [
     AC_SEARCH_LIBS(gnutls_hash, gnutls, [with_gnutls_hash=yes])
     AS_IF([test "x$with_gnutls_hash" == xyes],
       [AC_CHECK_HEADERS([gnutls/crypto.h], [], [], [#include <gnutls/gnutls.h>])])
-    AC_CHECK_HEADERS([gnutls/ocsp.h])
+    AC_CHECK_HEADERS([gnutls/ocsp.h],
+      [AC_DEFINE([WITH_OCSP], [1], [OCSP is supported])],
+      [AC_MSG_WARN(*** Header file gnutls/ocsp.h was not found. OCSP will be disabled.)])
     AC_CHECK_FUNCS(gnutls_srp_server_get_username gnutls_transport_get_int)
   ])
 ], [test "x$with_ssl" == "xopenssl"], [
@@ -517,6 +521,10 @@ AS_IF([test "x$with_ssl" == "xgnutls"], [
   AS_IF([test "x$with_openssl" == xyes], [
     AC_CHECK_HEADERS([openssl/ssl.h])
     AC_CHECK_HEADERS([openssl/x509_vfy.h])
+    AC_CHECK_HEADERS([openssl/ocsp.h],
+      [AC_DEFINE([WITH_OCSP], [1], [OCSP is supported])],
+      [AC_MSG_WARN(*** Header file openssl/ocsp.h was not found. OCSP will be disabled.)])
+
     AC_CHECK_FUNCS(SSL_new X509_STORE_add_lookup)
 
     AC_SEARCH_LIBS(EVP_MD_CTX_new, crypto,
@@ -544,9 +552,9 @@ AS_IF([test "x$with_ssl" == "xgnutls"], [
   AC_MSG_ERROR([*** Unsupported value for --with-ssl. Use 'gnutls' (default), 'openssl', 'wolfssl' or 'none'])
 ])
 
-AM_CONDITIONAL([WITH_GNUTLS], [test "x$with_gnutls" = xyes])
-AM_CONDITIONAL([WITH_OPENSSL], [test "x$with_openssl" = xyes])
-AM_CONDITIONAL([WITH_WOLFSSL], [test "x$with_wolfssl" = xyes])
+AM_CONDITIONAL([WITH_GNUTLS], [test "x$with_ssl" = xgnutls && test "x$with_gnutls" == xyes])
+AM_CONDITIONAL([WITH_OPENSSL], [test "x$with_ssl" = xopenssl && test "x$with_openssl" == xyes])
+AM_CONDITIONAL([WITH_WOLFSSL], [test "x$with_ssl" = xwolfssl && test "x$with_wolfssl" == xyes])
 
 AM_CONDITIONAL([WITH_TLS], [test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes || test "x$with_openssl" = xyes])
 AS_IF([test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes || test "x$with_openssl" = xyes], [
@@ -834,6 +842,13 @@ AS_IF([test "x$with_libmicrohttpd" != xno], [
   LIBS=$old_LIBS
   CFLAGS=$old_CFLAGS
 ])
+
+AS_IF([test "x$with_gnutls" == xyes], [
+  TEST_LIBS="$TEST_LIBS $GNUTLS_LIBS"
+  TEST_CFLAGS="$TEST_CFLAGS $GNUTLS_CFLAGS"
+  AC_DEFINE([WITH_GNUTLS_IN_TESTSUITE], [1], [GnuTLS is available for test suite])],
+  [AC_MSG_WARN(*** GnuTLS is not available. Some tests will not run.)])
+
 AM_CONDITIONAL([WITH_MICROHTTPD], [test "x$with_libmicrohttpd" = xyes])
 
 # Check for plugin support

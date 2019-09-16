@@ -94,7 +94,7 @@ static struct config
 } config = {
 	.check_certificate = 1,
 	.check_hostname = 1,
-#ifdef HAVE_GNUTLS_OCSP_H
+#ifdef WITH_OCSP
 	.ocsp = 1,
 	.ocsp_stapling = 1,
 #endif
