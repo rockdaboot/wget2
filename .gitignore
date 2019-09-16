@@ -78,7 +78,6 @@ nbproject
 snippet
 src/wget2
 src/wget2_noinstall
-src/version-text.h
 stamp-h1
 test-driver
 wget2-*

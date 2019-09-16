@@ -126,7 +126,17 @@ struct optionw {
 	    *help_str[4];
 };
 
-#include "version-text.h"
+static const char _version_text[] =
+"\n"
+"Copyright (C) 2012-2015 Tim Ruehsen\n"
+"Copyright (C) 2015-2019 Free Software Foundation, Inc.\n"
+"\n"
+"License GPLv3+: GNU GPL version 3 or later\n"
+"<http://www.gnu.org/licenses/gpl.html>.\n"
+"This is free software: you are free to change and redistribute it.\n"
+"There is NO WARRANTY, to the extent permitted by law.\n"
+"\n"
+"Please send bug reports and questions to <bug-wget@gnu.org>.";
 
 static int print_version(WGET_GCC_UNUSED option_t opt, WGET_GCC_UNUSED const char *val, WGET_GCC_UNUSED const char invert)
 {
