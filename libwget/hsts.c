@@ -137,13 +137,13 @@ static void free_hsts(hsts_entry *hsts)
 	}
 }
 
-static hsts_entry *new_hsts(const char *host, uint16_t port, time_t maxage, int include_subdomains)
+static hsts_entry *new_hsts(const char *host, uint16_t port, time_t maxage, bool include_subdomains)
 {
 	hsts_entry *hsts = init_hsts(NULL);
 
 	hsts->host = wget_strdup(host);
 	hsts->port = port ? port : 443;
-	hsts->include_subdomains = !!include_subdomains;
+	hsts->include_subdomains = include_subdomains;
 
 	if (maxage <= 0 || maxage >= INT64_MAX / 2 || hsts->created < 0 || hsts->created >= INT64_MAX / 2) {
 		hsts->maxage = 0;
@@ -301,7 +301,7 @@ static void hsts_db_add_entry(wget_hsts_db *hsts_db, hsts_entry *hsts)
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-void wget_hsts_db_add(wget_hsts_db *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
+void wget_hsts_db_add(wget_hsts_db *hsts_db, const char *host, uint16_t port, time_t maxage, bool include_subdomains)
 {
 	if (plugin_vtable) {
 		plugin_vtable->add(hsts_db, host, port, maxage, include_subdomains);

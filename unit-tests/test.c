@@ -1308,7 +1308,7 @@ static void test_hsts(void)
 	};
 	wget_hsts_db *hsts_db = wget_hsts_db_init(NULL, NULL);
 	time_t maxage;
-	char include_subdomains;
+	bool include_subdomains;
 	int n;
 
 	// fill HSTS database with values

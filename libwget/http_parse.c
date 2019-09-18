@@ -646,7 +646,7 @@ const char *wget_http_parse_public_key_pins(const char *s, wget_hpkp *hpkp)
 // directive-name            = token
 // directive-value           = token | quoted-string
 
-const char *wget_http_parse_strict_transport_security(const char *s, time_t *maxage, char *include_subdomains)
+const char *wget_http_parse_strict_transport_security(const char *s, time_t *maxage, bool *include_subdomains)
 {
 	wget_http_header_param param;
 
@@ -701,14 +701,11 @@ const char *wget_http_parse_content_encoding(const char *s, char *content_encodi
 	return s;
 }
 
-const char *wget_http_parse_connection(const char *s, char *keep_alive)
+const char *wget_http_parse_connection(const char *s, bool *keep_alive)
 {
 	while (c_isblank(*s)) s++;
 
-	if (!wget_strcasecmp_ascii(s, "keep-alive"))
-		*keep_alive = 1;
-	else
-		*keep_alive = 0;
+	*keep_alive = !wget_strcasecmp_ascii(s, "keep-alive");
 
 	while (wget_http_istoken(*s)) s++;
 

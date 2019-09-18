@@ -1400,7 +1400,7 @@ typedef int wget_hsts_host_match_fn(const wget_hsts_db *, const char *hsts_db, u
 typedef wget_hsts_db *wget_hsts_db_init_fn(wget_hsts_db *hsts_db, const char *fname);
 typedef void wget_hsts_db_deinit_fn(wget_hsts_db *hsts_db);
 typedef void wget_hsts_db_free_fn(wget_hsts_db **hsts_db);
-typedef void wget_hsts_db_add_fn(wget_hsts_db *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains);
+typedef void wget_hsts_db_add_fn(wget_hsts_db *hsts_db, const char *host, uint16_t port, time_t maxage, bool include_subdomains);
 typedef int wget_hsts_db_save_fn(wget_hsts_db *hsts_db);
 typedef int wget_hsts_db_load_fn(wget_hsts_db *hsts_db);
 typedef void wget_hsts_db_set_fname_fn(wget_hsts_db *hsts_db, const char *fname);
@@ -2145,6 +2145,8 @@ struct wget_http_response_st {
 		header; //!< the raw header data if requested by the application
 	wget_buffer *
 		body; //!< the body data
+	long long
+		response_end; //!< when this response was received
 	size_t
 		content_length; //!< length of the body data
 	size_t
@@ -2167,15 +2169,14 @@ struct wget_http_response_st {
 	wget_transfer_encoding
 		transfer_encoding;
 	char
-		content_encoding,
+		content_encoding;
+	bool
 		hsts_include_subdomains,
 		keep_alive;
 	bool
 		content_length_valid : 1,
 		hsts : 1, //!< if hsts_maxage and hsts_include_subdomains are valid
 		csp : 1;
-	long long
-		response_end; //!< when this response was received
 };
 
 typedef struct wget_http_connection_st wget_http_connection;
@@ -2225,11 +2226,11 @@ WGETAPI const char *
 WGETAPI const char *
 	wget_http_parse_content_disposition(const char *s, const char **filename) WGET_GCC_NONNULL((1));
 WGETAPI const char *
-	wget_http_parse_strict_transport_security(const char *s, time_t *maxage, char *include_subdomains) WGET_GCC_NONNULL((1));
+	wget_http_parse_strict_transport_security(const char *s, time_t *maxage, bool *include_subdomains) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
 	wget_http_parse_public_key_pins(const char *s, wget_hpkp *hpkp) WGET_GCC_NONNULL((1));
 WGETAPI const char *
-	wget_http_parse_connection(const char *s, char *keep_alive) WGET_GCC_NONNULL_ALL;
+	wget_http_parse_connection(const char *s, bool *keep_alive) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
 	wget_http_parse_setcookie(const char *s, wget_cookie **cookie) WGET_GCC_NONNULL((1));
 WGETAPI const char *

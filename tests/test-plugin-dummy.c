@@ -588,7 +588,7 @@ static void test_hsts_db_free(wget_hsts_db **hsts_db)
 	*hsts_db = NULL;
 }
 
-static void test_hsts_db_add(wget_hsts_db *hsts_db, const char *host, uint16_t port, time_t maxage, int include_subdomains)
+static void test_hsts_db_add(wget_hsts_db *hsts_db, const char *host, uint16_t port, time_t maxage, bool include_subdomains)
 {
 	(void) hsts_db;
 	wget_debug_printf("%s: host %s port %hu maxage %lld include_subdomains %d\n", __func__,
