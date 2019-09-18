@@ -206,10 +206,10 @@ void wget_tcp_set_dns(wget_tcp *tcp, wget_dns *dns)
  *
  * If \p tcp is NULL, TCP Fast Open is enabled or disabled globally.
  */
-void wget_tcp_set_tcp_fastopen(wget_tcp *tcp, int tcp_fastopen)
+void wget_tcp_set_tcp_fastopen(wget_tcp *tcp, bool tcp_fastopen)
 {
 #if defined TCP_FASTOPEN_OSX || defined TCP_FASTOPEN_LINUX || defined TCP_FASTOPEN_LINUX_411
-	(tcp ? tcp : &_global_tcp)->tcp_fastopen = !!tcp_fastopen;
+	(tcp ? tcp : &_global_tcp)->tcp_fastopen = tcp_fastopen;
 #else
 	(void) tcp; (void) tcp_fastopen;
 #endif

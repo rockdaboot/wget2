@@ -1899,7 +1899,7 @@ WGETAPI int
 WGETAPI void
 	wget_tcp_set_connect_timeout(wget_tcp *tcp, int timeout);
 WGETAPI void
-	wget_tcp_set_tcp_fastopen(wget_tcp *tcp, int tcp_fastopen);
+	wget_tcp_set_tcp_fastopen(wget_tcp *tcp, bool tcp_fastopen);
 WGETAPI void
 	wget_tcp_set_tls_false_start(wget_tcp *tcp, int false_start);
 WGETAPI void

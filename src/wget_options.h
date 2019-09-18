@@ -164,9 +164,6 @@ struct config {
 		quota,
 		limit_rate, // bytes
 		start_pos; // bytes
-	bool
-		no_compression,
-		auth_no_challenge;
 	int
 		http2_request_window,
 		backups,
@@ -242,7 +239,6 @@ struct config {
 		cookies,
 		spider,
 		dns_caching,
-		tcp_fastopen,
 		check_certificate,
 		check_hostname,
 		cert_type,             // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
@@ -271,7 +267,10 @@ struct config {
 		unlink,
 		background,
 		if_modified_since;
-
+	bool
+		auth_no_challenge,
+		no_compression,
+		tcp_fastopen;
 };
 
 extern struct config

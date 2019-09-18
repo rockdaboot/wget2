@@ -137,7 +137,7 @@ void wget_global_init(int first_key, ...)
 			}
 			break;
 		case WGET_TCP_FASTFORWARD:
-			wget_tcp_set_tcp_fastopen(NULL, va_arg(args, int));
+			wget_tcp_set_tcp_fastopen(NULL, va_arg(args, int) != 0);
 			break;
 		case WGET_COOKIE_SUFFIXES:
 			psl_file = va_arg(args, const char *);
