@@ -249,7 +249,7 @@ void wget_tcp_set_tls_false_start(wget_tcp *tcp, bool false_start)
  *
  * You can enable and disable it with wget_tcp_set_tls_false_start().
  */
-char wget_tcp_get_tls_false_start(wget_tcp *tcp)
+bool wget_tcp_get_tls_false_start(wget_tcp *tcp)
 {
 	return (tcp ? tcp : &_global_tcp)->tls_false_start;
 }
