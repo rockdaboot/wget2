@@ -203,7 +203,7 @@ wget_buffer *wget_buffer_alloc(size_t size)
 	return buf;
 }
 
-static int _buffer_realloc(wget_buffer *buf, size_t size)
+static int buffer_realloc(wget_buffer *buf, size_t size)
 {
 	char *old_data = buf->data;
 
@@ -246,7 +246,7 @@ int wget_buffer_ensure_capacity(wget_buffer *buf, size_t size)
 {
 	if (likely(buf)) {
 		if (buf->size < size)
-			return _buffer_realloc(buf, size);
+			return buffer_realloc(buf, size);
 	}
 
 	return WGET_E_SUCCESS;
@@ -382,7 +382,7 @@ size_t wget_buffer_memcat(wget_buffer *buf, const void *data, size_t length)
 
 	if (likely(length)) {
 		if (buf->size < buf->length + length)
-			if (_buffer_realloc(buf, buf->size * 2 + length) != WGET_E_SUCCESS)
+			if (buffer_realloc(buf, buf->size * 2 + length) != WGET_E_SUCCESS)
 				return buf->length;
 
 		if (likely(data))
@@ -519,7 +519,7 @@ size_t wget_buffer_memset_append(wget_buffer *buf, char c, size_t length)
 
 	if (likely(length)) {
 		if (unlikely(buf->size < buf->length + length))
-			if (_buffer_realloc(buf, buf->size * 2 + length) != WGET_E_SUCCESS)
+			if (buffer_realloc(buf, buf->size * 2 + length) != WGET_E_SUCCESS)
 				return buf->length;
 
 		memset(buf->data + buf->length, c, length);
