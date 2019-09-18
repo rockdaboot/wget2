@@ -69,7 +69,7 @@ static wget_dns default_dns = {
 static bool
 	initialized;
 
-static void __attribute__((constructor)) _wget_net_init(void)
+static void __attribute__((constructor)) net_init(void)
 {
 	if (!initialized) {
 		wget_thread_mutex_init(&default_dns.mutex);
@@ -77,7 +77,7 @@ static void __attribute__((constructor)) _wget_net_init(void)
 	}
 }
 
-static void __attribute__((destructor)) _wget_net_exit(void)
+static void __attribute__((destructor)) net_exit(void)
 {
 	if (initialized) {
 		wget_thread_mutex_destroy(&default_dns.mutex);
@@ -173,7 +173,7 @@ wget_dns_cache *wget_dns_get_cache(wget_dns *dns)
 /*
  * Reorder address list so that addresses of the preferred family will come first.
  */
-static struct addrinfo *_wget_sort_preferred(struct addrinfo *addrinfo, int preferred_family)
+static struct addrinfo *sort_preferred(struct addrinfo *addrinfo, int preferred_family)
 {
 	struct addrinfo *preferred = NULL, *preferred_tail = NULL;
 	struct addrinfo *unpreferred = NULL, *unpreferred_tail = NULL;
@@ -210,7 +210,7 @@ static struct addrinfo *_wget_sort_preferred(struct addrinfo *addrinfo, int pref
 }
 
 // we can't provide a portable way of respecting a DNS timeout
-static int _resolve(int family, int flags, const char *host, uint16_t port, struct addrinfo **out_addr)
+static int resolve(int family, int flags, const char *host, uint16_t port, struct addrinfo **out_addr)
 {
 	struct addrinfo hints = {
 		.ai_family = family,
@@ -257,7 +257,7 @@ int wget_dns_cache_ip(wget_dns *dns, const char *ip, const char *name, uint16_t 
 	} else
 		return WGET_E_INVALID;
 
-	if ((rc = _resolve(family, AI_NUMERICHOST, ip, port, &ai)) != 0) {
+	if ((rc = resolve(family, AI_NUMERICHOST, ip, port, &ai)) != 0) {
 		error_printf(_("Failed to resolve %s:%d: %s\n"), ip, port, gai_strerror(rc));
 		return WGET_E_UNKNOWN;
 	}
@@ -322,7 +322,7 @@ struct addrinfo *wget_dns_resolve(wget_dns *dns, const char *host, uint16_t port
 
 		addrinfo = NULL;
 
-		rc = _resolve(family, 0, host, port, &addrinfo);
+		rc = resolve(family, 0, host, port, &addrinfo);
 		if (rc == 0 || rc != EAI_AGAIN)
 			break;
 
@@ -356,7 +356,7 @@ struct addrinfo *wget_dns_resolve(wget_dns *dns, const char *host, uint16_t port
 	}
 
 	if (family == AF_UNSPEC && preferred_family != AF_UNSPEC)
-		addrinfo = _wget_sort_preferred(addrinfo, preferred_family);
+		addrinfo = sort_preferred(addrinfo, preferred_family);
 
 	if (dns->stats_callback) {
 		if ((rc = getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
