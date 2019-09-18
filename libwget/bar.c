@@ -56,31 +56,31 @@
 // symbol in the symbol table making debugging a whole lot easier.
 
 // Define the parameters for how the progress bar looks
-enum _BAR_SIZES {
-	_BAR_FILENAME_SIZE  = 20,
-	_BAR_RATIO_SIZE     =  3,
-	_BAR_METER_COST     =  2,
-	_BAR_DOWNBYTES_SIZE =  8,
-	_BAR_SPEED_SIZE     =  8,
+enum BAR_SIZES {
+	BAR_FILENAME_SIZE  = 20,
+	BAR_RATIO_SIZE     =  3,
+	BAR_METER_COST     =  2,
+	BAR_DOWNBYTES_SIZE =  8,
+	BAR_SPEED_SIZE     =  8,
 };
 
 // Define the cost (in number of columns) of the progress bar decorations. This
 // includes all the elements that are not the progress indicator itself.
-enum _BAR_DECOR_SIZE {
-	_BAR_DECOR_COST =
-		_BAR_FILENAME_SIZE  + 1 + \
-		_BAR_RATIO_SIZE     + 2 + \
-		_BAR_METER_COST     + 1 + \
-		_BAR_DOWNBYTES_SIZE + 1 + \
-		_BAR_SPEED_SIZE     + 3
+enum BAR_DECOR_SIZE {
+	BAR_DECOR_COST =
+		BAR_FILENAME_SIZE  + 1 +
+		BAR_RATIO_SIZE     + 2 +
+		BAR_METER_COST     + 1 +
+		BAR_DOWNBYTES_SIZE + 1 +
+		BAR_SPEED_SIZE     + 3
 };
 
-enum _SCREEN_WIDTH {
+enum SCREEN_WIDTH {
 	DEFAULT_SCREEN_WIDTH = 70,
 	MINIMUM_SCREEN_WIDTH = 45,
 };
 
-enum _bar_slot_status_t {
+enum bar_slot_status {
 	EMPTY = 0,
 	DOWNLOADING = 1,
 	COMPLETE = 2
@@ -91,7 +91,7 @@ enum _bar_slot_status_t {
  *  This includes things like how often it is updated, how many values are
  *  stored in the speed ring, etc.
  */
-enum _BAR_SETTINGS {
+enum BAR_SETTINGS {
 	/// The number of values to store in the speed ring
 	SPEED_RING_SIZE   =  24,
 };
@@ -100,8 +100,8 @@ typedef struct {
 	char
 		*progress,
 		*filename,
-		speed_buf[_BAR_SPEED_SIZE],
-		human_size[_BAR_DOWNBYTES_SIZE];
+		speed_buf[BAR_SPEED_SIZE],
+		human_size[BAR_DOWNBYTES_SIZE];
 	uint64_t
 		file_size,
 		time_ring[SPEED_RING_SIZE],
@@ -112,14 +112,14 @@ typedef struct {
 		ring_used,
 		tick,
 		numfiles;
-	enum _bar_slot_status_t
+	enum bar_slot_status
 		status;
 	bool
 		redraw : 1;
-} _bar_slot_t;
+} bar_slot;
 
 struct wget_bar_st {
-	_bar_slot_t
+	bar_slot
 		*slots;
 	char
 		*progress_mem_holder,
@@ -148,7 +148,7 @@ static unsigned short speed_modifier = 1000;
 // specify rate at which speed stats should be updated. Speed
 // ring size will remain constant (Don't want second heap allocation)
 //  - darnir 29/07/2018
-static void _bar_update_speed_stats(_bar_slot_t *slotp)
+static void bar_update_speed_stats(bar_slot *slotp)
 {
 	int ring_pos = slotp->ring_pos;
 	int ring_used = slotp->ring_used;
@@ -191,14 +191,14 @@ static void _bar_update_speed_stats(_bar_slot_t *slotp)
 static volatile sig_atomic_t winsize_changed;
 
 static inline WGET_GCC_ALWAYS_INLINE void
-_restore_cursor_position(void)
+restore_cursor_position(void)
 {
 	// ESC 8: Restore cursor position
 	fputs("\0338", stdout);
 }
 
 static inline WGET_GCC_ALWAYS_INLINE void
-_bar_print_slot(const wget_bar *bar, int slot)
+bar_print_slot(const wget_bar *bar, int slot)
 {
 	// ESC 7: Save cursor
 	// CSI <n> A: Cursor up
@@ -207,9 +207,9 @@ _bar_print_slot(const wget_bar *bar, int slot)
 }
 
 static inline WGET_GCC_ALWAYS_INLINE void
-_bar_set_progress(const wget_bar *bar, int slot)
+bar_set_progress(const wget_bar *bar, int slot)
 {
-	_bar_slot_t *slotp = &bar->slots[slot];
+	bar_slot *slotp = &bar->slots[slot];
 
 	if (slotp->file_size > 0) {
 		size_t bytes = slotp->bytes_downloaded;
@@ -263,7 +263,7 @@ _bar_set_progress(const wget_bar *bar, int slot)
  * to determine the position of a (virtual) cursor in the available space.
  */
 static void
-inspect_multibyte(char *s, size_t available_space, size_t *inspectedp, size_t *padp)
+bar_inspect_multibyte(char *s, size_t available_space, size_t *inspectedp, size_t *padp)
 {
 	unsigned int displayed = 0; /* number of columns displayed so far */
 	int inspected = 0;          /* total number of bytes inspected from s */
@@ -309,9 +309,9 @@ inspect_multibyte(char *s, size_t available_space, size_t *inspectedp, size_t *p
 	*padp = available_space - displayed;
 }
 
-static void _bar_update_slot(const wget_bar *bar, int slot)
+static void bar_update_slot(const wget_bar *bar, int slot)
 {
-	_bar_slot_t *slotp = &bar->slots[slot];
+	bar_slot *slotp = &bar->slots[slot];
 
 	// We only print a progress bar for the slot if a context has been
 	// registered for it
@@ -327,11 +327,11 @@ static void _bar_update_slot(const wget_bar *bar, int slot)
 
 		wget_human_readable(slotp->human_size, sizeof(slotp->human_size), cur);
 
-		_bar_update_speed_stats(slotp);
+		bar_update_speed_stats(slotp);
 
-		_bar_set_progress(bar, slot);
+		bar_set_progress(bar, slot);
 
-		_bar_print_slot(bar, slot);
+		bar_print_slot(bar, slot);
 
 		// The progress bar looks like this:
 		//
@@ -345,21 +345,21 @@ static void _bar_update_slot(const wget_bar *bar, int slot)
 		// xxx.xxKB/s   _BAR_SPEED_SIZE         Download speed
 		// ===>         Remaining               Progress Meter
 
-		inspect_multibyte(slotp->filename, _BAR_FILENAME_SIZE, &consumed, &pad);
+		bar_inspect_multibyte(slotp->filename, BAR_FILENAME_SIZE, &consumed, &pad);
 		wget_fprintf(stdout, "%-*.*s %*d%% [%s] %*s %*s%c/s",
 				(int) (consumed+pad), (int) (consumed+pad), slotp->filename,
-				_BAR_RATIO_SIZE, ratio,
+				BAR_RATIO_SIZE, ratio,
 				slotp->progress,
-				_BAR_DOWNBYTES_SIZE, slotp->human_size,
-				_BAR_SPEED_SIZE, slotp->speed_buf, report_speed_type_char);
+				BAR_DOWNBYTES_SIZE, slotp->human_size,
+				BAR_SPEED_SIZE, slotp->speed_buf, report_speed_type_char);
 
-		_restore_cursor_position();
+		restore_cursor_position();
 		fflush(stdout);
 		slotp->tick++;
 	}
 }
 
-static int _bar_get_width(void)
+static int bar_get_width(void)
 {
 	int width = DEFAULT_SCREEN_WIDTH;
 
@@ -370,14 +370,14 @@ static int _bar_get_width(void)
 			width--; // leave one space at the end, else we see a linebreak on Windows
 	}
 
-	return width - _BAR_DECOR_COST;
+	return width - BAR_DECOR_COST;
 }
 
-static void _bar_update_winsize(wget_bar *bar, bool slots_changed) {
-
+static void bar_update_winsize(wget_bar *bar, bool slots_changed)
+{
 	if (winsize_changed || slots_changed) {
 		char *progress_mem_holder;
-		int max_width = _bar_get_width();
+		int max_width = bar_get_width();
 
 		if (!(progress_mem_holder = wget_calloc(bar->nslots, max_width + 1)))
 			return;
@@ -420,12 +420,12 @@ static void _bar_update_winsize(wget_bar *bar, bool slots_changed) {
 	winsize_changed = 0;
 }
 
-static void _bar_update(wget_bar *bar)
+static void bar_update(wget_bar *bar)
 {
-	_bar_update_winsize(bar, false);
+	bar_update_winsize(bar, false);
 	for (int i = 0; i < bar->nslots; i++) {
 		if (bar->slots[i].redraw || winsize_changed) {
-			_bar_update_slot(bar, i);
+			bar_update_slot(bar, i);
 			bar->slots[i].redraw = 0;
 		}
 	}
@@ -449,7 +449,7 @@ wget_bar *wget_bar_init(wget_bar *bar, int nslots)
 {
 	/* Initialize screen_width if this hasn't been done or if it might
 	   have changed, as indicated by receiving SIGWINCH.  */
-	int max_width = _bar_get_width();
+	int max_width = bar_get_width();
 
 	if (nslots < 1 || max_width < 1)
 		return NULL;
@@ -482,20 +482,20 @@ void wget_bar_set_slots(wget_bar *bar, int nslots)
 	int more_slots = nslots - bar->nslots;
 
 	if (more_slots > 0) {
-		_bar_slot_t *slots = wget_realloc(bar->slots, nslots * sizeof(_bar_slot_t));
+		bar_slot *slots = wget_realloc(bar->slots, nslots * sizeof(bar_slot));
 		if (!slots) {
 			wget_thread_mutex_unlock(bar->mutex);
 			return;
 		}
 		bar->slots = slots;
-		memset(bar->slots + bar->nslots, 0, more_slots * sizeof(_bar_slot_t));
+		memset(bar->slots + bar->nslots, 0, more_slots * sizeof(bar_slot));
 		bar->nslots = nslots;
 
 		for (int i = 0; i < more_slots; i++)
 			fputs("\n", stdout);
 
-		_bar_update_winsize(bar, true);
-		_bar_update(bar);
+		bar_update_winsize(bar, true);
+		bar_update(bar);
 	}
 	wget_thread_mutex_unlock(bar->mutex);
 }
@@ -513,7 +513,7 @@ void wget_bar_set_slots(wget_bar *bar, int nslots)
 void wget_bar_slot_begin(wget_bar *bar, int slot, const char *filename, int new_file, ssize_t file_size)
 {
 	wget_thread_mutex_lock(bar->mutex);
-	_bar_slot_t *slotp = &bar->slots[slot];
+	bar_slot *slotp = &bar->slots[slot];
 
 	xfree(slotp->filename);
 	if (new_file)
@@ -562,10 +562,10 @@ void wget_bar_slot_deregister(wget_bar *bar, int slot)
 {
 	wget_thread_mutex_lock(bar->mutex);
 	if (slot >= 0 && slot < bar->nslots) {
-		_bar_slot_t *slotp = &bar->slots[slot];
+		bar_slot *slotp = &bar->slots[slot];
 
 		slotp->status = COMPLETE;
-		_bar_update_slot(bar, slot);
+		bar_update_slot(bar, slot);
 	}
 	wget_thread_mutex_unlock(bar->mutex);
 }
@@ -578,7 +578,7 @@ void wget_bar_slot_deregister(wget_bar *bar, int slot)
 void wget_bar_update(wget_bar *bar)
 {
 	wget_thread_mutex_lock(bar->mutex);
-	_bar_update(bar);
+	bar_update(bar);
 	wget_thread_mutex_unlock(bar->mutex);
 }
 
@@ -627,10 +627,10 @@ void wget_bar_free(wget_bar **bar)
 void wget_bar_print(wget_bar *bar, int slot, const char *display)
 {
 	wget_thread_mutex_lock(bar->mutex);
-	_bar_print_slot(bar, slot);
+	bar_print_slot(bar, slot);
 	// CSI <n> G: Cursor horizontal absolute
 	wget_fprintf(stdout, "\033[27G[%-*.*s]", bar->max_width, bar->max_width, display);
-	_restore_cursor_position();
+	restore_cursor_position();
 	fflush(stdout);
 	wget_thread_mutex_unlock(bar->mutex);
 }
@@ -700,9 +700,9 @@ void wget_bar_write_line(wget_bar *bar, const char *buf, size_t len)
 	wget_fprintf(stdout, "\0337\033[1S\033[%dA\033[1G\033[0J\033[31m", bar->nslots + 1);
 	fwrite(buf, 1, len, stdout);
 	fputs("\033[m", stdout); // reset text color
-	_restore_cursor_position();
+	restore_cursor_position();
 
-	_bar_update(bar);
+	bar_update(bar);
 	wget_thread_mutex_unlock(bar->mutex);
 }
 
