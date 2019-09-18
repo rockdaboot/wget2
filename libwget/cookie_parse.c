@@ -388,7 +388,7 @@ static int cookie_normalize_cookie(const wget_iri *iri, wget_cookie *cookie)
 	if (cookie->maxage)
 		cookie->expires = cookie->maxage;
 
-	cookie->persistent = !!cookie->expires;
+	cookie->persistent = cookie->expires != 0;
 
 	// convert domain to lowercase
 	wget_strtolower((char *)cookie->domain);
