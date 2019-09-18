@@ -2810,10 +2810,10 @@ typedef struct
 		version,
 		cert_chain_size;
 	char
-		http_protocol,
-		false_start,
-		tfo;
+		http_protocol;
 	bool
+		false_start,
+		tfo,
 		tls_con,
 		resumed;
 } wget_tls_stats_data;

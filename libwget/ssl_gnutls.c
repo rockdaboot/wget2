@@ -128,7 +128,7 @@ struct _session_context {
 		hostname;
 	wget_hpkp_stats_result
 		stats_hpkp;
-	unsigned char
+	bool
 		ocsp_stapling : 1,
 		valid : 1,
 		delayed_session_data : 1;
@@ -1628,7 +1628,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	// In the unlikely case that the server's certificate chain changed right now,
 	// we fallback to OCSP responder request later.
 	if (hostname) {
-		if (!(ctx->valid = !!wget_ocsp_hostname_is_valid(_config.ocsp_host_cache, hostname))) {
+		if (!(ctx->valid = wget_ocsp_hostname_is_valid(_config.ocsp_host_cache, hostname))) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
 			if ((rc = gnutls_ocsp_status_request_enable_client(session, NULL, 0, NULL)) == GNUTLS_E_SUCCESS)
 				ctx->ocsp_stapling = 1;
@@ -1721,7 +1721,7 @@ int wget_ssl_open(wget_tcp *tcp)
 		stats.tls_secs = after_millisecs - before_millisecs;
 		stats.tls_con = 1;
 #if GNUTLS_VERSION_NUMBER >= 0x030500
-		stats.false_start = !! (gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START);
+		stats.false_start = (gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START) != 0;
 #endif
 	}
 
