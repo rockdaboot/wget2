@@ -1901,7 +1901,7 @@ WGETAPI void
 WGETAPI void
 	wget_tcp_set_tcp_fastopen(wget_tcp *tcp, bool tcp_fastopen);
 WGETAPI void
-	wget_tcp_set_tls_false_start(wget_tcp *tcp, int false_start);
+	wget_tcp_set_tls_false_start(wget_tcp *tcp, bool false_start);
 WGETAPI void
 	wget_tcp_set_ssl(wget_tcp *tcp, int ssl);
 WGETAPI int

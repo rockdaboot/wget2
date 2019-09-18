@@ -188,7 +188,6 @@ struct config {
 		report_speed;
 	char
 		tls_resume,            // if TLS session resumption is enabled or not
-		tls_false_start,
 		progress,
 		content_on_error,
 		fsync_policy,
@@ -270,6 +269,7 @@ struct config {
 	bool
 		auth_no_challenge,
 		no_compression,
+		tls_false_start,
 		tcp_fastopen;
 };
 

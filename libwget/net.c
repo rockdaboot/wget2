@@ -236,9 +236,9 @@ bool wget_tcp_get_tcp_fastopen(wget_tcp *tcp)
  *
  * If \p tcp is NULL, TLS False Start is enabled or disabled globally.
  */
-void wget_tcp_set_tls_false_start(wget_tcp *tcp, int false_start)
+void wget_tcp_set_tls_false_start(wget_tcp *tcp, bool false_start)
 {
-	(tcp ? tcp : &_global_tcp)->tls_false_start = !!false_start;
+	(tcp ? tcp : &_global_tcp)->tls_false_start = false_start;
 }
 
 /**
