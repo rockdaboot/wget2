@@ -243,7 +243,6 @@ struct config {
 		cert_type,             // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
 		private_key_type,      // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
 		span_hosts,
-		recursive,
 		verbose,
 		print_version,
 		quiet,
@@ -269,6 +268,7 @@ struct config {
 	bool
 		auth_no_challenge,
 		no_compression,
+		recursive,
 		tls_false_start,
 		tcp_fastopen;
 };

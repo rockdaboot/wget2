@@ -160,7 +160,7 @@ void stats_site_add(wget_http_response *resp, wget_gpg_info_t *gpg_info)
 	doc->iri = iri;
 	doc->status = resp->code;
 	doc->encoding = resp->content_encoding;
-	doc->redirect = !!job->redirection_level;
+	doc->redirect = job->redirection_level != 0;
 	doc->mime_type = wget_strdup(resp->content_type);
 	doc->last_modified = resp->last_modified;
 

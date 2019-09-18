@@ -191,9 +191,9 @@ static const char * WGET_GCC_NONNULL_ALL _get_local_filename(const wget_iri *iri
 {
 	wget_buffer buf;
 	char *fname;
-	int directories;
+	bool directories;
 
-	directories = !!config.recursive;
+	directories = config.recursive;
 
 	if (config.directories == 0)
 		directories = 0;

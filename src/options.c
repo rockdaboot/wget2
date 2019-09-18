@@ -3840,17 +3840,16 @@ int selftest_options(void)
 		static struct {
 			const char
 				*argv[3];
-			char
+			bool
 				result;
 		} test_bool_short[] = {
 			{ { "", "-r", "-" }, 1 },
 		};
 
 		// save config values
-		char recursive = config.recursive;
+		bool recursive = config.recursive;
 
 		for (it = 0; it < countof(test_bool_short); it++) {
-			config.recursive = 2; // invalid bool value
 			parse_command_line(3, test_bool_short[it].argv);
 			if (config.recursive != test_bool_short[it].result) {
 				error_printf(_("%s: Failed to parse bool short option #%zu (=%d)\n"), __func__, it, config.recursive);
@@ -3877,14 +3876,12 @@ int selftest_options(void)
 		};
 
 		for (it = 0; it < countof(test_bool); it++) {
-			config.recursive = 2; // invalid bool value
 			parse_command_line(2, test_bool[it].argv);
 			if (config.recursive != test_bool[it].result) {
 				error_printf(_("%s: Failed to parse bool long option #%zu (%d)\n"), __func__, it, config.recursive);
 				ret = 1;
 			}
 
-			config.recursive = 2; // invalid bool value
 			parse_command_line(3, test_bool[it].argv);
 			if (config.recursive != test_bool[it].result) {
 				error_printf(_("%s: Failed to parse bool long option #%zu (%d)\n"), __func__, it, config.recursive);
