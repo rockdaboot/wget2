@@ -64,7 +64,7 @@ static const unsigned char base64_2_bin[256] = {
 static bool WGET_GCC_CONST _isbase64(char c)
 {
 	// isalnum(c) does not work for all locales
-	return !!base64_2_bin[(unsigned char) c];
+	return base64_2_bin[(unsigned char) c] != 0;
 //	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '+' || c == '/' || c == '-' || c == '_';
 }
 
