@@ -223,7 +223,7 @@ void wget_tcp_set_tcp_fastopen(wget_tcp *tcp, bool tcp_fastopen)
  *
  * You can enable and disable it with wget_tcp_set_tcp_fastopen().
  */
-char wget_tcp_get_tcp_fastopen(wget_tcp *tcp)
+bool wget_tcp_get_tcp_fastopen(wget_tcp *tcp)
 {
 	return (tcp ? tcp : &_global_tcp)->tcp_fastopen;
 }

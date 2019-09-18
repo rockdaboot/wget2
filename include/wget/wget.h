@@ -1916,7 +1916,7 @@ WGETAPI void
 	wget_tcp_set_ssl_ca_file(wget_tcp *tcp, const char *cafile);
 WGETAPI void
 	wget_tcp_set_ssl_key_file(wget_tcp *tcp, const char *certfile, const char *keyfile);
-WGETAPI char
+WGETAPI bool
 	wget_tcp_get_tcp_fastopen(wget_tcp *tcp) WGET_GCC_PURE;
 WGETAPI char
 	wget_tcp_get_tls_false_start(wget_tcp *tcp) WGET_GCC_PURE;
