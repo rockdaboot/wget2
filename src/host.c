@@ -172,7 +172,7 @@ static int _search_queue_for_free_job(struct _find_free_job_context *ctx, JOB *j
 	return 0;
 }
 
-static bool WGET_GCC_NONNULL_ALL _search_host_for_free_job(struct _find_free_job_context *ctx, HOST *host)
+static int WGET_GCC_NONNULL_ALL _search_host_for_free_job(struct _find_free_job_context *ctx, HOST *host)
 {
 	// host may be blocked due to max. number of failures reached
 	if (host->blocked) {

@@ -61,7 +61,7 @@ static const unsigned char base64_2_bin[256] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static bool WGET_GCC_CONST _isbase64(char c)
+static bool WGET_GCC_CONST isbase64(char c)
 {
 	// isalnum(c) does not work for all locales
 	return base64_2_bin[(unsigned char) c] != 0;
@@ -78,7 +78,7 @@ static bool WGET_GCC_CONST _isbase64(char c)
 bool wget_base64_is_string(const char *src)
 {
 	if (src) {
-		while (_isbase64(*src)) src++;
+		while (isbase64(*src)) src++;
 
 		if (!*src || (*src == '=' && src[1]) || (*src == '=' && src[1] == '=' && src[2]))
 			return 1;
@@ -105,7 +105,7 @@ size_t wget_base64_decode(char *dst, const char *src, size_t n)
 	int extra;
 
 	// trim '=' at the end
-	while (n > 0 && !_isbase64(usrc[n - 1]))
+	while (n > 0 && !isbase64(usrc[n - 1]))
 		n--;
 
 	extra = n & 3;
@@ -168,7 +168,7 @@ char *wget_base64_decode_alloc(const char *src, size_t n, size_t *outlen)
 
 #define WGET_BASE64_URLENCODE 1
 
-static size_t _wget_base64_encode(char *dst, const char *src, size_t n, int flags)
+static size_t base64_encode(char *dst, const char *src, size_t n, int flags)
 {
 	static const char base64unsafe[64] =
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -219,7 +219,7 @@ static size_t _wget_base64_encode(char *dst, const char *src, size_t n, int flag
  */
 size_t wget_base64_encode(char *dst, const char *src, size_t n)
 {
-	return _wget_base64_encode(dst, src, n, 0);
+	return base64_encode(dst, src, n, 0);
 }
 
 /**
@@ -235,7 +235,7 @@ size_t wget_base64_encode(char *dst, const char *src, size_t n)
  */
 size_t wget_base64_urlencode(char *dst, const char *src, size_t n)
 {
-	return _wget_base64_encode(dst, src, n, WGET_BASE64_URLENCODE);
+	return base64_encode(dst, src, n, WGET_BASE64_URLENCODE);
 }
 
 /**
