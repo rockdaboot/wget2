@@ -1903,8 +1903,8 @@ WGETAPI void
 WGETAPI void
 	wget_tcp_set_tls_false_start(wget_tcp *tcp, bool false_start);
 WGETAPI void
-	wget_tcp_set_ssl(wget_tcp *tcp, int ssl);
-WGETAPI int
+	wget_tcp_set_ssl(wget_tcp *tcp, bool ssl);
+WGETAPI bool
 	wget_tcp_get_ssl(wget_tcp *tcp) WGET_GCC_PURE;
 WGETAPI const char * NULLABLE
 	wget_tcp_get_ip(wget_tcp *tcp) WGET_GCC_PURE;

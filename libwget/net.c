@@ -463,9 +463,9 @@ void wget_tcp_set_bind_address(wget_tcp *tcp, const char *bind_address)
  *
  * If \p tcp is NULL, TLS will be enabled globally. Otherwise, TLS will be enabled only for the provided connection.
  */
-void wget_tcp_set_ssl(wget_tcp *tcp, int ssl)
+void wget_tcp_set_ssl(wget_tcp *tcp, bool ssl)
 {
-	(tcp ? tcp : &_global_tcp)->ssl = !!ssl;
+	(tcp ? tcp : &_global_tcp)->ssl = ssl;
 }
 
 /**
@@ -474,7 +474,7 @@ void wget_tcp_set_ssl(wget_tcp *tcp, int ssl)
  *
  * Tells whether TLS is enabled or not.
  */
-int wget_tcp_get_ssl(wget_tcp *tcp)
+bool wget_tcp_get_ssl(wget_tcp *tcp)
 {
 	return (tcp ? tcp : &_global_tcp)->ssl;
 }
