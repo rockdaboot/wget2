@@ -53,7 +53,7 @@
 #define FLAG_HEXUP       128
 /* \endcond */
 
-static void _copy_string(wget_buffer *buf, unsigned int flags, int field_width, int precision, const char *arg)
+static void copy_string(wget_buffer *buf, unsigned int flags, int field_width, int precision, const char *arg)
 {
 	size_t length;
 
@@ -87,7 +87,7 @@ static void _copy_string(wget_buffer *buf, unsigned int flags, int field_width, 
 	}
 }
 
-static void _convert_dec_fast(wget_buffer *buf, int arg)
+static void convert_dec_fast(wget_buffer *buf, int arg)
 {
 	char str[32]; // long enough to hold decimal long long
 	char *dst = str + sizeof(str) - 1;
@@ -111,7 +111,7 @@ static void _convert_dec_fast(wget_buffer *buf, int arg)
 	wget_buffer_memcat(buf, dst + 1, sizeof(str) - (dst - str) - 1);
 }
 
-static void _convert_dec(wget_buffer *buf, unsigned int flags, int field_width, int precision, long long arg)
+static void convert_dec(wget_buffer *buf, unsigned int flags, int field_width, int precision, long long arg)
 {
 	unsigned long long argu = arg;
 	char str[32], minus = 0; // long enough to hold decimal long long
@@ -229,7 +229,7 @@ static void _convert_dec(wget_buffer *buf, unsigned int flags, int field_width, 
 	}
 }
 
-static void _convert_pointer(wget_buffer *buf, void *pointer)
+static void convert_pointer(wget_buffer *buf, void *pointer)
 {
 	static const char HEX[16] = "0123456789abcdef";
 	char str[32]; // long enough to hold hexadecimal pointer
@@ -259,7 +259,7 @@ static void _convert_pointer(wget_buffer *buf, void *pointer)
 	wget_buffer_memcat(buf, dst, length);
 }
 
-static const char *_read_precision(const char *p, int *out, int precision_is_external)
+static const char *read_precision(const char *p, int *out, int precision_is_external)
 {
 	int precision = -1;
 
@@ -281,7 +281,7 @@ static const char *_read_precision(const char *p, int *out, int precision_is_ext
 	return p;
 }
 
-static const char *_read_flag_chars(const char *p, unsigned int *out)
+static const char *read_flag_chars(const char *p, unsigned int *out)
 {
 	unsigned int flags;
 
@@ -300,7 +300,7 @@ static const char *_read_flag_chars(const char *p, unsigned int *out)
 	return p;
 }
 
-static const char *_read_field_width(const char *p, int *out, unsigned int *flags, int width_is_external)
+static const char *read_field_width(const char *p, int *out, unsigned int *flags, int width_is_external)
 {
 	int field_width;
 
@@ -364,7 +364,7 @@ size_t wget_buffer_vprintf_append(wget_buffer *buf, const char *fmt, va_list arg
 			p++;
 			continue;
 		} else if (*p == 'd') {
-			_convert_dec_fast(buf, va_arg(args, int));
+			convert_dec_fast(buf, va_arg(args, int));
 			p++;
 			continue;
 		} else if (*p == 'c') {
@@ -373,7 +373,7 @@ size_t wget_buffer_vprintf_append(wget_buffer *buf, const char *fmt, va_list arg
 			p++;
 			continue;
 		} else if (*p == 'p') {
-			_convert_pointer(buf, va_arg(args, void *));
+			convert_pointer(buf, va_arg(args, void *));
 			p++;
 			continue;
 		} else if (*p == '%') {
@@ -383,7 +383,7 @@ size_t wget_buffer_vprintf_append(wget_buffer *buf, const char *fmt, va_list arg
 		}
 
 		/* Read the flag chars (optional, simplified) */
-		p = _read_flag_chars(p, &flags);
+		p = read_flag_chars(p, &flags);
 
 		/*
 		 * Read field width (optional).
@@ -392,9 +392,9 @@ size_t wget_buffer_vprintf_append(wget_buffer *buf, const char *fmt, va_list arg
 		 */
 		if (*p == '*') {
 			field_width = va_arg(args, int);
-			p = _read_field_width(p, &field_width, &flags, 1);
+			p = read_field_width(p, &field_width, &flags, 1);
 		} else {
-			p = _read_field_width(p, &field_width, &flags, 0);
+			p = read_field_width(p, &field_width, &flags, 0);
 		}
 
 		/*
@@ -405,9 +405,9 @@ size_t wget_buffer_vprintf_append(wget_buffer *buf, const char *fmt, va_list arg
 		if (*p == '.') {
 			if (*++p == '*') {
 				precision = va_arg(args, int);
-				p = _read_precision(p, &precision, 1);
+				p = read_precision(p, &precision, 1);
 			} else {
-				p = _read_precision(p, &precision, 0);
+				p = read_precision(p, &precision, 0);
 			}
 		} else
 			precision = -1;
@@ -452,20 +452,20 @@ size_t wget_buffer_vprintf_append(wget_buffer *buf, const char *fmt, va_list arg
 
 		case 's':
 			p++;
-			_copy_string(buf, flags, field_width, precision, va_arg(args, const char *));
+			copy_string(buf, flags, field_width, precision, va_arg(args, const char *));
 			continue;
 
 		case 'c':
 		{
 			char c[2] = { (char) va_arg(args, int), 0 };
 			p++;
-			_copy_string(buf, flags, field_width, precision, c);
+			copy_string(buf, flags, field_width, precision, c);
 			continue;
 		}
 
 		case 'p': // %p shortcut
 			p++;
-			_convert_dec(buf, flags | FLAG_HEXLO | FLAG_ALTERNATE, field_width, precision, (long long)(ptrdiff_t)va_arg(args, void *));
+			convert_dec(buf, flags | FLAG_HEXLO | FLAG_ALTERNATE, field_width, precision, (long long)(ptrdiff_t)va_arg(args, void *));
 			continue;
 
 		default:
@@ -474,15 +474,15 @@ size_t wget_buffer_vprintf_append(wget_buffer *buf, const char *fmt, va_list arg
 		}
 
 		if (*p == 'd' || *p == 'i') {
-			_convert_dec(buf, flags | FLAG_SIGNED | FLAG_DECIMAL, field_width, precision, arg);
+			convert_dec(buf, flags | FLAG_SIGNED | FLAG_DECIMAL, field_width, precision, arg);
 		} else if (*p == 'u') {
-			_convert_dec(buf, flags | FLAG_DECIMAL, field_width, precision, argu);
+			convert_dec(buf, flags | FLAG_DECIMAL, field_width, precision, argu);
 		} else if (*p == 'x') {
-			_convert_dec(buf, flags | FLAG_HEXLO, field_width, precision, argu);
+			convert_dec(buf, flags | FLAG_HEXLO, field_width, precision, argu);
 		} else if (*p == 'X') {
-			_convert_dec(buf, flags | FLAG_HEXUP, field_width, precision, argu);
+			convert_dec(buf, flags | FLAG_HEXUP, field_width, precision, argu);
 		} else if (*p == 'o') {
-			_convert_dec(buf, flags | FLAG_OCTAL, field_width, precision, argu);
+			convert_dec(buf, flags | FLAG_OCTAL, field_width, precision, argu);
 		} else {
 			/*
 			 * This is an unknown conversion specifier,
