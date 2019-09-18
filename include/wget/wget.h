@@ -376,7 +376,7 @@ WGETAPI int
 	wget_memiconv(const char *src_encoding, const void *src, size_t srclen, const char *dst_encoding, char **out, size_t *outlen);
 WGETAPI char * NULLABLE
 	wget_striconv(const char *src, const char *src_encoding, const char *dst_encoding) WGET_GCC_MALLOC;
-WGETAPI int
+WGETAPI bool
 	wget_str_needs_encoding(const char *s) WGET_GCC_PURE;
 WGETAPI bool
 	wget_str_is_valid_utf8(const char *utf8) WGET_GCC_PURE;

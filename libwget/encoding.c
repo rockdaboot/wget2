@@ -149,14 +149,14 @@ char *wget_striconv(const char *src, const char *src_encoding, const char *dst_e
 	return dst;
 }
 
-int wget_str_needs_encoding(const char *s)
+bool wget_str_needs_encoding(const char *s)
 {
 	if (!s)
-		return 0;
+		return false;
 
 	while (*s && (*s & ~0x7f) == 0) s++;
 
-	return !!*s;
+	return *s != 0;
 }
 
 bool wget_str_is_valid_utf8(const char *utf8)
