@@ -35,13 +35,13 @@
 #include <wget.h>
 #include "private.h"
 
-typedef struct _entry_st _entry_t;
+typedef struct entry_st entry_t;
 
-struct _entry_st {
+struct entry_st {
 	void
 		*key,
 		*value;
-	_entry_t
+	entry_t
 		*next;
 	unsigned int
 		hash;
@@ -56,7 +56,7 @@ struct wget_hashmap_st {
 		*key_destructor; // key destructor function
 	wget_hashmap_value_destructor
 		*value_destructor; // value destructor function
-	_entry_t
+	entry_t
 		**entry;   // pointer to array of pointers to entries
 	int
 		max,       // allocated entries
@@ -70,7 +70,7 @@ struct wget_hashmap_st {
 struct wget_hashmap_iterator_st {
 	struct wget_hashmap_st
 		*h;
-	_entry_t
+	entry_t
 		*entry;
 	int
 		pos;
@@ -171,7 +171,7 @@ wget_hashmap *wget_hashmap_create(int max, wget_hashmap_hash_fn *hash, wget_hash
 	if (!h)
 		return NULL;
 
-	h->entry = wget_calloc(max, sizeof(_entry_t *));
+	h->entry = wget_calloc(max, sizeof(entry_t *));
 
 	if (!h->entry) {
 		xfree(h);
@@ -192,9 +192,9 @@ wget_hashmap *wget_hashmap_create(int max, wget_hashmap_hash_fn *hash, wget_hash
 }
 
 WGET_GCC_NONNULL_ALL
-static _entry_t * hashmap_find_entry(const wget_hashmap *h, const char *key, unsigned int hash)
+static entry_t * hashmap_find_entry(const wget_hashmap *h, const char *key, unsigned int hash)
 {
-	for (_entry_t * e = h->entry[hash % h->max]; e; e = e->next) {
+	for (entry_t * e = h->entry[hash % h->max]; e; e = e->next) {
 		if (hash == e->hash && (key == e->key || !h->cmp(key, e->key))) {
 			return e;
 		}
@@ -204,9 +204,9 @@ static _entry_t * hashmap_find_entry(const wget_hashmap *h, const char *key, uns
 }
 
 WGET_GCC_NONNULL_ALL
-static void hashmap_rehash(wget_hashmap *h, _entry_t **new_entry, int newmax, int recalc_hash)
+static void hashmap_rehash(wget_hashmap *h, entry_t **new_entry, int newmax, int recalc_hash)
 {
-	_entry_t *entry, *next;
+	entry_t *entry, *next;
 	int cur = h->cur;
 
 	for (int it = 0; it < h->max && cur; it++) {
@@ -233,9 +233,9 @@ static void hashmap_rehash(wget_hashmap *h, _entry_t **new_entry, int newmax, in
 WGET_GCC_NONNULL((1,3))
 static int hashmap_new_entry(wget_hashmap *h, unsigned int hash, const char *key, const char *value)
 {
-	_entry_t *entry;
+	entry_t *entry;
 
-	if (!(entry = wget_malloc(sizeof(_entry_t))))
+	if (!(entry = wget_malloc(sizeof(entry_t))))
 		return WGET_E_MEMORY;
 
 	int pos = hash % h->max;
@@ -250,9 +250,9 @@ static int hashmap_new_entry(wget_hashmap *h, unsigned int hash, const char *key
 		int newsize = (int) (h->max * h->resize_factor);
 
 		if (newsize > 0) {
-			_entry_t **new_entry;
+			entry_t **new_entry;
 
-			if (!(new_entry = wget_calloc(newsize, sizeof(_entry_t *)))) {
+			if (!(new_entry = wget_calloc(newsize, sizeof(entry_t *)))) {
 				h->cur--;
 				xfree(h->entry[pos]);
 				return WGET_E_MEMORY;
@@ -286,7 +286,7 @@ static int hashmap_new_entry(wget_hashmap *h, unsigned int hash, const char *key
 int wget_hashmap_put(wget_hashmap *h, const void *key, const void *value)
 {
 	if (h && key) {
-		_entry_t *entry;
+		entry_t *entry;
 		unsigned int hash = h->hash(key);
 		int rc;
 
@@ -342,7 +342,7 @@ int wget_hashmap_contains(const wget_hashmap *h, const void *key)
 int wget_hashmap_get(const wget_hashmap *h, const void *key, void **value)
 {
 	if (h && key) {
-		_entry_t *entry;
+		entry_t *entry;
 
 		if ((entry = hashmap_find_entry(h, key, h->hash(key)))) {
 			if (value)
@@ -357,7 +357,7 @@ int wget_hashmap_get(const wget_hashmap *h, const void *key, void **value)
 WGET_GCC_NONNULL_ALL
 static int hashmap_remove_entry(wget_hashmap *h, const char *key, int free_kv)
 {
-	_entry_t *entry, *next, *prev = NULL;
+	entry_t *entry, *next, *prev = NULL;
 	unsigned int hash = h->hash(key);
 	int pos = hash % h->max;
 
@@ -451,7 +451,7 @@ void wget_hashmap_free(wget_hashmap **h)
 void wget_hashmap_clear(wget_hashmap *h)
 {
 	if (h) {
-		_entry_t *entry, *next;
+		entry_t *entry, *next;
 		int it, cur = h->cur;
 
 		for (it = 0; it < h->max && cur; it++) {
@@ -504,7 +504,7 @@ int wget_hashmap_size(const wget_hashmap *h)
 int wget_hashmap_browse(const wget_hashmap *h, wget_hashmap_browse_fn *browse, void *ctx)
 {
 	if (h && browse) {
-		_entry_t *entry;
+		entry_t *entry;
 		int it, ret, cur = h->cur;
 
 		for (it = 0; it < h->max && cur; it++) {
@@ -549,7 +549,7 @@ int wget_hashmap_sethashfunc(wget_hashmap *h, wget_hashmap_hash_fn *hash)
 	if (!h->cur)
 		return WGET_E_SUCCESS; // no re-hashing needed
 
-	_entry_t **new_entry = wget_calloc(h->max, sizeof(_entry_t *));
+	entry_t **new_entry = wget_calloc(h->max, sizeof(entry_t *));
 
 	if (!new_entry)
 		return WGET_E_MEMORY;
