@@ -42,7 +42,7 @@ CRITICAL_SECTION           g_trace_crit;
  * Routines to address console controls like cursor positioning, fg+bg colors, ...
  */
 
-static void _reset_color(void)
+static void reset_color(void)
 {
 #ifdef _WIN32
 	fflush(stdout);
@@ -124,7 +124,7 @@ int wget_console_init(void)
 	win_init = 1;
 #endif
 
-	atexit(_reset_color);
+	atexit(reset_color);
 
 	return 0;
 }
@@ -136,7 +136,7 @@ int wget_console_init(void)
  */
 int wget_console_deinit(void)
 {
-	_reset_color();
+	reset_color();
 
 	return 0;
 }
