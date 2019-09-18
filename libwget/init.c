@@ -144,7 +144,7 @@ void wget_global_init(int first_key, ...)
 			_config.cookies_enabled = 1;
 			break;
 		case WGET_COOKIES_ENABLED:
-			_config.cookies_enabled = !!va_arg(args, int);
+			_config.cookies_enabled = va_arg(args, int) != 0;
 			break;
 		case WGET_COOKIE_FILE:
 			// load cookie-store
