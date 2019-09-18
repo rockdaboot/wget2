@@ -173,7 +173,7 @@ void wget_http_request_set_body_cb(wget_http_request *req, wget_http_body_callba
 void wget_http_request_set_int(wget_http_request *req, int key, int value)
 {
 	switch (key) {
-	case WGET_HTTP_RESPONSE_KEEPHEADER: req->response_keepheader = !!value; break;
+	case WGET_HTTP_RESPONSE_KEEPHEADER: req->response_keepheader = value != 0; break;
 	default: error_printf(_("%s: Unknown key %d (or value must not be an integer)\n"), __func__, key);
 	}
 }
