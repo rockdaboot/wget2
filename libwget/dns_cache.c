@@ -57,7 +57,7 @@ struct wget_dns_cache_st {
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int WGET_GCC_PURE _hash_dns(const struct cache_entry *entry)
+static unsigned int WGET_GCC_PURE hash_dns(const struct cache_entry *entry)
 {
 	unsigned int hash = entry->port;
 	const unsigned char *p = (unsigned char *) entry->host;
@@ -68,7 +68,7 @@ static unsigned int WGET_GCC_PURE _hash_dns(const struct cache_entry *entry)
 	return hash;
 }
 
-static int WGET_GCC_PURE _compare_dns(const struct cache_entry *a1, const struct cache_entry *a2)
+static int WGET_GCC_PURE compare_dns(const struct cache_entry *a1, const struct cache_entry *a2)
 {
 	if (a1->port < a2->port)
 		return -1;
@@ -78,7 +78,7 @@ static int WGET_GCC_PURE _compare_dns(const struct cache_entry *a1, const struct
 	return wget_strcasecmp(a1->host, a2->host);
 }
 
-static void _free_dns(struct cache_entry *entry)
+static void free_dns(struct cache_entry *entry)
 {
 	freeaddrinfo(entry->addrinfo);
 	xfree(entry);
@@ -103,13 +103,13 @@ int wget_dns_cache_init(wget_dns_cache **cache)
 		return WGET_E_INVALID;
 	}
 
-	if (!(_cache->cache = wget_hashmap_create(16, (wget_hashmap_hash_fn *) _hash_dns, (wget_hashmap_compare_fn *) _compare_dns))) {
+	if (!(_cache->cache = wget_hashmap_create(16, (wget_hashmap_hash_fn *) hash_dns, (wget_hashmap_compare_fn *) compare_dns))) {
 		wget_dns_cache_free(&_cache);
 		return WGET_E_MEMORY;
 	}
 
-	wget_hashmap_set_key_destructor(_cache->cache, (wget_hashmap_key_destructor *) _free_dns);
-	wget_hashmap_set_value_destructor(_cache->cache, (wget_hashmap_value_destructor *) _free_dns);
+	wget_hashmap_set_key_destructor(_cache->cache, (wget_hashmap_key_destructor *) free_dns);
+	wget_hashmap_set_value_destructor(_cache->cache, (wget_hashmap_value_destructor *) free_dns);
 
 	*cache = _cache;
 
