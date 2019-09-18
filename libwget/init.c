@@ -37,7 +37,7 @@ static struct _CONFIG {
 		*cookie_file;
 	wget_cookie_db
 		*cookie_db;
-	char
+	bool
 		cookies_enabled,
 		keep_session_cookies;
 } _config = {
@@ -152,7 +152,7 @@ void wget_global_init(int first_key, ...)
 			_config.cookie_file = va_arg(args, char *);
 			break;
 		case WGET_COOKIE_KEEPSESSIONCOOKIES:
-			_config.keep_session_cookies = !!va_arg(args, int);
+			_config.keep_session_cookies = va_arg(args, int) != 0;
 			break;
 		case WGET_BIND_ADDRESS:
 			wget_tcp_set_bind_address(NULL, va_arg(args, const char *));

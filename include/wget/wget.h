@@ -1368,7 +1368,7 @@ WGETAPI void
 WGETAPI void
 	wget_cookie_db_free(wget_cookie_db **cookie_db);
 WGETAPI void
-	wget_cookie_set_keep_session_cookies(wget_cookie_db *cookie_db, int keep);
+	wget_cookie_set_keep_session_cookies(wget_cookie_db *cookie_db, bool keep);
 WGETAPI int
 	wget_cookie_db_save(wget_cookie_db *cookie_db, const char *fname);
 WGETAPI int

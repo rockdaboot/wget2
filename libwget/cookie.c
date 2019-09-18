@@ -328,10 +328,10 @@ void wget_cookie_db_free(wget_cookie_db **cookie_db)
 	}
 }
 
-void wget_cookie_set_keep_session_cookies(wget_cookie_db *cookie_db, int keep)
+void wget_cookie_set_keep_session_cookies(wget_cookie_db *cookie_db, bool keep)
 {
 	if (cookie_db)
-		cookie_db->keep_session_cookies = !!keep;
+		cookie_db->keep_session_cookies = keep;
 }
 
 static int cookie_db_load(wget_cookie_db *cookie_db, FILE *fp)
