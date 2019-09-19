@@ -1,4 +1,5 @@
 [![Build status](https://gitlab.com/gnuwget/wget2/badges/master/build.svg)](https://gitlab.com/gnuwget/wget2/pipelines)
+[![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/wget2.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:wget2)
 [![Coverage status](https://gitlab.com/gnuwget/wget2/badges/master/coverage.svg)](https://gnuwget.gitlab.io/wget2/coverage)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/7852/badge.svg)](https://scan.coverity.com/projects/rockdaboot-wget2)
 
