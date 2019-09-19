@@ -3781,6 +3781,9 @@ static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 #ifdef WITH_ZSTD
 		wget_buffer_strcat(&buf, buf.length ? ", zstd" : "zstd");
 #endif
+#ifdef WITH_LZIP
+		wget_buffer_strcat(&buf, buf.length ? ", lzip" : "lzip");
+#endif
 
 		if (!buf.length)
 			wget_buffer_strcat(&buf, "identity");

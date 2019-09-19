@@ -58,6 +58,10 @@
 #include <zstd.h>
 #endif
 
+#ifdef WITH_LZIP
+#include <lzlib.h>
+#endif
+
 #include <wget.h>
 #include "private.h"
 
@@ -84,6 +88,10 @@ struct wget_decompressor_st {
 #ifdef WITH_ZSTD
 	ZSTD_DStream
 		*zstd_strm;
+#endif
+#ifdef WITH_LZIP
+	struct LZ_Decoder
+		*lzip_strm;
 #endif
 
 	wget_decompressor_sink_fn
@@ -328,7 +336,7 @@ static int zstd_decompress(wget_decompressor *dc, char *src, size_t srclen)
 
 		size_t rc = ZSTD_decompressStream(strm, &output , &input);
 		if (ZSTD_isError(rc)) {
-			error_printf(_("Failed to init Zstandard decompression: %s\n"), ZSTD_getErrorName(rc));
+			error_printf(_("Failed to uncompress Zstandard stream: %s\n"), ZSTD_getErrorName(rc));
 			return -1;
 		}
 
@@ -344,6 +352,71 @@ static void zstd_exit(wget_decompressor *dc)
 	ZSTD_freeDStream(dc->zstd_strm);
 }
 #endif // WITH_ZSTD
+
+#ifdef WITH_LZIP
+static int lzip_init(struct LZ_Decoder **strm)
+{
+	if ((*strm = LZ_decompress_open()) == NULL) {
+		error_printf(_("Failed to create lzip decompression\n"));
+		return -1;
+	}
+
+	// docs say, we have to check the pointer
+	enum LZ_Errno err;
+	if ((err = LZ_decompress_errno(*strm)) != LZ_ok) {
+		error_printf(_("Failed to create lzip decompression: %d %s\n"), (int) err, LZ_strerror(err));
+		LZ_decompress_close(*strm);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int lzip_decompress(wget_decompressor *dc, char *src, size_t srclen)
+{
+	struct LZ_Decoder *strm;
+	uint8_t dst[10240];
+	size_t available_in;
+	const uint8_t *next_in;
+	int rbytes, wbytes;
+	enum LZ_Errno err;
+
+	if (!srclen) {
+		// special case to avoid decompress errors
+		if (dc->sink)
+			dc->sink(dc->context, "", 0);
+
+		return 0;
+	}
+
+	strm = dc->lzip_strm;
+	next_in = (uint8_t *)src;
+	available_in = srclen;
+
+	do {
+		wbytes = LZ_decompress_write(strm, next_in, available_in);
+		next_in += wbytes;
+		available_in -= wbytes;
+
+		while ((rbytes = LZ_decompress_read(strm, dst, sizeof(dst))) > 0) {
+			if (dc->sink)
+				dc->sink(dc->context, (char *) dst, rbytes);
+		}
+
+		if ((err = LZ_decompress_errno(strm)) != LZ_ok) {
+			error_printf(_("Failed to uncompress lzip stream: %d %s\n"), (int) err, LZ_strerror(err));
+			return -1;
+		}
+	} while (wbytes > 0);
+
+	return 0;
+}
+
+static void lzip_exit(wget_decompressor *dc)
+{
+	LZ_decompress_close(dc->lzip_strm);
+}
+#endif // WITH_LZIP
 
 #ifdef WITH_BZIP2
 static int bzip2_init(bz_stream *strm)
@@ -461,6 +534,13 @@ wget_decompressor *wget_decompress_open(
 			dc->exit = zstd_exit;
 		}
 #endif
+	} else if (encoding == wget_content_encoding_lzip) {
+#ifdef WITH_LZIP
+		if ((rc = lzip_init(&dc->lzip_strm)) == 0) {
+			dc->decompress = lzip_decompress;
+			dc->exit = lzip_exit;
+		}
+#endif
 	}
 
 	if (!dc->decompress) {
@@ -512,7 +592,7 @@ void *wget_decompress_get_context(wget_decompressor *dc)
 	return dc ? dc->context : NULL;
 }
 
-static char _encoding_names[wget_content_encoding_max][9] = {
+static char _encoding_names[][9] = {
 	[wget_content_encoding_identity] = "identity",
 	[wget_content_encoding_gzip] = "gzip",
 	[wget_content_encoding_deflate] = "deflate",
@@ -521,6 +601,7 @@ static char _encoding_names[wget_content_encoding_max][9] = {
 	[wget_content_encoding_bzip2] = "bzip2",
 	[wget_content_encoding_brotli] = "br",
 	[wget_content_encoding_zstd] = "zstd",
+	[wget_content_encoding_lzip] = "lzip",
 };
 
 wget_content_encoding wget_content_encoding_by_name(const char *name)

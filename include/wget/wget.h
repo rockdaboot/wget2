@@ -1145,7 +1145,8 @@ typedef enum {
 	wget_content_encoding_bzip2 = 5,
 	wget_content_encoding_brotli = 6,
 	wget_content_encoding_zstd = 7,
-	wget_content_encoding_max = 8
+	wget_content_encoding_lzip = 8,
+	wget_content_encoding_max = 9
 } wget_content_encoding;
 
 WGETAPI WGET_GCC_PURE wget_content_encoding

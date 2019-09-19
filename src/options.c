@@ -235,6 +235,12 @@ static int print_version(WGET_GCC_UNUSED option_t opt, WGET_GCC_UNUSED const cha
 	" -bzip2"
 #endif
 
+#if defined WITH_LZIP
+	" +lzip"
+#else
+	" -lzip"
+#endif
+
 #if defined WITH_LIBNGHTTP2
 	" +http2"
 #else
@@ -1097,6 +1103,10 @@ static int parse_compression(option_t opt, const char *val, const char invert)
 			if (type == wget_content_encoding_zstd)
 				not_built = 1;
 #endif
+#ifndef WITH_LZIP
+			if (type == wget_content_encoding_lzip)
+				not_built = 1;
+#endif
 
 			if (not_built) {
 				wget_error_printf(_("Lib for type %s not built"), wget_content_encoding_to_name(type));
@@ -1333,7 +1343,7 @@ static const struct optionw options[] = {
 		"compression", &config.compression, parse_compression, -1, 0,
 		SECTION_HTTP,
 		{ "Customize Accept-Encoding with\n",
-		   "identity, gzip, deflate, xz, lzma, br, bzip2, zstd\n",
+		   "identity, gzip, deflate, xz, lzma, br, bzip2, zstd, lzip\n",
 		   "and any combination of it\n",
 		   "no-compression means no Accept-Encoding\n"
 		}

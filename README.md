@@ -32,6 +32,7 @@ A non-exhaustive list of features
 - Support for HTTP/1.1 and HTTP/2.0 protocol
 - [brotli](https://github.com/google/brotli) decompression support (Accept-Encoding: br)
 - [zstandard](https://github.com/facebook/zstd) decompression support, RFC8478 (Accept-Encoding: zstd)
+- [lzip](https://www.nongnu.org/lzip/) decompression support, (Accept-Encoding: lzip)
 - HPKP - HTTP Public Key Pinning (RFC7469) with persistent database
 - TCP Fast Open for plain text *and* for HTTPS
 - TLS Session Resumption including persistent session data cache

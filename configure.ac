@@ -665,6 +665,21 @@ AS_IF([test "x$with_zstd" != xno], [
 ])
 AM_CONDITIONAL([WITH_ZSTD], [test "x$with_zstd" = xyes])
 
+AC_ARG_WITH(lz, AS_HELP_STRING([--without-lzip], [disable lzip compression support]), with_lzip=$withval, with_lzip=yes)
+AS_IF([test "x$with_lzip" != xno], [
+  PKG_CHECK_MODULES([LZIP], liblz, [
+    with_lz=yes
+    LIBS="$LZIP_LIBS $LIBS"
+    CFLAGS="$LZIP_CFLAGS $CFLAGS"
+    AC_DEFINE([WITH_LZIP], [1], [Use liblz (lzip)])
+  ], [
+    AC_SEARCH_LIBS(LZ_decompress_open, lz,
+      [with_lzip=yes; AC_DEFINE([WITH_LZIP], [1], [Use liblz (lzip)])],
+      [with_lzip=no;  AC_MSG_WARN(*** liblz was not found. You will not be able to use lzip decompression)])
+  ])
+])
+AM_CONDITIONAL([WITH_LZIP], [test "x$with_lzip" = xyes])
+
 # Support for internationalized domain names.
 # IDN support in Wget2 is provided in multiple ways:
 #   1. libidn2 >= 0.14.0 (IDNA 2008)
@@ -862,6 +877,7 @@ AC_MSG_NOTICE([Summary of build options:
   LZMA compression:   $with_lzma
   Brotli compression: $with_brotlidec
   Zstd compression:   $with_zstd
+  Lzip compression:   $with_lzip
   IDNA support:       $IDNA_INFO
   PSL support:        $with_libpsl
   HSTS support:       $with_libhsts

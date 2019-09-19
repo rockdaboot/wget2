@@ -354,7 +354,7 @@ Go to background immediately after startup. If no output file is specified via t
 
     `ResponseTime` ms between start of request and first response packet.
 
-    `Encoding` 0,1,2,3,4,5 mean server side compression was 'identity', 'gzip', 'deflate', 'lzma/xz', 'bzip2', 'brotli', 'zstd'
+    `Encoding` 0,1,2,3,4,5 mean server side compression was 'identity', 'gzip', 'deflate', 'lzma/xz', 'bzip2', 'brotli', 'zstd', 'lzip'
 
     `Verification` PGP verification status. 0,1,2,3 mean 'none',  'valid', 'invalid', 'bad', 'missing'.
 
@@ -1322,8 +1322,9 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--compression=TYPE`
 
-  If this TYPE(`identity`, `gzip`, `deflate`, `xz`, `lzma`, `br`, `bzip2`, `zstd` or any combination of it) is given,
-  Wget2 will set "Accept-Encoding" header accordingly. `--no-compression` means no "Accept-Encoding" header at all.
+  If this TYPE(`identity`, `gzip`, `deflate`, `xz`, `lzma`, `br`, `bzip2`, `zstd`, `lzip` or any combination of it)
+  is given, Wget2 will set "Accept-Encoding" header accordingly. `--no-compression` means no "Accept-Encoding" header
+  at all.
   To set "Accept-Encoding" to a custom value, use `--no-compression` in combination with
   `--header="Accept-Encoding: xxx"`.
 

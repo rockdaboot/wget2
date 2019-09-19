@@ -693,6 +693,8 @@ const char *wget_http_parse_content_encoding(const char *s, char *content_encodi
 		*content_encoding = wget_content_encoding_brotli;
 	else if (!wget_strcasecmp_ascii(s, "zstd"))
 		*content_encoding = wget_content_encoding_zstd;
+	else if (!wget_strcasecmp_ascii(s, "lzip"))
+		*content_encoding = wget_content_encoding_lzip;
 	else
 		*content_encoding = wget_content_encoding_identity;
 
