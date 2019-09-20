@@ -372,14 +372,32 @@ static int lzip_init(struct LZ_Decoder **strm)
 	return 0;
 }
 
+static int lzip_drain(wget_decompressor *dc)
+{
+	struct LZ_Decoder *strm = dc->lzip_strm;
+	uint8_t dst[10240];
+	int rbytes;
+	enum LZ_Errno err;
+
+	while ((rbytes = LZ_decompress_read(strm, dst, sizeof(dst))) > 0) {
+		if (dc->sink)
+			dc->sink(dc->context, (char *) dst, rbytes);
+	}
+
+	if ((err = LZ_decompress_errno(strm)) != LZ_ok) {
+		error_printf(_("Failed to uncompress lzip stream: %d %s\n"), (int) err, LZ_strerror(err));
+		return -1;
+	}
+
+	return 0;
+}
+
 static int lzip_decompress(wget_decompressor *dc, char *src, size_t srclen)
 {
 	struct LZ_Decoder *strm;
-	uint8_t dst[10240];
 	size_t available_in;
 	const uint8_t *next_in;
-	int rbytes, wbytes;
-	enum LZ_Errno err;
+	int wbytes;
 
 	if (!srclen) {
 		// special case to avoid decompress errors
@@ -398,15 +416,8 @@ static int lzip_decompress(wget_decompressor *dc, char *src, size_t srclen)
 		next_in += wbytes;
 		available_in -= wbytes;
 
-		while ((rbytes = LZ_decompress_read(strm, dst, sizeof(dst))) > 0) {
-			if (dc->sink)
-				dc->sink(dc->context, (char *) dst, rbytes);
-		}
-
-		if ((err = LZ_decompress_errno(strm)) != LZ_ok) {
-			error_printf(_("Failed to uncompress lzip stream: %d %s\n"), (int) err, LZ_strerror(err));
+		if (lzip_drain(dc) < 0)
 			return -1;
-		}
 	} while (wbytes > 0);
 
 	return 0;
@@ -414,7 +425,12 @@ static int lzip_decompress(wget_decompressor *dc, char *src, size_t srclen)
 
 static void lzip_exit(wget_decompressor *dc)
 {
-	LZ_decompress_close(dc->lzip_strm);
+	struct LZ_Decoder *strm = dc->lzip_strm;
+
+	if (LZ_decompress_finish(strm) == 0)
+		lzip_drain(dc);
+
+	LZ_decompress_close(strm);
 }
 #endif // WITH_LZIP
 
