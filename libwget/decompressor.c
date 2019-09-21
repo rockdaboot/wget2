@@ -530,7 +530,7 @@ wget_decompressor *wget_decompress_open(
 			dc->exit = bzip2_exit;
 		}
 #endif
-	} else if (encoding == wget_content_encoding_lzma) {
+	} else if (encoding == wget_content_encoding_lzma || encoding == wget_content_encoding_xz) {
 #ifdef WITH_LZMA
 		if ((rc = lzma_init(&dc->lzma_strm)) == 0) {
 			dc->decompress = lzma_decompress;
@@ -562,7 +562,8 @@ wget_decompressor *wget_decompress_open(
 
 	if (!dc->decompress) {
 		// identity
-		debug_printf("Falling back to Content-Encoding 'identity'\n");
+		if (encoding != wget_content_encoding_identity)
+			debug_printf("Falling back to Content-Encoding 'identity'\n");
 		dc->decompress = identity;
 	}
 
