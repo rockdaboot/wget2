@@ -39,6 +39,7 @@
 #include <string.h>
 
 #ifdef WITH_ZLIB
+#define ZLIB_CONST
 #include <zlib.h>
 #endif
 
@@ -65,7 +66,7 @@
 #include <wget.h>
 #include "private.h"
 
-typedef int wget_decompressor_decompress_fn(wget_decompressor *dc, char *src, size_t srclen);
+typedef int wget_decompressor_decompress_fn(wget_decompressor *dc, const char *src, size_t srclen);
 typedef void wget_decompressor_exit_fn(wget_decompressor *dc);
 
 struct wget_decompressor_st {
@@ -123,7 +124,7 @@ static int gzip_init(z_stream *strm)
 	return 0;
 }
 
-static int gzip_decompress(wget_decompressor *dc, char *src, size_t srclen)
+static int gzip_decompress(wget_decompressor *dc, const char *src, size_t srclen)
 {
 	z_stream *strm;
 	char dst[10240];
@@ -138,7 +139,7 @@ static int gzip_decompress(wget_decompressor *dc, char *src, size_t srclen)
 	}
 
 	strm = &dc->z_strm;
-	strm->next_in = (unsigned char *) src;
+	strm->next_in = (const unsigned char *) src;
 	strm->avail_in = (unsigned int) srclen;
 
 	do {
@@ -195,7 +196,7 @@ static int lzma_init(lzma_stream *strm)
 	return 0;
 }
 
-static int lzma_decompress(wget_decompressor *dc, char *src, size_t srclen)
+static int lzma_decompress(wget_decompressor *dc, const char *src, size_t srclen)
 {
 	lzma_stream *strm;
 	char dst[10240];
@@ -210,11 +211,11 @@ static int lzma_decompress(wget_decompressor *dc, char *src, size_t srclen)
 	}
 
 	strm = &dc->lzma_strm;
-	strm->next_in = (unsigned char *)src;
+	strm->next_in = (const uint8_t *) src;
 	strm->avail_in = srclen;
 
 	do {
-		strm->next_out = (unsigned char *)dst;
+		strm->next_out = (unsigned char *) dst;
 		strm->avail_out = sizeof(dst);
 
 		status = lzma_code(strm, LZMA_RUN);
@@ -248,7 +249,7 @@ static int brotli_init(BrotliDecoderState **strm)
 	return 0;
 }
 
-static int brotli_decompress(wget_decompressor *dc, char *src, size_t srclen)
+static int brotli_decompress(wget_decompressor *dc, const char *src, size_t srclen)
 {
 	BrotliDecoderState *strm;
 	BrotliDecoderResult status;
@@ -266,7 +267,7 @@ static int brotli_decompress(wget_decompressor *dc, char *src, size_t srclen)
 	}
 
 	strm = dc->brotli_strm;
-	next_in = (uint8_t *)src;
+	next_in = (const uint8_t *) src;
 	available_in = srclen;
 
 	do {
@@ -314,7 +315,7 @@ static int zstd_init(ZSTD_DStream **strm)
 	return 0;
 }
 
-static int zstd_decompress(wget_decompressor *dc, char *src, size_t srclen)
+static int zstd_decompress(wget_decompressor *dc, const char *src, size_t srclen)
 {
 	ZSTD_DStream *strm;
 	uint8_t dst[10240];
@@ -392,7 +393,7 @@ static int lzip_drain(wget_decompressor *dc)
 	return 0;
 }
 
-static int lzip_decompress(wget_decompressor *dc, char *src, size_t srclen)
+static int lzip_decompress(wget_decompressor *dc, const char *src, size_t srclen)
 {
 	struct LZ_Decoder *strm;
 	size_t available_in;
@@ -408,7 +409,7 @@ static int lzip_decompress(wget_decompressor *dc, char *src, size_t srclen)
 	}
 
 	strm = dc->lzip_strm;
-	next_in = (uint8_t *)src;
+	next_in = (const uint8_t *) src;
 	available_in = srclen;
 
 	do {
@@ -447,7 +448,7 @@ static int bzip2_init(bz_stream *strm)
 	return 0;
 }
 
-static int bzip2_decompress(wget_decompressor *dc, char *src, size_t srclen)
+static int bzip2_decompress(wget_decompressor *dc, const char *src, size_t srclen)
 {
 	bz_stream *strm;
 	char dst[10240];
@@ -462,7 +463,7 @@ static int bzip2_decompress(wget_decompressor *dc, char *src, size_t srclen)
 	}
 
 	strm = &dc->bz_strm;
-	strm->next_in = src;
+	strm->next_in = (char *) src;
 	strm->avail_in = (unsigned int) srclen;
 
 	do {
@@ -489,7 +490,7 @@ static void bzip2_exit(wget_decompressor *dc)
 }
 #endif // WITH_BZIP2
 
-static int identity(wget_decompressor *dc, char *src, size_t srclen)
+static int identity(wget_decompressor *dc, const char *src, size_t srclen)
 {
 	if (dc->sink)
 		dc->sink(dc->context, src, srclen);
@@ -585,7 +586,7 @@ void wget_decompress_close(wget_decompressor *dc)
 	}
 }
 
-int wget_decompress(wget_decompressor *dc, char *src, size_t srclen)
+int wget_decompress(wget_decompressor *dc, const char *src, size_t srclen)
 {
 	if (dc) {
 		int rc = dc->decompress(dc, src, srclen);

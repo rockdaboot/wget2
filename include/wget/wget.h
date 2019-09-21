@@ -1158,7 +1158,7 @@ WGETAPI wget_decompressor * NULLABLE
 WGETAPI void
 	wget_decompress_close(wget_decompressor *dc);
 WGETAPI int
-	wget_decompress(wget_decompressor *dc, char *src, size_t srclen);
+	wget_decompress(wget_decompressor *dc, const char *src, size_t srclen);
 WGETAPI void
 	wget_decompress_set_error_handler(wget_decompressor *dc, wget_decompressor_error_handler *error_handler);
 WGETAPI void * NULLABLE
