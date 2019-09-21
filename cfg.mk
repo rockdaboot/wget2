@@ -80,4 +80,4 @@ sc_gettext_printf:
 exclude_file_name_regexp--sc_gettext_printf = ^(tests|unit-tests|examples|fuzz)/.*\.c|^libwget/test_linking.*\.c$$
 exclude_file_name_regexp--sc_prohibit_alloc = ^(fuzz/.*\.c)$$
 exclude_file_name_regexp--sc_prohibit_free = ^(cfg.mk|fuzz/.*\.c|unit-tests/.*\.c)$$
-exclude_file_name_regexp--sc_prohibit_printf = ^(unit-tests/(test\.c|buffer_printf_perf\.c)|examples/.*\.c|libwget/strlcpy\.c)$$
+exclude_file_name_regexp--sc_prohibit_printf = ^(unit-tests/.*\.c|examples/.*\.c|libwget/strlcpy\.c)$$

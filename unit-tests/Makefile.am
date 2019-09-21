@@ -31,7 +31,8 @@ endif
 WGET_TESTS = \
  test$(EXEEXT) \
  test-parse-html$(EXEEXT) \
- test-cond
+ test-cond$(EXEEXT) \
+ test-decompress$(EXEEXT)
 
 if PLUGIN_SUPPORT
  WGET_TESTS += test-dl$(EXEEXT)
