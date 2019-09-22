@@ -30,6 +30,7 @@ variables:
   BUILD_IMAGES_PROJECT: gnuwget/build-images
   DEBIAN_BUILD: buildenv-debian-stretch
   DEBIAN_TESTING_BUILD: buildenv-debian-testing
+  DEBIAN_STABLEi386_BUILD: buildenv-debian-stable-i386
   DEBIAN_UNSTABLE_BUILD: buildenv-debian-unstable
   DEBIAN_HTTP2_BUILD: buildenv-mhd-http2
   FEDORA_BUILD: buildenv-fedora
@@ -267,6 +268,29 @@ Valgrind/Debian:
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap --skip-po
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
+    - make -j$(nproc)
+    - make check -j$(nproc)
+  tags:
+    - shared
+  except:
+    - tags
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./*.log
+      - fuzz/*.log
+      - unit-tests/*.log
+      - tests/*.log
+
+Valgrind/i386:
+  stage: stage1-testing
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_STABLEi386_BUILD
+  script:
+    - cp -a /usr/local/gnulib .
+    - export CFLAGS=$CFLAGS_DEFAULT
+    - ./bootstrap --skip-po
+    - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests --without-gpgme
     - make -j$(nproc)
     - make check -j$(nproc)
   tags:
