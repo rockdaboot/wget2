@@ -50,7 +50,7 @@
 #include <wget.h>
 #include "private.h"
 
-static ssize_t __read(const void *f, char *dst, size_t len)
+static ssize_t read_fp(const void *f, char *dst, size_t len)
 {
 	FILE *fp = (FILE *)f;
 	ssize_t ret = (ssize_t)fread(dst, 1, len, fp);
@@ -59,15 +59,16 @@ static ssize_t __read(const void *f, char *dst, size_t len)
 	return ret;
 }
 
-static ssize_t __readfd(const void *f, char *dst, size_t len)
+static ssize_t read_fd(const void *f, char *dst, size_t len)
 {
 	int *fd = (int *)f;
 	return read(*fd, dst, len);
 }
 
-static ssize_t _getline_internal(char **buf, size_t *bufsize,
-		       const void *f,
-		       ssize_t (*reader)(const void *f, char *dst, size_t len))
+static ssize_t getline_internal(
+	char **buf, size_t *bufsize,
+	const void *f,
+	ssize_t (*reader)(const void *f, char *dst, size_t len))
 {
 	ssize_t nbytes = 0;
 	size_t *sizep, length = 0;
@@ -167,7 +168,7 @@ static ssize_t _getline_internal(char **buf, size_t *bufsize,
  */
 ssize_t wget_fdgetline(char **buf, size_t *bufsize, int fd)
 {
-	return _getline_internal(buf, bufsize, (void *)&fd, __readfd);
+	return getline_internal(buf, bufsize, (void *)&fd, read_fd);
 }
 
 /**
@@ -197,7 +198,7 @@ ssize_t wget_fdgetline(char **buf, size_t *bufsize, int fd)
  */
 ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
 {
-	return _getline_internal(buf, bufsize, (void *)fp, __read);
+	return getline_internal(buf, bufsize, (void *)fp, read_fp);
 }
 
 /**
