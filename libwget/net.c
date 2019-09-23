@@ -107,7 +107,7 @@
  *   - Family: `AF_UNSPEC` (basically means "I don't care, pick the first one available").
  */
 
-static struct wget_tcp_st _global_tcp = {
+static struct wget_tcp_st global_tcp = {
 	.sockfd = -1,
 	.dns_timeout = -1,
 	.connect_timeout = -1,
@@ -158,7 +158,7 @@ int wget_net_deinit(void)
 	return rc ? -1 : 0;
 }
 
-static int WGET_GCC_CONST _value_to_family(int value)
+static int WGET_GCC_CONST value_to_family(int value)
 {
 	switch (value) {
 	case WGET_NET_FAMILY_IPV4:
@@ -170,7 +170,7 @@ static int WGET_GCC_CONST _value_to_family(int value)
 	}
 }
 
-static int WGET_GCC_CONST _family_to_value(int family)
+static int WGET_GCC_CONST family_to_value(int family)
 {
 	switch (family) {
 	case AF_INET:
@@ -193,7 +193,7 @@ static int WGET_GCC_CONST _family_to_value(int family)
  */
 void wget_tcp_set_dns(wget_tcp *tcp, wget_dns *dns)
 {
-	(tcp ? tcp : &_global_tcp)->dns = dns;
+	(tcp ? tcp : &global_tcp)->dns = dns;
 }
 
 /**
@@ -209,7 +209,7 @@ void wget_tcp_set_dns(wget_tcp *tcp, wget_dns *dns)
 void wget_tcp_set_tcp_fastopen(wget_tcp *tcp, bool tcp_fastopen)
 {
 #if defined TCP_FASTOPEN_OSX || defined TCP_FASTOPEN_LINUX || defined TCP_FASTOPEN_LINUX_411
-	(tcp ? tcp : &_global_tcp)->tcp_fastopen = tcp_fastopen;
+	(tcp ? tcp : &global_tcp)->tcp_fastopen = tcp_fastopen;
 #else
 	(void) tcp; (void) tcp_fastopen;
 #endif
@@ -225,7 +225,7 @@ void wget_tcp_set_tcp_fastopen(wget_tcp *tcp, bool tcp_fastopen)
  */
 bool wget_tcp_get_tcp_fastopen(wget_tcp *tcp)
 {
-	return (tcp ? tcp : &_global_tcp)->tcp_fastopen;
+	return (tcp ? tcp : &global_tcp)->tcp_fastopen;
 }
 
 /**
@@ -238,7 +238,7 @@ bool wget_tcp_get_tcp_fastopen(wget_tcp *tcp)
  */
 void wget_tcp_set_tls_false_start(wget_tcp *tcp, bool false_start)
 {
-	(tcp ? tcp : &_global_tcp)->tls_false_start = false_start;
+	(tcp ? tcp : &global_tcp)->tls_false_start = false_start;
 }
 
 /**
@@ -251,7 +251,7 @@ void wget_tcp_set_tls_false_start(wget_tcp *tcp, bool false_start)
  */
 bool wget_tcp_get_tls_false_start(wget_tcp *tcp)
 {
-	return (tcp ? tcp : &_global_tcp)->tls_false_start;
+	return (tcp ? tcp : &global_tcp)->tls_false_start;
 }
 
 /**
@@ -265,7 +265,7 @@ bool wget_tcp_get_tls_false_start(wget_tcp *tcp)
  */
 void wget_tcp_set_protocol(wget_tcp *tcp, int protocol)
 {
-	(tcp ? tcp : &_global_tcp)->protocol = protocol;
+	(tcp ? tcp : &global_tcp)->protocol = protocol;
 }
 
 /**
@@ -276,7 +276,7 @@ void wget_tcp_set_protocol(wget_tcp *tcp, int protocol)
  */
 int wget_tcp_get_protocol(wget_tcp *tcp)
 {
-	return (tcp ? tcp : &_global_tcp)->protocol;
+	return (tcp ? tcp : &global_tcp)->protocol;
 }
 
 /**
@@ -291,7 +291,7 @@ int wget_tcp_get_protocol(wget_tcp *tcp)
  */
 void wget_tcp_set_preferred_family(wget_tcp *tcp, int family)
 {
-	(tcp ? tcp : &_global_tcp)->preferred_family = _value_to_family(family);
+	(tcp ? tcp : &global_tcp)->preferred_family = value_to_family(family);
 }
 
 /**
@@ -302,7 +302,7 @@ void wget_tcp_set_preferred_family(wget_tcp *tcp, int family)
  */
 int wget_tcp_get_preferred_family(wget_tcp *tcp)
 {
-	return _family_to_value((tcp ? tcp : &_global_tcp)->preferred_family);
+	return family_to_value((tcp ? tcp : &global_tcp)->preferred_family);
 }
 
 /**
@@ -317,7 +317,7 @@ int wget_tcp_get_preferred_family(wget_tcp *tcp)
  */
 void wget_tcp_set_family(wget_tcp *tcp, int family)
 {
-	(tcp ? tcp : &_global_tcp)->family = _value_to_family(family);
+	(tcp ? tcp : &global_tcp)->family = value_to_family(family);
 }
 
 /**
@@ -328,7 +328,7 @@ void wget_tcp_set_family(wget_tcp *tcp, int family)
  */
 int wget_tcp_get_family(wget_tcp *tcp)
 {
-	return _family_to_value((tcp ? tcp : &_global_tcp)->family);
+	return family_to_value((tcp ? tcp : &global_tcp)->family);
 }
 
 /**
@@ -372,7 +372,7 @@ int wget_tcp_get_local_port(wget_tcp *tcp)
  */
 void wget_tcp_set_connect_timeout(wget_tcp *tcp, int timeout)
 {
-	(tcp ? tcp : &_global_tcp)->connect_timeout = timeout;
+	(tcp ? tcp : &global_tcp)->connect_timeout = timeout;
 }
 
 /**
@@ -388,7 +388,7 @@ void wget_tcp_set_connect_timeout(wget_tcp *tcp, int timeout)
  */
 void wget_tcp_set_timeout(wget_tcp *tcp, int timeout)
 {
-	(tcp ? tcp : &_global_tcp)->timeout = timeout;
+	(tcp ? tcp : &global_tcp)->timeout = timeout;
 }
 
 /**
@@ -399,7 +399,7 @@ void wget_tcp_set_timeout(wget_tcp *tcp, int timeout)
  */
 int wget_tcp_get_timeout(wget_tcp *tcp)
 {
-	return (tcp ? tcp : &_global_tcp)->timeout;
+	return (tcp ? tcp : &global_tcp)->timeout;
 }
 
 /**
@@ -416,7 +416,7 @@ int wget_tcp_get_timeout(wget_tcp *tcp)
 void wget_tcp_set_bind_address(wget_tcp *tcp, const char *bind_address)
 {
 	if (!tcp)
-		tcp = &_global_tcp;
+		tcp = &global_tcp;
 
 
 	wget_dns_freeaddrinfo(tcp->dns, &tcp->bind_addrinfo);
@@ -465,7 +465,7 @@ void wget_tcp_set_bind_address(wget_tcp *tcp, const char *bind_address)
  */
 void wget_tcp_set_ssl(wget_tcp *tcp, bool ssl)
 {
-	(tcp ? tcp : &_global_tcp)->ssl = ssl;
+	(tcp ? tcp : &global_tcp)->ssl = ssl;
 }
 
 /**
@@ -476,7 +476,7 @@ void wget_tcp_set_ssl(wget_tcp *tcp, bool ssl)
  */
 bool wget_tcp_get_ssl(wget_tcp *tcp)
 {
-	return (tcp ? tcp : &_global_tcp)->ssl;
+	return (tcp ? tcp : &global_tcp)->ssl;
 }
 
 /**
@@ -503,7 +503,7 @@ const char *wget_tcp_get_ip(wget_tcp *tcp)
 void wget_tcp_set_ssl_hostname(wget_tcp *tcp, const char *hostname)
 {
 	if (!tcp)
-		tcp = &_global_tcp;
+		tcp = &global_tcp;
 
 	xfree(tcp->ssl_hostname);
 	tcp->ssl_hostname = wget_strdup(hostname);
@@ -517,7 +517,7 @@ void wget_tcp_set_ssl_hostname(wget_tcp *tcp, const char *hostname)
  */
 const char *wget_tcp_get_ssl_hostname(wget_tcp *tcp)
 {
-	return (tcp ? tcp : &_global_tcp)->ssl_hostname;
+	return (tcp ? tcp : &global_tcp)->ssl_hostname;
 }
 
 /**
@@ -535,8 +535,8 @@ wget_tcp *wget_tcp_init(void)
 	wget_tcp *tcp = wget_malloc(sizeof(wget_tcp));
 
 	if (tcp) {
-		*tcp = _global_tcp;
-		tcp->ssl_hostname = wget_strdup(_global_tcp.ssl_hostname);
+		*tcp = global_tcp;
+		tcp->ssl_hostname = wget_strdup(global_tcp.ssl_hostname);
 	}
 
 	return tcp;
@@ -559,7 +559,7 @@ void wget_tcp_deinit(wget_tcp **_tcp)
 	wget_tcp *tcp;
 
 	if (!_tcp) {
-		xfree(_global_tcp.ssl_hostname);
+		xfree(global_tcp.ssl_hostname);
 		return;
 	}
 
@@ -594,7 +594,7 @@ static void _set_async(int fd)
 #endif
 }
 
-static void _set_socket_options(int fd)
+static void set_socket_options(int fd)
 {
 	int on = 1;
 
@@ -679,7 +679,7 @@ int wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port)
 		int sockfd;
 		if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) != -1) {
 			_set_async(sockfd);
-			_set_socket_options(sockfd);
+			set_socket_options(sockfd);
 
 			if (tcp->bind_addrinfo) {
 				if (debug) {
