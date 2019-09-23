@@ -23,6 +23,8 @@
 #ifndef LIBWGET_COOKIE_H
 #define LIBWGET_COOKIE_H
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <wget.h>
 
 struct wget_cookie_st {
@@ -34,13 +36,13 @@ struct wget_cookie_st {
 		domain;
 	const char *
 		path;
-	time_t
+	int64_t
 		expires; // time of expiration (format YYYYMMDDHHMMSS)
-	time_t
+	int64_t
 		maxage; // like expires, but precedes it if set
-	time_t
+	int64_t
 		last_access;
-	time_t
+	int64_t
 		creation;
 	unsigned int
 		sort_age; // need for sorting on Cookie: header construction
