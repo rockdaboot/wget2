@@ -2206,7 +2206,7 @@ WGETAPI const char *
 	wget_http_parse_name(const char *s, const char **name) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
 	wget_parse_name_fixed(const char *s, const char **name, size_t *namelen) WGET_GCC_NONNULL_ALL;
-WGETAPI time_t
+WGETAPI int64_t
 	wget_http_parse_full_date(const char *s) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
 	wget_http_parse_link(const char *s, wget_http_link *link) WGET_GCC_NONNULL_ALL;
@@ -2238,7 +2238,7 @@ WGETAPI const char *
 	wget_http_parse_etag(const char *s, const char **etag) WGET_GCC_NONNULL((1));
 
 WGETAPI char *
-	wget_http_print_date(time_t t, char *buf, size_t bufsize) WGET_GCC_NONNULL_ALL;
+	wget_http_print_date(int64_t t, char *buf, size_t bufsize) WGET_GCC_NONNULL_ALL;
 
 WGETAPI void
 	wget_http_add_param(wget_vector **params, wget_http_header_param *param) WGET_GCC_NONNULL_ALL;

@@ -33,6 +33,7 @@
 #include <c-ctype.h>
 #include <time.h>
 #include <errno.h>
+#include <stdint.h>
 
 #include <wget.h>
 #include "private.h"
@@ -818,7 +819,7 @@ month        = "Jan" | "Feb" | "Mar" | "Apr"
 				 | "Sep" | "Oct" | "Nov" | "Dec"
 */
 
-time_t wget_http_parse_full_date(const char *s)
+int64_t wget_http_parse_full_date(const char *s)
 {
 	// we simply can't use strptime() since it requires us to setlocale()
 	// which is not thread-safe !!!
@@ -853,9 +854,7 @@ time_t wget_http_parse_full_date(const char *s)
 	}
 
 	if (*mname) {
-		unsigned it;
-
-		for (it = 0; it < countof(mnames); it++) {
+		for (unsigned it = 0; it < countof(mnames); it++) {
 			if (!wget_strcasecmp_ascii(mname, mnames[it])) {
 				mon = it + 1;
 				break;
@@ -885,10 +884,10 @@ time_t wget_http_parse_full_date(const char *s)
 	days += sum_of_days[mon - 1] + (mon > 2 && leap_year);
 	days += day - 1;
 
-	return (((time_t)days * 24 + hour) * 60 + min) * 60 + sec;
+	return (((int64_t)days * 24 + hour) * 60 + min) * 60 + sec;
 }
 
-char *wget_http_print_date(time_t t, char *buf, size_t bufsize)
+char *wget_http_print_date(int64_t t, char *buf, size_t bufsize)
 {
 	static const char *dnames[7] = {
 		"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
@@ -897,11 +896,22 @@ char *wget_http_print_date(time_t t, char *buf, size_t bufsize)
 		"Jan", "Feb", "Mar","Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 	};
 	struct tm tm;
+	time_t tt;
 
 	if (!bufsize)
 		return buf;
 
-	if (gmtime_r(&t, &tm)) {
+#if __LP64__ == 1
+	tt = (time_t) t; // 64bit time_t
+#else
+	// 32bit time_t
+	if (t > 2147483647)
+		tt = 2147483647;
+	else
+		tt = (time_t) t;
+#endif
+
+	if (gmtime_r(&tt, &tm)) {
 		wget_snprintf(buf, bufsize, "%s, %02d %s %d %02d:%02d:%02d GMT",
 			dnames[tm.tm_wday],tm.tm_mday,mnames[tm.tm_mon],tm.tm_year+1900,
 			tm.tm_hour, tm.tm_min, tm.tm_sec);
