@@ -44,15 +44,15 @@
  * Routines for URL extraction from Sitemap XML data.
  */
 
-struct _sitemap_context {
+struct sitemap_context {
 	wget_vector
 		*sitemap_urls,
 		*urls;
 };
 
-static void _sitemap_get_url(void *context, int flags, const char *dir, const char *attr WGET_GCC_UNUSED, const char *val, size_t len, size_t pos WGET_GCC_UNUSED)
+static void sitemap_get_url(void *context, int flags, const char *dir, const char *attr WGET_GCC_UNUSED, const char *val, size_t len, size_t pos WGET_GCC_UNUSED)
 {
-	struct _sitemap_context *ctx = context;
+	struct sitemap_context *ctx = context;
 
 	if ((flags & XML_FLG_CONTENT) && len) {
 		int type;
@@ -103,9 +103,9 @@ static void _sitemap_get_url(void *context, int flags, const char *dir, const ch
  */
 void wget_sitemap_get_urls_inline(const char *sitemap, wget_vector **urls, wget_vector **sitemap_urls)
 {
-	struct _sitemap_context context = { .urls = NULL, .sitemap_urls = NULL };
+	struct sitemap_context context = { .urls = NULL, .sitemap_urls = NULL };
 
-	wget_xml_parse_buffer(sitemap, _sitemap_get_url, &context, XML_HINT_REMOVE_EMPTY_CONTENT);
+	wget_xml_parse_buffer(sitemap, sitemap_get_url, &context, XML_HINT_REMOVE_EMPTY_CONTENT);
 
 	*urls = context.urls;
 	*sitemap_urls = context.sitemap_urls;
