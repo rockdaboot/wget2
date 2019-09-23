@@ -396,7 +396,7 @@ static int lzip_drain(wget_decompressor *dc)
 static int lzip_decompress(wget_decompressor *dc, const char *src, size_t srclen)
 {
 	struct LZ_Decoder *strm;
-	size_t available_in;
+	int available_in;
 	const uint8_t *next_in;
 	int wbytes;
 
@@ -410,7 +410,7 @@ static int lzip_decompress(wget_decompressor *dc, const char *src, size_t srclen
 
 	strm = dc->lzip_strm;
 	next_in = (const uint8_t *) src;
-	available_in = srclen;
+	available_in = (int) srclen;
 
 	do {
 		wbytes = LZ_decompress_write(strm, next_in, available_in);
