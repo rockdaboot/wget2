@@ -77,7 +77,7 @@ static wget_ocsp_stats_callback
 static void
 	*ocsp_stats_ctx;
 
-static struct _config {
+static struct config {
 	const char
 		*secure_protocol,
 		*ca_directory,
@@ -106,7 +106,7 @@ static struct _config {
 		ocsp_date : 1,
 		ocsp_stapling : 1,
 		ocsp_nonce : 1;
-} _config = {
+} config = {
 	.check_certificate = 1,
 	.check_hostname = 1,
 #ifdef HAVE_GNUTLS_OCSP_H
@@ -123,7 +123,7 @@ static struct _config {
 #endif
 };
 
-struct _session_context {
+struct session_context {
 	const char *
 		hostname;
 	wget_hpkp_stats_result
@@ -135,9 +135,9 @@ struct _session_context {
 };
 
 static gnutls_certificate_credentials_t
-	_credentials;
+	credentials;
 static gnutls_priority_t
-	_priority_cache;
+	priority_cache;
 
 /**
  * \param[in] key An identifier for the config parameter (starting with `WGET_SSL_`) to set
@@ -196,14 +196,14 @@ static gnutls_priority_t
 void wget_ssl_set_config_string(int key, const char *value)
 {
 	switch (key) {
-	case WGET_SSL_SECURE_PROTOCOL: _config.secure_protocol = value; break;
-	case WGET_SSL_CA_DIRECTORY: _config.ca_directory = value; break;
-	case WGET_SSL_CA_FILE: _config.ca_file = value; break;
-	case WGET_SSL_CERT_FILE: _config.cert_file = value; break;
-	case WGET_SSL_KEY_FILE: _config.key_file = value; break;
-	case WGET_SSL_CRL_FILE: _config.crl_file = value; break;
-	case WGET_SSL_OCSP_SERVER: _config.ocsp_server = value; break;
-	case WGET_SSL_ALPN: _config.alpn = value; break;
+	case WGET_SSL_SECURE_PROTOCOL: config.secure_protocol = value; break;
+	case WGET_SSL_CA_DIRECTORY: config.ca_directory = value; break;
+	case WGET_SSL_CA_FILE: config.ca_file = value; break;
+	case WGET_SSL_CERT_FILE: config.cert_file = value; break;
+	case WGET_SSL_KEY_FILE: config.key_file = value; break;
+	case WGET_SSL_CRL_FILE: config.crl_file = value; break;
+	case WGET_SSL_OCSP_SERVER: config.ocsp_server = value; break;
+	case WGET_SSL_ALPN: config.alpn = value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
 	}
 }
@@ -235,9 +235,9 @@ void wget_ssl_set_config_string(int key, const char *value)
 void wget_ssl_set_config_object(int key, void *value)
 {
 	switch (key) {
-	case WGET_SSL_OCSP_CACHE: _config.ocsp_cert_cache = (wget_ocsp_db *)value; break;
-	case WGET_SSL_SESSION_CACHE: _config.tls_session_cache = (wget_tls_session_db *)value; break;
-	case WGET_SSL_HPKP_CACHE: _config.hpkp_cache = (wget_hpkp_db *)value; break;
+	case WGET_SSL_OCSP_CACHE: config.ocsp_cert_cache = (wget_ocsp_db *)value; break;
+	case WGET_SSL_SESSION_CACHE: config.tls_session_cache = (wget_tls_session_db *)value; break;
+	case WGET_SSL_HPKP_CACHE: config.hpkp_cache = (wget_hpkp_db *)value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an object)\n"), key);
 	}
 }
@@ -276,16 +276,16 @@ void wget_ssl_set_config_object(int key, void *value)
 void wget_ssl_set_config_int(int key, int value)
 {
 	switch (key) {
-	case WGET_SSL_CHECK_CERTIFICATE: _config.check_certificate = (char)value; break;
-	case WGET_SSL_CHECK_HOSTNAME: _config.check_hostname = (char)value; break;
-	case WGET_SSL_CA_TYPE: _config.ca_type = (char)value; break;
-	case WGET_SSL_CERT_TYPE: _config.cert_type = (char)value; break;
-	case WGET_SSL_KEY_TYPE: _config.key_type = (char)value; break;
-	case WGET_SSL_PRINT_INFO: _config.print_info = (char)value; break;
-	case WGET_SSL_OCSP: _config.ocsp = (char)value; break;
-	case WGET_SSL_OCSP_DATE: _config.ocsp_date = (char)value; break;
-	case WGET_SSL_OCSP_STAPLING: _config.ocsp_stapling = (char)value; break;
-	case WGET_SSL_OCSP_NONCE: _config.ocsp_nonce = value; break;
+	case WGET_SSL_CHECK_CERTIFICATE: config.check_certificate = (char)value; break;
+	case WGET_SSL_CHECK_HOSTNAME: config.check_hostname = (char)value; break;
+	case WGET_SSL_CA_TYPE: config.ca_type = (char)value; break;
+	case WGET_SSL_CERT_TYPE: config.cert_type = (char)value; break;
+	case WGET_SSL_KEY_TYPE: config.key_type = (char)value; break;
+	case WGET_SSL_PRINT_INFO: config.print_info = (char)value; break;
+	case WGET_SSL_OCSP: config.ocsp = (char)value; break;
+	case WGET_SSL_OCSP_DATE: config.ocsp_date = (char)value; break;
+	case WGET_SSL_OCSP_STAPLING: config.ocsp_stapling = (char)value; break;
+	case WGET_SSL_OCSP_NONCE: config.ocsp_nonce = value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an integer)\n"), key);
 	}
 }
@@ -300,7 +300,7 @@ static const char *safe_ctime(time_t t, char *buf, size_t size)
 	return "[error]";
 }
 
-static void _print_x509_certificate_info(gnutls_session_t session)
+static void print_x509_certificate_info(gnutls_session_t session)
 {
 	const char *name;
 	char dn[128], timebuf[64];
@@ -394,7 +394,7 @@ static void _print_x509_certificate_info(gnutls_session_t session)
 	}
 }
 
-static int _print_info(gnutls_session_t session)
+static int print_info(gnutls_session_t session)
 {
 	const char *tmp;
 	gnutls_credentials_type_t cred;
@@ -467,7 +467,7 @@ static int _print_info(gnutls_session_t session)
 		/* if the certificate list is available, then
 		 * print some information about it.
 		 */
-		_print_x509_certificate_info(session);
+		print_x509_certificate_info(session);
 		break;
 
 	default:
@@ -731,7 +731,7 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 	}
 
 	if (ntime == -1) {
-		if (_config.ocsp_date && now - vtime > OCSP_VALIDITY_SECS) {
+		if (config.ocsp_date && now - vtime > OCSP_VALIDITY_SECS) {
 			debug_printf("*** The OCSP response is old (was issued at: %s) ignoring", safe_ctime(vtime, timebuf, sizeof(timebuf)));
 			goto cleanup;
 		}
@@ -758,7 +758,7 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 			goto cleanup;
 		}
 
-		if (_config.ocsp_nonce && (rnonce.size != nonce->size || memcmp(nonce->data, rnonce.data, nonce->size) != 0)) {
+		if (config.ocsp_nonce && (rnonce.size != nonce->size || memcmp(nonce->data, rnonce.data, nonce->size) != 0)) {
 			debug_printf("nonce in the response doesn't match\n");
 			gnutls_free(rnonce.data);
 			goto cleanup;
@@ -798,13 +798,13 @@ static char *_get_cert_fingerprint(gnutls_x509_crt_t cert, char *fingerprint_hex
 /*
  * Add cert to OCSP cache, being either valid or revoked (valid==0)
  */
-static void _add_cert_to_ocsp_cache(gnutls_x509_crt_t cert, bool valid)
+static void add_cert_to_ocsp_cache(gnutls_x509_crt_t cert, bool valid)
 {
-	if (_config.ocsp_cert_cache) {
+	if (config.ocsp_cert_cache) {
 		char fingerprint_hex[64 * 2 +1];
 
 		_get_cert_fingerprint(cert, fingerprint_hex, sizeof(fingerprint_hex));
-		wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint_hex, time(NULL) + 3600, valid); // 1h valid
+		wget_ocsp_db_add_fingerprint(config.ocsp_cert_cache, fingerprint_hex, time(NULL) + 3600, valid); // 1h valid
 	}
 }
 
@@ -829,7 +829,7 @@ static int cert_verify_ocsp(gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer)
 		return -1;
 	}
 
-	if (send_ocsp_request(_config.ocsp_server, cert, issuer, &resp, &nonce) < 0) {
+	if (send_ocsp_request(config.ocsp_server, cert, issuer, &resp, &nonce) < 0) {
 		debug_printf("Cannot contact OCSP server\n");
 		return -1;
 	}
@@ -842,13 +842,13 @@ static int cert_verify_ocsp(gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer)
 }
 #endif // HAVE_GNUTLS_OCSP_H
 
-static int _cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname, gnutls_session_t session)
+static int cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname, gnutls_session_t session)
 {
 	gnutls_pubkey_t key = NULL;
 	int rc, ret = -1;
-	struct _session_context *ctx = gnutls_session_get_ptr(session);
+	struct session_context *ctx = gnutls_session_get_ptr(session);
 
-	if (!_config.hpkp_cache)
+	if (!config.hpkp_cache)
 		return 0;
 
 	gnutls_pubkey_init(&key);
@@ -867,7 +867,7 @@ static int _cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname, gnutl
 		goto out;
 	}
 
-	rc = wget_hpkp_db_check_pubkey(_config.hpkp_cache, hostname, pubkey.data, pubkey.size);
+	rc = wget_hpkp_db_check_pubkey(config.hpkp_cache, hostname, pubkey.data, pubkey.size);
 	gnutls_free(pubkey.data);
 #else
 	size_t size = 0;
@@ -887,7 +887,7 @@ static int _cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname, gnutl
 		goto out;
 	}
 
-	rc = wget_hpkp_db_check_pubkey(_config.hpkp_cache, hostname, data, size);
+	rc = wget_hpkp_db_check_pubkey(config.hpkp_cache, hostname, data, size);
 	xfree(data);
 #endif
 
@@ -914,7 +914,7 @@ out:
 /* This function will verify the peer's certificate, and check
  * if the hostname matches, as well as the activation, expiration dates.
  */
-static int _verify_certificate_callback(gnutls_session_t session)
+static int verify_certificate_callback(gnutls_session_t session)
 {
 	unsigned int status, deinit_cert = 0, deinit_issuer = 0;
 	const gnutls_datum_t *cert_list = 0;
@@ -922,13 +922,13 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	int ret = -1, err, ocsp_ok = 0, pinning_ok = 0;
 	gnutls_x509_crt_t cert = NULL, issuer = NULL;
 	const char *hostname;
-	const char *tag = _config.check_certificate ? _("ERROR") : _("WARNING");
+	const char *tag = config.check_certificate ? _("ERROR") : _("WARNING");
 #ifdef HAVE_GNUTLS_OCSP_H
 	unsigned nvalid = 0, nrevoked = 0, nignored = 0;
 #endif
 
 	// read hostname
-	struct _session_context *ctx = gnutls_session_get_ptr(session);
+	struct session_context *ctx = gnutls_session_get_ptr(session);
 	hostname = ctx->hostname;
 
 	/* This verification function uses the trusted CAs in the credentials
@@ -950,13 +950,13 @@ static int _verify_certificate_callback(gnutls_session_t session)
 
 #ifdef HAVE_GNUTLS_OCSP_H
 	if (status & GNUTLS_CERT_REVOKED) {
-		if (_config.ocsp_cert_cache)
-			wget_ocsp_db_add_host(_config.ocsp_cert_cache, hostname, 0); // remove entry from cache
+		if (config.ocsp_cert_cache)
+			wget_ocsp_db_add_host(config.ocsp_cert_cache, hostname, 0); // remove entry from cache
 		if (ctx->ocsp_stapling) {
 			if (gnutls_x509_crt_init(&cert) == GNUTLS_E_SUCCESS) {
 				if ((cert_list = gnutls_certificate_get_peers(session, &cert_list_size))) {
 					if (gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER) == GNUTLS_E_SUCCESS) {
-						_add_cert_to_ocsp_cache(cert, false);
+						add_cert_to_ocsp_cache(cert, false);
 					}
 				}
 				gnutls_x509_crt_deinit(cert);
@@ -1041,7 +1041,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		goto out;
 	}
 
-	if (!_config.check_hostname || (_config.check_hostname && hostname && gnutls_x509_crt_check_hostname(cert, hostname)))
+	if (!config.check_hostname || (config.check_hostname && hostname && gnutls_x509_crt_check_hostname(cert, hostname)))
 		ret = 0;
 	else
 		goto out;
@@ -1049,20 +1049,20 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	// At this point, the cert chain has been found valid regarding the locally available CA certificates and CRLs.
 	// Now, we are going to check the revocation status via OCSP
 #ifdef HAVE_GNUTLS_OCSP_H
-	if (_config.ocsp_stapling) {
+	if (config.ocsp_stapling) {
 		if (!ctx->valid && ctx->ocsp_stapling) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
 			if (gnutls_ocsp_status_request_is_checked(session, 0)) {
 				debug_printf("Server certificate is valid regarding OCSP stapling\n");
 //				_get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
-				_add_cert_to_ocsp_cache(cert, true);
+				add_cert_to_ocsp_cache(cert, true);
 				nvalid = 1;
 			}
 #if GNUTLS_VERSION_NUMBER >= 0x030400
 			else if (gnutls_ocsp_status_request_is_checked(session, GNUTLS_OCSP_SR_IS_AVAIL))
 				error_printf(_("WARNING: The certificate's (stapled) OCSP status is invalid\n"));
 #endif
-			else if (!_config.ocsp)
+			else if (!config.ocsp)
 				error_printf(_("WARNING: The certificate's (stapled) OCSP status has not been sent\n"));
 #endif
 		} else if (ctx->valid)
@@ -1079,19 +1079,19 @@ static int _verify_certificate_callback(gnutls_session_t session)
 			continue;
 		}
 
-		if (_cert_verify_hpkp(cert, hostname, session) == 0)
+		if (cert_verify_hpkp(cert, hostname, session) == 0)
 			pinning_ok = 1;
 
-		_cert_verify_hpkp(cert, hostname, session);
+		cert_verify_hpkp(cert, hostname, session);
 
 #ifdef HAVE_GNUTLS_OCSP_H
-		if (_config.ocsp && it > nvalid) {
+		if (config.ocsp && it > nvalid) {
 			char fingerprint[64 * 2 +1];
 			int revoked;
 
 			_get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
 
-			if (wget_ocsp_fingerprint_in_cache(_config.ocsp_cert_cache, fingerprint, &revoked)) {
+			if (wget_ocsp_fingerprint_in_cache(config.ocsp_cert_cache, fingerprint, &revoked)) {
 				// found cert's fingerprint in cache
 				if (revoked) {
 					debug_printf("Certificate[%u] of '%s' has been revoked (cached)\n", it, hostname);
@@ -1107,7 +1107,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 				gnutls_x509_crt_deinit(issuer);
 				deinit_issuer = 0;
 			}
-			if ((err = gnutls_certificate_get_issuer(_credentials, cert, &issuer, 0)) != GNUTLS_E_SUCCESS && it < cert_list_size - 1) {
+			if ((err = gnutls_certificate_get_issuer(credentials, cert, &issuer, 0)) != GNUTLS_E_SUCCESS && it < cert_list_size - 1) {
 				gnutls_x509_crt_init(&issuer);
 				deinit_issuer = 1;
 				if ((err = gnutls_x509_crt_import(issuer, &cert_list[it + 1], GNUTLS_X509_FMT_DER))  != GNUTLS_E_SUCCESS) {
@@ -1124,11 +1124,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 
 			if (ocsp_ok == 1) {
 				debug_printf("Certificate[%u] of '%s' is valid (via OCSP)\n", it, hostname);
-				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, true); // 1h valid
+				wget_ocsp_db_add_fingerprint(config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, true); // 1h valid
 				nvalid++;
 			} else if (ocsp_ok == 0) {
 				debug_printf("%s: Certificate[%u] of '%s' has been revoked (via OCSP)\n", tag, it, hostname);
-				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, false);  // cert has been revoked
+				wget_ocsp_db_add_fingerprint(config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, false);  // cert has been revoked
 				nrevoked++;
 			} else {
 				debug_printf("WARNING: OCSP response not available or ignored\n");
@@ -1139,7 +1139,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	}
 
 #ifdef HAVE_GNUTLS_OCSP_H
-	if (_config.ocsp && ocsp_stats_callback) {
+	if (config.ocsp && ocsp_stats_callback) {
 		wget_ocsp_stats_data stats;
 		stats.hostname = hostname;
 		stats.nvalid = nvalid;
@@ -1150,11 +1150,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		ocsp_stats_callback(&stats, ocsp_stats_ctx);
 	}
 
-	if (_config.ocsp_stapling || _config.ocsp) {
+	if (config.ocsp_stapling || config.ocsp) {
 		if (nvalid == cert_list_size) {
-			wget_ocsp_db_add_host(_config.ocsp_cert_cache, hostname, time(NULL) + 3600); // 1h valid
+			wget_ocsp_db_add_host(config.ocsp_cert_cache, hostname, time(NULL) + 3600); // 1h valid
 		} else if (nrevoked) {
-			wget_ocsp_db_add_host(_config.ocsp_cert_cache, hostname, 0); // remove entry from cache
+			wget_ocsp_db_add_host(config.ocsp_cert_cache, hostname, 0); // remove entry from cache
 			ret = -1;
 		}
 	}
@@ -1173,25 +1173,25 @@ out:
 	if (deinit_issuer)
 		gnutls_x509_crt_deinit(issuer);
 
-	return _config.check_certificate ? ret : 0;
+	return config.check_certificate ? ret : 0;
 }
 
-static int _init;
-static wget_thread_mutex _mutex;
+static int init;
+static wget_thread_mutex mutex;
 
-static void __attribute__ ((constructor)) _wget_tls_init(void)
+static void __attribute__ ((constructor)) tls_init(void)
 {
-	if (!_mutex)
-		wget_thread_mutex_init(&_mutex);
+	if (!mutex)
+		wget_thread_mutex_init(&mutex);
 }
 
-static void __attribute__ ((destructor)) _wget_tls_exit(void)
+static void __attribute__ ((destructor)) tls_exit(void)
 {
-	if (_mutex)
-		wget_thread_mutex_destroy(&_mutex);
+	if (mutex)
+		wget_thread_mutex_destroy(&mutex);
 }
 
-static int _key_type(int type)
+static int key_type(int type)
 {
 	if (type == WGET_SSL_X509_FMT_DER)
 		return GNUTLS_X509_FMT_DER;
@@ -1201,32 +1201,32 @@ static int _key_type(int type)
 
 // ssl_init() is thread safe
 
-static void _set_credentials(gnutls_certificate_credentials_t *credentials)
+static void set_credentials(gnutls_certificate_credentials_t creds)
 {
-	if (_config.cert_file && !_config.key_file) {
+	if (config.cert_file && !config.key_file) {
 		// Use the private key from the cert file unless otherwise specified.
-		_config.key_file = _config.cert_file;
-		_config.key_type = _config.cert_type;
+		config.key_file = config.cert_file;
+		config.key_type = config.cert_type;
 	}
-	else if (!_config.cert_file && _config.key_file) {
+	else if (!config.cert_file && config.key_file) {
 		// Use the cert from the private key file unless otherwise specified.
-		_config.cert_file = _config.key_file;
-		_config.cert_type = _config.key_type;
+		config.cert_file = config.key_file;
+		config.cert_type = config.key_type;
 	}
 
-	if (_config.cert_file && _config.key_file) {
-		if (_config.key_type != _config.cert_type) {
+	if (config.cert_file && config.key_file) {
+		if (config.key_type != config.cert_type) {
 			// GnuTLS can't handle this
 			error_printf(_("GnuTLS requires the key and the cert to be of the same type.\n"));
 		}
 
-		if (gnutls_certificate_set_x509_key_file(*credentials, _config.cert_file, _config.key_file, _key_type(_config.key_type)) != GNUTLS_E_SUCCESS)
+		if (gnutls_certificate_set_x509_key_file(creds, config.cert_file, config.key_file, key_type(config.key_type)) != GNUTLS_E_SUCCESS)
 			error_printf(_("No certificates or keys were found\n"));
 	}
 
-	if (_config.ca_file) {
-		if (gnutls_certificate_set_x509_trust_file(*credentials, _config.ca_file, _key_type(_config.ca_type)) <= 0)
-			error_printf(_("No CAs were found in '%s'\n"), _config.ca_file);
+	if (config.ca_file) {
+		if (gnutls_certificate_set_x509_trust_file(creds, config.ca_file, key_type(config.ca_type)) <= 0)
+			error_printf(_("No CAs were found in '%s'\n"), config.ca_file);
 	}
 }
 
@@ -1252,25 +1252,25 @@ static void _set_credentials(gnutls_certificate_credentials_t *credentials)
  */
 void wget_ssl_init(void)
 {
-	_wget_tls_init();
+	tls_init();
 
-	wget_thread_mutex_lock(_mutex);
+	wget_thread_mutex_lock(mutex);
 
-	if (!_init) {
+	if (!init) {
 		int rc, ncerts = -1;
 
 		debug_printf("GnuTLS init\n");
 		gnutls_global_init();
-		gnutls_certificate_allocate_credentials(&_credentials);
-		gnutls_certificate_set_verify_function(_credentials, _verify_certificate_callback);
+		gnutls_certificate_allocate_credentials(&credentials);
+		gnutls_certificate_set_verify_function(credentials, verify_certificate_callback);
 
-		if (_config.ca_directory && *_config.ca_directory && _config.check_certificate) {
+		if (config.ca_directory && *config.ca_directory && config.check_certificate) {
 #if GNUTLS_VERSION_NUMBER >= 0x03000d
-			if (!strcmp(_config.ca_directory, "system"))
-				ncerts = gnutls_certificate_set_x509_system_trust(_credentials);
+			if (!strcmp(config.ca_directory, "system"))
+				ncerts = gnutls_certificate_set_x509_system_trust(credentials);
 #else
-			if (!strcmp(_config.ca_directory, "system"))
-				_config.ca_directory = "/etc/ssl/certs";
+			if (!strcmp(config.ca_directory, "system"))
+				config.ca_directory = "/etc/ssl/certs";
 #endif
 
 			if (ncerts < 0) {
@@ -1278,9 +1278,9 @@ void wget_ssl_init(void)
 
 				ncerts = 0;
 
-				if ((dir = opendir(_config.ca_directory))) {
+				if ((dir = opendir(config.ca_directory))) {
 					struct dirent *dp;
-					size_t dirlen = strlen(_config.ca_directory);
+					size_t dirlen = strlen(config.ca_directory);
 
 					while ((dp = readdir(dir))) {
 						size_t len = strlen(dp->d_name);
@@ -1289,10 +1289,10 @@ void wget_ssl_init(void)
 							struct stat st;
 							char fname[dirlen + 1 + len + 1];
 
-							wget_snprintf(fname, sizeof(fname), "%s/%s", _config.ca_directory, dp->d_name);
+							wget_snprintf(fname, sizeof(fname), "%s/%s", config.ca_directory, dp->d_name);
 							if (stat(fname, &st) == 0 && S_ISREG(st.st_mode)) {
 								debug_printf("GnuTLS loading %s\n", fname);
-								if ((rc = gnutls_certificate_set_x509_trust_file(_credentials, fname, GNUTLS_X509_FMT_PEM)) <= 0)
+								if ((rc = gnutls_certificate_set_x509_trust_file(credentials, fname, GNUTLS_X509_FMT_PEM)) <= 0)
 									debug_printf("Failed to load cert '%s': (%d)\n", fname, rc);
 								else
 									ncerts += rc;
@@ -1302,29 +1302,29 @@ void wget_ssl_init(void)
 
 					closedir(dir);
 				} else {
-					error_printf(_("Failed to opendir %s\n"), _config.ca_directory);
+					error_printf(_("Failed to opendir %s\n"), config.ca_directory);
 				}
 			}
 		}
 
-		if (_config.crl_file) {
-			if ((rc = gnutls_certificate_set_x509_crl_file(_credentials, _config.crl_file, GNUTLS_X509_FMT_PEM)) <= 0)
-				error_printf(_("Failed to load CRL '%s': (%d)\n"), _config.crl_file, rc);
+		if (config.crl_file) {
+			if ((rc = gnutls_certificate_set_x509_crl_file(credentials, config.crl_file, GNUTLS_X509_FMT_PEM)) <= 0)
+				error_printf(_("Failed to load CRL '%s': (%d)\n"), config.crl_file, rc);
 		}
 
-		_set_credentials(&_credentials);
+		set_credentials(credentials);
 
 		debug_printf("Certificates loaded: %d\n", ncerts);
 
-		if (_config.secure_protocol) {
+		if (config.secure_protocol) {
 			const char *priorities = NULL;
 
-			if (!wget_strcasecmp_ascii(_config.secure_protocol, "PFS")) {
+			if (!wget_strcasecmp_ascii(config.secure_protocol, "PFS")) {
 				priorities = "PFS:-VERS-SSL3.0";
 				// -RSA to force DHE/ECDHE key exchanges to have Perfect Forward Secrecy (PFS))
-				if ((rc = gnutls_priority_init(&_priority_cache, priorities, NULL)) != GNUTLS_E_SUCCESS) {
+				if ((rc = gnutls_priority_init(&priority_cache, priorities, NULL)) != GNUTLS_E_SUCCESS) {
 					priorities = "NORMAL:-RSA:-VERS-SSL3.0";
-					rc = gnutls_priority_init(&_priority_cache, priorities, NULL);
+					rc = gnutls_priority_init(&priority_cache, priorities, NULL);
 				}
 			} else {
 #if GNUTLS_VERSION_NUMBER >= 0x030603
@@ -1332,38 +1332,38 @@ void wget_ssl_init(void)
 #else
 #define TLS13_PRIO ""
 #endif
-				if (!wget_strncasecmp_ascii(_config.secure_protocol, "SSL", 3))
+				if (!wget_strncasecmp_ascii(config.secure_protocol, "SSL", 3))
 					priorities = "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0";
-				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1"))
+				else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1"))
 					priorities = "NORMAL:-VERS-SSL3.0" TLS13_PRIO;
-				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1_1"))
+				else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1_1"))
 					priorities = "NORMAL:-VERS-SSL3.0:-VERS-TLS1.0" TLS13_PRIO;
-				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1_2"))
+				else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1_2"))
 					priorities = "NORMAL:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1" TLS13_PRIO;
-				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1_3"))
+				else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1_3"))
 					priorities = "NORMAL:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-VERS-TLS1.2" TLS13_PRIO;
-				else if (!wget_strcasecmp_ascii(_config.secure_protocol, "auto")) {
+				else if (!wget_strcasecmp_ascii(config.secure_protocol, "auto")) {
 					/* use system default, priorities = NULL */
-				} else if (*_config.secure_protocol)
-					priorities = _config.secure_protocol;
+				} else if (*config.secure_protocol)
+					priorities = config.secure_protocol;
 
-				rc = gnutls_priority_init(&_priority_cache, priorities, NULL);
+				rc = gnutls_priority_init(&priority_cache, priorities, NULL);
 			}
 
 			if (rc != GNUTLS_E_SUCCESS)
 				error_printf(_("GnuTLS: Unsupported priority string '%s': %s\n"), priorities ? priorities : "(null)", gnutls_strerror(rc));
 		} else {
 			// use GnuTLS defaults, which might hold insecure ciphers
-			if ((rc = gnutls_priority_init(&_priority_cache, NULL, NULL)))
+			if ((rc = gnutls_priority_init(&priority_cache, NULL, NULL)))
 				error_printf(_("GnuTLS: Unsupported default priority 'NULL': %s\n"), gnutls_strerror(rc));
 		}
 
-		_init++;
+		init++;
 
 		debug_printf("GnuTLS init done\n");
 	}
 
-	wget_thread_mutex_unlock(_mutex);
+	wget_thread_mutex_unlock(mutex);
 }
 
 /**
@@ -1380,20 +1380,20 @@ void wget_ssl_init(void)
  */
 void wget_ssl_deinit(void)
 {
-	wget_thread_mutex_lock(_mutex);
+	wget_thread_mutex_lock(mutex);
 
-	if (_init == 1) {
-		gnutls_certificate_free_credentials(_credentials);
-		gnutls_priority_deinit(_priority_cache);
+	if (init == 1) {
+		gnutls_certificate_free_credentials(credentials);
+		gnutls_priority_deinit(priority_cache);
 		gnutls_global_deinit();
 	}
 
-	if (_init > 0) _init--;
+	if (init > 0) init--;
 
-	wget_thread_mutex_unlock(_mutex);
+	wget_thread_mutex_unlock(mutex);
 }
 
-static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
+static int do_handshake(gnutls_session_t session, int sockfd, int timeout)
 {
 	int ret;
 
@@ -1468,7 +1468,7 @@ static int _do_handshake(gnutls_session_t session, int sockfd, int timeout)
 #include <sys/uio.h> // writev
 #include <netdb.h>
 #include <errno.h>
-static ssize_t _ssl_writev(gnutls_transport_ptr_t *p, const giovec_t *iov, int iovcnt)
+static ssize_t ssl_writev(gnutls_transport_ptr_t *p, const giovec_t *iov, int iovcnt)
 {
 	wget_tcp *tcp = (wget_tcp *) p;
 	ssize_t ret;
@@ -1519,13 +1519,13 @@ static ssize_t _ssl_writev(gnutls_transport_ptr_t *p, const giovec_t *iov, int i
 #endif
 
 #ifdef _WIN32
-static ssize_t _win32_send(gnutls_transport_ptr_t p, const void *buf, size_t size)
+static ssize_t win32_send(gnutls_transport_ptr_t p, const void *buf, size_t size)
 {
 	int sockfd = (int) (ptrdiff_t) p;
 
 	return send(sockfd, buf, size, 0);
 }
-static ssize_t _win32_recv(gnutls_transport_ptr_t p, void *buf, size_t size)
+static ssize_t win32_recv(gnutls_transport_ptr_t p, void *buf, size_t size)
 {
 	int sockfd = (int) (ptrdiff_t) p;
 
@@ -1568,7 +1568,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	if (!tcp)
 		return WGET_E_INVALID;
 
-	if (!_init)
+	if (!init)
 		wget_ssl_init();
 
 	hostname = tcp->ssl_hostname;
@@ -1605,18 +1605,18 @@ int wget_ssl_open(wget_tcp *tcp)
 	gnutls_init(&session, flags);
 #endif
 
-	if ((rc = gnutls_priority_set(session, _priority_cache)) != GNUTLS_E_SUCCESS)
+	if ((rc = gnutls_priority_set(session, priority_cache)) != GNUTLS_E_SUCCESS)
 		error_printf(_("GnuTLS: Failed to set priorities: %s\n"), gnutls_strerror(rc));
 
-	if (!wget_strcasecmp_ascii(_config.secure_protocol, "auto"))
+	if (!wget_strcasecmp_ascii(config.secure_protocol, "auto"))
 		gnutls_session_enable_compatibility_mode(session);
 
 	// RFC 6066 SNI Server Name Indication
 	if (hostname)
 		gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
-	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, _credentials);
+	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, credentials);
 
-	struct _session_context *ctx = wget_calloc(1, sizeof(struct _session_context));
+	struct session_context *ctx = wget_calloc(1, sizeof(struct session_context));
 	ctx->hostname = wget_strdup(hostname);
 
 #ifdef HAVE_GNUTLS_OCSP_H
@@ -1625,7 +1625,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	// In the unlikely case that the server's certificate chain changed right now,
 	// we fallback to OCSP responder request later.
 	if (hostname) {
-		if (!(ctx->valid = wget_ocsp_hostname_is_valid(_config.ocsp_host_cache, hostname))) {
+		if (!(ctx->valid = wget_ocsp_hostname_is_valid(config.ocsp_host_cache, hostname))) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
 			if ((rc = gnutls_ocsp_status_request_enable_client(session, NULL, 0, NULL)) == GNUTLS_E_SUCCESS)
 				ctx->ocsp_stapling = 1;
@@ -1635,23 +1635,23 @@ int wget_ssl_open(wget_tcp *tcp)
 		}
 	}
 #else
-	if (_config.ocsp || _config.ocsp_stapling)
+	if (config.ocsp || config.ocsp_stapling)
 		error_printf(_("WARNING: OCSP is not available in this version of GnuTLS.\n"));
 #endif
 
 #if GNUTLS_VERSION_NUMBER >= 0x030200
-	if (_config.alpn) {
+	if (config.alpn) {
 		unsigned nprot;
 		const char *e, *s;
 
-		for (nprot = 0, s = e = _config.alpn; *e; s = e + 1)
+		for (nprot = 0, s = e = config.alpn; *e; s = e + 1)
 			if ((e = strchrnul(s, ',')) != s)
 				nprot++;
 
 		if (nprot) {
 			gnutls_datum_t data[16];
 
-			for (nprot = 0, s = e = _config.alpn; *e && nprot < countof(data); s = e + 1) {
+			for (nprot = 0, s = e = config.alpn; *e && nprot < countof(data); s = e + 1) {
 				if ((e = strchrnul(s, ',')) != s) {
 					data[nprot].data = (unsigned char *) s;
 					data[nprot].size = (unsigned) (e - s);
@@ -1675,14 +1675,14 @@ int wget_ssl_open(wget_tcp *tcp)
 			stats.tfo = (char)rc;
 
 		// prepare for TCP FASTOPEN... sendmsg() instead of connect/write on first write
-		gnutls_transport_set_vec_push_function(session, (ssize_t (*)(gnutls_transport_ptr_t, const giovec_t *iov, int iovcnt)) _ssl_writev);
+		gnutls_transport_set_vec_push_function(session, (ssize_t (*)(gnutls_transport_ptr_t, const giovec_t *iov, int iovcnt)) ssl_writev);
 		gnutls_transport_set_ptr(session, tcp);
 	} else {
 #endif
 
 #ifdef _WIN32
-	gnutls_transport_set_push_function(session, (gnutls_push_func) _win32_send);
-	gnutls_transport_set_pull_function(session, (gnutls_pull_func) _win32_recv);
+	gnutls_transport_set_push_function(session, (gnutls_push_func) win32_send);
+	gnutls_transport_set_pull_function(session, (gnutls_pull_func) win32_recv);
 #endif
 
 #ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
@@ -1700,7 +1700,7 @@ int wget_ssl_open(wget_tcp *tcp)
 		void *data;
 		size_t size;
 
-		if (wget_tls_session_get(_config.tls_session_cache, ctx->hostname, &data, &size) == 0) {
+		if (wget_tls_session_get(config.tls_session_cache, ctx->hostname, &data, &size) == 0) {
 			debug_printf("found cached session data for %s\n", ctx->hostname);
 			if ((rc = gnutls_session_set_data(session, data, size)) != GNUTLS_E_SUCCESS)
 				error_printf(_("GnuTLS: Failed to set session data: %s\n"), gnutls_strerror(rc));
@@ -1711,7 +1711,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	if (tls_stats_callback)
 		before_millisecs = wget_get_timemillis();
 
-	ret = _do_handshake(session, sockfd, connect_timeout);
+	ret = do_handshake(session, sockfd, connect_timeout);
 
 	if (tls_stats_callback) {
 		long long after_millisecs = wget_get_timemillis();
@@ -1723,11 +1723,11 @@ int wget_ssl_open(wget_tcp *tcp)
 	}
 
 #if GNUTLS_VERSION_NUMBER >= 0x030200
-	if (_config.alpn) {
+	if (config.alpn) {
 		gnutls_datum_t protocol;
 		if ((rc = gnutls_alpn_get_selected_protocol(session, &protocol))) {
 			debug_printf("GnuTLS: Get ALPN: %s\n", gnutls_strerror(rc));
-			if (!strstr(_config.alpn,"http/1.1"))
+			if (!strstr(config.alpn,"http/1.1"))
 				ret = WGET_E_CONNECT;
 		} else {
 			debug_printf("ALPN: Server accepted protocol '%.*s'\n", (int) protocol.size, protocol.data);
@@ -1743,8 +1743,8 @@ int wget_ssl_open(wget_tcp *tcp)
 	}
 #endif
 
-	if (_config.print_info)
-		_print_info(session);
+	if (config.print_info)
+		print_info(session);
 
 	if (ret == WGET_E_SUCCESS) {
 		int resumed = gnutls_session_is_resumed(session);
@@ -1757,14 +1757,14 @@ int wget_ssl_open(wget_tcp *tcp)
 
 		debug_printf("Handshake completed%s\n", resumed ? " (resumed session)" : "");
 
-		if (!resumed && _config.tls_session_cache) {
+		if (!resumed && config.tls_session_cache) {
 			if (tcp->tls_false_start) {
 				ctx->delayed_session_data = 1;
 			} else {
 				gnutls_datum_t session_data;
 
 				if ((rc = gnutls_session_get_data2(session, &session_data)) == GNUTLS_E_SUCCESS) {
-					wget_tls_session_db_add(_config.tls_session_cache,
+					wget_tls_session_db_add(config.tls_session_cache,
 						wget_tls_session_new(ctx->hostname, 18 * 3600, session_data.data, session_data.size)); // 18h valid
 					gnutls_free(session_data.data);
 				} else
@@ -1805,7 +1805,7 @@ void wget_ssl_close(void **session)
 {
 	if (session && *session) {
 		gnutls_session_t s = *session;
-		struct _session_context *ctx = gnutls_session_get_ptr(s);
+		struct session_context *ctx = gnutls_session_get_ptr(s);
 		int ret;
 
 		do
@@ -1867,7 +1867,7 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 
 		if (nbytes == GNUTLS_E_REHANDSHAKE) {
 			debug_printf("*** REHANDSHAKE while reading\n");
-			if ((nbytes = _do_handshake(session, sockfd, timeout)) == 0)
+			if ((nbytes = do_handshake(session, sockfd, timeout)) == 0)
 				continue; /* restart reading */
 		}
 
@@ -1890,14 +1890,14 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 		nbytes = gnutls_record_recv(session, buf, count);
 
 		// If False Start + Session Resumption are enabled, we get the session data after the first read()
-		struct _session_context *ctx = gnutls_session_get_ptr(session);
+		struct session_context *ctx = gnutls_session_get_ptr(session);
 		if (ctx && ctx->delayed_session_data) {
 			gnutls_datum_t session_data;
 
 			if ((rc = gnutls_session_get_data2(session, &session_data)) == GNUTLS_E_SUCCESS) {
 				debug_printf("Got delayed session data\n");
 				ctx->delayed_session_data = 0;
-				wget_tls_session_db_add(_config.tls_session_cache,
+				wget_tls_session_db_add(config.tls_session_cache,
 					wget_tls_session_new(ctx->hostname, 18 * 3600, session_data.data, session_data.size)); // 18h valid
 				gnutls_free(session_data.data);
 			} else
@@ -1906,7 +1906,7 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 
 		if (nbytes == GNUTLS_E_REHANDSHAKE) {
 			debug_printf("*** REHANDSHAKE while reading\n");
-			if ((nbytes = _do_handshake(session, sockfd, timeout)) == 0)
+			if ((nbytes = do_handshake(session, sockfd, timeout)) == 0)
 				nbytes = GNUTLS_E_AGAIN; /* restart reading */
 		}
 		if (nbytes >= 0 || nbytes != GNUTLS_E_AGAIN)
@@ -1958,7 +1958,7 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 
 		if (nbytes == GNUTLS_E_REHANDSHAKE) {
 			debug_printf("*** REHANDSHAKE while writing\n");
-			if ((nbytes = _do_handshake(session, sockfd, timeout)) == 0)
+			if ((nbytes = do_handshake(session, sockfd, timeout)) == 0)
 				continue; /* restart writing */
 		}
 		if (nbytes == GNUTLS_E_AGAIN)
