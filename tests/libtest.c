@@ -1696,8 +1696,12 @@ void wget_test(int first_key, ...)
 
 						size_t content_length = expected_files[it].content_length ? expected_files[it].content_length : strlen(expected_content);
 
-						if (content_length != (size_t) nbytes || memcmp(expected_content, content, nbytes) != 0)
-							wget_error_printf_exit("Unexpected content in %s [%s]\n", fname, options);
+						if (content_length != (size_t) nbytes || memcmp(expected_content, content, nbytes) != 0) {
+							wget_error_printf("Unexpected content in %s [%s]\n", fname, options);
+							wget_error_printf("  Expected %zu bytes:\n%s\n", content_length, expected_content);
+							wget_error_printf("  Got %zu bytes:\n%s\n", content_length, content);
+							exit(EXIT_FAILURE);
+						}
 
 						if (expected_content_alloc)
 							wget_xfree(expected_content);
