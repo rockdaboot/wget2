@@ -60,7 +60,7 @@ typedef struct {
 		mime_type;
 	bool
 		redirect : 1; //!< Was this a redirection ?
-	time_t
+	int64_t
 		last_modified;
 } site_stats_t;
 

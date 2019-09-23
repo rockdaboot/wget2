@@ -151,7 +151,7 @@ void wget_hpkp_set_host(wget_hpkp *hpkp, const char *host)
  * Sets the maximum time the HPKP entry is valid.
  * Corresponds to `max-age` directive in `Public-Key-Pins` HTTP response header.
  */
-void wget_hpkp_set_maxage(wget_hpkp *hpkp, time_t maxage)
+void wget_hpkp_set_maxage(wget_hpkp *hpkp, int64_t maxage)
 {
 	int64_t now;
 
@@ -251,7 +251,7 @@ const char * wget_hpkp_get_host(wget_hpkp *hpkp)
  *
  * Gets the maximum time this entry is valid for, as set by \ref wget_hpkp_set_maxage "wget_hpkp_set_maxage()"
  */
-time_t wget_hpkp_get_maxage(wget_hpkp *hpkp)
+int64_t wget_hpkp_get_maxage(wget_hpkp *hpkp)
 {
 	return hpkp->maxage;
 }

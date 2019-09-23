@@ -1307,7 +1307,7 @@ static void test_hsts(void)
 		{ "www.example.com", 8080, 0 }, // wrong port
 	};
 	wget_hsts_db *hsts_db = wget_hsts_db_init(NULL, NULL);
-	time_t maxage;
+	int64_t maxage;
 	bool include_subdomains;
 	int n;
 
@@ -1382,7 +1382,7 @@ static void test_hpkp(void)
 		{ "www.example3.com", 443, "max-age=14400" }, // this removes the previous entry, due to no PINs
 	};
 	struct hpkp_db_params {
-		time_t
+		int64_t
 			maxage;
 		bool
 			include_subdomains;

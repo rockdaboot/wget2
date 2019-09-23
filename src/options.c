@@ -45,8 +45,8 @@
 #include <glob.h>
 #include <fcntl.h>
 #include <time.h>
+#include <limits.h> // LLONG_MAX, INT_MAX
 #include <sys/stat.h>
-//#include <netdb.h>
 #include <spawn.h>
 #include "getpass.h"
 

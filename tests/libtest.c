@@ -370,7 +370,7 @@ static int _answer_to_connection(
 	struct MHD_Response *response = NULL;
 	struct query_string query;
 	int ret = 0;
-	time_t modified;
+	int64_t modified;
 	const char *modified_val, *to_bytes_string = "";
 	ssize_t from_bytes, to_bytes;
 	size_t body_len;

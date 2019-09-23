@@ -150,8 +150,8 @@ static unsigned int WGET_GCC_PURE
 static int
 	read_xattr_metadata(const char *name, char *value, size_t size, int fd),
 	write_xattr_metadata(const char *name, const char *value, int fd),
-	write_xattr_last_modified(time_t last_modified, int fd),
-	set_file_metadata(wget_iri *origin_url, wget_iri *referrer_url, const char *mime_type, const char *charset, time_t last_modified, FILE *fp),
+	write_xattr_last_modified(int64_t last_modified, int fd),
+	set_file_metadata(wget_iri *origin_url, wget_iri *referrer_url, const char *mime_type, const char *charset, int64_t last_modified, FILE *fp),
 	http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloader);
 wget_http_response
 	*http_receive_response(wget_http_connection *conn);
@@ -1830,7 +1830,7 @@ static int process_response_header(wget_http_response *resp)
 
 static bool check_status_code_list(wget_vector *list, uint16_t status);
 static bool check_mime_list(wget_vector *list, const char *mime);
-static time_t WGET_GCC_NONNULL_ALL get_file_lmtime(const char *fname);
+static int64_t WGET_GCC_NONNULL_ALL get_file_lmtime(const char *fname);
 
 static void process_head_response(wget_http_response *resp)
 {
@@ -3031,7 +3031,7 @@ static long long WGET_GCC_NONNULL_ALL get_file_size(const char *fname)
 	return -1;
 }
 
-static time_t WGET_GCC_NONNULL_ALL get_file_mtime(const char *fname)
+static int64_t WGET_GCC_NONNULL_ALL get_file_mtime(const char *fname)
 {
 	struct stat st;
 
@@ -3042,16 +3042,16 @@ static time_t WGET_GCC_NONNULL_ALL get_file_mtime(const char *fname)
 	return 0;
 }
 
-static time_t WGET_GCC_NONNULL_ALL get_file_lmtime(const char *fname)
+static int64_t WGET_GCC_NONNULL_ALL get_file_lmtime(const char *fname)
 {
-	time_t ret = 0;
+	int64_t ret = 0;
 	FILE *fp;
 
 	// see if we stored the server timestamp before
 	if ((fp = fopen(fname, "r"))) {
 		char tbuf[32];
 		if (read_xattr_metadata("user.last_modified", tbuf, sizeof(tbuf), fileno(fp)) > 0)
-			ret = (time_t) atoll(tbuf);
+			ret = (int64_t) atoll(tbuf);
 
 		fclose(fp);
 	}
@@ -3062,13 +3062,24 @@ static time_t WGET_GCC_NONNULL_ALL get_file_lmtime(const char *fname)
 	return ret;
 }
 
-static void set_file_mtime(int fd, time_t modified)
+static void set_file_mtime(int fd, int64_t modified)
 {
 	struct timespec timespecs[2]; // [0]=last access  [1]=last modified
+	time_t tt;
 
 	gettime(&timespecs[0]);
 
-	timespecs[1].tv_sec = modified;
+#if __LP64__ == 1
+	tt = (time_t) modified; // 64bit time_t
+#else
+	// 32bit time_t
+	if (modified > 2147483647)
+		tt = 2147483647;
+	else
+		tt = (time_t) modified;
+#endif
+
+	timespecs[1].tv_sec = tt;
 	timespecs[1].tv_nsec = 0;
 
 	if (futimens(fd, timespecs) == -1)
@@ -3722,7 +3733,7 @@ static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 			wget_http_add_header_printf(req, "Range", "bytes=%lld-", config.start_pos);
 
 		if (config.timestamping && config.if_modified_since) {
-			time_t mtime = get_file_lmtime(local_filename);
+			int64_t mtime = get_file_lmtime(local_filename);
 
 			if (mtime) {
 				char http_date[32];
@@ -4026,7 +4037,7 @@ static int read_xattr_metadata(const char *name, char *value, size_t size, int f
 	return rc;
 }
 
-static int write_xattr_last_modified(time_t last_modified, int fd)
+static int write_xattr_last_modified(int64_t last_modified, int fd)
 {
 	char tbuf[32];
 
@@ -4058,7 +4069,7 @@ static int read_xattr_metadata(const char *name, char *value, size_t size, int f
 	return -1;
 }
 
-static int write_xattr_last_modified(time_t last_modified, int fd)
+static int write_xattr_last_modified(int64_t last_modified, int fd)
 {
 	(void)last_modified;
 	(void)fd;
@@ -4070,7 +4081,7 @@ static int write_xattr_last_modified(time_t last_modified, int fd)
 /* Store metadata name/value attributes against fp. */
 static int set_file_metadata(wget_iri *origin_iri, wget_iri *referrer_iri,
 					  const char *mime_type, const char *charset,
-					  time_t last_modified, FILE *fp)
+					  int64_t last_modified, FILE *fp)
 {
 	int fd;
 

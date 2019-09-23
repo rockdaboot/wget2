@@ -588,7 +588,7 @@ static void test_hsts_db_free(wget_hsts_db **hsts_db)
 	*hsts_db = NULL;
 }
 
-static void test_hsts_db_add(wget_hsts_db *hsts_db, const char *host, uint16_t port, time_t maxage, bool include_subdomains)
+static void test_hsts_db_add(wget_hsts_db *hsts_db, const char *host, uint16_t port, int64_t maxage, bool include_subdomains)
 {
 	(void) hsts_db;
 	wget_debug_printf("%s: host %s port %hu maxage %lld include_subdomains %d\n", __func__,
@@ -669,14 +669,14 @@ static bool test_ocsp_db_hostname_is_valid(const wget_ocsp_db *ocsp_db, const ch
 	return true;
 }
 
-static void test_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, bool valid)
+static void test_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, int64_t maxage, bool valid)
 {
 	(void) ocsp_db;
 
 	wget_debug_printf("%s: fingerprint %s maxage %lld valid %d\n", __func__, fingerprint, (long long) maxage, valid);
 }
 
-static void test_ocsp_db_add_host(wget_ocsp_db *ocsp_db, const char *host, time_t maxage)
+static void test_ocsp_db_add_host(wget_ocsp_db *ocsp_db, const char *host, int64_t maxage)
 {
 	(void) ocsp_db;
 

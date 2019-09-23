@@ -126,7 +126,7 @@ static void free_ocsp(ocsp_entry *ocsp)
 	}
 }
 
-static ocsp_entry *new_ocsp(const char *fingerprint, time_t maxage, bool valid)
+static ocsp_entry *new_ocsp(const char *fingerprint, int64_t maxage, bool valid)
 {
 	if (fingerprint) {
 		if (!(fingerprint = wget_strdup(fingerprint)))
@@ -320,7 +320,7 @@ static void ocsp_db_add_fingerprint_entry(wget_ocsp_db *ocsp_db, ocsp_entry *ocs
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-void wget_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, bool valid)
+void wget_ocsp_db_add_fingerprint(wget_ocsp_db *ocsp_db, const char *fingerprint, int64_t maxage, bool valid)
 {
 	if (plugin_vtable) {
 		plugin_vtable->add_fingerprint(ocsp_db, fingerprint, maxage, valid);
@@ -389,7 +389,7 @@ static void ocsp_db_add_host_entry(wget_ocsp_db *ocsp_db, ocsp_entry *ocsp)
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-void wget_ocsp_db_add_host(wget_ocsp_db *ocsp_db, const char *host, time_t maxage)
+void wget_ocsp_db_add_host(wget_ocsp_db *ocsp_db, const char *host, int64_t maxage)
 {
 	if (plugin_vtable) {
 		plugin_vtable->add_host(ocsp_db, host, maxage);

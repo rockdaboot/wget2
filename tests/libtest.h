@@ -128,7 +128,7 @@ typedef struct {
 		expected_req_headers[10];
 	const char *
 		unexpected_req_headers[10];
-	time_t
+	int64_t
 		modified;
 
 	// auth fields

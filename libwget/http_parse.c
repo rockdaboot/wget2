@@ -624,7 +624,7 @@ const char *wget_http_parse_public_key_pins(const char *s, wget_hpkp *hpkp)
 
 		if (param.value) {
 			if (!wget_strcasecmp_ascii(param.name, "max-age")) {
-				wget_hpkp_set_maxage(hpkp, (time_t)atoll(param.value));
+				wget_hpkp_set_maxage(hpkp, (int64_t) atoll(param.value));
 			} else if (!wget_strncasecmp_ascii(param.name, "pin-", 4)) {
 				wget_hpkp_pin_add(hpkp, param.name + 4, param.value);
 			}
@@ -647,7 +647,7 @@ const char *wget_http_parse_public_key_pins(const char *s, wget_hpkp *hpkp)
 // directive-name            = token
 // directive-value           = token | quoted-string
 
-const char *wget_http_parse_strict_transport_security(const char *s, time_t *maxage, bool *include_subdomains)
+const char *wget_http_parse_strict_transport_security(const char *s, int64_t *maxage, bool *include_subdomains)
 {
 	wget_http_header_param param;
 
@@ -659,7 +659,7 @@ const char *wget_http_parse_strict_transport_security(const char *s, time_t *max
 
 		if (param.value) {
 			if (!wget_strcasecmp_ascii(param.name, "max-age")) {
-				*maxage = (time_t)atoll(param.value);
+				*maxage = (int64_t) atoll(param.value);
 			}
 		} else {
 			if (!wget_strcasecmp_ascii(param.name, "includeSubDomains")) {
@@ -878,7 +878,7 @@ int64_t wget_http_parse_full_date(const char *s)
 		return 0; // return as session cookie
 	}
 
-	// calculate time_t from GMT/UTC time values
+	// calculate time_t (represented as int64_t) from GMT/UTC time values
 
 	days = 365 * (year - 1970) + leap_days(1970, year);
 	days += sum_of_days[mon - 1] + (mon > 2 && leap_year);
@@ -997,14 +997,14 @@ static long long adjust_time(long long t, int n)
 
 // return current GMT/UTC
 
-static long long get_current_time(void)
+static int64_t get_current_time(void)
 {
-	time_t t = time(NULL);
+	int64_t t = time(NULL);
 	struct tm tm;
 
 	gmtime_r(&t, &tm);
 
-	return (((((long long)(tm.tm_year + 1900)*100 + tm.tm_mon + 1)*100 + tm.tm_mday)*100 + tm.tm_hour)*100 + tm.tm_min)*100 + tm.tm_sec;
+	return (((((int64_t)(tm.tm_year + 1900)*100 + tm.tm_mon + 1)*100 + tm.tm_mday)*100 + tm.tm_hour)*100 + tm.tm_min)*100 + tm.tm_sec;
 }
 */
 

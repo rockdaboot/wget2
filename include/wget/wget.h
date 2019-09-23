@@ -28,15 +28,14 @@
 #ifndef WGET_WGET_H
 #define WGET_WGET_H
 
-#include <stddef.h>
+#include <stddef.h> // size_t
 #include <sys/types.h>
 #include <unistd.h>
-#include <stdarg.h>
-#include <stdio.h>
+#include <stdarg.h> // va_list
+#include <stdio.h> // FILE
 #include <stdlib.h>
-#include <time.h>
-#include <stdbool.h>
-#include <inttypes.h>
+#include <stdbool.h> // bool
+#include <stdint.h> // int64_t
 
 #ifdef WGETVER_FILE
 #   include WGETVER_FILE
@@ -1401,7 +1400,7 @@ typedef int wget_hsts_host_match_fn(const wget_hsts_db *, const char *hsts_db, u
 typedef wget_hsts_db *wget_hsts_db_init_fn(wget_hsts_db *hsts_db, const char *fname);
 typedef void wget_hsts_db_deinit_fn(wget_hsts_db *hsts_db);
 typedef void wget_hsts_db_free_fn(wget_hsts_db **hsts_db);
-typedef void wget_hsts_db_add_fn(wget_hsts_db *hsts_db, const char *host, uint16_t port, time_t maxage, bool include_subdomains);
+typedef void wget_hsts_db_add_fn(wget_hsts_db *hsts_db, const char *host, uint16_t port, int64_t maxage, bool include_subdomains);
 typedef int wget_hsts_db_save_fn(wget_hsts_db *hsts_db);
 typedef int wget_hsts_db_load_fn(wget_hsts_db *hsts_db);
 typedef void wget_hsts_db_set_fname_fn(wget_hsts_db *hsts_db, const char *fname);
@@ -1516,7 +1515,7 @@ WGETAPI void
 WGETAPI void
 	wget_hpkp_set_host(wget_hpkp *hpkp, const char *host);
 WGETAPI void
-	wget_hpkp_set_maxage(wget_hpkp *hpkp, time_t maxage);
+	wget_hpkp_set_maxage(wget_hpkp *hpkp, int64_t maxage);
 WGETAPI void
 	wget_hpkp_set_include_subdomains(wget_hpkp *hpkp, bool include_subdomains);
 WGETAPI int
@@ -1527,7 +1526,7 @@ WGETAPI void
 	wget_hpkp_get_pins(wget_hpkp *hpkp, const char **pin_types, size_t *sizes, const void **pins);
 WGETAPI const char *
 	wget_hpkp_get_host(wget_hpkp *hpkp);
-WGETAPI time_t
+WGETAPI int64_t
 	wget_hpkp_get_maxage(wget_hpkp *hpkp);
 WGETAPI bool
 	wget_hpkp_get_include_subdomains(wget_hpkp *hpkp);
@@ -1559,7 +1558,7 @@ WGETAPI void
 WGETAPI void
 	wget_tls_session_free(wget_tls_session *tls_session);
 WGETAPI wget_tls_session * NULLABLE
-	wget_tls_session_new(const char *host, time_t maxage, const void *data, size_t data_size);
+	wget_tls_session_new(const char *host, int64_t maxage, const void *data, size_t data_size);
 WGETAPI int
 	wget_tls_session_get(const wget_tls_session_db *tls_session_db, const char *host, void **data, size_t *size);
 WGETAPI wget_tls_session_db * NULLABLE
@@ -1600,8 +1599,8 @@ typedef void wget_ocsp_db_deinit_fn(wget_ocsp_db *ocsp_db);
 typedef void wget_ocsp_db_free_fn(wget_ocsp_db **ocsp_db);
 typedef bool wget_ocsp_fingerprint_in_cache_fn(const wget_ocsp_db *ocsp_db, const char *fingerprint, int *valid);
 typedef bool wget_ocsp_hostname_is_valid_fn(const wget_ocsp_db *ocsp_db, const char *hostname);
-typedef void wget_ocsp_db_add_fingerprint_fn(wget_ocsp_db *ocsp_db, const char *fingerprint, time_t maxage, bool valid);
-typedef void wget_ocsp_db_add_host_fn(wget_ocsp_db *ocsp_db, const char *host, time_t maxage);
+typedef void wget_ocsp_db_add_fingerprint_fn(wget_ocsp_db *ocsp_db, const char *fingerprint, int64_t maxage, bool valid);
+typedef void wget_ocsp_db_add_host_fn(wget_ocsp_db *ocsp_db, const char *host, int64_t maxage);
 typedef int wget_ocsp_db_save_fn(wget_ocsp_db *ocsp_db);
 typedef int wget_ocsp_db_load_fn(wget_ocsp_db *ocsp_db);
 
@@ -2153,9 +2152,9 @@ struct wget_http_response_st {
 	size_t
 		cur_downloaded,
 		accounted_for;	// reported to bar
-	time_t
+	int64_t
 		last_modified;
-	time_t
+	int64_t
 		hsts_maxage;
 	char
 		reason[32]; //!< reason string after the status code
@@ -2227,7 +2226,7 @@ WGETAPI const char *
 WGETAPI const char *
 	wget_http_parse_content_disposition(const char *s, const char **filename) WGET_GCC_NONNULL((1));
 WGETAPI const char *
-	wget_http_parse_strict_transport_security(const char *s, time_t *maxage, bool *include_subdomains) WGET_GCC_NONNULL_ALL;
+	wget_http_parse_strict_transport_security(const char *s, int64_t *maxage, bool *include_subdomains) WGET_GCC_NONNULL_ALL;
 WGETAPI const char *
 	wget_http_parse_public_key_pins(const char *s, wget_hpkp *hpkp) WGET_GCC_NONNULL((1));
 WGETAPI const char *

@@ -126,7 +126,7 @@ void wget_tls_session_free(wget_tls_session *tls_session)
 	}
 }
 
-wget_tls_session *wget_tls_session_new(const char *host, time_t maxage, const void *data, size_t data_size)
+wget_tls_session *wget_tls_session_new(const char *host, int64_t maxage, const void *data, size_t data_size)
 {
 	wget_tls_session *tls_session = wget_tls_session_init(NULL);
 
