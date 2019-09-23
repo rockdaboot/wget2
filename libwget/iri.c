@@ -110,15 +110,15 @@ bool wget_iri_supported(const wget_iri *iri)
 
 /* \cond _hide_internal_symbols */
 #define IRI_CTYPE_GENDELIM (1<<0)
-#define _iri_isgendelim(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_GENDELIM)
+#define iri_isgendelim(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_GENDELIM)
 
 #define IRI_CTYPE_SUBDELIM (1<<1)
-#define _iri_issubdelim(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_SUBDELIM)
+#define iri_issubdelim(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_SUBDELIM)
 
 #define IRI_CTYPE_UNRESERVED (1<<2)
-#define _iri_isunreserved(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_UNRESERVED)
+#define iri_isunreserved(c) (iri_ctype[(unsigned char)(c)] & IRI_CTYPE_UNRESERVED)
 
-#define _iri_isscheme(c) (c_isalnum(c) || c == '+' || c == '-' || c == '.')
+#define iri_isscheme(c) (c_isalnum(c) || c == '+' || c == '-' || c == '.')
 /* \endcond */
 
 static const unsigned char
@@ -160,7 +160,7 @@ static const unsigned char
 bool wget_iri_isgendelim(char c)
 {
 	// return strchr(":/?#[]@",c)!=NULL;
-	return _iri_isgendelim(c);
+	return iri_isgendelim(c);
 }
 
 /**
@@ -173,7 +173,7 @@ bool wget_iri_isgendelim(char c)
 bool wget_iri_issubdelim(char c)
 {
 	// return strchr("!$&\'()*+,;=",c)!=NULL;
-	return _iri_issubdelim(c);
+	return iri_issubdelim(c);
 }
 
 /**
@@ -205,7 +205,7 @@ bool wget_iri_isreserved(char c)
  */
 bool wget_iri_isunreserved(char c)
 {
-	return c > 32 && c < 127 && (c_isalnum(c) || _iri_isunreserved(c));
+	return c > 32 && c < 127 && (c_isalnum(c) || iri_isunreserved(c));
 }
 
 /**
@@ -216,15 +216,15 @@ bool wget_iri_isunreserved(char c)
  */
 bool wget_iri_isunreserved_path(char c)
 {
-	return c > 32 && c < 127 && (c_isalnum(c) || _iri_isunreserved(c) || c == '/');
+	return c > 32 && c < 127 && (c_isalnum(c) || iri_isunreserved(c) || c == '/');
 }
 
-static unsigned char WGET_GCC_CONST _unhex(unsigned char c)
+static unsigned char WGET_GCC_CONST unhex(unsigned char c)
 {
 	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
 }
 
-static char *_iri_unescape_inline(char *src, int ctype)
+static char *iri_unescape_inline(char *src, int ctype)
 {
 	char *ret = NULL;
 	unsigned char *s = (unsigned char *)src; // just a helper to avoid casting a lot
@@ -233,7 +233,7 @@ static char *_iri_unescape_inline(char *src, int ctype)
 	while (*s) {
 		if (*s == '%') {
 			if (c_isxdigit(s[1]) && c_isxdigit(s[2])) {
-				unsigned char c = (unsigned char) (_unhex(s[1]) << 4) | _unhex(s[2]);
+				unsigned char c = (unsigned char) (unhex(s[1]) << 4) | unhex(s[2]);
 				if (!ctype || (!(iri_ctype[(unsigned char)(c)] & ctype) && c != '%')) {
 					*d++ = c;
 					s += 3;
@@ -275,7 +275,7 @@ static char *_iri_unescape_inline(char *src, int ctype)
 			if (s[1] == 'x') {
 				unsigned char *p = s + 2;
 				while (c_isxdigit(*p)) {
-					value = (value << 4) | _unhex(*p);
+					value = (value << 4) | unhex(*p);
 					p++;
 				}
 				if (*p == ';') {
@@ -324,7 +324,7 @@ static char *_iri_unescape_inline(char *src, int ctype)
  */
 char *wget_iri_unescape_inline(char *src)
 {
-	return _iri_unescape_inline(src, 0);
+	return iri_unescape_inline(src, 0);
 }
 
 /**
@@ -342,7 +342,7 @@ char *wget_iri_unescape_inline(char *src)
  */
 char *wget_iri_unescape_url_inline(char *src)
 {
-	return _iri_unescape_inline(src, IRI_CTYPE_GENDELIM);
+	return iri_unescape_inline(src, IRI_CTYPE_GENDELIM);
 }
 
 /**
@@ -452,7 +452,7 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 		const char *x;
 		have_scheme = 1;
 
-		for (x = url; *x && _iri_isscheme(*x); x++)
+		for (x = url; *x && iri_isscheme(*x); x++)
 			;
 
 		if (*x != ':' || c_isdigit(x[1]))
@@ -746,7 +746,7 @@ const char *wget_iri_get_connection_part(wget_iri *iri)
 
 // normalize /../ and remove /./
 
-static size_t WGET_GCC_NONNULL_ALL _normalize_path(char *path)
+static size_t WGET_GCC_NONNULL_ALL normalize_path(char *path)
 {
 	char *p1 = path, *p2 = path;
 
@@ -863,7 +863,7 @@ const char *wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len
 
 				// absolute URI without scheme: //authority/path...
 				if ((p = strchr(path + 2, '/')))
-					_normalize_path(p + 1);
+					normalize_path(p + 1);
 
 				wget_buffer_strcpy(buf, schemes[base->scheme].name);
 				wget_buffer_strcat(buf, ":");
@@ -871,7 +871,7 @@ const char *wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len
 				debug_printf("*1 %s\n", buf->data);
 			} else {
 				// absolute path
-				_normalize_path(path);
+				normalize_path(path);
 
 				wget_buffer_strcpy(buf, wget_iri_get_connection_part(base));
 				wget_buffer_strcat(buf, "/");
@@ -906,7 +906,7 @@ const char *wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len
 			if (len)
 				wget_buffer_memcat(buf, val, len);
 
-			buf->length = _normalize_path(buf->data + tmp_len) + tmp_len;
+			buf->length = normalize_path(buf->data + tmp_len) + tmp_len;
 
 			debug_printf("*4 %s %zu\n", buf->data, buf->length);
 		} else if (val[len] == 0) {
