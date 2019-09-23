@@ -32,7 +32,7 @@
 #include <wget.h>
 #include "private.h"
 
-static struct _CONFIG {
+static struct config {
 	char
 		*cookie_file;
 	wget_cookie_db
@@ -40,17 +40,17 @@ static struct _CONFIG {
 	bool
 		cookies_enabled,
 		keep_session_cookies;
-} _config = {
+} config = {
 	.cookies_enabled = 0
 };
 
 static wget_dns_cache *dns_cache;
 
-static int _init;
+static int global_initialized;
 static wget_thread_mutex _mutex;
 static bool initialized;
 
-static void __attribute__ ((constructor)) _wget_global_init(void)
+static void __attribute__ ((constructor)) global_init(void)
 {
 	if (!initialized) {
 		wget_thread_mutex_init(&_mutex);
@@ -58,7 +58,7 @@ static void __attribute__ ((constructor)) _wget_global_init(void)
 	}
 }
 
-static void __attribute__ ((destructor)) _wget_global_exit(void)
+static void __attribute__ ((destructor)) global_exit(void)
 {
 	if (initialized) {
 		wget_thread_mutex_destroy(&_mutex);
@@ -81,11 +81,11 @@ void wget_global_init(int first_key, ...)
 
 	// just in case that automatic initializers didn't work,
 	// e.g. maybe a static build
-	_wget_global_init();
+	global_init();
 
 	wget_thread_mutex_lock(_mutex);
 
-	if (_init++) {
+	if (global_initialized++) {
 		wget_thread_mutex_unlock(_mutex);
 		return;
 	}
@@ -141,18 +141,18 @@ void wget_global_init(int first_key, ...)
 			break;
 		case WGET_COOKIE_SUFFIXES:
 			psl_file = va_arg(args, const char *);
-			_config.cookies_enabled = 1;
+			config.cookies_enabled = 1;
 			break;
 		case WGET_COOKIES_ENABLED:
-			_config.cookies_enabled = va_arg(args, int) != 0;
+			config.cookies_enabled = va_arg(args, int) != 0;
 			break;
 		case WGET_COOKIE_FILE:
 			// load cookie-store
-			_config.cookies_enabled = 1;
-			_config.cookie_file = va_arg(args, char *);
+			config.cookies_enabled = 1;
+			config.cookie_file = va_arg(args, char *);
 			break;
 		case WGET_COOKIE_KEEPSESSIONCOOKIES:
-			_config.keep_session_cookies = va_arg(args, int) != 0;
+			config.keep_session_cookies = va_arg(args, int) != 0;
 			break;
 		case WGET_BIND_ADDRESS:
 			wget_tcp_set_bind_address(NULL, va_arg(args, const char *));
@@ -172,11 +172,11 @@ void wget_global_init(int first_key, ...)
 	}
 	va_end(args);
 
-	if (_config.cookies_enabled && _config.cookie_file) {
-		_config.cookie_db = wget_cookie_db_init(NULL);
-		wget_cookie_set_keep_session_cookies(_config.cookie_db, _config.keep_session_cookies);
-		wget_cookie_db_load(_config.cookie_db, _config.cookie_file);
-		wget_cookie_db_load_psl(_config.cookie_db, psl_file);
+	if (config.cookies_enabled && config.cookie_file) {
+		config.cookie_db = wget_cookie_db_init(NULL);
+		wget_cookie_set_keep_session_cookies(config.cookie_db, config.keep_session_cookies);
+		wget_cookie_db_load(config.cookie_db, config.cookie_file);
+		wget_cookie_db_load_psl(config.cookie_db, psl_file);
 	}
 
 	rc = wget_net_init();
@@ -198,11 +198,11 @@ void wget_global_deinit(void)
 
 	// we need to lock a static mutex here
 
-	if (_init == 1) {
+	if (global_initialized == 1) {
 		// free resources here
-		if (_config.cookie_db && _config.cookies_enabled && _config.cookie_file) {
-			wget_cookie_db_save(_config.cookie_db, _config.cookie_file);
-			wget_cookie_db_free(&_config.cookie_db);
+		if (config.cookie_db && config.cookies_enabled && config.cookie_file) {
+			wget_cookie_db_save(config.cookie_db, config.cookie_file);
+			wget_cookie_db_free(&config.cookie_db);
 		}
 		wget_tcp_set_bind_address(NULL, NULL);
 
@@ -215,9 +215,9 @@ void wget_global_deinit(void)
 		wget_http_set_no_proxy(NULL, NULL);
 	}
 
-	if (_init > 0) _init--;
+	if (global_initialized > 0) global_initialized--;
 
-	_wget_global_exit();
+	global_exit();
 
 	// we need to unlock a static mutex here
 
@@ -231,9 +231,9 @@ int wget_global_get_int(int key)
 {
 	switch (key) {
 	case WGET_COOKIES_ENABLED:
-		return _config.cookies_enabled;
+		return config.cookies_enabled;
 	case WGET_COOKIE_KEEPSESSIONCOOKIES:
-		return _config.keep_session_cookies;
+		return config.keep_session_cookies;
 	case WGET_NET_FAMILY_EXCLUSIVE:
 		return wget_tcp_get_family(NULL);
 	case WGET_NET_FAMILY_PREFERRED:
@@ -260,9 +260,9 @@ const void *wget_global_get_ptr(int key)
 	case WGET_INFO_FILE:
 		return wget_logger_get_file(wget_get_logger(WGET_LOGGER_INFO));
 	case WGET_COOKIE_FILE:
-		return _config.cookie_file;
+		return config.cookie_file;
 	case WGET_COOKIE_DB:
-		return _config.cookie_db;
+		return config.cookie_db;
 	default:
 		wget_error_printf(_("%s: Unknown option %d"), __func__, key);
 		return NULL;
