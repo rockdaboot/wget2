@@ -39,51 +39,51 @@
 #include "logger.h"
 
 static wget_logger
-	_info,
-	_error,
-	_debug;
+	info_logger,
+	error_logger,
+	debug_logger;
 
 void wget_info_vprintf(const char *fmt, va_list args)
 {
-	if (_info.vprintf)
-		_info.vprintf(&_info, fmt, args);
+	if (info_logger.vprintf)
+		info_logger.vprintf(&info_logger, fmt, args);
 }
 
 void wget_info_printf(const char *fmt, ...)
 {
-	if (_info.vprintf) {
+	if (info_logger.vprintf) {
 		va_list args;
 
 		va_start(args, fmt);
-		_info.vprintf(&_info, fmt, args);
+		info_logger.vprintf(&info_logger, fmt, args);
 		va_end(args);
 	}
 }
 
 void wget_error_vprintf(const char *fmt, va_list args)
 {
-	if (_error.vprintf)
-		_error.vprintf(&_error, fmt, args);
+	if (error_logger.vprintf)
+		error_logger.vprintf(&error_logger, fmt, args);
 }
 
 void wget_error_printf(const char *fmt, ...)
 {
-	if (_error.vprintf) {
+	if (error_logger.vprintf) {
 		va_list args;
 
 		va_start(args, fmt);
-		_error.vprintf(&_error, fmt, args);
+		error_logger.vprintf(&error_logger, fmt, args);
 		va_end(args);
 	}
 }
 
 void wget_error_printf_exit(const char *fmt, ...)
 {
-	if (_error.vprintf) {
+	if (error_logger.vprintf) {
 		va_list args;
 
 		va_start(args, fmt);
-		_error.vprintf(&_error, fmt, args);
+		error_logger.vprintf(&error_logger, fmt, args);
 		va_end(args);
 	}
 
@@ -92,35 +92,35 @@ void wget_error_printf_exit(const char *fmt, ...)
 
 void wget_debug_vprintf(const char *fmt, va_list args)
 {
-	if (_debug.vprintf)
-		_debug.vprintf(&_debug, fmt, args);
+	if (debug_logger.vprintf)
+		debug_logger.vprintf(&debug_logger, fmt, args);
 }
 
 void wget_debug_printf(const char *fmt, ...)
 {
-	if (_debug.vprintf) {
+	if (debug_logger.vprintf) {
 		va_list args;
 
 		va_start(args, fmt);
-		_debug.vprintf(&_debug, fmt, args);
+		debug_logger.vprintf(&debug_logger, fmt, args);
 		va_end(args);
 	}
 }
 
 void wget_debug_write(const char *buf, size_t len)
 {
-	if (_debug.write)
-		_debug.write(&_debug, buf, len);
+	if (debug_logger.write)
+		debug_logger.write(&debug_logger, buf, len);
 }
 
 wget_logger *wget_get_logger(int id)
 {
 	if (id == WGET_LOGGER_DEBUG)
-		return &_debug;
+		return &debug_logger;
 	else if (id == WGET_LOGGER_ERROR)
-		return &_error;
+		return &error_logger;
 	else if (id == WGET_LOGGER_INFO)
-		return &_info;
+		return &info_logger;
 	else
 		return NULL;
 }
