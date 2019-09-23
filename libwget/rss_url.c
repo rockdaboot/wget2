@@ -35,14 +35,14 @@
 #include <wget.h>
 #include "private.h"
 
-struct _rss_context {
+struct rss_context {
 	wget_vector
 		*urls;
 };
 
-static void _rss_get_url(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos WGET_GCC_UNUSED)
+static void rss_get_url(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos WGET_GCC_UNUSED)
 {
-	struct _rss_context *ctx = context;
+	struct rss_context *ctx = context;
 	wget_string * url;
 
 	if (!val || !len)
@@ -99,9 +99,9 @@ static void _rss_get_url(void *context, int flags, const char *dir, const char *
 
 void wget_rss_get_urls_inline(const char *rss, wget_vector **urls)
 {
-	struct _rss_context context = { .urls = NULL };
+	struct rss_context context = { .urls = NULL };
 
-	wget_xml_parse_buffer(rss, _rss_get_url, &context, XML_HINT_REMOVE_EMPTY_CONTENT);
+	wget_xml_parse_buffer(rss, rss_get_url, &context, XML_HINT_REMOVE_EMPTY_CONTENT);
 
 	*urls = context.urls;
 }
