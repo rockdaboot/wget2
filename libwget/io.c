@@ -34,17 +34,7 @@
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <errno.h>
-#ifdef HAVE_POLL
-	#include <poll.h>
-#elif defined _WIN32
-	#undef select
-	#include <io.h>
-	#include <winsock2.h>
-	#include <msvc-nothrow.h> // make _get_osfhandle() return error
-#else
-	#include <sys/time.h>
-	#include <sys/select.h>
-#endif
+#include <poll.h>
 #include "dirname.h"
 
 #include <wget.h>
@@ -219,8 +209,6 @@ ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
 int wget_ready_2_transfer(int fd, int timeout, int mode)
 {
 	int rc = -1;
-
-#ifdef HAVE_POLL
 	struct pollfd pollfd;
 
 	pollfd.fd = fd;
@@ -242,47 +230,7 @@ int wget_ready_2_transfer(int fd, int timeout, int mode)
 			rc |= WGET_IO_WRITABLE;
 	}
 
-#else
-#ifdef _WIN32
-	//Get OS specific handle
-	int pfd = _get_osfhandle(fd);
-#else
-	int pfd = fd;
-#endif
-	fd_set fdset;
-	fd_set *rd = NULL, *wr = NULL;
-	struct timeval tmoval, *tmo = NULL;
-
-	if (fd >= FD_SETSIZE) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	FD_ZERO(&fdset);
-	FD_SET(pfd, &fdset);
-
-	if (mode & WGET_IO_READABLE)
-		rd = &fdset;
-	if (mode & WGET_IO_WRITABLE)
-		wr = &fdset;
-
-	if (timeout >= 0) {
-		tmoval.tv_sec = timeout / 1000L;
-		tmoval.tv_usec = (timeout % 1000) * 1000;
-		tmo = &tmoval;
-	}
-
-	if ((rc = select (pfd + 1, rd, wr, NULL, tmo)) >= 0) {
-		rc = 0;
-		if (rd && FD_ISSET(pfd, rd))
-			rc |= WGET_IO_READABLE;
-		if (wr && FD_ISSET(pfd, wr))
-			rc |= WGET_IO_WRITABLE;
-	}
-
-#endif
-
-  return rc;
+	return rc;
 }
 
 /**
