@@ -53,7 +53,7 @@ static struct random_data state;
 static wget_thread_mutex mutex;
 static bool initialized;
 
-static void __attribute__ ((constructor)) _wget_random_init(void)
+static void __attribute__ ((constructor)) random_init(void)
 {
 	if (!initialized) {
 		wget_thread_mutex_init(&mutex);
@@ -61,7 +61,7 @@ static void __attribute__ ((constructor)) _wget_random_init(void)
 	}
 }
 
-static void __attribute__ ((destructor)) _wget_random_exit(void)
+static void __attribute__ ((destructor)) random_exit(void)
 {
 	if (initialized) {
 		wget_thread_mutex_destroy(&mutex);
@@ -79,7 +79,7 @@ static void __attribute__ ((destructor)) _wget_random_exit(void)
  */
 void wget_random_init(void)
 {
-	_wget_random_init();
+	random_init();
 }
 
 /**
@@ -92,7 +92,7 @@ void wget_random_init(void)
  */
 void wget_random_exit(void)
 {
-	_wget_random_exit();
+	random_exit();
 }
 
 /**
