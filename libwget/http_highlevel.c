@@ -35,7 +35,7 @@
 #include "private.h"
 #include "http.h"
 
-static int _stream_callback(wget_http_response *resp WGET_GCC_UNUSED, void *user_data, const char *data, size_t length)
+static int stream_callback(wget_http_response *resp WGET_GCC_UNUSED, void *user_data, const char *data, size_t length)
 {
 	FILE *stream = (FILE *) user_data;
 
@@ -51,7 +51,7 @@ static int _stream_callback(wget_http_response *resp WGET_GCC_UNUSED, void *user
 	return 0;
 }
 
-static int _fd_callback(wget_http_response *resp WGET_GCC_UNUSED, void *user_data, const char *data, size_t length)
+static int fd_callback(wget_http_response *resp WGET_GCC_UNUSED, void *user_data, const char *data, size_t length)
 {
 	int fd = *(int *) user_data;
 	ssize_t nbytes = write(fd, data, length);
@@ -247,20 +247,20 @@ wget_http_response *wget_http_get(int first_key, ...)
 				if (saveas_name) {
 					FILE *fp;
 					if ((fp = fopen(saveas_name, "wb"))) {
-						wget_http_request_set_body_cb(req, _stream_callback, fp);
+						wget_http_request_set_body_cb(req, stream_callback, fp);
 						resp = wget_http_get_response(conn);
 						fclose(fp);
 					} else
 						debug_printf("Failed to open '%s' for writing\n", saveas_name);
 				}
 				else if (saveas_stream)  {
-					wget_http_request_set_body_cb(req, _stream_callback, saveas_stream);
+					wget_http_request_set_body_cb(req, stream_callback, saveas_stream);
 					resp = wget_http_get_response(conn);
 				} else if (saveas_callback) {
 					wget_http_request_set_body_cb(req, saveas_callback, body_user_data);
 					resp = wget_http_get_response(conn);
 				} else if (saveas_fd != -1) {
-					wget_http_request_set_body_cb(req, _fd_callback, &saveas_fd);
+					wget_http_request_set_body_cb(req, fd_callback, &saveas_fd);
 					resp = wget_http_get_response(conn);
 				} else
 					resp = wget_http_get_response(conn);
