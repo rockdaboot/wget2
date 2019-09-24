@@ -45,11 +45,6 @@
 #ifdef _WIN32
 #	include <windows.h>
 	static CRITICAL_SECTION g_crit;
-#	define _U
-#	define _U_WIN32 WGET_GCC_UNUSED
-#else
-#	define _U WGET_GCC_UNUSED
-#	define _U_WIN32
 #endif
 
 #include <wget.h>
@@ -57,13 +52,13 @@
 #include "wget_options.h"
 #include "wget_log.h"
 
-static void _write_out(
+static void write_out(
 	FILE *default_fp,
 	const char *data,
 	size_t len,
 	int with_timestamp,
-	const char _U_WIN32 *colorstring,
-	wget_console_color _U color_id)
+	const char *colorstring,
+	wget_console_color color_id)
 {
 	FILE *fp;
 	int fd = -1;
@@ -95,6 +90,8 @@ static void _write_out(
 
 	if (use_color)
 		wget_buffer_strcpy(&buf, colorstring);
+#else
+	(void) colorstring; // silence unused warning
 #endif
 
 	if (with_timestamp) {
@@ -119,6 +116,7 @@ static void _write_out(
 
 	if (fp) {
 #ifndef _WIN32
+		(void) color_id; // silence unused warning
 		fwrite(buf.data, 1, buf.length, fp);
 #else
 		EnterCriticalSection(&g_crit);
@@ -137,59 +135,59 @@ static void _write_out(
 	wget_buffer_deinit(&buf);
 }
 
-static void _write_debug(FILE *fp, const char *data, size_t len)
+static void write_debug(FILE *fp, const char *data, size_t len)
 {
-	_write_out(fp, data, len, 1, "\033[35m", WGET_CONSOLE_COLOR_MAGENTA); // magenta/purple text
+	write_out(fp, data, len, 1, "\033[35m", WGET_CONSOLE_COLOR_MAGENTA); // magenta/purple text
 }
 
-static void _write_error(FILE *fp, const char *data, size_t len)
+static void write_error(FILE *fp, const char *data, size_t len)
 {
-	_write_out(fp, data, len, 0, "\033[31m", WGET_CONSOLE_COLOR_RED); // red text
+	write_out(fp, data, len, 0, "\033[31m", WGET_CONSOLE_COLOR_RED); // red text
 }
 
-static void _write_info(FILE *fp, const char *data, size_t len)
+static void write_info(FILE *fp, const char *data, size_t len)
 {
 	if (!data || (ssize_t)len <= 0)
 		return;
 
-	_write_out(fp, data, len, 0, NULL, WGET_CONSOLE_COLOR_WHITE /* Or 'WGET_CONSOLE_COLOR_RESET'? */);
+	write_out(fp, data, len, 0, NULL, WGET_CONSOLE_COLOR_WHITE /* Or 'WGET_CONSOLE_COLOR_RESET'? */);
 
 }
 
-static void _write_debug_stderr(const char *data, size_t len)
+static void write_debug_stderr(const char *data, size_t len)
 {
-	_write_debug(stderr, data, len);
+	write_debug(stderr, data, len);
 }
 
-static void WGET_GCC_UNUSED _write_debug_stdout(const char *data, size_t len)
+static void WGET_GCC_UNUSED write_debug_stdout(const char *data, size_t len)
 {
-	_write_debug(stdout, data, len);
+	write_debug(stdout, data, len);
 }
 
-static void _write_error_stderr(const char *data, size_t len)
+static void write_error_stderr(const char *data, size_t len)
 {
-	_write_error(stderr, data, len);
+	write_error(stderr, data, len);
 }
 
-static void _write_error_stdout(const char *data, size_t len)
+static void write_error_stdout(const char *data, size_t len)
 {
-	_write_error(stdout, data, len);
+	write_error(stdout, data, len);
 }
 
-static void _write_info_stderr(const char *data, size_t len)
+static void write_info_stderr(const char *data, size_t len)
 {
-	_write_info(stderr, data, len);
+	write_info(stderr, data, len);
 }
 
-static void _write_info_stdout(const char *data, size_t len)
+static void write_info_stdout(const char *data, size_t len)
 {
-	_write_info(stdout, data, len);
+	write_info(stdout, data, len);
 }
 
 
 void log_write_error_stdout(const char *data, size_t len)
 {
-	_write_error_stdout(data, len);
+	write_error_stdout(data, len);
 }
 
 void log_init(void)
@@ -218,17 +216,17 @@ void log_init(void)
 // no printing during fuzzing
 #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 	// set debug logging
-	wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), config.debug ? _write_debug_stderr : NULL);
+	wget_logger_set_func(wget_get_logger(WGET_LOGGER_DEBUG), config.debug ? write_debug_stderr : NULL);
 
 	// set debug logging
-	wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : _write_error_stderr);
+	wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : write_error_stderr);
 
 	// set error logging
 //	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_ERROR), config.quiet ? NULL : stderr);
 
 	// set info logging
 	wget_logger_set_func(wget_get_logger(WGET_LOGGER_INFO),
-		config.verbose && !config.quiet ? (fileno(stdout) == fileno(stderr) ? _write_info_stderr : _write_info_stdout) : NULL);
+		config.verbose && !config.quiet ? (fileno(stdout) == fileno(stderr) ? write_info_stderr : write_info_stdout) : NULL);
 //	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
 #endif
 }
