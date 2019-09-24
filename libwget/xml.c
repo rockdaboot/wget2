@@ -61,7 +61,7 @@ typedef struct {
 		*user_ctx; // user context (not needed if we were using nested functions)
 	wget_xml_callback
 		*callback;
-} _xml_context;
+} xml_context;
 
 /* \cond _hide_internal_symbols */
 #define ascii_isspace(c) (c == ' ' || (c >= 9 && c <=  13))
@@ -72,7 +72,7 @@ typedef struct {
 
 // append a char to token buffer
 
-static const char *getToken(_xml_context *context)
+static const char *getToken(xml_context *context)
 {
 	int c;
 	const char *p;
@@ -195,7 +195,7 @@ static const char *getToken(_xml_context *context)
 	return NULL;
 }
 
-static int getValue(_xml_context *context)
+static int getValue(xml_context *context)
 {
 	int c;
 
@@ -224,7 +224,7 @@ static int getValue(_xml_context *context)
 // see https://html.spec.whatwg.org/multipage/scripting.html#the-script-element
 // 4.3.1.2 Restrictions for contents of script elements
 
-static const char *getScriptContent(_xml_context *context)
+static const char *getScriptContent(xml_context *context)
 {
 	int comment = 0, length_valid = 0;
 	const char *p;
@@ -265,7 +265,7 @@ static const char *getScriptContent(_xml_context *context)
 	return context->token;
 }
 
-static const char *getUnparsed(_xml_context *context, int flags, const char *end, size_t len, const char *directory)
+static const char *getUnparsed(xml_context *context, int flags, const char *end, size_t len, const char *directory)
 {
 	int c;
 
@@ -314,22 +314,22 @@ static const char *getUnparsed(_xml_context *context, int flags, const char *end
 	return context->token;
 }
 
-static const char *getComment(_xml_context *context)
+static const char *getComment(xml_context *context)
 {
 	return getUnparsed(context, XML_FLG_COMMENT, "-->", 3, NULL);
 }
 
-static const char *getProcessing(_xml_context *context)
+static const char *getProcessing(xml_context *context)
 {
 	return getUnparsed(context, XML_FLG_PROCESSING, "?>", 2, NULL);
 }
 
-static const char *getSpecial(_xml_context *context)
+static const char *getSpecial(xml_context *context)
 {
 	return getUnparsed(context, XML_FLG_SPECIAL, ">", 1, NULL);
 }
 
-static const char *getContent(_xml_context *context, const char *directory)
+static const char *getContent(xml_context *context, const char *directory)
 {
 	int c;
 
@@ -347,7 +347,7 @@ static const char *getContent(_xml_context *context, const char *directory)
 	return context->token;
 }
 
-static int parseXML(const char *dir, _xml_context *context)
+static int parseXML(const char *dir, xml_context *context)
 {
 	const char *tok;
 	char directory[256] = "";
@@ -506,7 +506,7 @@ int wget_xml_parse_buffer(
 	void *user_ctx,
 	int hints)
 {
-	_xml_context context;
+	xml_context context;
 
 	context.token = NULL;
 	context.token_size = 0;
