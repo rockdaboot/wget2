@@ -95,7 +95,7 @@
 
 #define WGET_DEFAULT_LOGFILE "wget-log"
 
-#define _CONTENT_TYPE_HTML 1
+#define CONTENT_TYPE_HTML 1
 typedef struct {
 	const char *
 		filename;
@@ -107,7 +107,7 @@ typedef struct {
 		parsed;
 	int
 		content_type;
-} _conversion_t;
+} conversion_t;
 static wget_vector *conversions;
 
 typedef struct {
@@ -123,10 +123,10 @@ typedef struct {
 		nchunks; // chunk downloads with 200 response
 	long long
 		bytes_body_uncompressed; // uncompressed bytes in body
-} _statistics_t;
-static _statistics_t stats;
+} statistics_t;
+static statistics_t stats;
 
-static int WGET_GCC_NONNULL((1)) _prepare_file(wget_http_response *resp, const char *fname, int flag,
+static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const char *fname, int flag,
 		wget_iri *uri, wget_iri *original_url, int ignore_patterns, wget_buffer *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path);
 
@@ -187,7 +187,7 @@ static int
 // --cut-dirs=number
 // -P / --directory-prefix=prefix
 
-static const char * WGET_GCC_NONNULL_ALL _get_local_filename(const wget_iri *iri)
+static const char * WGET_GCC_NONNULL_ALL get_local_filename_real(const wget_iri *iri)
 {
 	wget_buffer buf;
 	char *fname;
@@ -290,10 +290,10 @@ const char * WGET_GCC_NONNULL_ALL get_local_filename(const wget_iri *iri)
 	if ((config.spider || config.output_document) && !config.continue_download)
 		return NULL;
 
-	return _get_local_filename(iri);
+	return get_local_filename_real(iri);
 }
 
-static long long _fetch_and_add_longlong(long long *p, long long n)
+static long long fetch_and_add_longlong(long long *p, long long n)
 {
 #ifdef WITH_SYNC_FETCH_AND_ADD_LONGLONG
 	return __sync_fetch_and_add(p, n);
@@ -307,7 +307,7 @@ static long long _fetch_and_add_longlong(long long *p, long long n)
 #endif
 }
 
-static void _atomic_increment_int(int *p)
+static void atomic_increment_int(int *p)
 {
 #ifdef WITH_SYNC_FETCH_AND_ADD
 	__sync_fetch_and_add(p, 1);
@@ -322,7 +322,7 @@ static void _atomic_increment_int(int *p)
 // we have to modify and check the quota in one (protected) step.
 static long long quota_modify_read(size_t nbytes)
 {
-	return _fetch_and_add_longlong(&quota, (long long)nbytes);
+	return fetch_and_add_longlong(&quota, (long long)nbytes);
 }
 
 static void nop(int sig)
@@ -361,7 +361,7 @@ static wget_thread_cond
 	main_cond,   // is signaled whenever a job is done
 	worker_cond; // is signaled whenever a job is added
 
-static void _wget_init(void)
+static void program_init(void)
 {
 	wget_global_init(0);
 	blacklist_init();
@@ -412,7 +412,7 @@ static void _wget_init(void)
 #endif
 }
 
-static void _wget_deinit(void)
+static void program_deinit(void)
 {
 	host_exit();
 	blacklist_exit();
@@ -1119,7 +1119,7 @@ out:
 	plugin_db_forward_url_verdict_free(&plugin_verdict);
 }
 
-static void _convert_links(void)
+static void convert_links(void)
 {
 	FILE *fpout = NULL;
 	wget_buffer buf;
@@ -1129,7 +1129,7 @@ static void _convert_links(void)
 
 	// cycle through all documents where links have been found
 	for (int it = 0; it < wget_vector_size(conversions); it++) {
-		_conversion_t *conversion = wget_vector_get(conversions, it);
+		conversion_t *conversion = wget_vector_get(conversions, it);
 		const char *data, *data_ptr;
 		size_t data_length;
 
@@ -1274,7 +1274,7 @@ int main(int argc, const char **argv)
 	char quota_buf[16];
 	long long start_time = 0;
 
-	_wget_init(); // initialize any resources belonging to this object file
+	program_init(); // initialize any resources belonging to this object file
 
 	set_exit_status(WG_EXIT_STATUS_PARSE_INIT); // --version, --help etc might set the status to OK
 	n = init(argc, argv);
@@ -1481,7 +1481,7 @@ int main(int argc, const char **argv)
 		blacklist_print();
 
 	if (config.convert_links && !config.delete_after) {
-		_convert_links();
+		convert_links();
 		wget_vector_free(&conversions);
 	}
 
@@ -1502,7 +1502,7 @@ int main(int argc, const char **argv)
 		wget_stringmap_free(&etags);
 
 		deinit();
-		_wget_deinit(); // destroy any resources belonging to this object file
+		program_deinit(); // destroy any resources belonging to this object file
 	}
 
 	// Shutdown plugin system
@@ -1686,15 +1686,15 @@ static void add_statistics(wget_http_response *resp)
 
 	if (resp->code == 200) {
 		if (job->part)
-			_atomic_increment_int(&stats.nchunks);
+			atomic_increment_int(&stats.nchunks);
 		else
-			_atomic_increment_int(&stats.ndownloads);
+			atomic_increment_int(&stats.ndownloads);
 	} else if (resp->code == 301 || resp->code == 302  || resp->code == 303  || resp->code == 307  || resp->code == 308)
-		_atomic_increment_int(&stats.nredirects);
+		atomic_increment_int(&stats.nredirects);
 	else if (resp->code == 304)
-		_atomic_increment_int(&stats.nnotmodified);
+		atomic_increment_int(&stats.nnotmodified);
 	else
-		_atomic_increment_int(&stats.nerrors);
+		atomic_increment_int(&stats.nerrors);
 
 	if (config.stats_site_args)
 		stats_site_add(resp, NULL);
@@ -2248,7 +2248,7 @@ static void process_response(wget_http_response *resp)
 	}
 }
 
-static void _fallback_to_http(JOB *job)
+static void fallback_to_http(JOB *job)
 {
 	if (!job->robotstxt) {
 		char *http_url = wget_aprintf("http://%s", job->iri->uri + 8);
@@ -2318,7 +2318,7 @@ void *downloader_thread(void *p)
 
 					if (establish_connection(downloader, &iri) != WGET_E_SUCCESS) {
 						if (job->http_fallback)
-							_fallback_to_http(job);
+							fallback_to_http(job);
 						else
 							host_increase_failure(host);
 						action = ACTION_ERROR;
@@ -2348,7 +2348,7 @@ void *downloader_thread(void *p)
 
 				if (http_send_request(job->iri, job->original_url, downloader) != WGET_E_SUCCESS) {
 					if (job->http_fallback)
-						_fallback_to_http(job);
+						fallback_to_http(job);
 					else
 						host_increase_failure(host);
 					action = ACTION_ERROR;
@@ -2444,9 +2444,9 @@ out:
 	return NULL;
 }
 
-static void _free_conversion_entry(void *conversion)
+static void free_conversion_entry(void *conversion)
 {
-	_conversion_t *c = conversion;
+	conversion_t *c = conversion;
 
 	xfree(c->filename);
 	xfree(c->encoding);
@@ -2455,9 +2455,9 @@ static void _free_conversion_entry(void *conversion)
 	xfree(c);
 }
 
-static void _remember_for_conversion(const char *filename, wget_iri *base_url, int content_type, const char *encoding, wget_html_parsed_result *parsed)
+static void remember_for_conversion(const char *filename, wget_iri *base_url, int content_type, const char *encoding, wget_html_parsed_result *parsed)
 {
-	_conversion_t *conversion = wget_malloc(sizeof(_conversion_t));
+	conversion_t *conversion = wget_malloc(sizeof(conversion_t));
 	conversion->filename = wget_strdup(filename);
 	conversion->encoding = wget_strdup(encoding);
 	conversion->base_url = wget_iri_clone(base_url);
@@ -2468,7 +2468,7 @@ static void _remember_for_conversion(const char *filename, wget_iri *base_url, i
 
 	if (!conversions) {
 		conversions = wget_vector_create(128, NULL);
-		wget_vector_set_destructor(conversions, _free_conversion_entry);
+		wget_vector_set_destructor(conversions, free_conversion_entry);
 	}
 
 	wget_vector_add(conversions, conversion);
@@ -2492,7 +2492,7 @@ static unsigned int WGET_GCC_PURE hash_url(const char *url)
 /*
  * helper function: percent-unescape, convert to utf-8, create URL string using base
  */
-static int _normalize_uri(wget_iri *base, wget_string *url, const char *encoding, wget_buffer *buf)
+static int normalize_uri(wget_iri *base, wget_string *url, const char *encoding, wget_buffer *buf)
 {
 	char *urlpart = wget_strmemdup(url->p, url->len);
 	char *urlpart_encoded;
@@ -2608,7 +2608,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	if (parsed->base.p) {
-		if (_normalize_uri(base, &parsed->base, encoding, &buf) == 0) {
+		if (normalize_uri(base, &parsed->base, encoding, &buf) == 0) {
 			// info_printf("%.*s -> %s\n", (int)parsed->base.len, parsed->base.p, buf.data);
 			if (!base && !buf.length)
 				info_printf(_("BASE '%.*s' not usable (missing absolute base URI)\n"), (int)parsed->base.len, parsed->base.p);
@@ -2647,7 +2647,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 			}
 		}
 
-		if (_normalize_uri(base, url, encoding, &buf))
+		if (normalize_uri(base, url, encoding, &buf))
 			continue;
 
 		// info_printf("%.*s -> %s\n", (int)url->len, url->p, buf.data);
@@ -2668,7 +2668,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 			wget_html_parsed_url *html_url = wget_vector_get(parsed->uris, it);
 			html_url->url.p = (const char *) (html_url->url.p - html); // convert pointer to offset
 		}
-		_remember_for_conversion(job->local_filename, base, _CONTENT_TYPE_HTML, encoding, parsed);
+		remember_for_conversion(job->local_filename, base, CONTENT_TYPE_HTML, encoding, parsed);
 		parsed = NULL; // 'parsed' has been consumed
 	}
 
@@ -2752,7 +2752,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_ir
 	// wget_sitemap_free_urls_inline(&res);
 }
 
-static int _get_unzipped(void *userdata, const char *data, size_t length)
+static int get_unzipped(void *userdata, const char *data, size_t length)
 {
 	wget_buffer_memcat((wget_buffer *)userdata, data, length);
 
@@ -2766,7 +2766,7 @@ void sitemap_parse_xml_gz(JOB *job, wget_buffer *gzipped_data, const char *encod
 
 	wget_buffer_init(&plain, NULL, gzipped_data->length * 10);
 
-	if ((dc = wget_decompress_open(wget_content_encoding_gzip, _get_unzipped, &plain))) {
+	if ((dc = wget_decompress_open(wget_content_encoding_gzip, get_unzipped, &plain))) {
 		wget_decompress(dc, gzipped_data->data, gzipped_data->length);
 		wget_decompress_close(dc);
 
@@ -2828,7 +2828,7 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, wget_i
 	}
 }
 
-static void _add_urls(JOB *job, wget_vector *urls, const char *encoding, wget_iri *base)
+static void add_urls(JOB *job, wget_vector *urls, const char *encoding, wget_iri *base)
 {
 	const char *p;
 	size_t baselen = 0;
@@ -2868,7 +2868,7 @@ void atom_parse(JOB *job, const char *data, const char *encoding, wget_iri *base
 	wget_vector *urls;
 
 	wget_atom_get_urls_inline(data, &urls);
-	_add_urls(job, urls, encoding, base);
+	add_urls(job, urls, encoding, base);
 	wget_vector_free(&urls);
 	// wget_atom_free_urls_inline(&res);
 }
@@ -2888,7 +2888,7 @@ void rss_parse(JOB *job, const char *data, const char *encoding, wget_iri *base)
 	wget_vector *urls;
 
 	wget_rss_get_urls_inline(data, &urls);
-	_add_urls(job, urls, encoding, base);
+	add_urls(job, urls, encoding, base);
 	wget_vector_free(&urls);
 	// wget_rss_free_urls_inline(&res);
 }
@@ -2955,7 +2955,7 @@ struct css_context {
 		encoding_allocated;
 };
 
-static void _css_parse_encoding(void *context, const char *encoding, size_t len)
+static void css_parse_encoding(void *context, const char *encoding, size_t len)
 {
 	struct css_context *ctx = context;
 
@@ -2967,12 +2967,12 @@ static void _css_parse_encoding(void *context, const char *encoding, size_t len)
 	}
 }
 
-static void _css_parse_uri(void *context, const char *url, size_t len, size_t pos WGET_GCC_UNUSED)
+static void css_parse_uri(void *context, const char *url, size_t len, size_t pos WGET_GCC_UNUSED)
 {
 	struct css_context *ctx = context;
 	wget_string u = { url, len };
 
-	if (_normalize_uri(ctx->base, &u, ctx->encoding, &ctx->uri_buf))
+	if (normalize_uri(ctx->base, &u, ctx->encoding, &ctx->uri_buf))
 		return;
 
 	// we assume every URL() in a CSS file being a page requisite, URL_FLG_REQUISITE skips --no-parent
@@ -2993,7 +2993,7 @@ void css_parse(JOB *job, const char *data, size_t len, const char *encoding, wge
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
 
-	wget_css_parse_buffer(data, len, _css_parse_uri, _css_parse_encoding, &context);
+	wget_css_parse_buffer(data, len, css_parse_uri, css_parse_encoding, &context);
 
 	if (context.encoding_allocated)
 		xfree(context.encoding);
@@ -3012,7 +3012,7 @@ void css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
 
-	wget_css_parse_file(fname, _css_parse_uri, _css_parse_encoding, &context);
+	wget_css_parse_file(fname, css_parse_uri, css_parse_encoding, &context);
 
 	if (context.encoding_allocated)
 		xfree(context.encoding);
@@ -3087,7 +3087,7 @@ static void set_file_mtime(int fd, int64_t modified)
 }
 
 // On windows, open() and fopen() return EACCES instead of EISDIR.
-static int _wa_open(const char *fname, int flags, mode_t mode) {
+static int wa_open(const char *fname, int flags, mode_t mode) {
 	int fd = open(fname, flags, mode);
 #ifdef _WIN32
 	if (fd < 0 && errno == EACCES) {
@@ -3100,14 +3100,14 @@ static int _wa_open(const char *fname, int flags, mode_t mode) {
 }
 
 // Opens files uniquely
-static int _open_unique(const char *fname, int flags, mode_t mode, int multiple, char *unique, size_t unique_len)
+static int open_unique(const char *fname, int flags, mode_t mode, int multiple, char *unique, size_t unique_len)
 {
 	int fd;
 
 	if (unique_len && unique[0])
-		return _wa_open(unique, flags, mode);
+		return wa_open(unique, flags, mode);
 
-	fd = _wa_open(fname, flags, mode);
+	fd = wa_open(fname, flags, mode);
 	if (fd >= 0)
 		return fd;
 
@@ -3120,13 +3120,13 @@ static int _open_unique(const char *fname, int flags, mode_t mode, int multiple,
 		for (int i = 1; i < 99999 && fd < 0 && ((multiple && errno == EEXIST) || errno == EISDIR); i++) {
 			if (wget_snprintf(unique, unique_len, "%.*s_%d%s", (int) (ext - fname), fname, i, ext) >= unique_len)
 				return -1;
-			fd = _wa_open(unique, flags, mode);
+			fd = wa_open(unique, flags, mode);
 		}
 	} else {
 		for (int i = 1; i < 99999 && fd < 0 && ((multiple && errno == EEXIST) || errno == EISDIR); i++) {
 			if (wget_snprintf(unique, unique_len, "%s.%d", fname, i) >= unique_len)
 				return -1;
-			fd = _wa_open(unique, flags, mode);
+			fd = wa_open(unique, flags, mode);
 		}
 	}
 
@@ -3156,7 +3156,7 @@ static bool check_mime_list(wget_vector *list, const char *mime)
 	return result;
 }
 
-static int WGET_GCC_NONNULL((1)) _prepare_file(wget_http_response *resp, const char *fname, int flag,
+static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const char *fname, int flag,
 		wget_iri *uri, wget_iri *original_url, int ignore_patterns, wget_buffer *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path)
 {
@@ -3321,7 +3321,7 @@ static int WGET_GCC_NONNULL((1)) _prepare_file(wget_http_response *resp, const c
 	if (partial_content) {
 		long long size = get_file_size(unique[0] ? unique : fname);
 		if (size > 0) {
-			fd = _open_unique(fname, O_RDONLY | O_BINARY, 0, multiple, unique, sizeof(unique));
+			fd = open_unique(fname, O_RDONLY | O_BINARY, 0, multiple, unique, sizeof(unique));
 			if (fd >= 0) {
 				size_t rc;
 				if ((unsigned long long) size > max_partial_content)
@@ -3351,7 +3351,7 @@ static int WGET_GCC_NONNULL((1)) _prepare_file(wget_http_response *resp, const c
 		}
 	}
 
-	fd = _open_unique(fname, O_WRONLY | flag | O_CREAT | O_NONBLOCK | O_BINARY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
+	fd = open_unique(fname, O_WRONLY | flag | O_CREAT | O_NONBLOCK | O_BINARY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
 		multiple, unique, sizeof(unique));
 	// debug_printf("1 fd=%d flag=%02x (%02x %02x %02x) errno=%d %s\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND,errno,fname);
 	// Store the "actual" file name (with any extensions that were added present)
@@ -3404,7 +3404,7 @@ static int WGET_GCC_NONNULL((1)) _prepare_file(wget_http_response *resp, const c
 }
 
 // context used for header and body callback
-struct _body_callback_context {
+struct body_callback_context {
 	JOB *job;
 	wget_buffer *body;
 	uint64_t max_memory;
@@ -3415,7 +3415,7 @@ struct _body_callback_context {
 	long long limit_prev_time_ms;
 };
 
-static int _get_requested_range(void *ctx, void *elem)
+static int get_requested_range(void *ctx, void *elem)
 {
 	wget_http_header_param *param = (wget_http_header_param *) elem;
 	long long *ret = (long long *) ctx;
@@ -3427,9 +3427,9 @@ static int _get_requested_range(void *ctx, void *elem)
 		return 0;
 }
 
-static int _get_header(wget_http_response *resp, void *context)
+static int get_header(wget_http_response *resp, void *context)
 {
-	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
+	struct body_callback_context *ctx = (struct body_callback_context *)context;
 	PART *part;
 	const char *dest = NULL, *name;
 	int ret = 0;
@@ -3478,7 +3478,7 @@ static int _get_header(wget_http_response *resp, void *context)
 		// Job re-use?
 		xfree(ctx->job->sig_filename);
 
-		ctx->outfd = _prepare_file(resp, dest,
+		ctx->outfd = prepare_file(resp, dest,
 			resp->code == 206 ? O_APPEND : O_TRUNC,
 			ctx->job->iri,
 			ctx->job->original_url,
@@ -3503,7 +3503,7 @@ out:
 		const char *filename = NULL;
 
 		if (!name) {
-			filename = _get_local_filename(ctx->job->iri);
+			filename = get_local_filename_real(ctx->job->iri);
 
 			if ((name = strrchr(filename, '/')))
 				name += 1;
@@ -3517,7 +3517,7 @@ out:
 		}
 		else if (config.continue_download && resp->code == 206) {
 			long long already_downloaded;
-			wget_vector_browse(resp->req->headers, _get_requested_range, &already_downloaded);
+			wget_vector_browse(resp->req->headers, get_requested_range, &already_downloaded);
 			bar_slot_begin(ctx->progress_slot, name, 1, resp->content_length+already_downloaded);
 			bar_set_downloaded(ctx->progress_slot, already_downloaded);
 		}
@@ -3556,7 +3556,7 @@ static bool check_status_code_list(wget_vector *list, uint16_t status)
 
 // Sleep after reading to slow down the transfer rate
 // Based on rsync's bandwidth limit implementation (see io.c:sleep_for_bwlimit)
-static void limit_transfer_rate(struct _body_callback_context *ctx, size_t read_bytes)
+static void limit_transfer_rate(struct body_callback_context *ctx, size_t read_bytes)
 {
 	long sleep_ms;
 	long elapsed_ms;
@@ -3593,12 +3593,12 @@ static void limit_transfer_rate(struct _body_callback_context *ctx, size_t read_
 }
 
 
-static int _get_body(wget_http_response *resp, void *context, const char *data, size_t length)
+static int get_body(wget_http_response *resp, void *context, const char *data, size_t length)
 {
-	struct _body_callback_context *ctx = (struct _body_callback_context *)context;
+	struct body_callback_context *ctx = (struct body_callback_context *)context;
 
 	if (ctx->length == 0) {
-		// first call to _get_body
+		// first call to get_body
 		if (config.server_response)
 			info_printf(_("# got header %zu bytes:\n%s\n"), resp->header->length, resp->header->data);
 	}
@@ -3642,7 +3642,7 @@ static int _get_body(wget_http_response *resp, void *context, const char *data, 
 	return 0;
 }
 
-static void _add_authorize_header(
+static void add_authorize_header(
 	wget_http_request *req,
 	wget_vector *challenges,
 	const char *username, const char *password, int proxied)
@@ -3839,9 +3839,9 @@ static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 	}
 
 	if (job->challenges) {
-		_add_authorize_header(req, job->challenges, config.http_username, config.http_password, 0);
+		add_authorize_header(req, job->challenges, config.http_username, config.http_password, 0);
 	} else if (job->proxy_challenges) {
-		_add_authorize_header(req, job->proxy_challenges, config.http_proxy_username, config.http_proxy_password, 1);
+		add_authorize_header(req, job->proxy_challenges, config.http_proxy_username, config.http_proxy_password, 1);
 	}
 
 	if (job->part)
@@ -3941,7 +3941,7 @@ int http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloa
 		return rc;
 	}
 
-	struct _body_callback_context *context = wget_calloc(1, sizeof(struct _body_callback_context));
+	struct body_callback_context *context = wget_calloc(1, sizeof(struct body_callback_context));
 
 	context->job = downloader->job;
 	context->max_memory = downloader->job->part ? 0 : ((uint64_t) 10) * (1 << 20);
@@ -3954,8 +3954,8 @@ int http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloa
 	context->limit_prev_time_ms = wget_get_timemillis();
 
 	// set callback functions
-	wget_http_request_set_header_cb(req, _get_header, context);
-	wget_http_request_set_body_cb(req, _get_body, context);
+	wget_http_request_set_header_cb(req, get_header, context);
+	wget_http_request_set_body_cb(req, get_body, context);
 
 	// keep the received response header in 'resp->header'
 	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, config.save_headers || config.server_response || (config.progress && config.spider));
@@ -3970,7 +3970,7 @@ wget_http_response *http_receive_response(wget_http_connection *conn)
 	if (!resp)
 		return NULL;
 
-	struct _body_callback_context *context = resp->req->body_user_data;
+	struct body_callback_context *context = resp->req->body_user_data;
 
 	resp->body = context->body;
 
