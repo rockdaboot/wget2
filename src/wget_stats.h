@@ -29,11 +29,9 @@
 #include "wget_gpgme.h"
 
 #define NULL_TO_DASH(s) ((s) ? (s) : "-")
-#define ONE_ZERO_DASH(s) ((s) ? ((s) == 1 ? "1" : "-") : "0")
 #define ON_OFF_DASH(s) ((s) ? ((s) == 1 ? "On" : "-") : "Off")
 #define YES_NO(s) ((s) ? "Yes" : "No")
 #define HTTP_1_2(s) ((s) == WGET_PROTOCOL_HTTP_1_1 ? "HTTP/1.1" : ((s) == WGET_PROTOCOL_HTTP_2_0 ? "HTTP/2" : "-"))
-#define HTTP_S_DASH(s) (strcmp(s, "http") ? (strcmp(s, "https") ? s : "1") : "0")
 
 void site_stats_print(void);
 void stats_site_add(wget_http_response *resp, wget_gpg_info_t *gpg_info);
