@@ -38,7 +38,7 @@
 
 #include <gpgme.h>
 
-static gpgme_protocol_t _proto_for_content_type(const char *type)
+static gpgme_protocol_t proto_for_content_type(const char *type)
 {
 	if (!wget_strcasecmp_ascii(type, "application/pgp-signature")) {
 		return GPGME_PROTOCOL_OpenPGP;
@@ -50,7 +50,7 @@ static gpgme_protocol_t _proto_for_content_type(const char *type)
 	return GPGME_PROTOCOL_UNKNOWN;
 }
 
-static void _validate_sigs(gpgme_signature_t sig, wget_gpg_info_t *info, const char *sig_filename)
+static void validate_sigs(gpgme_signature_t sig, wget_gpg_info_t *info, const char *sig_filename)
 {
 	for (gpgme_signature_t cur = sig; cur; cur = cur->next) {
 		if (cur->summary & (GPGME_SIGSUM_VALID | GPGME_SIGSUM_GREEN)) {
@@ -85,7 +85,7 @@ static void _validate_sigs(gpgme_signature_t sig, wget_gpg_info_t *info, const c
  * Returns a pointer to the first character of the second string, or NULL if the given
  * string contains no '.'s
  */
-static char *_remove_ext(char *str)
+static char *remove_ext(char *str)
 {
 	char *ext = strrchr(str, '.');
 
@@ -96,21 +96,21 @@ static char *_remove_ext(char *str)
 }
 
 
-static char *_determine_base_file(const char *real_filename, const char *base_filename)
+static char *determine_base_file(const char *real_filename, const char *base_filename)
 {
 	size_t base_len = strlen(base_filename);
 	size_t real_len = strlen(real_filename);
 
 	if (!wget_strncmp(real_filename, base_filename, base_len < real_len ? real_len : base_len)) {
 		char *f = wget_strdup(real_filename);
-		_remove_ext(f);
+		remove_ext(f);
 		return f;
 	}
 
 	char *real_name_cpy = wget_strdup(real_filename);
 	char *base_name_cpy = wget_strdup(base_filename);
 
-	char *real_ext = _remove_ext(real_name_cpy);
+	char *real_ext = remove_ext(real_name_cpy);
 	char *answer = NULL;
 
 	if (!real_ext) {
@@ -122,7 +122,7 @@ static char *_determine_base_file(const char *real_filename, const char *base_fi
 	// to the back. Which needs to be added to the file that has been signed so that we compare like vs. like.
 	if (!wget_strncmp(real_name_cpy, base_name_cpy, base_len)) {
 		// Strip the extension from the base name (this will remove a '.sig' or similar)
-		_remove_ext(base_name_cpy);
+		remove_ext(base_name_cpy);
 
 		// Create and store the corrected file name
 		wget_asprintf(&answer, "%s.%s", base_name_cpy, real_ext);
@@ -135,7 +135,7 @@ static char *_determine_base_file(const char *real_filename, const char *base_fi
 	return answer;
 }
 
-static void _print_gpg_error(gpgme_error_t err)
+static void print_gpg_error(gpgme_error_t err)
 {
 	char buf[128];
 
@@ -143,7 +143,7 @@ static void _print_gpg_error(gpgme_error_t err)
 	error_printf("  %s\n", buf); // no translation
 }
 
-static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wget_gpg_info_t *info,
+static int verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wget_gpg_info_t *info,
 		const char *sig_filename)
 {
 	gpgme_ctx_t ctx;
@@ -154,7 +154,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 	e = gpgme_new(&ctx);
 	if (e != GPG_ERR_NO_ERROR) {
 		error_printf(_("Failed to init gpgme context\n"));
-		_print_gpg_error(e);
+		print_gpg_error(e);
 		return WGET_E_GPG_VER_ERR;
 	}
 
@@ -169,7 +169,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 
 			if (e != GPG_ERR_NO_ERROR) {
 				error_printf(_("Couldn't specify gnupg homedir\n"));
-				_print_gpg_error(e);
+				print_gpg_error(e);
 				res = WGET_E_GPG_VER_ERR;
 				goto done;
 			}
@@ -184,7 +184,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 	e = gpgme_op_verify(ctx, sig_buff, data_buf, NULL);
 	if (e != GPG_ERR_NO_ERROR) {
 		error_printf(_("Error during verification\n"));
-		_print_gpg_error(e);
+		print_gpg_error(e);
 		res = WGET_E_GPG_VER_ERR;
 		goto done;
 	}
@@ -192,7 +192,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 	verify_result = gpgme_op_verify_result(ctx);
 	if (!verify_result) {
 		error_printf(_("GPGME verify failed!\n"));
-		_print_gpg_error(e);
+		print_gpg_error(e);
 		res = WGET_E_GPG_VER_FAIL;
 		goto done;
 	}
@@ -203,7 +203,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 		memset(info, 0, sizeof(*info));
 	}
 
-	_validate_sigs(verify_result->signatures, info, sig_filename);
+	validate_sigs(verify_result->signatures, info, sig_filename);
 
 	if (info->valid_sigs)
 		res = WGET_E_SUCCESS; // we saw at least one successful verification
@@ -216,7 +216,7 @@ static int _verify_detached_sig(gpgme_data_t sig_buff, gpgme_data_t data_buf, wg
 	return res;
 }
 
-static int _verify_detached_str(const char *sig, const size_t sig_len,
+static int verify_detached_str(const char *sig, const size_t sig_len,
 	const char *dat, const size_t dat_len, wget_gpg_info_t *info,
 	const char *sig_filename)
 {
@@ -224,17 +224,17 @@ static int _verify_detached_str(const char *sig, const size_t sig_len,
 	gpgme_error_t e;
 
 	if ((e = gpgme_data_new_from_mem(&sig_d, sig, sig_len, 0)) != GPG_ERR_NO_ERROR) {
-		_print_gpg_error(e);
+		print_gpg_error(e);
 		return WGET_E_GPG_VER_ERR;
 	}
 
 	if ((e = gpgme_data_new_from_mem(&data_d, dat, dat_len, 0)) != GPG_ERR_NO_ERROR) {
-		_print_gpg_error(e);
+		print_gpg_error(e);
 		gpgme_data_release(sig_d);
 		return WGET_E_GPG_VER_ERR;
 	}
 
-	int ret = _verify_detached_sig(sig_d, data_d, info, sig_filename);
+	int ret = verify_detached_sig(sig_d, data_d, info, sig_filename);
 
 	gpgme_data_release(sig_d);
 	gpgme_data_release(data_d);
@@ -256,7 +256,7 @@ int wget_verify_pgp_sig_buff(wget_buffer *sig, wget_buffer *data, wget_gpg_info_
 int wget_verify_pgp_sig_str(const char *sig, const size_t sig_len, const char *data, const size_t data_len, wget_gpg_info_t *info)
 {
 #ifdef WITH_GPGME
-	return _verify_detached_str(sig, sig_len, data, data_len, info, NULL);
+	return verify_detached_str(sig, sig_len, data, data_len, info, NULL);
 #else
 	return WGET_E_GPG_DISABLED;
 #endif
@@ -268,14 +268,14 @@ int wget_verify_job(JOB *job, wget_http_response *resp, wget_gpg_info_t *info)
 		memset(info, 0, sizeof(*info));
 
 #ifdef WITH_GPGME
-	if (_proto_for_content_type(resp->content_type) != GPGME_PROTOCOL_OpenPGP) {
+	if (proto_for_content_type(resp->content_type) != GPGME_PROTOCOL_OpenPGP) {
 		// This is not a super future-proof way to do it.
 		error_printf(_("Unsupported protocol type for content: %s\n"), resp->content_type);
 		return WGET_E_INVALID;
 	}
 
 	// The corrected name of the base file, adjusted for any collision extensions
-	char *corrected_base_file = _determine_base_file(job->sig_filename, job->local_filename);
+	char *corrected_base_file = determine_base_file(job->sig_filename, job->local_filename);
 
 	if (!corrected_base_file) {
 		error_printf(_("Couldn't correct signature file!\n"));
@@ -295,7 +295,7 @@ int wget_verify_job(JOB *job, wget_http_response *resp, wget_gpg_info_t *info)
 	xfree(corrected_base_file);
 
 	int res =
-		_verify_detached_str(resp->body->data, resp->body->length, file_contents, num_bytes, info, job->sig_filename);
+		verify_detached_str(resp->body->data, resp->body->length, file_contents, num_bytes, info, job->sig_filename);
 
 	xfree(file_contents);
 
@@ -321,7 +321,7 @@ char *wget_verify_get_base_file(JOB *job)
 {
 #ifdef WITH_GPGME
 	if (job->sig_req)
-		return _determine_base_file(job->sig_filename, job->local_filename);
+		return determine_base_file(job->sig_filename, job->local_filename);
 #endif
 	return NULL;
 }
