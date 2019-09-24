@@ -724,7 +724,7 @@ static void add_url_to_queue(const char *url, wget_iri *base, const char *encodi
 
 	if (iri->scheme == WGET_IRI_SCHEME_HTTP && config.https_enforce) {
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
-		if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT)
+		if (config.https_enforce == HTTPS_ENFORCE_SOFT)
 			http_fallback = 1;
 	}
 
@@ -912,7 +912,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	if (iri->scheme == WGET_IRI_SCHEME_HTTP && config.https_enforce && !(flags & URL_FLG_SKIPFALLBACK)) {
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
-		if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT)
+		if (config.https_enforce == HTTPS_ENFORCE_SOFT)
 			http_fallback = 1;
 	}
 

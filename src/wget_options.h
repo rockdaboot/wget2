@@ -41,11 +41,11 @@
 #define EXCLUDED_DIRECTORY_PREFIX '-'
 
 //types for --https-enforce
-enum {
-	WGET_HTTPS_ENFORCE_NONE,
-	WGET_HTTPS_ENFORCE_SOFT,
-	WGET_HTTPS_ENFORCE_HARD
-};
+typedef enum {
+	HTTPS_ENFORCE_NONE,
+	HTTPS_ENFORCE_SOFT,
+	HTTPS_ENFORCE_HARD
+} https_enforce_mode;
 
 enum {
 	WGET_GPG_VERIFY_DISABLED,
@@ -186,6 +186,8 @@ struct config {
 		default_https_port;
 	wget_report_speed
 		report_speed;
+	https_enforce_mode
+		https_enforce;
 	char
 		tls_resume,            // if TLS session resumption is enabled or not
 		progress,
@@ -260,7 +262,6 @@ struct config {
 		askpass,
 		verify_save_failed,
 		verify_sig,
-		https_enforce,
 		retry_connrefused,
 		unlink,
 		background,

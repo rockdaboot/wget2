@@ -999,11 +999,11 @@ static int parse_report_speed_type(option_t opt, const char *val, WGET_GCC_UNUSE
 static int parse_https_enforce(option_t opt, const char *val, WGET_GCC_UNUSED const char invert)
 {
 	if (!wget_strcasecmp_ascii(val, "hard"))
-		*((char *)opt->var) = WGET_HTTPS_ENFORCE_HARD;
+		*((https_enforce_mode *)opt->var) = HTTPS_ENFORCE_HARD;
 	else if (!wget_strcasecmp_ascii(val, "soft"))
-		*((char *)opt->var) = WGET_HTTPS_ENFORCE_SOFT;
+		*((https_enforce_mode *)opt->var) = HTTPS_ENFORCE_SOFT;
 	else if (!wget_strcasecmp_ascii(val, "none"))
-		*((char *)opt->var) = WGET_HTTPS_ENFORCE_NONE;
+		*((https_enforce_mode *)opt->var) = HTTPS_ENFORCE_NONE;
 	else if (!val[0]) {
 		error_printf(_("Missing required type specifier\n"));
 		return -1;
@@ -3290,7 +3290,7 @@ int init(int argc, const char **argv)
 
 	if (config.https_only && config.https_enforce)
 		// disable https enforce if https-only is enabled
-		config.https_enforce = WGET_HTTPS_ENFORCE_NONE;
+		config.https_enforce = HTTPS_ENFORCE_NONE;
 
 	wget_iri_set_defaultport(WGET_IRI_SCHEME_HTTP, config.default_http_port);
 	wget_iri_set_defaultport(WGET_IRI_SCHEME_HTTPS, config.default_https_port);
