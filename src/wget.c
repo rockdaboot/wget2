@@ -1721,7 +1721,7 @@ static int process_response_header(wget_http_response *resp)
 			if (!job->sig_req) {
 				set_exit_status(WG_EXIT_STATUS_REMOTE);
 			} else if (!ext) {
-				if (config.verify_sig == WGET_GPG_VERIFY_SIG_FAIL)
+				if (config.verify_sig == GPG_VERIFY_SIG_FAIL)
 					set_exit_status(WG_EXIT_STATUS_REMOTE);
 			} else {
 				char *next_check = wget_aprintf("%s.%s", job->sig_req, ext);
@@ -2171,7 +2171,7 @@ static void process_response(wget_http_response *resp)
 				}
 			}
 		}
-		else if (config.verify_sig != WGET_GPG_VERIFY_DISABLED
+		else if (config.verify_sig != GPG_VERIFY_DISABLED
 			 && resp->content_type) {
 #ifdef WITH_GPGME
 			if (wget_strcasecmp_ascii(resp->content_type, "application/pgp-signature") == 0) {

@@ -47,11 +47,11 @@ typedef enum {
 	HTTPS_ENFORCE_HARD
 } https_enforce_mode;
 
-enum {
-	WGET_GPG_VERIFY_DISABLED,
-	WGET_GPG_VERIFY_SIG_FAIL,
+typedef enum {
+	GPG_VERIFY_DISABLED,
+	GPG_VERIFY_SIG_FAIL,
 	WGET_GPG_VERIFY_SIG_NO_FAIL
-};
+} gpg_verify_mode;
 
 typedef struct {
 	const char
@@ -186,12 +186,13 @@ struct config {
 		report_speed;
 	https_enforce_mode
 		https_enforce;
+	gpg_verify_mode
+		verify_sig;
 	char
 		cert_type,             // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
 		private_key_type,      // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
 		progress,
-		regex_type,
-		verify_sig;
+		regex_type;
 	bool
 		tls_resume,            // if TLS session resumption is enabled or not
 		content_on_error,

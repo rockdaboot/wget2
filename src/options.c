@@ -1025,12 +1025,12 @@ static int parse_verify_sig(option_t opt, const char *val, const char invert)
 				error_printf(_("no-verify-sig cannot take additional arguments\n"));
 				return -1;
 			} else {
-				*((char *)opt->var) = WGET_GPG_VERIFY_DISABLED;
+				*((gpg_verify_mode *)opt->var) = GPG_VERIFY_DISABLED;
 			}
 		} else if (!val || !wget_strcasecmp_ascii(val, "fail"))
-			*((char *)opt->var) = WGET_GPG_VERIFY_SIG_FAIL;
+			*((gpg_verify_mode *)opt->var) = GPG_VERIFY_SIG_FAIL;
 		else if (!wget_strcasecmp_ascii(val, "no-fail"))
-			*((char *)opt->var) = WGET_GPG_VERIFY_SIG_NO_FAIL;
+			*((gpg_verify_mode *)opt->var) = WGET_GPG_VERIFY_SIG_NO_FAIL;
 		else {
 			error_printf(_("Invalid option specifier: %s\n"), val);
 			return -1;
@@ -1205,7 +1205,7 @@ struct config config = {
 	.netrc = 1,
 	.waitretry = 10 * 1000,
 #ifdef WITH_GPGME
-	.verify_sig = WGET_GPG_VERIFY_DISABLED,
+	.verify_sig = GPG_VERIFY_DISABLED,
 	.verify_save_failed = 0,
 #endif
 	.metalink = 1,
