@@ -63,7 +63,7 @@ static wget_ocsp_stats_callback
 static void
 	*ocsp_stats_ctx;
 
-static struct _config {
+static struct config {
 	const char
 		*secure_protocol,
 		*ca_directory,
@@ -90,7 +90,7 @@ static struct _config {
 		print_info : 1,
 		ocsp : 1,
 		ocsp_stapling : 1;
-} _config = {
+} config = {
 	.check_certificate = 1,
 	.check_hostname = 1,
 	.ocsp = 1,
@@ -105,7 +105,7 @@ static struct _config {
 #endif
 };
 
-struct _session_context {
+struct session_context {
 	const char *
 		hostname;
 	wget_hpkp_stats_result
@@ -176,14 +176,14 @@ static WOLFSSL_CTX
 void wget_ssl_set_config_string(int key, const char *value)
 {
 	switch (key) {
-	case WGET_SSL_SECURE_PROTOCOL: _config.secure_protocol = value; break;
-	case WGET_SSL_CA_DIRECTORY: _config.ca_directory = value; break;
-	case WGET_SSL_CA_FILE: _config.ca_file = value; break;
-	case WGET_SSL_CERT_FILE: _config.cert_file = value; break;
-	case WGET_SSL_KEY_FILE: _config.key_file = value; break;
-	case WGET_SSL_CRL_FILE: _config.crl_file = value; break;
-	case WGET_SSL_OCSP_SERVER: _config.ocsp_server = value; break;
-	case WGET_SSL_ALPN: _config.alpn = value; break;
+	case WGET_SSL_SECURE_PROTOCOL: config.secure_protocol = value; break;
+	case WGET_SSL_CA_DIRECTORY: config.ca_directory = value; break;
+	case WGET_SSL_CA_FILE: config.ca_file = value; break;
+	case WGET_SSL_CERT_FILE: config.cert_file = value; break;
+	case WGET_SSL_KEY_FILE: config.key_file = value; break;
+	case WGET_SSL_CRL_FILE: config.crl_file = value; break;
+	case WGET_SSL_OCSP_SERVER: config.ocsp_server = value; break;
+	case WGET_SSL_ALPN: config.alpn = value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be a string)\n"), key);
 	}
 }
@@ -215,9 +215,9 @@ void wget_ssl_set_config_string(int key, const char *value)
 void wget_ssl_set_config_object(int key, void *value)
 {
 	switch (key) {
-	case WGET_SSL_OCSP_CACHE: _config.ocsp_cert_cache = (wget_ocsp_db *)value; break;
-	case WGET_SSL_SESSION_CACHE: _config.tls_session_cache = (wget_tls_session_db *)value; break;
-	case WGET_SSL_HPKP_CACHE: _config.hpkp_cache = (wget_hpkp_db *)value; break;
+	case WGET_SSL_OCSP_CACHE: config.ocsp_cert_cache = (wget_ocsp_db *)value; break;
+	case WGET_SSL_SESSION_CACHE: config.tls_session_cache = (wget_tls_session_db *)value; break;
+	case WGET_SSL_HPKP_CACHE: config.hpkp_cache = (wget_hpkp_db *)value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an object)\n"), key);
 	}
 }
@@ -256,14 +256,14 @@ void wget_ssl_set_config_object(int key, void *value)
 void wget_ssl_set_config_int(int key, int value)
 {
 	switch (key) {
-	case WGET_SSL_CHECK_CERTIFICATE: _config.check_certificate = (char)value; break;
-	case WGET_SSL_CHECK_HOSTNAME: _config.check_hostname = (char)value; break;
-	case WGET_SSL_CA_TYPE: _config.ca_type = (char)value; break;
-	case WGET_SSL_CERT_TYPE: _config.cert_type = (char)value; break;
-	case WGET_SSL_KEY_TYPE: _config.key_type = (char)value; break;
-	case WGET_SSL_PRINT_INFO: _config.print_info = (char)value; break;
-	case WGET_SSL_OCSP: _config.ocsp = (char)value; break;
-	case WGET_SSL_OCSP_STAPLING: _config.ocsp_stapling = (char)value; break;
+	case WGET_SSL_CHECK_CERTIFICATE: config.check_certificate = (char)value; break;
+	case WGET_SSL_CHECK_HOSTNAME: config.check_hostname = (char)value; break;
+	case WGET_SSL_CA_TYPE: config.ca_type = (char)value; break;
+	case WGET_SSL_CERT_TYPE: config.cert_type = (char)value; break;
+	case WGET_SSL_KEY_TYPE: config.key_type = (char)value; break;
+	case WGET_SSL_PRINT_INFO: config.print_info = (char)value; break;
+	case WGET_SSL_OCSP: config.ocsp = (char)value; break;
+	case WGET_SSL_OCSP_STAPLING: config.ocsp_stapling = (char)value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an integer)\n"), key);
 	}
 }
@@ -272,7 +272,7 @@ void wget_ssl_set_config_int(int key, int value)
  * if the hostname matches, as well as the activation, expiration dates.
  */
 /*
-static int _verify_certificate_callback(gnutls_session_t session)
+static int verify_certificate_callback(gnutls_session_t session)
 {
 	unsigned int status, deinit_cert = 0, deinit_issuer = 0;
 	const gnutls_datum_t *cert_list = 0;
@@ -280,11 +280,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	int ret = -1, err, ocsp_ok = 0, pinning_ok = 0;
 	gnutls_x509_crt_t cert = NULL, issuer = NULL;
 	const char *hostname;
-	const char *tag = _config.check_certificate ? _("ERROR") : _("WARNING");
+	const char *tag = config.check_certificate ? _("ERROR") : _("WARNING");
 	unsigned nvalid = 0, nrevoked = 0, nignored = 0;
 
 	// read hostname
-	struct _session_context *ctx = gnutls_session_get_ptr(session);
+	struct session_context *ctx = gnutls_session_get_ptr(session);
 	hostname = ctx->hostname;
 
 	// This verification function uses the trusted CAs in the credentials
@@ -292,22 +292,22 @@ static int _verify_certificate_callback(gnutls_session_t session)
 	//
 	if (gnutls_certificate_verify_peers3(session, hostname, &status) != GNUTLS_E_SUCCESS) {
 //		if (wget_get_logger(WGET_LOGGER_DEBUG))
-//			_print_info(session);
+//			print_info(session);
 		error_printf(_("%s: Certificate verification error\n"), tag);
 		goto out;
 	}
 
 //	if (wget_get_logger(WGET_LOGGER_DEBUG))
-//		_print_info(session);
+//		print_info(session);
 
 	if (status & GNUTLS_CERT_REVOKED) {
-		if (_config.ocsp_cert_cache)
-			wget_ocsp_db_add_host(_config.ocsp_cert_cache, hostname, 0); // remove entry from cache
+		if (config.ocsp_cert_cache)
+			wget_ocsp_db_add_host(config.ocsp_cert_cache, hostname, 0); // remove entry from cache
 		if (ctx->ocsp_stapling) {
 			if (gnutls_x509_crt_init(&cert) == GNUTLS_E_SUCCESS) {
 				if ((cert_list = gnutls_certificate_get_peers(session, &cert_list_size))) {
 					if (gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER) == GNUTLS_E_SUCCESS) {
-						_add_cert_to_ocsp_cache(cert, 0);
+						add_cert_to_ocsp_cache(cert, 0);
 					}
 				}
 				gnutls_x509_crt_deinit(cert);
@@ -353,24 +353,24 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		goto out;
 	}
 
-	if (!_config.check_hostname || (_config.check_hostname && hostname && gnutls_x509_crt_check_hostname(cert, hostname)))
+	if (!config.check_hostname || (config.check_hostname && hostname && gnutls_x509_crt_check_hostname(cert, hostname)))
 		ret = 0;
 	else
 		goto out;
 
 	// At this point, the cert chain has been found valid regarding the locally available CA certificates and CRLs.
 	// Now, we are going to check the revocation status via OCSP
-	if (_config.ocsp_stapling) {
+	if (config.ocsp_stapling) {
 		if (!ctx->valid && ctx->ocsp_stapling) {
 			if (gnutls_ocsp_status_request_is_checked(session, 0)) {
 				debug_printf("Server certificate is valid regarding OCSP stapling\n");
-//				_get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
-				_add_cert_to_ocsp_cache(cert, 1);
+//				get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
+				add_cert_to_ocsp_cache(cert, 1);
 				nvalid = 1;
 			}
 			else if (gnutls_ocsp_status_request_is_checked(session, GNUTLS_OCSP_SR_IS_AVAIL))
 				error_printf(_("WARNING: The certificate's (stapled) OCSP status is invalid\n"));
-			else if (!_config.ocsp)
+			else if (!config.ocsp)
 				error_printf(_("WARNING: The certificate's (stapled) OCSP status has not been sent\n"));
 		} else if (ctx->valid)
 			debug_printf("OCSP: Host '%s' is valid (from cache)\n", hostname);
@@ -385,18 +385,18 @@ static int _verify_certificate_callback(gnutls_session_t session)
 			continue;
 		}
 
-		if (_cert_verify_hpkp(cert, hostname, session) == 0)
+		if (cert_verify_hpkp(cert, hostname, session) == 0)
 			pinning_ok = 1;
 
-		_cert_verify_hpkp(cert, hostname, session);
+		cert_verify_hpkp(cert, hostname, session);
 
-		if (_config.ocsp && it > nvalid) {
+		if (config.ocsp && it > nvalid) {
 			char fingerprint[64 * 2 +1];
 			int revoked;
 
-			_get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
+			get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
 
-			if (wget_ocsp_fingerprint_in_cache(_config.ocsp_cert_cache, fingerprint, &revoked)) {
+			if (wget_ocsp_fingerprint_in_cache(config.ocsp_cert_cache, fingerprint, &revoked)) {
 				// found cert's fingerprint in cache
 				if (revoked) {
 					debug_printf("Certificate[%u] of '%s' has been revoked (cached)\n", it, hostname);
@@ -412,7 +412,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 				gnutls_x509_crt_deinit(issuer);
 				deinit_issuer = 0;
 			}
-			if ((err = gnutls_certificate_get_issuer(_credentials, cert, &issuer, 0)) != GNUTLS_E_SUCCESS && it < cert_list_size - 1) {
+			if ((err = gnutls_certificate_get_issuer(credentials, cert, &issuer, 0)) != GNUTLS_E_SUCCESS && it < cert_list_size - 1) {
 				gnutls_x509_crt_init(&issuer);
 				deinit_issuer = 1;
 				if ((err = gnutls_x509_crt_import(issuer, &cert_list[it + 1], GNUTLS_X509_FMT_DER))  != GNUTLS_E_SUCCESS) {
@@ -429,11 +429,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 
 			if (ocsp_ok == 1) {
 				debug_printf("Certificate[%u] of '%s' is valid (via OCSP)\n", it, hostname);
-				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, 1); // 1h valid
+				wget_ocsp_db_add_fingerprint(config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, 1); // 1h valid
 				nvalid++;
 			} else if (ocsp_ok == 0) {
 				debug_printf("%s: Certificate[%u] of '%s' has been revoked (via OCSP)\n", tag, it, hostname);
-				wget_ocsp_db_add_fingerprint(_config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, 0);  // cert has been revoked
+				wget_ocsp_db_add_fingerprint(config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, 0);  // cert has been revoked
 				nrevoked++;
 			} else {
 				debug_printf("WARNING: OCSP response not available or ignored\n");
@@ -442,7 +442,7 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		}
 	}
 
-	if (_config.ocsp && stats_callback_ocsp) {
+	if (config.ocsp && stats_callback_ocsp) {
 		wget_ocsp_stats_data stats;
 		stats.hostname = hostname;
 		stats.nvalid = nvalid;
@@ -453,11 +453,11 @@ static int _verify_certificate_callback(gnutls_session_t session)
 		stats_callback_ocsp(&stats);
 	}
 
-	if (_config.ocsp_stapling || _config.ocsp) {
+	if (config.ocsp_stapling || config.ocsp) {
 		if (nvalid == cert_list_size) {
-			wget_ocsp_db_add_host(_config.ocsp_cert_cache, hostname, time(NULL) + 3600); // 1h valid
+			wget_ocsp_db_add_host(config.ocsp_cert_cache, hostname, time(NULL) + 3600); // 1h valid
 		} else if (nrevoked) {
-			wget_ocsp_db_add_host(_config.ocsp_cert_cache, hostname, 0); // remove entry from cache
+			wget_ocsp_db_add_host(config.ocsp_cert_cache, hostname, 0); // remove entry from cache
 			ret = -1;
 		}
 	}
@@ -475,52 +475,52 @@ out:
 	if (deinit_issuer)
 		gnutls_x509_crt_deinit(issuer);
 
-	return _config.check_certificate ? ret : 0;
+	return config.check_certificate ? ret : 0;
 }
 */
 
-static int _init;
-static wget_thread_mutex _mutex;
+static int init;
+static wget_thread_mutex mutex;
 
-static void __attribute__ ((constructor)) _wget_tls_init(void)
+static void __attribute__ ((constructor)) tls_init(void)
 {
-	if (!_mutex)
-		wget_thread_mutex_init(&_mutex);
+	if (!mutex)
+		wget_thread_mutex_init(&mutex);
 }
 
-static void __attribute__ ((destructor)) _wget_tls_exit(void)
+static void __attribute__ ((destructor)) tls_exit(void)
 {
-	if (_mutex)
-		wget_thread_mutex_destroy(&_mutex);
+	if (mutex)
+		wget_thread_mutex_destroy(&mutex);
 }
 
 /*
-static void _set_credentials(gnutls_certificate_credentials_t *credentials)
+static void set_credentials(gnutls_certificate_credentials_t *credentials)
 {
-	if (_config.cert_file && !_config.key_file) {
+	if (config.cert_file && !config.key_file) {
 		// Use the private key from the cert file unless otherwise specified.
-		_config.key_file = _config.cert_file;
-		_config.key_type = _config.cert_type;
+		config.key_file = config.cert_file;
+		config.key_type = config.cert_type;
 	}
-	else if (!_config.cert_file && _config.key_file) {
+	else if (!config.cert_file && config.key_file) {
 		// Use the cert from the private key file unless otherwise specified.
-		_config.cert_file = _config.key_file;
-		_config.cert_type = _config.key_type;
+		config.cert_file = config.key_file;
+		config.cert_type = config.key_type;
 	}
 
-	if (_config.cert_file && _config.key_file) {
-		if (_config.key_type != _config.cert_type) {
+	if (config.cert_file && config.key_file) {
+		if (config.key_type !=config.cert_type) {
 			// GnuTLS can't handle this
 			error_printf(_("GnuTLS requires the key and the cert to be of the same type.\n"));
 		}
 
-		if (gnutls_certificate_set_x509_key_file(*credentials, _config.cert_file, _config.key_file, _key_type(_config.key_type)) != GNUTLS_E_SUCCESS)
+		if (gnutls_certificate_set_x509_key_file(*credentials,config.cert_file,config.key_file,key_type(config.key_type)) != GNUTLS_E_SUCCESS)
 			error_printf(_("No certificates or keys were found\n"));
 	}
 
-	if (_config.ca_file) {
-		if (gnutls_certificate_set_x509_trust_file(*credentials, _config.ca_file, _key_type(_config.ca_type)) <= 0)
-			error_printf(_("No CAs were found in '%s'\n"), _config.ca_file);
+	if (config.ca_file) {
+		if (gnutls_certificate_set_x509_trust_file(*credentials, config.ca_file, key_type(config.ca_type)) <= 0)
+			error_printf(_("No CAs were found in '%s'\n"), config.ca_file);
 	}
 }
 */
@@ -547,11 +547,11 @@ static void _set_credentials(gnutls_certificate_credentials_t *credentials)
  */
 void wget_ssl_init(void)
 {
-	_wget_tls_init();
+	tls_init();
 
-	wget_thread_mutex_lock(_mutex);
+	wget_thread_mutex_lock(mutex);
 
-	if (!_init) {
+	if (!init) {
 		WOLFSSL_METHOD *method;
 		int min_version = -1;
 		const char *ciphers = NULL;
@@ -559,33 +559,33 @@ void wget_ssl_init(void)
 		debug_printf("WolfSSL init\n");
 		wolfSSL_Init();
 
-		if (!wget_strcasecmp_ascii(_config.secure_protocol, "SSLv2")) {
+		if (!wget_strcasecmp_ascii(config.secure_protocol, "SSLv2")) {
 			method = SSLv2_client_method();
-		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "SSLv3")) {
+		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "SSLv3")) {
 			method = wolfSSLv23_client_method();
 			min_version = WOLFSSL_SSLV3;
-		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1")) {
+		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1")) {
 			method = wolfSSLv23_client_method();
 			min_version = WOLFSSL_TLSV1;
-		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1_1")) {
+		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1_1")) {
 			method = wolfSSLv23_client_method();
 			min_version = WOLFSSL_TLSV1_1;
-		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1_2")) {
+		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1_2")) {
 			method = wolfSSLv23_client_method();
 			min_version = WOLFSSL_TLSV1_2;
-		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "TLSv1_3")) {
+		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1_3")) {
 			method = wolfSSLv23_client_method();
 			min_version = WOLFSSL_TLSV1_3;
-		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "PFS")) {
+		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "PFS")) {
 			method = wolfSSLv23_client_method();
 			ciphers = "HIGH:!aNULL:!RC4:!MD5:!SRP:!PSK:!kRSA";
-		} else if (!wget_strcasecmp_ascii(_config.secure_protocol, "auto")) {
+		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "auto")) {
 			method = wolfSSLv23_client_method();
 			min_version = WOLFSSL_TLSV1_2;
 			ciphers = "HIGH:!aNULL:!RC4:!MD5:!SRP:!PSK";
-		} else if (*_config.secure_protocol) {
+		} else if (*config.secure_protocol) {
 			method = wolfSSLv23_client_method();
-			ciphers = _config.secure_protocol;
+			ciphers = config.secure_protocol;
 		} else {
 			error_printf(_("Missing TLS method\n"));
 			goto out;
@@ -610,25 +610,25 @@ void wget_ssl_init(void)
 			if (!wolfSSL_CTX_set_cipher_list(ssl_ctx, ciphers))
 				error_printf(_("WolfSSL: Failed to set ciphers '%s'\n"), ciphers);
 
-		if (_config.check_certificate) {
-			if (!wget_strcmp(_config.ca_directory, "system"))
-				_config.ca_directory = "/etc/ssl/certs";
+		if (config.check_certificate) {
+			if (!wget_strcmp(config.ca_directory, "system"))
+				config.ca_directory = "/etc/ssl/certs";
 
 			/* Load client certificates into WOLFSSL_CTX */
-			if (wolfSSL_CTX_load_verify_locations(ssl_ctx, _config.ca_file, _config.ca_directory) != SSL_SUCCESS) {
-				error_printf(_("Failed to load %s, please check the file.\n"), _config.ca_directory);
+			if (wolfSSL_CTX_load_verify_locations(ssl_ctx, config.ca_file, config.ca_directory) != SSL_SUCCESS) {
+				error_printf(_("Failed to load %s, please check the file.\n"), config.ca_directory);
 				goto out;
 			}
 		} else {
 			wolfSSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_NONE, NULL);
 		}
 
-/*		if (_config.crl_file) {
+/*		if (config.crl_file) {
 			WOLFSSL_X509_STORE *store = wolfSSL_CTX_get_cert_store(ssl_ctx);
 			WOLFSSL_X509_LOOKUP *lookup;
 
 			if (!(lookup = wolfSSL_X509_STORE_add_lookup(store, wolfSSL_X509_LOOKUP_file()))
-				|| (!X509_load_crl_file(lookup, _config.crl_file, X509_FILETYPE_PEM)))
+				|| (!X509_load_crl_file(lookup, config.crl_file, X509_FILETYPE_PEM)))
 				return;
 
 			wolfSSL_X509_STORE_set_flags(store, WOLFSSL_CRL_CHECK | WOLFSSL_CRL_CHECKALL);
@@ -637,12 +637,12 @@ void wget_ssl_init(void)
 		debug_printf("Certificates loaded\n");
 
 out:
-		_init++;
+		init++;
 
 		debug_printf("WolfSSL init done\n");
 	}
 
-	wget_thread_mutex_unlock(_mutex);
+	wget_thread_mutex_unlock(mutex);
 }
 
 /**
@@ -659,19 +659,19 @@ out:
  */
 void wget_ssl_deinit(void)
 {
-	wget_thread_mutex_lock(_mutex);
+	wget_thread_mutex_lock(mutex);
 
-	if (_init == 1) {
+	if (init == 1) {
 		wolfSSL_CTX_free(ssl_ctx); ssl_ctx = NULL;
 		wolfSSL_Cleanup();
 	}
 
-	if (_init > 0) _init--;
+	if (init > 0) init--;
 
-	wget_thread_mutex_unlock(_mutex);
+	wget_thread_mutex_unlock(mutex);
 }
 
-static int _do_handshake(WOLFSSL *session, int sockfd, int timeout)
+static int do_handshake(WOLFSSL *session, int sockfd, int timeout)
 {
 	int ret;
 
@@ -848,7 +848,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	if (!tcp)
 		return WGET_E_INVALID;
 
-	if (!_init)
+	if (!init)
 		wget_ssl_init();
 
 	hostname = tcp->ssl_hostname;
@@ -867,19 +867,19 @@ int wget_ssl_open(wget_tcp *tcp)
 //	if (tcp->tls_false_start)
 //		info_printf(_("WolfSSL doesn't support TLS False Start\n"));
 
-	if (_config.alpn) {
-		size_t len = strlen(_config.alpn);
+	if (config.alpn) {
+		size_t len = strlen(config.alpn);
 		char alpn[len + 1];
 
 		// wolfSSL_UseALPN() destroys the ALPN string (bad design pattern !)
-		memcpy(alpn, _config.alpn, len + 1);
+		memcpy(alpn, config.alpn, len + 1);
 		if (wolfSSL_UseALPN(session, alpn, len, WOLFSSL_ALPN_CONTINUE_ON_MISMATCH) == WOLFSSL_SUCCESS) {
-			debug_printf("ALPN offering %s\n", _config.alpn);
+			debug_printf("ALPN offering %s\n", config.alpn);
 		} else
-			debug_printf("WolfSSL: Failed to set ALPN: %s\n", _config.alpn);
+			debug_printf("WolfSSL: Failed to set ALPN: %s\n", config.alpn);
 	}
 
-	struct _session_context *ctx = wget_calloc(1, sizeof(struct _session_context));
+	struct session_context *ctx = wget_calloc(1, sizeof(struct session_context));
 	ctx->hostname = wget_strdup(hostname);
 
 	tcp->ssl_session = session;
@@ -892,7 +892,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	if (tls_stats_callback)
 		before_millisecs = wget_get_timemillis();
 
-	ret = _do_handshake(session, sockfd, connect_timeout);
+	ret = do_handshake(session, sockfd, connect_timeout);
 
 	if (tls_stats_callback) {
 		long long after_millisecs = wget_get_timemillis();
@@ -922,7 +922,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	else if ((bits = wolfSSL_GetDhKey_Sz(session)) > 0)
 		debug_printf("SSL DH size %d bits\n", bits);
 
-	if (_config.alpn) {
+	if (config.alpn) {
 		char *protocol;
 		uint16_t protocol_length;
 
@@ -966,14 +966,14 @@ int wget_ssl_open(wget_tcp *tcp)
 
 		debug_printf("Handshake completed%s\n", resumed ? " (resumed session)" : "");
 
-		if (!resumed && _config.tls_session_cache) {
+		if (!resumed && config.tls_session_cache) {
 /*			WOLFSSL_SESSION *session_data = wolfSSL_get_session(session);
 
 			if (session_data) {
 				int session_data_size = wolfSSL_get_session_cache_memsize();
 				char session_data_data[session_data_size];
 				if (wolfSSL_memsave_session_cache(session_data_data, session_data_size) == SSL_SUCCESS) {
-					wget_tls_session_db_add(_config.tls_session_cache,
+					wget_tls_session_db_add(config.tls_session_cache,
 						wget_tls_session_new(ctx->hostname, 18 * 3600, session_data.data, session_data.size)); // 18h valid
 				}
 			}
@@ -981,7 +981,7 @@ int wget_ssl_open(wget_tcp *tcp)
 /*			gnutls_datum_t session_data;
 
 			if ((rc = gnutls_session_get_data2(session, &session_data)) == GNUTLS_E_SUCCESS) {
-				wget_tls_session_db_add(_config.tls_session_cache,
+				wget_tls_session_db_add(config.tls_session_cache,
 					wget_tls_session_new(ctx->hostname, 18 * 3600, session_data.data, session_data.size)); // 18h valid
 				gnutls_free(session_data.data);
 			} else
@@ -1094,14 +1094,14 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 		nbytes = gnutls_record_recv(session, buf, count);
 
 		// If False Start + Session Resumption are enabled, we get the session data after the first read()
-		struct _session_context *ctx = gnutls_session_get_ptr(session);
+		struct session_context *ctx = gnutls_session_get_ptr(session);
 		if (ctx && ctx->delayed_session_data) {
 			gnutls_datum_t session_data;
 
 			if ((rc = gnutls_session_get_data2(session, &session_data)) == GNUTLS_E_SUCCESS) {
 				debug_printf("Got delayed session data\n");
 				ctx->delayed_session_data = 0;
-				wget_tls_session_db_add(_config.tls_session_cache,
+				wget_tls_session_db_add(config.tls_session_cache,
 					wget_tls_session_new(ctx->hostname, 18 * 3600, session_data.data, session_data.size)); // 18h valid
 				gnutls_free(session_data.data);
 			} else
@@ -1110,7 +1110,7 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 
 		if (nbytes == GNUTLS_E_REHANDSHAKE) {
 			debug_printf("*** REHANDSHAKE while reading\n");
-			if ((nbytes = _do_handshake(session, sockfd, timeout)) == 0)
+			if ((nbytes = do_handshake(session, sockfd, timeout)) == 0)
 				nbytes = GNUTLS_E_AGAIN; // restart reading
 		}
 		if (nbytes >= 0 || nbytes != GNUTLS_E_AGAIN)
@@ -1170,7 +1170,7 @@ ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int
 
 		if (nbytes == GNUTLS_E_REHANDSHAKE) {
 			debug_printf("*** REHANDSHAKE while writing\n");
-			if ((nbytes = _do_handshake(session, sockfd, timeout)) == 0)
+			if ((nbytes = do_handshake(session, sockfd, timeout)) == 0)
 				continue; // restart writing
 		}
 		if (nbytes == GNUTLS_E_AGAIN)
