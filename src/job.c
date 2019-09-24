@@ -122,7 +122,7 @@ static int check_file_hash(HASH *hash, const char *fname)
 }
 */
 
-static int _check_file_fd(wget_metalink_hash *hash, int fd)
+static int check_file_fd(wget_metalink_hash *hash, int fd)
 {
 	char sum[128 + 1]; // large enough for sha-512 hex
 
@@ -196,7 +196,7 @@ int job_validate_file(JOB *job)
 		for (int it = 0; errno != EINTR && it < wget_vector_size(metalink->hashes); it++) {
 			wget_metalink_hash *hash = wget_vector_get(metalink->hashes, it);
 
-			if ((rc = _check_file_fd(hash, fd)) == -1)
+			if ((rc = check_file_fd(hash, fd)) == -1)
 				continue; // hash type not available, try next
 
 			break;
