@@ -112,25 +112,25 @@ typedef struct {
 	wget_intercept_action parent;
 
 	struct plugin_db_forward_url_verdict verdict;
-} intercept_action_t;
+} intercept_action;
 
 static void impl_action_reject(wget_intercept_action *p_action)
 {
-	intercept_action_t *action = (intercept_action_t *) p_action;
+	intercept_action *action = (intercept_action *) p_action;
 
 	action->verdict.reject = 1;
 }
 
 static void impl_action_accept(wget_intercept_action *p_action)
 {
-	intercept_action_t *action = (intercept_action_t *) p_action;
+	intercept_action *action = (intercept_action *) p_action;
 
 	action->verdict.accept = 1;
 }
 
 static void impl_action_set_alt_url(wget_intercept_action *p_action, const wget_iri *iri)
 {
-	intercept_action_t *action = (intercept_action_t *) p_action;
+	intercept_action *action = (intercept_action *) p_action;
 
 	if (action->verdict.alt_iri)
 		wget_iri_free(&action->verdict.alt_iri);
@@ -139,7 +139,7 @@ static void impl_action_set_alt_url(wget_intercept_action *p_action, const wget_
 
 static void impl_action_set_local_filename(wget_intercept_action *p_action, const char *local_filename)
 {
-	intercept_action_t *action = (intercept_action_t *) p_action;
+	intercept_action *action = (intercept_action *) p_action;
 
 	if (action->verdict.alt_local_filename)
 		wget_free(action->verdict.alt_local_filename);
@@ -163,32 +163,32 @@ typedef struct {
 	const void *data;
 	void *data_buf;
 	wget_vector *recurse_iris;
-} downloaded_file_t;
+} downloaded_file;
 
 static const wget_iri *impl_file_get_source_url(wget_downloaded_file *p_file)
 {
-	downloaded_file_t *file = (downloaded_file_t *) p_file;
+	downloaded_file *file = (downloaded_file *) p_file;
 
 	return file->iri;
 }
 
 static const char *impl_file_get_local_filename(wget_downloaded_file *p_file)
 {
-	downloaded_file_t *file = (downloaded_file_t *) p_file;
+	downloaded_file *file = (downloaded_file *) p_file;
 
 	return file->filename;
 }
 
 static uint64_t impl_file_get_size(wget_downloaded_file *p_file)
 {
-	downloaded_file_t *file = (downloaded_file_t *) p_file;
+	downloaded_file *file = (downloaded_file *) p_file;
 
 	return file->size;
 }
 
 static int impl_file_get_contents(wget_downloaded_file *p_file, const void **data, size_t *size)
 {
-	downloaded_file_t *file = (downloaded_file_t *) p_file;
+	downloaded_file *file = (downloaded_file *) p_file;
 
 	if ((! file->data) && file->filename) {
 		size_t dummy;
@@ -206,7 +206,7 @@ static int impl_file_get_contents(wget_downloaded_file *p_file, const void **dat
 
 static FILE *impl_file_open_stream(wget_downloaded_file *p_file)
 {
-	downloaded_file_t *file = (downloaded_file_t *) p_file;
+	downloaded_file *file = (downloaded_file *) p_file;
 
 #ifdef HAVE_FMEMOPEN
 	if (file->data)
@@ -219,14 +219,14 @@ static FILE *impl_file_open_stream(wget_downloaded_file *p_file)
 
 static bool impl_file_get_recurse(wget_downloaded_file *p_file)
 {
-	downloaded_file_t *file = (downloaded_file_t *) p_file;
+	downloaded_file *file = (downloaded_file *) p_file;
 
 	return file->recurse_iris ? true : false;
 }
 
 static void impl_file_add_recurse_url(wget_downloaded_file *p_file, const wget_iri *iri)
 {
-	downloaded_file_t *file = (downloaded_file_t *) p_file;
+	downloaded_file *file = (downloaded_file *) p_file;
 
 	if (file->recurse_iris)
 		wget_vector_add(file->recurse_iris, wget_iri_clone(iri));
@@ -269,7 +269,7 @@ static void plugin_free(plugin_t *plugin)
 }
 
 // Loads a plugin located at given path and assign it a name
-static plugin_t *_load_plugin(const char *name, const char *path, dl_error_t *e)
+static plugin_t *load_plugin(const char *name, const char *path, dl_error_t *e)
 {
 	size_t name_len;
 	dl_file_t *dm;
@@ -327,7 +327,7 @@ static plugin_t *_load_plugin(const char *name, const char *path, dl_error_t *e)
 plugin_t *plugin_db_load_from_path(const char *path, dl_error_t *e)
 {
 	char *name = dl_get_name_from_path(path, 0);
-	plugin_t *plugin = _load_plugin(name, path, e);
+	plugin_t *plugin = load_plugin(name, path, e);
 	wget_free(name);
 	return plugin;
 }
@@ -347,7 +347,7 @@ plugin_t *plugin_db_load_from_name(const char *name, dl_error_t *e)
 	}
 
 	// Delegate
-	plugin = _load_plugin(name, filename, e);
+	plugin = load_plugin(name, filename, e);
 	wget_free(filename);
 	return plugin;
 }
@@ -520,7 +520,7 @@ int plugin_db_help_forwarded(void)
 void plugin_db_forward_url(const wget_iri *iri, struct plugin_db_forward_url_verdict *verdict)
 {
 	// Initialize action structure
-	intercept_action_t action = { .parent.vtable = &vtable };
+	intercept_action action = { .parent.vtable = &vtable };
 	int n_plugins = wget_vector_size(plugin_list);
 
 	for (int i = 0; i < n_plugins; i++) {
@@ -557,7 +557,7 @@ int plugin_db_forward_downloaded_file(const wget_iri *iri, uint64_t size, const 
 	int ret = 1;
 
 	// Initialize the structure
-	downloaded_file_t file = {
+	downloaded_file file = {
 		.parent.vtable = &vtable,
 		.iri = iri,
 		.filename = filename,
