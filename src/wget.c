@@ -1276,12 +1276,12 @@ int main(int argc, const char **argv)
 
 	program_init(); // initialize any resources belonging to this object file
 
-	set_exit_status(WG_EXIT_STATUS_PARSE_INIT); // --version, --help etc might set the status to OK
+	set_exit_status(EXIT_STATUS_PARSE_INIT); // --version, --help etc might set the status to OK
 	n = init(argc, argv);
 	if (n < 0) {
 		goto out;
 	}
-	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+	set_exit_status(EXIT_STATUS_NO_ERROR);
 
 	for (; n < argc; n++) {
 		add_url_to_queue(argv[n], config.base, config.local_encoding, 0);
@@ -1618,7 +1618,7 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri **iri)
 			mirror_index = downloader->id % mirror_count;
 		else {
 			host_final_failure(downloader->job->host);
-			set_exit_status(WG_EXIT_STATUS_NETWORK);
+			set_exit_status(EXIT_STATUS_NETWORK);
 			return rc;
 		}
 
@@ -1665,14 +1665,14 @@ static int establish_connection(DOWNLOADER *downloader, wget_iri **iri)
 		wget_http_close(&downloader->conn);
 		if (!downloader->job->http_fallback) {
 			host_final_failure(downloader->job->host);
-			set_exit_status(WG_EXIT_STATUS_TLS);
+			set_exit_status(EXIT_STATUS_TLS);
 		}
 	} else if (rc == WGET_E_CONNECT) {
 		/* failed to connect */
 		wget_http_close(&downloader->conn);
 		if (!config.retry_connrefused && !downloader->job->http_fallback) {
 			host_final_failure(downloader->job->host);
-			set_exit_status(WG_EXIT_STATUS_NETWORK);
+			set_exit_status(EXIT_STATUS_NETWORK);
 		}
 	}
 
@@ -1714,15 +1714,15 @@ static int process_response_header(wget_http_response *resp)
 	// Wget1.x compatibility
 	if (resp->code/100 == 4 && resp->code != 416) {
 		if (job->head_first)
-			set_exit_status(WG_EXIT_STATUS_REMOTE);
+			set_exit_status(EXIT_STATUS_REMOTE);
 		else if (resp->code == 404 && !job->robotstxt) {
 #ifdef WITH_GPGME
 			char *ext = wget_list_getfirst(job->remaining_sig_ext);
 			if (!job->sig_req) {
-				set_exit_status(WG_EXIT_STATUS_REMOTE);
+				set_exit_status(EXIT_STATUS_REMOTE);
 			} else if (!ext) {
 				if (config.verify_sig == GPG_VERIFY_SIG_FAIL)
-					set_exit_status(WG_EXIT_STATUS_REMOTE);
+					set_exit_status(EXIT_STATUS_REMOTE);
 			} else {
 				char *next_check = wget_aprintf("%s.%s", job->sig_req, ext);
 				wget_list_remove(&job->remaining_sig_ext, ext);
@@ -1730,7 +1730,7 @@ static int process_response_header(wget_http_response *resp)
 				wget_xfree(next_check);
 			}
 #else
-			set_exit_status(WG_EXIT_STATUS_REMOTE);
+			set_exit_status(EXIT_STATUS_REMOTE);
 #endif
 		}
 	}
@@ -1775,7 +1775,7 @@ static int process_response_header(wget_http_response *resp)
 		if (job->auth_failure_count > 1 || !resp->challenges) {
 			// We already tried with credentials and they are wrong OR
 			// The server sent no challenge. Don't try again.
-			set_exit_status(WG_EXIT_STATUS_AUTH);
+			set_exit_status(EXIT_STATUS_AUTH);
 			return 1;
 		}
 
@@ -1790,7 +1790,7 @@ static int process_response_header(wget_http_response *resp)
 		if (job->proxy_challenges || !resp->challenges) {
 			// We already tried with credentials and they are wrong OR
 			// The proxy server sent no challenge. Don't try again.
-			set_exit_status(WG_EXIT_STATUS_AUTH);
+			set_exit_status(EXIT_STATUS_AUTH);
 			return 1;
 		}
 
@@ -2179,7 +2179,7 @@ static void process_response(wget_http_response *resp)
 				wget_gpg_info_t info;
 
 				if (wget_verify_job(job, resp, &info) != WGET_E_SUCCESS) {
-					set_exit_status(WG_EXIT_STATUS_GPG_ERROR);
+					set_exit_status(EXIT_STATUS_GPG_ERROR);
 					if (!config.verify_save_failed) {
 						char *base_path = wget_verify_get_base_file(job);
 						if (base_path) {
@@ -3201,7 +3201,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 				size_t rc = safe_write(1, resp->header->data, resp->header->length);
 				if (rc == SAFE_WRITE_ERROR) {
 					error_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
-					set_exit_status(WG_EXIT_STATUS_IO);
+					set_exit_status(EXIT_STATUS_IO);
 				}
 			}
 
@@ -3331,13 +3331,13 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 				if (rc == SAFE_READ_ERROR || (long long) rc != size) {
 					error_printf(_("Failed to load partial content from '%s' (errno=%d): %s\n"),
 						fname, errno, strerror(errno));
-					set_exit_status(WG_EXIT_STATUS_IO);
+					set_exit_status(EXIT_STATUS_IO);
 				}
 				close(fd);
 			} else {
 				error_printf(_("Failed to load partial content from '%s' (errno=%d): %s\n"),
 					fname, errno, strerror(errno));
-				set_exit_status(WG_EXIT_STATUS_IO);
+				set_exit_status(EXIT_STATUS_IO);
 			}
 		}
 	}
@@ -3346,7 +3346,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		if (unlink(fname) < 0 && errno != ENOENT) {
 			error_printf(_("Failed to unlink '%s' (errno=%d): %s\n"),
 				fname, errno, strerror(errno));
-			set_exit_status(WG_EXIT_STATUS_IO);
+			set_exit_status(EXIT_STATUS_IO);
 			return -1;
 		}
 	}
@@ -3365,7 +3365,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		if (config.save_headers) {
 			if ((rc = write(fd, resp->header->data, resp->header->length)) != (ssize_t)resp->header->length) {
 				error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), *actual_file_name, rc, errno);
-				set_exit_status(WG_EXIT_STATUS_IO);
+				set_exit_status(EXIT_STATUS_IO);
 			}
 		}
 		// TODO SAVE UNIQUE-NESS
@@ -3381,7 +3381,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 				info_printf(_("Directory / file name clash - not saving '%s'\n"), fname);
 			else {
 				error_printf(_("Failed to open '%s' (errno=%d): %s\n"), fname, errno, strerror(errno));
-				set_exit_status(WG_EXIT_STATUS_IO);
+				set_exit_status(EXIT_STATUS_IO);
 			}
 		}
 	}
@@ -3393,7 +3393,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 			fclose(fp);
 		} else {
 			error_printf(_("Failed to save extended attribute %s\n"), *actual_file_name);
-			set_exit_status(WG_EXIT_STATUS_IO);
+			set_exit_status(EXIT_STATUS_IO);
 		}
 	}
 
@@ -3447,13 +3447,13 @@ static int get_header(wget_http_response *resp, void *context)
 		name = ctx->job->metalink->name;
 		ctx->outfd = open(ctx->job->metalink->name, O_WRONLY | O_CREAT | O_NONBLOCK | O_BINARY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 		if (ctx->outfd == -1) {
-			set_exit_status(WG_EXIT_STATUS_IO);
+			set_exit_status(EXIT_STATUS_IO);
 			ret = -1;
 			goto out;
 		}
 		if (lseek(ctx->outfd, part->position, SEEK_SET) == (off_t) -1) {
 			close(ctx->outfd);
-			set_exit_status(WG_EXIT_STATUS_IO);
+			set_exit_status(EXIT_STATUS_IO);
 			ret = -1;
 			goto out;
 		}
@@ -3623,7 +3623,7 @@ static int get_body(wget_http_response *resp, void *context, const char *data, s
 		if (written == SAFE_WRITE_ERROR) {
 			if (!terminate)
 				debug_printf("Failed to write errno=%d\n", errno);
-			set_exit_status(WG_EXIT_STATUS_IO);
+			set_exit_status(EXIT_STATUS_IO);
 			return -1;
 		}
 	}
@@ -3988,7 +3988,7 @@ wget_http_response *http_receive_response(wget_http_connection *conn)
 		if (config.fsync_policy) {
 			if (fsync(context->outfd) < 0 && errno == EIO) {
 				error_printf(_("Failed to fsync errno=%d\n"), errno);
-				set_exit_status(WG_EXIT_STATUS_IO);
+				set_exit_status(EXIT_STATUS_IO);
 			}
 		}
 
@@ -4151,7 +4151,7 @@ static void fork_to_background(void)
 		if (logfile_changed)
 			printf(_("Output will be written to %s.\n"), config.logfile);
 
-		exit(WG_EXIT_STATUS_NO_ERROR);
+		exit(EXIT_STATUS_NO_ERROR);
 	}
 
 	/* child: give up the privileges and keep running. */

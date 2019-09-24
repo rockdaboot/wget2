@@ -257,7 +257,7 @@ static int print_version(WGET_GCC_UNUSED option_t opt, WGET_GCC_UNUSED const cha
 
 	puts(version_text);
 
-	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+	set_exit_status(EXIT_STATUS_NO_ERROR);
 	return -1; // stop processing & exit
 }
 
@@ -1143,7 +1143,7 @@ static int list_plugins(WGET_GCC_UNUSED option_t opt,
 	}
 	wget_vector_free(&v);
 
-	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+	set_exit_status(EXIT_STATUS_NO_ERROR);
 	return -1; // stop processing & exit
 }
 
@@ -1155,7 +1155,7 @@ static int print_plugin_help(WGET_GCC_UNUSED option_t opt,
 
 	plugin_db_show_help();
 
-	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+	set_exit_status(EXIT_STATUS_NO_ERROR);
 	return -1; // stop processing & exit
 }
 
@@ -2276,7 +2276,7 @@ static const struct optionw options[] = {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 static int print_help(WGET_GCC_UNUSED option_t opt, WGET_GCC_UNUSED const char *val, WGET_GCC_UNUSED const char invert)
 {
-	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+	set_exit_status(EXIT_STATUS_NO_ERROR);
 	return -1; // stop processing & exit
 }
 #else
@@ -2373,7 +2373,7 @@ static int print_help(WGET_GCC_UNUSED option_t opt, WGET_GCC_UNUSED const char *
  * Using rm logfile + wget achieves the old behaviour...
  *
  */
-	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+	set_exit_status(EXIT_STATUS_NO_ERROR);
 	return -1; // stop processing & exit
 }
 #endif
@@ -3255,7 +3255,7 @@ int init(int argc, const char **argv)
 		}
 
 		if (plugin_db_load_from_envvar()) {
-			set_exit_status(WG_EXIT_STATUS_PARSE_INIT);
+			set_exit_status(EXIT_STATUS_PARSE_INIT);
 			return -1; // stop processing & exit
 		}
 	}
@@ -3269,7 +3269,7 @@ int init(int argc, const char **argv)
 		return -1;
 
 	if (plugin_db_help_forwarded()) {
-		set_exit_status(WG_EXIT_STATUS_NO_ERROR);
+		set_exit_status(EXIT_STATUS_NO_ERROR);
 		return -1; // stop processing & exit
 	}
 

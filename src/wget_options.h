@@ -278,16 +278,16 @@ extern struct config
 	config;
 
 typedef enum {
-	WG_EXIT_STATUS_NO_ERROR       = EXIT_SUCCESS,
-	WG_EXIT_STATUS_GENERIC        = 1,
-	WG_EXIT_STATUS_PARSE_INIT     = 2,
-	WG_EXIT_STATUS_IO             = 3,
-	WG_EXIT_STATUS_NETWORK        = 4,
-	WG_EXIT_STATUS_TLS            = 5,
-	WG_EXIT_STATUS_AUTH           = 6,
-	WG_EXIT_STATUS_PROTOCOL       = 7,
-	WG_EXIT_STATUS_REMOTE         = 8,
-	WG_EXIT_STATUS_GPG_ERROR      = 9
+	EXIT_STATUS_NO_ERROR       = EXIT_SUCCESS,
+	EXIT_STATUS_GENERIC        = 1,
+	EXIT_STATUS_PARSE_INIT     = 2,
+	EXIT_STATUS_IO             = 3,
+	EXIT_STATUS_NETWORK        = 4,
+	EXIT_STATUS_TLS            = 5,
+	EXIT_STATUS_AUTH           = 6,
+	EXIT_STATUS_PROTOCOL       = 7,
+	EXIT_STATUS_REMOTE         = 8,
+	EXIT_STATUS_GPG_ERROR      = 9
 } exit_status_e;
 
 // Needed for fuzzers that are compiled by C++
