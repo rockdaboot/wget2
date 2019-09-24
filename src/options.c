@@ -66,10 +66,10 @@
 
 static void set_allocation_functions(void);
 
-static exit_status_t
+static exit_status_e
 	exit_status;
 
-void set_exit_status(exit_status_t status)
+void set_exit_status(exit_status_e status)
 {
 	// use Wget exit status scheme:
 	// - error code 0 is default
@@ -86,7 +86,7 @@ void set_exit_status(exit_status_t status)
 	}
 }
 
-exit_status_t get_exit_status(void)
+exit_status_e get_exit_status(void)
 {
 	return exit_status;
 }
@@ -126,7 +126,7 @@ struct optionw {
 	    *help_str[4];
 };
 
-static const char _version_text[] =
+static const char version_text[] =
 "\n"
 "Copyright (C) 2012-2015 Tim Ruehsen\n"
 "Copyright (C) 2015-2019 Free Software Foundation, Inc.\n"
@@ -255,7 +255,7 @@ static int print_version(WGET_GCC_UNUSED option_t opt, WGET_GCC_UNUSED const cha
 	);
 #endif // #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 
-	puts(_version_text);
+	puts(version_text);
 
 	set_exit_status(WG_EXIT_STATUS_NO_ERROR);
 	return -1; // stop processing & exit
@@ -282,7 +282,7 @@ static int parse_uint16(option_t opt, const char *val, WGET_GCC_UNUSED const cha
 }
 
 // parse '2.5k' locale independent
-static int _parse_double_modifier(const char *in, double *d, char *c)
+static int parse_double_modifier(const char *in, double *d, char *c)
 {
 	bool minus = false;
 
@@ -327,7 +327,7 @@ static int parse_numbytes(option_t opt, const char *val, WGET_GCC_UNUSED const c
 			return 0;
 		}
 
-		if (_parse_double_modifier(val, &num, &modifier) >= 1 && num >= 0) {
+		if (parse_double_modifier(val, &num, &modifier) >= 1 && num >= 0) {
 			if (modifier) {
 				switch (c_tolower(modifier)) {
 				case 'k': num *= 1024; break;
@@ -443,7 +443,7 @@ static int parse_header(option_t opt, const char *val, WGET_GCC_UNUSED const cha
 	return 0;
 }
 
-static const char *_strchrnul_esc(const char *s, char c)
+static const char *strchrnul_esc(const char *s, char c)
 {
 	const char *p;
 
@@ -457,7 +457,7 @@ static const char *_strchrnul_esc(const char *s, char c)
 	return p; // pointer to trailing \0
 }
 
-static char *_strmemdup_esc(const char *s, size_t size)
+static char *strmemdup_esc(const char *s, size_t size)
 {
    const char *p, *e;
 	size_t newsize = 0;
@@ -497,13 +497,13 @@ static int parse_stringlist_expand(option_t opt, const char *val, int expand, in
 			v = *((wget_vector **)opt->var) = wget_vector_create(8, (wget_vector_compare_fn *) strcmp);
 
 		for (s = p = val; *p; s = p + 1) {
-			if ((p = _strchrnul_esc(s, ',')) != s) {
+			if ((p = strchrnul_esc(s, ',')) != s) {
 				if (wget_vector_size(v) >= max_entries) {
 					wget_debug_printf("%s: More than %d entries, ignoring overflow\n", __func__, max_entries);
 					return -1;
 				}
 
-				const char *fname = _strmemdup_esc(s, p - s);
+				const char *fname = strmemdup_esc(s, p - s);
 
 				if (expand && *s == '~') {
 					wget_vector_add(v, shell_expand(fname));
@@ -596,7 +596,7 @@ static void tag_free(void *tag)
 	}
 }
 
-static void WGET_GCC_NONNULL_ALL _add_tag(wget_vector *v, const char *begin, const char *end)
+static void WGET_GCC_NONNULL_ALL add_tag(wget_vector *v, const char *begin, const char *end)
 {
 	wget_html_tag *tag = wget_malloc(sizeof(wget_html_tag));
 	const char *attribute;
@@ -615,7 +615,7 @@ static void WGET_GCC_NONNULL_ALL _add_tag(wget_vector *v, const char *begin, con
 		tag_free(tag); // avoid double entries
 }
 
-static int WGET_GCC_NONNULL_ALL _compare_tag(const wget_html_tag *t1, const wget_html_tag *t2)
+static int WGET_GCC_NONNULL_ALL compare_tag(const wget_html_tag *t1, const wget_html_tag *t2)
 {
 	int n;
 
@@ -641,13 +641,13 @@ static int parse_taglist(option_t opt, const char *val, WGET_GCC_UNUSED const ch
 		const char *s, *p;
 
 		if (!v) {
-			v = *((wget_vector **)opt->var) = wget_vector_create(8, (wget_vector_compare_fn *) _compare_tag);
+			v = *((wget_vector **)opt->var) = wget_vector_create(8, (wget_vector_compare_fn *) compare_tag);
 			wget_vector_set_destructor(v, tag_free);
 		}
 
 		for (s = p = val; *p; s = p + 1) {
 			if ((p = strchrnul(s, ',')) != s)
-				_add_tag(v, s, p);
+				add_tag(v, s, p);
 		}
 	} else {
 		wget_vector_free(opt->var);
@@ -699,7 +699,7 @@ static int parse_timeout(option_t opt, const char *val, WGET_GCC_UNUSED const ch
 	if (wget_strcasecmp_ascii(val, "INF") && wget_strcasecmp_ascii(val, "INFINITY")) {
 		char modifier = 0;
 
-		if (_parse_double_modifier(val, &fval, &modifier) >= 1 && fval >= 0) {
+		if (parse_double_modifier(val, &fval, &modifier) >= 1 && fval >= 0) {
 			if (modifier) {
 				switch (c_tolower(modifier)) {
 				case 's': fval *= 1000; break;
@@ -2542,7 +2542,7 @@ static int parse_execute(WGET_GCC_UNUSED option_t opt, const char *val, WGET_GCC
 	return set_long_option(val, NULL, 1);
 }
 
-static int _parse_option(char *linep, char **name, char **val)
+static int parse_option(char *linep, char **name, char **val)
 {
 	int quote;
 
@@ -2601,7 +2601,7 @@ static int _parse_option(char *linep, char **name, char **val)
 // - format is 'name value', where value might be enclosed in ' or "
 // - values enclosed in " or ' might contain \\, \" and \'
 
-static int WGET_GCC_NONNULL((1)) _read_config(const char *cfgfile, int expand)
+static int WGET_GCC_NONNULL((1)) read_config_expand(const char *cfgfile, int expand)
 {
 	static int level; // level of recursions to prevent endless include loops
 	FILE *fp;
@@ -2625,13 +2625,13 @@ static int WGET_GCC_NONNULL((1)) _read_config(const char *cfgfile, int expand)
 
 			for (it = 0; it < globbuf.gl_pathc && ret == 0; it++) {
 				if (globbuf.gl_pathv[it][strlen(globbuf.gl_pathv[it])-1] != '/') {
-					ret = _read_config(globbuf.gl_pathv[it], 0);
+					ret = read_config_expand(globbuf.gl_pathv[it], 0);
 				}
 			}
 
 			globfree(&globbuf);
 		} else {
-			ret = _read_config(cfgfile, 0);
+			ret = read_config_expand(cfgfile, 0);
 		}
 
 		level--;
@@ -2681,7 +2681,7 @@ static int WGET_GCC_NONNULL((1)) _read_config(const char *cfgfile, int expand)
 			linep = linebuf.data;
 		}
 
-		found = _parse_option(linep, &name, &val);
+		found = parse_option(linep, &name, &val);
 
 		if (found == 1) {
 			// debug_printf("%s = %s\n",name,val);
@@ -2690,7 +2690,7 @@ static int WGET_GCC_NONNULL((1)) _read_config(const char *cfgfile, int expand)
 		} else if (found == 2) {
 			// debug_printf("%s %s\n",name,val);
 			if (!strcmp(name, "include")) {
-				ret = _read_config(val, 1);
+				ret = read_config_expand(val, 1);
 			} else {
 				if ((rc = set_long_option(name, NULL, 0)) < 0)
 					ret = rc;
@@ -2716,10 +2716,10 @@ static bool read_config(void)
 	bool ret = true;
 
 	if (config.system_config)
-		ret = _read_config(config.system_config, 1);
+		ret = read_config_expand(config.system_config, 1);
 
 	if (config.user_config)
-		ret &= _read_config(config.user_config, 1);
+		ret &= read_config_expand(config.user_config, 1);
 
 	return ret;
 }
@@ -2954,7 +2954,7 @@ static int use_askpass(void)
 static wget_dns_cache *dns_cache;
 static wget_dns *dns;
 
-static int _preload_dns_cache(const char *fname)
+static int preload_dns_cache(const char *fname)
 {
 	FILE *fp;
 	char buf[256], ip[64], name[256];
@@ -3121,7 +3121,7 @@ static void stats_callback_ocsp(wget_ocsp_stats_data *stats, void *ctx)
 	}
 }
 
-static const char *_tlsversion_string(int v)
+static const char *tlsversion_string(int v)
 {
 	switch (v) {
 	case 1: return "SSL3";
@@ -3139,7 +3139,7 @@ static void stats_callback_tls(wget_tls_stats_data *stats, void *ctx)
 
 	if (config.stats_tls_args->format == WGET_STATS_FORMAT_HUMAN) {
 		wget_fprintf(fp, "  %s:\n", stats->hostname);
-		wget_fprintf(fp, "    Version         : %s\n", _tlsversion_string(stats->version));
+		wget_fprintf(fp, "    Version         : %s\n", tlsversion_string(stats->version));
 		wget_fprintf(fp, "    False Start     : %s\n", ON_OFF_DASH(stats->false_start));
 		wget_fprintf(fp, "    TFO             : %s\n", ON_OFF_DASH(stats->tfo));
 		wget_fprintf(fp, "    ALPN Protocol   : %s\n", stats->alpn_protocol ? stats->alpn_protocol : "-");
@@ -3629,7 +3629,7 @@ int init(int argc, const char **argv)
 	}
 
 	if (config.dns_cache_preload)
-		_preload_dns_cache(config.dns_cache_preload);
+		preload_dns_cache(config.dns_cache_preload);
 
 	return n;
 }

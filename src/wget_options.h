@@ -276,7 +276,7 @@ struct config {
 extern struct config
 	config;
 
-typedef enum exit_status_t {
+typedef enum {
 	WG_EXIT_STATUS_NO_ERROR       = EXIT_SUCCESS,
 	WG_EXIT_STATUS_GENERIC        = 1,
 	WG_EXIT_STATUS_PARSE_INIT     = 2,
@@ -287,7 +287,7 @@ typedef enum exit_status_t {
 	WG_EXIT_STATUS_PROTOCOL       = 7,
 	WG_EXIT_STATUS_REMOTE         = 8,
 	WG_EXIT_STATUS_GPG_ERROR      = 9
-} exit_status_t;
+} exit_status_e;
 
 // Needed for fuzzers that are compiled by C++
 #ifdef __cplusplus
@@ -297,8 +297,8 @@ extern "C" {
 int init(int argc, const char **argv) WGET_GCC_NONNULL_ALL;
 int selftest_options(void);
 void deinit(void);
-void set_exit_status(exit_status_t status);
-exit_status_t get_exit_status(void);
+void set_exit_status(exit_status_e status);
+exit_status_e get_exit_status(void);
 
 #ifdef __cplusplus
 }
