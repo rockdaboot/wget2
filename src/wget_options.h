@@ -187,8 +187,13 @@ struct config {
 	https_enforce_mode
 		https_enforce;
 	char
-		tls_resume,            // if TLS session resumption is enabled or not
+		cert_type,             // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
+		private_key_type,      // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
 		progress,
+		regex_type,
+		verify_sig;
+	bool
+		tls_resume,            // if TLS session resumption is enabled or not
 		content_on_error,
 		fsync_policy,
 		netrc,
@@ -240,11 +245,8 @@ struct config {
 		dns_caching,
 		check_certificate,
 		check_hostname,
-		cert_type,             // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
-		private_key_type,      // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
 		span_hosts,
 		verbose,
-		print_version,
 		quiet,
 		debug,
 		metalink,
@@ -255,16 +257,13 @@ struct config {
 		force_progress,
 		local_db,
 		dont_write, // fuzzers and unit/fuzz tests set this to 1, so they won't write any files
-		regex_type,
 		filter_urls,
 		askpass,
 		verify_save_failed,
-		verify_sig,
 		retry_connrefused,
 		unlink,
 		background,
-		if_modified_since;
-	bool
+		if_modified_since,
 		auth_no_challenge,
 		no_compression,
 		ocsp_date,
