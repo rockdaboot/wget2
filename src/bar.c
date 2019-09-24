@@ -45,27 +45,27 @@
 
 // Rate at which progress thread it updated. This is the amount of time (in ms)
 // for which the thread will sleep before waking up and redrawing the progress
-enum { _BAR_THREAD_SLEEP_DURATION = 125 };
+enum { BAR_THREAD_SLEEP_DURATION = 125 };
 
 static wget_bar
 	*bar;
 static wget_thread
 	progress_thread;
 static bool
-	_terminate_thread;
+	terminate_thread;
 
-static void *_bar_update_thread(void *p WGET_GCC_UNUSED)
+static void *bar_update_thread(void *p WGET_GCC_UNUSED)
 {
-	while (!_terminate_thread) {
+	while (!terminate_thread) {
 		wget_bar_update(bar);
 
-		wget_millisleep(_BAR_THREAD_SLEEP_DURATION);
+		wget_millisleep(BAR_THREAD_SLEEP_DURATION);
 	}
 
 	return NULL;
 }
 
-static void _error_write(const char *buf, size_t len)
+static void error_write(const char *buf, size_t len)
 {
 	// write 'above' the progress bar area, scrolls screen one line up
 	wget_bar_write_line(bar, buf, len);
@@ -80,10 +80,10 @@ bool bar_init(void)
 		wget_bar_set_speed_type(config.report_speed);
 
 		// set custom write function for wget_error_printf()
-		wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), _error_write);
+		wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), error_write);
 
-		_terminate_thread = 0;
-		if (wget_thread_start(&progress_thread, _bar_update_thread, NULL, 0)) {
+		terminate_thread = 0;
+		if (wget_thread_start(&progress_thread, bar_update_thread, NULL, 0)) {
 			wget_bar_free(&bar);
 			goto nobar;
 		}
@@ -99,7 +99,7 @@ nobar:
 
 void bar_deinit(void)
 {
-	_terminate_thread = 1;
+	terminate_thread = 1;
 	wget_thread_join(&progress_thread);
 	wget_bar_free(&bar);
 }
