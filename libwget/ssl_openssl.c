@@ -44,7 +44,7 @@ static wget_ocsp_stats_callback
 static void
 	*ocsp_stats_ctx;
 
-static struct _config
+static struct config
 {
 	const char
 		*secure_protocol,
@@ -72,7 +72,7 @@ static struct _config
 		print_info :1,
 		ocsp :1,
 		ocsp_stapling :1;
-} _config = {
+} config = {
 	.check_certificate = 1,
 	.check_hostname = 1,
 #ifdef HAVE_GNUTLS_OCSP_H
@@ -89,31 +89,31 @@ static struct _config
 #endif
 	};
 
-static int _init;
-static wget_thread_mutex _mutex;
+static int init;
+static wget_thread_mutex mutex;
 
 static SSL_CTX *_ctx;
-static int _store_userdata_idx;
+static int store_userdata_idx;
 
 /*
  * Constructor & destructor
  */
-static void __attribute__ ((constructor)) _wget_tls_init(void)
+static void __attribute__ ((constructor)) tls_init(void)
 {
-	if (!_mutex)
-		wget_thread_mutex_init(&_mutex);
+	if (!mutex)
+		wget_thread_mutex_init(&mutex);
 
-	_store_userdata_idx = X509_STORE_CTX_get_ex_new_index(
+	store_userdata_idx = X509_STORE_CTX_get_ex_new_index(
 			0, NULL,	/* argl, argp */
 			NULL,		/* new_func */
 			NULL,		/* dup_func */
 			NULL);		/* free_func */
 }
 
-static void __attribute__ ((destructor)) _wget_tls_exit(void)
+static void __attribute__ ((destructor)) tls_exit(void)
 {
-	if (_mutex)
-		wget_thread_mutex_destroy(&_mutex);
+	if (mutex)
+		wget_thread_mutex_destroy(&mutex);
 }
 
 /*
@@ -178,28 +178,28 @@ void wget_ssl_set_config_string(int key, const char *value)
 {
 	switch (key) {
 	case WGET_SSL_SECURE_PROTOCOL:
-		_config.secure_protocol = value;
+		config.secure_protocol = value;
 		break;
 	case WGET_SSL_CA_DIRECTORY:
-		_config.ca_directory = value;
+		config.ca_directory = value;
 		break;
 	case WGET_SSL_CA_FILE:
-		_config.ca_file = value;
+		config.ca_file = value;
 		break;
 	case WGET_SSL_CERT_FILE:
-		_config.cert_file = value;
+		config.cert_file = value;
 		break;
 	case WGET_SSL_KEY_FILE:
-		_config.key_file = value;
+		config.key_file = value;
 		break;
 	case WGET_SSL_CRL_FILE:
-		_config.crl_file = value;
+		config.crl_file = value;
 		break;
 	case WGET_SSL_OCSP_SERVER:
-		_config.ocsp_server = value;
+		config.ocsp_server = value;
 		break;
 	case WGET_SSL_ALPN:
-		_config.alpn = value;
+		config.alpn = value;
 		break;
 	default:
 		error_printf(_("Unknown configuration key %d (maybe this config value should be of another type?)\n"), key);
@@ -233,13 +233,13 @@ void wget_ssl_set_config_object(int key, void *value)
 {
 	switch (key) {
 	case WGET_SSL_OCSP_CACHE:
-		_config.ocsp_cert_cache = (wget_ocsp_db *) value;
+		config.ocsp_cert_cache = (wget_ocsp_db *) value;
 		break;
 	case WGET_SSL_SESSION_CACHE:
-		_config.tls_session_cache = (wget_tls_session_db *) value;
+		config.tls_session_cache = (wget_tls_session_db *) value;
 		break;
 	case WGET_SSL_HPKP_CACHE:
-		_config.hpkp_cache = (wget_hpkp_db *) value;
+		config.hpkp_cache = (wget_hpkp_db *) value;
 		break;
 	default:
 		error_printf(_("Unknown configuration key %d (maybe this config value should be of another type?)\n"), key);
@@ -281,28 +281,28 @@ void wget_ssl_set_config_int(int key, int value)
 {
 	switch (key) {
 	case WGET_SSL_CHECK_CERTIFICATE:
-		_config.check_certificate = value;
+		config.check_certificate = value;
 		break;
 	case WGET_SSL_CHECK_HOSTNAME:
-		_config.check_hostname = value;
+		config.check_hostname = value;
 		break;
 	case WGET_SSL_PRINT_INFO:
-		_config.print_info = value;
+		config.print_info = value;
 		break;
 	case WGET_SSL_CA_TYPE:
-		_config.ca_type = (char) value;
+		config.ca_type = (char) value;
 		break;
 	case WGET_SSL_CERT_TYPE:
-		_config.cert_type = (char) value;
+		config.cert_type = (char) value;
 		break;
 	case WGET_SSL_KEY_TYPE:
-		_config.key_type = (char) value;
+		config.key_type = (char) value;
 		break;
 	case WGET_SSL_OCSP:
-		_config.ocsp = value;
+		config.ocsp = value;
 		break;
 	case WGET_SSL_OCSP_STAPLING:
-		_config.ocsp_stapling = value;
+		config.ocsp_stapling = value;
 		break;
 	default:
 		error_printf(_("Unknown configuration key %d (maybe this config value should be of another type?)\n"), key);
@@ -452,7 +452,7 @@ static int verify_hpkp(const char *hostname, X509 *subject_cert)
 		return -1;
 
 	/* Lookup database */
-	retval = wget_hpkp_db_check_pubkey(_config.hpkp_cache,
+	retval = wget_hpkp_db_check_pubkey(config.hpkp_cache,
 		hostname,
 		spki, spki_len);
 
@@ -490,7 +490,7 @@ static int verify_hpkp(const char *hostname, X509 *subject_cert)
  * (which retains the result of previous checks made by OpenSSL) and 0 on failure (will override
  * OpenSSL's result, whatever it is).
  */
-static int _openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storectx)
+static int openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storectx)
 {
 	int pin_ok = 0, retval;
 	X509_STORE *store;
@@ -500,7 +500,7 @@ static int _openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storect
 	unsigned cert_list_size = sk_X509_num(certs);
 
 	/* Check the whole cert chain against HPKP database */
-	if (!_config.hpkp_cache) {
+	if (!config.hpkp_cache) {
 		sk_X509_pop_free(certs, X509_free);
 		return ossl_retval;
 	}
@@ -512,7 +512,7 @@ static int _openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storect
 		return ossl_retval;
 	}
 
-	hostname = X509_STORE_get_ex_data(store, _store_userdata_idx);
+	hostname = X509_STORE_get_ex_data(store, store_userdata_idx);
 	if (!hostname) {
 		sk_X509_pop_free(certs, X509_free);
 		error_printf(_("Could not retrieve saved hostname. Will skip HPKP checks.\n"));
@@ -543,7 +543,7 @@ static int openssl_init(SSL_CTX *ctx)
 	int retval = 0;
 	X509_STORE *store;
 
-	if (!_config.check_certificate) {
+	if (!config.check_certificate) {
 		SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
 		info_printf(_("Certificate check disabled. Peer's certificate will NOT be checked.\n"));
 		goto end;
@@ -556,16 +556,16 @@ static int openssl_init(SSL_CTX *ctx)
 		goto end;
 	}
 
-	if (_config.ca_directory && *_config.ca_directory) {
-		retval = openssl_load_trust_files(ctx, _config.ca_directory);
+	if (config.ca_directory && *config.ca_directory) {
+		retval = openssl_load_trust_files(ctx, config.ca_directory);
 		if (retval < 0)
 			goto end;
 
-		if (_config.crl_file) {
+		if (config.crl_file) {
 			/* Load CRL file in PEM format. */
-			if ((retval = openssl_load_crl(store, _config.crl_file)) < 0) {
+			if ((retval = openssl_load_crl(store, config.crl_file)) < 0) {
 				error_printf(_("Could not load CRL from '%s' (%d)\n"),
-					_config.crl_file,
+					config.crl_file,
 					retval);
 				goto end;
 			}
@@ -575,16 +575,16 @@ static int openssl_init(SSL_CTX *ctx)
 	}
 
 	/* Load individual CA file, if requested */
-	if (_config.ca_file && *_config.ca_file
-		&& !SSL_CTX_load_verify_locations(ctx, _config.ca_file, NULL))
+	if (config.ca_file && *config.ca_file
+		&& !SSL_CTX_load_verify_locations(ctx, config.ca_file, NULL))
 	{
-		error_printf(_("Could not load CA certificate from file '%s'\n"), _config.ca_file);
+		error_printf(_("Could not load CA certificate from file '%s'\n"), config.ca_file);
 	}
 
 	/* Set our custom revocation check function, for HPKP and OCSP validation */
-	X509_STORE_set_verify_cb(store, _openssl_revocation_check_fn);
+	X509_STORE_set_verify_cb(store, openssl_revocation_check_fn);
 
-	retval = openssl_set_priorities(ctx, _config.secure_protocol);
+	retval = openssl_set_priorities(ctx, config.secure_protocol);
 
 end:
 	return retval;
@@ -617,19 +617,19 @@ static void openssl_deinit(SSL_CTX *ctx)
  */
 void wget_ssl_init(void)
 {
-	wget_thread_mutex_lock(_mutex);
+	wget_thread_mutex_lock(mutex);
 
-	if (!_init) {
+	if (!init) {
 		_ctx = SSL_CTX_new(TLS_client_method());
 		if (_ctx && openssl_init(_ctx) == 0) {
-			_init++;
+			init++;
 			debug_printf("OpenSSL initialized\n");
 		} else {
 			error_printf(_("Could not initialize OpenSSL\n"));
 		}
 	}
 
-	wget_thread_mutex_unlock(_mutex);
+	wget_thread_mutex_unlock(mutex);
 }
 
 /**
@@ -646,15 +646,15 @@ void wget_ssl_init(void)
  */
 void wget_ssl_deinit(void)
 {
-	wget_thread_mutex_lock(_mutex);
+	wget_thread_mutex_lock(mutex);
 
-	if (_init == 1)
+	if (init == 1)
 		openssl_deinit(_ctx);
 
-	if (_init > 0)
-		_init--;
+	if (init > 0)
+		init--;
 
-	wget_thread_mutex_unlock(_mutex);
+	wget_thread_mutex_unlock(mutex);
 }
 
 static int ssl_resume_session(SSL *ssl, const char *hostname)
@@ -663,10 +663,10 @@ static int ssl_resume_session(SSL *ssl, const char *hostname)
 	unsigned long sesslen;
 	SSL_SESSION *ssl_session;
 
-	if (!_config.tls_session_cache)
+	if (!config.tls_session_cache)
 		return 0;
 
-	if (wget_tls_session_get(_config.tls_session_cache,
+	if (wget_tls_session_get(config.tls_session_cache,
 			hostname,
 			&sess, &sesslen) == 0
 		&& sess)
@@ -701,12 +701,12 @@ static int ssl_save_session(const SSL *ssl, const char *hostname)
 	unsigned long sesslen;
 	SSL_SESSION *ssl_session = SSL_get0_session(ssl);
 
-	if (!ssl_session || !_config.tls_session_cache)
+	if (!ssl_session || !config.tls_session_cache)
 		return 0;
 
 	sesslen = i2d_SSL_SESSION(ssl_session, (unsigned char **) &sess);
 	if (sesslen) {
-		wget_tls_session_db_add(_config.tls_session_cache,
+		wget_tls_session_db_add(config.tls_session_cache,
 			wget_tls_session_new(hostname,
 				18 * 3600, /* session valid for 18 hours */
 				sess, sesslen));
@@ -804,7 +804,7 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	if (!tcp || tcp->sockfd < 0)
 		return WGET_E_INVALID;
-	if (!_init)
+	if (!init)
 		wget_ssl_init();
 
 	/* Initiate a new TLS connection from an existing OpenSSL context */
@@ -814,7 +814,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	}
 
 	/* Store the hostname for the verification callback */
-	if (_store_userdata_idx == -1) {
+	if (store_userdata_idx == -1) {
 		retval = WGET_E_UNKNOWN;
 		goto bail;
 	}
@@ -823,13 +823,13 @@ int wget_ssl_open(wget_tcp *tcp)
 		retval = WGET_E_UNKNOWN;
 		goto bail;
 	}
-	if (!X509_STORE_set_ex_data(store, _store_userdata_idx, (void *) tcp->ssl_hostname)) {
+	if (!X509_STORE_set_ex_data(store, store_userdata_idx, (void *) tcp->ssl_hostname)) {
 		retval = WGET_E_UNKNOWN;
 		goto bail;
 	}
 
 	/* Enable host name verification, if requested */
-	if (_config.check_hostname) {
+	if (config.check_hostname) {
 		SSL_set1_host(ssl, tcp->ssl_hostname);
 		SSL_set_hostflags(ssl, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
 	} else {
@@ -842,7 +842,7 @@ int wget_ssl_open(wget_tcp *tcp)
 		error_printf(_("SNI could not be sent"));
 
 	/* Send ALPN if requested */
-	if (_config.alpn && ssl_set_alpn_offering(ssl, _config.alpn))
+	if (config.alpn && ssl_set_alpn_offering(ssl, config.alpn))
 		error_printf(_("ALPN offering could not be sent"));
 
 	/* Resume from a previous SSL/TLS session, if available */
@@ -893,7 +893,7 @@ int wget_ssl_open(wget_tcp *tcp)
 		debug_printf("TLS session discarded");
 
 	/* Set the protocol selected by the server via ALPN, if any */
-	if (_config.alpn)
+	if (config.alpn)
 		ssl_set_alpn_selected_protocol(ssl, tcp);
 
 	tcp->ssl_session = ssl;
