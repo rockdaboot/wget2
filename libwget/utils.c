@@ -300,7 +300,7 @@ long long wget_get_timemillis(void)
 }
 
 WGET_GCC_CONST
-static unsigned char _unhex(unsigned char c)
+static unsigned char unhex(unsigned char c)
 {
 	return c <= '9' ? c - '0' : (c <= 'F' ? c - 'A' + 10 : c - 'a' + 10);
 }
@@ -323,7 +323,7 @@ int wget_percent_unescape(char *src)
 	while (*s) {
 		if (*s == '%') {
 			if (c_isxdigit(s[1]) && c_isxdigit(s[2])) {
-				*d++ = (unsigned char) (_unhex(s[1]) << 4) | _unhex(s[2]);
+				*d++ = (unsigned char) (unhex(s[1]) << 4) | unhex(s[2]);
 				s += 3;
 				ret = 1;
 				continue;
