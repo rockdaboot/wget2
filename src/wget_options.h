@@ -178,9 +178,7 @@ struct config {
 		dns_timeout, // ms
 		read_timeout, // ms
 		max_redirect,
-		max_threads,
-		ocsp_date,
-		ocsp_nonce;
+		max_threads;
 	uint16_t
 		default_http_port,
 		default_https_port;
@@ -269,6 +267,8 @@ struct config {
 	bool
 		auth_no_challenge,
 		no_compression,
+		ocsp_date,
+		ocsp_nonce,
 		recursive,
 		tls_false_start,
 		tcp_fastopen;
