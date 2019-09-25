@@ -177,22 +177,22 @@ int wget_dns_cache_add(wget_dns_cache *cache, const char *host, uint16_t port, s
 		return WGET_E_INVALID;
 
 	struct cache_entry entry = { .host = host, .port = port };
-	struct addrinfo *ai;
+	struct cache_entry *entryp;
 
 	wget_thread_mutex_lock(cache->mutex);
 
-	if (wget_hashmap_get(cache->cache, &entry, &ai)) {
+	if (wget_hashmap_get(cache->cache, &entry, &entryp)) {
 		// host+port is already in cache
 		wget_thread_mutex_unlock(cache->mutex);
-		if (*addrinfo != ai)
+		if (*addrinfo != entryp->addrinfo)
 			freeaddrinfo(*addrinfo);
-		*addrinfo = ai;
+		*addrinfo = entryp->addrinfo;
 		return WGET_E_SUCCESS;
 	}
 
 	// insert addrinfo into dns cache
 	size_t hostlen = strlen(host) + 1;
-	struct cache_entry *entryp = wget_malloc(sizeof(struct cache_entry) + hostlen);
+	entryp = wget_malloc(sizeof(struct cache_entry) + hostlen);
 
 	if (!entryp) {
 		wget_thread_mutex_unlock(cache->mutex);
