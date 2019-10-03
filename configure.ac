@@ -3,8 +3,8 @@
 CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 
-AC_PREREQ([2.67])
-AC_INIT([wget2], [1.99.2], [bug-wget@gnu.org], [wget2], [https://savannah.gnu.org/projects/wget])
+AC_PREREQ([2.69])
+AC_INIT([wget2],[1.99.2],[bug-wget@gnu.org],[wget2],[https://savannah.gnu.org/projects/wget])
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -13,7 +13,6 @@ AM_INIT_AUTOMAKE([subdir-objects parallel-tests gnu -Wno-portability dist-lzip])
 
 CFLAGS=$CFLAGS
 AC_USE_SYSTEM_EXTENSIONS
-AC_GNU_SOURCE
 
 AC_CANONICAL_HOST
 case $host_os in
@@ -49,7 +48,7 @@ AC_PROG_CC_STDC
 #
 AC_PROG_CC_C99
 if test "$ac_cv_prog_cc_c99" = "no"; then
-  AC_ERROR([Compiler does not support C99. Aborting.])
+  AC_MSG_ERROR(Compiler does not support C99. Aborting.)
 fi
 
 gl_EARLY
@@ -373,7 +372,7 @@ AM_CONDITIONAL([WITH_PANDOC], [ test -n "$PANDOC" ])
 #
 # enable creation of man pages
 #
-#AC_ARG_ENABLE(man,[AC_HELP_STRING([--enable-man],
+#AC_ARG_ENABLE(man,[AS_HELP_STRING([--enable-man],
 #                                  [generate man pages [default=auto]])],enable_man=yes,enable_man=no)
 
 #AM_CONDITIONAL(ENABLE_MAN, test x$enable_man != xno)
