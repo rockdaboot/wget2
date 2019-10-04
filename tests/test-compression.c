@@ -41,7 +41,6 @@ typedef struct  {
 } compression_test_t;
 
 #define KNOWN_TYPES countof(compressions)
-#define BUF_SIZE 40
 
 int main(void)
 {
@@ -272,8 +271,8 @@ int main(void)
 
 	// test all compression types
 	for (unsigned int i = 0; i < KNOWN_TYPES; i++) {
-		char* test_option = wget_malloc(BUF_SIZE);
-		sprintf(test_option, "--compression=%s", compressions[i].type);
+		char test_option[64];
+		wget_snprintf(test_option, sizeof(test_option), "--compression=%s", compressions[i].type);
 
 		if (compressions[i].with_lib)
 			wget_test(
@@ -292,8 +291,6 @@ int main(void)
 				WGET_TEST_REQUEST_URL, urls[i].name + 1,
 				WGET_TEST_EXPECTED_ERROR_CODE, 2,
 				0);
-
-		wget_free(test_option);
 	}
 
 	// test none
