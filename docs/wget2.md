@@ -370,13 +370,13 @@ Go to background immediately after startup. If no output file is specified via t
   Set number of tries to number. Specify 0 or inf for infinite retrying.  The default is to retry 20 times, with the exception
   of fatal errors like "connection refused" or "not found" (404), which are not retried.
 
-### `--retry-on-http-status=list`
+### `--retry-on-http-error=list`
 
   Specify a comma-separated list of HTTP codes in which Wget2 will retry the download. The elements of the list may contain
   wildcards. If an HTTP code starts with the character '!' it won't be downloaded. This is useful when trying to download
   something with exceptions. For example, retry every failed download if error code is not 404:
 
-      wget2 --retry-on-http-status=*,\!404 https://example.com/
+      wget2 --retry-on-http-error=*,\!404 https://example.com/
 
   Please keep in mind that "200" is the only forbidden code. If it is included on the status list Wget2 will ignore it. The
   max. number of download attempts is given by the `--tries` option.
