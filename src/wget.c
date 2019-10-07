@@ -2636,14 +2636,17 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 
 		// with --page-requisites: just load inline URLs from the deepest level documents
 		if (page_requisites && !wget_strcasecmp_ascii(html_url->attr, "href")) {
-			// don't load from dir 'A', 'AREA' and 'EMBED'
-			// only load from dir 'LINK' when rel was 'icon shortcut' or 'stylesheet'
-			if ((c_tolower(*html_url->tag) == 'a'
-				&& (html_url->tag[1] == 0 || !wget_strcasecmp_ascii(html_url->tag,"area")))
-				|| !html_url->link_inline
-				|| !wget_strcasecmp_ascii(html_url->tag,"embed")) {
-				info_printf(_("URL '%.*s' not followed (page requisites + level)\n"), (int)url->len, url->p);
-				continue;
+			// don't load from attribute 'A', 'AREA' and 'EMBED'
+			// only load from attribute 'LINK' when rel was 'icon shortcut' or 'stylesheet'
+			if (config.level && level >= config.level - 1) {
+				if ((c_tolower(*html_url->tag) == 'a'
+					&& (html_url->tag[1] == 0 || !wget_strcasecmp_ascii(html_url->tag,"area")))
+					|| !html_url->link_inline
+					|| !wget_strcasecmp_ascii(html_url->tag,"embed"))
+				{
+					info_printf(_("URL '%.*s' not followed (page requisites + level)\n"), (int)url->len, url->p);
+					continue;
+				}
 			}
 		}
 
