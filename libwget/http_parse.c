@@ -706,11 +706,18 @@ const char *wget_http_parse_content_encoding(const char *s, char *content_encodi
 
 const char *wget_http_parse_connection(const char *s, bool *keep_alive)
 {
-	while (c_isblank(*s)) s++;
+	const char *e;
 
-	*keep_alive = !wget_strcasecmp_ascii(s, "keep-alive");
+	*keep_alive = false;
 
-	while (wget_http_istoken(*s)) s++;
+	for (e = s; *e; s = e + 1) {
+		if ((e = strchrnul(s, ',')) != s) {
+			while (c_isblank(*s)) s++;
+
+			if (!wget_strncasecmp_ascii(s, "keep-alive", 10))
+				*keep_alive = true;
+		}
+	}
 
 	return s;
 }
