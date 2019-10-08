@@ -3159,6 +3159,20 @@ static bool check_mime_list(wget_vector *list, const char *mime)
 	return result;
 }
 
+static bool is_file(const char *fname)
+{
+	struct stat st;
+
+	return stat(fname, &st) == 0 && S_ISREG(st.st_mode);
+}
+
+static bool is_directory(const char *fname)
+{
+	struct stat st;
+
+	return stat(fname, &st) == 0 && S_ISDIR(st.st_mode);
+}
+
 static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const char *fname, int flag,
 		wget_iri *uri, wget_iri *original_url, int ignore_patterns, wget_buffer *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path)
@@ -3290,7 +3304,8 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		if (oflag == O_TRUNC)
 			flag = O_TRUNC;
 	} else if (!config.clobber || (config.recursive && config.directories)) {
-		if (oflag == O_TRUNC && (!(config.recursive && config.directories) || (config.page_requisites && !config.clobber))) {
+		// debug_printf("oflag=%02x recursive %d directories %d page_requsites %d clobber %d\n",oflag,config.recursive,config.directories,config.page_requisites,config.clobber);
+		if (oflag == O_TRUNC && (!(config.recursive && config.directories) || !config.clobber)) {
 			flag = O_EXCL;
 		}
 	} else if (flag != O_APPEND) {
@@ -3357,6 +3372,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 	fd = open_unique(fname, O_WRONLY | flag | O_CREAT | O_NONBLOCK | O_BINARY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
 		multiple, unique, sizeof(unique));
 	// debug_printf("1 fd=%d flag=%02x (%02x %02x %02x) errno=%d %s\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND,errno,fname);
+
 	// Store the "actual" file name (with any extensions that were added present)
 	wget_asprintf(actual_file_name, "%s", unique[0] ? unique : fname);
 
@@ -3374,13 +3390,13 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		// TODO SAVE UNIQUE-NESS
 	} else {
 		if (fd == -1) {
-			if (errno == EEXIST) {
+			if (errno == EEXIST && is_file(fname)) {
 				error_printf(_("File '%s' already there; not retrieving.\n"), fname);
 
 				if (config.page_requisites && !config.clobber) {
 					parse_localfile(job, job->local_filename, config.remote_encoding, resp->content_type, job->iri);
 				}
-			} else if (errno == EISDIR)
+			} else if (errno == EISDIR || is_directory(fname))
 				info_printf(_("Directory / file name clash - not saving '%s'\n"), fname);
 			else {
 				error_printf(_("Failed to open '%s' (errno=%d): %s\n"), fname, errno, strerror(errno));
