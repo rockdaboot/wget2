@@ -987,8 +987,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 				server_stats_callback(conn, resp);
 
 			if (req->header_callback) {
-				if (req->header_callback(resp, req->header_user_data))
-					goto cleanup; // stop requested by callback function
+				req->header_callback(resp, req->header_user_data);
 			}
 
 			if (req && !wget_strcasecmp_ascii(req->method, "HEAD"))
