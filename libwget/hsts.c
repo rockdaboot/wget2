@@ -141,6 +141,9 @@ static hsts_entry *new_hsts(const char *host, uint16_t port, int64_t maxage, boo
 {
 	hsts_entry *hsts = init_hsts(NULL);
 
+	if (!hsts)
+		return NULL;
+
 	hsts->host = wget_strdup(host);
 	hsts->port = port ? port : 443;
 	hsts->include_subdomains = include_subdomains;
