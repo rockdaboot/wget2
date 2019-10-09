@@ -140,7 +140,7 @@ static void
 	rss_parse(JOB *job, const char *data, const char *encoding, wget_iri *base),
 	rss_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base),
 	metalink_parse_localfile(const char *fname),
-	html_parse(JOB *job, int level, const char *data, size_t len, const char *encoding, wget_iri *base),
+	html_parse(JOB *job, int level, const char *fname, const char *data, size_t len, const char *encoding, wget_iri *base),
 	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, wget_iri *base),
 	css_parse(JOB *job, const char *data, size_t len, const char *encoding, wget_iri *base),
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base),
@@ -2151,9 +2151,9 @@ static void process_response(wget_http_response *resp)
 		if (process_decision && recurse_decision) {
 			if (resp->content_type && resp->body) {
 				if (!wget_strcasecmp_ascii(resp->content_type, "text/html")) {
-					html_parse(job, job->level, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					html_parse(job, job->level, job->local_filename, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")) {
-					html_parse(job, job->level, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					html_parse(job, job->level, job->local_filename, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 					// xml_parse(sockfd, resp, job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
 					css_parse(job, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
@@ -2525,7 +2525,7 @@ static int normalize_uri(wget_iri *base, wget_string *url, const char *encoding,
 	return 0;
 }
 
-void html_parse(JOB *job, int level, const char *html, size_t html_len, const char *encoding, wget_iri *base)
+void html_parse(JOB *job, int level, const char *fname, const char *html, size_t html_len, const char *encoding, wget_iri *base)
 {
 	wget_iri *allocated_base = NULL;
 	const char *reason;
@@ -2579,7 +2579,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 			html = utf8;
 			if (convert_links) {
 				convert_links = 0; // prevent link conversion
-				info_printf(_("Link conversion disabled for '%s'\n"), job->local_filename);
+				info_printf(_("Link conversion disabled for '%s'\n"), fname);
 			}
 
 		} else {
@@ -2671,7 +2671,7 @@ void html_parse(JOB *job, int level, const char *html, size_t html_len, const ch
 			wget_html_parsed_url *html_url = wget_vector_get(parsed->uris, it);
 			html_url->url.p = (const char *) (html_url->url.p - html); // convert pointer to offset
 		}
-		remember_for_conversion(job->local_filename, base, CONTENT_TYPE_HTML, encoding, parsed);
+		remember_for_conversion(fname, base, CONTENT_TYPE_HTML, encoding, parsed);
 		parsed = NULL; // 'parsed' has been consumed
 	}
 
@@ -2688,7 +2688,7 @@ void html_parse_localfile(JOB *job, int level, const char *fname, const char *en
 	size_t n;
 
 	if ((data = wget_read_file(fname, &n))) {
-		html_parse(job, level, data, n, encoding, base);
+		html_parse(job, level, fname, data, n, encoding, base);
 	}
 
 	xfree(data);
