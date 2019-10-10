@@ -133,10 +133,10 @@ void stats_site_add(wget_http_response *resp, wget_gpg_info_t *gpg_info)
 			*p = 0;
 
 		site_stats_data *doc;
-		wget_stringmap_get(docs, uri, &doc);
+		int rc = wget_stringmap_get(docs, uri, &doc);
 		xfree(uri);
 
-		if (doc) {
+		if (rc && doc) {
 			if (gpg_info->valid_sigs)
 				doc->signature_status = 1;
 			else if (gpg_info->invalid_sigs)
