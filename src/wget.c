@@ -454,7 +454,10 @@ static int in_directory_pattern_list(const wget_vector *v, const char *fname)
 	// if -X was given alone: include all be default
 	const char *pattern;
 	char *path;
-	bool default_exclude = 0;
+	bool default_exclude;
+
+	if (!fname)
+		return false;
 
 	if (*fname == '/')
 		fname++;
@@ -1008,7 +1011,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			for (int it = 0, n = wget_robots_get_path_count(host->robots); it < n; it++) {
 				wget_string *path = wget_robots_get_path(host->robots, it);
 				// info_printf("%s: checked robot path '%.*s' / '%s' / '%s'\n", __func__, (int)path->len, path->path, iri->path, iri->uri);
-				if (path->len && !strncmp(path->p + 1, iri->path ? iri->path : "", path->len - 1)) {
+				if (path->len && !strncmp(path->p + 1, iri->path, path->len - 1)) {
 					info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), iri->uri);
 					goto out;
 				}
