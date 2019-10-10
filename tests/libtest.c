@@ -1817,7 +1817,7 @@ int wget_test_check_file_system(void)
 				goto out;
 			}
 
-			if (strcmp(buf, fname[it])) {
+			if (memcmp(buf, fname[it], sizeof(fname[0]))) {
 				wget_debug_printf("%s: Found case-mangling file system\n", __func__);
 				flags = WGET_TEST_FS_CASEMATTERS;
 				goto out; // we can stop here
