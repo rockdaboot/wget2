@@ -84,6 +84,8 @@ Full+VPATH/Debian:
   tags:
     - shared
     - docker
+  except:
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -112,6 +114,8 @@ Debian/Testing:
   tags:
     - shared
     - docker
+  except:
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -134,6 +138,8 @@ Debian/Unstable:
   tags:
     - shared
     - docker
+  except:
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -155,6 +161,8 @@ Debian/WolfSSL:
   tags:
     - shared
     - docker
+  except:
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -176,6 +184,8 @@ Debian/OpenSSL:
   tags:
     - shared
     - docker
+  except:
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -203,6 +213,8 @@ Minimal/Debian:
     - make -j$(nproc) check
   tags:
     - shared
+  except:
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -231,6 +243,8 @@ Sanitizers/Debian:
     - make -j$(nproc) check
   tags:
     - shared
+  except:
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -254,6 +268,7 @@ Scan-Build/Debian:
     - shared
   except:
     - tags
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -274,6 +289,7 @@ Valgrind/Debian:
     - shared
   except:
     - tags
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -297,6 +313,7 @@ Valgrind/i386:
     - shared
   except:
     - tags
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -319,6 +336,7 @@ Simple/Fedora:
     - shared
   except:
     - tags
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -341,6 +359,7 @@ Alpine:
     - shared
   except:
     - tags
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -395,7 +414,6 @@ pages:
       - public
   only:
     - master
-    - tmp-public-tarball
 
 MinGW64:
   stage: stage1-testing
@@ -416,6 +434,7 @@ MinGW64:
     - docker
   except:
     - tags
+    - coverity-scan@gnuwget/wget2
   allow_failure: true
   artifacts:
     expire_in: 2 weeks
@@ -440,6 +459,8 @@ Arch:
   tags:
     - shared
     - docker
+  except:
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -475,6 +496,8 @@ Tarball:
     - shared
   dependencies:
     - Full+VPATH/Debian
+  except:
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -514,6 +537,8 @@ Debian/HTTP2:
     - shared
     - docker
   allow_failure: true
+  except:
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -553,6 +578,7 @@ FreeBSD.x86_64:
     - branches@gnuwget/wget2
   except:
     - tags
+    - coverity-scan@gnuwget/wget2
   artifacts:
     expire_in: 1 week
     when: on_failure
@@ -561,3 +587,27 @@ FreeBSD.x86_64:
       - fuzz/*.log
       - tests/*.log
       - unit-tests/*.log
+
+coverity:
+  stage: stage1-testing
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
+  script:
+    - wget https://scan.coverity.com/download/linux64 --post-data "token=$COVERITY_SCAN_TOKEN&project=$COVERITY_SCAN_PROJECT_NAME" -O /tmp/coverity_tool.tgz
+    - tar xfz /tmp/coverity_tool.tgz
+    - ./bootstrap --skip-po
+    - CFLAGS="-g -Og" ./configure --cache-file cache/config.cache --disable-doc
+    - cov-analysis-linux64-*/bin/cov-build --dir cov-int make -j$(nproc)
+    - tar cfz cov-int.tar.gz cov-int
+    - curl https://scan.coverity.com/builds?project=$COVERITY_SCAN_PROJECT_NAME
+      --form token=$COVERITY_SCAN_TOKEN --form email=tim.ruehsen@gmx.de
+      --form file=@cov-int.tar.gz --form version="`git describe --tags`"
+      --form description="CI build"
+  tags:
+    - shared
+  only:
+    - coverity-scan@gnuwget/wget2
+  artifacts:
+    expire_in: 1 week
+    when: on_failure
+    paths:
+      - cov-int/*.txt
