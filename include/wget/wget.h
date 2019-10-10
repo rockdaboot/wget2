@@ -763,7 +763,7 @@ WGETAPI void
 WGETAPI void
 	wget_hashmap_clear(wget_hashmap *h);
 WGETAPI int
-	wget_hashmap_get(const wget_hashmap *h, const void *key, void **value);
+	wget_hashmap_get(const wget_hashmap *h, const void *key, void **value) WGET_GCC_UNUSED_RESULT;
 #define wget_hashmap_get(a, b, c) wget_hashmap_get((a), (b), (void **)(c))
 WGETAPI int
 	wget_hashmap_contains(const wget_hashmap *h, const void *key);
@@ -869,7 +869,7 @@ int wget_stringmap_put(wget_stringmap *h, const char *key, const void *value)
  *
  * Neither \p h nor \p key must be %NULL.
  */
-static inline
+static inline WGET_GCC_UNUSED_RESULT
 int wget_stringmap_get(const wget_stringmap *h, const char *key, void **value)
 {
 	return wget_hashmap_get(h, key, value);
