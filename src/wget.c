@@ -716,7 +716,7 @@ static void add_url_to_queue(const char *url, wget_iri *base, const char *encodi
 		plugin_verdict.alt_iri = NULL;
 	}
 
-	if (iri->scheme != WGET_IRI_SCHEME_HTTP && iri->scheme != WGET_IRI_SCHEME_HTTPS) {
+	if (!wget_iri_supported(iri)) {
 		error_printf(_("URI scheme not supported: '%s'\n"), url);
 		wget_iri_free(&iri);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
@@ -736,6 +736,7 @@ static void add_url_to_queue(const char *url, wget_iri *base, const char *encodi
 			// we know this URL already
 			wget_thread_mutex_unlock(downloader_mutex);
 			plugin_db_forward_url_verdict_free(&plugin_verdict);
+			wget_iri_free(&iri);
 			return;
 		}
 	}
@@ -776,8 +777,10 @@ static void add_url_to_queue(const char *url, wget_iri *base, const char *encodi
 				// create a special job for downloading robots.txt (before anything else)
 				wget_iri *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
 
-				if (blacklist_add(robot_iri))
+				if (robot_iri && blacklist_add(robot_iri))
 					host_add_robotstxt_job(host, robot_iri, http_fallback);
+				else
+					wget_iri_free(&robot_iri);
 			}
 		}
 	} else
@@ -922,8 +925,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 	wget_thread_mutex_lock(downloader_mutex);
 
 	if (!blacklist_add(iri)) {
-		// we know this URL already
-		// iri has been free'd by blacklist_add()
+		wget_iri_free(&iri);
 		goto out;
 	}
 
@@ -1001,8 +1003,10 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 				// create a special job for downloading robots.txt (before anything else)
 				wget_iri *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
 
-				if (blacklist_add(robot_iri))
+				if (robot_iri && blacklist_add(robot_iri))
 					host_add_robotstxt_job(host, robot_iri, http_fallback);
+				else
+					wget_iri_free(&robot_iri);
 			}
 		}
 	} else if ((host = host_get(iri))) {

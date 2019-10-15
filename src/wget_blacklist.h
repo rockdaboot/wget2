@@ -30,10 +30,17 @@
 
 #include <wget.h>
 
+typedef struct {
+	wget_iri
+		*iri;
+	const char *
+		local_filename;
+} blacklist_entry;
+
 void blacklist_init(void);
 void blacklist_exit(void);
 int blacklist_size(void) WGET_GCC_PURE;
-wget_iri *blacklist_add(wget_iri *iri);
+blacklist_entry *blacklist_add(wget_iri *iri);
 void blacklist_print(void);
 void blacklist_free(void);
 

@@ -41,23 +41,15 @@ static wget_hashmap
 static wget_thread_mutex
 	mutex;
 
-void blacklist_init(void)
-{
-	wget_thread_mutex_init(&mutex);
-}
-
-void blacklist_exit(void)
-{
-	wget_thread_mutex_destroy(&mutex);
-}
-
 // Paul Larson's hash function from Microsoft Research
 // ~ O(1) insertion, search and removal
 #ifdef __clang__
 __attribute__((no_sanitize("integer")))
 #endif
-static unsigned int WGET_GCC_NONNULL_ALL hash_iri(const wget_iri *iri)
+static WGET_GCC_NONNULL_ALL wget_hashmap_hash_fn hash_iri;
+static unsigned int WGET_GCC_NONNULL_ALL hash_iri(const void *key)
 {
+	const wget_iri *iri = (wget_iri *) key;
 	unsigned int h = iri->port; // use port as SALT if hash table attacks doesn't matter
 	const unsigned char *p;
 
@@ -75,62 +67,78 @@ static unsigned int WGET_GCC_NONNULL_ALL hash_iri(const wget_iri *iri)
 	return h;
 }
 
-static int WGET_GCC_NONNULL_ALL blacklist_print_entry(WGET_GCC_UNUSED void *ctx, const wget_iri *iri)
+static WGET_GCC_NONNULL_ALL wget_hashmap_browse_fn blacklist_print_entry;
+static int WGET_GCC_NONNULL_ALL blacklist_print_entry(void *ctx, const void *key, void *value)
 {
+	(void) ctx; (void) value;
+
+	const wget_iri *iri = (wget_iri *) key;
 	debug_printf("blacklist %s\n", iri->uri);
 	return 0;
 }
 
+static wget_hashmap_key_destructor free_key;
+static void free_key(void *key)
+{
+	wget_iri_free((wget_iri **) &key);
+}
+
+void blacklist_init(void)
+{
+	wget_thread_mutex_init(&mutex);
+
+	blacklist = wget_hashmap_create(128, hash_iri, (wget_hashmap_compare_fn *) wget_iri_compare);
+	wget_hashmap_set_key_destructor(blacklist, free_key);
+}
+
+void blacklist_exit(void)
+{
+	wget_thread_mutex_destroy(&mutex);
+}
+
+/**
+ * Only called outside multi-threading, no locking needed
+ */
 void blacklist_print(void)
 {
-	wget_thread_mutex_lock(mutex);
 	wget_hashmap_browse(blacklist, (wget_hashmap_browse_fn *) blacklist_print_entry, NULL);
-	wget_thread_mutex_unlock(mutex);
 }
 
-int blacklist_size(void)
+/**
+ * \param[in] iri wget_iri to put into the blacklist
+ * \return A new blacklist_entry or %NULL if that \p iri was already known
+ *
+ * The given \p iri will be put into the blacklist.
+ */
+blacklist_entry *blacklist_add(wget_iri *iri)
 {
-	return wget_hashmap_size(blacklist);
-}
+	blacklist_entry *entryp;
 
-static void _free_entry(wget_iri *iri)
-{
-	wget_iri_free(&iri);
-}
+	wget_thread_mutex_lock(mutex);
 
-wget_iri *blacklist_add(wget_iri *iri)
-{
-	if (!iri)
-		return NULL;
+	if (!wget_hashmap_get(blacklist, iri, &entryp)) {
+		entryp = wget_malloc(sizeof(blacklist_entry));
+		entryp->iri = iri;
 
-	if (wget_iri_supported(iri)) {
-		wget_thread_mutex_lock(mutex);
+		// info_printf("Add to blacklist: %s\n",iri->uri);
 
-		if (!blacklist) {
-			blacklist = wget_hashmap_create(128, (wget_hashmap_hash_fn *) hash_iri, (wget_hashmap_compare_fn *) wget_iri_compare);
-			wget_hashmap_set_key_destructor(blacklist, (wget_hashmap_key_destructor *) _free_entry);
-		}
-
-		if (!wget_hashmap_contains(blacklist, iri)) {
-			// info_printf("Add to blacklist: %s\n",iri->uri);
-			wget_hashmap_put(blacklist, iri, NULL); // use hashmap as a hashset (without value)
-			wget_thread_mutex_unlock(mutex);
-			return iri;
-		} else {
-			debug_printf("not requesting '%s'. (Already Seen)\n", iri->uri);
-		}
-
+		wget_hashmap_put(blacklist, iri, entryp);
 		wget_thread_mutex_unlock(mutex);
+
+		return entryp;
 	}
 
-	wget_iri_free(&iri);
+	wget_thread_mutex_unlock(mutex);
+
+	debug_printf("not requesting '%s'. (Already Seen)\n", iri->uri);
 
 	return NULL;
 }
 
+/**
+ * Only called outside multi-threading, no locking needed
+ */
 void blacklist_free(void)
 {
-	wget_thread_mutex_lock(mutex);
 	wget_hashmap_free(&blacklist);
-	wget_thread_mutex_unlock(mutex);
 }
