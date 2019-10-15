@@ -687,7 +687,7 @@ static void parse_localfile(JOB *job, const char *fname, const char *encoding, c
 
 // Add URLs given by user (command line, file or -i option).
 // Needs to be thread-save.
-static void add_url_to_queue(const char *url, wget_iri *base, const char *encoding, int flags)
+static void queue_url_from_local(const char *url, wget_iri *base, const char *encoding, int flags)
 {
 	wget_iri *iri;
 	JOB *new_job = NULL, job_buf;
@@ -1291,7 +1291,7 @@ int main(int argc, const char **argv)
 	set_exit_status(EXIT_STATUS_NO_ERROR);
 
 	for (; n < argc; n++) {
-		add_url_to_queue(argv[n], config.base, config.local_encoding, 0);
+		queue_url_from_local(argv[n], config.base, config.local_encoding, 0);
 	}
 
 	if (config.input_file) {
@@ -1335,7 +1335,7 @@ int main(int argc, const char **argv)
 					// debug_printf("len=%zd url=%s\n", len, buf);
 
 					url[len] = 0;
-					add_url_to_queue(buf, config.base, config.input_encoding, 0);
+					queue_url_from_local(buf, config.base, config.input_encoding, 0);
 				}
 				xfree(buf);
 			} else {
@@ -1359,7 +1359,7 @@ int main(int argc, const char **argv)
 					// debug_printf("len=%zd url=%s\n", len, buf);
 
 					url[len] = 0;
-					add_url_to_queue(url, config.base, config.input_encoding, 0);
+					queue_url_from_local(url, config.base, config.input_encoding, 0);
 				}
 				xfree(buf);
 				close(fd);
@@ -1538,7 +1538,7 @@ void *input_thread(void *p WGET_GCC_UNUSED)
 	char *buf = NULL;
 
 	while ((len = wget_fdgetline(&buf, &bufsize, STDIN_FILENO)) >= 0) {
-		add_url_to_queue(buf, config.base, config.local_encoding, URL_FLG_NO_BLACKLISTING);
+		queue_url_from_local(buf, config.base, config.local_encoding, URL_FLG_NO_BLACKLISTING);
 
 		if (nthreads < config.max_threads && nthreads < queue_size())
 			// wake up main thread to recalculate # of workers
