@@ -33,6 +33,8 @@
 #include <wget.h>
 
 #include "wget_main.h"
+#include "wget_options.h"
+#include "wget_utils.h"
 #include "wget_blacklist.h"
 
 static wget_hashmap
@@ -40,6 +42,124 @@ static wget_hashmap
 
 static wget_thread_mutex
 	mutex;
+
+// generate the local filename corresponding to an URI
+// respect the following options:
+// --restrict-file-names (unix,windows,nocontrol,ascii,lowercase,uppercase)
+// -nd / --no-directories
+// -x / --force-directories
+// -nH / --no-host-directories
+// --protocol-directories
+// --cut-dirs=number
+// -P / --directory-prefix=prefix
+
+WGET_GCC_NONNULL_ALL
+static const char * get_local_filename_real(const wget_iri *iri)
+{
+	wget_buffer buf;
+	char *fname;
+	bool directories;
+
+	directories = config.recursive;
+
+	if (config.directories == 0)
+		directories = 0;
+
+	if (config.force_directories == 1)
+		directories = 1;
+
+	wget_buffer_init(&buf, NULL, 256);
+
+	if (config.directory_prefix && *config.directory_prefix) {
+		wget_buffer_strcat(&buf, config.directory_prefix);
+		wget_buffer_memcat(&buf, "/", 1);
+	}
+
+	if (directories) {
+		if (config.protocol_directories && wget_iri_supported(iri)) {
+			wget_buffer_strcat(&buf, wget_iri_scheme_get_name(iri->scheme));
+			wget_buffer_memcat(&buf, "/", 1);
+		}
+
+		if (config.host_directories && iri->host && *iri->host) {
+			wget_buffer_strcat(&buf, iri->host);
+			wget_buffer_memcat(&buf, "/", 1);
+		}
+
+		if (config.cut_directories) {
+			// cut directories
+			wget_buffer path_buf;
+			const char *p;
+			int n;
+			char sbuf[256];
+
+			wget_buffer_init(&path_buf, sbuf, sizeof(sbuf));
+			wget_iri_get_path(iri, &path_buf, config.local_encoding);
+
+			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
+				p = strchr(*p == '/' ? p + 1 : p, '/');
+			}
+
+			if (!p && path_buf.data) {
+				// we can't strip this many path elements, just use the filename
+				p = strrchr(path_buf.data, '/');
+				if (!p)
+					p = path_buf.data;
+			}
+
+			if (p) {
+				while (*p == '/')
+					p++;
+
+				wget_buffer_strcat(&buf, p);
+			}
+
+			wget_buffer_deinit(&path_buf);
+		} else {
+			wget_iri_get_path(iri, &buf, config.local_encoding);
+		}
+
+		if (config.cut_file_get_vars)
+			fname = buf.data;
+		else
+			fname = wget_iri_get_query_as_filename(iri, &buf, config.local_encoding);
+	} else {
+		if (config.cut_file_get_vars)
+			fname = wget_iri_get_path(iri, &buf, config.local_encoding);
+		else
+			fname = wget_iri_get_filename(iri, &buf, config.local_encoding);
+	}
+
+	// do the filename escaping here
+	if (config.restrict_file_names) {
+		char fname_esc[buf.length * 3 + 1];
+
+		if (wget_restrict_file_name(fname, fname_esc, config.restrict_file_names) != fname) {
+			// escaping was really done, replace fname
+			wget_buffer_strcpy(&buf, fname_esc);
+			fname = buf.data;
+		}
+	}
+
+	// create the complete directory path
+//	mkdir_path(fname);
+
+	debug_printf("local filename = '%s'\n", fname);
+
+	return fname;
+}
+
+WGET_GCC_NONNULL_ALL
+static const char * get_local_filename(const wget_iri *iri)
+{
+	if (config.delete_after)
+		return NULL;
+
+	if ((config.spider || config.output_document) && !config.continue_download)
+		return NULL;
+
+	return get_local_filename_real(iri);
+}
 
 // Paul Larson's hash function from Microsoft Research
 // ~ O(1) insertion, search and removal
@@ -77,10 +197,14 @@ static int WGET_GCC_NONNULL_ALL blacklist_print_entry(void *ctx, const void *key
 	return 0;
 }
 
-static wget_hashmap_key_destructor free_key;
-static void free_key(void *key)
+static wget_hashmap_value_destructor free_value;
+static void free_value(void *value)
 {
-	wget_iri_free((wget_iri **) &key);
+	blacklist_entry *blacklistp = value;
+
+	wget_xfree(blacklistp->local_filename);
+	wget_iri_free((wget_iri **) &blacklistp->iri);
+	wget_xfree(value);
 }
 
 void blacklist_init(void)
@@ -88,7 +212,8 @@ void blacklist_init(void)
 	wget_thread_mutex_init(&mutex);
 
 	blacklist = wget_hashmap_create(128, hash_iri, (wget_hashmap_compare_fn *) wget_iri_compare);
-	wget_hashmap_set_key_destructor(blacklist, free_key);
+	wget_hashmap_set_key_destructor(blacklist, NULL); // destroy the key (iri) in free_value()
+	wget_hashmap_set_value_destructor(blacklist, free_value);
 }
 
 void blacklist_exit(void)
@@ -110,7 +235,7 @@ void blacklist_print(void)
  *
  * The given \p iri will be put into the blacklist.
  */
-blacklist_entry *blacklist_add(wget_iri *iri)
+blacklist_entry *blacklist_add(const wget_iri *iri)
 {
 	blacklist_entry *entryp;
 
@@ -119,6 +244,7 @@ blacklist_entry *blacklist_add(wget_iri *iri)
 	if (!wget_hashmap_get(blacklist, iri, &entryp)) {
 		entryp = wget_malloc(sizeof(blacklist_entry));
 		entryp->iri = iri;
+		entryp->local_filename = get_local_filename(iri);
 
 		// info_printf("Add to blacklist: %s\n",iri->uri);
 
@@ -131,6 +257,16 @@ blacklist_entry *blacklist_add(wget_iri *iri)
 	wget_thread_mutex_unlock(mutex);
 
 	debug_printf("not requesting '%s'. (Already Seen)\n", iri->uri);
+
+	return NULL;
+}
+
+blacklist_entry *blacklist_get(const wget_iri *iri)
+{
+	blacklist_entry *entryp;
+
+	if (wget_hashmap_get(blacklist, iri, &entryp))
+		return entryp;
 
 	return NULL;
 }

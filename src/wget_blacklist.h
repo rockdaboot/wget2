@@ -31,7 +31,7 @@
 #include <wget.h>
 
 typedef struct {
-	wget_iri
+	const wget_iri
 		*iri;
 	const char *
 		local_filename;
@@ -40,7 +40,8 @@ typedef struct {
 void blacklist_init(void);
 void blacklist_exit(void);
 int blacklist_size(void) WGET_GCC_PURE;
-blacklist_entry *blacklist_add(wget_iri *iri);
+blacklist_entry *blacklist_add(const wget_iri *iri);
+blacklist_entry *blacklist_get(const wget_iri *iri);
 void blacklist_print(void);
 void blacklist_free(void);
 

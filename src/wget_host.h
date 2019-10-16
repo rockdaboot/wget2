@@ -31,6 +31,8 @@
 #include <wget.h>
 #include <stdbool.h>
 
+#include "wget_blacklist.h"
+
 struct JOB;
 typedef struct JOB JOB;
 
@@ -65,7 +67,7 @@ HOST *host_get(wget_iri *iri) WGET_GCC_NONNULL((1));
 
 JOB *host_get_job(HOST *host, long long *pause);
 void host_add_job(HOST *host, const JOB *job) WGET_GCC_NONNULL((1,2));
-void host_add_robotstxt_job(HOST *host, wget_iri *iri, bool http_fallback) WGET_GCC_NONNULL((1,2));
+void host_add_robotstxt_job(HOST *host, blacklist_entry *blacklist_entry, bool http_fallback) WGET_GCC_NONNULL((1,2));
 void host_release_jobs(HOST *host);
 void host_remove_job(HOST *host, JOB *job) WGET_GCC_NONNULL((1,2));
 void host_queue_free(HOST *host) WGET_GCC_NONNULL((1));

@@ -249,7 +249,7 @@ static int _release_job(wget_thread_id *ctx, JOB *job)
 			if (part->inuse && part->used_by == self) {
 				part->inuse = 0;
 				part->used_by = 0;
-				debug_printf("released chunk %d/%d %s\n", it + 1, wget_vector_size(job->parts), job->local_filename);
+				debug_printf("released chunk %d/%d %s\n", it + 1, wget_vector_size(job->parts), job->blacklist_entry->local_filename);
 			}
 		}
 	} else if (job->inuse && job->used_by == self) {
@@ -295,7 +295,8 @@ void host_add_job(HOST *host, const JOB *job)
 {
 	JOB *jobp;
 
-	debug_printf("%s: job fname %s\n", __func__, job->local_filename);
+	if (job->blacklist_entry)
+		debug_printf("%s: job fname %s\n", __func__, job->blacklist_entry->local_filename);
 
 	wget_thread_mutex_lock(hosts_mutex);
 
@@ -323,14 +324,14 @@ void host_add_job(HOST *host, const JOB *job)
  * This function creates a priority job for robots.txt.
  * This job has to be processed before any other job.
  */
-void host_add_robotstxt_job(HOST *host, wget_iri *iri, bool http_fallback)
+void host_add_robotstxt_job(HOST *host, blacklist_entry *blacklist_entry, bool http_fallback)
 {
 	JOB *job;
 
-	job = job_init(NULL, iri, http_fallback);
+	job = job_init(NULL, blacklist_entry->iri, http_fallback);
 	job->host = host;
 	job->robotstxt = 1;
-	job->local_filename = get_local_filename(job->iri);
+	job->blacklist_entry = blacklist_entry;
 
 	wget_thread_mutex_lock(hosts_mutex);
 	host->robot_job = job;
@@ -490,7 +491,7 @@ void host_queue_free(HOST *host)
 /*
 static int _queue_print_func(void *context WGET_GCC_UNUSED, JOB *job)
 {
-	debug_printf("  %s %d\n", job->local_filename, job->inuse);
+	debug_printf("  %s %d\n", job->blacklist_entry->local_filename, job->inuse);
 	return 0;
 }
 

@@ -31,6 +31,7 @@
 #include <sys/types.h> // for off_t
 
 #include <wget.h>
+#include "wget_blacklist.h"
 #include "wget_host.h"
 
 // file part to download
@@ -74,8 +75,8 @@ struct JOB {
 
 	HOST
 		*host;
-	const char
-		*local_filename;
+	blacklist_entry
+		*blacklist_entry;
 	char
 		*sig_filename, // Signature information. Meaning depends on sig_req.
 		*sig_req; // The base URI for the file that we need to verify.

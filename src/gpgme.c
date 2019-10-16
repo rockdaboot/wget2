@@ -275,7 +275,7 @@ int wget_verify_job(JOB *job, wget_http_response *resp, wget_gpg_info_t *info)
 	}
 
 	// The corrected name of the base file, adjusted for any collision extensions
-	char *corrected_base_file = determine_base_file(job->sig_filename, job->local_filename);
+	const char *corrected_base_file = determine_base_file(job->sig_filename, job->blacklist_entry->local_filename);
 
 	if (!corrected_base_file) {
 		error_printf(_("Couldn't correct signature file!\n"));
@@ -321,7 +321,7 @@ char *wget_verify_get_base_file(JOB *job)
 {
 #ifdef WITH_GPGME
 	if (job->sig_req)
-		return determine_base_file(job->sig_filename, job->local_filename);
+		return determine_base_file(job->sig_filename, job->blacklist_entry->local_filename);
 #endif
 	return NULL;
 }

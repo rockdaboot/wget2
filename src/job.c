@@ -49,7 +49,6 @@ void job_free(JOB *job)
 	wget_vector_free(&job->parts);
 	wget_list_free(&job->remaining_sig_ext);
 	xfree(job->sig_req);
-	xfree(job->local_filename);
 	xfree(job->sig_filename);
 }
 

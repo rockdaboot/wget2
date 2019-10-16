@@ -177,122 +177,6 @@ static volatile bool
 static int
 	nthreads;
 
-// generate the local filename corresponding to an URI
-// respect the following options:
-// --restrict-file-names (unix,windows,nocontrol,ascii,lowercase,uppercase)
-// -nd / --no-directories
-// -x / --force-directories
-// -nH / --no-host-directories
-// --protocol-directories
-// --cut-dirs=number
-// -P / --directory-prefix=prefix
-
-static const char * WGET_GCC_NONNULL_ALL get_local_filename_real(const wget_iri *iri)
-{
-	wget_buffer buf;
-	char *fname;
-	bool directories;
-
-	directories = config.recursive;
-
-	if (config.directories == 0)
-		directories = 0;
-
-	if (config.force_directories == 1)
-		directories = 1;
-
-	wget_buffer_init(&buf, NULL, 256);
-
-	if (config.directory_prefix && *config.directory_prefix) {
-		wget_buffer_strcat(&buf, config.directory_prefix);
-		wget_buffer_memcat(&buf, "/", 1);
-	}
-
-	if (directories) {
-		if (config.protocol_directories && wget_iri_supported(iri)) {
-			wget_buffer_strcat(&buf, wget_iri_scheme_get_name(iri->scheme));
-			wget_buffer_memcat(&buf, "/", 1);
-		}
-
-		if (config.host_directories && iri->host && *iri->host) {
-			wget_buffer_strcat(&buf, iri->host);
-			wget_buffer_memcat(&buf, "/", 1);
-		}
-
-		if (config.cut_directories) {
-			// cut directories
-			wget_buffer path_buf;
-			const char *p;
-			int n;
-			char sbuf[256];
-
-			wget_buffer_init(&path_buf, sbuf, sizeof(sbuf));
-			wget_iri_get_path(iri, &path_buf, config.local_encoding);
-
-			for (n = 0, p = path_buf.data; n < config.cut_directories && p; n++) {
-				p = strchr(*p == '/' ? p + 1 : p, '/');
-			}
-
-			if (!p && path_buf.data) {
-				// we can't strip this many path elements, just use the filename
-				p = strrchr(path_buf.data, '/');
-				if (!p)
-					p = path_buf.data;
-			}
-
-			if (p) {
-				while (*p == '/')
-					p++;
-
-				wget_buffer_strcat(&buf, p);
-			}
-
-			wget_buffer_deinit(&path_buf);
-		} else {
-			wget_iri_get_path(iri, &buf, config.local_encoding);
-		}
-
-		if (config.cut_file_get_vars)
-			fname = buf.data;
-		else
-			fname = wget_iri_get_query_as_filename(iri, &buf, config.local_encoding);
-	} else {
-		if (config.cut_file_get_vars)
-			fname = wget_iri_get_path(iri, &buf, config.local_encoding);
-		else
-			fname = wget_iri_get_filename(iri, &buf, config.local_encoding);
-	}
-
-	// do the filename escaping here
-	if (config.restrict_file_names) {
-		char fname_esc[buf.length * 3 + 1];
-
-		if (wget_restrict_file_name(fname, fname_esc, config.restrict_file_names) != fname) {
-			// escaping was really done, replace fname
-			wget_buffer_strcpy(&buf, fname_esc);
-			fname = buf.data;
-		}
-	}
-
-	// create the complete directory path
-//	mkdir_path(fname);
-
-	debug_printf("local filename = '%s'\n", fname);
-
-	return fname;
-}
-
-const char * WGET_GCC_NONNULL_ALL get_local_filename(const wget_iri *iri)
-{
-	if (config.delete_after)
-		return NULL;
-
-	if ((config.spider || config.output_document) && !config.continue_download)
-		return NULL;
-
-	return get_local_filename_real(iri);
-}
-
 static long long fetch_and_add_longlong(long long *p, long long n)
 {
 #ifdef WITH_SYNC_FETCH_AND_ADD_LONGLONG
@@ -691,8 +575,8 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 {
 	wget_iri *iri;
 	JOB *new_job = NULL, job_buf;
+	blacklist_entry *blacklistp;
 	HOST *host;
-	const char *local_filename;
 	struct plugin_db_forward_url_verdict plugin_verdict;
 	bool http_fallback = 0;
 
@@ -731,8 +615,8 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 			http_fallback = 1;
 	}
 
-	if (!blacklist_add(iri)) {
-		if (!(flags & URL_FLG_NO_BLACKLISTING)) {
+	if (!(blacklistp = blacklist_add(iri))) {
+		if (!(flags & URL_FLG_NO_BLACKLISTING) || !(blacklistp = blacklist_get(iri))) {
 			// we know this URL already
 			wget_thread_mutex_unlock(downloader_mutex);
 			plugin_db_forward_url_verdict_free(&plugin_verdict);
@@ -751,19 +635,17 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 	}
 
 	if (plugin_verdict.alt_local_filename) {
-		local_filename = plugin_verdict.alt_local_filename;
+		xfree(blacklistp->local_filename);
+		blacklistp->local_filename = plugin_verdict.alt_local_filename;
 		plugin_verdict.alt_local_filename = NULL;
-	} else {
-		local_filename = get_local_filename(iri);
 	}
 
-	if (!config.clobber && local_filename && access(local_filename, F_OK) == 0) {
+	if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
 		debug_printf("not requesting '%s'. (File already exists)\n", iri->uri);
 		wget_thread_mutex_unlock(downloader_mutex);
 		if (config.recursive || config.page_requisites) {
-			parse_localfile(NULL, local_filename, NULL, NULL, iri);
+			parse_localfile(NULL, blacklistp->local_filename, NULL, NULL, iri);
 		}
-		xfree(local_filename);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
 	}
@@ -771,14 +653,15 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 	if ((host = host_add(iri))) {
 		// a new host entry has been created
 		if (config.recursive) {
-			if (!config.clobber && local_filename && access(local_filename, F_OK) == 0) {
+			if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
 				debug_printf("not requesting '%s'. (File already exists)\n", iri->uri);
 			} else {
 				// create a special job for downloading robots.txt (before anything else)
 				wget_iri *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
+				blacklist_entry *blacklist_robots;
 
-				if (robot_iri && blacklist_add(robot_iri))
-					host_add_robotstxt_job(host, robot_iri, http_fallback);
+				if (robot_iri && (blacklist_robots = blacklist_add(robot_iri)))
+					host_add_robotstxt_job(host, blacklist_robots, http_fallback);
 				else
 					wget_iri_free(&robot_iri);
 			}
@@ -809,7 +692,7 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 	}
 
 	new_job = job_init(&job_buf, iri, http_fallback);
-	new_job->local_filename = local_filename;
+	new_job->blacklist_entry = blacklistp;
 
 	if (plugin_verdict.accept) {
 		new_job->ignore_patterns = 1;
@@ -854,7 +737,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 	JOB *new_job = NULL, job_buf;
 	wget_iri *iri;
 	HOST *host;
-	const char *local_filename = NULL;
+	blacklist_entry *blacklistp;
 	struct plugin_db_forward_url_verdict plugin_verdict;
 	bool http_fallback = 0;
 
@@ -924,7 +807,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 
 	wget_thread_mutex_lock(downloader_mutex);
 
-	if (!blacklist_add(iri)) {
+	if (!(blacklistp = blacklist_add(iri))) {
 		wget_iri_free(&iri);
 		goto out;
 	}
@@ -973,22 +856,23 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 
 	if (!config.output_document) {
 		if (plugin_verdict.alt_local_filename) {
-			local_filename = plugin_verdict.alt_local_filename;
+			xfree(blacklistp->local_filename);
+			blacklistp->local_filename = plugin_verdict.alt_local_filename;
 			plugin_verdict.alt_local_filename = NULL;
 		} else if (!(flags & URL_FLG_REDIRECTION) || config.trust_server_names || !job) {
-			local_filename = get_local_filename(iri);
+			// local_filename = get_local_filename(iri);
 		} else {
-			local_filename = wget_strdup(job->local_filename);
+			xfree(blacklistp->local_filename);
+			blacklistp->local_filename = wget_strdup(job->blacklist_entry->local_filename);
 		}
 
-		if (!config.clobber && local_filename && access(local_filename, F_OK) == 0) {
+		if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
 			info_printf(_("URL '%s' not requested (file already exists)\n"), iri->uri);
 			wget_thread_mutex_unlock(downloader_mutex);
 			if (config.recursive && (!config.level || (job && job->level < config.level + config.page_requisites))) {
-				parse_localfile(job, local_filename, encoding, NULL, iri);
+				parse_localfile(job, blacklistp->local_filename, encoding, NULL, iri);
 			}
 			// do not 'goto out;' here
-			xfree(local_filename);
 			plugin_db_forward_url_verdict_free(&plugin_verdict);
 			return;
 		}
@@ -997,14 +881,15 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 	if ((host = host_add(iri))) {
 		// a new host entry has been created
 		if (config.recursive) {
-			if (!config.clobber && local_filename && access(local_filename, F_OK) == 0) {
+			if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
 				debug_printf("not requesting '%s' (File already exists)\n", iri->uri);
 			} else {
 				// create a special job for downloading robots.txt (before anything else)
 				wget_iri *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
+				blacklist_entry *blacklist_robots;
 
-				if (robot_iri && blacklist_add(robot_iri))
-					host_add_robotstxt_job(host, robot_iri, http_fallback);
+				if (robot_iri && (blacklist_robots = blacklist_add(robot_iri)))
+					host_add_robotstxt_job(host, blacklist_robots, http_fallback);
 				else
 					wget_iri_free(&robot_iri);
 			}
@@ -1049,8 +934,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 	}
 
 	new_job = job_init(&job_buf, iri, http_fallback);
-	new_job->local_filename = local_filename;
-	local_filename = NULL;
+	new_job->blacklist_entry = blacklistp;
 
 	if (job) {
 		if (flags & URL_FLG_REDIRECTION) {
@@ -1121,7 +1005,6 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 	wget_thread_cond_signal(worker_cond);
 
 out:
-	xfree(local_filename);
 	wget_thread_mutex_unlock(downloader_mutex);
 	plugin_db_forward_url_verdict_free(&plugin_verdict);
 }
@@ -1160,15 +1043,21 @@ static void convert_links(void)
 			if (wget_iri_relative_to_abs(conversion->base_url, url->p, url->len, &buf)) {
 				// buf.data now holds the absolute URL as a string
 				wget_iri *iri = wget_iri_parse(buf.data, conversion->encoding);
+				blacklist_entry *blacklist_entry;
 
 				if (!iri) {
 					wget_error_printf(_("Cannot resolve URI '%s'\n"), buf.data);
 					continue;
 				}
 
-				const char *filename = get_local_filename(iri);
+				if (!(blacklist_entry = blacklist_add(iri))) {
+					blacklist_entry = blacklist_get(iri);
+					wget_iri_free(&iri);
+				}
 
-				if (access(filename, W_OK) == 0) {
+				const char *filename = blacklist_entry->local_filename;
+
+				if (filename && access(filename, W_OK) == 0) {
 					const char *linkpath = filename, *dir = NULL, *p1, *p2;
 					const char *docpath = conversion->filename;
 
@@ -1217,8 +1106,6 @@ static void convert_links(void)
 						data_ptr = url->p + url->len;
 					}
 				}
-				xfree(filename);
-				wget_iri_free(&iri);
 			}
 		}
 
@@ -1842,18 +1729,19 @@ static int64_t WGET_GCC_NONNULL_ALL get_file_lmtime(const char *fname);
 static void process_head_response(wget_http_response *resp)
 {
 	JOB *job = resp->req->user_data;
+	const char *local_filename = job->blacklist_entry->local_filename;
 
 	job->head_first = 0;
 
-	long long file_size = (job->local_filename) ? get_file_size(job->local_filename) : -1;
+	long long file_size = (local_filename) ? get_file_size(local_filename) : -1;
 	if (config.timestamping && !config.if_modified_since && resp->code == 200
 		&& file_size == (long long)resp->content_length
-		&& resp->last_modified <= get_file_lmtime(job->local_filename))
+		&& resp->last_modified <= get_file_lmtime(local_filename))
 	{
-		info_printf(_("File '%s' not modified on server. Omitting download"), job->local_filename);
+		info_printf(_("File '%s' not modified on server. Omitting download"), local_filename);
 
 		if (config.recursive && (!config.level || job->level < config.level + config.page_requisites))
-			parse_localfile(job, job->local_filename, resp->content_type_encoding, resp->content_type, job->iri);
+			parse_localfile(job, local_filename, resp->content_type_encoding, resp->content_type, job->iri);
 
 		return;
 	}
@@ -1903,7 +1791,7 @@ static void process_head_response(wget_http_response *resp)
 		wget_metalink_mirror mirror = { .location = "-", .iri = job->iri };
 		wget_metalink *metalink = wget_calloc(1, sizeof(wget_metalink));
 		metalink->size = resp->content_length; // total file size
-		metalink->name = wget_strdup(config.output_document ? config.output_document : job->local_filename);
+		metalink->name = wget_strdup(config.output_document ? config.output_document : local_filename);
 
 		ssize_t npieces = (resp->content_length + config.chunk_size - 1) / config.chunk_size;
 		metalink->pieces = wget_vector_create((int) npieces, NULL);
@@ -1982,7 +1870,7 @@ static void process_response_part(wget_http_response *resp)
 			else if (job->metalink)
 				print_status(downloader, "%s checking...\n", job->metalink->name);
 			else
-				print_status(downloader, "%s checking...\n", job->local_filename);
+				print_status(downloader, "%s checking...\n", job->blacklist_entry->local_filename);
 			if (job_validate_file(job)) {
 				if (config.progress)
 					bar_print(downloader->id, "Checksum OK");
@@ -2100,7 +1988,7 @@ static void process_response(wget_http_response *resp)
 
 	// Forward response to plugins
 	if (resp->code == 200 || resp->code == 206 || resp->code == 416 || (resp->code == 304 && config.timestamping)) {
-		process_decision = job->local_filename || resp->body ? 1 : 0;
+		process_decision = job->blacklist_entry->local_filename || resp->body ? 1 : 0;
 		recurse_decision = process_decision && config.recursive
 			&& (!config.level || job->level < config.level + config.page_requisites) ? 1 : 0;
 		if (process_decision) {
@@ -2113,7 +2001,7 @@ static void process_response(wget_http_response *resp)
 			if (config.spider || (config.recursive && config.output_document))
 				filename = NULL;
 			else
-				filename = job->local_filename;
+				filename = job->blacklist_entry->local_filename;
 
 			if ((resp->code == 304 || resp->code == 416 || resp->code == 206) && filename)
 				size = get_file_size(filename);
@@ -2158,9 +2046,9 @@ static void process_response(wget_http_response *resp)
 		if (process_decision && recurse_decision) {
 			if (resp->content_type && resp->body) {
 				if (!wget_strcasecmp_ascii(resp->content_type, "text/html")) {
-					html_parse(job, job->level, job->local_filename, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					html_parse(job, job->level, job->blacklist_entry->local_filename, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")) {
-					html_parse(job, job->level, job->local_filename, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					html_parse(job, job->level, job->blacklist_entry->local_filename, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
 					// xml_parse(sockfd, resp, job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
 					css_parse(job, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
@@ -2197,11 +2085,11 @@ static void process_response(wget_http_response *resp)
 						}
 					}
 				} else {
-					wget_info_printf(_("Signature for file %s successfully verified\n"), job->local_filename);
+					wget_info_printf(_("Signature for file %s successfully verified\n"), job->blacklist_entry->local_filename);
 				}
 
 				// Remove the signature file.
-				unlink(job->local_filename);
+				unlink(job->blacklist_entry->local_filename);
 
 				if (config.stats_site_args)
 					stats_site_add(resp, &info);
@@ -2248,7 +2136,7 @@ static void process_response(wget_http_response *resp)
 			if (config.content_disposition && resp->content_filename)
 				local_filename = resp->content_filename;
 			else
-				local_filename = job->local_filename;
+				local_filename = job->blacklist_entry->local_filename;
 
 			parse_localfile(job, local_filename, resp->content_type_encoding, resp->content_type, job->iri);
 		}
@@ -3393,7 +3281,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 				error_printf(_("File '%s' already there; not retrieving.\n"), fname);
 
 				if (config.page_requisites && !config.clobber) {
-					parse_localfile(job, job->local_filename, config.remote_encoding, resp->content_type, job->iri);
+					parse_localfile(job, job->blacklist_entry->local_filename, config.remote_encoding, resp->content_type, job->iri);
 				}
 			} else if (errno == EISDIR || is_directory(fname))
 				info_printf(_("Directory / file name clash - not saving '%s'\n"), fname);
@@ -3460,7 +3348,7 @@ static int get_header(wget_http_response *resp, void *context)
 		!wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml"));
 
 	if (ctx->job->head_first || (config.metalink && metalink)) {
-		name = ctx->job->local_filename;
+		name = ctx->job->blacklist_entry->local_filename;
 	} else if ((part = ctx->job->part)) {
 		name = ctx->job->metalink->name;
 		ctx->outfd = open(ctx->job->metalink->name, O_WRONLY | O_CREAT | O_NONBLOCK | O_BINARY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
@@ -3486,7 +3374,7 @@ static int get_header(wget_http_response *resp, void *context)
 		name = dest = resp->content_filename;
 #endif
 	} else
-		name = dest = config.output_document ? config.output_document : ctx->job->local_filename;
+		name = dest = config.output_document ? config.output_document : ctx->job->blacklist_entry->local_filename;
 
 	if (dest
 		&& ((config.save_content_on && check_status_code_list(config.save_content_on, resp->code))
@@ -3521,9 +3409,9 @@ out:
 		const char *filename = NULL;
 
 		if (!name) {
-			filename = get_local_filename_real(ctx->job->iri);
+			filename = ctx->job->blacklist_entry->local_filename;
 
-			if ((name = strrchr(filename, '/')))
+			if (filename && (name = strrchr(filename, '/')))
 				name += 1;
 			else
 				name = filename;
@@ -3542,8 +3430,6 @@ out:
 		else {
 			bar_slot_begin(ctx->progress_slot, name, ((resp->code == 200 || resp->code == 206) ? 1 : 0), resp->content_length);
 		}
-
-		xfree(filename);
 	}
 
 	return ret;
@@ -3733,7 +3619,7 @@ static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 		return req;
 
 	if (config.continue_download || config.start_pos || (config.timestamping && config.if_modified_since)) {
-		const char *local_filename = config.output_document ? config.output_document : job->local_filename;
+		const char *local_filename = config.output_document ? config.output_document : job->blacklist_entry->local_filename;
 
 		/* We never want to continue the robots job. Always grab a fresh copy
 		 * from the server. */
