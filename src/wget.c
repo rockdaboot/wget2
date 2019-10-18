@@ -3263,16 +3263,8 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		} else
 			ext = NULL;
 
-		if (ext) {
-			size_t ext_length = strlen(ext);
-
-			if (fname_length >= ext_length && wget_strcasecmp_ascii(fname + fname_length - ext_length, ext)) {
-				alloced_fname = wget_malloc(fname_length + ext_length + 1);
-				memcpy(alloced_fname, fname, fname_length);
-				memcpy(alloced_fname + fname_length, ext, ext_length + 1);
-				fname = alloced_fname;
-			}
-		}
+		if (ext && !wget_match_tail_nocase(fname, ext))
+			fname = alloced_fname = wget_aprintf("%s%s", fname, ext);
 	}
 
 	if (! ignore_patterns) {
