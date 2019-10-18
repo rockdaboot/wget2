@@ -3250,23 +3250,21 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 	}
 
 	if (config.adjust_extension && resp->content_type) {
-		const char *ext[2] = { NULL, NULL };
+		const char *ext = NULL;
 
 		if (!wget_strcasecmp_ascii(resp->content_type, "text/html") || !wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")) {
-			ext[0] = ".html";
-			ext[1] = ".htm";
+			if (!wget_match_tail_nocase(fname, ".html") && !wget_match_tail_nocase(fname, ".htm"))
+				fname = alloced_fname = wget_aprintf("%s%s", fname, ".html");
 		} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
-			ext[0] = ".css";
+			ext = ".css";
 		} else if (!wget_strcasecmp_ascii(resp->content_type, "application/atom+xml")) {
-			ext[0] = ".atom";
+			ext = ".atom";
 		} else if (!wget_strcasecmp_ascii(resp->content_type, "application/rss+xml")) {
-			ext[0] = ".rss";
+			ext = ".rss";
 		}
 
-		if (ext[0] && !wget_match_tail_nocase(fname, ext[0]))
-			fname = alloced_fname = wget_aprintf("%s%s", fname, ext[0]);
-		else if (ext[1] && !wget_match_tail_nocase(fname, ext[1]))
-			fname = alloced_fname = wget_aprintf("%s%s", fname, ext[1]);
+		if (ext && !wget_match_tail_nocase(fname, ext))
+			fname = alloced_fname = wget_aprintf("%s%s", fname, ext);
 	}
 
 	if (! ignore_patterns) {
