@@ -60,8 +60,8 @@ typedef struct {
 void host_init(void);
 void host_exit(void);
 
-HOST *host_add(wget_iri *iri) WGET_GCC_NONNULL((1));
-HOST *host_get(wget_iri *iri) WGET_GCC_NONNULL((1));
+HOST *host_add(const wget_iri *iri) WGET_GCC_NONNULL((1));
+HOST *host_get(const wget_iri *iri) WGET_GCC_NONNULL((1));
 
 JOB *host_get_job(HOST *host, long long *pause);
 void host_add_job(HOST *host, const JOB *job) WGET_GCC_NONNULL((1,2));

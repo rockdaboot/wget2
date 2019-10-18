@@ -52,7 +52,7 @@ typedef struct {
 typedef struct DOWNLOADER DOWNLOADER;
 
 struct JOB {
-	wget_iri
+	const wget_iri
 		*iri,
 		*original_url,
 		*referer;

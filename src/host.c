@@ -103,7 +103,7 @@ static void _free_host_entry(HOST *host)
 	}
 }
 
-HOST *host_add(wget_iri *iri)
+HOST *host_add(const wget_iri *iri)
 {
 	wget_thread_mutex_lock(hosts_mutex);
 
@@ -125,7 +125,7 @@ HOST *host_add(wget_iri *iri)
 	return hostp;
 }
 
-HOST *host_get(wget_iri *iri)
+HOST *host_get(const wget_iri *iri)
 {
 	HOST *hostp, host = { .scheme = iri->scheme, .host = iri->host, .port = iri->port };
 

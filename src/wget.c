@@ -101,8 +101,8 @@ typedef struct {
 		filename;
 	const char *
 		encoding;
-	wget_iri *
-		base_url;
+	const wget_iri *
+		base;
 	wget_html_parsed_result *
 		parsed;
 	int
@@ -127,23 +127,23 @@ typedef struct {
 static statistics_t stats;
 
 static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const char *fname, int flag,
-		wget_iri *uri, wget_iri *original_url, int ignore_patterns, wget_buffer *partial_content,
+		const wget_iri *uri, const wget_iri *original_url, int ignore_patterns, wget_buffer *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path);
 
 static void
-	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_iri *base),
-	sitemap_parse_xml_gz(JOB *job, wget_buffer *data, const char *encoding, wget_iri *base),
-	sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base),
-	sitemap_parse_text(JOB *job, const char *data, const char *encoding, wget_iri *base),
-	atom_parse(JOB *job, const char *data, const char *encoding, wget_iri *base),
-	atom_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base),
-	rss_parse(JOB *job, const char *data, const char *encoding, wget_iri *base),
-	rss_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base),
+	sitemap_parse_xml(JOB *job, const char *data, const char *encoding, const wget_iri *base),
+	sitemap_parse_xml_gz(JOB *job, wget_buffer *data, const char *encoding, const wget_iri *base),
+	sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base),
+	sitemap_parse_text(JOB *job, const char *data, const char *encoding, const wget_iri *base),
+	atom_parse(JOB *job, const char *data, const char *encoding, const wget_iri *base),
+	atom_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base),
+	rss_parse(JOB *job, const char *data, const char *encoding, const wget_iri *base),
+	rss_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base),
 	metalink_parse_localfile(const char *fname),
-	html_parse(JOB *job, int level, const char *fname, const char *data, size_t len, const char *encoding, wget_iri *base),
-	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, wget_iri *base),
-	css_parse(JOB *job, const char *data, size_t len, const char *encoding, wget_iri *base),
-	css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base),
+	html_parse(JOB *job, int level, const char *fname, const char *data, size_t len, const char *encoding, const wget_iri *base),
+	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, const wget_iri *base),
+	css_parse(JOB *job, const char *data, size_t len, const char *encoding, const wget_iri *base),
+	css_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base),
 	fork_to_background(void);
 static unsigned int WGET_GCC_PURE
 	hash_url(const char *url);
@@ -151,8 +151,8 @@ static int
 	read_xattr_metadata(const char *name, char *value, size_t size, int fd),
 	write_xattr_metadata(const char *name, const char *value, int fd),
 	write_xattr_last_modified(int64_t last_modified, int fd),
-	set_file_metadata(wget_iri *origin_url, wget_iri *referrer_url, const char *mime_type, const char *charset, int64_t last_modified, FILE *fp),
-	http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloader);
+	set_file_metadata(const wget_iri *origin_url, const wget_iri *referrer_url, const char *mime_type, const char *charset, int64_t last_modified, FILE *fp),
+	http_send_request(const wget_iri *iri, const wget_iri *original_url, DOWNLOADER *downloader);
 wget_http_response
 	*http_receive_response(wget_http_connection *conn);
 static long long WGET_GCC_NONNULL_ALL get_file_size(const char *fname);
@@ -517,7 +517,7 @@ static int regex_match(const char *string, const char *pattern)
 #endif
 }
 
-static void parse_localfile(JOB *job, const char *fname, const char *encoding, const char *mimetype, wget_iri *base)
+static void parse_localfile(JOB *job, const char *fname, const char *encoding, const char *mimetype, const wget_iri *base)
 {
 	int fd;
 	int level = job ? job->level : 0;
@@ -1009,7 +1009,7 @@ static void convert_links(void)
 		const char *data, *data_ptr;
 		size_t data_length;
 
-		wget_info_printf(_("convert %s %s %s\n"), conversion->filename, conversion->base_url->uri, conversion->encoding);
+		wget_info_printf(_("convert %s %s %s\n"), conversion->filename, conversion->base->uri, conversion->encoding);
 
 		if (!(data = data_ptr = wget_read_file(conversion->filename, &data_length))) {
 			wget_error_printf(_("%s not found (%d)\n"), conversion->filename, errno);
@@ -1026,7 +1026,7 @@ static void convert_links(void)
 			if (url->len >= 1 && *url->p == '#') // ignore e.g. href='#'
 				continue;
 
-			if (wget_iri_relative_to_abs(conversion->base_url, url->p, url->len, &buf)) {
+			if (wget_iri_relative_to_abs(conversion->base, url->p, url->len, &buf)) {
 				// buf.data now holds the absolute URL as a string
 				wget_iri *iri = wget_iri_parse(buf.data, conversion->encoding);
 				blacklist_entry *blacklist_entry;
@@ -1432,7 +1432,7 @@ void *input_thread(void *p WGET_GCC_UNUSED)
 	return NULL;
 }
 
-static int try_connection(DOWNLOADER *downloader, wget_iri *iri)
+static int try_connection(DOWNLOADER *downloader, const wget_iri *iri)
 {
 	wget_http_connection *conn;
 	int rc;
@@ -1481,7 +1481,7 @@ static int try_connection(DOWNLOADER *downloader, wget_iri *iri)
 	return rc;
 }
 
-static int establish_connection(DOWNLOADER *downloader, wget_iri **iri)
+static int establish_connection(DOWNLOADER *downloader, const wget_iri **iri)
 {
 	int rc = WGET_E_UNKNOWN;
 
@@ -1584,7 +1584,7 @@ static int process_response_header(wget_http_response *resp)
 {
 	JOB *job = resp->req->user_data;
 	DOWNLOADER *downloader = job->downloader;
-	wget_iri *iri = job->iri;
+	const wget_iri *iri = job->iri;
 
 	if (resp->code < 400 || resp->code > 599)
 		print_status(downloader, "HTTP response %d %s [%s]\n", resp->code, resp->reason, iri->uri);
@@ -2190,7 +2190,7 @@ void *downloader_thread(void *p)
 			wget_thread_mutex_unlock(main_mutex); locked = 0;
 
 			{
-				wget_iri *iri = job->iri;
+				const wget_iri *iri = job->iri;
 				downloader->job = job;
 				job->downloader = downloader;
 
@@ -2331,17 +2331,17 @@ static void free_conversion_entry(void *conversion)
 
 	xfree(c->filename);
 	xfree(c->encoding);
-	wget_iri_free(&c->base_url);
+	wget_iri_free((wget_iri **)&c->base);
 	wget_html_free_urls_inline(&c->parsed);
 	xfree(c);
 }
 
-static void remember_for_conversion(const char *filename, wget_iri *base_url, int content_type, const char *encoding, wget_html_parsed_result *parsed)
+static void remember_for_conversion(const char *filename, const wget_iri *base, int content_type, const char *encoding, wget_html_parsed_result *parsed)
 {
 	conversion_t *conversion = wget_malloc(sizeof(conversion_t));
 	conversion->filename = wget_strdup(filename);
 	conversion->encoding = wget_strdup(encoding);
-	conversion->base_url = wget_iri_clone(base_url);
+	conversion->base = wget_iri_clone(base);
 	conversion->content_type = content_type;
 	conversion->parsed = parsed;
 
@@ -2373,7 +2373,7 @@ static unsigned int WGET_GCC_PURE hash_url(const char *url)
 /*
  * helper function: percent-unescape, convert to utf-8, create URL string using base
  */
-static int normalize_uri(wget_iri *base, wget_string *url, const char *encoding, wget_buffer *buf)
+static int normalize_uri(const wget_iri *base, wget_string *url, const char *encoding, wget_buffer *buf)
 {
 	char *urlpart = wget_strmemdup(url->p, url->len);
 	char *urlpart_encoded;
@@ -2406,7 +2406,7 @@ static int normalize_uri(wget_iri *base, wget_string *url, const char *encoding,
 	return 0;
 }
 
-void html_parse(JOB *job, int level, const char *fname, const char *html, size_t html_len, const char *encoding, wget_iri *base)
+void html_parse(JOB *job, int level, const char *fname, const char *html, size_t html_len, const char *encoding, const wget_iri *base)
 {
 	wget_iri *allocated_base = NULL;
 	const char *reason;
@@ -2563,7 +2563,7 @@ cleanup:
 	xfree(utf8);
 }
 
-void html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, wget_iri *base)
+void html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, const wget_iri *base)
 {
 	char *data;
 	size_t n;
@@ -2575,7 +2575,7 @@ void html_parse_localfile(JOB *job, int level, const char *fname, const char *en
 	xfree(data);
 }
 
-void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, wget_iri *base)
+void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, const wget_iri *base)
 {
 	wget_vector *urls, *sitemap_urls;
 	const char *p;
@@ -2643,7 +2643,7 @@ static int get_unzipped(void *userdata, const char *data, size_t length)
 	return 0;
 }
 
-void sitemap_parse_xml_gz(JOB *job, wget_buffer *gzipped_data, const char *encoding, wget_iri *base)
+void sitemap_parse_xml_gz(JOB *job, wget_buffer *gzipped_data, const char *encoding, const wget_iri *base)
 {
 	wget_buffer plain;
 	wget_decompressor *dc = NULL;
@@ -2661,7 +2661,7 @@ void sitemap_parse_xml_gz(JOB *job, wget_buffer *gzipped_data, const char *encod
 	wget_buffer_deinit(&plain);
 }
 
-void sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base)
+void sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base)
 {
 	char *data;
 
@@ -2671,7 +2671,7 @@ void sitemap_parse_xml_localfile(JOB *job, const char *fname, const char *encodi
 	xfree(data);
 }
 
-void sitemap_parse_text(JOB *job, const char *data, const char *encoding, wget_iri *base)
+void sitemap_parse_text(JOB *job, const char *data, const char *encoding, const wget_iri *base)
 {
 	size_t baselen = 0;
 	const char *end, *line, *p;
@@ -2712,7 +2712,7 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, wget_i
 	}
 }
 
-static void add_urls(JOB *job, wget_vector *urls, const char *encoding, wget_iri *base)
+static void add_urls(JOB *job, wget_vector *urls, const char *encoding, const wget_iri *base)
 {
 	const char *p;
 	size_t baselen = 0;
@@ -2747,7 +2747,7 @@ static void add_urls(JOB *job, wget_vector *urls, const char *encoding, wget_iri
 	wget_thread_mutex_unlock(known_urls_mutex);
 }
 
-void atom_parse(JOB *job, const char *data, const char *encoding, wget_iri *base)
+void atom_parse(JOB *job, const char *data, const char *encoding, const wget_iri *base)
 {
 	wget_vector *urls;
 
@@ -2757,7 +2757,7 @@ void atom_parse(JOB *job, const char *data, const char *encoding, wget_iri *base
 	// wget_atom_free_urls_inline(&res);
 }
 
-void atom_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base)
+void atom_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base)
 {
 	char *data;
 
@@ -2767,7 +2767,7 @@ void atom_parse_localfile(JOB *job, const char *fname, const char *encoding, wge
 	xfree(data);
 }
 
-void rss_parse(JOB *job, const char *data, const char *encoding, wget_iri *base)
+void rss_parse(JOB *job, const char *data, const char *encoding, const wget_iri *base)
 {
 	wget_vector *urls;
 
@@ -2777,7 +2777,7 @@ void rss_parse(JOB *job, const char *data, const char *encoding, wget_iri *base)
 	// wget_rss_free_urls_inline(&res);
 }
 
-void rss_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base)
+void rss_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base)
 {
 	char *data;
 
@@ -2829,7 +2829,7 @@ void metalink_parse_localfile(const char *fname)
 struct css_context {
 	JOB
 		*job;
-	wget_iri
+	const wget_iri
 		*base;
 	const char
 		*encoding;
@@ -2866,7 +2866,7 @@ static void css_parse_uri(void *context, const char *url, size_t len, size_t pos
 		queue_url_from_remote(ctx->job, ctx->encoding, ctx->uri_buf.data, URL_FLG_REQUISITE);
 }
 
-void css_parse(JOB *job, const char *data, size_t len, const char *encoding, wget_iri *base)
+void css_parse(JOB *job, const char *data, size_t len, const char *encoding, const wget_iri *base)
 {
 	// create scheme://authority that will be prepended to relative paths
 	struct css_context context = { .base = base, .job = job, .encoding = encoding };
@@ -2885,7 +2885,7 @@ void css_parse(JOB *job, const char *data, size_t len, const char *encoding, wge
 	wget_buffer_deinit(&context.uri_buf);
 }
 
-void css_parse_localfile(JOB *job, const char *fname, const char *encoding, wget_iri *base)
+void css_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base)
 {
 	// create scheme://authority that will be prepended to relative paths
 	struct css_context context = { .base = base, .job = job, .encoding = encoding };
@@ -3055,7 +3055,7 @@ static bool is_directory(const char *fname)
 }
 
 static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const char *fname, int flag,
-		wget_iri *uri, wget_iri *original_url, int ignore_patterns, wget_buffer *partial_content,
+		const wget_iri *uri, const wget_iri *original_url, int ignore_patterns, wget_buffer *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path)
 {
 	JOB *job = resp->req->user_data;
@@ -3583,7 +3583,7 @@ static void add_authorize_header(
 	}
 }
 
-static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
+static wget_http_request *http_create_request(const wget_iri *iri, JOB *job)
 {
 	wget_http_request *req;
 	wget_buffer buf;
@@ -3715,7 +3715,7 @@ static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 	if (config.referer)
 		wget_http_add_header(req, "Referer", config.referer);
 	else if (job->referer) {
-		wget_iri *referer = job->referer;
+		const wget_iri *referer = job->referer;
 
 		wget_buffer_strcpy(&buf, wget_iri_scheme_get_name(referer->scheme));
 		wget_buffer_memcat(&buf, "://", 3);
@@ -3793,7 +3793,7 @@ static wget_http_request *http_create_request(wget_iri *iri, JOB *job)
 	return req;
 }
 
-int http_send_request(wget_iri *iri, wget_iri *original_url, DOWNLOADER *downloader)
+int http_send_request(const wget_iri *iri, const wget_iri *original_url, DOWNLOADER *downloader)
 {
 	wget_http_connection *conn = downloader->conn;
 
@@ -3969,7 +3969,7 @@ static int write_xattr_last_modified(int64_t last_modified, int fd)
 #endif /* USE_XATTR */
 
 /* Store metadata name/value attributes against fp. */
-static int set_file_metadata(wget_iri *origin_iri, wget_iri *referrer_iri,
+static int set_file_metadata(const wget_iri *origin_iri, const wget_iri *referrer_iri,
 					  const char *mime_type, const char *charset,
 					  int64_t last_modified, FILE *fp)
 {
