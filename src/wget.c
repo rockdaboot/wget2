@@ -685,8 +685,7 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 		}
 	}
 
-	new_job = job_init(&job_buf, iri, http_fallback);
-	new_job->blacklist_entry = blacklistp;
+	new_job = job_init(&job_buf, blacklistp, http_fallback);
 
 	if (plugin_verdict.accept) {
 		new_job->ignore_patterns = 1;
@@ -921,8 +920,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 		}
 	}
 
-	new_job = job_init(&job_buf, iri, http_fallback);
-	new_job->blacklist_entry = blacklistp;
+	new_job = job_init(&job_buf, blacklistp, http_fallback);
 
 	if (job) {
 		if (flags & URL_FLG_REDIRECTION) {

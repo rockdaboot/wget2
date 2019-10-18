@@ -128,7 +128,7 @@ struct DOWNLOADER {
 		final_error : 1;
 };
 
-JOB *job_init(JOB *job, wget_iri *iri, bool http_fallback) WGET_GCC_NONNULL((2));
+JOB *job_init(JOB *job, blacklist_entry *blacklistp, bool http_fallback) WGET_GCC_NONNULL((2));
 int job_validate_file(JOB *job) WGET_GCC_NONNULL((1));
 void job_create_parts(JOB *job) WGET_GCC_NONNULL((1));
 void job_free(JOB *job) WGET_GCC_NONNULL((1));

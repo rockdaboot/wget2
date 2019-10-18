@@ -335,10 +335,9 @@ void host_add_robotstxt_job(HOST *host, const wget_iri *base, const char *encodi
 		return;
 	}
 
-	job = job_init(NULL, robot_iri, http_fallback);
+	job = job_init(NULL, blacklist_robots, http_fallback);
 	job->host = host;
 	job->robotstxt = 1;
-	job->blacklist_entry = blacklist_robots;
 
 	wget_thread_mutex_lock(hosts_mutex);
 	host->robot_job = job;
