@@ -324,14 +324,21 @@ void host_add_job(HOST *host, const JOB *job)
  * This function creates a priority job for robots.txt.
  * This job has to be processed before any other job.
  */
-void host_add_robotstxt_job(HOST *host, blacklist_entry *blacklist_entry, bool http_fallback)
+void host_add_robotstxt_job(HOST *host, const wget_iri *base, const char *encoding, bool http_fallback)
 {
 	JOB *job;
+	blacklist_entry *blacklist_robots;
+	wget_iri *robot_iri = wget_iri_parse_base(base, "/robots.txt", encoding);
 
-	job = job_init(NULL, blacklist_entry->iri, http_fallback);
+	if (!robot_iri || !(blacklist_robots = blacklist_add(robot_iri))) {
+		wget_iri_free(&robot_iri);
+		return;
+	}
+
+	job = job_init(NULL, robot_iri, http_fallback);
 	job->host = host;
 	job->robotstxt = 1;
-	job->blacklist_entry = blacklist_entry;
+	job->blacklist_entry = blacklist_robots;
 
 	wget_thread_mutex_lock(hosts_mutex);
 	host->robot_job = job;

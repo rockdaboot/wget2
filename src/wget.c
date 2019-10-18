@@ -657,13 +657,7 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 				debug_printf("not requesting '%s'. (File already exists)\n", iri->uri);
 			} else {
 				// create a special job for downloading robots.txt (before anything else)
-				wget_iri *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
-				blacklist_entry *blacklist_robots;
-
-				if (robot_iri && (blacklist_robots = blacklist_add(robot_iri)))
-					host_add_robotstxt_job(host, blacklist_robots, http_fallback);
-				else
-					wget_iri_free(&robot_iri);
+				host_add_robotstxt_job(host, iri, encoding, http_fallback);
 			}
 		}
 	} else
@@ -885,13 +879,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 				debug_printf("not requesting '%s' (File already exists)\n", iri->uri);
 			} else {
 				// create a special job for downloading robots.txt (before anything else)
-				wget_iri *robot_iri = wget_iri_parse_base(iri, "/robots.txt", encoding);
-				blacklist_entry *blacklist_robots;
-
-				if (robot_iri && (blacklist_robots = blacklist_add(robot_iri)))
-					host_add_robotstxt_job(host, blacklist_robots, http_fallback);
-				else
-					wget_iri_free(&robot_iri);
+				host_add_robotstxt_job(host, iri, encoding, http_fallback);
 			}
 		}
 	} else if ((host = host_get(iri))) {
@@ -4011,14 +3999,17 @@ static int set_file_metadata(wget_iri *origin_iri, wget_iri *referrer_iri,
 	wget_buffer buf;
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
-	wget_buffer_printf(&buf, "%s/", wget_iri_get_connection_part(origin_iri));
+	wget_iri_get_connection_part(origin_iri, &buf);
+	wget_buffer_memcat(&buf, "/", 1);
 	wget_iri_get_escaped_resource(origin_iri, &buf);
 
 	write_xattr_metadata("user.xdg.origin.url", buf.data, fd);
 
-	wget_buffer_deinit(&buf);
+	wget_buffer_reset(&buf);
+	wget_iri_get_connection_part(referrer_iri, &buf);
+	write_xattr_metadata("user.xdg.referrer.url", buf.data, fd);
 
-	write_xattr_metadata("user.xdg.referrer.url", wget_iri_get_connection_part(referrer_iri), fd);
+	wget_buffer_deinit(&buf);
 
 	return write_xattr_last_modified(last_modified, fd);
 }

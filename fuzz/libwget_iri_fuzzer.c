@@ -43,7 +43,6 @@ static void test(char *in, size_t len, const char *encoding)
 	iri2 = wget_iri_parse_base(base, in, encoding);
 	int x = wget_iri_compare(iri, iri2);
 	wget_iri_free(&iri2);
-	wget_iri_get_connection_part(iri);
 
 	wget_buffer buf;
 	wget_buffer_init(&buf, NULL, 32);
@@ -61,6 +60,7 @@ static void test(char *in, size_t len, const char *encoding)
 		wget_iri_get_path(iri, &buf, encoding);
 		wget_iri_get_query_as_filename(iri, &buf, encoding);
 		wget_iri_get_filename(iri, &buf, encoding);
+		wget_iri_get_connection_part(iri, &buf);
 	}
 
 	wget_buffer_deinit(&buf);

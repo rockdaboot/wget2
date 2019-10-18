@@ -715,9 +715,10 @@ wget_iri *wget_iri_clone(const wget_iri *iri)
 
 /**
  * \param[in] iri An IRI
- * \return A string with the connection part of the IRI.
+ * \param[in] buf A buffer, where the resulting string will be put
+ * \return The contents of the buffer \p buf
  *
- * Return the connection part of the IRI \p iri.
+ * Append the connection part of the IRI \p iri to \p buf.
  *
  * The connection part is formed by the scheme, the hostname, and optionally the port. For example:
  *
@@ -727,21 +728,17 @@ wget_iri *wget_iri_clone(const wget_iri *iri)
  * It may be of the form `https://example.com:8080` if the port was provided when creating the IRI
  * or of the form `https://example.com` otherwise.
  */
-const char *wget_iri_get_connection_part(wget_iri *iri)
+const char *wget_iri_get_connection_part(const wget_iri *iri, wget_buffer *buf)
 {
 	if (iri) {
-		if (!iri->connection_part) {
-			if (iri->port_given) {
-				iri->connection_part =  wget_aprintf("%s://%s:%hu", schemes[iri->scheme].name, iri->host, iri->port);
-			} else {
-				iri->connection_part = wget_aprintf("%s://%s", schemes[iri->scheme].name, iri->host);
-			}
+		if (iri->port_given) {
+			wget_buffer_printf_append(buf, "%s://%s:%hu", schemes[iri->scheme].name, iri->host, iri->port);
+		} else {
+			wget_buffer_printf_append(buf, "%s://%s", schemes[iri->scheme].name, iri->host);
 		}
-
-		return iri->connection_part;
 	}
 
-	return NULL;
+	return buf->data;
 }
 
 // normalize /../ and remove /./
@@ -844,7 +841,7 @@ static size_t WGET_GCC_NONNULL_ALL normalize_path(char *path)
  *
  * if \p len is `-1`, the length of \p val will be the result from `strlen(val)`.
  */
-const char *wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len, wget_buffer *buf)
+const char *wget_iri_relative_to_abs(const wget_iri *base, const char *val, size_t len, wget_buffer *buf)
 {
 	debug_printf("*url = %.*s\n", (int)len, val);
 
@@ -873,7 +870,8 @@ const char *wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len
 				// absolute path
 				normalize_path(path);
 
-				wget_buffer_strcpy(buf, wget_iri_get_connection_part(base));
+				wget_buffer_reset(buf);
+				wget_iri_get_connection_part(base, buf);
 				wget_buffer_strcat(buf, "/");
 				wget_buffer_strcat(buf, path);
 				debug_printf("*2 %s\n", buf->data);
@@ -895,7 +893,8 @@ const char *wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len
 		} else if (base) {
 			// relative path
 			const char *lastsep = base->path ? strrchr(base->path, '/') : NULL;
-			wget_buffer_strcpy(buf, wget_iri_get_connection_part(base));
+			wget_buffer_reset(buf);
+			wget_iri_get_connection_part(base, buf);
 			wget_buffer_strcat(buf, "/");
 
 			size_t tmp_len = buf->length;
@@ -936,7 +935,7 @@ const char *wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len
  *
  * If \p base is NULL, then the parameter \p url must itself be an absolute URI.
  */
-wget_iri *wget_iri_parse_base(wget_iri *base, const char *url, const char *encoding)
+wget_iri *wget_iri_parse_base(const wget_iri *base, const char *url, const char *encoding)
 {
 	wget_iri *iri;
 

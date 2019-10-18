@@ -75,7 +75,7 @@ struct JOB {
 
 	HOST
 		*host;
-	blacklist_entry
+	const blacklist_entry
 		*blacklist_entry;
 	char
 		*sig_filename, // Signature information. Meaning depends on sig_req.

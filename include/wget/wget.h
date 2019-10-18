@@ -1300,13 +1300,13 @@ WGETAPI char *
 WGETAPI wget_iri *
 	wget_iri_parse(const char *uri, const char *encoding);
 WGETAPI wget_iri * NULLABLE
-	wget_iri_parse_base(wget_iri *base, const char *url, const char *encoding);
+	wget_iri_parse_base(const wget_iri *base, const char *url, const char *encoding);
 WGETAPI wget_iri * NULLABLE
 	wget_iri_clone(const wget_iri *iri);
 WGETAPI const char * NULLABLE
-	wget_iri_get_connection_part(wget_iri *iri);
+	wget_iri_get_connection_part(const wget_iri *iri, wget_buffer *buf);
 WGETAPI const char *
-	wget_iri_relative_to_abs(wget_iri *base, const char *val, size_t len, wget_buffer *buf);
+	wget_iri_relative_to_abs(const wget_iri *base, const char *val, size_t len, wget_buffer *buf);
 WGETAPI const char *
 	wget_iri_escape(const char *src, wget_buffer *buf);
 WGETAPI const char *
