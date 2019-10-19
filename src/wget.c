@@ -569,6 +569,7 @@ static void parse_localfile(JOB *job, const char *fname, const char *encoding, c
 	}
 }
 
+// not static because used by metalink.c
 static void test_modify_hsts(wget_iri *iri)
 {
 	bool match = 0;
@@ -630,13 +631,13 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 	if (iri->scheme == WGET_IRI_SCHEME_HTTP)
 		test_modify_hsts(iri);
 
-	wget_thread_mutex_lock(downloader_mutex);
-
 	if (iri->scheme == WGET_IRI_SCHEME_HTTP && config.https_enforce) {
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
 		if (config.https_enforce == HTTPS_ENFORCE_SOFT)
 			http_fallback = 1;
 	}
+
+	wget_thread_mutex_lock(downloader_mutex);
 
 	if (!(blacklistp = blacklist_add(iri))) {
 		if (!(flags & URL_FLG_NO_BLACKLISTING) || !(blacklistp = blacklist_get(iri))) {
@@ -1519,16 +1520,21 @@ static int establish_connection(DOWNLOADER *downloader, const wget_iri **iri)
 
 				mirror_index = (mirror_index + 1) % wget_vector_size(metalink->mirrors);
 
+//				if (iri->scheme == WGET_IRI_SCHEME_HTTP)
+//					test_modify_hsts(mirror->iri);
+
+				if (config.https_only && mirror->iri->scheme != WGET_IRI_SCHEME_HTTPS)
+					continue;
+
 				if (mirror->iri->scheme == WGET_IRI_SCHEME_HTTP && config.https_enforce) {
-					wget_iri_set_scheme(mirror->iri, WGET_IRI_SCHEME_HTTPS);
-//					if (config.https_enforce == WGET_HTTPS_ENFORCE_SOFT)
-//						http_fallback = 1;
+//					wget_iri_set_scheme(mirror->iri, WGET_IRI_SCHEME_HTTPS);
+					if (config.https_enforce != HTTPS_ENFORCE_SOFT)
+						continue;
 				}
 
 				rc = try_connection(downloader, mirror->iri);
 
 				if (rc == WGET_E_SUCCESS) {
-
 					// Add mirror URI to hosts
 					host_add(mirror->iri);
 

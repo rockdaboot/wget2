@@ -67,7 +67,7 @@ static void mirror_free(void *mirror)
 	wget_metalink_mirror *m = mirror;
 
 	if (m) {
-		wget_iri_free(&m->iri);
+		wget_iri_free((wget_iri **) &m->iri);
 		xfree(m);
 	}
 }
@@ -130,20 +130,37 @@ static void add_mirror(metalink_context *ctx, const char *value)
 	while (c_isspace(*value))
 		value++;
 
-	if (wget_strncasecmp_ascii(value, "http:", 5) && wget_strncasecmp_ascii(value, "https:", 6))
+	wget_iri *iri = wget_iri_parse(value, NULL);
+
+	if (!iri)
 		return;
+
+	if (!wget_iri_supported(iri)) {
+		error_printf(_("Mirror scheme not supported: '%s'\n"), value);
+		wget_iri_free(&iri);
+		return;
+	}
+
+/*	if (iri->scheme == WGET_IRI_SCHEME_HTTP)
+		test_modify_hsts(iri);
+
+	if (config.https_only && iri->scheme != WGET_IRI_SCHEME_HTTPS) {
+		info_printf(_("Mirror '%s' dropped (https-only requested)\n"), value);
+		wget_iri_free(&iri);
+		return;
+	}
+
+	if (iri->scheme == WGET_IRI_SCHEME_HTTP && config.https_enforce) {
+		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
+	}
+*/
 
 	wget_metalink *metalink = ctx->metalink;
 	wget_metalink_mirror *mirror = wget_calloc(1, sizeof(wget_metalink_mirror));
 
 	wget_strscpy(mirror->location, ctx->location, sizeof(mirror->location));
 	mirror->priority = ctx->priority;
-	mirror->iri = wget_iri_parse(value, NULL);
-
-	if (!mirror->iri) {
-		xfree(mirror);
-		return;
-	}
+	mirror->iri = iri;
 
 	if (!metalink->mirrors) {
 		metalink->mirrors = wget_vector_create(4, NULL);

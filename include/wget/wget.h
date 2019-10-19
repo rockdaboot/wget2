@@ -2409,7 +2409,7 @@ WGETAPI void WGET_GCC_PRINTF_FORMAT(4,5) WGET_GCC_NONNULL_ALL
  */
 
 typedef struct {
-	wget_iri
+	const wget_iri
 		*iri;        //!< parsed URL of the mirror
 	int
 		priority;    //!< priority of the mirror
