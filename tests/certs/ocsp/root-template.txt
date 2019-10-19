@@ -5,6 +5,7 @@ expiration_days = -1
 ca
 
 #Key Usage
+tls_www_server
 ocsp_signing_key
 time_stamping_key
 cert_signing_key

@@ -352,5 +352,5 @@ ess_cert_id_chain	= no	# Must the ESS cert id chain be included?
 
 [ v3_intermediate ]
 basicConstraints = critical, CA:true
-extendedKeyUsage = critical, OCSPSigning, timeStamping
+extendedKeyUsage = OCSPSigning, timeStamping, serverAuth
 keyUsage = critical, keyCertSign, cRLSign
