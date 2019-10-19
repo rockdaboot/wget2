@@ -569,6 +569,26 @@ static void parse_localfile(JOB *job, const char *fname, const char *encoding, c
 	}
 }
 
+static void test_modify_hsts(wget_iri *iri)
+{
+	bool match = 0;
+
+	if (config.hsts && wget_hsts_host_match(config.hsts_db, iri->host, iri->port)) {
+		match = 1;
+	}
+#ifdef WITH_LIBHSTS
+	else if (config.hsts_preload && config.hsts_preload_data) {
+		if (hsts_search(config.hsts_preload_data, iri->host, 0, NULL) == HSTS_SUCCESS) {
+			match = 1;
+		}
+	}
+#endif
+
+	if (match) {
+		info_printf(_("HSTS in effect for %s:%hu\n"), iri->host, iri->port);
+		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
+	}
+}
 // Add URLs given by user (command line, file or -i option).
 // Needs to be thread-save.
 static void queue_url_from_local(const char *url, wget_iri *base, const char *encoding, int flags)
@@ -606,6 +626,9 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
 	}
+
+	if (iri->scheme == WGET_IRI_SCHEME_HTTP)
+		test_modify_hsts(iri);
 
 	wget_thread_mutex_lock(downloader_mutex);
 
@@ -784,6 +807,9 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
 	}
+
+	if (iri->scheme == WGET_IRI_SCHEME_HTTP)
+		test_modify_hsts(iri);
 
 	if (config.https_only && iri->scheme != WGET_IRI_SCHEME_HTTPS) {
 		info_printf(_("URL '%s' not followed (https-only requested)\n"), url);
@@ -1436,27 +1462,6 @@ static int try_connection(DOWNLOADER *downloader, const wget_iri *iri)
 {
 	wget_http_connection *conn;
 	int rc;
-
-	if (iri->scheme == WGET_IRI_SCHEME_HTTP) {
-		bool match = 0;
-
-		if (config.hsts && wget_hsts_host_match(config.hsts_db, iri->host, iri->port)) {
-			match = 1;
-		}
-#ifdef WITH_LIBHSTS
-		else if (config.hsts_preload && config.hsts_preload_data) {
-			if (hsts_search(config.hsts_preload_data, iri->host, 0, NULL) == HSTS_SUCCESS) {
-				match = 1;
-			}
-		}
-#endif
-
-		if (match) {
-			info_printf(_("HSTS in effect for %s:%hu\n"), iri->host, iri->port);
-			wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
-			host_add(iri);	// add new host to hosts
-		}
-	}
 
 	if ((conn = downloader->conn)) {
 		if (!wget_strcmp(wget_http_get_host(conn), iri->host) &&
