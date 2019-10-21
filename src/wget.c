@@ -769,7 +769,7 @@ static void add_url_to_queue(const char *url, wget_iri *base, const char *encodi
 
 	if ((host = host_add(iri))) {
 		// a new host entry has been created
-		if (config.recursive && config.robots) {
+		if (config.recursive) {
 			if (!config.clobber && local_filename && access(local_filename, F_OK) == 0) {
 				debug_printf("not requesting '%s'. (File already exists)\n", iri->uri);
 			} else {
@@ -994,7 +994,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 
 	if ((host = host_add(iri))) {
 		// a new host entry has been created
-		if (config.recursive && config.robots) {
+		if (config.recursive) {
 			if (!config.clobber && local_filename && access(local_filename, F_OK) == 0) {
 				debug_printf("not requesting '%s' (File already exists)\n", iri->uri);
 			} else {
@@ -1006,7 +1006,7 @@ static void add_url(JOB *job, const char *encoding, const char *url, int flags)
 			}
 		}
 	} else if ((host = host_get(iri))) {
-		if (host->robots && iri->path) {
+		if (host->robots && iri->path && config.robots) {
 			// info_printf("%s: checking '%s' / '%s'\n", __func__, iri->path, iri->uri);
 			for (int it = 0, n = wget_robots_get_path_count(host->robots); it < n; it++) {
 				wget_string *path = wget_robots_get_path(host->robots, it);

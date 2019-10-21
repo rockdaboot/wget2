@@ -1740,10 +1740,10 @@ Go to background immediately after startup. If no output file is specified via t
 
   Enable the Robots Exclusion Standard (default: on).
 
-  For each visited domain, download `/robots.txt` first and follow it's rules.
+  For each visited domain, follow rules specified in `/robots.txt`.
   You should respect the domain owner's rules and turn this off only for very good reasons.
 
-  When enabled, the `robots.txt` file is also scanned for sitemaps. These are lists of pages / files
+  Whether enabled or disabled, the `robots.txt` file is downloaded and scanned for sitemaps. These are lists of pages / files
   available for download that not necessarily are available via recursive scanning.
 
 ## <a name="Recursive Accept/Reject Options"/>Recursive Accept/Reject Options
