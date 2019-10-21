@@ -32,6 +32,13 @@
 #include <wget.h>
 #include <wget_job.h>
 
+//definition of gpg error conditions
+typedef enum {
+	WGET_E_GPG_DISABLED = -9, /* GPGME was not enabled at compile time */
+	WGET_E_GPG_VER_FAIL = -10, /* 1 or more non-valid signatures */
+	WGET_E_GPG_VER_ERR = -11, /* Verification failed, GPGME error */
+} wget_gpg_error;
+
 /**
  * Statistics about a certain verification.
  */

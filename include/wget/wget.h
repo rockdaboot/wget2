@@ -260,13 +260,10 @@ typedef enum {
 	WGET_E_HANDSHAKE = -6, /* general TLS handshake failure */
 	WGET_E_CERTIFICATE = -7, /* general TLS certificate failure */
 	WGET_E_TLS_DISABLED = -8, /* TLS was not enabled at compile time */
-	WGET_E_GPG_DISABLED = -9, /* GPGME was not enabled at compile time */
-	WGET_E_GPG_VER_FAIL = -10, /* 1 or more non-valid signatures */
-	WGET_E_GPG_VER_ERR = -11, /* Verification failed, GPGME error */
-	WGET_E_XML_PARSE_ERR = -12, /* XML parsing failed */
-	WGET_E_OPEN = -13, /* Failed to open file */
-	WGET_E_IO = -14, /* General I/O error (read/write/stat/...) */
-	WGET_E_UNSUPPORTED = -15, /* Unsupported function */
+	WGET_E_XML_PARSE_ERR = -9, /* XML parsing failed */
+	WGET_E_OPEN = -10, /* Failed to open file */
+	WGET_E_IO = -11, /* General I/O error (read/write/stat/...) */
+	WGET_E_UNSUPPORTED = -12, /* Unsupported function */
 } wget_error;
 
 WGETAPI const char *

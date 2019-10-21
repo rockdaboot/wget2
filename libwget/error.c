@@ -50,9 +50,6 @@ const char *wget_strerror(wget_error err)
 	case WGET_E_HANDSHAKE: return _("Handshake error");
 	case WGET_E_CERTIFICATE: return _("Certificate error");
 	case WGET_E_TLS_DISABLED: return _("libwget has been built without TLS support");
-	case WGET_E_GPG_DISABLED: return _("Wget has been built without GPG support");
-	case WGET_E_GPG_VER_FAIL: return _("GPG signature is bad");
-	case WGET_E_GPG_VER_ERR: return _("GPG error");
 	case WGET_E_XML_PARSE_ERR: return _("Failed to parse XML");
 	case WGET_E_OPEN: return _("Failed to open file");
 	case WGET_E_IO: return _("I/O error");
