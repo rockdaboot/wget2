@@ -1268,15 +1268,15 @@ void wget_ssl_init(void)
 #if GNUTLS_VERSION_NUMBER >= 0x03000d
 			if (!strcmp(config.ca_directory, "system"))
 				ncerts = gnutls_certificate_set_x509_system_trust(credentials);
-#else
-			if (!strcmp(config.ca_directory, "system"))
-				config.ca_directory = "/etc/ssl/certs";
 #endif
 
 			if (ncerts < 0) {
 				DIR *dir;
 
 				ncerts = 0;
+
+				if (!strcmp(config.ca_directory, "system"))
+					config.ca_directory = "/etc/ssl/certs";
 
 				if ((dir = opendir(config.ca_directory))) {
 					struct dirent *dp;
