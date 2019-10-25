@@ -1878,7 +1878,7 @@ static void test_stringmap(void)
 		} else ok++;
 
 		iter = wget_stringmap_iterator_alloc(m);
-		for (it = 0; (skey = wget_stringmap_iterator_next(iter, &val)); it++) {
+		for (it = 0; (skey = wget_stringmap_iterator_next(iter, (void **) &val)); it++) {
 			int x = atoi(skey + 30), y = atoi(val);
 
 			if (!(c_isdigit(*val) && x >= 0 && x == y)) {

@@ -1078,7 +1078,7 @@ void wget_stringmap_set_resize_factor(wget_stringmap *h, float factor)
  * When iterating over a stringmap, the order of returned key/value pairs is not defined.
  */
 static inline
-void * NULLABLE wget_stringmap_iterator_next(wget_stringmap_iterator *h, char **value)
+void * NULLABLE wget_stringmap_iterator_next(wget_stringmap_iterator *h, void **value)
 {
 	return wget_hashmap_iterator_next(h, (void **) value);
 }
