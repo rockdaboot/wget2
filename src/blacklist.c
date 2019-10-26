@@ -261,6 +261,21 @@ blacklist_entry *blacklist_add(const wget_iri *iri)
 	return NULL;
 }
 
+void blacklist_set_filename(blacklist_entry *blacklistp, const char *fname)
+{
+	if (!wget_strcmp(blacklistp->local_filename, fname))
+		return;
+
+	debug_printf("blacklist set filename: %s -> %s\n", blacklistp->local_filename, fname);
+
+	// remove from blacklist, set new name and add again
+	wget_hashmap_remove_nofree(blacklist, blacklistp->iri);
+	xfree(blacklistp->local_filename);
+	blacklistp->local_filename = wget_strdup(fname);
+
+	wget_hashmap_put(blacklist, blacklistp->iri, blacklistp);
+}
+
 blacklist_entry *blacklist_get(const wget_iri *iri)
 {
 	blacklist_entry *entryp;

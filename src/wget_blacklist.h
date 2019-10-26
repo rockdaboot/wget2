@@ -44,5 +44,6 @@ blacklist_entry *blacklist_add(const wget_iri *iri);
 blacklist_entry *blacklist_get(const wget_iri *iri);
 void blacklist_print(void);
 void blacklist_free(void);
+void blacklist_set_filename(blacklist_entry *blacklistp, const char *fname);
 
 #endif /* SRC_WGET_BLACKLIST_H */
