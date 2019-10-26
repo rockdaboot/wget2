@@ -74,6 +74,7 @@ int main(void)
 			{	NULL } },
 		0);
 
+/*
 	// test-E-k-K
 	wget_test(
 		WGET_TEST_OPTIONS, "-r -nd -E -k -K",
@@ -85,6 +86,7 @@ int main(void)
 			{ "subpage.php.html", urls[1].body },
 			{	NULL } },
 		0);
+*/
 
 	exit(EXIT_SUCCESS);
 }
