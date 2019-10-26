@@ -20,6 +20,7 @@
 #include <config.h>
 
 #include <stdlib.h> // exit()
+#include <microhttpd.h>
 #include "libtest.h"
 
 int main(void)
@@ -59,6 +60,14 @@ int main(void)
 		WGET_TEST_FEATURE_MHD,
 		WGET_TEST_FEATURE_TLS,
 		0);
+
+#if MHD_VERSION >= 0x00096701 && MHD_VERSION <= 0x00096702
+	// the logging is enabled after wget_test_start_server()
+	wget_error_printf("SKIP due to MHD 0x%08x issue\n", (unsigned) MHD_VERSION);
+	exit(WGET_TEST_EXIT_SKIP);
+#else
+	wget_error_printf("Built with MHD 0x%08x\n", (unsigned) MHD_VERSION);
+#endif
 
 	// wget2 downloads recursively from HTTPS though we give an http:// URL.
 	wget_test(
