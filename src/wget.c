@@ -108,7 +108,7 @@ typedef struct {
 	int
 		content_type;
 } conversion_t;
-static wget_vector *conversions;
+static wget_stringmap *conversions;
 
 typedef struct {
 	int
@@ -1025,14 +1025,16 @@ out:
 static void convert_links(void)
 {
 	FILE *fpout = NULL;
+	conversion_t *conversion;
 	wget_buffer buf;
 	char sbuf[1024];
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	// cycle through all documents where links have been found
-	for (int it = 0; it < wget_vector_size(conversions); it++) {
-		conversion_t *conversion = wget_vector_get(conversions, it);
+	wget_stringmap_iterator *iter = wget_stringmap_iterator_alloc(conversions);
+
+	for (int it = 0; wget_stringmap_iterator_next(iter, (void **) &conversion); it++) {
 		const char *data, *data_ptr;
 		size_t data_length;
 
@@ -1131,6 +1133,7 @@ static void convert_links(void)
 		xfree(data);
 	}
 
+	wget_hashmap_iterator_free(&iter);
 	wget_buffer_deinit(&buf);
 }
 
@@ -1389,7 +1392,7 @@ int main(int argc, const char **argv)
 
 	if (config.convert_links && !config.delete_after) {
 		convert_links();
-		wget_vector_free(&conversions);
+		wget_hashmap_free(&conversions);
 	}
 
 	if (config.stats_site_args)
@@ -2336,7 +2339,27 @@ out:
 	return NULL;
 }
 
-static void free_conversion_entry(void *conversion)
+/*
+static WGET_GCC_NONNULL_ALL wget_hashmap_hash_fn hash_conversion;
+static unsigned int WGET_GCC_NONNULL_ALL hash_conversion(const void *key)
+{
+	unsigned int h = 0;
+	const unsigned char *p;
+
+	for (p = key; p && *p; p++)
+		h = h * 101 + *p;
+
+	return h;
+}
+
+static WGET_GCC_PURE wget_hashmap_compare_fn compare_conversion;
+static int WGET_GCC_PURE compare_conversion(const void *a, const void *b)
+{
+	return wget_strcasecmp((const char *) a, (const char *) b);
+}
+*/
+
+static void free_conversion(void *conversion)
 {
 	conversion_t *c = conversion;
 
@@ -2349,21 +2372,28 @@ static void free_conversion_entry(void *conversion)
 
 static void remember_for_conversion(const char *filename, const wget_iri *base, int content_type, const char *encoding, wget_html_parsed_result *parsed)
 {
-	conversion_t *conversion = wget_malloc(sizeof(conversion_t));
-	conversion->filename = wget_strdup(filename);
-	conversion->encoding = wget_strdup(encoding);
-	conversion->base = wget_iri_clone(base);
-	conversion->content_type = content_type;
-	conversion->parsed = parsed;
-
 	wget_thread_mutex_lock(conversion_mutex);
 
+	debug_printf("conversion: remember %s\n", filename);
+
 	if (!conversions) {
-		conversions = wget_vector_create(128, NULL);
-		wget_vector_set_destructor(conversions, free_conversion_entry);
+		conversions = wget_stringmap_create_nocase(128);
+		wget_stringmap_set_key_destructor(conversions, NULL); // destroy the key (filename) in free_value()
+		wget_stringmap_set_value_destructor(conversions, free_conversion);
 	}
 
-	wget_vector_add(conversions, conversion);
+	if (!wget_stringmap_get(conversions, filename, NULL)) {
+		conversion_t *conversion = wget_malloc(sizeof(conversion_t));
+		conversion->filename = wget_strdup(filename);
+		conversion->encoding = wget_strdup(encoding);
+		conversion->base = wget_iri_clone(base);
+		conversion->content_type = content_type; // TODO: remove if unused
+		conversion->parsed = parsed;
+
+		wget_stringmap_put(conversions, conversion->filename, conversion);
+	} else {
+		wget_html_free_urls_inline(&parsed);
+	}
 
 	wget_thread_mutex_unlock(conversion_mutex);
 }
@@ -3302,6 +3332,8 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 
 	wget_thread_mutex_unlock(savefile_mutex);
 
+	blacklist_set_filename((blacklist_entry *) job->blacklist_entry, *actual_file_name);
+
 	xfree(alloced_fname);
 	return fd;
 }
@@ -3393,6 +3425,7 @@ static int get_header(wget_http_response *resp, void *context)
 
 		if (ctx->outfd == -1)
 			ret = -1;
+
 	}
 
 //	info_printf("Opened %d\n", ctx->outfd);
