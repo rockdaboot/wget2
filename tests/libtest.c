@@ -435,6 +435,13 @@ static int _answer_to_connection(
 			// check request headers
 			bool bad_request = false;
 
+			if (request_url->expected_method && strcmp(method, request_url->expected_method)) {
+				wget_debug_printf("%s: Expected request method '%s', but got '%s'\n",
+					__func__, request_url->expected_method, method);
+				bad_request = true;
+				break;
+			}
+
 			for (const char **header = request_url->expected_req_headers; *header; header++) {
 				const char *header_value = strchr(*header, ':');
 				const char *header_key = wget_strmemdup(*header, header_value - *header);

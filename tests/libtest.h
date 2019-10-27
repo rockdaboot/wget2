@@ -128,6 +128,8 @@ typedef struct {
 		expected_req_headers[10];
 	const char *
 		unexpected_req_headers[10];
+	const char *
+		expected_method;
 	int64_t
 		modified;
 
