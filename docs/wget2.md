@@ -1257,13 +1257,13 @@ Go to background immediately after startup. If no output file is specified via t
   `--save-cookies` will not save them (and neither will browsers) and the cookies.txt file will be empty.  In that
   case use --keep-session-cookies along with --save-cookies to force saving of session cookies.
 
-### `--method=HTTP-Method` [Not implemented yet]
+### `--method=HTTP-Method`
 
   For the purpose of RESTful scripting, Wget2 allows sending of other HTTP Methods without the need to explicitly
   set them using --header=Header-Line.  Wget2 will use whatever string is passed to it after --method as the HTTP
   Method to the server.
 
-### `--body-data=Data-String`, `--body-file=Data-File` [Not implemented yet]
+### `--body-data=Data-String`, `--body-file=Data-File`
 
   Must be set when additional data needs to be sent to the server along with the Method specified using `--method`.
   `--body-data` sends string as data, whereas --body-file sends the contents of file.  Other than that, they work in

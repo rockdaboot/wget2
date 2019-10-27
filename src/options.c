@@ -1290,6 +1290,16 @@ static const struct optionw options[] = {
 		  "(default: automatic)\n"
 		}
 	},
+	{ "body-data", &config.body_data, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Data to be sent in a request.\n"
+		}
+	},
+	{ "body-file", &config.body_file, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "File with data to be sent in a request.\n"
+		}
+	},
 	{ "ca-certificate", &config.ca_cert, parse_string, 1, 0,
 		SECTION_SSL,
 		{ "File with bundle of PEM CA certificates.\n"
@@ -1814,6 +1824,11 @@ static const struct optionw options[] = {
 		SECTION_HTTP,
 		{ "Follow a metalink file instead of storing it\n",
 		  "(default: on)\n"
+		}
+	},
+	{ "method", &config.method, parse_string, 1, 0,
+		SECTION_HTTP,
+		{ "HTTP method to use for request.\n"
 		}
 	},
 	{ "mirror", &config.mirror, parse_mirror, -1, 'm',
@@ -3659,6 +3674,8 @@ void deinit(void)
 	xfree(config.accept_regex);
 	xfree(config.base_url);
 	xfree(config.bind_address);
+	xfree(config.body_data);
+	xfree(config.body_file);
 	xfree(config.ca_cert);
 	xfree(config.ca_directory);
 	xfree(config.cert_file);
@@ -3682,6 +3699,7 @@ void deinit(void)
 	xfree(config.local_encoding);
 	xfree(config.logfile);
 	xfree(config.logfile_append);
+	xfree(config.method);
 	xfree(config.netrc_file);
 	xfree(config.ocsp_file);
 	xfree(config.ocsp_server);

@@ -106,7 +106,8 @@ struct JOB {
 		requested_by_user : 1, // download even if disallowed by robots.txt
 		ignore_patterns : 1, // Ignore accept/reject patterns
 		http_fallback : 1, // When true, we try again on error, using HTTP (instead of HTTPS)
-		recursive_send_head : 1; // Indicate whether the HEAD request is sent by the recursive mode
+		recursive_send_head : 1, // Indicate whether the HEAD request is sent by the recursive mode
+		redirect_get : 1; // Indicate whether to use GET method for redirection request
 };
 
 struct DOWNLOADER {

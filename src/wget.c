@@ -956,6 +956,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 			new_job->redirection_level = job->redirection_level + 1;
 			new_job->referer = job->referer;
 			new_job->original_url = job->iri;
+			new_job->redirect_get = job->redirect_get;
 		} else {
 			new_job->parent_id = job->id;
 			new_job->level = job->level + 1;
@@ -1705,6 +1706,9 @@ static int process_response_header(wget_http_response *resp)
 	if (resp->location) {
 		wget_buffer uri_buf;
 		char uri_sbuf[1024];
+
+		if (resp->code / 100  == 3 && resp->code != 307)
+			job->redirect_get = 1;
 
 		wget_cookie_normalize_cookies(job->iri, resp->cookies);
 		wget_cookie_store_cookies(config.cookie_db, resp->cookies);
@@ -3636,13 +3640,19 @@ static wget_http_request *http_create_request(const wget_iri *iri, JOB *job)
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
-	if (job->head_first) {
-		method = "HEAD";
+	if(job->redirect_get && job->redirection_level > 0)
+		method = "GET";
+	else if(config.method) {
+		method = config.method;
 	} else {
-		if (config.post_data || config.post_file)
-			method = "POST";
-		else
-			method = "GET";
+		if (job->head_first) {
+			method = "HEAD";
+		} else {
+			if (config.post_data || config.post_file)
+				method = "POST";
+			else
+				method = "GET";
+		}
 	}
 
 	if (!(req = wget_http_create_request(iri, method)))
@@ -3826,6 +3836,19 @@ static wget_http_request *http_create_request(const wget_iri *iri, JOB *job)
 		char *data;
 
 		if ((data = wget_read_file(config.post_file, &length))) {
+			wget_http_request_set_body(req, "application/x-www-form-urlencoded", data, length);
+		} else {
+			wget_http_free_request(&req);
+		}
+	} else if (config.body_data) {
+		size_t length = strlen(config.body_data);
+
+		wget_http_request_set_body(req, "application/x-www-form-urlencoded", wget_memdup(config.body_data, length), length);
+	} else if (config.body_file) {
+		size_t length;
+		char *data;
+
+		if ((data = wget_read_file(config.body_file, &length))) {
 			wget_http_request_set_body(req, "application/x-www-form-urlencoded", data, length);
 		} else {
 			wget_http_free_request(&req);

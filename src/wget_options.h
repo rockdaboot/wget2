@@ -68,6 +68,8 @@ struct config {
 	const char
 		*post_file,
 		*post_data,
+		*body_file,
+		*body_data,
 		*http_username,
 		*http_password,
 		*http_proxy_username,
@@ -113,7 +115,8 @@ struct config {
 		*ocsp_file,
 		*netrc_file,
 		*use_askpass_bin,
-		*dns_cache_preload;
+		*dns_cache_preload,
+		*method;
 	wget_vector
 		*compression,
 		*domains,
