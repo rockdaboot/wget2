@@ -43,10 +43,6 @@ int main(void)
 			.code = "200 Dontcare",
 			.body = "secondpage",
 		},
-		{	.name = "/secondpage.html",
-			.code = "200 Dontcare",
-			.body = "secondpage",
-		},
 	};
 
 	// functions won't come back if an error occurs
