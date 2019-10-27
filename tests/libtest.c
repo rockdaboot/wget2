@@ -155,12 +155,6 @@ static enum PASS {
 	END_PASS
 } proto_pass;
 
-static char *_scan_directory(const char* data)
-{
-	return strchr(data, '/');
-}
-
-
 static const char *_parse_hostname(const char* data)
 {
 	if (data) {
@@ -409,18 +403,15 @@ static int _answer_to_connection(
 		wget_xfree(from_bytes_string);
 	}
 
-	// append query string into URL
-	wget_buffer *url_full = wget_buffer_alloc(1024);
-	wget_buffer_strcpy(url_full, url);
-	if (query.params->data)
-		wget_buffer_strcat(url_full, query.params->data);
-	wget_buffer_free(&query.params);
+	// append 'index.html' to directory and append query string
+	const char *url_full, *p;
+	if ((p = strrchr(url, '/')) && p[1] == 0) {
+		url_full = wget_aprintf("%sindex.html%s", url, query.params->data ? query.params->data : "");
+	} else {
+		url_full = wget_aprintf("%s%s", url, query.params->data ? query.params->data : "");
+	}
 
-	// default page to index.html
-	if (!strcmp(url_full->data, "/"))
-		wget_buffer_strcat(url_full, "index.html");
-
-	// it1 = iteration for urls data
+	// iterate over test urls array
 	unsigned int found = 0, chunked = 0;
 	for (wget_test_url_t *request_url = urls; request_url < urls + nurls; request_url++) {
 		if (request_url->http_only && https)
@@ -428,22 +419,12 @@ static int _answer_to_connection(
 		if (request_url->https_only && !https)
 			continue;
 
-		// create default page for directory without index page
-		const char *dir = _scan_directory(url_full->data + 1);
-		if (dir && !strcmp(dir, "/"))
-			wget_buffer_strcat(url_full, "index.html");
-
-		// create default page for hostname without index page
-		const char *host = _parse_hostname(url_full->data);
-		if (host && !strcmp(host, "/"))
-			wget_buffer_strcat(url_full, "index.html");
-
 		// convert remote url into escaped char for iri encoding
 		wget_buffer *url_iri = wget_buffer_alloc(1024);
 		wget_buffer_strcpy(url_iri, request_url->name);
 		MHD_http_unescape(url_iri->data);
 
-		if (!strcmp(_parse_hostname(url_full->data), _parse_hostname(url_iri->data))) {
+		if (!strcmp(_parse_hostname(url_full), _parse_hostname(url_iri->data))) {
 			size_t body_length =
 				request_url->body_len ? request_url->body_len
 				: (request_url->body ? strlen(request_url->body) : 0);
@@ -656,7 +637,7 @@ static int _answer_to_connection(
 		ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
 	}
 
-	wget_buffer_free(&url_full);
+	wget_xfree(url_full);
 	wget_buffer_free(&header_range);
 	char server_version[50];
 	wget_snprintf(server_version, sizeof(server_version), "Libmicrohttpd/%08x", (unsigned int) MHD_VERSION);
