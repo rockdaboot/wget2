@@ -152,6 +152,7 @@ WGETAPI void wget_test_stop_server(void);
 WGETAPI void wget_test_start_server(int first_key, ...);
 WGETAPI void wget_test(int first_key, ...);
 WGETAPI int wget_test_check_file_system(void);
+WGETAPI void wget_test_set_executable(const char *);
 WGETAPI int wget_test_get_http_server_port(void) WGET_GCC_PURE;
 WGETAPI int wget_test_get_https_server_port(void) WGET_GCC_PURE;
 WGETAPI int wget_test_get_ocsp_server_port(void) WGET_GCC_PURE;

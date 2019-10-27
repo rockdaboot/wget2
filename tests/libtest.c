@@ -1348,6 +1348,12 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 		wget_error_printf_exit("Failed to diropen %s\n", dirname);
 }
 
+const char *global_executable;
+void wget_test_set_executable(const char *program)
+{
+	global_executable = program;
+}
+
 void wget_test(int first_key, ...)
 {
 #if !defined WITH_LIBNGHTTP2 || !defined HAVE_MICROHTTPD_HTTP2_H
@@ -1392,7 +1398,7 @@ void wget_test(int first_key, ...)
 #ifdef HAVE_GNUTLS_OCSP_H
 			*ocsp_resp_file = NULL,
 #endif
-			*executable;
+			*executable = global_executable;
 		const wget_test_file_t
 			*expected_files = NULL,
 			*existing_files = NULL;
@@ -1413,17 +1419,19 @@ void wget_test(int first_key, ...)
 		bool
 			options_alloc = 0;
 
+		if (!executable) {
 #ifdef _WIN32
-		if (proto_pass == H2_PASS)
-			executable = BUILDDIR "\\..\\src\\wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy --timeout 10 --https-enforce=hard --ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp";
-		else
-			executable = BUILDDIR "\\..\\src\\wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy --timeout 10";
+			if (proto_pass == H2_PASS)
+				executable = BUILDDIR "\\..\\src\\wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy --timeout 10 --https-enforce=hard --ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp";
+			else
+				executable = BUILDDIR "\\..\\src\\wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy --timeout 10";
 #else
-		if (proto_pass == H2_PASS)
-			executable = BUILDDIR "/../src/wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy --timeout 10 --https-enforce=hard --ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp";
-		else
-			executable = BUILDDIR "/../src/wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy --timeout 10";
+			if (proto_pass == H2_PASS)
+				executable = BUILDDIR "/../src/wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy --timeout 10 --https-enforce=hard --ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp";
+			else
+				executable = BUILDDIR "/../src/wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy --timeout 10";
 #endif
+		}
 
 		keep_tmpfiles = 0;
 		clean_directory = 1;
