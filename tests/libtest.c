@@ -535,7 +535,7 @@ static int _answer_to_connection(
 						wget_xfree(header_key);
 					}
 				}
-				ret = MHD_queue_response(connection, MHD_HTTP_FOUND, response);
+				ret = MHD_queue_response(connection, atoi(urls[it1].code), response);
 				wget_buffer_free(&url_iri);
 				found = 1;
 				break;
@@ -545,7 +545,7 @@ static int _answer_to_connection(
 			if (atoi(urls[it1].code) != 200) {
 				response = MHD_create_response_from_buffer(body_length,
 					(void *) urls[it1].body, MHD_RESPMEM_MUST_COPY);
-				ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
+				ret = MHD_queue_response(connection, atoi(urls[it1].code), response);
 				wget_buffer_free(&url_iri);
 				found = 1;
 				break;
