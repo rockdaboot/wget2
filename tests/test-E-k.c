@@ -37,7 +37,7 @@ int main(void)
 			.code = "200 Dontcare",
 			.body =
 				"<html><head><title>Main Page</title></head><body><p>A link to a" \
-				" <a href=\"http://localhost:{{port}}/subpage.php\">second page</a>." \
+				" <a href=\"//localhost:{{port}}/subpage.php\">second page</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
