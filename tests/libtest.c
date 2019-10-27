@@ -410,6 +410,7 @@ static int _answer_to_connection(
 	} else {
 		url_full = wget_aprintf("%s%s", url, query.params->data ? query.params->data : "");
 	}
+	wget_buffer_free(&query.params);
 
 	// iterate over test urls array
 	bool found = false, chunked = false;
