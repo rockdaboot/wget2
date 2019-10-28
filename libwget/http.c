@@ -760,7 +760,7 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 
 		resource[0] = '/';
 		memcpy(resource + 1, req->esc_resource.data, req->esc_resource.length + 1);
-		init_nv(&nvs[0], ":method", "GET");
+		init_nv(&nvs[0], ":method", req->method);
 		init_nv(&nvs[1], ":path", resource);
 		init_nv(&nvs[2], ":scheme", "https");
 		// init_nv(&nvs[3], ":authority", req->esc_host.data);
