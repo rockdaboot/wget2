@@ -1385,6 +1385,12 @@ static const struct optionw options[] = {
 		{ "Continue download for given files. (default: off)\n"
 		}
 	},
+	{ "convert-file-only", &config.convert_file_only, parse_bool, -1, 0,
+		SECTION_DOWNLOAD,
+		{ "Convert only filename part of embedded URLs.\n",
+		  "(default: off)\n",
+		}
+	},
 	{ "convert-links", &config.convert_links, parse_bool, -1, 'k',
 		SECTION_DOWNLOAD,
 		{ "Convert embedded URLs to local URLs.\n",

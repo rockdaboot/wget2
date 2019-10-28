@@ -1660,7 +1660,7 @@ Go to background immediately after startup. If no output file is specified via t
   Note that only at the end of the download can Wget2 know which links have been downloaded.  Because of that, the
   work done by `-k` will be performed at the end of all the downloads.
 
-### `--convert-file-only` [Not implemented yet]
+### `--convert-file-only`
 
   This option converts only the filename part of the URLs, leaving the rest of the URLs untouched. This filename
   part is sometimes referred to as the "basename", although we avoid that term here in order not to cause

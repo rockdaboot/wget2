@@ -207,6 +207,7 @@ struct config {
 		ocsp,
 		mirror,
 		backup_converted,
+		convert_file_only,
 		convert_links,
 		ignore_case,
 		ignore_length,

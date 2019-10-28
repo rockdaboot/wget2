@@ -1023,6 +1023,70 @@ out:
 	plugin_db_forward_url_verdict_free(&plugin_verdict);
 }
 
+
+/*
+ * Converts only the filename part of URLs found in the body of a page
+ * e.g.
+ * //localhost/index becomes //localhost/index.html
+ */
+static void convert_link_file_only(const char *filename, wget_string *url, wget_buffer *buf)
+{
+	if (filename && access(filename, W_OK) == 0) {
+		const char *linkname = url->p, *link_basename = NULL, *p1, *p2;
+		const char *localname = filename, *local_basename = NULL;
+
+		// find the filename part of the linkpath
+		for (link_basename = p1 = linkname; *p1 != '\"'; p1++)
+			if (*p1 == '/') link_basename = p1+1;
+
+		// find the filename part of the real filepath
+		for (local_basename = p2 = localname; *p2; p2++)
+			if (*p2 == '/') local_basename = p2+1;
+
+		//copy dirname from initial URL and basename from local filename
+		wget_buffer_memcpy(buf, linkname, link_basename-linkname);
+		wget_buffer_strcat(buf, local_basename);
+
+		wget_info_printf(_("  %.*s -> %s\n"), (int) url->len,  linkname, localname);
+		wget_info_printf(_("       -> %s\n"), buf->data);
+	} else {
+		// insert initial URL without any change
+		wget_buffer_memcpy(buf, url->p, url->len);
+		wget_info_printf(_("  %.*s -> %s\n"), (int) url->len,  url->p, buf->data);
+	}
+}
+
+static void convert_link_whole(const char *filename, conversion_t *conversion, wget_string *url, wget_buffer *buf)
+{
+	if (filename && access(filename, W_OK) == 0) {
+		const char *linkpath = filename, *dir = NULL, *p1, *p2;
+		const char *docpath = conversion->filename;
+
+		// e.g.
+		// docpath  'hostname/1level/2level/3level/xyz.html'
+		// linkpath 'hostname/1level/2level.bak/3level/xyz.html'
+		// expected result: '../../2level.bak/3level/xyz.html'
+
+		// find first difference in path
+		for (dir = p1 = linkpath, p2 = docpath; *p1 && *p1 == *p2; p1++, p2++)
+			if (*p1 == '/') dir = p1+1;
+
+		// generate relative path
+		wget_buffer_reset(buf); // reuse buffer
+		while (*p2) {
+			if (*p2++ == '/')
+				wget_buffer_memcat(buf, "../", 3);
+		}
+		wget_buffer_strcat(buf, dir);
+
+		wget_info_printf(_("  %.*s -> %s\n"), (int) url->len,  url->p, linkpath); // no translation
+		wget_info_printf(_("       -> %s\n"), buf->data); // no translation
+	} else {
+		// insert absolute URL
+		wget_info_printf(_("  %.*s -> %s\n"), (int) url->len,  url->p, buf->data); // no translation
+	}
+}
+
 static void convert_links(void)
 {
 	FILE *fpout = NULL;
@@ -1073,33 +1137,10 @@ static void convert_links(void)
 
 				const char *filename = blacklist_entry->local_filename;
 
-				if (filename && access(filename, W_OK) == 0) {
-					const char *linkpath = filename, *dir = NULL, *p1, *p2;
-					const char *docpath = conversion->filename;
-
-					// e.g.
-					// docpath  'hostname/1level/2level/3level/xyz.html'
-					// linkpath 'hostname/1level/2level.bak/3level/xyz.html'
-					// expected result: '../../2level.bak/3level/xyz.html'
-
-					// find first difference in path
-					for (dir = p1 = linkpath, p2 = docpath; *p1 && *p1 == *p2; p1++, p2++)
-						if (*p1 == '/') dir = p1+1;
-
-					// generate relative path
-					wget_buffer_reset(&buf); // reuse buffer
-					while (*p2) {
-						if (*p2++ == '/')
-							wget_buffer_memcat(&buf, "../", 3);
-					}
-					wget_buffer_strcat(&buf, dir);
-
-					wget_info_printf("  %.*s -> %s\n", (int) url->len,  url->p, linkpath); // no translation
-					wget_info_printf("       -> %s\n", buf.data); // no translation
-				} else {
-					// insert absolute URL
-					wget_info_printf("  %.*s -> %s\n", (int) url->len,  url->p, buf.data); // no translation
-				}
+				if (config.convert_links)
+					convert_link_whole(filename, conversion, url, &buf);
+				else if (config.convert_file_only)
+					convert_link_file_only(filename, url, &buf);
 
 				if (buf.length != url->len || strncmp(buf.data, url->p, url->len)) {
 					// conversion takes place, write to disk
@@ -1391,7 +1432,11 @@ int main(int argc, const char **argv)
 	if (config.debug)
 		blacklist_print();
 
-	if (config.convert_links && !config.delete_after) {
+	if (config.convert_links && config.convert_file_only) {
+		error_printf(_("--convert-links and --convert-file-only cannot be used together, error\n"));
+		set_exit_status(EXIT_STATUS_PARSE_INIT);
+		goto out;
+	} else if ((config.convert_links || config.convert_file_only) && !config.delete_after) {
 		convert_links();
 		wget_hashmap_free(&conversions);
 	}
@@ -2459,6 +2504,7 @@ void html_parse(JOB *job, int level, const char *fname, const char *html, size_t
 	wget_buffer buf;
 	char sbuf[1024];
 	int convert_links = config.convert_links && !config.delete_after;
+	int convert_file_only = config.convert_file_only && !config.delete_after;
 	bool page_requisites = config.recursive && config.page_requisites && config.level && level < config.level;
 
 	//	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
@@ -2506,6 +2552,9 @@ void html_parse(JOB *job, int level, const char *fname, const char *html, size_t
 			if (convert_links) {
 				convert_links = 0; // prevent link conversion
 				info_printf(_("Link conversion disabled for '%s'\n"), fname);
+			} else if (convert_file_only) {
+				convert_file_only = 0; // prevent filename conversion
+				info_printf(_("Filename conversion disabled for '%s'\n"), fname);
 			}
 
 		} else {
@@ -2592,7 +2641,7 @@ void html_parse(JOB *job, int level, const char *fname, const char *html, size_t
 
 	wget_buffer_deinit(&buf);
 
-	if (convert_links && !config.delete_after) {
+	if ((convert_links || convert_file_only) && !config.delete_after) {
 		for (int it = 0; it < wget_vector_size(parsed->uris); it++) {
 			wget_html_parsed_url *html_url = wget_vector_get(parsed->uris, it);
 			html_url->url.p = (const char *) (html_url->url.p - html); // convert pointer to offset
