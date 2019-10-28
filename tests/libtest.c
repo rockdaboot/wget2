@@ -439,7 +439,6 @@ static int _answer_to_connection(
 				wget_debug_printf("%s: Expected request method '%s', but got '%s'\n",
 					__func__, request_url->expected_method, method);
 				bad_request = true;
-				break;
 			}
 
 			for (const char **header = request_url->expected_req_headers; *header; header++) {
@@ -450,6 +449,7 @@ static int _answer_to_connection(
 
 				// 400 Bad Request
 				if (!got_val || strcmp(got_val, header_value + 2)) {
+					wget_debug_printf("%s: Missing expected header '%s'\n", __func__, *header);
 					bad_request = true;
 					break;
 				}
@@ -458,8 +458,10 @@ static int _answer_to_connection(
 			// check unexpected headers
 			for (const char **header_key = request_url->unexpected_req_headers; *header_key; header_key++) {
 				const char *got_val = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, *header_key);
+
 				// 400 Bad Request
 				if (got_val) {
+					wget_debug_printf("%s: Got unexpected header '%s'\n", __func__, *header_key);
 					bad_request = true;
 					break;
 				}
@@ -1366,7 +1368,7 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 		wget_error_printf_exit("Failed to diropen %s\n", dirname);
 }
 
-const char *global_executable;
+static const char *global_executable;
 void wget_test_set_executable(const char *program)
 {
 	global_executable = program;
