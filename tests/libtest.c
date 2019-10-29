@@ -1146,6 +1146,29 @@ void wget_test_start_server(int first_key, ...)
 		WGET_INFO_FUNC, _write_msg,
 		0);
 
+	wget_debug_printf("MHD compiled with 0x%08x, linked with %s\n", (unsigned) MHD_VERSION, MHD_get_version());
+#if MHD_VERSION >= 0x00095400
+	wget_debug_printf("MHD_OPTION_STRICT_FOR_CLIENT: yes\n");
+#else
+	wget_debug_printf("MHD_OPTION_STRICT_FOR_CLIENT: no\n");
+#endif
+#if MHD_VERSION >= 0x00096800
+	wget_debug_printf("MHD_OPTION_SERVER_INSANITY: yes\n");
+#else
+	wget_debug_printf("MHD_OPTION_SERVER_INSANITY: no\n");
+#endif
+#ifdef HAVE_MICROHTTPD_HTTP2_H
+	wget_debug_printf("HAVE_MICROHTTPD_HTTP2_H: yes\n");
+#else
+	wget_debug_printf("HAVE_MICROHTTPD_HTTP2_H: no\n");
+#endif
+#ifdef HAVE_GNUTLS_OCSP_H
+	wget_debug_printf("HAVE_GNUTLS_OCSP_H: yes\n");
+#else
+	wget_debug_printf("HAVE_GNUTLS_OCSP_H: no\n");
+#endif
+	wget_debug_printf("\n");
+
 	va_start(args, first_key);
 	for (key = first_key; key; key = va_arg(args, int)) {
 		switch (key) {
