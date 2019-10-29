@@ -2495,7 +2495,7 @@ WGETAPI void
 WGETAPI void
 	wget_bar_printf(wget_bar *bar, int slot, const char *fmt, ...) WGET_GCC_PRINTF_FORMAT(3,4) WGET_GCC_NONNULL_ALL;
 WGETAPI void
-	wget_bar_slot_begin(wget_bar *bar, int slot, const char *filename, int new_file, ssize_t filesize) WGET_GCC_NONNULL_ALL;
+	wget_bar_slot_begin(wget_bar *bar, int slot, const char *filename, int new_file, ssize_t filesize) WGET_GCC_NONNULL((1));
 WGETAPI void
 	wget_bar_slot_downloaded(wget_bar *bar, int slot, size_t nbytes);
 WGETAPI void
