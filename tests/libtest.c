@@ -678,10 +678,10 @@ static int _http_server_start(int SERVER_MODE)
 			port_num, _check_to_accept, (void *) (ptrdiff_t) SERVER_MODE, &_answer_to_connection, NULL,
 			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
 			MHD_OPTION_NONCE_NC_SIZE, 300,
-#ifdef MHD_OPTION_STRICT_FOR_CLIENT
+#if MHD_VERSION >= 0x00095400
 			MHD_OPTION_STRICT_FOR_CLIENT, 1,
 #endif
-#ifdef MHD_OPTION_SERVER_INSANITY
+#if MHD_VERSION >= 0x00096800
 			MHD_OPTION_SERVER_INSANITY, 1,
 #endif
 			MHD_OPTION_END);
@@ -710,10 +710,10 @@ static int _http_server_start(int SERVER_MODE)
 					port_num, _check_to_accept, (void *) (ptrdiff_t) SERVER_MODE, &_answer_to_connection, NULL,
 					MHD_OPTION_HTTPS_MEM_KEY, key_pem,
 					MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
-#ifdef MHD_OPTION_STRICT_FOR_CLIENT
+#if MHD_VERSION >= 0x00095400
 					MHD_OPTION_STRICT_FOR_CLIENT, 1,
 #endif
-#ifdef MHD_OPTION_SERVER_INSANITY
+#if MHD_VERSION >= 0x00096800
 			MHD_OPTION_SERVER_INSANITY, 1,
 #endif
 				MHD_OPTION_CONNECTION_MEMORY_LIMIT, (size_t) 1*1024*1024,
@@ -734,10 +734,10 @@ static int _http_server_start(int SERVER_MODE)
 					port_num, _check_to_accept, (void *) (ptrdiff_t) SERVER_MODE, &_answer_to_connection, NULL,
 					MHD_OPTION_HTTPS_MEM_KEY, key_pem,
 					MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
-#ifdef MHD_OPTION_STRICT_FOR_CLIENT
+#if MHD_VERSION >= 0x00095400
 					MHD_OPTION_STRICT_FOR_CLIENT, 1,
 #endif
-#ifdef MHD_OPTION_SERVER_INSANITY
+#if MHD_VERSION >= 0x00096800
 			MHD_OPTION_SERVER_INSANITY, 1,
 #endif
 					//Enough to send 1MB files through
@@ -761,10 +761,10 @@ static int _http_server_start(int SERVER_MODE)
 				,
 				port_num, _check_to_accept, (void *) (ptrdiff_t) SERVER_MODE, &_answer_to_connection, NULL,
 				MHD_OPTION_HTTPS_CERT_CALLBACK, &_ocsp_cert_callback,
-#ifdef MHD_OPTION_STRICT_FOR_CLIENT
+#if MHD_VERSION >= 0x00095400
 				MHD_OPTION_STRICT_FOR_CLIENT, 1,
 #endif
-#ifdef MHD_OPTION_SERVER_INSANITY
+#if MHD_VERSION >= 0x00096800
 			MHD_OPTION_SERVER_INSANITY, 1,
 #endif
 				MHD_OPTION_CONNECTION_MEMORY_LIMIT, (size_t) 1*1024*1024,
@@ -811,10 +811,10 @@ static int _http_server_start(int SERVER_MODE)
 			port_num, NULL, NULL, &_ocsp_ahc, NULL,
 			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
 			MHD_OPTION_NONCE_NC_SIZE, 300,
-#ifdef MHD_OPTION_STRICT_FOR_CLIENT
+#if MHD_VERSION >= 0x00095400
 			MHD_OPTION_STRICT_FOR_CLIENT, 1,
 #endif
-#ifdef MHD_OPTION_SERVER_INSANITY
+#if MHD_VERSION >= 0x00096800
 			MHD_OPTION_SERVER_INSANITY, 1,
 #endif
 			MHD_OPTION_CONNECTION_MEMORY_LIMIT, (size_t) 1*1024*1024,
@@ -863,10 +863,10 @@ static int _http_server_start(int SERVER_MODE)
 			,
 			port_num, _check_to_accept, (void *) (ptrdiff_t) SERVER_MODE, &_answer_to_connection, NULL,
 			MHD_OPTION_HTTPS_CERT_CALLBACK2, _ocsp_stap_cert_callback,
-#ifdef MHD_OPTION_STRICT_FOR_CLIENT
+#if MHD_VERSION >= 0x00095400
 				MHD_OPTION_STRICT_FOR_CLIENT, 1,
 #endif
-#ifdef MHD_OPTION_SERVER_INSANITY
+#if MHD_VERSION >= 0x00096800
 			MHD_OPTION_SERVER_INSANITY, 1,
 #endif
 			MHD_OPTION_CONNECTION_MEMORY_LIMIT, (size_t) 1*1024*1024,
