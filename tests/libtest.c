@@ -606,6 +606,13 @@ static int _answer_to_connection(
 				ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 			}
 
+	// switch off Content-Length sanity checks
+#if MHD_VERSION >= 0x00096800
+			MHD_set_response_options(response,
+				MHD_RF_INSANITY_HEADER_CONTENT_LENGTH,
+				MHD_RO_END);
+#endif
+
 			// add available headers
 			for (const char **header = request_url->headers; *header; header++) {
 				const char *header_value = strchr(*header, ':');
