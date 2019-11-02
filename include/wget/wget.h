@@ -228,26 +228,27 @@ WGET_BEGIN_DECLS
 #define WGET_NET_FAMILY_PREFERRED 1017
 #define WGET_TCP_FASTFORWARD  1018
 
-#define WGET_HTTP_URL                 2000
-#define WGET_HTTP_URL_ENCODING        2001
-#define WGET_HTTP_URI                 2002
-#define WGET_HTTP_COOKIE_STORE        2003
-#define WGET_HTTP_HEADER_ADD          2004
-//#define WGET_HTTP_HEADER_DEL        2005
-//#define WGET_HTTP_HEADER_SET        2006
-//#define WGET_HTTP_BIND_ADDRESS      2007
-#define WGET_HTTP_CONNECTION_PTR      2008
-#define WGET_HTTP_RESPONSE_KEEPHEADER 2009
-#define WGET_HTTP_MAX_REDIRECTIONS    2010
-#define WGET_HTTP_BODY_SAVEAS_STREAM  2011
-#define WGET_HTTP_BODY_SAVEAS_FILE    2012
-#define WGET_HTTP_BODY_SAVEAS_FD      2013
-#define WGET_HTTP_BODY_SAVEAS_FUNC    2014
-#define WGET_HTTP_HEADER_FUNC         2015
-#define WGET_HTTP_SCHEME              2016
-#define WGET_HTTP_BODY                2017
-#define WGET_HTTP_BODY_SAVEAS         2018
-#define WGET_HTTP_USER_DATA           2019
+#define WGET_HTTP_URL                   2000
+#define WGET_HTTP_URL_ENCODING          2001
+#define WGET_HTTP_URI                   2002
+#define WGET_HTTP_COOKIE_STORE          2003
+#define WGET_HTTP_HEADER_ADD            2004
+//#define WGET_HTTP_HEADER_DEL          2005
+//#define WGET_HTTP_HEADER_SET          2006
+//#define WGET_HTTP_BIND_ADDRESS        2007
+#define WGET_HTTP_CONNECTION_PTR        2008
+#define WGET_HTTP_RESPONSE_KEEPHEADER   2009
+#define WGET_HTTP_MAX_REDIRECTIONS      2010
+#define WGET_HTTP_BODY_SAVEAS_STREAM    2011
+#define WGET_HTTP_BODY_SAVEAS_FILE      2012
+#define WGET_HTTP_BODY_SAVEAS_FD        2013
+#define WGET_HTTP_BODY_SAVEAS_FUNC      2014
+#define WGET_HTTP_HEADER_FUNC           2015
+#define WGET_HTTP_SCHEME                2016
+#define WGET_HTTP_BODY                  2017
+#define WGET_HTTP_BODY_SAVEAS           2018
+#define WGET_HTTP_USER_DATA             2019
+#define WGET_HTTP_RESPONSE_IGNORELENGTH 2020
 
 // definition of error conditions
 typedef enum {
@@ -2104,6 +2105,8 @@ typedef struct {
 	bool
 		response_keepheader : 1; //!< the application wants the response header data
 	bool
+		response_ignorelength : 1; //!< ignore the Content-Length in the response header
+	bool
 		debug_skip_body : 1; //!< if set, do not print the request body (e.g. because it's binary)
 	long long
 		request_start; //!< When this request was sent out
@@ -2172,6 +2175,7 @@ struct wget_http_response_st {
 		keep_alive;
 	bool
 		content_length_valid : 1,
+		length_inconsistent : 1, //!< set when length of data received is not same as Content-Length
 		hsts : 1, //!< if hsts_maxage and hsts_include_subdomains are valid
 		csp : 1;
 };

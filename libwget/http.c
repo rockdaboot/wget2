@@ -174,6 +174,7 @@ void wget_http_request_set_int(wget_http_request *req, int key, int value)
 {
 	switch (key) {
 	case WGET_HTTP_RESPONSE_KEEPHEADER: req->response_keepheader = value != 0; break;
+	case WGET_HTTP_RESPONSE_IGNORELENGTH: req->response_ignorelength = value != 0; break;
 	default: error_printf(_("%s: Unknown key %d (or value must not be an integer)\n"), __func__, key);
 	}
 }
@@ -182,6 +183,7 @@ int wget_http_request_get_int(wget_http_request *req, int key)
 {
 	switch (key) {
 	case WGET_HTTP_RESPONSE_KEEPHEADER: return req->response_keepheader;
+	case WGET_HTTP_RESPONSE_IGNORELENGTH: return req->response_ignorelength;
 	default:
 		error_printf(_("%s: Unknown key %d (or value must not be an integer)\n"), __func__, key);
 		return -1;
@@ -1193,7 +1195,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 				}
 			}
 		}
-	} else if (resp->content_length_valid) {
+	} else if (resp->content_length_valid && !resp->req->response_ignorelength) {
 		// read content_length bytes
 		debug_printf("method 2\n");
 
@@ -1214,10 +1216,13 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 		}
 		if (nbytes < 0)
 			error_printf(_("Failed to read %zd bytes (%d)\n"), nbytes, errno);
-		if (body_len < resp->content_length)
+		if (body_len < resp->content_length) {
+			resp->length_inconsistent = true;
 			error_printf(_("Just got %zu of %zu bytes\n"), body_len, resp->content_length);
-		else if (body_len > resp->content_length)
+		} else if (body_len > resp->content_length) {
+			resp->length_inconsistent = true;
 			error_printf(_("Body too large: %zu instead of %zu bytes\n"), body_len, resp->content_length);
+		}
 		resp->content_length = body_len;
 	} else {
 		// read as long as we can

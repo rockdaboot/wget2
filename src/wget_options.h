@@ -209,6 +209,7 @@ struct config {
 		backup_converted,
 		convert_links,
 		ignore_case,
+		ignore_length,
 		hsts,                  // if HSTS (HTTP Strict Transport Security) is enabled or not
 		hsts_preload,          // if loading of a HSTS Preload file is enabled of not
 		hpkp,                  // HTTP Public Key Pinning (HPKP)

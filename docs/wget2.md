@@ -1142,7 +1142,7 @@ Go to background immediately after startup. If no output file is specified via t
   The PSL allows to prevent setting of "super-cookies" that lead to cookie privacy leakage.
   More details can be found on https://publicsuffix.org/.
 
-### `--ignore-length` [Not implemented yet]
+### `--ignore-length`
 
   Unfortunately, some HTTP servers (CGI programs, to be more precise) send out bogus "Content-Length" headers,
   which makes Wget2 go wild, as it thinks not all the document was retrieved.  You can spot this syndrome if Wget

@@ -3916,7 +3916,7 @@ int http_send_request(const wget_iri *iri, const wget_iri *original_url, DOWNLOA
 
 	// keep the received response header in 'resp->header'
 	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, config.save_headers || config.server_response || (config.progress && config.spider));
-
+	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_IGNORELENGTH, config.ignore_length);
 	return WGET_E_SUCCESS;
 }
 
@@ -3956,6 +3956,8 @@ wget_http_response *http_receive_response(wget_http_connection *conn)
 	if (config.progress)
 		bar_slot_deregister(context->progress_slot);
 
+	if (resp->length_inconsistent)
+		set_exit_status(EXIT_STATUS_PROTOCOL);
 	xfree(context);
 
 	return resp;

@@ -1723,6 +1723,12 @@ static const struct optionw options[] = {
 		{ "Ignore case when matching files. (default: off)\n"
 		}
 	},
+	{ "ignore-length", &config.ignore_length, parse_bool, -1, 0,
+		SECTION_DOWNLOAD,
+		{ "Ignore content-length header field\n",
+			"(default: off)\n",
+		}
+	},
 	{ "ignore-tags", &config.ignore_tags, parse_taglist, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Ignore tag/attributes for URL scanning,\n",

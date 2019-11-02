@@ -31,7 +31,7 @@ WGET_TESTS = test-wget-1$(EXEEXT) test-c-r$(EXEEXT) test-restrict-ascii$(EXEEXT)
  test-gzip$(EXEEXT) test-compression$(EXEEXT) test-include-and-exclude-directories$(EXEEXT) test--save-content-on$(EXEEXT)\
  test-limit-rate$(EXEEXT) test-post-handshake-auth$(EXEEXT) test-unlink$(EXEEXT)\
  test-ocsp-server$(EXEEXT) test-ocsp-stap$(EXEEXT) test-limit-rate-http2$(EXEEXT) test-timestamping$(EXEEXT)\
- test-cookies$(EXEEXT) test-E-k$(EXEEXT)
+ test-cookies$(EXEEXT) test-E-k$(EXEEXT) test-ignore-length$(EXEEXT)
 #test--post-file$(EXEEXT) test-cookies-http_state$(EXEEXT)
 
 if WITH_GPGME
