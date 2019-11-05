@@ -115,6 +115,10 @@ Go to background immediately after startup. If no output file is specified via t
   Execute command as if it were a part of `.wgetrc`.  A command thus invoked will be executed after the commands in `.wgetrc`, thus
   taking precedence over them.  If you need to specify more than one wgetrc command, use multiple instances of `-e`.
 
+### `--hyperlink`
+
+  Hyperlink names of downloaded files so that they can opened from the terminal by clicking on them.  Only a few terminal emulators
+  currently support hyperlinks.  Enable this option if you know your terminal supports hyperlinks.
 
 ## <a name="Logging and Input File Options"/>Logging and Input File Options
 

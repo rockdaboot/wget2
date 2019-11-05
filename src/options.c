@@ -49,6 +49,7 @@
 #include <sys/stat.h>
 #include <spawn.h>
 #include "getpass.h"
+#include "xgethostname.h"
 
 #include <wget.h>
 
@@ -1218,6 +1219,7 @@ struct config config = {
 	.report_speed = WGET_REPORT_SPEED_BYTES,
 	.default_http_port = 80,
 	.default_https_port = 443,
+	.hyperlink = false,
 	.if_modified_since = 1
 };
 
@@ -1715,6 +1717,11 @@ static const struct optionw options[] = {
 		SECTION_SSL,
 		{ "Set HTTPS proxy/proxies, overriding environment\n",
 		  "variables. Use comma to separate proxies.\n"
+		}
+	},
+	{ "hyperlink", &config.hyperlink, parse_bool, -1, 0,
+		SECTION_STARTUP,
+		{ "Enable terminal hyperlink support\n"
 		}
 	},
 	{ "if-modified-since", &config.if_modified_since, parse_bool, -1, 0,
@@ -3326,6 +3333,10 @@ int init(int argc, const char **argv)
 	if (config.max_threads < 1 || (config.max_threads > 1 && config.chunk_size))
 		config.max_threads = 1;
 
+	if (config.hyperlink) {
+		config.hostname = xgethostname();
+	}
+
 	// truncate output document
 	if (config.output_document && strcmp(config.output_document, "-") && !config.dont_write) {
 		int fd = open(config.output_document, O_WRONLY | O_TRUNC | O_BINARY);
@@ -3712,6 +3723,7 @@ void deinit(void)
 	xfree(config.logfile);
 	xfree(config.logfile_append);
 	xfree(config.method);
+	xfree(config.hostname);
 	xfree(config.netrc_file);
 	xfree(config.ocsp_file);
 	xfree(config.ocsp_server);

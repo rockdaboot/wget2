@@ -3346,7 +3346,14 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 	if (fd >= 0) {
 		ssize_t rc;
 
-		info_printf(_("Saving '%s'\n"), *actual_file_name);
+		if (config.hyperlink) {
+			const char *canon_file_name = canonicalize_file_name(*actual_file_name);
+			info_printf(_("Saving '\033]8;;file://%s%s\033\\%s\033]8;;\033\\'\n"),
+					config.hostname, canon_file_name, *actual_file_name);
+			xfree(canon_file_name);
+		} else {
+			info_printf(_("Saving '%s'\n"), *actual_file_name);
+		}
 
 		if (config.save_headers) {
 			if ((rc = write(fd, resp->header->data, resp->header->length)) != (ssize_t)resp->header->length) {
