@@ -1702,18 +1702,13 @@ void wget_test(int first_key, ...)
 					wget_error_printf_exit("Missing expected file '%s/%s' [%s]\n", tmpdir, fname, options);
 
 				if (expected_files[it].content) {
-					char *content = wget_malloc(st.st_size ? st.st_size : 1);
+					size_t nbytes;
+					char *content = wget_read_file(fname, &nbytes);
 
-					if ((fd = open(fname, O_RDONLY | O_BINARY)) != -1) {
-						ssize_t nbytes = read(fd, content, st.st_size);
-						close(fd);
-
-						if (nbytes != st.st_size)
-							wget_error_printf_exit("Failed to read %lld bytes from file '%s/%s', just got %zd [%s]\n",
-								(long long)st.st_size, tmpdir, fname, nbytes, options);
-
+					if (content) {
 						const char *expected_content = _insert_ports(expected_files[it].content);
 						bool expected_content_alloc = 0;
+
 						if (!expected_content)
 							expected_content = expected_files[it].content;
 						else
@@ -1721,10 +1716,10 @@ void wget_test(int first_key, ...)
 
 						size_t content_length = expected_files[it].content_length ? expected_files[it].content_length : strlen(expected_content);
 
-						if (content_length != (size_t) nbytes || memcmp(expected_content, content, nbytes) != 0) {
+						if (content_length != nbytes || memcmp(expected_content, content, nbytes) != 0) {
 							wget_error_printf("Unexpected content in %s [%s]\n", fname, options);
 							wget_error_printf("  Expected %zu bytes:\n%s\n", content_length, expected_content);
-							wget_error_printf("  Got %zu bytes:\n%s\n", content_length, content);
+							wget_error_printf("  Got %zu bytes:\n%s\n", nbytes, content);
 							exit(EXIT_FAILURE);
 						}
 
