@@ -696,9 +696,12 @@ AS_IF([test "x$with_lzip" != xno], [
     CFLAGS="$LZIP_CFLAGS $CFLAGS"
     AC_DEFINE([WITH_LZIP], [1], [Use liblz (lzip)])
   ], [
+    old_LIBS="$LIBS"
+    LIBS=
     AC_SEARCH_LIBS(LZ_decompress_open, lz,
-      [with_lzip=yes; AC_DEFINE([WITH_LZIP], [1], [Use liblz (lzip)])],
+      [with_lzip=yes; LZIP_LIBS="$LIBS"; AC_DEFINE([WITH_LZIP], [1], [Use liblz (lzip)])],
       [with_lzip=no;  AC_MSG_WARN(*** liblz was not found. You will not be able to use lzip decompression)])
+    LIBS="$old_LIBS $LZIP_LIBS"
   ])
 ])
 AM_CONDITIONAL([WITH_LZIP], [test "x$with_lzip" = xyes])
