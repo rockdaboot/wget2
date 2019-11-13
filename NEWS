@@ -6,6 +6,29 @@ See the end for copying conditions.
 
 Please send GNU Wget2 bug reports to <bug-wget@gnu.org>.
 
+xx.xx.xxxx Release 1.99.3 (beta)
+  * OpenSSL: Fix CRL checking
+  * OpenSSL: Implement ALPN
+  * OpenSSL: Fix memory leaks
+  * Update license information
+  * Fix for reproducible builds
+  * Add Accept-Encoding: lzip
+  * Rename --retry-on-http-status to --retry-on-http-error
+  * Limit to page requisites only for leaf pages
+  * Allow list of tokens for Connection: header
+  * Fix directory clash with --no-clobber
+  * Fix NULL dereference with --convert-links
+  * Using --robots=off downloads robots.txt
+  * Add pkg-config support for GPGME
+  * Fix conversion (-k) in combination with -E
+  * Fix cookie file header to be recognized by 'file' command
+  * Fix loading CA certs when 'system' is not supported
+  * Add option --method, improving backward compatibility
+  * Add option --body-data, improving backward compatibility
+  * Add option --body-file, improving backward compatibility
+  * Add option --convert-file-only, improving backward compatibility
+  * Support terminal hyperlinks in output
+
 30.08.2019 Release 1.99.2 (beta)
   * Improve docs
   * Improve build system
