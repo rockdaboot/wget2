@@ -22,6 +22,7 @@
 #include <config.h>
 
 #include <dirent.h>
+#include <limits.h> // INT_MAX
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/ocsp.h>
@@ -29,6 +30,17 @@
 #include <openssl/ossl_typ.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
+
+#ifdef LIBRESSL_VERSION_NUMBER
+  #ifndef TLS_MAX_VERSION
+    #ifndef TLS1_3_VERSION
+      #define TLS1_3_VERSION TLS1_2_VERSION
+      #define TLS_MAX_VERSION TLS1_2_VERSION
+    #else
+      #define TLS_MAX_VERSION TLS1_3_VERSION
+    #endif
+  #endif
+#endif
 
 #include <wget.h>
 #include "private.h"
@@ -623,7 +635,11 @@ void wget_ssl_init(void)
 		_ctx = SSL_CTX_new(TLS_client_method());
 		if (_ctx && openssl_init(_ctx) == 0) {
 			init++;
+#ifdef LIBRESSL_VERSION_NUMBER
+			debug_printf("LibreSSL initialized\n");
+#else
 			debug_printf("OpenSSL initialized\n");
+#endif
 		} else {
 			error_printf(_("Could not initialize OpenSSL\n"));
 		}
@@ -679,7 +695,7 @@ static int ssl_resume_session(SSL *ssl, const char *hostname)
 			error_printf(_("OpenSSL: Could not parse cached session data.\n"));
 			return -1;
 		}
-#if OPENSSL_VERSION_NUMBER >= 0x10101000
+#if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined LIBRESSL_VERSION_NUMBER
 		if (!SSL_SESSION_is_resumable(ssl_session))
 			return -1;
 #endif
@@ -831,11 +847,18 @@ int wget_ssl_open(wget_tcp *tcp)
 	/* Enable host name verification, if requested */
 	if (config.check_hostname) {
 		SSL_set1_host(ssl, tcp->ssl_hostname);
+#ifndef LIBRESSL_VERSION_NUMBER
+// LibreSSL <= 3.0.2 does not know SSL_set_hostflags()
 		SSL_set_hostflags(ssl, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
-	} else {
+#endif
+	}
+#ifndef LIBRESSL_VERSION_NUMBER
+// LibreSSL <= 3.0.2 does not know SSL_set_hostflags() nor X509_CHECK_FLAG_NEVER_CHECK_SUBJECT
+	else {
 		SSL_set_hostflags(ssl, X509_CHECK_FLAG_NEVER_CHECK_SUBJECT);
 		info_printf(_("Host name check disabled. Server certificate's subject name will not be checked.\n"));
 	}
+#endif
 
 	/* Send Server Name Indication (SNI) */
 	if (tcp->ssl_hostname && !SSL_set_tlsext_host_name(ssl, tcp->ssl_hostname))
