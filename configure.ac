@@ -474,9 +474,7 @@ AS_IF([test "x$with_ssl" == "xgnutls"], [
     AC_CHECK_HEADERS([gnutls/ocsp.h])
     AC_CHECK_FUNCS(gnutls_srp_server_get_username gnutls_transport_get_int)
   ])
-])
-
-AS_IF([test "x$with_ssl" == "xopenssl"], [
+], [test "x$with_ssl" == "xopenssl"], [
   PKG_CHECK_MODULES([OPENSSL], [openssl], [
     with_openssl=yes
     LIBS="$OPENSSL_LIBS $LIBS"
@@ -499,9 +497,7 @@ AS_IF([test "x$with_ssl" == "xopenssl"], [
       [with_libcrypto=no; AC_MSG_WARN(*** LIBCRYPTO was not found. Fallback to libwolfcrypt for hashing and checksumming.)
     ])
   ])
-])
-
-AS_IF([test "x$with_ssl" = "xwolfssl"], [
+], [test "x$with_ssl" = "xwolfssl"], [
   PKG_CHECK_MODULES([WOLFSSL], [wolfssl], [
     with_wolfssl=yes
     LIBS="$WOLFSSL_LIBS $LIBS"
@@ -517,6 +513,8 @@ AS_IF([test "x$with_ssl" = "xwolfssl"], [
     with_libwolfcrypt=yes
     AC_DEFINE([WITH_LIBWOLFCRYPT], [1], [Use wolfcrypt])
   ])
+], [test "x$with_ssl" != "xnone"], [
+  AC_MSG_ERROR([*** Unsupported value for --with-ssl. Use 'gnutls' (default), 'openssl', 'wolfssl' or 'none'])
 ])
 
 AM_CONDITIONAL([WITH_GNUTLS], [test "x$with_gnutls" = xyes])
@@ -526,10 +524,8 @@ AM_CONDITIONAL([WITH_WOLFSSL], [test "x$with_wolfssl" = xyes])
 AM_CONDITIONAL([WITH_TLS], [test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes || test "x$with_openssl" = xyes])
 AS_IF([test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes || test "x$with_openssl" = xyes], [
   AC_DEFINE([WITH_TLS], [1], [Built with TLS support])
-], [test "x$with_ssl" = "xnone"], [
-  AC_DEFINE([WITH_TLS], [0], [No TLS support])
 ], [
-  AC_MSG_ERROR([*** Unsupported value for --with-ssl. Use 'gnutls' (default), 'openssl', 'wolfssl' or 'none'])
+  AC_DEFINE([WITH_TLS], [0], [No TLS support])
 ])
 
 AS_IF([(test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes) && test "x$with_libwolfcrypt" != xyes && test "x$with_libcrypto" != xyes], [
