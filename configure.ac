@@ -526,7 +526,11 @@ AM_CONDITIONAL([WITH_WOLFSSL], [test "x$with_wolfssl" = xyes])
 AM_CONDITIONAL([WITH_TLS], [test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes || test "x$with_openssl" = xyes])
 AS_IF([test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes || test "x$with_openssl" = xyes], [
   AC_DEFINE([WITH_TLS], [1], [Built with TLS support])
-], [AC_DEFINE([WITH_TLS], [0], [No TLS support])])
+], [test "x$with_ssl" = "xnone"], [
+  AC_DEFINE([WITH_TLS], [0], [No TLS support])
+], [
+  AC_MSG_ERROR([*** Unsupported value for --with-ssl. Use 'gnutls' (default), 'openssl', 'wolfssl' or 'none'])
+])
 
 AS_IF([(test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes) && test "x$with_libwolfcrypt" != xyes && test "x$with_libcrypto" != xyes], [
   PKG_CHECK_MODULES([NETTLE], nettle, [
