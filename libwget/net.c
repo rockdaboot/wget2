@@ -921,9 +921,11 @@ ssize_t wget_tcp_write(wget_tcp *tcp, const char *buf, size_t count)
 		} else {
 			if (errno != EAGAIN
 				&& errno != ENOTCONN
-				&& errno != EINPROGRESS
-			) {
-				error_printf(_("Failed to write %zu bytes (%d: %s)\n"), count, errno, strerror(errno));
+				&& errno != EINPROGRESS)
+			{
+				char ebuf[128];
+
+				error_printf(_("Failed to write %zu bytes (%d: %s)\n"), count, errno, strerror_r(errno, ebuf, sizeof(ebuf)));
 				return -1;
 			}
 

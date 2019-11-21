@@ -3060,8 +3060,11 @@ static void set_file_mtime(int fd, int64_t modified)
 	timespecs[1].tv_sec = tt;
 	timespecs[1].tv_nsec = 0;
 
-	if (futimens(fd, timespecs) == -1)
-		error_printf (_("Failed to set file date: %s\n"), strerror (errno));
+	if (futimens(fd, timespecs) == -1) {
+		char ebuf[128];
+
+		error_printf (_("Failed to set file date (%d: %s)\n"), errno, strerror_r(errno, ebuf, sizeof(ebuf)));
+	}
 }
 
 // On windows, open() and fopen() return EACCES instead of EISDIR.
@@ -3157,6 +3160,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 	int fd, multiple = 0, oflag = flag;
 	size_t fname_length;
 	long long old_quota;
+	char ebuf[128];
 
 	if (!fname)
 		return -1;
@@ -3315,13 +3319,13 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 				rc = safe_read(fd, partial_content->data, size);
 				if (rc == SAFE_READ_ERROR || (long long) rc != size) {
 					error_printf(_("Failed to load partial content from '%s' (errno=%d): %s\n"),
-						fname, errno, strerror(errno));
+						fname, errno, strerror_r(errno, ebuf, sizeof(ebuf)));
 					set_exit_status(EXIT_STATUS_IO);
 				}
 				close(fd);
 			} else {
 				error_printf(_("Failed to load partial content from '%s' (errno=%d): %s\n"),
-					fname, errno, strerror(errno));
+					fname, errno, strerror_r(errno, ebuf, sizeof(ebuf)));
 				set_exit_status(EXIT_STATUS_IO);
 			}
 		}
@@ -3330,7 +3334,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 	if (config.unlink && flag == O_TRUNC) {
 		if (unlink(fname) < 0 && errno != ENOENT) {
 			error_printf(_("Failed to unlink '%s' (errno=%d): %s\n"),
-				fname, errno, strerror(errno));
+				fname, errno, strerror_r(errno, ebuf, sizeof(ebuf)));
 			set_exit_status(EXIT_STATUS_IO);
 			return -1;
 		}
@@ -3373,7 +3377,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 			} else if (errno == EISDIR || is_directory(fname))
 				info_printf(_("Directory / file name clash - not saving '%s'\n"), fname);
 			else {
-				error_printf(_("Failed to open '%s' (errno=%d): %s\n"), fname, errno, strerror(errno));
+				error_printf(_("Failed to open '%s' (%d: %s)\n"), fname, errno, strerror_r(errno, ebuf, sizeof(ebuf)));
 				set_exit_status(EXIT_STATUS_IO);
 			}
 		}
@@ -4148,6 +4152,7 @@ static void fork_to_background(void)
 static void fork_to_background(void)
 {
 	short logfile_changed = 0;
+
 	if (!config.logfile && (!config.quiet || config.server_response) && !config.dont_write) {
 		config.logfile = wget_strdup(WGET_DEFAULT_LOGFILE);
 		// truncate logfile
@@ -4160,14 +4165,15 @@ static void fork_to_background(void)
 	}
 
 	pid_t pid = fork();
-	if (pid < 0) // parent, error
-		error_printf_exit(_("Failed to fork (errno=%d): %s\n"), errno, strerror(errno));
-
+	if (pid < 0) { // parent, error
+		char ebuf[128];
+		error_printf_exit(_("Failed to fork (%d: %s)\n"), errno, strerror_r(errno, ebuf, sizeof(ebuf)));
+	}
 	else if (pid != 0) {
 		// parent, no error
-		printf(_("Continuing in background, pid %d.\n"), (int) pid);
+		wget_printf(_("Continuing in background, pid %d.\n"), (int) pid);
 		if (logfile_changed)
-			printf(_("Output will be written to %s.\n"), config.logfile);
+			wget_printf(_("Output will be written to %s.\n"), config.logfile);
 
 		exit(EXIT_STATUS_NO_ERROR);
 	}
