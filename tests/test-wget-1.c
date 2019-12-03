@@ -477,6 +477,32 @@ int main(void)
 			{	NULL } },
 		0);
 
+	// test -c with existing empty file
+	wget_test(
+		WGET_TEST_OPTIONS, "-c",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, "" },
+			{	NULL } },
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{	NULL } },
+		0);
+
+	// test -c with existing complete file
+	wget_test(
+		WGET_TEST_OPTIONS, "-c",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{	NULL } },
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{	NULL } },
+		0);
+
 	// test --chunk-size, new file
 	wget_test(
 		WGET_TEST_OPTIONS, "--chunk-size=3",
