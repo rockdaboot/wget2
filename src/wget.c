@@ -3305,7 +3305,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 	// Load partial content
 	if (partial_content) {
 		long long size = get_file_size(unique[0] ? unique : fname);
-		if (size > 0) {
+		if (size >= 0) {
 			fd = open_unique(fname, O_RDONLY | O_BINARY, 0, multiple, unique, sizeof(unique));
 			if (fd >= 0) {
 				size_t rc;
@@ -3724,7 +3724,7 @@ static wget_http_request *http_create_request(const wget_iri *iri, JOB *job)
 
 		if (config.continue_download) {
 			long long file_size = get_file_size(local_filename);
-			if (file_size > 0)
+			if (file_size >= 0)
 				wget_http_add_header_printf(req, "Range", "bytes=%lld-", file_size);
 		}
 
