@@ -551,7 +551,7 @@ void plugin_db_forward_url_verdict_free(struct plugin_db_forward_url_verdict *ve
 }
 
 // Forwards downloaded file to interested plugins
-int plugin_db_forward_downloaded_file(const wget_iri *iri, uint64_t size, const char *filename, const void *data,
+int plugin_db_forward_downloaded_file(const wget_iri *iri, int64_t size, const char *filename, const void *data,
 		wget_vector *recurse_iris)
 {
 	int ret = 1;

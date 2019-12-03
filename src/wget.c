@@ -2042,9 +2042,8 @@ static void process_response(wget_http_response *resp)
 			&& (!config.level || job->level < config.level + config.page_requisites) ? 1 : 0;
 		if (process_decision) {
 			wget_vector *recurse_iris = NULL;
-			int n_recurse_iris = 0;
 			const void *data = NULL;
-			uint64_t size;
+			int64_t size;
 			const char *filename;
 
 			if (config.spider || (config.recursive && config.output_document))
@@ -2057,7 +2056,7 @@ static void process_response(wget_http_response *resp)
 			else
 				size = resp->content_length;
 
-			if ((resp->code == 200 || resp->code == 206) && resp->body && resp->body->length == size)
+			if ((resp->code == 200 || resp->code == 206) && resp->body && (int64_t) resp->body->length == size)
 				data = resp->body->data;
 
 			if (recurse_decision)
@@ -2066,9 +2065,9 @@ static void process_response(wget_http_response *resp)
 			process_decision = plugin_db_forward_downloaded_file(job->iri, size > 0 ? size : 0, filename, data, recurse_iris);
 
 			if (recurse_decision) {
-				n_recurse_iris = wget_vector_size(recurse_iris);
-				for (int i = 0; i < n_recurse_iris; i++) {
+				for (int i = 0; i < wget_vector_size(recurse_iris); i++) {
 					wget_iri *iri = (wget_iri *) wget_vector_get(recurse_iris, i);
+
 					queue_url_from_remote(job, "utf-8", iri->uri, 0);
 					wget_iri_free_content(iri);
 				}

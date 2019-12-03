@@ -95,7 +95,7 @@ void plugin_db_forward_url_verdict_free(struct plugin_db_forward_url_verdict *ve
 
 // Forwards downloaded file to interested plugins
 // Returns 0 if wget must not post-process the file, 1 otherwise
-int plugin_db_forward_downloaded_file(const wget_iri *iri, uint64_t size, const char *filename, const void *data,
+int plugin_db_forward_downloaded_file(const wget_iri *iri, int64_t size, const char *filename, const void *data,
 		wget_vector *recurse_iris);
 
 // Sends 'finalize' signal to all plugins and unloads all plugins
