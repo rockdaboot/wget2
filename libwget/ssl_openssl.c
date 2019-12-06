@@ -31,6 +31,13 @@
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
 
+#ifdef _WIN32
+#  include <w32sock.h>
+#else
+#  define FD_TO_SOCKET(x) (x)
+#  define SOCKET_TO_FD(x) (x)
+#endif
+
 #ifdef LIBRESSL_VERSION_NUMBER
   #ifndef TLS_MAX_VERSION
     #ifndef TLS1_3_VERSION
@@ -824,7 +831,7 @@ int wget_ssl_open(wget_tcp *tcp)
 		wget_ssl_init();
 
 	/* Initiate a new TLS connection from an existing OpenSSL context */
-	if (!(ssl = SSL_new(_ctx)) || !SSL_set_fd(ssl, tcp->sockfd)) {
+	if (!(ssl = SSL_new(_ctx)) || !SSL_set_fd(ssl, FD_TO_SOCKET(tcp->sockfd))) {
 		retval = WGET_E_UNKNOWN;
 		goto bail;
 	}
@@ -964,7 +971,7 @@ static int ssl_transfer(int want,
 		return 0;
 	if ((ssl = session) == NULL)
 		return WGET_E_INVALID;
-	if ((fd = SSL_get_fd(ssl)) < 0)
+	if ((fd = SOCKET_TO_FD(SSL_get_fd(ssl))) < 0)
 		return WGET_E_UNKNOWN;
 
 	/* SSL_read() and SSL_write() take ints, so we'd rather play safe here */
