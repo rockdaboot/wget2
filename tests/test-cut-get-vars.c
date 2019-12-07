@@ -109,5 +109,48 @@ int main(void)
 			{	NULL } },
 		0);
 
+	/* test recursive --cut-file-get-vars with directories
+	 *
+	 * There is only *one* page2.html though 'page2.html?cut=1' and 'page2.html?cut=2'
+	 * have been downloaded. This is inherited behavior from --recursive and might be
+	 * unexpected.
+	 */
+	wget_test(
+		WGET_TEST_OPTIONS, "-nH -r --cut-file-get-vars",
+		WGET_TEST_REQUEST_URL, "page1.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ "page2.html", urls[3].body },
+			{ "subdir/page3.html", urls[5].body },
+			{	NULL } },
+		0);
+
+	/* test recursive --cut-file-get-vars --cut-url-get-vars with directories
+	 *
+	 * There ? query part is cut before downloading. So we see only see downloads of
+	 * 'page2.html' and 'subdir/page3.html'.
+	 */
+	wget_test(
+		WGET_TEST_OPTIONS, "-nH -r --cut-file-get-vars --cut-url-get-vars",
+		WGET_TEST_REQUEST_URL, "page1.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ "page2.html", urls[1].body },
+			{ "subdir/page3.html", urls[4].body },
+			{	NULL } },
+		0);
+
+	// test simple --cut-file-get-vars
+	wget_test(
+		WGET_TEST_OPTIONS, "-nH --cut-file-get-vars",
+		WGET_TEST_REQUEST_URL, "subdir/page3.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "page3.html", urls[4].body },
+			{	NULL } },
+		0);
+
 	exit(EXIT_SUCCESS);
 }
