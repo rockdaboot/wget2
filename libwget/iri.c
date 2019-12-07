@@ -1288,7 +1288,7 @@ char *wget_iri_get_query_as_filename(const wget_iri *iri, wget_buffer *buf, cons
  * If \p encoding is provided, this function will try to convert the path (which is originally
  * in UTF-8) to that encoding.
  */
-char *wget_iri_get_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding)
+char *wget_iri_get_basename(const wget_iri *iri, wget_buffer *buf, const char *encoding)
 {
 	if (iri->path) {
 		char *fname;

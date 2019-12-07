@@ -127,7 +127,7 @@ static const char * get_local_filename_real(const wget_iri *iri)
 		if (config.cut_file_get_vars)
 			fname = wget_iri_get_path(iri, &buf, config.local_encoding);
 		else
-			fname = wget_iri_get_filename(iri, &buf, config.local_encoding);
+			fname = wget_iri_get_basename(iri, &buf, config.local_encoding);
 	}
 
 	// do the filename escaping here

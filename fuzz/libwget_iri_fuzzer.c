@@ -59,7 +59,7 @@ static void test(char *in, size_t len, const char *encoding)
 		wget_iri_get_escaped_resource(iri, &buf);
 		wget_iri_get_path(iri, &buf, encoding);
 		wget_iri_get_query_as_filename(iri, &buf, encoding);
-		wget_iri_get_filename(iri, &buf, encoding);
+		wget_iri_get_basename(iri, &buf, encoding);
 		wget_iri_get_connection_part(iri, &buf);
 	}
 
