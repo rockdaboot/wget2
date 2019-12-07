@@ -1288,7 +1288,7 @@ char *wget_iri_get_query_as_filename(const wget_iri *iri, wget_buffer *buf, cons
  * If \p encoding is provided, this function will try to convert the path (which is originally
  * in UTF-8) to that encoding.
  */
-char *wget_iri_get_basename(const wget_iri *iri, wget_buffer *buf, const char *encoding)
+char *wget_iri_get_basename(const wget_iri *iri, wget_buffer *buf, const char *encoding, int flags)
 {
 	if (iri->path) {
 		char *fname;
@@ -1320,7 +1320,10 @@ char *wget_iri_get_basename(const wget_iri *iri, wget_buffer *buf, const char *e
 	if ((buf->length == 0 || buf->data[buf->length - 1] == '/') && default_page)
 		wget_buffer_memcat(buf, default_page, default_page_length);
 
-	return wget_iri_get_query_as_filename(iri, buf, encoding);
+	if (flags & WGET_IRI_WITH_QUERY)
+		return wget_iri_get_query_as_filename(iri, buf, encoding);
+
+	return buf->data;
 }
 
 // escaping: see https://tools.ietf.org/html/rfc2396#2 following (especially 2.4.2)

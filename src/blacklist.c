@@ -125,9 +125,9 @@ static const char * get_local_filename_real(const wget_iri *iri)
 			fname = wget_iri_get_query_as_filename(iri, &buf, config.local_encoding);
 	} else {
 		if (config.cut_file_get_vars)
-			fname = wget_iri_get_path(iri, &buf, config.local_encoding);
+			fname = wget_iri_get_basename(iri, &buf, config.local_encoding, 0); // without query part
 		else
-			fname = wget_iri_get_basename(iri, &buf, config.local_encoding);
+			fname = wget_iri_get_basename(iri, &buf, config.local_encoding, WGET_IRI_WITH_QUERY);
 	}
 
 	// do the filename escaping here

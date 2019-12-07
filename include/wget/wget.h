@@ -1170,6 +1170,9 @@ typedef enum {
 	WGET_IRI_SCHEME_HTTPS = 1
 } wget_iri_scheme;
 
+// flags for wget_iri_get_basename()
+#define WGET_IRI_WITH_QUERY  1
+
 /**
  * \ingroup libwget-iri
  *
@@ -1323,7 +1326,7 @@ WGETAPI char *
 WGETAPI char *
 	wget_iri_get_query_as_filename(const wget_iri *iri, wget_buffer *buf, const char *encoding) WGET_GCC_NONNULL((1,2));
 WGETAPI char *
-	wget_iri_get_basename(const wget_iri *iri, wget_buffer *buf, const char *encoding) WGET_GCC_NONNULL((1,2));
+	wget_iri_get_basename(const wget_iri *iri, wget_buffer *buf, const char *encoding, int flags) WGET_GCC_NONNULL((1,2));
 WGETAPI wget_iri_scheme
 	wget_iri_set_scheme(wget_iri *iri, wget_iri_scheme scheme);
 WGETAPI const char * NULLABLE
