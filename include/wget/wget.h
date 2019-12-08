@@ -1754,7 +1754,7 @@ typedef struct {
 
 typedef struct {
 	wget_vector
-		*uris; //!< list of found URLs (entries: wget_html_parsed_url_t)
+		*uris; //!< list of found URLs (entries: wget_html_parsed_url)
 	const char *
 		encoding; //!< the charset encoding set by the parsed document or NULL if none
 	wget_string
@@ -2444,9 +2444,9 @@ typedef struct {
 	const char
 		*name;    //!< filename
 	wget_vector
-		*mirrors, //!< mirrors that provide the file (element: wget_metalink_mirror_t)
-		*hashes,  //!< checksums of complete file (element: wget_metalink_hash_t)
-		*pieces;  //!< checksums of smaller pieces of the file (element: wget_metalink_piece_t)
+		*mirrors, //!< mirrors that provide the file (element: wget_metalink_mirror)
+		*hashes,  //!< checksums of complete file (element: wget_metalink_hash)
+		*pieces;  //!< checksums of smaller pieces of the file (element: wget_metalink_piece)
 	off_t
 		size;     //!< total size of the file
 } wget_metalink;
