@@ -1292,6 +1292,12 @@ static const struct optionw options[] = {
 		  "(default: automatic)\n"
 		}
 	},
+	{ "bind-interface", &config.bind_interface, parse_string, 1, 0,
+		SECTION_DOWNLOAD,
+		{ "Bind sockets to the input Network Interface.\n",
+		  "(default: automatic)\n"
+		}
+	},
 	{ "body-data", &config.body_data, parse_string, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Data to be sent in a request.\n"
@@ -3595,6 +3601,8 @@ int init(int argc, const char **argv)
 	wget_tcp_set_tls_false_start(NULL, config.tls_false_start);
 	if (!config.dont_write) // fuzzing mode, try to avoid real network access
 		wget_tcp_set_bind_address(NULL, config.bind_address);
+	if (config.bind_interface)
+		wget_tcp_set_bind_interface(NULL, config.bind_interface);
 	if (config.inet4_only)
 		wget_tcp_set_family(NULL, WGET_NET_FAMILY_IPV4);
 	else if (config.inet6_only)
@@ -3697,6 +3705,7 @@ void deinit(void)
 	xfree(config.accept_regex);
 	xfree(config.base_url);
 	xfree(config.bind_address);
+	xfree(config.bind_interface);
 	xfree(config.body_data);
 	xfree(config.body_file);
 	xfree(config.ca_cert);

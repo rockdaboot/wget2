@@ -43,7 +43,8 @@ struct wget_tcp_st {
 		connect_addrinfo; // needed for TCP_FASTOPEN delayed connect
 	const char
 		*ssl_hostname, // if set, do SSL hostname checking
-		*ip;
+		*ip,
+		*bind_interface;
 	wget_dns
 		*dns;
 	int

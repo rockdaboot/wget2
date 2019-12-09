@@ -369,6 +369,13 @@ Go to background immediately after startup. If no output file is specified via t
   When making client TCP/IP connections, bind to ADDRESS on the local machine.  ADDRESS may be specified as a hostname or IP
   address.  This option can be useful if your machine is bound to multiple IPs.
 
+### `--bind-interface=INTERFACE`
+
+  When making client TCP/IP connections, bind to INTERFACE on the local machine. INTERFACE may be specified as the name
+  for a Network Interface.  This option can be useful if your machine has multiple Network Interfaces.
+  However, the option works only when wget2 is run with elevated privileges
+  (On GNU/Linux: root / sudo or `sudo setcap cap_net_raw+ep <path to wget|wget2>`).
+
 ### `-t`, `--tries=number`
 
   Set number of tries to number. Specify 0 or inf for infinite retrying.  The default is to retry 20 times, with the exception

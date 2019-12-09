@@ -78,6 +78,7 @@ struct config {
 		*local_encoding,  // encoding of the environment and file system
 		*remote_encoding, // encoding of remote files (if not specified in Content-Type HTTP header or in document itself)
 		*bind_address,
+		*bind_interface,
 		*input_file,
 		*base_url,
 		*default_page,

@@ -227,6 +227,7 @@ WGET_BEGIN_DECLS
 #define WGET_NET_FAMILY_EXCLUSIVE 1016
 #define WGET_NET_FAMILY_PREFERRED 1017
 #define WGET_TCP_FASTFORWARD  1018
+#define WGET_BIND_INTERFACE  1019
 
 #define WGET_HTTP_URL                   2000
 #define WGET_HTTP_URL_ENCODING          2001
@@ -1939,6 +1940,8 @@ WGETAPI void
 	wget_tcp_set_protocol(wget_tcp *tcp, int protocol);
 WGETAPI void
 	wget_tcp_set_bind_address(wget_tcp *tcp, const char *bind_address);
+WGETAPI void
+	wget_tcp_set_bind_interface(wget_tcp *tcp, const char *bind_interface);
 WGETAPI int
 	wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port);
 WGETAPI int

@@ -163,6 +163,9 @@ void wget_global_init(int first_key, ...)
 		case WGET_NET_FAMILY_PREFERRED:
 			wget_tcp_set_preferred_family(NULL, va_arg(args, int));
 			break;
+		case WGET_BIND_INTERFACE:
+			wget_tcp_set_bind_interface(NULL, va_arg(args, const char *));
+			break;
 		default:
 			wget_thread_mutex_unlock(_mutex);
 			wget_error_printf(_("%s: Unknown option %d"), __func__, key);
