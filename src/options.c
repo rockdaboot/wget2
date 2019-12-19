@@ -346,7 +346,7 @@ static int parse_numbytes(option_t opt, const char *val, WGET_GCC_UNUSED const c
 			return -1;
 		}
 
-		*((long long *)opt->var) = num > LLONG_MAX ? LLONG_MAX : (long long) num;
+		*((long long *)opt->var) = (long long) num > LLONG_MAX ? LLONG_MAX : (long long) num;
 	}
 
 	return 0;
