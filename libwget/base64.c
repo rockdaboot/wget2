@@ -105,7 +105,7 @@ size_t wget_base64_decode(char *dst, const char *src, size_t n)
 	int extra;
 
 	// trim '=' at the end
-	while (n > 0 && !isbase64(usrc[n - 1]))
+	while (n > 0 && !isbase64(src[n - 1]))
 		n--;
 
 	extra = n & 3;
