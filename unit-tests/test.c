@@ -934,7 +934,7 @@ static void test_iri_relative_to_absolute(void)
 		const struct iri_test_data *t = &test_data[it];
 
 		base = wget_iri_parse(t->base, "utf-8");
-		wget_iri_relative_to_abs(base, t->relative, -1, &uri_buf);
+		wget_iri_relative_to_abs(base, t->relative, (size_t) -1, &uri_buf);
 
 		if (!strcmp(uri_buf.data, t->result))
 			ok++;
