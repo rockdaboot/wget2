@@ -113,7 +113,7 @@ static void convert_dec_fast(wget_buffer *buf, int arg)
 
 static void convert_dec(wget_buffer *buf, unsigned int flags, int field_width, int precision, long long arg)
 {
-	unsigned long long argu = arg;
+	unsigned long long argu = (unsigned long long) arg;
 	char str[32], minus = 0; // long enough to hold decimal long long
 	char *dst = str + sizeof(str) - 1;
 	unsigned char c;
@@ -476,13 +476,13 @@ size_t wget_buffer_vprintf_append(wget_buffer *buf, const char *fmt, va_list arg
 		if (*p == 'd' || *p == 'i') {
 			convert_dec(buf, flags | FLAG_SIGNED | FLAG_DECIMAL, field_width, precision, arg);
 		} else if (*p == 'u') {
-			convert_dec(buf, flags | FLAG_DECIMAL, field_width, precision, argu);
+			convert_dec(buf, flags | FLAG_DECIMAL, field_width, precision, (long long) argu);
 		} else if (*p == 'x') {
-			convert_dec(buf, flags | FLAG_HEXLO, field_width, precision, argu);
+			convert_dec(buf, flags | FLAG_HEXLO, field_width, precision, (long long) argu);
 		} else if (*p == 'X') {
-			convert_dec(buf, flags | FLAG_HEXUP, field_width, precision, argu);
+			convert_dec(buf, flags | FLAG_HEXUP, field_width, precision, (long long) argu);
 		} else if (*p == 'o') {
-			convert_dec(buf, flags | FLAG_OCTAL, field_width, precision, argu);
+			convert_dec(buf, flags | FLAG_OCTAL, field_width, precision, (long long) argu);
 		} else {
 			/*
 			 * This is an unknown conversion specifier,
