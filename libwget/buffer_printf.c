@@ -43,14 +43,14 @@
  */
 
 /* \cond _hide_internal_symbols */
-#define FLAG_ZERO_PADDED   1
-#define FLAG_LEFT_ADJUST   2
-#define FLAG_ALTERNATE     4
-#define FLAG_SIGNED        8
-#define FLAG_DECIMAL      16
-#define FLAG_OCTAL        32
-#define FLAG_HEXLO        64
-#define FLAG_HEXUP       128
+#define FLAG_ZERO_PADDED   1U
+#define FLAG_LEFT_ADJUST   2U
+#define FLAG_ALTERNATE     4U
+#define FLAG_SIGNED        8U
+#define FLAG_DECIMAL      16U
+#define FLAG_OCTAL        32U
+#define FLAG_HEXLO        64U
+#define FLAG_HEXUP       128U
 /* \endcond */
 
 static void copy_string(wget_buffer *buf, unsigned int flags, int field_width, int precision, const char *arg)
