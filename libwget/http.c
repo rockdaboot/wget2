@@ -1104,7 +1104,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 			end += 2;
 
 			// now p points to chunk-size (hex)
-			chunk_size = strtoll(p, NULL, 16);
+			chunk_size = (size_t) strtoll(p, NULL, 16);
 			// debug_printf("chunk size is %zu\n", chunk_size);
 			if (chunk_size == 0) {
 				// now read 'trailer CRLF' which is '*(entity-header CRLF) CRLF'
