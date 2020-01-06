@@ -1760,7 +1760,7 @@ static int process_response_header(wget_http_response *resp)
 
 		wget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
-		wget_iri_relative_to_abs(iri, resp->location, -1, &uri_buf);
+		wget_iri_relative_to_abs(iri, resp->location, (size_t) -1, &uri_buf);
 
 		if (uri_buf.length)
 			queue_url_from_remote(job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION);
