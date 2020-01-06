@@ -234,7 +234,7 @@ static ssize_t _callback (void *cls, uint64_t pos, char *buf, size_t buf_size)
 		(struct ResponseContentCallbackParam *)cls;
 
 	if (pos >= param->response_size)
-		return MHD_CONTENT_READER_END_OF_STREAM;
+		return (ssize_t) MHD_CONTENT_READER_END_OF_STREAM;
 
 	// divide data into two chunks
 	buf_size = (param->response_size / 2) + 1;
