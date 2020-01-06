@@ -268,21 +268,43 @@ fi
 
 if test "$gl_cc_sanitize_ubsan" = yes; then
   gl_WARN_ADD([-fsanitize=undefined])
-  gl_WARN_ADD([-fno-sanitize-recover=undefined])
+  gl_WARN_ADD([-fsanitize=bool])
+  gl_WARN_ADD([-fsanitize=alignment])
+  gl_WARN_ADD([-fsanitize=null])
+  gl_WARN_ADD([-fsanitize=enum])
+  gl_WARN_ADD([-fsanitize=bounds-strict])
 
-  # additional clang options
+  # additional clang options, from OSS-Fuzz (20.12.2019)
   gl_WARN_ADD([-fsanitize=integer])
-  gl_WARN_ADD([-fsanitize=nullability])
-  gl_WARN_ADD([-fno-sanitize-recover=integer])
-  gl_WARN_ADD([-fno-sanitize-recover=nullability])
+  gl_WARN_ADD([-fsanitize=array-bounds])
+  gl_WARN_ADD([-fsanitize=builtin])
+  gl_WARN_ADD([-fsanitize=float-divide-by-zero])
+  gl_WARN_ADD([-fsanitize=function])
+  gl_WARN_ADD([-fsanitize=integer-divide-by-zero])
+  gl_WARN_ADD([-fsanitize=object-size])
+  gl_WARN_ADD([-fsanitize=return])
+  gl_WARN_ADD([-fsanitize=returns-nonnull-attribute])
+  gl_WARN_ADD([-fsanitize=shift])
+  gl_WARN_ADD([-fsanitize=signed-integer-overflow])
+  gl_WARN_ADD([-fsanitize=unsigned-integer-overflow])
+  gl_WARN_ADD([-fsanitize=unreachable])
+  gl_WARN_ADD([-fsanitize=vla-bound])
+  gl_WARN_ADD([-fsanitize=vptr])
 fi
 
 if test "$gl_cc_sanitize_asan" = yes; then
   gl_WARN_ADD([-fsanitize=address])
+  gl_WARN_ADD([-fsanitize=leak])
+  gl_WARN_ADD([-fsanitize=nonnull-attribute])
   gl_WARN_ADD([-fno-omit-frame-pointer])
 
   # additional clang option
   gl_WARN_ADD([-fsanitize-address-use-after-scope])
+fi
+
+if test "$gl_cc_sanitize_ubsan" = yes || test "$gl_cc_sanitize_asan" = yes; then
+  gl_WARN_ADD([-fno-sanitize-recover=all])
+  gl_WARN_ADD([-fsanitize-recover=unsigned-integer-overflow])
 fi
 
 if test "$gl_cc_sanitize_msan" = yes; then
