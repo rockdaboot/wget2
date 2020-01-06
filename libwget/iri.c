@@ -944,11 +944,11 @@ wget_iri *wget_iri_parse_base(const wget_iri *base, const char *url, const char 
 		char sbuf[256];
 
 		wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-		iri = wget_iri_parse(wget_iri_relative_to_abs(base, url, -1, &buf), encoding);
+		iri = wget_iri_parse(wget_iri_relative_to_abs(base, url, (size_t) -1, &buf), encoding);
 		wget_buffer_deinit(&buf);
 	} else {
 		// no base: just check URL for being an absolute URI
-		iri = wget_iri_parse(wget_iri_relative_to_abs(NULL, url, -1, NULL), encoding);
+		iri = wget_iri_parse(wget_iri_relative_to_abs(NULL, url, (size_t) -1, NULL), encoding);
 	}
 
 	return iri;
