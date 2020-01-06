@@ -54,7 +54,7 @@ struct wget_bitmap_st {
 	bitmap_type
 		bits;
 	bitmap_type
-		map[1];
+		map[];
 };
 
 /**
