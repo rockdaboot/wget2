@@ -72,7 +72,6 @@ Full+VPATH/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - contrib/spell-checker
-    - cp -a /usr/local/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
     - sed -i 's/dist-lzip//g' configure.ac
     - ./bootstrap --skip-po && touch .manywarnings
@@ -202,7 +201,6 @@ Minimal/Debian:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
-    - cp -a /usr/local/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - sed -i 's/dist-lzip//g' configure.ac
     - ./bootstrap --skip-po && touch .manywarnings
@@ -232,7 +230,6 @@ Sanitizers/Debian:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
   script:
-    - cp -a /usr/local/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - ./bootstrap --skip-po && touch .manywarnings
     - export CC="ccache clang"
@@ -258,7 +255,6 @@ Scan-Build/Debian:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
   script:
-    - cp -a /usr/local/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap --skip-po && touch .manywarnings
     - CC=clang ./configure $CONFIGURE_BASE_FLAGS
@@ -279,7 +275,6 @@ Valgrind/Debian:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
-    - cp -a /usr/local/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap --skip-po
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
@@ -303,7 +298,6 @@ Valgrind/i386:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_STABLEi386_BUILD
   script:
-    - cp -a /usr/local/gnulib .
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./bootstrap --skip-po
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests --without-gpgme
@@ -327,7 +321,6 @@ Simple/Fedora:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
-    - cp -a /usr/local/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - ./bootstrap --skip-po && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS
@@ -350,7 +343,6 @@ Alpine:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ALPINE_BUILD
   script:
-    - cp -a /usr/local/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT"
     - ./bootstrap --skip-po
     - ./configure $CONFIGURE_BASE_FLAGS
@@ -388,7 +380,6 @@ pages:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
-    - cp -a /usr/local/gnulib .
     - ./bootstrap --skip-po
     - export CFLAGS=$CFLAGS_DEFAULT
     - ./configure $CONFIGURE_BASE_FLAGS
@@ -419,7 +410,6 @@ MinGW64:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
   script:
-    - cp -a /usr/local/gnulib .
     - ./bootstrap --skip-po
     - cp pthread_sigmask.c.mingw lib/pthread_sigmask.c
     - export CC="ccache $PREFIX-gcc"
