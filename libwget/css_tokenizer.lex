@@ -26,8 +26,9 @@
 	#pragma GCC diagnostic ignored "-Wunused-parameter"
 	#pragma GCC diagnostic ignored "-Wsign-compare"
 	#pragma GCC diagnostic ignored "-Wswitch-default"
-	#pragma GCC diagnostic ignored "-Wunreachable-code" // clang
+	#pragma clang diagnostic ignored "-Wunreachable-code"
 	#pragma clang diagnostic ignored "-Wshorten-64-to-32"
+	#pragma clang diagnostic ignored "-Wextra-semi-stmt"
 	#ifndef __clang__
 		#pragma GCC diagnostic ignored "-Wsuggest-attribute=pure"
 	#endif
