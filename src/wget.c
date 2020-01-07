@@ -51,6 +51,7 @@
 #if defined __clang__
   // silence warnings in gnulib code
   #pragma clang diagnostic ignored "-Wshorten-64-to-32"
+  #pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
 #endif
 
 #include "timespec.h" // gnulib gettime()
