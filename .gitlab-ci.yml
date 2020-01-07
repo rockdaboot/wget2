@@ -230,15 +230,15 @@ Minimal/Debian:
 #  * check, syntax-check
 Sanitizers/Debian:
   stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
   script:
     - cp -a /usr/local/gnulib .
     - export CFLAGS="$CFLAGS_DEFAULT -Werror"
     - ./bootstrap --skip-po && touch .manywarnings
     - export CC="ccache clang"
-    - export UBSAN_OPTIONS=print_stacktrace=1
-    - export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-3.8/bin/llvm-symbolizer
+    - export UBSAN_OPTIONS=print_stacktrace=1:report_error_type=1
     - export LSAN_OPTIONS=suppressions="$PWD/tests/clang-asan-suppressions"
+    - export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer
     - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan
     - make -j$(nproc) check
   tags:
