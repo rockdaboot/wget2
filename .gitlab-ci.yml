@@ -72,7 +72,7 @@ Full+VPATH/Debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - contrib/spell-checker
-    - export CFLAGS=$CFLAGS_DEFAULT
+    - export CFLAGS="$CFLAGS_DEFAULT"
     - sed -i 's/dist-lzip//g' configure.ac
     - ./bootstrap --skip-po && touch .manywarnings
     - mkdir vpath && cd vpath
@@ -201,14 +201,15 @@ Minimal/Debian:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
-    - export CFLAGS="$CFLAGS_DEFAULT -Werror"
+    - export CFLAGS="$CFLAGS_DEFAULT"
     - sed -i 's/dist-lzip//g' configure.ac
     - ./bootstrap --skip-po && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --disable-doc
         --disable-xattr --without-gnutls --without-libpsl --without-libnghttp2 --without-bzip2
         --without-gpgme --without-zlib --without-lzma --without-brotlidec --without-libidn2
         --without-libidn --without-libpcre2 --without-libpcre --without-plugin-support
-    - make -j$(nproc) check
+    - make -j$(nproc) -C lib
+    - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
   tags:
     - shared
   except:
@@ -230,14 +231,15 @@ Sanitizers/Debian:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
   script:
-    - export CFLAGS="$CFLAGS_DEFAULT -Werror"
+    - export CFLAGS="$CFLAGS_DEFAULT"
     - ./bootstrap --skip-po && touch .manywarnings
     - export CC="ccache clang"
     - export UBSAN_OPTIONS=print_stacktrace=1:report_error_type=1
     - export LSAN_OPTIONS=suppressions="$PWD/tests/clang-asan-suppressions"
     - export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer
     - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan
-    - make -j$(nproc) check
+    - make -j$(nproc) -C lib
+    - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
   tags:
     - shared
   except:
@@ -255,7 +257,7 @@ Scan-Build/Debian:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
   script:
-    - export CFLAGS=$CFLAGS_DEFAULT
+    - export CFLAGS="$CFLAGS_DEFAULT"
     - ./bootstrap --skip-po && touch .manywarnings
     - CC=clang ./configure $CONFIGURE_BASE_FLAGS
     - make -C lib -j$(nproc)
@@ -275,7 +277,7 @@ Valgrind/Debian:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
-    - export CFLAGS=$CFLAGS_DEFAULT
+    - export CFLAGS="$CFLAGS_DEFAULT"
     - ./bootstrap --skip-po
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
     - make -j$(nproc)
@@ -298,7 +300,7 @@ Valgrind/i386:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_STABLEi386_BUILD
   script:
-    - export CFLAGS=$CFLAGS_DEFAULT
+    - export CFLAGS="$CFLAGS_DEFAULT"
     - ./bootstrap --skip-po
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests --without-gpgme
     - make -j$(nproc)
@@ -321,10 +323,11 @@ Simple/Fedora:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
   script:
-    - export CFLAGS="$CFLAGS_DEFAULT -Werror"
+    - export CFLAGS="$CFLAGS_DEFAULT"
     - ./bootstrap --skip-po && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS
-    - make -j$(nproc) check
+    - make -j$(nproc) -C lib
+    - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
   tags:
     - shared
   except:
@@ -381,7 +384,7 @@ pages:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
     - ./bootstrap --skip-po
-    - export CFLAGS=$CFLAGS_DEFAULT
+    - export CFLAGS="$CFLAGS_DEFAULT"
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check-coverage
     - make dist
