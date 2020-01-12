@@ -676,7 +676,8 @@ static int print_ocsp_cert_status(int status, int reason)
 struct _verification_flags {
 	unsigned int
 		verifying_ocsp,
-		ocsp_checked;
+		ocsp_checked,
+		cert_chain_size;
 	const char *hostname;
 	wget_hpkp_stats_result hpkp_stats;
 };
@@ -1004,6 +1005,9 @@ static int openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storectx
 	if (vflags->verifying_ocsp)
 		goto end;
 
+	/* Store the certificate chain size */
+	vflags->cert_chain_size = sk_X509_num(certs);
+
 	if (config.hpkp_cache) {
 		/* Check cert chain against HPKP database */
 		if (!check_cert_chain_for_hpkp(certs, vflags->hostname, &vflags->hpkp_stats)) {
@@ -1014,7 +1018,7 @@ static int openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storectx
 	}
 
 	if (config.ocsp && !vflags->ocsp_checked) {
-		/* Check cert chain agains OCSP */
+		/* Check cert chain against OCSP */
 		vflags->verifying_ocsp = 1;
 
 		if (!check_cert_chain_for_ocsp(certs, store, vflags->hostname)) {
@@ -1283,6 +1287,37 @@ static void ssl_set_alpn_selected_protocol(const SSL *ssl, wget_tcp *tcp, wget_t
 	}
 }
 
+static int get_tls_version(const SSL *ssl)
+{
+	int version = SSL_version(ssl);
+
+	/*
+	 * These values are mapped to the return values of GnuTLS' function
+	 * gnutls_protocol_get_version() - integers on a gnutls_protocol_t enum.
+	 *
+	 * See: https://gitlab.com/gnutls/gnutls/blob/master/lib/includes/gnutls/gnutls.h.in#L736
+	 */
+	switch (version) {
+	case SSL3_VERSION:
+		/* SSL v3 */
+		return 1;
+	case TLS1_VERSION:
+		/* TLS 1.0 */
+		return 2;
+	case TLS1_1_VERSION:
+		/* TLS 1.1 */
+		return 3;
+	case TLS1_2_VERSION:
+		/* TLS 1.2 */
+		return 4;
+	case TLS1_3_VERSION:
+		/* TLS 1.3 */
+		return 5;
+	default:
+		return -1;
+	}
+}
+
 /**
  * \param[in] tcp A TCP connection (see wget_tcp_init())
  * \return `WGET_E_SUCCESS` on success or an error code (`WGET_E_*`) on failure
@@ -1306,8 +1341,8 @@ int wget_ssl_open(wget_tcp *tcp)
 	wget_tls_stats_data stats = {
 		.alpn_protocol = NULL,
 		.version = -1,
-		.false_start = -1,
-		.tfo = -1,
+		.false_start = 0,
+		.tfo = 0,
 		.resumed = 0,
 		.http_protocol = WGET_PROTOCOL_HTTP_1_1,
 		.cert_chain_size = 0
@@ -1333,6 +1368,7 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	vflags->ocsp_checked = 0;
 	vflags->verifying_ocsp = 0;
+	vflags->cert_chain_size = 0;
 	vflags->hostname = tcp->ssl_hostname;
 
 	if (store_userdata_idx == -1) {
@@ -1420,9 +1456,6 @@ int wget_ssl_open(wget_tcp *tcp)
 	/* Success! */
 	debug_printf("Handshake completed%s\n", resumed ? " (resumed session)" : " (full handshake - not resumed)");
 
-	if (stats_p)
-		stats_p->resumed = resumed;
-
 	/* Save the current TLS session */
 	if (ssl_save_session(ssl, tcp->ssl_hostname))
 		debug_printf("TLS session saved in cache");
@@ -1434,9 +1467,16 @@ int wget_ssl_open(wget_tcp *tcp)
 		ssl_set_alpn_selected_protocol(ssl, tcp, stats_p);
 
 	if (stats_p) {
+		stats_p->version = get_tls_version(ssl);
 		stats_p->hostname = vflags->hostname;
+		stats_p->resumed = resumed;
+		stats_p->cert_chain_size = vflags->cert_chain_size;
 		tls_stats_callback(stats_p, tls_stats_ctx);
 		xfree(stats_p->alpn_protocol);
+
+#ifdef MSG_FASTOPEN
+		stats_p->tfo = wget_tcp_get_tcp_fastopen(tcp);
+#endif
 	}
 
 	tcp->hpkp = vflags->hpkp_stats;
