@@ -82,7 +82,7 @@ Full+VPATH/Debian:
     - mv wget2-*.gz ..
   tags:
     - shared
-    - docker
+    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -112,7 +112,7 @@ Debian/Testing:
     - make check -j$(nproc)
   tags:
     - shared
-    - docker
+    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -136,7 +136,7 @@ Debian/Unstable:
     - make check -j$(nproc)
   tags:
     - shared
-    - docker
+    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -159,7 +159,7 @@ Debian/WolfSSL:
     - make check -j$(nproc)
   tags:
     - shared
-    - docker
+    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -182,7 +182,7 @@ Debian/OpenSSL:
     - make check -j$(nproc)
   tags:
     - shared
-    - docker
+    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -424,7 +424,7 @@ MinGW64:
     - make check -j$(nproc) LOG_COMPILER=wine
   tags:
     - shared
-    - docker
+    - linux
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -451,7 +451,7 @@ Arch:
     - make check -j$(nproc)
   tags:
     - shared
-    - docker
+    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -528,7 +528,7 @@ Debian/HTTP2:
     - make code-coverage-capture
   tags:
     - shared
-    - docker
+    - linux
   allow_failure: true
   except:
     - coverity-scan@gnuwget/wget2
