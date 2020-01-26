@@ -106,7 +106,7 @@
 
   Print a help message describing all of Wget2's command-line options.
 
-### `-b`, `--background` [Not supported on Windows yet]
+### `-b`, `--background`
 
 Go to background immediately after startup. If no output file is specified via the `-o`, output is redirected to `wget-log`.
 

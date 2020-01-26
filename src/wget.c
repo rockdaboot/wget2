@@ -146,6 +146,7 @@ static void
 	css_parse(JOB *job, const char *data, size_t len, const char *encoding, const wget_iri *base),
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base),
 	fork_to_background(void);
+
 static unsigned int WGET_GCC_PURE
 	hash_url(const char *url);
 static int
@@ -3432,7 +3433,7 @@ static int get_header(wget_http_response *resp, void *context)
 #endif
 
 	bool metalink = config.metalink && resp->content_type
-	    && (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml") ||
+		&& (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml") ||
 		!wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml"));
 
 	if (ctx->job->head_first || (config.metalink && metalink)) {
@@ -4137,9 +4138,216 @@ static int set_file_metadata(const wget_iri *origin_iri, const wget_iri *referre
 }
 
 #ifdef _WIN32
+/*
+ * Construct the name for a named section (a.k.a. `file mapping') object.
+ * The returned string is dynamically allocated and needs to be xfree()'d.
+ */
+static char * make_section_name(DWORD pid)
+{
+	return wget_aprintf("gnu_wget_fake_fork_%lu", pid);
+}
+
+/*
+ * This structure is used to hold all the data that is exchanged between
+ * parent and child.
+ */
+struct fake_fork_info
+{
+	HANDLE event;
+	char lfilename[MAX_PATH + 1];
+	bool logfile_changed;
+};
+
+/*
+ * Determines if we are the child and if so performs the child logic.
+ * Return values:
+ *  < 0  error
+ *  0  parent
+ *  > 0  child
+ */
+static int fake_fork_child(void)
+{
+	HANDLE section, event;
+	struct fake_fork_info *info;
+	char *name;
+
+	name = make_section_name(GetCurrentProcessId());
+	section = OpenFileMapping(FILE_MAP_WRITE, FALSE, name);
+	xfree(name);
+
+	if (!section)
+		return 0;                   // We are the parent.
+
+	info = MapViewOfFile(section, FILE_MAP_WRITE, 0, 0, 0);
+	if (!info) {
+		CloseHandle (section);
+		return -1;
+	}
+
+	event = info->event;
+
+	info->logfile_changed = false;
+	if (!config.logfile && (!config.quiet || config.server_response) && !config.dont_write) {
+		config.logfile = wget_strdup(WGET_DEFAULT_LOGFILE);
+		// truncate logfile
+		int fd = open(config.logfile, O_WRONLY | O_TRUNC);
+
+		if (fd != -1) {
+			info->logfile_changed = true;
+			wget_snprintf(info->lfilename, sizeof(info->lfilename), "%s", config.logfile);
+			close(fd);
+		}
+	}
+
+	UnmapViewOfFile(info);
+	CloseHandle(section);
+
+	// Inform the parent that we've done our part.
+	if (!SetEvent(event))
+		return -1;
+
+	CloseHandle(event);
+	return 1;                     // We are the child.
+}
+
+/*
+ * Windows doesn't have anything similar to fork(). So this functionality
+ * is implemented by creating a new process with the exact same parameters
+ * and options as the current process and then exiting the current process.
+ */
+static void fake_fork(void)
+{
+	char exe[MAX_PATH + 1];
+	DWORD exe_len, le;
+	SECURITY_ATTRIBUTES sa;
+	HANDLE section, event, h[2];
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	struct fake_fork_info *info;
+	char *name;
+	BOOL rv;
+
+	section = pi.hProcess = pi.hThread = NULL;
+
+	// Get the fully qualified name of our executable.  This is more reliable
+	// than using argv[0].
+	exe_len = GetModuleFileName(GetModuleHandle(NULL), exe, sizeof(exe));
+	if (!exe_len || (exe_len >= sizeof(exe)))
+		return;
+
+	sa.nLength = sizeof(sa);
+	sa.lpSecurityDescriptor = NULL;
+	sa.bInheritHandle = TRUE;
+
+	// Create an anonymous inheritable event object that starts out
+	// non-signaled.
+	event = CreateEvent(&sa, FALSE, FALSE, NULL);
+	if (!event)
+		return;
+
+	// Create the child process detached form the current console and in a
+	// suspended state.
+	memset(&(si), '\0', sizeof(si));
+	si.cb = sizeof(si);
+	rv = CreateProcess(exe, GetCommandLine(), NULL, NULL, TRUE,
+	                   CREATE_SUSPENDED | DETACHED_PROCESS,
+	                   NULL, NULL, &si, &pi);
+	if (!rv)
+		goto cleanup;
+
+	// Create a named section object with a name based on the process id of
+	// the child.
+	name = make_section_name(pi.dwProcessId);
+	section = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0,
+	                            sizeof(struct fake_fork_info), name);
+	le = GetLastError();
+	xfree(name);
+
+	// Fail if the section object already exists (should not happen).
+	if (!section || (le == ERROR_ALREADY_EXISTS)) {
+		rv = FALSE;
+		goto cleanup;
+	}
+
+	// Copy the event handle into the section object.
+	info = MapViewOfFile(section, FILE_MAP_WRITE, 0, 0, 0);
+	if (!info) {
+		rv = FALSE;
+		goto cleanup;
+	}
+
+	info->event = event;
+
+	UnmapViewOfFile(info);
+
+	// Start the child process.
+	rv = ResumeThread(pi.hThread);
+	if (!rv) {
+		TerminateProcess(pi.hProcess, (DWORD) -1);
+		goto cleanup;
+	}
+
+	// Wait for the child to signal to us that it has done its part.  If it
+	// terminates before signaling us it's an error.
+	h[0] = event;
+	h[1] = pi.hProcess;
+	rv = WAIT_OBJECT_0 == WaitForMultipleObjects(2, h, FALSE, 5 * 60 * 1000);
+	if (!rv)
+		goto cleanup;
+
+	info = MapViewOfFile(section, FILE_MAP_READ, 0, 0, 0);
+	if (!info) {
+		rv = FALSE;
+		goto cleanup;
+	}
+
+	// Ensure string is properly terminated.
+	if (info->logfile_changed && !memchr (info->lfilename, '\0', sizeof(info->lfilename))) {
+		rv = FALSE;
+		goto cleanup;
+	}
+
+	wget_printf(_("Continuing in background, pid %lu.\n"), pi.dwProcessId);
+	if (info->logfile_changed)
+		wget_printf(_("Output will be written to %s.\n"), info->lfilename);
+
+	UnmapViewOfFile(info);
+
+cleanup:
+
+	if (event)
+		CloseHandle(event);
+	if (section)
+		CloseHandle(section);
+	if (pi.hThread)
+		CloseHandle(pi.hThread);
+	if (pi.hProcess)
+		CloseHandle(pi.hProcess);
+
+	// We're the parent.  If all is well, terminate.
+	if (rv)
+		exit(EXIT_SUCCESS);
+
+	// We failed, return.
+}
 
 static void fork_to_background(void)
 {
+	int rv = fake_fork_child();
+	if (rv < 0) {
+		wget_fprintf(stderr, _("fake_fork_child() failed\n"));
+		abort ();
+	}
+	else if (rv == 0) {
+		// We're the parent.
+		fake_fork();
+
+		// If fake_fork() returns, it failed.
+		wget_fprintf(stderr, _("fake_fork() failed\n"));
+		abort();
+	}
+
+	// If we get here, we're the child.
 	return;
 }
 
