@@ -225,6 +225,8 @@ struct ResponseContentCallbackParam
 {
 	const char *response_data;
 	size_t response_size;
+	interrupt_response_mode_t interrupt_response_mode;
+	size_t interrupt_response_after_nbytes;
 };
 
 static ssize_t _callback (void *cls, uint64_t pos, char *buf, size_t buf_size)
@@ -245,6 +247,35 @@ static ssize_t _callback (void *cls, uint64_t pos, char *buf, size_t buf_size)
 
 	memcpy (buf, param->response_data + pos, size_to_copy);
 
+	return size_to_copy;
+}
+
+static ssize_t _callback_interruptable (void *cls, uint64_t pos, char *buf, size_t buf_size)
+{
+	size_t size_to_copy;
+	struct ResponseContentCallbackParam *const param =
+		(struct ResponseContentCallbackParam *)cls;
+
+	if (pos >= param->response_size)
+		return (ssize_t) MHD_CONTENT_READER_END_OF_STREAM;
+
+	if (buf_size <= (param->response_size - pos)) {
+		size_to_copy = buf_size;
+	} else {
+		size_to_copy = param->response_size - pos;
+	}
+
+	if (param->interrupt_response_mode != INTERRUPT_RESPONSE_DISABLED) {
+		if (pos >= param->interrupt_response_after_nbytes) {
+			return (ssize_t) MHD_CONTENT_READER_END_WITH_ERROR;
+		}
+
+		if (size_to_copy > (param->interrupt_response_after_nbytes - pos)) {
+			size_to_copy = param->interrupt_response_after_nbytes - pos;
+		}
+	}
+
+	memcpy (buf, param->response_data + pos, size_to_copy);
 	return size_to_copy;
 }
 
@@ -592,8 +623,19 @@ static int _answer_to_connection(
 					response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
 					ret = MHD_queue_response(connection, MHD_HTTP_RANGE_NOT_SATISFIABLE, response);
 				} else {
-					response = MHD_create_response_from_buffer(body_len,
-						(void *) (request_url->body + from_bytes), MHD_RESPMEM_MUST_COPY);
+					if (request_url->interrupt_response_mode != INTERRUPT_RESPONSE_DISABLED) {
+						struct ResponseContentCallbackParam *callback_param = wget_malloc(sizeof(struct ResponseContentCallbackParam));
+						callback_param->response_data = (void *) (request_url->body + from_bytes);
+						callback_param->response_size = body_len;
+						callback_param->interrupt_response_mode = request_url->interrupt_response_mode;
+						callback_param->interrupt_response_after_nbytes = request_url->interrupt_response_after_nbytes;
+
+						response = MHD_create_response_from_callback(body_len,
+								1024, &_callback_interruptable, callback_param, &_free_callback_param);
+					} else {
+						response = MHD_create_response_from_buffer(body_len,
+							(void *) (request_url->body + from_bytes), MHD_RESPMEM_MUST_COPY);
+					}
 					MHD_add_response_header(response, MHD_HTTP_HEADER_ACCEPT_RANGES, "bytes");
 					wget_snprintf(content_range, sizeof(content_range), "%zd-%zd/%zu", from_bytes, to_bytes, body_len);
 					MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_RANGE, content_range);
@@ -602,7 +644,19 @@ static int _answer_to_connection(
 					ret = MHD_queue_response(connection, MHD_HTTP_PARTIAL_CONTENT, response);
 				}
 			} else {
-				response = MHD_create_response_from_buffer(body_length, (void *) request_url->body, MHD_RESPMEM_MUST_COPY);
+				if (request_url->interrupt_response_mode != INTERRUPT_RESPONSE_DISABLED) {
+					struct ResponseContentCallbackParam *callback_param = wget_malloc(sizeof(struct ResponseContentCallbackParam));
+					callback_param->response_data = request_url->body;
+					callback_param->response_size = body_length;
+					callback_param->interrupt_response_mode = request_url->interrupt_response_mode;
+					callback_param->interrupt_response_after_nbytes = request_url->interrupt_response_after_nbytes;
+
+					response = MHD_create_response_from_callback(body_length,
+							1024, &_callback_interruptable, callback_param, &_free_callback_param);
+				} else {
+					response = MHD_create_response_from_buffer(body_length, (void *) request_url->body, MHD_RESPMEM_MUST_COPY);
+				}
+
 				ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 			}
 

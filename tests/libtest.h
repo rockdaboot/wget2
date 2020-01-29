@@ -78,6 +78,11 @@ extern "C" {
 // for OCSP testing
 #define WGET_TEST_OCSP_RESP_FILE 3003
 
+typedef enum {
+	INTERRUPT_RESPONSE_DISABLED = 0,
+	INTERRUPT_RESPONSE_DURING_BODY
+} interrupt_response_mode_t;
+
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 
 #define TEST_OPAQUE_STR "11733b200778ce33060f31c9af70a870ba96ddd4"
@@ -142,6 +147,11 @@ typedef struct {
 		auth_password;
 	size_t
 		body_len; // The length of the body in bytes. 0 means use strlen(body)
+
+	interrupt_response_mode_t
+		interrupt_response_mode;
+	size_t
+		interrupt_response_after_nbytes;
 
 	bool
 		https_only : 1,
