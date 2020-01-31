@@ -90,12 +90,15 @@ struct JOB {
 	unsigned long long
 		id, // each job an unique ID value
 		parent_id; // parent job id for recursive mode
+	long long
+		retry_ts; // timestamp of earliest retry in milliseconds
 	int
 		level, // current recursion level
 		redirection_level, // number of redirections occurred to create this job
 		auth_failure_count, // number of times server has returned a 401 response
 		mirror_pos, // where to look up the next (metalink) mirror to use
-		piece_pos; // where to look up the next (metalink) piece to download
+		piece_pos, // where to look up the next (metalink) piece to download
+		failures; // if failures reach config.tries, the job finally failed and is removed
 	bool
 		challenges_alloc : 1, // Indicate whether the challenges vector is owned by the JOB
 		inuse : 1, // if job is already in use, 'used_by' holds the thread id of the downloader

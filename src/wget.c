@@ -2311,15 +2311,6 @@ void *downloader_thread(void *p)
 		case ACTION_GET_RESPONSE:
 			resp = http_receive_response(downloader->conn);
 
-			if (config.http_retry_on_error && resp && resp->code != 200) {
-				wget_snprintf(http_code, sizeof(http_code), "%d", resp->code);
-				if (check_mime_list(config.http_retry_on_error, http_code)) {
-					print_status(downloader, "Got a HTTP Code %d. Retrying...", resp->code);
-					wget_http_free_request(&resp->req);
-					wget_http_free_response(&resp);
-				}
-			}
-
 			if (!resp) {
 				// likely that the other side closed the connection, try again
 				host_increase_failure(host);
@@ -2327,9 +2318,35 @@ void *downloader_thread(void *p)
 				break;
 			}
 
-			host_reset_failure(host);
-
 			job = resp->req->user_data;
+
+			if (resp->length_inconsistent && resp && resp->code == 200) {
+				if (config.tries && ++job->failures >= config.tries) {
+					print_status(downloader, "Unexpected body length %zu. Job reached max tries.", resp->content_length);
+					set_exit_status(EXIT_STATUS_NETWORK);
+				} else {
+					print_status(downloader, "Unexpected body length %zu. Retrying...", resp->content_length);
+					debug_printf("Removing %s\n", job->blacklist_entry->local_filename);
+					unlink(job->blacklist_entry->local_filename);
+					job->done = 0;
+					job->retry_ts = wget_get_timemillis() + job->failures * 1000;
+				}
+				goto next;
+			}
+			else if (config.http_retry_on_error && resp && resp->code != 200) {
+				if (config.tries && ++job->failures >= config.tries) {
+					print_status(downloader, "Got a HTTP Code %d. Job reached max tries.", resp->code);
+				} else {
+					wget_snprintf(http_code, sizeof(http_code), "%d", resp->code);
+					if (check_mime_list(config.http_retry_on_error, http_code)) {
+						print_status(downloader, "Got a HTTP Code %d. Retrying...", resp->code);
+						job->done = 0;
+						job->retry_ts = wget_get_timemillis() + job->failures * 1000;
+						set_exit_status(EXIT_STATUS_NETWORK);
+					}
+				}
+				goto next;
+			}
 
 			// general response check to see if we need further processing
 			if (process_response_header(resp) == 0) {
@@ -2340,6 +2357,9 @@ void *downloader_thread(void *p)
 				else
 					process_response(resp); // GET + POST request/response
 			}
+
+next:
+			host_reset_failure(host);
 
 			wget_http_free_request(&resp->req);
 			wget_http_free_response(&resp);
@@ -4014,6 +4034,7 @@ wget_http_response *http_receive_response(wget_http_connection *conn)
 
 	if (resp->length_inconsistent)
 		set_exit_status(EXIT_STATUS_PROTOCOL);
+
 	xfree(context);
 
 	return resp;
