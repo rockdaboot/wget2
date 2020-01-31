@@ -1654,8 +1654,7 @@ void wget_test(int first_key, ...)
 
 		wget_buffer_strcat(cmd, " 2>&1");
 
-		wget_info_printf("cmd=%s\n", cmd->data);
-		wget_error_printf("\n  Testing '%s'\n", cmd->data);
+		wget_error_printf("\n##### Testing '%s'\n", cmd->data);
 
 		// catch stdout and write to stderr so all output is in sync
 		FILE *pp;
@@ -1731,7 +1730,7 @@ void wget_test(int first_key, ...)
 				}
 
 				if (expected_files[it].timestamp && st.st_mtime != expected_files[it].timestamp)
-					wget_error_printf_exit("Unexpected timestamp '%s/%s' [%s]\n", tmpdir, fname, options);
+					wget_error_printf_exit("Unexpected timestamp '%s/%s' (%ld) [%s]\n", tmpdir, fname, st.st_mtime, options);
 			}
 		}
 
