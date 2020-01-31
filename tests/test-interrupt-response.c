@@ -40,10 +40,9 @@ int main(void)
 	static char data1_interrupted[INTERRUPT_AFTER_NBYTES + 1];
 	memset(data1_interrupted, '@', sizeof(data1_interrupted) - 1);
 
-	static char data2_interrupted[DUMMYDATA_SIZE + 1];
-	memset(data2_interrupted, '@', INTERRUPT_AFTER_NBYTES);
-	memset(data2_interrupted + INTERRUPT_AFTER_NBYTES, '-',
-				 sizeof(data2_interrupted) - INTERRUPT_AFTER_NBYTES - 1);
+	static char data12_merged[DUMMYDATA_SIZE + 1];
+	memcpy(data12_merged, data1, INTERRUPT_AFTER_NBYTES);
+	memcpy(data12_merged + INTERRUPT_AFTER_NBYTES, data2, INTERRUPT_AFTER_NBYTES);
 
 
 	wget_test_url_t urls[]={
@@ -79,6 +78,7 @@ int main(void)
 			.body = data1,
 			.headers = {
 				"Content-Type: application/octet-stream",
+				"Last-Modified: Sun, 09 Sep 2001 01:46:40 GMT", // =1000000000
 			},
 			.interrupt_response_mode = INTERRUPT_RESPONSE_DURING_BODY,
 			.interrupt_response_after_nbytes = INTERRUPT_AFTER_NBYTES
@@ -102,9 +102,9 @@ int main(void)
 
 	// Test interrupt connection immediately
 	wget_test(
-		WGET_TEST_OPTIONS, "",
+		WGET_TEST_OPTIONS, "--tries=2",
 		WGET_TEST_REQUEST_URL, "file2.bin",
-		WGET_TEST_EXPECTED_ERROR_CODE, 7,
+		WGET_TEST_EXPECTED_ERROR_CODE, 4,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "file2.bin", "" },
 			{	NULL } },
@@ -112,9 +112,10 @@ int main(void)
 
 	// test interrupting connection during headers transfer
 	wget_test(
-		WGET_TEST_OPTIONS, "",
+//		WGET_TEST_EXECUTABLE, "/usr/bin/wget",
+		WGET_TEST_OPTIONS, "--tries=2",
 		WGET_TEST_REQUEST_URL, "file3.bin",
-		WGET_TEST_EXPECTED_ERROR_CODE, 7,
+		WGET_TEST_EXPECTED_ERROR_CODE, 4,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "file3.bin", data1_interrupted },
 			{	NULL } },
@@ -125,26 +126,30 @@ int main(void)
 	urls[2].body = data2;
 
 	// test continue after interrupt
+	// Wget1.x fails here
 	wget_test(
-		WGET_TEST_OPTIONS, "-c",
+//		WGET_TEST_EXECUTABLE, "/usr/bin/wget -d",
+		WGET_TEST_OPTIONS, "-c --tries=2",
 		WGET_TEST_REQUEST_URL, "file3.bin",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
 			{ "file3.bin", data1_interrupted },
 			{	NULL } },
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "file3.bin", data2_interrupted },
+			{ "file3.bin", data12_merged },
 			{	NULL } },
 		0);
 
 	// Testing interrupting responses while timestamping is active
-	// Expect that timestamp of partially finished file will match server
+	// Expect that timestamp of partially finished file will match server minus one due to interruption
+	// Wget1.x leaves the partial file with a current timestamp (ignoring Last-Modified header)
 	wget_test(
-		WGET_TEST_OPTIONS, "-N",
+//		WGET_TEST_EXECUTABLE, "/usr/bin/wget",
+		WGET_TEST_OPTIONS, "-N --tries=2",
 		WGET_TEST_REQUEST_URL, "file4.bin",
-		WGET_TEST_EXPECTED_ERROR_CODE, 7,
+		WGET_TEST_EXPECTED_ERROR_CODE, 4,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "file4.bin", data1_interrupted, 1000000000 },
+			{ "file4.bin", data1_interrupted, 1000000000 - 1 },
 			{	NULL } },
 		0);
 
@@ -153,16 +158,32 @@ int main(void)
 	urls[3].body = data2;
 
 	// Testing continue interrupted response while timestamping is active
-	// Expect that file will be skipped
+	// Expect that file will be skipped due to "304 not modified" from server
 	wget_test(
+//		WGET_TEST_EXECUTABLE, "/usr/bin/wget",
 		WGET_TEST_OPTIONS, "-c -N",
 		WGET_TEST_REQUEST_URL, "file4.bin",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
-			{ "file4.bin", data1_interrupted, 1111111111 },
+			{ "file4.bin", data1_interrupted, 1000000000 },
 			{	NULL } },
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ "file4.bin", data1_interrupted, 1111111111 },
+			{ "file4.bin", data1_interrupted, 1000000000 },
+			{	NULL } },
+		0);
+
+	// Testing continue interrupted response while timestamping is active
+	// Expect that file will be appended/merged due to "206 Partial Content" from server
+	wget_test(
+//		WGET_TEST_EXECUTABLE, "/usr/bin/wget",
+		WGET_TEST_OPTIONS, "-c -N",
+		WGET_TEST_REQUEST_URL, "file4.bin",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{ "file4.bin", data1_interrupted, 1000000000 - 1 }, // 1s older than on server
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "file4.bin", data12_merged, 1000000000 },
 			{	NULL } },
 		0);
 
