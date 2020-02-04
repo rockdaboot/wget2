@@ -294,8 +294,11 @@ static const char *safe_ctime(time_t t, char *buf, size_t size)
 {
 	struct tm tm;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-y2k"
 	if (localtime_r(&t, &tm) && strftime(buf, size, "%c", &tm))
 		return buf;
+#pragma GCC diagnostic pop
 
 	return "[error]";
 }
