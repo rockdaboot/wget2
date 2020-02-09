@@ -242,6 +242,7 @@ Sanitizers/Debian:
     - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
   tags:
     - shared
+    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -264,6 +265,7 @@ Scan-Build/Debian:
     - scan-build -v --use-cc=clang -enable-checker valist,security,nullability --status-bugs -o scan-build make -j$(nproc)
   tags:
     - shared
+    - linux
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -284,6 +286,7 @@ Valgrind/Debian:
     - make check -j$(nproc)
   tags:
     - shared
+    - linux
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -307,6 +310,7 @@ Valgrind/i386:
     - make check -j$(nproc)
   tags:
     - shared
+    - linux
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -330,6 +334,7 @@ Simple/Fedora:
     - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
   tags:
     - shared
+    - linux
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -352,6 +357,7 @@ Alpine:
     - make -j$(nproc) check
   tags:
     - shared
+    - linux
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -402,6 +408,7 @@ pages:
     - mv wget2-*.gz public/wget2-latest.tar.gz
   tags:
     - shared
+    - linux
   artifacts:
     when: on_success
     paths:
@@ -487,6 +494,7 @@ Tarball:
     - make -j$(nproc)
   tags:
     - shared
+    - linux
   dependencies:
     - Full+VPATH/Debian
   except:
@@ -593,6 +601,7 @@ coverity:
       --form description="CI build"
   tags:
     - shared
+    - linux
   only:
     - coverity-scan@gnuwget/wget2
   artifacts:
