@@ -389,23 +389,40 @@ pages:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
   script:
+    - mkdir -p public
     - ./bootstrap --skip-po
     - export CFLAGS="$CFLAGS_DEFAULT"
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check-coverage
+
+# Tarball
     - make dist
-    - mkdir -p public
-    # Test suite coverage report
+    - mv wget2-*.gz public/wget2-latest.tar.gz
+
+# Test suite coverage report
+    - coverage=$(grep -m 1 'headerCovTableEntry[a-zA-Z].*[0-9]*' lcov/index.html|sed 's/^.*>\([0-9]\+\.[0-9]\+\).*/\1/');
+    - coverage=$(printf %.2f $coverage)
+    - inum=$(echo $coverage|cut -d'.' -f1)
+    - if [ -z "$inum" ]; then inum="0"; fi
+    - contrib/make-coverage-badge "coverage" "$coverage%"
+    - mv badge.svg public/coverage.svg
     - rm -rf public/coverage
     - mv lcov public/coverage
-    # Online Documentation
+
+# Online Documentation
     - rm -rf public/reference
     - mv docs/html public/reference
-    # Coverage report for all our fuzz corpora
+
+# Coverage report for all our fuzz corpora
     - make -j$(nproc) fuzz-coverage
+    - coverage=$(grep -m 1 'headerCovTableEntry[a-zA-Z].*[0-9]*' lcov/index.html|sed 's/^.*>\([0-9]\+\.[0-9]\+\).*/\1/');
+    - coverage=$(printf %.2f $coverage)
+    - inum=$(echo $coverage|cut -d'.' -f1)
+    - if [ -z "$inum" ]; then inum="0"; fi
+    - contrib/make-coverage-badge "fuzz-coverage" "$coverage%"
+    - mv badge.svg public/fuzz-coverage.svg
     - rm -rf public/fuzz-coverage
     - mv lcov public/fuzz-coverage
-    - mv wget2-*.gz public/wget2-latest.tar.gz
   tags:
     - shared
     - linux

@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+#
+# Copyright (C) 2019 Tim Ruehsen
+#
+#Permission is hereby granted, free of charge, to any person obtaining a
+#copy of this software and associated documentation files (the "Software"),
+#to deal in the Software without restriction, including without limitation
+#the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#and/or sell copies of the Software, and to permit persons to whom the
+#Software is furnished to do so, subject to the following conditions:
+#
+#The above copyright notice and this permission notice shall be included in
+#all copies or substantial portions of the Software.
+#
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#DEALINGS IN THE SOFTWARE.
+
+# Find the latest version at https://gitlab.com/rockdaboot/make-coverage-badge
+
+# Fill with defaults when no options are given
+text=${1:-coverage}
+coverage=${2:-0.00%}
+
+# translate '.xx' to '0.xx'
+inum=$(echo $coverage|cut -d'.' -f1)
+if [ -z "$inum" ]; then inum="0"; fi
+
+# calculate needed widths in pixels
+textwidth=$(($(echo -n "$text"|wc -m) * 7 + 6))
+numwidth=54
+totalwidth=$(($textwidth + $numwidth))
+
+# Select color depending on the percentage
+# https://www.w3.org/TR/SVG11/types.html#ColorKeywords
+if [ $inum -ge 90 ]; then
+#  color="lawngreen"
+  color="#4c1"
+elif [ $inum -ge 80 ]; then
+  color="yellow"
+elif [ $inum -ge 70 ]; then
+  color="orange"
+else
+  color="red"
+fi
+
+cat <<EOF >badge.svg
+<svg xmlns="http://www.w3.org/2000/svg" width="${totalwidth}" height="20">
+<linearGradient id="b" x2="0" y2="100%">
+<stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+<stop offset="1" stop-opacity=".1"/>
+</linearGradient>
+<mask id="a">
+<rect width="${totalwidth}" height="20" rx="3" fill="#fff"/>
+</mask>
+<g mask="url(#a)">
+<path fill="#555" d="M0 0h${textwidth}v20H0z"/>
+<path fill="${color}" d="M${textwidth} 0h${numwidth}v20H${textwidth}z"/>
+<path fill="url(#b)" d="M0 0h${totalwidth}v20H0z"/>
+</g>
+<g fill="#fff" text-anchor="middle" font-family="Verdana,DejaVu Sans,Geneva,sans-serif" font-size="11">
+<text x="$(($textwidth / 2))" y="15" fill="#010101" fill-opacity=".3">${text}</text>
+<text x="$(($textwidth / 2))" y="14">${text}</text>
+<text x="$(($textwidth + $numwidth / 2))" y="15" fill="#010101" fill-opacity=".3">${coverage}</text>
+<text x="$(($textwidth + $numwidth / 2))" y="14">${coverage}</text>
+</g>
+</svg>
+EOF
