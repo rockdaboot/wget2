@@ -1,4 +1,4 @@
-[![Build status](https://gitlab.com/gnuwget/wget2/badges/master/build.svg)](https://gitlab.com/gnuwget/wget2/pipelines)
+[![Build status](https://gitlab.com/gnuwget/wget2/badges/master/pipeline.svg)](https://gitlab.com/gnuwget/wget2/pipelines)
 [![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/wget2.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:wget2)
 [![Coverage status](https://gnuwget.gitlab.io/wget2/fuzz-coverage.svg)](https://gnuwget.gitlab.io/wget2/fuzz-coverage)
 [![Coverage status](https://gnuwget.gitlab.io/wget2/coverage.svg)](https://gnuwget.gitlab.io/wget2/coverage)
