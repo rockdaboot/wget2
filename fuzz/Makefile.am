@@ -34,7 +34,7 @@ WGET_TESTS = \
 if FUZZING
   bin_PROGRAMS = $(WGET_TESTS)
   LDADD += $(LIB_FUZZING_ENGINE)
-  AM_LDFLAGS = -no-install -all-static
+  AM_LDFLAGS = -no-install
 else
   AM_CPPFLAGS += -DTEST_RUN
   AM_TESTS_ENVIRONMENT = export VALGRIND_TESTS"=@VALGRIND_TESTS@";
