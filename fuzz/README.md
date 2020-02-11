@@ -4,18 +4,41 @@ These are fuzzers designed for use with `libFuzzer` or `afl`. They can
 be used to run on Google's OSS-Fuzz (https://github.com/google/oss-fuzz/).
 
 The convention used here is that the initial values for each parser fuzzer
-are taken from the $NAME.in directory.
+are taken from the $NAME.in directory ($NAME is the name of the fuzzer, e.g.
+'libwget_xml_parse_buffer_fuzzer').
 
 Crash reproducers from OSS-Fuzz are put into $NAME.repro directory for
 regression testing with top dir 'make check' or 'make check-valgrind'.
 
+The script `get_ossfuzz_corpora` downloads the corpora from OSS-Fuzz for
+the given fuzzer. It puts those files together with the local ones and performs
+a 'merge' step to remove superfluous corpora. The next step would be to add
+changed/new corpora to the git repository.
 
-# Running a fuzzer using clang
+Example:
+```
+./get_ossfuzz_corpora libwget_xml_parse_buffer_fuzzer
+git add libwget_xml_parse_buffer_fuzzer.in/*
+git commit -a -m "Update OSS-Fuzz corpora"
+(create a branch and push if something changed)
+(create a MR)
+```
+
+Since there are quite a few fuzzers now, you can update all their corpora
+in one step with `./get_all_corpora`. Do this from time to time to stay
+in sync with OSS-Fuzz. Whenever library code or fuzzers change, there might
+me new corpora after 1-2 days.
+
+
+# Running a fuzzer using clang and libFuzzer
 
 Use the following commands on top dir:
 ```
 export CC=clang
-export CFLAGS="-O1 -g -fno-omit-frame-pointer -gline-tables-only -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -fsanitize=undefined,integer,nullability -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-coverage=trace-pc-guard,trace-cmp"
+#export CFLAGS="-O1 -g -fno-omit-frame-pointer -gline-tables-only -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -fsanitize=undefined,integer,nullability,bool,alignment,null,enum,address,leak,nonnull-attribute -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-coverage=trace-pc-guard,trace-cmp"
+
+export CFLAGS="-O1 -fno-omit-frame-pointer -gline-tables-only -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -fsanitize=bool,array-bounds,float-divide-by-zero,function,integer-divide-by-zero,return,shift,signed-integer-overflow,vla-bound,vptr -fno-sanitize-recover=bool,array-bounds,float-divide-by-zero,function,integer-divide-by-zero,return,shift,signed-integer-overflow,vla-bound,vptr -fsanitize=fuzzer-no-link"
+
 export LIB_FUZZING_ENGINE="-lFuzzer -lstdc++"
 ./configure --enable-fuzzing --disable-doc --disable-manywarnings
 make clean
@@ -23,8 +46,9 @@ make -j$(nproc)
 cd fuzz
 
 # run libwget_xml_parse_buffer_fuzzer
-UBSAN_OPTIONS=print_stacktrace=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-7/bin/llvm-symbolizer \
-  ./run-clang.sh libwget_xml_parse_buffer_fuzzer
+export UBSAN_OPTIONS=print_stacktrace=1:report_error_type=1
+export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer
+./run-clang.sh libwget_xml_parse_buffer_fuzzer
 ```
 
 If you see a crash, then a crash corpora is written that can be used for further
