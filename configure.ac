@@ -228,6 +228,11 @@ if test -n "$WARN_CFLAGS"; then
   AC_SUBST([GNULIB_WARN_CFLAGS])
 fi
 
+AC_ARG_ENABLE([manylibs],
+  [AS_HELP_STRING([--disable-manylibs], [Generate small libraries of libwget functionality groups])],
+  [enable_manylibs=$enableval], [enable_manylibs=yes])
+AM_CONDITIONAL([ENABLE_MANYLIBS], [test "x$enable_manylibs" = xyes])
+
 AC_ARG_ENABLE([fuzzing],
   [AS_HELP_STRING([--enable-fuzzing], [Turn on fuzzing build (for developers)])],
   [enable_fuzzing=yes; AC_SUBST([LIB_FUZZING_ENGINE])], [enable_fuzzing=no; LIB_FUZZING_ENGINE=""])
@@ -923,6 +928,7 @@ AC_MSG_NOTICE([Summary of build options:
   LDFlags:            ${LDFLAGS}
   Libs:               ${LIBS}
   Library types:      shared=${enable_shared}, static=${enable_static}
+  Small libraries:    $enable_manylibs
   SSL/TLS support:    $with_ssl $ssl_enabled
   GZIP compression:   $with_zlib
   BZIP2 compression:  $with_bzip2

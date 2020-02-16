@@ -42,6 +42,24 @@ libwget_la_LIBADD = libcsstokenizer.la $(libwget_libadd)
 # include ABI version information
 libwget_la_LDFLAGS = -no-undefined -version-info $(LIBWGET_SO_VERSION)
 
+# convenience library to avoid warnings about unused macros
+noinst_LTLIBRARIES = libcsstokenizer.la
+libcsstokenizer_la_SOURCES = css_tokenizer.c css_tokenizer.lex
+libcsstokenizer_la_CFLAGS = $(AM_CFLAGS)
+libcsstokenizer_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
+
+# gnulib needs config.h included before any gnulib header files
+css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
+	$(AM_V_GEN)
+	$(AM_V_at)$(LEX) -w -o $@ $(srcdir)/css_tokenizer.lex
+	$(AM_V_at)$(SED) 's/fprintf/wget_fprintf/g' $@ >$@.tmp
+	$(AM_V_at)mv $@.tmp $@
+	$(AM_V_at)rm -f lex.yy.c
+
+DISTCLEANFILES = css_tokenizer.c
+
+if ENABLE_MANYLIBS
+
 ######## libwget alloc ########
 lib_LTLIBRARIES += libwget_alloc.la
 libwget_alloc_la_SOURCES =  xalloc.c
@@ -196,22 +214,6 @@ libwget_css_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_css_la_LIBADD = libcsstokenizer.la libwget_iri.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
 libwget_css_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
 
-# convenience library to avoid warnings about unused macros
-noinst_LTLIBRARIES = libcsstokenizer.la
-libcsstokenizer_la_SOURCES = css_tokenizer.c css_tokenizer.lex
-libcsstokenizer_la_CFLAGS = $(AM_CFLAGS)
-libcsstokenizer_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
-
-# gnulib needs config.h included before any gnulib header files
-css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
-	$(AM_V_GEN)
-	$(AM_V_at)$(LEX) -w -o $@ $(srcdir)/css_tokenizer.lex
-	$(AM_V_at)$(SED) 's/fprintf/wget_fprintf/g' $@ >$@.tmp
-	$(AM_V_at)mv $@.tmp $@
-	$(AM_V_at)rm -f lex.yy.c
-
-DISTCLEANFILES = css_tokenizer.c
-
 ######## libwget progress ########
 lib_LTLIBRARIES += libwget_progress.la
 libwget_progress_la_SOURCES =  bar.c
@@ -351,3 +353,5 @@ test_linking_SOURCES = test_linking.c
 test_linking_CPPFLAGS = -I$(top_srcdir)/include/wget -I$(top_builddir)/include/wget
 test_linking_LDADD = libwget.la
 test_linking_LDFLAGS = -static -no-install
+
+endif # ENABLE_MANYLIBS
