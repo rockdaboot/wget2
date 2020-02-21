@@ -387,9 +387,10 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `-O`, `--output-document=file`
 
-  The documents will not be written to the appropriate files, but all will be concatenated together and written to file.  If -
-  is used as file, documents will be printed to standard output, disabling link conversion.  (Use ./- to print to a file
-  literally named -.)
+  The documents will not be written to the appropriate files, but all will be concatenated together and written to file.  If `-`
+  is used as file, documents will be printed to standard output, disabling link conversion. Use `./-` to print to a file
+  literally named `-`. To not get Wget2 status messages mixed with file content, use `-q` in combination with `-O-` (This is
+  different to how Wget 1.x behaves).
 
   Using -r or -p with -O may not work as you expect: Wget2 won't just download the first file to file and then
   download the rest to their normal names: all downloaded content will be placed in file.
