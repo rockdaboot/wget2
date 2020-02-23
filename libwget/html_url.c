@@ -42,6 +42,8 @@ typedef struct {
 		additional_tags;
 	wget_vector *
 		ignore_tags;
+	wget_string
+		download;
 	int
 		uri_index;
 	size_t
@@ -100,6 +102,8 @@ static void css_parse_uri(void *context, const char *url WGET_GCC_UNUSED, size_t
 	wget_strscpy(parsed_url->tag, ctx->css_dir, sizeof(parsed_url->tag));
 	parsed_url->url.p = (const char *) (ctx->html + ctx->css_start_offset + pos);
 	parsed_url->url.len = len;
+	parsed_url->download.p = NULL;
+	parsed_url->download.len = 0;
 
 	if (!res->uris)
 		res->uris = wget_vector_create(32, NULL);
@@ -119,8 +123,16 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 	// Also ,we are interested in ROBOTS e.g.
 	//   <META name="ROBOTS" content="NOINDEX, NOFOLLOW">
 	if ((flags & XML_FLG_BEGIN)) {
-		if ((*tag|0x20) == 'm' && !wget_strcasecmp_ascii(tag, "meta"))
+		if ((*tag|0x20) == 'a' && (tag[1] == 0 || !wget_strcasecmp_ascii(tag, "area"))) {
+			// The download attribute is only valid for 'a' and 'area' tags.
+			// S 4.6.5 in https://html.spec.whatwg.org/multipage/links.html#downloading-resources
+			ctx->uri_index = -1;
+			ctx->download.p = NULL;
+			ctx->download.len = 0;
+		}
+		else if ((*tag|0x20) == 'm' && !wget_strcasecmp_ascii(tag, "meta")) {
 			ctx->found_robots = ctx->found_content_type = 0;
+		}
 		else if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link")) {
 			ctx->link_inline = 0;
 			ctx->uri_index = -1;
@@ -222,6 +234,31 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 			}
 		}
 
+		if ((*tag|0x20) == 'a' && (tag[1] == 0 || !wget_strcasecmp_ascii(tag, "area"))
+			&& !wget_strcasecmp_ascii(attr, "download"))
+		{
+			if (!val)
+				return;
+
+			for (;len && c_isspace(*val); val++, len--); // skip leading spaces
+			for (;len && c_isspace(val[len - 1]); len--);  // skip trailing spaces
+			if (!len)
+				return;
+
+			// remember for later
+			ctx->download.p = val;
+			ctx->download.len = len;
+
+			if (ctx->uri_index >= 0) {
+				// href= came before download=
+				wget_html_parsed_url *url = wget_vector_get(res->uris, ctx->uri_index);
+				url->download.p = val;
+				url->download.len = len;
+			}
+
+			return;
+		}
+
 		// shortcut to avoid unneeded calls to bsearch()
 		int found = 0;
 
@@ -260,6 +297,8 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 					for (;len && c_isspace(*val); val++, len--); // skip leading spaces
 					for (p = val;len && !c_isspace(*val) && *val != ','; val++, len--); // find end of URL
 					if (p != val) {
+						url.download.p = NULL;
+						url.download.len = 0;
 						url.link_inline = ctx->link_inline;
 						wget_strscpy(url.attr, attr, sizeof(url.attr));
 						wget_strscpy(url.tag, tag, sizeof(url.tag));
@@ -273,6 +312,8 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 
 			} else {
 				// value is a single URL
+				url.download.p = ctx->download.p;
+				url.download.len = ctx->download.len;
 				url.link_inline = ctx->link_inline;
 				wget_strscpy(url.attr, attr, sizeof(url.attr));
 				wget_strscpy(url.tag, tag, sizeof(url.tag));

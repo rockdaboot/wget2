@@ -1749,6 +1749,8 @@ typedef struct {
 typedef struct {
 	wget_string
 		url; //!< URL within the parsed document (pointer and length)
+	wget_string
+		download; //!< Value of additional 'download' attribute, the name to be saved to disk
 	char
 		attr[16]; //!< name of the attribute containing the URL, e.g. 'href'
 	char
