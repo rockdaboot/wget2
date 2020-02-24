@@ -2811,17 +2811,15 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, const 
 			// but not any other.
 			if (baselen && (len <= baselen || wget_strncasecmp(line, base->uri, baselen))) {
 				info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)len, line);
-			} else if (len < 1024) {
-				char url[len + 1];
-
-				memcpy(url, line, len);
-				url[len] = 0;
-
-				queue_url_from_remote(job, encoding, url, 0);
 			} else {
-				char *url = wget_strmemdup(line, len);
+				char urlbuf[1024], *url;
+
+				url = wget_strmemcpy_a(urlbuf, sizeof(urlbuf), line, len);
+
 				queue_url_from_remote(job, encoding, url, 0);
-				xfree(url);
+
+				if (url != urlbuf)
+					xfree(url);
 			}
 		}
 	}
