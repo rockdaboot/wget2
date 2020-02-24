@@ -489,6 +489,10 @@ WGETAPI char * NULLABLE
 WGETAPI size_t
 	wget_strmemcpy(char *restrict s, size_t ssize, const void *restrict m, size_t n);
 
+LIBWGET_WARN_UNUSED_RESULT WGET_GCC_NONNULL_ALL
+WGETAPI void * NULLABLE
+	wget_strmemcpy_a(char *s, size_t ssize, const void *m, size_t n);
+
 /*
  * Base64 routines
  */

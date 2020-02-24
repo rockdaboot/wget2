@@ -1070,12 +1070,9 @@ int wget_http_parse_header_line(wget_http_response *resp, const char *name, size
 	char *value0;
 	int ret = WGET_E_SUCCESS;
 
-	if (valuelen < sizeof(valuebuf)) {
-		wget_strmemcpy(value0 = valuebuf, sizeof(valuebuf), value, valuelen);
-	} else {
-		if (!(value0 = wget_strmemdup(value, valuelen)))
-			return WGET_E_MEMORY;
-	}
+	value0 = wget_strmemcpy_a(valuebuf, sizeof(valuebuf), value, valuelen);
+	if (!value0)
+		return WGET_E_MEMORY;
 
 	switch (*name | 0x20) {
 	case ':':

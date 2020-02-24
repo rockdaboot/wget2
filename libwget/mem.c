@@ -130,4 +130,29 @@ size_t wget_strmemcpy(char *s, size_t ssize, const void *m, size_t n)
 	return n;
 }
 
+/**
+ * \param[out] s Buffer to hold the C string output
+ * \param[in] ssize Size of the output buffer
+ * \param[in] m Memory to read from
+ * \param[in] n Length of memory
+ * \return Pointer to destination (either \p s or a freshly allocated buffer)
+ *
+ * Convert the given memory region \p m with length \p n into a C string at \p s or at freshly allocated memory,
+ * if the space in \p s was not sufficient.
+ *
+ * If \p s was too small to hold \p n + 1 bytes, the result must be free'd after use, e.g.
+ *   if (res != s) wget_free(res);
+ */
+void *wget_strmemcpy_a(char *s, size_t ssize, const void *m, size_t n)
+{
+	if (n >= ssize) {
+		if (!(s = wget_malloc(n + 1)))
+			return NULL;
+	}
+
+	memmove(s, m, n);
+	s[n] = 0;
+	return s;
+}
+
 /**@}*/
