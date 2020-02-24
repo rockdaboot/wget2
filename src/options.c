@@ -112,7 +112,7 @@ typedef const struct optionw *option_t; // forward declaration
 
 struct optionw {
 	const char
-		*long_name;
+		long_name[22];
 	void
 		*var;
 	int
@@ -2453,11 +2453,15 @@ static int WGET_GCC_NONNULL((1)) set_long_option(const char *name, const char *v
 {
 	option_t opt;
 	char invert = 0, value_present = 0, case_insensitive = 1;
-	char namebuf[strlen(name) + 1], *p;
+	char namebuf[sizeof(options[0].long_name) + 5], *p;
 	int ret = 0, rc;
 
 	if ((p = strchr(name, '='))) {
 		// option with appended value
+		if (p - name >= (int) sizeof(namebuf)) {
+			error_printf(_("Unknown option '%s'\n"), name);
+			return -1;
+		}
 		memcpy(namebuf, name, p - name);
 		namebuf[p - name] = 0;
 		name = namebuf;
