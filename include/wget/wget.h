@@ -486,7 +486,7 @@ LIBWGET_WARN_UNUSED_RESULT WGET_GCC_ALLOC_SIZE(2)
 WGETAPI char * NULLABLE
 	wget_strmemdup(const void *m, size_t n);
 
-WGETAPI void
+WGETAPI size_t
 	wget_strmemcpy(char *restrict s, size_t ssize, const void *restrict m, size_t n);
 
 /*

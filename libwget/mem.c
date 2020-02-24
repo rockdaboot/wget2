@@ -106,14 +106,15 @@ char *wget_strmemdup(const void *m, size_t n)
  * \param[in] ssize Size of the output buffer
  * \param[in] m Memory to read from
  * \param[in] n Length of memory
+ * \return Number of bytes copied, not counting the trailing 0 byte
  *
  * Convert the given memory region \p m with length \p n into a C string at \p s.
  * A max. of \p ssize - 1  is copied into \p s.
  */
-void wget_strmemcpy(char *s, size_t ssize, const void *m, size_t n)
+size_t wget_strmemcpy(char *s, size_t ssize, const void *m, size_t n)
 {
 	if (!s || !ssize)
-		return;
+		return 0;
 
 	if (likely(n > 0)) {
 		if (n >= ssize)
@@ -125,6 +126,8 @@ void wget_strmemcpy(char *s, size_t ssize, const void *m, size_t n)
 			n = 0;
 	}
 	s[n] = 0;
+
+	return n;
 }
 
 /**@}*/

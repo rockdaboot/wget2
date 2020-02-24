@@ -87,22 +87,24 @@ static void test_mem(void)
 	CHECK(p = wget_strmemdup("xxx", 0));
 	xfree(p);
 
-	wget_strmemcpy(NULL, 0, NULL, 0);
-	wget_strmemcpy(NULL, 5, NULL, 3);
+	CHECK(wget_strmemcpy(NULL, 0, NULL, 0) == 0);
+	CHECK(wget_strmemcpy(NULL, 5, NULL, 3) == 0);
 
 	char buf[32] = "x";
-	wget_strmemcpy(buf, 0, "xxx", 0);
+	CHECK(wget_strmemcpy(buf, 0, "xxx", 0) == 0);
 	CHECK(!strcmp(buf, "x"));
-	wget_strmemcpy(buf, 0, "xxx", 1);
+	CHECK(wget_strmemcpy(buf, 0, "xxx", 1) == 0);
 	CHECK(!strcmp(buf, "x"));
-	wget_strmemcpy(buf, sizeof(buf), "xxx", 0);
+	CHECK(wget_strmemcpy(buf, sizeof(buf), "xxx", 0) == 0);
 	CHECK(!strcmp(buf, ""));
-	wget_strmemcpy(buf, 1, "xxx", 3);
+	CHECK(wget_strmemcpy(buf, 1, "xxx", 3) == 0);
 	CHECK(!strcmp(buf, ""));
-	wget_strmemcpy(buf, 2, "xxx", 3);
+	CHECK(wget_strmemcpy(buf, 2, "xxx", 3) == 1);
 	CHECK(!strcmp(buf, "x"));
-	wget_strmemcpy(buf, 2, NULL, 3);
+	CHECK(wget_strmemcpy(buf, 2, NULL, 3) == 0);
 	CHECK(!strcmp(buf, ""));
+	CHECK(wget_strmemcpy(buf, sizeof(buf), "xxx", 3) == 3);
+	CHECK(!strcmp(buf, "xxx"));
 
 #if __GNUC__ >= 7
 #pragma GCC diagnostic pop
