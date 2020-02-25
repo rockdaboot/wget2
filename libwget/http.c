@@ -1284,10 +1284,9 @@ static wget_vector *parse_proxies(const char *proxy, const char *encoding)
 	for (s = p = proxy; *p; s = p + 1) {
 		if ((p = strchrnul(s, ',')) != s && p - s < 256) {
 			wget_iri *iri;
-			char host[p - s + 1];
+			char host[256];
 
-			memcpy(host, s, p - s);
-			host[p - s] = 0;
+			wget_strmemcpy(host, sizeof(host), s, p - s);
 
 			iri = wget_iri_parse (host, encoding);
 			if (iri) {
