@@ -418,10 +418,11 @@ static int parseXML(const char *dir, xml_context *context)
 						parseXML(directory, context); // descend one level
 					break;
 				} else {
-//					wget_snprintf(attribute, sizeof(attribute), "%.*s", (int)context->token_len, tok);
-					char attribute[context->token_len + 1];
-					memcpy(attribute, tok, context->token_len);
-					attribute[context->token_len] = 0;
+					char attribute[256];
+					size_t attrlen = context->token_len >= sizeof(attribute) ? sizeof(attribute) - 1 : context->token_len;
+
+					memcpy(attribute, tok, attrlen);
+					attribute[attrlen] = 0;
 
 					if (getValue(context) == EOF) return WGET_E_XML_PARSE_ERR; // syntax error
 
