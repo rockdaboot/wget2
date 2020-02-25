@@ -869,14 +869,18 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	if (config.alpn) {
 		size_t len = strlen(config.alpn);
-		char alpn[len + 1];
+		char alpnbuf[256], *alpn;
 
 		// wolfSSL_UseALPN() destroys the ALPN string (bad design pattern !)
-		memcpy(alpn, config.alpn, len + 1);
+		alpn = wget_strmemcpy_a(alpnbuf, sizeof(alpnbuf), config.alpn, strlen(config.alpn));
+
 		if (wolfSSL_UseALPN(session, alpn, len, WOLFSSL_ALPN_CONTINUE_ON_MISMATCH) == WOLFSSL_SUCCESS) {
 			debug_printf("ALPN offering %s\n", config.alpn);
 		} else
 			debug_printf("WolfSSL: Failed to set ALPN: %s\n", config.alpn);
+
+		if (alpn != alpnbuf)
+			xfree(alpn);
 	}
 
 	struct session_context *ctx = wget_calloc(1, sizeof(struct session_context));
