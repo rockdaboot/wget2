@@ -215,7 +215,7 @@ size_t wget_vsnprintf(char *str, size_t size, const char *fmt, va_list args)
 {
 	wget_buffer buf;
 
-	wget_buffer_init(&buf, str, sizeof(size));
+	wget_buffer_init(&buf, str, size);
 
 	size_t len = wget_buffer_vprintf(&buf, fmt, args);
 
