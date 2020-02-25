@@ -214,9 +214,8 @@ size_t wget_printf(const char *fmt, ...)
 size_t wget_vsnprintf(char *str, size_t size, const char *fmt, va_list args)
 {
 	wget_buffer buf;
-	char sbuf[1024];
 
-	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+	wget_buffer_init(&buf, str, sizeof(size));
 
 	size_t len = wget_buffer_vprintf(&buf, fmt, args);
 
@@ -226,7 +225,9 @@ size_t wget_vsnprintf(char *str, size_t size, const char *fmt, va_list args)
 	}
 
 	if (str) {
-		if (len < size) {
+		if (buf.data == str) {
+			buf.data = NULL;
+		} else if (len < size) {
 			memcpy(str, buf.data, len + 1);
 		} else {
 			memcpy(str, buf.data, size - 1);
