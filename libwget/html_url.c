@@ -139,13 +139,14 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 					return;
 				}
 			} else if (ctx->found_robots && !wget_strcasecmp_ascii(attr, "content")) {
-				char *p;
-				char valbuf[len + 1], *value = valbuf;
+				char valbuf[256], *valp;
+				const char *value;
 
-				memcpy(value, val, len);
-				value[len] = 0;
+				value = valp = wget_strmemcpy_a(valbuf, sizeof(valbuf), val, len);
 
 				while (*value) {
+					const char *p;
+
 					while (c_isspace(*value)) value++;
 					if (*value == ',') { value++; continue; }
 					for (p = value; *p && !c_isspace(*p) && *p != ','; p++);
@@ -159,16 +160,23 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 
 					value = *p  ? p + 1 : p;
 				}
+
+				if (valp != valbuf)
+					xfree(valp);
+
 				return;
 			}
 
 			if (ctx->found_content_type && !res->encoding) {
 				if (!wget_strcasecmp_ascii(attr, "content")) {
-					char valbuf[len + 1], *value = valbuf;
+					char valbuf[256];
+					const char *value;
 
-					memcpy(value, val, len);
-					value[len] = 0;
+					value = wget_strmemcpy_a(valbuf, sizeof(valbuf), val, len);
 					wget_http_parse_content_type(value, NULL, &res->encoding);
+
+					if (value != valbuf)
+						xfree(value);
 				}
 			}
 			else if (!ctx->found_content_type && !res->encoding) {
