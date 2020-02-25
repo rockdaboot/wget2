@@ -175,7 +175,8 @@ static void add_mirror(metalink_context *ctx, const char *value)
 static void metalink_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos WGET_GCC_UNUSED)
 {
 	metalink_context *ctx = context;
-	char value[len + 1];
+	char valuebuf[1024];
+	const char *value;
 
 	// info_printf("\n%02X %s %s '%s'\n", flags, dir, attr, value);
 	if (!(flags & (XML_FLG_CONTENT | XML_FLG_ATTRIBUTE))) return; // ignore comments
@@ -184,9 +185,7 @@ static void metalink_parse(void *context, int flags, const char *dir, const char
 
 	dir += 14;
 
-	if (val)
-			memcpy(value, val, len);
-	value[len] = 0;
+	value = wget_strmemcpy_a(valuebuf, sizeof(valuebuf), val ? val : "", len);
 
 	if (!wget_strncasecmp_ascii(dir, "s/file", 6)) {
 		// metalink 3 XML format
@@ -273,6 +272,9 @@ static void metalink_parse(void *context, int flags, const char *dir, const char
 			}
 		}
 	}
+
+	if (value != valuebuf)
+		xfree(value);
 }
 
 wget_metalink *wget_metalink_parse(const char *xml)
