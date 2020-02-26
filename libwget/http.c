@@ -740,6 +740,32 @@ void wget_http_close(wget_http_connection **conn)
 }
 
 #ifdef WITH_LIBNGHTTP2
+static ssize_t data_prd_read_callback(
+	nghttp2_session *session, int32_t stream_id, uint8_t *buf, size_t length,
+	uint32_t *data_flags, nghttp2_data_source *source, void *user_data WGET_GCC_UNUSED)
+{
+	struct http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, stream_id);
+	const char *bodyp = source->ptr;
+
+	if (!ctx)
+		return NGHTTP2_ERR_CALLBACK_FAILURE;
+
+//	debug_printf("[INFO] C ----------------------------> S (DATA post body), length:%zu %zu\n", length, ctx->resp->req->body_length);
+
+	size_t len = ctx->resp->req->body_length - (bodyp - ctx->resp->req->body);
+
+	if (len > length)
+		len = length;
+
+	memcpy(buf, bodyp, len);
+	source->ptr = (char *) (bodyp + len);
+
+	if (!len)
+		*data_flags = NGHTTP2_DATA_FLAG_EOF;
+
+	return len;
+}
+
 static void init_nv(nghttp2_nv *nv, const char *name, const char *value)
 {
 	nv->name = (uint8_t *)name;
@@ -752,6 +778,7 @@ static void init_nv(nghttp2_nv *nv, const char *name, const char *value)
 
 int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 {
+	char length_str[32];
 	ssize_t nbytes;
 
 #ifdef WITH_LIBNGHTTP2
@@ -782,6 +809,11 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 			init_nv(nvp++, param->name, param->value);
 		}
 
+		if (req->body_length) {
+			wget_snprintf(length_str, sizeof(length_str), "%zu", req->body_length);
+			init_nv(nvp++, "Content-Length", length_str);
+		}
+
 		struct http2_stream_context *ctx = wget_calloc(1, sizeof(struct http2_stream_context));
 		// HTTP/2.0 has the streamid as link between
 		ctx->resp = wget_calloc(1, sizeof(wget_http_response));
@@ -791,8 +823,16 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 		ctx->resp->keep_alive = 1;
 		req->request_start = wget_get_timemillis();
 
-		// nghttp2 does strdup of name+value and lowercase conversion of 'name'
-		req->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, NULL, ctx);
+		if (req->body_length) {
+			nghttp2_data_provider data_prd;
+			data_prd.source.ptr = (void *) req->body;
+			debug_printf("body length: %zu %zu\n", req->body_length, ctx->resp->req->body_length);
+			data_prd.read_callback = data_prd_read_callback;
+			req->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, &data_prd, ctx);
+		} else {
+			// nghttp2 does strdup of name+value and lowercase conversion of 'name'
+			req->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, NULL, ctx);
+		}
 
 		if (req->stream_id < 0) {
 			error_printf(_("Failed to submit HTTP2 request\n"));
