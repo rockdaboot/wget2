@@ -36,13 +36,13 @@ int main(void)
 				"Content-Type: text/css",
 			},
 			.body =
-"@import \"page1.html\";\n"\
-"@charset \"iso-8859-1\";\n"\
-"\n"\
-"#test1{background:url(/page2.html) no-repeat center}\n"\
-"#test2{background:url(http://localhost:{{port}}/page3.html)}\n"\
-"#test3{background:url('page4.html') no-repeat whatever}\n"\
-"",
+				"@import \"page1.html\";\n"\
+				"@charset \"iso-8859-1\";\n"\
+				"\n"\
+				"#test1{background:url(/page2.html) no-repeat center}\n"\
+				"#test2{background:url(http://localhost:{{port}}/page3.html)}\n"\
+				"#test3{background:url('page4.html') no-repeat whatever}\n"\
+				"",
 		},
 		{	.name = "/page1.html",
 			.code = "200 Dontcare",

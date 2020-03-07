@@ -36,18 +36,18 @@ int main(void)
 	wget_test_url_t urls[]={
 		{	.name = "/main.rss",
 			.body =
-"<?xml version=\"1.0\" encoding=\"utf-8\"?>"\
-"<channel>"\
-"<title>Da title</title>"\
-"<link>http://localhost:{{port}}/page1.html</link>"\
-"<description>Nice article</description>"\
-"<item>"\
-"<title>Item title</title>"\
-"<link>http://localhost:{{port}}/page2.html</link>"\
-"<pubDate>Sun, 01 Sep 2013 18:41:05 -0700</pubDate>"\
-"<guid isPermaLink=\"true\">http://localhost:{{port}}/page3.html</guid>"\
-"<description>item description</description>"\
-"</item></channel></rss>",
+				"<?xml version=\"1.0\" encoding=\"utf-8\"?>"\
+				"<channel>"\
+				"<title>Da title</title>"\
+				"<link>http://localhost:{{port}}/page1.html</link>"\
+				"<description>Nice article</description>"\
+				"<item>"\
+				"<title>Item title</title>"\
+				"<link>http://localhost:{{port}}/page2.html</link>"\
+				"<pubDate>Sun, 01 Sep 2013 18:41:05 -0700</pubDate>"\
+				"<guid isPermaLink=\"true\">http://localhost:{{port}}/page3.html</guid>"\
+				"<description>item description</description>"\
+				"</item></channel></rss>",
 		},
 		{	.name = "/page1.html",
 			.code = "200 Dontcare",
