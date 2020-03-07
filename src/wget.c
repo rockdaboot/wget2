@@ -57,6 +57,7 @@
 #include "timespec.h" // gnulib gettime()
 #include "safe-read.h"
 #include "safe-write.h"
+#include "filename.h" // IS_PATH_WITH_DIR()
 
 #ifdef WITH_LIBPCRE2
 # define PCRE2_CODE_UNIT_WIDTH 8
@@ -751,7 +752,7 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 
 // Add URLs parsed from downloaded files
 // Needs to be thread-safe
-static void queue_url_from_remote(JOB *job, const char *encoding, const char *url, int flags)
+static void queue_url_from_remote(JOB *job, const char *encoding, const char *url, int flags, const char *download_name)
 {
 	JOB *new_job = NULL, job_buf;
 	wget_iri *iri;
@@ -832,6 +833,14 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 	if (!(blacklistp = blacklist_add(iri))) {
 		wget_iri_free(&iri);
 		goto out;
+	}
+
+	if (download_name && !IS_PATH_WITH_DIR(download_name)) {
+		debug_printf("Change local file name. %s -> %s\n", blacklistp->local_filename, download_name);
+		size_t len = strlen(download_name);
+		if (len > strlen(blacklistp->local_filename))
+			blacklistp->local_filename = wget_realloc(blacklistp->local_filename, len + 1);
+		memcpy(blacklistp->local_filename, download_name, len + 1);
 	}
 
 	if (config.recursive) {
@@ -1668,7 +1677,7 @@ static int process_response_header(wget_http_response *resp)
 			} else {
 				char *next_check = wget_aprintf("%s.%s", job->sig_req, ext);
 				wget_list_remove(&job->remaining_sig_ext, ext);
-				queue_url_from_remote(job, "utf-8", next_check, URL_FLG_SIGNATURE_REQ);
+				queue_url_from_remote(job, "utf-8", next_check, URL_FLG_SIGNATURE_REQ, NULL);
 				wget_xfree(next_check);
 			}
 #else
@@ -1765,7 +1774,7 @@ static int process_response_header(wget_http_response *resp)
 		wget_iri_relative_to_abs(iri, resp->location, (size_t) -1, &uri_buf);
 
 		if (uri_buf.length)
-			queue_url_from_remote(job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION);
+			queue_url_from_remote(job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION, NULL);
 
 		wget_buffer_deinit(&uri_buf);
 	}
@@ -1997,11 +2006,11 @@ static void process_response(wget_http_response *resp)
 
 		if (metalink) {
 			// found a link to a metalink3 or metalink4 description, create a new job
-			queue_url_from_remote(job, "utf-8", metalink->uri, 0);
+			queue_url_from_remote(job, "utf-8", metalink->uri, 0, NULL);
 			return;
 		} else if (top_link) {
 			// no metalink4 description found, create a new job
-			queue_url_from_remote(job, "utf-8", top_link->uri, 0);
+			queue_url_from_remote(job, "utf-8", top_link->uri, 0, NULL);
 			return;
 		}
 	}
@@ -2070,7 +2079,7 @@ static void process_response(wget_http_response *resp)
 				for (int i = 0; i < wget_vector_size(recurse_iris); i++) {
 					wget_iri *iri = (wget_iri *) wget_vector_get(recurse_iris, i);
 
-					queue_url_from_remote(job, "utf-8", iri->uri, 0);
+					queue_url_from_remote(job, "utf-8", iri->uri, 0, NULL);
 					wget_iri_free_content(iri);
 				}
 				wget_vector_free(&recurse_iris);
@@ -2090,7 +2099,7 @@ static void process_response(wget_http_response *resp)
 		for (int it = 0, n = wget_robots_get_sitemap_count(job->host->robots); it < n; it++) {
 			const char *sitemap = wget_robots_get_sitemap(job->host->robots, it);
 			debug_printf("adding sitemap '%s'\n", sitemap);
-			queue_url_from_remote(job, "utf-8", sitemap, URL_FLG_SITEMAP); // see https://www.sitemaps.org/protocol.html#escaping
+			queue_url_from_remote(job, "utf-8", sitemap, URL_FLG_SITEMAP, NULL); // see https://www.sitemaps.org/protocol.html#escaping
 		}
 	} else if (resp->code == 200 || resp->code == 206) {
 		if (process_decision && recurse_decision) {
@@ -2169,7 +2178,7 @@ static void process_response(wget_http_response *resp)
 						else if (job->sig_req)
 							error_printf(_("Cannot check the signature on a signature!\n"));
 						else
-							queue_url_from_remote(job, "utf-8", first_check, URL_FLG_SIGNATURE_REQ);
+							queue_url_from_remote(job, "utf-8", first_check, URL_FLG_SIGNATURE_REQ, NULL);
 
 						wget_free(first_check);
 
@@ -2197,7 +2206,7 @@ static void fallback_to_http(JOB *job)
 {
 	if (!job->robotstxt) {
 		char *http_url = wget_aprintf("http://%s", job->iri->uri + 8);
-		queue_url_from_remote(NULL, "utf-8", http_url, URL_FLG_SKIPFALLBACK);
+		queue_url_from_remote(NULL, "utf-8", http_url, URL_FLG_SKIPFALLBACK, NULL);
 		host_remove_job(job->host, job);
 		xfree(http_url);
 	} else {
@@ -2624,7 +2633,7 @@ void html_parse(JOB *job, int level, const char *fname, const char *html, size_t
 		wget_html_parsed_url *html_url = wget_vector_get(parsed->uris, it);
 		wget_string *url = &html_url->url;
 
-		/* do not follow action and formation at all */
+		/* do not follow action and formaction at all */
 		if (!wget_strcasecmp_ascii(html_url->attr, "action") || !wget_strcasecmp_ascii(html_url->attr, "formaction")) {
 			info_printf(_("URL '%.*s' not followed (action/formaction attribute)\n"), (int)url->len, url->p);
 			continue;
@@ -2654,8 +2663,17 @@ void html_parse(JOB *job, int level, const char *fname, const char *html, size_t
 			info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)url->len, url->p);
 		else {
 			// Blacklist for URLs before they are processed
-			if (wget_hashmap_put(known_urls, wget_strmemdup(buf.data, buf.length), NULL) == 0)
-				queue_url_from_remote(job, "utf-8", buf.data, page_requisites ? URL_FLG_REQUISITE : 0);
+			if (wget_hashmap_put(known_urls, wget_strmemdup(buf.data, buf.length), NULL) == 0) {
+				char *download_name;
+
+				if (html_url->download.p)
+					download_name = wget_strmemdup(html_url->download.p, html_url->download.len);
+				else
+					download_name = NULL;
+
+				queue_url_from_remote(job, "utf-8", buf.data, page_requisites ? URL_FLG_REQUISITE : 0, download_name);
+				xfree(download_name);
+			}
 		}
 	}
 	wget_thread_mutex_unlock(known_urls_mutex);
@@ -2725,7 +2743,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, const w
 			continue;
 		}
 
-		queue_url_from_remote(job, encoding, p, 0);
+		queue_url_from_remote(job, encoding, p, 0, NULL);
 	}
 
 	// process the sitemap index urls here
@@ -2742,7 +2760,7 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, const w
 			continue;
 		}
 
-		queue_url_from_remote(job, encoding, p, URL_FLG_SITEMAP);
+		queue_url_from_remote(job, encoding, p, URL_FLG_SITEMAP, NULL);
 	}
 	wget_thread_mutex_unlock(known_urls_mutex);
 
@@ -2816,7 +2834,7 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, const 
 
 				url = wget_strmemcpy_a(urlbuf, sizeof(urlbuf), line, len);
 
-				queue_url_from_remote(job, encoding, url, 0);
+				queue_url_from_remote(job, encoding, url, 0, NULL);
 
 				if (url != urlbuf)
 					xfree(url);
@@ -2855,7 +2873,7 @@ static void add_urls(JOB *job, wget_vector *urls, const char *encoding, const wg
 			continue;
 		}
 
-		queue_url_from_remote(job, encoding, p, 0);
+		queue_url_from_remote(job, encoding, p, 0, NULL);
 	}
 	wget_thread_mutex_unlock(known_urls_mutex);
 }
@@ -2976,7 +2994,7 @@ static void css_parse_uri(void *context, const char *url, size_t len, size_t pos
 	if (!ctx->base && !ctx->uri_buf.length)
 		info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)len, url);
 	else
-		queue_url_from_remote(ctx->job, ctx->encoding, ctx->uri_buf.data, URL_FLG_REQUISITE);
+		queue_url_from_remote(ctx->job, ctx->encoding, ctx->uri_buf.data, URL_FLG_REQUISITE, NULL);
 }
 
 void css_parse(JOB *job, const char *data, size_t len, const char *encoding, const wget_iri *base)

@@ -54,7 +54,7 @@ static wget_thread_mutex
 // -P / --directory-prefix=prefix
 
 WGET_GCC_NONNULL_ALL
-static const char * get_local_filename_real(const wget_iri *iri)
+static char * get_local_filename_real(const wget_iri *iri)
 {
 	wget_buffer buf;
 	char *fname;
@@ -150,7 +150,7 @@ static const char * get_local_filename_real(const wget_iri *iri)
 }
 
 WGET_GCC_NONNULL_ALL
-static const char * get_local_filename(const wget_iri *iri)
+static char * get_local_filename(const wget_iri *iri)
 {
 	if (config.delete_after)
 		return NULL;

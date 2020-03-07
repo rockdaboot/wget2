@@ -33,7 +33,7 @@
 typedef struct {
 	const wget_iri
 		*iri;
-	const char *
+	char *
 		local_filename;
 } blacklist_entry;
 
