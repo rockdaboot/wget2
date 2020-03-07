@@ -1348,8 +1348,8 @@ static const struct optionw options[] = {
 	{ "chunk-size", &config.chunk_size, parse_numbytes, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Download large files in multithreaded chunks.\n",
-			"(default: 0 (=off)) Example:\n",
-			"wget --chunk-size=1M\n"
+		  "(default: 0 (=off)) Example:\n",
+		  "wget --chunk-size=1M\n"
 		}
 	},
 	{ "clobber", &config.clobber, parse_bool, -1, 0,
@@ -1357,18 +1357,17 @@ static const struct optionw options[] = {
 		{ "Enable file clobbering. (default: on)\n"
 		}
 	},
-	{
-		"compression", &config.compression, parse_compression, -1, 0,
+	{ "compression", &config.compression, parse_compression, -1, 0,
 		SECTION_HTTP,
 		{ "Customize Accept-Encoding with\n",
-		   "identity, gzip, deflate, xz, lzma, br, bzip2, zstd, lzip\n",
-		   "and any combination of it\n",
-		   "no-compression means no Accept-Encoding\n"
+		  "identity, gzip, deflate, xz, lzma, br, bzip2, zstd, lzip\n",
+		  "and any combination of it\n",
+		  "no-compression means no Accept-Encoding\n"
 		}
 	},
 	{ "config", &config.user_config, parse_filename, 1, 0,
 		SECTION_STARTUP,
-		{  "Path to initialization file (default: ~/.config/wget/wget2rc)\n"
+		{ "Path to initialization file (default: ~/.config/wget/wget2rc)\n"
 		}
 	}, // for backward compatibility only
 	{ "connect-timeout", &config.connect_timeout, parse_timeout, 1, 0,
@@ -1751,7 +1750,7 @@ static const struct optionw options[] = {
 	{ "ignore-length", &config.ignore_length, parse_bool, -1, 0,
 		SECTION_DOWNLOAD,
 		{ "Ignore content-length header field\n",
-			"(default: off)\n",
+		  "(default: off)\n",
 		}
 	},
 	{ "ignore-tags", &config.ignore_tags, parse_taglist, 1, 0,
@@ -1796,7 +1795,7 @@ static const struct optionw options[] = {
 	{ "keep-extension", &config.keep_extension, parse_bool, -1, 0,
 		SECTION_DOWNLOAD,
 		{ "If file exists: Use pattern 'basename_N.ext'\n",
-			"instead of 'filename.N'. (default: off)\n"
+		  "instead of 'filename.N'. (default: off)\n"
 		}
 	},
 	{ "keep-session-cookies", &config.keep_session_cookies, parse_bool, -1, 0,
