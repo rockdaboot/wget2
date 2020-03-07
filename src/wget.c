@@ -58,6 +58,7 @@
 #include "safe-read.h"
 #include "safe-write.h"
 #include "filename.h" // IS_PATH_WITH_DIR()
+#include "dirname.h" // last_component()
 
 #ifdef WITH_LIBPCRE2
 # define PCRE2_CODE_UNIT_WIDTH 8
@@ -837,10 +838,14 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 
 	if (download_name && !IS_PATH_WITH_DIR(download_name)) {
 		debug_printf("Change local file name. %s -> %s\n", blacklistp->local_filename, download_name);
+		const char *basename = last_component(blacklistp->local_filename);
+		size_t oldlen = strlen(blacklistp->local_filename);
+		size_t dirlen = basename - blacklistp->local_filename;
 		size_t len = strlen(download_name);
-		if (len > strlen(blacklistp->local_filename))
-			blacklistp->local_filename = wget_realloc(blacklistp->local_filename, len + 1);
-		memcpy(blacklistp->local_filename, download_name, len + 1);
+
+		if (dirlen + len > oldlen)
+			blacklistp->local_filename = wget_realloc(blacklistp->local_filename, dirlen + len + 1);
+		memcpy(blacklistp->local_filename + dirlen, download_name, len + 1);
 	}
 
 	if (config.recursive) {
@@ -2666,7 +2671,7 @@ void html_parse(JOB *job, int level, const char *fname, const char *html, size_t
 			if (wget_hashmap_put(known_urls, wget_strmemdup(buf.data, buf.length), NULL) == 0) {
 				char *download_name;
 
-				if (html_url->download.p)
+				if (config.download_attr && html_url->download.p)
 					download_name = wget_strmemdup(html_url->download.p, html_url->download.len);
 				else
 					download_name = NULL;

@@ -1495,6 +1495,12 @@ static const struct optionw options[] = {
 		{ "Comma-separated list of domains to follow.\n"
 		}
 	},
+	{ "download-attr", &config.download_attr, parse_bool, -1, 0,
+		SECTION_DOWNLOAD,
+		{ "Use the file name specified in HTML5 download\n",
+		  "attributes. (default: off)\n"
+		}
+	},
 	{ "egd-file", &config.egd_file, parse_filename, 1, 0,
 		SECTION_SSL,
 		{ "File to be used as socket for random data from\n",

@@ -1342,6 +1342,11 @@ Go to background immediately after startup. If no output file is specified via t
 
   Compatibility-Note: `none` type in Wget 1.X has the same meaning as `identity` type in Wget2.
 
+### `--download-attr`
+
+  The `download` HTML5 attribute may specify (or better: suggest) a file name for the `href` URL in `a` and `area`
+  tags. This option tells Wget2 to make use of this file name when saving. The default is off.
+
 ## <a name="HTTPS Options"/>HTTPS (SSL/TLS) Options
 
   To support encrypted HTTP (HTTPS) downloads, Wget2 must be compiled with an external SSL library. The current default

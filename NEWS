@@ -27,6 +27,7 @@ xx.xx.xxxx Release 1.99.3 (beta)
   * Add option --body-data, improving backward compatibility
   * Add option --body-file, improving backward compatibility
   * Add option --convert-file-only, improving backward compatibility
+  * Add option --download-attr to make use of the HTML5 'download' attribute
   * Support terminal hyperlinks in output
   * Configure switch --disable-manylibs to disable building small libraries
 

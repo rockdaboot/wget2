@@ -251,6 +251,7 @@ struct config {
 		cookies,
 		spider,
 		dns_caching,
+		download_attr,
 		check_certificate,
 		check_hostname,
 		span_hosts,
