@@ -778,11 +778,11 @@ static void init_nv(nghttp2_nv *nv, const char *name, const char *value)
 
 int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 {
-	char length_str[32];
 	ssize_t nbytes;
 
 #ifdef WITH_LIBNGHTTP2
 	if (wget_tcp_get_protocol(conn->tcp) == WGET_PROTOCOL_HTTP_2_0) {
+		char length_str[32];
 		int n = 4 + wget_vector_size(req->headers);
 		nghttp2_nv nvs[n], *nvp;
 		char resource[req->esc_resource.length + 2];
