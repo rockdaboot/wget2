@@ -173,7 +173,7 @@ struct addrinfo *wget_dns_cache_get(wget_dns_cache *cache, const char *host, uin
  */
 int wget_dns_cache_add(wget_dns_cache *cache, const char *host, uint16_t port, struct addrinfo **addrinfo)
 {
-	if (!cache || !host | !addrinfo)
+	if (!cache || !host || !addrinfo)
 		return WGET_E_INVALID;
 
 	struct cache_entry entry = { .host = host, .port = port };
