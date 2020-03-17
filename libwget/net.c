@@ -123,15 +123,6 @@ static struct wget_tcp_st global_tcp = {
 #endif
 };
 
-typedef struct
-{
-	const char
-		*hostname,
-		*ip;
-	uint16_t port;
-	long long dns_secs;	// milliseconds
-} _stats_data_t;
-
 /* for Windows compatibility */
 #include "sockets.h"
 /**
