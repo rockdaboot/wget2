@@ -154,7 +154,8 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 				char valbuf[256], *valp;
 				const char *value;
 
-				value = valp = wget_strmemcpy_a(valbuf, sizeof(valbuf), val, len);
+				if (!(value = valp = wget_strmemcpy_a(valbuf, sizeof(valbuf), val, len)))
+					return;
 
 				while (*value) {
 					const char *p;
@@ -184,7 +185,9 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 					char valbuf[256];
 					const char *value;
 
-					value = wget_strmemcpy_a(valbuf, sizeof(valbuf), val, len);
+					if (!(value = wget_strmemcpy_a(valbuf, sizeof(valbuf), val, len)))
+						return;
+
 					wget_http_parse_content_type(value, NULL, &res->encoding);
 
 					if (value != valbuf)
