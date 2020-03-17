@@ -1402,7 +1402,7 @@ typedef struct wget_hsts_db_st wget_hsts_db;
  * See tests/test-plugin-dummy.c and tests/Makefile.am for details.
  */
 
-typedef int wget_hsts_host_match_fn(const wget_hsts_db *, const char *hsts_db, uint16_t port);
+typedef int wget_hsts_host_match_fn(const wget_hsts_db *hsts_db, const char *host, uint16_t port);
 typedef wget_hsts_db *wget_hsts_db_init_fn(wget_hsts_db *hsts_db, const char *fname);
 typedef void wget_hsts_db_deinit_fn(wget_hsts_db *hsts_db);
 typedef void wget_hsts_db_free_fn(wget_hsts_db **hsts_db);
