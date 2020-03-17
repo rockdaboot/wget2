@@ -179,13 +179,16 @@ static void metalink_parse(void *context, int flags, const char *dir, const char
 	const char *value;
 
 	// info_printf("\n%02X %s %s '%s'\n", flags, dir, attr, value);
-	if (!(flags & (XML_FLG_CONTENT | XML_FLG_ATTRIBUTE))) return; // ignore comments
+	if (!(flags & (XML_FLG_CONTENT | XML_FLG_ATTRIBUTE)))
+		return; // ignore comments
 
-	if (wget_strncasecmp_ascii(dir, "/metalink/file", 14)) return;
+	if (wget_strncasecmp_ascii(dir, "/metalink/file", 14))
+		return;
 
 	dir += 14;
 
-	value = wget_strmemcpy_a(valuebuf, sizeof(valuebuf), val ? val : "", len);
+	if (!(value = wget_strmemcpy_a(valuebuf, sizeof(valuebuf), val ? val : "", len)))
+		return;
 
 	if (!wget_strncasecmp_ascii(dir, "s/file", 6)) {
 		// metalink 3 XML format
