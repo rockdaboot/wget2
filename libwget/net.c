@@ -418,14 +418,10 @@ void wget_tcp_set_bind_address(wget_tcp *tcp, const char *bind_address)
 	if (!tcp)
 		tcp = &global_tcp;
 
-
 	wget_dns_freeaddrinfo(tcp->dns, &tcp->bind_addrinfo);
 
 	if (bind_address) {
-		char copybuf[256], *copy, *s;
-		const char *host;
-
-		s = copy = wget_strmemcpy_a(copybuf, sizeof(copybuf), bind_address, strlen(bind_address));
+		const char *host, *s = bind_address;
 
 		if (*s == '[') {
 			/* IPv6 address within brackets */
@@ -446,15 +442,15 @@ void wget_tcp_set_bind_address(wget_tcp *tcp, const char *bind_address)
 		}
 
 		if (*s == ':') {
-			*s++ = 0;
-			if (c_isdigit(*s))
-				tcp->bind_addrinfo = wget_dns_resolve(tcp->dns, host, (uint16_t) atoi(s), tcp->family, tcp->preferred_family);
+			char port[6];
+
+			wget_strscpy(port, s + 1, sizeof(port));
+
+			if (c_isdigit(*port))
+				tcp->bind_addrinfo = wget_dns_resolve(tcp->dns, host, (uint16_t) atoi(port), tcp->family, tcp->preferred_family);
 		} else {
 			tcp->bind_addrinfo = wget_dns_resolve(tcp->dns, host, 0, tcp->family, tcp->preferred_family);
 		}
-
-		if (copy != copybuf)
-			xfree(copy);
 	}
 }
 
