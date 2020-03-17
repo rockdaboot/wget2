@@ -58,6 +58,7 @@
 #include "safe-read.h"
 #include "safe-write.h"
 #include "filename.h" // IS_PATH_WITH_DIR()
+#undef FILE_SYSTEM_PREFIX_LEN
 #include "dirname.h" // last_component()
 
 #ifdef WITH_LIBPCRE2
