@@ -43,7 +43,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include <c-ctype.h>
 
 #include <wget.h>
 #include "private.h"
@@ -127,9 +126,6 @@ static void add_file_hash(metalink_context *ctx, const char *value)
 
 static void add_mirror(metalink_context *ctx, const char *value)
 {
-	while (c_isspace(*value))
-		value++;
-
 	wget_iri *iri = wget_iri_parse(value, NULL);
 
 	if (!iri)
