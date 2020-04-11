@@ -314,6 +314,8 @@ static void test_buffer_printf(void)
 	static const char *left_adjust[] = { "", "-" };
 	static const long long number[] = { 0, 1LL, -1LL, 10LL, -10LL, 18446744073709551615ULL };
 	static const char *modifier[] = { "", "h", "hh", "l", "ll", "z" }; // %L... won't work on OpenBSD5.0
+	enum argtype { type_int, type_long, type_long_long, type_size_t };
+	static const enum argtype modifier_type[] = { type_int, type_int, type_int, type_long, type_long_long, type_size_t };
 	static const char *conversion[] = { "d", "i", "u", "o", "x", "X" };
 	char fmt[32], result[64], string[32];
 	size_t z, a, it, n, c, m;
@@ -464,8 +466,26 @@ integer_tests:
 							#pragma GCC diagnostic push
 							#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
-							snprintf(result, sizeof(result), fmt, number[n]);
-							wget_buffer_printf(&buf, fmt, number[n]);
+							switch (modifier_type[m]) {
+							case type_int:
+								snprintf(result, sizeof(result), fmt, (int)number[n]);
+								wget_buffer_printf(&buf, fmt, (int)number[n]);
+								break;
+							case type_long:
+								snprintf(result, sizeof(result), fmt, (long)number[n]);
+								wget_buffer_printf(&buf, fmt, (long)number[n]);
+								break;
+							case type_long_long:
+								snprintf(result, sizeof(result), fmt, (long long)number[n]);
+								wget_buffer_printf(&buf, fmt, (long long)number[n]);
+								break;
+							case type_size_t:
+								snprintf(result, sizeof(result), fmt, (size_t)number[n]);
+								wget_buffer_printf(&buf, fmt, (size_t)number[n]);
+								break;
+							default:
+								abort();
+							}
 #if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 							#pragma GCC diagnostic pop
 #endif
