@@ -183,7 +183,7 @@ static void test_fn_check(void *fn, const char *expected)
 {
 	char buf[16];
 	test_fn fn_p;
-	*((void **) &fn_p) = fn;
+	fn_p = (test_fn)fn;
 	(*fn_p)(buf, sizeof(buf));
 	if (strncmp(buf, expected, 15) != 0)
 		abortmsg("Test function returned %s, expected %s", buf, expected);
