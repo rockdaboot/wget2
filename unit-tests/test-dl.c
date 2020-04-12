@@ -182,9 +182,20 @@ typedef void (*test_fn)(char buf[16], size_t len);
 static void test_fn_check(void *fn, const char *expected)
 {
 	char buf[16];
-	test_fn fn_p;
-	fn_p = (test_fn)fn;
+
+#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+	// POSIX requires a conversion from 'void *' into a function pointer to work
+	// But -pedantic throws 'ISO C forbids conversion of object pointer to function pointer type'
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+	test_fn fn_p = (test_fn) fn;
+#if defined __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+	#pragma GCC diagnostic pop
+#endif
+
 	(*fn_p)(buf, sizeof(buf));
+
 	if (strncmp(buf, expected, 15) != 0)
 		abortmsg("Test function returned %s, expected %s", buf, expected);
 }
