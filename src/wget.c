@@ -4012,7 +4012,7 @@ int http_send_request(const wget_iri *iri, const wget_iri *original_url, DOWNLOA
 	wget_http_request_set_body_cb(req, get_body, context);
 
 	// keep the received response header in 'resp->header'
-	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, config.save_headers || config.server_response || (config.progress && config.spider));
+	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, config.save_headers || config.server_response || (config.progress && config.spider) || (config.chunk_size && config.progress));
 	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_IGNORELENGTH, config.ignore_length);
 	return WGET_E_SUCCESS;
 }
