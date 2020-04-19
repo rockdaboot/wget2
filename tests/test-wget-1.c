@@ -514,9 +514,32 @@ int main(void)
 			{	NULL } },
 		0);
 
+	// test --chunk-size with --progress, new file
+	wget_test(
+		WGET_TEST_OPTIONS, "--chunk-size=3 --progress=bar",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		// no existing file
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
 	// test --chunk-size, new file, without Content-Length header
 	wget_test(
 		WGET_TEST_OPTIONS, "--chunk-size=3",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_SERVER_SEND_CONTENT_LENGTH, 0, // server does not send Content-Length
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		// no existing file
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
+	// test --chunk-size with --progress, new file, without Content-Length header
+	wget_test(
+		WGET_TEST_OPTIONS, "--chunk-size=3 --progress=bar",
 		WGET_TEST_REQUEST_URL, "dummy.txt",
 		WGET_TEST_SERVER_SEND_CONTENT_LENGTH, 0, // server does not send Content-Length
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
@@ -537,6 +560,17 @@ int main(void)
 			{	NULL } },
 		0);
 
+	// test --chunk-size with --progress, new file, with chunk size > Content-Length
+	wget_test(
+		WGET_TEST_OPTIONS, "--chunk-size=1000 --progress=bar",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		// no existing file
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
 	// test -c --chunk-size, new file
 	wget_test(
 		WGET_TEST_OPTIONS, "--chunk-size=3 -c",
@@ -548,9 +582,33 @@ int main(void)
 			{	NULL } },
 		0);
 
+	// test -c --chunk-size with --progress, new file
+	wget_test(
+		WGET_TEST_OPTIONS, "--chunk-size=3 -c --progress=bar",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		// no existing file
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
 	// test -c --chunk-size, existing file
 	wget_test(
 		WGET_TEST_OPTIONS, "--chunk-size=3 -c",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
+			{ "dummy.txt",  urls[3].body },
+			{	NULL } },
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
+	// test -c --chunk-size with --progress, existing file
+	wget_test(
+		WGET_TEST_OPTIONS, "--chunk-size=3 -c --progress=bar",
 		WGET_TEST_REQUEST_URL, "dummy.txt",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
