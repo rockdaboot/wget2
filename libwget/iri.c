@@ -303,6 +303,10 @@ static char *iri_unescape_inline(char *src, int ctype)
 					// this cannot be done inline since the URL's length may increase
 				}
 			}
+		} else if (*s == '\r' || *s == '\n') {
+			// Ignore / remove CR and LF from URLs. See https://gitlab.com/gnuwget/wget2/-/issues/522
+			s++;
+			continue;
 		}
 
 		*d++ = *s++;
