@@ -573,7 +573,6 @@ static void parse_localfile(JOB *job, const char *fname, const char *encoding, c
 	}
 }
 
-// not static because used by metalink.c
 static void test_modify_hsts(wget_iri *iri)
 {
 	bool match = 0;
