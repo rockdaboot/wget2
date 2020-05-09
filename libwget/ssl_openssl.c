@@ -536,6 +536,73 @@ static int check_cert_chain_for_hpkp(STACK_OF(X509) *certs, const char *hostname
 	return pin_ok;
 }
 
+struct verification_flags {
+	SSL
+		*ssl;
+	const char
+		*hostname;
+	X509_STORE
+		*certstore;
+	unsigned int
+		verifying_ocsp,
+		ocsp_checked,
+		cert_chain_size;
+	const char *hostname;
+	X509_STORE *certstore;
+	wget_hpkp_stats_result hpkp_stats;
+};
+
+static int check_ocsp_response(OCSP_RESPONSE *,
+		STACK_OF(X509) *,
+		X509_STORE *,
+		bool);
+
+static int ocsp_resp_cb(SSL *s, void *arg)
+{
+	int result;
+	long ocsp_resp_len;
+	const unsigned char *ocsp_resp_raw = NULL;
+	OCSP_RESPONSE *ocspresp;
+	STACK_OF(X509) *certstack;
+	struct verification_flags *vflags = arg;
+
+	if (!vflags)
+		return 0;
+
+	ocsp_resp_len = SSL_get_tlsext_status_ocsp_resp(s, &ocsp_resp_raw);
+	if (ocsp_resp_len == -1) {
+		debug_printf("No stapled OCSP response was received. Continuing.\n");
+		return 1;
+	}
+
+	ocspresp = d2i_OCSP_RESPONSE(NULL, &ocsp_resp_raw, ocsp_resp_len);
+	if (!ocspresp) {
+		error_printf(_("Got a stapled OCSP response, but could not parse it. Aborting.\n"));
+		return 0;
+	}
+
+	certstack = SSL_get_peer_cert_chain(vflags->ssl);
+	if (!certstack) {
+		error_printf(_("Could not get server's cert stack\n"));
+		return 0;
+	}
+
+	result = check_ocsp_response(ocspresp,
+		certstack,
+		vflags->certstore,
+		config.ocsp_date); /* check time? */
+
+	if (result == -1) {
+		OCSP_RESPONSE_free(ocspresp);
+		error_printf(_("Could not verify stapled OCSP response. Aborting.\n"));
+		return 0;
+	}
+
+	OCSP_RESPONSE_free(ocspresp);
+	debug_printf("Got a stapled OCSP response. Length: %ld. Status: OK\n", ocsp_resp_len);
+	return 1;
+}
+
 static OCSP_REQUEST *send_ocsp_request(const char *uri,
 		OCSP_CERTID *certid,
 		wget_http_response **response)
@@ -673,19 +740,9 @@ static int print_ocsp_cert_status(int status, int reason)
 	return status;
 }
 
-struct _verification_flags {
-	unsigned int
-		verifying_ocsp,
-		ocsp_checked,
-		cert_chain_size;
-	const char *hostname;
-	wget_hpkp_stats_result hpkp_stats;
-};
-
 static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 		STACK_OF(X509) *certstack,
 		X509_STORE *certstore,
-		OCSP_REQUEST *ocspreq,
 		bool check_time)
 {
 	int
@@ -711,11 +768,6 @@ static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 
 	if (!OCSP_basic_verify(ocspbs, certstack, certstore, 0)) {
 		error_printf(_("Could not verify OCSP certificate chain\n"));
-		goto end;
-	}
-
-	if (config.ocsp_nonce && !OCSP_check_nonce(ocspreq, ocspbs)) {
-		error_printf(_("OCSP nonce does not match\n"));
 		goto end;
 	}
 
@@ -763,13 +815,15 @@ end:
 static int verify_ocsp(const char *ocsp_uri,
 		X509 *subject_cert, X509 *issuer_cert,
 		STACK_OF(X509) *certs, X509_STORE *certstore,
-		bool check_time)
+		bool check_time, bool check_nonce)
 {
+	int retval = 1;
 	wget_http_response *resp;
 	const unsigned char *body;
 	OCSP_CERTID *certid;
 	OCSP_REQUEST *ocspreq;
 	OCSP_RESPONSE *ocspresp;
+	OCSP_BASICRESP *ocspbs = NULL;
 
 	/* Generate CertID and OCSP request */
 	certid = OCSP_cert_to_id(EVP_sha256(), subject_cert, issuer_cert);
@@ -787,17 +841,33 @@ static int verify_ocsp(const char *ocsp_uri,
 		return -1;
 	}
 
-	if (check_ocsp_response(ocspresp, certs, certstore, ocspreq, check_time) < 0) {
-		wget_http_free_response(&resp);
-		OCSP_RESPONSE_free(ocspresp);
-		OCSP_REQUEST_free(ocspreq);
-		return 1;
+	if (check_ocsp_response(ocspresp, certs, certstore, check_time) < 0)
+		goto end;
+
+	if (check_nonce) {
+		if (!(ocspbs = OCSP_response_get1_basic(ocspresp))) {
+			error_printf(_("Could not obtain OCSP_BASICRESPONSE\n"));
+			goto end;
+		}
+
+		if (!OCSP_check_nonce(ocspreq, ocspbs)) {
+			error_printf(_("OCSP nonce does not match\n"));
+			goto end;
+		}
+
+		OCSP_BASICRESP_free(ocspbs);
+		ocspbs = NULL;
 	}
 
+	retval = 0; /* Success */
+
+end:
+	if (ocspbs)
+		OCSP_BASICRESP_free(ocspbs);
 	wget_http_free_response(&resp);
 	OCSP_RESPONSE_free(ocspresp);
 	OCSP_REQUEST_free(ocspreq);
-	return 0;
+	return retval;
 }
 
 static char *read_ocsp_uri_from_certificate(const X509 *cert)
@@ -924,7 +994,7 @@ static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, c
 		if (!config.ocsp_server) {
 			ocsp_uri = read_ocsp_uri_from_certificate(cert);
 			if (!ocsp_uri) {
-				info_printf(_("OCSP URI not given and not found in certificate. Skipping OCSP check for cert %u.\n"),
+				debug_printf("OCSP URI not given and not found in certificate. Skipping OCSP check for cert %u.\n",
 						i);
 				num_ignored++;
 				xfree(fingerprint);
@@ -937,7 +1007,7 @@ static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, c
 
 		ocsp_ok = verify_ocsp(config.ocsp_server ? config.ocsp_server : ocsp_uri,
 				cert, issuer_cert, certs, store,
-				config.ocsp_date);
+				config.ocsp_date, config.ocsp_nonce);
 		if (ocsp_ok == 0)
 			num_ok++;
 		else if (ocsp_ok == 1)
@@ -1078,6 +1148,11 @@ static int openssl_init(SSL_CTX *ctx)
 	{
 		error_printf(_("Could not load CA certificate from file '%s'\n"), config.ca_file);
 	}
+
+#ifdef WITH_OCSP
+	if (config.ocsp_stapling)
+		SSL_CTX_set_tlsext_status_cb(ctx, ocsp_resp_cb);
+#endif
 
 	/* Set our custom revocation check function, for HPKP and OCSP validation */
 	X509_STORE_set_verify_cb(store, openssl_revocation_check_fn);
@@ -1381,10 +1456,18 @@ int wget_ssl_open(wget_tcp *tcp)
 		retval = WGET_E_UNKNOWN;
 		goto bail;
 	}
+
+	vflags->certstore = store;
+	vflags->ssl = ssl;
+
 	if (!X509_STORE_set_ex_data(store, store_userdata_idx, (void *) vflags)) {
 		retval = WGET_E_UNKNOWN;
 		goto bail;
 	}
+#ifdef WITH_OCSP
+	SSL_CTX_set_tlsext_status_arg(_ctx, vflags);
+#endif
+
 
 	/* Enable stats logging, if requested */
 	if (tls_stats_callback)
@@ -1403,6 +1486,15 @@ int wget_ssl_open(wget_tcp *tcp)
 	else {
 		SSL_set_hostflags(ssl, X509_CHECK_FLAG_NEVER_CHECK_SUBJECT);
 		info_printf(_("Host name check disabled. Server certificate's subject name will not be checked.\n"));
+	}
+#endif
+
+#ifdef WITH_OCSP
+	if (config.ocsp_stapling) {
+		if (SSL_set_tlsext_status_type(ssl, TLSEXT_STATUSTYPE_ocsp))
+			debug_printf("Sending 'status_request' extension in handshake\n");
+		else
+			error_printf(_("Could not set 'status_request' extension\n"));
 	}
 #endif
 

@@ -936,7 +936,7 @@ static int _http_server_start(int SERVER_MODE)
 			,
 			port_num, (MHD_AcceptPolicyCallback)_check_to_accept,
 			(void *) (ptrdiff_t) SERVER_MODE, (MHD_AccessHandlerCallback)_answer_to_connection, NULL,
-			MHD_OPTION_HTTPS_CERT_CALLBACK2, _ocsp_stap_cert_callback,
+			MHD_OPTION_HTTPS_CERT_CALLBACK, _ocsp_cert_callback,
 #if MHD_VERSION >= 0x00095400
 				MHD_OPTION_STRICT_FOR_CLIENT, 1,
 #endif
