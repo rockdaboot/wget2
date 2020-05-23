@@ -23,9 +23,6 @@
 
 int main(void)
 {
-#ifdef WITH_OPENSSL
-	exit(WGET_TEST_EXIT_SKIP);
-#endif
 	wget_test_url_t urls[]={
 		{	.name = "/index.html",
 			.code = "200",
@@ -45,7 +42,7 @@ int main(void)
 
 	// Test ocsp with 'verified' response
 	wget_test(
-		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/ocsp/x509-interm-cert.pem --ocsp-stapling",
+		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/ocsp/x509-root-cert.pem --ocsp-stapling --no-ocsp-date",
 		WGET_TEST_REQUEST_URL, "https://localhost:{{sslport}}/index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []){
