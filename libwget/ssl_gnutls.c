@@ -1274,8 +1274,13 @@ void wget_ssl_init(void)
 
 		if (config.ca_directory && *config.ca_directory && config.check_certificate) {
 #if GNUTLS_VERSION_NUMBER >= 0x03000d
-			if (!strcmp(config.ca_directory, "system"))
+			if (!strcmp(config.ca_directory, "system")) {
 				ncerts = gnutls_certificate_set_x509_system_trust(credentials);
+				if (ncerts < 0)
+					debug_printf("GnuTLS system certificate store error %d\n", ncerts);
+				else
+					debug_printf("GnuTLS system certificate store is empty\n");
+			}
 #endif
 
 			if (ncerts < 0) {
