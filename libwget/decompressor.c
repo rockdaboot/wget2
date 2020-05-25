@@ -341,7 +341,7 @@ static int zstd_decompress(wget_decompressor *dc, const char *src, size_t srclen
 			return -1;
 		}
 
-		if (dc->sink)
+		if (output.pos && dc->sink)
 			dc->sink(dc->context, (char *)dst, output.pos);
 	}
 
