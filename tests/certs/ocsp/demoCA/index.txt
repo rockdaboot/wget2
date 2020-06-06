@@ -1,2 +1,2 @@
-R	30190402122856Z	191130122902Z	01	unknown	/O=gnuwget/OU=Wget/CN=intermediate
-V	21191106122856Z		02	unknown	/O=gnuwget/OU=Wget/CN=localhost
+R	30200105013513Z	200903013524Z	01	unknown	/O=gnuwget/OU=Wget/CN=intermediate
+V	21200810013513Z		02	unknown	/O=gnuwget/OU=Wget/CN=localhost
