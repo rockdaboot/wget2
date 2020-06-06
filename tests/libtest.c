@@ -131,8 +131,6 @@ static struct ocsp_resp_t {
 
 #ifdef WITH_OCSP
 #if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
-static gnutls_pcert_st *pcrt_stap;
-static gnutls_privkey_t *privkey_stap;
 static gnutls_ocsp_data_st *ocsp_stap_resp;
 #endif
 #endif
@@ -349,20 +347,21 @@ static int _ocsp_cert_callback(
 }
 
 #if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
-static gnutls_certificate_retrieve_function3 _ocsp_stap_cert_callback;
 static int _ocsp_stap_cert_callback(
 	gnutls_session_t session WGET_GCC_UNUSED,
 	const struct gnutls_cert_retr_st *info WGET_GCC_UNUSED,
-	gnutls_pcert_st **pcert,
+	gnutls_pcert_st **certs,
 	unsigned int *pcert_length,
 	gnutls_ocsp_data_st **ocsp,
 	unsigned int *ocsp_length,
 	gnutls_privkey_t *pkey,
 	unsigned int *flags WGET_GCC_UNUSED)
 {
-	*pcert = pcrt_stap;
-	*pkey = *privkey_stap;
-	*pcert_length = 1;
+	*certs = pcrt;
+	*(certs+1) = pcrt+1;
+	*pcert_length = 2;
+
+	*pkey = *privkey;
 
 	*ocsp = ocsp_stap_resp;
 	*ocsp_length = 1;
@@ -906,23 +905,34 @@ static int _http_server_start(int SERVER_MODE)
 
 		gnutls_datum_t data;
 
-		pcrt_stap = wget_malloc(sizeof(gnutls_pcert_st));
-		ocsp_stap_resp = wget_malloc(sizeof(gnutls_ocsp_data_st));
-		privkey_stap = wget_malloc(sizeof(gnutls_privkey_t));
+		/* Load private key */
+		privkey = wget_malloc(sizeof(gnutls_privkey_t));
 
-		gnutls_privkey_init(privkey_stap);
+		gnutls_privkey_init(privkey);
 
 		if ((rc = gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-key.pem", &data)) < 0)
 			file_load_err(SRCDIR "/certs/ocsp/x509-server-key.pem", gnutls_strerror(rc));
 
-		gnutls_privkey_import_x509_raw(*privkey_stap, &data, GNUTLS_X509_FMT_PEM, NULL, 0);
+		gnutls_privkey_import_x509_raw(*privkey, &data, GNUTLS_X509_FMT_PEM, NULL, 0);
 		gnutls_free(data.data);
+
+		/* Load certificate chain */
+		pcrt = wget_malloc(sizeof(gnutls_pcert_st) * 2);
 
 		if ((rc = gnutls_load_file(SRCDIR "/certs/ocsp/x509-server-cert.pem", &data)) < 0)
 			file_load_err(SRCDIR "/certs/ocsp/x509-server-cert.pem", gnutls_strerror(rc));
 
-		gnutls_pcert_import_x509_raw(pcrt_stap, &data, GNUTLS_X509_FMT_PEM, 0);
+		gnutls_pcert_import_x509_raw(pcrt, &data, GNUTLS_X509_FMT_PEM, 0);
 		gnutls_free(data.data);
+
+		if ((rc = gnutls_load_file(SRCDIR "/certs/ocsp/x509-interm-cert.pem", &data)) < 0)
+			file_load_err(SRCDIR "/certs/ocsp/x509-interm-cert.pem", gnutls_strerror(rc));
+
+		gnutls_pcert_import_x509_raw(pcrt+1, &data, GNUTLS_X509_FMT_PEM, 0);
+		gnutls_free(data.data);
+
+		/* Load stapled OCSP response */
+		ocsp_stap_resp = wget_malloc(sizeof(gnutls_ocsp_data_st));
 
 		if ((rc = gnutls_load_file(SRCDIR "/certs/ocsp/ocsp_stapled_resp.der", &data)) < 0)
 			file_load_err(SRCDIR "/certs/ocsp/ocsp_stapled_resp.der", gnutls_strerror(rc));
@@ -931,12 +941,13 @@ static int _http_server_start(int SERVER_MODE)
 		ocsp_stap_resp->response.size = data.size;
 		ocsp_stap_resp->exptime = 0;
 
+		/* Start HTTPS daemon with stapled OCSP responses */
 		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS
 				| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
 			,
 			port_num, (MHD_AcceptPolicyCallback)_check_to_accept,
 			(void *) (ptrdiff_t) SERVER_MODE, (MHD_AccessHandlerCallback)_answer_to_connection, NULL,
-			MHD_OPTION_HTTPS_CERT_CALLBACK, _ocsp_cert_callback,
+			MHD_OPTION_HTTPS_CERT_CALLBACK2, _ocsp_stap_cert_callback,
 #if MHD_VERSION >= 0x00095400
 				MHD_OPTION_STRICT_FOR_CLIENT, 1,
 #endif
