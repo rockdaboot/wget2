@@ -3040,9 +3040,9 @@ static void WGET_GCC_NONNULL_ALL get_config_files(const char *config_home, const
 	// First add the Global Wget2rc file.
 	if ((env = getenv ("SYSTEM_WGET2RC")) && *env) {
 		config.system_config = wget_strdup(env);
-	} else {
-		if (config.system_config && access(config.system_config, R_OK) != 0)
-			config.system_config = NULL;
+	} else if (config.system_config) {
+		if (access(config.system_config, R_OK) != 0)
+			xfree(config.system_config);
 	}
 
 	if ((env = getenv("WGET2RC")) && *env) {
@@ -3242,6 +3242,7 @@ int init(int argc, const char **argv)
 	config.secure_protocol = wget_strdup(config.secure_protocol);
 	config.ca_directory = wget_strdup(config.ca_directory);
 	config.default_page = wget_strdup(config.default_page);
+	config.system_config = wget_strdup(config.system_config);
 
 	log_init();
 
