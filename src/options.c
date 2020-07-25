@@ -3508,7 +3508,7 @@ int init(int argc, const char **argv)
 			wget_vector_add(config.sig_ext, wget_strdup("sig"));
 		} else {
 
-			// Dedup ...
+			// Dedupe ...
 			// Duplicate extensions break the chain when "add_url" blocks the requests
 			// so they don't come back as a failure.
 			int start_len = wget_vector_size(config.sig_ext);
