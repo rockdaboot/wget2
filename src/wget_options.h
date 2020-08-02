@@ -53,6 +53,12 @@ typedef enum {
 	WGET_GPG_VERIFY_SIG_NO_FAIL
 } gpg_verify_mode;
 
+typedef enum {
+	DOWNLOAD_ATTR_NO,
+	DOWNLOAD_ATTR_STRIPPATH,
+	DOWNLOAD_ATTR_USEPATH,
+} download_attr_mode;
+
 typedef struct {
 	const char
 		*filename;
@@ -197,7 +203,8 @@ struct config {
 		cert_type,             // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
 		private_key_type,      // SSL_X509_FMT_PEM or SSL_X509_FMT_DER (=ASN1)
 		progress,
-		regex_type;
+		regex_type,
+		download_attr;
 	bool
 		tls_resume,            // if TLS session resumption is enabled or not
 		content_on_error,
@@ -251,7 +258,6 @@ struct config {
 		cookies,
 		spider,
 		dns_caching,
-		download_attr,
 		check_certificate,
 		check_hostname,
 		span_hosts,

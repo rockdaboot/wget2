@@ -1342,10 +1342,14 @@ Go to background immediately after startup. If no output file is specified via t
 
   Compatibility-Note: `none` type in Wget 1.X has the same meaning as `identity` type in Wget2.
 
-### `--download-attr`
+### `--download-attr=[strippath|usepath]`
 
   The `download` HTML5 attribute may specify (or better: suggest) a file name for the `href` URL in `a` and `area`
-  tags. This option tells Wget2 to make use of this file name when saving. The default is off.
+  tags. This option tells Wget2 to make use of this file name when saving. The two possible values are 'strippath'
+  to strip the path from the file name. This is the default.
+
+  The value 'usepath' takes the file name as as including the directory. This is very dangerous and we can't stress
+  enough not to use it on untrusted input or servers ! Only use this if you really trust the input or the server.
 
 ## <a name="HTTPS Options"/>HTTPS (SSL/TLS) Options
 

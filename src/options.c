@@ -1127,6 +1127,36 @@ static int parse_compression(option_t opt, const char *val, const char invert)
 	return -1;
 }
 
+static int parse_download_attr(option_t opt, const char *val, const char invert)
+{
+	(void) opt;
+
+	if (!val && invert) {   // --no-download-attr
+		config.download_attr = DOWNLOAD_ATTR_NO;
+		return 0;
+	}
+
+	if (!val) {    // --download_attr
+		config.download_attr = DOWNLOAD_ATTR_STRIPPATH;
+		return 0;
+	}
+
+	if (invert) {
+		error_printf(_("Disallowed Value for --no-download-attr: %s\n"), val);
+		return -1;
+	}
+
+	if (!strcasecmp(val, "strippath")) {
+		config.download_attr = DOWNLOAD_ATTR_STRIPPATH;
+	} else if (!strcasecmp(val, "usepath")) {
+		config.download_attr = DOWNLOAD_ATTR_USEPATH;
+	} else {
+		error_printf(_("Invalid value for --download-attr: %s\n"), val);
+		return -1;
+	}
+
+	return 0;
+}
 
 static int list_plugins(WGET_GCC_UNUSED option_t opt,
 	WGET_GCC_UNUSED const char *val, WGET_GCC_UNUSED const char invert)
@@ -1494,10 +1524,12 @@ static const struct optionw options[] = {
 		{ "Comma-separated list of domains to follow.\n"
 		}
 	},
-	{ "download-attr", &config.download_attr, parse_bool, -1, 0,
+	{ "download-attr", &config.download_attr, parse_download_attr, -1, 0,
 		SECTION_DOWNLOAD,
-		{ "Use the file name specified in HTML5 download\n",
-		  "attributes. (default: off)\n"
+		{ "Recognize HTML5 download attributes.\n",
+		  "'strippath' strips the path to be more secure.\n"
+		  "'usepath' uses the path as is (this can be extremely dangerous !).\n"
+		  "(default: strippath)\n"
 		}
 	},
 	{ "egd-file", &config.egd_file, parse_filename, 1, 0,

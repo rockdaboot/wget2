@@ -35,7 +35,7 @@ int main(void)
 				"<html><head></head>\n"\
 				"<body>\n"\
 				" <a href=\"image1\" download>image 1</a>." \
-				" <a href=\"image2\" download=\"sleepingcat.png\">image 2</a>." \
+				" <a href=\"image2\" download=\"/tmp/sleepingcat.png\">image 2</a>." \
 				" <a href=\"image3\">image 3</a>." \
 				" <img href=\"image4\" download>image 4</img>." \
 				" <img href=\"image5\" download=\"sleepingcat2.png\">image 5</img>." \
@@ -140,6 +140,7 @@ int main(void)
 		0);
 
 	// --download-attr: File names amended by download attribute (only in <a> and <area> tags)
+	// check if default is working
 	wget_test(
 		WGET_TEST_OPTIONS, "-nH --no-robots -r --download-attr",
 		WGET_TEST_REQUEST_URL, "page1.html",
@@ -148,6 +149,46 @@ int main(void)
 			{ urls[0].name + 1, urls[0].body },
 			{ urls[1].name + 1, urls[1].body },
 			{ "sleepingcat.png", urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
+			{ urls[4].name + 1, urls[4].body },
+			{ urls[5].name + 1, urls[5].body },
+			{ urls[6].name + 1, urls[6].body },
+			{ urls[7].name + 1, urls[7].body },
+			{ "subdir/sleepingcat.png", urls[8].body },
+			{ urls[9].name + 1, urls[9].body },
+			{	NULL } },
+		0);
+
+	// --download-attr=strippath: File names amended by download attribute (only in <a> and <area> tags)
+	// check if 'strippath' default is working
+	wget_test(
+		WGET_TEST_OPTIONS, "-nH --no-robots -r --download-attr=strippath",
+		WGET_TEST_REQUEST_URL, "page1.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ "sleepingcat.png", urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
+			{ urls[4].name + 1, urls[4].body },
+			{ urls[5].name + 1, urls[5].body },
+			{ urls[6].name + 1, urls[6].body },
+			{ urls[7].name + 1, urls[7].body },
+			{ "subdir/sleepingcat.png", urls[8].body },
+			{ urls[9].name + 1, urls[9].body },
+			{	NULL } },
+		0);
+
+	// --download-attr=strippath: File names amended by download attribute (only in <a> and <area> tags)
+	// check if 'usepath' default is working with paths
+	wget_test(
+		WGET_TEST_OPTIONS, "-nH --no-robots -r --download-attr=usepath",
+		WGET_TEST_REQUEST_URL, "page1.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ "/tmp/sleepingcat.png", urls[2].body },
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
 			{ urls[5].name + 1, urls[5].body },

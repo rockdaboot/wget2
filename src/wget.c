@@ -835,7 +835,11 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 		goto out;
 	}
 
-	if (download_name && !IS_PATH_WITH_DIR(download_name)) {
+	if (download_name) {
+		if (config.download_attr == DOWNLOAD_ATTR_STRIPPATH && IS_PATH_WITH_DIR(download_name)) {
+			download_name = last_component(download_name);
+		}
+
 		debug_printf("Change local file name. %s -> %s\n", blacklistp->local_filename, download_name);
 		const char *basename = last_component(blacklistp->local_filename);
 		size_t oldlen = strlen(blacklistp->local_filename);
