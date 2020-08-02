@@ -352,6 +352,7 @@ Alpine:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ALPINE_BUILD
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
+    - ln -s /usr/bin/python3 /usr/bin/python
     - ./bootstrap --skip-po
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check
