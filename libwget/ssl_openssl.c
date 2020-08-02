@@ -544,12 +544,12 @@ struct verification_flags {
 	X509_STORE
 		*certstore;
 	unsigned int
-		verifying_ocsp,
-		ocsp_checked,
 		cert_chain_size;
-	const char *hostname;
-	X509_STORE *certstore;
-	wget_hpkp_stats_result hpkp_stats;
+	wget_hpkp_stats_result
+		hpkp_stats;
+	bool
+		verifying_ocsp,
+		ocsp_checked;
 };
 
 static int check_ocsp_response(OCSP_RESPONSE *,
@@ -1052,7 +1052,7 @@ static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, c
 static int openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storectx)
 {
 	X509_STORE *store;
-	struct _verification_flags *vflags;
+	struct verification_flags *vflags;
 	STACK_OF(X509) *certs = X509_STORE_CTX_get1_chain(storectx);
 
 	if (ossl_retval == 0) {
@@ -1412,7 +1412,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	SSL *ssl = NULL;
 	X509_STORE *store;
 	int retval, error, resumed;
-	struct _verification_flags *vflags = NULL;
+	struct verification_flags *vflags = NULL;
 	wget_tls_stats_data stats = {
 		.alpn_protocol = NULL,
 		.version = -1,
@@ -1435,7 +1435,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	}
 
 	/* Store state flags for the verification callback */
-	vflags = wget_malloc(sizeof(struct _verification_flags));
+	vflags = wget_malloc(sizeof(struct verification_flags));
 	if (!vflags) {
 		retval = WGET_E_MEMORY;
 		goto bail;
