@@ -138,7 +138,7 @@ found:
 		_iter->pos++;
 	}
 
-	if (!_iter->entry) {
+	if (!_iter->entry && h) {
 		for (; _iter->pos < h->max; _iter->pos++) {
 			if (h->entry[_iter->pos]) {
 				_iter->entry = h->entry[_iter->pos];
