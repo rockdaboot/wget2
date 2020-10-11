@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$TRAVIS_OS_NAME" = "osx" ]]; then
-	brew update
+	brew upgrade
 	brew install gnutls
 	brew install nettle
 	brew outdated autoconf || brew upgrade autoconf
