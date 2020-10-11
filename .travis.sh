@@ -38,9 +38,9 @@ for OPTS in "${CONFIGURE_OPTIONS[@]}"; do
 		make install -j3
 	fi
 	if make clean check -j3; then :; else
-		test -f fuzz/test-suite.log && cat fuzz/test-suite.log
-		test -f unit-tests/test-suite.log && cat unit-tests/test-suite.log
-		test -f tests/test-suite.log && cat tests/test-suite.log
+		test -f fuzz/test-suite.log && tail -1000 fuzz/test-suite.log
+		test -f unit-tests/test-suite.log && tail -1000 unit-tests/test-suite.log
+		test -f tests/test-suite.log && tail -1000 tests/test-suite.log
 		exit 1
 	fi
 done
