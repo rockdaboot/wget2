@@ -1,5 +1,5 @@
 sudo: required
-dist: trusty
+dist: bionic
 
 language: c
 
@@ -34,7 +34,7 @@ addons:
             - liblzma-dev
             - libidn2-0
             - libidn2-0-dev
-            - libunistring0
+            - libunistring
             - libunistring-dev
             - libc6
             - valgrind
