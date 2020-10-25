@@ -109,7 +109,7 @@ fi
 ./configure --prefix=$PREFIX --cc=$PREFIX-gcc
 make
 cp -p libdl.a ../$PREFIX/lib/
-cp -p dlfcn.h ../$PREFIX/include/
+cp -p src/dlfcn.h ../$PREFIX/include/
 cd ..
 
 # Install Libmicrohttpd from source
