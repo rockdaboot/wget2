@@ -101,13 +101,15 @@ Full+VPATH/Debian:
 
 
 # Debian Testing
+# - Testing dash to detects bashims in configure.ac
 Debian/Testing:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_TESTING_BUILD
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
     - ./bootstrap --skip-po && touch .manywarnings
-    - ./configure $CONFIGURE_BASE_FLAGS
+    - CONFIG_SHELL=/bin/dash dash ./configure $CONFIGURE_BASE_FLAGS -q 2>&1 >/dev/null |
+        grep -v "libhsts was not found" | grep . && exit 1
     - make -j$(nproc)
     - make check -j$(nproc)
   tags:
