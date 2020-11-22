@@ -222,7 +222,7 @@ static int getValue(xml_context *context)
 
 // special HTML <script> content parsing
 // see https://html.spec.whatwg.org/multipage/scripting.html#the-script-element
-// 4.3.1.2 Restrictions for contents of script elements
+// see https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
 
 static const char *getScriptContent(xml_context *context)
 {
@@ -261,6 +261,49 @@ static const char *getScriptContent(xml_context *context)
 
 	if (context->callback)
 		context->callback(context->user_ctx, XML_FLG_CONTENT | XML_FLG_END, "script", NULL, context->token, context->token_len, context->token - context->buf);
+
+	return context->token;
+}
+
+// special HTML <style> content parsing
+// see https://html.spec.whatwg.org/multipage/semantics.html#the-style-element
+static const char *getStyleContent(xml_context *context)
+{
+	int comment = 0, length_valid = 0;
+	const char *p;
+
+	for (p = context->token = context->p; *p; p++) {
+		if (comment) {
+			if (p[0] == '*' && p[1] == '/') {
+				p += 2 - 1;
+				comment = 0;
+			}
+		} else {
+			if (p[0] == '/' && p[1] == '*') {
+				p += 2 - 1;
+				comment = 1;
+			} else if (*p == '<' && !wget_strncasecmp_ascii(p, "</style", 7)) {
+				context->token_len = p - context->token;
+				length_valid = 1;
+				for (p += 7; ascii_isspace(*p); p++);
+				if (*p == '>') {
+					p++;
+					break; // found end of <style>
+				} else if (!*p)
+					break; // end of input
+			}
+		}
+	}
+	context->p = p;
+
+	if (!length_valid)
+		context->token_len = p - context->token;
+
+	if (!*p && !context->token_len)
+		return NULL;
+
+	if (context->callback)
+		context->callback(context->user_ctx, XML_FLG_CONTENT | XML_FLG_END, "style", NULL, context->token, context->token_len, context->token - context->buf);
 
 	return context->token;
 }
@@ -333,7 +376,7 @@ static const char *getContent(xml_context *context, const char *directory)
 {
 	int c;
 
-		for (context->token = context->p; (c = *context->p) && c != '<'; context->p++);
+	for (context->token = context->p; (c = *context->p) && c != '<'; context->p++);
 
 	context->token_len = context->p - context->token;
 
@@ -410,7 +453,7 @@ static int parseXML(const char *dir, xml_context *context)
 								debug_printf("%s=%.*s\n", directory, (int)context->token_len, context->token);
 						}
 						else if (!wget_strcasecmp_ascii(directory, "style")) {
-							getContent(context, "style");
+							getStyleContent(context);
 							if (context->token_len)
 								debug_printf("%s=%.*s\n", directory, (int)context->token_len, context->token);
 						}
