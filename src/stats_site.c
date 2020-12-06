@@ -203,10 +203,11 @@ static int print_csv_entry(FILE *_fp, site_stats_data *doc)
 {
 	long long transfer_time = doc->response_end - doc->request_start;
 
-	wget_fprintf(_fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d,%ld,%s\n",
+	wget_fprintf(_fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d,%lld,%s\n",
 		doc->id, doc->parent_id, doc->iri->uri, doc->status, !doc->redirect, doc->method,
 		doc->size_downloaded, doc->size_decompressed, transfer_time,
-		doc->initial_response_duration, doc->encoding, doc->signature_status, doc->last_modified, doc->mime_type);
+		doc->initial_response_duration, doc->encoding, doc->signature_status,
+		(long long) doc->last_modified, doc->mime_type);
 
 	return 0;
 }

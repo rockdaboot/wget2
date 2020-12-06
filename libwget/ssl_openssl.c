@@ -1237,7 +1237,7 @@ void wget_ssl_deinit(void)
 static int ssl_resume_session(SSL *ssl, const char *hostname)
 {
 	void *sess = NULL;
-	unsigned long sesslen;
+	size_t sesslen;
 	SSL_SESSION *ssl_session;
 
 	if (!config.tls_session_cache)
@@ -1251,7 +1251,7 @@ static int ssl_resume_session(SSL *ssl, const char *hostname)
 		debug_printf("Found cached session data for host '%s'\n",hostname);
 		ssl_session = d2i_SSL_SESSION(NULL,
 				(const unsigned char **) &sess,
-				sesslen);
+				(long) sesslen);
 		if (!ssl_session) {
 			error_printf(_("OpenSSL: Could not parse cached session data.\n"));
 			return -1;
