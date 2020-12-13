@@ -204,6 +204,11 @@ if test -n "$WARN_CFLAGS"; then
     WARN_CFLAGS="$WARN_CFLAGS -Wno-missing-field-initializers"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-nullability-extension -Wno-nullability-completeness"
 
+    CLANG_VERSION=$($CC -dumpversion | cut -f1 -d.)
+    if test $CLANG_VERSION -ge 11; then
+      WARN_CFLAGS="$WARN_CFLAGS -Wno-implicit-int-float-conversion"
+    fi
+
     # remove all flags from WARN_FLAGS that are already in CFLAGS
     # wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])
 
