@@ -1269,7 +1269,7 @@ wget_http_response *wget_http_parse_response_header(char *buf)
 		return NULL;
 	}
 
-	for (char *line = eol + 1; eol && *line && *line != '\r' && *line != '\n'; line = eol + 1) {
+	for (char *line = eol + 1; eol && *line && *line != '\r' && *line != '\n'; line = eol ? eol + 1 : NULL) {
 		eol = strchr(line, '\n');
 		while (eol && c_isblank(eol[1])) { // handle split lines
 			*eol = eol[-1] = ' ';
