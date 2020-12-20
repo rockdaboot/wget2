@@ -1501,11 +1501,10 @@ int main(int argc, const char **argv)
  */
 void *input_thread(void *p WGET_GCC_UNUSED)
 {
-	ssize_t len;
 	size_t bufsize = 0;
 	char *buf = NULL;
 
-	while ((len = wget_fdgetline(&buf, &bufsize, STDIN_FILENO)) >= 0) {
+	while (wget_fdgetline(&buf, &bufsize, STDIN_FILENO) >= 0) {
 		queue_url_from_local(buf, config.base, config.local_encoding, URL_FLG_NO_BLACKLISTING);
 
 		if (nthreads < config.max_threads && nthreads < queue_size())

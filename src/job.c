@@ -231,7 +231,7 @@ int job_validate_file(JOB *job)
 
 			part.id = it + 1;
 
-			if ((rc = check_piece_hash(hash, fd, part.position, part.length)) != 1) {
+			if (check_piece_hash(hash, fd, part.position, part.length) != 1) {
 				info_printf(_("Piece %d/%d not OK - requeuing\n"), it + 1, wget_vector_size(metalink->pieces));
 				wget_vector_add_memdup(job->parts, &part, sizeof(PART));
 				debug_printf("  need to download %llu bytes from pos=%llu\n",

@@ -2599,18 +2599,16 @@ static int WGET_GCC_NONNULL((1)) set_long_option(const char *name, const char *v
 
 static int parse_proxy(option_t opt, const char *val, const char invert)
 {
-	int rc;
-
-	if ((rc = parse_bool(opt, val, invert)) < 0) {
+	if (parse_bool(opt, val, invert) < 0) {
 		if (invert) {
 			// the strdup'ed string will be released on program exit
 			xfree(config.no_proxy);
 			config.no_proxy = val ? wget_strdup(val) : NULL;
 		} else {
 			if((opt = bsearch("http-proxy", options, countof(options), sizeof(options[0]), opt_compare)))
-				parse_string(opt, val, invert);
+				return parse_string(opt, val, invert);
 			if((opt = bsearch("https-proxy", options, countof(options), sizeof(options[0]), opt_compare)))
-				parse_string(opt, val, invert);
+				return parse_string(opt, val, invert);
 		}
 	}
 
