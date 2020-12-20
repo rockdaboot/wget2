@@ -165,9 +165,10 @@ static const char *_parse_hostname(const char* data)
 {
 	if (data) {
 		if (!wget_strncasecmp_ascii(data, "http://", 7)) {
-			return strchr(data += 7, '/');
-		} else if (!wget_strncasecmp_ascii(data, "https://", 8)) {
-			return strchr(data += 8, '/');
+			return strchr(data + 7, '/');
+		}
+		if (!wget_strncasecmp_ascii(data, "https://", 8)) {
+			return strchr(data + 8, '/');
 		}
 	}
 
@@ -405,7 +406,6 @@ static enum MHD_Result _answer_to_connection(
 	int64_t modified;
 	const char *modified_val, *to_bytes_string = "";
 	ssize_t from_bytes, to_bytes;
-	size_t body_len;
 	char content_len[100], content_range[100];
 
 	// whether or not this connection is HTTPS
@@ -428,7 +428,7 @@ static enum MHD_Result _answer_to_connection(
 	if (!strcmp(method, "GET"))
 		MHD_get_connection_values(connection, MHD_HEADER_KIND, (MHD_KeyValueIterator)_print_header_range, header_range);
 
-	from_bytes = to_bytes = body_len = 0;
+	from_bytes = to_bytes = 0;
 	if (*header_range->data) {
 		const char *from_bytes_string;
 		const char *range_string = strchr(header_range->data, '=');
@@ -624,7 +624,8 @@ static enum MHD_Result _answer_to_connection(
 			else if (*header_range->data) {
 				if (!strcmp(to_bytes_string, "-"))
 					to_bytes = body_length - 1;
-				body_len = to_bytes - from_bytes + 1;
+
+				size_t body_len = to_bytes - from_bytes + 1;
 
 				if (from_bytes > to_bytes || from_bytes >= (int) body_length) {
 					response = MHD_create_response_from_buffer(0, (void *) "", MHD_RESPMEM_PERSISTENT);
