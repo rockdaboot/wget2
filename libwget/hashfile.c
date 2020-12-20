@@ -268,7 +268,7 @@ int wget_hash_fast(wget_digest_algorithm algorithm, const void *text, size_t tex
 	if (hashtype == WC_HASH_TYPE_NONE)
 		return WGET_E_UNSUPPORTED;
 
-	if (wc_Hash(hashtype, text, textlen, digest, wc_HashGetDigestSize(hashtype)) != 0)
+	if (wc_Hash(hashtype, text, (unsigned) textlen, digest, wc_HashGetDigestSize(hashtype)) != 0)
 		return WGET_E_UNKNOWN;
 
 	return WGET_E_SUCCESS;
@@ -309,7 +309,7 @@ int wget_hash_init(wget_hash_hd **handle, wget_digest_algorithm algorithm)
 
 int wget_hash(wget_hash_hd *handle, const void *text, size_t textlen)
 {
-	if (wc_HashUpdate(&handle->hash, handle->type, text, textlen) == 0)
+	if (wc_HashUpdate(&handle->hash, handle->type, text, (unsigned) textlen) == 0)
 		return WGET_E_SUCCESS;
 
 	return WGET_E_UNKNOWN;
