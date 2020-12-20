@@ -564,7 +564,7 @@ static int send_ocsp_request(const char *server,
 		      gnutls_x509_crt_t cert, gnutls_x509_crt_t issuer,
 		      wget_buffer **ocsp_data, gnutls_datum_t *nonce)
 {
-	int ret = -1, rc;
+	int ret = -1;
 	int server_allocated = 0;
 	gnutls_datum_t body;
 	wget_iri *iri;
@@ -574,6 +574,7 @@ static int send_ocsp_request(const char *server,
 		/* try to read URL from issuer certificate */
 		gnutls_datum_t data;
 		unsigned i = 0;
+		int rc;
 
 		do {
 			rc = gnutls_x509_crt_get_authority_info_access(cert, i++, GNUTLS_IA_OCSP_URI, &data, NULL);
@@ -616,7 +617,7 @@ static int send_ocsp_request(const char *server,
 	wget_http_add_header(req, "Connection", "close");
 
 	wget_http_connection *conn;
-	if ((rc = wget_http_open(&conn, iri)) == WGET_E_SUCCESS) {
+	if (wget_http_open(&conn, iri) == WGET_E_SUCCESS) {
 		wget_http_request_set_body(req, "application/ocsp-request", wget_memdup(body.data, body.size), body.size);
 		req->debug_skip_body = 1;
 		if (wget_http_send_request(conn, req) == 0) {

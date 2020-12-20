@@ -943,7 +943,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 		while (!wget_vector_size(conn->received_http2_responses) && !conn->abort_indicator && !abort_indicator) {
 			int rc;
 
-			while (nghttp2_session_want_write(conn->http2_session) && (rc = nghttp2_session_send(conn->http2_session)) == 0)
+			while (nghttp2_session_want_write(conn->http2_session) && nghttp2_session_send(conn->http2_session) == 0)
 				;
 
 			if ((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) <= 0) {

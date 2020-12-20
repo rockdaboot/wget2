@@ -775,7 +775,7 @@ int wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port)
 					}
 				}
 
-				if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+				if (getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV) == 0)
 					tcp->ip = wget_strdup(adr);
 				else
 					tcp->ip = NULL;

@@ -359,7 +359,7 @@ struct addrinfo *wget_dns_resolve(wget_dns *dns, const char *host, uint16_t port
 		addrinfo = sort_preferred(addrinfo, preferred_family);
 
 	if (dns->stats_callback) {
-		if ((rc = getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
+		if (getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV) == 0)
 			stats.ip = adr;
 		else
 			stats.ip = "???";
