@@ -95,13 +95,12 @@ static char *_normalize_location(const char *base, const char *url)
 	wget_string url_s = { .p = url, .len = strlen(url) };
 	wget_iri *base_iri = wget_iri_parse(base, "utf-8");
 	char sbuf[1024], *norm_url = NULL;
-	int rc;
 
 	if (!base_iri)
 		return NULL;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-	if ((rc = _normalize_uri(base_iri, &url_s, "utf-8", &buf)) == 0) {
+	if (_normalize_uri(base_iri, &url_s, "utf-8", &buf) == 0) {
 		norm_url = wget_strmemdup(buf.data, buf.length);
 	}
 	wget_buffer_deinit(&buf);
