@@ -1216,9 +1216,9 @@ void wget_test_start_server(int first_key, ...)
 	va_list args;
 	bool start_http = 1;
 #ifdef WITH_TLS
-	bool ocsp_stap = 0;
 	bool start_https = 1;
 #ifdef WITH_OCSP
+	bool ocsp_stap = 0;
 	bool start_ocsp = 0;
 #endif
 #ifdef HAVE_MICROHTTPD_HTTP2_H
