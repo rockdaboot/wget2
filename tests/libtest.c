@@ -1329,8 +1329,8 @@ void wget_test_start_server(int first_key, ...)
 			start_h2 = 0;
 #endif
 			start_ocsp = 1;
-#endif
 			break;
+#endif
 		case WGET_TEST_FEATURE_OCSP_STAPLING:
 #if !defined WITH_OCSP || MHD_VERSION < 0x00096502 || GNUTLS_VERSION_NUMBER < 0x030603
 			wget_error_printf("MHD or GnuTLS version insufficient. Skipping\n");
