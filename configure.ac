@@ -100,7 +100,6 @@ AC_CONFIG_FILES([include/wget/wgetver.h])
 
 AC_CONFIG_SRCDIR([src/wget.c])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_MACRO_DIR([m4])
 
 # Non-verbose make
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
