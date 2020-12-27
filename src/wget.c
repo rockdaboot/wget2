@@ -1789,9 +1789,9 @@ static int process_response_header(wget_http_response *resp)
 	return 0;
 }
 
-static bool check_status_code_list(wget_vector *list, uint16_t status);
 static bool check_mime_list(wget_vector *list, const char *mime);
 static bool check_statuscode_list(wget_vector *codes, const char *code);
+static bool check_status_code_list(wget_vector *codes, uint16_t code);
 static int64_t WGET_GCC_NONNULL_ALL get_file_lmtime(const char *fname);
 
 static void process_head_response(wget_http_response *resp)
@@ -3156,7 +3156,7 @@ static int open_unique(const char *fname, int flags, mode_t mode, int multiple, 
 	return fd;
 }
 
-// return 0 if mime won't be downloaded and 1 if it will
+// Return whether the mime string is in the list and not excluded.
 static bool check_mime_list(wget_vector *list, const char *mime)
 {
 	char result = 0;
@@ -3179,10 +3179,20 @@ static bool check_mime_list(wget_vector *list, const char *mime)
 	return result;
 }
 
-// return whether code is in the list of codes
+// Return whether the status code is in the list of codes.
 static bool check_statuscode_list(wget_vector *codes, const char *code)
 {
 	return check_mime_list(codes, code);
+}
+
+// Return whether the status code is in the list of codes.
+static bool check_status_code_list(wget_vector *codes, uint16_t code)
+{
+	char _code[6];
+
+	wget_snprintf(_code, sizeof(_code), "%hu", code);
+
+	return check_statuscode_list(codes, _code);
 }
 
 static bool is_file(const char *fname)
@@ -3573,29 +3583,6 @@ out:
 	}
 
 	return ret;
-}
-
-// Search function for --save-content-on=. Return 0 if content won't be downloaded and 1 if it will.
-static bool check_status_code_list(wget_vector *list, uint16_t status)
-{
-	char result = 0;
-	char key[6];
-
-	wget_snprintf(key, sizeof(key), "%hu", status);
-
-	for (int i = 0; i < wget_vector_size(list); i++) {
-		char *entry = wget_vector_get(list, i);
-		bool exclude = (*entry == '!');
-
-		entry += exclude;
-
-		if (strpbrk(entry, "*") && !fnmatch(entry, key, FNM_CASEFOLD))
-			result = !exclude;
-		else if (!wget_strcasecmp(entry, key))
-			result = !exclude;
-	}
-
-	return result;
 }
 
 // Sleep after reading to slow down the transfer rate
