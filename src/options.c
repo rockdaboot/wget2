@@ -148,6 +148,12 @@ static int print_version(WGET_GCC_UNUSED option_t opt, WGET_GCC_UNUSED const cha
 #if defined WITH_GNUTLS
 	" +https"
 	" +ssl/gnutls"
+#elif defined WITH_OPENSSL
+	" +https"
+	" +ssl/openssl"
+#elif defined WITH_WOLFSSL
+	" +https"
+	" +ssl/wolfssl"
 #else
 	" -https"
 	" -ssl"
