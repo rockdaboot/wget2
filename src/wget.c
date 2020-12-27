@@ -1791,6 +1791,7 @@ static int process_response_header(wget_http_response *resp)
 
 static bool check_status_code_list(wget_vector *list, uint16_t status);
 static bool check_mime_list(wget_vector *list, const char *mime);
+static bool check_statuscode_list(wget_vector *codes, const char *code);
 static int64_t WGET_GCC_NONNULL_ALL get_file_lmtime(const char *fname);
 
 static void process_head_response(wget_http_response *resp)
@@ -2354,7 +2355,7 @@ void *downloader_thread(void *p)
 					print_status(downloader, "Got a HTTP Code %d. Job reached max tries.", resp->code);
 				} else {
 					wget_snprintf(http_code, sizeof(http_code), "%d", resp->code);
-					if (check_mime_list(config.retry_on_http_error, http_code)) {
+					if (check_statuscode_list(config.retry_on_http_error, http_code)) {
 						print_status(downloader, "Got a HTTP Code %d. Retrying...", resp->code);
 						job->done = 0;
 						job->retry_ts = wget_get_timemillis() + job->failures * 1000;
@@ -3176,6 +3177,12 @@ static bool check_mime_list(wget_vector *list, const char *mime)
 
 	debug_printf("mime check %d", result);
 	return result;
+}
+
+// return whether code is in the list of codes
+static bool check_statuscode_list(wget_vector *codes, const char *code)
+{
+	return check_mime_list(codes, code);
 }
 
 static bool is_file(const char *fname)
