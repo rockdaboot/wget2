@@ -96,7 +96,14 @@ int main(void)
 		WGET_TEST_FEATURE_MHD,
 		0);
 
-	// test-i
+	wget_test(
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[1].body },
+			{	NULL } },
+		0);
+
 	wget_test(
 //		WGET_TEST_KEEP_TMPFILES, 1,
 		WGET_TEST_OPTIONS, "--method=POST",
@@ -128,6 +135,26 @@ int main(void)
 			{ urls[6].name + 1, urls[7].body },
 			{	NULL } },
 		0);
+
+	wget_test(
+		WGET_TEST_OPTIONS, "--retry-on-http-error=301",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[1].body },
+			{	NULL } },
+		0);
+
+	urls[0].code = "501 Not implemented";
+	wget_test(
+		WGET_TEST_OPTIONS, "--tries=2 --retry-on-http-error=501",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 4,
+		0);
+
+	// Check if we really retried exactly 1x.
+	if (system("if [ \"$(grep -c 'HTTP ERROR response 501' ../test-redirection.log)\" != 2 ]; then exit 1; fi"))
+		wget_error_printf_exit("Expected exactly 2x 'HTTP ERROR response 501'\n");
 
 	//for a POST request:
 	//	upon receiving 301 response code, redirection request must be GET request

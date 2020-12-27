@@ -1669,6 +1669,19 @@ static int process_response_header(wget_http_response *resp)
 	else
 		print_status(downloader, "HTTP ERROR response %d %s [%s]\n", resp->code, resp->reason, iri->uri);
 
+	if (resp->length_inconsistent && resp->code == 200) {
+		print_status(downloader, "Unexpected body length %zu.", resp->content_length);
+		if (config.tries && ++job->failures < config.tries) {
+			debug_printf("Removing %s\n", job->blacklist_entry->local_filename);
+			unlink(job->blacklist_entry->local_filename);
+
+			// retry later
+			job->done = 0;
+			job->retry_ts = wget_get_timemillis() + job->failures * 1000;
+		}
+		return 1; // skip further processing of the request
+	}
+
 	// Wget1.x compatibility
 	if (resp->code/100 == 4 && resp->code != 416) {
 		if (job->head_first)
@@ -2237,7 +2250,6 @@ void *downloader_thread(void *p)
 	int pending = 0, max_pending = 1, locked;
 	long long pause = 0;
 	enum actions action = ACTION_GET_JOB;
-	char http_code[7];
 
 	// downloader->thread = wget_thread_self(); // to avoid race condition
 
@@ -2337,34 +2349,6 @@ void *downloader_thread(void *p)
 
 			job = resp->req->user_data;
 
-			if (resp->length_inconsistent && resp && resp->code == 200) {
-				if (config.tries && ++job->failures >= config.tries) {
-					print_status(downloader, "Unexpected body length %zu. Job reached max tries.", resp->content_length);
-					set_exit_status(EXIT_STATUS_NETWORK);
-				} else {
-					print_status(downloader, "Unexpected body length %zu. Retrying...", resp->content_length);
-					debug_printf("Removing %s\n", job->blacklist_entry->local_filename);
-					unlink(job->blacklist_entry->local_filename);
-					job->done = 0;
-					job->retry_ts = wget_get_timemillis() + job->failures * 1000;
-				}
-				goto next;
-			}
-			else if (config.retry_on_http_error && resp && resp->code != 200) {
-				if (config.tries && ++job->failures >= config.tries) {
-					print_status(downloader, "Got a HTTP Code %d. Job reached max tries.", resp->code);
-				} else {
-					wget_snprintf(http_code, sizeof(http_code), "%d", resp->code);
-					if (check_statuscode_list(config.retry_on_http_error, http_code)) {
-						print_status(downloader, "Got a HTTP Code %d. Retrying...", resp->code);
-						job->done = 0;
-						job->retry_ts = wget_get_timemillis() + job->failures * 1000;
-						set_exit_status(EXIT_STATUS_NETWORK);
-					}
-				}
-				goto next;
-			}
-
 			// general response check to see if we need further processing
 			if (process_response_header(resp) == 0) {
 				if (job->head_first)
@@ -2375,7 +2359,17 @@ void *downloader_thread(void *p)
 					process_response(resp); // GET + POST request/response
 			}
 
-next:
+			if (config.retry_on_http_error && resp->code != 200) {
+				if (config.tries && ++job->failures >= config.tries) {
+					print_status(downloader, "Job reached max tries.");
+					job->done=1;
+				} else if (check_status_code_list(config.retry_on_http_error, resp->code)) {
+					job->done = 0;
+					job->retry_ts = wget_get_timemillis() + job->failures * 1000;
+					set_exit_status(EXIT_STATUS_NETWORK);
+				}
+			}
+
 			host_reset_failure(host);
 
 			wget_http_free_request(&resp->req);

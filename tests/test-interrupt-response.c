@@ -105,7 +105,7 @@ int main(void)
 	wget_test(
 		WGET_TEST_OPTIONS, "--tries=2",
 		WGET_TEST_REQUEST_URL, "file2.bin",
-		WGET_TEST_EXPECTED_ERROR_CODE, 4,
+		WGET_TEST_EXPECTED_ERROR_CODE, 7,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "file2.bin", "" },
 			{	NULL } },
@@ -116,7 +116,7 @@ int main(void)
 //		WGET_TEST_EXECUTABLE, "/usr/bin/wget",
 		WGET_TEST_OPTIONS, "--tries=2",
 		WGET_TEST_REQUEST_URL, "file3.bin",
-		WGET_TEST_EXPECTED_ERROR_CODE, 4,
+		WGET_TEST_EXPECTED_ERROR_CODE, 7,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "file3.bin", data1_interrupted },
 			{	NULL } },
@@ -148,7 +148,7 @@ int main(void)
 //		WGET_TEST_EXECUTABLE, "/usr/bin/wget",
 		WGET_TEST_OPTIONS, "-N --tries=2",
 		WGET_TEST_REQUEST_URL, "file4.bin",
-		WGET_TEST_EXPECTED_ERROR_CODE, 4,
+		WGET_TEST_EXPECTED_ERROR_CODE, 7,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
 			{ "file4.bin", data1_interrupted, 1000000000 - 1 },
 			{	NULL } },
