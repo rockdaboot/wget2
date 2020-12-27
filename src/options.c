@@ -2131,7 +2131,7 @@ static const struct optionw options[] = {
 		  " (default: off)\n"
 		}
 	},
-	{ "retry-on-http-error", &config.http_retry_on_error, parse_stringlist, 1, 0,
+	{ "retry-on-http-error", &config.retry_on_http_error, parse_stringlist, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Specify a list of http statuses in which the download will be retried\n"
 		}
@@ -3840,7 +3840,7 @@ void deinit(void)
 	wget_vector_free(&config.exclude_directories);
 	wget_vector_free(&config.save_content_on);
 	wget_vector_free(&config.mime_types);
-	wget_vector_free(&config.http_retry_on_error);
+	wget_vector_free(&config.retry_on_http_error);
 	wget_vector_free(&config.domains);
 	wget_vector_free(&config.exclude_domains);
 	wget_vector_free(&config.follow_tags);

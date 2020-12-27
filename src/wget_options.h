@@ -140,7 +140,7 @@ struct config {
 		*default_challenges,
 		*headers,
 		*mime_types,
-		*http_retry_on_error,
+		*retry_on_http_error,
 		*save_content_on;
 	wget_content_encoding
 		compression_methods[wget_content_encoding_max + 1];	// the last one for counting

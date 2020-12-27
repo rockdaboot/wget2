@@ -2349,12 +2349,12 @@ void *downloader_thread(void *p)
 				}
 				goto next;
 			}
-			else if (config.http_retry_on_error && resp && resp->code != 200) {
+			else if (config.retry_on_http_error && resp && resp->code != 200) {
 				if (config.tries && ++job->failures >= config.tries) {
 					print_status(downloader, "Got a HTTP Code %d. Job reached max tries.", resp->code);
 				} else {
 					wget_snprintf(http_code, sizeof(http_code), "%d", resp->code);
-					if (check_mime_list(config.http_retry_on_error, http_code)) {
+					if (check_mime_list(config.retry_on_http_error, http_code)) {
 						print_status(downloader, "Got a HTTP Code %d. Retrying...", resp->code);
 						job->done = 0;
 						job->retry_ts = wget_get_timemillis() + job->failures * 1000;
