@@ -153,7 +153,7 @@ static int gzip_decompress(wget_decompressor *dc, const char *src, size_t srclen
 		}
 	} while (status == Z_OK && !strm->avail_out);
 
-	if (status == Z_OK || status == Z_STREAM_END)
+	if (status == Z_OK || status == Z_BUF_ERROR || status == Z_STREAM_END)
 		return 0;
 
 	error_printf(_("Failed to uncompress gzip stream (%d)\n"), status);
