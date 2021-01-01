@@ -30,12 +30,11 @@ addons:
             - libtool
             - gettext
             - flex
-            - liblzma5
             - liblzma-dev
-            - libidn2-0
             - libidn2-0-dev
-            - libunistring
             - libunistring-dev
+            - gnutls-dev
+            - libgcrypt-dev
             - libc6
             - valgrind
             - lcov
