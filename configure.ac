@@ -235,7 +235,7 @@ fi
 AC_ARG_ENABLE([manylibs],
   [AS_HELP_STRING([--disable-manylibs], [Generate small libraries of libwget functionality groups])],
   [enable_manylibs=$enableval], [enable_manylibs=yes])
-AM_CONDITIONAL([ENABLE_MANYLIBS], [test "x$enable_manylibs" = xyes])
+AM_CONDITIONAL([ENABLE_MANYLIBS], [test "$enable_manylibs" = "yes"])
 
 AC_ARG_ENABLE([fuzzing],
   [AS_HELP_STRING([--enable-fuzzing], [Turn on fuzzing build (for developers)])],
@@ -358,14 +358,14 @@ case "$host_os" in
       ENABLE_XATTR=no
 esac
 
-if test "X${ENABLE_XATTR}" = "Xyes"; then
+if test "${ENABLE_XATTR}" = "yes" ; then
   AC_CHECK_FUNCS([$xattr_syscalls], [], [
     AC_MSG_NOTICE([Disabling Extended Attribute support: your system does not support $xattr_syscalls])
     ENABLE_XATTR=no
   ])
 fi
 
-test "X${ENABLE_XATTR}" = "Xyes" && AC_DEFINE([ENABLE_XATTR], 1,
+test "${ENABLE_XATTR}" = "yes" && AC_DEFINE([ENABLE_XATTR], 1,
     [Define if you want file meta-data storing into POSIX Extended Attributes compiled in.])
 
 #
@@ -382,7 +382,7 @@ m4_ifdef([AM_GNU_GETTEXT_VERSION], [
 #do not indent here
 AM_GNU_GETTEXT_VERSION([0.19.3])
 ])
-AM_CONDITIONAL([HAVE_PO], [ test "$have_po" = yes ])
+AM_CONDITIONAL([HAVE_PO], [ test "$have_po" = "yes" ])
 
 #
 # check for doxygen and pandoc
@@ -422,7 +422,7 @@ AM_CONDITIONAL([WITH_PANDOC], [ test -n "$PANDOC" ])
 #AC_ARG_ENABLE(man,[AS_HELP_STRING([--enable-man],
 #                                  [generate man pages [default=auto]])],enable_man=yes,enable_man=no)
 
-#AM_CONDITIONAL(ENABLE_MAN, test x$enable_man != xno)
+#AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" != "no")
 #AC_MSG_CHECKING([whether to generate man pages])
 #AS_IF([test "$enable_man" != no], [
 #  AC_MSG_RESULT([yes])
@@ -438,9 +438,9 @@ AC_CHECK_PROG(LDCONFIG, ldconfig, ldconfig, :)
 AC_ARG_ENABLE(valgrind-tests,
   AS_HELP_STRING([--enable-valgrind-tests], [enable using Valgrind for tests (mutually exclusive with Address/Memory/Thread sanitizer)]),
   [ac_enable_valgrind=$enableval], [ac_enable_valgrind=no])
-AS_IF([test "x${ac_enable_valgrind}" != xno], [
+AS_IF([test "${ac_enable_valgrind}" != "no"], [
   AC_CHECK_PROG(HAVE_VALGRIND, valgrind, yes, no)
-  AS_IF([test "x$HAVE_VALGRIND" = xyes], [
+  AS_IF([test "$HAVE_VALGRIND" = "yes"], [
     VALGRIND_TESTS="1"
     AC_SUBST(VALGRIND_TESTS)
     TESTS_INFO="Test suite will be run under Valgrind"
@@ -486,7 +486,7 @@ PKG_PROG_PKG_CONFIG
 
 AC_ARG_WITH(ssl, AS_HELP_STRING([--with-ssl], [Use SSL/TLS with specified library. Options: 'gnutls' (default), 'openssl', 'wolfssl' or 'none']), with_ssl=$withval, with_ssl=gnutls)
 
-AS_IF([test "x$with_ssl" = xyes], [with_ssl=gnutls])
+AS_IF([test "$with_ssl" = "yes"], [with_ssl=gnutls])
 
 PKG_CHECK_MODULES([GNUTLS], [gnutls], [
   with_gnutls=yes
@@ -496,20 +496,20 @@ PKG_CHECK_MODULES([GNUTLS], [gnutls], [
     [with_gnutls=no;  AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS, nor run the OCSP tests. Fallback to libnettle for hashing and checksumming.)])
 ])
 
-AS_IF([test "x$with_ssl" = "xgnutls"], [
-  AS_IF([test "x$with_gnutls" = xyes], [
+AS_IF([test "$with_ssl" = "gnutls"], [
+  AS_IF([test "$with_gnutls" = "yes"], [
     LIBS="$GNUTLS_LIBS $LIBS"
     CFLAGS="$GNUTLS_CFLAGS $CFLAGS"
     AC_DEFINE([WITH_GNUTLS], [1], [Use GnuTLS])
     AC_SEARCH_LIBS(gnutls_hash, gnutls, [with_gnutls_hash=yes])
-    AS_IF([test "x$with_gnutls_hash" = xyes],
+    AS_IF([test "$with_gnutls_hash" = "yes"],
       [AC_CHECK_HEADERS([gnutls/crypto.h], [], [], [#include <gnutls/gnutls.h>])])
     AC_CHECK_HEADERS([gnutls/ocsp.h],
       [AC_DEFINE([WITH_OCSP], [1], [OCSP is supported])],
       [AC_MSG_WARN(*** Header file gnutls/ocsp.h was not found. OCSP will be disabled.)])
     AC_CHECK_FUNCS(gnutls_srp_server_get_username gnutls_transport_get_int)
   ])
-], [test "x$with_ssl" = "xopenssl"], [
+], [test "$with_ssl" = "openssl"], [
   PKG_CHECK_MODULES([OPENSSL], [openssl], [
     with_openssl=yes
     LIBS="$OPENSSL_LIBS $LIBS"
@@ -522,7 +522,7 @@ AS_IF([test "x$with_ssl" = "xgnutls"], [
     ])
   ])
 
-  AS_IF([test "x$with_openssl" = xyes], [
+  AS_IF([test "$with_openssl" = "yes"], [
     AC_CHECK_HEADERS([openssl/ssl.h])
     AC_CHECK_HEADERS([openssl/x509_vfy.h])
     AC_CHECK_HEADERS([openssl/ocsp.h],
@@ -536,7 +536,7 @@ AS_IF([test "x$with_ssl" = "xgnutls"], [
       [with_libcrypto=no; AC_MSG_WARN(*** LIBCRYPTO was not found. Fallback to libwolfcrypt for hashing and checksumming.)
     ])
   ])
-], [test "x$with_ssl" = "xwolfssl"], [
+], [test "$with_ssl" = "wolfssl"], [
   PKG_CHECK_MODULES([WOLFSSL], [wolfssl], [
     with_wolfssl=yes
     LIBS="$WOLFSSL_LIBS $LIBS"
@@ -548,26 +548,26 @@ AS_IF([test "x$with_ssl" = "xgnutls"], [
       [with_wolfssl=no;  AC_MSG_WARN(*** WolfSSL was not found. You will not be able to use HTTPS.)])
   ])
 
-  AS_IF([test "x$with_wolfssl" = xyes], [
+  AS_IF([test "$with_wolfssl" = "yes"], [
     with_libwolfcrypt=yes
     AC_DEFINE([WITH_LIBWOLFCRYPT], [1], [Use wolfcrypt])
   ])
-], [test "x$with_ssl" != "xnone"], [
+], [test "$with_ssl" != "none"], [
   AC_MSG_ERROR([*** Unsupported value for --with-ssl. Use 'gnutls' (default), 'openssl', 'wolfssl' or 'none'])
 ])
 
-AM_CONDITIONAL([WITH_GNUTLS], [test "x$with_ssl" = xgnutls && test "x$with_gnutls" = xyes])
-AM_CONDITIONAL([WITH_OPENSSL], [test "x$with_ssl" = xopenssl && test "x$with_openssl" = xyes])
-AM_CONDITIONAL([WITH_WOLFSSL], [test "x$with_ssl" = xwolfssl && test "x$with_wolfssl" = xyes])
+AM_CONDITIONAL([WITH_GNUTLS], [test "$with_ssl" = "gnutls" && test "$with_gnutls" = "yes"])
+AM_CONDITIONAL([WITH_OPENSSL], [test "$with_ssl" = "openssl" && test "$with_openssl" = "yes"])
+AM_CONDITIONAL([WITH_WOLFSSL], [test "$with_ssl" = "wolfssl" && test "$with_wolfssl" = "yes"])
 
-AM_CONDITIONAL([WITH_TLS], [test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes || test "x$with_openssl" = xyes])
-AS_IF([test "x$with_gnutls" = xyes || test "x$with_wolfssl" = xyes || test "x$with_openssl" = xyes], [
+AM_CONDITIONAL([WITH_TLS], [test "$with_gnutls" = "yes" || test "$with_wolfssl" = "yes" || test "$with_openssl" = "yes"])
+AS_IF([test "$with_gnutls" = "yes" || test "$with_wolfssl" = "yes" || test "$with_openssl" = "yes"], [
   AC_DEFINE([WITH_TLS], [1], [Built with TLS support])
 ], [
   AC_DEFINE([WITH_TLS], [0], [No TLS support])
 ])
 
-AS_IF([(test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes) && test "x$with_libwolfcrypt" != xyes && test "x$with_libcrypto" != xyes], [
+AS_IF([(test "$with_gnutls" != "yes" || test "$with_gnutls_hash" != "yes") && test "$with_libwolfcrypt" != "yes" && test "$with_libcrypto" != "yes"], [
   PKG_CHECK_MODULES([NETTLE], nettle, [
     with_libnettle=yes
     LIBS="$NETTLE_LIBS $LIBS"
@@ -578,22 +578,22 @@ AS_IF([(test "x$with_gnutls" != xyes || test "x$with_gnutls_hash" != xyes) && te
      AC_MSG_WARN(*** LIBNETTLE was not found. Fallback to libgcrypt for hashing and checksumming.)
   ])
 
-  AS_IF([test "x$with_libnettle" != xyes], [
+  AS_IF([test "$with_libnettle" != "yes"], [
     AC_SEARCH_LIBS(gcry_check_version, gcrypt,
       [with_gcrypt=yes; AC_DEFINE([WITH_GCRYPT], [1], [Use libgcrypt]) AC_CHECK_HEADERS([gcrypt.h])],
       [with_gcrypt=no;  AC_MSG_WARN(*** LIBGCRYPT was not found. Fallback to gnulib for hashing and checksumming.)])
   ])
 ])
 
-AM_CONDITIONAL([WITH_LIBNETTLE], [test "x$with_libnettle" = xyes])
-AM_CONDITIONAL([WITH_CRYPT], [test "x$with_gcrypt" = xyes])
+AM_CONDITIONAL([WITH_LIBNETTLE], [test "$with_libnettle" = "yes"])
+AM_CONDITIONAL([WITH_CRYPT], [test "$with_gcrypt" = "yes"])
 
 AC_ARG_WITH(libpsl, AS_HELP_STRING([--without-libpsl], [disable support for libpsl cookie checking]), with_libpsl=$withval, with_libpsl=yes)
-AS_IF([test "x$with_libpsl" != xno], [
+AS_IF([test "$with_libpsl" != "no"], [
   PKG_CHECK_MODULES([LIBPSL], libpsl, [
     with_libpsl=yes
     # correct $LIBPSL_LIBS (in libpsl <= 0.6.0)
-    AS_IF([test "x$LIBPSL_LIBS" = "x-llibpsl "], [LIBPSL_LIBS="-lpsl"])
+    AS_IF([test "$LIBPSL_LIBS" = "-llibpsl "], [LIBPSL_LIBS="-lpsl"])
     LIBS="$LIBPSL_LIBS $LIBS"
     CFLAGS="$LIBPSL_CFLAGS $CFLAGS"
     AC_DEFINE([WITH_LIBPSL], [1], [PSL support enabled])
@@ -603,10 +603,10 @@ AS_IF([test "x$with_libpsl" != xno], [
       [with_libpsl=no;  AC_MSG_WARN(*** libpsl was not found. Fallback to builtin cookie checking.)])
   ])
 ])
-AM_CONDITIONAL([WITH_LIBPSL], [test "x$with_libpsl" = xyes])
+AM_CONDITIONAL([WITH_LIBPSL], [test "$with_libpsl" = "yes"])
 
 AC_ARG_WITH(libhsts, AS_HELP_STRING([--without-libhsts], [disable support for libhsts checking]), with_libhsts=$withval, with_libhsts=yes)
-AS_IF([test "x$with_libhsts" != xno], [
+AS_IF([test "$with_libhsts" != "no"], [
   PKG_CHECK_MODULES([LIBHSTS], libhsts, [
     with_libhsts=yes
     LIBS="$LIBHSTS_LIBS $LIBS"
@@ -618,10 +618,10 @@ AS_IF([test "x$with_libhsts" != xno], [
       [with_libhsts=no;  AC_MSG_WARN(*** libhsts was not found.)])
   ])
 ])
-AM_CONDITIONAL([WITH_LIBHSTS], [test "x$with_libHSTS" = xyes])
+AM_CONDITIONAL([WITH_LIBHSTS], [test "$with_libHSTS" = "yes"])
 
 AC_ARG_WITH(libnghttp2, AS_HELP_STRING([--without-libnghttp2], [disable support for libnghttp2]), with_libnghttp2=$withval, with_libnghttp2=yes)
-AS_IF([test "x$with_libnghttp2" != xno], [
+AS_IF([test "$with_libnghttp2" != "no"], [
   PKG_CHECK_MODULES([LIBNGHTTP2], libnghttp2, [
     with_libnghttp2=yes
     LIBS="$LIBNGHTTP2_LIBS $LIBS"
@@ -633,18 +633,18 @@ AS_IF([test "x$with_libnghttp2" != xno], [
       [with_libnghttp2=no;  AC_MSG_WARN(*** libnghttp2 was not found. HTTP/2.0 support disabled.)])
   ])
 ])
-AM_CONDITIONAL([WITH_LIBNGHTTP2], [test "x$with_libnghttp2" = xyes])
+AM_CONDITIONAL([WITH_LIBNGHTTP2], [test "$with_libnghttp2" = "yes"])
 
 AC_ARG_WITH(bzip2, AS_HELP_STRING([--without-bzip2], [disable bzip2 compression support]), with_bzip2=$withval, with_bzip2=yes)
-AS_IF([test "x$with_bzip2" != xno], [
+AS_IF([test "$with_bzip2" != "no"], [
   AC_SEARCH_LIBS(BZ2_bzDecompress, bz2,
     [with_bzip2=yes; AC_SUBST([BZ2_LIBS], -lbz2) AC_DEFINE([WITH_BZIP2], [1], [Use libbz2])],
     [with_bzip2=no;  AC_MSG_WARN(*** libbz2 was not found. You will not be able to use BZIP2 (de)compression)])
 ])
-AM_CONDITIONAL([WITH_BZIP2], [test "x$with_bzip2" = xyes])
+AM_CONDITIONAL([WITH_BZIP2], [test "$with_bzip2" = "yes"])
 
 AC_ARG_WITH(gpgme, AS_HELP_STRING([--without-gpgme], [support signature verification with gpgme]), with_gpgme=$withval, with_gpgme=yes)
-AS_IF([test "x$with_gpgme" != xno], [
+AS_IF([test "$with_gpgme" != "no"], [
   PKG_CHECK_MODULES([GPGME], gpgme, [
     with_gpgme=yes
     LIBS="$GPGME_LIBS $LIBS"
@@ -665,10 +665,10 @@ AS_IF([test "x$with_gpgme" != xno], [
     ])
   ])
 ])
-AM_CONDITIONAL([WITH_GPGME], [test "x$with_gpgme" = xyes])
+AM_CONDITIONAL([WITH_GPGME], [test "$with_gpgme" = "yes"])
 
 AC_ARG_WITH(zlib, AS_HELP_STRING([--without-zlib], [disable gzip compression support]), with_zlib=$withval, with_zlib=yes)
-AS_IF([test "x$with_zlib" != xno], [
+AS_IF([test "$with_zlib" != "no"], [
   PKG_CHECK_MODULES([ZLIB], zlib, [
     with_zlib=yes
     LIBS="$ZLIB_LIBS $LIBS"
@@ -680,10 +680,10 @@ AS_IF([test "x$with_zlib" != xno], [
       [with_zlib=no;  AC_MSG_WARN(*** ZLIB was not found. You will not be able to use gzip (de)compression)])
   ])
 ])
-AM_CONDITIONAL([WITH_ZLIB], [test "x$with_zlib" = xyes])
+AM_CONDITIONAL([WITH_ZLIB], [test "$with_zlib" = "yes"])
 
 AC_ARG_WITH(lzma, AS_HELP_STRING([--without-lzma], [disable LZMA compression support]), with_lzma=$withval, with_lzma=yes)
-AS_IF([test "x$with_lzma" != xno], [
+AS_IF([test "$with_lzma" != "no"], [
   PKG_CHECK_MODULES([LZMA], liblzma, [
     with_lzma=yes
     LIBS="$LZMA_LIBS $LIBS"
@@ -695,10 +695,10 @@ AS_IF([test "x$with_lzma" != xno], [
       [with_lzma=no;  AC_MSG_WARN(*** liblzma was not found. You will not be able to use LZMA (de)compression)])
   ])
 ])
-AM_CONDITIONAL([WITH_LZMA], [test "x$with_lzma" = xyes])
+AM_CONDITIONAL([WITH_LZMA], [test "$with_lzma" = "yes"])
 
 AC_ARG_WITH(brotlidec, AS_HELP_STRING([--without-brotlidec], [disable Brotli compression support]), with_brotlidec=$withval, with_brotlidec=yes)
-AS_IF([test "x$with_brotlidec" != xno], [
+AS_IF([test "$with_brotlidec" != "no"], [
   PKG_CHECK_MODULES([BROTLIDEC], libbrotlidec, [
     with_brotlidec=yes
     LIBS="$BROTLIDEC_LIBS $LIBS"
@@ -710,10 +710,10 @@ AS_IF([test "x$with_brotlidec" != xno], [
       [with_brotlidec=no;  AC_MSG_WARN(*** libbrotlidec was not found. You will not be able to use Brotli decompression)])
   ])
 ])
-AM_CONDITIONAL([WITH_BROTLIDEC], [test "x$with_brotlidec" = xyes])
+AM_CONDITIONAL([WITH_BROTLIDEC], [test "$with_brotlidec" = "yes"])
 
 AC_ARG_WITH(zstd, AS_HELP_STRING([--without-zstd], [disable Zstandard compression support]), with_zstd=$withval, with_zstd=yes)
-AS_IF([test "x$with_zstd" != xno], [
+AS_IF([test "$with_zstd" != "no"], [
   PKG_CHECK_MODULES([ZSTD], libzstd, [
     with_zstd=yes
     LIBS="$ZSTD_LIBS $LIBS"
@@ -725,10 +725,10 @@ AS_IF([test "x$with_zstd" != xno], [
       [with_zstd=no;  AC_MSG_WARN(*** libzstd was not found. You will not be able to use Zstandard decompression)])
   ])
 ])
-AM_CONDITIONAL([WITH_ZSTD], [test "x$with_zstd" = xyes])
+AM_CONDITIONAL([WITH_ZSTD], [test "$with_zstd" = "yes"])
 
 AC_ARG_WITH(lz, AS_HELP_STRING([--without-lzip], [disable lzip compression support]), with_lzip=$withval, with_lzip=yes)
-AS_IF([test "x$with_lzip" != xno], [
+AS_IF([test "$with_lzip" != "no"], [
   PKG_CHECK_MODULES([LZIP], liblz, [
     with_lz=yes
     LIBS="$LZIP_LIBS $LIBS"
@@ -743,7 +743,7 @@ AS_IF([test "x$with_lzip" != xno], [
     LIBS="$old_LIBS $LZIP_LIBS"
   ])
 ])
-AM_CONDITIONAL([WITH_LZIP], [test "x$with_lzip" = xyes])
+AM_CONDITIONAL([WITH_LZIP], [test "$with_lzip" = "yes"])
 
 # Support for internationalized domain names.
 # IDN support in Wget2 is provided in multiple ways:
@@ -752,7 +752,7 @@ AM_CONDITIONAL([WITH_LZIP], [test "x$with_lzip" = xyes])
 #
 # If libidn2 is not found at all, we try to fallback to libidn.
 AC_ARG_WITH(libidn2, AS_HELP_STRING([--without-libidn2], [disable IDN2 support]), with_libidn2=$withval, with_libidn2=yes)
-AS_IF([test "x$with_libidn2" != xno], [
+AS_IF([test "$with_libidn2" != "no"], [
   PKG_CHECK_MODULES([LIBIDN2], [libidn2 >= 0.14.0], [
     with_libidn2=yes
     IDNA_INFO="IDNA 2008 (libidn2)"
@@ -765,11 +765,11 @@ AS_IF([test "x$with_libidn2" != xno], [
     ])
 ])
 
-AM_CONDITIONAL([WITH_LIBIDN2], [test "x$with_libidn2" = xyes])
+AM_CONDITIONAL([WITH_LIBIDN2], [test "$with_libidn2" = "yes"])
 
-AS_IF([test "x$with_libidn2" != xyes], [
+AS_IF([test "$with_libidn2" != "yes"], [
   AC_ARG_WITH(libidn, AS_HELP_STRING([--without-libidn], [disable IDN support]), with_libidn=$withval, with_libidn=yes)
-  AS_IF([test "x$with_libidn" != xno], [
+  AS_IF([test "$with_libidn" != "no"], [
     PKG_CHECK_MODULES([LIBIDN], libidn, [
       with_libidn=yes
       LIBS="$LIBIDN_LIBS $LIBS"
@@ -783,10 +783,10 @@ AS_IF([test "x$with_libidn2" != xyes], [
     ])
   ])
 ])
-AM_CONDITIONAL([WITH_LIBIDN], [test "x$with_libidn" = xyes])
+AM_CONDITIONAL([WITH_LIBIDN], [test "$with_libidn" = "yes"])
 
 AC_ARG_WITH(libpcre2, AS_HELP_STRING([--without-libpcre2], [disable support for libpcre2]), with_libpcre2=$withval, with_libpcre2=yes)
-AS_IF([test "x$with_libpcre2" != xno], [
+AS_IF([test "$with_libpcre2" != "no"], [
   PKG_CHECK_MODULES([LIBPCRE2], libpcre2-8, [
     with_libpcre2=yes
     LIBS="$LIBPCRE2_LIBS $LIBS"
@@ -798,11 +798,11 @@ AS_IF([test "x$with_libpcre2" != xno], [
       [with_libpcre2=no; AC_MSG_WARN(*** libpcre2 was not found. PCRE2 regex support disabled.)])
   ])
 ])
-AM_CONDITIONAL([WITH_LIBPCRE2], [test "x$with_libpcre2" = xyes])
+AM_CONDITIONAL([WITH_LIBPCRE2], [test "$with_libpcre2" = "yes"])
 
-AS_IF([test "x$with_libpcre2" != xyes], [
+AS_IF([test "$with_libpcre2" != "yes"], [
  AC_ARG_WITH(libpcre, AS_HELP_STRING([--without-libpcre], [disable support for libpcre]), with_libpcre=$withval, with_libpcre=yes)
- AS_IF([test "x$with_libpcre" != xno], [
+ AS_IF([test "$with_libpcre" != "no"], [
    PKG_CHECK_MODULES([LIBPCRE], libpcre, [
      with_libpcre=yes
      LIBS="$LIBPCRE_LIBS $LIBS"
@@ -815,12 +815,12 @@ AS_IF([test "x$with_libpcre2" != xyes], [
    ])
  ])
 ])
-AM_CONDITIONAL([WITH_LIBPCRE], [test "x$with_libpcre" = xyes])
+AM_CONDITIONAL([WITH_LIBPCRE], [test "$with_libpcre" = "yes"])
 
-AS_IF([test "x$with_libpcre" = xyes], [HAVE_PCRE="yes, via libpcre"], [test "x$with_libpcre2" = xyes], [HAVE_PCRE="yes, via libpcre2"], [HAVE_PCRE=no])
+AS_IF([test "$with_libpcre" = "yes"], [HAVE_PCRE="yes, via libpcre"], [test "$with_libpcre2" = "yes"], [HAVE_PCRE="yes, via libpcre2"], [HAVE_PCRE=no])
 
 AC_ARG_WITH(libmicrohttpd, AS_HELP_STRING([--without-libmicrohttpd], [disable support for libmicrohttpd]), with_libmicrohttpd=$withval, with_libmicrohttpd=yes)
-AS_IF([test "x$with_libmicrohttpd" != xno], [
+AS_IF([test "$with_libmicrohttpd" != "no"], [
   old_LIBS=$LIBS
   old_CFLAGS=$CFLAGS
   PKG_CHECK_MODULES(MICROHTTPD, [libmicrohttpd], [
@@ -847,13 +847,13 @@ AS_IF([test "x$with_libmicrohttpd" != xno], [
   CFLAGS=$old_CFLAGS
 ])
 
-AS_IF([test "x$with_gnutls" = xyes], [
+AS_IF([test "$with_gnutls" = "yes"], [
   TEST_LIBS="$TEST_LIBS $GNUTLS_LIBS"
   TEST_CFLAGS="$TEST_CFLAGS $GNUTLS_CFLAGS"
   AC_DEFINE([WITH_GNUTLS_IN_TESTSUITE], [1], [GnuTLS is available for test suite])],
   [AC_MSG_WARN(*** GnuTLS is not available. Some tests will not run.)])
 
-AM_CONDITIONAL([WITH_MICROHTTPD], [test "x$with_libmicrohttpd" = xyes])
+AM_CONDITIONAL([WITH_MICROHTTPD], [test "$with_libmicrohttpd" = "yes"])
 
 # Check for plugin support
 AC_CANONICAL_HOST
@@ -874,29 +874,29 @@ AC_ARG_WITH(plugin_support,
 		[plugin_support="$withval"],
 		[plugin_support="yes"])
 FUZZ_LIBS=$LIBS
-if test "x$plugin_support" = "xno"; then
+if test "$plugin_support" = "no"; then
 	OLD_LIBS=$LIBS
 	AC_SEARCH_LIBS([dlsym], [dl dld])
 	FUZZ_LIBS=$LIBS
 	LIBS=$OLD_LIBS
-elif test "x$dl_impl" = "xlibdl"; then
+elif test "$dl_impl" = "libdl"; then
 	AC_SEARCH_LIBS([dlsym], [dl ldl], [:], [dl_impl="none"])
 	FUZZ_LIBS=$LIBS
 fi
 AC_SUBST([FUZZ_LIBS])
-if test "x$plugin_support" = "xyes" && test "x$dl_impl" = "xnone"; then
+if test "$plugin_support" = "yes" && test "$dl_impl" = "none"; then
 	AC_MSG_WARN(*** No working backend for plugin support found)
 	plugin_support="no"
 fi
-if test "x$plugin_support" = "xyes"; then
+if test "$plugin_support" = "yes"; then
 	AC_DEFINE([PLUGIN_SUPPORT], [1], [Enable plugin support])
-	if test "x$dl_impl" = "xwindows"; then
+	if test "$dl_impl" = "windows"; then
 		AC_DEFINE([PLUGIN_SUPPORT_WINDOWS], [1], [Use windows API for plugins])
 	else
 		AC_DEFINE([PLUGIN_SUPPORT_LIBDL], [1], [Use libdl for plugins])
 	fi
 fi
-AM_CONDITIONAL([PLUGIN_SUPPORT], [test "x$plugin_support" = xyes])
+AM_CONDITIONAL([PLUGIN_SUPPORT], [test "$plugin_support" = "yes"])
 
 AC_SUBST([TEST_CFLAGS])
 AC_SUBST([TEST_LIBS])
@@ -929,9 +929,9 @@ AC_CONFIG_FILES([Makefile
 AC_OUTPUT
 
 # Check if expected TLS library was found and print it
-AS_IF([test "x$with_ssl" = xwolfssl && test "x$with_wolfssl" = xno], [ssl_enabled="(not found)"],
-  [test "x$with_ssl" = xopenssl && test "x$with_openssl" = xno], [ssl_enabled="(not found)"],
-  [test "x$with_ssl" = xgnutls && test "x$with_gnutls" = xno], [ssl_enabled="(not found)"],
+AS_IF([test "$with_ssl" = "wolfssl" && test "$with_wolfssl" = "no"], [ssl_enabled="(not found)"],
+  [test "$with_ssl" = "openssl" && test "$with_openssl" = "no"], [ssl_enabled="(not found)"],
+  [test "$with_ssl" = "gnutls" && test "$with_gnutls" = "no"], [ssl_enabled="(not found)"],
   [])
 
 # patching libtool, generated when coming here
