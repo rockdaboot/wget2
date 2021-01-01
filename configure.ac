@@ -47,12 +47,8 @@ case $host_os in
 esac
 
 # Append EXTRA_CFLAGS to CFLAGS, if defined.
-if test "$EXTRA_CFLAGS" != ""; then
-  CFLAGS="$CFLAGS $EXTRA_CFLAGS"
-fi
-if test "$XTRA_CFLAGS" != ""; then
-  CFLAGS="$CFLAGS $XTRA_CFLAGS"
-fi
+test -n "$EXTRA_CFLAGS" && CFLAGS="$CFLAGS $EXTRA_CFLAGS"
+test -n "$XTRA_CFLAGS" && CFLAGS="$CFLAGS $XTRA_CFLAGS"
 
 # If CFLAGS isn't defined and using gcc, set CFLAGS to something reasonable.
 # Otherwise, just prevent autoconf from molesting CFLAGS.
@@ -240,7 +236,7 @@ AM_CONDITIONAL([ENABLE_MANYLIBS], [test "$enable_manylibs" = "yes"])
 AC_ARG_ENABLE([fuzzing],
   [AS_HELP_STRING([--enable-fuzzing], [Turn on fuzzing build (for developers)])],
   [enable_fuzzing=yes; AC_SUBST([LIB_FUZZING_ENGINE])], [enable_fuzzing=no; LIB_FUZZING_ENGINE=""])
-AM_CONDITIONAL([FUZZING], [test ! -z "$LIB_FUZZING_ENGINE"])
+AM_CONDITIONAL([FUZZING], [test -n "$LIB_FUZZING_ENGINE"])
 
 AC_ARG_ENABLE([fsanitize-ubsan],
   [AS_HELP_STRING([--enable-fsanitize-ubsan], [Turn on Undefined Behavior Sanitizer (for developers)])],
