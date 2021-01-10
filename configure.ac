@@ -27,9 +27,6 @@ AC_CONFIG_AUX_DIR([build-aux])
 
 AM_INIT_AUTOMAKE([subdir-objects parallel-tests gnu -Wno-portability dist-lzip])
 
-CFLAGS=$CFLAGS
-AC_USE_SYSTEM_EXTENSIONS
-
 AC_CANONICAL_HOST
 case $host_os in
   linux*)
@@ -50,15 +47,8 @@ esac
 test -n "$EXTRA_CFLAGS" && CFLAGS="$CFLAGS $EXTRA_CFLAGS"
 test -n "$XTRA_CFLAGS" && CFLAGS="$CFLAGS $XTRA_CFLAGS"
 
-# If CFLAGS isn't defined and using gcc, set CFLAGS to something reasonable.
-# Otherwise, just prevent autoconf from molesting CFLAGS.
-#AC_PROG_CC
-AC_PROG_CC_STDC
-
-#
-# Require C99 support
-#
-AC_PROG_CC_C99
+AC_USE_SYSTEM_EXTENSIONS
+AC_PROG_CC
 if test "$ac_cv_prog_cc_c99" = "no"; then
   AC_MSG_ERROR(Compiler does not support C99. Aborting.)
 fi
@@ -108,12 +98,9 @@ AC_CHECK_SIZEOF(off_t)
 
 # Checks for programs.
 
-#AM_NLS
-#IT_PROG_INTLTOOL([0.40.0])
 AC_PROG_LEX
 AC_PROG_INSTALL
 AC_PROG_LN_S
-AM_PROG_CC_C_O
 
 # enable all possible compiler warnings in WARN_FLAGS
 #
