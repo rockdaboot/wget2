@@ -1,6 +1,6 @@
 #! /bin/sh
 # Print a version string.
-scriptversion=2019-01-04.17; # UTC
+scriptversion=2021-01-10.00; # UTC
 
 # Bootstrap this package from checked-out sources.
 
@@ -47,7 +47,7 @@ PERL="${PERL-perl}"
 
 me=$0
 
-default_gnulib_url=git://git.sv.gnu.org/gnulib
+default_gnulib_url=https://git.savannah.gnu.org/git/gnulib.git
 
 usage() {
   cat <<EOF
@@ -71,7 +71,9 @@ Options:
  --no-git                 do not use git to update gnulib.  Requires that
                           --gnulib-srcdir point to a correct gnulib snapshot
  --skip-po                do not download po files
-
+EOF
+  bootstrap_print_option_usage_hook
+  cat <<EOF
 If the file $me.conf exists in the same directory as this script, its
 contents are read as shell variables to configure the bootstrap.
 
@@ -154,6 +156,18 @@ gnulib_files=
 : ${AUTOPOINT=autopoint}
 : ${AUTORECONF=autoreconf}
 
+# A function to be called for each unrecognized option.  Returns 0 if
+# the option in $1 has been processed by the function.  Returns 1 if
+# the option has not been processed by the function.  Override it via
+# your own definition in bootstrap.conf
+
+bootstrap_option_hook() { return 1; }
+
+# A function to be called in order to print the --help information
+# corresponding to user-defined command-line options.
+
+bootstrap_print_option_usage_hook() { :; }
+
 # A function to be called right after gnulib-tool is run.
 # Override it via your own definition in bootstrap.conf.
 bootstrap_post_import_hook() { :; }
@@ -166,11 +180,11 @@ bootstrap_epilogue() { :; }
 # specified directory.  Fill in the first %s with the destination
 # directory and the second with the domain name.
 po_download_command_format=\
-"wget --mirror --level=1 -nd -q -A.po -P '%s' \
+"wget --mirror --level=1 -nd -nv -A.po -P '%s' \
  https://translationproject.org/latest/%s/"
 
 # Prefer a non-empty tarname (4th argument of AC_INIT if given), else
-# fall back to the package name (1st argument with munging)
+# fall back to the package name (1st argument with munging).
 extract_package_name='
   /^AC_INIT(\[*/{
      s///
@@ -187,8 +201,11 @@ extract_package_name='
      p
   }
 '
-package=$(sed -n "$extract_package_name" configure.ac) \
-  || die 'cannot find package name in configure.ac'
+package=$(${AUTOCONF:-autoconf} --trace AC_INIT:\$4 configure.ac 2>/dev/null)
+if test -z "$package"; then
+  package=$(sed -n "$extract_package_name" configure.ac) \
+      || die 'cannot find package name in configure.ac'
+fi
 gnulib_name=lib$package
 
 build_aux=build-aux
@@ -335,7 +352,7 @@ do
   --no-git)
     use_git=false;;
   *)
-    die "$option: unknown option";;
+    bootstrap_option_hook $option || die "$option: unknown option";;
   esac
 done
 
@@ -724,11 +741,7 @@ if $use_gnulib; then
     }
   fi
 
-  # Try to use the (experimental) python implementation when possible
-  gnulib_tool=$GNULIB_SRCDIR/gnulib-tool.py
-  if ! command -v python 2>&1 >/dev/null; then
-	  gnulib_tool=$GNULIB_SRCDIR/gnulib-tool
-  fi
+  gnulib_tool=$GNULIB_SRCDIR/gnulib-tool
   <$gnulib_tool || exit $?
 fi
 
@@ -974,7 +987,7 @@ bootstrap_post_import_hook \
 # Uninitialized submodules are listed with an initial dash.
 if $use_git && git submodule | grep '^-' >/dev/null; then
   die "some git submodules are not initialized. "     \
-      "Run 'git submodule init' and bootstrap again."
+      "Run 'git submodule update --init' and bootstrap again."
 fi
 
 # Remove any dangling symlink matching "*.m4" or "*.[ch]" in some
