@@ -1051,6 +1051,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 		}
 	}
 	if (!nread) goto cleanup;
+	if (!p) goto cleanup;
 
 	if (resp && resp->code == HTTP_STATUS_RANGE_NOT_SATISFIABLE) {
 		/*
