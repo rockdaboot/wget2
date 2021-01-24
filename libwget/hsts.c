@@ -258,6 +258,9 @@ void wget_hsts_db_free(wget_hsts_db **hsts_db)
 
 static void hsts_db_add_entry(wget_hsts_db *hsts_db, hsts_entry *hsts)
 {
+	if (!hsts)
+		return;
+
 	wget_thread_mutex_lock(hsts_db->mutex);
 
 	if (hsts->maxage == 0) {
