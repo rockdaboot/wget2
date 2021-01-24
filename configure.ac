@@ -16,6 +16,11 @@ dnl along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Process this file with autoconf to produce a configure script.
 
+dnl Error if AX_CODE_COVERAGE if missing.
+m4_pattern_forbid([^_?AX_])
+m4_pattern_allow([AX_CHECK_GNU_MAKE_HEADLINE])
+m4_pattern_allow([_AX_CODE_COVERAGE_GCOV_PROG_WITH])
+
 CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 
