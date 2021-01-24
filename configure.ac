@@ -98,7 +98,7 @@ AC_CHECK_SIZEOF(off_t)
 
 # Checks for programs.
 
-AC_PROG_LEX
+AC_PROG_LEX([noyywrap])
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
