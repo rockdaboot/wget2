@@ -995,7 +995,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 
 		if (nread < 4) continue;
 
-		if (nread == nbytes)
+		if (nread - nbytes <= 4)
 			p = buf;
 		else
 			p = buf + nread - nbytes - 3;
