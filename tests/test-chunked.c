@@ -29,9 +29,25 @@
 int main(void)
 {
 	wget_test_url_t urls[]={
-		{	.name = "/1.txt",
+		{	.name = "/1.bad.txt", // ?.bad.txt switches off MHD handling of chunked transfer
 			.code = "200 Dontcare",
-			.body = "the quick brown fox\njumps over the lazy dog",
+			.body = "5\r\nhello\r\n0\r\n\r\n",
+			.headers = {
+				"Content-Type: text/plain",
+				"Transfer-Encoding: chunked",
+			}
+		},
+		{	.name = "/2.bad.txt", // ?.bad.txt switches off MHD handling of chunked transfer
+			.code = "200 Dontcare",
+			.body = "1\r\nh\r\n2\r\nel\r\n2\r\nlo\r\n0\r\n\r\n",
+			.headers = {
+				"Content-Type: text/plain",
+				"Transfer-Encoding: chunked",
+			}
+		},
+		{	.name = "/3.bad.txt", // ?.bad.txt switches off MHD handling of chunked transfer
+			.code = "200 Dontcare",
+			.body = "1\r\nh\r\n2\r\nel\r\n2\r\nlo\r\n0\r\ntrailer\r\n\r\n",
 			.headers = {
 				"Content-Type: text/plain",
 				"Transfer-Encoding: chunked",
@@ -46,13 +62,15 @@ int main(void)
 		WGET_TEST_SKIP_H2,
 		0);
 
-	// test negative chunk size (32bit system only)
+	// simple test
 	wget_test(
 		WGET_TEST_OPTIONS, "",
-		WGET_TEST_REQUEST_URL, "1.txt",
+		WGET_TEST_REQUEST_URLS, urls[0].name + 1, urls[1].name + 1, urls[2].name + 1, NULL,
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
-			{ urls[0].name + 1, "the quick brown fox\njumps over the lazy dog" },
+			{ urls[0].name + 1, "hello"},
+			{ urls[1].name + 1, "hello"},
+			{ urls[2].name + 1, "hello"},
 			{	NULL } },
 		0);
 
