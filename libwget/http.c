@@ -1171,7 +1171,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 					end = buf;
 					// debug_printf("a nbytes %zd\n", nbytes);
 				}
-				debug_printf("end of trailer \n");
+				debug_printf("end of trailer\n");
 				goto cleanup;
 			}
 
