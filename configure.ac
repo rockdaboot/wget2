@@ -472,20 +472,11 @@ AC_LINK_IFELSE(
 
 PKG_PROG_PKG_CONFIG
 
-AC_ARG_WITH(ssl, AS_HELP_STRING([--with-ssl], [Use SSL/TLS with specified library. Options: 'gnutls' (default), 'openssl', 'wolfssl' or 'none']), with_ssl=$withval, with_ssl=gnutls)
+AC_ARG_WITH(ssl, AS_HELP_STRING([--with-ssl], [Use SSL/TLS with specified library. Options: 'gnutls' (default), 'openssl', 'wolfssl' or 'none']), with_ssl=$withval, with_ssl="yes")
 
-AS_IF([test "$with_ssl" = "yes"], [with_ssl=gnutls])
-
-PKG_CHECK_MODULES([GNUTLS], [gnutls], [
-  with_gnutls=yes
-], [
-  AC_SEARCH_LIBS(gnutls_global_init, gnutls,
-    [with_gnutls=yes],
-    [with_gnutls=no;  AC_MSG_WARN(*** GNUTLS was not found. You will not be able to use HTTPS, nor run the OCSP tests. Fallback to libnettle for hashing and checksumming.)])
-])
-
-AS_IF([test "$with_ssl" = "gnutls"], [
-  AS_IF([test "$with_gnutls" = "yes"], [
+AS_IF([test "$with_ssl" = "gnutls" || test "$with_ssl" = "yes"], [
+  PKG_CHECK_MODULES([GNUTLS], [gnutls], [
+    with_gnutls=yes
     LIBS="$GNUTLS_LIBS $LIBS"
     CFLAGS="$GNUTLS_CFLAGS $CFLAGS"
     AC_DEFINE([WITH_GNUTLS], [1], [Use GnuTLS])
@@ -496,8 +487,14 @@ AS_IF([test "$with_ssl" = "gnutls"], [
       [AC_DEFINE([WITH_OCSP], [1], [OCSP is supported])],
       [AC_MSG_WARN(*** Header file gnutls/ocsp.h was not found. OCSP will be disabled.)])
     AC_CHECK_FUNCS(gnutls_srp_server_get_username gnutls_transport_get_int)
+  ], [
+    AC_SEARCH_LIBS(gnutls_global_init, gnutls,
+      [with_gnutls=yes],
+      [AC_MSG_WARN(*** GNUTLS was not found. Fallback to libnettle for hashing and checksumming.)])
   ])
-], [test "$with_ssl" = "openssl"], [
+])
+
+AS_IF([test "$with_ssl" = "openssl" || (test "$with_ssl" = "yes" && test "$with_gnutls" != "yes")], [
   PKG_CHECK_MODULES([OPENSSL], [openssl], [
     with_openssl=yes
     LIBS="$OPENSSL_LIBS $LIBS"
@@ -506,7 +503,7 @@ AS_IF([test "$with_ssl" = "gnutls"], [
   ], [
     AC_SEARCH_LIBS(SSL_CTX_new, openssl,
       [with_openssl=yes; AC_DEFINE([WITH_OPENSSL], [1], [Use OpenSSL])],
-      [with_openssl=no;  AC_MSG_WARN(*** OpenSSL was not found.)
+      [AC_MSG_WARN(*** OpenSSL was not found.)
     ])
   ])
 
@@ -524,7 +521,9 @@ AS_IF([test "$with_ssl" = "gnutls"], [
       [with_libcrypto=no; AC_MSG_WARN(*** LIBCRYPTO was not found. Fallback to libwolfcrypt for hashing and checksumming.)
     ])
   ])
-], [test "$with_ssl" = "wolfssl"], [
+])
+
+AS_IF([test "$with_ssl" = "wolfssl" || (test "$with_ssl" = "yes" && test "$with_gnutls" != "yes" && test "$with_openssl" != "yes")], [
   PKG_CHECK_MODULES([WOLFSSL], [wolfssl], [
     with_wolfssl=yes
     LIBS="$WOLFSSL_LIBS $LIBS"
@@ -533,27 +532,41 @@ AS_IF([test "$with_ssl" = "gnutls"], [
   ], [
     AC_SEARCH_LIBS(wolfSSL_Init, wolfssl,
       [with_wolfssl=yes; AC_DEFINE([WITH_WOLFSSL], [1], [Use WolfSSL])],
-      [with_wolfssl=no;  AC_MSG_WARN(*** WolfSSL was not found. You will not be able to use HTTPS.)])
+      [AC_MSG_WARN(*** WolfSSL was not found.)])
   ])
 
   AS_IF([test "$with_wolfssl" = "yes"], [
     with_libwolfcrypt=yes
     AC_DEFINE([WITH_LIBWOLFCRYPT], [1], [Use wolfcrypt])
   ])
-], [test "$with_ssl" != "none"], [
-  AC_MSG_ERROR([*** Unsupported value for --with-ssl. Use 'gnutls' (default), 'openssl', 'wolfssl' or 'none'])
 ])
 
-AM_CONDITIONAL([WITH_GNUTLS], [test "$with_ssl" = "gnutls" && test "$with_gnutls" = "yes"])
-AM_CONDITIONAL([WITH_OPENSSL], [test "$with_ssl" = "openssl" && test "$with_openssl" = "yes"])
-AM_CONDITIONAL([WITH_WOLFSSL], [test "$with_ssl" = "wolfssl" && test "$with_wolfssl" = "yes"])
-
-AM_CONDITIONAL([WITH_TLS], [test "$with_gnutls" = "yes" || test "$with_wolfssl" = "yes" || test "$with_openssl" = "yes"])
 AS_IF([test "$with_gnutls" = "yes" || test "$with_wolfssl" = "yes" || test "$with_openssl" = "yes"], [
   AC_DEFINE([WITH_TLS], [1], [Built with TLS support])
+  AS_IF([test "$with_gnutls" = "yes"], [ssl_enabled="gnutls"],
+        [test "$with_openssl" = "yes"], [ssl_enabled="openssl"],
+        [test "$with_wolfssl" = "yes"], [ssl_enabled="wolfssl"],
+        [ssl_enabled="(not found)"])
 ], [
   AC_DEFINE([WITH_TLS], [0], [No TLS support])
+  AS_IF([test "$with_ssl" != "none"], [
+    AC_MSG_ERROR([*** SSL/TLS library \"$with_ssl\" not found.])
+  ])
+  ssl_enabled="none"
 ])
+
+#AS_IF([test "$with_gnutls" != "yes" && test "$with_openssl" != "yes" && test "$with_wolfssl" != "yes"], [
+#  AS_IF([test "$with_ssl" != "none"], [
+#    AC_MSG_ERROR([*** Unsupported value for --with-ssl. Use 'gnutls' (default), 'openssl', 'wolfssl' or 'none'])
+#  ])
+#  ssl_enabled="(not found)"
+#])
+
+AM_CONDITIONAL([WITH_GNUTLS], [test "$with_gnutls" = "yes"])
+AM_CONDITIONAL([WITH_OPENSSL], [test "$with_openssl" = "yes"])
+AM_CONDITIONAL([WITH_WOLFSSL], [test "$with_wolfssl" = "yes"])
+
+AM_CONDITIONAL([WITH_TLS], [test "$with_gnutls" = "yes" || test "$with_wolfssl" = "yes" || test "$with_openssl" = "yes"])
 
 AS_IF([(test "$with_gnutls" != "yes" || test "$with_gnutls_hash" != "yes") && test "$with_libwolfcrypt" != "yes" && test "$with_libcrypto" != "yes"], [
   PKG_CHECK_MODULES([NETTLE], nettle, [
@@ -916,12 +929,6 @@ AC_CONFIG_FILES([Makefile
                  docs/wget2_md2man.sh])
 AC_OUTPUT
 
-# Check if expected TLS library was found and print it
-AS_IF([test "$with_ssl" = "wolfssl" && test "$with_wolfssl" = "no"], [ssl_enabled="(not found)"],
-  [test "$with_ssl" = "openssl" && test "$with_openssl" = "no"], [ssl_enabled="(not found)"],
-  [test "$with_ssl" = "gnutls" && test "$with_gnutls" = "no"], [ssl_enabled="(not found)"],
-  [])
-
 # patching libtool, generated when coming here
 patch libtool contrib/libtool.patch
 
@@ -936,7 +943,7 @@ AC_MSG_NOTICE([Summary of build options:
   Libs:               ${LIBS}
   Library types:      shared=${enable_shared}, static=${enable_static}
   Small libraries:    $enable_manylibs
-  SSL/TLS support:    $with_ssl $ssl_enabled
+  SSL/TLS support:    $ssl_enabled
   GZIP compression:   $with_zlib
   BZIP2 compression:  $with_bzip2
   LZMA compression:   $with_lzma
