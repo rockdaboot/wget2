@@ -480,11 +480,13 @@ AS_IF([test "$with_ssl" = "gnutls" || test "$with_ssl" = "yes"], [
     LIBS="$GNUTLS_LIBS $LIBS"
     CFLAGS="$GNUTLS_CFLAGS $CFLAGS"
     AC_DEFINE([WITH_GNUTLS], [1], [Use GnuTLS])
+    AC_DEFINE([WITH_GNUTLS_IN_TESTSUITE], [1], [GnuTLS is available for test suite.])
     AC_SEARCH_LIBS(gnutls_hash, gnutls, [with_gnutls_hash=yes])
     AS_IF([test "$with_gnutls_hash" = "yes"],
       [AC_CHECK_HEADERS([gnutls/crypto.h], [], [], [#include <gnutls/gnutls.h>])])
     AC_CHECK_HEADERS([gnutls/ocsp.h],
-      [AC_DEFINE([WITH_OCSP], [1], [OCSP is supported])],
+      [AC_DEFINE([WITH_OCSP], [1], [OCSP is supported.])
+       AC_DEFINE([WITH_GNUTLS_OCSP], [1], [GnuTLS OCSP is supported for test suite.])],
       [AC_MSG_WARN(*** Header file gnutls/ocsp.h was not found. OCSP will be disabled.)])
     AC_CHECK_FUNCS(gnutls_srp_server_get_username gnutls_transport_get_int)
   ], [
@@ -846,13 +848,29 @@ AS_IF([test "$with_libmicrohttpd" != "no"], [
   ])
   LIBS=$old_LIBS
   CFLAGS=$old_CFLAGS
-])
 
-AS_IF([test "$with_gnutls" = "yes"], [
-  TEST_LIBS="$TEST_LIBS $GNUTLS_LIBS"
-  TEST_CFLAGS="$TEST_CFLAGS $GNUTLS_CFLAGS"
-  AC_DEFINE([WITH_GNUTLS_IN_TESTSUITE], [1], [GnuTLS is available for test suite])],
-  [AC_MSG_WARN(*** GnuTLS is not available. Some tests will not run.)])
+  AS_IF([test "$with_libmicrohttpd" = "yes" && test "$with_gnutls" != "yes"], [
+    dnl MHD needs GnuTLS
+    PKG_CHECK_MODULES([GNUTLS], [gnutls], [
+      TEST_LIBS="$TEST_LIBS $GNUTLS_LIBS"
+      TEST_CFLAGS="$TEST_CFLAGS $GNUTLS_CFLAGS"
+      AC_DEFINE([WITH_GNUTLS_IN_TESTSUITE], [1], [GnuTLS is available for test suite.])
+      AC_CHECK_HEADERS([gnutls/ocsp.h],
+        [AC_DEFINE([WITH_GNUTLS_OCSP], [1], [GnuTLS OCSP is supported for test suite.])],
+        [AC_MSG_WARN(*** Header file gnutls/ocsp.h was not found. OCSP will be disabled for tests.)])
+    ], [
+      old_LIBS=$LIBS
+      old_CFLAGS=$CFLAGS
+      AC_SEARCH_LIBS(gnutls_global_init, gnutls,
+        [AC_DEFINE([WITH_GNUTLS_IN_TESTSUITE], [1], [GnuTLS is available for test suite.])],
+        [AC_MSG_WARN(*** GnuTLS is not available. Some tests will not run.)])
+      TEST_LIBS=$LIBS
+      TEST_CFLAGS=$CFLAGS
+      LIBS=$old_LIBS
+      CFLAGS=$old_CFLAGS
+    ])
+  ])
+])
 
 AM_CONDITIONAL([WITH_MICROHTTPD], [test "$with_libmicrohttpd" = "yes"])
 
