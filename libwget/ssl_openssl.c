@@ -1385,7 +1385,7 @@ static int get_tls_version(const SSL *ssl)
 	case TLS1_2_VERSION:
 		/* TLS 1.2 */
 		return 4;
-#if TLS1_2_VERSION != TLS1_3_VERSION
+#if defined TLS1_3_VERSION && TLS1_2_VERSION != TLS1_3_VERSION
 	case TLS1_3_VERSION:
 		/* TLS 1.3 */
 		return 5;
