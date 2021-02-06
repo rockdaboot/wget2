@@ -593,6 +593,7 @@ FreeBSD.x86_64:
     - freebsd
   only:
     - branches@gnuwget/wget2
+  allow_failure: true
   except:
     - tags
     - coverity-scan@gnuwget/wget2
