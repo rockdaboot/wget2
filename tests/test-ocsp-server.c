@@ -51,13 +51,16 @@ int main(void)
 			{	NULL} },
 		0);
 
+#ifndef WITH_WOLFSSL
 	// Test ocsp with 'revoked' response
+	// Todo: Let WolfSSL code check the revocation.
 	wget_test(
 		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/ocsp/x509-root-cert.pem --no-ocsp-file --no-ocsp-date --no-ocsp-nonce --ocsp --ocsp-server http://localhost:{{ocspport}}",
 		WGET_TEST_REQUEST_URL, "https://localhost:{{sslport}}/index.html",
 		WGET_TEST_EXPECTED_ERROR_CODE, 5,
 		WGET_TEST_OCSP_RESP_FILE, SRCDIR "/certs/ocsp/ocsp_resp_revoked.der",
 		0);
+#endif
 
 	// Test ocsp with 'revoked' response ignored by --no-check-certificate
 	wget_test(
