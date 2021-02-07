@@ -3294,7 +3294,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 			fname = alloced_fname = wget_aprintf("%s%s", fname, ext);
 	}
 
-	if (! ignore_patterns) {
+	if (!ignore_patterns && !config.filter_urls) {
 		if ((config.accept_patterns && !in_pattern_list(config.accept_patterns, fname))
 				|| (config.accept_regex && !regex_match(fname, config.accept_regex)))
 		{
