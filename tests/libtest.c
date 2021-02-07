@@ -1328,7 +1328,11 @@ void wget_test_start_server(int first_key, ...)
 #ifdef HAVE_MICROHTTPD_HTTP2_H
 			start_h2 = 0;
 #endif
+#ifdef WITH_TLS
+#ifdef WITH_GNUTLS_OCSP
 			start_ocsp = 1;
+#endif
+#endif
 			break;
 #endif
 		case WGET_TEST_FEATURE_OCSP_STAPLING:
@@ -1337,11 +1341,17 @@ void wget_test_start_server(int first_key, ...)
 			exit(WGET_TEST_EXIT_SKIP);
 #else
 			start_http = 0;
+#ifdef WITH_TLS
 			start_https = 0;
+#endif
 #ifdef HAVE_MICROHTTPD_HTTP2_H
 			start_h2 = 0;
 #endif
+#ifdef WITH_TLS
+#ifdef WITH_GNUTLS_OCSP
 			ocsp_stap = 1;
+#endif
+#endif
 			break;
 #endif
 		case WGET_TEST_SKIP_H2:

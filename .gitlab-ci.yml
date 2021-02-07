@@ -506,7 +506,7 @@ Tarball:
     - tar xvf wget2-*.gz
     - cd wget2-*
     - unset CC
-    - ./configure $CONFIGURE_BASE_FLAGS --disable-manywarnings
+    - ./configure $CONFIGURE_BASE_FLAGS --with-ssl=none --disable-manywarnings
     - make -j$(nproc)
     - make -j$(nproc) check
     # check if essential files are accidentally cleaned
