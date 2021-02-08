@@ -34,6 +34,7 @@
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
+#include <openssl/asn1.h>
 
 #ifdef _WIN32
 #  include <w32sock.h>
