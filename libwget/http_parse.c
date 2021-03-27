@@ -496,21 +496,6 @@ const char *wget_http_parse_content_type(const char *s, const char **content_typ
 	return s;
 }
 
-// RFC 2183
-//
-// disposition := "Content-Disposition" ":" disposition-type *(";" disposition-parm)
-// disposition-type := "inline" / "attachment" / extension-token   ; values are not case-sensitive
-// disposition-parm := filename-parm / creation-date-parm / modification-date-parm
-//                     / read-date-parm / size-parm / parameter
-// filename-parm := "filename" "=" value
-// creation-date-parm := "creation-date" "=" quoted-date-time
-// modification-date-parm := "modification-date" "=" quoted-date-time
-// read-date-parm := "read-date" "=" quoted-date-time
-// size-parm := "size" "=" 1*DIGIT
-// quoted-date-time := quoted-string
-//                     ; contents MUST be an RFC 822 `date-time'
-//                     ; numeric timezones (+HHMM or -HHMM) MUST be used
-
 // RFC 6266 - Use of the Content-Disposition Header Field in the Hypertext Transfer Protocol (HTTP)
 // content-disposition = "Content-Disposition" ":" disposition-type *( ";" disposition-parm )
 // disposition-type    = "inline" | "attachment" | disp-ext-type ; case-insensitive
