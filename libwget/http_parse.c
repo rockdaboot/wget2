@@ -511,6 +511,25 @@ const char *wget_http_parse_content_type(const char *s, const char **content_typ
 //                     ; contents MUST be an RFC 822 `date-time'
 //                     ; numeric timezones (+HHMM or -HHMM) MUST be used
 
+// RFC 6266 - Use of the Content-Disposition Header Field in the Hypertext Transfer Protocol (HTTP)
+// content-disposition = "Content-Disposition" ":" disposition-type *( ";" disposition-parm )
+// disposition-type    = "inline" | "attachment" | disp-ext-type ; case-insensitive
+// disp-ext-type       = token
+// disposition-parm    = filename-parm | disp-ext-parm
+// filename-parm       = "filename" "=" value | "filename*" "=" ext-value
+// disp-ext-parm       = token "=" value | ext-token "=" ext-value
+// ext-token           = <the characters in token, followed by "*">
+//
+// Defined in [RFC2616]:
+//
+// token         = <token, defined in [RFC2616], Section 2.2>
+// quoted-string = <quoted-string, defined in [RFC2616], Section 2.2>
+// value         = <value, defined in [RFC2616], Section 3.6> ; token | quoted-string
+//
+// Defined in [RFC5987]:
+//
+// ext-value   = <ext-value, defined in [RFC5987], Section 3.2>
+
 const char *wget_http_parse_content_disposition(const char *s, const char **filename)
 {
 	wget_http_header_param param;

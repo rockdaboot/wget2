@@ -2420,6 +2420,22 @@ static void test_set_proxy(void)
 	}
 }
 
+// Add some corner cases here.
+static void test_parse_header_line(void)
+{
+	const char *filename;
+
+	// from https://github.com/rockdaboot/wget2/issues/235
+	wget_http_parse_content_disposition("attachment; filename=\"with space\"", &filename);
+
+	if (strcmp(filename, "with space") == 0) {
+		ok++;
+	} else {
+		failed++;
+		info_printf("HTTP keep-alive Connection header could not be set.\n");
+	}
+}
+
 static void test_parse_response_header(void)
 {
 	char *response_text = wget_strdup(
@@ -2557,6 +2573,7 @@ int main(int argc, const char **argv)
 	test_robots();
 	test_set_proxy();
 	test_parse_response_header();
+	test_parse_header_line();
 
 	selftest_options() ? failed++ : ok++;
 
