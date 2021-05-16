@@ -134,7 +134,6 @@ static const unsigned char
 		['!'] = IRI_CTYPE_SUBDELIM,
 		['$'] = IRI_CTYPE_SUBDELIM,
 		['&'] = IRI_CTYPE_SUBDELIM,
-//		['\\'] = IRI_CTYPE_SUBDELIM,
 		['\''] = IRI_CTYPE_SUBDELIM,
 		['('] = IRI_CTYPE_SUBDELIM,
 		[')'] = IRI_CTYPE_SUBDELIM,
@@ -144,6 +143,68 @@ static const unsigned char
 		[';'] = IRI_CTYPE_SUBDELIM,
 		['='] = IRI_CTYPE_SUBDELIM,
 
+		['0'] = IRI_CTYPE_UNRESERVED,
+		['1'] = IRI_CTYPE_UNRESERVED,
+		['2'] = IRI_CTYPE_UNRESERVED,
+		['3'] = IRI_CTYPE_UNRESERVED,
+		['4'] = IRI_CTYPE_UNRESERVED,
+		['5'] = IRI_CTYPE_UNRESERVED,
+		['6'] = IRI_CTYPE_UNRESERVED,
+		['7'] = IRI_CTYPE_UNRESERVED,
+		['8'] = IRI_CTYPE_UNRESERVED,
+		['9'] = IRI_CTYPE_UNRESERVED,
+		['a'] = IRI_CTYPE_UNRESERVED,
+		['b'] = IRI_CTYPE_UNRESERVED,
+		['c'] = IRI_CTYPE_UNRESERVED,
+		['d'] = IRI_CTYPE_UNRESERVED,
+		['e'] = IRI_CTYPE_UNRESERVED,
+		['f'] = IRI_CTYPE_UNRESERVED,
+		['g'] = IRI_CTYPE_UNRESERVED,
+		['h'] = IRI_CTYPE_UNRESERVED,
+		['i'] = IRI_CTYPE_UNRESERVED,
+		['j'] = IRI_CTYPE_UNRESERVED,
+		['k'] = IRI_CTYPE_UNRESERVED,
+		['l'] = IRI_CTYPE_UNRESERVED,
+		['m'] = IRI_CTYPE_UNRESERVED,
+		['n'] = IRI_CTYPE_UNRESERVED,
+		['o'] = IRI_CTYPE_UNRESERVED,
+		['p'] = IRI_CTYPE_UNRESERVED,
+		['q'] = IRI_CTYPE_UNRESERVED,
+		['r'] = IRI_CTYPE_UNRESERVED,
+		['s'] = IRI_CTYPE_UNRESERVED,
+		['t'] = IRI_CTYPE_UNRESERVED,
+		['u'] = IRI_CTYPE_UNRESERVED,
+		['v'] = IRI_CTYPE_UNRESERVED,
+		['w'] = IRI_CTYPE_UNRESERVED,
+		['x'] = IRI_CTYPE_UNRESERVED,
+		['y'] = IRI_CTYPE_UNRESERVED,
+		['z'] = IRI_CTYPE_UNRESERVED,
+		['A'] = IRI_CTYPE_UNRESERVED,
+		['B'] = IRI_CTYPE_UNRESERVED,
+		['C'] = IRI_CTYPE_UNRESERVED,
+		['D'] = IRI_CTYPE_UNRESERVED,
+		['E'] = IRI_CTYPE_UNRESERVED,
+		['F'] = IRI_CTYPE_UNRESERVED,
+		['G'] = IRI_CTYPE_UNRESERVED,
+		['H'] = IRI_CTYPE_UNRESERVED,
+		['I'] = IRI_CTYPE_UNRESERVED,
+		['J'] = IRI_CTYPE_UNRESERVED,
+		['K'] = IRI_CTYPE_UNRESERVED,
+		['L'] = IRI_CTYPE_UNRESERVED,
+		['M'] = IRI_CTYPE_UNRESERVED,
+		['N'] = IRI_CTYPE_UNRESERVED,
+		['O'] = IRI_CTYPE_UNRESERVED,
+		['P'] = IRI_CTYPE_UNRESERVED,
+		['Q'] = IRI_CTYPE_UNRESERVED,
+		['R'] = IRI_CTYPE_UNRESERVED,
+		['S'] = IRI_CTYPE_UNRESERVED,
+		['T'] = IRI_CTYPE_UNRESERVED,
+		['U'] = IRI_CTYPE_UNRESERVED,
+		['V'] = IRI_CTYPE_UNRESERVED,
+		['W'] = IRI_CTYPE_UNRESERVED,
+		['X'] = IRI_CTYPE_UNRESERVED,
+		['Y'] = IRI_CTYPE_UNRESERVED,
+		['Z'] = IRI_CTYPE_UNRESERVED,
 		['-'] = IRI_CTYPE_UNRESERVED,
 		['.'] = IRI_CTYPE_UNRESERVED,
 		['_'] = IRI_CTYPE_UNRESERVED,
@@ -205,18 +266,7 @@ bool wget_iri_isreserved(char c)
  */
 bool wget_iri_isunreserved(char c)
 {
-	return c > 32 && c < 127 && (c_isalnum(c) || iri_isunreserved(c));
-}
-
-/**
- * \param[in] c A character
- * \return 1 if \p c is an unreserved character or a path separator, 0 if not
- *
- * Tests whether \p c is an unreserved character **or a path separator (`/`)**.
- */
-bool wget_iri_isunreserved_path(char c)
-{
-	return c > 32 && c < 127 && (c_isalnum(c) || iri_isunreserved(c) || c == '/');
+	return iri_isunreserved(c);
 }
 
 static unsigned char WGET_GCC_CONST unhex(unsigned char c)
@@ -1036,7 +1086,7 @@ const char *wget_iri_escape(const char *src, wget_buffer *buf)
 		return buf->data;
 
 	for (begin = src; *src; src++) {
-		if (!wget_iri_isunreserved(*src)) {
+		if (!iri_isunreserved(*src)) {
 			if (begin != src)
 				wget_buffer_memcat(buf, begin, src - begin);
 			begin = src + 1;
@@ -1053,18 +1103,22 @@ const char *wget_iri_escape(const char *src, wget_buffer *buf)
 /**
  * \param[in] src A string, whose reserved characters are to be percent-encoded
  * \param[in] buf A buffer where the result will be copied.
- * \return The contents of the buffer \p buf after \p src has been encoded.
+ * \return The contents of the buffer \p buf after \p src has been encoded
+ * as described in https://datatracker.ietf.org/doc/html/rfc7230#section-5.3.1.
  *
- * Escapes (using percent-encoding) all the reserved characters in the string \p src
- * (just like wget_iri_escape()), **plus the path separator character `/`**. This function
- * is thus ideally suited for paths.
+ * Escapes the path part of the URI suitable for GET/POST requests (origin-form).
+ *   origin-form    = absolute-path [ "?" query ]
+ *   path-absolute = "/" [ segment-nz *( "/" segment ) ]
+ *   segment-nz    = 1*pchar
+ *   segment       = *pchar
+ *   pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
  */
 const char *wget_iri_escape_path(const char *src, wget_buffer *buf)
 {
 	const char *begin;
 
 	for (begin = src; *src; src++) {
-		if (!wget_iri_isunreserved_path(*src)) {
+		if (!(iri_isunreserved(*src) || iri_issubdelim(*src) || *src == '/' || *src == ':' || *src == '@')) {
 			if (begin != src)
 				wget_buffer_memcat(buf, begin, src - begin);
 			begin = src + 1;
@@ -1092,7 +1146,7 @@ const char *wget_iri_escape_query(const char *src, wget_buffer *buf)
 	const char *begin;
 
 	for (begin = src; *src; src++) {
-		if (!wget_iri_isunreserved(*src) && *src != '=' && *src != '&') {
+		if (!iri_isunreserved(*src) && *src != '=' && *src != '&') {
 			if (begin != src)
 				wget_buffer_memcat(buf, begin, src - begin);
 			begin = src + 1;
@@ -1130,6 +1184,11 @@ const char *wget_iri_get_escaped_host(const wget_iri *iri, wget_buffer *buf)
  * \return The contents of the buffer \p buf
  *
  * Return the resource string, suitable for use in HTTP requests.
+ * Details:
+ *   https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.1
+ *   https://datatracker.ietf.org/doc/html/rfc7230#section-2.7
+ *   https://datatracker.ietf.org/doc/html/rfc3986#section-3.3
+ *
  * The resource string is comprised of the path, plus the query part, if present. Example:
  *
  *     /foo/bar/?param_1=one&param_2=two

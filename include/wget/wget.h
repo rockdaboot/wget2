@@ -1298,8 +1298,6 @@ WGETAPI bool
 	wget_iri_isreserved(char c) WGET_GCC_CONST;
 WGETAPI bool
 	wget_iri_isunreserved(char c) WGET_GCC_CONST;
-WGETAPI bool
-	wget_iri_isunreserved_path(char c) WGET_GCC_CONST;
 WGETAPI int
 	wget_iri_compare(wget_iri *iri1, wget_iri *iri2) WGET_GCC_PURE;
 WGETAPI char *
