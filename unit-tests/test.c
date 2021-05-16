@@ -2434,6 +2434,8 @@ static void test_parse_header_line(void)
 		failed++;
 		info_printf("HTTP keep-alive Connection header could not be set.\n");
 	}
+
+	xfree(filename);
 }
 
 static void test_parse_response_header(void)
