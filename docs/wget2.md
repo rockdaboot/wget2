@@ -158,15 +158,15 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `-i`, `--input-file=file`
 
-  Read URLs from a local or external file. If - is specified as file, URLs are read from the standard input. (Use ./- to read
-  from a file literally named -.)
+  Read URLs from a local or external file. If `-` is specified as file, URLs are read from the standard input.
+  Use `./-` to read from a file literally named `-`.
 
   If this function is used, no URLs need be present on the command line.  If there are URLs both on the command line and in an
   input file, those on the command lines will be the first ones to be retrieved. `file` is expected to contain one URL per line,
   except one of the --force- options specifies a different format.
 
-  If you specify --force-html, the document will be regarded as HTML.  In that case you may have problems with relative
-  links, which you can solve either by adding "<base href="url">" to the documents or by specifying --base=url on the command
+  If you specify `--force-html`, the document will be regarded as HTML.  In that case you may have problems with relative
+  links, which you can solve either by adding `<base href="url">` to the documents or by specifying `--base=url` on the command
   line.
 
   If you specify `--force-css`, the document will be regarded as CSS.
@@ -179,7 +179,7 @@ Go to background immediately after startup. If no output file is specified via t
 
   If you specify `--force-metalink`, the document will be regarded as Metalink description.
 
-  If you have problems with relative links, you should use --base=url on the command line.
+  If you have problems with relative links, you should use `--base=url` on the command line.
 
 ### `-F`, `--force-html`
 
@@ -997,8 +997,8 @@ Go to background immediately after startup. If no output file is specified via t
 ### `-P prefix`, `--directory-prefix=prefix`
 
   Set directory prefix to prefix.  The directory prefix is the directory where all other files and subdirectories
-  will be saved to, i.e. the top of the retrieval tree.  The default is . (the current directory).
-
+  will be saved to, i.e. the top of the retrieval tree.  The default is `.`, the current directory.
+  If the directory `prefix` doesn't exist, it will be created.
 
 ## <a name="HTTP Options"/>HTTP Options
 
