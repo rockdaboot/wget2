@@ -294,12 +294,18 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 
 			if (!wget_strcasecmp_ascii(attr, "srcset")) {
 				// value is a list of URLs, see https://html.spec.whatwg.org/multipage/embedded-content.html#attr-img-srcset
+				// See also https://html.spec.whatwg.org/multipage/images.html#srcset-attribute
 				while (len) {
 					const char *p;
 
 					for (;len && c_isspace(*val); val++, len--); // skip leading spaces
 					for (p = val;len && !c_isspace(*val) && *val != ','; val++, len--); // find end of URL
 					if (p != val) {
+						// The 'data:' URL contains a single comma: https://datatracker.ietf.org/doc/html/rfc2397
+						if (len && *val == ',' && !wget_strncasecmp_ascii(p, "data:", 5)) {
+							// advance to the end of the 'data:' URL
+							for (val++, len--;len && !c_isspace(*val) && *val != ','; val++, len--);
+						}
 						url.download.p = NULL;
 						url.download.len = 0;
 						url.link_inline = ctx->link_inline;
