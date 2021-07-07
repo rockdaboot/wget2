@@ -1135,6 +1135,16 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 				if (conn->abort_indicator || abort_indicator)
 					goto cleanup;
 
+				if (body_len + 1024 > bufsize) {
+					if (wget_buffer_ensure_capacity(conn->buf, bufsize + 1024) != WGET_E_SUCCESS) {
+						error_printf(_("Failed to allocate %zu bytes\n"), bufsize + 1024);
+						goto cleanup;
+					}
+					p = conn->buf->data + (p - buf);
+					buf = conn->buf->data;
+					bufsize = conn->buf->size;
+				}
+
 				if ((nbytes = wget_tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)
 					goto cleanup;
 
@@ -1145,7 +1155,13 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 			end += 2;
 
 			// now p points to chunk-size (hex)
+			errno = 0;
 			chunk_size = (size_t) strtoll(p, NULL, 16);
+			if (errno) {
+				error_printf(_("Failed to convert chunk size '%.31s'\n"), p);
+				goto cleanup;
+			}
+
 			// debug_printf("chunk size is %zu\n", chunk_size);
 			if (chunk_size == 0) {
 				// now read 'trailer CRLF' which is '*(entity-header CRLF) CRLF'
@@ -1190,8 +1206,16 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 				continue;
 			}
 
-			resp->cur_downloaded += (buf + body_len) - end;
-			wget_decompress(dc, end, (buf + body_len) - end);
+//			resp->cur_downloaded += (buf + body_len) - end;
+//			wget_decompress(dc, end, (buf + body_len) - end);
+
+			if ((uintptr_t)((buf + body_len) - end) > chunk_size) {
+				resp->cur_downloaded += chunk_size;
+				wget_decompress(dc, end, chunk_size);
+			} else {
+				resp->cur_downloaded += (buf + body_len) - end;
+				wget_decompress(dc, end, (buf + body_len) - end);
+			}
 
 			chunk_size = (((uintptr_t) p) - ((uintptr_t) (buf + body_len))); // in fact needed bytes to have chunk_size+2 in buf
 
