@@ -1,3 +1,6 @@
 [submodule "gnulib"]
 	path = gnulib
 	url = https://git.savannah.gnu.org/git/gnulib.git
+[submodule "wiki"]
+	path = wiki
+	url = https://gitlab.com/gnuwget/wget2.wiki.git
