@@ -222,18 +222,36 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 
 		if ((*tag|0x20) == 'l' && !wget_strcasecmp_ascii(tag, "link")) {
 			if (!wget_strcasecmp_ascii(attr, "rel")) {
-				if (!wget_strncasecmp_ascii(val, "shortcut icon", len)
-					|| !wget_strncasecmp_ascii(val, "stylesheet", len)
-					|| !wget_strncasecmp_ascii(val, "preload", len))
-					ctx->link_inline = 1;
-				else
-					ctx->link_inline = 0;
+				ctx->link_inline = 0;
+
+				// "rel" contains a space separated list of items.
+				//   see https://html.spec.whatwg.org/multipage/semantics.html#attr-link-rel
+				//   see https://html.spec.whatwg.org/multipage/links.html#linkTypes
+				while (len) {
+					const char *p;
+
+					for (p = val;len && !c_isspace(*val); val++, len--); // find end of item
+					if (p == val) { val++; len--; continue; } // found a delimiter
+
+					// Check for items that may be important to display the page.
+					if (!wget_strncasecmp_ascii(p, "icon", val - p)
+						|| !wget_strncasecmp_ascii(p, "manifest", val - p)
+						|| !wget_strncasecmp_ascii(p, "modulepreload", val - p)
+						|| !wget_strncasecmp_ascii(p, "stylesheet", val - p)
+						|| !wget_strncasecmp_ascii(p, "prefetch", val - p)
+						|| !wget_strncasecmp_ascii(p, "preload", val - p))
+					{
+						ctx->link_inline = 1;
+						break;
+					}
+				}
 
 				if (ctx->uri_index >= 0) {
 					// href= came before rel=
 					wget_html_parsed_url *url = wget_vector_get(res->uris, ctx->uri_index);
 					url->link_inline = ctx->link_inline;
 				}
+				return;
 			}
 		}
 
