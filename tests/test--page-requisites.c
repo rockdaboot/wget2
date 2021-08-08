@@ -43,6 +43,11 @@ int main(void)
 				"<link rel=\"stylesheet\" href=\"test1.css\" />"
 				"<link href=\"test2.css\" rel=\"stylesheet\" />"
 				"<link rel=\"shortcut icon\" href=\"myfavicon.ico\" />"
+				"<link rel=\"icon\" href=\"icon.ico\" />"
+				"<link rel=\"alternate icon\" href=\"icon2.ico\" />"
+				"<link rel=\"alternate icon whatever\" href=\"icon3.ico\" />"
+				"<link rel=\" icon whatever\" href=\"icon4.ico\" />"
+				"<link rel=\"wontdownload\" href=\"wontdownload.txt\" />"
 				"<link href=\"not.txt\" rel=\"whatever\" />"
 				"<link href=\"preload.css\" rel=\"preload\" as=\"style\"/>"
 			"</p></body></html>",
@@ -184,6 +189,34 @@ int main(void)
 				"Content-Type: image/jpg",
 			}
 		},
+		{	.name = "/icon.ico",
+			.code = "200 Dontcare",
+			.body = "ICON",
+			.headers = {
+				"Content-Type: image/x-icon",
+			}
+		},
+		{	.name = "/icon2.ico",
+			.code = "200 Dontcare",
+			.body = "ICON2",
+			.headers = {
+				"Content-Type: image/x-icon",
+			}
+		},
+		{	.name = "/icon3.ico",
+			.code = "200 Dontcare",
+			.body = "ICON3",
+			.headers = {
+				"Content-Type: image/x-icon",
+			}
+		},
+		{	.name = "/icon4.ico",
+			.code = "200 Dontcare",
+			.body = "ICON4",
+			.headers = {
+				"Content-Type: image/x-icon",
+			}
+		},
 	};
 
 	// functions won't come back if an error occurs
@@ -212,6 +245,10 @@ int main(void)
 			{ urls[14].name + 1, urls[14].body }, // import1.css
 			{ urls[15].name + 1, urls[15].body }, // import2.css
 			{ urls[16].name + 1, urls[16].body }, // background.css
+			{ urls[17].name + 1, urls[17].body }, // icon.ico
+			{ urls[18].name + 1, urls[18].body }, // icon2.ico
+			{ urls[19].name + 1, urls[19].body }, // icon3.ico
+			{ urls[20].name + 1, urls[20].body }, // icon4.ico
 			{	NULL } },
 		0);
 
