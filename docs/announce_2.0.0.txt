@@ -28,6 +28,40 @@ GNU Wget2 is licensed under GPLv3+. Libwget is licensed under LGPLv3+.
 
 **Noteworthy changes since the last release (see also the NEWS file):**
 
+  * OpenSSL: Fix CRL checking
+  * OpenSSL: Implement ALPN
+  * OpenSSL: Fix memory leaks
+  * Update license information
+  * Fix for reproducible builds
+  * Add Accept-Encoding: lzip
+  * Rename --retry-on-http-status to --retry-on-http-error
+  * Limit to page requisites only for leaf pages
+  * Allow list of tokens for Connection: header
+  * Fix directory clash with --no-clobber
+  * Fix NULL dereference with --convert-links
+  * Using --robots=off downloads robots.txt
+  * Add pkg-config support for GPGME
+  * Fix conversion (-k) in combination with -E
+  * Fix cookie file header to be recognized by 'file' command
+  * Fix loading CA certs when 'system' is not supported
+  * Add option --method, improving backward compatibility
+  * Add option --body-data, improving backward compatibility
+  * Add option --body-file, improving backward compatibility
+  * Add option --ignore-length, improving backward compatibility
+  * Add option --convert-file-only, improving backward compatibility
+  * Add option --download-attr to make use of the HTML5 'download' attribute
+  * Support terminal hyperlinks in output
+  * Configure switch --disable-manylibs to disable building small libraries
+  * Support --background on Windows
+  * Add option --bind-interface
+  * Add HTTP2 uploading
+  * Support the HTML download attribute (for a and area tags)
+  * Add option --download-attr=[strippath|usepath] to control download attribute support
+  * OpenSSL: Add OCSP support
+  * OpenSSL: Implement OCSP stapling
+  * Support data: URL in srcset attribute
+  * Fixed diverse issues
+  * Improved code, documentation, building, testing, CI, ...
 
 **Download**
 
