@@ -122,6 +122,8 @@ for ext in $extensions; do
   gpg --default-key $signing_key --yes -b $app_tarball
 
   echo -e "version: 1.2\nfilename: ${app_tarball}\ndirectory: wget\n" >${app_tarball}.directive
+  echo -e "symlink: ${app_tarball} ${app_name}-latest.tar.$ext" >>${app_tarball}.directive
+  echo -e "symlink: ${app_tarball}.sig ${app_name}-latest.tar.${ext}.sig" >>${app_tarball}.directive
   gpg --default-key $signing_key --yes --clearsign ${app_tarball}.directive
 
 ftp -v -n -i -p ftp-upload.gnu.org <<EOF
@@ -134,4 +136,4 @@ EOF
 
 done
 
-echo "Don't forget to mention the authors announcement. (list with 'contrib/mk_authors'"
+echo "Don't forget to mention the authors announcement. (list with 'contrib/mk_authors')"
