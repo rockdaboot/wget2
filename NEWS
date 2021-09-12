@@ -6,7 +6,7 @@ See the end for copying conditions.
 
 Please send GNU Wget2 bug reports to <bug-wget@gnu.org>.
 
-xx.xx.2021 Release 2.0.0
+12.09.2021 Release v2.0.0
   * OpenSSL: Fix CRL checking
   * OpenSSL: Implement ALPN
   * OpenSSL: Fix memory leaks
