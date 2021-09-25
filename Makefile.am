@@ -41,7 +41,8 @@ ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libwget.pc
 
-EXTRA_DIST = cfg.mk build-aux/config.rpath m4/gnulib-cache.m4 README.md contrib/check_options
+EXTRA_DIST = cfg.mk build-aux/config.rpath m4/gnulib-cache.m4 README.md \
+             contrib/check_options contrib/libtool.patch
 
 include $(top_srcdir)/aminclude_static.am
 clean-local: code-coverage-clean
