@@ -730,10 +730,10 @@ AS_IF([test "$with_zstd" != "no"], [
 ])
 AM_CONDITIONAL([WITH_ZSTD], [test "$with_zstd" = "yes"])
 
-AC_ARG_WITH(lz, AS_HELP_STRING([--without-lzip], [disable lzip compression support]), with_lzip=$withval, with_lzip=yes)
+AC_ARG_WITH(lzip, AS_HELP_STRING([--without-lzip], [disable lzip compression support]), with_lzip=$withval, with_lzip=yes)
 AS_IF([test "$with_lzip" != "no"], [
   PKG_CHECK_MODULES([LZIP], liblz, [
-    with_lz=yes
+    with_lzip=yes
     LIBS="$LZIP_LIBS $LIBS"
     CFLAGS="$LZIP_CFLAGS $CFLAGS"
     AC_DEFINE([WITH_LZIP], [1], [Use liblz (lzip)])
