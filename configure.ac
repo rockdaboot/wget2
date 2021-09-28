@@ -947,9 +947,6 @@ AC_CONFIG_FILES([Makefile
                  docs/wget2_md2man.sh])
 AC_OUTPUT
 
-# patching libtool, generated when coming here
-patch libtool contrib/libtool.patch
-
 AC_MSG_NOTICE([Summary of build options:
 
   Version:            ${PACKAGE_VERSION}
