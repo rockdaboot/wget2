@@ -65,161 +65,161 @@ lib_LTLIBRARIES += libwget_alloc.la
 libwget_alloc_la_SOURCES =  xalloc.c
 libwget_alloc_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_alloc_la_LIBADD =  ../lib/libgnu.la
-libwget_alloc_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_alloc_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget ip ########
 lib_LTLIBRARIES += libwget_ip.la
 libwget_ip_la_SOURCES =  ip.c
 libwget_ip_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_ip_la_LIBADD = $(INET_PTON_LIB) ../lib/libgnu.la
-libwget_ip_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_ip_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget common ########
 lib_LTLIBRARIES += libwget_common.la
 libwget_common_la_SOURCES =  buffer.c buffer_printf.c base64.c bitmap.c hashmap.c list.c log.c mem.c printf.c stringmap.c strlcpy.c strscpy.c utils.c vector.c error.c
 libwget_common_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_common_la_LIBADD =  libwget_alloc.la ../lib/libgnu.la
-libwget_common_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_common_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget thread ########
 lib_LTLIBRARIES += libwget_thread.la
 libwget_thread_la_SOURCES =  thread.c
 libwget_thread_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_thread_la_LIBADD = libwget_alloc.la $(LIB_CLOCK_GETTIME) $(LTLIBMULTITHREAD) $(LTLIBTHREAD) ../lib/libgnu.la
-libwget_thread_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_thread_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget encoding ########
 lib_LTLIBRARIES += libwget_encoding.la
 libwget_encoding_la_SOURCES =  encoding.c
 libwget_encoding_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_encoding_la_LIBADD = libwget_common.la libwget_alloc.la $(LIBIDN_LIBS) $(LIBIDN2_LIBS) ../lib/libgnu.la
-libwget_encoding_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_encoding_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget iri ########
 lib_LTLIBRARIES += libwget_iri.la
 libwget_iri_la_SOURCES =  iri.c
 libwget_iri_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_iri_la_LIBADD = libwget_encoding.la libwget_ip.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_iri_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_iri_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget io ########
 lib_LTLIBRARIES += libwget_io.la
 libwget_io_la_SOURCES =  io.c
 libwget_io_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_io_la_LIBADD = libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_io_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_io_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget hashfile ########
 lib_LTLIBRARIES += libwget_hashfile.la
 libwget_hashfile_la_SOURCES =  hashfile.c
 libwget_hashfile_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_hashfile_la_LIBADD = libwget_common.la libwget_alloc.la $(GNUTLS_LIBS) $(WOLFSSL_LIBS) $(OPENSSL_LIBS) $(NETTLE_LIBS) ../lib/libgnu.la
-libwget_hashfile_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_hashfile_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget hpkp_db ########
 lib_LTLIBRARIES += libwget_hpkp_db.la
 libwget_hpkp_db_la_SOURCES =  hpkp_db.c hpkp.c hpkp.h
 libwget_hpkp_db_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_hpkp_db_la_LIBADD = libwget_hashfile.la libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_hpkp_db_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_hpkp_db_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget hsts ########
 lib_LTLIBRARIES += libwget_hsts.la
 libwget_hsts_la_SOURCES =  hsts.c
 libwget_hsts_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_hsts_la_LIBADD = libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_hsts_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_hsts_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget ocsp ########
 lib_LTLIBRARIES += libwget_ocsp.la
 libwget_ocsp_la_SOURCES =  ocsp.c
 libwget_ocsp_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_ocsp_la_LIBADD = libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_ocsp_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_ocsp_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget tls_session ########
 lib_LTLIBRARIES += libwget_tls_session.la
 libwget_tls_session_la_SOURCES =  tls_session.c
 libwget_tls_session_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_tls_session_la_LIBADD = libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_tls_session_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_tls_session_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget http_parse ########
 lib_LTLIBRARIES += libwget_http_parse.la
 libwget_http_parse_la_SOURCES =  http_parse.c cookie_parse.c cookie.h hpkp.c cookie.h
 libwget_http_parse_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_http_parse_la_LIBADD = libwget_encoding.la libwget_common.la libwget_alloc.la $(LIBPSL_LIBS) ../lib/libgnu.la
-libwget_http_parse_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_http_parse_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget logger ########
 lib_LTLIBRARIES += libwget_logger.la
 libwget_logger_la_SOURCES =  logger.c
 libwget_logger_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_logger_la_LIBADD = libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_logger_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_logger_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget dnscache ########
 lib_LTLIBRARIES += libwget_dnscache.la
 libwget_dnscache_la_SOURCES =  dns_cache.c
 libwget_dnscache_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_dnscache_la_LIBADD = libwget_thread.la libwget_common.la libwget_alloc.la $(GETADDRINFO_LIB) ../lib/libgnu.la
-libwget_dnscache_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_dnscache_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget dns ########
 lib_LTLIBRARIES += libwget_dns.la
 libwget_dns_la_SOURCES =  dns.c
 libwget_dns_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_dns_la_LIBADD = libwget_dnscache.la libwget_ip.la libwget_logger.la libwget_thread.la libwget_common.la libwget_alloc.la $(GETADDRINFO_LIB) ../lib/libgnu.la
-libwget_dns_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_dns_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget robots ########
 lib_LTLIBRARIES += libwget_robots.la
 libwget_robots_la_SOURCES =  robots.c
 libwget_robots_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_robots_la_LIBADD = libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_robots_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_robots_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget xml ########
 lib_LTLIBRARIES += libwget_xml.la
 libwget_xml_la_SOURCES =  xml.c
 libwget_xml_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_xml_la_LIBADD = libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_xml_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_xml_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget metalink ########
 lib_LTLIBRARIES += libwget_metalink.la
 libwget_metalink_la_SOURCES =  metalink.c
 libwget_metalink_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_metalink_la_LIBADD = libwget_xml.la libwget_iri.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_metalink_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_metalink_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget netrc ########
 lib_LTLIBRARIES += libwget_netrc.la
 libwget_netrc_la_SOURCES =  netrc.c
 libwget_netrc_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_netrc_la_LIBADD = libwget_io.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_netrc_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_netrc_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget decompress ########
 lib_LTLIBRARIES += libwget_decompress.la
 libwget_decompress_la_SOURCES =  decompressor.c
 libwget_decompress_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_decompress_la_LIBADD = libwget_common.la libwget_alloc.la ../lib/libgnu.la $(ZSTD_LIBS) $(BROTLIDEC_LIBS) $(LZMA_LIBS) $(ZLIB_LIBS) $(BZ2_LIBS) $(LZIP_LIBS)
-libwget_decompress_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_decompress_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget CSS ########
 lib_LTLIBRARIES += libwget_css.la
 libwget_css_la_SOURCES =  css_url.c css.c css_tokenizer.h
 libwget_css_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_css_la_LIBADD = libcsstokenizer.la libwget_iri.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_css_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_css_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## libwget progress ########
 lib_LTLIBRARIES += libwget_progress.la
 libwget_progress_la_SOURCES =  bar.c
 libwget_progress_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
 libwget_progress_la_LIBADD = libwget_thread.la libwget_common.la libwget_alloc.la ../lib/libgnu.la
-libwget_progress_la_LDFLAGS = $(libwget_la_LDFLAGS) -no-whole-archive
+libwget_progress_la_LDFLAGS = $(libwget_la_LDFLAGS) -Wl,--no-whole-archive
 
 ######## Test linking ########
 noinst_PROGRAMS = test_linking_common
