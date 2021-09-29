@@ -552,7 +552,7 @@ AS_IF([test "$with_gnutls" = "yes" || test "$with_wolfssl" = "yes" || test "$wit
 ], [
   AS_IF([test "$with_ssl" != "none"], [
     AS_IF([test "$with_ssl" = "yes"], [AC_MSG_ERROR([*** No SSL/TLS library not found.])],
-          [AC_MSG_ERROR([*** SSL/TLS library \"$with_ssl\" not found.])])
+          [AC_MSG_ERROR([*** SSL/TLS library "$with_ssl" not found.])])
   ])
   ssl_enabled="none"
 ])
