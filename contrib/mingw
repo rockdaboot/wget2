@@ -33,6 +33,7 @@ else
   cd libunistring
   git pull
 fi
+./gitsub.sh pull
 ./autogen.sh
 ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --prefix=$INSTALLDIR
 make clean
@@ -76,7 +77,7 @@ else
   git pull
 fi
 bash .bootstrap
-./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-mini-gmp --enable-shared --disable-documentation --prefix=$INSTALLDIR
+./configure --host=$PREFIX --enable-mini-gmp --enable-shared --disable-documentation --prefix=$INSTALLDIR
 make clean
 make -j$(nproc)
 make install
@@ -93,7 +94,8 @@ fi
 ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX \
   --with-nettle-mini --enable-shared --with-included-libtasn1 \
   --with-included-unistring --without-p11-kit --disable-doc --disable-tests --disable-tools --disable-cxx \
-  --disable-maintainer-mode --disable-libdane --disable-hardware-acceleration --disable-guile --prefix=$INSTALLDIR
+  --disable-maintainer-mode --disable-libdane --disable-hardware-acceleration --disable-guile --prefix=$INSTALLDIR \
+  --disable-tests
 make -j$(nproc)
 make install
 cd ..
@@ -114,7 +116,7 @@ cd ..
 
 # Install Libmicrohttpd from source
 if [ ! -d libmicrohttpd ]; then
-  git clone --recursive https://gnunet.org/git/libmicrohttpd.git
+  git clone --recursive https://git.gnunet.org/libmicrohttpd.git
   cd libmicrohttpd
 else
   cd libmicrohttpd
@@ -127,10 +129,9 @@ make -j$(nproc)
 make install
 cd ..
 
-# somehow, the GnuTLS build needs a static gcc library. It comes with MinGW, but we have to find it's directory.
+# Build Wget2 and run checks
 ./bootstrap
-./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
-cp -p pthread_sigmask.c.mingw lib/pthread_sigmask.c
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared --without-gpgme
 make clean
-make -j$(nproc)
-make check -j$(nproc) LOG_COMPILER=wine
+make -j
+make check -j LOG_COMPILER=wine
