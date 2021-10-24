@@ -1,0 +1,96 @@
+#!/bin/bash
+
+set -e
+
+# just in case...
+unset CC
+unset CXX
+
+#PREFIX=i686-w64-mingw32
+PREFIX=x86_64-w64-mingw32
+
+export PATH="/usr/$PREFIX/bin:$PATH"
+export INSTALLDIR="$PWD/$PREFIX"
+export PKG_CONFIG_PATH=$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig
+export PKG_CONFIG_LIBDIR="$INSTALLDIR/lib/pkgconfig"
+export PKG_CONFIG="/usr/bin/${PREFIX}-pkg-config"
+export CPPFLAGS="-I$INSTALLDIR/include"
+export LDFLAGS="-L$INSTALLDIR/lib"
+
+# somehow, the GnuTLS build needs a static gcc library. It comes with MinGW, but we have to find it's directory.
+GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|head -1))
+
+# without WINEPATH our local DLLs won't be find when running tests
+export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs;$GCCLIB"
+
+# let mingw compiler be less verbose
+export CFLAGS="-O2 -Wall -Wno-format"
+
+rm -rf libiconv-*
+wget -q -O- https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.16.tar.gz | tar xz
+cd libiconv-*
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --prefix=$INSTALLDIR
+make -j
+make install
+cd ..
+
+rm -rf libunistring-*
+wget -q -O- https://ftp.gnu.org/gnu/libunistring/libunistring-latest.tar.gz | tar xz
+cd libunistring-*
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --prefix=$INSTALLDIR
+make -j
+make install
+cd ..
+
+rm -rf libidn2-*
+wget -q -O- https://ftp.gnu.org/gnu/libidn/libidn2-latest.tar.gz | tar xz
+cd libidn2-*
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --disable-doc --prefix=$INSTALLDIR
+make -j
+make install
+cd ..
+
+rm -rf libpsl
+git clone --recursive https://github.com/rockdaboot/libpsl.git
+cd libpsl
+./autogen.sh
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --disable-gtk-doc --enable-runtime=libidn2 --enable-builtin=libidn2 --prefix=$INSTALLDIR
+make -j
+make install
+cd ..
+
+rm -rf nettle
+git clone https://git.lysator.liu.se/nettle/nettle.git
+cd nettle
+bash .bootstrap
+./configure --host=$PREFIX --enable-mini-gmp --disable-shared --enable-static --disable-documentation --prefix=$INSTALLDIR
+make -j
+make install
+cd ..
+
+rm -rf gnutls
+git clone https://gitlab.com/gnutls/gnutls.git
+cd gnutls
+./bootstrap
+autoreconf -fi
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR \
+  --with-nettle-mini --disable-shared --enable-static --with-included-libtasn1 \
+  --with-included-unistring --without-p11-kit --disable-doc --disable-tests --disable-full-test-suite --disable-tools \
+  --disable-cxx --disable-maintainer-mode --disable-libdane --disable-hardware-acceleration --disable-guile
+make -j
+make install
+cd ..
+
+rm -rf libmicrohttpd
+wget -q -O- https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-latest.tar.gz | tar xz
+cd libmicrohttpd-*
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-doc --disable-examples --disable-shared --enable-static
+make -j
+make install
+cd ..
+
+./bootstrap
+LDFLAGS="-Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive" \
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme
+make -j
+make check -j LOG_COMPILER=wine
