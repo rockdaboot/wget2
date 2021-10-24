@@ -595,7 +595,7 @@ static int send_ocsp_request(const char *server,
 		server = wget_strmemdup((char *)data.data, data.size);
 		server_allocated = 1;
 
-		gnutls_free(data.data);
+		xfree(data.data);
 	}
 
 	iri = wget_iri_parse(server, NULL);
@@ -633,7 +633,7 @@ static int send_ocsp_request(const char *server,
 		wget_http_close(&conn);
 	}
 
-	gnutls_free(body.data);
+	xfree(body.data);
 
 out:
 	wget_http_free_request(&req);
@@ -769,11 +769,11 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 
 		if (config.ocsp_nonce && (rnonce.size != nonce->size || memcmp(nonce->data, rnonce.data, nonce->size) != 0)) {
 			debug_printf("nonce in the response doesn't match\n");
-			gnutls_free(rnonce.data);
+			xfree(rnonce.data);
 			goto cleanup;
 		}
 
-		gnutls_free(rnonce.data);
+		xfree(rnonce.data);
 	}
 
  finish_ok:
@@ -877,7 +877,7 @@ static int cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname, gnutls
 	}
 
 	rc = wget_hpkp_db_check_pubkey(config.hpkp_cache, hostname, pubkey.data, pubkey.size);
-	gnutls_free(pubkey.data);
+	xfree(pubkey.data);
 #else
 	size_t size = 0;
 	void *data = NULL;
@@ -982,7 +982,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 			status, gnutls_certificate_type_get(session), &out, 0) == GNUTLS_E_SUCCESS)
 		{
 			error_printf("%s: %s\n", tag, out.data); // no translation
-			gnutls_free(out.data);
+			xfree(out.data);
 		}
 
 		goto out;
@@ -1780,7 +1780,7 @@ int wget_ssl_open(wget_tcp *tcp)
 				if ((rc = gnutls_session_get_data2(session, &session_data)) == GNUTLS_E_SUCCESS) {
 					wget_tls_session_db_add(config.tls_session_cache,
 						wget_tls_session_new(ctx->hostname, 18 * 3600, session_data.data, session_data.size)); // 18h valid
-					gnutls_free(session_data.data);
+					xfree(session_data.data);
 				} else
 					debug_printf("Failed to get session data: %s", gnutls_strerror(rc));
 			}
@@ -1913,7 +1913,7 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 				ctx->delayed_session_data = 0;
 				wget_tls_session_db_add(config.tls_session_cache,
 					wget_tls_session_new(ctx->hostname, 18 * 3600, session_data.data, session_data.size)); // 18h valid
-				gnutls_free(session_data.data);
+				xfree(session_data.data);
 			} else
 				debug_printf("No delayed session data%s\n", gnutls_strerror(rc));
 		}
