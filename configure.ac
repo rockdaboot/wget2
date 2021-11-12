@@ -662,14 +662,6 @@ AS_IF([test "$with_libnghttp2" != "no"], [
 ])
 AM_CONDITIONAL([WITH_LIBNGHTTP2], [test "$with_libnghttp2" = "yes"])
 
-AC_ARG_WITH(bzip2, AS_HELP_STRING([--without-bzip2], [disable bzip2 compression support]), with_bzip2=$withval, with_bzip2=yes)
-AS_IF([test "$with_bzip2" != "no"], [
-  AC_SEARCH_LIBS(BZ2_bzDecompress, bz2,
-    [with_bzip2=yes; AC_SUBST([BZ2_LIBS], -lbz2) AC_DEFINE([WITH_BZIP2], [1], [Use libbz2])],
-    [with_bzip2=no;  AC_MSG_WARN(*** libbz2 was not found. You will not be able to use BZIP2 (de)compression)])
-])
-AM_CONDITIONAL([WITH_BZIP2], [test "$with_bzip2" = "yes"])
-
 AC_ARG_WITH(gpgme, AS_HELP_STRING([--without-gpgme], [support signature verification with gpgme]), with_gpgme=$withval, with_gpgme=yes)
 AS_IF([test "$with_gpgme" != "no"], [
   PKG_CHECK_MODULES([GPGME], gpgme, [
@@ -693,6 +685,18 @@ AS_IF([test "$with_gpgme" != "no"], [
   ])
 ])
 AM_CONDITIONAL([WITH_GPGME], [test "$with_gpgme" = "yes"])
+
+AC_ARG_WITH(bzip2, AS_HELP_STRING([--with-bzip2], [enable bzip2 compression support]), with_bzip2=$withval, with_bzip2=no)
+AS_IF([test "$with_bzip2" = "yes"], [
+  OLD_LIBS="$LIBS"
+  LIBS=
+  AC_SEARCH_LIBS(BZ2_bzDecompress, bz2,
+    [with_bzip2=yes; AC_DEFINE([WITH_BZIP2], [1], [Use libbz2])],
+    [with_bzip2=no;  AC_MSG_WARN(*** libbz2 was not found. You will not be able to use BZIP2 (de)compression)])
+  BZ2_LIBS="$LIBS"
+  LIBS="$LIBS $OLD_LIBS"
+])
+AM_CONDITIONAL([WITH_BZIP2], [test "$with_bzip2" = "yes"])
 
 AC_ARG_WITH(zlib, AS_HELP_STRING([--without-zlib], [disable gzip compression support]), with_zlib=$withval, with_zlib=yes)
 AS_IF([test "$with_zlib" != "no"], [
