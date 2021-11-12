@@ -717,8 +717,8 @@ AS_IF([test "$with_zlib" != "no"], [
 ])
 AM_CONDITIONAL([WITH_ZLIB], [test "$with_zlib" = "yes"])
 
-AC_ARG_WITH(lzma, AS_HELP_STRING([--without-lzma], [disable LZMA compression support]), with_lzma=$withval, with_lzma=yes)
-AS_IF([test "$with_lzma" != "no"], [
+AC_ARG_WITH(lzma, AS_HELP_STRING([--with-lzma], [enable LZMA compression support]), with_lzma=$withval, with_lzma=no)
+AS_IF([test "$with_lzma" = "yes"], [
   PKG_CHECK_MODULES([LZMA], liblzma, [
     with_lzma=yes
     LIBS="$LZMA_LIBS $LIBS"
