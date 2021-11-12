@@ -336,21 +336,31 @@ AS_IF([test "$ENABLE_ASSERT" != "yes"], [CFLAGS="-DNDEBUG $CFLAGS"], [])
 #
 AC_ARG_ENABLE([xattr],
   [AS_HELP_STRING([--disable-xattr], [disable support for POSIX Extended Attributes])],
-  [ENABLE_XATTR=$enableval],
+  [ENABLE_XATTR=$enableval; xattr_requested=$enableval],
   [ENABLE_XATTR=yes])
 
-case "$host_os" in
-  *linux* | *darwin*) xattr_syscalls="fsetxattr" ;;
-  freebsd*)           xattr_syscalls="extattr_set_fd" ;;
-  *)  AC_MSG_NOTICE([Disabling Extended Attribute support: your system is not known to support extended attributes.])
-      ENABLE_XATTR=no
-esac
-
 if test "${ENABLE_XATTR}" = "yes" ; then
-  AC_CHECK_FUNCS([$xattr_syscalls], [], [
-    AC_MSG_NOTICE([Disabling Extended Attribute support: your system does not support $xattr_syscalls])
-    ENABLE_XATTR=no
-  ])
+  case "$host_os" in
+    *linux* | *darwin*)
+      AC_CHECK_FUNCS([fsetxattr], [], [
+        AC_MSG_NOTICE([Disabling Extended Attribute support: your system does not support fsetxattr])
+        ENABLE_XATTR=no
+      ])
+      ;;
+    freebsd*)
+      AC_CHECK_FUNCS([extattr_set_fd], [], [
+        AC_MSG_NOTICE([Disabling Extended Attribute support: your system does not support extattr_set_fd])
+        ENABLE_XATTR=no
+      ])
+      ;;
+    *)
+      AC_MSG_NOTICE([Disabling Extended Attribute support: your system is not known to support extended attributes.])
+      ENABLE_XATTR=no
+  esac
+
+  if test "$ENABLE_XATTR" = "no" && test "$xattr_requested" = "yes"; then
+    AC_MSG_ERROR([Extended Attributes (xattr) have been requested but are not available.])
+  fi
 fi
 
 test "${ENABLE_XATTR}" = "yes" && AC_DEFINE([ENABLE_XATTR], 1,
