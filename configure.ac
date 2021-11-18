@@ -519,7 +519,7 @@ AS_IF([test "$with_ssl" = "openssl" || (test "$with_ssl" = "yes" && test "$with_
   ], [
     OLD_LIBS="$LIBS"
     LIBS=
-    AC_SEARCH_LIBS(SSL_CTX_new, openssl,
+    AC_SEARCH_LIBS(SSL_CTX_new, ssl,
       [with_openssl=yes; AC_DEFINE([WITH_OPENSSL], [1], [Use OpenSSL])],
       [AC_MSG_WARN(*** OpenSSL was not found.)
     ])
