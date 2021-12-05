@@ -283,7 +283,7 @@ static void program_init(void)
 	struct sigaction sig_action;
 	memset(&sig_action, 0, sizeof(sig_action));
 
-	sig_action.sa_sigaction = (void (*)(int, siginfo_t *, void *))SIG_IGN;
+	sig_action.sa_handler = SIG_IGN;
 	sigaction(SIGPIPE, &sig_action, NULL); // this forces socket error return
 	sig_action.sa_handler = nop;
 	sigaction(SIGTERM, &sig_action, NULL);
