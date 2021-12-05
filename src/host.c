@@ -180,8 +180,11 @@ static int _search_queue_for_free_job(struct _find_free_job_context *ctx, JOB *j
 	return 0;
 }
 
-static int WGET_GCC_NONNULL_ALL _search_host_for_free_job(struct _find_free_job_context *ctx, HOST *host)
+static int WGET_GCC_NONNULL((1,2)) _search_host_for_free_job(void *_ctx, const void *_host, WGET_GCC_UNUSED void *v)
 {
+	struct _find_free_job_context *ctx = _ctx;
+	const HOST *host = _host;
+
 	// host may be blocked due to max. number of failures reached
 	if (host->blocked) {
 		debug_printf("host %s is blocked (qsize=%d)\n", host->host, host->qsize);
@@ -233,10 +236,10 @@ JOB *host_get_job(HOST *host, long long *pause)
 	struct _find_free_job_context ctx = { .now = wget_get_timemillis() };
 
 	if (host) {
-		_search_host_for_free_job(&ctx, host);
+		_search_host_for_free_job(&ctx, host, NULL);
 	} else {
 		wget_thread_mutex_lock(hosts_mutex);
-		wget_hashmap_browse(hosts, (wget_hashmap_browse_fn *) _search_host_for_free_job, &ctx);
+		wget_hashmap_browse(hosts, _search_host_for_free_job, &ctx);
 		wget_thread_mutex_unlock(hosts_mutex);
 	}
 

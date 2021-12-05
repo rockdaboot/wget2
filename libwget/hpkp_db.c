@@ -360,8 +360,11 @@ int wget_hpkp_db_load(wget_hpkp_db *hpkp_db)
 	}
 }
 
-static int hpkp_save_pin(FILE *fp, wget_hpkp_pin *pin)
+static int hpkp_save_pin(void *_fp, void *_pin)
 {
+	FILE *fp = _fp;
+	wget_hpkp_pin *pin = _pin;
+
 	wget_fprintf(fp, "*%s %s\n", pin->hash_type, pin->pin_b64);
 
 	if (ferror(fp))
@@ -371,8 +374,11 @@ static int hpkp_save_pin(FILE *fp, wget_hpkp_pin *pin)
 }
 
 WGET_GCC_NONNULL_ALL
-static int hpkp_save(FILE *fp, const wget_hpkp *hpkp)
+static int hpkp_save(void *_fp, const void *_hpkp, WGET_GCC_UNUSED void *v)
 {
+	FILE *fp = _fp;
+	const wget_hpkp *hpkp = _hpkp;
+
 	if (wget_vector_size(hpkp->pins) == 0)
 		debug_printf("HPKP: drop '%s', no PIN entries\n", hpkp->host);
 	else if (hpkp->expires < time(NULL))
@@ -383,7 +389,7 @@ static int hpkp_save(FILE *fp, const wget_hpkp *hpkp)
 		if (ferror(fp))
 			return -1;
 
-		return wget_vector_browse(hpkp->pins, (wget_vector_browse_fn *) hpkp_save_pin, fp);
+		return wget_vector_browse(hpkp->pins, hpkp_save_pin, fp);
 	}
 
 	return 0;
@@ -401,7 +407,7 @@ static int hpkp_db_save(wget_hpkp_db *hpkp_db, FILE *fp)
 		if (ferror(fp))
 			return -1;
 
-		return wget_hashmap_browse(entries, (wget_hashmap_browse_fn *) hpkp_save, fp);
+		return wget_hashmap_browse(entries, hpkp_save, fp);
 	}
 
 	return 0;
