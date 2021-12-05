@@ -325,7 +325,7 @@ static char *iri_unescape_inline(char *src, int ctype)
 			if (s[1] == 'x') {
 				unsigned char *p = s + 2;
 				while (c_isxdigit(*p)) {
-					value = (value << 4) | unhex(*p);
+					value = ((value & 0x0FFFFFFF) << 4) | unhex(*p);
 					p++;
 				}
 				if (*p == ';') {
