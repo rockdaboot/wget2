@@ -1526,7 +1526,14 @@ static ssize_t ssl_writev(gnutls_transport_ptr_t *p, const giovec_t *iov, int io
 	gnutls_transport_set_ptr(tcp->ssl_session, (gnutls_transport_ptr_t)(ptrdiff_t)tcp->sockfd);
 #endif
 
+#if defined __clang__
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wcast-function-type"
+#endif
 	gnutls_transport_set_vec_push_function(tcp->ssl_session, (ssize_t (*) (gnutls_transport_ptr_t, const giovec_t * iov, int iovcnt)) writev);
+#if defined __clang__
+  #pragma clang diagnostic pop
+#endif
 
 	return ret;
 }
