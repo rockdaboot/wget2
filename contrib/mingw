@@ -91,11 +91,11 @@ else
   git pull
 fi
 ./bootstrap
-./configure --build=x86_64-pc-linux-gnu --host=$PREFIX \
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR \
   --with-nettle-mini --enable-shared --with-included-libtasn1 \
-  --with-included-unistring --without-p11-kit --disable-doc --disable-tests --disable-tools --disable-cxx \
-  --disable-maintainer-mode --disable-libdane --disable-hardware-acceleration --disable-guile --prefix=$INSTALLDIR \
-  --disable-tests
+  --with-included-unistring --without-p11-kit --disable-doc --disable-tests --disable-full-test-suite --disable-tools \
+  --disable-cxx --disable-maintainer-mode --disable-libdane --disable-hardware-acceleration --disable-guile
+
 make -j$(nproc)
 make install
 cd ..
