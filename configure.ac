@@ -196,6 +196,14 @@ if test -n "$WARN_CFLAGS"; then
       WARN_CFLAGS="$WARN_CFLAGS -Wno-implicit-int-float-conversion"
     fi
 
+    if test $CLANG_VERSION -ge 12; then
+      WARN_CFLAGS="$WARN_CFLAGS -Wno-string-concatenation"
+    fi
+
+    if test $CLANG_VERSION -ge 13; then
+      WARN_CFLAGS="$WARN_CFLAGS -Wno-reserved-identifier"
+    fi
+
     # remove all flags from WARN_FLAGS that are already in CFLAGS
     # wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])
 
