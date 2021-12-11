@@ -1672,8 +1672,10 @@ static int process_response_header(wget_http_response *resp)
 	if (resp->length_inconsistent && resp->code == 200) {
 		print_status(downloader, "Unexpected body length %zu.", resp->content_length);
 		if (config.tries && ++job->failures < config.tries) {
-			debug_printf("Removing %s\n", job->blacklist_entry->local_filename);
-			unlink(job->blacklist_entry->local_filename);
+			if  (job->blacklist_entry->local_filename) {
+				debug_printf("Removing %s\n", job->blacklist_entry->local_filename);
+				unlink(job->blacklist_entry->local_filename);
+			}
 
 			// retry later
 			job->done = 0;
