@@ -218,8 +218,11 @@ static void nop(int sig)
 	if (sig == SIGTERM) {
 		abort(); // hard stop if got a SIGTERM
 	} else if (sig == SIGINT) {
-		if (terminate)
-			abort(); // hard stop if pressed CTRL-C a second time
+		if (terminate) {
+			// Hard stop if pressed CTRL-C a second time.
+			// Do not use abort() to avoid a core dump.
+			exit(EXIT_STATUS_GENERIC);
+		}
 
 		terminate = 1; // set global termination flag
 		wget_http_abort_connection(NULL); // soft-abort all connections
