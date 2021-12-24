@@ -216,7 +216,8 @@ static long long quota_modify_read(size_t nbytes)
 static void nop(int sig)
 {
 	if (sig == SIGTERM) {
-		abort(); // hard stop if got a SIGTERM
+		// Hard stop on SIGTERM
+		exit(EXIT_STATUS_GENERIC);
 	} else if (sig == SIGINT) {
 		if (terminate) {
 			// Hard stop if pressed CTRL-C a second time.
