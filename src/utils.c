@@ -51,7 +51,9 @@ void mkdir_path(const char *_fname, bool is_file)
 
 		rc = mkdir(fname, 0755);
 
-		// debug_printf("mkdir(%s)=%d errno=%d\n", fname, rc, errno);
+		if (rc < 0 && errno != EEXIST)
+			debug_printf("mkdir(%s)=%d errno=%d\n", fname, rc, errno);
+
 		if (rc) {
 			struct stat st;
 
@@ -94,7 +96,8 @@ void mkdir_path(const char *_fname, bool is_file)
 	// directory for the last part
 	if (!is_file) {
 		int rc = mkdir(_fname, 0755);
-		// debug_printf("mkdir(%s)=%d errno=%d\n", _fname, rc, errno);
+		if (rc < 0 && errno != EEXIST)
+			debug_printf("mkdir(%s)=%d errno=%d\n", _fname, rc, errno);
 	}
 }
 
