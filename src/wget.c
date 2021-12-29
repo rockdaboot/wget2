@@ -788,7 +788,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 		iri = wget_iri_parse(url, encoding);
 
 	if (!iri) {
-		error_printf(_("Cannot resolve URI '%s'\n"), url);
+		info_printf(_("Cannot resolve URI '%s'\n"), url);
 		return;
 	}
 
@@ -1149,7 +1149,7 @@ static void convert_links(void)
 				blacklist_entry *blacklist_entry;
 
 				if (!iri) {
-					wget_error_printf(_("Cannot resolve URI '%s'\n"), buf.data);
+					info_printf(_("Cannot resolve URI '%s'\n"), buf.data);
 					continue;
 				}
 
