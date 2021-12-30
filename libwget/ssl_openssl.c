@@ -640,7 +640,7 @@ static OCSP_REQUEST *send_ocsp_request(const char *uri,
 		WGET_HTTP_URL, uri,
 		WGET_HTTP_SCHEME, "POST",
 		WGET_HTTP_HEADER_ADD, "Accept-Encoding", "identity",
-		WGET_HTTP_HEADER_ADD, "Accept", "application/ocsp-response",
+		WGET_HTTP_HEADER_ADD, "Accept", "*/*",
 		WGET_HTTP_HEADER_ADD, "Content-Type", "application/ocsp-request",
 		WGET_HTTP_MAX_REDIRECTIONS, 5,
 		WGET_HTTP_BODY, ocspreq_bytes, ocspreq_bytes_len,
@@ -828,7 +828,7 @@ static int verify_ocsp(const char *ocsp_uri,
 	OCSP_BASICRESP *ocspbs = NULL;
 
 	/* Generate CertID and OCSP request */
-	certid = OCSP_cert_to_id(EVP_sha256(), subject_cert, issuer_cert);
+	certid = OCSP_cert_to_id(EVP_sha1(), subject_cert, issuer_cert);
 	if (!(ocspreq = send_ocsp_request(ocsp_uri,
 			certid,
 			&resp)))
