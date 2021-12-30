@@ -876,7 +876,9 @@ static char *read_ocsp_uri_from_certificate(X509 *cert)
 	STACK_OF(OPENSSL_STRING) *str_stack = X509_get1_ocsp(cert);
 
 	if (str_stack && sk_OPENSSL_STRING_num(str_stack) > 0) {
-		return wget_strdup(sk_OPENSSL_STRING_value(str_stack, 0));
+		char *uri = wget_strdup(sk_OPENSSL_STRING_value(str_stack, 0));
+		X509_email_free(str_stack); // utterly misnamed, it simply frees a stack of strings.
+		return uri;
 	}
 
 	return NULL;
