@@ -786,6 +786,7 @@ static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 
 	if (print_ocsp_cert_status(status, reason) != V_OCSP_CERTSTATUS_GOOD) {
 		error_printf(_("Certificate revoked by OCSP\n"));
+		retval = 1;
 		goto end;
 	}
 
@@ -818,7 +819,7 @@ static int verify_ocsp(const char *ocsp_uri,
 		STACK_OF(X509) *certs, X509_STORE *certstore,
 		bool check_time, bool check_nonce)
 {
-	int retval = 1;
+	int retval;
 	wget_http_response *resp;
 	const unsigned char *body;
 	OCSP_CERTID *certid;
@@ -842,7 +843,7 @@ static int verify_ocsp(const char *ocsp_uri,
 		return -1;
 	}
 
-	if (check_ocsp_response(ocspresp, certs, certstore, check_time) < 0)
+	if ((retval = check_ocsp_response(ocspresp, certs, certstore, check_time)) < 0)
 		goto end;
 
 	if (check_nonce) {
