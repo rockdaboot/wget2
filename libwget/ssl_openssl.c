@@ -1013,6 +1013,8 @@ static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, c
 			num_ok++;
 		else if (ocsp_ok == 1)
 			num_revoked++;
+		else
+			num_ignored++;
 
 		/* Add the certificate to the OCSP cache */
 		if (ocsp_ok == 0 || ocsp_ok == 1) {
