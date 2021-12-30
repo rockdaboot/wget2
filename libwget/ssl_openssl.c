@@ -871,25 +871,15 @@ end:
 	return retval;
 }
 
-static char *read_ocsp_uri_from_certificate(const X509 *cert)
+static char *read_ocsp_uri_from_certificate(X509 *cert)
 {
-	int idx;
-	unsigned char *ocsp_uri = NULL;
-	X509_EXTENSION *ext;
-	ASN1_OCTET_STRING *extdata;
-	const STACK_OF(X509_EXTENSION) *exts = X509_get0_extensions(cert);
+	STACK_OF(OPENSSL_STRING) *str_stack = X509_get1_ocsp(cert);
 
-	if (exts) {
-		/* Read the authorityInfoAccess extension */
-		if ((idx = X509v3_get_ext_by_NID(exts, NID_info_access, -1)) >= 0) {
-			ext = sk_X509_EXTENSION_value(exts, idx);
-			extdata = X509_EXTENSION_get_data(ext);
-			if (extdata)
-				ASN1_STRING_to_UTF8(&ocsp_uri, extdata);
-		}
+	if (str_stack && sk_OPENSSL_STRING_num(str_stack) > 0) {
+		return wget_strdup(sk_OPENSSL_STRING_value(str_stack, 0));
 	}
 
-	return (char *) ocsp_uri;
+	return NULL;
 }
 
 static char *compute_cert_fingerprint(X509 *cert)
@@ -1025,9 +1015,7 @@ static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, c
 		}
 
 		xfree(fingerprint);
-
-		if (ocsp_uri)
-			OPENSSL_free(ocsp_uri);
+		xfree(ocsp_uri);
 	}
 
 	if (ocsp_stats_callback) {
