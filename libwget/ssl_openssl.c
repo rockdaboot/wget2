@@ -591,7 +591,7 @@ static int ocsp_resp_cb(SSL *s, void *arg)
 	result = check_ocsp_response(ocspresp,
 		certstack,
 		vflags->certstore,
-		config.ocsp_date); /* check time? */
+		0);
 
 	if (result == -1) {
 		OCSP_RESPONSE_free(ocspresp);
