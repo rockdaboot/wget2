@@ -28,7 +28,7 @@ after_script:
 
 variables:
   BUILD_IMAGES_PROJECT: gnuwget/build-images
-  DEBIAN_BUILD: buildenv-debian-stretch
+  DEBIAN_BUILD: buildenv-debian-stable
   DEBIAN_TESTING_BUILD: buildenv-debian-testing
   DEBIAN_STABLEi386_BUILD: buildenv-debian-stable-i386
   DEBIAN_UNSTABLE_BUILD: buildenv-debian-unstable
