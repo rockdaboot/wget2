@@ -390,7 +390,7 @@ Alpine:
 
 pages:
   stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_TESTING_BUILD
   script:
     - mkdir -p public
     - ./bootstrap --skip-po
