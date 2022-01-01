@@ -157,3 +157,12 @@
    fun:gnutls_x509_trust_list_add_trust_file
    fun:gnutls_x509_trust_list_add_system_trust
 }
+
+{
+   glibc dynamic loading false positive
+   Memcheck:Addr8
+   fun:strncmp
+   fun:is_dst
+   ...
+   fun:_dl_catch_exception
+}
