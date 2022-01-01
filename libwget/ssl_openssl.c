@@ -742,6 +742,73 @@ static void print_ocsp_cert_status(int status, int reason)
 	debug_printf("*** OCSP cert status: %s\n", reason_string);
 }
 
+static void print_openssl_time(const char *prefix, const ASN1_GENERALIZEDTIME *t)
+{
+	int nread;
+	char buf[128];
+	BIO *mem = BIO_new(BIO_s_mem());
+
+	ASN1_GENERALIZEDTIME_print(mem, t);
+
+	nread = BIO_read(mem, buf, sizeof(buf)-1);
+	if (nread > 0) {
+		buf[nread] = '\0';
+		debug_printf("%s%s\n", prefix, buf);
+	} else {
+		error_printf("ERROR: print_openssl_time: BIO_read failed\n");
+	}
+
+	BIO_free_all(mem);
+}
+
+static int check_ocsp_response_times(const ASN1_GENERALIZEDTIME *thisupd,
+				     const ASN1_GENERALIZEDTIME *nextupd)
+{
+	int day, sec, retval = -1;
+	ASN1_TIME *now;
+
+	now = ASN1_TIME_adj(NULL, time(NULL), 0, 0);
+	if (!now) {
+		error_printf(_("Could not get current time!\n"));
+		return -1;
+	}
+
+	print_openssl_time("*** OCSP issued time: ", thisupd);
+
+	if (!nextupd) {
+		debug_printf("OCSP nextUpd not set. Checking thisUpd is not too old.\n");
+		if (!ASN1_TIME_diff(&day, &sec, now, thisupd)) {
+			error_printf(_("Could not compute time difference for thisUpd. Aborting.\n"));
+			goto end;
+		}
+		if (day < -3) {
+			error_printf(_("*** OCSP response thisUpd is too old. Aborting.\n"));
+			goto end;
+		}
+
+		retval = 0;
+		goto end;
+	}
+
+	print_openssl_time("*** OCSP update time: ", nextupd);
+
+	if (!ASN1_TIME_diff(&day, &sec, now, nextupd)) {
+		error_printf(_("Could not compute time difference for nextUpd. Aborting.\n"));
+		goto end;
+	}
+
+	if (day < 0 || (day == 0 && sec < 0)) {
+		error_printf(_("*** OCSP next update is in the past!\n"));
+		goto end;
+	}
+
+	retval = 0;
+
+end:
+	ASN1_STRING_free(now);
+	return retval;
+}
+
 static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 		STACK_OF(X509) *certstack,
 		X509_STORE *certstore,
@@ -749,14 +816,12 @@ static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 {
 	int
 		retval = -1,
-		status, reason,
-		day, sec;
+		status, reason;
 	OCSP_BASICRESP *ocspbs = NULL;
 	OCSP_SINGLERESP *single;
 	ASN1_GENERALIZEDTIME *revtime = NULL,
 			*thisupd = NULL,
 			*nextupd = NULL;
-	ASN1_TIME *now;
 
 	status = OCSP_response_status(ocspresp);
 	print_ocsp_response_status(status);
@@ -780,6 +845,7 @@ static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 		goto end;
 	}
 
+	// thisupd and nextupd are internal pointers and MUST NOT be freed
 	status = OCSP_single_get0_status(single, &reason, &revtime, &thisupd, &nextupd);
 	if (status == -1) {
 		error_printf(_("Could not obtain OCSP response status\n"));
@@ -789,8 +855,8 @@ static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 	print_ocsp_cert_status(status, reason);
 
 	if (status == V_OCSP_CERTSTATUS_REVOKED) {
-		error_printf(_("Certificate revoked by OCSP\n"));
-		retval = 1;
+		print_openssl_time("*** Certificate revoked by OCSP at: ", revtime);
+		retval = 1; // Failure
 		goto end;
 	}
 
@@ -801,16 +867,13 @@ static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 			goto end;
 		}
 
-		now = ASN1_TIME_adj(NULL, time(NULL), 0, 0);
-
-		if (ASN1_TIME_diff(&day, &sec, now, thisupd) && day <= -3) {
-			error_printf(_("OCSP response is too old. Ignoring.\n"));
+		if (check_ocsp_response_times(thisupd, nextupd) < 0) {
+			retval = 1; // Failure
 			goto end;
 		}
 	}
 
-	/* Success! */
-	retval = 0;
+	retval = 0; // Success!
 
 end:
 	if (ocspbs)
