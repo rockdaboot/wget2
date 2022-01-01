@@ -739,6 +739,9 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 		goto cleanup;
 	}
 
+	debug_printf("*** OCSP issued time: %s\n", safe_ctime(vtime, timebuf, sizeof(timebuf)));
+	debug_printf("*** OCSP update time  : %s\n", safe_ctime(ntime, timebuf, sizeof(timebuf)));
+
 	if (ntime == -1) {
 		if (config.ocsp_date && now - vtime > OCSP_VALIDITY_SECS) {
 			debug_printf("*** The OCSP response is old (was issued at: %s) ignoring", safe_ctime(vtime, timebuf, sizeof(timebuf)));
