@@ -681,64 +681,65 @@ static const char *get_printable_ocsp_reason_desc(int reason)
 	case OCSP_REVOKED_STATUS_REMOVEFROMCRL:
 		return "remove from CRL";
 	default:
-		return NULL;
+		return "unknown reason";
 	}
 }
 
-static int print_ocsp_response_status(int status)
+static void print_ocsp_response_status(int status)
 {
-	debug_printf("*** OCSP response status: ");
+	char msg[64];
+	const char *status_string;
 
 	switch (status) {
 	case OCSP_RESPONSE_STATUS_SUCCESSFUL:
-		debug_printf("successful\n");
+		status_string = "successful";
 		break;
 	case OCSP_RESPONSE_STATUS_MALFORMEDREQUEST:
-		debug_printf("malformed request\n");
+		status_string = "malformed request";
 		break;
 	case OCSP_RESPONSE_STATUS_INTERNALERROR:
-		debug_printf("internal error\n");
+		status_string = "internal error";
 		break;
 	case OCSP_RESPONSE_STATUS_TRYLATER:
-		debug_printf("try later\n");
+		status_string = "try later";
 		break;
 	case OCSP_RESPONSE_STATUS_SIGREQUIRED:
-		debug_printf("signature required\n");
+		status_string = "signature required";
 		break;
 	case OCSP_RESPONSE_STATUS_UNAUTHORIZED:
-		debug_printf("unauthorized\n");
+		status_string = "unauthorized";
 		break;
 	default:
-		debug_printf("unknown status code %d\n", status);
+		wget_snprintf(msg, sizeof(msg), "unknown status code %d", status);
+		status_string = msg;
 		break;
 	}
 
-	return status;
+	debug_printf("*** OCSP response status: %s\n", status_string);
 }
 
-static int print_ocsp_cert_status(int status, int reason)
+static void print_ocsp_cert_status(int status, int reason)
 {
-	const char *reason_desc;
-
-	debug_printf("*** OCSP cert status: ");
+	char msg[64];
+	const char *reason_string;
 
 	switch (status) {
 	case V_OCSP_CERTSTATUS_GOOD:
-		debug_printf("good\n");
+		reason_string = "good";
 		break;
 	case V_OCSP_CERTSTATUS_UNKNOWN:
-		debug_printf("unknown\n");
-		break;
-	default:
-		debug_printf("invalid status code\n");
+		reason_string = "unknown";
 		break;
 	case V_OCSP_CERTSTATUS_REVOKED:
-		reason_desc = get_printable_ocsp_reason_desc(reason);
-		debug_printf("Revoked. Reason: %s\n", (reason_desc ? reason_desc : "unknown reason"));
+		wget_snprintf(msg, sizeof(msg), "revoked (%s)", get_printable_ocsp_reason_desc(reason));
+		reason_string = msg;
+		break;
+	default:
+		reason_string = "invalid status code";
 		break;
 	}
 
-	return status;
+	debug_printf("*** OCSP cert status: %s\n", reason_string);
 }
 
 static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
@@ -758,7 +759,9 @@ static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 	ASN1_TIME *now;
 
 	status = OCSP_response_status(ocspresp);
-	if (print_ocsp_response_status(status) != OCSP_RESPONSE_STATUS_SUCCESSFUL) {
+	print_ocsp_response_status(status);
+
+	if (status != OCSP_RESPONSE_STATUS_SUCCESSFUL) {
 		error_printf(_("Unsuccessful OCSP response\n"));
 		goto end;
 	}
@@ -783,7 +786,9 @@ static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 		goto end;
 	}
 
-	if (print_ocsp_cert_status(status, reason) == V_OCSP_CERTSTATUS_REVOKED) {
+	print_ocsp_cert_status(status, reason);
+
+	if (status == V_OCSP_CERTSTATUS_REVOKED) {
 		error_printf(_("Certificate revoked by OCSP\n"));
 		retval = 1;
 		goto end;
