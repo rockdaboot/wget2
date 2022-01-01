@@ -883,8 +883,8 @@ int wget_ssl_open(wget_tcp *tcp)
 			xfree(alpn);
 	}
 
-	struct session_context *ctx = wget_calloc(1, sizeof(struct session_context));
-	ctx->hostname = wget_strdup(hostname);
+	// struct session_context *ctx = wget_calloc(1, sizeof(struct session_context));
+	// ctx->hostname = wget_strdup(hostname);
 
 	tcp->ssl_session = session;
 //	gnutls_session_set_ptr(session, ctx);
@@ -1005,13 +1005,13 @@ int wget_ssl_open(wget_tcp *tcp)
 		xfree(stats.alpn_protocol);
 	}
 
-	tcp->hpkp = ctx->stats_hpkp;
+	// tcp->hpkp = ctx->stats_hpkp;
 
 	if (ret != WGET_E_SUCCESS) {
 		if (ret == WGET_E_TIMEOUT)
 			debug_printf("Handshake timed out\n");
-		xfree(ctx->hostname);
-		xfree(ctx);
+		// xfree(ctx->hostname);
+		// xfree(ctx);
 		wolfSSL_free(session);
 		tcp->ssl_session = NULL;
 	}
