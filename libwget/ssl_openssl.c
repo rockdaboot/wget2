@@ -709,7 +709,7 @@ static int print_ocsp_response_status(int status)
 		debug_printf("unauthorized\n");
 		break;
 	default:
-		debug_printf("unknown status code\n");
+		debug_printf("unknown status code %d\n", status);
 		break;
 	}
 
@@ -758,8 +758,7 @@ static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 	ASN1_TIME *now;
 
 	status = OCSP_response_status(ocspresp);
-	if (print_ocsp_response_status(status)
-			!= OCSP_RESPONSE_STATUS_SUCCESSFUL) {
+	if (print_ocsp_response_status(status) != OCSP_RESPONSE_STATUS_SUCCESSFUL) {
 		error_printf(_("Unsuccessful OCSP response\n"));
 		goto end;
 	}
@@ -784,7 +783,7 @@ static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 		goto end;
 	}
 
-	if (print_ocsp_cert_status(status, reason) != V_OCSP_CERTSTATUS_GOOD) {
+	if (print_ocsp_cert_status(status, reason) == V_OCSP_CERTSTATUS_REVOKED) {
 		error_printf(_("Certificate revoked by OCSP\n"));
 		retval = 1;
 		goto end;
@@ -843,17 +842,19 @@ static int verify_ocsp(const char *ocsp_uri,
 		return -1;
 	}
 
-	if ((retval = check_ocsp_response(ocspresp, certs, certstore, check_time)) < 0)
+	if ((retval = check_ocsp_response(ocspresp, certs, certstore, check_time)) != 0)
 		goto end;
 
 	if (check_nonce) {
 		if (!(ocspbs = OCSP_response_get1_basic(ocspresp))) {
 			error_printf(_("Could not obtain OCSP_BASICRESPONSE\n"));
+			retval = -1;
 			goto end;
 		}
 
 		if (!OCSP_check_nonce(ocspreq, ocspbs)) {
 			error_printf(_("OCSP nonce does not match\n"));
+			retval = 1; // Failure
 			goto end;
 		}
 
@@ -861,7 +862,7 @@ static int verify_ocsp(const char *ocsp_uri,
 		ocspbs = NULL;
 	}
 
-	retval = 0; /* Success */
+	retval = 0; // Success
 
 end:
 	if (ocspbs)
