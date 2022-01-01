@@ -934,7 +934,8 @@ int wget_ssl_open(wget_tcp *tcp)
 			debug_printf("WolfSSL: Failed to connect ALPN\n");
 		else {
 			debug_printf("WolfSSL: Server accepted ALPN protocol '%.*s'\n", (int) protocol_length, protocol);
-			stats.alpn_protocol = wget_strmemdup(protocol, protocol_length);
+			if (tls_stats_callback)
+				stats.alpn_protocol = wget_strmemdup(protocol, protocol_length);
 
 			if (protocol_length == 2 && !memcmp(protocol, "h2", 2)) {
 				tcp->protocol = WGET_PROTOCOL_HTTP_2_0;
