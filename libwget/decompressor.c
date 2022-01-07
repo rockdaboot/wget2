@@ -107,6 +107,8 @@ struct wget_decompressor_st {
 		*context; // given to sink()
 	wget_content_encoding
 		encoding;
+	bool
+		inflating; // deflate/gzip succeeded the init phase
 };
 
 #ifdef WITH_ZLIB
@@ -139,6 +141,7 @@ static int gzip_decompress(wget_decompressor *dc, const char *src, size_t srclen
 	}
 
 	strm = &dc->z_strm;
+restart:
 	strm->next_in = (const unsigned char *) src;
 	strm->avail_in = (unsigned int) srclen;
 
@@ -147,6 +150,18 @@ static int gzip_decompress(wget_decompressor *dc, const char *src, size_t srclen
 		strm->avail_out = sizeof(dst);
 
 		status = inflate(strm, Z_SYNC_FLUSH);
+		if (status == Z_DATA_ERROR && !dc->inflating)  {
+			// Looks like some servers send gzip/deflate streams without header.
+			// Reported at https://gitlab.com/gnuwget/wget2/-/issues/532.
+			inflateEnd(strm);
+			if(inflateInit2(strm, -MAX_WBITS) != Z_OK) {
+				error_printf(_("Failed to re-init deflate/gzip decompression\n"));
+				return -1;
+			}
+			dc->inflating = true;
+			goto restart;
+		}
+		dc->inflating = true;
 		if ((status == Z_OK || status == Z_STREAM_END) && strm->avail_out < sizeof(dst)) {
 			if (dc->sink)
 				dc->sink(dc->context, dst, sizeof(dst) - strm->avail_out);
