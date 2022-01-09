@@ -3391,10 +3391,14 @@ int init(int argc, const char **argv)
 
 	// truncate output document
 	if (config.output_document && strcmp(config.output_document, "-") && !config.dont_write) {
-		int fd = open(config.output_document, O_WRONLY | O_TRUNC | O_BINARY);
+		if (config.unlink) {
+			unlink(config.output_document);
+		} else {
+			int fd = open(config.output_document, O_WRONLY | O_TRUNC | O_BINARY);
 
-		if (fd != -1)
-			close(fd);
+			if (fd != -1)
+				close(fd);
+		}
 	}
 
 	if (!config.local_encoding)
