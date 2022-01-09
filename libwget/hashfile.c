@@ -238,6 +238,7 @@ int wget_hash_deinit(wget_hash_hd **handle, void *digest)
 #define WOLFSSL_SHA384
 #define WOLFSSL_SHA512
 #define WC_NO_HARDEN
+#include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/hash.h>
 
 struct wget_hash_hd_st {
