@@ -39,6 +39,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <c-ctype.h>
+#include <errno.h>
 
 #include <wget.h>
 #include "../libwget/private.h"
@@ -1231,7 +1232,12 @@ static void test_cookies(void)
 	int result, result_psl;
 
 	cookies = wget_cookie_db_init(NULL);
-	wget_cookie_db_load_psl(cookies, SRCDIR "/files/public_suffix_list.dat");
+
+	if (wget_cookie_db_load_psl(cookies, SRCDIR "/files/public_suffix_list.dat") == -1) {
+			failed++;
+			info_printf("Failed to load %s (errno=%d)\n", SRCDIR "/files/public_suffix_list.dat", errno);
+			goto out;
+	}
 
 	for (it = 0; it < countof(test_data); it++) {
 		char *header, *set_cookie;
@@ -1294,6 +1300,7 @@ next:
 		wget_iri_free(&iri);
 	}
 
+out:
 	wget_cookie_db_free(&cookies);
 }
 
