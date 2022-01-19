@@ -81,6 +81,15 @@ make -j
 make install
 cd ..
 
+rm -rf nghttp2-*
+wget -q -O- https://github.com/nghttp2/nghttp2/releases/download/v1.46.0/nghttp2-1.46.0.tar.gz | tar xz
+cd nghttp2-*
+./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static \
+  --disable-python-bindings --disable-examples --disable-app --disable-failmalloc --disable-hpack-tools
+make -j
+make install
+cd ..
+
 rm -rf libmicrohttpd
 wget -q -O- https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-latest.tar.gz | tar xz
 cd libmicrohttpd-*
