@@ -947,7 +947,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 				;
 
 			if ((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) <= 0) {
-				debug_printf("failed to receive: %d\n", errno);
+				debug_printf("failed to receive: %d (nbytes=%ld)\n", errno, (long) nbytes);
 				break;
 			}
 
