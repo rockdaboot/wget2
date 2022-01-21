@@ -948,7 +948,10 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 
 			if ((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) <= 0) {
 				debug_printf("failed to receive: %d (nbytes=%ld)\n", errno, (long) nbytes);
-				break;
+				if (nbytes == -1)
+					break;
+
+				// nbytes == 0 has been seen on Win11, continue looping
 			}
 
 			if ((nbytes = nghttp2_session_mem_recv(conn->http2_session, (uint8_t *) buf, nbytes)) < 0) {
