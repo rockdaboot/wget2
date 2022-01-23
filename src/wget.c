@@ -3401,7 +3401,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 	// debug_printf("1 fd=%d flag=%02x (%02x %02x %02x) errno=%d %s\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND,errno,fname);
 
 	// Store the "actual" file name (with any extensions that were added present)
-	wget_asprintf(actual_file_name, "%s", unique[0] ? unique : fname);
+	*actual_file_name = wget_strdup(unique[0] ? unique : fname);
 
 	if (fd >= 0) {
 		ssize_t rc;
