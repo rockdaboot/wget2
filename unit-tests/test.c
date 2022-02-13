@@ -2168,9 +2168,22 @@ static void test_netrc(void)
 			3,
 			{
 				{ "localhost", "theuser", "thepw" },
-				{ "localhost2", "theuser2", "thepw2" }
+				{ "localhost2", "theuser2", "thepw2" },
+				{ "abc", "111", "222" }
 			}
 		},
+		{ "machine m\nlogin u\npassword a\\b", 1,       {{ "m", "u", "ab" }} },
+		{ "machine m\nlogin u\npassword a\\\\b", 1,     {{ "m", "u", "a\\b" }} },
+		{ "machine m\nlogin u\npassword \"a\\\\b\"", 1, {{ "m", "u", "a\\b" }} },
+		{ "machine m\nlogin u\npassword \"a\\\"b\"", 1, {{ "m", "u", "a\"b" }} },
+		{ "machine m\nlogin u\npassword a\"b", 1,       {{ "m", "u", "a\"b" }} },
+		{ "machine m\nlogin u\npassword a\\\\\\\\b", 1, {{ "m", "u", "a\\\\b" }} },
+		{ "machine m\nlogin u\npassword a\\\\", 1,      {{ "m", "u", "a\\" }} },
+		{ "machine m\nlogin u\npassword \"a\\\\\"", 1,  {{ "m", "u", "a\\" }} },
+		{ "machine m\nlogin u\npassword a\\", 1,        {{ "m", "u", "a" }} },
+		{ "machine m\nlogin u\npassword \"a b\"", 1,    {{ "m", "u", "a b" }} },
+		{ "machine m\nlogin u\npassword a b", 1,        {{ "m", "u", "a" }} },
+		{ "machine m\nlogin u\npassword a\\ b", 1,        {{ "m", "u", "a b" }} },
 	};
 	FILE *fp;
 	wget_netrc_db *netrc_db;
@@ -2206,11 +2219,11 @@ static void test_netrc(void)
 					failed++;
 				}
 				else if (strcmp(netrc->login, e->login)) {
-					info_printf("[%u] Login mismatch '%s' / '%s' in netrc_db\n", it, netrc->login, e->login);
+					info_printf("[%u] Login mismatch in netrc_db: expected '%s', got '%s'\n", it, e->login, netrc->login);
 					failed++;
 				}
 				else if (strcmp(netrc->password, e->password)) {
-					info_printf("[%u] Password mismatch '%s' / '%s' in netrc_db\n", it, netrc->login, e->login);
+					info_printf("[%u] Password mismatch in netrc_db: expected '%s', got '%s'\n", it, e->password, netrc->password);
 					failed++;
 				} else
 					ok++;

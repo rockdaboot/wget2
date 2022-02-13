@@ -1046,6 +1046,9 @@ Go to background immediately after startup. If no output file is specified via t
   If the passwords are really important, do not leave them lying in those files either. Edit the files and delete
   them after Wget2 has started the download.
 
+  In `~/.netrc` passwords may be double quoted to allow spaces. Also, escape characters with a backslash if needed.
+  A backslash in a password always needs to be escaped, so use `\\` instead of a single `\`.
+
   Also see `--use-askpass` and `--ask-password` for an interactive method to provide your password.
 
 ### `--http-proxy-user=user`, `--http-proxy-password=password`

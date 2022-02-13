@@ -171,9 +171,22 @@ void wget_netrc_db_add(wget_netrc_db *netrc_db, wget_netrc *netrc)
 	// no need to free anything here
 }
 
+static const char *unescape_password(const char *p, size_t n)
+{
+	char *dst = wget_malloc(n + 1), *bufp = dst;
+
+	for (; n; n--) {
+		if (*p == '\\')
+			p++;
+		*bufp++ = *p++;
+	}
+	*bufp = 0;
+
+	return dst;
+}
+
 // load the .netrc file
 // not thread-save
-
 int wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname)
 {
 	FILE *fp;
@@ -188,7 +201,8 @@ int wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname)
 	char *buf = NULL, *linep, *p, *key = NULL;
 	size_t bufsize = 0;
 	ssize_t buflen;
-	int in_macdef = 0, in_machine = 0, nentries = 0;
+	int nentries = 0;
+	bool in_macdef = 0, in_machine = 0, quoted = 0;
 
 	while ((buflen = wget_getline(&buf, &bufsize, fp)) >= 0) {
 		linep = buf;
@@ -236,7 +250,19 @@ int wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname)
 				continue; // token outside of machine or default
 
 			while (isspace(*linep)) linep++;
-			for (p = linep; *linep && !isspace(*linep);) linep++;
+			if (*linep == '\"') {
+				quoted = 1;
+				linep++;
+			}
+
+			int escaped = 0;
+			for (p = linep; *linep && (quoted ? *linep != '\"' : !isspace(*linep));) {
+				if (*linep == '\\') {
+					escaped++;
+					linep++;
+				}
+				linep++;
+			}
 
 			if (!strcmp(key, "machine")) {
 				if (!netrc.host)
@@ -245,8 +271,12 @@ int wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname)
 				if (!netrc.login)
 					netrc.login = wget_strmemdup(p, linep - p);
 			} else if (!strcmp(key, "password")) {
-				if (!netrc.password)
-					netrc.password = wget_strmemdup(p, linep - p);
+				if (!netrc.password) {
+					if (!escaped)
+						 netrc.password = wget_strmemdup(p, linep - p);
+					else
+						netrc.password = unescape_password(p, linep - p - escaped);
+				}
 			} else if (!strcmp(key, "port")) { // GNU extension
 				netrc.port = (uint16_t) atoi(p);
 			} else if (!strcmp(key, "force")) { // GNU extension
@@ -254,6 +284,10 @@ int wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname)
 			} else if (!strcmp(key, "macdef")) {
 				in_macdef = 1; // the above code skips until next empty line
 			}
+
+			if (quoted && *linep == '\"')
+				linep++;
+
 		} while (*linep);
 
 		xfree(key);
