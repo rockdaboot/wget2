@@ -46,4 +46,7 @@ void blacklist_print(void);
 void blacklist_free(void);
 void blacklist_set_filename(blacklist_entry *blacklistp, const char *fname);
 
+WGET_GCC_NONNULL_ALL
+char *get_local_filename(const wget_iri *iri);
+
 #endif /* SRC_WGET_BLACKLIST_H */

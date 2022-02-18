@@ -150,7 +150,7 @@ static char * get_local_filename_real(const wget_iri *iri)
 }
 
 WGET_GCC_NONNULL_ALL
-static char * get_local_filename(const wget_iri *iri)
+char * get_local_filename(const wget_iri *iri)
 {
 	if (config.delete_after)
 		return NULL;
