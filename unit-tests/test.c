@@ -1234,8 +1234,10 @@ static void test_cookies(void)
 	cookies = wget_cookie_db_init(NULL);
 
 	if (wget_cookie_db_load_psl(cookies, SRCDIR "/files/public_suffix_list.dat") == -1) {
+#ifdef WITH_LIBPSL
 			failed++;
 			info_printf("Failed to load %s (errno=%d)\n", SRCDIR "/files/public_suffix_list.dat", errno);
+#endif
 			goto out;
 	}
 
