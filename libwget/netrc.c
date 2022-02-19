@@ -174,6 +174,9 @@ void wget_netrc_db_add(wget_netrc_db *netrc_db, wget_netrc *netrc)
 static const char *unescape_password(const char *p, size_t n)
 {
 	char *dst = wget_malloc(n + 1), *bufp = dst;
+	if (!dst) {
+		return dst;
+	}
 
 	for (; n; n--) {
 		if (*p == '\\')
