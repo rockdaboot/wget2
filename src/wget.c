@@ -1100,13 +1100,13 @@ static void convert_link_whole(const char *filename, conversion_t *conversion, w
 			if (*p2++ == '/')
 				wget_buffer_memcat(buf, "../", 3);
 		}
-		wget_buffer_strcat(buf, dir);
+		wget_iri_escape_path(dir, buf);
 
-		wget_info_printf(_("  %.*s -> %s\n"), (int) url->len,  url->p, linkpath); // no translation
-		wget_info_printf(_("       -> %s\n"), buf->data); // no translation
+		wget_debug_printf("  %.*s -> %s\n", (int) url->len,  url->p, linkpath);
+		wget_debug_printf("       -> %s\n", buf->data);
 	} else {
 		// insert absolute URL
-		wget_info_printf(_("  %.*s -> %s\n"), (int) url->len,  url->p, buf->data); // no translation
+		wget_debug_printf("  %.*s -> %s\n", (int) url->len,  url->p, buf->data);
 	}
 }
 

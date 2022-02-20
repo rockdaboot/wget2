@@ -22,6 +22,7 @@
  *
  * Changelog
  * 15.07.2013  Tim Ruehsen  created
+ * 19.02.2022  Tim Ruehsen  add test for query part including escaped chars
  *
  */
 
@@ -42,8 +43,8 @@ int main(void)
 				"</head><body><p>A link to a" \
 				" <a href=\"second.html\">second page</a>." \
 				" <a href=\"htTp://localhost:{{port}}/second.html\">second page</a>." \
-				" <a href=\"subdir/third.html\">third page</a>." \
 				" <a href=\"htTp://localhost:{{port}}/subdir/third.html\">third page</a>." \
+				" <a href=\"subdir/third.html?x&h=http%3A%2F%2Fexample.com\">third page</a>." \
 				" <SCRIPT LANGUAGE=\"JavaScript\">document.write(\"<img src=\\\"rw1\\\"\");</SCRIPT>" \
 				"</p></body></html>",
 			.headers = {
@@ -52,14 +53,21 @@ int main(void)
 		},
 		{	.name = "/second.html",
 			.code = "200 Dontcare",
-			.body = "<html><head><title>Site</title></head><body>Some Text</body></html>",
+			.body = "<html><head><title>Site</title></head><body>Second</body></html>",
 			.headers = {
 				"Content-Type: text/html",
 			}
 		},
 		{	.name = "/subdir/third.html",
 			.code = "200 Dontcare",
-			.body = "<html><head><title>Site</title></head><body>Some Text</body></html>",
+			.body = "<html><head><title>Site</title></head><body>Third</body></html>",
+			.headers = {
+				"Content-Type: text/html",
+			}
+		},
+		{	.name = "/subdir/third.html?x&h=http%3A%2F%2Fexample.com",
+			.code = "200 Dontcare",
+			.body = "<html><head><title>Site</title></head><body>Third2</body></html>",
 			.headers = {
 				"Content-Type: text/html",
 			}
@@ -74,7 +82,7 @@ int main(void)
 		" <a href=\"second.html\">second page</a>." \
 		" <a href=\"second.html\">second page</a>." \
 		" <a href=\"subdir/third.html\">third page</a>." \
-		" <a href=\"subdir/third.html\">third page</a>." \
+		" <a href=\"subdir/third.html%3Fx&h=http%253A%252F%252Fexample.com\">third page</a>." \
 		" <SCRIPT LANGUAGE=\"JavaScript\">document.write(\"<img src=\\\"rw1\\\"\");</SCRIPT>" \
 		"</p></body></html>";
 
@@ -94,6 +102,7 @@ int main(void)
 			{ urls[0].name + 1, converted },
 			{ urls[1].name + 1, urls[1].body },
 			{ urls[2].name + 1, urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
 			{	NULL } },
 		0);
 
