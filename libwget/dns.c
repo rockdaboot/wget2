@@ -258,7 +258,7 @@ int wget_dns_cache_ip(wget_dns *dns, const char *ip, const char *name, uint16_t 
 		return WGET_E_INVALID;
 
 	if ((rc = resolve(family, AI_NUMERICHOST, ip, port, &ai)) != 0) {
-		error_printf(_("Failed to resolve %s:%d: %s\n"), ip, port, gai_strerror(rc));
+		error_printf(_("Failed to resolve '%s:%d': %s\n"), ip, port, gai_strerror(rc));
 		return WGET_E_UNKNOWN;
 	}
 
@@ -341,7 +341,7 @@ struct addrinfo *wget_dns_resolve(wget_dns *dns, const char *host, uint16_t port
 	}
 
 	if (rc) {
-		error_printf(_("Failed to resolve %s (%s)\n"),
+		error_printf(_("Failed to resolve '%s' (%s)\n"),
 				(host ? host : ""), gai_strerror(rc));
 
 		if (dns->cache)
