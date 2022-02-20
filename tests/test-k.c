@@ -44,7 +44,7 @@ int main(void)
 				" <a href=\"second.html\">second page</a>." \
 				" <a href=\"htTp://localhost:{{port}}/second.html\">second page</a>." \
 				" <a href=\"htTp://localhost:{{port}}/subdir/third.html\">third page</a>." \
-				" <a href=\"subdir/third.html?x&h=http%3A%2F%2Fexample.com\">third page</a>." \
+				" <a href=\"subdir/third.html?x&h=http%3A%2F%2Fexample.com#frag\">third page</a>." \
 				" <SCRIPT LANGUAGE=\"JavaScript\">document.write(\"<img src=\\\"rw1\\\"\");</SCRIPT>" \
 				"</p></body></html>",
 			.headers = {
@@ -82,7 +82,7 @@ int main(void)
 		" <a href=\"second.html\">second page</a>." \
 		" <a href=\"second.html\">second page</a>." \
 		" <a href=\"subdir/third.html\">third page</a>." \
-		" <a href=\"subdir/third.html%3Fx&h=http%253A%252F%252Fexample.com\">third page</a>." \
+		" <a href=\"subdir/third.html%3Fx&h=http%253A%252F%252Fexample.com#frag\">third page</a>." \
 		" <SCRIPT LANGUAGE=\"JavaScript\">document.write(\"<img src=\\\"rw1\\\"\");</SCRIPT>" \
 		"</p></body></html>";
 

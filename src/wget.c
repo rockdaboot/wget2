@@ -1070,12 +1070,12 @@ static void convert_link_file_only(const char *filename, wget_string *url, wget_
 		wget_buffer_memcpy(buf, linkname, link_basename-linkname);
 		wget_buffer_strcat(buf, local_basename);
 
-		wget_info_printf(_("  %.*s -> %s\n"), (int) url->len,  linkname, localname);
-		wget_info_printf(_("       -> %s\n"), buf->data);
+		wget_debug_printf("  %.*s -> %s\n", (int) url->len,  linkname, localname);
+		wget_debug_printf("       -> %s\n", buf->data);
 	} else {
 		// insert initial URL without any change
 		wget_buffer_memcpy(buf, url->p, url->len);
-		wget_info_printf(_("  %.*s -> %s\n"), (int) url->len,  url->p, buf->data);
+		wget_debug_printf("  %.*s -> %s\n", (int) url->len,  url->p, buf->data);
 	}
 }
 
@@ -1160,9 +1160,13 @@ static void convert_links(void)
 
 				const char *filename = blacklist_entry->local_filename;
 
-				if (config.convert_links)
+				if (config.convert_links) {
 					convert_link_whole(filename, conversion, url, &buf);
-				else if (config.convert_file_only)
+					if (blacklist_entry->iri->fragment) {
+						wget_buffer_memcat(&buf, "#", 1);
+						wget_buffer_strcat(&buf, blacklist_entry->iri->fragment);
+					}
+				} else if (config.convert_file_only)
 					convert_link_file_only(filename, url, &buf);
 
 				if (buf.length != url->len || strncmp(buf.data, url->p, url->len)) {
