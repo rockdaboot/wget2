@@ -31,7 +31,8 @@ local-checks-to-skip =            \
   sc_makefile_at_at_check         \
   sc_prohibit_atoi_atof           \
   sc_prohibit_gnu_make_extensions \
-  sc_prohibit_strcmp
+  sc_prohibit_strcmp              \
+  sc_indent
 
 update-copyright-env = UPDATE_COPYRIGHT_FORCE=1 UPDATE_COPYRIGHT_USE_INTERVALS=1
 
