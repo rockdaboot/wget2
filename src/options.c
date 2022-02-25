@@ -1658,7 +1658,7 @@ static const struct optionw options[] = {
 	{ "hpkp-file", &config.hpkp_file, parse_filename, 1, 0,
 		SECTION_SSL,
 		{ "Set file for storing HPKP data\n",
-		  "(default: ~/.wget-hpkp)\n"
+		  "(default: $XDG_DATA_HOME/wget/.wget-hpkp)\n"
 		}
 	},
 	{ "hsts", &config.hsts, parse_bool, -1, 0,
@@ -1669,7 +1669,7 @@ static const struct optionw options[] = {
 	},
 	{ "hsts-file", &config.hsts_file, parse_filename, 1, 0,
 		SECTION_SSL,
-		{ "Set file for HSTS caching. (default: ~/.wget-hsts)\n"
+		{ "Set file for HSTS caching. (default: $XDG_DATA_HOME/wget/.wget-hsts)\n"
 		}
 	},
 	{ "hsts-preload", &config.hsts_preload, parse_bool, -1, 0,
@@ -1936,7 +1936,7 @@ static const struct optionw options[] = {
 	{ "ocsp-file", &config.ocsp_file, parse_filename, 1, 0,
 		SECTION_SSL,
 		{ "Set file for OCSP chaching.\n",
-		  "(default: ~/.wget-ocsp)\n"
+		  "(default: $XDG_DATA_HOME/wget/.wget-ocsp)\n"
 		}
 	},
 	{ "ocsp-nonce", &config.ocsp_nonce, parse_bool, -1, 0,
@@ -2271,7 +2271,7 @@ static const struct optionw options[] = {
 	{ "tls-session-file", &config.tls_session_file, parse_filename, 1, 0,
 		SECTION_SSL,
 		{ "Set file for TLS Session caching.\n",
-		  "(default: ~/.wget-session)\n"
+		  "(default: $XDG_DATA_HOME/wget/.wget-session)\n"
 		}
 	},
 	{ "tries", &config.tries, parse_integer, 1, 't',

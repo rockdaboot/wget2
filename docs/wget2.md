@@ -1482,9 +1482,13 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--hsts-file=file`
 
-  By default, Wget2 stores its HSTS database in ~/.wget-hsts.  You can use --hsts-file to override this. Wget2 will
-  use the supplied file as the HSTS database. Such file must conform to the correct HSTS database format used by
-  Wget. If Wget2 cannot parse the provided file, the behaviour is unspecified.
+  By default, Wget2 stores its HSTS data in `$XDG_DATA_HOME/wget/.wget-hsts` or, if XDG_DATA_HOME is not set, in
+  `~/.local/wget/.wget-hsts`. You can use `--hsts-file` to override this.
+
+  Wget2 will use the supplied file as the HSTS database. Such file must conform to the correct HSTS database format
+  used by Wget. If Wget2 cannot parse the provided file, the behaviour is unspecified.
+
+  To disable persistent storage use `--no-hsts-file`.
 
   The Wget2's HSTS database is a plain text file. Each line contains an HSTS entry (ie. a site that has issued a
   "Strict-Transport-Security" header and that therefore has specified a concrete HSTS policy to be applied). Lines
@@ -1543,12 +1547,17 @@ Go to background immediately after startup. If no output file is specified via t
   Enable HTTP Public Key Pinning (HPKP) (default: on).
 
   This is a Trust On First Use (TOFU) mechanism to add another security layer to HTTPS (RFC 7469).
-  It persistently stores the data into `~/.wget-hpkp` which can be changed via the `--hpkp-file`option.
+
+  The certificate key data of a previously established TLS session will be compared with the current
+  data. In case both doesn't match, the connection will be terminated.
 
 ### `--hpkp-file=file`
 
-  For HPKP (`--hpkp`) you need the certificate key data of a previously established
-  TLS session. Wget2 persistently stores this data in the given file (default: ~/.wget-hpkp).
+  By default, Wget2 stores its HPKP data in `$XDG_DATA_HOME/wget/.wget-hpkp` or, if XDG_DATA_HOME is not set, in
+  `~/.local/wget/.wget-hpkp`. You can use `--hpkp-file` to override this.
+
+  Wget2 will use the supplied file as the HPKP database. Such file must conform to the correct HPKP database format
+  used by Wget. If Wget2 cannot parse the provided file, the behaviour is unspecified.
 
   To disable persistent storage use `--no-hpkp-file`.
 
@@ -1556,13 +1565,18 @@ Go to background immediately after startup. If no output file is specified via t
 
   Enable TLS Session Resumption which is disabled as default.
 
+  For TLS Session Resumption the session data of a previously established TLS session is needed.
+
   There are several security flaws related to TLS 1.2 session resumption which are explained in detail at:
   https://web.archive.org/web/20171103231804/https://blog.filippo.io/we-need-to-talk-about-session-tickets/
 
 ### `--tls-session-file=file`
 
-  For TLS Session Resumption (`--tls-resume`) you need the session data of a previously established
-  TLS session. Wget2 persistently stores this data in the given file (default: ~/.wget-session).
+  By default, Wget2 stores its TLS Session data in `$XDG_DATA_HOME/wget/.wget-session` or, if XDG_DATA_HOME is not set, in
+  `~/.local/wget/.wget-session`. You can use `--tls-session-file` to override this.
+
+  Wget2 will use the supplied file as the TLS Session database. Such file must conform to the correct TLS Session database format
+  used by Wget. If Wget2 cannot parse the provided file, the behaviour is unspecified.
 
   To disable persistent storage use `--no-tls-session-file`.
 
@@ -1601,7 +1615,11 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--ocsp-file=file`
 
-  Set the file for persistent OCSP response caching (default: ~/.wget-ocsp).
+  By default, Wget2 stores its TLS Session data in `$XDG_DATA_HOME/wget/.wget-ocsp` or, if XDG_DATA_HOME is not set, in
+  `~/.local/wget/.wget-ocsp`. You can use `--ocsp-file` to override this.
+
+  Wget2 will use the supplied file as the OCSP database. Such file must conform to the correct OCSP database format
+  used by Wget. If Wget2 cannot parse the provided file, the behaviour is unspecified.
 
   To disable persistent OCSP caching use `--no-ocsp-file`.
 
