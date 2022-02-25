@@ -755,7 +755,7 @@ static void print_openssl_time(const char *prefix, const ASN1_GENERALIZEDTIME *t
 		buf[nread] = '\0';
 		debug_printf("%s%s\n", prefix, buf);
 	} else {
-		error_printf("ERROR: print_openssl_time: BIO_read failed\n");
+		error_printf(_("ERROR: print_openssl_time: BIO_read failed\n"));
 	}
 
 	BIO_free_all(mem);
