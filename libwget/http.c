@@ -921,6 +921,12 @@ ssize_t wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, in
 	return buf->length;
 }
 
+static char *get_page(wget_http_request *req)
+{
+	return wget_aprintf("%s://%s/%s",
+		wget_iri_scheme_get_name(req->scheme), req->esc_host.data, req->esc_resource.data);
+}
+
 wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 {
 	size_t bufsize, body_len = 0, body_size = 0;
@@ -1140,7 +1146,9 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 
 				if (body_len + 1024 > bufsize) {
 					if (wget_buffer_ensure_capacity(conn->buf, bufsize + 1024) != WGET_E_SUCCESS) {
-						error_printf(_("Failed to allocate %zu bytes\n"), bufsize + 1024);
+						char *page = get_page(req);
+						error_printf(_("Failed to allocate %zu bytes (%s)\n"), bufsize + 1024, page);
+						xfree(page);
 						goto cleanup;
 					}
 					p = conn->buf->data + (p - buf);
@@ -1161,7 +1169,9 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 			errno = 0;
 			chunk_size = (size_t) strtoll(p, NULL, 16);
 			if (errno) {
-				error_printf(_("Failed to convert chunk size '%.31s'\n"), p);
+				char *page = get_page(req);
+				error_printf(_("Failed to convert chunk size '%.31s' (%s)\n"), p, page);
+				xfree(page);
 				goto cleanup;
 			}
 
@@ -1197,7 +1207,9 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 			// check for pointer overflow
 			if (chunk_size > SIZE_MAX/2 - 2 || end >= end + chunk_size + 2) {
 //			if (end > end + chunk_size || end >= end + chunk_size + 2) {
-				error_printf(_("Chunk size overflow: %zX\n"), chunk_size);
+				char *page = get_page(req);
+				error_printf(_("Chunk size overflow: %zX (%s)\n"), chunk_size, page);
+				xfree(page);
 				goto cleanup;
 			}
 
@@ -1237,7 +1249,9 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 						debug_printf("chunk completed\n");
 						// p=end+chunk_size+2;
 					} else {
-						error_printf(_("Expected end-of-chunk not found\n"));
+						char *page = get_page(req);
+						error_printf(_("Expected end-of-chunk not found (%s)\n"), page);
+						xfree(page);
 						goto cleanup;
 					}
 					if (chunk_size > 2) {
@@ -1282,14 +1296,21 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 			resp->cur_downloaded += nbytes;
 			wget_decompress(dc, buf, nbytes);
 		}
-		if (nbytes < 0)
-			error_printf(_("Failed to read %zd bytes (%d)\n"), nbytes, errno);
+		if (nbytes < 0) {
+			char *page = get_page(req);
+			error_printf(_("Failed to read %zd bytes (%d) (%s)\n"), nbytes, errno, page);
+			xfree(page);
+		}
 		if (body_len < resp->content_length) {
 			resp->length_inconsistent = true;
-			error_printf(_("Just got %zu of %zu bytes\n"), body_len, resp->content_length);
+			char *page = get_page(req);
+			error_printf(_("Just got %zu of %zu bytes (%s)\n"), body_len, resp->content_length, page);
+			xfree(page);
 		} else if (body_len > resp->content_length) {
 			resp->length_inconsistent = true;
-			error_printf(_("Body too large: %zu instead of %zu bytes\n"), body_len, resp->content_length);
+			char *page = get_page(req);
+			error_printf(_("Body too large: %zu instead of %zu bytes (%s)\n"), body_len, resp->content_length, page);
+			xfree(page);
 		}
 		resp->content_length = body_len;
 	} else {
