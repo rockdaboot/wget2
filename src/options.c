@@ -2423,12 +2423,9 @@ static int print_help(WGET_GCC_UNUSED option_t opt, WGET_GCC_UNUSED const char *
 			printf("Plugin options:\n");
 			break;
 
-		case SECTION_END:
-			break;
-
 		default:
 			printf("Unknown help section %d\n", (int) sect);
-			break;
+			exit(EXIT_FAILURE);
 		}
 		for (unsigned it = 0; it < countof(options); it++) {
 			if (options[it].section == sect) {
