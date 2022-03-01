@@ -29,12 +29,12 @@ if WITH_GPGME
   wget2_SOURCES += gpgme.c wget_gpgme.h
 endif
 
-wget2_LDADD = ../libwget/libwget.la \
+wget2_LDADD = ../lib/libgnu.la ../libwget/libwget.la \
  $(LIBOBJS) $(GETADDRINFO_LIB) $(GETHOSTNAME_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB) $(INET_PTON_LIB) \
  $(LIBMULTITHREAD) $(LIBSOCKET) $(LIBTHREAD) $(LIB_CLOCK_GETTIME) $(LIB_CRYPTO) $(LIB_GETLOGIN) \
  $(LIB_HARD_LOCALE) $(LIB_MBRTOWC) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_POSIX_SPAWN) $(LIB_PTHREAD_SIGMASK) \
  $(LIB_SELECT) $(LIB_SETLOCALE) $(LIB_SETLOCALE_NULL) $(LTLIBICONV) $(LTLIBINTL) $(SERVENT_LIB) @INTL_MACOSX_LIBS@ \
- $(LIBS) ../lib/libgnu.la
+ $(LIBS)
 
 wget2_noinstall_SOURCES = $(wget2_SOURCES)
 wget2_noinstall_LDFLAGS = -no-install
@@ -45,7 +45,3 @@ noinst_LTLIBRARIES = libtest-utils.la
 libtest_utils_la_SOURCES = utils.c wget_utils.h
 libtest_utils_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include/wget -I$(top_builddir)/lib -I$(top_srcdir)/lib $(CFLAG_VISIBILITY) -DBUILDING_LIBWGET \
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
-#libtest_utils_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
-
-#css_tokenizer.c: $(srcdir)/css_tokenizer.lex css_tokenizer.h
-#	$(LEX) -o $@ $<

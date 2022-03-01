@@ -2,7 +2,7 @@ DEFS = @DEFS@ \
  -DSRCDIR=\"$(abs_srcdir)\" -DBUILDDIR=\"$(abs_builddir)\" -DEXEEXT=\"$(EXEEXT)\"
 
 MYLIBS = \
- $(LIBOBJS) $(GETADDRINFO_LIB) $(GETHOSTNAME_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB) $(INET_PTON_LIB) \
+ $(GETADDRINFO_LIB) $(GETHOSTNAME_LIB) $(HOSTENT_LIB) $(INET_NTOP_LIB) $(INET_PTON_LIB) \
  $(LIBMULTITHREAD) $(LIBSOCKET) $(LIBTHREAD) $(LIB_CLOCK_GETTIME) $(LIB_CRYPTO) $(LIB_GETLOGIN) \
  $(LIB_HARD_LOCALE) $(LIB_MBRTOWC) $(LIB_NANOSLEEP) $(LIB_POLL) $(LIB_POSIX_SPAWN) $(LIB_PTHREAD_SIGMASK) \
  $(LIB_SELECT) $(LIB_SETLOCALE) $(LIB_SETLOCALE_NULL) $(LTLIBICONV) $(LTLIBINTL) $(SERVENT_LIB) @INTL_MACOSX_LIBS@ \
@@ -61,7 +61,7 @@ noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = libtest.c libtest.h
 libtest_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include/wget -I$(top_builddir)/lib -I$(top_srcdir)/lib $(CFLAG_VISIBILITY) -DBUILDING_LIBWGET \
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
-libtest_la_LIBADD = ../src/libtest-utils.la ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
+libtest_la_LIBADD = ../src/libtest-utils.la ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 EXTRA_DIST = certs gpg
 
@@ -79,34 +79,34 @@ dummy_ldflags = -avoid-version -module -shared -no-undefined \
 libpluginname_la_SOURCES = test-plugin-dummy.c plugin_tests.h
 libpluginname_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_NAME
 libpluginname_la_LDFLAGS = $(dummy_ldflags)
-libpluginname_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
+libpluginname_la_LIBADD = ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 libpluginexit_la_SOURCES = test-plugin-dummy.c plugin_tests.h
 libpluginexit_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_EXITSTATUS
 libpluginexit_la_LDFLAGS = $(dummy_ldflags)
-libpluginexit_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
+libpluginexit_la_LIBADD = ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 libpluginfaulty1_la_SOURCES = test-plugin-dummy.c plugin_tests.h
 libpluginfaulty1_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_FAULTY1
 libpluginfaulty1_la_LDFLAGS = $(dummy_ldflags)
-libpluginfaulty1_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
+libpluginfaulty1_la_LIBADD =  ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 libpluginfaulty2_la_SOURCES = test-plugin-dummy.c plugin_tests.h
 libpluginfaulty2_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_FAULTY2
 libpluginfaulty2_la_LDFLAGS = $(dummy_ldflags)
-libpluginfaulty2_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
+libpluginfaulty2_la_LIBADD = ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 libpluginoption_la_SOURCES = test-plugin-dummy.c plugin_tests.h
 libpluginoption_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_OPTIONS
 libpluginoption_la_LDFLAGS = $(dummy_ldflags)
-libpluginoption_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
+libpluginoption_la_LIBADD = ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 libpluginapi_la_SOURCES = test-plugin-dummy.c plugin_tests.h
 libpluginapi_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_API
 libpluginapi_la_LDFLAGS = $(dummy_ldflags)
-libpluginapi_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
+libpluginapi_la_LIBADD = ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 libplugindb_la_SOURCES = test-plugin-dummy.c plugin_tests.h
 libplugindb_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_DATABASE
 libplugindb_la_LDFLAGS = $(dummy_ldflags)
-libplugindb_la_LIBADD = ../libwget/libwget.la $(MYLIBS) ../lib/libgnu.la
+libplugindb_la_LIBADD = ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
