@@ -2423,6 +2423,8 @@ static int print_help(WGET_GCC_UNUSED option_t opt, WGET_GCC_UNUSED const char *
 			printf("Plugin options:\n");
 			break;
 
+		case SECTION_END:
+			// fallthrough
 		default:
 			printf("Unknown help section %d\n", (int) sect);
 			exit(EXIT_FAILURE);
