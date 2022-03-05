@@ -76,7 +76,7 @@ Full+VPATH/Debian:
     - sed -i 's/dist-lzip//g' configure.ac
     - ./bootstrap --skip-po && touch .manywarnings
     - mkdir vpath && cd vpath
-    - ../configure $CONFIGURE_BASE_FLAGS --cache-file ../cache/config.cache
+    - ../configure $CONFIGURE_BASE_FLAGS --enable-manylibs --cache-file ../cache/config.cache
     - make -j$(nproc)
     - make -j$(nproc) distcheck
     - mv wget2-*.gz ..

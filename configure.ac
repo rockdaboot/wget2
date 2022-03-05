@@ -229,8 +229,8 @@ if test -n "$WARN_CFLAGS"; then
 fi
 
 AC_ARG_ENABLE([manylibs],
-  [AS_HELP_STRING([--disable-manylibs], [Generate small libraries of libwget functionality groups])],
-  [enable_manylibs=$enableval], [enable_manylibs=yes])
+  [AS_HELP_STRING([--enable-manylibs], [Generate small libraries of libwget functionality groups])],
+  [enable_manylibs=$enableval], [enable_manylibs=no])
 AM_CONDITIONAL([ENABLE_MANYLIBS], [test "$enable_manylibs" = "yes"])
 
 AC_ARG_ENABLE([fuzzing],
