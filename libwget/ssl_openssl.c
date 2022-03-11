@@ -1546,8 +1546,9 @@ int wget_ssl_open(wget_tcp *tcp)
 		SSL_set_hostflags(ssl, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
 #endif
 	}
-#ifndef LIBRESSL_VERSION_NUMBER
+#if !defined(LIBRESSL_VERSION_NUMBER) || !defined(X509_CHECK_FLAG_NEVER_CHECK_SUBJECT)
 // LibreSSL <= 3.0.2 does not know SSL_set_hostflags() nor X509_CHECK_FLAG_NEVER_CHECK_SUBJECT
+// OpenSSL < 1.1 doesn't have X509_CHECK_FLAG_NEVER_CHECK_SUBJECT
 	else {
 		SSL_set_hostflags(ssl, X509_CHECK_FLAG_NEVER_CHECK_SUBJECT);
 		info_printf(_("Host name check disabled. Server certificate's subject name will not be checked.\n"));
