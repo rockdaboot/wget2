@@ -62,6 +62,7 @@ int main(void)
 				" <A href=\"../secondpage.html\">second page</a>." \
 				" <a href=\"subpage1.html?query&param#frag\">page in subdir2</a>." \
 				" <a href=\"./subpage2.html\">page in subdir2</a>." \
+				" <a href=\"./audio.mp3\">mp3 in subdir2</a>." \
 				"</p></body></html>",
 			.headers = {
 				"Content-Type: text/html",
@@ -82,6 +83,10 @@ int main(void)
 		{	.name = "/subdir2/subpage2.html",
 			.code = "200 Dontcare",
 			.body = "sub2_2"
+		},
+		{	.name = "/subdir2/audio.mp3",
+			.code = "200 Dontcare",
+			.body = "sub2_audio.mp3"
 		},
 		{	.name = "/robots_open.txt",
 			.code = "200 Dontcare",
@@ -164,6 +169,23 @@ int main(void)
 			{ urls[3].name + 1, urls[3].body },
 			{ urls[4].name + 1, urls[4].body },
 			{ urls[6].name + 1, urls[6].body },
+			{	NULL } },
+		0);
+
+	// Disable robots.txt
+	wget_test(
+		WGET_TEST_OPTIONS, "-r --no-robots -nH",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[2].name + 1, urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
+			{ urls[4].name + 1, urls[4].body },
+			{ urls[5].name + 1, urls[5].body },
+			{ urls[6].name + 1, urls[6].body },
+			{ urls[7].name + 1, urls[7].body },
 			{	NULL } },
 		0);
 
