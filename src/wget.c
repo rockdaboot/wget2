@@ -2378,10 +2378,11 @@ void *downloader_thread(void *p)
 				if (config.tries && ++job->failures >= config.tries) {
 					print_status(downloader, "Job reached max tries.");
 					job->done=1;
+					if (resp->code >= 400)
+						set_exit_status(EXIT_STATUS_NETWORK);
 				} else if (check_status_code_list(config.retry_on_http_error, resp->code)) {
 					job->done = 0;
 					job->retry_ts = wget_get_timemillis() + job->failures * 1000;
-					set_exit_status(EXIT_STATUS_NETWORK);
 				}
 			}
 
