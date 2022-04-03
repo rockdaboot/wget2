@@ -2879,7 +2879,7 @@ static void add_urls(JOB *job, wget_vector *urls, const char *encoding, const wg
 		wget_string *url = wget_vector_get(urls, it);
 
 		if (baselen && (url->len <= baselen || wget_strncasecmp(url->p, base->uri, baselen))) {
-			info_printf(_("URL '%.*s' not followed (not matching sitemap location)\n"), (int)url->len, url->p);
+			info_printf(_("URL '%.*s' not followed (not matching base)\n"), (int)url->len, url->p);
 			continue;
 		}
 
