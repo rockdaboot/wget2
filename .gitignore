@@ -1,4 +1,7 @@
 # Ignore all executable files in these directories
+libwget/*
+!libwget/*.*
+
 tests/*
 !tests/*.*
 
@@ -71,7 +74,6 @@ lib
 libtool
 libwget.pc
 libwget/css_tokenizer.c
-libwget/test_linking
 ltmain.sh
 missing
 nbproject
