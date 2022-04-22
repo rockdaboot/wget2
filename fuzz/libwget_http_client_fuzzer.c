@@ -172,8 +172,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		"Content-Length: 10\r\n"
 		"Connection: keep-alive\r\n\r\n"
 		,
-		"HTTP/1.1 200 OK\r\n"
-		"Host: a\r\n\r\n"
+		("HTTP/1.1 200 OK\r\n"
+		"Host: a\r\n\r\n")
 	};
 
 	if (size > 256) // same as max_len = 4096 in .options file
