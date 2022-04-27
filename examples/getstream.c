@@ -60,17 +60,17 @@ static int header_callback(wget_http_response *resp, void *context WGET_GCC_UNUS
 	// If you are looking for header that are ignored by libwget, parse them yourself.
 
 	if (resp->header) {
-		char key[64], value[128];
+		char key[64], value[128] = "";
 
 		// simplistic scanning (just an example)
-		// won't work with split lines and not with empty values
+		// won't work with split lines
 		for (char *p = strchr(resp->header->data, '\n'); p && sscanf(p + 1, " %63[a-zA-z-] : %127[^\r\n]", key, value) >= 1; p = strchr(p + 1, '\n')) {
 			// wget_info_printf("%s = %s\n", key, value);
 			if (!wget_strcasecmp_ascii(key, "icy-name")) {
 				stream_name = wget_strdup(value);
 				break;
 			}
-			*value=0;
+			*value = 0;
 		}
 	}
 
