@@ -286,12 +286,12 @@ char *wget_cookie_create_request_header(wget_cookie_db *cookie_db, const wget_ir
 wget_cookie_db *wget_cookie_db_init(wget_cookie_db *cookie_db)
 {
 	if (!cookie_db) {
-		cookie_db = wget_malloc(sizeof(wget_cookie_db));
+		cookie_db = wget_calloc(1, sizeof(wget_cookie_db));
 		if (!cookie_db)
 			return NULL;
-	}
+	} else
+		memset(cookie_db, 0, sizeof(*cookie_db));
 
-	memset(cookie_db, 0, sizeof(*cookie_db));
 	cookie_db->cookies = wget_vector_create(32, (wget_vector_compare_fn *) compare_cookie);
 	wget_vector_set_destructor(cookie_db->cookies, cookie_free);
 	wget_thread_mutex_init(&cookie_db->mutex);
