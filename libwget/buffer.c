@@ -544,26 +544,19 @@ char *wget_buffer_trim(wget_buffer *buf)
 	if (unlikely(!buf))
 		return NULL;
 
-	if (buf->length) {
-		char *start = buf->data;
-		char *end = start + buf->length - 1;
+	while (buf->length > 0 && isspace(buf->data[buf->length - 1])) {
+		buf->length--;
+	}
+	buf->data[buf->length] = 0;
 
-		if (isspace(*end)) {
-			/* Skip trailing spaces */
-			for (; isspace(*end) && end >= start; end--)
-				;
-			end[1] = 0;
-			buf->length = (size_t) (end - start + 1);
-		}
+	size_t spaces = 0;
+	while (buf->length > 0 && isspace(buf->data[spaces]))
+		spaces++;
 
-		if (isspace(*start)) {
-			/* Skip leading spaces */
-			for (; isspace(*start) && end >= start; start++)
-				;
-			buf->length = (size_t) (end - start + 1);
-			/* Include trailing 0 */
-			memmove(buf->data, start, buf->length + 1);
-		}
+	if (spaces) {
+		buf->length -= spaces;
+		/* Include trailing 0 */
+		memmove(buf->data, buf->data + spaces, buf->length + 1);
 	}
 
 	return buf->data;

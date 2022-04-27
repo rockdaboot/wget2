@@ -273,11 +273,12 @@ static void test_buffer(void)
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 	for (int mid_ws = 0; mid_ws <= 2; mid_ws++) {
 		char expected[16];
-		snprintf(expected, sizeof(expected), "x%.*sy", mid_ws, "  ");
+		snprintf(expected, sizeof(expected), "x%*.*sy", mid_ws, mid_ws, "");
 
 		for (int lead_ws = 0; lead_ws <= 2; lead_ws++) {
 			for (int trail_ws = 0; trail_ws <= 2; trail_ws++) {
-				wget_buffer_printf(&buf, "%.*sx%.*sy%.*s", lead_ws, "  ", mid_ws, "  ", trail_ws, "  ");
+				wget_buffer_printf(&buf, "%*.*sx%*.*sy%*.*s",
+					lead_ws, lead_ws, "", mid_ws, mid_ws, "", trail_ws, trail_ws, "");
 				wget_buffer_trim(&buf);
 				if (!strcmp(buf.data, expected))
 					ok++;
@@ -286,6 +287,18 @@ static void test_buffer(void)
 					info_printf("test_buffer_trim: got '%s' (expected '%s') (%d, %d, %d)\n", buf.data, expected, lead_ws, mid_ws, trail_ws);
 				}
 			}
+		}
+	}
+
+	char expected[] = "";
+	for (int ws = 0; ws <= 3; ws++) {
+		wget_buffer_printf(&buf, "%*.*s", ws, ws, "");
+		wget_buffer_trim(&buf);
+		if (!strcmp(buf.data, expected))
+			ok++;
+		else {
+			failed++;
+			info_printf("test_buffer_trim: got '%s' (expected '%s') (%d)\n", buf.data, expected, ws);
 		}
 	}
 	wget_buffer_deinit(&buf);
