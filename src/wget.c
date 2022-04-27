@@ -284,10 +284,8 @@ static void program_init(void)
 	signal(SIGINT, nop);
 #else
 	// need to set some signals
-	struct sigaction sig_action;
-	memset(&sig_action, 0, sizeof(sig_action));
+	struct sigaction sig_action = { .sa_handler = SIG_IGN };
 
-	sig_action.sa_handler = SIG_IGN;
 	sigaction(SIGPIPE, &sig_action, NULL); // this forces socket error return
 	sig_action.sa_handler = nop;
 	sigaction(SIGTERM, &sig_action, NULL);

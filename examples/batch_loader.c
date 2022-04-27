@@ -123,9 +123,7 @@ int main(int argc WGET_GCC_UNUSED, const char *const *argv WGET_GCC_UNUSED)
 		0);
 
 #ifndef _WIN32
-	struct sigaction sig_action;
-	memset(&sig_action, 0, sizeof(sig_action));
-	sig_action.sa_handler = SIG_IGN;
+	struct sigaction sig_action = { .sa_handler = SIG_IGN };
 	sigaction(SIGPIPE, &sig_action, NULL); // this forces socket error return
 #endif
 
