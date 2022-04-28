@@ -18,7 +18,7 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- * Double linked list routines
+ * Circular doubly linked list routines
  *
  * Changelog
  * 25.04.2012  Tim Ruehsen  created
@@ -35,11 +35,11 @@
 
 /**
  * \file
- * \brief Double linked list routines
- * \defgroup libwget-list Double linked list
+ * \brief Circular doubly linked list routines
+ * \defgroup libwget-list Circular doubly linked list
  * @{
  *
- * Double linked lists provide fast insertion, removal and
+ * Circular doubly linked lists provide fast insertion, removal and
  * iteration in either direction.
  *
  * Each element has pointers to the next and the previous element.<br>
@@ -58,7 +58,7 @@ struct wget_list_st {
 };
 
 /**
- * \param[in] list Pointer to Pointer to a double linked list
+ * \param[in] list Pointer to Pointer to a circular doubly linked list
  * \param[in] data Pointer to data to be inserted
  * \param[in] size Size of data in bytes
  * \return Pointer to the new element or NULL if memory allocation failed
@@ -118,10 +118,10 @@ wget_list_append(wget_list **list, const void *data, size_t size)
 }
 
 /**
- * \param[in] list Pointer to Pointer to a double linked list
+ * \param[in] list Pointer to Pointer to a circular doubly linked list
  * \param[in] data Pointer to data to be inserted
  * \param[in] size Size of data in bytes
- * \return Pointer to the new element
+ * \return Pointer to the new element or NULL if memory allocation failed
  *
  * Insert an entry at the beginning of the list.
  * \p size bytes at \p data will be copied and prepended to the list.
@@ -139,30 +139,32 @@ void *wget_list_prepend(wget_list **list, const void *data, size_t size)
 }
 
 /**
- * \param[in] list Pointer to Pointer to a double linked list
+ * \param[in] list Pointer to Pointer to a circular doubly linked list
  * \param[in] elem Pointer to a list element returned by wget_list_append() or wget_list_prepend()
  *
  * Remove an element from the list.
  */
 void wget_list_remove(wget_list **list, void *elem)
 {
+	if (!*list)
+		return;
+
 	wget_list *node = ((wget_list *)elem) - 1;
 
-	if (node->prev == node->next && node == node->prev) {
+	if (node == node->prev) {
 		// removing the last node in the list
-		if (*list && node == *list)
-			*list = NULL;
+		*list = NULL;
 	} else {
 		node->prev->next = node->next;
 		node->next->prev = node->prev;
-		if (*list && node == *list)
+		if (node == *list)
 			*list = node->next;
 	}
 	xfree(node);
 }
 
 /**
- * \param[in] list Pointer to a double linked list
+ * \param[in] list Pointer to a circular doubly linked list
  * \return Pointer to the first element of the list or %NULL if the list is empty
  *
  * Get the first element of a list.
@@ -173,7 +175,7 @@ void *wget_list_getfirst(const wget_list *list)
 }
 
 /**
- * \param[in] list Pointer to a double linked list
+ * \param[in] list Pointer to a circular doubly linked list
  * \return Pointer to the last element of the list or %NULL if the list is empty
  *
  * Get the last element of a list.
@@ -199,7 +201,7 @@ void *wget_list_getnext(const void *elem)
 }
 
 /**
- * \param[in] list Pointer to a double linked list
+ * \param[in] list Pointer to a circular doubly linked list
  * \param[in] browse Pointer to callback function which is called for every element in the list.
  *  If the callback functions returns a value not equal to zero, browsing is stopped and
  *  this value will be returned by wget_list_browse.
@@ -240,7 +242,7 @@ int wget_list_browse(const wget_list *list, wget_list_browse_fn *browse, void *c
 }
 
 /**
- * \param[in] list Pointer to Pointer to a double linked list
+ * \param[in] list Pointer to Pointer to a circular doubly linked list
  *
  * Freeing the list and it's entry.
  */
