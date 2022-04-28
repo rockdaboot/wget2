@@ -252,7 +252,7 @@ static ssize_t _callback (void *cls, uint64_t pos, char *buf, size_t buf_size)
 	else
 		size_to_copy = param->response_size - pos;
 
-	memcpy (buf, param->response_data + pos, size_to_copy);
+	memcpy(buf, param->response_data + pos, size_to_copy);
 
 	return size_to_copy;
 }
@@ -282,7 +282,7 @@ static ssize_t _callback_interruptable (void *cls, uint64_t pos, char *buf, size
 		}
 	}
 
-	memcpy (buf, param->response_data + pos, size_to_copy);
+	memcpy(buf, param->response_data + pos, size_to_copy);
 	return size_to_copy;
 }
 

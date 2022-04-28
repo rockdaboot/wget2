@@ -211,7 +211,7 @@ int main(void)
 		0);
 
 	char modified[strlen(urls[2].body)+1];
-	memcpy(modified, urls[2].body, strlen(urls[2].body)+1);
+	memcpy(modified, urls[2].body, sizeof(modified));
 	modified[0] = '.';
 	wget_test(
 		WGET_TEST_OPTIONS, "--exclude-directories=/firstdir --include-directories=/*/pub -r -nH -N --no-if-modified-since",

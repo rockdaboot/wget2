@@ -393,15 +393,12 @@ int wget_vector_move(wget_vector *v, int old_pos, int new_pos)
 	if (v->sorted && v->cmp && v->cmp(v->entry[old_pos], v->entry[new_pos]))
 		v->sorted = 0;
 
-	if (old_pos < new_pos) {
-		void *tmp = v->entry[old_pos];
+	void *tmp = v->entry[old_pos];
+	if (old_pos < new_pos)
 		memmove(&v->entry[old_pos], &v->entry[old_pos + 1], (new_pos - old_pos) * sizeof(void *));
-		v->entry[new_pos] = tmp;
-	} else {
-		void *tmp = v->entry[old_pos];
+	else
 		memmove(&v->entry[new_pos + 1], &v->entry[new_pos], (old_pos - new_pos) * sizeof(void *));
-		v->entry[new_pos] = tmp;
-	}
+	v->entry[new_pos] = tmp;
 
 	return new_pos;
 }

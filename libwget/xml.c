@@ -470,13 +470,10 @@ static int parseXML(const char *dir, xml_context *context)
 					wget_snprintf(&directory[pos], sizeof(directory) - pos, "%.*s", (int)context->token_len, tok);
 			} else {
 				// wget_snprintf(directory, sizeof(directory), "%.*s", (int)context->token_len, tok);
-				if (context->token_len < sizeof(directory)) {
-					memcpy(directory, tok, context->token_len);
-					directory[context->token_len] = 0;
-				} else {
-					memcpy(directory, tok, sizeof(directory) - 1);
-					directory[sizeof(directory) - 1] = 0;
-				}
+				size_t dirlen = context->token_len >= sizeof(directory) ? sizeof(directory) - 1 : context->token_len;
+
+				memcpy(directory, tok, dirlen);
+				directory[dirlen] = 0;
 			}
 
 			while ((tok = getToken(context))) {
