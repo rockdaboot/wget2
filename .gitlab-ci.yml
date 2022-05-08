@@ -470,6 +470,7 @@ MinGW64-static:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD_STATIC
   script:
+    - unset CC
     - ./bootstrap --skip-po
     - LDFLAGS="-Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
       CFLAGS="$CFLAGS -DNGHTTP2_STATICLIB"
