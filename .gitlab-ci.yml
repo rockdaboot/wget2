@@ -477,7 +477,7 @@ MinGW64-static:
       ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme
     - make -j$(nproc)
     - mkdir -p public
-    - mv src/wget2.exe /public/wget2-latest.exe
+    - mv src/wget2.exe public/wget2-latest.exe
   tags:
     - shared
     - linux
