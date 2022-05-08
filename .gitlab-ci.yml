@@ -36,6 +36,7 @@ variables:
   FEDORA_BUILD: buildenv-fedora
   CENTOS7_BUILD: buildenv-centos7
   MINGW_BUILD: buildenv-mingw
+  MINGW_BUILD_STATIC: buildenv-mingw-static
   ALPINE_BUILD: buildenv-alpine
   ARCH_BUILD: buildenv-arch
   BASIC_BUILD: buildenv-basic
@@ -467,10 +468,12 @@ MinGW64:
 
 MinGW64-static:
   stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD_STATIC
   script:
     - ./bootstrap --skip-po
-    - ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme
+    - LDFLAGS="-Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
+      CFLAGS="$CFLAGS -DNGHTTP2_STATICLIB"
+      ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme
     - make -j$(nproc)
     - mv src/wget2.exe /public/wget2-latest.exe
   tags:
