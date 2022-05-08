@@ -465,6 +465,25 @@ MinGW64:
       - unit-tests/*.log
       - tests/*.log
 
+MinGW64-static:
+  stage: stage1-testing
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
+  script:
+    - ./bootstrap --skip-po
+    - ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme
+    - make -j$(nproc)
+    - mv src/wget2.exe /public/wget2-latest.exe
+  tags:
+    - shared
+    - linux
+  allow_failure: true
+  artifacts:
+    when: on_success
+    paths:
+      - public
+  only:
+    - master
+
 Arch:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ARCH_BUILD
