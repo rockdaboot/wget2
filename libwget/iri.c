@@ -1210,10 +1210,7 @@ const char *wget_iri_get_escaped_resource(const wget_iri *iri, wget_buffer *buf)
 	if (iri->query) {
 		wget_buffer_memcat(buf, "?", 1);
 		for (const char *p = iri->query; *p; p++)
-			if (*p == ' ')
-				wget_buffer_memcat(buf, "%20", 3);
-			else
-				wget_buffer_memcat(buf, p, 1);
+			wget_buffer_memcat(buf, *p == ' ' ? "+" : p, 1);
 	}
 
 	return buf->data;
