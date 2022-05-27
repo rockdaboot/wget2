@@ -6,6 +6,28 @@ See the end for copying conditions.
 
 Please send GNU Wget2 bug reports to <bug-wget@gnu.org>.
 
+27.05.2022 Release v2.0.1
+  * Fix escaping space in query part
+  * Set EXIT_STATUS_NETWORK on error for the last try
+  * Fix -k/--convert-links fragment
+  * Fix escapng URLs with -k/--convert-links
+  * Fix false reporting of a PSL error
+  * Fix --directory-prefix with --content-disposition
+  * Allow spaces and \ escaping in passwords in .netrc
+  * Fix download abortion on some versions of Windows
+  * Fix --unlink behavior
+  * Fix deflate decompression when server omits the header
+  * WolfSSL: Fix buffer overflow in SHA512 hashing
+  * WolfSSL: Fix memory leak
+  * Add support for unquoted HTML attribute values
+  * OpenSSL: Fix several OCSP issues
+  * Use keep-alive for HTTP/1.1 and higher as default
+  * Don't create core dumps on CTRL-c
+  * Fix replacing Content-Type: headers
+  * Fix NULL pointer read / segfault
+  * Fix several build issues
+  * Fix several documentation issues
+
 12.09.2021 Release v2.0.0
   * OpenSSL: Fix CRL checking
   * OpenSSL: Implement ALPN

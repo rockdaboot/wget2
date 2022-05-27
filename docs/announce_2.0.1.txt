@@ -1,0 +1,97 @@
+Hi,
+
+we are happy to announce the release 2.0.1 of GNU Wget2.
+
+Wget2 is the successor of GNU Wget, a file and recursive website
+downloader.
+
+Designed and written from scratch it wraps around libwget, that provides
+the basic functions needed by a web client.
+
+Wget2 works multi-threaded and uses many features to allow fast operation.
+
+In many cases Wget2 downloads much faster than Wget due to HTTP2,
+HTTP compression, parallel connections, use of If-Modified-Since HTTP header
+and more.
+
+Wget2 has several new command-line options, see the wiki page for a list and
+comparison with Wget.
+
+Wget will be maintained further. The idea is that breaking changes and new
+functionalities go into Wget2 / libwget.
+
+Except for WARC and FTP, Wget2 is a drop-in replacement for Wget in most cases.
+Of course there may be subtle differences, so make sure to test well before
+replacing Wget by Wget2.
+
+GNU Wget2 is licensed under GPLv3+. Libwget is licensed under LGPLv3+.
+
+**Noteworthy changes since the last release (see also the NEWS file):**
+
+  * Fix escaping space in query part
+  * Set EXIT_STATUS_NETWORK on error for the last try
+  * Fix -k/--convert-links fragment
+  * Fix escapng URLs with -k/--convert-links
+  * Fix false reporting of a PSL error
+  * Fix --directory-prefix with --content-disposition
+  * Allow spaces and \ escaping in passwords in .netrc
+  * Fix download abortion on some versions of Windows
+  * Fix --unlink behavior
+  * Fix deflate decompression when server omits the header
+  * WolfSSL: Fix buffer overflow in SHA512 hashing
+  * WolfSSL: Fix memory leak
+  * Add support for unquoted HTML attribute values
+  * OpenSSL: Fix several OCSP issues
+  * Use keep-alive for HTTP/1.1 and higher as default
+  * Don't create core dumps on CTRL-c
+  * Fix replacing Content-Type: headers
+  * Fix NULL pointer read / segfault
+  * Fix several build issues
+  * Fix several documentation issues
+
+**Download**
+
+  https://ftp.gnu.org/gnu/wget/wget2-2.0.1.tar.gz
+
+  https://ftp.gnu.org/gnu/wget/wget2-2.0.1.tar.lz
+
+**Signatures (GPG key 0x08302DB6A2670428)**
+
+  https://ftp.gnu.org/gnu/wget/wget2-2.0.1.tar.gz.sig
+
+  https://ftp.gnu.org/gnu/wget/wget2-2.0.1.tar.lz.sig
+
+**Project Website**
+
+  https://gitlab.com/gnuwget/wget2
+
+**Online Documentation**
+
+  https://gnuwget.gitlab.io/wget2/reference/
+
+**Wiki**
+
+  https://gitlab.com/gnuwget/wget2/-/wikis/Home
+
+**Mailing List**
+
+  https://savannah.gnu.org/mail/?group=wget
+
+**Bug Tracker**
+
+  https://gitlab.com/gnuwget/wget2/issues
+
+**Getting the Source Code (Development)**
+
+  git clone https://gitlab.com/gnuwget/wget2.git
+
+**Source Code Test Coverage**
+
+  https://gnuwget.gitlab.io/wget2/coverage/
+
+**Fuzz Code Coverage**
+
+  https://gnuwget.gitlab.io/wget2/fuzz-coverage/
+
+
+With Best Regards, Tim Rühsen

@@ -25,7 +25,7 @@ CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 
 AC_PREREQ([2.69])
-AC_INIT([wget2],[2.0.0],[bug-wget@gnu.org],[wget2],[https://savannah.gnu.org/projects/wget])
+AC_INIT([wget2],[2.0.1],[bug-wget@gnu.org],[wget2],[https://savannah.gnu.org/projects/wget])
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -78,7 +78,7 @@ LT_INIT([dlopen])
 # 5. If any interfaces have been added since the last public release, then increment age.
 # 6. If any existing interfaces have been removed or changed since the last public release, then set age to 0.
 AC_SUBST([LIBWGET_SO_VERSION], [1:0:0])
-AC_SUBST([LIBWGET_VERSION], [2.0.0])
+AC_SUBST([LIBWGET_VERSION], [2.1.0])
 
 #
 # Generate version defines for include file
@@ -400,17 +400,18 @@ if test "$enable_doc" = yes; then
   AC_CHECK_PROGS([PANDOC], [pandoc])
 
   if test -n "$DOXYGEN" || test -n "$PANDOC"; then
+    DOCS_INFO="yes"
     LIBWGET_DOCS_INFO="yes (found:"
     if test -n "$DOXYGEN"; then
       LIBWGET_DOCS_INFO="$LIBWGET_DOCS_INFO Doxygen)"
-	else
-	  LIBWGET_DOCS_INFO="no"
+    else
+      LIBWGET_DOCS_INFO="no"
     fi
     WGET2_DOCS_INFO="yes (found:"
     if test -n "$PANDOC"; then
       WGET2_DOCS_INFO="$WGET2_DOCS_INFO Pandoc)"
-	else
-	  WGET2_DOCS_INFO="no"
+    else
+      WGET2_DOCS_INFO="no"
     fi
   else
     DOCS_INFO="no (neither Doxygen nor Pandoc found)"
