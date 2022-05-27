@@ -427,6 +427,7 @@ pages:
     - mv badge.svg public/fuzz-coverage.svg
     - rm -rf public/fuzz-coverage
     - mv lcov public/fuzz-coverage
+    - mv wget2.exe public/
   tags:
     - shared
     - linux
@@ -476,8 +477,7 @@ MinGW64-static:
       CFLAGS="$CFLAGS -DNGHTTP2_STATICLIB"
       ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme
     - make -j$(nproc)
-    - mkdir -p public
-    - mv src/wget2.exe public/wget2-latest.exe
+    - mv src/wget2.exe .
   tags:
     - shared
     - linux
@@ -485,7 +485,7 @@ MinGW64-static:
   artifacts:
     when: on_success
     paths:
-      - public
+      - wget2.exe
   only:
     - master
 
