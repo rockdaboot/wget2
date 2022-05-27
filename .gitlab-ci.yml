@@ -427,7 +427,6 @@ pages:
     - mv badge.svg public/fuzz-coverage.svg
     - rm -rf public/fuzz-coverage
     - mv lcov public/fuzz-coverage
-    - mv wget2.exe public/
   tags:
     - shared
     - linux
