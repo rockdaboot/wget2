@@ -1546,7 +1546,7 @@ int wget_ssl_open(wget_tcp *tcp)
 		SSL_set_hostflags(ssl, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
 #endif
 	}
-#if !defined(LIBRESSL_VERSION_NUMBER) || !defined(X509_CHECK_FLAG_NEVER_CHECK_SUBJECT)
+#if !defined LIBRESSL_VERSION_NUMBER || !defined X509_CHECK_FLAG_NEVER_CHECK_SUBJECT
 // LibreSSL <= 3.0.2 does not know SSL_set_hostflags() nor X509_CHECK_FLAG_NEVER_CHECK_SUBJECT
 // OpenSSL < 1.1 doesn't have X509_CHECK_FLAG_NEVER_CHECK_SUBJECT
 	else {
