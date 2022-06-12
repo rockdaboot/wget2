@@ -504,40 +504,16 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--progress=type`
 
-  Select the type of the progress indicator you wish to use.  Legal indicators are "dot" and "bar".
+  Select the type of the progress indicator you wish to use. Supported indicator types are `none` and `bar`.
 
-  It draws an ASCII progress bar graphics (a.k.a "thermometer" display) indicating the status of retrieval.
-  If the output is not a TTY, the "dot" bar will be used by default.
+  Type `bar` draws an ASCII progress bar graphics (a.k.a "thermometer" display) indicating the status of retrieval.
 
-  Use `--progress=dot` to switch to the "dot" display.  It traces the retrieval by printing dots on the screen, each
-  dot representing a fixed amount of downloaded data.
+  If the output is a TTY, `bar` is the default. Else, the progress bar will be switched off, except when using `--force-progress`.
 
-  The progress type can also take one or more parameters.  The parameters vary based on the type selected.
-  Parameters to type are passed by appending them to the type separated by a colon (`:`) like this:
-  `--progress=type:parameter1:parameter2`.
+  The type 'dot' is currently not supported, but won't trigger an error to not break wget command lines.
 
-  When using the dotted retrieval, you may set the style by specifying the type as dot:style.  Different styles
-  assign different meaning to one dot.  With the "default" style each dot represents 1K, there are ten dots in a
-  cluster and 50 dots in a line.  The "binary" style has a more "computer"-like orientation: 8K dots, 16-dots
-  clusters and 48 dots per line (which makes for 384K lines).  The "mega" style is suitable for downloading large
-  files, each dot represents 64K retrieved, there are eight dots in a cluster, and 48 dots on each line (so each
-  line contains 3M).  If "mega" is not enough then you can use the "giga" style. Each dot represents 1M retrieved,
-  there are eight dots in a cluster, and 32 dots on each line (so each line contains 32M).
-
-  With `--progress=bar`, there are currently two possible parameters, `force` and `noscroll`.
-
-  When the output is not a TTY, the progress bar always falls back to "dot", even if `--progress=bar` was passed to
-  Wget2 during invocation. This behaviour can be overridden and the "bar" output forced by using the "force"
-  parameter as `--progress=bar:force`.
-
-  By default, the bar style progress bar scroll the name of the file from left to right for the file being
-  downloaded if the filename exceeds the maximum length allotted for its display.  In certain cases, such as with
-  --progress=bar:force, one may not want the scrolling filename in the progress bar.  By passing the "noscroll"
-  parameter, Wget2 can be forced to display as much of the filename as possible without scrolling through it.
-
-  Note that you can set the default style using the "progress" command in .wget2rc.  That setting may be overridden
-  from the command line.  For example, to force the bar output without scrolling, use
-  --progress=bar:force:noscroll.
+  The parameterized types `bar:force` and `bar:force:noscroll` will add the effect of `--force-progress`.
+  These are accepted for better wget compatibility.
 
 ### `--force-progress`
 
