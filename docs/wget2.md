@@ -18,7 +18,6 @@
 * [Exit Status](#Exit Status)
 * [Startup File](#Startup File)
 * [Bugs](#Bugs)
-* [See Also](#See Also)
 * [Author](#Author)
 * [Copyright](#Copyright)
 
@@ -79,9 +78,9 @@
       wget2 -o log -- -x
 
   The options that accept comma-separated lists all respect the convention that prepending `--no-` clears its
-  value.  This can be useful to clear the `.wgetrc` settings.  For instance, if your `.wgetrc` sets `exclude-directories`
+  value.  This can be useful to clear the `.wget2rc` settings.  For instance, if your `.wget2rc` sets `exclude-directories`
   to `/cgi-bin`, the following example will first reset it, and then set it to exclude `/priv` and `/trash`.  You can
-  also clear the lists in `.wgetrc`.
+  also clear the lists in `.wget2rc`.
 
       wget2 --no-exclude-directories -X /priv,/trash
 
@@ -92,7 +91,7 @@
   Affirmative options can be negated by prepending the `--no-` to the option name; negative options can be negated by
   omitting the `--no-` prefix.  This might seem superfluous - if the default for an affirmative option is to not do
   something, then why provide a way to explicitly turn it off?  But the startup file may in fact change the default.
-  For instance, using `timestamping = on` in `.wgetrc` makes Wget2 download updated files only.
+  For instance, using `timestamping = on` in `.wget2rc` makes Wget2 download updated files only.
   Using `--no-timestamping` is the only way to restore the factory default from the command line.
 
 
@@ -112,8 +111,8 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `-e`, `--execute=command`
 
-  Execute command as if it were a part of `.wgetrc`.  A command thus invoked will be executed after the commands in `.wgetrc`, thus
-  taking precedence over them.  If you need to specify more than one wgetrc command, use multiple instances of `-e`.
+  Execute command as if it were a part of `.wget2rc`.  A command thus invoked will be executed after the commands in `.wget2rc`, thus
+  taking precedence over them.  If you need to specify more than one wget2rc command, use multiple instances of `-e`.
 
 ### `--hyperlink`
 
@@ -536,7 +535,7 @@ Go to background immediately after startup. If no output file is specified via t
   --progress=bar:force, one may not want the scrolling filename in the progress bar.  By passing the "noscroll"
   parameter, Wget2 can be forced to display as much of the filename as possible without scrolling through it.
 
-  Note that you can set the default style using the "progress" command in .wgetrc.  That setting may be overridden
+  Note that you can set the default style using the "progress" command in .wget2rc.  That setting may be overridden
   from the command line.  For example, to force the bar output without scrolling, use
   --progress=bar:force:noscroll.
 
@@ -794,14 +793,14 @@ Go to background immediately after startup. If no output file is specified via t
 ### `--user=user`, `--password=password`
 
   Specify the username user and password password for HTTP file retrieval. This overrides the lookup of
-  credentials in the .netrc file (--netrc is enabled by default). These parameters can be overridden using the
-  --http-user and --http-password options for HTTP(S) connections.
+  credentials in the .netrc file (`--netrc` is enabled by default). These parameters can be overridden using the
+  `--http-user` and `--http-password` options for HTTP(S) connections.
 
-  If neither --http-proxy-user nor --http-proxy-password is given these settings are also taken for proxy authentication.
+  If neither `--http-proxy-user` nor `--http-proxy-password` is given these settings are also taken for proxy authentication.
 
 ### `--ask-password`
 
-  Prompt for a password on the command line. Overrides the password set by --password (if any).
+  Prompt for a password on the command line. Overrides the password set by `--password` (if any).
 
 ### `--use-askpass=command`
 
@@ -809,9 +808,9 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--no-iri`
 
-  Turn off internationalized URI (IRI) support. Use --iri to turn it on. IRI support is activated by default.
+  Turn off internationalized URI (IRI) support. Use `--iri` to turn it on. IRI support is activated by default.
 
-  You can set the default state of IRI support using the "iri" command in .wgetrc. That setting may be overridden
+  You can set the default state of IRI support using the "iri" command in `.wget2rc`. That setting may be overridden
   from the command line.
 
 ### `--local-encoding=encoding`
@@ -1041,7 +1040,7 @@ Go to background immediately after startup. If no output file is specified via t
   Specify the user and password for HTTP authentication. According to the type of the challenge, Wget
   will encode them using either the "basic" (insecure), the "digest", or the Windows "NTLM" authentication scheme.
 
-  If possible, put your credentials into `~/.netrc` (see also `--netrc` and `--netrc-file` options) or into `~/.wgetrc`.
+  If possible, put your credentials into `~/.netrc` (see also `--netrc` and `--netrc-file` options) or into `.wget2rc`.
   This is far more secure than using the command line which can be seen by any other user.
   If the passwords are really important, do not leave them lying in those files either. Edit the files and delete
   them after Wget2 has started the download.
@@ -1875,14 +1874,14 @@ Go to background immediately after startup. If no output file is specified via t
 
   Please be aware that the behavior of this combination of flags works slightly different than in wget1.x.
 
-  If -I is given first, the default is 'exclude all'. If -X is given first, the default is 'include all'.
+  If `-I` is given first, the default is 'exclude all'. If `-X` is given first, the default is 'include all'.
 
   Multiple -I/-X options are processed 'first to last'. The last match is relevant.
 
       Example: -I /pub -X /pub/trash would download all from /pub/ except from /pub/trash.
       Example: -X /pub -I /pub/important would download all except from /pub where only /pub/important would be downloaded.
 
-  To reset the list (e.g. to ignore -I/-X from .wgetrc files) use `--no-include-directories` or `--no-exclude-directories`.
+  To reset the list (e.g. to ignore -I/-X from `.wget2rc` files) use `--no-include-directories` or `--no-exclude-directories`.
 
 ### `-np`, `--no-parent`
 
@@ -1956,7 +1955,7 @@ Go to background immediately after startup. If no output file is specified via t
 
       1   Generic error code.
 
-      2   Parse error. For instance, when parsing command-line options, the .wgetrc or .netrc...
+      2   Parse error. For instance, when parsing command-line options, the .wget2rc or .netrc...
 
       3   File I/O error.
 
@@ -2042,9 +2041,9 @@ that in case of a collision, the user's wget2rc _overrides_ the global wget2rc.
   will occur with a simpler set of options.  You might even try to start the download at the page where the crash
   occurred to see if that page somehow triggered the crash.
 
-  Also, while I will probably be interested to know the contents of your `.wgetrc` file, just dumping it into the
-  debug message is probably a bad idea.  Instead, you should first try to see if the bug repeats with `.wgetrc` moved
-  out of the way.  Only if it turns out that `.wgetrc` settings affect the bug, mail me the relevant parts of the
+  Also, while I will probably be interested to know the contents of your `.wget2rc` file, just dumping it into the
+  debug message is probably a bad idea.  Instead, you should first try to see if the bug repeats with `.wget2rc` moved
+  out of the way.  Only if it turns out that `.wget2rc` settings affect the bug, mail me the relevant parts of the
   file.
 
   3.  Please start Wget2 with -d option and send us the resulting output (or relevant parts thereof).  If Wget2 was
@@ -2058,13 +2057,6 @@ that in case of a collision, the user's wget2rc _overrides_ the global wget2rc.
 
   4.  If Wget2 has crashed, try to run it in a debugger, e.g. ```gdb `which wget` core``` and type "where" to get the
   backtrace.  This may not work if the system administrator has disabled core files, but it is safe to try.
-
-
-# <a name="See also"/>See also
-
-  This is not the complete manual for GNU Wget.  For more complete information, including more detailed explanations of
-  some of the options, and a number of commands available for use with .wgetrc files and the -e option, see the GNU
-  Info entry for wget.
 
 
 # <a name="Author"/>Author
