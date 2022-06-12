@@ -61,6 +61,7 @@
 #include "wget_stats.h"
 #include "wget_testing.h"
 #include "wget_utils.h"
+#include "wget_bar.h"
 #ifdef WITH_GPGME
 #  include "wget_gpgme.h"
 #endif
@@ -1256,7 +1257,8 @@ struct config config = {
 	.default_http_port = 80,
 	.default_https_port = 443,
 	.hyperlink = false,
-	.if_modified_since = 1
+	.if_modified_since = 1,
+	.progress = PROGRESS_TYPE_BAR
 };
 
 static int parse_execute(option_t opt, const char *val, const char invert);
