@@ -18,7 +18,7 @@
  * along with Wget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- * Header file for job routines
+ * Header file for progress bar routines
  *
  * Changelog
  * 11.09.2014  Tim Ruehsen  created
@@ -27,6 +27,9 @@
 
 #ifndef SRC_WGET_BAR_H
 #define SRC_WGET_BAR_H
+
+#define PROGRESS_TYPE_NONE  0
+#define PROGRESS_TYPE_BAR   1
 
 bool bar_init(void);
 void bar_deinit(void);

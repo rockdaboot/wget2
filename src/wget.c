@@ -1221,7 +1221,7 @@ static void print_status(DOWNLOADER *downloader WGET_GCC_UNUSED, const char *fmt
 static void print_progress_report(long long start_time)
 {
 
-	if (config.progress) {
+	if (config.progress == PROGRESS_TYPE_BAR) {
 		char quota_buf[16];
 		char speed_buf[16];
 		char rs_type = (config.report_speed == WGET_REPORT_SPEED_BYTES) ? 'B' : 'b';
@@ -1357,23 +1357,23 @@ int main(int argc, const char **argv)
 	// threads.
 	if (!wget_thread_support()) {
 		config.max_threads = 1;
-		if (config.progress) {
-			config.progress = 0;
+		if (config.progress != PROGRESS_TYPE_NONE) {
+			config.progress = PROGRESS_TYPE_NONE;
 			wget_info_printf(_("Wget2 built without thread support. Disabling progress report\n"));
 		}
 	}
 
 	if (config.quiet) {
 		if (!config.force_progress) {
-			config.progress = 0;
+			config.progress = PROGRESS_TYPE_NONE;
 		}
 	}
 
-	if (config.progress && !isatty(STDOUT_FILENO) && !config.force_progress) {
-		config.progress = 0;
+	if (config.progress != PROGRESS_TYPE_NONE && !isatty(STDOUT_FILENO) && !config.force_progress) {
+		config.progress = PROGRESS_TYPE_NONE;
 	}
 
-	if (config.progress) {
+	if (config.progress == PROGRESS_TYPE_BAR) {
 		if (bar_init()) {
 			wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), NULL);
 			start_time = wget_get_timemillis();
@@ -1397,7 +1397,7 @@ int main(int argc, const char **argv)
 			// counter ater the iteration. So we add one already here to
 			// account for it. The second extra slot is for the stats data that
 			// is printed on the last line.
-			if (config.progress)
+			if (config.progress == PROGRESS_TYPE_BAR)
 				bar_update_slots(nthreads + 1 + 1);
 
 			// start worker threads (I call them 'downloaders')
@@ -1433,7 +1433,9 @@ int main(int argc, const char **argv)
 	}
 
 	print_progress_report(start_time);
-	if (!config.progress && (config.recursive || config.page_requisites || (config.input_file && quota != 0)) && quota) {
+	if (config.progress == PROGRESS_TYPE_NONE
+		&& (config.recursive || config.page_requisites || (config.input_file && quota != 0)) && quota)
+	{
 		info_printf(_("Downloaded: %d files, %s bytes, %d redirects, %d errors\n"),
 			stats.ndownloads, wget_human_readable(quota_buf, sizeof(quota_buf), quota), stats.nredirects, stats.nerrors);
 	}
@@ -1477,7 +1479,7 @@ int main(int argc, const char **argv)
 		blacklist_free();
 		hosts_free();
 		xfree(downloaders);
-		if (config.progress)
+		if (config.progress == PROGRESS_TYPE_BAR)
 			bar_deinit();
 		wget_vector_clear_nofree(parents);
 		wget_vector_free(&parents);
@@ -1956,20 +1958,20 @@ static void process_response_part(wget_http_response *resp)
 
 		if (all_done) {
 			// check integrity of complete file
-			if (config.progress)
+			if (config.progress == PROGRESS_TYPE_BAR)
 				bar_print(downloader->id, "Checksumming...");
 			else if (job->metalink)
 				print_status(downloader, "%s checking...\n", job->metalink->name);
 			else
 				print_status(downloader, "%s checking...\n", job->blacklist_entry->local_filename);
 			if (job_validate_file(job)) {
-				if (config.progress)
+				if (config.progress == PROGRESS_TYPE_BAR)
 					bar_print(downloader->id, "Checksum OK");
 				else
 					debug_printf("checksum ok\n");
 				job->done = 1; // we are done with this job, main state machine will remove it
 			} else {
-				if (config.progress)
+				if (config.progress == PROGRESS_TYPE_BAR)
 					bar_print(downloader->id, "Checksum FAILED");
 				else
 					debug_printf("checksum failed\n");
@@ -3558,7 +3560,7 @@ static int get_header(wget_http_response *resp, void *context)
 //	info_printf("Opened %d\n", ctx->outfd);
 
 out:
-	if (config.progress) {
+	if (config.progress == PROGRESS_TYPE_BAR) {
 		const char *filename = NULL;
 
 		if (!name) {
@@ -3667,7 +3669,7 @@ static int get_body(wget_http_response *resp, void *context, const char *data, s
 	if (ctx->max_memory == 0 || ctx->length < ctx->max_memory)
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
-	if (config.progress) {
+	if (config.progress == PROGRESS_TYPE_BAR) {
 		bar_set_downloaded(ctx->progress_slot, resp->cur_downloaded - resp->accounted_for);
 		resp->accounted_for = resp->cur_downloaded;
 	}
@@ -3978,7 +3980,7 @@ int http_send_request(const wget_iri *iri, const wget_iri *original_url, DOWNLOA
 				job->part->id, wget_vector_size(job->parts),
 				(long long)job->part->position, (long long)(job->part->position + job->part->length - 1),
 				job->metalink->name, iri->host);
-		else if (config.progress)
+		else if (config.progress == PROGRESS_TYPE_BAR)
 			bar_print(downloader->id, iri->uri);
 		else
 			print_status(downloader, "[%d] Downloading '%s' ...\n", downloader->id, iri->uri);
@@ -4013,7 +4015,9 @@ int http_send_request(const wget_iri *iri, const wget_iri *original_url, DOWNLOA
 	wget_http_request_set_body_cb(req, get_body, context);
 
 	// keep the received response header in 'resp->header'
-	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, config.save_headers || config.server_response || (config.progress && config.spider) || (config.chunk_size && config.progress));
+	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER,
+		config.save_headers || config.server_response
+		|| (config.progress == PROGRESS_TYPE_BAR && (config.spider || config.chunk_size)));
 	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_IGNORELENGTH, config.ignore_length);
 	return WGET_E_SUCCESS;
 }
@@ -4051,7 +4055,7 @@ wget_http_response *http_receive_response(wget_http_connection *conn)
 		context->outfd = -1;
 	}
 
-	if (config.progress)
+	if (config.progress == PROGRESS_TYPE_BAR)
 		bar_slot_deregister(context->progress_slot);
 
 	if (resp->length_inconsistent)
