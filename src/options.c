@@ -776,10 +776,17 @@ static int WGET_GCC_PURE WGET_GCC_NONNULL((1)) parse_progress_type(option_t opt,
 	}
 
 	if (!wget_strcasecmp_ascii(val, "none"))
-		*((char *)opt->var) = 0;
-	else if (!wget_strcasecmp_ascii(val, "bar"))
-		*((char *)opt->var) = 1;
-	else {
+		*((char *)opt->var) = PROGRESS_TYPE_NONE;
+	else if (!wget_strncasecmp_ascii(val, "bar", 3)) {
+		*((char *)opt->var) = PROGRESS_TYPE_BAR;
+		// Silent Wget compatibility
+		if (!wget_strncasecmp_ascii(val+3, ":force", 6) || !wget_strncasecmp_ascii(val+3, ":noscroll:force", 15)) {
+			config.force_progress = true;
+		}
+	} else if (!wget_strcasecmp_ascii(val, "dot")) {
+		// Wget compatibility, whether want to support 'dot' depends on user feedback.
+		info_printf(_("Progress type '%s' ignored. It is not implemented yet\n"), val);
+	} else {
 		error_printf(_("Unknown progress type '%s'\n"), val);
 		return -1;
 	}
