@@ -57,7 +57,7 @@ static void check(int result, int line, const char *msg)
 		ok++;
 	} else {
 		failed++;
-		wget_info_printf("L%d: %s\n", line, msg);
+		wget_error_printf_exit("L%d: %s\n", line, msg);
 	}
 }
 
