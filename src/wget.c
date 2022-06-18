@@ -1122,7 +1122,7 @@ static void convert_links(void)
 	// cycle through all documents where links have been found
 	wget_stringmap_iterator *iter = wget_stringmap_iterator_alloc(conversions);
 
-	for (int it = 0; wget_stringmap_iterator_next(iter, (void **) &conversion); it++) {
+	while (wget_stringmap_iterator_next(iter, (void **) &conversion)) {
 		const char *data, *data_ptr;
 		size_t data_length;
 
