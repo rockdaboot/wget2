@@ -206,6 +206,10 @@ if test -n "$WARN_CFLAGS"; then
       WARN_CFLAGS="$WARN_CFLAGS -Wno-reserved-identifier"
     fi
 
+    if test $CLANG_VERSION -ge 15; then
+      WARN_CFLAGS="$WARN_CFLAGS -Wno-declaration-after-statement"
+    fi
+
     # remove all flags from WARN_FLAGS that are already in CFLAGS
     # wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])
 
