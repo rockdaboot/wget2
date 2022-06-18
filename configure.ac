@@ -134,6 +134,8 @@ if test -n "$WARN_CFLAGS"; then
     nw="$nw -Wabi" # gcc 8, very noisy
     nw="$nw -Wunused-macros" # triggers in auto-generated lex css parser, #pragma doesn't work, conflicts with -Werror
     nw="$nw -Wchkp" # gcc-9 says: not supported any more (but emits it via -Q --help=C)"
+    nw="$nw -Wc90-c99-compat" # gcc-12, we use C99
+    nw="$nw -Wlong-long" # gcc-12, we use C99
     if test "$cross_compiling" = yes; then
       nw="$nw -Wformat"
     fi
