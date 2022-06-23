@@ -265,7 +265,8 @@ Scan-Build/Debian:
     - ./bootstrap --skip-po && touch .manywarnings
     - CC=clang ./configure $CONFIGURE_BASE_FLAGS
     - make -C lib -j$(nproc)
-    - scan-build -v --use-cc=clang -enable-checker valist,nullability --status-bugs -o scan-build make -j$(nproc)
+    - scan-build -v --use-cc=clang --force-analyze-debug-code --show-description -analyzer-config stable-report-filename=true -enable-checker valist,nullability --status-bugs -o scan-build make -j$(nproc)
+    - scan-build -v --use-cc=clang --force-analyze-debug-code --show-description -analyzer-config stable-report-filename=true -enable-checker valist,nullability --status-bugs -o scan-build make -j$(nproc) check
   tags:
     - shared
     - linux
