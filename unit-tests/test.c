@@ -302,6 +302,12 @@ static void test_buffer(void)
 	wget_buffer_bufcpy(&buf, bufp);
 	wget_buffer_free(&bufp);
 	wget_buffer_deinit(&buf);
+
+	bufp = wget_buffer_alloc(16);
+	assert(wget_buffer_strcpy(bufp, "moin") == 4);
+	assert(wget_buffer_memset(bufp, 'A', 0) == 0);
+	assert(*bufp->data == 0);
+	wget_buffer_free(&bufp);
 }
 
 static void test_buffer_printf(void)
