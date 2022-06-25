@@ -18,10 +18,11 @@
  * along with libwget.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- * routines to parse robots.txt
+ * routines to parse robots.txt (RFC 9309)
  *
  * Changelog
  * 28.09.2013  Tim Ruehsen  created
+ * 15.03.2024  Avinash Sonawane, Tim Ruehsen  updated to RFC 9309 (except for the Allow field)
  *
  */
 
@@ -29,6 +30,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 #include <wget.h>
 #include "private.h"
@@ -59,12 +61,39 @@ static void path_free(void *path)
 	xfree(p);
 }
 
+static inline void advance_ws(const char **s)
+{
+	for (; isblank(**s); (*s)++);
+}
+
+static bool parse_record_field(const char **data, const char *field, size_t field_length)
+{
+	advance_ws(data);
+
+	if (wget_strncasecmp_ascii(*data, field, field_length))
+		return false;
+
+	*data += field_length;
+	advance_ws(data);
+
+	if (**data != ':')
+		return false;
+
+	*data += 1;
+	advance_ws(data);
+
+	return true;
+}
+#define parse_record_field(d, f) parse_record_field(d, f, sizeof(f) - 1)
+
+
 /**
  * \param[in] data Memory with robots.txt content (with trailing 0-byte)
  * \param[in] client Name of the client / user-agent
  * \return Return an allocated wget_robots structure or NULL on error
  *
- * The function parses the robots.txt \p data and returns a ROBOTS structure
+ * The function parses the robots.txt \p data in accordance to
+ * https://www.robotstxt.org/orig.html#format and returns a ROBOTS structure
  * including a list of the disallowed paths and including a list of the sitemap
  * files.
  *
@@ -75,8 +104,18 @@ int wget_robots_parse(wget_robots **_robots, const char *data, const char *clien
 	wget_robots *robots;
 	wget_string path;
 	size_t client_length = client ? strlen(client) : 0;
-	int collect = 0;
 	const char *p;
+	bool seek_record_client = false;
+	enum record {
+		NOT_IN_RECORD,
+		/* User-agent:client */
+		IN_RECORD_CLIENT,
+		/* User-agent:* */
+		IN_RECORD_STAR,
+		/* Disallow:foo */
+		ADDED_DISALLOW,
+		NO_MORE_RECORDS
+	} state;
 
 	if (!data || !*data || !_robots)
 		return WGET_E_INVALID;
@@ -84,32 +123,35 @@ int wget_robots_parse(wget_robots **_robots, const char *data, const char *clien
 	if (!(robots = wget_calloc(1, sizeof(wget_robots))))
 		return WGET_E_MEMORY;
 
+	state = NOT_IN_RECORD;
 	do {
-		if (collect < 2 && !wget_strncasecmp_ascii(data, "User-agent:", 11)) {
-			if (!collect) {
-				for (data += 11; *data == ' ' || *data == '\t'; data++);
-				if (client && !wget_strncasecmp_ascii(data, client, client_length)) {
-					collect = 1;
-				}
-				else if (*data == '*') {
-					collect = 1;
-				}
-			} else
-				collect = 2;
-		}
-		else if (collect == 1 && !wget_strncasecmp_ascii(data, "Disallow:", 9)) {
-			for (data += 9; *data == ' ' || *data == '\t'; data++);
-			if (*data == '\r' || *data == '\n' || *data == '#' || !*data) {
+		if (state != NO_MORE_RECORDS && state != IN_RECORD_CLIENT && parse_record_field(&data, "User-agent")) {
+			if (client && !wget_strncasecmp_ascii(data, client, client_length)) {
+				if (!seek_record_client)
+					wget_vector_free(&robots->paths);
+				seek_record_client = true;
+				state = IN_RECORD_CLIENT;
+			} else if (!seek_record_client && (*data == '*'))
+				state = IN_RECORD_STAR;
+			else if (state == ADDED_DISALLOW)
+				state = NOT_IN_RECORD;
+		} else if (state != NO_MORE_RECORDS && state != NOT_IN_RECORD && parse_record_field(&data, "Disallow")) {
+			if (!*data || isspace(*data) || *data == '#') {
 				// all allowed
 				wget_vector_free(&robots->paths);
-				collect = 2;
+				if (seek_record_client)
+					state = NO_MORE_RECORDS;
+				else {
+					state = NOT_IN_RECORD;
+					seek_record_client = true;
+				}
 			} else {
 				if (!robots->paths) {
 					if (!(robots->paths = wget_vector_create(32, NULL)))
 						goto oom;
 					wget_vector_set_destructor(robots->paths, path_free);
 				}
-				for (p = data; *p && !isspace(*p); p++);
+				for (p = data; *p && !isspace(*p) && *p != '#'; p++);
 				path.len = p - data;
 				if (!(path.p = wget_strmemdup(data, path.len)))
 					goto oom;
@@ -117,21 +159,22 @@ int wget_robots_parse(wget_robots **_robots, const char *data, const char *clien
 					xfree(path.p);
 					goto oom;
 				}
+				state = ADDED_DISALLOW;
 			}
-		}
-		else if (!wget_strncasecmp_ascii(data, "Sitemap:", 8)) {
-			for (data += 8; *data==' ' || *data == '\t'; data++);
-			for (p = data; *p && !isspace(*p); p++);
+		} else if (parse_record_field(&data, "Sitemap")) {
+			for (p = data; *p && !isspace(*p) && *p != '#'; p++);
 
-			if (!robots->sitemaps)
-				if (!(robots->sitemaps = wget_vector_create(4, NULL)))
+			if (p > data){
+				if (!robots->sitemaps)
+					if (!(robots->sitemaps = wget_vector_create(4, NULL)))
+						goto oom;
+
+				char *sitemap = wget_strmemdup(data, p - data);
+				if (!sitemap)
 					goto oom;
-
-			char *sitemap = wget_strmemdup(data, p - data);
-			if (!sitemap)
-				goto oom;
-			if (wget_vector_add(robots->sitemaps, sitemap) < 0)
-				goto oom;
+				if (wget_vector_add(robots->sitemaps, sitemap) < 0)
+					goto oom;
+			}
 		}
 
 		if ((data = strchr(data, '\n')))
