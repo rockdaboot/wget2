@@ -206,7 +206,7 @@ if test -n "$WARN_CFLAGS"; then
       WARN_CFLAGS="$WARN_CFLAGS -Wno-reserved-identifier"
     fi
 
-    if test $CLANG_VERSION -ge 15; then
+    if test $CLANG_VERSION -ge 14; then
       WARN_CFLAGS="$WARN_CFLAGS -Wno-declaration-after-statement"
     fi
 
