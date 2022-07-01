@@ -1693,7 +1693,7 @@ static int process_response_header(wget_http_response *resp)
 	}
 
 	// Wget1.x compatibility
-	if (resp->code/100 == 4 && resp->code != 416) {
+	if (resp->code / 100 == 4 && resp->code != 416) {
 		if (job->head_first)
 			set_exit_status(EXIT_STATUS_REMOTE);
 		else if (resp->code == 404 && !job->robotstxt) {
@@ -1714,6 +1714,9 @@ static int process_response_header(wget_http_response *resp)
 			set_exit_status(EXIT_STATUS_REMOTE);
 #endif
 		}
+	}
+	else if (resp->code >= 500) {
+		set_exit_status(EXIT_STATUS_REMOTE);
 	}
 
 	// Server doesn't support keep-alive or want us to close the connection.
