@@ -99,7 +99,7 @@ int wget_robots_parse(wget_robots **_robots, const char *data, const char *clien
 		}
 		else if (collect == 1 && !wget_strncasecmp_ascii(data, "Disallow:", 9)) {
 			for (data += 9; *data == ' ' || *data == '\t'; data++);
-			if (*data == '\r' || *data == '\n' || !*data) {
+			if (*data == '\r' || *data == '\n' || *data == '#' || !*data) {
 				// all allowed
 				wget_vector_free(&robots->paths);
 				collect = 2;

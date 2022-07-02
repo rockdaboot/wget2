@@ -2263,42 +2263,52 @@ static void test_robots(void)
 {
 	static const struct test_data {
 		const char *
-			data;
+			name;
+		const char *
+			input;
 		const char *
 			path[3];
 		const char *
 			sitemap[3];
 	} test_data[] = {
 		{
-			// Deny all robots from part of the server
+			"Allow all + sitemap",
 			"User-agent: *\n"
-			"Disallow: /cgi-bin/\n",
-			{ "/cgi-bin/", NULL },
-			{ "", NULL }
+			"Disallow: # allow all\n"
+			"Sitemap: http://www.example.com/sitemap.xml",
+			{ NULL },
+			{ "http://www.example.com/sitemap.xml", NULL }
 		},
 		{
-			// Deny all robots from the entire server
+			"Deny all /cgi-bin",
+			"User-agent: *\n"
+			"Disallow: /cgi-bin/ # comment\n",
+			{ "/cgi-bin/", NULL },
+			{ NULL }
+		},
+		{
+			"Deny all /",
 			"User-agent: *\n"
 			"Disallow: /\n",
 			{ "/", NULL },
 			{ NULL }
 		},
 		{
-			// allow a single robot for part of the server
+			"Deny wget2 /cgi/bin",
 			"User-agent: wget2\n"
 			"Disallow: /cgi-bin/\n",
 			{ "/cgi-bin/", NULL },
 			{ NULL }
 		},
 		{
-			// deny a single robot
+			"Deny wget2 /",
 			"User-agent: wget2\n"
 			"Disallow: /\n",
 			{ "/", NULL },
 			{ NULL }
 		},
 		{
-			// allow a single robot
+			"Allow all but deny wget2 /",
 			"User-agent: *\n"
 			"Disallow: /\n"
 			"User-agent: wget2\n"
@@ -2307,14 +2317,14 @@ static void test_robots(void)
 			{ NULL }
 		},
 		{
-			// Allow all robots complete access
-			// or simply don't use a robots.txt at all
+			"Allow all",
 			"User-agent: *\n"
 			"Disallow: \n",
 			{ NULL },
 			{ NULL }
 		},
 		{
+			"Deny all /cgi-bin + sitemap",
 			// with 1 sitemap
 			"User-agent: *\n"
 			"Disallow: /cgi-bin/\n"
@@ -2323,7 +2333,7 @@ static void test_robots(void)
 			{ "http://www.example.com/sitemap.xml", NULL }
 		},
 		{
-			// with 2 sitemap
+			"Deny all /cgi-bin + 2 sitemaps",
 			"User-agent: *\n"
 			"Disallow: /cgi-bin/\n"
 			"Sitemap: http://www.example1.com/sitemap.xml\n"
@@ -2332,7 +2342,7 @@ static void test_robots(void)
 			{ "http://www.example1.com/sitemap.xml", "http://www.example2.com/sitemap.xml", NULL }
 		},
 		{
-			// with 2 "Disallow" entries
+			"Deny all /cgi-bin, /tmp + 2 sitemaps",
 			"User-agent: *\n"
 			"Disallow: /cgi-bin/\n"
 			"Disallow: /tmp/\n"
@@ -2342,7 +2352,7 @@ static void test_robots(void)
 			{ "http://www.example1.com/sitemap.xml", "http://www.example2.com/sitemap.xml", NULL }
 		},
 		{
-			// with equal number entries
+			"Deny all /cgi-bin, /tmp, /jumk + 3 sitemaps",
 			"User-agent: *\n"
 			"Disallow: /cgi-bin/\n"
 			"Disallow: /tmp/\n"
@@ -2354,27 +2364,41 @@ static void test_robots(void)
 			{ "http://www.example1.com/sitemap.xml", "http://www.example2.com/sitemap.xml", "http://www.example3.com/sitemap.xml" }
 		},
 		{
-			// null termination test
+			"Missing EOL",
 			"User-agent: *\n"
 			"Disallow: /cgi-bin/",
 			{ "/cgi-bin/", NULL },
-			{ "", NULL }
+			{ NULL }
 		},
-		{
-			// null termination test #2
-			"User-agent: *"
-			"Disallow: /cgi-bin/",
-			{ "/cgi-bin/", NULL },
-			{ "", NULL }
-		}
 	};
 
 	for (unsigned it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
 		wget_robots *robots;
+		int count;
 
-		if (wget_robots_parse(&robots, t->data, PACKAGE_NAME) != WGET_E_SUCCESS) {
-			info_printf("Failed to parse: \"%s\" on robots\n", t->path[it]);
+		if (wget_robots_parse(&robots, t->input, PACKAGE_NAME) != WGET_E_SUCCESS) {
+			info_printf("'%s': Failed to parse: \"%s\" on robots\n", t->name, t->path[it]);
+			failed++;
+			continue;
+		}
+
+		count = 0;
+		for (unsigned it2 = 0; it2 < countof(test_data[it].path) && t->path[it2]; it2++, count++)
+			;
+		if (count != wget_robots_get_path_count(robots)) {
+			info_printf("'%s': paths mismatch: expected %d, got %d\n",
+				t->name, count, wget_robots_get_path_count(robots));
+			failed++;
+			continue;
+		}
+
+		count = 0;
+		for (unsigned it2 = 0; it2 < countof(test_data[it].sitemap) && t->sitemap[it2]; it2++, count++)
+			;
+		if (count != wget_robots_get_sitemap_count(robots)) {
+			info_printf("'%s': sitemap # mismatch: expected %d, got %d\n",
+				t->name, count, wget_robots_get_sitemap_count(robots));
 			failed++;
 			continue;
 		}
@@ -2388,7 +2412,7 @@ static void test_robots(void)
 					it3 = n;
 					ok++;
 				} else if ((strcmp(paths->p, t->path[it2]) && it3 == n - 1)) {
-					info_printf("Cannot find path: \"%s\" on robots\n", t->path[it2]);
+					info_printf("'%s': Cannot find path: \"%s\" on robots\n", t->name, t->path[it2]);
 					failed++;
 				}
 			}
@@ -2403,7 +2427,7 @@ static void test_robots(void)
 					it3 = n;
 					ok++;
 				} else if ((strcmp(sitemaps, t->sitemap[it2]) && it3 == n - 1)) {
-					info_printf("Cannot find sitemap: \"%s\" on robots\n", t->sitemap[it2]);
+					info_printf("'%s': Cannot find sitemap: \"%s\" on robots\n", t->name, t->sitemap[it2]);
 					failed++;
 				}
 			}
